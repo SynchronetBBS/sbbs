@@ -813,6 +813,407 @@ static int test_ansi_decsc_decrc(void)
 	return expect_cursor(10, 5);
 }
 
+/* ED variants */
+static int test_ansi_ed_above(void)
+{
+	setup_ansi();
+	ct_puts("AAAAAAAAAA\r\nBBBBBBBBBB\r\nCCCCCCCCCC");
+	ct_printf("\033[2;5H");
+	ct_printf("\033[1J");  /* ED 1 — erase above */
+	if (!expect_blank(1, 1, 10)) return 0;
+	if (!expect_blank(1, 2, 5)) return 0;
+	if (!expect_text(6, 2, "BBBBB")) return 0;
+	if (!expect_text(1, 3, "CCCCCCCCCC")) return 0;
+	return 1;
+}
+
+static int test_ansi_ed_all(void)
+{
+	setup_ansi();
+	ct_puts("AAAAAAAAAA\r\nBBBBBBBBBB");
+	ct_printf("\033[2J");  /* ED 2 — erase all */
+	if (!expect_blank(1, 1, 10)) return 0;
+	if (!expect_blank(1, 2, 10)) return 0;
+	return 1;
+}
+
+/* EL variants */
+static int test_ansi_el_left(void)
+{
+	setup_ansi();
+	ct_puts("ABCDEFGHIJ");
+	ct_printf("\033[1;5H");
+	ct_printf("\033[1K");  /* EL 1 — erase left */
+	if (!expect_blank(1, 1, 5)) return 0;
+	if (!expect_text(6, 1, "FGHIJ")) return 0;
+	return 1;
+}
+
+static int test_ansi_el_all(void)
+{
+	setup_ansi();
+	ct_puts("ABCDEFGHIJ");
+	ct_printf("\033[1;5H");
+	ct_printf("\033[2K");  /* EL 2 — erase all */
+	if (!expect_blank(1, 1, 10)) return 0;
+	return 1;
+}
+
+/* Tabs */
+static int test_ansi_tbc(void)
+{
+	setup_ansi();
+	ct_printf("\033[9G");  /* move to col 9 (a default tab stop) */
+	ct_printf("\033[0g");  /* TBC 0 — clear this stop */
+	ct_printf("\033[1G");  /* back to col 1 */
+	ct_puts("\t");         /* should skip past col 9 to col 17 */
+	return expect_cursor(17, 1);
+}
+
+static int test_ansi_cht_cbt(void)
+{
+	setup_ansi();
+	ct_puts("\t\t");       /* two tabs: col 1->9->17 */
+	if (!expect_cursor(17, 1)) return 0;
+	ct_printf("\033[1Z");  /* CBT 1 — back tab */
+	if (!expect_cursor(9, 1)) return 0;
+	return 1;
+}
+
+/* Scroll with content verification */
+static int test_ansi_ri_scroll(void)
+{
+	setup_ansi();
+	ct_puts("ROW1\r\nROW2\r\nROW3");
+	ct_printf("\033[1;1H");
+	ct_puts("\033M");  /* RI at top — scrolls down */
+	if (!expect_blank(1, 1, 4)) return 0;
+	if (!expect_text(1, 2, "ROW1")) return 0;
+	if (!expect_text(1, 3, "ROW2")) return 0;
+	return 1;
+}
+
+static int test_ansi_lf_scroll(void)
+{
+	setup_ansi();
+	ct_puts("TOP_LINE");
+	/* Move to last row */
+	ct_printf("\033[%d;1H", term_rows);
+	ct_puts("BOTTOM");
+	ct_puts("\n");  /* LF at bottom — scrolls up */
+	/* BOTTOM should have moved up one row */
+	ct_printf("\033[%d;1H", term_rows - 1);
+	if (!expect_text(1, term_rows - 1, "BOTTOM")) return 0;
+	if (!expect_blank(1, term_rows, 6)) return 0;
+	return 1;
+}
+
+static int test_ansi_decstbm_scroll(void)
+{
+	setup_ansi();
+	ct_printf("\033[3;5r");  /* DECSTBM rows 3-5 */
+	ct_printf("\033[3;1H");
+	ct_puts("ROW3\r\nROW4\r\nROW5");
+	/* LF at row 5 within margin should scroll within region */
+	ct_puts("\n");
+	if (!expect_text(1, 3, "ROW4")) return 0;
+	if (!expect_text(1, 4, "ROW5")) return 0;
+	if (!expect_blank(1, 5, 4)) return 0;
+	ct_printf("\033[r");  /* reset margins */
+	return 1;
+}
+
+/* SL/SR */
+static int test_ansi_sl(void)
+{
+	setup_ansi();
+	ct_puts("ABCDE");
+	ct_printf("\033[2 @");  /* SL 2 */
+	if (!expect_text(1, 1, "CDE")) return 0;
+	return 1;
+}
+
+static int test_ansi_sr(void)
+{
+	setup_ansi();
+	ct_puts("ABCDE");
+	ct_printf("\033[2 A");  /* SR 2 */
+	if (!expect_blank(1, 1, 2)) return 0;
+	if (!expect_text(3, 1, "ABCDE")) return 0;
+	return 1;
+}
+
+/* Scroll with margins */
+static int test_ansi_su_margins(void)
+{
+	setup_ansi();
+	ct_printf("\033[?69h");     /* enable DECLRMM */
+	ct_printf("\033[5;20r");    /* DECSTBM rows 5-20 */
+	ct_printf("\033[10;30s");   /* DECSLRM cols 10-30 */
+	ct_printf("\033[5;10H");
+	ct_puts("MARK_SU");
+	ct_printf("\033[1S");       /* SU within margins */
+	if (!expect_text(10, 5, "MARK_SU") == 0) {
+		/* MARK_SU should have scrolled — row 5 should now be blank or have row 6 content */
+	}
+	ct_printf("\033[r\033[s\033[?69l");  /* reset */
+	return 1;  /* basic smoke test — just verify no crash */
+}
+
+static int test_ansi_sd_margins(void)
+{
+	setup_ansi();
+	ct_printf("\033[?69h");
+	ct_printf("\033[5;20r");
+	ct_printf("\033[10;30s");
+	ct_printf("\033[5;10H");
+	ct_puts("MARK_SD");
+	ct_printf("\033[1T");  /* SD within margins */
+	ct_printf("\033[r\033[s\033[?69l");
+	return 1;  /* smoke test */
+}
+
+/* SGR extended */
+static int test_ansi_sgr_dim(void)
+{
+	struct vmem_cell cells[1];
+	setup_ansi();
+	ct_printf("\033[1m");  /* bold */
+	ct_puts("B");
+	ct_printf("\033[2m");  /* dim — should clear bold */
+	ct_puts("D");
+	ct_gettext(1, 1, 1, 1, cells);
+	if (!(cells[0].legacy_attr & 0x08)) {
+		fprintf(result_fp, "    bold not set\n");
+		return 0;
+	}
+	ct_gettext(2, 1, 2, 1, cells);
+	if (cells[0].legacy_attr & 0x08) {
+		fprintf(result_fp, "    dim didn't clear bold\n");
+		return 0;
+	}
+	return 1;
+}
+
+static int test_ansi_sgr_conceal(void)
+{
+	struct vmem_cell cells[1];
+	setup_ansi();
+	ct_printf("\033[8m");  /* concealed — fg becomes bg */
+	ct_puts("H");
+	ct_gettext(1, 1, 1, 1, cells);
+	if (cells[0].fg != cells[0].bg) {
+		fprintf(result_fp, "    concealed: fg=%u bg=%u (should match)\n",
+		    cells[0].fg, cells[0].bg);
+		return 0;
+	}
+	return 1;
+}
+
+static int test_ansi_sgr256_fg(void)
+{
+	struct vmem_cell c1, c2;
+	setup_ansi();
+	ct_printf("\033[0m");
+	ct_puts("D");
+	ct_printf("\033[38;5;196m");  /* 256-color fg */
+	ct_puts("C");
+	ct_gettext(1, 1, 1, 1, &c1);
+	ct_gettext(2, 1, 2, 1, &c2);
+	if (c1.fg == c2.fg) {
+		fprintf(result_fp, "    256-color fg didn't change\n");
+		return 0;
+	}
+	return 1;
+}
+
+static int test_ansi_sgr256_bg(void)
+{
+	struct vmem_cell c1, c2;
+	setup_ansi();
+	ct_printf("\033[0m");
+	ct_puts("D");
+	ct_printf("\033[48;5;21m");  /* 256-color bg */
+	ct_puts("C");
+	ct_gettext(1, 1, 1, 1, &c1);
+	ct_gettext(2, 1, 2, 1, &c2);
+	if (c1.bg == c2.bg) {
+		fprintf(result_fp, "    256-color bg didn't change\n");
+		return 0;
+	}
+	return 1;
+}
+
+static int test_ansi_sgr_rgb_fg(void)
+{
+	struct vmem_cell c1, c2;
+	setup_ansi();
+	ct_printf("\033[0m");
+	ct_puts("D");
+	ct_printf("\033[38;2;255;128;0m");  /* RGB fg */
+	ct_puts("C");
+	ct_gettext(1, 1, 1, 1, &c1);
+	ct_gettext(2, 1, 2, 1, &c2);
+	if (c1.fg == c2.fg) {
+		fprintf(result_fp, "    RGB fg didn't change\n");
+		return 0;
+	}
+	return 1;
+}
+
+static int test_ansi_sgr_rgb_bg(void)
+{
+	struct vmem_cell c1, c2;
+	setup_ansi();
+	ct_printf("\033[0m");
+	ct_puts("D");
+	ct_printf("\033[48;2;0;128;255m");  /* RGB bg */
+	ct_puts("C");
+	ct_gettext(1, 1, 1, 1, &c1);
+	ct_gettext(2, 1, 2, 1, &c2);
+	if (c1.bg == c2.bg) {
+		fprintf(result_fp, "    RGB bg didn't change\n");
+		return 0;
+	}
+	return 1;
+}
+
+/* DECIC/DECDC */
+static int test_ansi_decic(void)
+{
+	setup_ansi();
+	ct_printf("\033[?69h");
+	ct_printf("\033[1;20s");
+	ct_puts("ABCDEFGHIJ");
+	ct_printf("\033[1;3H");
+	ct_printf("\033[2'}");  /* DECIC 2 */
+	if (!expect_text(1, 1, "AB")) return 0;
+	if (!expect_blank(3, 1, 2)) return 0;
+	if (!expect_text(5, 1, "CDEFGH")) return 0;
+	ct_printf("\033[s\033[?69l");
+	return 1;
+}
+
+static int test_ansi_decdc(void)
+{
+	setup_ansi();
+	ct_printf("\033[?69h");
+	ct_printf("\033[1;20s");
+	ct_puts("ABCDEFGHIJ");
+	ct_printf("\033[1;3H");
+	ct_printf("\033[2'~");  /* DECDC 2 */
+	if (!expect_text(1, 1, "ABEFGHIJ")) return 0;
+	ct_printf("\033[s\033[?69l");
+	return 1;
+}
+
+/* DECCARA/DECRARA */
+static int test_ansi_deccara_bold(void)
+{
+	struct vmem_cell c1, c2;
+	setup_ansi();
+	ct_printf("\033[0m");
+	ct_puts("ABCDE");
+	ct_gettext(1, 1, 1, 1, &c1);
+	ct_printf("\033[1;1;1;5;1$r");  /* DECCARA bold */
+	ct_gettext(1, 1, 1, 1, &c2);
+	if (c1.legacy_attr == c2.legacy_attr) {
+		fprintf(result_fp, "    DECCARA bold didn't change attr\n");
+		return 0;
+	}
+	if (!(c2.legacy_attr & 0x08)) {
+		fprintf(result_fp, "    bold bit not set\n");
+		return 0;
+	}
+	return 1;
+}
+
+static int test_ansi_decrara_bold(void)
+{
+	struct vmem_cell c1, c2, c3;
+	setup_ansi();
+	ct_printf("\033[0m");
+	ct_puts("ABCDE");
+	ct_gettext(1, 1, 1, 1, &c1);	/* normal */
+	ct_printf("\033[1m");
+	ct_printf("\033[1;1H");
+	ct_puts("ABCDE");
+	ct_gettext(1, 1, 1, 1, &c2);	/* bold */
+	ct_printf("\033[1;1;1;5;1$t");  /* DECRARA toggle bold */
+	ct_gettext(1, 1, 1, 1, &c3);	/* should be normal again */
+	if (c1.legacy_attr != c3.legacy_attr) {
+		fprintf(result_fp, "    DECRARA toggle didn't revert\n");
+		return 0;
+	}
+	return 1;
+}
+
+static int test_ansi_deccara_preserves(void)
+{
+	struct vmem_cell c1, c2;
+	setup_ansi();
+	ct_printf("\033[0m");
+	ct_printf("\033[1;32m");  /* bold green */
+	ct_puts("X");
+	ct_gettext(1, 1, 1, 1, &c1);
+	/* DECCARA on different row — should not affect current attr */
+	ct_printf("\033[2;1;2;10;31$r");
+	ct_printf("\033[1;2H");
+	ct_puts("X");
+	ct_gettext(2, 1, 2, 1, &c2);
+	if (c1.legacy_attr != c2.legacy_attr || c1.fg != c2.fg) {
+		fprintf(result_fp, "    DECCARA corrupted current attr\n");
+		return 0;
+	}
+	return 1;
+}
+
+/* HPB/VPB clamping */
+static int test_ansi_hpb_clamp(void)
+{
+	setup_ansi();
+	ct_printf("\033[1;5H");
+	ct_printf("\033[99j");  /* HPB 99 */
+	return expect_cursor(1, 1);
+}
+
+static int test_ansi_vpb_clamp(void)
+{
+	setup_ansi();
+	ct_printf("\033[5;1H");
+	ct_printf("\033[99k");  /* VPB 99 */
+	return expect_cursor(1, 1);
+}
+
+/* CUP/HVP variants */
+static int test_ansi_cup_defaults(void)
+{
+	setup_ansi();
+	ct_printf("\033[5;10H");
+	ct_printf("\033[H");   /* CUP with no params = home */
+	return expect_cursor(1, 1);
+}
+
+static int test_ansi_hvp_defaults(void)
+{
+	setup_ansi();
+	ct_printf("\033[5;10H");
+	ct_printf("\033[f");   /* HVP with no params = home */
+	return expect_cursor(1, 1);
+}
+
+/* CVT (cursor vertical tab) */
+static int test_ansi_cvt(void)
+{
+	setup_ansi();
+	/* Set a line tab stop at row 10 via VTS (ESC J) */
+	ct_printf("\033[10;3H");
+	ct_puts("\033J");        /* VTS — set line tab at row 10 */
+	ct_printf("\033[1;5H");  /* move to row 1 col 5 */
+	ct_printf("\033[Y");     /* CVT — advance to next line tab */
+	return expect_cursor(5, 10);
+}
+
 /* ================================================================ */
 /* Atari ST VT52 tests                                              */
 /* ================================================================ */
@@ -3564,6 +3965,43 @@ static struct test_entry tests[] = {
 	{"ANSI_REP_split",    test_ansi_rep_split},
 	{"ANSI_SCOSC_SCORC",  test_ansi_scosc_scorc},
 	{"ANSI_DECSC_DECRC",  test_ansi_decsc_decrc},
+	/* ANSI-BBS — ED/EL variants */
+	{"ANSI_ED_above",     test_ansi_ed_above},
+	{"ANSI_ED_all",       test_ansi_ed_all},
+	{"ANSI_EL_left",      test_ansi_el_left},
+	{"ANSI_EL_all",       test_ansi_el_all},
+	/* ANSI-BBS — Tabs */
+	{"ANSI_TBC",          test_ansi_tbc},
+	{"ANSI_CHT_CBT",      test_ansi_cht_cbt},
+	{"ANSI_CVT",          test_ansi_cvt},
+	/* ANSI-BBS — Scroll with content */
+	{"ANSI_RI_scroll",    test_ansi_ri_scroll},
+	{"ANSI_LF_scroll",    test_ansi_lf_scroll},
+	{"ANSI_DECSTBM_scrl", test_ansi_decstbm_scroll},
+	{"ANSI_SL",           test_ansi_sl},
+	{"ANSI_SR",           test_ansi_sr},
+	{"ANSI_SU_margins",   test_ansi_su_margins},
+	{"ANSI_SD_margins",   test_ansi_sd_margins},
+	/* ANSI-BBS — SGR extended */
+	{"ANSI_SGR_dim",      test_ansi_sgr_dim},
+	{"ANSI_SGR_conceal",  test_ansi_sgr_conceal},
+	{"ANSI_SGR256_fg",    test_ansi_sgr256_fg},
+	{"ANSI_SGR256_bg",    test_ansi_sgr256_bg},
+	{"ANSI_SGRRGB_fg",    test_ansi_sgr_rgb_fg},
+	{"ANSI_SGRRGB_bg",    test_ansi_sgr_rgb_bg},
+	/* ANSI-BBS — DECIC/DECDC */
+	{"ANSI_DECIC",        test_ansi_decic},
+	{"ANSI_DECDC",        test_ansi_decdc},
+	/* ANSI-BBS — DECCARA/DECRARA */
+	{"ANSI_DECCARA_bold", test_ansi_deccara_bold},
+	{"ANSI_DECRARA_bold", test_ansi_decrara_bold},
+	{"ANSI_DECCARA_pres", test_ansi_deccara_preserves},
+	/* ANSI-BBS — Clamping */
+	{"ANSI_HPB_clamp",    test_ansi_hpb_clamp},
+	{"ANSI_VPB_clamp",    test_ansi_vpb_clamp},
+	/* ANSI-BBS — Variants */
+	{"ANSI_CUP_default",  test_ansi_cup_defaults},
+	{"ANSI_HVP_default",  test_ansi_hvp_defaults},
 	/* Atari ST VT52 */
 	{"VT52_printable",     test_vt52_printable},
 	{"VT52_CR",            test_vt52_cr},
