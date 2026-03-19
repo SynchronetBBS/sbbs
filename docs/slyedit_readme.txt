@@ -1,6 +1,6 @@
                          SlyEdit message editor
-                              Version 1.94
-                        Release date: 2026-03-05
+                              Version 2.01
+                        Release date: 2026-03-18
 
                                   by
 
@@ -899,7 +899,13 @@ replace), you would use $1 to refer to the word "darn".  For example, for
 11. User settings
 =================
 Since version 1.32, SlyEdit has the ability for each user to configure some
-settings for themselves.  The user settings include the following:
+settings for themselves.  Note that SlyEdit settings are not saved or loaded
+for guest users, so anyone logging in as guest will always get the default
+SlyEdit settings, and guest users should always be asked for what SlyEdit mode
+they want to use upon running SlyEdit.
+
+The user settings include the following:
+- The SlyEdit mode: DCT, Ice, or Random
 - Whether or not to enable the option to use taglines
 - Whether or not to prompt for spell checking when saving a message
 - Whether or not to add the original author's initials to quote lines

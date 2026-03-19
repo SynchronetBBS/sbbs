@@ -102,8 +102,8 @@ if (console.screen_columns < 80)
 }
 
 // Version information
-var EDITOR_VERSION = "2.00";
-var EDITOR_VER_DATE = "2026-03-05";
+var EDITOR_VERSION = "2.01";
+var EDITOR_VER_DATE = "2026-03-18";
 
 
 // Program variables

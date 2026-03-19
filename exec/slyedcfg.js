@@ -9,7 +9,7 @@ require("sbbsdefs.js", "P_NONE");
 require("uifcdefs.js", "UIFC_INMSG");
 
 
-if (!uifc.init("SlyEdit 1.93 Configurator"))
+if (!uifc.init("SlyEdit 2.01 Configurator"))
 {
 	print("Failed to initialize uifc");
 	exit(1);
