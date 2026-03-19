@@ -821,6 +821,26 @@ magic_message(MSG msg)
 	 * put generic stuff in here.
 	 */
 	switch(msg.message) {
+		case WM_ACTIVATEAPP:
+			if (msg.wParam == TRUE) {
+				// Sync modifier state with actual keyboard when
+				// regaining focus — key-up events are lost while
+				// another window is focused (ticket #226).
+				mods = 0;
+				if (GetKeyState(VK_CONTROL) < 0)
+					mods |= WMOD_CTRL;
+				if (GetKeyState(VK_LCONTROL) < 0)
+					mods |= WMOD_LCTRL;
+				if (GetKeyState(VK_RCONTROL) < 0)
+					mods |= WMOD_RCTRL;
+				if (GetKeyState(VK_SHIFT) < 0)
+					mods |= WMOD_SHIFT;
+				if (GetKeyState(VK_LSHIFT) < 0)
+					mods |= WMOD_LSHIFT;
+				if (GetKeyState(VK_RSHIFT) < 0)
+					mods |= WMOD_RSHIFT;
+			}
+			return false;
 		// Keyboard stuff
 		case WM_KEYDOWN:
 		case WM_KEYUP:
