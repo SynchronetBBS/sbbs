@@ -1052,12 +1052,15 @@ set_default_cursor(void)
 bool
 check_exit(bool force)
 {
+	if (quitting)
+		return true;
 	if (force || (uifc.exit_flags & UIFC_XF_QUIT)) {
 		if (!(uifc.exit_flags & UIFC_XF_QUIT) && settings.confirm_close) {
 			if (!confirm("Are you sure you want to exit?", NULL))
 				return false;
 		}
 		quitting = true;
+		uifc.exit_flags |= UIFC_XF_QUIT;
 		return true;
 	}
 	return false;
