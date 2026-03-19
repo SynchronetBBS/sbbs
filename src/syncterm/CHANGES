@@ -28,6 +28,10 @@ Fix black bar at bottom of 132x37 mode
 Fix snapping of height-controlled modes
 Fix delay at end of ZModem transfer
 Fix "Failed to decrypt BBS list" for empty list files
+Fix keys stuck after Ctrl+clicking a URL in Win32-GDI
+Fix blank drive list in file picker on Windows
+Fix status bar smear during fast scroll
+Fix zombie process when closing window while connected
 Fix compatibility with "SSH-2.0-Go"
 Fix curses mode stdio drop detection
 Fix curses CPU spin when PTY is deleted (e.g., ttyd disconnect)
