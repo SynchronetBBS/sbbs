@@ -1153,45 +1153,75 @@ SyncTERM uses multiple threads with carefully structured communication:
 
 ## Testing
 
-Two automated test suites cover the terminal emulation layer:
+Three test suites cover the terminal emulation layer:
 
-### termtest (syncterm/termtest.c) — ANSI-BBS Integration Tests
+### cterm_test (conio/cterm_test.c) — Unit Tests
 
-165 tests for the ANSI-BBS emulation mode.  Uses a headless SDL
-offscreen SyncTERM instance connected to the test binary via PTY.
-Tests exercise CSI sequences, cursor movement, scrolling, SGR
-attributes, mode queries (DECRQM, DECRQSS), screen readback (STS
-via SSA/ESA), rectangular area operations (DECERA, DECFRA, DECCRA,
-DECCARA, DECRARA), and other ECMA-48/DEC/CTerm features.
-
-Run with: `bash run_termtest.sh build/syncterm build/termtest`
-
-### cterm_test (conio/cterm_test.c) — Non-ANSI Unit Tests
-
-122 tests for the five non-ANSI emulation modes.  Initializes ciolib
-with SDL offscreen, creates cterm instances directly via `cterm_init()`,
+275 tests covering all six emulation modes.  Initializes ciolib with
+SDL offscreen, creates cterm instances directly via `cterm_init()`,
 writes test data via `cterm_write()`, and verifies screen state via
-`vmem_gettext()`.  No PTY or SyncTERM process needed.
+`vmem_gettext()` and rendered pixels via `getpixels()`.  No PTY or
+SyncTERM process needed.  Response capture via `response_cb` callback
+with retbuf leak detection.
 
+- **ANSI-BBS** (84 tests): C0 controls, cursor movement + clamping,
+  erase operations (ED/EL/ICH/DCH/IL/DL/ECH + variants), SGR (reset,
+  bold, blink, negative, dim, conceal, 256-color, RGB, bright fg/bg,
+  default fg/bg), margins (DECSTBM/DECSLRM), scrolling (SU/SD/SL/SR
+  + margins), modes (autowrap, origin, bracket paste), DEC rectangular
+  ops (DECERA/DECFRA/DECCRA/DECIC/DECDC/DECCARA/DECRARA/DECSACE),
+  REP with packet-split regression, macros (DECDMAC/DECINVM),
+  save/restore cursor and mode, DECSCUSR, CT24BC, FETM/TTM, OSC 8,
+  music state, query/response (DSR/DA/DECRQSS/DECRQM/DECRQCRA)
 - **Atari ST VT52** (38 tests): C0 controls, cursor movement, ESC
   sequences (standard VT52 + GEMDOS/TOS extensions), scrolling,
   wrapping, colors, reverse video
 - **ATASCII** (19 tests): cursor wrapping, clear screen, backspace,
   ESC inverse mode, insert/delete line/char, tabs, screen codes
 - **PETSCII** (28 tests): all 3 screen modes (C64, C128-40, C128-80),
-  colors per mode, reverse video, cursor movement with wrapping,
-  delete/insert, C64/C128 control code differences
+  colors per mode, reverse video, cursor movement, font switching
 - **Prestel** (26 tests): C0 controls, cursor wrapping (no scroll),
-  serial attributes (alpha/mosaic color, flash, conceal, hold,
-  double height, background, separated), raw C1 controls
+  serial attributes (all 7 alpha + 7 mosaic colors, flash, conceal,
+  hold, double height, background, separated), raw C1 controls
 - **BEEB** (11 tests): character translation, BEL, scroll behavior,
   DEL, APS addressing, VDU 23 cursor, C1 serial attributes
+- **Edge cases** (16 tests): ESC split across cterm_write calls (ANSI,
+  VT52, Prestel), CSI parameter split, DCS/SOS terminator split,
+  zero-length writes, very long parameters, VT52 ESC Y split, BEEB
+  VDU 23 split, doorway mode split
+- **Pixel tests** (6 tests): character rendering, color/bg/bold
+  changes, 256-color via getpixels()
+- **Regressions** (2 tests): RIS state reset, response ordering
 
 Build: `cmake --build . --target cterm_test`
-Run: `ciolib/cterm_test [filter]`
+Run: `build/ciolib/cterm_test [filter]`
 
 The test binary sets `SDL_VIDEO_EGL_DRIVER=none` internally to prevent
 NVIDIA EGL crashes on FreeBSD during SDL shutdown.
+
+### termtest (syncterm/termtest.c) — Integration Tests
+
+67 tests that require the full SyncTERM process connected via PTY.
+Uses STS screen readback and response parsing to verify features that
+need the integration path: device queries (DSR, DA, DECRQSS, DECRQM,
+DECRPM), screen readback (STS via SSA/ESA), palette queries (OSC 4,
+10, 11, 104), SyncTERM extensions (CTSV, APC JXL, CTSMRR), doorway
+mode encoding, response ordering regression, and forced LCF.
+
+Run with: `bash run_termtest.sh build/syncterm build/termtest`
+
+### termtest.js (xtrn/termtest/termtest.js) — BBS Interactive Tests
+
+148 tests that run as a Synchronet BBS external program, providing
+interactive visual verification on a real terminal connection.  Two
+modes: automatic (using DECRQCRA checksums) and interactive (visual
+yes/no prompts).  Also includes keyboard input testing and an ANSI
+fuzz testing mode.
+
+Covers: C0 controls, cursor movement, editing, tabs, SGR, scrolling,
+modes, DEC rectangular ops, DECCARA/DECRARA/DECSACE, CT24BC, FETM/TTM,
+vertical tabs, origin mode, SL/SR with margins, save/restore mode,
+extended SGR, DECRQSS extensions, OSC 8 hyperlinks, and more.
 
 ## Coding Conventions
 
