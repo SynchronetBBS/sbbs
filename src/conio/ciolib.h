@@ -383,6 +383,7 @@ typedef struct {
 	void	(*textmode)		(int);
 	int		(*ungetch)		(int);
 	int		(*movetext)		(int,int,int,int,int,int);
+	int		(*movetext_clear)(int,int,int,int,int,int,struct vmem_cell *);
 	char	*(*cgets)		(char *);
 	int		(*cscanf)		(char *,...);
 	char	*(*getpass)		(const char *);
@@ -466,6 +467,7 @@ CIOLIBEXPORT int initciolib(int mode);
 CIOLIBEXPORT void suspendciolib(void);
 
 CIOLIBEXPORT int ciolib_movetext(int sx, int sy, int ex, int ey, int dx, int dy);
+CIOLIBEXPORT int ciolib_movetext_clear(int sx, int sy, int ex, int ey, int dx, int dy, struct vmem_cell *fill);
 CIOLIBEXPORT char * ciolib_cgets(char *str);
 CIOLIBEXPORT int ciolib_cscanf (char *format , ...);
 CIOLIBEXPORT int ciolib_kbhit(void);
@@ -568,6 +570,7 @@ CIOLIBEXPORT void ansi_ciolib_setdoorway(int enable);
 	#define cprintf					ciolib_cprintf
 
 	#define movetext(a,b,c,d,e,f)	ciolib_movetext(a,b,c,d,e,f)
+	#define movetext_clear(a,b,c,d,e,f,g)	ciolib_movetext_clear(a,b,c,d,e,f,g)
 	#define cgets(a)				ciolib_cgets(a)
 	#define kbhit()					ciolib_kbhit()
 	#define kbwait(a)				ciolib_kbwait(a)

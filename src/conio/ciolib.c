@@ -355,6 +355,7 @@ static int try_gdi_init(int mode)
 		cio_api.getfont=bitmap_getfont;
 		cio_api.loadfont=bitmap_loadfont;
 		cio_api.movetext=bitmap_movetext;
+		cio_api.movetext_clear=bitmap_movetext_clear;
 		cio_api.clreol=bitmap_clreol;
 		cio_api.clrscr=bitmap_clrscr;
 		cio_api.getcustomcursor=bitmap_getcustomcursor;
@@ -411,6 +412,7 @@ static int try_sdl_init(int mode)
 		cio_api.getfont=bitmap_getfont;
 		cio_api.loadfont=bitmap_loadfont;
 		cio_api.movetext=bitmap_movetext;
+		cio_api.movetext_clear=bitmap_movetext_clear;
 		cio_api.clreol=bitmap_clreol;
 		cio_api.clrscr=bitmap_clrscr;
 		cio_api.getcustomcursor=bitmap_getcustomcursor;
@@ -478,6 +480,7 @@ static int try_wayland_init(int mode)
 		cio_api.loadfont=bitmap_loadfont;
 		cio_api.beep=wl_beep;
 		cio_api.movetext=bitmap_movetext;
+		cio_api.movetext_clear=bitmap_movetext_clear;
 		cio_api.clreol=bitmap_clreol;
 		cio_api.clrscr=bitmap_clrscr;
 		cio_api.getcustomcursor=bitmap_getcustomcursor;
@@ -543,6 +546,7 @@ static int try_quartz_init(int mode)
 		cio_api.loadfont=bitmap_loadfont;
 		cio_api.beep=cg_beep;
 		cio_api.movetext=bitmap_movetext;
+		cio_api.movetext_clear=bitmap_movetext_clear;
 		cio_api.clreol=bitmap_clreol;
 		cio_api.clrscr=bitmap_clrscr;
 		cio_api.getcustomcursor=bitmap_getcustomcursor;
@@ -606,6 +610,7 @@ static int try_x_init(int mode)
 		cio_api.loadfont=bitmap_loadfont;
 		cio_api.beep=x_beep;
 		cio_api.movetext=bitmap_movetext;
+		cio_api.movetext_clear=bitmap_movetext_clear;
 		cio_api.clreol=bitmap_clreol;
 		cio_api.clrscr=bitmap_clrscr;
 		cio_api.getcustomcursor=bitmap_getcustomcursor;
@@ -790,6 +795,7 @@ static int try_retro_init(int mode)
 	cio_api.loadfont=bitmap_loadfont;
 	cio_api.beep=retro_beep;
 	cio_api.movetext=bitmap_movetext;
+	cio_api.movetext_clear=bitmap_movetext_clear;
 	cio_api.clreol=bitmap_clreol;
 	cio_api.clrscr=bitmap_clrscr;
 	cio_api.getcustomcursor=bitmap_getcustomcursor;
@@ -1162,6 +1168,71 @@ CIOLIBEXPORT int ciolib_movetext(int sx, int sy, int ex, int ey, int dx, int dy)
 fail:
 	free(buf);
 	return 0;
+}
+
+CIOLIBEXPORT int ciolib_movetext_clear(int sx, int sy, int ex, int ey, int dx, int dy, struct vmem_cell *fill)
+{
+	int ret;
+	int width = ex - sx + 1;
+	int height = ey - sy + 1;
+
+	CIOLIB_INIT();
+
+	if (cio_api.movetext_clear != NULL)
+		return cio_api.movetext_clear(sx, sy, ex, ey, dx, dy, fill);
+
+	/* Fallback: movetext + fill non-overlapping source area */
+	ret = ciolib_movetext(sx, sy, ex, ey, dx, dy);
+	if (ret && fill != NULL) {
+		int ddx = dx - sx;
+		int ddy = dy - sy;
+		struct vmem_cell *buf;
+		int count;
+
+		/* Horizontal strip: rows exposed by vertical shift */
+		if (ddy < 0) {
+			count = width * (-ddy);
+			buf = malloc(count * sizeof(*buf));
+			if (buf) {
+				for (int i = 0; i < count; i++)
+					buf[i] = *fill;
+				ciolib_vmem_puttext(sx, ey + ddy + 1, ex, ey, buf);
+				free(buf);
+			}
+		}
+		else if (ddy > 0) {
+			count = width * ddy;
+			buf = malloc(count * sizeof(*buf));
+			if (buf) {
+				for (int i = 0; i < count; i++)
+					buf[i] = *fill;
+				ciolib_vmem_puttext(sx, sy, ex, sy + ddy - 1, buf);
+				free(buf);
+			}
+		}
+
+		/* Vertical strip: columns exposed by horizontal shift */
+		if (ddx != 0) {
+			int vsy = sy + (ddy > 0 ? ddy : 0);
+			int vey = ey + (ddy < 0 ? ddy : 0);
+			int vheight = vey - vsy + 1;
+			int vwidth = ddx < 0 ? -ddx : ddx;
+			if (vheight > 0 && vwidth > 0) {
+				count = vwidth * vheight;
+				buf = malloc(count * sizeof(*buf));
+				if (buf) {
+					for (int i = 0; i < count; i++)
+						buf[i] = *fill;
+					if (ddx < 0)
+						ciolib_vmem_puttext(ex + ddx + 1, vsy, ex, vey, buf);
+					else
+						ciolib_vmem_puttext(sx, vsy, sx + ddx - 1, vey, buf);
+					free(buf);
+				}
+			}
+		}
+	}
+	return ret;
 }
 
 /* Optional */
