@@ -3064,6 +3064,181 @@ for people who want to maintain compatibility.
 |"\033[Z"
 |===
 
+== PETSCII Emulation
+
+CTerm's PETSCII mode emulates the Commodore 64 and Commodore 128
+screen editors.  PETSCII (PET Standard Code of Information
+Interchange) is the character encoding used by Commodore 8-bit
+computers, with control codes for color, cursor movement, and screen
+editing.
+
+Three screen modes are supported:
+
+[cols="2,1,1,2"]
+|===
+| Mode | Size | Colors | Default Attr
+
+| C64 40×25 | 40×25 | 16 (C64 palette) | 0x6E (light blue on blue)
+| C128 40×25 | 40×25 | 16 (C64 palette) | 0xBD (light green on dark green)
+| C128 80×25 | 80×25 | 16 (CGA palette) | 0x07 (light grey on black)
+|===
+
+All three modes have bright backgrounds enabled and blinking disabled
+(BGBRIGHT and NOBLINK video flags).
+
+Each mode has two font variants: upper-case/graphics (the default) and
+lower-case/upper-case (selected by control codes 14 and 142).
+
+=== Control Codes
+
+[cols="1,1,3"]
+|===
+| Byte | Name | Action
+
+| 5 | White | Set foreground color to white
+| 7 | Bell | Audible bell
+| 13 | Return | Carriage return + line feed. Also disables reverse mode. Scrolls at bottom.
+| 14 | Lower Case | Switch to lower-case/upper-case font
+| 17 | Cursor Down | Move cursor down one row (scrolls at bottom)
+| 18 | Reverse On | Enable reverse video mode
+| 19 | Home | Move cursor to top-left corner
+| 20 | Delete | Destructive backspace — move cursor left (wrapping to end of previous row), shift remaining characters left, blank inserted at right margin. At top-left, does nothing.
+| 28 | Red | Set foreground color to red
+| 29 | Cursor Right | Move cursor right (wraps to first column of next row, scrolls at bottom)
+| 30 | Green | Set foreground color to green
+| 31 | Blue | Set foreground color to blue
+| 129 | Orange | Set foreground color to orange (C64/C128-40) or magenta (C128-80)
+| 141 | Shift+Return | Line feed (move to first column of next row, scrolls at bottom). Does NOT disable reverse mode.
+| 142 | Upper Case | Switch to upper-case/graphics font
+| 144 | Black | Set foreground color to black
+| 145 | Cursor Up | Move cursor up one row (clamps at top, no scroll)
+| 146 | Reverse Off | Disable reverse video mode
+| 147 | Clear Screen | Clear screen and home cursor
+| 148 | Insert | Insert a blank space at cursor; characters to the right shift right. Character at right margin is lost.
+| 149 | Brown | Set foreground color
+| 150 | Light Red | Set foreground color
+| 151 | Dark Grey | Set foreground color
+| 152 | Grey | Set foreground color
+| 153 | Light Green | Set foreground color
+| 154 | Light Blue | Set foreground color
+| 155 | Light Grey | Set foreground color
+| 156 | Purple | Set foreground color
+| 157 | Cursor Left | Move cursor left (wraps to last column of previous row if at left margin; clamps at top-left)
+| 158 | Yellow | Set foreground color
+| 159 | Cyan | Set foreground color
+|===
+
+Bytes 32–127 and 160–255 are printable characters (unless listed
+above).  Bytes in ranges 0–31 and 128–159 that are not listed above
+are ignored.
+
+=== Known Differences from Hardware
+
+The Commodore 128 KERNAL handles several control codes differently
+from the C64.  CTerm currently uses C64 behavior for most of these.
+The following codes differ between C64 and C128 hardware but are not
+yet differentiated in CTerm:
+
+[cols="1,2,2"]
+|===
+| Byte | C64 Hardware | C128 Hardware
+
+| 0x02 | Ignored | UL ON (underline, C128 only)
+| 0x08 | LOCK CASE | TAB SET/CLEAR (HTS)
+| 0x09 | UNLOCK CASE | TAB (HT)
+| 0x0A | Ignored | LINE FEED
+| 0x0B | Ignored | UNLOCK CASE
+| 0x0C | Ignored | LOCK CASE
+| 0x0F | Ignored | FSH ON (flashing, 80-column only)
+| 0x1B | Ignored | ESC
+| 0x82 | Ignored | UL OFF (underline off, C128 only)
+| 0x8F | Ignored | FSH OFF (flashing off, 80-column only)
+|===
+
+NOTE: The actual behavior desired may differ from raw hardware because
+BBS terminal programs (CCGMS, DesTerm, NovaTerm, etc.) running on
+these systems may have performed their own translation or stripping of
+control codes before displaying them.
+
+=== Color Mapping
+
+The 16 color control codes map to different palette indices depending
+on the screen mode.
+
+.C64 and C128 40-column color mapping
+[cols="1,2,1,1,2,1"]
+|===
+| Byte | Color Name | Index | Byte | Color Name | Index
+
+| 144 | Black | 0 | 129 | Orange | 8
+| 5 | White | 1 | 149 | Brown | 9
+| 28 | Red | 2 | 150 | Light Red | 10
+| 159 | Cyan | 3 | 151 | Dark Grey | 11
+| 156 | Purple | 4 | 152 | Grey | 12
+| 30 | Green | 5 | 153 | Light Green | 13
+| 31 | Blue | 6 | 154 | Light Blue | 14
+| 158 | Yellow | 7 | 155 | Light Grey | 15
+|===
+
+.C128 80-column color mapping
+[cols="1,2,1,1,2,1"]
+|===
+| Byte | Color Name | Index | Byte | Color Name | Index
+
+| 144 | Black | 0 | 152 | Grey | 8
+| 31 | Blue | 1 | 154 | Light Blue | 9
+| 30 | Green | 2 | 153 | Light Green | 10
+| 151 | Dark Grey | 3 | 159 | Cyan | 11
+| 28 | Red | 4 | 150 | Light Red | 12
+| 129 | Orange | 5 | 156 | Purple | 13
+| 149 | Brown | 6 | 158 | Yellow | 14
+| 155 | Light Grey | 7 | 5 | White | 15
+|===
+
+NOTE: The C64 and C128 40-column modes use the C64 VIC-II palette.
+The C128 80-column mode uses a standard CGA-compatible palette.  The
+same control code byte may map to a different palette index depending
+on the mode.
+
+=== Reverse Video
+
+Reverse video mode (byte 18 on, byte 146 off) swaps the foreground
+and background nibbles of the attribute byte for all subsequent
+characters.  Byte 13 (Return) also disables reverse mode.
+
+=== Cursor Movement Details
+
+- **Return (13):** Moves cursor to first column and down one row.
+  Scrolls if at bottom.  Also disables reverse mode.
+- **Shift+Return (141):** Same as Return but does NOT disable reverse.
+- **Cursor Down (17):** Move down one row, scrolls at bottom.
+- **Cursor Up (145):** Move up one row, clamps at top (no scroll).
+- **Cursor Right (29):** Move right one column.  At right margin,
+  wraps to first column of next row.  At bottom-right, scrolls.
+- **Cursor Left (157):** Move left one column.  At left margin, wraps
+  to last column of previous row.  At top-left, does nothing.
+
+=== Font Switching
+
+Two character sets are available per machine type:
+
+[cols="1,2,2"]
+|===
+| Mode | Upper Case (142) | Lower Case (14)
+
+| C64 | Font 32 (C64 UPPER) | Font 33 (C64 Lower)
+| C128 | Font 34 (C128 UPPER) | Font 35 (C128 Lower)
+|===
+
+The upper-case set contains upper-case letters and PETSCII graphics
+characters.  The lower-case set contains both upper and lower-case
+letters.
+
+=== Unimplemented Features
+
+- Flashing on/off (bytes 2/0x82 and 15/0x8F) — C128 80-column only,
+  not implemented
+
 == ATASCII Emulation
 
 CTerm's ATASCII mode emulates the Atari 8-bit computer's screen editor.

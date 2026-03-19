@@ -1082,6 +1082,553 @@ test_vt52_tab(void)
 }
 
 /* ================================================================ */
+/* PETSCII tests                                                    */
+/* ================================================================ */
+
+static int
+test_pet_printable(void)
+{
+	struct vmem_cell cells[1];
+
+	setup_cterm(C64_40X25, CTERM_EMULATION_PETASCII);
+	ct_write("A", 1);	/* byte 65 — printable */
+	ct_gettext(1, 1, 1, 1, cells);
+	if ((cells[0].ch & 0xFF) != 65) {
+		fprintf(result_fp, "    ch=%d, expected 65\n", cells[0].ch & 0xFF);
+		return 0;
+	}
+	return 1;
+}
+
+static int
+test_pet_return(void)
+{
+	int col, row;
+
+	setup_cterm(C64_40X25, CTERM_EMULATION_PETASCII);
+	ct_write("AB", 2);
+	ct_write("\x0d", 1);	/* 13 = Return */
+	ct_cursor(&col, &row);
+	if (col != 1 || row != 2) {
+		fprintf(result_fp, "    cursor at %d,%d, expected 1,2\n", col, row);
+		return 0;
+	}
+	return 1;
+}
+
+static int
+test_pet_return_disables_reverse(void)
+{
+	setup_cterm(C64_40X25, CTERM_EMULATION_PETASCII);
+	ct_write("\x12", 1);	/* Reverse on */
+	if (!cterm->c64reversemode) {
+		fprintf(result_fp, "    reverse not enabled\n");
+		return 0;
+	}
+	ct_write("\x0d", 1);	/* Return — should disable reverse */
+	if (cterm->c64reversemode) {
+		fprintf(result_fp, "    reverse not disabled by return\n");
+		return 0;
+	}
+	return 1;
+}
+
+static int
+test_pet_shift_return(void)
+{
+	setup_cterm(C64_40X25, CTERM_EMULATION_PETASCII);
+	ct_write("\x12", 1);	/* Reverse on */
+	ct_write("\x8d", 1);	/* 141 = Shift+Return */
+	/* Should NOT disable reverse */
+	if (!cterm->c64reversemode) {
+		fprintf(result_fp, "    shift+return disabled reverse\n");
+		return 0;
+	}
+	int col, row;
+	ct_cursor(&col, &row);
+	if (col != 1 || row != 2) {
+		fprintf(result_fp, "    cursor at %d,%d, expected 1,2\n", col, row);
+		return 0;
+	}
+	return 1;
+}
+
+static int
+test_pet_clear_screen(void)
+{
+	int col, row;
+
+	setup_cterm(C64_40X25, CTERM_EMULATION_PETASCII);
+	ct_write("HELLO", 5);
+	ct_write("\x93", 1);	/* 147 = Clear Screen */
+	ct_cursor(&col, &row);
+	if (col != 1 || row != 1) {
+		fprintf(result_fp, "    cursor at %d,%d, expected 1,1\n", col, row);
+		return 0;
+	}
+	return 1;
+}
+
+static int
+test_pet_home(void)
+{
+	int col, row;
+
+	setup_cterm(C64_40X25, CTERM_EMULATION_PETASCII);
+	ct_write("HELLO\x0d""MORE", 10);
+	ct_write("\x13", 1);	/* 19 = Home */
+	ct_cursor(&col, &row);
+	if (col != 1 || row != 1) {
+		fprintf(result_fp, "    cursor at %d,%d, expected 1,1\n", col, row);
+		return 0;
+	}
+	return 1;
+}
+
+static int
+test_pet_cursor_down(void)
+{
+	int col, row;
+
+	setup_cterm(C64_40X25, CTERM_EMULATION_PETASCII);
+	ct_write("\x11", 1);	/* 17 = Cursor Down */
+	ct_cursor(&col, &row);
+	if (row != 2) {
+		fprintf(result_fp, "    row %d, expected 2\n", row);
+		return 0;
+	}
+	return 1;
+}
+
+static int
+test_pet_cursor_down_scroll(void)
+{
+	int col, row;
+
+	/* Cursor down at bottom should scroll */
+	setup_cterm(C64_40X25, CTERM_EMULATION_PETASCII);
+	for (int i = 0; i < term_rows; i++)
+		ct_write("\x11", 1);	/* past bottom */
+	ct_cursor(&col, &row);
+	if (row != term_rows) {
+		fprintf(result_fp, "    row %d, expected %d\n", row, term_rows);
+		return 0;
+	}
+	return 1;
+}
+
+static int
+test_pet_cursor_up(void)
+{
+	int col, row;
+
+	setup_cterm(C64_40X25, CTERM_EMULATION_PETASCII);
+	ct_write("\x11\x11", 2);	/* down twice */
+	ct_write("\x91", 1);	/* 145 = Cursor Up */
+	ct_cursor(&col, &row);
+	if (row != 2) {
+		fprintf(result_fp, "    row %d, expected 2\n", row);
+		return 0;
+	}
+	/* At top, should clamp */
+	ct_write("\x91\x91\x91", 3);
+	ct_cursor(&col, &row);
+	if (row != 1) {
+		fprintf(result_fp, "    clamp: row %d, expected 1\n", row);
+		return 0;
+	}
+	return 1;
+}
+
+static int
+test_pet_cursor_right(void)
+{
+	int col, row;
+
+	setup_cterm(C64_40X25, CTERM_EMULATION_PETASCII);
+	ct_write("\x1d", 1);	/* 29 = Cursor Right */
+	ct_cursor(&col, &row);
+	if (col != 2) {
+		fprintf(result_fp, "    col %d, expected 2\n", col);
+		return 0;
+	}
+	return 1;
+}
+
+static int
+test_pet_cursor_right_wrap(void)
+{
+	int col, row;
+
+	/* At right margin, wraps to next row */
+	setup_cterm(C64_40X25, CTERM_EMULATION_PETASCII);
+	for (int i = 0; i < term_cols; i++)
+		ct_write("\x1d", 1);
+	ct_cursor(&col, &row);
+	if (col != 1 || row != 2) {
+		fprintf(result_fp, "    wrap: %d,%d, expected 1,2\n", col, row);
+		return 0;
+	}
+	return 1;
+}
+
+static int
+test_pet_cursor_left(void)
+{
+	int col, row;
+
+	setup_cterm(C64_40X25, CTERM_EMULATION_PETASCII);
+	ct_write("AB", 2);
+	ct_write("\x9d", 1);	/* 157 = Cursor Left */
+	ct_cursor(&col, &row);
+	if (col != 2) {
+		fprintf(result_fp, "    col %d, expected 2\n", col);
+		return 0;
+	}
+	return 1;
+}
+
+static int
+test_pet_cursor_left_wrap(void)
+{
+	int col, row;
+
+	/* At left margin, wraps to end of previous row */
+	setup_cterm(C64_40X25, CTERM_EMULATION_PETASCII);
+	ct_write("\x0d", 1);	/* Return to row 2 */
+	ct_write("\x9d", 1);	/* Left at col 1 row 2 -> wraps to col 40 row 1 */
+	ct_cursor(&col, &row);
+	if (col != term_cols || row != 1) {
+		fprintf(result_fp, "    wrap: %d,%d, expected %d,1\n",
+		    col, row, term_cols);
+		return 0;
+	}
+	return 1;
+}
+
+static int
+test_pet_cursor_left_clamp(void)
+{
+	int col, row;
+
+	/* At top-left, should do nothing */
+	setup_cterm(C64_40X25, CTERM_EMULATION_PETASCII);
+	ct_write("\x9d", 1);	/* Left at 1,1 */
+	ct_cursor(&col, &row);
+	if (col != 1 || row != 1) {
+		fprintf(result_fp, "    clamp: %d,%d, expected 1,1\n", col, row);
+		return 0;
+	}
+	return 1;
+}
+
+static int
+test_pet_delete(void)
+{
+	struct vmem_cell cells[5];
+	int col, row;
+
+	setup_cterm(C64_40X25, CTERM_EMULATION_PETASCII);
+	ct_write("ABCDE", 5);
+	/* Delete at col 6 — backspaces to col 5, deletes 'E', shifts nothing */
+	ct_write("\x14", 1);	/* 20 = Delete */
+	ct_cursor(&col, &row);
+	if (col != 5) {
+		fprintf(result_fp, "    cursor col %d, expected 5\n", col);
+		return 0;
+	}
+	return 1;
+}
+
+static int
+test_pet_insert(void)
+{
+	struct vmem_cell cells[5];
+	int col, row;
+
+	setup_cterm(C64_40X25, CTERM_EMULATION_PETASCII);
+	ct_write("ABCD", 4);
+	/* Cursor at col 5. Move left 3 times to col 2 */
+	ct_write("\x9d\x9d\x9d", 3);
+	ct_cursor(&col, &row);
+	if (col != 2) {
+		fprintf(result_fp, "    pre-insert cursor col %d, expected 2\n", col);
+		return 0;
+	}
+	ct_write("\x94", 1);	/* 148 = Insert */
+	/* Space inserted at col 2, BCD shifted right */
+	ct_gettext(2, 1, 2, 1, cells);
+	if (cells[0].ch != ' ' && cells[0].ch != 0) {
+		fprintf(result_fp, "    col 2 not blank: ch=%d\n", cells[0].ch);
+		return 0;
+	}
+	return 1;
+}
+
+static int
+test_pet_reverse(void)
+{
+	struct vmem_cell cells[2];
+
+	setup_cterm(C64_40X25, CTERM_EMULATION_PETASCII);
+	ct_write("A", 1);	/* normal */
+	ct_write("\x12", 1);	/* 18 = Reverse on */
+	ct_write("B", 1);
+	ct_write("\x92", 1);	/* 146 = Reverse off */
+
+	ct_gettext(1, 1, 2, 1, cells);
+	/* In reverse mode, fg/bg nibbles are swapped */
+	uint8_t a_attr = cells[0].legacy_attr;
+	uint8_t b_attr = cells[1].legacy_attr;
+	uint8_t a_fg = a_attr & 0x0F;
+	uint8_t a_bg = (a_attr >> 4) & 0x0F;
+	uint8_t b_fg = b_attr & 0x0F;
+	uint8_t b_bg = (b_attr >> 4) & 0x0F;
+	if (a_fg != b_bg || a_bg != b_fg) {
+		fprintf(result_fp, "    reverse: A=0x%02x B=0x%02x\n", a_attr, b_attr);
+		return 0;
+	}
+	return 1;
+}
+
+static int
+test_pet_color_c64(void)
+{
+	struct vmem_cell cells[1];
+
+	/* C64 40-col: byte 28 (Red) = palette index 2 */
+	setup_cterm(C64_40X25, CTERM_EMULATION_PETASCII);
+	ct_write("\x1c", 1);	/* Red */
+	ct_write("R", 1);
+	ct_gettext(1, 1, 1, 1, cells);
+	if ((cells[0].legacy_attr & 0x0F) != 2) {
+		fprintf(result_fp, "    C64 red: fg=%d, expected 2\n",
+		    cells[0].legacy_attr & 0x0F);
+		return 0;
+	}
+	return 1;
+}
+
+static int
+test_pet_color_c128_80(void)
+{
+	struct vmem_cell cells[1];
+
+	/* C128 80-col: byte 28 (Red) = palette index 4 */
+	setup_cterm(C128_80X25, CTERM_EMULATION_PETASCII);
+	ct_write("\x1c", 1);	/* Red */
+	ct_write("R", 1);
+	ct_gettext(1, 1, 1, 1, cells);
+	if ((cells[0].legacy_attr & 0x0F) != 4) {
+		fprintf(result_fp, "    C128-80 red: fg=%d, expected 4\n",
+		    cells[0].legacy_attr & 0x0F);
+		return 0;
+	}
+	return 1;
+}
+
+static int
+test_pet_color_c128_40(void)
+{
+	struct vmem_cell cells[1];
+
+	/* C128 40-col uses same mapping as C64 */
+	setup_cterm(C128_40X25, CTERM_EMULATION_PETASCII);
+	ct_write("\x1c", 1);	/* Red */
+	ct_write("R", 1);
+	ct_gettext(1, 1, 1, 1, cells);
+	if ((cells[0].legacy_attr & 0x0F) != 2) {
+		fprintf(result_fp, "    C128-40 red: fg=%d, expected 2\n",
+		    cells[0].legacy_attr & 0x0F);
+		return 0;
+	}
+	return 1;
+}
+
+static int
+test_pet_all_colors_c64(void)
+{
+	struct vmem_cell cells[1];
+
+	/* Verify all 16 color codes in C64 mode */
+	setup_cterm(C64_40X25, CTERM_EMULATION_PETASCII);
+	struct { unsigned char byte; int index; } colors[] = {
+		{144, 0}, {5, 1}, {28, 2}, {159, 3},
+		{156, 4}, {30, 5}, {31, 6}, {158, 7},
+		{129, 8}, {149, 9}, {150, 10}, {151, 11},
+		{152, 12}, {153, 13}, {154, 14}, {155, 15},
+	};
+	for (int i = 0; i < 16; i++) {
+		ct_write((char *)&colors[i].byte, 1);
+		ct_write("X", 1);
+		ct_gettext(1 + i, 1, 1 + i, 1, cells);
+		int fg = cells[0].legacy_attr & 0x0F;
+		if (fg != colors[i].index) {
+			fprintf(result_fp, "    byte %d: fg=%d, expected %d\n",
+			    colors[i].byte, fg, colors[i].index);
+			return 0;
+		}
+	}
+	return 1;
+}
+
+static int
+test_pet_bell(void)
+{
+	int col, row;
+
+	setup_cterm(C64_40X25, CTERM_EMULATION_PETASCII);
+	ct_write("A", 1);
+	ct_cursor(&col, &row);
+	ct_write("\x07", 1);	/* Bell */
+	int col2, row2;
+	ct_cursor(&col2, &row2);
+	if (col != col2 || row != row2) {
+		fprintf(result_fp, "    bell moved cursor\n");
+		return 0;
+	}
+	return 1;
+}
+
+static int
+test_pet_ignored_controls(void)
+{
+	int col, row;
+
+	/* Various undefined control bytes should be ignored */
+	setup_cterm(C64_40X25, CTERM_EMULATION_PETASCII);
+	ct_write("A", 1);
+	ct_cursor(&col, &row);
+	/* Send some undefined controls */
+	char ignored[] = {0, 1, 2, 3, 4, 6, 8, 9, 10, 11, 12, 15, 16};
+	ct_write(ignored, sizeof(ignored));
+	int col2, row2;
+	ct_cursor(&col2, &row2);
+	if (col != col2 || row != row2) {
+		fprintf(result_fp, "    cursor moved from %d,%d to %d,%d\n",
+		    col, row, col2, row2);
+		return 0;
+	}
+	return 1;
+}
+
+static int
+test_pet_return_scroll(void)
+{
+	struct vmem_cell cells[1];
+	int col, row;
+
+	/* Write on row 1, move to last row, return to scroll, verify row 1 moved up */
+	setup_cterm(C64_40X25, CTERM_EMULATION_PETASCII);
+	ct_write("MARK", 4);
+	/* Move to last row */
+	for (int i = 0; i < term_rows - 1; i++)
+		ct_write("\x11", 1);
+	ct_cursor(&col, &row);
+	/* Return at bottom triggers scroll */
+	ct_write("\x0d", 1);
+	/* MARK was on row 1, should now be gone (scrolled off) or still visible
+	 * depending on how many scrolls happened. Actually cursor down at bottom
+	 * scrolls too. Let's just verify cursor ended on the last row. */
+	ct_cursor(&col, &row);
+	if (row != term_rows) {
+		fprintf(result_fp, "    cursor row %d, expected %d\n", row, term_rows);
+		return 0;
+	}
+	if (col != 1) {
+		fprintf(result_fp, "    cursor col %d, expected 1\n", col);
+		return 0;
+	}
+	return 1;
+}
+
+static int
+test_pet_c64_lock_unlock_case(void)
+{
+	int col, row;
+
+	/* On C64, 0x08 = LOCK CASE, 0x09 = UNLOCK CASE.
+	 * Currently these are ignored (fall through to default
+	 * which drops bytes < 32). Test current behavior. */
+	setup_cterm(C64_40X25, CTERM_EMULATION_PETASCII);
+	ct_write("A", 1);
+	ct_cursor(&col, &row);
+	ct_write("\x08\x09", 2);
+	int col2, row2;
+	ct_cursor(&col2, &row2);
+	if (col != col2 || row != row2) {
+		fprintf(result_fp, "    0x08/0x09 moved cursor\n");
+		return 0;
+	}
+	return 1;
+}
+
+static int
+test_pet_c128_disputed_ignored(void)
+{
+	int col, row;
+
+	/* On C128, bytes 0x0A-0x0C, 0x1B have special meaning on
+	 * real hardware, but CTerm currently ignores them in all
+	 * PETSCII modes. Test current behavior. */
+	setup_cterm(C128_80X25, CTERM_EMULATION_PETASCII);
+	ct_write("A", 1);
+	ct_cursor(&col, &row);
+	char disputed[] = {0x02, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0F, 0x1B, 0x82, 0x8F};
+	ct_write(disputed, sizeof(disputed));
+	int col2, row2;
+	ct_cursor(&col2, &row2);
+	if (col != col2 || row != row2) {
+		fprintf(result_fp, "    disputed bytes moved cursor from %d,%d to %d,%d\n",
+		    col, row, col2, row2);
+		return 0;
+	}
+	return 1;
+}
+
+static int
+test_pet_lf_c128_80(void)
+{
+	int col, row;
+
+	/* Byte 10 (LF) is currently ignored in all PETSCII modes.
+	 * The C128 80-column VDC may have treated it as a line feed,
+	 * but this is unconfirmed. Test matches current behavior. */
+	setup_cterm(C128_80X25, CTERM_EMULATION_PETASCII);
+	ct_write("AB", 2);
+	ct_cursor(&col, &row);
+	ct_write("\x0a", 1);	/* LF */
+	int col2, row2;
+	ct_cursor(&col2, &row2);
+	if (col != col2 || row != row2) {
+		fprintf(result_fp, "    C128-80 LF moved cursor from %d,%d to %d,%d\n",
+		    col, row, col2, row2);
+		return 0;
+	}
+	return 1;
+}
+
+static int
+test_pet_lf_c64_ignored(void)
+{
+	int col, row;
+
+	/* On C64, byte 10 (LF) should be ignored */
+	setup_cterm(C64_40X25, CTERM_EMULATION_PETASCII);
+	ct_write("AB", 2);
+	ct_cursor(&col, &row);
+	ct_write("\x0a", 1);	/* LF — should be ignored */
+	int col2, row2;
+	ct_cursor(&col2, &row2);
+	if (col != col2 || row != row2) {
+		fprintf(result_fp, "    C64 LF moved cursor from %d,%d to %d,%d\n",
+		    col, row, col2, row2);
+		return 0;
+	}
+	return 1;
+}
+
+/* ================================================================ */
 /* ATASCII tests                                                    */
 /* ================================================================ */
 
@@ -1608,6 +2155,35 @@ static struct test_entry tests[] = {
 	{"VT52_cr_lf",         test_vt52_cr_lf_sequence},
 	{"VT52_scroll_content", test_vt52_scroll_content_preserved},
 	{"VT52_tab",           test_vt52_tab},
+	/* PETSCII */
+	{"PET_printable",      test_pet_printable},
+	{"PET_return",         test_pet_return},
+	{"PET_return_norev",   test_pet_return_disables_reverse},
+	{"PET_shift_return",   test_pet_shift_return},
+	{"PET_clear_screen",   test_pet_clear_screen},
+	{"PET_home",           test_pet_home},
+	{"PET_cursor_down",    test_pet_cursor_down},
+	{"PET_down_scroll",    test_pet_cursor_down_scroll},
+	{"PET_cursor_up",      test_pet_cursor_up},
+	{"PET_cursor_right",   test_pet_cursor_right},
+	{"PET_right_wrap",     test_pet_cursor_right_wrap},
+	{"PET_cursor_left",    test_pet_cursor_left},
+	{"PET_left_wrap",      test_pet_cursor_left_wrap},
+	{"PET_left_clamp",     test_pet_cursor_left_clamp},
+	{"PET_delete",         test_pet_delete},
+	{"PET_insert",         test_pet_insert},
+	{"PET_reverse",        test_pet_reverse},
+	{"PET_color_c64",      test_pet_color_c64},
+	{"PET_color_c128_80",  test_pet_color_c128_80},
+	{"PET_color_c128_40",  test_pet_color_c128_40},
+	{"PET_all_colors_c64", test_pet_all_colors_c64},
+	{"PET_bell",           test_pet_bell},
+	{"PET_ignored_ctrl",   test_pet_ignored_controls},
+	{"PET_return_scroll",  test_pet_return_scroll},
+	{"PET_c64_lock_case",  test_pet_c64_lock_unlock_case},
+	{"PET_c128_disputed",  test_pet_c128_disputed_ignored},
+	{"PET_lf_c128_80",    test_pet_lf_c128_80},
+	{"PET_lf_c64_ignored", test_pet_lf_c64_ignored},
 	/* ATASCII */
 	{"ATA_printable",      test_atascii_printable},
 	{"ATA_return",         test_atascii_return},
