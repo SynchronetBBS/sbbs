@@ -544,17 +544,29 @@ modes (?h/?l), SyncTERM extensions (=h/=l), device queries (c/n/t/S).
 
 #### Emulation-Specific Handling
 
-- **ATASCII**: Control codes for cursor movement (28-31), screen clear
-  (125), tabs. Screen code translation between ATASCII and display.
-  Attribute byte used as mode flag (7=normal, 1=inverse).
-- **PETSCII**: C64/C128 color codes, reverse mode, screen code
-  translation. Different palettes for C64 40-col and C128 80-col modes.
-- **Prestel/Viewdata**: Control characters with split before/after
-  semantics for attribute application. Mosaic graphics (2x3 grid per
-  cell), hold mode, double-height, conceal/reveal, programming mode.
-- **BBC Micro (BEEB)**: VDU command parsing with fixed-length
-  multi-byte sequences.
-- **Atari ST VT52**: VT52-style escape sequences.
+All non-ANSI emulation modes are documented in `conio/cterm.adoc`.
+
+- **Atari ST VT52**: Standard VT52 escape sequences plus GEMDOS/TOS
+  extensions (16-color, insert/delete line, cursor save/restore,
+  reverse video, autowrap control). Three screen modes: 40×25 (16
+  colors), 80×25 (4 colors), 80×25 mono (2 colors).
+- **ATASCII**: Atari 8-bit control codes for cursor movement (28-31
+  with wrapping), screen clear (125), destructive backspace (126),
+  tabs (127). ESC toggles inverse mode with screen code translation.
+  Two screen modes: 40×24, XEP80 80×25.
+- **PETSCII**: C64/C128 color codes, reverse mode. Different color
+  palettes for C64/C128-40 (VIC-II) and C128-80 (CGA). Some control
+  codes differ between C64 and C128 hardware (documented in cterm.adoc).
+- **Prestel/Viewdata**: Serial attributes with split before/after
+  semantics — control codes occupy character cells. Mosaic graphics
+  (2×3 grid per cell), hold mode, double-height (requires bitmap
+  rendering in bitmap_con.c), conceal/reveal, separated/contiguous
+  mosaics, remote programming protocol. Cursor wraps around screen
+  (no scrolling).
+- **BBC Micro (BEEB)**: Same serial attribute system as Prestel but
+  cursor scrolls instead of wrapping. VDU 23 for cursor control, APS
+  (byte 28) for direct addressing. Character translation (#/\_/\`).
+  Serial attributes delivered via raw C1 bytes, not ESC.
 
 #### Sixel Graphics
 
@@ -1141,74 +1153,45 @@ SyncTERM uses multiple threads with carefully structured communication:
 
 ## Testing
 
-### Automated Test Suite
+Two automated test suites cover the terminal emulation layer:
 
-`syncterm/termtest.c` is a standalone C test program (~2400 lines) that runs
-as the child process of a SyncTERM `shell:` connection via PTY.  It sends
-escape sequences to SyncTERM (via stdout) and reads terminal responses (via
-stdin) to verify correct behavior.
+### termtest (syncterm/termtest.c) — ANSI-BBS Integration Tests
 
-The test harness runs headless using SDL's offscreen video driver.  SDL must
-be compiled in for tests to work.
+165 tests for the ANSI-BBS emulation mode.  Uses a headless SDL
+offscreen SyncTERM instance connected to the test binary via PTY.
+Tests exercise CSI sequences, cursor movement, scrolling, SGR
+attributes, mode queries (DECRQM, DECRQSS), screen readback (STS
+via SSA/ESA), rectangular area operations (DECERA, DECFRA, DECCRA,
+DECCARA, DECRARA), and other ECMA-48/DEC/CTerm features.
 
-**Running tests:**
+Run with: `bash run_termtest.sh build/syncterm build/termtest`
 
-```sh
-# GNU Make:
-gmake test
+### cterm_test (conio/cterm_test.c) — Non-ANSI Unit Tests
 
-# CMake:
-cd build && cmake .. && cmake --build . -j8 && ctest -V
-```
+122 tests for the five non-ANSI emulation modes.  Initializes ciolib
+with SDL offscreen, creates cterm instances directly via `cterm_init()`,
+writes test data via `cterm_write()`, and verifies screen state via
+`vmem_gettext()`.  No PTY or SyncTERM process needed.
 
-`run_termtest.sh` handles the SDL headless environment setup
-(`SDL_VIDEODRIVER=offscreen`, `SDL_RENDER_DRIVER=software`,
-`SDL_VIDEO_EGL_DRIVER=none`) and result verification.
+- **Atari ST VT52** (38 tests): C0 controls, cursor movement, ESC
+  sequences (standard VT52 + GEMDOS/TOS extensions), scrolling,
+  wrapping, colors, reverse video
+- **ATASCII** (19 tests): cursor wrapping, clear screen, backspace,
+  ESC inverse mode, insert/delete line/char, tabs, screen codes
+- **PETSCII** (28 tests): all 3 screen modes (C64, C128-40, C128-80),
+  colors per mode, reverse video, cursor movement with wrapping,
+  delete/insert, C64/C128 control code differences
+- **Prestel** (26 tests): C0 controls, cursor wrapping (no scroll),
+  serial attributes (alpha/mosaic color, flash, conceal, hold,
+  double height, background, separated), raw C1 controls
+- **BEEB** (11 tests): character translation, BEL, scroll behavior,
+  DEL, APS addressing, VDU 23 cursor, C1 serial attributes
 
-### Verification Methods
+Build: `cmake --build . --target cterm_test`
+Run: `ciolib/cterm_test [filter]`
 
-Tests use several terminal query mechanisms:
-
-- **DSR** (`CSI 6 n`): Cursor position verification — most tests use this
-- **DECRQCRA** (`CSI Pid;1;Pt;Pl;Pb;Pr *y`): Rectangular area checksums —
-  detects content and attribute changes (checksums pixels/cells, not just
-  characters)
-- **STS** (`ESC S`): Screen content readback — reads actual cell content
-  from the presentation component as an ECMA-48 data stream.  Configured
-  by SSA (`ESC F`) for start position, ESA (`ESC G`) for end position,
-  FETM (SM/RM mode 14) for text-only vs attributed, and TTM (SM/RM mode 16)
-  for cursor-exclusive vs inclusive end
-- **DECRQM** (`CSI Ps $ p`): Mode state queries — verifies DECSET/DECRST
-  and ANSI mode changes
-- **DECRQSS** (`DCS $ q ... ST`): Setting queries — SGR state, margins,
-  cursor style
-- **OSC 4** with `?`: Palette readback
-
-### Adding Tests
-
-Tests are simple C functions returning 1 (pass), 0 (fail), or -1 (skip):
-
-```c
-static int
-test_example(void)
-{
-    cursor_to(1, 1);
-    term_write("\033[2J");       /* clear screen */
-    term_write("Hello");
-    return check_xy(6, 1);      /* verify cursor at col 6, row 1 */
-}
-```
-
-Add the function and an entry to the `tests[]` array at the bottom of
-`termtest.c`.  The test framework calls `clear_screen()` and `term_drain()`
-between tests automatically.
-
-### Cross-Terminal Validation
-
-The test program can also run under other terminals (e.g., xterm) for
-cross-validation.  SyncTERM-specific tests (DECDMAC, DECINVM, CTSV,
-doorway mode, CTSMRR) will fail on other terminals — these failures are
-expected and documented.
+The test binary sets `SDL_VIDEO_EGL_DRIVER=none` internally to prevent
+NVIDIA EGL crashes on FreeBSD during SDL shutdown.
 
 ## Coding Conventions
 

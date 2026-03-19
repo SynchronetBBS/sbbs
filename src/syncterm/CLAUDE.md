@@ -34,27 +34,18 @@ compile-time options.
 
 ## Testing
 
-Automated tests require SDL (for headless offscreen rendering).
+Two test suites exist:
 
-**GNU Make:**
-```sh
-gmake test          # build and run all tests
-gmake termtest      # build just the test binary
-```
+- **termtest** (syncterm/termtest.c) — 165 ANSI-BBS integration tests using
+  headless SDL + PTY.  Tests use STS readback and DECRQCRA checksums.
+  Run via: `bash run_termtest.sh build/syncterm build/termtest`
 
-**CMake:**
-```sh
-cd build && cmake .. && cmake --build . -j8
-ctest -V            # verbose output
-```
-
-The test harness (`termtest.c`) runs as a child process of SyncTERM via
-`shell:` URL over PTY. It sends escape sequences and verifies responses.
-`run_termtest.sh` handles headless SDL setup and result checking.
-
-Tests use DSR (cursor position), DECRQCRA (checksums), DECRQM (mode state),
-DECRQSS (settings), OSC 4 (palette), and STS (screen content readback)
-for verification.
+- **cterm_test** (conio/cterm_test.c) — 122 unit tests for non-ANSI emulation
+  modes (VT52, ATASCII, PETSCII, Prestel, BEEB).  Uses SDL offscreen with
+  direct cterm_init/cterm_write/vmem_gettext.  Sets `SDL_VIDEO_EGL_DRIVER=none`
+  internally to avoid NVIDIA EGL crashes.
+  Build: `cmake --build . --target cterm_test`
+  Run: `ciolib/cterm_test [filter]`
 
 ## Code Style
 
