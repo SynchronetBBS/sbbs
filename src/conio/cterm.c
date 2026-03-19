@@ -3182,8 +3182,9 @@ apply_sgr(struct cterminal *cterm, struct esc_seq *seq, int *pi)
 	}
 }
 
-static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *speed, char last)
+static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *speed)
 {
+	char last = cterm->lastch;
 	char	*p;
 	char	*p2;
 	char	tmp[1024];
@@ -6584,7 +6585,7 @@ CIOLIBEXPORT size_t cterm_write(struct cterminal * cterm, const void *vbuf, int 
 	int mpalette;
 	struct vmem_cell tmpvc[1] = {0};
 	int orig_fonts[4];
-	char lastch = 0;
+	/* lastch is now cterm->lastch (persists across cterm_write calls) */
  	int palette_offset = 0;
 
 	if(!cterm->started)
@@ -6972,8 +6973,8 @@ CIOLIBEXPORT size_t cterm_write(struct cterminal * cterm, const void *vbuf, int 
 							case SEQ_INCOMPLETE:
 								break;
 							case SEQ_COMPLETE:
-								do_ansi(cterm, retbuf, retsize, speed, lastch);
-								lastch = 0;
+								do_ansi(cterm, retbuf, retsize, speed);
+								cterm->lastch = 0;
 								break;
 						}
 					}
@@ -7690,7 +7691,7 @@ CIOLIBEXPORT size_t cterm_write(struct cterminal * cterm, const void *vbuf, int 
 								// Ignored
 								break;
 							case 7:			/* Beep */
-								lastch = 0;
+								cterm->lastch = 0;
 								uctputs(cterm, prn);
 								prn[0]=0;
 								prnpos = prn;
@@ -7739,7 +7740,7 @@ CIOLIBEXPORT size_t cterm_write(struct cterminal * cterm, const void *vbuf, int 
 							case 31:
 								break;
 							default:
-								lastch = ch[0];
+								cterm->lastch = ch[0];
 								*prnpos++ = ch[0];
 								*prnpos = 0;
 						}
@@ -7765,12 +7766,12 @@ CIOLIBEXPORT size_t cterm_write(struct cterminal * cterm, const void *vbuf, int 
 						else {
 							switch(buf[j]) {
 								case 0:
-									lastch = 0;
+									cterm->lastch = 0;
 									if(cterm->doorway_mode)
 										cterm->doorway_char=1;
 									break;
 								case 7:			/* Beep */
-									lastch = 0;
+									cterm->lastch = 0;
 									uctputs(cterm, prn);
 									prn[0]=0;
 									prnpos = prn;
@@ -7785,7 +7786,7 @@ CIOLIBEXPORT size_t cterm_write(struct cterminal * cterm, const void *vbuf, int 
 									}
 									break;
 								case 12:		/* ^L - Clear screen */
-									lastch = 0;
+									cterm->lastch = 0;
 									uctputs(cterm, prn);
 									prn[0]=0;
 									prnpos = prn;
@@ -7801,7 +7802,7 @@ CIOLIBEXPORT size_t cterm_write(struct cterminal * cterm, const void *vbuf, int 
 									cterm->sequence=1;
 									break;
 								default:
-									lastch = ch[0];
+									cterm->lastch = ch[0];
 									*prnpos++ = ch[0];
 									*prnpos = 0;
 							}

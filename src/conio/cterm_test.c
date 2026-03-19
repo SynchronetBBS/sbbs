@@ -8,6 +8,7 @@
  * Run with: SDL_VIDEODRIVER=offscreen SDL_RENDER_DRIVER=software ./cterm_test
  */
 
+#include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -151,6 +152,665 @@ ct_cursor(int *col, int *row)
 	gettextinfo(&ti);
 	if (col) *col = ti.curx;
 	if (row) *row = ti.cury;
+}
+
+/*
+ * Convenience: set up ANSI-BBS mode (80x25).
+ */
+static void
+setup_ansi(void)
+{
+	setup_cterm(C80, CTERM_EMULATION_ANSI_BBS);
+}
+
+/*
+ * Send a formatted string to cterm (like printf but to cterm_write).
+ */
+static void
+ct_printf(const char *fmt, ...)
+{
+	char buf[1024];
+	va_list ap;
+	va_start(ap, fmt);
+	int n = vsnprintf(buf, sizeof(buf), fmt, ap);
+	va_end(ap);
+	if (n > 0)
+		ct_write(buf, n);
+}
+
+/*
+ * Verify cursor is at expected position. Returns 1 if match, 0 if not.
+ */
+static int
+expect_cursor(int ecol, int erow)
+{
+	int col, row;
+	ct_cursor(&col, &row);
+	if (col != ecol || row != erow) {
+		fprintf(result_fp, "    cursor at %d,%d, expected %d,%d\n",
+		    col, row, ecol, erow);
+		return 0;
+	}
+	return 1;
+}
+
+/*
+ * Verify screen text at position matches expected string.
+ * Returns 1 if match, 0 if not.
+ */
+static int
+expect_text(int col, int row, const char *expected)
+{
+	char buf[256];
+	int len = strlen(expected);
+	ct_read_chars(row, col, len, buf, sizeof(buf));
+	if (strncmp(buf, expected, len) != 0) {
+		fprintf(result_fp, "    at %d,%d: '%.40s', expected '%.40s'\n",
+		    col, row, buf, expected);
+		return 0;
+	}
+	return 1;
+}
+
+/*
+ * Verify a range of cells are blank (space or NUL).
+ * Returns 1 if all blank, 0 if not.
+ */
+static int
+expect_blank(int col, int row, int len)
+{
+	struct vmem_cell cells[256];
+	if (len > 256) len = 256;
+	ct_gettext(col, row, col + len - 1, row, cells);
+	for (int i = 0; i < len; i++) {
+		if (cells[i].ch != ' ' && cells[i].ch != 0) {
+			fprintf(result_fp, "    col %d row %d not blank (ch=0x%02x)\n",
+			    col + i, row, cells[i].ch & 0xFF);
+			return 0;
+		}
+	}
+	return 1;
+}
+
+/* ================================================================ */
+/* ANSI-BBS tests                                                   */
+/* ================================================================ */
+
+static int test_ansi_nul(void)
+{
+	setup_ansi();
+	ct_puts("A");
+	ct_write("\x00", 1);
+	return expect_cursor(2, 1);  /* NUL should not move cursor */
+}
+
+static int test_ansi_bs(void)
+{
+	setup_ansi();
+	ct_puts("AB\b");
+	return expect_cursor(2, 1);
+}
+
+static int test_ansi_ht(void)
+{
+	setup_ansi();
+	ct_puts("A\t");
+	return expect_cursor(9, 1);  /* default tab stop at col 9 */
+}
+
+static int test_ansi_lf(void)
+{
+	setup_ansi();
+	ct_puts("A\n");
+	return expect_cursor(2, 2);  /* LF moves down, preserves column */
+}
+
+static int test_ansi_cr(void)
+{
+	setup_ansi();
+	ct_puts("ABC\r");
+	return expect_cursor(1, 1);
+}
+
+static int test_ansi_nel(void)
+{
+	setup_ansi();
+	ct_puts("AB");
+	ct_puts("\033E");  /* NEL = CR+LF */
+	return expect_cursor(1, 2);
+}
+
+static int test_ansi_hts(void)
+{
+	/* Set a tab stop at col 5, verify CHT lands there */
+	setup_ansi();
+	ct_printf("\033[5G");   /* CHA to col 5 */
+	ct_puts("\033H");       /* HTS */
+	ct_printf("\033[1G");   /* back to col 1 */
+	ct_puts("\t");          /* tab should land at col 5 */
+	return expect_cursor(5, 1);
+}
+
+static int test_ansi_ri(void)
+{
+	setup_ansi();
+	ct_printf("\033[3;1H");  /* row 3 */
+	ct_puts("\033M");        /* RI = reverse index */
+	return expect_cursor(1, 2);
+}
+
+static int test_ansi_ris(void)
+{
+	setup_ansi();
+	ct_puts("HELLO");
+	ct_puts("\033c");  /* RIS */
+	if (!expect_cursor(1, 1)) return 0;
+	return expect_blank(1, 1, 5);
+}
+
+/* Cursor movement */
+
+static int test_ansi_cuu(void)
+{
+	setup_ansi();
+	ct_printf("\033[5;5H");
+	ct_printf("\033[2A");  /* CUU 2 */
+	return expect_cursor(5, 3);
+}
+
+static int test_ansi_cud(void)
+{
+	setup_ansi();
+	ct_printf("\033[2B");  /* CUD 2 */
+	return expect_cursor(1, 3);
+}
+
+static int test_ansi_cuf(void)
+{
+	setup_ansi();
+	ct_printf("\033[5C");  /* CUF 5 */
+	return expect_cursor(6, 1);
+}
+
+static int test_ansi_cub(void)
+{
+	setup_ansi();
+	ct_printf("\033[10;10H");
+	ct_printf("\033[3D");  /* CUB 3 */
+	return expect_cursor(7, 10);
+}
+
+static int test_ansi_cnl(void)
+{
+	setup_ansi();
+	ct_puts("ABC");
+	ct_printf("\033[2E");  /* CNL 2 */
+	return expect_cursor(1, 3);
+}
+
+static int test_ansi_cpl(void)
+{
+	setup_ansi();
+	ct_printf("\033[5;10H");
+	ct_printf("\033[2F");  /* CPL 2 */
+	return expect_cursor(1, 3);
+}
+
+static int test_ansi_cup(void)
+{
+	setup_ansi();
+	ct_printf("\033[12;34H");
+	return expect_cursor(34, 12);
+}
+
+static int test_ansi_hvp(void)
+{
+	setup_ansi();
+	ct_printf("\033[15;20f");
+	return expect_cursor(20, 15);
+}
+
+static int test_ansi_cha(void)
+{
+	setup_ansi();
+	ct_printf("\033[3;10H");
+	ct_printf("\033[25G");  /* CHA 25 */
+	return expect_cursor(25, 3);
+}
+
+static int test_ansi_vpa(void)
+{
+	setup_ansi();
+	ct_printf("\033[3;10H");
+	ct_printf("\033[15d");  /* VPA 15 */
+	return expect_cursor(10, 15);
+}
+
+static int test_ansi_hpa(void)
+{
+	setup_ansi();
+	ct_printf("\033[3;10H");
+	ct_printf("\033[20`");  /* HPA 20 */
+	return expect_cursor(20, 3);
+}
+
+static int test_ansi_hpr(void)
+{
+	setup_ansi();
+	ct_printf("\033[1;5H");
+	ct_printf("\033[3a");  /* HPR 3 */
+	return expect_cursor(8, 1);
+}
+
+static int test_ansi_vpr(void)
+{
+	setup_ansi();
+	ct_printf("\033[5;1H");
+	ct_printf("\033[3e");  /* VPR 3 */
+	return expect_cursor(1, 8);
+}
+
+static int test_ansi_hpb(void)
+{
+	setup_ansi();
+	ct_printf("\033[1;10H");
+	ct_printf("\033[3j");  /* HPB 3 */
+	return expect_cursor(7, 1);
+}
+
+static int test_ansi_vpb(void)
+{
+	setup_ansi();
+	ct_printf("\033[10;1H");
+	ct_printf("\033[3k");  /* VPB 3 */
+	return expect_cursor(1, 7);
+}
+
+/* Cursor clamping */
+
+static int test_ansi_cuu_clamp(void)
+{
+	setup_ansi();
+	ct_printf("\033[99A");
+	return expect_cursor(1, 1);
+}
+
+static int test_ansi_cud_clamp(void)
+{
+	setup_ansi();
+	ct_printf("\033[99B");
+	return expect_cursor(1, term_rows);
+}
+
+static int test_ansi_cuf_clamp(void)
+{
+	setup_ansi();
+	ct_printf("\033[999C");
+	return expect_cursor(term_cols, 1);
+}
+
+static int test_ansi_cub_clamp(void)
+{
+	setup_ansi();
+	ct_printf("\033[10;10H");
+	ct_printf("\033[99D");
+	return expect_cursor(1, 10);
+}
+
+/* Erase operations */
+
+static int test_ansi_ed(void)
+{
+	setup_ansi();
+	ct_puts("AAAAAAAAAA");
+	ct_printf("\033[1;1H");
+	ct_printf("\033[2;1H");
+	ct_puts("BBBBBBBBBB");
+	ct_printf("\033[1;5H");
+	ct_printf("\033[J");  /* ED 0 — erase below from cursor */
+	/* Row 1 cols 1-4 should still have AAAA */
+	if (!expect_text(1, 1, "AAAA")) return 0;
+	/* Row 1 cols 5+ should be blank */
+	if (!expect_blank(5, 1, 6)) return 0;
+	/* Row 2 should be blank */
+	if (!expect_blank(1, 2, 10)) return 0;
+	return 1;
+}
+
+static int test_ansi_el(void)
+{
+	setup_ansi();
+	ct_puts("ABCDEFGHIJ");
+	ct_printf("\033[1;5H");
+	ct_printf("\033[K");  /* EL 0 — erase to end of line */
+	if (!expect_text(1, 1, "ABCD")) return 0;
+	if (!expect_blank(5, 1, 6)) return 0;
+	return 1;
+}
+
+static int test_ansi_ich(void)
+{
+	setup_ansi();
+	ct_puts("ABCDE");
+	ct_printf("\033[1;3H");
+	ct_printf("\033[2@");  /* ICH 2 */
+	if (!expect_text(1, 1, "AB")) return 0;
+	if (!expect_blank(3, 1, 2)) return 0;
+	if (!expect_text(5, 1, "CDE")) return 0;
+	return 1;
+}
+
+static int test_ansi_dch(void)
+{
+	setup_ansi();
+	ct_puts("ABCDE");
+	ct_printf("\033[1;3H");
+	ct_printf("\033[2P");  /* DCH 2 */
+	if (!expect_text(1, 1, "ABE")) return 0;
+	return 1;
+}
+
+static int test_ansi_il(void)
+{
+	setup_ansi();
+	ct_puts("LINE1\r\nLINE2\r\nLINE3");
+	ct_printf("\033[2;1H");
+	ct_printf("\033[1L");  /* IL 1 */
+	if (!expect_text(1, 1, "LINE1")) return 0;
+	if (!expect_blank(1, 2, 5)) return 0;
+	if (!expect_text(1, 3, "LINE2")) return 0;
+	return 1;
+}
+
+static int test_ansi_dl(void)
+{
+	setup_ansi();
+	ct_puts("LINE1\r\nLINE2\r\nLINE3");
+	ct_printf("\033[2;1H");
+	ct_printf("\033[1M");  /* DL 1 */
+	if (!expect_text(1, 1, "LINE1")) return 0;
+	if (!expect_text(1, 2, "LINE3")) return 0;
+	return 1;
+}
+
+static int test_ansi_ech(void)
+{
+	setup_ansi();
+	ct_puts("ABCDEFGHIJ");
+	ct_printf("\033[1;3H");
+	ct_printf("\033[4X");  /* ECH 4 */
+	if (!expect_text(1, 1, "AB")) return 0;
+	if (!expect_blank(3, 1, 4)) return 0;
+	if (!expect_text(7, 1, "GHIJ")) return 0;
+	return 1;
+}
+
+/* SGR */
+
+static int test_ansi_sgr_reset(void)
+{
+	struct vmem_cell c1, c2;
+
+	setup_ansi();
+	ct_printf("\033[1;31m");  /* bold red */
+	ct_puts("R");
+	ct_printf("\033[0m");     /* reset */
+	ct_puts("N");
+	ct_gettext(1, 1, 1, 1, &c1);
+	ct_gettext(2, 1, 2, 1, &c2);
+	if (c1.legacy_attr == c2.legacy_attr) {
+		fprintf(result_fp, "    SGR reset didn't change attr\n");
+		return 0;
+	}
+	return 1;
+}
+
+static int test_ansi_sgr_bold(void)
+{
+	struct vmem_cell cells[1];
+
+	setup_ansi();
+	ct_printf("\033[1m");  /* bold */
+	ct_puts("B");
+	ct_gettext(1, 1, 1, 1, cells);
+	if (!(cells[0].legacy_attr & 0x08)) {
+		fprintf(result_fp, "    bold bit not set\n");
+		return 0;
+	}
+	return 1;
+}
+
+static int test_ansi_sgr_blink(void)
+{
+	struct vmem_cell cells[1];
+
+	setup_ansi();
+	ct_printf("\033[5m");  /* blink */
+	ct_puts("K");
+	ct_gettext(1, 1, 1, 1, cells);
+	if (!(cells[0].legacy_attr & 0x80)) {
+		fprintf(result_fp, "    blink bit not set\n");
+		return 0;
+	}
+	return 1;
+}
+
+static int test_ansi_sgr_negative(void)
+{
+	struct vmem_cell c1, c2;
+
+	setup_ansi();
+	ct_puts("N");
+	ct_printf("\033[7m");  /* negative */
+	ct_puts("R");
+	ct_gettext(1, 1, 1, 1, &c1);
+	ct_gettext(2, 1, 2, 1, &c2);
+	/* fg and bg should be swapped */
+	if (c1.fg != c2.bg || c1.bg != c2.fg) {
+		fprintf(result_fp, "    negative didn't swap fg/bg\n");
+		return 0;
+	}
+	return 1;
+}
+
+static int test_ansi_sgr_fg_color(void)
+{
+	struct vmem_cell cells[1];
+
+	setup_ansi();
+	ct_printf("\033[32m");  /* green fg */
+	ct_puts("G");
+	ct_gettext(1, 1, 1, 1, cells);
+	/* Green = color 2 in CGA order */
+	if ((cells[0].legacy_attr & 0x07) != 2) {
+		fprintf(result_fp, "    fg=%d, expected 2\n", cells[0].legacy_attr & 0x07);
+		return 0;
+	}
+	return 1;
+}
+
+static int test_ansi_sgr_bg_color(void)
+{
+	struct vmem_cell cells[1];
+
+	setup_ansi();
+	ct_printf("\033[44m");  /* blue bg */
+	ct_puts("B");
+	ct_gettext(1, 1, 1, 1, cells);
+	/* Blue = color 1 in CGA order */
+	if (((cells[0].legacy_attr >> 4) & 0x07) != 1) {
+		fprintf(result_fp, "    bg=%d, expected 1\n",
+		    (cells[0].legacy_attr >> 4) & 0x07);
+		return 0;
+	}
+	return 1;
+}
+
+/* Margins and scrolling */
+
+static int test_ansi_decstbm(void)
+{
+	setup_ansi();
+	ct_printf("\033[5;20r");  /* DECSTBM rows 5-20 */
+	/* Cursor should home after DECSTBM */
+	return expect_cursor(1, 1);
+}
+
+static int test_ansi_decslrm(void)
+{
+	setup_ansi();
+	ct_printf("\033[?69h");    /* enable DECLRMM */
+	ct_printf("\033[10;70s");  /* DECSLRM cols 10-70 */
+	ct_printf("\033[?69l");    /* disable DECLRMM */
+	return expect_cursor(1, 1);
+}
+
+static int test_ansi_su(void)
+{
+	setup_ansi();
+	ct_puts("ROW1\r\nROW2\r\nROW3");
+	ct_printf("\033[1S");  /* SU 1 — scroll up */
+	if (!expect_text(1, 1, "ROW2")) return 0;
+	if (!expect_text(1, 2, "ROW3")) return 0;
+	return 1;
+}
+
+static int test_ansi_sd(void)
+{
+	setup_ansi();
+	ct_puts("ROW1\r\nROW2\r\nROW3");
+	ct_printf("\033[1T");  /* SD 1 — scroll down */
+	if (!expect_blank(1, 1, 4)) return 0;
+	if (!expect_text(1, 2, "ROW1")) return 0;
+	if (!expect_text(1, 3, "ROW2")) return 0;
+	return 1;
+}
+
+/* Autowrap */
+
+static int test_ansi_autowrap(void)
+{
+	int col, row;
+
+	setup_ansi();
+	/* Fill row 1 completely */
+	for (int i = 0; i < term_cols; i++)
+		ct_puts("X");
+	ct_puts("W");  /* should wrap to row 2 */
+	ct_cursor(&col, &row);
+	if (row != 2) {
+		fprintf(result_fp, "    wrap: row %d, expected 2\n", row);
+		return 0;
+	}
+	return 1;
+}
+
+static int test_ansi_nowrap(void)
+{
+	setup_ansi();
+	ct_printf("\033[?7l");  /* disable autowrap */
+	for (int i = 0; i < term_cols + 5; i++)
+		ct_puts("X");
+	if (!expect_cursor(term_cols, 1)) return 0;
+	ct_printf("\033[?7h");  /* re-enable */
+	return 1;
+}
+
+/* Origin mode */
+
+static int test_ansi_origin_mode(void)
+{
+	setup_ansi();
+	ct_printf("\033[5;20r");   /* DECSTBM 5-20 */
+	ct_printf("\033[?6h");     /* enable origin mode */
+	/* In origin mode, CUP 1;1 should go to top of scroll region */
+	ct_printf("\033[1;1H");
+	ct_puts("X");
+	/* X should be at absolute row 5 col 1 */
+	if (!expect_text(1, 5, "X")) return 0;
+	ct_printf("\033[?6l");     /* disable origin mode */
+	ct_printf("\033[r");       /* reset margins */
+	return 1;
+}
+
+/* DECERA/DECFRA/DECCRA */
+
+static int test_ansi_decera(void)
+{
+	setup_ansi();
+	ct_puts("ABCDEFGHIJ\r\nKLMNOPQRST");
+	ct_printf("\033[1;3;2;8$z");  /* DECERA: erase cols 3-8, rows 1-2 */
+	if (!expect_text(1, 1, "AB")) return 0;
+	if (!expect_blank(3, 1, 6)) return 0;
+	if (!expect_text(9, 1, "IJ")) return 0;
+	if (!expect_text(1, 2, "KL")) return 0;
+	if (!expect_blank(3, 2, 6)) return 0;
+	if (!expect_text(9, 2, "ST")) return 0;
+	return 1;
+}
+
+static int test_ansi_decfra(void)
+{
+	setup_ansi();
+	ct_puts("ABCDEFGHIJ\r\nKLMNOPQRST");
+	ct_printf("\033[35;1;3;2;7$x");  /* DECFRA: fill cols 3-7 with '#' */
+	if (!expect_text(1, 1, "AB#####HIJ")) return 0;
+	if (!expect_text(1, 2, "KL#####RST")) return 0;
+	return 1;
+}
+
+static int test_ansi_deccra(void)
+{
+	setup_ansi();
+	ct_puts("HELLO\r\nWORLD");
+	ct_printf("\033[1;1;2;5;1;5;10;1$v");  /* DECCRA: copy to row 5 col 10 */
+	if (!expect_text(10, 5, "HELLO")) return 0;
+	if (!expect_text(10, 6, "WORLD")) return 0;
+	if (!expect_text(1, 1, "HELLO")) return 0;  /* source intact */
+	return 1;
+}
+
+/* REP */
+
+static int test_ansi_rep(void)
+{
+	setup_ansi();
+	ct_write("X\033[4b", 5);  /* X then REP 4 in same write */
+	if (!expect_text(1, 1, "XXXXX")) return 0;
+	return 1;
+}
+
+static int test_ansi_rep_split(void)
+{
+	/* Regression: REP must work when character and CSI b arrive
+	 * in separate cterm_write calls (e.g., split across packets) */
+	setup_ansi();
+	ct_puts("X");
+	ct_printf("\033[4b");
+	if (!expect_text(1, 1, "XXXXX")) return 0;
+	return 1;
+}
+
+/* Save/restore cursor */
+
+static int test_ansi_scosc_scorc(void)
+{
+	setup_ansi();
+	ct_printf("\033[5;10H");
+	ct_printf("\033[s");   /* SCOSC */
+	ct_printf("\033[1;1H");
+	ct_printf("\033[u");   /* SCORC */
+	return expect_cursor(10, 5);
+}
+
+static int test_ansi_decsc_decrc(void)
+{
+	setup_ansi();
+	ct_printf("\033[5;10H");
+	ct_puts("\0337");      /* DECSC */
+	ct_printf("\033[1;1H");
+	ct_puts("\0338");      /* DECRC */
+	return expect_cursor(10, 5);
 }
 
 /* ================================================================ */
@@ -2841,6 +3501,69 @@ struct test_entry {
 };
 
 static struct test_entry tests[] = {
+	/* ANSI-BBS — C0 controls */
+	{"ANSI_NUL",          test_ansi_nul},
+	{"ANSI_BS",           test_ansi_bs},
+	{"ANSI_HT",           test_ansi_ht},
+	{"ANSI_LF",           test_ansi_lf},
+	{"ANSI_CR",           test_ansi_cr},
+	{"ANSI_NEL",          test_ansi_nel},
+	{"ANSI_HTS",          test_ansi_hts},
+	{"ANSI_RI",           test_ansi_ri},
+	{"ANSI_RIS",          test_ansi_ris},
+	/* ANSI-BBS — Cursor movement */
+	{"ANSI_CUU",          test_ansi_cuu},
+	{"ANSI_CUD",          test_ansi_cud},
+	{"ANSI_CUF",          test_ansi_cuf},
+	{"ANSI_CUB",          test_ansi_cub},
+	{"ANSI_CNL",          test_ansi_cnl},
+	{"ANSI_CPL",          test_ansi_cpl},
+	{"ANSI_CUP",          test_ansi_cup},
+	{"ANSI_HVP",          test_ansi_hvp},
+	{"ANSI_CHA",          test_ansi_cha},
+	{"ANSI_VPA",          test_ansi_vpa},
+	{"ANSI_HPA",          test_ansi_hpa},
+	{"ANSI_HPR",          test_ansi_hpr},
+	{"ANSI_VPR",          test_ansi_vpr},
+	{"ANSI_HPB",          test_ansi_hpb},
+	{"ANSI_VPB",          test_ansi_vpb},
+	{"ANSI_CUU_clamp",   test_ansi_cuu_clamp},
+	{"ANSI_CUD_clamp",   test_ansi_cud_clamp},
+	{"ANSI_CUF_clamp",   test_ansi_cuf_clamp},
+	{"ANSI_CUB_clamp",   test_ansi_cub_clamp},
+	/* ANSI-BBS — Erase operations */
+	{"ANSI_ED",           test_ansi_ed},
+	{"ANSI_EL",           test_ansi_el},
+	{"ANSI_ICH",          test_ansi_ich},
+	{"ANSI_DCH",          test_ansi_dch},
+	{"ANSI_IL",           test_ansi_il},
+	{"ANSI_DL",           test_ansi_dl},
+	{"ANSI_ECH",          test_ansi_ech},
+	/* ANSI-BBS — SGR */
+	{"ANSI_SGR_reset",    test_ansi_sgr_reset},
+	{"ANSI_SGR_bold",     test_ansi_sgr_bold},
+	{"ANSI_SGR_blink",    test_ansi_sgr_blink},
+	{"ANSI_SGR_neg",      test_ansi_sgr_negative},
+	{"ANSI_SGR_fg",       test_ansi_sgr_fg_color},
+	{"ANSI_SGR_bg",       test_ansi_sgr_bg_color},
+	/* ANSI-BBS — Margins and scrolling */
+	{"ANSI_DECSTBM",      test_ansi_decstbm},
+	{"ANSI_DECSLRM",      test_ansi_decslrm},
+	{"ANSI_SU",           test_ansi_su},
+	{"ANSI_SD",           test_ansi_sd},
+	/* ANSI-BBS — Modes */
+	{"ANSI_autowrap",     test_ansi_autowrap},
+	{"ANSI_nowrap",       test_ansi_nowrap},
+	{"ANSI_origin",       test_ansi_origin_mode},
+	/* ANSI-BBS — DEC rectangular ops */
+	{"ANSI_DECERA",       test_ansi_decera},
+	{"ANSI_DECFRA",       test_ansi_decfra},
+	{"ANSI_DECCRA",       test_ansi_deccra},
+	/* ANSI-BBS — Misc */
+	{"ANSI_REP",          test_ansi_rep},
+	{"ANSI_REP_split",    test_ansi_rep_split},
+	{"ANSI_SCOSC_SCORC",  test_ansi_scosc_scorc},
+	{"ANSI_DECSC_DECRC",  test_ansi_decsc_decrc},
 	/* Atari ST VT52 */
 	{"VT52_printable",     test_vt52_printable},
 	{"VT52_CR",            test_vt52_cr},
@@ -2986,14 +3709,14 @@ int main(int argc, char **argv)
 	setenv("SDL_VIDEO_EGL_DRIVER", "none", 1);
 
 	ciolib_initial_scaling = 1.0;
-	ciolib_initial_mode = ATARIST_80X25;
+	ciolib_initial_mode = C80;
 	ciolib_initial_program_name = "cterm_test";
 	ciolib_initial_program_class = "cterm_test";
 	if (initciolib(CIOLIB_MODE_SDL)) {
 		fprintf(stderr, "Failed to initialize ciolib (SDL)\n");
 		return 1;
 	}
-	textmode(ATARIST_80X25);
+	textmode(C80);
 
 	fprintf(result_fp, "# cterm_test results\n");
 
@@ -3001,9 +3724,6 @@ int main(int argc, char **argv)
 		if (filter && strstr(tests[i].name, filter) == NULL)
 			continue;
 		total++;
-
-		/* Reset terminal state */
-		setup_cterm(ATARIST_80X25, CTERM_EMULATION_ATARIST_VT52);
 
 		int result = tests[i].fn();
 		switch (result) {
