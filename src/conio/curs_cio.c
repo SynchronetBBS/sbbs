@@ -951,12 +951,17 @@ int curs_getch(void)
 				curs_nextgetch=CIO_KEY_MOUSE>>8;
 				return(CIO_KEY_MOUSE & 0xff);
 			}
-			/* If stdin is at EOF (e.g., SSH session died),
-			 * select() reports it as readable but there are
-			 * no bytes pending. Signal quit to exit cleanly
-			 * instead of spinning. */
+			/* If stdin is at EOF or the PTY is gone (e.g., SSH
+			 * session died, ttyd disconnected), signal quit
+			 * to exit cleanly instead of spinning. */
 			int nbytes = 0;
-			if (ioctl(fileno(stdin), FIONREAD, &nbytes) == 0 && nbytes == 0) {
+			int fion_ret = ioctl(fileno(stdin), FIONREAD, &nbytes);
+			if (fion_ret == -1) {
+				/* FIONREAD failed (EIO = PTY deleted) — fd is dead */
+				curs_nextgetch = CIO_KEY_QUIT >> 8;
+				return(CIO_KEY_QUIT & 0xff);
+			}
+			if (nbytes == 0) {
 				struct timeval tv = {0, 0};
 				fd_set rfds;
 				FD_ZERO(&rfds);
