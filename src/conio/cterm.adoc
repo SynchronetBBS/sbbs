@@ -3064,6 +3064,175 @@ for people who want to maintain compatibility.
 |"\033[Z"
 |===
 
+== Atari ST VT52 Emulation
+
+CTerm's Atari ST VT52 mode emulates the VT52-compatible terminal built
+into the Atari ST's TOS/GEM desktop.  This includes the standard VT52
+command set plus GEMDOS/TOS extensions for color, line editing, and
+additional cursor control.
+
+Three screen modes are supported, matching the Atari ST's display
+hardware:
+
+[cols="2,1,1,2"]
+|===
+| Mode | Size | Colors | Notes
+
+| Low resolution (ST 40×25) | 40×25 | 16 | Full 16-color palette
+| Medium resolution (ST 80×25) | 80×25 | 4 | White, Red, Green, Black
+| High resolution (ST 80×25 Mono) | 80×25 | 2 | White and Black
+|===
+
+Autowrap is disabled by default (unlike ANSI-BBS mode).  All three
+modes have bright backgrounds enabled and blinking disabled (BGBRIGHT
+and NOBLINK video flags).
+
+The available colors depend on the screen mode — color commands
+(`ESC b`, `ESC c`) index into the mode's palette, and indices beyond
+the mode's color count wrap around (only the low bits are meaningful).
+
+=== C0 Control Characters
+
+[cols="1,1,3"]
+|===
+| Byte | Name | Action
+
+| 0x00 | NUL | Ignored
+| 0x01–0x06 | — | Ignored
+| 0x07 | BEL | Audible bell
+| 0x08 | BS | Backspace — move cursor left one column (no wrap, clamps at left margin)
+| 0x09 | HT | Horizontal tab — advance to next tab stop
+| 0x0A | LF | Line feed — move cursor down one row, scroll if at bottom
+| 0x0B | VT | Vertical tab — same as LF (move down one row, scroll)
+| 0x0C | FF | Form feed — same as LF (move down one row, scroll)
+| 0x0D | CR | Carriage return — move cursor to left margin
+| 0x0E–0x1A | — | Ignored
+| 0x1B | ESC | Start escape sequence
+| 0x1C–0x1F | — | Ignored
+| 0x20–0x7E | — | Printable character, displayed at cursor position
+|===
+
+BS, HT, LF, and CR are processed by the shared `ctputs` output path.
+VT and FF are handled explicitly before output and behave identically
+to LF (move down one row with scroll).
+
+=== Escape Sequences — Standard VT52
+
+All sequences are two bytes: ESC followed by a single character, except
+ESC Y which takes two additional parameter bytes.
+
+[cols="1,1,3"]
+|===
+| Sequence | Name | Action
+
+| `ESC A` | Cursor Up | Move cursor up one row (clamp at top, no scroll)
+| `ESC B` | Cursor Down | Move cursor down one row (clamp at bottom, no scroll)
+| `ESC C` | Cursor Right | Move cursor right one column (clamp at right margin)
+| `ESC D` | Cursor Left | Move cursor left one column (clamp at left margin)
+| `ESC H` | Cursor Home | Move cursor to top-left corner (row 1, column 1)
+| `ESC I` | Reverse Line Feed | Move cursor up one row; if at top, scroll down
+| `ESC J` | Erase to End of Page | Clear from cursor to end of line, then clear all lines below
+| `ESC K` | Erase to End of Line | Clear from cursor to end of current line
+| `ESC Y` _row col_ | Direct Cursor Address | Move cursor to position (_row_ − 32, _col_ − 32). Row and column are 0-based offsets encoded as the value + 32 (space = 0). Row is clamped to 0–23, column to 0–79. Parameters below 32 abort the sequence.
+| `ESC ESC` | — | Ignored (ESC followed by ESC)
+| `ESC =` | Alternate Keypad | Enable alternate keypad mode
+| `ESC >` | Normal Keypad | Disable alternate keypad mode (normal numeric keypad)
+| `ESC F` | — | Ignored (VT52 graphics mode — not applicable)
+| `ESC G` | — | Ignored (VT52 graphics mode — not applicable)
+| `ESC [` | — | Ignored (hold-screen mode — not implemented)
+| `ESC \` | — | Ignored (hold-screen mode — not implemented)
+|===
+
+=== Escape Sequences — GEMDOS/TOS Extensions
+
+These are extensions specific to the Atari ST's TOS operating system.
+
+[cols="1,1,3"]
+|===
+| Sequence | Name | Action
+
+| `ESC E` | Clear Screen | Clear entire screen and move cursor to home position
+| `ESC L` | Insert Line | Insert a blank line at cursor row; lines below shift down. Cursor column is preserved.
+| `ESC M` | Delete Line | Delete the line at cursor row; lines below shift up. A blank line is added at the bottom.
+| `ESC b` _c_ | Set Foreground Color | Set foreground color to _c_ & 0x0F (4-bit palette index, 0–15)
+| `ESC c` _c_ | Set Background Color | Set background color to _c_ & 0x0F (4-bit palette index, 0–15)
+| `ESC d` | Erase to Start of Page | Clear from cursor to start of line (inclusive), then clear all lines above
+| `ESC e` | Show Cursor | Make cursor visible (normal cursor)
+| `ESC f` | Hide Cursor | Make cursor invisible
+| `ESC j` | Save Cursor | Save current cursor position
+| `ESC k` | Restore Cursor | Restore cursor to last saved position. No effect if no position was saved or if saved position is outside the current window.
+| `ESC l` | Clear Line | Clear the entire current line (cursor position is preserved)
+| `ESC o` | Erase to Start of Line | Clear from start of line to cursor position (inclusive)
+| `ESC p` | Reverse Video On | Enable reverse video (swap foreground and background)
+| `ESC q` | Reverse Video Off | Disable reverse video (restore normal foreground/background)
+| `ESC v` | Enable Autowrap | Characters at the right margin wrap to the next line
+| `ESC w` | Disable Autowrap | Characters at the right margin are clamped (no wrap)
+|===
+
+=== Color Palette
+
+The color parameter for `ESC b` and `ESC c` is the low 4 bits of the
+byte following the command character (value & 0x0F), giving an index
+from 0 to 15 into the current mode's palette.
+
+In **low resolution** (40×25), the full 16-color palette is available:
+
+[cols="1,2,1,2"]
+|===
+| Index | Color | Index | Color
+
+| 0 | White | 8 | Light Red
+| 1 | Red | 9 | Light Green
+| 2 | Green | 10 | Light Yellow
+| 3 | Yellow | 11 | Light Blue
+| 4 | Blue | 12 | Light Magenta
+| 5 | Magenta | 13 | Light Cyan
+| 6 | Cyan | 14 | Dark Grey
+| 7 | Light Grey | 15 | Black
+|===
+
+In **medium resolution** (80×25), the default palette has 4 colors
+repeated across all 16 slots: White (0), Red (1), Green (2), Black (3),
+matching the Atari ST hardware where only 4 simultaneous colors were
+available.
+
+In **high resolution** (80×25 mono), the default palette alternates
+White and Black across all 16 slots, matching the monochrome hardware.
+
+NOTE: SyncTERM's per-entry custom palette feature allows users to
+override the default palette with up to 16 unique colors in any mode.
+This does not match hardware behavior where medium and high resolution
+modes are physically limited to 4 and 2 colors respectively, but
+provides flexibility for BBS content that uses the additional palette
+slots.
+
+NOTE: Reverse video (`ESC p` / `ESC q`) interacts with color commands.
+When reverse video is active, `ESC b` sets the background color and
+`ESC c` sets the foreground color (the sense is swapped).
+
+=== Negative Image (Reverse Video)
+
+The Atari ST VT52 mode uses the full 4-bit foreground and background
+nibbles when swapping for reverse video, unlike ANSI-BBS mode which
+only swaps the low 3 bits and preserves the bright/blink bits
+independently.  In VT52 mode, `ESC p` swaps all 4 bits of the
+foreground nibble with all 4 bits of the background nibble.
+
+=== Differences from Standard VT52
+
+* Autowrap is off by default (standard VT52 has no autowrap control)
+* 16-color support via `ESC b` and `ESC c` (Atari ST extension)
+* Insert/delete line (`ESC L` / `ESC M`) are TOS extensions
+* Erase-to-start commands (`ESC d`, `ESC o`) are TOS extensions
+* Cursor save/restore (`ESC j` / `ESC k`) are TOS extensions
+* Show/hide cursor (`ESC e` / `ESC f`) are TOS extensions
+* Autowrap control (`ESC v` / `ESC w`) are TOS extensions
+* Reverse video (`ESC p` / `ESC q`) are TOS extensions
+* Clear line (`ESC l`) is a TOS extension
+* VT52 Identify (`ESC Z`) is not implemented
+* VT52 graphics mode (`ESC F` / `ESC G`) is not implemented
+* Hold-screen mode (`ESC [` / `ESC \`) is not implemented
+
 == References
 
 * [[STD-070]]https://vt100.net/manx/details/1,35074[[STD-070\]] Digital Equipment Corporation. Video Systems Reference Manual. 1989-04-14.
