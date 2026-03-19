@@ -1,0 +1,18 @@
+{
+  "name": "avatar_chat",
+  "version": "0.1.0",
+  "description": "Avatar-enabled JSON chat client for Synchronet BBS",
+  "main": "avatar_chat.js",
+  "private": true,
+  "scripts": {
+    "build": "nodejs build.js",
+    "typecheck": "nodejs build.js --typecheck",
+    "watch": "nodejs build.js --watch"
+  },
+  "author": "Futureland contributors",
+  "license": "MIT",
+  "devDependencies": {
+    "esbuild": "^0.19.12",
+    "typescript": "^5.9.3"
+  }
+}
