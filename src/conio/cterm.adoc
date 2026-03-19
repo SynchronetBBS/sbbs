@@ -3064,6 +3064,106 @@ for people who want to maintain compatibility.
 |"\033[Z"
 |===
 
+== ATASCII Emulation
+
+CTerm's ATASCII mode emulates the Atari 8-bit computer's screen editor.
+ATASCII (Atari ASCII) is the character encoding used by Atari 400/800
+and XL/XE series computers, with control codes and cursor behavior
+specific to the Atari hardware.
+
+Two screen modes are supported:
+
+[cols="2,1,1,2"]
+|===
+| Mode | Size | Colors | Notes
+
+| Standard (Atari 40×24) | 40×24 | 2 | Dark blue background, light blue foreground
+| XEP80 (Atari 80×25) | 80×25 | 2 | Greyscale (white and black)
+|===
+
+No escape sequences are used; all operations are performed via
+single-byte control codes.
+
+=== Character Encoding
+
+In **normal mode**, printable bytes are stored directly as raw ATASCII
+values in the screen buffer.  The font rendering maps these to the
+appropriate Atari glyphs.
+
+In **inverse (ESC) mode**, bytes are translated to Atari screen codes
+before storage:
+
+- Bytes 0–31 are mapped to screen codes 64–95
+- Bytes 32–95 are mapped to screen codes 0–63
+- Bytes 96–127 are not translated
+- Bytes 128–159 are mapped to screen codes 192–223
+- Bytes 160–223 are mapped to screen codes 128–191
+- Bytes 224–255 are not translated
+
+=== ESC Mode
+
+Byte 27 (ESC) enables _inverse video mode_.  The next byte received is
+translated to a screen code (see above) and displayed using the inverse
+attribute (attr=1 instead of the normal attr=7).  After displaying the
+inverse character, normal mode is automatically restored.  The ESC byte
+itself is not displayed.
+
+In ESC mode, byte 155 (Return) still functions as a control code.
+All other bytes are translated to screen codes and displayed in
+inverse.
+
+=== Control Codes
+
+[cols="1,1,3"]
+|===
+| Byte | Name | Action
+
+| 27 | ESC | Enable inverse video for the next character
+| 28 | Cursor Up | Move cursor up one row; wraps to bottom of same column
+| 29 | Cursor Down | Move cursor down one row; wraps to top of same column
+| 30 | Cursor Left | Move cursor left one column; wraps to right side of same row
+| 31 | Cursor Right | Move cursor right one column; wraps to left side of same row
+| 125 | Clear Screen | Clear entire screen and home cursor
+| 126 | Backspace | Move cursor left one column and erase the character at the new position. Does NOT wrap; sticks at left margin.
+| 127 | Tab | Advance to next tab stop. If no tab stop is found before end of line, wraps to first column of next row (scrolling if at bottom).
+| 155 | Return (EOL) | Move cursor to first column of next row (CR+LF). Scrolls if at bottom.
+| 156 | Delete Line | Delete the current line; lines below shift up. Cursor moves to first column.
+| 157 | Insert Line | Insert a blank line at cursor row; lines below shift down. Current line is cleared.
+| 158 | Clear Tab | Clear the tab stop at the current cursor column
+| 159 | Set Tab | Set a tab stop at the current cursor column
+| 253 | Bell | Audible bell
+| 254 | Delete Char | Delete the character at the cursor; characters to the right shift left. A blank is inserted at the right margin.
+| 255 | Insert Char | Insert a blank space at the cursor; characters to the right shift right. The character at the right margin is lost.
+|===
+
+All other byte values (including 0–26 except ESC, 32–124, 128–154,
+160–252) are treated as printable characters and displayed using the
+ATASCII-to-screen-code translation described above.
+
+=== Cursor Wrapping Behavior
+
+The four cursor movement keys wrap differently than most terminals:
+
+- **Up (28):** Wraps from the top row to the bottom row of the _same
+  column_. Does NOT scroll.
+- **Down (29):** Wraps from the bottom row to the top row of the _same
+  column_. Does NOT scroll.
+- **Left (30):** Wraps from the left margin to the right margin of the
+  _same row_. Does NOT change rows.
+- **Right (31):** Wraps from the right margin to the left margin of the
+  _same row_. Does NOT change rows.
+
+This matches verified Atari 8-bit hardware behavior.
+
+=== Tab Stops
+
+Tab stops in ATASCII are set and cleared at individual column positions
+using bytes 159 (Set Tab) and 158 (Clear Tab).  Default tab stops are
+at the standard 8-column intervals.  The tab character (byte 127)
+advances to the next set tab stop; if no stop exists before the end of
+the line, it wraps to column 1 of the next row (scrolling if
+necessary).
+
 == Atari ST VT52 Emulation
 
 CTerm's Atari ST VT52 mode emulates the VT52-compatible terminal built

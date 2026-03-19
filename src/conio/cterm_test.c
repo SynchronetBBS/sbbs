@@ -1082,6 +1082,484 @@ test_vt52_tab(void)
 }
 
 /* ================================================================ */
+/* ATASCII tests                                                    */
+/* ================================================================ */
+
+static int
+test_atascii_printable(void)
+{
+	struct vmem_cell cells[5];
+
+	setup_cterm(ATARI_40X24, CTERM_EMULATION_ATASCII);
+	/* In normal mode, raw ATASCII byte is stored directly */
+	ct_write("A", 1);
+	ct_gettext(1, 1, 1, 1, cells);
+	if ((cells[0].ch & 0xFF) != 65) {
+		fprintf(result_fp, "    'A' stored as %d, expected 65\n",
+		    cells[0].ch & 0xFF);
+		return 0;
+	}
+	return 1;
+}
+
+static int
+test_atascii_return(void)
+{
+	int col, row;
+
+	setup_cterm(ATARI_40X24, CTERM_EMULATION_ATASCII);
+	ct_write("AB", 2);
+	ct_write("\x9b", 1);	/* 155 = Return */
+	ct_cursor(&col, &row);
+	if (col != 1 || row != 2) {
+		fprintf(result_fp, "    cursor at %d,%d, expected 1,2\n", col, row);
+		return 0;
+	}
+	return 1;
+}
+
+static int
+test_atascii_clear_screen(void)
+{
+	int col, row;
+	struct vmem_cell cells[5];
+
+	setup_cterm(ATARI_40X24, CTERM_EMULATION_ATASCII);
+	ct_write("HELLO", 5);
+	ct_write("\x7d", 1);	/* 125 = Clear Screen */
+	ct_cursor(&col, &row);
+	if (col != 1 || row != 1) {
+		fprintf(result_fp, "    cursor at %d,%d, expected 1,1\n", col, row);
+		return 0;
+	}
+	ct_gettext(1, 1, 5, 1, cells);
+	for (int i = 0; i < 5; i++) {
+		if (cells[i].ch != 0 && cells[i].ch != ' ') {
+			fprintf(result_fp, "    col %d not blank (ch=%d)\n",
+			    i + 1, cells[i].ch);
+			return 0;
+		}
+	}
+	return 1;
+}
+
+static int
+test_atascii_cursor_up_wrap(void)
+{
+	int col, row;
+
+	/* Cursor up wraps to bottom of same column */
+	setup_cterm(ATARI_40X24, CTERM_EMULATION_ATASCII);
+	ct_write("\x1c", 1);	/* 28 = Cursor Up from row 1 */
+	ct_cursor(&col, &row);
+	if (row != term_rows) {
+		fprintf(result_fp, "    wrapped to row %d, expected %d\n",
+		    row, term_rows);
+		return 0;
+	}
+	if (col != 1) {
+		fprintf(result_fp, "    column changed to %d, expected 1\n", col);
+		return 0;
+	}
+	return 1;
+}
+
+static int
+test_atascii_cursor_down_wrap(void)
+{
+	int col, row;
+
+	/* Cursor down wraps to top of same column */
+	setup_cterm(ATARI_40X24, CTERM_EMULATION_ATASCII);
+	/* Move to bottom row */
+	for (int i = 0; i < term_rows - 1; i++)
+		ct_write("\x1d", 1);	/* 29 = Cursor Down */
+	ct_cursor(&col, &row);
+	int last_row = row;
+	ct_write("\x1d", 1);	/* one more wraps to top */
+	ct_cursor(&col, &row);
+	if (row != 1) {
+		fprintf(result_fp, "    wrapped to row %d, expected 1\n", row);
+		return 0;
+	}
+	(void)last_row;
+	return 1;
+}
+
+static int
+test_atascii_cursor_left_wrap(void)
+{
+	int col, row;
+
+	/* Cursor left wraps to right side of same row */
+	setup_cterm(ATARI_40X24, CTERM_EMULATION_ATASCII);
+	ct_write("\x1e", 1);	/* 30 = Cursor Left from col 1 */
+	ct_cursor(&col, &row);
+	if (col != term_cols) {
+		fprintf(result_fp, "    wrapped to col %d, expected %d\n",
+		    col, term_cols);
+		return 0;
+	}
+	if (row != 1) {
+		fprintf(result_fp, "    row changed to %d, expected 1\n", row);
+		return 0;
+	}
+	return 1;
+}
+
+static int
+test_atascii_cursor_right_wrap(void)
+{
+	int col, row;
+
+	/* Cursor right wraps to left side of same row */
+	setup_cterm(ATARI_40X24, CTERM_EMULATION_ATASCII);
+	/* Move to last column */
+	for (int i = 0; i < term_cols - 1; i++)
+		ct_write("\x1f", 1);	/* 31 = Cursor Right */
+	ct_write("\x1f", 1);	/* one more wraps */
+	ct_cursor(&col, &row);
+	if (col != 1) {
+		fprintf(result_fp, "    wrapped to col %d, expected 1\n", col);
+		return 0;
+	}
+	if (row != 1) {
+		fprintf(result_fp, "    row changed to %d, expected 1\n", row);
+		return 0;
+	}
+	return 1;
+}
+
+static int
+test_atascii_backspace(void)
+{
+	int col, row;
+	struct vmem_cell cells[1];
+
+	setup_cterm(ATARI_40X24, CTERM_EMULATION_ATASCII);
+	ct_write("AB", 2);
+	ct_write("\x7e", 1);	/* 126 = Backspace */
+	ct_cursor(&col, &row);
+	if (col != 2) {
+		fprintf(result_fp, "    cursor at col %d, expected 2\n", col);
+		return 0;
+	}
+	/* Character at col 2 should be erased (space) */
+	ct_gettext(2, 1, 2, 1, cells);
+	if (cells[0].ch != 0 && cells[0].ch != ' ') {
+		fprintf(result_fp, "    col 2 not erased (ch=%d)\n", cells[0].ch);
+		return 0;
+	}
+	/* Backspace at col 1 should stick */
+	ct_write("\x7e\x7e", 2);
+	ct_cursor(&col, &row);
+	if (col != 1) {
+		fprintf(result_fp, "    BS didn't clamp at col 1, got %d\n", col);
+		return 0;
+	}
+	return 1;
+}
+
+static int
+test_atascii_esc_inverse(void)
+{
+	struct vmem_cell cells[2];
+
+	setup_cterm(ATARI_40X24, CTERM_EMULATION_ATASCII);
+	ct_write("A", 1);		/* normal */
+	ct_write("\x1b" "A", 2);	/* ESC + A = inverse A */
+	ct_gettext(1, 1, 2, 1, cells);
+	/* Normal char should have attr 7, inverse should have attr 1 */
+	if (cells[0].legacy_attr != 7) {
+		fprintf(result_fp, "    normal attr %d, expected 7\n",
+		    cells[0].legacy_attr);
+		return 0;
+	}
+	if (cells[1].legacy_attr != 1) {
+		fprintf(result_fp, "    inverse attr %d, expected 1\n",
+		    cells[1].legacy_attr);
+		return 0;
+	}
+	return 1;
+}
+
+static int
+test_atascii_esc_auto_reset(void)
+{
+	struct vmem_cell cells[3];
+
+	/* ESC only affects the next character, then resets to normal */
+	setup_cterm(ATARI_40X24, CTERM_EMULATION_ATASCII);
+	ct_write("\x1b" "AB", 3);	/* ESC + A (inverse) + B (normal) */
+	ct_gettext(1, 1, 2, 1, cells);
+	if (cells[0].legacy_attr != 1) {
+		fprintf(result_fp, "    first char attr %d, expected 1\n",
+		    cells[0].legacy_attr);
+		return 0;
+	}
+	if (cells[1].legacy_attr != 7) {
+		fprintf(result_fp, "    second char attr %d, expected 7\n",
+		    cells[1].legacy_attr);
+		return 0;
+	}
+	return 1;
+}
+
+static int
+test_atascii_delete_line(void)
+{
+	struct vmem_cell cells[5];
+
+	setup_cterm(ATARI_40X24, CTERM_EMULATION_ATASCII);
+	ct_write("AAAAA", 5);
+	ct_write("\x9b", 1);	/* Return - next line */
+	ct_write("BBBBB", 5);
+	ct_write("\x9b", 1);
+	ct_write("CCCCC", 5);
+	/* Cursor at row 3 col 6. Up to row 2. */
+	ct_write("\x1c", 1);
+	ct_write("\x9c", 1);	/* 156 = Delete Line */
+	/* Row 2 should now have what was row 3 (CCCCC) — raw byte 67 */
+	ct_gettext(1, 2, 5, 2, cells);
+	for (int i = 0; i < 5; i++) {
+		if ((cells[i].ch & 0xFF) != 67) {
+			fprintf(result_fp, "    row 2 col %d: ch=%d, expected 67\n",
+			    i + 1, cells[i].ch & 0xFF);
+			return 0;
+		}
+	}
+	return 1;
+}
+
+static int
+test_atascii_insert_line(void)
+{
+	struct vmem_cell cells[5];
+
+	setup_cterm(ATARI_40X24, CTERM_EMULATION_ATASCII);
+	ct_write("AAAAA", 5);
+	ct_write("\x9b", 1);	/* Return */
+	ct_write("BBBBB", 5);
+	/* Cursor at row 2 col 6. Move up to row 1 */
+	ct_write("\x1c", 1);
+	ct_write("\x9d", 1);	/* 157 = Insert Line */
+	/* Row 1 should be blank, old row 1 (AAAAA) should be at row 2 */
+	ct_gettext(1, 1, 5, 1, cells);
+	for (int i = 0; i < 5; i++) {
+		if (cells[i].ch != 0 && cells[i].ch != ' ') {
+			fprintf(result_fp, "    inserted row not blank at col %d\n", i + 1);
+			return 0;
+		}
+	}
+	/* 'A' raw byte = 65 */
+	ct_gettext(1, 2, 5, 2, cells);
+	for (int i = 0; i < 5; i++) {
+		if ((cells[i].ch & 0xFF) != 65) {
+			fprintf(result_fp, "    row 2 col %d: ch=%d, expected 65\n",
+			    i + 1, cells[i].ch & 0xFF);
+			return 0;
+		}
+	}
+	return 1;
+}
+
+static int
+test_atascii_delete_char(void)
+{
+	struct vmem_cell cells[5];
+
+	setup_cterm(ATARI_40X24, CTERM_EMULATION_ATASCII);
+	ct_write("ABCDE", 5);
+	/* Move to col 2: Left 3 times from col 6 (after E) -> 5 -> 4 -> 3.
+	 * Wait, cursor is at col 6 after writing 5 chars. Left 3 = col 3.
+	 * Need to be at col 2 for delete. Left 4 times. */
+	ct_write("\x1e\x1e\x1e\x1e", 4);	/* col 6->5->4->3->2 */
+	ct_write("\xfe", 1);	/* 254 = Delete Char */
+	/* Deletes char at col 2 ('B'=66), shifts CDE left: A C D E _ */
+	ct_gettext(1, 1, 4, 1, cells);
+	/* Raw bytes: A=65, C=67, D=68, E=69 */
+	if ((cells[0].ch & 0xFF) != 65 || (cells[1].ch & 0xFF) != 67 ||
+	    (cells[2].ch & 0xFF) != 68 || (cells[3].ch & 0xFF) != 69) {
+		fprintf(result_fp, "    after DCH: %d %d %d %d, expected 65 67 68 69\n",
+		    cells[0].ch & 0xFF, cells[1].ch & 0xFF,
+		    cells[2].ch & 0xFF, cells[3].ch & 0xFF);
+		return 0;
+	}
+	return 1;
+}
+
+static int
+test_atascii_insert_char(void)
+{
+	struct vmem_cell cells[5];
+
+	setup_cterm(ATARI_40X24, CTERM_EMULATION_ATASCII);
+	ct_write("ABCD", 4);
+	/* Move to col 2: from col 5, Left 3 times */
+	ct_write("\x1e\x1e\x1e", 3);	/* col 5->4->3->2 */
+	ct_write("\xff", 1);	/* 255 = Insert Char */
+	/* Should insert space at col 2, shifting BCD right: A_BCD */
+	ct_gettext(1, 1, 5, 1, cells);
+	/* Raw bytes: A=65, space=32, B=66, C=67, D=68 */
+	if ((cells[0].ch & 0xFF) != 65) {
+		fprintf(result_fp, "    col 1: %d, expected 65\n", cells[0].ch & 0xFF);
+		return 0;
+	}
+	if ((cells[1].ch & 0xFF) != 32 && cells[1].ch != 0) {
+		fprintf(result_fp, "    col 2 not blank: %d\n", cells[1].ch & 0xFF);
+		return 0;
+	}
+	if ((cells[2].ch & 0xFF) != 66) {
+		fprintf(result_fp, "    col 3: %d, expected 66\n", cells[2].ch & 0xFF);
+		return 0;
+	}
+	return 1;
+}
+
+static int
+test_atascii_bell(void)
+{
+	int col, row;
+
+	/* Bell should not move cursor */
+	setup_cterm(ATARI_40X24, CTERM_EMULATION_ATASCII);
+	ct_write("A", 1);
+	ct_cursor(&col, &row);
+	ct_write("\xfd", 1);	/* 253 = Bell */
+	int col2, row2;
+	ct_cursor(&col2, &row2);
+	if (col != col2 || row != row2) {
+		fprintf(result_fp, "    bell moved cursor\n");
+		return 0;
+	}
+	return 1;
+}
+
+static int
+test_atascii_return_scroll(void)
+{
+	struct vmem_cell cells[5];
+
+	/* Return at bottom row should scroll */
+	setup_cterm(ATARI_40X24, CTERM_EMULATION_ATASCII);
+	ct_write("FIRST", 5);
+	/* Move to last row */
+	for (int i = 0; i < term_rows - 1; i++)
+		ct_write("\x9b", 1);	/* Return to advance rows */
+	/* Write something on last row */
+	ct_write("LAST!", 5);
+	ct_write("\x9b", 1);	/* Return at bottom — should scroll */
+	/* "LAST!" should have moved up one row. Raw byte 'L'=76 */
+	ct_gettext(1, term_rows - 1, 1, term_rows - 1, cells);
+	if ((cells[0].ch & 0xFF) != 76) {
+		fprintf(result_fp, "    scroll: row %d col 1 ch=%d, expected 76\n",
+		    term_rows - 1, cells[0].ch & 0xFF);
+		return 0;
+	}
+	return 1;
+}
+
+static int
+test_atascii_tab(void)
+{
+	int col, row;
+
+	setup_cterm(ATARI_40X24, CTERM_EMULATION_ATASCII);
+	ct_write("A", 1);
+	ct_write("\x7f", 1);	/* 127 = Tab */
+	ct_cursor(&col, &row);
+	/* Default tabs at 8-col intervals: from col 2, next stop at col 9 */
+	if (col != 9) {
+		fprintf(result_fp, "    tab: col %d, expected 9\n", col);
+		return 0;
+	}
+	return 1;
+}
+
+static int
+test_atascii_tab_set_clear(void)
+{
+	int col, row;
+
+	setup_cterm(ATARI_40X24, CTERM_EMULATION_ATASCII);
+	/* Move to col 5 and set a tab */
+	for (int i = 0; i < 4; i++)
+		ct_write("\x1f", 1);	/* Right */
+	ct_write("\x9f", 1);	/* 159 = Set Tab */
+	/* Go home and tab — should land at col 5 */
+	ct_write("\x7d", 1);	/* Clear screen (homes cursor) */
+	ct_write("A", 1);
+	ct_write("\x7f", 1);	/* Tab */
+	ct_cursor(&col, &row);
+	if (col != 5) {
+		fprintf(result_fp, "    custom tab: col %d, expected 5\n", col);
+		return 0;
+	}
+	/* Clear that tab stop */
+	ct_write("\x9e", 1);	/* 158 = Clear Tab at col 5 */
+	ct_write("\x7d", 1);	/* Clear screen */
+	ct_write("A", 1);
+	ct_write("\x7f", 1);	/* Tab */
+	ct_cursor(&col, &row);
+	/* Should skip to next default stop (col 9) since col 5 was cleared */
+	if (col != 9) {
+		fprintf(result_fp, "    after clear: col %d, expected 9\n", col);
+		return 0;
+	}
+	return 1;
+}
+
+static int
+test_atascii_screen_code_mapping(void)
+{
+	struct vmem_cell cells[6];
+
+	/* In ESC (inverse) mode, screen code translation is applied.
+	 * In normal mode, raw bytes are stored directly.
+	 * Test both modes. */
+	setup_cterm(ATARI_40X24, CTERM_EMULATION_ATASCII);
+
+	/* Normal mode: raw bytes stored as-is */
+	ct_write("A", 1);	/* byte 65 -> stored as 65 */
+	ct_gettext(1, 1, 1, 1, cells);
+	if ((cells[0].ch & 0xFF) != 65) {
+		fprintf(result_fp, "    normal 'A': ch=%d, expected 65\n",
+		    cells[0].ch & 0xFF);
+		return 0;
+	}
+
+	/* ESC mode: screen code translation applied */
+	/* ESC + byte 65 (32-95 range): 65-32=33 */
+	ct_write("\x1b\x41", 2);
+	ct_gettext(2, 1, 2, 1, cells);
+	if ((cells[0].ch & 0xFF) != 33) {
+		fprintf(result_fp, "    ESC 'A': ch=%d, expected 33\n",
+		    cells[0].ch & 0xFF);
+		return 0;
+	}
+
+	/* ESC + byte 1 (0-31 range): 1+64=65 */
+	ct_write("\x1b\x01", 2);
+	ct_gettext(3, 1, 3, 1, cells);
+	if ((cells[0].ch & 0xFF) != 65) {
+		fprintf(result_fp, "    ESC 0x01: ch=%d, expected 65\n",
+		    cells[0].ch & 0xFF);
+		return 0;
+	}
+
+	/* ESC + byte 97 (96-127 range): no translation = 97 */
+	ct_write("\x1b\x61", 2);
+	ct_gettext(4, 1, 4, 1, cells);
+	if ((cells[0].ch & 0xFF) != 97) {
+		fprintf(result_fp, "    ESC 0x61: ch=%d, expected 97\n",
+		    cells[0].ch & 0xFF);
+		return 0;
+	}
+
+	return 1;
+}
+
+/* ================================================================ */
 /* Test table and main                                              */
 /* ================================================================ */
 
@@ -1130,6 +1608,26 @@ static struct test_entry tests[] = {
 	{"VT52_cr_lf",         test_vt52_cr_lf_sequence},
 	{"VT52_scroll_content", test_vt52_scroll_content_preserved},
 	{"VT52_tab",           test_vt52_tab},
+	/* ATASCII */
+	{"ATA_printable",      test_atascii_printable},
+	{"ATA_return",         test_atascii_return},
+	{"ATA_clear_screen",   test_atascii_clear_screen},
+	{"ATA_cursor_up",      test_atascii_cursor_up_wrap},
+	{"ATA_cursor_down",    test_atascii_cursor_down_wrap},
+	{"ATA_cursor_left",    test_atascii_cursor_left_wrap},
+	{"ATA_cursor_right",   test_atascii_cursor_right_wrap},
+	{"ATA_backspace",      test_atascii_backspace},
+	{"ATA_esc_inverse",    test_atascii_esc_inverse},
+	{"ATA_esc_auto_reset", test_atascii_esc_auto_reset},
+	{"ATA_delete_line",    test_atascii_delete_line},
+	{"ATA_insert_line",    test_atascii_insert_line},
+	{"ATA_delete_char",    test_atascii_delete_char},
+	{"ATA_insert_char",    test_atascii_insert_char},
+	{"ATA_bell",           test_atascii_bell},
+	{"ATA_return_scroll",  test_atascii_return_scroll},
+	{"ATA_tab",            test_atascii_tab},
+	{"ATA_tab_set_clear",  test_atascii_tab_set_clear},
+	{"ATA_screen_codes",   test_atascii_screen_code_mapping},
 	{NULL, NULL}
 };
 
