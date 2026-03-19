@@ -2048,6 +2048,290 @@ var tests = [
 		console.write(format("\x1b[%dM", console.screen_rows - 1));
 		return true;
 	}},
+	/* --- DEC Rectangular Area Operations --- */
+	{'name':'DECERA', 'func':function() {
+		console.clear();
+		console.gotoxy(1, 1);
+		console.write("ABCDEFGHIJ");
+		console.gotoxy(1, 2);
+		console.write("KLMNOPQRST");
+		// Erase cols 3-8, rows 1-2
+		console.write("\x1b[1;3;2;8$z");
+		return interactive_or_string("AB      IJ", 1, 1);
+	}},
+	{'name':'DECFRA', 'func':function() {
+		console.clear();
+		console.gotoxy(1, 1);
+		console.write("ABCDEFGHIJ");
+		// Fill cols 3-7, rows 1-1 with '#' (35)
+		console.write("\x1b[35;1;3;1;7$x");
+		return interactive_or_string("AB#####HIJ", 1, 1);
+	}},
+	{'name':'DECCRA', 'func':function() {
+		console.clear();
+		console.gotoxy(1, 1);
+		console.write("HELLO");
+		// Copy row 1 cols 1-5 to row 3 col 10
+		console.write("\x1b[1;1;1;5;1;3;10;1$v");
+		return interactive_or_string("HELLO", 10, 3);
+	}},
+	{'name':'DECIC', 'func':function() {
+		// Enable left/right margins
+		console.clear();
+		console.write("\x1b[?69h\x1b[1;20s");
+		console.gotoxy(1, 1);
+		console.write("ABCDEFGHIJ");
+		console.gotoxy(3, 1);
+		console.write("\x1b[2'}");  // Insert 2 columns
+		var ret = interactive_or_string("AB  CDEFGH", 1, 1);
+		console.write("\x1b[s\x1b[?69l");
+		return ret;
+	}},
+	{'name':'DECDC', 'func':function() {
+		console.clear();
+		console.write("\x1b[?69h\x1b[1;20s");
+		console.gotoxy(1, 1);
+		console.write("ABCDEFGHIJ");
+		console.gotoxy(3, 1);
+		console.write("\x1b[2'~");  // Delete 2 columns
+		var ret = interactive_or_string("ABEFGHIJ", 1, 1);
+		console.write("\x1b[s\x1b[?69l");
+		return ret;
+	}},
+	/* --- DECCARA / DECRARA / DECSACE --- */
+	{'name':'DECCARA', 'func':function() {
+		if (!has_cksum) return null;
+		console.clear();
+		console.write("\x1b[0m");
+		console.gotoxy(1, 1);
+		console.write("ABCDE");
+		var cs1 = get_cs(1, 1, 5, 1);
+		// Apply bold via DECCARA
+		console.write("\x1b[1;1;1;5;1$r");
+		var cs2 = get_cs(1, 1, 5, 1);
+		if (cs1 === cs2)
+			return false;
+		// Undo bold via DECCARA SGR 22
+		console.write("\x1b[1;1;1;5;22$r");
+		var cs3 = get_cs(1, 1, 5, 1);
+		return (cs1 === cs3);
+	}},
+	{'name':'DECRARA', 'func':function() {
+		if (!has_cksum) return null;
+		console.clear();
+		console.write("\x1b[0m");
+		console.gotoxy(1, 1);
+		console.write("ABCDE");
+		var cs1 = get_cs(1, 1, 5, 1);
+		// Toggle bold via DECRARA
+		console.write("\x1b[1;1;1;5;1$t");
+		var cs2 = get_cs(1, 1, 5, 1);
+		if (cs1 === cs2)
+			return false;
+		// Toggle again — should revert
+		console.write("\x1b[1;1;1;5;1$t");
+		var cs3 = get_cs(1, 1, 5, 1);
+		return (cs1 === cs3);
+	}},
+	{'name':'DECSACE', 'func':function() {
+		if (!has_cksum) return null;
+		console.clear();
+		console.write("\x1b[0m");
+		// Set stream mode
+		console.write("\x1b[1*x");
+		console.gotoxy(1, 1);
+		console.write("LINE1TEXT.");
+		console.gotoxy(1, 2);
+		console.write("LINE2TEXT.");
+		var cs1 = get_cs(6, 1, 10, 1);
+		// DECCARA stream: row 1 col 6 to row 2 col 5, bold
+		console.write("\x1b[1;6;2;5;1$r");
+		var cs2 = get_cs(6, 1, 10, 1);
+		console.write("\x1b[0*x");  // reset
+		return (cs1 !== cs2);
+	}},
+	/* --- CT24BC (24-bit color) --- */
+	{'name':'CT24BC', 'func':function() {
+		if (!has_cksum) return null;
+		console.clear();
+		console.write("\x1b[0m");
+		console.gotoxy(1, 1);
+		console.write("X");
+		var cs1 = get_cs(1, 1, 1, 1);
+		console.gotoxy(1, 1);
+		console.write("\x1b[1;255;128;0t");  // fg orange
+		console.write("X");
+		var cs2 = get_cs(1, 1, 1, 1);
+		console.write("\x1b[0m");
+		return (cs1 !== cs2);
+	}},
+	/* --- FETM/TTM --- */
+	{'name':'FETM', 'func':function() {
+		// Set FETM=EXCLUDE, verify via DECRQM
+		console.write("\x1b[14h");
+		console.write("\x1b[14$p");
+		var seq = read_ansi_seq(500);
+		console.write("\x1b[14l");  // reset
+		if (seq === null) return null;
+		// Response should indicate mode 14 is set (Pm=1 or 3)
+		var m = seq.match(/\x1b\[14;([0-9]+)\$y/);
+		return (m !== null && (m[1] === '1' || m[1] === '3'));
+	}},
+	{'name':'TTM', 'func':function() {
+		console.write("\x1b[16h");
+		console.write("\x1b[16$p");
+		var seq = read_ansi_seq(500);
+		console.write("\x1b[16l");
+		if (seq === null) return null;
+		var m = seq.match(/\x1b\[16;([0-9]+)\$y/);
+		return (m !== null && (m[1] === '1' || m[1] === '3'));
+	}},
+	/* --- Vertical Line Tabulation --- */
+	{'name':'CVTwithVTS', 'func':function() {
+		console.clear();
+		// Set a line tab stop at row 10
+		console.gotoxy(3, 10);
+		console.write("\x1bJ");  // VTS
+		console.gotoxy(5, 1);
+		console.write("\x1b[Y");  // CVT
+		var pos = fast_getxy();
+		// Clear line tabs
+		console.write("\x1b[4g");
+		return (pos.x === 5 && pos.y === 10);
+	}},
+	/* --- Origin Mode --- */
+	{'name':'OriginMode', 'func':function() {
+		console.clear();
+		console.write("\x1b[5;20r");  // DECSTBM 5-20
+		console.write("\x1b[?6h");    // origin on
+		console.gotoxy(1, 1);         // should be row 5 abs
+		console.write("X");
+		console.write("\x1b[?6l");    // origin off
+		console.write("\x1b[r");      // reset margins
+		return interactive_or_string("X", 1, 5);
+	}},
+	/* --- SL/SR --- */
+	{'name':'SLMargins', 'func':function() {
+		console.clear();
+		console.write("\x1b[?69h\x1b[5;15s");
+		console.gotoxy(5, 1);
+		console.write("ABCDEFGHIJK");
+		console.write("\x1b[2 @");  // SL 2
+		var ret = interactive_or_string("CDE", 5, 1);
+		console.write("\x1b[s\x1b[?69l");
+		return ret;
+	}},
+	{'name':'SRMargins', 'func':function() {
+		console.clear();
+		console.write("\x1b[?69h\x1b[5;15s");
+		console.gotoxy(5, 1);
+		console.write("ABCDEFGHIJK");
+		console.write("\x1b[2 A");  // SR 2
+		var ret = interactive_or_string("ABC", 7, 1);
+		console.write("\x1b[s\x1b[?69l");
+		return ret;
+	}},
+	/* --- Save/Restore Mode --- */
+	{'name':'CTSMS_CTRMS', 'func':function() {
+		// Save autowrap (on), disable, verify, restore, verify
+		console.write("\x1b[?7s");   // save
+		console.write("\x1b[?7l");   // disable
+		console.write("\x1b[?7$p");  // query
+		var seq1 = read_ansi_seq(500);
+		console.write("\x1b[?7u");   // restore
+		console.write("\x1b[?7$p");  // query
+		var seq2 = read_ansi_seq(500);
+		if (seq1 === null || seq2 === null) return null;
+		// First query: should be reset (Pm=2)
+		var m1 = seq1.match(/\x1b\[\?7;([0-9]+)\$y/);
+		var m2 = seq2.match(/\x1b\[\?7;([0-9]+)\$y/);
+		if (m1 === null || m2 === null) return null;
+		return (m1[1] === '2' && (m2[1] === '1' || m2[1] === '3'));
+	}},
+	/* --- SGR Extended --- */
+	{'name':'SGRNoBlink', 'func':function() {
+		if (!has_cksum) return null;
+		console.clear();
+		console.gotoxy(1, 1);
+		console.write("\x1b[0m#");
+		var cs1 = get_cs(1, 1, 1, 1);
+		console.gotoxy(1, 1);
+		console.write("\x1b[0;5;25m#");
+		var cs2 = get_cs(1, 1, 1, 1);
+		console.write("\x1b[0m");
+		return (cs1 === cs2);
+	}},
+	{'name':'SGRNormInt', 'func':function() {
+		if (!has_cksum) return null;
+		console.clear();
+		console.gotoxy(1, 1);
+		console.write("\x1b[0m#");
+		var cs1 = get_cs(1, 1, 1, 1);
+		console.gotoxy(1, 1);
+		console.write("\x1b[0;1;22m#");
+		var cs2 = get_cs(1, 1, 1, 1);
+		console.write("\x1b[0m");
+		return (cs1 === cs2);
+	}},
+	{'name':'SGRDefFG', 'func':function() {
+		if (!has_cksum) return null;
+		console.clear();
+		console.gotoxy(1, 1);
+		console.write("\x1b[0;37m#");
+		var cs1 = get_cs(1, 1, 1, 1);
+		console.gotoxy(1, 1);
+		console.write("\x1b[0;39m#");
+		var cs2 = get_cs(1, 1, 1, 1);
+		console.write("\x1b[0m");
+		return (cs1 === cs2);
+	}},
+	{'name':'SGRDefBG', 'func':function() {
+		if (!has_cksum) return null;
+		console.clear();
+		console.gotoxy(1, 1);
+		console.write("\x1b[0;40m ");
+		var cs1 = get_cs(1, 1, 1, 1);
+		console.gotoxy(1, 1);
+		console.write("\x1b[0;49m ");
+		var cs2 = get_cs(1, 1, 1, 1);
+		console.write("\x1b[0m");
+		return (cs1 === cs2);
+	}},
+	{'name':'SGRBrightBG', 'func':function() {
+		if (!has_cksum) return null;
+		console.write("\x1b[?33h");
+		console.clear();
+		console.gotoxy(1, 1);
+		console.write("\x1b[0;41m ");
+		var cs1 = get_cs(1, 1, 1, 1);
+		console.gotoxy(1, 1);
+		console.write("\x1b[0;101m ");
+		var cs2 = get_cs(1, 1, 1, 1);
+		console.write("\x1b[0m\x1b[?33l");
+		return (cs1 !== cs2);
+	}},
+	/* --- DECRQSS extensions --- */
+	{'name':'DECRQSS_*x', 'func':function() {
+		console.write("\x1bP$q*x\x1b\\");
+		var seq = read_ansi_string(500);
+		if (seq === null) return null;
+		return (seq.indexOf('*x') >= 0);
+	}},
+	{'name':'DECRQSS_*r', 'func':function() {
+		console.write("\x1bP$q*r\x1b\\");
+		var seq = read_ansi_string(500);
+		if (seq === null) return null;
+		return (seq.indexOf('*r') >= 0);
+	}},
+	/* --- OSC 8 Hyperlink --- */
+	{'name':'OSC8', 'func':function() {
+		console.clear();
+		console.gotoxy(1, 1);
+		console.write("\x1b]8;id=test;https://example.com\x1b\\");
+		console.write("LINK");
+		console.write("\x1b]8;;\x1b\\");
+		return ask_user("Do you see the text 'LINK' (possibly underlined or colored as a hyperlink)?");
+	}},
 ];
 
 var input_keys = [
