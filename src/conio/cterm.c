@@ -754,7 +754,6 @@ fill_rect(struct cterminal *cterm, int left, int top, int right, int bottom, uin
 {
 	int width = right - left + 1;
 	int height = bottom - top + 1;
-	int total = width * height;
 	struct vmem_cell *buf;
 	int i, r;
 
@@ -2995,6 +2994,194 @@ done:
 	cterm_respond(cterm, "\033\\", 2);
 }
 
+/*
+ * Apply a single SGR parameter to the current cterm state.
+ * Used by both the normal SGR handler (case 'm') and DECCARA.
+ * seq and *pi identify the current parameter; *pi may be advanced
+ * for sub-parameters (e.g. extended colour 38;5;N).
+ */
+static void
+apply_sgr(struct cterminal *cterm, struct esc_seq *seq, int *pi)
+{
+	struct text_info ti;
+	int flags;
+
+	gettextinfo(&ti);
+	flags = getvideoflags();
+	seq_default(seq, *pi, 0);
+	switch (seq->param_int[*pi]) {
+		case 0:
+			set_negative(cterm, false);
+			cterm->attr = ti.normattr;
+			attr2palette(cterm->attr, &cterm->fg_color, &cterm->bg_color);
+			FREE_AND_NULL(cterm->fg_tc_str);
+			FREE_AND_NULL(cterm->bg_tc_str);
+			break;
+		case 1:
+			if (!cterm->skypix)
+				cterm->attr |= 8;
+			if (!(flags & CIOLIB_VIDEO_NOBRIGHT)) {
+				attr2palette(cterm->attr, cterm->negative ? NULL : &cterm->fg_color, cterm->negative ? &cterm->fg_color : NULL);
+				FREE_AND_NULL(cterm->fg_tc_str);
+			}
+			break;
+		case 2:
+			if (!cterm->skypix)
+				cterm->attr &= 247;
+			if (!(flags & CIOLIB_VIDEO_NOBRIGHT)) {
+				attr2palette(cterm->attr, cterm->negative ? NULL : &cterm->fg_color, cterm->negative ? &cterm->fg_color : NULL);
+				FREE_AND_NULL(cterm->fg_tc_str);
+			}
+			break;
+		case 4:	/* Underscore */
+			break;
+		case 5:
+		case 6:
+			if (!cterm->skypix)
+				cterm->attr |= 128;
+			if (flags & CIOLIB_VIDEO_BGBRIGHT) {
+				attr2palette(cterm->attr, cterm->negative ? &cterm->bg_color : NULL, cterm->negative ? NULL : &cterm->bg_color);
+				FREE_AND_NULL(cterm->bg_tc_str);
+			}
+			break;
+		case 7:
+			set_negative(cterm, true);
+			break;
+		case 8:
+			{
+				int j = cterm->attr & 112;
+				cterm->attr &= 112;
+				cterm->attr |= j >> 4;
+			}
+			cterm->fg_color = cterm->bg_color;
+			FREE_AND_NULL(cterm->fg_tc_str);
+			if (cterm->bg_tc_str != NULL)
+				cterm->fg_tc_str = strdup(cterm->bg_tc_str);
+			break;
+		case 22:
+			cterm->attr &= 0xf7;
+			if (!(flags & CIOLIB_VIDEO_NOBRIGHT)) {
+				attr2palette(cterm->attr, cterm->negative ? NULL : &cterm->fg_color, cterm->negative ? &cterm->fg_color : NULL);
+				FREE_AND_NULL(cterm->fg_tc_str);
+			}
+			break;
+		case 25:
+			cterm->attr &= 0x7f;
+			if (flags & CIOLIB_VIDEO_BGBRIGHT) {
+				attr2palette(cterm->attr, cterm->negative ? &cterm->bg_color : NULL, cterm->negative ? NULL : &cterm->bg_color);
+				FREE_AND_NULL(cterm->bg_tc_str);
+			}
+			break;
+		case 27:
+			set_negative(cterm, false);
+			break;
+		case 30:
+			set_fgattr(cterm, skypix_color(cterm, BLACK));
+			break;
+		case 31:
+			set_fgattr(cterm, skypix_color(cterm, RED));
+			break;
+		case 32:
+			set_fgattr(cterm, skypix_color(cterm, GREEN));
+			break;
+		case 33:
+			set_fgattr(cterm, skypix_color(cterm, BROWN));
+			break;
+		case 34:
+			set_fgattr(cterm, skypix_color(cterm, BLUE));
+			break;
+		case 35:
+			set_fgattr(cterm, skypix_color(cterm, MAGENTA));
+			break;
+		case 36:
+			set_fgattr(cterm, skypix_color(cterm, CYAN));
+			break;
+		case 38:
+			parse_extended_colour(seq, pi, cterm, true ^ cterm->negative);
+			break;
+		case 37:
+		case 39:
+			set_fgattr(cterm, skypix_color(cterm, LIGHTGRAY));
+			break;
+		case 49:
+		case 40:
+			set_bgattr(cterm, skypix_color(cterm, BLACK));
+			break;
+		case 41:
+			set_bgattr(cterm, skypix_color(cterm, RED));
+			break;
+		case 42:
+			set_bgattr(cterm, skypix_color(cterm, GREEN));
+			break;
+		case 43:
+			set_bgattr(cterm, skypix_color(cterm, BROWN));
+			break;
+		case 44:
+			set_bgattr(cterm, skypix_color(cterm, BLUE));
+			break;
+		case 45:
+			set_bgattr(cterm, skypix_color(cterm, MAGENTA));
+			break;
+		case 46:
+			set_bgattr(cterm, skypix_color(cterm, CYAN));
+			break;
+		case 47:
+			set_bgattr(cterm, skypix_color(cterm, LIGHTGRAY));
+			break;
+		case 48:
+			parse_extended_colour(seq, pi, cterm, false ^ cterm->negative);
+			break;
+		case 90:
+			set_bright_fg(cterm, BLACK, flags);
+			break;
+		case 91:
+			set_bright_fg(cterm, RED, flags);
+			break;
+		case 92:
+			set_bright_fg(cterm, GREEN, flags);
+			break;
+		case 93:
+			set_bright_fg(cterm, BROWN, flags);
+			break;
+		case 94:
+			set_bright_fg(cterm, BLUE, flags);
+			break;
+		case 95:
+			set_bright_fg(cterm, MAGENTA, flags);
+			break;
+		case 96:
+			set_bright_fg(cterm, CYAN, flags);
+			break;
+		case 97:
+			set_bright_fg(cterm, LIGHTGRAY, flags);
+			break;
+		case 100:
+			set_bright_bg(cterm, BLACK, flags);
+			break;
+		case 101:
+			set_bright_bg(cterm, RED, flags);
+			break;
+		case 102:
+			set_bright_bg(cterm, GREEN, flags);
+			break;
+		case 103:
+			set_bright_bg(cterm, BROWN, flags);
+			break;
+		case 104:
+			set_bright_bg(cterm, BLUE, flags);
+			break;
+		case 105:
+			set_bright_bg(cterm, MAGENTA, flags);
+			break;
+		case 106:
+			set_bright_bg(cterm, CYAN, flags);
+			break;
+		case 107:
+			set_bright_bg(cterm, LIGHTGRAY, flags);
+			break;
+	}
+}
+
 static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *speed, char last)
 {
 	char	*p;
@@ -4184,8 +4371,10 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 									break;
 							}
 						}
-						if(newspeed >= 0)
+						if(newspeed >= 0) {
 							*speed = newspeed;
+							cterm->decscs_speed = newspeed;
+						}
 					}
 					else if (strcmp(seq->ctrl_func, "*y") == 0) {
 						if (seq->param_count >= 6) {
@@ -4441,6 +4630,177 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 								}
 							}
 						}
+					}
+					/* DECCARA — Change Attributes in Rectangular Area */
+					else if (strcmp(seq->ctrl_func, "$r") == 0 && parse_parameters(seq)) {
+						seq_default(seq, 0, 1);
+						seq_default(seq, 1, 1);
+						seq_default(seq, 2, cterm->height);
+						seq_default(seq, 3, cterm->width);
+						int top = seq->param_int[0];
+						int left = seq->param_int[1];
+						int bottom = seq->param_int[2];
+						int right = seq->param_int[3];
+						if (cterm->extattr & CTERM_EXTATTR_ORIGINMODE) {
+							top += cterm->top_margin - 1;
+							bottom += cterm->top_margin - 1;
+							left += cterm->left_margin - 1;
+							right += cterm->left_margin - 1;
+						}
+						if (top < 1) top = 1;
+						if (left < 1) left = 1;
+						if (bottom > cterm->height) bottom = cterm->height;
+						if (right > cterm->width) right = cterm->width;
+						if (top > bottom)
+							break;
+						if (cterm->decsace != 1 && left > right)
+							break;
+						{
+							unsigned char save_attr = cterm->attr;
+							uint32_t save_fg = cterm->fg_color;
+							uint32_t save_bg = cterm->bg_color;
+							bool save_neg = cterm->negative;
+							char *save_fg_tc = cterm->fg_tc_str ? strdup(cterm->fg_tc_str) : NULL;
+							char *save_bg_tc = cterm->bg_tc_str ? strdup(cterm->bg_tc_str) : NULL;
+							int st = top, sl = left, sb = bottom, sr = right;
+							coord_conv_xy(cterm, CTERM_COORD_TERM, CTERM_COORD_SCREEN, &sl, &st);
+							coord_conv_xy(cterm, CTERM_COORD_TERM, CTERM_COORD_SCREEN, &sr, &sb);
+							int bufsz = (cterm->decsace == 1) ? cterm->width : (sr - sl + 1);
+							struct vmem_cell *rowbuf = calloc(bufsz, sizeof(*rowbuf));
+							if (rowbuf) {
+								for (int r = st; r <= sb; r++) {
+									int c_start, c_end;
+									if (cterm->decsace == 1) {
+										c_start = (r == st) ? sl : cterm->x;
+										c_end = (r == sb) ? sr : cterm->x + cterm->width - 1;
+									}
+									else {
+										c_start = sl;
+										c_end = sr;
+									}
+									vmem_gettext(c_start, r, c_end, r, rowbuf);
+									int cnt = c_end - c_start + 1;
+									for (int c = 0; c < cnt; c++) {
+										cterm->attr = rowbuf[c].legacy_attr;
+										cterm->fg_color = rowbuf[c].fg;
+										cterm->bg_color = rowbuf[c].bg;
+										cterm->negative = false;
+										FREE_AND_NULL(cterm->fg_tc_str);
+										FREE_AND_NULL(cterm->bg_tc_str);
+										for (int p = 4; p < seq->param_count; p++)
+											apply_sgr(cterm, seq, &p);
+										rowbuf[c].legacy_attr = cterm->attr;
+										rowbuf[c].fg = cterm->fg_color;
+										rowbuf[c].bg = cterm->bg_color;
+										rowbuf[c].font = ciolib_attrfont(cterm->attr);
+									}
+									vmem_puttext(c_start, r, c_end, r, rowbuf);
+								}
+								free(rowbuf);
+							}
+							FREE_AND_NULL(cterm->fg_tc_str);
+							FREE_AND_NULL(cterm->bg_tc_str);
+							cterm->attr = save_attr;
+							cterm->fg_color = save_fg;
+							cterm->bg_color = save_bg;
+							cterm->negative = save_neg;
+							cterm->fg_tc_str = save_fg_tc;
+							cterm->bg_tc_str = save_bg_tc;
+						}
+					}
+					/* DECRARA — Reverse Attributes in Rectangular Area */
+					else if (strcmp(seq->ctrl_func, "$t") == 0 && parse_parameters(seq)) {
+						seq_default(seq, 0, 1);
+						seq_default(seq, 1, 1);
+						seq_default(seq, 2, cterm->height);
+						seq_default(seq, 3, cterm->width);
+						int top = seq->param_int[0];
+						int left = seq->param_int[1];
+						int bottom = seq->param_int[2];
+						int right = seq->param_int[3];
+						if (cterm->extattr & CTERM_EXTATTR_ORIGINMODE) {
+							top += cterm->top_margin - 1;
+							bottom += cterm->top_margin - 1;
+							left += cterm->left_margin - 1;
+							right += cterm->left_margin - 1;
+						}
+						if (top < 1) top = 1;
+						if (left < 1) left = 1;
+						if (bottom > cterm->height) bottom = cterm->height;
+						if (right > cterm->width) right = cterm->width;
+						if (top > bottom)
+							break;
+						if (cterm->decsace != 1 && left > right)
+							break;
+						{
+							int st = top, sl = left, sb = bottom, sr = right;
+							coord_conv_xy(cterm, CTERM_COORD_TERM, CTERM_COORD_SCREEN, &sl, &st);
+							coord_conv_xy(cterm, CTERM_COORD_TERM, CTERM_COORD_SCREEN, &sr, &sb);
+							int bufsz = (cterm->decsace == 1) ? cterm->width : (sr - sl + 1);
+							struct vmem_cell *rowbuf = calloc(bufsz, sizeof(*rowbuf));
+							if (rowbuf) {
+								for (int r = st; r <= sb; r++) {
+									int c_start, c_end;
+									if (cterm->decsace == 1) {
+										c_start = (r == st) ? sl : cterm->x;
+										c_end = (r == sb) ? sr : cterm->x + cterm->width - 1;
+									}
+									else {
+										c_start = sl;
+										c_end = sr;
+									}
+									vmem_gettext(c_start, r, c_end, r, rowbuf);
+									int cnt = c_end - c_start + 1;
+									for (int c = 0; c < cnt; c++) {
+										for (int p = 4; p < seq->param_count; p++) {
+											seq_default(seq, p, 0);
+											switch (seq->param_int[p]) {
+												case 0:
+													rowbuf[c].legacy_attr ^= 0x88;
+													attr2palette(rowbuf[c].legacy_attr, &rowbuf[c].fg, NULL);
+													attr2palette(rowbuf[c].legacy_attr, NULL, &rowbuf[c].bg);
+													{
+														uint32_t tfg = rowbuf[c].fg;
+														rowbuf[c].fg = rowbuf[c].bg;
+														rowbuf[c].bg = tfg;
+													}
+													break;
+												case 1:
+												case 22:
+													rowbuf[c].legacy_attr ^= 0x08;
+													attr2palette(rowbuf[c].legacy_attr, &rowbuf[c].fg, NULL);
+													break;
+												case 5:
+												case 25:
+													rowbuf[c].legacy_attr ^= 0x80;
+													attr2palette(rowbuf[c].legacy_attr, NULL, &rowbuf[c].bg);
+													break;
+												case 7:
+												case 27:
+													{
+														uint8_t a = rowbuf[c].legacy_attr;
+														uint8_t fg_nibble = a & 0x0f;
+														uint8_t bg_nibble = (a >> 4) & 0x0f;
+														rowbuf[c].legacy_attr = (fg_nibble << 4) | bg_nibble;
+														uint32_t tfg = rowbuf[c].fg;
+														rowbuf[c].fg = rowbuf[c].bg;
+														rowbuf[c].bg = tfg;
+													}
+													break;
+											}
+										}
+										rowbuf[c].font = ciolib_attrfont(rowbuf[c].legacy_attr);
+									}
+									vmem_puttext(c_start, r, c_end, r, rowbuf);
+								}
+								free(rowbuf);
+							}
+						}
+					}
+					/* DECSACE — Select Attribute Change Extent */
+					else if (strcmp(seq->ctrl_func, "*x") == 0 && parse_parameters(seq)) {
+						seq_default(seq, 0, 0);
+						cterm->decsace = seq->param_int[0];
 					}
 				}
 				else {
@@ -4837,183 +5197,9 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 							}
 							break;
 						case 'm':	/* Select Graphic Rendition */
-							gettextinfo(&ti);
-							flags = getvideoflags();
 							seq_default(seq, 0, 0);
 							for (i=0; i < seq->param_count; i++) {
-								seq_default(seq, i, 0);
-								switch(seq->param_int[i]) {
-									case 0:
-										set_negative(cterm, false);
-										cterm->attr=ti.normattr;
-										attr2palette(cterm->attr, &cterm->fg_color, &cterm->bg_color);
-										FREE_AND_NULL(cterm->fg_tc_str);
-										FREE_AND_NULL(cterm->bg_tc_str);
-										break;
-									case 1:
-										if (!cterm->skypix)
-											cterm->attr|=8;
-										if (!(flags & CIOLIB_VIDEO_NOBRIGHT)) {
-											attr2palette(cterm->attr, cterm->negative ? NULL : &cterm->fg_color, cterm->negative ? &cterm->fg_color : NULL);
-											FREE_AND_NULL(cterm->fg_tc_str);
-										}
-										break;
-									case 2:
-										if (!cterm->skypix)
-											cterm->attr&=247;
-										if (!(flags & CIOLIB_VIDEO_NOBRIGHT)) {
-											attr2palette(cterm->attr, cterm->negative ? NULL : &cterm->fg_color, cterm->negative ? &cterm->fg_color : NULL);
-											FREE_AND_NULL(cterm->fg_tc_str);
-										}
-										break;
-									case 4:	/* Underscore */
-										break;
-									case 5:
-									case 6:
-										if (!cterm->skypix)
-											cterm->attr|=128;
-										if (flags & CIOLIB_VIDEO_BGBRIGHT) {
-											attr2palette(cterm->attr, cterm->negative ? &cterm->bg_color : NULL, cterm->negative ? NULL : &cterm->bg_color);
-											FREE_AND_NULL(cterm->bg_tc_str);
-										}
-										break;
-									case 7:
-										set_negative(cterm, true);
-										break;
-									case 8:
-										j = cterm->attr & 112;
-										cterm->attr &= 112;
-										cterm->attr |= j>>4;
-										// TODO: Negative image mode problem.
-										cterm->fg_color = cterm->bg_color;
-										FREE_AND_NULL(cterm->fg_tc_str);
-										if (cterm->bg_tc_str != NULL)
-											cterm->fg_tc_str = strdup(cterm->bg_tc_str);
-										break;
-									case 22:
-										// TODO: Negative image mode problem.
-										cterm->attr &= 0xf7;
-										if (!(flags & CIOLIB_VIDEO_NOBRIGHT)) {
-											attr2palette(cterm->attr, cterm->negative ? NULL : &cterm->fg_color, cterm->negative ? &cterm->fg_color : NULL);
-											FREE_AND_NULL(cterm->fg_tc_str);
-										}
-										break;
-									case 25:
-										// TODO: Negative image mode problem.
-										cterm->attr &= 0x7f;
-										if (flags & CIOLIB_VIDEO_BGBRIGHT) {
-											attr2palette(cterm->attr, cterm->negative ? &cterm->bg_color : NULL, cterm->negative ? NULL : &cterm->bg_color);
-											FREE_AND_NULL(cterm->bg_tc_str);
-										}
-										break;
-									case 27:
-										set_negative(cterm, false);
-										break;
-									case 30:
-										set_fgattr(cterm, skypix_color(cterm, BLACK));
-										break;
-									case 31:
-										set_fgattr(cterm, skypix_color(cterm, RED));
-										break;
-									case 32:
-										set_fgattr(cterm, skypix_color(cterm, GREEN));
-										break;
-									case 33:
-										set_fgattr(cterm, skypix_color(cterm, BROWN));
-										break;
-									case 34:
-										set_fgattr(cterm, skypix_color(cterm, BLUE));
-										break;
-									case 35:
-										set_fgattr(cterm, skypix_color(cterm, MAGENTA));
-										break;
-									case 36:
-										set_fgattr(cterm, skypix_color(cterm, CYAN));
-										break;
-									case 38:
-										parse_extended_colour(seq, &i, cterm, true ^ cterm->negative);
-										break;
-									case 37:
-									case 39:
-										set_fgattr(cterm, skypix_color(cterm, LIGHTGRAY));
-										break;
-									case 49:
-									case 40:
-										set_bgattr(cterm, skypix_color(cterm, BLACK));
-										break;
-									case 41:
-										set_bgattr(cterm, skypix_color(cterm, RED));
-										break;
-									case 42:
-										set_bgattr(cterm, skypix_color(cterm, GREEN));
-										break;
-									case 43:
-										set_bgattr(cterm, skypix_color(cterm, BROWN));
-										break;
-									case 44:
-										set_bgattr(cterm, skypix_color(cterm, BLUE));
-										break;
-									case 45:
-										set_bgattr(cterm, skypix_color(cterm, MAGENTA));
-										break;
-									case 46:
-										set_bgattr(cterm, skypix_color(cterm, CYAN));
-										break;
-									case 47:
-										set_bgattr(cterm, skypix_color(cterm, LIGHTGRAY));
-										break;
-									case 48:
-										parse_extended_colour(seq, &i, cterm, false ^ cterm->negative);
-										break;
-									case 90:
-										set_bright_fg(cterm, BLACK, flags);
-										break;
-									case 91:
-										set_bright_fg(cterm, RED, flags);
-										break;
-									case 92:
-										set_bright_fg(cterm, GREEN, flags);
-										break;
-									case 93:
-										set_bright_fg(cterm, BROWN, flags);
-										break;
-									case 94:
-										set_bright_fg(cterm, BLUE, flags);
-										break;
-									case 95:
-										set_bright_fg(cterm, MAGENTA, flags);
-										break;
-									case 96:
-										set_bright_fg(cterm, CYAN, flags);
-										break;
-									case 97:
-										set_bright_fg(cterm, LIGHTGRAY, flags);
-										break;
-									case 100:
-										set_bright_bg(cterm, BLACK, flags);
-										break;
-									case 101:
-										set_bright_bg(cterm, RED, flags);
-										break;
-									case 102:
-										set_bright_bg(cterm, GREEN, flags);
-										break;
-									case 103:
-										set_bright_bg(cterm, BROWN, flags);
-										break;
-									case 104:
-										set_bright_bg(cterm, BLUE, flags);
-										break;
-									case 105:
-										set_bright_bg(cterm, MAGENTA, flags);
-										break;
-									case 106:
-										set_bright_bg(cterm, CYAN, flags);
-										break;
-									case 107:
-										set_bright_bg(cterm, LIGHTGRAY, flags);
-										break;
-								}
+								apply_sgr(cterm, seq, &i);
 							}
 							textattr(cterm->attr);
 							setcolour(cterm->fg_color, cterm->bg_color);
@@ -5346,6 +5532,28 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 												if (*tmp)
 													cterm_respond(cterm, tmp, strlen(tmp));
 											}
+											else if (cterm->strbuf[3] == 'x' && cterm->strbuf[4] == 0) {
+												sprintf(tmp, "\x1bP1$r%d*x\x1b\\", cterm->decsace);
+												cterm_respond(cterm, tmp, strlen(tmp));
+											}
+											else if (cterm->strbuf[3] == 'r' && cterm->strbuf[4] == 0) {
+												int ps2 = 0;
+												switch (cterm->decscs_speed) {
+													case 300:    ps2 = 1; break;
+													case 600:    ps2 = 2; break;
+													case 1200:   ps2 = 3; break;
+													case 2400:   ps2 = 4; break;
+													case 4800:   ps2 = 5; break;
+													case 9600:   ps2 = 6; break;
+													case 19200:  ps2 = 7; break;
+													case 38400:  ps2 = 8; break;
+													case 57600:  ps2 = 9; break;
+													case 76800:  ps2 = 10; break;
+													case 115200: ps2 = 11; break;
+												}
+												sprintf(tmp, "\x1bP1$r;%d*r\x1b\\", ps2);
+												cterm_respond(cterm, tmp, strlen(tmp));
+											}
 											break;
 										case ' ':
 											if (cterm->strbuf[3] == 'q' && cterm->strbuf[4] == 0) {
@@ -5591,6 +5799,8 @@ cterm_reset(struct cterminal *cterm)
 		cterm->tab_count = 0;
 	FREE_AND_NULL(cterm->vtabs);
 	cterm->vtab_count = 0;
+	cterm->decsace = 0;
+	cterm->decscs_speed = 0;
 	cterm->setfont_result = CTERM_NO_SETFONT_REQUESTED;
 	cterm->saved_mode = 0;
 	cterm->saved_mode_mask = 0;

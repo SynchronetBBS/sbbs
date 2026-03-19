@@ -1912,6 +1912,24 @@ line number of the bottom line.
 
 SOURCE: <<VT100>>
 
+=== `CSI Pt ; Pl ; Pb ; Pr ; Ps ... Ps $ r` Change Attributes in Rectangular Area (`DECCARA`)
+Defaults: `Pt` = 1  `Pl` = 1  `Pb` = last line  `Pr` = last column +
+Sets SGR attributes in a rectangular screen area without changing
+characters.  `Pt`, `Pl`, `Pb`, `Pr` define the rectangle.  The
+remaining `Ps` parameters are SGR attribute values (same as `CSI m`),
+including extended colour sequences (38;5;N, 38;2;R;G;B, 48;5;N,
+48;2;R;G;B).
+
+If DECSACE is set to 1 (stream mode), the operation applies as a
+character stream from (`Pt`,`Pl`) to (`Pb`,`Pr`) wrapping at line
+boundaries.  In stream mode, `Pl` > `Pr` is permitted when `Pt` <
+`Pb`.
+
+Coordinates are affected by DECOM (origin mode).  Does not change
+cursor position.
+
+SOURCE: <<VT420>>
+
 === `CSI Ps1 ; Ps2 * r` Select Communication Speed (`DECSCS`)
 Set the output emulation speed.
 If `Ps1` or `Ps2` are omitted, causes output speed emulation to stop
@@ -2000,6 +2018,32 @@ enough for all cells in a 132x60 screen to have unique foreground
 and background colours though, so the current screen should always
 be as expected.
 
+=== `CSI Pt ; Pl ; Pb ; Pr ; Ps ... Ps $ t` Reverse Attributes in Rectangular Area (`DECRARA`)
+Defaults: `Pt` = 1  `Pl` = 1  `Pb` = last line  `Pr` = last column +
+Toggles (reverses) SGR attributes in a rectangular screen area without
+changing characters.  `Pt`, `Pl`, `Pb`, `Pr` define the rectangle.
+The remaining `Ps` parameters specify which attributes to toggle:
+
+[cols="1,3"]
+|===
+| Ps | Action
+
+| 0 | Invert all toggleable attributes (bold, blink, negative)
+| 1 or 22 | Toggle bold (XOR legacy attribute bit 3)
+| 5 or 25 | Toggle blink (XOR legacy attribute bit 7)
+| 7 or 27 | Toggle negative (swap foreground and background)
+|===
+
+All other `Ps` values are silently ignored.
+
+If DECSACE is set to 1 (stream mode), the operation applies as a
+character stream wrapping at line boundaries.
+
+Coordinates are affected by DECOM (origin mode).  Does not change
+cursor position.
+
+SOURCE: <<VT420>>
+
 === `CSI u` Restore Cursor Position (`SCORC`)
 Move the cursor to the last position saved by `CSI s`.  If no position
 has been saved, the cursor is not moved.
@@ -2057,6 +2101,23 @@ Defaults: `Pt` = 1, `Pl` = 1, `Pb` = last line, `Pr` = last column.
 If `Pb` < `Pt` or `Pr` < `Pl`, DECFRA is ignored.
 Coordinates are affected by origin mode (DECOM) but not by margins.
 Values exceeding page dimensions are clamped.  The cursor does not move.
+
+SOURCE: <<VT420>>
+
+=== `CSI Ps * x` Select Attribute Change Extent (`DECSACE`)
+Controls whether DECCARA and DECRARA operate on a rectangular area or
+a character stream.
+
+[cols="1,3"]
+|===
+| Ps | Mode
+
+| 0 | Rectangular (default)
+| 1 | Stream (linear character sequence wrapping at line boundaries)
+| 2 | Rectangular
+|===
+
+Reset to 0 by RIS.
 
 SOURCE: <<VT420>>
 
@@ -2287,6 +2348,13 @@ characters.
 |` q` (space + q)
 |Request cursor style (`DECSCUSR`).  The response contains the
 current cursor style number (0–4) as set by `CSI Ps SP q`.
+|`*r`
+|Request communication speed (`DECSCS`).  The response contains the
+current speed parameters as `;Ps2*r` where `Ps2` is the speed index
+(0=default, 1=300, 2=600, ..., 11=115200).
+|`*x`
+|Request attribute change extent (`DECSACE`).  The response contains
+the current DECSACE value (0 or 1).
 |===
 
 SOURCE: <<VT420>>

@@ -3365,6 +3365,65 @@ test_decrqss_starpipe(void)
 	return (strstr(buf, "1$r") != NULL);
 }
 
+static int
+test_decrqss_starx(void)
+{
+	char buf[64];
+
+	/* DECRQSS for DECSACE (*x) — default should be 0 */
+	term_write("\033P$q*x\033\\");
+	if (read_dcs_response(buf, sizeof(buf), 500) == 0)
+		return 0;
+	if (strstr(buf, "1$r") == NULL)
+		return 0;
+	if (strstr(buf, "*x") == NULL)
+		return 0;
+	/* Set to stream, query again */
+	term_write("\033[1*x");
+	term_write("\033P$q*x\033\\");
+	if (read_dcs_response(buf, sizeof(buf), 500) == 0)
+		return 0;
+	if (strstr(buf, "1*x") == NULL) {
+		fprintf(result_fp, "    DECSACE not reported as 1 after set\n");
+		term_write("\033[0*x");
+		return 0;
+	}
+	term_write("\033[0*x");
+	return 1;
+}
+
+static int
+test_decrqss_starr(void)
+{
+	char buf[64];
+
+	/* DECRQSS for DECSCS (*r) — default speed is 0 */
+	term_write("\033P$q*r\033\\");
+	if (read_dcs_response(buf, sizeof(buf), 500) == 0)
+		return 0;
+	if (strstr(buf, "1$r") == NULL || strstr(buf, "*r") == NULL)
+		return 0;
+	/* Should report ;0*r (default speed) */
+	if (strstr(buf, ";0*r") == NULL) {
+		fprintf(result_fp, "    default speed not 0: %s\n", buf);
+		return 0;
+	}
+	/* Set speed to 9600 (Ps2=6), query again */
+	term_write("\033[;6*r");
+	term_write("\033P$q*r\033\\");
+	if (read_dcs_response(buf, sizeof(buf), 500) == 0) {
+		term_write("\033[;0*r");
+		return 0;
+	}
+	if (strstr(buf, ";6*r") == NULL) {
+		fprintf(result_fp, "    speed not reported as 6 after set: %s\n", buf);
+		term_write("\033[;0*r");
+		return 0;
+	}
+	term_write("\033[;0*r");
+	return 1;
+}
+
 /* --- APC JXL query --- */
 
 static int
@@ -3603,6 +3662,373 @@ test_nul_doorway(void)
 	return 1;
 }
 
+/* --- DECCARA / DECRARA / DECSACE --- */
+
+/*
+ * Search for an SGR parameter value in an attributed readback stream.
+ * The stream contains sequences like ESC[0;1;37m — we parse the
+ * numeric parameters from every CSI...m sequence looking for a match.
+ */
+static int
+stream_has_sgr(const char *stream, int sgr_val)
+{
+	const char *p = stream;
+	while (*p) {
+		if (p[0] == '\033' && p[1] == '[') {
+			p += 2;
+			/* Parse CSI parameters until final byte */
+			while (*p) {
+				int val = 0;
+				int has_digits = 0;
+				while (*p >= '0' && *p <= '9') {
+					val = val * 10 + (*p - '0');
+					has_digits = 1;
+					p++;
+				}
+				if (has_digits && val == sgr_val) {
+					/* Check this is actually an SGR (final byte 'm') */
+					const char *q = p;
+					while (*q == ';' || (*q >= '0' && *q <= '9'))
+						q++;
+					if (*q == 'm')
+						return 1;
+				}
+				if (*p == ';')
+					p++;
+				else
+					break;
+			}
+			/* Skip to final byte */
+			while (*p && (unsigned char)*p < 0x40)
+				p++;
+			if (*p) p++;
+		}
+		else {
+			p++;
+		}
+	}
+	return 0;
+}
+
+static int
+test_deccara_bold(void)
+{
+	char cs_normal[16], cs_bold[16];
+	char stream[4096];
+
+	if (!has_cksum || !has_sts)
+		return -1;
+	/* Write normal text, apply bold via DECCARA */
+	cursor_to(1, 1);
+	term_write("\033[0m");
+	term_write("ABCDE");
+	if (!get_checksum(1, 1, 5, 1, cs_normal, sizeof(cs_normal)))
+		return -1;
+	/* DECCARA: row 1, cols 1-5, SGR 1 (bold) */
+	term_write("\033[1;1;1;5;1$r");
+	if (!get_checksum(1, 1, 5, 1, cs_bold, sizeof(cs_bold)))
+		return -1;
+	if (strcmp(cs_normal, cs_bold) == 0) {
+		fprintf(result_fp, "    checksum unchanged after DECCARA bold\n");
+		return 0;
+	}
+	/* Verify readback of cell (1,1) contains SGR 1 (bold).
+	 * First cell's SGR is absolute (relative to default). */
+	int n = read_screen_at(1, 1, 1, 1, stream, sizeof(stream));
+	if (n == 0) return -1;
+	if (!stream_has_sgr(stream, 1)) {
+		fprintf(result_fp, "    readback missing SGR 1 (bold)\n");
+		return 0;
+	}
+	return 1;
+}
+
+static int
+test_deccara_color(void)
+{
+	char cs_normal[16], cs_colored[16];
+	char stream[4096];
+
+	if (!has_cksum || !has_sts)
+		return -1;
+	/* Write normal text, apply 256-color via DECCARA */
+	cursor_to(1, 1);
+	term_write("\033[0m");
+	term_write("COLOR");
+	if (!get_checksum(1, 1, 5, 1, cs_normal, sizeof(cs_normal)))
+		return -1;
+	/* DECCARA: row 1, cols 1-5, SGR 38;5;196 (bright red 256-color) */
+	term_write("\033[1;1;1;5;38;5;196$r");
+	if (!get_checksum(1, 1, 5, 1, cs_colored, sizeof(cs_colored)))
+		return -1;
+	if (strcmp(cs_normal, cs_colored) == 0) {
+		fprintf(result_fp, "    checksum unchanged after DECCARA color\n");
+		return 0;
+	}
+	/* Verify readback contains extended color (38;2 or 38;5) */
+	int n = read_screen_at(1, 1, 1, 1, stream, sizeof(stream));
+	if (n == 0) return -1;
+	if (!stream_has_sgr(stream, 38)) {
+		fprintf(result_fp, "    readback missing SGR 38 (extended color)\n");
+		return 0;
+	}
+	return 1;
+}
+
+static int
+test_decrara_toggle_bold(void)
+{
+	char cs_normal[16], cs_bold[16], cs_toggled[16];
+
+	if (!has_cksum)
+		return -1;
+	/* Write normal text, apply bold, toggle bold back off */
+	cursor_to(1, 1);
+	term_write("\033[0m");
+	term_write("TGLBD");
+	if (!get_checksum(1, 1, 5, 1, cs_normal, sizeof(cs_normal)))
+		return -1;
+	/* Apply bold via SGR */
+	term_write("\033[1m");
+	cursor_to(1, 1);
+	term_write("TGLBD");
+	if (!get_checksum(1, 1, 5, 1, cs_bold, sizeof(cs_bold)))
+		return -1;
+	/* DECRARA: toggle bold (SGR 1) in row 1, cols 1-5 */
+	term_write("\033[1;1;1;5;1$t");
+	if (!get_checksum(1, 1, 5, 1, cs_toggled, sizeof(cs_toggled)))
+		return -1;
+	/* After toggling bold off, should match original non-bold */
+	if (strcmp(cs_normal, cs_toggled) != 0) {
+		fprintf(result_fp, "    DECRARA toggle bold didn't revert to normal\n");
+		return 0;
+	}
+	return 1;
+}
+
+static int
+test_decrara_toggle_blink(void)
+{
+	char cs_normal[16], cs_blink[16], cs_toggled[16];
+
+	if (!has_cksum)
+		return -1;
+	cursor_to(1, 1);
+	term_write("\033[0m");
+	term_write("BLINK");
+	if (!get_checksum(1, 1, 5, 1, cs_normal, sizeof(cs_normal)))
+		return -1;
+	term_write("\033[5m");
+	cursor_to(1, 1);
+	term_write("BLINK");
+	if (!get_checksum(1, 1, 5, 1, cs_blink, sizeof(cs_blink)))
+		return -1;
+	/* DECRARA: toggle blink (SGR 5) */
+	term_write("\033[1;1;1;5;5$t");
+	if (!get_checksum(1, 1, 5, 1, cs_toggled, sizeof(cs_toggled)))
+		return -1;
+	if (strcmp(cs_normal, cs_toggled) != 0) {
+		fprintf(result_fp, "    DECRARA toggle blink didn't revert\n");
+		return 0;
+	}
+	return 1;
+}
+
+static int
+test_decrara_toggle_negative(void)
+{
+	char cs_normal[16], cs_toggled[16], cs_double[16];
+
+	if (!has_cksum)
+		return -1;
+	cursor_to(1, 1);
+	term_write("\033[0m");
+	term_write("NEGAT");
+	if (!get_checksum(1, 1, 5, 1, cs_normal, sizeof(cs_normal)))
+		return -1;
+	/* DECRARA: toggle negative (SGR 7) */
+	term_write("\033[1;1;1;5;7$t");
+	if (!get_checksum(1, 1, 5, 1, cs_toggled, sizeof(cs_toggled)))
+		return -1;
+	if (strcmp(cs_normal, cs_toggled) == 0) {
+		fprintf(result_fp, "    DECRARA negative didn't change checksum\n");
+		return 0;
+	}
+	/* Toggle again — should revert */
+	term_write("\033[1;1;1;5;7$t");
+	if (!get_checksum(1, 1, 5, 1, cs_double, sizeof(cs_double)))
+		return -1;
+	if (strcmp(cs_normal, cs_double) != 0) {
+		fprintf(result_fp, "    DECRARA double toggle didn't revert\n");
+		return 0;
+	}
+	return 1;
+}
+
+static int
+test_decrara_sgr0(void)
+{
+	char cs_normal[16], cs_modified[16], cs_toggled[16];
+
+	if (!has_cksum)
+		return -1;
+	/* Write text with bold+blink, then DECRARA SGR 0 inverts all */
+	cursor_to(1, 1);
+	term_write("\033[0m");
+	term_write("ALLRV");
+	if (!get_checksum(1, 1, 5, 1, cs_normal, sizeof(cs_normal)))
+		return -1;
+	/* Apply bold+blink */
+	cursor_to(1, 1);
+	term_write("\033[1;5m");
+	term_write("ALLRV");
+	if (!get_checksum(1, 1, 5, 1, cs_modified, sizeof(cs_modified)))
+		return -1;
+	/* DECRARA SGR 0: invert all toggleable attributes */
+	term_write("\033[1;1;1;5;0$t");
+	if (!get_checksum(1, 1, 5, 1, cs_toggled, sizeof(cs_toggled)))
+		return -1;
+	/* Bold+blink were on; SGR 0 inverts them plus negative.
+	 * Bold off + blink off + negative on = different from both normal and modified */
+	if (strcmp(cs_toggled, cs_modified) == 0) {
+		fprintf(result_fp, "    DECRARA SGR 0 didn't change from bold+blink\n");
+		return 0;
+	}
+	return 1;
+}
+
+static int
+test_decsace_stream(void)
+{
+	char cs_r1_before[16], cs_r2_before[16];
+	char cs_r1_after[16], cs_r2_after[16];
+	char stream[4096];
+
+	if (!has_cksum || !has_sts)
+		return -1;
+	/* Set DECSACE=1 (stream mode), write text on two rows, apply bold */
+	term_write("\033[1*x");	/* DECSACE stream */
+	cursor_to(1, 1);
+	term_write("\033[0m");
+	term_write("LINE1TEXT.");
+	cursor_to(1, 2);
+	term_write("LINE2TEXT.");
+	/* Checksum cols 6-10 on row 1 and cols 1-5 on row 2 before DECCARA */
+	if (!get_checksum(6, 1, 10, 1, cs_r1_before, sizeof(cs_r1_before)))
+		goto skip;
+	if (!get_checksum(1, 2, 5, 2, cs_r2_before, sizeof(cs_r2_before)))
+		goto skip;
+	/* DECCARA stream: row 1 col 6 to row 2 col 5, bold.
+	 * In stream mode this affects r1:c6-c80 then r2:c1-c5 */
+	term_write("\033[1;6;2;5;1$r");
+	if (!get_checksum(6, 1, 10, 1, cs_r1_after, sizeof(cs_r1_after)))
+		goto skip;
+	if (!get_checksum(1, 2, 5, 2, cs_r2_after, sizeof(cs_r2_after)))
+		goto skip;
+	/* Both regions should have changed (bold applied) */
+	if (strcmp(cs_r1_before, cs_r1_after) == 0) {
+		fprintf(result_fp, "    row 1 cols 6-10 unchanged in stream mode\n");
+		goto fail;
+	}
+	if (strcmp(cs_r2_before, cs_r2_after) == 0) {
+		fprintf(result_fp, "    row 2 cols 1-5 unchanged in stream mode\n");
+		goto fail;
+	}
+	/* Verify readback: col 6 row 1 should be bold */
+	int n = read_screen_at(6, 1, 1, 1, stream, sizeof(stream));
+	if (n == 0) goto skip;
+	if (!stream_has_sgr(stream, 1)) {
+		fprintf(result_fp, "    row 1 col 6 readback missing bold\n");
+		goto fail;
+	}
+	/* Verify readback: col 1 row 2 should be bold */
+	n = read_screen_at(1, 2, 1, 1, stream, sizeof(stream));
+	if (n == 0) goto skip;
+	if (!stream_has_sgr(stream, 1)) {
+		fprintf(result_fp, "    row 2 col 1 readback missing bold\n");
+		goto fail;
+	}
+	term_write("\033[0*x");	/* Reset DECSACE to rectangle */
+	return 1;
+skip:
+	term_write("\033[0*x");
+	return -1;
+fail:
+	term_write("\033[0*x");
+	return 0;
+}
+
+static int
+test_deccara_preserves_attr(void)
+{
+	char cs_before[16], cs_after[16];
+
+	if (!has_cksum || !has_sts)
+		return -1;
+	/* Set a distinctive attribute (bold + green fg), write a char,
+	 * checksum it.  Then run DECCARA on a DIFFERENT row to apply
+	 * red fg.  Write another char with the same cursor state and
+	 * verify it matches the original — proving DECCARA didn't
+	 * corrupt the current attribute. */
+	cursor_to(1, 1);
+	term_write("\033[0m");
+	term_write("          ");	/* clear row 1 */
+	cursor_to(1, 2);
+	term_write("          ");	/* clear row 2 */
+	cursor_to(1, 1);
+	term_write("\033[1;32m");	/* bold green */
+	term_write("X");
+	if (!get_checksum(1, 1, 1, 1, cs_before, sizeof(cs_before)))
+		return -1;
+	/* DECCARA on row 2: apply red fg (SGR 31) — should NOT affect
+	 * the current drawing attribute */
+	term_write("\033[2;1;2;10;31$r");
+	/* Write another char at (2,1) using whatever the current attr is */
+	cursor_to(2, 1);
+	term_write("X");
+	if (!get_checksum(2, 1, 2, 1, cs_after, sizeof(cs_after)))
+		return -1;
+	/* Both X chars were written with the same SGR state (bold green),
+	 * so their checksums must match */
+	if (strcmp(cs_before, cs_after) != 0) {
+		fprintf(result_fp, "    DECCARA corrupted current attribute\n");
+		return 0;
+	}
+	return 1;
+}
+
+static int
+test_decrara_preserves_attr(void)
+{
+	char cs_before[16], cs_after[16];
+
+	if (!has_cksum || !has_sts)
+		return -1;
+	/* Same approach: set bold green, write X, then DECRARA on a
+	 * different row, write another X, verify checksums match. */
+	cursor_to(1, 1);
+	term_write("\033[0m");
+	term_write("          ");
+	cursor_to(1, 2);
+	term_write("          ");
+	cursor_to(1, 1);
+	term_write("\033[1;32m");	/* bold green */
+	term_write("X");
+	if (!get_checksum(1, 1, 1, 1, cs_before, sizeof(cs_before)))
+		return -1;
+	/* DECRARA on row 2: toggle bold — should NOT affect current attr */
+	term_write("\033[2;1;2;10;1$t");
+	cursor_to(2, 1);
+	term_write("X");
+	if (!get_checksum(2, 1, 2, 1, cs_after, sizeof(cs_after)))
+		return -1;
+	if (strcmp(cs_before, cs_after) != 0) {
+		fprintf(result_fp, "    DECRARA corrupted current attribute\n");
+		return 0;
+	}
+	return 1;
+}
+
 /* --- Response ordering regression test --- */
 
 static int
@@ -3812,6 +4238,8 @@ static struct test_entry tests[] = {
 	{"DECRQSS_t",      test_decrqss_t},
 	{"DECRQSS_dollarpipe", test_decrqss_dollarpipe},
 	{"DECRQSS_starpipe", test_decrqss_starpipe},
+	{"DECRQSS_starx", test_decrqss_starx},
+	{"DECRQSS_starr", test_decrqss_starr},
 	/* Save/restore modes */
 	{"CTSMS_CTRMS",    test_save_restore_mode},
 	/* SGR extended */
@@ -3849,6 +4277,16 @@ static struct test_entry tests[] = {
 	{"DECCRA",         test_deccra},
 	{"DECIC",          test_decic},
 	{"DECDC",          test_decdc},
+	/* DECCARA / DECRARA / DECSACE */
+	{"DECCARA_bold",   test_deccara_bold},
+	{"DECCARA_color",  test_deccara_color},
+	{"DECRARA_bold",   test_decrara_toggle_bold},
+	{"DECRARA_blink",  test_decrara_toggle_blink},
+	{"DECRARA_neg",    test_decrara_toggle_negative},
+	{"DECRARA_sgr0",   test_decrara_sgr0},
+	{"DECCARA_attr",   test_deccara_preserves_attr},
+	{"DECRARA_attr",   test_decrara_preserves_attr},
+	{"DECSACE_stream", test_decsace_stream},
 	/* NUL in doorway mode + doorway readback encoding */
 	{"NUL_doorway",    test_nul_doorway},
 	/* Regression: response ordering when APC + CSI in same cterm_write */

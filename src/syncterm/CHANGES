@@ -7,6 +7,7 @@ Add Wayland backend
 Support encrypted dialing directories
 Support web-based main dialing directory
 Allow specifying terminal type for each entry
+Add DECCARA, DECRARA, DECSACE (change/reverse attributes in rectangular areas)
 Add support for DECSCUSR
 Add [ and ] keys to navigate between items in edit submenus
 Add named sort profiles with < and > keys to cycle through them

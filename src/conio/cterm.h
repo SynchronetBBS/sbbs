@@ -182,6 +182,8 @@ struct cterminal {
 	int					tab_count;
 	int					*vtabs;
 	int					vtab_count;
+	uint8_t decsace;	/* DECSACE: 0/2=rectangle, 1=stream */
+	int					decscs_speed;	/* Last DECSCS speed value (bps, 0=default) */
 	uint32_t last_column_flag;
 #define CTERM_LCF_SET 1
 #define CTERM_LCF_ENABLED 2
