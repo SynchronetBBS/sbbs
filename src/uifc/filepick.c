@@ -155,7 +155,7 @@ char **get_file_opt_list(char **fns, int files, int dirsonly, int root)
 	for (i = 0; i < files; i++) {
 		if (isdir(fns[i])) {
 			if (dirsonly)
-				opts[j++] = strdup(getdirname(fns[i]));
+				opts[j++] = strdup(root ? fns[i] : getdirname(fns[i]));
 		}
 		else {
 			if (!dirsonly)
