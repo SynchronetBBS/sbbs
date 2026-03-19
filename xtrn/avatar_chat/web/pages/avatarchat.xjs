@@ -1,0 +1,636 @@
+<!--AvatarChat-->
+
+<?xjs
+
+function loadAvatarChatWebConfig() {
+    var path = js.exec_dir + '../../xtrn/avatar_chat/avatar_chat.ini';
+    var file = new File(path);
+    var config = {
+        defaultChannel: 'main'
+    };
+
+    if (!file.open('r')) {
+        return config;
+    }
+
+    config.defaultChannel = String(file.iniGetValue(null, 'default_channel', config.defaultChannel) || config.defaultChannel);
+    file.close();
+
+    return config;
+}
+
+var avatarChatWebConfig = loadAvatarChatWebConfig();
+var avatarChatLoggedIn = user.number > 0;
+
+?>
+<style>
+.avatar-chat-web {
+    --chat-bg: #050505;
+    --chat-panel: #111111;
+    --chat-border: #2b2b2b;
+    --chat-muted: #9e9e9e;
+    --chat-fg: #efefef;
+    --chat-accent: #34c6d3;
+    --chat-self: #2d2ad8;
+    --chat-other: #2a2a2a;
+    --chat-system: #666666;
+    color: var(--chat-fg);
+}
+.avatar-chat-web .avatar-chat-shell {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    min-height: 70vh;
+}
+.avatar-chat-web .avatar-chat-topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+}
+.avatar-chat-web .avatar-chat-title {
+    margin: 0;
+    font-size: 1.5rem;
+}
+.avatar-chat-web .avatar-chat-channel {
+    color: var(--chat-muted);
+    font-size: 0.95rem;
+}
+.avatar-chat-web .avatar-chat-count {
+    border: 1px solid var(--chat-border);
+    background: var(--chat-panel);
+    color: var(--chat-fg);
+    border-radius: 999px;
+    padding: 0.35rem 0.8rem;
+    cursor: pointer;
+}
+.avatar-chat-web .avatar-chat-users {
+    display: none;
+    border: 1px solid var(--chat-border);
+    background: var(--chat-panel);
+    border-radius: 0.75rem;
+    padding: 0.75rem;
+}
+.avatar-chat-web .avatar-chat-users.is-open {
+    display: block;
+}
+.avatar-chat-web .avatar-chat-users-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.5rem;
+}
+.avatar-chat-web .avatar-chat-users-close {
+    border: 1px solid var(--chat-border);
+    background: transparent;
+    color: var(--chat-fg);
+    border-radius: 0.4rem;
+    padding: 0.1rem 0.45rem;
+}
+.avatar-chat-web .avatar-chat-users-list {
+    display: grid;
+    gap: 0.5rem;
+}
+.avatar-chat-web .avatar-chat-user {
+    display: grid;
+    grid-template-columns: 56px 1fr;
+    gap: 0.6rem;
+    align-items: center;
+}
+.avatar-chat-web .avatar-chat-user-avatar,
+.avatar-chat-web .avatar-chat-avatar {
+    width: 50px;
+    min-width: 50px;
+    height: 72px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--chat-border);
+    border-radius: 0.5rem;
+    background: #0a0a0a;
+    overflow: hidden;
+}
+.avatar-chat-web .avatar-chat-user-avatar img,
+.avatar-chat-web .avatar-chat-avatar img {
+    max-width: 100%;
+    max-height: 100%;
+    image-rendering: pixelated;
+}
+.avatar-chat-web .avatar-chat-avatar-placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    color: var(--chat-muted);
+    font-weight: bold;
+    font-size: 1.2rem;
+}
+.avatar-chat-web .avatar-chat-messages {
+    flex: 1 1 auto;
+    border: 1px solid var(--chat-border);
+    background: var(--chat-bg);
+    border-radius: 1rem;
+    padding: 1rem;
+    overflow-y: auto;
+    min-height: 420px;
+}
+.avatar-chat-web .avatar-chat-empty {
+    text-align: center;
+    color: var(--chat-muted);
+    padding: 3rem 1rem;
+}
+.avatar-chat-web .avatar-chat-system {
+    text-align: center;
+    color: var(--chat-system);
+    margin: 0.5rem 0 1rem;
+}
+.avatar-chat-web .avatar-chat-group {
+    display: flex;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+    max-width: 92%;
+}
+.avatar-chat-web .avatar-chat-group.is-self {
+    margin-left: auto;
+    flex-direction: row-reverse;
+}
+.avatar-chat-web .avatar-chat-content {
+    min-width: 0;
+}
+.avatar-chat-web .avatar-chat-header {
+    font-size: 0.95rem;
+    color: var(--chat-fg);
+    margin-bottom: 0.3rem;
+}
+.avatar-chat-web .avatar-chat-group.is-self .avatar-chat-header {
+    text-align: right;
+}
+.avatar-chat-web .avatar-chat-system-name {
+    color: var(--chat-muted);
+}
+.avatar-chat-web .avatar-chat-time {
+    color: var(--chat-muted);
+    font-size: 0.85rem;
+}
+.avatar-chat-web .avatar-chat-bubble {
+    display: block;
+    padding: 0.7rem 0.9rem;
+    border-radius: 0.9rem;
+    margin-bottom: 0.35rem;
+    max-width: 100%;
+    word-break: break-word;
+    line-height: 1.5;
+}
+.avatar-chat-web .avatar-chat-group.is-self .avatar-chat-bubble {
+    background: var(--chat-self);
+    color: #ffffff;
+}
+.avatar-chat-web .avatar-chat-group:not(.is-self) .avatar-chat-bubble {
+    background: var(--chat-other);
+    color: var(--chat-fg);
+}
+.avatar-chat-web .avatar-chat-form {
+    display: flex;
+    gap: 0.5rem;
+}
+.avatar-chat-web .avatar-chat-input {
+    flex: 1 1 auto;
+    border: 1px solid var(--chat-border);
+    background: #0b0b0b;
+    color: var(--chat-fg);
+    border-radius: 0.75rem;
+    padding: 0.8rem 0.95rem;
+}
+.avatar-chat-web .avatar-chat-send {
+    border: 0;
+    border-radius: 0.75rem;
+    padding: 0.8rem 1rem;
+    background: var(--chat-accent);
+    color: #041013;
+    font-weight: bold;
+}
+.avatar-chat-web .avatar-chat-login {
+    color: var(--chat-muted);
+    text-align: center;
+}
+.avatar-chat-web .avatar-chat-login a {
+    color: var(--chat-accent);
+}
+@media (max-width: 768px) {
+    .avatar-chat-web .avatar-chat-group {
+        max-width: 100%;
+    }
+    .avatar-chat-web .avatar-chat-messages {
+        min-height: 360px;
+        padding: 0.75rem;
+    }
+}
+</style>
+
+<div class="avatar-chat-web">
+    <div class="avatar-chat-shell">
+        <div class="avatar-chat-topbar">
+            <div>
+                <h3 class="avatar-chat-title">Avatar Chat</h3>
+                <div class="avatar-chat-channel">Channel: <span id="avatar-chat-channel-label"><? write(avatarChatWebConfig.defaultChannel); ?></span></div>
+            </div>
+            <button id="avatar-chat-count" class="avatar-chat-count" type="button">0 users</button>
+        </div>
+
+        <div id="avatar-chat-users" class="avatar-chat-users">
+            <div class="avatar-chat-users-header">
+                <strong>Online Users</strong>
+                <button id="avatar-chat-users-close" class="avatar-chat-users-close" type="button">x</button>
+            </div>
+            <div id="avatar-chat-users-list" class="avatar-chat-users-list"></div>
+        </div>
+
+        <div id="avatar-chat-messages" class="avatar-chat-messages">
+            <div class="avatar-chat-empty">Loading chat history...</div>
+        </div>
+
+<?xjs if (avatarChatLoggedIn) { ?>
+        <form id="avatar-chat-form" class="avatar-chat-form" autocomplete="off">
+            <input id="avatar-chat-input" class="avatar-chat-input" type="text" maxlength="500" placeholder="Type a message...">
+            <button class="avatar-chat-send" type="submit">Send</button>
+        </form>
+<?xjs } else { ?>
+        <div class="avatar-chat-login">
+            Log in from the web interface to send messages.
+        </div>
+<?xjs } ?>
+    </div>
+</div>
+
+<script>
+(function () {
+    'use strict';
+
+    var pageConfig = {
+        defaultChannel: <? write(JSON.stringify(avatarChatWebConfig.defaultChannel)); ?>,
+        userAlias: <? write(JSON.stringify(String(user.alias || ''))); ?>,
+        userNumber: <? write(String(user.number || 0)); ?>,
+        isLoggedIn: <? write(avatarChatLoggedIn ? 'true' : 'false'); ?>
+    };
+    var params = new URLSearchParams(window.location.search);
+    var channel = params.get('channel') || pageConfig.defaultChannel || 'main';
+    var apiBase = './api/avatarchat.ssjs';
+    var eventUrl = './api/events.ssjs?subscribe=avatarchat&channel=' + encodeURIComponent(channel);
+    var messages = [];
+    var users = [];
+    var eventSource = null;
+    var graphicsReady = false;
+    var avatarsReady = false;
+    var converter = null;
+
+    var channelLabel = document.getElementById('avatar-chat-channel-label');
+    var countButton = document.getElementById('avatar-chat-count');
+    var usersPanel = document.getElementById('avatar-chat-users');
+    var usersList = document.getElementById('avatar-chat-users-list');
+    var usersClose = document.getElementById('avatar-chat-users-close');
+    var messageContainer = document.getElementById('avatar-chat-messages');
+    var form = document.getElementById('avatar-chat-form');
+    var input = document.getElementById('avatar-chat-input');
+
+    if (channelLabel) {
+        channelLabel.textContent = channel;
+    }
+
+    function loadScript(src, done) {
+        var script = document.createElement('script');
+        script.src = src;
+        script.onload = done;
+        script.onerror = done;
+        document.head.appendChild(script);
+    }
+
+    function ensureDependencies(callback) {
+        function done() {
+            graphicsReady = typeof GraphicsConverter !== 'undefined';
+            avatarsReady = typeof Avatars !== 'undefined' && typeof Avatars.draw === 'function';
+            if (graphicsReady && !converter) {
+                converter = new GraphicsConverter('./images/cp437-ibm-vga8.png', 8, 16, 64, 4);
+            }
+            callback();
+        }
+
+        if (typeof GraphicsConverter === 'undefined') {
+            loadScript('./js/graphics-converter.js', function () {
+                if (typeof Avatars === 'undefined') {
+                    loadScript('./js/avatars.js', done);
+                    return;
+                }
+                done();
+            });
+            return;
+        }
+
+        if (typeof Avatars === 'undefined') {
+            loadScript('./js/avatars.js', done);
+            return;
+        }
+
+        done();
+    }
+
+    function escapeHtml(text) {
+        var div = document.createElement('div');
+        div.appendChild(document.createTextNode(text || ''));
+        return div.innerHTML;
+    }
+
+    function linkify(text) {
+        return escapeHtml(text || '').replace(/(https?:\/\/[^\s<]+)/gi, '<a href="$1" target="_blank" rel="noopener">$1</a>');
+    }
+
+    function formatTime(timestamp) {
+        if (!timestamp) {
+            return '';
+        }
+        var date = new Date(timestamp);
+        var hours = date.getHours();
+        var minutes = date.getMinutes();
+        var ampm = hours >= 12 ? 'PM' : 'AM';
+
+        hours = hours % 12 || 12;
+        return String(hours) + ':' + (minutes < 10 ? '0' : '') + String(minutes) + ' ' + ampm;
+    }
+
+    function fetchJSON(url, options) {
+        return fetch(url, options || {}).then(function (response) {
+            return response.json();
+        });
+    }
+
+    function scrollToBottom() {
+        requestAnimationFrame(function () {
+            messageContainer.scrollTop = messageContainer.scrollHeight;
+        });
+    }
+
+    function renderEmbeddedAvatars(root) {
+        var scope = root || document;
+        var els = scope.querySelectorAll('div[data-avatar-bin]:empty');
+
+        if (!els.length || !graphicsReady || !converter) {
+            return;
+        }
+
+        els.forEach(function (el) {
+            var bin = el.getAttribute('data-avatar-bin');
+            if (!bin) {
+                return;
+            }
+
+            try {
+                converter.from_bin(atob(bin), 10, 6, function (dataURL) {
+                    var img = new Image();
+                    img.addEventListener('load', function () {
+                        if (!el.hasChildNodes()) {
+                            el.appendChild(img);
+                        }
+                    });
+                    img.src = dataURL;
+                }, true);
+            } catch (_error) {}
+        });
+    }
+
+    function renderLocalAvatars(root) {
+        if (!avatarsReady) {
+            return;
+        }
+
+        var scope = root || document;
+        var avatarEls = scope.querySelectorAll('div[data-avatar]');
+        var ids = [];
+
+        avatarEls.forEach(function (el) {
+            var id = el.getAttribute('data-avatar');
+            if (id && id !== '0') {
+                ids.push(id);
+            }
+        });
+
+        if (ids.length) {
+            Avatars.draw(ids);
+        }
+    }
+
+    function renderAvatarFallbacks(root) {
+        var scope = root || document;
+        var placeholders = scope.querySelectorAll('.avatar-chat-avatar-placeholder[data-initial]');
+
+        placeholders.forEach(function (el) {
+            if (el.parentNode && el.parentNode.children.length > 1) {
+                el.remove();
+            }
+        });
+    }
+
+    function renderUsers() {
+        var html = '';
+
+        if (!users.length) {
+            usersList.innerHTML = '<div class="avatar-chat-empty">No users online.</div>';
+            return;
+        }
+
+        users.forEach(function (entry) {
+            var initial = entry.nick ? entry.nick.charAt(0).toUpperCase() : '?';
+
+            html += '<div class="avatar-chat-user">';
+            html += '<div class="avatar-chat-user-avatar">';
+            if (entry.userNumber && entry.userNumber > 0) {
+                html += '<div data-avatar="' + String(entry.userNumber) + '"></div>';
+            } else {
+                html += '<div class="avatar-chat-avatar-placeholder" data-initial="' + escapeHtml(initial) + '">' + escapeHtml(initial) + '</div>';
+            }
+            html += '</div>';
+            html += '<div>';
+            html += '<div><strong>' + escapeHtml(entry.nick || 'Unknown') + '</strong></div>';
+            if (entry.system) {
+                html += '<div class="avatar-chat-channel">' + escapeHtml(entry.system) + '</div>';
+            }
+            html += '</div></div>';
+        });
+
+        usersList.innerHTML = html;
+        renderLocalAvatars(usersList);
+    }
+
+    function renderMessages() {
+        var html = '';
+        var previousSender = '';
+        var previousTime = 0;
+        var groupWindow = 120000;
+
+        if (!messages.length) {
+            messageContainer.innerHTML = '<div class="avatar-chat-empty">No messages yet. Say hello.</div>';
+            return;
+        }
+
+        messages.forEach(function (message) {
+            var isSystem = !message.sender;
+            var isSelf = pageConfig.userAlias && message.sender === pageConfig.userAlias;
+            var sameGroup = message.sender === previousSender && Math.abs((message.timestamp || 0) - previousTime) < groupWindow;
+            var avatarInitial = message.sender ? message.sender.charAt(0).toUpperCase() : '?';
+
+            if (isSystem) {
+                html += '<div class="avatar-chat-system">' + escapeHtml(message.text || '') + '</div>';
+                previousSender = '';
+                previousTime = 0;
+                return;
+            }
+
+            if (!sameGroup) {
+                if (previousSender.length) {
+                    html += '</div></div>';
+                }
+
+                html += '<div class="avatar-chat-group' + (isSelf ? ' is-self' : '') + '">';
+                html += '<div class="avatar-chat-avatar">';
+                if (message.avatar) {
+                    html += '<div data-avatar-bin="' + escapeHtml(message.avatar) + '"></div>';
+                } else if (message.userNumber && message.userNumber > 0) {
+                    html += '<div data-avatar="' + String(message.userNumber) + '"></div>';
+                } else {
+                    html += '<div class="avatar-chat-avatar-placeholder" data-initial="' + escapeHtml(avatarInitial) + '">' + escapeHtml(avatarInitial) + '</div>';
+                }
+                html += '</div>';
+                html += '<div class="avatar-chat-content">';
+                html += '<div class="avatar-chat-header">';
+                html += '<strong>' + escapeHtml(message.sender) + '</strong>';
+                if (message.system) {
+                    html += ' <span class="avatar-chat-system-name">- ' + escapeHtml(message.system) + '</span>';
+                }
+                html += ' <span class="avatar-chat-time">' + escapeHtml(formatTime(message.timestamp)) + '</span>';
+                html += '</div>';
+            }
+
+            html += '<div class="avatar-chat-bubble">' + linkify(message.text || '') + '</div>';
+            previousSender = message.sender;
+            previousTime = message.timestamp || 0;
+        });
+
+        if (previousSender.length) {
+            html += '</div></div>';
+        }
+
+        messageContainer.innerHTML = html;
+        renderEmbeddedAvatars(messageContainer);
+        renderLocalAvatars(messageContainer);
+        renderAvatarFallbacks(messageContainer);
+        scrollToBottom();
+    }
+
+    function setUsers(nextUsers) {
+        users = Array.isArray(nextUsers) ? nextUsers : [];
+        if (countButton) {
+            countButton.textContent = String(users.length) + ' user' + (users.length === 1 ? '' : 's');
+        }
+        renderUsers();
+    }
+
+    function loadHistory() {
+        return fetchJSON(apiBase + '?action=history&channel=' + encodeURIComponent(channel)).then(function (response) {
+            messages = response && response.messages ? response.messages : [];
+            renderMessages();
+        });
+    }
+
+    function loadUsers() {
+        return fetchJSON(apiBase + '?action=who&channel=' + encodeURIComponent(channel)).then(function (response) {
+            setUsers(response && response.users ? response.users : []);
+        });
+    }
+
+    function sendMessage(text) {
+        var body = new URLSearchParams();
+        body.set('action', 'send');
+        body.set('channel', channel);
+        body.set('message', text);
+
+        return fetchJSON(apiBase, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: body.toString()
+        });
+    }
+
+    function connectEvents() {
+        if (!window.EventSource) {
+            return;
+        }
+
+        eventSource = new EventSource(eventUrl);
+        eventSource.addEventListener('avatarchat', function (event) {
+            var payload;
+
+            try {
+                payload = JSON.parse(event.data);
+            } catch (_parseError) {
+                return;
+            }
+
+            if (!payload) {
+                return;
+            }
+
+            if (payload.type === 'message') {
+                messages.push(payload);
+                if (messages.length > 200) {
+                    messages.shift();
+                }
+                renderMessages();
+                return;
+            }
+
+            if (payload.type === 'join' || payload.type === 'part') {
+                loadUsers();
+            }
+        });
+    }
+
+    if (countButton) {
+        countButton.addEventListener('click', function () {
+            usersPanel.classList.toggle('is-open');
+            if (usersPanel.classList.contains('is-open')) {
+                loadUsers();
+            }
+        });
+    }
+
+    if (usersClose) {
+        usersClose.addEventListener('click', function () {
+            usersPanel.classList.remove('is-open');
+        });
+    }
+
+    if (form) {
+        form.addEventListener('submit', function (event) {
+            var text = input.value.replace(/^\s+|\s+$/g, '');
+
+            event.preventDefault();
+            if (!text.length) {
+                return;
+            }
+
+            sendMessage(text).then(function (response) {
+                if (response && response.error) {
+                    window.alert(response.error);
+                    return;
+                }
+                input.value = '';
+            });
+        });
+    }
+
+    ensureDependencies(function () {
+        loadHistory();
+        loadUsers();
+        connectEvents();
+    });
+})();
+</script>

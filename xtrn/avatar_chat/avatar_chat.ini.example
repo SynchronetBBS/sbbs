@@ -1,0 +1,10 @@
+; Avatar Chat root-level configuration
+; Copy or rename this file to avatar_chat.ini and adjust as needed.
+
+host = 127.0.0.1
+port = 10088
+default_channel = main
+max_history = 200
+poll_delay_ms = 25
+reconnect_delay_ms = 3000
+input_max_length = 500
