@@ -813,6 +813,8 @@ cg_events_init(int mode)
 		int w, h;
 		assert_rwlock_wrlock(&vstatlock);
 		vstat.scaling = ciolib_initial_scaling;
+		bitmap_get_scaled_win_size(vstat.scaling,
+		    &vstat.winwidth, &vstat.winheight, 0, 0);
 		if (cg_init_mode == CIOLIB_MODE_QUARTZ_FULLSCREEN) {
 			cg_fullscreen = true;
 			NSScreen *scr = [NSScreen mainScreen];
