@@ -194,6 +194,52 @@ ct_cursor(int *col, int *row)
 }
 
 /*
+ * Get a single pixel value at pixel coordinates (px, py).
+ * Returns ARGB uint32_t, or 0 on failure.
+ */
+static uint32_t
+get_pixel(int px, int py)
+{
+	struct ciolib_pixels *pix = getpixels(px, py, px, py, 1);
+	if (!pix)
+		return 0;
+	uint32_t val = pix->pixels[0];
+	freepixels(pix);
+	return val;
+}
+
+/*
+ * Extract RGB components from an ARGB pixel.
+ */
+#define PIX_R(p) (((p) >> 16) & 0xFF)
+#define PIX_G(p) (((p) >> 8) & 0xFF)
+#define PIX_B(p) ((p) & 0xFF)
+
+/*
+ * Check if a rectangular pixel region contains at least two distinct colors.
+ * Returns 1 if non-uniform (has foreground+background), 0 if all same color.
+ */
+static int
+pixels_have_fg(int px1, int py1, int px2, int py2)
+{
+	struct ciolib_pixels *pix = getpixels(px1, py1, px2, py2, 1);
+	if (!pix)
+		return 0;
+	int w = px2 - px1 + 1;
+	int h = py2 - py1 + 1;
+	uint32_t first = pix->pixels[0];
+	int found_diff = 0;
+	for (int i = 0; i < w * h; i++) {
+		if (pix->pixels[i] != first) {
+			found_diff = 1;
+			break;
+		}
+	}
+	freepixels(pix);
+	return found_diff;
+}
+
+/*
  * Convenience: set up ANSI-BBS mode (80x25).
  */
 static void
@@ -2217,6 +2263,337 @@ static int test_response_ordering_direct(void)
 	if (dsr > da) {
 		fprintf(result_fp, "    DSR after DA (ordering bug)\n");
 		return 0;
+	}
+	return 1;
+}
+
+/* ================================================================ */
+/* Stage 3: Pixel-level tests                                       */
+/* ================================================================ */
+
+static int test_pixel_char_rendering(void)
+{
+	setup_ansi();
+	ct_printf("\033[0m");
+	ct_puts("A");
+	/* Character cell for (1,1) in C80 is 8 pixels wide, 16 tall.
+	 * Pixel coords are 0-based: col 1 = px 0..7, row 1 = py 0..15 */
+	if (!pixels_have_fg(0, 0, 7, 15)) {
+		fprintf(result_fp, "    char 'A' has no foreground pixels\n");
+		return 0;
+	}
+	return 1;
+}
+
+static int test_pixel_blank_cell(void)
+{
+	setup_ansi();
+	ct_printf("\033[0m");
+	/* Cell (5,5) should be blank — all pixels same color */
+	if (pixels_have_fg(32, 64, 39, 79)) {
+		fprintf(result_fp, "    blank cell has foreground pixels\n");
+		return 0;
+	}
+	return 1;
+}
+
+static int test_pixel_color_change(void)
+{
+	struct ciolib_pixels *pix1, *pix2;
+	uint32_t fg1 = 0, fg2 = 0;
+
+	setup_ansi();
+	/* Write 'X' with default (white) fg */
+	ct_printf("\033[0m");
+	ct_puts("X");
+	pix1 = getpixels(0, 0, 7, 15, 1);
+	if (!pix1) return -1;
+	/* Find a foreground pixel (differs from bg) */
+	for (int i = 0; i < 8 * 16; i++) {
+		if (pix1->pixels[i] != pix1->pixels[0]) {
+			fg1 = pix1->pixels[i];
+			break;
+		}
+	}
+	freepixels(pix1);
+
+	/* Rewrite with red fg */
+	ct_printf("\033[1;1H\033[0;31m");
+	ct_puts("X");
+	pix2 = getpixels(0, 0, 7, 15, 1);
+	if (!pix2) return -1;
+	for (int i = 0; i < 8 * 16; i++) {
+		if (pix2->pixels[i] != pix2->pixels[0]) {
+			fg2 = pix2->pixels[i];
+			break;
+		}
+	}
+	freepixels(pix2);
+
+	if (fg1 == 0 || fg2 == 0) {
+		fprintf(result_fp, "    couldn't find fg pixels\n");
+		return 0;
+	}
+	if (fg1 == fg2) {
+		fprintf(result_fp, "    SGR color change didn't affect pixels\n");
+		return 0;
+	}
+	return 1;
+}
+
+static int test_pixel_bg_change(void)
+{
+	struct ciolib_pixels *pix1, *pix2;
+
+	setup_ansi();
+	/* Write space with default bg */
+	ct_printf("\033[0m");
+	ct_puts(" ");
+	pix1 = getpixels(0, 0, 7, 15, 1);
+	if (!pix1) return -1;
+	uint32_t bg1 = pix1->pixels[0];
+	freepixels(pix1);
+
+	/* Rewrite with blue bg */
+	ct_printf("\033[1;1H\033[0;44m");
+	ct_puts(" ");
+	pix2 = getpixels(0, 0, 7, 15, 1);
+	if (!pix2) return -1;
+	uint32_t bg2 = pix2->pixels[0];
+	freepixels(pix2);
+
+	if (bg1 == bg2) {
+		fprintf(result_fp, "    bg color didn't change: 0x%08x\n", bg1);
+		return 0;
+	}
+	return 1;
+}
+
+static int test_pixel_bold_differs(void)
+{
+	struct ciolib_pixels *pix;
+	uint32_t normal_fg = 0, bold_fg = 0;
+
+	setup_ansi();
+	/* Write normal char, find fg pixel value */
+	ct_printf("\033[0;31m");
+	ct_puts("X");
+	pix = getpixels(0, 0, 7, 15, 1);
+	if (!pix) return -1;
+	for (int i = 0; i < 8 * 16; i++) {
+		if (pix->pixels[i] != pix->pixels[0]) {
+			normal_fg = pix->pixels[i];
+			break;
+		}
+	}
+	freepixels(pix);
+
+	/* Write bold char at same position */
+	ct_printf("\033[1;1H\033[1;31m");
+	ct_puts("X");
+	pix = getpixels(0, 0, 7, 15, 1);
+	if (!pix) return -1;
+	for (int i = 0; i < 8 * 16; i++) {
+		if (pix->pixels[i] != pix->pixels[0]) {
+			bold_fg = pix->pixels[i];
+			break;
+		}
+	}
+	freepixels(pix);
+
+	if (normal_fg == 0 || bold_fg == 0) {
+		fprintf(result_fp, "    couldn't find fg pixels\n");
+		return 0;
+	}
+	if (normal_fg == bold_fg) {
+		fprintf(result_fp, "    bold didn't change fg pixel value\n");
+		return 0;
+	}
+	return 1;
+}
+
+static int test_pixel_256color_differs(void)
+{
+	struct ciolib_pixels *pix;
+	uint32_t default_fg = 0, ext_fg = 0;
+
+	setup_ansi();
+	ct_printf("\033[0m");
+	ct_puts("X");
+	pix = getpixels(0, 0, 7, 15, 1);
+	if (!pix) return -1;
+	for (int i = 0; i < 8 * 16; i++) {
+		if (pix->pixels[i] != pix->pixels[0]) {
+			default_fg = pix->pixels[i];
+			break;
+		}
+	}
+	freepixels(pix);
+
+	/* 256-color fg should differ from default */
+	ct_printf("\033[1;1H\033[38;5;196m");
+	ct_puts("X");
+	pix = getpixels(0, 0, 7, 15, 1);
+	if (!pix) return -1;
+	for (int i = 0; i < 8 * 16; i++) {
+		if (pix->pixels[i] != pix->pixels[0]) {
+			ext_fg = pix->pixels[i];
+			break;
+		}
+	}
+	freepixels(pix);
+
+	if (default_fg == 0 || ext_fg == 0) {
+		fprintf(result_fp, "    couldn't find fg pixels\n");
+		return 0;
+	}
+	if (default_fg == ext_fg) {
+		fprintf(result_fp, "    256-color didn't change fg pixel\n");
+		return 0;
+	}
+	return 1;
+}
+
+/* ================================================================ */
+/* Stage 4: Non-ANSI mode edge cases                                */
+/* ================================================================ */
+
+/* ATASCII encoding boundary bytes */
+static int test_atascii_encoding_boundaries(void)
+{
+	struct vmem_cell cells[6];
+
+	setup_cterm(ATARI_40X24, CTERM_EMULATION_ATASCII);
+	/* Test bytes at each encoding boundary in ESC (inverse) mode:
+	 * 31/32 boundary, 95/96 boundary */
+	ct_write("\x1b\x1f", 2);  /* ESC + 31 (0-31 range): 31+64=95 */
+	ct_write("\x1b\x20", 2);  /* ESC + 32 (32-95 range): 32-32=0 */
+	ct_write("\x1b\x5f", 2);  /* ESC + 95 (32-95 range): 95-32=63 */
+	ct_write("\x1b\x60", 2);  /* ESC + 96 (96-127 range): no xlat=96 */
+	ct_gettext(1, 1, 4, 1, cells);
+	int expected[] = {95, 0, 63, 96};
+	for (int i = 0; i < 4; i++) {
+		if ((cells[i].ch & 0xFF) != expected[i]) {
+			fprintf(result_fp, "    boundary %d: ch=%d, expected %d\n",
+			    i, cells[i].ch & 0xFF, expected[i]);
+			return 0;
+		}
+	}
+	return 1;
+}
+
+/* PETSCII font switching */
+static int test_petscii_font_switch(void)
+{
+	setup_cterm(C64_40X25, CTERM_EMULATION_PETASCII);
+	/* Default should be upper case font (32) */
+	int orig = cterm->altfont[0];
+	ct_write("\x0e", 1);	/* 14 = Lower case font */
+	if (cterm->altfont[0] != 33) {
+		fprintf(result_fp, "    C64 lowercase: font=%d, expected 33\n",
+		    cterm->altfont[0]);
+		return 0;
+	}
+	ct_write("\x8e", 1);	/* 142 = Upper case font */
+	if (cterm->altfont[0] != 32) {
+		fprintf(result_fp, "    C64 uppercase: font=%d, expected 32\n",
+		    cterm->altfont[0]);
+		return 0;
+	}
+	return 1;
+}
+
+static int test_petscii_font_switch_c128(void)
+{
+	setup_cterm(C128_80X25, CTERM_EMULATION_PETASCII);
+	ct_write("\x0e", 1);	/* Lower case */
+	if (cterm->altfont[0] != 35) {
+		fprintf(result_fp, "    C128 lowercase: font=%d, expected 35\n",
+		    cterm->altfont[0]);
+		return 0;
+	}
+	ct_write("\x8e", 1);	/* Upper case */
+	if (cterm->altfont[0] != 34) {
+		fprintf(result_fp, "    C128 uppercase: font=%d, expected 34\n",
+		    cterm->altfont[0]);
+		return 0;
+	}
+	return 1;
+}
+
+/* PETSCII all 16 colors in C128-80 mode */
+static int test_petscii_all_colors_c128_80(void)
+{
+	struct vmem_cell cells[1];
+
+	setup_cterm(C128_80X25, CTERM_EMULATION_PETASCII);
+	struct { unsigned char byte; int index; } colors[] = {
+		{144, 0}, {31, 1}, {30, 2}, {151, 3},
+		{28, 4}, {129, 5}, {149, 6}, {155, 7},
+		{152, 8}, {154, 9}, {153, 10}, {159, 11},
+		{150, 12}, {156, 13}, {158, 14}, {5, 15},
+	};
+	for (int i = 0; i < 16; i++) {
+		ct_write((char *)&colors[i].byte, 1);
+		ct_write("X", 1);
+		ct_gettext(1 + i, 1, 1 + i, 1, cells);
+		int fg = cells[0].legacy_attr & 0x0F;
+		if (fg != colors[i].index) {
+			fprintf(result_fp, "    C128-80 byte %d: fg=%d, expected %d\n",
+			    colors[i].byte, fg, colors[i].index);
+			return 0;
+		}
+	}
+	return 1;
+}
+
+/* Prestel all 7 alpha colors */
+static int test_prestel_all_alpha_colors(void)
+{
+	/* Prestel colors map to low 3 bits of attr (CGA 3-bit color) */
+	int expected_colors[] = {RED & 7, GREEN & 7, YELLOW & 7, BLUE & 7, MAGENTA & 7, CYAN & 7, WHITE & 7};
+	int codes[] = {0x41, 0x42, 0x43, 0x44, 0x45, 0x46, 0x47};
+
+	setup_cterm(PRESTEL_40X25, CTERM_EMULATION_PRESTEL);
+	for (int i = 0; i < 7; i++) {
+		char esc[2] = {0x1b, codes[i]};
+		ct_write(esc, 2);
+		ct_write("X", 1);	/* flush state */
+		if ((cterm->attr & 0x07) != expected_colors[i]) {
+			fprintf(result_fp, "    alpha 0x%02x: fg=%d, expected %d\n",
+			    codes[i], cterm->attr & 0x07, expected_colors[i]);
+			return 0;
+		}
+		/* Should NOT be in mosaic mode */
+		if (cterm->extattr & CTERM_EXTATTR_PRESTEL_MOSAIC) {
+			fprintf(result_fp, "    alpha 0x%02x: mosaic set\n", codes[i]);
+			return 0;
+		}
+	}
+	return 1;
+}
+
+/* Prestel all 7 mosaic colors */
+static int test_prestel_all_mosaic_colors(void)
+{
+	int expected_colors[] = {RED & 7, GREEN & 7, YELLOW & 7, BLUE & 7, MAGENTA & 7, CYAN & 7, WHITE & 7};
+	int codes[] = {0x51, 0x52, 0x53, 0x54, 0x55, 0x56, 0x57};
+
+	setup_cterm(PRESTEL_40X25, CTERM_EMULATION_PRESTEL);
+	for (int i = 0; i < 7; i++) {
+		char esc[2] = {0x1b, codes[i]};
+		ct_write(esc, 2);
+		ct_write("X", 1);
+		if ((cterm->attr & 0x07) != expected_colors[i]) {
+			fprintf(result_fp, "    mosaic 0x%02x: fg=%d, expected %d\n",
+			    codes[i], cterm->attr & 0x07, expected_colors[i]);
+			return 0;
+		}
+		/* SHOULD be in mosaic mode */
+		if (!(cterm->extattr & CTERM_EXTATTR_PRESTEL_MOSAIC)) {
+			fprintf(result_fp, "    mosaic 0x%02x: mosaic not set\n", codes[i]);
+			return 0;
+		}
 	}
 	return 1;
 }
@@ -5077,6 +5454,20 @@ static struct test_entry tests[] = {
 	/* Stage 5: Regressions */
 	{"REG_ris_clears",    test_ris_clears_state},
 	{"REG_resp_order",    test_response_ordering_direct},
+	/* Stage 3: Pixel-level tests */
+	{"PIX_char_render",   test_pixel_char_rendering},
+	{"PIX_blank_cell",    test_pixel_blank_cell},
+	{"PIX_color_change",  test_pixel_color_change},
+	{"PIX_bg_change",     test_pixel_bg_change},
+	{"PIX_bold_differs",  test_pixel_bold_differs},
+	{"PIX_256color",      test_pixel_256color_differs},
+	/* Stage 4: Non-ANSI edge cases */
+	{"ATA_enc_boundary",  test_atascii_encoding_boundaries},
+	{"PET_font_c64",      test_petscii_font_switch},
+	{"PET_font_c128",     test_petscii_font_switch_c128},
+	{"PET_colors_c128",   test_petscii_all_colors_c128_80},
+	{"PRS_alpha_colors",  test_prestel_all_alpha_colors},
+	{"PRS_mosaic_colors", test_prestel_all_mosaic_colors},
 	/* Atari ST VT52 */
 	{"VT52_printable",     test_vt52_printable},
 	{"VT52_CR",            test_vt52_cr},
