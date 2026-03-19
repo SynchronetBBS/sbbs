@@ -1,4 +1,4 @@
-var REVISION = "1.40";
+var REVISION = "1.41";
 
 load('sbbsdefs.js');
 load("lz-string.js");
@@ -10,9 +10,7 @@ var fidoaddr = load({}, 'fidoaddr.js');
 var export_freq = 7;	// minimum days between exports
 var verbosity = 0;
 
-var options=load({}, "modopts.js", "avatars");
-if(!options)
-	options = {};
+var options=load({}, "modopts.js", "avatars", {});
 if(!options.sub)
     options.sub = load({}, "syncdata.js").find();
 if(options && options.export_freq > 0)
@@ -337,9 +335,11 @@ function export_users(msgbase, realnames, all)
 		if(!system.username(n))
 			continue;
 		var u = new User(n);
-		if((u.settings&USER_DELETED)
-			|| !u.stats.total_posts			// No need to export avatars for users that have never posted
-			|| (u.security.restrictions&(UFLAG_P|UFLAG_N|UFLAG_Q)) // or will never post
+		if(u.settings&USER_DELETED)
+			continue;
+		if(options.export_all !== true &&
+			(!u.stats.total_posts			// No need to export avatars for users that have never posted
+				|| (u.security.restrictions&(UFLAG_P|UFLAG_N|UFLAG_Q))) // or will never post
 			) {
 			if(verbosity)
 				printf("User #%u hasn't or can't post, skipping\r\n", n);
