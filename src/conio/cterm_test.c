@@ -1214,6 +1214,288 @@ static int test_ansi_cvt(void)
 	return expect_cursor(5, 10);
 }
 
+/* SGR: noblink (5 then 25 = same as no blink) */
+static int test_ansi_sgr_noblink(void)
+{
+	struct vmem_cell c1, c2;
+	setup_ansi();
+	ct_printf("\033[0m");
+	ct_puts("#");
+	ct_gettext(1, 1, 1, 1, &c1);
+	ct_printf("\033[1;1H\033[0;5;25m");
+	ct_puts("#");
+	ct_gettext(1, 1, 1, 1, &c2);
+	/* blink then noblink should equal no blink */
+	if (c1.legacy_attr != c2.legacy_attr) {
+		fprintf(result_fp, "    SGR 5;25: attr 0x%02x != 0x%02x\n",
+		    c2.legacy_attr, c1.legacy_attr);
+		return 0;
+	}
+	return 1;
+}
+
+/* SGR: normal intensity (1 then 22 = same as no bold) */
+static int test_ansi_sgr_normal_int(void)
+{
+	struct vmem_cell c1, c2;
+	setup_ansi();
+	ct_printf("\033[0m");
+	ct_puts("#");
+	ct_gettext(1, 1, 1, 1, &c1);
+	ct_printf("\033[1;1H\033[0;1;22m");
+	ct_puts("#");
+	ct_gettext(1, 1, 1, 1, &c2);
+	if (c1.legacy_attr != c2.legacy_attr) {
+		fprintf(result_fp, "    SGR 1;22: attr 0x%02x != 0x%02x\n",
+		    c2.legacy_attr, c1.legacy_attr);
+		return 0;
+	}
+	return 1;
+}
+
+/* SGR 39 = default fg (same as white/lightgray) */
+static int test_ansi_sgr_default_fg(void)
+{
+	struct vmem_cell c1, c2;
+	setup_ansi();
+	ct_printf("\033[0;37m");
+	ct_puts("#");
+	ct_printf("\033[1;1H\033[0;39m");
+	ct_puts("#");
+	ct_gettext(1, 1, 1, 1, &c1);
+	ct_gettext(1, 1, 1, 1, &c2);
+	/* Both should use default fg — read cells fresh */
+	ct_printf("\033[0;37m");
+	ct_printf("\033[1;1H");
+	ct_puts("A");
+	ct_gettext(1, 1, 1, 1, &c1);
+	ct_printf("\033[0;39m");
+	ct_printf("\033[1;2H");
+	ct_puts("B");
+	ct_gettext(2, 1, 2, 1, &c2);
+	if ((c1.legacy_attr & 0x07) != (c2.legacy_attr & 0x07)) {
+		fprintf(result_fp, "    SGR 37 fg=%d, SGR 39 fg=%d\n",
+		    c1.legacy_attr & 0x07, c2.legacy_attr & 0x07);
+		return 0;
+	}
+	return 1;
+}
+
+/* SGR 49 = default bg (same as black) */
+static int test_ansi_sgr_default_bg(void)
+{
+	struct vmem_cell c1, c2;
+	setup_ansi();
+	ct_printf("\033[0;40m");
+	ct_puts("A");
+	ct_printf("\033[0;49m");
+	ct_puts("B");
+	ct_gettext(1, 1, 1, 1, &c1);
+	ct_gettext(2, 1, 2, 1, &c2);
+	if (((c1.legacy_attr >> 4) & 0x07) != ((c2.legacy_attr >> 4) & 0x07)) {
+		fprintf(result_fp, "    SGR 40 bg=%d, SGR 49 bg=%d\n",
+		    (c1.legacy_attr >> 4) & 0x07, (c2.legacy_attr >> 4) & 0x07);
+		return 0;
+	}
+	return 1;
+}
+
+/* SGR bright fg (90-97) */
+static int test_ansi_sgr_bright_fg(void)
+{
+	struct vmem_cell c1, c2;
+	setup_ansi();
+	ct_printf("\033[0;31m");
+	ct_puts("N");
+	ct_printf("\033[0;91m");
+	ct_puts("B");
+	ct_gettext(1, 1, 1, 1, &c1);
+	ct_gettext(2, 1, 2, 1, &c2);
+	if (c1.legacy_attr == c2.legacy_attr) {
+		fprintf(result_fp, "    SGR 91 same as SGR 31\n");
+		return 0;
+	}
+	/* Bright should have bit 3 set */
+	if (!(c2.legacy_attr & 0x08)) {
+		fprintf(result_fp, "    SGR 91: bold bit not set\n");
+		return 0;
+	}
+	return 1;
+}
+
+/* SGR bright bg (100-107) requires mode 33 */
+static int test_ansi_sgr_bright_bg(void)
+{
+	struct vmem_cell c1, c2;
+	setup_ansi();
+	ct_printf("\033[?33h");  /* enable bright bg */
+	ct_printf("\033[0;41m");
+	ct_puts("N");
+	ct_printf("\033[0;101m");
+	ct_puts("B");
+	ct_gettext(1, 1, 1, 1, &c1);
+	ct_gettext(2, 1, 2, 1, &c2);
+	ct_printf("\033[0m\033[?33l");
+	if (c1.legacy_attr == c2.legacy_attr) {
+		fprintf(result_fp, "    SGR 101 same as SGR 41\n");
+		return 0;
+	}
+	return 1;
+}
+
+/* SL/SR with margins */
+static int test_ansi_sl_margins(void)
+{
+	setup_ansi();
+	ct_printf("\033[?69h");
+	ct_printf("\033[5;15s");    /* DECSLRM cols 5-15 */
+	ct_printf("\033[1;5H");
+	ct_puts("ABCDEFGHIJK");     /* fills cols 5-15 */
+	ct_printf("\033[2 @");      /* SL 2 within margins */
+	if (!expect_text(5, 1, "CDE")) return 0;
+	ct_printf("\033[s\033[?69l");
+	return 1;
+}
+
+static int test_ansi_sr_margins(void)
+{
+	setup_ansi();
+	ct_printf("\033[?69h");
+	ct_printf("\033[5;15s");
+	ct_printf("\033[1;5H");
+	ct_puts("ABCDEFGHIJK");
+	ct_printf("\033[2 A");      /* SR 2 within margins */
+	if (!expect_blank(5, 1, 2)) return 0;
+	if (!expect_text(7, 1, "ABCDE")) return 0;
+	ct_printf("\033[s\033[?69l");
+	return 1;
+}
+
+/* DECCARA with extended color */
+static int test_ansi_deccara_color(void)
+{
+	struct vmem_cell c1, c2;
+	setup_ansi();
+	ct_printf("\033[0m");
+	ct_puts("COLOR");
+	ct_gettext(1, 1, 1, 1, &c1);
+	ct_printf("\033[1;1;1;5;38;5;196$r");  /* DECCARA 256-color fg */
+	ct_gettext(1, 1, 1, 1, &c2);
+	if (c1.fg == c2.fg) {
+		fprintf(result_fp, "    DECCARA color didn't change fg\n");
+		return 0;
+	}
+	return 1;
+}
+
+/* DECRARA blink toggle */
+static int test_ansi_decrara_blink(void)
+{
+	struct vmem_cell c1, c2, c3;
+	setup_ansi();
+	ct_printf("\033[0m");
+	ct_puts("ABCDE");
+	ct_gettext(1, 1, 1, 1, &c1);
+	ct_printf("\033[5m\033[1;1H");
+	ct_puts("ABCDE");
+	ct_gettext(1, 1, 1, 1, &c2);
+	ct_printf("\033[1;1;1;5;5$t");  /* DECRARA toggle blink */
+	ct_gettext(1, 1, 1, 1, &c3);
+	if (c1.legacy_attr != c3.legacy_attr) {
+		fprintf(result_fp, "    DECRARA blink toggle didn't revert\n");
+		return 0;
+	}
+	return 1;
+}
+
+/* DECRARA negative toggle */
+static int test_ansi_decrara_neg(void)
+{
+	struct vmem_cell c1, c2;
+	setup_ansi();
+	ct_printf("\033[0m");
+	ct_puts("NEGAT");
+	ct_gettext(1, 1, 1, 1, &c1);
+	ct_printf("\033[1;1;1;5;7$t");  /* DECRARA toggle negative */
+	ct_gettext(1, 1, 1, 1, &c2);
+	if (c1.legacy_attr == c2.legacy_attr && c1.fg == c2.fg) {
+		fprintf(result_fp, "    DECRARA negative didn't change\n");
+		return 0;
+	}
+	/* Toggle again — should revert */
+	ct_printf("\033[1;1;1;5;7$t");
+	struct vmem_cell c3;
+	ct_gettext(1, 1, 1, 1, &c3);
+	if (c1.fg != c3.fg || c1.bg != c3.bg) {
+		fprintf(result_fp, "    DECRARA double toggle didn't revert\n");
+		return 0;
+	}
+	return 1;
+}
+
+/* DECRARA SGR 0 (invert all toggleable) */
+static int test_ansi_decrara_sgr0(void)
+{
+	struct vmem_cell c1, c2;
+	setup_ansi();
+	ct_printf("\033[1;5m");  /* bold + blink */
+	ct_puts("ALLRV");
+	ct_gettext(1, 1, 1, 1, &c1);
+	ct_printf("\033[1;1;1;5;0$t");  /* DECRARA SGR 0 */
+	ct_gettext(1, 1, 1, 1, &c2);
+	if (c1.legacy_attr == c2.legacy_attr) {
+		fprintf(result_fp, "    DECRARA SGR 0 didn't change\n");
+		return 0;
+	}
+	return 1;
+}
+
+/* DECSACE stream mode */
+static int test_ansi_decsace_stream(void)
+{
+	struct vmem_cell c1, c2;
+	setup_ansi();
+	ct_printf("\033[1*x");  /* DECSACE stream */
+	ct_printf("\033[0m");
+	ct_puts("LINE1TEXT.");
+	ct_printf("\033[2;1H");
+	ct_puts("LINE2TEXT.");
+	/* Get a cell from row 1 col 6 before DECCARA */
+	ct_gettext(6, 1, 6, 1, &c1);
+	/* DECCARA stream: row 1 col 6 to row 2 col 5, bold */
+	ct_printf("\033[1;6;2;5;1$r");
+	ct_gettext(6, 1, 6, 1, &c2);
+	if (c1.legacy_attr == c2.legacy_attr) {
+		fprintf(result_fp, "    stream mode didn't apply bold\n");
+		ct_printf("\033[0*x");
+		return 0;
+	}
+	ct_printf("\033[0*x");  /* reset DECSACE */
+	return 1;
+}
+
+/* DECSTBM scroll with content outside margins preserved */
+static int test_ansi_decstbm_outside(void)
+{
+	setup_ansi();
+	ct_printf("\033[5;1H");
+	ct_puts("OUTSIDE_ABOVE");
+	ct_printf("\033[12;1H");
+	ct_puts("SCROLLMARK");
+	ct_printf("\033[20;1H");
+	ct_puts("OUTSIDE_BELOW");
+	ct_printf("\033[10;15r");  /* DECSTBM rows 10-15 */
+	ct_printf("\033[15;1H");
+	ct_puts("\r\n");           /* scroll within region */
+	/* SCROLLMARK was at row 12, should now be at row 11 */
+	if (!expect_text(1, 11, "SCROLLMARK")) return 0;
+	/* Content outside margins should not have moved */
+	if (!expect_text(1, 5, "OUTSIDE_ABOVE")) return 0;
+	if (!expect_text(1, 20, "OUTSIDE_BELOW")) return 0;
+	ct_printf("\033[r");
+	return 1;
+}
+
 /* ================================================================ */
 /* Atari ST VT52 tests                                              */
 /* ================================================================ */
@@ -4002,6 +4284,24 @@ static struct test_entry tests[] = {
 	/* ANSI-BBS — Variants */
 	{"ANSI_CUP_default",  test_ansi_cup_defaults},
 	{"ANSI_HVP_default",  test_ansi_hvp_defaults},
+	/* ANSI-BBS — SGR more */
+	{"ANSI_SGR_noblink",  test_ansi_sgr_noblink},
+	{"ANSI_SGR_normint",  test_ansi_sgr_normal_int},
+	{"ANSI_SGR_def_fg",   test_ansi_sgr_default_fg},
+	{"ANSI_SGR_def_bg",   test_ansi_sgr_default_bg},
+	{"ANSI_SGR_brt_fg",   test_ansi_sgr_bright_fg},
+	{"ANSI_SGR_brt_bg",   test_ansi_sgr_bright_bg},
+	/* ANSI-BBS — SL/SR with margins */
+	{"ANSI_SL_margins",   test_ansi_sl_margins},
+	{"ANSI_SR_margins",   test_ansi_sr_margins},
+	/* ANSI-BBS — DECCARA/DECRARA more */
+	{"ANSI_DECCARA_clr",  test_ansi_deccara_color},
+	{"ANSI_DECRARA_blk",  test_ansi_decrara_blink},
+	{"ANSI_DECRARA_neg",  test_ansi_decrara_neg},
+	{"ANSI_DECRARA_sg0",  test_ansi_decrara_sgr0},
+	{"ANSI_DECSACE_strm", test_ansi_decsace_stream},
+	/* ANSI-BBS — DECSTBM outside margins */
+	{"ANSI_STBM_outside", test_ansi_decstbm_outside},
 	/* Atari ST VT52 */
 	{"VT52_printable",     test_vt52_printable},
 	{"VT52_CR",            test_vt52_cr},
