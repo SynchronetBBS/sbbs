@@ -1681,6 +1681,16 @@ wl_event_thread(void *args)
 	bitmap_drv_init(wl_drawrect, wl_flush);
 	init_mode_internal(ciolib_initial_mode);
 
+	/* bitmap_drv_init_mode resets vstat.scaling to 1 on the first
+	 * call because winwidth/winheight are still zero.  Restore the
+	 * requested scaling and compute the correct window size. */
+	assert_rwlock_wrlock(&vstatlock);
+	vstat.scaling = ciolib_initial_scaling;
+	bitmap_get_scaled_win_size(vstat.scaling,
+	    &vstat.winwidth, &vstat.winheight, 0, 0);
+	wl_cvstat = vstat;
+	assert_rwlock_unlock(&vstatlock);
+
 	/* Create window surface */
 	setup_surface();
 
