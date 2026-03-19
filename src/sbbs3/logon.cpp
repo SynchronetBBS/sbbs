@@ -48,7 +48,6 @@ bool sbbs_t::logon_process()
 	char       path[MAX_PATH + 1];
 	int        i, j;
 	uint       mailw, mailr;
-	int        kmode;
 	uint       totallogons;
 	node_t     node;
 	struct  tm tm;
@@ -320,10 +319,6 @@ bool sbbs_t::logon_process()
 			              , useron.number, useron.alias);
 			return false;
 		}
-		kmode = (cfg.uq & UQ_NOEXASC) | K_TRIM;
-		if (!(cfg.uq & UQ_NOUPRLWR))
-			kmode |= K_UPRLWR;
-
 		if (!useron_is_guest()) {
 			if (cfg.new_sif[0]) {
 				safe_snprintf(str, sizeof(str), "%suser/%4.4u.dat", cfg.data_dir, useron.number);
