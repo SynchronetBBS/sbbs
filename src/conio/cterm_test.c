@@ -1823,6 +1823,405 @@ static int test_ansi_decstbm_outside(void)
 }
 
 /* ================================================================ */
+/* Stage 1: Edge cases and packet-split tests                       */
+/* ================================================================ */
+
+/* 1a. ESC sequence split across cterm_write calls */
+static int test_split_esc_ansi(void)
+{
+	setup_ansi();
+	ct_write("\033", 1);       /* ESC alone */
+	ct_write("[5;10H", 6);    /* rest of CUP */
+	return expect_cursor(10, 5);
+}
+
+static int test_split_esc_vt52(void)
+{
+	int col, row;
+	setup_cterm(ATARIST_80X25, CTERM_EMULATION_ATARIST_VT52);
+	ct_write("\033", 1);
+	ct_write("B", 1);	/* cursor down */
+	ct_cursor(&col, &row);
+	if (row != 2) {
+		fprintf(result_fp, "    VT52 split ESC B: row %d, expected 2\n", row);
+		return 0;
+	}
+	return 1;
+}
+
+static int test_split_esc_prestel(void)
+{
+	setup_cterm(PRESTEL_40X25, CTERM_EMULATION_PRESTEL);
+	ct_write("\033", 1);
+	ct_write("\x41", 1);	/* Alpha Red */
+	ct_write("X", 1);	/* flush state */
+	/* Verify fg changed to red */
+	if ((cterm->attr & 0x07) != RED) {
+		fprintf(result_fp, "    Prestel split ESC: fg=%d, expected RED\n",
+		    cterm->attr & 0x07);
+		return 0;
+	}
+	return 1;
+}
+
+/* 1b. CSI parameter split */
+static int test_split_csi_param_midnum(void)
+{
+	setup_ansi();
+	ct_write("\033[1", 3);     /* CSI + start of row number */
+	ct_write("5;20H", 5);     /* rest: row 15, col 20 */
+	return expect_cursor(20, 15);
+}
+
+static int test_split_csi_param_semicolon(void)
+{
+	setup_ansi();
+	ct_write("\033[15;", 5);   /* CSI + row + semicolon */
+	ct_write("20H", 3);       /* col + final byte */
+	return expect_cursor(20, 15);
+}
+
+static int test_split_csi_final_byte(void)
+{
+	setup_ansi();
+	ct_write("\033[15;20", 7); /* everything except final */
+	ct_write("H", 1);         /* just the final byte */
+	return expect_cursor(20, 15);
+}
+
+/* 1c. String (DCS) split across calls */
+static int test_split_dcs_macro(void)
+{
+	setup_ansi();
+	/* Define macro 0 as "Hi" (hex: 4869) split across 3 writes */
+	ct_write("\033P", 2);              /* DCS intro */
+	ct_write("0;0;1!z48", 9);         /* macro params + start of hex */
+	ct_write("69\033\\", 4);          /* rest of hex + ST */
+	/* Invoke macro */
+	ct_printf("\033[1;1H");
+	ct_printf("\033[0*z");
+	return expect_text(1, 1, "Hi");
+}
+
+/* 1d. SOS terminator split (ESC at end, \ at start of next) */
+static int test_split_sos_terminator(void)
+{
+	setup_ansi();
+	ct_puts("X");
+	int col, row;
+	ct_cursor(&col, &row);
+	/* Send SOS with terminator ESC split from \ */
+	ct_write("\033Xdata\033", 7);  /* SOS + data + ESC */
+	ct_write("\\", 1);             /* backslash completes ST */
+	/* Cursor should not have moved (SOS is passthrough) */
+	return expect_cursor(col, row);
+}
+
+/* 1e. Zero-length write */
+static int test_zero_length_write(void)
+{
+	setup_ansi();
+	ct_puts("A");
+	int col1, row1;
+	ct_cursor(&col1, &row1);
+	unsigned int ext1 = cterm->extattr;
+	unsigned char attr1 = cterm->attr;
+
+	ct_write("", 0);	/* zero-length write */
+
+	int col2, row2;
+	ct_cursor(&col2, &row2);
+	if (col1 != col2 || row1 != row2) {
+		fprintf(result_fp, "    zero-length changed cursor\n");
+		return 0;
+	}
+	if (ext1 != cterm->extattr || attr1 != cterm->attr) {
+		fprintf(result_fp, "    zero-length changed state\n");
+		return 0;
+	}
+	return 1;
+}
+
+/* Also test zero-length mid-sequence */
+static int test_zero_length_mid_esc(void)
+{
+	setup_ansi();
+	ct_write("\033", 1);    /* start ESC */
+	ct_write("", 0);        /* zero-length */
+	ct_write("[5;10H", 6);  /* complete sequence */
+	return expect_cursor(10, 5);
+}
+
+/* 1f. Very long CSI parameters */
+static int test_long_csi_params(void)
+{
+	char buf[1024];
+	int n;
+
+	setup_ansi();
+	/* CSI with many parameters — SGR with 50 zeros */
+	n = snprintf(buf, sizeof(buf), "\033[");
+	for (int i = 0; i < 50 && n < (int)sizeof(buf) - 5; i++)
+		n += snprintf(buf + n, sizeof(buf) - n, "0;");
+	n += snprintf(buf + n, sizeof(buf) - n, "0m");
+	ct_write(buf, n);
+	/* Should not crash, just apply SGR 0 many times */
+	ct_puts("X");
+	return expect_cursor(2, 1);
+}
+
+static int test_large_csi_value(void)
+{
+	setup_ansi();
+	/* Very large row value — should clamp */
+	ct_printf("\033[999999;1H");
+	int col, row;
+	ct_cursor(&col, &row);
+	if (row != term_rows) {
+		fprintf(result_fp, "    large value: row %d, expected %d\n", row, term_rows);
+		return 0;
+	}
+	return 1;
+}
+
+/* 1g. VT52 ESC Y split */
+static int test_split_vt52_esc_y(void)
+{
+	int col, row;
+
+	setup_cterm(ATARIST_80X25, CTERM_EMULATION_ATARIST_VT52);
+	/* Split: ESC Y in one call, row+col in next */
+	ct_write("\033Y", 2);
+	ct_write("\x28\x2A", 2);  /* row 8, col 10 (0-based) */
+	ct_cursor(&col, &row);
+	if (col != 11 || row != 9) {
+		fprintf(result_fp, "    split ESC Y: %d,%d, expected 11,9\n", col, row);
+		return 0;
+	}
+	return 1;
+}
+
+static int test_split_vt52_esc_y_mid(void)
+{
+	int col, row;
+
+	setup_cterm(ATARIST_80X25, CTERM_EMULATION_ATARIST_VT52);
+	/* Split mid-params: ESC Y row in one call, col in next */
+	ct_write("\033Y\x28", 3);
+	ct_write("\x2A", 1);
+	ct_cursor(&col, &row);
+	if (col != 11 || row != 9) {
+		fprintf(result_fp, "    split ESC Y mid: %d,%d, expected 11,9\n", col, row);
+		return 0;
+	}
+	return 1;
+}
+
+/* 1h. BEEB VDU 23 split */
+static int test_split_beeb_vdu23(void)
+{
+	setup_cterm(PRESTEL_40X25, CTERM_EMULATION_BEEB);
+	/* VDU 23,1,0;0;0;0; = hide cursor, split across calls */
+	char part1[] = {23, 1, 0};
+	char part2[] = {0, 0, 0, 0, 0, 0, 0};
+	ct_write(part1, 3);
+	ct_write(part2, 7);
+	if (cterm->cursor != _NOCURSOR) {
+		fprintf(result_fp, "    split VDU 23: cursor not hidden\n");
+		return 0;
+	}
+	/* Now show cursor, also split */
+	char show1[] = {23, 1, 1, 0, 0};
+	char show2[] = {0, 0, 0, 0, 0};
+	ct_write(show1, 5);
+	ct_write(show2, 5);
+	if (cterm->cursor != _NORMALCURSOR) {
+		fprintf(result_fp, "    split VDU 23 show: cursor not visible\n");
+		return 0;
+	}
+	return 1;
+}
+
+/* 1i. Doorway mode split */
+static int test_split_doorway(void)
+{
+	struct vmem_cell cells[1];
+
+	setup_ansi();
+	/* Enable doorway mode */
+	ct_printf("\033[=255h");
+	/* Send NUL (doorway trigger) at end of one call, literal ESC in next */
+	ct_write("\x00", 1);
+	ct_write("\x1b", 1);
+	/* Disable doorway */
+	ct_printf("\033[=255l");
+	/* ESC byte should have been placed as a character */
+	ct_gettext(1, 1, 1, 1, cells);
+	if ((cells[0].ch & 0xFF) != 0x1b) {
+		fprintf(result_fp, "    doorway split: ch=0x%02x, expected 0x1b\n",
+		    cells[0].ch & 0xFF);
+		return 0;
+	}
+	return 1;
+}
+
+/* Stage 2: Untested ANSI features */
+
+static int test_ansi_decscusr(void)
+{
+	setup_ansi();
+	ct_printf("\033[2 q");  /* block cursor */
+	if (cterm->cursor != _SOLIDCURSOR) {
+		fprintf(result_fp, "    DECSCUSR 2: cursor=%d, expected SOLID\n", cterm->cursor);
+		return 0;
+	}
+	ct_printf("\033[4 q");  /* underline, no blink */
+	if (cterm->cursor != _NORMALCURSOR) {
+		fprintf(result_fp, "    DECSCUSR 4: cursor=%d, expected NORMAL\n", cterm->cursor);
+		return 0;
+	}
+	return 1;
+}
+
+static int test_ansi_ct24bc(void)
+{
+	struct vmem_cell c1, c2;
+
+	setup_ansi();
+	ct_printf("\033[0m");
+	ct_puts("D");
+	ct_printf("\033[1;255;128;0t");  /* CT24BC: fg = orange */
+	ct_puts("O");
+	ct_gettext(1, 1, 1, 1, &c1);
+	ct_gettext(2, 1, 2, 1, &c2);
+	if (c1.fg == c2.fg) {
+		fprintf(result_fp, "    CT24BC didn't change fg\n");
+		return 0;
+	}
+	return 1;
+}
+
+static int test_ansi_fetm_ttm(void)
+{
+	setup_ansi();
+	ct_printf("\033[14h");	/* FETM = EXCLUDE */
+	if (cterm->fetm != 1) {
+		fprintf(result_fp, "    FETM not set\n");
+		return 0;
+	}
+	ct_printf("\033[14l");	/* FETM = INSERT */
+	if (cterm->fetm != 0) {
+		fprintf(result_fp, "    FETM not cleared\n");
+		return 0;
+	}
+	ct_printf("\033[16h");	/* TTM = ALL */
+	if (cterm->ttm != 1) {
+		fprintf(result_fp, "    TTM not set\n");
+		return 0;
+	}
+	ct_printf("\033[16l");	/* TTM = CURSOR */
+	if (cterm->ttm != 0) {
+		fprintf(result_fp, "    TTM not cleared\n");
+		return 0;
+	}
+	return 1;
+}
+
+static int test_ansi_osc8_hyperlink(void)
+{
+	struct vmem_cell cells[5];
+
+	setup_ansi();
+	/* Open hyperlink: OSC 8 ; params ; uri ST
+	 * OSC = ESC ], ST = ESC \ */
+	char open[] = "\033]8;id=t1;https://example.com\033\\";
+	ct_write(open, sizeof(open) - 1);
+	ct_puts("LINK");
+	/* Close hyperlink: OSC 8 ; ; ST */
+	char close[] = "\033]8;;\033\\";
+	ct_write(close, sizeof(close) - 1);
+	ct_puts("NONE");
+	ct_gettext(1, 1, 4, 1, cells);
+	/* LINK chars should have non-zero hyperlink_id */
+	if (cells[0].hyperlink_id == 0) {
+		fprintf(result_fp, "    hyperlink_id not set (ch='%c' hl=%d)\n",
+		    cells[0].ch, cells[0].hyperlink_id);
+		return 0;
+	}
+	/* NONE chars should have zero hyperlink_id */
+	ct_gettext(5, 1, 8, 1, cells);
+	if (cells[0].hyperlink_id != 0) {
+		fprintf(result_fp, "    hyperlink_id not cleared\n");
+		return 0;
+	}
+	return 1;
+}
+
+static int test_ansi_music_state(void)
+{
+	setup_ansi();
+	/* Enable SyncTERM music mode */
+	ct_printf("\033[|");
+	/* Send music start: CSI | then music data */
+	ct_write("\033[|MFCDE\x0e", 8);
+	/* After SO (0x0E), music should have been processed */
+	if (cterm->music != 0) {
+		fprintf(result_fp, "    music state not cleared after SO\n");
+		return 0;
+	}
+	return 1;
+}
+
+/* Stage 5: Regression / comprehensive tests */
+
+static int test_ris_clears_state(void)
+{
+	setup_ansi();
+	/* Set various state */
+	ct_printf("\033[?7l");      /* disable autowrap */
+	ct_printf("\033[5;20r");    /* DECSTBM */
+	ct_printf("\033[1;32m");    /* bold green */
+	ct_printf("\033[?6h");      /* origin mode */
+	cterm->lastch = 'Z';
+	/* RIS */
+	ct_printf("\033c");
+	/* Verify reset */
+	if (!(cterm->extattr & CTERM_EXTATTR_AUTOWRAP)) {
+		fprintf(result_fp, "    autowrap not restored\n");
+		return 0;
+	}
+	if (cterm->lastch != 0) {
+		fprintf(result_fp, "    lastch not cleared\n");
+		return 0;
+	}
+	if (cterm->extattr & CTERM_EXTATTR_ORIGINMODE) {
+		fprintf(result_fp, "    origin mode not cleared\n");
+		return 0;
+	}
+	return expect_cursor(1, 1);
+}
+
+static int test_response_ordering_direct(void)
+{
+	setup_ansi();
+	response_clear();
+	/* Send DSR + DA in single write */
+	ct_write("\033[6n\033[c", 7);
+	/* DSR response (ESC[row;colR) should come before DA response */
+	char *dsr = strstr(response_buf, "R");
+	char *da = strstr(response_buf, "c");
+	if (dsr == NULL || da == NULL) {
+		fprintf(result_fp, "    missing responses\n");
+		return 0;
+	}
+	if (dsr > da) {
+		fprintf(result_fp, "    DSR after DA (ordering bug)\n");
+		return 0;
+	}
+	return 1;
+}
+
+/* ================================================================ */
 /* Atari ST VT52 tests                                              */
 /* ================================================================ */
 
@@ -4652,6 +5051,32 @@ static struct test_entry tests[] = {
 	{"ANSI_DECSACE_strm", test_ansi_decsace_stream},
 	/* ANSI-BBS — DECSTBM outside margins */
 	{"ANSI_STBM_outside", test_ansi_decstbm_outside},
+	/* Stage 1: Packet-split edge cases */
+	{"SPLIT_esc_ansi",    test_split_esc_ansi},
+	{"SPLIT_esc_vt52",    test_split_esc_vt52},
+	{"SPLIT_esc_prestel", test_split_esc_prestel},
+	{"SPLIT_csi_midnum",  test_split_csi_param_midnum},
+	{"SPLIT_csi_semi",    test_split_csi_param_semicolon},
+	{"SPLIT_csi_final",   test_split_csi_final_byte},
+	{"SPLIT_dcs_macro",   test_split_dcs_macro},
+	{"SPLIT_sos_term",    test_split_sos_terminator},
+	{"SPLIT_zero_len",    test_zero_length_write},
+	{"SPLIT_zero_mid",    test_zero_length_mid_esc},
+	{"SPLIT_long_params", test_long_csi_params},
+	{"SPLIT_large_val",   test_large_csi_value},
+	{"SPLIT_vt52_esc_y",  test_split_vt52_esc_y},
+	{"SPLIT_vt52_y_mid",  test_split_vt52_esc_y_mid},
+	{"SPLIT_beeb_vdu23",  test_split_beeb_vdu23},
+	{"SPLIT_doorway",     test_split_doorway},
+	/* Stage 2: Untested ANSI features */
+	{"ANSI_DECSCUSR",     test_ansi_decscusr},
+	{"ANSI_CT24BC",       test_ansi_ct24bc},
+	{"ANSI_FETM_TTM",     test_ansi_fetm_ttm},
+	{"ANSI_OSC8_link",    test_ansi_osc8_hyperlink},
+	{"ANSI_music_state",  test_ansi_music_state},
+	/* Stage 5: Regressions */
+	{"REG_ris_clears",    test_ris_clears_state},
+	{"REG_resp_order",    test_response_ordering_direct},
 	/* Atari ST VT52 */
 	{"VT52_printable",     test_vt52_printable},
 	{"VT52_CR",            test_vt52_cr},
