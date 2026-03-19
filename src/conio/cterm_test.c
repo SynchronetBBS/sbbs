@@ -1629,6 +1629,731 @@ test_pet_lf_c64_ignored(void)
 }
 
 /* ================================================================ */
+/* Prestel tests                                                    */
+/* ================================================================ */
+
+static int
+test_prestel_printable(void)
+{
+	struct vmem_cell cells[1];
+
+	setup_cterm(PRESTEL_40X25, CTERM_EMULATION_PRESTEL);
+	ct_write("A", 1);
+	ct_gettext(1, 1, 1, 1, cells);
+	if ((cells[0].ch & 0xFF) != 'A') {
+		fprintf(result_fp, "    ch=%d, expected %d\n", cells[0].ch & 0xFF, 'A');
+		return 0;
+	}
+	return 1;
+}
+
+static int
+test_prestel_apr(void)
+{
+	int col, row;
+
+	/* APR (0x0D) = Active Position Return — move to start of current row */
+	setup_cterm(PRESTEL_40X25, CTERM_EMULATION_PRESTEL);
+	ct_write("HELLO", 5);
+	ct_write("\x0d", 1);
+	ct_cursor(&col, &row);
+	if (col != 1) {
+		fprintf(result_fp, "    col %d, expected 1\n", col);
+		return 0;
+	}
+	if (row != 1) {
+		fprintf(result_fp, "    row %d, expected 1 (APR should not move down)\n", row);
+		return 0;
+	}
+	return 1;
+}
+
+static int
+test_prestel_apb(void)
+{
+	int col, row;
+
+	/* APB (0x08) = cursor left, wraps */
+	setup_cterm(PRESTEL_40X25, CTERM_EMULATION_PRESTEL);
+	ct_write("AB", 2);
+	ct_write("\x08", 1);
+	ct_cursor(&col, &row);
+	if (col != 2) {
+		fprintf(result_fp, "    col %d, expected 2\n", col);
+		return 0;
+	}
+	return 1;
+}
+
+static int
+test_prestel_apf(void)
+{
+	int col, row;
+
+	/* APF (0x09) = cursor right, wraps */
+	setup_cterm(PRESTEL_40X25, CTERM_EMULATION_PRESTEL);
+	ct_write("\x09", 1);
+	ct_cursor(&col, &row);
+	if (col != 2) {
+		fprintf(result_fp, "    col %d, expected 2\n", col);
+		return 0;
+	}
+	return 1;
+}
+
+static int
+test_prestel_apd(void)
+{
+	int col, row;
+
+	/* APD (0x0A) = cursor down */
+	setup_cterm(PRESTEL_40X25, CTERM_EMULATION_PRESTEL);
+	ct_write("AB", 2);
+	ct_write("\x0a", 1);
+	ct_cursor(&col, &row);
+	if (row != 2) {
+		fprintf(result_fp, "    row %d, expected 2\n", row);
+		return 0;
+	}
+	/* Column should be preserved */
+	if (col != 3) {
+		fprintf(result_fp, "    col %d, expected 3\n", col);
+		return 0;
+	}
+	return 1;
+}
+
+static int
+test_prestel_apu(void)
+{
+	int col, row;
+
+	/* APU (0x0B) = cursor up */
+	setup_cterm(PRESTEL_40X25, CTERM_EMULATION_PRESTEL);
+	ct_write("\x0a\x0a", 2);	/* down twice to row 3 */
+	ct_write("\x0b", 1);		/* up to row 2 */
+	ct_cursor(&col, &row);
+	if (row != 2) {
+		fprintf(result_fp, "    row %d, expected 2\n", row);
+		return 0;
+	}
+	return 1;
+}
+
+static int
+test_prestel_apd_wrap(void)
+{
+	int col, row;
+
+	/* APD at bottom row should wrap to top (Prestel, no scroll) */
+	setup_cterm(PRESTEL_40X25, CTERM_EMULATION_PRESTEL);
+	/* Move to bottom row */
+	for (int i = 0; i < term_rows - 1; i++)
+		ct_write("\x0a", 1);
+	ct_cursor(&col, &row);
+	int last_row = row;
+	ct_write("\x0a", 1);	/* one more — should wrap to top */
+	ct_cursor(&col, &row);
+	if (row != 1) {
+		fprintf(result_fp, "    APD wrap: row %d, expected 1 (from %d)\n",
+		    row, last_row);
+		return 0;
+	}
+	return 1;
+}
+
+static int
+test_prestel_apu_wrap(void)
+{
+	int col, row;
+
+	/* APU at top row should wrap to bottom (Prestel, no scroll) */
+	setup_cterm(PRESTEL_40X25, CTERM_EMULATION_PRESTEL);
+	ct_write("\x0b", 1);	/* up from row 1 — should wrap to bottom */
+	ct_cursor(&col, &row);
+	if (row != term_rows) {
+		fprintf(result_fp, "    APU wrap: row %d, expected %d\n", row, term_rows);
+		return 0;
+	}
+	return 1;
+}
+
+static int
+test_prestel_cs(void)
+{
+	int col, row;
+	struct vmem_cell cells[5];
+
+	/* CS (0x0C) = clear screen + home */
+	setup_cterm(PRESTEL_40X25, CTERM_EMULATION_PRESTEL);
+	ct_write("HELLO\x0a""WORLD", 11);
+	ct_write("\x0c", 1);
+	ct_cursor(&col, &row);
+	if (col != 1 || row != 1) {
+		fprintf(result_fp, "    cursor at %d,%d, expected 1,1\n", col, row);
+		return 0;
+	}
+	ct_gettext(1, 1, 5, 1, cells);
+	for (int i = 0; i < 5; i++) {
+		if (cells[i].ch != 0 && cells[i].ch != ' ') {
+			fprintf(result_fp, "    col %d not blank: %d\n", i + 1, cells[i].ch);
+			return 0;
+		}
+	}
+	return 1;
+}
+
+static int
+test_prestel_aph(void)
+{
+	int col, row;
+
+	/* APH (0x1E) = home cursor */
+	setup_cterm(PRESTEL_40X25, CTERM_EMULATION_PRESTEL);
+	ct_write("HELLO\x0a""WORLD", 11);
+	ct_write("\x1e", 1);
+	ct_cursor(&col, &row);
+	if (col != 1 || row != 1) {
+		fprintf(result_fp, "    cursor at %d,%d, expected 1,1\n", col, row);
+		return 0;
+	}
+	return 1;
+}
+
+static int
+test_prestel_cursor_on_off(void)
+{
+	/* CON (0x11) / COF (0x14) */
+	setup_cterm(PRESTEL_40X25, CTERM_EMULATION_PRESTEL);
+	/* Prestel starts with cursor off */
+	ct_write("\x11", 1);	/* cursor on */
+	if (cterm->cursor != _NORMALCURSOR) {
+		fprintf(result_fp, "    CON: cursor not visible\n");
+		return 0;
+	}
+	ct_write("\x14", 1);	/* cursor off */
+	if (cterm->cursor != _NOCURSOR) {
+		fprintf(result_fp, "    COF: cursor not hidden\n");
+		return 0;
+	}
+	return 1;
+}
+
+static int
+test_prestel_enq(void)
+{
+	int col, row;
+
+	/* ENQ (0x05) should not move cursor */
+	setup_cterm(PRESTEL_40X25, CTERM_EMULATION_PRESTEL);
+	ct_write("A", 1);
+	ct_cursor(&col, &row);
+	ct_write("\x05", 1);
+	int col2, row2;
+	ct_cursor(&col2, &row2);
+	if (col != col2 || row != row2) {
+		fprintf(result_fp, "    ENQ moved cursor\n");
+		return 0;
+	}
+	return 1;
+}
+
+static int
+test_prestel_nul(void)
+{
+	int col, row;
+
+	/* NUL (0x00) should not move cursor */
+	setup_cterm(PRESTEL_40X25, CTERM_EMULATION_PRESTEL);
+	ct_write("A", 1);
+	ct_cursor(&col, &row);
+	ct_write("\x00", 1);
+	int col2, row2;
+	ct_cursor(&col2, &row2);
+	if (col != col2 || row != row2) {
+		fprintf(result_fp, "    NUL moved cursor\n");
+		return 0;
+	}
+	return 1;
+}
+
+static int
+test_prestel_ignored_c0(void)
+{
+	int col, row;
+
+	/* Undefined C0 controls should be ignored */
+	setup_cterm(PRESTEL_40X25, CTERM_EMULATION_PRESTEL);
+	ct_write("A", 1);
+	ct_cursor(&col, &row);
+	char ignored[] = {1, 2, 3, 4, 6, 7, 14, 15, 16, 18, 19, 25, 26, 28, 29, 31};
+	ct_write(ignored, sizeof(ignored));
+	int col2, row2;
+	ct_cursor(&col2, &row2);
+	if (col != col2 || row != row2) {
+		fprintf(result_fp, "    ignored C0 moved cursor from %d,%d to %d,%d\n",
+		    col, row, col2, row2);
+		return 0;
+	}
+	return 1;
+}
+
+static int
+test_prestel_esc_alpha_color(void)
+{
+	struct vmem_cell cells[2];
+
+	/* ESC + 0x41 = Alphanumeric Red (after effect) */
+	setup_cterm(PRESTEL_40X25, CTERM_EMULATION_PRESTEL);
+	/* Default is white alphanumeric */
+	ct_write("W", 1);	/* white char at col 1 */
+	ct_write("\x1b\x41", 2);	/* ESC + Alpha Red — takes col 2 */
+	ct_write("R", 1);	/* red char at col 3 */
+
+	ct_gettext(1, 1, 1, 1, cells);
+	uint8_t white_fg = cells[0].legacy_attr & 0x07;
+	ct_gettext(3, 1, 3, 1, cells);
+	uint8_t red_fg = cells[0].legacy_attr & 0x07;
+	if (white_fg == red_fg) {
+		fprintf(result_fp, "    alpha red didn't change fg color\n");
+		return 0;
+	}
+	/* Red should be color index for red (4 in CGA mapping) */
+	if (red_fg != RED) {
+		fprintf(result_fp, "    fg=%d, expected RED (%d)\n", red_fg, RED);
+		return 0;
+	}
+	return 1;
+}
+
+static int
+test_prestel_esc_mosaic_color(void)
+{
+	/* ESC + 0x51 = Mosaic Red — should switch to mosaic mode.
+	 * Write a char after the control to flush state (see post-release
+	 * TODO: investigate why prestel_fix_line restore overwrites
+	 * after-effect state without a subsequent character write). */
+	setup_cterm(PRESTEL_40X25, CTERM_EMULATION_PRESTEL);
+	ct_write("\x1b\x51", 2);	/* ESC + Mosaic Red */
+	ct_write("X", 1);
+	if (!(cterm->extattr & CTERM_EXTATTR_PRESTEL_MOSAIC)) {
+		fprintf(result_fp, "    mosaic mode not set\n");
+		return 0;
+	}
+	return 1;
+}
+
+static int
+test_prestel_esc_flash_steady(void)
+{
+	/* ESC + 0x48 = Flash, ESC + 0x49 = Steady */
+	setup_cterm(PRESTEL_40X25, CTERM_EMULATION_PRESTEL);
+	ct_write("\x1b\x48", 2);	/* Flash */
+	ct_write("X", 1);
+	if (!(cterm->attr & 0x80)) {
+		fprintf(result_fp, "    flash not set\n");
+		return 0;
+	}
+	ct_write("\x1b\x49", 2);	/* Steady */
+	ct_write("X", 1);
+	if (cterm->attr & 0x80) {
+		fprintf(result_fp, "    flash not cleared\n");
+		return 0;
+	}
+	return 1;
+}
+
+static int
+test_prestel_esc_conceal(void)
+{
+	/* ESC + 0x58 = Conceal */
+	setup_cterm(PRESTEL_40X25, CTERM_EMULATION_PRESTEL);
+	ct_write("\x1b\x58", 2);
+	ct_write("X", 1);
+	if (!(cterm->extattr & CTERM_EXTATTR_PRESTEL_CONCEAL)) {
+		fprintf(result_fp, "    conceal not set\n");
+		return 0;
+	}
+	/* Color code should clear conceal */
+	ct_write("\x1b\x41", 2);
+	ct_write("X", 1);
+	if (cterm->extattr & CTERM_EXTATTR_PRESTEL_CONCEAL) {
+		fprintf(result_fp, "    conceal not cleared by color\n");
+		return 0;
+	}
+	return 1;
+}
+
+static int
+test_prestel_esc_hold_release(void)
+{
+	/* ESC + 0x5E = Hold, ESC + 0x5F = Release */
+	setup_cterm(PRESTEL_40X25, CTERM_EMULATION_PRESTEL);
+	ct_write("\x1b\x5e", 2);	/* Hold */
+	ct_write("X", 1);
+	if (!(cterm->extattr & CTERM_EXTATTR_PRESTEL_HOLD)) {
+		fprintf(result_fp, "    hold not set\n");
+		return 0;
+	}
+	ct_write("\x1b\x5f", 2);	/* Release */
+	ct_write("X", 1);
+	if (cterm->extattr & CTERM_EXTATTR_PRESTEL_HOLD) {
+		fprintf(result_fp, "    hold not cleared\n");
+		return 0;
+	}
+	return 1;
+}
+
+static int
+test_prestel_esc_double_height(void)
+{
+	/* ESC + 0x4D = Double Height, ESC + 0x4C = Normal Height */
+	setup_cterm(PRESTEL_40X25, CTERM_EMULATION_PRESTEL);
+	ct_write("\x1b\x4d", 2);	/* Double Height */
+	ct_write("X", 1);
+	if (!(cterm->extattr & CTERM_EXTATTR_PRESTEL_DOUBLE_HEIGHT)) {
+		fprintf(result_fp, "    double height not set\n");
+		return 0;
+	}
+	ct_write("\x1b\x4c", 2);	/* Normal Height */
+	ct_write("X", 1);
+	if (cterm->extattr & CTERM_EXTATTR_PRESTEL_DOUBLE_HEIGHT) {
+		fprintf(result_fp, "    double height not cleared\n");
+		return 0;
+	}
+	return 1;
+}
+
+static int
+test_prestel_esc_background(void)
+{
+	struct vmem_cell cells[1];
+
+	/* ESC + 0x5C = Black Background, ESC + 0x5D = New Background */
+	setup_cterm(PRESTEL_40X25, CTERM_EMULATION_PRESTEL);
+	/* Set fg to green, then new background should adopt green */
+	ct_write("\x1b\x42", 2);	/* Alpha Green */
+	ct_write("\x1b\x5d", 2);	/* New Background */
+	ct_write("X", 1);
+	ct_gettext(3, 1, 3, 1, cells);	/* X is at col 3 (after 2 control cells) */
+	/* Background should not be black anymore */
+	uint8_t bg = (cells[0].legacy_attr >> 4) & 0x07;
+	if (bg == BLACK) {
+		fprintf(result_fp, "    new background still black\n");
+		return 0;
+	}
+	return 1;
+}
+
+static int
+test_prestel_esc_separated(void)
+{
+	/* ESC + 0x5A = Separated, ESC + 0x59 = Contiguous */
+	setup_cterm(PRESTEL_40X25, CTERM_EMULATION_PRESTEL);
+	ct_write("\x1b\x5a", 2);	/* Separated */
+	ct_write("X", 1);
+	if (!(cterm->extattr & CTERM_EXTATTR_PRESTEL_SEPARATED)) {
+		fprintf(result_fp, "    separated not set\n");
+		return 0;
+	}
+	ct_write("\x1b\x59", 2);	/* Contiguous */
+	ct_write("X", 1);
+	if (cterm->extattr & CTERM_EXTATTR_PRESTEL_SEPARATED) {
+		fprintf(result_fp, "    separated not cleared\n");
+		return 0;
+	}
+	return 1;
+}
+
+static int
+test_prestel_row_attr_reset(void)
+{
+	/* Attributes should reset at start of each new row */
+	setup_cterm(PRESTEL_40X25, CTERM_EMULATION_PRESTEL);
+	ct_write("\x1b\x51", 2);	/* Mosaic Red */
+	ct_write("X", 1);
+	if (!(cterm->extattr & CTERM_EXTATTR_PRESTEL_MOSAIC)) {
+		fprintf(result_fp, "    mosaic not set\n");
+		return 0;
+	}
+	/* Move to next row — attributes should reset.
+	 * APD moves down, then write a char to flush state. */
+	ct_write("\x0a", 1);	/* APD */
+	ct_write("\x0d", 1);	/* APR */
+	ct_write("Y", 1);
+	if (cterm->extattr & CTERM_EXTATTR_PRESTEL_MOSAIC) {
+		fprintf(result_fp, "    mosaic not reset on new row\n");
+		return 0;
+	}
+	return 1;
+}
+
+static int
+test_prestel_c1_raw(void)
+{
+	/* Bytes 0x80-0x9F should work as raw C1 controls (value - 0x40) */
+	setup_cterm(PRESTEL_40X25, CTERM_EMULATION_PRESTEL);
+	/* 0x91 = 0x51 after subtracting 0x40 = Mosaic Red */
+	ct_write("\x91", 1);
+	ct_write("X", 1);
+	if (!(cterm->extattr & CTERM_EXTATTR_PRESTEL_MOSAIC)) {
+		fprintf(result_fp, "    raw C1 0x91 didn't set mosaic\n");
+		return 0;
+	}
+	return 1;
+}
+
+static int
+test_prestel_apb_wrap(void)
+{
+	int col, row;
+
+	/* APB at col 1 should wrap to end of previous row */
+	setup_cterm(PRESTEL_40X25, CTERM_EMULATION_PRESTEL);
+	ct_write("\x0a", 1);	/* down to row 2 */
+	ct_write("\x08", 1);	/* left from col 1 row 2 */
+	ct_cursor(&col, &row);
+	if (col != term_cols || row != 1) {
+		fprintf(result_fp, "    APB wrap: %d,%d, expected %d,1\n",
+		    col, row, term_cols);
+		return 0;
+	}
+	return 1;
+}
+
+static int
+test_prestel_apf_wrap(void)
+{
+	int col, row;
+
+	/* APF at end of row should wrap to start of next row */
+	setup_cterm(PRESTEL_40X25, CTERM_EMULATION_PRESTEL);
+	for (int i = 0; i < term_cols; i++)
+		ct_write("\x09", 1);
+	ct_cursor(&col, &row);
+	if (col != 1 || row != 2) {
+		fprintf(result_fp, "    APF wrap: %d,%d, expected 1,2\n", col, row);
+		return 0;
+	}
+	return 1;
+}
+
+/* ================================================================ */
+/* BEEB (BBC Micro Mode 7) tests                                    */
+/* ================================================================ */
+
+static int
+test_beeb_printable(void)
+{
+	struct vmem_cell cells[1];
+
+	setup_cterm(PRESTEL_40X25, CTERM_EMULATION_BEEB);
+	ct_write("A", 1);
+	ct_gettext(1, 1, 1, 1, cells);
+	if ((cells[0].ch & 0xFF) != 'A') {
+		fprintf(result_fp, "    ch=%d, expected %d\n", cells[0].ch & 0xFF, 'A');
+		return 0;
+	}
+	return 1;
+}
+
+static int
+test_beeb_char_translate(void)
+{
+	struct vmem_cell cells[3];
+
+	/* BEEB translates: # -> _, _ -> `, ` -> # */
+	setup_cterm(PRESTEL_40X25, CTERM_EMULATION_BEEB);
+	ct_write("#_`", 3);
+	ct_gettext(1, 1, 3, 1, cells);
+	if ((cells[0].ch & 0xFF) != '_') {
+		fprintf(result_fp, "    # -> %c, expected _\n", cells[0].ch & 0xFF);
+		return 0;
+	}
+	if ((cells[1].ch & 0xFF) != '`') {
+		fprintf(result_fp, "    _ -> %c, expected `\n", cells[1].ch & 0xFF);
+		return 0;
+	}
+	if ((cells[2].ch & 0xFF) != '#') {
+		fprintf(result_fp, "    ` -> %c, expected #\n", cells[2].ch & 0xFF);
+		return 0;
+	}
+	return 1;
+}
+
+static int
+test_beeb_bel(void)
+{
+	int col, row;
+
+	/* BEL (0x07) should not move cursor */
+	setup_cterm(PRESTEL_40X25, CTERM_EMULATION_BEEB);
+	ct_write("A", 1);
+	ct_cursor(&col, &row);
+	ct_write("\x07", 1);
+	int col2, row2;
+	ct_cursor(&col2, &row2);
+	if (col != col2 || row != row2) {
+		fprintf(result_fp, "    BEL moved cursor\n");
+		return 0;
+	}
+	return 1;
+}
+
+static int
+test_beeb_apd_scroll(void)
+{
+	int col, row;
+	struct vmem_cell cells[5];
+
+	/* BEEB APD at bottom should scroll, not wrap */
+	setup_cterm(PRESTEL_40X25, CTERM_EMULATION_BEEB);
+	ct_write("MARK", 4);
+	for (int i = 0; i < term_rows - 1; i++)
+		ct_write("\x0a", 1);
+	ct_cursor(&col, &row);
+	ct_write("\x0a", 1);	/* one more — should scroll */
+	ct_cursor(&col, &row);
+	/* Should still be on last row after scroll, not wrapped to row 1 */
+	if (row != term_rows) {
+		fprintf(result_fp, "    BEEB APD: row %d, expected %d\n", row, term_rows);
+		return 0;
+	}
+	return 1;
+}
+
+static int
+test_beeb_apu_scroll(void)
+{
+	int col, row;
+
+	/* BEEB APU at top should scroll down, not wrap */
+	setup_cterm(PRESTEL_40X25, CTERM_EMULATION_BEEB);
+	ct_write("\x0b", 1);	/* up from row 1 — should scroll down */
+	ct_cursor(&col, &row);
+	/* Should stay on row 1, not wrap to bottom */
+	if (row != 1) {
+		fprintf(result_fp, "    BEEB APU: row %d, expected 1\n", row);
+		return 0;
+	}
+	return 1;
+}
+
+static int
+test_beeb_del(void)
+{
+	struct vmem_cell cells[1];
+	int col, row;
+
+	/* DEL (0x7F) = destructive backspace */
+	setup_cterm(PRESTEL_40X25, CTERM_EMULATION_BEEB);
+	ct_write("AB", 2);
+	ct_write("\x7f", 1);	/* DEL */
+	ct_cursor(&col, &row);
+	if (col != 2) {
+		fprintf(result_fp, "    cursor col %d, expected 2\n", col);
+		return 0;
+	}
+	/* Character at col 2 should be erased (space) */
+	ct_gettext(2, 1, 2, 1, cells);
+	if (cells[0].ch != ' ' && cells[0].ch != 0) {
+		fprintf(result_fp, "    col 2 not erased: ch=%d\n", cells[0].ch);
+		return 0;
+	}
+	return 1;
+}
+
+static int
+test_beeb_aps(void)
+{
+	int col, row;
+
+	/* APS (0x1C) followed by col, row — direct cursor addressing */
+	setup_cterm(PRESTEL_40X25, CTERM_EMULATION_BEEB);
+	/* Move to col 10 (0-based), row 5 (0-based): 10+0x20=0x2A, 5+0x20=0x25 */
+	ct_write("\x1c\x25\x2a", 3);
+	ct_cursor(&col, &row);
+	/* Note: code does gotoxy((escbuf[2]-' ')+1, (escbuf[1]-' ')+1)
+	 * escbuf[1] is first data byte (0x25=row 5), escbuf[2] is second (0x2A=col 10) */
+	if (col != 11 || row != 6) {
+		fprintf(result_fp, "    APS: %d,%d, expected 11,6\n", col, row);
+		return 0;
+	}
+	return 1;
+}
+
+static int
+test_beeb_vdu23_cursor(void)
+{
+	/* VDU 23,1,0;0;0;0; = hide cursor
+	 * VDU 23,1,1;0;0;0; = show cursor */
+	setup_cterm(PRESTEL_40X25, CTERM_EMULATION_BEEB);
+	/* Hide: byte 23, then 1, 0, 0,0,0,0,0,0,0 (9 data bytes) */
+	char hide[] = {23, 1, 0, 0, 0, 0, 0, 0, 0, 0};
+	ct_write(hide, sizeof(hide));
+	if (cterm->cursor != _NOCURSOR) {
+		fprintf(result_fp, "    VDU 23 hide: cursor not hidden\n");
+		return 0;
+	}
+	/* Show: byte 23, then 1, 1, 0,0,0,0,0,0,0 */
+	char show[] = {23, 1, 1, 0, 0, 0, 0, 0, 0, 0};
+	ct_write(show, sizeof(show));
+	if (cterm->cursor != _NORMALCURSOR) {
+		fprintf(result_fp, "    VDU 23 show: cursor not visible\n");
+		return 0;
+	}
+	return 1;
+}
+
+static int
+test_beeb_aph(void)
+{
+	int col, row;
+
+	setup_cterm(PRESTEL_40X25, CTERM_EMULATION_BEEB);
+	ct_write("HELLO\x0a""MORE", 10);
+	ct_write("\x1e", 1);	/* APH */
+	ct_cursor(&col, &row);
+	if (col != 1 || row != 1) {
+		fprintf(result_fp, "    APH: %d,%d, expected 1,1\n", col, row);
+		return 0;
+	}
+	return 1;
+}
+
+static int
+test_beeb_cs(void)
+{
+	int col, row;
+
+	setup_cterm(PRESTEL_40X25, CTERM_EMULATION_BEEB);
+	ct_write("HELLO", 5);
+	ct_write("\x0c", 1);	/* CS */
+	ct_cursor(&col, &row);
+	if (col != 1 || row != 1) {
+		fprintf(result_fp, "    CS: %d,%d, expected 1,1\n", col, row);
+		return 0;
+	}
+	return 1;
+}
+
+static int
+test_beeb_c1_serial_attr(void)
+{
+	/* In BEEB mode, serial attributes come via raw C1 bytes (0x80-0x9F),
+	 * not via ESC (ESC is for VDU sequences only in BEEB mode).
+	 * 0x91 = 0x51 (Mosaic Red) + 0x40 */
+	setup_cterm(PRESTEL_40X25, CTERM_EMULATION_BEEB);
+	ct_write("\x91", 1);	/* Raw C1: Mosaic Red */
+	ct_write("X", 1);
+	if (!(cterm->extattr & CTERM_EXTATTR_PRESTEL_MOSAIC)) {
+		fprintf(result_fp, "    mosaic not set via C1 in BEEB\n");
+		return 0;
+	}
+	return 1;
+}
+
+/* ================================================================ */
 /* ATASCII tests                                                    */
 /* ================================================================ */
 
@@ -2184,6 +2909,45 @@ static struct test_entry tests[] = {
 	{"PET_c128_disputed",  test_pet_c128_disputed_ignored},
 	{"PET_lf_c128_80",    test_pet_lf_c128_80},
 	{"PET_lf_c64_ignored", test_pet_lf_c64_ignored},
+	/* Prestel */
+	{"PRS_printable",      test_prestel_printable},
+	{"PRS_APR",            test_prestel_apr},
+	{"PRS_APB",            test_prestel_apb},
+	{"PRS_APF",            test_prestel_apf},
+	{"PRS_APD",            test_prestel_apd},
+	{"PRS_APU",            test_prestel_apu},
+	{"PRS_APD_wrap",       test_prestel_apd_wrap},
+	{"PRS_APU_wrap",       test_prestel_apu_wrap},
+	{"PRS_APB_wrap",       test_prestel_apb_wrap},
+	{"PRS_APF_wrap",       test_prestel_apf_wrap},
+	{"PRS_CS",             test_prestel_cs},
+	{"PRS_APH",            test_prestel_aph},
+	{"PRS_cursor_on_off",  test_prestel_cursor_on_off},
+	{"PRS_ENQ",            test_prestel_enq},
+	{"PRS_NUL",            test_prestel_nul},
+	{"PRS_ignored_c0",     test_prestel_ignored_c0},
+	{"PRS_alpha_color",    test_prestel_esc_alpha_color},
+	{"PRS_mosaic_color",   test_prestel_esc_mosaic_color},
+	{"PRS_flash_steady",   test_prestel_esc_flash_steady},
+	{"PRS_conceal",        test_prestel_esc_conceal},
+	{"PRS_hold_release",   test_prestel_esc_hold_release},
+	{"PRS_double_height",  test_prestel_esc_double_height},
+	{"PRS_background",     test_prestel_esc_background},
+	{"PRS_separated",      test_prestel_esc_separated},
+	{"PRS_row_reset",      test_prestel_row_attr_reset},
+	{"PRS_c1_raw",         test_prestel_c1_raw},
+	/* BEEB */
+	{"BEEB_printable",     test_beeb_printable},
+	{"BEEB_char_xlate",    test_beeb_char_translate},
+	{"BEEB_BEL",           test_beeb_bel},
+	{"BEEB_APD_scroll",    test_beeb_apd_scroll},
+	{"BEEB_APU_scroll",    test_beeb_apu_scroll},
+	{"BEEB_DEL",           test_beeb_del},
+	{"BEEB_APS",           test_beeb_aps},
+	{"BEEB_VDU23_cursor",  test_beeb_vdu23_cursor},
+	{"BEEB_APH",           test_beeb_aph},
+	{"BEEB_CS",            test_beeb_cs},
+	{"BEEB_c1_serial",     test_beeb_c1_serial_attr},
 	/* ATASCII */
 	{"ATA_printable",      test_atascii_printable},
 	{"ATA_return",         test_atascii_return},
