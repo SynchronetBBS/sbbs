@@ -36,6 +36,33 @@ static struct cterminal *cterm;
 static struct vmem_cell *scrollback;
 static int term_cols, term_rows;
 
+/* Response capture buffer */
+static char response_buf[4096];
+static size_t response_len;
+
+/* Retbuf leak detection: if response_cb is set, nothing should
+ * write to retbuf. We pass a separate retbuf to detect leaks. */
+static char retbuf_leak[4096];
+static int retbuf_leaked;
+
+static void
+response_cb(const char *buf, size_t len, void *cbdata)
+{
+	(void)cbdata;
+	if (response_len + len < sizeof(response_buf)) {
+		memcpy(response_buf + response_len, buf, len);
+		response_len += len;
+		response_buf[response_len] = '\0';
+	}
+}
+
+static void
+response_clear(void)
+{
+	response_buf[0] = '\0';
+	response_len = 0;
+}
+
 #define SCROLL_LINES 100
 
 static void
@@ -80,6 +107,10 @@ setup_cterm(int mode, int emulation)
 		fprintf(stderr, "cterm_init failed\n");
 		return;
 	}
+	cterm->response_cb = response_cb;
+	cterm->response_cbdata = NULL;
+	response_clear();
+	retbuf_leaked = 0;
 	cterm_start(cterm);
 }
 
@@ -101,7 +132,15 @@ static void
 ct_write(const void *buf, int len)
 {
 	int speed = 0;
-	cterm_write(cterm, buf, len, NULL, 0, &speed);
+	retbuf_leak[0] = '\0';
+	cterm_write(cterm, buf, len, retbuf_leak, sizeof(retbuf_leak), &speed);
+	if (retbuf_leak[0] != '\0') {
+		if (!retbuf_leaked) {
+			fprintf(result_fp, "    RETBUF LEAK: '%.*s'\n",
+			    (int)strlen(retbuf_leak), retbuf_leak);
+		}
+		retbuf_leaked = 1;
+	}
 }
 
 /*
@@ -1212,6 +1251,293 @@ static int test_ansi_cvt(void)
 	ct_printf("\033[1;5H");  /* move to row 1 col 5 */
 	ct_printf("\033[Y");     /* CVT — advance to next line tab */
 	return expect_cursor(5, 10);
+}
+
+/* Query/response tests */
+
+static int test_ansi_dsr(void)
+{
+	int row, col;
+	setup_ansi();
+	ct_printf("\033[5;10H");
+	response_clear();
+	ct_printf("\033[6n");  /* DSR — cursor position report */
+	/* Response should be ESC[5;10R */
+	if (sscanf(response_buf, "\033[%d;%dR", &row, &col) != 2) {
+		fprintf(result_fp, "    no DSR response: '%s'\n", response_buf);
+		return 0;
+	}
+	if (row != 5 || col != 10) {
+		fprintf(result_fp, "    DSR: %d;%d, expected 5;10\n", row, col);
+		return 0;
+	}
+	return 1;
+}
+
+static int test_ansi_dsr_status(void)
+{
+	setup_ansi();
+	response_clear();
+	ct_printf("\033[5n");  /* DSR — status report */
+	if (strstr(response_buf, "\033[0n") == NULL) {
+		fprintf(result_fp, "    no status response\n");
+		return 0;
+	}
+	return 1;
+}
+
+static int test_ansi_da(void)
+{
+	setup_ansi();
+	response_clear();
+	ct_printf("\033[c");  /* DA — device attributes */
+	/* CTerm DA response starts with ESC[= (not ESC[?) */
+	if (response_len == 0) {
+		fprintf(result_fp, "    no DA response\n");
+		return 0;
+	}
+	if (strstr(response_buf, "c") == NULL) {
+		fprintf(result_fp, "    DA response missing final 'c': '%s'\n", response_buf);
+		return 0;
+	}
+	return 1;
+}
+
+static int test_ansi_decrqss_m(void)
+{
+	setup_ansi();
+	response_clear();
+	ct_write("\033P$qm\033\\", 7);  /* DECRQSS for SGR */
+	if (strstr(response_buf, "1$r") == NULL) {
+		fprintf(result_fp, "    no DECRQSS m response: '%s'\n", response_buf);
+		return 0;
+	}
+	return 1;
+}
+
+static int test_ansi_decrqss_r(void)
+{
+	setup_ansi();
+	response_clear();
+	ct_write("\033P$qr\033\\", 7);  /* DECRQSS for DECSTBM */
+	if (strstr(response_buf, "1$r") == NULL) {
+		fprintf(result_fp, "    no DECRQSS r response\n");
+		return 0;
+	}
+	return 1;
+}
+
+static int test_ansi_decrqss_s(void)
+{
+	setup_ansi();
+	response_clear();
+	ct_write("\033P$qs\033\\", 7);  /* DECRQSS for DECSLRM */
+	if (strstr(response_buf, "1$r") == NULL) {
+		fprintf(result_fp, "    no DECRQSS s response\n");
+		return 0;
+	}
+	return 1;
+}
+
+static int test_ansi_decrqss_starx(void)
+{
+	setup_ansi();
+	response_clear();
+	ct_write("\033P$q*x\033\\", 8);  /* DECRQSS for DECSACE */
+	if (strstr(response_buf, "*x") == NULL) {
+		fprintf(result_fp, "    no DECRQSS *x response: '%s'\n", response_buf);
+		return 0;
+	}
+	return 1;
+}
+
+static int test_ansi_decrqss_starr(void)
+{
+	setup_ansi();
+	response_clear();
+	ct_write("\033P$q*r\033\\", 8);  /* DECRQSS for DECSCS */
+	if (strstr(response_buf, "*r") == NULL) {
+		fprintf(result_fp, "    no DECRQSS *r response\n");
+		return 0;
+	}
+	return 1;
+}
+
+static int test_ansi_decrqm_autowrap(void)
+{
+	setup_ansi();
+	response_clear();
+	ct_printf("\033[?7$p");  /* DECRQM autowrap */
+	/* Response: CSI ? 7 ; Pm $ y  where Pm=1 (set) */
+	if (strstr(response_buf, "?7;1$y") == NULL &&
+	    strstr(response_buf, "?7;3$y") == NULL) {
+		fprintf(result_fp, "    autowrap not reported as set: '%s'\n", response_buf);
+		return 0;
+	}
+	return 1;
+}
+
+static int test_ansi_decrqm_origin(void)
+{
+	setup_ansi();
+	response_clear();
+	ct_printf("\033[?6$p");  /* DECRQM origin mode */
+	/* Should be reset (Pm=2) */
+	if (strstr(response_buf, "?6;2$y") == NULL &&
+	    strstr(response_buf, "?6;4$y") == NULL) {
+		fprintf(result_fp, "    origin not reported as reset: '%s'\n", response_buf);
+		return 0;
+	}
+	return 1;
+}
+
+/* DECDMAC — define and invoke a macro */
+static int test_ansi_decdmac(void)
+{
+	setup_ansi();
+	/* Define macro 0 as "Hello" (hex-encoded: 48656c6c6f) */
+	ct_write("\033P0;0;1!z48656c6c6f\033\\", 22);
+	/* Invoke macro 0 */
+	ct_printf("\033[1;1H");
+	ct_printf("\033[0*z");
+	if (!expect_text(1, 1, "Hello")) return 0;
+	if (!expect_cursor(6, 1)) return 0;
+	return 1;
+}
+
+/* DECINVM — invoke a defined macro */
+static int test_ansi_decinvm(void)
+{
+	setup_ansi();
+	/* Define macro 1 as "World" */
+	ct_write("\033P1;0;1!z576f726c64\033\\", 22);
+	ct_printf("\033[5;1H");
+	ct_printf("\033[1*z");  /* invoke macro 1 */
+	if (!expect_text(1, 5, "World")) return 0;
+	return 1;
+}
+
+/* DECRQCRA — checksum of rectangular area */
+static int test_ansi_decrqcra(void)
+{
+	setup_ansi();
+	ct_puts("A");
+	response_clear();
+	ct_printf("\033[1;1;1;1;1;1*y");  /* DECRQCRA: id=1, page=1, top=1, left=1, bottom=1, right=1 */
+	/* Response: DCS Pid ! ~ Xxxx ST */
+	if (response_len == 0) {
+		fprintf(result_fp, "    no DECRQCRA response\n");
+		return 0;
+	}
+	if (strstr(response_buf, "!~") == NULL) {
+		fprintf(result_fp, "    DECRQCRA response missing !~: '%.*s'\n",
+		    (int)response_len, response_buf);
+		return 0;
+	}
+	return 1;
+}
+
+/* String passthrough — cursor must not move */
+static int test_ansi_apc_passthrough(void)
+{
+	setup_ansi();
+	ct_puts("X");
+	int col, row;
+	ct_cursor(&col, &row);
+	ct_write("\033_SomeAPCdata\033\\", 15);
+	return expect_cursor(col, row);
+}
+
+static int test_ansi_dcs_passthrough(void)
+{
+	setup_ansi();
+	ct_puts("X");
+	int col, row;
+	ct_cursor(&col, &row);
+	/* DCS with unknown content should not move cursor */
+	ct_write("\033PUnknown\033\\", 11);
+	return expect_cursor(col, row);
+}
+
+static int test_ansi_pm_passthrough(void)
+{
+	setup_ansi();
+	ct_puts("X");
+	int col, row;
+	ct_cursor(&col, &row);
+	ct_write("\033^PMdata\033\\", 10);
+	return expect_cursor(col, row);
+}
+
+static int test_ansi_sos_passthrough(void)
+{
+	setup_ansi();
+	ct_puts("X");
+	int col, row;
+	ct_cursor(&col, &row);
+	ct_write("\033XSOSdata\033\\", 11);
+	return expect_cursor(col, row);
+}
+
+/* BCDM — bracket paste detection */
+static int test_ansi_bcdm(void)
+{
+	setup_ansi();
+	ct_printf("\033[?2004h");  /* enable bracket paste */
+	if (!(cterm->extattr & CTERM_EXTATTR_BRACKETPASTE)) {
+		fprintf(result_fp, "    bracket paste not enabled\n");
+		return 0;
+	}
+	ct_printf("\033[?2004l");  /* disable */
+	if (cterm->extattr & CTERM_EXTATTR_BRACKETPASTE) {
+		fprintf(result_fp, "    bracket paste not disabled\n");
+		return 0;
+	}
+	return 1;
+}
+
+/* Save/restore mode */
+static int test_ansi_save_restore_mode(void)
+{
+	setup_ansi();
+	/* Autowrap is on by default. Save, disable, restore. */
+	ct_printf("\033[?7s");   /* save autowrap */
+	ct_printf("\033[?7l");   /* disable */
+	if (cterm->extattr & CTERM_EXTATTR_AUTOWRAP) {
+		fprintf(result_fp, "    autowrap not disabled\n");
+		return 0;
+	}
+	ct_printf("\033[?7u");   /* restore */
+	if (!(cterm->extattr & CTERM_EXTATTR_AUTOWRAP)) {
+		fprintf(result_fp, "    autowrap not restored\n");
+		return 0;
+	}
+	return 1;
+}
+
+/* Retbuf leak detection — when response_cb is set, nothing should
+ * go through retbuf. This catches responses that bypass the callback.
+ * Runs all major query types and checks the retbuf_leaked flag. */
+static int test_ansi_retbuf_leak(void)
+{
+	setup_ansi();
+	ct_printf("\033[6n");          /* DSR cursor position */
+	ct_printf("\033[5n");          /* DSR status */
+	ct_printf("\033[c");           /* DA */
+	ct_write("\033P$qm\033\\", 7); /* DECRQSS SGR */
+	ct_write("\033P$qr\033\\", 7); /* DECRQSS DECSTBM */
+	ct_write("\033P$qs\033\\", 7); /* DECRQSS DECSLRM */
+	ct_write("\033P$q*x\033\\", 8); /* DECRQSS DECSACE */
+	ct_write("\033P$q*r\033\\", 8); /* DECRQSS DECSCS */
+	ct_printf("\033[?7$p");        /* DECRQM autowrap */
+	ct_printf("\033[?6$p");        /* DECRQM origin */
+	ct_printf("\033[1;1;1;1;1;1*y"); /* DECRQCRA */
+	ct_printf("\033[=4n");          /* CTSMRR */
+	if (retbuf_leaked) {
+		fprintf(result_fp, "    response leaked to retbuf when callback is set\n");
+		return 0;
+	}
+	return 1;
 }
 
 /* SGR: noblink (5 then 25 = same as no blink) */
@@ -4284,6 +4610,30 @@ static struct test_entry tests[] = {
 	/* ANSI-BBS — Variants */
 	{"ANSI_CUP_default",  test_ansi_cup_defaults},
 	{"ANSI_HVP_default",  test_ansi_hvp_defaults},
+	/* ANSI-BBS — Query/response */
+	{"ANSI_DSR",          test_ansi_dsr},
+	{"ANSI_DSR_status",   test_ansi_dsr_status},
+	{"ANSI_DA",           test_ansi_da},
+	{"ANSI_DECRQSS_m",   test_ansi_decrqss_m},
+	{"ANSI_DECRQSS_r",   test_ansi_decrqss_r},
+	{"ANSI_DECRQSS_s",   test_ansi_decrqss_s},
+	{"ANSI_DECRQSS_sx",  test_ansi_decrqss_starx},
+	{"ANSI_DECRQSS_sr",  test_ansi_decrqss_starr},
+	{"ANSI_DECRQM_aw",   test_ansi_decrqm_autowrap},
+	{"ANSI_DECRQM_orig", test_ansi_decrqm_origin},
+	{"ANSI_DECRQCRA",    test_ansi_decrqcra},
+	/* ANSI-BBS — Macros */
+	{"ANSI_DECDMAC",     test_ansi_decdmac},
+	{"ANSI_DECINVM",     test_ansi_decinvm},
+	/* ANSI-BBS — String passthrough */
+	{"ANSI_APC_pass",    test_ansi_apc_passthrough},
+	{"ANSI_DCS_pass",    test_ansi_dcs_passthrough},
+	{"ANSI_PM_pass",     test_ansi_pm_passthrough},
+	{"ANSI_SOS_pass",    test_ansi_sos_passthrough},
+	/* ANSI-BBS — Modes */
+	{"ANSI_BCDM",        test_ansi_bcdm},
+	{"ANSI_save_mode",   test_ansi_save_restore_mode},
+	{"ANSI_retbuf_leak", test_ansi_retbuf_leak},
 	/* ANSI-BBS — SGR more */
 	{"ANSI_SGR_noblink",  test_ansi_sgr_noblink},
 	{"ANSI_SGR_normint",  test_ansi_sgr_normal_int},
