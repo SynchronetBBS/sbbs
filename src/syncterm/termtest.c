@@ -4094,63 +4094,21 @@ struct test_entry {
 };
 
 static struct test_entry tests[] = {
-	/* C0 controls and escape sequences */
-	{"NUL",           test_nul},
-	{"BS",            test_bs},
-	{"HT",            test_ht},
-	{"LF",            test_lf},
-	{"CR",            test_cr},
-	{"NEL",           test_nel},
-	{"HTS",           test_hts},
-	{"RI",            test_ri},
-	{"RIS",           test_ris},
-	/* String passthrough (cursor must not move) */
+	/*
+	 * Tests that require the PTY integration path (SyncTERM process,
+	 * STS readback, response parsing, or SyncTERM-specific features).
+	 *
+	 * Cursor movement, erase ops, SGR, scrolling, margins, modes,
+	 * rectangular ops, macros, tabs, and save/restore are now tested
+	 * in cterm_test.c via direct cterm_write/vmem_gettext.
+	 */
+	/* String passthrough (cursor must not move — verifies PTY path) */
 	{"APC",           test_apc},
 	{"DCS",           test_dcs},
 	{"PM",            test_pm},
 	{"OSC",           test_osc},
 	{"SOS",           test_sos},
-	/* Cursor movement */
-	{"CUU",           test_cuu},
-	{"CUD",           test_cud},
-	{"CUF",           test_cuf},
-	{"CUB",           test_cub},
-	{"CNL",           test_cnl},
-	{"CPL",           test_cpl},
-	{"CUP",           test_cup},
-	{"CUP_variants",  test_cup_variants},
-	{"HVP",           test_hvp},
-	{"HVP_variants",  test_hvp_variants},
-	{"CHA",           test_cha},
-	{"VPA",           test_vpa},
-	{"HPA",           test_hpa},
-	{"HPR",           test_hpr},
-	{"VPR",           test_vpr},
-	{"HPB",           test_hpb},
-	{"VPB",           test_vpb},
-	{"REP",           test_rep},
-	/* Clamping */
-	{"CUU_clamp",     test_cuu_stop},
-	{"CUD_clamp",     test_cud_stop},
-	{"CUF_clamp",     test_cuf_clamp},
-	{"CUB_clamp",     test_cub_clamp},
-	{"HPB_clamp",     test_hpb_clamp},
-	{"VPB_clamp",     test_vpb_clamp},
-	/* Editing */
-	{"ED",            test_ed_below},
-	{"EL",            test_el_right},
-	{"ICH",           test_ich},
-	{"DCH",           test_dch},
-	{"IL",            test_il},
-	{"DL",            test_dl},
-	{"ECH",           test_ech},
-	/* Tabs */
-	{"TBC",           test_tbc},
-	{"HTS_CHT_CBT",   test_hts_cht_cbt},
-	/* Save/restore */
-	{"SCOSC_SCORC",   test_save_restore_cursor},
-	{"DECSC_DECRC",   test_decsc_decrc},
-	/* Device queries */
+	/* Device queries (response format via PTY) */
 	{"DSR",           test_dsr},
 	{"DSR_status",    test_dsr_status},
 	{"DA",            test_da},
@@ -4160,29 +4118,6 @@ static struct test_entry tests[] = {
 	{"DECRQSS_r",     test_decrqss_r},
 	{"DECRQSS_s",     test_decrqss_s},
 	{"DECMSR",        test_decmsr},
-	/* Scroll regions and margins */
-	{"DECSTBM",       test_decstbm},
-	{"DECSTBM_scroll", test_decstbm_scroll},
-	{"DECSLRM",       test_decslrm},
-	/* Scrolling */
-	{"SU",            test_su},
-	{"SD",            test_sd},
-	{"RI_scroll",     test_ri_scroll},
-	{"LF_scroll",     test_lf_scroll},
-	/* SGR */
-	{"SGR_reset",     test_sgr_reset},
-	{"SGR256_FG",     test_sgr256_fg},
-	{"SGR256_BG",     test_sgr256_bg},
-	{"SGRRGB_FG",     test_sgr_rgb_fg},
-	{"SGRRGB_BG",     test_sgr_rgb_bg},
-	{"SGR_bright",    test_sgr_bright},
-	{"SGR_negative",  test_sgr_negative},
-	{"SGR_conceal",   test_sgr_conceal},
-	/* Modes */
-	{"Autowrap",      test_autowrap},
-	{"DECRST_nowrap", test_decrst_nowrap},
-	{"Origin_mode",   test_origin_mode},
-	{"BCDM",          test_bcdm},
 	/* DECRPM mode queries */
 	{"DECRQM",              test_decrpm},
 	{"DECRQM_autowrap",     test_decrpm_autowrap},
@@ -4197,7 +4132,7 @@ static struct test_entry tests[] = {
 	/* Palette queries */
 	{"OSC4_query",    test_osc4_query},
 	{"OSC104",        test_osc104},
-	/* Cursor style */
+	/* Cursor style query */
 	{"DECRQSS_SPq",   test_decrqss_cursor_style},
 	/* Screen readback (ECMA-48 SSA/STS) */
 	{"STS_text_only",      test_sts_text_only},
@@ -4206,23 +4141,8 @@ static struct test_entry tests[] = {
 	{"STS_with_sgr",       test_sts_with_sgr},
 	{"DECRQM_ANSI_modes",  test_decrqm_ansi_modes},
 	/* SyncTERM extensions */
-	{"DECDMAC",       test_decdmac},
-	{"DECINVM",       test_decinvm},
 	{"CTSV",          test_ctsv},
-	/* Editing extended */
-	{"ED_above",       test_ed_above},
-	{"ED_all",         test_ed_all},
-	{"EL_left",        test_el_left},
-	{"EL_all",         test_el_all},
-	{"SL",             test_sl},
-	{"SR",             test_sr},
-	{"SU_margins",     test_su_margins},
-	{"SD_margins",     test_sd_margins},
-	{"SL_margins",     test_sl_margins},
-	{"SR_margins",     test_sr_margins},
-	/* Cursor extended */
-	{"CVT",            test_cvt},
-	/* Tabs extended */
+	/* Tabs extended (response) */
 	{"TSR",            test_tsr},
 	/* Device queries extended */
 	{"CTDA",           test_ctda},
@@ -4240,22 +4160,12 @@ static struct test_entry tests[] = {
 	{"DECRQSS_starpipe", test_decrqss_starpipe},
 	{"DECRQSS_starx", test_decrqss_starx},
 	{"DECRQSS_starr", test_decrqss_starr},
-	/* Save/restore modes */
-	{"CTSMS_CTRMS",    test_save_restore_mode},
-	/* SGR extended */
-	{"SGR_dim",        test_sgr_dim},
-	{"SGR_blink",      test_sgr_blink},
-	{"SGR_noblink",    test_sgr_noblink},
-	{"SGR_normal_int", test_sgr_normal_intensity},
-	{"SGR_default_fg", test_sgr_default_fg},
-	{"SGR_default_bg", test_sgr_default_bg},
-	{"SGR_bright_bg",  test_sgr_bright_bg},
-	/* 24-bit color extension */
+	/* 24-bit color (needs checksum comparison via PTY) */
 	{"CT24BC",         test_ct24bc},
 	/* OSC queries */
 	{"OSC10_query",    test_osc10_query},
 	{"OSC11_query",    test_osc11_query},
-	/* OSC 8 hyperlink */
+	/* OSC 8 hyperlink readback */
 	{"OSC8_readback",  test_osc8_readback},
 	/* DECRPM additional modes */
 	{"DECRPM_mode31",  test_decrpm_mode31},
@@ -4271,22 +4181,6 @@ static struct test_entry tests[] = {
 	{"SM_TTM",         test_sm_ttm},
 	/* SyncTERM extensions */
 	{"APC_JXL_query",  test_apc_jxl_query},
-	/* Rectangular area operations */
-	{"DECERA",         test_decera},
-	{"DECFRA",         test_decfra},
-	{"DECCRA",         test_deccra},
-	{"DECIC",          test_decic},
-	{"DECDC",          test_decdc},
-	/* DECCARA / DECRARA / DECSACE */
-	{"DECCARA_bold",   test_deccara_bold},
-	{"DECCARA_color",  test_deccara_color},
-	{"DECRARA_bold",   test_decrara_toggle_bold},
-	{"DECRARA_blink",  test_decrara_toggle_blink},
-	{"DECRARA_neg",    test_decrara_toggle_negative},
-	{"DECRARA_sgr0",   test_decrara_sgr0},
-	{"DECCARA_attr",   test_deccara_preserves_attr},
-	{"DECRARA_attr",   test_decrara_preserves_attr},
-	{"DECSACE_stream", test_decsace_stream},
 	/* NUL in doorway mode + doorway readback encoding */
 	{"NUL_doorway",    test_nul_doorway},
 	/* Regression: response ordering when APC + CSI in same cterm_write */
