@@ -29,7 +29,9 @@
 	#else
 		#define DLLEXPORT   __declspec(dllexport)
 	#endif
-#else   /* !_WIN32 || !_DLL*/
+#elif defined(__GNUC__) || defined(__clang__)
+	#define DLLEXPORT   __attribute__((visibility("default")))
+#else
 	#define DLLEXPORT
 #endif
 
