@@ -197,6 +197,10 @@ SOURCE: <<ECMA-48>>
 Begins a string consisting of the characters 0x08 - 0x0d and
 0x20-0x7e, terminated by a String Terminator (`ST`)
 
+If a byte outside the valid range (other than `ESC`) is received, the
+string is discarded and the byte is re-processed as normal input.
+This applies to all command strings: DCS, OSC, PM, and APC.
+
 Introduces <<Device Control Strings>>
 
 SOURCE: <<ECMA-48>>

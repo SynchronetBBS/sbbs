@@ -1529,6 +1529,59 @@ static int test_ansi_sos_passthrough(void)
 	return expect_cursor(col, row);
 }
 
+/*
+ * Malformed string tests (ECMA-48 §5.6).
+ *
+ * Command strings (DCS/OSC/APC/PM) allow bytes 00/08-00/13 and 02/00-07/14.
+ * Character strings (SOS) allow any byte except SOS and ST.
+ *
+ * When an invalid byte appears, the string is discarded and the invalid
+ * byte is re-processed as normal input.  Each command string test uses a
+ * byte that is valid in an SOS character string but invalid in a command
+ * string, from a different part of the invalid range.
+ */
+
+/* OSC + BEL (0x07) — below 00/08 floor of command string range */
+static int test_ansi_osc_malformed(void)
+{
+	setup_ansi();
+	ct_printf("\033[2J\033[H");
+	/* BEL aborts the OSC and beeps (no visible output), then 'A' prints */
+	ct_write("\033]0;title\x07" "A", 11);
+	return expect_text(1, 1, "A");
+}
+
+/* DCS + BEL (0x07) — below 00/08 floor of command string range */
+static int test_ansi_dcs_malformed(void)
+{
+	setup_ansi();
+	ct_printf("\033[2J\033[H");
+	/* BEL aborts the DCS and beeps, then 'B' prints at col 1 */
+	ct_write("\033Pdata\x07" "B", 8);
+	return expect_text(1, 1, "B");
+}
+
+/* APC + SI (0x0F) — in the gap between 00/13 and 02/00 */
+static int test_ansi_apc_malformed(void)
+{
+	setup_ansi();
+	ct_printf("\033[2J\033[H");
+	/* SI re-processed as default (prints as CP437 glyph), 'C' follows */
+	ct_write("\033_stuff\x0f" "C", 9);
+	return expect_text(2, 1, "C");
+}
+
+/* SOS + SOS — the only invalid sequence in a character string */
+static int test_ansi_sos_malformed(void)
+{
+	setup_ansi();
+	ct_printf("\033[2J\033[H");
+	/* First SOS is malformed (no ST), second SOS starts a new string
+	 * which is properly terminated.  'D' follows and should print. */
+	ct_write("\033Xfirst\033Xsecond\033\\D", 19);
+	return expect_text(1, 1, "D");
+}
+
 /* BCDM — bracket paste detection */
 static int test_ansi_bcdm(void)
 {
@@ -5403,6 +5456,11 @@ static struct test_entry tests[] = {
 	{"ANSI_DCS_pass",    test_ansi_dcs_passthrough},
 	{"ANSI_PM_pass",     test_ansi_pm_passthrough},
 	{"ANSI_SOS_pass",    test_ansi_sos_passthrough},
+	/* ANSI-BBS — Malformed strings */
+	{"ANSI_OSC_malform",  test_ansi_osc_malformed},
+	{"ANSI_DCS_malform",  test_ansi_dcs_malformed},
+	{"ANSI_APC_malform",  test_ansi_apc_malformed},
+	{"ANSI_SOS_malform",  test_ansi_sos_malformed},
 	/* ANSI-BBS — Modes */
 	{"ANSI_BCDM",        test_ansi_bcdm},
 	{"ANSI_save_mode",   test_ansi_save_restore_mode},

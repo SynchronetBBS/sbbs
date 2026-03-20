@@ -2847,6 +2847,13 @@ sgr_diff(struct cterminal *cterm, const struct vmem_cell *prev, const struct vme
 /*
  * STS — Transmit selected area content.
  * Framed as: SOS CTerm:STS:<N>: <content> ST
+ *
+ * The response content is inside an SOS frame, so it must never contain
+ * SOS (ESC X) or ST (ESC \) — either would prematurely terminate the
+ * frame.  OSC 8 hyperlinks use ESC : \ (escaped ST) instead of ESC \.
+ * Cell characters that are C0 controls (including ESC) or DEL are
+ * doorway-encoded (FETM=INSERT) or replaced with SPACE (FETM=EXCLUDE),
+ * so they cannot combine with following cells to form ESC X or ESC \.
  */
 static void
 cterm_transmit_selected(struct cterminal *cterm)
@@ -6687,10 +6694,11 @@ CIOLIBEXPORT size_t cterm_write(struct cterminal * cterm, const void *vbuf, int 
 								}
 								else {
 									cterm->string = 0;
-									/* Just toss out the string and this char */
+									/* Toss out the malformed string, but re-process the byte */
 									FREE_AND_NULL(cterm->strbuf);
 									cterm->strbuflen = cterm->strbufsize = 0;
 									cterm->sixel = SIXEL_INACTIVE;
+									j--;
 								}
 							}
 							else {
