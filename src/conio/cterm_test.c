@@ -1582,6 +1582,72 @@ static int test_ansi_sos_malformed(void)
 	return expect_text(1, 1, "D");
 }
 
+/*
+ * NUL (media-fill) handling per ECMA-48 §8.3.88.
+ * NUL may be freely inserted/removed without affecting content.
+ * Inside escape sequences and command strings: ignored.
+ * Inside SOS character strings: accumulated (application's data).
+ */
+
+/* NUL inside CSI sequence — should be ignored, sequence completes */
+static int test_ansi_nul_in_seq(void)
+{
+	setup_ansi();
+	ct_printf("\033[2J\033[H");
+	ct_puts("ABCDE");
+	/* CSI 3 NUL G — NUL should be ignored, CHA 3 moves to col 3 */
+	ct_write("\033[3\x00G", 5);
+	return expect_cursor(3, 1);
+}
+
+/* NUL inside OSC command string — should be ignored, string continues */
+static int test_ansi_nul_in_osc(void)
+{
+	setup_ansi();
+	ct_printf("\033[2J\033[H");
+	/* OSC 0 ; t NUL i t l e ST — NUL ignored, string completes normally.
+	 * Cursor should not move (OSC doesn't affect cursor). Then 'A' prints. */
+	ct_write("\033]0;t\x00itle\033\\A", 13);
+	return expect_text(1, 1, "A");
+}
+
+/* NUL inside DCS command string — should be ignored, string continues */
+static int test_ansi_nul_in_dcs(void)
+{
+	setup_ansi();
+	ct_printf("\033[2J\033[H");
+	/* DCS with NUL in content, properly terminated by ST, then 'B' prints */
+	ct_write("\033Pda\x00ta\033\\B", 10);
+	return expect_text(1, 1, "B");
+}
+
+/* NUL inside SOS character string — should be accumulated, not stripped */
+static int test_ansi_nul_in_sos(void)
+{
+	setup_ansi();
+	ct_printf("\033[2J\033[H");
+	/* Send SOS with embedded NUL, but don't terminate yet */
+	ct_write("\033X" "he\x00lo", 7);
+	/* Verify NUL was accumulated: strbuflen should be 5 (h e NUL l o) */
+	if (cterm->strbuflen != 5) {
+		fprintf(result_fp, "    strbuflen=%d, expected 5\n",
+		    (int)cterm->strbuflen);
+		/* Terminate the SOS so we don't leave state dirty */
+		ct_write("\033\\", 2);
+		return 0;
+	}
+	/* Verify the NUL is actually in the buffer at position 2 */
+	if (cterm->strbuf[2] != '\0') {
+		fprintf(result_fp, "    strbuf[2]=0x%02x, expected 0x00\n",
+		    (unsigned char)cterm->strbuf[2]);
+		ct_write("\033\\", 2);
+		return 0;
+	}
+	/* Terminate and verify normal output resumes */
+	ct_write("\033\\E", 3);
+	return expect_text(1, 1, "E");
+}
+
 /* BCDM — bracket paste detection */
 static int test_ansi_bcdm(void)
 {
@@ -5461,6 +5527,11 @@ static struct test_entry tests[] = {
 	{"ANSI_DCS_malform",  test_ansi_dcs_malformed},
 	{"ANSI_APC_malform",  test_ansi_apc_malformed},
 	{"ANSI_SOS_malform",  test_ansi_sos_malformed},
+	/* ANSI-BBS — NUL media-fill */
+	{"ANSI_NUL_in_seq",   test_ansi_nul_in_seq},
+	{"ANSI_NUL_in_osc",   test_ansi_nul_in_osc},
+	{"ANSI_NUL_in_dcs",   test_ansi_nul_in_dcs},
+	{"ANSI_NUL_in_sos",   test_ansi_nul_in_sos},
 	/* ANSI-BBS — Modes */
 	{"ANSI_BCDM",        test_ansi_bcdm},
 	{"ANSI_save_mode",   test_ansi_save_restore_mode},
