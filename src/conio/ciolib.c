@@ -1174,7 +1174,6 @@ CIOLIBEXPORT int ciolib_movetext_clear(int sx, int sy, int ex, int ey, int dx, i
 {
 	int ret;
 	int width = ex - sx + 1;
-	int height = ey - sy + 1;
 
 	CIOLIB_INIT();
 
