@@ -1988,7 +1988,7 @@ static void get_libperm(lib_t *lib, user_t *user, client_t *client, char *permst
 	if (chk_ar(&scfg, lib->ar, user, client)) {
 		//*(p++) = 'a';	// File may be appended to
 		//*(p++) = 'c';	// Files may be created in dir
-		//*(p++) = 'd';	// Item may be depeted (dir or file)
+		//*(p++) = 'd';	// Item may be deleted (dir or file)
 		*(p++) = 'e';   // Can change to the dir
 		//*(p++) = 'f';	// Item may be renamed
 		*(p++) = 'l';   // Directory contents can be listed
@@ -2028,7 +2028,7 @@ static BOOL can_delete_files(lib_t *lib, dir_t *dir, user_t *user, client_t *cli
 {
 	if (!chk_ar(&scfg, lib->ar, user, client))
 		return FALSE;
-	if (user->rest & FLAG('D'))
+	if (user->rest & FLAG('R'))
 		return FALSE;
 	if (!chk_ar(&scfg, dir->ar, user, client))
 		return FALSE;
@@ -2046,7 +2046,7 @@ static void get_dirperm(lib_t *lib, dir_t *dir, user_t *user, client_t *client, 
 	//*(p++) = 'a';	// File may be appended to
 	if (can_upload(lib, dir, user, client))
 		*(p++) = 'c';   // Files may be created in dir
-	//*(p++) = 'd';	// Item may be depeted (dir or file)
+	//*(p++) = 'd';	// Item may be deleted (dir or file)
 	if (can_list(lib, dir, user, client)) {
 		*(p++) = 'e';   // Can change to the dir
 		//*(p++) = 'f';	// Item may be renamed
@@ -2079,17 +2079,15 @@ static BOOL can_append(lib_t *lib, dir_t *dir, user_t *user, client_t *client, f
 
 static BOOL can_delete(lib_t *lib, dir_t *dir, user_t *user, client_t *client, file_t *file)
 {
-	if (user->rest & FLAG('D'))
+	if (user->rest & FLAG('R'))
 		return FALSE;
 	if (!chk_ar(&scfg, lib->ar, user, client))
 		return FALSE;
 	if (!chk_ar(&scfg, dir->ar, user, client))
 		return FALSE;
-	if (!user_is_dirop(&scfg, dir->dirnum, user, client))
-		return FALSE;
-	if (!(user->exempt & FLAG('R')))
-		return FALSE;
-	return TRUE;
+	if (user_is_dirop(&scfg, dir->dirnum, user, client) || (user->exempt & FLAG('R')))
+		return TRUE;
+	return stricmp(file->from, user->alias) == 0;
 }
 
 static BOOL can_download(lib_t *lib, dir_t *dir, user_t *user, client_t *client, file_t *file)
