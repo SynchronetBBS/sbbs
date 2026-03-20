@@ -6683,7 +6683,9 @@ CIOLIBEXPORT size_t cterm_write(struct cterminal * cterm, const void *vbuf, int 
 						case CTERM_STRING_OSC:
 							/* 0x08-0x0d, 0x20-0x7e */
 						case CTERM_STRING_PM:
-							/* 0x08-0x0d, 0x20-0x7e */
+							/* 0x08-0x0d, 0x20-0x7e; NUL is media-fill (ECMA-48 §8.3.88) */
+							if (ch[0] == 0)
+								break;
 							if (ch[0] < 8 || (ch[0] > 0x0d && ch[0] < 0x20) || ch[0] > 0x7e) {
 								if (ch[0] == 27) {
 									uctputs(cterm, prn);
@@ -6968,6 +6970,8 @@ CIOLIBEXPORT size_t cterm_write(struct cterminal * cterm, const void *vbuf, int 
 								break;						}
 					}
 					else {
+						if (ch[0] == 0)
+							continue;	/* NUL: media-fill, ignore (ECMA-48 §8.3.88) */
 						ustrcat(cterm->escbuf,ch);
 						switch(legal_sequence(cterm->escbuf, sizeof(cterm->escbuf)-1)) {
 							case SEQ_BROKEN:
