@@ -9,7 +9,7 @@ Add DECRQSS queries for communication speed and DECSACE
 Add support for DECSCUSR
 Fix curses CPU spin when PTY is deleted (e.g., ttyd disconnect)
 Fix hyperlink IDs not cleared on erase/scroll operations
-Fix 9 terminfo entry bugs, add 5 missing capabilities
+Fix 9 termcap/terminfo entry bugs, add 5 missing capabilities
 Fix custom entry palette lost on terminal reset
 
 Version 1.8rc2
