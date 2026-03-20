@@ -1010,6 +1010,9 @@ message to lower-case and comparing them with the words in the dictionary.
 ===================
 Version  Date         Description
 -------  ----         -----------
+2.01     2026-03-18   For guest users, always use default settings (with no
+                      saved UI style/mode, in particular) and don't save user
+                      settings
 2.00     2026-03-05   SlyEdit has a new user setting (in the user settings menu,
                       opened with Ctrl-U), to specify which UI style to use
                       (Ice/DCT/Random), and if the user hasn't chosen, SlyEdit
