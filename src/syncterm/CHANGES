@@ -36,7 +36,7 @@ Fix compatibility with "SSH-2.0-Go"
 Fix curses mode stdio drop detection
 Fix curses CPU spin when PTY is deleted (e.g., ttyd disconnect)
 Fix hyperlink IDs not cleared on erase/scroll operations
-Fix 9 terminfo entry bugs, add 5 missing capabilities
+Fix 9 termcap/terminfo entry bugs, add 5 missing capabilities
 Fix custom entry palette lost on terminal reset
 Full code audit by Claude Opus, many fixes
 
