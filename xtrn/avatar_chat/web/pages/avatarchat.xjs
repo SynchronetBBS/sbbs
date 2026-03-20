@@ -2070,8 +2070,10 @@ var avatarChatLoggedIn = user.number > 0;
         loadPrivateThreads(false);
         loadActiveHistory(false);
         loadUsers(false);
-        connectEvents();
-        startReconcileLoop();
+        if (pageConfig.isLoggedIn) {
+            connectEvents();
+            startReconcileLoop();
+        }
     });
 
     window.addEventListener('beforeunload', function () {
