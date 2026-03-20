@@ -483,6 +483,7 @@ send_key(WORD keyval)
 static void
 send_scancode(uint32_t evdev_key, bool pressed)
 {
+	uint32_t tevdev_key;
 	WORD keyval = 0xffff;
 
 	/*
@@ -492,47 +493,50 @@ send_scancode(uint32_t evdev_key, bool pressed)
 	 */
 	switch (evdev_key) {
 	case EVDEV_KEY_HOME:
-		evdev_key = 71;
+		tevdev_key = 71;
 		break;
 	case EVDEV_KEY_UP:
-		evdev_key = 72;
+		tevdev_key = 72;
 		break;
 	case EVDEV_KEY_PAGEUP:
-		evdev_key = 73;
+		tevdev_key = 73;
 		break;
 	case EVDEV_KEY_LEFT:
-		evdev_key = 75;
+		tevdev_key = 75;
 		break;
 	case EVDEV_KEY_RIGHT:
-		evdev_key = 77;
+		tevdev_key = 77;
 		break;
 	case EVDEV_KEY_END:
-		evdev_key = 79;
+		tevdev_key = 79;
 		break;
 	case EVDEV_KEY_DOWN:
-		evdev_key = 80;
+		tevdev_key = 80;
 		break;
 	case EVDEV_KEY_PAGEDOWN:
-		evdev_key = 81;
+		tevdev_key = 81;
 		break;
 	case EVDEV_KEY_INSERT:
-		evdev_key = 82;
+		tevdev_key = 82;
 		break;
 	case EVDEV_KEY_DELETE:
-		evdev_key = 83;
+		tevdev_key = 83;
+		break;
+	default:
+		tevdev_key = evdev_key;
 		break;
 	}
 
 	if (!pressed) {
-		if ((int)evdev_key == repeat_key)
+		if ((int)tevdev_key == repeat_key)
 			repeat_key = -1;
 		return;
 	}
 
 	/* Alt+Left/Right: snap window scaling to prev/next integer */
 	if (alt_held && !maximized && !fullscreen
-	    && (evdev_key == 75 || evdev_key == 77)) {
-		snap_resize(evdev_key == 77);
+	    && (tevdev_key == 75 || tevdev_key == 77)) {
+		snap_resize(tevdev_key == 77);
 		return;
 	}
 
@@ -562,20 +566,20 @@ send_scancode(uint32_t evdev_key, bool pressed)
 		}
 	}
 
-	if (evdev_key < sizeof(ScanCodes) / sizeof(ScanCodes[0])) {
+	if (tevdev_key < sizeof(ScanCodes) / sizeof(ScanCodes[0])) {
 		if (alt_held)
-			keyval = ScanCodes[evdev_key].alt;
+			keyval = ScanCodes[tevdev_key].alt;
 		else if (ctrl_held)
-			keyval = ScanCodes[evdev_key].ctrl;
+			keyval = ScanCodes[tevdev_key].ctrl;
 		else if (shift_held)
-			keyval = ScanCodes[evdev_key].shift;
+			keyval = ScanCodes[tevdev_key].shift;
 		else
-			keyval = ScanCodes[evdev_key].base;
+			keyval = ScanCodes[tevdev_key].base;
 	}
 
 	if (keyval != 0xffff) {
 		send_key(keyval);
-		repeat_key = evdev_key;
+		repeat_key = tevdev_key;
 		repeat_since = xp_timer64();
 		repeat_in_delay = true;
 	}
