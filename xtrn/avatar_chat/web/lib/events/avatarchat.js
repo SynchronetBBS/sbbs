@@ -113,6 +113,9 @@ channelPath = 'channels.' + channel + '.messages';
 mailboxPath = includeMailbox ? ('channels.' + user.alias + '.messages') : '';
 
 function connect() {
+    if (user.number < 1) {
+        return false;
+    }
     try {
         client = new JSONClient(config.host, config.port);
         client.subscribe('chat', channelPath);
