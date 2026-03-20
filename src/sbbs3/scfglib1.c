@@ -1100,3 +1100,13 @@ char* dir_vpath(scfg_t* cfg, dir_t* dir, char* path, size_t size)
 		              , cfg->lib[dir->lib]->vdir, dir->vdir);
 	return path;
 }
+
+/****************************************************************************/
+/****************************************************************************/
+bool dir_is_locked(scfg_t* cfg, int dirnum)
+{
+	smb_t smb;
+	if (!smb_init_dir(cfg, &smb, dirnum))
+		return false;
+	return smb_islocked(&smb);
+}

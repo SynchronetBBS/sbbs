@@ -116,6 +116,57 @@ js_close(JSContext *cx, uintN argc, jsval *arglist)
 }
 
 static JSBool
+js_lock(JSContext *cx, uintN argc, jsval *arglist)
+{
+	JSObject*  obj = JS_THIS_OBJECT(cx, arglist);
+	private_t* p;
+	jsrefcount rc;
+
+	if ((p = (private_t*)js_GetClassPrivate(cx, obj, &js_filebase_class)) == NULL) {
+		return JS_FALSE;
+	}
+
+	JS_SET_RVAL(cx, arglist, JSVAL_FALSE);
+
+	rc = JS_SUSPENDREQUEST(cx);
+	p->smb_result = smb_lock(&(p->smb));
+	if (p->smb_result != SMB_SUCCESS) {
+		JS_RESUMEREQUEST(cx, rc);
+		return JS_TRUE;
+	}
+	JS_RESUMEREQUEST(cx, rc);
+	JS_SET_RVAL(cx, arglist, JSVAL_TRUE);
+
+	return JS_TRUE;
+}
+
+static JSBool
+js_unlock(JSContext *cx, uintN argc, jsval *arglist)
+{
+	JSObject*  obj = JS_THIS_OBJECT(cx, arglist);
+	private_t* p;
+	jsrefcount rc;
+
+	if ((p = (private_t*)js_GetClassPrivate(cx, obj, &js_filebase_class)) == NULL) {
+		return JS_FALSE;
+	}
+
+	JS_SET_RVAL(cx, arglist, JSVAL_FALSE);
+
+	rc = JS_SUSPENDREQUEST(cx);
+	p->smb_result = smb_unlock(&(p->smb));
+	if (p->smb_result != SMB_SUCCESS) {
+		JS_RESUMEREQUEST(cx, rc);
+		return JS_TRUE;
+	}
+	JS_RESUMEREQUEST(cx, rc);
+	JS_SET_RVAL(cx, arglist, JSVAL_TRUE);
+
+	return JS_TRUE;
+}
+
+
+static JSBool
 js_dump_file(JSContext *cx, uintN argc, jsval *arglist)
 {
 	JSObject*  obj = JS_THIS_OBJECT(cx, arglist);
@@ -1668,9 +1719,17 @@ static jsSyncMethodSpec js_filebase_functions[] = {
 	 , JSDOCSTR("")
 	 , JSDOCSTR("Open file base")
 	 , 31900},
+	{"lock",            js_lock,           0, JSTYPE_BOOLEAN
+	 , JSDOCSTR("")
+	 , JSDOCSTR("Lock an open file base for maintenance (prevents subsequent/concurrent opens if locked successfully, i.e. returns <tt>true</tt>)")
+	 , 32105},
+	{"unlock",          js_unlock,         0, JSTYPE_BOOLEAN
+	 , JSDOCSTR("")
+	 , JSDOCSTR("Unlock a locked file base")
+	 , 32105},
 	{"close",           js_close,           0, JSTYPE_BOOLEAN
 	 , JSDOCSTR("")
-	 , JSDOCSTR("Close file base (if open)")
+	 , JSDOCSTR("Close file base (if open), unlocks the base if it was previously locked")
 	 , 31900},
 	{"get",             js_get_file,        2, JSTYPE_OBJECT
 	 , JSDOCSTR("<i>string</i> filename or <i>object</i> file-meta-object [,<i>number</i> detail=FileBase.DETAIL.NORM]")

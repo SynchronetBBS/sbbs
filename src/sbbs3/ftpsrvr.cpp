@@ -2105,7 +2105,7 @@ static void get_fileperm(lib_t *lib, dir_t *dir, user_t *user, client_t *client,
 		*(p++) = 'a';   // File may be appended to
 	//*(p++) = 'c';	// Files may be created in dir
 	if (can_delete(lib, dir, user, client, file))
-		*(p++) = 'd';   // Item may be depeted (dir or file)
+		*(p++) = 'd';   // Item may be deleted (dir or file)
 	//*(p++) = 'e';	// Can change to the dir
 	//*(p++) = 'f';	// Item may be renamed
 	//*(p++) = 'l';	// Directory contents can be listed
@@ -4212,7 +4212,6 @@ static void ctrl_thread(void* arg)
 				lprintf(LOG_INFO, "%04d <%s> %slisting: /%s/%s directory in %s mode"
 				        , sock, user.alias, detail ? "detailed ":""
 				        , scfg.lib[lib]->vdir, scfg.dir[dir]->vdir, mode);
-
 				smb_t smb;
 				if ((result = smb_open_dir(&scfg, &smb, dir)) != SMB_SUCCESS) {
 					lprintf(LOG_ERR, "ERROR %d (%s) opening %s", result, smb.last_error, smb.file);
@@ -4560,7 +4559,15 @@ static void ctrl_thread(void* arg)
 					filepos = 0;
 					continue;
 				}
-
+				if (dir_is_locked(&scfg, dir)) {
+					lprintf(LOG_WARNING, "%04d <%s> directory /%s/%s is locked (for maintenance)"
+						    , sock, user.alias
+						    , scfg.lib[scfg.dir[dir]->lib]->vdir
+						    , scfg.dir[dir]->vdir);
+					sockprintf(sock, sess, "452 Directory is locked. Try again later.");
+					filepos = 0;
+					continue;
+				}
 				filedat = findfile(&scfg, dir, p, NULL);
 				if (!filedat) {
 					sockprintf(sock, sess, "550 File not found: %s", p);
@@ -4767,6 +4774,14 @@ static void ctrl_thread(void* arg)
 
 				append = (strnicmp(cmd, "APPE", 4) == 0);
 
+				if (dir_is_locked(&scfg, dir)) {
+					lprintf(LOG_WARNING, "%04d <%s> directory /%s/%s is locked (for maintenance)"
+						    , sock, user.alias
+						    , scfg.lib[scfg.dir[dir]->lib]->vdir
+						    , scfg.dir[dir]->vdir);
+					sockprintf(sock, sess, "452 Directory is locked. Try again later.");
+					continue;
+				}
 				if (!user_is_dirop(&scfg, dir, &user, &client) && !(user.exempt & FLAG('U'))) {
 					if (!chk_ar(&scfg, scfg.dir[dir]->ul_ar, &user, &client)
 					    || !chk_ar(&scfg, scfg.lib[scfg.dir[dir]->lib]->ul_ar, &user, &client)) {
