@@ -1870,7 +1870,7 @@ main(int argc, char **argv)
 	    "\tsmglp=\\E[?69h\\E[%{1}%p1%+%d;0s\\E[?69l,smgrp=\\E[?69h\\E[0;%{1}%p1%+%ds\\E[?69l,\n"
 	    "\thts=\\EH,ht=\t,setab=\\E[4%p1%dm,setaf=\\E[3%p1%dm,\n"
 	    "\tsmglr=\\E[?69h\\E[%i%p1%d;%p2%ds\\E[?69l,smso=\\E[0;1;7m,rmso=\\E[m,\n"
-	    "\tu6=\\E[%i%d;%dR,u7=\\E[6n,\n"
+	    "\top=\\E[39;49m,u6=\\E[%i%d;%dR,u7=\\E[6n,\n"
 	    // XTerm bracketed pasted: https://invisible-island.net/xterm/xterm-paste64.html
 	    /* NOTE: From terminfo source: https://invisible-island.net/ncurses/terminfo.ti.html
 	     * Bracketed paste was introduced by xterm patch #203 in May 2005, as part of a
@@ -1879,6 +1879,8 @@ main(int argc, char **argv)
 	     * detail.  The names for the extended capabilities here were introduced by vim
 	     * in January 2017, but used internally.  In 2023, vim patch 9.0.1117 is needed
 	     * to work with this change. */
+	    "\tsmgtb=\\E[%i%p1%d;%p2%dr,\n"
+	    "\tSe=\\E[ q,Ss=\\E[%p1%d q,\n"
 	    "\tBD=\\E[?2004l,BE=\\E[?2004h,PE=\\E[201~,PS=\\E[200~,\n"
 	    "syncterm-bitmap|SyncTERM in Bitmap Mode,\n"
 	    "\tccc,\n"
