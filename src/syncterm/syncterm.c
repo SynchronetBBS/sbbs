@@ -2438,7 +2438,7 @@ main(int argc, char **argv)
 					bbs->type = USER_BBSLIST;
 					add_bbs(settings.list_path, bbs, false);
 				}
-				if ((listfile = fopen(settings.list_path, "r+b")) != NULL) {
+				if (!safe_mode && (listfile = fopen(settings.list_path, "r+b")) != NULL) {
 					inifile = iniReadBBSList(listfile, true);
 					iniSetDateTime(&inifile,
 					    bbs->name,
@@ -2458,7 +2458,7 @@ main(int argc, char **argv)
 			term.nostatus = bbs->nostatus;
 			if (drawwin())
 				return 1;
-			if ((log_fp == NULL) && bbs->logfile[0])
+			if (!safe_mode && (log_fp == NULL) && bbs->logfile[0])
 				log_fp = fopen(bbs->logfile, bbs->append_logfile ? "a" : "w");
 			if (log_fp != NULL) {
 				time_t now = time(NULL);
@@ -2554,8 +2554,9 @@ main(int argc, char **argv)
 	gettextinfo(&txtinfo);
 
         // Only save window info if we're in the startup mode...
-	if ((txtinfo.currmode == screen_to_ciolib(settings.startup_mode))
-	    || ((settings.startup_mode == SCREEN_MODE_CURRENT) && (txtinfo.currmode == C80))) {
+	if (!safe_mode
+	    && ((txtinfo.currmode == screen_to_ciolib(settings.startup_mode))
+	    || ((settings.startup_mode == SCREEN_MODE_CURRENT) && (txtinfo.currmode == C80)))) {
 		sf = getscaling();
 		if (((sf > 0.0) && (sf != settings.scaling_factor))) {
 			char       inipath[MAX_PATH + 1];
