@@ -379,12 +379,16 @@ function showStatus(msg, col) {
 function clearStatus() { showStatus(""); }
 
 // ── Drawing ───────────────────────────────────────────────────────────────────
-function drawPieceJXL(piece, isDark, col, row) {
+function drawPieceJXL(piece, isDark, col, row, masked) {
     if (pieceSpriteY[piece]) {
-        console.write("\x1b_SyncTERM:P;Paste;SY=" + pieceSpriteY[piece][isDark ? 0 : 1] +
-                      ";SH=" + (cellH * charPixH) +
-                      ";DX=" + ((col-1)*charPixW) +
-                      ";DY=" + ((row-1)*charPixH) + ";B=1\x1b\\");
+        var cmd = "\x1b_SyncTERM:P;Paste;SY=" + pieceSpriteY[piece][isDark ? 0 : 1] +
+                  ";SH=" + (cellH * charPixH) +
+                  ";DX=" + ((col-1)*charPixW) +
+                  ";DY=" + ((row-1)*charPixH);
+        if (masked)
+            cmd += ";MBUF;MY=" + pieceDrawMY[piece.toUpperCase()];
+        cmd += ";B=1\x1b\\";
+        console.write(cmd);
     } else {
         var fname = pieceNames[piece] + '-' + (isDark ? 'dark' : 'light') + '.jxl';
         console.write("\x1b_SyncTERM:C;DrawJXL;DX=" + ((col-1)*charPixW) +
@@ -420,9 +424,9 @@ function drawSquare(r, c, highlight) {
         var isWp = (piece === piece.toUpperCase());
         var hidden = (isWp && hideWhite) || (!isWp && hideBlack);
         if (!hidden) {
-            var useJXL = jxlOk && (isDark ? (bg === '44') : (bg === '46'));
-            if (useJXL) {
-                drawPieceJXL(piece, isDark, pos.col, pos.row);
+            if (jxlOk && pieceSpriteY[piece]) {
+                // Use mask on highlighted squares so the highlight bg shows through
+                drawPieceJXL(piece, isDark, pos.col, pos.row, !!highlight);
             } else {
                 console.gotoxy(pos.col + 2, pos.row);
                 console.print("\x1b[" + bg + ";" + (isWp ? whiteFg : blackFg) + "m" + (isWp ? piece.toUpperCase() : piece.toLowerCase()));
