@@ -5997,19 +5997,20 @@ doterm(struct bbslist *bbs)
 					    && (cio_api.mode != CIOLIB_MODE_CURSES_IBM)
 					    && (cio_api.mode != CIOLIB_MODE_ANSI))
 						break;
-					if ((cio_api.mode != CIOLIB_MODE_CURSES)
-					    && (cio_api.mode != CIOLIB_MODE_CURSES_ASCII)
-					    && (cio_api.mode != CIOLIB_MODE_CURSES_IBM)
-					    && (cio_api.mode != CIOLIB_MODE_ANSI)) {
-                                                        /* FALLTHROUGH for curses/ansi modes */
+					/*
+					 * In curses/ansi modes, CTRL-Q acts as
+					 * hangup (skipping the exit check that
+					 * Alt-X gets).  goto replaces a Duff's
+					 * device that was used here previously.
+					 */
+					goto hangup;
 				case 0x2d00: /* Alt-X - Exit */
 				case CIO_KEY_QUIT:
-								if (!check_exit(true))
-									break;
-					}
-
-                                // Fallthrough
+					if (!check_exit(true))
+						break;
+					/* FALLTHROUGH */
 				case 0x2300: /* Alt-H - Hangup */
+				hangup:
 				{
 					struct ciolib_screen *savscrn;
 					savscrn = cp437_savescrn();
