@@ -7,14 +7,14 @@
 "use strict";
 
 require("sbbsdefs.js", "K_NOCRLF");
-require("key_defs.js", "KEY_UP");
 require("rip_lib.js", "RIPWindow");
+require("rip_lightbar_menu.js", "RIPLightbarMenu");
 
 if (!console.term_supports(USER_RIP))
 {
     console.print("\x01n\x01y\x01hYour terminal doesn't support RIP\x01n\r\n");
     console.pause();
-    exit(0);
+    exit(-1);
 }
 
 js.on_exit('console.attributes = ' + console.attributes);
@@ -26,344 +26,10 @@ var dflt = Number(argv[0]);
 var items = console.uselect_items;
 var header = format(bbs.text(bbs.text.SelectItemHdr), console.uselect_title);
 
-// Border layout constants (RIP graphics viewport is 640x350)
-var BORDER_LEFT = 15;
-var BORDER_RIGHT = 625;
-var BORDER_TOP = 64;
-var BEVEL_OUTER = 2;   // Outer raised bevel thickness
-var BEVEL_GAP = 2;     // Gap between outer and inner bevel (surface color)
-var BEVEL_INNER = 2;   // Inner sunken bevel thickness
-var BEVEL_TOTAL = BEVEL_OUTER + BEVEL_GAP + BEVEL_INNER; // Total border inset per side
-var INNER_PAD = 1;     // Padding between inner bevel and menu content
-
-// Menu item layout (inside the border)
-var MENU_LEFT_X = BORDER_LEFT + BEVEL_TOTAL + INNER_PAD;
-var MENU_TOP_Y = BORDER_TOP + BEVEL_TOTAL + INNER_PAD;
-var TEXT_Y_OFFSET = 4;
-var ITEM_HEIGHT = 16;
-var SCREEN_HEIGHT = 350;
-var MAX_VISIBLE = Math.floor((SCREEN_HEIGHT - MENU_TOP_Y - BEVEL_TOTAL - INNER_PAD - 1) / ITEM_HEIGHT);
-
-// Scrollbar constants
-var SCROLLBAR_WIDTH = 14;
-var SCROLLBAR_GAP = 2;
-var ARROW_HEIGHT = 14;     // Height of up/down arrow buttons
-
-// Determine if scrollbar is needed
-var needsScrollbar = (items.length > MAX_VISIBLE);
-
-// Menu right edge depends on whether scrollbar is present
-var MENU_RIGHT_X = BORDER_RIGHT - BEVEL_TOTAL - INNER_PAD
-                   - (needsScrollbar ? SCROLLBAR_WIDTH + SCROLLBAR_GAP : 0);
-var TEXT_X = MENU_LEFT_X + 4;
-
-// Scrollbar geometry (only meaningful when needsScrollbar is true)
-var SB_LEFT = MENU_RIGHT_X + SCROLLBAR_GAP;
-var SB_RIGHT = BORDER_RIGHT - BEVEL_TOTAL - INNER_PAD;
-
-// Colors
-var COLOR_NORMAL_BG = RIP_COLOR_LT_GRAY;
-var COLOR_NORMAL_FG = RIP_COLOR_BLACK;
-var COLOR_SELECTED_BG = RIP_COLOR_CYAN;
-var COLOR_SELECTED_FG = RIP_COLOR_WHITE;
-var COLOR_BORDER_SURFACE = RIP_COLOR_BLUE;
-var COLOR_BEVEL_BRIGHT = RIP_COLOR_WHITE;
-var COLOR_BEVEL_DARK = RIP_COLOR_DK_GRAY;
-var COLOR_SB_TRACK = RIP_COLOR_DK_GRAY;
-var COLOR_SB_THUMB = RIP_COLOR_LT_GRAY;
-var COLOR_SB_ARROW_BG = RIP_COLOR_LT_GRAY;
-var COLOR_SB_ARROW_FG = RIP_COLOR_BLACK;
-
-// Mouse click identifiers (high-byte chars safe for CP437 terminals)
-var MOUSE_ITEM_BASE = 0x80;  // 0x80 + visible position for item clicks
-var MOUSE_SCROLL_UP = 0xFE;
-var MOUSE_SCROLL_DN = 0xFD;
-var MOUSE_TRACK_PG_UP = 0xFC; // Click in scrollbar track above thumb
-var MOUSE_TRACK_PG_DN = 0xFB; // Click in scrollbar track below thumb
-var MOUSE_THUMB_DRAG = 0xFA;  // Thumb press+drag; followed by 4-digit $Y$ coordinate
-
-// State
-var selectedIndex = 0;
-var topIndex = 0;
-var visibleCount = Math.min(items.length, MAX_VISIBLE);
-
-// Set initial selection to the default item
-for (var i = 0; i < items.length; ++i)
-{
-	if (items[i].num == dflt)
-	{
-		selectedIndex = i;
-		break;
-	}
-}
-// Ensure the selected item is within the visible range
-if (selectedIndex >= topIndex + visibleCount)
-	topIndex = selectedIndex - visibleCount + 1;
-
-// Calculate border bottom based on the number of visible items
-var BORDER_BOTTOM = MENU_TOP_Y + visibleCount * ITEM_HEIGHT + INNER_PAD + BEVEL_TOTAL;
-if (BORDER_BOTTOM > SCREEN_HEIGHT - 1)
-	BORDER_BOTTOM = SCREEN_HEIGHT - 1;
-
-// Scrollbar track geometry (between arrow buttons)
-var SB_TOP = MENU_TOP_Y;
-var SB_BOTTOM = MENU_TOP_Y + visibleCount * ITEM_HEIGHT - 1;
-var SB_ARROW_UP_TOP = SB_TOP;
-var SB_ARROW_UP_BOT = SB_TOP + ARROW_HEIGHT - 1;
-var SB_ARROW_DN_TOP = SB_BOTTOM - ARROW_HEIGHT + 1;
-var SB_ARROW_DN_BOT = SB_BOTTOM;
-var SB_TRACK_TOP = SB_ARROW_UP_BOT + 1;
-var SB_TRACK_BOT = SB_ARROW_DN_TOP - 1;
-var SB_TRACK_HEIGHT = SB_TRACK_BOT - SB_TRACK_TOP + 1;
-
 // Send a batch of RIP commands to the client.
-// RIP commands must start with ! at the beginning of a new line.
 function sendRIP(cmds)
 {
 	console.write("\r\n!" + cmds + "\r\n");
-}
-
-// Build the display text for a menu item, with hotkey prefix
-function getItemText(index)
-{
-	if (items.length <= 15)
-		return format("%X %s", index + 1, items[index].name);
-	else if (items.length <= 26)
-		return format("%c %s", ascii('A') + index, items[index].name);
-	return items[index].name;
-}
-
-// Build RIP commands for a small triangle arrow (up or down)
-function buildArrowRIP(centerX, topY, pointsUp)
-{
-	var rip = "";
-	rip += RIPColorNumeric(COLOR_SB_ARROW_FG);
-	rip += RIPFillStyleNumeric(1, COLOR_SB_ARROW_FG);
-	var triH = 5;
-	var triW = 8;
-	var baseY = pointsUp ? (topY + 3 + triH) : (topY + 3);
-	var tipY = pointsUp ? (topY + 3) : (topY + 3 + triH);
-	var pts = [
-		{ x: centerX - Math.floor(triW / 2), y: baseY },
-		{ x: centerX + Math.floor(triW / 2), y: baseY },
-		{ x: centerX, y: tipY }
-	];
-	rip += RIPFillPolygonNumeric(pts);
-	return rip;
-}
-
-// Build RIP commands for the scrollbar
-function buildScrollbarRIP()
-{
-	if (!needsScrollbar)
-		return "";
-
-	var rip = "";
-
-	// Up arrow button (raised)
-	rip += RIPFillStyleNumeric(1, COLOR_SB_ARROW_BG);
-	rip += RIPBarNumeric(SB_LEFT, SB_ARROW_UP_TOP, SB_RIGHT, SB_ARROW_UP_BOT);
-	// Bevel: bright top/left, dark bottom/right
-	rip += RIPFillStyleNumeric(1, COLOR_BEVEL_BRIGHT);
-	rip += RIPBarNumeric(SB_LEFT, SB_ARROW_UP_TOP, SB_RIGHT, SB_ARROW_UP_TOP);
-	rip += RIPBarNumeric(SB_LEFT, SB_ARROW_UP_TOP, SB_LEFT, SB_ARROW_UP_BOT);
-	rip += RIPFillStyleNumeric(1, COLOR_BEVEL_DARK);
-	rip += RIPBarNumeric(SB_LEFT, SB_ARROW_UP_BOT, SB_RIGHT, SB_ARROW_UP_BOT);
-	rip += RIPBarNumeric(SB_RIGHT, SB_ARROW_UP_TOP, SB_RIGHT, SB_ARROW_UP_BOT);
-	// Arrow triangle
-	var sbCenterX = Math.floor((SB_LEFT + SB_RIGHT) / 2);
-	rip += buildArrowRIP(sbCenterX, SB_ARROW_UP_TOP, true);
-
-	// Down arrow button (raised)
-	rip += RIPFillStyleNumeric(1, COLOR_SB_ARROW_BG);
-	rip += RIPBarNumeric(SB_LEFT, SB_ARROW_DN_TOP, SB_RIGHT, SB_ARROW_DN_BOT);
-	rip += RIPFillStyleNumeric(1, COLOR_BEVEL_BRIGHT);
-	rip += RIPBarNumeric(SB_LEFT, SB_ARROW_DN_TOP, SB_RIGHT, SB_ARROW_DN_TOP);
-	rip += RIPBarNumeric(SB_LEFT, SB_ARROW_DN_TOP, SB_LEFT, SB_ARROW_DN_BOT);
-	rip += RIPFillStyleNumeric(1, COLOR_BEVEL_DARK);
-	rip += RIPBarNumeric(SB_LEFT, SB_ARROW_DN_BOT, SB_RIGHT, SB_ARROW_DN_BOT);
-	rip += RIPBarNumeric(SB_RIGHT, SB_ARROW_DN_TOP, SB_RIGHT, SB_ARROW_DN_BOT);
-	rip += buildArrowRIP(sbCenterX, SB_ARROW_DN_TOP, false);
-
-	// Track background
-	rip += RIPFillStyleNumeric(1, COLOR_SB_TRACK);
-	rip += RIPBarNumeric(SB_LEFT, SB_TRACK_TOP, SB_RIGHT, SB_TRACK_BOT);
-
-	// Thumb
-	rip += buildScrollbarThumbRIP();
-
-	return rip;
-}
-
-// Calculate the scrollbar thumb position and height
-function getThumbGeometry()
-{
-	var maxTop = items.length - visibleCount;
-	var thumbH = Math.max(8, Math.floor(SB_TRACK_HEIGHT * visibleCount / items.length));
-	var thumbRange = SB_TRACK_HEIGHT - thumbH;
-	var thumbY = SB_TRACK_TOP + (maxTop > 0 ? Math.floor(thumbRange * topIndex / maxTop) : 0);
-	return { y: thumbY, h: thumbH };
-}
-
-// Build RIP commands for just the scrollbar thumb (for efficient updates)
-function buildScrollbarThumbRIP()
-{
-	if (!needsScrollbar || SB_TRACK_HEIGHT <= 0)
-		return "";
-
-	var thumb = getThumbGeometry();
-
-	var rip = "";
-	// Clear track
-	rip += RIPFillStyleNumeric(1, COLOR_SB_TRACK);
-	rip += RIPBarNumeric(SB_LEFT, SB_TRACK_TOP, SB_RIGHT, SB_TRACK_BOT);
-	// Draw thumb (raised look)
-	rip += RIPFillStyleNumeric(1, COLOR_SB_THUMB);
-	rip += RIPBarNumeric(SB_LEFT, thumb.y, SB_RIGHT, thumb.y + thumb.h - 1);
-	// Thumb bevel
-	rip += RIPFillStyleNumeric(1, COLOR_BEVEL_BRIGHT);
-	rip += RIPBarNumeric(SB_LEFT, thumb.y, SB_RIGHT, thumb.y);
-	rip += RIPBarNumeric(SB_LEFT, thumb.y, SB_LEFT, thumb.y + thumb.h - 1);
-	rip += RIPFillStyleNumeric(1, COLOR_BEVEL_DARK);
-	rip += RIPBarNumeric(SB_LEFT, thumb.y + thumb.h - 1, SB_RIGHT, thumb.y + thumb.h - 1);
-	rip += RIPBarNumeric(SB_RIGHT, thumb.y, SB_RIGHT, thumb.y + thumb.h - 1);
-	return rip;
-}
-
-// Build RIP commands to draw the chisel/sunken 3D border around the menu area
-function buildMenuBorderRIP()
-{
-	var rip = "";
-
-	// Fill the entire border area with the surface color
-	rip += RIPFillStyleNumeric(1, COLOR_BORDER_SURFACE);
-	rip += RIPBarNumeric(BORDER_LEFT, BORDER_TOP, BORDER_RIGHT, BORDER_BOTTOM);
-
-	// Outer raised bevel: bright edges on top and left
-	rip += RIPFillStyleNumeric(1, COLOR_BEVEL_BRIGHT);
-	rip += RIPBarNumeric(BORDER_LEFT, BORDER_TOP, BORDER_RIGHT, BORDER_TOP + BEVEL_OUTER - 1);
-	rip += RIPBarNumeric(BORDER_LEFT, BORDER_TOP + BEVEL_OUTER, BORDER_LEFT + BEVEL_OUTER - 1, BORDER_BOTTOM);
-	// Outer raised bevel: dark edges on bottom and right
-	rip += RIPFillStyleNumeric(1, COLOR_BEVEL_DARK);
-	rip += RIPBarNumeric(BORDER_LEFT, BORDER_BOTTOM - BEVEL_OUTER + 1, BORDER_RIGHT, BORDER_BOTTOM);
-	rip += RIPBarNumeric(BORDER_RIGHT - BEVEL_OUTER + 1, BORDER_TOP, BORDER_RIGHT, BORDER_BOTTOM - BEVEL_OUTER);
-
-	// Inner sunken bevel (inset from outer bevel + gap): dark edges on top and left
-	var ix0 = BORDER_LEFT + BEVEL_OUTER + BEVEL_GAP;
-	var iy0 = BORDER_TOP + BEVEL_OUTER + BEVEL_GAP;
-	var ix1 = BORDER_RIGHT - BEVEL_OUTER - BEVEL_GAP;
-	var iy1 = BORDER_BOTTOM - BEVEL_OUTER - BEVEL_GAP;
-	rip += RIPFillStyleNumeric(1, COLOR_BEVEL_DARK);
-	rip += RIPBarNumeric(ix0, iy0, ix1, iy0 + BEVEL_INNER - 1);
-	rip += RIPBarNumeric(ix0, iy0 + BEVEL_INNER, ix0 + BEVEL_INNER - 1, iy1);
-	// Inner sunken bevel: bright edges on bottom and right
-	rip += RIPFillStyleNumeric(1, COLOR_BEVEL_BRIGHT);
-	rip += RIPBarNumeric(ix0, iy1 - BEVEL_INNER + 1, ix1, iy1);
-	rip += RIPBarNumeric(ix1 - BEVEL_INNER + 1, iy0, ix1, iy1 - BEVEL_INNER);
-
-	// Fill the content area with black (menu items area)
-	rip += RIPFillStyleNumeric(1, RIP_COLOR_BLACK);
-	rip += RIPBarNumeric(MENU_LEFT_X, MENU_TOP_Y,
-	                     MENU_RIGHT_X, MENU_TOP_Y + visibleCount * ITEM_HEIGHT - 1);
-
-	// Draw the scrollbar (fills the area to the right of the menu items)
-	rip += buildScrollbarRIP();
-
-	return rip;
-}
-
-// Build RIP commands to draw a single menu item at its visible position
-function buildItemRIP(index, isSelected)
-{
-	var bgColor = isSelected ? COLOR_SELECTED_BG : COLOR_NORMAL_BG;
-	var fgColor = isSelected ? COLOR_SELECTED_FG : COLOR_NORMAL_FG;
-	var visPos = index - topIndex;
-	var y = MENU_TOP_Y + visPos * ITEM_HEIGHT;
-
-	var rip = "";
-	// Draw filled background rectangle for this item
-	rip += RIPFillStyleNumeric(1, bgColor);
-	rip += RIPBarNumeric(MENU_LEFT_X, y, MENU_RIGHT_X, y + ITEM_HEIGHT - 1);
-	// Draw item text
-	rip += RIPColorNumeric(fgColor);
-	rip += RIPFontStyleNumeric(RIP_FONT_DEFAULT, 0, 1, 0);
-	rip += RIPTextXYNumeric(TEXT_X, y + TEXT_Y_OFFSET, getItemText(index));
-	return rip;
-}
-
-// Build RIP mouse region commands for all visible items and scrollbar buttons
-function buildMouseRegionsRIP()
-{
-	var rip = RIPKillMouseFields();
-
-	// Mouse region for each visible menu item
-	var dispCount = Math.min(visibleCount, items.length - topIndex);
-	for (var i = 0; i < dispCount; ++i)
-	{
-		var y = MENU_TOP_Y + i * ITEM_HEIGHT;
-		var clickChar = String.fromCharCode(MOUSE_ITEM_BASE + i);
-		rip += RIPMouseNumeric(0, MENU_LEFT_X, y, MENU_RIGHT_X, y + ITEM_HEIGHT - 1,
-		                       true, false, 0, clickChar);
-	}
-
-	// Scrollbar mouse regions
-	if (needsScrollbar)
-	{
-		// Up/down arrow buttons
-		rip += RIPMouseNumeric(0, SB_LEFT, SB_ARROW_UP_TOP, SB_RIGHT, SB_ARROW_UP_BOT,
-		                       true, false, 0, String.fromCharCode(MOUSE_SCROLL_UP));
-		rip += RIPMouseNumeric(0, SB_LEFT, SB_ARROW_DN_TOP, SB_RIGHT, SB_ARROW_DN_BOT,
-		                       true, false, 0, String.fromCharCode(MOUSE_SCROLL_DN));
-
-		// Track and thumb regions (only if there's a track area)
-		if (SB_TRACK_HEIGHT > 0)
-		{
-			var thumb = getThumbGeometry();
-
-			// Track area above thumb (page up)
-			if (thumb.y > SB_TRACK_TOP)
-				rip += RIPMouseNumeric(0, SB_LEFT, SB_TRACK_TOP, SB_RIGHT, thumb.y - 1,
-				                       false, false, 0, String.fromCharCode(MOUSE_TRACK_PG_UP));
-
-			// Thumb itself: on release, sends prefix char + $Y$ (4-digit Y coordinate).
-			// SyncTerm expands $Y$ to the mouse Y position at release time via
-			// mousestate_res(), so dragging the thumb and releasing elsewhere
-			// gives us the release Y — enabling drag-to-scroll.
-			rip += RIPMouseNumeric(0, SB_LEFT, thumb.y, SB_RIGHT, thumb.y + thumb.h - 1,
-			                       false, false, 0,
-			                       String.fromCharCode(MOUSE_THUMB_DRAG) + "$Y$");
-
-			// Track area below thumb (page down)
-			if (thumb.y + thumb.h <= SB_TRACK_BOT)
-				rip += RIPMouseNumeric(0, SB_LEFT, thumb.y + thumb.h, SB_RIGHT, SB_TRACK_BOT,
-				                       false, false, 0, String.fromCharCode(MOUSE_TRACK_PG_DN));
-		}
-	}
-
-	return rip;
-}
-
-// Draw all visible menu items and update mouse regions
-function drawFullMenu()
-{
-	var rip = "";
-	for (var i = topIndex; i < topIndex + visibleCount && i < items.length; ++i)
-		rip += buildItemRIP(i, i === selectedIndex);
-	// If fewer items than max visible, clear remaining area inside border
-	if (items.length - topIndex < visibleCount)
-	{
-		var clearY = MENU_TOP_Y + (items.length - topIndex) * ITEM_HEIGHT;
-		rip += RIPFillStyleNumeric(1, RIP_COLOR_BLACK);
-		rip += RIPBarNumeric(MENU_LEFT_X, clearY, MENU_RIGHT_X,
-		                     MENU_TOP_Y + visibleCount * ITEM_HEIGHT - 1);
-	}
-	// Update scrollbar thumb position
-	if (needsScrollbar)
-		rip += buildScrollbarThumbRIP();
-	// Update mouse regions
-	rip += buildMouseRegionsRIP();
-	rip += RIPGotoXYNumeric(0, 0);
-	sendRIP(rip);
 }
 
 // Displays a RIP header at the top of the screen
@@ -401,151 +67,39 @@ sendRIP(hdrRIP);
 // the RIPButton delimiter that the terminal may have echoed to the text window.
 sendRIP(RIPWindowNumeric(0, 8, 79, 42, 1, 0) + RIPEraseTextWindow());
 
-// Draw the 3D border around the menu area, then draw the menu items inside it
-sendRIP(buildMenuBorderRIP());
-drawFullMenu();
+// --- Create the lightbar menu ---
+var MENU_X = 15;
+var MENU_Y = 64;
+var MENU_WIDTH = 611;   // 625 - 15 + 1
+var MENU_HEIGHT = 286;  // 350 - 64
+var menu = new RIPLightbarMenu(MENU_X, MENU_Y, MENU_WIDTH, MENU_HEIGHT, true);
 
-// --- Main input loop ---
-var retval = -1;
-while (bbs.online && !js.terminated)
+// Add items with hotkey prefixes
+for (var i = 0; i < items.length; ++i)
 {
-	var key = console.getkey(K_NOCRLF|K_NOECHO|K_NOSPIN);
-	if (key.toUpperCase() == console.quit_key)
-		break;
-
-	var oldSelected = selectedIndex;
-	var oldTop = topIndex;
-	var ch = key.charCodeAt(0);
-
-	// Check for mouse item click (high-byte identifiers)
-	if (ch >= MOUSE_ITEM_BASE && ch < MOUSE_ITEM_BASE + visibleCount)
+	var text, hotkey;
+	if (items.length <= 15)
 	{
-		var clickedIndex = topIndex + (ch - MOUSE_ITEM_BASE);
-		if (clickedIndex >= 0 && clickedIndex < items.length)
-			retval = items[clickedIndex].num;
+		text = format("%X %s", i + 1, items[i].name);
+		hotkey = format("%X", i + 1);
 	}
-	else if (ch === MOUSE_SCROLL_UP)
+	else if (items.length <= 26)
 	{
-		if (selectedIndex > 0)
-			--selectedIndex;
-	}
-	else if (ch === MOUSE_SCROLL_DN)
-	{
-		if (selectedIndex < items.length - 1)
-			++selectedIndex;
-	}
-	else if (ch === MOUSE_TRACK_PG_UP)
-	{
-		selectedIndex = Math.max(0, selectedIndex - visibleCount);
-	}
-	else if (ch === MOUSE_TRACK_PG_DN)
-	{
-		selectedIndex = Math.min(items.length - 1, selectedIndex + visibleCount);
-	}
-	else if (ch === MOUSE_THUMB_DRAG)
-	{
-		// Read the 4-digit Y coordinate that follows (from the $Y$ text variable
-		// expanded by SyncTerm at the time of mouse button release)
-		var yStr = "";
-		for (var d = 0; d < 4; ++d)
-		{
-			var dc = console.inkey(0, 500);
-			if (dc === "")
-				break;
-			yStr += dc;
-		}
-		var mouseY = parseInt(yStr, 10);
-		if (!isNaN(mouseY) && SB_TRACK_HEIGHT > 0)
-		{
-			var oldTopForDrag = topIndex;
-			var maxTop = items.length - visibleCount;
-			var thumb = getThumbGeometry();
-			var thumbRange = SB_TRACK_HEIGHT - thumb.h;
-			if (thumbRange > 0)
-			{
-				// Map the release Y position to a topIndex value.
-				// Clamp the Y to the track area, then compute proportionally.
-				var clampedY = Math.max(SB_TRACK_TOP, Math.min(SB_TRACK_BOT, mouseY));
-				var relY = clampedY - SB_TRACK_TOP;
-				topIndex = Math.round(relY * maxTop / thumbRange);
-				topIndex = Math.max(0, Math.min(maxTop, topIndex));
-			}
-			// If the selected item scrolled out of view, adjust:
-			// scrolled down → select topmost visible item
-			// scrolled up → select bottommost visible item
-			if (selectedIndex < topIndex)
-				selectedIndex = topIndex;
-			else if (selectedIndex >= topIndex + visibleCount)
-				selectedIndex = topIndex + visibleCount - 1;
-		}
+		text = format("%c %s", ascii('A') + i, items[i].name);
+		hotkey = String.fromCharCode(ascii('A') + i);
 	}
 	else
 	{
-		switch (key) {
-			case KEY_UP:
-				if (selectedIndex > 0)
-					--selectedIndex;
-				break;
-			case KEY_DOWN:
-				if (selectedIndex < items.length - 1)
-					++selectedIndex;
-				break;
-			case KEY_HOME:
-				selectedIndex = 0;
-				break;
-			case KEY_END:
-				selectedIndex = items.length - 1;
-				break;
-			case KEY_PAGEUP:
-				selectedIndex = Math.max(0, selectedIndex - visibleCount);
-				break;
-			case KEY_PAGEDN:
-				selectedIndex = Math.min(items.length - 1, selectedIndex + visibleCount);
-				break;
-			case '\r':
-				retval = items[selectedIndex].num;
-				break;
-			default:
-				// Check for hotkey selection
-				if (items.length <= 15)
-				{
-					var num = parseInt(key, 16);
-					if (!isNaN(num) && num >= 1 && num <= items.length)
-						retval = items[num - 1].num;
-				}
-				else if (items.length <= 26)
-				{
-					var idx = key.toUpperCase().charCodeAt(0) - ascii('A');
-					if (idx >= 0 && idx < items.length)
-						retval = items[idx].num;
-				}
-				break;
-		}
+		text = items[i].name;
+		hotkey = null;
 	}
-
-	if (retval >= 0)
-		break;
-
-	// Adjust scroll position if selected item moved out of view
-	if (selectedIndex < topIndex)
-		topIndex = selectedIndex;
-	else if (selectedIndex >= topIndex + visibleCount)
-		topIndex = selectedIndex - visibleCount + 1;
-
-	// Update the display efficiently
-	if (topIndex !== oldTop)
-	{
-		// Viewport scrolled; redraw all visible items, scrollbar, and mouse regions
-		drawFullMenu();
-	}
-	else if (selectedIndex !== oldSelected)
-	{
-		// Only redraw the previously-selected and newly-selected items
-		var rip = buildItemRIP(oldSelected, false) + buildItemRIP(selectedIndex, true);
-		rip += RIPGotoXYNumeric(0, 0);
-		sendRIP(rip);
-	}
+	menu.Add(text, items[i].num, hotkey);
 }
+
+// Get the user's selection
+var retval = menu.GetVal(dflt);
+if (retval === null)
+	retval = -1;
 
 // --- Exit cleanup ---
 // Restore the RIP text window before exiting.
