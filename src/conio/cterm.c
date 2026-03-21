@@ -1133,7 +1133,7 @@ scrolldown(struct cterminal *cterm)
 		.fg = cterm->fg_color,
 		.bg = cterm->bg_color,
 		.font = ciolib_attrfont(cterm->attr),
-		.hyperlink_id = 0;
+		.hyperlink_id = 0,
 	};
 
 	coord_conv_xy(cterm, CTERM_COORD_TERM, CTERM_COORD_SCREEN, &minx, &miny);
