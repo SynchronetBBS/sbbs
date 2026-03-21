@@ -7,14 +7,10 @@
 require("sbbsdefs.js", "K_NOCRLF");
 require("key_defs.js", "KEY_UP");
 require("rip_lib.js", "RIPWindow");
+require("rip_scrollbar.js", "RIPScrollbar");
 
-// Mouse click identifiers (high-byte chars safe for CP437 terminals)
-var RIP_LBMENU_MOUSE_ITEM_BASE   = 0x80; // 0x80 + visible position for item clicks
-var RIP_LBMENU_MOUSE_SCROLL_UP   = 0xFE;
-var RIP_LBMENU_MOUSE_SCROLL_DN   = 0xFD;
-var RIP_LBMENU_MOUSE_TRACK_PG_UP = 0xFC;
-var RIP_LBMENU_MOUSE_TRACK_PG_DN = 0xFB;
-var RIP_LBMENU_MOUSE_THUMB_DRAG  = 0xFA;
+// Mouse click identifiers for menu items (high-byte chars safe for CP437 terminals)
+var RIP_LBMENU_MOUSE_ITEM_BASE = 0x80; // 0x80 + visible position for item clicks
 
 // Border bevel dimensions (pixels)
 var RIP_LBMENU_BEVEL_OUTER = 2;
@@ -26,7 +22,6 @@ var RIP_LBMENU_INNER_PAD   = 1;
 // Scrollbar dimensions (pixels)
 var RIP_LBMENU_SCROLLBAR_WIDTH = 14;
 var RIP_LBMENU_SCROLLBAR_GAP   = 2;
-var RIP_LBMENU_ARROW_HEIGHT    = 14;
 
 
 // RIPLightbarMenu constructor.
@@ -77,6 +72,8 @@ function RIPLightbarMenu(pX, pY, pWidth, pHeight, pUseRIPBorder)
 
 	// Internal computed layout (set by _computeLayout)
 	this._layout = null;
+	// Internal RIPScrollbar instance (created by _computeLayout when needed)
+	this._scrollbar = null;
 
 	// Public methods
 	this.Add = RIPLightbarMenu_Add;
@@ -87,10 +84,6 @@ function RIPLightbarMenu(pX, pY, pWidth, pHeight, pUseRIPBorder)
 	this._computeLayout = RIPLightbarMenu_computeLayout;
 	this._buildItemRIP = RIPLightbarMenu_buildItemRIP;
 	this._buildMenuBorderRIP = RIPLightbarMenu_buildMenuBorderRIP;
-	this._buildScrollbarRIP = RIPLightbarMenu_buildScrollbarRIP;
-	this._buildScrollbarThumbRIP = RIPLightbarMenu_buildScrollbarThumbRIP;
-	this._buildArrowRIP = RIPLightbarMenu_buildArrowRIP;
-	this._getThumbGeometry = RIPLightbarMenu_getThumbGeometry;
 	this._buildMouseRegionsRIP = RIPLightbarMenu_buildMouseRegionsRIP;
 	this._drawFullMenu = RIPLightbarMenu_drawFullMenu;
 }
@@ -129,6 +122,7 @@ function RIPLightbarMenu_GetVal(pDefaultRetVal)
 
 	this._computeLayout();
 	var L = this._layout;
+	var sb = this._scrollbar; // May be null if no scrollbar needed
 
 	// Set initial selection to the item matching pDefaultRetVal
 	if (typeof pDefaultRetVal !== "undefined" && pDefaultRetVal !== null)
@@ -180,30 +174,26 @@ function RIPLightbarMenu_GetVal(pDefaultRetVal)
 			if (clickedIndex >= 0 && clickedIndex < this.menuItems.length)
 				retval = this.menuItems[clickedIndex].retval;
 		}
-		// Scroll up arrow
-		else if (ch === RIP_LBMENU_MOUSE_SCROLL_UP)
+		// Scrollbar mouse events (only if scrollbar exists)
+		else if (sb !== null && ch === sb.mouseChars.scrollUp)
 		{
 			if (this.selectedIndex > 0)
 				--this.selectedIndex;
 		}
-		// Scroll down arrow
-		else if (ch === RIP_LBMENU_MOUSE_SCROLL_DN)
+		else if (sb !== null && ch === sb.mouseChars.scrollDn)
 		{
 			if (this.selectedIndex < this.menuItems.length - 1)
 				++this.selectedIndex;
 		}
-		// Track above thumb (page up)
-		else if (ch === RIP_LBMENU_MOUSE_TRACK_PG_UP)
+		else if (sb !== null && ch === sb.mouseChars.trackPgUp)
 		{
 			this.selectedIndex = Math.max(0, this.selectedIndex - L.visibleCount);
 		}
-		// Track below thumb (page down)
-		else if (ch === RIP_LBMENU_MOUSE_TRACK_PG_DN)
+		else if (sb !== null && ch === sb.mouseChars.trackPgDn)
 		{
 			this.selectedIndex = Math.min(this.menuItems.length - 1, this.selectedIndex + L.visibleCount);
 		}
-		// Thumb drag (press on thumb, release sends $Y$ coordinate)
-		else if (ch === RIP_LBMENU_MOUSE_THUMB_DRAG)
+		else if (sb !== null && ch === sb.mouseChars.thumbDrag)
 		{
 			// Read the Y coordinate digits that follow (from the $Y$ text
 			// variable expanded by SyncTerm at mouse button release time)
@@ -216,16 +206,17 @@ function RIPLightbarMenu_GetVal(pDefaultRetVal)
 				yStr += dc;
 			}
 			var mouseY = parseInt(yStr, 10);
-			if (!isNaN(mouseY) && L.sbTrackHeight > 0)
+			var sbL = sb._layout;
+			if (!isNaN(mouseY) && sbL.trackHeight > 0)
 			{
 				var maxTop = this.menuItems.length - L.visibleCount;
-				var thumb = this._getThumbGeometry();
-				var thumbRange = L.sbTrackHeight - thumb.h;
+				var thumb = sb.getThumbGeometry();
+				var thumbRange = sbL.trackHeight - thumb.h;
 				if (thumbRange > 0)
 				{
 					// Map the release Y position to a topIndex value
-					var clampedY = Math.max(L.sbTrackTop, Math.min(L.sbTrackBot, mouseY));
-					var relY = clampedY - L.sbTrackTop;
+					var clampedY = Math.max(sbL.trackTop, Math.min(sbL.trackBot, mouseY));
+					var relY = clampedY - sbL.trackTop;
 					this.topIndex = Math.round(relY * maxTop / thumbRange);
 					this.topIndex = Math.max(0, Math.min(maxTop, this.topIndex));
 				}
@@ -321,7 +312,8 @@ function RIPLightbarMenu_sendRIP(cmds)
 
 
 // Compute internal layout geometry from the current pos, size, item count,
-// and border settings. Must be called before any drawing.
+// and border settings. Creates the RIPScrollbar instance if scrolling is
+// needed. Must be called before any drawing.
 function RIPLightbarMenu_computeLayout()
 {
 	var L = {};
@@ -357,125 +349,30 @@ function RIPLightbarMenu_computeLayout()
 	if (L.borderBottom > maxBottom)
 		L.borderBottom = maxBottom;
 
-	// Scrollbar geometry (only meaningful when needsScrollbar is true)
+	this._layout = L;
+
+	// Create or clear the RIPScrollbar instance
 	if (L.needsScrollbar)
 	{
-		L.sbLeft = L.menuRightX + RIP_LBMENU_SCROLLBAR_GAP;
-		L.sbRight = contentRight;
-		L.sbTop = L.menuTopY;
-		L.sbBottom = L.menuTopY + L.visibleCount * this.itemHeight - 1;
-		L.sbArrowUpTop = L.sbTop;
-		L.sbArrowUpBot = L.sbTop + RIP_LBMENU_ARROW_HEIGHT - 1;
-		L.sbArrowDnTop = L.sbBottom - RIP_LBMENU_ARROW_HEIGHT + 1;
-		L.sbArrowDnBot = L.sbBottom;
-		L.sbTrackTop = L.sbArrowUpBot + 1;
-		L.sbTrackBot = L.sbArrowDnTop - 1;
-		L.sbTrackHeight = L.sbTrackBot - L.sbTrackTop + 1;
+		var sbX = L.menuRightX + RIP_LBMENU_SCROLLBAR_GAP;
+		var sbWidth = contentRight - sbX + 1;
+		var sbHeight = L.visibleCount * this.itemHeight;
+		this._scrollbar = new RIPScrollbar(sbX, L.menuTopY, sbWidth, sbHeight);
+		// Copy scrollbar-related colors from the menu's color settings
+		this._scrollbar.colors.track = this.colors.scrollTrack;
+		this._scrollbar.colors.thumb = this.colors.scrollThumb;
+		this._scrollbar.colors.arrowBg = this.colors.scrollArrowBg;
+		this._scrollbar.colors.arrowFg = this.colors.scrollArrowFg;
+		this._scrollbar.colors.bevelBright = this.colors.bevelBright;
+		this._scrollbar.colors.bevelDark = this.colors.bevelDark;
+		// Set the scroll state
+		this._scrollbar.setScrollState(this.menuItems.length, L.visibleCount, this.topIndex);
+		this._scrollbar.computeLayout();
 	}
-
-	this._layout = L;
-}
-
-
-// Calculate the scrollbar thumb position and height based on current topIndex.
-function RIPLightbarMenu_getThumbGeometry()
-{
-	var L = this._layout;
-	var maxTop = this.menuItems.length - L.visibleCount;
-	var thumbH = Math.max(8, Math.floor(L.sbTrackHeight * L.visibleCount / this.menuItems.length));
-	var thumbRange = L.sbTrackHeight - thumbH;
-	var thumbY = L.sbTrackTop + (maxTop > 0 ? Math.floor(thumbRange * this.topIndex / maxTop) : 0);
-	return { y: thumbY, h: thumbH };
-}
-
-
-// Build RIP commands for a small filled triangle arrow (up or down).
-function RIPLightbarMenu_buildArrowRIP(centerX, topY, pointsUp)
-{
-	var rip = "";
-	rip += RIPColorNumeric(this.colors.scrollArrowFg);
-	rip += RIPFillStyleNumeric(1, this.colors.scrollArrowFg);
-	var triH = 5;
-	var triW = 8;
-	var baseY = pointsUp ? (topY + 3 + triH) : (topY + 3);
-	var tipY = pointsUp ? (topY + 3) : (topY + 3 + triH);
-	var pts = [
-		{ x: centerX - Math.floor(triW / 2), y: baseY },
-		{ x: centerX + Math.floor(triW / 2), y: baseY },
-		{ x: centerX, y: tipY }
-	];
-	rip += RIPFillPolygonNumeric(pts);
-	return rip;
-}
-
-
-// Build RIP commands for just the scrollbar thumb (track + thumb).
-// Used for efficient updates when only the thumb position changes.
-function RIPLightbarMenu_buildScrollbarThumbRIP()
-{
-	var L = this._layout;
-	if (!L.needsScrollbar || L.sbTrackHeight <= 0)
-		return "";
-
-	var thumb = this._getThumbGeometry();
-	var rip = "";
-	// Clear track
-	rip += RIPFillStyleNumeric(1, this.colors.scrollTrack);
-	rip += RIPBarNumeric(L.sbLeft, L.sbTrackTop, L.sbRight, L.sbTrackBot);
-	// Draw thumb (raised look)
-	rip += RIPFillStyleNumeric(1, this.colors.scrollThumb);
-	rip += RIPBarNumeric(L.sbLeft, thumb.y, L.sbRight, thumb.y + thumb.h - 1);
-	// Thumb bevel: bright top/left, dark bottom/right
-	rip += RIPFillStyleNumeric(1, this.colors.bevelBright);
-	rip += RIPBarNumeric(L.sbLeft, thumb.y, L.sbRight, thumb.y);
-	rip += RIPBarNumeric(L.sbLeft, thumb.y, L.sbLeft, thumb.y + thumb.h - 1);
-	rip += RIPFillStyleNumeric(1, this.colors.bevelDark);
-	rip += RIPBarNumeric(L.sbLeft, thumb.y + thumb.h - 1, L.sbRight, thumb.y + thumb.h - 1);
-	rip += RIPBarNumeric(L.sbRight, thumb.y, L.sbRight, thumb.y + thumb.h - 1);
-	return rip;
-}
-
-
-// Build RIP commands for the full scrollbar (arrows + track + thumb).
-function RIPLightbarMenu_buildScrollbarRIP()
-{
-	var L = this._layout;
-	if (!L.needsScrollbar)
-		return "";
-
-	var rip = "";
-	var sbCenterX = Math.floor((L.sbLeft + L.sbRight) / 2);
-
-	// Up arrow button (raised bevel)
-	rip += RIPFillStyleNumeric(1, this.colors.scrollArrowBg);
-	rip += RIPBarNumeric(L.sbLeft, L.sbArrowUpTop, L.sbRight, L.sbArrowUpBot);
-	rip += RIPFillStyleNumeric(1, this.colors.bevelBright);
-	rip += RIPBarNumeric(L.sbLeft, L.sbArrowUpTop, L.sbRight, L.sbArrowUpTop);
-	rip += RIPBarNumeric(L.sbLeft, L.sbArrowUpTop, L.sbLeft, L.sbArrowUpBot);
-	rip += RIPFillStyleNumeric(1, this.colors.bevelDark);
-	rip += RIPBarNumeric(L.sbLeft, L.sbArrowUpBot, L.sbRight, L.sbArrowUpBot);
-	rip += RIPBarNumeric(L.sbRight, L.sbArrowUpTop, L.sbRight, L.sbArrowUpBot);
-	rip += this._buildArrowRIP(sbCenterX, L.sbArrowUpTop, true);
-
-	// Down arrow button (raised bevel)
-	rip += RIPFillStyleNumeric(1, this.colors.scrollArrowBg);
-	rip += RIPBarNumeric(L.sbLeft, L.sbArrowDnTop, L.sbRight, L.sbArrowDnBot);
-	rip += RIPFillStyleNumeric(1, this.colors.bevelBright);
-	rip += RIPBarNumeric(L.sbLeft, L.sbArrowDnTop, L.sbRight, L.sbArrowDnTop);
-	rip += RIPBarNumeric(L.sbLeft, L.sbArrowDnTop, L.sbLeft, L.sbArrowDnBot);
-	rip += RIPFillStyleNumeric(1, this.colors.bevelDark);
-	rip += RIPBarNumeric(L.sbLeft, L.sbArrowDnBot, L.sbRight, L.sbArrowDnBot);
-	rip += RIPBarNumeric(L.sbRight, L.sbArrowDnTop, L.sbRight, L.sbArrowDnBot);
-	rip += this._buildArrowRIP(sbCenterX, L.sbArrowDnTop, false);
-
-	// Track background
-	rip += RIPFillStyleNumeric(1, this.colors.scrollTrack);
-	rip += RIPBarNumeric(L.sbLeft, L.sbTrackTop, L.sbRight, L.sbTrackBot);
-
-	// Thumb
-	rip += this._buildScrollbarThumbRIP();
-
-	return rip;
+	else
+	{
+		this._scrollbar = null;
+	}
 }
 
 
@@ -492,7 +389,8 @@ function RIPLightbarMenu_buildMenuBorderRIP()
 		rip += RIPFillStyleNumeric(1, this.colors.contentBg);
 		rip += RIPBarNumeric(L.menuLeftX, L.menuTopY,
 		                     L.menuRightX, L.menuTopY + L.visibleCount * this.itemHeight - 1);
-		rip += this._buildScrollbarRIP();
+		if (this._scrollbar !== null)
+			rip += this._scrollbar.buildFullRIP();
 		return rip;
 	}
 
@@ -535,7 +433,8 @@ function RIPLightbarMenu_buildMenuBorderRIP()
 	                     L.menuRightX, L.menuTopY + L.visibleCount * this.itemHeight - 1);
 
 	// Draw the scrollbar (to the right of the menu items)
-	rip += this._buildScrollbarRIP();
+	if (this._scrollbar !== null)
+		rip += this._scrollbar.buildFullRIP();
 
 	return rip;
 }
@@ -578,40 +477,9 @@ function RIPLightbarMenu_buildMouseRegionsRIP()
 		                       true, false, 0, clickChar);
 	}
 
-	// Scrollbar mouse regions
-	if (L.needsScrollbar)
-	{
-		// Up/down arrow buttons
-		rip += RIPMouseNumeric(0, L.sbLeft, L.sbArrowUpTop, L.sbRight, L.sbArrowUpBot,
-		                       true, false, 0, String.fromCharCode(RIP_LBMENU_MOUSE_SCROLL_UP));
-		rip += RIPMouseNumeric(0, L.sbLeft, L.sbArrowDnTop, L.sbRight, L.sbArrowDnBot,
-		                       true, false, 0, String.fromCharCode(RIP_LBMENU_MOUSE_SCROLL_DN));
-
-		// Track and thumb regions (only if there's a track area)
-		if (L.sbTrackHeight > 0)
-		{
-			var thumb = this._getThumbGeometry();
-
-			// Track area above thumb (page up)
-			if (thumb.y > L.sbTrackTop)
-				rip += RIPMouseNumeric(0, L.sbLeft, L.sbTrackTop, L.sbRight, thumb.y - 1,
-				                       false, false, 0,
-				                       String.fromCharCode(RIP_LBMENU_MOUSE_TRACK_PG_UP));
-
-			// Thumb itself: on release, sends prefix char + $Y$ (Y coordinate).
-			// SyncTerm expands $Y$ to the mouse Y position at release time,
-			// enabling drag-to-scroll.
-			rip += RIPMouseNumeric(0, L.sbLeft, thumb.y, L.sbRight, thumb.y + thumb.h - 1,
-			                       false, false, 0,
-			                       String.fromCharCode(RIP_LBMENU_MOUSE_THUMB_DRAG) + "$Y$");
-
-			// Track area below thumb (page down)
-			if (thumb.y + thumb.h <= L.sbTrackBot)
-				rip += RIPMouseNumeric(0, L.sbLeft, thumb.y + thumb.h, L.sbRight, L.sbTrackBot,
-				                       false, false, 0,
-				                       String.fromCharCode(RIP_LBMENU_MOUSE_TRACK_PG_DN));
-		}
-	}
+	// Scrollbar mouse regions (delegated to the RIPScrollbar instance)
+	if (this._scrollbar !== null)
+		rip += this._scrollbar.buildMouseRegionsRIP();
 
 	return rip;
 }
@@ -638,8 +506,11 @@ function RIPLightbarMenu_drawFullMenu()
 	}
 
 	// Update the scrollbar thumb position
-	if (L.needsScrollbar)
-		rip += this._buildScrollbarThumbRIP();
+	if (this._scrollbar !== null)
+	{
+		this._scrollbar.topIndex = this.topIndex;
+		rip += this._scrollbar.buildThumbRIP();
+	}
 
 	// Rebuild mouse regions (item positions and thumb position may have changed)
 	rip += this._buildMouseRegionsRIP();
