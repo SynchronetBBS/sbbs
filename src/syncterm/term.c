@@ -6055,34 +6055,31 @@ doterm(struct bbslist *bbs)
 							hidemouse();
 							hold_update = oldmc;
 							return false;
-						case 3:
+						case SM_UPLOAD:
 							begin_upload(bbs, false, inch);
 							break;
-						case 4:
+						case SM_DOWNLOAD:
 							begin_download(bbs);
 							break;
-						case 7:
+						case SM_CAPTURE:
 							capture_control(bbs);
 							break;
-						case 8:
+						case SM_MUSIC:
 							music_control(bbs);
 							break;
-						case 9:
+						case SM_FONT:
 							font_control(bbs, cterm);
 							break;
-						case 10:
+						case SM_DOORWAY:
 							cterm->doorway_mode = !cterm->doorway_mode;
 							break;
-						case 11:
+						case SM_MOUSE:
 							ms.flags ^= MS_FLAGS_DISABLED;
 							setup_mouse_events(&ms);
 							showmouse();
 							break;
-
-#ifdef WITHOUT_OOII
-						case 12:
-#else
-						case 12:
+#ifndef WITHOUT_OOII
+						case SM_OOII:
 							ooii_mode++;
 							if (ooii_mode > MAX_OOII_MODE) {
 								xptone_close();
@@ -6092,8 +6089,8 @@ doterm(struct bbslist *bbs)
 								xptone_open();
 							}
 							break;
-						case 13:
 #endif
+						case SM_EXIT:
 							finish_scrollback();
 							cterm_end(cterm, 0);
 							cterm = NULL;
@@ -6101,11 +6098,7 @@ doterm(struct bbslist *bbs)
 							hidemouse();
 							hold_update = oldmc;
 							return true;
-#ifdef WITHOUT_OOII
-						case 13:
-#else
-						case 14:
-#endif
+						case SM_DIRECTORY:
 						{
 							struct ciolib_screen *savscrn;
 							char                  title[LIST_NAME_MAX + 13];
