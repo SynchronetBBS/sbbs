@@ -1002,7 +1002,7 @@ ssh_connect(struct bbslist *bbs)
 				i = 1;
 			switch(i) {
 				case 1:
-					if ((listfile = fopen(settings.list_path, "r+b")) != NULL) {
+					if (!safe_mode && (listfile = fopen(settings.list_path, "r+b")) != NULL) {
 						inifile = iniReadBBSList(listfile, true);
 						iniSetString(&inifile, bbs->name, "SSHFingerprint", fpstr, &ini_style);
 						iniWriteFile(listfile, inifile);
