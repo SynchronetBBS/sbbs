@@ -5388,6 +5388,46 @@ send_emulation_key(struct cterminal *cterm, int key, bool *atascii_inverse)
 	}
 }
 
+static void
+open_hyperlink(int hyperlink_id)
+{
+	if (!ciolib_open_hyperlink(hyperlink_id)) {
+		char *url = ciolib_get_hyperlink_url(hyperlink_id);
+		if (url) {
+			copytext(url, strlen(url));
+			uifcmsg("URL copied to clipboard", url);
+			free(url);
+		}
+	}
+}
+
+static void
+open_url_at_cursor(struct mouse_event *mevent)
+{
+	struct vmem_cell *scrbuf;
+
+	scrbuf = malloc(term.width * term.height * sizeof(*scrbuf));
+	if (scrbuf) {
+		if (vmem_gettext(term.x - 1, term.y - 1,
+		    term.x + term.width - 2,
+		    term.y + term.height - 2, scrbuf)) {
+			char *url = detect_url_at(scrbuf,
+			    term.width, term.height,
+			    mevent->startx - 1,
+			    mevent->starty - 1);
+			if (url) {
+				if (!cio_api.openurl
+				    || !cio_api.openurl(url)) {
+					copytext(url, strlen(url));
+					uifcmsg("URL copied to clipboard", url);
+				}
+				free(url);
+			}
+		}
+		free(scrbuf);
+	}
+}
+
 bool
 doterm(struct bbslist *bbs)
 {
@@ -5789,82 +5829,26 @@ doterm(struct bbslist *bbs)
 					getmouse(&mevent);
 					switch (mevent.event) {
 						case CIOLIB_BUTTON_1_PRESS:
-							if (mevent.hyperlink_id
-							    && (mevent.kbmodifiers & CIOLIB_KMOD_CTRL)) {
-								if (!ciolib_open_hyperlink(mevent.hyperlink_id)) {
-									char *url = ciolib_get_hyperlink_url(mevent.hyperlink_id);
-									if (url) {
-										copytext(url, strlen(url));
-										uifcmsg("URL copied to clipboard", url);
-										free(url);
-									}
-								}
+							if ((mevent.kbmodifiers & CIOLIB_KMOD_CTRL)
+							    && mevent.hyperlink_id) {
+								open_hyperlink(mevent.hyperlink_id);
 								break;
 							}
 							if ((mevent.kbmodifiers & CIOLIB_KMOD_CTRL)
 							    && !mevent.hyperlink_id
 							    && ms.mode != MM_OFF) {
-								struct vmem_cell *scrbuf;
-								scrbuf = malloc(term.width * term.height * sizeof(*scrbuf));
-								if (scrbuf) {
-									if (vmem_gettext(term.x - 1, term.y - 1,
-									    term.x + term.width - 2,
-									    term.y + term.height - 2, scrbuf)) {
-										char *url = detect_url_at(scrbuf,
-										    term.width, term.height,
-										    mevent.startx - 1,
-										    mevent.starty - 1);
-										if (url) {
-											if (!cio_api.openurl
-											    || !cio_api.openurl(url)) {
-												copytext(url, strlen(url));
-												uifcmsg("URL copied to clipboard",
-												    url);
-											}
-											free(url);
-										}
-									}
-									free(scrbuf);
-								}
+								open_url_at_cursor(&mevent);
 								break;
 							}
 							/* FALLTHROUGH */
 						case CIOLIB_BUTTON_1_CLICK:
 							if (ms.mode == MM_OFF) {
 								if (mevent.hyperlink_id) {
-									if (!ciolib_open_hyperlink(mevent.hyperlink_id)) {
-										char *url = ciolib_get_hyperlink_url(mevent.hyperlink_id);
-										if (url) {
-											copytext(url, strlen(url));
-											uifcmsg("URL copied to clipboard", url);
-											free(url);
-										}
-									}
+									open_hyperlink(mevent.hyperlink_id);
 									break;
 								}
 								if (mevent.kbmodifiers & CIOLIB_KMOD_CTRL) {
-									struct vmem_cell *scrbuf;
-									scrbuf = malloc(term.width * term.height * sizeof(*scrbuf));
-									if (scrbuf) {
-										if (vmem_gettext(term.x - 1, term.y - 1,
-										    term.x + term.width - 2,
-										    term.y + term.height - 2, scrbuf)) {
-											char *url = detect_url_at(scrbuf,
-											    term.width, term.height,
-											    mevent.startx - 1,
-											    mevent.starty - 1);
-											if (url) {
-												if (!cio_api.openurl
-												    || !cio_api.openurl(url)) {
-													copytext(url, strlen(url));
-													uifcmsg("URL copied to clipboard",
-													    url);
-												}
-												free(url);
-											}
-										}
-										free(scrbuf);
-									}
+									open_url_at_cursor(&mevent);
 								}
 								break;
 							}
