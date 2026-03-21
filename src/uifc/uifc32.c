@@ -213,6 +213,7 @@ fill_blk_scrn(BOOL force)
 			blk_scrn[i].legacy_attr = attr;
 			blk_scrn[i].ch = api->chars->background;
 			blk_scrn[i].font = 0;
+			blk_scrn[i].hyperlink_id = 0;
 			attr2palette(blk_scrn[i].legacy_attr, &blk_scrn[i].fg, &blk_scrn[i].bg);
 		}
 		blk_scrn_ch = api->chars->background;
@@ -755,7 +756,6 @@ int ulist(uifc_winmode_t mode, int left, int top, int width, int *cur, int *bar
 		width = title_len + hbrdrsize + 2;
 		for (i = 0; i < opts; i++) {
 			if (option[i] != NULL) {
-				truncspctrl(option[i]);
 				if ((j = strlen(option[i]) + hbrdrsize + 2 + 1) > width)
 					width = j;
 			}

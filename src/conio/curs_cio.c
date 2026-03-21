@@ -711,6 +711,7 @@ int curs_vmem_gettext(int sx, int sy, int ex, int ey, struct vmem_cell *fill)
 			fill[fillpos].legacy_attr = colour|attrib;
 			attr2palette(attrib, &fill[fillpos].fg, &fill[fillpos].bg);
 			fill[fillpos].font = fnt;
+			fill[fillpos].hyperlink_id = 0;
 			fillpos++;
 		}
 	}

@@ -584,6 +584,7 @@ struct charstate {
 	bool double_height;
 	bool sep;
 	bool top_half;
+	bool link;
 };
 
 struct blockstate {
@@ -610,6 +611,7 @@ calc_charstate(struct blockstate *bs, struct vmem_cell *vc, struct charstate *cs
 	cs->sep = false;
 	cs->double_height = false;
 	cs->top_half = true;
+	cs->link = vc->hyperlink_id != 0;
 
 	if (vstat.forced_font) {
 		switch (vc->font) {
@@ -782,14 +784,14 @@ calc_charstate(struct blockstate *bs, struct vmem_cell *vc, struct charstate *cs
  * Basically, this is the happy path
  */
 static void
-draw_char_row_fast(struct blockstate *bs, struct charstate *cs)
+draw_char_row_fast(struct blockstate *bs, struct charstate *cs, bool last)
 {
 	const uint8_t mask[8] = {0x80, 0x40, 0x20, 0x10, 0x08, 0x04, 0x02, 0x01};
 	const uint8_t fb = cs->font[cs->fontoffset];
 	int pixeloffset = bs->pixeloffset;
 
 	for(unsigned x = 0; x < 8; x++) {
-		const bool fbb = fb & mask[x];
+		const bool fbb = (fb & mask[x]) | (last && cs->link && !(x & 3));
 
 		if (fbb) {
 			screena.rect->data[pixeloffset] = cs->afc;
@@ -807,7 +809,7 @@ draw_char_row_fast(struct blockstate *bs, struct charstate *cs)
 }
 
 static void
-draw_char_row_slow(struct blockstate *bs, struct charstate *cs, uint32_t y)
+draw_char_row_slow(struct blockstate *bs, struct charstate *cs, uint32_t y, bool last)
 {
 	bool fbb;
 	int pixeloffset;
@@ -845,6 +847,8 @@ draw_char_row_slow(struct blockstate *bs, struct charstate *cs, uint32_t y)
 			if (x == 0 || x == 1 || x == 6 || x == 7 || y == 4 || y == 5 || y == 12 || y == 13 || y == 18 || y == 19)
 				fbb = false;
 		}
+		if ((!fbb) && last && cs->link && !(x & 3))
+			fbb = true;
 
 		uint32_t ac, bc;
 
@@ -973,11 +977,12 @@ bitmap_draw_vmem_locked(int sx, int sy, int ex, int ey, struct vmem_cell *fill, 
 			}
 			// Draw the characters...
 			for (unsigned y = 0; y < vstat.charheight; y++) {
+				const bool last = (y == vstat.charheight - 1);
 				for (unsigned vx = 0; vx < vwidth; vx++) {
 					if (charstate[vx].slow)
-						draw_char_row_slow(&bs, &charstate[vx], y);
+						draw_char_row_slow(&bs, &charstate[vx], y, last);
 					else {
-						draw_char_row_fast(&bs, &charstate[vx]);
+						draw_char_row_fast(&bs, &charstate[vx], last);
 					}
 				}
 				bs.pixeloffset += rsz;

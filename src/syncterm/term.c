@@ -638,6 +638,7 @@ update_status(struct bbslist *bbs, int speed, int ooii_mode, bool ata_inv)
 			status_bar[i].ch = ' ';
 			status_bar[i].font = 0;
 			status_bar[i].legacy_attr = 0x1e;
+			status_bar[i].hyperlink_id = 0;
 		}
 	}
 

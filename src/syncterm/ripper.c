@@ -10362,6 +10362,7 @@ reinit_screen(uint8_t *font, int fx, int fy)
 				vstat.vmem->vmem[off].ch = ' ';
 				vstat.vmem->vmem[off].font = 0;
 				vstat.vmem->vmem[off].legacy_attr = 7;
+				vstat.vmem->vmem[off].hyperlink_id = 0;
 			}
 		}
 	}

@@ -259,6 +259,11 @@ if (jxlOk) {
         }
     }
     if (uploadFail > 0) jxlOk = false;  // silently fall back to ANSI
+    // Upload piece silhouette mask (6 pieces stacked, each 40x32, for animation)
+    if (jxlOk) {
+        if (uploadToCache(imgDir + "piece_mask.pbm", "piece_mask.pbm"))
+            console.write("\x1b_SyncTERM:C;LoadPBM;piece_mask.pbm\x1b\\");
+    }
 }
 
 // ── Mouse ────────────────────────────────────────────────────────────────────
@@ -1445,6 +1450,186 @@ function getStockfishScore() {
     return score;
 }
 
+// ── Move animation ───────────────────────────────────────────────────────────
+// Slide a piece from its source to destination square.  When flash is true,
+// the source square is highlighted twice first to capture attention (AI moves).
+// Called before applyMove() so the board still shows the original position.
+
+function animateMove(from, to, flash) {
+	var piece = game.board[from.r][from.c];
+	if (piece === ' ') return;
+
+	if (flash) {
+		// Flash source square twice to capture attention
+		for (var fi = 0; fi < 2; fi++) {
+			drawSquare(from.r, from.c, 'sel');
+			mswait(150);
+			drawSquare(from.r, from.c, null);
+			mswait(100);
+		}
+	}
+
+	// JXL images have baked-in backgrounds matching default colors only
+	var canJXL = jxlOk && darkBg === '44' && lightBg === '46';
+
+	if (canJXL)
+		animateSlideJXL(from, to, piece);
+	else
+		animateSlideANSI(from, to, piece);
+
+	// Castling: also animate the rook (no flash, just slide)
+	if (piece.toUpperCase() === 'K' && from.c === 4 && Math.abs(to.c - from.c) === 2) {
+		var rookFrom, rookTo;
+		if (to.c === 6) { rookFrom = {r: from.r, c: 7}; rookTo = {r: from.r, c: 5}; }
+		else            { rookFrom = {r: from.r, c: 0}; rookTo = {r: from.r, c: 3}; }
+		var rook = game.board[rookFrom.r][rookFrom.c];
+		if (rook !== ' ') {
+			// Draw king at its destination so the rook's background buffer
+			// includes it (otherwise the rook erase mask wipes the king)
+			game.board[to.r][to.c] = piece;
+			drawSquare(to.r, to.c, null);
+			if (canJXL)
+				animateSlideJXL(rookFrom, rookTo, rook);
+			else
+				animateSlideANSI(rookFrom, rookTo, rook);
+			game.board[to.r][to.c] = ' ';
+		}
+	}
+
+	// Reset attributes so console.clear() in drawBoard() doesn't fill
+	// the screen with the last square's background color (BCE mode)
+	console.write("\x1b[0m");
+}
+
+// Mask Y-offsets into piece_mask.pbm: each piece has 160 rows (32 draw + 128 erase)
+var ANIM_BORDER = 48;  // erase mask border (covers max per-frame movement)
+var pieceDrawMY  = { 'P': 0, 'N': 160, 'B': 320, 'R': 480, 'Q': 640, 'K': 800 };
+var pieceEraseMY = { 'P': 32, 'N': 192, 'B': 352, 'R': 512, 'Q': 672, 'K': 832 };
+
+function animateSlideJXL(from, to, piece) {
+	var srcPos = squareToChar(from.r, from.c);
+	var dstPos = squareToChar(to.r, to.c);
+	var pUp    = piece.toUpperCase();
+	var drawMY  = pieceDrawMY[pUp];
+	var eraseMY = pieceEraseMY[pUp];
+	var B = ANIM_BORDER;
+
+	// Clear the piece from its source square on screen
+	var saved = game.board[from.r][from.c];
+	game.board[from.r][from.c] = ' ';
+	drawSquare(from.r, from.c, null);
+	game.board[from.r][from.c] = saved;
+
+	// Save clean screen (piece removed) to pixel buffer 0
+	console.write("\x1b_SyncTERM:P;Copy;B=0\x1b\\");
+
+	// Load piece image into pixel buffer 1 (destination square variant)
+	var dstDark = (to.r + to.c) % 2 !== 0;
+	var fname = pieceNames[piece] + '-' + (dstDark ? 'dark' : 'light') + '.jxl';
+	console.write("\x1b_SyncTERM:C;LoadJXL;B=1;" + fname + "\x1b\\");
+
+	// Piece size in pixels
+	var pw = cellW * charPixW;
+	var ph = cellH * charPixH;
+	var ew = pw + 2 * B;  // erase mask width
+	var eh = ph + 2 * B;  // erase mask height
+
+	// Source and destination pixel positions (0-based)
+	var sx = (srcPos.col - 1) * charPixW;
+	var sy = (srcPos.row - 1) * charPixH;
+	var dx = (dstPos.col - 1) * charPixW;
+	var dy = (dstPos.row - 1) * charPixH;
+
+	var STEPS = 12;
+	var prevX = -1, prevY = -1;
+
+	for (var i = 0; i <= STEPS; i++) {
+		var t = i / STEPS;
+		// Ease-in-out curve
+		t = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+		var cx = Math.round(sx + (dx - sx) * t);
+		var cy = Math.round(sy + (dy - sy) * t);
+
+		if (cx === prevX && cy === prevY) continue;
+
+		// Pre-build draw + erase commands, emit in one write (atomic frame)
+		// 1. Draw piece at new position with silhouette mask
+		var cmds = "\x1b_SyncTERM:P;Paste;DX=" + cx + ";DY=" + cy +
+		           ";MBUF;MY=" + drawMY + ";B=1\x1b\\";
+		// 2. Erase trail: paste background around new position with inverted
+		//    mask (hole preserves the piece just drawn, border erases trail)
+		if (prevX >= 0) {
+			cmds += "\x1b_SyncTERM:P;Paste;SX=" + (cx - B) + ";SY=" + (cy - B) +
+			        ";SW=" + ew + ";SH=" + eh +
+			        ";DX=" + (cx - B) + ";DY=" + (cy - B) +
+			        ";MBUF;MY=" + eraseMY + ";B=0\x1b\\";
+		}
+		console.write(cmds);
+
+		prevX = cx;
+		prevY = cy;
+		mswait(20);
+	}
+
+	// Restore final position (full drawBoard follows)
+	if (prevX >= 0) {
+		console.write("\x1b_SyncTERM:P;Paste;SX=" + (prevX - B) + ";SY=" + (prevY - B) +
+		              ";SW=" + ew + ";SH=" + eh +
+		              ";DX=" + (prevX - B) + ";DY=" + (prevY - B) + ";B=0\x1b\\");
+	}
+}
+
+function animateSlideANSI(from, to, piece) {
+	var srcPos = squareToChar(from.r, from.c);
+	var dstPos = squareToChar(to.r, to.c);
+	var isWp = (piece === piece.toUpperCase());
+	var fg = isWp ? whiteFg : blackFg;
+
+	// Clear the piece from its source square on screen
+	var saved = game.board[from.r][from.c];
+	game.board[from.r][from.c] = ' ';
+	drawSquare(from.r, from.c, null);
+	game.board[from.r][from.c] = saved;
+
+	// Interpolate from center of source cell to center of dest cell
+	var scx = srcPos.col + 2, scy = srcPos.row;
+	var dcx = dstPos.col + 2, dcy = dstPos.row;
+
+	var STEPS = 8;
+	var prevCol = -1, prevRow = -1;
+
+	for (var i = 0; i <= STEPS; i++) {
+		var t = i / STEPS;
+		t = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+		var cx = Math.round(scx + (dcx - scx) * t);
+		var cy = Math.round(scy + (dcy - scy) * t);
+
+		if (cx === prevCol && cy === prevRow) continue;
+
+		// Restore previous position by redrawing the board square under it
+		if (prevCol >= 0) {
+			var sq = charToSquare(prevCol, prevRow);
+			if (sq) drawSquare(sq.r, sq.c, null);
+			else { console.gotoxy(prevCol, prevRow); console.write("\x1b[0m "); }
+		}
+
+		// Draw piece character at new position
+		console.gotoxy(cx, cy);
+		console.write("\x1b[" + selBg + ";" + fg + "m" + piece.toUpperCase() + "\x1b[0m");
+
+		prevCol = cx;
+		prevRow = cy;
+		mswait(30);
+	}
+
+	// Restore final position (full drawBoard follows)
+	if (prevCol >= 0) {
+		var sq = charToSquare(prevCol, prevRow);
+		if (sq) drawSquare(sq.r, sq.c, null);
+		else { console.gotoxy(prevCol, prevRow); console.write("\x1b[0m "); }
+	}
+}
+
 // ── Apply a player move + trigger AI ─────────────────────────────────────────
 function doPlayerMove(from, to) {
     if (!game.isLegalMove(from.r, from.c, to.r, to.c)) {
@@ -1455,6 +1640,8 @@ function doPlayerMove(from, to) {
     if ((piece==='P' && to.r===0) || (piece==='p' && to.r===7))
         promo = askPromotion(game.playerColor);
 
+    drawBoard();
+    animateMove(from, to, false);
     game.applyMove(from, to, promo);
     drawBoard();
     if (game.isCheckmate() || game.isStalemate() ||
@@ -1464,7 +1651,7 @@ function doPlayerMove(from, to) {
     if (game.turn !== game.playerColor) {
         showStatus("Thinking...", "0;36");
         var ai = getAIMove();
-        if (ai) { game.applyMove(ai.f, ai.t, ai.promoteTo); drawBoard(); }
+        if (ai) { animateMove(ai.f, ai.t, true); game.applyMove(ai.f, ai.t, ai.promoteTo); drawBoard(); }
         else { showStatus("Engine returned no move.", "1;31"); mswait(1200); }
     }
     return true;
@@ -1697,13 +1884,13 @@ while (keepPlaying && !console.aborted) {
     if (!skipStartup && game.playerColor === 'b') {
         showStatus("Engine opening as White...", "0;36");
         var aiFirst = getAIMove();
-        if (aiFirst) { game.applyMove(aiFirst.f, aiFirst.t, aiFirst.promoteTo); drawBoard(); }
+        if (aiFirst) { animateMove(aiFirst.f, aiFirst.t, true); game.applyMove(aiFirst.f, aiFirst.t, aiFirst.promoteTo); drawBoard(); }
     }
     // On resume, if it somehow became AI's turn, let AI move
     if (skipStartup && game.turn !== game.playerColor) {
         showStatus("Stockfish thinking...", "0;36");
         var aiResume = getAIMove();
-        if (aiResume) { game.applyMove(aiResume.f, aiResume.t, aiResume.promoteTo); drawBoard(); }
+        if (aiResume) { animateMove(aiResume.f, aiResume.t, true); game.applyMove(aiResume.f, aiResume.t, aiResume.promoteTo); drawBoard(); }
     }
 
     // ── Inner game loop ───────────────────────────────────────────────────────
