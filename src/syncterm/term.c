@@ -1041,7 +1041,7 @@ size_t
 count_data_waiting(void)
 {
 	recv_bytes(0);
-	return recv_byte_buffer_len;
+	return recv_byte_buffer_len - recv_byte_buffer_pos;
 }
 
 void
