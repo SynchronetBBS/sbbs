@@ -307,7 +307,7 @@ font_management(void)
 			if (i & MSK_INS) {
 				str[0] = 0;
 				uifc.helpbuf = "Enter the name of the font as you want it to appear in menus.";
-				if (uifc.input(WIN_SAV | WIN_MID, 0, 0, "Font Name", str, 50, 0) == -1) {
+				if (uifc.input(WIN_SAV | WIN_MID, 0, 0, "Font Name", str, 50, 0) == -1 || !str[0]) {
 					check_exit(false);
 					break;
 				}
