@@ -2,7 +2,11 @@ SynChess by Claude, assisted by Nelgin.
 
 This is a chess game for modern versions of Synchronet and SyncTERM
 and others that that support jpegXL. Fear not, a less pretty interface
-is available for those without. 
+is available for those without.
+
+SyncTERM must be launched in a graphics/pixel mode (not ANSI or curses
+mode) for piece graphics to display.  Text rendering is used automatically
+as a fallback.
 
 
 The only guarantee you receive with this software is that it works
@@ -38,6 +42,28 @@ MacOS			brew install stockfish
 			Homebrew is the easiest install method.
 
 
+Once Stockfish is installed, you must tell SynChess where to find
+the binary. The command 'which stockfish' will usually give you the
+path, such as /usr/games/stockfish. Edit synchess.ini and put the
+location into the stockfish_path setting.
+
+
+
+Compiling SyncTERM on Linux — JPEG XL support:
+
+SyncTERM requires the libjxl development library to be installed before
+compiling in order to display piece graphics in SynChess.
+
+Debian / Ubuntu		sudo apt install libjxl-dev
+Arch Linux		sudo pacman -S libjxl
+Gentoo			emerge --ask media-libs/libjxl
+Slackware		build from source: https://github.com/libjxl/libjxl
+Fedora / RHEL		sudo dnf install libjxl-devel
+			(may require RPM Fusion or a COPR repo)
+
+Without libjxl, SyncTERM will still work but piece graphics will not
+be available and SynChess will fall back to text rendering.
+
 
 Features:
  Play as white, black, or random.
@@ -56,6 +82,8 @@ Features:
 
  Options to show all moves, last move or no movies. Last move is useful
  for "blindfold mode".
+
+ Animated opponent moves with 5 speed levels (1=slow, 4=fast, 5=off).
 
  Keeps track of wins/losses/draws and by which method (checkmate, agreed
  draw, insufficient material etc).
@@ -79,8 +107,10 @@ Features:
 
  The system will decide whether to take a draw or not based on the position.
 
- Ability to see PGN of a completed game and opportunity to download it as a
- file.
+ PGN export: after a game ends you can view the PGN (Portable Game Notation)
+ on screen and optionally download it as a file.  PGN is a standard chess
+ format you can paste into Lichess, Chess.com, Fritz, or any other chess
+ program to replay or analyse the game.
 
  Quitting will ask the player if they wish to save the game and it will be
  resumed next time, otherwise if the player has made a move, it will count
@@ -89,16 +119,18 @@ Features:
  Caputred pieces are displayed along with points value difference, if either
  player is over 1 point higher in material.
 
- 
+
  Game will end automatically on 3 move repetition, 50 move rule, or
  insufficient material.
+
+ Moves are animated in both modes.
 
 Todo:
 
  Player v Player mode
  Possibly interbbs mode
 
- 
+
 
 Setup:
 
@@ -108,7 +140,7 @@ Setup:
  If you wish to do it the manual way, read on.
 
  Copy synchess-dist.ini to synchess.ini and make any configuration changes.
- 
+
 
  Simply add SynChess to your External Programs > Online Programs (Door)
  section of scfg.
@@ -120,7 +152,7 @@ Setup:
  4: Command Line               ?synchess
  5: Clean-up Command Line
  6: Execution Cost             None
- 7: Access Requirements        ANSI AND 80 COLS
+ 7: Access Requirements        ANSI AND COLS 80
  8: Execution Requirements
  9: Multiple Concurrent Users  Yes
 10: Native Executable          No
@@ -134,4 +166,41 @@ Setup:
 18: Place Drop File In         Node Directory
 19: Time Options...
 
-Let your board recycle and you're good to go. 
+Let your board recycle and you're good to go.
+
+Thanks:
+	To Nightfox, Digital Man, phigan, and Deuce for trying the game and
+	giving some good initial feedback. 
+
+Change Log:
+
+Version 1.00	19 Mar 2026	Initial Release
+Version 1.01	21 Mar 2026	Animiated added by Deuce. Thank you for that
+				great addition.
+
+				Instructions include pressing Q to quit will
+				allow the user to save the current game. It'll
+				be resumed on their next session.
+
+				Instructions contain more details on compiling
+				SyncTERM with jpegxl support of Linux.
+
+				In synchess.ini path has been changed to
+				stockfish_path and instructions added to the
+				stockfish section in this readme. Please update
+				your .ini file accordingly.
+
+				Pretty header now displayed when there is a saved
+				game.
+
+				Added information on PGN format and changed the
+				prompt to view/download PGN to make it a little
+				less cryptic.
+
+				Stopped same user running SynChess concurrently
+				on different terminals. This shouldn't usually
+				be a problem unless you allow users to login on
+				multiple terminals.
+
+				Fixed access requirements for COLS 80 that were
+				backwards.
