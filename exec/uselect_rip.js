@@ -27,9 +27,15 @@ var items = console.uselect_items;
 var header = format(bbs.text(bbs.text.SelectItemHdr), console.uselect_title);
 
 // Send a batch of RIP commands to the client.
+// Uses \r (CR) before ! instead of \r\n (CRLF) to avoid advancing the text
+// cursor to a new line, which would scroll the text window. The \r returns
+// to column 0 so ! is recognized as the start of a RIP command line.
+// Always parks the text cursor at (0,0) after each batch to prevent cursor
+// drift from the trailing \r\n that terminates the RIP line.
 function sendRIP(cmds)
 {
-	console.write("\r\n!" + cmds + "\r\n");
+	//console.write("\r!" + cmds + RIPGotoXYNumeric(0, 0) + "\r\n");
+	console.write("\r!" + cmds + "\r\n");
 }
 
 // Displays a RIP header at the top of the screen
@@ -54,18 +60,24 @@ function RIPHdr(pText, pRIPFont, pFontSize, pTextColorNum, pInnerBorderColorNum,
 }
 
 // --- Initial screen setup ---
-sendRIP(RIPResetWindows() + RIPNoMore());
+// Avoid RIPResetWindows() — it calls reinit_screen() in SyncTerm, which tears
+// down and recreates the entire terminal emulator instance (cterm_end/cterm_init,
+// vmem realloc, pixel buffer save/restore). Every RIPWindow command also triggers
+// reinit_screen() due to a bug in the early-return check (compares font size
+// INDEX against pixel WIDTH, so it never matches). By not changing the text
+// window font at all, we avoid all reinit_screen() calls and eliminate the
+// post-exit input delay. RIP graphical commands use pixel coordinates (640x350)
+// independent of the text window font, so the menu renders identically.
+sendRIP(RIPKillMouseFields()
+        + RIPFillStyleNumeric(1, RIP_COLOR_BLACK)
+        + RIPBarNumeric(0, 0, 639, 349)
+        + RIPNoMore());
 
 // Draw the header at the top of the screen.
 // Strip Ctrl-A codes from the header text since they don't display well with RIP.
 var cleanHeader = strip_ctrl(header);
 var hdrRIP = RIPHdr(cleanHeader, RIP_FONT_TRIPLEX, 5, RIP_COLOR_BLUE);
 sendRIP(hdrRIP);
-
-// Set the text window below the header area (text row 8 in 80x43 mode ≈ pixel 64,
-// below the 60px header) and erase it. This clears any "<>" text artifacts from
-// the RIPButton delimiter that the terminal may have echoed to the text window.
-sendRIP(RIPWindowNumeric(0, 8, 79, 42, 1, 0) + RIPEraseTextWindow());
 
 // --- Create the lightbar menu ---
 var MENU_X = 15;
@@ -102,10 +114,10 @@ if (retval === null)
 	retval = -1;
 
 // --- Exit cleanup ---
-// Restore the RIP text window before exiting.
-// RIPResetWindows() set 80x43 (8x8 font). Restore to 80x25 (8x14 font, size=2)
-// to match the standard text mode the calling shell expects.
-sendRIP(RIPWindowNumeric(0, 0, 79, 24, 1, 2));
+// No RIPWindow command on exit. Since we never changed the text window font
+// on startup (avoided RIPResetWindows), the calling shell's font is still
+// intact and no restoration is needed. This avoids triggering SyncTerm's
+// reinit_screen() which is the primary cause of the post-exit input delay.
 
 // console.write() (rputs) sends raw bytes through Synchronet's output path which
 // updates internal terminal tracking state (column, row, lastcrcol) via

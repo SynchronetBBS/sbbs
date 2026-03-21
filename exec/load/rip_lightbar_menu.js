@@ -305,9 +305,13 @@ function RIPLightbarMenu_GetVal(pDefaultRetVal)
 // ---- Internal methods ----
 
 // Send a batch of RIP commands to the client.
+// Uses \r (CR) before ! instead of \r\n (CRLF) to avoid advancing the text
+// cursor to a new line, which would scroll the text window. Parks the text
+// cursor at (0,0) after each batch to prevent cursor drift.
 function RIPLightbarMenu_sendRIP(cmds)
 {
-	console.write("\r\n!" + cmds + "\r\n");
+	//console.write("\r!" + cmds + RIPGotoXYNumeric(0, 0) + "\r\n");
+	console.write("\r!" + cmds + "\r\n");
 }
 
 
