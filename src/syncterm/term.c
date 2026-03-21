@@ -59,6 +59,11 @@ static char ansi_replybuf[2048];
 struct terminal   term;
 struct cterminal *cterm;
 
+#ifndef WITHOUT_OOII
+static BYTE   ooii_buf[256];
+static size_t ooii_buf_len;
+#endif
+
 #define TRANSFER_WIN_WIDTH 66
 #define TRANSFER_WIN_HEIGHT 18
 static struct vmem_cell winbuf[(TRANSFER_WIN_WIDTH + 2) * (TRANSFER_WIN_HEIGHT + 1) * 2]; /* Save buffer for transfer
@@ -5428,19 +5433,243 @@ open_url_at_cursor(struct mouse_event *mevent)
 	}
 }
 
+static void
+handle_mouse_event(struct mouse_state *ms)
+{
+	char               mouse_buf[64];
+	struct mouse_event mevent;
+
+	getmouse(&mevent);
+	switch (mevent.event) {
+		case CIOLIB_BUTTON_1_PRESS:
+			if ((mevent.kbmodifiers & CIOLIB_KMOD_CTRL)
+			    && mevent.hyperlink_id) {
+				open_hyperlink(mevent.hyperlink_id);
+				break;
+			}
+			if ((mevent.kbmodifiers & CIOLIB_KMOD_CTRL)
+			    && !mevent.hyperlink_id
+			    && ms->mode != MM_OFF) {
+				open_url_at_cursor(&mevent);
+				break;
+			}
+			/* FALLTHROUGH */
+		case CIOLIB_BUTTON_1_CLICK:
+			if (ms->mode == MM_OFF) {
+				if (mevent.hyperlink_id) {
+					open_hyperlink(mevent.hyperlink_id);
+					break;
+				}
+				if (mevent.kbmodifiers & CIOLIB_KMOD_CTRL) {
+					open_url_at_cursor(&mevent);
+				}
+				break;
+			}
+			/* FALLTHROUGH */
+		case CIOLIB_BUTTON_1_RELEASE:
+		case CIOLIB_BUTTON_2_PRESS:
+		case CIOLIB_BUTTON_2_RELEASE:
+		case CIOLIB_BUTTON_3_PRESS:
+		case CIOLIB_BUTTON_3_RELEASE:
+			conn_send(mouse_buf,
+			    fill_mevent(mouse_buf, sizeof(mouse_buf), &mevent, ms), 0);
+			break;
+		case CIOLIB_MOUSE_MOVE:
+			if (ms->mode == MM_BUTTON_EVENT_TRACKING
+			    || ms->mode == MM_ANY_EVENT_TRACKING)
+				conn_send(mouse_buf,
+				    fill_mevent(mouse_buf, sizeof(mouse_buf), &mevent, ms), 0);
+			if (mevent.hyperlink_id != hover_hyperlink_id) {
+				hover_hyperlink_id = mevent.hyperlink_id;
+				if (hover_hyperlink_id) {
+					if (!term.nostatus) {
+						char *url = ciolib_get_hyperlink_url(hover_hyperlink_id);
+						if (url) {
+							show_status_url(url);
+							free(url);
+						}
+					}
+					if (ms->mode == MM_OFF)
+						mousepointer(CIOLIB_MOUSEPTR_ARROW);
+				}
+				else {
+					force_status_update = true;
+					if (ms->mode == MM_OFF)
+						mousepointer(CIOLIB_MOUSEPTR_BAR);
+				}
+			}
+			break;
+		case CIOLIB_BUTTON_4_PRESS:
+		case CIOLIB_BUTTON_5_PRESS:
+			if ((ms->mode != MM_X10) && (ms->mode != MM_OFF) && (ms->mode != MM_RIP)) {
+				conn_send(mouse_buf,
+				    fill_mevent(mouse_buf, sizeof(mouse_buf), &mevent, ms), 0);
+				break;
+			}
+			viewscroll();
+			setup_mouse_events(ms);
+			break;
+		case CIOLIB_BUTTON_1_DRAG_START:
+			mousedrag(scrollback_buf);
+			break;
+		case CIOLIB_BUTTON_2_CLICK:
+		case CIOLIB_BUTTON_3_CLICK:
+			if (ms->mode == MM_X10) {
+				conn_send(mouse_buf,
+				    fill_mevent(mouse_buf, sizeof(mouse_buf), &mevent, ms), 0);
+			}
+			else {
+				do_paste();
+			}
+			break;
+	}
+}
+
+/*
+ * Speedwatch: detects ESC [ 0-or-1 ; digits * r (SyncTERM speed response).
+ * Returns true when the full sequence is matched.
+ */
+static bool
+check_speedwatch(int *state, int ch)
+{
+	switch (*state) {
+		case 0:
+			if (ch == '\x1b')
+				*state = 1;
+			return false;
+		case 1:
+			*state = (ch == '[') ? 2 : 0;
+			return false;
+		case 2:
+			*state = (ch == '0' || ch == '1') ? 3 : 0;
+			return false;
+		case 3:
+			*state = (ch == ';') ? 4 : 0;
+			return false;
+		case 4:
+			if (ch >= '0' && ch <= '9')
+				return false;
+			*state = (ch == '*') ? 5 : 0;
+			return false;
+		case 5:
+			*state = 0;
+			return (ch == 'r');
+	}
+	return false;
+}
+
+/* Zmodem auto-detect patterns */
+static const BYTE zrqinit_pat[] = {ZDLE, ZHEX, '0', '0', 0};
+static const BYTE zrinit_pat[] = {ZDLE, ZHEX, '0', '1', 0};
+#define ZMODEM_SEQ_LEN (sizeof(zrqinit_pat) - 1)
+
+/*
+ * Feed a byte into the Zmodem auto-detect state machine.
+ * Returns true when a full ZRQINIT or ZRINIT sequence is detected.
+ * Caller checks zrqbuf to determine which.
+ */
+static bool
+feed_zmodem_detect(int ch, BYTE *zrqbuf, size_t *zrqlen)
+{
+	if ((ch == zrqinit_pat[*zrqlen]) || (ch == zrinit_pat[*zrqlen])) {
+		zrqbuf[*zrqlen] = ch;
+		zrqbuf[++(*zrqlen)] = 0;
+		if (*zrqlen == ZMODEM_SEQ_LEN)
+			return true;
+	}
+	else {
+		zrqbuf[0] = 0;
+		*zrqlen = 0;
+	}
+	return false;
+}
+
+#ifndef WITHOUT_OOII
+/* OOII auto-detect init patterns */
+static const BYTE ooii_init1[] =
+    "\xdb\b \xdb\b \xdb\b[\xdb\b[\xdb\b \xdb\bM\xdb\ba\xdb\bi\xdb\bn\xdb\bt\xdb\be\xdb\bn\xdb\ba\xdb\bn\xdb\bc\xdb\be\xdb\b \xdb\bC\xdb\bo\xdb\bm\xdb\bp\xdb\bl\xdb\be\xdb\bt\xdb\be\xdb\b \xdb\b]\xdb\b]\xdb\b \b\r\n\r\n\r\n\x1b[0;0;36mDo you have the Overkill Ansiterm installed? (y/N)  \xe9 ";
+static const BYTE ooii_init2[] =
+    "\xdb\b \xdb\b \xdb\b[\xdb\b[\xdb\b \xdb\bM\xdb\ba\xdb\bi\xdb\bn\xdb\bt\xdb\be\xdb\bn\xdb\ba\xdb\bn\xdb\bc\xdb\be\xdb\b \xdb\bC\xdb\bo\xdb\bm\xdb\bp\xdb\bl\xdb\be\xdb\bt\xdb\be\xdb\b \xdb\b]\xdb\b]\xdb\b \b\r\n\r\n\x1b[0m\x1b[2J\r\n\r\n\x1b[0;1;30mHX Force retinal scan in progress ... \x1b[0;0;30m";
+
+enum ooii_result {
+	OOII_PASS,	/* byte not consumed, add to outbuf */
+	OOII_CONSUMED,	/* byte consumed by OOII */
+	OOII_COMPLETE,	/* complete code received, caller should flush and handle */
+};
+
+/*
+ * Feed a byte into the OOII auto-detect/command state machine.
+ * When ooii_mode != 0: accumulates command bytes, returns OOII_COMPLETE
+ * when '|' terminator received.
+ * When ooii_mode == 0: matches init patterns, sets mode on match.
+ */
+static enum ooii_result
+feed_ooii(int inch, int *ooii_mode)
+{
+	if (*ooii_mode) {
+		if (ooii_buf[0] == 0) {
+			if (inch == 0xab) {
+				ooii_buf[ooii_buf_len++] = inch;
+				ooii_buf[ooii_buf_len] = 0;
+				return OOII_CONSUMED;
+			}
+		}
+		else {
+			if (ooii_buf_len + 1 >= sizeof(ooii_buf))
+				ooii_buf_len--;
+			ooii_buf[ooii_buf_len++] = inch;
+			ooii_buf[ooii_buf_len] = 0;
+			if (inch == '|')
+				return OOII_COMPLETE;
+			return OOII_CONSUMED;
+		}
+	}
+	else {
+		if (inch == ooii_init1[ooii_buf_len]) {
+			ooii_buf[ooii_buf_len++] = inch;
+			ooii_buf[ooii_buf_len] = 0;
+			if (ooii_init1[ooii_buf_len] == 0) {
+				if (strcmp((char *)ooii_buf,
+				    (char *)ooii_init1) == 0) {
+					*ooii_mode = 1;
+					xptone_open();
+				}
+				ooii_buf[0] = 0;
+				ooii_buf_len = 0;
+			}
+		}
+		else if (inch == ooii_init2[ooii_buf_len]) {
+			ooii_buf[ooii_buf_len++] = inch;
+			ooii_buf[ooii_buf_len] = 0;
+			if (ooii_init2[ooii_buf_len] == 0) {
+				if (strcmp((char *)ooii_buf,
+				    (char *)ooii_init2) == 0) {
+					*ooii_mode = 2;
+					xptone_open();
+				}
+				ooii_buf[0] = 0;
+				ooii_buf_len = 0;
+			}
+		}
+		else {
+			ooii_buf[0] = 0;
+			ooii_buf_len = 0;
+		}
+	}
+	return OOII_PASS;
+}
+#endif /* !WITHOUT_OOII */
+
 bool
 doterm(struct bbslist *bbs)
 {
 	unsigned char     ch[2];
-	char              mouse_buf[64];
 	unsigned char     outbuf[OUTBUF_SIZE];
 	size_t            outbuf_size = 0;
 	int               key;
 	int               i, j;
 	struct vmem_cell *vc;
-	BYTE              zrqinit[] = {ZDLE, ZHEX, '0', '0', 0};  /* for Zmodem auto-downloads */
-	BYTE              zrinit[] = {ZDLE, ZHEX, '0', '1', 0};   /* for Zmodem auto-uploads */
-	BYTE              zrqbuf[sizeof(zrqinit)];
+	BYTE              zrqbuf[ZMODEM_SEQ_LEN + 1];
 	size_t zrqlen;
 	int               inch = NOINP;
 	long double       nextchar = 0;
@@ -5453,28 +5682,6 @@ doterm(struct bbslist *bbs)
 	size_t            remain;
 	struct text_info  txtinfo;
 
-#ifndef WITHOUT_OOII
-	BYTE              ooii_buf[256];
-	size_t ooii_buf_len;
-	BYTE              ooii_init1[] =
-	    "\xdb\b \xdb\b \xdb\b[\xdb\b[\xdb\b \xdb\bM\xdb\ba\xdb\bi\xdb\bn\xdb\bt\xdb\be\xdb\bn\xdb\ba\xdb\bn\xdb\bc\xdb\be\xdb\b \xdb\bC\xdb\bo\xdb\bm\xdb\bp\xdb\bl\xdb\be\xdb\bt\xdb\be\xdb\b \xdb\b]\xdb\b]\xdb\b \b\r\n\r\n\r\n\x1b[0;0;36mDo you have the Overkill Ansiterm installed? (y/N)  \xe9 ";            /*
-                                                                                                                                                                                                                                                                                                                          *
-                                                                                                                                                                                                                                                                                                                          * for
-                                                                                                                                                                                                                                                                                                                          *
-                                                                                                                                                                                                                                                                                                                          * OOII
-                                                                                                                                                                                                                                                                                                                          *
-                                                                                                                                                                                                                                                                                                                          * auto-enable
-                                                                                                                                                                                                                                                                                                                          */
-	BYTE ooii_init2[] =
-	    "\xdb\b \xdb\b \xdb\b[\xdb\b[\xdb\b \xdb\bM\xdb\ba\xdb\bi\xdb\bn\xdb\bt\xdb\be\xdb\bn\xdb\ba\xdb\bn\xdb\bc\xdb\be\xdb\b \xdb\bC\xdb\bo\xdb\bm\xdb\bp\xdb\bl\xdb\be\xdb\bt\xdb\be\xdb\b \xdb\b]\xdb\b]\xdb\b \b\r\n\r\n\x1b[0m\x1b[2J\r\n\r\n\x1b[0;1;30mHX Force retinal scan in progress ... \x1b[0;0;30m"; /*
-                                                                                                                                                                                                                                                                                                                          *
-                                                                                                                                                                                                                                                                                                                          * for
-                                                                                                                                                                                                                                                                                                                          *
-                                                                                                                                                                                                                                                                                                                          * OOII
-                                                                                                                                                                                                                                                                                                                          *
-                                                                                                                                                                                                                                                                                                                          * auto-enable
-                                                                                                                                                                                                                                                                                                                          */
-#endif
 	int                ooii_mode = 0;
 	recv_byte_buffer_len = recv_byte_buffer_pos = 0;
 	struct mouse_state ms = {0};
@@ -5648,133 +5855,45 @@ doterm(struct bbslist *bbs)
 							nextchar = lastchar + 1 / (long double)(speed / 10);
 						}
 
-						switch (speedwatch) {
-							case 0:
-								if (inch == '\x1b')
-									speedwatch = 1;
-								break;
-							case 1:
-								if (inch == '[')
-									speedwatch = 2;
-								else
-									speedwatch = 0;
-								break;
-							case 2:
-								if ((inch == '0') || (inch == '1'))
-									speedwatch = 3;
-								else
-									speedwatch = 0;
-								break;
-							case 3:
-								if (inch == ';')
-									speedwatch = 4;
-								else
-									speedwatch = 0;
-								break;
-							case 4:
-								if ((inch >= '0') && (inch <= '9'))
-									break;
-								if (inch == '*')
-									speedwatch = 5;
-								else
-									speedwatch = 0;
-								break;
-							case 5:
-								if (inch == 'r')
-									remain = 1;
-								speedwatch = 0;
-								break;
-						}
-						if ((inch == zrqinit[zrqlen]) || (inch == zrinit[zrqlen])) {
-							zrqbuf[zrqlen] = inch;
-							zrqbuf[++zrqlen] = 0;
-							if (zrqlen == sizeof(zrqinit) - 1) {
-                                                                /* Have full sequence (Assumes
-                                                                 * zrinit and zrqinit are same
-                                                                 * length */
-								WRITE_OUTBUF();
-								suspend_rip(true);
-								if (!strcmp((char *)zrqbuf, (char *)zrqinit)) {
-									struct ciolib_screen *savscrn = cp437_savescrn();
-									zmodem_download(bbs);
-									restorescreen(savscrn);
-									freescreen(savscrn);
-								}
-								else
-									begin_upload(bbs, true, inch);
-								setup_mouse_events(&ms);
-								suspend_rip(false);
-								zrqbuf[0] = 0;
-								zrqlen = 0;
-								remain = 1;
+						if (check_speedwatch(&speedwatch, inch))
+							remain = 1;
+						if (feed_zmodem_detect(inch, zrqbuf, &zrqlen)) {
+							WRITE_OUTBUF();
+							suspend_rip(true);
+							if (!strcmp((char *)zrqbuf, (char *)zrqinit_pat)) {
+								struct ciolib_screen *savscrn = cp437_savescrn();
+								zmodem_download(bbs);
+								restorescreen(savscrn);
+								freescreen(savscrn);
 							}
-						}
-						else {
+							else
+								begin_upload(bbs, true, inch);
+							setup_mouse_events(&ms);
+							suspend_rip(false);
 							zrqbuf[0] = 0;
 							zrqlen = 0;
+							remain = 1;
 						}
 #ifndef WITHOUT_OOII
-						if (ooii_mode) {
-							if (ooii_buf[0] == 0) {
-								if (inch == 0xab) {
-									ooii_buf[ooii_buf_len++] = inch;
-									ooii_buf[ooii_buf_len] = 0;
-									continue;
+						switch (feed_ooii(inch, &ooii_mode)) {
+							case OOII_COMPLETE:
+								WRITE_OUTBUF();
+								if (handle_ooii_code(ooii_buf, &ooii_mode,
+								    (unsigned char *)ansi_replybuf,
+								    sizeof(ansi_replybuf))) {
+									ooii_mode = 0;
+									xptone_close();
 								}
-							}
-							else { /* Already have the start of the sequence */
-								if (ooii_buf_len + 1 >= sizeof(ooii_buf))
-									ooii_buf_len--;
-								ooii_buf[ooii_buf_len++] = inch;
-								ooii_buf[ooii_buf_len] = 0;
-								if (inch == '|') {
-									WRITE_OUTBUF();
-									if (handle_ooii_code(ooii_buf, &ooii_mode,
-									    (unsigned char *)ansi_replybuf,
-									    sizeof(ansi_replybuf))) {
-										ooii_mode = 0;
-										xptone_close();
-									}
-									if (ansi_replybuf[0])
-										conn_send(ansi_replybuf,
-										    strlen((char *)ansi_replybuf), 0);
-									ooii_buf[0] = 0;
-									ooii_buf_len = 0;
-								}
-								continue;
-							}
-						}
-						else {
-							if (inch == ooii_init1[ooii_buf_len]) {
-								ooii_buf[ooii_buf_len++] = inch;
-								ooii_buf[ooii_buf_len] = 0;
-								if (ooii_init1[ooii_buf_len] == 0) {
-									if (strcmp((char *)ooii_buf,
-									    (char *)ooii_init1) == 0) {
-										ooii_mode = 1;
-										xptone_open();
-									}
-									ooii_buf[0] = 0;
-									ooii_buf_len = 0;
-								}
-							}
-							else if (inch == ooii_init2[ooii_buf_len]) {
-								ooii_buf[ooii_buf_len++] = inch;
-								ooii_buf[ooii_buf_len] = 0;
-								if (ooii_init2[ooii_buf_len] == 0) {
-									if (strcmp((char *)ooii_buf,
-									    (char *)ooii_init2) == 0) {
-										ooii_mode = 2;
-										xptone_open();
-									}
-									ooii_buf[0] = 0;
-									ooii_buf_len = 0;
-								}
-							}
-							else {
+								if (ansi_replybuf[0])
+									conn_send(ansi_replybuf,
+									    strlen((char *)ansi_replybuf), 0);
 								ooii_buf[0] = 0;
 								ooii_buf_len = 0;
-							}
+								/* FALLTHROUGH */
+							case OOII_CONSUMED:
+								continue;
+							case OOII_PASS:
+								break;
 						}
 #endif /* ifndef WITHOUT_OOII */
 						if (outbuf_size >= sizeof(outbuf))
@@ -5799,8 +5918,6 @@ doterm(struct bbslist *bbs)
                 /* Get local input */
 		while (quitting || rip_kbhit()) {
 			sleep = false;
-			struct mouse_event mevent;
-
 			updated = true;
 			gotoxy(wherex(), wherey());
 			if (quitting) {
@@ -5826,93 +5943,7 @@ doterm(struct bbslist *bbs)
                          */
 			switch (key) {
 				case CIO_KEY_MOUSE:
-					getmouse(&mevent);
-					switch (mevent.event) {
-						case CIOLIB_BUTTON_1_PRESS:
-							if ((mevent.kbmodifiers & CIOLIB_KMOD_CTRL)
-							    && mevent.hyperlink_id) {
-								open_hyperlink(mevent.hyperlink_id);
-								break;
-							}
-							if ((mevent.kbmodifiers & CIOLIB_KMOD_CTRL)
-							    && !mevent.hyperlink_id
-							    && ms.mode != MM_OFF) {
-								open_url_at_cursor(&mevent);
-								break;
-							}
-							/* FALLTHROUGH */
-						case CIOLIB_BUTTON_1_CLICK:
-							if (ms.mode == MM_OFF) {
-								if (mevent.hyperlink_id) {
-									open_hyperlink(mevent.hyperlink_id);
-									break;
-								}
-								if (mevent.kbmodifiers & CIOLIB_KMOD_CTRL) {
-									open_url_at_cursor(&mevent);
-								}
-								break;
-							}
-							/* FALLTHROUGH */
-						case CIOLIB_BUTTON_1_RELEASE:
-						case CIOLIB_BUTTON_2_PRESS:
-						case CIOLIB_BUTTON_2_RELEASE:
-						case CIOLIB_BUTTON_3_PRESS:
-						case CIOLIB_BUTTON_3_RELEASE:
-							conn_send(mouse_buf,
-							    fill_mevent(mouse_buf, sizeof(mouse_buf), &mevent, &ms), 0);
-							break;
-						case CIOLIB_MOUSE_MOVE:
-							if (ms.mode == MM_BUTTON_EVENT_TRACKING
-							    || ms.mode == MM_ANY_EVENT_TRACKING)
-								conn_send(mouse_buf,
-								    fill_mevent(mouse_buf, sizeof(mouse_buf), &mevent, &ms), 0);
-							if (mevent.hyperlink_id != hover_hyperlink_id) {
-								hover_hyperlink_id = mevent.hyperlink_id;
-								if (hover_hyperlink_id) {
-									if (!term.nostatus) {
-										char *url = ciolib_get_hyperlink_url(hover_hyperlink_id);
-										if (url) {
-											show_status_url(url);
-											free(url);
-										}
-									}
-									if (ms.mode == MM_OFF)
-										mousepointer(CIOLIB_MOUSEPTR_ARROW);
-								}
-								else {
-									force_status_update = true;
-									if (ms.mode == MM_OFF)
-										mousepointer(CIOLIB_MOUSEPTR_BAR);
-								}
-							}
-							break;
-						case CIOLIB_BUTTON_4_PRESS:
-						case CIOLIB_BUTTON_5_PRESS:
-							if ((ms.mode != MM_X10) && (ms.mode != MM_OFF) && (ms.mode != MM_RIP)) {
-								conn_send(mouse_buf,
-								    fill_mevent(mouse_buf, sizeof(mouse_buf), &mevent,
-								    &ms), 0);
-								break;
-							}
-							viewscroll();
-							setup_mouse_events(&ms);
-							break;
-						case CIOLIB_BUTTON_1_DRAG_START:
-							mousedrag(scrollback_buf);
-							break;
-						case CIOLIB_BUTTON_2_CLICK:
-						case CIOLIB_BUTTON_3_CLICK:
-							if (ms.mode == MM_X10) {
-								conn_send(mouse_buf,
-								    fill_mevent(mouse_buf, sizeof(mouse_buf), &mevent,
-								    &ms), 0);
-							}
-							else {
-								do_paste();
-							}
-							break;
-					}
-
+					handle_mouse_event(&ms);
 					key = 0;
 					break;
 				case CIO_KEY_SHIFT_IC: /* Shift-Insert - Paste */
