@@ -7,6 +7,7 @@ Add vertical line tabulation (VTS, CVT)
 Add DECRQM reporting for all ECMA-48 standard modes
 Add DECRQSS queries for communication speed and DECSACE
 Add support for DECSCUSR
+Add a dotted underline to OCS 8 links
 Fix curses CPU spin when PTY is deleted (e.g., ttyd disconnect)
 Fix hyperlink IDs not cleared on erase/scroll operations
 Fix 9 termcap/terminfo entry bugs, add 5 missing capabilities
