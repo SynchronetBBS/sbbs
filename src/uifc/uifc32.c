@@ -755,7 +755,6 @@ int ulist(uifc_winmode_t mode, int left, int top, int width, int *cur, int *bar
 		width = title_len + hbrdrsize + 2;
 		for (i = 0; i < opts; i++) {
 			if (option[i] != NULL) {
-				truncspctrl(option[i]);
 				if ((j = strlen(option[i]) + hbrdrsize + 2 + 1) > width)
 					width = j;
 			}
