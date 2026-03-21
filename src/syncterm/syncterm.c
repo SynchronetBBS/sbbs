@@ -2554,8 +2554,9 @@ main(int argc, char **argv)
 	gettextinfo(&txtinfo);
 
         // Only save window info if we're in the startup mode...
-	if ((txtinfo.currmode == screen_to_ciolib(settings.startup_mode))
-	    || ((settings.startup_mode == SCREEN_MODE_CURRENT) && (txtinfo.currmode == C80))) {
+	if (!safe_mode
+	    && ((txtinfo.currmode == screen_to_ciolib(settings.startup_mode))
+	    || ((settings.startup_mode == SCREEN_MODE_CURRENT) && (txtinfo.currmode == C80)))) {
 		sf = getscaling();
 		if (((sf > 0.0) && (sf != settings.scaling_factor))) {
 			char       inipath[MAX_PATH + 1];
