@@ -29,7 +29,7 @@ export SDL_VIDEODRIVER=offscreen
 export SDL_RENDER_DRIVER=software
 export SDL_VIDEO_EGL_DRIVER=none
 
-timeout 30 "$SYNCTERM" -iS -Q "shell:$WRAPPER" 2>/dev/null || true
+timeout 30 "$SYNCTERM" -iS -S -Q "shell:$WRAPPER" 2>/dev/null || true
 
 if [ ! -s "$RESULTS" ]; then
 	echo "ERROR: no test results produced" >&2
