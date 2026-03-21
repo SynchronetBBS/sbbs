@@ -911,6 +911,8 @@ write_sort_profiles(void)
 	char str[64];
 	int i;
 
+	if (safe_mode)
+		return;
 	get_syncterm_filename(inipath, sizeof(inipath), SYNCTERM_PATH_INI, false);
 	if ((fp = fopen(inipath, "r")) != NULL) {
 		inicontents = iniReadFile(fp);

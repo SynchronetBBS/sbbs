@@ -2438,7 +2438,7 @@ main(int argc, char **argv)
 					bbs->type = USER_BBSLIST;
 					add_bbs(settings.list_path, bbs, false);
 				}
-				if ((listfile = fopen(settings.list_path, "r+b")) != NULL) {
+				if (!safe_mode && (listfile = fopen(settings.list_path, "r+b")) != NULL) {
 					inifile = iniReadBBSList(listfile, true);
 					iniSetDateTime(&inifile,
 					    bbs->name,
@@ -2458,7 +2458,7 @@ main(int argc, char **argv)
 			term.nostatus = bbs->nostatus;
 			if (drawwin())
 				return 1;
-			if ((log_fp == NULL) && bbs->logfile[0])
+			if (!safe_mode && (log_fp == NULL) && bbs->logfile[0])
 				log_fp = fopen(bbs->logfile, bbs->append_logfile ? "a" : "w");
 			if (log_fp != NULL) {
 				time_t now = time(NULL);
