@@ -1578,6 +1578,7 @@ CIOLIBEXPORT void ciolib_clreol(void)
 			buf[i].fg = ciolib_fg;
 			buf[i].bg = ciolib_bg;
 			buf[i].font = ciolib_attrfont(cio_textinfo.attribute);
+			buf[i].hyperlink_id = 0;
 		}
 	}
 	ciolib_vmem_puttext(
@@ -1617,6 +1618,7 @@ CIOLIBEXPORT void ciolib_clrscr(void)
 			buf[i].fg = ciolib_fg;
 			buf[i].bg = ciolib_bg;
 			buf[i].font = ciolib_attrfont(cio_textinfo.attribute);
+			buf[i].hyperlink_id = 0;
 		}
 	}
 	puttext_can_move=1;
@@ -2573,6 +2575,7 @@ ciolib_set_vmem(struct vmem_cell *cell, uint8_t ch, uint8_t attr, uint8_t font)
 		return;
 	cell->ch = ch;
 	cell->font = font;
+	cell->hyperlink_id = 0;
 	ciolib_set_vmem_attr(cell, attr);
 }
 

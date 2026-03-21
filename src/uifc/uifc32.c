@@ -213,6 +213,7 @@ fill_blk_scrn(BOOL force)
 			blk_scrn[i].legacy_attr = attr;
 			blk_scrn[i].ch = api->chars->background;
 			blk_scrn[i].font = 0;
+			blk_scrn[i].hyperlink_id = 0;
 			attr2palette(blk_scrn[i].legacy_attr, &blk_scrn[i].fg, &blk_scrn[i].bg);
 		}
 		blk_scrn_ch = api->chars->background;
