@@ -59,6 +59,11 @@ static char ansi_replybuf[2048];
 struct terminal   term;
 struct cterminal *cterm;
 
+#ifndef WITHOUT_OOII
+static BYTE   ooii_buf[256];
+static size_t ooii_buf_len;
+#endif
+
 #define TRANSFER_WIN_WIDTH 66
 #define TRANSFER_WIN_HEIGHT 18
 static struct vmem_cell winbuf[(TRANSFER_WIN_WIDTH + 2) * (TRANSFER_WIN_HEIGHT + 1) * 2]; /* Save buffer for transfer
@@ -93,6 +98,250 @@ static uint8_t pnm_gamma[256] = {
 	254, 255, 255
 };
 static uint8_t pnm_gamma_max = 255;
+
+/* Key-to-sequence mapping for emulation-specific input translation.
+ * Tables are sorted by key value for bsearch(). */
+struct key_mapping {
+	int         key;
+	const char *seq;
+	int         len;
+};
+
+#define KEY_MAP_SIZE(table) (int)(sizeof(table) / sizeof((table)[0]))
+#define LOOKUP_KEY(table, key, len) \
+	lookup_key((table), KEY_MAP_SIZE(table), (key), (len))
+static const struct key_mapping atascii_keys[] = {
+	{253,                      "\x07",        1},	/* Undo Unicode: Atascii beep -> ^G */
+	{CIO_KEY_UP,               "\x1c",        1},
+	{CIO_KEY_LEFT,             "\x1e",        1},
+	{CIO_KEY_RIGHT,            "\x1f",        1},
+	{CIO_KEY_DOWN,             "\x1d",        1},
+	{CIO_KEY_IC,               "\xff",        1},
+	{CIO_KEY_DC,               "\x7e",        1},	/* "Delete" key */
+};
+
+static const struct key_mapping petscii_keys[] = {
+	{8,                        "\x14",        1},
+	{'\n',                     "\x0d",        1},
+	{'\r',                     "\x0d",        1},
+	{CIO_KEY_F(1),             "\x85",        1},
+	{CIO_KEY_F(2),             "\x89",        1},
+	{CIO_KEY_F(3),             "\x86",        1},
+	{CIO_KEY_F(4),             "\x8a",        1},
+	{CIO_KEY_F(5),             "\x87",        1},
+	{CIO_KEY_F(6),             "\x8b",        1},
+	{CIO_KEY_F(7),             "\x88",        1},
+	{CIO_KEY_F(8),             "\x8c",        1},
+	{CIO_KEY_HOME,             "\x13",        1},
+	{CIO_KEY_UP,               "\x91",        1},
+	{CIO_KEY_LEFT,             "\x9d",        1},
+	{CIO_KEY_RIGHT,            "\x1d",        1},
+	{CIO_KEY_END,              "\x93",        1},	/* Clear / Shift-Home */
+	{CIO_KEY_DOWN,             "\x11",        1},
+	{CIO_KEY_IC,               "\x94",        1},
+	{CIO_KEY_DC,               "\x14",        1},
+};
+
+static const struct key_mapping prestel_keys[] = {
+	{8,                        "\x7f",        1},
+	{9,                        "\x09",        1},
+	{10,                       "\x0d",        1},	/* LF sends CR */
+	{13,                       "_",           1},	/* CR sends _ */
+	{'#',                      "_",           1},
+	{'_',                      "`",           1},
+	{'`',                      "#",           1},
+	{CIO_KEY_SHIFT_END,        "\x9b",        1},	/* Copy */
+	{CIO_KEY_SHIFT_DOWN,       "\x9e",        1},
+	{CIO_KEY_SHIFT_LEFT,       "\x9c",        1},
+	{CIO_KEY_SHIFT_RIGHT,      "\x9d",        1},
+	{CIO_KEY_SHIFT_UP,         "\x9f",        1},
+	{CIO_KEY_F(7),             "\x1b",        1},
+	{CIO_KEY_HOME,             "\x1f",        1},
+	{CIO_KEY_UP,               "\x8f",        1},
+	{CIO_KEY_LEFT,             "\x8c",        1},
+	{CIO_KEY_RIGHT,            "\x8d",        1},
+	{CIO_KEY_DOWN,             "\x8e",        1},
+	{CIO_KEY_DC,               "\x7f",        1},
+	{CIO_KEY_SHIFT_F(1),       "\x91",        1},
+	{CIO_KEY_SHIFT_F(2),       "\x92",        1},
+	{CIO_KEY_SHIFT_F(3),       "\x93",        1},
+	{CIO_KEY_SHIFT_F(4),       "\x94",        1},
+	{CIO_KEY_SHIFT_F(5),       "\x95",        1},
+	{CIO_KEY_SHIFT_F(6),       "\x96",        1},
+	{CIO_KEY_SHIFT_F(7),       "\x97",        1},
+	{CIO_KEY_SHIFT_F(8),       "\x98",        1},
+	{CIO_KEY_SHIFT_F(9),       "\x99",        1},
+	{CIO_KEY_SHIFT_F(10),      "\x90",        1},	/* F0 */
+	{CIO_KEY_CTRL_F(1),        "\xa1",        1},
+	{CIO_KEY_CTRL_F(2),        "\xa2",        1},
+	{CIO_KEY_CTRL_F(3),        "\xa3",        1},
+	{CIO_KEY_CTRL_F(4),        "\xa4",        1},
+	{CIO_KEY_CTRL_F(5),        "\xa5",        1},
+	{CIO_KEY_CTRL_F(6),        "\xa6",        1},
+	{CIO_KEY_CTRL_F(7),        "\xa7",        1},
+	{CIO_KEY_CTRL_F(8),        "\xa8",        1},
+	{CIO_KEY_CTRL_F(9),        "\xa9",        1},
+	{CIO_KEY_CTRL_F(10),       "\xa0",        1},	/* F0 */
+	{CIO_KEY_CTRL_LEFT,        "\xac",        1},
+	{CIO_KEY_CTRL_RIGHT,       "\xad",        1},
+	{CIO_KEY_CTRL_END,         "\xab",        1},	/* Copy */
+	{CIO_KEY_CTRL_UP,          "\xaf",        1},
+	{CIO_KEY_CTRL_DOWN,        "\xae",        1},
+};
+
+static const struct key_mapping beeb_keys[] = {
+	{8,                        "\x7f",        1},
+	{CIO_KEY_SHIFT_END,        "\x9b",        1},	/* Copy */
+	{CIO_KEY_SHIFT_DOWN,       "\x9e",        1},
+	{CIO_KEY_SHIFT_LEFT,       "\x9c",        1},
+	{CIO_KEY_SHIFT_RIGHT,      "\x9d",        1},
+	{CIO_KEY_SHIFT_UP,         "\x9f",        1},
+	{CIO_KEY_F(7),             "\x1b",        1},
+	{CIO_KEY_HOME,             "\x1f",        1},
+	{CIO_KEY_UP,               "\x8f",        1},
+	{CIO_KEY_LEFT,             "\x8c",        1},
+	{CIO_KEY_RIGHT,            "\x8d",        1},
+	{CIO_KEY_DOWN,             "\x8e",        1},
+	{CIO_KEY_DC,               "\x7f",        1},
+	{CIO_KEY_SHIFT_F(1),       "\x91",        1},
+	{CIO_KEY_SHIFT_F(2),       "\x92",        1},
+	{CIO_KEY_SHIFT_F(3),       "\x93",        1},
+	{CIO_KEY_SHIFT_F(4),       "\x94",        1},
+	{CIO_KEY_SHIFT_F(5),       "\x95",        1},
+	{CIO_KEY_SHIFT_F(6),       "\x96",        1},
+	{CIO_KEY_SHIFT_F(7),       "\x97",        1},
+	{CIO_KEY_SHIFT_F(8),       "\x98",        1},
+	{CIO_KEY_SHIFT_F(9),       "\x99",        1},
+	{CIO_KEY_SHIFT_F(10),      "\x90",        1},	/* F0 */
+	{CIO_KEY_CTRL_F(1),        "\xa1",        1},
+	{CIO_KEY_CTRL_F(2),        "\xa2",        1},
+	{CIO_KEY_CTRL_F(3),        "\xa3",        1},
+	{CIO_KEY_CTRL_F(4),        "\xa4",        1},
+	{CIO_KEY_CTRL_F(5),        "\xa5",        1},
+	{CIO_KEY_CTRL_F(6),        "\xa6",        1},
+	{CIO_KEY_CTRL_F(7),        "\xa7",        1},
+	{CIO_KEY_CTRL_F(8),        "\xa8",        1},
+	{CIO_KEY_CTRL_F(9),        "\xa9",        1},
+	{CIO_KEY_CTRL_F(10),       "\xa0",        1},	/* F0 */
+	{CIO_KEY_CTRL_LEFT,        "\xac",        1},
+	{CIO_KEY_CTRL_RIGHT,       "\xad",        1},
+	{CIO_KEY_CTRL_END,         "\xab",        1},	/* Copy */
+	{CIO_KEY_CTRL_UP,          "\xaf",        1},
+	{CIO_KEY_CTRL_DOWN,        "\xae",        1},
+};
+
+static const struct key_mapping vt52_keys[] = {
+	{CIO_KEY_F(1),             "\033P",       2},
+	{CIO_KEY_F(2),             "\033Q",       2},
+	{CIO_KEY_F(3),             "\033R",       2},
+	{CIO_KEY_UP,               "\033A",       2},
+	{CIO_KEY_LEFT,             "\033D",       2},
+	{CIO_KEY_RIGHT,            "\033C",       2},
+	{CIO_KEY_DOWN,             "\033B",       2},
+};
+
+static const struct key_mapping ansi_keys[] = {
+	{CIO_KEY_BACKTAB,          "\033[Z",      3},
+	{CIO_KEY_F(1),             "\033[11~",    5},
+	{CIO_KEY_F(2),             "\033[12~",    5},
+	{CIO_KEY_F(3),             "\033[13~",    5},
+	{CIO_KEY_F(4),             "\033[14~",    5},
+	{CIO_KEY_F(5),             "\033[15~",    5},
+	{CIO_KEY_F(6),             "\033[17~",    5},
+	{CIO_KEY_F(7),             "\033[18~",    5},
+	{CIO_KEY_F(8),             "\033[19~",    5},
+	{CIO_KEY_F(9),             "\033[20~",    5},
+	{CIO_KEY_F(10),            "\033[21~",    5},
+	{CIO_KEY_HOME,             "\033[H",      3},
+	{CIO_KEY_UP,               "\033[A",      3},
+	{CIO_KEY_PPAGE,            "\033[V",      3},
+	{CIO_KEY_LEFT,             "\033[D",      3},
+	{CIO_KEY_RIGHT,            "\033[C",      3},
+	{CIO_KEY_END,              "\033[K",      3},
+#ifdef CIO_KEY_SELECT
+	{CIO_KEY_SELECT,           "\033[K",      3},
+#endif
+	{CIO_KEY_DOWN,             "\033[B",      3},
+	{CIO_KEY_NPAGE,            "\033[U",      3},
+	{CIO_KEY_IC,               "\033[@",      3},
+	{CIO_KEY_SHIFT_F(1),       "\033[11;2~",  7},
+	{CIO_KEY_SHIFT_F(2),       "\033[12;2~",  7},
+	{CIO_KEY_SHIFT_F(3),       "\033[13;2~",  7},
+	{CIO_KEY_SHIFT_F(4),       "\033[14;2~",  7},
+	{CIO_KEY_SHIFT_F(5),       "\033[15;2~",  7},
+	{CIO_KEY_SHIFT_F(6),       "\033[17;2~",  7},
+	{CIO_KEY_SHIFT_F(7),       "\033[18;2~",  7},
+	{CIO_KEY_SHIFT_F(8),       "\033[19;2~",  7},
+	{CIO_KEY_SHIFT_F(9),       "\033[20;2~",  7},
+	{CIO_KEY_SHIFT_F(10),      "\033[21;2~",  7},
+	{CIO_KEY_CTRL_F(1),        "\033[11;5~",  7},
+	{CIO_KEY_CTRL_F(2),        "\033[12;5~",  7},
+	{CIO_KEY_CTRL_F(3),        "\033[13;5~",  7},
+	{CIO_KEY_CTRL_F(4),        "\033[14;5~",  7},
+	{CIO_KEY_CTRL_F(5),        "\033[15;5~",  7},
+	{CIO_KEY_CTRL_F(6),        "\033[17;5~",  7},
+	{CIO_KEY_CTRL_F(7),        "\033[18;5~",  7},
+	{CIO_KEY_CTRL_F(8),        "\033[19;5~",  7},
+	{CIO_KEY_CTRL_F(9),        "\033[20;5~",  7},
+	{CIO_KEY_CTRL_F(10),       "\033[21;5~",  7},
+	{CIO_KEY_ALT_F(1),         "\033[11;3~",  7},
+	{CIO_KEY_ALT_F(2),         "\033[12;3~",  7},
+	{CIO_KEY_ALT_F(3),         "\033[13;3~",  7},
+	{CIO_KEY_ALT_F(4),         "\033[14;3~",  7},
+	{CIO_KEY_ALT_F(5),         "\033[15;3~",  7},
+	{CIO_KEY_ALT_F(6),         "\033[17;3~",  7},
+	{CIO_KEY_ALT_F(7),         "\033[18;3~",  7},
+	{CIO_KEY_ALT_F(8),         "\033[19;3~",  7},
+	{CIO_KEY_ALT_F(9),         "\033[20;3~",  7},
+	{CIO_KEY_ALT_F(10),        "\033[21;3~",  7},
+	{CIO_KEY_F(11),            "\033[23~",    5},
+	{CIO_KEY_F(12),            "\033[24~",    5},
+	{CIO_KEY_SHIFT_F(11),      "\033[23;2~",  7},
+	{CIO_KEY_SHIFT_F(12),      "\033[24;2~",  7},
+	{CIO_KEY_CTRL_F(11),       "\033[23;5~",  7},
+	{CIO_KEY_CTRL_F(12),       "\033[24;5~",  7},
+	{CIO_KEY_ALT_F(11),        "\033[23;3~",  7},
+	{CIO_KEY_ALT_F(12),        "\033[24;3~",  7},
+};
+
+static int
+key_mapping_cmp(const void *a, const void *b)
+{
+	return ((const struct key_mapping *)a)->key
+	     - ((const struct key_mapping *)b)->key;
+}
+
+static const char *
+lookup_key(const struct key_mapping *map, int count, int key, int *len)
+{
+	struct key_mapping needle = {key, NULL, 0};
+	const struct key_mapping *found;
+
+	found = bsearch(&needle, map, count, sizeof(*map), key_mapping_cmp);
+	if (found) {
+		*len = found->len;
+		return found->seq;
+	}
+	return NULL;
+}
+
+static void
+verify_key_tables(void)
+{
+#define CHECK_SORTED(table) do {					\
+	for (int i_ = 1; i_ < KEY_MAP_SIZE(table); i_++)		\
+		assert((table)[i_ - 1].key < (table)[i_].key);		\
+} while (0)
+
+	CHECK_SORTED(atascii_keys);
+	CHECK_SORTED(petscii_keys);
+	CHECK_SORTED(prestel_keys);
+	CHECK_SORTED(beeb_keys);
+	CHECK_SORTED(vt52_keys);
+	CHECK_SORTED(ansi_keys);
+#undef CHECK_SORTED
+}
+
 
 void
 get_cterm_size(int *cols, int *rows, int ns)
@@ -1041,7 +1290,7 @@ size_t
 count_data_waiting(void)
 {
 	recv_bytes(0);
-	return recv_byte_buffer_len;
+	return recv_byte_buffer_len - recv_byte_buffer_pos;
 }
 
 void
@@ -5033,19 +5282,394 @@ finish_scrollback(void)
 	}
 }
 
+
+static void
+toggle_prestel_reveal(void)
+{
+	cio_api.options ^= CONIO_OPT_PRESTEL_REVEAL;
+	struct ciolib_screen *savscrn = savescreen();
+	ciolib_vmem_puttext(1, 1, savscrn->text_info.screenwidth,
+	    savscrn->text_info.screenheight, savscrn->vmem);
+	freescreen(savscrn);
+}
+
+static void
+send_emulation_key(struct cterminal *cterm, int key, bool *atascii_inverse)
+{
+	unsigned char ch;
+	int           slen;
+	const char   *seq;
+
+	if (cterm->emulation == CTERM_EMULATION_ATASCII) {
+		if (key == 96) {
+			*atascii_inverse = !*atascii_inverse;
+			return;
+		}
+		seq = LOOKUP_KEY(atascii_keys, key, &slen);
+		if (seq)
+			conn_send(seq, slen, 0);
+		else if (key < 256) {
+			ch = key;
+			conn_send(&ch, 1, 0);
+		}
+	}
+	else if (cterm->emulation == CTERM_EMULATION_PETASCII) {
+		seq = LOOKUP_KEY(petscii_keys, key, &slen);
+		if (seq)
+			conn_send(seq, slen, 0);
+		else if (key < 256) {
+			ch = key;
+			conn_send(&ch, 1, 0);
+		}
+	}
+	else if (cterm->emulation == CTERM_EMULATION_PRESTEL) {
+		if (key == CIO_KEY_F(3) || key == CIO_KEY_NPAGE) {
+			toggle_prestel_reveal();
+			return;
+		}
+		seq = LOOKUP_KEY(prestel_keys, key, &slen);
+		if (seq)
+			conn_send(seq, slen, 0);
+		else if (key > 31 && key < 128) {
+			ch = key;
+			conn_send(&ch, 1, 0);
+		}
+	}
+	else if (cterm->emulation == CTERM_EMULATION_BEEB) {
+		if (key == CIO_KEY_F(3) || key == CIO_KEY_NPAGE) {
+			toggle_prestel_reveal();
+			return;
+		}
+		seq = LOOKUP_KEY(beeb_keys, key, &slen);
+		if (seq)
+			conn_send(seq, slen, 0);
+		else if (key < 128) {
+			ch = key;
+			conn_send(&ch, 1, 0);
+		}
+	}
+	else if (cterm->emulation == CTERM_EMULATION_ATARIST_VT52) {
+		if (key == CIO_KEY_DC) {
+			if (cterm->extattr & CTERM_EXTATTR_DECBKM)
+				conn_send("\x7f", 1, 0);
+			else
+				conn_send("\x1b[3~", 4, 0);
+			return;
+		}
+		if (key == '\b') {
+			ch = (cterm->extattr & CTERM_EXTATTR_DECBKM) ? '\b' : '\x7f';
+			conn_send(&ch, 1, 0);
+			return;
+		}
+		seq = LOOKUP_KEY(vt52_keys, key, &slen);
+		if (seq)
+			conn_send(seq, slen, 0);
+		else if (key >= 0 && key < 256) {
+			ch = key;
+			conn_send(&ch, 1, 0);
+		}
+	}
+	else {
+		/* ANSI-BBS */
+		if (key == CIO_KEY_DC) {
+			if (cterm->extattr & CTERM_EXTATTR_DECBKM)
+				conn_send("\x7f", 1, 0);
+			else
+				conn_send("\x1b[3~", 4, 0);
+			return;
+		}
+		if (key == '\b') {
+			ch = (cterm->extattr & CTERM_EXTATTR_DECBKM) ? '\b' : '\x7f';
+			conn_send(&ch, 1, 0);
+			return;
+		}
+		seq = LOOKUP_KEY(ansi_keys, key, &slen);
+		if (seq)
+			conn_send(seq, slen, 0);
+		else if (key >= 0 && key < 256) {
+			ch = key;
+			conn_send(&ch, 1, 0);
+		}
+	}
+}
+
+static void
+open_hyperlink(int hyperlink_id)
+{
+	if (!ciolib_open_hyperlink(hyperlink_id)) {
+		char *url = ciolib_get_hyperlink_url(hyperlink_id);
+		if (url) {
+			copytext(url, strlen(url));
+			uifcmsg("URL copied to clipboard", url);
+			free(url);
+		}
+	}
+}
+
+static void
+open_url_at_cursor(struct mouse_event *mevent)
+{
+	struct vmem_cell *scrbuf;
+
+	scrbuf = malloc(term.width * term.height * sizeof(*scrbuf));
+	if (scrbuf) {
+		if (vmem_gettext(term.x - 1, term.y - 1,
+		    term.x + term.width - 2,
+		    term.y + term.height - 2, scrbuf)) {
+			char *url = detect_url_at(scrbuf,
+			    term.width, term.height,
+			    mevent->startx - 1,
+			    mevent->starty - 1);
+			if (url) {
+				if (!cio_api.openurl
+				    || !cio_api.openurl(url)) {
+					copytext(url, strlen(url));
+					uifcmsg("URL copied to clipboard", url);
+				}
+				free(url);
+			}
+		}
+		free(scrbuf);
+	}
+}
+
+static void
+handle_mouse_event(struct mouse_state *ms)
+{
+	char               mouse_buf[64];
+	struct mouse_event mevent;
+
+	getmouse(&mevent);
+	switch (mevent.event) {
+		case CIOLIB_BUTTON_1_PRESS:
+			if ((mevent.kbmodifiers & CIOLIB_KMOD_CTRL)
+			    && mevent.hyperlink_id) {
+				open_hyperlink(mevent.hyperlink_id);
+				break;
+			}
+			if ((mevent.kbmodifiers & CIOLIB_KMOD_CTRL)
+			    && !mevent.hyperlink_id
+			    && ms->mode != MM_OFF) {
+				open_url_at_cursor(&mevent);
+				break;
+			}
+			/* FALLTHROUGH */
+		case CIOLIB_BUTTON_1_CLICK:
+			if (ms->mode == MM_OFF) {
+				if (mevent.hyperlink_id) {
+					open_hyperlink(mevent.hyperlink_id);
+					break;
+				}
+				if (mevent.kbmodifiers & CIOLIB_KMOD_CTRL) {
+					open_url_at_cursor(&mevent);
+				}
+				break;
+			}
+			/* FALLTHROUGH */
+		case CIOLIB_BUTTON_1_RELEASE:
+		case CIOLIB_BUTTON_2_PRESS:
+		case CIOLIB_BUTTON_2_RELEASE:
+		case CIOLIB_BUTTON_3_PRESS:
+		case CIOLIB_BUTTON_3_RELEASE:
+			conn_send(mouse_buf,
+			    fill_mevent(mouse_buf, sizeof(mouse_buf), &mevent, ms), 0);
+			break;
+		case CIOLIB_MOUSE_MOVE:
+			if (ms->mode == MM_BUTTON_EVENT_TRACKING
+			    || ms->mode == MM_ANY_EVENT_TRACKING)
+				conn_send(mouse_buf,
+				    fill_mevent(mouse_buf, sizeof(mouse_buf), &mevent, ms), 0);
+			if (mevent.hyperlink_id != hover_hyperlink_id) {
+				hover_hyperlink_id = mevent.hyperlink_id;
+				if (hover_hyperlink_id) {
+					if (!term.nostatus) {
+						char *url = ciolib_get_hyperlink_url(hover_hyperlink_id);
+						if (url) {
+							show_status_url(url);
+							free(url);
+						}
+					}
+					if (ms->mode == MM_OFF)
+						mousepointer(CIOLIB_MOUSEPTR_ARROW);
+				}
+				else {
+					force_status_update = true;
+					if (ms->mode == MM_OFF)
+						mousepointer(CIOLIB_MOUSEPTR_BAR);
+				}
+			}
+			break;
+		case CIOLIB_BUTTON_4_PRESS:
+		case CIOLIB_BUTTON_5_PRESS:
+			if ((ms->mode != MM_X10) && (ms->mode != MM_OFF) && (ms->mode != MM_RIP)) {
+				conn_send(mouse_buf,
+				    fill_mevent(mouse_buf, sizeof(mouse_buf), &mevent, ms), 0);
+				break;
+			}
+			viewscroll();
+			setup_mouse_events(ms);
+			break;
+		case CIOLIB_BUTTON_1_DRAG_START:
+			mousedrag(scrollback_buf);
+			break;
+		case CIOLIB_BUTTON_2_CLICK:
+		case CIOLIB_BUTTON_3_CLICK:
+			if (ms->mode == MM_X10) {
+				conn_send(mouse_buf,
+				    fill_mevent(mouse_buf, sizeof(mouse_buf), &mevent, ms), 0);
+			}
+			else {
+				do_paste();
+			}
+			break;
+	}
+}
+
+/*
+ * Speedwatch: detects ESC [ 0-or-1 ; digits * r (SyncTERM speed response).
+ * Returns true when the full sequence is matched.
+ */
+static bool
+check_speedwatch(int *state, int ch)
+{
+	switch (*state) {
+		case 0:
+			if (ch == '\x1b')
+				*state = 1;
+			return false;
+		case 1:
+			*state = (ch == '[') ? 2 : 0;
+			return false;
+		case 2:
+			*state = (ch == '0' || ch == '1') ? 3 : 0;
+			return false;
+		case 3:
+			*state = (ch == ';') ? 4 : 0;
+			return false;
+		case 4:
+			if (ch >= '0' && ch <= '9')
+				return false;
+			*state = (ch == '*') ? 5 : 0;
+			return false;
+		case 5:
+			*state = 0;
+			return (ch == 'r');
+	}
+	return false;
+}
+
+/* Zmodem auto-detect patterns */
+static const BYTE zrqinit_pat[] = {ZDLE, ZHEX, '0', '0', 0};
+static const BYTE zrinit_pat[] = {ZDLE, ZHEX, '0', '1', 0};
+#define ZMODEM_SEQ_LEN (sizeof(zrqinit_pat) - 1)
+
+/*
+ * Feed a byte into the Zmodem auto-detect state machine.
+ * Returns true when a full ZRQINIT or ZRINIT sequence is detected.
+ * Caller checks zrqbuf to determine which.
+ */
+static bool
+feed_zmodem_detect(int ch, BYTE *zrqbuf, size_t *zrqlen)
+{
+	if ((ch == zrqinit_pat[*zrqlen]) || (ch == zrinit_pat[*zrqlen])) {
+		zrqbuf[*zrqlen] = ch;
+		zrqbuf[++(*zrqlen)] = 0;
+		if (*zrqlen == ZMODEM_SEQ_LEN)
+			return true;
+	}
+	else {
+		zrqbuf[0] = 0;
+		*zrqlen = 0;
+	}
+	return false;
+}
+
+#ifndef WITHOUT_OOII
+/* OOII auto-detect init patterns */
+static const BYTE ooii_init1[] =
+    "\xdb\b \xdb\b \xdb\b[\xdb\b[\xdb\b \xdb\bM\xdb\ba\xdb\bi\xdb\bn\xdb\bt\xdb\be\xdb\bn\xdb\ba\xdb\bn\xdb\bc\xdb\be\xdb\b \xdb\bC\xdb\bo\xdb\bm\xdb\bp\xdb\bl\xdb\be\xdb\bt\xdb\be\xdb\b \xdb\b]\xdb\b]\xdb\b \b\r\n\r\n\r\n\x1b[0;0;36mDo you have the Overkill Ansiterm installed? (y/N)  \xe9 ";
+static const BYTE ooii_init2[] =
+    "\xdb\b \xdb\b \xdb\b[\xdb\b[\xdb\b \xdb\bM\xdb\ba\xdb\bi\xdb\bn\xdb\bt\xdb\be\xdb\bn\xdb\ba\xdb\bn\xdb\bc\xdb\be\xdb\b \xdb\bC\xdb\bo\xdb\bm\xdb\bp\xdb\bl\xdb\be\xdb\bt\xdb\be\xdb\b \xdb\b]\xdb\b]\xdb\b \b\r\n\r\n\x1b[0m\x1b[2J\r\n\r\n\x1b[0;1;30mHX Force retinal scan in progress ... \x1b[0;0;30m";
+
+enum ooii_result {
+	OOII_PASS,	/* byte not consumed, add to outbuf */
+	OOII_CONSUMED,	/* byte consumed by OOII */
+	OOII_COMPLETE,	/* complete code received, caller should flush and handle */
+};
+
+/*
+ * Feed a byte into the OOII auto-detect/command state machine.
+ * When ooii_mode != 0: accumulates command bytes, returns OOII_COMPLETE
+ * when '|' terminator received.
+ * When ooii_mode == 0: matches init patterns, sets mode on match.
+ */
+static enum ooii_result
+feed_ooii(int inch, int *ooii_mode)
+{
+	if (*ooii_mode) {
+		if (ooii_buf[0] == 0) {
+			if (inch == 0xab) {
+				ooii_buf[ooii_buf_len++] = inch;
+				ooii_buf[ooii_buf_len] = 0;
+				return OOII_CONSUMED;
+			}
+		}
+		else {
+			if (ooii_buf_len + 1 >= sizeof(ooii_buf))
+				ooii_buf_len--;
+			ooii_buf[ooii_buf_len++] = inch;
+			ooii_buf[ooii_buf_len] = 0;
+			if (inch == '|')
+				return OOII_COMPLETE;
+			return OOII_CONSUMED;
+		}
+	}
+	else {
+		if (inch == ooii_init1[ooii_buf_len]) {
+			ooii_buf[ooii_buf_len++] = inch;
+			ooii_buf[ooii_buf_len] = 0;
+			if (ooii_init1[ooii_buf_len] == 0) {
+				if (strcmp((char *)ooii_buf,
+				    (char *)ooii_init1) == 0) {
+					*ooii_mode = 1;
+					xptone_open();
+				}
+				ooii_buf[0] = 0;
+				ooii_buf_len = 0;
+			}
+		}
+		else if (inch == ooii_init2[ooii_buf_len]) {
+			ooii_buf[ooii_buf_len++] = inch;
+			ooii_buf[ooii_buf_len] = 0;
+			if (ooii_init2[ooii_buf_len] == 0) {
+				if (strcmp((char *)ooii_buf,
+				    (char *)ooii_init2) == 0) {
+					*ooii_mode = 2;
+					xptone_open();
+				}
+				ooii_buf[0] = 0;
+				ooii_buf_len = 0;
+			}
+		}
+		else {
+			ooii_buf[0] = 0;
+			ooii_buf_len = 0;
+		}
+	}
+	return OOII_PASS;
+}
+#endif /* !WITHOUT_OOII */
+
 bool
 doterm(struct bbslist *bbs)
 {
 	unsigned char     ch[2];
-	char              mouse_buf[64];
 	unsigned char     outbuf[OUTBUF_SIZE];
 	size_t            outbuf_size = 0;
 	int               key;
 	int               i, j;
 	struct vmem_cell *vc;
-	BYTE              zrqinit[] = {ZDLE, ZHEX, '0', '0', 0};  /* for Zmodem auto-downloads */
-	BYTE              zrinit[] = {ZDLE, ZHEX, '0', '1', 0};   /* for Zmodem auto-uploads */
-	BYTE              zrqbuf[sizeof(zrqinit)];
+	BYTE              zrqbuf[ZMODEM_SEQ_LEN + 1];
 	size_t zrqlen;
 	int               inch = NOINP;
 	long double       nextchar = 0;
@@ -5058,34 +5682,15 @@ doterm(struct bbslist *bbs)
 	size_t            remain;
 	struct text_info  txtinfo;
 
-#ifndef WITHOUT_OOII
-	BYTE              ooii_buf[256];
-	size_t ooii_buf_len;
-	BYTE              ooii_init1[] =
-	    "\xdb\b \xdb\b \xdb\b[\xdb\b[\xdb\b \xdb\bM\xdb\ba\xdb\bi\xdb\bn\xdb\bt\xdb\be\xdb\bn\xdb\ba\xdb\bn\xdb\bc\xdb\be\xdb\b \xdb\bC\xdb\bo\xdb\bm\xdb\bp\xdb\bl\xdb\be\xdb\bt\xdb\be\xdb\b \xdb\b]\xdb\b]\xdb\b \b\r\n\r\n\r\n\x1b[0;0;36mDo you have the Overkill Ansiterm installed? (y/N)  \xe9 ";            /*
-                                                                                                                                                                                                                                                                                                                          *
-                                                                                                                                                                                                                                                                                                                          * for
-                                                                                                                                                                                                                                                                                                                          *
-                                                                                                                                                                                                                                                                                                                          * OOII
-                                                                                                                                                                                                                                                                                                                          *
-                                                                                                                                                                                                                                                                                                                          * auto-enable
-                                                                                                                                                                                                                                                                                                                          */
-	BYTE ooii_init2[] =
-	    "\xdb\b \xdb\b \xdb\b[\xdb\b[\xdb\b \xdb\bM\xdb\ba\xdb\bi\xdb\bn\xdb\bt\xdb\be\xdb\bn\xdb\ba\xdb\bn\xdb\bc\xdb\be\xdb\b \xdb\bC\xdb\bo\xdb\bm\xdb\bp\xdb\bl\xdb\be\xdb\bt\xdb\be\xdb\b \xdb\b]\xdb\b]\xdb\b \b\r\n\r\n\x1b[0m\x1b[2J\r\n\r\n\x1b[0;1;30mHX Force retinal scan in progress ... \x1b[0;0;30m"; /*
-                                                                                                                                                                                                                                                                                                                          *
-                                                                                                                                                                                                                                                                                                                          * for
-                                                                                                                                                                                                                                                                                                                          *
-                                                                                                                                                                                                                                                                                                                          * OOII
-                                                                                                                                                                                                                                                                                                                          *
-                                                                                                                                                                                                                                                                                                                          * auto-enable
-                                                                                                                                                                                                                                                                                                                          */
-#endif
 	int                ooii_mode = 0;
 	recv_byte_buffer_len = recv_byte_buffer_pos = 0;
 	struct mouse_state ms = {0};
 	int                speedwatch = 0;
 	bool atascii_inverse = false;
 
+#ifndef NDEBUG
+	verify_key_tables();
+#endif
 	normalize_entry(bbs);
 	freepixels(pixmap_buffer[0]);
 	freepixels(pixmap_buffer[1]);
@@ -5250,133 +5855,45 @@ doterm(struct bbslist *bbs)
 							nextchar = lastchar + 1 / (long double)(speed / 10);
 						}
 
-						switch (speedwatch) {
-							case 0:
-								if (inch == '\x1b')
-									speedwatch = 1;
-								break;
-							case 1:
-								if (inch == '[')
-									speedwatch = 2;
-								else
-									speedwatch = 0;
-								break;
-							case 2:
-								if ((inch == '0') || (inch == '1'))
-									speedwatch = 3;
-								else
-									speedwatch = 0;
-								break;
-							case 3:
-								if (inch == ';')
-									speedwatch = 4;
-								else
-									speedwatch = 0;
-								break;
-							case 4:
-								if ((inch >= '0') && (inch <= '9'))
-									break;
-								if (inch == '*')
-									speedwatch = 5;
-								else
-									speedwatch = 0;
-								break;
-							case 5:
-								if (inch == 'r')
-									remain = 1;
-								speedwatch = 0;
-								break;
-						}
-						if ((inch == zrqinit[zrqlen]) || (inch == zrinit[zrqlen])) {
-							zrqbuf[zrqlen] = inch;
-							zrqbuf[++zrqlen] = 0;
-							if (zrqlen == sizeof(zrqinit) - 1) {
-                                                                /* Have full sequence (Assumes
-                                                                 * zrinit and zrqinit are same
-                                                                 * length */
-								WRITE_OUTBUF();
-								suspend_rip(true);
-								if (!strcmp((char *)zrqbuf, (char *)zrqinit)) {
-									struct ciolib_screen *savscrn = cp437_savescrn();
-									zmodem_download(bbs);
-									restorescreen(savscrn);
-									freescreen(savscrn);
-								}
-								else
-									begin_upload(bbs, true, inch);
-								setup_mouse_events(&ms);
-								suspend_rip(false);
-								zrqbuf[0] = 0;
-								zrqlen = 0;
-								remain = 1;
+						if (check_speedwatch(&speedwatch, inch))
+							remain = 1;
+						if (feed_zmodem_detect(inch, zrqbuf, &zrqlen)) {
+							WRITE_OUTBUF();
+							suspend_rip(true);
+							if (!strcmp((char *)zrqbuf, (char *)zrqinit_pat)) {
+								struct ciolib_screen *savscrn = cp437_savescrn();
+								zmodem_download(bbs);
+								restorescreen(savscrn);
+								freescreen(savscrn);
 							}
-						}
-						else {
+							else
+								begin_upload(bbs, true, inch);
+							setup_mouse_events(&ms);
+							suspend_rip(false);
 							zrqbuf[0] = 0;
 							zrqlen = 0;
+							remain = 1;
 						}
 #ifndef WITHOUT_OOII
-						if (ooii_mode) {
-							if (ooii_buf[0] == 0) {
-								if (inch == 0xab) {
-									ooii_buf[ooii_buf_len++] = inch;
-									ooii_buf[ooii_buf_len] = 0;
-									continue;
+						switch (feed_ooii(inch, &ooii_mode)) {
+							case OOII_COMPLETE:
+								WRITE_OUTBUF();
+								if (handle_ooii_code(ooii_buf, &ooii_mode,
+								    (unsigned char *)ansi_replybuf,
+								    sizeof(ansi_replybuf))) {
+									ooii_mode = 0;
+									xptone_close();
 								}
-							}
-							else { /* Already have the start of the sequence */
-								if (ooii_buf_len + 1 >= sizeof(ooii_buf))
-									ooii_buf_len--;
-								ooii_buf[ooii_buf_len++] = inch;
-								ooii_buf[ooii_buf_len] = 0;
-								if (inch == '|') {
-									WRITE_OUTBUF();
-									if (handle_ooii_code(ooii_buf, &ooii_mode,
-									    (unsigned char *)ansi_replybuf,
-									    sizeof(ansi_replybuf))) {
-										ooii_mode = 0;
-										xptone_close();
-									}
-									if (ansi_replybuf[0])
-										conn_send(ansi_replybuf,
-										    strlen((char *)ansi_replybuf), 0);
-									ooii_buf[0] = 0;
-									ooii_buf_len = 0;
-								}
-								continue;
-							}
-						}
-						else {
-							if (inch == ooii_init1[ooii_buf_len]) {
-								ooii_buf[ooii_buf_len++] = inch;
-								ooii_buf[ooii_buf_len] = 0;
-								if (ooii_init1[ooii_buf_len] == 0) {
-									if (strcmp((char *)ooii_buf,
-									    (char *)ooii_init1) == 0) {
-										ooii_mode = 1;
-										xptone_open();
-									}
-									ooii_buf[0] = 0;
-									ooii_buf_len = 0;
-								}
-							}
-							else if (inch == ooii_init2[ooii_buf_len]) {
-								ooii_buf[ooii_buf_len++] = inch;
-								ooii_buf[ooii_buf_len] = 0;
-								if (ooii_init2[ooii_buf_len] == 0) {
-									if (strcmp((char *)ooii_buf,
-									    (char *)ooii_init2) == 0) {
-										ooii_mode = 2;
-										xptone_open();
-									}
-									ooii_buf[0] = 0;
-									ooii_buf_len = 0;
-								}
-							}
-							else {
+								if (ansi_replybuf[0])
+									conn_send(ansi_replybuf,
+									    strlen((char *)ansi_replybuf), 0);
 								ooii_buf[0] = 0;
 								ooii_buf_len = 0;
-							}
+								/* FALLTHROUGH */
+							case OOII_CONSUMED:
+								continue;
+							case OOII_PASS:
+								break;
 						}
 #endif /* ifndef WITHOUT_OOII */
 						if (outbuf_size >= sizeof(outbuf))
@@ -5401,8 +5918,6 @@ doterm(struct bbslist *bbs)
                 /* Get local input */
 		while (quitting || rip_kbhit()) {
 			sleep = false;
-			struct mouse_event mevent;
-
 			updated = true;
 			gotoxy(wherex(), wherey());
 			if (quitting) {
@@ -5428,149 +5943,7 @@ doterm(struct bbslist *bbs)
                          */
 			switch (key) {
 				case CIO_KEY_MOUSE:
-					getmouse(&mevent);
-					switch (mevent.event) {
-						case CIOLIB_BUTTON_1_PRESS:
-							if (mevent.hyperlink_id
-							    && (mevent.kbmodifiers & CIOLIB_KMOD_CTRL)) {
-								if (!ciolib_open_hyperlink(mevent.hyperlink_id)) {
-									char *url = ciolib_get_hyperlink_url(mevent.hyperlink_id);
-									if (url) {
-										copytext(url, strlen(url));
-										uifcmsg("URL copied to clipboard", url);
-										free(url);
-									}
-								}
-								break;
-							}
-							if ((mevent.kbmodifiers & CIOLIB_KMOD_CTRL)
-							    && !mevent.hyperlink_id
-							    && ms.mode != MM_OFF) {
-								struct vmem_cell *scrbuf;
-								scrbuf = malloc(term.width * term.height * sizeof(*scrbuf));
-								if (scrbuf) {
-									if (vmem_gettext(term.x - 1, term.y - 1,
-									    term.x + term.width - 2,
-									    term.y + term.height - 2, scrbuf)) {
-										char *url = detect_url_at(scrbuf,
-										    term.width, term.height,
-										    mevent.startx - 1,
-										    mevent.starty - 1);
-										if (url) {
-											if (!cio_api.openurl
-											    || !cio_api.openurl(url)) {
-												copytext(url, strlen(url));
-												uifcmsg("URL copied to clipboard",
-												    url);
-											}
-											free(url);
-										}
-									}
-									free(scrbuf);
-								}
-								break;
-							}
-							/* FALLTHROUGH */
-						case CIOLIB_BUTTON_1_CLICK:
-							if (ms.mode == MM_OFF) {
-								if (mevent.hyperlink_id) {
-									if (!ciolib_open_hyperlink(mevent.hyperlink_id)) {
-										char *url = ciolib_get_hyperlink_url(mevent.hyperlink_id);
-										if (url) {
-											copytext(url, strlen(url));
-											uifcmsg("URL copied to clipboard", url);
-											free(url);
-										}
-									}
-									break;
-								}
-								if (mevent.kbmodifiers & CIOLIB_KMOD_CTRL) {
-									struct vmem_cell *scrbuf;
-									scrbuf = malloc(term.width * term.height * sizeof(*scrbuf));
-									if (scrbuf) {
-										if (vmem_gettext(term.x - 1, term.y - 1,
-										    term.x + term.width - 2,
-										    term.y + term.height - 2, scrbuf)) {
-											char *url = detect_url_at(scrbuf,
-											    term.width, term.height,
-											    mevent.startx - 1,
-											    mevent.starty - 1);
-											if (url) {
-												if (!cio_api.openurl
-												    || !cio_api.openurl(url)) {
-													copytext(url, strlen(url));
-													uifcmsg("URL copied to clipboard",
-													    url);
-												}
-												free(url);
-											}
-										}
-										free(scrbuf);
-									}
-								}
-								break;
-							}
-							/* FALLTHROUGH */
-						case CIOLIB_BUTTON_1_RELEASE:
-						case CIOLIB_BUTTON_2_PRESS:
-						case CIOLIB_BUTTON_2_RELEASE:
-						case CIOLIB_BUTTON_3_PRESS:
-						case CIOLIB_BUTTON_3_RELEASE:
-							conn_send(mouse_buf,
-							    fill_mevent(mouse_buf, sizeof(mouse_buf), &mevent, &ms), 0);
-							break;
-						case CIOLIB_MOUSE_MOVE:
-							if (ms.mode == MM_BUTTON_EVENT_TRACKING
-							    || ms.mode == MM_ANY_EVENT_TRACKING)
-								conn_send(mouse_buf,
-								    fill_mevent(mouse_buf, sizeof(mouse_buf), &mevent, &ms), 0);
-							if (mevent.hyperlink_id != hover_hyperlink_id) {
-								hover_hyperlink_id = mevent.hyperlink_id;
-								if (hover_hyperlink_id) {
-									if (!term.nostatus) {
-										char *url = ciolib_get_hyperlink_url(hover_hyperlink_id);
-										if (url) {
-											show_status_url(url);
-											free(url);
-										}
-									}
-									if (ms.mode == MM_OFF)
-										mousepointer(CIOLIB_MOUSEPTR_ARROW);
-								}
-								else {
-									force_status_update = true;
-									if (ms.mode == MM_OFF)
-										mousepointer(CIOLIB_MOUSEPTR_BAR);
-								}
-							}
-							break;
-						case CIOLIB_BUTTON_4_PRESS:
-						case CIOLIB_BUTTON_5_PRESS:
-							if ((ms.mode != MM_X10) && (ms.mode != MM_OFF) && (ms.mode != MM_RIP)) {
-								conn_send(mouse_buf,
-								    fill_mevent(mouse_buf, sizeof(mouse_buf), &mevent,
-								    &ms), 0);
-								break;
-							}
-							viewscroll();
-							setup_mouse_events(&ms);
-							break;
-						case CIOLIB_BUTTON_1_DRAG_START:
-							mousedrag(scrollback_buf);
-							break;
-						case CIOLIB_BUTTON_2_CLICK:
-						case CIOLIB_BUTTON_3_CLICK:
-							if (ms.mode == MM_X10) {
-								conn_send(mouse_buf,
-								    fill_mevent(mouse_buf, sizeof(mouse_buf), &mevent,
-								    &ms), 0);
-							}
-							else {
-								do_paste();
-							}
-							break;
-					}
-
+					handle_mouse_event(&ms);
 					key = 0;
 					break;
 				case CIO_KEY_SHIFT_IC: /* Shift-Insert - Paste */
@@ -5655,19 +6028,20 @@ doterm(struct bbslist *bbs)
 					    && (cio_api.mode != CIOLIB_MODE_CURSES_IBM)
 					    && (cio_api.mode != CIOLIB_MODE_ANSI))
 						break;
-					if ((cio_api.mode != CIOLIB_MODE_CURSES)
-					    && (cio_api.mode != CIOLIB_MODE_CURSES_ASCII)
-					    && (cio_api.mode != CIOLIB_MODE_CURSES_IBM)
-					    && (cio_api.mode != CIOLIB_MODE_ANSI)) {
-                                                        /* FALLTHROUGH for curses/ansi modes */
+					/*
+					 * In curses/ansi modes, CTRL-Q acts as
+					 * hangup (skipping the exit check that
+					 * Alt-X gets).  goto replaces a Duff's
+					 * device that was used here previously.
+					 */
+					goto hangup;
 				case 0x2d00: /* Alt-X - Exit */
 				case CIO_KEY_QUIT:
-								if (!check_exit(true))
-									break;
-					}
-
-                                // Fallthrough
+					if (!check_exit(true))
+						break;
+					/* FALLTHROUGH */
 				case 0x2300: /* Alt-H - Hangup */
+				hangup:
 				{
 					struct ciolib_screen *savscrn;
 					savscrn = cp437_savescrn();
@@ -5712,34 +6086,31 @@ doterm(struct bbslist *bbs)
 							hidemouse();
 							hold_update = oldmc;
 							return false;
-						case 3:
+						case SM_UPLOAD:
 							begin_upload(bbs, false, inch);
 							break;
-						case 4:
+						case SM_DOWNLOAD:
 							begin_download(bbs);
 							break;
-						case 7:
+						case SM_CAPTURE:
 							capture_control(bbs);
 							break;
-						case 8:
+						case SM_MUSIC:
 							music_control(bbs);
 							break;
-						case 9:
+						case SM_FONT:
 							font_control(bbs, cterm);
 							break;
-						case 10:
+						case SM_DOORWAY:
 							cterm->doorway_mode = !cterm->doorway_mode;
 							break;
-						case 11:
+						case SM_MOUSE:
 							ms.flags ^= MS_FLAGS_DISABLED;
 							setup_mouse_events(&ms);
 							showmouse();
 							break;
-
-#ifdef WITHOUT_OOII
-						case 12:
-#else
-						case 12:
+#ifndef WITHOUT_OOII
+						case SM_OOII:
 							ooii_mode++;
 							if (ooii_mode > MAX_OOII_MODE) {
 								xptone_close();
@@ -5749,8 +6120,8 @@ doterm(struct bbslist *bbs)
 								xptone_open();
 							}
 							break;
-						case 13:
 #endif
+						case SM_EXIT:
 							finish_scrollback();
 							cterm_end(cterm, 0);
 							cterm = NULL;
@@ -5758,11 +6129,7 @@ doterm(struct bbslist *bbs)
 							hidemouse();
 							hold_update = oldmc;
 							return true;
-#ifdef WITHOUT_OOII
-						case 13:
-#else
-						case 14:
-#endif
+						case SM_DIRECTORY:
 						{
 							struct ciolib_screen *savscrn;
 							char                  title[LIST_NAME_MAX + 13];
@@ -5804,591 +6171,8 @@ doterm(struct bbslist *bbs)
 					}
 					break;
 			}
-			if (key && (cterm->emulation == CTERM_EMULATION_ATASCII)) {
-                                /* Translate keys to ATASCII */
-				switch (key) {
-					case 253: // Undo Unicode: Atascii beep -> ^G
-						ch[0] = 7;
-						conn_send(ch, 1, 0);
-						break;
-					case CIO_KEY_DOWN:
-						ch[0] = 29;
-						conn_send(ch, 1, 0);
-						break;
-					case CIO_KEY_DC: /* "Delete" key */
-						ch[0] = 126;
-						conn_send(ch, 1, 0);
-						break;
-					case CIO_KEY_RIGHT:
-						ch[0] = 31;
-						conn_send(ch, 1, 0);
-						break;
-					case CIO_KEY_UP:
-						ch[0] = 28;
-						conn_send(ch, 1, 0);
-						break;
-					case CIO_KEY_LEFT:
-						ch[0] = 30;
-						conn_send(ch, 1, 0);
-						break;
-					case CIO_KEY_IC:
-						ch[0] = 255;
-						conn_send(ch, 1, 0);
-						break;
-					case 96: /* Backtick toggles inverse */
-						atascii_inverse = !atascii_inverse;
-						break;
-					default:
-						if (key < 256) {
-							ch[0] = key;
-							conn_send(ch, 1, 0);
-						}
-						break;
-				}
-			}
-			else if (key && (cterm->emulation == CTERM_EMULATION_PETASCII)) {
-                                /* Translate keys to PETSCII */
-				switch (key) {
-					case '\r':
-					case '\n':
-						ch[0] = 13;
-						conn_send(ch, 1, 0);
-						break;
-					case CIO_KEY_DOWN:
-						ch[0] = 17;
-						conn_send(ch, 1, 0);
-						break;
-					case CIO_KEY_HOME:
-						ch[0] = 19;
-						conn_send(ch, 1, 0);
-						break;
-					case CIO_KEY_END:
-						ch[0] = 147; /* Clear / Shift-Home */
-						conn_send(ch, 1, 0);
-						break;
-					case 8:
-					case CIO_KEY_DC: /* "Delete" key */
-						ch[0] = 20;
-						conn_send(ch, 1, 0);
-						break;
-					case CIO_KEY_RIGHT:
-						ch[0] = 29;
-						conn_send(ch, 1, 0);
-						break;
-					case CIO_KEY_F(1):
-						ch[0] = 133;
-						conn_send(ch, 1, 0);
-						break;
-					case CIO_KEY_F(3):
-						ch[0] = 134;
-						conn_send(ch, 1, 0);
-						break;
-					case CIO_KEY_F(5):
-						ch[0] = 135;
-						conn_send(ch, 1, 0);
-						break;
-					case CIO_KEY_F(7):
-						ch[0] = 136;
-						conn_send(ch, 1, 0);
-						break;
-					case CIO_KEY_F(2):
-						ch[0] = 137;
-						conn_send(ch, 1, 0);
-						break;
-					case CIO_KEY_F(4):
-						ch[0] = 138;
-						conn_send(ch, 1, 0);
-						break;
-					case CIO_KEY_F(6):
-						ch[0] = 139;
-						conn_send(ch, 1, 0);
-						break;
-					case CIO_KEY_F(8):
-						ch[0] = 140;
-						conn_send(ch, 1, 0);
-						break;
-					case CIO_KEY_UP:
-						ch[0] = 145;
-						conn_send(ch, 1, 0);
-						break;
-					case CIO_KEY_IC:
-						ch[0] = 148;
-						conn_send(ch, 1, 0);
-						break;
-					case CIO_KEY_LEFT:
-						ch[0] = 157;
-						conn_send(ch, 1, 0);
-						break;
-					default:
-						if (key < 256) {
-							ch[0] = key;
-							conn_send(ch, 1, 0);
-						}
-						break;
-				}
-			}
-			else if (key && (cterm->emulation == CTERM_EMULATION_PRESTEL || cterm->emulation == CTERM_EMULATION_BEEB)) {
-				switch (key) {
-					case '_':
-						if (cterm->emulation == CTERM_EMULATION_PRESTEL)
-							ch[0] = '`';
-						else
-							ch[0] = '_';
-						conn_send(ch, 1, 0);
-						break;
-					case '#':
-						if (cterm->emulation == CTERM_EMULATION_PRESTEL)
-							ch[0] = '_';
-						else
-							ch[0] = '#';
-						conn_send(ch, 1, 0);
-						break;
-					case '`':
-						if (cterm->emulation == CTERM_EMULATION_PRESTEL)
-							ch[0] = '#';
-						else
-							ch[0] = '`';
-						conn_send(ch, 1, 0);
-						break;
-					case 8:
-					case CIO_KEY_DC:
-						ch[0] = 127;
-						conn_send(ch, 1, 0);
-						break;
-					case 9:
-						ch[0] = 9;
-						conn_send(ch, 1, 0);
-						break;
-					case 10:
-						if (cterm->emulation == CTERM_EMULATION_PRESTEL)
-							ch[0] = '\r';
-						else
-							ch[0] = 10;
-						conn_send(ch, 1, 0);
-						break;
-					case 13:
-						if (cterm->emulation == CTERM_EMULATION_PRESTEL)
-							ch[0] = '_';
-						else
-							ch[0] = 13;
-						conn_send(ch, 1, 0);
-						break;
-					case CIO_KEY_HOME:
-						ch[0] = 0x1f;
-						conn_send(ch, 1, 0);
-						break;
-					// These mappings are from Commstar...
-					case CIO_KEY_F(7):	// Another ESC... ESC returns to Commstar menu
-						ch[0] = 27;
-						conn_send(ch, 1, 0);
-						break;
-					case CIO_KEY_LEFT:
-						ch[0] = 140;
-						conn_send(ch, 1, 0);
-						break;
-					case CIO_KEY_RIGHT:
-						ch[0] = 141;
-						conn_send(ch, 1, 0);
-						break;
-					case CIO_KEY_DOWN:
-						ch[0] = 142;
-						conn_send(ch, 1, 0);
-						break;
-					case CIO_KEY_UP:
-						ch[0] = 143;
-						conn_send(ch, 1, 0);
-						break;
-					case CIO_KEY_SHIFT_F(10):	// F0
-						ch[0] = 144;
-						conn_send(ch, 1, 0);
-						break;
-					case CIO_KEY_SHIFT_F(1):
-						ch[0] = 145;
-						conn_send(ch, 1, 0);
-						break;
-					case CIO_KEY_SHIFT_F(2):
-						ch[0] = 146;
-						conn_send(ch, 1, 0);
-						break;
-					case CIO_KEY_SHIFT_F(3):
-						ch[0] = 147;
-						conn_send(ch, 1, 0);
-						break;
-					case CIO_KEY_SHIFT_F(4):
-						ch[0] = 148;
-						conn_send(ch, 1, 0);
-						break;
-					case CIO_KEY_SHIFT_F(5):
-						ch[0] = 149;
-						conn_send(ch, 1, 0);
-						break;
-					case CIO_KEY_SHIFT_F(6):
-						ch[0] = 150;
-						conn_send(ch, 1, 0);
-						break;
-					case CIO_KEY_SHIFT_F(7):
-						ch[0] = 151;
-						conn_send(ch, 1, 0);
-						break;
-					case CIO_KEY_SHIFT_F(8):
-						ch[0] = 152;
-						conn_send(ch, 1, 0);
-						break;
-					case CIO_KEY_SHIFT_F(9):
-						ch[0] = 153;
-						conn_send(ch, 1, 0);
-						break;
-					case CIO_KEY_SHIFT_END:	// Copy
-						ch[0] = 155;
-						conn_send(ch, 1, 0);
-						break;
-					case CIO_KEY_SHIFT_LEFT:
-						ch[0] = 156;
-						conn_send(ch, 1, 0);
-						break;
-					case CIO_KEY_SHIFT_RIGHT:
-						ch[0] = 157;
-						conn_send(ch, 1, 0);
-						break;
-					case CIO_KEY_SHIFT_DOWN:
-						ch[0] = 158;
-						conn_send(ch, 1, 0);
-						break;
-					case CIO_KEY_SHIFT_UP:
-						ch[0] = 159;
-						conn_send(ch, 1, 0);
-						break;
-
-					case CIO_KEY_CTRL_F(10):	// F0
-						ch[0] = 160;
-						conn_send(ch, 1, 0);
-						break;
-					case CIO_KEY_CTRL_F(1):
-						ch[0] = 161;
-						conn_send(ch, 1, 0);
-						break;
-					case CIO_KEY_CTRL_F(2):
-						ch[0] = 162;
-						conn_send(ch, 1, 0);
-						break;
-					case CIO_KEY_CTRL_F(3):
-						ch[0] = 163;
-						conn_send(ch, 1, 0);
-						break;
-					case CIO_KEY_CTRL_F(4):
-						ch[0] = 164;
-						conn_send(ch, 1, 0);
-						break;
-					case CIO_KEY_CTRL_F(5):
-						ch[0] = 165;
-						conn_send(ch, 1, 0);
-						break;
-					case CIO_KEY_CTRL_F(6):
-						ch[0] = 166;
-						conn_send(ch, 1, 0);
-						break;
-					case CIO_KEY_CTRL_F(7):
-						ch[0] = 167;
-						conn_send(ch, 1, 0);
-						break;
-					case CIO_KEY_CTRL_F(8):
-						ch[0] = 168;
-						conn_send(ch, 1, 0);
-						break;
-					case CIO_KEY_CTRL_F(9):
-						ch[0] = 169;
-						conn_send(ch, 1, 0);
-						break;
-					case CIO_KEY_CTRL_END:	// Copy
-						ch[0] = 171;
-						conn_send(ch, 1, 0);
-						break;
-					case CIO_KEY_CTRL_LEFT:
-						ch[0] = 172;
-						conn_send(ch, 1, 0);
-						break;
-					case CIO_KEY_CTRL_RIGHT:
-						ch[0] = 173;
-						conn_send(ch, 1, 0);
-						break;
-					case CIO_KEY_CTRL_DOWN:
-						ch[0] = 174;
-						conn_send(ch, 1, 0);
-						break;
-					case CIO_KEY_CTRL_UP:
-						ch[0] = 175;
-						conn_send(ch, 1, 0);
-						break;
-
-					case CIO_KEY_F(3):
-					case CIO_KEY_NPAGE:
-					{
-						cio_api.options ^= CONIO_OPT_PRESTEL_REVEAL;
-						struct ciolib_screen *savscrn = savescreen();
-						ciolib_vmem_puttext(1, 1, savscrn->text_info.screenwidth, savscrn->text_info.screenheight, savscrn->vmem);
-						freescreen(savscrn);
-						break;
-					}
-					// TODO: Add clear screen key?
-					default:
-						if (cterm->emulation == CTERM_EMULATION_PRESTEL) {
-							if (key == 13 || (key < 128 && key > 31)) {
-								ch[0] = key;
-								conn_send(ch, 1, 0);
-							}
-						}
-						else {
-							if (key < 128) {
-								ch[0] = key;
-								conn_send(ch, 1, 0);
-							}
-						}
-						break;
-				}
-			}
-			else if (key && (cterm->emulation == CTERM_EMULATION_ATARIST_VT52)) {
-				switch (key) {
-					case CIO_KEY_F(1):
-						conn_send("\033P", 2, 0);
-						break;
-					case CIO_KEY_F(2):
-						conn_send("\033Q", 2, 0);
-						break;
-					case CIO_KEY_F(3):
-						conn_send("\033R", 2, 0);
-						break;
-					case CIO_KEY_LEFT:
-						conn_send("\033D", 2, 0);
-						break;
-					case CIO_KEY_RIGHT:
-						conn_send("\033C", 2, 0);
-						break;
-					case CIO_KEY_UP:
-						conn_send("\033A", 2, 0);
-						break;
-					case CIO_KEY_DOWN:
-						conn_send("\033B", 2, 0);
-						break;
-					case CIO_KEY_DC:    /* "Delete" key, send ASCII 127 (DEL) */
-						if (cterm->extattr & CTERM_EXTATTR_DECBKM)
-							conn_send("\x7f", 1, 0);
-						else
-							conn_send("\x1b[3~", 4, 0);
-						break;
-					case '\b':
-						if (cterm->extattr & CTERM_EXTATTR_DECBKM)
-							key = '\b';
-						else
-							key = '\x7f';
-
-                                        /* FALLTHROUGH to default */
-					default:
-						if ((key < 256) && (key >= 0)) {
-							ch[0] = key;
-							conn_send(ch, 1, 0);
-						}
-				}
-			}
-			else if (key) {
-				switch (key) {
-					case CIO_KEY_LEFT:
-						conn_send("\033[D", 3, 0);
-						break;
-					case CIO_KEY_RIGHT:
-						conn_send("\033[C", 3, 0);
-						break;
-					case CIO_KEY_UP:
-						conn_send("\033[A", 3, 0);
-						break;
-					case CIO_KEY_DOWN:
-						conn_send("\033[B", 3, 0);
-						break;
-					case CIO_KEY_HOME:
-						conn_send("\033[H", 3, 0);
-						break;
-					case CIO_KEY_END:
-#ifdef CIO_KEY_SELECT
-					case CIO_KEY_SELECT: /* Some terminfo/termcap entries use KEY_SELECT as the END
-                                                              * key! */
-#endif
-						conn_send("\033[K", 3, 0);
-						break;
-					case CIO_KEY_DC:    /* "Delete" key, send ASCII 127 (DEL) */
-						if (cterm->extattr & CTERM_EXTATTR_DECBKM)
-							conn_send("\x7f", 1, 0);
-						else
-							conn_send("\x1b[3~", 4, 0);
-						break;
-					case CIO_KEY_NPAGE: /* Page down */
-						conn_send("\033[U", 3, 0);
-						break;
-					case CIO_KEY_PPAGE: /* Page up */
-						conn_send("\033[V", 3, 0);
-						break;
-					case CIO_KEY_F(1):
-						conn_send("\033[11~", 5, 0);
-						break;
-					case CIO_KEY_F(2):
-						conn_send("\033[12~", 5, 0);
-						break;
-					case CIO_KEY_F(3):
-						conn_send("\033[13~", 5, 0);
-						break;
-					case CIO_KEY_F(4):
-						conn_send("\033[14~", 5, 0);
-						break;
-					case CIO_KEY_F(5):
-						conn_send("\033[15~", 5, 0);
-						break;
-					case CIO_KEY_F(6):
-						conn_send("\033[17~", 5, 0);
-						break;
-					case CIO_KEY_F(7):
-						conn_send("\033[18~", 5, 0);
-						break;
-					case CIO_KEY_F(8):
-						conn_send("\033[19~", 5, 0);
-						break;
-					case CIO_KEY_F(9):
-						conn_send("\033[20~", 5, 0);
-						break;
-					case CIO_KEY_F(10):
-						conn_send("\033[21~", 5, 0);
-						break;
-					case CIO_KEY_F(11):
-						conn_send("\033[23~", 5, 0);
-						break;
-					case CIO_KEY_F(12):
-						conn_send("\033[24~", 5, 0);
-						break;
-					case CIO_KEY_SHIFT_F(1):
-						conn_send("\033[11;2~", 7, 0);
-						break;
-					case CIO_KEY_SHIFT_F(2):
-						conn_send("\033[12;2~", 7, 0);
-						break;
-					case CIO_KEY_SHIFT_F(3):
-						conn_send("\033[13;2~", 7, 0);
-						break;
-					case CIO_KEY_SHIFT_F(4):
-						conn_send("\033[14;2~", 7, 0);
-						break;
-					case CIO_KEY_SHIFT_F(5):
-						conn_send("\033[15;2~", 7, 0);
-						break;
-					case CIO_KEY_SHIFT_F(6):
-						conn_send("\033[17;2~", 7, 0);
-						break;
-					case CIO_KEY_SHIFT_F(7):
-						conn_send("\033[18;2~", 7, 0);
-						break;
-					case CIO_KEY_SHIFT_F(8):
-						conn_send("\033[19;2~", 7, 0);
-						break;
-					case CIO_KEY_SHIFT_F(9):
-						conn_send("\033[20;2~", 7, 0);
-						break;
-					case CIO_KEY_SHIFT_F(10):
-						conn_send("\033[21;2~", 7, 0);
-						break;
-					case CIO_KEY_SHIFT_F(11):
-						conn_send("\033[23;2~", 7, 0);
-						break;
-					case CIO_KEY_SHIFT_F(12):
-						conn_send("\033[24;2~", 7, 0);
-						break;
-					case CIO_KEY_CTRL_F(1):
-						conn_send("\033[11;5~", 7, 0);
-						break;
-					case CIO_KEY_CTRL_F(2):
-						conn_send("\033[12;5~", 7, 0);
-						break;
-					case CIO_KEY_CTRL_F(3):
-						conn_send("\033[13;5~", 7, 0);
-						break;
-					case CIO_KEY_CTRL_F(4):
-						conn_send("\033[14;5~", 7, 0);
-						break;
-					case CIO_KEY_CTRL_F(5):
-						conn_send("\033[15;5~", 7, 0);
-						break;
-					case CIO_KEY_CTRL_F(6):
-						conn_send("\033[17;5~", 7, 0);
-						break;
-					case CIO_KEY_CTRL_F(7):
-						conn_send("\033[18;5~", 7, 0);
-						break;
-					case CIO_KEY_CTRL_F(8):
-						conn_send("\033[19;5~", 7, 0);
-						break;
-					case CIO_KEY_CTRL_F(9):
-						conn_send("\033[20;5~", 7, 0);
-						break;
-					case CIO_KEY_CTRL_F(10):
-						conn_send("\033[21;5~", 7, 0);
-						break;
-					case CIO_KEY_CTRL_F(11):
-						conn_send("\033[23;5~", 7, 0);
-						break;
-					case CIO_KEY_CTRL_F(12):
-						conn_send("\033[24;5~", 7, 0);
-						break;
-					case CIO_KEY_ALT_F(1):
-						conn_send("\033[11;3~", 7, 0);
-						break;
-					case CIO_KEY_ALT_F(2):
-						conn_send("\033[12;3~", 7, 0);
-						break;
-					case CIO_KEY_ALT_F(3):
-						conn_send("\033[13;3~", 7, 0);
-						break;
-					case CIO_KEY_ALT_F(4):
-						conn_send("\033[14;3~", 7, 0);
-						break;
-					case CIO_KEY_ALT_F(5):
-						conn_send("\033[15;3~", 7, 0);
-						break;
-					case CIO_KEY_ALT_F(6):
-						conn_send("\033[17;3~", 7, 0);
-						break;
-					case CIO_KEY_ALT_F(7):
-						conn_send("\033[18;3~", 7, 0);
-						break;
-					case CIO_KEY_ALT_F(8):
-						conn_send("\033[19;3~", 7, 0);
-						break;
-					case CIO_KEY_ALT_F(9):
-						conn_send("\033[20;3~", 7, 0);
-						break;
-					case CIO_KEY_ALT_F(10):
-						conn_send("\033[21;3~", 7, 0);
-						break;
-					case CIO_KEY_ALT_F(11):
-						conn_send("\033[23;3~", 7, 0);
-						break;
-					case CIO_KEY_ALT_F(12):
-						conn_send("\033[24;3~", 7, 0);
-						break;
-					case CIO_KEY_IC:
-						conn_send("\033[@", 3, 0);
-						break;
-					case CIO_KEY_BACKTAB:
-						conn_send("\033[Z", 3, 0);
-						break;
-					case '\b':
-						if (cterm->extattr & CTERM_EXTATTR_DECBKM)
-							key = '\b';
-						else
-							key = '\x7f';
-
-                                        /* FALLTHROUGH to default */
-					default:
-						if ((key < 256) && (key >= 0)) {
-							ch[0] = key;
-							conn_send(ch, 1, 0);
-						}
-				}
-			}
+			if (key)
+				send_emulation_key(cterm, key, &atascii_inverse);
 		}
 		if (sleep)
 			SLEEP(1);

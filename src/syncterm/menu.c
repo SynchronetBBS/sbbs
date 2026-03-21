@@ -7,6 +7,7 @@
 
 #include "bbslist.h"
 #include "conn.h"
+#include "menu.h"
 #include "cterm.h"
 #include "syncterm.h"
 #include "term.h"
@@ -290,19 +291,19 @@ syncmenu(struct bbslist *bbs, int *speed)
 				check_exit(false);
 				ret = 1;
 				break;
-			case 0: /* Scrollback */
+			case SM_SCROLLBACK:
 				uifcbail();
 				restorescreen(savscrn);
 				viewscroll();
 				break;
-			case 1: /* Disconnect */
+			case SM_DISCONNECT:
 				ret = -1;
 				break;
-			case 2: /* Login */
+			case SM_LOGIN:
 				ret = 1;
 				send_login(bbs);
 				break;
-			case 5: /* Output rate */
+			case SM_OUTPUT_RATE:
 				if ((bbs->conn_type == CONN_TYPE_MODEM) || (bbs->conn_type == CONN_TYPE_SERIAL)
 				    || (bbs->conn_type == CONN_TYPE_SERIAL_NORTS)) {
 					uifcmsg("Not supported for this connection type",
@@ -320,9 +321,9 @@ syncmenu(struct bbslist *bbs, int *speed)
 					if (i >= 0)
 						*speed = rates[i];
 				}
-				ret = 5;
+				ret = SM_OUTPUT_RATE;
 				break;
-			case 6: /* Change log level (temporarily) */
+			case SM_LOG_LEVEL:
 				j = log_level;
 				uifc.helpbuf = "`Log Level`\n\n"
 				    "The log level changes the verbosity of messages shown in the transfer\n"
@@ -333,7 +334,7 @@ syncmenu(struct bbslist *bbs, int *speed)
 					check_exit(false);
 				if (i >= 0)
 					log_level = j;
-				ret = 6;
+				ret = SM_LOG_LEVEL;
 				break;
 			default:
 				ret = i;
