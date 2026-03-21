@@ -94,6 +94,250 @@ static uint8_t pnm_gamma[256] = {
 };
 static uint8_t pnm_gamma_max = 255;
 
+/* Key-to-sequence mapping for emulation-specific input translation.
+ * Tables are sorted by key value for bsearch(). */
+struct key_mapping {
+	int         key;
+	const char *seq;
+	int         len;
+};
+
+#define KEY_MAP_SIZE(table) (int)(sizeof(table) / sizeof((table)[0]))
+#define LOOKUP_KEY(table, key, len) \
+	lookup_key((table), KEY_MAP_SIZE(table), (key), (len))
+static const struct key_mapping atascii_keys[] = {
+	{253,                      "\x07",        1},	/* Undo Unicode: Atascii beep -> ^G */
+	{CIO_KEY_UP,               "\x1c",        1},
+	{CIO_KEY_LEFT,             "\x1e",        1},
+	{CIO_KEY_RIGHT,            "\x1f",        1},
+	{CIO_KEY_DOWN,             "\x1d",        1},
+	{CIO_KEY_IC,               "\xff",        1},
+	{CIO_KEY_DC,               "\x7e",        1},	/* "Delete" key */
+};
+
+static const struct key_mapping petscii_keys[] = {
+	{8,                        "\x14",        1},
+	{'\n',                     "\x0d",        1},
+	{'\r',                     "\x0d",        1},
+	{CIO_KEY_F(1),             "\x85",        1},
+	{CIO_KEY_F(2),             "\x89",        1},
+	{CIO_KEY_F(3),             "\x86",        1},
+	{CIO_KEY_F(4),             "\x8a",        1},
+	{CIO_KEY_F(5),             "\x87",        1},
+	{CIO_KEY_F(6),             "\x8b",        1},
+	{CIO_KEY_F(7),             "\x88",        1},
+	{CIO_KEY_F(8),             "\x8c",        1},
+	{CIO_KEY_HOME,             "\x13",        1},
+	{CIO_KEY_UP,               "\x91",        1},
+	{CIO_KEY_LEFT,             "\x9d",        1},
+	{CIO_KEY_RIGHT,            "\x1d",        1},
+	{CIO_KEY_END,              "\x93",        1},	/* Clear / Shift-Home */
+	{CIO_KEY_DOWN,             "\x11",        1},
+	{CIO_KEY_IC,               "\x94",        1},
+	{CIO_KEY_DC,               "\x14",        1},
+};
+
+static const struct key_mapping prestel_keys[] = {
+	{8,                        "\x7f",        1},
+	{9,                        "\x09",        1},
+	{10,                       "\x0d",        1},	/* LF sends CR */
+	{13,                       "_",           1},	/* CR sends _ */
+	{'#',                      "_",           1},
+	{'_',                      "`",           1},
+	{'`',                      "#",           1},
+	{CIO_KEY_SHIFT_END,        "\x9b",        1},	/* Copy */
+	{CIO_KEY_SHIFT_DOWN,       "\x9e",        1},
+	{CIO_KEY_SHIFT_LEFT,       "\x9c",        1},
+	{CIO_KEY_SHIFT_RIGHT,      "\x9d",        1},
+	{CIO_KEY_SHIFT_UP,         "\x9f",        1},
+	{CIO_KEY_F(7),             "\x1b",        1},
+	{CIO_KEY_HOME,             "\x1f",        1},
+	{CIO_KEY_UP,               "\x8f",        1},
+	{CIO_KEY_LEFT,             "\x8c",        1},
+	{CIO_KEY_RIGHT,            "\x8d",        1},
+	{CIO_KEY_DOWN,             "\x8e",        1},
+	{CIO_KEY_DC,               "\x7f",        1},
+	{CIO_KEY_SHIFT_F(1),       "\x91",        1},
+	{CIO_KEY_SHIFT_F(2),       "\x92",        1},
+	{CIO_KEY_SHIFT_F(3),       "\x93",        1},
+	{CIO_KEY_SHIFT_F(4),       "\x94",        1},
+	{CIO_KEY_SHIFT_F(5),       "\x95",        1},
+	{CIO_KEY_SHIFT_F(6),       "\x96",        1},
+	{CIO_KEY_SHIFT_F(7),       "\x97",        1},
+	{CIO_KEY_SHIFT_F(8),       "\x98",        1},
+	{CIO_KEY_SHIFT_F(9),       "\x99",        1},
+	{CIO_KEY_SHIFT_F(10),      "\x90",        1},	/* F0 */
+	{CIO_KEY_CTRL_F(1),        "\xa1",        1},
+	{CIO_KEY_CTRL_F(2),        "\xa2",        1},
+	{CIO_KEY_CTRL_F(3),        "\xa3",        1},
+	{CIO_KEY_CTRL_F(4),        "\xa4",        1},
+	{CIO_KEY_CTRL_F(5),        "\xa5",        1},
+	{CIO_KEY_CTRL_F(6),        "\xa6",        1},
+	{CIO_KEY_CTRL_F(7),        "\xa7",        1},
+	{CIO_KEY_CTRL_F(8),        "\xa8",        1},
+	{CIO_KEY_CTRL_F(9),        "\xa9",        1},
+	{CIO_KEY_CTRL_F(10),       "\xa0",        1},	/* F0 */
+	{CIO_KEY_CTRL_LEFT,        "\xac",        1},
+	{CIO_KEY_CTRL_RIGHT,       "\xad",        1},
+	{CIO_KEY_CTRL_END,         "\xab",        1},	/* Copy */
+	{CIO_KEY_CTRL_UP,          "\xaf",        1},
+	{CIO_KEY_CTRL_DOWN,        "\xae",        1},
+};
+
+static const struct key_mapping beeb_keys[] = {
+	{8,                        "\x7f",        1},
+	{CIO_KEY_SHIFT_END,        "\x9b",        1},	/* Copy */
+	{CIO_KEY_SHIFT_DOWN,       "\x9e",        1},
+	{CIO_KEY_SHIFT_LEFT,       "\x9c",        1},
+	{CIO_KEY_SHIFT_RIGHT,      "\x9d",        1},
+	{CIO_KEY_SHIFT_UP,         "\x9f",        1},
+	{CIO_KEY_F(7),             "\x1b",        1},
+	{CIO_KEY_HOME,             "\x1f",        1},
+	{CIO_KEY_UP,               "\x8f",        1},
+	{CIO_KEY_LEFT,             "\x8c",        1},
+	{CIO_KEY_RIGHT,            "\x8d",        1},
+	{CIO_KEY_DOWN,             "\x8e",        1},
+	{CIO_KEY_DC,               "\x7f",        1},
+	{CIO_KEY_SHIFT_F(1),       "\x91",        1},
+	{CIO_KEY_SHIFT_F(2),       "\x92",        1},
+	{CIO_KEY_SHIFT_F(3),       "\x93",        1},
+	{CIO_KEY_SHIFT_F(4),       "\x94",        1},
+	{CIO_KEY_SHIFT_F(5),       "\x95",        1},
+	{CIO_KEY_SHIFT_F(6),       "\x96",        1},
+	{CIO_KEY_SHIFT_F(7),       "\x97",        1},
+	{CIO_KEY_SHIFT_F(8),       "\x98",        1},
+	{CIO_KEY_SHIFT_F(9),       "\x99",        1},
+	{CIO_KEY_SHIFT_F(10),      "\x90",        1},	/* F0 */
+	{CIO_KEY_CTRL_F(1),        "\xa1",        1},
+	{CIO_KEY_CTRL_F(2),        "\xa2",        1},
+	{CIO_KEY_CTRL_F(3),        "\xa3",        1},
+	{CIO_KEY_CTRL_F(4),        "\xa4",        1},
+	{CIO_KEY_CTRL_F(5),        "\xa5",        1},
+	{CIO_KEY_CTRL_F(6),        "\xa6",        1},
+	{CIO_KEY_CTRL_F(7),        "\xa7",        1},
+	{CIO_KEY_CTRL_F(8),        "\xa8",        1},
+	{CIO_KEY_CTRL_F(9),        "\xa9",        1},
+	{CIO_KEY_CTRL_F(10),       "\xa0",        1},	/* F0 */
+	{CIO_KEY_CTRL_LEFT,        "\xac",        1},
+	{CIO_KEY_CTRL_RIGHT,       "\xad",        1},
+	{CIO_KEY_CTRL_END,         "\xab",        1},	/* Copy */
+	{CIO_KEY_CTRL_UP,          "\xaf",        1},
+	{CIO_KEY_CTRL_DOWN,        "\xae",        1},
+};
+
+static const struct key_mapping vt52_keys[] = {
+	{CIO_KEY_F(1),             "\033P",       2},
+	{CIO_KEY_F(2),             "\033Q",       2},
+	{CIO_KEY_F(3),             "\033R",       2},
+	{CIO_KEY_UP,               "\033A",       2},
+	{CIO_KEY_LEFT,             "\033D",       2},
+	{CIO_KEY_RIGHT,            "\033C",       2},
+	{CIO_KEY_DOWN,             "\033B",       2},
+};
+
+static const struct key_mapping ansi_keys[] = {
+	{CIO_KEY_BACKTAB,          "\033[Z",      3},
+	{CIO_KEY_F(1),             "\033[11~",    5},
+	{CIO_KEY_F(2),             "\033[12~",    5},
+	{CIO_KEY_F(3),             "\033[13~",    5},
+	{CIO_KEY_F(4),             "\033[14~",    5},
+	{CIO_KEY_F(5),             "\033[15~",    5},
+	{CIO_KEY_F(6),             "\033[17~",    5},
+	{CIO_KEY_F(7),             "\033[18~",    5},
+	{CIO_KEY_F(8),             "\033[19~",    5},
+	{CIO_KEY_F(9),             "\033[20~",    5},
+	{CIO_KEY_F(10),            "\033[21~",    5},
+	{CIO_KEY_HOME,             "\033[H",      3},
+	{CIO_KEY_UP,               "\033[A",      3},
+	{CIO_KEY_PPAGE,            "\033[V",      3},
+	{CIO_KEY_LEFT,             "\033[D",      3},
+	{CIO_KEY_RIGHT,            "\033[C",      3},
+	{CIO_KEY_END,              "\033[K",      3},
+#ifdef CIO_KEY_SELECT
+	{CIO_KEY_SELECT,           "\033[K",      3},
+#endif
+	{CIO_KEY_DOWN,             "\033[B",      3},
+	{CIO_KEY_NPAGE,            "\033[U",      3},
+	{CIO_KEY_IC,               "\033[@",      3},
+	{CIO_KEY_SHIFT_F(1),       "\033[11;2~",  7},
+	{CIO_KEY_SHIFT_F(2),       "\033[12;2~",  7},
+	{CIO_KEY_SHIFT_F(3),       "\033[13;2~",  7},
+	{CIO_KEY_SHIFT_F(4),       "\033[14;2~",  7},
+	{CIO_KEY_SHIFT_F(5),       "\033[15;2~",  7},
+	{CIO_KEY_SHIFT_F(6),       "\033[17;2~",  7},
+	{CIO_KEY_SHIFT_F(7),       "\033[18;2~",  7},
+	{CIO_KEY_SHIFT_F(8),       "\033[19;2~",  7},
+	{CIO_KEY_SHIFT_F(9),       "\033[20;2~",  7},
+	{CIO_KEY_SHIFT_F(10),      "\033[21;2~",  7},
+	{CIO_KEY_CTRL_F(1),        "\033[11;5~",  7},
+	{CIO_KEY_CTRL_F(2),        "\033[12;5~",  7},
+	{CIO_KEY_CTRL_F(3),        "\033[13;5~",  7},
+	{CIO_KEY_CTRL_F(4),        "\033[14;5~",  7},
+	{CIO_KEY_CTRL_F(5),        "\033[15;5~",  7},
+	{CIO_KEY_CTRL_F(6),        "\033[17;5~",  7},
+	{CIO_KEY_CTRL_F(7),        "\033[18;5~",  7},
+	{CIO_KEY_CTRL_F(8),        "\033[19;5~",  7},
+	{CIO_KEY_CTRL_F(9),        "\033[20;5~",  7},
+	{CIO_KEY_CTRL_F(10),       "\033[21;5~",  7},
+	{CIO_KEY_ALT_F(1),         "\033[11;3~",  7},
+	{CIO_KEY_ALT_F(2),         "\033[12;3~",  7},
+	{CIO_KEY_ALT_F(3),         "\033[13;3~",  7},
+	{CIO_KEY_ALT_F(4),         "\033[14;3~",  7},
+	{CIO_KEY_ALT_F(5),         "\033[15;3~",  7},
+	{CIO_KEY_ALT_F(6),         "\033[17;3~",  7},
+	{CIO_KEY_ALT_F(7),         "\033[18;3~",  7},
+	{CIO_KEY_ALT_F(8),         "\033[19;3~",  7},
+	{CIO_KEY_ALT_F(9),         "\033[20;3~",  7},
+	{CIO_KEY_ALT_F(10),        "\033[21;3~",  7},
+	{CIO_KEY_F(11),            "\033[23~",    5},
+	{CIO_KEY_F(12),            "\033[24~",    5},
+	{CIO_KEY_SHIFT_F(11),      "\033[23;2~",  7},
+	{CIO_KEY_SHIFT_F(12),      "\033[24;2~",  7},
+	{CIO_KEY_CTRL_F(11),       "\033[23;5~",  7},
+	{CIO_KEY_CTRL_F(12),       "\033[24;5~",  7},
+	{CIO_KEY_ALT_F(11),        "\033[23;3~",  7},
+	{CIO_KEY_ALT_F(12),        "\033[24;3~",  7},
+};
+
+static int
+key_mapping_cmp(const void *a, const void *b)
+{
+	return ((const struct key_mapping *)a)->key
+	     - ((const struct key_mapping *)b)->key;
+}
+
+static const char *
+lookup_key(const struct key_mapping *map, int count, int key, int *len)
+{
+	struct key_mapping needle = {key, NULL, 0};
+	const struct key_mapping *found;
+
+	found = bsearch(&needle, map, count, sizeof(*map), key_mapping_cmp);
+	if (found) {
+		*len = found->len;
+		return found->seq;
+	}
+	return NULL;
+}
+
+static void
+verify_key_tables(void)
+{
+#define CHECK_SORTED(table) do {					\
+	for (int i_ = 1; i_ < KEY_MAP_SIZE(table); i_++)		\
+		assert((table)[i_ - 1].key < (table)[i_].key);		\
+} while (0)
+
+	CHECK_SORTED(atascii_keys);
+	CHECK_SORTED(petscii_keys);
+	CHECK_SORTED(prestel_keys);
+	CHECK_SORTED(beeb_keys);
+	CHECK_SORTED(vt52_keys);
+	CHECK_SORTED(ansi_keys);
+#undef CHECK_SORTED
+}
+
+
 void
 get_cterm_size(int *cols, int *rows, int ns)
 {
@@ -5033,6 +5277,117 @@ finish_scrollback(void)
 	}
 }
 
+
+static void
+toggle_prestel_reveal(void)
+{
+	cio_api.options ^= CONIO_OPT_PRESTEL_REVEAL;
+	struct ciolib_screen *savscrn = savescreen();
+	ciolib_vmem_puttext(1, 1, savscrn->text_info.screenwidth,
+	    savscrn->text_info.screenheight, savscrn->vmem);
+	freescreen(savscrn);
+}
+
+static void
+send_emulation_key(struct cterminal *cterm, int key, bool *atascii_inverse)
+{
+	unsigned char ch;
+	int           slen;
+	const char   *seq;
+
+	if (cterm->emulation == CTERM_EMULATION_ATASCII) {
+		if (key == 96) {
+			*atascii_inverse = !*atascii_inverse;
+			return;
+		}
+		seq = LOOKUP_KEY(atascii_keys, key, &slen);
+		if (seq)
+			conn_send(seq, slen, 0);
+		else if (key < 256) {
+			ch = key;
+			conn_send(&ch, 1, 0);
+		}
+	}
+	else if (cterm->emulation == CTERM_EMULATION_PETASCII) {
+		seq = LOOKUP_KEY(petscii_keys, key, &slen);
+		if (seq)
+			conn_send(seq, slen, 0);
+		else if (key < 256) {
+			ch = key;
+			conn_send(&ch, 1, 0);
+		}
+	}
+	else if (cterm->emulation == CTERM_EMULATION_PRESTEL) {
+		if (key == CIO_KEY_F(3) || key == CIO_KEY_NPAGE) {
+			toggle_prestel_reveal();
+			return;
+		}
+		seq = LOOKUP_KEY(prestel_keys, key, &slen);
+		if (seq)
+			conn_send(seq, slen, 0);
+		else if (key > 31 && key < 128) {
+			ch = key;
+			conn_send(&ch, 1, 0);
+		}
+	}
+	else if (cterm->emulation == CTERM_EMULATION_BEEB) {
+		if (key == CIO_KEY_F(3) || key == CIO_KEY_NPAGE) {
+			toggle_prestel_reveal();
+			return;
+		}
+		seq = LOOKUP_KEY(beeb_keys, key, &slen);
+		if (seq)
+			conn_send(seq, slen, 0);
+		else if (key < 128) {
+			ch = key;
+			conn_send(&ch, 1, 0);
+		}
+	}
+	else if (cterm->emulation == CTERM_EMULATION_ATARIST_VT52) {
+		if (key == CIO_KEY_DC) {
+			if (cterm->extattr & CTERM_EXTATTR_DECBKM)
+				conn_send("\x7f", 1, 0);
+			else
+				conn_send("\x1b[3~", 4, 0);
+			return;
+		}
+		if (key == '\b') {
+			ch = (cterm->extattr & CTERM_EXTATTR_DECBKM) ? '\b' : '\x7f';
+			conn_send(&ch, 1, 0);
+			return;
+		}
+		seq = LOOKUP_KEY(vt52_keys, key, &slen);
+		if (seq)
+			conn_send(seq, slen, 0);
+		else if (key >= 0 && key < 256) {
+			ch = key;
+			conn_send(&ch, 1, 0);
+		}
+	}
+	else {
+		/* ANSI-BBS */
+		if (key == CIO_KEY_DC) {
+			if (cterm->extattr & CTERM_EXTATTR_DECBKM)
+				conn_send("\x7f", 1, 0);
+			else
+				conn_send("\x1b[3~", 4, 0);
+			return;
+		}
+		if (key == '\b') {
+			ch = (cterm->extattr & CTERM_EXTATTR_DECBKM) ? '\b' : '\x7f';
+			conn_send(&ch, 1, 0);
+			return;
+		}
+		seq = LOOKUP_KEY(ansi_keys, key, &slen);
+		if (seq)
+			conn_send(seq, slen, 0);
+		else if (key >= 0 && key < 256) {
+			ch = key;
+			conn_send(&ch, 1, 0);
+		}
+	}
+}
+
 bool
 doterm(struct bbslist *bbs)
 {
@@ -5086,6 +5441,9 @@ doterm(struct bbslist *bbs)
 	int                speedwatch = 0;
 	bool atascii_inverse = false;
 
+#ifndef NDEBUG
+	verify_key_tables();
+#endif
 	normalize_entry(bbs);
 	freepixels(pixmap_buffer[0]);
 	freepixels(pixmap_buffer[1]);
@@ -5804,591 +6162,8 @@ doterm(struct bbslist *bbs)
 					}
 					break;
 			}
-			if (key && (cterm->emulation == CTERM_EMULATION_ATASCII)) {
-                                /* Translate keys to ATASCII */
-				switch (key) {
-					case 253: // Undo Unicode: Atascii beep -> ^G
-						ch[0] = 7;
-						conn_send(ch, 1, 0);
-						break;
-					case CIO_KEY_DOWN:
-						ch[0] = 29;
-						conn_send(ch, 1, 0);
-						break;
-					case CIO_KEY_DC: /* "Delete" key */
-						ch[0] = 126;
-						conn_send(ch, 1, 0);
-						break;
-					case CIO_KEY_RIGHT:
-						ch[0] = 31;
-						conn_send(ch, 1, 0);
-						break;
-					case CIO_KEY_UP:
-						ch[0] = 28;
-						conn_send(ch, 1, 0);
-						break;
-					case CIO_KEY_LEFT:
-						ch[0] = 30;
-						conn_send(ch, 1, 0);
-						break;
-					case CIO_KEY_IC:
-						ch[0] = 255;
-						conn_send(ch, 1, 0);
-						break;
-					case 96: /* Backtick toggles inverse */
-						atascii_inverse = !atascii_inverse;
-						break;
-					default:
-						if (key < 256) {
-							ch[0] = key;
-							conn_send(ch, 1, 0);
-						}
-						break;
-				}
-			}
-			else if (key && (cterm->emulation == CTERM_EMULATION_PETASCII)) {
-                                /* Translate keys to PETSCII */
-				switch (key) {
-					case '\r':
-					case '\n':
-						ch[0] = 13;
-						conn_send(ch, 1, 0);
-						break;
-					case CIO_KEY_DOWN:
-						ch[0] = 17;
-						conn_send(ch, 1, 0);
-						break;
-					case CIO_KEY_HOME:
-						ch[0] = 19;
-						conn_send(ch, 1, 0);
-						break;
-					case CIO_KEY_END:
-						ch[0] = 147; /* Clear / Shift-Home */
-						conn_send(ch, 1, 0);
-						break;
-					case 8:
-					case CIO_KEY_DC: /* "Delete" key */
-						ch[0] = 20;
-						conn_send(ch, 1, 0);
-						break;
-					case CIO_KEY_RIGHT:
-						ch[0] = 29;
-						conn_send(ch, 1, 0);
-						break;
-					case CIO_KEY_F(1):
-						ch[0] = 133;
-						conn_send(ch, 1, 0);
-						break;
-					case CIO_KEY_F(3):
-						ch[0] = 134;
-						conn_send(ch, 1, 0);
-						break;
-					case CIO_KEY_F(5):
-						ch[0] = 135;
-						conn_send(ch, 1, 0);
-						break;
-					case CIO_KEY_F(7):
-						ch[0] = 136;
-						conn_send(ch, 1, 0);
-						break;
-					case CIO_KEY_F(2):
-						ch[0] = 137;
-						conn_send(ch, 1, 0);
-						break;
-					case CIO_KEY_F(4):
-						ch[0] = 138;
-						conn_send(ch, 1, 0);
-						break;
-					case CIO_KEY_F(6):
-						ch[0] = 139;
-						conn_send(ch, 1, 0);
-						break;
-					case CIO_KEY_F(8):
-						ch[0] = 140;
-						conn_send(ch, 1, 0);
-						break;
-					case CIO_KEY_UP:
-						ch[0] = 145;
-						conn_send(ch, 1, 0);
-						break;
-					case CIO_KEY_IC:
-						ch[0] = 148;
-						conn_send(ch, 1, 0);
-						break;
-					case CIO_KEY_LEFT:
-						ch[0] = 157;
-						conn_send(ch, 1, 0);
-						break;
-					default:
-						if (key < 256) {
-							ch[0] = key;
-							conn_send(ch, 1, 0);
-						}
-						break;
-				}
-			}
-			else if (key && (cterm->emulation == CTERM_EMULATION_PRESTEL || cterm->emulation == CTERM_EMULATION_BEEB)) {
-				switch (key) {
-					case '_':
-						if (cterm->emulation == CTERM_EMULATION_PRESTEL)
-							ch[0] = '`';
-						else
-							ch[0] = '_';
-						conn_send(ch, 1, 0);
-						break;
-					case '#':
-						if (cterm->emulation == CTERM_EMULATION_PRESTEL)
-							ch[0] = '_';
-						else
-							ch[0] = '#';
-						conn_send(ch, 1, 0);
-						break;
-					case '`':
-						if (cterm->emulation == CTERM_EMULATION_PRESTEL)
-							ch[0] = '#';
-						else
-							ch[0] = '`';
-						conn_send(ch, 1, 0);
-						break;
-					case 8:
-					case CIO_KEY_DC:
-						ch[0] = 127;
-						conn_send(ch, 1, 0);
-						break;
-					case 9:
-						ch[0] = 9;
-						conn_send(ch, 1, 0);
-						break;
-					case 10:
-						if (cterm->emulation == CTERM_EMULATION_PRESTEL)
-							ch[0] = '\r';
-						else
-							ch[0] = 10;
-						conn_send(ch, 1, 0);
-						break;
-					case 13:
-						if (cterm->emulation == CTERM_EMULATION_PRESTEL)
-							ch[0] = '_';
-						else
-							ch[0] = 13;
-						conn_send(ch, 1, 0);
-						break;
-					case CIO_KEY_HOME:
-						ch[0] = 0x1f;
-						conn_send(ch, 1, 0);
-						break;
-					// These mappings are from Commstar...
-					case CIO_KEY_F(7):	// Another ESC... ESC returns to Commstar menu
-						ch[0] = 27;
-						conn_send(ch, 1, 0);
-						break;
-					case CIO_KEY_LEFT:
-						ch[0] = 140;
-						conn_send(ch, 1, 0);
-						break;
-					case CIO_KEY_RIGHT:
-						ch[0] = 141;
-						conn_send(ch, 1, 0);
-						break;
-					case CIO_KEY_DOWN:
-						ch[0] = 142;
-						conn_send(ch, 1, 0);
-						break;
-					case CIO_KEY_UP:
-						ch[0] = 143;
-						conn_send(ch, 1, 0);
-						break;
-					case CIO_KEY_SHIFT_F(10):	// F0
-						ch[0] = 144;
-						conn_send(ch, 1, 0);
-						break;
-					case CIO_KEY_SHIFT_F(1):
-						ch[0] = 145;
-						conn_send(ch, 1, 0);
-						break;
-					case CIO_KEY_SHIFT_F(2):
-						ch[0] = 146;
-						conn_send(ch, 1, 0);
-						break;
-					case CIO_KEY_SHIFT_F(3):
-						ch[0] = 147;
-						conn_send(ch, 1, 0);
-						break;
-					case CIO_KEY_SHIFT_F(4):
-						ch[0] = 148;
-						conn_send(ch, 1, 0);
-						break;
-					case CIO_KEY_SHIFT_F(5):
-						ch[0] = 149;
-						conn_send(ch, 1, 0);
-						break;
-					case CIO_KEY_SHIFT_F(6):
-						ch[0] = 150;
-						conn_send(ch, 1, 0);
-						break;
-					case CIO_KEY_SHIFT_F(7):
-						ch[0] = 151;
-						conn_send(ch, 1, 0);
-						break;
-					case CIO_KEY_SHIFT_F(8):
-						ch[0] = 152;
-						conn_send(ch, 1, 0);
-						break;
-					case CIO_KEY_SHIFT_F(9):
-						ch[0] = 153;
-						conn_send(ch, 1, 0);
-						break;
-					case CIO_KEY_SHIFT_END:	// Copy
-						ch[0] = 155;
-						conn_send(ch, 1, 0);
-						break;
-					case CIO_KEY_SHIFT_LEFT:
-						ch[0] = 156;
-						conn_send(ch, 1, 0);
-						break;
-					case CIO_KEY_SHIFT_RIGHT:
-						ch[0] = 157;
-						conn_send(ch, 1, 0);
-						break;
-					case CIO_KEY_SHIFT_DOWN:
-						ch[0] = 158;
-						conn_send(ch, 1, 0);
-						break;
-					case CIO_KEY_SHIFT_UP:
-						ch[0] = 159;
-						conn_send(ch, 1, 0);
-						break;
-
-					case CIO_KEY_CTRL_F(10):	// F0
-						ch[0] = 160;
-						conn_send(ch, 1, 0);
-						break;
-					case CIO_KEY_CTRL_F(1):
-						ch[0] = 161;
-						conn_send(ch, 1, 0);
-						break;
-					case CIO_KEY_CTRL_F(2):
-						ch[0] = 162;
-						conn_send(ch, 1, 0);
-						break;
-					case CIO_KEY_CTRL_F(3):
-						ch[0] = 163;
-						conn_send(ch, 1, 0);
-						break;
-					case CIO_KEY_CTRL_F(4):
-						ch[0] = 164;
-						conn_send(ch, 1, 0);
-						break;
-					case CIO_KEY_CTRL_F(5):
-						ch[0] = 165;
-						conn_send(ch, 1, 0);
-						break;
-					case CIO_KEY_CTRL_F(6):
-						ch[0] = 166;
-						conn_send(ch, 1, 0);
-						break;
-					case CIO_KEY_CTRL_F(7):
-						ch[0] = 167;
-						conn_send(ch, 1, 0);
-						break;
-					case CIO_KEY_CTRL_F(8):
-						ch[0] = 168;
-						conn_send(ch, 1, 0);
-						break;
-					case CIO_KEY_CTRL_F(9):
-						ch[0] = 169;
-						conn_send(ch, 1, 0);
-						break;
-					case CIO_KEY_CTRL_END:	// Copy
-						ch[0] = 171;
-						conn_send(ch, 1, 0);
-						break;
-					case CIO_KEY_CTRL_LEFT:
-						ch[0] = 172;
-						conn_send(ch, 1, 0);
-						break;
-					case CIO_KEY_CTRL_RIGHT:
-						ch[0] = 173;
-						conn_send(ch, 1, 0);
-						break;
-					case CIO_KEY_CTRL_DOWN:
-						ch[0] = 174;
-						conn_send(ch, 1, 0);
-						break;
-					case CIO_KEY_CTRL_UP:
-						ch[0] = 175;
-						conn_send(ch, 1, 0);
-						break;
-
-					case CIO_KEY_F(3):
-					case CIO_KEY_NPAGE:
-					{
-						cio_api.options ^= CONIO_OPT_PRESTEL_REVEAL;
-						struct ciolib_screen *savscrn = savescreen();
-						ciolib_vmem_puttext(1, 1, savscrn->text_info.screenwidth, savscrn->text_info.screenheight, savscrn->vmem);
-						freescreen(savscrn);
-						break;
-					}
-					// TODO: Add clear screen key?
-					default:
-						if (cterm->emulation == CTERM_EMULATION_PRESTEL) {
-							if (key == 13 || (key < 128 && key > 31)) {
-								ch[0] = key;
-								conn_send(ch, 1, 0);
-							}
-						}
-						else {
-							if (key < 128) {
-								ch[0] = key;
-								conn_send(ch, 1, 0);
-							}
-						}
-						break;
-				}
-			}
-			else if (key && (cterm->emulation == CTERM_EMULATION_ATARIST_VT52)) {
-				switch (key) {
-					case CIO_KEY_F(1):
-						conn_send("\033P", 2, 0);
-						break;
-					case CIO_KEY_F(2):
-						conn_send("\033Q", 2, 0);
-						break;
-					case CIO_KEY_F(3):
-						conn_send("\033R", 2, 0);
-						break;
-					case CIO_KEY_LEFT:
-						conn_send("\033D", 2, 0);
-						break;
-					case CIO_KEY_RIGHT:
-						conn_send("\033C", 2, 0);
-						break;
-					case CIO_KEY_UP:
-						conn_send("\033A", 2, 0);
-						break;
-					case CIO_KEY_DOWN:
-						conn_send("\033B", 2, 0);
-						break;
-					case CIO_KEY_DC:    /* "Delete" key, send ASCII 127 (DEL) */
-						if (cterm->extattr & CTERM_EXTATTR_DECBKM)
-							conn_send("\x7f", 1, 0);
-						else
-							conn_send("\x1b[3~", 4, 0);
-						break;
-					case '\b':
-						if (cterm->extattr & CTERM_EXTATTR_DECBKM)
-							key = '\b';
-						else
-							key = '\x7f';
-
-                                        /* FALLTHROUGH to default */
-					default:
-						if ((key < 256) && (key >= 0)) {
-							ch[0] = key;
-							conn_send(ch, 1, 0);
-						}
-				}
-			}
-			else if (key) {
-				switch (key) {
-					case CIO_KEY_LEFT:
-						conn_send("\033[D", 3, 0);
-						break;
-					case CIO_KEY_RIGHT:
-						conn_send("\033[C", 3, 0);
-						break;
-					case CIO_KEY_UP:
-						conn_send("\033[A", 3, 0);
-						break;
-					case CIO_KEY_DOWN:
-						conn_send("\033[B", 3, 0);
-						break;
-					case CIO_KEY_HOME:
-						conn_send("\033[H", 3, 0);
-						break;
-					case CIO_KEY_END:
-#ifdef CIO_KEY_SELECT
-					case CIO_KEY_SELECT: /* Some terminfo/termcap entries use KEY_SELECT as the END
-                                                              * key! */
-#endif
-						conn_send("\033[K", 3, 0);
-						break;
-					case CIO_KEY_DC:    /* "Delete" key, send ASCII 127 (DEL) */
-						if (cterm->extattr & CTERM_EXTATTR_DECBKM)
-							conn_send("\x7f", 1, 0);
-						else
-							conn_send("\x1b[3~", 4, 0);
-						break;
-					case CIO_KEY_NPAGE: /* Page down */
-						conn_send("\033[U", 3, 0);
-						break;
-					case CIO_KEY_PPAGE: /* Page up */
-						conn_send("\033[V", 3, 0);
-						break;
-					case CIO_KEY_F(1):
-						conn_send("\033[11~", 5, 0);
-						break;
-					case CIO_KEY_F(2):
-						conn_send("\033[12~", 5, 0);
-						break;
-					case CIO_KEY_F(3):
-						conn_send("\033[13~", 5, 0);
-						break;
-					case CIO_KEY_F(4):
-						conn_send("\033[14~", 5, 0);
-						break;
-					case CIO_KEY_F(5):
-						conn_send("\033[15~", 5, 0);
-						break;
-					case CIO_KEY_F(6):
-						conn_send("\033[17~", 5, 0);
-						break;
-					case CIO_KEY_F(7):
-						conn_send("\033[18~", 5, 0);
-						break;
-					case CIO_KEY_F(8):
-						conn_send("\033[19~", 5, 0);
-						break;
-					case CIO_KEY_F(9):
-						conn_send("\033[20~", 5, 0);
-						break;
-					case CIO_KEY_F(10):
-						conn_send("\033[21~", 5, 0);
-						break;
-					case CIO_KEY_F(11):
-						conn_send("\033[23~", 5, 0);
-						break;
-					case CIO_KEY_F(12):
-						conn_send("\033[24~", 5, 0);
-						break;
-					case CIO_KEY_SHIFT_F(1):
-						conn_send("\033[11;2~", 7, 0);
-						break;
-					case CIO_KEY_SHIFT_F(2):
-						conn_send("\033[12;2~", 7, 0);
-						break;
-					case CIO_KEY_SHIFT_F(3):
-						conn_send("\033[13;2~", 7, 0);
-						break;
-					case CIO_KEY_SHIFT_F(4):
-						conn_send("\033[14;2~", 7, 0);
-						break;
-					case CIO_KEY_SHIFT_F(5):
-						conn_send("\033[15;2~", 7, 0);
-						break;
-					case CIO_KEY_SHIFT_F(6):
-						conn_send("\033[17;2~", 7, 0);
-						break;
-					case CIO_KEY_SHIFT_F(7):
-						conn_send("\033[18;2~", 7, 0);
-						break;
-					case CIO_KEY_SHIFT_F(8):
-						conn_send("\033[19;2~", 7, 0);
-						break;
-					case CIO_KEY_SHIFT_F(9):
-						conn_send("\033[20;2~", 7, 0);
-						break;
-					case CIO_KEY_SHIFT_F(10):
-						conn_send("\033[21;2~", 7, 0);
-						break;
-					case CIO_KEY_SHIFT_F(11):
-						conn_send("\033[23;2~", 7, 0);
-						break;
-					case CIO_KEY_SHIFT_F(12):
-						conn_send("\033[24;2~", 7, 0);
-						break;
-					case CIO_KEY_CTRL_F(1):
-						conn_send("\033[11;5~", 7, 0);
-						break;
-					case CIO_KEY_CTRL_F(2):
-						conn_send("\033[12;5~", 7, 0);
-						break;
-					case CIO_KEY_CTRL_F(3):
-						conn_send("\033[13;5~", 7, 0);
-						break;
-					case CIO_KEY_CTRL_F(4):
-						conn_send("\033[14;5~", 7, 0);
-						break;
-					case CIO_KEY_CTRL_F(5):
-						conn_send("\033[15;5~", 7, 0);
-						break;
-					case CIO_KEY_CTRL_F(6):
-						conn_send("\033[17;5~", 7, 0);
-						break;
-					case CIO_KEY_CTRL_F(7):
-						conn_send("\033[18;5~", 7, 0);
-						break;
-					case CIO_KEY_CTRL_F(8):
-						conn_send("\033[19;5~", 7, 0);
-						break;
-					case CIO_KEY_CTRL_F(9):
-						conn_send("\033[20;5~", 7, 0);
-						break;
-					case CIO_KEY_CTRL_F(10):
-						conn_send("\033[21;5~", 7, 0);
-						break;
-					case CIO_KEY_CTRL_F(11):
-						conn_send("\033[23;5~", 7, 0);
-						break;
-					case CIO_KEY_CTRL_F(12):
-						conn_send("\033[24;5~", 7, 0);
-						break;
-					case CIO_KEY_ALT_F(1):
-						conn_send("\033[11;3~", 7, 0);
-						break;
-					case CIO_KEY_ALT_F(2):
-						conn_send("\033[12;3~", 7, 0);
-						break;
-					case CIO_KEY_ALT_F(3):
-						conn_send("\033[13;3~", 7, 0);
-						break;
-					case CIO_KEY_ALT_F(4):
-						conn_send("\033[14;3~", 7, 0);
-						break;
-					case CIO_KEY_ALT_F(5):
-						conn_send("\033[15;3~", 7, 0);
-						break;
-					case CIO_KEY_ALT_F(6):
-						conn_send("\033[17;3~", 7, 0);
-						break;
-					case CIO_KEY_ALT_F(7):
-						conn_send("\033[18;3~", 7, 0);
-						break;
-					case CIO_KEY_ALT_F(8):
-						conn_send("\033[19;3~", 7, 0);
-						break;
-					case CIO_KEY_ALT_F(9):
-						conn_send("\033[20;3~", 7, 0);
-						break;
-					case CIO_KEY_ALT_F(10):
-						conn_send("\033[21;3~", 7, 0);
-						break;
-					case CIO_KEY_ALT_F(11):
-						conn_send("\033[23;3~", 7, 0);
-						break;
-					case CIO_KEY_ALT_F(12):
-						conn_send("\033[24;3~", 7, 0);
-						break;
-					case CIO_KEY_IC:
-						conn_send("\033[@", 3, 0);
-						break;
-					case CIO_KEY_BACKTAB:
-						conn_send("\033[Z", 3, 0);
-						break;
-					case '\b':
-						if (cterm->extattr & CTERM_EXTATTR_DECBKM)
-							key = '\b';
-						else
-							key = '\x7f';
-
-                                        /* FALLTHROUGH to default */
-					default:
-						if ((key < 256) && (key >= 0)) {
-							ch[0] = key;
-							conn_send(ch, 1, 0);
-						}
-				}
-			}
+			if (key)
+				send_emulation_key(cterm, key, &atascii_inverse);
 		}
 		if (sleep)
 			SLEEP(1);
