@@ -259,10 +259,12 @@ if (jxlOk) {
         }
     }
     if (uploadFail > 0) jxlOk = false;  // silently fall back to ANSI
-    // Upload piece silhouette mask (6 pieces stacked, each 40x32, for animation)
+    // Upload animation assets: silhouette masks + sprite sheet
     if (jxlOk) {
         if (uploadToCache(imgDir + "piece_mask.pbm", "piece_mask.pbm"))
             console.write("\x1b_SyncTERM:C;LoadPBM;piece_mask.pbm\x1b\\");
+        if (uploadToCache(imgDir + "piece_sprites.jxl", "piece_sprites.jxl"))
+            console.write("\x1b_SyncTERM:C;LoadJXL;B=1;piece_sprites.jxl\x1b\\");
     }
 }
 
@@ -386,15 +388,29 @@ function clearStatus() { showStatus(""); }
 
 // ── Drawing ───────────────────────────────────────────────────────────────────
 function drawPieceJXL(piece, isDark, col, row) {
-    var fname = pieceNames[piece] + '-' + (isDark ? 'dark' : 'light') + '.jxl';
-    console.write("\x1b_SyncTERM:C;DrawJXL;DX=" + ((col-1)*charPixW) +
-                  ";DY=" + ((row-1)*charPixH) + ";" + fname + "\x1b\\");
+    if (pieceSpriteY[piece]) {
+        console.write("\x1b_SyncTERM:P;Paste;SY=" + pieceSpriteY[piece][isDark ? 0 : 1] +
+                      ";SH=" + (cellH * charPixH) +
+                      ";DX=" + ((col-1)*charPixW) +
+                      ";DY=" + ((row-1)*charPixH) + ";B=1\x1b\\");
+    } else {
+        var fname = pieceNames[piece] + '-' + (isDark ? 'dark' : 'light') + '.jxl';
+        console.write("\x1b_SyncTERM:C;DrawJXL;DX=" + ((col-1)*charPixW) +
+                      ";DY=" + ((row-1)*charPixH) + ";" + fname + "\x1b\\");
+    }
 }
 
 function drawCapIconJXL(piece, col, row) {
-    var fname = pieceNames[piece] + '-cap.jxl';
-    console.write("\x1b_SyncTERM:C;DrawJXL;DX=" + ((col-1)*charPixW) +
-                  ";DY=" + ((row-1)*charPixH) + ";" + fname + "\x1b\\");
+    if (pieceSpriteY[piece]) {
+        console.write("\x1b_SyncTERM:P;Paste;SY=" + pieceSpriteY[piece][2] +
+                      ";SW=" + (CAP_W * charPixW) + ";SH=" + (CAP_H * charPixH) +
+                      ";DX=" + ((col-1)*charPixW) +
+                      ";DY=" + ((row-1)*charPixH) + ";B=1\x1b\\");
+    } else {
+        var fname = pieceNames[piece] + '-cap.jxl';
+        console.write("\x1b_SyncTERM:C;DrawJXL;DX=" + ((col-1)*charPixW) +
+                      ";DY=" + ((row-1)*charPixH) + ";" + fname + "\x1b\\");
+    }
 }
 
 function drawSquare(r, c, highlight) {
@@ -728,8 +744,15 @@ function askPromotion(promotingColor) {
             // Centre the 40px image within the slotW-char slot
             var px = (slotCol - 1) * charPixW + Math.floor((slotW * charPixW - jxlPixW) / 2);
             var py = (promoRow - 1) * charPixH;
-            console.write("\x1b_SyncTERM:C;DrawJXL;DX=" + px + ";DY=" + py + ";" +
-                prefix + '-' + names[i] + '-promo.jxl\x1b\\');
+            var promoChar = (promotingColor === 'w') ? pieces[i] : pieces[i].toLowerCase();
+            if (pieceSpriteY[promoChar]) {
+                console.write("\x1b_SyncTERM:P;Paste;SY=" + pieceSpriteY[promoChar][3] +
+                              ";SH=" + (cellH * charPixH) +
+                              ";DX=" + px + ";DY=" + py + ";B=1\x1b\\");
+            } else {
+                console.write("\x1b_SyncTERM:C;DrawJXL;DX=" + px + ";DY=" + py + ";" +
+                    prefix + '-' + names[i] + '-promo.jxl\x1b\\');
+            }
         } else {
             console.gotoxy(slotCol + Math.floor(slotW / 2), promoRow);
             console.print("\x1b[47;1;30m" + pieces[i]);
@@ -1506,6 +1529,18 @@ var ANIM_BORDER = 48;  // erase mask border (covers max per-frame movement)
 var pieceDrawMY  = { 'P': 0, 'N': 160, 'B': 320, 'R': 480, 'Q': 640, 'K': 800 };
 var pieceEraseMY = { 'P': 32, 'N': 192, 'B': 352, 'R': 512, 'Q': 672, 'K': 832 };
 
+// Sprite sheet Y-offsets into piece_sprites.jxl (pre-loaded in buffer 1)
+// [darkSY, lightSY] per piece char
+// Index: 0=dark, 1=light, 2=cap, 3=promo
+var pieceSpriteY = {
+	'P': [0, 32, 64, 96],         'p': [128, 160, 192, 224],
+	'N': [256, 288, 320, 352],    'n': [384, 416, 448, 480],
+	'B': [512, 544, 576, 608],    'b': [640, 672, 704, 736],
+	'R': [768, 800, 832, 864],    'r': [896, 928, 960, 992],
+	'Q': [1024, 1056, 1088, 1120],'q': [1152, 1184, 1216, 1248],
+	'K': [1280, 1312, 1344, 1376],'k': [1408, 1440, 1472, 1504]
+};
+
 function animateSlideJXL(from, to, piece) {
 	var srcPos = squareToChar(from.r, from.c);
 	var dstPos = squareToChar(to.r, to.c);
@@ -1513,6 +1548,10 @@ function animateSlideJXL(from, to, piece) {
 	var drawMY  = pieceDrawMY[pUp];
 	var eraseMY = pieceEraseMY[pUp];
 	var B = ANIM_BORDER;
+
+	// Select piece variant from sprite sheet (buffer 1, pre-loaded at startup)
+	var dstDark = (to.r + to.c) % 2 !== 0;
+	var spriteSY = pieceSpriteY[piece][dstDark ? 0 : 1];  // dark=0, light=1
 
 	// Clear the piece from its source square on screen
 	var saved = game.board[from.r][from.c];
@@ -1522,11 +1561,6 @@ function animateSlideJXL(from, to, piece) {
 
 	// Save clean screen (piece removed) to pixel buffer 0
 	console.write("\x1b_SyncTERM:P;Copy;B=0\x1b\\");
-
-	// Load piece image into pixel buffer 1 (destination square variant)
-	var dstDark = (to.r + to.c) % 2 !== 0;
-	var fname = pieceNames[piece] + '-' + (dstDark ? 'dark' : 'light') + '.jxl';
-	console.write("\x1b_SyncTERM:C;LoadJXL;B=1;" + fname + "\x1b\\");
 
 	// Piece size in pixels
 	var pw = cellW * charPixW;
@@ -1553,8 +1587,9 @@ function animateSlideJXL(from, to, piece) {
 		if (cx === prevX && cy === prevY) continue;
 
 		// Pre-build draw + erase commands, emit in one write (atomic frame)
-		// 1. Draw piece at new position with silhouette mask
-		var cmds = "\x1b_SyncTERM:P;Paste;DX=" + cx + ";DY=" + cy +
+		// 1. Draw piece at new position from sprite sheet with silhouette mask
+		var cmds = "\x1b_SyncTERM:P;Paste;SY=" + spriteSY + ";SH=" + ph +
+		           ";DX=" + cx + ";DY=" + cy +
 		           ";MBUF;MY=" + drawMY + ";B=1\x1b\\";
 		// 2. Erase trail: paste background around new position with inverted
 		//    mask (hole preserves the piece just drawn, border erases trail)
@@ -1571,12 +1606,7 @@ function animateSlideJXL(from, to, piece) {
 		mswait(20);
 	}
 
-	// Restore final position (full drawBoard follows)
-	if (prevX >= 0) {
-		console.write("\x1b_SyncTERM:P;Paste;SX=" + (prevX - B) + ";SY=" + (prevY - B) +
-		              ";SW=" + ew + ";SH=" + eh +
-		              ";DX=" + (prevX - B) + ";DY=" + (prevY - B) + ";B=0\x1b\\");
-	}
+	// Piece remains drawn at its destination — no cleanup needed
 }
 
 function animateSlideANSI(from, to, piece) {
