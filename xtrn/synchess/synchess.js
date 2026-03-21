@@ -250,21 +250,13 @@ console.clear();
 if (!isGuest) loadIni();
 
 if (jxlOk) {
-    var uploadFail = 0;
-    var variants = ['dark', 'light', 'cap', 'promo'];
-    for (var sym in pieceNames) {
-        for (var vi = 0; vi < variants.length; vi++) {
-            var fn = pieceNames[sym] + '-' + variants[vi] + '.jxl';
-            if (!uploadToCache(imgDir + fn, fn)) uploadFail++;
-        }
-    }
-    if (uploadFail > 0) jxlOk = false;  // silently fall back to ANSI
-    // Upload animation assets: silhouette masks + sprite sheet
-    if (jxlOk) {
-        if (uploadToCache(imgDir + "piece_mask.pbm", "piece_mask.pbm"))
-            console.write("\x1b_SyncTERM:C;LoadPBM;piece_mask.pbm\x1b\\");
-        if (uploadToCache(imgDir + "piece_sprites.jxl", "piece_sprites.jxl"))
-            console.write("\x1b_SyncTERM:C;LoadJXL;B=1;piece_sprites.jxl\x1b\\");
+    // Upload sprite sheet + animation masks, load into pixel/mask buffers
+    if (uploadToCache(imgDir + "piece_sprites.jxl", "piece_sprites.jxl") &&
+        uploadToCache(imgDir + "piece_mask.pbm", "piece_mask.pbm")) {
+        console.write("\x1b_SyncTERM:C;LoadJXL;B=1;piece_sprites.jxl\x1b\\");
+        console.write("\x1b_SyncTERM:C;LoadPBM;piece_mask.pbm\x1b\\");
+    } else {
+        jxlOk = false;  // silently fall back to ANSI
     }
 }
 
