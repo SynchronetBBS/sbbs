@@ -159,6 +159,7 @@ function saveIni() {
 
 // ── Saved game ────────────────────────────────────────────────────────────────
 var gameSavePath = system.data_dir + "user/" + format("%04d.synchess.save", user.number);
+var lockPath     = !isGuest && system.data_dir + "user/" + format("%04d.synchess.lock", user.number);
 
 function saveGame() {
     if (isGuest) return false;
@@ -425,8 +426,10 @@ function drawSquare(r, c, highlight) {
         var hidden = (isWp && hideWhite) || (!isWp && hideBlack);
         if (!hidden) {
             if (jxlOk && pieceSpriteY[piece]) {
-                // Use mask on highlighted squares so the highlight bg shows through
-                drawPieceJXL(piece, isDark, pos.col, pos.row, !!highlight);
+                // Use mask when square bg differs from the sprite's baked-in default bg,
+                // so the actual ANSI bg (custom colour or highlight) shows through.
+                var needMask = !!highlight || (isDark ? darkBg !== '44' : lightBg !== '46');
+                drawPieceJXL(piece, isDark, pos.col, pos.row, needMask);
             } else {
                 console.gotoxy(pos.col + 2, pos.row);
                 console.print("\x1b[" + bg + ";" + (isWp ? whiteFg : blackFg) + "m" + (isWp ? piece.toUpperCase() : piece.toLowerCase()));
@@ -549,6 +552,24 @@ function drawPanels() {
     for (var cr2 = nextRow; cr2 < STATUS_ROW - 1; cr2++) {
         console.gotoxy(RIGHT_COL, cr2);
         console.print(padR("", RIGHT_W));
+    }
+}
+
+// Redraw only the 64 board squares without clearing the screen.
+// Used for mouse selection highlights to avoid the console.clear() flash.
+function refreshBoardSquares(selSq, hintSqs) {
+    for (var i = 0; i < 8; i++) {
+        var r = (game.playerColor === 'w') ? i : 7 - i;
+        for (var j = 0; j < 8; j++) {
+            var c = (game.playerColor === 'w') ? j : 7 - j;
+            var hl = null;
+            if (selSq && selSq.r === r && selSq.c === c) hl = 'sel';
+            if (hintSqs) {
+                for (var hi = 0; hi < hintSqs.length; hi++)
+                    if (hintSqs[hi].r === r && hintSqs[hi].c === c) { hl = 'hint'; break; }
+            }
+            drawSquare(r, c, hl);
+        }
     }
 }
 
@@ -1084,7 +1105,7 @@ function readPlayerInput() {
                         var mine = p !== ' ' && ((p===p.toUpperCase()) === (game.playerColor==='w'));
                         if (mine) {
                             var hints = showLegalMoves ? game.getLegalMovesFrom(sq.r, sq.c) : null;
-                            drawBoard(sq, hints);
+                            refreshBoardSquares(sq, hints);
                             mouseon();
                             showStatus("Selected " + p.toUpperCase() + game.toAlgebraic(sq.r,sq.c) +
                                 " -- release on target", "1;33");
@@ -1097,7 +1118,7 @@ function readPlayerInput() {
                         return { type: 'drag', from: from, to: sq };
                     }
                     pressSq = null;
-                    drawBoard(null, null);
+                    refreshBoardSquares(null, null);
                     drawMenuBar();
                     mouseon();
                 }
@@ -1488,10 +1509,9 @@ function animateMove(from, to, flash) {
 		}
 	}
 
-	// JXL images have baked-in backgrounds matching default colors only
 	var canJXL = jxlOk && darkBg === '44' && lightBg === '46';
 
-	if (canJXL)
+	if (jxlOk)
 		animateSlideJXL(from, to, piece);
 	else
 		animateSlideANSI(from, to, piece);
@@ -1507,7 +1527,7 @@ function animateMove(from, to, flash) {
 			// includes it (otherwise the rook erase mask wipes the king)
 			game.board[to.r][to.c] = piece;
 			drawSquare(to.r, to.c, null);
-			if (canJXL)
+			if (jxlOk)
 				animateSlideJXL(rookFrom, rookTo, rook);
 			else
 				animateSlideANSI(rookFrom, rookTo, rook);
@@ -1645,7 +1665,7 @@ function animateSlideANSI(from, to, piece) {
 
 		prevCol = cx;
 		prevRow = cy;
-		mswait(30);
+		mswait(80);
 	}
 
 	// Restore final position (full drawBoard follows)
@@ -1685,20 +1705,16 @@ function doPlayerMove(from, to) {
 
 // ── Startup screen ────────────────────────────────────────────────────────────
 // Returns false if the user pressed Q to quit, true otherwise.
-function runStartup() {
+function drawWelcomeScreen() {
     function rep(s, n) { var o = ''; for (var i = 0; i < n; i++) o += s; return o; }
-
     var RST = "\x1b[0m";
-    var BC  = "\x1b[1;36m";        // bright cyan — borders
-    var DSQ = "\x1b[1;33;44m";     // bright yellow on dark blue  (dark square)
-    var LSQ = "\x1b[1;32;46m";     // bright green  on dark cyan  (light square)
+    var BC  = "\x1b[1;36m";
+    var DSQ = "\x1b[1;33;44m";
+    var LSQ = "\x1b[1;32;46m";
     var tileColors = [DSQ,LSQ,DSQ,LSQ, DSQ,LSQ,DSQ,LSQ];
+    var TL = "\xC9", TR = "\xBB", BL = "\xC8", BR = "\xBC";
+    var VB = "\xBA", HB = "\xCD";
 
-    // CP437 box drawing chars sent as low-byte values (Synchronet truncates to low byte)
-    var TL = "\xC9", TR = "\xBB", BL = "\xC8", BR = "\xBC"; // ╔ ╗ ╚ ╝
-    var VB = "\xBA", HB = "\xCD";                            // ║ ═
-
-    // ── Box helpers ───────────────────────────────────────────────────────
     function hline(l, r, row) {
         console.gotoxy(1, row);
         console.print(BC + l + rep(HB, 78) + r + RST);
@@ -1709,78 +1725,74 @@ function runStartup() {
     }
     function blank(row) { brow(rep(" ", 78), row); }
 
-    // ── Static screen (rows 1-16) — callable for initial draw and redraw ──
-    function drawScreen() {
-        console.clear();
-        mouseon();
+    console.clear();
+    mouseon();
 
-        // Rows 1-2: chess board header strips (20 tiles × 4 chars = 80)
-        var pat1 = "", pat2 = "";
-        for (var i = 0; i < 20; i++) {
-            pat1 += ((i%2===0) ? "\x1b[44m" : "\x1b[46m") + "    ";
-            pat2 += ((i%2===0) ? "\x1b[46m" : "\x1b[44m") + "    ";
+    var pat1 = "", pat2 = "";
+    for (var i = 0; i < 20; i++) {
+        pat1 += ((i%2===0) ? "\x1b[44m" : "\x1b[46m") + "    ";
+        pat2 += ((i%2===0) ? "\x1b[46m" : "\x1b[44m") + "    ";
+    }
+    console.gotoxy(1,1); console.print(pat1 + RST);
+    console.gotoxy(1,2); console.print(pat2 + RST);
+
+    hline(TL, TR, 3);
+    blank(4);
+
+    var letters = "SYNCHESS";
+    function titleRow(showLetters) {
+        var s = rep(" ", 3);
+        for (var i = 0; i < 8; i++) {
+            s += tileColors[i];
+            s += showLetters ? "    " + letters[i] + "    " : rep(" ", 9);
+            s += RST;
         }
-        console.gotoxy(1,1); console.print(pat1 + RST);
-        console.gotoxy(1,2); console.print(pat2 + RST);
+        return s + rep(" ", 3);
+    }
+    brow(titleRow(false), 5);
+    brow(titleRow(true),  6);
+    brow(titleRow(false), 7);
+    blank(8);
 
-        hline(TL, TR, 3);
-        blank(4);
+    var uname   = user.alias || user.name || "Player";
+    var welcome = "Welcome, " + uname + "!";
+    var right   = "Chess for Synchronet BBS  |  v1.01";
+    var visLen  = welcome.length + 5 + right.length;
+    var lpad    = Math.max(0, Math.floor((78 - visLen) / 2));
+    var rpad    = Math.max(0, 78 - visLen - lpad);
+    var sub = rep(" ", lpad) +
+              "\x1b[1;33m" + welcome +
+              "  \x1b[0;36m|\x1b[0;37m  " +
+              right + RST +
+              rep(" ", rpad);
+    brow(sub, 9);
+    blank(10);
 
-        // Rows 5-7: 3-row big title
-        var letters = "SYNCHESS";
-        function titleRow(showLetters) {
-            var s = rep(" ", 3);
-            for (var i = 0; i < 8; i++) {
-                s += tileColors[i];
-                s += showLetters ? "    " + letters[i] + "    " : rep(" ", 9);
-                s += RST;
-            }
-            return s + rep(" ", 3);
-        }
-        brow(titleRow(false), 5);
-        brow(titleRow(true),  6);
-        brow(titleRow(false), 7);
-        blank(8);
-
-        // Row 9: subtitle
-        var uname   = user.alias || user.name || "Player";
-        var welcome = "Welcome, " + uname + "!";
-        var right   = "Chess for Synchronet BBS  |  v1.0";
-        var visLen  = welcome.length + 5 + right.length;
-        var lpad    = Math.max(0, Math.floor((78 - visLen) / 2));
-        var rpad    = Math.max(0, 78 - visLen - lpad);
-        var sub = rep(" ", lpad) +
-                  "\x1b[1;33m" + welcome +
-                  "  \x1b[0;36m|\x1b[0;37m  " +
-                  right + RST +
-                  rep(" ", rpad);
-        brow(sub, 9);
-        blank(10);
-
-        // Rows 11-12: piece images
-        var pieceStartCol = 21;
-        var pieceRow = ['R','N','B','Q','K','B','N','R'];
-        for (var row = 11; row <= 12; row++) {
-            console.gotoxy(1, row);
-            console.print(BC + VB + RST + rep(" ", 19));
-            for (var i = 0; i < 8; i++)
-                console.print(((i%2===0) ? "\x1b[44m" : "\x1b[46m") + rep(" ", cellW) + RST);
-            console.print(rep(" ", 19) + BC + VB + RST);
-        }
-        if (jxlOk) {
-            for (var i = 0; i < 8; i++)
-                drawPieceJXL(pieceRow[i], (i%2===0), pieceStartCol + i*cellW, 11);
-        }
-
-        blank(13);
-        hline(BL, BR, 14);
-
-        // Rows 15-16: footer strips
-        console.gotoxy(1,15); console.print(pat2 + RST);
-        console.gotoxy(1,16); console.print(pat1 + RST);
+    var pieceStartCol = 21;
+    var pieceRow = ['R','N','B','Q','K','B','N','R'];
+    for (var row = 11; row <= 12; row++) {
+        console.gotoxy(1, row);
+        console.print(BC + VB + RST + rep(" ", 19));
+        for (var i = 0; i < 8; i++)
+            console.print(((i%2===0) ? "\x1b[44m" : "\x1b[46m") + rep(" ", cellW) + RST);
+        console.print(rep(" ", 19) + BC + VB + RST);
+    }
+    if (jxlOk) {
+        for (var i = 0; i < 8; i++)
+            drawPieceJXL(pieceRow[i], (i%2===0), pieceStartCol + i*cellW, 11);
     }
 
-    drawScreen();
+    blank(13);
+    hline(BL, BR, 14);
+
+    console.gotoxy(1,15); console.print(pat2 + RST);
+    console.gotoxy(1,16); console.print(pat1 + RST);
+}
+
+function runStartup() {
+    var RST = "\x1b[0m";
+
+    drawWelcomeScreen();
 
     // ── Row 18: color selection ───────────────────────────────────────────
     var colorStr = "         \x01NPlay as:  " +
@@ -1845,7 +1857,7 @@ function runStartup() {
             var pkMap2 = {}; pkMap2[pkRow] = ' ';
             readOneKey(pkMap2);
             // Redraw startup screen
-            drawScreen();
+            drawWelcomeScreen();
             console.gotoxy(1, 18);
             console.print("\x1b[0;37m         Play as:  \x1b[1;33m" + chosenName + "\x1b[K\x1b[0m");
             console.gotoxy(4, 21);
@@ -1862,6 +1874,29 @@ function runStartup() {
     game.level = lv;
     console.print(RST);
     return true;
+}
+
+// ── Session lock ─────────────────────────────────────────────────────────────
+if (lockPath) {
+    var _lf = new File(lockPath);
+    if (_lf.open("r")) {
+        var _storedNode = parseInt(_lf.readAll()[0], 10) || 0;
+        _lf.close();
+        var _nl = system.node_list;
+        var _isLive = _storedNode > 0 && _storedNode !== bbs.node_num
+            && _storedNode <= _nl.length
+            && _nl[_storedNode - 1].useron === user.number;
+        if (_isLive) {
+            console.clear();
+            console.print("\x1b[1;31mSynChess is already running on node " + _storedNode + ".\r\n");
+            console.print("\x1b[0mOnly one session of SynChess may run at a time.\r\n");
+            mswait(3000);
+            js.exit();
+        }
+        (new File(lockPath)).remove();
+    }
+    var _wf = new File(lockPath);
+    if (_wf.open("w")) { _wf.writeln(bbs.node_num); _wf.close(); }
 }
 
 // ── Main ──────────────────────────────────────────────────────────────────────
@@ -1882,12 +1917,10 @@ while (keepPlaying && !console.aborted) {
     var hasSave = svf && svf.open("r");
     if (hasSave) svf.close();
     if (hasSave) {
-        console.clear();
-        console.gotoxy(3, 8);
-        console.print("\x1b[1;36mA saved game was found.\x1b[0m\r\n");
+        drawWelcomeScreen();
         var rk2 = readHotspotKey(
-            "   \x01H\x01Y@`(R)`R@\x01Nesume  \x01H\x01Y@`(N)`N@\x01New game  \x01H\x01Y@`(Q)`Q@\x01Nuit",
-            10
+            "   \x01H\x01Y@`(R)`R@\x01Nesume saved game  \x01H\x01Y@`(Q)`Q@\x01Nuit",
+            18
         );
         if (rk2 === 'Q') { keepPlaying = false; break; }
         if (rk2 === 'R') {
@@ -1897,8 +1930,6 @@ while (keepPlaying && !console.aborted) {
                 showStatus("Could not load save file. Starting new game.", "1;31");
                 mswait(1500); deleteSavedGame();
             }
-        } else {
-            deleteSavedGame();
         }
     }
 
@@ -2060,16 +2091,17 @@ while (keepPlaying && !console.aborted) {
         while (true) {
             showStatus(gameResult, gameResultColor);
             pa = readHotspotKey(
-                "\x01H\x01Y@`(P)`P@\x01CGN   \x01H\x01Y@`(A)`A@\x01Cgain   \x01H\x01Y@`(Q)`Q@\x01Cuit",
+                "\x01H\x01Y@`(V)`V@\x01Ciew/Download PGN   \x01H\x01Y@`(A)`A@\x01Cgain   \x01H\x01Y@`(Q)`Q@\x01Cuit",
                 INPUT_ROW
             );
-            if (pa === 'P') { exportPGN(); continue; }
+            if (pa === 'V') { exportPGN(); continue; }
             if (pa === 'A' || pa === 'Q') break;
         }
         keepPlaying = (pa === 'A');
     }
 }
 
+if (lockPath) (new File(lockPath)).remove();
 mouseoff();
 console.gotoxy(1, INPUT_ROW);
 console.print("\x1b[0mThanks for playing SynChess!  \x1b[K");
