@@ -259,10 +259,10 @@ static const struct {
 	const char *name;
 	const char *value;
 } default_sort_profiles[] = {
-	{ "Name",           "1" },
-	{ "Last Connected", "3,1" },
-	{ "Most Called",    "4,1" },
-	{ "Date Added",     "2,1" },
+	{ "Name",           "29,1" },
+	{ "Last Connected", "29,3,1" },
+	{ "Most Called",    "29,4,1" },
+	{ "Date Added",     "29,2,1" },
 };
 #define NUM_DEFAULT_SORT_PROFILES (sizeof(default_sort_profiles) / sizeof(default_sort_profiles[0]))
 
