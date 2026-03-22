@@ -2869,6 +2869,7 @@ int bitmap_drv_init_mode(int mode, int *width, int *height, int maxwidth, int ma
 			vstat.vmem->vmem[i].ch = 0;
 			vstat.vmem->vmem[i].legacy_attr = vstat.currattr;
 			vstat.vmem->vmem[i].font = default_font == -99 ? 0 : default_font;
+			vstat.vmem->vmem[i].hyperlink_id = 0;
 			bitmap_attr2palette_locked(vstat.currattr, &vstat.vmem->vmem[i].fg, &vstat.vmem->vmem[i].bg);
 		}
 	}
