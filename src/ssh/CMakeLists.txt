@@ -1,9 +1,33 @@
 cmake_minimum_required(VERSION 3.21)
-project(deuce-ssh VERSION 0.0 LANGUAGES C)
+project(deucessh VERSION 0.1 LANGUAGES C)
+
+option(DEUCESSH_BUILD_STATIC "Build static library" ON)
+option(DEUCESSH_BUILD_SHARED "Build shared library" ON)
+
+if(NOT DEUCESSH_BUILD_STATIC AND NOT DEUCESSH_BUILD_SHARED)
+	message(FATAL_ERROR "At least one of DEUCESSH_BUILD_STATIC or DEUCESSH_BUILD_SHARED must be ON")
+endif()
 
 find_package(OpenSSL REQUIRED)
 
-set(DEUCE_SSH_SOURCES
+# C11 threads: FreeBSD needs -lstdthreads, Linux/macOS have it in libc
+include(CheckCSourceCompiles)
+set(CMAKE_REQUIRED_FLAGS "-std=c17")
+check_c_source_compiles("
+	#include <threads.h>
+	int main(void) { mtx_t m; mtx_init(&m, mtx_plain); return 0; }
+" HAVE_THREADS_IN_LIBC)
+if(NOT HAVE_THREADS_IN_LIBC)
+	find_library(STDTHREADS_LIB stdthreads)
+	if(NOT STDTHREADS_LIB)
+		message(FATAL_ERROR "C11 <threads.h> not found in libc or libstdthreads")
+	endif()
+	set(THREADS_LINK_LIB ${STDTHREADS_LIB})
+else()
+	set(THREADS_LINK_LIB "")
+endif()
+
+set(DEUCESSH_SOURCES
 	ssh-arch.c ssh-trans.c ssh.c ssh-auth.c ssh-conn.c ssh-chan.c
 	kex/curve25519-sha256.c
 	kex/dh-gex-sha256.c
@@ -16,62 +40,111 @@ set(DEUCE_SSH_SOURCES
 	comp/none.c
 )
 
-set(DEUCE_SSH_HEADERS
-	deucessh.h ssh-arch.h ssh-trans.h ssh-auth.h ssh-conn.h ssh-chan.h portable.h
-	kex/curve25519-sha256.h kex/dh-gex-sha256.h
-	key_algo/ssh-ed25519.h key_algo/rsa-sha2-256.h
-	enc/aes256-ctr.h enc/none.h
-	mac/hmac-sha2-256.h mac/none.h
-	comp/none.h
+set(DEUCESSH_PUBLIC_HEADERS
+	deucessh.h deucessh-arch.h deucessh-auth.h deucessh-conn.h
+	deucessh-algorithms.h deucessh-portable.h
 )
 
-set(DEUCE_SSH_COMPILE_OPTIONS
+set(DEUCESSH_COMPILE_OPTIONS
 	$<$<OR:$<C_COMPILER_ID:Clang>,$<C_COMPILER_ID:AppleClang>,$<C_COMPILER_ID:GNU>>:
 		-Wall -Wpedantic -pedantic -Werror>
 	$<$<C_COMPILER_ID:MSVC>:
 		/W4>)
 
-# --- Static library (no visibility annotations) ---
+set(DEUCESSH_INSTALL_TARGETS "")
 
-add_library(deuce-ssh_static STATIC ${DEUCE_SSH_SOURCES})
-set_property(TARGET deuce-ssh_static PROPERTY C_STANDARD 17)
-set_property(TARGET deuce-ssh_static PROPERTY C_STANDARD_REQUIRED ON)
-set_property(TARGET deuce-ssh_static PROPERTY OUTPUT_NAME deuce-ssh)
-target_sources(deuce-ssh_static INTERFACE FILE_SET HEADERS FILES ${DEUCE_SSH_HEADERS})
-target_include_directories(deuce-ssh_static PUBLIC .)
-target_include_directories(deuce-ssh_static PRIVATE ${OPENSSL_INCLUDE_DIR})
-target_link_libraries(deuce-ssh_static INTERFACE ${OPENSSL_CRYPTO_LIBRARIES})
-target_link_libraries(deuce-ssh_static INTERFACE stdthreads)
-target_compile_definitions(deuce-ssh_static PRIVATE $<$<CONFIG:Release>:NDEBUG>)
-target_compile_options(deuce-ssh_static PRIVATE ${DEUCE_SSH_COMPILE_OPTIONS})
+# --- Static library ---
 
-# --- Shared library (visibility annotations + hidden default) ---
+if(DEUCESSH_BUILD_STATIC)
+	add_library(deucessh_static STATIC ${DEUCESSH_SOURCES})
+	add_library(deucessh::static ALIAS deucessh_static)
+	set_property(TARGET deucessh_static PROPERTY C_STANDARD 17)
+	set_property(TARGET deucessh_static PROPERTY C_STANDARD_REQUIRED ON)
+	set_property(TARGET deucessh_static PROPERTY OUTPUT_NAME deucessh)
+	target_include_directories(deucessh_static
+		PUBLIC
+			$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+			$<INSTALL_INTERFACE:include/deucessh>
+		PRIVATE
+			${OPENSSL_INCLUDE_DIR})
+	target_link_libraries(deucessh_static
+		INTERFACE ${OPENSSL_CRYPTO_LIBRARIES} ${THREADS_LINK_LIB})
+	target_compile_definitions(deucessh_static
+		PRIVATE $<$<CONFIG:Release>:NDEBUG>)
+	target_compile_options(deucessh_static PRIVATE ${DEUCESSH_COMPILE_OPTIONS})
+	list(APPEND DEUCESSH_INSTALL_TARGETS deucessh_static)
+endif()
 
-add_library(deuce-ssh_shared SHARED ${DEUCE_SSH_SOURCES})
-set_property(TARGET deuce-ssh_shared PROPERTY C_STANDARD 17)
-set_property(TARGET deuce-ssh_shared PROPERTY C_STANDARD_REQUIRED ON)
-set_property(TARGET deuce-ssh_shared PROPERTY OUTPUT_NAME deuce-ssh)
-set_property(TARGET deuce-ssh_shared PROPERTY POSITION_INDEPENDENT_CODE 1)
-target_sources(deuce-ssh_shared INTERFACE FILE_SET HEADERS FILES ${DEUCE_SSH_HEADERS})
-target_include_directories(deuce-ssh_shared PUBLIC .)
-target_include_directories(deuce-ssh_shared PRIVATE ${OPENSSL_INCLUDE_DIR})
-target_link_libraries(deuce-ssh_shared PRIVATE ${OPENSSL_CRYPTO_LIBRARIES})
-target_link_libraries(deuce-ssh_shared PRIVATE stdthreads)
-target_compile_definitions(deuce-ssh_shared
-	PRIVATE
-		DEUCE_SSH_SHARED
-		$<$<CONFIG:Release>:NDEBUG>)
-target_compile_options(deuce-ssh_shared PRIVATE
-	${DEUCE_SSH_COMPILE_OPTIONS}
-	$<$<OR:$<C_COMPILER_ID:Clang>,$<C_COMPILER_ID:AppleClang>,$<C_COMPILER_ID:GNU>>:
-		-fvisibility=hidden>)
+# --- Shared library ---
 
-# --- Test executables ---
+if(DEUCESSH_BUILD_SHARED)
+	add_library(deucessh_shared SHARED ${DEUCESSH_SOURCES})
+	add_library(deucessh::shared ALIAS deucessh_shared)
+	set_property(TARGET deucessh_shared PROPERTY C_STANDARD 17)
+	set_property(TARGET deucessh_shared PROPERTY C_STANDARD_REQUIRED ON)
+	set_property(TARGET deucessh_shared PROPERTY OUTPUT_NAME deucessh)
+	set_property(TARGET deucessh_shared PROPERTY POSITION_INDEPENDENT_CODE ON)
+	set_property(TARGET deucessh_shared PROPERTY VERSION ${PROJECT_VERSION})
+	set_property(TARGET deucessh_shared PROPERTY SOVERSION ${PROJECT_VERSION_MAJOR})
+	target_include_directories(deucessh_shared
+		PUBLIC
+			$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+			$<INSTALL_INTERFACE:include/deucessh>
+		PRIVATE
+			${OPENSSL_INCLUDE_DIR})
+	target_link_libraries(deucessh_shared
+		PRIVATE ${OPENSSL_CRYPTO_LIBRARIES} ${THREADS_LINK_LIB})
+	target_compile_definitions(deucessh_shared
+		PRIVATE
+			DSSH_SHARED
+			$<$<CONFIG:Release>:NDEBUG>)
+	target_compile_options(deucessh_shared PRIVATE
+		${DEUCESSH_COMPILE_OPTIONS}
+		$<$<OR:$<C_COMPILER_ID:Clang>,$<C_COMPILER_ID:AppleClang>,$<C_COMPILER_ID:GNU>>:
+			-fvisibility=hidden>)
+	list(APPEND DEUCESSH_INSTALL_TARGETS deucessh_shared)
+endif()
 
-add_executable(client EXCLUDE_FROM_ALL client.c)
-target_link_libraries(client PRIVATE deuce-ssh_static)
+# --- Install ---
 
-add_executable(server EXCLUDE_FROM_ALL server.c)
-target_link_libraries(server PRIVATE deuce-ssh_static)
+include(GNUInstallDirs)
+include(CMakePackageConfigHelpers)
 
-install(TARGETS deuce-ssh_static deuce-ssh_shared)
+install(TARGETS ${DEUCESSH_INSTALL_TARGETS}
+	EXPORT deucesshTargets
+	ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+	LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})
+
+install(FILES ${DEUCESSH_PUBLIC_HEADERS}
+	DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/deucessh)
+
+install(EXPORT deucesshTargets
+	FILE deucesshTargets.cmake
+	NAMESPACE deucessh::
+	DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/deucessh)
+
+write_basic_package_version_file(
+	${CMAKE_CURRENT_BINARY_DIR}/deucesshConfigVersion.cmake
+	VERSION ${PROJECT_VERSION}
+	COMPATIBILITY SameMajorVersion)
+
+configure_file(deucessh.pc.in
+	${CMAKE_CURRENT_BINARY_DIR}/deucessh.pc @ONLY)
+
+install(FILES
+	${CMAKE_CURRENT_SOURCE_DIR}/deucesshConfig.cmake
+	${CMAKE_CURRENT_BINARY_DIR}/deucesshConfigVersion.cmake
+	DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/deucessh)
+
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/deucessh.pc
+	DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig)
+
+# --- Test executables (not installed) ---
+
+if(DEUCESSH_BUILD_STATIC)
+	add_executable(client EXCLUDE_FROM_ALL client.c)
+	target_link_libraries(client PRIVATE deucessh_static)
+
+	add_executable(server EXCLUDE_FROM_ALL server.c)
+	target_link_libraries(server PRIVATE deucessh_static)
+endif()
