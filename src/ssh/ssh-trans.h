@@ -240,29 +240,29 @@ typedef struct deuce_ssh_transport_state_s {
  * Applications may register their own custom modules alongside or
  * instead of the library's built-in algorithms.
  */
-int deuce_ssh_transport_register_kex(deuce_ssh_kex kex);
-int deuce_ssh_transport_register_key_algo(deuce_ssh_key_algo key_algo);
-int deuce_ssh_transport_register_enc(deuce_ssh_enc enc);
-int deuce_ssh_transport_register_mac(deuce_ssh_mac mac);
-int deuce_ssh_transport_register_comp(deuce_ssh_comp comp);
-int deuce_ssh_transport_register_lang(deuce_ssh_language lang);
+DEUCE_SSH_PUBLIC int deuce_ssh_transport_register_kex(deuce_ssh_kex kex);
+DEUCE_SSH_PUBLIC int deuce_ssh_transport_register_key_algo(deuce_ssh_key_algo key_algo);
+DEUCE_SSH_PUBLIC int deuce_ssh_transport_register_enc(deuce_ssh_enc enc);
+DEUCE_SSH_PUBLIC int deuce_ssh_transport_register_mac(deuce_ssh_mac mac);
+DEUCE_SSH_PUBLIC int deuce_ssh_transport_register_comp(deuce_ssh_comp comp);
+DEUCE_SSH_PUBLIC int deuce_ssh_transport_register_lang(deuce_ssh_language lang);
 
 /*
  * Initialize transport state for a session.  Allocates packet buffers
  * sized to max_packet_size (pass 0 for the RFC minimum of 33280 bytes).
  * Locks the algorithm registry on first call.  Returns 0 on success.
  */
-int deuce_ssh_transport_init(deuce_ssh_session sess, size_t max_packet_size);
+DEUCE_SSH_PUBLIC int deuce_ssh_transport_init(deuce_ssh_session sess, size_t max_packet_size);
 
 /* Free all transport state (buffers, keys, contexts, mutexes). */
-void deuce_ssh_transport_cleanup(deuce_ssh_session sess);
+DEUCE_SSH_PUBLIC void deuce_ssh_transport_cleanup(deuce_ssh_session sess);
 
 /*
  * Perform SSH version exchange (RFC 4253 s4.2).
  * Sends our version string, receives and validates the peer's.
  * Must be called before kexinit.  Returns 0 on success.
  */
-int deuce_ssh_transport_version_exchange(deuce_ssh_session sess);
+DEUCE_SSH_PUBLIC int deuce_ssh_transport_version_exchange(deuce_ssh_session sess);
 
 /*
  * Send an SSH binary packet (RFC 4253 s6).
@@ -271,7 +271,7 @@ int deuce_ssh_transport_version_exchange(deuce_ssh_session sess);
  * If seq_out is not NULL, stores the packet's sequence number.
  * Returns 0 on success.
  */
-int deuce_ssh_transport_send_packet(deuce_ssh_session sess,
+DEUCE_SSH_PUBLIC int deuce_ssh_transport_send_packet(deuce_ssh_session sess,
     const uint8_t *payload, size_t payload_len, uint32_t *seq_out);
 
 /*
@@ -285,7 +285,7 @@ int deuce_ssh_transport_send_packet(deuce_ssh_session sess,
  * On success, *payload points into the session's rx_packet buffer
  * and is only valid until the next recv_packet call.
  */
-int deuce_ssh_transport_recv_packet(deuce_ssh_session sess,
+DEUCE_SSH_PUBLIC int deuce_ssh_transport_recv_packet(deuce_ssh_session sess,
     uint8_t *msg_type, uint8_t **payload, size_t *payload_len);
 
 /*
@@ -293,7 +293,7 @@ int deuce_ssh_transport_recv_packet(deuce_ssh_session sess,
  * Sends our KEXINIT, receives the peer's, and negotiates algorithms.
  * On failure, sends SSH_MSG_DISCONNECT.  Returns 0 on success.
  */
-int deuce_ssh_transport_kexinit(deuce_ssh_session sess);
+DEUCE_SSH_PUBLIC int deuce_ssh_transport_kexinit(deuce_ssh_session sess);
 
 /*
  * Run the selected key exchange algorithm (RFC 4253 s7).
@@ -301,7 +301,7 @@ int deuce_ssh_transport_kexinit(deuce_ssh_session sess);
  * exchange (e.g., ECDH_INIT/REPLY for curve25519-sha256).
  * Populates shared_secret and exchange_hash in the transport state.
  */
-int deuce_ssh_transport_kex(deuce_ssh_session sess);
+DEUCE_SSH_PUBLIC int deuce_ssh_transport_kex(deuce_ssh_session sess);
 
 /*
  * Exchange NEWKEYS and activate encryption (RFC 4253 s7.3).
@@ -309,7 +309,7 @@ int deuce_ssh_transport_kex(deuce_ssh_session sess);
  * using the KEX's hash algorithm, and initializes the cipher and
  * MAC contexts for both directions.  Returns 0 on success.
  */
-int deuce_ssh_transport_newkeys(deuce_ssh_session sess);
+DEUCE_SSH_PUBLIC int deuce_ssh_transport_newkeys(deuce_ssh_session sess);
 
 /*
  * Perform key re-exchange (RFC 4253 s9).
@@ -324,7 +324,7 @@ int deuce_ssh_transport_newkeys(deuce_ssh_session sess);
  *
  * Returns 0 on success.
  */
-int deuce_ssh_transport_rekey(deuce_ssh_session sess);
+DEUCE_SSH_PUBLIC int deuce_ssh_transport_rekey(deuce_ssh_session sess);
 
 /*
  * Returns true if the session needs rekeying (packet count has
@@ -333,14 +333,14 @@ int deuce_ssh_transport_rekey(deuce_ssh_session sess);
  * byte count or elapsed time) alongside the automatic packet-count
  * based rekey.
  */
-bool deuce_ssh_transport_rekey_needed(deuce_ssh_session sess);
+DEUCE_SSH_PUBLIC bool deuce_ssh_transport_rekey_needed(deuce_ssh_session sess);
 
 /*
  * Send SSH_MSG_UNIMPLEMENTED (RFC 4253 s11.4) in response to an
  * unrecognized message.  The rejected_seq is the sequence number of
  * the packet that was not understood.  Returns 0 on success.
  */
-int deuce_ssh_transport_send_unimplemented(deuce_ssh_session sess,
+DEUCE_SSH_PUBLIC int deuce_ssh_transport_send_unimplemented(deuce_ssh_session sess,
     uint32_t rejected_seq);
 
 /*
@@ -348,17 +348,17 @@ int deuce_ssh_transport_send_unimplemented(deuce_ssh_session sess,
  * The desc string is clamped to 230 bytes.  The send is best-effort
  * (errors are ignored since we're disconnecting).
  */
-int deuce_ssh_transport_disconnect(deuce_ssh_session sess,
+DEUCE_SSH_PUBLIC int deuce_ssh_transport_disconnect(deuce_ssh_session sess,
     uint32_t reason, const char *desc);
 
 /* Find a registered key algorithm by name.  Returns NULL if not found. */
-deuce_ssh_key_algo deuce_ssh_transport_find_key_algo(const char *name);
+DEUCE_SSH_PUBLIC deuce_ssh_key_algo deuce_ssh_transport_find_key_algo(const char *name);
 
 /* Query functions — return negotiated algorithm names or NULL. */
-const char *deuce_ssh_transport_get_remote_version(deuce_ssh_session sess);
-const char *deuce_ssh_transport_get_kex_name(deuce_ssh_session sess);
-const char *deuce_ssh_transport_get_hostkey_name(deuce_ssh_session sess);
-const char *deuce_ssh_transport_get_enc_name(deuce_ssh_session sess);
-const char *deuce_ssh_transport_get_mac_name(deuce_ssh_session sess);
+DEUCE_SSH_PUBLIC const char *deuce_ssh_transport_get_remote_version(deuce_ssh_session sess);
+DEUCE_SSH_PUBLIC const char *deuce_ssh_transport_get_kex_name(deuce_ssh_session sess);
+DEUCE_SSH_PUBLIC const char *deuce_ssh_transport_get_hostkey_name(deuce_ssh_session sess);
+DEUCE_SSH_PUBLIC const char *deuce_ssh_transport_get_enc_name(deuce_ssh_session sess);
+DEUCE_SSH_PUBLIC const char *deuce_ssh_transport_get_mac_name(deuce_ssh_session sess);
 
 #endif

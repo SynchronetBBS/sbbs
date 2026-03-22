@@ -58,7 +58,7 @@ typedef void (*deuce_ssh_auth_banner_cb)(
  * Sends SSH_MSG_SERVICE_REQUEST and waits for SERVICE_ACCEPT.
  * Returns 0 on success.
  */
-int deuce_ssh_auth_request_service(deuce_ssh_session sess, const char *service);
+DEUCE_SSH_PUBLIC int deuce_ssh_auth_request_service(deuce_ssh_session sess, const char *service);
 
 /*
  * Query available authentication methods by sending a "none"
@@ -68,7 +68,7 @@ int deuce_ssh_auth_request_service(deuce_ssh_session sess, const char *service);
  *       (e.g., "publickey,password,keyboard-interactive")
  *   <0 = error
  */
-int deuce_ssh_auth_get_methods(deuce_ssh_session sess,
+DEUCE_SSH_PUBLIC int deuce_ssh_auth_get_methods(deuce_ssh_session sess,
     const char *username, char *methods, size_t methods_sz);
 
 /*
@@ -99,7 +99,7 @@ typedef int (*deuce_ssh_auth_passwd_change_cb)(
  * authentication fails with DEUCE_SSH_ERROR_INIT.
  * Returns 0 on success, negative on failure or rejection.
  */
-int deuce_ssh_auth_password(deuce_ssh_session sess,
+DEUCE_SSH_PUBLIC int deuce_ssh_auth_password(deuce_ssh_session sess,
     const char *username, const char *password,
     deuce_ssh_auth_passwd_change_cb passwd_change_cb, void *passwd_change_cbdata);
 
@@ -109,7 +109,7 @@ int deuce_ssh_auth_password(deuce_ssh_session sess,
  * name, instruction, and prompts.  The callback provides responses.
  * Returns 0 on success, negative on failure or rejection.
  */
-int deuce_ssh_auth_keyboard_interactive(deuce_ssh_session sess,
+DEUCE_SSH_PUBLIC int deuce_ssh_auth_keyboard_interactive(deuce_ssh_session sess,
     const char *username, deuce_ssh_auth_kbi_prompt_cb prompt_cb,
     void *cbdata);
 
@@ -214,7 +214,7 @@ struct deuce_ssh_auth_server_cbs {
  *
  * Returns 0 on successful authentication.
  */
-int deuce_ssh_auth_server(deuce_ssh_session sess,
+DEUCE_SSH_PUBLIC int deuce_ssh_auth_server(deuce_ssh_session sess,
     const struct deuce_ssh_auth_server_cbs *cbs,
     uint8_t *username_out, size_t *username_out_len);
 
@@ -230,7 +230,7 @@ int deuce_ssh_auth_server(deuce_ssh_session sess,
  * algorithm (e.g., "ssh-ed25519", "rsa-sha2-256").
  * Returns 0 on success, negative on failure or rejection.
  */
-int deuce_ssh_auth_publickey(deuce_ssh_session sess,
+DEUCE_SSH_PUBLIC int deuce_ssh_auth_publickey(deuce_ssh_session sess,
     const char *username, const char *algo_name,
     deuce_ssh_key_algo_ctx *ctx);
 

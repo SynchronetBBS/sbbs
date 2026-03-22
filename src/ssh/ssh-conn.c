@@ -655,7 +655,7 @@ demux_thread_func(void *arg)
 	return 0;
 }
 
-int
+DEUCE_SSH_PUBLIC int
 deuce_ssh_session_start(deuce_ssh_session sess)
 {
 	if (sess->demux_running)
@@ -691,7 +691,7 @@ deuce_ssh_session_start(deuce_ssh_session sess)
 	return 0;
 }
 
-void
+DEUCE_SSH_PUBLIC void
 deuce_ssh_session_stop(deuce_ssh_session sess)
 {
 	if (!sess->demux_running && sess->channels == NULL)
@@ -727,7 +727,7 @@ deuce_ssh_session_stop(deuce_ssh_session sess)
  * Session accept — wait for incoming CHANNEL_OPEN
  * ================================================================ */
 
-int
+DEUCE_SSH_PUBLIC int
 deuce_ssh_session_accept(deuce_ssh_session sess,
     struct deuce_ssh_incoming_open **inc, int timeout_ms)
 {
@@ -766,7 +766,7 @@ deuce_ssh_session_accept(deuce_ssh_session sess,
 	return 0;
 }
 
-void
+DEUCE_SSH_PUBLIC void
 deuce_ssh_session_reject(deuce_ssh_session sess,
     struct deuce_ssh_incoming_open *inc, uint32_t reason_code,
     const char *description)
@@ -942,7 +942,7 @@ send_channel_request_wait(deuce_ssh_session sess,
  * High-level open functions
  * ================================================================ */
 
-int
+DEUCE_SSH_PUBLIC int
 deuce_ssh_session_open_shell(deuce_ssh_session sess,
     struct deuce_ssh_channel_s *ch,
     const struct deuce_ssh_pty_req *pty)
@@ -1001,7 +1001,7 @@ open_fail:
 	return res;
 }
 
-int
+DEUCE_SSH_PUBLIC int
 deuce_ssh_session_open_exec(deuce_ssh_session sess,
     struct deuce_ssh_channel_s *ch,
     const char *command)
@@ -1042,7 +1042,7 @@ open_fail:
 	return res;
 }
 
-int
+DEUCE_SSH_PUBLIC int
 deuce_ssh_channel_open_subsystem(deuce_ssh_session sess,
     struct deuce_ssh_channel_s *ch,
     const char *subsystem)
@@ -1087,7 +1087,7 @@ open_fail:
  * Server-side accept helpers
  * ================================================================ */
 
-int
+DEUCE_SSH_PUBLIC int
 deuce_ssh_channel_accept_raw(deuce_ssh_session sess,
     struct deuce_ssh_incoming_open *inc,
     struct deuce_ssh_channel_s *ch)
@@ -1167,7 +1167,7 @@ setup_reply(deuce_ssh_session sess, struct deuce_ssh_channel_s *ch,
 	return deuce_ssh_transport_send_packet(sess, msg, pos, NULL);
 }
 
-int
+DEUCE_SSH_PUBLIC int
 deuce_ssh_session_accept_channel(deuce_ssh_session sess,
     struct deuce_ssh_incoming_open *inc,
     struct deuce_ssh_channel_s *ch,
@@ -1474,7 +1474,7 @@ session_stderr_readable(struct deuce_ssh_channel_s *ch)
 	return avail;
 }
 
-int
+DEUCE_SSH_PUBLIC int
 deuce_ssh_session_poll(deuce_ssh_session sess,
     struct deuce_ssh_channel_s *ch, int events, int timeout_ms)
 {
@@ -1529,7 +1529,7 @@ deuce_ssh_session_poll(deuce_ssh_session sess,
 	}
 }
 
-ssize_t
+DEUCE_SSH_PUBLIC ssize_t
 deuce_ssh_session_read(deuce_ssh_session sess,
     struct deuce_ssh_channel_s *ch, uint8_t *buf, size_t bufsz)
 {
@@ -1544,7 +1544,7 @@ deuce_ssh_session_read(deuce_ssh_session sess,
 	return (ssize_t)n;
 }
 
-ssize_t
+DEUCE_SSH_PUBLIC ssize_t
 deuce_ssh_session_read_ext(deuce_ssh_session sess,
     struct deuce_ssh_channel_s *ch, uint8_t *buf, size_t bufsz)
 {
@@ -1559,7 +1559,7 @@ deuce_ssh_session_read_ext(deuce_ssh_session sess,
 	return (ssize_t)n;
 }
 
-ssize_t
+DEUCE_SSH_PUBLIC ssize_t
 deuce_ssh_session_write(deuce_ssh_session sess,
     struct deuce_ssh_channel_s *ch, const uint8_t *buf, size_t bufsz)
 {
@@ -1581,7 +1581,7 @@ deuce_ssh_session_write(deuce_ssh_session sess,
 	return (ssize_t)len;
 }
 
-ssize_t
+DEUCE_SSH_PUBLIC ssize_t
 deuce_ssh_session_write_ext(deuce_ssh_session sess,
     struct deuce_ssh_channel_s *ch, const uint8_t *buf, size_t bufsz)
 {
@@ -1604,7 +1604,7 @@ deuce_ssh_session_write_ext(deuce_ssh_session sess,
 	return (ssize_t)len;
 }
 
-int
+DEUCE_SSH_PUBLIC int
 deuce_ssh_session_read_signal(deuce_ssh_session sess,
     struct deuce_ssh_channel_s *ch, const char **signal_name)
 {
@@ -1621,7 +1621,7 @@ deuce_ssh_session_read_signal(deuce_ssh_session sess,
 	return 0;
 }
 
-int
+DEUCE_SSH_PUBLIC int
 deuce_ssh_session_close(deuce_ssh_session sess,
     struct deuce_ssh_channel_s *ch, uint32_t exit_code)
 {
@@ -1637,7 +1637,7 @@ deuce_ssh_session_close(deuce_ssh_session sess,
  * Poll / Read / Write — Raw channels (message-based)
  * ================================================================ */
 
-int
+DEUCE_SSH_PUBLIC int
 deuce_ssh_channel_poll(deuce_ssh_session sess,
     struct deuce_ssh_channel_s *ch, int events, int timeout_ms)
 {
@@ -1683,7 +1683,7 @@ deuce_ssh_channel_poll(deuce_ssh_session sess,
 	}
 }
 
-ssize_t
+DEUCE_SSH_PUBLIC ssize_t
 deuce_ssh_channel_read(deuce_ssh_session sess,
     struct deuce_ssh_channel_s *ch, uint8_t *buf, size_t bufsz)
 {
@@ -1696,7 +1696,7 @@ deuce_ssh_channel_read(deuce_ssh_session sess,
 	return n;
 }
 
-int
+DEUCE_SSH_PUBLIC int
 deuce_ssh_channel_write(deuce_ssh_session sess,
     struct deuce_ssh_channel_s *ch, const uint8_t *buf, size_t len)
 {
@@ -1708,7 +1708,7 @@ deuce_ssh_channel_write(deuce_ssh_session sess,
 	return deuce_ssh_conn_send_data(sess, ch, buf, len);
 }
 
-int
+DEUCE_SSH_PUBLIC int
 deuce_ssh_channel_close(deuce_ssh_session sess,
     struct deuce_ssh_channel_s *ch)
 {
@@ -1723,7 +1723,7 @@ deuce_ssh_channel_close(deuce_ssh_session sess,
  * Window change (client-side)
  * ================================================================ */
 
-int
+DEUCE_SSH_PUBLIC int
 deuce_ssh_session_send_signal(deuce_ssh_session sess,
     struct deuce_ssh_channel_s *ch, const char *signal_name)
 {
@@ -1749,7 +1749,7 @@ deuce_ssh_session_send_signal(deuce_ssh_session sess,
 	return res;
 }
 
-int
+DEUCE_SSH_PUBLIC int
 deuce_ssh_session_send_window_change(deuce_ssh_session sess,
     struct deuce_ssh_channel_s *ch,
     uint32_t cols, uint32_t rows, uint32_t wpx, uint32_t hpx)

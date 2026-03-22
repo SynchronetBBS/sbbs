@@ -154,7 +154,7 @@ parse_userauth_prefix(const uint8_t *payload, size_t payload_len,
  * Server-side authentication loop
  * ================================================================ */
 
-int
+DEUCE_SSH_PUBLIC int
 deuce_ssh_auth_server(deuce_ssh_session sess,
     const struct deuce_ssh_auth_server_cbs *cbs,
     uint8_t *username_out, size_t *username_out_len)
@@ -451,7 +451,7 @@ done:
  * Client-side authentication
  * ================================================================ */
 
-int
+DEUCE_SSH_PUBLIC int
 deuce_ssh_auth_request_service(deuce_ssh_session sess, const char *service)
 {
 	size_t slen = strlen(service);
@@ -485,7 +485,7 @@ deuce_ssh_auth_request_service(deuce_ssh_session sess, const char *service)
 	return 0;
 }
 
-int
+DEUCE_SSH_PUBLIC int
 deuce_ssh_auth_get_methods(deuce_ssh_session sess,
     const char *username, char *methods, size_t methods_sz)
 {
@@ -597,7 +597,7 @@ send_password_request(deuce_ssh_session sess,
 	return res;
 }
 
-int
+DEUCE_SSH_PUBLIC int
 deuce_ssh_auth_password(deuce_ssh_session sess,
     const char *username, const char *password,
     deuce_ssh_auth_passwd_change_cb passwd_change_cb, void *passwd_change_cbdata)
@@ -676,7 +676,7 @@ deuce_ssh_auth_password(deuce_ssh_session sess,
 	}
 }
 
-int
+DEUCE_SSH_PUBLIC int
 deuce_ssh_auth_keyboard_interactive(deuce_ssh_session sess,
     const char *username, deuce_ssh_auth_kbi_prompt_cb prompt_cb,
     void *cbdata)
@@ -867,7 +867,7 @@ deuce_ssh_auth_keyboard_interactive(deuce_ssh_session sess,
 	}
 }
 
-int
+DEUCE_SSH_PUBLIC int
 deuce_ssh_auth_publickey(deuce_ssh_session sess,
     const char *username, const char *algo_name,
     deuce_ssh_key_algo_ctx *ctx)

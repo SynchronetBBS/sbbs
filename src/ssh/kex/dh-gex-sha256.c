@@ -456,14 +456,14 @@ kex_cleanup(deuce_ssh_session sess)
 {
 }
 
-void
+DEUCE_SSH_PUBLIC void
 deuce_ssh_dh_gex_set_provider(deuce_ssh_session sess,
     struct deuce_ssh_dh_gex_provider *provider)
 {
 	sess->trans.kex_ctx = provider;
 }
 
-int
+DEUCE_SSH_PUBLIC int
 register_dh_gex_sha256(void)
 {
 	struct deuce_ssh_kex_s *kex = malloc(sizeof(*kex) + KEX_NAME_LEN + 1);

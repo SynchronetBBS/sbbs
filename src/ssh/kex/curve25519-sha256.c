@@ -419,7 +419,7 @@ kex_cleanup(deuce_ssh_session sess)
 	return;
 }
 
-int
+DEUCE_SSH_PUBLIC int
 register_curve25519_sha256(void)
 {
 	struct deuce_ssh_kex_s *kex = malloc(sizeof(*kex) + KEX_NAME_LEN + 1);

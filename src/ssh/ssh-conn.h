@@ -137,14 +137,14 @@ struct deuce_ssh_server_session_cbs {
  * Start the demux thread.  Call after handshake and auth are complete.
  * Returns 0 on success.
  */
-int deuce_ssh_session_start(deuce_ssh_session sess);
+DEUCE_SSH_PUBLIC int deuce_ssh_session_start(deuce_ssh_session sess);
 
 /*
  * Stop the demux thread and free all channel/demux resources.
  * Called automatically by deuce_ssh_session_cleanup() if the demux
  * was started.  Safe to call multiple times.
  */
-void deuce_ssh_session_stop(deuce_ssh_session sess);
+DEUCE_SSH_PUBLIC void deuce_ssh_session_stop(deuce_ssh_session sess);
 
 /*
  * Wait for an incoming CHANNEL_OPEN from the peer.
@@ -152,14 +152,14 @@ void deuce_ssh_session_stop(deuce_ssh_session sess);
  * timeout_ms: -1 = block, 0 = non-blocking.
  * The caller must accept, reject, or free the incoming open.
  */
-int deuce_ssh_session_accept(deuce_ssh_session sess,
+DEUCE_SSH_PUBLIC int deuce_ssh_session_accept(deuce_ssh_session sess,
     struct deuce_ssh_incoming_open **inc, int timeout_ms);
 
 /*
  * Reject an incoming channel open.  Sends CHANNEL_OPEN_FAILURE
  * and frees the incoming open struct.
  */
-void deuce_ssh_session_reject(deuce_ssh_session sess,
+DEUCE_SSH_PUBLIC void deuce_ssh_session_reject(deuce_ssh_session sess,
     struct deuce_ssh_incoming_open *inc, uint32_t reason_code,
     const char *description);
 
@@ -170,7 +170,7 @@ void deuce_ssh_session_reject(deuce_ssh_session sess,
  * Sends CHANNEL_OPEN + pty-req + shell, waits for confirmations.
  * On success, ch is ready for session_read/write/poll.
  */
-int deuce_ssh_session_open_shell(deuce_ssh_session sess,
+DEUCE_SSH_PUBLIC int deuce_ssh_session_open_shell(deuce_ssh_session sess,
     struct deuce_ssh_channel_s *ch,
     const struct deuce_ssh_pty_req *pty);
 
@@ -178,7 +178,7 @@ int deuce_ssh_session_open_shell(deuce_ssh_session sess,
  * Open an exec session (no PTY).
  * Sends CHANNEL_OPEN + exec, waits for confirmations.
  */
-int deuce_ssh_session_open_exec(deuce_ssh_session sess,
+DEUCE_SSH_PUBLIC int deuce_ssh_session_open_exec(deuce_ssh_session sess,
     struct deuce_ssh_channel_s *ch,
     const char *command);
 
@@ -186,7 +186,7 @@ int deuce_ssh_session_open_exec(deuce_ssh_session sess,
  * Open a raw channel for a subsystem.
  * Sends CHANNEL_OPEN + subsystem, waits for confirmations.
  */
-int deuce_ssh_channel_open_subsystem(deuce_ssh_session sess,
+DEUCE_SSH_PUBLIC int deuce_ssh_channel_open_subsystem(deuce_ssh_session sess,
     struct deuce_ssh_channel_s *ch,
     const char *subsystem);
 
@@ -199,7 +199,7 @@ int deuce_ssh_channel_open_subsystem(deuce_ssh_session sess,
  * and *request_data is the command/subsystem name (for exec/subsystem).
  * ch is ready for session_read/write/poll.
  */
-int deuce_ssh_session_accept_channel(deuce_ssh_session sess,
+DEUCE_SSH_PUBLIC int deuce_ssh_session_accept_channel(deuce_ssh_session sess,
     struct deuce_ssh_incoming_open *inc,
     struct deuce_ssh_channel_s *ch,
     const struct deuce_ssh_server_session_cbs *cbs,
@@ -208,22 +208,22 @@ int deuce_ssh_session_accept_channel(deuce_ssh_session sess,
 /*
  * Accept an incoming channel as a raw (message-based) channel.
  */
-int deuce_ssh_channel_accept_raw(deuce_ssh_session sess,
+DEUCE_SSH_PUBLIC int deuce_ssh_channel_accept_raw(deuce_ssh_session sess,
     struct deuce_ssh_incoming_open *inc,
     struct deuce_ssh_channel_s *ch);
 
 /* --- Session channel I/O (stream-based) --- */
 
-int deuce_ssh_session_poll(deuce_ssh_session sess,
+DEUCE_SSH_PUBLIC int deuce_ssh_session_poll(deuce_ssh_session sess,
     struct deuce_ssh_channel_s *ch, int events, int timeout_ms);
 
-ssize_t deuce_ssh_session_read(deuce_ssh_session sess,
+DEUCE_SSH_PUBLIC ssize_t deuce_ssh_session_read(deuce_ssh_session sess,
     struct deuce_ssh_channel_s *ch, uint8_t *buf, size_t bufsz);
 
-ssize_t deuce_ssh_session_read_ext(deuce_ssh_session sess,
+DEUCE_SSH_PUBLIC ssize_t deuce_ssh_session_read_ext(deuce_ssh_session sess,
     struct deuce_ssh_channel_s *ch, uint8_t *buf, size_t bufsz);
 
-ssize_t deuce_ssh_session_write(deuce_ssh_session sess,
+DEUCE_SSH_PUBLIC ssize_t deuce_ssh_session_write(deuce_ssh_session sess,
     struct deuce_ssh_channel_s *ch, const uint8_t *buf, size_t bufsz);
 
 /*
@@ -231,22 +231,22 @@ ssize_t deuce_ssh_session_write(deuce_ssh_session sess,
  * Same semantics as session_write — returns bytes written (may be
  * short), 0 if window full, negative on error.
  */
-ssize_t deuce_ssh_session_write_ext(deuce_ssh_session sess,
+DEUCE_SSH_PUBLIC ssize_t deuce_ssh_session_write_ext(deuce_ssh_session sess,
     struct deuce_ssh_channel_s *ch, const uint8_t *buf, size_t bufsz);
 
-int deuce_ssh_session_read_signal(deuce_ssh_session sess,
+DEUCE_SSH_PUBLIC int deuce_ssh_session_read_signal(deuce_ssh_session sess,
     struct deuce_ssh_channel_s *ch, const char **signal_name);
 
 /*
  * Graceful session close: sends exit-status + EOF + CLOSE.
  * Unregisters the channel and frees buffers.
  */
-int deuce_ssh_session_close(deuce_ssh_session sess,
+DEUCE_SSH_PUBLIC int deuce_ssh_session_close(deuce_ssh_session sess,
     struct deuce_ssh_channel_s *ch, uint32_t exit_code);
 
 /* --- Raw channel I/O (message-based) --- */
 
-int deuce_ssh_channel_poll(deuce_ssh_session sess,
+DEUCE_SSH_PUBLIC int deuce_ssh_channel_poll(deuce_ssh_session sess,
     struct deuce_ssh_channel_s *ch, int events, int timeout_ms);
 
 /*
@@ -255,7 +255,7 @@ int deuce_ssh_channel_poll(deuce_ssh_session sess,
  * stays queued).  Pass buf=NULL, bufsz=0 to peek at the next
  * message size without consuming it.
  */
-ssize_t deuce_ssh_channel_read(deuce_ssh_session sess,
+DEUCE_SSH_PUBLIC ssize_t deuce_ssh_channel_read(deuce_ssh_session sess,
     struct deuce_ssh_channel_s *ch, uint8_t *buf, size_t bufsz);
 
 /*
@@ -263,14 +263,14 @@ ssize_t deuce_ssh_channel_read(deuce_ssh_session sess,
  * Returns DEUCE_SSH_ERROR_TOOLONG if the message exceeds the remote
  * window or max packet size.  No partial sends.
  */
-int deuce_ssh_channel_write(deuce_ssh_session sess,
+DEUCE_SSH_PUBLIC int deuce_ssh_channel_write(deuce_ssh_session sess,
     struct deuce_ssh_channel_s *ch, const uint8_t *buf, size_t len);
 
 /*
  * Close a raw channel: sends EOF + CLOSE.
  * Unregisters the channel and frees buffers.
  */
-int deuce_ssh_channel_close(deuce_ssh_session sess,
+DEUCE_SSH_PUBLIC int deuce_ssh_channel_close(deuce_ssh_session sess,
     struct deuce_ssh_channel_s *ch);
 
 /* --- Window change (client-side, after open) --- */
@@ -280,10 +280,10 @@ int deuce_ssh_channel_close(deuce_ssh_session sess,
  * signal_name is without the "SIG" prefix (e.g., "INT", "TERM", "USR1").
  * Sends CHANNEL_REQUEST "signal" with want_reply=false.
  */
-int deuce_ssh_session_send_signal(deuce_ssh_session sess,
+DEUCE_SSH_PUBLIC int deuce_ssh_session_send_signal(deuce_ssh_session sess,
     struct deuce_ssh_channel_s *ch, const char *signal_name);
 
-int deuce_ssh_session_send_window_change(deuce_ssh_session sess,
+DEUCE_SSH_PUBLIC int deuce_ssh_session_send_window_change(deuce_ssh_session sess,
     struct deuce_ssh_channel_s *ch,
     uint32_t cols, uint32_t rows, uint32_t wpx, uint32_t hpx);
 

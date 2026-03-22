@@ -22,9 +22,9 @@ struct deuce_ssh_dh_gex_provider {
  * Must be called before key exchange on the server side.
  * The provider struct must remain valid for the session's lifetime.
  */
-void deuce_ssh_dh_gex_set_provider(deuce_ssh_session sess,
+DEUCE_SSH_PUBLIC void deuce_ssh_dh_gex_set_provider(deuce_ssh_session sess,
     struct deuce_ssh_dh_gex_provider *provider);
 
-int register_dh_gex_sha256(void);
+DEUCE_SSH_PUBLIC int register_dh_gex_sha256(void);
 
 #endif

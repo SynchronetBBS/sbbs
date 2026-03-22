@@ -14,7 +14,7 @@ cleanup(deuce_ssh_mac_ctx *ctx)
 {
 }
 
-int
+DEUCE_SSH_PUBLIC int
 register_none_mac(void)
 {
 	static const char name[] = "none";

@@ -3,7 +3,7 @@
 #include "deucessh.h"
 #include "ssh-conn.h"
 
-int
+DEUCE_SSH_PUBLIC int
 deuce_ssh_session_init(deuce_ssh_session sess)
 {
 	int res = mtx_init(&sess->mtx, mtx_plain);
@@ -24,7 +24,7 @@ deuce_ssh_session_init(deuce_ssh_session sess)
 	return 0;
 }
 
-bool
+DEUCE_SSH_PUBLIC bool
 deuce_ssh_session_terminate(deuce_ssh_session sess)
 {
 	bool t = true;
@@ -35,7 +35,7 @@ deuce_ssh_session_terminate(deuce_ssh_session sess)
 	return false;
 }
 
-void
+DEUCE_SSH_PUBLIC void
 deuce_ssh_session_cleanup(deuce_ssh_session sess)
 {
 	deuce_ssh_session_terminate(sess);

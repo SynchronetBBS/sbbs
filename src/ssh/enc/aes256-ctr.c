@@ -62,7 +62,7 @@ cleanup(deuce_ssh_enc_ctx *ctx)
 	}
 }
 
-int
+DEUCE_SSH_PUBLIC int
 register_aes256_ctr(void)
 {
 	static const char name[] = AES256_CTR_NAME;

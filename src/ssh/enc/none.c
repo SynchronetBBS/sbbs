@@ -20,7 +20,7 @@ cleanup(deuce_ssh_enc_ctx *ctx)
 {
 }
 
-int
+DEUCE_SSH_PUBLIC int
 register_none_enc(void)
 {
 	static const char name[] = "none";

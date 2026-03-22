@@ -179,7 +179,7 @@ cleanup(deuce_ssh_key_algo_ctx *ctx)
 	}
 }
 
-int
+DEUCE_SSH_PUBLIC int
 register_ssh_ed25519(void)
 {
 	struct deuce_ssh_key_algo_s *ka = malloc(sizeof(*ka) + ED25519_NAME_LEN + 1);
@@ -196,7 +196,7 @@ register_ssh_ed25519(void)
 	return deuce_ssh_transport_register_key_algo(ka);
 }
 
-int
+DEUCE_SSH_PUBLIC int
 ssh_ed25519_load_key_file(deuce_ssh_session sess, const char *path)
 {
 	FILE *fp = fopen(path, "r");
@@ -230,7 +230,7 @@ ssh_ed25519_load_key_file(deuce_ssh_session sess, const char *path)
 	return 0;
 }
 
-int
+DEUCE_SSH_PUBLIC int
 ssh_ed25519_generate_key(deuce_ssh_session sess)
 {
 	EVP_PKEY *pkey = NULL;

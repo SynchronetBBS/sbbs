@@ -177,7 +177,7 @@ version_tx(deuce_ssh_session sess)
 	return 0;
 }
 
-deuce_ssh_key_algo
+DEUCE_SSH_PUBLIC deuce_ssh_key_algo
 deuce_ssh_transport_find_key_algo(const char *name)
 {
 	for (deuce_ssh_key_algo ka = gconf.key_algo_head; ka != NULL; ka = ka->next) {
@@ -187,37 +187,37 @@ deuce_ssh_transport_find_key_algo(const char *name)
 	return NULL;
 }
 
-const char *
+DEUCE_SSH_PUBLIC const char *
 deuce_ssh_transport_get_remote_version(deuce_ssh_session sess)
 {
 	return sess->trans.remote_id_str;
 }
 
-const char *
+DEUCE_SSH_PUBLIC const char *
 deuce_ssh_transport_get_kex_name(deuce_ssh_session sess)
 {
 	return sess->trans.kex_selected ? sess->trans.kex_selected->name : NULL;
 }
 
-const char *
+DEUCE_SSH_PUBLIC const char *
 deuce_ssh_transport_get_hostkey_name(deuce_ssh_session sess)
 {
 	return sess->trans.key_algo_selected ? sess->trans.key_algo_selected->name : NULL;
 }
 
-const char *
+DEUCE_SSH_PUBLIC const char *
 deuce_ssh_transport_get_enc_name(deuce_ssh_session sess)
 {
 	return sess->trans.enc_c2s_selected ? sess->trans.enc_c2s_selected->name : NULL;
 }
 
-const char *
+DEUCE_SSH_PUBLIC const char *
 deuce_ssh_transport_get_mac_name(deuce_ssh_session sess)
 {
 	return sess->trans.mac_c2s_selected ? sess->trans.mac_c2s_selected->name : NULL;
 }
 
-int
+DEUCE_SSH_PUBLIC int
 deuce_ssh_transport_version_exchange(deuce_ssh_session sess)
 {
 	int res = version_tx(sess);
@@ -230,7 +230,7 @@ deuce_ssh_transport_version_exchange(deuce_ssh_session sess)
  * Rekeying (RFC 4253 s9)
  * ================================================================ */
 
-bool
+DEUCE_SSH_PUBLIC bool
 deuce_ssh_transport_rekey_needed(deuce_ssh_session sess)
 {
 	if (sess->trans.tx_since_rekey >= DEUCE_SSH_REKEY_SOFT_LIMIT ||
@@ -244,7 +244,7 @@ deuce_ssh_transport_rekey_needed(deuce_ssh_session sess)
 	return false;
 }
 
-int
+DEUCE_SSH_PUBLIC int
 deuce_ssh_transport_rekey(deuce_ssh_session sess)
 {
 	/*
@@ -290,7 +290,7 @@ deuce_ssh_transport_rekey(deuce_ssh_session sess)
  * SSH_MSG_UNIMPLEMENTED (RFC 4253 s11.4)
  * ================================================================ */
 
-int
+DEUCE_SSH_PUBLIC int
 deuce_ssh_transport_send_unimplemented(deuce_ssh_session sess,
     uint32_t rejected_seq)
 {
@@ -305,7 +305,7 @@ deuce_ssh_transport_send_unimplemented(deuce_ssh_session sess,
  * SSH_MSG_DISCONNECT (RFC 4253 s11.1)
  * ================================================================ */
 
-int
+DEUCE_SSH_PUBLIC int
 deuce_ssh_transport_disconnect(deuce_ssh_session sess,
     uint32_t reason, const char *desc)
 {
@@ -403,7 +403,7 @@ rx_mac_size(deuce_ssh_session sess)
 	return mac->digest_size;
 }
 
-int
+DEUCE_SSH_PUBLIC int
 deuce_ssh_transport_send_packet(deuce_ssh_session sess,
     const uint8_t *payload, size_t payload_len, uint32_t *seq_out)
 {
@@ -643,7 +643,7 @@ rx_done:
  *   SSH_MSG_UNIMPLEMENTED (3) — silently discarded (TODO: needs design work)
  *   SSH_MSG_DISCONNECT (1)    — sets terminate, returns error
  */
-int
+DEUCE_SSH_PUBLIC int
 deuce_ssh_transport_recv_packet(deuce_ssh_session sess,
     uint8_t *msg_type, uint8_t **payload, size_t *payload_len)
 {
@@ -849,7 +849,7 @@ serialize_namelist_from_str(const char *str, uint8_t *buf, size_t bufsz, size_t 
 	*pos += len;
 }
 
-int
+DEUCE_SSH_PUBLIC int
 deuce_ssh_transport_kexinit(deuce_ssh_session sess)
 {
 	size_t kexinit_bufsz = sess->trans.packet_buf_sz;
@@ -1068,7 +1068,7 @@ deuce_ssh_transport_kexinit(deuce_ssh_session sess)
  * Key exchange (RFC 4253 s7)
  * ================================================================ */
 
-int
+DEUCE_SSH_PUBLIC int
 deuce_ssh_transport_kex(deuce_ssh_session sess)
 {
 	if (sess->trans.kex_selected == NULL || sess->trans.kex_selected->handler == NULL)
@@ -1136,7 +1136,7 @@ derive_key(const char *hash_name,
 	return 0;
 }
 
-int
+DEUCE_SSH_PUBLIC int
 deuce_ssh_transport_newkeys(deuce_ssh_session sess)
 {
 	/*
@@ -1315,7 +1315,7 @@ keys_cleanup:
  * Init / cleanup / registration
  * ================================================================ */
 
-int
+DEUCE_SSH_PUBLIC int
 deuce_ssh_transport_init(deuce_ssh_session sess, size_t max_packet_size)
 {
 	gconf.used = true;
@@ -1386,7 +1386,7 @@ deuce_ssh_transport_init(deuce_ssh_session sess, size_t max_packet_size)
 	return 0;
 }
 
-void
+DEUCE_SSH_PUBLIC void
 deuce_ssh_transport_cleanup(deuce_ssh_session sess)
 {
 	if (sess->trans.kex_selected) {
@@ -1472,7 +1472,7 @@ deuce_ssh_transport_cleanup(deuce_ssh_session sess)
 	}
 }
 
-int
+DEUCE_SSH_PUBLIC int
 deuce_ssh_transport_register_kex(deuce_ssh_kex kex)
 {
 	if (gconf.used)
@@ -1492,7 +1492,7 @@ deuce_ssh_transport_register_kex(deuce_ssh_kex kex)
 	return 0;
 }
 
-int
+DEUCE_SSH_PUBLIC int
 deuce_ssh_transport_register_key_algo(deuce_ssh_key_algo key_algo)
 {
 	if (gconf.used)
@@ -1512,7 +1512,7 @@ deuce_ssh_transport_register_key_algo(deuce_ssh_key_algo key_algo)
 	return 0;
 }
 
-int
+DEUCE_SSH_PUBLIC int
 deuce_ssh_transport_register_enc(deuce_ssh_enc enc)
 {
 	if (gconf.used)
@@ -1532,7 +1532,7 @@ deuce_ssh_transport_register_enc(deuce_ssh_enc enc)
 	return 0;
 }
 
-int
+DEUCE_SSH_PUBLIC int
 deuce_ssh_transport_register_mac(deuce_ssh_mac mac)
 {
 	if (gconf.used)
@@ -1552,7 +1552,7 @@ deuce_ssh_transport_register_mac(deuce_ssh_mac mac)
 	return 0;
 }
 
-int
+DEUCE_SSH_PUBLIC int
 deuce_ssh_transport_register_comp(deuce_ssh_comp comp)
 {
 	if (gconf.used)
@@ -1572,7 +1572,7 @@ deuce_ssh_transport_register_comp(deuce_ssh_comp comp)
 	return 0;
 }
 
-int
+DEUCE_SSH_PUBLIC int
 deuce_ssh_transport_register_lang(deuce_ssh_language lang)
 {
 	if (gconf.used)
@@ -1592,7 +1592,7 @@ deuce_ssh_transport_register_lang(deuce_ssh_language lang)
 	return 0;
 }
 
-int
+DEUCE_SSH_PUBLIC int
 deuce_ssh_transport_set_callbacks(deuce_ssh_transport_io_cb tx, deuce_ssh_transport_io_cb rx, deuce_ssh_transport_rxline_cb rx_line, deuce_ssh_transport_extra_line_cb extra_line_cb)
 {
 	if (gconf.used)

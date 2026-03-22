@@ -12,7 +12,7 @@
  * Circular byte buffer
  * ================================================================ */
 
-int
+DEUCE_SSH_PRIVATE int
 deuce_ssh_bytebuf_init(struct deuce_ssh_bytebuf *b, size_t capacity)
 {
 	b->data = malloc(capacity);
@@ -26,7 +26,7 @@ deuce_ssh_bytebuf_init(struct deuce_ssh_bytebuf *b, size_t capacity)
 	return 0;
 }
 
-void
+DEUCE_SSH_PRIVATE void
 deuce_ssh_bytebuf_free(struct deuce_ssh_bytebuf *b)
 {
 	free(b->data);
@@ -37,7 +37,7 @@ deuce_ssh_bytebuf_free(struct deuce_ssh_bytebuf *b)
 	b->used = 0;
 }
 
-size_t
+DEUCE_SSH_PRIVATE size_t
 deuce_ssh_bytebuf_write(struct deuce_ssh_bytebuf *b,
     const uint8_t *data, size_t len)
 {
@@ -61,7 +61,7 @@ deuce_ssh_bytebuf_write(struct deuce_ssh_bytebuf *b,
 	return len;
 }
 
-size_t
+DEUCE_SSH_PRIVATE size_t
 deuce_ssh_bytebuf_read(struct deuce_ssh_bytebuf *b,
     uint8_t *buf, size_t bufsz, size_t limit)
 {
@@ -86,13 +86,13 @@ deuce_ssh_bytebuf_read(struct deuce_ssh_bytebuf *b,
 	return avail;
 }
 
-size_t
+DEUCE_SSH_PRIVATE size_t
 deuce_ssh_bytebuf_available(const struct deuce_ssh_bytebuf *b)
 {
 	return b->used;
 }
 
-size_t
+DEUCE_SSH_PRIVATE size_t
 deuce_ssh_bytebuf_free_space(const struct deuce_ssh_bytebuf *b)
 {
 	return b->capacity - b->used;
@@ -102,7 +102,7 @@ deuce_ssh_bytebuf_free_space(const struct deuce_ssh_bytebuf *b)
  * Message queue
  * ================================================================ */
 
-void
+DEUCE_SSH_PRIVATE void
 deuce_ssh_msgqueue_init(struct deuce_ssh_msgqueue *q)
 {
 	q->head = NULL;
@@ -111,7 +111,7 @@ deuce_ssh_msgqueue_init(struct deuce_ssh_msgqueue *q)
 	q->count = 0;
 }
 
-void
+DEUCE_SSH_PRIVATE void
 deuce_ssh_msgqueue_free(struct deuce_ssh_msgqueue *q)
 {
 	struct deuce_ssh_msgqueue_entry *e = q->head;
@@ -126,7 +126,7 @@ deuce_ssh_msgqueue_free(struct deuce_ssh_msgqueue *q)
 	q->count = 0;
 }
 
-int
+DEUCE_SSH_PRIVATE int
 deuce_ssh_msgqueue_push(struct deuce_ssh_msgqueue *q,
     const uint8_t *data, size_t len)
 {
@@ -147,7 +147,7 @@ deuce_ssh_msgqueue_push(struct deuce_ssh_msgqueue *q,
 	return 0;
 }
 
-size_t
+DEUCE_SSH_PRIVATE size_t
 deuce_ssh_msgqueue_peek_size(const struct deuce_ssh_msgqueue *q)
 {
 	if (q->head == NULL)
@@ -155,7 +155,7 @@ deuce_ssh_msgqueue_peek_size(const struct deuce_ssh_msgqueue *q)
 	return q->head->len;
 }
 
-ssize_t
+DEUCE_SSH_PRIVATE ssize_t
 deuce_ssh_msgqueue_pop(struct deuce_ssh_msgqueue *q,
     uint8_t *buf, size_t bufsz)
 {
@@ -183,14 +183,14 @@ deuce_ssh_msgqueue_pop(struct deuce_ssh_msgqueue *q,
  * Signal queue
  * ================================================================ */
 
-void
+DEUCE_SSH_PRIVATE void
 deuce_ssh_sigqueue_init(struct deuce_ssh_signal_queue *q)
 {
 	q->head = NULL;
 	q->tail = NULL;
 }
 
-void
+DEUCE_SSH_PRIVATE void
 deuce_ssh_sigqueue_free(struct deuce_ssh_signal_queue *q)
 {
 	struct deuce_ssh_signal_mark *m = q->head;
@@ -203,7 +203,7 @@ deuce_ssh_sigqueue_free(struct deuce_ssh_signal_queue *q)
 	q->tail = NULL;
 }
 
-int
+DEUCE_SSH_PRIVATE int
 deuce_ssh_sigqueue_push(struct deuce_ssh_signal_queue *q,
     const char *name, size_t stdout_pos, size_t stderr_pos)
 {
@@ -227,7 +227,7 @@ deuce_ssh_sigqueue_push(struct deuce_ssh_signal_queue *q,
 	return 0;
 }
 
-bool
+DEUCE_SSH_PRIVATE bool
 deuce_ssh_sigqueue_ready(const struct deuce_ssh_signal_queue *q,
     size_t stdout_consumed, size_t stderr_consumed)
 {
@@ -237,7 +237,7 @@ deuce_ssh_sigqueue_ready(const struct deuce_ssh_signal_queue *q,
 	    stderr_consumed >= q->head->stderr_pos;
 }
 
-const char *
+DEUCE_SSH_PRIVATE const char *
 deuce_ssh_sigqueue_pop(struct deuce_ssh_signal_queue *q,
     size_t stdout_consumed, size_t stderr_consumed,
     char *buf, size_t bufsz)
@@ -266,14 +266,14 @@ deuce_ssh_sigqueue_pop(struct deuce_ssh_signal_queue *q,
  * Accept queue
  * ================================================================ */
 
-void
+DEUCE_SSH_PRIVATE void
 deuce_ssh_acceptqueue_init(struct deuce_ssh_accept_queue *q)
 {
 	q->head = NULL;
 	q->tail = NULL;
 }
 
-void
+DEUCE_SSH_PRIVATE void
 deuce_ssh_acceptqueue_free(struct deuce_ssh_accept_queue *q)
 {
 	struct deuce_ssh_incoming_open *e = q->head;
@@ -286,7 +286,7 @@ deuce_ssh_acceptqueue_free(struct deuce_ssh_accept_queue *q)
 	q->tail = NULL;
 }
 
-int
+DEUCE_SSH_PRIVATE int
 deuce_ssh_acceptqueue_push(struct deuce_ssh_accept_queue *q,
     uint32_t peer_channel, uint32_t peer_window,
     uint32_t peer_max_packet,
@@ -313,7 +313,7 @@ deuce_ssh_acceptqueue_push(struct deuce_ssh_accept_queue *q,
 	return 0;
 }
 
-struct deuce_ssh_incoming_open *
+DEUCE_SSH_PRIVATE struct deuce_ssh_incoming_open *
 deuce_ssh_acceptqueue_pop(struct deuce_ssh_accept_queue *q)
 {
 	struct deuce_ssh_incoming_open *e = q->head;

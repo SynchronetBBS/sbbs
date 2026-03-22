@@ -147,21 +147,21 @@ struct deuce_ssh_session_s {
  * and zeroed the struct (e.g., via memset).  Allocates packet buffers
  * and initializes mutexes.  Returns 0 on success.
  */
-int deuce_ssh_session_init(deuce_ssh_session sess);
+DEUCE_SSH_PUBLIC int deuce_ssh_session_init(deuce_ssh_session sess);
 
 /*
  * Signal a session to terminate.  Sets terminate flag and returns true
  * if the session was initialized, false if already terminated.
  * Does not block — the session's I/O callbacks will see the flag.
  */
-bool deuce_ssh_session_terminate(deuce_ssh_session sess);
+DEUCE_SSH_PUBLIC bool deuce_ssh_session_terminate(deuce_ssh_session sess);
 
 /*
  * Clean up all session resources.  Calls terminate if needed, frees
  * all transport state, algorithm contexts, and packet buffers.
  * The session struct itself is NOT freed (caller owns it).
  */
-void deuce_ssh_session_cleanup(deuce_ssh_session sess);
+DEUCE_SSH_PUBLIC void deuce_ssh_session_cleanup(deuce_ssh_session sess);
 
 /*
  * Set the global I/O callbacks and optional extra-line callback.
@@ -175,6 +175,6 @@ void deuce_ssh_session_cleanup(deuce_ssh_session sess);
  * rx_line: line-oriented receive for version exchange
  * extra_line_cb: called for non-SSH lines before version (may be NULL)
  */
-int deuce_ssh_transport_set_callbacks(deuce_ssh_transport_io_cb tx, deuce_ssh_transport_io_cb rx, deuce_ssh_transport_rxline_cb rx_line, deuce_ssh_transport_extra_line_cb extra_line_cb);
+DEUCE_SSH_PUBLIC int deuce_ssh_transport_set_callbacks(deuce_ssh_transport_io_cb tx, deuce_ssh_transport_io_cb rx, deuce_ssh_transport_rxline_cb rx_line, deuce_ssh_transport_extra_line_cb extra_line_cb);
 
 #endif

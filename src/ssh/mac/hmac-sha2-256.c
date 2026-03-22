@@ -60,7 +60,7 @@ cleanup(deuce_ssh_mac_ctx *ctx)
 	free(ctx);
 }
 
-int
+DEUCE_SSH_PUBLIC int
 register_hmac_sha2_256(void)
 {
 	static const char name[] = HMAC_SHA2_256_NAME;

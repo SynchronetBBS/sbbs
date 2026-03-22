@@ -298,7 +298,7 @@ cleanup(deuce_ssh_key_algo_ctx *ctx)
 	}
 }
 
-int
+DEUCE_SSH_PUBLIC int
 rsa_sha2_256_load_key_file(deuce_ssh_session sess, const char *path)
 {
 	FILE *fp = fopen(path, "r");
@@ -332,7 +332,7 @@ rsa_sha2_256_load_key_file(deuce_ssh_session sess, const char *path)
 	return 0;
 }
 
-int
+DEUCE_SSH_PUBLIC int
 rsa_sha2_256_generate_key(deuce_ssh_session sess, unsigned int bits)
 {
 	EVP_PKEY *pkey = NULL;
@@ -370,7 +370,7 @@ rsa_sha2_256_generate_key(deuce_ssh_session sess, unsigned int bits)
 	return 0;
 }
 
-int
+DEUCE_SSH_PUBLIC int
 register_rsa_sha2_256(void)
 {
 	struct deuce_ssh_key_algo_s *ka = malloc(sizeof(*ka) + RSA_SHA2_256_NAME_LEN + 1);
