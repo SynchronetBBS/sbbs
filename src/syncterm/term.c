@@ -6038,6 +6038,7 @@ doterm(struct bbslist *bbs)
 					goto hangup;
 				case 0x2d00: /* Alt-X - Exit */
 				case CIO_KEY_QUIT:
+					uifc.exit_flags |= UIFC_XF_QUIT;
 					if (!check_exit(true))
 						break;
 					/* FALLTHROUGH */
