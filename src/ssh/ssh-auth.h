@@ -218,14 +218,13 @@ DEUCE_SSH_PUBLIC int deuce_ssh_auth_server(deuce_ssh_session sess,
 
 /*
  * Authenticate with a public key (RFC 4252 s7).
- * Uses the session's key_algo_ctx (loaded via ssh_ed25519_load_key_file,
- * rsa_sha2_256_load_key_file, etc.) and the negotiated key algorithm's
- * sign/pubkey functions.  The algo_name must match a registered key
- * algorithm (e.g., "ssh-ed25519", "rsa-sha2-256").
+ * Uses the key loaded via ssh_ed25519_load_key_file(),
+ * rsa_sha2_256_load_key_file(), etc., on the registered algorithm entry.
+ * The algo_name must match a registered key algorithm that has a key
+ * loaded (e.g., "ssh-ed25519", "rsa-sha2-256").
  * Returns 0 on success, negative on failure or rejection.
  */
 DEUCE_SSH_PUBLIC int deuce_ssh_auth_publickey(deuce_ssh_session sess,
-    const char *username, const char *algo_name,
-    deuce_ssh_key_algo_ctx *ctx);
+    const char *username, const char *algo_name);
 
 #endif

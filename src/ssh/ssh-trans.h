@@ -96,8 +96,8 @@ typedef void (*deuce_ssh_enc_cleanup)(deuce_ssh_enc_ctx *ctx);
 typedef int (*deuce_ssh_mac_generate)(const uint8_t *key, const uint8_t *buf, size_t bufsz, uint8_t *outbuf);
 typedef void (*deuce_ssh_mac_cleanup)(deuce_ssh_mac_ctx *ctx);
 
-typedef int (*deuce_ssh_comp_compress)(uint8_t *buf, uint8_t *bufsz, deuce_ssh_comp_ctx *ctx);
-typedef int (*deuce_ssh_comp_uncompress)(uint8_t *buf, uint8_t *bufsz, deuce_ssh_comp_ctx *ctx);
+typedef int (*deuce_ssh_comp_compress)(uint8_t *buf, size_t *bufsz, deuce_ssh_comp_ctx *ctx);
+typedef int (*deuce_ssh_comp_uncompress)(uint8_t *buf, size_t *bufsz, deuce_ssh_comp_ctx *ctx);
 typedef void (*deuce_ssh_comp_cleanup)(deuce_ssh_comp_ctx *ctx);
 
 typedef struct deuce_ssh_kex_s {
@@ -116,6 +116,7 @@ typedef struct deuce_ssh_key_algo_s {
 	deuce_ssh_key_algo_pubkey pubkey;
 	deuce_ssh_key_algo_haskey haskey;
 	deuce_ssh_key_algo_cleanup cleanup;
+	deuce_ssh_key_algo_ctx *ctx;
 	uint32_t flags;
 	char name[];
 } *deuce_ssh_key_algo;
@@ -212,7 +213,6 @@ typedef struct deuce_ssh_transport_state_s {
 	size_t peer_kexinit_sz;
 	uint8_t *peer_kexinit;
 
-	deuce_ssh_key_algo_ctx *key_algo_ctx;
 	deuce_ssh_key_algo key_algo_selected;
 
 	deuce_ssh_enc_ctx *enc_c2s_ctx;

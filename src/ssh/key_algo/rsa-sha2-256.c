@@ -9,6 +9,7 @@
 #include <string.h>
 
 #include "deucessh.h"
+#include "ssh-trans.h"
 
 #define RSA_SHA2_256_NAME     "rsa-sha2-256"
 #define RSA_SHA2_256_NAME_LEN 12
@@ -52,11 +53,15 @@ verify(const uint8_t *key_blob, size_t key_blob_len,
 	size_t kp = 0;
 	uint32_t slen;
 
-	/* Skip algorithm name ("ssh-rsa") */
+	/* Validate algorithm name ("ssh-rsa") */
 	if (deuce_ssh_parse_uint32(&key_blob[kp], key_blob_len - kp, &slen) < 4 ||
 	    kp + 4 + slen > key_blob_len)
 		return DEUCE_SSH_ERROR_PARSE;
-	kp += 4 + slen;
+	kp += 4;
+	if (slen != RSA_KEY_TYPE_NAME_LEN ||
+	    memcmp(&key_blob[kp], RSA_KEY_TYPE_NAME, RSA_KEY_TYPE_NAME_LEN) != 0)
+		return DEUCE_SSH_ERROR_INVALID;
+	kp += slen;
 
 	/* e (public exponent) */
 	if (deuce_ssh_parse_uint32(&key_blob[kp], key_blob_len - kp, &slen) < 4 ||
@@ -72,9 +77,14 @@ verify(const uint8_t *key_blob, size_t key_blob_len,
 		goto done;
 	kp += 4;
 	n_bn = BN_bin2bn(&key_blob[kp], slen, NULL);
+	kp += slen;
 
 	if (e_bn == NULL || n_bn == NULL)
 		goto done;
+	if (kp != key_blob_len) {
+		result = DEUCE_SSH_ERROR_PARSE;
+		goto done;
+	}
 
 	/* Build RSA public key via EVP */
 	bld = OSSL_PARAM_BLD_new();
@@ -97,13 +107,19 @@ verify(const uint8_t *key_blob, size_t key_blob_len,
 	/* Parse signature from sig_blob */
 	size_t sp = 0;
 
-	/* Skip algorithm name ("rsa-sha2-256") */
+	/* Validate algorithm name ("rsa-sha2-256") */
 	if (deuce_ssh_parse_uint32(&sig_blob[sp], sig_blob_len - sp, &slen) < 4 ||
 	    sp + 4 + slen > sig_blob_len) {
 		result = DEUCE_SSH_ERROR_PARSE;
 		goto done;
 	}
-	sp += 4 + slen;
+	sp += 4;
+	if (slen != RSA_SHA2_256_NAME_LEN ||
+	    memcmp(&sig_blob[sp], RSA_SHA2_256_NAME, RSA_SHA2_256_NAME_LEN) != 0) {
+		result = DEUCE_SSH_ERROR_INVALID;
+		goto done;
+	}
+	sp += slen;
 
 	/* Raw signature bytes */
 	uint32_t raw_sig_len;
@@ -114,6 +130,11 @@ verify(const uint8_t *key_blob, size_t key_blob_len,
 	}
 	sp += 4;
 	const uint8_t *raw_sig = &sig_blob[sp];
+	sp += raw_sig_len;
+	if (sp != sig_blob_len) {
+		result = DEUCE_SSH_ERROR_PARSE;
+		goto done;
+	}
 
 	/* Verify RSASSA-PKCS1-v1_5 with SHA-256 */
 	mdctx = EVP_MD_CTX_new();
@@ -285,7 +306,8 @@ static int
 haskey(deuce_ssh_key_algo_ctx *ctx)
 {
 	struct cbdata *cbd = (struct cbdata *)ctx;
-	return (cbd != NULL && cbd->pkey != NULL);
+	return (cbd != NULL && cbd->pkey != NULL &&
+	    EVP_PKEY_id(cbd->pkey) == EVP_PKEY_RSA);
 }
 
 static void
@@ -299,13 +321,19 @@ cleanup(deuce_ssh_key_algo_ctx *ctx)
 }
 
 DEUCE_SSH_PUBLIC int
-rsa_sha2_256_load_key_file(deuce_ssh_session sess, const char *path)
+rsa_sha2_256_load_key_file(const char *path, pem_password_cb *pw_cb,
+    void *pw_cbdata)
 {
+	deuce_ssh_key_algo ka =
+	    deuce_ssh_transport_find_key_algo(RSA_SHA2_256_NAME);
+	if (ka == NULL)
+		return DEUCE_SSH_ERROR_INIT;
+
 	FILE *fp = fopen(path, "r");
 	if (fp == NULL)
 		return DEUCE_SSH_ERROR_INIT;
 
-	EVP_PKEY *pkey = PEM_read_PrivateKey(fp, NULL, NULL, NULL);
+	EVP_PKEY *pkey = PEM_read_PrivateKey(fp, NULL, pw_cb, pw_cbdata);
 	fclose(fp);
 	if (pkey == NULL)
 		return DEUCE_SSH_ERROR_INIT;
@@ -315,14 +343,14 @@ rsa_sha2_256_load_key_file(deuce_ssh_session sess, const char *path)
 		return DEUCE_SSH_ERROR_INVALID;
 	}
 
-	struct cbdata *cbd = (struct cbdata *)sess->trans.key_algo_ctx;
+	struct cbdata *cbd = (struct cbdata *)ka->ctx;
 	if (cbd == NULL) {
 		cbd = calloc(1, sizeof(*cbd));
 		if (cbd == NULL) {
 			EVP_PKEY_free(pkey);
 			return DEUCE_SSH_ERROR_ALLOC;
 		}
-		sess->trans.key_algo_ctx = (deuce_ssh_key_algo_ctx *)cbd;
+		ka->ctx = (deuce_ssh_key_algo_ctx *)cbd;
 	}
 	else {
 		EVP_PKEY_free(cbd->pkey);
@@ -333,11 +361,100 @@ rsa_sha2_256_load_key_file(deuce_ssh_session sess, const char *path)
 }
 
 DEUCE_SSH_PUBLIC int
-rsa_sha2_256_generate_key(deuce_ssh_session sess, unsigned int bits)
+rsa_sha2_256_save_key_file(const char *path, pem_password_cb *pw_cb,
+    void *pw_cbdata)
 {
+	deuce_ssh_key_algo ka =
+	    deuce_ssh_transport_find_key_algo(RSA_SHA2_256_NAME);
+	if (ka == NULL)
+		return DEUCE_SSH_ERROR_INIT;
+
+	struct cbdata *cbd = (struct cbdata *)ka->ctx;
+	if (cbd == NULL || cbd->pkey == NULL)
+		return DEUCE_SSH_ERROR_INIT;
+
+	FILE *fp = fopen(path, "w");
+	if (fp == NULL)
+		return DEUCE_SSH_ERROR_INIT;
+
+	const EVP_CIPHER *cipher = pw_cb != NULL ?
+	    EVP_aes_256_cbc() : NULL;
+	int ok = PEM_write_PrivateKey(fp, cbd->pkey,
+	    cipher, NULL, 0, pw_cb, pw_cbdata);
+	if (fclose(fp) != 0)
+		ok = 0;
+	return ok == 1 ? 0 : DEUCE_SSH_ERROR_INIT;
+}
+
+DEUCE_SSH_PUBLIC ssize_t
+rsa_sha2_256_get_pub_str(char *buf, size_t bufsz)
+{
+	deuce_ssh_key_algo ka =
+	    deuce_ssh_transport_find_key_algo(RSA_SHA2_256_NAME);
+	if (ka == NULL)
+		return DEUCE_SSH_ERROR_INIT;
+
+	uint8_t blob[2048];
+	size_t blob_len;
+	int res = pubkey(blob, sizeof(blob), &blob_len, ka->ctx);
+	if (res < 0)
+		return res;
+
+	size_t b64_len = 4 * ((blob_len + 2) / 3);
+	/* "ssh-rsa " + base64 + NUL */
+	size_t needed = RSA_KEY_TYPE_NAME_LEN + 1 + b64_len + 1;
+
+	if (buf == NULL || bufsz == 0)
+		return (ssize_t)needed;
+	if (bufsz < needed)
+		return DEUCE_SSH_ERROR_TOOLONG;
+
+	memcpy(buf, RSA_KEY_TYPE_NAME, RSA_KEY_TYPE_NAME_LEN);
+	buf[RSA_KEY_TYPE_NAME_LEN] = ' ';
+	EVP_EncodeBlock((unsigned char *)&buf[RSA_KEY_TYPE_NAME_LEN + 1],
+	    blob, (int)blob_len);
+	return (ssize_t)needed;
+}
+
+DEUCE_SSH_PUBLIC int
+rsa_sha2_256_save_pub_file(const char *path)
+{
+	char *str = NULL;
+	ssize_t len = rsa_sha2_256_get_pub_str(NULL, 0);
+	if (len < 0)
+		return (int)len;
+	str = malloc((size_t)len);
+	if (str == NULL)
+		return DEUCE_SSH_ERROR_ALLOC;
+	ssize_t res = rsa_sha2_256_get_pub_str(str, (size_t)len);
+	if (res < 0) {
+		free(str);
+		return (int)res;
+	}
+
+	FILE *fp = fopen(path, "w");
+	if (fp == NULL) {
+		free(str);
+		return DEUCE_SSH_ERROR_INIT;
+	}
+	int wok = fprintf(fp, "%s\n", str) >= 0;
+	if (fclose(fp) != 0)
+		wok = 0;
+	free(str);
+	return wok ? 0 : DEUCE_SSH_ERROR_INIT;
+}
+
+DEUCE_SSH_PUBLIC int
+rsa_sha2_256_generate_key(unsigned int bits)
+{
+	deuce_ssh_key_algo ka =
+	    deuce_ssh_transport_find_key_algo(RSA_SHA2_256_NAME);
+	if (ka == NULL)
+		return DEUCE_SSH_ERROR_INIT;
+
 	EVP_PKEY *pkey = NULL;
-	EVP_PKEY_CTX *ctx = EVP_PKEY_CTX_new_from_name(NULL, "RSA", NULL);
-	if (ctx == NULL)
+	EVP_PKEY_CTX *pctx = EVP_PKEY_CTX_new_from_name(NULL, "RSA", NULL);
+	if (pctx == NULL)
 		return DEUCE_SSH_ERROR_ALLOC;
 
 	OSSL_PARAM params[] = {
@@ -345,22 +462,22 @@ rsa_sha2_256_generate_key(deuce_ssh_session sess, unsigned int bits)
 		OSSL_PARAM_construct_end(),
 	};
 
-	if (EVP_PKEY_keygen_init(ctx) != 1 ||
-	    EVP_PKEY_CTX_set_params(ctx, params) != 1 ||
-	    EVP_PKEY_keygen(ctx, &pkey) != 1) {
-		EVP_PKEY_CTX_free(ctx);
+	if (EVP_PKEY_keygen_init(pctx) != 1 ||
+	    EVP_PKEY_CTX_set_params(pctx, params) != 1 ||
+	    EVP_PKEY_keygen(pctx, &pkey) != 1) {
+		EVP_PKEY_CTX_free(pctx);
 		return DEUCE_SSH_ERROR_INIT;
 	}
-	EVP_PKEY_CTX_free(ctx);
+	EVP_PKEY_CTX_free(pctx);
 
-	struct cbdata *cbd = (struct cbdata *)sess->trans.key_algo_ctx;
+	struct cbdata *cbd = (struct cbdata *)ka->ctx;
 	if (cbd == NULL) {
 		cbd = calloc(1, sizeof(*cbd));
 		if (cbd == NULL) {
 			EVP_PKEY_free(pkey);
 			return DEUCE_SSH_ERROR_ALLOC;
 		}
-		sess->trans.key_algo_ctx = (deuce_ssh_key_algo_ctx *)cbd;
+		ka->ctx = (deuce_ssh_key_algo_ctx *)cbd;
 	}
 	else {
 		EVP_PKEY_free(cbd->pkey);
@@ -382,6 +499,7 @@ register_rsa_sha2_256(void)
 	ka->pubkey = pubkey;
 	ka->haskey = haskey;
 	ka->cleanup = cleanup;
+	ka->ctx = NULL;
 	ka->flags = DEUCE_SSH_KEY_ALGO_FLAG_SIGNATURE_CAPABLE;
 	memcpy(ka->name, RSA_SHA2_256_NAME, RSA_SHA2_256_NAME_LEN + 1);
 	return deuce_ssh_transport_register_key_algo(ka);

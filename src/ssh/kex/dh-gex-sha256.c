@@ -1,6 +1,7 @@
 // RFC 4419: Diffie-Hellman Group Exchange with SHA-256
 
 #include <openssl/bn.h>
+#include <openssl/crypto.h>
 #include <openssl/evp.h>
 #include <openssl/param_build.h>
 #include <stdlib.h>
@@ -45,6 +46,7 @@ serialize_bn_mpint(const BIGNUM *bn, uint8_t *buf, size_t bufsz, size_t *pos)
 	memcpy(&buf[*pos], tmp, bn_bytes);
 	*pos += bn_bytes;
 
+	OPENSSL_cleanse(tmp, bn_bytes);
 	free(tmp);
 	return 0;
 }
@@ -151,6 +153,8 @@ compute_exchange_hash(
 
 		mp = 0; mres = serialize_bn_mpint(k, mpbuf, sizeof(mpbuf), &mp);
 		ok = ok && (mres == 0) && EVP_DigestUpdate(mdctx, mpbuf, mp);
+
+		OPENSSL_cleanse(mpbuf, sizeof(mpbuf));
 	}
 
 	ok = ok && EVP_DigestFinal_ex(mdctx, hash_out, NULL);
@@ -229,13 +233,13 @@ handler(deuce_ssh_session sess)
 		e_bn = BN_new();
 		BIGNUM *x = BN_new();
 		if (!bnctx || !e_bn || !x) {
-			BN_free(x);
+			BN_clear_free(x);
 			res = DEUCE_SSH_ERROR_ALLOC;
 			goto cleanup;
 		}
 		if (BN_rand(x, BN_num_bits(p) - 1, BN_RAND_TOP_ONE, BN_RAND_BOTTOM_ANY) != 1 ||
 		    BN_mod_exp(e_bn, g, x, p, bnctx) != 1) {
-			BN_free(x);
+			BN_clear_free(x);
 			res = DEUCE_SSH_ERROR_INIT;
 			goto cleanup;
 		}
@@ -246,43 +250,43 @@ handler(deuce_ssh_session sess)
 			size_t pos = 0;
 			init_msg[pos++] = SSH_MSG_KEX_DH_GEX_INIT;
 			res = serialize_bn_mpint(e_bn, init_msg, sizeof(init_msg), &pos);
-			if (res < 0) { BN_free(x); goto cleanup; }
+			if (res < 0) { BN_clear_free(x); goto cleanup; }
 			res = deuce_ssh_transport_send_packet(sess, init_msg, pos, NULL);
-			if (res < 0) { BN_free(x); goto cleanup; }
+			if (res < 0) { BN_clear_free(x); goto cleanup; }
 		}
 
 		/* 5. Receive GEX_REPLY(K_S, f, sig) */
 		res = deuce_ssh_transport_recv_packet(sess, &msg_type, &payload, &payload_len);
-		if (res < 0) { BN_free(x); goto cleanup; }
-		if (msg_type != SSH_MSG_KEX_DH_GEX_REPLY) { BN_free(x); res = DEUCE_SSH_ERROR_PARSE; goto cleanup; }
+		if (res < 0) { BN_clear_free(x); goto cleanup; }
+		if (msg_type != SSH_MSG_KEX_DH_GEX_REPLY) { BN_clear_free(x); res = DEUCE_SSH_ERROR_PARSE; goto cleanup; }
 
 		size_t rpos = 1;
 		uint32_t ks_len;
 		if (rpos + 4 > payload_len ||
 		    deuce_ssh_parse_uint32(&payload[rpos], payload_len - rpos, &ks_len) < 4 ||
-		    rpos + 4 + ks_len > payload_len) { BN_free(x); res = DEUCE_SSH_ERROR_PARSE; goto cleanup; }
+		    rpos + 4 + ks_len > payload_len) { BN_clear_free(x); res = DEUCE_SSH_ERROR_PARSE; goto cleanup; }
 		rpos += 4;
 		const uint8_t *k_s = &payload[rpos];
 		rpos += ks_len;
 
 		ssize_t fn = parse_bn_mpint(&payload[rpos], payload_len - rpos, &f_bn);
-		if (fn < 0) { BN_free(x); res = (int)fn; goto cleanup; }
+		if (fn < 0) { BN_clear_free(x); res = (int)fn; goto cleanup; }
 		rpos += fn;
 
 		/* RFC 4253 s8: f MUST be in [1, p-1] */
-		if (!dh_value_valid(f_bn, p)) { BN_free(x); res = DEUCE_SSH_ERROR_INVALID; goto cleanup; }
+		if (!dh_value_valid(f_bn, p)) { BN_clear_free(x); res = DEUCE_SSH_ERROR_INVALID; goto cleanup; }
 
 		uint32_t sig_len;
 		if (rpos + 4 > payload_len ||
 		    deuce_ssh_parse_uint32(&payload[rpos], payload_len - rpos, &sig_len) < 4 ||
-		    rpos + 4 + sig_len > payload_len) { BN_free(x); res = DEUCE_SSH_ERROR_PARSE; goto cleanup; }
+		    rpos + 4 + sig_len > payload_len) { BN_clear_free(x); res = DEUCE_SSH_ERROR_PARSE; goto cleanup; }
 		rpos += 4;
 		const uint8_t *sig_h = &payload[rpos];
 
 		/* 6. Compute K = f^x mod p */
 		k_bn = BN_new();
-		if (!k_bn || BN_mod_exp(k_bn, f_bn, x, p, bnctx) != 1) { BN_free(x); res = DEUCE_SSH_ERROR_INIT; goto cleanup; }
-		BN_free(x);
+		if (!k_bn || BN_mod_exp(k_bn, f_bn, x, p, bnctx) != 1) { BN_clear_free(x); res = DEUCE_SSH_ERROR_INIT; goto cleanup; }
+		BN_clear_free(x);
 
 		/* Store shared secret */
 		int k_bytes = BN_num_bytes(k_bn);
@@ -316,9 +320,9 @@ handler(deuce_ssh_session sess)
 			return DEUCE_SSH_ERROR_INIT;
 
 		/* Get host key blob */
-		uint8_t k_s_buf[512];
+		uint8_t k_s_buf[1024];
 		size_t k_s_len;
-		res = ka->pubkey(k_s_buf, sizeof(k_s_buf), &k_s_len, sess->trans.key_algo_ctx);
+		res = ka->pubkey(k_s_buf, sizeof(k_s_buf), &k_s_len, ka->ctx);
 		if (res < 0) return res;
 
 		/* 1. Receive GEX_REQUEST(min, n, max) */
@@ -380,18 +384,18 @@ handler(deuce_ssh_session sess)
 		k_bn = BN_new();
 		BIGNUM *y = BN_new();
 		if (!bnctx || !f_bn || !k_bn || !y) {
-			BN_free(y);
+			BN_clear_free(y);
 			res = DEUCE_SSH_ERROR_ALLOC;
 			goto cleanup;
 		}
 		if (BN_rand(y, BN_num_bits(p) - 1, BN_RAND_TOP_ONE, BN_RAND_BOTTOM_ANY) != 1 ||
 		    BN_mod_exp(f_bn, g, y, p, bnctx) != 1 ||
 		    BN_mod_exp(k_bn, e_bn, y, p, bnctx) != 1) {
-			BN_free(y);
+			BN_clear_free(y);
 			res = DEUCE_SSH_ERROR_INIT;
 			goto cleanup;
 		}
-		BN_free(y);
+		BN_clear_free(y);
 
 		/* Store shared secret */
 		int k_bytes = BN_num_bytes(k_bn);
@@ -408,10 +412,10 @@ handler(deuce_ssh_session sess)
 		if (res < 0) goto cleanup;
 
 		/* 6. Sign exchange hash */
-		uint8_t sig_buf[256];
+		uint8_t sig_buf[1024];
 		size_t sig_len;
 		res = ka->sign(sig_buf, sizeof(sig_buf), &sig_len,
-		    hash, SHA256_DIGEST_LEN, sess->trans.key_algo_ctx);
+		    hash, SHA256_DIGEST_LEN, ka->ctx);
 		if (res < 0) goto cleanup;
 
 		/* 7. Send GEX_REPLY(K_S, f, sig) */
@@ -447,7 +451,7 @@ cleanup:
 	BN_free(g);
 	BN_free(e_bn);
 	BN_free(f_bn);
-	BN_free(k_bn);
+	BN_clear_free(k_bn);
 	return res;
 }
 

@@ -4,13 +4,13 @@
 #include "deucessh.h"
 
 static int
-compress(uint8_t *buf, uint8_t *bufsz, deuce_ssh_comp_ctx *ctx)
+compress(uint8_t *buf, size_t *bufsz, deuce_ssh_comp_ctx *ctx)
 {
 	return 0;
 }
 
 static int
-uncompress(uint8_t *buf, uint8_t *bufsz, deuce_ssh_comp_ctx *ctx)
+uncompress(uint8_t *buf, size_t *bufsz, deuce_ssh_comp_ctx *ctx)
 {
 	return 0;
 }

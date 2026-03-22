@@ -185,9 +185,23 @@ int main(void)
     sess.trans.client = false;  /* server mode */
     deuce_ssh_session_init(&sess, 0);  /* 0 = RFC minimum (33280 bytes) */
 
-    /* 3. Load or generate a host key */
-    ssh_ed25519_generate_key(&sess);
-    /* Or: ssh_ed25519_load_key_file(&sess, "/path/to/host_key.pem"); */
+    /* 3. Load host keys (stored on algorithm entry, not session).
+     * Pass NULL for unencrypted PEM, or a pem_password_cb for encrypted. */
+    ssh_ed25519_load_key_file("/path/to/host_ed25519.pem", NULL, NULL);
+    rsa_sha2_256_load_key_file("/path/to/host_rsa.pem", NULL, NULL);
+    /* Or generate + save:
+     *   ssh_ed25519_generate_key();
+     *   ssh_ed25519_save_key_file("/path/to/host_ed25519.pem", NULL, NULL);
+     *   ssh_ed25519_save_pub_file("/path/to/host_ed25519.pub");
+     *
+     * To encrypt the saved key, pass a pem_password_cb:
+     *   ssh_ed25519_save_key_file("/path/to/key.pem", my_pw_cb, my_ctx);
+     *
+     * To get the public key string at runtime (pass NULL/0 for size query):
+     *   ssize_t len = ssh_ed25519_get_pub_str(NULL, 0);
+     *   char *pub = malloc(len);
+     *   ssh_ed25519_get_pub_str(pub, len);  // "ssh-ed25519 AAAA..."
+     */
 
     /* 4. If offering DH-GEX, provide a group selection callback */
     struct deuce_ssh_dh_gex_provider provider = {
@@ -303,12 +317,11 @@ my_passwd_change(const uint8_t *prompt, size_t prompt_len,
 ```c
 #include "key_algo/ssh-ed25519.h"
 
-/* Load the private key */
-ssh_ed25519_load_key_file(&sess, "/path/to/id_ed25519");
+/* Load the private key (stored on the algorithm entry) */
+ssh_ed25519_load_key_file("/path/to/id_ed25519", NULL, NULL);
 
 /* Authenticate */
-deuce_ssh_auth_publickey(&sess, "user", "ssh-ed25519",
-    sess.trans.key_algo_ctx);
+deuce_ssh_auth_publickey(&sess, "user", "ssh-ed25519");
 ```
 
 The function signs the session-bound authentication data (session ID
@@ -516,6 +529,55 @@ struct deuce_ssh_dh_gex_provider prov = {
     .cbdata = NULL,
 };
 deuce_ssh_dh_gex_set_provider(&sess, &prov);
+```
+
+## Key Management
+
+Keys are stored on the global algorithm registration entry, not on
+individual sessions.  Load once, use across all sessions.  Multiple
+algorithms can have keys loaded simultaneously — the server's KEXINIT
+only advertises algorithms that have a key loaded.
+
+Each key algorithm provides these functions:
+
+| Function | Purpose |
+|----------|---------|
+| `_load_key_file(path, pw_cb, cbdata)` | Load private key from PEM file |
+| `_save_key_file(path, pw_cb, cbdata)` | Save private key to PEM file |
+| `_save_pub_file(path)` | Save public key in OpenSSH format |
+| `_get_pub_str(buf, bufsz)` | Get OpenSSH public key string (0/NULL to query size) |
+| `_generate_key(...)` | Generate a new key in memory |
+
+The `pw_cb` parameter is OpenSSL's `pem_password_cb` — pass NULL for
+unencrypted PEM, or a callback to encrypt (save) / decrypt (load)
+with AES-256-CBC:
+
+```c
+/* Passphrase callback: fill buf, return length */
+int my_pw_cb(char *buf, int size, int rwflag, void *u)
+{
+    const char *pass = u;
+    int len = strlen(pass);
+    if (len > size)
+        len = size;
+    memcpy(buf, pass, len);
+    return len;
+}
+
+/* Generate, save encrypted, export public key */
+ssh_ed25519_generate_key();
+ssh_ed25519_save_key_file("/etc/ssh/host_ed25519",
+    my_pw_cb, "passphrase");
+ssh_ed25519_save_pub_file("/etc/ssh/host_ed25519.pub");
+
+/* Load encrypted key */
+ssh_ed25519_load_key_file("/etc/ssh/host_ed25519",
+    my_pw_cb, "passphrase");
+
+/* Get public key string at runtime */
+ssize_t len = ssh_ed25519_get_pub_str(NULL, 0);
+char *pub = malloc(len);
+ssh_ed25519_get_pub_str(pub, len);  /* "ssh-ed25519 AAAA..." */
 ```
 
 ## Channel Lifecycle

@@ -886,8 +886,30 @@ deuce_ssh_transport_kexinit(deuce_ssh_session sess)
 	build_namelist(gconf.kex_head, noff, namelist, sizeof(namelist));
 	serialize_namelist_from_str(namelist, kexinit, sess->trans.packet_buf_sz, &pos);
 
-	noff = offsetof(struct deuce_ssh_key_algo_s, name);
-	build_namelist(gconf.key_algo_head, noff, namelist, sizeof(namelist));
+	if (sess->trans.client) {
+		noff = offsetof(struct deuce_ssh_key_algo_s, name);
+		build_namelist(gconf.key_algo_head, noff, namelist, sizeof(namelist));
+	}
+	else {
+		/* Server: only advertise key algorithms we have a key for */
+		size_t nlpos = 0;
+		bool nlfirst = true;
+		for (deuce_ssh_key_algo ka = gconf.key_algo_head; ka != NULL;
+		    ka = ka->next) {
+			if (ka->haskey == NULL ||
+			    !ka->haskey(ka->ctx))
+				continue;
+			size_t nlen = strlen(ka->name);
+			if (!nlfirst && nlpos + 1 < sizeof(namelist))
+				namelist[nlpos++] = ',';
+			if (nlpos + nlen < sizeof(namelist)) {
+				memcpy(&namelist[nlpos], ka->name, nlen);
+				nlpos += nlen;
+			}
+			nlfirst = false;
+		}
+		namelist[nlpos] = 0;
+	}
 	serialize_namelist_from_str(namelist, kexinit, sess->trans.packet_buf_sz, &pos);
 
 	noff = offsetof(struct deuce_ssh_enc_s, name);
@@ -1410,9 +1432,8 @@ deuce_ssh_transport_cleanup(deuce_ssh_session sess)
 		sess->trans.kex_selected = NULL;
 	}
 	if (sess->trans.key_algo_selected) {
-		if (sess->trans.key_algo_selected->cleanup != NULL)
-			sess->trans.key_algo_selected->cleanup(sess->trans.key_algo_ctx);
-		sess->trans.key_algo_ctx = NULL;
+		/* Key context lives on the global algorithm entry, not the
+		 * session — don't clean it up here. */
 		sess->trans.key_algo_selected = NULL;
 	}
 	if (sess->trans.enc_c2s_selected) {

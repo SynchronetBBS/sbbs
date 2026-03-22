@@ -883,19 +883,18 @@ deuce_ssh_auth_keyboard_interactive(deuce_ssh_session sess,
 
 DEUCE_SSH_PUBLIC int
 deuce_ssh_auth_publickey(deuce_ssh_session sess,
-    const char *username, const char *algo_name,
-    deuce_ssh_key_algo_ctx *ctx)
+    const char *username, const char *algo_name)
 {
 	deuce_ssh_key_algo ka = deuce_ssh_transport_find_key_algo(algo_name);
 	if (ka == NULL || ka->sign == NULL || ka->pubkey == NULL)
 		return DEUCE_SSH_ERROR_INIT;
-	if (ctx == NULL || !ka->haskey(ctx))
+	if (!ka->haskey || !ka->haskey(ka->ctx))
 		return DEUCE_SSH_ERROR_INIT;
 
 	/* Get the public key blob */
 	uint8_t pubkey_buf[1024];
 	size_t pubkey_len;
-	int res = ka->pubkey(pubkey_buf, sizeof(pubkey_buf), &pubkey_len, ctx);
+	int res = ka->pubkey(pubkey_buf, sizeof(pubkey_buf), &pubkey_len, ka->ctx);
 	if (res < 0)
 		return res;
 
@@ -950,7 +949,7 @@ deuce_ssh_auth_publickey(deuce_ssh_session sess,
 	/* Sign the data */
 	uint8_t sig_buf[1024];
 	size_t sig_len;
-	res = ka->sign(sig_buf, sizeof(sig_buf), &sig_len, sign_data, sp, ctx);
+	res = ka->sign(sig_buf, sizeof(sig_buf), &sig_len, sign_data, sp, ka->ctx);
 	free(sign_data);
 	if (res < 0)
 		return res;

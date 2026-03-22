@@ -263,7 +263,7 @@ main(int argc, char **argv)
 	if (res < 0) { fprintf(stderr, "session_init failed: %d\n", res); return 1; }
 
 	/* Generate ephemeral host key and set DH group provider */
-	res = ssh_ed25519_generate_key(&sess);
+	res = ssh_ed25519_generate_key();
 	if (res < 0) { fprintf(stderr, "host key gen failed: %d\n", res); return 1; }
 	deuce_ssh_dh_gex_set_provider(&sess, &dh_provider);
 
