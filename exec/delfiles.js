@@ -56,6 +56,10 @@ for(var i in dir_list) {
 	var base = new FileBase(dir_code);
 	if(!base.open())
 		throw new Error(base.last_error);
+	if(typeof base.lock === 'function' && !base.lock()) {
+		log(LOG_WARNING, "Can't lock the filebase for maintenance: " + dir_code);
+		continue;
+	}
 	if(options.offline) {
 		log(dir_code + ": Purging offline files");
 		var dirent = directory(dir.path + '*');
