@@ -9,7 +9,7 @@ set_property(TARGET deuce-ssh PROPERTY C_STANDARD_REQUIRED ON)
 set_property(TARGET deuce-ssh PROPERTY POSITION_INDEPENDENT_CODE 1)
 target_sources(deuce-ssh
 	PRIVATE
-		ssh-arch.c ssh-trans.c ssh.c ssh-auth.c ssh-conn.c
+		ssh-arch.c ssh-trans.c ssh.c ssh-auth.c ssh-conn.c ssh-chan.c
 		kex/curve25519-sha256.c
 		kex/dh-gex-sha256.c
 		key_algo/ssh-ed25519.c

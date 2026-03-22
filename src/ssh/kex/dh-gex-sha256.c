@@ -66,6 +66,20 @@ parse_bn_mpint(const uint8_t *buf, size_t bufsz, BIGNUM **bn)
 }
 
 /*
+ * RFC 4253 s8: Values of e or f not in [1, p-1] MUST NOT be
+ * sent or accepted.
+ */
+static bool
+dh_value_valid(const BIGNUM *val, const BIGNUM *p)
+{
+	if (BN_is_zero(val) || BN_is_negative(val))
+		return false;
+	if (BN_cmp(val, p) >= 0)
+		return false;
+	return true;
+}
+
+/*
  * Compute exchange hash:
  * H = SHA256(V_C || V_S || I_C || I_S || K_S ||
  *            min || n || max || p || g || e || f || K)
@@ -255,6 +269,9 @@ handler(deuce_ssh_session sess)
 		if (fn < 0) { BN_free(x); res = (int)fn; goto cleanup; }
 		rpos += fn;
 
+		/* RFC 4253 s8: f MUST be in [1, p-1] */
+		if (!dh_value_valid(f_bn, p)) { BN_free(x); res = DEUCE_SSH_ERROR_INVALID; goto cleanup; }
+
 		uint32_t sig_len;
 		if (rpos + 4 > payload_len ||
 		    deuce_ssh_parse_uint32(&payload[rpos], payload_len - rpos, &sig_len) < 4 ||
@@ -353,6 +370,9 @@ handler(deuce_ssh_session sess)
 			ssize_t n = parse_bn_mpint(&payload[rpos], payload_len - rpos, &e_bn);
 			if (n < 0) { res = (int)n; goto cleanup; }
 		}
+
+		/* RFC 4253 s8: e MUST be in [1, p-1] */
+		if (!dh_value_valid(e_bn, p)) { res = DEUCE_SSH_ERROR_INVALID; goto cleanup; }
 
 		/* 4. Generate y, compute f = g^y mod p, K = e^y mod p */
 		bnctx = BN_CTX_new();

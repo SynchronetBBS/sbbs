@@ -224,6 +224,9 @@ deuce_ssh_parse_namelist(const uint8_t *buf, size_t bufsz, deuce_ssh_namelist va
 			if (str.value[i] <= ' ' || str.value[i] >= 127)
 				return DEUCE_SSH_ERROR_PARSE;
 		}
+		/* Trailing comma would produce a zero-length final name */
+		if (str.value[str.length - 1] == ',')
+			return DEUCE_SSH_ERROR_PARSE;
 	}
 	val->value = str.value;
 	val->length = str.length;
@@ -259,5 +262,8 @@ deuce_ssh_parse_namelist_next(deuce_ssh_string val, deuce_ssh_namelist nl)
 			break;
 		}
 	}
+	/* RFC 4251 s6: names MUST NOT be longer than 64 characters */
+	if (val->length > 64)
+		return DEUCE_SSH_ERROR_PARSE;
 	return val->length + 4;
 }

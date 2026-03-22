@@ -7,6 +7,8 @@
 #error Only include deucessh.h, do not directly include this file.
 #endif
 
+#include <time.h>
+
 /* Opaque context types for algorithm modules.
  * Each module defines the actual struct contents. */
 typedef struct deuce_ssh_enc_ctx deuce_ssh_enc_ctx;
@@ -152,10 +154,23 @@ typedef struct deuce_ssh_language_s {
 	char name[];
 } *deuce_ssh_language;
 
+/* Rekey thresholds (RFC 4253 s9, RFC 4251 s9.3.2) */
+#define DEUCE_SSH_REKEY_SOFT_LIMIT  UINT32_C(0x10000000)  /* 2^28 packets */
+#define DEUCE_SSH_REKEY_HARD_LIMIT  UINT32_C(0x80000000)  /* 2^31 packets */
+#define DEUCE_SSH_REKEY_BYTES       UINT64_C(0x40000000)  /* 1 GiB */
+#define DEUCE_SSH_REKEY_SECONDS     3600                   /* 1 hour */
+
 typedef struct deuce_ssh_transport_state_s {
 	uint32_t    tx_seq;
 	uint32_t    rx_seq;
+	uint32_t    tx_since_rekey;  /* packets sent since last (re)key */
+	uint32_t    rx_since_rekey;  /* packets received since last (re)key */
+	uint64_t    bytes_since_rekey; /* bytes sent+received since last (re)key */
+	time_t      rekey_time;     /* time of last (re)key */
+	uint32_t    last_rx_seq;    /* seq number of last received packet */
 	bool        client;
+	bool        rekey_in_progress; /* true between KEXINIT and NEWKEYS */
+	cnd_t       rekey_cnd;     /* wakes senders blocked during rekey */
 
 	/* Packet buffers (dynamically allocated) */
 	size_t packet_buf_sz;
@@ -298,12 +313,47 @@ int deuce_ssh_transport_kex(deuce_ssh_session sess);
 int deuce_ssh_transport_newkeys(deuce_ssh_session sess);
 
 /*
+ * Perform key re-exchange (RFC 4253 s9).
+ * Re-runs KEXINIT, KEX, and NEWKEYS to derive fresh session keys.
+ * Resets the per-key packet counters.
+ *
+ * Normally called automatically: recv_packet triggers rekey when
+ * per-key packet counts exceed the soft limit (2^28), and also
+ * handles peer-initiated rekey (incoming KEXINIT).  Applications
+ * only need to call this directly for single-threaded usage or
+ * to force an early rekey (e.g., after 1 GB of data).
+ *
+ * Returns 0 on success.
+ */
+int deuce_ssh_transport_rekey(deuce_ssh_session sess);
+
+/*
+ * Returns true if the session needs rekeying (packet count has
+ * exceeded the soft limit of 2^28 packets).  Useful for applications
+ * that want to trigger rekey based on additional criteria (e.g.,
+ * byte count or elapsed time) alongside the automatic packet-count
+ * based rekey.
+ */
+bool deuce_ssh_transport_rekey_needed(deuce_ssh_session sess);
+
+/*
+ * Send SSH_MSG_UNIMPLEMENTED (RFC 4253 s11.4) in response to an
+ * unrecognized message.  The rejected_seq is the sequence number of
+ * the packet that was not understood.  Returns 0 on success.
+ */
+int deuce_ssh_transport_send_unimplemented(deuce_ssh_session sess,
+    uint32_t rejected_seq);
+
+/*
  * Send SSH_MSG_DISCONNECT (RFC 4253 s11.1) and set terminate flag.
  * The desc string is clamped to 230 bytes.  The send is best-effort
  * (errors are ignored since we're disconnecting).
  */
 int deuce_ssh_transport_disconnect(deuce_ssh_session sess,
     uint32_t reason, const char *desc);
+
+/* Find a registered key algorithm by name.  Returns NULL if not found. */
+deuce_ssh_key_algo deuce_ssh_transport_find_key_algo(const char *name);
 
 /* Query functions — return negotiated algorithm names or NULL. */
 const char *deuce_ssh_transport_get_remote_version(deuce_ssh_session sess);

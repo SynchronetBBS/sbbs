@@ -163,116 +163,31 @@ static struct deuce_ssh_dh_gex_provider dh_provider = {
 };
 
 /* ================================================================
- * Server-side protocol handling
+ * Server-side auth callbacks
  * ================================================================ */
 
 static int
-handle_auth(void)
+auth_none(const uint8_t *username, size_t username_len, void *cbdata)
 {
-	uint8_t msg_type;
-	uint8_t *payload;
-	size_t payload_len;
-	int res;
-
-	/* Receive SERVICE_REQUEST */
-	res = deuce_ssh_transport_recv_packet(&sess, &msg_type, &payload, &payload_len);
-	if (res < 0)
-		return res;
-	if (msg_type != SSH_MSG_SERVICE_REQUEST)
-		return DEUCE_SSH_ERROR_PARSE;
-
-	/* Send SERVICE_ACCEPT */
-	{
-		uint8_t accept[32];
-		size_t pos = 0;
-		accept[pos++] = SSH_MSG_SERVICE_ACCEPT;
-		/* Echo back the service name */
-		if (payload_len > 1 + 4) {
-			uint32_t slen;
-			deuce_ssh_parse_uint32(&payload[1], payload_len - 1, &slen);
-			if (1 + 4 + slen <= payload_len) {
-				deuce_ssh_serialize_uint32(slen, accept, sizeof(accept), &pos);
-				memcpy(&accept[pos], &payload[5], slen);
-				pos += slen;
-			}
-		}
-		res = deuce_ssh_transport_send_packet(&sess, accept, pos, NULL);
-		if (res < 0)
-			return res;
-	}
-
-	/* Auth loop */
-	for (;;) {
-		res = deuce_ssh_transport_recv_packet(&sess, &msg_type, &payload, &payload_len);
-		if (res < 0)
-			return res;
-		if (msg_type != SSH_MSG_USERAUTH_REQUEST)
-			return DEUCE_SSH_ERROR_PARSE;
-
-		/* Parse: string user, string service, string method */
-		size_t rpos = 1;
-		uint32_t ulen;
-		if (rpos + 4 > payload_len)
-			return DEUCE_SSH_ERROR_PARSE;
-		deuce_ssh_parse_uint32(&payload[rpos], payload_len - rpos, &ulen);
-		rpos += 4;
-		if (rpos + ulen > payload_len)
-			return DEUCE_SSH_ERROR_PARSE;
-		rpos += ulen; /* skip username */
-
-		uint32_t slen;
-		if (rpos + 4 > payload_len)
-			return DEUCE_SSH_ERROR_PARSE;
-		deuce_ssh_parse_uint32(&payload[rpos], payload_len - rpos, &slen);
-		rpos += 4;
-		if (rpos + slen > payload_len)
-			return DEUCE_SSH_ERROR_PARSE;
-		rpos += slen; /* skip service */
-
-		uint32_t mlen;
-		if (rpos + 4 > payload_len)
-			return DEUCE_SSH_ERROR_PARSE;
-		deuce_ssh_parse_uint32(&payload[rpos], payload_len - rpos, &mlen);
-		rpos += 4;
-		if (rpos + mlen > payload_len)
-			return DEUCE_SSH_ERROR_PARSE;
-		const uint8_t *method = &payload[rpos];
-		rpos += mlen;
-
-		if (mlen == 4 && memcmp(method, "none", 4) == 0) {
-			/* Accept none auth for testing */
-			uint8_t success = SSH_MSG_USERAUTH_SUCCESS;
-			res = deuce_ssh_transport_send_packet(&sess, &success, 1, NULL);
-			if (res < 0)
-				return res;
-			return 0;
-		}
-
-		if (mlen == 8 && memcmp(method, "password", 8) == 0) {
-			/* Accept any password */
-			uint8_t success = SSH_MSG_USERAUTH_SUCCESS;
-			res = deuce_ssh_transport_send_packet(&sess, &success, 1, NULL);
-			if (res < 0)
-				return res;
-			return 0;
-		}
-
-		/* Unknown method — send failure */
-		{
-			static const char methods[] = "password";
-			uint8_t fail[32];
-			size_t pos = 0;
-			fail[pos++] = SSH_MSG_USERAUTH_FAILURE;
-			deuce_ssh_serialize_uint32(sizeof(methods) - 1, fail, sizeof(fail), &pos);
-			memcpy(&fail[pos], methods, sizeof(methods) - 1);
-			pos += sizeof(methods) - 1;
-			fail[pos++] = 0;
-			res = deuce_ssh_transport_send_packet(&sess, fail, pos, NULL);
-			if (res < 0)
-				return res;
-		}
-	}
+	/* Accept any user without credentials (testing) */
+	return DEUCE_SSH_AUTH_SUCCESS;
 }
+
+static int
+auth_password(const uint8_t *username, size_t username_len,
+    const uint8_t *password, size_t password_len,
+    uint8_t **change_prompt, size_t *change_prompt_len,
+    void *cbdata)
+{
+	/* Accept any password (testing) */
+	return DEUCE_SSH_AUTH_SUCCESS;
+}
+
+static struct deuce_ssh_auth_server_cbs auth_cbs = {
+	.methods_str = "password",
+	.none_cb = auth_none,
+	.password_cb = auth_password,
+};
 
 static int
 handle_channel(void)
@@ -543,7 +458,9 @@ main(int argc, char **argv)
 
 	/* Auth */
 	fprintf(stderr, "Handling auth...\n");
-	res = handle_auth();
+	uint8_t auth_user[256];
+	size_t auth_user_len;
+	res = deuce_ssh_auth_server(&sess, &auth_cbs, auth_user, &auth_user_len);
 	if (res < 0) {
 		fprintf(stderr, "auth failed: %d\n", res);
 		return 1;

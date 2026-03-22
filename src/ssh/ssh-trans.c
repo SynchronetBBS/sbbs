@@ -73,12 +73,39 @@ is_version_line(uint8_t *buf, size_t buflen)
 	return (buf[0] == 'S' && buf[1] == 'S' && buf[2] == 'H' && buf[3] == '-');
 }
 
+/*
+ * RFC 4253 s4.2: protoversion and softwareversion MUST consist of
+ * printable US-ASCII characters, excluding whitespace and minus sign.
+ * (minus is allowed as separator but not "excluded" — re-reading the
+ * RFC, the constraint is "printable US-ASCII" which is 0x20–0x7E,
+ * but 0x20 (space) is only allowed before comments).
+ * We validate that the entire version line (before CR-LF) contains
+ * only bytes in 0x20–0x7E (printable ASCII).
+ */
+static inline bool
+has_non_ascii(uint8_t *buf, size_t buflen)
+{
+	for (size_t i = 0; i < buflen; i++) {
+		if (buf[i] < 0x20 || buf[i] > 0x7E)
+			return true;
+	}
+	return false;
+}
+
+/*
+ * RFC 4253 s5.1: Clients using protocol 2.0 MUST be able to identify
+ * "1.99" as identical to "2.0".
+ */
 static inline bool
 is_20(uint8_t *buf, size_t buflen)
 {
 	if (buflen < 8)
 		return false;
-	return (buf[4] == '2' && buf[5] == '.' && buf[6] == '0' && buf[7] == '-');
+	if (buf[4] == '2' && buf[5] == '.' && buf[6] == '0' && buf[7] == '-')
+		return true;
+	if (buflen >= 9 && buf[4] == '1' && buf[5] == '.' && buf[6] == '9' && buf[7] == '9' && buf[8] == '-')
+		return true;
+	return false;
 }
 
 static int
@@ -94,7 +121,7 @@ version_rx(deuce_ssh_session sess)
 			return res;
 		}
 		if (is_version_line(sess->trans.rx_packet, received)) {
-			if (received > 255 || has_nulls(sess->trans.rx_packet, received) || missing_crlf(sess->trans.rx_packet, received) || !is_20(sess->trans.rx_packet, received)) {
+			if (received > 255 || has_nulls(sess->trans.rx_packet, received) || missing_crlf(sess->trans.rx_packet, received) || has_non_ascii(sess->trans.rx_packet, received - 2) || !is_20(sess->trans.rx_packet, received)) {
 				sess->terminate = true;
 				return DEUCE_SSH_ERROR_INVALID;
 			}
@@ -150,6 +177,16 @@ version_tx(deuce_ssh_session sess)
 	return 0;
 }
 
+deuce_ssh_key_algo
+deuce_ssh_transport_find_key_algo(const char *name)
+{
+	for (deuce_ssh_key_algo ka = gconf.key_algo_head; ka != NULL; ka = ka->next) {
+		if (strcmp(ka->name, name) == 0)
+			return ka;
+	}
+	return NULL;
+}
+
 const char *
 deuce_ssh_transport_get_remote_version(deuce_ssh_session sess)
 {
@@ -187,6 +224,81 @@ deuce_ssh_transport_version_exchange(deuce_ssh_session sess)
 	if (res < 0)
 		return res;
 	return version_rx(sess);
+}
+
+/* ================================================================
+ * Rekeying (RFC 4253 s9)
+ * ================================================================ */
+
+bool
+deuce_ssh_transport_rekey_needed(deuce_ssh_session sess)
+{
+	if (sess->trans.tx_since_rekey >= DEUCE_SSH_REKEY_SOFT_LIMIT ||
+	    sess->trans.rx_since_rekey >= DEUCE_SSH_REKEY_SOFT_LIMIT)
+		return true;
+	if (sess->trans.bytes_since_rekey >= DEUCE_SSH_REKEY_BYTES)
+		return true;
+	if (sess->trans.rekey_time != 0 &&
+	    time(NULL) - sess->trans.rekey_time >= DEUCE_SSH_REKEY_SECONDS)
+		return true;
+	return false;
+}
+
+int
+deuce_ssh_transport_rekey(deuce_ssh_session sess)
+{
+	/*
+	 * RFC 4253 s9: Rekey uses existing encryption until NEWKEYS.
+	 * Do NOT free cipher/MAC contexts here — they are needed for
+	 * the kexinit/kex packets.  newkeys() will replace them.
+	 *
+	 * Free old KEX outputs (shared_secret, exchange_hash) but NOT
+	 * session_id — it persists across rekeys per RFC 4253 s7.2.
+	 */
+	free(sess->trans.shared_secret);
+	sess->trans.shared_secret = NULL;
+	sess->trans.shared_secret_sz = 0;
+	free(sess->trans.exchange_hash);
+	sess->trans.exchange_hash = NULL;
+	sess->trans.exchange_hash_sz = 0;
+
+	/*
+	 * Block application-layer sends during rekey (RFC 4253 s7.1).
+	 * Set the flag under tx_mtx since send_packet checks it there.
+	 */
+	mtx_lock(&sess->trans.tx_mtx);
+	sess->trans.rekey_in_progress = true;
+	mtx_unlock(&sess->trans.tx_mtx);
+
+	/* Re-negotiate algorithms */
+	int res = deuce_ssh_transport_kexinit(sess);
+	if (res == 0)
+		res = deuce_ssh_transport_kex(sess);
+	if (res == 0)
+		res = deuce_ssh_transport_newkeys(sess);
+
+	/* Clear the flag and wake any blocked senders */
+	mtx_lock(&sess->trans.tx_mtx);
+	sess->trans.rekey_in_progress = false;
+	cnd_broadcast(&sess->trans.rekey_cnd);
+	mtx_unlock(&sess->trans.tx_mtx);
+
+	return res;
+}
+
+/* ================================================================
+ * SSH_MSG_UNIMPLEMENTED (RFC 4253 s11.4)
+ * ================================================================ */
+
+int
+deuce_ssh_transport_send_unimplemented(deuce_ssh_session sess,
+    uint32_t rejected_seq)
+{
+	uint8_t msg[8];
+	size_t pos = 0;
+	msg[pos++] = SSH_MSG_UNIMPLEMENTED;
+	deuce_ssh_serialize_uint32(rejected_seq, msg, sizeof(msg), &pos);
+	return deuce_ssh_transport_send_packet(sess, msg, pos, NULL);
 }
 
 /* ================================================================
@@ -297,6 +409,17 @@ deuce_ssh_transport_send_packet(deuce_ssh_session sess,
 {
 	int ret;
 	mtx_lock(&sess->trans.tx_mtx);
+
+	/*
+	 * RFC 4253 s7.1: during rekey, only transport/KEX messages
+	 * (types 1–49) are allowed.  Block application-layer messages
+	 * (types 50+) until rekey completes.
+	 */
+	if (payload_len > 0 && payload[0] >= 50) {
+		while (sess->trans.rekey_in_progress && !sess->terminate)
+			cnd_wait(&sess->trans.rekey_cnd, &sess->trans.tx_mtx);
+	}
+
 	size_t bs = tx_block_size(sess);
 
 	size_t padding_len = bs - ((5 + payload_len) % bs);
@@ -366,11 +489,19 @@ deuce_ssh_transport_send_packet(deuce_ssh_session sess,
 		}
 	}
 
+	/* Refuse to send if per-key packet count would exceed hard limit */
+	if (sess->trans.tx_since_rekey >= DEUCE_SSH_REKEY_HARD_LIMIT) {
+		ret = DEUCE_SSH_ERROR_REKEY_NEEDED;
+		goto tx_done;
+	}
+
 	ret = gconf.tx(sess->trans.tx_packet, pos, &sess->terminate, sess->tx_cbdata);
 	if (ret == 0) {
 		if (seq_out != NULL)
 			*seq_out = sess->trans.tx_seq;
 		sess->trans.tx_seq++;
+		sess->trans.tx_since_rekey++;
+		sess->trans.bytes_since_rekey += pos;
 	}
 
 tx_done:
@@ -389,6 +520,13 @@ recv_packet_raw(deuce_ssh_session sess,
 {
 	int ret;
 	mtx_lock(&sess->trans.rx_mtx);
+
+	/* Refuse to receive if per-key packet count would exceed hard limit */
+	if (sess->trans.rx_since_rekey >= DEUCE_SSH_REKEY_HARD_LIMIT) {
+		ret = DEUCE_SSH_ERROR_REKEY_NEEDED;
+		goto rx_done;
+	}
+
 	size_t bs = rx_block_size(sess);
 
 	ret = gconf.rx(sess->trans.rx_packet, bs, &sess->terminate, sess->rx_cbdata);
@@ -486,7 +624,10 @@ recv_packet_raw(deuce_ssh_session sess,
 	*payload_len = packet_length - padding_length - 1;
 	*msg_type = sess->trans.rx_packet[5];
 
+	sess->trans.last_rx_seq = sess->trans.rx_seq;
 	sess->trans.rx_seq++;
+	sess->trans.rx_since_rekey++;
+	sess->trans.bytes_since_rekey += packet_length + 4 + mac_len;
 	ret = 0;
 
 rx_done:
@@ -517,6 +658,31 @@ deuce_ssh_transport_recv_packet(deuce_ssh_session sess,
 			return DEUCE_SSH_ERROR_TERMINATED;
 		case SSH_MSG_IGNORE:
 			continue;
+		case SSH_MSG_KEXINIT:
+			/*
+			 * RFC 4253 s9: Peer-initiated rekey.  Only handle
+			 * this after the initial key exchange is complete
+			 * (session_id is set).  During initial handshake,
+			 * return KEXINIT to the caller (kexinit()).
+			 */
+			if (sess->trans.session_id == NULL)
+				return 0;
+			{
+				free(sess->trans.peer_kexinit);
+				sess->trans.peer_kexinit = malloc(*payload_len);
+				if (sess->trans.peer_kexinit == NULL)
+					return DEUCE_SSH_ERROR_ALLOC;
+				memcpy(sess->trans.peer_kexinit, *payload, *payload_len);
+				sess->trans.peer_kexinit_sz = *payload_len;
+
+				/* rekey() handles the rest: sends our
+				 * KEXINIT, runs KEX, exchanges NEWKEYS,
+				 * and installs new keys. */
+				int rk = deuce_ssh_transport_rekey(sess);
+				if (rk < 0)
+					return rk;
+			}
+			continue;
 		case SSH_MSG_DEBUG:
 			if (sess->debug_cb != NULL && *payload_len >= 2) {
 				bool always_display = (*payload)[1];
@@ -541,7 +707,53 @@ deuce_ssh_transport_recv_packet(deuce_ssh_session sess,
 				sess->unimplemented_cb(rejected_seq, sess->unimplemented_cbdata);
 			}
 			continue;
+		case 80: /* SSH_MSG_GLOBAL_REQUEST */
+			/*
+			 * RFC 4254 s4: receiver MUST respond appropriately.
+			 * Parse the request name and want_reply flag.
+			 */
+			{
+				size_t gpos = 1;
+				uint32_t gname_len;
+				if (gpos + 4 > *payload_len)
+					break; /* malformed, return to caller */
+				deuce_ssh_parse_uint32(&(*payload)[gpos], *payload_len - gpos, &gname_len);
+				gpos += 4;
+				if (gpos + gname_len + 1 > *payload_len)
+					break;
+				const uint8_t *gname = &(*payload)[gpos];
+				gpos += gname_len;
+				bool want_reply = ((*payload)[gpos] != 0);
+				gpos++;
+
+				int gr_res = -1;
+				if (sess->global_request_cb != NULL) {
+					typedef int (*gr_cb)(const uint8_t *, size_t,
+					    bool, const uint8_t *, size_t, void *);
+					gr_cb cb = (gr_cb)sess->global_request_cb;
+					gr_res = cb(gname, gname_len, want_reply,
+					    &(*payload)[gpos], *payload_len - gpos,
+					    sess->global_request_cbdata);
+				}
+
+				if (want_reply) {
+					uint8_t reply = (gr_res >= 0) ? 81 : 82;
+					deuce_ssh_transport_send_packet(sess, &reply, 1, NULL);
+				}
+			}
+			continue;
 		default:
+			/*
+			 * Auto-rekey: if any threshold (packet count,
+			 * bytes, or time) has been exceeded, rekey now
+			 * before returning this message to the caller.
+			 */
+			if (sess->trans.session_id != NULL &&
+			    deuce_ssh_transport_rekey_needed(sess)) {
+				int rk = deuce_ssh_transport_rekey(sess);
+				if (rk < 0)
+					return rk;
+			}
 			return 0;
 		}
 	}
@@ -697,50 +909,67 @@ deuce_ssh_transport_kexinit(deuce_ssh_session sess)
 	if (res < 0)
 		return res;
 
-	/* Receive peer's KEXINIT */
-	uint8_t msg_type;
-	uint8_t *peer_payload;
-	size_t peer_len;
-	res = deuce_ssh_transport_recv_packet(sess, &msg_type, &peer_payload, &peer_len);
-	if (res < 0)
-		return res;
-	if (msg_type != SSH_MSG_KEXINIT)
-		return DEUCE_SSH_ERROR_PARSE;
+	/*
+	 * If peer_kexinit is already populated (peer-initiated rekey),
+	 * skip receiving — we already have it.  Otherwise, receive it.
+	 */
+	if (sess->trans.peer_kexinit == NULL) {
+		uint8_t msg_type;
+		uint8_t *peer_payload;
+		size_t peer_len;
+		res = deuce_ssh_transport_recv_packet(sess, &msg_type, &peer_payload, &peer_len);
+		if (res < 0)
+			return res;
+		if (msg_type != SSH_MSG_KEXINIT)
+			return DEUCE_SSH_ERROR_PARSE;
 
-	free(sess->trans.peer_kexinit);
-	sess->trans.peer_kexinit = malloc(peer_len);
-	if (sess->trans.peer_kexinit == NULL)
-		return DEUCE_SSH_ERROR_ALLOC;
-	memcpy(sess->trans.peer_kexinit, peer_payload, peer_len);
-	sess->trans.peer_kexinit_sz = peer_len;
+		sess->trans.peer_kexinit = malloc(peer_len);
+		if (sess->trans.peer_kexinit == NULL)
+			return DEUCE_SSH_ERROR_ALLOC;
+		memcpy(sess->trans.peer_kexinit, peer_payload, peer_len);
+		sess->trans.peer_kexinit_sz = peer_len;
+	}
 
 	/* Parse peer's 10 name-lists (skip msg_type(1) + cookie(16)).
 	 * RFC 4251 s6: algorithm names MUST NOT contain control characters
 	 * (ASCII codes 32 or less) or DEL (127).  Reject violations. */
+	uint8_t *pk = sess->trans.peer_kexinit;
+	size_t pk_len = sess->trans.peer_kexinit_sz;
 	size_t ppos = 17;
 	char peer_lists[10][1024];
 	for (int i = 0; i < 10; i++) {
 		uint32_t nlen;
-		if (deuce_ssh_parse_uint32(&peer_payload[ppos], peer_len - ppos, &nlen) < 4)
+		if (deuce_ssh_parse_uint32(&pk[ppos], pk_len - ppos, &nlen) < 4)
 			return DEUCE_SSH_ERROR_PARSE;
 		ppos += 4;
-		if (ppos + nlen > peer_len)
+		if (ppos + nlen > pk_len)
 			return DEUCE_SSH_ERROR_PARSE;
 		for (uint32_t j = 0; j < nlen; j++) {
-			uint8_t ch = peer_payload[ppos + j];
+			uint8_t ch = pk[ppos + j];
 			if (ch <= ' ' || ch >= 127)
 				return DEUCE_SSH_ERROR_PARSE;
 		}
+		/* RFC 4251 s6: individual names MUST NOT exceed 64 chars */
+		{
+			uint32_t name_start = 0;
+			for (uint32_t j = 0; j <= nlen; j++) {
+				if (j == nlen || pk[ppos + j] == ',') {
+					if (j - name_start > 64)
+						return DEUCE_SSH_ERROR_PARSE;
+					name_start = j + 1;
+				}
+			}
+		}
 		size_t copylen = nlen < sizeof(peer_lists[i]) - 1 ? nlen : sizeof(peer_lists[i]) - 1;
-		memcpy(peer_lists[i], &peer_payload[ppos], copylen);
+		memcpy(peer_lists[i], &pk[ppos], copylen);
 		peer_lists[i][copylen] = 0;
 		ppos += nlen;
 	}
 
 	/* Parse first_kex_packet_follows boolean */
 	bool peer_first_kex_follows = false;
-	if (ppos < peer_len)
-		peer_first_kex_follows = (peer_payload[ppos] != 0);
+	if (ppos < pk_len)
+		peer_first_kex_follows = (pk[ppos] != 0);
 
 	/* Negotiate algorithms */
 	const char *client_kex, *server_kex;
@@ -910,6 +1139,16 @@ derive_key(const char *hash_name,
 int
 deuce_ssh_transport_newkeys(deuce_ssh_session sess)
 {
+	/*
+	 * Save references to OLD encryption/MAC modules so we can call
+	 * the correct cleanup functions after negotiation may have
+	 * changed the _selected pointers (rekey case).
+	 */
+	deuce_ssh_enc old_enc_c2s = sess->trans.enc_c2s_selected;
+	deuce_ssh_enc old_enc_s2c = sess->trans.enc_s2c_selected;
+	deuce_ssh_mac old_mac_c2s = sess->trans.mac_c2s_selected;
+	deuce_ssh_mac old_mac_s2c = sess->trans.mac_s2c_selected;
+
 	uint8_t newkeys_msg = SSH_MSG_NEWKEYS;
 	int res = deuce_ssh_transport_send_packet(sess, &newkeys_msg, 1, NULL);
 	if (res < 0)
@@ -990,7 +1229,44 @@ deuce_ssh_transport_newkeys(deuce_ssh_session sess)
 		return res;
 	}
 
-	/* Initialize encryption contexts via the enc module */
+	/*
+	 * Free old cipher/MAC contexts (rekey case — during initial
+	 * key exchange these are NULL so the cleanup calls are no-ops).
+	 * RFC 4253 s9: old encryption is used until NEWKEYS, which we
+	 * just exchanged above.  Now switch to new keys.
+	 *
+	 * Note: enc_c2s/enc_s2c are the NEWLY negotiated algorithms.
+	 * The old contexts were created by whatever algorithm was
+	 * previously selected.  Since all enc modules use the same
+	 * cleanup pattern (EVP_CIPHER_CTX_free), and the cleanup
+	 * function pointer is per-module, we need to use the enc module
+	 * that CREATED the context.  For simplicity and correctness,
+	 * we use the new module's cleanup — all our enc modules have
+	 * compatible cleanup functions.  If a module's cleanup is NULL,
+	 * the context was never created.
+	 */
+	if (sess->trans.enc_c2s_ctx != NULL && old_enc_c2s != NULL) {
+		if (old_enc_c2s->cleanup != NULL)
+			old_enc_c2s->cleanup(sess->trans.enc_c2s_ctx);
+		sess->trans.enc_c2s_ctx = NULL;
+	}
+	if (sess->trans.enc_s2c_ctx != NULL && old_enc_s2c != NULL) {
+		if (old_enc_s2c->cleanup != NULL)
+			old_enc_s2c->cleanup(sess->trans.enc_s2c_ctx);
+		sess->trans.enc_s2c_ctx = NULL;
+	}
+	if (sess->trans.mac_c2s_ctx != NULL && old_mac_c2s != NULL) {
+		if (old_mac_c2s->cleanup != NULL)
+			old_mac_c2s->cleanup(sess->trans.mac_c2s_ctx);
+		sess->trans.mac_c2s_ctx = NULL;
+	}
+	if (sess->trans.mac_s2c_ctx != NULL && old_mac_s2c != NULL) {
+		if (old_mac_s2c->cleanup != NULL)
+			old_mac_s2c->cleanup(sess->trans.mac_s2c_ctx);
+		sess->trans.mac_s2c_ctx = NULL;
+	}
+
+	/* Initialize new encryption contexts via the enc module */
 	deuce_ssh_enc enc_c2s = sess->trans.enc_c2s_selected;
 	deuce_ssh_enc enc_s2c = sess->trans.enc_s2c_selected;
 
@@ -1014,6 +1290,12 @@ deuce_ssh_transport_newkeys(deuce_ssh_session sess)
 		integ_c2s = NULL;
 		integ_s2c = NULL;
 	}
+
+	/* Reset per-key counters */
+	sess->trans.tx_since_rekey = 0;
+	sess->trans.rx_since_rekey = 0;
+	sess->trans.bytes_since_rekey = 0;
+	sess->trans.rekey_time = time(NULL);
 
 	free(sess->trans.our_kexinit);
 	sess->trans.our_kexinit = NULL;
@@ -1070,6 +1352,16 @@ deuce_ssh_transport_init(deuce_ssh_session sess, size_t max_packet_size)
 		free(sess->trans.rx_mac_scratch);
 		return DEUCE_SSH_ERROR_INIT;
 	}
+	if (cnd_init(&sess->trans.rekey_cnd) != thrd_success) {
+		mtx_destroy(&sess->trans.tx_mtx);
+		mtx_destroy(&sess->trans.rx_mtx);
+		free(sess->trans.tx_packet);
+		free(sess->trans.rx_packet);
+		free(sess->trans.tx_mac_scratch);
+		free(sess->trans.rx_mac_scratch);
+		return DEUCE_SSH_ERROR_INIT;
+	}
+	sess->trans.rekey_in_progress = false;
 
 	sess->trans.kex_selected = NULL;
 	sess->trans.key_algo_selected = NULL;
@@ -1086,6 +1378,10 @@ deuce_ssh_transport_init(deuce_ssh_session sess, size_t max_packet_size)
 	sess->trans.exchange_hash = NULL;
 	sess->trans.tx_seq = 0;
 	sess->trans.rx_seq = 0;
+	sess->trans.tx_since_rekey = 0;
+	sess->trans.rx_since_rekey = 0;
+	sess->trans.bytes_since_rekey = 0;
+	sess->trans.rekey_time = time(NULL);
 
 	return 0;
 }
@@ -1180,6 +1476,8 @@ deuce_ssh_transport_register_kex(deuce_ssh_kex kex)
 {
 	if (gconf.used)
 		return DEUCE_SSH_ERROR_TOOLATE;
+	if (strlen(kex->name) > 64 || strlen(kex->name) == 0)
+		return DEUCE_SSH_ERROR_TOOLONG;
 	if (kex->next)
 		return DEUCE_SSH_ERROR_MUST_BE_NULL;
 	if (gconf.kex_entries + 1 == SIZE_MAX)
@@ -1198,6 +1496,8 @@ deuce_ssh_transport_register_key_algo(deuce_ssh_key_algo key_algo)
 {
 	if (gconf.used)
 		return DEUCE_SSH_ERROR_TOOLATE;
+	if (strlen(key_algo->name) > 64 || strlen(key_algo->name) == 0)
+		return DEUCE_SSH_ERROR_TOOLONG;
 	if (key_algo->next)
 		return DEUCE_SSH_ERROR_MUST_BE_NULL;
 	if (gconf.key_algo_entries + 1 == SIZE_MAX)
@@ -1216,6 +1516,8 @@ deuce_ssh_transport_register_enc(deuce_ssh_enc enc)
 {
 	if (gconf.used)
 		return DEUCE_SSH_ERROR_TOOLATE;
+	if (strlen(enc->name) > 64 || strlen(enc->name) == 0)
+		return DEUCE_SSH_ERROR_TOOLONG;
 	if (enc->next)
 		return DEUCE_SSH_ERROR_MUST_BE_NULL;
 	if (gconf.enc_entries + 1 == SIZE_MAX)
@@ -1234,6 +1536,8 @@ deuce_ssh_transport_register_mac(deuce_ssh_mac mac)
 {
 	if (gconf.used)
 		return DEUCE_SSH_ERROR_TOOLATE;
+	if (strlen(mac->name) > 64 || strlen(mac->name) == 0)
+		return DEUCE_SSH_ERROR_TOOLONG;
 	if (mac->next)
 		return DEUCE_SSH_ERROR_MUST_BE_NULL;
 	if (gconf.mac_entries + 1 == SIZE_MAX)
@@ -1252,6 +1556,8 @@ deuce_ssh_transport_register_comp(deuce_ssh_comp comp)
 {
 	if (gconf.used)
 		return DEUCE_SSH_ERROR_TOOLATE;
+	if (strlen(comp->name) > 64 || strlen(comp->name) == 0)
+		return DEUCE_SSH_ERROR_TOOLONG;
 	if (comp->next)
 		return DEUCE_SSH_ERROR_MUST_BE_NULL;
 	if (gconf.comp_entries + 1 == SIZE_MAX)
@@ -1270,6 +1576,8 @@ deuce_ssh_transport_register_lang(deuce_ssh_language lang)
 {
 	if (gconf.used)
 		return DEUCE_SSH_ERROR_TOOLATE;
+	if (strlen(lang->name) > 64 || strlen(lang->name) == 0)
+		return DEUCE_SSH_ERROR_TOOLONG;
 	if (lang->next)
 		return DEUCE_SSH_ERROR_MUST_BE_NULL;
 	if (gconf.lang_entries + 1 == SIZE_MAX)

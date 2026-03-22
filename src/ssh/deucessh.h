@@ -29,6 +29,7 @@ static_assert(0, "threads.h support required");
 #define DEUCE_SSH_ERROR_TOOLONG       -8   /* Data exceeds buffer or protocol limit */
 #define DEUCE_SSH_ERROR_MUST_BE_NULL  -9   /* Linked list next pointer was not NULL */
 #define DEUCE_SSH_ERROR_NOMORE       -10   /* No more items in name-list */
+#define DEUCE_SSH_ERROR_REKEY_NEEDED -11   /* Must rekey before sending more packets */
 
 typedef struct deuce_ssh_transport_state_s *deuce_ssh_transport_state;
 typedef struct deuce_ssh_session_s *deuce_ssh_session;
@@ -72,6 +73,7 @@ typedef void (*deuce_ssh_unimplemented_cb)(uint32_t rejected_seq, void *cbdata);
 
 #include "ssh-arch.h"
 #include "ssh-trans.h"
+#include "ssh-chan.h"
 
 /*
  * SSH session state.  Allocate one per connection.  Set trans.client
@@ -96,8 +98,48 @@ struct deuce_ssh_session_s {
 	deuce_ssh_unimplemented_cb unimplemented_cb;
 	void *unimplemented_cbdata;
 
+	/* Auth banner callback (set before authentication) */
+	void *banner_cb;      /* deuce_ssh_auth_banner_cb — void* to avoid circular include */
+	void *banner_cbdata;
+
+	/*
+	 * Optional global request callback (RFC 4254 s4).
+	 * If set, called for every SSH_MSG_GLOBAL_REQUEST.  The callback
+	 * receives the request name, want_reply flag, and the request-
+	 * specific data.  Return 0 to send REQUEST_SUCCESS (with no
+	 * response data), positive to send REQUEST_SUCCESS (caller fills
+	 * response), or negative to send REQUEST_FAILURE.  If the
+	 * callback is NULL, REQUEST_FAILURE is sent automatically for
+	 * requests with want_reply=true.
+	 *
+	 * Actual type: int (*)(const uint8_t *name, size_t name_len,
+	 *     bool want_reply, const uint8_t *data, size_t data_len,
+	 *     void *cbdata)
+	 * Stored as void* to avoid circular include with ssh-conn.h.
+	 */
+	void *global_request_cb;
+	void *global_request_cbdata;
+
 	/* Transport layer state */
 	struct deuce_ssh_transport_state_s trans;
+
+	/* Demux thread and channel table (initialized by session_start).
+	 * struct deuce_ssh_channel_s is defined in ssh-conn.h. */
+	thrd_t demux_thread;
+	atomic_bool demux_running;
+
+	struct deuce_ssh_channel_s **channels;
+	size_t channel_count;
+	size_t channel_capacity;
+	mtx_t channel_mtx;          /* protects channels array */
+
+	/* Incoming channel open queue + condition variable */
+	struct deuce_ssh_accept_queue accept_queue;
+	mtx_t accept_mtx;
+	cnd_t accept_cnd;
+
+	/* Next auto-assigned local channel ID */
+	uint32_t next_channel_id;
 };
 
 /*

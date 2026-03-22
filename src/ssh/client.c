@@ -26,6 +26,31 @@
 static int sock = -1;
 struct deuce_ssh_session_s sess;
 
+/* Keyboard-interactive callback: answer every prompt with the password */
+static int
+kbi_prompt(const uint8_t *name, size_t name_len,
+    const uint8_t *instruction, size_t instruction_len,
+    uint32_t num_prompts,
+    const uint8_t **prompts, const size_t *prompt_lens,
+    const bool *echo,
+    uint8_t **responses, size_t *response_lens,
+    void *cbdata)
+{
+	const char *password = cbdata;
+	size_t plen = strlen(password);
+	for (uint32_t i = 0; i < num_prompts; i++) {
+		responses[i] = malloc(plen);
+		if (responses[i] == NULL) {
+			for (uint32_t j = 0; j < i; j++)
+				free(responses[j]);
+			return DEUCE_SSH_ERROR_ALLOC;
+		}
+		memcpy(responses[i], password, plen);
+		response_lens[i] = plen;
+	}
+	return 0;
+}
+
 /* ================================================================
  * I/O callbacks for the transport layer
  * ================================================================ */
@@ -343,9 +368,9 @@ main(int argc, char **argv)
 		fprintf(stderr, "Auth methods: %s\n", methods);
 		res = -1;
 		if (strstr(methods, "password"))
-			res = deuce_ssh_auth_password(&sess, username, password);
+			res = deuce_ssh_auth_password(&sess, username, password, NULL, NULL);
 		if (res < 0 && strstr(methods, "keyboard-interactive"))
-			res = deuce_ssh_auth_keyboard_interactive(&sess, username, password);
+			res = deuce_ssh_auth_keyboard_interactive(&sess, username, kbi_prompt, (void *)password);
 		if (res < 0) {
 			fprintf(stderr, "authentication failed: %d\n", res);
 			return 1;
