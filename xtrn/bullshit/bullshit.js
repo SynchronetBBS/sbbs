@@ -8329,6 +8329,12 @@ js.on_exit('console.write("[?25h");');
         if (_ret === 0)
           continue;
       }
+      if(!options.bullshit.messageBase) {
+        console.writeln("No bulletin message base configured. Sysop has been notified.");
+	console.pause();
+        log(LOG_ERR,"No bulletin message base configured for bullshit.");
+        exit(1);
+      }
       var msgBase = new MsgBase(options.bullshit.messageBase);
       if (msgBase.open()) {
         var messages = [];
