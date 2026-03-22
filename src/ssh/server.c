@@ -1,5 +1,6 @@
 /*
- * Minimal SSH server: accepts one connection, handles ping/pong, exits.
+ * Example SSH server using the high-level DeuceSSH API.
+ * Accepts one connection, handles a single session, exits.
  * Usage: server [port]
  */
 
@@ -139,8 +140,6 @@ static int
 select_dh_group(uint32_t min, uint32_t preferred, uint32_t max,
     uint8_t **p, size_t *p_len, uint8_t **g, size_t *g_len, void *cbdata)
 {
-	/* Only offer group 14 (2048-bit). A real server would select
-	 * based on min/preferred/max from a moduli file. */
 	if (min > 2048)
 		return DEUCE_SSH_ERROR_INIT;
 	*p = malloc(sizeof(group14_prime));
@@ -163,13 +162,12 @@ static struct deuce_ssh_dh_gex_provider dh_provider = {
 };
 
 /* ================================================================
- * Server-side auth callbacks
+ * Auth callbacks
  * ================================================================ */
 
 static int
 auth_none(const uint8_t *username, size_t username_len, void *cbdata)
 {
-	/* Accept any user without credentials (testing) */
 	return DEUCE_SSH_AUTH_SUCCESS;
 }
 
@@ -179,7 +177,6 @@ auth_password(const uint8_t *username, size_t username_len,
     uint8_t **change_prompt, size_t *change_prompt_len,
     void *cbdata)
 {
-	/* Accept any password (testing) */
 	return DEUCE_SSH_AUTH_SUCCESS;
 }
 
@@ -189,163 +186,30 @@ static struct deuce_ssh_auth_server_cbs auth_cbs = {
 	.password_cb = auth_password,
 };
 
+/* ================================================================
+ * Session callbacks
+ * ================================================================ */
+
 static int
-handle_channel(void)
+pty_req_cb(const struct deuce_ssh_pty_req *pty, void *cbdata)
 {
-	uint8_t msg_type;
-	uint8_t *payload;
-	size_t payload_len;
-	int res;
-
-	/* Receive CHANNEL_OPEN */
-	res = deuce_ssh_transport_recv_packet(&sess, &msg_type, &payload, &payload_len);
-	if (res < 0)
-		return res;
-	if (msg_type != SSH_MSG_CHANNEL_OPEN)
-		return DEUCE_SSH_ERROR_PARSE;
-
-	/* Parse sender_channel from the open request */
-	/* Skip: msg_type(1) + string channel_type */
-	size_t rpos = 1;
-	uint32_t type_len;
-	if (rpos + 4 > payload_len)
-		return DEUCE_SSH_ERROR_PARSE;
-	deuce_ssh_parse_uint32(&payload[rpos], payload_len - rpos, &type_len);
-	rpos += 4 + type_len;
-
-	if (rpos + 12 > payload_len)
-		return DEUCE_SSH_ERROR_PARSE;
-	uint32_t remote_channel;
-	deuce_ssh_parse_uint32(&payload[rpos], payload_len - rpos, &remote_channel);
-	rpos += 4;
-	uint32_t remote_window;
-	deuce_ssh_parse_uint32(&payload[rpos], payload_len - rpos, &remote_window);
-
-	/* Send CHANNEL_OPEN_CONFIRMATION */
-	{
-		uint8_t confirm[32];
-		size_t pos = 0;
-		confirm[pos++] = SSH_MSG_CHANNEL_OPEN_CONFIRMATION;
-		deuce_ssh_serialize_uint32(remote_channel, confirm, sizeof(confirm), &pos);
-		deuce_ssh_serialize_uint32(0, confirm, sizeof(confirm), &pos); /* our channel */
-		deuce_ssh_serialize_uint32(0x200000, confirm, sizeof(confirm), &pos); /* window */
-		deuce_ssh_serialize_uint32(0x8000, confirm, sizeof(confirm), &pos); /* max packet */
-		res = deuce_ssh_transport_send_packet(&sess, confirm, pos, NULL);
-		if (res < 0)
-			return res;
-	}
-
-	/* Receive CHANNEL_REQUEST (exec) */
-	res = deuce_ssh_transport_recv_packet(&sess, &msg_type, &payload, &payload_len);
-	if (res < 0)
-		return res;
-	if (msg_type != SSH_MSG_CHANNEL_REQUEST)
-		return DEUCE_SSH_ERROR_PARSE;
-
-	/* Parse: channel(4) + string request_type + bool want_reply + string command */
-	rpos = 1 + 4; /* skip msg_type + channel */
-	uint32_t req_len;
-	if (rpos + 4 > payload_len)
-		return DEUCE_SSH_ERROR_PARSE;
-	deuce_ssh_parse_uint32(&payload[rpos], payload_len - rpos, &req_len);
-	rpos += 4 + req_len + 1; /* skip request_type + want_reply */
-
-	uint32_t cmd_len = 0;
-	const uint8_t *cmd = NULL;
-	if (rpos + 4 <= payload_len) {
-		deuce_ssh_parse_uint32(&payload[rpos], payload_len - rpos, &cmd_len);
-		rpos += 4;
-		if (rpos + cmd_len <= payload_len)
-			cmd = &payload[rpos];
-	}
-
-	/* Send CHANNEL_SUCCESS */
-	{
-		uint8_t success[8];
-		size_t pos = 0;
-		success[pos++] = SSH_MSG_CHANNEL_SUCCESS;
-		deuce_ssh_serialize_uint32(remote_channel, success, sizeof(success), &pos);
-		res = deuce_ssh_transport_send_packet(&sess, success, pos, NULL);
-		if (res < 0)
-			return res;
-	}
-
-	/* Handle the command */
-	const char *response;
-	if (cmd != NULL && cmd_len == 4 && memcmp(cmd, "ping", 4) == 0)
-		response = "pong\n";
-	else
-		response = "unknown command\n";
-
-	/* Send response as CHANNEL_DATA */
-	size_t resp_len = strlen(response);
-	size_t data_msg_len = 1 + 4 + 4 + resp_len;
-	uint8_t *data_msg = malloc(data_msg_len);
-	if (data_msg == NULL)
-		return DEUCE_SSH_ERROR_ALLOC;
-	{
-		size_t pos = 0;
-		data_msg[pos++] = SSH_MSG_CHANNEL_DATA;
-		deuce_ssh_serialize_uint32(remote_channel, data_msg, data_msg_len, &pos);
-		deuce_ssh_serialize_uint32((uint32_t)resp_len, data_msg, data_msg_len, &pos);
-		memcpy(&data_msg[pos], response, resp_len);
-		pos += resp_len;
-		res = deuce_ssh_transport_send_packet(&sess, data_msg, pos, NULL);
-	}
-	free(data_msg);
-	if (res < 0)
-		return res;
-
-	/* Send exit-status (0) so the client knows the command succeeded */
-	{
-		static const char req[] = "exit-status";
-		uint8_t status_msg[32];
-		size_t pos = 0;
-		status_msg[pos++] = SSH_MSG_CHANNEL_REQUEST;
-		deuce_ssh_serialize_uint32(remote_channel, status_msg, sizeof(status_msg), &pos);
-		deuce_ssh_serialize_uint32(sizeof(req) - 1, status_msg, sizeof(status_msg), &pos);
-		memcpy(&status_msg[pos], req, sizeof(req) - 1);
-		pos += sizeof(req) - 1;
-		status_msg[pos++] = 0; /* want_reply = false */
-		deuce_ssh_serialize_uint32(0, status_msg, sizeof(status_msg), &pos); /* exit code 0 */
-		res = deuce_ssh_transport_send_packet(&sess, status_msg, pos, NULL);
-		if (res < 0)
-			return res;
-	}
-
-	/* Send CHANNEL_EOF */
-	{
-		uint8_t eof[8];
-		size_t pos = 0;
-		eof[pos++] = SSH_MSG_CHANNEL_EOF;
-		deuce_ssh_serialize_uint32(remote_channel, eof, sizeof(eof), &pos);
-		res = deuce_ssh_transport_send_packet(&sess, eof, pos, NULL);
-		if (res < 0)
-			return res;
-	}
-
-	/* Send CHANNEL_CLOSE */
-	{
-		uint8_t cls[8];
-		size_t pos = 0;
-		cls[pos++] = SSH_MSG_CHANNEL_CLOSE;
-		deuce_ssh_serialize_uint32(remote_channel, cls, sizeof(cls), &pos);
-		res = deuce_ssh_transport_send_packet(&sess, cls, pos, NULL);
-		if (res < 0)
-			return res;
-	}
-
-	/* Wait for client's CHANNEL_CLOSE (may receive EOF or other messages first) */
-	for (;;) {
-		res = deuce_ssh_transport_recv_packet(&sess, &msg_type, &payload, &payload_len);
-		if (res < 0)
-			return res;
-		if (msg_type == SSH_MSG_CHANNEL_CLOSE)
-			break;
-	}
-
+	fprintf(stderr, "  PTY: %s %ux%u\n", pty->term, pty->cols, pty->rows);
 	return 0;
 }
+
+static int
+env_cb(const uint8_t *name, size_t name_len,
+    const uint8_t *value, size_t value_len, void *cbdata)
+{
+	fprintf(stderr, "  ENV: %.*s=%.*s\n",
+	    (int)name_len, name, (int)value_len, value);
+	return 0;
+}
+
+static struct deuce_ssh_server_session_cbs session_cbs = {
+	.pty_req = pty_req_cb,
+	.env = env_cb,
+};
 
 /* ================================================================
  * Main
@@ -372,10 +236,7 @@ main(int argc, char **argv)
 
 	/* Listen */
 	int listen_fd = socket(PF_INET, SOCK_STREAM, 0);
-	if (listen_fd == -1) {
-		perror("socket");
-		return 1;
-	}
+	if (listen_fd == -1) { perror("socket"); return 1; }
 	int opt = 1;
 	setsockopt(listen_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
 
@@ -385,56 +246,36 @@ main(int argc, char **argv)
 		.sin_addr = { htonl(INADDR_ANY) },
 	};
 	if (bind(listen_fd, (struct sockaddr *)&sa, sizeof(sa)) == -1) {
-		perror("bind");
-		return 1;
+		perror("bind"); return 1;
 	}
-	if (listen(listen_fd, 1) == -1) {
-		perror("listen");
-		return 1;
-	}
+	if (listen(listen_fd, 1) == -1) { perror("listen"); return 1; }
 	fprintf(stderr, "Listening on port %d...\n", port);
 
 	conn_fd = accept(listen_fd, NULL, NULL);
 	close(listen_fd);
-	if (conn_fd == -1) {
-		perror("accept");
-		return 1;
-	}
+	if (conn_fd == -1) { perror("accept"); return 1; }
 	fprintf(stderr, "Connection accepted.\n");
 
 	/* Initialize session */
 	memset(&sess, 0, sizeof(sess));
 	sess.trans.client = false;
 	int res = deuce_ssh_session_init(&sess);
-	if (res < 0) {
-		fprintf(stderr, "session_init failed: %d\n", res);
-		return 1;
-	}
+	if (res < 0) { fprintf(stderr, "session_init failed: %d\n", res); return 1; }
 
 	/* Generate ephemeral host key and set DH group provider */
 	res = ssh_ed25519_generate_key(&sess);
-	if (res < 0) {
-		fprintf(stderr, "host key generation failed: %d\n", res);
-		return 1;
-	}
-
+	if (res < 0) { fprintf(stderr, "host key gen failed: %d\n", res); return 1; }
 	deuce_ssh_dh_gex_set_provider(&sess, &dh_provider);
 
 	/* Handshake */
 	fprintf(stderr, "Version exchange...\n");
 	res = deuce_ssh_transport_version_exchange(&sess);
-	if (res < 0) {
-		fprintf(stderr, "version_exchange failed: %d\n", res);
-		return 1;
-	}
+	if (res < 0) { fprintf(stderr, "version_exchange failed: %d\n", res); return 1; }
 	fprintf(stderr, "Remote: %s\n", deuce_ssh_transport_get_remote_version(&sess));
 
 	fprintf(stderr, "KEXINIT...\n");
 	res = deuce_ssh_transport_kexinit(&sess);
-	if (res < 0) {
-		fprintf(stderr, "kexinit failed: %d\n", res);
-		return 1;
-	}
+	if (res < 0) { fprintf(stderr, "kexinit failed: %d\n", res); return 1; }
 	fprintf(stderr, "KEX: %s, Host key: %s, Enc: %s, MAC: %s\n",
 	    deuce_ssh_transport_get_kex_name(&sess),
 	    deuce_ssh_transport_get_hostkey_name(&sess),
@@ -443,17 +284,11 @@ main(int argc, char **argv)
 
 	fprintf(stderr, "Key exchange...\n");
 	res = deuce_ssh_transport_kex(&sess);
-	if (res < 0) {
-		fprintf(stderr, "kex failed: %d\n", res);
-		return 1;
-	}
+	if (res < 0) { fprintf(stderr, "kex failed: %d\n", res); return 1; }
 
 	fprintf(stderr, "NEWKEYS...\n");
 	res = deuce_ssh_transport_newkeys(&sess);
-	if (res < 0) {
-		fprintf(stderr, "newkeys failed: %d\n", res);
-		return 1;
-	}
+	if (res < 0) { fprintf(stderr, "newkeys failed: %d\n", res); return 1; }
 	fprintf(stderr, "Encrypted transport established.\n");
 
 	/* Auth */
@@ -461,22 +296,59 @@ main(int argc, char **argv)
 	uint8_t auth_user[256];
 	size_t auth_user_len;
 	res = deuce_ssh_auth_server(&sess, &auth_cbs, auth_user, &auth_user_len);
-	if (res < 0) {
-		fprintf(stderr, "auth failed: %d\n", res);
-		return 1;
-	}
+	if (res < 0) { fprintf(stderr, "auth failed: %d\n", res); return 1; }
 	fprintf(stderr, "Client authenticated.\n");
 
-	/* Channel */
+	/* Start demux thread */
+	res = deuce_ssh_session_start(&sess);
+	if (res < 0) { fprintf(stderr, "session_start failed: %d\n", res); return 1; }
+
+	/* Accept incoming channel */
+	struct deuce_ssh_incoming_open *inc;
+	res = deuce_ssh_session_accept(&sess, &inc, -1);
+	if (res < 0) { fprintf(stderr, "accept failed: %d\n", res); return 1; }
+
+	/* Accept as session channel */
+	struct deuce_ssh_channel_s ch;
+	const char *req_type, *req_data;
 	fprintf(stderr, "Handling channel...\n");
-	res = handle_channel();
-	if (res < 0) {
-		fprintf(stderr, "channel failed: %d\n", res);
-		return 1;
+	res = deuce_ssh_session_accept_channel(&sess, inc, &ch,
+	    &session_cbs, &req_type, &req_data);
+	if (res < 0) { fprintf(stderr, "session_accept_channel failed: %d\n", res); return 1; }
+	fprintf(stderr, "  Request: %s %s\n", req_type, req_data);
+
+	if (strcmp(req_type, "exec") == 0) {
+		/* Execute command — respond and close */
+		if (strcmp(req_data, "ping") == 0) {
+			deuce_ssh_session_write(&sess, &ch,
+			    (const uint8_t *)"pong\n", 5);
+			deuce_ssh_session_write_ext(&sess, &ch,
+			    (const uint8_t *)"gnop\n", 5);
+		}
+		else {
+			deuce_ssh_session_write(&sess, &ch,
+			    (const uint8_t *)"unknown command\n", 16);
+		}
 	}
-	fprintf(stderr, "Channel closed.\n");
+	else {
+		/* Shell mode — echo back until EOF */
+		uint8_t buf[4096];
+		for (;;) {
+			int ev = deuce_ssh_session_poll(&sess, &ch,
+			    DEUCE_SSH_POLL_READ, -1);
+			if (ev <= 0)
+				break;
+			ssize_t n = deuce_ssh_session_read(&sess, &ch,
+			    buf, sizeof(buf));
+			if (n <= 0)
+				break;
+			deuce_ssh_session_write(&sess, &ch, buf, n);
+		}
+	}
 
 	/* Clean shutdown */
+	fprintf(stderr, "Channel closed.\n");
+	deuce_ssh_session_close(&sess, &ch, 0);
 	deuce_ssh_session_cleanup(&sess);
 	close(conn_fd);
 	fprintf(stderr, "Server shutdown complete.\n");

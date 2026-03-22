@@ -1,3 +1,10 @@
+/*
+ * Example SSH client using the high-level DeuceSSH API.
+ * Usage: client username password [host] [port] [command]
+ * If command is given, runs exec mode (no pty).
+ * If omitted, opens an interactive shell with pty.
+ */
+
 #include <netdb.h>
 #include <netinet/in.h>
 #include <sys/socket.h>
@@ -26,7 +33,10 @@
 static int sock = -1;
 struct deuce_ssh_session_s sess;
 
-/* Keyboard-interactive callback: answer every prompt with the password */
+/* ================================================================
+ * Keyboard-interactive callback: answer every prompt with password
+ * ================================================================ */
+
 static int
 kbi_prompt(const uint8_t *name, size_t name_len,
     const uint8_t *instruction, size_t instruction_len,
@@ -151,58 +161,17 @@ extra_line(uint8_t *buf, size_t bufsz, void *cbdata)
 }
 
 /* ================================================================
- * Receive thread — reads channel data and writes to stdout/stderr
- * ================================================================ */
-
-struct rx_thread_args {
-	struct deuce_ssh_channel_s *ch;
-};
-
-static int
-rx_thread(void *arg)
-{
-	struct rx_thread_args *a = arg;
-	struct deuce_ssh_channel_s *ch = a->ch;
-
-	for (;;) {
-		uint8_t msg_type;
-		uint8_t *data;
-		size_t data_len;
-
-		int res = deuce_ssh_conn_recv(&sess, ch, &msg_type, &data, &data_len);
-		if (res < 0)
-			break;
-
-		if (msg_type == SSH_MSG_CHANNEL_DATA) {
-			write(STDOUT_FILENO, data, data_len);
-			if (ch->local_window < 0x100000)
-				deuce_ssh_conn_send_window_adjust(&sess, ch, 0x200000);
-		}
-		else if (msg_type == SSH_MSG_CHANNEL_EXTENDED_DATA) {
-			if (data != NULL && data_len > 0)
-				write(STDERR_FILENO, data, data_len);
-		}
-		else if (msg_type == SSH_MSG_CHANNEL_EOF ||
-		         msg_type == SSH_MSG_CHANNEL_CLOSE) {
-			break;
-		}
-	}
-
-	return 0;
-}
-
-/* ================================================================
- * Transmit thread — reads from stdin and sends as channel data
+ * Stdin writer thread — reads from stdin, writes to channel
  * ================================================================ */
 
 static int
-tx_thread(void *arg)
+stdin_thread(void *arg)
 {
-	struct rx_thread_args *a = arg;
-	struct deuce_ssh_channel_s *ch = a->ch;
+	struct deuce_ssh_channel_s *ch = arg;
 	uint8_t buf[4096];
 
 	for (;;) {
+		/* Wait for stdin data */
 		struct pollfd fds[1] = {
 			{ .fd = STDIN_FILENO, .events = POLLIN },
 		};
@@ -216,18 +185,21 @@ tx_thread(void *arg)
 		if (n <= 0)
 			break;
 
-		int res = deuce_ssh_conn_send_data(&sess, ch, buf, n);
-		if (res < 0)
-			break;
+		/* Wait for channel write space, then send */
+		while (n > 0) {
+			int ev = deuce_ssh_session_poll(&sess, ch,
+			    DEUCE_SSH_POLL_WRITE, 1000);
+			if (ev < 0 || sess.terminate)
+				goto done;
+			if (!(ev & DEUCE_SSH_POLL_WRITE))
+				continue;
+			ssize_t w = deuce_ssh_session_write(&sess, ch, buf, n);
+			if (w < 0)
+				goto done;
+			n -= w;
+		}
 	}
-
-	/* Signal EOF to the remote side */
-	uint8_t eof_msg[8];
-	size_t pos = 0;
-	eof_msg[pos++] = SSH_MSG_CHANNEL_EOF;
-	deuce_ssh_serialize_uint32(ch->remote_id, eof_msg, sizeof(eof_msg), &pos);
-	deuce_ssh_transport_send_packet(&sess, eof_msg, pos, NULL);
-
+done:
 	return 0;
 }
 
@@ -244,8 +216,7 @@ main(int argc, char **argv)
 	const char *password = NULL;
 	const char *command = NULL;
 
-	/* client user pass [host] [port] [command]
-	 * If command is omitted, forward stdin/stdout interactively. */
+	/* client user pass [host] [port] [command] */
 	if (argc > 1) username = argv[1];
 	if (argc > 2) password = argv[2];
 	if (argc > 3) host = argv[3];
@@ -306,61 +277,38 @@ main(int argc, char **argv)
 		return 1;
 	}
 
-	/* ---- Single-threaded handshake ---- */
-
-	/* Version exchange */
+	/* Handshake */
 	fprintf(stderr, "Version exchange...\n");
 	res = deuce_ssh_transport_version_exchange(&sess);
-	if (res < 0) {
-		fprintf(stderr, "version_exchange failed: %d\n", res);
-		return 1;
-	}
+	if (res < 0) { fprintf(stderr, "version_exchange failed: %d\n", res); return 1; }
 	fprintf(stderr, "Remote: %s\n", deuce_ssh_transport_get_remote_version(&sess));
 
-	/* KEXINIT */
 	fprintf(stderr, "KEXINIT...\n");
 	res = deuce_ssh_transport_kexinit(&sess);
-	if (res < 0) {
-		fprintf(stderr, "kexinit failed: %d\n", res);
-		return 1;
-	}
-	fprintf(stderr, "KEX algorithm: %s\n", deuce_ssh_transport_get_kex_name(&sess));
-	fprintf(stderr, "Host key: %s\n", deuce_ssh_transport_get_hostkey_name(&sess));
-	fprintf(stderr, "Enc C2S: %s\n", deuce_ssh_transport_get_enc_name(&sess));
-	fprintf(stderr, "MAC C2S: %s\n", deuce_ssh_transport_get_mac_name(&sess));
+	if (res < 0) { fprintf(stderr, "kexinit failed: %d\n", res); return 1; }
+	fprintf(stderr, "KEX: %s, Host key: %s, Enc: %s, MAC: %s\n",
+	    deuce_ssh_transport_get_kex_name(&sess),
+	    deuce_ssh_transport_get_hostkey_name(&sess),
+	    deuce_ssh_transport_get_enc_name(&sess),
+	    deuce_ssh_transport_get_mac_name(&sess));
 
-	/* Key exchange */
 	fprintf(stderr, "Key exchange...\n");
 	res = deuce_ssh_transport_kex(&sess);
-	if (res < 0) {
-		fprintf(stderr, "kex failed: %d\n", res);
-		return 1;
-	}
+	if (res < 0) { fprintf(stderr, "kex failed: %d\n", res); return 1; }
 
-	/* NEWKEYS */
 	fprintf(stderr, "NEWKEYS...\n");
 	res = deuce_ssh_transport_newkeys(&sess);
-	if (res < 0) {
-		fprintf(stderr, "newkeys failed: %d\n", res);
-		return 1;
-	}
+	if (res < 0) { fprintf(stderr, "newkeys failed: %d\n", res); return 1; }
 	fprintf(stderr, "Encrypted transport established.\n");
 
-	/* Request ssh-userauth service */
+	/* Authenticate */
 	fprintf(stderr, "Requesting ssh-userauth...\n");
 	res = deuce_ssh_auth_request_service(&sess, "ssh-userauth");
-	if (res < 0) {
-		fprintf(stderr, "service request failed: %d\n", res);
-		return 1;
-	}
+	if (res < 0) { fprintf(stderr, "service request failed: %d\n", res); return 1; }
 
-	/* Query available auth methods */
 	char methods[256];
 	res = deuce_ssh_auth_get_methods(&sess, username, methods, sizeof(methods));
-	if (res < 0) {
-		fprintf(stderr, "auth method query failed: %d\n", res);
-		return 1;
-	}
+	if (res < 0) { fprintf(stderr, "auth method query failed: %d\n", res); return 1; }
 	if (res == 0) {
 		fprintf(stderr, "No authentication required.\n");
 	}
@@ -371,59 +319,73 @@ main(int argc, char **argv)
 			res = deuce_ssh_auth_password(&sess, username, password, NULL, NULL);
 		if (res < 0 && strstr(methods, "keyboard-interactive"))
 			res = deuce_ssh_auth_keyboard_interactive(&sess, username, kbi_prompt, (void *)password);
-		if (res < 0) {
-			fprintf(stderr, "authentication failed: %d\n", res);
-			return 1;
-		}
+		if (res < 0) { fprintf(stderr, "authentication failed: %d\n", res); return 1; }
 		fprintf(stderr, "Authenticated.\n");
 	}
 
+	/* Start the demux thread */
+	res = deuce_ssh_session_start(&sess);
+	if (res < 0) { fprintf(stderr, "session_start failed: %d\n", res); return 1; }
+
 	/* Open channel */
 	struct deuce_ssh_channel_s ch;
-	fprintf(stderr, "Opening channel...\n");
-	res = deuce_ssh_conn_open_session(&sess, &ch, 0);
-	if (res < 0) {
-		fprintf(stderr, "channel open failed: %d\n", res);
-		return 1;
-	}
-
 	if (command != NULL) {
-		/* Exec mode: run command, read output */
 		fprintf(stderr, "Executing: %s\n", command);
-		res = deuce_ssh_conn_request_exec(&sess, &ch, command);
-		if (res < 0) {
-			fprintf(stderr, "exec failed: %d\n", res);
-			return 1;
-		}
+		res = deuce_ssh_session_open_exec(&sess, &ch, command);
 	}
-
-	/* ---- Two-threaded I/O ---- */
-
-	struct rx_thread_args args = { .ch = &ch };
-	thrd_t rx_thrd, tx_thrd;
-
-	if (thrd_create(&rx_thrd, rx_thread, &args) != thrd_success) {
-		fprintf(stderr, "failed to create rx thread\n");
-		return 1;
+	else {
+		fprintf(stderr, "Opening shell...\n");
+		struct deuce_ssh_pty_req pty = {
+			.term = "xterm-256color",
+			.cols = 80, .rows = 24,
+			.wpx = 0, .hpx = 0,
+		};
+		res = deuce_ssh_session_open_shell(&sess, &ch, &pty);
 	}
+	if (res < 0) { fprintf(stderr, "channel open failed: %d\n", res); return 1; }
 
+	/* Interactive mode: spawn a stdin writer thread */
+	thrd_t writer;
+	bool have_writer = false;
 	if (command == NULL) {
-		/* Interactive mode: forward stdin to channel */
-		if (thrd_create(&tx_thrd, tx_thread, &args) != thrd_success) {
-			fprintf(stderr, "failed to create tx thread\n");
-			sess.terminate = true;
-			thrd_join(rx_thrd, &res);
-			return 1;
-		}
-		int tx_res;
-		thrd_join(tx_thrd, &tx_res);
+		if (thrd_create(&writer, stdin_thread, &ch) == thrd_success)
+			have_writer = true;
 	}
 
-	/* Wait for receive thread to finish */
-	int rx_res;
-	thrd_join(rx_thrd, &rx_res);
+	/* Read stdout/stderr/signals via poll */
+	uint8_t buf[4096];
+	int poll_events = DEUCE_SSH_POLL_READ | DEUCE_SSH_POLL_READEXT |
+	    DEUCE_SSH_POLL_SIGNAL;
+	for (;;) {
+		int ev = deuce_ssh_session_poll(&sess, &ch, poll_events, -1);
+		if (ev <= 0)
+			break;
 
-	deuce_ssh_conn_close(&sess, &ch);
+		if (ev & DEUCE_SSH_POLL_READ) {
+			ssize_t n = deuce_ssh_session_read(&sess, &ch, buf, sizeof(buf));
+			if (n <= 0)
+				break;
+			write(STDOUT_FILENO, buf, n);
+		}
+		if (ev & DEUCE_SSH_POLL_READEXT) {
+			ssize_t n = deuce_ssh_session_read_ext(&sess, &ch, buf, sizeof(buf));
+			if (n > 0)
+				write(STDERR_FILENO, buf, n);
+		}
+		if (ev & DEUCE_SSH_POLL_SIGNAL) {
+			const char *signame;
+			if (deuce_ssh_session_read_signal(&sess, &ch, &signame) == 0)
+				fprintf(stderr, "[signal: SIG%s]\n", signame);
+		}
+	}
+
+	/* Clean up */
+	if (have_writer) {
+		sess.terminate = true;
+		int wr;
+		thrd_join(writer, &wr);
+	}
+	deuce_ssh_session_close(&sess, &ch, 0);
 	deuce_ssh_session_cleanup(&sess);
 	close(sock);
 	return 0;

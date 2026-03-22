@@ -1,4 +1,7 @@
+#include <stdlib.h>
+
 #include "deucessh.h"
+#include "ssh-conn.h"
 
 int
 deuce_ssh_session_init(deuce_ssh_session sess)
@@ -10,6 +13,12 @@ deuce_ssh_session_init(deuce_ssh_session sess)
 	res = deuce_ssh_transport_init(sess, 0);
 	if (res < 0)
 		return res;
+
+	sess->demux_running = false;
+	sess->channels = NULL;
+	sess->channel_count = 0;
+	sess->channel_capacity = 0;
+	sess->next_channel_id = 0;
 
 	sess->initialized = true;
 	return 0;
@@ -30,6 +39,7 @@ void
 deuce_ssh_session_cleanup(deuce_ssh_session sess)
 {
 	deuce_ssh_session_terminate(sess);
+	deuce_ssh_session_stop(sess);
 	deuce_ssh_transport_cleanup(sess);
 	mtx_destroy(&sess->mtx);
 }

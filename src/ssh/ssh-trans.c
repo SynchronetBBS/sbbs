@@ -1437,6 +1437,7 @@ deuce_ssh_transport_cleanup(deuce_ssh_session sess)
 		sess->trans.comp_s2c_selected = NULL;
 	}
 
+	cnd_destroy(&sess->trans.rekey_cnd);
 	mtx_destroy(&sess->trans.tx_mtx);
 	mtx_destroy(&sess->trans.rx_mtx);
 

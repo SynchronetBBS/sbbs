@@ -184,7 +184,6 @@ typedef struct deuce_ssh_transport_state_s {
 	mtx_t rx_mtx;
 
 	/* Transport options */
-	thrd_t transport_thread;
 	size_t id_str_sz;
 	char id_str[254];
 

@@ -95,9 +95,11 @@ int  deuce_ssh_sigqueue_push(struct deuce_ssh_signal_queue *q,
 /* Check if the front signal is ready (both streams drained past mark) */
 bool deuce_ssh_sigqueue_ready(const struct deuce_ssh_signal_queue *q,
     size_t stdout_consumed, size_t stderr_consumed);
-/* Consume the front signal. Returns the name, or NULL if not ready. */
+/* Consume the front signal. Copies name into buf (bufsz >= 32).
+ * Returns buf on success, or NULL if not ready. */
 const char *deuce_ssh_sigqueue_pop(struct deuce_ssh_signal_queue *q,
-    size_t stdout_consumed, size_t stderr_consumed);
+    size_t stdout_consumed, size_t stderr_consumed,
+    char *buf, size_t bufsz);
 
 /* ================================================================
  * Incoming channel open queue (for session_accept)

@@ -27,114 +27,12 @@ window_add(uint32_t current, uint32_t bytes)
 	return result;
 }
 
-int
-deuce_ssh_conn_open_session(deuce_ssh_session sess,
-    struct deuce_ssh_channel_s *ch, uint32_t local_id)
-{
-	static const char type[] = "session";
-	uint8_t msg[256];
-	size_t pos = 0;
+/* ================================================================
+ * Low-level wire functions — internal only.
+ * Used by the high-level API; not part of the public interface.
+ * ================================================================ */
 
-	ch->local_id = local_id;
-	ch->local_window = INITIAL_WINDOW_SIZE;
-	ch->open = false;
-	ch->close_sent = false;
-	ch->close_received = false;
-	ch->eof_sent = false;
-
-	msg[pos++] = SSH_MSG_CHANNEL_OPEN;
-	deuce_ssh_serialize_uint32((uint32_t)(sizeof(type) - 1), msg, sizeof(msg), &pos);
-	memcpy(&msg[pos], type, sizeof(type) - 1);
-	pos += sizeof(type) - 1;
-	deuce_ssh_serialize_uint32(ch->local_id, msg, sizeof(msg), &pos);
-	deuce_ssh_serialize_uint32(ch->local_window, msg, sizeof(msg), &pos);
-	deuce_ssh_serialize_uint32(MAX_PACKET_SIZE, msg, sizeof(msg), &pos);
-
-	int res = deuce_ssh_transport_send_packet(sess, msg, pos, NULL);
-	if (res < 0)
-		return res;
-
-	uint8_t msg_type;
-	uint8_t *payload;
-	size_t payload_len;
-	res = deuce_ssh_transport_recv_packet(sess, &msg_type, &payload, &payload_len);
-	if (res < 0)
-		return res;
-	if (msg_type != SSH_MSG_CHANNEL_OPEN_CONFIRMATION) {
-		deuce_ssh_transport_send_unimplemented(sess, sess->trans.last_rx_seq);
-		return DEUCE_SSH_ERROR_INIT;
-	}
-
-	/* Parse: recipient_channel(4) sender_channel(4) window(4) max_packet(4) */
-	if (payload_len < 1 + 16)
-		return DEUCE_SSH_ERROR_PARSE;
-	size_t rpos = 1;
-	uint32_t tmp;
-	deuce_ssh_parse_uint32(&payload[rpos], payload_len - rpos, &tmp);
-	rpos += 4;
-	deuce_ssh_parse_uint32(&payload[rpos], payload_len - rpos, &ch->remote_id);
-	rpos += 4;
-	deuce_ssh_parse_uint32(&payload[rpos], payload_len - rpos, &ch->remote_window);
-	rpos += 4;
-	deuce_ssh_parse_uint32(&payload[rpos], payload_len - rpos, &ch->remote_max_packet);
-
-	ch->open = true;
-	return 0;
-}
-
-int
-deuce_ssh_conn_request_exec(deuce_ssh_session sess,
-    struct deuce_ssh_channel_s *ch, const char *command)
-{
-	static const char req[] = "exec";
-	size_t cmdlen = strlen(command);
-	size_t msg_len = 1 + 4 + 4 + (sizeof(req) - 1) + 1 + 4 + cmdlen;
-	uint8_t *msg = malloc(msg_len);
-	if (msg == NULL)
-		return DEUCE_SSH_ERROR_ALLOC;
-	size_t pos = 0;
-
-	msg[pos++] = SSH_MSG_CHANNEL_REQUEST;
-	deuce_ssh_serialize_uint32(ch->remote_id, msg, msg_len, &pos);
-	deuce_ssh_serialize_uint32((uint32_t)(sizeof(req) - 1), msg, msg_len, &pos);
-	memcpy(&msg[pos], req, sizeof(req) - 1);
-	pos += sizeof(req) - 1;
-	msg[pos++] = 1; /* want_reply = TRUE */
-	deuce_ssh_serialize_uint32((uint32_t)cmdlen, msg, msg_len, &pos);
-	memcpy(&msg[pos], command, cmdlen);
-	pos += cmdlen;
-
-	int res = deuce_ssh_transport_send_packet(sess, msg, pos, NULL);
-	free(msg);
-	if (res < 0)
-		return res;
-
-	uint8_t msg_type;
-	uint8_t *payload;
-	size_t payload_len;
-	for (;;) {
-		res = deuce_ssh_transport_recv_packet(sess, &msg_type, &payload, &payload_len);
-		if (res < 0)
-			return res;
-		if (msg_type == SSH_MSG_CHANNEL_WINDOW_ADJUST) {
-			if (payload_len < 1 + 8)
-				return DEUCE_SSH_ERROR_PARSE;
-			uint32_t bytes;
-			deuce_ssh_parse_uint32(&payload[5], payload_len - 5, &bytes);
-			ch->remote_window = window_add(ch->remote_window, bytes);
-			continue;
-		}
-		break;
-	}
-
-	if (msg_type == SSH_MSG_CHANNEL_SUCCESS)
-		return 0;
-	if (msg_type != SSH_MSG_CHANNEL_FAILURE)
-		deuce_ssh_transport_send_unimplemented(sess, sess->trans.last_rx_seq);
-	return DEUCE_SSH_ERROR_INIT;
-}
-
-int
+static int
 deuce_ssh_conn_send_data(deuce_ssh_session sess,
     struct deuce_ssh_channel_s *ch, const uint8_t *data, size_t len)
 {
@@ -159,83 +57,7 @@ deuce_ssh_conn_send_data(deuce_ssh_session sess,
 	return res;
 }
 
-int
-deuce_ssh_conn_recv(deuce_ssh_session sess,
-    struct deuce_ssh_channel_s *ch, uint8_t *msg_type,
-    uint8_t **data, size_t *data_len)
-{
-	uint8_t *payload;
-	size_t payload_len;
-	int res = deuce_ssh_transport_recv_packet(sess, msg_type, &payload, &payload_len);
-	if (res < 0)
-		return res;
-
-	if (*msg_type == SSH_MSG_CHANNEL_DATA) {
-		/* Parse: msg_type(1) + channel(4) + string data */
-		if (payload_len < 1 + 4 + 4)
-			return DEUCE_SSH_ERROR_PARSE;
-		size_t rpos = 1 + 4;
-		uint32_t dlen;
-		deuce_ssh_parse_uint32(&payload[rpos], payload_len - rpos, &dlen);
-		rpos += 4;
-		if (rpos + dlen > payload_len)
-			return DEUCE_SSH_ERROR_PARSE;
-		*data = &payload[rpos];
-		*data_len = dlen;
-		ch->local_window -= dlen;
-	}
-	else if (*msg_type == SSH_MSG_CHANNEL_EXTENDED_DATA) {
-		/* Parse: msg_type(1) + channel(4) + type(4) + string data */
-		if (payload_len < 1 + 4 + 4 + 4)
-			return DEUCE_SSH_ERROR_PARSE;
-		size_t rpos = 1 + 4 + 4;
-		uint32_t dlen;
-		deuce_ssh_parse_uint32(&payload[rpos], payload_len - rpos, &dlen);
-		rpos += 4;
-		if (rpos + dlen > payload_len)
-			return DEUCE_SSH_ERROR_PARSE;
-		*data = &payload[rpos];
-		*data_len = dlen;
-		ch->local_window -= dlen;
-	}
-	else if (*msg_type == SSH_MSG_CHANNEL_WINDOW_ADJUST) {
-		if (payload_len < 1 + 4 + 4)
-			return DEUCE_SSH_ERROR_PARSE;
-		uint32_t bytes;
-		deuce_ssh_parse_uint32(&payload[5], payload_len - 5, &bytes);
-		ch->remote_window = window_add(ch->remote_window, bytes);
-		*data = NULL;
-		*data_len = 0;
-	}
-	else if (*msg_type == SSH_MSG_CHANNEL_CLOSE) {
-		ch->close_received = true;
-		*data = payload;
-		*data_len = payload_len;
-	}
-	else {
-		*data = payload;
-		*data_len = payload_len;
-	}
-
-	return 0;
-}
-
-int
-deuce_ssh_conn_send_window_adjust(deuce_ssh_session sess,
-    struct deuce_ssh_channel_s *ch, uint32_t bytes)
-{
-	uint8_t msg[32];
-	size_t pos = 0;
-
-	msg[pos++] = SSH_MSG_CHANNEL_WINDOW_ADJUST;
-	deuce_ssh_serialize_uint32(ch->remote_id, msg, sizeof(msg), &pos);
-	deuce_ssh_serialize_uint32(bytes, msg, sizeof(msg), &pos);
-
-	ch->local_window = window_add(ch->local_window, bytes);
-	return deuce_ssh_transport_send_packet(sess, msg, pos, NULL);
-}
-
-int
+static int
 deuce_ssh_conn_send_extended_data(deuce_ssh_session sess,
     struct deuce_ssh_channel_s *ch, uint32_t data_type_code,
     const uint8_t *data, size_t len)
@@ -262,7 +84,24 @@ deuce_ssh_conn_send_extended_data(deuce_ssh_session sess,
 	return res;
 }
 
-int
+#define SSH_EXTENDED_DATA_STDERR  UINT32_C(1)
+
+static int
+deuce_ssh_conn_send_window_adjust(deuce_ssh_session sess,
+    struct deuce_ssh_channel_s *ch, uint32_t bytes)
+{
+	uint8_t msg[32];
+	size_t pos = 0;
+
+	msg[pos++] = SSH_MSG_CHANNEL_WINDOW_ADJUST;
+	deuce_ssh_serialize_uint32(ch->remote_id, msg, sizeof(msg), &pos);
+	deuce_ssh_serialize_uint32(bytes, msg, sizeof(msg), &pos);
+
+	ch->local_window = window_add(ch->local_window, bytes);
+	return deuce_ssh_transport_send_packet(sess, msg, pos, NULL);
+}
+
+static int
 deuce_ssh_conn_send_exit_status(deuce_ssh_session sess,
     struct deuce_ssh_channel_s *ch, uint32_t exit_code)
 {
@@ -279,7 +118,7 @@ deuce_ssh_conn_send_exit_status(deuce_ssh_session sess,
 	return deuce_ssh_transport_send_packet(sess, msg, pos, NULL);
 }
 
-int
+static int
 deuce_ssh_conn_send_eof(deuce_ssh_session sess,
     struct deuce_ssh_channel_s *ch)
 {
@@ -295,7 +134,7 @@ deuce_ssh_conn_send_eof(deuce_ssh_session sess,
 	return deuce_ssh_transport_send_packet(sess, msg, pos, NULL);
 }
 
-int
+static int
 deuce_ssh_conn_close(deuce_ssh_session sess,
     struct deuce_ssh_channel_s *ch)
 {
@@ -436,6 +275,8 @@ cleanup_channel_buffers(struct deuce_ssh_channel_s *ch)
 	else if (ch->chan_type == DEUCE_SSH_CHAN_RAW) {
 		deuce_ssh_msgqueue_free(&ch->buf.raw.queue);
 	}
+	free(ch->setup_payload);
+	ch->setup_payload = NULL;
 	if (ch->chan_type != 0) {
 		cnd_destroy(&ch->poll_cnd);
 		mtx_destroy(&ch->buf_mtx);
@@ -450,6 +291,9 @@ cleanup_channel_buffers(struct deuce_ssh_channel_s *ch)
 static void
 maybe_replenish_window(deuce_ssh_session sess, struct deuce_ssh_channel_s *ch)
 {
+	/* No point replenishing if peer is done sending */
+	if (ch->eof_received || ch->close_received)
+		return;
 	/* Replenish when window drops below half the target */
 	if (ch->local_window < ch->window_max / 2) {
 		uint32_t add = ch->window_max - ch->local_window;
@@ -508,6 +352,9 @@ demux_dispatch(deuce_ssh_session sess, uint8_t msg_type,
 	case SSH_MSG_CHANNEL_DATA:
 		if (payload_len < 9)
 			break;
+		/* Discard data after peer sent EOF or CLOSE */
+		if (ch->eof_received || ch->close_received)
+			break;
 		{
 			uint32_t dlen;
 			deuce_ssh_parse_uint32(&payload[5], payload_len - 5, &dlen);
@@ -530,6 +377,8 @@ demux_dispatch(deuce_ssh_session sess, uint8_t msg_type,
 
 	case SSH_MSG_CHANNEL_EXTENDED_DATA:
 		if (payload_len < 13)
+			break;
+		if (ch->eof_received || ch->close_received)
 			break;
 		{
 			uint32_t data_type;
@@ -564,13 +413,15 @@ demux_dispatch(deuce_ssh_session sess, uint8_t msg_type,
 
 	case SSH_MSG_CHANNEL_CLOSE:
 		ch->close_received = true;
-		ch->open = false;
-		/* Send reciprocal CLOSE if we haven't already */
-		if (!ch->close_sent) {
-			mtx_unlock(&ch->buf_mtx);
-			deuce_ssh_conn_close(sess, ch);
-			mtx_lock(&ch->buf_mtx);
-		}
+		/*
+		 * Don't auto-send the reciprocal CLOSE here.  The
+		 * application needs a chance to drain buffered data,
+		 * send exit-status, and clean up before the channel
+		 * is fully closed.  poll() will wake with POLL_READ
+		 * (read returns 0), and the application calls
+		 * session_close() or channel_close() which sends
+		 * the reciprocal CLOSE via conn_close() (idempotent).
+		 */
 		break;
 
 	case SSH_MSG_CHANNEL_REQUEST:
@@ -643,6 +494,12 @@ demux_dispatch(deuce_ssh_session sess, uint8_t msg_type,
 				mtx_lock(&ch->buf_mtx);
 			}
 		}
+		break;
+
+	case SSH_MSG_CHANNEL_OPEN_FAILURE:
+		/* Server rejected our CHANNEL_OPEN.  Mark the channel
+		 * so open_session_channel's wait loop exits. */
+		ch->close_received = true;
 		break;
 
 	case SSH_MSG_CHANNEL_SUCCESS:
@@ -834,6 +691,38 @@ deuce_ssh_session_start(deuce_ssh_session sess)
 	return 0;
 }
 
+void
+deuce_ssh_session_stop(deuce_ssh_session sess)
+{
+	if (!sess->demux_running && sess->channels == NULL)
+		return;
+
+	/* Signal termination and join the demux thread */
+	if (sess->demux_running) {
+		sess->terminate = true;
+		int demux_res;
+		thrd_join(sess->demux_thread, &demux_res);
+	}
+
+	/* Clean up registered channels */
+	if (sess->channels != NULL) {
+		for (size_t i = 0; i < sess->channel_count; i++) {
+			struct deuce_ssh_channel_s *ch = sess->channels[i];
+			if (ch != NULL)
+				cleanup_channel_buffers(ch);
+		}
+		free(sess->channels);
+		sess->channels = NULL;
+		sess->channel_count = 0;
+		sess->channel_capacity = 0;
+	}
+
+	deuce_ssh_acceptqueue_free(&sess->accept_queue);
+	cnd_destroy(&sess->accept_cnd);
+	mtx_destroy(&sess->accept_mtx);
+	mtx_destroy(&sess->channel_mtx);
+}
+
 /* ================================================================
  * Session accept — wait for incoming CHANNEL_OPEN
  * ================================================================ */
@@ -928,10 +817,15 @@ send_open_confirmation(deuce_ssh_session sess,
 static int
 open_session_channel(deuce_ssh_session sess, struct deuce_ssh_channel_s *ch)
 {
-	memset(ch, 0, sizeof(*ch));
+	/* Caller has already initialized buffers (init_session_channel
+	 * or init_raw_channel).  Set wire-level fields only. */
 	ch->local_id = alloc_channel_id(sess);
 	ch->local_window = INITIAL_WINDOW_SIZE;
 	ch->open = false;
+	ch->close_sent = false;
+	ch->close_received = false;
+	ch->eof_sent = false;
+	ch->eof_received = false;
 
 	/* Send CHANNEL_OPEN via the low-level function.
 	 * The demux thread is running, but this message's response
@@ -1070,6 +964,8 @@ deuce_ssh_session_open_shell(deuce_ssh_session sess,
 		size_t extra_len = 4 + tlen + 4 + 4 + 4 + 4 + 4 + mlen;
 		uint8_t *extra = malloc(extra_len);
 		if (extra == NULL) {
+			deuce_ssh_conn_close(sess, ch);
+			unregister_channel(sess, ch);
 			cleanup_channel_buffers(ch);
 			return DEUCE_SSH_ERROR_ALLOC;
 		}
@@ -1087,20 +983,22 @@ deuce_ssh_session_open_shell(deuce_ssh_session sess,
 		ep += mlen;
 		res = send_channel_request_wait(sess, ch, "pty-req", extra, ep);
 		free(extra);
-		if (res < 0) {
-			cleanup_channel_buffers(ch);
-			return res;
-		}
+		if (res < 0)
+			goto open_fail;
 	}
 
 	/* Send shell */
 	res = send_channel_request_wait(sess, ch, "shell", NULL, 0);
-	if (res < 0) {
-		cleanup_channel_buffers(ch);
-		return res;
-	}
+	if (res < 0)
+		goto open_fail;
 
 	return 0;
+
+open_fail:
+	deuce_ssh_conn_close(sess, ch);
+	unregister_channel(sess, ch);
+	cleanup_channel_buffers(ch);
+	return res;
 }
 
 int
@@ -1123,8 +1021,8 @@ deuce_ssh_session_open_exec(deuce_ssh_session sess,
 	size_t extra_len = 4 + cmdlen;
 	uint8_t *extra = malloc(extra_len);
 	if (extra == NULL) {
-		cleanup_channel_buffers(ch);
-		return DEUCE_SSH_ERROR_ALLOC;
+		res = DEUCE_SSH_ERROR_ALLOC;
+		goto open_fail;
 	}
 	size_t ep = 0;
 	deuce_ssh_serialize_uint32((uint32_t)cmdlen, extra, extra_len, &ep);
@@ -1132,12 +1030,16 @@ deuce_ssh_session_open_exec(deuce_ssh_session sess,
 	ep += cmdlen;
 	res = send_channel_request_wait(sess, ch, "exec", extra, ep);
 	free(extra);
-	if (res < 0) {
-		cleanup_channel_buffers(ch);
-		return res;
-	}
+	if (res < 0)
+		goto open_fail;
 
 	return 0;
+
+open_fail:
+	deuce_ssh_conn_close(sess, ch);
+	unregister_channel(sess, ch);
+	cleanup_channel_buffers(ch);
+	return res;
 }
 
 int
@@ -1160,8 +1062,8 @@ deuce_ssh_channel_open_subsystem(deuce_ssh_session sess,
 	size_t extra_len = 4 + slen;
 	uint8_t *extra = malloc(extra_len);
 	if (extra == NULL) {
-		cleanup_channel_buffers(ch);
-		return DEUCE_SSH_ERROR_ALLOC;
+		res = DEUCE_SSH_ERROR_ALLOC;
+		goto open_fail;
 	}
 	size_t ep = 0;
 	deuce_ssh_serialize_uint32((uint32_t)slen, extra, extra_len, &ep);
@@ -1169,12 +1071,16 @@ deuce_ssh_channel_open_subsystem(deuce_ssh_session sess,
 	ep += slen;
 	res = send_channel_request_wait(sess, ch, "subsystem", extra, ep);
 	free(extra);
-	if (res < 0) {
-		cleanup_channel_buffers(ch);
-		return res;
-	}
+	if (res < 0)
+		goto open_fail;
 
 	return 0;
+
+open_fail:
+	deuce_ssh_conn_close(sess, ch);
+	unregister_channel(sess, ch);
+	cleanup_channel_buffers(ch);
+	return res;
 }
 
 /* ================================================================
@@ -1304,10 +1210,8 @@ deuce_ssh_session_accept_channel(deuce_ssh_session sess,
 	ch->open = true;
 
 	/* Process setup requests until shell/exec/subsystem arrives */
-	static char req_type_buf[32];
-	static char req_data_buf[1024];
-	req_type_buf[0] = 0;
-	req_data_buf[0] = 0;
+	ch->req_type[0] = 0;
+	ch->req_data[0] = 0;
 
 	for (;;) {
 		uint8_t msg_type;
@@ -1436,8 +1340,8 @@ deuce_ssh_session_accept_channel(deuce_ssh_session sess,
 
 		/* shell */
 		if (rtype_len == 5 && memcmp(rtype, "shell", 5) == 0) {
-			memcpy(req_type_buf, "shell", 6);
-			req_data_buf[0] = 0;
+			memcpy(ch->req_type, "shell", 6);
+			ch->req_data[0] = 0;
 			if (want_reply)
 				setup_reply(sess, ch, true);
 			free(payload);
@@ -1446,15 +1350,15 @@ deuce_ssh_session_accept_channel(deuce_ssh_session sess,
 
 		/* exec */
 		if (rtype_len == 4 && memcmp(rtype, "exec", 4) == 0) {
-			memcpy(req_type_buf, "exec", 5);
+			memcpy(ch->req_type, "exec", 5);
 			if (rpos + 4 <= payload_len) {
 				uint32_t clen;
 				deuce_ssh_parse_uint32(&payload[rpos], payload_len - rpos, &clen);
 				rpos += 4;
-				size_t cn = clen < sizeof(req_data_buf) - 1 ? clen : sizeof(req_data_buf) - 1;
+				size_t cn = clen < sizeof(ch->req_data) - 1 ? clen : sizeof(ch->req_data) - 1;
 				if (rpos + cn <= payload_len)
-					memcpy(req_data_buf, &payload[rpos], cn);
-				req_data_buf[cn] = 0;
+					memcpy(ch->req_data, &payload[rpos], cn);
+				ch->req_data[cn] = 0;
 			}
 			if (want_reply)
 				setup_reply(sess, ch, true);
@@ -1464,15 +1368,15 @@ deuce_ssh_session_accept_channel(deuce_ssh_session sess,
 
 		/* subsystem */
 		if (rtype_len == 9 && memcmp(rtype, "subsystem", 9) == 0) {
-			memcpy(req_type_buf, "subsystem", 10);
+			memcpy(ch->req_type, "subsystem", 10);
 			if (rpos + 4 <= payload_len) {
 				uint32_t slen;
 				deuce_ssh_parse_uint32(&payload[rpos], payload_len - rpos, &slen);
 				rpos += 4;
-				size_t sn = slen < sizeof(req_data_buf) - 1 ? slen : sizeof(req_data_buf) - 1;
+				size_t sn = slen < sizeof(ch->req_data) - 1 ? slen : sizeof(ch->req_data) - 1;
 				if (rpos + sn <= payload_len)
-					memcpy(req_data_buf, &payload[rpos], sn);
-				req_data_buf[sn] = 0;
+					memcpy(ch->req_data, &payload[rpos], sn);
+				ch->req_data[sn] = 0;
 			}
 			if (want_reply)
 				setup_reply(sess, ch, true);
@@ -1486,11 +1390,25 @@ deuce_ssh_session_accept_channel(deuce_ssh_session sess,
 		free(payload);
 	}
 
-	/* Transition from setup mode to normal buffered mode */
+	/* Transition from setup mode to normal buffered mode.
+	 * buf_mtx and poll_cnd are already initialized from setup —
+	 * just init the buffers directly. */
 	ch->setup_mode = false;
-	res = init_session_channel(ch, INITIAL_WINDOW_SIZE);
+	ch->chan_type = DEUCE_SSH_CHAN_SESSION;
+	ch->window_max = INITIAL_WINDOW_SIZE;
+	ch->stdout_consumed = 0;
+	ch->stderr_consumed = 0;
+	ch->exit_code = 0;
+	ch->exit_code_received = false;
+	res = deuce_ssh_bytebuf_init(&ch->buf.session.stdout_buf, INITIAL_WINDOW_SIZE);
 	if (res < 0)
 		goto fail;
+	res = deuce_ssh_bytebuf_init(&ch->buf.session.stderr_buf, INITIAL_WINDOW_SIZE);
+	if (res < 0) {
+		deuce_ssh_bytebuf_free(&ch->buf.session.stdout_buf);
+		goto fail;
+	}
+	deuce_ssh_sigqueue_init(&ch->buf.session.signals);
 
 	/* Install window-change callback for post-setup delivery */
 	if (cbs->window_change != NULL) {
@@ -1499,9 +1417,9 @@ deuce_ssh_session_accept_channel(deuce_ssh_session sess,
 	}
 
 	if (request_type != NULL)
-		*request_type = req_type_buf;
+		*request_type = ch->req_type;
 	if (request_data != NULL)
-		*request_data = req_data_buf;
+		*request_data = ch->req_data;
 	return 0;
 
 fail:
@@ -1573,7 +1491,7 @@ deuce_ssh_session_poll(deuce_ssh_session sess,
 		    (session_stderr_readable(ch) > 0 || ch->eof_received || ch->close_received))
 			ready |= DEUCE_SSH_POLL_READEXT;
 
-		if ((events & DEUCE_SSH_POLL_WRITE) && ch->remote_window > 0 && ch->open)
+		if ((events & DEUCE_SSH_POLL_WRITE) && ch->remote_window > 0 && ch->open && !ch->close_received)
 			ready |= DEUCE_SSH_POLL_WRITE;
 
 		if ((events & DEUCE_SSH_POLL_SIGNAL) &&
@@ -1645,7 +1563,7 @@ ssize_t
 deuce_ssh_session_write(deuce_ssh_session sess,
     struct deuce_ssh_channel_s *ch, const uint8_t *buf, size_t bufsz)
 {
-	if (!ch->open || ch->eof_sent)
+	if (!ch->open || ch->eof_sent || ch->close_received)
 		return DEUCE_SSH_ERROR_INIT;
 
 	uint32_t avail = ch->remote_window;
@@ -1663,6 +1581,29 @@ deuce_ssh_session_write(deuce_ssh_session sess,
 	return (ssize_t)len;
 }
 
+ssize_t
+deuce_ssh_session_write_ext(deuce_ssh_session sess,
+    struct deuce_ssh_channel_s *ch, const uint8_t *buf, size_t bufsz)
+{
+	if (!ch->open || ch->eof_sent || ch->close_received)
+		return DEUCE_SSH_ERROR_INIT;
+
+	uint32_t avail = ch->remote_window;
+	if (avail == 0)
+		return 0;
+	size_t len = bufsz;
+	if (len > avail)
+		len = avail;
+	if (len > ch->remote_max_packet)
+		len = ch->remote_max_packet;
+
+	int res = deuce_ssh_conn_send_extended_data(sess, ch,
+	    SSH_EXTENDED_DATA_STDERR, buf, len);
+	if (res < 0)
+		return res;
+	return (ssize_t)len;
+}
+
 int
 deuce_ssh_session_read_signal(deuce_ssh_session sess,
     struct deuce_ssh_channel_s *ch, const char **signal_name)
@@ -1670,12 +1611,13 @@ deuce_ssh_session_read_signal(deuce_ssh_session sess,
 	mtx_lock(&ch->buf_mtx);
 	const char *name = deuce_ssh_sigqueue_pop(
 	    &ch->buf.session.signals,
-	    ch->stdout_consumed, ch->stderr_consumed);
+	    ch->stdout_consumed, ch->stderr_consumed,
+	    ch->last_signal, sizeof(ch->last_signal));
 	mtx_unlock(&ch->buf_mtx);
 
 	if (name == NULL)
 		return DEUCE_SSH_ERROR_NOMORE;
-	*signal_name = name;
+	*signal_name = ch->last_signal;
 	return 0;
 }
 
@@ -1708,7 +1650,7 @@ deuce_ssh_channel_poll(deuce_ssh_session sess,
 		    (ch->buf.raw.queue.count > 0 || ch->eof_received || ch->close_received))
 			ready |= DEUCE_SSH_POLL_READ;
 
-		if ((events & DEUCE_SSH_POLL_WRITE) && ch->remote_window > 0 && ch->open)
+		if ((events & DEUCE_SSH_POLL_WRITE) && ch->remote_window > 0 && ch->open && !ch->close_received)
 			ready |= DEUCE_SSH_POLL_WRITE;
 
 		if (ready || sess->terminate) {
@@ -1758,7 +1700,7 @@ int
 deuce_ssh_channel_write(deuce_ssh_session sess,
     struct deuce_ssh_channel_s *ch, const uint8_t *buf, size_t len)
 {
-	if (!ch->open || ch->eof_sent)
+	if (!ch->open || ch->eof_sent || ch->close_received)
 		return DEUCE_SSH_ERROR_INIT;
 	if (len > ch->remote_window || len > ch->remote_max_packet)
 		return DEUCE_SSH_ERROR_TOOLONG;
@@ -1780,6 +1722,32 @@ deuce_ssh_channel_close(deuce_ssh_session sess,
 /* ================================================================
  * Window change (client-side)
  * ================================================================ */
+
+int
+deuce_ssh_session_send_signal(deuce_ssh_session sess,
+    struct deuce_ssh_channel_s *ch, const char *signal_name)
+{
+	size_t slen = strlen(signal_name);
+	size_t rtlen = 6; /* "signal" */
+	size_t msg_len = 1 + 4 + 4 + rtlen + 1 + 4 + slen;
+	uint8_t *msg = malloc(msg_len);
+	if (msg == NULL)
+		return DEUCE_SSH_ERROR_ALLOC;
+	size_t pos = 0;
+	msg[pos++] = SSH_MSG_CHANNEL_REQUEST;
+	deuce_ssh_serialize_uint32(ch->remote_id, msg, msg_len, &pos);
+	deuce_ssh_serialize_uint32((uint32_t)rtlen, msg, msg_len, &pos);
+	memcpy(&msg[pos], "signal", rtlen);
+	pos += rtlen;
+	msg[pos++] = 0; /* want_reply = FALSE */
+	deuce_ssh_serialize_uint32((uint32_t)slen, msg, msg_len, &pos);
+	memcpy(&msg[pos], signal_name, slen);
+	pos += slen;
+
+	int res = deuce_ssh_transport_send_packet(sess, msg, pos, NULL);
+	free(msg);
+	return res;
+}
 
 int
 deuce_ssh_session_send_window_change(deuce_ssh_session sess,

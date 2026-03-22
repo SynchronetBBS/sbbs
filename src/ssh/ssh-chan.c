@@ -239,7 +239,8 @@ deuce_ssh_sigqueue_ready(const struct deuce_ssh_signal_queue *q,
 
 const char *
 deuce_ssh_sigqueue_pop(struct deuce_ssh_signal_queue *q,
-    size_t stdout_consumed, size_t stderr_consumed)
+    size_t stdout_consumed, size_t stderr_consumed,
+    char *buf, size_t bufsz)
 {
 	if (q->head == NULL)
 		return NULL;
@@ -252,12 +253,13 @@ deuce_ssh_sigqueue_pop(struct deuce_ssh_signal_queue *q,
 	if (q->head == NULL)
 		q->tail = NULL;
 
-	/* Return name — caller must use before next pop.
-	 * We stash it in a static buffer since the mark is freed. */
-	static char last_name[32];
-	memcpy(last_name, m->name, sizeof(last_name));
+	size_t nlen = strlen(m->name);
+	if (nlen >= bufsz)
+		nlen = bufsz - 1;
+	memcpy(buf, m->name, nlen);
+	buf[nlen] = 0;
 	free(m);
-	return last_name;
+	return buf;
 }
 
 /* ================================================================
