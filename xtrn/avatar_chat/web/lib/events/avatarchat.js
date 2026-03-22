@@ -113,7 +113,7 @@ channelPath = 'channels.' + channel + '.messages';
 mailboxPath = includeMailbox ? ('channels.' + user.alias + '.messages') : '';
 
 function connect() {
-    if (user.number < 1) {
+    if (user.number < 1 || user.alias === settings.guest) {
         return false;
     }
     try {
@@ -271,6 +271,7 @@ function processUpdate(packet) {
 }
 
 function cycle() {
+    if (user.number < 1 || user.alias === settings.guest) return;
     var now = time();
 
     if (now - lastCycle < frequency) {

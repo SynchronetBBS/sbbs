@@ -21,6 +21,7 @@ function loadAvatarChatWebConfig() {
 
 var avatarChatWebConfig = loadAvatarChatWebConfig();
 var avatarChatLoggedIn = user.number > 0;
+var avatarChatCanUseRealtime = is_user();
 
 ?>
 <style>
@@ -573,7 +574,8 @@ var avatarChatLoggedIn = user.number > 0;
         userAlias: <? write(JSON.stringify(String(user.alias || ''))); ?>,
         systemName: <? write(JSON.stringify(String(system.name || ''))); ?>,
         userNumber: <? write(String(user.number || 0)); ?>,
-        isLoggedIn: <? write(avatarChatLoggedIn ? 'true' : 'false'); ?>
+        isLoggedIn: <? write(avatarChatLoggedIn ? 'true' : 'false'); ?>,
+        canUseRealtime: <? write(avatarChatCanUseRealtime ? 'true' : 'false'); ?>
     };
     var params = new URLSearchParams(window.location.search);
     var apiBase = './api/avatarchat.ssjs';
@@ -1070,7 +1072,7 @@ var avatarChatLoggedIn = user.number > 0;
             return;
         }
 
-        if (!pageConfig.isLoggedIn) {
+        if (!pageConfig.canUseRealtime) {
             setStatus('info', 'Log in from the web interface to open private chats.', false);
             return;
         }
@@ -1118,7 +1120,7 @@ var avatarChatLoggedIn = user.number > 0;
         loadUsers(false);
         loadPresenceMap(true);
 
-        if (changed || reconnectStream) {
+        if (pageConfig.canUseRealtime && (changed || reconnectStream)) {
             connectEvents(changed || reconnectStream);
         }
     }
@@ -1529,7 +1531,7 @@ var avatarChatLoggedIn = user.number > 0;
     }
 
     function loadPrivateThreads(silent) {
-        if (!pageConfig.isLoggedIn) {
+        if (!pageConfig.canUseRealtime) {
             privateThreads = [];
             renderPrivateList();
             return Promise.resolve(true);
@@ -1789,6 +1791,10 @@ var avatarChatLoggedIn = user.number > 0;
     }
 
     function connectEvents(isReconnect) {
+        if (!pageConfig.canUseRealtime) {
+            return;
+        }
+
         if (!window.EventSource) {
             setStatus('warning', 'This browser does not support realtime updates. Background refresh will continue, but updates may be delayed.', false);
             return;
@@ -1919,7 +1925,9 @@ var avatarChatLoggedIn = user.number > 0;
             reconnectAttemptCount = 0;
             closeEventSource();
             reconcileState(true);
-            connectEvents(true);
+            if (pageConfig.canUseRealtime) {
+                connectEvents(true);
+            }
         });
     }
 
@@ -2070,7 +2078,7 @@ var avatarChatLoggedIn = user.number > 0;
         loadPrivateThreads(false);
         loadActiveHistory(false);
         loadUsers(false);
-        if (pageConfig.isLoggedIn) {
+        if (pageConfig.canUseRealtime) {
             connectEvents();
             startReconcileLoop();
         }
