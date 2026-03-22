@@ -3301,7 +3301,7 @@ font_control(struct bbslist *bbs, struct cterminal *cterm)
 			    "`8x16` Used for screen modes with 30 lines or fewer than 28 lines.";
 			k = uifc.list(WIN_MID | WIN_SAV | WIN_INS, 0, 0, 0, &i, &j, "Font Setup", font_names);
 			if (k != -1) {
-				if (k & MSK_INS) {
+				if ((k & MSK_ON) == MSK_INS) {
 					struct file_pick fpick;
 
 					j = filepick(&uifc, "Load Font From File", &fpick, ".", NULL, 0);
@@ -5435,6 +5435,28 @@ open_url_at_cursor(struct mouse_event *mevent)
 }
 
 static void
+drain_drag_events(void)
+{
+	struct mouse_event me;
+	int key;
+
+	while (1) {
+		key = getch();
+		if ((key == 0) || (key == 0xe0))
+			key |= getch() << 8;
+		if (key == CIO_KEY_MOUSE) {
+			getmouse(&me);
+			if (me.event == CIOLIB_BUTTON_1_DRAG_END)
+				return;
+		}
+		else {
+			ungetch(key);
+			return;
+		}
+	}
+}
+
+static void
 handle_mouse_event(struct mouse_state *ms)
 {
 	char               mouse_buf[64];
@@ -5511,6 +5533,17 @@ handle_mouse_event(struct mouse_state *ms)
 			setup_mouse_events(ms);
 			break;
 		case CIOLIB_BUTTON_1_DRAG_START:
+			if (ms->mode == MM_OFF && mevent.hyperlink_id) {
+				drain_drag_events();
+				open_hyperlink(mevent.hyperlink_id);
+				break;
+			}
+			if (ms->mode == MM_OFF
+			    && (mevent.kbmodifiers & CIOLIB_KMOD_CTRL)) {
+				drain_drag_events();
+				open_url_at_cursor(&mevent);
+				break;
+			}
 			mousedrag(scrollback_buf);
 			break;
 		case CIOLIB_BUTTON_2_CLICK:
