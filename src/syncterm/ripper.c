@@ -16237,6 +16237,17 @@ parse_rip(BYTE *origbuf, unsigned blen, unsigned maxlen)
 				moredata = NULL;
 				moredata_len = 0;
 				moredata_size = 0;
+				// After flush, rip_start was reset to sentinel.
+				// If restored state is still inside a RIP sequence,
+				// the moredata buffer is all RIP from the start.
+				switch (rip.state) {
+					case RIP_STATE_BOL:
+					case RIP_STATE_MOL:
+						break;
+					default:
+						rip_start = 0;
+						break;
+				}
 			}
 			else {
 				normal_palette();
@@ -16362,6 +16373,10 @@ parse_rip(BYTE *origbuf, unsigned blen, unsigned maxlen)
 						rip.state = RIP_STATE_PIPE;
 						break;
 					}
+					if (buf[pos] == '!' || buf[pos] == '\x01' || buf[pos] == '\x02') {
+						rip_start = pos;
+						break;
+					}
 					unrip_line(buf, &blen, &pos, &rip_start, maxlen);
 					rip.state = RIP_STATE_MOL;
 					break;
@@ -16371,9 +16386,20 @@ parse_rip(BYTE *origbuf, unsigned blen, unsigned maxlen)
 						break;
 					}
 					if (buf[pos] == '#') {
-						handle_rip_line(buf, &blen, &pos, &rip_start, maxlen, RIP_STATE_CMD);
-						rip.lchars = 0;
-						rip_start = pos + 1;
+						if (handle_rip_line(buf, &blen, &pos, &rip_start, maxlen, RIP_STATE_BANG)) {
+							rip.lchars = 0;
+							rip_start = pos + 1;
+						}
+						else {
+							// handle_rip_line deferred (non-RIP text
+							// precedes), but |# means flush now.
+							if ((cterm->log == CTERM_LOG_RAW) && (cterm->logfile != NULL))
+								fwrite(pending, 1, pending_len, cterm->logfile);
+							do_rip_string(pending, pending_len);
+							pending_len = 0;
+							pending[0] = 0;
+							rip.newstate = RIP_STATE_FLUSHING;
+						}
 						rip.state = RIP_STATE_BANG;
 						break;
 					}
