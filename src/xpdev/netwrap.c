@@ -85,24 +85,26 @@ str_list_t getNameServerList(void)
 const char* getHostNameByAddr(const char* addr, char* buf, size_t size)
 {
 	const char* result = NULL;
-	SOCKADDR_IN sockaddr = {0};
+	struct sockaddr_in  in = { AF_INET };
+	struct sockaddr_in6 in6 = { AF_INET6 };
 
 #ifdef _WIN32
 	WSADATA  wsaData;
 	WSAStartup(MAKEWORD(2, 2), &wsaData);
 #endif
 	if (addr != NULL) {
-		sockaddr.sin_family = AF_INET;
-		if ((sockaddr.sin_addr.s_addr = parseIPv4Address(addr)) == INADDR_NONE)
-			result = addr;
-		else if (getnameinfo((SOCKADDR*)&sockaddr, sizeof sockaddr, buf, size, NULL, 0, NI_NAMEREQD) == 0)
-			result = buf;
+		if (xp_inet_pton(AF_INET, addr, &in.sin_addr) != -1) {
+			if (getnameinfo((SOCKADDR*)&in, sizeof in, buf, size, NULL, 0, NI_NAMEREQD) == 0)
+				result = buf;
+		}
+		else if (xp_inet_pton(AF_INET6, addr, &in6.sin6_addr) != -1) {
+			if (getnameinfo((SOCKADDR*)&in6, sizeof in6, buf, size, NULL, 0, NI_NAMEREQD) == 0)
+				result = buf;
+		}
 	}
-
 #ifdef _WIN32
 	WSACleanup();
 #endif
-
 	return result;
 }
 
@@ -243,18 +245,25 @@ isValidHostnameString(const char *str)
 bool
 isValidAddressString(const char *str)
 {
-	struct sockaddr_in  in;
-	struct sockaddr_in6 in6;
+	bool result = false;
+	char   addr[32];
+#ifdef _WIN32
+	WSADATA  wsaData;
+	WSAStartup(MAKEWORD(2, 2), &wsaData);
+#endif
 
 	/*
 	 * Per RFC-1123, we need to check for valid IP address first
 	 */
-	if (xp_inet_pton(AF_INET, str, &in) != -1)
-		return true;
-	if (xp_inet_pton(AF_INET6, str, &in6) != -1)
-		return true;
+	if (xp_inet_pton(AF_INET, str, addr) != -1)
+		result = true;
+	else if (xp_inet_pton(AF_INET6, str, addr) != -1)
+		result = true;
 
-	return false;
+#ifdef _WIN32
+	WSACleanup();
+#endif
+	return result;
 }
 
 bool
@@ -308,8 +317,12 @@ int main(int argc, char** argv)
 		freeNameServerList(list);
 	}
 
-	if (argc > 1)
-		printf("%s\n", getHostNameByAddr(argv[1], buf, sizeof buf));
+	if (argc > 1) {
+		printf("isValidAddressString(%s) = %d\n", argv[1], isValidAddressString(argv[1]));
+		printf("isValidHostname(%s) = %d\n", argv[1], isValidHostname(argv[1]));
+		char* p = getHostNameByAddr(argv[1], buf, sizeof buf);
+		printf("%s\n", p == NULL ? "(null)" : p);
+	}
 
 	return 0;
 }
