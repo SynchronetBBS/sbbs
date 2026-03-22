@@ -702,6 +702,14 @@ gdi_handle_wm_dpichanged(WPARAM wParam, RECT *r)
 	return 0;
 }
 
+#define WMOD_CTRL     1
+#define WMOD_LCTRL    2
+#define WMOD_RCTRL    4
+#define WMOD_SHIFT    8
+#define WMOD_LSHIFT  16
+#define WMOD_RSHIFT  32
+static uint8_t mods = 0;
+
 static LRESULT CALLBACK
 gdi_WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 	POINT p;
@@ -748,6 +756,27 @@ gdi_WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 			return gdi_handle_mouse_button(lParam, CIOLIB_BUTTON_RELEASE(3));
 		case WM_ACTIVATE:
 			return gdi_handle_activate(hwnd, wParam);
+		case WM_KILLFOCUS:
+			// WM_KILLFOCUS/WM_SETFOCUS are sent (not posted),
+			// so they come directly here, bypassing
+			// magic_message (ticket 226).
+			mods = 0;
+			return 0;
+		case WM_SETFOCUS:
+			mods = 0;
+			if (GetAsyncKeyState(VK_CONTROL) < 0)
+				mods |= WMOD_CTRL;
+			if (GetAsyncKeyState(VK_LCONTROL) < 0)
+				mods |= WMOD_LCTRL;
+			if (GetAsyncKeyState(VK_RCONTROL) < 0)
+				mods |= WMOD_RCTRL;
+			if (GetAsyncKeyState(VK_SHIFT) < 0)
+				mods |= WMOD_SHIFT;
+			if (GetAsyncKeyState(VK_LSHIFT) < 0)
+				mods |= WMOD_LSHIFT;
+			if (GetAsyncKeyState(VK_RSHIFT) < 0)
+				mods |= WMOD_RSHIFT;
+			return 0;
 		case WM_GETMINMAXINFO:
 			return handle_wm_getminmaxinfo((MINMAXINFO *)lParam);
 		case WM_SETCURSOR:
@@ -805,45 +834,15 @@ gdi_snap(bool grow)
 	assert_rwlock_unlock(&vstatlock);
 }
 
-#define WMOD_CTRL     1
-#define WMOD_LCTRL    2
-#define WMOD_RCTRL    4
-#define WMOD_SHIFT    8
-#define WMOD_LSHIFT  16
-#define WMOD_RSHIFT  32
 static bool
 magic_message(MSG msg)
 {
-	static uint8_t mods = 0;
 	uint8_t set = 0;
 
 	/* Note that some messages go directly to gdi_WndProc(), so we can't
 	 * put generic stuff in here.
 	 */
 	switch(msg.message) {
-		case WM_ACTIVATEAPP:
-			if (msg.wParam == TRUE) {
-				// Sync modifier state with actual keyboard when
-				// regaining focus — key-up events are lost while
-				// another window is focused (ticket #226).
-				// GetAsyncKeyState checks actual hardware state;
-				// GetKeyState reflects message-queue state which
-				// is stale when key-up went to another window.
-				mods = 0;
-				if (GetAsyncKeyState(VK_CONTROL) < 0)
-					mods |= WMOD_CTRL;
-				if (GetAsyncKeyState(VK_LCONTROL) < 0)
-					mods |= WMOD_LCTRL;
-				if (GetAsyncKeyState(VK_RCONTROL) < 0)
-					mods |= WMOD_RCTRL;
-				if (GetAsyncKeyState(VK_SHIFT) < 0)
-					mods |= WMOD_SHIFT;
-				if (GetAsyncKeyState(VK_LSHIFT) < 0)
-					mods |= WMOD_LSHIFT;
-				if (GetAsyncKeyState(VK_RSHIFT) < 0)
-					mods |= WMOD_RSHIFT;
-			}
-			return false;
 		// Keyboard stuff
 		case WM_KEYDOWN:
 		case WM_KEYUP:
