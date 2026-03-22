@@ -1850,6 +1850,131 @@ test_session_cleanup_null(void)
 }
 
 /* ================================================================
+ * RFC conformance gap tests
+ * ================================================================ */
+
+/* RFC 4253 s9 / 4251 s9.3.3: hard limit refuses send at 2^31 */
+static int
+test_rekey_hard_limit_send(void)
+{
+	struct handshake_ctx ctx;
+	if (handshake_setup(&ctx) < 0) {
+		handshake_cleanup(&ctx);
+		return TEST_FAIL;
+	}
+
+	ctx.client->trans.tx_since_rekey = DSSH_REKEY_HARD_LIMIT;
+	uint8_t msg[] = { SSH_MSG_SERVICE_REQUEST, 0x42 };
+	int res = dssh_transport_send_packet(ctx.client, msg,
+	    sizeof(msg), NULL);
+	ASSERT_EQ(res, DSSH_ERROR_REKEY_NEEDED);
+
+	handshake_cleanup(&ctx);
+	return TEST_PASS;
+}
+
+/* RFC 4253 s9 / 4251 s9.3.3: hard limit refuses recv at 2^31 */
+static int
+test_rekey_hard_limit_recv(void)
+{
+	struct handshake_ctx ctx;
+	if (handshake_setup(&ctx) < 0) {
+		handshake_cleanup(&ctx);
+		return TEST_FAIL;
+	}
+
+	/* Client sends a packet before we set the limit */
+	uint8_t msg[] = { SSH_MSG_SERVICE_REQUEST, 0x42 };
+	ASSERT_OK(dssh_transport_send_packet(ctx.client, msg,
+	    sizeof(msg), NULL));
+
+	/* Set hard limit on server AFTER packet is in flight */
+	ctx.server->trans.rx_since_rekey = DSSH_REKEY_HARD_LIMIT;
+
+	uint8_t mt;
+	uint8_t *payload;
+	size_t plen;
+	int res = dssh_transport_recv_packet(ctx.server, &mt,
+	    &payload, &plen);
+	ASSERT_EQ(res, DSSH_ERROR_REKEY_NEEDED);
+
+	handshake_cleanup(&ctx);
+	return TEST_PASS;
+}
+
+/* RFC 4253 s6.4-3: sequence numbers never reset across rekey */
+static int
+test_rekey_seq_preserved(void)
+{
+	struct handshake_ctx ctx;
+	if (handshake_setup(&ctx) < 0) {
+		handshake_cleanup(&ctx);
+		return TEST_FAIL;
+	}
+
+	/* Send a few packets to advance sequence numbers */
+	for (int i = 0; i < 5; i++) {
+		uint8_t msg[] = { SSH_MSG_IGNORE, 0 };
+		ASSERT_OK(dssh_transport_send_packet(ctx.client, msg,
+		    sizeof(msg), NULL));
+	}
+
+	uint32_t pre_tx = ctx.client->trans.tx_seq;
+	uint32_t pre_rx = ctx.client->trans.rx_seq;
+	ASSERT_TRUE(pre_tx >= 5);
+
+	/* Run rekey */
+	struct rekey_thread_arg client_arg = { &ctx, -1 };
+	struct rekey_thread_arg server_arg = { &ctx, -1 };
+	thrd_t ct, st;
+	thrd_create(&ct, rekey_client_thread, &client_arg);
+	thrd_create(&st, rekey_server_recv_thread, &server_arg);
+	thrd_join(ct, NULL);
+
+	uint8_t msg2[] = { SSH_MSG_SERVICE_REQUEST, 0xEE };
+	dssh_transport_send_packet(ctx.client, msg2, sizeof(msg2), NULL);
+	thrd_join(st, NULL);
+
+	/* Sequence numbers must NOT have been reset */
+	ASSERT_TRUE(ctx.client->trans.tx_seq > pre_tx);
+	ASSERT_TRUE(ctx.client->trans.rx_seq >= pre_rx);
+
+	/* But per-key counters WERE reset */
+	ASSERT_TRUE(ctx.client->trans.tx_since_rekey < pre_tx);
+
+	handshake_cleanup(&ctx);
+	return TEST_PASS;
+}
+
+/* RFC 4253 s6.4-2: MAC active after handshake */
+static int
+test_handshake_mac_active(void)
+{
+	struct handshake_ctx ctx;
+	if (handshake_setup(&ctx) < 0) {
+		handshake_cleanup(&ctx);
+		return TEST_FAIL;
+	}
+
+	/* Both directions should have MAC contexts */
+	ASSERT_NOT_NULL(ctx.client->trans.mac_c2s_ctx);
+	ASSERT_NOT_NULL(ctx.client->trans.mac_s2c_ctx);
+	ASSERT_NOT_NULL(ctx.client->trans.mac_c2s_selected);
+	ASSERT_NOT_NULL(ctx.client->trans.mac_s2c_selected);
+
+	/* Digest size should be 32 (HMAC-SHA-256) */
+	ASSERT_EQ(ctx.client->trans.mac_c2s_selected->digest_size, 32);
+	ASSERT_EQ(ctx.client->trans.mac_s2c_selected->digest_size, 32);
+
+	/* Encryption should also be active */
+	ASSERT_NOT_NULL(ctx.client->trans.enc_c2s_ctx);
+	ASSERT_NOT_NULL(ctx.client->trans.enc_s2c_ctx);
+
+	handshake_cleanup(&ctx);
+	return TEST_PASS;
+}
+
+/* ================================================================
  * Test table
  * ================================================================ */
 
@@ -1929,6 +2054,12 @@ static struct dssh_test_entry tests[] = {
 	{ "rekey/after_handshake",           test_rekey_after_handshake },
 	{ "rekey/session_id_stable",         test_rekey_session_id_stable },
 	{ "rekey/encrypted_roundtrip",       test_rekey_encrypted_roundtrip },
+
+	/* RFC conformance */
+	{ "rekey/hard_limit_send",           test_rekey_hard_limit_send },
+	{ "rekey/hard_limit_recv",           test_rekey_hard_limit_recv },
+	{ "rekey/seq_preserved",             test_rekey_seq_preserved },
+	{ "handshake/mac_active",            test_handshake_mac_active },
 
 	/* Session lifecycle */
 	{ "session/init_cleanup",            test_session_init_cleanup },

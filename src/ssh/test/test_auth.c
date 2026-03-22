@@ -1692,6 +1692,125 @@ test_auth_roundtrip_multiple_attempts(void)
 
 
 /* ================================================================
+ * RFC 4252 s5.4: Banner message delivery
+ * ================================================================ */
+
+static bool banner_received;
+static char banner_text[256];
+
+static void
+test_banner_cb(const uint8_t *message, size_t message_len,
+    const uint8_t *language, size_t language_len, void *cbdata)
+{
+	(void)language;
+	(void)language_len;
+	(void)cbdata;
+	banner_received = true;
+	size_t n = message_len < sizeof(banner_text) - 1
+	    ? message_len : sizeof(banner_text) - 1;
+	memcpy(banner_text, message, n);
+	banner_text[n] = 0;
+}
+
+/* Server thread that sends a banner before accepting auth */
+static int
+banner_server_thread(void *arg)
+{
+	struct auth_server_arg *a = arg;
+	dssh_session sess = a->ctx->server;
+
+	/* Receive SERVICE_REQUEST, send SERVICE_ACCEPT */
+	uint8_t msg_type;
+	uint8_t *payload;
+	size_t payload_len;
+	int res = dssh_transport_recv_packet(sess, &msg_type,
+	    &payload, &payload_len);
+	if (res < 0) {
+		a->result = res;
+		return 0;
+	}
+	uint8_t accept[32];
+	size_t pos = 0;
+	accept[pos++] = SSH_MSG_SERVICE_ACCEPT;
+	if (payload_len > 1) {
+		uint32_t slen;
+		dssh_parse_uint32(&payload[1], payload_len - 1, &slen);
+		dssh_serialize_uint32(slen, accept, sizeof(accept), &pos);
+		memcpy(&accept[pos], &payload[5], slen);
+		pos += slen;
+	}
+	dssh_transport_send_packet(sess, accept, pos, NULL);
+
+	/* Receive the password auth request */
+	res = dssh_transport_recv_packet(sess, &msg_type,
+	    &payload, &payload_len);
+	if (res < 0) {
+		a->result = res;
+		return 0;
+	}
+
+	/* Send BANNER before SUCCESS — dssh_auth_password handles
+	 * BANNER messages in its recv loop (RFC 4252 s5.4). */
+	const char *banner_msg = "Welcome to DeuceSSH test server!";
+	size_t blen = strlen(banner_msg);
+	uint8_t banner[256];
+	pos = 0;
+	banner[pos++] = SSH_MSG_USERAUTH_BANNER;
+	dssh_serialize_uint32((uint32_t)blen, banner, sizeof(banner), &pos);
+	memcpy(&banner[pos], banner_msg, blen);
+	pos += blen;
+	dssh_serialize_uint32(0, banner, sizeof(banner), &pos);
+	dssh_transport_send_packet(sess, banner, pos, NULL);
+
+	/* Now send SUCCESS */
+	{
+		uint8_t succ = SSH_MSG_USERAUTH_SUCCESS;
+		dssh_transport_send_packet(sess, &succ, 1, NULL);
+	}
+	a->result = 0;
+	return 0;
+}
+
+static int
+test_auth_banner_delivered(void)
+{
+	struct handshake_ctx ctx;
+	if (handshake_setup(&ctx) < 0) {
+		handshake_cleanup(&ctx);
+		return TEST_FAIL;
+	}
+
+	banner_received = false;
+	banner_text[0] = 0;
+
+	/* Set banner callback on client */
+	dssh_session_set_banner_cb(ctx.client,
+	    (void *)test_banner_cb, NULL);
+
+	struct auth_server_arg sa = {0};
+	sa.ctx = &ctx;
+
+	thrd_t st;
+	ASSERT_TRUE(thrd_create(&st, banner_server_thread, &sa) == thrd_success);
+
+	/* Client sends password auth — server sends BANNER then SUCCESS.
+	 * dssh_auth_password handles BANNER in its recv loop. */
+	int res = dssh_auth_password(ctx.client, "testuser", "pass",
+	    NULL, NULL);
+	ASSERT_EQ(res, 0);
+
+	thrd_join(st, NULL);
+	ASSERT_EQ(sa.result, 0);
+
+	/* Verify banner was delivered */
+	ASSERT_TRUE(banner_received);
+	ASSERT_STR_EQ(banner_text, "Welcome to DeuceSSH test server!");
+
+	handshake_cleanup(&ctx);
+	return TEST_PASS;
+}
+
+/* ================================================================
  * Test table and main
  * ================================================================ */
 
@@ -1721,6 +1840,7 @@ static struct dssh_test_entry tests[] = {
 	{ "auth/roundtrip/get_methods",       test_auth_roundtrip_get_methods },
 	{ "auth/roundtrip/kbi",               test_auth_roundtrip_kbi },
 	{ "auth/roundtrip/multiple_attempts", test_auth_roundtrip_multiple_attempts },
+	{ "auth/banner_delivered",            test_auth_banner_delivered },
 };
 
 DSSH_TEST_MAIN(tests)
