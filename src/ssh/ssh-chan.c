@@ -155,14 +155,14 @@ deuce_ssh_msgqueue_peek_size(const struct deuce_ssh_msgqueue *q)
 	return q->head->len;
 }
 
-DEUCE_SSH_PRIVATE ssize_t
+DEUCE_SSH_PRIVATE int64_t
 deuce_ssh_msgqueue_pop(struct deuce_ssh_msgqueue *q,
     uint8_t *buf, size_t bufsz)
 {
 	if (q->head == NULL)
 		return 0;
 	if (buf == NULL)
-		return (ssize_t)q->head->len;
+		return (int64_t)q->head->len;
 	if (bufsz < q->head->len)
 		return DEUCE_SSH_ERROR_TOOLONG;
 
@@ -176,7 +176,7 @@ deuce_ssh_msgqueue_pop(struct deuce_ssh_msgqueue *q,
 	q->total_bytes -= len;
 	q->count--;
 	free(e);
-	return (ssize_t)len;
+	return (int64_t)len;
 }
 
 /* ================================================================

@@ -279,7 +279,7 @@ ssh_ed25519_save_key_file(const char *path, pem_password_cb *pw_cb,
 	return ok == 1 ? 0 : DEUCE_SSH_ERROR_INIT;
 }
 
-DEUCE_SSH_PUBLIC ssize_t
+DEUCE_SSH_PUBLIC int64_t
 ssh_ed25519_get_pub_str(char *buf, size_t bufsz)
 {
 	deuce_ssh_key_algo ka =
@@ -298,7 +298,7 @@ ssh_ed25519_get_pub_str(char *buf, size_t bufsz)
 	size_t needed = ED25519_NAME_LEN + 1 + b64_len + 1;
 
 	if (buf == NULL || bufsz == 0)
-		return (ssize_t)needed;
+		return (int64_t)needed;
 	if (bufsz < needed)
 		return DEUCE_SSH_ERROR_TOOLONG;
 
@@ -306,14 +306,14 @@ ssh_ed25519_get_pub_str(char *buf, size_t bufsz)
 	buf[ED25519_NAME_LEN] = ' ';
 	EVP_EncodeBlock((unsigned char *)&buf[ED25519_NAME_LEN + 1],
 	    blob, (int)blob_len);
-	return (ssize_t)needed;
+	return (int64_t)needed;
 }
 
 DEUCE_SSH_PUBLIC int
 ssh_ed25519_save_pub_file(const char *path)
 {
 	char str[256];
-	ssize_t len = ssh_ed25519_get_pub_str(str, sizeof(str));
+	int64_t len = ssh_ed25519_get_pub_str(str, sizeof(str));
 	if (len < 0)
 		return (int)len;
 

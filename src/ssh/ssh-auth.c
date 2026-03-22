@@ -108,7 +108,7 @@ send_pk_ok(deuce_ssh_session sess,
  *   string user, string service, string method
  * Returns the offset past the method string, or negative on error.
  */
-static ssize_t
+static int64_t
 parse_userauth_prefix(const uint8_t *payload, size_t payload_len,
     const uint8_t **username, size_t *username_len,
     const uint8_t **method, size_t *method_len)
@@ -147,7 +147,7 @@ parse_userauth_prefix(const uint8_t *payload, size_t payload_len,
 	*method_len = mlen;
 	rpos += mlen;
 
-	return (ssize_t)rpos;
+	return (int64_t)rpos;
 }
 
 /* ================================================================
@@ -208,7 +208,7 @@ deuce_ssh_auth_server(deuce_ssh_session sess,
 
 		const uint8_t *user, *method;
 		size_t user_len, method_len;
-		ssize_t rpos = parse_userauth_prefix(payload, payload_len,
+		int64_t rpos = parse_userauth_prefix(payload, payload_len,
 		    &user, &user_len, &method, &method_len);
 		if (rpos < 0)
 			return (int)rpos;

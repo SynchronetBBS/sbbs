@@ -61,38 +61,38 @@ typedef struct deuce_ssh_namelist_s {
 	deuce_ssh_mpint : deuce_ssh_serialize_mpint(val, buf, bufsz, pos),         \
 	deuce_ssh_namelist : deuce_ssh_serialize_namelist(val, buf, bufsz, pos))
 
-ssize_t deuce_ssh_parse_byte(const uint8_t *buf, size_t bufsz, deuce_ssh_byte *val);
+int64_t deuce_ssh_parse_byte(const uint8_t *buf, size_t bufsz, deuce_ssh_byte *val);
 size_t deuce_ssh_serialized_byte_length(deuce_ssh_byte val);
 int deuce_ssh_serialize_byte(deuce_ssh_byte val, uint8_t *buf, size_t bufsz, size_t *pos);
 
 // A byte array is different because val->length *must* be set before parsing
-ssize_t deuce_ssh_parse_bytearray(const uint8_t *buf, size_t bufsz, deuce_ssh_bytearray val);
+int64_t deuce_ssh_parse_bytearray(const uint8_t *buf, size_t bufsz, deuce_ssh_bytearray val);
 size_t deuce_ssh_serialized_bytearray_length(deuce_ssh_bytearray val);
 int deuce_ssh_serialize_bytearray(deuce_ssh_bytearray val, uint8_t *buf, size_t bufsz, size_t *pos);
 
-ssize_t deuce_ssh_parse_boolean(const uint8_t *buf, size_t bufsz, deuce_ssh_boolean *val);
+int64_t deuce_ssh_parse_boolean(const uint8_t *buf, size_t bufsz, deuce_ssh_boolean *val);
 size_t deuce_ssh_serialized_boolean_length(deuce_ssh_boolean val);
 int deuce_ssh_serialize_boolean(deuce_ssh_boolean val, uint8_t *buf, size_t bufsz, size_t *pos);
 
-ssize_t deuce_ssh_parse_uint32(const uint8_t *buf, size_t bufsz, deuce_ssh_uint32_t *val);
+int64_t deuce_ssh_parse_uint32(const uint8_t *buf, size_t bufsz, deuce_ssh_uint32_t *val);
 size_t deuce_ssh_serialized_uint32_length(deuce_ssh_uint32_t val);
 int deuce_ssh_serialize_uint32(deuce_ssh_uint32_t val, uint8_t *buf, size_t bufsz, size_t *pos);
 
-ssize_t deuce_ssh_parse_uint64(const uint8_t *buf, size_t bufsz, deuce_ssh_uint64_t *val);
+int64_t deuce_ssh_parse_uint64(const uint8_t *buf, size_t bufsz, deuce_ssh_uint64_t *val);
 size_t deuce_ssh_serialized_uint64_length(deuce_ssh_uint64_t val);
 int deuce_ssh_serialize_uint64(deuce_ssh_uint64_t val, uint8_t *buf, size_t bufsz, size_t *pos);
 
-ssize_t deuce_ssh_parse_string(const uint8_t *buf, size_t bufsz, deuce_ssh_string val);
+int64_t deuce_ssh_parse_string(const uint8_t *buf, size_t bufsz, deuce_ssh_string val);
 size_t deuce_ssh_serialized_string_length(deuce_ssh_string val);
 int deuce_ssh_serialize_string(deuce_ssh_string val, uint8_t *buf, size_t bufsz, size_t *pos);
 
-ssize_t deuce_ssh_parse_mpint(const uint8_t *buf, size_t bufsz, deuce_ssh_mpint val);
+int64_t deuce_ssh_parse_mpint(const uint8_t *buf, size_t bufsz, deuce_ssh_mpint val);
 size_t deuce_ssh_serialized_mpint_length(deuce_ssh_mpint val);
 int deuce_ssh_serialize_mpint(deuce_ssh_mpint val, uint8_t *buf, size_t bufsz, size_t *pos);
 
-ssize_t deuce_ssh_parse_namelist(const uint8_t *buf, size_t bufsz, deuce_ssh_namelist val);
+int64_t deuce_ssh_parse_namelist(const uint8_t *buf, size_t bufsz, deuce_ssh_namelist val);
 size_t deuce_ssh_serialized_namelist_length(deuce_ssh_namelist val);
 int deuce_ssh_serialize_namelist(deuce_ssh_namelist val, uint8_t *buf, size_t bufsz, size_t *pos);
-ssize_t deuce_ssh_parse_namelist_next(deuce_ssh_string val, deuce_ssh_namelist nl);
+int64_t deuce_ssh_parse_namelist_next(deuce_ssh_string val, deuce_ssh_namelist nl);
 
 #endif

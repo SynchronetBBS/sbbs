@@ -1368,6 +1368,8 @@ deuce_ssh_transport_init(deuce_ssh_session sess, size_t max_packet_size)
 
 	if (max_packet_size < SSH_BPP_PACKET_SIZE_MIN)
 		max_packet_size = SSH_BPP_PACKET_SIZE_MIN;
+	if (max_packet_size > SSH_BPP_PACKET_SIZE_MAX)
+		max_packet_size = SSH_BPP_PACKET_SIZE_MAX;
 
 	sess->trans.packet_buf_sz = max_packet_size;
 	sess->trans.tx_packet = malloc(max_packet_size);

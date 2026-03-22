@@ -16,6 +16,10 @@ static_assert(0, "threads.h support required");
 #include <stdbool.h>
 #include <threads.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /* Error codes returned by library functions.  Zero is success;
  * negative values are errors. */
 #define DEUCE_SSH_ERROR_NONE           0
@@ -181,5 +185,9 @@ DEUCE_SSH_PUBLIC void deuce_ssh_session_cleanup(deuce_ssh_session sess);
  * extra_line_cb: called for non-SSH lines before version (may be NULL)
  */
 DEUCE_SSH_PUBLIC int deuce_ssh_transport_set_callbacks(deuce_ssh_transport_io_cb tx, deuce_ssh_transport_io_cb rx, deuce_ssh_transport_rxline_cb rx_line, deuce_ssh_transport_extra_line_cb extra_line_cb);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

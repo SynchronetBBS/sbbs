@@ -9,6 +9,10 @@
 
 #include <time.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /* Opaque context types for algorithm modules.
  * Each module defines the actual struct contents. */
 typedef struct deuce_ssh_enc_ctx deuce_ssh_enc_ctx;
@@ -61,7 +65,8 @@ typedef struct deuce_ssh_comp_ctx deuce_ssh_comp_ctx;
  * With max padding of 255 bytes, minimum buffer = 32768 + 260 = 33028.
  * We round up for alignment.
  */
-#define SSH_BPP_PACKET_SIZE_MIN 33280
+#define SSH_BPP_PACKET_SIZE_MIN  33280
+#define SSH_BPP_PACKET_SIZE_MAX  (64 * 1024 * 1024)  /* 64 MiB */
 
 typedef struct deuce_ssh_transport_packet_s {
 	deuce_ssh_string payload;
@@ -297,5 +302,9 @@ DEUCE_SSH_PRIVATE int deuce_ssh_transport_newkeys(deuce_ssh_session sess);
 DEUCE_SSH_PRIVATE int deuce_ssh_transport_rekey(deuce_ssh_session sess);
 DEUCE_SSH_PRIVATE bool deuce_ssh_transport_rekey_needed(deuce_ssh_session sess);
 DEUCE_SSH_PRIVATE deuce_ssh_key_algo deuce_ssh_transport_find_key_algo(const char *name);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

@@ -5,6 +5,10 @@
 
 #include "deucessh.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #define SSH_MSG_GLOBAL_REQUEST            UINT8_C(80)
 #define SSH_MSG_REQUEST_SUCCESS           UINT8_C(81)
 #define SSH_MSG_REQUEST_FAILURE           UINT8_C(82)
@@ -217,13 +221,13 @@ DEUCE_SSH_PUBLIC int deuce_ssh_channel_accept_raw(deuce_ssh_session sess,
 DEUCE_SSH_PUBLIC int deuce_ssh_session_poll(deuce_ssh_session sess,
     struct deuce_ssh_channel_s *ch, int events, int timeout_ms);
 
-DEUCE_SSH_PUBLIC ssize_t deuce_ssh_session_read(deuce_ssh_session sess,
+DEUCE_SSH_PUBLIC int64_t deuce_ssh_session_read(deuce_ssh_session sess,
     struct deuce_ssh_channel_s *ch, uint8_t *buf, size_t bufsz);
 
-DEUCE_SSH_PUBLIC ssize_t deuce_ssh_session_read_ext(deuce_ssh_session sess,
+DEUCE_SSH_PUBLIC int64_t deuce_ssh_session_read_ext(deuce_ssh_session sess,
     struct deuce_ssh_channel_s *ch, uint8_t *buf, size_t bufsz);
 
-DEUCE_SSH_PUBLIC ssize_t deuce_ssh_session_write(deuce_ssh_session sess,
+DEUCE_SSH_PUBLIC int64_t deuce_ssh_session_write(deuce_ssh_session sess,
     struct deuce_ssh_channel_s *ch, const uint8_t *buf, size_t bufsz);
 
 /*
@@ -231,7 +235,7 @@ DEUCE_SSH_PUBLIC ssize_t deuce_ssh_session_write(deuce_ssh_session sess,
  * Same semantics as session_write — returns bytes written (may be
  * short), 0 if window full, negative on error.
  */
-DEUCE_SSH_PUBLIC ssize_t deuce_ssh_session_write_ext(deuce_ssh_session sess,
+DEUCE_SSH_PUBLIC int64_t deuce_ssh_session_write_ext(deuce_ssh_session sess,
     struct deuce_ssh_channel_s *ch, const uint8_t *buf, size_t bufsz);
 
 DEUCE_SSH_PUBLIC int deuce_ssh_session_read_signal(deuce_ssh_session sess,
@@ -255,7 +259,7 @@ DEUCE_SSH_PUBLIC int deuce_ssh_channel_poll(deuce_ssh_session sess,
  * stays queued).  Pass buf=NULL, bufsz=0 to peek at the next
  * message size without consuming it.
  */
-DEUCE_SSH_PUBLIC ssize_t deuce_ssh_channel_read(deuce_ssh_session sess,
+DEUCE_SSH_PUBLIC int64_t deuce_ssh_channel_read(deuce_ssh_session sess,
     struct deuce_ssh_channel_s *ch, uint8_t *buf, size_t bufsz);
 
 /*
@@ -286,5 +290,9 @@ DEUCE_SSH_PUBLIC int deuce_ssh_session_send_signal(deuce_ssh_session sess,
 DEUCE_SSH_PUBLIC int deuce_ssh_session_send_window_change(deuce_ssh_session sess,
     struct deuce_ssh_channel_s *ch,
     uint32_t cols, uint32_t rows, uint32_t wpx, uint32_t hpx);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

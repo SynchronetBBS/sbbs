@@ -7,9 +7,8 @@
 /*
  * Required by parse functions
  */
-_Static_assert(sizeof(ssize_t) > sizeof(uint32_t), "ssize_t must be larger than uint32_t");
 
-ssize_t
+int64_t
 deuce_ssh_parse_byte(const uint8_t *buf, size_t bufsz, deuce_ssh_byte *val)
 {
 	if (bufsz < 1)
@@ -34,7 +33,7 @@ deuce_ssh_serialize_byte(deuce_ssh_byte val, uint8_t *buf, size_t bufsz, size_t 
 	return 0;
 }
 
-ssize_t
+int64_t
 deuce_ssh_parse_bytearray(const uint8_t *buf, size_t bufsz, deuce_ssh_bytearray val)
 {
 	if (val->length < 2)
@@ -61,7 +60,7 @@ deuce_ssh_serialize_bytearray(deuce_ssh_bytearray val, uint8_t *buf, size_t bufs
 	return 0;
 }
 
-ssize_t
+int64_t
 deuce_ssh_parse_boolean(const uint8_t *buf, size_t bufsz, deuce_ssh_boolean *val)
 {
 	if (bufsz < 1)
@@ -86,7 +85,7 @@ deuce_ssh_serialize_boolean(deuce_ssh_boolean val, uint8_t *buf, size_t bufsz, s
 	return 0;
 }
 
-ssize_t
+int64_t
 deuce_ssh_parse_uint32(const uint8_t *buf, size_t bufsz, deuce_ssh_uint32_t *val)
 {
 	if (bufsz < 4)
@@ -113,7 +112,7 @@ deuce_ssh_serialize_uint32(deuce_ssh_uint32_t val, uint8_t *buf, size_t bufsz, s
 	return 0;
 }
 
-ssize_t
+int64_t
 deuce_ssh_parse_uint64(const uint8_t *buf, size_t bufsz, deuce_ssh_uint64_t *val)
 {
 	if (bufsz < 8)
@@ -146,13 +145,13 @@ deuce_ssh_serialize_uint64(deuce_ssh_uint64_t val, uint8_t *buf, size_t bufsz, s
 	return 0;
 }
 
-ssize_t
+int64_t
 deuce_ssh_parse_string(const uint8_t *buf, size_t bufsz, deuce_ssh_string val)
 {
 	if (bufsz < 4)
 		return DEUCE_SSH_ERROR_PARSE;
 	uint32_t len;
-	ssize_t ret = deuce_ssh_parse_uint32(buf, bufsz, &len);
+	int64_t ret = deuce_ssh_parse_uint32(buf, bufsz, &len);
 	if (ret < 4)
 		return ret;
 	size_t sz = ret + len;
@@ -180,10 +179,10 @@ deuce_ssh_serialize_string(deuce_ssh_string val, uint8_t *buf, size_t bufsz, siz
 	return 0;
 }
 
-ssize_t
+int64_t
 deuce_ssh_parse_mpint(const uint8_t *buf, size_t bufsz, deuce_ssh_mpint val)
 {
-	ssize_t ret = deuce_ssh_parse_string(buf, bufsz, val);
+	int64_t ret = deuce_ssh_parse_string(buf, bufsz, val);
 	if (ret < 4)
 		return ret;
 	if (val->length >= 2) {
@@ -207,12 +206,12 @@ deuce_ssh_serialize_mpint(deuce_ssh_mpint val, uint8_t *buf, size_t bufsz, size_
 	return deuce_ssh_serialize_string(val, buf, bufsz, pos);
 }
 
-ssize_t
+int64_t
 deuce_ssh_parse_namelist(const uint8_t *buf, size_t bufsz, deuce_ssh_namelist val)
 {
 	struct deuce_ssh_string_s str;
 
-	ssize_t ret = deuce_ssh_parse_string(buf, bufsz, &str);
+	int64_t ret = deuce_ssh_parse_string(buf, bufsz, &str);
 	if (ret < 4)
 		return ret;
 	if (str.length > 0) {
@@ -250,7 +249,7 @@ deuce_ssh_serialize_namelist(deuce_ssh_namelist val, uint8_t *buf, size_t bufsz,
 	return deuce_ssh_serialize_string(&str, buf, bufsz, pos);
 }
 
-ssize_t
+int64_t
 deuce_ssh_parse_namelist_next(deuce_ssh_string val, deuce_ssh_namelist nl)
 {
 	if (nl->next >= nl->length)

@@ -386,7 +386,7 @@ rsa_sha2_256_save_key_file(const char *path, pem_password_cb *pw_cb,
 	return ok == 1 ? 0 : DEUCE_SSH_ERROR_INIT;
 }
 
-DEUCE_SSH_PUBLIC ssize_t
+DEUCE_SSH_PUBLIC int64_t
 rsa_sha2_256_get_pub_str(char *buf, size_t bufsz)
 {
 	deuce_ssh_key_algo ka =
@@ -405,7 +405,7 @@ rsa_sha2_256_get_pub_str(char *buf, size_t bufsz)
 	size_t needed = RSA_KEY_TYPE_NAME_LEN + 1 + b64_len + 1;
 
 	if (buf == NULL || bufsz == 0)
-		return (ssize_t)needed;
+		return (int64_t)needed;
 	if (bufsz < needed)
 		return DEUCE_SSH_ERROR_TOOLONG;
 
@@ -413,20 +413,20 @@ rsa_sha2_256_get_pub_str(char *buf, size_t bufsz)
 	buf[RSA_KEY_TYPE_NAME_LEN] = ' ';
 	EVP_EncodeBlock((unsigned char *)&buf[RSA_KEY_TYPE_NAME_LEN + 1],
 	    blob, (int)blob_len);
-	return (ssize_t)needed;
+	return (int64_t)needed;
 }
 
 DEUCE_SSH_PUBLIC int
 rsa_sha2_256_save_pub_file(const char *path)
 {
 	char *str = NULL;
-	ssize_t len = rsa_sha2_256_get_pub_str(NULL, 0);
+	int64_t len = rsa_sha2_256_get_pub_str(NULL, 0);
 	if (len < 0)
 		return (int)len;
 	str = malloc((size_t)len);
 	if (str == NULL)
 		return DEUCE_SSH_ERROR_ALLOC;
-	ssize_t res = rsa_sha2_256_get_pub_str(str, (size_t)len);
+	int64_t res = rsa_sha2_256_get_pub_str(str, (size_t)len);
 	if (res < 0) {
 		free(str);
 		return (int)res;

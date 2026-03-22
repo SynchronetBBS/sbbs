@@ -51,7 +51,7 @@ serialize_bn_mpint(const BIGNUM *bn, uint8_t *buf, size_t bufsz, size_t *pos)
 	return 0;
 }
 
-static ssize_t
+static int64_t
 parse_bn_mpint(const uint8_t *buf, size_t bufsz, BIGNUM **bn)
 {
 	if (bufsz < 4)
@@ -220,7 +220,7 @@ handler(deuce_ssh_session sess)
 		{
 			size_t rpos = 1;
 			if (rpos >= payload_len) return DEUCE_SSH_ERROR_PARSE;
-			ssize_t n = parse_bn_mpint(&payload[rpos], payload_len - rpos, &p);
+			int64_t n = parse_bn_mpint(&payload[rpos], payload_len - rpos, &p);
 			if (n < 0) return (int)n;
 			rpos += n;
 			if (rpos >= payload_len) { BN_free(p); return DEUCE_SSH_ERROR_PARSE; }
@@ -269,7 +269,7 @@ handler(deuce_ssh_session sess)
 		const uint8_t *k_s = &payload[rpos];
 		rpos += ks_len;
 
-		ssize_t fn = parse_bn_mpint(&payload[rpos], payload_len - rpos, &f_bn);
+		int64_t fn = parse_bn_mpint(&payload[rpos], payload_len - rpos, &f_bn);
 		if (fn < 0) { BN_clear_free(x); res = (int)fn; goto cleanup; }
 		rpos += fn;
 
@@ -371,7 +371,7 @@ handler(deuce_ssh_session sess)
 		if (msg_type != SSH_MSG_KEX_DH_GEX_INIT) { res = DEUCE_SSH_ERROR_PARSE; goto cleanup; }
 		{
 			size_t rpos = 1;
-			ssize_t n = parse_bn_mpint(&payload[rpos], payload_len - rpos, &e_bn);
+			int64_t n = parse_bn_mpint(&payload[rpos], payload_len - rpos, &e_bn);
 			if (n < 0) { res = (int)n; goto cleanup; }
 		}
 

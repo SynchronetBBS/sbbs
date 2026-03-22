@@ -5,6 +5,10 @@
 
 #include "deucessh.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #define SSH_MSG_USERAUTH_REQUEST          UINT8_C(50)
 #define SSH_MSG_USERAUTH_FAILURE          UINT8_C(51)
 #define SSH_MSG_USERAUTH_SUCCESS          UINT8_C(52)
@@ -226,5 +230,9 @@ DEUCE_SSH_PUBLIC int deuce_ssh_auth_server(deuce_ssh_session sess,
  */
 DEUCE_SSH_PUBLIC int deuce_ssh_auth_publickey(deuce_ssh_session sess,
     const char *username, const char *algo_name);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

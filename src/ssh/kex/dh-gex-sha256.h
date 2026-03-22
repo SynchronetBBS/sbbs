@@ -3,6 +3,10 @@
 
 #include "deucessh.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /*
  * DH group provider: the server application implements this to
  * supply a safe prime and generator for the requested size range.
@@ -26,5 +30,9 @@ DEUCE_SSH_PUBLIC void deuce_ssh_dh_gex_set_provider(deuce_ssh_session sess,
     struct deuce_ssh_dh_gex_provider *provider);
 
 DEUCE_SSH_PUBLIC int register_dh_gex_sha256(void);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

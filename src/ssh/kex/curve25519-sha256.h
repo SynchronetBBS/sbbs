@@ -3,6 +3,14 @@
 
 #include "portable.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 DEUCE_SSH_PUBLIC int register_curve25519_sha256(void);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

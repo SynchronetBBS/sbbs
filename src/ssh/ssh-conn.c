@@ -1529,7 +1529,7 @@ deuce_ssh_session_poll(deuce_ssh_session sess,
 	}
 }
 
-DEUCE_SSH_PUBLIC ssize_t
+DEUCE_SSH_PUBLIC int64_t
 deuce_ssh_session_read(deuce_ssh_session sess,
     struct deuce_ssh_channel_s *ch, uint8_t *buf, size_t bufsz)
 {
@@ -1541,10 +1541,10 @@ deuce_ssh_session_read(deuce_ssh_session sess,
 
 	if (n > 0)
 		maybe_replenish_window(sess, ch);
-	return (ssize_t)n;
+	return (int64_t)n;
 }
 
-DEUCE_SSH_PUBLIC ssize_t
+DEUCE_SSH_PUBLIC int64_t
 deuce_ssh_session_read_ext(deuce_ssh_session sess,
     struct deuce_ssh_channel_s *ch, uint8_t *buf, size_t bufsz)
 {
@@ -1556,10 +1556,10 @@ deuce_ssh_session_read_ext(deuce_ssh_session sess,
 
 	if (n > 0)
 		maybe_replenish_window(sess, ch);
-	return (ssize_t)n;
+	return (int64_t)n;
 }
 
-DEUCE_SSH_PUBLIC ssize_t
+DEUCE_SSH_PUBLIC int64_t
 deuce_ssh_session_write(deuce_ssh_session sess,
     struct deuce_ssh_channel_s *ch, const uint8_t *buf, size_t bufsz)
 {
@@ -1578,10 +1578,10 @@ deuce_ssh_session_write(deuce_ssh_session sess,
 	int res = deuce_ssh_conn_send_data(sess, ch, buf, len);
 	if (res < 0)
 		return res;
-	return (ssize_t)len;
+	return (int64_t)len;
 }
 
-DEUCE_SSH_PUBLIC ssize_t
+DEUCE_SSH_PUBLIC int64_t
 deuce_ssh_session_write_ext(deuce_ssh_session sess,
     struct deuce_ssh_channel_s *ch, const uint8_t *buf, size_t bufsz)
 {
@@ -1601,7 +1601,7 @@ deuce_ssh_session_write_ext(deuce_ssh_session sess,
 	    SSH_EXTENDED_DATA_STDERR, buf, len);
 	if (res < 0)
 		return res;
-	return (ssize_t)len;
+	return (int64_t)len;
 }
 
 DEUCE_SSH_PUBLIC int
@@ -1683,12 +1683,12 @@ deuce_ssh_channel_poll(deuce_ssh_session sess,
 	}
 }
 
-DEUCE_SSH_PUBLIC ssize_t
+DEUCE_SSH_PUBLIC int64_t
 deuce_ssh_channel_read(deuce_ssh_session sess,
     struct deuce_ssh_channel_s *ch, uint8_t *buf, size_t bufsz)
 {
 	mtx_lock(&ch->buf_mtx);
-	ssize_t n = deuce_ssh_msgqueue_pop(&ch->buf.raw.queue, buf, bufsz);
+	int64_t n = deuce_ssh_msgqueue_pop(&ch->buf.raw.queue, buf, bufsz);
 	mtx_unlock(&ch->buf_mtx);
 
 	if (n > 0)

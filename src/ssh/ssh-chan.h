@@ -8,10 +8,9 @@
 #ifndef DEUCE_SSH_CHAN_H
 #define DEUCE_SSH_CHAN_H
 
-#include <stdint.h>
 #include <stdbool.h>
 #include <stddef.h>
-#include <sys/types.h>
+#include <stdint.h>
 #include <threads.h>
 
 /* ================================================================
@@ -68,7 +67,7 @@ DEUCE_SSH_PRIVATE size_t deuce_ssh_msgqueue_peek_size(const struct deuce_ssh_msg
 /* Dequeue a message into buf. Returns message length, or
  * DEUCE_SSH_ERROR_TOOLONG if bufsz too small (message stays queued),
  * or 0 if empty. */
-DEUCE_SSH_PRIVATE ssize_t deuce_ssh_msgqueue_pop(struct deuce_ssh_msgqueue *q,
+DEUCE_SSH_PRIVATE int64_t deuce_ssh_msgqueue_pop(struct deuce_ssh_msgqueue *q,
     uint8_t *buf, size_t bufsz);
 
 /* ================================================================
