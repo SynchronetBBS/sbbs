@@ -50,8 +50,8 @@ before the next packet is read, preserving order.
 **CONFORMS** — `open_session_channel()` (internal) sends
 SSH_MSG_CHANNEL_OPEN with channel type "session", sender channel ID,
 initial window size, and maximum packet size.  Called by the public
-`deuce_ssh_session_open_shell()`, `deuce_ssh_session_open_exec()`, and
-`deuce_ssh_channel_open_subsystem()`.
+`dssh_session_open_shell()`, `dssh_session_open_exec()`, and
+`dssh_channel_open_subsystem()`.
 
 ### 5.1-2 (Client processes CHANNEL_OPEN_CONFIRMATION)
 
@@ -67,10 +67,10 @@ setting `close_received` and waking the poll condition, causing
 
 ### 5.1-4 (Server responds to CHANNEL_OPEN)
 
-**CONFORMS** — `deuce_ssh_session_accept()` receives incoming
+**CONFORMS** — `dssh_session_accept()` receives incoming
 CHANNEL_OPEN (queued by the demux thread).
-`deuce_ssh_channel_accept_raw()` sends CHANNEL_OPEN_CONFIRMATION.
-`deuce_ssh_session_reject()` sends CHANNEL_OPEN_FAILURE.  The demux
+`dssh_channel_accept_raw()` sends CHANNEL_OPEN_CONFIRMATION.
+`dssh_session_reject()` sends CHANNEL_OPEN_FAILURE.  The demux
 thread auto-rejects forbidden channel types.
 
 ---
@@ -82,7 +82,7 @@ thread auto-rejects forbidden channel types.
 > 2^32 - 1 bytes.
 
 **CONFORMS** — `local_window` and `remote_window` in
-`struct deuce_ssh_channel_s` are `uint32_t`, supporting the full range.
+the channel struct (internal) are `uint32_t`, supporting the full range.
 
 ### 5.2-2
 > The window **MUST NOT** be increased above 2^32 - 1 bytes.
@@ -113,7 +113,7 @@ transport buffer (33280 bytes) with room for packet headers.
 
 **CONFORMS** — `conn_send_data()` (internal) sends SSH_MSG_CHANNEL_DATA
 with proper format (channel ID + data string).  Called by the public
-`deuce_ssh_session_write()` and `deuce_ssh_channel_write()`.
+`dssh_session_write()` and `dssh_channel_write()`.
 
 ### 5.2-6 (CHANNEL_DATA receiving)
 
@@ -132,7 +132,7 @@ extracting the data_type_code and data payload, decrementing
 **CONFORMS** — `conn_send_extended_data()` (internal) sends
 CHANNEL_EXTENDED_DATA with a specified data_type_code (typically 1
 for stderr).  Same window constraints as send_data.  Called by the
-public `deuce_ssh_session_write_ext()`.
+public `dssh_session_write_ext()`.
 
 ### 5.2-9 (WINDOW_ADJUST sending)
 
@@ -165,7 +165,7 @@ Tracks `eof_sent` to prevent double-send.
 no-op if already sent (prevents double-close).  The demux thread sets
 `close_received` when the peer sends CLOSE and wakes poll waiters.
 The application cleans up its resources and then calls
-`deuce_ssh_session_close()` or `deuce_ssh_channel_close()` to send the
+`dssh_session_close()` or `dssh_channel_close()` to send the
 reciprocal CLOSE (which the library skips if it already sent one).
 The channel struct tracks both `close_sent` and `close_received`.
 
@@ -173,7 +173,7 @@ The channel struct tracks both `close_sent` and `close_received`.
 > A party **MAY** send SSH_MSG_CHANNEL_CLOSE without having sent or
 > received SSH_MSG_CHANNEL_EOF.
 
-**CONFORMS** — `deuce_ssh_session_close()` / `deuce_ssh_channel_close()`
+**CONFORMS** — `dssh_session_close()` / `dssh_channel_close()`
 can be called at any time.
 
 ### 5.3-4
@@ -232,7 +232,7 @@ reason SSH_OPEN_ADMINISTRATIVELY_PROHIBITED.
 > Zero dimension parameters **MUST** be ignored.
 
 **APPLICATION** — PTY dimensions are passed through to the server
-application's `pty_req` callback in `deuce_ssh_server_session_cbs`.
+application's `pty_req` callback in `dssh_server_session_cbs`.
 Interpretation of zero dimensions is the application's responsibility.
 
 ### 6.2-2
@@ -262,8 +262,8 @@ pty requests.
 ## Section 6.4: Environment Variable Passing
 
 **CONFORMS** — Server-side env callback in
-`deuce_ssh_server_session_cbs` receives environment variables during
-`deuce_ssh_session_accept_channel()`.  Client-side env sending is
+`dssh_server_session_cbs` receives environment variables during
+`dssh_session_accept_channel()`.  Client-side env sending is
 available via `conn_request_env()` (internal).
 
 ---
@@ -287,7 +287,7 @@ responsibility.
 > It is **RECOMMENDED** that the reply to these messages be requested
 > and checked.
 
-**CONFORMS** — `deuce_ssh_session_open_exec()` sends the exec request
+**CONFORMS** — `dssh_session_open_exec()` sends the exec request
 with `want_reply=TRUE` via `send_channel_request_wait()` and checks
 the response.
 
@@ -306,7 +306,7 @@ server-sent shell/exec/subsystem requests on client-owned channels.
 ### 6.7-1
 > A response **SHOULD NOT** be sent to this message.
 
-**CONFORMS** — `deuce_ssh_session_send_window_change()` sends the
+**CONFORMS** — `dssh_session_send_window_change()` sends the
 window-change request with `want_reply=FALSE`.  The demux thread
 delivers incoming window-change requests to the per-channel
 `window_change_cb` callback without sending a response.
@@ -330,10 +330,10 @@ xon-xoff requests.
 > Some systems lack signal implementation and **SHOULD** ignore this
 > message.
 
-**CONFORMS** — `deuce_ssh_session_send_signal()` sends signal requests.
+**CONFORMS** — `dssh_session_send_signal()` sends signal requests.
 The demux thread receives incoming "signal" CHANNEL_REQUESTs and queues
 them with stream position marks for synchronization.
-`deuce_ssh_session_read_signal()` delivers them to the application.
+`dssh_session_read_signal()` delivers them to the application.
 
 ---
 
@@ -343,7 +343,7 @@ them with stream position marks for synchronization.
 > Returning the status is **RECOMMENDED**.
 
 **CONFORMS** — `conn_send_exit_status()` (internal) sends exit-status.
-`deuce_ssh_session_close(sess, ch, exit_code)` sends exit-status + EOF
+`dssh_session_close(sess, ch, exit_code)` sends exit-status + EOF
 + CLOSE in the correct order.
 
 ---
@@ -425,17 +425,17 @@ application's responsibility.
 - **SUCCESS/FAILURE handling** (5.4-2) — demux thread delivers responses
   via per-channel `request_pending`/`request_responded`/`request_success`.
 - **Server CHANNEL_REQUEST dispatch** (5.4-3) — demux thread handles
-  signals, exit-status, window-change; `deuce_ssh_channel_accept_raw()`
+  signals, exit-status, window-change; `dssh_channel_accept_raw()`
   for subsystem channels.
 - **Client rejects session opens** (6.1-1) — demux auto-rejects
   "session" CHANNEL_OPEN when `sess->trans.client == true`.
 - **X11 channel opens rejected** (6.3-2) — demux auto-rejects "x11".
 - **Environment variables** (6.4) — server callback in session_cbs.
 - **Exit status** (6.10-1) — `conn_send_exit_status()` (internal) and
-  `deuce_ssh_session_close(sess, ch, exit_code)`.
+  `dssh_session_close(sess, ch, exit_code)`.
 - **Port forwarding rejected** (7.1-1, 7.2-1, 7.2-2) — global requests
   auto-fail; "forwarded-tcpip" and "direct-tcpip" auto-rejected.
-- **Extended data sending** — `deuce_ssh_session_write_ext()`.
+- **Extended data sending** — `dssh_session_write_ext()`.
 
 ### Remaining
 

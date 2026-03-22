@@ -90,7 +90,7 @@ range.
 > Packets containing SSH_MSG_DISCONNECT **MUST** have Disconnection
 > Message 'reason code' values.
 
-**CONFORMS** — `deuce_ssh_transport_disconnect()` always includes a
+**CONFORMS** — `dssh_transport_disconnect()` always includes a
 `uint32_t reason` code in the disconnect message.
 
 ### 4.2-2 (Assigned Values)
@@ -143,10 +143,10 @@ messages that the application constructs directly.
 
 **CONFORMS** — Covered in detail in audit-4251.md (sections 6-1
 through 6-4).  All registered algorithm names are validated:
-- Received names: character validation in `deuce_ssh_parse_namelist()`
+- Received names: character validation in `dssh_parse_namelist()`
   and 64-character limit in KEXINIT parsing
 - Registered names: length and emptiness checks in all
-  `deuce_ssh_transport_register_*()` functions
+  `dssh_transport_register_*()` functions
 - All built-in names are IANA-compliant US-ASCII strings under 64
   characters
 

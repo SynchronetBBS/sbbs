@@ -1,0 +1,69 @@
+/*
+ * deuce-ssh-algorithms.h — Built-in algorithm registration and key management.
+ *
+ * Include this header to access register_*() functions for built-in
+ * algorithms and key load/save/generate functions for key algorithms.
+ */
+
+#ifndef DSSH_ALGORITHMS_H
+#define DSSH_ALGORITHMS_H
+
+#include <openssl/pem.h>
+
+#include "deucessh.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+/* Key exchange */
+DSSH_PUBLIC int register_curve25519_sha256(void);
+DSSH_PUBLIC int register_dh_gex_sha256(void);
+
+/* Host key algorithms */
+DSSH_PUBLIC int register_ssh_ed25519(void);
+DSSH_PUBLIC int ssh_ed25519_load_key_file(const char *path,
+    pem_password_cb *pw_cb, void *pw_cbdata);
+DSSH_PUBLIC int ssh_ed25519_save_key_file(const char *path,
+    pem_password_cb *pw_cb, void *pw_cbdata);
+DSSH_PUBLIC int64_t ssh_ed25519_get_pub_str(char *buf, size_t bufsz);
+DSSH_PUBLIC int ssh_ed25519_save_pub_file(const char *path);
+DSSH_PUBLIC int ssh_ed25519_generate_key(void);
+
+DSSH_PUBLIC int register_rsa_sha2_256(void);
+DSSH_PUBLIC int rsa_sha2_256_load_key_file(const char *path,
+    pem_password_cb *pw_cb, void *pw_cbdata);
+DSSH_PUBLIC int rsa_sha2_256_save_key_file(const char *path,
+    pem_password_cb *pw_cb, void *pw_cbdata);
+DSSH_PUBLIC int64_t rsa_sha2_256_get_pub_str(char *buf, size_t bufsz);
+DSSH_PUBLIC int rsa_sha2_256_save_pub_file(const char *path);
+DSSH_PUBLIC int rsa_sha2_256_generate_key(unsigned int bits);
+
+/* Encryption */
+DSSH_PUBLIC int register_aes256_ctr(void);
+DSSH_PUBLIC int register_none_enc(void);
+
+/* MAC */
+DSSH_PUBLIC int register_hmac_sha2_256(void);
+DSSH_PUBLIC int register_none_mac(void);
+
+/* Compression */
+DSSH_PUBLIC int register_none_comp(void);
+
+/* DH group provider (server-side, for DH-GEX) */
+struct dssh_dh_gex_provider {
+	int (*select_group)(uint32_t min, uint32_t preferred, uint32_t max,
+	    uint8_t **p, size_t *p_len,
+	    uint8_t **g, size_t *g_len,
+	    void *cbdata);
+	void *cbdata;
+};
+
+DSSH_PUBLIC void dssh_dh_gex_set_provider(dssh_session sess,
+    struct dssh_dh_gex_provider *provider);
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif

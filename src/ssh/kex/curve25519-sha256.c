@@ -6,7 +6,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "deucessh.h"
+#include "ssh-internal.h"
 
 #define X25519_KEY_LEN    32
 #define SHA256_DIGEST_LEN 32
@@ -33,38 +33,38 @@ compute_exchange_hash(
 {
 	EVP_MD_CTX *mdctx = EVP_MD_CTX_new();
 	if (mdctx == NULL)
-		return DEUCE_SSH_ERROR_ALLOC;
+		return DSSH_ERROR_ALLOC;
 
 	uint8_t lenbuf[4];
 	int ok = 1;
 
 	ok = ok && EVP_DigestInit_ex(mdctx, EVP_sha256(), NULL);
 
-	{ size_t p = 0; deuce_ssh_serialize_uint32((uint32_t)v_c_len, lenbuf, 4, &p); }
+	{ size_t p = 0; dssh_serialize_uint32((uint32_t)v_c_len, lenbuf, 4, &p); }
 	ok = ok && EVP_DigestUpdate(mdctx, lenbuf, 4);
 	ok = ok && EVP_DigestUpdate(mdctx, v_c, v_c_len);
 
-	{ size_t p = 0; deuce_ssh_serialize_uint32((uint32_t)v_s_len, lenbuf, 4, &p); }
+	{ size_t p = 0; dssh_serialize_uint32((uint32_t)v_s_len, lenbuf, 4, &p); }
 	ok = ok && EVP_DigestUpdate(mdctx, lenbuf, 4);
 	ok = ok && EVP_DigestUpdate(mdctx, v_s, v_s_len);
 
-	{ size_t p = 0; deuce_ssh_serialize_uint32((uint32_t)i_c_len, lenbuf, 4, &p); }
+	{ size_t p = 0; dssh_serialize_uint32((uint32_t)i_c_len, lenbuf, 4, &p); }
 	ok = ok && EVP_DigestUpdate(mdctx, lenbuf, 4);
 	ok = ok && EVP_DigestUpdate(mdctx, i_c, i_c_len);
 
-	{ size_t p = 0; deuce_ssh_serialize_uint32((uint32_t)i_s_len, lenbuf, 4, &p); }
+	{ size_t p = 0; dssh_serialize_uint32((uint32_t)i_s_len, lenbuf, 4, &p); }
 	ok = ok && EVP_DigestUpdate(mdctx, lenbuf, 4);
 	ok = ok && EVP_DigestUpdate(mdctx, i_s, i_s_len);
 
-	{ size_t p = 0; deuce_ssh_serialize_uint32((uint32_t)k_s_len, lenbuf, 4, &p); }
+	{ size_t p = 0; dssh_serialize_uint32((uint32_t)k_s_len, lenbuf, 4, &p); }
 	ok = ok && EVP_DigestUpdate(mdctx, lenbuf, 4);
 	ok = ok && EVP_DigestUpdate(mdctx, k_s, k_s_len);
 
-	{ size_t p = 0; deuce_ssh_serialize_uint32((uint32_t)q_c_len, lenbuf, 4, &p); }
+	{ size_t p = 0; dssh_serialize_uint32((uint32_t)q_c_len, lenbuf, 4, &p); }
 	ok = ok && EVP_DigestUpdate(mdctx, lenbuf, 4);
 	ok = ok && EVP_DigestUpdate(mdctx, q_c, q_c_len);
 
-	{ size_t p = 0; deuce_ssh_serialize_uint32((uint32_t)q_s_len, lenbuf, 4, &p); }
+	{ size_t p = 0; dssh_serialize_uint32((uint32_t)q_s_len, lenbuf, 4, &p); }
 	ok = ok && EVP_DigestUpdate(mdctx, lenbuf, 4);
 	ok = ok && EVP_DigestUpdate(mdctx, q_s, q_s_len);
 
@@ -73,7 +73,7 @@ compute_exchange_hash(
 	ok = ok && EVP_DigestFinal_ex(mdctx, hash_out, NULL);
 
 	EVP_MD_CTX_free(mdctx);
-	return ok ? 0 : DEUCE_SSH_ERROR_INIT;
+	return ok ? 0 : DSSH_ERROR_INIT;
 }
 
 /*
@@ -92,48 +92,48 @@ x25519_exchange(const uint8_t *peer_pub, size_t peer_pub_len,
 
 	pctx = EVP_PKEY_CTX_new_id(EVP_PKEY_X25519, NULL);
 	if (pctx == NULL)
-		return DEUCE_SSH_ERROR_ALLOC;
+		return DSSH_ERROR_ALLOC;
 	if (EVP_PKEY_keygen_init(pctx) != 1 ||
 	    EVP_PKEY_keygen(pctx, &our_key) != 1) {
 		EVP_PKEY_CTX_free(pctx);
-		return DEUCE_SSH_ERROR_INIT;
+		return DSSH_ERROR_INIT;
 	}
 	EVP_PKEY_CTX_free(pctx);
 
 	size_t pub_len = X25519_KEY_LEN;
 	if (EVP_PKEY_get_raw_public_key(our_key, our_pub, &pub_len) != 1) {
 		EVP_PKEY_free(our_key);
-		return DEUCE_SSH_ERROR_INIT;
+		return DSSH_ERROR_INIT;
 	}
 
 	peer_key = EVP_PKEY_new_raw_public_key(EVP_PKEY_X25519, NULL, peer_pub, peer_pub_len);
 	if (peer_key == NULL) {
 		EVP_PKEY_free(our_key);
-		return DEUCE_SSH_ERROR_INIT;
+		return DSSH_ERROR_INIT;
 	}
 
 	pctx = EVP_PKEY_CTX_new(our_key, NULL);
 	if (pctx == NULL || EVP_PKEY_derive_init(pctx) != 1 ||
 	    EVP_PKEY_derive_set_peer(pctx, peer_key) != 1) {
-		res = DEUCE_SSH_ERROR_INIT;
+		res = DSSH_ERROR_INIT;
 		goto done;
 	}
 
 	*secret_len = 0;
 	if (EVP_PKEY_derive(pctx, NULL, secret_len) != 1) {
-		res = DEUCE_SSH_ERROR_INIT;
+		res = DSSH_ERROR_INIT;
 		goto done;
 	}
 	*secret = malloc(*secret_len);
 	if (*secret == NULL) {
-		res = DEUCE_SSH_ERROR_ALLOC;
+		res = DSSH_ERROR_ALLOC;
 		goto done;
 	}
 	if (EVP_PKEY_derive(pctx, *secret, secret_len) != 1) {
 		OPENSSL_cleanse(*secret, *secret_len);
 		free(*secret);
 		*secret = NULL;
-		res = DEUCE_SSH_ERROR_INIT;
+		res = DSSH_ERROR_INIT;
 		goto done;
 	}
 	res = 0;
@@ -161,7 +161,7 @@ encode_shared_secret(uint8_t *raw, size_t raw_len,
 	}
 	*ss_out = malloc(raw_len);
 	if (*ss_out == NULL)
-		return DEUCE_SSH_ERROR_ALLOC;
+		return DSSH_ERROR_ALLOC;
 	memcpy(*ss_out, start, raw_len);
 	*ss_len = raw_len;
 
@@ -172,10 +172,10 @@ encode_shared_secret(uint8_t *raw, size_t raw_len,
 	if (*mpint_out == NULL) {
 		free(*ss_out);
 		*ss_out = NULL;
-		return DEUCE_SSH_ERROR_ALLOC;
+		return DSSH_ERROR_ALLOC;
 	}
 	size_t kp = 0;
-	deuce_ssh_serialize_uint32((uint32_t)mpint_data_len, *mpint_out, *mpint_len, &kp);
+	dssh_serialize_uint32((uint32_t)mpint_data_len, *mpint_out, *mpint_len, &kp);
 	if (need_pad)
 		(*mpint_out)[kp++] = 0;
 	memcpy(&(*mpint_out)[kp], start, raw_len);
@@ -183,7 +183,7 @@ encode_shared_secret(uint8_t *raw, size_t raw_len,
 }
 
 static int
-handler(deuce_ssh_session sess)
+handler(dssh_session sess)
 {
 	int res;
 	const char *v_c, *v_s;
@@ -215,7 +215,7 @@ handler(deuce_ssh_session sess)
 	/* Get host key blob (server signs, client verifies) */
 	uint8_t k_s_buf[1024];
 	size_t k_s_len = 0;
-	deuce_ssh_key_algo ka = sess->trans.key_algo_selected;
+	dssh_key_algo ka = sess->trans.key_algo_selected;
 
 	if (sess->trans.client) {
 		/* Client: send ECDH_INIT, receive ECDH_REPLY */
@@ -225,27 +225,27 @@ handler(deuce_ssh_session sess)
 		EVP_PKEY_CTX *pctx = EVP_PKEY_CTX_new_id(EVP_PKEY_X25519, NULL);
 		EVP_PKEY *tmp_key = NULL;
 		if (pctx == NULL)
-			return DEUCE_SSH_ERROR_ALLOC;
+			return DSSH_ERROR_ALLOC;
 		if (EVP_PKEY_keygen_init(pctx) != 1 ||
 		    EVP_PKEY_keygen(pctx, &tmp_key) != 1) {
 			EVP_PKEY_CTX_free(pctx);
-			return DEUCE_SSH_ERROR_INIT;
+			return DSSH_ERROR_INIT;
 		}
 		EVP_PKEY_CTX_free(pctx);
 		size_t pub_len = X25519_KEY_LEN;
 		if (EVP_PKEY_get_raw_public_key(tmp_key, our_pub, &pub_len) != 1) {
 			EVP_PKEY_free(tmp_key);
-			return DEUCE_SSH_ERROR_INIT;
+			return DSSH_ERROR_INIT;
 		}
 		memcpy(q_c, our_pub, X25519_KEY_LEN);
 
 		uint8_t init_msg[1 + 4 + X25519_KEY_LEN];
 		size_t pos = 0;
 		init_msg[pos++] = SSH_MSG_KEX_ECDH_INIT;
-		deuce_ssh_serialize_uint32(X25519_KEY_LEN, init_msg, sizeof(init_msg), &pos);
+		dssh_serialize_uint32(X25519_KEY_LEN, init_msg, sizeof(init_msg), &pos);
 		memcpy(&init_msg[pos], q_c, X25519_KEY_LEN);
 		pos += X25519_KEY_LEN;
-		res = deuce_ssh_transport_send_packet(sess, init_msg, pos, NULL);
+		res = dssh_transport_send_packet(sess, init_msg, pos, NULL);
 		if (res < 0) {
 			EVP_PKEY_free(tmp_key);
 			return res;
@@ -255,15 +255,15 @@ handler(deuce_ssh_session sess)
 		uint8_t msg_type;
 		uint8_t *reply;
 		size_t reply_len;
-		res = deuce_ssh_transport_recv_packet(sess, &msg_type, &reply, &reply_len);
+		res = dssh_transport_recv_packet(sess, &msg_type, &reply, &reply_len);
 		if (res < 0) { EVP_PKEY_free(tmp_key); return res; }
-		if (msg_type != SSH_MSG_KEX_ECDH_REPLY) { EVP_PKEY_free(tmp_key); return DEUCE_SSH_ERROR_PARSE; }
+		if (msg_type != SSH_MSG_KEX_ECDH_REPLY) { EVP_PKEY_free(tmp_key); return DSSH_ERROR_PARSE; }
 
 		/* Parse K_S, Q_S, sig */
 		size_t rpos = 1;
 		uint32_t ks_len;
-		if (deuce_ssh_parse_uint32(&reply[rpos], reply_len - rpos, &ks_len) < 4 ||
-		    rpos + 4 + ks_len > reply_len) { EVP_PKEY_free(tmp_key); return DEUCE_SSH_ERROR_PARSE; }
+		if (dssh_parse_uint32(&reply[rpos], reply_len - rpos, &ks_len) < 4 ||
+		    rpos + 4 + ks_len > reply_len) { EVP_PKEY_free(tmp_key); return DSSH_ERROR_PARSE; }
 		rpos += 4;
 		uint8_t *k_s = &reply[rpos];
 		k_s_len = ks_len;
@@ -271,16 +271,16 @@ handler(deuce_ssh_session sess)
 
 		uint32_t qs_len;
 		if (rpos + 4 > reply_len ||
-		    deuce_ssh_parse_uint32(&reply[rpos], reply_len - rpos, &qs_len) < 4 ||
-		    qs_len != X25519_KEY_LEN || rpos + 4 + qs_len > reply_len) { EVP_PKEY_free(tmp_key); return DEUCE_SSH_ERROR_PARSE; }
+		    dssh_parse_uint32(&reply[rpos], reply_len - rpos, &qs_len) < 4 ||
+		    qs_len != X25519_KEY_LEN || rpos + 4 + qs_len > reply_len) { EVP_PKEY_free(tmp_key); return DSSH_ERROR_PARSE; }
 		rpos += 4;
 		memcpy(q_s, &reply[rpos], X25519_KEY_LEN);
 		rpos += qs_len;
 
 		uint32_t sig_len;
 		if (rpos + 4 > reply_len ||
-		    deuce_ssh_parse_uint32(&reply[rpos], reply_len - rpos, &sig_len) < 4 ||
-		    rpos + 4 + sig_len > reply_len) { EVP_PKEY_free(tmp_key); return DEUCE_SSH_ERROR_PARSE; }
+		    dssh_parse_uint32(&reply[rpos], reply_len - rpos, &sig_len) < 4 ||
+		    rpos + 4 + sig_len > reply_len) { EVP_PKEY_free(tmp_key); return DSSH_ERROR_PARSE; }
 		rpos += 4;
 		uint8_t *sig_h = &reply[rpos];
 
@@ -290,19 +290,19 @@ handler(deuce_ssh_session sess)
 		if (!peer_key || !pctx || EVP_PKEY_derive_init(pctx) != 1 ||
 		    EVP_PKEY_derive_set_peer(pctx, peer_key) != 1) {
 			EVP_PKEY_free(tmp_key); EVP_PKEY_free(peer_key); EVP_PKEY_CTX_free(pctx);
-			return DEUCE_SSH_ERROR_INIT;
+			return DSSH_ERROR_INIT;
 		}
 		raw_secret_len = 0;
 		if (EVP_PKEY_derive(pctx, NULL, &raw_secret_len) != 1) {
 			EVP_PKEY_free(tmp_key); EVP_PKEY_free(peer_key); EVP_PKEY_CTX_free(pctx);
-			return DEUCE_SSH_ERROR_INIT;
+			return DSSH_ERROR_INIT;
 		}
 		raw_secret = malloc(raw_secret_len);
 		if (!raw_secret || EVP_PKEY_derive(pctx, raw_secret, &raw_secret_len) != 1) {
 			OPENSSL_cleanse(raw_secret, raw_secret_len);
 			free(raw_secret);
 			EVP_PKEY_free(tmp_key); EVP_PKEY_free(peer_key); EVP_PKEY_CTX_free(pctx);
-			return DEUCE_SSH_ERROR_INIT;
+			return DSSH_ERROR_INIT;
 		}
 		EVP_PKEY_free(tmp_key);
 		EVP_PKEY_free(peer_key);
@@ -326,7 +326,7 @@ handler(deuce_ssh_session sess)
 		if (res < 0) { OPENSSL_cleanse(ss_copy, ss_len); free(ss_copy); return res; }
 
 		/* Verify server signature */
-		if (ka == NULL || ka->verify == NULL) { OPENSSL_cleanse(ss_copy, ss_len); free(ss_copy); return DEUCE_SSH_ERROR_INIT; }
+		if (ka == NULL || ka->verify == NULL) { OPENSSL_cleanse(ss_copy, ss_len); free(ss_copy); return DSSH_ERROR_INIT; }
 		res = ka->verify(k_s, k_s_len, sig_h, sig_len, hash, SHA256_DIGEST_LEN);
 		if (res < 0) { OPENSSL_cleanse(ss_copy, ss_len); free(ss_copy); return res; }
 
@@ -334,14 +334,14 @@ handler(deuce_ssh_session sess)
 		sess->trans.shared_secret = ss_copy;
 		sess->trans.shared_secret_sz = ss_len;
 		sess->trans.exchange_hash = malloc(SHA256_DIGEST_LEN);
-		if (sess->trans.exchange_hash == NULL) { OPENSSL_cleanse(ss_copy, ss_len); free(ss_copy); return DEUCE_SSH_ERROR_ALLOC; }
+		if (sess->trans.exchange_hash == NULL) { OPENSSL_cleanse(ss_copy, ss_len); free(ss_copy); return DSSH_ERROR_ALLOC; }
 		memcpy(sess->trans.exchange_hash, hash, SHA256_DIGEST_LEN);
 		sess->trans.exchange_hash_sz = SHA256_DIGEST_LEN;
 	}
 	else {
 		/* Server: receive ECDH_INIT, send ECDH_REPLY */
 		if (ka == NULL || ka->pubkey == NULL || ka->sign == NULL)
-			return DEUCE_SSH_ERROR_INIT;
+			return DSSH_ERROR_INIT;
 
 		/* Get our host key blob */
 		res = ka->pubkey(k_s_buf, sizeof(k_s_buf), &k_s_len, ka->ctx);
@@ -352,17 +352,17 @@ handler(deuce_ssh_session sess)
 		uint8_t msg_type;
 		uint8_t *init_payload;
 		size_t init_len;
-		res = deuce_ssh_transport_recv_packet(sess, &msg_type, &init_payload, &init_len);
+		res = dssh_transport_recv_packet(sess, &msg_type, &init_payload, &init_len);
 		if (res < 0)
 			return res;
 		if (msg_type != SSH_MSG_KEX_ECDH_INIT)
-			return DEUCE_SSH_ERROR_PARSE;
+			return DSSH_ERROR_PARSE;
 
 		size_t rpos = 1;
 		uint32_t qc_len;
-		if (deuce_ssh_parse_uint32(&init_payload[rpos], init_len - rpos, &qc_len) < 4 ||
+		if (dssh_parse_uint32(&init_payload[rpos], init_len - rpos, &qc_len) < 4 ||
 		    qc_len != X25519_KEY_LEN || rpos + 4 + qc_len > init_len)
-			return DEUCE_SSH_ERROR_PARSE;
+			return DSSH_ERROR_PARSE;
 		rpos += 4;
 		memcpy(q_c, &init_payload[rpos], X25519_KEY_LEN);
 
@@ -398,19 +398,19 @@ handler(deuce_ssh_session sess)
 		/* Send ECDH_REPLY(K_S, Q_S, sig) */
 		size_t reply_sz = 1 + 4 + k_s_len + 4 + X25519_KEY_LEN + 4 + sig_len;
 		uint8_t *reply_msg = malloc(reply_sz);
-		if (reply_msg == NULL) { OPENSSL_cleanse(ss_copy, ss_len); free(ss_copy); return DEUCE_SSH_ERROR_ALLOC; }
+		if (reply_msg == NULL) { OPENSSL_cleanse(ss_copy, ss_len); free(ss_copy); return DSSH_ERROR_ALLOC; }
 		size_t pos = 0;
 		reply_msg[pos++] = SSH_MSG_KEX_ECDH_REPLY;
-		deuce_ssh_serialize_uint32((uint32_t)k_s_len, reply_msg, reply_sz, &pos);
+		dssh_serialize_uint32((uint32_t)k_s_len, reply_msg, reply_sz, &pos);
 		memcpy(&reply_msg[pos], k_s_buf, k_s_len);
 		pos += k_s_len;
-		deuce_ssh_serialize_uint32(X25519_KEY_LEN, reply_msg, reply_sz, &pos);
+		dssh_serialize_uint32(X25519_KEY_LEN, reply_msg, reply_sz, &pos);
 		memcpy(&reply_msg[pos], q_s, X25519_KEY_LEN);
 		pos += X25519_KEY_LEN;
-		deuce_ssh_serialize_uint32((uint32_t)sig_len, reply_msg, reply_sz, &pos);
+		dssh_serialize_uint32((uint32_t)sig_len, reply_msg, reply_sz, &pos);
 		memcpy(&reply_msg[pos], sig_buf, sig_len);
 		pos += sig_len;
-		res = deuce_ssh_transport_send_packet(sess, reply_msg, pos, NULL);
+		res = dssh_transport_send_packet(sess, reply_msg, pos, NULL);
 		free(reply_msg);
 		if (res < 0) { OPENSSL_cleanse(ss_copy, ss_len); free(ss_copy); return res; }
 
@@ -418,7 +418,7 @@ handler(deuce_ssh_session sess)
 		sess->trans.shared_secret = ss_copy;
 		sess->trans.shared_secret_sz = ss_len;
 		sess->trans.exchange_hash = malloc(SHA256_DIGEST_LEN);
-		if (sess->trans.exchange_hash == NULL) { OPENSSL_cleanse(ss_copy, ss_len); free(ss_copy); return DEUCE_SSH_ERROR_ALLOC; }
+		if (sess->trans.exchange_hash == NULL) { OPENSSL_cleanse(ss_copy, ss_len); free(ss_copy); return DSSH_ERROR_ALLOC; }
 		memcpy(sess->trans.exchange_hash, hash, SHA256_DIGEST_LEN);
 		sess->trans.exchange_hash_sz = SHA256_DIGEST_LEN;
 	}
@@ -427,22 +427,22 @@ handler(deuce_ssh_session sess)
 }
 
 static void
-kex_cleanup(deuce_ssh_session sess)
+kex_cleanup(dssh_session sess)
 {
 	return;
 }
 
-DEUCE_SSH_PUBLIC int
+DSSH_PUBLIC int
 register_curve25519_sha256(void)
 {
-	struct deuce_ssh_kex_s *kex = malloc(sizeof(*kex) + KEX_NAME_LEN + 1);
+	struct dssh_kex_s *kex = malloc(sizeof(*kex) + KEX_NAME_LEN + 1);
 	if (kex == NULL)
-		return DEUCE_SSH_ERROR_ALLOC;
+		return DSSH_ERROR_ALLOC;
 	kex->next = NULL;
 	kex->handler = handler;
 	kex->cleanup = kex_cleanup;
-	kex->flags = DEUCE_SSH_KEX_FLAG_NEEDS_SIGNATURE_CAPABLE;
+	kex->flags = DSSH_KEX_FLAG_NEEDS_SIGNATURE_CAPABLE;
 	kex->hash_name = "SHA256";
 	memcpy(kex->name, KEX_NAME, KEX_NAME_LEN + 1);
-	return deuce_ssh_transport_register_kex(kex);
+	return dssh_transport_register_kex(kex);
 }

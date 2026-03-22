@@ -3,20 +3,20 @@
 #include <string.h>
 #include <stdlib.h>
 
-#include "deucessh.h"
-#include "ssh-auth.h"
+#include "ssh-internal.h"
+#include "deucessh-auth.h"
 
 static void
-handle_banner(deuce_ssh_session sess, uint8_t *payload, size_t payload_len)
+handle_banner(dssh_session sess, uint8_t *payload, size_t payload_len)
 {
-	deuce_ssh_auth_banner_cb cb = (deuce_ssh_auth_banner_cb)sess->banner_cb;
+	dssh_auth_banner_cb cb = (dssh_auth_banner_cb)sess->banner_cb;
 	if (cb == NULL)
 		return;
 	size_t rpos = 1;
 	uint32_t msg_len;
 	if (rpos + 4 > payload_len)
 		return;
-	deuce_ssh_parse_uint32(&payload[rpos], payload_len - rpos, &msg_len);
+	dssh_parse_uint32(&payload[rpos], payload_len - rpos, &msg_len);
 	rpos += 4;
 	if (rpos + msg_len > payload_len)
 		return;
@@ -26,7 +26,7 @@ handle_banner(deuce_ssh_session sess, uint8_t *payload, size_t payload_len)
 	uint32_t lang_len = 0;
 	const uint8_t *language = NULL;
 	if (rpos + 4 <= payload_len) {
-		deuce_ssh_parse_uint32(&payload[rpos], payload_len - rpos, &lang_len);
+		dssh_parse_uint32(&payload[rpos], payload_len - rpos, &lang_len);
 		rpos += 4;
 		if (rpos + lang_len <= payload_len)
 			language = &payload[rpos];
@@ -42,63 +42,63 @@ handle_banner(deuce_ssh_session sess, uint8_t *payload, size_t payload_len)
  * ================================================================ */
 
 static int
-send_auth_failure(deuce_ssh_session sess, const char *methods, bool partial_success)
+send_auth_failure(dssh_session sess, const char *methods, bool partial_success)
 {
 	size_t mlen = strlen(methods);
 	uint8_t msg[256];
 	size_t pos = 0;
 	msg[pos++] = SSH_MSG_USERAUTH_FAILURE;
-	deuce_ssh_serialize_uint32((uint32_t)mlen, msg, sizeof(msg), &pos);
+	dssh_serialize_uint32((uint32_t)mlen, msg, sizeof(msg), &pos);
 	memcpy(&msg[pos], methods, mlen);
 	pos += mlen;
 	msg[pos++] = partial_success ? 1 : 0;
-	return deuce_ssh_transport_send_packet(sess, msg, pos, NULL);
+	return dssh_transport_send_packet(sess, msg, pos, NULL);
 }
 
 static int
-send_auth_success(deuce_ssh_session sess)
+send_auth_success(dssh_session sess)
 {
 	uint8_t msg = SSH_MSG_USERAUTH_SUCCESS;
-	return deuce_ssh_transport_send_packet(sess, &msg, 1, NULL);
+	return dssh_transport_send_packet(sess, &msg, 1, NULL);
 }
 
 static int
-send_passwd_changereq(deuce_ssh_session sess,
+send_passwd_changereq(dssh_session sess,
     const uint8_t *prompt, size_t prompt_len)
 {
 	size_t msg_len = 1 + 4 + prompt_len + 4;
 	uint8_t *msg = malloc(msg_len);
 	if (msg == NULL)
-		return DEUCE_SSH_ERROR_ALLOC;
+		return DSSH_ERROR_ALLOC;
 	size_t pos = 0;
 	msg[pos++] = SSH_MSG_USERAUTH_PASSWD_CHANGEREQ;
-	deuce_ssh_serialize_uint32((uint32_t)prompt_len, msg, msg_len, &pos);
+	dssh_serialize_uint32((uint32_t)prompt_len, msg, msg_len, &pos);
 	memcpy(&msg[pos], prompt, prompt_len);
 	pos += prompt_len;
-	deuce_ssh_serialize_uint32(0, msg, msg_len, &pos); /* language tag */
-	int res = deuce_ssh_transport_send_packet(sess, msg, pos, NULL);
+	dssh_serialize_uint32(0, msg, msg_len, &pos); /* language tag */
+	int res = dssh_transport_send_packet(sess, msg, pos, NULL);
 	free(msg);
 	return res;
 }
 
 static int
-send_pk_ok(deuce_ssh_session sess,
+send_pk_ok(dssh_session sess,
     const char *algo_name, size_t algo_len,
     const uint8_t *pubkey_blob, size_t pubkey_blob_len)
 {
 	size_t msg_len = 1 + 4 + algo_len + 4 + pubkey_blob_len;
 	uint8_t *msg = malloc(msg_len);
 	if (msg == NULL)
-		return DEUCE_SSH_ERROR_ALLOC;
+		return DSSH_ERROR_ALLOC;
 	size_t pos = 0;
 	msg[pos++] = SSH_MSG_USERAUTH_PK_OK;
-	deuce_ssh_serialize_uint32((uint32_t)algo_len, msg, msg_len, &pos);
+	dssh_serialize_uint32((uint32_t)algo_len, msg, msg_len, &pos);
 	memcpy(&msg[pos], algo_name, algo_len);
 	pos += algo_len;
-	deuce_ssh_serialize_uint32((uint32_t)pubkey_blob_len, msg, msg_len, &pos);
+	dssh_serialize_uint32((uint32_t)pubkey_blob_len, msg, msg_len, &pos);
 	memcpy(&msg[pos], pubkey_blob, pubkey_blob_len);
 	pos += pubkey_blob_len;
-	int res = deuce_ssh_transport_send_packet(sess, msg, pos, NULL);
+	int res = dssh_transport_send_packet(sess, msg, pos, NULL);
 	free(msg);
 	return res;
 }
@@ -116,11 +116,11 @@ parse_userauth_prefix(const uint8_t *payload, size_t payload_len,
 	size_t rpos = 1; /* skip msg_type */
 	uint32_t ulen;
 	if (rpos + 4 > payload_len)
-		return DEUCE_SSH_ERROR_PARSE;
-	deuce_ssh_parse_uint32(&payload[rpos], payload_len - rpos, &ulen);
+		return DSSH_ERROR_PARSE;
+	dssh_parse_uint32(&payload[rpos], payload_len - rpos, &ulen);
 	rpos += 4;
 	if (rpos + ulen > payload_len)
-		return DEUCE_SSH_ERROR_PARSE;
+		return DSSH_ERROR_PARSE;
 	*username = &payload[rpos];
 	*username_len = ulen;
 	rpos += ulen;
@@ -128,21 +128,21 @@ parse_userauth_prefix(const uint8_t *payload, size_t payload_len,
 	/* service name (skip) */
 	uint32_t slen;
 	if (rpos + 4 > payload_len)
-		return DEUCE_SSH_ERROR_PARSE;
-	deuce_ssh_parse_uint32(&payload[rpos], payload_len - rpos, &slen);
+		return DSSH_ERROR_PARSE;
+	dssh_parse_uint32(&payload[rpos], payload_len - rpos, &slen);
 	rpos += 4;
 	if (rpos + slen > payload_len)
-		return DEUCE_SSH_ERROR_PARSE;
+		return DSSH_ERROR_PARSE;
 	rpos += slen;
 
 	/* method name */
 	uint32_t mlen;
 	if (rpos + 4 > payload_len)
-		return DEUCE_SSH_ERROR_PARSE;
-	deuce_ssh_parse_uint32(&payload[rpos], payload_len - rpos, &mlen);
+		return DSSH_ERROR_PARSE;
+	dssh_parse_uint32(&payload[rpos], payload_len - rpos, &mlen);
 	rpos += 4;
 	if (rpos + mlen > payload_len)
-		return DEUCE_SSH_ERROR_PARSE;
+		return DSSH_ERROR_PARSE;
 	*method = &payload[rpos];
 	*method_len = mlen;
 	rpos += mlen;
@@ -154,9 +154,9 @@ parse_userauth_prefix(const uint8_t *payload, size_t payload_len,
  * Server-side authentication loop
  * ================================================================ */
 
-DEUCE_SSH_PUBLIC int
-deuce_ssh_auth_server(deuce_ssh_session sess,
-    const struct deuce_ssh_auth_server_cbs *cbs,
+DSSH_PUBLIC int
+dssh_auth_server(dssh_session sess,
+    const struct dssh_auth_server_cbs *cbs,
     uint8_t *username_out, size_t *username_out_len)
 {
 	uint8_t msg_type;
@@ -165,12 +165,12 @@ deuce_ssh_auth_server(deuce_ssh_session sess,
 	int res;
 
 	/* Receive SERVICE_REQUEST */
-	res = deuce_ssh_transport_recv_packet(sess, &msg_type, &payload, &payload_len);
+	res = dssh_transport_recv_packet(sess, &msg_type, &payload, &payload_len);
 	if (res < 0)
 		return res;
 	if (msg_type != SSH_MSG_SERVICE_REQUEST) {
-		deuce_ssh_transport_send_unimplemented(sess, sess->trans.last_rx_seq);
-		return DEUCE_SSH_ERROR_PARSE;
+		dssh_transport_send_unimplemented(sess, sess->trans.last_rx_seq);
+		return DSSH_ERROR_PARSE;
 	}
 
 	/* Send SERVICE_ACCEPT (echo back the service name) */
@@ -180,14 +180,14 @@ deuce_ssh_auth_server(deuce_ssh_session sess,
 		accept[pos++] = SSH_MSG_SERVICE_ACCEPT;
 		if (payload_len > 5) {
 			uint32_t slen;
-			deuce_ssh_parse_uint32(&payload[1], payload_len - 1, &slen);
+			dssh_parse_uint32(&payload[1], payload_len - 1, &slen);
 			if (5 + slen <= payload_len) {
-				deuce_ssh_serialize_uint32(slen, accept, sizeof(accept), &pos);
+				dssh_serialize_uint32(slen, accept, sizeof(accept), &pos);
 				memcpy(&accept[pos], &payload[5], slen);
 				pos += slen;
 			}
 		}
-		res = deuce_ssh_transport_send_packet(sess, accept, pos, NULL);
+		res = dssh_transport_send_packet(sess, accept, pos, NULL);
 		if (res < 0)
 			return res;
 	}
@@ -198,11 +198,11 @@ deuce_ssh_auth_server(deuce_ssh_session sess,
 
 	/* Auth loop */
 	for (;;) {
-		res = deuce_ssh_transport_recv_packet(sess, &msg_type, &payload, &payload_len);
+		res = dssh_transport_recv_packet(sess, &msg_type, &payload, &payload_len);
 		if (res < 0)
 			return res;
 		if (msg_type != SSH_MSG_USERAUTH_REQUEST) {
-			deuce_ssh_transport_send_unimplemented(sess, sess->trans.last_rx_seq);
+			dssh_transport_send_unimplemented(sess, sess->trans.last_rx_seq);
 			continue;
 		}
 
@@ -219,16 +219,16 @@ deuce_ssh_auth_server(deuce_ssh_session sess,
 
 		/* Dispatch by method */
 		if (method_len == 4 && memcmp(method, "none", 4) == 0) {
-			int auth_res = DEUCE_SSH_AUTH_FAILURE;
+			int auth_res = DSSH_AUTH_FAILURE;
 			if (cbs->none_cb != NULL)
 				auth_res = cbs->none_cb(user, user_len, cbs->cbdata);
-			if (auth_res == DEUCE_SSH_AUTH_SUCCESS) {
+			if (auth_res == DSSH_AUTH_SUCCESS) {
 				res = send_auth_success(sess);
 				if (res < 0) return res;
 				goto done;
 			}
 			res = send_auth_failure(sess, cbs->methods_str,
-			    auth_res == DEUCE_SSH_AUTH_PARTIAL);
+			    auth_res == DSSH_AUTH_PARTIAL);
 			if (res < 0) return res;
 			continue;
 		}
@@ -242,17 +242,17 @@ deuce_ssh_auth_server(deuce_ssh_session sess,
 
 			/* Parse: boolean change, string password [, string new_password] */
 			if ((size_t)rpos + 1 > payload_len)
-				return DEUCE_SSH_ERROR_PARSE;
+				return DSSH_ERROR_PARSE;
 			bool change = (payload[rpos] != 0);
 			rpos++;
 
 			uint32_t pw_len;
 			if ((size_t)rpos + 4 > payload_len)
-				return DEUCE_SSH_ERROR_PARSE;
-			deuce_ssh_parse_uint32(&payload[rpos], payload_len - rpos, &pw_len);
+				return DSSH_ERROR_PARSE;
+			dssh_parse_uint32(&payload[rpos], payload_len - rpos, &pw_len);
 			rpos += 4;
 			if ((size_t)rpos + pw_len > payload_len)
-				return DEUCE_SSH_ERROR_PARSE;
+				return DSSH_ERROR_PARSE;
 			const uint8_t *pw = &payload[rpos];
 			rpos += pw_len;
 
@@ -260,14 +260,14 @@ deuce_ssh_auth_server(deuce_ssh_session sess,
 				/* Password change request */
 				uint32_t new_pw_len;
 				if ((size_t)rpos + 4 > payload_len)
-					return DEUCE_SSH_ERROR_PARSE;
-				deuce_ssh_parse_uint32(&payload[rpos], payload_len - rpos, &new_pw_len);
+					return DSSH_ERROR_PARSE;
+				dssh_parse_uint32(&payload[rpos], payload_len - rpos, &new_pw_len);
 				rpos += 4;
 				if ((size_t)rpos + new_pw_len > payload_len)
-					return DEUCE_SSH_ERROR_PARSE;
+					return DSSH_ERROR_PARSE;
 				const uint8_t *new_pw = &payload[rpos];
 
-				int auth_res = DEUCE_SSH_AUTH_FAILURE;
+				int auth_res = DSSH_AUTH_FAILURE;
 				uint8_t *prompt = NULL;
 				size_t prompt_len = 0;
 				if (cbs->passwd_change_cb != NULL)
@@ -275,13 +275,13 @@ deuce_ssh_auth_server(deuce_ssh_session sess,
 					    pw, pw_len, new_pw, new_pw_len,
 					    &prompt, &prompt_len, cbs->cbdata);
 
-				if (auth_res == DEUCE_SSH_AUTH_SUCCESS) {
+				if (auth_res == DSSH_AUTH_SUCCESS) {
 					free(prompt);
 					res = send_auth_success(sess);
 					if (res < 0) return res;
 					goto done;
 				}
-				if (auth_res == DEUCE_SSH_AUTH_CHANGE_PASSWORD && prompt != NULL) {
+				if (auth_res == DSSH_AUTH_CHANGE_PASSWORD && prompt != NULL) {
 					res = send_passwd_changereq(sess, prompt, prompt_len);
 					free(prompt);
 					if (res < 0) return res;
@@ -289,7 +289,7 @@ deuce_ssh_auth_server(deuce_ssh_session sess,
 				}
 				free(prompt);
 				res = send_auth_failure(sess, cbs->methods_str,
-				    auth_res == DEUCE_SSH_AUTH_PARTIAL);
+				    auth_res == DSSH_AUTH_PARTIAL);
 				if (res < 0) return res;
 				continue;
 			}
@@ -300,13 +300,13 @@ deuce_ssh_auth_server(deuce_ssh_session sess,
 			int auth_res = cbs->password_cb(user, user_len,
 			    pw, pw_len, &prompt, &prompt_len, cbs->cbdata);
 
-			if (auth_res == DEUCE_SSH_AUTH_SUCCESS) {
+			if (auth_res == DSSH_AUTH_SUCCESS) {
 				free(prompt);
 				res = send_auth_success(sess);
 				if (res < 0) return res;
 				goto done;
 			}
-			if (auth_res == DEUCE_SSH_AUTH_CHANGE_PASSWORD && prompt != NULL) {
+			if (auth_res == DSSH_AUTH_CHANGE_PASSWORD && prompt != NULL) {
 				res = send_passwd_changereq(sess, prompt, prompt_len);
 				free(prompt);
 				if (res < 0) return res;
@@ -314,7 +314,7 @@ deuce_ssh_auth_server(deuce_ssh_session sess,
 			}
 			free(prompt);
 			res = send_auth_failure(sess, cbs->methods_str,
-			    auth_res == DEUCE_SSH_AUTH_PARTIAL);
+			    auth_res == DSSH_AUTH_PARTIAL);
 			if (res < 0) return res;
 			continue;
 		}
@@ -328,27 +328,27 @@ deuce_ssh_auth_server(deuce_ssh_session sess,
 
 			/* Parse: boolean has_sig, string algo, string pubkey [, string sig] */
 			if ((size_t)rpos + 1 > payload_len)
-				return DEUCE_SSH_ERROR_PARSE;
+				return DSSH_ERROR_PARSE;
 			bool has_sig = (payload[rpos] != 0);
 			rpos++;
 
 			uint32_t algo_len;
 			if ((size_t)rpos + 4 > payload_len)
-				return DEUCE_SSH_ERROR_PARSE;
-			deuce_ssh_parse_uint32(&payload[rpos], payload_len - rpos, &algo_len);
+				return DSSH_ERROR_PARSE;
+			dssh_parse_uint32(&payload[rpos], payload_len - rpos, &algo_len);
 			rpos += 4;
 			if ((size_t)rpos + algo_len > payload_len)
-				return DEUCE_SSH_ERROR_PARSE;
+				return DSSH_ERROR_PARSE;
 			const uint8_t *algo = &payload[rpos];
 			rpos += algo_len;
 
 			uint32_t pk_len;
 			if ((size_t)rpos + 4 > payload_len)
-				return DEUCE_SSH_ERROR_PARSE;
-			deuce_ssh_parse_uint32(&payload[rpos], payload_len - rpos, &pk_len);
+				return DSSH_ERROR_PARSE;
+			dssh_parse_uint32(&payload[rpos], payload_len - rpos, &pk_len);
 			rpos += 4;
 			if ((size_t)rpos + pk_len > payload_len)
-				return DEUCE_SSH_ERROR_PARSE;
+				return DSSH_ERROR_PARSE;
 			const uint8_t *pk_blob = &payload[rpos];
 			rpos += pk_len;
 
@@ -362,7 +362,7 @@ deuce_ssh_auth_server(deuce_ssh_session sess,
 				/* Key probe — ask app if key is acceptable */
 				int auth_res = cbs->publickey_cb(user, user_len,
 				    algo_name, pk_blob, pk_len, false, cbs->cbdata);
-				if (auth_res == DEUCE_SSH_AUTH_SUCCESS) {
+				if (auth_res == DSSH_AUTH_SUCCESS) {
 					res = send_pk_ok(sess, algo_name, algo_len,
 					    pk_blob, pk_len);
 				}
@@ -376,15 +376,15 @@ deuce_ssh_auth_server(deuce_ssh_session sess,
 			/* Has signature — verify it */
 			uint32_t sig_len;
 			if ((size_t)rpos + 4 > payload_len)
-				return DEUCE_SSH_ERROR_PARSE;
-			deuce_ssh_parse_uint32(&payload[rpos], payload_len - rpos, &sig_len);
+				return DSSH_ERROR_PARSE;
+			dssh_parse_uint32(&payload[rpos], payload_len - rpos, &sig_len);
 			rpos += 4;
 			if ((size_t)rpos + sig_len > payload_len)
-				return DEUCE_SSH_ERROR_PARSE;
+				return DSSH_ERROR_PARSE;
 			const uint8_t *sig_blob = &payload[rpos];
 
 			/* Find the key algorithm to verify the signature */
-			deuce_ssh_key_algo ka = deuce_ssh_transport_find_key_algo(algo_name);
+			dssh_key_algo ka = dssh_transport_find_key_algo(algo_name);
 			if (ka == NULL || ka->verify == NULL) {
 				res = send_auth_failure(sess, cbs->methods_str, false);
 				if (res < 0) return res;
@@ -399,9 +399,9 @@ deuce_ssh_auth_server(deuce_ssh_session sess,
 			sd_len = 4 + sess->trans.session_id_sz + before_sig;
 			uint8_t *sign_data = malloc(sd_len);
 			if (sign_data == NULL)
-				return DEUCE_SSH_ERROR_ALLOC;
+				return DSSH_ERROR_ALLOC;
 			size_t sp = 0;
-			deuce_ssh_serialize_uint32((uint32_t)sess->trans.session_id_sz,
+			dssh_serialize_uint32((uint32_t)sess->trans.session_id_sz,
 			    sign_data, sd_len, &sp);
 			memcpy(&sign_data[sp], sess->trans.session_id,
 			    sess->trans.session_id_sz);
@@ -422,13 +422,13 @@ deuce_ssh_auth_server(deuce_ssh_session sess,
 			/* Signature valid — ask app if user is authorized */
 			int auth_res = cbs->publickey_cb(user, user_len,
 			    algo_name, pk_blob, pk_len, true, cbs->cbdata);
-			if (auth_res == DEUCE_SSH_AUTH_SUCCESS) {
+			if (auth_res == DSSH_AUTH_SUCCESS) {
 				res = send_auth_success(sess);
 				if (res < 0) return res;
 				goto done;
 			}
 			res = send_auth_failure(sess, cbs->methods_str,
-			    auth_res == DEUCE_SSH_AUTH_PARTIAL);
+			    auth_res == DSSH_AUTH_PARTIAL);
 			if (res < 0) return res;
 			continue;
 		}
@@ -452,21 +452,21 @@ done:
  * ================================================================ */
 
 static int
-deuce_ssh_auth_request_service(deuce_ssh_session sess, const char *service)
+dssh_auth_request_service(dssh_session sess, const char *service)
 {
 	size_t slen = strlen(service);
 	size_t msg_len = 1 + 4 + slen;
 	uint8_t *msg = malloc(msg_len);
 	if (msg == NULL)
-		return DEUCE_SSH_ERROR_ALLOC;
+		return DSSH_ERROR_ALLOC;
 	size_t pos = 0;
 
 	msg[pos++] = SSH_MSG_SERVICE_REQUEST;
-	deuce_ssh_serialize_uint32((uint32_t)slen, msg, msg_len, &pos);
+	dssh_serialize_uint32((uint32_t)slen, msg, msg_len, &pos);
 	memcpy(&msg[pos], service, slen);
 	pos += slen;
 
-	int res = deuce_ssh_transport_send_packet(sess, msg, pos, NULL);
+	int res = dssh_transport_send_packet(sess, msg, pos, NULL);
 	free(msg);
 	if (res < 0)
 		return res;
@@ -474,30 +474,30 @@ deuce_ssh_auth_request_service(deuce_ssh_session sess, const char *service)
 	uint8_t msg_type;
 	uint8_t *payload;
 	size_t payload_len;
-	res = deuce_ssh_transport_recv_packet(sess, &msg_type, &payload, &payload_len);
+	res = dssh_transport_recv_packet(sess, &msg_type, &payload, &payload_len);
 	if (res < 0)
 		return res;
 	if (msg_type != SSH_MSG_SERVICE_ACCEPT) {
-		deuce_ssh_transport_send_unimplemented(sess, sess->trans.last_rx_seq);
-		return DEUCE_SSH_ERROR_INIT;
+		dssh_transport_send_unimplemented(sess, sess->trans.last_rx_seq);
+		return DSSH_ERROR_INIT;
 	}
 
 	return 0;
 }
 
 static int
-ensure_auth_service(deuce_ssh_session sess)
+ensure_auth_service(dssh_session sess)
 {
 	if (sess->auth_service_requested)
 		return 0;
-	int res = deuce_ssh_auth_request_service(sess, "ssh-userauth");
+	int res = dssh_auth_request_service(sess, "ssh-userauth");
 	if (res == 0)
 		sess->auth_service_requested = true;
 	return res;
 }
 
-DEUCE_SSH_PUBLIC int
-deuce_ssh_auth_get_methods(deuce_ssh_session sess,
+DSSH_PUBLIC int
+dssh_auth_get_methods(dssh_session sess,
     const char *username, char *methods, size_t methods_sz)
 {
 	int res = ensure_auth_service(sess);
@@ -509,21 +509,21 @@ deuce_ssh_auth_get_methods(deuce_ssh_session sess,
 	size_t msg_len = 1 + 4 + ulen + 4 + (sizeof(service) - 1) + 4 + (sizeof(method) - 1);
 	uint8_t *msg = malloc(msg_len);
 	if (msg == NULL)
-		return DEUCE_SSH_ERROR_ALLOC;
+		return DSSH_ERROR_ALLOC;
 	size_t pos = 0;
 
 	msg[pos++] = SSH_MSG_USERAUTH_REQUEST;
-	deuce_ssh_serialize_uint32((uint32_t)ulen, msg, msg_len, &pos);
+	dssh_serialize_uint32((uint32_t)ulen, msg, msg_len, &pos);
 	memcpy(&msg[pos], username, ulen);
 	pos += ulen;
-	deuce_ssh_serialize_uint32((uint32_t)(sizeof(service) - 1), msg, msg_len, &pos);
+	dssh_serialize_uint32((uint32_t)(sizeof(service) - 1), msg, msg_len, &pos);
 	memcpy(&msg[pos], service, sizeof(service) - 1);
 	pos += sizeof(service) - 1;
-	deuce_ssh_serialize_uint32((uint32_t)(sizeof(method) - 1), msg, msg_len, &pos);
+	dssh_serialize_uint32((uint32_t)(sizeof(method) - 1), msg, msg_len, &pos);
 	memcpy(&msg[pos], method, sizeof(method) - 1);
 	pos += sizeof(method) - 1;
 
-	res = deuce_ssh_transport_send_packet(sess, msg, pos, NULL);
+	res = dssh_transport_send_packet(sess, msg, pos, NULL);
 	free(msg);
 	if (res < 0)
 		return res;
@@ -531,7 +531,7 @@ deuce_ssh_auth_get_methods(deuce_ssh_session sess,
 	uint8_t msg_type;
 	uint8_t *payload;
 	size_t payload_len;
-	res = deuce_ssh_transport_recv_packet(sess, &msg_type, &payload, &payload_len);
+	res = dssh_transport_recv_packet(sess, &msg_type, &payload, &payload_len);
 	if (res < 0)
 		return res;
 
@@ -543,16 +543,16 @@ deuce_ssh_auth_get_methods(deuce_ssh_session sess,
 
 	if (msg_type == SSH_MSG_USERAUTH_FAILURE) {
 		if (payload_len < 1 + 4)
-			return DEUCE_SSH_ERROR_PARSE;
+			return DSSH_ERROR_PARSE;
 		uint32_t mlen;
-		deuce_ssh_parse_uint32(&payload[1], payload_len - 1, &mlen);
+		dssh_parse_uint32(&payload[1], payload_len - 1, &mlen);
 		if (1 + 4 + mlen > payload_len)
-			return DEUCE_SSH_ERROR_PARSE;
+			return DSSH_ERROR_PARSE;
 		/* RFC 4251 s6: names MUST NOT contain control chars or DEL */
 		for (uint32_t j = 0; j < mlen; j++) {
 			uint8_t ch = payload[5 + j];
 			if (ch <= ' ' || ch >= 127)
-				return DEUCE_SSH_ERROR_PARSE;
+				return DSSH_ERROR_PARSE;
 		}
 		size_t copylen = mlen < methods_sz - 1 ? mlen : methods_sz - 1;
 		memcpy(methods, &payload[5], copylen);
@@ -560,7 +560,7 @@ deuce_ssh_auth_get_methods(deuce_ssh_session sess,
 		return 1;
 	}
 
-	return DEUCE_SSH_ERROR_INIT;
+	return DSSH_ERROR_INIT;
 }
 
 /*
@@ -569,7 +569,7 @@ deuce_ssh_auth_get_methods(deuce_ssh_session sess,
  * If change is true: password change (boolean TRUE, old_password, new_password).
  */
 static int
-send_password_request(deuce_ssh_session sess,
+send_password_request(dssh_session sess,
     const char *username, const char *old_password,
     const uint8_t *new_password, size_t new_password_len, bool change)
 {
@@ -583,38 +583,38 @@ send_password_request(deuce_ssh_session sess,
 		msg_len += 4 + new_password_len;
 	uint8_t *msg = malloc(msg_len);
 	if (msg == NULL)
-		return DEUCE_SSH_ERROR_ALLOC;
+		return DSSH_ERROR_ALLOC;
 	size_t pos = 0;
 
 	msg[pos++] = SSH_MSG_USERAUTH_REQUEST;
-	deuce_ssh_serialize_uint32((uint32_t)ulen, msg, msg_len, &pos);
+	dssh_serialize_uint32((uint32_t)ulen, msg, msg_len, &pos);
 	memcpy(&msg[pos], username, ulen);
 	pos += ulen;
-	deuce_ssh_serialize_uint32((uint32_t)(sizeof(service) - 1), msg, msg_len, &pos);
+	dssh_serialize_uint32((uint32_t)(sizeof(service) - 1), msg, msg_len, &pos);
 	memcpy(&msg[pos], service, sizeof(service) - 1);
 	pos += sizeof(service) - 1;
-	deuce_ssh_serialize_uint32((uint32_t)(sizeof(method) - 1), msg, msg_len, &pos);
+	dssh_serialize_uint32((uint32_t)(sizeof(method) - 1), msg, msg_len, &pos);
 	memcpy(&msg[pos], method, sizeof(method) - 1);
 	pos += sizeof(method) - 1;
 	msg[pos++] = change ? 1 : 0;
-	deuce_ssh_serialize_uint32((uint32_t)oplen, msg, msg_len, &pos);
+	dssh_serialize_uint32((uint32_t)oplen, msg, msg_len, &pos);
 	memcpy(&msg[pos], old_password, oplen);
 	pos += oplen;
 	if (change) {
-		deuce_ssh_serialize_uint32((uint32_t)new_password_len, msg, msg_len, &pos);
+		dssh_serialize_uint32((uint32_t)new_password_len, msg, msg_len, &pos);
 		memcpy(&msg[pos], new_password, new_password_len);
 		pos += new_password_len;
 	}
 
-	int res = deuce_ssh_transport_send_packet(sess, msg, pos, NULL);
+	int res = dssh_transport_send_packet(sess, msg, pos, NULL);
 	free(msg);
 	return res;
 }
 
-DEUCE_SSH_PUBLIC int
-deuce_ssh_auth_password(deuce_ssh_session sess,
+DSSH_PUBLIC int
+dssh_auth_password(dssh_session sess,
     const char *username, const char *password,
-    deuce_ssh_auth_passwd_change_cb passwd_change_cb, void *passwd_change_cbdata)
+    dssh_auth_passwd_change_cb passwd_change_cb, void *passwd_change_cbdata)
 {
 	int res = send_password_request(sess, username, password, NULL, 0, false);
 	if (res < 0)
@@ -624,7 +624,7 @@ deuce_ssh_auth_password(deuce_ssh_session sess,
 		uint8_t msg_type;
 		uint8_t *payload;
 		size_t payload_len;
-		res = deuce_ssh_transport_recv_packet(sess, &msg_type, &payload, &payload_len);
+		res = dssh_transport_recv_packet(sess, &msg_type, &payload, &payload_len);
 		if (res < 0)
 			return res;
 
@@ -637,28 +637,28 @@ deuce_ssh_auth_password(deuce_ssh_session sess,
 			return 0;
 
 		if (msg_type == SSH_MSG_USERAUTH_FAILURE)
-			return DEUCE_SSH_ERROR_INIT;
+			return DSSH_ERROR_INIT;
 
 		if (msg_type == SSH_MSG_USERAUTH_PASSWD_CHANGEREQ) {
 			if (passwd_change_cb == NULL)
-				return DEUCE_SSH_ERROR_INIT;
+				return DSSH_ERROR_INIT;
 
 			/* Parse: prompt string, language string */
 			size_t rpos = 1;
 			uint32_t prompt_len;
 			if (rpos + 4 > payload_len)
-				return DEUCE_SSH_ERROR_PARSE;
-			deuce_ssh_parse_uint32(&payload[rpos], payload_len - rpos, &prompt_len);
+				return DSSH_ERROR_PARSE;
+			dssh_parse_uint32(&payload[rpos], payload_len - rpos, &prompt_len);
 			rpos += 4;
 			if (rpos + prompt_len > payload_len)
-				return DEUCE_SSH_ERROR_PARSE;
+				return DSSH_ERROR_PARSE;
 			const uint8_t *prompt = &payload[rpos];
 			rpos += prompt_len;
 
 			uint32_t lang_len = 0;
 			const uint8_t *language = NULL;
 			if (rpos + 4 <= payload_len) {
-				deuce_ssh_parse_uint32(&payload[rpos], payload_len - rpos, &lang_len);
+				dssh_parse_uint32(&payload[rpos], payload_len - rpos, &lang_len);
 				rpos += 4;
 				if (rpos + lang_len <= payload_len)
 					language = &payload[rpos];
@@ -685,18 +685,18 @@ deuce_ssh_auth_password(deuce_ssh_session sess,
 			continue;
 		}
 
-		deuce_ssh_transport_send_unimplemented(sess, sess->trans.last_rx_seq);
-		return DEUCE_SSH_ERROR_INIT;
+		dssh_transport_send_unimplemented(sess, sess->trans.last_rx_seq);
+		return DSSH_ERROR_INIT;
 	}
 }
 
-DEUCE_SSH_PUBLIC int
-deuce_ssh_auth_keyboard_interactive(deuce_ssh_session sess,
-    const char *username, deuce_ssh_auth_kbi_prompt_cb prompt_cb,
+DSSH_PUBLIC int
+dssh_auth_keyboard_interactive(dssh_session sess,
+    const char *username, dssh_auth_kbi_prompt_cb prompt_cb,
     void *cbdata)
 {
 	if (prompt_cb == NULL)
-		return DEUCE_SSH_ERROR_INIT;
+		return DSSH_ERROR_INIT;
 	size_t ulen = strlen(username);
 	static const char service[] = "ssh-connection";
 	static const char method[] = "keyboard-interactive";
@@ -704,23 +704,23 @@ deuce_ssh_auth_keyboard_interactive(deuce_ssh_session sess,
 	    4 + (sizeof(method) - 1) + 4 + 4;
 	uint8_t *msg = malloc(msg_len);
 	if (msg == NULL)
-		return DEUCE_SSH_ERROR_ALLOC;
+		return DSSH_ERROR_ALLOC;
 	size_t pos = 0;
 
 	msg[pos++] = SSH_MSG_USERAUTH_REQUEST;
-	deuce_ssh_serialize_uint32((uint32_t)ulen, msg, msg_len, &pos);
+	dssh_serialize_uint32((uint32_t)ulen, msg, msg_len, &pos);
 	memcpy(&msg[pos], username, ulen);
 	pos += ulen;
-	deuce_ssh_serialize_uint32((uint32_t)(sizeof(service) - 1), msg, msg_len, &pos);
+	dssh_serialize_uint32((uint32_t)(sizeof(service) - 1), msg, msg_len, &pos);
 	memcpy(&msg[pos], service, sizeof(service) - 1);
 	pos += sizeof(service) - 1;
-	deuce_ssh_serialize_uint32((uint32_t)(sizeof(method) - 1), msg, msg_len, &pos);
+	dssh_serialize_uint32((uint32_t)(sizeof(method) - 1), msg, msg_len, &pos);
 	memcpy(&msg[pos], method, sizeof(method) - 1);
 	pos += sizeof(method) - 1;
-	deuce_ssh_serialize_uint32(0, msg, msg_len, &pos); /* language */
-	deuce_ssh_serialize_uint32(0, msg, msg_len, &pos); /* submethods */
+	dssh_serialize_uint32(0, msg, msg_len, &pos); /* language */
+	dssh_serialize_uint32(0, msg, msg_len, &pos); /* submethods */
 
-	int res = deuce_ssh_transport_send_packet(sess, msg, pos, NULL);
+	int res = dssh_transport_send_packet(sess, msg, pos, NULL);
 	free(msg);
 	if (res < 0)
 		return res;
@@ -729,7 +729,7 @@ deuce_ssh_auth_keyboard_interactive(deuce_ssh_session sess,
 		uint8_t msg_type;
 		uint8_t *payload;
 		size_t payload_len;
-		res = deuce_ssh_transport_recv_packet(sess, &msg_type, &payload, &payload_len);
+		res = dssh_transport_recv_packet(sess, &msg_type, &payload, &payload_len);
 		if (res < 0)
 			return res;
 
@@ -742,7 +742,7 @@ deuce_ssh_auth_keyboard_interactive(deuce_ssh_session sess,
 			return 0;
 
 		if (msg_type == SSH_MSG_USERAUTH_FAILURE)
-			return DEUCE_SSH_ERROR_INIT;
+			return DSSH_ERROR_INIT;
 
 		if (msg_type == SSH_MSG_USERAUTH_INFO_REQUEST) {
 			size_t rpos = 1;
@@ -750,40 +750,40 @@ deuce_ssh_auth_keyboard_interactive(deuce_ssh_session sess,
 
 			/* Parse name string */
 			if (rpos + 4 > payload_len)
-				return DEUCE_SSH_ERROR_PARSE;
-			deuce_ssh_parse_uint32(&payload[rpos], payload_len - rpos, &slen);
+				return DSSH_ERROR_PARSE;
+			dssh_parse_uint32(&payload[rpos], payload_len - rpos, &slen);
 			rpos += 4;
 			if (rpos + slen > payload_len)
-				return DEUCE_SSH_ERROR_PARSE;
+				return DSSH_ERROR_PARSE;
 			const uint8_t *name = &payload[rpos];
 			size_t name_len = slen;
 			rpos += slen;
 
 			/* Parse instruction string */
 			if (rpos + 4 > payload_len)
-				return DEUCE_SSH_ERROR_PARSE;
-			deuce_ssh_parse_uint32(&payload[rpos], payload_len - rpos, &slen);
+				return DSSH_ERROR_PARSE;
+			dssh_parse_uint32(&payload[rpos], payload_len - rpos, &slen);
 			rpos += 4;
 			if (rpos + slen > payload_len)
-				return DEUCE_SSH_ERROR_PARSE;
+				return DSSH_ERROR_PARSE;
 			const uint8_t *instruction = &payload[rpos];
 			size_t instruction_len = slen;
 			rpos += slen;
 
 			/* Parse language string (ignored) */
 			if (rpos + 4 > payload_len)
-				return DEUCE_SSH_ERROR_PARSE;
-			deuce_ssh_parse_uint32(&payload[rpos], payload_len - rpos, &slen);
+				return DSSH_ERROR_PARSE;
+			dssh_parse_uint32(&payload[rpos], payload_len - rpos, &slen);
 			rpos += 4;
 			if (rpos + slen > payload_len)
-				return DEUCE_SSH_ERROR_PARSE;
+				return DSSH_ERROR_PARSE;
 			rpos += slen;
 
 			/* num_prompts */
 			if (rpos + 4 > payload_len)
-				return DEUCE_SSH_ERROR_PARSE;
+				return DSSH_ERROR_PARSE;
 			uint32_t num_prompts;
-			deuce_ssh_parse_uint32(&payload[rpos], payload_len - rpos, &num_prompts);
+			dssh_parse_uint32(&payload[rpos], payload_len - rpos, &num_prompts);
 			rpos += 4;
 
 			/* Parse each prompt + echo flag */
@@ -802,21 +802,21 @@ deuce_ssh_auth_keyboard_interactive(deuce_ssh_session sess,
 				if (!prompts || !prompt_lens || !echo || !responses || !response_lens) {
 					free(prompts); free(prompt_lens); free(echo);
 					free(responses); free(response_lens);
-					return DEUCE_SSH_ERROR_ALLOC;
+					return DSSH_ERROR_ALLOC;
 				}
 
 				for (uint32_t i = 0; i < num_prompts; i++) {
 					if (rpos + 4 > payload_len) {
 						free(prompts); free(prompt_lens); free(echo);
 						free(responses); free(response_lens);
-						return DEUCE_SSH_ERROR_PARSE;
+						return DSSH_ERROR_PARSE;
 					}
-					deuce_ssh_parse_uint32(&payload[rpos], payload_len - rpos, &slen);
+					dssh_parse_uint32(&payload[rpos], payload_len - rpos, &slen);
 					rpos += 4;
 					if (rpos + slen + 1 > payload_len) {
 						free(prompts); free(prompt_lens); free(echo);
 						free(responses); free(response_lens);
-						return DEUCE_SSH_ERROR_PARSE;
+						return DSSH_ERROR_PARSE;
 					}
 					prompts[i] = &payload[rpos];
 					prompt_lens[i] = slen;
@@ -854,13 +854,13 @@ deuce_ssh_auth_keyboard_interactive(deuce_ssh_session sess,
 					free(responses[i]);
 				free(responses);
 				free(response_lens);
-				return DEUCE_SSH_ERROR_ALLOC;
+				return DSSH_ERROR_ALLOC;
 			}
 			size_t rp = 0;
 			resp[rp++] = SSH_MSG_USERAUTH_INFO_RESPONSE;
-			deuce_ssh_serialize_uint32(num_prompts, resp, resp_sz, &rp);
+			dssh_serialize_uint32(num_prompts, resp, resp_sz, &rp);
 			for (uint32_t i = 0; i < num_prompts; i++) {
-				deuce_ssh_serialize_uint32((uint32_t)response_lens[i], resp, resp_sz, &rp);
+				dssh_serialize_uint32((uint32_t)response_lens[i], resp, resp_sz, &rp);
 				if (response_lens[i] > 0)
 					memcpy(&resp[rp], responses[i], response_lens[i]);
 				rp += response_lens[i];
@@ -869,27 +869,27 @@ deuce_ssh_auth_keyboard_interactive(deuce_ssh_session sess,
 			free(responses);
 			free(response_lens);
 
-			res = deuce_ssh_transport_send_packet(sess, resp, rp, NULL);
+			res = dssh_transport_send_packet(sess, resp, rp, NULL);
 			free(resp);
 			if (res < 0)
 				return res;
 			continue;
 		}
 
-		deuce_ssh_transport_send_unimplemented(sess, sess->trans.last_rx_seq);
-		return DEUCE_SSH_ERROR_PARSE;
+		dssh_transport_send_unimplemented(sess, sess->trans.last_rx_seq);
+		return DSSH_ERROR_PARSE;
 	}
 }
 
-DEUCE_SSH_PUBLIC int
-deuce_ssh_auth_publickey(deuce_ssh_session sess,
+DSSH_PUBLIC int
+dssh_auth_publickey(dssh_session sess,
     const char *username, const char *algo_name)
 {
-	deuce_ssh_key_algo ka = deuce_ssh_transport_find_key_algo(algo_name);
+	dssh_key_algo ka = dssh_transport_find_key_algo(algo_name);
 	if (ka == NULL || ka->sign == NULL || ka->pubkey == NULL)
-		return DEUCE_SSH_ERROR_INIT;
+		return DSSH_ERROR_INIT;
 	if (!ka->haskey || !ka->haskey(ka->ctx))
-		return DEUCE_SSH_ERROR_INIT;
+		return DSSH_ERROR_INIT;
 
 	/* Get the public key blob */
 	uint8_t pubkey_buf[1024];
@@ -919,30 +919,30 @@ deuce_ssh_auth_publickey(deuce_ssh_session sess,
 	    4 + (sizeof(method) - 1) + 1 + 4 + alen + 4 + pubkey_len;
 	uint8_t *sign_data = malloc(sign_data_len);
 	if (sign_data == NULL)
-		return DEUCE_SSH_ERROR_ALLOC;
+		return DSSH_ERROR_ALLOC;
 	size_t sp = 0;
 
-	deuce_ssh_serialize_uint32((uint32_t)sess->trans.session_id_sz,
+	dssh_serialize_uint32((uint32_t)sess->trans.session_id_sz,
 	    sign_data, sign_data_len, &sp);
 	memcpy(&sign_data[sp], sess->trans.session_id, sess->trans.session_id_sz);
 	sp += sess->trans.session_id_sz;
 	sign_data[sp++] = SSH_MSG_USERAUTH_REQUEST;
-	deuce_ssh_serialize_uint32((uint32_t)ulen, sign_data, sign_data_len, &sp);
+	dssh_serialize_uint32((uint32_t)ulen, sign_data, sign_data_len, &sp);
 	memcpy(&sign_data[sp], username, ulen);
 	sp += ulen;
-	deuce_ssh_serialize_uint32((uint32_t)(sizeof(service) - 1),
+	dssh_serialize_uint32((uint32_t)(sizeof(service) - 1),
 	    sign_data, sign_data_len, &sp);
 	memcpy(&sign_data[sp], service, sizeof(service) - 1);
 	sp += sizeof(service) - 1;
-	deuce_ssh_serialize_uint32((uint32_t)(sizeof(method) - 1),
+	dssh_serialize_uint32((uint32_t)(sizeof(method) - 1),
 	    sign_data, sign_data_len, &sp);
 	memcpy(&sign_data[sp], method, sizeof(method) - 1);
 	sp += sizeof(method) - 1;
 	sign_data[sp++] = 1; /* TRUE */
-	deuce_ssh_serialize_uint32((uint32_t)alen, sign_data, sign_data_len, &sp);
+	dssh_serialize_uint32((uint32_t)alen, sign_data, sign_data_len, &sp);
 	memcpy(&sign_data[sp], algo_name, alen);
 	sp += alen;
-	deuce_ssh_serialize_uint32((uint32_t)pubkey_len, sign_data, sign_data_len, &sp);
+	dssh_serialize_uint32((uint32_t)pubkey_len, sign_data, sign_data_len, &sp);
 	memcpy(&sign_data[sp], pubkey_buf, pubkey_len);
 	sp += pubkey_len;
 
@@ -970,31 +970,31 @@ deuce_ssh_auth_publickey(deuce_ssh_session sess,
 	    4 + pubkey_len + 4 + sig_len;
 	uint8_t *msg = malloc(msg_len);
 	if (msg == NULL)
-		return DEUCE_SSH_ERROR_ALLOC;
+		return DSSH_ERROR_ALLOC;
 	size_t pos = 0;
 
 	msg[pos++] = SSH_MSG_USERAUTH_REQUEST;
-	deuce_ssh_serialize_uint32((uint32_t)ulen, msg, msg_len, &pos);
+	dssh_serialize_uint32((uint32_t)ulen, msg, msg_len, &pos);
 	memcpy(&msg[pos], username, ulen);
 	pos += ulen;
-	deuce_ssh_serialize_uint32((uint32_t)(sizeof(service) - 1), msg, msg_len, &pos);
+	dssh_serialize_uint32((uint32_t)(sizeof(service) - 1), msg, msg_len, &pos);
 	memcpy(&msg[pos], service, sizeof(service) - 1);
 	pos += sizeof(service) - 1;
-	deuce_ssh_serialize_uint32((uint32_t)(sizeof(method) - 1), msg, msg_len, &pos);
+	dssh_serialize_uint32((uint32_t)(sizeof(method) - 1), msg, msg_len, &pos);
 	memcpy(&msg[pos], method, sizeof(method) - 1);
 	pos += sizeof(method) - 1;
 	msg[pos++] = 1; /* TRUE */
-	deuce_ssh_serialize_uint32((uint32_t)alen, msg, msg_len, &pos);
+	dssh_serialize_uint32((uint32_t)alen, msg, msg_len, &pos);
 	memcpy(&msg[pos], algo_name, alen);
 	pos += alen;
-	deuce_ssh_serialize_uint32((uint32_t)pubkey_len, msg, msg_len, &pos);
+	dssh_serialize_uint32((uint32_t)pubkey_len, msg, msg_len, &pos);
 	memcpy(&msg[pos], pubkey_buf, pubkey_len);
 	pos += pubkey_len;
-	deuce_ssh_serialize_uint32((uint32_t)sig_len, msg, msg_len, &pos);
+	dssh_serialize_uint32((uint32_t)sig_len, msg, msg_len, &pos);
 	memcpy(&msg[pos], sig_buf, sig_len);
 	pos += sig_len;
 
-	res = deuce_ssh_transport_send_packet(sess, msg, pos, NULL);
+	res = dssh_transport_send_packet(sess, msg, pos, NULL);
 	free(msg);
 	if (res < 0)
 		return res;
@@ -1004,7 +1004,7 @@ deuce_ssh_auth_publickey(deuce_ssh_session sess,
 	uint8_t *payload;
 	size_t payload_len;
 	for (;;) {
-		res = deuce_ssh_transport_recv_packet(sess, &msg_type, &payload, &payload_len);
+		res = dssh_transport_recv_packet(sess, &msg_type, &payload, &payload_len);
 		if (res < 0)
 			return res;
 		if (msg_type == SSH_MSG_USERAUTH_BANNER) {
@@ -1017,5 +1017,5 @@ deuce_ssh_auth_publickey(deuce_ssh_session sess,
 	if (msg_type == SSH_MSG_USERAUTH_SUCCESS)
 		return 0;
 
-	return DEUCE_SSH_ERROR_INIT;
+	return DSSH_ERROR_INIT;
 }

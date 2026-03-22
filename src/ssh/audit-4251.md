@@ -34,7 +34,7 @@ implementations.
 **APPLICATION** — The library provides `ssh_ed25519_generate_key()` and
 `ssh_ed25519_load_key_file()` for host key provisioning.  Whether a host
 key is present is determined by the server application.  The library will
-fail KEX with `DEUCE_SSH_ERROR_INIT` if no key is loaded, so the
+fail KEX with `DSSH_ERROR_INIT` if no key is loaded, so the
 application cannot accidentally skip this.
 
 ### 4.1-2
@@ -193,7 +193,7 @@ Context: leaving out host key verification.
 > specified.
 
 **CONFORMS** — The disconnect message includes a language tag (empty
-string, per `deuce_ssh_transport_disconnect()`).  The library serializes
+string, per `dssh_transport_disconnect()`).  The library serializes
 strings as raw bytes — character set interpretation is the application's
 responsibility.
 
@@ -237,29 +237,29 @@ protocol library concern.
 > non-zero values **MUST** be interpreted as TRUE; however, applications
 > **MUST NOT** store values other than 0 and 1.
 
-**CONFORMS (MUST interpret non-zero as TRUE)** — `deuce_ssh_parse_boolean()`
+**CONFORMS (MUST interpret non-zero as TRUE)** — `dssh_parse_boolean()`
 at `ssh-arch.c:69` assigns `*val = buf[0]`, where `val` is a `bool`.
 C's `_Bool` conversion guarantees any non-zero value becomes `true` (1).
 
 **CONFORMS (MUST NOT store values other than 0 and 1)** —
-`deuce_ssh_serialize_boolean()` at `ssh-arch.c:84` stores
+`dssh_serialize_boolean()` at `ssh-arch.c:84` stores
 `buf[*pos] = val` where `val` is `bool`, which in C is always 0 or 1.
 
 ### 5-2 (uint32)
 > Represents a 32-bit unsigned integer. Stored as four bytes in the
 > order of decreasing significance (network byte order).
 
-**CONFORMS** — `deuce_ssh_parse_uint32()` at `ssh-arch.c:94` reads four
+**CONFORMS** — `dssh_parse_uint32()` at `ssh-arch.c:94` reads four
 bytes in big-endian order with explicit shifts: `(buf[0]<<24) |
-(buf[1]<<16) | (buf[2]<<8) | buf[3]`.  `deuce_ssh_serialize_uint32()`
+(buf[1]<<16) | (buf[2]<<8) | buf[3]`.  `dssh_serialize_uint32()`
 at `ssh-arch.c:109-113` writes in the same order.
 
 ### 5-3 (uint64)
 > Represents a 64-bit unsigned integer. Stored as eight bytes in the
 > order of decreasing significance (network byte order).
 
-**CONFORMS** — `deuce_ssh_parse_uint64()` at `ssh-arch.c:121-124`
-and `deuce_ssh_serialize_uint64()` at `ssh-arch.c:138-146` handle 8
+**CONFORMS** — `dssh_parse_uint64()` at `ssh-arch.c:121-124`
+and `dssh_serialize_uint64()` at `ssh-arch.c:138-146` handle 8
 bytes in big-endian order.
 
 ### 5-4 (string)
@@ -267,9 +267,9 @@ bytes in big-endian order.
 > its length [...] and zero (= empty string) or more bytes [...]
 > Terminating null characters are not used.
 
-**CONFORMS** — `deuce_ssh_parse_string()` at `ssh-arch.c:150-164`
+**CONFORMS** — `dssh_parse_string()` at `ssh-arch.c:150-164`
 reads a uint32 length then points into the buffer.  No NUL terminator
-is expected or added.  `deuce_ssh_serialize_string()` at
+is expected or added.  `dssh_serialize_string()` at
 `ssh-arch.c:173-181` writes uint32 length + raw bytes, no NUL.
 
 ### 5-5 (string)
@@ -287,7 +287,7 @@ names, etc.) are serialized with explicit length calculation via
 
 **CONFORMS** — `encode_shared_secret()` in `kex/curve25519-sha256.c:166`
 checks `start[0] & 0x80` and prepends a zero byte.
-`deuce_ssh_transport_newkeys()` at `ssh-trans.c:939` does the same for
+`dssh_transport_newkeys()` at `ssh-trans.c:939` does the same for
 key derivation.  `serialize_bn_mpint()` in `kex/dh-gex-sha256.c:34`
 also handles this.
 
@@ -295,7 +295,7 @@ also handles this.
 > Unnecessary leading bytes with the value 0 or 255 **MUST NOT** be
 > included.
 
-**CONFORMS** — `deuce_ssh_parse_mpint()` at `ssh-arch.c:189-193`
+**CONFORMS** — `dssh_parse_mpint()` at `ssh-arch.c:189-193`
 validates incoming mpints: rejects a leading 0x00 where the next byte
 doesn't have the high bit set (unnecessary leading zero), and rejects
 a leading 0xFF where the next byte has the high bit set (unnecessary
@@ -327,7 +327,7 @@ definition.
 > A name **MUST** have a non-zero length, and it **MUST NOT** contain a
 > comma (",").
 
-**CONFORMS** — `deuce_ssh_parse_namelist()` at `ssh-arch.c:220-225`
+**CONFORMS** — `dssh_parse_namelist()` at `ssh-arch.c:220-225`
 rejects empty names (comma at position 0, or consecutive commas: `i == 0
 || str.value[i - 1] == ','`).  Commas are handled as delimiters, not
 stored in name values.  Trailing commas would cause a zero-length final
@@ -339,7 +339,7 @@ similar inputs that would produce a zero-length final name.
 ### 5-11 (name-list)
 > All of the elements contained are names and **MUST** be in US-ASCII.
 
-**CONFORMS** — `deuce_ssh_parse_namelist()` at `ssh-arch.c:224` rejects
+**CONFORMS** — `dssh_parse_namelist()` at `ssh-arch.c:224` rejects
 any byte `<= ' '` (space, 32) or `>= 127` (DEL and above).  This
 ensures only printable US-ASCII (33–126) and comma (44) are accepted.
 
@@ -348,8 +348,8 @@ ensures only printable US-ASCII (33–126) and comma (44) are accepted.
 > individual names, nor for the list as a whole.
 
 **CONFORMS** — NUL (0) is caught by the `str.value[i] <= ' '` check in
-`deuce_ssh_parse_namelist()`.  Serialization via
-`deuce_ssh_serialize_namelist()` delegates to `serialize_string()` which
+`dssh_parse_namelist()`.  Serialization via
+`dssh_serialize_namelist()` delegates to `serialize_string()` which
 writes raw bytes without NUL terminators.
 
 ---
@@ -361,14 +361,14 @@ writes raw bytes without NUL terminators.
 > non-empty strings no longer than 64 characters.
 
 **CONFORMS** — Printable US-ASCII: enforced on received name-lists by
-the character validation in `deuce_ssh_parse_namelist()` (rejects bytes
+the character validation in `dssh_parse_namelist()` (rejects bytes
 <= 32 or >= 127).  Non-empty: enforced by the empty-name check in
-`deuce_ssh_parse_namelist()` (see 5-10).
+`dssh_parse_namelist()` (see 5-10).
 
 64-character limit: enforced on received names in KEXINIT parsing
 (`ssh-trans.c` walks each name-list and rejects any individual name
-> 64 characters).  Also enforced in `deuce_ssh_parse_namelist_next()`.
-Enforced on registered names by all `deuce_ssh_transport_register_*()`
+> 64 characters).  Also enforced in `dssh_parse_namelist_next()`.
+Enforced on registered names by all `dssh_transport_register_*()`
 functions.
 
 ### 6-2
@@ -546,7 +546,7 @@ CBC mode.
 > "none" MAC is enabled.
 
 **APPLICATION** — Warning about algorithm selection is the application's
-responsibility.  The library provides `deuce_ssh_transport_get_mac_name()`
+responsibility.  The library provides `dssh_transport_get_mac_name()`
 for the application to check what was negotiated.
 
 ### 9.3.2-3
@@ -554,11 +554,11 @@ for the application to check what was negotiated.
 
 **CONFORMS** — The library tracks per-key packet counts
 (`tx_since_rekey` / `rx_since_rekey`) and provides
-`deuce_ssh_transport_rekey_needed()` which returns true once either
+`dssh_transport_rekey_needed()` which returns true once either
 counter exceeds the soft limit of 2^28.  The application can poll
-this flag and call `deuce_ssh_transport_rekey()` to perform key
+this flag and call `dssh_transport_rekey()` to perform key
 re-exchange.  A hard limit at 2^31 prevents sending/receiving if the
-application fails to rekey, returning `DEUCE_SSH_ERROR_REKEY_NEEDED`.
+application fails to rekey, returning `DSSH_ERROR_REKEY_NEEDED`.
 
 ---
 
@@ -570,8 +570,8 @@ application fails to rekey, returning `DEUCE_SSH_ERROR_REKEY_NEEDED`.
 **CONFORMS** — The library enforces a hard limit of 2^31 packets per
 key, well before the 2^32 sequence number wrap.  Once the hard limit is
 reached, `send_packet` and `recv_packet` refuse with
-`DEUCE_SSH_ERROR_REKEY_NEEDED`, forcing the application to either rekey
-(via `deuce_ssh_transport_rekey()`) or disconnect.  This guarantees the
+`DSSH_ERROR_REKEY_NEEDED`, forcing the application to either rekey
+(via `dssh_transport_rekey()`) or disconnect.  This guarantees the
 MUST to rekey before sequence number wrap is never violated.
 
 ---
@@ -670,7 +670,7 @@ Note: lowercase "should" — not a normative keyword per RFC 2119.
 
 **N/A** — The library does not provide a convenience function to send
 `SSH_MSG_IGNORE`, but applications can construct and send one via
-`deuce_ssh_transport_send_packet()` with message type 2.
+`dssh_transport_send_packet()` with message type 2.
 
 ---
 
@@ -692,7 +692,7 @@ responsibility.
 
 **APPLICATION** — If the `none` cipher is negotiated, the application
 should not send passwords.  The library does not enforce this — it
-provides `deuce_ssh_transport_get_enc_name()` for the application to
+provides `dssh_transport_get_enc_name()` for the application to
 check.
 
 ### 9.4.1-2
@@ -729,7 +729,7 @@ responsibility.
 
 **APPLICATION** — Server-side authentication validation is entirely the
 application's responsibility.  The library provides client-side auth
-functions (`deuce_ssh_auth_password()`, etc.) that send credentials, but
+functions (`dssh_auth_password()`, etc.) that send credentials, but
 validation happens in the server application code.
 
 ### 9.4.3-2

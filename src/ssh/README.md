@@ -15,7 +15,7 @@ No proprietary extensions (no `@` algorithm names).
 ## Dependencies
 
 - **OpenSSL 3.0+** (libcrypto only — no libssl)
-- **C11 threads** (`<threads.h>`, `<stdatomic.h>`)
+- **C11 threads** (`<threads.h>`, `<stdatomic.h>`) — used internally only, not exposed in public headers
 
 ## Building
 
@@ -27,7 +27,7 @@ cmake --build . --target client -j8    # + test client
 cmake --build . --target server -j8    # + test server
 ```
 
-Produces `libdeuce-ssh.a` (static) and `libdeuce-ssh.so` (shared).
+Produces `libdeucessh.a` (static) and `libdeucessh.so` (shared).
 
 ## Built-in Algorithms
 
@@ -45,35 +45,27 @@ All algorithms support both client and server side.
 
 ```c
 #include "deucessh.h"
-#include "ssh-auth.h"
-#include "ssh-conn.h"
-
-/* Include headers for the algorithms you want */
-#include "kex/curve25519-sha256.h"
-#include "key_algo/ssh-ed25519.h"
-#include "enc/aes256-ctr.h"
-#include "enc/none.h"
-#include "mac/hmac-sha2-256.h"
-#include "mac/none.h"
-#include "comp/none.h"
+#include "deucessh-auth.h"
+#include "deucessh-conn.h"
+#include "deucessh-algorithms.h"
 
 /* 1. Implement I/O callbacks */
 static int my_tx(uint8_t *buf, size_t bufsz,
-    atomic_bool *terminate, void *cbdata)
+    dssh_session sess, void *cbdata)
 {
     /* Send exactly bufsz bytes over your transport (socket, etc.).
-     * Block until complete or *terminate becomes true.
+     * Block until complete or dssh_session_is_terminated(sess).
      * Return 0 on success, negative on error. */
 }
 
 static int my_rx(uint8_t *buf, size_t bufsz,
-    atomic_bool *terminate, void *cbdata)
+    dssh_session sess, void *cbdata)
 {
     /* Receive exactly bufsz bytes.  Same contract as tx. */
 }
 
 static int my_rxline(uint8_t *buf, size_t bufsz,
-    size_t *bytes_received, atomic_bool *terminate, void *cbdata)
+    size_t *bytes_received, dssh_session sess, void *cbdata)
 {
     /* Receive bytes one at a time until CR-LF.
      * Set *bytes_received to total including CR-LF.
@@ -83,7 +75,7 @@ static int my_rxline(uint8_t *buf, size_t bufsz,
 int main(void)
 {
     /* 2. Register algorithms (order = preference) */
-    deuce_ssh_transport_set_callbacks(my_tx, my_rx, my_rxline, NULL);
+    dssh_transport_set_callbacks(my_tx, my_rx, my_rxline, NULL);
     register_curve25519_sha256();
     register_ssh_ed25519();
     register_aes256_ctr();
@@ -92,50 +84,44 @@ int main(void)
     register_none_mac();
     register_none_comp();
 
-    /* 3. Create and initialize session */
-    struct deuce_ssh_session_s sess;
-    memset(&sess, 0, sizeof(sess));
-    sess.trans.client = true;
-    /* sess.tx_cbdata = your_socket_ptr;  -- passed to I/O callbacks */
-    /* sess.rx_cbdata = your_socket_ptr; */
-    /* sess.rx_line_cbdata = your_socket_ptr; */
-    deuce_ssh_session_init(&sess, 0);  /* 0 = RFC minimum (33280 bytes) */
+    /* 3. Create session (opaque handle) */
+    dssh_session sess = dssh_session_init(true, 0);
+    /* dssh_session_set_cbdata(sess, sock_ptr, sock_ptr, sock_ptr, NULL); */
 
     /* 4. Handshake */
-    deuce_ssh_transport_handshake(&sess);
+    dssh_transport_handshake(sess);
 
     /* 5. Authenticate */
     char methods[256];
-    int r = deuce_ssh_auth_get_methods(&sess, "user", methods, sizeof(methods));
+    int r = dssh_auth_get_methods(sess, "user", methods, sizeof(methods));
     if (r > 0) {
         if (strstr(methods, "password"))
-            deuce_ssh_auth_password(&sess, "user", "pass", NULL, NULL);
+            dssh_auth_password(sess, "user", "pass", NULL, NULL);
         else if (strstr(methods, "keyboard-interactive"))
-            deuce_ssh_auth_keyboard_interactive(&sess, "user",
+            dssh_auth_keyboard_interactive(sess, "user",
                 my_kbi_prompt, my_context);  /* see KBI section below */
     }
 
     /* 6. Start the demux thread */
-    deuce_ssh_session_start(&sess);
+    dssh_session_start(sess);
 
-    /* 7. Open channel and execute command (high-level API) */
-    struct deuce_ssh_channel_s ch;
-    deuce_ssh_session_open_exec(&sess, &ch, "echo hello");
+    /* 7. Open channel and execute command */
+    dssh_channel ch = dssh_session_open_exec(sess, "echo hello");
 
     /* 8. Read output using poll/read */
     uint8_t buf[4096];
     int ev;
-    while ((ev = deuce_ssh_session_poll(&sess, &ch,
-            DEUCE_SSH_POLL_READ, -1)) & DEUCE_SSH_POLL_READ) {
-        ssize_t n = deuce_ssh_session_read(&sess, &ch, buf, sizeof(buf));
+    while ((ev = dssh_session_poll(sess, ch,
+            DSSH_POLL_READ, -1)) & DSSH_POLL_READ) {
+        int64_t n = dssh_session_read(sess, ch, buf, sizeof(buf));
         if (n <= 0)
             break;  /* EOF or closed */
         write(STDOUT_FILENO, buf, n);
     }
 
-    /* 9. Clean up */
-    deuce_ssh_session_close(&sess, &ch, 0);
-    deuce_ssh_session_cleanup(&sess);
+    /* 9. Clean up (close frees the channel, cleanup frees the session) */
+    dssh_session_close(sess, ch, 0);
+    dssh_session_cleanup(sess);
 }
 ```
 
@@ -143,33 +129,22 @@ int main(void)
 
 ```c
 #include "deucessh.h"
-#include "ssh-trans.h"
-#include "ssh-auth.h"
-#include "ssh-conn.h"
-#include "kex/curve25519-sha256.h"
-#include "kex/dh-gex-sha256.h"
-#include "key_algo/ssh-ed25519.h"
-#include "enc/aes256-ctr.h"
-#include "enc/none.h"
-#include "mac/hmac-sha2-256.h"
-#include "mac/none.h"
-#include "comp/none.h"
+#include "deucessh-auth.h"
+#include "deucessh-conn.h"
+#include "deucessh-algorithms.h"
 
 /* Server-side auth: accept any password */
 static int my_password_cb(const uint8_t *username, size_t username_len,
     const uint8_t *password, size_t password_len,
     uint8_t **change_prompt, size_t *change_prompt_len, void *cbdata)
 {
-    /* Validate credentials against your user database.
-     * Return DEUCE_SSH_AUTH_SUCCESS, DEUCE_SSH_AUTH_FAILURE,
-     * DEUCE_SSH_AUTH_PARTIAL, or DEUCE_SSH_AUTH_CHANGE_PASSWORD. */
-    return DEUCE_SSH_AUTH_SUCCESS;
+    return DSSH_AUTH_SUCCESS;
 }
 
 int main(void)
 {
     /* 1. Register algorithms and I/O callbacks (same as client) */
-    deuce_ssh_transport_set_callbacks(my_tx, my_rx, my_rxline, NULL);
+    dssh_transport_set_callbacks(my_tx, my_rx, my_rxline, NULL);
     register_curve25519_sha256();
     register_dh_gex_sha256();
     register_ssh_ed25519();
@@ -179,80 +154,58 @@ int main(void)
     register_none_mac();
     register_none_comp();
 
-    /* 2. Accept a connection, then create session */
-    struct deuce_ssh_session_s sess;
-    memset(&sess, 0, sizeof(sess));
-    sess.trans.client = false;  /* server mode */
-    deuce_ssh_session_init(&sess, 0);  /* 0 = RFC minimum (33280 bytes) */
-
-    /* 3. Load host keys (stored on algorithm entry, not session).
-     * Pass NULL for unencrypted PEM, or a pem_password_cb for encrypted. */
+    /* 2. Load host keys (stored on algorithm entry, not session) */
     ssh_ed25519_load_key_file("/path/to/host_ed25519.pem", NULL, NULL);
     rsa_sha2_256_load_key_file("/path/to/host_rsa.pem", NULL, NULL);
-    /* Or generate + save:
-     *   ssh_ed25519_generate_key();
-     *   ssh_ed25519_save_key_file("/path/to/host_ed25519.pem", NULL, NULL);
-     *   ssh_ed25519_save_pub_file("/path/to/host_ed25519.pub");
-     *
-     * To encrypt the saved key, pass a pem_password_cb:
-     *   ssh_ed25519_save_key_file("/path/to/key.pem", my_pw_cb, my_ctx);
-     *
-     * To get the public key string at runtime (pass NULL/0 for size query):
-     *   ssize_t len = ssh_ed25519_get_pub_str(NULL, 0);
-     *   char *pub = malloc(len);
-     *   ssh_ed25519_get_pub_str(pub, len);  // "ssh-ed25519 AAAA..."
-     */
+
+    /* 3. Accept a connection, then create session */
+    dssh_session sess = dssh_session_init(false, 0);
 
     /* 4. If offering DH-GEX, provide a group selection callback */
-    struct deuce_ssh_dh_gex_provider provider = {
+    struct dssh_dh_gex_provider provider = {
         .select_group = my_group_selector,
         .cbdata = NULL,
     };
-    deuce_ssh_dh_gex_set_provider(&sess, &provider);
+    dssh_dh_gex_set_provider(sess, &provider);
 
     /* 5. Handshake */
-    deuce_ssh_transport_handshake(&sess);
+    dssh_transport_handshake(sess);
 
     /* 6. Authenticate */
-    struct deuce_ssh_auth_server_cbs auth_cbs = {
+    struct dssh_auth_server_cbs auth_cbs = {
         .methods_str = "publickey,password",
         .password_cb = my_password_cb,
-        /* .publickey_cb = my_pubkey_cb, */
-        /* .none_cb = my_none_cb, */
     };
     uint8_t username[256];
     size_t username_len;
-    deuce_ssh_auth_server(&sess, &auth_cbs, username, &username_len);
+    dssh_auth_server(sess, &auth_cbs, username, &username_len);
 
     /* 7. Start demux thread */
-    deuce_ssh_session_start(&sess);
+    dssh_session_start(sess);
 
     /* 8. Accept incoming channels */
-    struct deuce_ssh_incoming_open *inc;
-    while (deuce_ssh_session_accept(&sess, &inc, -1) == 0) {
-        /* Accept as raw channel (for subsystems) */
-        struct deuce_ssh_channel_s ch;
-        deuce_ssh_channel_accept_raw(&sess, inc, &ch);
+    struct dssh_incoming_open *inc;
+    while (dssh_session_accept(sess, &inc, -1) == 0) {
+        dssh_channel ch = dssh_channel_accept_raw(sess, inc);
 
-        /* Read/write using poll */
         int ev;
-        while ((ev = deuce_ssh_channel_poll(&sess, &ch,
-                DEUCE_SSH_POLL_READ, -1)) & DEUCE_SSH_POLL_READ) {
-            ssize_t len = deuce_ssh_channel_read(&sess, &ch, NULL, 0);
+        while ((ev = dssh_channel_poll(sess, ch,
+                DSSH_POLL_READ, -1)) & DSSH_POLL_READ) {
+            int64_t len = dssh_channel_read(sess, ch, NULL, 0);
             if (len <= 0)
                 break;
             uint8_t *msg = malloc(len);
-            deuce_ssh_channel_read(&sess, &ch, msg, len);
+            dssh_channel_read(sess, ch, msg, len);
             /* process and respond... */
-            deuce_ssh_channel_write(&sess, &ch, response, resp_len);
+            dssh_channel_write(sess, ch, response, resp_len);
             free(msg);
         }
 
-        deuce_ssh_channel_close(&sess, &ch);
+        dssh_channel_close(sess, ch);
     }
 
     /* 9. Clean up */
-    deuce_ssh_session_cleanup(&sess);
+    dssh_session_cleanup(sess);
 }
 ```
 
@@ -262,13 +215,13 @@ The library does no I/O itself.  You provide three callbacks:
 
 | Callback | Purpose |
 |----------|---------|
-| `tx` | Send exactly N bytes.  Block until done or `*terminate` is true. |
-| `rx` | Receive exactly N bytes.  Block until done or `*terminate` is true. |
+| `tx` | Send exactly N bytes.  Block until done or `dssh_session_is_terminated(sess)`. |
+| `rx` | Receive exactly N bytes.  Same contract as tx. |
 | `rx_line` | Receive until CR-LF (version exchange only). |
 
-All callbacks return 0 on success, negative on error.  The `cbdata`
-parameter comes from the session struct (`sess->tx_cbdata`, etc.),
-allowing you to pass a socket handle or connection context.
+All callbacks receive the session handle and a `cbdata` pointer.
+Return 0 on success, negative on error.  The `cbdata` is set via
+`dssh_session_set_cbdata()`.
 
 Callbacks are registered globally once.  Per-session differentiation
 is via the `cbdata` pointers.
@@ -279,10 +232,10 @@ is via the `cbdata` pointers.
 
 ```c
 /* Simple password auth (no password change support): */
-deuce_ssh_auth_password(&sess, "user", "pass", NULL, NULL);
+dssh_auth_password(sess, "user", "pass", NULL, NULL);
 
 /* With password change support: */
-deuce_ssh_auth_password(&sess, "user", "pass",
+dssh_auth_password(sess, "user", "pass",
     my_passwd_change_cb, my_context);
 ```
 
@@ -305,7 +258,7 @@ my_passwd_change(const uint8_t *prompt, size_t prompt_len,
 
     *new_password = malloc(len);
     if (*new_password == NULL)
-        return DEUCE_SSH_ERROR_ALLOC;
+        return DSSH_ERROR_ALLOC;
     memcpy(*new_password, buf, len);
     *new_password_len = len;
     return 0;
@@ -315,13 +268,13 @@ my_passwd_change(const uint8_t *prompt, size_t prompt_len,
 ### Public Key
 
 ```c
-#include "key_algo/ssh-ed25519.h"
+#include "deucessh-algorithms.h"
 
 /* Load the private key (stored on the algorithm entry) */
 ssh_ed25519_load_key_file("/path/to/id_ed25519", NULL, NULL);
 
 /* Authenticate */
-deuce_ssh_auth_publickey(&sess, "user", "ssh-ed25519");
+dssh_auth_publickey(sess, "user", "ssh-ed25519");
 ```
 
 The function signs the session-bound authentication data (session ID
@@ -330,7 +283,7 @@ Works with any registered key algorithm that supports signing.
 
 ### Keyboard-Interactive
 
-`deuce_ssh_auth_keyboard_interactive()` uses a callback to handle
+`dssh_auth_keyboard_interactive()` uses a callback to handle
 server prompts (RFC 4256).  The callback receives the server's name
 and instruction strings, plus an array of prompts with echo flags,
 and must fill in the responses:
@@ -359,7 +312,7 @@ my_kbi_prompt(const uint8_t *name, size_t name_len,
         /* Each response must be malloc'd — the library frees it */
         responses[i] = malloc(len);
         if (responses[i] == NULL)
-            return DEUCE_SSH_ERROR_ALLOC;
+            return DSSH_ERROR_ALLOC;
         memcpy(responses[i], buf, len);
         response_lens[i] = len;
     }
@@ -367,7 +320,7 @@ my_kbi_prompt(const uint8_t *name, size_t name_len,
 }
 
 /* Usage: */
-deuce_ssh_auth_keyboard_interactive(&sess, "user",
+dssh_auth_keyboard_interactive(sess, "user",
     my_kbi_prompt, my_context);
 ```
 
@@ -389,7 +342,7 @@ simple_kbi(const uint8_t *name, size_t name_len,
     for (uint32_t i = 0; i < num_prompts; i++) {
         responses[i] = malloc(plen);
         if (responses[i] == NULL)
-            return DEUCE_SSH_ERROR_ALLOC;
+            return DSSH_ERROR_ALLOC;
         memcpy(responses[i], password, plen);
         response_lens[i] = plen;
     }
@@ -397,19 +350,19 @@ simple_kbi(const uint8_t *name, size_t name_len,
 }
 
 /* Usage: */
-deuce_ssh_auth_keyboard_interactive(&sess, "user",
+dssh_auth_keyboard_interactive(sess, "user",
     simple_kbi, (void *)"mypassword");
 ```
 
 ## Authentication — Server Side
 
-`deuce_ssh_auth_server()` drives the server-side authentication loop.
+`dssh_auth_server()` drives the server-side authentication loop.
 It handles SERVICE_REQUEST/ACCEPT, receives USERAUTH_REQUEST messages,
 dispatches to your callbacks, and sends SUCCESS/FAILURE/CHANGEREQ/PK_OK
 responses.
 
 ```c
-struct deuce_ssh_auth_server_cbs cbs = {
+struct dssh_auth_server_cbs cbs = {
     .methods_str = "publickey,password",
     .password_cb = my_password_cb,
     .passwd_change_cb = my_passwd_change_cb,  /* optional */
@@ -419,17 +372,17 @@ struct deuce_ssh_auth_server_cbs cbs = {
 };
 uint8_t username[256];
 size_t username_len;
-int r = deuce_ssh_auth_server(&sess, &cbs, username, &username_len);
+int r = dssh_auth_server(sess, &cbs, username, &username_len);
 ```
 
 ### Callback Return Values
 
 | Value | Meaning |
 |-------|---------|
-| `DEUCE_SSH_AUTH_SUCCESS` | User authenticated — library sends SUCCESS |
-| `DEUCE_SSH_AUTH_FAILURE` | Rejected — library sends FAILURE |
-| `DEUCE_SSH_AUTH_PARTIAL` | Succeeded, but more auth needed — library sends FAILURE with partial_success=TRUE |
-| `DEUCE_SSH_AUTH_CHANGE_PASSWORD` | Password expired — library sends PASSWD_CHANGEREQ (password method only) |
+| `DSSH_AUTH_SUCCESS` | User authenticated — library sends SUCCESS |
+| `DSSH_AUTH_FAILURE` | Rejected — library sends FAILURE |
+| `DSSH_AUTH_PARTIAL` | Succeeded, but more auth needed — library sends FAILURE with partial_success=TRUE |
+| `DSSH_AUTH_CHANGE_PASSWORD` | Password expired — library sends PASSWD_CHANGEREQ (password method only) |
 
 ### Password Callback
 
@@ -442,10 +395,10 @@ my_password_cb(const uint8_t *username, size_t username_len,
 {
     /* Validate credentials.
      * To request a password change, set *change_prompt to a malloc'd
-     * prompt string and return DEUCE_SSH_AUTH_CHANGE_PASSWORD. */
+     * prompt string and return DSSH_AUTH_CHANGE_PASSWORD. */
     if (check_password(username, username_len, password, password_len))
-        return DEUCE_SSH_AUTH_SUCCESS;
-    return DEUCE_SSH_AUTH_FAILURE;
+        return DSSH_AUTH_SUCCESS;
+    return DSSH_AUTH_FAILURE;
 }
 ```
 
@@ -460,12 +413,12 @@ my_passwd_change_cb(const uint8_t *username, size_t username_len,
     void *cbdata)
 {
     /* Validate old password and set new one.
-     * Return DEUCE_SSH_AUTH_CHANGE_PASSWORD to re-prompt. */
+     * Return DSSH_AUTH_CHANGE_PASSWORD to re-prompt. */
     if (!check_password(username, username_len,
             old_password, old_password_len))
-        return DEUCE_SSH_AUTH_FAILURE;
+        return DSSH_AUTH_FAILURE;
     set_password(username, username_len, new_password, new_password_len);
-    return DEUCE_SSH_AUTH_SUCCESS;
+    return DSSH_AUTH_SUCCESS;
 }
 ```
 
@@ -484,8 +437,8 @@ my_pubkey_cb(const uint8_t *username, size_t username_len,
      * the signature — just check authorization. */
     if (is_key_authorized(username, username_len,
             pubkey_blob, pubkey_blob_len))
-        return DEUCE_SSH_AUTH_SUCCESS;
-    return DEUCE_SSH_AUTH_FAILURE;
+        return DSSH_AUTH_SUCCESS;
+    return DSSH_AUTH_FAILURE;
 }
 ```
 
@@ -503,7 +456,7 @@ register_dh_gex_sha256();
 
 You can register your own custom algorithm modules by implementing
 the callback signatures defined in `ssh-trans.h` and calling the
-corresponding `deuce_ssh_transport_register_*()` function.
+corresponding `dssh_transport_register_*()` function.
 
 ## DH Group Provider (Server)
 
@@ -524,11 +477,11 @@ int my_group_selector(uint32_t min, uint32_t preferred, uint32_t max,
 Set it on the session before key exchange:
 
 ```c
-struct deuce_ssh_dh_gex_provider prov = {
+struct dssh_dh_gex_provider prov = {
     .select_group = my_group_selector,
     .cbdata = NULL,
 };
-deuce_ssh_dh_gex_set_provider(&sess, &prov);
+dssh_dh_gex_set_provider(sess, &prov);
 ```
 
 ## Key Management
@@ -575,7 +528,7 @@ ssh_ed25519_load_key_file("/etc/ssh/host_ed25519",
     my_pw_cb, "passphrase");
 
 /* Get public key string at runtime */
-ssize_t len = ssh_ed25519_get_pub_str(NULL, 0);
+int64_t len = ssh_ed25519_get_pub_str(NULL, 0);
 char *pub = malloc(len);
 ssh_ed25519_get_pub_str(pub, len);  /* "ssh-ed25519 AAAA..." */
 ```
@@ -588,47 +541,47 @@ ssh_ed25519_get_pub_str(pub, len);  /* "ssh-ed25519 AAAA..." */
 streams (stdin/stdout/stderr), signal synchronization, exit status:
 
 ```c
-/* Open */
-deuce_ssh_session_open_shell(&sess, &ch, &pty);  /* or open_exec */
+/* Open (returns opaque channel handle, NULL on failure) */
+dssh_channel ch = dssh_session_open_shell(sess, &pty);
 
 /* I/O */
-deuce_ssh_session_poll(&sess, &ch, events, timeout_ms);
-deuce_ssh_session_read(&sess, &ch, buf, bufsz);       /* stdout */
-deuce_ssh_session_read_ext(&sess, &ch, buf, bufsz);   /* stderr */
-deuce_ssh_session_write(&sess, &ch, buf, bufsz);      /* stdin */
-deuce_ssh_session_write_ext(&sess, &ch, buf, bufsz);  /* stderr out */
-deuce_ssh_session_read_signal(&sess, &ch, &name);     /* signals */
-deuce_ssh_session_send_signal(&sess, &ch, "INT");     /* send signal */
+dssh_session_poll(sess, ch, events, timeout_ms);
+dssh_session_read(sess, ch, buf, bufsz);       /* stdout */
+dssh_session_read_ext(sess, ch, buf, bufsz);   /* stderr */
+dssh_session_write(sess, ch, buf, bufsz);      /* stdin */
+dssh_session_write_ext(sess, ch, buf, bufsz);  /* stderr out */
+dssh_session_read_signal(sess, ch, &name);     /* signals */
+dssh_session_send_signal(sess, ch, "INT");     /* send signal */
 
 /* Close (sends exit-status + EOF + CLOSE) */
-deuce_ssh_session_close(&sess, &ch, exit_code);
+dssh_session_close(sess, ch, exit_code);
 ```
 
 **Raw channels** (subsystems) — message-based, bidirectional, no
 partial reads or writes:
 
 ```c
-/* Open */
-deuce_ssh_channel_open_subsystem(&sess, &ch, "sftp");
+/* Open (returns opaque channel handle, NULL on failure) */
+dssh_channel ch = dssh_channel_open_subsystem(sess, "sftp");
 
 /* I/O */
-deuce_ssh_channel_poll(&sess, &ch, events, timeout_ms);
-len = deuce_ssh_channel_read(&sess, &ch, NULL, 0);   /* peek size */
-deuce_ssh_channel_read(&sess, &ch, buf, bufsz);      /* read msg */
-deuce_ssh_channel_write(&sess, &ch, buf, len);        /* write msg */
+dssh_channel_poll(sess, ch, events, timeout_ms);
+len = dssh_channel_read(sess, ch, NULL, 0);   /* peek size */
+dssh_channel_read(sess, ch, buf, bufsz);      /* read msg */
+dssh_channel_write(sess, ch, buf, len);        /* write msg */
 
 /* Close (sends EOF + CLOSE) */
-deuce_ssh_channel_close(&sess, &ch);
+dssh_channel_close(sess, ch);
 ```
 
 ### Poll events
 
 | Flag | Meaning |
 |------|---------|
-| `DEUCE_SSH_POLL_READ` | stdout data (session) or message (raw) available, or EOF |
-| `DEUCE_SSH_POLL_READEXT` | stderr data available, or EOF (session only) |
-| `DEUCE_SSH_POLL_WRITE` | send window has space |
-| `DEUCE_SSH_POLL_SIGNAL` | signal ready — both streams drained to mark (session only) |
+| `DSSH_POLL_READ` | stdout data (session) or message (raw) available, or EOF |
+| `DSSH_POLL_READEXT` | stderr data available, or EOF (session only) |
+| `DSSH_POLL_WRITE` | send window has space |
+| `DSSH_POLL_SIGNAL` | signal ready — both streams drained to mark (session only) |
 
 A read that returns 0 means EOF or closed.
 
@@ -656,7 +609,7 @@ Writes are blocked after `close_received`.
 
 ### Demux thread
 
-`deuce_ssh_session_start()` launches a single demux thread that reads
+`dssh_session_start()` launches a single demux thread that reads
 all incoming packets and dispatches them to per-channel buffers.  The
 demux thread also handles:
 
@@ -670,7 +623,7 @@ demux thread also handles:
 - Data after peer EOF/CLOSE — discarded
 - Rekeying, global requests, IGNORE/DEBUG/UNIMPLEMENTED — transparent
 
-`deuce_ssh_session_stop()` terminates the demux thread and frees all
+`dssh_session_stop()` terminates the demux thread and frees all
 channel resources.  Called automatically by `session_cleanup()`.
 
 ## Thread Safety
@@ -697,58 +650,43 @@ any of these thresholds is exceeded:
 
 | Threshold | Default | Constant |
 |-----------|---------|----------|
-| Packets per key | 2^28 (~268M) | `DEUCE_SSH_REKEY_SOFT_LIMIT` |
-| Bytes per key | 1 GiB | `DEUCE_SSH_REKEY_BYTES` |
-| Time per key | 1 hour | `DEUCE_SSH_REKEY_SECONDS` |
+| Packets per key | 2^28 (~268M) | `DSSH_REKEY_SOFT_LIMIT` |
+| Bytes per key | 1 GiB | `DSSH_REKEY_BYTES` |
+| Time per key | 1 hour | `DSSH_REKEY_SECONDS` |
 
 Auto-rekey is triggered transparently by the demux thread.  Peer-
 initiated rekey (incoming `SSH_MSG_KEXINIT`) is also handled
 transparently.  The application does not need to do anything.
 
 For send-only sessions without a receive thread, a hard packet limit
-(2^31) returns `DEUCE_SSH_ERROR_REKEY_NEEDED`.
+(2^31) returns `DSSH_ERROR_REKEY_NEEDED`.
 
 ## Optional Callbacks
 
-Set these on the session struct before or after init:
+Set these on the session after init, before handshake:
 
 ```c
-/* SSH_MSG_DEBUG notification */
-sess.debug_cb = my_debug_handler;
-sess.debug_cbdata = my_context;
-
-/* SSH_MSG_UNIMPLEMENTED notification */
-sess.unimplemented_cb = my_unimpl_handler;
-sess.unimplemented_cbdata = my_context;
-
-/* SSH_MSG_USERAUTH_BANNER (client-side, during authentication) */
-sess.banner_cb = (void *)my_banner_handler;
-sess.banner_cbdata = my_context;
-
-/* SSH_MSG_GLOBAL_REQUEST (RFC 4254 s4) — escape hatch for
- * application-specific global requests.  By default, all global
- * requests are consumed by the library and answered with
- * REQUEST_FAILURE.  If set, the callback can return >= 0 to
- * send REQUEST_SUCCESS instead. */
-sess.global_request_cb = (void *)my_global_req_handler;
-sess.global_request_cbdata = my_context;
+dssh_session_set_debug_cb(sess, my_debug_handler, my_context);
+dssh_session_set_unimplemented_cb(sess, my_unimpl_handler, my_context);
+dssh_session_set_banner_cb(sess, my_banner_handler, my_context);
+dssh_session_set_global_request_cb(sess, my_global_req_handler, my_context);
 ```
 
 ## Error Handling
 
-All functions return 0 on success, negative `DEUCE_SSH_ERROR_*` codes
+All functions return 0 on success, negative `DSSH_ERROR_*` codes
 on failure.  The transport layer sends `SSH_MSG_DISCONNECT` on
 protocol errors (negotiation failure, MAC mismatch) before returning.
 
 Received `SSH_MSG_DISCONNECT` from the peer returns
-`DEUCE_SSH_ERROR_TERMINATED`.  Transport messages (`IGNORE`, `DEBUG`,
+`DSSH_ERROR_TERMINATED`.  Transport messages (`IGNORE`, `DEBUG`,
 `UNIMPLEMENTED`), global requests (`GLOBAL_REQUEST`), and peer-
 initiated rekey (`KEXINIT`) are handled transparently by the library
 and never returned to the caller.
 
 ## Packet Buffer Size
 
-`deuce_ssh_session_init()` takes a `max_packet_size` parameter that
+`dssh_session_init()` takes a `max_packet_size` parameter that
 controls the per-session packet buffer allocation.  Pass 0 for the
 RFC minimum (33280 bytes), which accommodates the RFC-required
 32768-byte uncompressed payload with room for headers and padding.
@@ -756,12 +694,23 @@ Pass a larger value to support bigger payloads.
 
 ## Files
 
+Public headers (consumers include these):
 ```
-deucessh.h          Main header (session, errors, callbacks)
-ssh-arch.h/.c       RFC 4251 data types (parse/serialize)
+deucessh.h               Core: errors, session lifecycle, transport queries
+deucessh-auth.h          Authentication (client + server)
+deucessh-conn.h          Connection: channels, poll/read/write
+deucessh-algorithms.h    Algorithm registration + key management
+deucessh-portable.h      Visibility macros (included automatically)
+deucessh-arch.h          Wire data types (included automatically)
+```
+
+Internal headers + sources:
+```
+ssh-internal.h      Session + channel struct definitions
 ssh-trans.h/.c      RFC 4253 transport (packets, KEX, keys)
-ssh-auth.h/.c       RFC 4252 authentication (client and server)
-ssh-conn.h/.c       RFC 4254 connection (channels)
+ssh-auth.c          RFC 4252 authentication
+ssh-conn.c          RFC 4254 connection
+ssh-chan.h/.c       Buffer primitives (bytebuf, msgqueue, signals)
 ssh.c               Session lifecycle
 
 kex/                Key exchange modules
@@ -770,6 +719,6 @@ enc/                Encryption modules
 mac/                MAC modules
 comp/               Compression modules
 
-client.c            Example client with two-threaded I/O
-server.c            Example server with ping/pong exec
+client.c            Example client
+server.c            Example server
 ```

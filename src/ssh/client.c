@@ -18,20 +18,12 @@
 #include <unistd.h>
 
 #include "deucessh.h"
-#include "ssh-auth.h"
-#include "ssh-conn.h"
-#include "kex/curve25519-sha256.h"
-#include "kex/dh-gex-sha256.h"
-#include "key_algo/ssh-ed25519.h"
-#include "key_algo/rsa-sha2-256.h"
-#include "enc/none.h"
-#include "enc/aes256-ctr.h"
-#include "mac/none.h"
-#include "mac/hmac-sha2-256.h"
-#include "comp/none.h"
+#include "deucessh-auth.h"
+#include "deucessh-conn.h"
+#include "deucessh-algorithms.h"
 
 static int sock = -1;
-struct deuce_ssh_session_s sess;
+static dssh_session sess;
 
 /* ================================================================
  * Keyboard-interactive callback: answer every prompt with password
@@ -53,7 +45,7 @@ kbi_prompt(const uint8_t *name, size_t name_len,
 		if (responses[i] == NULL) {
 			for (uint32_t j = 0; j < i; j++)
 				free(responses[j]);
-			return DEUCE_SSH_ERROR_ALLOC;
+			return DSSH_ERROR_ALLOC;
 		}
 		memcpy(responses[i], password, plen);
 		response_lens[i] = plen;
@@ -66,10 +58,10 @@ kbi_prompt(const uint8_t *name, size_t name_len,
  * ================================================================ */
 
 static int
-tx(uint8_t *buf, size_t bufsz, atomic_bool *terminate, void *cbdata)
+tx(uint8_t *buf, size_t bufsz, dssh_session s, void *cbdata)
 {
 	size_t sent_total = 0;
-	while (sent_total < bufsz && !(*terminate)) {
+	while (sent_total < bufsz && !dssh_session_is_terminated(s)) {
 		struct pollfd fd = {
 			.fd = sock,
 			.events = POLLOUT,
@@ -77,11 +69,11 @@ tx(uint8_t *buf, size_t bufsz, atomic_bool *terminate, void *cbdata)
 		};
 		int pr = poll(&fd, 1, 5000);
 		if (pr < 0)
-			return DEUCE_SSH_ERROR_INIT;
+			return DSSH_ERROR_INIT;
 		if (pr == 0)
 			continue;
 		if (fd.revents & (POLLHUP | POLLERR))
-			return DEUCE_SSH_ERROR_INIT;
+			return DSSH_ERROR_INIT;
 		ssize_t n = send(sock, &buf[sent_total], bufsz - sent_total, 0);
 		if (n > 0) {
 			sent_total += n;
@@ -89,17 +81,17 @@ tx(uint8_t *buf, size_t bufsz, atomic_bool *terminate, void *cbdata)
 		else if (n < 0) {
 			if (errno == EAGAIN || errno == EINTR)
 				continue;
-			return DEUCE_SSH_ERROR_INIT;
+			return DSSH_ERROR_INIT;
 		}
 	}
 	return 0;
 }
 
 static int
-rx(uint8_t *buf, size_t bufsz, atomic_bool *terminate, void *cbdata)
+rx(uint8_t *buf, size_t bufsz, dssh_session s, void *cbdata)
 {
 	size_t rxlen = 0;
-	while (rxlen < bufsz && !(*terminate)) {
+	while (rxlen < bufsz && !dssh_session_is_terminated(s)) {
 		struct pollfd fd = {
 			.fd = sock,
 			.events = POLLIN,
@@ -107,22 +99,22 @@ rx(uint8_t *buf, size_t bufsz, atomic_bool *terminate, void *cbdata)
 		};
 		int pr = poll(&fd, 1, 5000);
 		if (pr < 0)
-			return DEUCE_SSH_ERROR_INIT;
+			return DSSH_ERROR_INIT;
 		if (pr == 0)
 			continue;
 		if (fd.revents & (POLLHUP | POLLERR) && !(fd.revents & POLLIN))
-			return DEUCE_SSH_ERROR_INIT;
+			return DSSH_ERROR_INIT;
 		ssize_t n = recv(sock, &buf[rxlen], bufsz - rxlen, 0);
 		if (n > 0) {
 			rxlen += n;
 		}
 		else if (n == 0) {
-			return DEUCE_SSH_ERROR_INIT;
+			return DSSH_ERROR_INIT;
 		}
 		else {
 			if (errno == EAGAIN || errno == EINTR)
 				continue;
-			return DEUCE_SSH_ERROR_INIT;
+			return DSSH_ERROR_INIT;
 		}
 	}
 	return 0;
@@ -130,13 +122,13 @@ rx(uint8_t *buf, size_t bufsz, atomic_bool *terminate, void *cbdata)
 
 static int
 rxline(uint8_t *buf, size_t bufsz, size_t *bytes_received,
-    atomic_bool *terminate, void *cbdata)
+    dssh_session s, void *cbdata)
 {
 	size_t pos = 0;
 	bool lastcr = false;
 
-	while (!(*terminate)) {
-		int res = rx(&buf[pos], 1, terminate, cbdata);
+	while (!dssh_session_is_terminated(s)) {
+		int res = rx(&buf[pos], 1, s, cbdata);
 		if (res < 0)
 			return res;
 		if (buf[pos] == '\r')
@@ -148,9 +140,9 @@ rxline(uint8_t *buf, size_t bufsz, size_t *bytes_received,
 		if (pos + 1 < bufsz)
 			pos++;
 		else
-			return DEUCE_SSH_ERROR_TOOLONG;
+			return DSSH_ERROR_TOOLONG;
 	}
-	return DEUCE_SSH_ERROR_TERMINATED;
+	return DSSH_ERROR_TERMINATED;
 }
 
 static int
@@ -167,7 +159,7 @@ extra_line(uint8_t *buf, size_t bufsz, void *cbdata)
 static int
 stdin_thread(void *arg)
 {
-	struct deuce_ssh_channel_s *ch = arg;
+	dssh_channel ch = arg;
 	uint8_t buf[4096];
 
 	for (;;) {
@@ -176,7 +168,7 @@ stdin_thread(void *arg)
 			{ .fd = STDIN_FILENO, .events = POLLIN },
 		};
 		int pr = poll(fds, 1, 1000);
-		if (sess.terminate)
+		if (dssh_session_is_terminated(sess))
 			break;
 		if (pr <= 0)
 			continue;
@@ -187,13 +179,13 @@ stdin_thread(void *arg)
 
 		/* Wait for channel write space, then send */
 		while (n > 0) {
-			int ev = deuce_ssh_session_poll(&sess, ch,
-			    DEUCE_SSH_POLL_WRITE, 1000);
-			if (ev < 0 || sess.terminate)
+			int ev = dssh_session_poll(sess, ch,
+			    DSSH_POLL_WRITE, 1000);
+			if (ev < 0 || dssh_session_is_terminated(sess))
 				goto done;
-			if (!(ev & DEUCE_SSH_POLL_WRITE))
+			if (!(ev & DSSH_POLL_WRITE))
 				continue;
-			ssize_t w = deuce_ssh_session_write(&sess, ch, buf, n);
+			ssize_t w = dssh_session_write(sess, ch, buf, n);
 			if (w < 0)
 				goto done;
 			n -= w;
@@ -256,7 +248,7 @@ main(int argc, char **argv)
 	fprintf(stderr, "Connected to %s:%d\n", host, port);
 
 	/* Register algorithms */
-	if (deuce_ssh_transport_set_callbacks(tx, rx, rxline, extra_line) != 0)
+	if (dssh_transport_set_callbacks(tx, rx, rxline, extra_line) != 0)
 		return 1;
 	if (register_curve25519_sha256() != 0) return 1;
 	if (register_dh_gex_sha256() != 0) return 1;
@@ -269,28 +261,26 @@ main(int argc, char **argv)
 	if (register_none_comp() != 0) return 1;
 
 	/* Initialize session */
-	memset(&sess, 0, sizeof(sess));
-	sess.trans.client = true;
-	int res = deuce_ssh_session_init(&sess, 0);
-	if (res < 0) {
-		fprintf(stderr, "session_init failed: %d\n", res);
+	sess = dssh_session_init(true, 0);
+	if (sess == NULL) {
+		fprintf(stderr, "session_init failed\n");
 		return 1;
 	}
 
 	/* Handshake */
 	fprintf(stderr, "Handshake...\n");
-	res = deuce_ssh_transport_handshake(&sess);
+	int res = dssh_transport_handshake(sess);
 	if (res < 0) { fprintf(stderr, "handshake failed: %d\n", res); return 1; }
-	fprintf(stderr, "Remote: %s\n", deuce_ssh_transport_get_remote_version(&sess));
+	fprintf(stderr, "Remote: %s\n", dssh_transport_get_remote_version(sess));
 	fprintf(stderr, "KEX: %s, Host key: %s, Enc: %s, MAC: %s\n",
-	    deuce_ssh_transport_get_kex_name(&sess),
-	    deuce_ssh_transport_get_hostkey_name(&sess),
-	    deuce_ssh_transport_get_enc_name(&sess),
-	    deuce_ssh_transport_get_mac_name(&sess));
+	    dssh_transport_get_kex_name(sess),
+	    dssh_transport_get_hostkey_name(sess),
+	    dssh_transport_get_enc_name(sess),
+	    dssh_transport_get_mac_name(sess));
 
 	/* Authenticate */
 	char methods[256];
-	res = deuce_ssh_auth_get_methods(&sess, username, methods, sizeof(methods));
+	res = dssh_auth_get_methods(sess, username, methods, sizeof(methods));
 	if (res < 0) { fprintf(stderr, "auth method query failed: %d\n", res); return 1; }
 	if (res == 0) {
 		fprintf(stderr, "No authentication required.\n");
@@ -299,77 +289,77 @@ main(int argc, char **argv)
 		fprintf(stderr, "Auth methods: %s\n", methods);
 		res = -1;
 		if (strstr(methods, "password"))
-			res = deuce_ssh_auth_password(&sess, username, password, NULL, NULL);
+			res = dssh_auth_password(sess, username, password, NULL, NULL);
 		if (res < 0 && strstr(methods, "keyboard-interactive"))
-			res = deuce_ssh_auth_keyboard_interactive(&sess, username, kbi_prompt, (void *)password);
+			res = dssh_auth_keyboard_interactive(sess, username, kbi_prompt, (void *)password);
 		if (res < 0) { fprintf(stderr, "authentication failed: %d\n", res); return 1; }
 		fprintf(stderr, "Authenticated.\n");
 	}
 
 	/* Start the demux thread */
-	res = deuce_ssh_session_start(&sess);
+	res = dssh_session_start(sess);
 	if (res < 0) { fprintf(stderr, "session_start failed: %d\n", res); return 1; }
 
 	/* Open channel */
-	struct deuce_ssh_channel_s ch;
+	dssh_channel ch;
 	if (command != NULL) {
 		fprintf(stderr, "Executing: %s\n", command);
-		res = deuce_ssh_session_open_exec(&sess, &ch, command);
+		ch = dssh_session_open_exec(sess, command);
 	}
 	else {
 		fprintf(stderr, "Opening shell...\n");
-		struct deuce_ssh_pty_req pty = {
+		struct dssh_pty_req pty = {
 			.term = "xterm-256color",
 			.cols = 80, .rows = 24,
 			.wpx = 0, .hpx = 0,
 		};
-		res = deuce_ssh_session_open_shell(&sess, &ch, &pty);
+		ch = dssh_session_open_shell(sess, &pty);
 	}
-	if (res < 0) { fprintf(stderr, "channel open failed: %d\n", res); return 1; }
+	if (ch == NULL) { fprintf(stderr, "channel open failed\n"); return 1; }
 
 	/* Interactive mode: spawn a stdin writer thread */
 	thrd_t writer;
 	bool have_writer = false;
 	if (command == NULL) {
-		if (thrd_create(&writer, stdin_thread, &ch) == thrd_success)
+		if (thrd_create(&writer, stdin_thread, ch) == thrd_success)
 			have_writer = true;
 	}
 
 	/* Read stdout/stderr/signals via poll */
 	uint8_t buf[4096];
-	int poll_events = DEUCE_SSH_POLL_READ | DEUCE_SSH_POLL_READEXT |
-	    DEUCE_SSH_POLL_SIGNAL;
+	int poll_events = DSSH_POLL_READ | DSSH_POLL_READEXT |
+	    DSSH_POLL_SIGNAL;
 	for (;;) {
-		int ev = deuce_ssh_session_poll(&sess, &ch, poll_events, -1);
+		int ev = dssh_session_poll(sess, ch, poll_events, -1);
 		if (ev <= 0)
 			break;
 
-		if (ev & DEUCE_SSH_POLL_READ) {
-			ssize_t n = deuce_ssh_session_read(&sess, &ch, buf, sizeof(buf));
+		if (ev & DSSH_POLL_READ) {
+			ssize_t n = dssh_session_read(sess, ch, buf, sizeof(buf));
 			if (n <= 0)
 				break;
 			write(STDOUT_FILENO, buf, n);
 		}
-		if (ev & DEUCE_SSH_POLL_READEXT) {
-			ssize_t n = deuce_ssh_session_read_ext(&sess, &ch, buf, sizeof(buf));
+		if (ev & DSSH_POLL_READEXT) {
+			ssize_t n = dssh_session_read_ext(sess, ch, buf, sizeof(buf));
 			if (n > 0)
 				write(STDERR_FILENO, buf, n);
 		}
-		if (ev & DEUCE_SSH_POLL_SIGNAL) {
+		if (ev & DSSH_POLL_SIGNAL) {
 			const char *signame;
-			if (deuce_ssh_session_read_signal(&sess, &ch, &signame) == 0)
+			if (dssh_session_read_signal(sess, ch, &signame) == 0)
 				fprintf(stderr, "[signal: SIG%s]\n", signame);
 		}
 	}
 
 	/* Clean up */
 	if (have_writer) {
-		sess.terminate = true;
+		dssh_session_terminate(sess);
 		int wr;
 		thrd_join(writer, &wr);
 	}
-	deuce_ssh_session_close(&sess, &ch, 0);
-	deuce_ssh_session_cleanup(&sess);
+	dssh_session_close(sess, ch, 0);
+	dssh_session_cleanup(sess);
 	close(sock);
 	return 0;
 }

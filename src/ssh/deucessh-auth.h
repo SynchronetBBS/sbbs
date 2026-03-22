@@ -1,7 +1,7 @@
 // RFC 4252: SSH Authentication Protocol
 
-#ifndef DEUCE_SSH_AUTH_H
-#define DEUCE_SSH_AUTH_H
+#ifndef DSSH_AUTH_H
+#define DSSH_AUTH_H
 
 #include "deucessh.h"
 
@@ -37,7 +37,7 @@ extern "C" {
  *
  * Return 0 to continue authentication, negative to abort.
  */
-typedef int (*deuce_ssh_auth_kbi_prompt_cb)(
+typedef int (*dssh_auth_kbi_prompt_cb)(
     const uint8_t *name, size_t name_len,
     const uint8_t *instruction, size_t instruction_len,
     uint32_t num_prompts,
@@ -52,7 +52,7 @@ typedef int (*deuce_ssh_auth_kbi_prompt_cb)(
  * message/message_len: the banner text (UTF-8, not NUL-terminated).
  * language/language_len: the language tag (may be empty).
  */
-typedef void (*deuce_ssh_auth_banner_cb)(
+typedef void (*dssh_auth_banner_cb)(
     const uint8_t *message, size_t message_len,
     const uint8_t *language, size_t language_len,
     void *cbdata);
@@ -66,7 +66,7 @@ typedef void (*deuce_ssh_auth_banner_cb)(
  *       (e.g., "publickey,password,keyboard-interactive")
  *   <0 = error
  */
-DEUCE_SSH_PUBLIC int deuce_ssh_auth_get_methods(deuce_ssh_session sess,
+DSSH_PUBLIC int dssh_auth_get_methods(dssh_session sess,
     const char *username, char *methods, size_t methods_sz);
 
 /*
@@ -83,7 +83,7 @@ DEUCE_SSH_PUBLIC int deuce_ssh_auth_get_methods(deuce_ssh_session sess,
  *
  * Return 0 to send the new password, negative to abort authentication.
  */
-typedef int (*deuce_ssh_auth_passwd_change_cb)(
+typedef int (*dssh_auth_passwd_change_cb)(
     const uint8_t *prompt, size_t prompt_len,
     const uint8_t *language, size_t language_len,
     uint8_t **new_password, size_t *new_password_len,
@@ -94,12 +94,12 @@ typedef int (*deuce_ssh_auth_passwd_change_cb)(
  * If passwd_change_cb is not NULL and the server requests a password
  * change, the callback is invoked to get the new password.
  * If passwd_change_cb is NULL and the server requests a change,
- * authentication fails with DEUCE_SSH_ERROR_INIT.
+ * authentication fails with DSSH_ERROR_INIT.
  * Returns 0 on success, negative on failure or rejection.
  */
-DEUCE_SSH_PUBLIC int deuce_ssh_auth_password(deuce_ssh_session sess,
+DSSH_PUBLIC int dssh_auth_password(dssh_session sess,
     const char *username, const char *password,
-    deuce_ssh_auth_passwd_change_cb passwd_change_cb, void *passwd_change_cbdata);
+    dssh_auth_passwd_change_cb passwd_change_cb, void *passwd_change_cbdata);
 
 /*
  * Authenticate via keyboard-interactive (RFC 4256).
@@ -107,8 +107,8 @@ DEUCE_SSH_PUBLIC int deuce_ssh_auth_password(deuce_ssh_session sess,
  * name, instruction, and prompts.  The callback provides responses.
  * Returns 0 on success, negative on failure or rejection.
  */
-DEUCE_SSH_PUBLIC int deuce_ssh_auth_keyboard_interactive(deuce_ssh_session sess,
-    const char *username, deuce_ssh_auth_kbi_prompt_cb prompt_cb,
+DSSH_PUBLIC int dssh_auth_keyboard_interactive(dssh_session sess,
+    const char *username, dssh_auth_kbi_prompt_cb prompt_cb,
     void *cbdata);
 
 /* ================================================================
@@ -119,22 +119,22 @@ DEUCE_SSH_PUBLIC int deuce_ssh_auth_keyboard_interactive(deuce_ssh_session sess,
  * Server auth callback results.
  * Return from the verify callbacks to indicate the outcome.
  */
-#define DEUCE_SSH_AUTH_SUCCESS          0   /* User authenticated */
-#define DEUCE_SSH_AUTH_FAILURE         -1   /* Wrong credentials */
-#define DEUCE_SSH_AUTH_PARTIAL          1   /* Succeeded, but more auth needed */
-#define DEUCE_SSH_AUTH_CHANGE_PASSWORD  2   /* Password expired (password method only) */
+#define DSSH_AUTH_SUCCESS          0   /* User authenticated */
+#define DSSH_AUTH_FAILURE         -1   /* Wrong credentials */
+#define DSSH_AUTH_PARTIAL          1   /* Succeeded, but more auth needed */
+#define DSSH_AUTH_CHANGE_PASSWORD  2   /* Password expired (password method only) */
 
 /*
  * Server-side password verification callback.
- * Return DEUCE_SSH_AUTH_SUCCESS, DEUCE_SSH_AUTH_FAILURE,
- * DEUCE_SSH_AUTH_PARTIAL, or DEUCE_SSH_AUTH_CHANGE_PASSWORD.
+ * Return DSSH_AUTH_SUCCESS, DSSH_AUTH_FAILURE,
+ * DSSH_AUTH_PARTIAL, or DSSH_AUTH_CHANGE_PASSWORD.
  *
- * When DEUCE_SSH_AUTH_CHANGE_PASSWORD is returned, set
+ * When DSSH_AUTH_CHANGE_PASSWORD is returned, set
  * *change_prompt to a malloc'd prompt string (the library frees it).
  * The library will send PASSWD_CHANGEREQ and call passwd_change_cb
  * (below) when the client responds.
  */
-typedef int (*deuce_ssh_auth_server_password_cb)(
+typedef int (*dssh_auth_server_password_cb)(
     const uint8_t *username, size_t username_len,
     const uint8_t *password, size_t password_len,
     uint8_t **change_prompt, size_t *change_prompt_len,
@@ -144,10 +144,10 @@ typedef int (*deuce_ssh_auth_server_password_cb)(
  * Server-side password change callback.
  * Called when the client sends a password change request (boolean TRUE).
  * Validate the old password and set the new one.
- * Return DEUCE_SSH_AUTH_SUCCESS, DEUCE_SSH_AUTH_FAILURE, or
- * DEUCE_SSH_AUTH_CHANGE_PASSWORD (to re-prompt).
+ * Return DSSH_AUTH_SUCCESS, DSSH_AUTH_FAILURE, or
+ * DSSH_AUTH_CHANGE_PASSWORD (to re-prompt).
  */
-typedef int (*deuce_ssh_auth_server_passwd_change_cb)(
+typedef int (*dssh_auth_server_passwd_change_cb)(
     const uint8_t *username, size_t username_len,
     const uint8_t *old_password, size_t old_password_len,
     const uint8_t *new_password, size_t new_password_len,
@@ -157,8 +157,8 @@ typedef int (*deuce_ssh_auth_server_passwd_change_cb)(
 /*
  * Server-side public key verification callback.
  * Verify that the given public key is authorized for the user.
- * Return DEUCE_SSH_AUTH_SUCCESS if the key is acceptable,
- * DEUCE_SSH_AUTH_FAILURE if not, DEUCE_SSH_AUTH_PARTIAL if more
+ * Return DSSH_AUTH_SUCCESS if the key is acceptable,
+ * DSSH_AUTH_FAILURE if not, DSSH_AUTH_PARTIAL if more
  * auth is needed.
  *
  * When has_signature is false, this is a key probe (PK_OK query) —
@@ -168,7 +168,7 @@ typedef int (*deuce_ssh_auth_server_passwd_change_cb)(
  * When has_signature is true, the library has already verified the
  * signature.  This callback only needs to check authorization.
  */
-typedef int (*deuce_ssh_auth_server_publickey_cb)(
+typedef int (*dssh_auth_server_publickey_cb)(
     const uint8_t *username, size_t username_len,
     const char *algo_name,
     const uint8_t *pubkey_blob, size_t pubkey_blob_len,
@@ -177,10 +177,10 @@ typedef int (*deuce_ssh_auth_server_publickey_cb)(
 
 /*
  * Server-side "none" auth callback.
- * Return DEUCE_SSH_AUTH_SUCCESS to grant access without credentials.
- * Return DEUCE_SSH_AUTH_FAILURE to require authentication.
+ * Return DSSH_AUTH_SUCCESS to grant access without credentials.
+ * Return DSSH_AUTH_FAILURE to require authentication.
  */
-typedef int (*deuce_ssh_auth_server_none_cb)(
+typedef int (*dssh_auth_server_none_cb)(
     const uint8_t *username, size_t username_len,
     void *cbdata);
 
@@ -190,12 +190,12 @@ typedef int (*deuce_ssh_auth_server_none_cb)(
  * methods_str is a comma-separated list of supported method names
  * (e.g., "publickey,password") sent in FAILURE responses.
  */
-struct deuce_ssh_auth_server_cbs {
+struct dssh_auth_server_cbs {
 	const char *methods_str;
-	deuce_ssh_auth_server_none_cb none_cb;
-	deuce_ssh_auth_server_password_cb password_cb;
-	deuce_ssh_auth_server_passwd_change_cb passwd_change_cb;
-	deuce_ssh_auth_server_publickey_cb publickey_cb;
+	dssh_auth_server_none_cb none_cb;
+	dssh_auth_server_password_cb password_cb;
+	dssh_auth_server_passwd_change_cb passwd_change_cb;
+	dssh_auth_server_publickey_cb publickey_cb;
 	void *cbdata;
 };
 
@@ -212,8 +212,8 @@ struct deuce_ssh_auth_server_cbs {
  *
  * Returns 0 on successful authentication.
  */
-DEUCE_SSH_PUBLIC int deuce_ssh_auth_server(deuce_ssh_session sess,
-    const struct deuce_ssh_auth_server_cbs *cbs,
+DSSH_PUBLIC int dssh_auth_server(dssh_session sess,
+    const struct dssh_auth_server_cbs *cbs,
     uint8_t *username_out, size_t *username_out_len);
 
 /* ================================================================
@@ -228,7 +228,7 @@ DEUCE_SSH_PUBLIC int deuce_ssh_auth_server(deuce_ssh_session sess,
  * loaded (e.g., "ssh-ed25519", "rsa-sha2-256").
  * Returns 0 on success, negative on failure or rejection.
  */
-DEUCE_SSH_PUBLIC int deuce_ssh_auth_publickey(deuce_ssh_session sess,
+DSSH_PUBLIC int dssh_auth_publickey(dssh_session sess,
     const char *username, const char *algo_name);
 
 #ifdef __cplusplus

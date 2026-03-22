@@ -34,18 +34,18 @@ unless noted otherwise.
 - [x] Thread lifetime audit: all mtx/cnd/thrd properly init'd, joined, destroyed
 - [x] Static buffer elimination (per-channel storage)
 
-Note: both `deuce_ssh_session_channel` and `deuce_ssh_raw_channel`
-use the same `struct deuce_ssh_channel_s` with `chan_type` discriminator.
+Note: both `dssh_session_channel` and `dssh_raw_channel`
+use the same `struct dssh_channel_s` with `chan_type` discriminator.
 
 ## Object Model
 
 ```
-deuce_ssh_session
+dssh_session
   ├── owns the demux thread (reads all packets, dispatches to channels)
   ├── channel listener (accept incoming CHANNEL_OPEN from peer)
   ├── can open outgoing channels (session or raw)
   │
-  ├── deuce_ssh_session_channel  ("popen" — shell/exec)
+  ├── dssh_session_channel  ("popen" — shell/exec)
   │     ├── read()      — stdout
   │     ├── read_ext()  — stderr
   │     ├── write()     — stdin
@@ -53,7 +53,7 @@ deuce_ssh_session
   │     ├── read_signal()
   │     └── close()     — sends exit-status + EOF + CLOSE
   │
-  └── deuce_ssh_raw_channel  ("socket" — subsystem)
+  └── dssh_raw_channel  ("socket" — subsystem)
         ├── read()
         ├── write()
         ├── poll()      — readiness for read/write
@@ -66,40 +66,39 @@ deuce_ssh_session
 
 ```c
 /* 1. Transport setup (unchanged) */
-deuce_ssh_transport_set_callbacks(tx, rx, rxline, NULL);
+dssh_transport_set_callbacks(tx, rx, rxline, NULL);
 register_curve25519_sha256();
 /* ... register algorithms ... */
 
-struct deuce_ssh_session_s sess;
-memset(&sess, 0, sizeof(sess));
+dssh_session sess;
 sess.trans.client = true;
-deuce_ssh_session_init(&sess);
+dssh_session_init(sess);
 
 /* 2. Handshake + auth */
-deuce_ssh_transport_handshake(&sess);
-deuce_ssh_auth_password(&sess, user, pass, NULL, NULL);
+dssh_transport_handshake(sess);
+dssh_auth_password(sess, user, pass, NULL, NULL);
 
 /* 3. Start the demux thread */
-deuce_ssh_session_start(&sess);
+dssh_session_start(sess);
 
 /* 4. Open a session channel (shell with pty) */
-struct deuce_ssh_pty_req pty = {
+struct dssh_pty_req pty = {
     .term = "xterm-256color",
     .cols = 80, .rows = 24,
     .wpx = 0, .hpx = 0,
 };
-struct deuce_ssh_session_channel_s sch;
-deuce_ssh_session_open_shell(&sess, &sch, &pty);
+struct dssh_session_channel_s sch;
+dssh_session_open_shell(sess, sch, &pty);
 /* sch is now a "popen" — read/write/poll ready */
 
 /* 5. Open a raw channel (subsystem) */
-struct deuce_ssh_raw_channel_s rch;
-deuce_ssh_channel_open_subsystem(&sess, &rch, "sftp");
+struct dssh_raw_channel_s rch;
+dssh_channel_open_subsystem(sess, rch, "sftp");
 /* rch is now a "socket" — read/write/poll ready */
 
 /* 6. Accept incoming channels from server */
-struct deuce_ssh_incoming_channel inc;
-while (deuce_ssh_session_accept(&sess, &inc, timeout_ms) == 0) {
+struct dssh_incoming_channel inc;
+while (dssh_session_accept(sess, inc, timeout_ms) == 0) {
     /* inc.channel_type tells us what the server wants */
     /* accept or reject, get a raw_channel back */
 }
@@ -111,33 +110,33 @@ while (deuce_ssh_session_accept(&sess, &inc, timeout_ms) == 0) {
 /* 1-2. Transport setup + handshake (unchanged, server mode) */
 
 /* 3. Auth */
-deuce_ssh_auth_server(&sess, &auth_cbs, user, &user_len);
+dssh_auth_server(sess, &auth_cbs, user, &user_len);
 
 /* 4. Start the demux thread */
-deuce_ssh_session_start(&sess);
+dssh_session_start(sess);
 
 /* 5. Accept incoming channels from client */
-struct deuce_ssh_incoming_channel inc;
-while (deuce_ssh_session_accept(&sess, &inc, -1) == 0) {
+struct dssh_incoming_channel inc;
+while (dssh_session_accept(sess, inc, -1) == 0) {
     if (inc is session) {
         /* fires pty/env/shell/exec callbacks */
-        struct deuce_ssh_session_channel_s sch;
-        deuce_ssh_session_accept_channel(&sess, &inc, &sch, &cbs);
+        struct dssh_session_channel_s sch;
+        dssh_session_accept_channel(sess, inc, sch, &cbs);
         /* hand sch off to worker thread */
     }
     else if (inc is subsystem) {
-        struct deuce_ssh_raw_channel_s rch;
-        deuce_ssh_channel_accept_raw(&sess, &inc, &rch);
+        struct dssh_raw_channel_s rch;
+        dssh_channel_accept_raw(sess, inc, rch);
         /* hand rch off to worker thread */
     }
     else {
-        deuce_ssh_channel_reject(&sess, &inc, reason);
+        dssh_channel_reject(sess, inc, reason);
     }
 }
 
 /* 6. Server can also open channels TO the client */
-struct deuce_ssh_raw_channel_s upload_ch;
-deuce_ssh_channel_open_subsystem(&sess, &upload_ch, "file-upload");
+struct dssh_raw_channel_s upload_ch;
+dssh_channel_open_subsystem(sess, &upload_ch, "file-upload");
 ```
 
 ## Data Structures
@@ -145,7 +144,7 @@ deuce_ssh_channel_open_subsystem(&sess, &upload_ch, "file-upload");
 ### PTY request (client → server)
 
 ```c
-struct deuce_ssh_pty_req {
+struct dssh_pty_req {
     const char *term;
     uint32_t cols, rows;
     uint32_t wpx, hpx;
@@ -157,7 +156,7 @@ struct deuce_ssh_pty_req {
 ### Incoming channel (from accept)
 
 ```c
-struct deuce_ssh_incoming_channel {
+struct dssh_incoming_channel {
     uint32_t peer_channel;
     uint32_t peer_window;
     uint32_t peer_max_packet;
@@ -172,9 +171,9 @@ struct deuce_ssh_incoming_channel {
 ### Server session callbacks
 
 ```c
-struct deuce_ssh_server_session_cbs {
+struct dssh_server_session_cbs {
     /* Called for "pty-req" — return 0 to accept */
-    int (*pty_req)(const struct deuce_ssh_pty_req *pty, void *cbdata);
+    int (*pty_req)(const struct dssh_pty_req *pty, void *cbdata);
 
     /* Called for "env" — return 0 to accept this variable */
     int (*env)(const uint8_t *name, size_t name_len,
@@ -195,19 +194,19 @@ client wants, and you call the appropriate accept function.
 ## Poll Interface
 
 ```c
-#define DEUCE_SSH_POLL_READ    0x01  /* stdout data available (or EOF) */
-#define DEUCE_SSH_POLL_READEXT 0x02  /* stderr data available (or EOF) */
-#define DEUCE_SSH_POLL_WRITE   0x04  /* send window has space */
-#define DEUCE_SSH_POLL_SIGNAL  0x08  /* signal ready (both streams drained to mark) */
+#define DSSH_POLL_READ    0x01  /* stdout data available (or EOF) */
+#define DSSH_POLL_READEXT 0x02  /* stderr data available (or EOF) */
+#define DSSH_POLL_WRITE   0x04  /* send window has space */
+#define DSSH_POLL_SIGNAL  0x08  /* signal ready (both streams drained to mark) */
 
 /* Session channel poll — all four events */
-int deuce_ssh_session_poll(deuce_ssh_session sess,
-    struct deuce_ssh_session_channel_s *ch,
+int dssh_session_poll(dssh_session sess,
+    struct dssh_session_channel_s *ch,
     int events, int timeout_ms);
 
 /* Raw channel poll — READ and WRITE only */
-int deuce_ssh_channel_poll(deuce_ssh_session sess,
-    struct deuce_ssh_raw_channel_s *ch,
+int dssh_channel_poll(dssh_session sess,
+    struct dssh_raw_channel_s *ch,
     int events, int timeout_ms);
 ```
 
@@ -223,29 +222,29 @@ if it cares.
 
 ```c
 /* Returns bytes read, 0 for EOF/closed, negative for error */
-ssize_t deuce_ssh_session_read(deuce_ssh_session sess,
-    struct deuce_ssh_session_channel_s *ch,
+int64_t dssh_session_read(dssh_session sess,
+    struct dssh_session_channel_s *ch,
     uint8_t *buf, size_t bufsz);
 
-ssize_t deuce_ssh_session_read_ext(deuce_ssh_session sess,
-    struct deuce_ssh_session_channel_s *ch,
+int64_t dssh_session_read_ext(dssh_session sess,
+    struct dssh_session_channel_s *ch,
     uint8_t *buf, size_t bufsz);
 
 /* Returns bytes written (may be short), 0 if window full, negative for error.
  * Application should poll for WRITE before retrying. */
-ssize_t deuce_ssh_session_write(deuce_ssh_session sess,
-    struct deuce_ssh_session_channel_s *ch,
+int64_t dssh_session_write(dssh_session sess,
+    struct dssh_session_channel_s *ch,
     const uint8_t *buf, size_t bufsz);
 
 /* Consume the next signal.  Only callable when POLL_SIGNAL is ready.
  * Returns signal name (e.g., "INT", "TERM") — valid until next call. */
-int deuce_ssh_session_read_signal(deuce_ssh_session sess,
-    struct deuce_ssh_session_channel_s *ch,
+int dssh_session_read_signal(dssh_session sess,
+    struct dssh_session_channel_s *ch,
     const char **signal_name);
 
 /* Graceful close: exit-status + EOF + CLOSE */
-int deuce_ssh_session_close(deuce_ssh_session sess,
-    struct deuce_ssh_session_channel_s *ch,
+int dssh_session_close(dssh_session sess,
+    struct dssh_session_channel_s *ch,
     uint32_t exit_code);
 ```
 
@@ -259,41 +258,41 @@ No partial reads or writes.
 /* Returns message length, 0 for EOF/closed, negative for error.
  * Always returns a complete message.
  *
- * If bufsz is too small, returns DEUCE_SSH_ERROR_TOOLONG — the
+ * If bufsz is too small, returns DSSH_ERROR_TOOLONG — the
  * message remains queued and can be retried with a larger buffer.
  *
  * To query the size of the next message without consuming it,
  * pass buf=NULL, bufsz=0.  Returns the message length.
  *
  * POLL_READ means at least one complete message is queued. */
-ssize_t deuce_ssh_channel_read(deuce_ssh_session sess,
-    struct deuce_ssh_raw_channel_s *ch,
+int64_t dssh_channel_read(dssh_session sess,
+    struct dssh_raw_channel_s *ch,
     uint8_t *buf, size_t bufsz);
 
 /* Sends a complete message.  Returns 0 on success, negative on
  * error.  If the message exceeds the remote window or max packet
- * size, returns DEUCE_SSH_ERROR_TOOLONG — the application should
+ * size, returns DSSH_ERROR_TOOLONG — the application should
  * poll for WRITE and retry.  No partial sends.
  *
  * POLL_WRITE means the remote window is nonzero, but a write can
  * still fail if the specific message is larger than the available
  * window. */
-int deuce_ssh_channel_write(deuce_ssh_session sess,
-    struct deuce_ssh_raw_channel_s *ch,
+int dssh_channel_write(dssh_session sess,
+    struct dssh_raw_channel_s *ch,
     const uint8_t *buf, size_t len);
 
 /* Close: EOF + CLOSE */
-int deuce_ssh_channel_close(deuce_ssh_session sess,
-    struct deuce_ssh_raw_channel_s *ch);
+int dssh_channel_close(dssh_session sess,
+    struct dssh_raw_channel_s *ch);
 ```
 
 Typical peek-then-read pattern:
 
 ```c
-ssize_t len = deuce_ssh_channel_read(sess, &ch, NULL, 0);
+int64_t len = dssh_channel_read(sess, ch, NULL, 0);
 if (len > 0) {
     uint8_t *msg = malloc(len);
-    deuce_ssh_channel_read(sess, &ch, msg, len);
+    dssh_channel_read(sess, ch, msg, len);
     process(msg, len);
     free(msg);
 }

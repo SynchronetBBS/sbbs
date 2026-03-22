@@ -1,13 +1,13 @@
 // RFC-4253
 
-#ifndef DEUCE_SSH_TRANS_H
-#define DEUCE_SSH_TRANS_H
+#ifndef DSSH_TRANS_H
+#define DSSH_TRANS_H
 
-#ifndef DEUCE_SSH_H
-#error Only include deucessh.h, do not directly include this file.
-#endif
-
+#include <stdatomic.h>
+#include <threads.h>
 #include <time.h>
+
+#include "deucessh.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -15,10 +15,10 @@ extern "C" {
 
 /* Opaque context types for algorithm modules.
  * Each module defines the actual struct contents. */
-typedef struct deuce_ssh_enc_ctx deuce_ssh_enc_ctx;
-typedef struct deuce_ssh_mac_ctx deuce_ssh_mac_ctx;
-typedef struct deuce_ssh_key_algo_ctx deuce_ssh_key_algo_ctx;
-typedef struct deuce_ssh_comp_ctx deuce_ssh_comp_ctx;
+typedef struct dssh_enc_ctx dssh_enc_ctx;
+typedef struct dssh_mac_ctx dssh_mac_ctx;
+typedef struct dssh_key_algo_ctx dssh_key_algo_ctx;
+typedef struct dssh_comp_ctx dssh_comp_ctx;
 
 /* Transport layer generic */
 #define SSH_MSG_DISCONNECT      UINT8_C(1)
@@ -52,11 +52,11 @@ typedef struct deuce_ssh_comp_ctx deuce_ssh_comp_ctx;
 #define SSH_DISCONNECT_NO_MORE_AUTH_METHODS_AVAILABLE UINT32_C(14)
 #define SSH_DISCONNECT_ILLEGAL_USER_NAME              UINT32_C(15)
 
-#define DEUCE_SSH_KEX_FLAG_NEEDS_ENCRYPTION_CAPABLE UINT32_C(1<<0)
-#define DEUCE_SSH_KEX_FLAG_NEEDS_SIGNATURE_CAPABLE  UINT32_C(1<<1)
+#define DSSH_KEX_FLAG_NEEDS_ENCRYPTION_CAPABLE UINT32_C(1<<0)
+#define DSSH_KEX_FLAG_NEEDS_SIGNATURE_CAPABLE  UINT32_C(1<<1)
 
-#define DEUCE_SSH_KEY_ALGO_FLAG_ENCRYPTION_CAPABLE UINT32_C(1<<0)
-#define DEUCE_SSH_KEY_ALGO_FLAG_SIGNATURE_CAPABLE  UINT32_C(1<<1)
+#define DSSH_KEY_ALGO_FLAG_ENCRYPTION_CAPABLE UINT32_C(1<<0)
+#define DSSH_KEY_ALGO_FLAG_SIGNATURE_CAPABLE  UINT32_C(1<<1)
 
 /*
  * RFC 4253 s6.1: implementations MUST be able to process packets with
@@ -68,13 +68,13 @@ typedef struct deuce_ssh_comp_ctx deuce_ssh_comp_ctx;
 #define SSH_BPP_PACKET_SIZE_MIN  33280
 #define SSH_BPP_PACKET_SIZE_MAX  (64 * 1024 * 1024)  /* 64 MiB */
 
-typedef struct deuce_ssh_transport_packet_s {
-	deuce_ssh_string payload;
-	deuce_ssh_string random_padding;
-	deuce_ssh_string mac;
-	deuce_ssh_uint32_t packet_length;
-	deuce_ssh_byte   padding;
-} *deuce_ssh_transport_packet;
+typedef struct dssh_transport_packet_s {
+	dssh_string payload;
+	dssh_string random_padding;
+	dssh_string mac;
+	dssh_uint32_t packet_length;
+	dssh_byte   padding;
+} *dssh_transport_packet;
 
 /*
  * KEX handler: drives the entire key exchange after KEXINIT
@@ -82,93 +82,93 @@ typedef struct deuce_ssh_transport_packet_s {
  * Must populate sess->trans.shared_secret, exchange_hash,
  * and their sizes.
  */
-typedef int (*deuce_ssh_kex_handler)(deuce_ssh_session sess);
-typedef void (*deuce_ssh_kex_cleanup)(deuce_ssh_session sess);
+typedef int (*dssh_kex_handler)(dssh_session sess);
+typedef void (*dssh_kex_cleanup)(dssh_session sess);
 
-typedef int (*deuce_ssh_key_algo_sign)(uint8_t *buf, size_t bufsz, size_t *outlen,
-    const uint8_t *data, size_t data_len, deuce_ssh_key_algo_ctx *ctx);
-typedef int (*deuce_ssh_key_algo_verify)(const uint8_t *key_blob, size_t key_blob_len,
+typedef int (*dssh_key_algo_sign)(uint8_t *buf, size_t bufsz, size_t *outlen,
+    const uint8_t *data, size_t data_len, dssh_key_algo_ctx *ctx);
+typedef int (*dssh_key_algo_verify)(const uint8_t *key_blob, size_t key_blob_len,
     const uint8_t *sig_blob, size_t sig_blob_len,
     const uint8_t *data, size_t data_len);
-typedef int (*deuce_ssh_key_algo_pubkey)(uint8_t *buf, size_t bufsz, size_t *outlen, deuce_ssh_key_algo_ctx *ctx);
-typedef int (*deuce_ssh_key_algo_haskey)(deuce_ssh_key_algo_ctx *ctx);
-typedef void (*deuce_ssh_key_algo_cleanup)(deuce_ssh_key_algo_ctx *ctx);
+typedef int (*dssh_key_algo_pubkey)(uint8_t *buf, size_t bufsz, size_t *outlen, dssh_key_algo_ctx *ctx);
+typedef int (*dssh_key_algo_haskey)(dssh_key_algo_ctx *ctx);
+typedef void (*dssh_key_algo_cleanup)(dssh_key_algo_ctx *ctx);
 
-typedef int (*deuce_ssh_enc_init)(const uint8_t *key, const uint8_t *iv, bool encrypt, deuce_ssh_enc_ctx **ctx);
-typedef int (*deuce_ssh_enc_crypt)(uint8_t *buf, size_t bufsz, deuce_ssh_enc_ctx *ctx);
-typedef void (*deuce_ssh_enc_cleanup)(deuce_ssh_enc_ctx *ctx);
+typedef int (*dssh_enc_init)(const uint8_t *key, const uint8_t *iv, bool encrypt, dssh_enc_ctx **ctx);
+typedef int (*dssh_enc_crypt)(uint8_t *buf, size_t bufsz, dssh_enc_ctx *ctx);
+typedef void (*dssh_enc_cleanup)(dssh_enc_ctx *ctx);
 
-typedef int (*deuce_ssh_mac_init)(const uint8_t *key, deuce_ssh_mac_ctx **ctx);
-typedef int (*deuce_ssh_mac_generate)(const uint8_t *buf, size_t bufsz, uint8_t *outbuf, deuce_ssh_mac_ctx *ctx);
-typedef void (*deuce_ssh_mac_cleanup)(deuce_ssh_mac_ctx *ctx);
+typedef int (*dssh_mac_init)(const uint8_t *key, dssh_mac_ctx **ctx);
+typedef int (*dssh_mac_generate)(const uint8_t *buf, size_t bufsz, uint8_t *outbuf, dssh_mac_ctx *ctx);
+typedef void (*dssh_mac_cleanup)(dssh_mac_ctx *ctx);
 
-typedef int (*deuce_ssh_comp_compress)(uint8_t *buf, size_t *bufsz, deuce_ssh_comp_ctx *ctx);
-typedef int (*deuce_ssh_comp_uncompress)(uint8_t *buf, size_t *bufsz, deuce_ssh_comp_ctx *ctx);
-typedef void (*deuce_ssh_comp_cleanup)(deuce_ssh_comp_ctx *ctx);
+typedef int (*dssh_comp_compress)(uint8_t *buf, size_t *bufsz, dssh_comp_ctx *ctx);
+typedef int (*dssh_comp_uncompress)(uint8_t *buf, size_t *bufsz, dssh_comp_ctx *ctx);
+typedef void (*dssh_comp_cleanup)(dssh_comp_ctx *ctx);
 
-typedef struct deuce_ssh_kex_s {
-	struct deuce_ssh_kex_s *next;
-	deuce_ssh_kex_handler handler;
-	deuce_ssh_kex_cleanup cleanup;
+typedef struct dssh_kex_s {
+	struct dssh_kex_s *next;
+	dssh_kex_handler handler;
+	dssh_kex_cleanup cleanup;
 	uint32_t flags;
 	const char *hash_name; /* OpenSSL digest name, e.g. "SHA256" */
 	char name[];
-} *deuce_ssh_kex;
+} *dssh_kex;
 
-typedef struct deuce_ssh_key_algo_s {
-	struct deuce_ssh_key_algo_s *next;
-	deuce_ssh_key_algo_sign sign;
-	deuce_ssh_key_algo_verify verify;
-	deuce_ssh_key_algo_pubkey pubkey;
-	deuce_ssh_key_algo_haskey haskey;
-	deuce_ssh_key_algo_cleanup cleanup;
-	deuce_ssh_key_algo_ctx *ctx;
+typedef struct dssh_key_algo_s {
+	struct dssh_key_algo_s *next;
+	dssh_key_algo_sign sign;
+	dssh_key_algo_verify verify;
+	dssh_key_algo_pubkey pubkey;
+	dssh_key_algo_haskey haskey;
+	dssh_key_algo_cleanup cleanup;
+	dssh_key_algo_ctx *ctx;
 	uint32_t flags;
 	char name[];
-} *deuce_ssh_key_algo;
+} *dssh_key_algo;
 
-typedef struct deuce_ssh_enc_s {
-	struct deuce_ssh_enc_s *next;
-	deuce_ssh_enc_init init;
-	deuce_ssh_enc_crypt encrypt;
-	deuce_ssh_enc_crypt decrypt;
-	deuce_ssh_enc_cleanup cleanup;
+typedef struct dssh_enc_s {
+	struct dssh_enc_s *next;
+	dssh_enc_init init;
+	dssh_enc_crypt encrypt;
+	dssh_enc_crypt decrypt;
+	dssh_enc_cleanup cleanup;
 	uint32_t flags;
 	uint16_t blocksize;
 	uint16_t key_size;
 	char name[];
-} *deuce_ssh_enc;
+} *dssh_enc;
 
-typedef struct deuce_ssh_mac_s {
-	struct deuce_ssh_mac_s *next;
-	deuce_ssh_mac_init init;
-	deuce_ssh_mac_generate generate;
-	deuce_ssh_mac_cleanup cleanup;
+typedef struct dssh_mac_s {
+	struct dssh_mac_s *next;
+	dssh_mac_init init;
+	dssh_mac_generate generate;
+	dssh_mac_cleanup cleanup;
 	uint16_t digest_size;
 	uint16_t key_size;
 	char name[];
-} *deuce_ssh_mac;
+} *dssh_mac;
 
-typedef struct deuce_ssh_comp_s {
-	struct deuce_ssh_comp_s *next;
-	deuce_ssh_comp_compress compress;
-	deuce_ssh_comp_uncompress uncompress;
-	deuce_ssh_comp_cleanup cleanup;
+typedef struct dssh_comp_s {
+	struct dssh_comp_s *next;
+	dssh_comp_compress compress;
+	dssh_comp_uncompress uncompress;
+	dssh_comp_cleanup cleanup;
 	char name[];
-} *deuce_ssh_comp;
+} *dssh_comp;
 
-typedef struct deuce_ssh_language_s {
-	struct deuce_ssh_language_s *next;
+typedef struct dssh_language_s {
+	struct dssh_language_s *next;
 	char name[];
-} *deuce_ssh_language;
+} *dssh_language;
 
 /* Rekey thresholds (RFC 4253 s9, RFC 4251 s9.3.2) */
-#define DEUCE_SSH_REKEY_SOFT_LIMIT  UINT32_C(0x10000000)  /* 2^28 packets */
-#define DEUCE_SSH_REKEY_HARD_LIMIT  UINT32_C(0x80000000)  /* 2^31 packets */
-#define DEUCE_SSH_REKEY_BYTES       UINT64_C(0x40000000)  /* 1 GiB */
-#define DEUCE_SSH_REKEY_SECONDS     3600                   /* 1 hour */
+#define DSSH_REKEY_SOFT_LIMIT  UINT32_C(0x10000000)  /* 2^28 packets */
+#define DSSH_REKEY_HARD_LIMIT  UINT32_C(0x80000000)  /* 2^31 packets */
+#define DSSH_REKEY_BYTES       UINT64_C(0x40000000)  /* 1 GiB */
+#define DSSH_REKEY_SECONDS     3600                   /* 1 hour */
 
-typedef struct deuce_ssh_transport_state_s {
+typedef struct dssh_transport_state_s {
 	uint32_t    tx_seq;
 	uint32_t    rx_seq;
 	uint32_t    tx_since_rekey;  /* packets sent since last (re)key */
@@ -202,7 +202,7 @@ typedef struct deuce_ssh_transport_state_s {
 
 	/* KEX options */
 	void *kex_ctx;
-	deuce_ssh_kex kex_selected;
+	dssh_kex kex_selected;
 
 	/* KEX outputs */
 	size_t shared_secret_sz;
@@ -220,39 +220,39 @@ typedef struct deuce_ssh_transport_state_s {
 	size_t peer_kexinit_sz;
 	uint8_t *peer_kexinit;
 
-	deuce_ssh_key_algo key_algo_selected;
+	dssh_key_algo key_algo_selected;
 
-	deuce_ssh_enc_ctx *enc_c2s_ctx;
-	deuce_ssh_enc enc_c2s_selected;
-	deuce_ssh_enc_ctx *enc_s2c_ctx;
-	deuce_ssh_enc enc_s2c_selected;
+	dssh_enc_ctx *enc_c2s_ctx;
+	dssh_enc enc_c2s_selected;
+	dssh_enc_ctx *enc_s2c_ctx;
+	dssh_enc enc_s2c_selected;
 
-	deuce_ssh_mac_ctx *mac_c2s_ctx;
-	deuce_ssh_mac mac_c2s_selected;
-	deuce_ssh_mac_ctx *mac_s2c_ctx;
-	deuce_ssh_mac mac_s2c_selected;
+	dssh_mac_ctx *mac_c2s_ctx;
+	dssh_mac mac_c2s_selected;
+	dssh_mac_ctx *mac_s2c_ctx;
+	dssh_mac mac_s2c_selected;
 
-	deuce_ssh_comp_ctx *comp_c2s_ctx;
-	deuce_ssh_comp comp_c2s_selected;
-	deuce_ssh_comp_ctx *comp_s2c_ctx;
-	deuce_ssh_comp comp_s2c_selected;
-} *deuce_ssh_transport_state;
+	dssh_comp_ctx *comp_c2s_ctx;
+	dssh_comp comp_c2s_selected;
+	dssh_comp_ctx *comp_s2c_ctx;
+	dssh_comp comp_s2c_selected;
+} *dssh_transport_state;
 
 /*
  * Algorithm registration — call before any session is initialized.
  * Registration order determines negotiation preference (first registered
  * is most preferred).  Returns 0 on success.  After the first
- * deuce_ssh_transport_init() call, registration is locked.
+ * dssh_transport_init() call, registration is locked.
  *
  * Applications may register their own custom modules alongside or
  * instead of the library's built-in algorithms.
  */
-DEUCE_SSH_PUBLIC int deuce_ssh_transport_register_kex(deuce_ssh_kex kex);
-DEUCE_SSH_PUBLIC int deuce_ssh_transport_register_key_algo(deuce_ssh_key_algo key_algo);
-DEUCE_SSH_PUBLIC int deuce_ssh_transport_register_enc(deuce_ssh_enc enc);
-DEUCE_SSH_PUBLIC int deuce_ssh_transport_register_mac(deuce_ssh_mac mac);
-DEUCE_SSH_PUBLIC int deuce_ssh_transport_register_comp(deuce_ssh_comp comp);
-DEUCE_SSH_PUBLIC int deuce_ssh_transport_register_lang(deuce_ssh_language lang);
+DSSH_PUBLIC int dssh_transport_register_kex(dssh_kex kex);
+DSSH_PUBLIC int dssh_transport_register_key_algo(dssh_key_algo key_algo);
+DSSH_PUBLIC int dssh_transport_register_enc(dssh_enc enc);
+DSSH_PUBLIC int dssh_transport_register_mac(dssh_mac mac);
+DSSH_PUBLIC int dssh_transport_register_comp(dssh_comp comp);
+DSSH_PUBLIC int dssh_transport_register_lang(dssh_language lang);
 
 /*
  * Initialize transport state for a session.  Allocates packet buffers
@@ -265,43 +265,43 @@ DEUCE_SSH_PUBLIC int deuce_ssh_transport_register_lang(deuce_ssh_language lang);
  * the encrypted transport is active and ready for authentication.
  * Returns 0 on success.
  */
-DEUCE_SSH_PUBLIC int deuce_ssh_transport_handshake(deuce_ssh_session sess);
+DSSH_PUBLIC int dssh_transport_handshake(dssh_session sess);
 
 /*
  * Send SSH_MSG_DISCONNECT (RFC 4253 s11.1) and set terminate flag.
  * The desc string is clamped to 230 bytes.  The send is best-effort
  * (errors are ignored since we're disconnecting).
  */
-DEUCE_SSH_PUBLIC int deuce_ssh_transport_disconnect(deuce_ssh_session sess,
+DSSH_PUBLIC int dssh_transport_disconnect(dssh_session sess,
     uint32_t reason, const char *desc);
 
 /* Query functions — return negotiated algorithm names or NULL. */
-DEUCE_SSH_PUBLIC const char *deuce_ssh_transport_get_remote_version(deuce_ssh_session sess);
-DEUCE_SSH_PUBLIC const char *deuce_ssh_transport_get_kex_name(deuce_ssh_session sess);
-DEUCE_SSH_PUBLIC const char *deuce_ssh_transport_get_hostkey_name(deuce_ssh_session sess);
-DEUCE_SSH_PUBLIC const char *deuce_ssh_transport_get_enc_name(deuce_ssh_session sess);
-DEUCE_SSH_PUBLIC const char *deuce_ssh_transport_get_mac_name(deuce_ssh_session sess);
+DSSH_PUBLIC const char *dssh_transport_get_remote_version(dssh_session sess);
+DSSH_PUBLIC const char *dssh_transport_get_kex_name(dssh_session sess);
+DSSH_PUBLIC const char *dssh_transport_get_hostkey_name(dssh_session sess);
+DSSH_PUBLIC const char *dssh_transport_get_enc_name(dssh_session sess);
+DSSH_PUBLIC const char *dssh_transport_get_mac_name(dssh_session sess);
 
 /* ================================================================
  * Internal functions — used by other library modules, not by
- * applications.  DEUCE_SSH_PRIVATE in shared builds.
+ * applications.  DSSH_PRIVATE in shared builds.
  * ================================================================ */
 
-DEUCE_SSH_PRIVATE int deuce_ssh_transport_init(deuce_ssh_session sess, size_t max_packet_size);
-DEUCE_SSH_PRIVATE void deuce_ssh_transport_cleanup(deuce_ssh_session sess);
-DEUCE_SSH_PRIVATE int deuce_ssh_transport_send_packet(deuce_ssh_session sess,
+DSSH_PRIVATE int dssh_transport_init(dssh_session sess, size_t max_packet_size);
+DSSH_PRIVATE void dssh_transport_cleanup(dssh_session sess);
+DSSH_PRIVATE int dssh_transport_send_packet(dssh_session sess,
     const uint8_t *payload, size_t payload_len, uint32_t *seq_out);
-DEUCE_SSH_PRIVATE int deuce_ssh_transport_recv_packet(deuce_ssh_session sess,
+DSSH_PRIVATE int dssh_transport_recv_packet(dssh_session sess,
     uint8_t *msg_type, uint8_t **payload, size_t *payload_len);
-DEUCE_SSH_PRIVATE int deuce_ssh_transport_send_unimplemented(deuce_ssh_session sess,
+DSSH_PRIVATE int dssh_transport_send_unimplemented(dssh_session sess,
     uint32_t rejected_seq);
-DEUCE_SSH_PRIVATE int deuce_ssh_transport_version_exchange(deuce_ssh_session sess);
-DEUCE_SSH_PRIVATE int deuce_ssh_transport_kexinit(deuce_ssh_session sess);
-DEUCE_SSH_PRIVATE int deuce_ssh_transport_kex(deuce_ssh_session sess);
-DEUCE_SSH_PRIVATE int deuce_ssh_transport_newkeys(deuce_ssh_session sess);
-DEUCE_SSH_PRIVATE int deuce_ssh_transport_rekey(deuce_ssh_session sess);
-DEUCE_SSH_PRIVATE bool deuce_ssh_transport_rekey_needed(deuce_ssh_session sess);
-DEUCE_SSH_PRIVATE deuce_ssh_key_algo deuce_ssh_transport_find_key_algo(const char *name);
+DSSH_PRIVATE int dssh_transport_version_exchange(dssh_session sess);
+DSSH_PRIVATE int dssh_transport_kexinit(dssh_session sess);
+DSSH_PRIVATE int dssh_transport_kex(dssh_session sess);
+DSSH_PRIVATE int dssh_transport_newkeys(dssh_session sess);
+DSSH_PRIVATE int dssh_transport_rekey(dssh_session sess);
+DSSH_PRIVATE bool dssh_transport_rekey_needed(dssh_session sess);
+DSSH_PRIVATE dssh_key_algo dssh_transport_find_key_algo(const char *name);
 
 #ifdef __cplusplus
 }

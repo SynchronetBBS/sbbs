@@ -27,13 +27,13 @@ Legend:
 > supported.
 
 **APPLICATION** — The application provides `methods_str` in the
-`deuce_ssh_auth_server_cbs` struct.  It is the application's
+`dssh_auth_server_cbs` struct.  It is the application's
 responsibility to not include `"none"` in this string.
 
 ### 4-2
 > However, it [the "none" method] **MAY** be sent by the client.
 
-**CONFORMS** — `deuce_ssh_auth_get_methods()` sends a "none" auth
+**CONFORMS** — `dssh_auth_get_methods()` sends a "none" auth
 request to query available methods.
 
 ### 4-3
@@ -41,7 +41,7 @@ request to query available methods.
 > to be granted access without any authentication, in which case, the
 > server **MUST** accept this request.
 
-**CONFORMS** — `deuce_ssh_auth_server()` dispatches "none" to the
+**CONFORMS** — `dssh_auth_server()` dispatches "none" to the
 `none_cb` callback.  If the callback returns SUCCESS, the library
 sends USERAUTH_SUCCESS.  If it returns FAILURE (or is NULL), the
 library sends USERAUTH_FAILURE.  The policy decision is correctly
@@ -79,8 +79,8 @@ delegated to the application callback.
 > [byte SSH_MSG_USERAUTH_REQUEST, string user name, string service name,
 > string method name, ...]
 
-**CONFORMS** — `deuce_ssh_auth_get_methods()`, `deuce_ssh_auth_password()`,
-and `deuce_ssh_auth_keyboard_interactive()` all build messages with
+**CONFORMS** — `dssh_auth_get_methods()`, `dssh_auth_password()`,
+and `dssh_auth_keyboard_interactive()` all build messages with
 this exact format: msg type (50), username string, service name
 (`"ssh-connection"`), method name, then method-specific fields.
 
@@ -161,7 +161,7 @@ implemented (OPTIONAL method).
 > If the server rejects the authentication request, it **MUST** respond
 > with [SSH_MSG_USERAUTH_FAILURE].
 
-**CONFORMS** — `deuce_ssh_auth_server()` sends USERAUTH_FAILURE via
+**CONFORMS** — `dssh_auth_server()` sends USERAUTH_FAILURE via
 `send_auth_failure()` whenever a callback returns FAILURE or a method
 is unsupported.
 
@@ -183,19 +183,19 @@ is unsupported.
 > request to which this is a response was successful.
 
 **CONFORMS** — `send_auth_failure()` sets partial_success based on the
-callback's return value: `DEUCE_SSH_AUTH_PARTIAL` maps to TRUE.
+callback's return value: `DSSH_AUTH_PARTIAL` maps to TRUE.
 
 ### 5.1-5
 > It **MUST** be FALSE if the request was not successfully processed.
 
-**CONFORMS** — `DEUCE_SSH_AUTH_FAILURE` maps to FALSE.
+**CONFORMS** — `DSSH_AUTH_FAILURE` maps to FALSE.
 
 ### 5.1-6
 > When the server accepts authentication, it **MUST** respond with
 > [SSH_MSG_USERAUTH_SUCCESS].
 
-**CONFORMS** — `deuce_ssh_auth_server()` sends USERAUTH_SUCCESS via
-`send_auth_success()` when a callback returns `DEUCE_SSH_AUTH_SUCCESS`.
+**CONFORMS** — `dssh_auth_server()` sends USERAUTH_SUCCESS via
+`send_auth_success()` when a callback returns `DSSH_AUTH_SUCCESS`.
 
 ### 5.1-7
 > The client **MAY** send several authentication requests without
@@ -210,7 +210,7 @@ using `send_packet` directly for pipelining.
 > any failed requests with a SSH_MSG_USERAUTH_FAILURE message before
 > processing the next request.
 
-**CONFORMS** — `deuce_ssh_auth_server()` processes each request
+**CONFORMS** — `dssh_auth_server()` processes each request
 synchronously: callback → send response → recv next request.
 
 ### 5.1-9
@@ -230,7 +230,7 @@ returning.  The application cannot accidentally pipeline.
 ### 5.1-11
 > SSH_MSG_USERAUTH_SUCCESS **MUST** be sent only once.
 
-**CONFORMS** — `deuce_ssh_auth_server()` exits the auth loop
+**CONFORMS** — `dssh_auth_server()` exits the auth loop
 immediately after sending SUCCESS (via `goto done`).
 
 ### 5.1-12
@@ -262,7 +262,7 @@ layer passes all messages through regardless.
 > Otherwise, the server **MUST** return SSH_MSG_USERAUTH_FAILURE and
 > **MAY** return with it a list of methods that may continue.
 
-**CONFORMS** — `deuce_ssh_auth_server()` sends FAILURE with the
+**CONFORMS** — `dssh_auth_server()` sends FAILURE with the
 application-provided `methods_str`.
 
 ### 5.2-3
@@ -290,7 +290,7 @@ application-provided `methods_str`.
 > screen.
 
 **CONFORMS** — SSH_MSG_USERAUTH_BANNER messages are passed to the
-application via the `deuce_ssh_auth_banner_cb` callback set on the
+application via the `dssh_auth_banner_cb` callback set on the
 session struct (`sess->banner_cb`).  If no callback is set, banners
 are silently discarded.  The callback receives the message text and
 language tag, and the application can display them.
@@ -321,7 +321,7 @@ character filtering for display is the application's responsibility.
 > The only **REQUIRED** authentication 'method name' is "publickey"
 > authentication.
 
-**CONFORMS** — `deuce_ssh_auth_publickey()` implements client-side
+**CONFORMS** — `dssh_auth_publickey()` implements client-side
 public key authentication.  It signs the session-bound authentication
 data per RFC 4252 s7 (session_id + USERAUTH_REQUEST fields) using
 the key algorithm's `sign()` callback, and sends the signed request.
@@ -376,15 +376,15 @@ Supports any registered key algorithm (`ssh-ed25519`, `rsa-sha2-256`).
 ### 8-1
 > All implementations **SHOULD** support password authentication.
 
-**CONFORMS** — `deuce_ssh_auth_password()` implements client-side
+**CONFORMS** — `dssh_auth_password()` implements client-side
 password authentication per RFC 4252 s8.
 
 ### 8-2
 > A server **MAY** request that a user change the password.
 
-**CONFORMS** — `deuce_ssh_auth_password()` handles
+**CONFORMS** — `dssh_auth_password()` handles
 SSH_MSG_USERAUTH_PASSWD_CHANGEREQ via an optional
-`deuce_ssh_auth_passwd_change_cb` callback.  If the callback is
+`dssh_auth_passwd_change_cb` callback.  If the callback is
 provided, it receives the server's prompt and returns the new password.
 If no callback is provided and the server requests a change,
 authentication fails gracefully.
@@ -408,7 +408,7 @@ UTF-8 encoding is the application's responsibility.
 
 **APPLICATION** — The library does not check the negotiated cipher
 before sending passwords.  The application should check
-`deuce_ssh_transport_get_enc_name()` and avoid password auth if
+`dssh_transport_get_enc_name()` and avoid password auth if
 `"none"` was negotiated.
 
 ### 8-6

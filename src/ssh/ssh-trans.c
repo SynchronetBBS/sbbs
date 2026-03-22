@@ -7,45 +7,45 @@
 #include <openssl/evp.h>
 #include <openssl/rand.h>
 
-#include "deucessh.h"
+#include "ssh-internal.h"
 
-typedef struct deuce_ssh_transport_global_config {
+typedef struct dssh_transport_global_config {
 	atomic_bool used;
 	const char *software_version;
 	const char *version_comment;
 
-	int (*tx)(uint8_t *buf, size_t bufsz, atomic_bool *terminate, void *cbdata);
-	int (*rx)(uint8_t *buf, size_t bufsz, atomic_bool *terminate, void *cbdata);
-	int (*rx_line)(uint8_t *buf, size_t bufsz, size_t *bytes_received, atomic_bool *terminate, void *cbdata);
+	dssh_transport_io_cb tx;
+	dssh_transport_io_cb rx;
+	dssh_transport_rxline_cb rx_line;
 	int (*extra_line_cb)(uint8_t *buf, size_t bufsz, void *cbdata);
 
 	size_t kex_entries;
-	deuce_ssh_kex kex_head;
-	deuce_ssh_kex kex_tail;
+	dssh_kex kex_head;
+	dssh_kex kex_tail;
 
 	size_t key_algo_entries;
-	deuce_ssh_key_algo key_algo_head;
-	deuce_ssh_key_algo key_algo_tail;
+	dssh_key_algo key_algo_head;
+	dssh_key_algo key_algo_tail;
 
 	size_t enc_entries;
-	deuce_ssh_enc enc_head;
-	deuce_ssh_enc enc_tail;
+	dssh_enc enc_head;
+	dssh_enc enc_tail;
 
 	size_t mac_entries;
-	deuce_ssh_mac mac_head;
-	deuce_ssh_mac mac_tail;
+	dssh_mac mac_head;
+	dssh_mac mac_tail;
 
 	size_t comp_entries;
-	deuce_ssh_comp comp_head;
-	deuce_ssh_comp comp_tail;
+	dssh_comp comp_head;
+	dssh_comp comp_tail;
 
 	size_t lang_entries;
-	deuce_ssh_language lang_head;
-	deuce_ssh_language lang_tail;
-} *deuce_ssh_transport_global_config;
+	dssh_language lang_head;
+	dssh_language lang_tail;
+} *dssh_transport_global_config;
 
 static const char * const sw_ver = "DeuceSSH-0.0";
-static struct deuce_ssh_transport_global_config gconf;
+static struct dssh_transport_global_config gconf;
 
 /* ================================================================
  * Version exchange (RFC 4253 s4.2)
@@ -109,13 +109,13 @@ is_20(uint8_t *buf, size_t buflen)
 }
 
 static int
-version_rx(deuce_ssh_session sess)
+version_rx(dssh_session sess)
 {
 	size_t received;
 	int res;
 
 	while (!sess->terminate) {
-		res = gconf.rx_line(sess->trans.rx_packet, sess->trans.packet_buf_sz - 1, &received, &sess->terminate, sess->rx_line_cbdata);
+		res = gconf.rx_line(sess->trans.rx_packet, sess->trans.packet_buf_sz - 1, &received, sess, sess->rx_line_cbdata);
 		if (res < 0) {
 			sess->terminate = true;
 			return res;
@@ -123,7 +123,7 @@ version_rx(deuce_ssh_session sess)
 		if (is_version_line(sess->trans.rx_packet, received)) {
 			if (received > 255 || has_nulls(sess->trans.rx_packet, received) || missing_crlf(sess->trans.rx_packet, received) || has_non_ascii(sess->trans.rx_packet, received - 2) || !is_20(sess->trans.rx_packet, received)) {
 				sess->terminate = true;
-				return DEUCE_SSH_ERROR_INVALID;
+				return DSSH_ERROR_INVALID;
 			}
 			sess->trans.remote_id_str_sz = received - 2;
 			memcpy(sess->trans.remote_id_str, sess->trans.rx_packet, sess->trans.remote_id_str_sz);
@@ -139,11 +139,11 @@ version_rx(deuce_ssh_session sess)
 			}
 		}
 	}
-	return DEUCE_SSH_ERROR_TERMINATED;
+	return DSSH_ERROR_TERMINATED;
 }
 
 static int
-version_tx(deuce_ssh_session sess)
+version_tx(dssh_session sess)
 {
 	int res;
 	size_t sz = 0;
@@ -152,7 +152,7 @@ version_tx(deuce_ssh_session sess)
 	sz += 8;
 	size_t asz = strlen(gconf.software_version);
 	if (sz + asz + 2 > 255)
-		return DEUCE_SSH_ERROR_TOOLONG;
+		return DSSH_ERROR_TOOLONG;
 	memcpy(&sess->trans.tx_packet[sz], gconf.software_version, asz);
 	sz += asz;
 	if (gconf.version_comment != NULL) {
@@ -160,7 +160,7 @@ version_tx(deuce_ssh_session sess)
 		sz += 1;
 		asz = strlen(gconf.version_comment);
 		if (sz + asz + 2 > 255)
-			return DEUCE_SSH_ERROR_TOOLONG;
+			return DSSH_ERROR_TOOLONG;
 		memcpy(&sess->trans.tx_packet[sz], gconf.version_comment, asz);
 		sz += asz;
 	}
@@ -169,7 +169,7 @@ version_tx(deuce_ssh_session sess)
 	sess->trans.id_str[sz] = 0;
 	memcpy(&sess->trans.tx_packet[sz], "\r\n", 2);
 	sz += 2;
-	res = gconf.tx(sess->trans.tx_packet, sz, &sess->terminate, sess->tx_cbdata);
+	res = gconf.tx(sess->trans.tx_packet, sz, sess, sess->tx_cbdata);
 	if (res < 0) {
 		sess->terminate = true;
 		return res;
@@ -177,48 +177,48 @@ version_tx(deuce_ssh_session sess)
 	return 0;
 }
 
-DEUCE_SSH_PRIVATE deuce_ssh_key_algo
-deuce_ssh_transport_find_key_algo(const char *name)
+DSSH_PRIVATE dssh_key_algo
+dssh_transport_find_key_algo(const char *name)
 {
-	for (deuce_ssh_key_algo ka = gconf.key_algo_head; ka != NULL; ka = ka->next) {
+	for (dssh_key_algo ka = gconf.key_algo_head; ka != NULL; ka = ka->next) {
 		if (strcmp(ka->name, name) == 0)
 			return ka;
 	}
 	return NULL;
 }
 
-DEUCE_SSH_PUBLIC const char *
-deuce_ssh_transport_get_remote_version(deuce_ssh_session sess)
+DSSH_PUBLIC const char *
+dssh_transport_get_remote_version(dssh_session sess)
 {
 	return sess->trans.remote_id_str;
 }
 
-DEUCE_SSH_PUBLIC const char *
-deuce_ssh_transport_get_kex_name(deuce_ssh_session sess)
+DSSH_PUBLIC const char *
+dssh_transport_get_kex_name(dssh_session sess)
 {
 	return sess->trans.kex_selected ? sess->trans.kex_selected->name : NULL;
 }
 
-DEUCE_SSH_PUBLIC const char *
-deuce_ssh_transport_get_hostkey_name(deuce_ssh_session sess)
+DSSH_PUBLIC const char *
+dssh_transport_get_hostkey_name(dssh_session sess)
 {
 	return sess->trans.key_algo_selected ? sess->trans.key_algo_selected->name : NULL;
 }
 
-DEUCE_SSH_PUBLIC const char *
-deuce_ssh_transport_get_enc_name(deuce_ssh_session sess)
+DSSH_PUBLIC const char *
+dssh_transport_get_enc_name(dssh_session sess)
 {
 	return sess->trans.enc_c2s_selected ? sess->trans.enc_c2s_selected->name : NULL;
 }
 
-DEUCE_SSH_PUBLIC const char *
-deuce_ssh_transport_get_mac_name(deuce_ssh_session sess)
+DSSH_PUBLIC const char *
+dssh_transport_get_mac_name(dssh_session sess)
 {
 	return sess->trans.mac_c2s_selected ? sess->trans.mac_c2s_selected->name : NULL;
 }
 
-DEUCE_SSH_PRIVATE int
-deuce_ssh_transport_version_exchange(deuce_ssh_session sess)
+DSSH_PRIVATE int
+dssh_transport_version_exchange(dssh_session sess)
 {
 	int res = version_tx(sess);
 	if (res < 0)
@@ -226,41 +226,41 @@ deuce_ssh_transport_version_exchange(deuce_ssh_session sess)
 	return version_rx(sess);
 }
 
-DEUCE_SSH_PUBLIC int
-deuce_ssh_transport_handshake(deuce_ssh_session sess)
+DSSH_PUBLIC int
+dssh_transport_handshake(dssh_session sess)
 {
-	int res = deuce_ssh_transport_version_exchange(sess);
+	int res = dssh_transport_version_exchange(sess);
 	if (res < 0)
 		return res;
-	res = deuce_ssh_transport_kexinit(sess);
+	res = dssh_transport_kexinit(sess);
 	if (res < 0)
 		return res;
-	res = deuce_ssh_transport_kex(sess);
+	res = dssh_transport_kex(sess);
 	if (res < 0)
 		return res;
-	return deuce_ssh_transport_newkeys(sess);
+	return dssh_transport_newkeys(sess);
 }
 
 /* ================================================================
  * Rekeying (RFC 4253 s9)
  * ================================================================ */
 
-DEUCE_SSH_PRIVATE bool
-deuce_ssh_transport_rekey_needed(deuce_ssh_session sess)
+DSSH_PRIVATE bool
+dssh_transport_rekey_needed(dssh_session sess)
 {
-	if (sess->trans.tx_since_rekey >= DEUCE_SSH_REKEY_SOFT_LIMIT ||
-	    sess->trans.rx_since_rekey >= DEUCE_SSH_REKEY_SOFT_LIMIT)
+	if (sess->trans.tx_since_rekey >= DSSH_REKEY_SOFT_LIMIT ||
+	    sess->trans.rx_since_rekey >= DSSH_REKEY_SOFT_LIMIT)
 		return true;
-	if (sess->trans.bytes_since_rekey >= DEUCE_SSH_REKEY_BYTES)
+	if (sess->trans.bytes_since_rekey >= DSSH_REKEY_BYTES)
 		return true;
 	if (sess->trans.rekey_time != 0 &&
-	    time(NULL) - sess->trans.rekey_time >= DEUCE_SSH_REKEY_SECONDS)
+	    time(NULL) - sess->trans.rekey_time >= DSSH_REKEY_SECONDS)
 		return true;
 	return false;
 }
 
-DEUCE_SSH_PRIVATE int
-deuce_ssh_transport_rekey(deuce_ssh_session sess)
+DSSH_PRIVATE int
+dssh_transport_rekey(dssh_session sess)
 {
 	/*
 	 * RFC 4253 s9: Rekey uses existing encryption until NEWKEYS.
@@ -286,11 +286,11 @@ deuce_ssh_transport_rekey(deuce_ssh_session sess)
 	mtx_unlock(&sess->trans.tx_mtx);
 
 	/* Re-negotiate algorithms */
-	int res = deuce_ssh_transport_kexinit(sess);
+	int res = dssh_transport_kexinit(sess);
 	if (res == 0)
-		res = deuce_ssh_transport_kex(sess);
+		res = dssh_transport_kex(sess);
 	if (res == 0)
-		res = deuce_ssh_transport_newkeys(sess);
+		res = dssh_transport_newkeys(sess);
 
 	/* Clear the flag and wake any blocked senders */
 	mtx_lock(&sess->trans.tx_mtx);
@@ -305,23 +305,23 @@ deuce_ssh_transport_rekey(deuce_ssh_session sess)
  * SSH_MSG_UNIMPLEMENTED (RFC 4253 s11.4)
  * ================================================================ */
 
-DEUCE_SSH_PRIVATE int
-deuce_ssh_transport_send_unimplemented(deuce_ssh_session sess,
+DSSH_PRIVATE int
+dssh_transport_send_unimplemented(dssh_session sess,
     uint32_t rejected_seq)
 {
 	uint8_t msg[8];
 	size_t pos = 0;
 	msg[pos++] = SSH_MSG_UNIMPLEMENTED;
-	deuce_ssh_serialize_uint32(rejected_seq, msg, sizeof(msg), &pos);
-	return deuce_ssh_transport_send_packet(sess, msg, pos, NULL);
+	dssh_serialize_uint32(rejected_seq, msg, sizeof(msg), &pos);
+	return dssh_transport_send_packet(sess, msg, pos, NULL);
 }
 
 /* ================================================================
  * SSH_MSG_DISCONNECT (RFC 4253 s11.1)
  * ================================================================ */
 
-DEUCE_SSH_PUBLIC int
-deuce_ssh_transport_disconnect(deuce_ssh_session sess,
+DSSH_PUBLIC int
+dssh_transport_disconnect(dssh_session sess,
     uint32_t reason, const char *desc)
 {
 	size_t dlen = strlen(desc);
@@ -331,13 +331,13 @@ deuce_ssh_transport_disconnect(deuce_ssh_session sess,
 	size_t pos = 0;
 
 	msg[pos++] = SSH_MSG_DISCONNECT;
-	deuce_ssh_serialize_uint32(reason, msg, sizeof(msg), &pos);
-	deuce_ssh_serialize_uint32((uint32_t)dlen, msg, sizeof(msg), &pos);
+	dssh_serialize_uint32(reason, msg, sizeof(msg), &pos);
+	dssh_serialize_uint32((uint32_t)dlen, msg, sizeof(msg), &pos);
 	memcpy(&msg[pos], desc, dlen);
 	pos += dlen;
-	deuce_ssh_serialize_uint32(0, msg, sizeof(msg), &pos); /* language tag */
+	dssh_serialize_uint32(0, msg, sizeof(msg), &pos); /* language tag */
 
-	deuce_ssh_transport_send_packet(sess, msg, pos, NULL);
+	dssh_transport_send_packet(sess, msg, pos, NULL);
 	sess->terminate = true;
 	return 0;
 }
@@ -347,9 +347,9 @@ deuce_ssh_transport_disconnect(deuce_ssh_session sess,
  * ================================================================ */
 
 static size_t
-tx_block_size(deuce_ssh_session sess)
+tx_block_size(dssh_session sess)
 {
-	deuce_ssh_enc enc;
+	dssh_enc enc;
 	void *cbd;
 	if (sess->trans.client) {
 		enc = sess->trans.enc_c2s_selected;
@@ -365,9 +365,9 @@ tx_block_size(deuce_ssh_session sess)
 }
 
 static size_t
-rx_block_size(deuce_ssh_session sess)
+rx_block_size(dssh_session sess)
 {
-	deuce_ssh_enc enc;
+	dssh_enc enc;
 	void *cbd;
 	if (sess->trans.client) {
 		enc = sess->trans.enc_s2c_selected;
@@ -383,9 +383,9 @@ rx_block_size(deuce_ssh_session sess)
 }
 
 static uint16_t
-tx_mac_size(deuce_ssh_session sess)
+tx_mac_size(dssh_session sess)
 {
-	deuce_ssh_mac mac;
+	dssh_mac mac;
 	void *cbd;
 	if (sess->trans.client) {
 		mac = sess->trans.mac_c2s_selected;
@@ -401,9 +401,9 @@ tx_mac_size(deuce_ssh_session sess)
 }
 
 static uint16_t
-rx_mac_size(deuce_ssh_session sess)
+rx_mac_size(dssh_session sess)
 {
-	deuce_ssh_mac mac;
+	dssh_mac mac;
 	void *cbd;
 	if (sess->trans.client) {
 		mac = sess->trans.mac_s2c_selected;
@@ -418,8 +418,8 @@ rx_mac_size(deuce_ssh_session sess)
 	return mac->digest_size;
 }
 
-DEUCE_SSH_PRIVATE int
-deuce_ssh_transport_send_packet(deuce_ssh_session sess,
+DSSH_PRIVATE int
+dssh_transport_send_packet(dssh_session sess,
     const uint8_t *payload, size_t payload_len, uint32_t *seq_out)
 {
 	int ret;
@@ -445,17 +445,17 @@ deuce_ssh_transport_send_packet(deuce_ssh_session sess,
 	size_t total = 4 + packet_length;
 
 	if (total > sess->trans.packet_buf_sz) {
-		ret = DEUCE_SSH_ERROR_TOOLONG;
+		ret = DSSH_ERROR_TOOLONG;
 		goto tx_done;
 	}
 
 	size_t pos = 0;
-	deuce_ssh_serialize_uint32(packet_length, sess->trans.tx_packet, sess->trans.packet_buf_sz, &pos);
+	dssh_serialize_uint32(packet_length, sess->trans.tx_packet, sess->trans.packet_buf_sz, &pos);
 	sess->trans.tx_packet[pos++] = (uint8_t)padding_len;
 	memcpy(&sess->trans.tx_packet[pos], payload, payload_len);
 	pos += payload_len;
 	if (RAND_bytes(&sess->trans.tx_packet[pos], (int)padding_len) != 1) {
-		ret = DEUCE_SSH_ERROR_INIT;
+		ret = DSSH_ERROR_INIT;
 		goto tx_done;
 	}
 	pos += padding_len;
@@ -465,12 +465,12 @@ deuce_ssh_transport_send_packet(deuce_ssh_session sess,
 	if (mac_len > 0) {
 		uint8_t *mac_input = sess->trans.tx_mac_scratch;
 		size_t mi_pos = 0;
-		deuce_ssh_serialize_uint32(sess->trans.tx_seq, mac_input, 4 + sess->trans.packet_buf_sz, &mi_pos);
+		dssh_serialize_uint32(sess->trans.tx_seq, mac_input, 4 + sess->trans.packet_buf_sz, &mi_pos);
 		memcpy(&mac_input[mi_pos], sess->trans.tx_packet, total);
 		mi_pos += total;
 
-		deuce_ssh_mac mac;
-		deuce_ssh_mac_ctx *mac_ctx;
+		dssh_mac mac;
+		dssh_mac_ctx *mac_ctx;
 		if (sess->trans.client) {
 			mac = sess->trans.mac_c2s_selected;
 			mac_ctx = sess->trans.mac_c2s_ctx;
@@ -487,8 +487,8 @@ deuce_ssh_transport_send_packet(deuce_ssh_session sess,
 
 	/* Encrypt (the packet, not the MAC) */
 	{
-		deuce_ssh_enc_ctx *enc_ctx;
-		deuce_ssh_enc enc;
+		dssh_enc_ctx *enc_ctx;
+		dssh_enc enc;
 		if (sess->trans.client) {
 			enc = sess->trans.enc_c2s_selected;
 			enc_ctx = sess->trans.enc_c2s_ctx;
@@ -505,12 +505,12 @@ deuce_ssh_transport_send_packet(deuce_ssh_session sess,
 	}
 
 	/* Refuse to send if per-key packet count would exceed hard limit */
-	if (sess->trans.tx_since_rekey >= DEUCE_SSH_REKEY_HARD_LIMIT) {
-		ret = DEUCE_SSH_ERROR_REKEY_NEEDED;
+	if (sess->trans.tx_since_rekey >= DSSH_REKEY_HARD_LIMIT) {
+		ret = DSSH_ERROR_REKEY_NEEDED;
 		goto tx_done;
 	}
 
-	ret = gconf.tx(sess->trans.tx_packet, pos, &sess->terminate, sess->tx_cbdata);
+	ret = gconf.tx(sess->trans.tx_packet, pos, sess, sess->tx_cbdata);
 	if (ret == 0) {
 		if (seq_out != NULL)
 			*seq_out = sess->trans.tx_seq;
@@ -530,27 +530,27 @@ tx_done:
  * public recv_packet wrapper below.
  */
 static int
-recv_packet_raw(deuce_ssh_session sess,
+recv_packet_raw(dssh_session sess,
     uint8_t *msg_type, uint8_t **payload, size_t *payload_len)
 {
 	int ret;
 	mtx_lock(&sess->trans.rx_mtx);
 
 	/* Refuse to receive if per-key packet count would exceed hard limit */
-	if (sess->trans.rx_since_rekey >= DEUCE_SSH_REKEY_HARD_LIMIT) {
-		ret = DEUCE_SSH_ERROR_REKEY_NEEDED;
+	if (sess->trans.rx_since_rekey >= DSSH_REKEY_HARD_LIMIT) {
+		ret = DSSH_ERROR_REKEY_NEEDED;
 		goto rx_done;
 	}
 
 	size_t bs = rx_block_size(sess);
 
-	ret = gconf.rx(sess->trans.rx_packet, bs, &sess->terminate, sess->rx_cbdata);
+	ret = gconf.rx(sess->trans.rx_packet, bs, sess, sess->rx_cbdata);
 	if (ret < 0)
 		goto rx_done;
 
 	/* Decrypt first block */
-	deuce_ssh_enc enc;
-	deuce_ssh_enc_ctx *enc_ctx;
+	dssh_enc enc;
+	dssh_enc_ctx *enc_ctx;
 	if (sess->trans.client) {
 		enc = sess->trans.enc_s2c_selected;
 		enc_ctx = sess->trans.enc_s2c_ctx;
@@ -566,21 +566,21 @@ recv_packet_raw(deuce_ssh_session sess,
 	}
 
 	uint32_t packet_length;
-	deuce_ssh_parse_uint32(sess->trans.rx_packet, 4, &packet_length);
+	dssh_parse_uint32(sess->trans.rx_packet, 4, &packet_length);
 
 	if (packet_length < 2 || packet_length + 4 > sess->trans.packet_buf_sz) {
-		ret = DEUCE_SSH_ERROR_TOOLONG;
+		ret = DSSH_ERROR_TOOLONG;
 		goto rx_done;
 	}
 
 	if (packet_length + 4 < bs) {
-		ret = DEUCE_SSH_ERROR_PARSE;
+		ret = DSSH_ERROR_PARSE;
 		goto rx_done;
 	}
 
 	size_t remaining = packet_length + 4 - bs;
 	if (remaining > 0) {
-		ret = gconf.rx(&sess->trans.rx_packet[bs], remaining, &sess->terminate, sess->rx_cbdata);
+		ret = gconf.rx(&sess->trans.rx_packet[bs], remaining, sess, sess->rx_cbdata);
 		if (ret < 0)
 			goto rx_done;
 		if (enc != NULL && enc->decrypt != NULL && enc_ctx != NULL) {
@@ -595,22 +595,22 @@ recv_packet_raw(deuce_ssh_session sess,
 	if (mac_len > 0) {
 		uint8_t received_mac[64];
 		if (mac_len > sizeof(received_mac)) {
-			ret = DEUCE_SSH_ERROR_TOOLONG;
+			ret = DSSH_ERROR_TOOLONG;
 			goto rx_done;
 		}
-		ret = gconf.rx(received_mac, mac_len, &sess->terminate, sess->rx_cbdata);
+		ret = gconf.rx(received_mac, mac_len, sess, sess->rx_cbdata);
 		if (ret < 0)
 			goto rx_done;
 
 		uint8_t *mac_input = sess->trans.rx_mac_scratch;
 		size_t mi_pos = 0;
-		deuce_ssh_serialize_uint32(sess->trans.rx_seq, mac_input, 4 + sess->trans.packet_buf_sz, &mi_pos);
+		dssh_serialize_uint32(sess->trans.rx_seq, mac_input, 4 + sess->trans.packet_buf_sz, &mi_pos);
 		memcpy(&mac_input[mi_pos], sess->trans.rx_packet, packet_length + 4);
 		mi_pos += packet_length + 4;
 
 		uint8_t computed_mac[64];
-		deuce_ssh_mac mac;
-		deuce_ssh_mac_ctx *mac_ctx;
+		dssh_mac mac;
+		dssh_mac_ctx *mac_ctx;
 		if (sess->trans.client) {
 			mac = sess->trans.mac_s2c_selected;
 			mac_ctx = sess->trans.mac_s2c_ctx;
@@ -623,16 +623,16 @@ recv_packet_raw(deuce_ssh_session sess,
 		if (ret < 0)
 			goto rx_done;
 		if (memcmp(received_mac, computed_mac, mac_len) != 0) {
-			deuce_ssh_transport_disconnect(sess,
+			dssh_transport_disconnect(sess,
 			    SSH_DISCONNECT_MAC_ERROR, "MAC verification failed");
-			ret = DEUCE_SSH_ERROR_INVALID;
+			ret = DSSH_ERROR_INVALID;
 			goto rx_done;
 		}
 	}
 
 	uint8_t padding_length = sess->trans.rx_packet[4];
 	if (padding_length + 1 >= packet_length) {
-		ret = DEUCE_SSH_ERROR_PARSE;
+		ret = DSSH_ERROR_PARSE;
 		goto rx_done;
 	}
 	*payload = &sess->trans.rx_packet[5];
@@ -658,8 +658,8 @@ rx_done:
  *   SSH_MSG_UNIMPLEMENTED (3) — silently discarded (TODO: needs design work)
  *   SSH_MSG_DISCONNECT (1)    — sets terminate, returns error
  */
-DEUCE_SSH_PRIVATE int
-deuce_ssh_transport_recv_packet(deuce_ssh_session sess,
+DSSH_PRIVATE int
+dssh_transport_recv_packet(dssh_session sess,
     uint8_t *msg_type, uint8_t **payload, size_t *payload_len)
 {
 	for (;;) {
@@ -670,7 +670,7 @@ deuce_ssh_transport_recv_packet(deuce_ssh_session sess,
 		switch (*msg_type) {
 		case SSH_MSG_DISCONNECT:
 			sess->terminate = true;
-			return DEUCE_SSH_ERROR_TERMINATED;
+			return DSSH_ERROR_TERMINATED;
 		case SSH_MSG_IGNORE:
 			continue;
 		case SSH_MSG_KEXINIT:
@@ -686,14 +686,14 @@ deuce_ssh_transport_recv_packet(deuce_ssh_session sess,
 				free(sess->trans.peer_kexinit);
 				sess->trans.peer_kexinit = malloc(*payload_len);
 				if (sess->trans.peer_kexinit == NULL)
-					return DEUCE_SSH_ERROR_ALLOC;
+					return DSSH_ERROR_ALLOC;
 				memcpy(sess->trans.peer_kexinit, *payload, *payload_len);
 				sess->trans.peer_kexinit_sz = *payload_len;
 
 				/* rekey() handles the rest: sends our
 				 * KEXINIT, runs KEX, exchanges NEWKEYS,
 				 * and installs new keys. */
-				int rk = deuce_ssh_transport_rekey(sess);
+				int rk = dssh_transport_rekey(sess);
 				if (rk < 0)
 					return rk;
 			}
@@ -705,7 +705,7 @@ deuce_ssh_transport_recv_packet(deuce_ssh_session sess,
 				size_t dpos = 2;
 				uint32_t msg_len = 0;
 				if (dpos + 4 <= *payload_len) {
-					deuce_ssh_parse_uint32(&(*payload)[dpos], *payload_len - dpos, &msg_len);
+					dssh_parse_uint32(&(*payload)[dpos], *payload_len - dpos, &msg_len);
 					dpos += 4;
 					if (dpos + msg_len > *payload_len)
 						msg_len = 0;
@@ -718,7 +718,7 @@ deuce_ssh_transport_recv_packet(deuce_ssh_session sess,
 		case SSH_MSG_UNIMPLEMENTED:
 			if (sess->unimplemented_cb != NULL && *payload_len >= 5) {
 				uint32_t rejected_seq;
-				deuce_ssh_parse_uint32(&(*payload)[1], *payload_len - 1, &rejected_seq);
+				dssh_parse_uint32(&(*payload)[1], *payload_len - 1, &rejected_seq);
 				sess->unimplemented_cb(rejected_seq, sess->unimplemented_cbdata);
 			}
 			continue;
@@ -732,7 +732,7 @@ deuce_ssh_transport_recv_packet(deuce_ssh_session sess,
 				uint32_t gname_len;
 				if (gpos + 4 > *payload_len)
 					break; /* malformed, return to caller */
-				deuce_ssh_parse_uint32(&(*payload)[gpos], *payload_len - gpos, &gname_len);
+				dssh_parse_uint32(&(*payload)[gpos], *payload_len - gpos, &gname_len);
 				gpos += 4;
 				if (gpos + gname_len + 1 > *payload_len)
 					break;
@@ -753,7 +753,7 @@ deuce_ssh_transport_recv_packet(deuce_ssh_session sess,
 
 				if (want_reply) {
 					uint8_t reply = (gr_res >= 0) ? 81 : 82;
-					deuce_ssh_transport_send_packet(sess, &reply, 1, NULL);
+					dssh_transport_send_packet(sess, &reply, 1, NULL);
 				}
 			}
 			continue;
@@ -764,8 +764,8 @@ deuce_ssh_transport_recv_packet(deuce_ssh_session sess,
 			 * before returning this message to the caller.
 			 */
 			if (sess->trans.session_id != NULL &&
-			    deuce_ssh_transport_rekey_needed(sess)) {
-				int rk = deuce_ssh_transport_rekey(sess);
+			    dssh_transport_rekey_needed(sess)) {
+				int rk = dssh_transport_rekey(sess);
 				if (rk < 0)
 					return rk;
 			}
@@ -859,42 +859,42 @@ static void
 serialize_namelist_from_str(const char *str, uint8_t *buf, size_t bufsz, size_t *pos)
 {
 	uint32_t len = (uint32_t)strlen(str);
-	deuce_ssh_serialize_uint32(len, buf, bufsz, pos);
+	dssh_serialize_uint32(len, buf, bufsz, pos);
 	memcpy(&buf[*pos], str, len);
 	*pos += len;
 }
 
-DEUCE_SSH_PRIVATE int
-deuce_ssh_transport_kexinit(deuce_ssh_session sess)
+DSSH_PRIVATE int
+dssh_transport_kexinit(dssh_session sess)
 {
 	size_t kexinit_bufsz = sess->trans.packet_buf_sz;
 	uint8_t *kexinit = malloc(kexinit_bufsz);
 	if (kexinit == NULL)
-		return DEUCE_SSH_ERROR_ALLOC;
+		return DSSH_ERROR_ALLOC;
 	size_t pos = 0;
 
 	kexinit[pos++] = SSH_MSG_KEXINIT;
 
 	if (RAND_bytes(&kexinit[pos], 16) != 1)
-		return DEUCE_SSH_ERROR_INIT;
+		return DSSH_ERROR_INIT;
 	pos += 16;
 
 	char namelist[1024];
 	size_t noff;
 
-	noff = offsetof(struct deuce_ssh_kex_s, name);
+	noff = offsetof(struct dssh_kex_s, name);
 	build_namelist(gconf.kex_head, noff, namelist, sizeof(namelist));
 	serialize_namelist_from_str(namelist, kexinit, sess->trans.packet_buf_sz, &pos);
 
 	if (sess->trans.client) {
-		noff = offsetof(struct deuce_ssh_key_algo_s, name);
+		noff = offsetof(struct dssh_key_algo_s, name);
 		build_namelist(gconf.key_algo_head, noff, namelist, sizeof(namelist));
 	}
 	else {
 		/* Server: only advertise key algorithms we have a key for */
 		size_t nlpos = 0;
 		bool nlfirst = true;
-		for (deuce_ssh_key_algo ka = gconf.key_algo_head; ka != NULL;
+		for (dssh_key_algo ka = gconf.key_algo_head; ka != NULL;
 		    ka = ka->next) {
 			if (ka->haskey == NULL ||
 			    !ka->haskey(ka->ctx))
@@ -912,17 +912,17 @@ deuce_ssh_transport_kexinit(deuce_ssh_session sess)
 	}
 	serialize_namelist_from_str(namelist, kexinit, sess->trans.packet_buf_sz, &pos);
 
-	noff = offsetof(struct deuce_ssh_enc_s, name);
+	noff = offsetof(struct dssh_enc_s, name);
 	build_namelist(gconf.enc_head, noff, namelist, sizeof(namelist));
 	serialize_namelist_from_str(namelist, kexinit, sess->trans.packet_buf_sz, &pos);
 	serialize_namelist_from_str(namelist, kexinit, sess->trans.packet_buf_sz, &pos);
 
-	noff = offsetof(struct deuce_ssh_mac_s, name);
+	noff = offsetof(struct dssh_mac_s, name);
 	build_namelist(gconf.mac_head, noff, namelist, sizeof(namelist));
 	serialize_namelist_from_str(namelist, kexinit, sess->trans.packet_buf_sz, &pos);
 	serialize_namelist_from_str(namelist, kexinit, sess->trans.packet_buf_sz, &pos);
 
-	noff = offsetof(struct deuce_ssh_comp_s, name);
+	noff = offsetof(struct dssh_comp_s, name);
 	build_namelist(gconf.comp_head, noff, namelist, sizeof(namelist));
 	serialize_namelist_from_str(namelist, kexinit, sess->trans.packet_buf_sz, &pos);
 	serialize_namelist_from_str(namelist, kexinit, sess->trans.packet_buf_sz, &pos);
@@ -934,7 +934,7 @@ deuce_ssh_transport_kexinit(deuce_ssh_session sess)
 	kexinit[pos++] = 0;
 
 	/* reserved */
-	deuce_ssh_serialize_uint32(0, kexinit, sess->trans.packet_buf_sz, &pos);
+	dssh_serialize_uint32(0, kexinit, sess->trans.packet_buf_sz, &pos);
 
 	/* Save our KEXINIT for exchange hash — transfer ownership */
 	free(sess->trans.our_kexinit);
@@ -942,7 +942,7 @@ deuce_ssh_transport_kexinit(deuce_ssh_session sess)
 	sess->trans.our_kexinit_sz = pos;
 
 	/* send_packet reads from kexinit (our_kexinit) into tx_packet */
-	int res = deuce_ssh_transport_send_packet(sess, kexinit, pos, NULL);
+	int res = dssh_transport_send_packet(sess, kexinit, pos, NULL);
 	if (res < 0)
 		return res;
 
@@ -954,15 +954,15 @@ deuce_ssh_transport_kexinit(deuce_ssh_session sess)
 		uint8_t msg_type;
 		uint8_t *peer_payload;
 		size_t peer_len;
-		res = deuce_ssh_transport_recv_packet(sess, &msg_type, &peer_payload, &peer_len);
+		res = dssh_transport_recv_packet(sess, &msg_type, &peer_payload, &peer_len);
 		if (res < 0)
 			return res;
 		if (msg_type != SSH_MSG_KEXINIT)
-			return DEUCE_SSH_ERROR_PARSE;
+			return DSSH_ERROR_PARSE;
 
 		sess->trans.peer_kexinit = malloc(peer_len);
 		if (sess->trans.peer_kexinit == NULL)
-			return DEUCE_SSH_ERROR_ALLOC;
+			return DSSH_ERROR_ALLOC;
 		memcpy(sess->trans.peer_kexinit, peer_payload, peer_len);
 		sess->trans.peer_kexinit_sz = peer_len;
 	}
@@ -976,15 +976,15 @@ deuce_ssh_transport_kexinit(deuce_ssh_session sess)
 	char peer_lists[10][1024];
 	for (int i = 0; i < 10; i++) {
 		uint32_t nlen;
-		if (deuce_ssh_parse_uint32(&pk[ppos], pk_len - ppos, &nlen) < 4)
-			return DEUCE_SSH_ERROR_PARSE;
+		if (dssh_parse_uint32(&pk[ppos], pk_len - ppos, &nlen) < 4)
+			return DSSH_ERROR_PARSE;
 		ppos += 4;
 		if (ppos + nlen > pk_len)
-			return DEUCE_SSH_ERROR_PARSE;
+			return DSSH_ERROR_PARSE;
 		for (uint32_t j = 0; j < nlen; j++) {
 			uint8_t ch = pk[ppos + j];
 			if (ch <= ' ' || ch >= 127)
-				return DEUCE_SSH_ERROR_PARSE;
+				return DSSH_ERROR_PARSE;
 		}
 		/* RFC 4251 s6: individual names MUST NOT exceed 64 chars */
 		{
@@ -992,7 +992,7 @@ deuce_ssh_transport_kexinit(deuce_ssh_session sess)
 			for (uint32_t j = 0; j <= nlen; j++) {
 				if (j == nlen || pk[ppos + j] == ',') {
 					if (j - name_start > 64)
-						return DEUCE_SSH_ERROR_PARSE;
+						return DSSH_ERROR_PARSE;
 					name_start = j + 1;
 				}
 			}
@@ -1019,11 +1019,11 @@ deuce_ssh_transport_kexinit(deuce_ssh_session sess)
 	const char *client_comp_s2c, *server_comp_s2c;
 
 	char our_lists[5][1024];
-	build_namelist(gconf.kex_head, offsetof(struct deuce_ssh_kex_s, name), our_lists[0], sizeof(our_lists[0]));
-	build_namelist(gconf.key_algo_head, offsetof(struct deuce_ssh_key_algo_s, name), our_lists[1], sizeof(our_lists[1]));
-	build_namelist(gconf.enc_head, offsetof(struct deuce_ssh_enc_s, name), our_lists[2], sizeof(our_lists[2]));
-	build_namelist(gconf.mac_head, offsetof(struct deuce_ssh_mac_s, name), our_lists[3], sizeof(our_lists[3]));
-	build_namelist(gconf.comp_head, offsetof(struct deuce_ssh_comp_s, name), our_lists[4], sizeof(our_lists[4]));
+	build_namelist(gconf.kex_head, offsetof(struct dssh_kex_s, name), our_lists[0], sizeof(our_lists[0]));
+	build_namelist(gconf.key_algo_head, offsetof(struct dssh_key_algo_s, name), our_lists[1], sizeof(our_lists[1]));
+	build_namelist(gconf.enc_head, offsetof(struct dssh_enc_s, name), our_lists[2], sizeof(our_lists[2]));
+	build_namelist(gconf.mac_head, offsetof(struct dssh_mac_s, name), our_lists[3], sizeof(our_lists[3]));
+	build_namelist(gconf.comp_head, offsetof(struct dssh_comp_s, name), our_lists[4], sizeof(our_lists[4]));
 
 	if (sess->trans.client) {
 		client_kex = our_lists[0];      server_kex = peer_lists[0];
@@ -1047,21 +1047,21 @@ deuce_ssh_transport_kexinit(deuce_ssh_session sess)
 	}
 
 	sess->trans.kex_selected = negotiate_algo(client_kex, server_kex,
-	    gconf.kex_head, offsetof(struct deuce_ssh_kex_s, name));
+	    gconf.kex_head, offsetof(struct dssh_kex_s, name));
 	sess->trans.key_algo_selected = negotiate_algo(client_hostkey, server_hostkey,
-	    gconf.key_algo_head, offsetof(struct deuce_ssh_key_algo_s, name));
+	    gconf.key_algo_head, offsetof(struct dssh_key_algo_s, name));
 	sess->trans.enc_c2s_selected = negotiate_algo(client_enc_c2s, server_enc_c2s,
-	    gconf.enc_head, offsetof(struct deuce_ssh_enc_s, name));
+	    gconf.enc_head, offsetof(struct dssh_enc_s, name));
 	sess->trans.enc_s2c_selected = negotiate_algo(client_enc_s2c, server_enc_s2c,
-	    gconf.enc_head, offsetof(struct deuce_ssh_enc_s, name));
+	    gconf.enc_head, offsetof(struct dssh_enc_s, name));
 	sess->trans.mac_c2s_selected = negotiate_algo(client_mac_c2s, server_mac_c2s,
-	    gconf.mac_head, offsetof(struct deuce_ssh_mac_s, name));
+	    gconf.mac_head, offsetof(struct dssh_mac_s, name));
 	sess->trans.mac_s2c_selected = negotiate_algo(client_mac_s2c, server_mac_s2c,
-	    gconf.mac_head, offsetof(struct deuce_ssh_mac_s, name));
+	    gconf.mac_head, offsetof(struct dssh_mac_s, name));
 	sess->trans.comp_c2s_selected = negotiate_algo(client_comp_c2s, server_comp_c2s,
-	    gconf.comp_head, offsetof(struct deuce_ssh_comp_s, name));
+	    gconf.comp_head, offsetof(struct dssh_comp_s, name));
 	sess->trans.comp_s2c_selected = negotiate_algo(client_comp_s2c, server_comp_s2c,
-	    gconf.comp_head, offsetof(struct deuce_ssh_comp_s, name));
+	    gconf.comp_head, offsetof(struct dssh_comp_s, name));
 
 	if (sess->trans.kex_selected == NULL ||
 	    sess->trans.key_algo_selected == NULL ||
@@ -1071,10 +1071,10 @@ deuce_ssh_transport_kexinit(deuce_ssh_session sess)
 	    sess->trans.mac_s2c_selected == NULL ||
 	    sess->trans.comp_c2s_selected == NULL ||
 	    sess->trans.comp_s2c_selected == NULL) {
-		deuce_ssh_transport_disconnect(sess,
+		dssh_transport_disconnect(sess,
 		    SSH_DISCONNECT_KEY_EXCHANGE_FAILED,
 		    "no common algorithm");
-		return DEUCE_SSH_ERROR_INIT;
+		return DSSH_ERROR_INIT;
 	}
 
 	/* Handle first_kex_packet_follows (RFC 4253 s7.1):
@@ -1105,11 +1105,11 @@ deuce_ssh_transport_kexinit(deuce_ssh_session sess)
  * Key exchange (RFC 4253 s7)
  * ================================================================ */
 
-DEUCE_SSH_PRIVATE int
-deuce_ssh_transport_kex(deuce_ssh_session sess)
+DSSH_PRIVATE int
+dssh_transport_kex(dssh_session sess)
 {
 	if (sess->trans.kex_selected == NULL || sess->trans.kex_selected->handler == NULL)
-		return DEUCE_SSH_ERROR_INIT;
+		return DSSH_ERROR_INIT;
 	return sess->trans.kex_selected->handler(sess);
 }
 
@@ -1127,12 +1127,12 @@ derive_key(const char *hash_name,
 {
 	EVP_MD *md = EVP_MD_fetch(NULL, hash_name, NULL);
 	if (md == NULL)
-		return DEUCE_SSH_ERROR_INIT;
+		return DSSH_ERROR_INIT;
 
 	EVP_MD_CTX *ctx = EVP_MD_CTX_new();
 	if (ctx == NULL) {
 		EVP_MD_free(md);
-		return DEUCE_SSH_ERROR_ALLOC;
+		return DSSH_ERROR_ALLOC;
 	}
 
 	size_t md_len = EVP_MD_get_size(md);
@@ -1147,7 +1147,7 @@ derive_key(const char *hash_name,
 	    EVP_DigestFinal_ex(ctx, tmp, NULL) != 1) {
 		EVP_MD_CTX_free(ctx);
 		EVP_MD_free(md);
-		return DEUCE_SSH_ERROR_INIT;
+		return DSSH_ERROR_INIT;
 	}
 	size_t copy = md_len < needed ? md_len : needed;
 	memcpy(out, tmp, copy);
@@ -1161,7 +1161,7 @@ derive_key(const char *hash_name,
 		    EVP_DigestFinal_ex(ctx, tmp, NULL) != 1) {
 			EVP_MD_CTX_free(ctx);
 			EVP_MD_free(md);
-			return DEUCE_SSH_ERROR_INIT;
+			return DSSH_ERROR_INIT;
 		}
 		copy = md_len < (needed - have) ? md_len : (needed - have);
 		memcpy(&out[have], tmp, copy);
@@ -1173,37 +1173,37 @@ derive_key(const char *hash_name,
 	return 0;
 }
 
-DEUCE_SSH_PRIVATE int
-deuce_ssh_transport_newkeys(deuce_ssh_session sess)
+DSSH_PRIVATE int
+dssh_transport_newkeys(dssh_session sess)
 {
 	/*
 	 * Save references to OLD encryption/MAC modules so we can call
 	 * the correct cleanup functions after negotiation may have
 	 * changed the _selected pointers (rekey case).
 	 */
-	deuce_ssh_enc old_enc_c2s = sess->trans.enc_c2s_selected;
-	deuce_ssh_enc old_enc_s2c = sess->trans.enc_s2c_selected;
-	deuce_ssh_mac old_mac_c2s = sess->trans.mac_c2s_selected;
-	deuce_ssh_mac old_mac_s2c = sess->trans.mac_s2c_selected;
+	dssh_enc old_enc_c2s = sess->trans.enc_c2s_selected;
+	dssh_enc old_enc_s2c = sess->trans.enc_s2c_selected;
+	dssh_mac old_mac_c2s = sess->trans.mac_c2s_selected;
+	dssh_mac old_mac_s2c = sess->trans.mac_s2c_selected;
 
 	uint8_t newkeys_msg = SSH_MSG_NEWKEYS;
-	int res = deuce_ssh_transport_send_packet(sess, &newkeys_msg, 1, NULL);
+	int res = dssh_transport_send_packet(sess, &newkeys_msg, 1, NULL);
 	if (res < 0)
 		return res;
 
 	uint8_t msg_type;
 	uint8_t *payload;
 	size_t payload_len;
-	res = deuce_ssh_transport_recv_packet(sess, &msg_type, &payload, &payload_len);
+	res = dssh_transport_recv_packet(sess, &msg_type, &payload, &payload_len);
 	if (res < 0)
 		return res;
 	if (msg_type != SSH_MSG_NEWKEYS)
-		return DEUCE_SSH_ERROR_PARSE;
+		return DSSH_ERROR_PARSE;
 
 	if (sess->trans.session_id == NULL) {
 		sess->trans.session_id = malloc(sess->trans.exchange_hash_sz);
 		if (sess->trans.session_id == NULL)
-			return DEUCE_SSH_ERROR_ALLOC;
+			return DSSH_ERROR_ALLOC;
 		memcpy(sess->trans.session_id, sess->trans.exchange_hash,
 		    sess->trans.exchange_hash_sz);
 		sess->trans.session_id_sz = sess->trans.exchange_hash_sz;
@@ -1217,9 +1217,9 @@ deuce_ssh_transport_newkeys(deuce_ssh_session sess)
 	size_t mpint_wire_len = 4 + mpint_data_len;
 	uint8_t *k_mpint = malloc(mpint_wire_len);
 	if (k_mpint == NULL)
-		return DEUCE_SSH_ERROR_ALLOC;
+		return DSSH_ERROR_ALLOC;
 	size_t kpos = 0;
-	deuce_ssh_serialize_uint32((uint32_t)mpint_data_len, k_mpint, mpint_wire_len, &kpos);
+	dssh_serialize_uint32((uint32_t)mpint_data_len, k_mpint, mpint_wire_len, &kpos);
 	if (need_pad)
 		k_mpint[kpos++] = 0;
 	memcpy(&k_mpint[kpos], ss, ss_sz);
@@ -1242,7 +1242,7 @@ deuce_ssh_transport_newkeys(deuce_ssh_session sess)
 		free(iv_c2s); free(iv_s2c);
 		free(key_c2s); free(key_s2c);
 		free(integ_c2s); free(integ_s2c);
-		return DEUCE_SSH_ERROR_ALLOC;
+		return DSSH_ERROR_ALLOC;
 	}
 
 	const uint8_t *H = sess->trans.exchange_hash;
@@ -1304,8 +1304,8 @@ deuce_ssh_transport_newkeys(deuce_ssh_session sess)
 	}
 
 	/* Initialize new encryption contexts via the enc module */
-	deuce_ssh_enc enc_c2s = sess->trans.enc_c2s_selected;
-	deuce_ssh_enc enc_s2c = sess->trans.enc_s2c_selected;
+	dssh_enc enc_c2s = sess->trans.enc_c2s_selected;
+	dssh_enc enc_s2c = sess->trans.enc_s2c_selected;
 
 	if (enc_c2s->init != NULL) {
 		res = enc_c2s->init(key_c2s, iv_c2s, sess->trans.client,
@@ -1358,8 +1358,8 @@ keys_cleanup:
  * Init / cleanup / registration
  * ================================================================ */
 
-DEUCE_SSH_PRIVATE int
-deuce_ssh_transport_init(deuce_ssh_session sess, size_t max_packet_size)
+DSSH_PRIVATE int
+dssh_transport_init(dssh_session sess, size_t max_packet_size)
 {
 	gconf.used = true;
 	if (gconf.software_version == NULL)
@@ -1386,7 +1386,7 @@ deuce_ssh_transport_init(deuce_ssh_session sess, size_t max_packet_size)
 		sess->trans.rx_packet = NULL;
 		sess->trans.tx_mac_scratch = NULL;
 		sess->trans.rx_mac_scratch = NULL;
-		return DEUCE_SSH_ERROR_ALLOC;
+		return DSSH_ERROR_ALLOC;
 	}
 
 	if (mtx_init(&sess->trans.tx_mtx, mtx_plain) != thrd_success ||
@@ -1395,7 +1395,7 @@ deuce_ssh_transport_init(deuce_ssh_session sess, size_t max_packet_size)
 		free(sess->trans.rx_packet);
 		free(sess->trans.tx_mac_scratch);
 		free(sess->trans.rx_mac_scratch);
-		return DEUCE_SSH_ERROR_INIT;
+		return DSSH_ERROR_INIT;
 	}
 	if (cnd_init(&sess->trans.rekey_cnd) != thrd_success) {
 		mtx_destroy(&sess->trans.tx_mtx);
@@ -1404,7 +1404,7 @@ deuce_ssh_transport_init(deuce_ssh_session sess, size_t max_packet_size)
 		free(sess->trans.rx_packet);
 		free(sess->trans.tx_mac_scratch);
 		free(sess->trans.rx_mac_scratch);
-		return DEUCE_SSH_ERROR_INIT;
+		return DSSH_ERROR_INIT;
 	}
 	sess->trans.rekey_in_progress = false;
 
@@ -1431,8 +1431,8 @@ deuce_ssh_transport_init(deuce_ssh_session sess, size_t max_packet_size)
 	return 0;
 }
 
-DEUCE_SSH_PRIVATE void
-deuce_ssh_transport_cleanup(deuce_ssh_session sess)
+DSSH_PRIVATE void
+dssh_transport_cleanup(dssh_session sess)
 {
 	if (sess->trans.kex_selected) {
 		if (sess->trans.kex_selected->cleanup != NULL)
@@ -1516,17 +1516,17 @@ deuce_ssh_transport_cleanup(deuce_ssh_session sess)
 	}
 }
 
-DEUCE_SSH_PUBLIC int
-deuce_ssh_transport_register_kex(deuce_ssh_kex kex)
+DSSH_PUBLIC int
+dssh_transport_register_kex(dssh_kex kex)
 {
 	if (gconf.used)
-		return DEUCE_SSH_ERROR_TOOLATE;
+		return DSSH_ERROR_TOOLATE;
 	if (strlen(kex->name) > 64 || strlen(kex->name) == 0)
-		return DEUCE_SSH_ERROR_TOOLONG;
+		return DSSH_ERROR_TOOLONG;
 	if (kex->next)
-		return DEUCE_SSH_ERROR_MUST_BE_NULL;
+		return DSSH_ERROR_MUST_BE_NULL;
 	if (gconf.kex_entries + 1 == SIZE_MAX)
-		return DEUCE_SSH_ERROR_TOOMANY;
+		return DSSH_ERROR_TOOMANY;
 	if (gconf.kex_head == NULL)
 		gconf.kex_head = kex;
 	if (gconf.kex_tail != NULL)
@@ -1536,17 +1536,17 @@ deuce_ssh_transport_register_kex(deuce_ssh_kex kex)
 	return 0;
 }
 
-DEUCE_SSH_PUBLIC int
-deuce_ssh_transport_register_key_algo(deuce_ssh_key_algo key_algo)
+DSSH_PUBLIC int
+dssh_transport_register_key_algo(dssh_key_algo key_algo)
 {
 	if (gconf.used)
-		return DEUCE_SSH_ERROR_TOOLATE;
+		return DSSH_ERROR_TOOLATE;
 	if (strlen(key_algo->name) > 64 || strlen(key_algo->name) == 0)
-		return DEUCE_SSH_ERROR_TOOLONG;
+		return DSSH_ERROR_TOOLONG;
 	if (key_algo->next)
-		return DEUCE_SSH_ERROR_MUST_BE_NULL;
+		return DSSH_ERROR_MUST_BE_NULL;
 	if (gconf.key_algo_entries + 1 == SIZE_MAX)
-		return DEUCE_SSH_ERROR_TOOMANY;
+		return DSSH_ERROR_TOOMANY;
 	if (gconf.key_algo_head == NULL)
 		gconf.key_algo_head = key_algo;
 	if (gconf.key_algo_tail != NULL)
@@ -1556,17 +1556,17 @@ deuce_ssh_transport_register_key_algo(deuce_ssh_key_algo key_algo)
 	return 0;
 }
 
-DEUCE_SSH_PUBLIC int
-deuce_ssh_transport_register_enc(deuce_ssh_enc enc)
+DSSH_PUBLIC int
+dssh_transport_register_enc(dssh_enc enc)
 {
 	if (gconf.used)
-		return DEUCE_SSH_ERROR_TOOLATE;
+		return DSSH_ERROR_TOOLATE;
 	if (strlen(enc->name) > 64 || strlen(enc->name) == 0)
-		return DEUCE_SSH_ERROR_TOOLONG;
+		return DSSH_ERROR_TOOLONG;
 	if (enc->next)
-		return DEUCE_SSH_ERROR_MUST_BE_NULL;
+		return DSSH_ERROR_MUST_BE_NULL;
 	if (gconf.enc_entries + 1 == SIZE_MAX)
-		return DEUCE_SSH_ERROR_TOOMANY;
+		return DSSH_ERROR_TOOMANY;
 	if (gconf.enc_head == NULL)
 		gconf.enc_head = enc;
 	if (gconf.enc_tail != NULL)
@@ -1576,17 +1576,17 @@ deuce_ssh_transport_register_enc(deuce_ssh_enc enc)
 	return 0;
 }
 
-DEUCE_SSH_PUBLIC int
-deuce_ssh_transport_register_mac(deuce_ssh_mac mac)
+DSSH_PUBLIC int
+dssh_transport_register_mac(dssh_mac mac)
 {
 	if (gconf.used)
-		return DEUCE_SSH_ERROR_TOOLATE;
+		return DSSH_ERROR_TOOLATE;
 	if (strlen(mac->name) > 64 || strlen(mac->name) == 0)
-		return DEUCE_SSH_ERROR_TOOLONG;
+		return DSSH_ERROR_TOOLONG;
 	if (mac->next)
-		return DEUCE_SSH_ERROR_MUST_BE_NULL;
+		return DSSH_ERROR_MUST_BE_NULL;
 	if (gconf.mac_entries + 1 == SIZE_MAX)
-		return DEUCE_SSH_ERROR_TOOMANY;
+		return DSSH_ERROR_TOOMANY;
 	if (gconf.mac_head == NULL)
 		gconf.mac_head = mac;
 	if (gconf.mac_tail != NULL)
@@ -1596,17 +1596,17 @@ deuce_ssh_transport_register_mac(deuce_ssh_mac mac)
 	return 0;
 }
 
-DEUCE_SSH_PUBLIC int
-deuce_ssh_transport_register_comp(deuce_ssh_comp comp)
+DSSH_PUBLIC int
+dssh_transport_register_comp(dssh_comp comp)
 {
 	if (gconf.used)
-		return DEUCE_SSH_ERROR_TOOLATE;
+		return DSSH_ERROR_TOOLATE;
 	if (strlen(comp->name) > 64 || strlen(comp->name) == 0)
-		return DEUCE_SSH_ERROR_TOOLONG;
+		return DSSH_ERROR_TOOLONG;
 	if (comp->next)
-		return DEUCE_SSH_ERROR_MUST_BE_NULL;
+		return DSSH_ERROR_MUST_BE_NULL;
 	if (gconf.comp_entries + 1 == SIZE_MAX)
-		return DEUCE_SSH_ERROR_TOOMANY;
+		return DSSH_ERROR_TOOMANY;
 	if (gconf.comp_head == NULL)
 		gconf.comp_head = comp;
 	if (gconf.comp_tail != NULL)
@@ -1616,17 +1616,17 @@ deuce_ssh_transport_register_comp(deuce_ssh_comp comp)
 	return 0;
 }
 
-DEUCE_SSH_PUBLIC int
-deuce_ssh_transport_register_lang(deuce_ssh_language lang)
+DSSH_PUBLIC int
+dssh_transport_register_lang(dssh_language lang)
 {
 	if (gconf.used)
-		return DEUCE_SSH_ERROR_TOOLATE;
+		return DSSH_ERROR_TOOLATE;
 	if (strlen(lang->name) > 64 || strlen(lang->name) == 0)
-		return DEUCE_SSH_ERROR_TOOLONG;
+		return DSSH_ERROR_TOOLONG;
 	if (lang->next)
-		return DEUCE_SSH_ERROR_MUST_BE_NULL;
+		return DSSH_ERROR_MUST_BE_NULL;
 	if (gconf.lang_entries + 1 == SIZE_MAX)
-		return DEUCE_SSH_ERROR_TOOMANY;
+		return DSSH_ERROR_TOOMANY;
 	if (gconf.lang_head == NULL)
 		gconf.lang_head = lang;
 	if (gconf.lang_tail != NULL)
@@ -1636,11 +1636,11 @@ deuce_ssh_transport_register_lang(deuce_ssh_language lang)
 	return 0;
 }
 
-DEUCE_SSH_PUBLIC int
-deuce_ssh_transport_set_callbacks(deuce_ssh_transport_io_cb tx, deuce_ssh_transport_io_cb rx, deuce_ssh_transport_rxline_cb rx_line, deuce_ssh_transport_extra_line_cb extra_line_cb)
+DSSH_PUBLIC int
+dssh_transport_set_callbacks(dssh_transport_io_cb tx, dssh_transport_io_cb rx, dssh_transport_rxline_cb rx_line, dssh_transport_extra_line_cb extra_line_cb)
 {
 	if (gconf.used)
-		return DEUCE_SSH_ERROR_TOOLATE;
+		return DSSH_ERROR_TOOLATE;
 	gconf.tx = tx;
 	gconf.rx = rx;
 	gconf.rx_line = rx_line;

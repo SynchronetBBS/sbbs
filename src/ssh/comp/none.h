@@ -1,13 +1,13 @@
 #ifndef NONE_COMP_H
 #define NONE_COMP_H
 
-#include "portable.h"
+#include "deucessh-portable.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-DEUCE_SSH_PUBLIC int register_none_comp(void);
+DSSH_PUBLIC int register_none_comp(void);
 
 #ifdef __cplusplus
 }

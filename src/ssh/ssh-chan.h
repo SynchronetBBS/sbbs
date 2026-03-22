@@ -5,8 +5,8 @@
  * and by the demux implementation.
  */
 
-#ifndef DEUCE_SSH_CHAN_H
-#define DEUCE_SSH_CHAN_H
+#ifndef DSSH_CHAN_H
+#define DSSH_CHAN_H
 
 #include <stdbool.h>
 #include <stddef.h>
@@ -17,7 +17,7 @@
  * Circular byte buffer (session channel stdout/stderr)
  * ================================================================ */
 
-struct deuce_ssh_bytebuf {
+struct dssh_bytebuf {
 	uint8_t *data;
 	size_t capacity;
 	size_t head;     /* next read position */
@@ -26,77 +26,77 @@ struct deuce_ssh_bytebuf {
 	size_t total;    /* total bytes ever written (for signal marks) */
 };
 
-DEUCE_SSH_PRIVATE int  deuce_ssh_bytebuf_init(struct deuce_ssh_bytebuf *b, size_t capacity);
-DEUCE_SSH_PRIVATE void deuce_ssh_bytebuf_free(struct deuce_ssh_bytebuf *b);
+DSSH_PRIVATE int  dssh_bytebuf_init(struct dssh_bytebuf *b, size_t capacity);
+DSSH_PRIVATE void dssh_bytebuf_free(struct dssh_bytebuf *b);
 /* Returns bytes actually written (may be less than len if full) */
-DEUCE_SSH_PRIVATE size_t deuce_ssh_bytebuf_write(struct deuce_ssh_bytebuf *b,
+DSSH_PRIVATE size_t dssh_bytebuf_write(struct dssh_bytebuf *b,
     const uint8_t *data, size_t len);
 /* Returns bytes actually read (may be less than bufsz if empty).
  * limit: max bytes to read (0 = no limit beyond buffer contents) */
-DEUCE_SSH_PRIVATE size_t deuce_ssh_bytebuf_read(struct deuce_ssh_bytebuf *b,
+DSSH_PRIVATE size_t dssh_bytebuf_read(struct dssh_bytebuf *b,
     uint8_t *buf, size_t bufsz, size_t limit);
 /* Returns number of bytes available to read */
-DEUCE_SSH_PRIVATE size_t deuce_ssh_bytebuf_available(const struct deuce_ssh_bytebuf *b);
+DSSH_PRIVATE size_t dssh_bytebuf_available(const struct dssh_bytebuf *b);
 /* Returns free space */
-DEUCE_SSH_PRIVATE size_t deuce_ssh_bytebuf_free_space(const struct deuce_ssh_bytebuf *b);
+DSSH_PRIVATE size_t dssh_bytebuf_free_space(const struct dssh_bytebuf *b);
 
 /* ================================================================
  * Message queue (raw channel data)
  * ================================================================ */
 
-struct deuce_ssh_msgqueue_entry {
-	struct deuce_ssh_msgqueue_entry *next;
+struct dssh_msgqueue_entry {
+	struct dssh_msgqueue_entry *next;
 	size_t len;
 	uint8_t data[];
 };
 
-struct deuce_ssh_msgqueue {
-	struct deuce_ssh_msgqueue_entry *head;
-	struct deuce_ssh_msgqueue_entry *tail;
+struct dssh_msgqueue {
+	struct dssh_msgqueue_entry *head;
+	struct dssh_msgqueue_entry *tail;
 	size_t total_bytes;   /* sum of all queued message lengths */
 	size_t count;         /* number of messages */
 };
 
-DEUCE_SSH_PRIVATE void deuce_ssh_msgqueue_init(struct deuce_ssh_msgqueue *q);
-DEUCE_SSH_PRIVATE void deuce_ssh_msgqueue_free(struct deuce_ssh_msgqueue *q);
+DSSH_PRIVATE void dssh_msgqueue_init(struct dssh_msgqueue *q);
+DSSH_PRIVATE void dssh_msgqueue_free(struct dssh_msgqueue *q);
 /* Enqueue a message (copies data). Returns 0 on success. */
-DEUCE_SSH_PRIVATE int  deuce_ssh_msgqueue_push(struct deuce_ssh_msgqueue *q,
+DSSH_PRIVATE int  dssh_msgqueue_push(struct dssh_msgqueue *q,
     const uint8_t *data, size_t len);
 /* Peek at the next message size. Returns 0 if empty. */
-DEUCE_SSH_PRIVATE size_t deuce_ssh_msgqueue_peek_size(const struct deuce_ssh_msgqueue *q);
+DSSH_PRIVATE size_t dssh_msgqueue_peek_size(const struct dssh_msgqueue *q);
 /* Dequeue a message into buf. Returns message length, or
- * DEUCE_SSH_ERROR_TOOLONG if bufsz too small (message stays queued),
+ * DSSH_ERROR_TOOLONG if bufsz too small (message stays queued),
  * or 0 if empty. */
-DEUCE_SSH_PRIVATE int64_t deuce_ssh_msgqueue_pop(struct deuce_ssh_msgqueue *q,
+DSSH_PRIVATE int64_t dssh_msgqueue_pop(struct dssh_msgqueue *q,
     uint8_t *buf, size_t bufsz);
 
 /* ================================================================
  * Signal queue with stream position marks
  * ================================================================ */
 
-struct deuce_ssh_signal_mark {
-	struct deuce_ssh_signal_mark *next;
+struct dssh_signal_mark {
+	struct dssh_signal_mark *next;
 	size_t stdout_pos;    /* bytebuf total at time of signal */
 	size_t stderr_pos;    /* bytebuf total at time of signal */
 	char name[32];        /* signal name without "SIG" prefix */
 };
 
-struct deuce_ssh_signal_queue {
-	struct deuce_ssh_signal_mark *head;
-	struct deuce_ssh_signal_mark *tail;
+struct dssh_signal_queue {
+	struct dssh_signal_mark *head;
+	struct dssh_signal_mark *tail;
 };
 
-DEUCE_SSH_PRIVATE void deuce_ssh_sigqueue_init(struct deuce_ssh_signal_queue *q);
-DEUCE_SSH_PRIVATE void deuce_ssh_sigqueue_free(struct deuce_ssh_signal_queue *q);
+DSSH_PRIVATE void dssh_sigqueue_init(struct dssh_signal_queue *q);
+DSSH_PRIVATE void dssh_sigqueue_free(struct dssh_signal_queue *q);
 /* Record a signal at the current stream positions */
-DEUCE_SSH_PRIVATE int  deuce_ssh_sigqueue_push(struct deuce_ssh_signal_queue *q,
+DSSH_PRIVATE int  dssh_sigqueue_push(struct dssh_signal_queue *q,
     const char *name, size_t stdout_pos, size_t stderr_pos);
 /* Check if the front signal is ready (both streams drained past mark) */
-DEUCE_SSH_PRIVATE bool deuce_ssh_sigqueue_ready(const struct deuce_ssh_signal_queue *q,
+DSSH_PRIVATE bool dssh_sigqueue_ready(const struct dssh_signal_queue *q,
     size_t stdout_consumed, size_t stderr_consumed);
 /* Consume the front signal. Copies name into buf (bufsz >= 32).
  * Returns buf on success, or NULL if not ready. */
-DEUCE_SSH_PRIVATE const char *deuce_ssh_sigqueue_pop(struct deuce_ssh_signal_queue *q,
+DSSH_PRIVATE const char *dssh_sigqueue_pop(struct dssh_signal_queue *q,
     size_t stdout_consumed, size_t stderr_consumed,
     char *buf, size_t bufsz);
 
@@ -104,8 +104,8 @@ DEUCE_SSH_PRIVATE const char *deuce_ssh_sigqueue_pop(struct deuce_ssh_signal_que
  * Incoming channel open queue (for session_accept)
  * ================================================================ */
 
-struct deuce_ssh_incoming_open {
-	struct deuce_ssh_incoming_open *next;
+struct dssh_incoming_open {
+	struct dssh_incoming_open *next;
 	uint32_t peer_channel;
 	uint32_t peer_window;
 	uint32_t peer_max_packet;
@@ -113,25 +113,25 @@ struct deuce_ssh_incoming_open {
 	char channel_type[64];
 };
 
-struct deuce_ssh_accept_queue {
-	struct deuce_ssh_incoming_open *head;
-	struct deuce_ssh_incoming_open *tail;
+struct dssh_accept_queue {
+	struct dssh_incoming_open *head;
+	struct dssh_incoming_open *tail;
 };
 
-DEUCE_SSH_PRIVATE void deuce_ssh_acceptqueue_init(struct deuce_ssh_accept_queue *q);
-DEUCE_SSH_PRIVATE void deuce_ssh_acceptqueue_free(struct deuce_ssh_accept_queue *q);
-DEUCE_SSH_PRIVATE int  deuce_ssh_acceptqueue_push(struct deuce_ssh_accept_queue *q,
+DSSH_PRIVATE void dssh_acceptqueue_init(struct dssh_accept_queue *q);
+DSSH_PRIVATE void dssh_acceptqueue_free(struct dssh_accept_queue *q);
+DSSH_PRIVATE int  dssh_acceptqueue_push(struct dssh_accept_queue *q,
     uint32_t peer_channel, uint32_t peer_window,
     uint32_t peer_max_packet,
     const uint8_t *type, size_t type_len);
-DEUCE_SSH_PRIVATE struct deuce_ssh_incoming_open *deuce_ssh_acceptqueue_pop(
-    struct deuce_ssh_accept_queue *q);
+DSSH_PRIVATE struct dssh_incoming_open *dssh_acceptqueue_pop(
+    struct dssh_accept_queue *q);
 
 /* ================================================================
  * Channel types
  * ================================================================ */
 
-#define DEUCE_SSH_CHAN_SESSION  1
-#define DEUCE_SSH_CHAN_RAW     2
+#define DSSH_CHAN_SESSION  1
+#define DSSH_CHAN_RAW     2
 
 #endif
