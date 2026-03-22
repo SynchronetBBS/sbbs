@@ -826,18 +826,21 @@ magic_message(MSG msg)
 				// Sync modifier state with actual keyboard when
 				// regaining focus — key-up events are lost while
 				// another window is focused (ticket #226).
+				// GetAsyncKeyState checks actual hardware state;
+				// GetKeyState reflects message-queue state which
+				// is stale when key-up went to another window.
 				mods = 0;
-				if (GetKeyState(VK_CONTROL) < 0)
+				if (GetAsyncKeyState(VK_CONTROL) < 0)
 					mods |= WMOD_CTRL;
-				if (GetKeyState(VK_LCONTROL) < 0)
+				if (GetAsyncKeyState(VK_LCONTROL) < 0)
 					mods |= WMOD_LCTRL;
-				if (GetKeyState(VK_RCONTROL) < 0)
+				if (GetAsyncKeyState(VK_RCONTROL) < 0)
 					mods |= WMOD_RCTRL;
-				if (GetKeyState(VK_SHIFT) < 0)
+				if (GetAsyncKeyState(VK_SHIFT) < 0)
 					mods |= WMOD_SHIFT;
-				if (GetKeyState(VK_LSHIFT) < 0)
+				if (GetAsyncKeyState(VK_LSHIFT) < 0)
 					mods |= WMOD_LSHIFT;
-				if (GetKeyState(VK_RSHIFT) < 0)
+				if (GetAsyncKeyState(VK_RSHIFT) < 0)
 					mods |= WMOD_RSHIFT;
 			}
 			return false;
