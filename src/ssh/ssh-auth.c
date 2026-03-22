@@ -451,7 +451,7 @@ done:
  * Client-side authentication
  * ================================================================ */
 
-DEUCE_SSH_PUBLIC int
+static int
 deuce_ssh_auth_request_service(deuce_ssh_session sess, const char *service)
 {
 	size_t slen = strlen(service);
@@ -485,10 +485,24 @@ deuce_ssh_auth_request_service(deuce_ssh_session sess, const char *service)
 	return 0;
 }
 
+static int
+ensure_auth_service(deuce_ssh_session sess)
+{
+	if (sess->auth_service_requested)
+		return 0;
+	int res = deuce_ssh_auth_request_service(sess, "ssh-userauth");
+	if (res == 0)
+		sess->auth_service_requested = true;
+	return res;
+}
+
 DEUCE_SSH_PUBLIC int
 deuce_ssh_auth_get_methods(deuce_ssh_session sess,
     const char *username, char *methods, size_t methods_sz)
 {
+	int res = ensure_auth_service(sess);
+	if (res < 0)
+		return res;
 	size_t ulen = strlen(username);
 	static const char service[] = "ssh-connection";
 	static const char method[] = "none";
@@ -509,7 +523,7 @@ deuce_ssh_auth_get_methods(deuce_ssh_session sess,
 	memcpy(&msg[pos], method, sizeof(method) - 1);
 	pos += sizeof(method) - 1;
 
-	int res = deuce_ssh_transport_send_packet(sess, msg, pos, NULL);
+	res = deuce_ssh_transport_send_packet(sess, msg, pos, NULL);
 	free(msg);
 	if (res < 0)
 		return res;

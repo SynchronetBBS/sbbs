@@ -54,15 +54,9 @@ typedef void (*deuce_ssh_auth_banner_cb)(
     void *cbdata);
 
 /*
- * Request an SSH service (typically "ssh-userauth").
- * Sends SSH_MSG_SERVICE_REQUEST and waits for SERVICE_ACCEPT.
- * Returns 0 on success.
- */
-DEUCE_SSH_PUBLIC int deuce_ssh_auth_request_service(deuce_ssh_session sess, const char *service);
-
-/*
  * Query available authentication methods by sending a "none"
- * auth request.  On return:
+ * auth request.  Sends SSH_MSG_SERVICE_REQUEST automatically
+ * if not already sent.  On return:
  *   0 = no auth required (rare; methods buffer is empty)
  *   1 = auth required; methods is a comma-separated list
  *       (e.g., "publickey,password,keyboard-interactive")

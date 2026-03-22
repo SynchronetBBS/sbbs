@@ -120,6 +120,9 @@ struct deuce_ssh_session_s {
 	void *global_request_cb;
 	void *global_request_cbdata;
 
+	/* Auth state */
+	bool auth_service_requested;  /* ssh-userauth service requested */
+
 	/* Transport layer state */
 	struct deuce_ssh_transport_state_s trans;
 

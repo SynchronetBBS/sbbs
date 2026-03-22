@@ -268,28 +268,15 @@ main(int argc, char **argv)
 	deuce_ssh_dh_gex_set_provider(&sess, &dh_provider);
 
 	/* Handshake */
-	fprintf(stderr, "Version exchange...\n");
-	res = deuce_ssh_transport_version_exchange(&sess);
-	if (res < 0) { fprintf(stderr, "version_exchange failed: %d\n", res); return 1; }
+	fprintf(stderr, "Handshake...\n");
+	res = deuce_ssh_transport_handshake(&sess);
+	if (res < 0) { fprintf(stderr, "handshake failed: %d\n", res); return 1; }
 	fprintf(stderr, "Remote: %s\n", deuce_ssh_transport_get_remote_version(&sess));
-
-	fprintf(stderr, "KEXINIT...\n");
-	res = deuce_ssh_transport_kexinit(&sess);
-	if (res < 0) { fprintf(stderr, "kexinit failed: %d\n", res); return 1; }
 	fprintf(stderr, "KEX: %s, Host key: %s, Enc: %s, MAC: %s\n",
 	    deuce_ssh_transport_get_kex_name(&sess),
 	    deuce_ssh_transport_get_hostkey_name(&sess),
 	    deuce_ssh_transport_get_enc_name(&sess),
 	    deuce_ssh_transport_get_mac_name(&sess));
-
-	fprintf(stderr, "Key exchange...\n");
-	res = deuce_ssh_transport_kex(&sess);
-	if (res < 0) { fprintf(stderr, "kex failed: %d\n", res); return 1; }
-
-	fprintf(stderr, "NEWKEYS...\n");
-	res = deuce_ssh_transport_newkeys(&sess);
-	if (res < 0) { fprintf(stderr, "newkeys failed: %d\n", res); return 1; }
-	fprintf(stderr, "Encrypted transport established.\n");
 
 	/* Auth */
 	fprintf(stderr, "Handling auth...\n");
