@@ -118,9 +118,9 @@ channel handling is in the application).
 > Packets containing SSH_MSG_CHANNEL_EXTENDED_DATA **MUST** have
 > 'data_type_code' values.
 
-**CONFORMS** — `deuce_ssh_conn_recv()` parses the `data_type_code`
-field from CHANNEL_EXTENDED_DATA messages (the type code is at offset
-1+4, parsed as uint32 before the data string).
+**CONFORMS** — The demux thread parses the `data_type_code` field from
+CHANNEL_EXTENDED_DATA messages (the type code is at offset 1+4, parsed
+as uint32 before the data string).
 
 ---
 

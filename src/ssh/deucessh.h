@@ -148,9 +148,11 @@ struct deuce_ssh_session_s {
 /*
  * Initialize a session.  The caller must have already set trans.client
  * and zeroed the struct (e.g., via memset).  Allocates packet buffers
+ * sized to max_packet_size (pass 0 for the RFC minimum of 33280 bytes)
  * and initializes mutexes.  Returns 0 on success.
  */
-DEUCE_SSH_PUBLIC int deuce_ssh_session_init(deuce_ssh_session sess);
+DEUCE_SSH_PUBLIC int deuce_ssh_session_init(deuce_ssh_session sess,
+    size_t max_packet_size);
 
 /*
  * Signal a session to terminate.  Sets terminate flag and returns true

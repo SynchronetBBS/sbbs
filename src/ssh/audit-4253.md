@@ -515,9 +515,9 @@ packet is silently discarded via `recv_packet_raw()`.
 > **MUST** wait for a response to its service request message before
 > sending any further data.
 
-**CONFORMS** — The library's client-side functions
-(`deuce_ssh_auth_request_service()`, etc.) are synchronous —
-they send a request and wait for a response before returning.
+**CONFORMS** — The library's client-side auth functions are
+synchronous — they send a request and wait for a response before
+returning.  The auth service request is sent automatically.
 
 ---
 
@@ -880,9 +880,10 @@ use 80–127.
 > **MUST** wait for a response to its service request message before
 > sending any further data.
 
-**CONFORMS** — `deuce_ssh_auth_request_service()` is synchronous —
-it sends SSH_MSG_SERVICE_REQUEST and blocks on `recv_packet()` for
-SSH_MSG_SERVICE_ACCEPT before returning.
+**CONFORMS** — `request_service()` (internal, called automatically by
+the auth functions) is synchronous — it sends SSH_MSG_SERVICE_REQUEST
+and blocks on `recv_packet()` for SSH_MSG_SERVICE_ACCEPT before
+returning.
 
 ---
 

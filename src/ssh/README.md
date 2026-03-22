@@ -99,18 +99,12 @@ int main(void)
     /* sess.tx_cbdata = your_socket_ptr;  -- passed to I/O callbacks */
     /* sess.rx_cbdata = your_socket_ptr; */
     /* sess.rx_line_cbdata = your_socket_ptr; */
-    deuce_ssh_session_init(&sess);
+    deuce_ssh_session_init(&sess, 0);  /* 0 = RFC minimum (33280 bytes) */
 
-    /* 4. Handshake (single-threaded) */
-    deuce_ssh_transport_version_exchange(&sess);
-    deuce_ssh_transport_kexinit(&sess);
-    deuce_ssh_transport_kex(&sess);
-    deuce_ssh_transport_newkeys(&sess);
-    /* Encrypted transport is now active */
+    /* 4. Handshake */
+    deuce_ssh_transport_handshake(&sess);
 
     /* 5. Authenticate */
-    deuce_ssh_auth_request_service(&sess, "ssh-userauth");
-
     char methods[256];
     int r = deuce_ssh_auth_get_methods(&sess, "user", methods, sizeof(methods));
     if (r > 0) {
@@ -189,7 +183,7 @@ int main(void)
     struct deuce_ssh_session_s sess;
     memset(&sess, 0, sizeof(sess));
     sess.trans.client = false;  /* server mode */
-    deuce_ssh_session_init(&sess);
+    deuce_ssh_session_init(&sess, 0);  /* 0 = RFC minimum (33280 bytes) */
 
     /* 3. Load or generate a host key */
     ssh_ed25519_generate_key(&sess);
@@ -203,10 +197,7 @@ int main(void)
     deuce_ssh_dh_gex_set_provider(&sess, &provider);
 
     /* 5. Handshake */
-    deuce_ssh_transport_version_exchange(&sess);
-    deuce_ssh_transport_kexinit(&sess);
-    deuce_ssh_transport_kex(&sess);
-    deuce_ssh_transport_newkeys(&sess);
+    deuce_ssh_transport_handshake(&sess);
 
     /* 6. Authenticate */
     struct deuce_ssh_auth_server_cbs auth_cbs = {
@@ -648,14 +639,12 @@ any of these thresholds is exceeded:
 | Bytes per key | 1 GiB | `DEUCE_SSH_REKEY_BYTES` |
 | Time per key | 1 hour | `DEUCE_SSH_REKEY_SECONDS` |
 
-Auto-rekey is triggered transparently inside `recv_packet`.  Peer-
+Auto-rekey is triggered transparently by the demux thread.  Peer-
 initiated rekey (incoming `SSH_MSG_KEXINIT`) is also handled
 transparently.  The application does not need to do anything.
 
 For send-only sessions without a receive thread, a hard packet limit
-(2^31) returns `DEUCE_SSH_ERROR_REKEY_NEEDED`.  Call
-`deuce_ssh_transport_rekey()` to perform a manual rekey, or use
-`deuce_ssh_transport_rekey_needed()` to check whether a rekey is due.
+(2^31) returns `DEUCE_SSH_ERROR_REKEY_NEEDED`.
 
 ## Optional Callbacks
 
@@ -683,10 +672,6 @@ sess.global_request_cb = (void *)my_global_req_handler;
 sess.global_request_cbdata = my_context;
 ```
 
-`send_packet` accepts an optional `uint32_t *seq_out` parameter
-that returns the packet's sequence number, which can be correlated
-with UNIMPLEMENTED notifications.
-
 ## Error Handling
 
 All functions return 0 on success, negative `DEUCE_SSH_ERROR_*` codes
@@ -696,14 +681,16 @@ protocol errors (negotiation failure, MAC mismatch) before returning.
 Received `SSH_MSG_DISCONNECT` from the peer returns
 `DEUCE_SSH_ERROR_TERMINATED`.  Transport messages (`IGNORE`, `DEBUG`,
 `UNIMPLEMENTED`), global requests (`GLOBAL_REQUEST`), and peer-
-initiated rekey (`KEXINIT`) are handled transparently by `recv_packet`
+initiated rekey (`KEXINIT`) are handled transparently by the library
 and never returned to the caller.
 
 ## Packet Buffer Size
 
-Pass 0 to `deuce_ssh_session_init()` for the RFC minimum (33280 bytes).
-For larger payloads, pass a bigger value — the library allocates
-per-session tx, rx, and MAC scratch buffers at that size.
+`deuce_ssh_session_init()` takes a `max_packet_size` parameter that
+controls the per-session packet buffer allocation.  Pass 0 for the
+RFC minimum (33280 bytes), which accommodates the RFC-required
+32768-byte uncompressed payload with room for headers and padding.
+Pass a larger value to support bigger payloads.
 
 ## Files
 

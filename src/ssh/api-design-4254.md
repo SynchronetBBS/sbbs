@@ -75,12 +75,8 @@ memset(&sess, 0, sizeof(sess));
 sess.trans.client = true;
 deuce_ssh_session_init(&sess);
 
-/* 2. Handshake + auth (unchanged) */
-deuce_ssh_transport_version_exchange(&sess);
-deuce_ssh_transport_kexinit(&sess);
-deuce_ssh_transport_kex(&sess);
-deuce_ssh_transport_newkeys(&sess);
-deuce_ssh_auth_request_service(&sess, "ssh-userauth");
+/* 2. Handshake + auth */
+deuce_ssh_transport_handshake(&sess);
 deuce_ssh_auth_password(&sess, user, pass, NULL, NULL);
 
 /* 3. Start the demux thread */

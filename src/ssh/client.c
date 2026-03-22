@@ -271,7 +271,7 @@ main(int argc, char **argv)
 	/* Initialize session */
 	memset(&sess, 0, sizeof(sess));
 	sess.trans.client = true;
-	int res = deuce_ssh_session_init(&sess);
+	int res = deuce_ssh_session_init(&sess, 0);
 	if (res < 0) {
 		fprintf(stderr, "session_init failed: %d\n", res);
 		return 1;

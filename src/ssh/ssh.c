@@ -4,13 +4,13 @@
 #include "ssh-conn.h"
 
 DEUCE_SSH_PUBLIC int
-deuce_ssh_session_init(deuce_ssh_session sess)
+deuce_ssh_session_init(deuce_ssh_session sess, size_t max_packet_size)
 {
 	int res = mtx_init(&sess->mtx, mtx_plain);
 	if (res != thrd_success)
 		return DEUCE_SSH_ERROR_INIT;
 
-	res = deuce_ssh_transport_init(sess, 0);
+	res = deuce_ssh_transport_init(sess, max_packet_size);
 	if (res < 0)
 		return res;
 
