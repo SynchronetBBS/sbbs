@@ -39,7 +39,7 @@
 extern "C" {
 #endif
 
-DLLEXPORT const char* 	getHostNameByAddr(const char*);
+DLLEXPORT const char* 	getHostNameByAddr(const char*, char* buf, size_t size);
 DLLEXPORT str_list_t	getNameServerList(void);
 DLLEXPORT void			freeNameServerList(str_list_t);
 DLLEXPORT const char*	IPv4AddressToStr(uint32_t, char* dest, size_t size);

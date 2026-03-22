@@ -1191,8 +1191,8 @@ bool sbbs_t::qwk_msg_filtered(smbmsg_t* msg, msg_filters filters)
 		        , msg->from_ip);
 		return true;
 	}
-
-	const char* hostname = getHostNameByAddr(msg->from_host);
+	char tmp[256];
+	const char* hostname = getHostNameByAddr(msg->from_host, tmp, sizeof tmp);
 	if (findstr_in_list(hostname, filters.host_can, NULL)) {
 		lprintf(LOG_NOTICE, "!Filtering QWK message from %s due to blocked hostname: %s"
 		        , msg->from

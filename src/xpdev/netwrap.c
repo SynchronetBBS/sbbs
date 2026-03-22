@@ -82,27 +82,28 @@ str_list_t getNameServerList(void)
 #endif
 }
 
-const char* getHostNameByAddr(const char* str)
+const char* getHostNameByAddr(const char* addr, char* buf, size_t size)
 {
-	HOSTENT* h;
-	uint32_t ip;
+	const char* result = NULL;
+	SOCKADDR_IN sockaddr = {0};
 
 #ifdef _WIN32
 	WSADATA  wsaData;
 	WSAStartup(MAKEWORD(2, 2), &wsaData);
 #endif
-	if (str == NULL)
-		return NULL;
-	if ((ip = parseIPv4Address(str)) == INADDR_NONE)
-		return str;
-	if ((h = gethostbyaddr((char *)&ip, sizeof(ip), AF_INET)) == NULL)
-		return NULL;
+	if (addr != NULL) {
+		sockaddr.sin_family = AF_INET;
+		if ((sockaddr.sin_addr.s_addr = parseIPv4Address(addr)) == INADDR_NONE)
+			result = addr;
+		else if (getnameinfo((SOCKADDR*)&sockaddr, sizeof sockaddr, buf, size, NULL, 0, NI_NAMEREQD) == 0)
+			result = buf;
+	}
 
 #ifdef _WIN32
 	WSACleanup();
 #endif
 
-	return h->h_name;
+	return result;
 }
 
 /* In case we want to DLL-export getNameServerList in the future */
@@ -299,6 +300,7 @@ int main(int argc, char** argv)
 {
 	size_t     i;
 	str_list_t list;
+	char buf[128];
 
 	if ((list = getNameServerList()) != NULL) {
 		for (i = 0; list[i] != NULL; i++)
@@ -307,7 +309,7 @@ int main(int argc, char** argv)
 	}
 
 	if (argc > 1)
-		printf("%s\n", getHostNameByAddr(argv[1]));
+		printf("%s\n", getHostNameByAddr(argv[1], buf, sizeof buf));
 
 	return 0;
 }
