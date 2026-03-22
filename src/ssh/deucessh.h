@@ -16,30 +16,44 @@ static_assert(0, "threads.h support required");
 #include <stdbool.h>
 #include <threads.h>
 
+/* Error codes returned by library functions.  Zero is success;
+ * negative values are errors. */
 #define DEUCE_SSH_ERROR_NONE           0
-#define DEUCE_SSH_ERROR_PARSE         -1
-#define DEUCE_SSH_ERROR_INVALID       -2
-#define DEUCE_SSH_ERROR_ALLOC         -3
-#define DEUCE_SSH_ERROR_INIT          -4
-#define DEUCE_SSH_ERROR_TERMINATED    -5
-#define DEUCE_SSH_ERROR_TOOLATE       -6
-#define DEUCE_SSH_ERROR_TOOMANY       -7
-#define DEUCE_SSH_ERROR_TOOLONG       -8
-#define DEUCE_SSH_ERROR_MUST_BE_NULL  -9
-#define DEUCE_SSH_ERROR_NOMORE       -10
+#define DEUCE_SSH_ERROR_PARSE         -1   /* Malformed packet or field */
+#define DEUCE_SSH_ERROR_INVALID       -2   /* Valid parse but invalid value (MAC mismatch, bad signature) */
+#define DEUCE_SSH_ERROR_ALLOC         -3   /* Memory allocation failure */
+#define DEUCE_SSH_ERROR_INIT          -4   /* Initialization or crypto failure */
+#define DEUCE_SSH_ERROR_TERMINATED    -5   /* Session terminated (peer disconnected) */
+#define DEUCE_SSH_ERROR_TOOLATE       -6   /* Operation not allowed after session started */
+#define DEUCE_SSH_ERROR_TOOMANY       -7   /* Too many registered algorithms */
+#define DEUCE_SSH_ERROR_TOOLONG       -8   /* Data exceeds buffer or protocol limit */
+#define DEUCE_SSH_ERROR_MUST_BE_NULL  -9   /* Linked list next pointer was not NULL */
+#define DEUCE_SSH_ERROR_NOMORE       -10   /* No more items in name-list */
 
 typedef struct deuce_ssh_transport_state_s *deuce_ssh_transport_state;
-typedef int (*deuce_ssh_transport_io_cb)(uint8_t *buf, size_t bufsz, atomic_bool *terminate, void *cbdata);
-typedef int (*deuce_ssh_transport_rxline_cb)(uint8_t *buf, size_t bufsz, size_t *bytes_received, atomic_bool *terminate, void *cbdata);
-typedef int (*deuce_ssh_transport_extra_line_cb)(uint8_t *buf, size_t bufsz, void *cbdata);
-
 typedef struct deuce_ssh_session_s *deuce_ssh_session;
 
 /*
- * Optional callback for SSH_MSG_DEBUG (RFC 4253 s11.3).
- * always_display: the sender's hint about whether to show the message.
- * message/message_len: the debug text (UTF-8, not NUL-terminated).
+ * I/O callback: send or receive exactly bufsz bytes.
+ * Must block until all bytes are transferred or *terminate becomes true.
+ * Returns 0 on success, negative error code on failure.
  */
+typedef int (*deuce_ssh_transport_io_cb)(uint8_t *buf, size_t bufsz, atomic_bool *terminate, void *cbdata);
+
+/*
+ * Line-oriented receive callback for version exchange.
+ * Reads until CR-LF is found.  Sets *bytes_received to the number
+ * of bytes including the CR-LF.  Returns 0 on success.
+ */
+typedef int (*deuce_ssh_transport_rxline_cb)(uint8_t *buf, size_t bufsz, size_t *bytes_received, atomic_bool *terminate, void *cbdata);
+
+/*
+ * Called for non-SSH lines received before the version string.
+ * buf is NUL-terminated, bufsz is the length without NUL.
+ * Return 0 to continue, negative to abort.
+ */
+typedef int (*deuce_ssh_transport_extra_line_cb)(uint8_t *buf, size_t bufsz, void *cbdata);
+
 /*
  * Optional callback for SSH_MSG_DEBUG (RFC 4253 s11.3).
  * always_display: the sender's hint about whether to show the message.
@@ -59,29 +73,66 @@ typedef void (*deuce_ssh_unimplemented_cb)(uint32_t rejected_seq, void *cbdata);
 #include "ssh-arch.h"
 #include "ssh-trans.h"
 
+/*
+ * SSH session state.  Allocate one per connection.  Set trans.client
+ * to true for client mode, false for server, before calling
+ * deuce_ssh_session_init().  Set the callback fields (debug_cb, etc.)
+ * and cbdata pointers before or after init as needed.
+ */
 struct deuce_ssh_session_s {
-	/* Global */
 	mtx_t mtx;
 	atomic_bool initialized;
 	atomic_bool terminate;
 
+	/* Per-session I/O callback data (passed to the global I/O callbacks) */
 	void *tx_cbdata;
 	void *rx_cbdata;
 	void *rx_line_cbdata;
 	void *extra_line_cbdata;
 
+	/* Optional notification callbacks */
 	deuce_ssh_debug_cb debug_cb;
 	void *debug_cbdata;
 	deuce_ssh_unimplemented_cb unimplemented_cb;
 	void *unimplemented_cbdata;
 
+	/* Transport layer state */
 	struct deuce_ssh_transport_state_s trans;
 };
 
+/*
+ * Initialize a session.  The caller must have already set trans.client
+ * and zeroed the struct (e.g., via memset).  Allocates packet buffers
+ * and initializes mutexes.  Returns 0 on success.
+ */
 int deuce_ssh_session_init(deuce_ssh_session sess);
+
+/*
+ * Signal a session to terminate.  Sets terminate flag and returns true
+ * if the session was initialized, false if already terminated.
+ * Does not block — the session's I/O callbacks will see the flag.
+ */
 bool deuce_ssh_session_terminate(deuce_ssh_session sess);
+
+/*
+ * Clean up all session resources.  Calls terminate if needed, frees
+ * all transport state, algorithm contexts, and packet buffers.
+ * The session struct itself is NOT freed (caller owns it).
+ */
 void deuce_ssh_session_cleanup(deuce_ssh_session sess);
 
+/*
+ * Set the global I/O callbacks and optional extra-line callback.
+ * Must be called before any session is initialized (before
+ * deuce_ssh_session_init).  All sessions share the same callback
+ * functions; per-session differentiation is via the cbdata pointers
+ * in the session struct.
+ *
+ * tx: send callback — must send exactly bufsz bytes
+ * rx: receive callback — must receive exactly bufsz bytes
+ * rx_line: line-oriented receive for version exchange
+ * extra_line_cb: called for non-SSH lines before version (may be NULL)
+ */
 int deuce_ssh_transport_set_callbacks(deuce_ssh_transport_io_cb tx, deuce_ssh_transport_io_cb rx, deuce_ssh_transport_rxline_cb rx_line, deuce_ssh_transport_extra_line_cb extra_line_cb);
 
 #endif
