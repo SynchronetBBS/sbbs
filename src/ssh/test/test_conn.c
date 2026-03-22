@@ -1991,6 +1991,142 @@ test_terminate_during_io(void)
 
 
 /* ================================================================
+ * Unexpected connection drop
+ * ================================================================ */
+
+/* Simulate sudden connection death during an active channel.
+ * The application's I/O callbacks start returning errors.
+ * Verify: session terminates, poll/read unblock, cleanup succeeds. */
+static int
+test_connection_drop_during_read(void)
+{
+	struct conn_ctx ctx;
+	if (conn_setup(&ctx) < 0)
+		return TEST_SKIP;
+
+	struct open_exec_ctx oc = {
+		.client = ctx.client,
+		.server = ctx.server,
+		.command = "cmd",
+		.cbs = &session_cbs,
+		.accept_timeout = 5000,
+	};
+	if (open_exec_channel(&oc) < 0) {
+		conn_cleanup(&ctx);
+		return TEST_SKIP;
+	}
+
+	/* Start a reader blocked on poll */
+	struct reader_ctx rc = {
+		.sess = ctx.server,
+		.ch = oc.server_ch,
+	};
+	thrd_t rt;
+	thrd_create(&rt, reader_thread_func, &rc);
+
+	/* Brief delay to let reader block */
+	struct timespec ts = { .tv_sec = 0, .tv_nsec = 50000000 };
+	thrd_sleep(&ts, NULL);
+
+	/* Kill the connection — close both pipes.
+	 * The demux thread's recv will get an error,
+	 * setting terminate and unblocking the reader. */
+	mock_io_close_c2s(&ctx.io);
+	mock_io_close_s2c(&ctx.io);
+
+	thrd_join(rt, NULL);
+
+	/* Session should be terminated */
+	ASSERT_TRUE(dssh_session_is_terminated(ctx.server));
+
+	/* Cleanup must not crash */
+	conn_cleanup(&ctx);
+	return TEST_PASS;
+}
+
+/* Verify that write fails cleanly after connection drop */
+static int
+test_connection_drop_during_write(void)
+{
+	struct conn_ctx ctx;
+	if (conn_setup(&ctx) < 0)
+		return TEST_SKIP;
+
+	struct open_exec_ctx oc = {
+		.client = ctx.client,
+		.server = ctx.server,
+		.command = "cmd",
+		.cbs = &session_cbs,
+		.accept_timeout = 5000,
+	};
+	if (open_exec_channel(&oc) < 0) {
+		conn_cleanup(&ctx);
+		return TEST_SKIP;
+	}
+
+	/* Kill the connection */
+	mock_io_close_c2s(&ctx.io);
+	mock_io_close_s2c(&ctx.io);
+
+	/* Brief delay for demux to notice */
+	struct timespec ts = { .tv_sec = 0, .tv_nsec = 100000000 };
+	thrd_sleep(&ts, NULL);
+
+	/* Write should fail (not hang, not crash) */
+	const uint8_t data[] = "after drop";
+	int64_t w = dssh_session_write(ctx.client, oc.client_ch,
+	    data, sizeof(data) - 1);
+	ASSERT_TRUE(w <= 0);
+
+	/* Poll should indicate error or return immediately */
+	int ev = dssh_session_poll(ctx.client, oc.client_ch,
+	    DSSH_POLL_READ, 100);
+	(void)ev;  /* any result is OK as long as it doesn't hang */
+
+	conn_cleanup(&ctx);
+	return TEST_PASS;
+}
+
+/* Verify cleanup works even if session_stop/cleanup is called
+ * without prior terminate — the application just calls cleanup
+ * when it detects the socket is dead. */
+static int
+test_cleanup_after_drop(void)
+{
+	struct conn_ctx ctx;
+	if (conn_setup(&ctx) < 0)
+		return TEST_SKIP;
+
+	struct open_exec_ctx oc = {
+		.client = ctx.client,
+		.server = ctx.server,
+		.command = "cmd",
+		.cbs = &session_cbs,
+		.accept_timeout = 5000,
+	};
+	if (open_exec_channel(&oc) < 0) {
+		conn_cleanup(&ctx);
+		return TEST_SKIP;
+	}
+
+	/* Kill pipes, then immediately cleanup without explicit
+	 * terminate — dssh_session_cleanup calls session_stop
+	 * which sets terminate and joins the demux thread.
+	 * The closed pipes ensure the demux unblocks. */
+	mock_io_close_c2s(&ctx.io);
+	mock_io_close_s2c(&ctx.io);
+
+	/* This must not hang or crash */
+	dssh_session_cleanup(ctx.server);
+	dssh_session_cleanup(ctx.client);
+	ctx.server = NULL;
+	ctx.client = NULL;
+	mock_io_free(&ctx.io);
+	dssh_test_reset_global_config();
+	return TEST_PASS;
+}
+
+/* ================================================================
  * Test table
  * ================================================================ */
 
@@ -2043,6 +2179,11 @@ static struct dssh_test_entry tests[] = {
 	/* Thread safety */
 	{ "test_concurrent_write_read",      test_concurrent_write_read },
 	{ "test_terminate_during_io",        test_terminate_during_io },
+
+	/* Connection drop */
+	{ "test_connection_drop_during_read",  test_connection_drop_during_read },
+	{ "test_connection_drop_during_write", test_connection_drop_during_write },
+	{ "test_cleanup_after_drop",           test_cleanup_after_drop },
 };
 
 DSSH_TEST_MAIN(tests)

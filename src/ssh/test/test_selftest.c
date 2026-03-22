@@ -1365,6 +1365,82 @@ test_self_rekey_preserves_channels(void)
 }
 
 /* ================================================================
+ * Test: unexpected connection drop — socket dies mid-session
+ * ================================================================ */
+
+static int
+test_self_connection_drop(void)
+{
+	struct selftest_ctx ctx;
+	if (selftest_setup(&ctx) < 0)
+		return TEST_FAIL;
+
+	ASSERT_OK(dssh_session_start(ctx.client));
+	ASSERT_OK(dssh_session_start(ctx.server));
+
+	struct server_echo_arg sarg = { .ctx = &ctx };
+	thrd_t st;
+	ASSERT_TRUE(thrd_create(&st, server_echo_thread, &sarg) == thrd_success);
+
+	dssh_channel ch = dssh_session_open_exec(ctx.client, "drop");
+	ASSERT_NOT_NULL(ch);
+
+	/* Write some data to confirm the channel works */
+	const uint8_t data[] = "before drop";
+	int64_t w = dssh_session_write(ctx.client, ch, data, sizeof(data) - 1);
+	ASSERT_TRUE(w > 0);
+
+	/* Wait for echo to confirm data arrived */
+	uint8_t buf[64];
+	size_t recvd = 0;
+	for (int i = 0; i < 50; i++) {
+		int ev = dssh_session_poll(ctx.client, ch,
+		    DSSH_POLL_READ, 100);
+		if (ev <= 0)
+			continue;
+		int64_t n = dssh_session_read(ctx.client, ch,
+		    buf + recvd, sizeof(buf) - recvd);
+		if (n <= 0)
+			break;
+		recvd += n;
+		if (recvd >= sizeof(data) - 1)
+			break;
+	}
+	ASSERT_EQ_U(recvd, sizeof(data) - 1);
+
+	/* Yank the socket out from under both sessions.
+	 * This simulates a VPN drop, cable pull, or peer crash.
+	 * The application detects the dead socket in its I/O
+	 * callbacks (recv returns 0 / send returns EPIPE). */
+	shutdown(ctx.client_fd, SHUT_RDWR);
+	shutdown(ctx.server_fd, SHUT_RDWR);
+
+	/* Give the demux threads time to see the error */
+	struct timespec ts = { .tv_sec = 0, .tv_nsec = 200000000 };
+	thrd_sleep(&ts, NULL);
+
+	/* Both sessions should be terminated */
+	ASSERT_TRUE(dssh_session_is_terminated(ctx.client));
+	ASSERT_TRUE(dssh_session_is_terminated(ctx.server));
+
+	/* Poll and write must not hang */
+	int ev = dssh_session_poll(ctx.client, ch,
+	    DSSH_POLL_READ, 100);
+	(void)ev;
+
+	w = dssh_session_write(ctx.client, ch,
+	    (const uint8_t *)"x", 1);
+	ASSERT_TRUE(w <= 0);
+
+	/* Server echo thread should have exited */
+	thrd_join(st, NULL);
+
+	/* Cleanup must succeed without hanging */
+	selftest_cleanup(&ctx);
+	return TEST_PASS;
+}
+
+/* ================================================================
  * Test table and main
  * ================================================================ */
 
@@ -1383,6 +1459,7 @@ static struct dssh_test_entry tests[] = {
 	{ "test_self_rekey_during_data",       test_self_rekey_during_data },
 	{ "test_self_rekey_manual",            test_self_rekey_manual },
 	{ "test_self_rekey_preserves_channels", test_self_rekey_preserves_channels },
+	{ "test_self_connection_drop",         test_self_connection_drop },
 };
 
 DSSH_TEST_MAIN(tests)
