@@ -9,17 +9,6 @@
  */
 
 // C23
-#ifdef __has_c_attribute
-	#if __has_c_attribute(maybe_unused)
-		#define MAYBE_UNUSED [[maybe_unused]]
-	#endif
-#endif
-
-#ifndef MAYBE_UNUSED
-	#define MAYBE_UNUSED
-#endif
-
-// C23
 #ifndef unreachable
 	#ifdef __GNUC__
 		#define unreachable() (__builtin_unreachable())
