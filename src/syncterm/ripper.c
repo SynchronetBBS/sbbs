@@ -48,6 +48,8 @@ enum rip_state {
 	RIP_STATE_MOL  // Middle of the line
 	,
 	RIP_STATE_BANG // Got a bang (or CTRL-A or CTRL-B)
+	,
+	RIP_STATE_NO_MORE // After |# — accepts ! for new RIP sequence
 
         // The following four groups must remain in this order and all must coincide
 
@@ -16292,6 +16294,7 @@ parse_rip(BYTE *origbuf, unsigned blen, unsigned maxlen)
 					case RIP_STATE_CSI:
 					case RIP_STATE_CSINUM:
 					case RIP_STATE_BANG:
+					case RIP_STATE_NO_MORE:
 						unrip_line(buf, &blen, &pos, &rip_start, maxlen);
 						rip.state = RIP_STATE_MOL;
 						continue;
@@ -16373,6 +16376,14 @@ parse_rip(BYTE *origbuf, unsigned blen, unsigned maxlen)
 						rip.state = RIP_STATE_PIPE;
 						break;
 					}
+					unrip_line(buf, &blen, &pos, &rip_start, maxlen);
+					rip.state = RIP_STATE_MOL;
+					break;
+				case RIP_STATE_NO_MORE:
+					if (buf[pos] == '|') {
+						rip.state = RIP_STATE_PIPE;
+						break;
+					}
 					if (buf[pos] == '!' || buf[pos] == '\x01' || buf[pos] == '\x02') {
 						rip_start = pos;
 						break;
@@ -16386,7 +16397,7 @@ parse_rip(BYTE *origbuf, unsigned blen, unsigned maxlen)
 						break;
 					}
 					if (buf[pos] == '#') {
-						if (handle_rip_line(buf, &blen, &pos, &rip_start, maxlen, RIP_STATE_BANG)) {
+						if (handle_rip_line(buf, &blen, &pos, &rip_start, maxlen, RIP_STATE_NO_MORE)) {
 							rip.lchars = 0;
 							rip_start = pos + 1;
 						}
@@ -16400,7 +16411,7 @@ parse_rip(BYTE *origbuf, unsigned blen, unsigned maxlen)
 							pending[0] = 0;
 							rip.newstate = RIP_STATE_FLUSHING;
 						}
-						rip.state = RIP_STATE_BANG;
+						rip.state = RIP_STATE_NO_MORE;
 						break;
 					}
 					rip.state = RIP_STATE_CMD;
