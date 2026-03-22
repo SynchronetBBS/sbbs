@@ -788,7 +788,7 @@ edit_sort_fields(int *order, const char *profile_name)
 		}
 		if (ret < -1)
 			continue;
-		if (ret & MSK_INS) { /* Insert field */
+		if ((ret & MSK_ON) == MSK_INS) { /* Insert field */
 			j = 0;
 			for (i = 0; i < nfields; i++) {
 				if (!is_sorting_in(order, i) && sort_order[i].name) {
@@ -808,13 +808,13 @@ edit_sort_fields(int *order, const char *profile_name)
 				sret = uifc.list(WIN_SAV | WIN_BOT | WIN_RHT,
 				                 0, 0, 0, &scurr, &sbar, "Sort Field", sopts);
 				if (sret >= 0) {
-					memmove(&(order[ret & MSK_OFF]) + 1, &(order[(ret & MSK_OFF)]),
-					        sizeof(sortorder) - sizeof(sortorder[0]) * ((ret & MSK_OFF) + 1));
+					memmove(&(order[(ret & MSK_ON) == MSK_OFF]) + 1, &(order[((ret & MSK_ON) == MSK_OFF)]),
+					        sizeof(sortorder) - sizeof(sortorder[0]) * (((ret & MSK_ON) == MSK_OFF) + 1));
 					j = 0;
 					for (i = 0; i < nfields; i++) {
 						if (!is_sorting_in(order, i) && sort_order[i].name) {
 							if (j == sret) {
-								order[ret & MSK_OFF] = i;
+								order[(ret & MSK_ON) == MSK_OFF] = i;
 								break;
 							}
 							j++;
@@ -827,13 +827,13 @@ edit_sort_fields(int *order, const char *profile_name)
 				}
 			}
 		}
-		else if (ret & MSK_DEL) { /* Delete field */
-			memmove(&(order[ret & MSK_OFF]),
-			        &(order[(ret & MSK_OFF)]) + 1,
-			        sizeof(sortorder) - sizeof(sortorder[0]) * ((ret & MSK_OFF) + 1));
+		else if ((ret & MSK_ON) == MSK_DEL) { /* Delete field */
+			memmove(&(order[(ret & MSK_ON) == MSK_OFF]),
+			        &(order[((ret & MSK_ON) == MSK_OFF)]) + 1,
+			        sizeof(sortorder) - sizeof(sortorder[0]) * (((ret & MSK_ON) == MSK_OFF) + 1));
 		}
 		else
-			order[ret & MSK_OFF] = 0 - order[ret & MSK_OFF];
+			order[(ret & MSK_ON) == MSK_OFF] = 0 - order[(ret & MSK_ON) == MSK_OFF];
 	}
 	return nav;
 }
@@ -1091,8 +1091,8 @@ edit_sort_profiles(struct bbslist **list, int *listcount, int *ocur, int *obar)
 			break;
 		}
 
-		if (ret & MSK_DEL) {
-			int idx = ret & MSK_OFF;
+		if ((ret & MSK_ON) == MSK_DEL) {
+			int idx = (ret & MSK_ON) == MSK_OFF;
 			namedStrListDelete(&sort_profiles, idx);
 			COUNT_LIST_ITEMS(sort_profiles, count);
 			if (count == 0) {
@@ -1105,9 +1105,9 @@ edit_sort_profiles(struct bbslist **list, int *listcount, int *ocur, int *obar)
 				active_profile = 0;
 			changed = true;
 		}
-		else if (ret & MSK_INS) {
+		else if ((ret & MSK_ON) == MSK_INS) {
 			char name[SORT_PROFILE_NAME_MAX + 1] = "";
-			int idx = ret & MSK_OFF;
+			int idx = (ret & MSK_ON) == MSK_OFF;
 
 			uifc.helpbuf = "Enter a unique name for the new sort profile.";
 			while (uifc.input(WIN_SAV | WIN_MID, 0, 0, "Profile Name",
@@ -1131,8 +1131,8 @@ edit_sort_profiles(struct bbslist **list, int *listcount, int *ocur, int *obar)
 				break;
 			}
 		}
-		else if (ret & MSK_EDIT) {
-			int idx = ret & MSK_OFF;
+		else if ((ret & MSK_ON) == MSK_EDIT) {
+			int idx = (ret & MSK_ON) == MSK_OFF;
 			if (idx < (int)count) {
 				char name[SORT_PROFILE_NAME_MAX + 1];
 				strlcpy(name, sort_profiles[idx]->name, sizeof(name));
@@ -1154,8 +1154,8 @@ edit_sort_profiles(struct bbslist **list, int *listcount, int *ocur, int *obar)
 					check_exit(false);
 			}
 		}
-		else if (ret & MSK_COPY) {
-			int idx = ret & MSK_OFF;
+		else if ((ret & MSK_ON) == MSK_COPY) {
+			int idx = (ret & MSK_ON) == MSK_OFF;
 			if (idx < (int)count) {
 				if (clipboard) {
 					free(clipboard->name);
@@ -1169,8 +1169,8 @@ edit_sort_profiles(struct bbslist **list, int *listcount, int *ocur, int *obar)
 				}
 			}
 		}
-		else if (ret & MSK_CUT) {
-			int idx = ret & MSK_OFF;
+		else if ((ret & MSK_ON) == MSK_CUT) {
+			int idx = (ret & MSK_ON) == MSK_OFF;
 			if (idx < (int)count) {
 				if (clipboard) {
 					free(clipboard->name);
@@ -1195,9 +1195,9 @@ edit_sort_profiles(struct bbslist **list, int *listcount, int *ocur, int *obar)
 				changed = true;
 			}
 		}
-		else if (ret & MSK_PASTE) {
+		else if ((ret & MSK_ON) == MSK_PASTE) {
 			if (clipboard) {
-				int idx = ret & MSK_OFF;
+				int idx = (ret & MSK_ON) == MSK_OFF;
 				char name[SORT_PROFILE_NAME_MAX + 1];
 				strlcpy(name, clipboard->name, sizeof(name));
 
@@ -4253,11 +4253,11 @@ edit_web_lists(void)
 			check_exit(false);
 			break;
 		}
-		if (i & MSK_DEL) {
-			namedStrListDelete(&settings.webgets, i & MSK_OFF);
+		if ((i & MSK_ON) == MSK_DEL) {
+			namedStrListDelete(&settings.webgets, (i & MSK_ON) == MSK_OFF);
 			changed = true;
 		}
-		else if (i & MSK_INS) {
+		else if ((i & MSK_ON) == MSK_INS) {
 			char tmpn[INI_MAX_VALUE_LEN + 1];
 			char tmpv[INI_MAX_VALUE_LEN + 1];
 			if (count == 0)
@@ -4290,12 +4290,12 @@ edit_web_lists(void)
 								uifc.msg(temp);
 							}
 							else {
-								namedStrListInsert(&settings.webgets, tmpn, tmpv, i & MSK_OFF);
+								namedStrListInsert(&settings.webgets, tmpn, tmpv, (i & MSK_ON) == MSK_OFF);
 								changed = true;
 							}
 						}
 						else {
-							namedStrListInsert(&settings.webgets, tmpn, tmpv, i & MSK_OFF);
+							namedStrListInsert(&settings.webgets, tmpn, tmpv, (i & MSK_ON) == MSK_OFF);
 							changed = true;
 						}
 					}
