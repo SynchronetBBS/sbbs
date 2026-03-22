@@ -9,6 +9,18 @@
 
 #include "ssh-internal.h"
 
+/*
+ * DSSH_TESTABLE: marks internal functions that need to be linkable
+ * from test code.  In normal builds these are static; when compiled
+ * with -DDSSH_TESTING they become externally visible (with a
+ * dssh_test_ prefix alias declared in test/dssh_test_internal.h).
+ */
+#ifdef DSSH_TESTING
+#define DSSH_TESTABLE
+#else
+#define DSSH_TESTABLE static
+#endif
+
 typedef struct dssh_transport_global_config {
 	atomic_bool used;
 	const char *software_version;
@@ -51,22 +63,22 @@ static struct dssh_transport_global_config gconf;
  * Version exchange (RFC 4253 s4.2)
  * ================================================================ */
 
-static inline bool
-has_nulls(uint8_t *buf, size_t buflen)
+DSSH_TESTABLE inline bool
+dssh_test_has_nulls(uint8_t *buf, size_t buflen)
 {
 	return memchr(buf, 0, buflen) != NULL;
 }
 
-static inline bool
-missing_crlf(uint8_t *buf, size_t buflen)
+DSSH_TESTABLE inline bool
+dssh_test_missing_crlf(uint8_t *buf, size_t buflen)
 {
 	if (buflen < 2)
 		return true;
 	return (buf[buflen - 1] != '\n' || buf[buflen - 2] != '\r');
 }
 
-static inline bool
-is_version_line(uint8_t *buf, size_t buflen)
+DSSH_TESTABLE inline bool
+dssh_test_is_version_line(uint8_t *buf, size_t buflen)
 {
 	if (buflen < 4)
 		return false;
@@ -82,8 +94,8 @@ is_version_line(uint8_t *buf, size_t buflen)
  * We validate that the entire version line (before CR-LF) contains
  * only bytes in 0x20–0x7E (printable ASCII).
  */
-static inline bool
-has_non_ascii(uint8_t *buf, size_t buflen)
+DSSH_TESTABLE inline bool
+dssh_test_has_non_ascii(uint8_t *buf, size_t buflen)
 {
 	for (size_t i = 0; i < buflen; i++) {
 		if (buf[i] < 0x20 || buf[i] > 0x7E)
@@ -96,8 +108,8 @@ has_non_ascii(uint8_t *buf, size_t buflen)
  * RFC 4253 s5.1: Clients using protocol 2.0 MUST be able to identify
  * "1.99" as identical to "2.0".
  */
-static inline bool
-is_20(uint8_t *buf, size_t buflen)
+DSSH_TESTABLE inline bool
+dssh_test_is_20(uint8_t *buf, size_t buflen)
 {
 	if (buflen < 8)
 		return false;
@@ -120,8 +132,8 @@ version_rx(dssh_session sess)
 			sess->terminate = true;
 			return res;
 		}
-		if (is_version_line(sess->trans.rx_packet, received)) {
-			if (received > 255 || has_nulls(sess->trans.rx_packet, received) || missing_crlf(sess->trans.rx_packet, received) || has_non_ascii(sess->trans.rx_packet, received - 2) || !is_20(sess->trans.rx_packet, received)) {
+		if (dssh_test_is_version_line(sess->trans.rx_packet, received)) {
+			if (received > 255 || dssh_test_has_nulls(sess->trans.rx_packet, received) || dssh_test_missing_crlf(sess->trans.rx_packet, received) || dssh_test_has_non_ascii(sess->trans.rx_packet, received - 2) || !dssh_test_is_20(sess->trans.rx_packet, received)) {
 				sess->terminate = true;
 				return DSSH_ERROR_INVALID;
 			}
@@ -662,6 +674,15 @@ DSSH_PRIVATE int
 dssh_transport_recv_packet(dssh_session sess,
     uint8_t *msg_type, uint8_t **payload, size_t *payload_len)
 {
+	/* Handle deferred auto-rekey before reading new data.
+	 * Safe here because no payload pointer is live yet. */
+	if (sess->trans.rekey_pending) {
+		sess->trans.rekey_pending = false;
+		int rk = dssh_transport_rekey(sess);
+		if (rk < 0)
+			return rk;
+	}
+
 	for (;;) {
 		int res = recv_packet_raw(sess, msg_type, payload, payload_len);
 		if (res < 0)
@@ -675,12 +696,19 @@ dssh_transport_recv_packet(dssh_session sess,
 			continue;
 		case SSH_MSG_KEXINIT:
 			/*
-			 * RFC 4253 s9: Peer-initiated rekey.  Only handle
-			 * this after the initial key exchange is complete
-			 * (session_id is set).  During initial handshake,
+			 * During initial handshake (session_id not yet set),
 			 * return KEXINIT to the caller (kexinit()).
+			 *
+			 * During a self-initiated rekey (rekey_in_progress
+			 * is true), kexinit() called us to receive the
+			 * peer's response — return KEXINIT to the caller
+			 * so kexinit() can save it and proceed.
+			 *
+			 * Otherwise this is a peer-initiated rekey — save
+			 * the peer's KEXINIT and run the rekey cycle.
 			 */
-			if (sess->trans.session_id == NULL)
+			if (sess->trans.session_id == NULL ||
+			    sess->trans.rekey_in_progress)
 				return 0;
 			{
 				free(sess->trans.peer_kexinit);
@@ -760,15 +788,15 @@ dssh_transport_recv_packet(dssh_session sess,
 		default:
 			/*
 			 * Auto-rekey: if any threshold (packet count,
-			 * bytes, or time) has been exceeded, rekey now
-			 * before returning this message to the caller.
+			 * bytes, or time) has been exceeded, note it.
+			 * We cannot rekey HERE because *payload points
+			 * into rx_packet — the rekey would overwrite it.
+			 * Instead, set the flag and rekey on the NEXT
+			 * recv_packet call, before reading new data.
 			 */
 			if (sess->trans.session_id != NULL &&
-			    dssh_transport_rekey_needed(sess)) {
-				int rk = dssh_transport_rekey(sess);
-				if (rk < 0)
-					return rk;
-			}
+			    dssh_transport_rekey_needed(sess))
+				sess->trans.rekey_pending = true;
 			return 0;
 		}
 	}
@@ -778,8 +806,8 @@ dssh_transport_recv_packet(dssh_session sess,
  * KEXINIT (RFC 4253 s7.1)
  * ================================================================ */
 
-static size_t
-build_namelist(void *head, size_t name_offset, char *buf, size_t bufsz)
+DSSH_TESTABLE size_t
+dssh_test_build_namelist(void *head, size_t name_offset, char *buf, size_t bufsz)
 {
 	size_t pos = 0;
 	bool first = true;
@@ -818,8 +846,8 @@ first_name(const char *list, char *buf, size_t bufsz)
 	return len;
 }
 
-static void *
-negotiate_algo(const char *client_list, const char *server_list,
+DSSH_TESTABLE void *
+dssh_test_negotiate_algo(const char *client_list, const char *server_list,
     void *head, size_t name_offset)
 {
 	const char *cp = client_list;
@@ -883,12 +911,12 @@ dssh_transport_kexinit(dssh_session sess)
 	size_t noff;
 
 	noff = offsetof(struct dssh_kex_s, name);
-	build_namelist(gconf.kex_head, noff, namelist, sizeof(namelist));
+	dssh_test_build_namelist(gconf.kex_head, noff, namelist, sizeof(namelist));
 	serialize_namelist_from_str(namelist, kexinit, sess->trans.packet_buf_sz, &pos);
 
 	if (sess->trans.client) {
 		noff = offsetof(struct dssh_key_algo_s, name);
-		build_namelist(gconf.key_algo_head, noff, namelist, sizeof(namelist));
+		dssh_test_build_namelist(gconf.key_algo_head, noff, namelist, sizeof(namelist));
 	}
 	else {
 		/* Server: only advertise key algorithms we have a key for */
@@ -913,17 +941,17 @@ dssh_transport_kexinit(dssh_session sess)
 	serialize_namelist_from_str(namelist, kexinit, sess->trans.packet_buf_sz, &pos);
 
 	noff = offsetof(struct dssh_enc_s, name);
-	build_namelist(gconf.enc_head, noff, namelist, sizeof(namelist));
+	dssh_test_build_namelist(gconf.enc_head, noff, namelist, sizeof(namelist));
 	serialize_namelist_from_str(namelist, kexinit, sess->trans.packet_buf_sz, &pos);
 	serialize_namelist_from_str(namelist, kexinit, sess->trans.packet_buf_sz, &pos);
 
 	noff = offsetof(struct dssh_mac_s, name);
-	build_namelist(gconf.mac_head, noff, namelist, sizeof(namelist));
+	dssh_test_build_namelist(gconf.mac_head, noff, namelist, sizeof(namelist));
 	serialize_namelist_from_str(namelist, kexinit, sess->trans.packet_buf_sz, &pos);
 	serialize_namelist_from_str(namelist, kexinit, sess->trans.packet_buf_sz, &pos);
 
 	noff = offsetof(struct dssh_comp_s, name);
-	build_namelist(gconf.comp_head, noff, namelist, sizeof(namelist));
+	dssh_test_build_namelist(gconf.comp_head, noff, namelist, sizeof(namelist));
 	serialize_namelist_from_str(namelist, kexinit, sess->trans.packet_buf_sz, &pos);
 	serialize_namelist_from_str(namelist, kexinit, sess->trans.packet_buf_sz, &pos);
 
@@ -951,14 +979,36 @@ dssh_transport_kexinit(dssh_session sess)
 	 * skip receiving — we already have it.  Otherwise, receive it.
 	 */
 	if (sess->trans.peer_kexinit == NULL) {
+		/*
+		 * Wait for peer's KEXINIT.  During rekey, the peer
+		 * may have sent application data (CHANNEL_DATA, etc.)
+		 * before seeing our KEXINIT.  Discard non-KEXINIT
+		 * messages — they will have been dispatched to
+		 * channel buffers by recv_packet's demux handling,
+		 * or we silently drop them here since the channel
+		 * data is already in the bytebuf from the prior
+		 * recv_packet call that triggered the rekey.
+		 *
+		 * Note: recv_packet handles DISCONNECT, IGNORE,
+		 * DEBUG, UNIMPLEMENTED, and GLOBAL_REQUEST internally.
+		 * Only application-layer messages (types 50+) reach
+		 * the default case.
+		 */
 		uint8_t msg_type;
 		uint8_t *peer_payload;
 		size_t peer_len;
-		res = dssh_transport_recv_packet(sess, &msg_type, &peer_payload, &peer_len);
-		if (res < 0)
-			return res;
-		if (msg_type != SSH_MSG_KEXINIT)
-			return DSSH_ERROR_PARSE;
+		for (;;) {
+			res = dssh_transport_recv_packet(sess, &msg_type,
+			    &peer_payload, &peer_len);
+			if (res < 0)
+				return res;
+			if (msg_type == SSH_MSG_KEXINIT)
+				break;
+			/* Discard non-KEXINIT during rekey.
+			 * Application data that arrived between our
+			 * KEXINIT and the peer's is lost.  This is a
+			 * race inherent in the SSH rekey protocol. */
+		}
 
 		sess->trans.peer_kexinit = malloc(peer_len);
 		if (sess->trans.peer_kexinit == NULL)
@@ -1019,11 +1069,11 @@ dssh_transport_kexinit(dssh_session sess)
 	const char *client_comp_s2c, *server_comp_s2c;
 
 	char our_lists[5][1024];
-	build_namelist(gconf.kex_head, offsetof(struct dssh_kex_s, name), our_lists[0], sizeof(our_lists[0]));
-	build_namelist(gconf.key_algo_head, offsetof(struct dssh_key_algo_s, name), our_lists[1], sizeof(our_lists[1]));
-	build_namelist(gconf.enc_head, offsetof(struct dssh_enc_s, name), our_lists[2], sizeof(our_lists[2]));
-	build_namelist(gconf.mac_head, offsetof(struct dssh_mac_s, name), our_lists[3], sizeof(our_lists[3]));
-	build_namelist(gconf.comp_head, offsetof(struct dssh_comp_s, name), our_lists[4], sizeof(our_lists[4]));
+	dssh_test_build_namelist(gconf.kex_head, offsetof(struct dssh_kex_s, name), our_lists[0], sizeof(our_lists[0]));
+	dssh_test_build_namelist(gconf.key_algo_head, offsetof(struct dssh_key_algo_s, name), our_lists[1], sizeof(our_lists[1]));
+	dssh_test_build_namelist(gconf.enc_head, offsetof(struct dssh_enc_s, name), our_lists[2], sizeof(our_lists[2]));
+	dssh_test_build_namelist(gconf.mac_head, offsetof(struct dssh_mac_s, name), our_lists[3], sizeof(our_lists[3]));
+	dssh_test_build_namelist(gconf.comp_head, offsetof(struct dssh_comp_s, name), our_lists[4], sizeof(our_lists[4]));
 
 	if (sess->trans.client) {
 		client_kex = our_lists[0];      server_kex = peer_lists[0];
@@ -1046,21 +1096,21 @@ dssh_transport_kexinit(dssh_session sess)
 		client_comp_s2c = peer_lists[7]; server_comp_s2c = our_lists[4];
 	}
 
-	sess->trans.kex_selected = negotiate_algo(client_kex, server_kex,
+	sess->trans.kex_selected = dssh_test_negotiate_algo(client_kex, server_kex,
 	    gconf.kex_head, offsetof(struct dssh_kex_s, name));
-	sess->trans.key_algo_selected = negotiate_algo(client_hostkey, server_hostkey,
+	sess->trans.key_algo_selected = dssh_test_negotiate_algo(client_hostkey, server_hostkey,
 	    gconf.key_algo_head, offsetof(struct dssh_key_algo_s, name));
-	sess->trans.enc_c2s_selected = negotiate_algo(client_enc_c2s, server_enc_c2s,
+	sess->trans.enc_c2s_selected = dssh_test_negotiate_algo(client_enc_c2s, server_enc_c2s,
 	    gconf.enc_head, offsetof(struct dssh_enc_s, name));
-	sess->trans.enc_s2c_selected = negotiate_algo(client_enc_s2c, server_enc_s2c,
+	sess->trans.enc_s2c_selected = dssh_test_negotiate_algo(client_enc_s2c, server_enc_s2c,
 	    gconf.enc_head, offsetof(struct dssh_enc_s, name));
-	sess->trans.mac_c2s_selected = negotiate_algo(client_mac_c2s, server_mac_c2s,
+	sess->trans.mac_c2s_selected = dssh_test_negotiate_algo(client_mac_c2s, server_mac_c2s,
 	    gconf.mac_head, offsetof(struct dssh_mac_s, name));
-	sess->trans.mac_s2c_selected = negotiate_algo(client_mac_s2c, server_mac_s2c,
+	sess->trans.mac_s2c_selected = dssh_test_negotiate_algo(client_mac_s2c, server_mac_s2c,
 	    gconf.mac_head, offsetof(struct dssh_mac_s, name));
-	sess->trans.comp_c2s_selected = negotiate_algo(client_comp_c2s, server_comp_c2s,
+	sess->trans.comp_c2s_selected = dssh_test_negotiate_algo(client_comp_c2s, server_comp_c2s,
 	    gconf.comp_head, offsetof(struct dssh_comp_s, name));
-	sess->trans.comp_s2c_selected = negotiate_algo(client_comp_s2c, server_comp_s2c,
+	sess->trans.comp_s2c_selected = dssh_test_negotiate_algo(client_comp_s2c, server_comp_s2c,
 	    gconf.comp_head, offsetof(struct dssh_comp_s, name));
 
 	if (sess->trans.kex_selected == NULL ||
@@ -1117,8 +1167,8 @@ dssh_transport_kex(dssh_session sess)
  * Key derivation and NEWKEYS (RFC 4253 s7.2, s7.3)
  * ================================================================ */
 
-static int
-derive_key(const char *hash_name,
+DSSH_TESTABLE int
+dssh_test_derive_key(const char *hash_name,
     const uint8_t *shared_secret, size_t shared_secret_sz,
     const uint8_t *hash, size_t hash_sz,
     uint8_t letter,
@@ -1250,12 +1300,12 @@ dssh_transport_newkeys(dssh_session sess)
 	const uint8_t *sid = sess->trans.session_id;
 	size_t sid_sz = sess->trans.session_id_sz;
 
-	res = derive_key(hash_name, k_mpint, mpint_wire_len, H, H_sz, 'A', sid, sid_sz, iv_c2s, enc_bs);
-	if (res == 0) res = derive_key(hash_name, k_mpint, mpint_wire_len, H, H_sz, 'B', sid, sid_sz, iv_s2c, enc_bs);
-	if (res == 0) res = derive_key(hash_name, k_mpint, mpint_wire_len, H, H_sz, 'C', sid, sid_sz, key_c2s, enc_key_sz);
-	if (res == 0) res = derive_key(hash_name, k_mpint, mpint_wire_len, H, H_sz, 'D', sid, sid_sz, key_s2c, enc_key_sz);
-	if (res == 0 && mac_key_sz > 0) res = derive_key(hash_name, k_mpint, mpint_wire_len, H, H_sz, 'E', sid, sid_sz, integ_c2s, mac_key_sz);
-	if (res == 0 && mac_key_sz > 0) res = derive_key(hash_name, k_mpint, mpint_wire_len, H, H_sz, 'F', sid, sid_sz, integ_s2c, mac_key_sz);
+	res = dssh_test_derive_key(hash_name, k_mpint, mpint_wire_len, H, H_sz, 'A', sid, sid_sz, iv_c2s, enc_bs);
+	if (res == 0) res = dssh_test_derive_key(hash_name, k_mpint, mpint_wire_len, H, H_sz, 'B', sid, sid_sz, iv_s2c, enc_bs);
+	if (res == 0) res = dssh_test_derive_key(hash_name, k_mpint, mpint_wire_len, H, H_sz, 'C', sid, sid_sz, key_c2s, enc_key_sz);
+	if (res == 0) res = dssh_test_derive_key(hash_name, k_mpint, mpint_wire_len, H, H_sz, 'D', sid, sid_sz, key_s2c, enc_key_sz);
+	if (res == 0 && mac_key_sz > 0) res = dssh_test_derive_key(hash_name, k_mpint, mpint_wire_len, H, H_sz, 'E', sid, sid_sz, integ_c2s, mac_key_sz);
+	if (res == 0 && mac_key_sz > 0) res = dssh_test_derive_key(hash_name, k_mpint, mpint_wire_len, H, H_sz, 'F', sid, sid_sz, integ_s2c, mac_key_sz);
 
 	free(k_mpint);
 
@@ -1407,6 +1457,7 @@ dssh_transport_init(dssh_session sess, size_t max_packet_size)
 		return DSSH_ERROR_INIT;
 	}
 	sess->trans.rekey_in_progress = false;
+	sess->trans.rekey_pending = false;
 
 	sess->trans.kex_selected = NULL;
 	sess->trans.key_algo_selected = NULL;
@@ -1647,3 +1698,53 @@ dssh_transport_set_callbacks(dssh_transport_io_cb tx, dssh_transport_io_cb rx, d
 	gconf.extra_line_cb = extra_line_cb;
 	return 0;
 }
+
+#ifdef DSSH_TESTING
+/*
+ * Reset the global configuration for test isolation.
+ * Frees all registered algorithm entries, zeros the config,
+ * and unlocks registration.
+ */
+void
+dssh_test_reset_global_config(void)
+{
+	/* Free linked list helpers */
+#define FREE_LIST(head) do { \
+	for (void *_n = (head); _n != NULL; ) { \
+		void *_next; \
+		memcpy(&_next, _n, sizeof(void *)); \
+		free(_n); \
+		_n = _next; \
+	} \
+} while (0)
+
+	/* Clean up key_algo contexts before freeing */
+	for (dssh_key_algo ka = gconf.key_algo_head; ka != NULL; ka = ka->next) {
+		if (ka->cleanup != NULL && ka->ctx != NULL)
+			ka->cleanup(ka->ctx);
+	}
+
+	FREE_LIST(gconf.kex_head);
+	FREE_LIST(gconf.key_algo_head);
+	FREE_LIST(gconf.enc_head);
+	FREE_LIST(gconf.mac_head);
+	FREE_LIST(gconf.comp_head);
+	FREE_LIST(gconf.lang_head);
+#undef FREE_LIST
+
+	memset(&gconf, 0, sizeof(gconf));
+	gconf.used = false;
+}
+
+/*
+ * Provide extern definitions for the inline version validators
+ * so the linker can resolve calls from test code.  In C17, an
+ * inline function only emits an external definition when an
+ * extern declaration appears in the same translation unit.
+ */
+extern inline bool dssh_test_has_nulls(uint8_t *buf, size_t buflen);
+extern inline bool dssh_test_missing_crlf(uint8_t *buf, size_t buflen);
+extern inline bool dssh_test_is_version_line(uint8_t *buf, size_t buflen);
+extern inline bool dssh_test_has_non_ascii(uint8_t *buf, size_t buflen);
+extern inline bool dssh_test_is_20(uint8_t *buf, size_t buflen);
+#endif

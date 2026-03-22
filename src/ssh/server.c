@@ -178,28 +178,43 @@ static struct dssh_auth_server_cbs auth_cbs = {
 };
 
 /* ================================================================
- * Session callbacks
+ * Session channel request callback
  * ================================================================ */
 
 static int
-pty_req_cb(const struct dssh_pty_req *pty, void *cbdata)
+channel_request_cb(const char *type, size_t type_len,
+    bool want_reply, const uint8_t *data, size_t data_len,
+    void *cbdata)
 {
-	fprintf(stderr, "  PTY: %s %ux%u\n", pty->term, pty->cols, pty->rows);
-	return 0;
-}
-
-static int
-env_cb(const uint8_t *name, size_t name_len,
-    const uint8_t *value, size_t value_len, void *cbdata)
-{
-	fprintf(stderr, "  ENV: %.*s=%.*s\n",
-	    (int)name_len, name, (int)value_len, value);
-	return 0;
+	if (type_len == 7 && memcmp(type, "pty-req", 7) == 0) {
+		struct dssh_pty_req pty;
+		if (dssh_parse_pty_req_data(data, data_len, &pty) == 0)
+			fprintf(stderr, "  PTY: %.*s %ux%u\n",
+			    (int)strlen(pty.term), pty.term,
+			    pty.cols, pty.rows);
+		return 0;
+	}
+	if (type_len == 3 && memcmp(type, "env", 3) == 0) {
+		const uint8_t *name, *value;
+		size_t nlen, vlen;
+		if (dssh_parse_env_data(data, data_len,
+		    &name, &nlen, &value, &vlen) == 0)
+			fprintf(stderr, "  ENV: %.*s=%.*s\n",
+			    (int)nlen, name, (int)vlen, value);
+		return 0;
+	}
+	if (type_len == 5 && memcmp(type, "shell", 5) == 0)
+		return 0;
+	if (type_len == 4 && memcmp(type, "exec", 4) == 0)
+		return 0;
+	if (type_len == 9 && memcmp(type, "subsystem", 9) == 0)
+		return 0;
+	/* Reject unknown requests */
+	return -1;
 }
 
 static struct dssh_server_session_cbs session_cbs = {
-	.pty_req = pty_req_cb,
-	.env = env_cb,
+	.request_cb = channel_request_cb,
 };
 
 /* ================================================================

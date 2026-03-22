@@ -391,12 +391,14 @@ dssh_auth_server(dssh_session sess,
 				continue;
 			}
 
-			/* Build the signed data (same as client builds) */
-			size_t sd_len = 4 + sess->trans.session_id_sz +
-			    (size_t)(rpos - sig_len - 4); /* everything before sig */
-			/* Actually: session_id_string + payload[0..before_sig] */
-			size_t before_sig = (size_t)rpos - sig_len - 4;
-			sd_len = 4 + sess->trans.session_id_sz + before_sig;
+			/* Build the signed data (same as client builds):
+			 * session_id_string + payload[0..before_sig]
+			 * where before_sig is everything before the
+			 * signature string (i.e., before the uint32 sig_len).
+			 * rpos currently points at the sig data, so
+			 * rpos - 4 is the offset of the sig_len field. */
+			size_t before_sig = (size_t)rpos - 4;
+			size_t sd_len = 4 + sess->trans.session_id_sz + before_sig;
 			uint8_t *sign_data = malloc(sd_len);
 			if (sign_data == NULL)
 				return DSSH_ERROR_ALLOC;
@@ -616,7 +618,10 @@ dssh_auth_password(dssh_session sess,
     const char *username, const char *password,
     dssh_auth_passwd_change_cb passwd_change_cb, void *passwd_change_cbdata)
 {
-	int res = send_password_request(sess, username, password, NULL, 0, false);
+	int res = ensure_auth_service(sess);
+	if (res < 0)
+		return res;
+	res = send_password_request(sess, username, password, NULL, 0, false);
 	if (res < 0)
 		return res;
 
@@ -697,6 +702,11 @@ dssh_auth_keyboard_interactive(dssh_session sess,
 {
 	if (prompt_cb == NULL)
 		return DSSH_ERROR_INIT;
+	{
+		int svc = ensure_auth_service(sess);
+		if (svc < 0)
+			return svc;
+	}
 	size_t ulen = strlen(username);
 	static const char service[] = "ssh-connection";
 	static const char method[] = "keyboard-interactive";
@@ -885,6 +895,11 @@ DSSH_PUBLIC int
 dssh_auth_publickey(dssh_session sess,
     const char *username, const char *algo_name)
 {
+	{
+		int svc = ensure_auth_service(sess);
+		if (svc < 0)
+			return svc;
+	}
 	dssh_key_algo ka = dssh_transport_find_key_algo(algo_name);
 	if (ka == NULL || ka->sign == NULL || ka->pubkey == NULL)
 		return DSSH_ERROR_INIT;

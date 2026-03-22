@@ -30,15 +30,62 @@ struct dssh_pty_req {
 /* Incoming channel open (from session_accept) */
 struct dssh_incoming_open;
 
-/* Server-side session setup callbacks */
+/*
+ * Channel request callback — called for every SSH_MSG_CHANNEL_REQUEST
+ * during session setup (pty-req, env, shell, exec, subsystem, etc.).
+ *
+ * type/type_len: request type string (not NUL-terminated)
+ * want_reply:    peer expects SUCCESS/FAILURE
+ * data/data_len: type-specific payload after the want_reply byte
+ *
+ * Return 0 to accept, negative to reject.
+ * When a terminal request (shell/exec/subsystem) is accepted, setup
+ * ends and the channel is returned to the caller.
+ *
+ * Use dssh_parse_uint32(), dssh_parse_string(), etc. from deucessh-arch.h
+ * and the helpers below to parse the type-specific data.
+ */
+typedef int (*dssh_channel_request_cb)(
+    const char *type, size_t type_len,
+    bool want_reply,
+    const uint8_t *data, size_t data_len,
+    void *cbdata);
+
+/*
+ * Session setup callbacks.
+ * request_cb: called for every CHANNEL_REQUEST during setup.
+ *             If NULL, all requests are accepted.
+ * window_change: called for window-change requests AFTER setup
+ *                completes (post-channel establishment).
+ *                May be NULL.
+ */
 struct dssh_server_session_cbs {
-	int (*pty_req)(const struct dssh_pty_req *pty, void *cbdata);
-	int (*env)(const uint8_t *name, size_t name_len,
-	    const uint8_t *value, size_t value_len, void *cbdata);
+	dssh_channel_request_cb request_cb;
 	void (*window_change)(uint32_t cols, uint32_t rows,
 	    uint32_t wpx, uint32_t hpx, void *cbdata);
 	void *cbdata;
 };
+
+/* Parse helpers for well-known channel request payloads.
+ * Call these from your request_cb to extract structured data.
+ * All return 0 on success, negative on parse error. */
+
+/* Parse pty-req data.  Pointers in pty->term point into data[]. */
+DSSH_PUBLIC int dssh_parse_pty_req_data(const uint8_t *data, size_t data_len,
+    struct dssh_pty_req *pty);
+
+/* Parse env data.  *name and *value point into data[]. */
+DSSH_PUBLIC int dssh_parse_env_data(const uint8_t *data, size_t data_len,
+    const uint8_t **name, size_t *name_len,
+    const uint8_t **value, size_t *value_len);
+
+/* Parse exec data.  *command points into data[]. */
+DSSH_PUBLIC int dssh_parse_exec_data(const uint8_t *data, size_t data_len,
+    const uint8_t **command, size_t *command_len);
+
+/* Parse subsystem data.  *name points into data[]. */
+DSSH_PUBLIC int dssh_parse_subsystem_data(const uint8_t *data, size_t data_len,
+    const uint8_t **name, size_t *name_len);
 
 /*
  * Start the demux thread.  Call after handshake and auth are complete.

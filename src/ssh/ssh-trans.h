@@ -178,6 +178,7 @@ typedef struct dssh_transport_state_s {
 	uint32_t    last_rx_seq;    /* seq number of last received packet */
 	bool        client;
 	bool        rekey_in_progress; /* true between KEXINIT and NEWKEYS */
+	bool        rekey_pending;     /* deferred auto-rekey (set in recv_packet) */
 	cnd_t       rekey_cnd;     /* wakes senders blocked during rekey */
 
 	/* Packet buffers (dynamically allocated) */
