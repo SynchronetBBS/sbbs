@@ -22,9 +22,17 @@ unless noted otherwise.
 - [x] channel_close (EOF + CLOSE)
 - [x] session_send_window_change
 - [x] Automatic window replenishment after reads
-- [x] send_exit_status, send_extended_data (low-level)
+- [x] send_exit_status (low-level, static)
+- [x] send_extended_data (low-level, static)
+- [x] session_write_ext (public, for server stderr)
+- [x] session_send_signal / session_read_signal (public)
 - [x] Server: session_accept_channel (pty/env/shell/exec callbacks, setup mailbox)
 - [x] Window-change callback delivery to server application (stored on channel, fired by demux)
+- [x] Channel close hardening (no auto-reciprocal, per-direction semantics)
+- [x] CHANNEL_OPEN_FAILURE handling in demux
+- [x] Low-level API made internal (static functions)
+- [x] Thread lifetime audit: all mtx/cnd/thrd properly init'd, joined, destroyed
+- [x] Static buffer elimination (per-channel storage)
 
 Note: both `deuce_ssh_session_channel` and `deuce_ssh_raw_channel`
 use the same `struct deuce_ssh_channel_s` with `chan_type` discriminator.

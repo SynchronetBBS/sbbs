@@ -540,10 +540,12 @@ deuce_ssh_session_open_shell(&sess, &ch, &pty);  /* or open_exec */
 
 /* I/O */
 deuce_ssh_session_poll(&sess, &ch, events, timeout_ms);
-deuce_ssh_session_read(&sess, &ch, buf, bufsz);      /* stdout */
-deuce_ssh_session_read_ext(&sess, &ch, buf, bufsz);  /* stderr */
-deuce_ssh_session_write(&sess, &ch, buf, bufsz);     /* stdin */
-deuce_ssh_session_read_signal(&sess, &ch, &name);    /* signals */
+deuce_ssh_session_read(&sess, &ch, buf, bufsz);       /* stdout */
+deuce_ssh_session_read_ext(&sess, &ch, buf, bufsz);   /* stderr */
+deuce_ssh_session_write(&sess, &ch, buf, bufsz);      /* stdin */
+deuce_ssh_session_write_ext(&sess, &ch, buf, bufsz);  /* stderr out */
+deuce_ssh_session_read_signal(&sess, &ch, &name);     /* signals */
+deuce_ssh_session_send_signal(&sess, &ch, "INT");     /* send signal */
 
 /* Close (sends exit-status + EOF + CLOSE) */
 deuce_ssh_session_close(&sess, &ch, exit_code);
@@ -585,6 +587,20 @@ WINDOW_ADJUST messages are sent automatically when the application
 drains the read buffers.  The application never sees window messages.
 Window arithmetic is clamped at 2^32-1.
 
+### Channel close
+
+Channels are bidirectional — each direction closes independently.
+EOF indicates "I'm done sending"; CLOSE tears down the channel.
+
+When the peer sends CLOSE, the library sets `close_received` and
+wakes poll (reads return 0).  The library does NOT auto-send the
+reciprocal CLOSE — the application gets a chance to drain remaining
+data, send exit-status, and clean up before calling `session_close()`
+or `channel_close()` to send the reciprocal CLOSE.
+
+Data received after the peer's EOF or CLOSE is silently discarded.
+Writes are blocked after `close_received`.
+
 ### Demux thread
 
 `deuce_ssh_session_start()` launches a single demux thread that reads
@@ -592,28 +608,34 @@ all incoming packets and dispatches them to per-channel buffers.  The
 demux thread also handles:
 
 - Incoming CHANNEL_OPEN — queued for `session_accept()`
-- CHANNEL_CLOSE — automatic reciprocal CLOSE
+- CHANNEL_EOF / CHANNEL_CLOSE — sets flags, wakes poll
 - CHANNEL_REQUEST "signal" — queued with stream position marks
 - CHANNEL_REQUEST "exit-status" — stored on channel
+- CHANNEL_REQUEST "window-change" — server callback
 - Forbidden channel types (x11, forwarded-tcpip, direct-tcpip,
   session-from-server) — auto-rejected
+- Data after peer EOF/CLOSE — discarded
 - Rekeying, global requests, IGNORE/DEBUG/UNIMPLEMENTED — transparent
+
+`deuce_ssh_session_stop()` terminates the demux thread and frees all
+channel resources.  Called automatically by `session_cleanup()`.
 
 ## Thread Safety
 
-The library supports one transmit thread and one receive thread
-operating concurrently on the same session.  The transport layer
-uses separate `tx_mtx` and `rx_mtx` mutexes:
+The library uses two concurrency models:
 
-- `send_packet` holds `tx_mtx` — multiple senders are serialized
-- `recv_packet` holds `rx_mtx` — multiple receivers are serialized
-- Send and receive never block each other
+**Before `session_start()`**: single-threaded.  Handshake and auth
+are sequential — no concurrent calls.
 
-The typical pattern:
+**After `session_start()`**: the demux thread handles all receiving.
+The application calls `poll()` / `read()` / `write()` from any
+thread.  Per-channel `buf_mtx` protects buffer access; `poll_cnd`
+wakes waiters.  Transport-layer `tx_mtx` serializes sends.  The
+demux thread and application threads never contend on the data path
+beyond brief mutex acquisitions.
 
-1. Single-threaded handshake (version exchange -> KEXINIT -> KEX -> NEWKEYS -> auth -> channel open)
-2. Spawn a receive thread that calls `deuce_ssh_conn_recv()` in a loop
-3. Main thread sends data via `deuce_ssh_conn_send_data()`
+During rekeying, application-layer sends (message type >= 50) are
+blocked until NEWKEYS completes.  Transport messages pass through.
 
 ## Rekeying
 
