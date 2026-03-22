@@ -93,7 +93,8 @@ typedef int (*deuce_ssh_enc_init)(const uint8_t *key, const uint8_t *iv, bool en
 typedef int (*deuce_ssh_enc_crypt)(uint8_t *buf, size_t bufsz, deuce_ssh_enc_ctx *ctx);
 typedef void (*deuce_ssh_enc_cleanup)(deuce_ssh_enc_ctx *ctx);
 
-typedef int (*deuce_ssh_mac_generate)(const uint8_t *key, const uint8_t *buf, size_t bufsz, uint8_t *outbuf);
+typedef int (*deuce_ssh_mac_init)(const uint8_t *key, deuce_ssh_mac_ctx **ctx);
+typedef int (*deuce_ssh_mac_generate)(const uint8_t *buf, size_t bufsz, uint8_t *outbuf, deuce_ssh_mac_ctx *ctx);
 typedef void (*deuce_ssh_mac_cleanup)(deuce_ssh_mac_ctx *ctx);
 
 typedef int (*deuce_ssh_comp_compress)(uint8_t *buf, size_t *bufsz, deuce_ssh_comp_ctx *ctx);
@@ -135,6 +136,7 @@ typedef struct deuce_ssh_enc_s {
 
 typedef struct deuce_ssh_mac_s {
 	struct deuce_ssh_mac_s *next;
+	deuce_ssh_mac_init init;
 	deuce_ssh_mac_generate generate;
 	deuce_ssh_mac_cleanup cleanup;
 	uint16_t digest_size;

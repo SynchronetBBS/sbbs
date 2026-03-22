@@ -470,16 +470,16 @@ deuce_ssh_transport_send_packet(deuce_ssh_session sess,
 		mi_pos += total;
 
 		deuce_ssh_mac mac;
-		uint8_t *mac_key;
+		deuce_ssh_mac_ctx *mac_ctx;
 		if (sess->trans.client) {
 			mac = sess->trans.mac_c2s_selected;
-			mac_key = (uint8_t *)sess->trans.mac_c2s_ctx;
+			mac_ctx = sess->trans.mac_c2s_ctx;
 		}
 		else {
 			mac = sess->trans.mac_s2c_selected;
-			mac_key = (uint8_t *)sess->trans.mac_s2c_ctx;
+			mac_ctx = sess->trans.mac_s2c_ctx;
 		}
-		ret = mac->generate(mac_key, mac_input, mi_pos, &sess->trans.tx_packet[pos]);
+		ret = mac->generate(mac_input, mi_pos, &sess->trans.tx_packet[pos], mac_ctx);
 		if (ret < 0)
 			goto tx_done;
 		pos += mac_len;
@@ -610,16 +610,16 @@ recv_packet_raw(deuce_ssh_session sess,
 
 		uint8_t computed_mac[64];
 		deuce_ssh_mac mac;
-		uint8_t *mac_key;
+		deuce_ssh_mac_ctx *mac_ctx;
 		if (sess->trans.client) {
 			mac = sess->trans.mac_s2c_selected;
-			mac_key = (uint8_t *)sess->trans.mac_s2c_ctx;
+			mac_ctx = sess->trans.mac_s2c_ctx;
 		}
 		else {
 			mac = sess->trans.mac_c2s_selected;
-			mac_key = (uint8_t *)sess->trans.mac_c2s_ctx;
+			mac_ctx = sess->trans.mac_c2s_ctx;
 		}
-		ret = mac->generate(mac_key, mac_input, mi_pos, computed_mac);
+		ret = mac->generate(mac_input, mi_pos, computed_mac, mac_ctx);
 		if (ret < 0)
 			goto rx_done;
 		if (memcmp(received_mac, computed_mac, mac_len) != 0) {
@@ -1320,12 +1320,18 @@ deuce_ssh_transport_newkeys(deuce_ssh_session sess)
 			goto keys_cleanup;
 	}
 
-	/* Store MAC keys as context (the key IS the context for HMAC) */
-	if (mac_key_sz > 0) {
-		sess->trans.mac_c2s_ctx = (deuce_ssh_mac_ctx *)integ_c2s;
-		sess->trans.mac_s2c_ctx = (deuce_ssh_mac_ctx *)integ_s2c;
-		integ_c2s = NULL;
-		integ_s2c = NULL;
+	/* Initialize MAC contexts */
+	if (mac_key_sz > 0 && sess->trans.mac_c2s_selected->init != NULL) {
+		res = sess->trans.mac_c2s_selected->init(integ_c2s,
+		    &sess->trans.mac_c2s_ctx);
+		if (res < 0)
+			goto keys_cleanup;
+	}
+	if (mac_key_sz > 0 && sess->trans.mac_s2c_selected->init != NULL) {
+		res = sess->trans.mac_s2c_selected->init(integ_s2c,
+		    &sess->trans.mac_s2c_ctx);
+		if (res < 0)
+			goto keys_cleanup;
 	}
 
 	/* Reset per-key counters */

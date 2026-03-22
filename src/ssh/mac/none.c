@@ -4,7 +4,8 @@
 #include "deucessh.h"
 
 static int
-generate(const uint8_t *key, const uint8_t *buf, size_t bufsz, uint8_t *outbuf)
+generate(const uint8_t *buf, size_t bufsz, uint8_t *outbuf,
+    deuce_ssh_mac_ctx *ctx)
 {
 	return 0;
 }
@@ -22,6 +23,7 @@ register_none_mac(void)
 	if (mac == NULL)
 		return DEUCE_SSH_ERROR_ALLOC;
 	mac->next = NULL;
+	mac->init = NULL;
 	mac->generate = generate;
 	mac->cleanup = cleanup;
 	mac->digest_size = 0;
