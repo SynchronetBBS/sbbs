@@ -178,7 +178,7 @@ function MRC_Session(host, port, user, pass, alias) {
         }
         
         if (msg.to_room === CTCP_ROOM) {             
-            log ("msg.body: " + msg.body);
+            //log ("msg.body: " + msg.body);
         
             const ctcp_data = msg.body.split(' ');
             if (ctcp_data[0] === "[CTCP]" && ctcp_data.length >= 4) {
@@ -186,12 +186,12 @@ function MRC_Session(host, port, user, pass, alias) {
                 if (state.show_ctcp_req) {
                     emit('ctcp-msg', '* |14[CTCP-REQUEST] |15' + ctcp_data[3] + ' |07on |15' + ctcp_data[2] + ' |07from |10' + msg.from_user);
                 }
-                if (ctcp_data[2] === "*" || (ctcp_data[2].toUpperCase()===user.toUpperCase()) || (ctcp_data[2].toUpperCase()==="#"+state.room.toUpperCase()) ) {
+                if (ctcp_data[2] === "*" || (ctcp_data[2].toUpperCase()===user.replace(/\s/g, '_').toUpperCase()) || (ctcp_data[2].toUpperCase()==="#"+state.room.toUpperCase()) ) {
                     send_ctcp(ctcp_data[1], "[CTCP-REPLY]", ctcp_data[3].toUpperCase() + " " + ctcp_reply(ctcp_data[3].toUpperCase(), ctcp_data.length >= 5 ? ctcp_data.slice(4).join(' ').trim() : "") );
                 }
                 
             } else if (ctcp_data[0] === "[CTCP-REPLY]" && ctcp_data.length >= 3) {
-                if (msg.to_user.toUpperCase()===user.toUpperCase()) {
+                if (msg.to_user.toUpperCase()===user.replace(/\s/g, '_').toUpperCase()) {
                     emit('ctcp-msg', '* |14[CTCP-REPLY] |10' + ctcp_data[1] + ' |15' + ctcp_data.slice(2).join(' ').trim());
                 }
             }
