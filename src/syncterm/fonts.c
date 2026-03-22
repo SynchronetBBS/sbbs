@@ -291,7 +291,7 @@ font_management(void)
 			int    show_filepick = 0;
 			char **path;
 
-			if (i & MSK_DEL) {
+			if ((i & MSK_ON) == MSK_DEL) {
 				if (fonts) {
 					FREE_AND_NULL(fonts[cur].name);
 					FREE_AND_NULL(fonts[cur].path8x8);
@@ -304,7 +304,7 @@ font_management(void)
 				}
 				break;
 			}
-			if (i & MSK_INS) {
+			if ((i & MSK_ON) == MSK_INS) {
 				str[0] = 0;
 				uifc.helpbuf = "Enter the name of the font as you want it to appear in menus.";
 				if (uifc.input(WIN_SAV | WIN_MID, 0, 0, "Font Name", str, 50, 0) == -1 || !str[0]) {
