@@ -186,22 +186,40 @@ int main(void)
     /* 8. Accept incoming channels */
     struct dssh_incoming_open *inc;
     while (dssh_session_accept(sess, &inc, -1) == 0) {
-        dssh_channel ch = dssh_channel_accept_raw(sess, inc);
+        struct dssh_server_session_cbs scbs = {
+            .request_cb = my_channel_request_cb,
+        };
+        const char *req_type, *req_data;
+        dssh_channel ch = dssh_session_accept_channel(sess, inc,
+            &scbs, &req_type, &req_data);
+        if (ch == NULL) continue;
 
-        int ev;
-        while ((ev = dssh_channel_poll(sess, ch,
-                DSSH_POLL_READ, -1)) & DSSH_POLL_READ) {
-            int64_t len = dssh_channel_read(sess, ch, NULL, 0);
-            if (len <= 0)
-                break;
-            uint8_t *msg = malloc(len);
-            dssh_channel_read(sess, ch, msg, len);
-            /* process and respond... */
-            dssh_channel_write(sess, ch, response, resp_len);
-            free(msg);
+        if (strcmp(req_type, "subsystem") == 0) {
+            /* Subsystem channels are raw (message-based) */
+            int ev;
+            while ((ev = dssh_channel_poll(sess, ch,
+                    DSSH_POLL_READ, -1)) & DSSH_POLL_READ) {
+                uint8_t msg[4096];
+                int64_t len = dssh_channel_read(sess, ch,
+                    msg, sizeof(msg));
+                if (len <= 0) break;
+                /* process and respond... */
+                dssh_channel_write(sess, ch, response, resp_len);
+            }
+            dssh_channel_close(sess, ch);
+        } else {
+            /* Shell/exec channels are session (stream-based) */
+            uint8_t buf[4096];
+            int ev;
+            while ((ev = dssh_session_poll(sess, ch,
+                    DSSH_POLL_READ, -1)) & DSSH_POLL_READ) {
+                int64_t n = dssh_session_read(sess, ch,
+                    buf, sizeof(buf));
+                if (n <= 0) break;
+                dssh_session_write(sess, ch, buf, n);
+            }
+            dssh_session_close(sess, ch, 0);
         }
-
-        dssh_channel_close(sess, ch);
     }
 
     /* 9. Clean up */
@@ -533,6 +551,52 @@ char *pub = malloc(len);
 ssh_ed25519_get_pub_str(pub, len);  /* "ssh-ed25519 AAAA..." */
 ```
 
+## Server-Side Channel Setup
+
+`dssh_session_accept_channel()` processes incoming `CHANNEL_REQUEST`
+messages until a terminal request (shell/exec/subsystem) arrives.
+Every request is passed to a single callback:
+
+```c
+static int
+my_channel_request_cb(const char *type, size_t type_len,
+    bool want_reply, const uint8_t *data, size_t data_len,
+    void *cbdata)
+{
+    if (type_len == 7 && memcmp(type, "pty-req", 7) == 0) {
+        struct dssh_pty_req pty;
+        dssh_parse_pty_req_data(data, data_len, &pty);
+        printf("PTY: %.*s %ux%u\n",
+            /* pty.term points into data, NOT NUL-terminated */
+            (int)(data_len >= 4 ? *(uint32_t*)data : 0), pty.term,
+            pty.cols, pty.rows);
+        return 0;  /* accept */
+    }
+    if (type_len == 3 && memcmp(type, "env", 3) == 0)
+        return 0;  /* accept env */
+    if (type_len == 5 && memcmp(type, "shell", 5) == 0)
+        return 0;  /* accept → DSSH_CHAN_SESSION */
+    if (type_len == 4 && memcmp(type, "exec", 4) == 0)
+        return 0;  /* accept → DSSH_CHAN_SESSION */
+    if (type_len == 9 && memcmp(type, "subsystem", 9) == 0)
+        return 0;  /* accept → DSSH_CHAN_RAW */
+    return -1;     /* reject unknown */
+}
+```
+
+The channel type is determined by the terminal request:
+- **shell** or **exec** → `DSSH_CHAN_SESSION` (stream-based, use `dssh_session_*` API)
+- **subsystem** → `DSSH_CHAN_RAW` (message-based, use `dssh_channel_*` API)
+
+Parse helpers for the `data` payload:
+- `dssh_parse_pty_req_data(data, len, &pty)` — fills `struct dssh_pty_req`
+- `dssh_parse_env_data(data, len, &name, &nlen, &value, &vlen)`
+- `dssh_parse_exec_data(data, len, &command, &clen)`
+- `dssh_parse_subsystem_data(data, len, &name, &nlen)`
+
+You can also use the RFC 4251 primitives directly: `dssh_parse_uint32()`,
+`dssh_parse_string()`, etc. (from `deucessh-arch.h`).
+
 ## Channel Lifecycle
 
 ### Two channel types
@@ -692,6 +756,37 @@ RFC minimum (33280 bytes), which accommodates the RFC-required
 32768-byte uncompressed payload with room for headers and padding.
 Pass a larger value to support bigger payloads.
 
+## Testing
+
+372 tests across 9 executables:
+
+```sh
+mkdir build && cd build
+cmake .. -DDEUCESSH_BUILD_TESTS=ON
+cmake --build . -j8
+ctest                        # run all
+ctest -R dssh_unit           # unit tests only
+ctest -R dssh_layer          # layer tests only
+ctest -R dssh_integration    # integration only
+./dssh_test_arch test_parse  # filter by name
+```
+
+| Suite | Tests | Scope |
+|-------|-------|-------|
+| test_arch | 89 | RFC 4251 wire format: parse/serialize/roundtrip for all types |
+| test_chan | 75 | Buffer primitives: bytebuf, msgqueue, signal queue, accept queue |
+| test_algo_enc | 23 | AES-256-CTR (NIST vectors), none cipher |
+| test_algo_mac | 18 | HMAC-SHA-256 (RFC 4231 vectors), none MAC |
+| test_algo_key | 32 | Ed25519 + RSA: generate/sign/verify/save/load |
+| test_transport | 67 | Version exchange, packets, KEXINIT, handshake, rekey, hard limits |
+| test_auth | 21 | Password, KBI, publickey, server-side auth, banners |
+| test_conn | 33 | Channels, demux, session/raw I/O, signals, close, threading |
+| test_selftest | 14 | Full client↔server via socketpair, including rekey under load |
+
+Tests use a custom framework (`test/dssh_test.h`) and mock I/O layer
+(`test/mock_io.h`) that replaces real sockets with in-process circular
+buffers.  Integration tests use `socketpair(AF_UNIX)`.
+
 ## Files
 
 Public headers (consumers include these):
@@ -721,4 +816,10 @@ comp/               Compression modules
 
 client.c            Example client
 server.c            Example server
+
+test/               Test suite (built with -DDEUCESSH_BUILD_TESTS=ON)
+  dssh_test.h       Test framework (assert macros, runner)
+  dssh_test_internal.h  Declarations for exposed static functions
+  mock_io.h/.c      Bidirectional mock I/O layer
+  test_*.c          Test source files (9 executables)
 ```
