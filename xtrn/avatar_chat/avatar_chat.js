@@ -1,5 +1,5 @@
 // Avatar Chat - Auto-generated, do not edit directly.
-// Built: 2026-03-19T00:02:03.216Z
+// Built: 2026-03-22T23:08:08.707Z
 load("sbbsdefs.js");
 load("key_defs.js");
 load("frame.js");
@@ -91,20 +91,75 @@ load("json-chat.js");
     }
     return lines;
   }
-  function formatClockTime(timestamp) {
-    var date = new Date(timestamp);
-    var hours = date.getHours();
-    var minutes = date.getMinutes();
-    var isPm = hours >= 12;
-    var hourText = "";
-    var minuteText = "";
-    hours = hours % 12;
-    if (hours === 0) {
-      hours = 12;
+  function formatRelativeTime(currentMs, previousMs) {
+    if (!currentMs || isNaN(currentMs))
+      return "";
+    var now = /* @__PURE__ */ new Date();
+    var cur = new Date(currentMs);
+    var todayY = now.getFullYear();
+    var todayM = now.getMonth();
+    var todayD = now.getDate();
+    var curY = cur.getFullYear();
+    var curM = cur.getMonth();
+    var curD = cur.getDate();
+    var curH = cur.getHours();
+    var curMin = cur.getMinutes();
+    var curIsToday = curY === todayY && curM === todayM && curD === todayD;
+    var pad2 = function(n) {
+      return n < 10 ? "0" + String(n) : String(n);
+    };
+    var h12 = function(h) {
+      return h % 12 === 0 ? 12 : h % 12;
+    };
+    var amPm = function(h) {
+      return h < 12 ? "am" : "pm";
+    };
+    var curTimeStr = String(h12(curH)) + ":" + pad2(curMin) + " " + amPm(curH);
+    var curDateStr = pad2(curM + 1) + "/" + pad2(curD) + "/" + String(curY).substr(2);
+    if (!previousMs) {
+      return curIsToday ? "Today " + curTimeStr : curDateStr + " " + curTimeStr;
     }
-    hourText = String(hours);
-    minuteText = minutes < 10 ? "0" + String(minutes) : String(minutes);
-    return hourText + ":" + minuteText + (isPm ? " pm" : " am");
+    var last = new Date(previousMs);
+    var lastY = last.getFullYear();
+    var lastM = last.getMonth();
+    var lastD = last.getDate();
+    if (curY === lastY && curM === lastM && curD === lastD) {
+      if (curIsToday) {
+        var diffMs = now.getTime() - cur.getTime();
+        var totalMin = Math.floor(diffMs / 6e4);
+        var diffHr = Math.floor(totalMin / 60);
+        var diffMin = totalMin % 60;
+        if (diffHr > 0) {
+          var s = String(diffHr) + (diffHr === 1 ? " hour" : " hours");
+          if (diffMin > 0)
+            s += " " + String(diffMin) + (diffMin === 1 ? " minute" : " minutes");
+          return s + " ago";
+        }
+        if (diffMin > 0) {
+          return String(diffMin) + (diffMin === 1 ? " minute" : " minutes") + " ago";
+        }
+        return "just now";
+      }
+      return curTimeStr;
+    }
+    if (curIsToday) {
+      return "Today " + curTimeStr;
+    }
+    return curDateStr + " " + curTimeStr;
+  }
+  function compactTimestamp(text) {
+    if (!text)
+      return "";
+    var s = text;
+    s = s.replace(/hours?/g, "h");
+    s = s.replace(/minutes?/g, "m");
+    s = s.replace(/seconds?/g, "s");
+    s = s.replace(/Today\s*/i, "");
+    s = s.replace(/Yesterday\s*/i, "yday ");
+    s = s.replace(/\s+/g, " ").replace(/^\s+|\s+$/g, "");
+    if (s === "just now")
+      s = "now";
+    return s;
   }
 
   // build/domain/chat-model.js
@@ -964,14 +1019,30 @@ load("json-chat.js");
         });
         continue;
       }
-      blocks.push(buildBubbleLayout(group, maxBubbleWidth, avatarSize.height, options));
+      var prevGroupTime = 0;
+      if (index > 0) {
+        var prevGroup = groups[index - 1];
+        if (prevGroup && prevGroup.messages.length) {
+          var prevLast = prevGroup.messages[prevGroup.messages.length - 1];
+          if (prevLast)
+            prevGroupTime = prevLast.time;
+        }
+      }
+      blocks.push(buildBubbleLayout(group, maxBubbleWidth, avatarSize.height, options, prevGroupTime));
     }
     return blocks;
   }
-  function buildBubbleLayout(group, maxBubbleWidth, avatarHeight, options) {
+  function buildBubbleLayout(group, maxBubbleWidth, avatarHeight, options, prevGroupTime) {
     var rows = [];
     var lastMessage = group.messages.length ? group.messages[group.messages.length - 1] : null;
-    var timestamp = lastMessage ? formatClockTime(lastMessage.time) : "";
+    var timestamp = "";
+    if (lastMessage) {
+      timestamp = formatRelativeTime(lastMessage.time, prevGroupTime || 0);
+      var headerSpace = maxBubbleWidth - (group.speakerName || "").length - 2;
+      if (headerSpace < timestamp.length) {
+        timestamp = compactTimestamp(timestamp);
+      }
+    }
     var index = 0;
     var messageIndex = 0;
     var width = 0;
@@ -1060,8 +1131,10 @@ load("json-chat.js");
   function renderNotice(frame, block, startRow) {
     var index = 0;
     for (index = 0; index < block.lines.length; index += 1) {
-      frame.gotoxy(1, startRow + index);
-      frame.putmsg(centerText(block.lines[index] || "", frame.width), DARKGRAY);
+      var line = block.lines[index] || "";
+      var leftOffset = Math.max(0, Math.floor((frame.width - line.length) / 2));
+      frame.gotoxy(1 + leftOffset, startRow + index);
+      frame.putmsg(line, DARKGRAY);
     }
     return startRow + block.lines.length;
   }
@@ -1180,6 +1253,8 @@ load("json-chat.js");
           header: null,
           actions: null,
           transcript: null,
+          animBg: null,
+          animFg: null,
           status: null,
           input: null,
           overlay: null,
@@ -1209,6 +1284,14 @@ load("json-chat.js");
         this.publicChannelMessageKeys = {};
         this.publicChannelUnreadCounts = {};
         this.lastPrivateHistorySyncAt = 0;
+        this.lastKeyTimestamp = Date.now();
+        this.idleAnimActive = false;
+        this.animMgr = null;
+        this.animFrame = "";
+        this.idleTickInterval = 0;
+        this.lastAnimTickAt = 0;
+        this.embeddedAvatars = {};
+        this.userBbsCache = {};
         try {
           this.avatarLib = load({}, "avatar_lib.js");
         } catch (error) {
@@ -1225,6 +1308,7 @@ load("json-chat.js");
             this.cycleChat();
             this.reconnectIfDue();
             this.handlePendingInput();
+            this.tickIdleAnimations();
             this.render();
           }
         } finally {
@@ -1492,8 +1576,17 @@ load("json-chat.js");
           }
           for (index = 0; index < channel.messages.length; index += 1) {
             var message = channel.messages[index];
+            if (message && message.nick && message.nick.avatar) {
+              var avatarData = String(message.nick.avatar).replace(/^\s+|\s+$/g, "");
+              if (avatarData.length) {
+                this.embeddedAvatars[message.nick.name.toUpperCase()] = avatarData;
+              }
+            }
             if (!message || !this.rememberPublicChannelMessage(channel.name, message)) {
               continue;
+            }
+            if (!message.nick) {
+              this.enrichJoinLeaveNotice(message, channel);
             }
             if (markUnread && channel.name.toUpperCase() !== this.currentChannel.toUpperCase() && message.nick && message.nick.name && message.nick.name.toUpperCase() !== user.alias.toUpperCase()) {
               this.publicChannelUnreadCounts[unreadKey] += 1;
@@ -1567,6 +1660,10 @@ load("json-chat.js");
         var key = this.readInputKey();
         if (!key) {
           return;
+        }
+        this.lastKeyTimestamp = Date.now();
+        if (this.idleAnimActive) {
+          this.stopIdleAnimations();
         }
         if (this.modalState && this.handleModalInput(key)) {
           return;
@@ -2414,7 +2511,8 @@ load("json-chat.js");
             name: name,
             host: bbs2,
             ip: nickValue.ip || rawEntry.ip || void 0,
-            qwkid: nickValue.qwkid || rawEntry.qwkid || void 0
+            qwkid: nickValue.qwkid || rawEntry.qwkid || void 0,
+            avatar: nickValue.avatar || void 0
           };
         } else {
           name = trimText(String(nickValue || rawEntry.name || rawEntry.alias || rawEntry.user || ""));
@@ -2427,8 +2525,17 @@ load("json-chat.js");
             };
           }
         }
+        if (nick && !nick.avatar && name.length) {
+          var embedded = this.embeddedAvatars[name.toUpperCase()];
+          if (embedded) {
+            nick.avatar = embedded;
+          }
+        }
         if (!name.length) {
           return null;
+        }
+        if (bbs2 && bbs2.length) {
+          this.userBbsCache[name.toUpperCase()] = bbs2;
         }
         return {
           name: name,
@@ -2436,6 +2543,41 @@ load("json-chat.js");
           nick: nick,
           isSelf: name.toUpperCase() === user.alias.toUpperCase()
         };
+      };
+      AvatarChatApp2.prototype.enrichJoinLeaveNotice = function(message, channel) {
+        if (!message || message.nick || !message.str)
+          return;
+        var text = message.str;
+        var hereMatch = /^(.+) is here\.$/.exec(text);
+        if (hereMatch) {
+          var userName = hereMatch[1] || "";
+          var bbsName = this.lookupUserBbs(userName, channel);
+          if (bbsName) {
+            message.str = userName + " is here from " + bbsName;
+          }
+          return;
+        }
+        var leftMatch = /^(.+) has left\.$/.exec(text);
+        if (leftMatch) {
+          var userName = leftMatch[1] || "";
+          var bbsName = this.lookupUserBbs(userName, channel);
+          if (bbsName) {
+            message.str = userName + " from " + bbsName + " left.";
+          }
+          return;
+        }
+      };
+      AvatarChatApp2.prototype.lookupUserBbs = function(userName, channel) {
+        var upper = userName.toUpperCase();
+        if (channel && channel.users) {
+          for (var i = 0; i < channel.users.length; i += 1) {
+            var entry = this.extractRosterEntry(channel.users[i]);
+            if (entry && entry.name.toUpperCase() === upper) {
+              return entry.bbs;
+            }
+          }
+        }
+        return this.userBbsCache[upper] || "";
       };
       AvatarChatApp2.prototype.buildChannelEntries = function() {
         var entries = [];
@@ -2676,8 +2818,16 @@ load("json-chat.js");
         this.frames.header.open();
         this.frames.actions = new Frame(1, 2, width, 1, BG_BLUE | WHITE, this.frames.root);
         this.frames.actions.open();
+        this.frames.animBg = new Frame(1, 3, width, transcriptHeight, BG_BLACK | LIGHTGRAY, this.frames.root);
+        this.frames.animBg.transparent = true;
+        this.frames.animBg.open();
         this.frames.transcript = new Frame(1, 3, width, transcriptHeight, BG_BLACK | LIGHTGRAY, this.frames.root);
+        this.frames.transcript.transparent = true;
         this.frames.transcript.open();
+        this.frames.animFg = new Frame(1, 3, width, transcriptHeight, BG_BLACK | LIGHTGRAY, this.frames.root);
+        this.frames.animFg.transparent = true;
+        this.frames.animFg.open();
+        this.frames.animFg.top();
         this.frames.status = new Frame(1, transcriptHeight + 3, width, 1, BG_MAGENTA | WHITE, this.frames.root);
         this.frames.status.open();
         this.frames.input = new Frame(1, transcriptHeight + 4, width, 1, BG_BLACK | WHITE, this.frames.root);
@@ -2749,12 +2899,23 @@ load("json-chat.js");
         this.frames.overlay = null;
       };
       AvatarChatApp2.prototype.destroyFrames = function() {
+        if (this.idleAnimActive) {
+          this.stopIdleAnimations();
+        }
+        this.animMgr = null;
+        this.animFrame = "";
         this.destroyModalFrames();
         if (this.frames.input) {
           this.frames.input.close();
         }
         if (this.frames.status) {
           this.frames.status.close();
+        }
+        if (this.frames.animFg) {
+          this.frames.animFg.close();
+        }
+        if (this.frames.animBg) {
+          this.frames.animBg.close();
         }
         if (this.frames.transcript) {
           this.frames.transcript.close();
@@ -2772,10 +2933,231 @@ load("json-chat.js");
         this.frames.header = null;
         this.frames.actions = null;
         this.frames.transcript = null;
+        this.frames.animBg = null;
+        this.frames.animFg = null;
         this.frames.status = null;
         this.frames.input = null;
         this.frames.width = 0;
         this.frames.height = 0;
+      };
+      AvatarChatApp2.prototype.collectChatNicks = function() {
+        var nicks = [];
+        var seen = {};
+        var key = "";
+        if (!this.chat) {
+          return nicks;
+        }
+        for (key in this.chat.channels) {
+          if (!Object.prototype.hasOwnProperty.call(this.chat.channels, key)) {
+            continue;
+          }
+          var channel = this.chat.channels[key];
+          if (!channel) {
+            continue;
+          }
+          var msgIndex = 0;
+          for (msgIndex = 0; msgIndex < channel.messages.length; msgIndex += 1) {
+            var message = channel.messages[msgIndex];
+            if (message && message.nick && message.nick.avatar) {
+              var avatarStr = String(message.nick.avatar).replace(/^\s+|\s+$/g, "");
+              if (avatarStr.length) {
+                this.embeddedAvatars[message.nick.name.toUpperCase()] = avatarStr;
+              }
+            }
+          }
+          if (!channel.users) {
+            continue;
+          }
+          var userIndex = 0;
+          for (userIndex = 0; userIndex < channel.users.length; userIndex += 1) {
+            var rosterEntry = this.extractRosterEntry(channel.users[userIndex]);
+            if (!rosterEntry || !rosterEntry.nick || !rosterEntry.nick.name) {
+              continue;
+            }
+            var nickKey = rosterEntry.nick.name.toUpperCase();
+            if (seen[nickKey]) {
+              continue;
+            }
+            seen[nickKey] = true;
+            nicks.push(rosterEntry.nick);
+          }
+        }
+        return nicks;
+      };
+      AvatarChatApp2.prototype.buildAnimOpts = function() {
+        var _this = this;
+        var cfg = this.config.idleAnimations;
+        return {
+          switch_interval: cfg.switchInterval,
+          fps: cfg.fps,
+          random: cfg.random,
+          sequence: cfg.sequence,
+          clear_on_switch: cfg.clearOnSwitch,
+          debug: false,
+          figlet_messages: cfg.figletMessages,
+          figlet_refresh: cfg.figletRefresh,
+          figlet_fonts: cfg.figletFonts || void 0,
+          figlet_colors: cfg.figletColors,
+          figlet_move: cfg.figletMove,
+          use_avatar_frames: cfg.useAvatarFrames,
+          avatar_lib: this.avatarLib || void 0,
+          getChatNicks: function() {
+            return _this.collectChatNicks();
+          },
+          star_count: cfg.starCount,
+          aurora_speed: cfg.auroraSpeed,
+          aurora_wave: cfg.auroraWave,
+          matrix_sparse: cfg.matrixSparse,
+          plasma_speed: cfg.plasmaSpeed,
+          plasma_scale: cfg.plasmaScale,
+          tunnel_speed: cfg.tunnelSpeed,
+          tunnel_scale: cfg.tunnelScale,
+          lissajous_speed: cfg.lissajousSpeed,
+          fire_decay: cfg.fireDecay,
+          ripple_count: cfg.rippleCount
+        };
+      };
+      AvatarChatApp2.prototype.initIdleAnimManagers = function() {
+        var cfg = this.config.idleAnimations;
+        if (!cfg.enabled)
+          return;
+        var CA = js.global.CanvasAnimations;
+        var AF = js.global.AvatarsFloat;
+        if (!CA) {
+          log("Avatar Chat: CanvasAnimations not loaded, idle animations disabled");
+          return;
+        }
+        var disableSet = {};
+        for (var i = 0; i < cfg.disable.length; i++) {
+          var disabledName = cfg.disable[i];
+          if (disabledName) {
+            disableSet[disabledName] = true;
+          }
+        }
+        var opts = this.buildAnimOpts();
+        var animBg = this.frames.animBg;
+        var animFg = this.frames.animFg;
+        var fgSet = {};
+        for (var i = 0; i < AvatarChatApp2.FOREGROUND_ANIMATIONS.length; i++) {
+          var fgName = AvatarChatApp2.FOREGROUND_ANIMATIONS[i];
+          if (fgName)
+            fgSet[fgName] = true;
+        }
+        var self = this;
+        opts.frameForAnim = function(name2, _defaultFrame) {
+          if (fgSet[name2]) {
+            if (animBg) {
+              try {
+                animBg.clear();
+                animBg.invalidate();
+              } catch (_e) {
+              }
+            }
+            self.animFrame = "fg";
+            return animFg || _defaultFrame;
+          }
+          if (animFg) {
+            try {
+              animFg.clear();
+              animFg.invalidate();
+            } catch (_e) {
+            }
+          }
+          self.animFrame = "bg";
+          return animBg || _defaultFrame;
+        };
+        var defaultFrame = animBg || animFg;
+        if (!defaultFrame)
+          return;
+        this.animMgr = new CA.AnimationManager(defaultFrame, opts);
+        for (var name in AvatarChatApp2.ANIMATION_MAP) {
+          if (disableSet[name])
+            continue;
+          var ctorKey = AvatarChatApp2.ANIMATION_MAP[name];
+          if (!ctorKey)
+            continue;
+          if (name === "avatars_float" && AF && AF.AvatarsFloat) {
+            this.animMgr.add(name, AF.AvatarsFloat);
+          } else if (CA[ctorKey]) {
+            this.animMgr.add(name, CA[ctorKey]);
+          }
+        }
+        this.idleTickInterval = Math.max(50, Math.floor(1e3 / Math.max(1, cfg.fps)));
+      };
+      AvatarChatApp2.prototype.startIdleAnimations = function() {
+        if (this.idleAnimActive)
+          return;
+        if (!this.animMgr) {
+          this.initIdleAnimManagers();
+        }
+        if (!this.animMgr)
+          return;
+        this.idleAnimActive = true;
+        this.lastAnimTickAt = Date.now();
+        try {
+          this.animMgr.start();
+        } catch (e) {
+          log("Avatar Chat: animation start error: " + String(e));
+        }
+      };
+      AvatarChatApp2.prototype.stopIdleAnimations = function() {
+        if (!this.idleAnimActive)
+          return;
+        this.idleAnimActive = false;
+        if (this.animMgr) {
+          try {
+            this.animMgr.dispose();
+          } catch (_e) {
+          }
+        }
+        if (this.frames.animBg) {
+          try {
+            this.frames.animBg.clear();
+            this.frames.animBg.invalidate();
+          } catch (_e) {
+          }
+        }
+        if (this.frames.animFg) {
+          try {
+            this.frames.animFg.clear();
+            this.frames.animFg.invalidate();
+          } catch (_e) {
+          }
+        }
+        if (this.frames.transcript) {
+          try {
+            this.frames.transcript.invalidate();
+          } catch (_e) {
+          }
+        }
+        this.resetRenderSignatures();
+      };
+      AvatarChatApp2.prototype.tickIdleAnimations = function() {
+        var cfg = this.config.idleAnimations;
+        if (!cfg.enabled)
+          return;
+        var now = Date.now();
+        var elapsed = now - this.lastKeyTimestamp;
+        if (!this.idleAnimActive) {
+          if (elapsed >= cfg.idleTimeoutSeconds * 1e3) {
+            this.startIdleAnimations();
+          }
+          return;
+        }
+        if (now - this.lastAnimTickAt < this.idleTickInterval) {
+          return;
+        }
+        this.lastAnimTickAt = now;
+        var switchNow = this.animMgr && this.animMgr.lastSwitch && time() - this.animMgr.lastSwitch >= cfg.switchInterval;
+        if (this.animMgr) {
+          try {
+            if (switchNow)
+              this.animMgr.start();
+            this.animMgr.tick();
+          } catch (e) {
+            log("Avatar Chat: animation tick error: " + String(e));
+          }
+        }
       };
       AvatarChatApp2.prototype.render = function() {
         this.ensureFrames();
@@ -3074,11 +3456,60 @@ load("json-chat.js");
         }
         return parts.join("|");
       };
+      AvatarChatApp2.FOREGROUND_ANIMATIONS = ["figlet_message", "avatars_float"];
+      AvatarChatApp2.ANIMATION_MAP = {
+        // Background-preference animations
+        tv_static: "TvStatic",
+        matrix_rain: "MatrixRain",
+        life: "Life",
+        starfield: "Starfield",
+        fireflies: "Fireflies",
+        sine_wave: "SineWave",
+        comet_trails: "CometTrails",
+        plasma: "Plasma",
+        fireworks: "Fireworks",
+        aurora: "Aurora",
+        fire_smoke: "FireSmoke",
+        ocean_ripple: "OceanRipple",
+        lissajous: "LissajousTrails",
+        lightning: "LightningStorm",
+        tunnel: "RecursiveTunnel",
+        // Foreground-preference animations
+        figlet_message: "FigletMessage",
+        avatars_float: "AvatarsFloat"
+      };
       return AvatarChatApp2;
     }()
   );
 
   // build/io/config.js
+  var DEFAULT_IDLE = {
+    enabled: true,
+    idleTimeoutSeconds: 180,
+    switchInterval: 60,
+    fps: 4,
+    random: true,
+    sequence: [],
+    disable: [],
+    clearOnSwitch: true,
+    figletMessages: "Avatar Chat",
+    figletRefresh: 180,
+    figletFonts: "",
+    figletColors: true,
+    figletMove: true,
+    useAvatarFrames: true,
+    starCount: 180,
+    auroraSpeed: 0.12,
+    auroraWave: 0.35,
+    matrixSparse: 4,
+    plasmaSpeed: 0.18,
+    plasmaScale: 0.12,
+    tunnelSpeed: 0.22,
+    tunnelScale: 0.17,
+    lissajousSpeed: 0.12,
+    fireDecay: 1,
+    rippleCount: 4
+  };
   var DEFAULT_CONFIG = {
     host: "127.0.0.1",
     port: 10088,
@@ -3086,7 +3517,8 @@ load("json-chat.js");
     maxHistory: 200,
     pollDelayMs: 25,
     reconnectDelayMs: 3e3,
-    inputMaxLength: 500
+    inputMaxLength: 500,
+    idleAnimations: DEFAULT_IDLE
   };
   function readString(file, key, defaultValue) {
     var value = file.iniGetValue(null, key, defaultValue);
@@ -3103,6 +3535,66 @@ load("json-chat.js");
     }
     return parsed;
   }
+  function readFloat(file, key, defaultValue) {
+    var value = file.iniGetValue(null, key, defaultValue);
+    var parsed = parseFloat(String(value));
+    if (isNaN(parsed)) {
+      return defaultValue;
+    }
+    return parsed;
+  }
+  function readBool(file, key, defaultValue) {
+    var value = file.iniGetValue(null, key, defaultValue);
+    if (value === void 0 || value === null) {
+      return defaultValue;
+    }
+    var s = String(value).toLowerCase().trim();
+    if (s === "true" || s === "1" || s === "yes") {
+      return true;
+    }
+    if (s === "false" || s === "0" || s === "no") {
+      return false;
+    }
+    return defaultValue;
+  }
+  function readList(file, key, defaultValue) {
+    var value = file.iniGetValue(null, key, "");
+    if (value === void 0 || value === null || String(value).trim() === "") {
+      return defaultValue;
+    }
+    return String(value).split(",").map(function(s) {
+      return s.trim();
+    }).filter(Boolean);
+  }
+  function loadIdleAnimConfig(file) {
+    return {
+      enabled: readBool(file, "idle_enabled", DEFAULT_IDLE.enabled),
+      idleTimeoutSeconds: readNumber(file, "idle_timeout_seconds", DEFAULT_IDLE.idleTimeoutSeconds),
+      switchInterval: readNumber(file, "idle_switch_interval", DEFAULT_IDLE.switchInterval),
+      fps: readNumber(file, "idle_fps", DEFAULT_IDLE.fps),
+      random: readBool(file, "idle_random", DEFAULT_IDLE.random),
+      sequence: readList(file, "idle_sequence", DEFAULT_IDLE.sequence),
+      disable: readList(file, "idle_disable", DEFAULT_IDLE.disable),
+      clearOnSwitch: readBool(file, "idle_clear_on_switch", DEFAULT_IDLE.clearOnSwitch),
+      figletMessages: readString(file, "idle_figlet_messages", DEFAULT_IDLE.figletMessages),
+      figletRefresh: readNumber(file, "idle_figlet_refresh", DEFAULT_IDLE.figletRefresh),
+      figletFonts: readString(file, "idle_figlet_fonts", DEFAULT_IDLE.figletFonts),
+      figletColors: readBool(file, "idle_figlet_colors", DEFAULT_IDLE.figletColors),
+      figletMove: readBool(file, "idle_figlet_move", DEFAULT_IDLE.figletMove),
+      useAvatarFrames: readBool(file, "idle_use_avatar_frames", DEFAULT_IDLE.useAvatarFrames),
+      starCount: readNumber(file, "idle_star_count", DEFAULT_IDLE.starCount),
+      auroraSpeed: readFloat(file, "idle_aurora_speed", DEFAULT_IDLE.auroraSpeed),
+      auroraWave: readFloat(file, "idle_aurora_wave", DEFAULT_IDLE.auroraWave),
+      matrixSparse: readNumber(file, "idle_matrix_sparse", DEFAULT_IDLE.matrixSparse),
+      plasmaSpeed: readFloat(file, "idle_plasma_speed", DEFAULT_IDLE.plasmaSpeed),
+      plasmaScale: readFloat(file, "idle_plasma_scale", DEFAULT_IDLE.plasmaScale),
+      tunnelSpeed: readFloat(file, "idle_tunnel_speed", DEFAULT_IDLE.tunnelSpeed),
+      tunnelScale: readFloat(file, "idle_tunnel_scale", DEFAULT_IDLE.tunnelScale),
+      lissajousSpeed: readFloat(file, "idle_lissajous_speed", DEFAULT_IDLE.lissajousSpeed),
+      fireDecay: readNumber(file, "idle_fire_decay", DEFAULT_IDLE.fireDecay),
+      rippleCount: readNumber(file, "idle_ripple_count", DEFAULT_IDLE.rippleCount)
+    };
+  }
   function loadConfig() {
     var configPath = js.exec_dir + "avatar_chat.ini";
     var file = new File(configPath);
@@ -3113,7 +3605,8 @@ load("json-chat.js");
       maxHistory: DEFAULT_CONFIG.maxHistory,
       pollDelayMs: DEFAULT_CONFIG.pollDelayMs,
       reconnectDelayMs: DEFAULT_CONFIG.reconnectDelayMs,
-      inputMaxLength: DEFAULT_CONFIG.inputMaxLength
+      inputMaxLength: DEFAULT_CONFIG.inputMaxLength,
+      idleAnimations: DEFAULT_IDLE
     };
     if (!file.open("r")) {
       return config;
@@ -3125,6 +3618,7 @@ load("json-chat.js");
     config.pollDelayMs = readNumber(file, "poll_delay_ms", DEFAULT_CONFIG.pollDelayMs);
     config.reconnectDelayMs = readNumber(file, "reconnect_delay_ms", DEFAULT_CONFIG.reconnectDelayMs);
     config.inputMaxLength = readNumber(file, "input_max_length", DEFAULT_CONFIG.inputMaxLength);
+    config.idleAnimations = loadIdleAnimConfig(file);
     file.close();
     if (config.port < 1) {
       config.port = DEFAULT_CONFIG.port;
@@ -3145,7 +3639,20 @@ load("json-chat.js");
   }
 
   // build/main.js
+  function loadIdleAnimationModules() {
+    try {
+      js.global.CanvasAnimations = load(js.exec_dir + "lib/canvas-animations.js");
+    } catch (error) {
+      log("Avatar Chat: canvas-animations.js unavailable: " + String(error));
+    }
+    try {
+      js.global.AvatarsFloat = load(js.exec_dir + "lib/avatars-float.js");
+    } catch (error) {
+      log("Avatar Chat: avatars-float.js unavailable: " + String(error));
+    }
+  }
   function main() {
+    loadIdleAnimationModules();
     var app = new AvatarChatApp(loadConfig());
     try {
       app.run();
