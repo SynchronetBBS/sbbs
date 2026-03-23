@@ -79,7 +79,12 @@ function podcast_get_enclosure_info(enc)
 	if (enc.url == undefined)
 		return false;
 	http = new HTTPRequest();
-	hdrs = http.Head(enc.url);
+	try {
+		hdrs = http.Head(enc.url);
+	} catch(e) {
+		log(LOG_ERR, e + " getting head of " + enc.url);
+		return false;
+	}
 	if (hdrs == undefined)
 		return false;
 	if (hdrs['Content-Type'] == undefined || hdrs['Content-Length'] == undefined) {
