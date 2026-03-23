@@ -1,6 +1,6 @@
                                Good Time Trivia
-                                 Version 1.06
-                           Release date: 2026-02-04
+                                 Version 1.07
+                           Release date: 2026-03-22
 
                                      by
 
@@ -448,6 +448,12 @@ Setting                           Description
 deleteScoresOlderThanDays         The number of days to keep old player scores.
                                   The background service will remove player
                                   scores older than this number of days.
+
+useDoveNetSyncData                Whether or not to use the Dove-Net syncdata
+                                  sub-board to share game data (in addition to
+                                  any other sub-boards specified by
+                                  scoresMsgSubBoardsForReading). Valid values
+                                  are true and false.
 
 scoresMsgSubBoardsForReading      This can be used to specify a comma-separated
                                   list of internal sub-board codes for the game
