@@ -135,7 +135,7 @@ if (!base.open()) {
 
 out = new File(opts.Filename+'.new');
 if (!out.open("wxb")) {
-	log("Unable to open temorary file "+out.name+".");
+	log(LOG_ERR, "ERROR " + out.error + " opening temporary file: "+out.name);
 	exit(1);
 }
 
