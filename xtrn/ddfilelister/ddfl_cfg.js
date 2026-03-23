@@ -11,7 +11,7 @@ require("sbbsdefs.js", "P_NONE");
 require("uifcdefs.js", "UIFC_INMSG");
 
 
-if (!uifc.init("DigDist. File Lister 2.33 Configurator"))
+if (!uifc.init("DigDist. File Lister 2.34 Configurator"))
 {
 	print("Failed to initialize uifc");
 	exit(1);

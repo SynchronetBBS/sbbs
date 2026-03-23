@@ -1,6 +1,6 @@
                         Digital Distortion File Lister
-                                 Version 2.33
-                           Release date: 2026-03-11
+                                 Version 2.34
+                           Release date: 2026-03-22
 
                                      by
 
@@ -50,6 +50,9 @@ action.  The file lister also uses message boxes to display information.
 
 If the user's terminal does not support ANSI, the file lister will run the
 stock Synchronet file lister interface instead.
+
+Digital Distortion File Lister also supports RIP (Remote Imaging Protocol). If
+the user's terminal supports RIP, then a fully RIP user interface will be used.
 
 Digital Distortion File Lister makes use of the user's extended description
 setting.  If the user's extended description setting is enabled, the lister
