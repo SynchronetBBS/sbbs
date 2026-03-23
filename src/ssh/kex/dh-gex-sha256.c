@@ -54,7 +54,7 @@ serialize_bn_mpint(const BIGNUM *bn, uint8_t *buf, size_t bufsz, size_t *pos)
 	return 0;
 }
 
-static int64_t
+DSSH_TESTABLE int64_t
 parse_bn_mpint(const uint8_t *buf, size_t bufsz, BIGNUM **bn)
 {
 	if (bufsz < 4)
@@ -74,7 +74,7 @@ parse_bn_mpint(const uint8_t *buf, size_t bufsz, BIGNUM **bn)
  * RFC 4253 s8: Values of e or f not in [1, p-1] MUST NOT be
  * sent or accepted.
  */
-static bool
+DSSH_TESTABLE bool
 dh_value_valid(const BIGNUM *val, const BIGNUM *p)
 {
 	if (BN_is_zero(val) || BN_is_negative(val))

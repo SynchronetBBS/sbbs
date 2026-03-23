@@ -13,6 +13,17 @@
 #include "ssh-trans.h"
 #include "ssh-chan.h"
 
+/*
+ * DSSH_TESTABLE: marks internal functions that need to be linkable
+ * from test code.  In normal builds these are static; when compiled
+ * with -DDSSH_TESTING they become externally visible.
+ */
+#ifdef DSSH_TESTING
+#define DSSH_TESTABLE
+#else
+#define DSSH_TESTABLE static
+#endif
+
 /* Set terminate flag and wake all library-owned condvar waiters. */
 DSSH_PRIVATE void dssh_session_set_terminate(dssh_session sess);
 

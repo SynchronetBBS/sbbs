@@ -3418,6 +3418,220 @@ test_is_20_199_partial(void)
 }
 
 /* ================================================================
+ * version_tx — defense-in-depth TOOLONG paths
+ *
+ * These are unreachable via the public API (set_version validates
+ * length first), but the code exists and should be tested.
+ * We bypass set_version by writing directly to the global config.
+ * ================================================================ */
+
+/* Access to gconf fields for test injection.  These are normally
+ * set by dssh_transport_set_version; we bypass it here. */
+extern const char *dssh_test_get_sw_version(void);
+extern void dssh_test_set_sw_version(const char *v);
+extern void dssh_test_set_version_comment(const char *c);
+
+static int
+test_version_tx_toolong_version(void)
+{
+	dssh_test_reset_global_config();
+	ASSERT_OK(register_all_algorithms());
+	if (test_generate_host_key() < 0)
+		return TEST_FAIL;
+	dssh_transport_set_callbacks(mock_tx_dispatch, mock_rx_dispatch,
+	    mock_rxline_dispatch, mock_extra_line_cb);
+
+	/* Inject a version string that's too long when combined with
+	 * "SSH-2.0-" prefix + "\r\n" suffix (>255 total) */
+	char long_ver[250];
+	memset(long_ver, 'A', sizeof(long_ver) - 1);
+	long_ver[sizeof(long_ver) - 1] = 0;
+	dssh_test_set_sw_version(long_ver);
+
+	struct mock_io_state io;
+	ASSERT_OK(mock_io_init(&io, 0));
+	dssh_session sess = dssh_session_init(true, 0);
+	ASSERT_NOT_NULL(sess);
+	dssh_session_set_cbdata(sess, &io, &io, &io, &io);
+
+	int res = version_tx(sess);
+	ASSERT_EQ(res, DSSH_ERROR_TOOLONG);
+
+	dssh_session_cleanup(sess);
+	mock_io_free(&io);
+	dssh_test_reset_global_config();
+	return TEST_PASS;
+}
+
+static int
+test_version_tx_toolong_comment(void)
+{
+	dssh_test_reset_global_config();
+	ASSERT_OK(register_all_algorithms());
+	if (test_generate_host_key() < 0)
+		return TEST_FAIL;
+	dssh_transport_set_callbacks(mock_tx_dispatch, mock_rx_dispatch,
+	    mock_rxline_dispatch, mock_extra_line_cb);
+
+	/* Version fits, but version + comment exceeds 255 */
+	char long_comment[250];
+	memset(long_comment, 'B', sizeof(long_comment) - 1);
+	long_comment[sizeof(long_comment) - 1] = 0;
+	dssh_test_set_sw_version("DeuceSSH");
+	dssh_test_set_version_comment(long_comment);
+
+	struct mock_io_state io;
+	ASSERT_OK(mock_io_init(&io, 0));
+	dssh_session sess = dssh_session_init(true, 0);
+	ASSERT_NOT_NULL(sess);
+	dssh_session_set_cbdata(sess, &io, &io, &io, &io);
+
+	int res = version_tx(sess);
+	ASSERT_EQ(res, DSSH_ERROR_TOOLONG);
+
+	dssh_session_cleanup(sess);
+	mock_io_free(&io);
+	dssh_test_reset_global_config();
+	return TEST_PASS;
+}
+
+/* ================================================================
+ * DH-GEX helpers — parse_bn_mpint and dh_value_valid
+ * ================================================================ */
+
+static int
+test_parse_bn_mpint_valid(void)
+{
+	/* Valid mpint: length=1, value=42 */
+	uint8_t buf[] = { 0, 0, 0, 1, 42 };
+	BIGNUM *bn = NULL;
+	int64_t ret = parse_bn_mpint(buf, sizeof(buf), &bn);
+	ASSERT_EQ(ret, 5);
+	ASSERT_NOT_NULL(bn);
+	ASSERT_TRUE(BN_is_word(bn, 42));
+	BN_free(bn);
+	return TEST_PASS;
+}
+
+static int
+test_parse_bn_mpint_short_header(void)
+{
+	/* bufsz < 4 */
+	uint8_t buf[] = { 0, 0 };
+	BIGNUM *bn = NULL;
+	int64_t ret = parse_bn_mpint(buf, sizeof(buf), &bn);
+	ASSERT_EQ(ret, (int64_t)DSSH_ERROR_PARSE);
+	return TEST_PASS;
+}
+
+static int
+test_parse_bn_mpint_truncated_data(void)
+{
+	/* Length says 10, only 2 bytes of data */
+	uint8_t buf[] = { 0, 0, 0, 10, 1, 2 };
+	BIGNUM *bn = NULL;
+	int64_t ret = parse_bn_mpint(buf, sizeof(buf), &bn);
+	ASSERT_EQ(ret, (int64_t)DSSH_ERROR_PARSE);
+	return TEST_PASS;
+}
+
+static int
+test_dh_value_valid_zero(void)
+{
+	BIGNUM *val = BN_new();
+	BIGNUM *p = BN_new();
+	BN_zero(val);
+	BN_set_word(p, 23);
+	ASSERT_FALSE(dh_value_valid(val, p));
+	BN_free(val);
+	BN_free(p);
+	return TEST_PASS;
+}
+
+static int
+test_dh_value_valid_negative(void)
+{
+	BIGNUM *val = BN_new();
+	BIGNUM *p = BN_new();
+	BN_set_word(val, 5);
+	BN_set_negative(val, 1);
+	BN_set_word(p, 23);
+	ASSERT_FALSE(dh_value_valid(val, p));
+	BN_free(val);
+	BN_free(p);
+	return TEST_PASS;
+}
+
+static int
+test_dh_value_valid_equal_to_p(void)
+{
+	BIGNUM *val = BN_new();
+	BIGNUM *p = BN_new();
+	BN_set_word(val, 23);
+	BN_set_word(p, 23);
+	/* val == p is not in [1, p-1] */
+	ASSERT_FALSE(dh_value_valid(val, p));
+	BN_free(val);
+	BN_free(p);
+	return TEST_PASS;
+}
+
+static int
+test_dh_value_valid_greater_than_p(void)
+{
+	BIGNUM *val = BN_new();
+	BIGNUM *p = BN_new();
+	BN_set_word(val, 24);
+	BN_set_word(p, 23);
+	ASSERT_FALSE(dh_value_valid(val, p));
+	BN_free(val);
+	BN_free(p);
+	return TEST_PASS;
+}
+
+static int
+test_dh_value_valid_ok(void)
+{
+	BIGNUM *val = BN_new();
+	BIGNUM *p = BN_new();
+	BN_set_word(val, 5);
+	BN_set_word(p, 23);
+	/* 5 is in [1, 22] */
+	ASSERT_TRUE(dh_value_valid(val, p));
+	BN_free(val);
+	BN_free(p);
+	return TEST_PASS;
+}
+
+static int
+test_dh_value_valid_one(void)
+{
+	BIGNUM *val = BN_new();
+	BIGNUM *p = BN_new();
+	BN_set_word(val, 1);
+	BN_set_word(p, 23);
+	/* 1 is the minimum valid value */
+	ASSERT_TRUE(dh_value_valid(val, p));
+	BN_free(val);
+	BN_free(p);
+	return TEST_PASS;
+}
+
+static int
+test_dh_value_valid_p_minus_one(void)
+{
+	BIGNUM *val = BN_new();
+	BIGNUM *p = BN_new();
+	BN_set_word(val, 22);
+	BN_set_word(p, 23);
+	/* p-1 is the maximum valid value */
+	ASSERT_TRUE(dh_value_valid(val, p));
+	BN_free(val);
+	BN_free(p);
+	return TEST_PASS;
+}
+
+/* ================================================================
  * Test table
  * ================================================================ */
 
@@ -3584,6 +3798,22 @@ static struct dssh_test_entry tests[] = {
 	/* set_version high-byte validation */
 	{ "set_version/high_byte_version",   test_set_version_high_byte_version },
 	{ "set_version/high_byte_comment",   test_set_version_high_byte_comment },
+
+	/* version_tx defense-in-depth */
+	{ "vex/tx_toolong_version",          test_version_tx_toolong_version },
+	{ "vex/tx_toolong_comment",          test_version_tx_toolong_comment },
+
+	/* DH-GEX parse/validate helpers */
+	{ "dhgex/parse_bn_mpint_valid",      test_parse_bn_mpint_valid },
+	{ "dhgex/parse_bn_mpint_short",      test_parse_bn_mpint_short_header },
+	{ "dhgex/parse_bn_mpint_truncated",  test_parse_bn_mpint_truncated_data },
+	{ "dhgex/dh_value_zero",             test_dh_value_valid_zero },
+	{ "dhgex/dh_value_negative",         test_dh_value_valid_negative },
+	{ "dhgex/dh_value_equal_p",          test_dh_value_valid_equal_to_p },
+	{ "dhgex/dh_value_greater_p",        test_dh_value_valid_greater_than_p },
+	{ "dhgex/dh_value_ok",              test_dh_value_valid_ok },
+	{ "dhgex/dh_value_one",             test_dh_value_valid_one },
+	{ "dhgex/dh_value_p_minus_one",      test_dh_value_valid_p_minus_one },
 };
 
 DSSH_TEST_MAIN(tests)

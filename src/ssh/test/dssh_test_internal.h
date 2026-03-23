@@ -62,6 +62,19 @@ bool dssh_test_is_version_line(uint8_t *buf, size_t buflen);
 bool dssh_test_has_non_ascii(uint8_t *buf, size_t buflen);
 bool dssh_test_is_20(uint8_t *buf, size_t buflen);
 
+/*
+ * version_tx from ssh-trans.c — sends the SSH version string.
+ */
+int version_tx(dssh_session sess);
+
+/*
+ * DH-GEX helpers from kex/dh-gex-sha256.c.
+ */
+#include <openssl/bn.h>
+
+int64_t parse_bn_mpint(const uint8_t *buf, size_t bufsz, BIGNUM **bn);
+bool dh_value_valid(const BIGNUM *val, const BIGNUM *p);
+
 #ifdef __cplusplus
 }
 #endif

@@ -9,17 +9,7 @@
 
 #include "ssh-internal.h"
 
-/*
- * DSSH_TESTABLE: marks internal functions that need to be linkable
- * from test code.  In normal builds these are static; when compiled
- * with -DDSSH_TESTING they become externally visible (with a
- * dssh_test_ prefix alias declared in test/dssh_test_internal.h).
- */
-#ifdef DSSH_TESTING
-#define DSSH_TESTABLE
-#else
-#define DSSH_TESTABLE static
-#endif
+/* DSSH_TESTABLE is defined in ssh-internal.h */
 
 typedef struct dssh_transport_global_config {
 	atomic_bool used;
@@ -157,7 +147,7 @@ version_rx(dssh_session sess)
 	return DSSH_ERROR_TERMINATED;
 }
 
-static int
+DSSH_TESTABLE int
 version_tx(dssh_session sess)
 {
 	int res;
@@ -1914,6 +1904,14 @@ dssh_test_reset_global_config(void)
 	memset(&gconf, 0, sizeof(gconf));
 	gconf.used = false;
 }
+
+/*
+ * Test accessors for injecting version strings that bypass
+ * set_version validation, allowing version_tx defense-in-depth
+ * tests to reach the TOOLONG branches.
+ */
+void dssh_test_set_sw_version(const char *v) { gconf.software_version = v; }
+void dssh_test_set_version_comment(const char *c) { gconf.version_comment = c; }
 
 /*
  * Provide extern definitions for the inline version validators
