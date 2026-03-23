@@ -455,8 +455,9 @@ dssh_transport_send_packet(dssh_session sess,
 
 	uint32_t packet_length = (uint32_t)(1 + payload_len + padding_len);
 	size_t total = 4 + packet_length;
+	uint16_t mac_len = tx_mac_size(sess);
 
-	if (total > sess->trans.packet_buf_sz) {
+	if (total + mac_len > sess->trans.packet_buf_sz) {
 		ret = DSSH_ERROR_TOOLONG;
 		goto tx_done;
 	}
@@ -473,7 +474,6 @@ dssh_transport_send_packet(dssh_session sess,
 	pos += padding_len;
 
 	/* MAC: mac(key, seq || unencrypted_packet) */
-	uint16_t mac_len = tx_mac_size(sess);
 	if (mac_len > 0) {
 		uint8_t *mac_input = sess->trans.tx_mac_scratch;
 		size_t mi_pos = 0;
