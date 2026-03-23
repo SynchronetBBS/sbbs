@@ -5,6 +5,9 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
+2.34     2026-03-22   Added RIP support. If the user's terminal supports RIP,
+                      ddfilelister will now use a fully RIP interface. This was
+                      done with the help of Claude AI.
 2.33     2026-03-11   Added the ability to have a custom header file to display
                       above the file list. New settings supported in the theme
                       configuration file: headerFilenameBase and headerMaxLines
