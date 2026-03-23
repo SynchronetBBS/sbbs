@@ -127,6 +127,93 @@ export function formatClockTime(timestamp: number): string {
   return hourText + ":" + minuteText + (isPm ? " pm" : " am");
 }
 
+
+
+/**
+ * Format a timestamp relative to now, matching the future_shell chat style.
+ * Shows "just now", "5 minutes ago", "2 hours 30 minutes ago" for same-day,
+ * "Today 3:05 pm" for first message of the day, or "MM/DD/YY H:MM am/pm" for older.
+ * @param currentMs  Epoch milliseconds of this message
+ * @param previousMs Epoch milliseconds of the previous group (0 or undefined for first)
+ */
+export function formatRelativeTime(currentMs: number, previousMs?: number): string {
+  if (!currentMs || isNaN(currentMs)) return "";
+
+  const now = new Date();
+  const cur = new Date(currentMs);
+  const todayY = now.getFullYear();
+  const todayM = now.getMonth();
+  const todayD = now.getDate();
+  const curY = cur.getFullYear();
+  const curM = cur.getMonth();
+  const curD = cur.getDate();
+  const curH = cur.getHours();
+  const curMin = cur.getMinutes();
+  const curIsToday = (curY === todayY && curM === todayM && curD === todayD);
+  const pad2 = (n: number): string => n < 10 ? "0" + String(n) : String(n);
+  const h12 = (h: number): number => h % 12 === 0 ? 12 : h % 12;
+  const amPm = (h: number): string => h < 12 ? "am" : "pm";
+  const curTimeStr = String(h12(curH)) + ":" + pad2(curMin) + " " + amPm(curH);
+  const curDateStr = pad2(curM + 1) + "/" + pad2(curD) + "/" + String(curY).substr(2);
+
+  if (!previousMs) {
+    return curIsToday ? "Today " + curTimeStr : curDateStr + " " + curTimeStr;
+  }
+
+  const last = new Date(previousMs);
+  const lastY = last.getFullYear();
+  const lastM = last.getMonth();
+  const lastD = last.getDate();
+
+  // Same day as previous message
+  if (curY === lastY && curM === lastM && curD === lastD) {
+    if (curIsToday) {
+      // Relative time from now
+      const diffMs = now.getTime() - cur.getTime();
+      const totalMin = Math.floor(diffMs / 60000);
+      const diffHr = Math.floor(totalMin / 60);
+      const diffMin = totalMin % 60;
+
+      if (diffHr > 0) {
+        let s = String(diffHr) + (diffHr === 1 ? " hour" : " hours");
+        if (diffMin > 0) s += " " + String(diffMin) + (diffMin === 1 ? " minute" : " minutes");
+        return s + " ago";
+      }
+      if (diffMin > 0) {
+        return String(diffMin) + (diffMin === 1 ? " minute" : " minutes") + " ago";
+      }
+      return "just now";
+    }
+    // Same day but not today — just show time
+    return curTimeStr;
+  }
+
+  // Current is today, previous was not
+  if (curIsToday) {
+    return "Today " + curTimeStr;
+  }
+
+  // Different days
+  return curDateStr + " " + curTimeStr;
+}
+
+/**
+ * Compact a relative timestamp for narrow displays.
+ * "2 hours 30 minutes ago" -> "2h 30m ago", "just now" -> "now"
+ */
+export function compactTimestamp(text: string): string {
+  if (!text) return "";
+  let s = text;
+  s = s.replace(/hours?/g, "h");
+  s = s.replace(/minutes?/g, "m");
+  s = s.replace(/seconds?/g, "s");
+  s = s.replace(/Today\s*/i, "");
+  s = s.replace(/Yesterday\s*/i, "yday ");
+  s = s.replace(/\s+/g, " ").replace(/^\s+|\s+$/g, "");
+  if (s === "just now") s = "now";
+  return s;
+}
+
 export function splitWords(text: string): string[] {
   const trimmed = trimText(text);
   if (!trimmed.length) {

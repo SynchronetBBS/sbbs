@@ -7,6 +7,7 @@ declare function base64_decode(data: string): string;
 declare function ascii(text: string): number;
 declare function mswait(milliseconds: number): void;
 declare function md5_calc(text: string): string;
+declare function time(): number;
 
 declare const K_NONE: number;
 declare const K_NOCRLF: number;
@@ -127,7 +128,9 @@ declare class Frame {
   cycle(): boolean;
   clear(attr?: number): void;
   refresh(): void;
+  invalidate(): void;
   gotoxy(x: number, y: number): void;
+  top(): void;
   putmsg(text: string, attr?: number): void;
   setData(x: number, y: number, ch: string, attr: number, useOffset?: boolean): void;
 }

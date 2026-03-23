@@ -1,6 +1,6 @@
 import { groupMessages, MessageGroup } from "../domain/chat-model";
 import { blitAvatarToFrame, lookupAvatarBinary, AvatarCache, resolveAvatarDimensions } from "./avatar";
-import { centerText, formatClockTime, padRight, wrapText } from "../util/text";
+import { centerText, compactTimestamp, formatRelativeTime, padRight, wrapText } from "../util/text";
 
 interface BubbleLayout {
   kind: "bubble";
@@ -87,7 +87,16 @@ function buildLayouts(
       continue;
     }
 
-    blocks.push(buildBubbleLayout(group, maxBubbleWidth, avatarSize.height, options));
+    // Determine previous group's last message time for relative timestamp
+    let prevGroupTime = 0;
+    if (index > 0) {
+      const prevGroup = groups[index - 1];
+      if (prevGroup && prevGroup.messages.length) {
+        const prevLast = prevGroup.messages[prevGroup.messages.length - 1];
+        if (prevLast) prevGroupTime = prevLast.time;
+      }
+    }
+    blocks.push(buildBubbleLayout(group, maxBubbleWidth, avatarSize.height, options, prevGroupTime));
   }
 
   return blocks;
@@ -97,11 +106,20 @@ function buildBubbleLayout(
   group: MessageGroup,
   maxBubbleWidth: number,
   avatarHeight: number,
-  options: TranscriptRenderOptions
+  options: TranscriptRenderOptions,
+  prevGroupTime?: number
 ): BubbleLayout {
   const rows: BubbleRow[] = [];
   const lastMessage = group.messages.length ? group.messages[group.messages.length - 1] : null;
-  const timestamp = lastMessage ? formatClockTime(lastMessage.time) : "";
+  let timestamp = "";
+  if (lastMessage) {
+    timestamp = formatRelativeTime(lastMessage.time, prevGroupTime || 0);
+    // Compact for narrow displays
+    const headerSpace = maxBubbleWidth - (group.speakerName || "").length - 2;
+    if (headerSpace < timestamp.length) {
+      timestamp = compactTimestamp(timestamp);
+    }
+  }
   let index = 0;
   let messageIndex = 0;
   let width = 0;
@@ -220,8 +238,12 @@ function renderNotice(frame: Frame, block: NoticeLayout, startRow: number): numb
   let index = 0;
 
   for (index = 0; index < block.lines.length; index += 1) {
-    frame.gotoxy(1, startRow + index);
-    frame.putmsg(centerText(block.lines[index] || "", frame.width), DARKGRAY);
+    const line = block.lines[index] || "";
+    // Position cursor at centered X offset instead of padding with spaces,
+    // so the transparent frame doesn't get opaque space characters.
+    const leftOffset = Math.max(0, Math.floor((frame.width - line.length) / 2));
+    frame.gotoxy(1 + leftOffset, startRow + index);
+    frame.putmsg(line, DARKGRAY);
   }
 
   return startRow + block.lines.length;
