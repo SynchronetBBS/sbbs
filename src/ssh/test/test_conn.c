@@ -19,6 +19,7 @@
 #include "ssh-internal.h"
 #include "dssh_test_internal.h"
 #include "mock_io.h"
+#include "test_dhgex_provider.h"
 
 
 /* ================================================================
@@ -59,14 +60,26 @@ mock_rxline_dispatch(uint8_t *buf, size_t bufsz,
  * Helper: register all algorithms needed for handshake
  * ================================================================ */
 
+static dssh_session
+init_server_session(void)
+{
+	dssh_session s = dssh_session_init(false, 0);
+	if (s != NULL)
+		test_dhgex_setup(s);
+	return s;
+}
+
 static int
 register_all_algorithms(void)
 {
 	int res;
-	res = register_curve25519_sha256();
+	if (test_using_dhgex())
+		res = register_dh_gex_sha256();
+	else
+		res = register_curve25519_sha256();
 	if (res < 0)
 		return res;
-	res = register_ssh_ed25519();
+	res = test_register_key_algos();
 	if (res < 0)
 		return res;
 	res = register_aes256_ctr();
@@ -228,7 +241,7 @@ conn_setup(struct conn_ctx *ctx)
 
 	if (register_all_algorithms() < 0)
 		return -1;
-	if (ssh_ed25519_generate_key() < 0)
+	if (test_generate_host_key() < 0)
 		return -1;
 
 	if (mock_io_init(&ctx->io, 0) < 0)
@@ -245,7 +258,7 @@ conn_setup(struct conn_ctx *ctx)
 	dssh_session_set_cbdata(ctx->client, &ctx->io, &ctx->io,
 	    &ctx->io, &ctx->io);
 
-	ctx->server = dssh_session_init(false, 0);
+	ctx->server = init_server_session();
 	if (ctx->server == NULL) {
 		dssh_session_cleanup(ctx->client);
 		mock_io_free(&ctx->io);
@@ -2127,10 +2140,443 @@ test_cleanup_after_drop(void)
 }
 
 /* ================================================================
+ * Parse helper unit tests (Category 1)
+ * ================================================================ */
+
+static int
+test_parse_pty_req_valid(void)
+{
+	/* Build: string "xterm" + uint32 cols + uint32 rows +
+	 *        uint32 wpx + uint32 hpx + string modes */
+	uint8_t data[128];
+	size_t pos = 0;
+	dssh_serialize_uint32(5, data, sizeof(data), &pos);
+	memcpy(&data[pos], "xterm", 5);
+	pos += 5;
+	dssh_serialize_uint32(80, data, sizeof(data), &pos);
+	dssh_serialize_uint32(24, data, sizeof(data), &pos);
+	dssh_serialize_uint32(640, data, sizeof(data), &pos);
+	dssh_serialize_uint32(480, data, sizeof(data), &pos);
+	/* modes: 2 bytes */
+	dssh_serialize_uint32(2, data, sizeof(data), &pos);
+	data[pos++] = 0x01;
+	data[pos++] = 0x00;
+
+	struct dssh_pty_req pty;
+	memset(&pty, 0, sizeof(pty));
+	ASSERT_EQ(dssh_parse_pty_req_data(data, pos, &pty), 0);
+	ASSERT_TRUE(memcmp(pty.term, "xterm", 5) == 0);
+	ASSERT_EQ_U(pty.cols, 80);
+	ASSERT_EQ_U(pty.rows, 24);
+	ASSERT_EQ_U(pty.wpx, 640);
+	ASSERT_EQ_U(pty.hpx, 480);
+	ASSERT_NOT_NULL(pty.modes);
+	ASSERT_EQ_U(pty.modes_len, 2);
+	return TEST_PASS;
+}
+
+static int
+test_parse_pty_req_no_modes(void)
+{
+	/* Valid pty-req but no modes string at all */
+	uint8_t data[64];
+	size_t pos = 0;
+	dssh_serialize_uint32(4, data, sizeof(data), &pos);
+	memcpy(&data[pos], "vt52", 4);
+	pos += 4;
+	dssh_serialize_uint32(40, data, sizeof(data), &pos);
+	dssh_serialize_uint32(24, data, sizeof(data), &pos);
+	dssh_serialize_uint32(0, data, sizeof(data), &pos);
+	dssh_serialize_uint32(0, data, sizeof(data), &pos);
+	/* No modes string at all — exactly at the boundary */
+
+	struct dssh_pty_req pty;
+	memset(&pty, 0, sizeof(pty));
+	ASSERT_EQ(dssh_parse_pty_req_data(data, pos, &pty), 0);
+	ASSERT_TRUE(memcmp(pty.term, "vt52", 4) == 0);
+	ASSERT_EQ_U(pty.cols, 40);
+	ASSERT_EQ_U(pty.rows, 24);
+	ASSERT_NULL(pty.modes);
+	ASSERT_EQ_U(pty.modes_len, 0);
+	return TEST_PASS;
+}
+
+static int
+test_parse_pty_req_modes_truncated(void)
+{
+	/* modes length says 10 but data is shorter */
+	uint8_t data[64];
+	size_t pos = 0;
+	dssh_serialize_uint32(4, data, sizeof(data), &pos);
+	memcpy(&data[pos], "vt52", 4);
+	pos += 4;
+	dssh_serialize_uint32(80, data, sizeof(data), &pos);
+	dssh_serialize_uint32(24, data, sizeof(data), &pos);
+	dssh_serialize_uint32(0, data, sizeof(data), &pos);
+	dssh_serialize_uint32(0, data, sizeof(data), &pos);
+	dssh_serialize_uint32(10, data, sizeof(data), &pos);
+	/* only 2 bytes of modes, but length says 10 */
+	data[pos++] = 0x01;
+	data[pos++] = 0x00;
+
+	struct dssh_pty_req pty;
+	memset(&pty, 0, sizeof(pty));
+	ASSERT_EQ(dssh_parse_pty_req_data(data, pos, &pty), 0);
+	/* modes should be NULL because mlen exceeds remaining data */
+	ASSERT_NULL(pty.modes);
+	ASSERT_EQ_U(pty.modes_len, 0);
+	return TEST_PASS;
+}
+
+static int
+test_parse_pty_req_truncated(void)
+{
+	/* Too short to even contain terminal string length + dimensions */
+	uint8_t data[8];
+	size_t pos = 0;
+	dssh_serialize_uint32(100, data, sizeof(data), &pos);
+
+	struct dssh_pty_req pty;
+	ASSERT_EQ(dssh_parse_pty_req_data(data, pos, &pty), DSSH_ERROR_PARSE);
+	return TEST_PASS;
+}
+
+static int
+test_parse_pty_req_empty(void)
+{
+	struct dssh_pty_req pty;
+	ASSERT_EQ(dssh_parse_pty_req_data(NULL, 0, &pty), DSSH_ERROR_PARSE);
+	return TEST_PASS;
+}
+
+static int
+test_parse_env_valid(void)
+{
+	uint8_t data[64];
+	size_t pos = 0;
+	dssh_serialize_uint32(4, data, sizeof(data), &pos);
+	memcpy(&data[pos], "TERM", 4);
+	pos += 4;
+	dssh_serialize_uint32(5, data, sizeof(data), &pos);
+	memcpy(&data[pos], "xterm", 5);
+	pos += 5;
+
+	const uint8_t *name, *value;
+	size_t name_len, value_len;
+	ASSERT_EQ(dssh_parse_env_data(data, pos,
+	    &name, &name_len, &value, &value_len), 0);
+	ASSERT_EQ_U(name_len, 4);
+	ASSERT_TRUE(memcmp(name, "TERM", 4) == 0);
+	ASSERT_EQ_U(value_len, 5);
+	ASSERT_TRUE(memcmp(value, "xterm", 5) == 0);
+	return TEST_PASS;
+}
+
+static int
+test_parse_env_truncated_name(void)
+{
+	/* name length exceeds data */
+	uint8_t data[8];
+	size_t pos = 0;
+	dssh_serialize_uint32(100, data, sizeof(data), &pos);
+
+	const uint8_t *name, *value;
+	size_t name_len, value_len;
+	ASSERT_EQ(dssh_parse_env_data(data, pos,
+	    &name, &name_len, &value, &value_len), DSSH_ERROR_PARSE);
+	return TEST_PASS;
+}
+
+static int
+test_parse_env_truncated_value(void)
+{
+	/* name OK but value length exceeds data */
+	uint8_t data[16];
+	size_t pos = 0;
+	dssh_serialize_uint32(1, data, sizeof(data), &pos);
+	data[pos++] = 'X';
+	dssh_serialize_uint32(100, data, sizeof(data), &pos);
+
+	const uint8_t *name, *value;
+	size_t name_len, value_len;
+	ASSERT_EQ(dssh_parse_env_data(data, pos,
+	    &name, &name_len, &value, &value_len), DSSH_ERROR_PARSE);
+	return TEST_PASS;
+}
+
+static int
+test_parse_env_empty(void)
+{
+	const uint8_t *name, *value;
+	size_t name_len, value_len;
+	ASSERT_EQ(dssh_parse_env_data(NULL, 0,
+	    &name, &name_len, &value, &value_len), DSSH_ERROR_PARSE);
+	return TEST_PASS;
+}
+
+static int
+test_parse_env_missing_value_header(void)
+{
+	/* name present but no room for value length */
+	uint8_t data[8];
+	size_t pos = 0;
+	dssh_serialize_uint32(1, data, sizeof(data), &pos);
+	data[pos++] = 'X';
+
+	const uint8_t *name, *value;
+	size_t name_len, value_len;
+	ASSERT_EQ(dssh_parse_env_data(data, pos,
+	    &name, &name_len, &value, &value_len), DSSH_ERROR_PARSE);
+	return TEST_PASS;
+}
+
+static int
+test_parse_exec_valid(void)
+{
+	uint8_t data[64];
+	size_t pos = 0;
+	dssh_serialize_uint32(7, data, sizeof(data), &pos);
+	memcpy(&data[pos], "/bin/sh", 7);
+	pos += 7;
+
+	const uint8_t *command;
+	size_t command_len;
+	ASSERT_EQ(dssh_parse_exec_data(data, pos,
+	    &command, &command_len), 0);
+	ASSERT_EQ_U(command_len, 7);
+	ASSERT_TRUE(memcmp(command, "/bin/sh", 7) == 0);
+	return TEST_PASS;
+}
+
+static int
+test_parse_exec_truncated(void)
+{
+	uint8_t data[8];
+	size_t pos = 0;
+	dssh_serialize_uint32(100, data, sizeof(data), &pos);
+
+	const uint8_t *command;
+	size_t command_len;
+	ASSERT_EQ(dssh_parse_exec_data(data, pos,
+	    &command, &command_len), DSSH_ERROR_PARSE);
+	return TEST_PASS;
+}
+
+static int
+test_parse_exec_empty(void)
+{
+	const uint8_t *command;
+	size_t command_len;
+	ASSERT_EQ(dssh_parse_exec_data(NULL, 0,
+	    &command, &command_len), DSSH_ERROR_PARSE);
+	return TEST_PASS;
+}
+
+static int
+test_parse_exec_zero_length(void)
+{
+	uint8_t data[4];
+	size_t pos = 0;
+	dssh_serialize_uint32(0, data, sizeof(data), &pos);
+
+	const uint8_t *command;
+	size_t command_len;
+	ASSERT_EQ(dssh_parse_exec_data(data, pos,
+	    &command, &command_len), 0);
+	ASSERT_EQ_U(command_len, 0);
+	return TEST_PASS;
+}
+
+static int
+test_parse_subsystem_valid(void)
+{
+	uint8_t data[32];
+	size_t pos = 0;
+	dssh_serialize_uint32(4, data, sizeof(data), &pos);
+	memcpy(&data[pos], "sftp", 4);
+	pos += 4;
+
+	const uint8_t *name;
+	size_t name_len;
+	ASSERT_EQ(dssh_parse_subsystem_data(data, pos,
+	    &name, &name_len), 0);
+	ASSERT_EQ_U(name_len, 4);
+	ASSERT_TRUE(memcmp(name, "sftp", 4) == 0);
+	return TEST_PASS;
+}
+
+static int
+test_parse_subsystem_truncated(void)
+{
+	uint8_t data[8];
+	size_t pos = 0;
+	dssh_serialize_uint32(100, data, sizeof(data), &pos);
+
+	const uint8_t *name;
+	size_t name_len;
+	ASSERT_EQ(dssh_parse_subsystem_data(data, pos,
+	    &name, &name_len), DSSH_ERROR_PARSE);
+	return TEST_PASS;
+}
+
+static int
+test_parse_subsystem_empty(void)
+{
+	const uint8_t *name;
+	size_t name_len;
+	ASSERT_EQ(dssh_parse_subsystem_data(NULL, 0,
+	    &name, &name_len), DSSH_ERROR_PARSE);
+	return TEST_PASS;
+}
+
+/* ================================================================
+ * Coverage: session_start twice, accept timeout, reject with NULL
+ * ================================================================ */
+
+static int
+test_session_start_twice(void)
+{
+	/* Calling session_start twice — covers demux_running guard */
+	struct conn_ctx ctx;
+	if (conn_setup(&ctx) < 0)
+		return TEST_FAIL;
+
+	/* Already started in conn_setup. Start again should fail. */
+	int res = dssh_session_start(ctx.client);
+	ASSERT_TRUE(res < 0);
+
+	conn_cleanup(&ctx);
+	return TEST_PASS;
+}
+
+static int
+test_accept_timeout_zero(void)
+{
+	/* accept with timeout_ms=0 — non-blocking, should return immediately */
+	struct conn_ctx ctx;
+	if (conn_setup(&ctx) < 0)
+		return TEST_FAIL;
+
+	struct dssh_incoming_open *inc = NULL;
+	int res = dssh_session_accept(ctx.server, &inc, 0);
+	/* No channel open pending, so should return a timeout/error */
+	ASSERT_TRUE(res < 0 || inc == NULL);
+
+	conn_cleanup(&ctx);
+	return TEST_PASS;
+}
+
+static int
+test_accept_timeout_short(void)
+{
+	/* accept with short positive timeout — should time out */
+	struct conn_ctx ctx;
+	if (conn_setup(&ctx) < 0)
+		return TEST_FAIL;
+
+	struct dssh_incoming_open *inc = NULL;
+	int res = dssh_session_accept(ctx.server, &inc, 50);  /* 50ms */
+	ASSERT_TRUE(res < 0 || inc == NULL);
+
+	conn_cleanup(&ctx);
+	return TEST_PASS;
+}
+
+static int
+test_reject_null_description(void)
+{
+	/* reject with NULL description — covers the dlen==0 path */
+	struct conn_ctx ctx;
+	if (conn_setup(&ctx) < 0)
+		return TEST_FAIL;
+
+	/* Open from client, reject on server with NULL description */
+	struct open_exec_ctx oc = {
+		.client = ctx.client,
+		.server = ctx.server,
+		.command = "echo test",
+		.cbs = &session_cbs,
+		.accept_timeout = 5000,
+		.reject = true,
+		.reject_reason = 1,
+	};
+
+	thrd_t ct;
+	thrd_create(&ct, client_open_exec_thread, &oc);
+
+	/* Server side: accept then reject with NULL description */
+	struct dssh_incoming_open *inc = NULL;
+	int res = dssh_session_accept(ctx.server, &inc, 5000);
+	if (res >= 0 && inc != NULL) {
+		dssh_session_reject(ctx.server, inc, 1, NULL);
+	}
+
+	thrd_join(ct, NULL);
+	/* Client should get NULL channel */
+	ASSERT_NULL(oc.client_ch);
+
+	conn_cleanup(&ctx);
+	return TEST_PASS;
+}
+
+static int
+test_session_poll_timeout_zero(void)
+{
+	/* session_poll with timeout_ms=0 — non-blocking */
+	struct conn_ctx ctx;
+	if (conn_setup(&ctx) < 0)
+		return TEST_FAIL;
+
+	struct open_exec_ctx oc = {
+		.client = ctx.client,
+		.server = ctx.server,
+		.command = "echo polltest",
+		.cbs = &session_cbs,
+		.accept_timeout = 5000,
+	};
+	if (open_exec_channel(&oc) < 0) {
+		conn_cleanup(&ctx);
+		return TEST_FAIL;
+	}
+	if (oc.client_ch == NULL || oc.server_ch == NULL) {
+		conn_cleanup(&ctx);
+		return TEST_FAIL;
+	}
+
+	/* Poll with timeout=0 on client — no data pending */
+	int events = dssh_session_poll(ctx.client, oc.client_ch,
+	    DSSH_POLL_READ | DSSH_POLL_WRITE, 0);
+	/* Should return 0 (no events) or just DSSH_POLL_WRITE */
+	ASSERT_TRUE(events >= 0);
+
+	conn_cleanup(&ctx);
+	return TEST_PASS;
+}
+
+/* ================================================================
  * Test table
  * ================================================================ */
 
 static struct dssh_test_entry tests[] = {
+	/* Parse helpers */
+	{ "parse/pty_req_valid",             test_parse_pty_req_valid },
+	{ "parse/pty_req_no_modes",          test_parse_pty_req_no_modes },
+	{ "parse/pty_req_modes_truncated",   test_parse_pty_req_modes_truncated },
+	{ "parse/pty_req_truncated",         test_parse_pty_req_truncated },
+	{ "parse/pty_req_empty",             test_parse_pty_req_empty },
+	{ "parse/env_valid",                 test_parse_env_valid },
+	{ "parse/env_truncated_name",        test_parse_env_truncated_name },
+	{ "parse/env_truncated_value",       test_parse_env_truncated_value },
+	{ "parse/env_empty",                 test_parse_env_empty },
+	{ "parse/env_missing_value_header",  test_parse_env_missing_value_header },
+	{ "parse/exec_valid",               test_parse_exec_valid },
+	{ "parse/exec_truncated",           test_parse_exec_truncated },
+	{ "parse/exec_empty",               test_parse_exec_empty },
+	{ "parse/exec_zero_length",         test_parse_exec_zero_length },
+	{ "parse/subsystem_valid",           test_parse_subsystem_valid },
+	{ "parse/subsystem_truncated",       test_parse_subsystem_truncated },
+	{ "parse/subsystem_empty",           test_parse_subsystem_empty },
+
 	/* Session start/stop */
 	{ "test_session_start",              test_session_start },
 	{ "test_session_stop",               test_session_stop },
@@ -2184,6 +2630,13 @@ static struct dssh_test_entry tests[] = {
 	{ "test_connection_drop_during_read",  test_connection_drop_during_read },
 	{ "test_connection_drop_during_write", test_connection_drop_during_write },
 	{ "test_cleanup_after_drop",           test_cleanup_after_drop },
+
+	/* Coverage: edge cases */
+	{ "test_session_start_twice",          test_session_start_twice },
+	{ "test_accept_timeout_zero",          test_accept_timeout_zero },
+	{ "test_accept_timeout_short",         test_accept_timeout_short },
+	{ "test_reject_null_description",      test_reject_null_description },
+	{ "test_session_poll_timeout_zero",    test_session_poll_timeout_zero },
 };
 
 DSSH_TEST_MAIN(tests)

@@ -21,6 +21,7 @@
 #include "ssh-trans.h"
 #include "ssh-internal.h"
 #include "dssh_test_internal.h"
+#include "test_dhgex_provider.h"
 
 /* ================================================================
  * Socket I/O callbacks
@@ -86,14 +87,26 @@ socket_rxline(uint8_t *buf, size_t bufsz, size_t *bytes_received,
  * Algorithm registration helper
  * ================================================================ */
 
+static dssh_session
+init_server_session(void)
+{
+	dssh_session s = dssh_session_init(false, 0);
+	if (s != NULL)
+		test_dhgex_setup(s);
+	return s;
+}
+
 static int
 register_all_algorithms(void)
 {
 	int res;
-	res = register_curve25519_sha256();
+	if (test_using_dhgex())
+		res = register_dh_gex_sha256();
+	else
+		res = register_curve25519_sha256();
 	if (res < 0)
 		return res;
-	res = register_ssh_ed25519();
+	res = test_register_key_algos();
 	if (res < 0)
 		return res;
 	res = register_aes256_ctr();
@@ -222,7 +235,7 @@ selftest_setup(struct selftest_ctx *ctx)
 
 	if (register_all_algorithms() < 0)
 		goto fail;
-	if (ssh_ed25519_generate_key() < 0)
+	if (test_generate_host_key() < 0)
 		goto fail;
 
 	int fds[2];
@@ -241,7 +254,7 @@ selftest_setup(struct selftest_ctx *ctx)
 	    &ctx->client_fd, &ctx->client_fd,
 	    &ctx->client_fd, &ctx->client_fd);
 
-	ctx->server = dssh_session_init(false, 0);
+	ctx->server = init_server_session();
 	if (ctx->server == NULL)
 		goto fail;
 	dssh_session_set_cbdata(ctx->server,
@@ -622,14 +635,20 @@ test_self_handshake_curve25519(void)
 	ASSERT_NOT_NULL(dssh_transport_get_enc_name(ctx.client));
 	ASSERT_NOT_NULL(dssh_transport_get_mac_name(ctx.client));
 
-	ASSERT_STR_EQ(dssh_transport_get_kex_name(ctx.client),
-	    "curve25519-sha256");
+	if (test_using_dhgex()) {
+		ASSERT_STR_EQ(dssh_transport_get_kex_name(ctx.client),
+		    "diffie-hellman-group-exchange-sha256");
+		ASSERT_STR_EQ(dssh_transport_get_kex_name(ctx.server),
+		    "diffie-hellman-group-exchange-sha256");
+	}
+	else {
+		ASSERT_STR_EQ(dssh_transport_get_kex_name(ctx.client),
+		    "curve25519-sha256");
+		ASSERT_STR_EQ(dssh_transport_get_kex_name(ctx.server),
+		    "curve25519-sha256");
+	}
 	ASSERT_STR_EQ(dssh_transport_get_hostkey_name(ctx.client),
-	    "ssh-ed25519");
-
-	/* Both sides should agree */
-	ASSERT_STR_EQ(dssh_transport_get_kex_name(ctx.server),
-	    "curve25519-sha256");
+	    test_key_algo_name());
 	ASSERT_STR_EQ(dssh_transport_get_enc_name(ctx.client),
 	    dssh_transport_get_enc_name(ctx.server));
 

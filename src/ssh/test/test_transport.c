@@ -19,6 +19,7 @@
 #include "ssh-internal.h"
 #include "dssh_test_internal.h"
 #include "mock_io.h"
+#include "test_dhgex_provider.h"
 
 
 /* ================================================================
@@ -63,14 +64,26 @@ mock_rxline_dispatch(uint8_t *buf, size_t bufsz,
  * Helper: register all algorithms needed for handshake
  * ================================================================ */
 
+static dssh_session
+init_server_session(void)
+{
+	dssh_session s = dssh_session_init(false, 0);
+	if (s != NULL)
+		test_dhgex_setup(s);
+	return s;
+}
+
 static int
 register_all_algorithms(void)
 {
 	int res;
-	res = register_curve25519_sha256();
+	if (test_using_dhgex())
+		res = register_dh_gex_sha256();
+	else
+		res = register_curve25519_sha256();
 	if (res < 0)
 		return res;
-	res = register_ssh_ed25519();
+	res = test_register_key_algos();
 	if (res < 0)
 		return res;
 	res = register_aes256_ctr();
@@ -130,7 +143,7 @@ handshake_setup(struct handshake_ctx *ctx)
 
 	if (register_all_algorithms() < 0)
 		return -1;
-	if (ssh_ed25519_generate_key() < 0)
+	if (test_generate_host_key() < 0)
 		return -1;
 
 	if (mock_io_init(&ctx->io, 0) < 0)
@@ -147,7 +160,7 @@ handshake_setup(struct handshake_ctx *ctx)
 	dssh_session_set_cbdata(ctx->client, &ctx->io, &ctx->io,
 	    &ctx->io, &ctx->io);
 
-	ctx->server = dssh_session_init(false, 0);
+	ctx->server = init_server_session();
 	if (ctx->server == NULL) {
 		dssh_session_cleanup(ctx->client);
 		mock_io_free(&ctx->io);
@@ -602,7 +615,7 @@ test_version_exchange_basic(void)
 	ASSERT_NOT_NULL(ctx.client);
 	dssh_session_set_cbdata(ctx.client, &ctx.io, &ctx.io, &ctx.io, &ctx.io);
 
-	ctx.server = dssh_session_init(false, 0);
+	ctx.server = init_server_session();
 	ASSERT_NOT_NULL(ctx.server);
 	dssh_session_set_cbdata(ctx.server, &ctx.io, &ctx.io, &ctx.io, &ctx.io);
 
@@ -638,7 +651,7 @@ test_version_exchange_remote_stored(void)
 	ASSERT_NOT_NULL(ctx.client);
 	dssh_session_set_cbdata(ctx.client, &ctx.io, &ctx.io, &ctx.io, &ctx.io);
 
-	ctx.server = dssh_session_init(false, 0);
+	ctx.server = init_server_session();
 	ASSERT_NOT_NULL(ctx.server);
 	dssh_session_set_cbdata(ctx.server, &ctx.io, &ctx.io, &ctx.io, &ctx.io);
 
@@ -807,7 +820,7 @@ test_packet_roundtrip(void)
 	ASSERT_NOT_NULL(client);
 	dssh_session_set_cbdata(client, &io, &io, &io, &io);
 
-	dssh_session server = dssh_session_init(false, 0);
+	dssh_session server = init_server_session();
 	ASSERT_NOT_NULL(server);
 	dssh_session_set_cbdata(server, &io, &io, &io, &io);
 
@@ -840,7 +853,7 @@ test_packet_roundtrip(void)
 	ASSERT_NOT_NULL(client);
 	dssh_session_set_cbdata(client, &io, &io, &io, &io);
 
-	server = dssh_session_init(false, 0);
+	server = init_server_session();
 	ASSERT_NOT_NULL(server);
 	dssh_session_set_cbdata(server, &io, &io, &io, &io);
 
@@ -975,7 +988,7 @@ test_packet_server_receives_client(void)
 	ASSERT_NOT_NULL(client);
 	dssh_session_set_cbdata(client, &io, &io, &io, &io);
 
-	dssh_session server = dssh_session_init(false, 0);
+	dssh_session server = init_server_session();
 	ASSERT_NOT_NULL(server);
 	dssh_session_set_cbdata(server, &io, &io, &io, &io);
 
@@ -1053,7 +1066,7 @@ test_packet_bidirectional(void)
 	ASSERT_NOT_NULL(client);
 	dssh_session_set_cbdata(client, &io, &io, &io, &io);
 
-	dssh_session server = dssh_session_init(false, 0);
+	dssh_session server = init_server_session();
 	ASSERT_NOT_NULL(server);
 	dssh_session_set_cbdata(server, &io, &io, &io, &io);
 
@@ -1097,7 +1110,7 @@ test_packet_empty_payload(void)
 	ASSERT_NOT_NULL(client);
 	dssh_session_set_cbdata(client, &io, &io, &io, &io);
 
-	dssh_session server = dssh_session_init(false, 0);
+	dssh_session server = init_server_session();
 	ASSERT_NOT_NULL(server);
 	dssh_session_set_cbdata(server, &io, &io, &io, &io);
 
@@ -1138,7 +1151,7 @@ test_ignore_silently_skipped(void)
 	ASSERT_NOT_NULL(client);
 	dssh_session_set_cbdata(client, &io, &io, &io, &io);
 
-	dssh_session server = dssh_session_init(false, 0);
+	dssh_session server = init_server_session();
 	ASSERT_NOT_NULL(server);
 	dssh_session_set_cbdata(server, &io, &io, &io, &io);
 
@@ -1178,7 +1191,7 @@ test_disconnect_sets_terminate(void)
 	ASSERT_NOT_NULL(client);
 	dssh_session_set_cbdata(client, &io, &io, &io, &io);
 
-	dssh_session server = dssh_session_init(false, 0);
+	dssh_session server = init_server_session();
 	ASSERT_NOT_NULL(server);
 	dssh_session_set_cbdata(server, &io, &io, &io, &io);
 
@@ -1234,7 +1247,7 @@ test_debug_invokes_callback(void)
 	ASSERT_NOT_NULL(client);
 	dssh_session_set_cbdata(client, &io, &io, &io, &io);
 
-	dssh_session server = dssh_session_init(false, 0);
+	dssh_session server = init_server_session();
 	ASSERT_NOT_NULL(server);
 	dssh_session_set_cbdata(server, &io, &io, &io, &io);
 
@@ -1303,7 +1316,7 @@ test_unimplemented_invokes_callback(void)
 	ASSERT_NOT_NULL(client);
 	dssh_session_set_cbdata(client, &io, &io, &io, &io);
 
-	dssh_session server = dssh_session_init(false, 0);
+	dssh_session server = init_server_session();
 	ASSERT_NOT_NULL(server);
 	dssh_session_set_cbdata(server, &io, &io, &io, &io);
 
@@ -1354,7 +1367,7 @@ test_multiple_ignore_before_real(void)
 	ASSERT_NOT_NULL(client);
 	dssh_session_set_cbdata(client, &io, &io, &io, &io);
 
-	dssh_session server = dssh_session_init(false, 0);
+	dssh_session server = init_server_session();
 	ASSERT_NOT_NULL(server);
 	dssh_session_set_cbdata(server, &io, &io, &io, &io);
 
@@ -1974,6 +1987,1158 @@ test_handshake_mac_active(void)
 	return TEST_PASS;
 }
 
+
+/* ================================================================
+ * Version exchange: rx error (Category 3)
+ * ================================================================ */
+
+static int
+test_version_exchange_rx_error(void)
+{
+	dssh_test_reset_global_config();
+	if (register_all_algorithms() < 0)
+		return TEST_FAIL;
+	if (test_generate_host_key() < 0)
+		return TEST_FAIL;
+
+	struct mock_io_state io;
+	if (mock_io_init(&io, 0) < 0)
+		return TEST_FAIL;
+
+	dssh_transport_set_callbacks(mock_tx_dispatch, mock_rx_dispatch,
+	    mock_rxline_dispatch, mock_extra_line_cb);
+
+	dssh_session sess = dssh_session_init(true, 0);
+	if (sess == NULL) {
+		mock_io_free(&io);
+		dssh_test_reset_global_config();
+		return TEST_FAIL;
+	}
+	dssh_session_set_cbdata(sess, &io, &io, &io, &io);
+
+	/* Close the s2c pipe before version exchange starts —
+	 * the rxline callback will fail */
+	mock_io_close_s2c(&io);
+
+	int res = dssh_transport_handshake(sess);
+	/* Should fail — either the tx succeeds but rx fails with pipe closed */
+	ASSERT_TRUE(res < 0);
+
+	dssh_session_cleanup(sess);
+	mock_io_free(&io);
+	dssh_test_reset_global_config();
+	return TEST_PASS;
+}
+
+/* ================================================================
+ * Version exchange: terminate mid-rx (Category 3)
+ * ================================================================ */
+
+static int
+test_version_exchange_terminate(void)
+{
+	dssh_test_reset_global_config();
+	if (register_all_algorithms() < 0)
+		return TEST_FAIL;
+	if (test_generate_host_key() < 0)
+		return TEST_FAIL;
+
+	struct mock_io_state io;
+	if (mock_io_init(&io, 0) < 0)
+		return TEST_FAIL;
+
+	dssh_transport_set_callbacks(mock_tx_dispatch, mock_rx_dispatch,
+	    mock_rxline_dispatch, mock_extra_line_cb);
+
+	dssh_session sess = dssh_session_init(true, 0);
+	if (sess == NULL) {
+		mock_io_free(&io);
+		dssh_test_reset_global_config();
+		return TEST_FAIL;
+	}
+	dssh_session_set_cbdata(sess, &io, &io, &io, &io);
+
+	/* Set terminate flag before handshake */
+	dssh_session_terminate(sess);
+
+	int res = dssh_transport_handshake(sess);
+	ASSERT_TRUE(res < 0);
+
+	dssh_session_cleanup(sess);
+	mock_io_free(&io);
+	dssh_test_reset_global_config();
+	return TEST_PASS;
+}
+
+/* ================================================================
+ * Disconnect with long description (Category 3)
+ * ================================================================ */
+
+static int
+test_disconnect_long_description(void)
+{
+	struct handshake_ctx ctx;
+	if (handshake_setup(&ctx) < 0) {
+		handshake_cleanup(&ctx);
+		return TEST_FAIL;
+	}
+
+	/* Description > 230 bytes should be truncated */
+	char long_desc[300];
+	memset(long_desc, 'A', sizeof(long_desc) - 1);
+	long_desc[sizeof(long_desc) - 1] = 0;
+
+	int res = dssh_transport_disconnect(ctx.client, 11, long_desc);
+	ASSERT_EQ(res, 0);
+
+	/* Client should be terminated now */
+	ASSERT_TRUE(dssh_session_is_terminated(ctx.client));
+
+	handshake_cleanup(&ctx);
+	return TEST_PASS;
+}
+
+/* ================================================================
+ * Packet recv with bad padding (Category 3)
+ *
+ * After handshake, corrupt a packet so padding_length >= packet_length.
+ * ================================================================ */
+
+static int
+test_packet_recv_bad_padding(void)
+{
+	struct handshake_ctx ctx;
+	if (handshake_setup(&ctx) < 0) {
+		handshake_cleanup(&ctx);
+		return TEST_FAIL;
+	}
+
+	/* We need to craft a raw packet with bad padding.
+	 * The simplest approach: send a legitimate packet from client,
+	 * then receive it on server side.  This just confirms the
+	 * normal path works.  For bad padding, we'd need to inject
+	 * raw bytes — but with encryption active, crafting raw is
+	 * extremely hard.  Instead test pre-handshake. */
+	handshake_cleanup(&ctx);
+
+	/* Test with unencrypted session */
+	dssh_test_reset_global_config();
+	if (register_all_algorithms() < 0)
+		return TEST_FAIL;
+	if (test_generate_host_key() < 0)
+		return TEST_FAIL;
+
+	struct mock_io_state io;
+	if (mock_io_init(&io, 0) < 0) {
+		dssh_test_reset_global_config();
+		return TEST_FAIL;
+	}
+
+	dssh_transport_set_callbacks(mock_tx_dispatch, mock_rx_dispatch,
+	    mock_rxline_dispatch, mock_extra_line_cb);
+
+	/* Create a server session (no handshake — unencrypted) */
+	dssh_session sess = init_server_session();
+	if (sess == NULL) {
+		mock_io_free(&io);
+		dssh_test_reset_global_config();
+		return TEST_FAIL;
+	}
+	dssh_session_set_cbdata(sess, &io, &io, &io, &io);
+
+	/* Inject a packet where padding_length >= packet_length.
+	 * packet_length=2 (minimum for 1 byte padding + 1 byte payload),
+	 * but set padding_length=255, which is >= packet_length. */
+	uint8_t bad_packet[16];
+	size_t pos = 0;
+	/* packet_length = 2 */
+	dssh_serialize_uint32(2, bad_packet, sizeof(bad_packet), &pos);
+	/* padding_length = 255 (>= packet_length of 2) */
+	bad_packet[pos++] = 255;
+	/* payload byte */
+	bad_packet[pos++] = 0x42;
+	/* Pad to block size (8 bytes minimum) */
+	while (pos < 8)
+		bad_packet[pos++] = 0;
+
+	mock_io_inject(&io.c2s, bad_packet, 8);
+
+	uint8_t msg_type;
+	uint8_t *payload;
+	size_t payload_len;
+	int res = dssh_transport_recv_packet(sess, &msg_type,
+	    &payload, &payload_len);
+	ASSERT_EQ(res, DSSH_ERROR_PARSE);
+
+	dssh_session_cleanup(sess);
+	mock_io_free(&io);
+	dssh_test_reset_global_config();
+	return TEST_PASS;
+}
+
+/* ================================================================
+ * Packet recv: packet too small (Category 3)
+ * ================================================================ */
+
+static int
+test_packet_recv_too_small(void)
+{
+	dssh_test_reset_global_config();
+	if (register_all_algorithms() < 0)
+		return TEST_FAIL;
+	if (test_generate_host_key() < 0)
+		return TEST_FAIL;
+
+	struct mock_io_state io;
+	if (mock_io_init(&io, 0) < 0) {
+		dssh_test_reset_global_config();
+		return TEST_FAIL;
+	}
+
+	dssh_transport_set_callbacks(mock_tx_dispatch, mock_rx_dispatch,
+	    mock_rxline_dispatch, mock_extra_line_cb);
+
+	dssh_session sess = init_server_session();
+	if (sess == NULL) {
+		mock_io_free(&io);
+		dssh_test_reset_global_config();
+		return TEST_FAIL;
+	}
+	dssh_session_set_cbdata(sess, &io, &io, &io, &io);
+
+	/* packet_length = 1, which is < 2 minimum */
+	uint8_t bad_packet[8];
+	size_t pos = 0;
+	dssh_serialize_uint32(1, bad_packet, sizeof(bad_packet), &pos);
+	bad_packet[pos++] = 0;
+	while (pos < 8)
+		bad_packet[pos++] = 0;
+
+	mock_io_inject(&io.c2s, bad_packet, 8);
+
+	uint8_t msg_type;
+	uint8_t *payload;
+	size_t payload_len;
+	int res = dssh_transport_recv_packet(sess, &msg_type,
+	    &payload, &payload_len);
+	ASSERT_EQ(res, DSSH_ERROR_TOOLONG);
+
+	dssh_session_cleanup(sess);
+	mock_io_free(&io);
+	dssh_test_reset_global_config();
+	return TEST_PASS;
+}
+
+/* ================================================================
+ * Extra-line callback error (Category 3)
+ * ================================================================ */
+
+static int
+mock_extra_line_cb_error(uint8_t *buf, size_t bufsz, void *cbdata)
+{
+	(void)buf;
+	(void)bufsz;
+	(void)cbdata;
+	return -1;
+}
+
+static int
+test_version_exchange_extra_line_error(void)
+{
+	dssh_test_reset_global_config();
+	if (register_all_algorithms() < 0)
+		return TEST_FAIL;
+	if (test_generate_host_key() < 0)
+		return TEST_FAIL;
+
+	struct mock_io_state io;
+	if (mock_io_init(&io, 0) < 0)
+		return TEST_FAIL;
+
+	dssh_transport_set_callbacks(mock_tx_dispatch, mock_rx_dispatch,
+	    mock_rxline_dispatch, mock_extra_line_cb_error);
+
+	dssh_session sess = dssh_session_init(true, 0);
+	if (sess == NULL) {
+		mock_io_free(&io);
+		dssh_test_reset_global_config();
+		return TEST_FAIL;
+	}
+	dssh_session_set_cbdata(sess, &io, &io, &io, &io);
+
+	/* Inject a non-SSH line followed by the real version.
+	 * The extra_line_cb will return -1, aborting version_rx. */
+	const char *extra = "This is not SSH\r\n";
+	mock_io_inject(&io.s2c, (const uint8_t *)extra, strlen(extra));
+
+	int res = dssh_transport_handshake(sess);
+	ASSERT_TRUE(res < 0);
+
+	dssh_session_cleanup(sess);
+	mock_io_free(&io);
+	dssh_test_reset_global_config();
+	return TEST_PASS;
+}
+
+/* ================================================================
+ * Registration validation — covers TOOLATE, TOOLONG, MUST_BE_NULL
+ * branches in register_kex/key_algo/enc/mac/comp/lang.
+ * ================================================================ */
+
+static int
+test_register_kex_toolate(void)
+{
+	dssh_test_reset_global_config();
+	ASSERT_EQ(register_all_algorithms(), 0);
+	dssh_transport_set_callbacks(mock_tx_dispatch, mock_rx_dispatch,
+	    mock_rxline_dispatch, mock_extra_line_cb);
+
+	dssh_session sess = dssh_session_init(true, 0);
+	ASSERT_NOT_NULL(sess);
+
+	/* gconf.used is now true — registration should fail */
+	uint8_t kbuf[sizeof(struct dssh_kex_s) + 16];
+	memset(kbuf, 0, sizeof(kbuf));
+	struct dssh_kex_s *late_kex = (struct dssh_kex_s *)kbuf;
+	strcpy(late_kex->name, "late-kex");
+	ASSERT_EQ(dssh_transport_register_kex(late_kex), DSSH_ERROR_TOOLATE);
+
+	dssh_session_cleanup(sess);
+	dssh_test_reset_global_config();
+	return TEST_PASS;
+}
+
+static int
+test_register_kex_empty_name(void)
+{
+	dssh_test_reset_global_config();
+
+	uint8_t kbuf[sizeof(struct dssh_kex_s) + 4];
+	memset(kbuf, 0, sizeof(kbuf));
+	struct dssh_kex_s *bad = (struct dssh_kex_s *)kbuf;
+	bad->name[0] = '\0';
+	ASSERT_EQ(dssh_transport_register_kex(bad), DSSH_ERROR_TOOLONG);
+
+	dssh_test_reset_global_config();
+	return TEST_PASS;
+}
+
+static int
+test_register_kex_next_not_null(void)
+{
+	dssh_test_reset_global_config();
+
+	uint8_t kbuf[sizeof(struct dssh_kex_s) + 16];
+	memset(kbuf, 0, sizeof(kbuf));
+	struct dssh_kex_s *bad = (struct dssh_kex_s *)kbuf;
+	bad->next = (struct dssh_kex_s *)0x1;  /* non-NULL */
+	strcpy(bad->name, "bad-kex");
+	ASSERT_EQ(dssh_transport_register_kex(bad), DSSH_ERROR_MUST_BE_NULL);
+
+	dssh_test_reset_global_config();
+	return TEST_PASS;
+}
+
+static int
+test_register_enc_toolate(void)
+{
+	dssh_test_reset_global_config();
+	ASSERT_EQ(register_all_algorithms(), 0);
+	dssh_transport_set_callbacks(mock_tx_dispatch, mock_rx_dispatch,
+	    mock_rxline_dispatch, mock_extra_line_cb);
+
+	dssh_session sess = dssh_session_init(true, 0);
+	ASSERT_NOT_NULL(sess);
+
+	uint8_t ebuf[sizeof(struct dssh_enc_s) + 16];
+	memset(ebuf, 0, sizeof(ebuf));
+	struct dssh_enc_s *late_enc = (struct dssh_enc_s *)ebuf;
+	strcpy(late_enc->name, "late-enc");
+	ASSERT_EQ(dssh_transport_register_enc(late_enc), DSSH_ERROR_TOOLATE);
+
+	dssh_session_cleanup(sess);
+	dssh_test_reset_global_config();
+	return TEST_PASS;
+}
+
+static int
+test_register_mac_toolate(void)
+{
+	dssh_test_reset_global_config();
+	ASSERT_EQ(register_all_algorithms(), 0);
+	dssh_transport_set_callbacks(mock_tx_dispatch, mock_rx_dispatch,
+	    mock_rxline_dispatch, mock_extra_line_cb);
+
+	dssh_session sess = dssh_session_init(true, 0);
+	ASSERT_NOT_NULL(sess);
+
+	uint8_t mbuf[sizeof(struct dssh_mac_s) + 16];
+	memset(mbuf, 0, sizeof(mbuf));
+	struct dssh_mac_s *late_mac = (struct dssh_mac_s *)mbuf;
+	strcpy(late_mac->name, "late-mac");
+	ASSERT_EQ(dssh_transport_register_mac(late_mac), DSSH_ERROR_TOOLATE);
+
+	dssh_session_cleanup(sess);
+	dssh_test_reset_global_config();
+	return TEST_PASS;
+}
+
+static int
+test_register_comp_empty_name(void)
+{
+	dssh_test_reset_global_config();
+
+	uint8_t cbuf[sizeof(struct dssh_comp_s) + 4];
+	memset(cbuf, 0, sizeof(cbuf));
+	struct dssh_comp_s *bad = (struct dssh_comp_s *)cbuf;
+	bad->name[0] = '\0';
+	ASSERT_EQ(dssh_transport_register_comp(bad), DSSH_ERROR_TOOLONG);
+
+	dssh_test_reset_global_config();
+	return TEST_PASS;
+}
+
+static int
+test_register_lang_basic(void)
+{
+	/* Covers the entire register_lang function which was never called.
+	 * Must heap-allocate since reset_global_config frees entries. */
+	dssh_test_reset_global_config();
+
+	size_t sz = sizeof(struct dssh_language_s) + 8;
+	struct dssh_language_s *lang = calloc(1, sz);
+	if (lang == NULL)
+		return TEST_FAIL;
+	strcpy(lang->name, "en");
+	ASSERT_EQ(dssh_transport_register_lang(lang), 0);
+
+	dssh_test_reset_global_config();
+	return TEST_PASS;
+}
+
+static int
+test_register_lang_empty_name(void)
+{
+	dssh_test_reset_global_config();
+
+	uint8_t lbuf[sizeof(struct dssh_language_s) + 4];
+	memset(lbuf, 0, sizeof(lbuf));
+	struct dssh_language_s *bad = (struct dssh_language_s *)lbuf;
+	bad->name[0] = '\0';
+	ASSERT_EQ(dssh_transport_register_lang(bad), DSSH_ERROR_TOOLONG);
+
+	dssh_test_reset_global_config();
+	return TEST_PASS;
+}
+
+static int
+test_register_lang_toolate(void)
+{
+	dssh_test_reset_global_config();
+	ASSERT_EQ(register_all_algorithms(), 0);
+	dssh_transport_set_callbacks(mock_tx_dispatch, mock_rx_dispatch,
+	    mock_rxline_dispatch, mock_extra_line_cb);
+
+	dssh_session sess = dssh_session_init(true, 0);
+	ASSERT_NOT_NULL(sess);
+
+	uint8_t lbuf[sizeof(struct dssh_language_s) + 8];
+	memset(lbuf, 0, sizeof(lbuf));
+	struct dssh_language_s *lang = (struct dssh_language_s *)lbuf;
+	strcpy(lang->name, "en");
+	ASSERT_EQ(dssh_transport_register_lang(lang), DSSH_ERROR_TOOLATE);
+
+	dssh_session_cleanup(sess);
+	dssh_test_reset_global_config();
+	return TEST_PASS;
+}
+
+/* ================================================================
+ * Getter-before-handshake — covers NULL ternary branches in
+ * get_kex_name, get_hostkey_name, get_enc_name, get_mac_name.
+ * ================================================================ */
+
+static int
+test_get_names_before_handshake(void)
+{
+	dssh_test_reset_global_config();
+	ASSERT_EQ(register_all_algorithms(), 0);
+	dssh_transport_set_callbacks(mock_tx_dispatch, mock_rx_dispatch,
+	    mock_rxline_dispatch, mock_extra_line_cb);
+
+	dssh_session sess = dssh_session_init(true, 0);
+	ASSERT_NOT_NULL(sess);
+
+	ASSERT_NULL(dssh_transport_get_kex_name(sess));
+	ASSERT_NULL(dssh_transport_get_hostkey_name(sess));
+	ASSERT_NULL(dssh_transport_get_enc_name(sess));
+	ASSERT_NULL(dssh_transport_get_mac_name(sess));
+
+	dssh_session_cleanup(sess);
+	dssh_test_reset_global_config();
+	return TEST_PASS;
+}
+
+/* ================================================================
+ * set_callbacks after session — covers TOOLATE branch.
+ * ================================================================ */
+
+static int
+test_set_callbacks_after_session(void)
+{
+	dssh_test_reset_global_config();
+	ASSERT_EQ(register_all_algorithms(), 0);
+	dssh_transport_set_callbacks(mock_tx_dispatch, mock_rx_dispatch,
+	    mock_rxline_dispatch, mock_extra_line_cb);
+
+	dssh_session sess = dssh_session_init(true, 0);
+	ASSERT_NOT_NULL(sess);
+
+	ASSERT_EQ(dssh_transport_set_callbacks(mock_tx_dispatch,
+	    mock_rx_dispatch, mock_rxline_dispatch, mock_extra_line_cb),
+	    DSSH_ERROR_TOOLATE);
+
+	dssh_session_cleanup(sess);
+	dssh_test_reset_global_config();
+	return TEST_PASS;
+}
+
+/* ================================================================
+ * set_global_request_cb — covers ssh.c:98-103 (never called).
+ * ================================================================ */
+
+static int
+test_set_global_request_cb(void)
+{
+	dssh_test_reset_global_config();
+	ASSERT_EQ(register_all_algorithms(), 0);
+	dssh_transport_set_callbacks(mock_tx_dispatch, mock_rx_dispatch,
+	    mock_rxline_dispatch, mock_extra_line_cb);
+
+	dssh_session sess = dssh_session_init(true, 0);
+	ASSERT_NOT_NULL(sess);
+
+	int dummy = 42;
+	dssh_session_set_global_request_cb(sess, (void *)0x1, &dummy);
+	/* Just verify it doesn't crash — the callback pointer is
+	 * stored in the session struct for later dispatch. */
+
+	dssh_session_cleanup(sess);
+	dssh_test_reset_global_config();
+	return TEST_PASS;
+}
+
+/* ================================================================
+ * GLOBAL_REQUEST handling — covers ssh-trans.c:753-787 (8+ branches)
+ * ================================================================ */
+
+static int global_request_cb_result = 0;
+static char global_request_name[64];
+static size_t global_request_name_len;
+static bool global_request_want_reply;
+
+static int
+mock_global_request_cb(const uint8_t *name, size_t name_len,
+    bool want_reply, const uint8_t *data, size_t data_len, void *cbdata)
+{
+	(void)data;
+	(void)data_len;
+	(void)cbdata;
+	if (name_len < sizeof(global_request_name)) {
+		memcpy(global_request_name, name, name_len);
+		global_request_name[name_len] = 0;
+	}
+	global_request_name_len = name_len;
+	global_request_want_reply = want_reply;
+	return global_request_cb_result;
+}
+
+static int
+test_global_request_with_reply(void)
+{
+	dssh_test_reset_global_config();
+	ASSERT_OK(register_all_algorithms());
+	if (test_generate_host_key() < 0)
+		return TEST_FAIL;
+	dssh_transport_set_callbacks(mock_tx_dispatch, mock_rx_dispatch,
+	    mock_rxline_dispatch, mock_extra_line_cb);
+
+	struct mock_io_state io;
+	ASSERT_OK(mock_io_init(&io, 0));
+
+	dssh_session client = dssh_session_init(true, 0);
+	ASSERT_NOT_NULL(client);
+	dssh_session_set_cbdata(client, &io, &io, &io, &io);
+
+	dssh_session server = init_server_session();
+	ASSERT_NOT_NULL(server);
+	dssh_session_set_cbdata(server, &io, &io, &io, &io);
+
+	/* Register global request callback on server */
+	global_request_cb_result = 0;  /* accept */
+	memset(global_request_name, 0, sizeof(global_request_name));
+	dssh_session_set_global_request_cb(server,
+	    (void *)mock_global_request_cb, NULL);
+
+	/* Build GLOBAL_REQUEST: msg_type(1) + string("test-req") + want_reply(1) */
+	uint8_t gr[64];
+	size_t gp = 0;
+	gr[gp++] = 80;  /* SSH_MSG_GLOBAL_REQUEST */
+	dssh_serialize_uint32(8, gr, sizeof(gr), &gp);
+	memcpy(&gr[gp], "test-req", 8);
+	gp += 8;
+	gr[gp++] = 1;  /* want_reply = true */
+
+	/* Send GLOBAL_REQUEST from client */
+	ASSERT_OK(dssh_transport_send_packet(client, gr, gp, NULL));
+
+	/* Send a follow-up SERVICE_REQUEST so recv_packet returns */
+	uint8_t follow[] = { SSH_MSG_SERVICE_REQUEST, 0x42 };
+	ASSERT_OK(dssh_transport_send_packet(client, follow, sizeof(follow), NULL));
+
+	/* Server recv_packet: processes GLOBAL_REQUEST internally, returns SERVICE_REQUEST */
+	uint8_t msg_type;
+	uint8_t *payload;
+	size_t payload_len;
+	ASSERT_OK(dssh_transport_recv_packet(server, &msg_type, &payload, &payload_len));
+	ASSERT_EQ(msg_type, SSH_MSG_SERVICE_REQUEST);
+
+	/* Verify callback was invoked */
+	ASSERT_STR_EQ(global_request_name, "test-req");
+	ASSERT_TRUE(global_request_want_reply);
+
+	/* Server should have sent REQUEST_SUCCESS (81) reply.
+	 * Client reads it. */
+	ASSERT_OK(dssh_transport_recv_packet(client, &msg_type, &payload, &payload_len));
+	ASSERT_EQ(msg_type, 81);  /* SSH_MSG_REQUEST_SUCCESS */
+
+	dssh_session_cleanup(client);
+	dssh_session_cleanup(server);
+	mock_io_free(&io);
+	dssh_test_reset_global_config();
+	return TEST_PASS;
+}
+
+static int
+test_global_request_rejected(void)
+{
+	dssh_test_reset_global_config();
+	ASSERT_OK(register_all_algorithms());
+	if (test_generate_host_key() < 0)
+		return TEST_FAIL;
+	dssh_transport_set_callbacks(mock_tx_dispatch, mock_rx_dispatch,
+	    mock_rxline_dispatch, mock_extra_line_cb);
+
+	struct mock_io_state io;
+	ASSERT_OK(mock_io_init(&io, 0));
+
+	dssh_session client = dssh_session_init(true, 0);
+	ASSERT_NOT_NULL(client);
+	dssh_session_set_cbdata(client, &io, &io, &io, &io);
+
+	dssh_session server = init_server_session();
+	ASSERT_NOT_NULL(server);
+	dssh_session_set_cbdata(server, &io, &io, &io, &io);
+
+	/* Callback returns -1 (reject) */
+	global_request_cb_result = -1;
+	dssh_session_set_global_request_cb(server,
+	    (void *)mock_global_request_cb, NULL);
+
+	uint8_t gr[64];
+	size_t gp = 0;
+	gr[gp++] = 80;
+	dssh_serialize_uint32(4, gr, sizeof(gr), &gp);
+	memcpy(&gr[gp], "deny", 4);
+	gp += 4;
+	gr[gp++] = 1;  /* want_reply */
+
+	ASSERT_OK(dssh_transport_send_packet(client, gr, gp, NULL));
+
+	uint8_t follow[] = { SSH_MSG_SERVICE_REQUEST, 0x43 };
+	ASSERT_OK(dssh_transport_send_packet(client, follow, sizeof(follow), NULL));
+
+	uint8_t msg_type;
+	uint8_t *payload;
+	size_t payload_len;
+	ASSERT_OK(dssh_transport_recv_packet(server, &msg_type, &payload, &payload_len));
+	ASSERT_EQ(msg_type, SSH_MSG_SERVICE_REQUEST);
+
+	/* Server sent REQUEST_FAILURE (82) */
+	ASSERT_OK(dssh_transport_recv_packet(client, &msg_type, &payload, &payload_len));
+	ASSERT_EQ(msg_type, 82);  /* SSH_MSG_REQUEST_FAILURE */
+
+	dssh_session_cleanup(client);
+	dssh_session_cleanup(server);
+	mock_io_free(&io);
+	dssh_test_reset_global_config();
+	return TEST_PASS;
+}
+
+static int
+test_global_request_no_reply(void)
+{
+	dssh_test_reset_global_config();
+	ASSERT_OK(register_all_algorithms());
+	if (test_generate_host_key() < 0)
+		return TEST_FAIL;
+	dssh_transport_set_callbacks(mock_tx_dispatch, mock_rx_dispatch,
+	    mock_rxline_dispatch, mock_extra_line_cb);
+
+	struct mock_io_state io;
+	ASSERT_OK(mock_io_init(&io, 0));
+
+	dssh_session client = dssh_session_init(true, 0);
+	ASSERT_NOT_NULL(client);
+	dssh_session_set_cbdata(client, &io, &io, &io, &io);
+
+	dssh_session server = init_server_session();
+	ASSERT_NOT_NULL(server);
+	dssh_session_set_cbdata(server, &io, &io, &io, &io);
+
+	global_request_cb_result = 0;
+	dssh_session_set_global_request_cb(server,
+	    (void *)mock_global_request_cb, NULL);
+
+	/* want_reply = false */
+	uint8_t gr[64];
+	size_t gp = 0;
+	gr[gp++] = 80;
+	dssh_serialize_uint32(5, gr, sizeof(gr), &gp);
+	memcpy(&gr[gp], "quiet", 5);
+	gp += 5;
+	gr[gp++] = 0;  /* want_reply = false */
+
+	ASSERT_OK(dssh_transport_send_packet(client, gr, gp, NULL));
+
+	uint8_t follow[] = { SSH_MSG_SERVICE_REQUEST, 0x44 };
+	ASSERT_OK(dssh_transport_send_packet(client, follow, sizeof(follow), NULL));
+
+	uint8_t msg_type;
+	uint8_t *payload;
+	size_t payload_len;
+	ASSERT_OK(dssh_transport_recv_packet(server, &msg_type, &payload, &payload_len));
+	ASSERT_EQ(msg_type, SSH_MSG_SERVICE_REQUEST);
+
+	/* No reply packet should be generated — client should not receive anything.
+	 * We verify by the fact recv_packet returned the SERVICE_REQUEST directly. */
+
+	dssh_session_cleanup(client);
+	dssh_session_cleanup(server);
+	mock_io_free(&io);
+	dssh_test_reset_global_config();
+	return TEST_PASS;
+}
+
+static int
+test_global_request_no_callback(void)
+{
+	/* No global_request_cb set — should auto-reject with FAILURE */
+	dssh_test_reset_global_config();
+	ASSERT_OK(register_all_algorithms());
+	if (test_generate_host_key() < 0)
+		return TEST_FAIL;
+	dssh_transport_set_callbacks(mock_tx_dispatch, mock_rx_dispatch,
+	    mock_rxline_dispatch, mock_extra_line_cb);
+
+	struct mock_io_state io;
+	ASSERT_OK(mock_io_init(&io, 0));
+
+	dssh_session client = dssh_session_init(true, 0);
+	ASSERT_NOT_NULL(client);
+	dssh_session_set_cbdata(client, &io, &io, &io, &io);
+
+	dssh_session server = init_server_session();
+	ASSERT_NOT_NULL(server);
+	dssh_session_set_cbdata(server, &io, &io, &io, &io);
+	/* No global_request_cb set */
+
+	uint8_t gr[64];
+	size_t gp = 0;
+	gr[gp++] = 80;
+	dssh_serialize_uint32(6, gr, sizeof(gr), &gp);
+	memcpy(&gr[gp], "nocb-r", 6);
+	gp += 6;
+	gr[gp++] = 1;  /* want_reply = true */
+
+	ASSERT_OK(dssh_transport_send_packet(client, gr, gp, NULL));
+
+	uint8_t follow[] = { SSH_MSG_SERVICE_REQUEST, 0x45 };
+	ASSERT_OK(dssh_transport_send_packet(client, follow, sizeof(follow), NULL));
+
+	uint8_t msg_type;
+	uint8_t *payload;
+	size_t payload_len;
+	ASSERT_OK(dssh_transport_recv_packet(server, &msg_type, &payload, &payload_len));
+	ASSERT_EQ(msg_type, SSH_MSG_SERVICE_REQUEST);
+
+	/* No callback → gr_res=-1 → FAILURE reply */
+	ASSERT_OK(dssh_transport_recv_packet(client, &msg_type, &payload, &payload_len));
+	ASSERT_EQ(msg_type, 82);  /* SSH_MSG_REQUEST_FAILURE */
+
+	dssh_session_cleanup(client);
+	dssh_session_cleanup(server);
+	mock_io_free(&io);
+	dssh_test_reset_global_config();
+	return TEST_PASS;
+}
+
+static int
+test_global_request_truncated(void)
+{
+	/* Truncated GLOBAL_REQUEST — too short for name length field */
+	dssh_test_reset_global_config();
+	ASSERT_OK(register_all_algorithms());
+	if (test_generate_host_key() < 0)
+		return TEST_FAIL;
+	dssh_transport_set_callbacks(mock_tx_dispatch, mock_rx_dispatch,
+	    mock_rxline_dispatch, mock_extra_line_cb);
+
+	struct mock_io_state io;
+	ASSERT_OK(mock_io_init(&io, 0));
+
+	dssh_session client = dssh_session_init(true, 0);
+	ASSERT_NOT_NULL(client);
+	dssh_session_set_cbdata(client, &io, &io, &io, &io);
+
+	dssh_session server = init_server_session();
+	ASSERT_NOT_NULL(server);
+	dssh_session_set_cbdata(server, &io, &io, &io, &io);
+
+	/* Just the msg_type byte — not enough for name length */
+	uint8_t gr[] = { 80 };
+	ASSERT_OK(dssh_transport_send_packet(client, gr, sizeof(gr), NULL));
+
+	/* Follow-up so recv_packet returns */
+	uint8_t follow[] = { SSH_MSG_SERVICE_REQUEST, 0x46 };
+	ASSERT_OK(dssh_transport_send_packet(client, follow, sizeof(follow), NULL));
+
+	uint8_t msg_type;
+	uint8_t *payload;
+	size_t payload_len;
+	ASSERT_OK(dssh_transport_recv_packet(server, &msg_type, &payload, &payload_len));
+	/* Truncated GLOBAL_REQUEST is silently dropped (break from switch
+	 * falls through to loop top), so we get the follow-up packet */
+	ASSERT_EQ(msg_type, SSH_MSG_SERVICE_REQUEST);
+
+	dssh_session_cleanup(client);
+	dssh_session_cleanup(server);
+	mock_io_free(&io);
+	dssh_test_reset_global_config();
+	return TEST_PASS;
+}
+
+/* ================================================================
+ * DEBUG edge cases — covers truncated/empty message branches
+ * ================================================================ */
+
+static bool debug_cb_invoked;
+static size_t debug_msg_len;
+
+static void
+mock_debug_cb_track(bool always, const uint8_t *msg, size_t len, void *cbdata)
+{
+	(void)always;
+	(void)msg;
+	(void)cbdata;
+	debug_cb_invoked = true;
+	debug_msg_len = len;
+}
+
+static int
+test_debug_truncated_payload(void)
+{
+	/* DEBUG with only 2 bytes (type + bool, no string) */
+	dssh_test_reset_global_config();
+	ASSERT_OK(register_all_algorithms());
+	if (test_generate_host_key() < 0)
+		return TEST_FAIL;
+	dssh_transport_set_callbacks(mock_tx_dispatch, mock_rx_dispatch,
+	    mock_rxline_dispatch, mock_extra_line_cb);
+
+	struct mock_io_state io;
+	ASSERT_OK(mock_io_init(&io, 0));
+
+	dssh_session client = dssh_session_init(true, 0);
+	ASSERT_NOT_NULL(client);
+	dssh_session_set_cbdata(client, &io, &io, &io, &io);
+
+	dssh_session server = init_server_session();
+	ASSERT_NOT_NULL(server);
+	dssh_session_set_cbdata(server, &io, &io, &io, &io);
+
+	debug_cb_invoked = false;
+	debug_msg_len = 999;
+	dssh_session_set_debug_cb(server, mock_debug_cb_track, NULL);
+
+	/* DEBUG: type(4) + always_display(1) — no string */
+	uint8_t dbg[] = { SSH_MSG_DEBUG, 1 };
+	ASSERT_OK(dssh_transport_send_packet(client, dbg, sizeof(dbg), NULL));
+
+	uint8_t follow[] = { SSH_MSG_SERVICE_REQUEST, 0x47 };
+	ASSERT_OK(dssh_transport_send_packet(client, follow, sizeof(follow), NULL));
+
+	uint8_t msg_type;
+	uint8_t *payload;
+	size_t payload_len;
+	ASSERT_OK(dssh_transport_recv_packet(server, &msg_type, &payload, &payload_len));
+	ASSERT_EQ(msg_type, SSH_MSG_SERVICE_REQUEST);
+
+	/* Callback should have been called with msg_len=0 */
+	ASSERT_TRUE(debug_cb_invoked);
+	ASSERT_EQ_U(debug_msg_len, 0);
+
+	dssh_session_cleanup(client);
+	dssh_session_cleanup(server);
+	mock_io_free(&io);
+	dssh_test_reset_global_config();
+	return TEST_PASS;
+}
+
+static int
+test_debug_no_callback(void)
+{
+	/* DEBUG received without debug_cb set — should be silently skipped */
+	dssh_test_reset_global_config();
+	ASSERT_OK(register_all_algorithms());
+	if (test_generate_host_key() < 0)
+		return TEST_FAIL;
+	dssh_transport_set_callbacks(mock_tx_dispatch, mock_rx_dispatch,
+	    mock_rxline_dispatch, mock_extra_line_cb);
+
+	struct mock_io_state io;
+	ASSERT_OK(mock_io_init(&io, 0));
+
+	dssh_session client = dssh_session_init(true, 0);
+	ASSERT_NOT_NULL(client);
+	dssh_session_set_cbdata(client, &io, &io, &io, &io);
+
+	dssh_session server = init_server_session();
+	ASSERT_NOT_NULL(server);
+	dssh_session_set_cbdata(server, &io, &io, &io, &io);
+	/* No debug_cb set */
+
+	uint8_t dbg[] = { SSH_MSG_DEBUG, 0, 0, 0, 0, 5, 'h', 'e', 'l', 'l', 'o' };
+	ASSERT_OK(dssh_transport_send_packet(client, dbg, sizeof(dbg), NULL));
+
+	uint8_t follow[] = { SSH_MSG_SERVICE_REQUEST, 0x48 };
+	ASSERT_OK(dssh_transport_send_packet(client, follow, sizeof(follow), NULL));
+
+	uint8_t msg_type;
+	uint8_t *payload;
+	size_t payload_len;
+	ASSERT_OK(dssh_transport_recv_packet(server, &msg_type, &payload, &payload_len));
+	ASSERT_EQ(msg_type, SSH_MSG_SERVICE_REQUEST);
+
+	dssh_session_cleanup(client);
+	dssh_session_cleanup(server);
+	mock_io_free(&io);
+	dssh_test_reset_global_config();
+	return TEST_PASS;
+}
+
+static int
+test_unimplemented_short_payload(void)
+{
+	/* UNIMPLEMENTED with payload < 5 bytes — should be silently skipped */
+	dssh_test_reset_global_config();
+	ASSERT_OK(register_all_algorithms());
+	if (test_generate_host_key() < 0)
+		return TEST_FAIL;
+	dssh_transport_set_callbacks(mock_tx_dispatch, mock_rx_dispatch,
+	    mock_rxline_dispatch, mock_extra_line_cb);
+
+	struct mock_io_state io;
+	ASSERT_OK(mock_io_init(&io, 0));
+
+	dssh_session client = dssh_session_init(true, 0);
+	ASSERT_NOT_NULL(client);
+	dssh_session_set_cbdata(client, &io, &io, &io, &io);
+
+	dssh_session server = init_server_session();
+	ASSERT_NOT_NULL(server);
+	dssh_session_set_cbdata(server, &io, &io, &io, &io);
+
+	bool unimpl_invoked = false;
+	/* Set callback so we can verify it was NOT invoked */
+	dssh_session_set_unimplemented_cb(server,
+	    (dssh_unimplemented_cb)(void *)&unimpl_invoked, NULL);
+
+	/* UNIMPLEMENTED with just 2 bytes (needs 5 for seq number) */
+	uint8_t unimp[] = { SSH_MSG_UNIMPLEMENTED, 0x00 };
+	ASSERT_OK(dssh_transport_send_packet(client, unimp, sizeof(unimp), NULL));
+
+	uint8_t follow[] = { SSH_MSG_SERVICE_REQUEST, 0x49 };
+	ASSERT_OK(dssh_transport_send_packet(client, follow, sizeof(follow), NULL));
+
+	uint8_t msg_type;
+	uint8_t *payload;
+	size_t payload_len;
+	ASSERT_OK(dssh_transport_recv_packet(server, &msg_type, &payload, &payload_len));
+	ASSERT_EQ(msg_type, SSH_MSG_SERVICE_REQUEST);
+
+	dssh_session_cleanup(client);
+	dssh_session_cleanup(server);
+	mock_io_free(&io);
+	dssh_test_reset_global_config();
+	return TEST_PASS;
+}
+
+/* ================================================================
+ * max_packet_size clamping — covers ssh-trans.c:1419-1422
+ * ================================================================ */
+
+static int
+test_init_small_packet_size(void)
+{
+	/* max_packet_size below minimum gets clamped up */
+	dssh_test_reset_global_config();
+	ASSERT_OK(register_all_algorithms());
+	if (test_generate_host_key() < 0)
+		return TEST_FAIL;
+	dssh_transport_set_callbacks(mock_tx_dispatch, mock_rx_dispatch,
+	    mock_rxline_dispatch, mock_extra_line_cb);
+
+	dssh_session sess = dssh_session_init(true, 100);  /* way too small */
+	ASSERT_NOT_NULL(sess);
+	/* Should be clamped to SSH_BPP_PACKET_SIZE_MIN */
+	ASSERT_TRUE(sess->trans.packet_buf_sz >= 33280);
+
+	dssh_session_cleanup(sess);
+	dssh_test_reset_global_config();
+	return TEST_PASS;
+}
+
+static int
+test_init_large_packet_size(void)
+{
+	/* max_packet_size above maximum gets clamped down */
+	dssh_test_reset_global_config();
+	ASSERT_OK(register_all_algorithms());
+	if (test_generate_host_key() < 0)
+		return TEST_FAIL;
+	dssh_transport_set_callbacks(mock_tx_dispatch, mock_rx_dispatch,
+	    mock_rxline_dispatch, mock_extra_line_cb);
+
+	dssh_session sess = dssh_session_init(true, (size_t)128 * 1024 * 1024);
+	ASSERT_NOT_NULL(sess);
+	/* Should be clamped to SSH_BPP_PACKET_SIZE_MAX (64 MiB) */
+	ASSERT_TRUE(sess->trans.packet_buf_sz <= 64 * 1024 * 1024);
+
+	dssh_session_cleanup(sess);
+	dssh_test_reset_global_config();
+	return TEST_PASS;
+}
+
+/* ================================================================
+ * build_namelist overflow — covers ssh-trans.c:818-823
+ * ================================================================ */
+
+static int
+test_build_namelist_overflow(void)
+{
+	/* Build namelist into a tiny buffer using a mock linked list.
+	 * This tests the comma-overflow and name-overflow branches. */
+	dssh_test_reset_global_config();
+
+	/* Create two fake kex entries with known names */
+	uint8_t e1buf[sizeof(struct dssh_kex_s) + 16];
+	uint8_t e2buf[sizeof(struct dssh_kex_s) + 16];
+	memset(e1buf, 0, sizeof(e1buf));
+	memset(e2buf, 0, sizeof(e2buf));
+	struct dssh_kex_s *e1 = (struct dssh_kex_s *)e1buf;
+	struct dssh_kex_s *e2 = (struct dssh_kex_s *)e2buf;
+	strcpy(e1->name, "alpha");
+	strcpy(e2->name, "bravo");
+	e1->next = e2;
+	e2->next = NULL;
+
+	/* Buffer fits "alpha," but not "alpha,bravo".
+	 * Comma is written but "bravo" is truncated. */
+	char buf[8];
+	size_t len = dssh_test_build_namelist(e1,
+	    offsetof(struct dssh_kex_s, name), buf, sizeof(buf));
+	/* "alpha," = 6 chars (comma written, name truncated) */
+	ASSERT_STR_EQ(buf, "alpha,");
+	ASSERT_EQ_U(len, 6);
+
+	/* Buffer too small for comma after "alpha" — covers pos+1>=bufsz */
+	char exact[6];  /* pos=5 after "alpha", 5+1>=6 so comma not written */
+	len = dssh_test_build_namelist(e1,
+	    offsetof(struct dssh_kex_s, name), exact, sizeof(exact));
+	ASSERT_STR_EQ(exact, "alpha");
+	ASSERT_EQ_U(len, 5);
+
+	/* Buffer too small even for "alpha" */
+	char tiny[4];
+	len = dssh_test_build_namelist(e1,
+	    offsetof(struct dssh_kex_s, name), tiny, sizeof(tiny));
+	ASSERT_TRUE(len < sizeof(tiny));
+
+	dssh_test_reset_global_config();
+	return TEST_PASS;
+}
+
+/* ================================================================
+ * Cleanup session that never handshaked — covers cleanup branches
+ * for NULL kex_selected/enc_selected/etc.
+ * ================================================================ */
+
+static int
+test_cleanup_no_handshake(void)
+{
+	dssh_test_reset_global_config();
+	ASSERT_OK(register_all_algorithms());
+	if (test_generate_host_key() < 0)
+		return TEST_FAIL;
+	dssh_transport_set_callbacks(mock_tx_dispatch, mock_rx_dispatch,
+	    mock_rxline_dispatch, mock_extra_line_cb);
+
+	dssh_session sess = dssh_session_init(true, 0);
+	ASSERT_NOT_NULL(sess);
+
+	/* All *_selected should be NULL — cleanup should handle gracefully */
+	ASSERT_NULL(sess->trans.kex_selected);
+	ASSERT_NULL(sess->trans.enc_c2s_selected);
+	ASSERT_NULL(sess->trans.mac_c2s_selected);
+
+	dssh_session_cleanup(sess);
+	dssh_test_reset_global_config();
+	return TEST_PASS;
+}
+
+/* ================================================================
+ * Version line parsing edge cases — covers short-circuit branches
+ * in is_version_line and is_20.
+ * ================================================================ */
+
+static int
+test_is_version_line_ss_not_ssh(void)
+{
+	/* "SSx-..." — starts with SS but not SSH */
+	uint8_t buf[] = "SSx-2.0-test\r\n";
+	ASSERT_FALSE(dssh_test_is_version_line(buf, sizeof(buf) - 1));
+	return TEST_PASS;
+}
+
+static int
+test_is_20_bad_minor(void)
+{
+	/* "SSH-2.x-test" — major is 2 but separator isn't ".0-" */
+	uint8_t buf[] = "SSH-2.x-test\r\n";
+	ASSERT_FALSE(dssh_test_is_20(buf, sizeof(buf) - 1));
+	return TEST_PASS;
+}
+
+static int
+test_is_20_199_partial(void)
+{
+	/* "SSH-1.9x-test" — starts like 1.99 but isn't */
+	uint8_t buf[] = "SSH-1.9x-test\r\n";
+	ASSERT_FALSE(dssh_test_is_20(buf, sizeof(buf) - 1));
+	return TEST_PASS;
+}
+
 /* ================================================================
  * Test table
  * ================================================================ */
@@ -2065,6 +3230,60 @@ static struct dssh_test_entry tests[] = {
 	{ "session/init_cleanup",            test_session_init_cleanup },
 	{ "session/terminate",               test_session_terminate },
 	{ "session/cleanup_null",            test_session_cleanup_null },
+
+	{ "vex/rx_error",                    test_version_exchange_rx_error },
+	{ "vex/terminate_mid_rx",            test_version_exchange_terminate },
+	{ "vex/extra_line_error",            test_version_exchange_extra_line_error },
+	{ "disconnect/long_description",     test_disconnect_long_description },
+	{ "packet/recv_bad_padding",         test_packet_recv_bad_padding },
+	{ "packet/recv_too_small",           test_packet_recv_too_small },
+
+	/* Registration validation */
+	{ "register/kex_toolate",            test_register_kex_toolate },
+	{ "register/kex_empty_name",         test_register_kex_empty_name },
+	{ "register/kex_next_not_null",      test_register_kex_next_not_null },
+	{ "register/enc_toolate",            test_register_enc_toolate },
+	{ "register/mac_toolate",            test_register_mac_toolate },
+	{ "register/comp_empty_name",        test_register_comp_empty_name },
+	{ "register/lang_basic",             test_register_lang_basic },
+	{ "register/lang_empty_name",        test_register_lang_empty_name },
+	{ "register/lang_toolate",           test_register_lang_toolate },
+
+	/* Getter before handshake */
+	{ "getter/names_before_handshake",   test_get_names_before_handshake },
+
+	/* Callbacks and session settings */
+	{ "callbacks/set_after_session",     test_set_callbacks_after_session },
+	{ "session/set_global_request_cb",   test_set_global_request_cb },
+
+	/* GLOBAL_REQUEST handling */
+	{ "global_request/with_reply",       test_global_request_with_reply },
+	{ "global_request/rejected",         test_global_request_rejected },
+	{ "global_request/no_reply",         test_global_request_no_reply },
+	{ "global_request/no_callback",      test_global_request_no_callback },
+	{ "global_request/truncated",        test_global_request_truncated },
+
+	/* DEBUG/UNIMPLEMENTED edge cases */
+	{ "debug/truncated_payload",         test_debug_truncated_payload },
+	{ "debug/no_callback",              test_debug_no_callback },
+	{ "unimplemented/short_payload",     test_unimplemented_short_payload },
+
+	/* Version parsing edge cases */
+	{ "version/is_version_ss_not_ssh",   test_is_version_line_ss_not_ssh },
+	{ "version/is_20_bad_minor",         test_is_20_bad_minor },
+	{ "version/is_20_199_partial",       test_is_20_199_partial },
+
+	/* max_packet_size clamping */
+	{ "init/small_packet_size",          test_init_small_packet_size },
+	{ "init/large_packet_size",          test_init_large_packet_size },
+
+	/* build_namelist overflow */
+	{ "algo/build_namelist_overflow",    test_build_namelist_overflow },
+
+	/* Cleanup partial session */
+	{ "cleanup/no_handshake",            test_cleanup_no_handshake },
+
+	/* Version exchange: long software version */
 };
 
 DSSH_TEST_MAIN(tests)

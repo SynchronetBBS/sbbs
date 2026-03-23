@@ -1572,6 +1572,103 @@ static int test_acceptqueue_pop_does_not_affect_remaining(void)
 }
 
 /* ================================================================
+ * Coverage: msgqueue_pop NULL buf (peek), sigqueue_pop edge cases
+ * ================================================================ */
+
+static int test_msgqueue_pop_null_buf_peek(void)
+{
+	/* Passing buf=NULL returns the message length without consuming.
+	 * Covers ssh-chan.c:164 (buf == NULL branch). */
+	struct dssh_msgqueue q;
+	dssh_msgqueue_init(&q);
+
+	const uint8_t msg[] = "peek test";
+	ASSERT_OK(dssh_msgqueue_push(&q, msg, sizeof(msg)));
+
+	/* Peek: buf=NULL should return length */
+	int64_t len = dssh_msgqueue_pop(&q, NULL, 0);
+	ASSERT_EQ(len, (int64_t)sizeof(msg));
+
+	/* Message should still be queued */
+	ASSERT_EQ_U(q.count, 1);
+	ASSERT_EQ_U(q.total_bytes, sizeof(msg));
+
+	/* Now actually consume it */
+	uint8_t buf[64];
+	int64_t got = dssh_msgqueue_pop(&q, buf, sizeof(buf));
+	ASSERT_EQ(got, (int64_t)sizeof(msg));
+	ASSERT_MEM_EQ(buf, msg, sizeof(msg));
+	ASSERT_EQ_U(q.count, 0);
+
+	dssh_msgqueue_free(&q);
+	return TEST_PASS;
+}
+
+static int test_sigqueue_pop_stderr_not_ready(void)
+{
+	/* stdout consumed enough, stderr not — covers the second
+	 * half of the OR on ssh-chan.c:247. */
+	struct dssh_signal_queue q;
+	dssh_sigqueue_init(&q);
+
+	ASSERT_OK(dssh_sigqueue_push(&q, "TST", 10, 100));
+
+	/* stdout sufficient, stderr insufficient */
+	char buf[32];
+	const char *name = dssh_sigqueue_pop(&q, 10, 50, buf, sizeof(buf));
+	ASSERT_NULL(name);
+
+	/* Signal should still be queued */
+	ASSERT_TRUE(dssh_sigqueue_ready(&q, 10, 100));
+
+	/* Now pop with both sufficient */
+	name = dssh_sigqueue_pop(&q, 10, 100, buf, sizeof(buf));
+	ASSERT_NOT_NULL(name);
+	ASSERT_STR_EQ(buf, "TST");
+
+	dssh_sigqueue_free(&q);
+	return TEST_PASS;
+}
+
+static int test_sigqueue_pop_name_truncation(void)
+{
+	/* Pop into a very small buffer — covers ssh-chan.c:257
+	 * (nlen >= bufsz truncation path). */
+	struct dssh_signal_queue q;
+	dssh_sigqueue_init(&q);
+
+	ASSERT_OK(dssh_sigqueue_push(&q, "LONGNAME", 0, 0));
+
+	/* Pop into a 4-byte buffer: "LON" + NUL */
+	char buf[4];
+	const char *name = dssh_sigqueue_pop(&q, 0, 0, buf, sizeof(buf));
+	ASSERT_NOT_NULL(name);
+	ASSERT_EQ_U(strlen(buf), 3);
+	ASSERT_MEM_EQ(buf, "LON", 3);
+
+	dssh_sigqueue_free(&q);
+	return TEST_PASS;
+}
+
+static int test_sigqueue_pop_tiny_buf(void)
+{
+	/* Pop into a 2-byte buffer: "L" + NUL */
+	struct dssh_signal_queue q;
+	dssh_sigqueue_init(&q);
+
+	ASSERT_OK(dssh_sigqueue_push(&q, "LONGNAME", 0, 0));
+
+	char buf[2];
+	const char *name = dssh_sigqueue_pop(&q, 0, 0, buf, sizeof(buf));
+	ASSERT_NOT_NULL(name);
+	ASSERT_EQ_U(strlen(buf), 1);
+	ASSERT_EQ(buf[0], 'L');
+
+	dssh_sigqueue_free(&q);
+	return TEST_PASS;
+}
+
+/* ================================================================
  * Test table
  * ================================================================ */
 
@@ -1658,6 +1755,12 @@ static struct dssh_test_entry tests[] = {
 	{ "acceptqueue_zero_window_packet",   test_acceptqueue_zero_window_packet },
 	{ "acceptqueue_single_char_type",     test_acceptqueue_single_char_type },
 	{ "acceptqueue_pop_no_affect_rest",   test_acceptqueue_pop_does_not_affect_remaining },
+
+	/* Coverage tests */
+	{ "msgqueue_pop_null_buf_peek",       test_msgqueue_pop_null_buf_peek },
+	{ "sigqueue_pop_stderr_not_ready",    test_sigqueue_pop_stderr_not_ready },
+	{ "sigqueue_pop_name_truncation",     test_sigqueue_pop_name_truncation },
+	{ "sigqueue_pop_tiny_buf",            test_sigqueue_pop_tiny_buf },
 };
 
 DSSH_TEST_MAIN(tests)

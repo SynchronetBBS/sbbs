@@ -1198,6 +1198,30 @@ test_serialize_overflow_at_offset(void)
 }
 
 /* ----------------------------------------------------------------
+ * parse_namelist with tiny buffer — covers ssh-arch.c:215
+ * ---------------------------------------------------------------- */
+
+static int
+test_parse_namelist_tiny_buffer(void)
+{
+	/* bufsz < 4: dssh_parse_string returns DSSH_ERROR_PARSE,
+	 * which makes dssh_parse_namelist's inner ret < 4 branch fire */
+	uint8_t buf[] = { 0x00, 0x00 };
+	struct dssh_namelist_s val = { 0 };
+	ASSERT_ERR(dssh_parse_namelist(buf, 2, &val), DSSH_ERROR_PARSE);
+	return TEST_PASS;
+}
+
+static int
+test_parse_namelist_zero_bufsz(void)
+{
+	uint8_t buf[] = { 0x00 };
+	struct dssh_namelist_s val = { 0 };
+	ASSERT_ERR(dssh_parse_namelist(buf, 0, &val), DSSH_ERROR_PARSE);
+	return TEST_PASS;
+}
+
+/* ----------------------------------------------------------------
  * test table
  * ---------------------------------------------------------------- */
 
@@ -1310,6 +1334,10 @@ static struct dssh_test_entry tests[] = {
 	{ "serialize_multiple_fields",      test_serialize_multiple_fields },
 	{ "serialize_at_nonzero_offset",    test_serialize_at_nonzero_offset },
 	{ "serialize_overflow_at_offset",   test_serialize_overflow_at_offset },
+
+	/* parse_namelist edge cases */
+	{ "parse_namelist_tiny_buffer",     test_parse_namelist_tiny_buffer },
+	{ "parse_namelist_zero_bufsz",      test_parse_namelist_zero_bufsz },
 };
 
 DSSH_TEST_MAIN(tests)
