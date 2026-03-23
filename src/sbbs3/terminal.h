@@ -280,7 +280,11 @@ public:
 	}
 
 	virtual void cleartoeos() {}
-	virtual void cleartoeol() {}
+	virtual void cleartoeol() {
+		unsigned int col = column;
+		cursor_right(cols - col);
+		cursor_left(cols - col);
+	}
 	virtual void clearline() {
 		carriage_return();
 		cleartoeol();
