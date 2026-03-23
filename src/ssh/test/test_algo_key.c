@@ -1568,6 +1568,214 @@ test_rsa_verify_sig_trailing_garbage(void)
 }
 
 /* ================================================================
+ * Deeper verify parse errors — truncation after valid prefix
+ * ================================================================ */
+
+static int
+test_ed25519_verify_key_truncated_after_name(void)
+{
+	/* Key blob: correct algo name, but truncated before raw key length */
+	dssh_test_reset_global_config();
+	ASSERT_EQ(register_ssh_ed25519(), 0);
+	ASSERT_EQ(ssh_ed25519_generate_key(), 0);
+	dssh_key_algo ka = dssh_transport_find_key_algo("ssh-ed25519");
+	ASSERT_NOT_NULL(ka);
+
+	uint8_t key[32];
+	size_t kp = 0;
+	dssh_serialize_uint32(11, key, sizeof(key), &kp);
+	memcpy(&key[kp], "ssh-ed25519", 11);
+	kp += 11;
+	/* No room for raw key length field */
+
+	const uint8_t data[] = "test";
+	uint8_t sig_buf[256];
+	size_t sig_len;
+	ASSERT_EQ(ka->sign(sig_buf, sizeof(sig_buf), &sig_len,
+	    data, sizeof(data) - 1, ka->ctx), 0);
+
+	ASSERT_TRUE(ka->verify(key, kp, sig_buf, sig_len,
+	    data, sizeof(data) - 1) < 0);
+	return TEST_PASS;
+}
+
+static int
+test_ed25519_verify_sig_truncated_after_name(void)
+{
+	/* Sig blob: correct algo name, but truncated before raw sig length */
+	dssh_test_reset_global_config();
+	ASSERT_EQ(register_ssh_ed25519(), 0);
+	ASSERT_EQ(ssh_ed25519_generate_key(), 0);
+	dssh_key_algo ka = dssh_transport_find_key_algo("ssh-ed25519");
+	ASSERT_NOT_NULL(ka);
+
+	uint8_t pub[256];
+	size_t pub_len;
+	ASSERT_EQ(ka->pubkey(pub, sizeof(pub), &pub_len, ka->ctx), 0);
+
+	uint8_t sig[32];
+	size_t sp = 0;
+	dssh_serialize_uint32(11, sig, sizeof(sig), &sp);
+	memcpy(&sig[sp], "ssh-ed25519", 11);
+	sp += 11;
+	/* No room for raw sig length field */
+
+	const uint8_t data[] = "test";
+	ASSERT_TRUE(ka->verify(pub, pub_len, sig, sp,
+	    data, sizeof(data) - 1) < 0);
+	return TEST_PASS;
+}
+
+static int
+test_ed25519_verify_bad_signature(void)
+{
+	/* Valid format but cryptographically wrong signature */
+	dssh_test_reset_global_config();
+	ASSERT_EQ(register_ssh_ed25519(), 0);
+	ASSERT_EQ(ssh_ed25519_generate_key(), 0);
+	dssh_key_algo ka = dssh_transport_find_key_algo("ssh-ed25519");
+	ASSERT_NOT_NULL(ka);
+
+	uint8_t pub[256];
+	size_t pub_len;
+	ASSERT_EQ(ka->pubkey(pub, sizeof(pub), &pub_len, ka->ctx), 0);
+
+	const uint8_t data[] = "test";
+	uint8_t sig[256];
+	size_t sig_len;
+	ASSERT_EQ(ka->sign(sig, sizeof(sig), &sig_len,
+	    data, sizeof(data) - 1, ka->ctx), 0);
+
+	/* Verify against different data — signature is valid format but wrong */
+	const uint8_t wrong_data[] = "wrong";
+	ASSERT_TRUE(ka->verify(pub, pub_len, sig, sig_len,
+	    wrong_data, sizeof(wrong_data) - 1) < 0);
+	return TEST_PASS;
+}
+
+static int
+test_rsa_verify_key_truncated_after_name(void)
+{
+	/* Key blob: correct algo name, truncated before e field */
+	dssh_test_reset_global_config();
+	ASSERT_EQ(register_rsa_sha2_256(), 0);
+	ASSERT_EQ(rsa_sha2_256_generate_key(2048), 0);
+	dssh_key_algo ka = dssh_transport_find_key_algo("rsa-sha2-256");
+	ASSERT_NOT_NULL(ka);
+
+	uint8_t key[32];
+	size_t kp = 0;
+	dssh_serialize_uint32(7, key, sizeof(key), &kp); /* "ssh-rsa" */
+	memcpy(&key[kp], "ssh-rsa", 7);
+	kp += 7;
+	/* No room for e length field */
+
+	const uint8_t data[] = "test";
+	uint8_t sig_buf[512];
+	size_t sig_len;
+	ASSERT_EQ(ka->sign(sig_buf, sizeof(sig_buf), &sig_len,
+	    data, sizeof(data) - 1, ka->ctx), 0);
+
+	ASSERT_TRUE(ka->verify(key, kp, sig_buf, sig_len,
+	    data, sizeof(data) - 1) < 0);
+	return TEST_PASS;
+}
+
+static int
+test_rsa_verify_key_truncated_after_e(void)
+{
+	/* Key blob: correct name + e field, truncated before n */
+	dssh_test_reset_global_config();
+	ASSERT_EQ(register_rsa_sha2_256(), 0);
+	ASSERT_EQ(rsa_sha2_256_generate_key(2048), 0);
+	dssh_key_algo ka = dssh_transport_find_key_algo("rsa-sha2-256");
+	ASSERT_NOT_NULL(ka);
+
+	uint8_t key[32];
+	size_t kp = 0;
+	dssh_serialize_uint32(7, key, sizeof(key), &kp);
+	memcpy(&key[kp], "ssh-rsa", 7);
+	kp += 7;
+	dssh_serialize_uint32(3, key, sizeof(key), &kp);
+	key[kp++] = 0x01; key[kp++] = 0x00; key[kp++] = 0x01; /* e=65537 */
+	/* No room for n length field */
+
+	const uint8_t data[] = "test";
+	uint8_t sig_buf[512];
+	size_t sig_len;
+	ASSERT_EQ(ka->sign(sig_buf, sizeof(sig_buf), &sig_len,
+	    data, sizeof(data) - 1, ka->ctx), 0);
+
+	ASSERT_TRUE(ka->verify(key, kp, sig_buf, sig_len,
+	    data, sizeof(data) - 1) < 0);
+	return TEST_PASS;
+}
+
+static int
+test_rsa_verify_sig_truncated_after_name(void)
+{
+	/* Sig blob: correct algo name, truncated before raw sig */
+	dssh_test_reset_global_config();
+	ASSERT_EQ(register_rsa_sha2_256(), 0);
+	ASSERT_EQ(rsa_sha2_256_generate_key(2048), 0);
+	dssh_key_algo ka = dssh_transport_find_key_algo("rsa-sha2-256");
+	ASSERT_NOT_NULL(ka);
+
+	uint8_t pub[2048];
+	size_t pub_len;
+	ASSERT_EQ(ka->pubkey(pub, sizeof(pub), &pub_len, ka->ctx), 0);
+
+	uint8_t sig[32];
+	size_t sp = 0;
+	dssh_serialize_uint32(12, sig, sizeof(sig), &sp);
+	memcpy(&sig[sp], "rsa-sha2-256", 12);
+	sp += 12;
+	/* No room for raw sig length */
+
+	const uint8_t data[] = "test";
+	ASSERT_TRUE(ka->verify(pub, pub_len, sig, sp,
+	    data, sizeof(data) - 1) < 0);
+	return TEST_PASS;
+}
+
+static int
+test_ed25519_generate_before_register(void)
+{
+	dssh_test_reset_global_config();
+	/* Don't register — ka will be NULL */
+	int res = ssh_ed25519_generate_key();
+	ASSERT_TRUE(res < 0);
+	return TEST_PASS;
+}
+
+static int
+test_rsa_generate_before_register(void)
+{
+	dssh_test_reset_global_config();
+	int res = rsa_sha2_256_generate_key(2048);
+	ASSERT_TRUE(res < 0);
+	return TEST_PASS;
+}
+
+static int
+test_ed25519_get_pub_str_before_register(void)
+{
+	dssh_test_reset_global_config();
+	int64_t res = ssh_ed25519_get_pub_str(NULL, 0);
+	ASSERT_TRUE(res < 0);
+	return TEST_PASS;
+}
+
+static int
+test_rsa_get_pub_str_before_register(void)
+{
+	dssh_test_reset_global_config();
+	int64_t res = rsa_sha2_256_get_pub_str(NULL, 0);
+	ASSERT_TRUE(res < 0);
+	return TEST_PASS;
+}
+
+/* ================================================================
  * Test table
  * ================================================================ */
 
@@ -1650,5 +1858,19 @@ static struct dssh_test_entry tests[] = {
 	{ "rsa_verify_wrong_key_name",       test_rsa_verify_wrong_key_algo_name },
 	{ "rsa_verify_key_trailing",         test_rsa_verify_key_trailing_garbage },
 	{ "rsa_verify_sig_trailing",         test_rsa_verify_sig_trailing_garbage },
+
+	/* Deeper verify parse errors */
+	{ "ed25519_verify_key_trunc_name",   test_ed25519_verify_key_truncated_after_name },
+	{ "ed25519_verify_sig_trunc_name",   test_ed25519_verify_sig_truncated_after_name },
+	{ "ed25519_verify_bad_signature",    test_ed25519_verify_bad_signature },
+	{ "rsa_verify_key_trunc_name",       test_rsa_verify_key_truncated_after_name },
+	{ "rsa_verify_key_trunc_e",          test_rsa_verify_key_truncated_after_e },
+	{ "rsa_verify_sig_trunc_name",       test_rsa_verify_sig_truncated_after_name },
+
+	/* Pre-registration errors */
+	{ "ed25519_generate_before_register", test_ed25519_generate_before_register },
+	{ "rsa_generate_before_register",    test_rsa_generate_before_register },
+	{ "ed25519_pub_str_before_register", test_ed25519_get_pub_str_before_register },
+	{ "rsa_pub_str_before_register",     test_rsa_get_pub_str_before_register },
 };
 DSSH_TEST_MAIN(tests)
