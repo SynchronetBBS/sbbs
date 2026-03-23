@@ -326,9 +326,6 @@ conn_setup(struct conn_ctx *ctx)
 static void
 conn_cleanup(struct conn_ctx *ctx)
 {
-	/* Close pipes first to unblock demux threads waiting in recv */
-	mock_io_close_c2s(&ctx->io);
-	mock_io_close_s2c(&ctx->io);
 	dssh_session_stop(ctx->server);
 	dssh_session_stop(ctx->client);
 	dssh_session_cleanup(ctx->server);
@@ -500,10 +497,6 @@ test_session_stop(void)
 	if (conn_setup(&ctx) < 0)
 		return TEST_SKIP;
 
-	/* Close pipes to unblock demux threads before stopping */
-	mock_io_close_c2s(&ctx.io);
-	mock_io_close_s2c(&ctx.io);
-
 	dssh_session_stop(ctx.client);
 	ASSERT_FALSE(ctx.client->demux_running);
 
@@ -526,10 +519,6 @@ test_session_start_stop(void)
 
 	ASSERT_TRUE(ctx.client->demux_running);
 	ASSERT_TRUE(ctx.server->demux_running);
-
-	/* Close pipes to unblock demux threads before stopping */
-	mock_io_close_c2s(&ctx.io);
-	mock_io_close_s2c(&ctx.io);
 
 	dssh_session_stop(ctx.client);
 	dssh_session_stop(ctx.server);

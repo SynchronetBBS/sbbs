@@ -132,12 +132,12 @@ version_rx(dssh_session sess)
 	while (!sess->terminate) {
 		res = gconf.rx_line(sess->trans.rx_packet, sess->trans.packet_buf_sz - 1, &received, sess, sess->rx_line_cbdata);
 		if (res < 0) {
-			sess->terminate = true;
+			dssh_session_set_terminate(sess);
 			return res;
 		}
 		if (dssh_test_is_version_line(sess->trans.rx_packet, received)) {
 			if (received > 255 || dssh_test_has_nulls(sess->trans.rx_packet, received) || dssh_test_missing_crlf(sess->trans.rx_packet, received) || dssh_test_has_non_ascii(sess->trans.rx_packet, received - 2) || !dssh_test_is_20(sess->trans.rx_packet, received)) {
-				sess->terminate = true;
+				dssh_session_set_terminate(sess);
 				return DSSH_ERROR_INVALID;
 			}
 			sess->trans.remote_id_str_sz = received - 2;
@@ -149,7 +149,7 @@ version_rx(dssh_session sess)
 			sess->trans.rx_packet[received] = 0;
 			res = gconf.extra_line_cb(sess->trans.rx_packet, received, sess->extra_line_cbdata);
 			if (res < 0) {
-				sess->terminate = true;
+				dssh_session_set_terminate(sess);
 				return res;
 			}
 		}
@@ -186,7 +186,7 @@ version_tx(dssh_session sess)
 	sz += 2;
 	res = gconf.tx(sess->trans.tx_packet, sz, sess, sess->tx_cbdata);
 	if (res < 0) {
-		sess->terminate = true;
+		dssh_session_set_terminate(sess);
 		return res;
 	}
 	return 0;
@@ -246,14 +246,21 @@ dssh_transport_handshake(dssh_session sess)
 {
 	int res = dssh_transport_version_exchange(sess);
 	if (res < 0)
-		return res;
+		goto fail;
 	res = dssh_transport_kexinit(sess);
 	if (res < 0)
-		return res;
+		goto fail;
 	res = dssh_transport_kex(sess);
 	if (res < 0)
-		return res;
-	return dssh_transport_newkeys(sess);
+		goto fail;
+	res = dssh_transport_newkeys(sess);
+	if (res < 0)
+		goto fail;
+	return 0;
+
+fail:
+	dssh_session_set_terminate(sess);
+	return res;
 }
 
 /* ================================================================
@@ -318,6 +325,8 @@ dssh_transport_rekey(dssh_session sess)
 	cnd_broadcast(&sess->trans.rekey_cnd);
 	mtx_unlock(&sess->trans.tx_mtx);
 
+	if (res < 0)
+		dssh_session_set_terminate(sess);
 	return res;
 }
 
@@ -358,7 +367,7 @@ dssh_transport_disconnect(dssh_session sess,
 	dssh_serialize_uint32(0, msg, sizeof(msg), &pos); /* language tag */
 
 	dssh_transport_send_packet(sess, msg, pos, NULL);
-	sess->terminate = true;
+	dssh_session_set_terminate(sess);
 	return 0;
 }
 
@@ -561,6 +570,12 @@ dssh_transport_send_packet(dssh_session sess,
 	}
 
 tx_done:
+	/* TOOLONG (packet too big) and REKEY_NEEDED (hard limit) are
+	 * recoverable — the session is still usable.  All other errors
+	 * (I/O callback failure, encrypt/MAC failure) mean the connection
+	 * is broken and cannot recover without closing the socket. */
+	if (ret < 0 && ret != DSSH_ERROR_TOOLONG && ret != DSSH_ERROR_REKEY_NEEDED)
+		dssh_session_set_terminate(sess);
 	mtx_unlock(&sess->trans.tx_mtx);
 	return ret;
 }
@@ -696,6 +711,11 @@ recv_packet_raw(dssh_session sess,
 	ret = 0;
 
 rx_done:
+	/* All recv errors are fatal: I/O failure, oversized packet,
+	 * bad padding, MAC mismatch, or decrypt failure all mean the
+	 * connection is broken. */
+	if (ret < 0)
+		dssh_session_set_terminate(sess);
 	mtx_unlock(&sess->trans.rx_mtx);
 	return ret;
 }
@@ -728,7 +748,7 @@ dssh_transport_recv_packet(dssh_session sess,
 
 		switch (*msg_type) {
 		case SSH_MSG_DISCONNECT:
-			sess->terminate = true;
+			dssh_session_set_terminate(sess);
 			return DSSH_ERROR_TERMINATED;
 		case SSH_MSG_IGNORE:
 			continue;

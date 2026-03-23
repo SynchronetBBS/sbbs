@@ -13,6 +13,9 @@
 #include "ssh-trans.h"
 #include "ssh-chan.h"
 
+/* Set terminate flag and wake all library-owned condvar waiters. */
+DSSH_PRIVATE void dssh_session_set_terminate(dssh_session sess);
+
 /* Channel types */
 #define DSSH_CHAN_SESSION 1
 #define DSSH_CHAN_RAW     2
@@ -137,6 +140,7 @@ struct dssh_session_s {
 	/* Demux thread and channel table */
 	thrd_t demux_thread;
 	atomic_bool demux_running;
+	bool conn_initialized;  /* channel_mtx/accept_mtx/accept_cnd valid */
 
 	struct dssh_channel_s **channels;
 	size_t channel_count;

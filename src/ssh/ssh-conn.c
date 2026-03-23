@@ -732,7 +732,7 @@ demux_thread_func(void *arg)
 			if (res == DSSH_ERROR_TERMINATED)
 				break;
 			/* Other errors — terminate */
-			sess->terminate = true;
+			dssh_session_set_terminate(sess);
 			break;
 		}
 
@@ -801,6 +801,7 @@ dssh_session_start(dssh_session sess)
 	sess->channel_capacity = 0;
 	sess->next_channel_id = 0;
 	dssh_acceptqueue_init(&sess->accept_queue);
+	sess->conn_initialized = true;
 
 	sess->demux_running = true;
 	if (thrd_create(&sess->demux_thread, demux_thread_func, sess) != thrd_success) {
@@ -822,7 +823,7 @@ dssh_session_stop(dssh_session sess)
 
 	/* Signal termination and join the demux thread */
 	if (sess->demux_running) {
-		sess->terminate = true;
+		dssh_session_set_terminate(sess);
 		int demux_res;
 		thrd_join(sess->demux_thread, &demux_res);
 	}

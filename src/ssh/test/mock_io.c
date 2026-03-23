@@ -5,7 +5,27 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <time.h>
+
 #include "mock_io.h"
+
+/*
+ * Timed wait helper: wait up to 50ms then re-check conditions.
+ * This ensures the terminate flag is checked promptly even though
+ * the library can't signal the mock I/O's condvar directly.
+ */
+static void
+pipe_timedwait(struct mock_io_pipe *p)
+{
+	struct timespec ts;
+	timespec_get(&ts, TIME_UTC);
+	ts.tv_nsec += 50000000L;  /* 50ms */
+	if (ts.tv_nsec >= 1000000000L) {
+		ts.tv_sec++;
+		ts.tv_nsec -= 1000000000L;
+	}
+	cnd_timedwait(&p->cnd, &p->mtx, &ts);
+}
 
 /* ================================================================
  * Pipe operations (circular buffer with condvar)
@@ -70,7 +90,7 @@ pipe_write(struct mock_io_pipe *p, const uint8_t *data, size_t len,
 				mtx_unlock(&p->mtx);
 				return -1;
 			}
-			cnd_wait(&p->cnd, &p->mtx);
+			pipe_timedwait(p);
 		}
 		if (p->closed) {
 			mtx_unlock(&p->mtx);
@@ -108,7 +128,7 @@ pipe_read(struct mock_io_pipe *p, uint8_t *buf, size_t len,
 				mtx_unlock(&p->mtx);
 				return -1;
 			}
-			cnd_wait(&p->cnd, &p->mtx);
+			pipe_timedwait(p);
 		}
 		if (p->used == 0 && p->closed) {
 			mtx_unlock(&p->mtx);
@@ -144,7 +164,7 @@ pipe_readline(struct mock_io_pipe *p, uint8_t *buf, size_t bufsz,
 				mtx_unlock(&p->mtx);
 				return -1;
 			}
-			cnd_wait(&p->cnd, &p->mtx);
+			pipe_timedwait(p);
 		}
 		if (p->used == 0 && p->closed) {
 			mtx_unlock(&p->mtx);

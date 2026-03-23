@@ -4,6 +4,39 @@
 #include "ssh-internal.h"
 #include "deucessh-conn.h"
 
+/*
+ * Set the terminate flag and wake all library-owned condvar waiters.
+ * This ensures that any thread blocked on rekey_cnd, accept_cnd,
+ * or a channel poll_cnd sees termination promptly instead of
+ * blocking until an external event (like a socket close) wakes it.
+ */
+DSSH_PRIVATE void
+dssh_session_set_terminate(dssh_session sess)
+{
+	sess->terminate = true;
+
+	/* Wake senders blocked during rekey */
+	cnd_broadcast(&sess->trans.rekey_cnd);
+
+	/* Wake conn-layer waiters if initialized */
+	if (sess->conn_initialized) {
+		mtx_lock(&sess->accept_mtx);
+		cnd_broadcast(&sess->accept_cnd);
+		mtx_unlock(&sess->accept_mtx);
+
+		mtx_lock(&sess->channel_mtx);
+		for (size_t i = 0; i < sess->channel_count; i++) {
+			dssh_channel ch = sess->channels[i];
+			if (ch->chan_type != 0) {
+				mtx_lock(&ch->buf_mtx);
+				cnd_signal(&ch->poll_cnd);
+				mtx_unlock(&ch->buf_mtx);
+			}
+		}
+		mtx_unlock(&sess->channel_mtx);
+	}
+}
+
 DSSH_PUBLIC dssh_session
 dssh_session_init(bool client, size_t max_packet_size)
 {
@@ -35,7 +68,7 @@ dssh_session_terminate(dssh_session sess)
 {
 	bool t = true;
 	if (atomic_compare_exchange_strong(&sess->initialized, &t, false)) {
-		sess->terminate = true;
+		dssh_session_set_terminate(sess);
 		return true;
 	}
 	return false;

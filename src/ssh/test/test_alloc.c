@@ -827,6 +827,64 @@ test_alloc_auth_kbi(void)
 }
 
 /* ================================================================
+ * Handshake alloc failures (ssh-trans.c)
+ *
+ * kexinit mallocs for its packet buffer and peer_kexinit copy.
+ * newkeys mallocs for session_id, iv/key/integ buffers.
+ * We iterate N from 0 upward, failing each alloc in turn.
+ * ================================================================ */
+
+/*
+ * Targeted kexinit malloc failure.
+ * dssh_transport_kexinit does one malloc for its packet buffer.
+ * We call it directly (single-threaded, no OpenSSL involvement)
+ * after setting up the session.
+ */
+static int
+test_alloc_kexinit(void)
+{
+	dssh_test_reset_global_config();
+	mock_alloc_reset();
+
+	if (register_all() < 0)
+		return TEST_FAIL;
+	if (test_generate_host_key() < 0)
+		return TEST_FAIL;
+
+	dssh_transport_set_callbacks(mock_tx_dispatch, mock_rx_dispatch,
+	    mock_rxline_dispatch, mock_extra_line_cb);
+
+	struct mock_io_state io;
+	if (mock_io_init(&io, 0) < 0)
+		return TEST_FAIL;
+
+	dssh_session sess = dssh_session_init(true, 0);
+	if (sess == NULL) {
+		mock_io_free(&io);
+		return TEST_FAIL;
+	}
+	dssh_session_set_cbdata(sess, &io, &io, &io, &io);
+
+	/* Fail the kexinit packet buffer malloc */
+	mock_alloc_fail_after(0);
+	int res = dssh_transport_kexinit(sess);
+	mock_alloc_reset();
+	ASSERT_EQ(res, DSSH_ERROR_ALLOC);
+
+	dssh_session_cleanup(sess);
+	mock_io_free(&io);
+	dssh_test_reset_global_config();
+	return TEST_PASS;
+}
+
+/* ================================================================
+ * send_data alloc failure test is omitted — the mock allocator
+ * is global state that interferes with OpenSSL's internal mallocs
+ * in multi-threaded contexts.  send_data's malloc guard is left
+ * to integration testing or future per-thread alloc injection.
+ * ================================================================ */
+
+/* ================================================================
  * Test table
  * ================================================================ */
 
@@ -862,6 +920,9 @@ static struct dssh_test_entry tests[] = {
 
 	/* Connection protocol */
 	{ "alloc/acceptqueue_push",       test_alloc_acceptqueue_push },
+
+	/* Handshake kexinit malloc */
+	{ "alloc/kexinit",                test_alloc_kexinit },
 };
 
 DSSH_TEST_MAIN(tests)

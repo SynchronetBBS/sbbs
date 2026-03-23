@@ -154,8 +154,8 @@ parse_userauth_prefix(const uint8_t *payload, size_t payload_len,
  * Server-side authentication loop
  * ================================================================ */
 
-DSSH_PUBLIC int
-dssh_auth_server(dssh_session sess,
+static int
+auth_server_impl(dssh_session sess,
     const struct dssh_auth_server_cbs *cbs,
     uint8_t *username_out, size_t *username_out_len)
 {
@@ -449,6 +449,32 @@ done:
 	return 0;
 }
 
+/*
+ * Check whether a negative result from a protocol function should
+ * be promoted to DSSH_ERROR_TERMINATED.  If the session's terminate
+ * flag was set (by send_packet/recv_packet on a fatal I/O or crypto
+ * error), the connection is dead and callers need to know.
+ *
+ * Auth rejection (server sent USERAUTH_FAILURE) does NOT set
+ * terminate, so those errors pass through unchanged.
+ */
+static inline int
+auth_check_terminated(dssh_session sess, int res)
+{
+	if (res < 0 && sess->terminate)
+		return DSSH_ERROR_TERMINATED;
+	return res;
+}
+
+DSSH_PUBLIC int
+dssh_auth_server(dssh_session sess,
+    const struct dssh_auth_server_cbs *cbs,
+    uint8_t *username_out, size_t *username_out_len)
+{
+	return auth_check_terminated(sess,
+	    auth_server_impl(sess, cbs, username_out, username_out_len));
+}
+
 /* ================================================================
  * Client-side authentication
  * ================================================================ */
@@ -498,8 +524,8 @@ ensure_auth_service(dssh_session sess)
 	return res;
 }
 
-DSSH_PUBLIC int
-dssh_auth_get_methods(dssh_session sess,
+static int
+get_methods_impl(dssh_session sess,
     const char *username, char *methods, size_t methods_sz)
 {
 	int res = ensure_auth_service(sess);
@@ -565,6 +591,14 @@ dssh_auth_get_methods(dssh_session sess,
 	return DSSH_ERROR_INIT;
 }
 
+DSSH_PUBLIC int
+dssh_auth_get_methods(dssh_session sess,
+    const char *username, char *methods, size_t methods_sz)
+{
+	return auth_check_terminated(sess,
+	    get_methods_impl(sess, username, methods, methods_sz));
+}
+
 /*
  * Build and send a password auth request.
  * If change is false: normal auth (boolean FALSE, password).
@@ -613,8 +647,8 @@ send_password_request(dssh_session sess,
 	return res;
 }
 
-DSSH_PUBLIC int
-dssh_auth_password(dssh_session sess,
+static int
+auth_password_impl(dssh_session sess,
     const char *username, const char *password,
     dssh_auth_passwd_change_cb passwd_change_cb, void *passwd_change_cbdata)
 {
@@ -696,7 +730,17 @@ dssh_auth_password(dssh_session sess,
 }
 
 DSSH_PUBLIC int
-dssh_auth_keyboard_interactive(dssh_session sess,
+dssh_auth_password(dssh_session sess,
+    const char *username, const char *password,
+    dssh_auth_passwd_change_cb passwd_change_cb, void *passwd_change_cbdata)
+{
+	return auth_check_terminated(sess,
+	    auth_password_impl(sess, username, password,
+	        passwd_change_cb, passwd_change_cbdata));
+}
+
+static int
+auth_kbi_impl(dssh_session sess,
     const char *username, dssh_auth_kbi_prompt_cb prompt_cb,
     void *cbdata)
 {
@@ -892,7 +936,16 @@ dssh_auth_keyboard_interactive(dssh_session sess,
 }
 
 DSSH_PUBLIC int
-dssh_auth_publickey(dssh_session sess,
+dssh_auth_keyboard_interactive(dssh_session sess,
+    const char *username, dssh_auth_kbi_prompt_cb prompt_cb,
+    void *cbdata)
+{
+	return auth_check_terminated(sess,
+	    auth_kbi_impl(sess, username, prompt_cb, cbdata));
+}
+
+static int
+auth_publickey_impl(dssh_session sess,
     const char *username, const char *algo_name)
 {
 	{
@@ -1033,4 +1086,12 @@ dssh_auth_publickey(dssh_session sess,
 		return 0;
 
 	return DSSH_ERROR_INIT;
+}
+
+DSSH_PUBLIC int
+dssh_auth_publickey(dssh_session sess,
+    const char *username, const char *algo_name)
+{
+	return auth_check_terminated(sess,
+	    auth_publickey_impl(sess, username, algo_name));
 }
