@@ -210,18 +210,11 @@ haskey(dssh_key_algo_ctx *ctx)
 static void
 cleanup(dssh_key_algo_ctx *ctx)
 {
-	/* cleanup is only called after successful register + keygen/load,
-	 * so cbd is always non-NULL. */
 	struct cbdata *cbd = (struct cbdata *)ctx;
-#ifdef DSSH_TESTING
-	EVP_PKEY_free(cbd->pkey);
-	free(cbd);
-#else
 	if (cbd != NULL) {
 		EVP_PKEY_free(cbd->pkey);
 		free(cbd);
 	}
-#endif
 }
 
 DSSH_PUBLIC int

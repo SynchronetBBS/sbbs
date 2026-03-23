@@ -884,6 +884,18 @@ test_alloc_kexinit(void)
  * to integration testing or future per-thread alloc injection.
  * ================================================================ */
 
+/*
+ * Iterative handshake alloc failure testing is not feasible with
+ * --wrap=malloc because OpenSSL does not gracefully handle malloc
+ * returning NULL — it corrupts global state or dereferences NULL
+ * in OPENSSL_cleanse/OPENSSL_sk_value.  The single-threaded
+ * test_alloc_kexinit above covers the library's own kexinit malloc.
+ *
+ * Deeper handshake mallocs (peer_kexinit, newkeys key buffers)
+ * are interleaved with OpenSSL allocations and cannot be tested
+ * without a per-module or per-thread allocation injection mechanism.
+ */
+
 /* ================================================================
  * Test table
  * ================================================================ */

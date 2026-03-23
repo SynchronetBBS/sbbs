@@ -298,7 +298,11 @@ handler(dssh_session sess)
 			return DSSH_ERROR_INIT;
 		}
 		raw_secret = malloc(raw_secret_len);
-		if (!raw_secret || EVP_PKEY_derive(pctx, raw_secret, &raw_secret_len) != 1) {
+		if (!raw_secret) {
+			EVP_PKEY_free(tmp_key); EVP_PKEY_free(peer_key); EVP_PKEY_CTX_free(pctx);
+			return DSSH_ERROR_ALLOC;
+		}
+		if (EVP_PKEY_derive(pctx, raw_secret, &raw_secret_len) != 1) {
 			OPENSSL_cleanse(raw_secret, raw_secret_len);
 			free(raw_secret);
 			EVP_PKEY_free(tmp_key); EVP_PKEY_free(peer_key); EVP_PKEY_CTX_free(pctx);
