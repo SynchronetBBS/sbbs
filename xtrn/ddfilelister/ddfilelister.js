@@ -4615,6 +4615,12 @@ function createFileListMenu_RIP(pQuitKeys)
 	var remainingChars = totalChars - fileListMenu.filenameLen - fileListMenu.fileSizeLen - 2 - sbCharsAdjust;
 	fileListMenu.shortDescLen = Math.max(10, remainingChars);
 	fileListMenu.extdDescEnabled = extendedDescEnabled();
+	// When extended descriptions are enabled, the menu only contains filenames
+	// and sizes (descriptions are in a separate right-side panel), so items
+	// should always fit within the menu width.  Suppress the horizontal scrollbar
+	// to avoid reserving space for it and to keep the layout clean.
+	if (fileListMenu.extdDescEnabled)
+		fileListMenu.noHorizontalScrollbar = true;
 
 	// Add additional quit keys
 	if (typeof pQuitKeys === "string")

@@ -160,6 +160,13 @@ function RIPLightbarMenu(pX, pY, pWidth, pHeight, pUseRIPBorder)
 	this.additionalQuitKeys = "";
 	this.additionalSelectItemKeys = "";
 
+	// --- Scrollbar toggles ---
+	// When true, the corresponding scrollbar is suppressed even if the content
+	// would normally require it.  Items that overflow the visible area will
+	// simply be clipped.  Both default to false (scrollbars enabled when needed).
+	this.noVerticalScrollbar = false;
+	this.noHorizontalScrollbar = false;
+
 	// Horizontal scroll state: the index of the first visible character in each
 	// item's text.  When a horizontal scrollbar is active, LEFT/RIGHT arrows
 	// shift this value to pan the visible text window across wide items.
@@ -981,11 +988,11 @@ function RIPLightbarMenu_computeLayout()
 	// First pass: compute layout without horizontal scrollbar
 	L.maxVisible = Math.floor(contentHeight / this.itemHeight);
 	L.visibleCount = Math.min(numItems, L.maxVisible);
-	L.needsScrollbar = (numItems > L.maxVisible);
+	L.needsScrollbar = (numItems > L.maxVisible) && !this.noVerticalScrollbar;
 	L.menuRightX = contentRight
 	               - (L.needsScrollbar ? RIP_LBMENU_SCROLLBAR_WIDTH + RIP_LBMENU_SCROLLBAR_GAP : 0);
 	L.charsPerItem = Math.floor((L.menuRightX - L.menuLeftX - this.textXOffset) / 8);
-	L.needsHScrollbar = (L.maxItemTextWidth > L.charsPerItem);
+	L.needsHScrollbar = (L.maxItemTextWidth > L.charsPerItem) && !this.noHorizontalScrollbar;
 
 	// Second pass: if horizontal scrollbar is needed, reserve space and recalculate
 	if (L.needsHScrollbar)
@@ -995,19 +1002,19 @@ function RIPLightbarMenu_computeLayout()
 		L.maxVisible = Math.floor(adjustedHeight / this.itemHeight);
 		L.visibleCount = Math.min(numItems, L.maxVisible);
 		// Vertical scrollbar status may have changed with the reduced height
-		L.needsScrollbar = (numItems > L.maxVisible);
+		L.needsScrollbar = (numItems > L.maxVisible) && !this.noVerticalScrollbar;
 		L.menuRightX = contentRight
 		               - (L.needsScrollbar ? RIP_LBMENU_SCROLLBAR_WIDTH + RIP_LBMENU_SCROLLBAR_GAP : 0);
 		L.charsPerItem = Math.floor((L.menuRightX - L.menuLeftX - this.textXOffset) / 8);
 		// Re-check: with the updated width, horizontal scrollbar may no longer be needed
-		L.needsHScrollbar = (L.maxItemTextWidth > L.charsPerItem);
+		L.needsHScrollbar = (L.maxItemTextWidth > L.charsPerItem) && !this.noHorizontalScrollbar;
 		if (!L.needsHScrollbar)
 		{
 			// Undo the reservation and recalculate
 			hsbReserve = 0;
 			L.maxVisible = Math.floor(contentHeight / this.itemHeight);
 			L.visibleCount = Math.min(numItems, L.maxVisible);
-			L.needsScrollbar = (numItems > L.maxVisible);
+			L.needsScrollbar = (numItems > L.maxVisible) && !this.noVerticalScrollbar;
 			L.menuRightX = contentRight
 			               - (L.needsScrollbar ? RIP_LBMENU_SCROLLBAR_WIDTH + RIP_LBMENU_SCROLLBAR_GAP : 0);
 			L.charsPerItem = Math.floor((L.menuRightX - L.menuLeftX - this.textXOffset) / 8);
