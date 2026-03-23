@@ -372,7 +372,9 @@ function showRIPTextDialog(pX, pY, pWidth, pHeight, pTitle, pLines, pAdditionalQ
 		scrollbar = new RIPScrollbar(sbX, contentY, sbWidth, contentH);
 		scrollbar.setScrollState(pLines.length, maxVisibleLines, 0);
 		scrollbar.computeLayout();
-		sendRIP(scrollbar.buildFullRIP());
+		// Draw the scrollbar visuals and register its mouse regions so that
+		// clicking the up/down arrows, track areas, and thumb actually works.
+		sendRIP(scrollbar.buildFullRIP() + scrollbar.buildMouseRegionsRIP());
 	}
 
 	// Redraws the visible portion of the text content and updates the scrollbar
@@ -393,11 +395,14 @@ function showRIPTextDialog(pX, pY, pWidth, pHeight, pTitle, pLines, pAdditionalQ
 			var lineText = pLines[topLine + li].substring(0, charsPerLine);
 			drawRip += RIPTextXYNumeric(contentX, contentY + li * lineHeight + 1, lineText);
 		}
-		// Update the scrollbar thumb to reflect the new scroll position
+		// Update the scrollbar thumb and mouse regions to reflect the new
+		// scroll position.  The mouse regions must be rebuilt because the
+		// thumb has moved, changing the track areas above/below it.
 		if (scrollbar !== null)
 		{
 			scrollbar.topIndex = topLine;
 			drawRip += scrollbar.buildThumbRIP();
+			drawRip += scrollbar.buildMouseRegionsRIP();
 		}
 		drawRip += RIPGotoXYNumeric(0, 0);
 		sendRIP(drawRip);
