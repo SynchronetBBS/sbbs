@@ -1463,7 +1463,6 @@ else
 			drawMenu = true;
 			refreshWholePromptLine = true;
 			currentActionVal = gFileMenuBar.getActionFromChar(userInput, false);
-			//if (user.is_sysop) console.print("\x01n\r\nHere - Char:" + userInput + ":, action val: " + currentActionVal + "  \x01p"); // Temporary
 			gFileMenuBar.setCurrentActionCode(currentActionVal, true);
 			actionRetObj = doAction(currentActionVal, gFileList, gFileListMenu);
 			// If the user toggled extended descriptions, then re-generate the array of
@@ -1563,7 +1562,8 @@ function doAction(pActionCode, pFileList, pFileListMenu)
 		case FILE_DOWNLOAD_SINGLE:
 			if (userCanDownloadFromFileArea_ShowErrorIfNot(fileMetadata.dirCode) && pFileListMenu.selectedItemIdx >= 0 && pFileListMenu.selectedItemIdx < pFileListMenu.NumItems())
 			{
-				console.print("\x01nHere! \x01p"); // Temporary
+				if (gUsingRIP)
+					console.clear("N");
 				retObj = letUserDownloadSelectedFile(fileMetadata);
 			}
 			else
@@ -7647,8 +7647,6 @@ function loadTextFileIntoArray(pFilename, pMaxNumLines, pMaxLineLen)
 			fileLines = inFile.readAll(maxLineLen);
 		inFile.close();
 	}
-	else
-		if (user.is_sysop) console.print("\x01n\r\n* Header file failed to open!\r\n\x01p"); // Temporary
 	return fileLines;
 }
 
