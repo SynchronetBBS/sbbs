@@ -690,6 +690,7 @@ BinkP.prototype.session = function()
 	var last = Date.now();
 	var cur_timeout;
 	var success = true;
+	var tlvl;
 
 	// Session set up, we're good to go!
 	outer:
@@ -772,8 +773,18 @@ BinkP.prototype.session = function()
 						break;
 					case this.command.M_EOB:
 						this.ack_file();
-						if (this.pending_ack.length > 0)
-							log(LOG_WARNING, "We got an M_EOB, but there are still "+this.pending_ack.length+" files pending M_GOT");
+						if (this.pending_ack.length > 0) {
+							// Mystic always hits this, but the transfer is successful.
+							tlvl = LOG_WARNING;
+							if (this.remote_ver !== undefined) {
+								m = this.remote_ver.match(/^Mystic\/1.12A([0-9]+)$/);
+								if (m !== null) {
+									if (parseInt(m[1], 10) <= 49)
+										tlvl = LOG_INFO;
+								}
+							}
+							log(tlvl, "We got an M_EOB, but there are still "+this.pending_ack.length+" files pending M_GOT");
+						}
 						else {
 							if (this.ver1_1) {
 								if (this.senteob >= 2 && this.goteob >= 2)
