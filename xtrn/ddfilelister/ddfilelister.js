@@ -271,11 +271,22 @@ function drawRIPColumnLabels()
 	}
 	else
 	{
-		// Traditional layout: filenameLen + fileSizeLen + descLen
-		var filenameLen = Math.min(20, Math.floor(totalChars * 0.3));
-		var sizeX = (filenameLen + 1) * 8;
+		// Non-extended layout: filename + size + description in one row.
+		// The GetItem format is: "%-filenameLen_s %fileSizeLen_s %-shortDescLen_s"
+		// So the size column spans characters (filenameLen+1) to (filenameLen+fileSizeLen).
+		// Right-align "Size" within that column, and start "Description" after the
+		// trailing space that follows the size column.
+		var filenameLen = gListIdxes.filenameEnd - gListIdxes.filenameStart;
+		// "Size" (4 chars) right-aligned within the fileSizeLen-wide column:
+		// the column ends at character (filenameLen + 1 + fileSizeLen - 1),
+		// so "Size" starts at (filenameLen + 1 + fileSizeLen - 4).
+		//var sizeX = (filenameLen + 1 + fileSizeLen - 4) * 8;
+		var sizeX = (filenameLen + 1 + fileSizeLen - 4) * 8;
+		sizeX += 4;
 		rip += RIPTextXYNumeric(sizeX, colY + 1, "Size");
-		var descX = (filenameLen + fileSizeLen + 2) * 8;
+		// "Description" starts one space after the size column ends
+		var descX = (filenameLen + 1 + fileSizeLen + 1) * 8;
+		descX += 4;
 		rip += RIPTextXYNumeric(descX, colY + 1, "Description");
 	}
 	rip += RIPGotoXYNumeric(0, 0);
@@ -4589,7 +4600,19 @@ function createFileListMenu_RIP(pQuitKeys)
 	fileListMenu.filenameLen = gListIdxes.filenameEnd - gListIdxes.filenameStart;
 	fileListMenu.fileSizeLen = gListIdxes.fileSizeEnd - gListIdxes.fileSizeStart - 1;
 	var totalChars = Math.floor(menuWidth / 8);
-	var remainingChars = totalChars - fileListMenu.filenameLen - fileListMenu.fileSizeLen - 2;
+	// When extended descriptions are disabled, the short description column
+	// fills the remaining width inside the menu.  If the menu will need a
+	// scrollbar (more files than visible rows), reduce the available characters
+	// so descriptions don't run into the scrollbar area (14px + 2px gap = 2 chars).
+	var sbCharsAdjust = 0;
+	if (!extendedDescEnabled())
+	{
+		var itemHeight = 16;
+		var maxVisible = Math.floor(menuHeight / itemHeight);
+		if (gFileList.length > maxVisible)
+			sbCharsAdjust = 2; // scrollbar (14px) + gap (2px) = 16px = 2 chars
+	}
+	var remainingChars = totalChars - fileListMenu.filenameLen - fileListMenu.fileSizeLen - 2 - sbCharsAdjust;
 	fileListMenu.shortDescLen = Math.max(10, remainingChars);
 	fileListMenu.extdDescEnabled = extendedDescEnabled();
 
