@@ -7,7 +7,6 @@
  * BBS address: digitaldistortionbbs.com (or digdist.synchro.net)
  */
 
-// TODO: RIP support?
 // 2026-02-19 - m1ndsurfer in Synchronet IRC mentioned for C64 files, basically converting PETSCII
 // characters to something that can be displayed on other terminals; Generating RIP file descriptions?
 // Using ImageMagick to convert to .png; and display as a small sixel image?
@@ -55,10 +54,23 @@ require("attr_conv.js", "convertAttrsToSyncPerSysCfg");
 require("file_size.js", "file_size_str");
 var gAvatar = load({}, "avatar_lib.js");
 
+// RIP/RIPScrip support: When the user's terminal supports RIP graphics, the
+// file lister uses RIPLightbarMenu (pixel-based menu with RIP graphics) instead
+// of DDLightbarMenu (ANSI character-cell menu), and all display functions use
+// RIP drawing commands.  The RIP libraries are only loaded when needed to avoid
+// overhead for non-RIP terminals.
+var gUsingRIP = console.term_supports(USER_RIP);
+if (gUsingRIP)
+{
+	require("rip_lib.js", "RIPWindow");
+	require("rip_lightbar_menu.js", "RIPLightbarMenu");
+	require("rip_scrollbar.js", "RIPScrollbar");
+}
+
 
 // Version information
-var LISTER_VERSION = "2.33";
-var LISTER_DATE = "2026-03-11";
+var LISTER_VERSION = "2.34";
+var LISTER_DATE = "2026-03-22";
 
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -145,6 +157,653 @@ gListIdxes.descriptionStart = gListIdxes.fileSizeEnd;
 gListIdxes.descriptionEnd = console.screen_columns - 1; // Leave 1 character remaining on the screen
 
 
+// RIP layout constants (640x350 pixel graphics viewport)
+var gRIP = null;
+if (gUsingRIP)
+{
+	gRIP = {
+		// Header area at the top
+		HDR_HEIGHT: 50,      // Pixels for the header area
+		// Column label row between header and file list menu
+		COL_HDR_HEIGHT: 10,  // Pixels for the column labels row (8px font + 2px pad)
+		// Command bar at the bottom
+		CMD_BAR_HEIGHT: 16,  // Pixels for the command bar at the bottom
+		CMD_BAR_Y: 334,      // Y position of the command bar (350 - 16)
+		// File list menu area (between column labels and command bar)
+		MENU_X: 0,
+		MENU_Y: 60,          // Below header (50) + column labels (10)
+		MENU_WIDTH: 640,
+		MENU_HEIGHT: 274,    // 334 - 60
+		// Character width in default 8x8 font
+		CHAR_WIDTH: 8,
+		CHAR_HEIGHT: 8,
+		// Max characters per line at 640px wide
+		MAX_CHARS: 80
+	};
+}
+
+// Send a batch of RIP commands to the client (only call when gUsingRIP is true).
+function sendRIP(cmds)
+{
+	console.write("\r!" + cmds + "\r\n");
+}
+
+// Builds RIP commands for a styled header bar at the top of the screen,
+// displaying text in a decorative button-style box (similar to digDistRIPHdr).
+//
+// Parameters:
+//  pText: The text to display in the header
+//  pRIPFont: RIP font number (default: RIP_FONT_TRIPLEX)
+//  pFontSize: Font size (default: 2)
+//  pTextColorNum: Text color (default: RIP_COLOR_BLUE)
+//
+// Return value: RIP command string
+function buildRIPHdr(pText, pRIPFont, pFontSize, pTextColorNum)
+{
+	var fontNum = (typeof pRIPFont === "number" && pRIPFont >= RIP_FONT_DEFAULT && pRIPFont <= RIP_FONT_BOLD ? pRIPFont : RIP_FONT_TRIPLEX);
+	var fontSize = (typeof pFontSize === "number" ? pFontSize : 2);
+	var textColorNum = (typeof pTextColorNum === "number" ? pTextColorNum : RIP_COLOR_BLUE);
+
+	var btnFlags = RIP_BTN_STYLE_CHISEL_EFFECT | RIP_BTN_STYLE_DROPSHADOW_LBL
+	             | RIP_BTN_STYLE_BEVEL | RIP_BTN_STYLE_SUNKEN;
+
+	var rip = RIPKillMouseFields();
+	rip += RIPFontStyleNumeric(fontNum, 0, fontSize, 0);
+	rip += RIPWriteMode(0);
+	rip += RIPButtonStyleNumeric(640, 30, 2, btnFlags, 5, textColorNum, 0, 15, 8, 7, 1, 0, 0, 0, 0);
+	rip += RIPButtonNumeric(0, 0, 640, 48, 0, 0, 0, [pText], "");
+	return rip;
+}
+
+// Draws the column label row ("Filename", "Size", "Description") in the area
+// between the header and the file list menu.  The labels are positioned to
+// align with the columns used in createFileListMenu_RIP's GetItem formatter.
+// This row uses the same dark blue background as the ANSI column header.
+function drawRIPColumnLabels()
+{
+	if (!gUsingRIP)
+		return;
+
+	var colY = gRIP.HDR_HEIGHT; // Top of the column label area (below header)
+	var colH = gRIP.COL_HDR_HEIGHT;
+	// Determine the menu width (matches createFileListMenu_RIP logic).
+	// When extended descriptions are enabled, the menu width matches the ANSI
+	// interface: (gListIdxes.fileSizeEnd + 1) characters * 8px per character.
+	var menuWidth = gRIP.MENU_WIDTH;
+	if (extendedDescEnabled())
+		menuWidth = (gListIdxes.fileSizeEnd + 1) * 8;
+	var totalChars = Math.floor(menuWidth / 8);
+
+	// Column widths must match the format used in createFileListMenu_RIP's GetItem.
+	// Use the same gListIdxes values as the ANSI version for consistency.
+	var fileSizeLen = gListIdxes.fileSizeEnd - gListIdxes.fileSizeStart - 1;
+
+	var rip = "";
+	// Dark background for the column label row
+	rip += RIPFillStyleNumeric(1, RIP_COLOR_BLUE);
+	rip += RIPBarNumeric(0, colY, 639, colY + colH - 1);
+	// Draw column labels in white
+	rip += RIPColorNumeric(RIP_COLOR_WHITE);
+	rip += RIPFontStyleNumeric(RIP_FONT_DEFAULT, 0, 1, 0);
+	rip += RIPTextXYNumeric(2, colY + 1, "Filename");
+	if (extendedDescEnabled())
+	{
+		// "Size" label: right-justified to align with the fixed-width size column.
+		// If the menu will need a scrollbar (more files than visible rows), the
+		// size column is shifted left by the scrollbar width (14px) + gap (2px)
+		// so "Size" ends just before the scrollbar starts.
+		var sbPixels = 0;
+		var menuHeight = gRIP.MENU_HEIGHT;
+		var itemHeight = 16; // Default RIPLightbarMenu item height
+		var maxVisible = Math.floor(menuHeight / itemHeight);
+		if (gFileList.length > maxVisible)
+			sbPixels = 16; // scrollbar width (14) + gap (2)
+		var sizeColStartChar = totalChars - fileSizeLen;
+		// Shift left by scrollbar width in characters (round up to whole chars)
+		var sbChars = Math.ceil(sbPixels / 8);
+		var sizeX = (sizeColStartChar + fileSizeLen - 4 - sbChars) * 8; // "Size" is 4 chars
+		rip += RIPTextXYNumeric(sizeX, colY + 1, "Size");
+		// "Description" label: in the separate panel to the right of the menu.
+		// Position matches displayFileExtDescOnMainScreen_RIP: (menuWidthChars + 1) * 8
+		var menuWidthChars = gListIdxes.fileSizeEnd + 1;
+		var descLabelX = (menuWidthChars + 1) * 8;
+		rip += RIPTextXYNumeric(descLabelX, colY + 1, "Description");
+	}
+	else
+	{
+		// Traditional layout: filenameLen + fileSizeLen + descLen
+		var filenameLen = Math.min(20, Math.floor(totalChars * 0.3));
+		var sizeX = (filenameLen + 1) * 8;
+		rip += RIPTextXYNumeric(sizeX, colY + 1, "Size");
+		var descX = (filenameLen + fileSizeLen + 2) * 8;
+		rip += RIPTextXYNumeric(descX, colY + 1, "Description");
+	}
+	rip += RIPGotoXYNumeric(0, 0);
+	sendRIP(rip);
+}
+
+// Displays a bordered, scrollable text dialog using RIP graphics.
+// This is the RIP equivalent of displayBorderedFrameAndDoInputLoop() — it serves
+// the same purpose (showing scrollable text in a bordered window) but draws
+// everything with RIP pixel graphics instead of ANSI character-cell graphics.
+//
+// The dialog consists of:
+//  - A 3D beveled border (outer raised + inner sunken, "chisel" style)
+//  - An optional title rendered in the top border area
+//  - A content area showing plain-text lines in the default 8x8 RIP font
+//  - A RIPScrollbar on the right side when content exceeds the visible area
+//
+// The user can scroll with arrow keys, Page Up/Down, Home/End, and exit with
+// Q, Enter, ESC, or any key in pAdditionalQuitKeys.
+//
+// Parameters:
+//  pX, pY, pWidth, pHeight: Dialog position and size in pixels
+//  pTitle: Optional title text for the top of the dialog
+//  pLines: Array of text strings to display (plain text, no Ctrl-A codes)
+//  pAdditionalQuitKeys: Optional string of additional keys to close the dialog
+function showRIPTextDialog(pX, pY, pWidth, pHeight, pTitle, pLines, pAdditionalQuitKeys, pPostDrawCallback)
+{
+	// The top border is thicker (16px) to make room for the title text, while
+	// the side and bottom borders use the standard 7px inset.
+	var sideInset = 7;    // Left, right, and bottom border thickness
+	var topInset = 16;    // Top border thickness (room for title text)
+	var contentX = pX + sideInset;
+	var contentY = pY + topInset;
+	var contentW = pWidth - 2 * sideInset;
+	var contentH = pHeight - topInset - sideInset; // Top is thicker than bottom
+	var lineHeight = 10; // 8px font height + 2px inter-line spacing
+	var maxVisibleLines = Math.floor(contentH / lineHeight);
+	var charsPerLine = Math.floor(contentW / 8); // 8 pixels per character
+	var needsScrollbar = (pLines.length > maxVisibleLines);
+	var sbWidth = 14;
+	var sbGap = 2;
+	// If a scrollbar is needed, reduce the text area width to make room for it
+	if (needsScrollbar)
+		charsPerLine = Math.floor((contentW - sbWidth - sbGap) / 8);
+	var textRightX = contentX + charsPerLine * 8; // Right edge of text area
+	var topLine = 0; // Index of the first visible line (scroll position)
+
+	// Build and send the border with a thicker top area for the title
+	var rip = "";
+	// Surface color fills the entire dialog area
+	rip += RIPFillStyleNumeric(1, RIP_COLOR_BLUE);
+	rip += RIPBarNumeric(pX, pY, pX + pWidth - 1, pY + pHeight - 1);
+	// Outer bevel: bright top/left (2px edges)
+	rip += RIPFillStyleNumeric(1, RIP_COLOR_WHITE);
+	rip += RIPBarNumeric(pX, pY, pX + pWidth - 1, pY + 1);
+	rip += RIPBarNumeric(pX, pY + 2, pX + 1, pY + pHeight - 1);
+	// Outer bevel: dark bottom/right (2px edges)
+	rip += RIPFillStyleNumeric(1, RIP_COLOR_DK_GRAY);
+	rip += RIPBarNumeric(pX, pY + pHeight - 2, pX + pWidth - 1, pY + pHeight - 1);
+	rip += RIPBarNumeric(pX + pWidth - 2, pY, pX + pWidth - 1, pY + pHeight - 3);
+	// Inner bevel sits below the title area on top, standard position elsewhere
+	var ix0 = pX + 4;
+	var iy0 = pY + topInset - 3; // Inner bevel top edge just above content
+	var ix1 = pX + pWidth - 5;
+	var iy1 = pY + pHeight - 5;
+	rip += RIPFillStyleNumeric(1, RIP_COLOR_DK_GRAY);
+	rip += RIPBarNumeric(ix0, iy0, ix1, iy0 + 1);
+	rip += RIPBarNumeric(ix0, iy0 + 2, ix0 + 1, iy1);
+	// Inner bevel: bright bottom/right
+	rip += RIPFillStyleNumeric(1, RIP_COLOR_WHITE);
+	rip += RIPBarNumeric(ix0, iy1 - 1, ix1, iy1);
+	rip += RIPBarNumeric(ix1 - 1, iy0, ix1, iy1 - 2);
+	// Content background (black area inside the inner bevel)
+	rip += RIPFillStyleNumeric(1, RIP_COLOR_BLACK);
+	rip += RIPBarNumeric(contentX, contentY, contentX + contentW - 1, contentY + contentH - 1);
+	// Title text centered in the thicker top border area (between outer and inner bevel)
+	if (typeof pTitle === "string" && pTitle.length > 0)
+	{
+		rip += RIPColorNumeric(RIP_COLOR_WHITE);
+		rip += RIPFontStyleNumeric(RIP_FONT_DEFAULT, 0, 1, 0);
+		// Center the title in the thicker top border area (vertically centered
+		// between the outer bevel top edge and the inner bevel top edge)
+		var titleX = pX + Math.floor((pWidth - pTitle.length * 8) / 2);
+		var titleY = pY + Math.floor((topInset - 8) / 2); // 8px font height
+		rip += RIPTextXYNumeric(titleX, titleY, pTitle);
+	}
+	sendRIP(rip);
+
+	// Create scrollbar if needed
+	var scrollbar = null;
+	if (needsScrollbar)
+	{
+		var sbX = textRightX + sbGap;
+		scrollbar = new RIPScrollbar(sbX, contentY, sbWidth, contentH);
+		scrollbar.setScrollState(pLines.length, maxVisibleLines, 0);
+		scrollbar.computeLayout();
+		sendRIP(scrollbar.buildFullRIP());
+	}
+
+	// Redraws the visible portion of the text content and updates the scrollbar
+	// thumb position.  Called once initially and again whenever the user scrolls.
+	// All drawing is batched into a single sendRIP call for efficiency.
+	function drawVisibleLines()
+	{
+		var drawRip = "";
+		// Clear the text content area (but not the scrollbar area)
+		drawRip += RIPFillStyleNumeric(1, RIP_COLOR_BLACK);
+		drawRip += RIPBarNumeric(contentX, contentY, textRightX - 1, contentY + contentH - 1);
+		// Draw each visible line of text
+		drawRip += RIPColorNumeric(RIP_COLOR_LT_GRAY);
+		drawRip += RIPFontStyleNumeric(RIP_FONT_DEFAULT, 0, 1, 0);
+		var visCount = Math.min(maxVisibleLines, pLines.length - topLine);
+		for (var li = 0; li < visCount; ++li)
+		{
+			var lineText = pLines[topLine + li].substring(0, charsPerLine);
+			drawRip += RIPTextXYNumeric(contentX, contentY + li * lineHeight + 1, lineText);
+		}
+		// Update the scrollbar thumb to reflect the new scroll position
+		if (scrollbar !== null)
+		{
+			scrollbar.topIndex = topLine;
+			drawRip += scrollbar.buildThumbRIP();
+		}
+		drawRip += RIPGotoXYNumeric(0, 0);
+		sendRIP(drawRip);
+	}
+
+	drawVisibleLines();
+
+	// If a post-draw callback was provided (e.g., to overlay an avatar in the
+	// text window after the dialog graphics are rendered), call it now — after
+	// the initial draw but before the input loop starts.
+	if (typeof pPostDrawCallback === "function")
+		pPostDrawCallback();
+
+	// Scroll input loop: wait for user keypresses and scroll the visible content.
+	// Only redraws when the scroll position actually changes.
+	var maxTopLine = Math.max(0, pLines.length - maxVisibleLines);
+	while (bbs.online && !js.terminated)
+	{
+		var key = console.getkey(K_NOCRLF | K_NOECHO | K_NOSPIN);
+		var keyUpper = key.toUpperCase();
+		if (keyUpper == "Q" || key == "\x1b" || key == "\r")
+			break;
+		if (typeof pAdditionalQuitKeys === "string" && pAdditionalQuitKeys.indexOf(key) > -1)
+			break;
+
+		var oldTop = topLine;
+		var ch = key.charCodeAt(0);
+		// Handle scrollbar mouse clicks: the RIPScrollbar's mouse regions send
+		// high-byte character codes when the user clicks the up/down arrows or
+		// the track areas above/below the thumb.
+		if (scrollbar !== null && ch === scrollbar.mouseChars.scrollUp)
+		{
+			if (topLine > 0) --topLine;
+		}
+		else if (scrollbar !== null && ch === scrollbar.mouseChars.scrollDn)
+		{
+			if (topLine < maxTopLine) ++topLine;
+		}
+		else if (scrollbar !== null && ch === scrollbar.mouseChars.trackPgUp)
+		{
+			topLine = Math.max(0, topLine - maxVisibleLines);
+		}
+		else if (scrollbar !== null && ch === scrollbar.mouseChars.trackPgDn)
+		{
+			topLine = Math.min(maxTopLine, topLine + maxVisibleLines);
+		}
+		else if (scrollbar !== null && ch === scrollbar.mouseChars.thumbDrag)
+		{
+			// Read the Y coordinate digits sent by the $Y$ text variable
+			var yStr = "";
+			for (var d = 0; d < 4; ++d)
+			{
+				var dc = console.inkey(0, 500);
+				if (dc === "")
+					break;
+				yStr += dc;
+			}
+			var mouseY = parseInt(yStr, 10);
+			var sbL = scrollbar._layout;
+			if (!isNaN(mouseY) && sbL.trackHeight > 0)
+			{
+				var thumb = scrollbar.getThumbGeometry();
+				var thumbRange = sbL.trackHeight - thumb.h;
+				if (thumbRange > 0)
+				{
+					var clampedY = Math.max(sbL.trackTop, Math.min(sbL.trackBot, mouseY));
+					var relY = clampedY - sbL.trackTop;
+					topLine = Math.round(relY * maxTopLine / thumbRange);
+					topLine = Math.max(0, Math.min(maxTopLine, topLine));
+				}
+			}
+		}
+		else
+		{
+			switch (key)
+			{
+				case KEY_UP:
+					if (topLine > 0) --topLine;
+					break;
+				case KEY_DOWN:
+					if (topLine < maxTopLine) ++topLine;
+					break;
+				case KEY_PAGEUP:
+					topLine = Math.max(0, topLine - maxVisibleLines);
+					break;
+				case KEY_PAGEDN:
+					topLine = Math.min(maxTopLine, topLine + maxVisibleLines);
+					break;
+				case KEY_HOME:
+					topLine = 0;
+					break;
+				case KEY_END:
+					topLine = maxTopLine;
+					break;
+			}
+		}
+		if (topLine !== oldTop)
+			drawVisibleLines();
+	}
+}
+
+// Draws a command bar at the bottom of the RIP screen showing available actions.
+function writeRIPCommandBar()
+{
+	if (!gUsingRIP)
+		return;
+	var rip = "";
+	// Draw the command bar background
+	rip += RIPFillStyleNumeric(1, RIP_COLOR_LT_GRAY);
+	rip += RIPBarNumeric(0, gRIP.CMD_BAR_Y, 639, 349);
+	// Draw the command labels
+	rip += RIPFontStyleNumeric(RIP_FONT_DEFAULT, 0, 1, 0);
+	var commands = [
+		{ key: "I", label: "Info" },
+		{ key: "V", label: "View" },
+		{ key: "B", label: "Batch" },
+		{ key: "D", label: "DL" },
+		{ key: "E", label: "ExtDesc" },
+		{ key: "?", label: "Help" },
+		{ key: "Q", label: "Quit" }
+	];
+	var cmdX = 4;
+	for (var ci = 0; ci < commands.length; ++ci)
+	{
+		// Hotkey in highlight color
+		rip += RIPColorNumeric(RIP_COLOR_RED);
+		rip += RIPTextXYNumeric(cmdX, gRIP.CMD_BAR_Y + 4, commands[ci].key);
+		cmdX += 8;
+		// Label in normal color
+		rip += RIPColorNumeric(RIP_COLOR_BLACK);
+		rip += RIPTextXYNumeric(cmdX, gRIP.CMD_BAR_Y + 4, commands[ci].label);
+		cmdX += (commands[ci].label.length + 1) * 8;
+	}
+	rip += RIPGotoXYNumeric(0, 0);
+	sendRIP(rip);
+}
+
+// RIP version of showFileInfo: Displays file metadata in a RIP bordered dialog.
+function showFileInfo_RIP(pFileList, pFileIdx)
+{
+	if (pFileIdx < 0 || pFileIdx >= pFileList.length)
+		return null;
+
+	var fileMetadata = pFileList[pFileIdx];
+	// Get extended file info from the filebase
+	var extInfo = getFileInfoFromFilebase(pFileIdx);
+	if (extInfo !== null)
+	{
+		for (var prop in extInfo)
+			if (extInfo.hasOwnProperty(prop) && typeof fileMetadata[prop] === "undefined")
+				fileMetadata[prop] = extInfo[prop];
+	}
+
+	// Build the info lines as plain text
+	var lines = [];
+	lines.push("Filename: " + fileMetadata.name);
+	lines.push("Size: " + file_size_str(fileMetadata.size, null, FILE_SIZE_PRECISION));
+	if (typeof fileMetadata.desc === "string" && fileMetadata.desc.length > 0)
+		lines.push("Desc: " + strip_ctrl(fileMetadata.desc));
+	if (typeof fileMetadata.dirCode === "string" && file_area.dir.hasOwnProperty(fileMetadata.dirCode))
+	{
+		var dirObj = file_area.dir[fileMetadata.dirCode];
+		lines.push("Library: " + file_area.lib_list[dirObj.lib_index].description);
+		lines.push("Directory: " + dirObj.description);
+	}
+	if (typeof fileMetadata.author === "string" && fileMetadata.author.length > 0)
+		lines.push("Author: " + fileMetadata.author);
+	if (typeof fileMetadata.author_org === "string" && fileMetadata.author_org.length > 0)
+		lines.push("Group: " + fileMetadata.author_org);
+	if (typeof fileMetadata.from === "string" && fileMetadata.from.length > 0)
+		lines.push("Uploaded by: " + fileMetadata.from);
+	if (typeof fileMetadata.time === "number" && fileMetadata.time > 0)
+		lines.push("File date: " + system.datestr(fileMetadata.time));
+	if (typeof fileMetadata.added === "number" && fileMetadata.added > 0)
+		lines.push("Added: " + system.datestr(fileMetadata.added));
+	if (typeof fileMetadata.last_downloaded === "number" && fileMetadata.last_downloaded > 0)
+		lines.push("Last downloaded: " + system.datestr(fileMetadata.last_downloaded));
+	if (typeof fileMetadata.times_downloaded === "number")
+		lines.push("Times downloaded: " + fileMetadata.times_downloaded);
+	// Extended description: word-wrap to fit within the dialog's content width.
+	// The dialog is 560px wide; with 7px side inset on each side, the content
+	// area is 546px wide, minus scrollbar = ~65 chars per line.
+	var dlgCharsPerLine = 63;
+	if (typeof fileMetadata.extdesc === "string" && fileMetadata.extdesc.length > 0)
+	{
+		lines.push("");
+		lines.push("--- Extended Description ---");
+		var extdRawLines = strip_ctrl_a(fileMetadata.extdesc).replace(/\r\n/g, "\n").replace(/\r/g, "\n").split("\n");
+		for (var ei = 0; ei < extdRawLines.length; ++ei)
+		{
+			var eLine = extdRawLines[ei];
+			// Word-wrap long lines to fit within the dialog content width
+			while (eLine.length > dlgCharsPerLine)
+			{
+				var breakAt = eLine.lastIndexOf(" ", dlgCharsPerLine);
+				if (breakAt <= 0)
+					breakAt = dlgCharsPerLine;
+				lines.push(eLine.substring(0, breakAt));
+				eLine = eLine.substring(breakAt).replace(/^\s+/, "");
+			}
+			lines.push(eLine);
+		}
+	}
+
+	// If the uploader has an avatar, retrieve it so we can overlay it on the
+	// dialog.  Avatars are 10 chars wide x 6 lines tall in CP437 with
+	// Synchronet Ctrl-A color codes.
+	var avatarLines = [];
+	if (gSettings.dispayUserAvatars && typeof fileMetadata.from === "string" && fileMetadata.from.length > 0)
+		avatarLines = getAvatarArray(fileMetadata.from);
+
+	// Display in a RIP text dialog (centered, nearly full-screen).
+	// If an avatar is available, pass a post-draw callback so the avatar is
+	// rendered to the text window overlay after the dialog's RIP graphics are
+	// drawn but before the input loop starts.  The text window is a separate
+	// layer that sits on top of the RIP graphics viewport, so CP437 box-drawing
+	// characters render natively using the terminal's built-in font.
+	var dlgX = 40, dlgY = 10, dlgW = 560, dlgH = 330;
+	var avatarCallback = null;
+	if (avatarLines.length > 0)
+	{
+		avatarCallback = function() {
+			// Calculate text cell position for the avatar.
+			// Place it at the top-right of the dialog content area.
+			// With 8px/char horizontally and 14px/char vertically (standard VGA
+			// text mode 80x25), convert the dialog's pixel coordinates to text cells.
+			var avatarPixelX = dlgX + dlgW - (gAvatar.defs.width * 8) - 16;
+			var avatarPixelY = dlgY + 30; // Below the dialog title
+			var avatarTextCol = Math.floor(avatarPixelX / 8);
+			var avatarTextRow = Math.floor(avatarPixelY / 14);
+			// Position the cursor in the text window via RIPGotoXY, then write
+			// each avatar line with console.print() which converts Ctrl-A codes
+			// to ANSI escape sequences for native CP437 glyph rendering.
+			for (var ai = 0; ai < avatarLines.length; ++ai)
+			{
+				sendRIP(RIPGotoXYNumeric(avatarTextCol, avatarTextRow + ai));
+				console.print(avatarLines[ai]);
+			}
+		};
+	}
+	showRIPTextDialog(dlgX, dlgY, dlgW, dlgH, "File Information", lines, "", avatarCallback);
+
+	// Redraw the main screen after dialog closes
+	return {
+		exitNow: false,
+		reDrawListerHeader: true,
+		reDrawCmdBar: true,
+		reDrawMainScreenContent: true,
+		reDrawHeaderTextOnly: false,
+		continueFileLister: true,
+		fileListPartialRedrawInfo: null
+	};
+}
+
+// RIP version of displayHelpScreen
+function displayHelpScreen_RIP()
+{
+	// Center the version and date strings within the dialog content width.
+	// The dialog is 520px wide with 7px side insets = 506px content = 63 chars.
+	var dlgChars = 63;
+	var versionStr = "DD File Lister v" + LISTER_VERSION;
+	var dateStr = LISTER_DATE;
+	var versionPad = Math.max(0, Math.floor((dlgChars - versionStr.length) / 2));
+	var datePad = Math.max(0, Math.floor((dlgChars - dateStr.length) / 2));
+	var helpLines = [
+		format("%" + (versionPad + versionStr.length) + "s", versionStr),
+		format("%" + (datePad + dateStr.length) + "s", dateStr),
+		"",
+		"DD File Lister - Help",
+		"",
+		"Navigation:",
+		"  Up/Down arrows: Move selection",
+		"  PageUp/PageDown: Scroll by page",
+		"  Home/End: Jump to first/last item",
+		"  Enter: Execute selected command",
+		"  Space: Toggle file selection (multi-select)",
+		"",
+		"Commands:",
+		"  I - View file information",
+		"  V - View/type file contents",
+		"  B - Add to batch download queue",
+		"  D - Download file",
+		"  E - Toggle extended descriptions",
+		"  ? - This help screen",
+		"  Q - Quit file lister",
+		"",
+		"Mouse: Click menu items to select them.",
+		"       Use scrollbar to scroll the list."
+	];
+	if (user.is_sysop)
+	{
+		helpLines.push("");
+		helpLines.push("Sysop Commands:");
+		helpLines.push("  DEL - Delete selected file(s)");
+		helpLines.push("  ! - Sysop command list");
+	}
+	showRIPTextDialog(60, 30, 520, 290, "Help", helpLines);
+}
+
+// Displays a RIP yes/no dialog box with the given prompt question.
+// Returns true if the user chooses "Yes", false if "No" or aborts.
+//
+// Parameters:
+//  pQuestion: The question text to display
+//  pDefaultYes: Boolean - Whether "Yes" is the default (default: true)
+function showRIPYesNoDialog(pQuestion, pDefaultYes)
+{
+	var defaultYes = (typeof pDefaultYes === "boolean" ? pDefaultYes : true);
+	// Dialog dimensions and position (centered on screen)
+	var dlgW = 420;
+	var dlgH = 70;
+	var dlgX = Math.floor((640 - dlgW) / 2);
+	var dlgY = Math.floor((350 - dlgH) / 2);
+	var btnW = 60;
+	var btnH = 18;
+	var btnY = dlgY + dlgH - btnH - 10;
+	var btnGap = 20;
+	// Center the two buttons horizontally within the dialog
+	var totalBtnW = 2 * btnW + btnGap;
+	var btnStartX = dlgX + Math.floor((dlgW - totalBtnW) / 2);
+	var yesBtnX = btnStartX;
+	var noBtnX = btnStartX + btnW + btnGap;
+
+	// Draw the dialog box
+	var rip = "";
+	// Dialog background with beveled border
+	rip += RIPFillStyleNumeric(1, RIP_COLOR_LT_GRAY);
+	rip += RIPBarNumeric(dlgX, dlgY, dlgX + dlgW - 1, dlgY + dlgH - 1);
+	// Outer bevel: bright top/left
+	rip += RIPFillStyleNumeric(1, RIP_COLOR_WHITE);
+	rip += RIPBarNumeric(dlgX, dlgY, dlgX + dlgW - 1, dlgY + 1);
+	rip += RIPBarNumeric(dlgX, dlgY + 2, dlgX + 1, dlgY + dlgH - 1);
+	// Outer bevel: dark bottom/right
+	rip += RIPFillStyleNumeric(1, RIP_COLOR_DK_GRAY);
+	rip += RIPBarNumeric(dlgX, dlgY + dlgH - 2, dlgX + dlgW - 1, dlgY + dlgH - 1);
+	rip += RIPBarNumeric(dlgX + dlgW - 2, dlgY, dlgX + dlgW - 1, dlgY + dlgH - 3);
+	// Question text (centered, in black on the light gray background)
+	var questionText = strip_ctrl(pQuestion);
+	var maxChars = Math.floor((dlgW - 16) / 8);
+	if (questionText.length > maxChars)
+		questionText = questionText.substring(0, maxChars);
+	var textX = dlgX + Math.floor((dlgW - questionText.length * 8) / 2);
+	rip += RIPColorNumeric(RIP_COLOR_BLACK);
+	rip += RIPFontStyleNumeric(RIP_FONT_DEFAULT, 0, 1, 0);
+	rip += RIPTextXYNumeric(textX, dlgY + 10, questionText);
+
+	// "Yes" button (raised bevel)
+	rip += RIPFillStyleNumeric(1, RIP_COLOR_LT_GRAY);
+	rip += RIPBarNumeric(yesBtnX, btnY, yesBtnX + btnW - 1, btnY + btnH - 1);
+	rip += RIPFillStyleNumeric(1, RIP_COLOR_WHITE);
+	rip += RIPBarNumeric(yesBtnX, btnY, yesBtnX + btnW - 1, btnY);
+	rip += RIPBarNumeric(yesBtnX, btnY, yesBtnX, btnY + btnH - 1);
+	rip += RIPFillStyleNumeric(1, RIP_COLOR_DK_GRAY);
+	rip += RIPBarNumeric(yesBtnX, btnY + btnH - 1, yesBtnX + btnW - 1, btnY + btnH - 1);
+	rip += RIPBarNumeric(yesBtnX + btnW - 1, btnY, yesBtnX + btnW - 1, btnY + btnH - 1);
+	rip += RIPColorNumeric(RIP_COLOR_BLACK);
+	var yesTextX = yesBtnX + Math.floor((btnW - 3 * 8) / 2); // "Yes" = 3 chars
+	rip += RIPTextXYNumeric(yesTextX, btnY + 5, "Yes");
+
+	// "No" button (raised bevel)
+	rip += RIPFillStyleNumeric(1, RIP_COLOR_LT_GRAY);
+	rip += RIPBarNumeric(noBtnX, btnY, noBtnX + btnW - 1, btnY + btnH - 1);
+	rip += RIPFillStyleNumeric(1, RIP_COLOR_WHITE);
+	rip += RIPBarNumeric(noBtnX, btnY, noBtnX + btnW - 1, btnY);
+	rip += RIPBarNumeric(noBtnX, btnY, noBtnX, btnY + btnH - 1);
+	rip += RIPFillStyleNumeric(1, RIP_COLOR_DK_GRAY);
+	rip += RIPBarNumeric(noBtnX, btnY + btnH - 1, noBtnX + btnW - 1, btnY + btnH - 1);
+	rip += RIPBarNumeric(noBtnX + btnW - 1, btnY, noBtnX + btnW - 1, btnY + btnH - 1);
+	rip += RIPColorNumeric(RIP_COLOR_BLACK);
+	var noTextX = noBtnX + Math.floor((btnW - 2 * 8) / 2); // "No" = 2 chars
+	rip += RIPTextXYNumeric(noTextX, btnY + 5, "No");
+
+	// Mouse regions for the buttons (0xD0 = Yes, 0xD1 = No)
+	rip += RIPKillMouseFields();
+	rip += RIPMouseNumeric(0, yesBtnX, btnY, yesBtnX + btnW - 1, btnY + btnH - 1,
+	                       true, false, 0, String.fromCharCode(0xD0));
+	rip += RIPMouseNumeric(0, noBtnX, btnY, noBtnX + btnW - 1, btnY + btnH - 1,
+	                       true, false, 0, String.fromCharCode(0xD1));
+	rip += RIPGotoXYNumeric(0, 0);
+	sendRIP(rip);
+
+	// Input loop: wait for Y, N, Enter (uses default), ESC (No), or mouse click
+	var result = defaultYes;
+	while (bbs.online && !js.terminated)
+	{
+		var key = console.getkey(K_NOCRLF | K_NOECHO | K_NOSPIN);
+		var ch = key.charCodeAt(0);
+		if (key.toUpperCase() === "Y" || ch === 0xD0)
+		{
+			result = true;
+			break;
+		}
+		else if (key.toUpperCase() === "N" || ch === 0xD1 || key === "\x1b")
+		{
+			result = false;
+			break;
+		}
+		else if (key === "\r")
+		{
+			// Enter uses the default
+			break;
+		}
+	}
+	return result;
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 // Script execution code
 
@@ -165,15 +824,32 @@ var gSettings = readConfigFile();
 // In case a custom file list header filename is specified, keep an array of
 // text lines read from that file.
 var gCustomFileListHdrLines = [];
+// For RIP terminals, check for a .rip version of the custom header file.
+// If a custom header is configured (e.g. "header.ans"), look for a matching
+// .rip file (e.g. "header.rip") first.  If found, it will be displayed as
+// RIP graphics; otherwise, fall back to loading the text/ANSI version.
+var gCustomRIPHdrFilename = "";
 if (gSettings.headerFilename.length > 0)
-	gCustomFileListHdrLines = loadTextFileIntoArray(gSettings.headerFilename, gSettings.headerMaxLines);
+{
+	if (gUsingRIP)
+	{
+		var ripHdrFilename = gSettings.headerFilename.replace(/\.[^.]+$/, ".rip");
+		if (file_exists(ripHdrFilename))
+			gCustomRIPHdrFilename = ripHdrFilename;
+		else
+			gCustomFileListHdrLines = loadTextFileIntoArray(gSettings.headerFilename, gSettings.headerMaxLines);
+	}
+	else
+		gCustomFileListHdrLines = loadTextFileIntoArray(gSettings.headerFilename, gSettings.headerMaxLines);
+}
 
 // Parse command-line arguments (which sets program options)
 var gRunningAsLoadableModule = parseArgs(argv);
 
 // If set to use the traditional (non-lightbar) UI and if set to use the Synchronet
-// stock file lister, then do so instead of using ddfilelister's traditional UI
-if ((!gSettings.useLightbarInterface || !console.term_supports(USER_ANSI)) && gSettings.traditionalUseSyncStock)
+// stock file lister, then do so instead of using ddfilelister's traditional UI.
+// RIP terminals always use the lightbar interface (via RIPLightbarMenu).
+if (!gUsingRIP && (!gSettings.useLightbarInterface || !console.term_supports(USER_ANSI)) && gSettings.traditionalUseSyncStock)
 {
 	var exitCode = 0;
 	if (gScriptMode == MODE_SEARCH_FILENAME || gScriptMode == MODE_SEARCH_DESCRIPTION || gScriptMode == MODE_NEW_FILE_SEARCH)
@@ -238,13 +914,123 @@ if (gFileList.length == 0)
 
 // Construct and display the menu/command bar at the bottom of the screen
 var gFileMenuBar = new DDFileMenuBar({ x: 1, y: console.screen_rows });
-// Clear the screen and display the header lines
-console.clear("\x01n");
-if ((gListBehavior & FL_NO_HDR) != FL_NO_HDR)
-	displayFileLibAndDirHeader(false, null, !gSettings.useLightbarInterface || !console.term_supports(USER_ANSI));
-// Create the file list menu (must be done after displayFileLibAndDirHeader() when using ANSI and lightbar)
+
+// --- Screen initialization ---
+// For RIP terminals: clear the graphics viewport, draw the RIP header and command bar.
+// For ANSI terminals: clear the screen with ANSI and display the text-based header.
+// The RIP path avoids RIPResetWindows() to prevent SyncTerm's reinit_screen() delay
+// (see uselect_rip.js for details on this issue).
+if (gUsingRIP)
+{
+	sendRIP(RIPKillMouseFields()
+	        + RIPFillStyleNumeric(1, RIP_COLOR_BLACK)
+	        + RIPBarNumeric(0, 0, 639, 349)
+	        + RIPNoMore());
+	if ((gListBehavior & FL_NO_HDR) != FL_NO_HDR)
+		displayFileLibAndDirHeader(false, null, false);
+	writeRIPCommandBar();
+}
+else
+{
+	console.clear("\x01n");
+	if ((gListBehavior & FL_NO_HDR) != FL_NO_HDR)
+		displayFileLibAndDirHeader(false, null, !gSettings.useLightbarInterface || !console.term_supports(USER_ANSI));
+}
+
+// Create the file list menu.  For RIP, this creates a RIPLightbarMenu (via
+// createFileListMenu_RIP); for ANSI, a DDLightbarMenu.  Both share the same
+// functional interface (NumItems, GetItem, selectedItemIdx, lastUserInput, etc.)
+// so the main input loops below can use the same property names.
+// Must be called after displayFileLibAndDirHeader() because the header display
+// sets gNumHeaderLinesDisplayed, which determines the ANSI menu's start row.
 var gFileListMenu = createFileListMenu(gFileMenuBar.getAllActionKeysStr(true, true) + KEY_LEFT + KEY_RIGHT + KEY_DEL /*+ CTRL_C*/);
-if (gSettings.useLightbarInterface && console.term_supports(USER_ANSI))
+
+// --- RIP lightbar UI main loop ---
+// The RIPLightbarMenu.GetVal() method draws the menu, handles scrolling/selection
+// internally via RIP graphics, and returns when the user presses a quit key (one
+// of the command bar hotkeys, arrow keys for bar navigation, Q, or ESC).  The
+// lastUserInput property tells us which key was pressed so we can dispatch the
+// appropriate action.  After each action, we redraw the RIP screen as needed
+// (the RIP graphics viewport must be fully redrawn after dialogs that overlay it).
+if (gUsingRIP)
+{
+	var continueDoingFileList = true;
+	while (continueDoingFileList)
+	{
+		// Clear multi-select state for this iteration so previously-selected items
+		// from a batch download don't carry over.
+		for (var prop in gFileListMenu.selectedItemIndexes)
+			delete gFileListMenu.selectedItemIndexes[prop];
+		var actionRetObj = null;
+		var currentActionVal = null;
+		// GetVal(null, selectedItemIndexes): null means no draw callback (the menu
+		// draws itself internally), second param shares the multi-select state.
+		var userChoice = gFileListMenu.GetVal(null, gFileListMenu.selectedItemIndexes);
+		var lastUserInputUpper = gFileListMenu.lastUserInput != null ? gFileListMenu.lastUserInput.toUpperCase() : null;
+		if (lastUserInputUpper == null || lastUserInputUpper == "Q" || console.aborted)
+			continueDoingFileList = false;
+		else if (lastUserInputUpper == KEY_LEFT)
+			gFileMenuBar.decrementMenuItemAndRefresh();
+		else if (lastUserInputUpper == KEY_RIGHT)
+			gFileMenuBar.incrementMenuItemAndRefresh();
+		else if (lastUserInputUpper == KEY_ENTER)
+		{
+			currentActionVal = gFileMenuBar.getCurrentSelectedAction();
+			gFileMenuBar.setCurrentActionCode(currentActionVal);
+			actionRetObj = doAction(currentActionVal, gFileList, gFileListMenu);
+		}
+		else if (lastUserInputUpper == KEY_DEL || lastUserInputUpper == KEY_BACKSPACE)
+		{
+			if (user.is_sysop)
+			{
+				gFileMenuBar.setCurrentActionCode(FILE_DELETE, true);
+				actionRetObj = doAction(FILE_DELETE, gFileList, gFileListMenu);
+				currentActionVal = FILE_DELETE;
+			}
+		}
+		else
+		{
+			currentActionVal = gFileMenuBar.getActionFromChar(lastUserInputUpper, false);
+			gFileMenuBar.setCurrentActionCode(currentActionVal, true);
+			actionRetObj = doAction(currentActionVal, gFileList, gFileListMenu);
+		}
+		// Handle action results.  Unlike the ANSI path which can do partial screen
+		// redraws (character-cell granularity), the RIP path redraws the entire
+		// graphics viewport when any significant redraw is needed.  This is because
+		// RIP dialogs (file info, help, etc.) overlay the entire screen with pixel
+		// graphics and there's no efficient way to restore just the covered portion.
+		// The menu itself is redrawn on the next GetVal() iteration automatically.
+		if (actionRetObj != null)
+		{
+			if (actionRetObj.exitNow)
+				continueDoingFileList = false;
+			else
+			{
+				if (actionRetObj.reDrawListerHeader || actionRetObj.reDrawMainScreenContent
+				    || actionRetObj.reDrawHeaderTextOnly)
+				{
+					// Clear the entire viewport and redraw header + command bar.
+					// The file list menu will be redrawn by GetVal() at the top
+					// of the next loop iteration (it always redraws on entry).
+					sendRIP(RIPFillStyleNumeric(1, RIP_COLOR_BLACK)
+					        + RIPBarNumeric(0, 0, 639, 349));
+					if ((gListBehavior & FL_NO_HDR) != FL_NO_HDR)
+						displayFileLibAndDirHeader(false, null, false);
+					writeRIPCommandBar();
+				}
+				if (actionRetObj.reDrawCmdBar)
+					writeRIPCommandBar();
+			}
+		}
+	}
+	// Exit cleanup for RIP: reset Synchronet's internal terminal tracking state
+	// to prevent stale values from affecting the calling shell.  console.write()
+	// used by sendRIP updates these counters but doesn't reset them on script exit.
+	console.line_counter = 0;
+	console.last_line_length = 0;
+	console.current_column = 0;
+}
+else if (gSettings.useLightbarInterface && console.term_supports(USER_ANSI))
 {
 	gFileMenuBar.writePromptLine();
 	// In a loop, show the file list menu, allowing the user to scroll the file list,
@@ -726,7 +1512,7 @@ function doAction(pActionCode, pFileList, pFileListMenu)
 
 	// If not using the ANSI interface, then prompt the user for the file number
 	// (for options that need one)
-	var useANSIInterface = gSettings.useLightbarInterface && console.term_supports(USER_ANSI);
+	var useANSIInterface = gUsingRIP || (gSettings.useLightbarInterface && console.term_supports(USER_ANSI));
 	var fileIdx = pFileListMenu.selectedItemIdx;
 	if (!useANSIInterface && pActionCode != QUIT && pActionCode != HELP && pActionCode != NEXT_PAGE && pActionCode != PREV_PAGE && pActionCode != TOGGLE_EXTD_DESCS)
 	{
@@ -754,7 +1540,10 @@ function doAction(pActionCode, pFileList, pFileListMenu)
 	switch (pActionCode)
 	{
 		case FILE_VIEW_INFO:
-			retObj = useANSIInterface ? showFileInfo_ANSI(fileMetadata) : showFileInfo_noANSI(fileMetadata);
+			if (gUsingRIP)
+				retObj = showFileInfo_RIP(pFileList, fileIdx);
+			else
+				retObj = useANSIInterface ? showFileInfo_ANSI(fileMetadata) : showFileInfo_noANSI(fileMetadata);
 			break;
 		case FILE_VIEW:
 			retObj = viewFile(fileMetadata);
@@ -773,7 +1562,10 @@ function doAction(pActionCode, pFileList, pFileListMenu)
 			break;
 		case FILE_DOWNLOAD_SINGLE:
 			if (userCanDownloadFromFileArea_ShowErrorIfNot(fileMetadata.dirCode) && pFileListMenu.selectedItemIdx >= 0 && pFileListMenu.selectedItemIdx < pFileListMenu.NumItems())
+			{
+				console.print("\x01nHere! \x01p"); // Temporary
 				retObj = letUserDownloadSelectedFile(fileMetadata);
+			}
 			else
 			{
 				retObj = getDefaultActionRetObj();
@@ -784,7 +1576,16 @@ function doAction(pActionCode, pFileList, pFileListMenu)
 			}
 			break;
 		case HELP:
-			retObj = displayHelpScreen();
+			if (gUsingRIP)
+			{
+				displayHelpScreen_RIP();
+				retObj = getDefaultActionRetObj();
+				retObj.reDrawListerHeader = true;
+				retObj.reDrawMainScreenContent = true;
+				retObj.reDrawCmdBar = true;
+			}
+			else
+				retObj = displayHelpScreen();
 			break;
 		case QUIT:
 			retObj = getDefaultActionRetObj();
@@ -864,7 +1665,7 @@ function applyColorsToWords(pStr, pFirstCharColor, pNextCharsColor)
 		{
 			updatedStr += "\x01n" + pFirstCharColor + words[i].charAt(0);
 			if (words[i].length > 1)
-				updatedStr += "\x01n" + pNextCharsColor + words[i].substr(1);
+				updatedStr += "\x01n" + pNextCharsColor + words[i].substring(1);
 			updatedStr += " ";
 		}
 		else
@@ -956,8 +1757,8 @@ function showFileInfo_ANSI(pFileMetadata)
 	var dirIdx = file_area.dir[dirCode].index;
 	var libDesc = file_area.lib_list[libIdx].description;
 	var dirDesc =  file_area.dir[dirCode].description;
-	var fileInfoStr = format("\x01c\x01h%s\x01g: \x01n\x01c%s\x01n\x01w\r\n", "Lib", libDesc.substr(0, frameInnerWidth-5));
-	fileInfoStr += format("\x01c\x01h%s\x01g: \x01n\x01c%s\x01n\x01w\r\n", "Dir", dirDesc.substr(0, frameInnerWidth-5));
+	var fileInfoStr = format("\x01c\x01h%s\x01g: \x01n\x01c%s\x01n\x01w\r\n", "Lib", libDesc.substring(0, frameInnerWidth-5));
+	fileInfoStr += format("\x01c\x01h%s\x01g: \x01n\x01c%s\x01n\x01w\r\n", "Dir", dirDesc.substring(0, frameInnerWidth-5));
 	fileInfoStr += "\r\n";
 	// Make sure the displayed filename isn't too crazy long
 	var adjustedFilename = shortenFilename(fileMetadata.name, frameInnerWidth, false);
@@ -1056,14 +1857,14 @@ function showFileInfo_ANSI(pFileMetadata)
 			{
 				//var valueLen = frameInnerWidth - console.strlen(userAvatarArray[arrayIdx]) - infoToDisplay[arrayIdx].label.length - 3;
 				var valueLen = frameInnerWidth - gAvatar.defs.width - infoToDisplay[arrayIdx].label.length - 3;
-				var valueStr = format("%-" + valueLen + "s", infoToDisplay[arrayIdx].value.toString().substr(0, valueLen));
+				var valueStr = format("%-" + valueLen + "s", infoToDisplay[arrayIdx].value.toString().substring(0, valueLen));
 				fileInfoStr += format(fieldFormatStr, infoToDisplay[arrayIdx].label, valueStr);
 				fileInfoStr += " " + userAvatarArray[arrayIdx];
 			}
 			else
 			{
 				// Just the file info without avatar line component
-				fileInfoStr += format(fieldFormatStr, infoToDisplay[arrayIdx].label, infoToDisplay[arrayIdx].value.toString().substr(0, frameInnerWidth));
+				fileInfoStr += format(fieldFormatStr, infoToDisplay[arrayIdx].label, infoToDisplay[arrayIdx].value.toString().substring(0, frameInnerWidth));
 			}
 		}
 		// In case the user avatar still has more lines, display them
@@ -1076,11 +1877,11 @@ function showFileInfo_ANSI(pFileMetadata)
 	else
 	{
 		// Uploaded by
-		fileInfoStr += format(fieldFormatStr, "Uploaded by", uploadedByStr.substr(0, frameInnerWidth));
+		fileInfoStr += format(fieldFormatStr, "Uploaded by", uploadedByStr.substring(0, frameInnerWidth));
 		// Uploaded On (date)
-		fileInfoStr += format(fieldFormatStr, "Uploaded on", uploadedDateStr.substr(0, frameInnerWidth));
+		fileInfoStr += format(fieldFormatStr, "Uploaded on", uploadedDateStr.substring(0, frameInnerWidth));
 		// File date
-		fileInfoStr += format(fieldFormatStr, "File date", fileDateStr.substr(0, frameInnerWidth));
+		fileInfoStr += format(fieldFormatStr, "File date", fileDateStr.substring(0, frameInnerWidth));
 		//fileInfoStr += "\r\n";
 		// Last downloaded
 		if (fileMetadata.hasOwnProperty("last_downloaded"))
@@ -1195,38 +1996,38 @@ function showFileInfo_noANSI(pFileMetadata)
 	var libDesc = format("(%d) %s", file_area.lib_list[libIdx].index+1, file_area.lib_list[libIdx].description);
 	var dirDesc = format("(%d) %s", file_area.dir[dirCode].index+1, file_area.dir[dirCode].description);
 	console.crlf();
-	printf(generalFormatStr, "Library", libDesc.substr(0, valueLen));
-	printf(generalFormatStr, "Directory", dirDesc.substr(0, valueLen));
+	printf(generalFormatStr, "Library", libDesc.substring(0, valueLen));
+	printf(generalFormatStr, "Directory", dirDesc.substring(0, valueLen));
 	var formatStr = "\x01n\x01g%-" + labelLen + "s\x01h" + lblSep + "\x01n" + gSettings.colors.filename + "%-" + valueLen + "s\x01n\r\n";
-	printf(formatStr, "Filename", fileMetadata.name.substr(0, valueLen));
+	printf(formatStr, "Filename", fileMetadata.name.substring(0, valueLen));
 	// File size
 	formatStr = "\x01n\x01g%-" + labelLen + "s\x01h" + lblSep + "\x01n" + gSettings.colors.fileSize + "%-" + valueLen + "s\x01n\r\n";
-	var fileSizeStr = format(gSettings.colors.fileSize + "%s (%s) bytes", numberWithCommas(fileMetadata.size), file_size_str(fileMetadata.size, null, FILE_SIZE_PRECISION).substr(0, valueLen));
-	printf(formatStr, "File size", fileSizeStr.substr(0, valueLen));
+	var fileSizeStr = format(gSettings.colors.fileSize + "%s (%s) bytes", numberWithCommas(fileMetadata.size), file_size_str(fileMetadata.size, null, FILE_SIZE_PRECISION).substring(0, valueLen));
+	printf(formatStr, "File size", fileSizeStr.substring(0, valueLen));
 	// Credit value
 	var dirFilesAreFree = Boolean(file_area.dir[dirCode].settings & DIR_FREE);
 	var creditStr = "FREE";
 	if (fileMetadata.hasOwnProperty("cost"))
 		creditStr = dirFilesAreFree || fileMetadata.cost == 0 ? "FREE" : fileMetadata.cost.toString();
-	printf(generalFormatStr, "Credit value", creditStr.substr(0, valueLen));
+	printf(generalFormatStr, "Credit value", creditStr.substring(0, valueLen));
 	if (fileMetadata.hasOwnProperty("crc32"))
-		printf(generalFormatStr, "File CRC-32", format("%x", fileMetadata.crc32).substr(0, valueLen));
+		printf(generalFormatStr, "File CRC-32", format("%x", fileMetadata.crc32).substring(0, valueLen));
 	if (fileMetadata.hasOwnProperty("md5"))
-		printf(generalFormatStr, "File MD5", fileMetadata.md5.substr(0, valueLen));
+		printf(generalFormatStr, "File MD5", fileMetadata.md5.substring(0, valueLen));
 	if (fileMetadata.hasOwnProperty("sha1"))
-		printf(generalFormatStr, "File SHA-1", fileMetadata.sha1.substr(0, valueLen));
+		printf(generalFormatStr, "File SHA-1", fileMetadata.sha1.substring(0, valueLen));
 	formatStr = "\x01n\x01g%-" + labelLen + "s\x01h" + lblSep + "\x01n" + gSettings.colors.desc + "%-" + valueLen + "s\x01n\r\n";
-	printf(formatStr, "Description", shortFileDesc.substr(0, valueLen));
+	printf(formatStr, "Description", shortFileDesc.substring(0, valueLen));
 	var authorStr = fileMetadata.hasOwnProperty("author") ? fileMetadata.author : "";
-	printf(generalFormatStr, "Author", authorStr.substr(0, valueLen));
+	printf(generalFormatStr, "Author", authorStr.substring(0, valueLen));
 	var groupStr = fileMetadata.hasOwnProperty("author_org") ? fileMetadata.author_org : "";
-	printf(generalFormatStr, "Group", groupStr.substr(0, valueLen));
+	printf(generalFormatStr, "Group", groupStr.substring(0, valueLen));
 	var uploadedByStr = "Unknown";
 	if (fileMetadata.hasOwnProperty("from"))
 		uploadedByStr = fileMetadata.from;
 	if (fileMetadata.hasOwnProperty("from_protocol"))
 		uploadedByStr += " via " + fileMetadata.from_protocol;
-	printf(generalFormatStr, "Uploaded by", uploadedByStr.substr(0, valueLen));
+	printf(generalFormatStr, "Uploaded by", uploadedByStr.substring(0, valueLen));
 	// If enabled, and if possible, show the avatar of the user who uploaded the file
 	if (gSettings.dispayUserAvatars && gAvatar != null && fileMetadata.from != "")
 	{
@@ -1242,16 +2043,16 @@ function showFileInfo_noANSI(pFileMetadata)
 	var timeStr = "Unknown";
 	if (fileMetadata.hasOwnProperty("added"))
 		timeStr = strftime(gTimeFormatStr, fileMetadata.added);
-	printf(formatStr, "Uploaded on", timeStr.substr(0, valueLen));
+	printf(formatStr, "Uploaded on", timeStr.substring(0, valueLen));
 	// File date
 	timeStr = "Unknown";
 	if (fileMetadata.hasOwnProperty("time"))
 		timeStr = strftime(gTimeFormatStr, fileMetadata.time);
-	printf(formatStr, "File date", timeStr.substr(0, valueLen));
+	printf(formatStr, "File date", timeStr.substring(0, valueLen));
 	if (fileMetadata.hasOwnProperty("last_downloaded"))
 	{
 		timeStr = strftime(gTimeFormatStr, fileMetadata.last_downloaded);
-		printf(generalFormatStr, "Last downloaded", timeStr.substr(0, valueLen));
+		printf(generalFormatStr, "Last downloaded", timeStr.substring(0, valueLen));
 	}
 	// Times downloaded, time to download
 	var timesDownloaded = fileMetadata.hasOwnProperty("times_downloaded") ? fileMetadata.times_downloaded : 0;
@@ -1401,7 +2202,7 @@ function addSelectedFilesToBatchDLQueue(pFileMetadata, pFileList)
 		var batchDLFile = new File(batchDLFilename);
 		if (batchDLFile.open(batchDLFile.exists ? "r+" : "w+"))
 		{
-			if (gSettings.useLightbarInterface && console.term_supports(USER_ANSI))
+			if (gUsingRIP || (gSettings.useLightbarInterface && console.term_supports(USER_ANSI)))
 				displayMsg("Adding file(s) to batch DL queue..", false, false);
 			else
 				console.print("\x01n\x01cAdding file(s) to batch DL queue..\x01n\r\n");
@@ -1439,8 +2240,58 @@ function addSelectedFilesToBatchDLQueue(pFileMetadata, pFileList)
 			batchDLFile.close();
 		}
 
-		// For ANSI/lightbar: Show a message box
-		if (gSettings.useLightbarInterface && console.term_supports(USER_ANSI))
+		// Show batch DL results: success/failure messages, queue stats, download prompt.
+		// The RIP path uses RIP dialogs; the ANSI path uses Frame-based windows.
+		if (gUsingRIP)
+		{
+			// RIP: Show results using RIP text dialogs instead of Frame-based windows
+			if (filenamesFailed.length == 0)
+			{
+				displayMsg("Your batch DL queue was successfully updated", false, true);
+				// Prompt if the user wants to download their batch queue
+				if (bbs.batch_dnload_total > 0)
+				{
+					// Show queue stats in a RIP dialog, then ask to download
+					var totalQueueSize = batchDLQueueStats.totalSize + pFileMetadata.size;
+					var totalQueueCost = batchDLQueueStats.totalCost;
+					if (pFileMetadata.hasOwnProperty("cost"))
+						totalQueueCost += pFileMetadata.cost;
+					var queueLines = [];
+					queueLines.push("Files: " + batchDLQueueStats.numFilesInQueue
+					              + "  Credits: " + totalQueueCost
+					              + "  Bytes: " + numWithCommas(totalQueueSize));
+					queueLines.push("");
+					for (var i = 0; i < batchDLQueueStats.filenames.length; ++i)
+					{
+						queueLines.push(batchDLQueueStats.filenames[i].filename);
+						if (typeof(batchDLQueueStats.filenames[i].desc) === "string")
+							queueLines.push("  " + batchDLQueueStats.filenames[i].desc);
+					}
+					showRIPTextDialog(60, 30, 520, 250, "Batch Download Queue", queueLines, "yYnN");
+					// Ask if they want to download now
+					if (showRIPYesNoDialog("Download your batch queue?", true))
+					{
+						retObj.reDrawListerHeader = true;
+						retObj.reDrawCmdBar = true;
+						bbs.batch_download();
+						if (bbs.online > 0)
+							console.pause();
+					}
+				}
+			}
+			else
+			{
+				// Show filenames that failed to be added
+				var failLines = [];
+				for (var i = 0; i < filenamesFailed.length; ++i)
+					failLines.push(filenamesFailed[i]);
+				showRIPTextDialog(60, 40, 520, 200, "Failed to add to batch DL", failLines);
+			}
+			retObj.reDrawMainScreenContent = true;
+			retObj.reDrawListerHeader = true;
+			retObj.reDrawCmdBar = true;
+		}
+		else if (gSettings.useLightbarInterface && console.term_supports(USER_ANSI))
 		{
 			// Frame location & size for batch DL queue stats or filenames that failed
 			var frameUpperLeftX = gFileListMenu.pos.x + 2;
@@ -1481,9 +2332,6 @@ function addSelectedFilesToBatchDLQueue(pFileMetadata, pFileList)
 					// Build a frame with batch DL queue stats and prompt the user if they want to
 					// download their batch DL queue
 					var frameTitle = "Download your batch queue (Y/N)?";
-					// \x01cFiles: \x01h1 \x01n\x01c(\x01h100 \x01n\x01cMax)  Credits: 0  Bytes: \x01h2,228,254 \x01n\x01c Time: 00:09:40
-					// Note: The maximum number of allowed files in the batch download queue doesn't seem to
-					// be available to JavaScript.
 					var totalQueueSize = batchDLQueueStats.totalSize + pFileMetadata.size;
 					var totalQueueCost = batchDLQueueStats.totalCost;
 					if (pFileMetadata.hasOwnProperty("cost"))
@@ -1494,7 +2342,7 @@ function addSelectedFilesToBatchDLQueue(pFileMetadata, pFileList)
 					{
 						queueStats += shortenFilename(batchDLQueueStats.filenames[i].filename, frameInnerWidth, false) + "\r\n";
 						if (typeof(batchDLQueueStats.filenames[i].desc) === "string")
-							queueStats += batchDLQueueStats.filenames[i].desc.substr(0, frameInnerWidth) + "\r\n";
+							queueStats += batchDLQueueStats.filenames[i].desc.substring(0, frameInnerWidth) + "\r\n";
 						if (i < batchDLQueueStats.filenames.length-1)
 							queueStats += "\r\n";
 					}
@@ -1583,9 +2431,10 @@ function addSelectedFilesToBatchDLQueue(pFileMetadata, pFileList)
 						if (i < batchDLQueueStats.filenames.length-1)
 							console.crlf();
 					}
-					// Prompt the user whether they want to download their file queue; send it to the user
-					// if they choose to do so.
-					if (console.yesno("Download your batch queue (Y/N)"))
+					// Prompt the user whether they want to download their file queue
+					var dlConfirmed = gUsingRIP ? showRIPYesNoDialog("Download your batch queue?", true)
+					                            : console.yesno("Download your batch queue (Y/N)");
+					if (dlConfirmed)
 					{
 						retObj.reDrawListerHeader = true;
 						retObj.reDrawCmdBar = true;
@@ -2493,7 +3342,7 @@ function DDFileMenuBar(pPos)
 			this.cmdArray.push(new DDFileMenuBarItem("Edit", 0, FILE_EDIT));
 		else
 		{
-			var itemText = console.screen_columns > 80 ? "Edit".substr(0, console.screen_columns-79) : "E"; //-80+1
+			var itemText = console.screen_columns > 80 ? "Edit".substring(0, console.screen_columns-79) : "E"; //-80+1
 			this.cmdArray.push(new DDFileMenuBarItem(itemText, 0, FILE_EDIT));
 		}
 		this.cmdArray.push(new DDFileMenuBarItem("Move", 0, FILE_MOVE));
@@ -2603,6 +3452,11 @@ function DDFileMenuBar_getItemTextFromIdx(pIdx)
 // For the DDFileMenuBar class: Writes the prompt text at the defined location
 function DDFileMenuBar_writePromptLine()
 {
+	// In RIP mode, the command bar is drawn with RIP graphics (writeRIPCommandBar),
+	// so skip the ANSI text-based prompt line to avoid text leaking into the
+	// RIP graphics viewport.
+	if (gUsingRIP)
+		return;
 	// Place the cursor at the defined location, then write the prompt text
 	if (gSettings.useLightbarInterface && console.term_supports(USER_ANSI))
 		console.gotoxy(this.pos.x, this.pos.y);
@@ -2621,18 +3475,23 @@ function DDFileMenuBar_refreshWithNewAction(pCmdIdx)
 	if (!this.cmdArray[pCmdIdx].displayItem)
 		return;
 
-	// Refresh the prompt area for the previous index with regular colors
-	// Re-draw the last item text with regular colors
-	var itemText = this.getItemTextFromIdx(this.currentCommandIdx);
-	if (console.term_supports(USER_ANSI))
+	// In RIP mode, skip the ANSI text updates — the RIP command bar is drawn
+	// separately with RIP graphics and doesn't need ANSI text refreshes.
+	// Just update the internal state (currentCommandIdx and promptText).
+	if (!gUsingRIP)
 	{
-		console.gotoxy(this.cmdArray[this.currentCommandIdx].pos, this.pos.y);
-		console.print("\x01n" + this.getDDFileMenuBarItemText(itemText, false, false));
-		// Draw the new item text with selected colors
-		itemText = this.getItemTextFromIdx(pCmdIdx);
-		console.gotoxy(this.cmdArray[pCmdIdx].pos, this.pos.y);
-		console.print("\x01n" + this.getDDFileMenuBarItemText(itemText, true, false));
-		console.gotoxy(this.pos.x+strip_ctrl(this.promptText).length-1, this.pos.y);
+		// Refresh the prompt area for the previous index with regular colors
+		var itemText = this.getItemTextFromIdx(this.currentCommandIdx);
+		if (console.term_supports(USER_ANSI))
+		{
+			console.gotoxy(this.cmdArray[this.currentCommandIdx].pos, this.pos.y);
+			console.print("\x01n" + this.getDDFileMenuBarItemText(itemText, false, false));
+			// Draw the new item text with selected colors
+			itemText = this.getItemTextFromIdx(pCmdIdx);
+			console.gotoxy(this.cmdArray[pCmdIdx].pos, this.pos.y);
+			console.print("\x01n" + this.getDDFileMenuBarItemText(itemText, true, false));
+			console.gotoxy(this.pos.x+strip_ctrl(this.promptText).length-1, this.pos.y);
+		}
 	}
 
 	this.lastCommandIdx = this.currentCommandIdx;
@@ -2660,7 +3519,7 @@ function DDFileMenuBar_getDDFileMenuBarItemText(pText, pSelected, pWithTrailingB
 
 	// Separate the first character from the rest of the text
 	var firstChar = pText.length > 0 ? pText.charAt(0) : "";
-	var restOfText = pText.length > 1 ? pText.substr(1, pText.length - 1) : "";
+	var restOfText = pText.length > 1 ? pText.substring(1) : "";
 	// Build the item text and return it
 	var itemText = "\x01n";
 	if (selected)
@@ -3150,6 +4009,146 @@ function displayFileLibAndDirHeader(pTextOnly, pDirCodeOverride, pNumberedMode)
 		dirName = "Various";
 	}
 
+	// RIP header display: Supports three modes:
+	// 1. Custom .rip header file — send raw RIP command lines from the file
+	// 2. Custom ASCII/CP437 header lines — draw them as RIP text on a black background
+	// 3. Default header — draw a styled RIP button with "DD File Lister" title and lib/dir info
+	if (gUsingRIP)
+	{
+		var ripHdrPixelHeight = 50; // Default header height in pixels
+
+		if (gCustomRIPHdrFilename.length > 0)
+		{
+			// Mode 1: Custom .rip header file — load and send each line as raw RIP.
+			// Each line in the .rip file is a RIP command line (starting with !).
+			// The header height defaults to 50px; if the sysop needs a different
+			// height, they can set headerRIPHeight in the config file.
+			var ripLines = loadTextFileIntoArray(gCustomRIPHdrFilename, 100);
+			for (var i = 0; i < ripLines.length; ++i)
+			{
+				var ripLine = ripLines[i];
+				// Replace @-codes for library/directory info so custom RIP headers
+				// can include dynamic content just like custom ASCII headers.
+				ripLine = ripLine.replace(/@LIB@/gi, libName);
+				ripLine = ripLine.replace(/@LIBL@/gi, libDesc);
+				ripLine = ripLine.replace(/@DIR@/gi, dirName);
+				ripLine = ripLine.replace(/@DIRL@/gi, dirDesc);
+				// Strip the leading ! if present — sendRIP adds its own
+				if (ripLine.length > 0 && ripLine.charAt(0) === "!")
+					ripLine = ripLine.substring(1);
+				if (ripLine.length > 0)
+					sendRIP(ripLine);
+			}
+			// Use configured RIP header height if available, otherwise default
+			if (typeof gSettings.headerRIPHeight === "number" && gSettings.headerRIPHeight > 0)
+				ripHdrPixelHeight = gSettings.headerRIPHeight;
+		}
+		else if (gCustomFileListHdrLines.length > 0)
+		{
+			// Mode 2: Custom ASCII/CP437 header lines — draw as RIP text.
+			// First fill the header background with black, then render each line
+			// using the default 8x8 RIP font (1 line = 8px + 2px spacing = 10px).
+			var lineHeight = 10; // 8px glyph height + 2px spacing
+			ripHdrPixelHeight = gCustomFileListHdrLines.length * lineHeight + 4; // +4 for top/bottom padding
+			var rip = RIPFillStyleNumeric(1, RIP_COLOR_BLACK);
+			rip += RIPBarNumeric(0, 0, 639, ripHdrPixelHeight - 1);
+			rip += RIPFontStyleNumeric(RIP_FONT_DEFAULT, 0, 1, 0);
+			rip += RIPColorNumeric(RIP_COLOR_LT_GRAY);
+			for (var i = 0; i < gCustomFileListHdrLines.length; ++i)
+			{
+				// Replace @-codes for library/directory info
+				var fileLine = gCustomFileListHdrLines[i];
+				fileLine = fileLine.replace(/@LIB@/gi, libName);
+				fileLine = fileLine.replace(/@LIBL@/gi, libDesc);
+				fileLine = fileLine.replace(/@DIR@/gi, dirName);
+				fileLine = fileLine.replace(/@DIRL@/gi, dirDesc);
+				// Also handle -L and -R formatted @-codes
+				var atCodeObj = findWholeAtCode(fileLine, "LIB-", true);
+				if (atCodeObj.startIdx > -1 && atCodeObj.fieldLen > 0)
+				{
+					var fmtStr = "%" + (atCodeObj.isRightJustify ? "" : "-") + atCodeObj.fieldLen + "s";
+					fileLine = fileLine.replace(new RegExp(escapeRegExp(atCodeObj.atCode), "gi"),
+					                            format(fmtStr, libName.substring(0, atCodeObj.fieldLen)));
+				}
+				atCodeObj = findWholeAtCode(fileLine, "LIBL-", true);
+				if (atCodeObj.startIdx > -1 && atCodeObj.fieldLen > 0)
+				{
+					var fmtStr = "%" + (atCodeObj.isRightJustify ? "" : "-") + atCodeObj.fieldLen + "s";
+					fileLine = fileLine.replace(new RegExp(escapeRegExp(atCodeObj.atCode), "gi"),
+					                            format(fmtStr, libDesc.substring(0, atCodeObj.fieldLen)));
+				}
+				atCodeObj = findWholeAtCode(fileLine, "DIR-", true);
+				if (atCodeObj.startIdx > -1 && atCodeObj.fieldLen > 0)
+				{
+					var fmtStr = "%" + (atCodeObj.isRightJustify ? "" : "-") + atCodeObj.fieldLen + "s";
+					fileLine = fileLine.replace(new RegExp(escapeRegExp(atCodeObj.atCode), "gi"),
+					                            format(fmtStr, dirName.substring(0, atCodeObj.fieldLen)));
+				}
+				atCodeObj = findWholeAtCode(fileLine, "DIRL-", true);
+				if (atCodeObj.startIdx > -1 && atCodeObj.fieldLen > 0)
+				{
+					var fmtStr = "%" + (atCodeObj.isRightJustify ? "" : "-") + atCodeObj.fieldLen + "s";
+					fileLine = fileLine.replace(new RegExp(escapeRegExp(atCodeObj.atCode), "gi"),
+					                            format(fmtStr, dirDesc.substring(0, atCodeObj.fieldLen)));
+				}
+				// Strip Ctrl-A attribute codes (not all control chars) since they
+				// can't be rendered with RIP text commands
+				fileLine = strip_ctrl_a(fileLine);
+				// Strip pipe codes (e.g., |07, |15) — these are Synchronet color
+				// attribute codes that appear in .msg/.ans files.  A pipe followed
+				// by two digits is a color code; remove them so the `|` doesn't get
+				// interpreted as a RIP command prefix character.
+				fileLine = fileLine.replace(/\|[0-9]{2}/g, "");
+				// Remove any remaining `|` characters — the RIP parser treats `|`
+				// as a command prefix, so literal `|` in text would corrupt the
+				// RIP command stream.  Replace with a space to preserve spacing.
+				fileLine = fileLine.replace(/\|/g, " ");
+				// Truncate to fit within the 640px-wide viewport (80 chars at 8px each)
+				fileLine = fileLine.substring(0, 80);
+				var textY = 2 + i * lineHeight;
+				rip += RIPTextXYNumeric(4, textY, fileLine);
+			}
+			rip += RIPGotoXYNumeric(0, 0);
+			sendRIP(rip);
+		}
+		else
+		{
+			// Mode 3: Default built-in RIP header — draw a styled button with
+			// "DD File Lister" title and library/directory info.
+			var hdrText = "DD File Lister";
+			var rip = buildRIPHdr("", RIP_FONT_TRIPLEX, 2, RIP_COLOR_BLUE);
+			rip += RIPFontStyleNumeric(RIP_FONT_TRIPLEX, 0, 2, 0);
+			rip += RIPColorNumeric(RIP_COLOR_BLUE);
+			rip += RIPTextXYNumeric(12, 5, hdrText);
+			rip += RIPFontStyleNumeric(RIP_FONT_DEFAULT, 0, 1, 0);
+			var infoTextX = 320;
+			var maxInfoChars = Math.floor((635 - infoTextX) / 8);
+			var libStr = "Lib #" + (libIdx + 1) + ": " + libDesc;
+			var dirStr = "Dir #" + (dirIdx + 1) + ": " + dirDesc;
+			libStr = libStr.substring(0, maxInfoChars);
+			dirStr = dirStr.substring(0, maxInfoChars);
+			rip += RIPColorNumeric(RIP_COLOR_BLUE);
+			rip += RIPTextXYNumeric(infoTextX, 10, libStr);
+			rip += RIPColorNumeric(RIP_COLOR_RED);
+			rip += RIPTextXYNumeric(infoTextX, 20, dirStr);
+			rip += RIPGotoXYNumeric(0, 0);
+			sendRIP(rip);
+			ripHdrPixelHeight = 50;
+		}
+
+		if (dispHdrFirstRun)
+		{
+			gNumHeaderLinesDisplayed = 0; // RIP doesn't use text rows for the header
+			gRIP.HDR_HEIGHT = ripHdrPixelHeight;
+			// Menu starts below the header + column label row
+			gRIP.MENU_Y = gRIP.HDR_HEIGHT + gRIP.COL_HDR_HEIGHT;
+			gRIP.MENU_HEIGHT = gRIP.CMD_BAR_Y - gRIP.MENU_Y;
+		}
+		// Draw the column label row between the header and the file list menu.
+		drawRIPColumnLabels();
+		return;
+	}
+
 	// If a custom file list header is to be used, then display it; otherwise,
 	// display the default built-in header.
 	if (gCustomFileListHdrLines.length > 0)
@@ -3220,8 +4219,8 @@ function displayFileLibAndDirHeader(pTextOnly, pDirCodeOverride, pNumberedMode)
 		// Default built-in header
 		var hdrTextWidth = console.screen_columns - 21;
 		var descWidth = hdrTextWidth - 11;
-		var libText = format("\x01cLib \x01w\x01h#\x01b%4d\x01c: \x01n\x01c%-" + descWidth + "s\x01n", +(libIdx+1), libDesc.substr(0, descWidth));
-		var dirText = format("\x01cDir \x01w\x01h#\x01b%4d\x01c: \x01n\x01c%-" + descWidth + "s\x01n", +(dirIdx+1), dirDesc.substr(0, descWidth));
+		var libText = format("\x01cLib \x01w\x01h#\x01b%4d\x01c: \x01n\x01c%-" + descWidth + "s\x01n", +(libIdx+1), libDesc.substring(0, descWidth));
+		var dirText = format("\x01cDir \x01w\x01h#\x01b%4d\x01c: \x01n\x01c%-" + descWidth + "s\x01n", +(dirIdx+1), dirDesc.substring(0, descWidth));
 
 		// Library line
 		if (textOnly)
@@ -3394,6 +4393,10 @@ function findWholeAtCode(pStr, pAtCodeStart, pCheckDashLOrDashR)
 // Return value: The DDLightbarMenu object for the file list in the file directory
 function createFileListMenu(pQuitKeys)
 {
+	// RIP branch: Create a RIPLightbarMenu instead of DDLightbarMenu
+	if (gUsingRIP)
+		return createFileListMenu_RIP(pQuitKeys);
+
 	// Create the menu object.  Place it below the header lines (which should have been written
 	// before this), and also leave 1 row at the bottom for the prompt line
 	var startRow = gNumHeaderLinesDisplayed > 0 ? gNumHeaderLinesDisplayed + 1 : 1;
@@ -3518,8 +4521,8 @@ function createFileListMenu(pQuitKeys)
 		var fileSizeStr = file_size_str(gFileList[pIdx].size, null, FILE_SIZE_PRECISION);
 		menuItemObj.text = format(this.fileFormatStr,
 		                          filename,
-								  fileSizeStr.substr(0, this.fileSizeLen),
-		                          desc.substr(0, this.shortDescLen));
+								  fileSizeStr.substring(0, this.fileSizeLen),
+		                          desc.substring(0, this.shortDescLen));
 		return menuItemObj;
 	}
 
@@ -3539,6 +4542,279 @@ function createFileListMenu(pQuitKeys)
 	}
 
 	return fileListMenu;
+}
+
+// Creates the file list menu for RIP terminals using RIPLightbarMenu.
+// This is the RIP equivalent of the DDLightbarMenu created in createFileListMenu().
+// It uses pixel-based positioning (640x350 viewport) instead of text-cell positioning,
+// but provides the same functional interface: overridden NumItems()/GetItem() that
+// reference gFileList, an OnItemNav callback for extended descriptions, multi-select
+// support, and additional quit keys from the command bar.
+//
+// Parameters:
+//  pQuitKeys: String of additional key characters that should exit the menu's input
+//             loop (typically the command bar hotkeys + arrow keys for bar navigation)
+function createFileListMenu_RIP(pQuitKeys)
+{
+	var menuX = gRIP.MENU_X;
+	var menuY = gRIP.MENU_Y;
+	var menuWidth = gRIP.MENU_WIDTH;
+	var menuHeight = gRIP.MENU_HEIGHT;
+	// When extended descriptions are enabled, the menu only takes the left portion
+	// of the screen; the right portion is reserved for the description text area
+	// (drawn by displayFileExtDescOnMainScreen_RIP).  Match the ANSI lightbar
+	// menu width exactly: the ANSI menu uses (gListIdxes.fileSizeEnd + 1) columns.
+	// Converting to pixels at 8px per character gives us the same character count
+	// for descriptions in both interfaces.
+	if (extendedDescEnabled())
+		menuWidth = (gListIdxes.fileSizeEnd + 1) * 8; // Match ANSI menu width exactly
+
+	// Create without a border (false) — the menu fills its area directly
+	var fileListMenu = new RIPLightbarMenu(menuX, menuY, menuWidth, menuHeight, false);
+	fileListMenu.multiSelect = true;
+	// Keep the menu open after selection so the main loop can process the action
+	// (e.g. view file info) and then return to the menu.
+	fileListMenu.exitOnItemSelect = false;
+
+	// Compute column widths using the same values as the ANSI menu (gListIdxes).
+	// This ensures filenames, file sizes, and descriptions use the same column
+	// widths in both RIP and CP437/ANSI modes.  The gListIdxes values are
+	// adjusted by populateFileList() based on whether extended descriptions are
+	// enabled and the longest filename in the directory.
+	fileListMenu.filenameLen = gListIdxes.filenameEnd - gListIdxes.filenameStart;
+	fileListMenu.fileSizeLen = gListIdxes.fileSizeEnd - gListIdxes.fileSizeStart - 1;
+	var totalChars = Math.floor(menuWidth / 8);
+	var remainingChars = totalChars - fileListMenu.filenameLen - fileListMenu.fileSizeLen - 2;
+	fileListMenu.shortDescLen = Math.max(10, remainingChars);
+	fileListMenu.extdDescEnabled = extendedDescEnabled();
+
+	// Add additional quit keys
+	if (typeof pQuitKeys === "string")
+		fileListMenu.AddAdditionalQuitKeys(pQuitKeys);
+
+	// Override NumItems to use the global file list
+	fileListMenu.NumItems = function() {
+		return gFileList.length;
+	};
+
+	fileListMenu.lastFileDirCode = "";
+	// Override GetItem to dynamically format file list items from gFileList.
+	// This avoids pre-loading all items into menuItems[] — the RIPLightbarMenu
+	// calls GetItem(idx) on demand as it draws each visible row.
+	//
+	// The filename is split into base name (left-justified) and extension
+	// (right-justified within the filename column), matching the CP437/ANSI
+	// version's columnar layout.  The full line fills the menu width:
+	//   BASENAME     .EXT  693.33K  Description text...
+	fileListMenu.GetItem = function(pIdx) {
+		if (pIdx < 0 || pIdx >= gFileList.length)
+			return null;
+		// When doing a file search across multiple directories, update the
+		// header to show the library/directory of the currently-displayed file
+		// whenever it changes (so the user knows which directory each file is in).
+		var allSameDir = (typeof(gFileList.allSameDir) === "boolean" ? gFileList.allSameDir : false);
+		if (isDoingFileSearch() && !allSameDir && gFileList[pIdx].dirCode != this.lastFileDirCode)
+		{
+			if ((gListBehavior & FL_NO_HDR) != FL_NO_HDR)
+				displayFileLibAndDirHeader(true, gFileList[pIdx].dirCode, false);
+		}
+		this.lastFileDirCode = gFileList[pIdx].dirCode;
+
+		var menuItemObj = this.MakeItemWithRetval(pIdx);
+		// Split the filename into base name and extension (including the dot).
+		// The extension is right-justified within the filename column, and the
+		// base name is left-justified — giving a clean columnar look where all
+		// extensions line up vertically.
+		var fullName = gFileList[pIdx].name;
+		var ext = file_getext(fullName);
+		var baseName = "";
+		if (typeof ext === "string")
+		{
+			baseName = file_getname(fullName);
+			var extIdx = baseName.indexOf(ext);
+			if (extIdx >= 0)
+				baseName = baseName.substring(0, extIdx);
+			// The extension column width is the extension length (including dot).
+			// The base name gets the remaining width within filenameLen.
+			var baseWidth = this.filenameLen - ext.length;
+			if (baseName.length > baseWidth)
+				baseName = baseName.substring(0, baseWidth);
+		}
+		else
+		{
+			// No extension — use the full filename, left-justified
+			ext = "";
+			baseName = fullName.substring(0, this.filenameLen);
+		}
+		// Build the filename column: base name left-justified, extension right-justified
+		var filenameCol = format("%-" + (this.filenameLen - ext.length) + "s%s", baseName, ext);
+
+		var fileSizeStr = file_size_str(gFileList[pIdx].size, null, FILE_SIZE_PRECISION);
+		var sizeStr = fileSizeStr.substring(0, this.fileSizeLen);
+		// Build the full line, filling the entire menu width.
+		// The layout spreads base name, extension, and file size across the
+		// available width:
+		//   BASENAME       .EXT 693.33K
+		//   ^left-just     ^right-just ^right-just at far edge
+		var totalChars = Math.floor(this._layout ? (this._layout.menuRightX - this._layout.menuLeftX) / 8 : this.size.width / 8);
+		if (this.extdDescEnabled)
+		{
+			// Extended descriptions are in a separate panel — the entire menu
+			// width is available for base name + extension + file size.
+			// All three sub-columns use fixed widths so they line up vertically:
+			//   [baseName     ][.EXT][ 693.33K]
+			//   ^left-just     ^fixed ^right-justified, fixed fileSizeLen
+			// The file size column is always fileSizeLen chars wide (right-justified).
+			// The extension column is always extColWidth chars wide (right-justified).
+			// The base name column gets the remaining space (left-justified).
+			var extColWidth = 5; // Fixed width for extension column (e.g., ".ZIP " or ".zip ")
+			var sizeColWidth = this.fileSizeLen; // Fixed width for size (7 chars)
+			var baseAreaWidth = totalChars - extColWidth - 1 - sizeColWidth; // 1 space before size
+			if (baseName.length > baseAreaWidth)
+				baseName = baseName.substring(0, baseAreaWidth);
+			// Build each fixed-width column:
+			// Base name: left-justified in baseAreaWidth chars
+			// Extension: right-justified in extColWidth chars
+			// Size: right-justified in sizeColWidth chars, preceded by a space
+			menuItemObj.text = format("%-" + baseAreaWidth + "s%" + extColWidth + "s %" + sizeColWidth + "s",
+			                          baseName, ext, sizeStr);
+		}
+		else
+		{
+			// Without extended descriptions, the line has filename + size + description.
+			// The filename+extension fill the filenameLen column, then the
+			// description occupies the remaining space.
+			var desc = (typeof(gFileList[pIdx].desc) === "string" ? gFileList[pIdx].desc : "");
+			desc = stripBadCharsFromStr(desc, true);
+			desc = removeOrReplaceSyncCursorMovementChars(desc, false);
+			if (gSettings.useFilenameIfNoDescription_ShortDescs && (desc == "" || /^\s+$/.test(desc)))
+				desc = gFileList[pIdx].name;
+			menuItemObj.text = format("%-" + this.filenameLen + "s %" + this.fileSizeLen + "s %-" + this.shortDescLen + "s",
+			                          filenameCol, sizeStr,
+			                          desc.substring(0, this.shortDescLen));
+		}
+		return menuItemObj;
+	};
+
+	fileListMenu.selectedItemIndexes = {};
+	fileListMenu.numSelectedItemIndexes = function() {
+		return Object.keys(this.selectedItemIndexes).length;
+	};
+
+	// Extended description navigation callback
+	if (extendedDescEnabled())
+	{
+		fileListMenu.OnItemNav = function(pOldItemIdx, pNewItemIdx) {
+			displayFileExtDescOnMainScreen_RIP(pNewItemIdx);
+		};
+		fileListMenu.callOnItemNavOnStartup = true;
+	}
+
+	return fileListMenu;
+}
+
+// Displays a file's extended description in the RIP graphics area to the right
+// of the file list menu.  This is the RIP equivalent of displayFileExtDescOnMainScreen().
+// The description area occupies the right portion of the screen (from pixel 344
+// to 639) — the left portion is used by the RIPLightbarMenu file list.
+//
+// The extended description is loaded from the filebase on demand and cached in
+// gFileList[pFileIdx].extdesc.  The text is word-wrapped to fit the available
+// width.  The file date is displayed at the bottom of the description area.
+//
+// Parameters:
+//  pFileIdx: Index into gFileList of the file whose description to display
+function displayFileExtDescOnMainScreen_RIP(pFileIdx)
+{
+	if (!gUsingRIP || pFileIdx < 0 || pFileIdx >= gFileList.length)
+		return;
+
+	// Extended description area: right side of the screen, next to the menu.
+	// The description starts right after the menu (matching the ANSI layout) with
+	// a small gap.  The character width matches the ANSI interface exactly:
+	// ANSI uses (console.screen_columns - menuWidth) characters for descriptions,
+	// and the menu width is (gListIdxes.fileSizeEnd + 1) characters.
+	var menuWidthChars = gListIdxes.fileSizeEnd + 1;
+	var descX = (menuWidthChars + 1) * 8; // +1 char gap between menu and desc area
+	var descY = gRIP.MENU_Y;
+	var descH = gRIP.MENU_HEIGHT;
+	var lineHeight = 10;
+	// Use the same character width as the ANSI interface for descriptions
+	var charsPerLine = console.screen_columns - menuWidthChars - 1;
+
+	var rip = "";
+	// Clear the description area
+	rip += RIPFillStyleNumeric(1, RIP_COLOR_BLACK);
+	rip += RIPBarNumeric(descX, descY, 639, descY + descH - 1);
+
+	// Get the file's extended description
+	var extdDesc = "";
+	if (typeof gFileList[pFileIdx].extdesc === "string")
+		extdDesc = gFileList[pFileIdx].extdesc;
+	else
+	{
+		// Try to load it from the filebase
+		var fileInfoObj = getFileInfoFromFilebase(pFileIdx);
+		if (fileInfoObj !== null && typeof fileInfoObj.extdesc === "string")
+		{
+			extdDesc = fileInfoObj.extdesc;
+			gFileList[pFileIdx].extdesc = extdDesc;
+		}
+	}
+
+	// Strip Ctrl-A codes and display as plain text.
+	// Strip Ctrl-A attribute codes (but NOT control characters like \n and \r,
+	// which are needed for line breaks).  strip_ctrl() removes ALL control chars
+	// including \n/\r, destroying line breaks — so use strip_ctrl_a() instead.
+	// Also strip pipe codes (|XX) and remaining literal `|` characters, since
+	// the RIP parser treats `|` as a command prefix.
+	extdDesc = strip_ctrl_a(extdDesc);
+	extdDesc = extdDesc.replace(/\|[0-9]{2}/g, "");
+	extdDesc = extdDesc.replace(/\|/g, " ");
+	// If no extended description, try using the short description
+	if (extdDesc.length === 0 && typeof gFileList[pFileIdx].desc === "string")
+		extdDesc = strip_ctrl_a(gFileList[pFileIdx].desc).replace(/\|[0-9]{2}/g, "").replace(/\|/g, " ");
+	if (extdDesc.length === 0)
+	{
+		// If still no description, show the filename
+		rip += RIPColorNumeric(RIP_COLOR_LT_GRAY);
+		rip += RIPFontStyleNumeric(RIP_FONT_DEFAULT, 0, 1, 0);
+		rip += RIPTextXYNumeric(descX + 4, descY + 4, gFileList[pFileIdx].name);
+	}
+	else
+	{
+		// Normalize line endings and split into lines.  Descriptions may use
+		// \r\n (after lfexpand), \n only (from filebase), or \r only.
+		// Normalize to \n first, then split.
+		extdDesc = extdDesc.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
+		var descLines = extdDesc.split("\n");
+		// Remove leading empty lines (same as ANSI version)
+		while (descLines.length > 0 && descLines[0].length === 0)
+			descLines.shift();
+		// Display the lines
+		var maxLines = Math.floor(descH / lineHeight);
+		rip += RIPColorNumeric(RIP_COLOR_LT_GRAY);
+		rip += RIPFontStyleNumeric(RIP_FONT_DEFAULT, 0, 1, 0);
+		for (var wi = 0; wi < descLines.length && wi < maxLines; ++wi)
+		{
+			var lineText = descLines[wi].substring(0, charsPerLine);
+			if (lineText.length > 0)
+				rip += RIPTextXYNumeric(descX + 4, descY + 4 + wi * lineHeight, lineText);
+		}
+	}
+
+	// Also display the file date if available
+	if (typeof gFileList[pFileIdx].time === "number" && gFileList[pFileIdx].time > 0)
+	{
+		var maxLines = Math.floor(descH / lineHeight);
+		var dateY = descY + (maxLines - 1) * lineHeight;
+		var dateStr = system.datestr(gFileList[pFileIdx].time);
+		rip += RIPColorNumeric(RIP_COLOR_GREEN);
+		rip += RIPTextXYNumeric(descX + 4, dateY, "Date: " + dateStr);
+	}
+
+	rip += RIPGotoXYNumeric(0, 0);
+	sendRIP(rip);
 }
 
 // Creates the menu for choosing a file library (for moving a message to another message area).
@@ -3637,13 +4913,13 @@ function createFileLibMenu()
 		{
 			menuItemObj.text = format(this.libFormatStr,
 			                          pIdx + 1,//file_area.lib_list[pIdx].number + 1,
-			                          file_area.lib_list[pIdx].description.substr(0, this.libDescLen),
+			                          file_area.lib_list[pIdx].description.substring(0, this.libDescLen),
 			                          file_area.lib_list[pIdx].dir_list.length);
 		}
 		else
 		{
 			menuItemObj.text = format(this.libFormatStr,
-			                          file_area.lib_list[pIdx].description.substr(0, this.libDescLen),
+			                          file_area.lib_list[pIdx].description.substring(0, this.libDescLen),
 			                          file_area.lib_list[pIdx].dir_list.length);
 		}
 		return menuItemObj;
@@ -3757,7 +5033,7 @@ function createFileDirMenu(pLibIdx)
 		});
 	}
 
-	fileDirMenu.topBorderText = "\x01y\x01h" + ("File directories of " + file_area.lib_list[pLibIdx].description).substr(0, fileDirMenu.size.width-2);
+	fileDirMenu.topBorderText = "\x01y\x01h" + ("File directories of " + file_area.lib_list[pLibIdx].description).substring(0, fileDirMenu.size.width-2);
 	// Define the menu function for ggetting an item
 	fileDirMenu.GetItem = function(pIdx) {
 		// Return the internal code for the directory for the item
@@ -3766,13 +5042,13 @@ function createFileDirMenu(pLibIdx)
 		{
 			menuItemObj.text = format(this.dirFormatStr,
 			                          pIdx + 1,//file_area.lib_list[this.libIdx].dir_list[pIdx].number + 1,
-			                          file_area.lib_list[this.libIdx].dir_list[pIdx].description.substr(0, this.dirDescLen),
+			                          file_area.lib_list[this.libIdx].dir_list[pIdx].description.substring(0, this.dirDescLen),
 			                          file_area.lib_list[this.libIdx].dir_list[pIdx].files);
 		}
 		else
 		{
 			menuItemObj.text = format(this.dirFormatStr,
-			                          file_area.lib_list[this.libIdx].dir_list[pIdx].description.substr(0, this.dirDescLen),
+			                          file_area.lib_list[this.libIdx].dir_list[pIdx].description.substring(0, this.dirDescLen),
 			                          file_area.lib_list[this.libIdx].dir_list[pIdx].files);
 
 		}
@@ -3859,8 +5135,8 @@ function numWithCommas(pNum)
 	var dotIdx = numStr.lastIndexOf(".");
 	if (dotIdx > -1)
 	{
-		afterDotSuffix = numStr.substr(dotIdx+1);
-		numStr = numStr.substr(0, dotIdx);
+		afterDotSuffix = numStr.substring(dotIdx+1);
+		numStr = numStr.substring(0, dotIdx);
 	}
 	// First, build an array containing sections of the number containing
 	// 3 digits each (the last may contain less than 3)
@@ -3871,12 +5147,12 @@ function numWithCommas(pNum)
 	{
 		if (i >= 3)
 		{
-			numParts.push(numStr.substr(i-2, 3));
+			numParts.push(numStr.substring(i-2, i+1));
 			i -= 3;
 		}
 		else
 		{
-			numParts.push(numStr.substr(0, i+1));
+			numParts.push(numStr.substring(0, i+1));
 			i -= i;
 			continueOn = false;
 		}
@@ -3888,7 +5164,7 @@ function numWithCommas(pNum)
 	for (var i = 0; i < numParts.length; ++i)
 		numStr += numParts[i] + ",";
 	if (/,$/.test(numStr))
-		numStr = numStr.substr(0, numStr.length-1);
+		numStr = numStr.substring(0, numStr.length-1);
 	// Append back the value after the decimal place if there was one
 	if (afterDotSuffix.length > 0)
 		numStr += "." + afterDotSuffix;
@@ -3910,6 +5186,43 @@ function displayMsgs(pMsgArray, pIsError, pWaitAndErase)
 
 	var waitAndErase = (typeof(pWaitAndErase) === "boolean" ? pWaitAndErase : true);
 
+	// RIP message display
+	if (gUsingRIP)
+	{
+		var msgColor = pIsError ? RIP_COLOR_YELLOW : RIP_COLOR_LT_CYAN;
+		var boxW = 400;
+		var boxH = 40 + pMsgArray.length * 12;
+		var boxX = Math.floor((640 - boxW) / 2);
+		var boxY = Math.floor((350 - boxH) / 2);
+		var rip = "";
+		// Draw message box background with border
+		rip += RIPFillStyleNumeric(1, RIP_COLOR_LT_GRAY);
+		rip += RIPBarNumeric(boxX, boxY, boxX + boxW - 1, boxY + boxH - 1);
+		rip += RIPFillStyleNumeric(1, RIP_COLOR_WHITE);
+		rip += RIPBarNumeric(boxX, boxY, boxX + boxW - 1, boxY + 1);
+		rip += RIPBarNumeric(boxX, boxY, boxX + 1, boxY + boxH - 1);
+		rip += RIPFillStyleNumeric(1, RIP_COLOR_DK_GRAY);
+		rip += RIPBarNumeric(boxX, boxY + boxH - 2, boxX + boxW - 1, boxY + boxH - 1);
+		rip += RIPBarNumeric(boxX + boxW - 2, boxY, boxX + boxW - 1, boxY + boxH - 1);
+		// Title
+		var title = pIsError ? "Error" : "Message";
+		rip += RIPColorNumeric(RIP_COLOR_BLACK);
+		rip += RIPFontStyleNumeric(RIP_FONT_DEFAULT, 0, 1, 0);
+		rip += RIPTextXYNumeric(boxX + 8, boxY + 4, title);
+		// Messages
+		rip += RIPColorNumeric(msgColor);
+		for (var i = 0; i < pMsgArray.length; ++i)
+		{
+			var msgText = strip_ctrl(pMsgArray[i]).substring(0, Math.floor(boxW / 8) - 2);
+			rip += RIPTextXYNumeric(boxX + 8, boxY + 20 + i * 12, msgText);
+		}
+		rip += RIPGotoXYNumeric(0, 0);
+		sendRIP(rip);
+		if (waitAndErase)
+			mswait(gErrorMsgWaitMS);
+		return;
+	}
+
 	if (gSettings.useLightbarInterface)
 	{
 		// Draw the box border, then write the messages
@@ -3923,7 +5236,7 @@ function displayMsgs(pMsgArray, pIsError, pWaitAndErase)
 		for (var i = 0; i < pMsgArray.length; ++i)
 		{
 			console.gotoxy(gErrorMsgBoxULX+1, gErrorMsgBoxULY+1);
-			printf(msgFormatStr, pMsgArray[i].substr(0, innerWidth));
+			printf(msgFormatStr, pMsgArray[i].substring(0, innerWidth));
 			if (waitAndErase)
 			{
 				// Wait for the error wait duration
@@ -3955,6 +5268,10 @@ function displayMsg(pMsg, pIsError, pWaitAndErase)
 // Erases the message box screen area by re-drawing the necessary components
 function eraseMsgBoxScreenArea()
 {
+	// In RIP mode, the message box is drawn with RIP graphics and doesn't need
+	// ANSI text-based cleanup — the full screen will be redrawn by the main loop.
+	if (gUsingRIP)
+		return;
 	// Refresh the list header line and have the file list menu refresh itself over
 	// the error message window
 	displayListHdrLine(true, gFileListMenu.numberedMode);
@@ -4114,31 +5431,49 @@ function confirmFileActionWithUser(pFilenames, pActionName, pDefaultYes)
 		numFilenames = pFilenames.length;
 	if (numFilenames < 1)
 		return false;
-	// If there is only 1 filename, then prompt the user near the bottom of the screen
+	// If there is only 1 filename, then prompt the user
 	else if (numFilenames == 1)
 	{
 		var filename = (typeof(pFilenames) === "string" ? pFilenames : pFilenames[0]);
-		if (gSettings.useLightbarInterface && console.term_supports(USER_ANSI))
+		var shortFilename = shortenFilename(filename, Math.floor(console.screen_columns/2), false);
+		if (gUsingRIP)
+		{
+			// RIP: Show a graphical yes/no dialog instead of console.yesno()
+			actionConfirmed = showRIPYesNoDialog(pActionName + " " + shortFilename + "?", pDefaultYes);
+		}
+		else if (gSettings.useLightbarInterface && console.term_supports(USER_ANSI))
 		{
 			drawSeparatorLine(1, console.screen_rows-2, console.screen_columns-1);
 			console.gotoxy(1, console.screen_rows-1);
 			console.cleartoeol("\x01n");
 			console.gotoxy(1, console.screen_rows-1);
-		}
-		var shortFilename = shortenFilename(filename, Math.floor(console.screen_columns/2), false);
-		if (pDefaultYes)
-			actionConfirmed = console.yesno(pActionName + " " + shortFilename);
-		else
-			actionConfirmed = !console.noyes(pActionName + " " + shortFilename);
-		if (gSettings.useLightbarInterface && console.term_supports(USER_ANSI))
-		{
+			if (pDefaultYes)
+				actionConfirmed = console.yesno(pActionName + " " + shortFilename);
+			else
+				actionConfirmed = !console.noyes(pActionName + " " + shortFilename);
 			// Refresh the main screen content, to erase the confirmation prompt
 			refreshScreenMainContent(1, console.screen_rows-2, console.screen_columns, 2, true);
+		}
+		else
+		{
+			if (pDefaultYes)
+				actionConfirmed = console.yesno(pActionName + " " + shortFilename);
+			else
+				actionConfirmed = !console.noyes(pActionName + " " + shortFilename);
 		}
 	}
 	else
 	{
-		if (gSettings.useLightbarInterface && console.term_supports(USER_ANSI))
+		if (gUsingRIP)
+		{
+			// RIP: Show a scrollable dialog listing the files, then a yes/no dialog
+			var fileLines = [];
+			for (var i = 0; i < pFilenames.length; ++i)
+				fileLines.push(pFilenames[i]);
+			showRIPTextDialog(80, 40, 480, 200, pActionName + " files", fileLines, "yYnN");
+			actionConfirmed = showRIPYesNoDialog(pActionName + " " + pFilenames.length + " files?", pDefaultYes);
+		}
+		else if (gSettings.useLightbarInterface && console.term_supports(USER_ANSI))
 		{
 			// Construct & draw a frame with the file list & display the frame to confirm with the
 			// user
@@ -4524,11 +5859,11 @@ function shortenFilename(pFilename, pMaxLen, pFillWidth)
 		var filenameWithoutExt = file_getname(pFilename);
 		var extIdx = filenameWithoutExt.indexOf(filenameExt);
 		if (extIdx >= 0)
-			filenameWithoutExt = filenameWithoutExt.substr(0, extIdx);
+			filenameWithoutExt = filenameWithoutExt.substring(0, extIdx);
 
 		var maxWithoutExtLen = pMaxLen - filenameExt.length;
 		if (filenameWithoutExt.length > maxWithoutExtLen)
-			filenameWithoutExt = filenameWithoutExt.substr(0, maxWithoutExtLen);
+			filenameWithoutExt = filenameWithoutExt.substring(0, maxWithoutExtLen);
 
 		var fillWidth = (typeof(pFillWidth) === "boolean" ? pFillWidth : false);
 		if (fillWidth)
@@ -4537,7 +5872,7 @@ function shortenFilename(pFilename, pMaxLen, pFillWidth)
 			shortenedFilename = filenameWithoutExt + filenameExt;
 	}
 	else
-		shortenedFilename = pFilename.substr(0, pMaxLen);
+		shortenedFilename = pFilename.substring(0, pMaxLen);
 	return shortenedFilename;
 }
 
@@ -4590,7 +5925,7 @@ function parseArgs(argv)
 			if (equalsIdx > -1)
 			{
 				argName = argv[i].substring(1, equalsIdx).toUpperCase();
-				argVal = argv[i].substr(equalsIdx+1);
+				argVal = argv[i].substring(equalsIdx+1);
 				argValUpper = argVal.toUpperCase();
 				if (argName === "MODE")
 				{
@@ -4817,7 +6152,7 @@ function populateFileList(pSearchMode)
 				gFileList[i].dirCode = gDirCode;
 				if (gFileList[i].hasOwnProperty("extdesc") && /\r\n$/.test(gFileList[i].extdesc))
 				{
-					gFileList[i].extdesc = gFileList[i].extdesc.substr(0, gFileList[i].extdesc.length-2);
+					gFileList[i].extdesc = gFileList[i].extdesc.substring(0, gFileList[i].extdesc.length-2);
 					// Fix line endings if necessary
 					gFileList[i].extdesc = lfexpand(gFileList[i].extdesc);
 				}
@@ -5509,8 +6844,8 @@ function displayFileExtDescOnMainScreen(pFileIdx, pStartScreenRow, pEndScreenRow
 		console.attributes = "N";
 		console.gotoxy(startX, screenRowForPrinting++);
 		var dateStr = "Date: " + strftime("%Y-%m-%d", fileMetadata.time);
-		//printf("%-" + maxDescLen + "s", dateStr.substr(0, maxDescLen));
-		printf(formatStr, dateStr.substr(0, maxDescLen));
+		//printf("%-" + maxDescLen + "s", dateStr.substring(0, maxDescLen));
+		printf(formatStr, dateStr.substring(0, maxDescLen));
 	}
 	// Clear the rest of the lines to the bottom of the list area
 	console.attributes = "N";
@@ -5653,7 +6988,7 @@ function userCanDownloadFromFileArea_ShowErrorIfNot(pDirCode)
 		var areaFullDesc = file_area.dir[pDirCode].lib_name + ": " + file_area.dir[pDirCode].description;
 		areaFullDesc = word_wrap(areaFullDesc, console.screen_columns-1, areaFullDesc.length).replace(/\r|\n/g, "\r\n");
 		while (areaFullDesc.lastIndexOf("\r\n") == areaFullDesc.length-2)
-			areaFullDesc = areaFullDesc.substr(0, areaFullDesc.length-2);
+			areaFullDesc = areaFullDesc.substring(0, areaFullDesc.length-2);
 		console.crlf();
 		console.print(areaFullDesc);
 		console.crlf();
@@ -5784,7 +7119,7 @@ function getFileInfoLineArrayForTraditionalUI(pFileList, pIdx, pFormatInfo)
 	// Note: substrWithAttrCodes() is defined in dd_lightbar_menu.js
 	var fileInfoLines = [];
 	var fileSizeStr = file_size_str(pFileList[pIdx].size, null, FILE_SIZE_PRECISION);
-	fileInfoLines.push(format(pFormatInfo.formatStr, pIdx+1, filename, fileSizeStr.substr(0, pFormatInfo.fileSizeLen), substrWithAttrCodes(descLines[0], 0, pFormatInfo.descLen)));
+	fileInfoLines.push(format(pFormatInfo.formatStr, pIdx+1, filename, fileSizeStr.substring(0, pFormatInfo.fileSizeLen), substrWithAttrCodes(descLines[0], 0, pFormatInfo.descLen)));
 	if (Boolean(user.settings & USER_EXTDESC)) // If extended descriptions
 	{
 		// TODO: Some extended descriptions that use block characters
@@ -5936,8 +7271,8 @@ function replaceCursorRightCodes(pStr)
 	var idxRetObj = cursorRightCodeIdx(str);
 	while (idxRetObj.idx > -1)
 	{
-		var strBefore = str.substr(0, idxRetObj.idx);
-		str = strBefore + format("%*s", idxRetObj.numSpaces, "") + str.substr(idxRetObj.idx+2);
+		var strBefore = str.substring(0, idxRetObj.idx);
+		str = strBefore + format("%*s", idxRetObj.numSpaces, "") + str.substring(idxRetObj.idx+2);
 		idxRetObj = cursorRightCodeIdx(str);
 	}
 	return str;
@@ -6025,8 +7360,14 @@ function doFileView(pDirCode, pFilespec)
 				else if (userInput == "B")
 				{
 					// Add the file to batch downloaded queue (confirm first)
-					console.crlf();
-					var addFileConfirmed = console.yesno(format("Add %s to your batch DL queue", fileMetadata.name));
+					var addFileConfirmed;
+					if (gUsingRIP)
+						addFileConfirmed = showRIPYesNoDialog(format("Add %s to batch DL?", fileMetadata.name), true);
+					else
+					{
+						console.crlf();
+						addFileConfirmed = console.yesno(format("Add %s to your batch DL queue", fileMetadata.name));
+					}
 					if (addFileConfirmed)
 					{
 						// If the file isn't in the user's batch DL queue already, then add it.
