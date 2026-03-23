@@ -2,50 +2,6 @@
 This is a trivia game for Synchronet.  It currently has a basic Q&A format, and supports multiple
 trivia categories.  User's high scores and trivia category stats (total score, last time played)
 are saved to a file.
-
-Date       Author            Description
-2022-11-18 Eric Oulashin     Version 1.00
-2022-11-25 Eric Oulashin     Version 1.01
-                             Added the ability to store & retrieve scores to/from a server,
-                             so that scores from multiple BBSes can be displayed.  There are
-                             also sysop functions to remove players and users from the hosted
-                             inter-BBS scores. Also, answer clues now don't mask spaces in the
-                             answer.
-2022-12-08 Eric Oulashin     Version 1.02
-                             The game can now post scores in (networked) message sub-boards as
-                             a backup to using a JSON DB server in case the server can't be
-                             contacted.
-2023-01-03 Eric Oulashin     Version 1.03 beta
-                             Started working on allowing Q&A files to have a section of JSON
-                             metadata, and also for its answers to possibly be a section of
-                             JSON containing multiple possible answers. JSON metadata in
-                             a QA file may have the following properties (all optional):
-                             category_name: The name of the category
-                             ARS: An ARS string that can restrict usage of the category
-                             "-- Answer metadata begin"/"-- Answer metadata end" sections
-                             need to have an "answers" property, which is an array of
-                             acceptable answers (as strings).  It can also optionally have an
-                             "answerFact" property, to specify an interesting fact about
-                             the answer.
-                             Fixed a bug in reading local scores and parsing them, which
-                             affected saving local scores and showing local scores.
-2023-01-14 Eric Oulashin     Version 1.03
-                             Releasing this version
-2024-03-26 Eric Oulashin     Version 1.04
-                             Formatting fix for sysop menu when the server scores file is missing.
-                             Allow showing help when playing a game by entering ?
-2024-03-29 Eric Oulashin     Version 1.05
-                             Ensure the correct script startup directory is always used (make
-                             a copy of js.exec_dir on startup, since js.exec_dir could change)
-2026-02-04 Eric Oulashin     Version 1.06
-                             To quit out of a question set, the user can now use /Q, /QUIT, or
-                             /EXIT (not simply Q, as that could be an answer to a question).
-                             Also, "answerFact" in the .qa files can now be an array (or a string)
-                             and it can also be called "answerFacts", which is to be an array of strings.
-                             For an array of facts, a random one will be chosen during play.
-                             Text within questions can be emphasized by putting ** characters around
-                             the section of text to be emphasized.
-                             New color setting: questionEmphasizedText
 */
 
 "use strict";
@@ -71,8 +27,8 @@ if (system.version_num < 31500)
 }
 
 // Version information
-var GAME_VERSION = "1.06";
-var GAME_VER_DATE = "2026-02-04";
+var GAME_VERSION = "1.07";
+var GAME_VER_DATE = "2026-03-22";
 
 // Load required .js libraries
 // Only the getAttrsBeforeStrIdx() function from dd_lightbar_menu.js is used
@@ -489,7 +445,7 @@ function playTrivia()
 			writeUserScoresToSubBoard = true;
 		if (writeUserScoresToSubBoard)
 		{
-			// If there are any message sub-boards configured, post the scores in there
+			// If there are any message sub-boards configured, post the scores in there.
 			for (var i = 0; i < gSettings.behavior.scoresMsgSubBoardsForPosting.length; ++i)
 			{
 				var subCode = gSettings.behavior.scoresMsgSubBoardsForPosting[i];
@@ -573,6 +529,8 @@ function loadSettings()
 			settings.remoteServer = {};
 		if (typeof(settings.server) !== "object")
 			settings.server = {};
+		if (typeof(settings.server.useDoveNetSyncData) !== "boolean") // Added in v1.07 on 2026-03-22
+			settings.server.useDoveNetSyncData = false;
 
 		if (typeof(settings.behavior.numQuestionsPerPlay) !== "number")
 			settings.behavior.numQuestionsPerPlay = 10;
@@ -597,6 +555,13 @@ function loadSettings()
 		}
 
 		settings.behavior.scoresMsgSubBoardsForPosting = splitAndVerifyMsgSubCodes(settings.behavior.scoresMsgSubBoardsForPosting, "scoresMsgSubBoardsForPosting");
+		// If configured to use the Dove-Net data sub-board specifically, then add the dove-net data sub-board internal code.
+		if (settings.server.useDoveNetSyncData)
+		{
+			var doveDataSubCode = load({}, "syncdata.js").find();
+			if (doveDataSubCode.length > 0)
+				settings.behavior.scoresMsgSubBoardsForPosting.push(doveDataSubCode);
+		}
 		settings.server.scoresMsgSubBoardsForReading = splitAndVerifyMsgSubCodes(settings.server.scoresMsgSubBoardsForReading, "scoresMsgSubBoardsForReading");
 
 		// Sanity checking
@@ -691,7 +656,6 @@ function splitAndVerifyMsgSubCodes(pSubCodeList, pSettingName)
 			log(LOG_ERR, errMsg);
 		}
 	}
-	//!msg_area.sub.hasOwnProperty(
 	return subCodes;
 }
 
