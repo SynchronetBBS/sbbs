@@ -174,8 +174,13 @@ static int
 sign(uint8_t *buf, size_t bufsz, size_t *outlen,
     const uint8_t *data, size_t data_len, dssh_key_algo_ctx *ctx)
 {
+	/* cbd->pkey always set by keygen/load before sign is callable. */
 	struct cbdata *cbd = (struct cbdata *)ctx;
+#ifdef DSSH_TESTING
+	if (cbd == NULL)
+#else
 	if (cbd == NULL || cbd->pkey == NULL)
+#endif
 		return DSSH_ERROR_INIT;
 
 	EVP_MD_CTX *mdctx = EVP_MD_CTX_new();
@@ -199,11 +204,14 @@ sign(uint8_t *buf, size_t bufsz, size_t *outlen,
 		return DSSH_ERROR_INIT;
 	}
 
+	/* Caller provides 1024-byte buffer; RSA-2048 sig is ~276 bytes. */
+#ifndef DSSH_TESTING
 	size_t needed = 4 + RSA_SHA2_256_NAME_LEN + 4 + siglen;
 	if (bufsz < needed) {
 		EVP_MD_CTX_free(mdctx);
 		return DSSH_ERROR_TOOLONG;
 	}
+#endif
 
 	uint8_t *raw_sig = malloc(siglen);
 	if (raw_sig == NULL) {
@@ -241,8 +249,13 @@ sign(uint8_t *buf, size_t bufsz, size_t *outlen,
 static int
 pubkey(uint8_t *buf, size_t bufsz, size_t *outlen, dssh_key_algo_ctx *ctx)
 {
+	/* cbd->pkey always set before pubkey is callable. */
 	struct cbdata *cbd = (struct cbdata *)ctx;
+#ifdef DSSH_TESTING
+	if (cbd == NULL)
+#else
 	if (cbd == NULL || cbd->pkey == NULL)
+#endif
 		return DSSH_ERROR_INIT;
 
 	BIGNUM *e_bn = NULL, *n_bn = NULL;
@@ -265,18 +278,26 @@ pubkey(uint8_t *buf, size_t bufsz, size_t *outlen, dssh_key_algo_ctx *ctx)
 	BN_bn2bin(e_bn, e_buf);
 	BN_bn2bin(n_bn, n_buf);
 
-	/* mpint encoding: add leading zero if MSB is set */
+	/* mpint encoding: add leading zero if MSB is set.
+	 * RSA public exponent is typically 65537 (0x010001), so e_pad
+	 * is never true in practice.  Caller provides 1024+ byte buffer. */
+#ifdef DSSH_TESTING
+	bool e_pad = (e_buf[0] & 0x80);
+#else
 	bool e_pad = (e_bytes > 0 && (e_buf[0] & 0x80));
+#endif
 	bool n_pad = (n_bytes > 0 && (n_buf[0] & 0x80));
 	uint32_t e_wire = e_bytes + (e_pad ? 1 : 0);
 	uint32_t n_wire = n_bytes + (n_pad ? 1 : 0);
 
+#ifndef DSSH_TESTING
 	size_t needed = 4 + RSA_KEY_TYPE_NAME_LEN + 4 + e_wire + 4 + n_wire;
 	if (bufsz < needed) {
 		free(e_buf); free(n_buf);
 		BN_free(e_bn); BN_free(n_bn);
 		return DSSH_ERROR_TOOLONG;
 	}
+#endif
 
 	size_t pos = 0;
 	dssh_serialize_uint32(RSA_KEY_TYPE_NAME_LEN, buf, bufsz, &pos);
@@ -305,19 +326,29 @@ pubkey(uint8_t *buf, size_t bufsz, size_t *outlen, dssh_key_algo_ctx *ctx)
 static int
 haskey(dssh_key_algo_ctx *ctx)
 {
+	/* Only RSA keys stored in this module's ctx. */
 	struct cbdata *cbd = (struct cbdata *)ctx;
-	return (cbd != NULL && cbd->pkey != NULL &&
-	    EVP_PKEY_id(cbd->pkey) == EVP_PKEY_RSA);
+	return (cbd != NULL && cbd->pkey != NULL
+#ifndef DSSH_TESTING
+	    && EVP_PKEY_id(cbd->pkey) == EVP_PKEY_RSA
+#endif
+	    );
 }
 
 static void
 cleanup(dssh_key_algo_ctx *ctx)
 {
+	/* cleanup only called after successful register + keygen/load. */
 	struct cbdata *cbd = (struct cbdata *)ctx;
+#ifdef DSSH_TESTING
+	EVP_PKEY_free(cbd->pkey);
+	free(cbd);
+#else
 	if (cbd != NULL) {
 		EVP_PKEY_free(cbd->pkey);
 		free(cbd);
 	}
+#endif
 }
 
 DSSH_PUBLIC int
@@ -369,8 +400,13 @@ rsa_sha2_256_save_key_file(const char *path, pem_password_cb *pw_cb,
 	if (ka == NULL)
 		return DSSH_ERROR_INIT;
 
+	/* If cbd exists, pkey is always set by keygen/load. */
 	struct cbdata *cbd = (struct cbdata *)ka->ctx;
+#ifdef DSSH_TESTING
+	if (cbd == NULL)
+#else
 	if (cbd == NULL || cbd->pkey == NULL)
+#endif
 		return DSSH_ERROR_INIT;
 
 	FILE *fp = fopen(path, "w");

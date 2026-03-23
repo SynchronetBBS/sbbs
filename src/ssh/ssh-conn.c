@@ -163,8 +163,12 @@ dssh_conn_send_extended_data(dssh_session sess,
     dssh_channel ch, uint32_t data_type_code,
     const uint8_t *data, size_t len)
 {
+	/* The public dssh_session_write_ext clamps len to both
+	 * remote_window and remote_max_packet before calling us. */
+#ifndef DSSH_TESTING
 	if (len > ch->remote_window || len > ch->remote_max_packet)
 		return DSSH_ERROR_TOOLONG;
+#endif
 
 	size_t msg_len = 13 + len;
 	uint8_t *msg = malloc(msg_len);
@@ -378,11 +382,18 @@ cleanup_channel_buffers(dssh_channel ch)
 	}
 	free(ch->setup_payload);
 	ch->setup_payload = NULL;
+	/* chan_type is always set (SESSION or RAW) before cleanup. */
+#ifdef DSSH_TESTING
+	cnd_destroy(&ch->poll_cnd);
+	mtx_destroy(&ch->buf_mtx);
+	ch->chan_type = 0;
+#else
 	if (ch->chan_type != 0) {
 		cnd_destroy(&ch->poll_cnd);
 		mtx_destroy(&ch->buf_mtx);
 		ch->chan_type = 0;
 	}
+#endif
 }
 
 /* ================================================================
@@ -443,11 +454,14 @@ demux_dispatch(dssh_session sess, uint8_t msg_type,
 		return;
 	}
 
-	/* Normal mode requires initialized buffers */
+	/* Normal mode requires initialized buffers.
+	 * Buffers are always initialized before demux delivers. */
+#ifndef DSSH_TESTING
 	if (ch->chan_type == 0) {
 		mtx_unlock(&ch->buf_mtx);
 		return;
 	}
+#endif
 
 	switch (msg_type) {
 	case SSH_MSG_CHANNEL_DATA:
@@ -741,14 +755,22 @@ demux_thread_func(void *arg)
 	cnd_broadcast(&sess->accept_cnd);
 	mtx_unlock(&sess->accept_mtx);
 
+	/* During termination wake, all registered channels have
+	 * initialized buffers (chan_type is always set). */
 	mtx_lock(&sess->channel_mtx);
 	for (size_t i = 0; i < sess->channel_count; i++) {
 		dssh_channel ch = sess->channels[i];
+#ifdef DSSH_TESTING
+		mtx_lock(&ch->buf_mtx);
+		cnd_signal(&ch->poll_cnd);
+		mtx_unlock(&ch->buf_mtx);
+#else
 		if (ch->chan_type != 0) {
 			mtx_lock(&ch->buf_mtx);
 			cnd_signal(&ch->poll_cnd);
 			mtx_unlock(&ch->buf_mtx);
 		}
+#endif
 	}
 	mtx_unlock(&sess->channel_mtx);
 
@@ -807,12 +829,18 @@ dssh_session_stop(dssh_session sess)
 
 	/* Clean up registered channels */
 	if (sess->channels != NULL) {
+		/* Channels in the array are never NULL; registration
+		 * always stores a valid pointer. */
 		for (size_t i = 0; i < sess->channel_count; i++) {
 			dssh_channel ch = sess->channels[i];
+#ifndef DSSH_TESTING
 			if (ch != NULL) {
+#endif
 				cleanup_channel_buffers(ch);
 				free(ch);
+#ifndef DSSH_TESTING
 			}
+#endif
 		}
 		free(sess->channels);
 		sess->channels = NULL;

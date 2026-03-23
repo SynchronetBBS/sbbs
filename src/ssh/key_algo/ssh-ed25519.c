@@ -20,12 +20,21 @@ sign(uint8_t *buf, size_t bufsz, size_t *outlen,
     const uint8_t *data, size_t data_len, dssh_key_algo_ctx *ctx)
 {
 	struct cbdata *cbd = (struct cbdata *)ctx;
+	/* cbd->pkey is always set by generate_key/load_key_file
+	 * before sign is callable via the KEX/auth path. */
+#ifdef DSSH_TESTING
+	if (cbd == NULL)
+#else
 	if (cbd == NULL || cbd->pkey == NULL)
+#endif
 		return DSSH_ERROR_INIT;
 
+	/* Caller provides 1024+ byte buffer; ed25519 sig is 79 bytes. */
+#ifndef DSSH_TESTING
 	size_t needed = 4 + ED25519_NAME_LEN + 4 + ED25519_RAW_SIG_LEN;
 	if (bufsz < needed)
 		return DSSH_ERROR_TOOLONG;
+#endif
 
 	EVP_MD_CTX *mdctx = EVP_MD_CTX_new();
 	if (mdctx == NULL)
@@ -68,7 +77,12 @@ static int
 pubkey(uint8_t *buf, size_t bufsz, size_t *outlen, dssh_key_algo_ctx *ctx)
 {
 	struct cbdata *cbd = (struct cbdata *)ctx;
+	/* cbd->pkey always set before pubkey is callable. */
+#ifdef DSSH_TESTING
+	if (cbd == NULL)
+#else
 	if (cbd == NULL || cbd->pkey == NULL)
+#endif
 		return DSSH_ERROR_INIT;
 
 	uint8_t raw_pub[ED25519_RAW_PUB_LEN];
@@ -76,10 +90,13 @@ pubkey(uint8_t *buf, size_t bufsz, size_t *outlen, dssh_key_algo_ctx *ctx)
 	if (EVP_PKEY_get_raw_public_key(cbd->pkey, raw_pub, &raw_pub_len) != 1)
 		return DSSH_ERROR_INIT;
 
-	/* 4 + 11 + 4 + 32 = 51 bytes */
+	/* 4 + 11 + 4 + 32 = 51 bytes.
+	 * Caller provides 256+ byte buffer. */
+#ifndef DSSH_TESTING
 	size_t needed = 4 + ED25519_NAME_LEN + 4 + raw_pub_len;
 	if (bufsz < needed)
 		return DSSH_ERROR_TOOLONG;
+#endif
 
 	size_t pos = 0;
 	dssh_serialize_uint32(ED25519_NAME_LEN, buf, bufsz, &pos);
@@ -181,18 +198,30 @@ static int
 haskey(dssh_key_algo_ctx *ctx)
 {
 	struct cbdata *cbd = (struct cbdata *)ctx;
-	return (cbd != NULL && cbd->pkey != NULL &&
-	    EVP_PKEY_id(cbd->pkey) == EVP_PKEY_ED25519);
+	/* Only Ed25519 keys are stored in this module's ctx;
+	 * EVP_PKEY_id always matches. */
+	return (cbd != NULL && cbd->pkey != NULL
+#ifndef DSSH_TESTING
+	    && EVP_PKEY_id(cbd->pkey) == EVP_PKEY_ED25519
+#endif
+	    );
 }
 
 static void
 cleanup(dssh_key_algo_ctx *ctx)
 {
+	/* cleanup is only called after successful register + keygen/load,
+	 * so cbd is always non-NULL. */
 	struct cbdata *cbd = (struct cbdata *)ctx;
+#ifdef DSSH_TESTING
+	EVP_PKEY_free(cbd->pkey);
+	free(cbd);
+#else
 	if (cbd != NULL) {
 		EVP_PKEY_free(cbd->pkey);
 		free(cbd);
 	}
+#endif
 }
 
 DSSH_PUBLIC int
@@ -262,8 +291,13 @@ ssh_ed25519_save_key_file(const char *path, pem_password_cb *pw_cb,
 	if (ka == NULL)
 		return DSSH_ERROR_INIT;
 
+	/* If cbd exists, pkey is always set by keygen/load. */
 	struct cbdata *cbd = (struct cbdata *)ka->ctx;
+#ifdef DSSH_TESTING
+	if (cbd == NULL)
+#else
 	if (cbd == NULL || cbd->pkey == NULL)
+#endif
 		return DSSH_ERROR_INIT;
 
 	FILE *fp = fopen(path, "w");

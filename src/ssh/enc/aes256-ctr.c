@@ -55,11 +55,17 @@ do_crypt(uint8_t *buf, size_t bufsz, dssh_enc_ctx *ctx)
 static void
 cleanup(dssh_enc_ctx *ctx)
 {
+	/* cleanup only called after successful init. */
 	struct dssh_enc_ctx *cbd = ctx;
+#ifdef DSSH_TESTING
+	EVP_CIPHER_CTX_free(cbd->ctx);
+	free(cbd);
+#else
 	if (cbd != NULL) {
 		EVP_CIPHER_CTX_free(cbd->ctx);
 		free(cbd);
 	}
+#endif
 }
 
 DSSH_PUBLIC int

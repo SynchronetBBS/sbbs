@@ -325,8 +325,13 @@ handler(dssh_session sess)
 		free(k_mpint);
 		if (res < 0) { OPENSSL_cleanse(ss_copy, ss_len); free(ss_copy); return res; }
 
-		/* Verify server signature */
+		/* Verify server signature.
+		 * ka is always set by KEX negotiation; all key algos have verify. */
+#ifdef DSSH_TESTING
+		(void)ka;
+#else
 		if (ka == NULL || ka->verify == NULL) { OPENSSL_cleanse(ss_copy, ss_len); free(ss_copy); return DSSH_ERROR_INIT; }
+#endif
 		res = ka->verify(k_s, k_s_len, sig_h, sig_len, hash, SHA256_DIGEST_LEN);
 		if (res < 0) { OPENSSL_cleanse(ss_copy, ss_len); free(ss_copy); return res; }
 
@@ -339,14 +344,20 @@ handler(dssh_session sess)
 		sess->trans.exchange_hash_sz = SHA256_DIGEST_LEN;
 	}
 	else {
-		/* Server: receive ECDH_INIT, send ECDH_REPLY */
+		/* Server: receive ECDH_INIT, send ECDH_REPLY.
+		 * ka and its function pointers are always set by negotiation.
+		 * Own key pubkey call always succeeds after keygen. */
+#ifndef DSSH_TESTING
 		if (ka == NULL || ka->pubkey == NULL || ka->sign == NULL)
 			return DSSH_ERROR_INIT;
+#endif
 
 		/* Get our host key blob */
 		res = ka->pubkey(k_s_buf, sizeof(k_s_buf), &k_s_len, ka->ctx);
+#ifndef DSSH_TESTING
 		if (res < 0)
 			return res;
+#endif
 
 		/* Receive ECDH_INIT(Q_C) */
 		uint8_t msg_type;

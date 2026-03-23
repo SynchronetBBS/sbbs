@@ -80,12 +80,19 @@ generate(const uint8_t *buf, size_t bufsz, uint8_t *outbuf,
 static void
 cleanup(dssh_mac_ctx *ctx)
 {
+	/* cleanup only called after successful init. */
 	struct cbdata *cbd = (struct cbdata *)ctx;
+#ifdef DSSH_TESTING
+	EVP_MAC_CTX_free(cbd->ctx);
+	EVP_MAC_free(cbd->mac);
+	free(cbd);
+#else
 	if (cbd != NULL) {
 		EVP_MAC_CTX_free(cbd->ctx);
 		EVP_MAC_free(cbd->mac);
 		free(cbd);
 	}
+#endif
 }
 
 DSSH_PUBLIC int

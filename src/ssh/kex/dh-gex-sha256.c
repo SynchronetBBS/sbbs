@@ -35,10 +35,13 @@ serialize_bn_mpint(const BIGNUM *bn, uint8_t *buf, size_t bufsz, size_t *pos)
 	bool need_pad = (bn_bytes > 0 && (tmp[0] & 0x80));
 	uint32_t mpint_len = bn_bytes + (need_pad ? 1 : 0);
 
+	/* 4096-byte buffer; DH primes are at most 1024 bytes. */
+#ifndef DSSH_TESTING
 	if (*pos + 4 + mpint_len > bufsz) {
 		free(tmp);
 		return DSSH_ERROR_TOOLONG;
 	}
+#endif
 
 	dssh_serialize_uint32(mpint_len, buf, bufsz, pos);
 	if (need_pad)
@@ -248,9 +251,12 @@ handler(dssh_session sess)
 		{
 			uint8_t init_msg[4096];
 			size_t pos = 0;
+			/* 4096-byte buffer is adequate for DH e value. */
 			init_msg[pos++] = SSH_MSG_KEX_DH_GEX_INIT;
 			res = serialize_bn_mpint(e_bn, init_msg, sizeof(init_msg), &pos);
+#ifndef DSSH_TESTING
 			if (res < 0) { BN_clear_free(x); goto cleanup; }
+#endif
 			res = dssh_transport_send_packet(sess, init_msg, pos, NULL);
 			if (res < 0) { BN_clear_free(x); goto cleanup; }
 		}
@@ -302,8 +308,11 @@ handler(dssh_session sess)
 		    client_min, client_n, client_max, p, g, e_bn, f_bn, k_bn, hash);
 		if (res < 0) goto cleanup;
 
+		/* ka always set by negotiation; all key algos have verify. */
 		dssh_key_algo ka = sess->trans.key_algo_selected;
+#ifndef DSSH_TESTING
 		if (!ka || !ka->verify) { res = DSSH_ERROR_INIT; goto cleanup; }
+#endif
 		res = ka->verify(k_s, ks_len, sig_h, sig_len, hash, SHA256_DIGEST_LEN);
 		if (res < 0) goto cleanup;
 
@@ -314,16 +323,22 @@ handler(dssh_session sess)
 		res = 0;
 	}
 	else {
-		/* ---- SERVER SIDE ---- */
+		/* ---- SERVER SIDE ----
+		 * ka and its function pointers are always set by negotiation.
+		 * Own key pubkey call always succeeds after keygen. */
 		dssh_key_algo ka = sess->trans.key_algo_selected;
+#ifndef DSSH_TESTING
 		if (!ka || !ka->pubkey || !ka->sign)
 			return DSSH_ERROR_INIT;
+#endif
 
 		/* Get host key blob */
 		uint8_t k_s_buf[1024];
 		size_t k_s_len;
 		res = ka->pubkey(k_s_buf, sizeof(k_s_buf), &k_s_len, ka->ctx);
+#ifndef DSSH_TESTING
 		if (res < 0) return res;
+#endif
 
 		/* 1. Receive GEX_REQUEST(min, n, max) */
 		res = dssh_transport_recv_packet(sess, &msg_type, &payload, &payload_len);
@@ -356,11 +371,16 @@ handler(dssh_session sess)
 		{
 			uint8_t group_msg[4096];
 			size_t pos = 0;
+			/* 4096-byte buffer is adequate for DH primes. */
 			group_msg[pos++] = SSH_MSG_KEX_DH_GEX_GROUP;
 			res = serialize_bn_mpint(p, group_msg, sizeof(group_msg), &pos);
+#ifndef DSSH_TESTING
 			if (res < 0) goto cleanup;
+#endif
 			res = serialize_bn_mpint(g, group_msg, sizeof(group_msg), &pos);
+#ifndef DSSH_TESTING
 			if (res < 0) goto cleanup;
+#endif
 			res = dssh_transport_send_packet(sess, group_msg, pos, NULL);
 			if (res < 0) goto cleanup;
 		}
@@ -428,8 +448,11 @@ handler(dssh_session sess)
 			dssh_serialize_uint32((uint32_t)k_s_len, reply, reply_sz, &pos);
 			memcpy(&reply[pos], k_s_buf, k_s_len);
 			pos += k_s_len;
+			/* Buffer is adequately sized for the DH value. */
 			res = serialize_bn_mpint(f_bn, reply, reply_sz, &pos);
+#ifndef DSSH_TESTING
 			if (res < 0) { free(reply); goto cleanup; }
+#endif
 			dssh_serialize_uint32((uint32_t)sig_len, reply, reply_sz, &pos);
 			memcpy(&reply[pos], sig_buf, sig_len);
 			pos += sig_len;

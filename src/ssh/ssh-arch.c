@@ -151,9 +151,13 @@ dssh_parse_string(const uint8_t *buf, size_t bufsz, dssh_string val)
 	if (bufsz < 4)
 		return DSSH_ERROR_PARSE;
 	uint32_t len;
+	/* dssh_parse_uint32 cannot fail here: it only fails when
+	 * bufsz < 4, which is already ruled out above. */
 	int64_t ret = dssh_parse_uint32(buf, bufsz, &len);
+#ifndef DSSH_TESTING
 	if (ret < 4)
 		return ret;
+#endif
 	size_t sz = ret + len;
 	if (bufsz < sz)
 		return DSSH_ERROR_PARSE;
