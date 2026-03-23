@@ -1987,6 +1987,210 @@ test_handshake_mac_active(void)
 	return TEST_PASS;
 }
 
+/* ================================================================
+ * dssh_transport_set_version validation
+ * ================================================================ */
+
+static int
+test_set_version_valid(void)
+{
+	dssh_test_reset_global_config();
+	ASSERT_EQ(dssh_transport_set_version("MySSH-1.0", NULL), 0);
+	dssh_test_reset_global_config();
+	return TEST_PASS;
+}
+
+static int
+test_set_version_valid_comment(void)
+{
+	dssh_test_reset_global_config();
+	ASSERT_EQ(dssh_transport_set_version("MySSH-1.0", "FreeBSD"), 0);
+	dssh_test_reset_global_config();
+	return TEST_PASS;
+}
+
+static int
+test_set_version_null(void)
+{
+	/* NULL software_version keeps the default — should succeed */
+	dssh_test_reset_global_config();
+	ASSERT_EQ(dssh_transport_set_version(NULL, NULL), 0);
+	dssh_test_reset_global_config();
+	return TEST_PASS;
+}
+
+static int
+test_set_version_null_with_comment(void)
+{
+	/* NULL version + comment — sets comment with default version */
+	dssh_test_reset_global_config();
+	ASSERT_EQ(dssh_transport_set_version(NULL, "my-comment"), 0);
+	dssh_test_reset_global_config();
+	return TEST_PASS;
+}
+
+static int
+test_set_version_empty(void)
+{
+	dssh_test_reset_global_config();
+	ASSERT_EQ(dssh_transport_set_version("", NULL), DSSH_ERROR_PARSE);
+	dssh_test_reset_global_config();
+	return TEST_PASS;
+}
+
+static int
+test_set_version_empty_comment(void)
+{
+	dssh_test_reset_global_config();
+	ASSERT_EQ(dssh_transport_set_version("MySSH-1.0", ""),
+	    DSSH_ERROR_PARSE);
+	dssh_test_reset_global_config();
+	return TEST_PASS;
+}
+
+static int
+test_set_version_space(void)
+{
+	dssh_test_reset_global_config();
+	ASSERT_EQ(dssh_transport_set_version("My SSH", NULL),
+	    DSSH_ERROR_INVALID);
+	dssh_test_reset_global_config();
+	return TEST_PASS;
+}
+
+static int
+test_set_version_comment_space(void)
+{
+	dssh_test_reset_global_config();
+	/* Spaces are allowed in comments per RFC 4253 s4.2 */
+	ASSERT_EQ(dssh_transport_set_version("MySSH", "has space"), 0);
+	dssh_test_reset_global_config();
+	return TEST_PASS;
+}
+
+static int
+test_set_version_comment_ctrl(void)
+{
+	dssh_test_reset_global_config();
+	ASSERT_EQ(dssh_transport_set_version("MySSH", "bad\x01comment"),
+	    DSSH_ERROR_INVALID);
+	dssh_test_reset_global_config();
+	return TEST_PASS;
+}
+
+static int
+test_set_version_ctrl(void)
+{
+	dssh_test_reset_global_config();
+	ASSERT_EQ(dssh_transport_set_version("My\x01SSH", NULL),
+	    DSSH_ERROR_INVALID);
+	dssh_test_reset_global_config();
+	return TEST_PASS;
+}
+
+static int
+test_set_version_high(void)
+{
+	dssh_test_reset_global_config();
+	ASSERT_EQ(dssh_transport_set_version("My\x80SSH", NULL),
+	    DSSH_ERROR_INVALID);
+	dssh_test_reset_global_config();
+	return TEST_PASS;
+}
+
+static int
+test_set_version_too_long(void)
+{
+	dssh_test_reset_global_config();
+	/* 255 - 8 ("SSH-2.0-") - 2 (CRLF) = 245 max for version alone */
+	char long_ver[250];
+	memset(long_ver, 'A', sizeof(long_ver) - 1);
+	long_ver[sizeof(long_ver) - 1] = 0;
+	ASSERT_EQ(dssh_transport_set_version(long_ver, NULL),
+	    DSSH_ERROR_TOOLONG);
+	dssh_test_reset_global_config();
+	return TEST_PASS;
+}
+
+static int
+test_set_version_after_session(void)
+{
+	dssh_test_reset_global_config();
+	ASSERT_EQ(register_all_algorithms(), 0);
+	dssh_transport_set_callbacks(mock_tx_dispatch, mock_rx_dispatch,
+	    mock_rxline_dispatch, mock_extra_line_cb);
+
+	dssh_session sess = dssh_session_init(true, 0);
+	ASSERT_NOT_NULL(sess);
+
+	/* Session init sets gconf.used = true */
+	ASSERT_EQ(dssh_transport_set_version("Late", NULL),
+	    DSSH_ERROR_TOOLATE);
+
+	dssh_session_cleanup(sess);
+	dssh_test_reset_global_config();
+	return TEST_PASS;
+}
+
+/* ================================================================
+ * Version exchange with comment (Category 3)
+ * ================================================================ */
+
+static int
+test_version_exchange_with_comment(void)
+{
+	struct handshake_ctx ctx;
+	memset(&ctx, 0, sizeof(ctx));
+
+	dssh_test_reset_global_config();
+	if (register_all_algorithms() < 0)
+		return TEST_FAIL;
+	if (test_generate_host_key() < 0)
+		return TEST_FAIL;
+
+	if (mock_io_init(&ctx.io, 0) < 0)
+		return TEST_FAIL;
+
+	dssh_transport_set_callbacks(mock_tx_dispatch, mock_rx_dispatch,
+	    mock_rxline_dispatch, mock_extra_line_cb);
+	dssh_transport_set_version("DeuceSSH-0.0", "test-comment");
+
+	ctx.client = dssh_session_init(true, 0);
+	if (ctx.client == NULL) {
+		mock_io_free(&ctx.io);
+		dssh_test_reset_global_config();
+		return TEST_FAIL;
+	}
+	dssh_session_set_cbdata(ctx.client, &ctx.io, &ctx.io,
+	    &ctx.io, &ctx.io);
+
+	ctx.server = init_server_session();
+	if (ctx.server == NULL) {
+		dssh_session_cleanup(ctx.client);
+		mock_io_free(&ctx.io);
+		dssh_test_reset_global_config();
+		return TEST_FAIL;
+	}
+	dssh_session_set_cbdata(ctx.server, &ctx.io, &ctx.io,
+	    &ctx.io, &ctx.io);
+
+	thrd_t ct, st;
+	thrd_create(&ct, handshake_client_thread, &ctx);
+	thrd_create(&st, handshake_server_thread, &ctx);
+	thrd_join(ct, NULL);
+	thrd_join(st, NULL);
+
+	ASSERT_EQ(ctx.client_result, 0);
+	ASSERT_EQ(ctx.server_result, 0);
+
+	/* The local id string should contain the comment */
+	const char *id = ctx.client->trans.id_str;
+	ASSERT_NOT_NULL(id);
+	ASSERT_TRUE(strstr(id, "test-comment") != NULL);
+
+	handshake_cleanup(&ctx);
+	return TEST_PASS;
+}
 
 /* ================================================================
  * Version exchange: rx error (Category 3)
@@ -3108,6 +3312,80 @@ test_cleanup_no_handshake(void)
 }
 
 /* ================================================================
+ * set_version with long string — covers version_tx TOOLONG
+ * ================================================================ */
+
+static int
+test_set_version_long_string(void)
+{
+	dssh_test_reset_global_config();
+
+	/* 250-char version string — should succeed (just under 255 limit with SSH-2.0- prefix) */
+	char long_ver[241];
+	memset(long_ver, 'A', 240);
+	long_ver[240] = 0;
+	ASSERT_EQ(dssh_transport_set_version(long_ver, NULL), 0);
+
+	dssh_test_reset_global_config();
+
+	/* 249-char version + comment — exceeds 255 combined */
+	char ver[242];
+	memset(ver, 'B', 241);
+	ver[241] = 0;
+	int res = dssh_transport_set_version(ver, "comment");
+	/* Should fail because "SSH-2.0-" + 241 + " " + "comment" > 255 */
+	ASSERT_EQ(res, DSSH_ERROR_TOOLONG);
+
+	dssh_test_reset_global_config();
+	return TEST_PASS;
+}
+
+/* ================================================================
+ * set_version high-byte validation — covers is_valid_sw_version
+ * and is_valid_comment > 0x7E branches.
+ * ================================================================ */
+
+static int
+test_set_version_high_byte_version(void)
+{
+	dssh_test_reset_global_config();
+
+	/* Version with DEL (0x7F) — out of range */
+	char bad_ver[] = { 't', 'e', 's', 't', 0x7F, 'v', 0 };
+	ASSERT_EQ(dssh_transport_set_version(bad_ver, NULL), DSSH_ERROR_INVALID);
+
+	dssh_test_reset_global_config();
+
+	/* Version with 0x80 — out of range */
+	char bad_ver2[] = { 't', 'e', 's', 't', (char)0x80, 'v', 0 };
+	ASSERT_EQ(dssh_transport_set_version(bad_ver2, NULL), DSSH_ERROR_INVALID);
+
+	dssh_test_reset_global_config();
+	return TEST_PASS;
+}
+
+static int
+test_set_version_high_byte_comment(void)
+{
+	dssh_test_reset_global_config();
+
+	/* Comment with DEL (0x7F) */
+	char bad_cm[] = { 't', 'e', 's', 't', 0x7F, 'c', 0 };
+	ASSERT_EQ(dssh_transport_set_version("DeuceSSH", bad_cm),
+	    DSSH_ERROR_INVALID);
+
+	dssh_test_reset_global_config();
+
+	/* Comment with 0x80 */
+	char bad_cm2[] = { 't', 'e', 's', 't', (char)0x80, 'c', 0 };
+	ASSERT_EQ(dssh_transport_set_version("DeuceSSH", bad_cm2),
+	    DSSH_ERROR_INVALID);
+
+	dssh_test_reset_global_config();
+	return TEST_PASS;
+}
+
+/* ================================================================
  * Version line parsing edge cases — covers short-circuit branches
  * in is_version_line and is_20.
  * ================================================================ */
@@ -3231,6 +3509,23 @@ static struct dssh_test_entry tests[] = {
 	{ "session/terminate",               test_session_terminate },
 	{ "session/cleanup_null",            test_session_cleanup_null },
 
+	/* set_version validation */
+	{ "set_version/valid",               test_set_version_valid },
+	{ "set_version/valid_with_comment",  test_set_version_valid_comment },
+	{ "set_version/null_version",        test_set_version_null },
+	{ "set_version/null_with_comment",   test_set_version_null_with_comment },
+	{ "set_version/empty_version",       test_set_version_empty },
+	{ "set_version/empty_comment",       test_set_version_empty_comment },
+	{ "set_version/space_in_version",    test_set_version_space },
+	{ "set_version/space_in_comment",    test_set_version_comment_space },
+	{ "set_version/ctrl_in_comment",     test_set_version_comment_ctrl },
+	{ "set_version/ctrl_in_version",     test_set_version_ctrl },
+	{ "set_version/high_byte",           test_set_version_high },
+	{ "set_version/too_long",            test_set_version_too_long },
+	{ "set_version/after_session",       test_set_version_after_session },
+
+	/* Error paths (coverage) */
+	{ "vex/with_comment",                test_version_exchange_with_comment },
 	{ "vex/rx_error",                    test_version_exchange_rx_error },
 	{ "vex/terminate_mid_rx",            test_version_exchange_terminate },
 	{ "vex/extra_line_error",            test_version_exchange_extra_line_error },
@@ -3284,6 +3579,11 @@ static struct dssh_test_entry tests[] = {
 	{ "cleanup/no_handshake",            test_cleanup_no_handshake },
 
 	/* Version exchange: long software version */
+	{ "set_version/long_version_string", test_set_version_long_string },
+
+	/* set_version high-byte validation */
+	{ "set_version/high_byte_version",   test_set_version_high_byte_version },
+	{ "set_version/high_byte_comment",   test_set_version_high_byte_comment },
 };
 
 DSSH_TEST_MAIN(tests)

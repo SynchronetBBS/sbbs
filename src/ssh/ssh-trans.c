@@ -56,7 +56,10 @@ typedef struct dssh_transport_global_config {
 	dssh_language lang_tail;
 } *dssh_transport_global_config;
 
-static const char * const sw_ver = "DeuceSSH-0.0";
+#ifndef DSSH_VERSION_STRING
+#define DSSH_VERSION_STRING "0.0"
+#endif
+static const char * const sw_ver = "DeuceSSH-" DSSH_VERSION_STRING;
 static struct dssh_transport_global_config gconf;
 
 /* ================================================================
@@ -1684,6 +1687,69 @@ dssh_transport_register_lang(dssh_language lang)
 		gconf.lang_tail->next = lang;
 	gconf.lang_tail = lang;
 	gconf.lang_entries++;
+	return 0;
+}
+
+/*
+ * Validate a softwareversion string per RFC 4253 s4.2:
+ * printable US-ASCII (0x21–0x7E), no spaces (space is the
+ * delimiter between softwareversion and comments).
+ */
+static bool
+is_valid_sw_version(const char *s, size_t len)
+{
+	for (size_t i = 0; i < len; i++) {
+		if (s[i] < 0x21 || s[i] > 0x7E)
+			return false;
+	}
+	return true;
+}
+
+/*
+ * Validate a comment string per RFC 4253 s4.2:
+ * printable US-ASCII (0x20–0x7E).  Spaces are allowed in comments;
+ * the comment runs from the SP after softwareversion to CR LF.
+ */
+static bool
+is_valid_comment(const char *s, size_t len)
+{
+	for (size_t i = 0; i < len; i++) {
+		if (s[i] < 0x20 || s[i] > 0x7E)
+			return false;
+	}
+	return true;
+}
+
+DSSH_PUBLIC int
+dssh_transport_set_version(const char *software_version,
+    const char *comment)
+{
+	if (gconf.used)
+		return DSSH_ERROR_TOOLATE;
+
+	/* NULL software_version leaves the default; validate if provided */
+	const char *sv = software_version != NULL ? software_version : sw_ver;
+	size_t sv_len = strlen(sv);
+	if (sv_len == 0)
+		return DSSH_ERROR_PARSE;
+	if (!is_valid_sw_version(sv, sv_len))
+		return DSSH_ERROR_INVALID;
+
+	/* "SSH-2.0-" (8) + version + " " + comment + CR LF <= 255 */
+	size_t total = 8 + sv_len + 2;
+	if (comment != NULL) {
+		size_t cm_len = strlen(comment);
+		if (cm_len == 0)
+			return DSSH_ERROR_PARSE;
+		if (!is_valid_comment(comment, cm_len))
+			return DSSH_ERROR_INVALID;
+		total += 1 + cm_len; /* SP + comment */
+	}
+	if (total > 255)
+		return DSSH_ERROR_TOOLONG;
+
+	gconf.software_version = sv;
+	gconf.version_comment = comment;
 	return 0;
 }
 

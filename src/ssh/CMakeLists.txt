@@ -70,7 +70,8 @@ if(DEUCESSH_BUILD_STATIC)
 	target_link_libraries(deucessh_static
 		INTERFACE ${OPENSSL_CRYPTO_LIBRARIES} ${THREADS_LINK_LIB})
 	target_compile_definitions(deucessh_static
-		PRIVATE $<$<CONFIG:Release>:NDEBUG>)
+		PRIVATE DSSH_VERSION_STRING="${PROJECT_VERSION}"
+		$<$<CONFIG:Release>:NDEBUG>)
 	target_compile_options(deucessh_static PRIVATE ${DEUCESSH_COMPILE_OPTIONS})
 	list(APPEND DEUCESSH_INSTALL_TARGETS deucessh_static)
 endif()
@@ -97,6 +98,7 @@ if(DEUCESSH_BUILD_SHARED)
 	target_compile_definitions(deucessh_shared
 		PRIVATE
 			DSSH_SHARED
+			DSSH_VERSION_STRING="${PROJECT_VERSION}"
 			$<$<CONFIG:Release>:NDEBUG>)
 	target_compile_options(deucessh_shared PRIVATE
 		${DEUCESSH_COMPILE_OPTIONS}

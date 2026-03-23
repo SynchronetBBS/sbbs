@@ -115,6 +115,32 @@ DSSH_PUBLIC void dssh_session_set_global_request_cb(
     dssh_session sess, void *cb, void *cbdata);
 
 /*
+ * Set the SSH version identification strings (RFC 4253 s4.2).
+ * Must be called before any session is initialized.
+ *
+ * software_version: e.g. "MySSH-1.0".  Must be non-empty printable
+ *                   US-ASCII (0x21–0x7E, no spaces).  Pass NULL to
+ *                   keep the library's built-in default.
+ * comment:          optional (pass NULL to omit).  Printable US-ASCII
+ *                   (0x20–0x7E); spaces are allowed in comments.
+ *
+ * The resulting version line "SSH-2.0-<version> <comment>\r\n"
+ * must fit in 255 bytes per RFC 4253.
+ *
+ * If not called, defaults to the library's built-in version string.
+ * Returns 0 on success, DSSH_ERROR_TOOLONG if the combined string
+ * exceeds 255 bytes, DSSH_ERROR_INVALID if characters are out of
+ * range, DSSH_ERROR_PARSE if software_version is empty (or comment
+ * is empty when non-NULL), or DSSH_ERROR_TOOLATE if a session has
+ * already been initialized.
+ *
+ * The strings are not copied — caller must ensure they remain
+ * valid for the lifetime of the library's global configuration.
+ */
+DSSH_PUBLIC int dssh_transport_set_version(
+    const char *software_version, const char *comment);
+
+/*
  * Set the global I/O callbacks and optional extra-line callback.
  * Must be called before any session is initialized.
  * All sessions share the same callback functions; per-session
