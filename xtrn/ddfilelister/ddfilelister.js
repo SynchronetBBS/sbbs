@@ -69,8 +69,8 @@ if (gUsingRIP)
 
 
 // Version information
-var LISTER_VERSION = "2.34";
-var LISTER_DATE = "2026-03-22";
+var LISTER_VERSION = "2.35";
+var LISTER_DATE = "2026-03-24";
 
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -5749,14 +5749,17 @@ function readConfigFile()
 	}
 	else
 	{
-		// Was unable to read the configuration file.  Output a warning to the user
-		// that defaults will be used and to notify the sysop.
-		console.attributes = "N";
-		console.crlf();
-		console.print("\x01w\x01hUnable to open the configuration file: \x01y" + cfgFilename);
-		console.crlf();
-		console.print("\x01wDefault settings will be used.  Please notify the sysop.");
-		mswait(2000);
+		// Was unable to read the configuration file.  If the user is the sysop,
+		// output a warning about that.
+		if (user.is_sysop)
+		{
+			console.attributes = "N";
+			console.crlf();
+			console.print("\x01w\x01hUnable to open the configuration file: \x01y" + cfgFilename);
+			console.crlf();
+			console.print("\x01wDefault settings will be used.");
+			mswait(2000);
+		}
 	}
 	
 	// If a theme filename was specified, then read the colors & strings
@@ -5820,14 +5823,17 @@ function readConfigFile()
 		}
 		else
 		{
-			// Was unable to read the theme file.  Output a warning to the user
-			// that defaults will be used and to notify the sysop.
-			console.attributes = "N";
-			console.crlf();
-			console.print("\x01w\x01hUnable to open the theme file: \x01y" + themeFilename);
-			console.crlf();
-			console.print("\x01wDefault colors will be used.  Please notify the sysop.");
-			mswait(2000);
+			// Was unable to read the theme file.  If the user is the sysop, output
+			// a warning about that.
+			if (user.is_sysop)
+			{
+				console.attributes = "N";
+				console.crlf();
+				console.print("\x01w\x01hUnable to open the theme file: \x01y" + themeFilename);
+				console.crlf();
+				console.print("\x01wDefault colors will be used.");
+				mswait(2000);
+			}
 		}
 	}
 
