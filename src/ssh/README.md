@@ -476,6 +476,264 @@ You can register your own custom algorithm modules by implementing
 the callback signatures defined in `ssh-trans.h` and calling the
 corresponding `dssh_transport_register_*()` function.
 
+## Custom Algorithm Modules
+
+You can implement custom encryption, MAC, compression, host key, or
+key exchange algorithms by filling in the appropriate struct and
+calling the registration function.  All modules include `ssh-trans.h`
+for the struct definitions and registration API.
+
+### Encryption Module
+
+Implement four callbacks and register:
+
+```c
+#include "ssh-trans.h"
+
+static int my_init(const uint8_t *key, const uint8_t *iv,
+    bool encrypt, dssh_enc_ctx **ctx)
+{
+    /* Allocate and initialize context.  encrypt indicates direction.
+     * Return 0 on success, negative on error. */
+}
+
+static int my_encrypt(uint8_t *buf, size_t bufsz, dssh_enc_ctx *ctx)
+{
+    /* Encrypt buf in place.  Return 0 on success. */
+}
+
+static int my_decrypt(uint8_t *buf, size_t bufsz, dssh_enc_ctx *ctx)
+{
+    /* Decrypt buf in place.  Return 0 on success. */
+}
+
+static void my_cleanup(dssh_enc_ctx *ctx)
+{
+    /* Free context resources. */
+}
+
+int register_my_enc(void)
+{
+    static const char name[] = "my-cipher";
+    struct dssh_enc_s *enc = malloc(sizeof(*enc) + sizeof(name));
+    if (enc == NULL) return DSSH_ERROR_ALLOC;
+    enc->next = NULL;
+    enc->init = my_init;
+    enc->encrypt = my_encrypt;
+    enc->decrypt = my_decrypt;
+    enc->cleanup = my_cleanup;
+    enc->flags = 0;
+    enc->blocksize = 16;  /* cipher block size in bytes */
+    enc->key_size = 32;   /* key size in bytes */
+    memcpy(enc->name, name, sizeof(name));
+    return dssh_transport_register_enc(enc);
+}
+```
+
+The `struct dssh_enc_s` (typedef `dssh_enc`) is defined in `ssh-trans.h`.
+
+### MAC Module
+
+Implement three callbacks:
+
+```c
+static int my_mac_init(const uint8_t *key, dssh_mac_ctx **ctx)
+{
+    /* Allocate and initialize MAC context with key.
+     * Return 0 on success, negative on error. */
+}
+
+static int my_mac_generate(const uint8_t *buf, size_t bufsz,
+    uint8_t *outbuf, dssh_mac_ctx *ctx)
+{
+    /* Compute MAC of buf, write to outbuf.
+     * outbuf is always digest_size bytes.
+     * Return 0 on success. */
+}
+
+static void my_mac_cleanup(dssh_mac_ctx *ctx) { /* ... */ }
+
+int register_my_mac(void)
+{
+    static const char name[] = "my-mac";
+    struct dssh_mac_s *mac = malloc(sizeof(*mac) + sizeof(name));
+    if (mac == NULL) return DSSH_ERROR_ALLOC;
+    mac->next = NULL;
+    mac->init = my_mac_init;
+    mac->generate = my_mac_generate;
+    mac->cleanup = my_mac_cleanup;
+    mac->digest_size = 32;  /* output tag size in bytes */
+    mac->key_size = 32;     /* key size in bytes */
+    memcpy(mac->name, name, sizeof(name));
+    return dssh_transport_register_mac(mac);
+}
+```
+
+The `struct dssh_mac_s` (typedef `dssh_mac`) is defined in `ssh-trans.h`.
+
+### Compression Module
+
+```c
+static int my_compress(uint8_t *buf, size_t *bufsz, dssh_comp_ctx *ctx)
+{
+    /* Compress buf in place, update *bufsz.  Return 0 on success. */
+}
+
+static int my_uncompress(uint8_t *buf, size_t *bufsz, dssh_comp_ctx *ctx)
+{
+    /* Decompress buf in place, update *bufsz.  Return 0 on success. */
+}
+
+static void my_comp_cleanup(dssh_comp_ctx *ctx) { /* ... */ }
+
+int register_my_comp(void)
+{
+    static const char name[] = "my-comp";
+    struct dssh_comp_s *comp = malloc(sizeof(*comp) + sizeof(name));
+    if (comp == NULL) return DSSH_ERROR_ALLOC;
+    comp->next = NULL;
+    comp->compress = my_compress;
+    comp->uncompress = my_uncompress;
+    comp->cleanup = my_comp_cleanup;
+    memcpy(comp->name, name, sizeof(name));
+    return dssh_transport_register_comp(comp);
+}
+```
+
+The `struct dssh_comp_s` (typedef `dssh_comp`) is defined in `ssh-trans.h`.
+
+### Host Key Module
+
+Host key modules implement sign, verify, public key export, and
+optional key management (generate, load, save).  They use the `ctx`
+field on the registered struct to store key material.
+
+```c
+static int my_sign(uint8_t *buf, size_t bufsz, size_t *outlen,
+    const uint8_t *data, size_t data_len, dssh_key_algo_ctx *ctx)
+{
+    /* Sign data, write SSH-encoded signature blob to buf.
+     * Set *outlen to actual size written.  Return 0 on success. */
+}
+
+static int my_verify(const uint8_t *key_blob, size_t key_blob_len,
+    const uint8_t *sig_blob, size_t sig_blob_len,
+    const uint8_t *data, size_t data_len)
+{
+    /* Verify that sig_blob is a valid signature of data under
+     * the public key in key_blob.  Return 0 if valid. */
+}
+
+static int my_pubkey(uint8_t *buf, size_t bufsz, size_t *outlen,
+    dssh_key_algo_ctx *ctx)
+{
+    /* Write SSH-encoded public key blob to buf.
+     * Set *outlen to actual size.  Return 0 on success. */
+}
+
+static int my_haskey(dssh_key_algo_ctx *ctx)
+{
+    /* Return true if a private key is loaded. */
+}
+
+static void my_key_cleanup(dssh_key_algo_ctx *ctx) { /* ... */ }
+
+int register_my_key_algo(void)
+{
+    static const char name[] = "my-key-type";
+    struct dssh_key_algo_s *ka = malloc(sizeof(*ka) + sizeof(name));
+    if (ka == NULL) return DSSH_ERROR_ALLOC;
+    ka->next = NULL;
+    ka->sign = my_sign;
+    ka->verify = my_verify;
+    ka->pubkey = my_pubkey;
+    ka->haskey = my_haskey;
+    ka->cleanup = my_key_cleanup;
+    ka->ctx = NULL;     /* set by generate/load */
+    ka->flags = DSSH_KEY_ALGO_FLAG_SIGNATURE_CAPABLE;
+    memcpy(ka->name, name, sizeof(name));
+    return dssh_transport_register_key_algo(ka);
+}
+```
+
+The `struct dssh_key_algo_s` (typedef `dssh_key_algo`) is defined in
+`ssh-trans.h`.  Key blobs and signature blobs use the SSH wire format
+defined in the relevant RFC for the algorithm.
+
+### KEX Module
+
+KEX modules are the most complex — they drive the key exchange
+protocol after KEXINIT negotiation completes.  A KEX handler receives
+the session handle and must:
+
+1. Exchange KEX-specific messages via `dssh_transport_send_packet()`
+   and `dssh_transport_recv_packet()`
+2. Compute the shared secret and store it in `sess->trans.shared_secret`
+   (malloc'd, big-endian mpint) and `sess->trans.shared_secret_sz`
+3. Compute the exchange hash and store it in `sess->trans.exchange_hash`
+   (malloc'd) and `sess->trans.exchange_hash_sz`
+4. Verify the server's host key signature (client) or sign the
+   exchange hash (server) using `sess->trans.key_algo_selected`
+
+Session fields available to KEX handlers (defined in
+`struct dssh_transport_state_s` in `ssh-trans.h`):
+
+| Field | Purpose |
+|-------|---------|
+| `sess->trans.client` | true if client side |
+| `sess->trans.id_str` / `id_str_sz` | Our version string (V_C or V_S) |
+| `sess->trans.remote_id_str` / `remote_id_str_sz` | Peer's version string |
+| `sess->trans.our_kexinit` / `our_kexinit_sz` | Our KEXINIT payload (I_C or I_S) |
+| `sess->trans.peer_kexinit` / `peer_kexinit_sz` | Peer's KEXINIT payload |
+| `sess->trans.key_algo_selected` | Negotiated host key algorithm |
+| `sess->trans.kex_ctx` | Per-KEX opaque context (e.g., DH-GEX provider) |
+| `sess->trans.shared_secret` | Output: shared secret K (mpint, big-endian) |
+| `sess->trans.exchange_hash` | Output: exchange hash H |
+
+```c
+static int my_kex_handler(dssh_session sess)
+{
+    /* 1. Generate ephemeral keys
+     * 2. Exchange messages (send_packet / recv_packet)
+     * 3. Compute shared secret → sess->trans.shared_secret
+     * 4. Compute exchange hash → sess->trans.exchange_hash
+     * 5. Verify/sign host key
+     * Return 0 on success, negative on error. */
+}
+
+static void my_kex_cleanup(dssh_session sess)
+{
+    /* Free any per-session KEX state. */
+}
+
+int register_my_kex(void)
+{
+    static const char name[] = "my-kex-method";
+    struct dssh_kex_s *kex = malloc(sizeof(*kex) + sizeof(name));
+    if (kex == NULL) return DSSH_ERROR_ALLOC;
+    kex->next = NULL;
+    kex->handler = my_kex_handler;
+    kex->cleanup = my_kex_cleanup;
+    kex->flags = DSSH_KEX_FLAG_NEEDS_SIGNATURE_CAPABLE;
+    kex->hash_name = "SHA256";  /* OpenSSL digest name for key derivation */
+    memcpy(kex->name, name, sizeof(name));
+    return dssh_transport_register_kex(kex);
+}
+```
+
+The `struct dssh_kex_s` (typedef `dssh_kex`) is defined in `ssh-trans.h`.
+KEX handlers additionally include `ssh-internal.h` for the session
+struct definition (`struct dssh_session_s`) needed to access
+`sess->trans.*` fields.
+
+### Registration Rules
+
+- Call `register_*()` before any `dssh_session_init()`.
+- After the first session init, registration is locked (`DSSH_ERROR_TOOLATE`).
+- Names must be 1–64 printable ASCII characters (no spaces, no control chars).
+- The `next` pointer must be NULL (the library manages the linked list).
+- Registration order determines negotiation preference.
+
 ## DH Group Provider (Server)
 
 If the server offers `diffie-hellman-group-exchange-sha256`, it must
@@ -758,7 +1016,7 @@ Pass a larger value to support bigger payloads.
 
 ## Testing
 
-372 tests across 9 executables:
+~650 tests across 11 executables, 26 CTest runs:
 
 ```sh
 mkdir build && cd build
@@ -777,15 +1035,19 @@ ctest -R dssh_integration    # integration only
 | test_chan | 75 | Buffer primitives: bytebuf, msgqueue, signal queue, accept queue |
 | test_algo_enc | 23 | AES-256-CTR (NIST vectors), none cipher |
 | test_algo_mac | 18 | HMAC-SHA-256 (RFC 4231 vectors), none MAC |
-| test_algo_key | 32 | Ed25519 + RSA: generate/sign/verify/save/load |
-| test_transport | 67 | Version exchange, packets, KEXINIT, handshake, rekey, hard limits |
-| test_auth | 21 | Password, KBI, publickey, server-side auth, banners |
-| test_conn | 33 | Channels, demux, session/raw I/O, signals, close, threading |
+| test_algo_key | 67 | Ed25519 + RSA: generate/sign/verify/save/load/parse errors |
+| test_transport | ~140 | Version exchange, packets, KEXINIT, handshake, rekey, registration |
+| test_auth | ~70 | Password, KBI, publickey, server-side auth, banners, parse errors |
+| test_conn | ~90 | Channels, demux, session/raw I/O, signals, close, threading |
+| test_alloc | ~30 | Iterative malloc/OpenSSL/C11 failure injection (×4 KEX/key combos) |
+| test_transport_errors | 9 | Transport error paths with test enc/mac modules |
 | test_selftest | 14 | Full client↔server via socketpair, including rekey under load |
 
-Tests use a custom framework (`test/dssh_test.h`) and mock I/O layer
-(`test/mock_io.h`) that replaces real sockets with in-process circular
-buffers.  Integration tests use `socketpair(AF_UNIX)`.
+Tests use a custom framework (`test/dssh_test.h`) and mock I/O via
+`socketpair(AF_UNIX)`.  Failure injection uses library-only malloc
+redirect (`dssh_test_alloc.h`) and OpenSSL/C11 call wrappers
+(`dssh_test_ossl.h`) — both use atomic countdown with plateau
+detection for automatic termination.
 
 ## Files
 
