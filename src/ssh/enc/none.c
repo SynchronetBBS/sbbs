@@ -2,6 +2,7 @@
 #include <string.h>
 
 #include "ssh-trans.h"
+#include "ssh-internal.h"
 
 static int
 encrypt(uint8_t *buf, size_t bufsz, dssh_enc_ctx *ctx)

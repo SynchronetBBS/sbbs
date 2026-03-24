@@ -13,6 +13,7 @@
 #include <threads.h>
 
 #include "dssh_test.h"
+#include "dssh_test_alloc.h"
 #include "deucessh.h"
 #include "deucessh-algorithms.h"
 #include "ssh-trans.h"
@@ -3819,6 +3820,154 @@ test_dh_value_valid_p_minus_one(void)
 }
 
 /* ================================================================
+ * None algorithm module coverage — call the no-op functions
+ * directly to get 100% on comp/none.c, enc/none.c, mac/none.c.
+ * ================================================================ */
+
+/* ================================================================
+ * aes256-ctr / hmac-sha2-256 edge cases — NULL ctx, alloc failure
+ * ================================================================ */
+
+static int
+test_aes256_ctr_null_ctx(void)
+{
+	dssh_test_reset_global_config();
+	ASSERT_EQ(register_aes256_ctr(), 0);
+
+	dssh_enc enc = gconf.enc_head;
+	ASSERT_NOT_NULL(enc);
+
+	uint8_t buf[16] = {0};
+	ASSERT_EQ(enc->encrypt(buf, sizeof(buf), NULL), DSSH_ERROR_INIT);
+	ASSERT_EQ(enc->decrypt(buf, sizeof(buf), NULL), DSSH_ERROR_INIT);
+
+	dssh_test_reset_global_config();
+	return TEST_PASS;
+}
+
+static int
+test_aes256_ctr_alloc_fail(void)
+{
+	dssh_test_reset_global_config();
+	ASSERT_EQ(register_aes256_ctr(), 0);
+
+	dssh_enc enc = gconf.enc_head;
+	ASSERT_NOT_NULL(enc);
+
+	uint8_t key[32], iv[16];
+	memset(key, 0x42, sizeof(key));
+	memset(iv, 0x00, sizeof(iv));
+
+	/* Fail the first malloc (cbd struct) */
+	dssh_test_alloc_fail_after(0);
+	dssh_enc_ctx *ectx = NULL;
+	int res = enc->init(key, iv, true, &ectx);
+	dssh_test_alloc_reset();
+	ASSERT_EQ(res, DSSH_ERROR_ALLOC);
+	ASSERT_NULL(ectx);
+
+	dssh_test_reset_global_config();
+	return TEST_PASS;
+}
+
+static int
+test_hmac_sha2_256_null_ctx(void)
+{
+	dssh_test_reset_global_config();
+	ASSERT_EQ(register_hmac_sha2_256(), 0);
+
+	dssh_mac mac = gconf.mac_head;
+	ASSERT_NOT_NULL(mac);
+
+	uint8_t buf[16] = {0};
+	uint8_t out[32];
+	ASSERT_EQ(mac->generate(buf, sizeof(buf), out, NULL), DSSH_ERROR_INIT);
+
+	dssh_test_reset_global_config();
+	return TEST_PASS;
+}
+
+static int
+test_hmac_sha2_256_alloc_fail(void)
+{
+	dssh_test_reset_global_config();
+	ASSERT_EQ(register_hmac_sha2_256(), 0);
+
+	dssh_mac mac = gconf.mac_head;
+	ASSERT_NOT_NULL(mac);
+
+	uint8_t key[32];
+	memset(key, 0x42, sizeof(key));
+
+	/* Fail the first calloc (cbd struct) */
+	dssh_test_alloc_fail_after(0);
+	dssh_mac_ctx *mctx = NULL;
+	int res = mac->init(key, &mctx);
+	dssh_test_alloc_reset();
+	ASSERT_EQ(res, DSSH_ERROR_ALLOC);
+	ASSERT_NULL(mctx);
+
+	dssh_test_reset_global_config();
+	return TEST_PASS;
+}
+
+/* ================================================================
+ * None algorithm module coverage
+ * ================================================================ */
+
+static int
+test_none_comp(void)
+{
+	dssh_test_reset_global_config();
+	ASSERT_EQ(register_none_comp(), 0);
+
+	dssh_comp comp = gconf.comp_head;
+	ASSERT_NOT_NULL(comp);
+
+	uint8_t buf[16] = {0};
+	size_t bufsz = sizeof(buf);
+	ASSERT_EQ(comp->compress(buf, &bufsz, NULL), 0);
+	ASSERT_EQ(comp->uncompress(buf, &bufsz, NULL), 0);
+
+	dssh_test_reset_global_config();
+	return TEST_PASS;
+}
+
+static int
+test_none_enc(void)
+{
+	dssh_test_reset_global_config();
+	ASSERT_EQ(register_none_enc(), 0);
+
+	dssh_enc enc = gconf.enc_head;
+	ASSERT_NOT_NULL(enc);
+
+	uint8_t buf[16] = {0};
+	ASSERT_EQ(enc->encrypt(buf, sizeof(buf), NULL), 0);
+	ASSERT_EQ(enc->decrypt(buf, sizeof(buf), NULL), 0);
+
+	dssh_test_reset_global_config();
+	return TEST_PASS;
+}
+
+static int
+test_none_mac(void)
+{
+	dssh_test_reset_global_config();
+	ASSERT_EQ(register_none_mac(), 0);
+
+	dssh_mac mac = gconf.mac_head;
+	ASSERT_NOT_NULL(mac);
+
+	uint8_t buf[16] = {0};
+	uint8_t out[1];
+	ASSERT_EQ(mac->generate(buf, sizeof(buf), out, NULL), 0);
+
+	dssh_test_reset_global_config();
+	return TEST_PASS;
+}
+
+/* ================================================================
  * Test table
  * ================================================================ */
 
@@ -3954,6 +4103,17 @@ static struct dssh_test_entry tests[] = {
 	{ "register/lang_empty_name",        test_register_lang_empty_name },
 	{ "register/lang_toolate",           test_register_lang_toolate },
 	{ "register/lang_next_not_null",     test_register_lang_next_not_null },
+
+	/* Algorithm edge cases */
+	{ "aes256_ctr/null_ctx",             test_aes256_ctr_null_ctx },
+	{ "aes256_ctr/alloc_fail",           test_aes256_ctr_alloc_fail },
+	{ "hmac_sha2_256/null_ctx",          test_hmac_sha2_256_null_ctx },
+	{ "hmac_sha2_256/alloc_fail",        test_hmac_sha2_256_alloc_fail },
+
+	/* None module coverage */
+	{ "none/comp",                       test_none_comp },
+	{ "none/enc",                        test_none_enc },
+	{ "none/mac",                        test_none_mac },
 
 	/* Getter before handshake */
 	{ "getter/names_before_handshake",   test_get_names_before_handshake },

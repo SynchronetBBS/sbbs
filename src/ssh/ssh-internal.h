@@ -30,9 +30,8 @@ DSSH_PRIVATE void dssh_session_set_terminate(dssh_session sess);
 /*
  * Test allocation redirection.  Under DSSH_TESTING, library code
  * calls dssh_test_malloc/calloc/realloc instead of the real
- * allocators.  These go through a countdown that can inject NULL
- * returns without affecting OpenSSL's internal allocations (which
- * don't include this header).
+ * allocators.  Algorithm module files must include ssh-internal.h
+ * to get these redirects.
  *
  * free() is NOT redirected — real free() handles all pointers
  * since dssh_test_malloc returns real malloc'd memory.
@@ -45,13 +44,6 @@ void *dssh_test_realloc(void *ptr, size_t sz);
 #define malloc(x)       dssh_test_malloc(x)
 #define calloc(n, s)    dssh_test_calloc(n, s)
 #define realloc(p, s)   dssh_test_realloc(p, s)
-
-/*
- * OpenSSL failure injection macros are in ssh-trans.h (under
- * DSSH_TESTING) so that algorithm module files (enc/, mac/, kex/,
- * key_algo/) also get the redirects — they include ssh-trans.h
- * but not ssh-internal.h.
- */
 
 /* C11 threads */
 int dssh_test_mtx_init(mtx_t *mtx, int type);

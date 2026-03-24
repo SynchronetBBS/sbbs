@@ -2,6 +2,7 @@
 #include <string.h>
 
 #include "ssh-trans.h"
+#include "ssh-internal.h"
 
 static int
 compress(uint8_t *buf, size_t *bufsz, dssh_comp_ctx *ctx)

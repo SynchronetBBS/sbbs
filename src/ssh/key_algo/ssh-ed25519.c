@@ -5,6 +5,7 @@
 
 #include "deucessh.h"
 #include "ssh-trans.h"
+#include "ssh-internal.h"
 
 #define ED25519_RAW_PUB_LEN  32
 #define ED25519_RAW_SIG_LEN  64

@@ -10,6 +10,7 @@
 
 #include "deucessh.h"
 #include "ssh-trans.h"
+#include "ssh-internal.h"
 
 #define RSA_SHA2_256_NAME     "rsa-sha2-256"
 #define RSA_SHA2_256_NAME_LEN 12

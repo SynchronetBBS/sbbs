@@ -5,6 +5,7 @@
 #include <string.h>
 
 #include "ssh-trans.h"
+#include "ssh-internal.h"
 
 #define HMAC_SHA2_256_DIGEST_SIZE 32
 #define HMAC_SHA2_256_KEY_SIZE    32

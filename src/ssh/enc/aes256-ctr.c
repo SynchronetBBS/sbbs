@@ -3,6 +3,7 @@
 #include <string.h>
 
 #include "ssh-trans.h"
+#include "ssh-internal.h"
 
 #define AES256_CTR_BLOCK_SIZE 16
 #define AES256_CTR_KEY_SIZE   32
