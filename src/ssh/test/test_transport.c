@@ -2658,6 +2658,193 @@ test_register_lang_toolate(void)
 }
 
 /* ================================================================
+ * Additional registration validation: TOOLONG, MUST_BE_NULL, TOOLATE
+ * for key_algo, enc, mac, comp.
+ * ================================================================ */
+
+static int
+test_register_key_algo_toolate(void)
+{
+	dssh_test_reset_global_config();
+	ASSERT_EQ(register_all_algorithms(), 0);
+	dssh_transport_set_callbacks(mock_tx_dispatch, mock_rx_dispatch,
+	    mock_rxline_dispatch, mock_extra_line_cb);
+
+	dssh_session sess = dssh_session_init(true, 0);
+	ASSERT_NOT_NULL(sess);
+
+	uint8_t buf[sizeof(struct dssh_key_algo_s) + 16];
+	memset(buf, 0, sizeof(buf));
+	struct dssh_key_algo_s *ka = (struct dssh_key_algo_s *)buf;
+	strcpy(ka->name, "late-key");
+	ASSERT_EQ(dssh_transport_register_key_algo(ka), DSSH_ERROR_TOOLATE);
+
+	dssh_session_cleanup(sess);
+	dssh_test_reset_global_config();
+	return TEST_PASS;
+}
+
+static int
+test_register_key_algo_toolong(void)
+{
+	dssh_test_reset_global_config();
+
+	uint8_t buf[sizeof(struct dssh_key_algo_s) + 128];
+	memset(buf, 0, sizeof(buf));
+	struct dssh_key_algo_s *ka = (struct dssh_key_algo_s *)buf;
+	memset(ka->name, 'x', 65);
+	ka->name[65] = '\0';
+	ASSERT_EQ(dssh_transport_register_key_algo(ka), DSSH_ERROR_TOOLONG);
+
+	/* Empty name */
+	ka->name[0] = '\0';
+	ASSERT_EQ(dssh_transport_register_key_algo(ka), DSSH_ERROR_TOOLONG);
+
+	dssh_test_reset_global_config();
+	return TEST_PASS;
+}
+
+static int
+test_register_key_algo_next_not_null(void)
+{
+	dssh_test_reset_global_config();
+
+	uint8_t buf[sizeof(struct dssh_key_algo_s) + 16];
+	memset(buf, 0, sizeof(buf));
+	struct dssh_key_algo_s *ka = (struct dssh_key_algo_s *)buf;
+	strcpy(ka->name, "test-ka");
+	ka->next = (void *)1;
+	ASSERT_EQ(dssh_transport_register_key_algo(ka), DSSH_ERROR_MUST_BE_NULL);
+
+	dssh_test_reset_global_config();
+	return TEST_PASS;
+}
+
+static int
+test_register_enc_toolong(void)
+{
+	dssh_test_reset_global_config();
+
+	uint8_t buf[sizeof(struct dssh_enc_s) + 128];
+	memset(buf, 0, sizeof(buf));
+	struct dssh_enc_s *enc = (struct dssh_enc_s *)buf;
+	memset(enc->name, 'x', 65);
+	enc->name[65] = '\0';
+	ASSERT_EQ(dssh_transport_register_enc(enc), DSSH_ERROR_TOOLONG);
+
+	enc->name[0] = '\0';
+	ASSERT_EQ(dssh_transport_register_enc(enc), DSSH_ERROR_TOOLONG);
+
+	dssh_test_reset_global_config();
+	return TEST_PASS;
+}
+
+static int
+test_register_enc_next_not_null(void)
+{
+	dssh_test_reset_global_config();
+
+	uint8_t buf[sizeof(struct dssh_enc_s) + 16];
+	memset(buf, 0, sizeof(buf));
+	struct dssh_enc_s *enc = (struct dssh_enc_s *)buf;
+	strcpy(enc->name, "test-enc");
+	enc->next = (void *)1;
+	ASSERT_EQ(dssh_transport_register_enc(enc), DSSH_ERROR_MUST_BE_NULL);
+
+	dssh_test_reset_global_config();
+	return TEST_PASS;
+}
+
+static int
+test_register_mac_toolong(void)
+{
+	dssh_test_reset_global_config();
+
+	uint8_t buf[sizeof(struct dssh_mac_s) + 128];
+	memset(buf, 0, sizeof(buf));
+	struct dssh_mac_s *mac = (struct dssh_mac_s *)buf;
+	memset(mac->name, 'x', 65);
+	mac->name[65] = '\0';
+	ASSERT_EQ(dssh_transport_register_mac(mac), DSSH_ERROR_TOOLONG);
+
+	mac->name[0] = '\0';
+	ASSERT_EQ(dssh_transport_register_mac(mac), DSSH_ERROR_TOOLONG);
+
+	dssh_test_reset_global_config();
+	return TEST_PASS;
+}
+
+static int
+test_register_mac_next_not_null(void)
+{
+	dssh_test_reset_global_config();
+
+	uint8_t buf[sizeof(struct dssh_mac_s) + 16];
+	memset(buf, 0, sizeof(buf));
+	struct dssh_mac_s *mac = (struct dssh_mac_s *)buf;
+	strcpy(mac->name, "test-mac");
+	mac->next = (void *)1;
+	ASSERT_EQ(dssh_transport_register_mac(mac), DSSH_ERROR_MUST_BE_NULL);
+
+	dssh_test_reset_global_config();
+	return TEST_PASS;
+}
+
+static int
+test_register_comp_toolate(void)
+{
+	dssh_test_reset_global_config();
+	ASSERT_EQ(register_all_algorithms(), 0);
+	dssh_transport_set_callbacks(mock_tx_dispatch, mock_rx_dispatch,
+	    mock_rxline_dispatch, mock_extra_line_cb);
+
+	dssh_session sess = dssh_session_init(true, 0);
+	ASSERT_NOT_NULL(sess);
+
+	uint8_t buf[sizeof(struct dssh_comp_s) + 16];
+	memset(buf, 0, sizeof(buf));
+	struct dssh_comp_s *comp = (struct dssh_comp_s *)buf;
+	strcpy(comp->name, "late-comp");
+	ASSERT_EQ(dssh_transport_register_comp(comp), DSSH_ERROR_TOOLATE);
+
+	dssh_session_cleanup(sess);
+	dssh_test_reset_global_config();
+	return TEST_PASS;
+}
+
+static int
+test_register_comp_next_not_null(void)
+{
+	dssh_test_reset_global_config();
+
+	uint8_t buf[sizeof(struct dssh_comp_s) + 16];
+	memset(buf, 0, sizeof(buf));
+	struct dssh_comp_s *comp = (struct dssh_comp_s *)buf;
+	strcpy(comp->name, "test-comp");
+	comp->next = (void *)1;
+	ASSERT_EQ(dssh_transport_register_comp(comp), DSSH_ERROR_MUST_BE_NULL);
+
+	dssh_test_reset_global_config();
+	return TEST_PASS;
+}
+
+static int
+test_register_lang_next_not_null(void)
+{
+	dssh_test_reset_global_config();
+
+	uint8_t buf[sizeof(struct dssh_language_s) + 16];
+	memset(buf, 0, sizeof(buf));
+	struct dssh_language_s *lang = (struct dssh_language_s *)buf;
+	strcpy(lang->name, "en");
+	lang->next = (void *)1;
+	ASSERT_EQ(dssh_transport_register_lang(lang), DSSH_ERROR_MUST_BE_NULL);
+
+	dssh_test_reset_global_config();
+	return TEST_PASS;
+}
+
+/* ================================================================
  * Getter-before-handshake — covers NULL ternary branches in
  * get_kex_name, get_hostkey_name, get_enc_name, get_mac_name.
  * ================================================================ */
@@ -3754,9 +3941,19 @@ static struct dssh_test_entry tests[] = {
 	{ "register/enc_toolate",            test_register_enc_toolate },
 	{ "register/mac_toolate",            test_register_mac_toolate },
 	{ "register/comp_empty_name",        test_register_comp_empty_name },
+	{ "register/key_algo_toolate",       test_register_key_algo_toolate },
+	{ "register/key_algo_toolong",       test_register_key_algo_toolong },
+	{ "register/key_algo_next_not_null", test_register_key_algo_next_not_null },
+	{ "register/enc_toolong",            test_register_enc_toolong },
+	{ "register/enc_next_not_null",      test_register_enc_next_not_null },
+	{ "register/mac_toolong",            test_register_mac_toolong },
+	{ "register/mac_next_not_null",      test_register_mac_next_not_null },
+	{ "register/comp_toolate",           test_register_comp_toolate },
+	{ "register/comp_next_not_null",     test_register_comp_next_not_null },
 	{ "register/lang_basic",             test_register_lang_basic },
 	{ "register/lang_empty_name",        test_register_lang_empty_name },
 	{ "register/lang_toolate",           test_register_lang_toolate },
+	{ "register/lang_next_not_null",     test_register_lang_next_not_null },
 
 	/* Getter before handshake */
 	{ "getter/names_before_handshake",   test_get_names_before_handshake },
