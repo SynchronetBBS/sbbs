@@ -3226,6 +3226,406 @@ test_server_parse_long_username(void)
 	return TEST_PASS;
 }
 
+/* Helper: build a valid USERAUTH_REQUEST prefix (msg_type + user + svc + method) */
+static size_t
+build_auth_prefix(uint8_t *msg, size_t bufsz, const char *method)
+{
+	static const char svc[] = "ssh-connection";
+	size_t pos = 0;
+	msg[pos++] = SSH_MSG_USERAUTH_REQUEST;
+	dssh_serialize_uint32(4, msg, bufsz, &pos);
+	memcpy(&msg[pos], "user", 4);
+	pos += 4;
+	dssh_serialize_uint32((uint32_t)(sizeof(svc) - 1), msg, bufsz, &pos);
+	memcpy(&msg[pos], svc, sizeof(svc) - 1);
+	pos += sizeof(svc) - 1;
+	size_t mlen = strlen(method);
+	dssh_serialize_uint32((uint32_t)mlen, msg, bufsz, &pos);
+	memcpy(&msg[pos], method, mlen);
+	pos += mlen;
+	return pos;
+}
+
+static int
+test_server_parse_password_truncated_pw(void)
+{
+	/* Password length says 100 but data is short */
+	struct parse_error_ctx pe;
+	if (parse_error_setup(&pe) < 0) {
+		parse_error_cleanup(&pe);
+		return TEST_FAIL;
+	}
+
+	uint8_t msg[128];
+	size_t pos = build_auth_prefix(msg, sizeof(msg), "password");
+	msg[pos++] = 0; /* change = false */
+	dssh_serialize_uint32(100, msg, sizeof(msg), &pos); /* pw_len */
+	msg[pos++] = 'p'; /* only 1 byte of "password" data */
+	ASSERT_OK(dssh_transport_send_packet(pe.hctx.client, msg, pos, NULL));
+
+	parse_error_cleanup(&pe);
+	ASSERT_TRUE(pe.sa.result < 0);
+	return TEST_PASS;
+}
+
+static int
+test_server_parse_password_change_no_newpw(void)
+{
+	/* Password with change=true, valid old password, but no new_password */
+	struct parse_error_ctx pe;
+	if (parse_error_setup(&pe) < 0) {
+		parse_error_cleanup(&pe);
+		return TEST_FAIL;
+	}
+
+	uint8_t msg[128];
+	size_t pos = build_auth_prefix(msg, sizeof(msg), "password");
+	msg[pos++] = 1; /* change = true */
+	dssh_serialize_uint32(4, msg, sizeof(msg), &pos);
+	memcpy(&msg[pos], "old!", 4);
+	pos += 4;
+	/* No new_password length field */
+	ASSERT_OK(dssh_transport_send_packet(pe.hctx.client, msg, pos, NULL));
+
+	parse_error_cleanup(&pe);
+	ASSERT_TRUE(pe.sa.result < 0);
+	return TEST_PASS;
+}
+
+static int
+test_server_parse_password_change_truncated_newpw(void)
+{
+	/* change=true, valid old pw, new_password length > remaining */
+	struct parse_error_ctx pe;
+	if (parse_error_setup(&pe) < 0) {
+		parse_error_cleanup(&pe);
+		return TEST_FAIL;
+	}
+
+	uint8_t msg[128];
+	size_t pos = build_auth_prefix(msg, sizeof(msg), "password");
+	msg[pos++] = 1; /* change = true */
+	dssh_serialize_uint32(3, msg, sizeof(msg), &pos);
+	memcpy(&msg[pos], "old", 3);
+	pos += 3;
+	dssh_serialize_uint32(200, msg, sizeof(msg), &pos); /* new_pw_len too large */
+	ASSERT_OK(dssh_transport_send_packet(pe.hctx.client, msg, pos, NULL));
+
+	parse_error_cleanup(&pe);
+	ASSERT_TRUE(pe.sa.result < 0);
+	return TEST_PASS;
+}
+
+static int
+test_server_no_password_cb(void)
+{
+	/* Password method arrives but no password_cb registered */
+	struct handshake_ctx ctx;
+	if (handshake_setup(&ctx) < 0) {
+		handshake_cleanup(&ctx);
+		return TEST_FAIL;
+	}
+
+	struct test_auth_cbdata cbdata = {0};
+	cbdata.none_result = DSSH_AUTH_SUCCESS;
+	struct auth_server_arg sa = {0};
+	sa.ctx = &ctx;
+	sa.cbs.methods_str = "password";
+	/* No password_cb set — NULL */
+	sa.cbs.none_cb = test_none_cb;
+	sa.cbs.cbdata = &cbdata;
+
+	thrd_t st;
+	ASSERT_TRUE(thrd_create(&st, auth_server_thread, &sa) == thrd_success);
+
+	/* SERVICE_REQUEST/ACCEPT */
+	{
+		static const char svc[] = "ssh-userauth";
+		uint8_t msg[64];
+		size_t pos = 0;
+		msg[pos++] = SSH_MSG_SERVICE_REQUEST;
+		dssh_serialize_uint32((uint32_t)(sizeof(svc) - 1), msg, sizeof(msg), &pos);
+		memcpy(&msg[pos], svc, sizeof(svc) - 1);
+		pos += sizeof(svc) - 1;
+		ASSERT_OK(dssh_transport_send_packet(ctx.client, msg, pos, NULL));
+	}
+	{
+		uint8_t msg_type;
+		uint8_t *payload;
+		size_t payload_len;
+		ASSERT_OK(dssh_transport_recv_packet(ctx.client, &msg_type, &payload, &payload_len));
+		ASSERT_EQ(msg_type, SSH_MSG_SERVICE_ACCEPT);
+	}
+
+	/* Send password auth — server has no password_cb */
+	uint8_t msg[128];
+	size_t pos = build_auth_prefix(msg, sizeof(msg), "password");
+	msg[pos++] = 0; /* change = false */
+	dssh_serialize_uint32(4, msg, sizeof(msg), &pos);
+	memcpy(&msg[pos], "pass", 4);
+	pos += 4;
+	ASSERT_OK(dssh_transport_send_packet(ctx.client, msg, pos, NULL));
+
+	/* Server should send USERAUTH_FAILURE (no password_cb) */
+	{
+		uint8_t msg_type;
+		uint8_t *payload;
+		size_t payload_len;
+		ASSERT_OK(dssh_transport_recv_packet(ctx.client, &msg_type, &payload, &payload_len));
+		ASSERT_EQ(msg_type, SSH_MSG_USERAUTH_FAILURE);
+	}
+
+	/* Now send none auth to let the server succeed and exit */
+	{
+		uint8_t nmsg[64];
+		size_t npos = build_auth_prefix(nmsg, sizeof(nmsg), "none");
+		ASSERT_OK(dssh_transport_send_packet(ctx.client, nmsg, npos, NULL));
+	}
+	{
+		uint8_t msg_type;
+		uint8_t *payload;
+		size_t payload_len;
+		ASSERT_OK(dssh_transport_recv_packet(ctx.client, &msg_type, &payload, &payload_len));
+		ASSERT_EQ(msg_type, SSH_MSG_USERAUTH_SUCCESS);
+	}
+
+	thrd_join(st, NULL);
+	ASSERT_EQ(sa.result, 0);
+
+	handshake_cleanup(&ctx);
+	return TEST_PASS;
+}
+
+static int
+test_server_no_publickey_cb(void)
+{
+	/* Publickey method arrives but no publickey_cb registered */
+	struct handshake_ctx ctx;
+	if (handshake_setup(&ctx) < 0) {
+		handshake_cleanup(&ctx);
+		return TEST_FAIL;
+	}
+
+	struct test_auth_cbdata cbdata = {0};
+	cbdata.none_result = DSSH_AUTH_SUCCESS;
+	struct auth_server_arg sa = {0};
+	sa.ctx = &ctx;
+	sa.cbs.methods_str = "publickey";
+	/* No publickey_cb set */
+	sa.cbs.none_cb = test_none_cb;
+	sa.cbs.cbdata = &cbdata;
+
+	thrd_t st;
+	ASSERT_TRUE(thrd_create(&st, auth_server_thread, &sa) == thrd_success);
+
+	/* SERVICE_REQUEST/ACCEPT */
+	{
+		static const char svc[] = "ssh-userauth";
+		uint8_t msg[64];
+		size_t pos = 0;
+		msg[pos++] = SSH_MSG_SERVICE_REQUEST;
+		dssh_serialize_uint32((uint32_t)(sizeof(svc) - 1), msg, sizeof(msg), &pos);
+		memcpy(&msg[pos], svc, sizeof(svc) - 1);
+		pos += sizeof(svc) - 1;
+		ASSERT_OK(dssh_transport_send_packet(ctx.client, msg, pos, NULL));
+	}
+	{
+		uint8_t msg_type;
+		uint8_t *payload;
+		size_t payload_len;
+		ASSERT_OK(dssh_transport_recv_packet(ctx.client, &msg_type, &payload, &payload_len));
+		ASSERT_EQ(msg_type, SSH_MSG_SERVICE_ACCEPT);
+	}
+
+	/* Send publickey probe — server has no publickey_cb */
+	uint8_t msg[256];
+	size_t pos = build_auth_prefix(msg, sizeof(msg), "publickey");
+	msg[pos++] = 0; /* has_sig = false */
+	dssh_serialize_uint32(11, msg, sizeof(msg), &pos);
+	memcpy(&msg[pos], "ssh-ed25519", 11);
+	pos += 11;
+	dssh_serialize_uint32(4, msg, sizeof(msg), &pos);
+	memcpy(&msg[pos], "fake", 4);
+	pos += 4;
+	ASSERT_OK(dssh_transport_send_packet(ctx.client, msg, pos, NULL));
+
+	/* Server should send USERAUTH_FAILURE */
+	{
+		uint8_t msg_type;
+		uint8_t *payload;
+		size_t payload_len;
+		ASSERT_OK(dssh_transport_recv_packet(ctx.client, &msg_type, &payload, &payload_len));
+		ASSERT_EQ(msg_type, SSH_MSG_USERAUTH_FAILURE);
+	}
+
+	/* Send none to exit cleanly */
+	{
+		uint8_t nmsg[64];
+		size_t npos = build_auth_prefix(nmsg, sizeof(nmsg), "none");
+		ASSERT_OK(dssh_transport_send_packet(ctx.client, nmsg, npos, NULL));
+	}
+	{
+		uint8_t msg_type;
+		uint8_t *payload;
+		size_t payload_len;
+		ASSERT_OK(dssh_transport_recv_packet(ctx.client, &msg_type, &payload, &payload_len));
+		ASSERT_EQ(msg_type, SSH_MSG_USERAUTH_SUCCESS);
+	}
+
+	thrd_join(st, NULL);
+	ASSERT_EQ(sa.result, 0);
+
+	handshake_cleanup(&ctx);
+	return TEST_PASS;
+}
+
+static int
+test_server_parse_publickey_no_algo(void)
+{
+	/* Publickey with has_sig=false but no algo length */
+	struct parse_error_ctx pe;
+	if (parse_error_setup(&pe) < 0) {
+		parse_error_cleanup(&pe);
+		return TEST_FAIL;
+	}
+
+	uint8_t msg[128];
+	size_t pos = build_auth_prefix(msg, sizeof(msg), "publickey");
+	msg[pos++] = 0; /* has_sig = false */
+	/* No algo length */
+	ASSERT_OK(dssh_transport_send_packet(pe.hctx.client, msg, pos, NULL));
+
+	parse_error_cleanup(&pe);
+	ASSERT_TRUE(pe.sa.result < 0);
+	return TEST_PASS;
+}
+
+static int
+test_server_parse_publickey_no_blob(void)
+{
+	/* Publickey with valid algo but no pubkey blob */
+	struct parse_error_ctx pe;
+	if (parse_error_setup(&pe) < 0) {
+		parse_error_cleanup(&pe);
+		return TEST_FAIL;
+	}
+
+	uint8_t msg[128];
+	size_t pos = build_auth_prefix(msg, sizeof(msg), "publickey");
+	msg[pos++] = 0; /* has_sig = false */
+	dssh_serialize_uint32(11, msg, sizeof(msg), &pos);
+	memcpy(&msg[pos], "ssh-ed25519", 11);
+	pos += 11;
+	/* No pubkey blob length */
+	ASSERT_OK(dssh_transport_send_packet(pe.hctx.client, msg, pos, NULL));
+
+	parse_error_cleanup(&pe);
+	ASSERT_TRUE(pe.sa.result < 0);
+	return TEST_PASS;
+}
+
+static int
+test_server_parse_publickey_sig_no_siglen(void)
+{
+	/* Publickey with has_sig=true, valid algo+blob, but no sig length */
+	struct parse_error_ctx pe;
+	if (parse_error_setup(&pe) < 0) {
+		parse_error_cleanup(&pe);
+		return TEST_FAIL;
+	}
+
+	uint8_t msg[128];
+	size_t pos = build_auth_prefix(msg, sizeof(msg), "publickey");
+	msg[pos++] = 1; /* has_sig = true */
+	dssh_serialize_uint32(11, msg, sizeof(msg), &pos);
+	memcpy(&msg[pos], "ssh-ed25519", 11);
+	pos += 11;
+	dssh_serialize_uint32(4, msg, sizeof(msg), &pos);
+	memcpy(&msg[pos], "fake", 4);
+	pos += 4;
+	/* No signature length */
+	ASSERT_OK(dssh_transport_send_packet(pe.hctx.client, msg, pos, NULL));
+
+	parse_error_cleanup(&pe);
+	ASSERT_TRUE(pe.sa.result < 0);
+	return TEST_PASS;
+}
+
+static int
+test_server_publickey_unknown_algo(void)
+{
+	/* Publickey with has_sig=true but unregistered algo name */
+	struct parse_error_ctx pe;
+	if (parse_error_setup(&pe) < 0) {
+		parse_error_cleanup(&pe);
+		return TEST_FAIL;
+	}
+
+	uint8_t msg[128];
+	size_t pos = build_auth_prefix(msg, sizeof(msg), "publickey");
+	msg[pos++] = 1; /* has_sig = true */
+	dssh_serialize_uint32(12, msg, sizeof(msg), &pos);
+	memcpy(&msg[pos], "unknown-algo", 12);
+	pos += 12;
+	dssh_serialize_uint32(4, msg, sizeof(msg), &pos);
+	memcpy(&msg[pos], "fake", 4);
+	pos += 4;
+	dssh_serialize_uint32(4, msg, sizeof(msg), &pos);
+	memcpy(&msg[pos], "sig!", 4);
+	pos += 4;
+	ASSERT_OK(dssh_transport_send_packet(pe.hctx.client, msg, pos, NULL));
+
+	/* Server should send USERAUTH_FAILURE for unknown algo.
+	 * Then we need to let the server exit — send none. */
+	{
+		uint8_t msg_type;
+		uint8_t *payload;
+		size_t payload_len;
+		ASSERT_OK(dssh_transport_recv_packet(pe.hctx.client, &msg_type, &payload, &payload_len));
+		ASSERT_EQ(msg_type, SSH_MSG_USERAUTH_FAILURE);
+	}
+
+	parse_error_cleanup(&pe);
+	return TEST_PASS;
+}
+
+static int
+test_server_publickey_probe_rejected(void)
+{
+	/* Key probe (has_sig=false) where callback rejects the key */
+	struct parse_error_ctx pe;
+	if (parse_error_setup(&pe) < 0) {
+		parse_error_cleanup(&pe);
+		return TEST_FAIL;
+	}
+
+	/* Override callback to reject */
+	pe.cbdata.publickey_result = DSSH_AUTH_FAILURE;
+
+	uint8_t msg[256];
+	size_t pos = build_auth_prefix(msg, sizeof(msg), "publickey");
+	msg[pos++] = 0; /* has_sig = false */
+	dssh_serialize_uint32(11, msg, sizeof(msg), &pos);
+	memcpy(&msg[pos], "ssh-ed25519", 11);
+	pos += 11;
+	dssh_serialize_uint32(4, msg, sizeof(msg), &pos);
+	memcpy(&msg[pos], "blob", 4);
+	pos += 4;
+	ASSERT_OK(dssh_transport_send_packet(pe.hctx.client, msg, pos, NULL));
+
+	/* Should get FAILURE, not PK_OK */
+	{
+		uint8_t msg_type;
+		uint8_t *payload;
+		size_t payload_len;
+		ASSERT_OK(dssh_transport_recv_packet(pe.hctx.client, &msg_type, &payload, &payload_len));
+		ASSERT_EQ(msg_type, SSH_MSG_USERAUTH_FAILURE);
+	}
+
+	parse_error_cleanup(&pe);
+	return TEST_PASS;
+}
+
 /* ================================================================
  * Test table and main
  * ================================================================ */
@@ -3292,6 +3692,16 @@ static struct dssh_test_entry tests[] = {
 	{ "auth/server/parse_pk_no_has_sig",  test_server_parse_publickey_no_has_sig },
 	{ "auth/server/parse_not_svc_req",    test_server_parse_not_service_request },
 	{ "auth/server/parse_long_username",  test_server_parse_long_username },
+	{ "auth/server/parse_pw_trunc_pw",   test_server_parse_password_truncated_pw },
+	{ "auth/server/parse_pw_chg_no_new", test_server_parse_password_change_no_newpw },
+	{ "auth/server/parse_pw_chg_trunc",  test_server_parse_password_change_truncated_newpw },
+	{ "auth/server/no_password_cb",      test_server_no_password_cb },
+	{ "auth/server/no_publickey_cb",     test_server_no_publickey_cb },
+	{ "auth/server/parse_pk_no_algo",    test_server_parse_publickey_no_algo },
+	{ "auth/server/parse_pk_no_blob",    test_server_parse_publickey_no_blob },
+	{ "auth/server/parse_pk_no_sig",     test_server_parse_publickey_sig_no_siglen },
+	{ "auth/server/pk_unknown_algo",     test_server_publickey_unknown_algo },
+	{ "auth/server/pk_probe_rejected",   test_server_publickey_probe_rejected },
 };
 
 DSSH_TEST_MAIN(tests)
