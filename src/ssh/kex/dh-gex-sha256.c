@@ -23,7 +23,7 @@
 #define GEX_N    4096
 #define GEX_MAX  8192
 
-static int
+DSSH_TESTABLE int
 serialize_bn_mpint(const BIGNUM *bn, uint8_t *buf, size_t bufsz, size_t *pos)
 {
 	int bn_bytes = BN_num_bytes(bn);

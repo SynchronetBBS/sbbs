@@ -78,6 +78,7 @@ int version_tx(dssh_session sess);
 #include <openssl/bn.h>
 
 int64_t parse_bn_mpint(const uint8_t *buf, size_t bufsz, BIGNUM **bn);
+int serialize_bn_mpint(const BIGNUM *bn, uint8_t *buf, size_t bufsz, size_t *pos);
 bool dh_value_valid(const BIGNUM *val, const BIGNUM *p);
 
 #ifdef __cplusplus
