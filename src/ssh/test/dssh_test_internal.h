@@ -54,6 +54,11 @@ size_t dssh_test_build_namelist(void *head, size_t name_offset,
     char *buf, size_t bufsz);
 
 /*
+ * Global config — DSSH_TESTABLE in ssh-trans.c.
+ */
+extern struct dssh_transport_global_config gconf;
+
+/*
  * Version string validators from ssh-trans.c.
  */
 bool dssh_test_has_nulls(uint8_t *buf, size_t buflen);

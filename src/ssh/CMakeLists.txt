@@ -304,12 +304,15 @@ if(DEUCESSH_BUILD_TESTS)
 		ENVIRONMENT "${DSSH_TEST_KEY_ENV}")
 	add_test(NAME dssh_unit_alloc_dhgex COMMAND dssh_test_alloc)
 	set_tests_properties(dssh_unit_alloc_dhgex PROPERTIES
+		TIMEOUT 120
 		ENVIRONMENT "DSSH_TEST_KEX=dh-gex;${DSSH_TEST_KEY_ENV}")
 	add_test(NAME dssh_unit_alloc_rsa COMMAND dssh_test_alloc)
 	set_tests_properties(dssh_unit_alloc_rsa PROPERTIES
+		TIMEOUT 120
 		ENVIRONMENT "DSSH_TEST_KEY=rsa;${DSSH_TEST_KEY_ENV}")
 	add_test(NAME dssh_unit_alloc_dhgex_rsa COMMAND dssh_test_alloc)
 	set_tests_properties(dssh_unit_alloc_dhgex_rsa PROPERTIES
+		TIMEOUT 600
 		ENVIRONMENT "DSSH_TEST_KEX=dh-gex;DSSH_TEST_KEY=rsa;${DSSH_TEST_KEY_ENV}")
 
 	# Test algorithm modules (enc/mac with failure injection)

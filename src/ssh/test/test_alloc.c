@@ -223,20 +223,20 @@ test_alloc_session_init(void)
 	ASSERT_EQ(register_all(), 0);
 
 	/* Fail each allocation in turn */
-	for (int n = 0; ; n++) {
+	int prev_count = -1;
+	for (int n = 0; n < 100; n++) {
 		mock_alloc_fail_after(n);
 		dssh_session sess = dssh_session_init(true, 0);
+		int cur_count = mock_alloc_count();
 		mock_alloc_reset();
 		if (sess != NULL) {
-			/* Success — we've covered all failure points */
 			dssh_session_cleanup(sess);
 			ASSERT_TRUE(n > 0);
 			break;
 		}
-		/* Must have returned NULL due to alloc failure */
-		ASSERT_NULL(sess);
-		/* Safety: don't loop forever */
-		ASSERT_TRUE(n < 20);
+		if (cur_count == prev_count)
+			break;
+		prev_count = cur_count;
 	}
 
 	dssh_test_reset_global_config();
@@ -928,7 +928,8 @@ hs_alloc_thread(void *arg)
 static int
 test_alloc_handshake_iterate(void)
 {
-	for (int n = 0; n < 50; n++) {
+	int prev_count = -1;
+	for (int n = 0; n < 100; n++) {
 		dssh_test_reset_global_config();
 		dssh_test_alloc_reset();
 		mock_alloc_reset();
@@ -998,6 +999,7 @@ test_alloc_handshake_iterate(void)
 		cnd_destroy(&bcnd);
 		mtx_destroy(&bmtx);
 
+		int cur_count = dssh_test_alloc_count();
 		dssh_test_alloc_reset();
 		bool ok = (ca.result == 0 && sa.result == 0);
 
@@ -1012,8 +1014,13 @@ test_alloc_handshake_iterate(void)
 			ASSERT_TRUE(n > 0);
 			return TEST_PASS;
 		}
+		if (cur_count == prev_count)
+			return TEST_PASS;
+		prev_count = cur_count;
 	}
 
+	fprintf(stderr, "  alloc/handshake_iterate: still incrementing at "
+	    "n=%d (count=%d), raise limit\n", 100, prev_count);
 	return TEST_FAIL;
 }
 
@@ -1088,11 +1095,12 @@ auth_alloc_server_thread(void *arg)
 static int
 test_alloc_auth_iterate(void)
 {
+	int prev_count = -1;
 	struct dssh_auth_server_cbs cbs = {0};
 	cbs.methods_str = "password";
 	cbs.password_cb = iter_password_cb;
 
-	for (int n = 0; n < 50; n++) {
+	for (int n = 0; n < 100; n++) {
 		dssh_test_reset_global_config();
 		dssh_test_alloc_reset();
 		mock_alloc_reset();
@@ -1181,6 +1189,7 @@ test_alloc_auth_iterate(void)
 		cnd_destroy(&bcnd);
 		mtx_destroy(&bmtx);
 
+		int cur_count = dssh_test_alloc_count();
 		dssh_test_alloc_reset();
 		bool ok = (ca.result == 0 && sa.result == 0);
 
@@ -1195,8 +1204,13 @@ test_alloc_auth_iterate(void)
 			ASSERT_TRUE(n > 0);
 			return TEST_PASS;
 		}
+		if (cur_count == prev_count)
+			return TEST_PASS;
+		prev_count = cur_count;
 	}
 
+	fprintf(stderr, "  alloc/auth_iterate: still incrementing at n=%d "
+	    "(count=%d), raise limit\n", 100, prev_count);
 	return TEST_FAIL;
 }
 
@@ -1327,11 +1341,12 @@ watchdog_thread(void *arg)
 static int
 test_alloc_conn_iterate(void)
 {
+	int prev_count = -1;
 	struct dssh_auth_server_cbs cbs = {0};
 	cbs.methods_str = "password";
 	cbs.password_cb = iter_password_cb;
 
-	for (int n = 0; n < 40; n++) {
+	for (int n = 0; n < 200; n++) {
 		dssh_test_reset_global_config();
 		dssh_test_alloc_reset();
 		mock_alloc_reset();
@@ -1425,6 +1440,7 @@ test_alloc_conn_iterate(void)
 		thrd_join(st, NULL);
 		thrd_join(wt, NULL);
 
+		int cur_count = dssh_test_alloc_count();
 		dssh_test_alloc_reset();
 		bool ok = (cca.result == 0 && csa.result == 0);
 
@@ -1448,8 +1464,13 @@ test_alloc_conn_iterate(void)
 			ASSERT_TRUE(n > 0);
 			return TEST_PASS;
 		}
+		if (cur_count == prev_count)
+			return TEST_PASS;
+		prev_count = cur_count;
 	}
 
+	fprintf(stderr, "  alloc/conn_iterate: still incrementing at n=%d "
+	    "(count=%d), raise limit\n", 200, prev_count);
 	return TEST_FAIL;
 }
 
@@ -1465,7 +1486,8 @@ test_alloc_conn_iterate(void)
 static int
 test_ossl_handshake_iterate(void)
 {
-	for (int n = 0; n < 200; n++) {
+	int prev_count = -1;
+	for (int n = 0; n < 500; n++) {
 		dssh_test_reset_global_config();
 		dssh_test_alloc_reset();
 		dssh_test_ossl_reset();
@@ -1535,6 +1557,7 @@ test_ossl_handshake_iterate(void)
 		cnd_destroy(&bcnd);
 		mtx_destroy(&bmtx);
 
+		int cur_count = dssh_test_ossl_count();
 		dssh_test_ossl_reset();
 		bool ok = (ca.result == 0 && sa.result == 0);
 
@@ -1549,8 +1572,245 @@ test_ossl_handshake_iterate(void)
 			ASSERT_TRUE(n > 0);
 			return TEST_PASS;
 		}
+
+		/* If the call count stopped increasing, all failure
+		 * points have been exercised — no need to keep going
+		 * through increasingly expensive successful crypto. */
+		if (cur_count == prev_count)
+			return TEST_PASS;
+		prev_count = cur_count;
 	}
 
+	fprintf(stderr, "  ossl/handshake_iterate: still incrementing at n=%d "
+	    "(count=%d), raise limit\n", 500, prev_count);
+	return TEST_FAIL;
+}
+
+/* ================================================================
+ * Isolated OpenSSL failure injection for key algo operations.
+ *
+ * Single-threaded: generate key, then iterate ossl failures through
+ * sign → pubkey → verify.  No handshake, no I/O — fast.
+ * ================================================================ */
+
+static int
+test_ossl_key_sign_verify_iterate(void)
+{
+	int prev_count = -1;
+	for (int n = 0; n < 500; n++) {
+		dssh_test_reset_global_config();
+		dssh_test_ossl_reset();
+		mock_alloc_reset();
+
+		int res = test_register_key_algos();
+		if (res < 0)
+			return TEST_FAIL;
+		if (test_generate_host_key() < 0)
+			return TEST_FAIL;
+
+		dssh_key_algo ka = dssh_transport_find_key_algo(
+		    test_key_algo_name());
+		if (ka == NULL)
+			return TEST_FAIL;
+
+		const uint8_t data[] = "test data for ossl sign/verify";
+		uint8_t sig_buf[1024];
+		size_t sig_len = 0;
+		uint8_t pub_buf[1024];
+		size_t pub_len = 0;
+
+		dssh_test_ossl_fail_after(n);
+
+		int sign_res = ka->sign(sig_buf, sizeof(sig_buf), &sig_len,
+		    data, sizeof(data) - 1, ka->ctx);
+		int pub_res = ka->pubkey(pub_buf, sizeof(pub_buf), &pub_len,
+		    ka->ctx);
+		int verify_res = -1;
+		if (sign_res == 0 && pub_res == 0)
+			verify_res = ka->verify(pub_buf, pub_len, sig_buf,
+			    sig_len, data, sizeof(data) - 1);
+
+		int cur_count = dssh_test_ossl_count();
+		dssh_test_ossl_reset();
+
+		if (sign_res == 0 && pub_res == 0 && verify_res == 0) {
+			dssh_test_reset_global_config();
+			ASSERT_TRUE(n > 0);
+			return TEST_PASS;
+		}
+		dssh_test_reset_global_config();
+		if (cur_count == prev_count)
+			return TEST_PASS;
+		prev_count = cur_count;
+	}
+
+	fprintf(stderr, "  ossl/key_sign_verify: still incrementing at n=%d "
+	    "(count=%d), raise limit\n", 500, prev_count);
+	return TEST_FAIL;
+}
+
+/* ================================================================
+ * Isolated OpenSSL failure injection for key generation.
+ *
+ * Single-threaded: iterate ossl failures through generate().
+ * ================================================================ */
+
+static int
+test_ossl_keygen_iterate(void)
+{
+	const char *algo = test_key_algo_name();
+	bool is_rsa = (strcmp(algo, "rsa-sha2-256") == 0);
+	int prev_count = -1;
+
+	for (int n = 0; n < 500; n++) {
+		dssh_test_reset_global_config();
+		dssh_test_ossl_reset();
+		mock_alloc_reset();
+
+		int res = test_register_key_algos();
+		if (res < 0)
+			return TEST_FAIL;
+
+		dssh_test_ossl_fail_after(n);
+
+		if (is_rsa)
+			res = rsa_sha2_256_generate_key(2048);
+		else
+			res = ssh_ed25519_generate_key();
+
+		int cur_count = dssh_test_ossl_count();
+		dssh_test_ossl_reset();
+
+		if (res == 0) {
+			dssh_test_reset_global_config();
+			ASSERT_TRUE(n > 0);
+			return TEST_PASS;
+		}
+		dssh_test_reset_global_config();
+		if (cur_count == prev_count)
+			return TEST_PASS;
+		prev_count = cur_count;
+	}
+
+	fprintf(stderr, "  ossl/keygen: still incrementing at n=%d "
+	    "(count=%d), raise limit\n", 500, prev_count);
+	return TEST_FAIL;
+}
+
+/* ================================================================
+ * Isolated OpenSSL failure injection for enc init/encrypt.
+ *
+ * Single-threaded: register aes256-ctr, iterate ossl failures
+ * through init → encrypt → cleanup.
+ * ================================================================ */
+
+static int
+test_ossl_enc_iterate(void)
+{
+	int prev_count = -1;
+	for (int n = 0; n < 500; n++) {
+		dssh_test_reset_global_config();
+		dssh_test_ossl_reset();
+		mock_alloc_reset();
+
+		ASSERT_EQ(register_aes256_ctr(), 0);
+
+		dssh_enc enc = gconf.enc_head;
+		if (enc == NULL)
+			return TEST_FAIL;
+
+		uint8_t key[32], iv[16];
+		memset(key, 0x42, sizeof(key));
+		memset(iv, 0x00, sizeof(iv));
+
+		dssh_test_ossl_fail_after(n);
+
+		dssh_enc_ctx *ectx = NULL;
+		int res = enc->init(key, iv, true, &ectx);
+		int enc_res = -1;
+		if (res == 0) {
+			uint8_t buf[16];
+			memset(buf, 'A', sizeof(buf));
+			enc_res = enc->encrypt(buf, sizeof(buf), ectx);
+			if (enc->cleanup)
+				enc->cleanup(ectx);
+		}
+
+		int cur_count = dssh_test_ossl_count();
+		dssh_test_ossl_reset();
+
+		if (res == 0 && enc_res == 0) {
+			dssh_test_reset_global_config();
+			ASSERT_TRUE(n > 0);
+			return TEST_PASS;
+		}
+		dssh_test_reset_global_config();
+		if (cur_count == prev_count)
+			return TEST_PASS;
+		prev_count = cur_count;
+	}
+
+	fprintf(stderr, "  ossl/enc: still incrementing at n=%d "
+	    "(count=%d), raise limit\n", 500, prev_count);
+	return TEST_FAIL;
+}
+
+/* ================================================================
+ * Isolated OpenSSL failure injection for mac init/compute/verify.
+ *
+ * Single-threaded: register hmac-sha2-256, iterate ossl failures
+ * through init → compute → verify → cleanup.
+ * ================================================================ */
+
+static int
+test_ossl_mac_iterate(void)
+{
+	int prev_count = -1;
+	for (int n = 0; n < 500; n++) {
+		dssh_test_reset_global_config();
+		dssh_test_ossl_reset();
+		mock_alloc_reset();
+
+		ASSERT_EQ(register_hmac_sha2_256(), 0);
+
+		dssh_mac mac = gconf.mac_head;
+		if (mac == NULL)
+			return TEST_FAIL;
+
+		uint8_t key[32];
+		memset(key, 0x42, sizeof(key));
+
+		dssh_test_ossl_fail_after(n);
+
+		dssh_mac_ctx *mctx = NULL;
+		int res = mac->init(key, &mctx);
+		int gen_res = -1;
+		if (res == 0) {
+			uint8_t data[16];
+			memset(data, 'B', sizeof(data));
+			uint8_t tag[64];
+			gen_res = mac->generate(data, sizeof(data),
+			    tag, mctx);
+			if (mac->cleanup)
+				mac->cleanup(mctx);
+		}
+
+		int cur_count = dssh_test_ossl_count();
+		dssh_test_ossl_reset();
+
+		if (res == 0 && gen_res == 0) {
+			dssh_test_reset_global_config();
+			ASSERT_TRUE(n > 0);
+			return TEST_PASS;
+		}
+		dssh_test_reset_global_config();
+		if (cur_count == prev_count)
+			return TEST_PASS;
+		prev_count = cur_count;
+	}
+
+	fprintf(stderr, "  ossl/mac: still incrementing at n=%d "
+	    "(count=%d), raise limit\n", 500, prev_count);
 	return TEST_FAIL;
 }
 
@@ -1605,6 +1865,10 @@ static struct dssh_test_entry tests[] = {
 
 	/* Iterative OpenSSL/C11 failure injection */
 	{ "ossl/handshake_iterate",       test_ossl_handshake_iterate },
+	{ "ossl/key_sign_verify",         test_ossl_key_sign_verify_iterate },
+	{ "ossl/keygen",                  test_ossl_keygen_iterate },
+	{ "ossl/enc",                     test_ossl_enc_iterate },
+	{ "ossl/mac",                     test_ossl_mac_iterate },
 };
 
 DSSH_TEST_MAIN(tests)

@@ -254,9 +254,7 @@ handler(dssh_session sess)
 			/* 4096-byte buffer is adequate for DH e value. */
 			init_msg[pos++] = SSH_MSG_KEX_DH_GEX_INIT;
 			res = serialize_bn_mpint(e_bn, init_msg, sizeof(init_msg), &pos);
-#ifndef DSSH_TESTING
 			if (res < 0) { BN_clear_free(x); goto cleanup; }
-#endif
 			res = dssh_transport_send_packet(sess, init_msg, pos, NULL);
 			if (res < 0) { BN_clear_free(x); goto cleanup; }
 		}
@@ -336,9 +334,7 @@ handler(dssh_session sess)
 		uint8_t k_s_buf[1024];
 		size_t k_s_len;
 		res = ka->pubkey(k_s_buf, sizeof(k_s_buf), &k_s_len, ka->ctx);
-#ifndef DSSH_TESTING
 		if (res < 0) return res;
-#endif
 
 		/* 1. Receive GEX_REQUEST(min, n, max) */
 		res = dssh_transport_recv_packet(sess, &msg_type, &payload, &payload_len);
@@ -374,13 +370,9 @@ handler(dssh_session sess)
 			/* 4096-byte buffer is adequate for DH primes. */
 			group_msg[pos++] = SSH_MSG_KEX_DH_GEX_GROUP;
 			res = serialize_bn_mpint(p, group_msg, sizeof(group_msg), &pos);
-#ifndef DSSH_TESTING
 			if (res < 0) goto cleanup;
-#endif
 			res = serialize_bn_mpint(g, group_msg, sizeof(group_msg), &pos);
-#ifndef DSSH_TESTING
 			if (res < 0) goto cleanup;
-#endif
 			res = dssh_transport_send_packet(sess, group_msg, pos, NULL);
 			if (res < 0) goto cleanup;
 		}
@@ -450,9 +442,7 @@ handler(dssh_session sess)
 			pos += k_s_len;
 			/* Buffer is adequately sized for the DH value. */
 			res = serialize_bn_mpint(f_bn, reply, reply_sz, &pos);
-#ifndef DSSH_TESTING
 			if (res < 0) { free(reply); goto cleanup; }
-#endif
 			dssh_serialize_uint32((uint32_t)sig_len, reply, reply_sz, &pos);
 			memcpy(&reply[pos], sig_buf, sig_len);
 			pos += sig_len;

@@ -364,10 +364,8 @@ handler(dssh_session sess)
 
 		/* Get our host key blob */
 		res = ka->pubkey(k_s_buf, sizeof(k_s_buf), &k_s_len, ka->ctx);
-#ifndef DSSH_TESTING
 		if (res < 0)
 			return res;
-#endif
 
 		/* Receive ECDH_INIT(Q_C) */
 		uint8_t msg_type;

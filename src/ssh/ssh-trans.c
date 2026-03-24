@@ -11,46 +11,13 @@
 
 /* DSSH_TESTABLE is defined in ssh-internal.h */
 
-typedef struct dssh_transport_global_config {
-	atomic_bool used;
-	const char *software_version;
-	const char *version_comment;
-
-	dssh_transport_io_cb tx;
-	dssh_transport_io_cb rx;
-	dssh_transport_rxline_cb rx_line;
-	int (*extra_line_cb)(uint8_t *buf, size_t bufsz, void *cbdata);
-
-	size_t kex_entries;
-	dssh_kex kex_head;
-	dssh_kex kex_tail;
-
-	size_t key_algo_entries;
-	dssh_key_algo key_algo_head;
-	dssh_key_algo key_algo_tail;
-
-	size_t enc_entries;
-	dssh_enc enc_head;
-	dssh_enc enc_tail;
-
-	size_t mac_entries;
-	dssh_mac mac_head;
-	dssh_mac mac_tail;
-
-	size_t comp_entries;
-	dssh_comp comp_head;
-	dssh_comp comp_tail;
-
-	size_t lang_entries;
-	dssh_language lang_head;
-	dssh_language lang_tail;
-} *dssh_transport_global_config;
+/* struct dssh_transport_global_config is defined in ssh-trans.h */
 
 #ifndef DSSH_VERSION_STRING
 #define DSSH_VERSION_STRING "0.0"
 #endif
 static const char * const sw_ver = "DeuceSSH-" DSSH_VERSION_STRING;
-static struct dssh_transport_global_config gconf;
+DSSH_TESTABLE struct dssh_transport_global_config gconf;
 
 /* ================================================================
  * Version exchange (RFC 4253 s4.2)
