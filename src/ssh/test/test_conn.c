@@ -3890,6 +3890,71 @@ test_accept_timeout_negative(void)
 }
 
 /* ================================================================
+ * Coverage: server rejects the exec request during setup
+ * Covers the is_terminal && cb_res < 0 path in accept_channel
+ * ================================================================ */
+
+static int
+reject_request_cb(const char *type, size_t type_len,
+    bool want_reply, const uint8_t *data, size_t data_len,
+    void *cbdata)
+{
+	(void)type; (void)type_len; (void)want_reply;
+	(void)data; (void)data_len; (void)cbdata;
+	return -1;  /* reject everything */
+}
+
+static const struct dssh_server_session_cbs reject_session_cbs = {
+	.request_cb = reject_request_cb,
+};
+
+static int
+server_accept_reject_exec_thread(void *arg)
+{
+	struct open_exec_ctx *ctx = arg;
+	struct dssh_incoming_open *inc = NULL;
+	int res = dssh_session_accept(ctx->server, &inc, 5000);
+	if (res < 0)
+		return 0;
+	const char *req_type = NULL;
+	const char *req_data = NULL;
+	/* Accept channel but use rejecting callback for exec request */
+	ctx->server_ch = dssh_session_accept_channel(ctx->server, inc,
+	    &reject_session_cbs, &req_type, &req_data);
+	return 0;
+}
+
+static int
+test_setup_exec_rejected_by_callback(void)
+{
+	struct conn_ctx ctx;
+	if (conn_setup(&ctx) < 0)
+		return TEST_SKIP;
+
+	struct open_exec_ctx oc = {
+		.client = ctx.client,
+		.server = ctx.server,
+		.command = "rejected_exec",
+		.cbs = &session_cbs,  /* client uses normal cbs */
+		.accept_timeout = 5000,
+	};
+
+	thrd_t ct, st;
+	thrd_create(&ct, client_open_exec_thread, &oc);
+	thrd_create(&st, server_accept_reject_exec_thread, &oc);
+	thrd_join(ct, NULL);
+	thrd_join(st, NULL);
+
+	/* Client should fail (exec rejected) */
+	ASSERT_NULL(oc.client_ch);
+	/* Server accept_channel should return NULL (setup failed) */
+	ASSERT_NULL(oc.server_ch);
+
+	conn_cleanup(&ctx);
+	return TEST_PASS;
+}
+
+/* ================================================================
  * Test table
  * ================================================================ */
 
@@ -4009,6 +4074,7 @@ static struct dssh_test_entry tests[] = {
 	{ "test_session_write_window_zero",     test_session_write_window_zero },
 	{ "test_session_write_ext_window_zero", test_session_write_ext_window_zero },
 	{ "test_accept_timeout_negative",       test_accept_timeout_negative },
+	{ "test_setup_exec_rejected_by_callback", test_setup_exec_rejected_by_callback },
 };
 
 DSSH_TEST_MAIN(tests)
