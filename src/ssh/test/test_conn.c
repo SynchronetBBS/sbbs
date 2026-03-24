@@ -2543,6 +2543,127 @@ test_session_poll_timeout_zero(void)
 }
 
 /* ================================================================
+ * Auto-reject channel types — covers demux_channel_open branches.
+ *
+ * Send CHANNEL_OPEN with forbidden types from server to client.
+ * The client's demux thread should auto-reject with OPEN_FAILURE.
+ * ================================================================ */
+
+/* Helper: build a CHANNEL_OPEN packet */
+static size_t
+build_channel_open(uint8_t *buf, size_t bufsz, const char *type,
+    uint32_t sender_ch, uint32_t window, uint32_t max_packet)
+{
+	size_t pos = 0;
+	buf[pos++] = SSH_MSG_CHANNEL_OPEN;
+	size_t tlen = strlen(type);
+	dssh_serialize_uint32((uint32_t)tlen, buf, bufsz, &pos);
+	memcpy(&buf[pos], type, tlen);
+	pos += tlen;
+	dssh_serialize_uint32(sender_ch, buf, bufsz, &pos);
+	dssh_serialize_uint32(window, buf, bufsz, &pos);
+	dssh_serialize_uint32(max_packet, buf, bufsz, &pos);
+	return pos;
+}
+
+static int
+test_auto_reject_x11(void)
+{
+	/* Server sends CHANNEL_OPEN "x11" to client.
+	 * Client's demux auto-rejects; server's demux sees the
+	 * OPEN_FAILURE but has no pending channel for it (harmless).
+	 * Verify the client accept queue has nothing. */
+	struct conn_ctx ctx;
+	if (conn_setup(&ctx) < 0)
+		return TEST_FAIL;
+
+	uint8_t msg[64];
+	size_t len = build_channel_open(msg, sizeof(msg), "x11", 0, 65536, 32768);
+	ASSERT_OK(dssh_transport_send_packet(ctx.server, msg, len, NULL));
+
+	/* Give the demux threads time to process */
+	struct timespec ts = { .tv_nsec = 100000000L }; /* 100ms */
+	thrd_sleep(&ts, NULL);
+
+	/* Client's accept queue should be empty (auto-rejected, not queued) */
+	struct dssh_incoming_open *inc = NULL;
+	int res = dssh_session_accept(ctx.client, &inc, 0);
+	ASSERT_TRUE(res < 0 || inc == NULL);
+
+	conn_cleanup(&ctx);
+	return TEST_PASS;
+}
+
+static int
+test_auto_reject_forwarded_tcpip(void)
+{
+	struct conn_ctx ctx;
+	if (conn_setup(&ctx) < 0)
+		return TEST_FAIL;
+
+	uint8_t msg[64];
+	size_t len = build_channel_open(msg, sizeof(msg), "forwarded-tcpip",
+	    0, 65536, 32768);
+	ASSERT_OK(dssh_transport_send_packet(ctx.server, msg, len, NULL));
+
+	struct timespec ts = { .tv_nsec = 100000000L };
+	thrd_sleep(&ts, NULL);
+
+	struct dssh_incoming_open *inc = NULL;
+	int res = dssh_session_accept(ctx.client, &inc, 0);
+	ASSERT_TRUE(res < 0 || inc == NULL);
+
+	conn_cleanup(&ctx);
+	return TEST_PASS;
+}
+
+static int
+test_auto_reject_direct_tcpip(void)
+{
+	struct conn_ctx ctx;
+	if (conn_setup(&ctx) < 0)
+		return TEST_FAIL;
+
+	uint8_t msg[64];
+	size_t len = build_channel_open(msg, sizeof(msg), "direct-tcpip",
+	    0, 65536, 32768);
+	ASSERT_OK(dssh_transport_send_packet(ctx.server, msg, len, NULL));
+
+	struct timespec ts = { .tv_nsec = 100000000L };
+	thrd_sleep(&ts, NULL);
+
+	struct dssh_incoming_open *inc = NULL;
+	int res = dssh_session_accept(ctx.client, &inc, 0);
+	ASSERT_TRUE(res < 0 || inc == NULL);
+
+	conn_cleanup(&ctx);
+	return TEST_PASS;
+}
+
+static int
+test_auto_reject_session_from_server(void)
+{
+	struct conn_ctx ctx;
+	if (conn_setup(&ctx) < 0)
+		return TEST_FAIL;
+
+	uint8_t msg[64];
+	size_t len = build_channel_open(msg, sizeof(msg), "session",
+	    0, 65536, 32768);
+	ASSERT_OK(dssh_transport_send_packet(ctx.server, msg, len, NULL));
+
+	struct timespec ts = { .tv_nsec = 100000000L };
+	thrd_sleep(&ts, NULL);
+
+	struct dssh_incoming_open *inc = NULL;
+	int res = dssh_session_accept(ctx.client, &inc, 0);
+	ASSERT_TRUE(res < 0 || inc == NULL);
+
+	conn_cleanup(&ctx);
+	return TEST_PASS;
+}
+
+/* ================================================================
  * Test table
  * ================================================================ */
 
@@ -2626,6 +2747,12 @@ static struct dssh_test_entry tests[] = {
 	{ "test_accept_timeout_short",         test_accept_timeout_short },
 	{ "test_reject_null_description",      test_reject_null_description },
 	{ "test_session_poll_timeout_zero",    test_session_poll_timeout_zero },
+
+	/* Auto-reject channel types */
+	{ "test_auto_reject_x11",              test_auto_reject_x11 },
+	{ "test_auto_reject_forwarded_tcpip",  test_auto_reject_forwarded_tcpip },
+	{ "test_auto_reject_direct_tcpip",     test_auto_reject_direct_tcpip },
+	{ "test_auto_reject_session_server",   test_auto_reject_session_from_server },
 };
 
 DSSH_TEST_MAIN(tests)
