@@ -4615,6 +4615,12 @@ function createFileListMenu_RIP(pQuitKeys)
 	var remainingChars = totalChars - fileListMenu.filenameLen - fileListMenu.fileSizeLen - 2 - sbCharsAdjust;
 	fileListMenu.shortDescLen = Math.max(10, remainingChars);
 	fileListMenu.extdDescEnabled = extendedDescEnabled();
+	// When extended descriptions are enabled, the menu only contains filenames
+	// and sizes (descriptions are in a separate right-side panel), so items
+	// should always fit within the menu width.  Suppress the horizontal scrollbar
+	// to avoid reserving space for it and to keep the layout clean.
+	if (fileListMenu.extdDescEnabled)
+		fileListMenu.noHorizontalScrollbar = true;
 
 	// Add additional quit keys
 	if (typeof pQuitKeys === "string")
@@ -4710,16 +4716,17 @@ function createFileListMenu_RIP(pQuitKeys)
 		else
 		{
 			// Without extended descriptions, the line has filename + size + description.
-			// The filename+extension fill the filenameLen column, then the
-			// description occupies the remaining space.
+			// The filename+extension fill the filenameLen column, then the description
+			// follows.  The description is NOT truncated — if it extends beyond the
+			// visible menu width, RIPLightbarMenu's horizontal scrollbar will
+			// automatically appear to let the user scroll right to see it all.
 			var desc = (typeof(gFileList[pIdx].desc) === "string" ? gFileList[pIdx].desc : "");
 			desc = stripBadCharsFromStr(desc, true);
 			desc = removeOrReplaceSyncCursorMovementChars(desc, false);
 			if (gSettings.useFilenameIfNoDescription_ShortDescs && (desc == "" || /^\s+$/.test(desc)))
 				desc = gFileList[pIdx].name;
-			menuItemObj.text = format("%-" + this.filenameLen + "s %" + this.fileSizeLen + "s %-" + this.shortDescLen + "s",
-			                          filenameCol, sizeStr,
-			                          desc.substring(0, this.shortDescLen));
+			menuItemObj.text = format("%-" + this.filenameLen + "s %" + this.fileSizeLen + "s %s",
+			                          filenameCol, sizeStr, desc);
 		}
 		return menuItemObj;
 	};
