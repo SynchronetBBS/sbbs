@@ -17,7 +17,7 @@ var SHIELD_ROW = 17;
 var PLAYER_ROW = 21;
 var GROUND_ROW = 23;
 var STATUS_ROW = 24;
-var DANGER_ROW = 16;                // game over when any invader top reaches row 16
+var DANGER_ROW = 20;                // game over when any invader reaches player row
 
 var SHIELD_COLS = [14, 30, 46, 62];
 var SHIELD_W    = 5,  SHIELD_H = 3;
@@ -98,8 +98,9 @@ function fgoto(c, r)  { fw("\x1b[" + r + ";" + c + "H"); }
 var MARCH_PITCHES = ["O1B", "O1A", "O1G", "O1F"];
 var marchStep     = 0;
 var soundOn       = true;
+var marchSilent   = false;   // suppressed during player death sequence
 function playMarch() {
-    if (!soundOn) return;
+    if (!soundOn || marchSilent) return;
     if (invAlive === 1) {
         // single alien: rapid high pip (L64 = very short 64th-note, O5A alternating O5E)
         var pip = (marchStep % 2) ? "O5E" : "O5A";
@@ -637,6 +638,7 @@ function checkCollisions() {
 // ── Player death ──────────────────────────────────────────────────────────────
 function playerHit() {
     heldKey = null;   // stop any queued movement before and after death
+    marchSilent = true;
     erasePlayer();
     drawExplodeAt(playerCol, PLAYER_ROW);
     mswait(700);
@@ -648,6 +650,7 @@ function playerHit() {
     bullet    = null;
     heldKey   = null;   // clear again after pause — drain any keys pressed during wait
     console.clearkeybuffer();
+    marchSilent = false;
     drawPlayer();
 }
 
