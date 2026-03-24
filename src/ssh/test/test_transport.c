@@ -4538,6 +4538,300 @@ test_hmac_sha2_256_generate_failure(void)
 }
 
 /* ================================================================
+ * Registration toolong guards (kex, comp, lang)
+ * ================================================================ */
+
+static int
+test_register_kex_toolong(void)
+{
+	dssh_test_reset_global_config();
+
+	uint8_t buf[sizeof(struct dssh_kex_s) + 128];
+	memset(buf, 0, sizeof(buf));
+	struct dssh_kex_s *kex = (struct dssh_kex_s *)buf;
+	memset(kex->name, 'x', 65);
+	kex->name[65] = '\0';
+	ASSERT_EQ(dssh_transport_register_kex(kex), DSSH_ERROR_TOOLONG);
+
+	dssh_test_reset_global_config();
+	return TEST_PASS;
+}
+
+static int
+test_register_comp_toolong(void)
+{
+	dssh_test_reset_global_config();
+
+	uint8_t buf[sizeof(struct dssh_comp_s) + 128];
+	memset(buf, 0, sizeof(buf));
+	struct dssh_comp_s *comp = (struct dssh_comp_s *)buf;
+	memset(comp->name, 'x', 65);
+	comp->name[65] = '\0';
+	ASSERT_EQ(dssh_transport_register_comp(comp), DSSH_ERROR_TOOLONG);
+
+	dssh_test_reset_global_config();
+	return TEST_PASS;
+}
+
+static int
+test_register_lang_toolong(void)
+{
+	dssh_test_reset_global_config();
+
+	uint8_t buf[sizeof(struct dssh_language_s) + 128];
+	memset(buf, 0, sizeof(buf));
+	struct dssh_language_s *lang = (struct dssh_language_s *)buf;
+	memset(lang->name, 'x', 65);
+	lang->name[65] = '\0';
+	ASSERT_EQ(dssh_transport_register_lang(lang), DSSH_ERROR_TOOLONG);
+
+	dssh_test_reset_global_config();
+	return TEST_PASS;
+}
+
+/* ================================================================
+ * Registration toomany guards (all 6 register functions)
+ * ================================================================ */
+
+static int
+test_register_kex_toomany(void)
+{
+	dssh_test_reset_global_config();
+
+	/* Register one valid entry so gconf.used stays false */
+	size_t sz = sizeof(struct dssh_kex_s) + 8;
+	struct dssh_kex_s *k1 = calloc(1, sz);
+	ASSERT_NOT_NULL(k1);
+	strcpy(k1->name, "kex-1");
+	ASSERT_EQ(dssh_transport_register_kex(k1), 0);
+
+	/* Forge the entries counter to SIZE_MAX - 1 */
+	gconf.kex_entries = SIZE_MAX - 1;
+
+	uint8_t buf[sizeof(struct dssh_kex_s) + 8];
+	memset(buf, 0, sizeof(buf));
+	struct dssh_kex_s *k2 = (struct dssh_kex_s *)buf;
+	strcpy(k2->name, "kex-2");
+	ASSERT_EQ(dssh_transport_register_kex(k2), DSSH_ERROR_TOOMANY);
+
+	gconf.kex_entries = 1; /* restore before reset frees the list */
+	dssh_test_reset_global_config();
+	return TEST_PASS;
+}
+
+static int
+test_register_key_algo_toomany(void)
+{
+	dssh_test_reset_global_config();
+
+	size_t sz = sizeof(struct dssh_key_algo_s) + 8;
+	struct dssh_key_algo_s *ka1 = calloc(1, sz);
+	ASSERT_NOT_NULL(ka1);
+	strcpy(ka1->name, "ka-1");
+	ASSERT_EQ(dssh_transport_register_key_algo(ka1), 0);
+
+	gconf.key_algo_entries = SIZE_MAX - 1;
+
+	uint8_t buf[sizeof(struct dssh_key_algo_s) + 8];
+	memset(buf, 0, sizeof(buf));
+	struct dssh_key_algo_s *ka2 = (struct dssh_key_algo_s *)buf;
+	strcpy(ka2->name, "ka-2");
+	ASSERT_EQ(dssh_transport_register_key_algo(ka2), DSSH_ERROR_TOOMANY);
+
+	gconf.key_algo_entries = 1;
+	dssh_test_reset_global_config();
+	return TEST_PASS;
+}
+
+static int
+test_register_enc_toomany(void)
+{
+	dssh_test_reset_global_config();
+
+	size_t sz = sizeof(struct dssh_enc_s) + 8;
+	struct dssh_enc_s *e1 = calloc(1, sz);
+	ASSERT_NOT_NULL(e1);
+	strcpy(e1->name, "enc-1");
+	ASSERT_EQ(dssh_transport_register_enc(e1), 0);
+
+	gconf.enc_entries = SIZE_MAX - 1;
+
+	uint8_t buf[sizeof(struct dssh_enc_s) + 8];
+	memset(buf, 0, sizeof(buf));
+	struct dssh_enc_s *e2 = (struct dssh_enc_s *)buf;
+	strcpy(e2->name, "enc-2");
+	ASSERT_EQ(dssh_transport_register_enc(e2), DSSH_ERROR_TOOMANY);
+
+	gconf.enc_entries = 1;
+	dssh_test_reset_global_config();
+	return TEST_PASS;
+}
+
+static int
+test_register_mac_toomany(void)
+{
+	dssh_test_reset_global_config();
+
+	size_t sz = sizeof(struct dssh_mac_s) + 8;
+	struct dssh_mac_s *m1 = calloc(1, sz);
+	ASSERT_NOT_NULL(m1);
+	strcpy(m1->name, "mac-1");
+	ASSERT_EQ(dssh_transport_register_mac(m1), 0);
+
+	gconf.mac_entries = SIZE_MAX - 1;
+
+	uint8_t buf[sizeof(struct dssh_mac_s) + 8];
+	memset(buf, 0, sizeof(buf));
+	struct dssh_mac_s *m2 = (struct dssh_mac_s *)buf;
+	strcpy(m2->name, "mac-2");
+	ASSERT_EQ(dssh_transport_register_mac(m2), DSSH_ERROR_TOOMANY);
+
+	gconf.mac_entries = 1;
+	dssh_test_reset_global_config();
+	return TEST_PASS;
+}
+
+static int
+test_register_comp_toomany(void)
+{
+	dssh_test_reset_global_config();
+
+	size_t sz = sizeof(struct dssh_comp_s) + 8;
+	struct dssh_comp_s *c1 = calloc(1, sz);
+	ASSERT_NOT_NULL(c1);
+	strcpy(c1->name, "comp-1");
+	ASSERT_EQ(dssh_transport_register_comp(c1), 0);
+
+	gconf.comp_entries = SIZE_MAX - 1;
+
+	uint8_t buf[sizeof(struct dssh_comp_s) + 8];
+	memset(buf, 0, sizeof(buf));
+	struct dssh_comp_s *c2 = (struct dssh_comp_s *)buf;
+	strcpy(c2->name, "comp-2");
+	ASSERT_EQ(dssh_transport_register_comp(c2), DSSH_ERROR_TOOMANY);
+
+	gconf.comp_entries = 1;
+	dssh_test_reset_global_config();
+	return TEST_PASS;
+}
+
+static int
+test_register_lang_toomany(void)
+{
+	dssh_test_reset_global_config();
+
+	size_t sz = sizeof(struct dssh_language_s) + 8;
+	struct dssh_language_s *l1 = calloc(1, sz);
+	ASSERT_NOT_NULL(l1);
+	strcpy(l1->name, "lang-1");
+	ASSERT_EQ(dssh_transport_register_lang(l1), 0);
+
+	gconf.lang_entries = SIZE_MAX - 1;
+
+	uint8_t buf[sizeof(struct dssh_language_s) + 8];
+	memset(buf, 0, sizeof(buf));
+	struct dssh_language_s *l2 = (struct dssh_language_s *)buf;
+	strcpy(l2->name, "lang-2");
+	ASSERT_EQ(dssh_transport_register_lang(l2), DSSH_ERROR_TOOMANY);
+
+	gconf.lang_entries = 1;
+	dssh_test_reset_global_config();
+	return TEST_PASS;
+}
+
+/* ================================================================
+ * Blocksize clamping — direct tx/rx_block_size tests
+ * ================================================================ */
+
+static int
+test_blocksize_clamp_direct(void)
+{
+	dssh_test_reset_global_config();
+	ASSERT_EQ(register_all_algorithms(), 0);
+	dssh_transport_set_callbacks(mock_tx_dispatch, mock_rx_dispatch,
+	    mock_rxline_dispatch, mock_extra_line_cb);
+
+	struct mock_io_state io;
+	ASSERT_OK(mock_io_init(&io, 0));
+	dssh_session sess = dssh_session_init(true, 0);
+	ASSERT_NOT_NULL(sess);
+	dssh_session_set_cbdata(sess, &io, &io, &io, &io);
+
+	/* No enc selected — should return 8 */
+	ASSERT_EQ_U(tx_block_size(sess), 8);
+	ASSERT_EQ_U(rx_block_size(sess), 8);
+
+	/* Set enc with blocksize < 8 */
+	struct dssh_enc_s tiny = { .blocksize = 4 };
+	sess->trans.enc_c2s_selected = &tiny;
+	sess->trans.enc_c2s_ctx = (dssh_enc_ctx *)1;
+	ASSERT_EQ_U(tx_block_size(sess), 8); /* clamped */
+
+	sess->trans.enc_s2c_selected = &tiny;
+	sess->trans.enc_s2c_ctx = (dssh_enc_ctx *)1;
+	ASSERT_EQ_U(rx_block_size(sess), 8); /* clamped */
+
+	/* Set enc with blocksize == 16 */
+	struct dssh_enc_s big = { .blocksize = 16 };
+	sess->trans.enc_c2s_selected = &big;
+	ASSERT_EQ_U(tx_block_size(sess), 16);
+	sess->trans.enc_s2c_selected = &big;
+	ASSERT_EQ_U(rx_block_size(sess), 16);
+
+	/* Restore before cleanup */
+	sess->trans.enc_c2s_selected = NULL;
+	sess->trans.enc_c2s_ctx = NULL;
+	sess->trans.enc_s2c_selected = NULL;
+	sess->trans.enc_s2c_ctx = NULL;
+
+	dssh_session_cleanup(sess);
+	mock_io_free(&io);
+	dssh_test_reset_global_config();
+	return TEST_PASS;
+}
+
+/* ================================================================
+ * Cleanup with NULL cleanup function pointers
+ * ================================================================ */
+
+static int
+test_cleanup_null_cleanup_fn(void)
+{
+	dssh_test_reset_global_config();
+	ASSERT_EQ(register_all_algorithms(), 0);
+	dssh_transport_set_callbacks(mock_tx_dispatch, mock_rx_dispatch,
+	    mock_rxline_dispatch, mock_extra_line_cb);
+
+	struct mock_io_state io;
+	ASSERT_OK(mock_io_init(&io, 0));
+	dssh_session sess = dssh_session_init(true, 0);
+	ASSERT_NOT_NULL(sess);
+	dssh_session_set_cbdata(sess, &io, &io, &io, &io);
+
+	/* Create dummy module structs with cleanup == NULL */
+	struct dssh_kex_s dummy_kex = { 0 };
+	struct dssh_enc_s dummy_enc = { 0 };
+	struct dssh_mac_s dummy_mac = { 0 };
+	struct dssh_comp_s dummy_comp = { 0 };
+
+	/* Set selected modules with NULL cleanup — dssh_transport_cleanup
+	 * should skip the cleanup calls without crashing. */
+	sess->trans.kex_selected = &dummy_kex;
+	sess->trans.enc_c2s_selected = &dummy_enc;
+	sess->trans.enc_s2c_selected = &dummy_enc;
+	sess->trans.mac_c2s_selected = &dummy_mac;
+	sess->trans.mac_s2c_selected = &dummy_mac;
+	sess->trans.comp_c2s_selected = &dummy_comp;
+	sess->trans.comp_s2c_selected = &dummy_comp;
+
+	/* dssh_session_cleanup calls dssh_transport_cleanup internally */
+	dssh_session_cleanup(sess);
+	mock_io_free(&io);
+	dssh_test_reset_global_config();
+	return TEST_PASS;
+}
+
+/* ================================================================
  * Test table
  * ================================================================ */
 
@@ -4673,6 +4967,15 @@ static struct dssh_test_entry tests[] = {
 	{ "register/lang_empty_name",        test_register_lang_empty_name },
 	{ "register/lang_toolate",           test_register_lang_toolate },
 	{ "register/lang_next_not_null",     test_register_lang_next_not_null },
+	{ "register/kex_toolong",            test_register_kex_toolong },
+	{ "register/comp_toolong",           test_register_comp_toolong },
+	{ "register/lang_toolong",           test_register_lang_toolong },
+	{ "register/kex_toomany",            test_register_kex_toomany },
+	{ "register/key_algo_toomany",       test_register_key_algo_toomany },
+	{ "register/enc_toomany",            test_register_enc_toomany },
+	{ "register/mac_toomany",            test_register_mac_toomany },
+	{ "register/comp_toomany",           test_register_comp_toomany },
+	{ "register/lang_toomany",           test_register_lang_toomany },
 
 	/* Algorithm edge cases */
 	{ "aes256_ctr/null_ctx",             test_aes256_ctr_null_ctx },
@@ -4691,6 +4994,8 @@ static struct dssh_test_entry tests[] = {
 	/* Formerly-guarded paths */
 	{ "guard/rekey_time_zero",           test_rekey_time_zero },
 	{ "guard/blocksize_lt8",             test_blocksize_lt8 },
+	{ "guard/blocksize_clamp_direct",    test_blocksize_clamp_direct },
+	{ "guard/cleanup_null_cleanup_fn",   test_cleanup_null_cleanup_fn },
 	{ "guard/ed25519_sign_small_buf",    test_ed25519_sign_small_buf },
 	{ "guard/ed25519_pubkey_small_buf",  test_ed25519_pubkey_small_buf },
 	{ "guard/rsa_sign_small_buf",        test_rsa_sign_small_buf },

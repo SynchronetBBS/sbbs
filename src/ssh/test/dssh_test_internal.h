@@ -81,6 +81,12 @@ void demux_dispatch(dssh_session sess, uint8_t msg_type,
 size_t first_name(const char *list, char *buf, size_t bufsz);
 
 /*
+ * Block size helpers from ssh-trans.c (BPP minimum clamping).
+ */
+size_t tx_block_size(dssh_session sess);
+size_t rx_block_size(dssh_session sess);
+
+/*
  * Version string validators from ssh-trans.c.
  */
 bool dssh_test_has_nulls(uint8_t *buf, size_t buflen);

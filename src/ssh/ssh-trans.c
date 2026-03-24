@@ -328,7 +328,7 @@ dssh_transport_disconnect(dssh_session sess,
  * Binary Packet Protocol (RFC 4253 s6)
  * ================================================================ */
 
-static size_t
+DSSH_TESTABLE size_t
 tx_block_size(dssh_session sess)
 {
 	dssh_enc enc;
@@ -348,7 +348,7 @@ tx_block_size(dssh_session sess)
 	return enc->blocksize;
 }
 
-static size_t
+DSSH_TESTABLE size_t
 rx_block_size(dssh_session sess)
 {
 	dssh_enc enc;

@@ -4461,6 +4461,501 @@ test_window_add_overflow(void)
 }
 
 /* ================================================================
+ * Coverage: defensive guard tests — !open, close_received,
+ * empty queue, eof/close in poll, signal mark <= consumed,
+ * infinite-wait poll, empty read_ext
+ * ================================================================ */
+
+static int
+test_session_write_not_open(void)
+{
+	dssh_test_reset_global_config();
+	if (register_all_algorithms() < 0)
+		return TEST_SKIP;
+	dssh_session s = dssh_session_init(false, 0);
+	if (s == NULL)
+		return TEST_SKIP;
+
+	struct dssh_channel_s ch = {0};
+	ch.open = false;
+	ch.eof_sent = false;
+	ch.close_received = false;
+
+	int64_t r = dssh_session_write(s, &ch, (const uint8_t *)"x", 1);
+	ASSERT_EQ(r, DSSH_ERROR_INIT);
+
+	dssh_session_cleanup(s);
+	dssh_test_reset_global_config();
+	return TEST_PASS;
+}
+
+static int
+test_session_write_ext_not_open(void)
+{
+	dssh_test_reset_global_config();
+	if (register_all_algorithms() < 0)
+		return TEST_SKIP;
+	dssh_session s = dssh_session_init(false, 0);
+	if (s == NULL)
+		return TEST_SKIP;
+
+	struct dssh_channel_s ch = {0};
+	ch.open = false;
+	ch.eof_sent = false;
+	ch.close_received = false;
+
+	int64_t r = dssh_session_write_ext(s, &ch, (const uint8_t *)"x", 1);
+	ASSERT_EQ(r, DSSH_ERROR_INIT);
+
+	dssh_session_cleanup(s);
+	dssh_test_reset_global_config();
+	return TEST_PASS;
+}
+
+static int
+test_session_write_close_received(void)
+{
+	dssh_test_reset_global_config();
+	if (register_all_algorithms() < 0)
+		return TEST_SKIP;
+	dssh_session s = dssh_session_init(false, 0);
+	if (s == NULL)
+		return TEST_SKIP;
+
+	struct dssh_channel_s ch = {0};
+	ch.open = true;
+	ch.eof_sent = false;
+	ch.close_received = true;
+
+	int64_t r = dssh_session_write(s, &ch, (const uint8_t *)"x", 1);
+	ASSERT_EQ(r, DSSH_ERROR_INIT);
+
+	dssh_session_cleanup(s);
+	dssh_test_reset_global_config();
+	return TEST_PASS;
+}
+
+static int
+test_session_write_ext_close_received(void)
+{
+	dssh_test_reset_global_config();
+	if (register_all_algorithms() < 0)
+		return TEST_SKIP;
+	dssh_session s = dssh_session_init(false, 0);
+	if (s == NULL)
+		return TEST_SKIP;
+
+	struct dssh_channel_s ch = {0};
+	ch.open = true;
+	ch.eof_sent = false;
+	ch.close_received = true;
+
+	int64_t r = dssh_session_write_ext(s, &ch, (const uint8_t *)"x", 1);
+	ASSERT_EQ(r, DSSH_ERROR_INIT);
+
+	dssh_session_cleanup(s);
+	dssh_test_reset_global_config();
+	return TEST_PASS;
+}
+
+static int
+test_channel_write_not_open(void)
+{
+	dssh_test_reset_global_config();
+	if (register_all_algorithms() < 0)
+		return TEST_SKIP;
+	dssh_session s = dssh_session_init(false, 0);
+	if (s == NULL)
+		return TEST_SKIP;
+
+	struct dssh_channel_s ch = {0};
+	ch.open = false;
+	ch.eof_sent = false;
+	ch.close_received = false;
+
+	int res = dssh_channel_write(s, &ch, (const uint8_t *)"x", 1);
+	ASSERT_EQ(res, DSSH_ERROR_INIT);
+
+	dssh_session_cleanup(s);
+	dssh_test_reset_global_config();
+	return TEST_PASS;
+}
+
+static int
+test_channel_write_close_received(void)
+{
+	dssh_test_reset_global_config();
+	if (register_all_algorithms() < 0)
+		return TEST_SKIP;
+	dssh_session s = dssh_session_init(false, 0);
+	if (s == NULL)
+		return TEST_SKIP;
+
+	struct dssh_channel_s ch = {0};
+	ch.open = true;
+	ch.eof_sent = false;
+	ch.close_received = true;
+
+	int res = dssh_channel_write(s, &ch, (const uint8_t *)"x", 1);
+	ASSERT_EQ(res, DSSH_ERROR_INIT);
+
+	dssh_session_cleanup(s);
+	dssh_test_reset_global_config();
+	return TEST_PASS;
+}
+
+static int
+test_channel_read_empty_queue(void)
+{
+	dssh_test_reset_global_config();
+	if (register_all_algorithms() < 0)
+		return TEST_SKIP;
+	dssh_session s = dssh_session_init(false, 0);
+	if (s == NULL)
+		return TEST_SKIP;
+
+	struct dssh_channel_s ch = {0};
+	ch.chan_type = DSSH_CHAN_RAW;
+	mtx_init(&ch.buf_mtx, mtx_plain);
+	dssh_msgqueue_init(&ch.buf.raw.queue);
+
+	uint8_t buf[64];
+	int64_t n = dssh_channel_read(s, &ch, buf, sizeof(buf));
+	ASSERT_EQ(n, (int64_t)0);
+
+	dssh_msgqueue_free(&ch.buf.raw.queue);
+	mtx_destroy(&ch.buf_mtx);
+	dssh_session_cleanup(s);
+	dssh_test_reset_global_config();
+	return TEST_PASS;
+}
+
+static int
+test_channel_poll_eof(void)
+{
+	dssh_test_reset_global_config();
+	if (register_all_algorithms() < 0)
+		return TEST_SKIP;
+	dssh_session s = dssh_session_init(false, 0);
+	if (s == NULL)
+		return TEST_SKIP;
+
+	struct dssh_channel_s ch = {0};
+	ch.chan_type = DSSH_CHAN_RAW;
+	mtx_init(&ch.buf_mtx, mtx_plain);
+	cnd_init(&ch.poll_cnd);
+	dssh_msgqueue_init(&ch.buf.raw.queue);
+	ch.eof_received = true;
+
+	int r = dssh_channel_poll(s, &ch, DSSH_POLL_READ, 0);
+	ASSERT_TRUE(r & DSSH_POLL_READ);
+
+	dssh_msgqueue_free(&ch.buf.raw.queue);
+	cnd_destroy(&ch.poll_cnd);
+	mtx_destroy(&ch.buf_mtx);
+	dssh_session_cleanup(s);
+	dssh_test_reset_global_config();
+	return TEST_PASS;
+}
+
+static int
+test_channel_poll_close_received(void)
+{
+	dssh_test_reset_global_config();
+	if (register_all_algorithms() < 0)
+		return TEST_SKIP;
+	dssh_session s = dssh_session_init(false, 0);
+	if (s == NULL)
+		return TEST_SKIP;
+
+	struct dssh_channel_s ch = {0};
+	ch.chan_type = DSSH_CHAN_RAW;
+	mtx_init(&ch.buf_mtx, mtx_plain);
+	cnd_init(&ch.poll_cnd);
+	dssh_msgqueue_init(&ch.buf.raw.queue);
+	ch.close_received = true;
+
+	int r = dssh_channel_poll(s, &ch, DSSH_POLL_READ, 0);
+	ASSERT_TRUE(r & DSSH_POLL_READ);
+
+	dssh_msgqueue_free(&ch.buf.raw.queue);
+	cnd_destroy(&ch.poll_cnd);
+	mtx_destroy(&ch.buf_mtx);
+	dssh_session_cleanup(s);
+	dssh_test_reset_global_config();
+	return TEST_PASS;
+}
+
+static int
+test_session_poll_close_read(void)
+{
+	dssh_test_reset_global_config();
+	if (register_all_algorithms() < 0)
+		return TEST_SKIP;
+	dssh_session s = dssh_session_init(false, 0);
+	if (s == NULL)
+		return TEST_SKIP;
+
+	struct dssh_channel_s ch = {0};
+	ch.chan_type = DSSH_CHAN_SESSION;
+	mtx_init(&ch.buf_mtx, mtx_plain);
+	cnd_init(&ch.poll_cnd);
+	dssh_bytebuf_init(&ch.buf.session.stdout_buf, 256);
+	dssh_bytebuf_init(&ch.buf.session.stderr_buf, 256);
+	dssh_sigqueue_init(&ch.buf.session.signals);
+	ch.close_received = true;
+
+	int r = dssh_session_poll(s, &ch, DSSH_POLL_READ, 0);
+	ASSERT_TRUE(r & DSSH_POLL_READ);
+
+	dssh_sigqueue_free(&ch.buf.session.signals);
+	dssh_bytebuf_free(&ch.buf.session.stdout_buf);
+	dssh_bytebuf_free(&ch.buf.session.stderr_buf);
+	cnd_destroy(&ch.poll_cnd);
+	mtx_destroy(&ch.buf_mtx);
+	dssh_session_cleanup(s);
+	dssh_test_reset_global_config();
+	return TEST_PASS;
+}
+
+static int
+test_session_poll_close_readext(void)
+{
+	dssh_test_reset_global_config();
+	if (register_all_algorithms() < 0)
+		return TEST_SKIP;
+	dssh_session s = dssh_session_init(false, 0);
+	if (s == NULL)
+		return TEST_SKIP;
+
+	struct dssh_channel_s ch = {0};
+	ch.chan_type = DSSH_CHAN_SESSION;
+	mtx_init(&ch.buf_mtx, mtx_plain);
+	cnd_init(&ch.poll_cnd);
+	dssh_bytebuf_init(&ch.buf.session.stdout_buf, 256);
+	dssh_bytebuf_init(&ch.buf.session.stderr_buf, 256);
+	dssh_sigqueue_init(&ch.buf.session.signals);
+	ch.close_received = true;
+
+	int r = dssh_session_poll(s, &ch, DSSH_POLL_READEXT, 0);
+	ASSERT_TRUE(r & DSSH_POLL_READEXT);
+
+	dssh_sigqueue_free(&ch.buf.session.signals);
+	dssh_bytebuf_free(&ch.buf.session.stdout_buf);
+	dssh_bytebuf_free(&ch.buf.session.stderr_buf);
+	cnd_destroy(&ch.poll_cnd);
+	mtx_destroy(&ch.buf_mtx);
+	dssh_session_cleanup(s);
+	dssh_test_reset_global_config();
+	return TEST_PASS;
+}
+
+static int
+test_stdout_signal_mark_consumed(void)
+{
+	/*
+	 * Test session_stdout_readable when a signal mark is at or before
+	 * the consumed position — the mark should not limit readable bytes.
+	 * Tested indirectly via dssh_session_poll + dssh_session_read.
+	 */
+	dssh_test_reset_global_config();
+	if (register_all_algorithms() < 0)
+		return TEST_SKIP;
+	dssh_session s = dssh_session_init(false, 0);
+	if (s == NULL)
+		return TEST_SKIP;
+
+	struct dssh_channel_s ch = {0};
+	ch.chan_type = DSSH_CHAN_SESSION;
+	mtx_init(&ch.buf_mtx, mtx_plain);
+	cnd_init(&ch.poll_cnd);
+	dssh_bytebuf_init(&ch.buf.session.stdout_buf, 256);
+	dssh_bytebuf_init(&ch.buf.session.stderr_buf, 256);
+	dssh_sigqueue_init(&ch.buf.session.signals);
+
+	/* Write 5 bytes to stdout */
+	dssh_bytebuf_write(&ch.buf.session.stdout_buf, (const uint8_t *)"hello", 5);
+
+	/* Push a signal with stdout mark at position 2 */
+	dssh_sigqueue_push(&ch.buf.session.signals, "TERM", 2, 0);
+
+	/* Set consumed past the mark */
+	ch.stdout_consumed = 3;
+
+	/* Poll should report data available (mark <= consumed, so not limiting) */
+	int r = dssh_session_poll(s, &ch, DSSH_POLL_READ, 0);
+	ASSERT_TRUE(r & DSSH_POLL_READ);
+
+	/* Read should return all 5 available bytes (mark not limiting) */
+	uint8_t buf[64];
+	int64_t n = dssh_session_read(s, &ch, buf, sizeof(buf));
+	ASSERT_EQ(n, (int64_t)5);
+
+	dssh_sigqueue_free(&ch.buf.session.signals);
+	dssh_bytebuf_free(&ch.buf.session.stdout_buf);
+	dssh_bytebuf_free(&ch.buf.session.stderr_buf);
+	cnd_destroy(&ch.poll_cnd);
+	mtx_destroy(&ch.buf_mtx);
+	dssh_session_cleanup(s);
+	dssh_test_reset_global_config();
+	return TEST_PASS;
+}
+
+static int
+test_stderr_signal_mark_consumed(void)
+{
+	/*
+	 * Test session_stderr_readable when a signal mark is at or before
+	 * the consumed position — tested indirectly via dssh_session_read_ext.
+	 */
+	dssh_test_reset_global_config();
+	if (register_all_algorithms() < 0)
+		return TEST_SKIP;
+	dssh_session s = dssh_session_init(false, 0);
+	if (s == NULL)
+		return TEST_SKIP;
+
+	struct dssh_channel_s ch = {0};
+	ch.chan_type = DSSH_CHAN_SESSION;
+	mtx_init(&ch.buf_mtx, mtx_plain);
+	cnd_init(&ch.poll_cnd);
+	dssh_bytebuf_init(&ch.buf.session.stdout_buf, 256);
+	dssh_bytebuf_init(&ch.buf.session.stderr_buf, 256);
+	dssh_sigqueue_init(&ch.buf.session.signals);
+
+	/* Write 5 bytes to stderr */
+	dssh_bytebuf_write(&ch.buf.session.stderr_buf, (const uint8_t *)"error", 5);
+
+	/* Push a signal with stderr mark at position 2 */
+	dssh_sigqueue_push(&ch.buf.session.signals, "TERM", 0, 2);
+
+	/* Set consumed past the mark */
+	ch.stderr_consumed = 3;
+
+	/* Poll should report extended data available */
+	int r = dssh_session_poll(s, &ch, DSSH_POLL_READEXT, 0);
+	ASSERT_TRUE(r & DSSH_POLL_READEXT);
+
+	/* Read should return all 5 available bytes */
+	uint8_t buf[64];
+	int64_t n = dssh_session_read_ext(s, &ch, buf, sizeof(buf));
+	ASSERT_EQ(n, (int64_t)5);
+
+	dssh_sigqueue_free(&ch.buf.session.signals);
+	dssh_bytebuf_free(&ch.buf.session.stdout_buf);
+	dssh_bytebuf_free(&ch.buf.session.stderr_buf);
+	cnd_destroy(&ch.poll_cnd);
+	mtx_destroy(&ch.buf_mtx);
+	dssh_session_cleanup(s);
+	dssh_test_reset_global_config();
+	return TEST_PASS;
+}
+
+static int
+test_channel_poll_infinite_data_ready(void)
+{
+	/*
+	 * channel_poll with timeout_ms == -1 (infinite wait) but data
+	 * already in the queue — should return immediately.
+	 */
+	dssh_test_reset_global_config();
+	if (register_all_algorithms() < 0)
+		return TEST_SKIP;
+	dssh_session s = dssh_session_init(false, 0);
+	if (s == NULL)
+		return TEST_SKIP;
+
+	struct dssh_channel_s ch = {0};
+	ch.chan_type = DSSH_CHAN_RAW;
+	mtx_init(&ch.buf_mtx, mtx_plain);
+	cnd_init(&ch.poll_cnd);
+	dssh_msgqueue_init(&ch.buf.raw.queue);
+	dssh_msgqueue_push(&ch.buf.raw.queue, (const uint8_t *)"x", 1);
+
+	int r = dssh_channel_poll(s, &ch, DSSH_POLL_READ, -1);
+	ASSERT_TRUE(r & DSSH_POLL_READ);
+
+	dssh_msgqueue_free(&ch.buf.raw.queue);
+	cnd_destroy(&ch.poll_cnd);
+	mtx_destroy(&ch.buf_mtx);
+	dssh_session_cleanup(s);
+	dssh_test_reset_global_config();
+	return TEST_PASS;
+}
+
+static int
+test_session_poll_infinite_data_ready(void)
+{
+	/*
+	 * session_poll with timeout_ms == -1 (infinite wait) but data
+	 * already in stdout — should return immediately.
+	 */
+	dssh_test_reset_global_config();
+	if (register_all_algorithms() < 0)
+		return TEST_SKIP;
+	dssh_session s = dssh_session_init(false, 0);
+	if (s == NULL)
+		return TEST_SKIP;
+
+	struct dssh_channel_s ch = {0};
+	ch.chan_type = DSSH_CHAN_SESSION;
+	mtx_init(&ch.buf_mtx, mtx_plain);
+	cnd_init(&ch.poll_cnd);
+	dssh_bytebuf_init(&ch.buf.session.stdout_buf, 256);
+	dssh_bytebuf_init(&ch.buf.session.stderr_buf, 256);
+	dssh_sigqueue_init(&ch.buf.session.signals);
+	dssh_bytebuf_write(&ch.buf.session.stdout_buf, (const uint8_t *)"hi", 2);
+
+	int r = dssh_session_poll(s, &ch, DSSH_POLL_READ, -1);
+	ASSERT_TRUE(r & DSSH_POLL_READ);
+
+	dssh_sigqueue_free(&ch.buf.session.signals);
+	dssh_bytebuf_free(&ch.buf.session.stdout_buf);
+	dssh_bytebuf_free(&ch.buf.session.stderr_buf);
+	cnd_destroy(&ch.poll_cnd);
+	mtx_destroy(&ch.buf_mtx);
+	dssh_session_cleanup(s);
+	dssh_test_reset_global_config();
+	return TEST_PASS;
+}
+
+static int
+test_session_read_ext_empty(void)
+{
+	/*
+	 * session_read_ext on an empty stderr buffer should return 0.
+	 * Covers the n > 0 False branch at line 1643.
+	 */
+	dssh_test_reset_global_config();
+	if (register_all_algorithms() < 0)
+		return TEST_SKIP;
+	dssh_session s = dssh_session_init(false, 0);
+	if (s == NULL)
+		return TEST_SKIP;
+
+	struct dssh_channel_s ch = {0};
+	ch.chan_type = DSSH_CHAN_SESSION;
+	mtx_init(&ch.buf_mtx, mtx_plain);
+	cnd_init(&ch.poll_cnd);
+	dssh_bytebuf_init(&ch.buf.session.stdout_buf, 256);
+	dssh_bytebuf_init(&ch.buf.session.stderr_buf, 256);
+	dssh_sigqueue_init(&ch.buf.session.signals);
+
+	uint8_t buf[64];
+	int64_t n = dssh_session_read_ext(s, &ch, buf, sizeof(buf));
+	ASSERT_EQ(n, (int64_t)0);
+
+	dssh_sigqueue_free(&ch.buf.session.signals);
+	dssh_bytebuf_free(&ch.buf.session.stdout_buf);
+	dssh_bytebuf_free(&ch.buf.session.stderr_buf);
+	cnd_destroy(&ch.poll_cnd);
+	mtx_destroy(&ch.buf_mtx);
+	dssh_session_cleanup(s);
+	dssh_test_reset_global_config();
+	return TEST_PASS;
+}
+
+/* ================================================================
  * Test table
  * ================================================================ */
 
@@ -4594,6 +5089,24 @@ static struct dssh_test_entry tests[] = {
 	{ "test_replenish_low_window",         test_maybe_replenish_low_window },
 	{ "test_window_underflow_to_zero",     test_demux_window_underflow_to_zero },
 	{ "test_window_add_overflow",          test_window_add_overflow },
+
+	/* Defensive guard coverage */
+	{ "test_session_write_not_open",       test_session_write_not_open },
+	{ "test_session_write_ext_not_open",   test_session_write_ext_not_open },
+	{ "test_session_write_close_recv",     test_session_write_close_received },
+	{ "test_session_write_ext_close_recv", test_session_write_ext_close_received },
+	{ "test_channel_write_not_open",       test_channel_write_not_open },
+	{ "test_channel_write_close_recv",     test_channel_write_close_received },
+	{ "test_channel_read_empty_queue",     test_channel_read_empty_queue },
+	{ "test_channel_poll_eof",             test_channel_poll_eof },
+	{ "test_channel_poll_close_received",  test_channel_poll_close_received },
+	{ "test_session_poll_close_read",      test_session_poll_close_read },
+	{ "test_session_poll_close_readext",   test_session_poll_close_readext },
+	{ "test_stdout_signal_mark_consumed",  test_stdout_signal_mark_consumed },
+	{ "test_stderr_signal_mark_consumed",  test_stderr_signal_mark_consumed },
+	{ "test_chan_poll_infinite_ready",      test_channel_poll_infinite_data_ready },
+	{ "test_sess_poll_infinite_ready",     test_session_poll_infinite_data_ready },
+	{ "test_session_read_ext_empty",       test_session_read_ext_empty },
 };
 
 DSSH_TEST_MAIN(tests)

@@ -1776,6 +1776,102 @@ test_rsa_get_pub_str_before_register(void)
 }
 
 /* ================================================================
+ * Defensive guard tests — NULL ctx and too-small buffer branches
+ * ================================================================ */
+
+static int
+test_ed25519_haskey_null_ctx(void)
+{
+	/* Covers haskey(NULL) — cbd != NULL False branch */
+	dssh_test_reset_global_config();
+	ASSERT_EQ(register_ssh_ed25519(), 0);
+
+	dssh_key_algo ka = dssh_transport_find_key_algo("ssh-ed25519");
+	ASSERT_NOT_NULL(ka);
+	ASSERT_FALSE(ka->haskey(NULL));
+
+	dssh_test_reset_global_config();
+	return TEST_PASS;
+}
+
+static int
+test_ed25519_cleanup_null_ctx(void)
+{
+	/* Covers cleanup(NULL) — cbd != NULL False branch */
+	dssh_test_reset_global_config();
+	ASSERT_EQ(register_ssh_ed25519(), 0);
+
+	dssh_key_algo ka = dssh_transport_find_key_algo("ssh-ed25519");
+	ASSERT_NOT_NULL(ka);
+	ka->cleanup(NULL);  /* must not crash */
+
+	dssh_test_reset_global_config();
+	return TEST_PASS;
+}
+
+static int
+test_ed25519_get_pub_str_bufsz_one(void)
+{
+	/* Covers get_pub_str bufsz < needed True branch */
+	dssh_test_reset_global_config();
+	ASSERT_EQ(register_ssh_ed25519(), 0);
+	ASSERT_EQ(ssh_ed25519_generate_key(), 0);
+
+	char buf[1];
+	int64_t res = ssh_ed25519_get_pub_str(buf, 1);
+	ASSERT_EQ(res, (int64_t)DSSH_ERROR_TOOLONG);
+
+	dssh_test_reset_global_config();
+	return TEST_PASS;
+}
+
+static int
+test_rsa_haskey_null_ctx(void)
+{
+	/* Covers haskey(NULL) — cbd != NULL False branch */
+	dssh_test_reset_global_config();
+	ASSERT_EQ(register_rsa_sha2_256(), 0);
+
+	dssh_key_algo ka = dssh_transport_find_key_algo("rsa-sha2-256");
+	ASSERT_NOT_NULL(ka);
+	ASSERT_FALSE(ka->haskey(NULL));
+
+	dssh_test_reset_global_config();
+	return TEST_PASS;
+}
+
+static int
+test_rsa_cleanup_null_ctx(void)
+{
+	/* Covers cleanup(NULL) — cbd != NULL False branch */
+	dssh_test_reset_global_config();
+	ASSERT_EQ(register_rsa_sha2_256(), 0);
+
+	dssh_key_algo ka = dssh_transport_find_key_algo("rsa-sha2-256");
+	ASSERT_NOT_NULL(ka);
+	ka->cleanup(NULL);  /* must not crash */
+
+	dssh_test_reset_global_config();
+	return TEST_PASS;
+}
+
+static int
+test_rsa_get_pub_str_bufsz_one(void)
+{
+	/* Covers get_pub_str bufsz < needed True branch */
+	dssh_test_reset_global_config();
+	ASSERT_EQ(register_rsa_sha2_256(), 0);
+	ASSERT_EQ(rsa_sha2_256_generate_key(2048), 0);
+
+	char buf[1];
+	int64_t res = rsa_sha2_256_get_pub_str(buf, 1);
+	ASSERT_EQ(res, (int64_t)DSSH_ERROR_TOOLONG);
+
+	dssh_test_reset_global_config();
+	return TEST_PASS;
+}
+
+/* ================================================================
  * Test table
  * ================================================================ */
 
@@ -1872,5 +1968,13 @@ static struct dssh_test_entry tests[] = {
 	{ "rsa_generate_before_register",    test_rsa_generate_before_register },
 	{ "ed25519_pub_str_before_register", test_ed25519_get_pub_str_before_register },
 	{ "rsa_pub_str_before_register",     test_rsa_get_pub_str_before_register },
+
+	/* Defensive guards — NULL ctx and too-small buffer */
+	{ "ed25519_haskey_null_ctx",         test_ed25519_haskey_null_ctx },
+	{ "ed25519_cleanup_null_ctx",        test_ed25519_cleanup_null_ctx },
+	{ "ed25519_pub_str_bufsz_one",       test_ed25519_get_pub_str_bufsz_one },
+	{ "rsa_haskey_null_ctx",             test_rsa_haskey_null_ctx },
+	{ "rsa_cleanup_null_ctx",            test_rsa_cleanup_null_ctx },
+	{ "rsa_pub_str_bufsz_one",           test_rsa_get_pub_str_bufsz_one },
 };
 DSSH_TEST_MAIN(tests)
