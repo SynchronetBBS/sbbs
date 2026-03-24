@@ -196,9 +196,18 @@ if(DEUCESSH_BUILD_TESTS)
 	set_property(TARGET dssh_test_allocator PROPERTY C_STANDARD_REQUIRED ON)
 	target_include_directories(dssh_test_allocator PUBLIC
 		${CMAKE_CURRENT_SOURCE_DIR}/test)
-	# Link into the test library so all test executables get the
-	# dssh_test_malloc definitions that library code references.
-	target_link_libraries(deucessh_test_lib INTERFACE dssh_test_allocator)
+	# OpenSSL + C11 threads failure injection library
+	add_library(dssh_test_ossl STATIC test/dssh_test_ossl.c)
+	set_property(TARGET dssh_test_ossl PROPERTY C_STANDARD 17)
+	set_property(TARGET dssh_test_ossl PROPERTY C_STANDARD_REQUIRED ON)
+	target_include_directories(dssh_test_ossl PUBLIC
+		${CMAKE_CURRENT_SOURCE_DIR}/test)
+	target_link_libraries(dssh_test_ossl PRIVATE OpenSSL::Crypto)
+
+	# Link both allocator and ossl injection into the test library
+	# so all test executables get the definitions library code references.
+	target_link_libraries(deucessh_test_lib INTERFACE
+		dssh_test_allocator dssh_test_ossl)
 
 	# Mock allocator library (--wrap based, for process-wide injection)
 	add_library(dssh_mock_alloc STATIC test/mock_alloc.c)

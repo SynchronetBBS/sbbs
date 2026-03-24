@@ -1452,6 +1452,107 @@ test_alloc_conn_iterate(void)
 }
 
 /* ================================================================
+ * Iterative OpenSSL/C11 failure injection during handshake.
+ *
+ * Same pattern as handshake_iterate, but arms the OpenSSL/C11
+ * wrapper countdown instead of the malloc countdown.
+ * ================================================================ */
+
+#include "dssh_test_ossl.h"
+
+static int
+test_ossl_handshake_iterate(void)
+{
+	for (int n = 0; n < 200; n++) {
+		dssh_test_reset_global_config();
+		dssh_test_alloc_reset();
+		dssh_test_ossl_reset();
+		mock_alloc_reset();
+
+		if (register_all() < 0)
+			return TEST_FAIL;
+		if (test_generate_host_key() < 0)
+			return TEST_FAIL;
+
+		struct mock_io_state io;
+		if (mock_io_init(&io, 0) < 0)
+			return TEST_FAIL;
+
+		dssh_transport_set_callbacks(mock_tx_dispatch, mock_rx_dispatch,
+		    mock_rxline_dispatch, mock_extra_line_cb);
+
+		dssh_session client = dssh_session_init(true, 0);
+		if (client == NULL) {
+			mock_io_free(&io);
+			continue;
+		}
+		dssh_session_set_cbdata(client, &io, &io, &io, &io);
+
+		dssh_session server = init_server_session();
+		if (server == NULL) {
+			dssh_session_cleanup(client);
+			mock_io_free(&io);
+			continue;
+		}
+		dssh_session_set_cbdata(server, &io, &io, &io, &io);
+
+		/* Barrier: create threads, wait for both ready, arm, release */
+		mtx_t bmtx;
+		cnd_t bcnd;
+		int bcount = 0;
+		mtx_init(&bmtx, mtx_plain);
+		cnd_init(&bcnd);
+
+		struct hs_alloc_ctx ca = {
+			.io = &io, .sess = client,
+			.barrier_mtx = &bmtx, .barrier_cnd = &bcnd,
+			.barrier_count = &bcount
+		};
+		struct hs_alloc_ctx sa = {
+			.io = &io, .sess = server,
+			.barrier_mtx = &bmtx, .barrier_cnd = &bcnd,
+			.barrier_count = &bcount
+		};
+
+		thrd_t ct, st;
+		thrd_create(&ct, hs_alloc_thread, &ca);
+		thrd_create(&st, hs_alloc_thread, &sa);
+
+		mtx_lock(&bmtx);
+		while (bcount < 2)
+			cnd_wait(&bcnd, &bmtx);
+
+		/* Arm the OpenSSL/C11 failure injection */
+		dssh_test_ossl_fail_after(n);
+		bcount = 3;
+		cnd_broadcast(&bcnd);
+		mtx_unlock(&bmtx);
+
+		thrd_join(ct, NULL);
+		thrd_join(st, NULL);
+		cnd_destroy(&bcnd);
+		mtx_destroy(&bmtx);
+
+		dssh_test_ossl_reset();
+		bool ok = (ca.result == 0 && sa.result == 0);
+
+		mock_io_close_c2s(&io);
+		mock_io_close_s2c(&io);
+		dssh_session_cleanup(server);
+		dssh_session_cleanup(client);
+		mock_io_free(&io);
+		dssh_test_reset_global_config();
+
+		if (ok) {
+			ASSERT_TRUE(n > 0);
+			return TEST_PASS;
+		}
+	}
+
+	return TEST_FAIL;
+}
+
+/* ================================================================
  * Test table
  * ================================================================ */
 
@@ -1499,6 +1600,9 @@ static struct dssh_test_entry tests[] = {
 
 	/* Iterative conn (library-only allocator) */
 	{ "alloc/conn_iterate",           test_alloc_conn_iterate },
+
+	/* Iterative OpenSSL/C11 failure injection */
+	{ "ossl/handshake_iterate",       test_ossl_handshake_iterate },
 };
 
 DSSH_TEST_MAIN(tests)
