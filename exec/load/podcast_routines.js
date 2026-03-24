@@ -85,6 +85,8 @@ function podcast_get_enclosure_info(enc)
 		log(LOG_ERR, e + " getting head of " + enc.url);
 		return false;
 	}
+	if (http.sock !== undefined)
+		http.sock.close();
 	if (hdrs == undefined)
 		return false;
 	if (hdrs['Content-Type'] == undefined || hdrs['Content-Length'] == undefined) {
