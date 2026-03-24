@@ -4418,6 +4418,126 @@ test_kexinit_peer_parse_truncated_namelist(void)
 }
 
 /* ================================================================
+ * Coverage: aes256-ctr cbd->ctx==NULL, EVP_EncryptUpdate failure
+ * ================================================================ */
+
+#include "dssh_test_ossl.h"
+
+static int
+test_aes256_ctr_ctx_member_null(void)
+{
+	/* cbd non-NULL but cbd->ctx is NULL — second half of OR at line 46 */
+	dssh_test_reset_global_config();
+	ASSERT_EQ(register_aes256_ctr(), 0);
+
+	dssh_enc enc = gconf.enc_head;
+	ASSERT_NOT_NULL(enc);
+
+	/* Allocate a real enc ctx via init, then NULL out the inner ctx */
+	uint8_t key[32], iv[16];
+	memset(key, 0x42, sizeof(key));
+	memset(iv, 0x00, sizeof(iv));
+	dssh_enc_ctx *ectx = NULL;
+	ASSERT_EQ(enc->init(key, iv, true, &ectx), 0);
+	ASSERT_NOT_NULL(ectx);
+
+	/* Save and NULL the inner OpenSSL ctx */
+	/* The enc_ctx struct's first member is EVP_CIPHER_CTX* */
+	void **inner = (void **)ectx;
+	void *saved = *inner;
+	*inner = NULL;
+
+	uint8_t buf[16] = {0};
+	ASSERT_EQ(enc->encrypt(buf, sizeof(buf), ectx), DSSH_ERROR_INIT);
+
+	/* Restore for proper cleanup */
+	*inner = saved;
+	enc->cleanup(ectx);
+
+	dssh_test_reset_global_config();
+	return TEST_PASS;
+}
+
+static int
+test_aes256_ctr_encrypt_update_failure(void)
+{
+	/* Init succeeds, then EVP_EncryptUpdate fails */
+	dssh_test_reset_global_config();
+	ASSERT_EQ(register_aes256_ctr(), 0);
+
+	dssh_enc enc = gconf.enc_head;
+	ASSERT_NOT_NULL(enc);
+
+	uint8_t key[32], iv[16];
+	memset(key, 0x42, sizeof(key));
+	memset(iv, 0x00, sizeof(iv));
+
+	/* Init with ossl injection disabled */
+	dssh_enc_ctx *ectx = NULL;
+	ASSERT_EQ(enc->init(key, iv, true, &ectx), 0);
+
+	/* Now arm ossl to fail the next call (EVP_EncryptUpdate) */
+	dssh_test_ossl_fail_after(0);
+	uint8_t buf[16] = {0};
+	int res = enc->encrypt(buf, sizeof(buf), ectx);
+	dssh_test_ossl_reset();
+	ASSERT_EQ(res, DSSH_ERROR_INIT);
+
+	enc->cleanup(ectx);
+	dssh_test_reset_global_config();
+	return TEST_PASS;
+}
+
+/* ================================================================
+ * Coverage: hmac-sha2-256 cleanup with NULL, MAC_final failure
+ * ================================================================ */
+
+static int
+test_hmac_sha2_256_cleanup_null(void)
+{
+	dssh_test_reset_global_config();
+	ASSERT_EQ(register_hmac_sha2_256(), 0);
+
+	dssh_mac mac = gconf.mac_head;
+	ASSERT_NOT_NULL(mac);
+
+	/* Cleanup with NULL ctx — should not crash */
+	mac->cleanup(NULL);
+
+	dssh_test_reset_global_config();
+	return TEST_PASS;
+}
+
+static int
+test_hmac_sha2_256_generate_failure(void)
+{
+	/* Init succeeds, then generate fails at EVP_MAC operation */
+	dssh_test_reset_global_config();
+	ASSERT_EQ(register_hmac_sha2_256(), 0);
+
+	dssh_mac mac = gconf.mac_head;
+	ASSERT_NOT_NULL(mac);
+
+	uint8_t key[32];
+	memset(key, 0x42, sizeof(key));
+
+	dssh_mac_ctx *mctx = NULL;
+	ASSERT_EQ(mac->init(key, &mctx), 0);
+
+	/* Arm ossl to fail the next call inside generate */
+	dssh_test_ossl_fail_after(0);
+	uint8_t data[16] = {0};
+	uint8_t tag[64];
+	int res = mac->generate(data, sizeof(data), tag, mctx);
+	dssh_test_ossl_reset();
+	ASSERT_TRUE(res < 0);
+
+	mac->cleanup(mctx);
+	dssh_test_reset_global_config();
+	return TEST_PASS;
+}
+
+/* ================================================================
  * Test table
  * ================================================================ */
 
@@ -4586,6 +4706,10 @@ static struct dssh_test_entry tests[] = {
 	{ "register/two_comp",              test_register_two_comp },
 	{ "register/two_lang",              test_register_two_lang },
 	{ "kexinit/peer_trunc_namelist",    test_kexinit_peer_parse_truncated_namelist },
+	{ "aes256_ctr/ctx_member_null",     test_aes256_ctr_ctx_member_null },
+	{ "aes256_ctr/encrypt_update_fail", test_aes256_ctr_encrypt_update_failure },
+	{ "hmac_sha2_256/cleanup_null",     test_hmac_sha2_256_cleanup_null },
+	{ "hmac_sha2_256/generate_failure", test_hmac_sha2_256_generate_failure },
 
 	/* Getter before handshake */
 	{ "getter/names_before_handshake",   test_get_names_before_handshake },

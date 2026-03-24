@@ -4428,6 +4428,39 @@ test_demux_window_underflow_to_zero(void)
 }
 
 /* ================================================================
+ * Coverage: window_add overflow via send_window_adjust
+ * ================================================================ */
+
+static int
+test_window_add_overflow(void)
+{
+	struct conn_ctx ctx;
+	if (conn_setup(&ctx) < 0)
+		return TEST_SKIP;
+
+	struct open_exec_ctx oc = {
+		.client = ctx.client, .server = ctx.server,
+		.command = "echo woverflow", .cbs = &session_cbs,
+		.accept_timeout = 5000,
+	};
+	if (open_exec_channel(&oc) < 0 || !oc.client_ch || !oc.server_ch) {
+		conn_cleanup(&ctx);
+		return TEST_FAIL;
+	}
+
+	/* Set local_window near UINT32_MAX, then add enough to overflow */
+	oc.server_ch->local_window = UINT32_MAX - 10;
+	dssh_conn_send_window_adjust(ctx.server, oc.server_ch, 20);
+	/* window_add should clamp to UINT32_MAX */
+	ASSERT_EQ(oc.server_ch->local_window, UINT32_MAX);
+
+	dssh_session_close(ctx.server, oc.server_ch, 0);
+	dssh_session_close(ctx.client, oc.client_ch, 0);
+	conn_cleanup(&ctx);
+	return TEST_PASS;
+}
+
+/* ================================================================
  * Test table
  * ================================================================ */
 
@@ -4560,6 +4593,7 @@ static struct dssh_test_entry tests[] = {
 	{ "test_replenish_after_eof",          test_maybe_replenish_after_eof },
 	{ "test_replenish_low_window",         test_maybe_replenish_low_window },
 	{ "test_window_underflow_to_zero",     test_demux_window_underflow_to_zero },
+	{ "test_window_add_overflow",          test_window_add_overflow },
 };
 
 DSSH_TEST_MAIN(tests)
