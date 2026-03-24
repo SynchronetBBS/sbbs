@@ -9,6 +9,7 @@
 #ifndef DSSH_TEST_DHGEX_PROVIDER_H
 #define DSSH_TEST_DHGEX_PROVIDER_H
 
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include "deucessh.h"
@@ -139,14 +140,49 @@ test_register_key_algos(void)
 }
 
 /*
- * Generate the host key appropriate for the current test
- * configuration.  RSA key generation uses 2048 bits.
+ * Generate or load the host key appropriate for the current test
+ * configuration.
+ *
+ * If DSSH_TEST_RSA_KEY / DSSH_TEST_ED25519_KEY is set to a file path,
+ * the key is loaded from that file if it exists, or generated and saved
+ * there if it doesn't.  This avoids repeated RSA keygen (~200ms each)
+ * across test runs.
+ *
+ * If the env var is not set, a fresh key is generated every time
+ * (original behavior).
  */
 static inline int
 test_generate_host_key(void)
 {
-	if (test_using_rsa())
+	const char *keyfile;
+	if (test_using_rsa()) {
+		keyfile = getenv("DSSH_TEST_RSA_KEY");
+		if (keyfile != NULL) {
+			FILE *fp = fopen(keyfile, "r");
+			if (fp != NULL) {
+				fclose(fp);
+				return rsa_sha2_256_load_key_file(keyfile,
+				    NULL, NULL);
+			}
+			int res = rsa_sha2_256_generate_key(2048);
+			if (res < 0) return res;
+			return rsa_sha2_256_save_key_file(keyfile,
+			    NULL, NULL);
+		}
 		return rsa_sha2_256_generate_key(2048);
+	}
+	keyfile = getenv("DSSH_TEST_ED25519_KEY");
+	if (keyfile != NULL) {
+		FILE *fp = fopen(keyfile, "r");
+		if (fp != NULL) {
+			fclose(fp);
+			return ssh_ed25519_load_key_file(keyfile,
+			    NULL, NULL);
+		}
+		int res = ssh_ed25519_generate_key();
+		if (res < 0) return res;
+		return ssh_ed25519_save_key_file(keyfile, NULL, NULL);
+	}
 	return ssh_ed25519_generate_key();
 }
 

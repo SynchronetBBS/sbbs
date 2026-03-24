@@ -160,6 +160,12 @@ option(DEUCESSH_TEST_SYNCHRONET "Build Synchronet interop tests" OFF)
 if(DEUCESSH_BUILD_TESTS)
 	enable_testing()
 
+	# Cached key files for test runs — avoids repeated RSA keygen.
+	# These are stored in the build directory and reused across runs.
+	set(DSSH_TEST_KEY_ENV
+		"DSSH_TEST_ED25519_KEY=${CMAKE_CURRENT_BINARY_DIR}/test_ed25519.pem"
+		"DSSH_TEST_RSA_KEY=${CMAKE_CURRENT_BINARY_DIR}/test_rsa.pem")
+
 	# Test-instrumented static library (exposes DSSH_TESTABLE functions)
 	add_library(deucessh_test_lib STATIC ${DEUCESSH_SOURCES})
 	set_property(TARGET deucessh_test_lib PROPERTY C_STANDARD 17)
@@ -238,47 +244,55 @@ if(DEUCESSH_BUILD_TESTS)
 	dssh_add_test(transport test/test_transport.c)
 	target_link_libraries(dssh_test_transport PRIVATE dssh_mock_io)
 	add_test(NAME dssh_layer_transport COMMAND dssh_test_transport)
+	set_tests_properties(dssh_layer_transport PROPERTIES
+		ENVIRONMENT "${DSSH_TEST_KEY_ENV}")
 	add_test(NAME dssh_layer_transport_dhgex COMMAND dssh_test_transport)
 	set_tests_properties(dssh_layer_transport_dhgex PROPERTIES
-		ENVIRONMENT "DSSH_TEST_KEX=dh-gex")
+		ENVIRONMENT "DSSH_TEST_KEX=dh-gex;${DSSH_TEST_KEY_ENV}")
 	add_test(NAME dssh_layer_transport_rsa COMMAND dssh_test_transport)
 	set_tests_properties(dssh_layer_transport_rsa PROPERTIES
-		ENVIRONMENT "DSSH_TEST_KEY=rsa")
+		ENVIRONMENT "DSSH_TEST_KEY=rsa;${DSSH_TEST_KEY_ENV}")
 	add_test(NAME dssh_layer_transport_dhgex_rsa COMMAND dssh_test_transport)
 	set_tests_properties(dssh_layer_transport_dhgex_rsa PROPERTIES
-		ENVIRONMENT "DSSH_TEST_KEX=dh-gex;DSSH_TEST_KEY=rsa")
+		ENVIRONMENT "DSSH_TEST_KEX=dh-gex;DSSH_TEST_KEY=rsa;${DSSH_TEST_KEY_ENV}")
 
 	dssh_add_test(auth test/test_auth.c)
 	target_link_libraries(dssh_test_auth PRIVATE dssh_mock_io)
 	add_test(NAME dssh_layer_auth COMMAND dssh_test_auth)
+	set_tests_properties(dssh_layer_auth PROPERTIES
+		ENVIRONMENT "${DSSH_TEST_KEY_ENV}")
 	add_test(NAME dssh_layer_auth_dhgex COMMAND dssh_test_auth)
 	set_tests_properties(dssh_layer_auth_dhgex PROPERTIES
-		ENVIRONMENT "DSSH_TEST_KEX=dh-gex")
+		ENVIRONMENT "DSSH_TEST_KEX=dh-gex;${DSSH_TEST_KEY_ENV}")
 	add_test(NAME dssh_layer_auth_rsa COMMAND dssh_test_auth)
 	set_tests_properties(dssh_layer_auth_rsa PROPERTIES
-		ENVIRONMENT "DSSH_TEST_KEY=rsa")
+		ENVIRONMENT "DSSH_TEST_KEY=rsa;${DSSH_TEST_KEY_ENV}")
 	add_test(NAME dssh_layer_auth_dhgex_rsa COMMAND dssh_test_auth)
 	set_tests_properties(dssh_layer_auth_dhgex_rsa PROPERTIES
-		ENVIRONMENT "DSSH_TEST_KEX=dh-gex;DSSH_TEST_KEY=rsa")
+		ENVIRONMENT "DSSH_TEST_KEX=dh-gex;DSSH_TEST_KEY=rsa;${DSSH_TEST_KEY_ENV}")
 
 	dssh_add_test(conn test/test_conn.c)
 	target_link_libraries(dssh_test_conn PRIVATE dssh_mock_io)
 	add_test(NAME dssh_layer_conn COMMAND dssh_test_conn)
+	set_tests_properties(dssh_layer_conn PROPERTIES
+		ENVIRONMENT "${DSSH_TEST_KEY_ENV}")
 	add_test(NAME dssh_layer_conn_dhgex COMMAND dssh_test_conn)
 	set_tests_properties(dssh_layer_conn_dhgex PROPERTIES
-		ENVIRONMENT "DSSH_TEST_KEX=dh-gex")
+		ENVIRONMENT "DSSH_TEST_KEX=dh-gex;${DSSH_TEST_KEY_ENV}")
 	add_test(NAME dssh_layer_conn_rsa COMMAND dssh_test_conn)
 	set_tests_properties(dssh_layer_conn_rsa PROPERTIES
-		ENVIRONMENT "DSSH_TEST_KEY=rsa")
+		ENVIRONMENT "DSSH_TEST_KEY=rsa;${DSSH_TEST_KEY_ENV}")
 	add_test(NAME dssh_layer_conn_dhgex_rsa COMMAND dssh_test_conn)
 	set_tests_properties(dssh_layer_conn_dhgex_rsa PROPERTIES
-		ENVIRONMENT "DSSH_TEST_KEX=dh-gex;DSSH_TEST_KEY=rsa")
+		ENVIRONMENT "DSSH_TEST_KEX=dh-gex;DSSH_TEST_KEY=rsa;${DSSH_TEST_KEY_ENV}")
 
 	# Tier 1b: Alloc failure tests (need mock allocator + mock I/O)
 	dssh_add_test(alloc test/test_alloc.c)
 	target_link_libraries(dssh_test_alloc PRIVATE dssh_mock_io dssh_mock_alloc)
 	target_link_options(dssh_test_alloc PRIVATE ${DSSH_WRAP_FLAGS})
 	add_test(NAME dssh_unit_alloc COMMAND dssh_test_alloc)
+	set_tests_properties(dssh_unit_alloc PROPERTIES
+		ENVIRONMENT "${DSSH_TEST_KEY_ENV}")
 
 	# Test algorithm modules (enc/mac with failure injection)
 	add_library(dssh_test_algos STATIC test/test_enc.c test/test_mac.c)
@@ -294,19 +308,23 @@ if(DEUCESSH_BUILD_TESTS)
 	target_link_libraries(dssh_test_transport_errors PRIVATE
 		dssh_mock_io dssh_test_algos)
 	add_test(NAME dssh_layer_transport_errors COMMAND dssh_test_transport_errors)
+	set_tests_properties(dssh_layer_transport_errors PROPERTIES
+		ENVIRONMENT "${DSSH_TEST_KEY_ENV}")
 
 	# Tier 3a: Self-test (default integration)
 	dssh_add_test(selftest test/test_selftest.c)
 	add_test(NAME dssh_integration_selftest COMMAND dssh_test_selftest)
+	set_tests_properties(dssh_integration_selftest PROPERTIES
+		ENVIRONMENT "${DSSH_TEST_KEY_ENV}")
 	add_test(NAME dssh_integration_selftest_dhgex COMMAND dssh_test_selftest)
 	set_tests_properties(dssh_integration_selftest_dhgex PROPERTIES
-		ENVIRONMENT "DSSH_TEST_KEX=dh-gex")
+		ENVIRONMENT "DSSH_TEST_KEX=dh-gex;${DSSH_TEST_KEY_ENV}")
 	add_test(NAME dssh_integration_selftest_rsa COMMAND dssh_test_selftest)
 	set_tests_properties(dssh_integration_selftest_rsa PROPERTIES
-		ENVIRONMENT "DSSH_TEST_KEY=rsa")
+		ENVIRONMENT "DSSH_TEST_KEY=rsa;${DSSH_TEST_KEY_ENV}")
 	add_test(NAME dssh_integration_selftest_dhgex_rsa COMMAND dssh_test_selftest)
 	set_tests_properties(dssh_integration_selftest_dhgex_rsa PROPERTIES
-		ENVIRONMENT "DSSH_TEST_KEX=dh-gex;DSSH_TEST_KEY=rsa")
+		ENVIRONMENT "DSSH_TEST_KEX=dh-gex;DSSH_TEST_KEY=rsa;${DSSH_TEST_KEY_ENV}")
 
 	# Tier 3b: OpenSSH interop (optional)
 	if(DEUCESSH_TEST_OPENSSH)
