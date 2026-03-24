@@ -23,6 +23,14 @@ require("rip_scrollbar.js", "RIPScrollbar");
 // Mouse click identifiers for menu items (high-byte chars safe for CP437 terminals)
 var RIP_LBMENU_MOUSE_ITEM_BASE = 0x80; // 0x80 + visible position for item clicks
 
+// Mouse click identifiers for the horizontal scrollbar (must not conflict with
+// the vertical scrollbar's identifiers 0xFA-0xFE or the item identifiers 0x80+)
+var RIP_LBMENU_HSCROLL_LEFT     = 0xF9; // Scroll left (left arrow clicked)
+var RIP_LBMENU_HSCROLL_RIGHT    = 0xF8; // Scroll right (right arrow clicked)
+var RIP_LBMENU_HSCROLL_PG_LEFT  = 0xF7; // Page left (track left of thumb clicked)
+var RIP_LBMENU_HSCROLL_PG_RIGHT = 0xF6; // Page right (track right of thumb clicked)
+var RIP_LBMENU_HSCROLL_THUMB    = 0xF5; // Thumb drag (followed by $X$ coordinate)
+
 // Border bevel dimensions (pixels)
 var RIP_LBMENU_BEVEL_OUTER = 2;
 var RIP_LBMENU_BEVEL_GAP   = 2;
@@ -152,10 +160,23 @@ function RIPLightbarMenu(pX, pY, pWidth, pHeight, pUseRIPBorder)
 	this.additionalQuitKeys = "";
 	this.additionalSelectItemKeys = "";
 
+	// --- Scrollbar toggles ---
+	// When true, the corresponding scrollbar is suppressed even if the content
+	// would normally require it.  Items that overflow the visible area will
+	// simply be clipped.  Both default to false (scrollbars enabled when needed).
+	this.noVerticalScrollbar = false;
+	this.noHorizontalScrollbar = false;
+
+	// Horizontal scroll state: the index of the first visible character in each
+	// item's text.  When a horizontal scrollbar is active, LEFT/RIGHT arrows
+	// shift this value to pan the visible text window across wide items.
+	this.leftCharIdx = 0;
+
 	// Internal computed layout (set by _computeLayout)
 	this._layout = null;
-	// Internal RIPScrollbar instance (created by _computeLayout when needed)
-	this._scrollbar = null;
+	// Internal RIPScrollbar instances (created by _computeLayout when needed)
+	this._vScrollbar = null;   // Vertical scrollbar (right side)
+	this._hScrollbar = null;  // Horizontal scrollbar (bottom, only if items are too wide)
 
 	// Public methods - Item management
 	this.Add = RIPLightbarMenu_Add;
@@ -324,7 +345,7 @@ function RIPLightbarMenu_RemoveItemHotkey(pIdx, pHotkey)
 			var hotkeyIdx = item.hotkeys.indexOf(pHotkey);
 			while (hotkeyIdx > -1)
 			{
-				item.hotkeys = item.hotkeys.substr(0, hotkeyIdx) + item.hotkeys.substr(hotkeyIdx + 1);
+				item.hotkeys = item.hotkeys.substring(0, hotkeyIdx) + item.hotkeys.substring(hotkeyIdx + 1);
 				hotkeyIdx = item.hotkeys.indexOf(pHotkey);
 			}
 		}
@@ -451,7 +472,8 @@ function RIPLightbarMenu_GetVal(pFirstParam, pSelectedItemIndexes)
 
 	this._computeLayout();
 	var L = this._layout;
-	var sb = this._scrollbar; // May be null if no scrollbar needed
+	var vsb = this._vScrollbar;   // Vertical scrollbar (may be null)
+	var hsb = this._hScrollbar; // Horizontal scrollbar (may be null)
 
 	// Clamp selectedItemIdx to valid range
 	if (this.selectedItemIdx < 0)
@@ -487,6 +509,7 @@ function RIPLightbarMenu_GetVal(pFirstParam, pSelectedItemIndexes)
 
 		var oldSelected = this.selectedItemIdx;
 		var oldTop = this.topItemIdx;
+		var oldLeftChar = this.leftCharIdx;
 		var ch = key.charCodeAt(0);
 		// These two variables track whether a definitive selection was made during
 		// this iteration.  They are only used in single-select mode — in multi-select
@@ -549,25 +572,25 @@ function RIPLightbarMenu_GetVal(pFirstParam, pSelectedItemIndexes)
 			}
 		}
 		// Scrollbar mouse events (only if scrollbar exists)
-		else if (sb !== null && ch === sb.mouseChars.scrollUp)
+		else if (vsb !== null && ch === vsb.mouseChars.scrollUp)
 		{
 			if (this.selectedItemIdx > 0)
 				--this.selectedItemIdx;
 		}
-		else if (sb !== null && ch === sb.mouseChars.scrollDn)
+		else if (vsb !== null && ch === vsb.mouseChars.scrollDn)
 		{
 			if (this.selectedItemIdx < numItems - 1)
 				++this.selectedItemIdx;
 		}
-		else if (sb !== null && ch === sb.mouseChars.trackPgUp)
+		else if (vsb !== null && ch === vsb.mouseChars.trackPgUp)
 		{
 			this.selectedItemIdx = Math.max(0, this.selectedItemIdx - L.visibleCount);
 		}
-		else if (sb !== null && ch === sb.mouseChars.trackPgDn)
+		else if (vsb !== null && ch === vsb.mouseChars.trackPgDn)
 		{
 			this.selectedItemIdx = Math.min(numItems - 1, this.selectedItemIdx + L.visibleCount);
 		}
-		else if (sb !== null && ch === sb.mouseChars.thumbDrag)
+		else if (vsb !== null && ch === vsb.mouseChars.thumbDrag)
 		{
 			// Thumb drag: the RIP mouse region for the scrollbar thumb includes
 			// the $Y$ text variable, which SyncTerm expands to the mouse Y pixel
@@ -584,7 +607,7 @@ function RIPLightbarMenu_GetVal(pFirstParam, pSelectedItemIndexes)
 				yStr += dc;
 			}
 			var mouseY = parseInt(yStr, 10);
-			var sbL = sb._layout;
+			var sbL = vsb._layout;
 			if (!isNaN(mouseY) && sbL.trackHeight > 0)
 			{
 				// Map the Y pixel position within the track to a topItemIdx value.
@@ -593,7 +616,7 @@ function RIPLightbarMenu_GetVal(pFirstParam, pSelectedItemIndexes)
 				// thumb's top edge is trackHeight - thumbHeight pixels, which maps
 				// linearly to 0..maxTop scroll positions.
 				var maxTop = numItems - L.visibleCount;
-				var thumb = sb.getThumbGeometry();
+				var thumb = vsb.getThumbGeometry();
 				var thumbRange = sbL.trackHeight - thumb.h;
 				if (thumbRange > 0)
 				{
@@ -608,6 +631,56 @@ function RIPLightbarMenu_GetVal(pFirstParam, pSelectedItemIndexes)
 					this.selectedItemIdx = this.topItemIdx;
 				else if (this.selectedItemIdx >= this.topItemIdx + L.visibleCount)
 					this.selectedItemIdx = this.topItemIdx + L.visibleCount - 1;
+			}
+		}
+		// --- Horizontal scrollbar mouse events ---
+		// These use different character codes (0xF5-0xF9) from the vertical
+		// scrollbar (0xFA-0xFE) to avoid conflicts.
+		else if (hsb !== null && ch === RIP_LBMENU_HSCROLL_LEFT)
+		{
+			if (this.leftCharIdx > 0)
+				--this.leftCharIdx;
+		}
+		else if (hsb !== null && ch === RIP_LBMENU_HSCROLL_RIGHT)
+		{
+			var maxLeftIdx = L.maxItemTextWidth - L.charsPerItem;
+			if (this.leftCharIdx < maxLeftIdx)
+				++this.leftCharIdx;
+		}
+		else if (hsb !== null && ch === RIP_LBMENU_HSCROLL_PG_LEFT)
+		{
+			this.leftCharIdx = Math.max(0, this.leftCharIdx - L.charsPerItem);
+		}
+		else if (hsb !== null && ch === RIP_LBMENU_HSCROLL_PG_RIGHT)
+		{
+			var maxLeftIdx = L.maxItemTextWidth - L.charsPerItem;
+			this.leftCharIdx = Math.min(maxLeftIdx, this.leftCharIdx + L.charsPerItem);
+		}
+		else if (hsb !== null && ch === RIP_LBMENU_HSCROLL_THUMB)
+		{
+			// Read the X coordinate digits from the $X$ text variable
+			var xStr = "";
+			for (var d = 0; d < 4; ++d)
+			{
+				var dc = console.inkey(0, 500);
+				if (dc === "")
+					break;
+				xStr += dc;
+			}
+			var mouseX = parseInt(xStr, 10);
+			var hsbL = hsb._layout;
+			if (!isNaN(mouseX) && hsbL.trackWidth > 0)
+			{
+				var maxLeftIdx = L.maxItemTextWidth - L.charsPerItem;
+				var thumb = hsb.getThumbGeometry();
+				var thumbRange = hsbL.trackWidth - thumb.w;
+				if (thumbRange > 0)
+				{
+					var clampedX = Math.max(hsbL.trackLeft, Math.min(hsbL.trackRight, mouseX));
+					var relX = clampedX - hsbL.trackLeft;
+					this.leftCharIdx = Math.round(relX * maxLeftIdx / thumbRange);
+					this.leftCharIdx = Math.max(0, Math.min(maxLeftIdx, this.leftCharIdx));
+				}
 			}
 		}
 		// --- Keyboard handling ---
@@ -634,6 +707,22 @@ function RIPLightbarMenu_GetVal(pFirstParam, pSelectedItemIndexes)
 					break;
 				case KEY_PAGEDN:
 					this.selectedItemIdx = Math.min(numItems - 1, this.selectedItemIdx + L.visibleCount);
+					break;
+				case KEY_LEFT:
+					// Scroll text left (decrease leftCharIdx) when horizontal
+					// scrollbar is active.  No effect if no horizontal scrollbar.
+					if (hsb !== null && this.leftCharIdx > 0)
+						--this.leftCharIdx;
+					break;
+				case KEY_RIGHT:
+					// Scroll text right (increase leftCharIdx) when horizontal
+					// scrollbar is active.  No effect if no horizontal scrollbar.
+					if (hsb !== null)
+					{
+						var maxLeftIdx = L.maxItemTextWidth - L.charsPerItem;
+						if (this.leftCharIdx < maxLeftIdx)
+							++this.leftCharIdx;
+					}
 					break;
 				case '\r':
 					// Enter key behavior differs between single-select and multi-select:
@@ -808,11 +897,11 @@ function RIPLightbarMenu_GetVal(pFirstParam, pSelectedItemIndexes)
 
 		// --- Efficient display update ---
 		// Only redraw what changed to minimize RIP data sent over the wire:
-		if (this.topItemIdx !== oldTop)
+		if (this.topItemIdx !== oldTop || this.leftCharIdx !== oldLeftChar)
 		{
-			// Viewport scrolled: must redraw all visible items, update the
-			// scrollbar thumb position, and rebuild mouse regions (since the
-			// visible items shifted).
+			// Viewport scrolled vertically or horizontally: must redraw all
+			// visible items, update scrollbar thumb positions, and rebuild
+			// mouse regions (since the visible content shifted).
 			this._drawFullMenu();
 		}
 		else if (this.selectedItemIdx !== oldSelected)
@@ -843,9 +932,9 @@ function RIPLightbarMenu_sendRIP(cmds)
 
 // Compute internal layout geometry from the current pos, size, item count,
 // and border settings.  The layout is stored in this._layout and used by all
-// drawing methods.  Also creates a RIPScrollbar instance if the item count
-// exceeds the visible area.  Must be called before any drawing, and should be
-// called again if the menu's position, size, or item count changes.
+// drawing methods.  Also creates RIPScrollbar instances for vertical and/or
+// horizontal scrolling if needed.  Must be called before any drawing, and
+// should be called again if the menu's position, size, or item count changes.
 //
 // Layout structure (all values in pixels):
 //   borderLeft/Top/Right/Bottom - outer edge of the border (or content if no border)
@@ -853,7 +942,10 @@ function RIPLightbarMenu_sendRIP(cmds)
 //   textX - left edge for item text (menuLeftX + textXOffset)
 //   maxVisible - max items that fit in the content area
 //   visibleCount - actual number of items shown (min of maxVisible and item count)
-//   needsScrollbar - whether a scrollbar is needed
+//   needsScrollbar - whether a vertical scrollbar is needed
+//   needsHScrollbar - whether a horizontal scrollbar is needed
+//   charsPerItem - max characters that fit horizontally in the item area
+//   maxItemTextWidth - length of the widest item's text (in characters)
 function RIPLightbarMenu_computeLayout()
 {
 	var L = {};
@@ -873,48 +965,125 @@ function RIPLightbarMenu_computeLayout()
 	var contentRight = L.borderRight - borderInset;
 	var contentHeight = this.size.height - 2 * borderInset;
 
-	// How many item rows fit vertically
+	// --- Determine the widest item text (in characters) ---
+	// This is needed to decide whether a horizontal scrollbar is required.
+	L.maxItemTextWidth = 0;
+	for (var mi = 0; mi < numItems; ++mi)
+	{
+		var mItem = this.GetItem(mi);
+		if (mItem !== null && mItem.text.length > L.maxItemTextWidth)
+			L.maxItemTextWidth = mItem.text.length;
+	}
+
+	// --- Two-pass layout to resolve vertical/horizontal scrollbar interdependency ---
+	// The vertical scrollbar reduces the item area width (which may cause items to
+	// need horizontal scrolling), and the horizontal scrollbar reduces the item area
+	// height (which may cause more items to need vertical scrolling).  We resolve
+	// this by computing the layout without the horizontal scrollbar first, then
+	// checking if one is needed, and if so, recomputing with the space reserved.
+	var hsbReserve = 0; // Pixels reserved at the bottom for the horizontal scrollbar
+	var hsbHeight = RIP_LBMENU_SCROLLBAR_WIDTH; // Same as vertical scrollbar width
+	var hsbGap = RIP_LBMENU_SCROLLBAR_GAP;
+
+	// First pass: compute layout without horizontal scrollbar
 	L.maxVisible = Math.floor(contentHeight / this.itemHeight);
 	L.visibleCount = Math.min(numItems, L.maxVisible);
-
-	// If there are more items than fit, a scrollbar is needed to the right of
-	// the item area.  The scrollbar takes SCROLLBAR_WIDTH pixels plus a gap,
-	// so the item area is narrowed accordingly.
-	L.needsScrollbar = (numItems > L.maxVisible);
+	L.needsScrollbar = (numItems > L.maxVisible) && !this.noVerticalScrollbar;
 	L.menuRightX = contentRight
 	               - (L.needsScrollbar ? RIP_LBMENU_SCROLLBAR_WIDTH + RIP_LBMENU_SCROLLBAR_GAP : 0);
+	L.charsPerItem = Math.floor((L.menuRightX - L.menuLeftX - this.textXOffset) / 8);
+	L.needsHScrollbar = (L.maxItemTextWidth > L.charsPerItem) && !this.noHorizontalScrollbar;
+
+	// Second pass: if horizontal scrollbar is needed, reserve space and recalculate
+	if (L.needsHScrollbar)
+	{
+		hsbReserve = hsbHeight + hsbGap;
+		var adjustedHeight = contentHeight - hsbReserve;
+		L.maxVisible = Math.floor(adjustedHeight / this.itemHeight);
+		L.visibleCount = Math.min(numItems, L.maxVisible);
+		// Vertical scrollbar status may have changed with the reduced height
+		L.needsScrollbar = (numItems > L.maxVisible) && !this.noVerticalScrollbar;
+		L.menuRightX = contentRight
+		               - (L.needsScrollbar ? RIP_LBMENU_SCROLLBAR_WIDTH + RIP_LBMENU_SCROLLBAR_GAP : 0);
+		L.charsPerItem = Math.floor((L.menuRightX - L.menuLeftX - this.textXOffset) / 8);
+		// Re-check: with the updated width, horizontal scrollbar may no longer be needed
+		L.needsHScrollbar = (L.maxItemTextWidth > L.charsPerItem) && !this.noHorizontalScrollbar;
+		if (!L.needsHScrollbar)
+		{
+			// Undo the reservation and recalculate
+			hsbReserve = 0;
+			L.maxVisible = Math.floor(contentHeight / this.itemHeight);
+			L.visibleCount = Math.min(numItems, L.maxVisible);
+			L.needsScrollbar = (numItems > L.maxVisible) && !this.noVerticalScrollbar;
+			L.menuRightX = contentRight
+			               - (L.needsScrollbar ? RIP_LBMENU_SCROLLBAR_WIDTH + RIP_LBMENU_SCROLLBAR_GAP : 0);
+			L.charsPerItem = Math.floor((L.menuRightX - L.menuLeftX - this.textXOffset) / 8);
+		}
+	}
+
 	L.textX = L.menuLeftX + this.textXOffset;
 
-	// Shrink the border to tightly fit the visible items (don't leave empty
-	// space below the last item row), but don't exceed the original size.
-	L.borderBottom = L.menuTopY + L.visibleCount * this.itemHeight + borderInset;
+	// Shrink the border to tightly fit the visible items (plus horizontal
+	// scrollbar if present), but don't exceed the original size.
+	L.borderBottom = L.menuTopY + L.visibleCount * this.itemHeight + hsbReserve + borderInset;
 	var maxBottom = this.pos.y + this.size.height - 1;
 	if (L.borderBottom > maxBottom)
 		L.borderBottom = maxBottom;
 
 	this._layout = L;
 
-	// Create or clear the RIPScrollbar instance
+	// --- Create or clear the vertical RIPScrollbar instance ---
 	if (L.needsScrollbar)
 	{
 		var sbX = L.menuRightX + RIP_LBMENU_SCROLLBAR_GAP;
 		var sbWidth = contentRight - sbX + 1;
 		var sbHeight = L.visibleCount * this.itemHeight;
-		this._scrollbar = new RIPScrollbar(sbX, L.menuTopY, sbWidth, sbHeight);
-		// Copy scrollbar-related colors from the menu's color settings
-		this._scrollbar.colors.track = this.colors.scrollTrack;
-		this._scrollbar.colors.thumb = this.colors.scrollThumb;
-		this._scrollbar.colors.arrowBg = this.colors.scrollArrowBg;
-		this._scrollbar.colors.arrowFg = this.colors.scrollArrowFg;
-		this._scrollbar.colors.bevelBright = this.colors.bevelBright;
-		this._scrollbar.colors.bevelDark = this.colors.bevelDark;
-		// Set the scroll state
-		this._scrollbar.setScrollState(numItems, L.visibleCount, this.topItemIdx);
-		this._scrollbar.computeLayout();
+		this._vScrollbar = new RIPScrollbar(sbX, L.menuTopY, sbWidth, sbHeight);
+		this._vScrollbar.colors.track = this.colors.scrollTrack;
+		this._vScrollbar.colors.thumb = this.colors.scrollThumb;
+		this._vScrollbar.colors.arrowBg = this.colors.scrollArrowBg;
+		this._vScrollbar.colors.arrowFg = this.colors.scrollArrowFg;
+		this._vScrollbar.colors.bevelBright = this.colors.bevelBright;
+		this._vScrollbar.colors.bevelDark = this.colors.bevelDark;
+		this._vScrollbar.setScrollState(numItems, L.visibleCount, this.topItemIdx);
+		this._vScrollbar.computeLayout();
 	}
 	else
 	{
-		this._scrollbar = null;
+		this._vScrollbar = null;
+	}
+
+	// --- Create or clear the horizontal RIPScrollbar instance ---
+	// The horizontal scrollbar sits at the bottom of the item area, spanning
+	// the full item width (not including the vertical scrollbar area).
+	if (L.needsHScrollbar)
+	{
+		var hsbY = L.menuTopY + L.visibleCount * this.itemHeight + hsbGap;
+		var hsbWidth = L.menuRightX - L.menuLeftX + 1;
+		this._hScrollbar = new RIPScrollbar(L.menuLeftX, hsbY, hsbWidth, hsbHeight);
+		this._hScrollbar.horizontal = true;
+		this._hScrollbar.colors.track = this.colors.scrollTrack;
+		this._hScrollbar.colors.thumb = this.colors.scrollThumb;
+		this._hScrollbar.colors.arrowBg = this.colors.scrollArrowBg;
+		this._hScrollbar.colors.arrowFg = this.colors.scrollArrowFg;
+		this._hScrollbar.colors.bevelBright = this.colors.bevelBright;
+		this._hScrollbar.colors.bevelDark = this.colors.bevelDark;
+		// Use different mouse chars from the vertical scrollbar to avoid conflicts
+		this._hScrollbar.mouseChars.scrollUp = RIP_LBMENU_HSCROLL_LEFT;
+		this._hScrollbar.mouseChars.scrollDn = RIP_LBMENU_HSCROLL_RIGHT;
+		this._hScrollbar.mouseChars.trackPgUp = RIP_LBMENU_HSCROLL_PG_LEFT;
+		this._hScrollbar.mouseChars.trackPgDn = RIP_LBMENU_HSCROLL_PG_RIGHT;
+		this._hScrollbar.mouseChars.thumbDrag = RIP_LBMENU_HSCROLL_THUMB;
+		// The "items" for the horizontal scrollbar represent individual character
+		// columns: totalItems = widest item width, visibleCount = visible chars
+		this._hScrollbar.setScrollState(L.maxItemTextWidth, L.charsPerItem, this.leftCharIdx);
+		this._hScrollbar.computeLayout();
+	}
+	else
+	{
+		this._hScrollbar = null;
+		// Reset horizontal scroll position when no horizontal scrollbar is needed
+		this.leftCharIdx = 0;
 	}
 }
 
@@ -937,8 +1106,10 @@ function RIPLightbarMenu_buildMenuBorderRIP()
 		rip += RIPFillStyleNumeric(1, this.colors.contentBg);
 		rip += RIPBarNumeric(L.menuLeftX, L.menuTopY,
 		                     L.menuRightX, L.menuTopY + L.visibleCount * this.itemHeight - 1);
-		if (this._scrollbar !== null)
-			rip += this._scrollbar.buildFullRIP();
+		if (this._vScrollbar !== null)
+			rip += this._vScrollbar.buildFullRIP();
+		if (this._hScrollbar !== null)
+			rip += this._hScrollbar.buildFullRIP();
 		return rip;
 	}
 
@@ -980,9 +1151,13 @@ function RIPLightbarMenu_buildMenuBorderRIP()
 	rip += RIPBarNumeric(L.menuLeftX, L.menuTopY,
 	                     L.menuRightX, L.menuTopY + L.visibleCount * this.itemHeight - 1);
 
-	// Draw the scrollbar (to the right of the menu items)
-	if (this._scrollbar !== null)
-		rip += this._scrollbar.buildFullRIP();
+	// Draw the vertical scrollbar (to the right of the menu items)
+	if (this._vScrollbar !== null)
+		rip += this._vScrollbar.buildFullRIP();
+
+	// Draw the horizontal scrollbar (at the bottom of the item area)
+	if (this._hScrollbar !== null)
+		rip += this._hScrollbar.buildFullRIP();
 
 	return rip;
 }
@@ -1010,10 +1185,13 @@ function RIPLightbarMenu_buildItemRIP(index, isSelected)
 	// Draw filled background rectangle for this item
 	rip += RIPFillStyleNumeric(1, bgColor);
 	rip += RIPBarNumeric(L.menuLeftX, y, L.menuRightX, y + this.itemHeight - 1);
-	// Draw item text
+	// Draw item text, clipped to the visible character window.
+	// When a horizontal scrollbar is active, leftCharIdx shifts the visible
+	// window into the item text; charsPerItem limits how many characters fit.
 	rip += RIPColorNumeric(fgColor);
 	rip += RIPFontStyleNumeric(RIP_FONT_DEFAULT, 0, 1, 0);
-	rip += RIPTextXYNumeric(L.textX, y + this.textYOffset, item.text);
+	var displayText = item.text.substring(this.leftCharIdx, this.leftCharIdx + L.charsPerItem);
+	rip += RIPTextXYNumeric(L.textX, y + this.textYOffset, displayText);
 	// Multi-select indicator
 	if (this.multiSelect && this.selectedItemIndexes[index] === true)
 	{
@@ -1047,9 +1225,13 @@ function RIPLightbarMenu_buildMouseRegionsRIP()
 		                       true, false, 0, clickChar);
 	}
 
-	// Scrollbar mouse regions (delegated to the RIPScrollbar instance)
-	if (this._scrollbar !== null)
-		rip += this._scrollbar.buildMouseRegionsRIP();
+	// Vertical scrollbar mouse regions
+	if (this._vScrollbar !== null)
+		rip += this._vScrollbar.buildMouseRegionsRIP();
+
+	// Horizontal scrollbar mouse regions
+	if (this._hScrollbar !== null)
+		rip += this._hScrollbar.buildMouseRegionsRIP();
 
 	return rip;
 }
@@ -1076,11 +1258,18 @@ function RIPLightbarMenu_drawFullMenu()
 		                     L.menuTopY + L.visibleCount * this.itemHeight - 1);
 	}
 
-	// Update the scrollbar thumb position
-	if (this._scrollbar !== null)
+	// Update the vertical scrollbar thumb position
+	if (this._vScrollbar !== null)
 	{
-		this._scrollbar.topIndex = this.topItemIdx;
-		rip += this._scrollbar.buildThumbRIP();
+		this._vScrollbar.topIndex = this.topItemIdx;
+		rip += this._vScrollbar.buildThumbRIP();
+	}
+
+	// Update the horizontal scrollbar thumb position
+	if (this._hScrollbar !== null)
+	{
+		this._hScrollbar.topIndex = this.leftCharIdx;
+		rip += this._hScrollbar.buildThumbRIP();
 	}
 
 	// Rebuild mouse regions (item positions and thumb position may have changed)
