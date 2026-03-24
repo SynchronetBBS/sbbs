@@ -163,12 +163,8 @@ dssh_conn_send_extended_data(dssh_session sess,
     dssh_channel ch, uint32_t data_type_code,
     const uint8_t *data, size_t len)
 {
-	/* The public dssh_session_write_ext clamps len to both
-	 * remote_window and remote_max_packet before calling us. */
-#ifndef DSSH_TESTING
 	if (len > ch->remote_window || len > ch->remote_max_packet)
 		return DSSH_ERROR_TOOLONG;
-#endif
 
 	size_t msg_len = 13 + len;
 	uint8_t *msg = malloc(msg_len);
@@ -454,14 +450,10 @@ demux_dispatch(dssh_session sess, uint8_t msg_type,
 		return;
 	}
 
-	/* Normal mode requires initialized buffers.
-	 * Buffers are always initialized before demux delivers. */
-#ifndef DSSH_TESTING
 	if (ch->chan_type == 0) {
 		mtx_unlock(&ch->buf_mtx);
 		return;
 	}
-#endif
 
 	switch (msg_type) {
 	case SSH_MSG_CHANNEL_DATA:
@@ -832,14 +824,10 @@ dssh_session_stop(dssh_session sess)
 		 * always stores a valid pointer. */
 		for (size_t i = 0; i < sess->channel_count; i++) {
 			dssh_channel ch = sess->channels[i];
-#ifndef DSSH_TESTING
 			if (ch != NULL) {
-#endif
 				cleanup_channel_buffers(ch);
 				free(ch);
-#ifndef DSSH_TESTING
 			}
-#endif
 		}
 		free(sess->channels);
 		sess->channels = NULL;

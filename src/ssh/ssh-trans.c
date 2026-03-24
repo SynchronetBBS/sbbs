@@ -232,12 +232,8 @@ dssh_transport_rekey_needed(dssh_session sess)
 		return true;
 	if (sess->trans.bytes_since_rekey >= DSSH_REKEY_BYTES)
 		return true;
-	/* rekey_time is set to time(NULL) in dssh_transport_init() and
-	 * newkeys(), so it is never 0 after initialization. */
-#ifndef DSSH_TESTING
 	if (sess->trans.rekey_time == 0)
 		return false;
-#endif
 	if (time(NULL) - sess->trans.rekey_time >= DSSH_REKEY_SECONDS)
 		return true;
 	return false;
@@ -347,11 +343,8 @@ tx_block_size(dssh_session sess)
 	}
 	if (enc == NULL || cbd == NULL)
 		return 8;
-	/* No enc module registers with blocksize < 8; SSH minimum is 8. */
-#ifndef DSSH_TESTING
 	if (enc->blocksize < 8)
 		return 8;
-#endif
 	return enc->blocksize;
 }
 
@@ -371,10 +364,8 @@ rx_block_size(dssh_session sess)
 	if (enc == NULL || cbd == NULL)
 		return 8;
 	/* No enc module registers with blocksize < 8; SSH minimum is 8. */
-#ifndef DSSH_TESTING
 	if (enc->blocksize < 8)
 		return 8;
-#endif
 	return enc->blocksize;
 }
 
@@ -942,28 +933,16 @@ dssh_transport_kexinit(dssh_session sess)
 		bool nlfirst = true;
 		for (dssh_key_algo ka = gconf.key_algo_head; ka != NULL;
 		    ka = ka->next) {
-#ifdef DSSH_TESTING
-			if (!ka->haskey(ka->ctx))
-#else
 			if (ka->haskey == NULL ||
 			    !ka->haskey(ka->ctx))
-#endif
 				continue;
 			size_t nlen = strlen(ka->name);
-#ifndef DSSH_TESTING
 			if (!nlfirst && nlpos + 1 < sizeof(namelist))
-#else
-			if (!nlfirst)
-#endif
 				namelist[nlpos++] = ',';
-#ifndef DSSH_TESTING
 			if (nlpos + nlen < sizeof(namelist)) {
-#endif
 				memcpy(&namelist[nlpos], ka->name, nlen);
 				nlpos += nlen;
-#ifndef DSSH_TESTING
 			}
-#endif
 			nlfirst = false;
 		}
 		namelist[nlpos] = 0;
@@ -1194,12 +1173,8 @@ dssh_transport_kexinit(dssh_session sess)
 DSSH_PRIVATE int
 dssh_transport_kex(dssh_session sess)
 {
-	/* kex_selected is validated non-NULL by kexinit() before
-	 * kex() is called; all KEX modules provide a handler. */
-#ifndef DSSH_TESTING
 	if (sess->trans.kex_selected == NULL || sess->trans.kex_selected->handler == NULL)
 		return DSSH_ERROR_INIT;
-#endif
 	return sess->trans.kex_selected->handler(sess);
 }
 
@@ -1377,32 +1352,23 @@ dssh_transport_newkeys(dssh_session sess)
 	 * compatible cleanup functions.  If a module's cleanup is NULL,
 	 * the context was never created.
 	 */
-	/* All enc/mac modules provide cleanup functions. */
 	if (sess->trans.enc_c2s_ctx != NULL && old_enc_c2s != NULL) {
-#ifndef DSSH_TESTING
 		if (old_enc_c2s->cleanup != NULL)
-#endif
 			old_enc_c2s->cleanup(sess->trans.enc_c2s_ctx);
 		sess->trans.enc_c2s_ctx = NULL;
 	}
 	if (sess->trans.enc_s2c_ctx != NULL && old_enc_s2c != NULL) {
-#ifndef DSSH_TESTING
 		if (old_enc_s2c->cleanup != NULL)
-#endif
 			old_enc_s2c->cleanup(sess->trans.enc_s2c_ctx);
 		sess->trans.enc_s2c_ctx = NULL;
 	}
 	if (sess->trans.mac_c2s_ctx != NULL && old_mac_c2s != NULL) {
-#ifndef DSSH_TESTING
 		if (old_mac_c2s->cleanup != NULL)
-#endif
 			old_mac_c2s->cleanup(sess->trans.mac_c2s_ctx);
 		sess->trans.mac_c2s_ctx = NULL;
 	}
 	if (sess->trans.mac_s2c_ctx != NULL && old_mac_s2c != NULL) {
-#ifndef DSSH_TESTING
 		if (old_mac_s2c->cleanup != NULL)
-#endif
 			old_mac_s2c->cleanup(sess->trans.mac_s2c_ctx);
 		sess->trans.mac_s2c_ctx = NULL;
 	}
@@ -1539,63 +1505,46 @@ dssh_transport_init(dssh_session sess, size_t max_packet_size)
 DSSH_PRIVATE void
 dssh_transport_cleanup(dssh_session sess)
 {
-	/* All registered modules provide cleanup functions. */
 	if (sess->trans.kex_selected) {
-#ifndef DSSH_TESTING
 		if (sess->trans.kex_selected->cleanup != NULL)
-#endif
 			sess->trans.kex_selected->cleanup(sess);
 		sess->trans.kex_selected = NULL;
 	}
 	if (sess->trans.key_algo_selected) {
-		/* Key context lives on the global algorithm entry, not the
-		 * session — don't clean it up here. */
 		sess->trans.key_algo_selected = NULL;
 	}
 	if (sess->trans.enc_c2s_selected) {
-#ifndef DSSH_TESTING
 		if (sess->trans.enc_c2s_selected->cleanup != NULL)
-#endif
 			sess->trans.enc_c2s_selected->cleanup(sess->trans.enc_c2s_ctx);
 		sess->trans.enc_c2s_ctx = NULL;
 		sess->trans.enc_c2s_selected = NULL;
 	}
 	if (sess->trans.enc_s2c_selected) {
-#ifndef DSSH_TESTING
 		if (sess->trans.enc_s2c_selected->cleanup != NULL)
-#endif
 			sess->trans.enc_s2c_selected->cleanup(sess->trans.enc_s2c_ctx);
 		sess->trans.enc_s2c_ctx = NULL;
 		sess->trans.enc_s2c_selected = NULL;
 	}
 	if (sess->trans.mac_c2s_selected) {
-#ifndef DSSH_TESTING
 		if (sess->trans.mac_c2s_selected->cleanup != NULL)
-#endif
 			sess->trans.mac_c2s_selected->cleanup(sess->trans.mac_c2s_ctx);
 		sess->trans.mac_c2s_ctx = NULL;
 		sess->trans.mac_c2s_selected = NULL;
 	}
 	if (sess->trans.mac_s2c_selected) {
-#ifndef DSSH_TESTING
 		if (sess->trans.mac_s2c_selected->cleanup != NULL)
-#endif
 			sess->trans.mac_s2c_selected->cleanup(sess->trans.mac_s2c_ctx);
 		sess->trans.mac_s2c_ctx = NULL;
 		sess->trans.mac_s2c_selected = NULL;
 	}
 	if (sess->trans.comp_c2s_selected) {
-#ifndef DSSH_TESTING
 		if (sess->trans.comp_c2s_selected->cleanup != NULL)
-#endif
 			sess->trans.comp_c2s_selected->cleanup(sess->trans.comp_c2s_ctx);
 		sess->trans.comp_c2s_ctx = NULL;
 		sess->trans.comp_c2s_selected = NULL;
 	}
 	if (sess->trans.comp_s2c_selected) {
-#ifndef DSSH_TESTING
 		if (sess->trans.comp_s2c_selected->cleanup != NULL)
-#endif
 			sess->trans.comp_s2c_selected->cleanup(sess->trans.comp_s2c_ctx);
 		sess->trans.comp_s2c_ctx = NULL;
 		sess->trans.comp_s2c_selected = NULL;
@@ -1628,16 +1577,12 @@ dssh_transport_cleanup(dssh_session sess)
 
 	sess->trans.remote_id_str_sz = 0;
 	sess->trans.remote_id_str[0] = 0;
-	/* Language negotiation is not implemented; remote_languages
-	 * is never populated, so this block is never reached. */
-#ifndef DSSH_TESTING
 	if (sess->trans.remote_languages) {
 		for (size_t i = 0; sess->trans.remote_languages[i]; i++)
 			free(sess->trans.remote_languages[i]);
 		free(sess->trans.remote_languages);
 		sess->trans.remote_languages = NULL;
 	}
-#endif
 }
 
 DSSH_PUBLIC int

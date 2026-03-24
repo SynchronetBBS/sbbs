@@ -354,13 +354,8 @@ handler(dssh_session sess)
 		sess->trans.exchange_hash_sz = SHA256_DIGEST_LEN;
 	}
 	else {
-		/* Server: receive ECDH_INIT, send ECDH_REPLY.
-		 * ka and its function pointers are always set by negotiation.
-		 * Own key pubkey call always succeeds after keygen. */
-#ifndef DSSH_TESTING
 		if (ka == NULL || ka->pubkey == NULL || ka->sign == NULL)
 			return DSSH_ERROR_INIT;
-#endif
 
 		/* Get our host key blob */
 		res = ka->pubkey(k_s_buf, sizeof(k_s_buf), &k_s_len, ka->ctx);

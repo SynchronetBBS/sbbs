@@ -30,12 +30,9 @@ sign(uint8_t *buf, size_t bufsz, size_t *outlen,
 #endif
 		return DSSH_ERROR_INIT;
 
-	/* Caller provides 1024+ byte buffer; ed25519 sig is 79 bytes. */
-#ifndef DSSH_TESTING
 	size_t needed = 4 + ED25519_NAME_LEN + 4 + ED25519_RAW_SIG_LEN;
 	if (bufsz < needed)
 		return DSSH_ERROR_TOOLONG;
-#endif
 
 	EVP_MD_CTX *mdctx = EVP_MD_CTX_new();
 	if (mdctx == NULL)
@@ -91,13 +88,9 @@ pubkey(uint8_t *buf, size_t bufsz, size_t *outlen, dssh_key_algo_ctx *ctx)
 	if (EVP_PKEY_get_raw_public_key(cbd->pkey, raw_pub, &raw_pub_len) != 1)
 		return DSSH_ERROR_INIT;
 
-	/* 4 + 11 + 4 + 32 = 51 bytes.
-	 * Caller provides 256+ byte buffer. */
-#ifndef DSSH_TESTING
 	size_t needed = 4 + ED25519_NAME_LEN + 4 + raw_pub_len;
 	if (bufsz < needed)
 		return DSSH_ERROR_TOOLONG;
-#endif
 
 	size_t pos = 0;
 	dssh_serialize_uint32(ED25519_NAME_LEN, buf, bufsz, &pos);
@@ -202,10 +195,7 @@ haskey(dssh_key_algo_ctx *ctx)
 	/* Only Ed25519 keys are stored in this module's ctx;
 	 * EVP_PKEY_id always matches. */
 	return (cbd != NULL && cbd->pkey != NULL
-#ifndef DSSH_TESTING
-	    && EVP_PKEY_id(cbd->pkey) == EVP_PKEY_ED25519
-#endif
-	    );
+	    && EVP_PKEY_id(cbd->pkey) == EVP_PKEY_ED25519);
 }
 
 static void

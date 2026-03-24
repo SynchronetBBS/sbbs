@@ -35,13 +35,10 @@ serialize_bn_mpint(const BIGNUM *bn, uint8_t *buf, size_t bufsz, size_t *pos)
 	bool need_pad = (bn_bytes > 0 && (tmp[0] & 0x80));
 	uint32_t mpint_len = bn_bytes + (need_pad ? 1 : 0);
 
-	/* 4096-byte buffer; DH primes are at most 1024 bytes. */
-#ifndef DSSH_TESTING
 	if (*pos + 4 + mpint_len > bufsz) {
 		free(tmp);
 		return DSSH_ERROR_TOOLONG;
 	}
-#endif
 
 	dssh_serialize_uint32(mpint_len, buf, bufsz, pos);
 	if (need_pad)
@@ -308,9 +305,7 @@ handler(dssh_session sess)
 
 		/* ka always set by negotiation; all key algos have verify. */
 		dssh_key_algo ka = sess->trans.key_algo_selected;
-#ifndef DSSH_TESTING
 		if (!ka || !ka->verify) { res = DSSH_ERROR_INIT; goto cleanup; }
-#endif
 		res = ka->verify(k_s, ks_len, sig_h, sig_len, hash, SHA256_DIGEST_LEN);
 		if (res < 0) goto cleanup;
 
@@ -325,10 +320,8 @@ handler(dssh_session sess)
 		 * ka and its function pointers are always set by negotiation.
 		 * Own key pubkey call always succeeds after keygen. */
 		dssh_key_algo ka = sess->trans.key_algo_selected;
-#ifndef DSSH_TESTING
 		if (!ka || !ka->pubkey || !ka->sign)
 			return DSSH_ERROR_INIT;
-#endif
 
 		/* Get host key blob */
 		uint8_t k_s_buf[1024];
