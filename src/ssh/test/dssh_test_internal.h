@@ -108,6 +108,16 @@ int version_tx(dssh_session sess);
 int64_t parse_bn_mpint(const uint8_t *buf, size_t bufsz, BIGNUM **bn);
 int serialize_bn_mpint(const BIGNUM *bn, uint8_t *buf, size_t bufsz, size_t *pos);
 bool dh_value_valid(const BIGNUM *val, const BIGNUM *p);
+int compute_exchange_hash(
+    const char *v_c, size_t v_c_len,
+    const char *v_s, size_t v_s_len,
+    const uint8_t *i_c, size_t i_c_len,
+    const uint8_t *i_s, size_t i_s_len,
+    const uint8_t *k_s, size_t k_s_len,
+    uint32_t gex_min, uint32_t gex_n, uint32_t gex_max,
+    const BIGNUM *p, const BIGNUM *g,
+    const BIGNUM *e, const BIGNUM *f, const BIGNUM *k,
+    uint8_t *hash_out);
 
 #ifdef __cplusplus
 }

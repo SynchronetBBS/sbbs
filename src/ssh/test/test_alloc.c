@@ -2145,6 +2145,127 @@ test_ossl_kex_server_iterate(void)
 	return TEST_FAIL;
 }
 
+/*
+ * Server kex thread that excludes itself from ossl injection.
+ * The server runs with real OpenSSL; only the client thread
+ * (which called dssh_test_ossl_fail_after) is affected.
+ */
+struct kex_excluded_ctx {
+	struct mock_io_state *io;
+	dssh_session sess;
+	int result;
+};
+
+static int
+kex_excluded_thread(void *arg)
+{
+	struct kex_excluded_ctx *ctx = arg;
+	dssh_test_ossl_exclude_thread();
+	ctx->result = dssh_transport_kex(ctx->sess);
+	if (ctx->result < 0) {
+		mock_io_close_s2c(ctx->io);
+	}
+	return 0;
+}
+
+static int
+test_ossl_kex_client_iterate(void)
+{
+	/* Only meaningful for DH-GEX */
+	if (!test_using_dhgex())
+		return TEST_SKIP;
+
+	int prev_count = -1;
+	for (int n = 0; n < 500; n++) {
+		dssh_test_reset_global_config();
+		dssh_test_alloc_reset();
+		dssh_test_ossl_reset();
+		mock_alloc_reset();
+
+		if (register_all() < 0)
+			return TEST_FAIL;
+		if (test_generate_host_key() < 0)
+			return TEST_FAIL;
+
+		struct mock_io_state io;
+		if (mock_io_init(&io, 0) < 0)
+			return TEST_FAIL;
+
+		dssh_transport_set_callbacks(mock_tx_dispatch, mock_rx_dispatch,
+		    mock_rxline_dispatch, mock_extra_line_cb);
+
+		dssh_session client = dssh_session_init(true, 0);
+		if (client == NULL) {
+			mock_io_free(&io);
+			continue;
+		}
+		dssh_session_set_cbdata(client, &io, &io, &io, &io);
+
+		dssh_session server = init_server_session();
+		if (server == NULL) {
+			dssh_session_cleanup(client);
+			mock_io_free(&io);
+			continue;
+		}
+		dssh_session_set_cbdata(server, &io, &io, &io, &io);
+
+		/* version_exchange + kexinit in threads */
+		{
+			struct ve_ki_ctx ca = { .io = &io, .sess = client };
+			struct ve_ki_ctx sa = { .io = &io, .sess = server };
+			thrd_t ct, st;
+			thrd_create(&ct, ve_ki_thread, &ca);
+			thrd_create(&st, ve_ki_thread, &sa);
+			thrd_join(ct, NULL);
+			thrd_join(st, NULL);
+			if (ca.result != 0 || sa.result != 0) {
+				mock_io_close_c2s(&io);
+				mock_io_close_s2c(&io);
+				dssh_session_cleanup(server);
+				dssh_session_cleanup(client);
+				mock_io_free(&io);
+				dssh_test_reset_global_config();
+				continue;
+			}
+		}
+
+		/* Arm ossl injection on THIS thread (main).
+		 * The server thread will exclude itself. */
+		dssh_test_ossl_fail_after(n);
+
+		/* Run KEX: server in excluded thread, client on main thread */
+		struct kex_excluded_ctx sctx = {
+			.io = &io, .sess = server
+		};
+		thrd_t st;
+		thrd_create(&st, kex_excluded_thread, &sctx);
+		int cres = dssh_transport_kex(client);
+		/* Close client's write pipe so server unblocks on read */
+		mock_io_close_c2s(&io);
+		thrd_join(st, NULL);
+
+		int cur_count = dssh_test_ossl_count();
+		dssh_test_ossl_reset();
+
+		mock_io_close_c2s(&io);
+		mock_io_close_s2c(&io);
+		dssh_session_cleanup(server);
+		dssh_session_cleanup(client);
+		mock_io_free(&io);
+		dssh_test_reset_global_config();
+
+		if (cres == 0 && sctx.result == 0) {
+			ASSERT_TRUE(n > 0);
+			return TEST_PASS;
+		}
+		prev_count = cur_count;
+	}
+
+	fprintf(stderr, "  ossl/kex_client: still incrementing at n=%d "
+	    "(count=%d), raise limit\n", 500, prev_count);
+	return TEST_FAIL;
+}
+
 /* ================================================================
  * Test table
  * ================================================================ */
@@ -2203,6 +2324,7 @@ static struct dssh_test_entry tests[] = {
 	{ "ossl/key_verify",              test_ossl_key_verify_iterate },
 	{ "ossl/key_pubkey",              test_ossl_key_pubkey_iterate },
 	{ "ossl/kex_server",              test_ossl_kex_server_iterate },
+	{ "ossl/kex_client",              test_ossl_kex_client_iterate },
 };
 
 DSSH_TEST_MAIN(tests)

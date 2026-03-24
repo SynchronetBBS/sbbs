@@ -21,6 +21,7 @@
  */
 void dssh_test_ossl_reset(void);
 void dssh_test_ossl_fail_after(int n);
+void dssh_test_ossl_exclude_thread(void);
 int  dssh_test_ossl_count(void);
 
 #endif /* DSSH_TEST_OSSL_H */

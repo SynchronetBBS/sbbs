@@ -27,11 +27,21 @@
 static atomic_int ossl_fail_at = -1;
 static atomic_int ossl_call_num = 0;
 
+/*
+ * Thread-local participation flag.  Defaults to true so all threads
+ * participate in the countdown (backward compatible).  A thread can
+ * opt out by calling dssh_test_ossl_exclude_thread(), which sets its
+ * local flag to false — its ossl calls then pass straight through
+ * without incrementing the counter.
+ */
+static _Thread_local bool ossl_this_thread = true;
+
 void
 dssh_test_ossl_reset(void)
 {
 	atomic_store(&ossl_fail_at, -1);
 	atomic_store(&ossl_call_num, 0);
+	ossl_this_thread = true;
 }
 
 void
@@ -39,6 +49,12 @@ dssh_test_ossl_fail_after(int n)
 {
 	atomic_store(&ossl_call_num, 0);
 	atomic_store(&ossl_fail_at, n);
+}
+
+void
+dssh_test_ossl_exclude_thread(void)
+{
+	ossl_this_thread = false;
 }
 
 int
@@ -49,11 +65,14 @@ dssh_test_ossl_count(void)
 
 /*
  * Check if this call should fail.  Returns true if the countdown
- * has fired (call_num == fail_at).
+ * has fired (call_num == fail_at).  Threads that called
+ * dssh_test_ossl_exclude_thread() are ignored.
  */
 static bool
 should_fail(void)
 {
+	if (!ossl_this_thread)
+		return false;
 	int fa = atomic_load(&ossl_fail_at);
 	if (fa < 0)
 		return false;

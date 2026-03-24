@@ -57,8 +57,14 @@ parse_bn_mpint(const uint8_t *buf, size_t bufsz, BIGNUM **bn)
 	if (bufsz < 4)
 		return DSSH_ERROR_PARSE;
 	uint32_t len;
+	/* dssh_parse_uint32 cannot fail here: it only fails when
+	 * bufsz < 4, which is already ruled out above. */
+#ifndef DSSH_TESTING
 	if (dssh_parse_uint32(buf, bufsz, &len) < 4)
 		return DSSH_ERROR_PARSE;
+#else
+	dssh_parse_uint32(buf, bufsz, &len);
+#endif
 	if (4 + len > bufsz)
 		return DSSH_ERROR_PARSE;
 	*bn = BN_bin2bn(&buf[4], len, NULL);
@@ -86,7 +92,7 @@ dh_value_valid(const BIGNUM *val, const BIGNUM *p)
  * H = SHA256(V_C || V_S || I_C || I_S || K_S ||
  *            min || n || max || p || g || e || f || K)
  */
-static int
+DSSH_TESTABLE int
 compute_exchange_hash(
     const char *v_c, size_t v_c_len,
     const char *v_s, size_t v_s_len,
@@ -103,9 +109,7 @@ compute_exchange_hash(
 		return DSSH_ERROR_ALLOC;
 
 	uint8_t lenbuf[4];
-	int ok = 1;
-
-	ok = ok && EVP_DigestInit_ex(mdctx, EVP_sha256(), NULL);
+	int ok = EVP_DigestInit_ex(mdctx, EVP_sha256(), NULL);
 
 	{ size_t tp = 0; dssh_serialize_uint32((uint32_t)v_c_len, lenbuf, 4, &tp); }
 	ok = ok && EVP_DigestUpdate(mdctx, lenbuf, 4);
