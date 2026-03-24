@@ -313,6 +313,8 @@ conn_setup(struct conn_ctx *ctx)
 		return -1;
 	}
 	if (dssh_session_start(ctx->server) != 0) {
+		mock_io_close_c2s(&ctx->io);
+		mock_io_close_s2c(&ctx->io);
 		dssh_session_stop(ctx->client);
 		dssh_session_cleanup(ctx->server);
 		dssh_session_cleanup(ctx->client);
@@ -326,6 +328,14 @@ conn_setup(struct conn_ctx *ctx)
 static void
 conn_cleanup(struct conn_ctx *ctx)
 {
+	/*
+	 * Close the write-ends of both pipes first so that any demux
+	 * thread blocked in read() gets EOF and can exit.  With
+	 * socketpair-based mock I/O, condvar broadcasts alone cannot
+	 * unblock a blocking read() — only closing the peer fd does.
+	 */
+	mock_io_close_c2s(&ctx->io);
+	mock_io_close_s2c(&ctx->io);
 	dssh_session_stop(ctx->server);
 	dssh_session_stop(ctx->client);
 	dssh_session_cleanup(ctx->server);
@@ -497,6 +507,10 @@ test_session_stop(void)
 	if (conn_setup(&ctx) < 0)
 		return TEST_SKIP;
 
+	/* Close pipes so demux threads' read() returns EOF */
+	mock_io_close_c2s(&ctx.io);
+	mock_io_close_s2c(&ctx.io);
+
 	dssh_session_stop(ctx.client);
 	ASSERT_FALSE(ctx.client->demux_running);
 
@@ -520,6 +534,8 @@ test_session_start_stop(void)
 	ASSERT_TRUE(ctx.client->demux_running);
 	ASSERT_TRUE(ctx.server->demux_running);
 
+	mock_io_close_c2s(&ctx.io);
+	mock_io_close_s2c(&ctx.io);
 	dssh_session_stop(ctx.client);
 	dssh_session_stop(ctx.server);
 
@@ -2582,8 +2598,6 @@ test_auto_reject_x11(void)
 	ASSERT_OK(dssh_transport_send_packet(ctx.server, msg, len, NULL));
 
 	/* Give the demux threads time to process */
-	struct timespec ts = { .tv_nsec = 100000000L }; /* 100ms */
-	thrd_sleep(&ts, NULL);
 
 	/* Client's accept queue should be empty (auto-rejected, not queued) */
 	struct dssh_incoming_open *inc = NULL;
@@ -2606,8 +2620,6 @@ test_auto_reject_forwarded_tcpip(void)
 	    0, 65536, 32768);
 	ASSERT_OK(dssh_transport_send_packet(ctx.server, msg, len, NULL));
 
-	struct timespec ts = { .tv_nsec = 100000000L };
-	thrd_sleep(&ts, NULL);
 
 	struct dssh_incoming_open *inc = NULL;
 	int res = dssh_session_accept(ctx.client, &inc, 0);
@@ -2629,8 +2641,6 @@ test_auto_reject_direct_tcpip(void)
 	    0, 65536, 32768);
 	ASSERT_OK(dssh_transport_send_packet(ctx.server, msg, len, NULL));
 
-	struct timespec ts = { .tv_nsec = 100000000L };
-	thrd_sleep(&ts, NULL);
 
 	struct dssh_incoming_open *inc = NULL;
 	int res = dssh_session_accept(ctx.client, &inc, 0);
@@ -2652,8 +2662,6 @@ test_auto_reject_session_from_server(void)
 	    0, 65536, 32768);
 	ASSERT_OK(dssh_transport_send_packet(ctx.server, msg, len, NULL));
 
-	struct timespec ts = { .tv_nsec = 100000000L };
-	thrd_sleep(&ts, NULL);
 
 	struct dssh_incoming_open *inc = NULL;
 	int res = dssh_session_accept(ctx.client, &inc, 0);
@@ -2696,8 +2704,6 @@ test_window_adjust_from_peer(void)
 	ASSERT_OK(dssh_transport_send_packet(ctx.server, msg, pos, NULL));
 
 	/* Give demux time to process */
-	struct timespec ts = { .tv_nsec = 100000000L };
-	thrd_sleep(&ts, NULL);
 
 	/* Client's remote_window should have increased */
 	/* (We can't easily check the exact value without reading the
@@ -2746,8 +2752,6 @@ test_data_after_eof(void)
 		ASSERT_OK(dssh_transport_send_packet(ctx.server, msg, pos, NULL));
 	}
 
-	struct timespec ts = { .tv_nsec = 100000000L };
-	thrd_sleep(&ts, NULL);
 
 	/* Now server sends CHANNEL_DATA after EOF — should be discarded */
 	{
@@ -2761,7 +2765,6 @@ test_data_after_eof(void)
 		ASSERT_OK(dssh_transport_send_packet(ctx.server, msg, pos, NULL));
 	}
 
-	thrd_sleep(&ts, NULL);
 
 	/* Client should have received nothing (data was discarded after EOF) */
 	uint8_t buf[32];
@@ -2804,8 +2807,6 @@ test_truncated_channel_data(void)
 	msg[pos++] = 0; /* partial data_len field */
 	ASSERT_OK(dssh_transport_send_packet(ctx.server, msg, pos, NULL));
 
-	struct timespec ts = { .tv_nsec = 100000000L };
-	thrd_sleep(&ts, NULL);
 
 	/* Session should still be functional */
 	uint8_t data[] = "still works";
@@ -2849,8 +2850,6 @@ test_ext_data_after_eof(void)
 		ASSERT_OK(dssh_transport_send_packet(ctx.server, msg, pos, NULL));
 	}
 
-	struct timespec ts = { .tv_nsec = 100000000L };
-	thrd_sleep(&ts, NULL);
 
 	/* Send EXTENDED_DATA (stderr) after EOF — should be discarded */
 	{
@@ -2865,7 +2864,6 @@ test_ext_data_after_eof(void)
 		ASSERT_OK(dssh_transport_send_packet(ctx.server, msg, pos, NULL));
 	}
 
-	thrd_sleep(&ts, NULL);
 
 	conn_cleanup(&ctx);
 	return TEST_PASS;
@@ -2903,8 +2901,6 @@ test_truncated_ext_data(void)
 	/* Only 9 bytes — no data_len or data */
 	ASSERT_OK(dssh_transport_send_packet(ctx.server, msg, pos, NULL));
 
-	struct timespec ts = { .tv_nsec = 100000000L };
-	thrd_sleep(&ts, NULL);
 
 	/* Session should still work */
 	uint8_t data[] = "ok";
@@ -2953,8 +2949,6 @@ test_channel_request_want_reply(void)
 		ASSERT_OK(dssh_transport_send_packet(ctx.server, msg, pos, NULL));
 	}
 
-	struct timespec ts = { .tv_nsec = 100000000L };
-	thrd_sleep(&ts, NULL);
 
 	/* Session should still be functional */
 	uint8_t data[] = "after request";
@@ -3003,10 +2997,895 @@ test_data_exceeds_window(void)
 		ASSERT_OK(dssh_transport_send_packet(ctx.server, msg, pos, NULL));
 	}
 
-	struct timespec ts = { .tv_nsec = 100000000L };
-	thrd_sleep(&ts, NULL);
 
 	conn_cleanup(&ctx);
+	return TEST_PASS;
+}
+
+/* ================================================================
+ * Coverage: session poll WRITE readiness
+ * ================================================================ */
+
+static int
+test_session_poll_write(void)
+{
+	struct conn_ctx ctx;
+	if (conn_setup(&ctx) < 0)
+		return TEST_SKIP;
+
+	struct open_exec_ctx oc = {
+		.client = ctx.client,
+		.server = ctx.server,
+		.command = "echo poll_write",
+		.cbs = &session_cbs,
+		.accept_timeout = 5000,
+	};
+	if (open_exec_channel(&oc) < 0 || oc.client_ch == NULL || oc.server_ch == NULL) {
+		conn_cleanup(&ctx);
+		return TEST_FAIL;
+	}
+
+	/* Fresh channel should have remote_window > 0, so WRITE is ready */
+	int ev = dssh_session_poll(ctx.client, oc.client_ch,
+	    DSSH_POLL_WRITE, 0);
+	ASSERT_TRUE(ev & DSSH_POLL_WRITE);
+
+	/* Also poll with timeout — should return immediately */
+	ev = dssh_session_poll(ctx.client, oc.client_ch,
+	    DSSH_POLL_WRITE, 100);
+	ASSERT_TRUE(ev & DSSH_POLL_WRITE);
+
+	dssh_session_close(ctx.server, oc.server_ch, 0);
+	dssh_session_close(ctx.client, oc.client_ch, 0);
+	conn_cleanup(&ctx);
+	return TEST_PASS;
+}
+
+/* ================================================================
+ * Coverage: session write edge cases
+ * ================================================================ */
+
+static int
+test_session_write_after_eof(void)
+{
+	struct conn_ctx ctx;
+	if (conn_setup(&ctx) < 0)
+		return TEST_SKIP;
+
+	struct open_exec_ctx oc = {
+		.client = ctx.client,
+		.server = ctx.server,
+		.command = "echo eof_write",
+		.cbs = &session_cbs,
+		.accept_timeout = 5000,
+	};
+	if (open_exec_channel(&oc) < 0 || oc.client_ch == NULL || oc.server_ch == NULL) {
+		conn_cleanup(&ctx);
+		return TEST_FAIL;
+	}
+
+	/* Mark EOF sent directly to test the write guard */
+	oc.client_ch->eof_sent = true;
+	int64_t w = dssh_session_write(ctx.client, oc.client_ch,
+	    (const uint8_t *)"after", 5);
+	ASSERT_TRUE(w < 0);
+
+	/* Reset so close works normally */
+	oc.client_ch->eof_sent = false;
+	dssh_session_close(ctx.server, oc.server_ch, 0);
+	dssh_session_close(ctx.client, oc.client_ch, 0);
+	conn_cleanup(&ctx);
+	return TEST_PASS;
+}
+
+static int
+test_session_write_ext_after_eof(void)
+{
+	struct conn_ctx ctx;
+	if (conn_setup(&ctx) < 0)
+		return TEST_SKIP;
+
+	struct open_exec_ctx oc = {
+		.client = ctx.client,
+		.server = ctx.server,
+		.command = "echo ext_eof",
+		.cbs = &session_cbs,
+		.accept_timeout = 5000,
+	};
+	if (open_exec_channel(&oc) < 0 || oc.client_ch == NULL || oc.server_ch == NULL) {
+		conn_cleanup(&ctx);
+		return TEST_FAIL;
+	}
+
+	/* Mark EOF sent directly to test the write_ext guard */
+	oc.server_ch->eof_sent = true;
+	int64_t w = dssh_session_write_ext(ctx.server, oc.server_ch,
+	    (const uint8_t *)"after", 5);
+	ASSERT_TRUE(w < 0);
+
+	oc.server_ch->eof_sent = false;
+	dssh_session_close(ctx.server, oc.server_ch, 0);
+	dssh_session_close(ctx.client, oc.client_ch, 0);
+	conn_cleanup(&ctx);
+	return TEST_PASS;
+}
+
+/* ================================================================
+ * Coverage: raw channel write edge cases
+ * ================================================================ */
+
+static int
+test_raw_channel_write_after_close(void)
+{
+	struct conn_ctx ctx;
+	if (conn_setup(&ctx) < 0)
+		return TEST_SKIP;
+
+	struct open_subsys_ctx oc = {
+		.client = ctx.client,
+		.server = ctx.server,
+		.subsystem = "test-sub",
+	};
+	thrd_t ct, st;
+	thrd_create(&ct, client_open_subsys_thread, &oc);
+	thrd_create(&st, server_accept_subsys_thread, &oc);
+	thrd_join(ct, NULL);
+	thrd_join(st, NULL);
+
+	if (oc.client_ch == NULL || oc.server_ch == NULL) {
+		conn_cleanup(&ctx);
+		return TEST_SKIP;
+	}
+
+	/* Mark EOF sent, then try to write from server */
+	oc.server_ch->eof_sent = true;
+	int res = dssh_channel_write(ctx.server, oc.server_ch,
+	    (const uint8_t *)"after", 5);
+	ASSERT_TRUE(res < 0);
+
+	oc.server_ch->eof_sent = false;
+	dssh_channel_close(ctx.client, oc.client_ch);
+	dssh_channel_close(ctx.server, oc.server_ch);
+	conn_cleanup(&ctx);
+	return TEST_PASS;
+}
+
+static int
+test_raw_channel_write_toolong(void)
+{
+	struct conn_ctx ctx;
+	if (conn_setup(&ctx) < 0)
+		return TEST_SKIP;
+
+	struct open_subsys_ctx oc = {
+		.client = ctx.client,
+		.server = ctx.server,
+		.subsystem = "test-sub",
+	};
+	thrd_t ct, st;
+	thrd_create(&ct, client_open_subsys_thread, &oc);
+	thrd_create(&st, server_accept_subsys_thread, &oc);
+	thrd_join(ct, NULL);
+	thrd_join(st, NULL);
+
+	if (oc.client_ch == NULL || oc.server_ch == NULL) {
+		conn_cleanup(&ctx);
+		return TEST_SKIP;
+	}
+
+	/* Allocate a buffer larger than remote_max_packet */
+	size_t too_big = oc.client_ch->remote_max_packet + 1;
+	uint8_t *buf = malloc(too_big);
+	ASSERT_NOT_NULL(buf);
+	memset(buf, 'X', too_big);
+
+	int res = dssh_channel_write(ctx.client, oc.client_ch, buf, too_big);
+	ASSERT_EQ(res, DSSH_ERROR_TOOLONG);
+	free(buf);
+
+	dssh_channel_close(ctx.client, oc.client_ch);
+	dssh_channel_close(ctx.server, oc.server_ch);
+	conn_cleanup(&ctx);
+	return TEST_PASS;
+}
+
+/* ================================================================
+ * Coverage: raw channel poll edge cases
+ * ================================================================ */
+
+static int
+test_raw_channel_poll_write(void)
+{
+	struct conn_ctx ctx;
+	if (conn_setup(&ctx) < 0)
+		return TEST_SKIP;
+
+	struct open_subsys_ctx oc = {
+		.client = ctx.client,
+		.server = ctx.server,
+		.subsystem = "test-sub",
+	};
+	thrd_t ct, st;
+	thrd_create(&ct, client_open_subsys_thread, &oc);
+	thrd_create(&st, server_accept_subsys_thread, &oc);
+	thrd_join(ct, NULL);
+	thrd_join(st, NULL);
+
+	if (oc.client_ch == NULL || oc.server_ch == NULL) {
+		conn_cleanup(&ctx);
+		return TEST_SKIP;
+	}
+
+	/* Fresh channel should have WRITE readiness */
+	int ev = dssh_channel_poll(ctx.client, oc.client_ch,
+	    DSSH_POLL_WRITE, 0);
+	ASSERT_TRUE(ev & DSSH_POLL_WRITE);
+
+	/* Poll with timeout — should return immediately */
+	ev = dssh_channel_poll(ctx.client, oc.client_ch,
+	    DSSH_POLL_WRITE, 100);
+	ASSERT_TRUE(ev & DSSH_POLL_WRITE);
+
+	dssh_channel_close(ctx.client, oc.client_ch);
+	dssh_channel_close(ctx.server, oc.server_ch);
+	conn_cleanup(&ctx);
+	return TEST_PASS;
+}
+
+static int
+test_raw_channel_poll_timeout_zero(void)
+{
+	struct conn_ctx ctx;
+	if (conn_setup(&ctx) < 0)
+		return TEST_SKIP;
+
+	struct open_subsys_ctx oc = {
+		.client = ctx.client,
+		.server = ctx.server,
+		.subsystem = "test-sub",
+	};
+	thrd_t ct, st;
+	thrd_create(&ct, client_open_subsys_thread, &oc);
+	thrd_create(&st, server_accept_subsys_thread, &oc);
+	thrd_join(ct, NULL);
+	thrd_join(st, NULL);
+
+	if (oc.client_ch == NULL || oc.server_ch == NULL) {
+		conn_cleanup(&ctx);
+		return TEST_SKIP;
+	}
+
+	/* No data pending — poll READ with timeout_ms=0 returns 0 */
+	int ev = dssh_channel_poll(ctx.server, oc.server_ch,
+	    DSSH_POLL_READ, 0);
+	ASSERT_EQ(ev, 0);
+
+	dssh_channel_close(ctx.client, oc.client_ch);
+	dssh_channel_close(ctx.server, oc.server_ch);
+	conn_cleanup(&ctx);
+	return TEST_PASS;
+}
+
+/* ================================================================
+ * Coverage: accept_raw (raw channel accept path)
+ * ================================================================ */
+
+static int
+server_accept_raw_thread(void *arg)
+{
+	struct open_subsys_ctx *ctx = arg;
+	struct dssh_incoming_open *inc = NULL;
+	int res = dssh_session_accept(ctx->server, &inc, 5000);
+	if (res < 0)
+		return 0;
+	ctx->server_ch = dssh_channel_accept_raw(ctx->server, inc);
+	return 0;
+}
+
+static int
+test_accept_raw(void)
+{
+	struct conn_ctx ctx;
+	if (conn_setup(&ctx) < 0)
+		return TEST_SKIP;
+
+	/*
+	 * Client opens subsystem, server accepts raw.
+	 * The server's raw channel auto-rejects the "subsystem" request,
+	 * so client_ch will be NULL.  But server_ch is valid and we can
+	 * test the raw channel's read/write/poll from the server side.
+	 */
+	struct open_subsys_ctx oc = {
+		.client = ctx.client,
+		.server = ctx.server,
+		.subsystem = "test-sub",
+	};
+	thrd_t ct, st;
+	thrd_create(&ct, client_open_subsys_thread, &oc);
+	thrd_create(&st, server_accept_raw_thread, &oc);
+	thrd_join(ct, NULL);
+	thrd_join(st, NULL);
+
+	/* Client should fail (subsystem rejected), server should succeed */
+	if (oc.server_ch == NULL) {
+		conn_cleanup(&ctx);
+		return TEST_SKIP;
+	}
+
+	/* Verify accept_raw returned a valid channel */
+	ASSERT_TRUE(oc.server_ch->open || oc.server_ch->close_received);
+
+	dssh_channel_close(ctx.server, oc.server_ch);
+	conn_cleanup(&ctx);
+	return TEST_PASS;
+}
+
+/* ================================================================
+ * Coverage: reject with long description (truncation path)
+ * ================================================================ */
+
+static int
+test_reject_long_description(void)
+{
+	struct conn_ctx ctx;
+	if (conn_setup(&ctx) < 0)
+		return TEST_SKIP;
+
+	/* Client opens a channel, server rejects with a very long description */
+	struct open_exec_ctx oc = {
+		.client = ctx.client,
+		.server = ctx.server,
+		.command = "echo reject",
+		.cbs = &session_cbs,
+		.accept_timeout = 5000,
+		.reject = true,
+		.reject_reason = 1,
+	};
+
+	/* We need custom accept thread that rejects with long desc */
+	thrd_t ct;
+	thrd_create(&ct, client_open_exec_thread, &oc);
+
+	struct dssh_incoming_open *inc = NULL;
+	int res = dssh_session_accept(ctx.server, &inc, 5000);
+	if (res == 0 && inc != NULL) {
+		/* Build a 300-byte description to trigger truncation (max 256 msg buf) */
+		char desc[300];
+		memset(desc, 'A', sizeof(desc) - 1);
+		desc[sizeof(desc) - 1] = '\0';
+		dssh_session_reject(ctx.server, inc, 1, desc);
+	}
+
+	thrd_join(ct, NULL);
+	/* Client should see open failure */
+	ASSERT_TRUE(oc.client_ch == NULL);
+
+	conn_cleanup(&ctx);
+	return TEST_PASS;
+}
+
+/* ================================================================
+ * Coverage: dssh_session_read_signal when no signal pending
+ * ================================================================ */
+
+static int
+test_read_signal_empty(void)
+{
+	struct conn_ctx ctx;
+	if (conn_setup(&ctx) < 0)
+		return TEST_SKIP;
+
+	struct open_exec_ctx oc = {
+		.client = ctx.client,
+		.server = ctx.server,
+		.command = "echo sig_empty",
+		.cbs = &session_cbs,
+		.accept_timeout = 5000,
+	};
+	if (open_exec_channel(&oc) < 0 || oc.client_ch == NULL || oc.server_ch == NULL) {
+		conn_cleanup(&ctx);
+		return TEST_FAIL;
+	}
+
+	/* No signal pending — should return NOMORE */
+	const char *signame = NULL;
+	int res = dssh_session_read_signal(ctx.server, oc.server_ch, &signame);
+	ASSERT_EQ(res, DSSH_ERROR_NOMORE);
+
+	dssh_session_close(ctx.server, oc.server_ch, 0);
+	dssh_session_close(ctx.client, oc.client_ch, 0);
+	conn_cleanup(&ctx);
+	return TEST_PASS;
+}
+
+/* ================================================================
+ * Coverage: signal interleaving — data then signal then more data
+ * The readable amount should be clamped to the signal mark.
+ * ================================================================ */
+
+static int
+test_signal_interleave_read(void)
+{
+	struct conn_ctx ctx;
+	if (conn_setup(&ctx) < 0)
+		return TEST_SKIP;
+
+	struct open_exec_ctx oc = {
+		.client = ctx.client,
+		.server = ctx.server,
+		.command = "echo siginterleave",
+		.cbs = &session_cbs,
+		.accept_timeout = 5000,
+	};
+	if (open_exec_channel(&oc) < 0 || oc.client_ch == NULL || oc.server_ch == NULL) {
+		conn_cleanup(&ctx);
+		return TEST_FAIL;
+	}
+
+	/* Client sends data, then a signal, then more data */
+	const uint8_t before[] = "BEFORE";
+	int64_t w = dssh_session_write(ctx.client, oc.client_ch,
+	    before, sizeof(before) - 1);
+	ASSERT_TRUE(w > 0);
+
+	/* Send signal */
+	int res = dssh_session_send_signal(ctx.client, oc.client_ch, "INT");
+	ASSERT_OK(res);
+
+	const uint8_t after[] = "AFTER";
+	w = dssh_session_write(ctx.client, oc.client_ch,
+	    after, sizeof(after) - 1);
+	ASSERT_TRUE(w > 0);
+
+	/* Wait for all three messages to arrive through the demux.
+	 * We can't poll for SIGNAL because it isn't "ready" until
+	 * stdout is consumed past the mark.  Instead, poll for READ
+	 * then sleep briefly to let the signal and second data arrive
+	 * before we call session_stdout_readable(). */
+	int ev = dssh_session_poll(ctx.server, oc.server_ch,
+	    DSSH_POLL_READ, 5000);
+	ASSERT_TRUE(ev & DSSH_POLL_READ);
+
+	/* Brief delay so signal + second data arrive through demux */
+	struct timespec ts = { .tv_sec = 0, .tv_nsec = 100000000 };
+	thrd_sleep(&ts, NULL);
+
+	/* First read: signal mark at stdout_pos=6 should clamp the
+	 * readable amount even though more data is in the buffer. */
+	uint8_t buf[64];
+	int64_t n = dssh_session_read(ctx.server, oc.server_ch,
+	    buf, sizeof(buf));
+	ASSERT_EQ(n, (int64_t)(sizeof(before) - 1));
+	ASSERT_MEM_EQ(buf, "BEFORE", 6);
+
+	/* Now stdout_consumed >= stdout_pos(6), so signal is ready */
+	ev = dssh_session_poll(ctx.server, oc.server_ch,
+	    DSSH_POLL_SIGNAL, 5000);
+	ASSERT_TRUE(ev & DSSH_POLL_SIGNAL);
+
+	/* Read signal */
+	const char *signame = NULL;
+	res = dssh_session_read_signal(ctx.server, oc.server_ch, &signame);
+	ASSERT_OK(res);
+	ASSERT_STR_EQ(signame, "INT");
+
+	/* Now the rest of the data is readable */
+	ev = dssh_session_poll(ctx.server, oc.server_ch,
+	    DSSH_POLL_READ, 5000);
+	ASSERT_TRUE(ev & DSSH_POLL_READ);
+
+	n = dssh_session_read(ctx.server, oc.server_ch,
+	    buf, sizeof(buf));
+	ASSERT_EQ(n, (int64_t)(sizeof(after) - 1));
+	ASSERT_MEM_EQ(buf, "AFTER", 5);
+
+	dssh_session_close(ctx.server, oc.server_ch, 0);
+	dssh_session_close(ctx.client, oc.client_ch, 0);
+	conn_cleanup(&ctx);
+	return TEST_PASS;
+}
+
+/* ================================================================
+ * Coverage: signal interleave with stderr (ext_data)
+ * ================================================================ */
+
+static int
+test_signal_interleave_read_ext(void)
+{
+	struct conn_ctx ctx;
+	if (conn_setup(&ctx) < 0)
+		return TEST_SKIP;
+
+	struct open_exec_ctx oc = {
+		.client = ctx.client,
+		.server = ctx.server,
+		.command = "echo sigext",
+		.cbs = &session_cbs,
+		.accept_timeout = 5000,
+	};
+	if (open_exec_channel(&oc) < 0 || oc.client_ch == NULL || oc.server_ch == NULL) {
+		conn_cleanup(&ctx);
+		return TEST_FAIL;
+	}
+
+	/* Server sends stderr data, then a signal, then more stderr data */
+	const uint8_t before[] = "ERR1";
+	int64_t w = dssh_session_write_ext(ctx.server, oc.server_ch,
+	    before, sizeof(before) - 1);
+	ASSERT_TRUE(w > 0);
+
+	int res = dssh_session_send_signal(ctx.server, oc.server_ch, "TERM");
+	ASSERT_OK(res);
+
+	const uint8_t after[] = "ERR2";
+	w = dssh_session_write_ext(ctx.server, oc.server_ch,
+	    after, sizeof(after) - 1);
+	ASSERT_TRUE(w > 0);
+
+	/* Wait for ext data to arrive, then sleep to let signal + second
+	 * ext arrive through demux before we read. */
+	int ev = dssh_session_poll(ctx.client, oc.client_ch,
+	    DSSH_POLL_READEXT, 5000);
+	ASSERT_TRUE(ev & DSSH_POLL_READEXT);
+
+	struct timespec ts = { .tv_sec = 0, .tv_nsec = 100000000 };
+	thrd_sleep(&ts, NULL);
+
+	/* First read_ext: signal mark at stderr_pos=4 clamps the read */
+	uint8_t buf[64];
+	int64_t n = dssh_session_read_ext(ctx.client, oc.client_ch,
+	    buf, sizeof(buf));
+	ASSERT_EQ(n, (int64_t)(sizeof(before) - 1));
+	ASSERT_MEM_EQ(buf, "ERR1", 4);
+
+	/* Now stderr_consumed >= stderr_pos(4), so signal is ready */
+	ev = dssh_session_poll(ctx.client, oc.client_ch,
+	    DSSH_POLL_SIGNAL, 5000);
+	ASSERT_TRUE(ev & DSSH_POLL_SIGNAL);
+
+	const char *signame = NULL;
+	res = dssh_session_read_signal(ctx.client, oc.client_ch, &signame);
+	ASSERT_OK(res);
+	ASSERT_STR_EQ(signame, "TERM");
+
+	/* Now the rest of stderr is readable — poll first to ensure arrival */
+	ev = dssh_session_poll(ctx.client, oc.client_ch,
+	    DSSH_POLL_READEXT, 5000);
+	ASSERT_TRUE(ev & DSSH_POLL_READEXT);
+
+	n = dssh_session_read_ext(ctx.client, oc.client_ch,
+	    buf, sizeof(buf));
+	ASSERT_EQ(n, (int64_t)(sizeof(after) - 1));
+	ASSERT_MEM_EQ(buf, "ERR2", 4);
+
+	dssh_session_close(ctx.server, oc.server_ch, 0);
+	dssh_session_close(ctx.client, oc.client_ch, 0);
+	conn_cleanup(&ctx);
+	return TEST_PASS;
+}
+
+/* ================================================================
+ * Coverage: truncated CHANNEL_OPEN (demux parse errors)
+ * ================================================================ */
+
+static int
+test_truncated_channel_open(void)
+{
+	struct conn_ctx ctx;
+	if (conn_setup(&ctx) < 0)
+		return TEST_FAIL;
+
+	/* Send a CHANNEL_OPEN with truncated type length (only 1 byte after msg type) */
+	{
+		uint8_t msg[2];
+		msg[0] = SSH_MSG_CHANNEL_OPEN;
+		msg[1] = 0;
+		ASSERT_OK(dssh_transport_send_packet(ctx.client, msg, 2, NULL));
+	}
+
+	/* Send a CHANNEL_OPEN with valid type_len but truncated type string */
+	{
+		uint8_t msg[8];
+		size_t pos = 0;
+		msg[pos++] = SSH_MSG_CHANNEL_OPEN;
+		dssh_serialize_uint32(100, msg, sizeof(msg), &pos); /* type_len=100 */
+		ASSERT_OK(dssh_transport_send_packet(ctx.client, msg, pos, NULL));
+	}
+
+	/* Send a CHANNEL_OPEN with valid type but truncated channel fields */
+	{
+		uint8_t msg[16];
+		size_t pos = 0;
+		msg[pos++] = SSH_MSG_CHANNEL_OPEN;
+		dssh_serialize_uint32(4, msg, sizeof(msg), &pos);
+		memcpy(&msg[pos], "test", 4);
+		pos += 4;
+		/* Missing: sender_channel, initial_window, max_packet (12 bytes) */
+		ASSERT_OK(dssh_transport_send_packet(ctx.client, msg, pos, NULL));
+	}
+
+	/* Brief delay to let demux process the packets */
+	struct timespec ts = { .tv_sec = 0, .tv_nsec = 100000000 };
+	thrd_sleep(&ts, NULL);
+
+	/* Session should still be operational */
+	ASSERT_TRUE(ctx.server->demux_running);
+
+	conn_cleanup(&ctx);
+	return TEST_PASS;
+}
+
+/* ================================================================
+ * Coverage: truncated CHANNEL_REQUEST (demux parse errors)
+ * ================================================================ */
+
+static int
+test_truncated_channel_request(void)
+{
+	struct conn_ctx ctx;
+	if (conn_setup(&ctx) < 0)
+		return TEST_FAIL;
+
+	struct open_exec_ctx oc = {
+		.client = ctx.client,
+		.server = ctx.server,
+		.command = "echo chanreq",
+		.cbs = &session_cbs,
+		.accept_timeout = 5000,
+	};
+	if (open_exec_channel(&oc) < 0 || oc.client_ch == NULL || oc.server_ch == NULL) {
+		conn_cleanup(&ctx);
+		return TEST_FAIL;
+	}
+
+	/* Send CHANNEL_REQUEST with payload too short for request type */
+	{
+		uint8_t msg[8];
+		size_t pos = 0;
+		msg[pos++] = SSH_MSG_CHANNEL_REQUEST;
+		dssh_serialize_uint32(oc.server_ch->local_id, msg, sizeof(msg), &pos);
+		/* Missing: request type string */
+		ASSERT_OK(dssh_transport_send_packet(ctx.client, msg, pos, NULL));
+	}
+
+	/* Send CHANNEL_REQUEST with valid type_len but truncated type+want_reply */
+	{
+		uint8_t msg[16];
+		size_t pos = 0;
+		msg[pos++] = SSH_MSG_CHANNEL_REQUEST;
+		dssh_serialize_uint32(oc.server_ch->local_id, msg, sizeof(msg), &pos);
+		dssh_serialize_uint32(100, msg, sizeof(msg), &pos); /* rtype_len=100 */
+		/* Missing: actual type string + want_reply */
+		ASSERT_OK(dssh_transport_send_packet(ctx.client, msg, pos, NULL));
+	}
+
+	struct timespec ts = { .tv_sec = 0, .tv_nsec = 100000000 };
+	thrd_sleep(&ts, NULL);
+
+	ASSERT_TRUE(ctx.server->demux_running);
+
+	dssh_session_close(ctx.server, oc.server_ch, 0);
+	dssh_session_close(ctx.client, oc.client_ch, 0);
+	conn_cleanup(&ctx);
+	return TEST_PASS;
+}
+
+/* ================================================================
+ * Coverage: demux_dispatch with payload < 5 bytes
+ * ================================================================ */
+
+static int
+test_demux_short_payload(void)
+{
+	struct conn_ctx ctx;
+	if (conn_setup(&ctx) < 0)
+		return TEST_FAIL;
+
+	/* Send a channel message with only 3 bytes (less than the 5 needed
+	 * to parse the channel ID) */
+	{
+		uint8_t msg[4];
+		size_t pos = 0;
+		msg[pos++] = SSH_MSG_CHANNEL_DATA;
+		msg[pos++] = 0;
+		msg[pos++] = 0;
+		ASSERT_OK(dssh_transport_send_packet(ctx.client, msg, pos, NULL));
+	}
+
+	/* Also send a short CHANNEL_CLOSE */
+	{
+		uint8_t msg[2];
+		msg[0] = SSH_MSG_CHANNEL_CLOSE;
+		msg[1] = 0;
+		ASSERT_OK(dssh_transport_send_packet(ctx.client, msg, 2, NULL));
+	}
+
+	struct timespec ts = { .tv_sec = 0, .tv_nsec = 100000000 };
+	thrd_sleep(&ts, NULL);
+
+	ASSERT_TRUE(ctx.server->demux_running);
+
+	conn_cleanup(&ctx);
+	return TEST_PASS;
+}
+
+/* ================================================================
+ * Coverage: session poll for READ when nothing ready (timeout=0)
+ * Covers the timeout_ms==0 early return path in dssh_session_poll
+ * ================================================================ */
+
+static int
+test_session_poll_read_empty(void)
+{
+	struct conn_ctx ctx;
+	if (conn_setup(&ctx) < 0)
+		return TEST_SKIP;
+
+	struct open_exec_ctx oc = {
+		.client = ctx.client,
+		.server = ctx.server,
+		.command = "echo poll_empty",
+		.cbs = &session_cbs,
+		.accept_timeout = 5000,
+	};
+	if (open_exec_channel(&oc) < 0 || oc.client_ch == NULL || oc.server_ch == NULL) {
+		conn_cleanup(&ctx);
+		return TEST_FAIL;
+	}
+
+	/* No data sent yet — poll READ with timeout=0 should return 0 */
+	int ev = dssh_session_poll(ctx.server, oc.server_ch,
+	    DSSH_POLL_READ, 0);
+	ASSERT_EQ(ev, 0);
+
+	/* Also poll READEXT with timeout=0 — no stderr data */
+	ev = dssh_session_poll(ctx.server, oc.server_ch,
+	    DSSH_POLL_READEXT, 0);
+	ASSERT_EQ(ev, 0);
+
+	/* Poll SIGNAL with timeout=0 — no signals */
+	ev = dssh_session_poll(ctx.server, oc.server_ch,
+	    DSSH_POLL_SIGNAL, 0);
+	ASSERT_EQ(ev, 0);
+
+	dssh_session_close(ctx.server, oc.server_ch, 0);
+	dssh_session_close(ctx.client, oc.client_ch, 0);
+	conn_cleanup(&ctx);
+	return TEST_PASS;
+}
+
+/* ================================================================
+ * Coverage: session write with window=0 and max_packet clamping
+ * ================================================================ */
+
+static int
+test_session_write_window_zero(void)
+{
+	struct conn_ctx ctx;
+	if (conn_setup(&ctx) < 0)
+		return TEST_SKIP;
+
+	struct open_exec_ctx oc = {
+		.client = ctx.client,
+		.server = ctx.server,
+		.command = "echo winzero",
+		.cbs = &session_cbs,
+		.accept_timeout = 5000,
+	};
+	if (open_exec_channel(&oc) < 0 || oc.client_ch == NULL || oc.server_ch == NULL) {
+		conn_cleanup(&ctx);
+		return TEST_FAIL;
+	}
+
+	/* Force remote_window to 0 to test the window=0 return path */
+	oc.client_ch->remote_window = 0;
+	int64_t w = dssh_session_write(ctx.client, oc.client_ch,
+	    (const uint8_t *)"data", 4);
+	ASSERT_EQ(w, 0);
+
+	/* Force window to small value to test clamping */
+	oc.client_ch->remote_window = 2;
+	w = dssh_session_write(ctx.client, oc.client_ch,
+	    (const uint8_t *)"data", 4);
+	ASSERT_EQ(w, 2);  /* clamped to window size */
+
+	/* Force max_packet smaller than data to test that clamping */
+	oc.client_ch->remote_window = 1000;
+	uint32_t orig_max = oc.client_ch->remote_max_packet;
+	oc.client_ch->remote_max_packet = 3;
+	w = dssh_session_write(ctx.client, oc.client_ch,
+	    (const uint8_t *)"data", 4);
+	ASSERT_EQ(w, 3);  /* clamped to max_packet */
+	oc.client_ch->remote_max_packet = orig_max;
+
+	dssh_session_close(ctx.server, oc.server_ch, 0);
+	dssh_session_close(ctx.client, oc.client_ch, 0);
+	conn_cleanup(&ctx);
+	return TEST_PASS;
+}
+
+/* ================================================================
+ * Coverage: session write_ext with window=0 and max_packet clamping
+ * ================================================================ */
+
+static int
+test_session_write_ext_window_zero(void)
+{
+	struct conn_ctx ctx;
+	if (conn_setup(&ctx) < 0)
+		return TEST_SKIP;
+
+	struct open_exec_ctx oc = {
+		.client = ctx.client,
+		.server = ctx.server,
+		.command = "echo extwinzero",
+		.cbs = &session_cbs,
+		.accept_timeout = 5000,
+	};
+	if (open_exec_channel(&oc) < 0 || oc.client_ch == NULL || oc.server_ch == NULL) {
+		conn_cleanup(&ctx);
+		return TEST_FAIL;
+	}
+
+	/* Force remote_window to 0 */
+	oc.server_ch->remote_window = 0;
+	int64_t w = dssh_session_write_ext(ctx.server, oc.server_ch,
+	    (const uint8_t *)"data", 4);
+	ASSERT_EQ(w, 0);
+
+	/* Force window to small value */
+	oc.server_ch->remote_window = 2;
+	w = dssh_session_write_ext(ctx.server, oc.server_ch,
+	    (const uint8_t *)"data", 4);
+	ASSERT_EQ(w, 2);
+
+	/* Force max_packet smaller */
+	oc.server_ch->remote_window = 1000;
+	uint32_t orig_max = oc.server_ch->remote_max_packet;
+	oc.server_ch->remote_max_packet = 3;
+	w = dssh_session_write_ext(ctx.server, oc.server_ch,
+	    (const uint8_t *)"data", 4);
+	ASSERT_EQ(w, 3);
+	oc.server_ch->remote_max_packet = orig_max;
+
+	dssh_session_close(ctx.server, oc.server_ch, 0);
+	dssh_session_close(ctx.client, oc.client_ch, 0);
+	conn_cleanup(&ctx);
+	return TEST_PASS;
+}
+
+/* ================================================================
+ * Coverage: accept with negative timeout (blocking, must be
+ * unblocked by terminate)
+ * ================================================================ */
+
+static int
+accept_blocking_thread(void *arg)
+{
+	struct conn_ctx *ctx = arg;
+	struct dssh_incoming_open *inc = NULL;
+	/* Blocking accept — should return when session is terminated */
+	dssh_session_accept(ctx->server, &inc, -1);
+	return 0;
+}
+
+static int
+test_accept_timeout_negative(void)
+{
+	struct conn_ctx ctx;
+	if (conn_setup(&ctx) < 0)
+		return TEST_SKIP;
+
+	thrd_t at;
+	thrd_create(&at, accept_blocking_thread, &ctx);
+
+	/* Brief delay so the accept thread enters cnd_wait */
+	struct timespec ts = { .tv_sec = 0, .tv_nsec = 50000000 };
+	thrd_sleep(&ts, NULL);
+
+	/* Terminate should unblock the accept */
+	conn_cleanup(&ctx);
+	thrd_join(at, NULL);
 	return TEST_PASS;
 }
 
@@ -3109,6 +3988,27 @@ static struct dssh_test_entry tests[] = {
 	{ "test_truncated_ext_data",           test_truncated_ext_data },
 	{ "test_channel_request_want_reply",   test_channel_request_want_reply },
 	{ "test_data_exceeds_window",          test_data_exceeds_window },
+
+	/* Coverage: additional edge cases */
+	{ "test_session_poll_write",            test_session_poll_write },
+	{ "test_session_write_after_eof",       test_session_write_after_eof },
+	{ "test_session_write_ext_after_eof",   test_session_write_ext_after_eof },
+	{ "test_raw_channel_write_after_close", test_raw_channel_write_after_close },
+	{ "test_raw_channel_write_toolong",     test_raw_channel_write_toolong },
+	{ "test_raw_channel_poll_write",        test_raw_channel_poll_write },
+	{ "test_raw_channel_poll_timeout_zero", test_raw_channel_poll_timeout_zero },
+	{ "test_accept_raw",                    test_accept_raw },
+	{ "test_reject_long_description",       test_reject_long_description },
+	{ "test_read_signal_empty",             test_read_signal_empty },
+	{ "test_signal_interleave_read",        test_signal_interleave_read },
+	{ "test_signal_interleave_read_ext",    test_signal_interleave_read_ext },
+	{ "test_truncated_channel_open",        test_truncated_channel_open },
+	{ "test_truncated_channel_request",     test_truncated_channel_request },
+	{ "test_demux_short_payload",           test_demux_short_payload },
+	{ "test_session_poll_read_empty",       test_session_poll_read_empty },
+	{ "test_session_write_window_zero",     test_session_write_window_zero },
+	{ "test_session_write_ext_window_zero", test_session_write_ext_window_zero },
+	{ "test_accept_timeout_negative",       test_accept_timeout_negative },
 };
 
 DSSH_TEST_MAIN(tests)

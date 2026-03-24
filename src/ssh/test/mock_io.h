@@ -1,10 +1,9 @@
 /*
  * mock_io.h — Bidirectional mock I/O for DeuceSSH layer tests.
  *
- * Provides circular buffers with C11 mutex/condvar synchronization
- * that implement the dssh_transport I/O callbacks.  Supports both
- * two-sided testing (client+server in separate threads) and
- * single-sided testing (inject/drain bytes manually).
+ * Uses socketpair() for natural blocking/unblocking behavior.
+ * When one side closes, the other gets an error immediately —
+ * no timed waits or condvar signaling needed.
  */
 
 #ifndef DSSH_MOCK_IO_H
@@ -13,49 +12,33 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
-#include <threads.h>
 
 #include "deucessh.h"
 
-#define MOCK_IO_DEFAULT_CAPACITY (256 * 1024)
-
 struct mock_io_pipe {
-	uint8_t *buf;
-	size_t capacity;
-	size_t head;     /* next read position */
-	size_t tail;     /* next write position */
-	size_t used;
-	mtx_t mtx;
-	cnd_t cnd;
-	bool closed;     /* writer has closed this pipe */
+	int rfd;    /* read end */
+	int wfd;    /* write end */
 };
 
 struct mock_io_state {
 	struct mock_io_pipe c2s;  /* client writes, server reads */
 	struct mock_io_pipe s2c;  /* server writes, client reads */
-
-	/* Fault injection */
-	bool inject_tx_error;     /* next tx returns -1 */
-	bool inject_rx_error;     /* next rx returns -1 */
-
-	/* Statistics */
-	size_t total_c2s_bytes;
-	size_t total_s2c_bytes;
 };
 
 /*
- * Initialize mock I/O state.  Each pipe gets 'capacity' bytes
- * (pass 0 for MOCK_IO_DEFAULT_CAPACITY).  Returns 0 on success.
+ * Initialize mock I/O state.  Creates two socketpairs.
+ * The capacity parameter is ignored (kept for API compat).
+ * Returns 0 on success.
  */
 int mock_io_init(struct mock_io_state *io, size_t capacity);
 
 /*
- * Free all resources.
+ * Free all resources (close any remaining fds).
  */
 void mock_io_free(struct mock_io_state *io);
 
 /*
- * Close one direction (unblocks any reader waiting on that pipe).
+ * Close one direction (unblocks any reader on that pipe).
  */
 void mock_io_close_c2s(struct mock_io_state *io);
 void mock_io_close_s2c(struct mock_io_state *io);
@@ -84,8 +67,8 @@ int mock_rxline_server(uint8_t *buf, size_t bufsz,
 
 /*
  * Single-sided helpers.
- * Inject bytes into a pipe (for feeding crafted data to the reader).
- * Drain bytes from a pipe (for inspecting what the writer sent).
+ * Inject bytes into a pipe's write end.
+ * Drain bytes from a pipe's read end (non-blocking).
  */
 size_t mock_io_inject(struct mock_io_pipe *pipe, const uint8_t *data, size_t len);
 size_t mock_io_drain(struct mock_io_pipe *pipe, uint8_t *buf, size_t bufsz);

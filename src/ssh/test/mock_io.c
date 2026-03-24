@@ -1,185 +1,117 @@
 /*
- * mock_io.c — Bidirectional mock I/O for DeuceSSH layer tests.
+ * mock_io.c — Bidirectional mock I/O using socketpair().
+ *
+ * Each direction (c2s, s2c) is a Unix socketpair.  Blocking
+ * read/write with natural close-unblocks-peer behavior — no
+ * condvars or timed waits needed.
  */
 
-#include <stdlib.h>
+#include <errno.h>
+#include <fcntl.h>
+#include <signal.h>
 #include <string.h>
-
-#include <time.h>
+#include <sys/socket.h>
+#include <unistd.h>
 
 #include "mock_io.h"
 
-/*
- * Timed wait helper: wait up to 50ms then re-check conditions.
- * This ensures the terminate flag is checked promptly even though
- * the library can't signal the mock I/O's condvar directly.
- */
-static void
-pipe_timedwait(struct mock_io_pipe *p)
-{
-	struct timespec ts;
-	timespec_get(&ts, TIME_UTC);
-	ts.tv_nsec += 50000000L;  /* 50ms */
-	if (ts.tv_nsec >= 1000000000L) {
-		ts.tv_sec++;
-		ts.tv_nsec -= 1000000000L;
-	}
-	cnd_timedwait(&p->cnd, &p->mtx, &ts);
-}
-
 /* ================================================================
- * Pipe operations (circular buffer with condvar)
+ * Pipe operations (socketpair wrapper)
  * ================================================================ */
 
 static int
-pipe_init(struct mock_io_pipe *p, size_t capacity)
+pipe_init(struct mock_io_pipe *p)
 {
-	p->buf = malloc(capacity);
-	if (p->buf == NULL)
+	int fds[2];
+	if (socketpair(AF_UNIX, SOCK_STREAM, 0, fds) < 0)
 		return -1;
-	p->capacity = capacity;
-	p->head = 0;
-	p->tail = 0;
-	p->used = 0;
-	p->closed = false;
-	if (mtx_init(&p->mtx, mtx_plain) != thrd_success) {
-		free(p->buf);
-		return -1;
-	}
-	if (cnd_init(&p->cnd) != thrd_success) {
-		mtx_destroy(&p->mtx);
-		free(p->buf);
-		return -1;
-	}
+	p->wfd = fds[0];
+	p->rfd = fds[1];
 	return 0;
 }
 
 static void
 pipe_free(struct mock_io_pipe *p)
 {
-	if (p->buf) {
-		cnd_destroy(&p->cnd);
-		mtx_destroy(&p->mtx);
-		free(p->buf);
-		p->buf = NULL;
+	if (p->rfd >= 0) {
+		close(p->rfd);
+		p->rfd = -1;
+	}
+	if (p->wfd >= 0) {
+		close(p->wfd);
+		p->wfd = -1;
 	}
 }
 
 static void
-pipe_close(struct mock_io_pipe *p)
+pipe_close_write(struct mock_io_pipe *p)
 {
-	mtx_lock(&p->mtx);
-	p->closed = true;
-	cnd_broadcast(&p->cnd);
-	mtx_unlock(&p->mtx);
+	if (p->wfd >= 0) {
+		close(p->wfd);
+		p->wfd = -1;
+	}
+}
+
+static void
+pipe_close_read(struct mock_io_pipe *p)
+{
+	if (p->rfd >= 0) {
+		close(p->rfd);
+		p->rfd = -1;
+	}
 }
 
 /*
- * Write data into the pipe.  Blocks until all bytes are written
- * or the session is terminated.  Returns 0 on success.
+ * Write all bytes.  Returns 0 on success, -1 on error/close.
  */
 static int
-pipe_write(struct mock_io_pipe *p, const uint8_t *data, size_t len,
-    dssh_session sess)
+pipe_write(struct mock_io_pipe *p, const uint8_t *data, size_t len)
 {
 	size_t written = 0;
-	mtx_lock(&p->mtx);
 	while (written < len) {
-		while (p->used >= p->capacity && !p->closed) {
-			if (sess && dssh_session_is_terminated(sess)) {
-				mtx_unlock(&p->mtx);
-				return -1;
-			}
-			pipe_timedwait(p);
-		}
-		if (p->closed) {
-			mtx_unlock(&p->mtx);
+		ssize_t n = send(p->wfd, data + written, len - written,
+		    MSG_NOSIGNAL);
+		if (n <= 0)
 			return -1;
-		}
-		size_t space = p->capacity - p->used;
-		size_t chunk = len - written;
-		if (chunk > space)
-			chunk = space;
-		for (size_t i = 0; i < chunk; i++) {
-			p->buf[p->tail] = data[written + i];
-			p->tail = (p->tail + 1) % p->capacity;
-		}
-		p->used += chunk;
-		written += chunk;
-		cnd_broadcast(&p->cnd);
+		written += n;
 	}
-	mtx_unlock(&p->mtx);
 	return 0;
 }
 
 /*
- * Read exactly 'len' bytes from the pipe.  Blocks until all bytes
- * are available or pipe is closed / session terminated.
+ * Read exactly len bytes.  Returns 0 on success, -1 on error/close.
  */
 static int
-pipe_read(struct mock_io_pipe *p, uint8_t *buf, size_t len,
-    dssh_session sess)
+pipe_read(struct mock_io_pipe *p, uint8_t *buf, size_t len)
 {
 	size_t have = 0;
-	mtx_lock(&p->mtx);
 	while (have < len) {
-		while (p->used == 0 && !p->closed) {
-			if (sess && dssh_session_is_terminated(sess)) {
-				mtx_unlock(&p->mtx);
-				return -1;
-			}
-			pipe_timedwait(p);
-		}
-		if (p->used == 0 && p->closed) {
-			mtx_unlock(&p->mtx);
+		ssize_t n = read(p->rfd, buf + have, len - have);
+		if (n <= 0)
 			return -1;
-		}
-		size_t chunk = len - have;
-		if (chunk > p->used)
-			chunk = p->used;
-		for (size_t i = 0; i < chunk; i++) {
-			buf[have + i] = p->buf[p->head];
-			p->head = (p->head + 1) % p->capacity;
-		}
-		p->used -= chunk;
-		have += chunk;
-		cnd_broadcast(&p->cnd);
+		have += n;
 	}
-	mtx_unlock(&p->mtx);
 	return 0;
 }
 
 /*
- * Read a line (up to and including CR-LF) from the pipe.
+ * Read a line (up to and including CR-LF).
  */
 static int
 pipe_readline(struct mock_io_pipe *p, uint8_t *buf, size_t bufsz,
-    size_t *bytes_received, dssh_session sess)
+    size_t *bytes_received)
 {
 	size_t have = 0;
-	mtx_lock(&p->mtx);
 	for (;;) {
-		while (p->used == 0 && !p->closed) {
-			if (sess && dssh_session_is_terminated(sess)) {
-				mtx_unlock(&p->mtx);
-				return -1;
-			}
-			pipe_timedwait(p);
-		}
-		if (p->used == 0 && p->closed) {
-			mtx_unlock(&p->mtx);
+		uint8_t ch;
+		ssize_t n = read(p->rfd, &ch, 1);
+		if (n <= 0)
 			return -1;
-		}
-		uint8_t ch = p->buf[p->head];
-		p->head = (p->head + 1) % p->capacity;
-		p->used--;
 		if (have < bufsz)
 			buf[have] = ch;
 		have++;
 		if (ch == '\n') {
 			*bytes_received = have;
-			cnd_broadcast(&p->cnd);
-			mtx_unlock(&p->mtx);
 			return 0;
 		}
 	}
@@ -192,12 +124,15 @@ pipe_readline(struct mock_io_pipe *p, uint8_t *buf, size_t bufsz,
 int
 mock_io_init(struct mock_io_state *io, size_t capacity)
 {
+	(void)capacity;
 	memset(io, 0, sizeof(*io));
-	if (capacity == 0)
-		capacity = MOCK_IO_DEFAULT_CAPACITY;
-	if (pipe_init(&io->c2s, capacity) < 0)
+	io->c2s.rfd = -1;
+	io->c2s.wfd = -1;
+	io->s2c.rfd = -1;
+	io->s2c.wfd = -1;
+	if (pipe_init(&io->c2s) < 0)
 		return -1;
-	if (pipe_init(&io->s2c, capacity) < 0) {
+	if (pipe_init(&io->s2c) < 0) {
 		pipe_free(&io->c2s);
 		return -1;
 	}
@@ -211,8 +146,19 @@ mock_io_free(struct mock_io_state *io)
 	pipe_free(&io->s2c);
 }
 
-void mock_io_close_c2s(struct mock_io_state *io) { pipe_close(&io->c2s); }
-void mock_io_close_s2c(struct mock_io_state *io) { pipe_close(&io->s2c); }
+void
+mock_io_close_c2s(struct mock_io_state *io)
+{
+	pipe_close_write(&io->c2s);
+	pipe_close_read(&io->c2s);
+}
+
+void
+mock_io_close_s2c(struct mock_io_state *io)
+{
+	pipe_close_write(&io->s2c);
+	pipe_close_read(&io->s2c);
+}
 
 /* ================================================================
  * Client callbacks: TX→c2s, RX←s2c
@@ -221,34 +167,26 @@ void mock_io_close_s2c(struct mock_io_state *io) { pipe_close(&io->s2c); }
 int
 mock_tx_client(uint8_t *buf, size_t bufsz, dssh_session sess, void *cbdata)
 {
+	(void)sess;
 	struct mock_io_state *io = cbdata;
-	if (io->inject_tx_error) {
-		io->inject_tx_error = false;
-		return -1;
-	}
-	int ret = pipe_write(&io->c2s, buf, bufsz, sess);
-	if (ret == 0)
-		io->total_c2s_bytes += bufsz;
-	return ret;
+	return pipe_write(&io->c2s, buf, bufsz);
 }
 
 int
 mock_rx_client(uint8_t *buf, size_t bufsz, dssh_session sess, void *cbdata)
 {
+	(void)sess;
 	struct mock_io_state *io = cbdata;
-	if (io->inject_rx_error) {
-		io->inject_rx_error = false;
-		return -1;
-	}
-	return pipe_read(&io->s2c, buf, bufsz, sess);
+	return pipe_read(&io->s2c, buf, bufsz);
 }
 
 int
 mock_rxline_client(uint8_t *buf, size_t bufsz, size_t *bytes_received,
     dssh_session sess, void *cbdata)
 {
+	(void)sess;
 	struct mock_io_state *io = cbdata;
-	return pipe_readline(&io->s2c, buf, bufsz, bytes_received, sess);
+	return pipe_readline(&io->s2c, buf, bufsz, bytes_received);
 }
 
 /* ================================================================
@@ -258,34 +196,26 @@ mock_rxline_client(uint8_t *buf, size_t bufsz, size_t *bytes_received,
 int
 mock_tx_server(uint8_t *buf, size_t bufsz, dssh_session sess, void *cbdata)
 {
+	(void)sess;
 	struct mock_io_state *io = cbdata;
-	if (io->inject_tx_error) {
-		io->inject_tx_error = false;
-		return -1;
-	}
-	int ret = pipe_write(&io->s2c, buf, bufsz, sess);
-	if (ret == 0)
-		io->total_s2c_bytes += bufsz;
-	return ret;
+	return pipe_write(&io->s2c, buf, bufsz);
 }
 
 int
 mock_rx_server(uint8_t *buf, size_t bufsz, dssh_session sess, void *cbdata)
 {
+	(void)sess;
 	struct mock_io_state *io = cbdata;
-	if (io->inject_rx_error) {
-		io->inject_rx_error = false;
-		return -1;
-	}
-	return pipe_read(&io->c2s, buf, bufsz, sess);
+	return pipe_read(&io->c2s, buf, bufsz);
 }
 
 int
 mock_rxline_server(uint8_t *buf, size_t bufsz, size_t *bytes_received,
     dssh_session sess, void *cbdata)
 {
+	(void)sess;
 	struct mock_io_state *io = cbdata;
-	return pipe_readline(&io->c2s, buf, bufsz, bytes_received, sess);
+	return pipe_readline(&io->c2s, buf, bufsz, bytes_received);
 }
 
 /* ================================================================
@@ -295,33 +225,19 @@ mock_rxline_server(uint8_t *buf, size_t bufsz, size_t *bytes_received,
 size_t
 mock_io_inject(struct mock_io_pipe *p, const uint8_t *data, size_t len)
 {
-	mtx_lock(&p->mtx);
-	size_t written = 0;
-	while (written < len && p->used < p->capacity) {
-		p->buf[p->tail] = data[written];
-		p->tail = (p->tail + 1) % p->capacity;
-		p->used++;
-		written++;
-	}
-	cnd_broadcast(&p->cnd);
-	mtx_unlock(&p->mtx);
-	return written;
+	ssize_t n = send(p->wfd, data, len, MSG_NOSIGNAL);
+	return n > 0 ? (size_t)n : 0;
 }
 
 size_t
 mock_io_drain(struct mock_io_pipe *p, uint8_t *buf, size_t bufsz)
 {
-	mtx_lock(&p->mtx);
-	size_t drained = 0;
-	while (drained < bufsz && p->used > 0) {
-		buf[drained] = p->buf[p->head];
-		p->head = (p->head + 1) % p->capacity;
-		p->used--;
-		drained++;
-	}
-	cnd_broadcast(&p->cnd);
-	mtx_unlock(&p->mtx);
-	return drained;
+	/* Non-blocking read */
+	int flags = fcntl(p->rfd, F_GETFL, 0);
+	fcntl(p->rfd, F_SETFL, flags | O_NONBLOCK);
+	ssize_t n = read(p->rfd, buf, bufsz);
+	fcntl(p->rfd, F_SETFL, flags);
+	return n > 0 ? (size_t)n : 0;
 }
 
 int
