@@ -692,6 +692,15 @@ test_alloc_send_pk_ok(void)
 	sa.cbs.publickey_cb = pk_ok_publickey_cb;
 	sa.fail_at = 0;  /* fail the first alloc in the auth loop */
 
+	/* Get the public key blob BEFORE starting the server thread,
+	 * since the server thread arms the process-wide allocator and
+	 * RSA pubkey() internally calls malloc. */
+	dssh_key_algo ka = dssh_transport_find_key_algo(test_key_algo_name());
+	ASSERT_NOT_NULL(ka);
+	uint8_t pubkey_buf[1024];
+	size_t pubkey_len;
+	ASSERT_EQ(ka->pubkey(pubkey_buf, sizeof(pubkey_buf), &pubkey_len, ka->ctx), 0);
+
 	thrd_t st;
 	ASSERT_TRUE(thrd_create(&st, pk_ok_server_thread, &sa) == thrd_success);
 
@@ -714,20 +723,13 @@ test_alloc_send_pk_ok(void)
 		ASSERT_EQ(msg_type, SSH_MSG_SERVICE_ACCEPT);
 	}
 
-	/* Get the public key blob */
-	dssh_key_algo ka = dssh_transport_find_key_algo(test_key_algo_name());
-	ASSERT_NOT_NULL(ka);
-	uint8_t pubkey_buf[256];
-	size_t pubkey_len;
-	ASSERT_EQ(ka->pubkey(pubkey_buf, sizeof(pubkey_buf), &pubkey_len, ka->ctx), 0);
-
 	/* Send publickey probe */
 	{
 		static const char svc[] = "ssh-connection";
 		static const char method[] = "publickey";
 		const char *algo = test_key_algo_name();
 		size_t algo_len = strlen(algo);
-		uint8_t msg[512];
+		uint8_t msg[2048];
 		size_t pos = 0;
 		msg[pos++] = SSH_MSG_USERAUTH_REQUEST;
 		dssh_serialize_uint32(1, msg, sizeof(msg), &pos);

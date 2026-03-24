@@ -302,6 +302,15 @@ if(DEUCESSH_BUILD_TESTS)
 	add_test(NAME dssh_unit_alloc COMMAND dssh_test_alloc)
 	set_tests_properties(dssh_unit_alloc PROPERTIES
 		ENVIRONMENT "${DSSH_TEST_KEY_ENV}")
+	add_test(NAME dssh_unit_alloc_dhgex COMMAND dssh_test_alloc)
+	set_tests_properties(dssh_unit_alloc_dhgex PROPERTIES
+		ENVIRONMENT "DSSH_TEST_KEX=dh-gex;${DSSH_TEST_KEY_ENV}")
+	add_test(NAME dssh_unit_alloc_rsa COMMAND dssh_test_alloc)
+	set_tests_properties(dssh_unit_alloc_rsa PROPERTIES
+		ENVIRONMENT "DSSH_TEST_KEY=rsa;${DSSH_TEST_KEY_ENV}")
+	add_test(NAME dssh_unit_alloc_dhgex_rsa COMMAND dssh_test_alloc)
+	set_tests_properties(dssh_unit_alloc_dhgex_rsa PROPERTIES
+		ENVIRONMENT "DSSH_TEST_KEX=dh-gex;DSSH_TEST_KEY=rsa;${DSSH_TEST_KEY_ENV}")
 
 	# Test algorithm modules (enc/mac with failure injection)
 	add_library(dssh_test_algos STATIC test/test_enc.c test/test_mac.c)
