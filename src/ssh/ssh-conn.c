@@ -133,7 +133,7 @@ window_add(uint32_t current, uint32_t bytes)
  * Used by the high-level API; not part of the public interface.
  * ================================================================ */
 
-static int
+DSSH_TESTABLE int
 dssh_conn_send_data(dssh_session sess,
     dssh_channel ch, const uint8_t *data, size_t len)
 {
@@ -158,7 +158,7 @@ dssh_conn_send_data(dssh_session sess,
 	return res;
 }
 
-static int
+DSSH_TESTABLE int
 dssh_conn_send_extended_data(dssh_session sess,
     dssh_channel ch, uint32_t data_type_code,
     const uint8_t *data, size_t len)
@@ -417,7 +417,7 @@ maybe_replenish_window(dssh_session sess, dssh_channel ch)
  * Dispatch a received packet to the appropriate channel buffer.
  * Called from the demux thread with no locks held.
  */
-static void
+DSSH_TESTABLE void
 demux_dispatch(dssh_session sess, uint8_t msg_type,
     uint8_t *payload, size_t payload_len)
 {

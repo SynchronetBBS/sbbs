@@ -4165,6 +4165,95 @@ test_data_dlen_exceeds_payload(void)
 }
 
 /* ================================================================
+ * Formerly-guarded paths — send_data/ext overflow, chan_type==0
+ * ================================================================ */
+
+static int
+test_send_extended_data_toolong(void)
+{
+	struct conn_ctx ctx;
+	if (conn_setup(&ctx) < 0)
+		return TEST_SKIP;
+
+	struct open_exec_ctx oc = {
+		.client = ctx.client,
+		.server = ctx.server,
+		.command = "echo extlen",
+		.cbs = &session_cbs,
+		.accept_timeout = 5000,
+	};
+	if (open_exec_channel(&oc) < 0 || oc.client_ch == NULL || oc.server_ch == NULL) {
+		conn_cleanup(&ctx);
+		return TEST_FAIL;
+	}
+
+	/* Call send_extended_data directly with len > remote_window */
+	uint8_t data[] = "x";
+	oc.server_ch->remote_window = 0;
+	int res = dssh_conn_send_extended_data(ctx.server, oc.server_ch,
+	    1, data, 1);
+	ASSERT_EQ(res, DSSH_ERROR_TOOLONG);
+
+	/* Also len > remote_max_packet */
+	oc.server_ch->remote_window = 0xFFFFFFFF;
+	oc.server_ch->remote_max_packet = 0;
+	res = dssh_conn_send_extended_data(ctx.server, oc.server_ch,
+	    1, data, 1);
+	ASSERT_EQ(res, DSSH_ERROR_TOOLONG);
+
+	/* Restore for cleanup */
+	oc.server_ch->remote_window = 0x200000;
+	oc.server_ch->remote_max_packet = 0x8000;
+
+	dssh_session_close(ctx.server, oc.server_ch, 0);
+	dssh_session_close(ctx.client, oc.client_ch, 0);
+	conn_cleanup(&ctx);
+	return TEST_PASS;
+}
+
+static int
+test_demux_dispatch_chan_type_zero(void)
+{
+	struct conn_ctx ctx;
+	if (conn_setup(&ctx) < 0)
+		return TEST_SKIP;
+
+	struct open_exec_ctx oc = {
+		.client = ctx.client,
+		.server = ctx.server,
+		.command = "echo chantype",
+		.cbs = &session_cbs,
+		.accept_timeout = 5000,
+	};
+	if (open_exec_channel(&oc) < 0 || oc.client_ch == NULL || oc.server_ch == NULL) {
+		conn_cleanup(&ctx);
+		return TEST_FAIL;
+	}
+
+	/* Temporarily set chan_type to 0 and call demux_dispatch directly.
+	 * It should return early without crashing. */
+	uint8_t saved_type = oc.server_ch->chan_type;
+	oc.server_ch->chan_type = 0;
+
+	/* Build a CHANNEL_DATA payload targeting this channel */
+	uint8_t payload[16];
+	size_t pos = 0;
+	payload[pos++] = SSH_MSG_CHANNEL_DATA;
+	dssh_serialize_uint32(oc.server_ch->local_id, payload, sizeof(payload), &pos);
+	dssh_serialize_uint32(1, payload, sizeof(payload), &pos);
+	payload[pos++] = 'x';
+
+	demux_dispatch(ctx.server, SSH_MSG_CHANNEL_DATA, payload, pos);
+
+	oc.server_ch->chan_type = saved_type;
+
+	dssh_session_close(ctx.server, oc.server_ch, 0);
+	dssh_session_close(ctx.client, oc.client_ch, 0);
+	conn_cleanup(&ctx);
+	return TEST_PASS;
+}
+
+/* ================================================================
  * Test table
  * ================================================================ */
 
@@ -4290,6 +4379,8 @@ static struct dssh_test_entry tests[] = {
 	{ "test_channel_success_no_request",   test_channel_success_no_request },
 	{ "test_double_eof_close",              test_double_eof_close },
 	{ "test_data_dlen_exceeds_payload",     test_data_dlen_exceeds_payload },
+	{ "test_send_ext_data_toolong",        test_send_extended_data_toolong },
+	{ "test_demux_chan_type_zero",          test_demux_dispatch_chan_type_zero },
 };
 
 DSSH_TEST_MAIN(tests)

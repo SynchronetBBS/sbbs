@@ -4241,6 +4241,83 @@ test_bn_mpint_small_buf(void)
 	return TEST_PASS;
 }
 
+static int
+test_ed25519_haskey_wrong_type(void)
+{
+	/* Load an RSA key into the ed25519 module's ctx — haskey should
+	 * return false because EVP_PKEY_id != EVP_PKEY_ED25519. */
+	dssh_test_reset_global_config();
+	ASSERT_EQ(register_ssh_ed25519(), 0);
+	ASSERT_EQ(register_rsa_sha2_256(), 0);
+	ASSERT_EQ(rsa_sha2_256_generate_key(2048), 0);
+
+	dssh_key_algo ed = dssh_transport_find_key_algo("ssh-ed25519");
+	dssh_key_algo rsa = dssh_transport_find_key_algo("rsa-sha2-256");
+	ASSERT_NOT_NULL(ed);
+	ASSERT_NOT_NULL(rsa);
+
+	/* Swap: give ed25519 the RSA ctx */
+	dssh_key_algo_ctx *saved = ed->ctx;
+	ed->ctx = rsa->ctx;
+	ASSERT_FALSE(ed->haskey(ed->ctx));
+	ed->ctx = saved;
+
+	dssh_test_reset_global_config();
+	return TEST_PASS;
+}
+
+static int
+test_rsa_haskey_wrong_type(void)
+{
+	dssh_test_reset_global_config();
+	ASSERT_EQ(register_ssh_ed25519(), 0);
+	ASSERT_EQ(register_rsa_sha2_256(), 0);
+	ASSERT_EQ(ssh_ed25519_generate_key(), 0);
+
+	dssh_key_algo ed = dssh_transport_find_key_algo("ssh-ed25519");
+	dssh_key_algo rsa = dssh_transport_find_key_algo("rsa-sha2-256");
+	ASSERT_NOT_NULL(ed);
+	ASSERT_NOT_NULL(rsa);
+
+	/* Swap: give RSA the ed25519 ctx */
+	dssh_key_algo_ctx *saved = rsa->ctx;
+	rsa->ctx = ed->ctx;
+	ASSERT_FALSE(rsa->haskey(rsa->ctx));
+	rsa->ctx = saved;
+
+	dssh_test_reset_global_config();
+	return TEST_PASS;
+}
+
+static int
+test_remote_languages_cleanup(void)
+{
+	/* Populate remote_languages, then verify cleanup frees them */
+	dssh_test_reset_global_config();
+	ASSERT_EQ(register_all_algorithms(), 0);
+	dssh_transport_set_callbacks(mock_tx_dispatch, mock_rx_dispatch,
+	    mock_rxline_dispatch, mock_extra_line_cb);
+
+	struct mock_io_state io;
+	ASSERT_OK(mock_io_init(&io, 0));
+	dssh_session sess = dssh_session_init(true, 0);
+	ASSERT_NOT_NULL(sess);
+	dssh_session_set_cbdata(sess, &io, &io, &io, &io);
+
+	/* Manually populate remote_languages (NULL-terminated array) */
+	sess->trans.remote_languages = calloc(3, sizeof(char *));
+	ASSERT_NOT_NULL(sess->trans.remote_languages);
+	sess->trans.remote_languages[0] = strdup("en");
+	sess->trans.remote_languages[1] = strdup("fr");
+	sess->trans.remote_languages[2] = NULL;
+
+	/* Cleanup should free them without crashing */
+	dssh_session_cleanup(sess);
+	mock_io_free(&io);
+	dssh_test_reset_global_config();
+	return TEST_PASS;
+}
+
 /* ================================================================
  * Test table
  * ================================================================ */
@@ -4400,6 +4477,9 @@ static struct dssh_test_entry tests[] = {
 	{ "guard/rsa_sign_small_buf",        test_rsa_sign_small_buf },
 	{ "guard/rsa_pubkey_small_buf",      test_rsa_pubkey_small_buf },
 	{ "guard/bn_mpint_small_buf",        test_bn_mpint_small_buf },
+	{ "guard/ed25519_haskey_wrong_type", test_ed25519_haskey_wrong_type },
+	{ "guard/rsa_haskey_wrong_type",     test_rsa_haskey_wrong_type },
+	{ "guard/remote_languages_cleanup",  test_remote_languages_cleanup },
 
 	/* Getter before handshake */
 	{ "getter/names_before_handshake",   test_get_names_before_handshake },

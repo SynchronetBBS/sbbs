@@ -11,6 +11,8 @@
 #include "deucessh.h"
 #include "ssh-trans.h"
 
+struct dssh_channel_s;
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -57,6 +59,16 @@ size_t dssh_test_build_namelist(void *head, size_t name_offset,
  * Global config — DSSH_TESTABLE in ssh-trans.c.
  */
 extern struct dssh_transport_global_config gconf;
+
+/*
+ * ssh-conn.c internal functions exposed for testing.
+ */
+int dssh_conn_send_data(dssh_session sess, struct dssh_channel_s *ch,
+    const uint8_t *data, size_t len);
+int dssh_conn_send_extended_data(dssh_session sess, struct dssh_channel_s *ch,
+    uint32_t data_type_code, const uint8_t *data, size_t len);
+void demux_dispatch(dssh_session sess, uint8_t msg_type,
+    uint8_t *payload, size_t payload_len);
 
 /*
  * Version string validators from ssh-trans.c.
