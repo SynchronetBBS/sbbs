@@ -25,6 +25,8 @@
 #include "mock_alloc.h"
 #include "test_dhgex_provider.h"
 
+#include <openssl/rand.h>
+
 
 /* ================================================================
  * Helpers
@@ -1819,6 +1821,339 @@ test_ossl_mac_iterate(void)
 }
 
 /* ================================================================
+ * Isolated key_algo ossl iterate: verify and pubkey
+ *
+ * These exercise OpenSSL error paths in verify() and pubkey()
+ * without any session or I/O — just the crypto callbacks.
+ * ================================================================ */
+
+static int
+test_ossl_key_verify_iterate(void)
+{
+	dssh_test_reset_global_config();
+	dssh_test_ossl_reset();
+	mock_alloc_reset();
+
+	int res = test_register_key_algos();
+	if (res < 0)
+		return TEST_FAIL;
+	if (test_generate_host_key() < 0)
+		return TEST_FAIL;
+
+	dssh_key_algo ka = dssh_transport_find_key_algo(test_key_algo_name());
+	if (ka == NULL)
+		return TEST_FAIL;
+
+	/* Generate valid sig + pubkey blobs with ossl off */
+	const uint8_t data[] = "test data for verify iterate";
+	uint8_t sig_buf[1024], pub_buf[1024];
+	size_t sig_len, pub_len;
+	ASSERT_EQ(ka->sign(sig_buf, sizeof(sig_buf), &sig_len,
+	    data, sizeof(data) - 1, ka->ctx), 0);
+	ASSERT_EQ(ka->pubkey(pub_buf, sizeof(pub_buf), &pub_len, ka->ctx), 0);
+
+	int prev_count = -1;
+	for (int n = 0; n < 500; n++) {
+		dssh_test_ossl_fail_after(n);
+		int vres = ka->verify(pub_buf, pub_len, sig_buf, sig_len,
+		    data, sizeof(data) - 1);
+		int cur_count = dssh_test_ossl_count();
+		dssh_test_ossl_reset();
+
+		if (vres == 0) {
+			dssh_test_reset_global_config();
+			ASSERT_TRUE(n > 0);
+			return TEST_PASS;
+		}
+		if (cur_count == prev_count) {
+			dssh_test_reset_global_config();
+			return TEST_PASS;
+		}
+		prev_count = cur_count;
+	}
+
+	fprintf(stderr, "  ossl/key_verify: still incrementing at n=%d "
+	    "(count=%d), raise limit\n", 500, prev_count);
+	dssh_test_reset_global_config();
+	return TEST_FAIL;
+}
+
+static int
+test_ossl_key_pubkey_iterate(void)
+{
+	dssh_test_reset_global_config();
+	dssh_test_ossl_reset();
+	mock_alloc_reset();
+
+	int res = test_register_key_algos();
+	if (res < 0)
+		return TEST_FAIL;
+	if (test_generate_host_key() < 0)
+		return TEST_FAIL;
+
+	dssh_key_algo ka = dssh_transport_find_key_algo(test_key_algo_name());
+	if (ka == NULL)
+		return TEST_FAIL;
+
+	int prev_count = -1;
+	for (int n = 0; n < 500; n++) {
+		dssh_test_ossl_fail_after(n);
+		uint8_t buf[1024];
+		size_t outlen;
+		int pres = ka->pubkey(buf, sizeof(buf), &outlen, ka->ctx);
+		int cur_count = dssh_test_ossl_count();
+		dssh_test_ossl_reset();
+
+		if (pres == 0) {
+			dssh_test_reset_global_config();
+			ASSERT_TRUE(n > 0);
+			return TEST_PASS;
+		}
+		if (cur_count == prev_count) {
+			dssh_test_reset_global_config();
+			return TEST_PASS;
+		}
+		prev_count = cur_count;
+	}
+
+	fprintf(stderr, "  ossl/key_pubkey: still incrementing at n=%d "
+	    "(count=%d), raise limit\n", 500, prev_count);
+	dssh_test_reset_global_config();
+	return TEST_FAIL;
+}
+
+/* ================================================================
+ * Server-side KEX handler iterate with packet replay.
+ *
+ * One-time two-threaded setup (version_exchange + kexinit) to get
+ * negotiated state, then single-threaded iterate of the server-side
+ * KEX handler with pre-injected client packets.
+ * ================================================================ */
+
+/*
+ * Build a plaintext SSH wire packet from a payload.
+ * Matches send_packet's format in pre-NEWKEYS mode:
+ *   uint32  packet_length (1 + payload_len + padding_len)
+ *   byte    padding_length
+ *   byte[]  payload
+ *   byte[]  zero_padding (at least 4 bytes, 8-byte aligned)
+ * Returns total wire length, or 0 on overflow.
+ */
+static size_t
+build_plaintext_packet(const uint8_t *payload, size_t payload_len,
+    uint8_t *buf, size_t bufsz)
+{
+	size_t bs = 8;
+	size_t padding_len = bs - ((5 + payload_len) % bs);
+	if (padding_len < 4)
+		padding_len += bs;
+	uint32_t packet_length = (uint32_t)(1 + payload_len + padding_len);
+	size_t total = 4 + packet_length;
+	if (total > bufsz)
+		return 0;
+	size_t pos = 0;
+	dssh_serialize_uint32(packet_length, buf, bufsz, &pos);
+	buf[pos++] = (uint8_t)padding_len;
+	memcpy(&buf[pos], payload, payload_len);
+	pos += payload_len;
+	memset(&buf[pos], 0, padding_len);
+	pos += padding_len;
+	return pos;
+}
+
+/* Thread: version_exchange + kexinit */
+struct ve_ki_ctx {
+	struct mock_io_state *io;
+	dssh_session sess;
+	int result;
+};
+
+static int
+ve_ki_thread(void *arg)
+{
+	struct ve_ki_ctx *ctx = arg;
+	ctx->result = dssh_transport_version_exchange(ctx->sess);
+	if (ctx->result == 0)
+		ctx->result = dssh_transport_kexinit(ctx->sess);
+	if (ctx->result < 0) {
+		/* Close our write pipe so peer unblocks */
+		if (ctx->sess->trans.client)
+			mock_io_close_c2s(ctx->io);
+		else
+			mock_io_close_s2c(ctx->io);
+	}
+	return 0;
+}
+
+static int
+test_ossl_kex_server_iterate(void)
+{
+	/* === ONE-TIME SETUP === */
+	dssh_test_reset_global_config();
+	dssh_test_alloc_reset();
+	dssh_test_ossl_reset();
+	mock_alloc_reset();
+
+	if (register_all() < 0)
+		return TEST_FAIL;
+	if (test_generate_host_key() < 0)
+		return TEST_FAIL;
+
+	struct mock_io_state setup_io;
+	if (mock_io_init(&setup_io, 0) < 0)
+		return TEST_FAIL;
+
+	dssh_transport_set_callbacks(mock_tx_dispatch, mock_rx_dispatch,
+	    mock_rxline_dispatch, mock_extra_line_cb);
+
+	dssh_session client = dssh_session_init(true, 0);
+	if (client == NULL) {
+		mock_io_free(&setup_io);
+		return TEST_FAIL;
+	}
+	dssh_session_set_cbdata(client, &setup_io, &setup_io,
+	    &setup_io, &setup_io);
+
+	dssh_session server = init_server_session();
+	if (server == NULL) {
+		dssh_session_cleanup(client);
+		mock_io_free(&setup_io);
+		return TEST_FAIL;
+	}
+	dssh_session_set_cbdata(server, &setup_io, &setup_io,
+	    &setup_io, &setup_io);
+
+	/* Two-threaded version_exchange + kexinit */
+	{
+		struct ve_ki_ctx ca = { .io = &setup_io, .sess = client };
+		struct ve_ki_ctx sa = { .io = &setup_io, .sess = server };
+		thrd_t ct, st;
+		thrd_create(&ct, ve_ki_thread, &ca);
+		thrd_create(&st, ve_ki_thread, &sa);
+		thrd_join(ct, NULL);
+		thrd_join(st, NULL);
+		if (ca.result != 0 || sa.result != 0) {
+			mock_io_close_c2s(&setup_io);
+			mock_io_close_s2c(&setup_io);
+			dssh_session_cleanup(server);
+			dssh_session_cleanup(client);
+			mock_io_free(&setup_io);
+			dssh_test_reset_global_config();
+			return TEST_FAIL;
+		}
+	}
+
+	/* Done with client and setup I/O */
+	dssh_session_cleanup(client);
+	mock_io_close_c2s(&setup_io);
+	mock_io_close_s2c(&setup_io);
+	mock_io_free(&setup_io);
+
+	/* === BUILD CLIENT KEX PACKETS === */
+	uint8_t wire_pkts[8192];
+	size_t wire_total = 0;
+
+	if (test_using_dhgex()) {
+		/* DH-GEX: GEX_REQUEST + GEX_INIT */
+		uint8_t req[16];
+		size_t rp = 0;
+		req[rp++] = 34; /* SSH_MSG_KEX_DH_GEX_REQUEST */
+		dssh_serialize_uint32(2048, req, sizeof(req), &rp);
+		dssh_serialize_uint32(4096, req, sizeof(req), &rp);
+		dssh_serialize_uint32(8192, req, sizeof(req), &rp);
+		wire_total += build_plaintext_packet(req, rp,
+		    &wire_pkts[wire_total], sizeof(wire_pkts) - wire_total);
+
+		/* GEX_INIT with e=2 (valid: 2 ∈ [1, p-1]) */
+		uint8_t init[16];
+		size_t ip = 0;
+		init[ip++] = 32; /* SSH_MSG_KEX_DH_GEX_INIT */
+		dssh_serialize_uint32(1, init, sizeof(init), &ip);
+		init[ip++] = 0x02; /* mpint value 2 */
+		wire_total += build_plaintext_packet(init, ip,
+		    &wire_pkts[wire_total], sizeof(wire_pkts) - wire_total);
+	}
+	else {
+		/* Curve25519: ECDH_INIT(Q_C) */
+		uint8_t qc[32];
+		RAND_bytes(qc, sizeof(qc)); /* any 32 bytes is valid X25519 */
+
+		uint8_t init[1 + 4 + 32];
+		size_t ip = 0;
+		init[ip++] = SSH_MSG_KEX_ECDH_INIT;
+		dssh_serialize_uint32(32, init, sizeof(init), &ip);
+		memcpy(&init[ip], qc, 32);
+		ip += 32;
+		wire_total += build_plaintext_packet(init, ip,
+		    &wire_pkts[wire_total], sizeof(wire_pkts) - wire_total);
+	}
+
+	/* Save server state for reset */
+	uint32_t saved_rx_seq = server->trans.rx_seq;
+	uint32_t saved_tx_seq = server->trans.tx_seq;
+
+	/* === ITERATE === */
+	int prev_count = -1;
+	for (int n = 0; n < 500; n++) {
+		/* Fresh I/O for this iteration */
+		struct mock_io_state iter_io;
+		if (mock_io_init(&iter_io, 0) < 0)
+			break;
+		dssh_session_set_cbdata(server, &iter_io, &iter_io,
+		    &iter_io, &iter_io);
+
+		/* Inject pre-built client packets */
+		mock_io_inject(&iter_io.c2s, wire_pkts, wire_total);
+
+		/* Reset mutable server state */
+		free(server->trans.shared_secret);
+		server->trans.shared_secret = NULL;
+		server->trans.shared_secret_sz = 0;
+		free(server->trans.exchange_hash);
+		server->trans.exchange_hash = NULL;
+		server->trans.exchange_hash_sz = 0;
+		server->trans.rx_seq = saved_rx_seq;
+		server->trans.tx_seq = saved_tx_seq;
+		server->trans.rx_since_rekey = 0;
+		server->trans.tx_since_rekey = 0;
+		server->trans.bytes_since_rekey = 0;
+		server->terminate = false;
+
+		dssh_test_ossl_fail_after(n);
+		int res = dssh_transport_kex(server);
+		int cur_count = dssh_test_ossl_count();
+		dssh_test_ossl_reset();
+
+		/* Drain server output */
+		uint8_t drain[16384];
+		mock_io_drain(&iter_io.s2c, drain, sizeof(drain));
+
+		mock_io_close_c2s(&iter_io);
+		mock_io_close_s2c(&iter_io);
+		mock_io_free(&iter_io);
+
+		if (res == 0) {
+			dssh_session_cleanup(server);
+			dssh_test_reset_global_config();
+			ASSERT_TRUE(n > 0);
+			return TEST_PASS;
+		}
+		if (cur_count == prev_count) {
+			dssh_session_cleanup(server);
+			dssh_test_reset_global_config();
+			return TEST_PASS;
+		}
+		prev_count = cur_count;
+	}
+
+	fprintf(stderr, "  ossl/kex_server: still incrementing at n=%d "
+	    "(count=%d), raise limit\n", 500, prev_count);
+	dssh_session_cleanup(server);
+	dssh_test_reset_global_config();
+	return TEST_FAIL;
+}
+
+/* ================================================================
  * Test table
  * ================================================================ */
 
@@ -1873,6 +2208,9 @@ static struct dssh_test_entry tests[] = {
 	{ "ossl/keygen",                  test_ossl_keygen_iterate },
 	{ "ossl/enc",                     test_ossl_enc_iterate },
 	{ "ossl/mac",                     test_ossl_mac_iterate },
+	{ "ossl/key_verify",              test_ossl_key_verify_iterate },
+	{ "ossl/key_pubkey",              test_ossl_key_pubkey_iterate },
+	{ "ossl/kex_server",              test_ossl_kex_server_iterate },
 };
 
 DSSH_TEST_MAIN(tests)
