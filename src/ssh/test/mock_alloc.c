@@ -10,6 +10,8 @@
 
 #include "mock_alloc.h"
 
+#include <stdatomic.h>
+#include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -19,33 +21,43 @@ extern void *__real_calloc(size_t, size_t);
 extern void *__real_realloc(void *, size_t);
 extern void  __real_free(void *);
 
-static int fail_at = -1;    /* -1 = disabled */
-static int alloc_num = 0;   /* current allocation index */
+static atomic_int fail_at = -1;
+static atomic_int alloc_num = 0;
 
 void
 mock_alloc_reset(void)
 {
-	fail_at = -1;
-	alloc_num = 0;
+	atomic_store(&fail_at, -1);
+	atomic_store(&alloc_num, 0);
 }
 
 void
 mock_alloc_fail_after(int n)
 {
-	fail_at = n;
-	alloc_num = 0;
+	atomic_store(&alloc_num, 0);
+	atomic_store(&fail_at, n);
 }
 
 int
 mock_alloc_count(void)
 {
-	return alloc_num;
+	return atomic_load(&alloc_num);
+}
+
+static bool
+should_fail(void)
+{
+	int fa = atomic_load(&fail_at);
+	if (fa < 0)
+		return false;
+	int n = atomic_fetch_add(&alloc_num, 1);
+	return (n == fa);
 }
 
 void *
 __wrap_malloc(size_t sz)
 {
-	if (fail_at >= 0 && alloc_num++ == fail_at)
+	if (should_fail())
 		return NULL;
 	return __real_malloc(sz);
 }
@@ -53,7 +65,7 @@ __wrap_malloc(size_t sz)
 void *
 __wrap_calloc(size_t nmemb, size_t sz)
 {
-	if (fail_at >= 0 && alloc_num++ == fail_at)
+	if (should_fail())
 		return NULL;
 	return __real_calloc(nmemb, sz);
 }
@@ -61,7 +73,7 @@ __wrap_calloc(size_t nmemb, size_t sz)
 void *
 __wrap_realloc(void *ptr, size_t sz)
 {
-	if (fail_at >= 0 && alloc_num++ == fail_at)
+	if (should_fail())
 		return NULL;
 	return __real_realloc(ptr, sz);
 }

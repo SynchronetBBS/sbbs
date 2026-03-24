@@ -234,13 +234,17 @@ test_alloc_session_init(void)
 			ASSERT_TRUE(n > 0);
 			break;
 		}
-		if (cur_count == prev_count)
-			break;
+		if (cur_count == prev_count) {
+			dssh_test_reset_global_config();
+			return TEST_PASS;
+		}
 		prev_count = cur_count;
 	}
 
+	fprintf(stderr, "  alloc/session_init: still incrementing at "
+	    "n=%d (count=%d), raise limit\n", 100, prev_count);
 	dssh_test_reset_global_config();
-	return TEST_PASS;
+	return TEST_FAIL;
 }
 
 /* ================================================================

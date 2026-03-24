@@ -13,6 +13,7 @@
 
 #include <stdlib.h>
 #include <stdatomic.h>
+#include <stdbool.h>
 
 static atomic_int dssh_alloc_fail_at = -1;
 static atomic_int dssh_alloc_num = 0;
@@ -20,28 +21,37 @@ static atomic_int dssh_alloc_num = 0;
 void
 dssh_test_alloc_reset(void)
 {
-	dssh_alloc_fail_at = -1;
-	dssh_alloc_num = 0;
+	atomic_store(&dssh_alloc_fail_at, -1);
+	atomic_store(&dssh_alloc_num, 0);
 }
 
 void
 dssh_test_alloc_fail_after(int n)
 {
-	dssh_alloc_fail_at = n;
-	dssh_alloc_num = 0;
+	atomic_store(&dssh_alloc_num, 0);
+	atomic_store(&dssh_alloc_fail_at, n);
 }
 
 int
 dssh_test_alloc_count(void)
 {
-	return dssh_alloc_num;
+	return atomic_load(&dssh_alloc_num);
+}
+
+static bool
+should_fail(void)
+{
+	int fa = atomic_load(&dssh_alloc_fail_at);
+	if (fa < 0)
+		return false;
+	int n = atomic_fetch_add(&dssh_alloc_num, 1);
+	return (n == fa);
 }
 
 void *
 dssh_test_malloc(size_t sz)
 {
-	int fat = dssh_alloc_fail_at;
-	if (fat >= 0 && dssh_alloc_num++ == fat)
+	if (should_fail())
 		return NULL;
 	return malloc(sz);
 }
@@ -49,8 +59,7 @@ dssh_test_malloc(size_t sz)
 void *
 dssh_test_calloc(size_t nmemb, size_t sz)
 {
-	int fat = dssh_alloc_fail_at;
-	if (fat >= 0 && dssh_alloc_num++ == fat)
+	if (should_fail())
 		return NULL;
 	return calloc(nmemb, sz);
 }
@@ -58,8 +67,7 @@ dssh_test_calloc(size_t nmemb, size_t sz)
 void *
 dssh_test_realloc(void *ptr, size_t sz)
 {
-	int fat = dssh_alloc_fail_at;
-	if (fat >= 0 && dssh_alloc_num++ == fat)
+	if (should_fail())
 		return NULL;
 	return realloc(ptr, sz);
 }
