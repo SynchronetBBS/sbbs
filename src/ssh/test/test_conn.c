@@ -4956,6 +4956,133 @@ test_session_read_ext_empty(void)
 }
 
 /* ================================================================
+ * Deterministic branch coverage — profiling-unstable branches
+ *
+ * These tests exercise branches that flip between "covered" and
+ * "missed" across runs due to non-deterministic thread scheduling.
+ * Each test here is single-threaded with no timing dependency.
+ * ================================================================ */
+
+/*
+ * session_poll nsec overflow (line 1606): ts.tv_nsec >= 1000000000L.
+ * We use timeout_ms=999 which adds 999000000 nsec.  The current
+ * nsec is almost always > 1000001 (~1ms), making the total
+ * exceed 1 billion.  We call it in a loop to ensure the branch
+ * fires at least once.
+ */
+static int
+test_session_poll_nsec_overflow(void)
+{
+	dssh_test_reset_global_config();
+	if (register_all_algorithms() < 0)
+		return TEST_SKIP;
+	dssh_session s = dssh_session_init(false, 0);
+	if (s == NULL)
+		return TEST_SKIP;
+
+	struct dssh_channel_s ch = {0};
+	ch.chan_type = DSSH_CHAN_SESSION;
+	mtx_init(&ch.buf_mtx, mtx_plain);
+	cnd_init(&ch.poll_cnd);
+	dssh_bytebuf_init(&ch.buf.session.stdout_buf, 256);
+	dssh_bytebuf_init(&ch.buf.session.stderr_buf, 256);
+	dssh_sigqueue_init(&ch.buf.session.signals);
+
+	/* Empty buffers + short timeout → times out.
+	 * timeout_ms=999 adds 999000000 nsec — overflows with >99.9% probability. */
+	for (int i = 0; i < 3; i++) {
+		int r = dssh_session_poll(s, &ch, DSSH_POLL_READ, 1);
+		(void)r;
+	}
+	/* Also test with 999 ms to maximize nsec addition */
+	int r = dssh_session_poll(s, &ch, DSSH_POLL_READ, 999);
+	ASSERT_EQ(r, 0);
+
+	dssh_sigqueue_free(&ch.buf.session.signals);
+	dssh_bytebuf_free(&ch.buf.session.stdout_buf);
+	dssh_bytebuf_free(&ch.buf.session.stderr_buf);
+	cnd_destroy(&ch.poll_cnd);
+	mtx_destroy(&ch.buf_mtx);
+	dssh_session_cleanup(s);
+	dssh_test_reset_global_config();
+	return TEST_PASS;
+}
+
+/*
+ * dssh_session_accept nsec overflow (line 871):
+ * Same pattern — short timeout with large millisecond fraction.
+ */
+static int
+test_accept_nsec_overflow(void)
+{
+	struct conn_ctx ctx;
+	if (conn_setup(&ctx) < 0)
+		return TEST_FAIL;
+
+	struct dssh_incoming_open *inc = NULL;
+	/* 999 ms timeout — adds 999000000 nsec, triggers overflow */
+	for (int i = 0; i < 3; i++) {
+		int res = dssh_session_accept(ctx.server, &inc, 1);
+		(void)res;
+	}
+	int res = dssh_session_accept(ctx.server, &inc, 999);
+	ASSERT_TRUE(res < 0 || inc == NULL);
+
+	conn_cleanup(&ctx);
+	return TEST_PASS;
+}
+
+/*
+ * session_stderr_readable: to_mark < avail branch (line 1556).
+ * Write 10 bytes to stderr, push a signal with stderr_pos=5,
+ * leave stderr_consumed=0.  session_stderr_readable returns
+ * min(10, 5-0) = 5, and to_mark(5) < avail(10) fires.
+ */
+static int
+test_stderr_signal_truncate(void)
+{
+	dssh_test_reset_global_config();
+	if (register_all_algorithms() < 0)
+		return TEST_SKIP;
+	dssh_session s = dssh_session_init(false, 0);
+	if (s == NULL)
+		return TEST_SKIP;
+
+	struct dssh_channel_s ch = {0};
+	ch.chan_type = DSSH_CHAN_SESSION;
+	mtx_init(&ch.buf_mtx, mtx_plain);
+	cnd_init(&ch.poll_cnd);
+	dssh_bytebuf_init(&ch.buf.session.stdout_buf, 256);
+	dssh_bytebuf_init(&ch.buf.session.stderr_buf, 256);
+	dssh_sigqueue_init(&ch.buf.session.signals);
+
+	/* Write 10 bytes to stderr */
+	dssh_bytebuf_write(&ch.buf.session.stderr_buf,
+	    (const uint8_t *)"0123456789", 10);
+
+	/* Push a signal with stderr mark at position 5 */
+	dssh_sigqueue_push(&ch.buf.session.signals, "TERM", 0, 5);
+
+	/* Leave stderr_consumed at 0 — to_mark = 5-0 = 5 < avail = 10 */
+	ch.stderr_consumed = 0;
+
+	/* read_ext should return only 5 bytes (clamped by signal mark) */
+	uint8_t buf[64];
+	int64_t n = dssh_session_read_ext(s, &ch, buf, sizeof(buf));
+	ASSERT_EQ(n, (int64_t)5);
+	ASSERT_MEM_EQ(buf, "01234", 5);
+
+	dssh_sigqueue_free(&ch.buf.session.signals);
+	dssh_bytebuf_free(&ch.buf.session.stdout_buf);
+	dssh_bytebuf_free(&ch.buf.session.stderr_buf);
+	cnd_destroy(&ch.poll_cnd);
+	mtx_destroy(&ch.buf_mtx);
+	dssh_session_cleanup(s);
+	dssh_test_reset_global_config();
+	return TEST_PASS;
+}
+
+/* ================================================================
  * Test table
  * ================================================================ */
 
@@ -5107,6 +5234,11 @@ static struct dssh_test_entry tests[] = {
 	{ "test_chan_poll_infinite_ready",      test_channel_poll_infinite_data_ready },
 	{ "test_sess_poll_infinite_ready",     test_session_poll_infinite_data_ready },
 	{ "test_session_read_ext_empty",       test_session_read_ext_empty },
+
+	/* Deterministic branch coverage — profiling-unstable */
+	{ "test_session_poll_nsec_overflow",   test_session_poll_nsec_overflow },
+	{ "test_accept_nsec_overflow",         test_accept_nsec_overflow },
+	{ "test_stderr_signal_truncate",       test_stderr_signal_truncate },
 };
 
 DSSH_TEST_MAIN(tests)

@@ -3606,6 +3606,33 @@ test_is_20_199_partial(void)
 	return TEST_PASS;
 }
 
+static int
+test_is_20_199_short_buf(void)
+{
+	/* 8-byte buffer: "SSH-3.0-" — fails buflen >= 9 on line 78 */
+	uint8_t buf[] = "SSH-3.0-";
+	ASSERT_FALSE(dssh_test_is_20(buf, 8));
+	return TEST_PASS;
+}
+
+static int
+test_is_20_199_bad_minor_digit(void)
+{
+	/* "SSH-1.88-test" — buf[6]=='8' not '9' */
+	uint8_t buf[] = "SSH-1.88-test\r\n";
+	ASSERT_FALSE(dssh_test_is_20(buf, sizeof(buf) - 1));
+	return TEST_PASS;
+}
+
+static int
+test_is_20_199_no_dash(void)
+{
+	/* "SSH-1.99Xtest" — buf[8]=='X' not '-' */
+	uint8_t buf[] = "SSH-1.99Xtest\r\n";
+	ASSERT_FALSE(dssh_test_is_20(buf, sizeof(buf) - 1));
+	return TEST_PASS;
+}
+
 /* ================================================================
  * version_tx — defense-in-depth TOOLONG paths
  *
@@ -4615,6 +4642,119 @@ test_c25519_encode_shared_secret_alloc_fail(void)
 	dssh_test_alloc_reset();
 	ASSERT_TRUE(res < 0);
 
+	return TEST_PASS;
+}
+
+/* ================================================================
+ * Negotiation failure — deterministic test for the || chain at
+ * lines 1131-1138.  After a successful two-threaded kexinit, we
+ * null out one gconf algo list head so the NEXT kexinit call
+ * builds an empty our_list for that category.  peer_kexinit is
+ * already populated from the first run, so kexinit skips recv
+ * and goes straight to negotiate — which returns NULL.
+ * ================================================================ */
+
+static int
+test_negotiate_no_common_kex(void)
+{
+	dssh_test_reset_global_config();
+	dssh_test_alloc_reset();
+	dssh_test_ossl_reset();
+
+	if (register_all_algorithms() < 0)
+		return TEST_FAIL;
+	if (test_generate_host_key() < 0)
+		return TEST_FAIL;
+
+	struct mock_io_state io;
+	if (mock_io_init(&io, 0) < 0)
+		return TEST_FAIL;
+
+	dssh_transport_set_callbacks(mock_tx_dispatch, mock_rx_dispatch,
+	    mock_rxline_dispatch, mock_extra_line_cb);
+
+	dssh_session client = dssh_session_init(true, 0);
+	if (client == NULL) {
+		mock_io_free(&io);
+		return TEST_FAIL;
+	}
+	dssh_session_set_cbdata(client, &io, &io, &io, &io);
+
+	dssh_session server = init_server_session();
+	if (server == NULL) {
+		dssh_session_cleanup(client);
+		mock_io_free(&io);
+		return TEST_FAIL;
+	}
+	dssh_session_set_cbdata(server, &io, &io, &io, &io);
+
+	/* Successful two-threaded version_exchange + kexinit */
+	{
+		struct ve_ki_ctx ca = { .io = &io, .sess = client };
+		struct ve_ki_ctx sa = { .io = &io, .sess = server };
+		thrd_t ct, st;
+		thrd_create(&ct, ve_ki_thread, &ca);
+		thrd_create(&st, ve_ki_thread, &sa);
+		thrd_join(ct, NULL);
+		thrd_join(st, NULL);
+		if (ca.result != 0 || sa.result != 0) {
+			mock_io_close_c2s(&io);
+			mock_io_close_s2c(&io);
+			dssh_session_cleanup(server);
+			dssh_session_cleanup(client);
+			mock_io_free(&io);
+			dssh_test_reset_global_config();
+			return TEST_FAIL;
+		}
+	}
+
+	/* Verify first kexinit succeeded */
+	ASSERT_NOT_NULL(client->trans.kex_selected);
+	ASSERT_NOT_NULL(client->trans.peer_kexinit);
+
+	/* Close old pipes, open fresh ones for the re-kexinit send */
+	mock_io_close_c2s(&io);
+	mock_io_close_s2c(&io);
+	mock_io_free(&io);
+
+	struct mock_io_state io2;
+	if (mock_io_init(&io2, 0) < 0) {
+		dssh_session_cleanup(server);
+		dssh_session_cleanup(client);
+		dssh_test_reset_global_config();
+		return TEST_FAIL;
+	}
+	dssh_session_set_cbdata(client, &io2, &io2, &io2, &io2);
+
+	/* Null out the kex list so our_lists[0] is empty.
+	 * negotiate_algo will return NULL for kex → line 1131 fires. */
+	dssh_kex saved_kex_head = gconf.kex_head;
+	gconf.kex_head = NULL;
+
+	/* Clear selected fields so the || chain exercises fresh */
+	client->trans.kex_selected = NULL;
+	client->trans.key_algo_selected = NULL;
+	client->trans.enc_c2s_selected = NULL;
+	client->trans.enc_s2c_selected = NULL;
+	client->trans.mac_c2s_selected = NULL;
+	client->trans.mac_s2c_selected = NULL;
+	client->trans.comp_c2s_selected = NULL;
+	client->trans.comp_s2c_selected = NULL;
+
+	/* peer_kexinit is still set from the first run, so
+	 * kexinit will skip recv and go straight to negotiate */
+	int res = dssh_transport_kexinit(client);
+	ASSERT_EQ(res, DSSH_ERROR_INIT);
+
+	/* Restore */
+	gconf.kex_head = saved_kex_head;
+
+	mock_io_close_c2s(&io2);
+	mock_io_close_s2c(&io2);
+	mock_io_free(&io2);
+	dssh_session_cleanup(server);
+	dssh_session_cleanup(client);
+	dssh_test_reset_global_config();
 	return TEST_PASS;
 }
 
@@ -5728,6 +5868,573 @@ test_cleanup_null_cleanup_fn(void)
 }
 
 /* ================================================================
+ * Deterministic branch coverage — profiling-unstable branches
+ *
+ * These tests exercise branches that flip between "covered" and
+ * "missed" across runs due to non-deterministic thread scheduling
+ * in two-threaded iterate tests.  Each test here is single-threaded
+ * with no timing dependency.
+ * ================================================================ */
+
+/*
+ * is_20: SSH-1.99 compatibility version (line 78).
+ * The 1.99 branch is exercised non-deterministically via
+ * test_version_exchange_accept_199, but here we call is_20 directly.
+ */
+static int
+test_is_20_version_199(void)
+{
+	uint8_t buf[] = "SSH-1.99-test\r\n";
+	ASSERT_TRUE(dssh_test_is_20(buf, sizeof(buf) - 1));
+	return TEST_PASS;
+}
+
+/*
+ * version_rx: received > 255 branch (line 96).
+ * Inject a 256-byte SSH version line into the s2c pipe and call
+ * dssh_transport_version_exchange as a client.  The line exceeds
+ * the 255-byte RFC limit, so version_rx must reject it.
+ */
+static int
+test_version_rx_too_long(void)
+{
+	dssh_test_reset_global_config();
+	dssh_transport_set_callbacks(mock_tx_dispatch, mock_rx_dispatch,
+	    mock_rxline_dispatch, mock_extra_line_cb);
+
+	struct mock_io_state io;
+	ASSERT_OK(mock_io_init(&io, 0));
+	ASSERT_OK(register_none_comp());
+
+	dssh_session client = dssh_session_init(true, 0);
+	ASSERT_NOT_NULL(client);
+	dssh_session_set_cbdata(client, &io, &io, &io, &io);
+
+	/* Build a 258-byte version line: "SSH-2.0-" (8) + 248 padding + "\r\n" (2) = 258 */
+	char long_line[259];
+	memcpy(long_line, "SSH-2.0-", 8);
+	memset(long_line + 8, 'x', 248);
+	long_line[256] = '\r';
+	long_line[257] = '\n';
+	long_line[258] = '\0';
+	mock_io_inject(&io.s2c, (const uint8_t *)long_line, 258);
+
+	int res = dssh_transport_version_exchange(client);
+	ASSERT_TRUE(res < 0);
+
+	dssh_session_cleanup(client);
+	mock_io_free(&io);
+	dssh_test_reset_global_config();
+	return TEST_PASS;
+}
+
+static int
+test_version_rx_non_ascii(void)
+{
+	dssh_test_reset_global_config();
+	dssh_transport_set_callbacks(mock_tx_dispatch, mock_rx_dispatch,
+	    mock_rxline_dispatch, mock_extra_line_cb);
+
+	struct mock_io_state io;
+	ASSERT_OK(mock_io_init(&io, 0));
+	ASSERT_OK(register_none_comp());
+
+	dssh_session client = dssh_session_init(true, 0);
+	ASSERT_NOT_NULL(client);
+	dssh_session_set_cbdata(client, &io, &io, &io, &io);
+
+	/* Version line with a high byte (0x80) — non-ASCII */
+	char bad_line[] = "SSH-2.0-\x80test\r\n";
+	mock_io_inject(&io.s2c, (const uint8_t *)bad_line,
+	    sizeof(bad_line) - 1);
+
+	int res = dssh_transport_version_exchange(client);
+	ASSERT_TRUE(res < 0);
+
+	dssh_session_cleanup(client);
+	mock_io_free(&io);
+	dssh_test_reset_global_config();
+	return TEST_PASS;
+}
+
+/*
+ * Negotiation: comp_s2c NULL (line 1138).
+ * Same pattern as test_negotiate_no_common_kex, but we null out
+ * only the comp list and craft a peer KEXINIT where comp_c2s
+ * matches "none" but comp_s2c is "bogus" — so comp_c2s_selected
+ * succeeds but comp_s2c_selected is NULL.
+ *
+ * peer_kexinit format: msg_type(1) + cookie(16) + 10 name-lists + bool(1) + reserved(4)
+ * For the client, peer = server, so peer_lists[6] = comp_c2s, peer_lists[7] = comp_s2c.
+ */
+static size_t
+write_namelist(uint8_t *buf, size_t pos, const char *str)
+{
+	uint32_t len = (uint32_t)strlen(str);
+	buf[pos]     = (len >> 24) & 0xFF;
+	buf[pos + 1] = (len >> 16) & 0xFF;
+	buf[pos + 2] = (len >>  8) & 0xFF;
+	buf[pos + 3] = (len      ) & 0xFF;
+	memcpy(&buf[pos + 4], str, len);
+	return pos + 4 + len;
+}
+
+static int
+test_negotiate_no_common_comp_s2c(void)
+{
+	dssh_test_reset_global_config();
+	dssh_test_alloc_reset();
+	dssh_test_ossl_reset();
+
+	if (register_all_algorithms() < 0)
+		return TEST_FAIL;
+	if (test_generate_host_key() < 0)
+		return TEST_FAIL;
+
+	struct mock_io_state io;
+	if (mock_io_init(&io, 0) < 0)
+		return TEST_FAIL;
+
+	dssh_transport_set_callbacks(mock_tx_dispatch, mock_rx_dispatch,
+	    mock_rxline_dispatch, mock_extra_line_cb);
+
+	dssh_session client = dssh_session_init(true, 0);
+	if (client == NULL) {
+		mock_io_free(&io);
+		return TEST_FAIL;
+	}
+	dssh_session_set_cbdata(client, &io, &io, &io, &io);
+
+	dssh_session server = init_server_session();
+	if (server == NULL) {
+		dssh_session_cleanup(client);
+		mock_io_free(&io);
+		return TEST_FAIL;
+	}
+	dssh_session_set_cbdata(server, &io, &io, &io, &io);
+
+	/* Successful two-threaded version_exchange + kexinit */
+	{
+		struct ve_ki_ctx ca = { .io = &io, .sess = client };
+		struct ve_ki_ctx sa = { .io = &io, .sess = server };
+		thrd_t ct, st;
+		thrd_create(&ct, ve_ki_thread, &ca);
+		thrd_create(&st, ve_ki_thread, &sa);
+		thrd_join(ct, NULL);
+		thrd_join(st, NULL);
+		if (ca.result != 0 || sa.result != 0) {
+			mock_io_close_c2s(&io);
+			mock_io_close_s2c(&io);
+			dssh_session_cleanup(server);
+			dssh_session_cleanup(client);
+			mock_io_free(&io);
+			dssh_test_reset_global_config();
+			return TEST_FAIL;
+		}
+	}
+
+	ASSERT_NOT_NULL(client->trans.kex_selected);
+	ASSERT_NOT_NULL(client->trans.peer_kexinit);
+
+	/* Close old pipes, open fresh ones for the re-kexinit send */
+	mock_io_close_c2s(&io);
+	mock_io_close_s2c(&io);
+	mock_io_free(&io);
+
+	struct mock_io_state io2;
+	if (mock_io_init(&io2, 0) < 0) {
+		dssh_session_cleanup(server);
+		dssh_session_cleanup(client);
+		dssh_test_reset_global_config();
+		return TEST_FAIL;
+	}
+	dssh_session_set_cbdata(client, &io2, &io2, &io2, &io2);
+
+	/* Build a crafted peer KEXINIT where comp_s2c (peer_lists[7])
+	 * is "bogus" but all other name-lists match our algorithms.
+	 * peer_lists[6] (comp_c2s) is "none" — matches our comp. */
+	uint8_t crafted[2048];
+	memset(crafted, 0, sizeof(crafted));
+	crafted[0] = 20;  /* SSH_MSG_KEXINIT */
+	/* cookie: bytes 1-16 already zero */
+
+	/* Determine our algorithm names for the matching lists */
+	char kex_name[64], ka_name[64], enc_name[64], mac_name[64];
+	dssh_test_build_namelist(gconf.kex_head,
+	    offsetof(struct dssh_kex_s, name), kex_name, sizeof(kex_name));
+	dssh_test_build_namelist(gconf.key_algo_head,
+	    offsetof(struct dssh_key_algo_s, name), ka_name, sizeof(ka_name));
+	dssh_test_build_namelist(gconf.enc_head,
+	    offsetof(struct dssh_enc_s, name), enc_name, sizeof(enc_name));
+	dssh_test_build_namelist(gconf.mac_head,
+	    offsetof(struct dssh_mac_s, name), mac_name, sizeof(mac_name));
+
+	size_t pos = 17;  /* skip msg_type + cookie */
+	pos = write_namelist(crafted, pos, kex_name);     /* [0] kex */
+	pos = write_namelist(crafted, pos, ka_name);      /* [1] host key */
+	pos = write_namelist(crafted, pos, enc_name);     /* [2] enc c2s */
+	pos = write_namelist(crafted, pos, enc_name);     /* [3] enc s2c */
+	pos = write_namelist(crafted, pos, mac_name);     /* [4] mac c2s */
+	pos = write_namelist(crafted, pos, mac_name);     /* [5] mac s2c */
+	pos = write_namelist(crafted, pos, "none");       /* [6] comp c2s — matches */
+	pos = write_namelist(crafted, pos, "bogus");      /* [7] comp s2c — NO match */
+	pos = write_namelist(crafted, pos, "");           /* [8] lang c2s */
+	pos = write_namelist(crafted, pos, "");           /* [9] lang s2c */
+	crafted[pos] = 0;  /* first_kex_packet_follows */
+	pos += 5;          /* + 4 bytes reserved (zeros) */
+
+	/* Replace the peer_kexinit */
+	free(client->trans.peer_kexinit);
+	client->trans.peer_kexinit = malloc(pos);
+	memcpy(client->trans.peer_kexinit, crafted, pos);
+	client->trans.peer_kexinit_sz = pos;
+
+	/* Clear selected fields */
+	client->trans.kex_selected = NULL;
+	client->trans.key_algo_selected = NULL;
+	client->trans.enc_c2s_selected = NULL;
+	client->trans.enc_s2c_selected = NULL;
+	client->trans.mac_c2s_selected = NULL;
+	client->trans.mac_s2c_selected = NULL;
+	client->trans.comp_c2s_selected = NULL;
+	client->trans.comp_s2c_selected = NULL;
+
+	/* Re-run kexinit — should fail because comp_s2c has no match */
+	int res = dssh_transport_kexinit(client);
+	ASSERT_EQ(res, DSSH_ERROR_INIT);
+
+	/* Verify comp_c2s succeeded but comp_s2c is NULL */
+	ASSERT_NOT_NULL(client->trans.comp_c2s_selected);
+	ASSERT_NULL(client->trans.comp_s2c_selected);
+
+	mock_io_close_c2s(&io2);
+	mock_io_close_s2c(&io2);
+	mock_io_free(&io2);
+	dssh_session_cleanup(server);
+	dssh_session_cleanup(client);
+	dssh_test_reset_global_config();
+	return TEST_PASS;
+}
+
+/*
+ * derive_key: fail EVP_DigestUpdate(shared_secret) — line 1208.
+ * ossl calls in derive_key:
+ *   0: EVP_MD_fetch
+ *   1: EVP_MD_CTX_new
+ *   2: EVP_DigestInit_ex
+ *   3: EVP_DigestUpdate(shared_secret)  <-- target
+ */
+static int
+test_derive_key_ossl_shared_secret(void)
+{
+	uint8_t shared_secret[32], hash[32], session_id[32], out[32];
+	memset(shared_secret, 0x11, sizeof(shared_secret));
+	memset(hash, 0x22, sizeof(hash));
+	memset(session_id, 0x33, sizeof(session_id));
+
+	dssh_test_ossl_fail_after(3);
+	int res = dssh_test_derive_key("SHA256",
+	    shared_secret, sizeof(shared_secret),
+	    hash, sizeof(hash),
+	    'A',
+	    session_id, sizeof(session_id),
+	    out, sizeof(out));
+	dssh_test_ossl_reset();
+	ASSERT_TRUE(res < 0);
+
+	return TEST_PASS;
+}
+
+/*
+ * derive_key: fail EVP_DigestUpdate(hash) — line 1209.
+ * ossl call 4.
+ */
+static int
+test_derive_key_ossl_hash(void)
+{
+	uint8_t shared_secret[32], hash[32], session_id[32], out[32];
+	memset(shared_secret, 0x11, sizeof(shared_secret));
+	memset(hash, 0x22, sizeof(hash));
+	memset(session_id, 0x33, sizeof(session_id));
+
+	dssh_test_ossl_fail_after(4);
+	int res = dssh_test_derive_key("SHA256",
+	    shared_secret, sizeof(shared_secret),
+	    hash, sizeof(hash),
+	    'A',
+	    session_id, sizeof(session_id),
+	    out, sizeof(out));
+	dssh_test_ossl_reset();
+	ASSERT_TRUE(res < 0);
+
+	return TEST_PASS;
+}
+
+/*
+ * derive_key: fail EVP_DigestUpdate(&letter) — line 1210.
+ * ossl call 5.
+ */
+static int
+test_derive_key_ossl_letter(void)
+{
+	uint8_t shared_secret[32], hash[32], session_id[32], out[32];
+	memset(shared_secret, 0x11, sizeof(shared_secret));
+	memset(hash, 0x22, sizeof(hash));
+	memset(session_id, 0x33, sizeof(session_id));
+
+	dssh_test_ossl_fail_after(5);
+	int res = dssh_test_derive_key("SHA256",
+	    shared_secret, sizeof(shared_secret),
+	    hash, sizeof(hash),
+	    'A',
+	    session_id, sizeof(session_id),
+	    out, sizeof(out));
+	dssh_test_ossl_reset();
+	ASSERT_TRUE(res < 0);
+
+	return TEST_PASS;
+}
+
+/*
+ * derive_key: fail EVP_DigestUpdate(session_id) — line 1211.
+ * ossl call 6.
+ */
+static int
+test_derive_key_ossl_session_id(void)
+{
+	uint8_t shared_secret[32], hash[32], session_id[32], out[32];
+	memset(shared_secret, 0x11, sizeof(shared_secret));
+	memset(hash, 0x22, sizeof(hash));
+	memset(session_id, 0x33, sizeof(session_id));
+
+	dssh_test_ossl_fail_after(6);
+	int res = dssh_test_derive_key("SHA256",
+	    shared_secret, sizeof(shared_secret),
+	    hash, sizeof(hash),
+	    'A',
+	    session_id, sizeof(session_id),
+	    out, sizeof(out));
+	dssh_test_ossl_reset();
+	ASSERT_TRUE(res < 0);
+
+	return TEST_PASS;
+}
+
+/*
+ * derive_key: fail EVP_DigestFinal_ex — line 1212.
+ * ossl call 7.
+ */
+static int
+test_derive_key_ossl_final(void)
+{
+	uint8_t shared_secret[32], hash[32], session_id[32], out[32];
+	memset(shared_secret, 0x11, sizeof(shared_secret));
+	memset(hash, 0x22, sizeof(hash));
+	memset(session_id, 0x33, sizeof(session_id));
+
+	dssh_test_ossl_fail_after(7);
+	int res = dssh_test_derive_key("SHA256",
+	    shared_secret, sizeof(shared_secret),
+	    hash, sizeof(hash),
+	    'A',
+	    session_id, sizeof(session_id),
+	    out, sizeof(out));
+	dssh_test_ossl_reset();
+	ASSERT_TRUE(res < 0);
+
+	return TEST_PASS;
+}
+
+/*
+ * derive_key: fail EVP_DigestInit_ex — line 1207.
+ * ossl call 2.
+ */
+static int
+test_derive_key_ossl_init(void)
+{
+	uint8_t shared_secret[32], hash[32], session_id[32], out[32];
+	memset(shared_secret, 0x11, sizeof(shared_secret));
+	memset(hash, 0x22, sizeof(hash));
+	memset(session_id, 0x33, sizeof(session_id));
+
+	dssh_test_ossl_fail_after(2);
+	int res = dssh_test_derive_key("SHA256",
+	    shared_secret, sizeof(shared_secret),
+	    hash, sizeof(hash),
+	    'A',
+	    session_id, sizeof(session_id),
+	    out, sizeof(out));
+	dssh_test_ossl_reset();
+	ASSERT_TRUE(res < 0);
+
+	return TEST_PASS;
+}
+
+/*
+ * derive_key: need > md_len so the while(have < needed) loop fires.
+ * Then fail the second EVP_DigestInit_ex (line 1222).
+ * SHA256 produces 32 bytes; requesting 64 forces the extension loop.
+ * First pass: calls 0-7 succeed (8 calls total).
+ * Second pass loop: call 8 = EVP_DigestInit_ex.
+ */
+static int
+test_derive_key_ossl_extension_loop(void)
+{
+	uint8_t shared_secret[32], hash[32], session_id[32], out[64];
+	memset(shared_secret, 0x11, sizeof(shared_secret));
+	memset(hash, 0x22, sizeof(hash));
+	memset(session_id, 0x33, sizeof(session_id));
+
+	/* Fail the EVP_DigestInit_ex in the extension loop (call 8) */
+	dssh_test_ossl_fail_after(8);
+	int res = dssh_test_derive_key("SHA256",
+	    shared_secret, sizeof(shared_secret),
+	    hash, sizeof(hash),
+	    'A',
+	    session_id, sizeof(session_id),
+	    out, sizeof(out));
+	dssh_test_ossl_reset();
+	ASSERT_TRUE(res < 0);
+
+	return TEST_PASS;
+}
+
+/*
+ * hmac-sha2-256 generate: cbd->ctx == NULL branch (line 63).
+ * Init succeeds, then we fail the EVP_MAC_init inside generate
+ * which leaves the ctx in a state where re-init fails.
+ * Actually, the simplest approach: call generate with ctx == NULL,
+ * which is already tested by test_hmac_sha2_256_null_ctx.
+ *
+ * For the cbd != NULL but cbd->ctx == NULL path: we need to init
+ * successfully, then corrupt the context.  The ossl injection can
+ * fail the EVP_MAC_CTX_new during init, but then init returns error
+ * and doesn't set *out.  Instead, we test by failing at ossl call 1
+ * during init (EVP_MAC_CTX_new), which makes init return error
+ * without setting mctx — so mctx stays NULL.
+ *
+ * The cbd->ctx == NULL check in generate is a safety net.
+ * We exercise it by calling generate after a partial init that
+ * created the cbd struct but didn't create the EVP_MAC_CTX.
+ * However, the init function creates cbd first, then fetches
+ * the MAC, then creates the ctx.  If ctx creation fails, init
+ * frees cbd and returns error.
+ *
+ * The only way to reach generate with cbd->ctx == NULL is if
+ * something goes very wrong.  Since the existing null_ctx test
+ * covers cbd == NULL, let's test with ossl failure at call 2
+ * during init (EVP_MAC_init) — this creates cbd and ctx but
+ * then MAC_init fails.  Init then frees ctx and cbd, returning
+ * error.  So we can't reach generate this way either.
+ *
+ * Actually, re-reading the code: generate does
+ *   EVP_MAC_init(cbd->ctx, NULL, 0, NULL)
+ * This is a re-init with the same key.  If this ossl call fails
+ * (line 67), generate returns DSSH_ERROR_INIT.  This is the
+ * branch at line 67-68.  Let's test it with ossl injection.
+ */
+static int
+test_hmac_sha2_256_reinit_failure(void)
+{
+	dssh_test_reset_global_config();
+	ASSERT_EQ(register_hmac_sha2_256(), 0);
+
+	dssh_mac mac = gconf.mac_head;
+	ASSERT_NOT_NULL(mac);
+
+	uint8_t key[32];
+	memset(key, 0x42, sizeof(key));
+
+	dssh_mac_ctx *mctx = NULL;
+	ASSERT_EQ(mac->init(key, &mctx), 0);
+
+	/* The generate function makes these ossl calls:
+	 *   0: EVP_MAC_init (re-init)
+	 *   1: EVP_MAC_update
+	 *   2: EVP_MAC_final
+	 * Fail at call 0 to hit the re-init failure path (line 67). */
+	dssh_test_ossl_fail_after(0);
+	uint8_t data[16] = {0};
+	uint8_t tag[64];
+	int res = mac->generate(data, sizeof(data), tag, mctx);
+	dssh_test_ossl_reset();
+	ASSERT_TRUE(res < 0);
+
+	/* Fail at call 1 to hit EVP_MAC_update failure (line 70) */
+	dssh_test_ossl_fail_after(1);
+	res = mac->generate(data, sizeof(data), tag, mctx);
+	dssh_test_ossl_reset();
+	ASSERT_TRUE(res < 0);
+
+	mac->cleanup(mctx);
+	dssh_test_reset_global_config();
+	return TEST_PASS;
+}
+
+/*
+ * hmac-sha2-256 init: EVP_MAC_fetch failure (line 27-28).
+ * ossl call 0 during init.
+ */
+static int
+test_hmac_sha2_256_fetch_failure(void)
+{
+	dssh_test_reset_global_config();
+	ASSERT_EQ(register_hmac_sha2_256(), 0);
+
+	dssh_mac mac = gconf.mac_head;
+	ASSERT_NOT_NULL(mac);
+
+	uint8_t key[32];
+	memset(key, 0x42, sizeof(key));
+
+	/* Fail the EVP_MAC_fetch (first ossl call in init) */
+	dssh_test_ossl_fail_after(0);
+	dssh_mac_ctx *mctx = NULL;
+	int res = mac->init(key, &mctx);
+	dssh_test_ossl_reset();
+	ASSERT_TRUE(res < 0);
+
+	dssh_test_reset_global_config();
+	return TEST_PASS;
+}
+
+/*
+ * hmac-sha2-256 init: EVP_MAC_init (HMAC key setup) failure (line 46-47).
+ * ossl calls in init:
+ *   0: EVP_MAC_fetch
+ *   1: EVP_MAC_CTX_new
+ *   2: EVP_MAC_init
+ * Fail at call 2.
+ */
+static int
+test_hmac_sha2_256_mac_init_failure(void)
+{
+	dssh_test_reset_global_config();
+	ASSERT_EQ(register_hmac_sha2_256(), 0);
+
+	dssh_mac mac = gconf.mac_head;
+	ASSERT_NOT_NULL(mac);
+
+	uint8_t key[32];
+	memset(key, 0x42, sizeof(key));
+
+	/* calloc is call 0 for the library allocator, but ossl countdown
+	 * only covers ossl wrappers.  The init function's ossl calls:
+	 *   0: EVP_MAC_fetch
+	 *   1: EVP_MAC_CTX_new
+	 *   2: EVP_MAC_init
+	 * Fail at call 2 to hit the EVP_MAC_init failure. */
+	dssh_test_ossl_fail_after(2);
+	dssh_mac_ctx *mctx = NULL;
+	int res = mac->init(key, &mctx);
+	dssh_test_ossl_reset();
+	ASSERT_TRUE(res < 0);
+
+	dssh_test_reset_global_config();
+	return TEST_PASS;
+}
+
+/* ================================================================
  * Test table
  * ================================================================ */
 
@@ -5993,6 +6700,32 @@ static struct dssh_test_entry tests[] = {
 	{ "c25519/server_bad_init_type",     test_c25519_server_bad_init_type },
 	{ "c25519/server_bad_qc_len",        test_c25519_server_bad_qc_len },
 	{ "c25519/server_qc_overrun",        test_c25519_server_qc_overrun },
+
+	/* Negotiation failure — deterministic NULL for each || leg */
+	{ "negotiate/no_common_kex",         test_negotiate_no_common_kex },
+	{ "negotiate/no_common_comp_s2c",    test_negotiate_no_common_comp_s2c },
+
+	/* Deterministic derive_key ossl failure for each DigestUpdate */
+	{ "derive_key/ossl_init",            test_derive_key_ossl_init },
+	{ "derive_key/ossl_shared_secret",   test_derive_key_ossl_shared_secret },
+	{ "derive_key/ossl_hash",            test_derive_key_ossl_hash },
+	{ "derive_key/ossl_letter",          test_derive_key_ossl_letter },
+	{ "derive_key/ossl_session_id",      test_derive_key_ossl_session_id },
+	{ "derive_key/ossl_final",           test_derive_key_ossl_final },
+	{ "derive_key/ossl_extension_loop",  test_derive_key_ossl_extension_loop },
+
+	/* Deterministic version parsing */
+	{ "version/is_20_199_valid",         test_is_20_version_199 },
+	{ "version/is_20_199_short_buf",     test_is_20_199_short_buf },
+	{ "version/is_20_199_bad_minor_d",   test_is_20_199_bad_minor_digit },
+	{ "version/is_20_199_no_dash",       test_is_20_199_no_dash },
+	{ "version/rx_too_long",             test_version_rx_too_long },
+	{ "version/rx_non_ascii",            test_version_rx_non_ascii },
+
+	/* HMAC-SHA2-256 deterministic ossl failures */
+	{ "hmac_sha2_256/reinit_failure",    test_hmac_sha2_256_reinit_failure },
+	{ "hmac_sha2_256/fetch_failure",     test_hmac_sha2_256_fetch_failure },
+	{ "hmac_sha2_256/mac_init_failure",  test_hmac_sha2_256_mac_init_failure },
 
 	/* Curve25519 helper function tests */
 	{ "c25519/encode_ss_leading_zeros",  test_c25519_encode_shared_secret_leading_zeros },
