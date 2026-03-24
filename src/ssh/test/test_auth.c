@@ -2851,6 +2851,382 @@ test_kbi_banner_before_info(void)
 }
 
 /* ================================================================
+ * Server auth parse error tests — truncated USERAUTH_REQUEST
+ *
+ * Each test completes a handshake, starts the server auth loop,
+ * does the SERVICE_REQUEST/ACCEPT exchange, then sends a
+ * malformed USERAUTH_REQUEST to trigger parse error branches.
+ * ================================================================ */
+
+/*
+ * Helper: set up handshake + SERVICE_REQUEST/ACCEPT, start server
+ * auth thread.  Returns 0 on success with server thread running.
+ * Caller must close pipes and join st on exit.
+ */
+struct parse_error_ctx {
+	struct handshake_ctx hctx;
+	struct auth_server_arg sa;
+	struct test_auth_cbdata cbdata;
+	thrd_t st;
+};
+
+static int
+parse_error_setup(struct parse_error_ctx *pe)
+{
+	memset(pe, 0, sizeof(*pe));
+	if (handshake_setup(&pe->hctx) < 0) {
+		handshake_cleanup(&pe->hctx);
+		return -1;
+	}
+
+	pe->cbdata.password_result = DSSH_AUTH_SUCCESS;
+	pe->sa.ctx = &pe->hctx;
+	pe->sa.cbs.methods_str = "password,publickey";
+	pe->sa.cbs.password_cb = test_password_cb;
+	pe->sa.cbs.publickey_cb = test_publickey_cb;
+	pe->sa.cbs.cbdata = &pe->cbdata;
+
+	if (thrd_create(&pe->st, auth_server_thread, &pe->sa) != thrd_success)
+		return -1;
+
+	/* SERVICE_REQUEST */
+	{
+		static const char svc[] = "ssh-userauth";
+		uint8_t msg[64];
+		size_t pos = 0;
+		msg[pos++] = SSH_MSG_SERVICE_REQUEST;
+		dssh_serialize_uint32((uint32_t)(sizeof(svc) - 1), msg, sizeof(msg), &pos);
+		memcpy(&msg[pos], svc, sizeof(svc) - 1);
+		pos += sizeof(svc) - 1;
+		if (dssh_transport_send_packet(pe->hctx.client, msg, pos, NULL) < 0)
+			return -1;
+	}
+	{
+		uint8_t msg_type;
+		uint8_t *payload;
+		size_t payload_len;
+		if (dssh_transport_recv_packet(pe->hctx.client, &msg_type,
+		    &payload, &payload_len) < 0)
+			return -1;
+		if (msg_type != SSH_MSG_SERVICE_ACCEPT)
+			return -1;
+	}
+	return 0;
+}
+
+static void
+parse_error_cleanup(struct parse_error_ctx *pe)
+{
+	mock_io_close_c2s(&pe->hctx.io);
+	mock_io_close_s2c(&pe->hctx.io);
+	thrd_join(pe->st, NULL);
+	handshake_cleanup(&pe->hctx);
+}
+
+static int
+test_server_parse_empty_request(void)
+{
+	/* USERAUTH_REQUEST with only the message type byte */
+	struct parse_error_ctx pe;
+	if (parse_error_setup(&pe) < 0) {
+		parse_error_cleanup(&pe);
+		return TEST_FAIL;
+	}
+
+	uint8_t msg[] = { SSH_MSG_USERAUTH_REQUEST };
+	ASSERT_OK(dssh_transport_send_packet(pe.hctx.client, msg, sizeof(msg), NULL));
+
+	parse_error_cleanup(&pe);
+	ASSERT_TRUE(pe.sa.result < 0);
+	return TEST_PASS;
+}
+
+static int
+test_server_parse_truncated_username(void)
+{
+	/* Username length says 100 but only 2 bytes follow */
+	struct parse_error_ctx pe;
+	if (parse_error_setup(&pe) < 0) {
+		parse_error_cleanup(&pe);
+		return TEST_FAIL;
+	}
+
+	uint8_t msg[16];
+	size_t pos = 0;
+	msg[pos++] = SSH_MSG_USERAUTH_REQUEST;
+	dssh_serialize_uint32(100, msg, sizeof(msg), &pos); /* username len */
+	msg[pos++] = 'u';
+	msg[pos++] = 's';
+	ASSERT_OK(dssh_transport_send_packet(pe.hctx.client, msg, pos, NULL));
+
+	parse_error_cleanup(&pe);
+	ASSERT_TRUE(pe.sa.result < 0);
+	return TEST_PASS;
+}
+
+static int
+test_server_parse_no_service(void)
+{
+	/* Valid username, but no service name field */
+	struct parse_error_ctx pe;
+	if (parse_error_setup(&pe) < 0) {
+		parse_error_cleanup(&pe);
+		return TEST_FAIL;
+	}
+
+	uint8_t msg[16];
+	size_t pos = 0;
+	msg[pos++] = SSH_MSG_USERAUTH_REQUEST;
+	dssh_serialize_uint32(1, msg, sizeof(msg), &pos);
+	msg[pos++] = 'u';
+	/* No service name length field */
+	ASSERT_OK(dssh_transport_send_packet(pe.hctx.client, msg, pos, NULL));
+
+	parse_error_cleanup(&pe);
+	ASSERT_TRUE(pe.sa.result < 0);
+	return TEST_PASS;
+}
+
+static int
+test_server_parse_truncated_service(void)
+{
+	/* Service name length says 50 but data is short */
+	struct parse_error_ctx pe;
+	if (parse_error_setup(&pe) < 0) {
+		parse_error_cleanup(&pe);
+		return TEST_FAIL;
+	}
+
+	uint8_t msg[16];
+	size_t pos = 0;
+	msg[pos++] = SSH_MSG_USERAUTH_REQUEST;
+	dssh_serialize_uint32(1, msg, sizeof(msg), &pos);
+	msg[pos++] = 'u';
+	dssh_serialize_uint32(50, msg, sizeof(msg), &pos); /* service len */
+	/* No service data */
+	ASSERT_OK(dssh_transport_send_packet(pe.hctx.client, msg, pos, NULL));
+
+	parse_error_cleanup(&pe);
+	ASSERT_TRUE(pe.sa.result < 0);
+	return TEST_PASS;
+}
+
+static int
+test_server_parse_no_method(void)
+{
+	/* Valid username + service, but no method field */
+	struct parse_error_ctx pe;
+	if (parse_error_setup(&pe) < 0) {
+		parse_error_cleanup(&pe);
+		return TEST_FAIL;
+	}
+
+	static const char svc[] = "ssh-connection";
+	uint8_t msg[64];
+	size_t pos = 0;
+	msg[pos++] = SSH_MSG_USERAUTH_REQUEST;
+	dssh_serialize_uint32(1, msg, sizeof(msg), &pos);
+	msg[pos++] = 'u';
+	dssh_serialize_uint32((uint32_t)(sizeof(svc) - 1), msg, sizeof(msg), &pos);
+	memcpy(&msg[pos], svc, sizeof(svc) - 1);
+	pos += sizeof(svc) - 1;
+	/* No method name */
+	ASSERT_OK(dssh_transport_send_packet(pe.hctx.client, msg, pos, NULL));
+
+	parse_error_cleanup(&pe);
+	ASSERT_TRUE(pe.sa.result < 0);
+	return TEST_PASS;
+}
+
+static int
+test_server_parse_truncated_method(void)
+{
+	/* Method length says 50 but data is short */
+	struct parse_error_ctx pe;
+	if (parse_error_setup(&pe) < 0) {
+		parse_error_cleanup(&pe);
+		return TEST_FAIL;
+	}
+
+	static const char svc[] = "ssh-connection";
+	uint8_t msg[64];
+	size_t pos = 0;
+	msg[pos++] = SSH_MSG_USERAUTH_REQUEST;
+	dssh_serialize_uint32(1, msg, sizeof(msg), &pos);
+	msg[pos++] = 'u';
+	dssh_serialize_uint32((uint32_t)(sizeof(svc) - 1), msg, sizeof(msg), &pos);
+	memcpy(&msg[pos], svc, sizeof(svc) - 1);
+	pos += sizeof(svc) - 1;
+	dssh_serialize_uint32(50, msg, sizeof(msg), &pos); /* method len */
+	/* No method data */
+	ASSERT_OK(dssh_transport_send_packet(pe.hctx.client, msg, pos, NULL));
+
+	parse_error_cleanup(&pe);
+	ASSERT_TRUE(pe.sa.result < 0);
+	return TEST_PASS;
+}
+
+static int
+test_server_parse_password_no_bool(void)
+{
+	/* Password method, but no change boolean */
+	struct parse_error_ctx pe;
+	if (parse_error_setup(&pe) < 0) {
+		parse_error_cleanup(&pe);
+		return TEST_FAIL;
+	}
+
+	static const char svc[] = "ssh-connection";
+	static const char method[] = "password";
+	uint8_t msg[64];
+	size_t pos = 0;
+	msg[pos++] = SSH_MSG_USERAUTH_REQUEST;
+	dssh_serialize_uint32(1, msg, sizeof(msg), &pos);
+	msg[pos++] = 'u';
+	dssh_serialize_uint32((uint32_t)(sizeof(svc) - 1), msg, sizeof(msg), &pos);
+	memcpy(&msg[pos], svc, sizeof(svc) - 1);
+	pos += sizeof(svc) - 1;
+	dssh_serialize_uint32((uint32_t)(sizeof(method) - 1), msg, sizeof(msg), &pos);
+	memcpy(&msg[pos], method, sizeof(method) - 1);
+	pos += sizeof(method) - 1;
+	/* No change boolean or password */
+	ASSERT_OK(dssh_transport_send_packet(pe.hctx.client, msg, pos, NULL));
+
+	parse_error_cleanup(&pe);
+	ASSERT_TRUE(pe.sa.result < 0);
+	return TEST_PASS;
+}
+
+static int
+test_server_parse_password_no_password(void)
+{
+	/* Password method with change=false, but no password length */
+	struct parse_error_ctx pe;
+	if (parse_error_setup(&pe) < 0) {
+		parse_error_cleanup(&pe);
+		return TEST_FAIL;
+	}
+
+	static const char svc[] = "ssh-connection";
+	static const char method[] = "password";
+	uint8_t msg[64];
+	size_t pos = 0;
+	msg[pos++] = SSH_MSG_USERAUTH_REQUEST;
+	dssh_serialize_uint32(1, msg, sizeof(msg), &pos);
+	msg[pos++] = 'u';
+	dssh_serialize_uint32((uint32_t)(sizeof(svc) - 1), msg, sizeof(msg), &pos);
+	memcpy(&msg[pos], svc, sizeof(svc) - 1);
+	pos += sizeof(svc) - 1;
+	dssh_serialize_uint32((uint32_t)(sizeof(method) - 1), msg, sizeof(msg), &pos);
+	memcpy(&msg[pos], method, sizeof(method) - 1);
+	pos += sizeof(method) - 1;
+	msg[pos++] = 0; /* change = false */
+	/* No password length */
+	ASSERT_OK(dssh_transport_send_packet(pe.hctx.client, msg, pos, NULL));
+
+	parse_error_cleanup(&pe);
+	ASSERT_TRUE(pe.sa.result < 0);
+	return TEST_PASS;
+}
+
+static int
+test_server_parse_publickey_no_has_sig(void)
+{
+	/* Publickey method, but no has_signature boolean */
+	struct parse_error_ctx pe;
+	if (parse_error_setup(&pe) < 0) {
+		parse_error_cleanup(&pe);
+		return TEST_FAIL;
+	}
+
+	static const char svc[] = "ssh-connection";
+	static const char method[] = "publickey";
+	uint8_t msg[64];
+	size_t pos = 0;
+	msg[pos++] = SSH_MSG_USERAUTH_REQUEST;
+	dssh_serialize_uint32(1, msg, sizeof(msg), &pos);
+	msg[pos++] = 'u';
+	dssh_serialize_uint32((uint32_t)(sizeof(svc) - 1), msg, sizeof(msg), &pos);
+	memcpy(&msg[pos], svc, sizeof(svc) - 1);
+	pos += sizeof(svc) - 1;
+	dssh_serialize_uint32((uint32_t)(sizeof(method) - 1), msg, sizeof(msg), &pos);
+	memcpy(&msg[pos], method, sizeof(method) - 1);
+	pos += sizeof(method) - 1;
+	/* No has_signature boolean */
+	ASSERT_OK(dssh_transport_send_packet(pe.hctx.client, msg, pos, NULL));
+
+	parse_error_cleanup(&pe);
+	ASSERT_TRUE(pe.sa.result < 0);
+	return TEST_PASS;
+}
+
+static int
+test_server_parse_not_service_request(void)
+{
+	/* First message is not SERVICE_REQUEST */
+	struct handshake_ctx ctx;
+	if (handshake_setup(&ctx) < 0) {
+		handshake_cleanup(&ctx);
+		return TEST_FAIL;
+	}
+
+	struct test_auth_cbdata cbdata = {0};
+	struct auth_server_arg sa = {0};
+	sa.ctx = &ctx;
+	sa.cbs.methods_str = "password";
+	sa.cbs.password_cb = test_password_cb;
+	sa.cbs.cbdata = &cbdata;
+
+	thrd_t st;
+	ASSERT_TRUE(thrd_create(&st, auth_server_thread, &sa) == thrd_success);
+
+	/* Send USERAUTH_REQUEST instead of SERVICE_REQUEST */
+	uint8_t msg[] = { SSH_MSG_USERAUTH_REQUEST, 0, 0, 0, 0 };
+	ASSERT_OK(dssh_transport_send_packet(ctx.client, msg, sizeof(msg), NULL));
+
+	mock_io_close_c2s(&ctx.io);
+	mock_io_close_s2c(&ctx.io);
+	thrd_join(st, NULL);
+	ASSERT_TRUE(sa.result < 0);
+
+	handshake_cleanup(&ctx);
+	return TEST_PASS;
+}
+
+static int
+test_server_parse_long_username(void)
+{
+	/* Username >= 256 bytes — tests the saved_user truncation path */
+	struct parse_error_ctx pe;
+	if (parse_error_setup(&pe) < 0) {
+		parse_error_cleanup(&pe);
+		return TEST_FAIL;
+	}
+
+	static const char svc[] = "ssh-connection";
+	static const char method[] = "none";
+	uint8_t msg[512];
+	size_t pos = 0;
+	msg[pos++] = SSH_MSG_USERAUTH_REQUEST;
+	dssh_serialize_uint32(300, msg, sizeof(msg), &pos);
+	memset(&msg[pos], 'A', 300);
+	pos += 300;
+	dssh_serialize_uint32((uint32_t)(sizeof(svc) - 1), msg, sizeof(msg), &pos);
+	memcpy(&msg[pos], svc, sizeof(svc) - 1);
+	pos += sizeof(svc) - 1;
+	dssh_serialize_uint32((uint32_t)(sizeof(method) - 1), msg, sizeof(msg), &pos);
+	memcpy(&msg[pos], method, sizeof(method) - 1);
+	pos += sizeof(method) - 1;
+	ASSERT_OK(dssh_transport_send_packet(pe.hctx.client, msg, pos, NULL));
+
+	/* Server should process this (none auth with no none_cb = failure),
+	 * but the username should be truncated to 255 bytes in saved_user. */
+	parse_error_cleanup(&pe);
+	/* Server loops waiting for more auth — it didn't crash */
+	return TEST_PASS;
+}
+
+/* ================================================================
  * Test table and main
  * ================================================================ */
 
@@ -2903,6 +3279,19 @@ static struct dssh_test_entry tests[] = {
 	{ "auth/kbi/failure_response",        test_kbi_failure_response },
 	{ "auth/kbi/unexpected_message",      test_kbi_unexpected_message },
 	{ "auth/kbi/banner_before_info",      test_kbi_banner_before_info },
+
+	/* Server auth parse errors */
+	{ "auth/server/parse_empty",          test_server_parse_empty_request },
+	{ "auth/server/parse_trunc_user",     test_server_parse_truncated_username },
+	{ "auth/server/parse_no_service",     test_server_parse_no_service },
+	{ "auth/server/parse_trunc_service",  test_server_parse_truncated_service },
+	{ "auth/server/parse_no_method",      test_server_parse_no_method },
+	{ "auth/server/parse_trunc_method",   test_server_parse_truncated_method },
+	{ "auth/server/parse_pw_no_bool",     test_server_parse_password_no_bool },
+	{ "auth/server/parse_pw_no_pass",     test_server_parse_password_no_password },
+	{ "auth/server/parse_pk_no_has_sig",  test_server_parse_publickey_no_has_sig },
+	{ "auth/server/parse_not_svc_req",    test_server_parse_not_service_request },
+	{ "auth/server/parse_long_username",  test_server_parse_long_username },
 };
 
 DSSH_TEST_MAIN(tests)
