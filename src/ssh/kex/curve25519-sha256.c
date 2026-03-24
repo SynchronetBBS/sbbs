@@ -343,7 +343,13 @@ handler(dssh_session sess)
 		sess->trans.shared_secret = ss_copy;
 		sess->trans.shared_secret_sz = ss_len;
 		sess->trans.exchange_hash = malloc(SHA256_DIGEST_LEN);
-		if (sess->trans.exchange_hash == NULL) { OPENSSL_cleanse(ss_copy, ss_len); free(ss_copy); return DSSH_ERROR_ALLOC; }
+		if (sess->trans.exchange_hash == NULL) {
+			OPENSSL_cleanse(ss_copy, ss_len);
+			free(ss_copy);
+			sess->trans.shared_secret = NULL;
+			sess->trans.shared_secret_sz = 0;
+			return DSSH_ERROR_ALLOC;
+		}
 		memcpy(sess->trans.exchange_hash, hash, SHA256_DIGEST_LEN);
 		sess->trans.exchange_hash_sz = SHA256_DIGEST_LEN;
 	}
@@ -433,7 +439,13 @@ handler(dssh_session sess)
 		sess->trans.shared_secret = ss_copy;
 		sess->trans.shared_secret_sz = ss_len;
 		sess->trans.exchange_hash = malloc(SHA256_DIGEST_LEN);
-		if (sess->trans.exchange_hash == NULL) { OPENSSL_cleanse(ss_copy, ss_len); free(ss_copy); return DSSH_ERROR_ALLOC; }
+		if (sess->trans.exchange_hash == NULL) {
+			OPENSSL_cleanse(ss_copy, ss_len);
+			free(ss_copy);
+			sess->trans.shared_secret = NULL;
+			sess->trans.shared_secret_sz = 0;
+			return DSSH_ERROR_ALLOC;
+		}
 		memcpy(sess->trans.exchange_hash, hash, SHA256_DIGEST_LEN);
 		sess->trans.exchange_hash_sz = SHA256_DIGEST_LEN;
 	}

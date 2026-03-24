@@ -27,6 +27,26 @@
 /* Set terminate flag and wake all library-owned condvar waiters. */
 DSSH_PRIVATE void dssh_session_set_terminate(dssh_session sess);
 
+/*
+ * Test allocation redirection.  Under DSSH_TESTING, library code
+ * calls dssh_test_malloc/calloc/realloc instead of the real
+ * allocators.  These go through a countdown that can inject NULL
+ * returns without affecting OpenSSL's internal allocations (which
+ * don't include this header).
+ *
+ * free() is NOT redirected — real free() handles all pointers
+ * since dssh_test_malloc returns real malloc'd memory.
+ */
+#ifdef DSSH_TESTING
+void *dssh_test_malloc(size_t sz);
+void *dssh_test_calloc(size_t nmemb, size_t sz);
+void *dssh_test_realloc(void *ptr, size_t sz);
+
+#define malloc(x)       dssh_test_malloc(x)
+#define calloc(n, s)    dssh_test_calloc(n, s)
+#define realloc(p, s)   dssh_test_realloc(p, s)
+#endif
+
 /* Channel types */
 #define DSSH_CHAN_SESSION 1
 #define DSSH_CHAN_RAW     2

@@ -878,23 +878,142 @@ test_alloc_kexinit(void)
 }
 
 /* ================================================================
- * send_data alloc failure test is omitted — the mock allocator
- * is global state that interferes with OpenSSL's internal mallocs
- * in multi-threaded contexts.  send_data's malloc guard is left
- * to integration testing or future per-thread alloc injection.
+ * Iterative handshake alloc failures using the library-only
+ * allocator (dssh_test_alloc).
+ *
+ * Unlike --wrap=malloc, the macro-based allocator only intercepts
+ * mallocs in library code (ssh-trans.c, ssh-auth.c, etc.), not
+ * OpenSSL's internal allocations.  This lets us fail every library
+ * malloc in turn during a two-threaded handshake without crashing
+ * OpenSSL.
  * ================================================================ */
 
-/*
- * Iterative handshake alloc failure testing is not feasible with
- * --wrap=malloc because OpenSSL does not gracefully handle malloc
- * returning NULL — it corrupts global state or dereferences NULL
- * in OPENSSL_cleanse/OPENSSL_sk_value.  The single-threaded
- * test_alloc_kexinit above covers the library's own kexinit malloc.
- *
- * Deeper handshake mallocs (peer_kexinit, newkeys key buffers)
- * are interleaved with OpenSSL allocations and cannot be tested
- * without a per-module or per-thread allocation injection mechanism.
- */
+#include "dssh_test_alloc.h"
+
+struct hs_alloc_ctx {
+	struct mock_io_state *io;
+	dssh_session sess;
+	int result;
+	mtx_t *barrier_mtx;
+	cnd_t *barrier_cnd;
+	int *barrier_count;
+};
+
+static int
+hs_alloc_thread(void *arg)
+{
+	struct hs_alloc_ctx *ctx = arg;
+	/* Wait for main thread to arm the allocator */
+	mtx_lock(ctx->barrier_mtx);
+	(*ctx->barrier_count)++;
+	cnd_broadcast(ctx->barrier_cnd);
+	while (*ctx->barrier_count < 3)
+		cnd_wait(ctx->barrier_cnd, ctx->barrier_mtx);
+	mtx_unlock(ctx->barrier_mtx);
+
+	ctx->result = dssh_transport_handshake(ctx->sess);
+	/* Close our write pipe so peer unblocks (two independent
+	 * sessions — terminate flag only affects our own session) */
+	if (ctx->result < 0) {
+		if (ctx->sess->trans.client)
+			mock_io_close_c2s(ctx->io);
+		else
+			mock_io_close_s2c(ctx->io);
+	}
+	return 0;
+}
+
+static int
+test_alloc_handshake_iterate(void)
+{
+	for (int n = 0; n < 50; n++) {
+		dssh_test_reset_global_config();
+		dssh_test_alloc_reset();
+		mock_alloc_reset();
+
+		if (register_all() < 0)
+			return TEST_FAIL;
+		if (test_generate_host_key() < 0)
+			return TEST_FAIL;
+
+		struct mock_io_state io;
+		if (mock_io_init(&io, 0) < 0)
+			return TEST_FAIL;
+
+		dssh_transport_set_callbacks(mock_tx_dispatch, mock_rx_dispatch,
+		    mock_rxline_dispatch, mock_extra_line_cb);
+
+		dssh_session client = dssh_session_init(true, 0);
+		if (client == NULL) {
+			mock_io_free(&io);
+			continue;
+		}
+		dssh_session_set_cbdata(client, &io, &io, &io, &io);
+
+		dssh_session server = init_server_session();
+		if (server == NULL) {
+			dssh_session_cleanup(client);
+			mock_io_free(&io);
+			continue;
+		}
+		dssh_session_set_cbdata(server, &io, &io, &io, &io);
+
+		/* Barrier: create threads, wait for both to be ready,
+		 * then arm the allocator and release. */
+		mtx_t bmtx;
+		cnd_t bcnd;
+		int bcount = 0;
+		mtx_init(&bmtx, mtx_plain);
+		cnd_init(&bcnd);
+
+		struct hs_alloc_ctx ca = {
+			.io = &io, .sess = client,
+			.barrier_mtx = &bmtx, .barrier_cnd = &bcnd,
+			.barrier_count = &bcount
+		};
+		struct hs_alloc_ctx sa = {
+			.io = &io, .sess = server,
+			.barrier_mtx = &bmtx, .barrier_cnd = &bcnd,
+			.barrier_count = &bcount
+		};
+
+		thrd_t ct, st;
+		thrd_create(&ct, hs_alloc_thread, &ca);
+		thrd_create(&st, hs_alloc_thread, &sa);
+
+		mtx_lock(&bmtx);
+		while (bcount < 2)
+			cnd_wait(&bcnd, &bmtx);
+
+		/* Arm the library-only allocator */
+		dssh_test_alloc_fail_after(n);
+		bcount = 3;
+		cnd_broadcast(&bcnd);
+		mtx_unlock(&bmtx);
+
+		thrd_join(ct, NULL);
+		thrd_join(st, NULL);
+		cnd_destroy(&bcnd);
+		mtx_destroy(&bmtx);
+
+		dssh_test_alloc_reset();
+		bool ok = (ca.result == 0 && sa.result == 0);
+
+		mock_io_close_c2s(&io);
+		mock_io_close_s2c(&io);
+		dssh_session_cleanup(server);
+		dssh_session_cleanup(client);
+		mock_io_free(&io);
+		dssh_test_reset_global_config();
+
+		if (ok) {
+			ASSERT_TRUE(n > 0);
+			return TEST_PASS;
+		}
+	}
+
+	return TEST_FAIL;
+}
 
 /* ================================================================
  * Test table
@@ -935,6 +1054,9 @@ static struct dssh_test_entry tests[] = {
 
 	/* Handshake kexinit malloc */
 	{ "alloc/kexinit",                test_alloc_kexinit },
+
+	/* Iterative handshake (library-only allocator) */
+	{ "alloc/handshake_iterate",      test_alloc_handshake_iterate },
 };
 
 DSSH_TEST_MAIN(tests)
