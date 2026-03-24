@@ -849,13 +849,27 @@ auth_kbi_impl(dssh_session sess,
 
 			if (num_prompts > 0) {
 				prompts = calloc(num_prompts, sizeof(*prompts));
+				if (!prompts)
+					return DSSH_ERROR_ALLOC;
 				prompt_lens = calloc(num_prompts, sizeof(*prompt_lens));
+				if (!prompt_lens) {
+					free(prompts);
+					return DSSH_ERROR_ALLOC;
+				}
 				echo = calloc(num_prompts, sizeof(*echo));
+				if (!echo) {
+					free(prompts); free(prompt_lens);
+					return DSSH_ERROR_ALLOC;
+				}
 				responses = calloc(num_prompts, sizeof(*responses));
-				response_lens = calloc(num_prompts, sizeof(*response_lens));
-				if (!prompts || !prompt_lens || !echo || !responses || !response_lens) {
+				if (!responses) {
 					free(prompts); free(prompt_lens); free(echo);
-					free(responses); free(response_lens);
+					return DSSH_ERROR_ALLOC;
+				}
+				response_lens = calloc(num_prompts, sizeof(*response_lens));
+				if (!response_lens) {
+					free(prompts); free(prompt_lens); free(echo);
+					free(responses);
 					return DSSH_ERROR_ALLOC;
 				}
 

@@ -1301,19 +1301,17 @@ dssh_transport_newkeys(dssh_session sess)
 	uint16_t mac_key_sz = sess->trans.mac_c2s_selected->key_size;
 
 	uint8_t *iv_c2s = malloc(enc_bs);
+	if (!iv_c2s) { free(k_mpint); return DSSH_ERROR_ALLOC; }
 	uint8_t *iv_s2c = malloc(enc_bs);
+	if (!iv_s2c) { free(k_mpint); free(iv_c2s); return DSSH_ERROR_ALLOC; }
 	uint8_t *key_c2s = malloc(enc_key_sz);
+	if (!key_c2s) { free(k_mpint); free(iv_c2s); free(iv_s2c); return DSSH_ERROR_ALLOC; }
 	uint8_t *key_s2c = malloc(enc_key_sz);
+	if (!key_s2c) { free(k_mpint); free(iv_c2s); free(iv_s2c); free(key_c2s); return DSSH_ERROR_ALLOC; }
 	uint8_t *integ_c2s = calloc(1, mac_key_sz > 0 ? mac_key_sz : 1);
+	if (!integ_c2s) { free(k_mpint); free(iv_c2s); free(iv_s2c); free(key_c2s); free(key_s2c); return DSSH_ERROR_ALLOC; }
 	uint8_t *integ_s2c = calloc(1, mac_key_sz > 0 ? mac_key_sz : 1);
-
-	if (!iv_c2s || !iv_s2c || !key_c2s || !key_s2c || !integ_c2s || !integ_s2c) {
-		free(k_mpint);
-		free(iv_c2s); free(iv_s2c);
-		free(key_c2s); free(key_s2c);
-		free(integ_c2s); free(integ_s2c);
-		return DSSH_ERROR_ALLOC;
-	}
+	if (!integ_s2c) { free(k_mpint); free(iv_c2s); free(iv_s2c); free(key_c2s); free(key_s2c); free(integ_c2s); return DSSH_ERROR_ALLOC; }
 
 	const uint8_t *H = sess->trans.exchange_hash;
 	size_t H_sz = sess->trans.exchange_hash_sz;
@@ -1443,19 +1441,26 @@ dssh_transport_init(dssh_session sess, size_t max_packet_size)
 
 	sess->trans.packet_buf_sz = max_packet_size;
 	sess->trans.tx_packet = malloc(max_packet_size);
+	if (!sess->trans.tx_packet)
+		return DSSH_ERROR_ALLOC;
 	sess->trans.rx_packet = malloc(max_packet_size);
-	sess->trans.tx_mac_scratch = malloc(4 + max_packet_size);
-	sess->trans.rx_mac_scratch = malloc(4 + max_packet_size);
-	if (!sess->trans.tx_packet || !sess->trans.rx_packet ||
-	    !sess->trans.tx_mac_scratch || !sess->trans.rx_mac_scratch) {
+	if (!sess->trans.rx_packet) {
 		free(sess->trans.tx_packet);
-		free(sess->trans.rx_packet);
-		free(sess->trans.tx_mac_scratch);
-		free(sess->trans.rx_mac_scratch);
 		sess->trans.tx_packet = NULL;
-		sess->trans.rx_packet = NULL;
+		return DSSH_ERROR_ALLOC;
+	}
+	sess->trans.tx_mac_scratch = malloc(4 + max_packet_size);
+	if (!sess->trans.tx_mac_scratch) {
+		free(sess->trans.tx_packet); free(sess->trans.rx_packet);
+		sess->trans.tx_packet = NULL; sess->trans.rx_packet = NULL;
+		return DSSH_ERROR_ALLOC;
+	}
+	sess->trans.rx_mac_scratch = malloc(4 + max_packet_size);
+	if (!sess->trans.rx_mac_scratch) {
+		free(sess->trans.tx_packet); free(sess->trans.rx_packet);
+		free(sess->trans.tx_mac_scratch);
+		sess->trans.tx_packet = NULL; sess->trans.rx_packet = NULL;
 		sess->trans.tx_mac_scratch = NULL;
-		sess->trans.rx_mac_scratch = NULL;
 		return DSSH_ERROR_ALLOC;
 	}
 

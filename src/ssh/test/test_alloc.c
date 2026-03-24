@@ -233,11 +233,8 @@ test_alloc_session_init(void)
 		mock_alloc_reset();
 		if (sess != NULL) {
 			dssh_session_cleanup(sess);
-			ASSERT_TRUE(n > 0);
-			break;
-		}
-		if (cur_count == prev_count) {
 			dssh_test_reset_global_config();
+			ASSERT_TRUE(n > 0);
 			return TEST_PASS;
 		}
 		prev_count = cur_count;
@@ -2136,11 +2133,6 @@ test_ossl_kex_server_iterate(void)
 			dssh_session_cleanup(server);
 			dssh_test_reset_global_config();
 			ASSERT_TRUE(n > 0);
-			return TEST_PASS;
-		}
-		if (cur_count == prev_count) {
-			dssh_session_cleanup(server);
-			dssh_test_reset_global_config();
 			return TEST_PASS;
 		}
 		prev_count = cur_count;

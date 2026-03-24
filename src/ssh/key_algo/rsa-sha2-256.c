@@ -267,9 +267,13 @@ pubkey(uint8_t *buf, size_t bufsz, size_t *outlen, dssh_key_algo_ctx *ctx)
 	int e_bytes = BN_num_bytes(e_bn);
 	int n_bytes = BN_num_bytes(n_bn);
 	uint8_t *e_buf = malloc(e_bytes);
+	if (!e_buf) {
+		BN_free(e_bn); BN_free(n_bn);
+		return DSSH_ERROR_ALLOC;
+	}
 	uint8_t *n_buf = malloc(n_bytes);
-	if (!e_buf || !n_buf) {
-		free(e_buf); free(n_buf);
+	if (!n_buf) {
+		free(e_buf);
 		BN_free(e_bn); BN_free(n_bn);
 		return DSSH_ERROR_ALLOC;
 	}

@@ -230,13 +230,11 @@ handler(dssh_session sess)
 
 		/* 3. Generate x, compute e = g^x mod p */
 		bnctx = BN_CTX_new();
+		if (!bnctx) { res = DSSH_ERROR_ALLOC; goto cleanup; }
 		e_bn = BN_new();
+		if (!e_bn) { res = DSSH_ERROR_ALLOC; goto cleanup; }
 		BIGNUM *x = BN_new();
-		if (!bnctx || !e_bn || !x) {
-			BN_clear_free(x);
-			res = DSSH_ERROR_ALLOC;
-			goto cleanup;
-		}
+		if (!x) { res = DSSH_ERROR_ALLOC; goto cleanup; }
 		if (BN_rand(x, BN_num_bits(p) - 1, BN_RAND_TOP_ONE, BN_RAND_BOTTOM_ANY) != 1 ||
 		    BN_mod_exp(e_bn, g, x, p, bnctx) != 1) {
 			BN_clear_free(x);
@@ -352,10 +350,11 @@ handler(dssh_session sess)
 		if (res < 0)
 			goto cleanup;
 		p = BN_bin2bn(p_bytes, p_len, NULL);
-		g = BN_bin2bn(g_bytes, g_len, NULL);
 		free(p_bytes);
+		if (!p) { free(g_bytes); res = DSSH_ERROR_ALLOC; goto cleanup; }
+		g = BN_bin2bn(g_bytes, g_len, NULL);
 		free(g_bytes);
-		if (!p || !g) { res = DSSH_ERROR_ALLOC; goto cleanup; }
+		if (!g) { res = DSSH_ERROR_ALLOC; goto cleanup; }
 
 		{
 			uint8_t group_msg[4096];
@@ -385,14 +384,13 @@ handler(dssh_session sess)
 
 		/* 4. Generate y, compute f = g^y mod p, K = e^y mod p */
 		bnctx = BN_CTX_new();
+		if (!bnctx) { res = DSSH_ERROR_ALLOC; goto cleanup; }
 		f_bn = BN_new();
+		if (!f_bn) { res = DSSH_ERROR_ALLOC; goto cleanup; }
 		k_bn = BN_new();
+		if (!k_bn) { res = DSSH_ERROR_ALLOC; goto cleanup; }
 		BIGNUM *y = BN_new();
-		if (!bnctx || !f_bn || !k_bn || !y) {
-			BN_clear_free(y);
-			res = DSSH_ERROR_ALLOC;
-			goto cleanup;
-		}
+		if (!y) { res = DSSH_ERROR_ALLOC; goto cleanup; }
 		if (BN_rand(y, BN_num_bits(p) - 1, BN_RAND_TOP_ONE, BN_RAND_BOTTOM_ANY) != 1 ||
 		    BN_mod_exp(f_bn, g, y, p, bnctx) != 1 ||
 		    BN_mod_exp(k_bn, e_bn, y, p, bnctx) != 1) {

@@ -286,8 +286,12 @@ handler(dssh_session sess)
 
 		/* Compute shared secret using our private key + Q_S */
 		EVP_PKEY *peer_key = EVP_PKEY_new_raw_public_key(EVP_PKEY_X25519, NULL, q_s, X25519_KEY_LEN);
+		if (!peer_key) {
+			EVP_PKEY_free(tmp_key);
+			return DSSH_ERROR_INIT;
+		}
 		pctx = EVP_PKEY_CTX_new(tmp_key, NULL);
-		if (!peer_key || !pctx || EVP_PKEY_derive_init(pctx) != 1 ||
+		if (!pctx || EVP_PKEY_derive_init(pctx) != 1 ||
 		    EVP_PKEY_derive_set_peer(pctx, peer_key) != 1) {
 			EVP_PKEY_free(tmp_key); EVP_PKEY_free(peer_key); EVP_PKEY_CTX_free(pctx);
 			return DSSH_ERROR_INIT;
