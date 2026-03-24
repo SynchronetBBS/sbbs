@@ -2664,6 +2664,160 @@ test_auto_reject_session_from_server(void)
 }
 
 /* ================================================================
+ * WINDOW_ADJUST from peer — covers demux_dispatch case
+ * ================================================================ */
+
+static int
+test_window_adjust_from_peer(void)
+{
+	struct conn_ctx ctx;
+	if (conn_setup(&ctx) < 0)
+		return TEST_FAIL;
+
+	struct open_exec_ctx oc = {
+		.client = ctx.client,
+		.server = ctx.server,
+		.command = "echo watest",
+		.cbs = &session_cbs,
+		.accept_timeout = 5000,
+	};
+	if (open_exec_channel(&oc) < 0 || oc.client_ch == NULL || oc.server_ch == NULL) {
+		conn_cleanup(&ctx);
+		return TEST_FAIL;
+	}
+
+	/* Server sends WINDOW_ADJUST to client's channel.
+	 * Build: msg_type(1) + recipient_channel(4) + bytes_to_add(4) */
+	uint8_t msg[16];
+	size_t pos = 0;
+	msg[pos++] = SSH_MSG_CHANNEL_WINDOW_ADJUST;
+	dssh_serialize_uint32(oc.client_ch->local_id, msg, sizeof(msg), &pos);
+	dssh_serialize_uint32(1000, msg, sizeof(msg), &pos);
+	ASSERT_OK(dssh_transport_send_packet(ctx.server, msg, pos, NULL));
+
+	/* Give demux time to process */
+	struct timespec ts = { .tv_nsec = 100000000L };
+	thrd_sleep(&ts, NULL);
+
+	/* Client's remote_window should have increased */
+	/* (We can't easily check the exact value without reading the
+	 * channel struct, but the test verifies the path doesn't crash
+	 * and the session remains functional.) */
+
+	/* Verify session still works */
+	uint8_t data[] = "after window adjust";
+	int64_t res = dssh_session_write(ctx.server, oc.server_ch,
+	    data, sizeof(data));
+	ASSERT_TRUE(res > 0);
+
+	conn_cleanup(&ctx);
+	return TEST_PASS;
+}
+
+/* ================================================================
+ * Data after EOF — covers demux eof_received/close_received guards
+ * ================================================================ */
+
+static int
+test_data_after_eof(void)
+{
+	struct conn_ctx ctx;
+	if (conn_setup(&ctx) < 0)
+		return TEST_FAIL;
+
+	struct open_exec_ctx oc = {
+		.client = ctx.client,
+		.server = ctx.server,
+		.command = "echo eoftest",
+		.cbs = &session_cbs,
+		.accept_timeout = 5000,
+	};
+	if (open_exec_channel(&oc) < 0 || oc.client_ch == NULL || oc.server_ch == NULL) {
+		conn_cleanup(&ctx);
+		return TEST_FAIL;
+	}
+
+	/* Server sends EOF to client */
+	{
+		uint8_t msg[8];
+		size_t pos = 0;
+		msg[pos++] = SSH_MSG_CHANNEL_EOF;
+		dssh_serialize_uint32(oc.client_ch->local_id, msg, sizeof(msg), &pos);
+		ASSERT_OK(dssh_transport_send_packet(ctx.server, msg, pos, NULL));
+	}
+
+	struct timespec ts = { .tv_nsec = 100000000L };
+	thrd_sleep(&ts, NULL);
+
+	/* Now server sends CHANNEL_DATA after EOF — should be discarded */
+	{
+		uint8_t msg[32];
+		size_t pos = 0;
+		msg[pos++] = SSH_MSG_CHANNEL_DATA;
+		dssh_serialize_uint32(oc.client_ch->local_id, msg, sizeof(msg), &pos);
+		dssh_serialize_uint32(5, msg, sizeof(msg), &pos);
+		memcpy(&msg[pos], "stale", 5);
+		pos += 5;
+		ASSERT_OK(dssh_transport_send_packet(ctx.server, msg, pos, NULL));
+	}
+
+	thrd_sleep(&ts, NULL);
+
+	/* Client should have received nothing (data was discarded after EOF) */
+	uint8_t buf[32];
+	int64_t got = dssh_session_read(ctx.client, oc.client_ch, buf, sizeof(buf));
+	ASSERT_EQ(got, 0);
+
+	conn_cleanup(&ctx);
+	return TEST_PASS;
+}
+
+/* ================================================================
+ * Truncated channel messages — covers payload_len guards in demux
+ * ================================================================ */
+
+static int
+test_truncated_channel_data(void)
+{
+	struct conn_ctx ctx;
+	if (conn_setup(&ctx) < 0)
+		return TEST_FAIL;
+
+	struct open_exec_ctx oc = {
+		.client = ctx.client,
+		.server = ctx.server,
+		.command = "echo trunctest",
+		.cbs = &session_cbs,
+		.accept_timeout = 5000,
+	};
+	if (open_exec_channel(&oc) < 0 || oc.client_ch == NULL || oc.server_ch == NULL) {
+		conn_cleanup(&ctx);
+		return TEST_FAIL;
+	}
+
+	/* Send CHANNEL_DATA with only 6 bytes (needs 9 minimum:
+	 * type(1) + channel(4) + data_len(4)) */
+	uint8_t msg[8];
+	size_t pos = 0;
+	msg[pos++] = SSH_MSG_CHANNEL_DATA;
+	dssh_serialize_uint32(oc.client_ch->local_id, msg, sizeof(msg), &pos);
+	msg[pos++] = 0; /* partial data_len field */
+	ASSERT_OK(dssh_transport_send_packet(ctx.server, msg, pos, NULL));
+
+	struct timespec ts = { .tv_nsec = 100000000L };
+	thrd_sleep(&ts, NULL);
+
+	/* Session should still be functional */
+	uint8_t data[] = "still works";
+	int64_t res = dssh_session_write(ctx.server, oc.server_ch,
+	    data, sizeof(data));
+	ASSERT_TRUE(res > 0);
+
+	conn_cleanup(&ctx);
+	return TEST_PASS;
+}
+
+/* ================================================================
  * Test table
  * ================================================================ */
 
@@ -2753,6 +2907,11 @@ static struct dssh_test_entry tests[] = {
 	{ "test_auto_reject_forwarded_tcpip",  test_auto_reject_forwarded_tcpip },
 	{ "test_auto_reject_direct_tcpip",     test_auto_reject_direct_tcpip },
 	{ "test_auto_reject_session_server",   test_auto_reject_session_from_server },
+
+	/* Demux edge cases */
+	{ "test_window_adjust_from_peer",      test_window_adjust_from_peer },
+	{ "test_data_after_eof",               test_data_after_eof },
+	{ "test_truncated_channel_data",       test_truncated_channel_data },
 };
 
 DSSH_TEST_MAIN(tests)

@@ -3627,6 +3627,192 @@ test_server_publickey_probe_rejected(void)
 }
 
 /* ================================================================
+ * Password change flow — server-side branch coverage
+ * ================================================================ */
+
+static int
+test_passwd_change_cb_failure(const uint8_t *username, size_t username_len,
+    const uint8_t *old_pw, size_t old_pw_len,
+    const uint8_t *new_pw, size_t new_pw_len,
+    uint8_t **prompt, size_t *prompt_len, void *cbdata)
+{
+	(void)username; (void)username_len;
+	(void)old_pw; (void)old_pw_len;
+	(void)new_pw; (void)new_pw_len;
+	(void)prompt; (void)prompt_len;
+	(void)cbdata;
+	return DSSH_AUTH_FAILURE;
+}
+
+static int
+test_server_password_change_rejected(void)
+{
+	/* Send password with change=true; passwd_change_cb returns FAILURE.
+	 * Server should send USERAUTH_FAILURE. */
+	struct handshake_ctx ctx;
+	if (handshake_setup(&ctx) < 0) {
+		handshake_cleanup(&ctx);
+		return TEST_FAIL;
+	}
+
+	struct test_auth_cbdata cbdata = {0};
+	cbdata.none_result = DSSH_AUTH_SUCCESS;
+	struct auth_server_arg sa = {0};
+	sa.ctx = &ctx;
+	sa.cbs.methods_str = "password";
+	sa.cbs.password_cb = test_password_cb;
+	sa.cbs.passwd_change_cb = test_passwd_change_cb_failure;
+	sa.cbs.none_cb = test_none_cb;
+	sa.cbs.cbdata = &cbdata;
+
+	thrd_t st;
+	ASSERT_TRUE(thrd_create(&st, auth_server_thread, &sa) == thrd_success);
+
+	/* SERVICE_REQUEST/ACCEPT */
+	{
+		static const char svc[] = "ssh-userauth";
+		uint8_t msg[64];
+		size_t pos = 0;
+		msg[pos++] = SSH_MSG_SERVICE_REQUEST;
+		dssh_serialize_uint32((uint32_t)(sizeof(svc) - 1), msg, sizeof(msg), &pos);
+		memcpy(&msg[pos], svc, sizeof(svc) - 1);
+		pos += sizeof(svc) - 1;
+		ASSERT_OK(dssh_transport_send_packet(ctx.client, msg, pos, NULL));
+	}
+	{
+		uint8_t msg_type;
+		uint8_t *payload;
+		size_t payload_len;
+		ASSERT_OK(dssh_transport_recv_packet(ctx.client, &msg_type, &payload, &payload_len));
+		ASSERT_EQ(msg_type, SSH_MSG_SERVICE_ACCEPT);
+	}
+
+	/* Send password change request */
+	uint8_t msg[128];
+	size_t pos = build_auth_prefix(msg, sizeof(msg), "password");
+	msg[pos++] = 1; /* change = true */
+	dssh_serialize_uint32(3, msg, sizeof(msg), &pos);
+	memcpy(&msg[pos], "old", 3);
+	pos += 3;
+	dssh_serialize_uint32(3, msg, sizeof(msg), &pos);
+	memcpy(&msg[pos], "new", 3);
+	pos += 3;
+	ASSERT_OK(dssh_transport_send_packet(ctx.client, msg, pos, NULL));
+
+	/* Should get FAILURE (callback rejected the change) */
+	{
+		uint8_t msg_type;
+		uint8_t *payload;
+		size_t payload_len;
+		ASSERT_OK(dssh_transport_recv_packet(ctx.client, &msg_type, &payload, &payload_len));
+		ASSERT_EQ(msg_type, SSH_MSG_USERAUTH_FAILURE);
+	}
+
+	/* Send none to finish */
+	{
+		uint8_t nmsg[64];
+		size_t npos = build_auth_prefix(nmsg, sizeof(nmsg), "none");
+		ASSERT_OK(dssh_transport_send_packet(ctx.client, nmsg, npos, NULL));
+	}
+	{
+		uint8_t msg_type;
+		uint8_t *payload;
+		size_t payload_len;
+		ASSERT_OK(dssh_transport_recv_packet(ctx.client, &msg_type, &payload, &payload_len));
+		ASSERT_EQ(msg_type, SSH_MSG_USERAUTH_SUCCESS);
+	}
+
+	thrd_join(st, NULL);
+	ASSERT_EQ(sa.result, 0);
+	handshake_cleanup(&ctx);
+	return TEST_PASS;
+}
+
+static int
+test_server_password_change_no_change_cb(void)
+{
+	/* Send password with change=true but no passwd_change_cb.
+	 * Server should fall through to FAILURE (auth_res stays FAILURE). */
+	struct handshake_ctx ctx;
+	if (handshake_setup(&ctx) < 0) {
+		handshake_cleanup(&ctx);
+		return TEST_FAIL;
+	}
+
+	struct test_auth_cbdata cbdata = {0};
+	cbdata.none_result = DSSH_AUTH_SUCCESS;
+	struct auth_server_arg sa = {0};
+	sa.ctx = &ctx;
+	sa.cbs.methods_str = "password";
+	sa.cbs.password_cb = test_password_cb;
+	/* No passwd_change_cb */
+	sa.cbs.none_cb = test_none_cb;
+	sa.cbs.cbdata = &cbdata;
+
+	thrd_t st;
+	ASSERT_TRUE(thrd_create(&st, auth_server_thread, &sa) == thrd_success);
+
+	/* SERVICE_REQUEST/ACCEPT */
+	{
+		static const char svc[] = "ssh-userauth";
+		uint8_t msg[64];
+		size_t pos = 0;
+		msg[pos++] = SSH_MSG_SERVICE_REQUEST;
+		dssh_serialize_uint32((uint32_t)(sizeof(svc) - 1), msg, sizeof(msg), &pos);
+		memcpy(&msg[pos], svc, sizeof(svc) - 1);
+		pos += sizeof(svc) - 1;
+		ASSERT_OK(dssh_transport_send_packet(ctx.client, msg, pos, NULL));
+	}
+	{
+		uint8_t msg_type;
+		uint8_t *payload;
+		size_t payload_len;
+		ASSERT_OK(dssh_transport_recv_packet(ctx.client, &msg_type, &payload, &payload_len));
+		ASSERT_EQ(msg_type, SSH_MSG_SERVICE_ACCEPT);
+	}
+
+	/* Send password change request */
+	uint8_t msg[128];
+	size_t pos = build_auth_prefix(msg, sizeof(msg), "password");
+	msg[pos++] = 1; /* change = true */
+	dssh_serialize_uint32(3, msg, sizeof(msg), &pos);
+	memcpy(&msg[pos], "old", 3);
+	pos += 3;
+	dssh_serialize_uint32(3, msg, sizeof(msg), &pos);
+	memcpy(&msg[pos], "new", 3);
+	pos += 3;
+	ASSERT_OK(dssh_transport_send_packet(ctx.client, msg, pos, NULL));
+
+	/* No passwd_change_cb → auth_res stays FAILURE → USERAUTH_FAILURE */
+	{
+		uint8_t msg_type;
+		uint8_t *payload;
+		size_t payload_len;
+		ASSERT_OK(dssh_transport_recv_packet(ctx.client, &msg_type, &payload, &payload_len));
+		ASSERT_EQ(msg_type, SSH_MSG_USERAUTH_FAILURE);
+	}
+
+	/* Send none to finish */
+	{
+		uint8_t nmsg[64];
+		size_t npos = build_auth_prefix(nmsg, sizeof(nmsg), "none");
+		ASSERT_OK(dssh_transport_send_packet(ctx.client, nmsg, npos, NULL));
+	}
+	{
+		uint8_t msg_type;
+		uint8_t *payload;
+		size_t payload_len;
+		ASSERT_OK(dssh_transport_recv_packet(ctx.client, &msg_type, &payload, &payload_len));
+		ASSERT_EQ(msg_type, SSH_MSG_USERAUTH_SUCCESS);
+	}
+
+	thrd_join(st, NULL);
+	ASSERT_EQ(sa.result, 0);
+	handshake_cleanup(&ctx);
+	return TEST_PASS;
+}
+
+/* ================================================================
  * Test table and main
  * ================================================================ */
 
@@ -3702,6 +3888,8 @@ static struct dssh_test_entry tests[] = {
 	{ "auth/server/parse_pk_no_sig",     test_server_parse_publickey_sig_no_siglen },
 	{ "auth/server/pk_unknown_algo",     test_server_publickey_unknown_algo },
 	{ "auth/server/pk_probe_rejected",   test_server_publickey_probe_rejected },
+	{ "auth/server/pw_change_rejected",  test_server_password_change_rejected },
+	{ "auth/server/pw_change_no_cb",     test_server_password_change_no_change_cb },
 };
 
 DSSH_TEST_MAIN(tests)
