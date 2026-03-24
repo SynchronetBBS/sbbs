@@ -2171,9 +2171,6 @@ kex_excluded_thread(void *arg)
 static int
 test_ossl_kex_client_iterate(void)
 {
-	/* Only meaningful for DH-GEX */
-	if (!test_using_dhgex())
-		return TEST_SKIP;
 
 	int prev_count = -1;
 	for (int n = 0; n < 500; n++) {
@@ -2616,6 +2613,245 @@ test_dhgex_client_reply_truncated_sig(void)
 	return TEST_PASS;
 }
 
+/* ================================================================
+ * Curve25519 client parse tests
+ *
+ * Equivalent of the DH-GEX client parse tests above, but for the
+ * curve25519-sha256 KEX.  The "bad server" reads ECDH_INIT from
+ * the client, sends a crafted ECDH_REPLY, then closes.
+ * ================================================================ */
+
+static int
+bad_c25519_server_thread(void *arg)
+{
+	struct bad_server_ctx *ctx = arg;
+	dssh_test_ossl_exclude_thread();
+	dssh_test_alloc_exclude_thread();
+
+	/* Read ECDH_INIT from client */
+	uint8_t msg_type;
+	uint8_t *payload;
+	size_t payload_len;
+	ctx->result = dssh_transport_recv_packet(ctx->sess,
+	    &msg_type, &payload, &payload_len);
+	if (ctx->result < 0) {
+		mock_io_close_s2c(ctx->io);
+		return 0;
+	}
+
+	/* Send the crafted reply (if any) */
+	if (ctx->reply_data != NULL && ctx->reply_len > 0) {
+		ctx->result = dssh_transport_send_packet(ctx->sess,
+		    ctx->reply_data, ctx->reply_len, NULL);
+	}
+
+	/* Close server output so client unblocks */
+	mock_io_close_s2c(ctx->io);
+	return 0;
+}
+
+static int
+c25519_client_parse_test(int (*server_thread)(void *),
+    const uint8_t *reply, size_t reply_len)
+{
+	dssh_test_reset_global_config();
+	dssh_test_alloc_reset();
+	dssh_test_ossl_reset();
+	mock_alloc_reset();
+
+	if (register_curve25519_sha256() < 0)
+		return TEST_FAIL;
+	if (test_register_key_algos() < 0)
+		return TEST_FAIL;
+	if (register_aes256_ctr() < 0)
+		return TEST_FAIL;
+	if (register_hmac_sha2_256() < 0)
+		return TEST_FAIL;
+	if (register_none_comp() < 0)
+		return TEST_FAIL;
+	if (test_generate_host_key() < 0)
+		return TEST_FAIL;
+
+	struct mock_io_state io;
+	if (mock_io_init(&io, 0) < 0)
+		return TEST_FAIL;
+
+	dssh_transport_set_callbacks(mock_tx_dispatch, mock_rx_dispatch,
+	    mock_rxline_dispatch, mock_extra_line_cb);
+
+	dssh_session client = dssh_session_init(true, 0);
+	if (client == NULL) {
+		mock_io_free(&io);
+		return TEST_FAIL;
+	}
+	dssh_session_set_cbdata(client, &io, &io, &io, &io);
+
+	dssh_session server = dssh_session_init(false, 0);
+	if (server == NULL) {
+		dssh_session_cleanup(client);
+		mock_io_free(&io);
+		return TEST_FAIL;
+	}
+	dssh_session_set_cbdata(server, &io, &io, &io, &io);
+
+	/* version_exchange + kexinit */
+	{
+		struct ve_ki_ctx ca = { .io = &io, .sess = client };
+		struct ve_ki_ctx sa = { .io = &io, .sess = server };
+		thrd_t ct, st;
+		thrd_create(&ct, ve_ki_thread, &ca);
+		thrd_create(&st, ve_ki_thread, &sa);
+		thrd_join(ct, NULL);
+		thrd_join(st, NULL);
+		if (ca.result != 0 || sa.result != 0) {
+			mock_io_close_c2s(&io);
+			mock_io_close_s2c(&io);
+			dssh_session_cleanup(server);
+			dssh_session_cleanup(client);
+			mock_io_free(&io);
+			dssh_test_reset_global_config();
+			return TEST_FAIL;
+		}
+	}
+
+	struct bad_server_ctx sctx = {
+		.io = &io, .sess = server,
+		.reply_data = reply, .reply_len = reply_len
+	};
+	thrd_t st;
+	thrd_create(&st, server_thread, &sctx);
+	int cres = dssh_transport_kex(client);
+	mock_io_close_c2s(&io);
+	thrd_join(st, NULL);
+
+	mock_io_close_s2c(&io);
+	dssh_session_cleanup(server);
+	dssh_session_cleanup(client);
+	mock_io_free(&io);
+	dssh_test_reset_global_config();
+
+	return cres;
+}
+
+/* Line 257: recv ECDH_REPLY fails (server closes before sending) */
+static int
+test_c25519_client_recv_reply_fail(void)
+{
+	if (test_using_dhgex())
+		return TEST_SKIP;
+	/* Empty reply + close → recv fails */
+	int res = c25519_client_parse_test(bad_c25519_server_thread, NULL, 0);
+	ASSERT_TRUE(res < 0);
+	return TEST_PASS;
+}
+
+/* Line 263: ECDH_REPLY too short for K_S length field */
+static int
+test_c25519_client_reply_short_ks(void)
+{
+	if (test_using_dhgex())
+		return TEST_SKIP;
+	/* ECDH_REPLY with only msg_type byte — no K_S length field */
+	uint8_t reply[1] = { 31 }; /* SSH_MSG_KEX_ECDH_REPLY */
+	int res = c25519_client_parse_test(bad_c25519_server_thread, reply, 1);
+	ASSERT_TRUE(res < 0);
+	return TEST_PASS;
+}
+
+/* Line 264: ECDH_REPLY with K_S length overrunning payload */
+static int
+test_c25519_client_reply_trunc_ks(void)
+{
+	if (test_using_dhgex())
+		return TEST_SKIP;
+	/* K_S length claiming 1000 bytes but only 2 present */
+	uint8_t reply[16];
+	size_t rp = 0;
+	reply[rp++] = 31; /* SSH_MSG_KEX_ECDH_REPLY */
+	dssh_serialize_uint32(1000, reply, sizeof(reply), &rp);
+	reply[rp++] = 0x01;
+	reply[rp++] = 0x02;
+	int res = c25519_client_parse_test(bad_c25519_server_thread, reply, rp);
+	ASSERT_TRUE(res < 0);
+	return TEST_PASS;
+}
+
+/* Line 271: ECDH_REPLY with K_S="" but end before Q_S length field */
+static int
+test_c25519_client_reply_short_qs(void)
+{
+	if (test_using_dhgex())
+		return TEST_SKIP;
+	/* K_S: empty string (len=0), payload ends before Q_S len */
+	uint8_t reply[8];
+	size_t rp = 0;
+	reply[rp++] = 31; /* SSH_MSG_KEX_ECDH_REPLY */
+	dssh_serialize_uint32(0, reply, sizeof(reply), &rp);
+	int res = c25519_client_parse_test(bad_c25519_server_thread, reply, rp);
+	ASSERT_TRUE(res < 0);
+	return TEST_PASS;
+}
+
+/* Line 277: ECDH_REPLY with Q_S length != 32 */
+static int
+test_c25519_client_reply_bad_qs_len(void)
+{
+	if (test_using_dhgex())
+		return TEST_SKIP;
+	/* K_S="" + Q_S with len=16 (not 32) */
+	uint8_t reply[32];
+	size_t rp = 0;
+	reply[rp++] = 31; /* SSH_MSG_KEX_ECDH_REPLY */
+	dssh_serialize_uint32(0, reply, sizeof(reply), &rp); /* K_S: empty */
+	dssh_serialize_uint32(16, reply, sizeof(reply), &rp); /* Q_S len=16 */
+	memset(&reply[rp], 0x42, 16);
+	rp += 16;
+	int res = c25519_client_parse_test(bad_c25519_server_thread, reply, rp);
+	ASSERT_TRUE(res < 0);
+	return TEST_PASS;
+}
+
+/* Line 283: ECDH_REPLY with K_S="" + Q_S(32 bytes) but no sig */
+static int
+test_c25519_client_reply_short_sig(void)
+{
+	if (test_using_dhgex())
+		return TEST_SKIP;
+	/* K_S="" + Q_S(32 bytes) + payload ends before sig len */
+	uint8_t reply[48];
+	size_t rp = 0;
+	reply[rp++] = 31; /* SSH_MSG_KEX_ECDH_REPLY */
+	dssh_serialize_uint32(0, reply, sizeof(reply), &rp); /* K_S: empty */
+	dssh_serialize_uint32(32, reply, sizeof(reply), &rp); /* Q_S len=32 */
+	memset(&reply[rp], 0x42, 32);
+	rp += 32;
+	/* No sig at all — payload ends here */
+	int res = c25519_client_parse_test(bad_c25519_server_thread, reply, rp);
+	ASSERT_TRUE(res < 0);
+	return TEST_PASS;
+}
+
+/* Line 289: ECDH_REPLY with sig length overrunning payload */
+static int
+test_c25519_client_reply_trunc_sig(void)
+{
+	if (test_using_dhgex())
+		return TEST_SKIP;
+	/* K_S="" + Q_S(32 bytes) + sig claiming 1000 bytes */
+	uint8_t reply[64];
+	size_t rp = 0;
+	reply[rp++] = 31; /* SSH_MSG_KEX_ECDH_REPLY */
+	dssh_serialize_uint32(0, reply, sizeof(reply), &rp); /* K_S: empty */
+	dssh_serialize_uint32(32, reply, sizeof(reply), &rp); /* Q_S len=32 */
+	memset(&reply[rp], 0x42, 32);
+	rp += 32;
+	/* sig: claiming 1000 bytes but message ends here */
+	dssh_serialize_uint32(1000, reply, sizeof(reply), &rp);
+	int res = c25519_client_parse_test(bad_c25519_server_thread, reply, rp);
+	ASSERT_TRUE(res < 0);
+	return TEST_PASS;
+}
+
 /*
  * Client kex with ka==NULL or ka->verify==NULL.  Uses two threads
  * with the server excluded.  The client runs through the full
@@ -2950,8 +3186,6 @@ alloc_kex_excluded_thread(void *arg)
 static int
 test_alloc_kex_client_iterate(void)
 {
-	if (!test_using_dhgex())
-		return TEST_SKIP;
 
 	for (int n = 0; n < 200; n++) {
 		dssh_test_reset_global_config();
@@ -3104,6 +3338,13 @@ static struct dssh_test_entry tests[] = {
 	{ "dhgex/client_reply_f_zero",    test_dhgex_client_reply_f_zero },
 	{ "dhgex/client_short_sig",       test_dhgex_client_reply_short_sig },
 	{ "dhgex/client_trunc_sig",       test_dhgex_client_reply_truncated_sig },
+	{ "c25519/client_recv_reply",     test_c25519_client_recv_reply_fail },
+	{ "c25519/client_short_ks",       test_c25519_client_reply_short_ks },
+	{ "c25519/client_trunc_ks",       test_c25519_client_reply_trunc_ks },
+	{ "c25519/client_short_qs",       test_c25519_client_reply_short_qs },
+	{ "c25519/client_bad_qs_len",     test_c25519_client_reply_bad_qs_len },
+	{ "c25519/client_short_sig",      test_c25519_client_reply_short_sig },
+	{ "c25519/client_trunc_sig",      test_c25519_client_reply_trunc_sig },
 	{ "alloc/kex_server",             test_alloc_kex_server_iterate },
 	{ "alloc/kex_client",             test_alloc_kex_client_iterate },
 };

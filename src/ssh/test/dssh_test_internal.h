@@ -119,6 +119,25 @@ int compute_exchange_hash(
     const BIGNUM *e, const BIGNUM *f, const BIGNUM *k,
     uint8_t *hash_out);
 
+/*
+ * Curve25519 helpers from kex/curve25519-sha256.c.
+ */
+int compute_exchange_hash_c25519(
+    const char *v_c, size_t v_c_len,
+    const char *v_s, size_t v_s_len,
+    const uint8_t *i_c, size_t i_c_len,
+    const uint8_t *i_s, size_t i_s_len,
+    const uint8_t *k_s, size_t k_s_len,
+    const uint8_t *q_c, size_t q_c_len,
+    const uint8_t *q_s, size_t q_s_len,
+    const uint8_t *k_mpint, size_t k_mpint_len,
+    uint8_t *hash_out);
+int x25519_exchange(const uint8_t *peer_pub, size_t peer_pub_len,
+    uint8_t *our_pub, uint8_t **secret, size_t *secret_len);
+int encode_shared_secret(uint8_t *raw, size_t raw_len,
+    uint8_t **ss_out, size_t *ss_len,
+    uint8_t **mpint_out, size_t *mpint_len);
+
 #ifdef __cplusplus
 }
 #endif

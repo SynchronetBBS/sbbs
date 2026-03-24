@@ -19,8 +19,8 @@
  *
  * All string values are encoded with uint32 length prefix.
  */
-static int
-compute_exchange_hash(
+DSSH_TESTABLE int
+compute_exchange_hash_c25519(
     const char *v_c, size_t v_c_len,
     const char *v_s, size_t v_s_len,
     const uint8_t *i_c, size_t i_c_len,
@@ -36,9 +36,7 @@ compute_exchange_hash(
 		return DSSH_ERROR_ALLOC;
 
 	uint8_t lenbuf[4];
-	int ok = 1;
-
-	ok = ok && EVP_DigestInit_ex(mdctx, EVP_sha256(), NULL);
+	int ok = EVP_DigestInit_ex(mdctx, EVP_sha256(), NULL);
 
 	{ size_t p = 0; dssh_serialize_uint32((uint32_t)v_c_len, lenbuf, 4, &p); }
 	ok = ok && EVP_DigestUpdate(mdctx, lenbuf, 4);
@@ -81,7 +79,7 @@ compute_exchange_hash(
  * On success, sets *our_pub (32 bytes), *secret and *secret_len.
  * Caller must free *secret.
  */
-static int
+DSSH_TESTABLE int
 x25519_exchange(const uint8_t *peer_pub, size_t peer_pub_len,
     uint8_t *our_pub, uint8_t **secret, size_t *secret_len)
 {
@@ -149,7 +147,7 @@ done:
  * Encode raw shared secret bytes as SSH mpint, stripping leading zeros.
  * Caller must free *mpint_out.
  */
-static int
+DSSH_TESTABLE int
 encode_shared_secret(uint8_t *raw, size_t raw_len,
     uint8_t **ss_out, size_t *ss_len,
     uint8_t **mpint_out, size_t *mpint_len)
@@ -270,17 +268,25 @@ handler(dssh_session sess)
 		rpos += ks_len;
 
 		uint32_t qs_len;
-		if (rpos + 4 > reply_len ||
-		    dssh_parse_uint32(&reply[rpos], reply_len - rpos, &qs_len) < 4 ||
-		    qs_len != X25519_KEY_LEN || rpos + 4 + qs_len > reply_len) { EVP_PKEY_free(tmp_key); return DSSH_ERROR_PARSE; }
+		if (rpos + 4 > reply_len) { EVP_PKEY_free(tmp_key); return DSSH_ERROR_PARSE; }
+#ifndef DSSH_TESTING
+		if (dssh_parse_uint32(&reply[rpos], reply_len - rpos, &qs_len) < 4) { EVP_PKEY_free(tmp_key); return DSSH_ERROR_PARSE; }
+#else
+		dssh_parse_uint32(&reply[rpos], reply_len - rpos, &qs_len);
+#endif
+		if (qs_len != X25519_KEY_LEN || rpos + 4 + qs_len > reply_len) { EVP_PKEY_free(tmp_key); return DSSH_ERROR_PARSE; }
 		rpos += 4;
 		memcpy(q_s, &reply[rpos], X25519_KEY_LEN);
 		rpos += qs_len;
 
 		uint32_t sig_len;
-		if (rpos + 4 > reply_len ||
-		    dssh_parse_uint32(&reply[rpos], reply_len - rpos, &sig_len) < 4 ||
-		    rpos + 4 + sig_len > reply_len) { EVP_PKEY_free(tmp_key); return DSSH_ERROR_PARSE; }
+		if (rpos + 4 > reply_len) { EVP_PKEY_free(tmp_key); return DSSH_ERROR_PARSE; }
+#ifndef DSSH_TESTING
+		if (dssh_parse_uint32(&reply[rpos], reply_len - rpos, &sig_len) < 4) { EVP_PKEY_free(tmp_key); return DSSH_ERROR_PARSE; }
+#else
+		dssh_parse_uint32(&reply[rpos], reply_len - rpos, &sig_len);
+#endif
+		if (rpos + 4 + sig_len > reply_len) { EVP_PKEY_free(tmp_key); return DSSH_ERROR_PARSE; }
 		rpos += 4;
 		uint8_t *sig_h = &reply[rpos];
 
@@ -325,7 +331,7 @@ handler(dssh_session sess)
 
 		/* Compute exchange hash */
 		uint8_t hash[SHA256_DIGEST_LEN];
-		res = compute_exchange_hash(v_c, v_c_len, v_s, v_s_len,
+		res = compute_exchange_hash_c25519(v_c, v_c_len, v_s, v_s_len,
 		    i_c, i_c_len, i_s, i_s_len,
 		    k_s, k_s_len, q_c, X25519_KEY_LEN, q_s, X25519_KEY_LEN,
 		    k_mpint, k_mpint_len, hash);
@@ -398,7 +404,7 @@ handler(dssh_session sess)
 
 		/* Compute exchange hash */
 		uint8_t hash[SHA256_DIGEST_LEN];
-		res = compute_exchange_hash(v_c, v_c_len, v_s, v_s_len,
+		res = compute_exchange_hash_c25519(v_c, v_c_len, v_s, v_s_len,
 		    i_c, i_c_len, i_s, i_s_len,
 		    k_s_buf, k_s_len, q_c, X25519_KEY_LEN, q_s, X25519_KEY_LEN,
 		    k_mpint, k_mpint_len, hash);

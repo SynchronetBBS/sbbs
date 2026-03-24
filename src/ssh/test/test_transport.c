@@ -4279,6 +4279,322 @@ test_dhgex_server_ka_null(void)
 }
 
 /* ================================================================
+ * Curve25519 server handler targeted tests
+ *
+ * Equivalent of dhgex_server_* but for the curve25519-sha256 KEX.
+ * Uses the same pattern: set up a server with negotiated state,
+ * then inject specific packets to exercise error paths.
+ * ================================================================ */
+
+struct c25519_server_ctx {
+	dssh_session server;
+	struct mock_io_state *io;
+};
+
+static int
+c25519_server_setup(struct c25519_server_ctx *ctx)
+{
+	dssh_test_reset_global_config();
+	dssh_test_alloc_reset();
+	dssh_test_ossl_reset();
+
+	if (register_curve25519_sha256() < 0)
+		return -1;
+	if (register_ssh_ed25519() < 0)
+		return -1;
+	if (register_aes256_ctr() < 0)
+		return -1;
+	if (register_hmac_sha2_256() < 0)
+		return -1;
+	if (register_none_comp() < 0)
+		return -1;
+	if (ssh_ed25519_generate_key() < 0)
+		return -1;
+
+	ctx->io = malloc(sizeof(struct mock_io_state));
+	if (mock_io_init(ctx->io, 0) < 0)
+		return -1;
+
+	dssh_transport_set_callbacks(mock_tx_dispatch, mock_rx_dispatch,
+	    mock_rxline_dispatch, mock_extra_line_cb);
+
+	dssh_session client = dssh_session_init(true, 0);
+	if (client == NULL)
+		return -1;
+	dssh_session_set_cbdata(client, ctx->io, ctx->io, ctx->io, ctx->io);
+
+	ctx->server = dssh_session_init(false, 0);
+	if (ctx->server == NULL) {
+		dssh_session_cleanup(client);
+		return -1;
+	}
+	dssh_session_set_cbdata(ctx->server, ctx->io, ctx->io,
+	    ctx->io, ctx->io);
+
+	/* Two-threaded version_exchange + kexinit */
+	struct ve_ki_ctx ca = { .io = ctx->io, .sess = client };
+	struct ve_ki_ctx sa = { .io = ctx->io, .sess = ctx->server };
+	thrd_t ct, st;
+	thrd_create(&ct, ve_ki_thread, &ca);
+	thrd_create(&st, ve_ki_thread, &sa);
+	thrd_join(ct, NULL);
+	thrd_join(st, NULL);
+
+	dssh_session_cleanup(client);
+	mock_io_close_c2s(ctx->io);
+	mock_io_close_s2c(ctx->io);
+	mock_io_free(ctx->io);
+
+	if (ca.result != 0 || sa.result != 0)
+		return -1;
+
+	return 0;
+}
+
+static void
+c25519_server_teardown(struct c25519_server_ctx *ctx)
+{
+	dssh_session_cleanup(ctx->server);
+	free(ctx->io);
+	dssh_test_reset_global_config();
+}
+
+/* Run the server handler with specific injected packets */
+static int
+c25519_server_run(struct c25519_server_ctx *ctx,
+    const uint8_t *wire, size_t wire_len)
+{
+	struct mock_io_state iter_io;
+	if (mock_io_init(&iter_io, 0) < 0)
+		return -999;
+	dssh_session_set_cbdata(ctx->server, &iter_io, &iter_io,
+	    &iter_io, &iter_io);
+
+	if (wire != NULL && wire_len > 0)
+		mock_io_inject(&iter_io.c2s, wire, wire_len);
+
+	/* Close c2s write end so server gets EOF after injected data */
+	if (iter_io.c2s.wfd >= 0) {
+		close(iter_io.c2s.wfd);
+		iter_io.c2s.wfd = -1;
+	}
+
+	/* Ensure ossl injection is disabled */
+	dssh_test_ossl_reset();
+	dssh_test_alloc_reset();
+
+	/* Reset mutable server state */
+	free(ctx->server->trans.shared_secret);
+	ctx->server->trans.shared_secret = NULL;
+	ctx->server->trans.shared_secret_sz = 0;
+	free(ctx->server->trans.exchange_hash);
+	ctx->server->trans.exchange_hash = NULL;
+	ctx->server->trans.exchange_hash_sz = 0;
+	ctx->server->terminate = false;
+
+	int res = dssh_transport_kex(ctx->server);
+
+	uint8_t drain[16384];
+	mock_io_drain(&iter_io.s2c, drain, sizeof(drain));
+	mock_io_close_c2s(&iter_io);
+	mock_io_close_s2c(&iter_io);
+	mock_io_free(&iter_io);
+
+	return res;
+}
+
+static int
+test_c25519_server_ka_null(void)
+{
+	struct c25519_server_ctx ctx;
+	if (c25519_server_setup(&ctx) < 0)
+		return TEST_FAIL;
+
+	/* Clear key_algo_selected entirely */
+	dssh_key_algo saved = ctx.server->trans.key_algo_selected;
+	ctx.server->trans.key_algo_selected = NULL;
+
+	int res = c25519_server_run(&ctx, NULL, 0);
+	ASSERT_EQ(res, DSSH_ERROR_INIT);
+
+	ctx.server->trans.key_algo_selected = saved;
+	c25519_server_teardown(&ctx);
+	return TEST_PASS;
+}
+
+static int
+test_c25519_server_null_pubkey_fn(void)
+{
+	struct c25519_server_ctx ctx;
+	if (c25519_server_setup(&ctx) < 0)
+		return TEST_FAIL;
+
+	/* Set key_algo to a stub with NULL pubkey */
+	struct dssh_key_algo_s dummy = {0};
+	dummy.sign = dummy_sign;
+	ctx.server->trans.key_algo_selected = &dummy;
+
+	int res = c25519_server_run(&ctx, NULL, 0);
+	ASSERT_EQ(res, DSSH_ERROR_INIT);
+
+	/* Restore before teardown */
+	ctx.server->trans.key_algo_selected = NULL;
+	c25519_server_teardown(&ctx);
+	return TEST_PASS;
+}
+
+static int
+test_c25519_server_null_sign_fn(void)
+{
+	struct c25519_server_ctx ctx;
+	if (c25519_server_setup(&ctx) < 0)
+		return TEST_FAIL;
+
+	struct dssh_key_algo_s dummy = {0};
+	dummy.pubkey = dummy_pubkey;
+	ctx.server->trans.key_algo_selected = &dummy;
+
+	int res = c25519_server_run(&ctx, NULL, 0);
+	ASSERT_EQ(res, DSSH_ERROR_INIT);
+
+	ctx.server->trans.key_algo_selected = NULL;
+	c25519_server_teardown(&ctx);
+	return TEST_PASS;
+}
+
+static int
+test_c25519_server_recv_fail(void)
+{
+	struct c25519_server_ctx ctx;
+	if (c25519_server_setup(&ctx) < 0)
+		return TEST_FAIL;
+
+	/* No packets injected — recv will fail immediately (pipe closed) */
+	int res = c25519_server_run(&ctx, NULL, 0);
+	ASSERT_TRUE(res < 0);
+
+	c25519_server_teardown(&ctx);
+	return TEST_PASS;
+}
+
+static int
+test_c25519_server_bad_init_type(void)
+{
+	struct c25519_server_ctx ctx;
+	if (c25519_server_setup(&ctx) < 0)
+		return TEST_FAIL;
+
+	/* Inject a packet with wrong msg_type (not ECDH_INIT=30) */
+	uint8_t pkt[8];
+	size_t pp = 0;
+	pkt[pp++] = 31; /* ECDH_REPLY, not ECDH_INIT(30) */
+	dssh_serialize_uint32(32, pkt, sizeof(pkt), &pp);
+	uint8_t wire[64];
+	size_t wlen = build_plaintext_packet_t(pkt, pp, wire, sizeof(wire));
+
+	int res = c25519_server_run(&ctx, wire, wlen);
+	ASSERT_EQ(res, DSSH_ERROR_PARSE);
+
+	c25519_server_teardown(&ctx);
+	return TEST_PASS;
+}
+
+static int
+test_c25519_server_bad_qc_len(void)
+{
+	struct c25519_server_ctx ctx;
+	if (c25519_server_setup(&ctx) < 0)
+		return TEST_FAIL;
+
+	/* Inject ECDH_INIT with qc_len=16 instead of 32 */
+	uint8_t pkt[32];
+	size_t pp = 0;
+	pkt[pp++] = 30; /* SSH_MSG_KEX_ECDH_INIT */
+	dssh_serialize_uint32(16, pkt, sizeof(pkt), &pp);
+	memset(&pkt[pp], 0x42, 16);
+	pp += 16;
+	uint8_t wire[64];
+	size_t wlen = build_plaintext_packet_t(pkt, pp, wire, sizeof(wire));
+
+	int res = c25519_server_run(&ctx, wire, wlen);
+	ASSERT_EQ(res, DSSH_ERROR_PARSE);
+
+	c25519_server_teardown(&ctx);
+	return TEST_PASS;
+}
+
+/* ================================================================
+ * Curve25519 helper function tests
+ * ================================================================ */
+
+static int
+test_c25519_encode_shared_secret_leading_zeros(void)
+{
+	/* Raw bytes with leading zeros — exercises the
+	 * while (raw_len > 1 && start[0] == 0) loop */
+	uint8_t raw[3] = { 0x00, 0x00, 0x42 };
+	uint8_t *ss_out = NULL;
+	size_t ss_len = 0;
+	uint8_t *mpint_out = NULL;
+	size_t mpint_len = 0;
+
+	int res = encode_shared_secret(raw, sizeof(raw),
+	    &ss_out, &ss_len, &mpint_out, &mpint_len);
+	ASSERT_EQ(res, 0);
+	ASSERT_NOT_NULL(ss_out);
+	ASSERT_NOT_NULL(mpint_out);
+	ASSERT_TRUE(ss_len > 0);
+	ASSERT_TRUE(mpint_len > 0);
+
+	free(ss_out);
+	free(mpint_out);
+	return TEST_PASS;
+}
+
+static int
+test_c25519_x25519_exchange_alloc_fail(void)
+{
+	uint8_t peer[32] = {9}; /* base point is valid */
+	uint8_t our_pub[32];
+	uint8_t *secret = NULL;
+	size_t secret_len = 0;
+
+	dssh_test_alloc_fail_after(0);
+	int res = x25519_exchange(peer, sizeof(peer),
+	    our_pub, &secret, &secret_len);
+	dssh_test_alloc_reset();
+	ASSERT_TRUE(res < 0);
+	return TEST_PASS;
+}
+
+static int
+test_c25519_encode_shared_secret_alloc_fail(void)
+{
+	uint8_t raw[32];
+	memset(raw, 0x42, sizeof(raw));
+	uint8_t *ss_out = NULL;
+	size_t ss_len = 0;
+	uint8_t *mpint_out = NULL;
+	size_t mpint_len = 0;
+
+	/* Fail first malloc (line 163) */
+	dssh_test_alloc_fail_after(0);
+	int res = encode_shared_secret(raw, sizeof(raw),
+	    &ss_out, &ss_len, &mpint_out, &mpint_len);
+	dssh_test_alloc_reset();
+	ASSERT_TRUE(res < 0);
+
+	/* Fail second malloc (line 172) */
+	dssh_test_alloc_fail_after(1);
+	res = encode_shared_secret(raw, sizeof(raw),
+	    &ss_out, &ss_len, &mpint_out, &mpint_len);
+	dssh_test_alloc_reset();
+	ASSERT_TRUE(res < 0);
+
+	return TEST_PASS;
+}
+
+/* ================================================================
  * DH-GEX helper coverage — serialize_bn_mpint edge cases
  * ================================================================ */
 
@@ -5644,6 +5960,19 @@ static struct dssh_test_entry tests[] = {
 	{ "dhgex/server_e_zero",             test_dhgex_server_e_zero },
 	{ "dhgex/server_recv_init_fail",     test_dhgex_server_recv_init_fail },
 	{ "dhgex/server_ka_null",            test_dhgex_server_ka_null },
+
+	/* Curve25519 server handler targeted tests */
+	{ "c25519/server_ka_null",           test_c25519_server_ka_null },
+	{ "c25519/server_null_pubkey_fn",    test_c25519_server_null_pubkey_fn },
+	{ "c25519/server_null_sign_fn",      test_c25519_server_null_sign_fn },
+	{ "c25519/server_recv_fail",         test_c25519_server_recv_fail },
+	{ "c25519/server_bad_init_type",     test_c25519_server_bad_init_type },
+	{ "c25519/server_bad_qc_len",        test_c25519_server_bad_qc_len },
+
+	/* Curve25519 helper function tests */
+	{ "c25519/encode_ss_leading_zeros",  test_c25519_encode_shared_secret_leading_zeros },
+	{ "c25519/x25519_exchange_alloc",    test_c25519_x25519_exchange_alloc_fail },
+	{ "c25519/encode_ss_alloc_fail",     test_c25519_encode_shared_secret_alloc_fail },
 };
 
 DSSH_TEST_MAIN(tests)
