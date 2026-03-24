@@ -23,8 +23,7 @@ Produces `libdeucessh.a` (static) and `libdeucessh.so` (shared).
 
 ## Testing
 
-~700 tests across 11 executables, 26 CTest runs (~120s sequential,
-~40s with `-j8`):
+~800+ tests across 11 executables, 26 CTest runs (~22s with `-j8`):
 ```sh
 cmake -S . -B build -DDEUCESSH_BUILD_TESTS=ON
 cmake --build build -j8
@@ -36,12 +35,24 @@ ctest -R dssh_integration    # integration only
 ./dssh_test_arch test_parse  # filter by name
 ```
 
+**Important: Two build directories.**  `build/` is the normal build.
+`build-cov/` is the coverage-instrumented build.  Always use explicit
+paths — never rely on the shell's current working directory:
+```sh
+cmake --build build -j8              # build from source dir
+cmake --build build-cov -j8         # build coverage variant
+cd build-cov && ctest -j8           # run tests (must cd first)
+cd build-cov && ./dssh_test_alloc   # run specific test
+```
+
 Test infrastructure:
 - `test/dssh_test.h` — test framework (assert macros, PASS/FAIL/SKIP, runner)
 - `test/mock_io.h/.c` — bidirectional mock I/O via socketpair()
 - `test/mock_alloc.h/.c` — process-wide alloc injection (--wrap=malloc)
 - `test/dssh_test_alloc.h/.c` — library-only alloc injection (macro-based,
-  doesn't affect OpenSSL)
+  doesn't affect OpenSSL); supports thread-local exclusion
+- `test/dssh_test_ossl.h/.c` — OpenSSL + C11 failure injection (countdown
+  wrappers); supports thread-local exclusion for two-threaded KEX tests
 - `test/test_enc.h/.c` — XOR cipher with failure injection
 - `test/test_mac.h/.c` — XOR-fold MAC with failure injection
 - `test/dssh_test_internal.h` — declarations for `DSSH_TESTABLE` functions
@@ -49,14 +60,14 @@ Test infrastructure:
   library malloc/calloc/realloc to test allocator, and compiles out
   unreachable defense-in-depth guards for accurate coverage
 
-Coverage measurement:
+Coverage measurement (run from source dir, not build-cov):
 ```sh
 cmake -S . -B build-cov -DDEUCESSH_BUILD_TESTS=ON \
   -DCMAKE_C_FLAGS="-fprofile-instr-generate -fcoverage-mapping" \
   -DCMAKE_EXE_LINKER_FLAGS="-fprofile-instr-generate"
 cmake --build build-cov -j8
 cd build-cov
-LLVM_PROFILE_FILE="dssh-%p.profraw" ctest
+LLVM_PROFILE_FILE="dssh-%p.profraw" ctest -j8
 llvm-profdata merge -sparse dssh-*.profraw -o dssh.profdata
 llvm-cov report ./dssh_test_selftest -instr-profile=dssh.profdata \
   -object=./dssh_test_transport -object=./dssh_test_auth \

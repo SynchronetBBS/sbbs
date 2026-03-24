@@ -4523,6 +4523,30 @@ test_c25519_server_bad_qc_len(void)
 	return TEST_PASS;
 }
 
+/* Line 388:35: ECDH_INIT with qc_len=32 but only 10 bytes of Q_C data */
+static int
+test_c25519_server_qc_overrun(void)
+{
+	struct c25519_server_ctx ctx;
+	if (c25519_server_setup(&ctx) < 0)
+		return TEST_FAIL;
+
+	uint8_t pkt[32];
+	size_t pp = 0;
+	pkt[pp++] = 30; /* SSH_MSG_KEX_ECDH_INIT */
+	dssh_serialize_uint32(32, pkt, sizeof(pkt), &pp); /* claims 32 bytes */
+	memset(&pkt[pp], 0x42, 10); /* only 10 bytes present */
+	pp += 10;
+	uint8_t wire[64];
+	size_t wlen = build_plaintext_packet_t(pkt, pp, wire, sizeof(wire));
+
+	int res = c25519_server_run(&ctx, wire, wlen);
+	ASSERT_TRUE(res < 0);
+
+	c25519_server_teardown(&ctx);
+	return TEST_PASS;
+}
+
 /* ================================================================
  * Curve25519 helper function tests
  * ================================================================ */
@@ -5968,6 +5992,7 @@ static struct dssh_test_entry tests[] = {
 	{ "c25519/server_recv_fail",         test_c25519_server_recv_fail },
 	{ "c25519/server_bad_init_type",     test_c25519_server_bad_init_type },
 	{ "c25519/server_bad_qc_len",        test_c25519_server_bad_qc_len },
+	{ "c25519/server_qc_overrun",        test_c25519_server_qc_overrun },
 
 	/* Curve25519 helper function tests */
 	{ "c25519/encode_ss_leading_zeros",  test_c25519_encode_shared_secret_leading_zeros },

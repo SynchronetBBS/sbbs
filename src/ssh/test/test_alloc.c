@@ -2811,6 +2811,24 @@ test_c25519_client_reply_bad_qs_len(void)
 	return TEST_PASS;
 }
 
+/* Line 277:35: ECDH_REPLY with K_S="" + Q_S len=32 but only 10 bytes present */
+static int
+test_c25519_client_reply_qs_overrun(void)
+{
+	if (test_using_dhgex())
+		return TEST_SKIP;
+	uint8_t reply[32];
+	size_t rp = 0;
+	reply[rp++] = 31; /* SSH_MSG_KEX_ECDH_REPLY */
+	dssh_serialize_uint32(0, reply, sizeof(reply), &rp); /* K_S: empty */
+	dssh_serialize_uint32(32, reply, sizeof(reply), &rp); /* Q_S len=32 */
+	memset(&reply[rp], 0x42, 10); /* only 10 bytes of Q_S data */
+	rp += 10;
+	int res = c25519_client_parse_test(bad_c25519_server_thread, reply, rp);
+	ASSERT_TRUE(res < 0);
+	return TEST_PASS;
+}
+
 /* Line 283: ECDH_REPLY with K_S="" + Q_S(32 bytes) but no sig */
 static int
 test_c25519_client_reply_short_sig(void)
@@ -3031,8 +3049,6 @@ test_ossl_kex_client_no_verify(void)
 static int
 test_alloc_kex_server_iterate(void)
 {
-	if (!test_using_dhgex())
-		return TEST_SKIP;
 
 	/* === ONE-TIME SETUP (same as ossl/kex_server) === */
 	dssh_test_reset_global_config();
@@ -3098,22 +3114,39 @@ test_alloc_kex_server_iterate(void)
 	uint8_t wire_pkts[8192];
 	size_t wire_total = 0;
 
-	uint8_t req[16];
-	size_t rp = 0;
-	req[rp++] = 34;
-	dssh_serialize_uint32(2048, req, sizeof(req), &rp);
-	dssh_serialize_uint32(4096, req, sizeof(req), &rp);
-	dssh_serialize_uint32(8192, req, sizeof(req), &rp);
-	wire_total += build_plaintext_packet(req, rp,
-	    &wire_pkts[wire_total], sizeof(wire_pkts) - wire_total);
+	if (test_using_dhgex()) {
+		/* DH-GEX: GEX_REQUEST + GEX_INIT */
+		uint8_t req[16];
+		size_t rp = 0;
+		req[rp++] = 34;
+		dssh_serialize_uint32(2048, req, sizeof(req), &rp);
+		dssh_serialize_uint32(4096, req, sizeof(req), &rp);
+		dssh_serialize_uint32(8192, req, sizeof(req), &rp);
+		wire_total += build_plaintext_packet(req, rp,
+		    &wire_pkts[wire_total], sizeof(wire_pkts) - wire_total);
 
-	uint8_t init[16];
-	size_t ip = 0;
-	init[ip++] = 32;
-	dssh_serialize_uint32(1, init, sizeof(init), &ip);
-	init[ip++] = 0x02;
-	wire_total += build_plaintext_packet(init, ip,
-	    &wire_pkts[wire_total], sizeof(wire_pkts) - wire_total);
+		uint8_t init[16];
+		size_t ip = 0;
+		init[ip++] = 32;
+		dssh_serialize_uint32(1, init, sizeof(init), &ip);
+		init[ip++] = 0x02;
+		wire_total += build_plaintext_packet(init, ip,
+		    &wire_pkts[wire_total], sizeof(wire_pkts) - wire_total);
+	}
+	else {
+		/* Curve25519: ECDH_INIT(Q_C) */
+		uint8_t qc[32];
+		RAND_bytes(qc, sizeof(qc));
+
+		uint8_t init[1 + 4 + 32];
+		size_t ip = 0;
+		init[ip++] = SSH_MSG_KEX_ECDH_INIT;
+		dssh_serialize_uint32(32, init, sizeof(init), &ip);
+		memcpy(&init[ip], qc, 32);
+		ip += 32;
+		wire_total += build_plaintext_packet(init, ip,
+		    &wire_pkts[wire_total], sizeof(wire_pkts) - wire_total);
+	}
 
 	uint32_t saved_rx_seq = server->trans.rx_seq;
 	uint32_t saved_tx_seq = server->trans.tx_seq;
@@ -3343,6 +3376,7 @@ static struct dssh_test_entry tests[] = {
 	{ "c25519/client_trunc_ks",       test_c25519_client_reply_trunc_ks },
 	{ "c25519/client_short_qs",       test_c25519_client_reply_short_qs },
 	{ "c25519/client_bad_qs_len",     test_c25519_client_reply_bad_qs_len },
+	{ "c25519/client_qs_overrun",     test_c25519_client_reply_qs_overrun },
 	{ "c25519/client_short_sig",      test_c25519_client_reply_short_sig },
 	{ "c25519/client_trunc_sig",      test_c25519_client_reply_trunc_sig },
 	{ "alloc/kex_server",             test_alloc_kex_server_iterate },
