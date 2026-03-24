@@ -3968,6 +3968,113 @@ test_none_mac(void)
 }
 
 /* ================================================================
+ * Coverage: DEBUG with msg_len > actual payload (line 754 clamp)
+ * ================================================================ */
+
+static int
+test_debug_msg_len_exceeds_payload(void)
+{
+	dssh_test_reset_global_config();
+	ASSERT_OK(register_all_algorithms());
+	if (test_generate_host_key() < 0)
+		return TEST_FAIL;
+	dssh_transport_set_callbacks(mock_tx_dispatch, mock_rx_dispatch,
+	    mock_rxline_dispatch, mock_extra_line_cb);
+
+	struct mock_io_state io;
+	ASSERT_OK(mock_io_init(&io, 0));
+
+	dssh_session client = dssh_session_init(true, 0);
+	ASSERT_NOT_NULL(client);
+	dssh_session_set_cbdata(client, &io, &io, &io, &io);
+
+	dssh_session server = init_server_session();
+	ASSERT_NOT_NULL(server);
+	dssh_session_set_cbdata(server, &io, &io, &io, &io);
+
+	debug_cb_invoked = false;
+	dssh_session_set_debug_cb(server, mock_debug_cb_track, NULL);
+
+	/* DEBUG: always_display(1) + msg_len=100(4) but no msg data */
+	uint8_t dbg[6];
+	dbg[0] = SSH_MSG_DEBUG;
+	dbg[1] = 1; /* always_display */
+	size_t dp = 2;
+	dssh_serialize_uint32(100, dbg, sizeof(dbg), &dp); /* msg_len=100 */
+	ASSERT_OK(dssh_transport_send_packet(client, dbg, sizeof(dbg), NULL));
+
+	/* Send a follow-up so recv_packet returns */
+	uint8_t follow[] = { SSH_MSG_SERVICE_REQUEST, 0x47 };
+	ASSERT_OK(dssh_transport_send_packet(client, follow, sizeof(follow), NULL));
+
+	uint8_t msg_type;
+	uint8_t *payload;
+	size_t payload_len;
+	dssh_transport_recv_packet(server, &msg_type, &payload, &payload_len);
+
+	/* Debug callback should have been invoked with msg_len clamped to 0 */
+	ASSERT_TRUE(debug_cb_invoked);
+	ASSERT_EQ(debug_msg_len, (size_t)0);
+
+	dssh_session_cleanup(server);
+	dssh_session_cleanup(client);
+	mock_io_free(&io);
+	dssh_test_reset_global_config();
+	return TEST_PASS;
+}
+
+/* ================================================================
+ * Coverage: GLOBAL_REQUEST with name_len > payload (line 781)
+ * ================================================================ */
+
+static int
+test_global_request_name_exceeds_payload(void)
+{
+	dssh_test_reset_global_config();
+	ASSERT_OK(register_all_algorithms());
+	if (test_generate_host_key() < 0)
+		return TEST_FAIL;
+	dssh_transport_set_callbacks(mock_tx_dispatch, mock_rx_dispatch,
+	    mock_rxline_dispatch, mock_extra_line_cb);
+
+	struct mock_io_state io;
+	ASSERT_OK(mock_io_init(&io, 0));
+
+	dssh_session client = dssh_session_init(true, 0);
+	ASSERT_NOT_NULL(client);
+	dssh_session_set_cbdata(client, &io, &io, &io, &io);
+
+	dssh_session server = init_server_session();
+	ASSERT_NOT_NULL(server);
+	dssh_session_set_cbdata(server, &io, &io, &io, &io);
+
+	/* GLOBAL_REQUEST: name_len=100 but only 2 bytes of name + no want_reply */
+	uint8_t gr[16];
+	size_t gp = 0;
+	gr[gp++] = 80; /* SSH_MSG_GLOBAL_REQUEST */
+	dssh_serialize_uint32(100, gr, sizeof(gr), &gp); /* name_len=100 */
+	gr[gp++] = 'a';
+	gr[gp++] = 'b';
+	/* Missing: rest of name + want_reply byte */
+	ASSERT_OK(dssh_transport_send_packet(client, gr, gp, NULL));
+
+	/* Follow-up packet to flush */
+	uint8_t follow[] = { SSH_MSG_SERVICE_REQUEST, 0x47 };
+	ASSERT_OK(dssh_transport_send_packet(client, follow, sizeof(follow), NULL));
+
+	uint8_t msg_type;
+	uint8_t *payload;
+	size_t payload_len;
+	dssh_transport_recv_packet(server, &msg_type, &payload, &payload_len);
+
+	dssh_session_cleanup(server);
+	dssh_session_cleanup(client);
+	mock_io_free(&io);
+	dssh_test_reset_global_config();
+	return TEST_PASS;
+}
+
+/* ================================================================
  * Test table
  * ================================================================ */
 
@@ -4111,6 +4218,9 @@ static struct dssh_test_entry tests[] = {
 	{ "hmac_sha2_256/alloc_fail",        test_hmac_sha2_256_alloc_fail },
 
 	/* None module coverage */
+	{ "debug/msg_len_exceeds_payload",   test_debug_msg_len_exceeds_payload },
+	{ "global_request/name_exceeds",     test_global_request_name_exceeds_payload },
+
 	{ "none/comp",                       test_none_comp },
 	{ "none/enc",                        test_none_enc },
 	{ "none/mac",                        test_none_mac },

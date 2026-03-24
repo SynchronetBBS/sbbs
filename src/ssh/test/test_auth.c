@@ -4068,6 +4068,177 @@ test_password_changereq_loop(void)
 }
 
 /* ================================================================
+ * Coverage: truncated USERAUTH_BANNER on client side
+ *
+ * We set up handshake, then from the server side send raw truncated
+ * BANNER packets before the auth response.  The client processes
+ * these in handle_banner().
+ * ================================================================ */
+
+static bool banner_trunc_cb_called;
+
+static void
+banner_trunc_cb(const uint8_t *message, size_t message_len,
+    const uint8_t *language, size_t language_len,
+    void *cbdata)
+{
+	(void)message; (void)message_len;
+	(void)language; (void)language_len;
+	(void)cbdata;
+	banner_trunc_cb_called = true;
+}
+
+static int
+banner_trunc_server_thread(void *arg)
+{
+	struct auth_server_arg *sa = arg;
+	dssh_session server = sa->ctx->server;
+
+	/* Complete SERVICE_REQUEST/ACCEPT */
+	uint8_t msg_type;
+	uint8_t *payload;
+	size_t payload_len;
+	if (dssh_transport_recv_packet(server, &msg_type, &payload, &payload_len) < 0)
+		{ sa->result = -1; return 0; }
+	{
+		uint8_t accept[64];
+		size_t pos = 0;
+		accept[pos++] = SSH_MSG_SERVICE_ACCEPT;
+		if (payload_len > 5) {
+			uint32_t slen;
+			dssh_parse_uint32(&payload[1], payload_len - 1, &slen);
+			dssh_serialize_uint32(slen, accept, sizeof(accept), &pos);
+			memcpy(&accept[pos], &payload[5], slen);
+			pos += slen;
+		}
+		dssh_transport_send_packet(server, accept, pos, NULL);
+	}
+
+	/* Send truncated banners before reading the auth request */
+	/* Banner with only msg_type — no msg_len header (line 18) */
+	{
+		uint8_t b[] = { 53 }; /* SSH_MSG_USERAUTH_BANNER */
+		dssh_transport_send_packet(server, b, sizeof(b), NULL);
+	}
+	/* Banner with msg_len=100 but no msg data (line 22) */
+	{
+		uint8_t b[8];
+		size_t bp = 0;
+		b[bp++] = 53;
+		dssh_serialize_uint32(100, b, sizeof(b), &bp);
+		dssh_transport_send_packet(server, b, bp, NULL);
+	}
+	/* Banner with valid msg but truncated lang (line 33-34) */
+	{
+		uint8_t b[32];
+		size_t bp = 0;
+		b[bp++] = 53;
+		dssh_serialize_uint32(5, b, sizeof(b), &bp);
+		memcpy(&b[bp], "hello", 5);
+		bp += 5;
+		/* lang_len=100 but no lang data */
+		dssh_serialize_uint32(100, b, sizeof(b), &bp);
+		dssh_transport_send_packet(server, b, bp, NULL);
+	}
+
+	/* Now send USERAUTH_SUCCESS so the client returns */
+	{
+		uint8_t msg_type2;
+		uint8_t *p2;
+		size_t p2_len;
+		dssh_transport_recv_packet(server, &msg_type2, &p2, &p2_len);
+		uint8_t success[] = { 52 }; /* SSH_MSG_USERAUTH_SUCCESS */
+		dssh_transport_send_packet(server, success, 1, NULL);
+	}
+
+	sa->result = 0;
+	return 0;
+}
+
+static int
+test_banner_truncated_variants(void)
+{
+	struct handshake_ctx ctx;
+	if (handshake_setup(&ctx) < 0) {
+		handshake_cleanup(&ctx);
+		return TEST_FAIL;
+	}
+
+	banner_trunc_cb_called = false;
+	dssh_session_set_banner_cb(ctx.client, (void *)banner_trunc_cb, NULL);
+
+	struct auth_server_arg sa = {0};
+	sa.ctx = &ctx;
+
+	thrd_t st;
+	ASSERT_TRUE(thrd_create(&st, banner_trunc_server_thread, &sa) == thrd_success);
+
+	/* Client: password auth — will see truncated banners first */
+	int res = dssh_auth_password(ctx.client, "testuser", "testpass",
+	    NULL, NULL);
+
+	thrd_join(st, NULL);
+	ASSERT_EQ(res, 0);  /* auth succeeded */
+	/* The valid banner (line 33-34 variant) should have invoked cb */
+	ASSERT_TRUE(banner_trunc_cb_called);
+
+	handshake_cleanup(&ctx);
+	return TEST_PASS;
+}
+
+/* ================================================================
+ * Coverage: client get_methods receives SUCCESS ("none" auth)
+ * ================================================================ */
+
+static int
+none_accept_server_thread(void *arg)
+{
+	struct auth_server_arg *sa = arg;
+	uint8_t username[256];
+	size_t username_len;
+	sa->result = dssh_auth_server(sa->ctx->server, &sa->cbs,
+	    username, &username_len);
+	return 0;
+}
+
+static int
+test_get_methods_none_accepted(void)
+{
+	struct handshake_ctx ctx;
+	if (handshake_setup(&ctx) < 0) {
+		handshake_cleanup(&ctx);
+		return TEST_FAIL;
+	}
+
+	/* Server: accept "none" auth method */
+	struct test_auth_cbdata cbdata = {0};
+	cbdata.none_result = DSSH_AUTH_SUCCESS;
+	struct auth_server_arg sa = {0};
+	sa.ctx = &ctx;
+	sa.cbs.methods_str = "none";
+	sa.cbs.none_cb = test_none_cb;
+	sa.cbs.cbdata = &cbdata;
+
+	thrd_t st;
+	ASSERT_TRUE(thrd_create(&st, none_accept_server_thread, &sa) == thrd_success);
+
+	/* Client: get_methods sends "none" USERAUTH_REQUEST.
+	 * Server accepts it → sends USERAUTH_SUCCESS.
+	 * get_methods should return 0 with empty methods string. */
+	char methods[256] = "unchanged";
+	int res = dssh_auth_get_methods(ctx.client, "testuser",
+	    methods, sizeof(methods));
+
+	thrd_join(st, NULL);
+	ASSERT_EQ(res, 0);
+	ASSERT_EQ(methods[0], '\0');
+	ASSERT_EQ(sa.result, 0);
+
+	handshake_cleanup(&ctx);
+	return TEST_PASS;
+}
+
+/* ================================================================
  * Test table and main
  * ================================================================ */
 
@@ -4145,6 +4316,8 @@ static struct dssh_test_entry tests[] = {
 	{ "auth/server/pk_probe_rejected",   test_server_publickey_probe_rejected },
 	{ "auth/server/pw_change_rejected",  test_server_password_change_rejected },
 	{ "auth/server/pw_change_no_cb",     test_server_password_change_no_change_cb },
+	{ "auth/banner_truncated",           test_banner_truncated_variants },
+	{ "auth/get_methods_none_accepted",  test_get_methods_none_accepted },
 	{ "auth/server/pk_sig_truncated",    test_server_parse_publickey_sig_truncated },
 	{ "auth/server/pk_sig_trunc_algo",   test_server_parse_publickey_sig_trunc_algo },
 	{ "auth/server/pk_sig_trunc_blob",   test_server_parse_publickey_sig_trunc_blob },

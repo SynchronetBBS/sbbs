@@ -3955,6 +3955,117 @@ test_setup_exec_rejected_by_callback(void)
 }
 
 /* ================================================================
+ * Coverage: truncated OPEN_CONFIRMATION (line 641)
+ * ================================================================ */
+
+static int
+test_truncated_open_confirmation(void)
+{
+	struct conn_ctx ctx;
+	if (conn_setup(&ctx) < 0)
+		return TEST_FAIL;
+
+	/* Send a short CHANNEL_OPEN_CONFIRMATION (needs 1+16 bytes) */
+	{
+		uint8_t msg[8];
+		size_t pos = 0;
+		msg[pos++] = SSH_MSG_CHANNEL_OPEN_CONFIRMATION;
+		dssh_serialize_uint32(0, msg, sizeof(msg), &pos); /* local_id */
+		/* Missing: remote_id, window, max_packet (12 bytes) */
+		ASSERT_OK(dssh_transport_send_packet(ctx.client, msg, pos, NULL));
+	}
+
+	struct timespec ts = { .tv_sec = 0, .tv_nsec = 100000000 };
+	thrd_sleep(&ts, NULL);
+	ASSERT_TRUE(ctx.server->demux_running);
+
+	conn_cleanup(&ctx);
+	return TEST_PASS;
+}
+
+/* ================================================================
+ * Coverage: OPEN_CONFIRMATION for unknown channel (line 646)
+ * ================================================================ */
+
+static int
+test_open_confirmation_unknown_channel(void)
+{
+	struct conn_ctx ctx;
+	if (conn_setup(&ctx) < 0)
+		return TEST_FAIL;
+
+	/* Send OPEN_CONFIRMATION for a channel ID that doesn't exist */
+	{
+		uint8_t msg[20];
+		size_t pos = 0;
+		msg[pos++] = SSH_MSG_CHANNEL_OPEN_CONFIRMATION;
+		dssh_serialize_uint32(9999, msg, sizeof(msg), &pos); /* bogus id */
+		dssh_serialize_uint32(0, msg, sizeof(msg), &pos);
+		dssh_serialize_uint32(0x200000, msg, sizeof(msg), &pos);
+		dssh_serialize_uint32(0x8000, msg, sizeof(msg), &pos);
+		ASSERT_OK(dssh_transport_send_packet(ctx.client, msg, pos, NULL));
+	}
+
+	struct timespec ts = { .tv_sec = 0, .tv_nsec = 100000000 };
+	thrd_sleep(&ts, NULL);
+	ASSERT_TRUE(ctx.server->demux_running);
+
+	conn_cleanup(&ctx);
+	return TEST_PASS;
+}
+
+/* ================================================================
+ * Coverage: unknown msg type dispatched to channel (line 612)
+ * — CHANNEL_SUCCESS/FAILURE when no request pending
+ * ================================================================ */
+
+static int
+test_channel_success_no_request(void)
+{
+	struct conn_ctx ctx;
+	if (conn_setup(&ctx) < 0)
+		return TEST_FAIL;
+
+	struct open_exec_ctx oc = {
+		.client = ctx.client,
+		.server = ctx.server,
+		.command = "echo success",
+		.cbs = &session_cbs,
+		.accept_timeout = 5000,
+	};
+	if (open_exec_channel(&oc) < 0 || oc.client_ch == NULL || oc.server_ch == NULL) {
+		conn_cleanup(&ctx);
+		return TEST_FAIL;
+	}
+
+	/* Send CHANNEL_SUCCESS to the server channel (no request pending) */
+	{
+		uint8_t msg[8];
+		size_t pos = 0;
+		msg[pos++] = SSH_MSG_CHANNEL_SUCCESS;
+		dssh_serialize_uint32(oc.server_ch->local_id, msg, sizeof(msg), &pos);
+		ASSERT_OK(dssh_transport_send_packet(ctx.client, msg, pos, NULL));
+	}
+	/* Also CHANNEL_FAILURE */
+	{
+		uint8_t msg[8];
+		size_t pos = 0;
+		msg[pos++] = SSH_MSG_CHANNEL_FAILURE;
+		dssh_serialize_uint32(oc.server_ch->local_id, msg, sizeof(msg), &pos);
+		ASSERT_OK(dssh_transport_send_packet(ctx.client, msg, pos, NULL));
+	}
+
+	struct timespec ts = { .tv_sec = 0, .tv_nsec = 100000000 };
+	thrd_sleep(&ts, NULL);
+	ASSERT_TRUE(ctx.server->demux_running);
+
+	dssh_session_close(ctx.server, oc.server_ch, 0);
+	dssh_session_close(ctx.client, oc.client_ch, 0);
+	conn_cleanup(&ctx);
+	return TEST_PASS;
+}
+
+/* ================================================================
  * Coverage: send EOF/CLOSE already-sent guards
  * ================================================================ */
 
@@ -4174,6 +4285,9 @@ static struct dssh_test_entry tests[] = {
 	{ "test_session_write_ext_window_zero", test_session_write_ext_window_zero },
 	{ "test_accept_timeout_negative",       test_accept_timeout_negative },
 	{ "test_setup_exec_rejected_by_callback", test_setup_exec_rejected_by_callback },
+	{ "test_truncated_open_confirmation",   test_truncated_open_confirmation },
+	{ "test_open_conf_unknown_channel",    test_open_confirmation_unknown_channel },
+	{ "test_channel_success_no_request",   test_channel_success_no_request },
 	{ "test_double_eof_close",              test_double_eof_close },
 	{ "test_data_dlen_exceeds_payload",     test_data_dlen_exceeds_payload },
 };

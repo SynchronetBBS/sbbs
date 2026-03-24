@@ -1,6 +1,21 @@
 # DeuceSSH — Bugs found during branch coverage work
 
-(none outstanding)
+5. `dssh_session_set_banner_cb()` takes `void *cb` instead of a
+   typed function pointer.  All the other callback setters
+   (`set_debug_cb`, `set_global_request_cb`, etc.) should be
+   checked too — the interface should be type-safe.
+
+6. ssh-conn.c line 687: dead x11 channel type check compares
+   `type_len == 2` with `memcmp(ctype, "x11", 3)` — a 2-character
+   type can never match a 3-byte compare.  The x11 rejection is
+   fully handled by the `type_len == 3` check on line 689.
+   Line 687 should be deleted.
+
+7. curve25519-sha256.c, dh-gex-sha256.c: `ka->pubkey()` error
+   checks were incorrectly wrapped in `#ifndef DSSH_TESTING`,
+   causing uninitialized `k_s_len` to be used on failure (segfault).
+   Fixed in `dfa73f16f8`.  Same commit fixed 4 `serialize_bn_mpint()`
+   error checks in dh-gex.
 
 ## Fixed
 
