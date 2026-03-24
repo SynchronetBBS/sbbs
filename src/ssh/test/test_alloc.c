@@ -1016,6 +1016,442 @@ test_alloc_handshake_iterate(void)
 }
 
 /* ================================================================
+ * Iterative auth alloc failures using the library-only allocator.
+ *
+ * For each N, we: handshake (allocator off) → arm allocator → run
+ * two-threaded auth → check.  Auth callbacks are simple accept-all.
+ * ================================================================ */
+
+static int
+iter_password_cb(const uint8_t *username, size_t username_len,
+    const uint8_t *password, size_t password_len,
+    uint8_t **change_prompt, size_t *change_prompt_len,
+    void *cbdata)
+{
+	(void)username; (void)username_len;
+	(void)password; (void)password_len;
+	(void)change_prompt; (void)change_prompt_len;
+	(void)cbdata;
+	return DSSH_AUTH_SUCCESS;
+}
+
+struct auth_alloc_ctx {
+	struct mock_io_state *io;
+	dssh_session sess;
+	struct dssh_auth_server_cbs *cbs;
+	int result;
+	mtx_t *barrier_mtx;
+	cnd_t *barrier_cnd;
+	int *barrier_count;
+};
+
+static int
+auth_alloc_client_thread(void *arg)
+{
+	struct auth_alloc_ctx *ctx = arg;
+	mtx_lock(ctx->barrier_mtx);
+	(*ctx->barrier_count)++;
+	cnd_broadcast(ctx->barrier_cnd);
+	while (*ctx->barrier_count < 3)
+		cnd_wait(ctx->barrier_cnd, ctx->barrier_mtx);
+	mtx_unlock(ctx->barrier_mtx);
+
+	ctx->result = dssh_auth_password(ctx->sess, "testuser",
+	    "testpass", NULL, NULL);
+	if (ctx->result < 0)
+		mock_io_close_c2s(ctx->io);
+	return 0;
+}
+
+static int
+auth_alloc_server_thread(void *arg)
+{
+	struct auth_alloc_ctx *ctx = arg;
+	mtx_lock(ctx->barrier_mtx);
+	(*ctx->barrier_count)++;
+	cnd_broadcast(ctx->barrier_cnd);
+	while (*ctx->barrier_count < 3)
+		cnd_wait(ctx->barrier_cnd, ctx->barrier_mtx);
+	mtx_unlock(ctx->barrier_mtx);
+
+	uint8_t username[256];
+	size_t username_len;
+	ctx->result = dssh_auth_server(ctx->sess, ctx->cbs,
+	    username, &username_len);
+	if (ctx->result < 0)
+		mock_io_close_s2c(ctx->io);
+	return 0;
+}
+
+static int
+test_alloc_auth_iterate(void)
+{
+	struct dssh_auth_server_cbs cbs = {0};
+	cbs.methods_str = "password";
+	cbs.password_cb = iter_password_cb;
+
+	for (int n = 0; n < 50; n++) {
+		dssh_test_reset_global_config();
+		dssh_test_alloc_reset();
+		mock_alloc_reset();
+
+		if (register_all() < 0)
+			return TEST_FAIL;
+		if (test_generate_host_key() < 0)
+			return TEST_FAIL;
+
+		struct mock_io_state io;
+		if (mock_io_init(&io, 0) < 0)
+			return TEST_FAIL;
+
+		dssh_transport_set_callbacks(mock_tx_dispatch, mock_rx_dispatch,
+		    mock_rxline_dispatch, mock_extra_line_cb);
+
+		dssh_session client = dssh_session_init(true, 0);
+		if (client == NULL) {
+			mock_io_free(&io);
+			continue;
+		}
+		dssh_session_set_cbdata(client, &io, &io, &io, &io);
+
+		dssh_session server = init_server_session();
+		if (server == NULL) {
+			dssh_session_cleanup(client);
+			mock_io_free(&io);
+			continue;
+		}
+		dssh_session_set_cbdata(server, &io, &io, &io, &io);
+
+		/* Handshake with allocator OFF */
+		{
+			struct handshake_ctx hctx;
+			hctx.io = io;
+			hctx.client = client;
+			hctx.server = server;
+			thrd_t ct, st;
+			thrd_create(&ct, handshake_client_thread, &hctx);
+			thrd_create(&st, handshake_server_thread, &hctx);
+			thrd_join(ct, NULL);
+			thrd_join(st, NULL);
+			if (hctx.client_result != 0 || hctx.server_result != 0) {
+				mock_io_close_c2s(&io);
+				mock_io_close_s2c(&io);
+				dssh_session_cleanup(server);
+				dssh_session_cleanup(client);
+				mock_io_free(&io);
+				dssh_test_reset_global_config();
+				continue;
+			}
+		}
+
+		/* Auth with allocator armed at N */
+		mtx_t bmtx;
+		cnd_t bcnd;
+		int bcount = 0;
+		mtx_init(&bmtx, mtx_plain);
+		cnd_init(&bcnd);
+
+		struct auth_alloc_ctx ca = {
+			.io = &io, .sess = client,
+			.barrier_mtx = &bmtx, .barrier_cnd = &bcnd,
+			.barrier_count = &bcount,
+		};
+		struct auth_alloc_ctx sa = {
+			.io = &io, .sess = server, .cbs = &cbs,
+			.barrier_mtx = &bmtx, .barrier_cnd = &bcnd,
+			.barrier_count = &bcount,
+		};
+
+		thrd_t ct, st;
+		thrd_create(&ct, auth_alloc_client_thread, &ca);
+		thrd_create(&st, auth_alloc_server_thread, &sa);
+
+		mtx_lock(&bmtx);
+		while (bcount < 2)
+			cnd_wait(&bcnd, &bmtx);
+		dssh_test_alloc_fail_after(n);
+		bcount = 3;
+		cnd_broadcast(&bcnd);
+		mtx_unlock(&bmtx);
+
+		thrd_join(ct, NULL);
+		thrd_join(st, NULL);
+		cnd_destroy(&bcnd);
+		mtx_destroy(&bmtx);
+
+		dssh_test_alloc_reset();
+		bool ok = (ca.result == 0 && sa.result == 0);
+
+		mock_io_close_c2s(&io);
+		mock_io_close_s2c(&io);
+		dssh_session_cleanup(server);
+		dssh_session_cleanup(client);
+		mock_io_free(&io);
+		dssh_test_reset_global_config();
+
+		if (ok) {
+			ASSERT_TRUE(n > 0);
+			return TEST_PASS;
+		}
+	}
+
+	return TEST_FAIL;
+}
+
+static int
+auth_only_client_thread(void *arg)
+{
+	struct auth_alloc_ctx *ctx = arg;
+	ctx->result = dssh_auth_password(ctx->sess, "testuser",
+	    "testpass", NULL, NULL);
+	if (ctx->result < 0)
+		mock_io_close_c2s(ctx->io);
+	return 0;
+}
+
+static int
+auth_only_server_thread(void *arg)
+{
+	struct auth_alloc_ctx *ctx = arg;
+	uint8_t username[256];
+	size_t username_len;
+	ctx->result = dssh_auth_server(ctx->sess, ctx->cbs,
+	    username, &username_len);
+	if (ctx->result < 0)
+		mock_io_close_s2c(ctx->io);
+	return 0;
+}
+
+/* ================================================================
+ * Iterative conn alloc failures: session_start + channel open.
+ *
+ * Handshake + auth with allocator off, then arm allocator and
+ * exercise session_start, channel open, and accept.
+ * ================================================================ */
+
+static int
+session_channel_request_cb(const char *type, size_t type_len,
+    bool want_reply, const uint8_t *data, size_t data_len,
+    void *cbdata)
+{
+	(void)type; (void)type_len; (void)want_reply;
+	(void)data; (void)data_len; (void)cbdata;
+	return 0;  /* accept */
+}
+
+static const struct dssh_server_session_cbs iter_session_cbs = {
+	.request_cb = session_channel_request_cb,
+};
+
+struct conn_alloc_ctx {
+	struct mock_io_state *io;
+	dssh_session sess;
+	dssh_channel ch;
+	int result;
+};
+
+static int
+conn_alloc_client_thread(void *arg)
+{
+	struct conn_alloc_ctx *ctx = arg;
+	int res = dssh_session_start(ctx->sess);
+	if (res < 0) {
+		ctx->result = res;
+		mock_io_close_c2s(ctx->io);
+		return 0;
+	}
+	ctx->ch = dssh_session_open_exec(ctx->sess, "echo test");
+	ctx->result = ctx->ch ? 0 : -1;
+	if (ctx->result < 0)
+		mock_io_close_c2s(ctx->io);
+	return 0;
+}
+
+static int
+conn_alloc_server_thread(void *arg)
+{
+	struct conn_alloc_ctx *ctx = arg;
+	int res = dssh_session_start(ctx->sess);
+	if (res < 0) {
+		ctx->result = res;
+		mock_io_close_s2c(ctx->io);
+		return 0;
+	}
+	struct dssh_incoming_open *inc = NULL;
+	res = dssh_session_accept(ctx->sess, &inc, 2000);
+	if (res < 0 || inc == NULL) {
+		ctx->result = -1;
+		mock_io_close_s2c(ctx->io);
+		return 0;
+	}
+	const char *req_type = NULL, *req_data = NULL;
+	ctx->ch = dssh_session_accept_channel(ctx->sess, inc,
+	    &iter_session_cbs, &req_type, &req_data);
+	ctx->result = ctx->ch ? 0 : -1;
+	if (ctx->result < 0)
+		mock_io_close_s2c(ctx->io);
+	return 0;
+}
+
+/*
+ * Watchdog: after a delay, closes pipes and sets terminate on both
+ * sessions to break any deadlocks from alloc-failure mid-protocol.
+ */
+struct watchdog_ctx {
+	struct mock_io_state *io;
+	dssh_session client;
+	dssh_session server;
+	int delay_ms;
+};
+
+static int
+watchdog_thread(void *arg)
+{
+	struct watchdog_ctx *ctx = arg;
+	struct timespec ts = {
+		.tv_sec = ctx->delay_ms / 1000,
+		.tv_nsec = (ctx->delay_ms % 1000) * 1000000L,
+	};
+	thrd_sleep(&ts, NULL);
+	mock_io_close_c2s(ctx->io);
+	mock_io_close_s2c(ctx->io);
+	if (ctx->client->conn_initialized)
+		dssh_session_set_terminate(ctx->client);
+	if (ctx->server->conn_initialized)
+		dssh_session_set_terminate(ctx->server);
+	return 0;
+}
+
+static int
+test_alloc_conn_iterate(void)
+{
+	struct dssh_auth_server_cbs cbs = {0};
+	cbs.methods_str = "password";
+	cbs.password_cb = iter_password_cb;
+
+	for (int n = 0; n < 40; n++) {
+		dssh_test_reset_global_config();
+		dssh_test_alloc_reset();
+		mock_alloc_reset();
+
+		if (register_all() < 0)
+			return TEST_FAIL;
+		if (test_generate_host_key() < 0)
+			return TEST_FAIL;
+
+		struct mock_io_state io;
+		if (mock_io_init(&io, 0) < 0)
+			return TEST_FAIL;
+
+		dssh_transport_set_callbacks(mock_tx_dispatch, mock_rx_dispatch,
+		    mock_rxline_dispatch, mock_extra_line_cb);
+
+		dssh_session client = dssh_session_init(true, 0);
+		if (client == NULL) {
+			mock_io_free(&io);
+			continue;
+		}
+		dssh_session_set_cbdata(client, &io, &io, &io, &io);
+
+		dssh_session server = init_server_session();
+		if (server == NULL) {
+			dssh_session_cleanup(client);
+			mock_io_free(&io);
+			continue;
+		}
+		dssh_session_set_cbdata(server, &io, &io, &io, &io);
+
+		/* Handshake with allocator OFF */
+		{
+			struct handshake_ctx hctx = {
+				.io = io, .client = client, .server = server,
+			};
+			thrd_t ct, st;
+			thrd_create(&ct, handshake_client_thread, &hctx);
+			thrd_create(&st, handshake_server_thread, &hctx);
+			thrd_join(ct, NULL);
+			thrd_join(st, NULL);
+			if (hctx.client_result != 0 || hctx.server_result != 0) {
+				mock_io_close_c2s(&io);
+				mock_io_close_s2c(&io);
+				dssh_session_cleanup(server);
+				dssh_session_cleanup(client);
+				mock_io_free(&io);
+				dssh_test_reset_global_config();
+				continue;
+			}
+		}
+
+		/* Auth with allocator OFF */
+		{
+			struct auth_alloc_ctx ca = { .io = &io, .sess = client };
+			struct auth_alloc_ctx sa = {
+				.io = &io, .sess = server, .cbs = &cbs,
+			};
+			thrd_t ct, st;
+			thrd_create(&ct, auth_only_client_thread, &ca);
+			thrd_create(&st, auth_only_server_thread, &sa);
+			thrd_join(ct, NULL);
+			thrd_join(st, NULL);
+			if (ca.result != 0 || sa.result != 0) {
+				mock_io_close_c2s(&io);
+				mock_io_close_s2c(&io);
+				dssh_session_cleanup(server);
+				dssh_session_cleanup(client);
+				mock_io_free(&io);
+				dssh_test_reset_global_config();
+				continue;
+			}
+		}
+
+		/* Arm allocator, launch conn threads + watchdog */
+		dssh_test_alloc_fail_after(n);
+
+		struct conn_alloc_ctx cca = { .io = &io, .sess = client };
+		struct conn_alloc_ctx csa = { .io = &io, .sess = server };
+		struct watchdog_ctx wctx = {
+			.io = &io, .client = client, .server = server,
+			.delay_ms = 3000,
+		};
+
+		thrd_t ct, st, wt;
+		thrd_create(&wt, watchdog_thread, &wctx);
+		thrd_create(&ct, conn_alloc_client_thread, &cca);
+		thrd_create(&st, conn_alloc_server_thread, &csa);
+
+		thrd_join(ct, NULL);
+		thrd_join(st, NULL);
+		thrd_join(wt, NULL);
+
+		dssh_test_alloc_reset();
+		bool ok = (cca.result == 0 && csa.result == 0);
+
+		/* Clean up */
+		mock_io_close_c2s(&io);
+		mock_io_close_s2c(&io);
+		if (ok && cca.ch != NULL)
+			dssh_session_close(client, cca.ch, 0);
+		if (ok && csa.ch != NULL)
+			dssh_session_close(server, csa.ch, 0);
+		if (client->demux_running)
+			dssh_session_stop(client);
+		if (server->demux_running)
+			dssh_session_stop(server);
+		dssh_session_cleanup(server);
+		dssh_session_cleanup(client);
+		mock_io_free(&io);
+		dssh_test_reset_global_config();
+
+		if (ok) {
+			ASSERT_TRUE(n > 0);
+			return TEST_PASS;
+		}
+	}
+
+	return TEST_FAIL;
+}
+
+/* ================================================================
  * Test table
  * ================================================================ */
 
@@ -1057,6 +1493,12 @@ static struct dssh_test_entry tests[] = {
 
 	/* Iterative handshake (library-only allocator) */
 	{ "alloc/handshake_iterate",      test_alloc_handshake_iterate },
+
+	/* Iterative auth (library-only allocator) */
+	{ "alloc/auth_iterate",           test_alloc_auth_iterate },
+
+	/* Iterative conn (library-only allocator) */
+	{ "alloc/conn_iterate",           test_alloc_conn_iterate },
 };
 
 DSSH_TEST_MAIN(tests)
