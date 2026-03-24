@@ -3955,6 +3955,105 @@ test_setup_exec_rejected_by_callback(void)
 }
 
 /* ================================================================
+ * Coverage: send EOF/CLOSE already-sent guards
+ * ================================================================ */
+
+static int
+test_double_eof_close(void)
+{
+	struct conn_ctx ctx;
+	if (conn_setup(&ctx) < 0)
+		return TEST_SKIP;
+
+	struct open_exec_ctx oc = {
+		.client = ctx.client,
+		.server = ctx.server,
+		.command = "echo double",
+		.cbs = &session_cbs,
+		.accept_timeout = 5000,
+	};
+	if (open_exec_channel(&oc) < 0 || oc.client_ch == NULL || oc.server_ch == NULL) {
+		conn_cleanup(&ctx);
+		return TEST_FAIL;
+	}
+
+	/* Close normally, which sends EOF + CLOSE internally */
+	dssh_session_close(ctx.server, oc.server_ch, 0);
+
+	/* Client: close its side too */
+	dssh_session_close(ctx.client, oc.client_ch, 0);
+
+	conn_cleanup(&ctx);
+	return TEST_PASS;
+}
+
+/* ================================================================
+ * Coverage: demux DATA with dlen field > actual payload bytes
+ * ================================================================ */
+
+static int
+test_data_dlen_exceeds_payload(void)
+{
+	struct conn_ctx ctx;
+	if (conn_setup(&ctx) < 0)
+		return TEST_FAIL;
+
+	struct open_exec_ctx oc = {
+		.client = ctx.client,
+		.server = ctx.server,
+		.command = "echo dlen",
+		.cbs = &session_cbs,
+		.accept_timeout = 5000,
+	};
+	if (open_exec_channel(&oc) < 0 || oc.client_ch == NULL || oc.server_ch == NULL) {
+		conn_cleanup(&ctx);
+		return TEST_FAIL;
+	}
+
+	/* Send CHANNEL_DATA with dlen=100 but only 3 bytes of data */
+	{
+		uint8_t msg[32];
+		size_t pos = 0;
+		msg[pos++] = SSH_MSG_CHANNEL_DATA;
+		dssh_serialize_uint32(oc.server_ch->local_id, msg, sizeof(msg), &pos);
+		dssh_serialize_uint32(100, msg, sizeof(msg), &pos); /* dlen=100 */
+		memcpy(&msg[pos], "abc", 3);
+		pos += 3;
+		ASSERT_OK(dssh_transport_send_packet(ctx.client, msg, pos, NULL));
+	}
+
+	/* Send CHANNEL_EXTENDED_DATA with dlen=100 but only 2 bytes */
+	{
+		uint8_t msg[32];
+		size_t pos = 0;
+		msg[pos++] = SSH_MSG_CHANNEL_EXTENDED_DATA;
+		dssh_serialize_uint32(oc.server_ch->local_id, msg, sizeof(msg), &pos);
+		dssh_serialize_uint32(1, msg, sizeof(msg), &pos); /* data_type=stderr */
+		dssh_serialize_uint32(100, msg, sizeof(msg), &pos); /* dlen=100 */
+		memcpy(&msg[pos], "xy", 2);
+		pos += 2;
+		ASSERT_OK(dssh_transport_send_packet(ctx.client, msg, pos, NULL));
+	}
+
+	/* Brief delay for demux to process */
+	struct timespec ts = { .tv_sec = 0, .tv_nsec = 100000000 };
+	thrd_sleep(&ts, NULL);
+
+	/* Session should still be running — dlen is clamped to payload */
+	ASSERT_TRUE(ctx.server->demux_running);
+
+	/* Read whatever arrived — should be clamped data */
+	uint8_t buf[256];
+	int64_t n = dssh_session_read(ctx.server, oc.server_ch, buf, sizeof(buf));
+	ASSERT_TRUE(n >= 0);
+
+	dssh_session_close(ctx.server, oc.server_ch, 0);
+	dssh_session_close(ctx.client, oc.client_ch, 0);
+	conn_cleanup(&ctx);
+	return TEST_PASS;
+}
+
+/* ================================================================
  * Test table
  * ================================================================ */
 
@@ -4075,6 +4174,8 @@ static struct dssh_test_entry tests[] = {
 	{ "test_session_write_ext_window_zero", test_session_write_ext_window_zero },
 	{ "test_accept_timeout_negative",       test_accept_timeout_negative },
 	{ "test_setup_exec_rejected_by_callback", test_setup_exec_rejected_by_callback },
+	{ "test_double_eof_close",              test_double_eof_close },
+	{ "test_data_dlen_exceeds_payload",     test_data_dlen_exceeds_payload },
 };
 
 DSSH_TEST_MAIN(tests)

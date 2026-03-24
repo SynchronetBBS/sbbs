@@ -3813,6 +3813,261 @@ test_server_password_change_no_change_cb(void)
 }
 
 /* ================================================================
+ * Coverage: publickey has_sig=true with truncated sig data
+ * ================================================================ */
+
+static int
+test_server_parse_publickey_sig_truncated(void)
+{
+	/* has_sig=true, valid algo+blob, sig_len=100 but only 2 bytes */
+	struct parse_error_ctx pe;
+	if (parse_error_setup(&pe) < 0) {
+		parse_error_cleanup(&pe);
+		return TEST_FAIL;
+	}
+
+	uint8_t msg[256];
+	size_t pos = build_auth_prefix(msg, sizeof(msg), "publickey");
+	msg[pos++] = 1; /* has_sig = true */
+	dssh_serialize_uint32(11, msg, sizeof(msg), &pos);
+	memcpy(&msg[pos], "ssh-ed25519", 11);
+	pos += 11;
+	dssh_serialize_uint32(4, msg, sizeof(msg), &pos);
+	memcpy(&msg[pos], "blob", 4);
+	pos += 4;
+	/* sig_len says 100 but only 2 bytes follow */
+	dssh_serialize_uint32(100, msg, sizeof(msg), &pos);
+	msg[pos++] = 0;
+	msg[pos++] = 0;
+	ASSERT_OK(dssh_transport_send_packet(pe.hctx.client, msg, pos, NULL));
+
+	parse_error_cleanup(&pe);
+	ASSERT_TRUE(pe.sa.result < 0);
+	return TEST_PASS;
+}
+
+/* ================================================================
+ * Coverage: publickey has_sig=true, truncated algo data
+ * ================================================================ */
+
+static int
+test_server_parse_publickey_sig_trunc_algo(void)
+{
+	/* has_sig=true, algo_len=100 but only 2 bytes of algo data */
+	struct parse_error_ctx pe;
+	if (parse_error_setup(&pe) < 0) {
+		parse_error_cleanup(&pe);
+		return TEST_FAIL;
+	}
+
+	uint8_t msg[128];
+	size_t pos = build_auth_prefix(msg, sizeof(msg), "publickey");
+	msg[pos++] = 1; /* has_sig = true */
+	dssh_serialize_uint32(100, msg, sizeof(msg), &pos);
+	memcpy(&msg[pos], "xx", 2);
+	pos += 2;
+	ASSERT_OK(dssh_transport_send_packet(pe.hctx.client, msg, pos, NULL));
+
+	parse_error_cleanup(&pe);
+	ASSERT_TRUE(pe.sa.result < 0);
+	return TEST_PASS;
+}
+
+/* ================================================================
+ * Coverage: publickey has_sig=true, truncated blob data
+ * ================================================================ */
+
+static int
+test_server_parse_publickey_sig_trunc_blob(void)
+{
+	/* has_sig=true, valid algo, pk_len=100 but only 2 bytes of blob */
+	struct parse_error_ctx pe;
+	if (parse_error_setup(&pe) < 0) {
+		parse_error_cleanup(&pe);
+		return TEST_FAIL;
+	}
+
+	uint8_t msg[128];
+	size_t pos = build_auth_prefix(msg, sizeof(msg), "publickey");
+	msg[pos++] = 1; /* has_sig = true */
+	dssh_serialize_uint32(11, msg, sizeof(msg), &pos);
+	memcpy(&msg[pos], "ssh-ed25519", 11);
+	pos += 11;
+	dssh_serialize_uint32(100, msg, sizeof(msg), &pos);
+	memcpy(&msg[pos], "xx", 2);
+	pos += 2;
+	ASSERT_OK(dssh_transport_send_packet(pe.hctx.client, msg, pos, NULL));
+
+	parse_error_cleanup(&pe);
+	ASSERT_TRUE(pe.sa.result < 0);
+	return TEST_PASS;
+}
+
+/* ================================================================
+ * Coverage: publickey verify failure (valid format, bad signature)
+ * ================================================================ */
+
+static int
+test_server_publickey_verify_bad_sig(void)
+{
+	/* has_sig=true, known algo, valid blob format, garbage signature */
+	struct parse_error_ctx pe;
+	if (parse_error_setup(&pe) < 0) {
+		parse_error_cleanup(&pe);
+		return TEST_FAIL;
+	}
+
+	/* Get real public key blob for the registered key algo */
+	const char *algo = test_key_algo_name();
+	dssh_key_algo ka = dssh_transport_find_key_algo(algo);
+	if (ka == NULL || !ka->haskey(ka->ctx)) {
+		parse_error_cleanup(&pe);
+		return TEST_SKIP;
+	}
+	uint8_t pub_buf[1024];
+	size_t pub_len;
+	if (ka->pubkey(pub_buf, sizeof(pub_buf), &pub_len, ka->ctx) < 0) {
+		parse_error_cleanup(&pe);
+		return TEST_SKIP;
+	}
+
+	/* Build a publickey request with a garbage signature */
+	size_t algo_len = strlen(algo);
+	uint8_t msg[2048];
+	size_t pos = build_auth_prefix(msg, sizeof(msg), "publickey");
+	msg[pos++] = 1; /* has_sig = true */
+	dssh_serialize_uint32((uint32_t)algo_len, msg, sizeof(msg), &pos);
+	memcpy(&msg[pos], algo, algo_len);
+	pos += algo_len;
+	dssh_serialize_uint32((uint32_t)pub_len, msg, sizeof(msg), &pos);
+	memcpy(&msg[pos], pub_buf, pub_len);
+	pos += pub_len;
+	/* Garbage signature: valid wire format but wrong data */
+	uint8_t fake_sig[128];
+	size_t fspos = 0;
+	dssh_serialize_uint32((uint32_t)algo_len, fake_sig, sizeof(fake_sig), &fspos);
+	memcpy(&fake_sig[fspos], algo, algo_len);
+	fspos += algo_len;
+	dssh_serialize_uint32(32, fake_sig, sizeof(fake_sig), &fspos);
+	memset(&fake_sig[fspos], 0xAA, 32);
+	fspos += 32;
+	dssh_serialize_uint32((uint32_t)fspos, msg, sizeof(msg), &pos);
+	memcpy(&msg[pos], fake_sig, fspos);
+	pos += fspos;
+	ASSERT_OK(dssh_transport_send_packet(pe.hctx.client, msg, pos, NULL));
+
+	/* Server should verify the sig, fail, and send FAILURE.
+	 * Then the pipe closes and auth returns error. */
+	parse_error_cleanup(&pe);
+	/* Server should NOT have succeeded */
+	ASSERT_TRUE(pe.sa.result != 0);
+	return TEST_PASS;
+}
+
+/* ================================================================
+ * Coverage: password CHANGEREQ → cb returns CHANGE_PASSWORD again
+ * ================================================================ */
+
+static int
+changereq_loop_password_cb(const uint8_t *username, size_t username_len,
+    const uint8_t *password, size_t password_len,
+    uint8_t **change_prompt, size_t *change_prompt_len,
+    void *cbdata)
+{
+	(void)username; (void)username_len;
+	(void)password; (void)password_len;
+	*change_prompt = malloc(6);
+	if (*change_prompt == NULL) {
+		*change_prompt_len = 0;
+		return DSSH_AUTH_FAILURE;
+	}
+	memcpy(*change_prompt, "retry!", 6);
+	*change_prompt_len = 6;
+	return DSSH_AUTH_CHANGE_PASSWORD;
+}
+
+static int
+changereq_loop_change_cb(const uint8_t *username, size_t username_len,
+    const uint8_t *old_pw, size_t old_pw_len,
+    const uint8_t *new_pw, size_t new_pw_len,
+    uint8_t **prompt, size_t *prompt_len, void *cbdata)
+{
+	(void)username; (void)username_len;
+	(void)old_pw; (void)old_pw_len;
+	(void)new_pw; (void)new_pw_len;
+	int *count = cbdata;
+	(*count)++;
+	if (*count < 2) {
+		/* First attempt: ask for another change */
+		*prompt = malloc(10);
+		if (*prompt == NULL) {
+			*prompt_len = 0;
+			return DSSH_AUTH_FAILURE;
+		}
+		memcpy(*prompt, "try again!", 10);
+		*prompt_len = 10;
+		return DSSH_AUTH_CHANGE_PASSWORD;
+	}
+	/* Second attempt: accept */
+	return DSSH_AUTH_SUCCESS;
+}
+
+static int
+test_client_changereq_cb(const uint8_t *prompt, size_t prompt_len,
+    const uint8_t *language, size_t language_len,
+    uint8_t **new_password, size_t *new_password_len,
+    void *cbdata)
+{
+	(void)prompt; (void)prompt_len;
+	(void)language; (void)language_len;
+	(void)cbdata;
+	*new_password = malloc(7);
+	memcpy(*new_password, "newpass", 7);
+	*new_password_len = 7;
+	return 0;
+}
+
+static int
+test_password_changereq_loop(void)
+{
+	struct handshake_ctx ctx;
+	if (handshake_setup(&ctx) < 0) {
+		handshake_cleanup(&ctx);
+		return TEST_FAIL;
+	}
+
+	int change_count = 0;
+	struct auth_server_arg sa = {0};
+	sa.ctx = &ctx;
+	sa.cbs.methods_str = "password";
+	sa.cbs.password_cb = changereq_loop_password_cb;
+	sa.cbs.passwd_change_cb = changereq_loop_change_cb;
+	sa.cbs.cbdata = &change_count;
+
+	thrd_t st;
+	ASSERT_TRUE(thrd_create(&st, auth_server_thread, &sa) == thrd_success);
+
+	/* Client: password auth with change callback.
+	 * Server password_cb returns CHANGE_PASSWORD with prompt.
+	 * Client sends new password (change=true).
+	 * Server passwd_change_cb returns CHANGE_PASSWORD again (first time).
+	 * Client sends another new password.
+	 * Server passwd_change_cb returns SUCCESS (second time). */
+	int res = dssh_auth_password(ctx.client, "testuser", "oldpass",
+	    test_client_changereq_cb, NULL);
+
+	thrd_join(st, NULL);
+
+	/* Auth should have succeeded after the change loop */
+	ASSERT_EQ(res, 0);
+	ASSERT_EQ(sa.result, 0);
+	ASSERT_EQ(change_count, 2);
+
+	handshake_cleanup(&ctx);
+	return TEST_PASS;
+}
+
+/* ================================================================
  * Test table and main
  * ================================================================ */
 
@@ -3890,6 +4145,11 @@ static struct dssh_test_entry tests[] = {
 	{ "auth/server/pk_probe_rejected",   test_server_publickey_probe_rejected },
 	{ "auth/server/pw_change_rejected",  test_server_password_change_rejected },
 	{ "auth/server/pw_change_no_cb",     test_server_password_change_no_change_cb },
+	{ "auth/server/pk_sig_truncated",    test_server_parse_publickey_sig_truncated },
+	{ "auth/server/pk_sig_trunc_algo",   test_server_parse_publickey_sig_trunc_algo },
+	{ "auth/server/pk_sig_trunc_blob",   test_server_parse_publickey_sig_trunc_blob },
+	{ "auth/server/pk_verify_bad_sig",   test_server_publickey_verify_bad_sig },
+	{ "auth/pw_changereq_loop",          test_password_changereq_loop },
 };
 
 DSSH_TEST_MAIN(tests)
