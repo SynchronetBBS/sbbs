@@ -5,18 +5,6 @@
    (`set_debug_cb`, `set_global_request_cb`, etc.) should be
    checked too — the interface should be type-safe.
 
-6. ssh-conn.c line 687: dead x11 channel type check compares
-   `type_len == 2` with `memcmp(ctype, "x11", 3)` — a 2-character
-   type can never match a 3-byte compare.  The x11 rejection is
-   fully handled by the `type_len == 3` check on line 689.
-   Line 687 should be deleted.
-
-7. curve25519-sha256.c, dh-gex-sha256.c: `ka->pubkey()` error
-   checks were incorrectly wrapped in `#ifndef DSSH_TESTING`,
-   causing uninitialized `k_s_len` to be used on failure (segfault).
-   Fixed in `dfa73f16f8`.  Same commit fixed 4 `serialize_bn_mpint()`
-   error checks in dh-gex.
-
 ## Fixed
 
 1. Handshake/rekey failure did not set terminate flag.
@@ -35,3 +23,11 @@
    left sess->trans.shared_secret pointing to it.  dssh_transport_cleanup
    then freed the same pointer again.  Found by valgrind.
    Fixed: NULL out shared_secret/shared_secret_sz on the error path.
+
+5. curve25519-sha256.c, dh-gex-sha256.c: `ka->pubkey()` error checks
+   incorrectly wrapped in `#ifndef DSSH_TESTING`, causing uninitialized
+   `k_s_len` to be used on failure (segfault).  Fixed in `dfa73f16f8`.
+   Same commit fixed 4 `serialize_bn_mpint()` error checks in dh-gex.
+
+6. ssh-conn.c: dead x11 channel type check — `type_len == 2` with
+   `memcmp(ctype, "x11", 3)` could never match.  Deleted.

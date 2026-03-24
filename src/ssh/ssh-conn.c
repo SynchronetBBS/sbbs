@@ -684,8 +684,6 @@ demux_channel_open(dssh_session sess, uint8_t *payload, size_t payload_len)
 
 	/* Auto-reject forbidden channel types */
 	bool reject = false;
-	if (type_len == 2 && memcmp(ctype, "x11", 3) == 0)
-		reject = true;
 	if (type_len == 3 && memcmp(ctype, "x11", 3) == 0)
 		reject = true;
 	if (type_len == 15 && memcmp(ctype, "forwarded-tcpip", 15) == 0)
