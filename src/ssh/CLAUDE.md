@@ -23,12 +23,13 @@ Produces `libdeucessh.a` (static) and `libdeucessh.so` (shared).
 
 ## Testing
 
-~600 tests across 11 executables, 23 CTest runs (~42s with key caching):
+~700 tests across 11 executables, 26 CTest runs (~120s sequential,
+~40s with `-j8`):
 ```sh
 cmake -S . -B build -DDEUCESSH_BUILD_TESTS=ON
 cmake --build build -j8
 cd build
-ctest                        # run all
+ctest -j8                    # run all in parallel
 ctest -R dssh_unit           # unit tests only
 ctest -R dssh_layer          # layer tests only
 ctest -R dssh_integration    # integration only
@@ -37,7 +38,7 @@ ctest -R dssh_integration    # integration only
 
 Test infrastructure:
 - `test/dssh_test.h` — test framework (assert macros, PASS/FAIL/SKIP, runner)
-- `test/mock_io.h/.c` — bidirectional mock I/O with timed-wait condvar sync
+- `test/mock_io.h/.c` — bidirectional mock I/O via socketpair()
 - `test/mock_alloc.h/.c` — process-wide alloc injection (--wrap=malloc)
 - `test/dssh_test_alloc.h/.c` — library-only alloc injection (macro-based,
   doesn't affect OpenSSL)
