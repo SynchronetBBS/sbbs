@@ -2267,6 +2267,774 @@ test_ossl_kex_client_iterate(void)
 }
 
 /* ================================================================
+ * Client-side parse/validate tests.  A "bad server" thread sends
+ * crafted packets to exercise error paths in the client handler.
+ * ================================================================ */
+
+struct bad_server_ctx {
+	struct mock_io_state *io;
+	dssh_session sess;
+	const uint8_t *reply_data;
+	size_t reply_len;
+	int result;
+};
+
+/*
+ * Bad server: reads GEX_REQUEST, sends a pre-built reply, then
+ * reads GEX_INIT (if the client gets that far) and closes.
+ */
+static int
+bad_server_group_thread(void *arg)
+{
+	struct bad_server_ctx *ctx = arg;
+	dssh_test_ossl_exclude_thread();
+	dssh_test_alloc_exclude_thread();
+
+	/* Read GEX_REQUEST from client */
+	uint8_t msg_type;
+	uint8_t *payload;
+	size_t payload_len;
+	ctx->result = dssh_transport_recv_packet(ctx->sess,
+	    &msg_type, &payload, &payload_len);
+	if (ctx->result < 0) {
+		mock_io_close_s2c(ctx->io);
+		return 0;
+	}
+
+	/* Send the crafted reply (if any) */
+	if (ctx->reply_data != NULL && ctx->reply_len > 0) {
+		ctx->result = dssh_transport_send_packet(ctx->sess,
+		    ctx->reply_data, ctx->reply_len, NULL);
+	}
+
+	/* Close server output so client unblocks */
+	mock_io_close_s2c(ctx->io);
+	return 0;
+}
+
+/*
+ * Bad server that sends a valid GEX_GROUP, reads GEX_INIT, then
+ * sends a crafted GEX_REPLY.
+ */
+static int
+bad_server_reply_thread(void *arg)
+{
+	struct bad_server_ctx *ctx = arg;
+	dssh_test_ossl_exclude_thread();
+	dssh_test_alloc_exclude_thread();
+
+	/* Read GEX_REQUEST */
+	uint8_t msg_type;
+	uint8_t *payload;
+	size_t payload_len;
+	ctx->result = dssh_transport_recv_packet(ctx->sess,
+	    &msg_type, &payload, &payload_len);
+	if (ctx->result < 0)
+		goto done;
+
+	/* Send a real GEX_GROUP via the real handler's first half.
+	 * Actually, just run the real kex handler — it sends GROUP
+	 * and reads INIT internally.  Too complex.
+	 *
+	 * Simpler: send GROUP manually, read INIT, send bad REPLY. */
+
+	/* Get the DH group from the provider */
+	struct dssh_dh_gex_provider *prov =
+	    (struct dssh_dh_gex_provider *)ctx->sess->trans.kex_ctx;
+	uint8_t *p_bytes = NULL, *g_bytes = NULL;
+	size_t p_len, g_len;
+	ctx->result = prov->select_group(2048, 4096, 8192,
+	    &p_bytes, &p_len, &g_bytes, &g_len, prov->cbdata);
+	if (ctx->result < 0)
+		goto done;
+
+	/* Build and send GEX_GROUP */
+	{
+		BIGNUM *p = BN_bin2bn(p_bytes, p_len, NULL);
+		BIGNUM *g_bn = BN_bin2bn(g_bytes, g_len, NULL);
+		free(p_bytes);
+		free(g_bytes);
+		if (!p || !g_bn) {
+			BN_free(p);
+			BN_free(g_bn);
+			ctx->result = -1;
+			goto done;
+		}
+		uint8_t group_msg[4096];
+		size_t gp = 0;
+		group_msg[gp++] = 31; /* GEX_GROUP */
+		serialize_bn_mpint(p, group_msg, sizeof(group_msg), &gp);
+		serialize_bn_mpint(g_bn, group_msg, sizeof(group_msg), &gp);
+		BN_free(p);
+		BN_free(g_bn);
+		ctx->result = dssh_transport_send_packet(ctx->sess,
+		    group_msg, gp, NULL);
+		if (ctx->result < 0)
+			goto done;
+	}
+
+	/* Read GEX_INIT (client's e value) */
+	ctx->result = dssh_transport_recv_packet(ctx->sess,
+	    &msg_type, &payload, &payload_len);
+	if (ctx->result < 0)
+		goto done;
+
+	/* Send the crafted bad REPLY */
+	ctx->result = dssh_transport_send_packet(ctx->sess,
+	    ctx->reply_data, ctx->reply_len, NULL);
+
+done:
+	mock_io_close_s2c(ctx->io);
+	return 0;
+}
+
+static int
+dhgex_client_parse_test(int (*server_thread)(void *),
+    const uint8_t *reply, size_t reply_len)
+{
+	dssh_test_reset_global_config();
+	dssh_test_alloc_reset();
+	dssh_test_ossl_reset();
+	mock_alloc_reset();
+
+	if (register_all() < 0)
+		return TEST_FAIL;
+	if (test_generate_host_key() < 0)
+		return TEST_FAIL;
+
+	struct mock_io_state io;
+	if (mock_io_init(&io, 0) < 0)
+		return TEST_FAIL;
+
+	dssh_transport_set_callbacks(mock_tx_dispatch, mock_rx_dispatch,
+	    mock_rxline_dispatch, mock_extra_line_cb);
+
+	dssh_session client = dssh_session_init(true, 0);
+	if (client == NULL) {
+		mock_io_free(&io);
+		return TEST_FAIL;
+	}
+	dssh_session_set_cbdata(client, &io, &io, &io, &io);
+
+	dssh_session server = init_server_session();
+	if (server == NULL) {
+		dssh_session_cleanup(client);
+		mock_io_free(&io);
+		return TEST_FAIL;
+	}
+	dssh_session_set_cbdata(server, &io, &io, &io, &io);
+
+	/* version_exchange + kexinit */
+	{
+		struct ve_ki_ctx ca = { .io = &io, .sess = client };
+		struct ve_ki_ctx sa = { .io = &io, .sess = server };
+		thrd_t ct, st;
+		thrd_create(&ct, ve_ki_thread, &ca);
+		thrd_create(&st, ve_ki_thread, &sa);
+		thrd_join(ct, NULL);
+		thrd_join(st, NULL);
+		if (ca.result != 0 || sa.result != 0) {
+			mock_io_close_c2s(&io);
+			mock_io_close_s2c(&io);
+			dssh_session_cleanup(server);
+			dssh_session_cleanup(client);
+			mock_io_free(&io);
+			dssh_test_reset_global_config();
+			return TEST_FAIL;
+		}
+	}
+
+	struct bad_server_ctx sctx = {
+		.io = &io, .sess = server,
+		.reply_data = reply, .reply_len = reply_len
+	};
+	thrd_t st;
+	thrd_create(&st, server_thread, &sctx);
+	int cres = dssh_transport_kex(client);
+	mock_io_close_c2s(&io);
+	thrd_join(st, NULL);
+
+	mock_io_close_s2c(&io);
+	dssh_session_cleanup(server);
+	dssh_session_cleanup(client);
+	mock_io_free(&io);
+	dssh_test_reset_global_config();
+
+	return cres;
+}
+
+/* Line 220: recv GEX_GROUP fails (server closes before sending) */
+static int
+test_dhgex_client_recv_group_fail(void)
+{
+	if (!test_using_dhgex())
+		return TEST_SKIP;
+	/* Empty reply + close → recv fails */
+	int res = dhgex_client_parse_test(bad_server_group_thread, NULL, 0);
+	ASSERT_TRUE(res < 0);
+	return TEST_PASS;
+}
+
+/* Line 226: GEX_GROUP payload empty after msg_type */
+static int
+test_dhgex_client_group_empty(void)
+{
+	if (!test_using_dhgex())
+		return TEST_SKIP;
+	uint8_t group[1] = { 31 }; /* GEX_GROUP, no p or g */
+	int res = dhgex_client_parse_test(bad_server_group_thread, group, 1);
+	ASSERT_TRUE(res < 0);
+	return TEST_PASS;
+}
+
+/* Line 230: GEX_GROUP has p but no g */
+static int
+test_dhgex_client_group_no_g(void)
+{
+	if (!test_using_dhgex())
+		return TEST_SKIP;
+	/* GEX_GROUP with p=2 but no g */
+	uint8_t group[16];
+	size_t gp = 0;
+	group[gp++] = 31;
+	dssh_serialize_uint32(1, group, sizeof(group), &gp);
+	group[gp++] = 0x02; /* mpint p=2 */
+	int res = dhgex_client_parse_test(bad_server_group_thread, group, gp);
+	ASSERT_TRUE(res < 0);
+	return TEST_PASS;
+}
+
+/* Line 264: wrong msg_type in GEX_REPLY */
+static int
+test_dhgex_client_bad_reply_type(void)
+{
+	if (!test_using_dhgex())
+		return TEST_SKIP;
+	/* Send a GEX_INIT(32) instead of GEX_REPLY(33) */
+	uint8_t reply[8];
+	size_t rp = 0;
+	reply[rp++] = 32; /* wrong type */
+	dssh_serialize_uint32(1, reply, sizeof(reply), &rp);
+	reply[rp++] = 0x02;
+	int res = dhgex_client_parse_test(bad_server_reply_thread, reply, rp);
+	ASSERT_TRUE(res < 0);
+	return TEST_PASS;
+}
+
+/* Line 268: GEX_REPLY too short for K_S length field */
+static int
+test_dhgex_client_reply_short_ks(void)
+{
+	if (!test_using_dhgex())
+		return TEST_SKIP;
+	/* GEX_REPLY with only msg_type byte — no K_S length field */
+	uint8_t reply[1] = { 33 };
+	int res = dhgex_client_parse_test(bad_server_reply_thread, reply, 1);
+	ASSERT_TRUE(res < 0);
+	return TEST_PASS;
+}
+
+/* Line 270: GEX_REPLY with K_S length overrunning payload */
+static int
+test_dhgex_client_reply_truncated_ks(void)
+{
+	if (!test_using_dhgex())
+		return TEST_SKIP;
+	/* GEX_REPLY with K_S length claiming 1000 bytes but only 2 present */
+	uint8_t reply[16];
+	size_t rp = 0;
+	reply[rp++] = 33; /* GEX_REPLY */
+	dssh_serialize_uint32(1000, reply, sizeof(reply), &rp);
+	reply[rp++] = 0x01;
+	reply[rp++] = 0x02;
+	int res = dhgex_client_parse_test(bad_server_reply_thread, reply, rp);
+	ASSERT_TRUE(res < 0);
+	return TEST_PASS;
+}
+
+/* Line 280: GEX_REPLY with f=0 (invalid DH value) */
+static int
+test_dhgex_client_reply_f_zero(void)
+{
+	if (!test_using_dhgex())
+		return TEST_SKIP;
+	/* GEX_REPLY: K_S="", f=0, sig="" */
+	uint8_t reply[32];
+	size_t rp = 0;
+	reply[rp++] = 33; /* GEX_REPLY */
+	/* K_S: empty string (len=0) */
+	dssh_serialize_uint32(0, reply, sizeof(reply), &rp);
+	/* f: mpint 0 (len=0) */
+	dssh_serialize_uint32(0, reply, sizeof(reply), &rp);
+	/* sig: empty (len=0) — won't be reached since f=0 fails first */
+	dssh_serialize_uint32(0, reply, sizeof(reply), &rp);
+	int res = dhgex_client_parse_test(bad_server_reply_thread, reply, rp);
+	ASSERT_TRUE(res < 0);
+	return TEST_PASS;
+}
+
+/* Line 289: GEX_REPLY too short for sig length field */
+static int
+test_dhgex_client_reply_short_sig(void)
+{
+	if (!test_using_dhgex())
+		return TEST_SKIP;
+	/* GEX_REPLY: K_S="", f=2 (valid), but payload ends before sig len */
+	uint8_t reply[16];
+	size_t rp = 0;
+	reply[rp++] = 33; /* GEX_REPLY */
+	/* K_S: empty string (len=0) */
+	dssh_serialize_uint32(0, reply, sizeof(reply), &rp);
+	/* f: mpint 2 */
+	dssh_serialize_uint32(1, reply, sizeof(reply), &rp);
+	reply[rp++] = 0x02;
+	/* No sig at all — payload ends here */
+	int res = dhgex_client_parse_test(bad_server_reply_thread, reply, rp);
+	ASSERT_TRUE(res < 0);
+	return TEST_PASS;
+}
+
+/* Line 291: GEX_REPLY with sig length overrunning payload */
+static int
+test_dhgex_client_reply_truncated_sig(void)
+{
+	if (!test_using_dhgex())
+		return TEST_SKIP;
+	/* GEX_REPLY: K_S="", f=2 (valid), sig claiming 1000 bytes */
+	uint8_t reply[32];
+	size_t rp = 0;
+	reply[rp++] = 33; /* GEX_REPLY */
+	/* K_S: empty string */
+	dssh_serialize_uint32(0, reply, sizeof(reply), &rp);
+	/* f: mpint 2 */
+	dssh_serialize_uint32(1, reply, sizeof(reply), &rp);
+	reply[rp++] = 0x02;
+	/* sig: claiming 1000 bytes but message ends here */
+	dssh_serialize_uint32(1000, reply, sizeof(reply), &rp);
+	int res = dhgex_client_parse_test(bad_server_reply_thread, reply, rp);
+	ASSERT_TRUE(res < 0);
+	return TEST_PASS;
+}
+
+/*
+ * Client kex with ka==NULL or ka->verify==NULL.  Uses two threads
+ * with the server excluded.  The client runs through the full
+ * handshake crypto, then hits the ka guard at the end.
+ */
+static int
+test_ossl_kex_client_ka_null(void)
+{
+	if (!test_using_dhgex())
+		return TEST_SKIP;
+
+	dssh_test_reset_global_config();
+	dssh_test_alloc_reset();
+	dssh_test_ossl_reset();
+	mock_alloc_reset();
+
+	if (register_all() < 0)
+		return TEST_FAIL;
+	if (test_generate_host_key() < 0)
+		return TEST_FAIL;
+
+	struct mock_io_state io;
+	if (mock_io_init(&io, 0) < 0)
+		return TEST_FAIL;
+
+	dssh_transport_set_callbacks(mock_tx_dispatch, mock_rx_dispatch,
+	    mock_rxline_dispatch, mock_extra_line_cb);
+
+	dssh_session client = dssh_session_init(true, 0);
+	if (client == NULL) {
+		mock_io_free(&io);
+		return TEST_FAIL;
+	}
+	dssh_session_set_cbdata(client, &io, &io, &io, &io);
+
+	dssh_session server = init_server_session();
+	if (server == NULL) {
+		dssh_session_cleanup(client);
+		mock_io_free(&io);
+		return TEST_FAIL;
+	}
+	dssh_session_set_cbdata(server, &io, &io, &io, &io);
+
+	/* version_exchange + kexinit in threads */
+	{
+		struct ve_ki_ctx ca = { .io = &io, .sess = client };
+		struct ve_ki_ctx sa = { .io = &io, .sess = server };
+		thrd_t ct, st;
+		thrd_create(&ct, ve_ki_thread, &ca);
+		thrd_create(&st, ve_ki_thread, &sa);
+		thrd_join(ct, NULL);
+		thrd_join(st, NULL);
+		if (ca.result != 0 || sa.result != 0) {
+			mock_io_close_c2s(&io);
+			mock_io_close_s2c(&io);
+			dssh_session_cleanup(server);
+			dssh_session_cleanup(client);
+			mock_io_free(&io);
+			dssh_test_reset_global_config();
+			return TEST_FAIL;
+		}
+	}
+
+	/* Null out client's key_algo_selected so ka==NULL at line 310 */
+	client->trans.key_algo_selected = NULL;
+
+	struct kex_excluded_ctx sctx = {
+		.io = &io, .sess = server
+	};
+	thrd_t st;
+	thrd_create(&st, kex_excluded_thread, &sctx);
+	int cres = dssh_transport_kex(client);
+	mock_io_close_c2s(&io);
+	thrd_join(st, NULL);
+
+	mock_io_close_s2c(&io);
+	dssh_session_cleanup(server);
+	dssh_session_cleanup(client);
+	mock_io_free(&io);
+	dssh_test_reset_global_config();
+
+	ASSERT_TRUE(cres < 0);
+	return TEST_PASS;
+}
+
+static int
+test_ossl_kex_client_no_verify(void)
+{
+	if (!test_using_dhgex())
+		return TEST_SKIP;
+
+	dssh_test_reset_global_config();
+	dssh_test_alloc_reset();
+	dssh_test_ossl_reset();
+	mock_alloc_reset();
+
+	if (register_all() < 0)
+		return TEST_FAIL;
+	if (test_generate_host_key() < 0)
+		return TEST_FAIL;
+
+	struct mock_io_state io;
+	if (mock_io_init(&io, 0) < 0)
+		return TEST_FAIL;
+
+	dssh_transport_set_callbacks(mock_tx_dispatch, mock_rx_dispatch,
+	    mock_rxline_dispatch, mock_extra_line_cb);
+
+	dssh_session client = dssh_session_init(true, 0);
+	if (client == NULL) {
+		mock_io_free(&io);
+		return TEST_FAIL;
+	}
+	dssh_session_set_cbdata(client, &io, &io, &io, &io);
+
+	dssh_session server = init_server_session();
+	if (server == NULL) {
+		dssh_session_cleanup(client);
+		mock_io_free(&io);
+		return TEST_FAIL;
+	}
+	dssh_session_set_cbdata(server, &io, &io, &io, &io);
+
+	{
+		struct ve_ki_ctx ca = { .io = &io, .sess = client };
+		struct ve_ki_ctx sa = { .io = &io, .sess = server };
+		thrd_t ct, st;
+		thrd_create(&ct, ve_ki_thread, &ca);
+		thrd_create(&st, ve_ki_thread, &sa);
+		thrd_join(ct, NULL);
+		thrd_join(st, NULL);
+		if (ca.result != 0 || sa.result != 0) {
+			mock_io_close_c2s(&io);
+			mock_io_close_s2c(&io);
+			dssh_session_cleanup(server);
+			dssh_session_cleanup(client);
+			mock_io_free(&io);
+			dssh_test_reset_global_config();
+			return TEST_FAIL;
+		}
+	}
+
+	/* Set verify to NULL (but ka is non-NULL) */
+	static struct dssh_key_algo_s dummy_ka = {0};
+	client->trans.key_algo_selected = &dummy_ka;
+
+	struct kex_excluded_ctx sctx = {
+		.io = &io, .sess = server
+	};
+	thrd_t st;
+	thrd_create(&st, kex_excluded_thread, &sctx);
+	int cres = dssh_transport_kex(client);
+	mock_io_close_c2s(&io);
+	thrd_join(st, NULL);
+
+	mock_io_close_s2c(&io);
+	dssh_session_cleanup(server);
+	/* Restore before cleanup to avoid dangling pointer */
+	client->trans.key_algo_selected = NULL;
+	dssh_session_cleanup(client);
+	mock_io_free(&io);
+	dssh_test_reset_global_config();
+
+	ASSERT_TRUE(cres < 0);
+	return TEST_PASS;
+}
+
+/* ================================================================
+ * Library alloc injection iterates for KEX server/client.
+ *
+ * These cover malloc failures in serialize_bn_mpint, shared_secret,
+ * reply buffer, and exchange_hash inside the DH-GEX handler.
+ * The ossl iterates only inject OpenSSL failures; these inject
+ * library malloc failures via dssh_test_alloc_fail_after().
+ * ================================================================ */
+
+static int
+test_alloc_kex_server_iterate(void)
+{
+	if (!test_using_dhgex())
+		return TEST_SKIP;
+
+	/* === ONE-TIME SETUP (same as ossl/kex_server) === */
+	dssh_test_reset_global_config();
+	dssh_test_alloc_reset();
+	dssh_test_ossl_reset();
+	mock_alloc_reset();
+
+	if (register_all() < 0)
+		return TEST_FAIL;
+	if (test_generate_host_key() < 0)
+		return TEST_FAIL;
+
+	struct mock_io_state setup_io;
+	if (mock_io_init(&setup_io, 0) < 0)
+		return TEST_FAIL;
+
+	dssh_transport_set_callbacks(mock_tx_dispatch, mock_rx_dispatch,
+	    mock_rxline_dispatch, mock_extra_line_cb);
+
+	dssh_session client = dssh_session_init(true, 0);
+	if (client == NULL) {
+		mock_io_free(&setup_io);
+		return TEST_FAIL;
+	}
+	dssh_session_set_cbdata(client, &setup_io, &setup_io,
+	    &setup_io, &setup_io);
+
+	dssh_session server = init_server_session();
+	if (server == NULL) {
+		dssh_session_cleanup(client);
+		mock_io_free(&setup_io);
+		return TEST_FAIL;
+	}
+	dssh_session_set_cbdata(server, &setup_io, &setup_io,
+	    &setup_io, &setup_io);
+
+	/* Two-threaded version_exchange + kexinit */
+	{
+		struct ve_ki_ctx ca = { .io = &setup_io, .sess = client };
+		struct ve_ki_ctx sa = { .io = &setup_io, .sess = server };
+		thrd_t ct, st;
+		thrd_create(&ct, ve_ki_thread, &ca);
+		thrd_create(&st, ve_ki_thread, &sa);
+		thrd_join(ct, NULL);
+		thrd_join(st, NULL);
+		if (ca.result != 0 || sa.result != 0) {
+			mock_io_close_c2s(&setup_io);
+			mock_io_close_s2c(&setup_io);
+			dssh_session_cleanup(server);
+			dssh_session_cleanup(client);
+			mock_io_free(&setup_io);
+			dssh_test_reset_global_config();
+			return TEST_FAIL;
+		}
+	}
+
+	dssh_session_cleanup(client);
+	mock_io_close_c2s(&setup_io);
+	mock_io_close_s2c(&setup_io);
+	mock_io_free(&setup_io);
+
+	/* Build client KEX packets */
+	uint8_t wire_pkts[8192];
+	size_t wire_total = 0;
+
+	uint8_t req[16];
+	size_t rp = 0;
+	req[rp++] = 34;
+	dssh_serialize_uint32(2048, req, sizeof(req), &rp);
+	dssh_serialize_uint32(4096, req, sizeof(req), &rp);
+	dssh_serialize_uint32(8192, req, sizeof(req), &rp);
+	wire_total += build_plaintext_packet(req, rp,
+	    &wire_pkts[wire_total], sizeof(wire_pkts) - wire_total);
+
+	uint8_t init[16];
+	size_t ip = 0;
+	init[ip++] = 32;
+	dssh_serialize_uint32(1, init, sizeof(init), &ip);
+	init[ip++] = 0x02;
+	wire_total += build_plaintext_packet(init, ip,
+	    &wire_pkts[wire_total], sizeof(wire_pkts) - wire_total);
+
+	uint32_t saved_rx_seq = server->trans.rx_seq;
+	uint32_t saved_tx_seq = server->trans.tx_seq;
+
+	/* === ITERATE === */
+	for (int n = 0; n < 200; n++) {
+		struct mock_io_state iter_io;
+		if (mock_io_init(&iter_io, 0) < 0)
+			break;
+		dssh_session_set_cbdata(server, &iter_io, &iter_io,
+		    &iter_io, &iter_io);
+
+		mock_io_inject(&iter_io.c2s, wire_pkts, wire_total);
+
+		free(server->trans.shared_secret);
+		server->trans.shared_secret = NULL;
+		server->trans.shared_secret_sz = 0;
+		free(server->trans.exchange_hash);
+		server->trans.exchange_hash = NULL;
+		server->trans.exchange_hash_sz = 0;
+		server->trans.rx_seq = saved_rx_seq;
+		server->trans.tx_seq = saved_tx_seq;
+		server->trans.rx_since_rekey = 0;
+		server->trans.tx_since_rekey = 0;
+		server->trans.bytes_since_rekey = 0;
+		server->terminate = false;
+
+		dssh_test_alloc_fail_after(n);
+		int res = dssh_transport_kex(server);
+		dssh_test_alloc_reset();
+
+		uint8_t drain[16384];
+		mock_io_drain(&iter_io.s2c, drain, sizeof(drain));
+
+		mock_io_close_c2s(&iter_io);
+		mock_io_close_s2c(&iter_io);
+		mock_io_free(&iter_io);
+
+		if (res == 0) {
+			dssh_session_cleanup(server);
+			dssh_test_reset_global_config();
+			ASSERT_TRUE(n > 0);
+			return TEST_PASS;
+		}
+	}
+
+	fprintf(stderr, "  alloc/kex_server: never succeeded within limit\n");
+	dssh_session_cleanup(server);
+	dssh_test_reset_global_config();
+	return TEST_FAIL;
+}
+
+/*
+ * alloc/kex_client: library alloc injection on the client during
+ * a two-threaded DH-GEX handshake.  The server thread excludes
+ * itself from alloc injection via dssh_test_alloc_exclude_thread().
+ */
+static int
+alloc_kex_excluded_thread(void *arg)
+{
+	struct kex_excluded_ctx *ctx = arg;
+	dssh_test_ossl_exclude_thread();
+	dssh_test_alloc_exclude_thread();
+	ctx->result = dssh_transport_kex(ctx->sess);
+	if (ctx->result < 0)
+		mock_io_close_s2c(ctx->io);
+	return 0;
+}
+
+static int
+test_alloc_kex_client_iterate(void)
+{
+	if (!test_using_dhgex())
+		return TEST_SKIP;
+
+	for (int n = 0; n < 200; n++) {
+		dssh_test_reset_global_config();
+		dssh_test_alloc_reset();
+		dssh_test_ossl_reset();
+		mock_alloc_reset();
+
+		if (register_all() < 0)
+			return TEST_FAIL;
+		if (test_generate_host_key() < 0)
+			return TEST_FAIL;
+
+		struct mock_io_state io;
+		if (mock_io_init(&io, 0) < 0)
+			return TEST_FAIL;
+
+		dssh_transport_set_callbacks(mock_tx_dispatch, mock_rx_dispatch,
+		    mock_rxline_dispatch, mock_extra_line_cb);
+
+		dssh_session client = dssh_session_init(true, 0);
+		if (client == NULL) {
+			mock_io_free(&io);
+			continue;
+		}
+		dssh_session_set_cbdata(client, &io, &io, &io, &io);
+
+		dssh_session server = init_server_session();
+		if (server == NULL) {
+			dssh_session_cleanup(client);
+			mock_io_free(&io);
+			continue;
+		}
+		dssh_session_set_cbdata(server, &io, &io, &io, &io);
+
+		{
+			struct ve_ki_ctx ca = { .io = &io, .sess = client };
+			struct ve_ki_ctx sa = { .io = &io, .sess = server };
+			thrd_t ct, st;
+			thrd_create(&ct, ve_ki_thread, &ca);
+			thrd_create(&st, ve_ki_thread, &sa);
+			thrd_join(ct, NULL);
+			thrd_join(st, NULL);
+			if (ca.result != 0 || sa.result != 0) {
+				mock_io_close_c2s(&io);
+				mock_io_close_s2c(&io);
+				dssh_session_cleanup(server);
+				dssh_session_cleanup(client);
+				mock_io_free(&io);
+				dssh_test_reset_global_config();
+				continue;
+			}
+		}
+
+		dssh_test_alloc_fail_after(n);
+
+		struct kex_excluded_ctx sctx = {
+			.io = &io, .sess = server
+		};
+		thrd_t st;
+		thrd_create(&st, alloc_kex_excluded_thread, &sctx);
+		int cres = dssh_transport_kex(client);
+		mock_io_close_c2s(&io);
+		thrd_join(st, NULL);
+
+		dssh_test_alloc_reset();
+
+		mock_io_close_s2c(&io);
+		dssh_session_cleanup(server);
+		dssh_session_cleanup(client);
+		mock_io_free(&io);
+		dssh_test_reset_global_config();
+
+		if (cres == 0 && sctx.result == 0) {
+			ASSERT_TRUE(n > 0);
+			return TEST_PASS;
+		}
+	}
+
+	fprintf(stderr, "  alloc/kex_client: never succeeded within limit\n");
+	return TEST_FAIL;
+}
+
+/* ================================================================
  * Test table
  * ================================================================ */
 
@@ -2325,6 +3093,19 @@ static struct dssh_test_entry tests[] = {
 	{ "ossl/key_pubkey",              test_ossl_key_pubkey_iterate },
 	{ "ossl/kex_server",              test_ossl_kex_server_iterate },
 	{ "ossl/kex_client",              test_ossl_kex_client_iterate },
+	{ "ossl/kex_client_ka_null",      test_ossl_kex_client_ka_null },
+	{ "ossl/kex_client_no_verify",    test_ossl_kex_client_no_verify },
+	{ "dhgex/client_recv_group_fail", test_dhgex_client_recv_group_fail },
+	{ "dhgex/client_group_empty",     test_dhgex_client_group_empty },
+	{ "dhgex/client_group_no_g",      test_dhgex_client_group_no_g },
+	{ "dhgex/client_bad_reply_type",  test_dhgex_client_bad_reply_type },
+	{ "dhgex/client_short_ks",        test_dhgex_client_reply_short_ks },
+	{ "dhgex/client_trunc_ks",        test_dhgex_client_reply_truncated_ks },
+	{ "dhgex/client_reply_f_zero",    test_dhgex_client_reply_f_zero },
+	{ "dhgex/client_short_sig",       test_dhgex_client_reply_short_sig },
+	{ "dhgex/client_trunc_sig",       test_dhgex_client_reply_truncated_sig },
+	{ "alloc/kex_server",             test_alloc_kex_server_iterate },
+	{ "alloc/kex_client",             test_alloc_kex_client_iterate },
 };
 
 DSSH_TEST_MAIN(tests)

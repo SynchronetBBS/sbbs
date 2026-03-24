@@ -4259,6 +4259,25 @@ test_dhgex_server_recv_init_fail(void)
 	return TEST_PASS;
 }
 
+static int
+test_dhgex_server_ka_null(void)
+{
+	struct dhgex_server_ctx ctx;
+	if (dhgex_server_setup(&ctx) < 0)
+		return TEST_FAIL;
+
+	/* Clear key_algo_selected entirely */
+	dssh_key_algo saved = ctx.server->trans.key_algo_selected;
+	ctx.server->trans.key_algo_selected = NULL;
+
+	int res = dhgex_server_run(&ctx, NULL, 0);
+	ASSERT_EQ(res, DSSH_ERROR_INIT);
+
+	ctx.server->trans.key_algo_selected = saved;
+	dhgex_server_teardown(&ctx);
+	return TEST_PASS;
+}
+
 /* ================================================================
  * DH-GEX helper coverage — serialize_bn_mpint edge cases
  * ================================================================ */
@@ -5624,6 +5643,7 @@ static struct dssh_test_entry tests[] = {
 	{ "dhgex/server_bad_init_type",      test_dhgex_server_bad_init_type },
 	{ "dhgex/server_e_zero",             test_dhgex_server_e_zero },
 	{ "dhgex/server_recv_init_fail",     test_dhgex_server_recv_init_fail },
+	{ "dhgex/server_ka_null",            test_dhgex_server_ka_null },
 };
 
 DSSH_TEST_MAIN(tests)

@@ -17,12 +17,14 @@
 
 static atomic_int dssh_alloc_fail_at = -1;
 static atomic_int dssh_alloc_num = 0;
+static _Thread_local bool dssh_alloc_this_thread = true;
 
 void
 dssh_test_alloc_reset(void)
 {
 	atomic_store(&dssh_alloc_fail_at, -1);
 	atomic_store(&dssh_alloc_num, 0);
+	dssh_alloc_this_thread = true;
 }
 
 void
@@ -30,6 +32,12 @@ dssh_test_alloc_fail_after(int n)
 {
 	atomic_store(&dssh_alloc_num, 0);
 	atomic_store(&dssh_alloc_fail_at, n);
+}
+
+void
+dssh_test_alloc_exclude_thread(void)
+{
+	dssh_alloc_this_thread = false;
 }
 
 int
@@ -41,6 +49,8 @@ dssh_test_alloc_count(void)
 static bool
 should_fail(void)
 {
+	if (!dssh_alloc_this_thread)
+		return false;
 	int fa = atomic_load(&dssh_alloc_fail_at);
 	if (fa < 0)
 		return false;

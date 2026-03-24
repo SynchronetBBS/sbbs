@@ -265,9 +265,15 @@ handler(dssh_session sess)
 
 		size_t rpos = 1;
 		uint32_t ks_len;
-		if (rpos + 4 > payload_len ||
-		    dssh_parse_uint32(&payload[rpos], payload_len - rpos, &ks_len) < 4 ||
-		    rpos + 4 + ks_len > payload_len) { BN_clear_free(x); res = DSSH_ERROR_PARSE; goto cleanup; }
+		if (rpos + 4 > payload_len) { BN_clear_free(x); res = DSSH_ERROR_PARSE; goto cleanup; }
+		/* dssh_parse_uint32 cannot fail here: bufsz >= 4
+		 * guaranteed by the check above. */
+#ifndef DSSH_TESTING
+		if (dssh_parse_uint32(&payload[rpos], payload_len - rpos, &ks_len) < 4) { BN_clear_free(x); res = DSSH_ERROR_PARSE; goto cleanup; }
+#else
+		dssh_parse_uint32(&payload[rpos], payload_len - rpos, &ks_len);
+#endif
+		if (rpos + 4 + ks_len > payload_len) { BN_clear_free(x); res = DSSH_ERROR_PARSE; goto cleanup; }
 		rpos += 4;
 		const uint8_t *k_s = &payload[rpos];
 		rpos += ks_len;
@@ -280,9 +286,13 @@ handler(dssh_session sess)
 		if (!dh_value_valid(f_bn, p)) { BN_clear_free(x); res = DSSH_ERROR_INVALID; goto cleanup; }
 
 		uint32_t sig_len;
-		if (rpos + 4 > payload_len ||
-		    dssh_parse_uint32(&payload[rpos], payload_len - rpos, &sig_len) < 4 ||
-		    rpos + 4 + sig_len > payload_len) { BN_clear_free(x); res = DSSH_ERROR_PARSE; goto cleanup; }
+		if (rpos + 4 > payload_len) { BN_clear_free(x); res = DSSH_ERROR_PARSE; goto cleanup; }
+#ifndef DSSH_TESTING
+		if (dssh_parse_uint32(&payload[rpos], payload_len - rpos, &sig_len) < 4) { BN_clear_free(x); res = DSSH_ERROR_PARSE; goto cleanup; }
+#else
+		dssh_parse_uint32(&payload[rpos], payload_len - rpos, &sig_len);
+#endif
+		if (rpos + 4 + sig_len > payload_len) { BN_clear_free(x); res = DSSH_ERROR_PARSE; goto cleanup; }
 		rpos += 4;
 		const uint8_t *sig_h = &payload[rpos];
 

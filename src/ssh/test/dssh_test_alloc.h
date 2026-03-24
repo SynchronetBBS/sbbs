@@ -14,6 +14,9 @@ void dssh_test_alloc_reset(void);
 /* Fail the Nth library allocation (0-based). */
 void dssh_test_alloc_fail_after(int n);
 
+/* Exclude calling thread from alloc injection (pass through). */
+void dssh_test_alloc_exclude_thread(void);
+
 /* Return the current allocation count. */
 int dssh_test_alloc_count(void);
 
