@@ -840,7 +840,7 @@ dssh_test_build_namelist(void *head, size_t name_offset, char *buf, size_t bufsz
  * Extract the first name from a comma-separated list into buf.
  * Returns the length of the name.
  */
-static size_t
+DSSH_TESTABLE size_t
 first_name(const char *list, char *buf, size_t bufsz)
 {
 	const char *comma = strchr(list, ',');

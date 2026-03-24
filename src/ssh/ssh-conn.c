@@ -187,7 +187,7 @@ dssh_conn_send_extended_data(dssh_session sess,
 
 #define SSH_EXTENDED_DATA_STDERR  UINT32_C(1)
 
-static int
+DSSH_TESTABLE int
 dssh_conn_send_window_adjust(dssh_session sess,
     dssh_channel ch, uint32_t bytes)
 {
@@ -219,7 +219,7 @@ dssh_conn_send_exit_status(dssh_session sess,
 	return dssh_transport_send_packet(sess, msg, pos, NULL);
 }
 
-static int
+DSSH_TESTABLE int
 dssh_conn_send_eof(dssh_session sess,
     dssh_channel ch)
 {
@@ -235,7 +235,7 @@ dssh_conn_send_eof(dssh_session sess,
 	return dssh_transport_send_packet(sess, msg, pos, NULL);
 }
 
-static int
+DSSH_TESTABLE int
 dssh_conn_close(dssh_session sess,
     dssh_channel ch)
 {
@@ -396,7 +396,7 @@ cleanup_channel_buffers(dssh_channel ch)
  * Window replenishment — called after reads drain buffer
  * ================================================================ */
 
-static void
+DSSH_TESTABLE void
 maybe_replenish_window(dssh_session sess, dssh_channel ch)
 {
 	/* No point replenishing if peer is done sending */

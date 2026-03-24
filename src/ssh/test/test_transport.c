@@ -4319,6 +4319,105 @@ test_remote_languages_cleanup(void)
 }
 
 /* ================================================================
+ * Coverage: first_name helper, register tail->next, cleanup NULL
+ * ================================================================ */
+
+static int
+test_first_name_basic(void)
+{
+	char buf[32];
+	size_t len = first_name("curve25519-sha256,aes256-ctr", buf, sizeof(buf));
+	ASSERT_EQ(len, (size_t)17);
+	ASSERT_STR_EQ(buf, "curve25519-sha256");
+	return TEST_PASS;
+}
+
+static int
+test_first_name_single(void)
+{
+	char buf[32];
+	size_t len = first_name("only-one", buf, sizeof(buf));
+	ASSERT_EQ(len, (size_t)8);
+	ASSERT_STR_EQ(buf, "only-one");
+	return TEST_PASS;
+}
+
+static int
+test_first_name_small_buf(void)
+{
+	char buf[4];
+	size_t len = first_name("longname", buf, sizeof(buf));
+	ASSERT_EQ(len, (size_t)3); /* clamped to bufsz-1 */
+	ASSERT_STR_EQ(buf, "lon");
+	return TEST_PASS;
+}
+
+static int
+test_register_two_kex(void)
+{
+	/* Covers kex_tail->next assignment (line 1602) */
+	dssh_test_reset_global_config();
+
+	if (test_using_dhgex()) {
+		ASSERT_EQ(register_dh_gex_sha256(), 0);
+		ASSERT_EQ(register_curve25519_sha256(), 0);
+	}
+	else {
+		ASSERT_EQ(register_curve25519_sha256(), 0);
+		ASSERT_EQ(register_dh_gex_sha256(), 0);
+	}
+
+	dssh_test_reset_global_config();
+	return TEST_PASS;
+}
+
+static int
+test_register_two_comp(void)
+{
+	/* Covers comp_tail->next assignment (line 1682) */
+	dssh_test_reset_global_config();
+
+	ASSERT_EQ(register_none_comp(), 0);
+
+	size_t sz = sizeof(struct dssh_comp_s) + 8;
+	struct dssh_comp_s *comp2 = calloc(1, sz);
+	ASSERT_NOT_NULL(comp2);
+	strcpy(comp2->name, "zlib");
+	ASSERT_EQ(dssh_transport_register_comp(comp2), 0);
+
+	dssh_test_reset_global_config();
+	return TEST_PASS;
+}
+
+static int
+test_register_two_lang(void)
+{
+	/* Covers lang_tail->next assignment (line 1702) */
+	dssh_test_reset_global_config();
+
+	size_t sz = sizeof(struct dssh_language_s) + 4;
+	struct dssh_language_s *l1 = calloc(1, sz);
+	struct dssh_language_s *l2 = calloc(1, sz);
+	ASSERT_NOT_NULL(l1);
+	ASSERT_NOT_NULL(l2);
+	strcpy(l1->name, "en");
+	strcpy(l2->name, "fr");
+	ASSERT_EQ(dssh_transport_register_lang(l1), 0);
+	ASSERT_EQ(dssh_transport_register_lang(l2), 0);
+
+	dssh_test_reset_global_config();
+	return TEST_PASS;
+}
+
+static int
+test_kexinit_peer_parse_truncated_namelist(void)
+{
+	/* Needs bridge infrastructure to inject a malformed KEXINIT
+	 * into a live handshake. */
+	return TEST_SKIP;
+}
+
+/* ================================================================
  * Test table
  * ================================================================ */
 
@@ -4480,6 +4579,13 @@ static struct dssh_test_entry tests[] = {
 	{ "guard/ed25519_haskey_wrong_type", test_ed25519_haskey_wrong_type },
 	{ "guard/rsa_haskey_wrong_type",     test_rsa_haskey_wrong_type },
 	{ "guard/remote_languages_cleanup",  test_remote_languages_cleanup },
+	{ "guard/first_name_basic",          test_first_name_basic },
+	{ "guard/first_name_single",         test_first_name_single },
+	{ "guard/first_name_small_buf",      test_first_name_small_buf },
+	{ "register/two_kex",               test_register_two_kex },
+	{ "register/two_comp",              test_register_two_comp },
+	{ "register/two_lang",              test_register_two_lang },
+	{ "kexinit/peer_trunc_namelist",    test_kexinit_peer_parse_truncated_namelist },
 
 	/* Getter before handshake */
 	{ "getter/names_before_handshake",   test_get_names_before_handshake },

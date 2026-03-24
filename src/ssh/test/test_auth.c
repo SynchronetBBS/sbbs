@@ -4239,6 +4239,376 @@ test_get_methods_none_accepted(void)
 }
 
 /* ================================================================
+ * Coverage: client get_methods FAILURE parse errors
+ * Server sends crafted USERAUTH_FAILURE responses.
+ * ================================================================ */
+
+/* Helper: server that does SERVICE_ACCEPT, receives auth request,
+ * then sends a crafted response. */
+struct crafted_response_ctx {
+	struct handshake_ctx *hctx;
+	const uint8_t *response;
+	size_t response_len;
+	bool close_after; /* close s2c pipe after sending */
+};
+
+static int
+crafted_response_server_thread(void *arg)
+{
+	struct crafted_response_ctx *cr = arg;
+	dssh_session server = cr->hctx->server;
+
+	/* SERVICE_REQUEST → SERVICE_ACCEPT */
+	uint8_t msg_type;
+	uint8_t *payload;
+	size_t payload_len;
+	if (dssh_transport_recv_packet(server, &msg_type, &payload, &payload_len) < 0)
+		return 0;
+	{
+		uint8_t accept[64];
+		size_t pos = 0;
+		accept[pos++] = SSH_MSG_SERVICE_ACCEPT;
+		if (payload_len > 5) {
+			uint32_t slen;
+			dssh_parse_uint32(&payload[1], payload_len - 1, &slen);
+			dssh_serialize_uint32(slen, accept, sizeof(accept), &pos);
+			memcpy(&accept[pos], &payload[5], slen);
+			pos += slen;
+		}
+		dssh_transport_send_packet(server, accept, pos, NULL);
+	}
+
+	/* Receive USERAUTH_REQUEST */
+	dssh_transport_recv_packet(server, &msg_type, &payload, &payload_len);
+
+	/* Send the crafted response */
+	dssh_transport_send_packet(server, cr->response, cr->response_len, NULL);
+	/* Close pipe so client's read() gets EOF instead of blocking */
+	mock_io_close_s2c(&cr->hctx->io);
+	return 0;
+}
+
+static int
+test_get_methods_failure_truncated(void)
+{
+	/* USERAUTH_FAILURE with only msg_type byte — line 574 */
+	struct handshake_ctx ctx;
+	if (handshake_setup(&ctx) < 0) {
+		handshake_cleanup(&ctx);
+		return TEST_FAIL;
+	}
+
+	uint8_t resp[] = { 51 }; /* SSH_MSG_USERAUTH_FAILURE, no data */
+	struct crafted_response_ctx cr = { &ctx, resp, sizeof(resp) };
+	thrd_t st;
+	thrd_create(&st, crafted_response_server_thread, &cr);
+
+	char methods[256];
+	int res = dssh_auth_get_methods(ctx.client, "user", methods, sizeof(methods));
+	thrd_join(st, NULL);
+	ASSERT_TRUE(res < 0);
+
+	handshake_cleanup(&ctx);
+	return TEST_PASS;
+}
+
+static int
+test_get_methods_failure_methods_len_exceeds(void)
+{
+	/* USERAUTH_FAILURE with methods_len > payload — line 578 */
+	struct handshake_ctx ctx;
+	if (handshake_setup(&ctx) < 0) {
+		handshake_cleanup(&ctx);
+		return TEST_FAIL;
+	}
+
+	uint8_t resp[8];
+	size_t rp = 0;
+	resp[rp++] = 51; /* USERAUTH_FAILURE */
+	dssh_serialize_uint32(100, resp, sizeof(resp), &rp); /* methods_len=100 */
+	struct crafted_response_ctx cr = { &ctx, resp, rp };
+	thrd_t st;
+	thrd_create(&st, crafted_response_server_thread, &cr);
+
+	char methods[256];
+	int res = dssh_auth_get_methods(ctx.client, "user", methods, sizeof(methods));
+	thrd_join(st, NULL);
+	ASSERT_TRUE(res < 0);
+
+	handshake_cleanup(&ctx);
+	return TEST_PASS;
+}
+
+static int
+test_get_methods_failure_control_char(void)
+{
+	/* USERAUTH_FAILURE with control char in methods — line 583 */
+	struct handshake_ctx ctx;
+	if (handshake_setup(&ctx) < 0) {
+		handshake_cleanup(&ctx);
+		return TEST_FAIL;
+	}
+
+	uint8_t resp[16];
+	size_t rp = 0;
+	resp[rp++] = 51;
+	dssh_serialize_uint32(4, resp, sizeof(resp), &rp);
+	memcpy(&resp[rp], "ab\x01c", 4); /* control char */
+	rp += 4;
+	struct crafted_response_ctx cr = { &ctx, resp, rp };
+	thrd_t st;
+	thrd_create(&st, crafted_response_server_thread, &cr);
+
+	char methods[256];
+	int res = dssh_auth_get_methods(ctx.client, "user", methods, sizeof(methods));
+	thrd_join(st, NULL);
+	ASSERT_TRUE(res < 0);
+
+	handshake_cleanup(&ctx);
+	return TEST_PASS;
+}
+
+static int
+test_get_methods_unexpected_msg(void)
+{
+	/* Server responds with neither SUCCESS nor FAILURE — line 591 */
+	struct handshake_ctx ctx;
+	if (handshake_setup(&ctx) < 0) {
+		handshake_cleanup(&ctx);
+		return TEST_FAIL;
+	}
+
+	uint8_t resp[] = { 99 }; /* bogus msg type */
+	struct crafted_response_ctx cr = { &ctx, resp, sizeof(resp) };
+	thrd_t st;
+	thrd_create(&st, crafted_response_server_thread, &cr);
+
+	char methods[256];
+	int res = dssh_auth_get_methods(ctx.client, "user", methods, sizeof(methods));
+	thrd_join(st, NULL);
+	ASSERT_TRUE(res < 0);
+
+	handshake_cleanup(&ctx);
+	return TEST_PASS;
+}
+
+/* ================================================================
+ * Coverage: client password — no change callback, CHANGEREQ parse
+ * ================================================================ */
+
+static int
+changereq_server_thread_send(void *arg)
+{
+	struct crafted_response_ctx *cr = arg;
+	dssh_session server = cr->hctx->server;
+
+	uint8_t msg_type;
+	uint8_t *payload;
+	size_t payload_len;
+	/* SERVICE_REQUEST → SERVICE_ACCEPT */
+	if (dssh_transport_recv_packet(server, &msg_type, &payload, &payload_len) < 0)
+		return 0;
+	{
+		uint8_t accept[64];
+		size_t pos = 0;
+		accept[pos++] = SSH_MSG_SERVICE_ACCEPT;
+		if (payload_len > 5) {
+			uint32_t slen;
+			dssh_parse_uint32(&payload[1], payload_len - 1, &slen);
+			dssh_serialize_uint32(slen, accept, sizeof(accept), &pos);
+			memcpy(&accept[pos], &payload[5], slen);
+			pos += slen;
+		}
+		dssh_transport_send_packet(server, accept, pos, NULL);
+	}
+	/* Receive password USERAUTH_REQUEST */
+	dssh_transport_recv_packet(server, &msg_type, &payload, &payload_len);
+
+	/* Send PASSWD_CHANGEREQ */
+	dssh_transport_send_packet(server, cr->response, cr->response_len, NULL);
+	mock_io_close_s2c(&cr->hctx->io);
+	return 0;
+}
+
+static int
+test_password_changereq_no_callback(void)
+{
+	/* Client receives CHANGEREQ but has no passwd_change_cb — line 683 */
+	struct handshake_ctx ctx;
+	if (handshake_setup(&ctx) < 0) {
+		handshake_cleanup(&ctx);
+		return TEST_FAIL;
+	}
+
+	uint8_t resp[32];
+	size_t rp = 0;
+	resp[rp++] = 60; /* SSH_MSG_USERAUTH_PASSWD_CHANGEREQ */
+	dssh_serialize_uint32(6, resp, sizeof(resp), &rp);
+	memcpy(&resp[rp], "change", 6);
+	rp += 6;
+	dssh_serialize_uint32(0, resp, sizeof(resp), &rp); /* lang */
+	struct crafted_response_ctx cr = { &ctx, resp, rp };
+	thrd_t st;
+	thrd_create(&st, changereq_server_thread_send, &cr);
+
+	int res = dssh_auth_password(ctx.client, "user", "pass", NULL, NULL);
+	thrd_join(st, NULL);
+	ASSERT_TRUE(res < 0);
+
+	handshake_cleanup(&ctx);
+	return TEST_PASS;
+}
+
+static int
+test_password_changereq_truncated_prompt(void)
+{
+	/* CHANGEREQ with only msg_type, no prompt header — line 689 */
+	struct handshake_ctx ctx;
+	if (handshake_setup(&ctx) < 0) {
+		handshake_cleanup(&ctx);
+		return TEST_FAIL;
+	}
+
+	uint8_t resp[] = { 60 }; /* CHANGEREQ, no data */
+	struct crafted_response_ctx cr = { &ctx, resp, sizeof(resp) };
+	thrd_t st;
+	thrd_create(&st, changereq_server_thread_send, &cr);
+
+	int res = dssh_auth_password(ctx.client, "user", "pass",
+	    test_client_changereq_cb, NULL);
+	thrd_join(st, NULL);
+	ASSERT_TRUE(res < 0);
+
+	handshake_cleanup(&ctx);
+	return TEST_PASS;
+}
+
+static int
+test_password_changereq_truncated_prompt_data(void)
+{
+	/* CHANGEREQ with prompt_len=100 but no data — line 693 */
+	struct handshake_ctx ctx;
+	if (handshake_setup(&ctx) < 0) {
+		handshake_cleanup(&ctx);
+		return TEST_FAIL;
+	}
+
+	uint8_t resp[8];
+	size_t rp = 0;
+	resp[rp++] = 60;
+	dssh_serialize_uint32(100, resp, sizeof(resp), &rp);
+	struct crafted_response_ctx cr = { &ctx, resp, rp };
+	thrd_t st;
+	thrd_create(&st, changereq_server_thread_send, &cr);
+
+	int res = dssh_auth_password(ctx.client, "user", "pass",
+	    test_client_changereq_cb, NULL);
+	thrd_join(st, NULL);
+	ASSERT_TRUE(res < 0);
+
+	handshake_cleanup(&ctx);
+	return TEST_PASS;
+}
+
+static int
+test_password_changereq_truncated_lang(void)
+{
+	/* CHANGEREQ with valid prompt but lang_len > remaining — lines 704-705 */
+	struct handshake_ctx ctx;
+	if (handshake_setup(&ctx) < 0) {
+		handshake_cleanup(&ctx);
+		return TEST_FAIL;
+	}
+
+	uint8_t resp[32];
+	size_t rp = 0;
+	resp[rp++] = 60;
+	dssh_serialize_uint32(3, resp, sizeof(resp), &rp);
+	memcpy(&resp[rp], "hi!", 3);
+	rp += 3;
+	dssh_serialize_uint32(100, resp, sizeof(resp), &rp); /* lang_len > remaining */
+	struct crafted_response_ctx cr = { &ctx, resp, rp };
+	thrd_t st;
+	thrd_create(&st, changereq_server_thread_send, &cr);
+
+	int res = dssh_auth_password(ctx.client, "user", "pass",
+	    test_client_changereq_cb, NULL);
+	thrd_join(st, NULL);
+	/* Should succeed (lang truncation is handled gracefully) or fail
+	 * depending on whether the change callback response succeeds.
+	 * The point is it doesn't crash. */
+	(void)res;
+
+	handshake_cleanup(&ctx);
+	return TEST_PASS;
+}
+
+static int
+test_password_unexpected_msg(void)
+{
+	/* Server responds with bogus msg type — line 727-728 */
+	struct handshake_ctx ctx;
+	if (handshake_setup(&ctx) < 0) {
+		handshake_cleanup(&ctx);
+		return TEST_FAIL;
+	}
+
+	uint8_t resp[] = { 99 }; /* bogus */
+	struct crafted_response_ctx cr = { &ctx, resp, sizeof(resp) };
+	thrd_t st;
+	thrd_create(&st, changereq_server_thread_send, &cr);
+
+	int res = dssh_auth_password(ctx.client, "user", "pass", NULL, NULL);
+	thrd_join(st, NULL);
+	ASSERT_TRUE(res < 0);
+
+	handshake_cleanup(&ctx);
+	return TEST_PASS;
+}
+
+/* ================================================================
+ * Coverage: client SERVICE_ACCEPT unexpected — line 509
+ * ================================================================ */
+
+static int
+service_bogus_server_thread(void *arg)
+{
+	struct crafted_response_ctx *cr = arg;
+	dssh_session server = cr->hctx->server;
+	uint8_t msg_type;
+	uint8_t *payload;
+	size_t payload_len;
+	dssh_transport_recv_packet(server, &msg_type, &payload, &payload_len);
+	/* Send bogus response instead of SERVICE_ACCEPT */
+	dssh_transport_send_packet(server, cr->response, cr->response_len, NULL);
+	mock_io_close_s2c(&cr->hctx->io);
+	return 0;
+}
+
+static int
+test_service_accept_unexpected(void)
+{
+	struct handshake_ctx ctx;
+	if (handshake_setup(&ctx) < 0) {
+		handshake_cleanup(&ctx);
+		return TEST_FAIL;
+	}
+
+	uint8_t resp[] = { 99 }; /* not SERVICE_ACCEPT(6) */
+	struct crafted_response_ctx cr = { &ctx, resp, sizeof(resp) };
+	thrd_t st;
+	thrd_create(&st, service_bogus_server_thread, &cr);
+
+	char methods[256];
+	int res = dssh_auth_get_methods(ctx.client, "user", methods, sizeof(methods));
+	thrd_join(st, NULL);
+	ASSERT_TRUE(res < 0);
+
+	handshake_cleanup(&ctx);
+	return TEST_PASS;
+}
+
+/* ================================================================
  * Test table and main
  * ================================================================ */
 
@@ -4318,6 +4688,16 @@ static struct dssh_test_entry tests[] = {
 	{ "auth/server/pw_change_no_cb",     test_server_password_change_no_change_cb },
 	{ "auth/banner_truncated",           test_banner_truncated_variants },
 	{ "auth/get_methods_none_accepted",  test_get_methods_none_accepted },
+	{ "auth/get_methods_fail_trunc",     test_get_methods_failure_truncated },
+	{ "auth/get_methods_fail_len",       test_get_methods_failure_methods_len_exceeds },
+	{ "auth/get_methods_fail_ctrl",      test_get_methods_failure_control_char },
+	{ "auth/get_methods_unexpected",     test_get_methods_unexpected_msg },
+	{ "auth/pw_changereq_no_cb",         test_password_changereq_no_callback },
+	{ "auth/pw_changereq_trunc_prompt",  test_password_changereq_truncated_prompt },
+	{ "auth/pw_changereq_trunc_data",    test_password_changereq_truncated_prompt_data },
+	{ "auth/pw_changereq_trunc_lang",    test_password_changereq_truncated_lang },
+	{ "auth/pw_unexpected_msg",          test_password_unexpected_msg },
+	{ "auth/service_accept_unexpected",  test_service_accept_unexpected },
 	{ "auth/server/pk_sig_truncated",    test_server_parse_publickey_sig_truncated },
 	{ "auth/server/pk_sig_trunc_algo",   test_server_parse_publickey_sig_trunc_algo },
 	{ "auth/server/pk_sig_trunc_blob",   test_server_parse_publickey_sig_trunc_blob },

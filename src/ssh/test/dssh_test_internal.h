@@ -67,8 +67,18 @@ int dssh_conn_send_data(dssh_session sess, struct dssh_channel_s *ch,
     const uint8_t *data, size_t len);
 int dssh_conn_send_extended_data(dssh_session sess, struct dssh_channel_s *ch,
     uint32_t data_type_code, const uint8_t *data, size_t len);
+int dssh_conn_send_eof(dssh_session sess, struct dssh_channel_s *ch);
+int dssh_conn_close(dssh_session sess, struct dssh_channel_s *ch);
+int dssh_conn_send_window_adjust(dssh_session sess,
+    struct dssh_channel_s *ch, uint32_t bytes);
+void maybe_replenish_window(dssh_session sess, struct dssh_channel_s *ch);
 void demux_dispatch(dssh_session sess, uint8_t msg_type,
     uint8_t *payload, size_t payload_len);
+
+/*
+ * ssh-trans.c internal functions exposed for testing.
+ */
+size_t first_name(const char *list, char *buf, size_t bufsz);
 
 /*
  * Version string validators from ssh-trans.c.

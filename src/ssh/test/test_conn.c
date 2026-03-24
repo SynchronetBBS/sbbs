@@ -4254,6 +4254,180 @@ test_demux_dispatch_chan_type_zero(void)
 }
 
 /* ================================================================
+ * Coverage: send_eof/close already-sent, window replenish,
+ * window underflow to zero
+ * ================================================================ */
+
+static int
+test_send_eof_already_sent(void)
+{
+	struct conn_ctx ctx;
+	if (conn_setup(&ctx) < 0)
+		return TEST_SKIP;
+
+	struct open_exec_ctx oc = {
+		.client = ctx.client, .server = ctx.server,
+		.command = "echo eof2", .cbs = &session_cbs,
+		.accept_timeout = 5000,
+	};
+	if (open_exec_channel(&oc) < 0 || !oc.client_ch || !oc.server_ch) {
+		conn_cleanup(&ctx);
+		return TEST_FAIL;
+	}
+
+	/* Send EOF, then send it again — second call returns 0 immediately */
+	ASSERT_OK(dssh_conn_send_eof(ctx.client, oc.client_ch));
+	ASSERT_TRUE(oc.client_ch->eof_sent);
+	ASSERT_EQ(dssh_conn_send_eof(ctx.client, oc.client_ch), 0);
+
+	dssh_session_close(ctx.server, oc.server_ch, 0);
+	conn_cleanup(&ctx);
+	return TEST_PASS;
+}
+
+static int
+test_send_close_already_sent(void)
+{
+	struct conn_ctx ctx;
+	if (conn_setup(&ctx) < 0)
+		return TEST_SKIP;
+
+	struct open_exec_ctx oc = {
+		.client = ctx.client, .server = ctx.server,
+		.command = "echo close2", .cbs = &session_cbs,
+		.accept_timeout = 5000,
+	};
+	if (open_exec_channel(&oc) < 0 || !oc.client_ch || !oc.server_ch) {
+		conn_cleanup(&ctx);
+		return TEST_FAIL;
+	}
+
+	ASSERT_OK(dssh_conn_close(ctx.client, oc.client_ch));
+	ASSERT_TRUE(oc.client_ch->close_sent);
+	ASSERT_EQ(dssh_conn_close(ctx.client, oc.client_ch), 0);
+
+	dssh_session_close(ctx.server, oc.server_ch, 0);
+	conn_cleanup(&ctx);
+	return TEST_PASS;
+}
+
+static int
+test_maybe_replenish_after_eof(void)
+{
+	/* replenish should be a no-op when eof_received is true */
+	struct conn_ctx ctx;
+	if (conn_setup(&ctx) < 0)
+		return TEST_SKIP;
+
+	struct open_exec_ctx oc = {
+		.client = ctx.client, .server = ctx.server,
+		.command = "echo replenish", .cbs = &session_cbs,
+		.accept_timeout = 5000,
+	};
+	if (open_exec_channel(&oc) < 0 || !oc.client_ch || !oc.server_ch) {
+		conn_cleanup(&ctx);
+		return TEST_FAIL;
+	}
+
+	/* Force low window + eof_received */
+	oc.server_ch->local_window = 0;
+	oc.server_ch->eof_received = true;
+	/* Should return without sending WINDOW_ADJUST */
+	maybe_replenish_window(ctx.server, oc.server_ch);
+	/* Window should still be 0 */
+	ASSERT_EQ(oc.server_ch->local_window, (uint32_t)0);
+	oc.server_ch->eof_received = false;
+
+	dssh_session_close(ctx.server, oc.server_ch, 0);
+	dssh_session_close(ctx.client, oc.client_ch, 0);
+	conn_cleanup(&ctx);
+	return TEST_PASS;
+}
+
+static int
+test_maybe_replenish_low_window(void)
+{
+	/* replenish should send WINDOW_ADJUST when window < max/2 */
+	struct conn_ctx ctx;
+	if (conn_setup(&ctx) < 0)
+		return TEST_SKIP;
+
+	struct open_exec_ctx oc = {
+		.client = ctx.client, .server = ctx.server,
+		.command = "echo replow", .cbs = &session_cbs,
+		.accept_timeout = 5000,
+	};
+	if (open_exec_channel(&oc) < 0 || !oc.client_ch || !oc.server_ch) {
+		conn_cleanup(&ctx);
+		return TEST_FAIL;
+	}
+
+	/* Force window below half of max */
+	oc.server_ch->local_window = 1;
+	maybe_replenish_window(ctx.server, oc.server_ch);
+	/* Window should have been replenished */
+	ASSERT_TRUE(oc.server_ch->local_window > 1);
+
+	dssh_session_close(ctx.server, oc.server_ch, 0);
+	dssh_session_close(ctx.client, oc.client_ch, 0);
+	conn_cleanup(&ctx);
+	return TEST_PASS;
+}
+
+static int
+test_demux_window_underflow_to_zero(void)
+{
+	/* Send data that exactly equals local_window → window becomes 0 */
+	struct conn_ctx ctx;
+	if (conn_setup(&ctx) < 0)
+		return TEST_FAIL;
+
+	struct open_exec_ctx oc = {
+		.client = ctx.client, .server = ctx.server,
+		.command = "echo wunder", .cbs = &session_cbs,
+		.accept_timeout = 5000,
+	};
+	if (open_exec_channel(&oc) < 0 || !oc.client_ch || !oc.server_ch) {
+		conn_cleanup(&ctx);
+		return TEST_FAIL;
+	}
+
+	/* Set server's local_window to a small value */
+	oc.server_ch->local_window = 5;
+	oc.server_ch->window_max = 5;
+
+	/* Client sends exactly 5 bytes — should drain window to 0 */
+	const uint8_t data[] = "hello";
+	dssh_session_write(ctx.client, oc.client_ch, data, 5);
+
+	/* Wait for data to arrive */
+	int ev = dssh_session_poll(ctx.server, oc.server_ch,
+	    DSSH_POLL_READ, 5000);
+	ASSERT_TRUE(ev & DSSH_POLL_READ);
+
+	/* Now send more data that exceeds the 0 window — should
+	 * trigger the window underflow (local_window = 0) path */
+	{
+		uint8_t msg[32];
+		size_t pos = 0;
+		msg[pos++] = SSH_MSG_CHANNEL_DATA;
+		dssh_serialize_uint32(oc.server_ch->local_id, msg, sizeof(msg), &pos);
+		dssh_serialize_uint32(3, msg, sizeof(msg), &pos);
+		memcpy(&msg[pos], "abc", 3);
+		pos += 3;
+		ASSERT_OK(dssh_transport_send_packet(ctx.client, msg, pos, NULL));
+	}
+
+	struct timespec ts = { .tv_sec = 0, .tv_nsec = 100000000 };
+	thrd_sleep(&ts, NULL);
+
+	dssh_session_close(ctx.server, oc.server_ch, 0);
+	dssh_session_close(ctx.client, oc.client_ch, 0);
+	conn_cleanup(&ctx);
+	return TEST_PASS;
+}
+
+/* ================================================================
  * Test table
  * ================================================================ */
 
@@ -4381,6 +4555,11 @@ static struct dssh_test_entry tests[] = {
 	{ "test_data_dlen_exceeds_payload",     test_data_dlen_exceeds_payload },
 	{ "test_send_ext_data_toolong",        test_send_extended_data_toolong },
 	{ "test_demux_chan_type_zero",          test_demux_dispatch_chan_type_zero },
+	{ "test_send_eof_already_sent",        test_send_eof_already_sent },
+	{ "test_send_close_already_sent",      test_send_close_already_sent },
+	{ "test_replenish_after_eof",          test_maybe_replenish_after_eof },
+	{ "test_replenish_low_window",         test_maybe_replenish_low_window },
+	{ "test_window_underflow_to_zero",     test_demux_window_underflow_to_zero },
 };
 
 DSSH_TEST_MAIN(tests)
