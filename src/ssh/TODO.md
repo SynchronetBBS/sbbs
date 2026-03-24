@@ -5,6 +5,14 @@
    (`set_debug_cb`, `set_global_request_cb`, etc.) should be
    checked too — the interface should be type-safe.
 
+7. Audit all `#ifndef DSSH_TESTING` dead-code guards.  Many wrap
+   error checks that were assumed unreachable but are trivially
+   testable by making the containing function `DSSH_TESTABLE` and
+   calling it directly with appropriate arguments (e.g., NULL
+   pointers, zero-length buffers, out-of-range values).  Each
+   guard should be evaluated: if the path is testable, remove the
+   guard and write a unit test instead.
+
 ## Fixed
 
 1. Handshake/rekey failure did not set terminate flag.
