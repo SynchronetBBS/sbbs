@@ -2818,6 +2818,199 @@ test_truncated_channel_data(void)
 }
 
 /* ================================================================
+ * Extended data after EOF — covers demux ext_data eof_received guard
+ * ================================================================ */
+
+static int
+test_ext_data_after_eof(void)
+{
+	struct conn_ctx ctx;
+	if (conn_setup(&ctx) < 0)
+		return TEST_FAIL;
+
+	struct open_exec_ctx oc = {
+		.client = ctx.client,
+		.server = ctx.server,
+		.command = "echo exteof",
+		.cbs = &session_cbs,
+		.accept_timeout = 5000,
+	};
+	if (open_exec_channel(&oc) < 0 || oc.client_ch == NULL || oc.server_ch == NULL) {
+		conn_cleanup(&ctx);
+		return TEST_FAIL;
+	}
+
+	/* Server sends EOF */
+	{
+		uint8_t msg[8];
+		size_t pos = 0;
+		msg[pos++] = SSH_MSG_CHANNEL_EOF;
+		dssh_serialize_uint32(oc.client_ch->local_id, msg, sizeof(msg), &pos);
+		ASSERT_OK(dssh_transport_send_packet(ctx.server, msg, pos, NULL));
+	}
+
+	struct timespec ts = { .tv_nsec = 100000000L };
+	thrd_sleep(&ts, NULL);
+
+	/* Send EXTENDED_DATA (stderr) after EOF — should be discarded */
+	{
+		uint8_t msg[32];
+		size_t pos = 0;
+		msg[pos++] = SSH_MSG_CHANNEL_EXTENDED_DATA;
+		dssh_serialize_uint32(oc.client_ch->local_id, msg, sizeof(msg), &pos);
+		dssh_serialize_uint32(1, msg, sizeof(msg), &pos); /* SSH_EXTENDED_DATA_STDERR */
+		dssh_serialize_uint32(5, msg, sizeof(msg), &pos);
+		memcpy(&msg[pos], "stale", 5);
+		pos += 5;
+		ASSERT_OK(dssh_transport_send_packet(ctx.server, msg, pos, NULL));
+	}
+
+	thrd_sleep(&ts, NULL);
+
+	conn_cleanup(&ctx);
+	return TEST_PASS;
+}
+
+/* ================================================================
+ * Truncated CHANNEL_EXTENDED_DATA — covers payload_len < 13 guard
+ * ================================================================ */
+
+static int
+test_truncated_ext_data(void)
+{
+	struct conn_ctx ctx;
+	if (conn_setup(&ctx) < 0)
+		return TEST_FAIL;
+
+	struct open_exec_ctx oc = {
+		.client = ctx.client,
+		.server = ctx.server,
+		.command = "echo truncext",
+		.cbs = &session_cbs,
+		.accept_timeout = 5000,
+	};
+	if (open_exec_channel(&oc) < 0 || oc.client_ch == NULL || oc.server_ch == NULL) {
+		conn_cleanup(&ctx);
+		return TEST_FAIL;
+	}
+
+	/* Send EXTENDED_DATA with only 10 bytes (needs 13 minimum) */
+	uint8_t msg[12];
+	size_t pos = 0;
+	msg[pos++] = SSH_MSG_CHANNEL_EXTENDED_DATA;
+	dssh_serialize_uint32(oc.client_ch->local_id, msg, sizeof(msg), &pos);
+	dssh_serialize_uint32(1, msg, sizeof(msg), &pos); /* data_type */
+	/* Only 9 bytes — no data_len or data */
+	ASSERT_OK(dssh_transport_send_packet(ctx.server, msg, pos, NULL));
+
+	struct timespec ts = { .tv_nsec = 100000000L };
+	thrd_sleep(&ts, NULL);
+
+	/* Session should still work */
+	uint8_t data[] = "ok";
+	int64_t res = dssh_session_write(ctx.server, oc.server_ch, data, sizeof(data));
+	ASSERT_TRUE(res > 0);
+
+	conn_cleanup(&ctx);
+	return TEST_PASS;
+}
+
+/* ================================================================
+ * Channel request with want_reply=true — covers the FAILURE response
+ * path in demux_dispatch for unhandled requests.
+ * ================================================================ */
+
+static int
+test_channel_request_want_reply(void)
+{
+	struct conn_ctx ctx;
+	if (conn_setup(&ctx) < 0)
+		return TEST_FAIL;
+
+	struct open_exec_ctx oc = {
+		.client = ctx.client,
+		.server = ctx.server,
+		.command = "echo reqtest",
+		.cbs = &session_cbs,
+		.accept_timeout = 5000,
+	};
+	if (open_exec_channel(&oc) < 0 || oc.client_ch == NULL || oc.server_ch == NULL) {
+		conn_cleanup(&ctx);
+		return TEST_FAIL;
+	}
+
+	/* Server sends an unknown channel request with want_reply=true
+	 * to the client's channel. The demux should send CHANNEL_FAILURE. */
+	{
+		uint8_t msg[64];
+		size_t pos = 0;
+		msg[pos++] = SSH_MSG_CHANNEL_REQUEST;
+		dssh_serialize_uint32(oc.client_ch->local_id, msg, sizeof(msg), &pos);
+		dssh_serialize_uint32(7, msg, sizeof(msg), &pos);
+		memcpy(&msg[pos], "unknown", 7);
+		pos += 7;
+		msg[pos++] = 1; /* want_reply = true */
+		ASSERT_OK(dssh_transport_send_packet(ctx.server, msg, pos, NULL));
+	}
+
+	struct timespec ts = { .tv_nsec = 100000000L };
+	thrd_sleep(&ts, NULL);
+
+	/* Session should still be functional */
+	uint8_t data[] = "after request";
+	int64_t res = dssh_session_write(ctx.server, oc.server_ch,
+	    data, sizeof(data));
+	ASSERT_TRUE(res > 0);
+
+	conn_cleanup(&ctx);
+	return TEST_PASS;
+}
+
+/* ================================================================
+ * Data with dlen > local_window — covers window saturation to 0
+ * ================================================================ */
+
+static int
+test_data_exceeds_window(void)
+{
+	struct conn_ctx ctx;
+	if (conn_setup(&ctx) < 0)
+		return TEST_FAIL;
+
+	struct open_exec_ctx oc = {
+		.client = ctx.client,
+		.server = ctx.server,
+		.command = "echo wintest",
+		.cbs = &session_cbs,
+		.accept_timeout = 5000,
+	};
+	if (open_exec_channel(&oc) < 0 || oc.client_ch == NULL || oc.server_ch == NULL) {
+		conn_cleanup(&ctx);
+		return TEST_FAIL;
+	}
+
+	/* Send CHANNEL_DATA with a dlen larger than the local window
+	 * (which is typically 2MB).  We fake the dlen field to be huge
+	 * but send less actual data — the demux clamps dlen to payload. */
+	{
+		uint8_t msg[32];
+		size_t pos = 0;
+		msg[pos++] = SSH_MSG_CHANNEL_DATA;
+		dssh_serialize_uint32(oc.client_ch->local_id, msg, sizeof(msg), &pos);
+		dssh_serialize_uint32(0xFFFFFFFF, msg, sizeof(msg), &pos); /* huge dlen */
+		memcpy(&msg[pos], "x", 1);
+		pos += 1;
+		ASSERT_OK(dssh_transport_send_packet(ctx.server, msg, pos, NULL));
+	}
+
+	struct timespec ts = { .tv_nsec = 100000000L };
+	thrd_sleep(&ts, NULL);
+
+	conn_cleanup(&ctx);
+	return TEST_PASS;
+}
+
+/* ================================================================
  * Test table
  * ================================================================ */
 
@@ -2912,6 +3105,10 @@ static struct dssh_test_entry tests[] = {
 	{ "test_window_adjust_from_peer",      test_window_adjust_from_peer },
 	{ "test_data_after_eof",               test_data_after_eof },
 	{ "test_truncated_channel_data",       test_truncated_channel_data },
+	{ "test_ext_data_after_eof",           test_ext_data_after_eof },
+	{ "test_truncated_ext_data",           test_truncated_ext_data },
+	{ "test_channel_request_want_reply",   test_channel_request_want_reply },
+	{ "test_data_exceeds_window",          test_data_exceeds_window },
 };
 
 DSSH_TEST_MAIN(tests)
