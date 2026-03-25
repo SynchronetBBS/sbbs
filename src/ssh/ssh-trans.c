@@ -824,13 +824,10 @@ dssh_transport_recv_packet(dssh_session sess,
 				int gr_res = -1;
 
 				if (sess->global_request_cb != NULL) {
-					typedef int (*gr_cb)(const uint8_t *, size_t,
-					    bool, const uint8_t *, size_t, void *);
-
-					gr_cb cb = (gr_cb)sess->global_request_cb;
-
-					gr_res = cb(gname, gname_len, want_reply,
-					        &(*payload)[gpos], *payload_len - gpos,
+					gr_res = sess->global_request_cb(
+					        gname, gname_len, want_reply,
+					        &(*payload)[gpos],
+					        *payload_len - gpos,
 					        sess->global_request_cbdata);
 				}
 

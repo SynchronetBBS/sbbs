@@ -9,7 +9,7 @@
 static void
 handle_banner(dssh_session sess, uint8_t *payload, size_t payload_len)
 {
-	dssh_auth_banner_cb cb = (dssh_auth_banner_cb)sess->banner_cb;
+	dssh_auth_banner_cb cb = sess->banner_cb;
 
 	if (cb == NULL)
 		return;

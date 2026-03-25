@@ -1799,7 +1799,7 @@ test_auth_banner_delivered(void)
 
 	/* Set banner callback on client */
 	dssh_session_set_banner_cb(ctx.client,
-	    (void *)test_banner_cb, NULL);
+	    test_banner_cb, NULL);
 
 	struct auth_server_arg sa = {0};
 	sa.ctx = &ctx;
@@ -4166,7 +4166,7 @@ test_banner_truncated_variants(void)
 	}
 
 	banner_trunc_cb_called = false;
-	dssh_session_set_banner_cb(ctx.client, (void *)banner_trunc_cb, NULL);
+	dssh_session_set_banner_cb(ctx.client, banner_trunc_cb, NULL);
 
 	struct auth_server_arg sa = {0};
 	sa.ctx = &ctx;
@@ -6539,7 +6539,7 @@ test_client_publickey_banner(void)
 
 	banner_received = false;
 	banner_text[0] = 0;
-	dssh_session_set_banner_cb(ctx.client, (void *)test_banner_cb, NULL);
+	dssh_session_set_banner_cb(ctx.client, test_banner_cb, NULL);
 
 	struct crafted_response_ctx cr = { &ctx, NULL, 0 };
 	thrd_t st;
@@ -6637,7 +6637,7 @@ test_server_banner_no_lang(void)
 
 	banner_received = false;
 	banner_text[0] = 0;
-	dssh_session_set_banner_cb(ctx.client, (void *)test_banner_cb, NULL);
+	dssh_session_set_banner_cb(ctx.client, test_banner_cb, NULL);
 
 	struct auth_server_arg sa = {0};
 	sa.ctx = &ctx;

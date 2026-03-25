@@ -1,10 +1,5 @@
 # DeuceSSH — Bugs found during branch coverage work
 
-5. `dssh_session_set_banner_cb()` takes `void *cb` instead of a
-   typed function pointer.  All the other callback setters
-   (`set_debug_cb`, `set_global_request_cb`, etc.) should be
-   checked too — the interface should be type-safe.
-
 ## Flaky tests (observed in isolated process — real bugs)
 
 8. `dssh_self_test_self_rekey_preserves_channels_dhgex` — intermittent
@@ -41,3 +36,8 @@
 
 6. ssh-conn.c: dead x11 channel type check — `type_len == 2` with
    `memcmp(ctype, "x11", 3)` could never match.  Deleted.
+
+9. `dssh_session_set_banner_cb()` and `set_global_request_cb()` took
+   `void *cb` instead of typed function pointers.  Fixed: both now use
+   proper typedefs (`dssh_auth_banner_cb`, `dssh_global_request_cb`).
+   Full audit found no other cases.

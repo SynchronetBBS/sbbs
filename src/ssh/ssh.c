@@ -125,7 +125,7 @@ dssh_session_set_unimplemented_cb(dssh_session sess,
 
 DSSH_PUBLIC void
 dssh_session_set_banner_cb(dssh_session sess,
-    void *cb, void *cbdata)
+    dssh_auth_banner_cb cb, void *cbdata)
 {
 	sess->banner_cb = cb;
 	sess->banner_cbdata = cbdata;
@@ -133,7 +133,7 @@ dssh_session_set_banner_cb(dssh_session sess,
 
 DSSH_PUBLIC void
 dssh_session_set_global_request_cb(dssh_session sess,
-    void *cb, void *cbdata)
+    dssh_global_request_cb cb, void *cbdata)
 {
 	sess->global_request_cb = cb;
 	sess->global_request_cbdata = cbdata;

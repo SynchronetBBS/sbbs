@@ -45,15 +45,7 @@ typedef int (*dssh_auth_kbi_prompt_cb)(const uint8_t *name, size_t name_len,
     uint8_t **responses, size_t *response_lens,
     void *cbdata);
 
-/*
- * Optional callback for SSH_MSG_USERAUTH_BANNER (RFC 4252 s5.4).
- * The server may send banner messages during authentication.
- * message/message_len: the banner text (UTF-8, not NUL-terminated).
- * language/language_len: the language tag (may be empty).
- */
-typedef void (*dssh_auth_banner_cb)(const uint8_t *message, size_t message_len,
-    const uint8_t *language, size_t language_len,
-    void *cbdata);
+/* dssh_auth_banner_cb is defined in deucessh.h */
 
 /*
  * Query available authentication methods by sending a "none"

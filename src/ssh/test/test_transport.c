@@ -2912,7 +2912,7 @@ test_set_global_request_cb(void)
 	ASSERT_NOT_NULL(sess);
 
 	int dummy = 42;
-	dssh_session_set_global_request_cb(sess, (void *)0x1, &dummy);
+	dssh_session_set_global_request_cb(sess, (dssh_global_request_cb)0x1, &dummy);
 	/* Just verify it doesn't crash — the callback pointer is
 	 * stored in the session struct for later dispatch. */
 
@@ -2971,7 +2971,7 @@ test_global_request_with_reply(void)
 	global_request_cb_result = 0;  /* accept */
 	memset(global_request_name, 0, sizeof(global_request_name));
 	dssh_session_set_global_request_cb(server,
-	    (void *)mock_global_request_cb, NULL);
+	    mock_global_request_cb, NULL);
 
 	/* Build GLOBAL_REQUEST: msg_type(1) + string("test-req") + want_reply(1) */
 	uint8_t gr[64];
@@ -3036,7 +3036,7 @@ test_global_request_rejected(void)
 	/* Callback returns -1 (reject) */
 	global_request_cb_result = -1;
 	dssh_session_set_global_request_cb(server,
-	    (void *)mock_global_request_cb, NULL);
+	    mock_global_request_cb, NULL);
 
 	uint8_t gr[64];
 	size_t gp = 0;
@@ -3091,7 +3091,7 @@ test_global_request_no_reply(void)
 
 	global_request_cb_result = 0;
 	dssh_session_set_global_request_cb(server,
-	    (void *)mock_global_request_cb, NULL);
+	    mock_global_request_cb, NULL);
 
 	/* want_reply = false */
 	uint8_t gr[64];

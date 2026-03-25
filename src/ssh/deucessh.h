@@ -108,9 +108,30 @@ DSSH_PUBLIC void dssh_session_set_cbdata(dssh_session sess,
 DSSH_PUBLIC void dssh_session_set_debug_cb(dssh_session sess,
     dssh_debug_cb cb, void *cbdata);
 DSSH_PUBLIC void dssh_session_set_unimplemented_cb(dssh_session sess, dssh_unimplemented_cb cb, void *cbdata);
+/*
+ * Optional callback for SSH_MSG_USERAUTH_BANNER (RFC 4252 s5.4).
+ * message/message_len: the banner text (UTF-8, not NUL-terminated).
+ * language/language_len: the language tag (may be empty).
+ */
+typedef void (*dssh_auth_banner_cb)(const uint8_t *message,
+    size_t message_len, const uint8_t *language, size_t language_len,
+    void *cbdata);
+
+/*
+ * Optional callback for SSH_MSG_GLOBAL_REQUEST (RFC 4254 s4).
+ * name/name_len: the request name.
+ * want_reply: whether the sender expects a response.
+ * data/data_len: request-specific data following the name.
+ * Return >= 0 to accept, < 0 to reject.
+ */
+typedef int (*dssh_global_request_cb)(const uint8_t *name,
+    size_t name_len, bool want_reply, const uint8_t *data,
+    size_t data_len, void *cbdata);
+
 DSSH_PUBLIC void dssh_session_set_banner_cb(dssh_session sess,
-    void *cb, void *cbdata);
-DSSH_PUBLIC void dssh_session_set_global_request_cb(dssh_session sess, void *cb, void *cbdata);
+    dssh_auth_banner_cb cb, void *cbdata);
+DSSH_PUBLIC void dssh_session_set_global_request_cb(dssh_session sess,
+    dssh_global_request_cb cb, void *cbdata);
 
 /*
  * Set the SSH version identification strings (RFC 4253 s4.2).

@@ -168,7 +168,7 @@ struct dssh_session_s {
 	void                         *unimplemented_cbdata;
 
         /* Auth banner callback (set before authentication) */
-	void                         *banner_cb;
+	dssh_auth_banner_cb           banner_cb;
 	void                         *banner_cbdata;
 
         /*
@@ -177,7 +177,7 @@ struct dssh_session_s {
          * Return 0 for REQUEST_SUCCESS, negative for REQUEST_FAILURE.
          * If NULL, REQUEST_FAILURE is sent automatically.
          */
-	void                         *global_request_cb;
+	dssh_global_request_cb        global_request_cb;
 	void                         *global_request_cbdata;
 
         /* Auth state */
