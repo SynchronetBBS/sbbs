@@ -5,6 +5,9 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
+2.35     2026-03-24   If the configuration or theme configuration filename
+                      can't be opened, output an error only if the user is the
+                      sysop (don't bug users about that).
 2.34     2026-03-22   Added RIP support. If the user's terminal supports RIP,
                       ddfilelister will now use a fully RIP interface. This was
                       done with the help of Claude AI.
