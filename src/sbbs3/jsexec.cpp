@@ -752,7 +752,7 @@ js_AssertEq(JSContext *cx, uintN argc, jsval *vp)
 }
 
 
-static jsSyncMethodSpec js_global_functions[] = {
+static jsSyncMethodSpec jse_global_functions[] = {
 	{"log",             js_log,             1,  JSTYPE_STRING,  JSDOCSTR("[<i>number</i> level=LOG_INFO,] value [,value]")
 	 , JSDOCSTR("Add a line of text to the server and/or system log.<br>"
 		        "<i>values</i> are typically string constants or variables (each logged as a separate log message),<br>"
@@ -907,7 +907,7 @@ static bool js_init(char** env)
 	JS_SetErrorReporter(js_cx, js_ErrorReporter);
 
 	/* Global Object */
-	if (!js_CreateCommonObjects(js_cx, &scfg, NULL, js_global_functions
+	if (!js_CreateCommonObjects(js_cx, &scfg, NULL, jse_global_functions
 	                            , xp_fast_timer64(), host_name, SOCKLIB_DESC /* system */
 	                            , &cb, &startup /* js */
 	                            , NULL /* user */
