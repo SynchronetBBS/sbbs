@@ -60,9 +60,16 @@ Test infrastructure:
 - `test/test_enc.h/.c` — XOR cipher with failure injection
 - `test/test_mac.h/.c` — XOR-fold MAC with failure injection
 - `test/dssh_test_internal.h` — declarations for `DSSH_TESTABLE` functions
-- `-DDSSH_TESTING` compile flag exposes static functions, redirects
-  library malloc/calloc/realloc to test allocator, and compiles out
-  unreachable defense-in-depth guards for accurate coverage
+- `-DDSSH_TESTING` compile flag exposes static functions via
+  `DSSH_TESTABLE`, redirects library malloc/calloc/realloc to test
+  allocator, redirects OpenSSL and C11 thread functions (mtx_init,
+  cnd_init, thrd_create) to ossl injection wrappers, and compiles out
+  unreachable defense-in-depth guards for accurate coverage.
+  **Defense-in-depth guards are ONLY for impossible states within
+  DeuceSSH's own code** (e.g. a NULL function pointer that the library
+  itself always sets).  External functions — standard C library,
+  OpenSSL, C11 threads — can and do fail; those failure paths MUST be
+  tested, never compiled out.
 
 Coverage measurement (run from source dir, not build-cov):
 ```sh

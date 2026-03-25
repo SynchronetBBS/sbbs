@@ -207,8 +207,8 @@ compute_exchange_hash(const char *v_c, size_t v_c_len,
 	return ok ? 0 : DSSH_ERROR_INIT;
 }
 
-static int
-handler(dssh_session sess)
+DSSH_TESTABLE int
+dhgex_handler(dssh_session sess)
 {
 	int            res;
 	BIGNUM        *p = NULL, *g = NULL, *e_bn = NULL, *f_bn = NULL, *k_bn = NULL;
@@ -703,7 +703,7 @@ register_dh_gex_sha256(void)
 	if (kex == NULL)
 		return DSSH_ERROR_ALLOC;
 	kex->next = NULL;
-	kex->handler = handler;
+	kex->handler = dhgex_handler;
 	kex->cleanup = kex_cleanup;
 	kex->flags = DSSH_KEX_FLAG_NEEDS_SIGNATURE_CAPABLE;
 	kex->hash_name = "SHA256";

@@ -137,6 +137,8 @@ int x25519_exchange(const uint8_t *peer_pub, size_t peer_pub_len,
 int encode_shared_secret(uint8_t *raw, size_t raw_len,
     uint8_t **ss_out, size_t *ss_len,
     uint8_t **mpint_out, size_t *mpint_len);
+int curve25519_handler(dssh_session sess);
+int dhgex_handler(dssh_session sess);
 
 /*
  * ssh-auth.c helpers exposed for direct testing.

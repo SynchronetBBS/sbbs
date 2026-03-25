@@ -214,8 +214,8 @@ encode_shared_secret(uint8_t *raw, size_t raw_len,
 	return 0;
 }
 
-static int
-handler(dssh_session sess)
+DSSH_TESTABLE int
+curve25519_handler(dssh_session sess)
 {
 	int            res;
 	const char    *v_c, *v_s;
@@ -594,7 +594,7 @@ register_curve25519_sha256(void)
 	if (kex == NULL)
 		return DSSH_ERROR_ALLOC;
 	kex->next = NULL;
-	kex->handler = handler;
+	kex->handler = curve25519_handler;
 	kex->cleanup = kex_cleanup;
 	kex->flags = DSSH_KEX_FLAG_NEEDS_SIGNATURE_CAPABLE;
 	kex->hash_name = "SHA256";

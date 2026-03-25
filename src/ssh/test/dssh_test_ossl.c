@@ -439,6 +439,14 @@ dssh_test_EVP_PKEY_CTX_set_params(EVP_PKEY_CTX *ctx,
 	return EVP_PKEY_CTX_set_params(ctx, params);
 }
 
+int
+dssh_test_EVP_PKEY_CTX_set_rsa_padding(EVP_PKEY_CTX *ctx, int pad_mode)
+{
+	if (should_fail())
+		return 0;
+	return EVP_PKEY_CTX_set_rsa_padding(ctx, pad_mode);
+}
+
 /* ================================================================
  * C11 threads wrappers
  * ================================================================ */

@@ -54,6 +54,15 @@ int dssh_test_thrd_create(thrd_t *thr, thrd_start_t func, void *arg);
  #define cnd_init(c) dssh_test_cnd_init(c)
  #define thrd_create(t, f, a) dssh_test_thrd_create(t, f, a)
 
+/* OpenSSL */
+int dssh_test_BN_rand(BIGNUM *rnd, int bits, int top, int bottom);
+int dssh_test_EVP_PKEY_CTX_set_rsa_padding(EVP_PKEY_CTX *ctx, int pad_mode);
+
+ #define BN_rand(r, b, t, bo) dssh_test_BN_rand(r, b, t, bo)
+ #define EVP_PKEY_CTX_set_rsa_padding(c, p) dssh_test_EVP_PKEY_CTX_set_rsa_padding(c, p)
+int dssh_test_EVP_CIPHER_CTX_set_padding(EVP_CIPHER_CTX *ctx, int pad);
+ #define EVP_CIPHER_CTX_set_padding(c, p) dssh_test_EVP_CIPHER_CTX_set_padding(c, p)
+
 #endif /* DSSH_TESTING */
 
 /* Channel types */
