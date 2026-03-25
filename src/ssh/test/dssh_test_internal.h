@@ -144,6 +144,20 @@ int encode_shared_secret(uint8_t *raw, size_t raw_len,
 int64_t parse_userauth_prefix(const uint8_t *payload, size_t payload_len,
     const uint8_t **user, size_t *user_len,
     const uint8_t **method, size_t *method_len);
+#include "deucessh-auth.h"
+int auth_server_impl(dssh_session sess,
+    const struct dssh_auth_server_cbs *cbs,
+    uint8_t *username_out, size_t *username_out_len);
+int get_methods_impl(dssh_session sess,
+    const char *username, char *methods, size_t methods_sz);
+int auth_password_impl(dssh_session sess,
+    const char *username, const char *password,
+    dssh_auth_passwd_change_cb passwd_change_cb, void *cbdata);
+int auth_kbi_impl(dssh_session sess,
+    const char *username,
+    dssh_auth_kbi_prompt_cb prompt_cb, void *cbdata);
+int auth_publickey_impl(dssh_session sess,
+    const char *username, const char *algo_name);
 
 #ifdef __cplusplus
 }

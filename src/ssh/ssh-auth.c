@@ -154,7 +154,7 @@ parse_userauth_prefix(const uint8_t *payload, size_t payload_len,
  * Server-side authentication loop
  * ================================================================ */
 
-static int
+DSSH_TESTABLE int
 auth_server_impl(dssh_session sess,
     const struct dssh_auth_server_cbs *cbs,
     uint8_t *username_out, size_t *username_out_len)
@@ -524,7 +524,7 @@ ensure_auth_service(dssh_session sess)
 	return res;
 }
 
-static int
+DSSH_TESTABLE int
 get_methods_impl(dssh_session sess,
     const char *username, char *methods, size_t methods_sz)
 {
@@ -647,7 +647,7 @@ send_password_request(dssh_session sess,
 	return res;
 }
 
-static int
+DSSH_TESTABLE int
 auth_password_impl(dssh_session sess,
     const char *username, const char *password,
     dssh_auth_passwd_change_cb passwd_change_cb, void *passwd_change_cbdata)
@@ -739,7 +739,7 @@ dssh_auth_password(dssh_session sess,
 	        passwd_change_cb, passwd_change_cbdata));
 }
 
-static int
+DSSH_TESTABLE int
 auth_kbi_impl(dssh_session sess,
     const char *username, dssh_auth_kbi_prompt_cb prompt_cb,
     void *cbdata)
@@ -958,7 +958,7 @@ dssh_auth_keyboard_interactive(dssh_session sess,
 	    auth_kbi_impl(sess, username, prompt_cb, cbdata));
 }
 
-static int
+DSSH_TESTABLE int
 auth_publickey_impl(dssh_session sess,
     const char *username, const char *algo_name)
 {
