@@ -5,6 +5,12 @@
    (`set_debug_cb`, `set_global_request_cb`, etc.) should be
    checked too — the interface should be type-safe.
 
+## Flaky tests (observed in isolated process — real bugs)
+
+8. `dssh_self_test_self_rekey_preserves_channels_dhgex` — intermittent
+   failure under `-j8`.  Occurs even when running as a standalone
+   process (not shared state from other tests).  Needs investigation.
+
 ## Fixed
 
 7. Removed all 31 `#ifndef DSSH_TESTING` dead-code guards.
