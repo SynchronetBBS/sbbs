@@ -121,11 +121,259 @@ int DLLCALL sbbs_random(int n)
 	return xp_random(n);
 }
 
+
+#ifdef BUILD_JSDOCS
+
+/* This is a stream-lined version of JS_DefineConstDoubles */
 JSBool
-DLLCALL js_DefineSyncProperties(JSContext *cx, JSObject *obj, jsSyncPropertySpec* props)
+js_DefineConstIntegers(JSContext* cx, JSObject* obj, jsConstIntSpec* ints, int flags)
+{
+	uint  i;
+	jsval val;
+
+	for (i = 0; ints[i].name; i++) {
+		val = INT_TO_JSVAL(ints[i].val);
+
+		if (!JS_DefineProperty(cx, obj, ints[i].name, val, NULL, NULL, flags))
+			return JS_FALSE;
+	}
+
+	return JS_TRUE;
+}
+
+JSBool
+js_DescribeSyncObject(JSContext* cx, JSObject* obj, const char* str, int ver)
+{
+	JSString* js_str = JS_NewStringCopyZ(cx, str);
+
+	if (js_str == NULL)
+		return JS_FALSE;
+
+	if (ver < 10000)     /* auto convert 313 to 31300 */
+		ver *= 100;
+
+	return JS_DefineProperty(cx, obj, "_description"
+	                         , STRING_TO_JSVAL(js_str), NULL, NULL, JSPROP_READONLY) != JS_FALSE
+	       && JS_DefineProperty(cx, obj, "_ver"
+	                            , INT_TO_JSVAL(ver), NULL, NULL, JSPROP_READONLY) != JS_FALSE;
+}
+
+JSBool
+js_DescribeSyncConstructor(JSContext* cx, JSObject* obj, const char* str)
+{
+	JSString* js_str = JS_NewStringCopyZ(cx, str);
+
+	if (js_str == NULL)
+		return JS_FALSE;
+
+	return JS_DefineProperty(cx, obj, "_constructor"
+	                         , STRING_TO_JSVAL(js_str), NULL, NULL, JSPROP_READONLY);
+}
+
+static const char* method_array_name = "_method_list";
+static const char* property_array_name = "_property_list";
+
+/*
+ * from jsatom.c:
+ * Keep this in sync with jspubtd.h -- an assertion below will insist that
+ * its length match the JSType enum's JSTYPE_LIMIT limit value.
+ */
+static const char *js_type_str[] = {
+	"void",         // changed from "undefined"
+	"object",
+	"function",
+	"string",
+	"number",
+	"boolean",
+	"null",
+	"xml",
+	"array",
+	"alias",
+	"undefined"
+};
+
+JSBool
+js_DefineSyncProperties(JSContext *cx, JSObject *obj, jsSyncPropertySpec* props)
+{
+	uint      i;
+	int       ver;
+	jsval     val;
+	JSString* js_str;
+	JSObject* array;
+	JSObject* prop;
+
+	if ((array = JS_NewObject(cx, NULL, NULL, obj)) == NULL)
+		return JS_FALSE;
+
+	for (i = 0; props[i].name != NULL; ++i) {
+		if (props[i].tinyid < 256 && props[i].tinyid > -129) {
+			if (!JS_DefinePropertyWithTinyId(cx, obj, /* Never reserve any "slots" for properties */
+			                                 props[i].name, props[i].tinyid, JSVAL_VOID, NULL, NULL, props[i].flags | JSPROP_SHARED))
+				return JS_FALSE;
+		}
+		else {
+			if (!JS_DefineProperty(cx, obj, props[i].name, JSVAL_VOID, NULL, NULL, props[i].flags | JSPROP_SHARED))
+				return JS_FALSE;
+		}
+		if (!(props[i].flags & JSPROP_ENUMERATE))   /* No need to document invisible props */
+			continue;
+
+		prop = JS_NewObject(cx, NULL, NULL, array);
+		if (prop == NULL)
+			return JS_FALSE;
+
+		if ((ver = props[i].ver) < 10000)      /* auto convert 313 to 31300 */
+			ver *= 100;
+		val = INT_TO_JSVAL(ver);
+		JS_SetProperty(cx, prop, "ver", &val);
+
+		if (props[i].desc != NULL) {
+			if ((js_str = JS_NewStringCopyZ(cx, props[i].desc)) == NULL)
+				return JS_FALSE;
+			val = STRING_TO_JSVAL(js_str);
+			JS_SetProperty(cx, prop, "desc", &val);
+		}
+		if (!JS_DefineProperty(cx, array, props[i].name, OBJECT_TO_JSVAL(prop), NULL, NULL, JSPROP_READONLY | JSPROP_ENUMERATE))
+			return JS_FALSE;
+	}
+
+	return JS_DefineProperty(cx, obj, property_array_name, OBJECT_TO_JSVAL(array), NULL, NULL, JSPROP_READONLY);
+}
+
+JSBool
+js_DefineSyncMethods(JSContext* cx, JSObject* obj, jsSyncMethodSpec *funcs)
+{
+	int       i;
+	jsuint    len = 0;
+	int       ver;
+	jsval     val;
+	JSObject* method;
+	JSObject* method_array;
+	JSString* js_str;
+	size_t    str_len = 0;
+	char *    str = NULL;
+
+	/* Return existing method_list array if it's already been created */
+	if (JS_GetProperty(cx, obj, method_array_name, &val) && val != JSVAL_VOID) {
+		method_array = JSVAL_TO_OBJECT(val);
+		// If the first item is already in the list, don't do anything.
+		if (method_array == NULL || !JS_GetArrayLength(cx, method_array, &len))
+			return JS_FALSE;
+		for (i = 0; i < (int)len; i++) {
+			if (JS_GetElement(cx, method_array, i, &val) != JS_TRUE || val == JSVAL_VOID)
+				continue;
+			JS_GetProperty(cx, JSVAL_TO_OBJECT(val), "name", &val);
+			JSVALUE_TO_RASTRING(cx, val, str, &str_len, NULL);
+			if (str == NULL)
+				continue;
+			if (strcmp(str, funcs[0].name) == 0)
+				return JS_TRUE;
+		}
+	}
+	else {
+		if ((method_array = JS_NewArrayObject(cx, 0, NULL)) == NULL)
+			return JS_FALSE;
+		if (!JS_DefineProperty(cx, obj, method_array_name, OBJECT_TO_JSVAL(method_array)
+		                       , NULL, NULL, 0))
+			return JS_FALSE;
+	}
+
+	for (i = 0; funcs[i].name != NULL; ++i) {
+
+		if (!JS_DefineFunction(cx, obj, funcs[i].name, funcs[i].call, funcs[i].nargs, 0))
+			return JS_FALSE;
+
+		if (funcs[i].type == JSTYPE_ALIAS)
+			continue;
+
+		method = JS_NewObject(cx, NULL, NULL, method_array);
+		if (method == NULL)
+			return JS_FALSE;
+
+		if (funcs[i].name != NULL) {
+			if ((js_str = JS_NewStringCopyZ(cx, funcs[i].name)) == NULL)
+				return JS_FALSE;
+			val = STRING_TO_JSVAL(js_str);
+			JS_SetProperty(cx, method, "name", &val);
+		}
+
+		val = INT_TO_JSVAL(funcs[i].nargs);
+		if (!JS_SetProperty(cx, method, "nargs", &val))
+			return JS_FALSE;
+
+		if ((js_str = JS_NewStringCopyZ(cx, js_type_str[funcs[i].type])) == NULL)
+			return JS_FALSE;
+		val = STRING_TO_JSVAL(js_str);
+		JS_SetProperty(cx, method, "type", &val);
+
+		if (funcs[i].args != NULL) {
+			if ((js_str = JS_NewStringCopyZ(cx, funcs[i].args)) == NULL)
+				return JS_FALSE;
+			val = STRING_TO_JSVAL(js_str);
+			JS_SetProperty(cx, method, "args", &val);
+		}
+
+		if (funcs[i].desc != NULL) {
+			if ((js_str = JS_NewStringCopyZ(cx, funcs[i].desc)) == NULL)
+				return JS_FALSE;
+			val = STRING_TO_JSVAL(js_str);
+			JS_SetProperty(cx, method, "desc", &val);
+		}
+
+		if (funcs[i].ver) {
+			if ((ver = funcs[i].ver) < 10000)      /* auto convert 313 to 31300 */
+				ver *= 100;
+			val = INT_TO_JSVAL(ver);
+			JS_SetProperty(cx, method, "ver", &val);
+		}
+
+		val = OBJECT_TO_JSVAL(method);
+		if (!JS_SetElement(cx, method_array, len + i, &val))
+			return JS_FALSE;
+	}
+
+	return JS_TRUE;
+}
+
+/*
+ * Always resolve all here since
+ * 1) We'll always be enumerating anyways
+ * 2) The speed penalty won't be seen in production code anyways
+ */
+JSBool
+js_SyncResolve(JSContext* cx, JSObject* obj, char *name, jsSyncPropertySpec* props, jsSyncMethodSpec* funcs, jsConstIntSpec* consts, int flags)
+{
+	JSBool ret = JS_TRUE;
+
+	if (props) {
+		if (!js_DefineSyncProperties(cx, obj, props))
+			ret = JS_FALSE;
+	}
+
+	if (funcs) {
+		if (!js_DefineSyncMethods(cx, obj, funcs))
+			ret = JS_FALSE;
+	}
+
+	if (consts) {
+		if (!js_DefineConstIntegers(cx, obj, consts, flags))
+			ret = JS_FALSE;
+	}
+
+	return ret;
+}
+
+#else // NON-JSDOCS
+
+JSBool
+js_DefineSyncProperties(JSContext *cx, JSObject *obj, jsSyncPropertySpec* props)
 {
 	uint i;
 
+	/*
+	 * NOTE: Any changes here should also be added to the same function in jsdoor.c
+	 *       (ie: anything not Synchronet specific).
+	 */
 	for (i = 0; props[i].name; i++) {
 		if (props[i].tinyid < 256 && props[i].tinyid > -129) {
 			if (!JS_DefinePropertyWithTinyId(cx, obj,
@@ -136,7 +384,6 @@ DLLCALL js_DefineSyncProperties(JSContext *cx, JSObject *obj, jsSyncPropertySpec
 			if (!JS_DefineProperty(cx, obj, props[i].name, JSVAL_VOID, NULL, NULL, props[i].flags | JSPROP_SHARED))
 				return JS_FALSE;
 		}
-
 	}
 
 	return JS_TRUE;
@@ -144,10 +391,14 @@ DLLCALL js_DefineSyncProperties(JSContext *cx, JSObject *obj, jsSyncPropertySpec
 
 
 JSBool
-DLLCALL js_DefineSyncMethods(JSContext* cx, JSObject* obj, jsSyncMethodSpec *funcs)
+js_DefineSyncMethods(JSContext* cx, JSObject* obj, jsSyncMethodSpec *funcs)
 {
 	uint i;
 
+	/*
+	 * NOTE: Any changes here should also be added to the same function in jsdoor.c
+	 *       (ie: anything not Synchronet specific).
+	 */
 	for (i = 0; funcs[i].name; i++)
 		if (!JS_DefineFunction(cx, obj, funcs[i].name, funcs[i].call, funcs[i].nargs, 0))
 			return JS_FALSE;
@@ -155,11 +406,15 @@ DLLCALL js_DefineSyncMethods(JSContext* cx, JSObject* obj, jsSyncMethodSpec *fun
 }
 
 JSBool
-DLLCALL js_SyncResolve(JSContext* cx, JSObject* obj, char *name, jsSyncPropertySpec* props, jsSyncMethodSpec* funcs, jsConstIntSpec* consts, int flags)
+js_SyncResolve(JSContext* cx, JSObject* obj, char *name, jsSyncPropertySpec* props, jsSyncMethodSpec* funcs, jsConstIntSpec* consts, int flags)
 {
 	uint  i;
 	jsval val;
 
+	/*
+	 * NOTE: Any changes here should also be added to the same function in jsdoor.c
+	 *       (ie: anything not Synchronet specific).
+	 */
 	if (props) {
 		for (i = 0; props[i].name; i++) {
 			if (name == NULL || strcmp(name, props[i].name) == 0) {
@@ -203,6 +458,8 @@ DLLCALL js_SyncResolve(JSContext* cx, JSObject* obj, char *name, jsSyncPropertyS
 
 	return JS_TRUE;
 }
+
+#endif
 
 // Needed for load()
 JSObject* js_CreateBbsObject(JSContext* cx, JSObject* parent)

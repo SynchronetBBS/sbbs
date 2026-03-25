@@ -753,26 +753,63 @@ js_AssertEq(JSContext *cx, uintN argc, jsval *vp)
 
 
 static jsSyncMethodSpec js_global_functions[] = {
-	{"log",             js_log,             1},
-	{"read",            js_read,            1},
-	{"readln",          js_readln,          0,  JSTYPE_STRING,  JSDOCSTR("[count]")
-	 , JSDOCSTR("Read a single line, up to count characters, from input stream")
-	 , 311},
-	{"write",           js_write,           0},
-	{"write_raw",       js_write,           0}, // alias for compatibility with sbbs
-	{"writeln",         js_writeln,         0},
-	{"print",           js_writeln,         0},
-	{"printf",          jse_printf,         1},
-	{"alert",           js_alert,           1},
-	{"prompt",          js_prompt,          1},
-	{"confirm",         js_confirm,         1},
-	{"deny",            js_deny,            1},
+	{"log",             js_log,             1,  JSTYPE_STRING,  JSDOCSTR("[<i>number</i> level=LOG_INFO,] value [,value]")
+	 , JSDOCSTR("Add a line of text to the server and/or system log.<br>"
+		        "<i>values</i> are typically string constants or variables (each logged as a separate log message),<br>"
+		        "<i>level</i> is the severity of the message to be logged, one of the globally-defined values, in decreasing severity:<br>"
+		        "<tt>LOG_EMERG, LOG_ALERT, LOG_CRIT, LOG_ERR, LOG_WARNING, LOG_NOTICE, LOG_INFO, and LOG_DEBUG</tt> (default: <tt>LOG_INFO</tt>)")
+	 , 311
+	},
+	{"read",            js_read,            0,  JSTYPE_STRING,  JSDOCSTR("[count=128]")
+	 , JSDOCSTR("Read up to <tt>count</tt> characters from input stream and return as a string or <tt>undefined</tt> upon error")
+	 , 311
+	},
+	{"readln",          js_readln,          0,  JSTYPE_STRING,  JSDOCSTR("[count=128]")
+	 , JSDOCSTR("Read a single line, up to <tt>count</tt> characters, from input stream and return as a string or <tt>undefined</tt> upon error")
+	 , 311
+	},
+	{"write",           js_write,           0,  JSTYPE_VOID,    JSDOCSTR("value [,value]")
+	 , JSDOCSTR("Send one or more values (typically strings) to the output stream")
+	 , 311
+	},
+	{"write_raw",       js_write,           0,  JSTYPE_ALIAS },
+	{"writeln",         js_writeln,         0,  JSTYPE_VOID,    JSDOCSTR("value [,value]")
+	 , JSDOCSTR("Send a line of text to the output stream with automatic line termination (CRLF), "
+		        "<i>values</i> are typically string constants or variables (AKA print)")
+	 , 311
+	},
+	{"print",           js_writeln,         0,  JSTYPE_ALIAS },
+	{"printf",          jse_printf,          1,  JSTYPE_STRING,  JSDOCSTR("<i>string</i> format [,value][,value]")
+	 , JSDOCSTR("Send a C-style formatted string of text to the output stream.  See also the <tt>format()</tt> function.")
+	 , 310
+	},
+	{"alert",           js_alert,           1,  JSTYPE_VOID,    JSDOCSTR("value")
+	 , JSDOCSTR("Send an alert message (ala client-side JS) to the output stream")
+	 , 310
+	},
+	{"prompt",          js_prompt,          1,  JSTYPE_STRING,  JSDOCSTR("[<i>string</i> text] [,<i>string</i> value] [,<i>number</i> k_mode=K_EDIT]")
+	 , JSDOCSTR("Display a prompt (<tt>text</tt>) and return a string of user input (ala client-side JS) or <tt>null</tt> upon no-input<br>"
+		        "<tt>value</tt> is an optional default string to be edited (used with the <tt>k_mode K_EDIT</tt> flag)<br>"
+		        "See <tt>sbbsdefs.js</tt> for all valid <tt>K_</tt> (keyboard-input) mode flags.")
+	 , 310
+	},
+	{"confirm",         js_confirm,         1,  JSTYPE_BOOLEAN, JSDOCSTR("value")
+	 , JSDOCSTR("Display a Yes/No prompt and return <tt>true</tt> or <tt>false</tt> "
+		        "based on user's confirmation (ala client-side JS, <tt>true</tt> = yes)<br>"
+		        "see also <tt>console.yesno()<tt>")
+	 , 310
+	},
+	{"deny",            js_deny,            1,  JSTYPE_BOOLEAN, JSDOCSTR("value")
+	 , JSDOCSTR("Display a No/Yes prompt and returns <tt>true</tt> or <tt>false</tt> "
+		        "based on user's denial (<tt>true</tt> = no)<br>"
+		        "see also <tt>console.noyes()<tt>")
+	 , 31501
+	},
 	{"chdir",           js_chdir,           1},
 	{"putenv",          js_putenv,          1},
 	{"assertEq",        js_AssertEq,        2},
 	{0}
 };
-
 static void
 js_ErrorReporter(JSContext *cx, const char *message, JSErrorReport *report)
 {

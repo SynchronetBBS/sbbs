@@ -106,7 +106,7 @@ function document_methods(name,obj,type)
 			,func
 			,obj._method_list[method].args
 			));
-		if(obj._method_list[method].args.indexOf("tt>") >= 0)
+		if(obj._method_list[method].args && obj._method_list[method].args.indexOf("tt>") >= 0)
 			alert(obj._method_list[method].name + " args contains tt tag");
 		if(!min_ver && obj._method_list[method].ver)
 			docwriteln("<td>" + verstr(obj._method_list[method].ver));
@@ -364,8 +364,11 @@ if(js.global.CryptContext != undefined) {
 	if(cc != undefined)			document_object("CryptContext",cc, "class");
 }
 if(js.global.CryptKeyset != undefined) {
-	var cks = new CryptKeyset(system.temp_dir + "tmpkeyset", CryptKeyset.KEYOPT.CREATE);
-	if(cks != undefined)			document_object("CryptKeyset",cks, "class");
+	try {
+		var cks = new CryptKeyset(system.temp_dir + "tmpkeyset", CryptKeyset.KEYOPT.CREATE);
+		if(cks != undefined)			document_object("CryptKeyset",cks, "class");
+	}
+	catch(e) {}
 }
 if(js.global.CryptCert != undefined) {
 	var ccert = new CryptCert(CryptCert.TYPE.CERTIFICATE);
