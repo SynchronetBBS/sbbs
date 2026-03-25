@@ -8,7 +8,11 @@
 #include <string.h>
 
 #include "kex/dh-gex-sha256.h"
+#include "deucessh.h"
+#include "ssh-trans.h"
+#ifdef DSSH_TESTING
 #include "ssh-internal.h"
+#endif
 
 #define SHA256_DIGEST_LEN 32
 #define KEX_NAME "diffie-hellman-group-exchange-sha256"
@@ -208,44 +212,19 @@ compute_exchange_hash(const char *v_c, size_t v_c_len,
 }
 
 DSSH_TESTABLE int
-dhgex_handler(dssh_session sess)
+dhgex_handler(struct dssh_kex_context *kctx)
 {
 	int            res;
 	BIGNUM        *p = NULL, *g = NULL, *e_bn = NULL, *f_bn = NULL, *k_bn = NULL;
 	BN_CTX        *bnctx = NULL;
-
-	const char    *v_c, *v_s;
-	size_t         v_c_len, v_s_len;
-	const uint8_t *i_c, *i_s;
-	size_t         i_c_len, i_s_len;
-
-	if (sess->trans.client) {
-		v_c = sess->trans.id_str;
-		v_c_len = sess->trans.id_str_sz;
-		v_s = sess->trans.remote_id_str;
-		v_s_len = sess->trans.remote_id_str_sz;
-		i_c = sess->trans.our_kexinit;
-		i_c_len = sess->trans.our_kexinit_sz;
-		i_s = sess->trans.peer_kexinit;
-		i_s_len = sess->trans.peer_kexinit_sz;
-	}
-	else {
-		v_c = sess->trans.remote_id_str;
-		v_c_len = sess->trans.remote_id_str_sz;
-		v_s = sess->trans.id_str;
-		v_s_len = sess->trans.id_str_sz;
-		i_c = sess->trans.peer_kexinit;
-		i_c_len = sess->trans.peer_kexinit_sz;
-		i_s = sess->trans.our_kexinit;
-		i_s_len = sess->trans.our_kexinit_sz;
-	}
+	dssh_key_algo  ka = kctx->key_algo;
 
 	uint32_t client_min, client_n, client_max;
 	uint8_t  msg_type;
 	uint8_t *payload;
 	size_t   payload_len;
 
-	if (sess->trans.client) {
+	if (kctx->client) {
                 /* ---- CLIENT SIDE ---- */
 		client_min = GEX_MIN;
 		client_n = GEX_N;
@@ -260,13 +239,13 @@ dhgex_handler(dssh_session sess)
 			dssh_serialize_uint32(client_min, msg, sizeof(msg), &pos);
 			dssh_serialize_uint32(client_n, msg, sizeof(msg), &pos);
 			dssh_serialize_uint32(client_max, msg, sizeof(msg), &pos);
-			res = dssh_transport_send_packet(sess, msg, pos, NULL);
+			res = kctx->send(msg, pos, kctx->io_ctx);
 			if (res < 0)
 				return res;
 		}
 
                 /* 2. Receive GEX_GROUP(p, g) */
-		res = dssh_transport_recv_packet(sess, &msg_type, &payload, &payload_len);
+		res = kctx->recv(&msg_type, &payload, &payload_len, kctx->io_ctx);
 		if (res < 0)
 			return res;
 		if (msg_type != SSH_MSG_KEX_DH_GEX_GROUP)
@@ -330,7 +309,7 @@ dhgex_handler(dssh_session sess)
 				BN_clear_free(x);
 				goto cleanup;
 			}
-			res = dssh_transport_send_packet(sess, init_msg, pos, NULL);
+			res = kctx->send(init_msg, pos, kctx->io_ctx);
 			if (res < 0) {
 				BN_clear_free(x);
 				goto cleanup;
@@ -338,7 +317,7 @@ dhgex_handler(dssh_session sess)
 		}
 
                 /* 5. Receive GEX_REPLY(K_S, f, sig) */
-		res = dssh_transport_recv_packet(sess, &msg_type, &payload, &payload_len);
+		res = kctx->recv(&msg_type, &payload, &payload_len, kctx->io_ctx);
 		if (res < 0) {
 			BN_clear_free(x);
 			goto cleanup;
@@ -433,25 +412,26 @@ dhgex_handler(dssh_session sess)
                 /* Store shared secret */
 		int k_bytes = BN_num_bytes(k_bn);
 
-		sess->trans.shared_secret = malloc(k_bytes);
-		if (!sess->trans.shared_secret) {
+		kctx->shared_secret = malloc(k_bytes);
+		if (!kctx->shared_secret) {
 			res = DSSH_ERROR_ALLOC;
 			goto cleanup;
 		}
-		BN_bn2bin(k_bn, sess->trans.shared_secret);
-		sess->trans.shared_secret_sz = k_bytes;
+		BN_bn2bin(k_bn, kctx->shared_secret);
+		kctx->shared_secret_sz = k_bytes;
 
                 /* 7. Compute and verify exchange hash */
 		uint8_t hash[SHA256_DIGEST_LEN];
 
-		res = compute_exchange_hash(v_c, v_c_len, v_s, v_s_len,
-		        i_c, i_c_len, i_s, i_s_len, k_s, ks_len,
+		res = compute_exchange_hash(
+		        kctx->v_c, kctx->v_c_len,
+		        kctx->v_s, kctx->v_s_len,
+		        kctx->i_c, kctx->i_c_len,
+		        kctx->i_s, kctx->i_s_len,
+		        k_s, ks_len,
 		        client_min, client_n, client_max, p, g, e_bn, f_bn, k_bn, hash);
 		if (res < 0)
 			goto cleanup;
-
-                /* ka always set by negotiation; all key algos have verify. */
-		dssh_key_algo ka = sess->trans.key_algo_selected;
 
 		if (!ka || !ka->verify) {
 			res = DSSH_ERROR_INIT;
@@ -461,21 +441,17 @@ dhgex_handler(dssh_session sess)
 		if (res < 0)
 			goto cleanup;
 
-		sess->trans.exchange_hash = malloc(SHA256_DIGEST_LEN);
-		if (!sess->trans.exchange_hash) {
+		kctx->exchange_hash = malloc(SHA256_DIGEST_LEN);
+		if (!kctx->exchange_hash) {
 			res = DSSH_ERROR_ALLOC;
 			goto cleanup;
 		}
-		memcpy(sess->trans.exchange_hash, hash, SHA256_DIGEST_LEN);
-		sess->trans.exchange_hash_sz = SHA256_DIGEST_LEN;
+		memcpy(kctx->exchange_hash, hash, SHA256_DIGEST_LEN);
+		kctx->exchange_hash_sz = SHA256_DIGEST_LEN;
 		res = 0;
 	}
 	else {
-                /* ---- SERVER SIDE ----
-                 * ka and its function pointers are always set by negotiation.
-                 * Own key pubkey call always succeeds after keygen. */
-		dssh_key_algo ka = sess->trans.key_algo_selected;
-
+                /* ---- SERVER SIDE ---- */
 		if (!ka || !ka->pubkey || !ka->sign)
 			return DSSH_ERROR_INIT;
 
@@ -488,7 +464,7 @@ dhgex_handler(dssh_session sess)
 			return res;
 
                 /* 1. Receive GEX_REQUEST(min, n, max) */
-		res = dssh_transport_recv_packet(sess, &msg_type, &payload, &payload_len);
+		res = kctx->recv(&msg_type, &payload, &payload_len, kctx->io_ctx);
 		if (res < 0)
 			return res;
 		if (msg_type != SSH_MSG_KEX_DH_GEX_REQUEST)
@@ -501,7 +477,7 @@ dhgex_handler(dssh_session sess)
 
                 /* 2. Select and send a DH group via the application's provider. */
 		struct dssh_dh_gex_provider *prov =
-		    (struct dssh_dh_gex_provider *)sess->trans.kex_ctx;
+		    (struct dssh_dh_gex_provider *)kctx->kex_data;
 
 		if ((prov == NULL) || (prov->select_group == NULL)) {
 			res = DSSH_ERROR_INIT;
@@ -541,13 +517,13 @@ dhgex_handler(dssh_session sess)
 			res = serialize_bn_mpint(g, group_msg, sizeof(group_msg), &pos);
 			if (res < 0)
 				goto cleanup;
-			res = dssh_transport_send_packet(sess, group_msg, pos, NULL);
+			res = kctx->send(group_msg, pos, kctx->io_ctx);
 			if (res < 0)
 				goto cleanup;
 		}
 
                 /* 3. Receive GEX_INIT(e) */
-		res = dssh_transport_recv_packet(sess, &msg_type, &payload, &payload_len);
+		res = kctx->recv(&msg_type, &payload, &payload_len, kctx->io_ctx);
 		if (res < 0)
 			goto cleanup;
 		if (msg_type != SSH_MSG_KEX_DH_GEX_INIT) {
@@ -605,19 +581,23 @@ dhgex_handler(dssh_session sess)
                 /* Store shared secret */
 		int k_bytes = BN_num_bytes(k_bn);
 
-		sess->trans.shared_secret = malloc(k_bytes);
-		if (!sess->trans.shared_secret) {
+		kctx->shared_secret = malloc(k_bytes);
+		if (!kctx->shared_secret) {
 			res = DSSH_ERROR_ALLOC;
 			goto cleanup;
 		}
-		BN_bn2bin(k_bn, sess->trans.shared_secret);
-		sess->trans.shared_secret_sz = k_bytes;
+		BN_bn2bin(k_bn, kctx->shared_secret);
+		kctx->shared_secret_sz = k_bytes;
 
                 /* 5. Compute exchange hash */
 		uint8_t hash[SHA256_DIGEST_LEN];
 
-		res = compute_exchange_hash(v_c, v_c_len, v_s, v_s_len,
-		        i_c, i_c_len, i_s, i_s_len, k_s_buf, k_s_len,
+		res = compute_exchange_hash(
+		        kctx->v_c, kctx->v_c_len,
+		        kctx->v_s, kctx->v_s_len,
+		        kctx->i_c, kctx->i_c_len,
+		        kctx->i_s, kctx->i_s_len,
+		        k_s_buf, k_s_len,
 		        client_min, client_n, client_max, p, g, e_bn, f_bn, k_bn, hash);
 		if (res < 0)
 			goto cleanup;
@@ -657,19 +637,19 @@ dhgex_handler(dssh_session sess)
 			dssh_serialize_uint32((uint32_t)sig_len, reply, reply_sz, &pos);
 			memcpy(&reply[pos], sig_buf, sig_len);
 			pos += sig_len;
-			res = dssh_transport_send_packet(sess, reply, pos, NULL);
+			res = kctx->send(reply, pos, kctx->io_ctx);
 			free(reply);
 			if (res < 0)
 				goto cleanup;
 		}
 
-		sess->trans.exchange_hash = malloc(SHA256_DIGEST_LEN);
-		if (!sess->trans.exchange_hash) {
+		kctx->exchange_hash = malloc(SHA256_DIGEST_LEN);
+		if (!kctx->exchange_hash) {
 			res = DSSH_ERROR_ALLOC;
 			goto cleanup;
 		}
-		memcpy(sess->trans.exchange_hash, hash, SHA256_DIGEST_LEN);
-		sess->trans.exchange_hash_sz = SHA256_DIGEST_LEN;
+		memcpy(kctx->exchange_hash, hash, SHA256_DIGEST_LEN);
+		kctx->exchange_hash_sz = SHA256_DIGEST_LEN;
 		res = 0;
 	}
 
@@ -684,15 +664,9 @@ cleanup:
 }
 
 static void
-kex_cleanup(dssh_session sess)
+kex_cleanup(void *kex_data)
 {
-}
-
-DSSH_PUBLIC void
-dssh_dh_gex_set_provider(dssh_session sess,
-    struct dssh_dh_gex_provider      *provider)
-{
-	sess->trans.kex_ctx = provider;
+	(void)kex_data;
 }
 
 DSSH_PUBLIC int

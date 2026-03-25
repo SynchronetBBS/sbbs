@@ -77,14 +77,8 @@ typedef struct dssh_transport_packet_s {
 	dssh_byte     padding;
 } *dssh_transport_packet;
 
-/*
- * KEX handler: drives the entire key exchange after KEXINIT
- * negotiation.  Uses send_packet/recv_packet internally.
- * Must populate sess->trans.shared_secret, exchange_hash,
- * and their sizes.
- */
-typedef int (*dssh_kex_handler)(dssh_session sess);
-typedef void (*dssh_kex_cleanup)(dssh_session sess);
+/* KEX handler and cleanup types — defined in deucessh-kex.h */
+#include "deucessh-kex.h"
 
 typedef int (*dssh_key_algo_sign)(uint8_t *buf, size_t bufsz, size_t *outlen,
     const uint8_t *data, size_t data_len, dssh_key_algo_ctx *ctx);

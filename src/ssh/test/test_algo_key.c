@@ -3047,12 +3047,11 @@ test_c25519_handler_null_ka(void)
 	dssh_test_reset_global_config();
 	ASSERT_EQ(register_ssh_ed25519(), 0);
 
-	struct dssh_session_s sess = {0};
-	/* Server path, no key algo selected */
-	sess.trans.client = false;
-	sess.trans.key_algo_selected = NULL;
+	struct dssh_kex_context kctx = {0};
+	kctx.client = false;
+	kctx.key_algo = NULL;
 
-	int res = curve25519_handler(&sess);
+	int res = curve25519_handler(&kctx);
 	ASSERT_TRUE(res < 0);
 	return TEST_PASS;
 }
@@ -3063,11 +3062,11 @@ test_dhgex_handler_null_ka(void)
 	dssh_test_reset_global_config();
 	ASSERT_EQ(register_ssh_ed25519(), 0);
 
-	struct dssh_session_s sess = {0};
-	sess.trans.client = false;
-	sess.trans.key_algo_selected = NULL;
+	struct dssh_kex_context kctx = {0};
+	kctx.client = false;
+	kctx.key_algo = NULL;
 
-	int res = dhgex_handler(&sess);
+	int res = dhgex_handler(&kctx);
 	ASSERT_TRUE(res < 0);
 	return TEST_PASS;
 }

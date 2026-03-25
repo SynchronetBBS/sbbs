@@ -2,7 +2,6 @@
  * ssh-internal.h — Internal struct definitions.
  * Not a public header.  Included by library .c files only.
  */
-
 #ifndef DSSH_INTERNAL_H
 #define DSSH_INTERNAL_H
 
@@ -13,16 +12,7 @@
 #include "ssh-chan.h"
 #include "ssh-trans.h"
 
-/*
- * DSSH_TESTABLE: marks internal functions that need to be linkable
- * from test code.  In normal builds these are static; when compiled
- * with -DDSSH_TESTING they become externally visible.
- */
-#ifdef DSSH_TESTING
- #define DSSH_TESTABLE
-#else
- #define DSSH_TESTABLE static
-#endif
+/* DSSH_TESTABLE is now defined in deucessh-portable.h */
 
 /* Set terminate flag and wake all library-owned condvar waiters. */
 DSSH_PRIVATE void dssh_session_set_terminate(dssh_session sess);

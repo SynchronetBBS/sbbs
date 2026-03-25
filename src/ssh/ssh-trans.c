@@ -7,6 +7,7 @@
 #include <threads.h>
 
 #include "ssh-internal.h"
+#include "deucessh-algorithms.h"
 
 /* DSSH_TESTABLE is defined in ssh-internal.h */
 
@@ -1261,12 +1262,67 @@ dssh_transport_kexinit(dssh_session sess)
  * Key exchange (RFC 4253 s7)
  * ================================================================ */
 
+static int
+kex_send_wrapper(const uint8_t *payload, size_t len, void *io_ctx)
+{
+	return dssh_transport_send_packet((dssh_session)io_ctx,
+	    payload, len, NULL);
+}
+
+static int
+kex_recv_wrapper(uint8_t *msg_type, uint8_t **payload,
+    size_t *payload_len, void *io_ctx)
+{
+	return dssh_transport_recv_packet((dssh_session)io_ctx,
+	    msg_type, payload, payload_len);
+}
+
 DSSH_PRIVATE int
 dssh_transport_kex(dssh_session sess)
 {
-	if ((sess->trans.kex_selected == NULL) || (sess->trans.kex_selected->handler == NULL))
+	if ((sess->trans.kex_selected == NULL)
+	    || (sess->trans.kex_selected->handler == NULL))
 		return DSSH_ERROR_INIT;
-	return sess->trans.kex_selected->handler(sess);
+
+	struct dssh_kex_context kctx = {
+		.client    = sess->trans.client,
+		.v_c       = sess->trans.client ?
+		    sess->trans.id_str : sess->trans.remote_id_str,
+		.v_c_len   = sess->trans.client ?
+		    sess->trans.id_str_sz : sess->trans.remote_id_str_sz,
+		.v_s       = sess->trans.client ?
+		    sess->trans.remote_id_str : sess->trans.id_str,
+		.v_s_len   = sess->trans.client ?
+		    sess->trans.remote_id_str_sz : sess->trans.id_str_sz,
+		.i_c       = sess->trans.client ?
+		    sess->trans.our_kexinit : sess->trans.peer_kexinit,
+		.i_c_len   = sess->trans.client ?
+		    sess->trans.our_kexinit_sz : sess->trans.peer_kexinit_sz,
+		.i_s       = sess->trans.client ?
+		    sess->trans.peer_kexinit : sess->trans.our_kexinit,
+		.i_s_len   = sess->trans.client ?
+		    sess->trans.peer_kexinit_sz : sess->trans.our_kexinit_sz,
+		.key_algo  = sess->trans.key_algo_selected,
+		.kex_data  = sess->trans.kex_ctx,
+		.send      = kex_send_wrapper,
+		.recv      = kex_recv_wrapper,
+		.io_ctx    = sess,
+	};
+
+	int res = sess->trans.kex_selected->handler(&kctx);
+
+	if (res == 0) {
+		sess->trans.shared_secret = kctx.shared_secret;
+		sess->trans.shared_secret_sz = kctx.shared_secret_sz;
+		sess->trans.exchange_hash = kctx.exchange_hash;
+		sess->trans.exchange_hash_sz = kctx.exchange_hash_sz;
+	}
+	else {
+		free(kctx.shared_secret);
+		free(kctx.exchange_hash);
+	}
+
+	return res;
 }
 
 /* ================================================================
@@ -1715,7 +1771,7 @@ dssh_transport_cleanup(dssh_session sess)
 {
 	if (sess->trans.kex_selected) {
 		if (sess->trans.kex_selected->cleanup != NULL)
-			sess->trans.kex_selected->cleanup(sess);
+			sess->trans.kex_selected->cleanup(sess->trans.kex_ctx);
 		sess->trans.kex_selected = NULL;
 	}
 	if (sess->trans.key_algo_selected)
@@ -1790,6 +1846,13 @@ dssh_transport_cleanup(dssh_session sess)
 		free(sess->trans.remote_languages);
 		sess->trans.remote_languages = NULL;
 	}
+}
+
+DSSH_PUBLIC void
+dssh_dh_gex_set_provider(dssh_session sess,
+    struct dssh_dh_gex_provider *provider)
+{
+	sess->trans.kex_ctx = provider;
 }
 
 DSSH_PUBLIC int

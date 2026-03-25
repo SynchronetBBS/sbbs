@@ -22,28 +22,16 @@ Open questions:
 
 ## 2. Reduce internal API exposure for KEX and key_algo modules
 
-KEX handlers currently reach directly into `sess->trans.*` fields to
-read version strings, KEXINIT payloads, and the negotiated host key
-algorithm, and to write the shared secret and exchange hash.  This
-couples module code tightly to the session struct layout.
+**DONE (KEX)**: `struct dssh_kex_context` (defined in `deucessh-kex.h`)
+provides all inputs, outputs, and I/O function pointers.  KEX handlers
+take `struct dssh_kex_context *kctx` instead of `dssh_session`.
+`dssh_transport_kex()` builds the context, calls the handler, and
+copies outputs back.  KEX modules no longer include `ssh-internal.h`
+in production builds.
 
-Key algorithm modules access `dssh_transport_find_key_algo()` (an
-internal function) and store key material on the global registration
-entry's `ctx` field.
-
-Ideas to explore:
-
-- **KEX context struct**: Instead of raw `sess->trans.*` access, pass
-  a `struct dssh_kex_params` to the handler containing the fields it
-  needs (version strings, KEXINIT payloads, host key algo) and output
-  fields (shared_secret, exchange_hash).  The handler fills the outputs
-  and the library copies them into the session.  This decouples KEX
-  modules from `ssh-internal.h` entirely.
-
-- **Helper functions**: Replace direct field access with accessor
-  functions like `dssh_kex_get_peer_kexinit(sess, &buf, &len)` and
-  `dssh_kex_set_shared_secret(sess, data, len)`.  Less disruptive
-  than a context struct but still adds indirection.
+Key algorithm modules still access `dssh_transport_find_key_algo()`
+(an internal function) and store key material on the global
+registration entry's `ctx` field.  Remaining ideas:
 
 - **Key algo lookup**: `dssh_transport_find_key_algo()` is only used
   by key_algo modules to find their own registration entry (for
@@ -56,8 +44,3 @@ Ideas to explore:
   separate key store.  This would allow per-session keys (e.g.,
   different host keys for different listen addresses) without
   changing the algorithm registry.
-
-The current approach works and is efficient (no copies, no
-indirection), but it means KEX modules must include `ssh-internal.h`
-and are fragile against struct layout changes.  Worth revisiting if
-third-party algorithm modules become a goal.

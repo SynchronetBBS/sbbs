@@ -55,4 +55,14 @@
  #define DSSH_PRIVATE
 #endif // if defined(DSSH_SHARED)
 
+/*
+ * DSSH_TESTABLE: marks internal functions that need to be linkable
+ * from test code when compiled with -DDSSH_TESTING.
+ */
+#ifdef DSSH_TESTING
+ #define DSSH_TESTABLE
+#else
+ #define DSSH_TESTABLE static
+#endif
+
 #endif // ifndef DSSH_PORTABLE_H

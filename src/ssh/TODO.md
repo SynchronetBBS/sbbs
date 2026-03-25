@@ -2,9 +2,13 @@
 
 ## Flaky tests (observed in isolated process — real bugs)
 
-8. `dssh_self_test_self_rekey_preserves_channels_dhgex` — intermittent
-   failure under `-j8`.  Occurs even when running as a standalone
-   process (not shared state from other tests).  Needs investigation.
+8. DH-GEX rekey selftests — intermittent SIGPIPE under `-j8`.
+   Occurs even when running as a standalone process (not shared
+   state from other tests).  Affected tests:
+   - `test_self_rekey_during_data_dhgex_rsa`
+   - `test_self_rekey_preserves_channels_dhgex_rsa`
+   SIGPIPE means a write to a closed socketpair fd — likely a
+   race between the rekey path and session teardown/cleanup.
 
 ## Fixed
 

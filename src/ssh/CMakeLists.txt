@@ -42,7 +42,7 @@ set(DEUCESSH_SOURCES
 
 set(DEUCESSH_PUBLIC_HEADERS
 	deucessh.h deucessh-arch.h deucessh-auth.h deucessh-conn.h
-	deucessh-algorithms.h deucessh-portable.h
+	deucessh-algorithms.h deucessh-kex.h deucessh-portable.h
 )
 
 set(DEUCESSH_COMPILE_OPTIONS
