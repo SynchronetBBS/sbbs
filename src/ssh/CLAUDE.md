@@ -36,8 +36,12 @@ ctest -R dssh_integration    # integration only
 ```
 
 **Important: Two build directories.**  `build/` is the normal build.
-`build-cov/` is the coverage-instrumented build.  Always use explicit
-paths — never rely on the shell's current working directory:
+`build-cov/` is the coverage-instrumented build.  Always use full
+paths — never rely on the shell's current working directory.
+
+**ALWAYS run `pwd` before ANY command that interacts with the filesystem**
+(builds, tests, file reads/writes, coverage, git, etc.) to confirm you
+are in the expected directory.
 ```sh
 cmake --build build -j8              # build from source dir
 cmake --build build-cov -j8         # build coverage variant
