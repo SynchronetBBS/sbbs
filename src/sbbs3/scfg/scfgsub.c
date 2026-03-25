@@ -46,6 +46,8 @@ bool new_sub(int new_subnum, int group_num, sub_t* pasted_sub, long misc)
 			*new_subboard = *cfg.sub[u];
 			new_subboard->misc &= ~SUB_TEMPLATE;
 			new_subboard->arstr[0] = 0;
+			new_subboard->area_tag[0] = 0;
+			new_subboard->newsgroup[0] = 0;
 			if (cfg.sub[u]->misc & SUB_TEMPLATE) /* Use this sub (not last) if marked as template */
 				break;
 		}
