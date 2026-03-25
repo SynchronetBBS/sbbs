@@ -4,16 +4,16 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "ssh-trans.h"
 #include "ssh-internal.h"
+#include "ssh-trans.h"
 
 #define HMAC_SHA2_256_DIGEST_SIZE 32
-#define HMAC_SHA2_256_KEY_SIZE    32
-#define HMAC_SHA2_256_NAME        "hmac-sha2-256"
-#define HMAC_SHA2_256_NAME_LEN    13
+#define HMAC_SHA2_256_KEY_SIZE 32
+#define HMAC_SHA2_256_NAME "hmac-sha2-256"
+#define HMAC_SHA2_256_NAME_LEN 13
 
 struct cbdata {
-	EVP_MAC *mac;
+	EVP_MAC     *mac;
 	EVP_MAC_CTX *ctx;
 };
 
@@ -21,6 +21,7 @@ static int
 init(const uint8_t *key, dssh_mac_ctx **out)
 {
 	struct cbdata *cbd = calloc(1, sizeof(*cbd));
+
 	if (cbd == NULL)
 		return DSSH_ERROR_ALLOC;
 
@@ -38,8 +39,7 @@ init(const uint8_t *key, dssh_mac_ctx **out)
 	}
 
 	OSSL_PARAM params[] = {
-		OSSL_PARAM_construct_utf8_string(
-		    OSSL_MAC_PARAM_DIGEST, "SHA256", 0),
+		OSSL_PARAM_construct_utf8_string(OSSL_MAC_PARAM_DIGEST, "SHA256", 0),
 		OSSL_PARAM_construct_end(),
 	};
 
@@ -60,10 +60,11 @@ generate(const uint8_t *buf, size_t bufsz, uint8_t *outbuf,
     dssh_mac_ctx *ctx)
 {
 	struct cbdata *cbd = (struct cbdata *)ctx;
-	if (cbd == NULL || cbd->ctx == NULL)
+
+	if ((cbd == NULL) || (cbd->ctx == NULL))
 		return DSSH_ERROR_INIT;
 
-	/* Re-initialize with same key — resets HMAC state */
+        /* Re-initialize with same key — resets HMAC state */
 	if (EVP_MAC_init(cbd->ctx, NULL, 0, NULL) != 1)
 		return DSSH_ERROR_INIT;
 
@@ -71,6 +72,7 @@ generate(const uint8_t *buf, size_t bufsz, uint8_t *outbuf,
 		return DSSH_ERROR_INIT;
 
 	size_t outlen = 0;
+
 	if (EVP_MAC_final(cbd->ctx, outbuf, &outlen,
 	    HMAC_SHA2_256_DIGEST_SIZE) != 1)
 		return DSSH_ERROR_INIT;
@@ -82,6 +84,7 @@ static void
 cleanup(dssh_mac_ctx *ctx)
 {
 	struct cbdata *cbd = (struct cbdata *)ctx;
+
 	if (cbd != NULL) {
 		EVP_MAC_CTX_free(cbd->ctx);
 		EVP_MAC_free(cbd->mac);
@@ -92,8 +95,9 @@ cleanup(dssh_mac_ctx *ctx)
 DSSH_PUBLIC int
 register_hmac_sha2_256(void)
 {
-	static const char name[] = HMAC_SHA2_256_NAME;
+	static const char  name[] = HMAC_SHA2_256_NAME;
 	struct dssh_mac_s *mac = malloc(sizeof(*mac) + sizeof(name));
+
 	if (mac == NULL)
 		return DSSH_ERROR_ALLOC;
 	mac->next = NULL;

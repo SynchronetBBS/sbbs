@@ -1,8 +1,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "ssh-trans.h"
 #include "ssh-internal.h"
+#include "ssh-trans.h"
 
 static int
 encrypt(uint8_t *buf, size_t bufsz, dssh_enc_ctx *ctx)
@@ -24,8 +24,9 @@ cleanup(dssh_enc_ctx *ctx)
 DSSH_PUBLIC int
 register_none_enc(void)
 {
-	static const char name[] = "none";
+	static const char  name[] = "none";
 	struct dssh_enc_s *enc = malloc(sizeof(*enc) + sizeof(name));
+
 	if (enc == NULL)
 		return DSSH_ERROR_ALLOC;
 	enc->next = NULL;

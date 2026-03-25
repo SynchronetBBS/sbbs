@@ -7,7 +7,6 @@
 /*
  * Required by parse functions
  */
-
 int64_t
 dssh_parse_byte(const uint8_t *buf, size_t bufsz, dssh_byte *val)
 {
@@ -117,9 +116,9 @@ dssh_parse_uint64(const uint8_t *buf, size_t bufsz, dssh_uint64_t *val)
 {
 	if (bufsz < 8)
 		return DSSH_ERROR_PARSE;
-	*val = (((uint64_t)buf[0]) << 56) | (((uint64_t)buf[1]) << 48) | (((uint64_t)buf[2]) << 40) |
-	    (((uint64_t)buf[3]) << 32) | (((uint64_t)buf[4]) << 24) | (((uint64_t)buf[5]) << 16) |
-	    (((uint64_t)buf[6]) << 8) | buf[7];
+	*val = (((uint64_t)buf[0]) << 56) | (((uint64_t)buf[1]) << 48) | (((uint64_t)buf[2]) << 40)
+	    | (((uint64_t)buf[3]) << 32) | (((uint64_t)buf[4]) << 24) | (((uint64_t)buf[5]) << 16)
+	    | (((uint64_t)buf[6]) << 8) | buf[7];
 	return 8;
 }
 
@@ -150,15 +149,19 @@ dssh_parse_string(const uint8_t *buf, size_t bufsz, dssh_string val)
 {
 	if (bufsz < 4)
 		return DSSH_ERROR_PARSE;
+
 	uint32_t len;
-	/* dssh_parse_uint32 cannot fail here: it only fails when
-	 * bufsz < 4, which is already ruled out above. */
+
+        /* dssh_parse_uint32 cannot fail here: it only fails when
+         * bufsz < 4, which is already ruled out above. */
 	int64_t ret = dssh_parse_uint32(buf, bufsz, &len);
+
 #ifndef DSSH_TESTING
 	if (ret < 4)
 		return ret;
 #endif
 	size_t sz = ret + len;
+
 	if (bufsz < sz)
 		return DSSH_ERROR_PARSE;
 	val->length = len;
@@ -187,6 +190,7 @@ int64_t
 dssh_parse_mpint(const uint8_t *buf, size_t bufsz, dssh_mpint val)
 {
 	int64_t ret = dssh_parse_string(buf, bufsz, val);
+
 	if (ret < 4)
 		return ret;
 	if (val->length >= 2) {
@@ -214,20 +218,21 @@ int64_t
 dssh_parse_namelist(const uint8_t *buf, size_t bufsz, dssh_namelist val)
 {
 	struct dssh_string_s str;
+	int64_t              ret = dssh_parse_string(buf, bufsz, &str);
 
-	int64_t ret = dssh_parse_string(buf, bufsz, &str);
 	if (ret < 4)
 		return ret;
 	if (str.length > 0) {
 		for (uint32_t i = 0; i < str.length; i++) {
 			if (str.value[i] == ',') {
-				if (i == 0 || str.value[i - 1] == ',')
+				if ((i == 0) || (str.value[i - 1] == ','))
 					return DSSH_ERROR_PARSE;
 			}
-			if (str.value[i] <= ' ' || str.value[i] >= 127)
+			if ((str.value[i] <= ' ') || (str.value[i] >= 127))
 				return DSSH_ERROR_PARSE;
 		}
-		/* Trailing comma would produce a zero-length final name */
+
+                /* Trailing comma would produce a zero-length final name */
 		if (str.value[str.length - 1] == ',')
 			return DSSH_ERROR_PARSE;
 	}
@@ -250,6 +255,7 @@ dssh_serialize_namelist(dssh_namelist val, uint8_t *buf, size_t bufsz, size_t *p
 		.value = val->value,
 		.length = val->length,
 	};
+
 	return dssh_serialize_string(&str, buf, bufsz, pos);
 }
 
@@ -265,7 +271,8 @@ dssh_parse_namelist_next(dssh_string val, dssh_namelist nl)
 			break;
 		}
 	}
-	/* RFC 4251 s6: names MUST NOT be longer than 64 characters */
+
+        /* RFC 4251 s6: names MUST NOT be longer than 64 characters */
 	if (val->length > 64)
 		return DSSH_ERROR_PARSE;
 	return val->length + 4;

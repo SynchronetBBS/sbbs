@@ -12,18 +12,18 @@ extern "C" {
 
 /* Error codes returned by library functions.  Zero is success;
  * negative values are errors. */
-#define DSSH_ERROR_NONE           0
-#define DSSH_ERROR_PARSE         -1   /* Malformed packet or field */
-#define DSSH_ERROR_INVALID       -2   /* Valid parse but invalid value (MAC mismatch, bad signature) */
-#define DSSH_ERROR_ALLOC         -3   /* Memory allocation failure */
-#define DSSH_ERROR_INIT          -4   /* Initialization or crypto failure */
-#define DSSH_ERROR_TERMINATED    -5   /* Session terminated (peer disconnected) */
-#define DSSH_ERROR_TOOLATE       -6   /* Operation not allowed after session started */
-#define DSSH_ERROR_TOOMANY       -7   /* Too many registered algorithms */
-#define DSSH_ERROR_TOOLONG       -8   /* Data exceeds buffer or protocol limit */
-#define DSSH_ERROR_MUST_BE_NULL  -9   /* Linked list next pointer was not NULL */
-#define DSSH_ERROR_NOMORE       -10   /* No more items in name-list */
-#define DSSH_ERROR_REKEY_NEEDED -11   /* Must rekey before sending more packets */
+#define DSSH_ERROR_NONE 0
+#define DSSH_ERROR_PARSE -1         /* Malformed packet or field */
+#define DSSH_ERROR_INVALID -2       /* Valid parse but invalid value (MAC mismatch, bad signature) */
+#define DSSH_ERROR_ALLOC -3         /* Memory allocation failure */
+#define DSSH_ERROR_INIT -4          /* Initialization or crypto failure */
+#define DSSH_ERROR_TERMINATED -5    /* Session terminated (peer disconnected) */
+#define DSSH_ERROR_TOOLATE -6       /* Operation not allowed after session started */
+#define DSSH_ERROR_TOOMANY -7       /* Too many registered algorithms */
+#define DSSH_ERROR_TOOLONG -8       /* Data exceeds buffer or protocol limit */
+#define DSSH_ERROR_MUST_BE_NULL -9  /* Linked list next pointer was not NULL */
+#define DSSH_ERROR_NOMORE -10       /* No more items in name-list */
+#define DSSH_ERROR_REKEY_NEEDED -11 /* Must rekey before sending more packets */
 
 /* Opaque session handle.  Created by session_init, freed by session_cleanup. */
 typedef struct dssh_session_s *dssh_session;
@@ -66,7 +66,7 @@ typedef void (*dssh_debug_cb)(bool always_display,
  * rejected_seq: the sequence number of the packet the peer did not understand.
  */
 typedef void (*dssh_unimplemented_cb)(uint32_t rejected_seq,
-    void *cbdata);
+    void                                      *cbdata);
 
 #include "deucessh-arch.h"
 
@@ -76,7 +76,7 @@ typedef void (*dssh_unimplemented_cb)(uint32_t rejected_seq,
  * minimum of 33280 bytes).  Returns NULL on failure.
  */
 DSSH_PUBLIC dssh_session dssh_session_init(bool client,
-    size_t max_packet_size);
+    size_t                                      max_packet_size);
 
 /*
  * Signal a session to terminate.  Sets terminate flag and returns true
@@ -107,12 +107,10 @@ DSSH_PUBLIC void dssh_session_set_cbdata(dssh_session sess,
  */
 DSSH_PUBLIC void dssh_session_set_debug_cb(dssh_session sess,
     dssh_debug_cb cb, void *cbdata);
-DSSH_PUBLIC void dssh_session_set_unimplemented_cb(
-    dssh_session sess, dssh_unimplemented_cb cb, void *cbdata);
+DSSH_PUBLIC void dssh_session_set_unimplemented_cb(dssh_session sess, dssh_unimplemented_cb cb, void *cbdata);
 DSSH_PUBLIC void dssh_session_set_banner_cb(dssh_session sess,
     void *cb, void *cbdata);
-DSSH_PUBLIC void dssh_session_set_global_request_cb(
-    dssh_session sess, void *cb, void *cbdata);
+DSSH_PUBLIC void dssh_session_set_global_request_cb(dssh_session sess, void *cb, void *cbdata);
 
 /*
  * Set the SSH version identification strings (RFC 4253 s4.2).
@@ -137,8 +135,7 @@ DSSH_PUBLIC void dssh_session_set_global_request_cb(
  * The strings are not copied — caller must ensure they remain
  * valid for the lifetime of the library's global configuration.
  */
-DSSH_PUBLIC int dssh_transport_set_version(
-    const char *software_version, const char *comment);
+DSSH_PUBLIC int dssh_transport_set_version(const char *software_version, const char *comment);
 
 /*
  * Set the global I/O callbacks and optional extra-line callback.
@@ -146,8 +143,7 @@ DSSH_PUBLIC int dssh_transport_set_version(
  * All sessions share the same callback functions; per-session
  * differentiation is via the cbdata pointers set above.
  */
-DSSH_PUBLIC int dssh_transport_set_callbacks(
-    dssh_transport_io_cb tx, dssh_transport_io_cb rx,
+DSSH_PUBLIC int dssh_transport_set_callbacks(dssh_transport_io_cb tx, dssh_transport_io_cb rx,
     dssh_transport_rxline_cb rx_line,
     dssh_transport_extra_line_cb extra_line_cb);
 
@@ -174,4 +170,4 @@ DSSH_PUBLIC const char *dssh_transport_get_mac_name(dssh_session sess);
 }
 #endif
 
-#endif
+#endif // ifndef DSSH_H

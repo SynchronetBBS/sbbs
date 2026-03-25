@@ -1,8 +1,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "ssh-trans.h"
 #include "ssh-internal.h"
+#include "ssh-trans.h"
 
 static int
 compress(uint8_t *buf, size_t *bufsz, dssh_comp_ctx *ctx)
@@ -24,8 +24,9 @@ cleanup(dssh_comp_ctx *ctx)
 DSSH_PUBLIC int
 register_none_comp(void)
 {
-	static const char name[] = "none";
+	static const char   name[] = "none";
 	struct dssh_comp_s *comp = malloc(sizeof(*comp) + sizeof(name));
+
 	if (comp == NULL)
 		return DSSH_ERROR_ALLOC;
 	comp->next = NULL;

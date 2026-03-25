@@ -6,7 +6,6 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-
 DSSH_PUBLIC int register_aes256_ctr(void);
 
 #ifdef __cplusplus

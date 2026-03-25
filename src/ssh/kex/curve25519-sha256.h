@@ -6,7 +6,6 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-
 DSSH_PUBLIC int register_curve25519_sha256(void);
 
 #ifdef __cplusplus

@@ -6,7 +6,6 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-
 DSSH_PUBLIC int register_none_comp(void);
 
 #ifdef __cplusplus

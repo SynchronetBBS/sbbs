@@ -9,15 +9,15 @@
 extern "C" {
 #endif
 
-#define SSH_MSG_USERAUTH_REQUEST          UINT8_C(50)
-#define SSH_MSG_USERAUTH_FAILURE          UINT8_C(51)
-#define SSH_MSG_USERAUTH_SUCCESS          UINT8_C(52)
-#define SSH_MSG_USERAUTH_BANNER           UINT8_C(53)
+#define SSH_MSG_USERAUTH_REQUEST UINT8_C(50)
+#define SSH_MSG_USERAUTH_FAILURE UINT8_C(51)
+#define SSH_MSG_USERAUTH_SUCCESS UINT8_C(52)
+#define SSH_MSG_USERAUTH_BANNER UINT8_C(53)
 
-#define SSH_MSG_USERAUTH_PK_OK                UINT8_C(60)
-#define SSH_MSG_USERAUTH_PASSWD_CHANGEREQ     UINT8_C(60)
-#define SSH_MSG_USERAUTH_INFO_REQUEST         UINT8_C(60)
-#define SSH_MSG_USERAUTH_INFO_RESPONSE        UINT8_C(61)
+#define SSH_MSG_USERAUTH_PK_OK UINT8_C(60)
+#define SSH_MSG_USERAUTH_PASSWD_CHANGEREQ UINT8_C(60)
+#define SSH_MSG_USERAUTH_INFO_REQUEST UINT8_C(60)
+#define SSH_MSG_USERAUTH_INFO_RESPONSE UINT8_C(61)
 
 /*
  * Keyboard-interactive prompt callback (RFC 4256).
@@ -37,8 +37,7 @@ extern "C" {
  *
  * Return 0 to continue authentication, negative to abort.
  */
-typedef int (*dssh_auth_kbi_prompt_cb)(
-    const uint8_t *name, size_t name_len,
+typedef int (*dssh_auth_kbi_prompt_cb)(const uint8_t *name, size_t name_len,
     const uint8_t *instruction, size_t instruction_len,
     uint32_t num_prompts,
     const uint8_t **prompts, const size_t *prompt_lens,
@@ -52,8 +51,7 @@ typedef int (*dssh_auth_kbi_prompt_cb)(
  * message/message_len: the banner text (UTF-8, not NUL-terminated).
  * language/language_len: the language tag (may be empty).
  */
-typedef void (*dssh_auth_banner_cb)(
-    const uint8_t *message, size_t message_len,
+typedef void (*dssh_auth_banner_cb)(const uint8_t *message, size_t message_len,
     const uint8_t *language, size_t language_len,
     void *cbdata);
 
@@ -83,8 +81,7 @@ DSSH_PUBLIC int dssh_auth_get_methods(dssh_session sess,
  *
  * Return 0 to send the new password, negative to abort authentication.
  */
-typedef int (*dssh_auth_passwd_change_cb)(
-    const uint8_t *prompt, size_t prompt_len,
+typedef int (*dssh_auth_passwd_change_cb)(const uint8_t *prompt, size_t prompt_len,
     const uint8_t *language, size_t language_len,
     uint8_t **new_password, size_t *new_password_len,
     void *cbdata);
@@ -119,10 +116,10 @@ DSSH_PUBLIC int dssh_auth_keyboard_interactive(dssh_session sess,
  * Server auth callback results.
  * Return from the verify callbacks to indicate the outcome.
  */
-#define DSSH_AUTH_SUCCESS          0   /* User authenticated */
-#define DSSH_AUTH_FAILURE         -1   /* Wrong credentials */
-#define DSSH_AUTH_PARTIAL          1   /* Succeeded, but more auth needed */
-#define DSSH_AUTH_CHANGE_PASSWORD  2   /* Password expired (password method only) */
+#define DSSH_AUTH_SUCCESS 0         /* User authenticated */
+#define DSSH_AUTH_FAILURE -1        /* Wrong credentials */
+#define DSSH_AUTH_PARTIAL 1         /* Succeeded, but more auth needed */
+#define DSSH_AUTH_CHANGE_PASSWORD 2 /* Password expired (password method only) */
 
 /*
  * Server-side password verification callback.
@@ -134,8 +131,7 @@ DSSH_PUBLIC int dssh_auth_keyboard_interactive(dssh_session sess,
  * The library will send PASSWD_CHANGEREQ and call passwd_change_cb
  * (below) when the client responds.
  */
-typedef int (*dssh_auth_server_password_cb)(
-    const uint8_t *username, size_t username_len,
+typedef int (*dssh_auth_server_password_cb)(const uint8_t *username, size_t username_len,
     const uint8_t *password, size_t password_len,
     uint8_t **change_prompt, size_t *change_prompt_len,
     void *cbdata);
@@ -147,8 +143,7 @@ typedef int (*dssh_auth_server_password_cb)(
  * Return DSSH_AUTH_SUCCESS, DSSH_AUTH_FAILURE, or
  * DSSH_AUTH_CHANGE_PASSWORD (to re-prompt).
  */
-typedef int (*dssh_auth_server_passwd_change_cb)(
-    const uint8_t *username, size_t username_len,
+typedef int (*dssh_auth_server_passwd_change_cb)(const uint8_t *username, size_t username_len,
     const uint8_t *old_password, size_t old_password_len,
     const uint8_t *new_password, size_t new_password_len,
     uint8_t **change_prompt, size_t *change_prompt_len,
@@ -168,8 +163,7 @@ typedef int (*dssh_auth_server_passwd_change_cb)(
  * When has_signature is true, the library has already verified the
  * signature.  This callback only needs to check authorization.
  */
-typedef int (*dssh_auth_server_publickey_cb)(
-    const uint8_t *username, size_t username_len,
+typedef int (*dssh_auth_server_publickey_cb)(const uint8_t *username, size_t username_len,
     const char *algo_name,
     const uint8_t *pubkey_blob, size_t pubkey_blob_len,
     bool has_signature,
@@ -180,8 +174,7 @@ typedef int (*dssh_auth_server_publickey_cb)(
  * Return DSSH_AUTH_SUCCESS to grant access without credentials.
  * Return DSSH_AUTH_FAILURE to require authentication.
  */
-typedef int (*dssh_auth_server_none_cb)(
-    const uint8_t *username, size_t username_len,
+typedef int (*dssh_auth_server_none_cb)(const uint8_t *username, size_t username_len,
     void *cbdata);
 
 /*
@@ -191,12 +184,12 @@ typedef int (*dssh_auth_server_none_cb)(
  * (e.g., "publickey,password") sent in FAILURE responses.
  */
 struct dssh_auth_server_cbs {
-	const char *methods_str;
-	dssh_auth_server_none_cb none_cb;
-	dssh_auth_server_password_cb password_cb;
+	const char                       *methods_str;
+	dssh_auth_server_none_cb          none_cb;
+	dssh_auth_server_password_cb      password_cb;
 	dssh_auth_server_passwd_change_cb passwd_change_cb;
-	dssh_auth_server_publickey_cb publickey_cb;
-	void *cbdata;
+	dssh_auth_server_publickey_cb     publickey_cb;
+	void                             *cbdata;
 };
 
 /*
@@ -219,7 +212,6 @@ DSSH_PUBLIC int dssh_auth_server(dssh_session sess,
 /* ================================================================
  * Client-side authentication
  * ================================================================ */
-
 /*
  * Authenticate with a public key (RFC 4252 s7).
  * Uses the key loaded via ssh_ed25519_load_key_file(),
@@ -235,4 +227,4 @@ DSSH_PUBLIC int dssh_auth_publickey(dssh_session sess,
 }
 #endif
 
-#endif
+#endif // ifndef DSSH_AUTH_H

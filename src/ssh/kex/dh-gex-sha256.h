@@ -14,7 +14,7 @@ extern "C" {
  * the caller frees them.
  */
 struct dssh_dh_gex_provider {
-	int (*select_group)(uint32_t min, uint32_t preferred, uint32_t max,
+	int   (*select_group)(uint32_t min, uint32_t preferred, uint32_t max,
 	    uint8_t **p, size_t *p_len,
 	    uint8_t **g, size_t *g_len,
 	    void *cbdata);
@@ -27,12 +27,11 @@ struct dssh_dh_gex_provider {
  * The provider struct must remain valid for the session's lifetime.
  */
 DSSH_PUBLIC void dssh_dh_gex_set_provider(dssh_session sess,
-    struct dssh_dh_gex_provider *provider);
-
+    struct dssh_dh_gex_provider                       *provider);
 DSSH_PUBLIC int register_dh_gex_sha256(void);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif
+#endif // ifndef DH_GEX_SHA256_H

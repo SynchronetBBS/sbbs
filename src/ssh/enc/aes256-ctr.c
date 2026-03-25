@@ -2,13 +2,13 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "ssh-trans.h"
 #include "ssh-internal.h"
+#include "ssh-trans.h"
 
 #define AES256_CTR_BLOCK_SIZE 16
-#define AES256_CTR_KEY_SIZE   32
-#define AES256_CTR_NAME       "aes256-ctr"
-#define AES256_CTR_NAME_LEN   10
+#define AES256_CTR_KEY_SIZE 32
+#define AES256_CTR_NAME "aes256-ctr"
+#define AES256_CTR_NAME_LEN 10
 
 struct dssh_enc_ctx {
 	EVP_CIPHER_CTX *ctx;
@@ -18,6 +18,7 @@ static int
 init_ctx(const uint8_t *key, const uint8_t *iv, bool encrypt_dir, dssh_enc_ctx **ctx)
 {
 	struct dssh_enc_ctx *cbd = malloc(sizeof(*cbd));
+
 	if (cbd == NULL)
 		return DSSH_ERROR_ALLOC;
 
@@ -28,8 +29,8 @@ init_ctx(const uint8_t *key, const uint8_t *iv, bool encrypt_dir, dssh_enc_ctx *
 	}
 
 	(void)encrypt_dir;
-	if (EVP_EncryptInit_ex(cbd->ctx, EVP_aes_256_ctr(), NULL, key, iv) != 1 ||
-	    EVP_CIPHER_CTX_set_padding(cbd->ctx, 0) != 1) {
+	if ((EVP_EncryptInit_ex(cbd->ctx, EVP_aes_256_ctr(), NULL, key, iv) != 1)
+	    || (EVP_CIPHER_CTX_set_padding(cbd->ctx, 0) != 1)) {
 		EVP_CIPHER_CTX_free(cbd->ctx);
 		free(cbd);
 		return DSSH_ERROR_INIT;
@@ -43,10 +44,12 @@ static int
 do_crypt(uint8_t *buf, size_t bufsz, dssh_enc_ctx *ctx)
 {
 	struct dssh_enc_ctx *cbd = ctx;
-	if (cbd == NULL || cbd->ctx == NULL)
+
+	if ((cbd == NULL) || (cbd->ctx == NULL))
 		return DSSH_ERROR_INIT;
 
 	int outlen = 0;
+
 	if (EVP_EncryptUpdate(cbd->ctx, buf, &outlen, buf, (int)bufsz) != 1)
 		return DSSH_ERROR_INIT;
 
@@ -57,6 +60,7 @@ static void
 cleanup(dssh_enc_ctx *ctx)
 {
 	struct dssh_enc_ctx *cbd = ctx;
+
 	if (cbd != NULL) {
 		EVP_CIPHER_CTX_free(cbd->ctx);
 		free(cbd);
@@ -66,8 +70,9 @@ cleanup(dssh_enc_ctx *ctx)
 DSSH_PUBLIC int
 register_aes256_ctr(void)
 {
-	static const char name[] = AES256_CTR_NAME;
+	static const char  name[] = AES256_CTR_NAME;
 	struct dssh_enc_s *enc = malloc(sizeof(*enc) + sizeof(name));
+
 	if (enc == NULL)
 		return DSSH_ERROR_ALLOC;
 	enc->next = NULL;

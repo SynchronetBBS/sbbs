@@ -1,8 +1,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "ssh-trans.h"
 #include "ssh-internal.h"
+#include "ssh-trans.h"
 
 static int
 generate(const uint8_t *buf, size_t bufsz, uint8_t *outbuf,
@@ -19,8 +19,9 @@ cleanup(dssh_mac_ctx *ctx)
 DSSH_PUBLIC int
 register_none_mac(void)
 {
-	static const char name[] = "none";
+	static const char  name[] = "none";
 	struct dssh_mac_s *mac = malloc(sizeof(*mac) + sizeof(name));
+
 	if (mac == NULL)
 		return DSSH_ERROR_ALLOC;
 	mac->next = NULL;

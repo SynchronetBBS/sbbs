@@ -11,7 +11,6 @@
 /* ================================================================
  * Circular byte buffer
  * ================================================================ */
-
 DSSH_PRIVATE int
 dssh_bytebuf_init(struct dssh_bytebuf *b, size_t capacity)
 {
@@ -42,13 +41,15 @@ dssh_bytebuf_write(struct dssh_bytebuf *b,
     const uint8_t *data, size_t len)
 {
 	size_t space = b->capacity - b->used;
+
 	if (len > space)
 		len = space;
 	if (len == 0)
 		return 0;
 
-	/* Write may wrap around the end of the buffer */
+        /* Write may wrap around the end of the buffer */
 	size_t first = b->capacity - b->tail;
+
 	if (first > len)
 		first = len;
 	memcpy(&b->data[b->tail], data, first);
@@ -66,15 +67,17 @@ dssh_bytebuf_read(struct dssh_bytebuf *b,
     uint8_t *buf, size_t bufsz, size_t limit)
 {
 	size_t avail = b->used;
-	if (limit > 0 && avail > limit)
+
+	if ((limit > 0) && (avail > limit))
 		avail = limit;
 	if (bufsz < avail)
 		avail = bufsz;
 	if (avail == 0)
 		return 0;
 
-	/* Read may wrap around the end of the buffer */
+        /* Read may wrap around the end of the buffer */
 	size_t first = b->capacity - b->head;
+
 	if (first > avail)
 		first = avail;
 	memcpy(buf, &b->data[b->head], first);
@@ -101,7 +104,6 @@ dssh_bytebuf_free_space(const struct dssh_bytebuf *b)
 /* ================================================================
  * Message queue
  * ================================================================ */
-
 DSSH_PRIVATE void
 dssh_msgqueue_init(struct dssh_msgqueue *q)
 {
@@ -115,8 +117,10 @@ DSSH_PRIVATE void
 dssh_msgqueue_free(struct dssh_msgqueue *q)
 {
 	struct dssh_msgqueue_entry *e = q->head;
+
 	while (e != NULL) {
 		struct dssh_msgqueue_entry *next = e->next;
+
 		free(e);
 		e = next;
 	}
@@ -131,6 +135,7 @@ dssh_msgqueue_push(struct dssh_msgqueue *q,
     const uint8_t *data, size_t len)
 {
 	struct dssh_msgqueue_entry *e = malloc(sizeof(*e) + len);
+
 	if (e == NULL)
 		return DSSH_ERROR_ALLOC;
 	e->next = NULL;
@@ -167,7 +172,8 @@ dssh_msgqueue_pop(struct dssh_msgqueue *q,
 		return DSSH_ERROR_TOOLONG;
 
 	struct dssh_msgqueue_entry *e = q->head;
-	size_t len = e->len;
+	size_t                      len = e->len;
+
 	memcpy(buf, e->data, len);
 
 	q->head = e->next;
@@ -182,7 +188,6 @@ dssh_msgqueue_pop(struct dssh_msgqueue *q,
 /* ================================================================
  * Signal queue
  * ================================================================ */
-
 DSSH_PRIVATE void
 dssh_sigqueue_init(struct dssh_signal_queue *q)
 {
@@ -194,8 +199,10 @@ DSSH_PRIVATE void
 dssh_sigqueue_free(struct dssh_signal_queue *q)
 {
 	struct dssh_signal_mark *m = q->head;
+
 	while (m != NULL) {
 		struct dssh_signal_mark *next = m->next;
+
 		free(m);
 		m = next;
 	}
@@ -208,12 +215,15 @@ dssh_sigqueue_push(struct dssh_signal_queue *q,
     const char *name, size_t stdout_pos, size_t stderr_pos)
 {
 	struct dssh_signal_mark *m = malloc(sizeof(*m));
+
 	if (m == NULL)
 		return DSSH_ERROR_ALLOC;
 	m->next = NULL;
 	m->stdout_pos = stdout_pos;
 	m->stderr_pos = stderr_pos;
+
 	size_t nlen = strlen(name);
+
 	if (nlen >= sizeof(m->name))
 		nlen = sizeof(m->name) - 1;
 	memcpy(m->name, name, nlen);
@@ -233,8 +243,8 @@ dssh_sigqueue_ready(const struct dssh_signal_queue *q,
 {
 	if (q->head == NULL)
 		return false;
-	return stdout_consumed >= q->head->stdout_pos &&
-	    stderr_consumed >= q->head->stderr_pos;
+	return stdout_consumed >= q->head->stdout_pos
+	       && stderr_consumed >= q->head->stderr_pos;
 }
 
 DSSH_PRIVATE const char *
@@ -244,16 +254,18 @@ dssh_sigqueue_pop(struct dssh_signal_queue *q,
 {
 	if (q->head == NULL)
 		return NULL;
-	if (stdout_consumed < q->head->stdout_pos ||
-	    stderr_consumed < q->head->stderr_pos)
+	if ((stdout_consumed < q->head->stdout_pos)
+	    || (stderr_consumed < q->head->stderr_pos))
 		return NULL;
 
 	struct dssh_signal_mark *m = q->head;
+
 	q->head = m->next;
 	if (q->head == NULL)
 		q->tail = NULL;
 
 	size_t nlen = strlen(m->name);
+
 	if (nlen >= bufsz)
 		nlen = bufsz - 1;
 	memcpy(buf, m->name, nlen);
@@ -265,7 +277,6 @@ dssh_sigqueue_pop(struct dssh_signal_queue *q,
 /* ================================================================
  * Accept queue
  * ================================================================ */
-
 DSSH_PRIVATE void
 dssh_acceptqueue_init(struct dssh_accept_queue *q)
 {
@@ -277,8 +288,10 @@ DSSH_PRIVATE void
 dssh_acceptqueue_free(struct dssh_accept_queue *q)
 {
 	struct dssh_incoming_open *e = q->head;
+
 	while (e != NULL) {
 		struct dssh_incoming_open *next = e->next;
+
 		free(e);
 		e = next;
 	}
@@ -293,6 +306,7 @@ dssh_acceptqueue_push(struct dssh_accept_queue *q,
     const uint8_t *type, size_t type_len)
 {
 	struct dssh_incoming_open *e = malloc(sizeof(*e));
+
 	if (e == NULL)
 		return DSSH_ERROR_ALLOC;
 	e->next = NULL;
@@ -314,9 +328,11 @@ dssh_acceptqueue_push(struct dssh_accept_queue *q,
 }
 
 DSSH_PRIVATE struct dssh_incoming_open *
+
 dssh_acceptqueue_pop(struct dssh_accept_queue *q)
 {
 	struct dssh_incoming_open *e = q->head;
+
 	if (e == NULL)
 		return NULL;
 	q->head = e->next;
