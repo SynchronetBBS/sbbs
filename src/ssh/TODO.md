@@ -5,11 +5,11 @@
    (`set_debug_cb`, `set_global_request_cb`, etc.) should be
    checked too — the interface should be type-safe.
 
-7. (fixed) Removed all 31 `#ifndef DSSH_TESTING` dead-code guards.
+## Fixed
+
+7. Removed all 31 `#ifndef DSSH_TESTING` dead-code guards.
    Only one legitimate contract-violation guard remains in
    `dssh_parse_string()` (ssh-arch.c:157).
-
-## Fixed
 
 1. Handshake/rekey failure did not set terminate flag.
    Fixed in: handshake, rekey, send_packet, recv_packet_raw.
