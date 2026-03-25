@@ -4609,6 +4609,836 @@ test_service_accept_unexpected(void)
 }
 
 /* ================================================================
+ * Server send-failure tests
+ *
+ * Each test completes a handshake, starts the server auth loop,
+ * drives the client side to the point where the server is about
+ * to send a response, then closes the s2c pipe so the server's
+ * send_packet fails.  Verifies sa.result < 0.
+ * ================================================================ */
+
+static int
+test_server_send_fail_service_accept(void)
+{
+	struct handshake_ctx ctx;
+	if (handshake_setup(&ctx) < 0) {
+		handshake_cleanup(&ctx);
+		return TEST_FAIL;
+	}
+
+	struct test_auth_cbdata cbdata = {0};
+	cbdata.none_result = DSSH_AUTH_SUCCESS;
+
+	struct auth_server_arg sa = {0};
+	sa.ctx = &ctx;
+	sa.cbs.methods_str = "none";
+	sa.cbs.none_cb = test_none_cb;
+	sa.cbs.cbdata = &cbdata;
+
+	thrd_t st;
+	ASSERT_TRUE(thrd_create(&st, auth_server_thread, &sa) == thrd_success);
+
+	/* Client: send SERVICE_REQUEST */
+	{
+		static const char svc[] = "ssh-userauth";
+		uint8_t msg[64];
+		size_t pos = 0;
+		msg[pos++] = SSH_MSG_SERVICE_REQUEST;
+		dssh_serialize_uint32((uint32_t)(sizeof(svc) - 1), msg, sizeof(msg), &pos);
+		memcpy(&msg[pos], svc, sizeof(svc) - 1);
+		pos += sizeof(svc) - 1;
+		ASSERT_OK(dssh_transport_send_packet(ctx.client, msg, pos, NULL));
+	}
+
+	/* Close s2c before the server sends SERVICE_ACCEPT */
+	mock_io_close_s2c(&ctx.io);
+
+	thrd_join(st, NULL);
+	ASSERT_TRUE(sa.result < 0);
+
+	mock_io_close_c2s(&ctx.io);
+	handshake_cleanup(&ctx);
+	return TEST_PASS;
+}
+
+static int
+test_server_send_fail_none_success(void)
+{
+	struct handshake_ctx ctx;
+	if (handshake_setup(&ctx) < 0) {
+		handshake_cleanup(&ctx);
+		return TEST_FAIL;
+	}
+
+	struct test_auth_cbdata cbdata = {0};
+	cbdata.none_result = DSSH_AUTH_SUCCESS;
+
+	struct auth_server_arg sa = {0};
+	sa.ctx = &ctx;
+	sa.cbs.methods_str = "none";
+	sa.cbs.none_cb = test_none_cb;
+	sa.cbs.cbdata = &cbdata;
+
+	thrd_t st;
+	ASSERT_TRUE(thrd_create(&st, auth_server_thread, &sa) == thrd_success);
+
+	/* SERVICE_REQUEST/ACCEPT */
+	{
+		static const char svc[] = "ssh-userauth";
+		uint8_t msg[64];
+		size_t pos = 0;
+		msg[pos++] = SSH_MSG_SERVICE_REQUEST;
+		dssh_serialize_uint32((uint32_t)(sizeof(svc) - 1), msg, sizeof(msg), &pos);
+		memcpy(&msg[pos], svc, sizeof(svc) - 1);
+		pos += sizeof(svc) - 1;
+		ASSERT_OK(dssh_transport_send_packet(ctx.client, msg, pos, NULL));
+	}
+	{
+		uint8_t msg_type;
+		uint8_t *payload;
+		size_t payload_len;
+		ASSERT_OK(dssh_transport_recv_packet(ctx.client, &msg_type, &payload, &payload_len));
+		ASSERT_EQ(msg_type, SSH_MSG_SERVICE_ACCEPT);
+	}
+
+	/* Send none auth request */
+	{
+		static const char user[] = "testuser";
+		static const char svc[] = "ssh-connection";
+		static const char method[] = "none";
+		uint8_t msg[128];
+		size_t pos = 0;
+		msg[pos++] = SSH_MSG_USERAUTH_REQUEST;
+		dssh_serialize_uint32((uint32_t)(sizeof(user) - 1), msg, sizeof(msg), &pos);
+		memcpy(&msg[pos], user, sizeof(user) - 1);
+		pos += sizeof(user) - 1;
+		dssh_serialize_uint32((uint32_t)(sizeof(svc) - 1), msg, sizeof(msg), &pos);
+		memcpy(&msg[pos], svc, sizeof(svc) - 1);
+		pos += sizeof(svc) - 1;
+		dssh_serialize_uint32((uint32_t)(sizeof(method) - 1), msg, sizeof(msg), &pos);
+		memcpy(&msg[pos], method, sizeof(method) - 1);
+		pos += sizeof(method) - 1;
+		ASSERT_OK(dssh_transport_send_packet(ctx.client, msg, pos, NULL));
+	}
+
+	/* Close s2c before server sends USERAUTH_SUCCESS */
+	mock_io_close_s2c(&ctx.io);
+
+	thrd_join(st, NULL);
+	ASSERT_TRUE(sa.result < 0);
+
+	mock_io_close_c2s(&ctx.io);
+	handshake_cleanup(&ctx);
+	return TEST_PASS;
+}
+
+static int
+test_server_send_fail_none_failure(void)
+{
+	struct handshake_ctx ctx;
+	if (handshake_setup(&ctx) < 0) {
+		handshake_cleanup(&ctx);
+		return TEST_FAIL;
+	}
+
+	struct test_auth_cbdata cbdata = {0};
+	cbdata.none_result = DSSH_AUTH_FAILURE;
+
+	struct auth_server_arg sa = {0};
+	sa.ctx = &ctx;
+	sa.cbs.methods_str = "password";
+	sa.cbs.none_cb = test_none_cb;
+	sa.cbs.password_cb = test_password_cb;
+	sa.cbs.cbdata = &cbdata;
+
+	thrd_t st;
+	ASSERT_TRUE(thrd_create(&st, auth_server_thread, &sa) == thrd_success);
+
+	/* SERVICE_REQUEST/ACCEPT */
+	{
+		static const char svc[] = "ssh-userauth";
+		uint8_t msg[64];
+		size_t pos = 0;
+		msg[pos++] = SSH_MSG_SERVICE_REQUEST;
+		dssh_serialize_uint32((uint32_t)(sizeof(svc) - 1), msg, sizeof(msg), &pos);
+		memcpy(&msg[pos], svc, sizeof(svc) - 1);
+		pos += sizeof(svc) - 1;
+		ASSERT_OK(dssh_transport_send_packet(ctx.client, msg, pos, NULL));
+	}
+	{
+		uint8_t msg_type;
+		uint8_t *payload;
+		size_t payload_len;
+		ASSERT_OK(dssh_transport_recv_packet(ctx.client, &msg_type, &payload, &payload_len));
+		ASSERT_EQ(msg_type, SSH_MSG_SERVICE_ACCEPT);
+	}
+
+	/* Send none auth request */
+	{
+		static const char user[] = "testuser";
+		static const char svc[] = "ssh-connection";
+		static const char method[] = "none";
+		uint8_t msg[128];
+		size_t pos = 0;
+		msg[pos++] = SSH_MSG_USERAUTH_REQUEST;
+		dssh_serialize_uint32((uint32_t)(sizeof(user) - 1), msg, sizeof(msg), &pos);
+		memcpy(&msg[pos], user, sizeof(user) - 1);
+		pos += sizeof(user) - 1;
+		dssh_serialize_uint32((uint32_t)(sizeof(svc) - 1), msg, sizeof(msg), &pos);
+		memcpy(&msg[pos], svc, sizeof(svc) - 1);
+		pos += sizeof(svc) - 1;
+		dssh_serialize_uint32((uint32_t)(sizeof(method) - 1), msg, sizeof(msg), &pos);
+		memcpy(&msg[pos], method, sizeof(method) - 1);
+		pos += sizeof(method) - 1;
+		ASSERT_OK(dssh_transport_send_packet(ctx.client, msg, pos, NULL));
+	}
+
+	/* Close s2c before server sends USERAUTH_FAILURE */
+	mock_io_close_s2c(&ctx.io);
+
+	thrd_join(st, NULL);
+	ASSERT_TRUE(sa.result < 0);
+
+	mock_io_close_c2s(&ctx.io);
+	handshake_cleanup(&ctx);
+	return TEST_PASS;
+}
+
+static int
+test_server_send_fail_password_success(void)
+{
+	struct handshake_ctx ctx;
+	if (handshake_setup(&ctx) < 0) {
+		handshake_cleanup(&ctx);
+		return TEST_FAIL;
+	}
+
+	struct test_auth_cbdata cbdata = {0};
+	cbdata.password_result = DSSH_AUTH_SUCCESS;
+
+	struct auth_server_arg sa = {0};
+	sa.ctx = &ctx;
+	sa.cbs.methods_str = "password";
+	sa.cbs.password_cb = test_password_cb;
+	sa.cbs.cbdata = &cbdata;
+
+	thrd_t st;
+	ASSERT_TRUE(thrd_create(&st, auth_server_thread, &sa) == thrd_success);
+
+	/* SERVICE_REQUEST/ACCEPT */
+	{
+		static const char svc[] = "ssh-userauth";
+		uint8_t msg[64];
+		size_t pos = 0;
+		msg[pos++] = SSH_MSG_SERVICE_REQUEST;
+		dssh_serialize_uint32((uint32_t)(sizeof(svc) - 1), msg, sizeof(msg), &pos);
+		memcpy(&msg[pos], svc, sizeof(svc) - 1);
+		pos += sizeof(svc) - 1;
+		ASSERT_OK(dssh_transport_send_packet(ctx.client, msg, pos, NULL));
+	}
+	{
+		uint8_t msg_type;
+		uint8_t *payload;
+		size_t payload_len;
+		ASSERT_OK(dssh_transport_recv_packet(ctx.client, &msg_type, &payload, &payload_len));
+		ASSERT_EQ(msg_type, SSH_MSG_SERVICE_ACCEPT);
+	}
+
+	/* Send password auth request */
+	{
+		static const char user[] = "sysop";
+		static const char svc[] = "ssh-connection";
+		static const char method[] = "password";
+		static const char pw[] = "hunter2";
+		uint8_t msg[256];
+		size_t pos = 0;
+		msg[pos++] = SSH_MSG_USERAUTH_REQUEST;
+		dssh_serialize_uint32((uint32_t)(sizeof(user) - 1), msg, sizeof(msg), &pos);
+		memcpy(&msg[pos], user, sizeof(user) - 1);
+		pos += sizeof(user) - 1;
+		dssh_serialize_uint32((uint32_t)(sizeof(svc) - 1), msg, sizeof(msg), &pos);
+		memcpy(&msg[pos], svc, sizeof(svc) - 1);
+		pos += sizeof(svc) - 1;
+		dssh_serialize_uint32((uint32_t)(sizeof(method) - 1), msg, sizeof(msg), &pos);
+		memcpy(&msg[pos], method, sizeof(method) - 1);
+		pos += sizeof(method) - 1;
+		msg[pos++] = 0; /* not a password change */
+		dssh_serialize_uint32((uint32_t)(sizeof(pw) - 1), msg, sizeof(msg), &pos);
+		memcpy(&msg[pos], pw, sizeof(pw) - 1);
+		pos += sizeof(pw) - 1;
+		ASSERT_OK(dssh_transport_send_packet(ctx.client, msg, pos, NULL));
+	}
+
+	/* Close s2c before server sends USERAUTH_SUCCESS */
+	mock_io_close_s2c(&ctx.io);
+
+	thrd_join(st, NULL);
+	ASSERT_TRUE(sa.result < 0);
+
+	mock_io_close_c2s(&ctx.io);
+	handshake_cleanup(&ctx);
+	return TEST_PASS;
+}
+
+static int
+test_server_send_fail_password_failure(void)
+{
+	struct handshake_ctx ctx;
+	if (handshake_setup(&ctx) < 0) {
+		handshake_cleanup(&ctx);
+		return TEST_FAIL;
+	}
+
+	struct test_auth_cbdata cbdata = {0};
+	cbdata.password_result = DSSH_AUTH_FAILURE;
+
+	struct auth_server_arg sa = {0};
+	sa.ctx = &ctx;
+	sa.cbs.methods_str = "password";
+	sa.cbs.password_cb = test_password_cb;
+	sa.cbs.cbdata = &cbdata;
+
+	thrd_t st;
+	ASSERT_TRUE(thrd_create(&st, auth_server_thread, &sa) == thrd_success);
+
+	/* SERVICE_REQUEST/ACCEPT */
+	{
+		static const char svc[] = "ssh-userauth";
+		uint8_t msg[64];
+		size_t pos = 0;
+		msg[pos++] = SSH_MSG_SERVICE_REQUEST;
+		dssh_serialize_uint32((uint32_t)(sizeof(svc) - 1), msg, sizeof(msg), &pos);
+		memcpy(&msg[pos], svc, sizeof(svc) - 1);
+		pos += sizeof(svc) - 1;
+		ASSERT_OK(dssh_transport_send_packet(ctx.client, msg, pos, NULL));
+	}
+	{
+		uint8_t msg_type;
+		uint8_t *payload;
+		size_t payload_len;
+		ASSERT_OK(dssh_transport_recv_packet(ctx.client, &msg_type, &payload, &payload_len));
+		ASSERT_EQ(msg_type, SSH_MSG_SERVICE_ACCEPT);
+	}
+
+	/* Send password auth request */
+	{
+		static const char user[] = "testuser";
+		static const char svc[] = "ssh-connection";
+		static const char method[] = "password";
+		static const char pw[] = "badpass";
+		uint8_t msg[256];
+		size_t pos = 0;
+		msg[pos++] = SSH_MSG_USERAUTH_REQUEST;
+		dssh_serialize_uint32((uint32_t)(sizeof(user) - 1), msg, sizeof(msg), &pos);
+		memcpy(&msg[pos], user, sizeof(user) - 1);
+		pos += sizeof(user) - 1;
+		dssh_serialize_uint32((uint32_t)(sizeof(svc) - 1), msg, sizeof(msg), &pos);
+		memcpy(&msg[pos], svc, sizeof(svc) - 1);
+		pos += sizeof(svc) - 1;
+		dssh_serialize_uint32((uint32_t)(sizeof(method) - 1), msg, sizeof(msg), &pos);
+		memcpy(&msg[pos], method, sizeof(method) - 1);
+		pos += sizeof(method) - 1;
+		msg[pos++] = 0;
+		dssh_serialize_uint32((uint32_t)(sizeof(pw) - 1), msg, sizeof(msg), &pos);
+		memcpy(&msg[pos], pw, sizeof(pw) - 1);
+		pos += sizeof(pw) - 1;
+		ASSERT_OK(dssh_transport_send_packet(ctx.client, msg, pos, NULL));
+	}
+
+	/* Close s2c before server sends USERAUTH_FAILURE */
+	mock_io_close_s2c(&ctx.io);
+
+	thrd_join(st, NULL);
+	ASSERT_TRUE(sa.result < 0);
+
+	mock_io_close_c2s(&ctx.io);
+	handshake_cleanup(&ctx);
+	return TEST_PASS;
+}
+
+static int
+test_server_send_fail_password_no_cb(void)
+{
+	struct handshake_ctx ctx;
+	if (handshake_setup(&ctx) < 0) {
+		handshake_cleanup(&ctx);
+		return TEST_FAIL;
+	}
+
+	struct auth_server_arg sa = {0};
+	sa.ctx = &ctx;
+	sa.cbs.methods_str = "password";
+	/* No password_cb set */
+
+	thrd_t st;
+	ASSERT_TRUE(thrd_create(&st, auth_server_thread, &sa) == thrd_success);
+
+	/* SERVICE_REQUEST/ACCEPT */
+	{
+		static const char svc[] = "ssh-userauth";
+		uint8_t msg[64];
+		size_t pos = 0;
+		msg[pos++] = SSH_MSG_SERVICE_REQUEST;
+		dssh_serialize_uint32((uint32_t)(sizeof(svc) - 1), msg, sizeof(msg), &pos);
+		memcpy(&msg[pos], svc, sizeof(svc) - 1);
+		pos += sizeof(svc) - 1;
+		ASSERT_OK(dssh_transport_send_packet(ctx.client, msg, pos, NULL));
+	}
+	{
+		uint8_t msg_type;
+		uint8_t *payload;
+		size_t payload_len;
+		ASSERT_OK(dssh_transport_recv_packet(ctx.client, &msg_type, &payload, &payload_len));
+		ASSERT_EQ(msg_type, SSH_MSG_SERVICE_ACCEPT);
+	}
+
+	/* Send password auth — server has no password_cb */
+	{
+		static const char user[] = "testuser";
+		static const char svc[] = "ssh-connection";
+		static const char method[] = "password";
+		static const char pw[] = "pass";
+		uint8_t msg[256];
+		size_t pos = 0;
+		msg[pos++] = SSH_MSG_USERAUTH_REQUEST;
+		dssh_serialize_uint32((uint32_t)(sizeof(user) - 1), msg, sizeof(msg), &pos);
+		memcpy(&msg[pos], user, sizeof(user) - 1);
+		pos += sizeof(user) - 1;
+		dssh_serialize_uint32((uint32_t)(sizeof(svc) - 1), msg, sizeof(msg), &pos);
+		memcpy(&msg[pos], svc, sizeof(svc) - 1);
+		pos += sizeof(svc) - 1;
+		dssh_serialize_uint32((uint32_t)(sizeof(method) - 1), msg, sizeof(msg), &pos);
+		memcpy(&msg[pos], method, sizeof(method) - 1);
+		pos += sizeof(method) - 1;
+		msg[pos++] = 0;
+		dssh_serialize_uint32((uint32_t)(sizeof(pw) - 1), msg, sizeof(msg), &pos);
+		memcpy(&msg[pos], pw, sizeof(pw) - 1);
+		pos += sizeof(pw) - 1;
+		ASSERT_OK(dssh_transport_send_packet(ctx.client, msg, pos, NULL));
+	}
+
+	/* Close s2c before server sends USERAUTH_FAILURE */
+	mock_io_close_s2c(&ctx.io);
+
+	thrd_join(st, NULL);
+	ASSERT_TRUE(sa.result < 0);
+
+	mock_io_close_c2s(&ctx.io);
+	handshake_cleanup(&ctx);
+	return TEST_PASS;
+}
+
+static int
+send_fail_changereq_password_cb(const uint8_t *username, size_t username_len,
+    const uint8_t *password, size_t password_len,
+    uint8_t **change_prompt, size_t *change_prompt_len,
+    void *cbdata)
+{
+	(void)username;
+	(void)username_len;
+	(void)password;
+	(void)password_len;
+	(void)cbdata;
+	*change_prompt = malloc(12);
+	if (*change_prompt == NULL) {
+		*change_prompt_len = 0;
+		return DSSH_AUTH_FAILURE;
+	}
+	memcpy(*change_prompt, "change pass!", 12);
+	*change_prompt_len = 12;
+	return DSSH_AUTH_CHANGE_PASSWORD;
+}
+
+static int
+test_server_send_fail_password_changereq(void)
+{
+	struct handshake_ctx ctx;
+	if (handshake_setup(&ctx) < 0) {
+		handshake_cleanup(&ctx);
+		return TEST_FAIL;
+	}
+
+	struct auth_server_arg sa = {0};
+	sa.ctx = &ctx;
+	sa.cbs.methods_str = "password";
+	sa.cbs.password_cb = send_fail_changereq_password_cb;
+
+	thrd_t st;
+	ASSERT_TRUE(thrd_create(&st, auth_server_thread, &sa) == thrd_success);
+
+	/* SERVICE_REQUEST/ACCEPT */
+	{
+		static const char svc[] = "ssh-userauth";
+		uint8_t msg[64];
+		size_t pos = 0;
+		msg[pos++] = SSH_MSG_SERVICE_REQUEST;
+		dssh_serialize_uint32((uint32_t)(sizeof(svc) - 1), msg, sizeof(msg), &pos);
+		memcpy(&msg[pos], svc, sizeof(svc) - 1);
+		pos += sizeof(svc) - 1;
+		ASSERT_OK(dssh_transport_send_packet(ctx.client, msg, pos, NULL));
+	}
+	{
+		uint8_t msg_type;
+		uint8_t *payload;
+		size_t payload_len;
+		ASSERT_OK(dssh_transport_recv_packet(ctx.client, &msg_type, &payload, &payload_len));
+		ASSERT_EQ(msg_type, SSH_MSG_SERVICE_ACCEPT);
+	}
+
+	/* Send password auth — cb will return CHANGE_PASSWORD */
+	{
+		static const char user[] = "testuser";
+		static const char svc[] = "ssh-connection";
+		static const char method[] = "password";
+		static const char pw[] = "oldpass";
+		uint8_t msg[256];
+		size_t pos = 0;
+		msg[pos++] = SSH_MSG_USERAUTH_REQUEST;
+		dssh_serialize_uint32((uint32_t)(sizeof(user) - 1), msg, sizeof(msg), &pos);
+		memcpy(&msg[pos], user, sizeof(user) - 1);
+		pos += sizeof(user) - 1;
+		dssh_serialize_uint32((uint32_t)(sizeof(svc) - 1), msg, sizeof(msg), &pos);
+		memcpy(&msg[pos], svc, sizeof(svc) - 1);
+		pos += sizeof(svc) - 1;
+		dssh_serialize_uint32((uint32_t)(sizeof(method) - 1), msg, sizeof(msg), &pos);
+		memcpy(&msg[pos], method, sizeof(method) - 1);
+		pos += sizeof(method) - 1;
+		msg[pos++] = 0; /* not a password change request from client */
+		dssh_serialize_uint32((uint32_t)(sizeof(pw) - 1), msg, sizeof(msg), &pos);
+		memcpy(&msg[pos], pw, sizeof(pw) - 1);
+		pos += sizeof(pw) - 1;
+		ASSERT_OK(dssh_transport_send_packet(ctx.client, msg, pos, NULL));
+	}
+
+	/* Close s2c before server sends PASSWD_CHANGEREQ */
+	mock_io_close_s2c(&ctx.io);
+
+	thrd_join(st, NULL);
+	ASSERT_TRUE(sa.result < 0);
+
+	mock_io_close_c2s(&ctx.io);
+	handshake_cleanup(&ctx);
+	return TEST_PASS;
+}
+
+static int
+test_server_send_fail_publickey_no_cb(void)
+{
+	struct handshake_ctx ctx;
+	if (handshake_setup(&ctx) < 0) {
+		handshake_cleanup(&ctx);
+		return TEST_FAIL;
+	}
+
+	struct auth_server_arg sa = {0};
+	sa.ctx = &ctx;
+	sa.cbs.methods_str = "publickey";
+	/* No publickey_cb set */
+
+	thrd_t st;
+	ASSERT_TRUE(thrd_create(&st, auth_server_thread, &sa) == thrd_success);
+
+	/* SERVICE_REQUEST/ACCEPT */
+	{
+		static const char svc[] = "ssh-userauth";
+		uint8_t msg[64];
+		size_t pos = 0;
+		msg[pos++] = SSH_MSG_SERVICE_REQUEST;
+		dssh_serialize_uint32((uint32_t)(sizeof(svc) - 1), msg, sizeof(msg), &pos);
+		memcpy(&msg[pos], svc, sizeof(svc) - 1);
+		pos += sizeof(svc) - 1;
+		ASSERT_OK(dssh_transport_send_packet(ctx.client, msg, pos, NULL));
+	}
+	{
+		uint8_t msg_type;
+		uint8_t *payload;
+		size_t payload_len;
+		ASSERT_OK(dssh_transport_recv_packet(ctx.client, &msg_type, &payload, &payload_len));
+		ASSERT_EQ(msg_type, SSH_MSG_SERVICE_ACCEPT);
+	}
+
+	/* Send publickey probe — server has no publickey_cb */
+	{
+		uint8_t msg[256];
+		size_t pos = build_auth_prefix(msg, sizeof(msg), "publickey");
+		msg[pos++] = 0; /* has_sig = false */
+		dssh_serialize_uint32(11, msg, sizeof(msg), &pos);
+		memcpy(&msg[pos], "ssh-ed25519", 11);
+		pos += 11;
+		dssh_serialize_uint32(4, msg, sizeof(msg), &pos);
+		memcpy(&msg[pos], "blob", 4);
+		pos += 4;
+		ASSERT_OK(dssh_transport_send_packet(ctx.client, msg, pos, NULL));
+	}
+
+	/* Close s2c before server sends USERAUTH_FAILURE */
+	mock_io_close_s2c(&ctx.io);
+
+	thrd_join(st, NULL);
+	ASSERT_TRUE(sa.result < 0);
+
+	mock_io_close_c2s(&ctx.io);
+	handshake_cleanup(&ctx);
+	return TEST_PASS;
+}
+
+static int
+test_server_send_fail_pk_ok(void)
+{
+	struct handshake_ctx ctx;
+	if (handshake_setup(&ctx) < 0) {
+		handshake_cleanup(&ctx);
+		return TEST_FAIL;
+	}
+
+	struct test_auth_cbdata cbdata = {0};
+	cbdata.publickey_result = DSSH_AUTH_SUCCESS;
+
+	struct auth_server_arg sa = {0};
+	sa.ctx = &ctx;
+	sa.cbs.methods_str = "publickey";
+	sa.cbs.publickey_cb = test_publickey_cb;
+	sa.cbs.cbdata = &cbdata;
+
+	thrd_t st;
+	ASSERT_TRUE(thrd_create(&st, auth_server_thread, &sa) == thrd_success);
+
+	/* SERVICE_REQUEST/ACCEPT */
+	{
+		static const char svc[] = "ssh-userauth";
+		uint8_t msg[64];
+		size_t pos = 0;
+		msg[pos++] = SSH_MSG_SERVICE_REQUEST;
+		dssh_serialize_uint32((uint32_t)(sizeof(svc) - 1), msg, sizeof(msg), &pos);
+		memcpy(&msg[pos], svc, sizeof(svc) - 1);
+		pos += sizeof(svc) - 1;
+		ASSERT_OK(dssh_transport_send_packet(ctx.client, msg, pos, NULL));
+	}
+	{
+		uint8_t msg_type;
+		uint8_t *payload;
+		size_t payload_len;
+		ASSERT_OK(dssh_transport_recv_packet(ctx.client, &msg_type, &payload, &payload_len));
+		ASSERT_EQ(msg_type, SSH_MSG_SERVICE_ACCEPT);
+	}
+
+	/* Send publickey probe — cb accepts, server tries to send PK_OK */
+	{
+		uint8_t msg[256];
+		size_t pos = build_auth_prefix(msg, sizeof(msg), "publickey");
+		msg[pos++] = 0; /* has_sig = false */
+		dssh_serialize_uint32(11, msg, sizeof(msg), &pos);
+		memcpy(&msg[pos], "ssh-ed25519", 11);
+		pos += 11;
+		dssh_serialize_uint32(4, msg, sizeof(msg), &pos);
+		memcpy(&msg[pos], "blob", 4);
+		pos += 4;
+		ASSERT_OK(dssh_transport_send_packet(ctx.client, msg, pos, NULL));
+	}
+
+	/* Close s2c before server sends PK_OK */
+	mock_io_close_s2c(&ctx.io);
+
+	thrd_join(st, NULL);
+	ASSERT_TRUE(sa.result < 0);
+
+	mock_io_close_c2s(&ctx.io);
+	handshake_cleanup(&ctx);
+	return TEST_PASS;
+}
+
+static int
+test_server_send_fail_pk_probe_rejected(void)
+{
+	struct handshake_ctx ctx;
+	if (handshake_setup(&ctx) < 0) {
+		handshake_cleanup(&ctx);
+		return TEST_FAIL;
+	}
+
+	struct test_auth_cbdata cbdata = {0};
+	cbdata.publickey_result = DSSH_AUTH_FAILURE;
+
+	struct auth_server_arg sa = {0};
+	sa.ctx = &ctx;
+	sa.cbs.methods_str = "publickey";
+	sa.cbs.publickey_cb = test_publickey_cb;
+	sa.cbs.cbdata = &cbdata;
+
+	thrd_t st;
+	ASSERT_TRUE(thrd_create(&st, auth_server_thread, &sa) == thrd_success);
+
+	/* SERVICE_REQUEST/ACCEPT */
+	{
+		static const char svc[] = "ssh-userauth";
+		uint8_t msg[64];
+		size_t pos = 0;
+		msg[pos++] = SSH_MSG_SERVICE_REQUEST;
+		dssh_serialize_uint32((uint32_t)(sizeof(svc) - 1), msg, sizeof(msg), &pos);
+		memcpy(&msg[pos], svc, sizeof(svc) - 1);
+		pos += sizeof(svc) - 1;
+		ASSERT_OK(dssh_transport_send_packet(ctx.client, msg, pos, NULL));
+	}
+	{
+		uint8_t msg_type;
+		uint8_t *payload;
+		size_t payload_len;
+		ASSERT_OK(dssh_transport_recv_packet(ctx.client, &msg_type, &payload, &payload_len));
+		ASSERT_EQ(msg_type, SSH_MSG_SERVICE_ACCEPT);
+	}
+
+	/* Send publickey probe — cb rejects, server tries to send FAILURE */
+	{
+		uint8_t msg[256];
+		size_t pos = build_auth_prefix(msg, sizeof(msg), "publickey");
+		msg[pos++] = 0; /* has_sig = false */
+		dssh_serialize_uint32(11, msg, sizeof(msg), &pos);
+		memcpy(&msg[pos], "ssh-ed25519", 11);
+		pos += 11;
+		dssh_serialize_uint32(4, msg, sizeof(msg), &pos);
+		memcpy(&msg[pos], "blob", 4);
+		pos += 4;
+		ASSERT_OK(dssh_transport_send_packet(ctx.client, msg, pos, NULL));
+	}
+
+	/* Close s2c before server sends USERAUTH_FAILURE */
+	mock_io_close_s2c(&ctx.io);
+
+	thrd_join(st, NULL);
+	ASSERT_TRUE(sa.result < 0);
+
+	mock_io_close_c2s(&ctx.io);
+	handshake_cleanup(&ctx);
+	return TEST_PASS;
+}
+
+static int
+test_server_send_fail_pk_unknown_algo(void)
+{
+	struct handshake_ctx ctx;
+	if (handshake_setup(&ctx) < 0) {
+		handshake_cleanup(&ctx);
+		return TEST_FAIL;
+	}
+
+	struct test_auth_cbdata cbdata = {0};
+	cbdata.publickey_result = DSSH_AUTH_SUCCESS;
+
+	struct auth_server_arg sa = {0};
+	sa.ctx = &ctx;
+	sa.cbs.methods_str = "publickey";
+	sa.cbs.publickey_cb = test_publickey_cb;
+	sa.cbs.cbdata = &cbdata;
+
+	thrd_t st;
+	ASSERT_TRUE(thrd_create(&st, auth_server_thread, &sa) == thrd_success);
+
+	/* SERVICE_REQUEST/ACCEPT */
+	{
+		static const char svc[] = "ssh-userauth";
+		uint8_t msg[64];
+		size_t pos = 0;
+		msg[pos++] = SSH_MSG_SERVICE_REQUEST;
+		dssh_serialize_uint32((uint32_t)(sizeof(svc) - 1), msg, sizeof(msg), &pos);
+		memcpy(&msg[pos], svc, sizeof(svc) - 1);
+		pos += sizeof(svc) - 1;
+		ASSERT_OK(dssh_transport_send_packet(ctx.client, msg, pos, NULL));
+	}
+	{
+		uint8_t msg_type;
+		uint8_t *payload;
+		size_t payload_len;
+		ASSERT_OK(dssh_transport_recv_packet(ctx.client, &msg_type, &payload, &payload_len));
+		ASSERT_EQ(msg_type, SSH_MSG_SERVICE_ACCEPT);
+	}
+
+	/* Send publickey with has_sig=true and unknown algo */
+	{
+		uint8_t msg[256];
+		size_t pos = build_auth_prefix(msg, sizeof(msg), "publickey");
+		msg[pos++] = 1; /* has_sig = true */
+		dssh_serialize_uint32(12, msg, sizeof(msg), &pos);
+		memcpy(&msg[pos], "unknown-algo", 12);
+		pos += 12;
+		dssh_serialize_uint32(4, msg, sizeof(msg), &pos);
+		memcpy(&msg[pos], "fake", 4);
+		pos += 4;
+		dssh_serialize_uint32(4, msg, sizeof(msg), &pos);
+		memcpy(&msg[pos], "sig!", 4);
+		pos += 4;
+		ASSERT_OK(dssh_transport_send_packet(ctx.client, msg, pos, NULL));
+	}
+
+	/* Close s2c before server sends USERAUTH_FAILURE */
+	mock_io_close_s2c(&ctx.io);
+
+	thrd_join(st, NULL);
+	ASSERT_TRUE(sa.result < 0);
+
+	mock_io_close_c2s(&ctx.io);
+	handshake_cleanup(&ctx);
+	return TEST_PASS;
+}
+
+static int
+test_server_send_fail_unknown_method(void)
+{
+	struct handshake_ctx ctx;
+	if (handshake_setup(&ctx) < 0) {
+		handshake_cleanup(&ctx);
+		return TEST_FAIL;
+	}
+
+	struct test_auth_cbdata cbdata = {0};
+	cbdata.password_result = DSSH_AUTH_SUCCESS;
+
+	struct auth_server_arg sa = {0};
+	sa.ctx = &ctx;
+	sa.cbs.methods_str = "password";
+	sa.cbs.password_cb = test_password_cb;
+	sa.cbs.cbdata = &cbdata;
+
+	thrd_t st;
+	ASSERT_TRUE(thrd_create(&st, auth_server_thread, &sa) == thrd_success);
+
+	/* SERVICE_REQUEST/ACCEPT */
+	{
+		static const char svc[] = "ssh-userauth";
+		uint8_t msg[64];
+		size_t pos = 0;
+		msg[pos++] = SSH_MSG_SERVICE_REQUEST;
+		dssh_serialize_uint32((uint32_t)(sizeof(svc) - 1), msg, sizeof(msg), &pos);
+		memcpy(&msg[pos], svc, sizeof(svc) - 1);
+		pos += sizeof(svc) - 1;
+		ASSERT_OK(dssh_transport_send_packet(ctx.client, msg, pos, NULL));
+	}
+	{
+		uint8_t msg_type;
+		uint8_t *payload;
+		size_t payload_len;
+		ASSERT_OK(dssh_transport_recv_packet(ctx.client, &msg_type, &payload, &payload_len));
+		ASSERT_EQ(msg_type, SSH_MSG_SERVICE_ACCEPT);
+	}
+
+	/* Send auth request with unknown method "bogus" */
+	{
+		uint8_t msg[128];
+		size_t pos = build_auth_prefix(msg, sizeof(msg), "bogus");
+		ASSERT_OK(dssh_transport_send_packet(ctx.client, msg, pos, NULL));
+	}
+
+	/* Close s2c before server sends USERAUTH_FAILURE */
+	mock_io_close_s2c(&ctx.io);
+
+	thrd_join(st, NULL);
+	ASSERT_TRUE(sa.result < 0);
+
+	mock_io_close_c2s(&ctx.io);
+	handshake_cleanup(&ctx);
+	return TEST_PASS;
+}
+
+/* ================================================================
  * Test table and main
  * ================================================================ */
 
@@ -4703,6 +5533,20 @@ static struct dssh_test_entry tests[] = {
 	{ "auth/server/pk_sig_trunc_blob",   test_server_parse_publickey_sig_trunc_blob },
 	{ "auth/server/pk_verify_bad_sig",   test_server_publickey_verify_bad_sig },
 	{ "auth/pw_changereq_loop",          test_password_changereq_loop },
+
+	/* Server send failures */
+	{ "auth/server_send_fail/svc_accept",    test_server_send_fail_service_accept },
+	{ "auth/server_send_fail/none_success",  test_server_send_fail_none_success },
+	{ "auth/server_send_fail/none_failure",  test_server_send_fail_none_failure },
+	{ "auth/server_send_fail/pw_success",    test_server_send_fail_password_success },
+	{ "auth/server_send_fail/pw_failure",    test_server_send_fail_password_failure },
+	{ "auth/server_send_fail/pw_no_cb",      test_server_send_fail_password_no_cb },
+	{ "auth/server_send_fail/pw_changereq",  test_server_send_fail_password_changereq },
+	{ "auth/server_send_fail/pk_no_cb",      test_server_send_fail_publickey_no_cb },
+	{ "auth/server_send_fail/pk_ok",         test_server_send_fail_pk_ok },
+	{ "auth/server_send_fail/pk_probe_rej",  test_server_send_fail_pk_probe_rejected },
+	{ "auth/server_send_fail/pk_unknown",    test_server_send_fail_pk_unknown_algo },
+	{ "auth/server_send_fail/unknown_meth",  test_server_send_fail_unknown_method },
 };
 
 DSSH_TEST_MAIN(tests)
