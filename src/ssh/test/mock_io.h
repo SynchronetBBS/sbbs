@@ -41,6 +41,7 @@ void mock_io_free(struct mock_io_state *io);
  * Close one direction (unblocks any reader on that pipe).
  */
 void mock_io_close_c2s(struct mock_io_state *io);
+void mock_io_close_c2s_write(struct mock_io_state *io);
 void mock_io_close_s2c(struct mock_io_state *io);
 
 /*

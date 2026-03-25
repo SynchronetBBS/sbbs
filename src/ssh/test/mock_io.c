@@ -154,6 +154,12 @@ mock_io_close_c2s(struct mock_io_state *io)
 }
 
 void
+mock_io_close_c2s_write(struct mock_io_state *io)
+{
+	pipe_close_write(&io->c2s);
+}
+
+void
 mock_io_close_s2c(struct mock_io_state *io)
 {
 	pipe_close_write(&io->s2c);
