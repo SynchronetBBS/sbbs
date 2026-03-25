@@ -108,7 +108,7 @@ send_pk_ok(dssh_session sess,
  *   string user, string service, string method
  * Returns the offset past the method string, or negative on error.
  */
-static int64_t
+DSSH_TESTABLE int64_t
 parse_userauth_prefix(const uint8_t *payload, size_t payload_len,
     const uint8_t **username, size_t *username_len,
     const uint8_t **method, size_t *method_len)

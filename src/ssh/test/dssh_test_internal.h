@@ -138,6 +138,13 @@ int encode_shared_secret(uint8_t *raw, size_t raw_len,
     uint8_t **ss_out, size_t *ss_len,
     uint8_t **mpint_out, size_t *mpint_len);
 
+/*
+ * ssh-auth.c helpers exposed for direct testing.
+ */
+int64_t parse_userauth_prefix(const uint8_t *payload, size_t payload_len,
+    const uint8_t **user, size_t *user_len,
+    const uint8_t **method, size_t *method_len);
+
 #ifdef __cplusplus
 }
 #endif

@@ -6700,6 +6700,142 @@ test_get_methods_small_buffer(void)
 }
 
 /* ================================================================
+ * Direct parse_userauth_prefix tests — called from main thread
+ * to avoid coverage counter issues with threaded server tests.
+ * ================================================================ */
+
+static int
+test_parse_prefix_empty(void)
+{
+	/* Just msg_type byte, no username length */
+	uint8_t payload[] = { 50 }; /* SSH_MSG_USERAUTH_REQUEST */
+	const uint8_t *user, *method;
+	size_t user_len, method_len;
+	int64_t res = parse_userauth_prefix(payload, 1,
+	    &user, &user_len, &method, &method_len);
+	ASSERT_TRUE(res < 0);
+	return TEST_PASS;
+}
+
+static int
+test_parse_prefix_trunc_username(void)
+{
+	/* username_len=100 but only 2 bytes of data */
+	uint8_t payload[8];
+	size_t pos = 0;
+	payload[pos++] = 50;
+	dssh_serialize_uint32(100, payload, sizeof(payload), &pos);
+	payload[pos++] = 'u';
+	payload[pos++] = 's';
+	const uint8_t *user, *method;
+	size_t user_len, method_len;
+	int64_t res = parse_userauth_prefix(payload, pos,
+	    &user, &user_len, &method, &method_len);
+	ASSERT_TRUE(res < 0);
+	return TEST_PASS;
+}
+
+static int
+test_parse_prefix_no_service(void)
+{
+	/* Valid username, no service length */
+	uint8_t payload[8];
+	size_t pos = 0;
+	payload[pos++] = 50;
+	dssh_serialize_uint32(1, payload, sizeof(payload), &pos);
+	payload[pos++] = 'u';
+	const uint8_t *user, *method;
+	size_t user_len, method_len;
+	int64_t res = parse_userauth_prefix(payload, pos,
+	    &user, &user_len, &method, &method_len);
+	ASSERT_TRUE(res < 0);
+	return TEST_PASS;
+}
+
+static int
+test_parse_prefix_trunc_service(void)
+{
+	/* service_len=100 but only 1 byte */
+	uint8_t payload[16];
+	size_t pos = 0;
+	payload[pos++] = 50;
+	dssh_serialize_uint32(1, payload, sizeof(payload), &pos);
+	payload[pos++] = 'u';
+	dssh_serialize_uint32(100, payload, sizeof(payload), &pos);
+	payload[pos++] = 's';
+	const uint8_t *user, *method;
+	size_t user_len, method_len;
+	int64_t res = parse_userauth_prefix(payload, pos,
+	    &user, &user_len, &method, &method_len);
+	ASSERT_TRUE(res < 0);
+	return TEST_PASS;
+}
+
+static int
+test_parse_prefix_no_method(void)
+{
+	/* Valid username + service, no method length */
+	uint8_t payload[16];
+	size_t pos = 0;
+	payload[pos++] = 50;
+	dssh_serialize_uint32(1, payload, sizeof(payload), &pos);
+	payload[pos++] = 'u';
+	dssh_serialize_uint32(1, payload, sizeof(payload), &pos);
+	payload[pos++] = 's';
+	const uint8_t *user, *method;
+	size_t user_len, method_len;
+	int64_t res = parse_userauth_prefix(payload, pos,
+	    &user, &user_len, &method, &method_len);
+	ASSERT_TRUE(res < 0);
+	return TEST_PASS;
+}
+
+static int
+test_parse_prefix_trunc_method(void)
+{
+	/* method_len=100 but only 2 bytes */
+	uint8_t payload[20];
+	size_t pos = 0;
+	payload[pos++] = 50;
+	dssh_serialize_uint32(1, payload, sizeof(payload), &pos);
+	payload[pos++] = 'u';
+	dssh_serialize_uint32(1, payload, sizeof(payload), &pos);
+	payload[pos++] = 's';
+	dssh_serialize_uint32(100, payload, sizeof(payload), &pos);
+	payload[pos++] = 'm';
+	payload[pos++] = 'x';
+	const uint8_t *user, *method;
+	size_t user_len, method_len;
+	int64_t res = parse_userauth_prefix(payload, pos,
+	    &user, &user_len, &method, &method_len);
+	ASSERT_TRUE(res < 0);
+	return TEST_PASS;
+}
+
+static int
+test_parse_prefix_valid(void)
+{
+	/* Valid: user="u", service="s", method="m" */
+	uint8_t payload[20];
+	size_t pos = 0;
+	payload[pos++] = 50;
+	dssh_serialize_uint32(1, payload, sizeof(payload), &pos);
+	payload[pos++] = 'u';
+	dssh_serialize_uint32(1, payload, sizeof(payload), &pos);
+	payload[pos++] = 's';
+	dssh_serialize_uint32(1, payload, sizeof(payload), &pos);
+	payload[pos++] = 'm';
+	const uint8_t *user, *method;
+	size_t user_len, method_len;
+	int64_t res = parse_userauth_prefix(payload, pos,
+	    &user, &user_len, &method, &method_len);
+	ASSERT_TRUE(res > 0);
+	ASSERT_EQ(user_len, 1);
+	ASSERT_EQ(method_len, 1);
+	return TEST_PASS;
+}
+
+/* ================================================================
  * Test table and main
  * ================================================================ */
 
@@ -6835,6 +6971,15 @@ static struct dssh_test_entry tests[] = {
 	{ "auth/client/pk_send_fail",            test_client_publickey_send_fail },
 	{ "auth/client/pk_recv_fail",            test_client_publickey_recv_fail },
 	{ "auth/client/pk_banner",               test_client_publickey_banner },
+
+	/* Direct parse_userauth_prefix unit tests */
+	{ "parse/prefix_empty",                  test_parse_prefix_empty },
+	{ "parse/prefix_trunc_username",         test_parse_prefix_trunc_username },
+	{ "parse/prefix_no_service",             test_parse_prefix_no_service },
+	{ "parse/prefix_trunc_service",          test_parse_prefix_trunc_service },
+	{ "parse/prefix_no_method",              test_parse_prefix_no_method },
+	{ "parse/prefix_trunc_method",           test_parse_prefix_trunc_method },
+	{ "parse/prefix_valid",                  test_parse_prefix_valid },
 };
 
 DSSH_TEST_MAIN(tests)
