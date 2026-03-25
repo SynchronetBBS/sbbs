@@ -107,7 +107,7 @@ endif
 
 ifndef WITHOUT_WAYLAND
  ifndef win
-  ifeq ($(shell pkg-config wayland-client --exists 2>/dev/null && echo YES), YES)
+  ifeq ($(shell pkg-config 'wayland-client >= 1.19.91' --exists 2>/dev/null && echo YES), YES)
    WITH_WAYLAND := 1
    CIOLIB-MT_CFLAGS += -DWITH_WAYLAND
    CIOLIB-MT_CFLAGS += $(shell pkg-config wayland-client --cflags-only-I)
