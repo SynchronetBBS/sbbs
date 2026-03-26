@@ -411,13 +411,17 @@ static struct dssh_channel_s *
 
 find_channel(dssh_session sess, uint32_t local_id)
 {
+	/* Lock order: channel_mtx then buf_mtx (hand-over-hand).
+	 * Acquire buf_mtx before releasing channel_mtx so the
+	 * channel cannot be freed between lookup and use. */
 	mtx_lock(&sess->channel_mtx);
 	for (size_t i = 0; i < sess->channel_count; i++) {
 		if (sess->channels[i]->local_id == local_id) {
 			dssh_channel ch = sess->channels[i];
 
+			mtx_lock(&ch->buf_mtx);
 			mtx_unlock(&sess->channel_mtx);
-			return ch;
+			return ch; /* returned with buf_mtx held */
 		}
 	}
 	mtx_unlock(&sess->channel_mtx);
@@ -603,7 +607,7 @@ demux_dispatch(dssh_session sess, uint8_t msg_type,
 	if (ch == NULL)
 		return 0; /* late message for closed channel */
 
-	mtx_lock(&ch->buf_mtx);
+        /* find_channel() returns with buf_mtx held */
 
         /*
          * Setup mode: during session_accept_channel, deliver messages
@@ -645,7 +649,7 @@ demux_dispatch(dssh_session sess, uint8_t msg_type,
 				if (dssh_parse_uint32(&payload[5], payload_len - 5, &dlen) < 4)
 					break;
 				if (9 + dlen > payload_len)
-					dlen = (uint32_t)(payload_len - 9);
+					break;
 
 				const uint8_t *data = &payload[9];
 
@@ -676,7 +680,7 @@ demux_dispatch(dssh_session sess, uint8_t msg_type,
 				if (dssh_parse_uint32(&payload[9], payload_len - 9, &dlen) < 4)
 					break;
 				if (13 + dlen > payload_len)
-					dlen = (uint32_t)(payload_len - 13);
+					break;
 
 				const uint8_t *data = &payload[13];
 
@@ -847,7 +851,7 @@ demux_open_confirmation(dssh_session sess,
 	if (ch == NULL)
 		return 0; /* late message for closed channel */
 
-	mtx_lock(&ch->buf_mtx);
+	/* find_channel() returns with buf_mtx held */
 	if (dssh_parse_uint32(&payload[5], payload_len - 5, &ch->remote_id) < 4
 	    || dssh_parse_uint32(&payload[9], payload_len - 9, &ch->remote_window) < 4
 	    || dssh_parse_uint32(&payload[13], payload_len - 13, &ch->remote_max_packet) < 4) {
@@ -983,7 +987,8 @@ demux_thread_func(void *arg)
 	mtx_unlock(&sess->accept_mtx);
 
         /* During termination wake, all registered channels have
-         * initialized buffers (chan_type is always set). */
+         * initialized buffers (chan_type is always set).
+         * Lock order: channel_mtx then buf_mtx. */
 	mtx_lock(&sess->channel_mtx);
 	for (size_t i = 0; i < sess->channel_count; i++) {
 		dssh_channel ch = sess->channels[i];

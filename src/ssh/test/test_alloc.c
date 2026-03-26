@@ -561,7 +561,8 @@ test_alloc_auth_publickey(void)
 /*
  * Server-side: send_passwd_changereq has a malloc.
  * send_pk_ok has a malloc.
- * send_auth_failure is stack-only (no malloc).
+ * send_auth_failure has a malloc (dynamic buffer).
+ * SERVICE_ACCEPT has a malloc (dynamic buffer).
  *
  * We test send_passwd_changereq by having the password callback
  * return DSSH_AUTH_CHANGE_PASSWORD, then failing the malloc inside
@@ -630,15 +631,12 @@ test_alloc_send_passwd_changereq(void)
 	sa.ctx = &ctx;
 	sa.cbs.methods_str = "password";
 	sa.cbs.password_cb = changereq_password_cb;
-	/* We need to find the right N.  The server auth loop does:
-	 * 0: malloc in SERVICE_ACCEPT? No, that's stack.
-	 * The first malloc inside the loop is the prompt from our
-	 * callback, then send_passwd_changereq does its malloc.
-	 * Let's fail at 0 — which will be the callback's prompt malloc.
-	 * Then at 1 — which will be the CHANGEREQ message malloc.
-	 * We want to fail the CHANGEREQ message, so try N=1.
-	 * But the exact N depends on the code path. Let's iterate. */
-	sa.fail_at = 0;
+	/* Malloc sequence inside dssh_auth_server for this path:
+	 * 0: SERVICE_ACCEPT buffer
+	 * 1: callback's prompt malloc (changereq_password_cb)
+	 * 2: send_passwd_changereq message buffer
+	 * Fail at 1 to hit the callback's prompt malloc. */
+	sa.fail_at = 1;
 
 	thrd_t st;
 	ASSERT_TRUE(thrd_create(&st, changereq_server_thread, &sa) == thrd_success);
@@ -747,7 +745,7 @@ test_alloc_send_pk_ok(void)
 	sa.ctx = &ctx;
 	sa.cbs.methods_str = "publickey";
 	sa.cbs.publickey_cb = pk_ok_publickey_cb;
-	sa.fail_at = 0;  /* fail the first alloc in the auth loop */
+	sa.fail_at = 1;  /* fail the first alloc in the auth loop (after SERVICE_ACCEPT) */
 
 	/* Get the public key blob BEFORE starting the server thread,
 	 * since the server thread arms the process-wide allocator and

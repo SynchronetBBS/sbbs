@@ -1200,6 +1200,10 @@ kexinit_fail:
          * (ASCII codes 32 or less) or DEL.  Reject violations. */
 	uint8_t *pk = sess->trans.peer_kexinit;
 	size_t   pk_len = sess->trans.peer_kexinit_sz;
+
+	if (pk_len < 1 + DSSH_KEXINIT_COOKIE_SIZE)
+		return DSSH_ERROR_PARSE;
+
 	size_t   ppos = 1 + DSSH_KEXINIT_COOKIE_SIZE;
 	char     peer_lists[DSSH_KEXINIT_NAMELIST_COUNT][DSSH_NAMELIST_BUF_SIZE];
 

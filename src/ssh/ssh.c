@@ -25,6 +25,7 @@ dssh_session_set_terminate(dssh_session sess)
 		cnd_broadcast(&sess->accept_cnd);
 		mtx_unlock(&sess->accept_mtx);
 
+		/* Lock order: channel_mtx then buf_mtx. */
 		mtx_lock(&sess->channel_mtx);
 		for (size_t i = 0; i < sess->channel_count; i++) {
 			dssh_channel ch = sess->channels[i];

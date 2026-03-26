@@ -124,7 +124,8 @@ struct dssh_channel_s {
 	    uint32_t wpx, uint32_t hpx, void *cbdata);
 	void    *window_change_cbdata;
 
-        /* C11 synchronization (platform-dependent size) */
+        /* C11 synchronization (platform-dependent size).
+         * Lock order: channel_mtx then buf_mtx (never reversed). */
 	mtx_t    buf_mtx;
 	cnd_t    poll_cnd;
 
@@ -195,7 +196,8 @@ struct dssh_session_s {
         /* Incoming channel open queue */
 	struct dssh_accept_queue      accept_queue;
 
-        /* C11 synchronization (platform-dependent size) */
+        /* C11 synchronization (platform-dependent size).
+         * Lock order: channel_mtx then buf_mtx (never reversed). */
 	mtx_t                         mtx;
 	mtx_t                         channel_mtx;
 	mtx_t                         accept_mtx;

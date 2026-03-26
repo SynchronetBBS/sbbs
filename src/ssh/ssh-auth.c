@@ -69,22 +69,31 @@ send_auth_failure(dssh_session sess, const char *methods, bool partial_success)
 	if (ret < 0)
 		return ret;
 
-	size_t  mlen = strlen(methods);
+	size_t mlen = strlen(methods);
 
-	if (mlen > UINT32_MAX)
+	if (mlen > UINT32_MAX || mlen > SIZE_MAX - 6)
 		return DSSH_ERROR_INVALID;
 
-	uint8_t msg[256];
-	size_t  pos = 0;
+	size_t   msg_len = 1 + 4 + mlen + 1;
+	uint8_t *msg = malloc(msg_len);
+
+	if (msg == NULL)
+		return DSSH_ERROR_ALLOC;
+
+	size_t pos = 0;
 
 	msg[pos++] = SSH_MSG_USERAUTH_FAILURE;
-	ret = dssh_serialize_uint32((uint32_t)mlen, msg, sizeof(msg), &pos);
+	ret = dssh_serialize_uint32((uint32_t)mlen, msg, msg_len, &pos);
 	if (ret < 0)
-		return ret;
+		goto done;
 	memcpy(&msg[pos], methods, mlen);
 	pos += mlen;
 	msg[pos++] = partial_success ? 1 : 0;
-	return dssh_transport_send_packet(sess, msg, pos, NULL);
+	ret = dssh_transport_send_packet(sess, msg, pos, NULL);
+
+done:
+	free(msg);
+	return ret;
 }
 
 static int
@@ -382,23 +391,41 @@ auth_server_impl(dssh_session sess,
 
         /* Send SERVICE_ACCEPT (echo back the service name) */
 	{
-		uint8_t accept[64];
-		size_t  pos = 0;
+		size_t   accept_len = 1;
+		uint32_t slen = 0;
+		bool     have_name = false;
 
-		accept[pos++] = SSH_MSG_SERVICE_ACCEPT;
 		if (payload_len > 5) {
-			uint32_t slen;
-
 			pv = dssh_parse_uint32(&payload[1], payload_len - 1, &slen);
 			if (pv >= 4 && 5 + slen <= payload_len) {
-				res = dssh_serialize_uint32(slen, accept, sizeof(accept), &pos);
-				if (res < 0)
-					return res;
-				memcpy(&accept[pos], &payload[5], slen);
-				pos += slen;
+				#if SIZE_MAX < UINT32_MAX + 5ULL
+				if (slen > SIZE_MAX - 5)
+					return DSSH_ERROR_INVALID;
+			#endif
+				accept_len = 1 + 4 + slen;
+				have_name = true;
 			}
 		}
+
+		uint8_t *accept = malloc(accept_len);
+
+		if (accept == NULL)
+			return DSSH_ERROR_ALLOC;
+
+		size_t pos = 0;
+
+		accept[pos++] = SSH_MSG_SERVICE_ACCEPT;
+		if (have_name) {
+			res = dssh_serialize_uint32(slen, accept, accept_len, &pos);
+			if (res < 0) {
+				free(accept);
+				return res;
+			}
+			memcpy(&accept[pos], &payload[5], slen);
+			pos += slen;
+		}
 		res = dssh_transport_send_packet(sess, accept, pos, NULL);
+		free(accept);
 		if (res < 0)
 			return res;
 	}
