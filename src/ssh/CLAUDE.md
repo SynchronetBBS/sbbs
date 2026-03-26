@@ -156,7 +156,8 @@ but the API enables conformance.
   size_t safe = (size_t)val;
   ```
 - **Overflow check before arithmetic**: `if (a > TYPE_MAX - b) return err;`
-  before `a + b`
+  before `a + b`.  Every `size_t` sum used as a malloc size is checked.
+  Cumulative counters use saturating adds.
 - **Use initializer if narrowed value used more than once**; single use
   with a prior range check can stay inline
 - **`DSSH_STRLEN(lit)`** macro in `ssh-internal.h` for
