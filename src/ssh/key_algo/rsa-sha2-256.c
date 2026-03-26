@@ -351,7 +351,7 @@ cleanup(dssh_key_algo_ctx *ctx)
 }
 
 DSSH_PUBLIC int
-rsa_sha2_256_load_key_file(const char *path, pem_password_cb *pw_cb,
+dssh_rsa_sha2_256_load_key_file(const char *path, pem_password_cb *pw_cb,
     void *pw_cbdata)
 {
 	FILE *fp = fopen(path, "r");
@@ -394,7 +394,7 @@ rsa_sha2_256_load_key_file(const char *path, pem_password_cb *pw_cb,
 }
 
 DSSH_PUBLIC int
-rsa_sha2_256_save_key_file(const char *path, pem_password_cb *pw_cb,
+dssh_rsa_sha2_256_save_key_file(const char *path, pem_password_cb *pw_cb,
     void *pw_cbdata)
 {
 #ifdef DSSH_TESTING
@@ -428,7 +428,7 @@ rsa_sha2_256_save_key_file(const char *path, pem_password_cb *pw_cb,
 }
 
 DSSH_PUBLIC int64_t
-rsa_sha2_256_get_pub_str(char *buf, size_t bufsz)
+dssh_rsa_sha2_256_get_pub_str(char *buf, size_t bufsz)
 {
 	uint8_t blob[2048];
 	size_t blob_len;
@@ -454,16 +454,16 @@ rsa_sha2_256_get_pub_str(char *buf, size_t bufsz)
 }
 
 DSSH_PUBLIC int
-rsa_sha2_256_save_pub_file(const char *path)
+dssh_rsa_sha2_256_save_pub_file(const char *path)
 {
 	char *str = NULL;
-	int64_t len = rsa_sha2_256_get_pub_str(NULL, 0);
+	int64_t len = dssh_rsa_sha2_256_get_pub_str(NULL, 0);
 	if (len < 0)
 		return (int)len;
 	str = malloc((size_t)len);
 	if (str == NULL)
 		return DSSH_ERROR_ALLOC;
-	int64_t res = rsa_sha2_256_get_pub_str(str, (size_t)len);
+	int64_t res = dssh_rsa_sha2_256_get_pub_str(str, (size_t)len);
 	if (res < 0) {
 		free(str);
 		return (int)res;
@@ -482,7 +482,7 @@ rsa_sha2_256_save_pub_file(const char *path)
 }
 
 DSSH_PUBLIC int
-rsa_sha2_256_generate_key(unsigned int bits)
+dssh_rsa_sha2_256_generate_key(unsigned int bits)
 {
 	EVP_PKEY *pkey = NULL;
 	EVP_PKEY_CTX *pctx = EVP_PKEY_CTX_new_from_name(NULL, "RSA", NULL);
@@ -527,7 +527,7 @@ rsa_sha2_256_generate_key(unsigned int bits)
 }
 
 DSSH_PUBLIC int
-register_rsa_sha2_256(void)
+dssh_register_rsa_sha2_256(void)
 {
 	struct dssh_key_algo_s *ka = malloc(sizeof(*ka) + RSA_SHA2_256_NAME_LEN + 1);
 	if (ka == NULL)

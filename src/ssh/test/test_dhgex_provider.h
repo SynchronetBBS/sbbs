@@ -127,14 +127,14 @@ test_register_key_algos(void)
 {
 	int res;
 	if (test_using_rsa()) {
-		res = register_rsa_sha2_256();
+		res = dssh_register_rsa_sha2_256();
 		if (res < 0) return res;
-		res = register_ssh_ed25519();
+		res = dssh_register_ssh_ed25519();
 	}
 	else {
-		res = register_ssh_ed25519();
+		res = dssh_register_ssh_ed25519();
 		if (res < 0) return res;
-		res = register_rsa_sha2_256();
+		res = dssh_register_rsa_sha2_256();
 	}
 	return res;
 }
@@ -161,29 +161,29 @@ test_generate_host_key(void)
 			FILE *fp = fopen(keyfile, "r");
 			if (fp != NULL) {
 				fclose(fp);
-				return rsa_sha2_256_load_key_file(keyfile,
+				return dssh_rsa_sha2_256_load_key_file(keyfile,
 				    NULL, NULL);
 			}
-			int res = rsa_sha2_256_generate_key(2048);
+			int res = dssh_rsa_sha2_256_generate_key(2048);
 			if (res < 0) return res;
-			return rsa_sha2_256_save_key_file(keyfile,
+			return dssh_rsa_sha2_256_save_key_file(keyfile,
 			    NULL, NULL);
 		}
-		return rsa_sha2_256_generate_key(2048);
+		return dssh_rsa_sha2_256_generate_key(2048);
 	}
 	keyfile = getenv("DSSH_TEST_ED25519_KEY");
 	if (keyfile != NULL) {
 		FILE *fp = fopen(keyfile, "r");
 		if (fp != NULL) {
 			fclose(fp);
-			return ssh_ed25519_load_key_file(keyfile,
+			return dssh_ed25519_load_key_file(keyfile,
 			    NULL, NULL);
 		}
-		int res = ssh_ed25519_generate_key();
+		int res = dssh_ed25519_generate_key();
 		if (res < 0) return res;
-		return ssh_ed25519_save_key_file(keyfile, NULL, NULL);
+		return dssh_ed25519_save_key_file(keyfile, NULL, NULL);
 	}
-	return ssh_ed25519_generate_key();
+	return dssh_ed25519_generate_key();
 }
 
 /*

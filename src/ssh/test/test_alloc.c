@@ -50,17 +50,17 @@ register_all(void)
 {
 	int res;
 	if (test_using_dhgex())
-		res = register_dh_gex_sha256();
+		res = dssh_register_dh_gex_sha256();
 	else
-		res = register_curve25519_sha256();
+		res = dssh_register_curve25519_sha256();
 	if (res < 0) return res;
 	res = test_register_key_algos();
 	if (res < 0) return res;
-	res = register_aes256_ctr();
+	res = dssh_register_aes256_ctr();
 	if (res < 0) return res;
-	res = register_hmac_sha2_256();
+	res = dssh_register_hmac_sha2_256();
 	if (res < 0) return res;
-	res = register_none_comp();
+	res = dssh_register_none_comp();
 	if (res < 0) return res;
 	return 0;
 }
@@ -77,12 +77,12 @@ test_alloc_register_curve25519(void)
 {
 	dssh_test_reset_global_config();
 	mock_alloc_fail_after(0);
-	int res = register_curve25519_sha256();
+	int res = dssh_register_curve25519_sha256();
 	mock_alloc_reset();
 	ASSERT_EQ(res, DSSH_ERROR_ALLOC);
 
 	/* Now succeed */
-	res = register_curve25519_sha256();
+	res = dssh_register_curve25519_sha256();
 	ASSERT_EQ(res, 0);
 	dssh_test_reset_global_config();
 	return TEST_PASS;
@@ -93,11 +93,11 @@ test_alloc_register_ed25519(void)
 {
 	dssh_test_reset_global_config();
 	mock_alloc_fail_after(0);
-	int res = register_ssh_ed25519();
+	int res = dssh_register_ssh_ed25519();
 	mock_alloc_reset();
 	ASSERT_EQ(res, DSSH_ERROR_ALLOC);
 
-	res = register_ssh_ed25519();
+	res = dssh_register_ssh_ed25519();
 	ASSERT_EQ(res, 0);
 	dssh_test_reset_global_config();
 	return TEST_PASS;
@@ -108,11 +108,11 @@ test_alloc_register_rsa(void)
 {
 	dssh_test_reset_global_config();
 	mock_alloc_fail_after(0);
-	int res = register_rsa_sha2_256();
+	int res = dssh_register_rsa_sha2_256();
 	mock_alloc_reset();
 	ASSERT_EQ(res, DSSH_ERROR_ALLOC);
 
-	res = register_rsa_sha2_256();
+	res = dssh_register_rsa_sha2_256();
 	ASSERT_EQ(res, 0);
 	dssh_test_reset_global_config();
 	return TEST_PASS;
@@ -123,11 +123,11 @@ test_alloc_register_aes256ctr(void)
 {
 	dssh_test_reset_global_config();
 	mock_alloc_fail_after(0);
-	int res = register_aes256_ctr();
+	int res = dssh_register_aes256_ctr();
 	mock_alloc_reset();
 	ASSERT_EQ(res, DSSH_ERROR_ALLOC);
 
-	res = register_aes256_ctr();
+	res = dssh_register_aes256_ctr();
 	ASSERT_EQ(res, 0);
 	dssh_test_reset_global_config();
 	return TEST_PASS;
@@ -138,11 +138,11 @@ test_alloc_register_hmac_sha2_256(void)
 {
 	dssh_test_reset_global_config();
 	mock_alloc_fail_after(0);
-	int res = register_hmac_sha2_256();
+	int res = dssh_register_hmac_sha2_256();
 	mock_alloc_reset();
 	ASSERT_EQ(res, DSSH_ERROR_ALLOC);
 
-	res = register_hmac_sha2_256();
+	res = dssh_register_hmac_sha2_256();
 	ASSERT_EQ(res, 0);
 	dssh_test_reset_global_config();
 	return TEST_PASS;
@@ -153,11 +153,11 @@ test_alloc_register_none_comp(void)
 {
 	dssh_test_reset_global_config();
 	mock_alloc_fail_after(0);
-	int res = register_none_comp();
+	int res = dssh_register_none_comp();
 	mock_alloc_reset();
 	ASSERT_EQ(res, DSSH_ERROR_ALLOC);
 
-	res = register_none_comp();
+	res = dssh_register_none_comp();
 	ASSERT_EQ(res, 0);
 	dssh_test_reset_global_config();
 	return TEST_PASS;
@@ -168,11 +168,11 @@ test_alloc_register_none_enc(void)
 {
 	dssh_test_reset_global_config();
 	mock_alloc_fail_after(0);
-	int res = register_none_enc();
+	int res = dssh_register_none_enc();
 	mock_alloc_reset();
 	ASSERT_EQ(res, DSSH_ERROR_ALLOC);
 
-	res = register_none_enc();
+	res = dssh_register_none_enc();
 	ASSERT_EQ(res, 0);
 	dssh_test_reset_global_config();
 	return TEST_PASS;
@@ -183,11 +183,11 @@ test_alloc_register_none_mac(void)
 {
 	dssh_test_reset_global_config();
 	mock_alloc_fail_after(0);
-	int res = register_none_mac();
+	int res = dssh_register_none_mac();
 	mock_alloc_reset();
 	ASSERT_EQ(res, DSSH_ERROR_ALLOC);
 
-	res = register_none_mac();
+	res = dssh_register_none_mac();
 	ASSERT_EQ(res, 0);
 	dssh_test_reset_global_config();
 	return TEST_PASS;
@@ -198,11 +198,11 @@ test_alloc_register_dh_gex(void)
 {
 	dssh_test_reset_global_config();
 	mock_alloc_fail_after(0);
-	int res = register_dh_gex_sha256();
+	int res = dssh_register_dh_gex_sha256();
 	mock_alloc_reset();
 	ASSERT_EQ(res, DSSH_ERROR_ALLOC);
 
-	res = register_dh_gex_sha256();
+	res = dssh_register_dh_gex_sha256();
 	ASSERT_EQ(res, 0);
 	dssh_test_reset_global_config();
 	return TEST_PASS;
@@ -1713,9 +1713,9 @@ test_ossl_keygen_iterate(void)
 		dssh_test_ossl_fail_after(n);
 
 		if (is_rsa)
-			res = rsa_sha2_256_generate_key(2048);
+			res = dssh_rsa_sha2_256_generate_key(2048);
 		else
-			res = ssh_ed25519_generate_key();
+			res = dssh_ed25519_generate_key();
 
 		int cur_count = dssh_test_ossl_count();
 		dssh_test_ossl_reset();
@@ -1752,7 +1752,7 @@ test_ossl_enc_iterate(void)
 		dssh_test_ossl_reset();
 		mock_alloc_reset();
 
-		ASSERT_EQ(register_aes256_ctr(), 0);
+		ASSERT_EQ(dssh_register_aes256_ctr(), 0);
 
 		dssh_enc enc = gconf.enc_head;
 		if (enc == NULL)
@@ -1810,7 +1810,7 @@ test_ossl_mac_iterate(void)
 		dssh_test_ossl_reset();
 		mock_alloc_reset();
 
-		ASSERT_EQ(register_hmac_sha2_256(), 0);
+		ASSERT_EQ(dssh_register_hmac_sha2_256(), 0);
 
 		dssh_mac mac = gconf.mac_head;
 		if (mac == NULL)
@@ -2695,15 +2695,15 @@ c25519_client_parse_test(int (*server_thread)(void *),
 	dssh_test_ossl_reset();
 	mock_alloc_reset();
 
-	if (register_curve25519_sha256() < 0)
+	if (dssh_register_curve25519_sha256() < 0)
 		return TEST_FAIL;
 	if (test_register_key_algos() < 0)
 		return TEST_FAIL;
-	if (register_aes256_ctr() < 0)
+	if (dssh_register_aes256_ctr() < 0)
 		return TEST_FAIL;
-	if (register_hmac_sha2_256() < 0)
+	if (dssh_register_hmac_sha2_256() < 0)
 		return TEST_FAIL;
-	if (register_none_comp() < 0)
+	if (dssh_register_none_comp() < 0)
 		return TEST_FAIL;
 	if (test_generate_host_key() < 0)
 		return TEST_FAIL;
@@ -3569,9 +3569,9 @@ static struct dssh_test_entry tests[] = {
 	{ "alloc/register_rsa",           test_alloc_register_rsa },
 	{ "alloc/register_aes256ctr",     test_alloc_register_aes256ctr },
 	{ "alloc/register_hmac_sha256",   test_alloc_register_hmac_sha2_256 },
-	{ "alloc/register_none_comp",     test_alloc_register_none_comp },
-	{ "alloc/register_none_enc",      test_alloc_register_none_enc },
-	{ "alloc/register_none_mac",      test_alloc_register_none_mac },
+	{ "alloc/dssh_register_none_comp",     test_alloc_register_none_comp },
+	{ "alloc/dssh_register_none_enc",      test_alloc_register_none_enc },
+	{ "alloc/dssh_register_none_mac",      test_alloc_register_none_mac },
 	{ "alloc/register_dh_gex",        test_alloc_register_dh_gex },
 
 	/* Session init */

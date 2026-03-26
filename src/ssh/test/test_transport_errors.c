@@ -64,15 +64,15 @@ static int
 register_test_algorithms(void)
 {
 	int res;
-	res = register_curve25519_sha256();
+	res = dssh_register_curve25519_sha256();
 	if (res < 0) return res;
-	res = register_ssh_ed25519();
+	res = dssh_register_ssh_ed25519();
 	if (res < 0) return res;
 	res = register_test_enc();
 	if (res < 0) return res;
 	res = register_test_mac();
 	if (res < 0) return res;
-	res = register_none_comp();
+	res = dssh_register_none_comp();
 	if (res < 0) return res;
 	return 0;
 }
@@ -106,7 +106,7 @@ handshake_setup(struct handshake_ctx *ctx)
 
 	if (register_test_algorithms() < 0)
 		return -1;
-	if (ssh_ed25519_generate_key() < 0)
+	if (dssh_ed25519_generate_key() < 0)
 		return -1;
 	if (mock_io_init(&ctx->io, 0) < 0)
 		return -1;
@@ -394,7 +394,7 @@ test_newkeys_enc_init_failure(void)
 
 	if (register_test_algorithms() < 0)
 		return TEST_FAIL;
-	if (ssh_ed25519_generate_key() < 0)
+	if (dssh_ed25519_generate_key() < 0)
 		return TEST_FAIL;
 
 	struct mock_io_state io;
@@ -459,7 +459,7 @@ test_newkeys_mac_init_failure(void)
 
 	if (register_test_algorithms() < 0)
 		return TEST_FAIL;
-	if (ssh_ed25519_generate_key() < 0)
+	if (dssh_ed25519_generate_key() < 0)
 		return TEST_FAIL;
 
 	struct mock_io_state io;
@@ -554,15 +554,15 @@ static int
 register_oversized_algorithms(void)
 {
 	int res;
-	res = register_curve25519_sha256();
+	res = dssh_register_curve25519_sha256();
 	if (res < 0) return res;
-	res = register_ssh_ed25519();
+	res = dssh_register_ssh_ed25519();
 	if (res < 0) return res;
 	res = register_test_enc();
 	if (res < 0) return res;
 	res = register_test_mac_oversized();
 	if (res < 0) return res;
-	res = register_none_comp();
+	res = dssh_register_none_comp();
 	if (res < 0) return res;
 	return 0;
 }
@@ -578,7 +578,7 @@ test_recv_mac_too_large(void)
 		dssh_test_reset_global_config();
 		return TEST_FAIL;
 	}
-	if (ssh_ed25519_generate_key() < 0) {
+	if (dssh_ed25519_generate_key() < 0) {
 		dssh_test_reset_global_config();
 		return TEST_FAIL;
 	}
@@ -662,7 +662,7 @@ test_send_mac_overflow_rejected(void)
 		dssh_test_reset_global_config();
 		return TEST_FAIL;
 	}
-	if (ssh_ed25519_generate_key() < 0) {
+	if (dssh_ed25519_generate_key() < 0) {
 		dssh_test_reset_global_config();
 		return TEST_FAIL;
 	}

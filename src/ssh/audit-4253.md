@@ -334,7 +334,7 @@ Interoperability with all modern implementations is achieved via
 > The `none` algorithm specifies that no encryption is to be done [...]
 > it is **NOT RECOMMENDED**.
 
-**CONFORMS** — The library provides `register_none_enc()` but does not
+**CONFORMS** — The library provides `dssh_register_none_enc()` but does not
 register it by default.  The application must explicitly opt in.
 
 ### 6.3-10

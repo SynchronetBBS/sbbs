@@ -31,8 +31,8 @@ implementations.
 ### 4.1-1
 > Each server host **SHOULD** have a host key.
 
-**APPLICATION** — The library provides `ssh_ed25519_generate_key()` and
-`ssh_ed25519_load_key_file()` for host key provisioning.  Whether a host
+**APPLICATION** — The library provides `dssh_ed25519_generate_key()` and
+`dssh_ed25519_load_key_file()` for host key provisioning.  Whether a host
 key is present is determined by the server application.  The library will
 fail KEX with `DSSH_ERROR_INIT` if no key is loaded, so the
 application cannot accidentally skip this.
@@ -57,8 +57,8 @@ material on multiple server instances.
 **CONFORMS** — DeuceSSH implements `rsa-sha2-256` (RFC 8332, which
 supersedes the deprecated `ssh-rsa` SHA-1 algorithm) with full
 sign/verify/pubkey support, and `ssh-ed25519`.  Both can be used as
-server host key algorithms.  `rsa_sha2_256_load_key_file()` and
-`rsa_sha2_256_generate_key()` provide server-side key management.
+server host key algorithms.  `dssh_rsa_sha2_256_load_key_file()` and
+`dssh_rsa_sha2_256_generate_key()` provide server-side key management.
 The original `ssh-rsa` (SHA-1 based) is not implemented, but RFC 8332
 explicitly updates RFC 4253 to make `rsa-sha2-256` an acceptable
 replacement.
@@ -516,7 +516,7 @@ application's responsibility.
 > The "none" cipher is provided for debugging and **SHOULD NOT** be used
 > except for that purpose.
 
-**APPLICATION** — The library provides `register_none_enc()`.  Whether
+**APPLICATION** — The library provides `dssh_register_none_enc()`.  Whether
 it is registered is the application's choice.  The library does not
 warn or restrict its use — it is up to the application to only register
 `none` for debugging.
@@ -539,7 +539,7 @@ CBC mode.
 > MAC] for any purpose other than debugging.
 
 **APPLICATION** — Same as 9.3.1-1.  The library provides
-`register_none_mac()`.  The application controls registration.
+`dssh_register_none_mac()`.  The application controls registration.
 
 ### 9.3.2-2
 > Users and administrators **SHOULD** be explicitly warned anytime the

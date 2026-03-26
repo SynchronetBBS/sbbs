@@ -67,7 +67,7 @@ dssh_session
 ```c
 /* 1. Transport setup (unchanged) */
 dssh_transport_set_callbacks(tx, rx, rxline, NULL);
-register_curve25519_sha256();
+dssh_register_curve25519_sha256();
 /* ... register algorithms ... */
 
 dssh_session sess;

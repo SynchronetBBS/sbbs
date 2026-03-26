@@ -22,7 +22,7 @@ cleanup(dssh_enc_ctx *ctx)
 }
 
 DSSH_PUBLIC int
-register_none_enc(void)
+dssh_register_none_enc(void)
 {
 	static const char  name[] = "none";
 	struct dssh_enc_s *enc = malloc(sizeof(*enc) + sizeof(name));

@@ -96,7 +96,7 @@ cleanup(dssh_mac_ctx *ctx)
 }
 
 DSSH_PUBLIC int
-register_hmac_sha2_256(void)
+dssh_register_hmac_sha2_256(void)
 {
 	static const char  name[] = HMAC_SHA2_256_NAME;
 	struct dssh_mac_s *mac = malloc(sizeof(*mac) + sizeof(name));

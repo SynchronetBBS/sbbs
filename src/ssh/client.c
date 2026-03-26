@@ -269,23 +269,23 @@ main(int argc, char **argv)
         /* Register algorithms */
 	if (dssh_transport_set_callbacks(tx, rx, rxline, extra_line) != 0)
 		return 1;
-	if (register_curve25519_sha256() != 0)
+	if (dssh_register_curve25519_sha256() != 0)
 		return 1;
-	if (register_dh_gex_sha256() != 0)
+	if (dssh_register_dh_gex_sha256() != 0)
 		return 1;
-	if (register_rsa_sha2_256() != 0)
+	if (dssh_register_rsa_sha2_256() != 0)
 		return 1;
-	if (register_ssh_ed25519() != 0)
+	if (dssh_register_ssh_ed25519() != 0)
 		return 1;
-	if (register_aes256_ctr() != 0)
+	if (dssh_register_aes256_ctr() != 0)
 		return 1;
-	if (register_none_enc() != 0)
+	if (dssh_register_none_enc() != 0)
 		return 1;
-	if (register_hmac_sha2_256() != 0)
+	if (dssh_register_hmac_sha2_256() != 0)
 		return 1;
-	if (register_none_mac() != 0)
+	if (dssh_register_none_mac() != 0)
 		return 1;
-	if (register_none_comp() != 0)
+	if (dssh_register_none_comp() != 0)
 		return 1;
 
         /* Initialize session */

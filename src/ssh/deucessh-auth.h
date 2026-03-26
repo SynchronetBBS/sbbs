@@ -206,8 +206,8 @@ DSSH_PUBLIC int dssh_auth_server(dssh_session sess,
  * ================================================================ */
 /*
  * Authenticate with a public key (RFC 4252 s7).
- * Uses the key loaded via ssh_ed25519_load_key_file(),
- * rsa_sha2_256_load_key_file(), etc., on the registered algorithm entry.
+ * Uses the key loaded via dssh_ed25519_load_key_file(),
+ * dssh_rsa_sha2_256_load_key_file(), etc., on the registered algorithm entry.
  * The algo_name must match a registered key algorithm that has a key
  * loaded (e.g., "ssh-ed25519", "rsa-sha2-256").
  * Returns 0 on success, negative on failure or rejection.

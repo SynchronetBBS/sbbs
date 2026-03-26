@@ -81,7 +81,7 @@ cleanup(dssh_enc_ctx *ctx)
 }
 
 DSSH_PUBLIC int
-register_aes256_ctr(void)
+dssh_register_aes256_ctr(void)
 {
 	static const char  name[] = AES256_CTR_NAME;
 	struct dssh_enc_s *enc = malloc(sizeof(*enc) + sizeof(name));

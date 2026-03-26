@@ -44,7 +44,7 @@ static int
 test_ed25519_register(void)
 {
 	dssh_test_reset_global_config();
-	ASSERT_EQ(register_ssh_ed25519(), 0);
+	ASSERT_EQ(dssh_register_ssh_ed25519(), 0);
 	return TEST_PASS;
 }
 
@@ -52,8 +52,8 @@ static int
 test_ed25519_generate_key(void)
 {
 	dssh_test_reset_global_config();
-	ASSERT_EQ(register_ssh_ed25519(), 0);
-	ASSERT_EQ(ssh_ed25519_generate_key(), 0);
+	ASSERT_EQ(dssh_register_ssh_ed25519(), 0);
+	ASSERT_EQ(dssh_ed25519_generate_key(), 0);
 	return TEST_PASS;
 }
 
@@ -61,8 +61,8 @@ static int
 test_ed25519_haskey_after_generate(void)
 {
 	dssh_test_reset_global_config();
-	ASSERT_EQ(register_ssh_ed25519(), 0);
-	ASSERT_EQ(ssh_ed25519_generate_key(), 0);
+	ASSERT_EQ(dssh_register_ssh_ed25519(), 0);
+	ASSERT_EQ(dssh_ed25519_generate_key(), 0);
 
 	dssh_key_algo ka = dssh_transport_find_key_algo("ssh-ed25519");
 	ASSERT_NOT_NULL(ka);
@@ -74,7 +74,7 @@ static int
 test_ed25519_no_key_before_generate(void)
 {
 	dssh_test_reset_global_config();
-	ASSERT_EQ(register_ssh_ed25519(), 0);
+	ASSERT_EQ(dssh_register_ssh_ed25519(), 0);
 
 	dssh_key_algo ka = dssh_transport_find_key_algo("ssh-ed25519");
 	ASSERT_NOT_NULL(ka);
@@ -86,8 +86,8 @@ static int
 test_ed25519_sign_verify_roundtrip(void)
 {
 	dssh_test_reset_global_config();
-	ASSERT_EQ(register_ssh_ed25519(), 0);
-	ASSERT_EQ(ssh_ed25519_generate_key(), 0);
+	ASSERT_EQ(dssh_register_ssh_ed25519(), 0);
+	ASSERT_EQ(dssh_ed25519_generate_key(), 0);
 
 	dssh_key_algo ka = dssh_transport_find_key_algo("ssh-ed25519");
 	ASSERT_NOT_NULL(ka);
@@ -118,8 +118,8 @@ static int
 test_ed25519_verify_corrupted_sig(void)
 {
 	dssh_test_reset_global_config();
-	ASSERT_EQ(register_ssh_ed25519(), 0);
-	ASSERT_EQ(ssh_ed25519_generate_key(), 0);
+	ASSERT_EQ(dssh_register_ssh_ed25519(), 0);
+	ASSERT_EQ(dssh_ed25519_generate_key(), 0);
 
 	dssh_key_algo ka = dssh_transport_find_key_algo("ssh-ed25519");
 	ASSERT_NOT_NULL(ka);
@@ -149,8 +149,8 @@ static int
 test_ed25519_verify_different_data(void)
 {
 	dssh_test_reset_global_config();
-	ASSERT_EQ(register_ssh_ed25519(), 0);
-	ASSERT_EQ(ssh_ed25519_generate_key(), 0);
+	ASSERT_EQ(dssh_register_ssh_ed25519(), 0);
+	ASSERT_EQ(dssh_ed25519_generate_key(), 0);
 
 	dssh_key_algo ka = dssh_transport_find_key_algo("ssh-ed25519");
 	ASSERT_NOT_NULL(ka);
@@ -177,11 +177,11 @@ static int
 test_ed25519_get_pub_str_format(void)
 {
 	dssh_test_reset_global_config();
-	ASSERT_EQ(register_ssh_ed25519(), 0);
-	ASSERT_EQ(ssh_ed25519_generate_key(), 0);
+	ASSERT_EQ(dssh_register_ssh_ed25519(), 0);
+	ASSERT_EQ(dssh_ed25519_generate_key(), 0);
 
 	char buf[256];
-	int64_t len = ssh_ed25519_get_pub_str(buf, sizeof(buf));
+	int64_t len = dssh_ed25519_get_pub_str(buf, sizeof(buf));
 	ASSERT_TRUE(len > 0);
 
 	/* Must start with "ssh-ed25519 " */
@@ -201,16 +201,16 @@ static int
 test_ed25519_get_pub_str_size_query(void)
 {
 	dssh_test_reset_global_config();
-	ASSERT_EQ(register_ssh_ed25519(), 0);
-	ASSERT_EQ(ssh_ed25519_generate_key(), 0);
+	ASSERT_EQ(dssh_register_ssh_ed25519(), 0);
+	ASSERT_EQ(dssh_ed25519_generate_key(), 0);
 
 	/* NULL buf returns needed size */
-	int64_t needed = ssh_ed25519_get_pub_str(NULL, 0);
+	int64_t needed = dssh_ed25519_get_pub_str(NULL, 0);
 	ASSERT_TRUE(needed > 0);
 
 	char *buf = malloc((size_t)needed);
 	ASSERT_NOT_NULL(buf);
-	int64_t len = ssh_ed25519_get_pub_str(buf, (size_t)needed);
+	int64_t len = dssh_ed25519_get_pub_str(buf, (size_t)needed);
 	ASSERT_EQ(len, needed);
 	free(buf);
 	return TEST_PASS;
@@ -220,8 +220,8 @@ static int
 test_ed25519_pubkey_blob_format(void)
 {
 	dssh_test_reset_global_config();
-	ASSERT_EQ(register_ssh_ed25519(), 0);
-	ASSERT_EQ(ssh_ed25519_generate_key(), 0);
+	ASSERT_EQ(dssh_register_ssh_ed25519(), 0);
+	ASSERT_EQ(dssh_ed25519_generate_key(), 0);
 
 	dssh_key_algo ka = dssh_transport_find_key_algo("ssh-ed25519");
 	ASSERT_NOT_NULL(ka);
@@ -250,8 +250,8 @@ static int
 test_ed25519_sig_blob_format(void)
 {
 	dssh_test_reset_global_config();
-	ASSERT_EQ(register_ssh_ed25519(), 0);
-	ASSERT_EQ(ssh_ed25519_generate_key(), 0);
+	ASSERT_EQ(dssh_register_ssh_ed25519(), 0);
+	ASSERT_EQ(dssh_ed25519_generate_key(), 0);
 
 	dssh_key_algo ka = dssh_transport_find_key_algo("ssh-ed25519");
 	ASSERT_NOT_NULL(ka);
@@ -282,12 +282,12 @@ static int
 test_ed25519_save_load_roundtrip(void)
 {
 	dssh_test_reset_global_config();
-	ASSERT_EQ(register_ssh_ed25519(), 0);
-	ASSERT_EQ(ssh_ed25519_generate_key(), 0);
+	ASSERT_EQ(dssh_register_ssh_ed25519(), 0);
+	ASSERT_EQ(dssh_ed25519_generate_key(), 0);
 
 	/* Get the original public key */
 	char orig_pub[256];
-	int64_t orig_len = ssh_ed25519_get_pub_str(orig_pub, sizeof(orig_pub));
+	int64_t orig_len = dssh_ed25519_get_pub_str(orig_pub, sizeof(orig_pub));
 	ASSERT_TRUE(orig_len > 0);
 
 	/* Save to temp file */
@@ -296,17 +296,17 @@ test_ed25519_save_load_roundtrip(void)
 	ASSERT_TRUE(fd >= 0);
 	close(fd);
 
-	ASSERT_EQ(ssh_ed25519_save_key_file(tmppath, NULL, NULL), 0);
+	ASSERT_EQ(dssh_ed25519_save_key_file(tmppath, NULL, NULL), 0);
 
 	/* Reset and re-register, then load */
 	dssh_test_reset_global_config();
-	ASSERT_EQ(register_ssh_ed25519(), 0);
-	ASSERT_EQ(ssh_ed25519_load_key_file(tmppath, NULL, NULL), 0);
+	ASSERT_EQ(dssh_register_ssh_ed25519(), 0);
+	ASSERT_EQ(dssh_ed25519_load_key_file(tmppath, NULL, NULL), 0);
 	unlink(tmppath);
 
 	/* Verify the loaded key produces the same public key */
 	char loaded_pub[256];
-	int64_t loaded_len = ssh_ed25519_get_pub_str(loaded_pub, sizeof(loaded_pub));
+	int64_t loaded_len = dssh_ed25519_get_pub_str(loaded_pub, sizeof(loaded_pub));
 	ASSERT_EQ(loaded_len, orig_len);
 	ASSERT_MEM_EQ(orig_pub, loaded_pub, (size_t)orig_len);
 	return TEST_PASS;
@@ -316,15 +316,15 @@ static int
 test_ed25519_save_pub_file(void)
 {
 	dssh_test_reset_global_config();
-	ASSERT_EQ(register_ssh_ed25519(), 0);
-	ASSERT_EQ(ssh_ed25519_generate_key(), 0);
+	ASSERT_EQ(dssh_register_ssh_ed25519(), 0);
+	ASSERT_EQ(dssh_ed25519_generate_key(), 0);
 
 	char tmppath[] = "/tmp/dssh_test_ed25519_pub_XXXXXX";
 	int fd = mkstemp(tmppath);
 	ASSERT_TRUE(fd >= 0);
 	close(fd);
 
-	ASSERT_EQ(ssh_ed25519_save_pub_file(tmppath), 0);
+	ASSERT_EQ(dssh_ed25519_save_pub_file(tmppath), 0);
 
 	/* Read and verify contents start with "ssh-ed25519 " */
 	FILE *fp = fopen(tmppath, "r");
@@ -347,20 +347,20 @@ static int
 test_ed25519_sign_verify_after_load(void)
 {
 	dssh_test_reset_global_config();
-	ASSERT_EQ(register_ssh_ed25519(), 0);
-	ASSERT_EQ(ssh_ed25519_generate_key(), 0);
+	ASSERT_EQ(dssh_register_ssh_ed25519(), 0);
+	ASSERT_EQ(dssh_ed25519_generate_key(), 0);
 
 	char tmppath[] = "/tmp/dssh_test_ed25519_sv_XXXXXX";
 	int fd = mkstemp(tmppath);
 	ASSERT_TRUE(fd >= 0);
 	close(fd);
 
-	ASSERT_EQ(ssh_ed25519_save_key_file(tmppath, NULL, NULL), 0);
+	ASSERT_EQ(dssh_ed25519_save_key_file(tmppath, NULL, NULL), 0);
 
 	/* Reload into fresh registry */
 	dssh_test_reset_global_config();
-	ASSERT_EQ(register_ssh_ed25519(), 0);
-	ASSERT_EQ(ssh_ed25519_load_key_file(tmppath, NULL, NULL), 0);
+	ASSERT_EQ(dssh_register_ssh_ed25519(), 0);
+	ASSERT_EQ(dssh_ed25519_load_key_file(tmppath, NULL, NULL), 0);
 	unlink(tmppath);
 
 	/* Sign and verify with the loaded key */
@@ -390,7 +390,7 @@ static int
 test_rsa_register(void)
 {
 	dssh_test_reset_global_config();
-	ASSERT_EQ(register_rsa_sha2_256(), 0);
+	ASSERT_EQ(dssh_register_rsa_sha2_256(), 0);
 	return TEST_PASS;
 }
 
@@ -398,8 +398,8 @@ static int
 test_rsa_generate_2048(void)
 {
 	dssh_test_reset_global_config();
-	ASSERT_EQ(register_rsa_sha2_256(), 0);
-	ASSERT_EQ(rsa_sha2_256_generate_key(2048), 0);
+	ASSERT_EQ(dssh_register_rsa_sha2_256(), 0);
+	ASSERT_EQ(dssh_rsa_sha2_256_generate_key(2048), 0);
 	return TEST_PASS;
 }
 
@@ -407,8 +407,8 @@ static int
 test_rsa_haskey_after_generate(void)
 {
 	dssh_test_reset_global_config();
-	ASSERT_EQ(register_rsa_sha2_256(), 0);
-	ASSERT_EQ(rsa_sha2_256_generate_key(2048), 0);
+	ASSERT_EQ(dssh_register_rsa_sha2_256(), 0);
+	ASSERT_EQ(dssh_rsa_sha2_256_generate_key(2048), 0);
 
 	dssh_key_algo ka = dssh_transport_find_key_algo("rsa-sha2-256");
 	ASSERT_NOT_NULL(ka);
@@ -420,7 +420,7 @@ static int
 test_rsa_no_key_before_generate(void)
 {
 	dssh_test_reset_global_config();
-	ASSERT_EQ(register_rsa_sha2_256(), 0);
+	ASSERT_EQ(dssh_register_rsa_sha2_256(), 0);
 
 	dssh_key_algo ka = dssh_transport_find_key_algo("rsa-sha2-256");
 	ASSERT_NOT_NULL(ka);
@@ -432,8 +432,8 @@ static int
 test_rsa_sign_verify_roundtrip(void)
 {
 	dssh_test_reset_global_config();
-	ASSERT_EQ(register_rsa_sha2_256(), 0);
-	ASSERT_EQ(rsa_sha2_256_generate_key(2048), 0);
+	ASSERT_EQ(dssh_register_rsa_sha2_256(), 0);
+	ASSERT_EQ(dssh_rsa_sha2_256_generate_key(2048), 0);
 
 	dssh_key_algo ka = dssh_transport_find_key_algo("rsa-sha2-256");
 	ASSERT_NOT_NULL(ka);
@@ -461,8 +461,8 @@ static int
 test_rsa_verify_corrupted_sig(void)
 {
 	dssh_test_reset_global_config();
-	ASSERT_EQ(register_rsa_sha2_256(), 0);
-	ASSERT_EQ(rsa_sha2_256_generate_key(2048), 0);
+	ASSERT_EQ(dssh_register_rsa_sha2_256(), 0);
+	ASSERT_EQ(dssh_rsa_sha2_256_generate_key(2048), 0);
 
 	dssh_key_algo ka = dssh_transport_find_key_algo("rsa-sha2-256");
 	ASSERT_NOT_NULL(ka);
@@ -490,8 +490,8 @@ static int
 test_rsa_verify_different_data(void)
 {
 	dssh_test_reset_global_config();
-	ASSERT_EQ(register_rsa_sha2_256(), 0);
-	ASSERT_EQ(rsa_sha2_256_generate_key(2048), 0);
+	ASSERT_EQ(dssh_register_rsa_sha2_256(), 0);
+	ASSERT_EQ(dssh_rsa_sha2_256_generate_key(2048), 0);
 
 	dssh_key_algo ka = dssh_transport_find_key_algo("rsa-sha2-256");
 	ASSERT_NOT_NULL(ka);
@@ -518,11 +518,11 @@ static int
 test_rsa_get_pub_str_format(void)
 {
 	dssh_test_reset_global_config();
-	ASSERT_EQ(register_rsa_sha2_256(), 0);
-	ASSERT_EQ(rsa_sha2_256_generate_key(2048), 0);
+	ASSERT_EQ(dssh_register_rsa_sha2_256(), 0);
+	ASSERT_EQ(dssh_rsa_sha2_256_generate_key(2048), 0);
 
 	char buf[2048];
-	int64_t len = rsa_sha2_256_get_pub_str(buf, sizeof(buf));
+	int64_t len = dssh_rsa_sha2_256_get_pub_str(buf, sizeof(buf));
 	ASSERT_TRUE(len > 0);
 
 	/* Must start with "ssh-rsa " (wire key type, not algorithm name) */
@@ -542,15 +542,15 @@ static int
 test_rsa_get_pub_str_size_query(void)
 {
 	dssh_test_reset_global_config();
-	ASSERT_EQ(register_rsa_sha2_256(), 0);
-	ASSERT_EQ(rsa_sha2_256_generate_key(2048), 0);
+	ASSERT_EQ(dssh_register_rsa_sha2_256(), 0);
+	ASSERT_EQ(dssh_rsa_sha2_256_generate_key(2048), 0);
 
-	int64_t needed = rsa_sha2_256_get_pub_str(NULL, 0);
+	int64_t needed = dssh_rsa_sha2_256_get_pub_str(NULL, 0);
 	ASSERT_TRUE(needed > 0);
 
 	char *buf = malloc((size_t)needed);
 	ASSERT_NOT_NULL(buf);
-	int64_t len = rsa_sha2_256_get_pub_str(buf, (size_t)needed);
+	int64_t len = dssh_rsa_sha2_256_get_pub_str(buf, (size_t)needed);
 	ASSERT_EQ(len, needed);
 	free(buf);
 	return TEST_PASS;
@@ -560,8 +560,8 @@ static int
 test_rsa_pubkey_blob_format(void)
 {
 	dssh_test_reset_global_config();
-	ASSERT_EQ(register_rsa_sha2_256(), 0);
-	ASSERT_EQ(rsa_sha2_256_generate_key(2048), 0);
+	ASSERT_EQ(dssh_register_rsa_sha2_256(), 0);
+	ASSERT_EQ(dssh_rsa_sha2_256_generate_key(2048), 0);
 
 	dssh_key_algo ka = dssh_transport_find_key_algo("rsa-sha2-256");
 	ASSERT_NOT_NULL(ka);
@@ -605,8 +605,8 @@ static int
 test_rsa_sig_blob_format(void)
 {
 	dssh_test_reset_global_config();
-	ASSERT_EQ(register_rsa_sha2_256(), 0);
-	ASSERT_EQ(rsa_sha2_256_generate_key(2048), 0);
+	ASSERT_EQ(dssh_register_rsa_sha2_256(), 0);
+	ASSERT_EQ(dssh_rsa_sha2_256_generate_key(2048), 0);
 
 	dssh_key_algo ka = dssh_transport_find_key_algo("rsa-sha2-256");
 	ASSERT_NOT_NULL(ka);
@@ -640,35 +640,35 @@ static int
 test_rsa_save_load_roundtrip(void)
 {
 	dssh_test_reset_global_config();
-	ASSERT_EQ(register_rsa_sha2_256(), 0);
-	ASSERT_EQ(rsa_sha2_256_generate_key(2048), 0);
+	ASSERT_EQ(dssh_register_rsa_sha2_256(), 0);
+	ASSERT_EQ(dssh_rsa_sha2_256_generate_key(2048), 0);
 
 	/* Get the original public key string */
-	int64_t needed = rsa_sha2_256_get_pub_str(NULL, 0);
+	int64_t needed = dssh_rsa_sha2_256_get_pub_str(NULL, 0);
 	ASSERT_TRUE(needed > 0);
 	char *orig_pub = malloc((size_t)needed);
 	ASSERT_NOT_NULL(orig_pub);
-	ASSERT_EQ(rsa_sha2_256_get_pub_str(orig_pub, (size_t)needed), needed);
+	ASSERT_EQ(dssh_rsa_sha2_256_get_pub_str(orig_pub, (size_t)needed), needed);
 
 	char tmppath[] = "/tmp/dssh_test_rsa_XXXXXX";
 	int fd = mkstemp(tmppath);
 	ASSERT_TRUE(fd >= 0);
 	close(fd);
 
-	ASSERT_EQ(rsa_sha2_256_save_key_file(tmppath, NULL, NULL), 0);
+	ASSERT_EQ(dssh_rsa_sha2_256_save_key_file(tmppath, NULL, NULL), 0);
 
 	/* Reset and re-register, then load */
 	dssh_test_reset_global_config();
-	ASSERT_EQ(register_rsa_sha2_256(), 0);
-	ASSERT_EQ(rsa_sha2_256_load_key_file(tmppath, NULL, NULL), 0);
+	ASSERT_EQ(dssh_register_rsa_sha2_256(), 0);
+	ASSERT_EQ(dssh_rsa_sha2_256_load_key_file(tmppath, NULL, NULL), 0);
 	unlink(tmppath);
 
 	/* Verify the loaded key produces the same public key */
-	int64_t loaded_needed = rsa_sha2_256_get_pub_str(NULL, 0);
+	int64_t loaded_needed = dssh_rsa_sha2_256_get_pub_str(NULL, 0);
 	ASSERT_EQ(loaded_needed, needed);
 	char *loaded_pub = malloc((size_t)loaded_needed);
 	ASSERT_NOT_NULL(loaded_pub);
-	ASSERT_EQ(rsa_sha2_256_get_pub_str(loaded_pub, (size_t)loaded_needed),
+	ASSERT_EQ(dssh_rsa_sha2_256_get_pub_str(loaded_pub, (size_t)loaded_needed),
 	    loaded_needed);
 
 	ASSERT_MEM_EQ(orig_pub, loaded_pub, (size_t)needed);
@@ -681,15 +681,15 @@ static int
 test_rsa_save_pub_file(void)
 {
 	dssh_test_reset_global_config();
-	ASSERT_EQ(register_rsa_sha2_256(), 0);
-	ASSERT_EQ(rsa_sha2_256_generate_key(2048), 0);
+	ASSERT_EQ(dssh_register_rsa_sha2_256(), 0);
+	ASSERT_EQ(dssh_rsa_sha2_256_generate_key(2048), 0);
 
 	char tmppath[] = "/tmp/dssh_test_rsa_pub_XXXXXX";
 	int fd = mkstemp(tmppath);
 	ASSERT_TRUE(fd >= 0);
 	close(fd);
 
-	ASSERT_EQ(rsa_sha2_256_save_pub_file(tmppath), 0);
+	ASSERT_EQ(dssh_rsa_sha2_256_save_pub_file(tmppath), 0);
 
 	FILE *fp = fopen(tmppath, "r");
 	ASSERT_NOT_NULL(fp);
@@ -712,8 +712,8 @@ static int
 test_rsa_generate_4096(void)
 {
 	dssh_test_reset_global_config();
-	ASSERT_EQ(register_rsa_sha2_256(), 0);
-	ASSERT_EQ(rsa_sha2_256_generate_key(4096), 0);
+	ASSERT_EQ(dssh_register_rsa_sha2_256(), 0);
+	ASSERT_EQ(dssh_rsa_sha2_256_generate_key(4096), 0);
 
 	dssh_key_algo ka = dssh_transport_find_key_algo("rsa-sha2-256");
 	ASSERT_NOT_NULL(ka);
@@ -746,20 +746,20 @@ static int
 test_rsa_sign_verify_after_load(void)
 {
 	dssh_test_reset_global_config();
-	ASSERT_EQ(register_rsa_sha2_256(), 0);
-	ASSERT_EQ(rsa_sha2_256_generate_key(2048), 0);
+	ASSERT_EQ(dssh_register_rsa_sha2_256(), 0);
+	ASSERT_EQ(dssh_rsa_sha2_256_generate_key(2048), 0);
 
 	char tmppath[] = "/tmp/dssh_test_rsa_sv_XXXXXX";
 	int fd = mkstemp(tmppath);
 	ASSERT_TRUE(fd >= 0);
 	close(fd);
 
-	ASSERT_EQ(rsa_sha2_256_save_key_file(tmppath, NULL, NULL), 0);
+	ASSERT_EQ(dssh_rsa_sha2_256_save_key_file(tmppath, NULL, NULL), 0);
 
 	/* Reload into fresh registry */
 	dssh_test_reset_global_config();
-	ASSERT_EQ(register_rsa_sha2_256(), 0);
-	ASSERT_EQ(rsa_sha2_256_load_key_file(tmppath, NULL, NULL), 0);
+	ASSERT_EQ(dssh_register_rsa_sha2_256(), 0);
+	ASSERT_EQ(dssh_rsa_sha2_256_load_key_file(tmppath, NULL, NULL), 0);
 	unlink(tmppath);
 
 	dssh_key_algo ka = dssh_transport_find_key_algo("rsa-sha2-256");
@@ -788,10 +788,10 @@ static int
 test_both_algorithms_coexist(void)
 {
 	dssh_test_reset_global_config();
-	ASSERT_EQ(register_ssh_ed25519(), 0);
-	ASSERT_EQ(register_rsa_sha2_256(), 0);
-	ASSERT_EQ(ssh_ed25519_generate_key(), 0);
-	ASSERT_EQ(rsa_sha2_256_generate_key(2048), 0);
+	ASSERT_EQ(dssh_register_ssh_ed25519(), 0);
+	ASSERT_EQ(dssh_register_rsa_sha2_256(), 0);
+	ASSERT_EQ(dssh_ed25519_generate_key(), 0);
+	ASSERT_EQ(dssh_rsa_sha2_256_generate_key(2048), 0);
 
 	dssh_key_algo ed_ka = dssh_transport_find_key_algo("ssh-ed25519");
 	dssh_key_algo rsa_ka = dssh_transport_find_key_algo("rsa-sha2-256");
@@ -831,10 +831,10 @@ static int
 test_ed25519_sig_fails_rsa_verify(void)
 {
 	dssh_test_reset_global_config();
-	ASSERT_EQ(register_ssh_ed25519(), 0);
-	ASSERT_EQ(register_rsa_sha2_256(), 0);
-	ASSERT_EQ(ssh_ed25519_generate_key(), 0);
-	ASSERT_EQ(rsa_sha2_256_generate_key(2048), 0);
+	ASSERT_EQ(dssh_register_ssh_ed25519(), 0);
+	ASSERT_EQ(dssh_register_rsa_sha2_256(), 0);
+	ASSERT_EQ(dssh_ed25519_generate_key(), 0);
+	ASSERT_EQ(dssh_rsa_sha2_256_generate_key(2048), 0);
 
 	dssh_key_algo ed_ka = dssh_transport_find_key_algo("ssh-ed25519");
 	dssh_key_algo rsa_ka = dssh_transport_find_key_algo("rsa-sha2-256");
@@ -865,7 +865,7 @@ static int
 test_find_unregistered_algo(void)
 {
 	dssh_test_reset_global_config();
-	ASSERT_EQ(register_ssh_ed25519(), 0);
+	ASSERT_EQ(dssh_register_ssh_ed25519(), 0);
 
 	dssh_key_algo ka = dssh_transport_find_key_algo("nonexistent-algo");
 	ASSERT_NULL(ka);
@@ -880,9 +880,9 @@ static int
 test_ed25519_load_nonexistent(void)
 {
 	dssh_test_reset_global_config();
-	ASSERT_EQ(register_ssh_ed25519(), 0);
+	ASSERT_EQ(dssh_register_ssh_ed25519(), 0);
 
-	int res = ssh_ed25519_load_key_file("/nonexistent/path/key", NULL, NULL);
+	int res = dssh_ed25519_load_key_file("/nonexistent/path/key", NULL, NULL);
 	ASSERT_TRUE(res < 0);
 	return TEST_PASS;
 }
@@ -891,9 +891,9 @@ static int
 test_rsa_load_nonexistent(void)
 {
 	dssh_test_reset_global_config();
-	ASSERT_EQ(register_rsa_sha2_256(), 0);
+	ASSERT_EQ(dssh_register_rsa_sha2_256(), 0);
 
-	int res = rsa_sha2_256_load_key_file("/nonexistent/path/key", NULL, NULL);
+	int res = dssh_rsa_sha2_256_load_key_file("/nonexistent/path/key", NULL, NULL);
 	ASSERT_TRUE(res < 0);
 	return TEST_PASS;
 }
@@ -902,7 +902,7 @@ static int
 test_ed25519_sign_without_key(void)
 {
 	dssh_test_reset_global_config();
-	ASSERT_EQ(register_ssh_ed25519(), 0);
+	ASSERT_EQ(dssh_register_ssh_ed25519(), 0);
 
 	dssh_key_algo ka = dssh_transport_find_key_algo("ssh-ed25519");
 	ASSERT_NOT_NULL(ka);
@@ -921,7 +921,7 @@ static int
 test_rsa_sign_without_key(void)
 {
 	dssh_test_reset_global_config();
-	ASSERT_EQ(register_rsa_sha2_256(), 0);
+	ASSERT_EQ(dssh_register_rsa_sha2_256(), 0);
 
 	dssh_key_algo ka = dssh_transport_find_key_algo("rsa-sha2-256");
 	ASSERT_NOT_NULL(ka);
@@ -940,7 +940,7 @@ static int
 test_ed25519_pubkey_without_key(void)
 {
 	dssh_test_reset_global_config();
-	ASSERT_EQ(register_ssh_ed25519(), 0);
+	ASSERT_EQ(dssh_register_ssh_ed25519(), 0);
 
 	dssh_key_algo ka = dssh_transport_find_key_algo("ssh-ed25519");
 	ASSERT_NOT_NULL(ka);
@@ -956,7 +956,7 @@ static int
 test_rsa_pubkey_without_key(void)
 {
 	dssh_test_reset_global_config();
-	ASSERT_EQ(register_rsa_sha2_256(), 0);
+	ASSERT_EQ(dssh_register_rsa_sha2_256(), 0);
 
 	dssh_key_algo ka = dssh_transport_find_key_algo("rsa-sha2-256");
 	ASSERT_NOT_NULL(ka);
@@ -972,8 +972,8 @@ static int
 test_ed25519_verify_short_sig(void)
 {
 	dssh_test_reset_global_config();
-	ASSERT_EQ(register_ssh_ed25519(), 0);
-	ASSERT_EQ(ssh_ed25519_generate_key(), 0);
+	ASSERT_EQ(dssh_register_ssh_ed25519(), 0);
+	ASSERT_EQ(dssh_ed25519_generate_key(), 0);
 
 	dssh_key_algo ka = dssh_transport_find_key_algo("ssh-ed25519");
 	ASSERT_NOT_NULL(ka);
@@ -995,8 +995,8 @@ static int
 test_rsa_verify_short_sig(void)
 {
 	dssh_test_reset_global_config();
-	ASSERT_EQ(register_rsa_sha2_256(), 0);
-	ASSERT_EQ(rsa_sha2_256_generate_key(2048), 0);
+	ASSERT_EQ(dssh_register_rsa_sha2_256(), 0);
+	ASSERT_EQ(dssh_rsa_sha2_256_generate_key(2048), 0);
 
 	dssh_key_algo ka = dssh_transport_find_key_algo("rsa-sha2-256");
 	ASSERT_NOT_NULL(ka);
@@ -1017,8 +1017,8 @@ static int
 test_ed25519_verify_wrong_algo(void)
 {
 	dssh_test_reset_global_config();
-	ASSERT_EQ(register_ssh_ed25519(), 0);
-	ASSERT_EQ(ssh_ed25519_generate_key(), 0);
+	ASSERT_EQ(dssh_register_ssh_ed25519(), 0);
+	ASSERT_EQ(dssh_ed25519_generate_key(), 0);
 
 	dssh_key_algo ka = dssh_transport_find_key_algo("ssh-ed25519");
 	ASSERT_NOT_NULL(ka);
@@ -1053,16 +1053,16 @@ test_ed25519_get_pub_str_small_buf(void)
 {
 	/* Covers bufsz < needed branch in get_pub_str */
 	dssh_test_reset_global_config();
-	ASSERT_EQ(register_ssh_ed25519(), 0);
-	ASSERT_EQ(ssh_ed25519_generate_key(), 0);
+	ASSERT_EQ(dssh_register_ssh_ed25519(), 0);
+	ASSERT_EQ(dssh_ed25519_generate_key(), 0);
 
 	/* Query needed size */
-	int64_t needed = ssh_ed25519_get_pub_str(NULL, 0);
+	int64_t needed = dssh_ed25519_get_pub_str(NULL, 0);
 	ASSERT_TRUE(needed > 0);
 
 	/* Pass buffer that's too small */
 	char small[8];
-	int64_t res = ssh_ed25519_get_pub_str(small, sizeof(small));
+	int64_t res = dssh_ed25519_get_pub_str(small, sizeof(small));
 	ASSERT_EQ(res, (int64_t)DSSH_ERROR_TOOLONG);
 	return TEST_PASS;
 }
@@ -1072,9 +1072,9 @@ test_ed25519_save_pub_before_keygen(void)
 {
 	/* save_pub_file before generating key */
 	dssh_test_reset_global_config();
-	ASSERT_EQ(register_ssh_ed25519(), 0);
+	ASSERT_EQ(dssh_register_ssh_ed25519(), 0);
 
-	int res = ssh_ed25519_save_pub_file("/tmp/dssh_no_key_pub");
+	int res = dssh_ed25519_save_pub_file("/tmp/dssh_no_key_pub");
 	ASSERT_TRUE(res < 0);
 	return TEST_PASS;
 }
@@ -1084,20 +1084,20 @@ test_ed25519_load_rsa_key_file(void)
 {
 	/* Load an RSA key into Ed25519 loader — wrong key type */
 	dssh_test_reset_global_config();
-	ASSERT_EQ(register_rsa_sha2_256(), 0);
-	ASSERT_EQ(rsa_sha2_256_generate_key(2048), 0);
+	ASSERT_EQ(dssh_register_rsa_sha2_256(), 0);
+	ASSERT_EQ(dssh_rsa_sha2_256_generate_key(2048), 0);
 
 	char tmppath[] = "/tmp/dssh_test_rsa_for_ed_XXXXXX";
 	int fd = mkstemp(tmppath);
 	ASSERT_TRUE(fd >= 0);
 	close(fd);
-	ASSERT_EQ(rsa_sha2_256_save_key_file(tmppath, NULL, NULL), 0);
+	ASSERT_EQ(dssh_rsa_sha2_256_save_key_file(tmppath, NULL, NULL), 0);
 
 	/* Now try to load it as Ed25519 */
 	dssh_test_reset_global_config();
-	ASSERT_EQ(register_ssh_ed25519(), 0);
+	ASSERT_EQ(dssh_register_ssh_ed25519(), 0);
 
-	int res = ssh_ed25519_load_key_file(tmppath, NULL, NULL);
+	int res = dssh_ed25519_load_key_file(tmppath, NULL, NULL);
 	unlink(tmppath);
 	ASSERT_TRUE(res < 0);
 	return TEST_PASS;
@@ -1107,14 +1107,14 @@ static int
 test_rsa_get_pub_str_small_buf(void)
 {
 	dssh_test_reset_global_config();
-	ASSERT_EQ(register_rsa_sha2_256(), 0);
-	ASSERT_EQ(rsa_sha2_256_generate_key(2048), 0);
+	ASSERT_EQ(dssh_register_rsa_sha2_256(), 0);
+	ASSERT_EQ(dssh_rsa_sha2_256_generate_key(2048), 0);
 
-	int64_t needed = rsa_sha2_256_get_pub_str(NULL, 0);
+	int64_t needed = dssh_rsa_sha2_256_get_pub_str(NULL, 0);
 	ASSERT_TRUE(needed > 0);
 
 	char small[8];
-	int64_t res = rsa_sha2_256_get_pub_str(small, sizeof(small));
+	int64_t res = dssh_rsa_sha2_256_get_pub_str(small, sizeof(small));
 	ASSERT_EQ(res, (int64_t)DSSH_ERROR_TOOLONG);
 	return TEST_PASS;
 }
@@ -1123,9 +1123,9 @@ static int
 test_rsa_save_pub_before_keygen(void)
 {
 	dssh_test_reset_global_config();
-	ASSERT_EQ(register_rsa_sha2_256(), 0);
+	ASSERT_EQ(dssh_register_rsa_sha2_256(), 0);
 
-	int res = rsa_sha2_256_save_pub_file("/tmp/dssh_no_key_pub");
+	int res = dssh_rsa_sha2_256_save_pub_file("/tmp/dssh_no_key_pub");
 	ASSERT_TRUE(res < 0);
 	return TEST_PASS;
 }
@@ -1135,19 +1135,19 @@ test_rsa_load_ed25519_key_file(void)
 {
 	/* Load an Ed25519 key into RSA loader — wrong key type */
 	dssh_test_reset_global_config();
-	ASSERT_EQ(register_ssh_ed25519(), 0);
-	ASSERT_EQ(ssh_ed25519_generate_key(), 0);
+	ASSERT_EQ(dssh_register_ssh_ed25519(), 0);
+	ASSERT_EQ(dssh_ed25519_generate_key(), 0);
 
 	char tmppath[] = "/tmp/dssh_test_ed_for_rsa_XXXXXX";
 	int fd = mkstemp(tmppath);
 	ASSERT_TRUE(fd >= 0);
 	close(fd);
-	ASSERT_EQ(ssh_ed25519_save_key_file(tmppath, NULL, NULL), 0);
+	ASSERT_EQ(dssh_ed25519_save_key_file(tmppath, NULL, NULL), 0);
 
 	dssh_test_reset_global_config();
-	ASSERT_EQ(register_rsa_sha2_256(), 0);
+	ASSERT_EQ(dssh_register_rsa_sha2_256(), 0);
 
-	int res = rsa_sha2_256_load_key_file(tmppath, NULL, NULL);
+	int res = dssh_rsa_sha2_256_load_key_file(tmppath, NULL, NULL);
 	unlink(tmppath);
 	ASSERT_TRUE(res < 0);
 	return TEST_PASS;
@@ -1158,9 +1158,9 @@ test_ed25519_save_key_before_keygen(void)
 {
 	/* save_key_file before generating/loading a key */
 	dssh_test_reset_global_config();
-	ASSERT_EQ(register_ssh_ed25519(), 0);
+	ASSERT_EQ(dssh_register_ssh_ed25519(), 0);
 
-	int res = ssh_ed25519_save_key_file("/tmp/dssh_nokey", NULL, NULL);
+	int res = dssh_ed25519_save_key_file("/tmp/dssh_nokey", NULL, NULL);
 	ASSERT_TRUE(res < 0);
 	return TEST_PASS;
 }
@@ -1169,9 +1169,9 @@ static int
 test_rsa_save_key_before_keygen(void)
 {
 	dssh_test_reset_global_config();
-	ASSERT_EQ(register_rsa_sha2_256(), 0);
+	ASSERT_EQ(dssh_register_rsa_sha2_256(), 0);
 
-	int res = rsa_sha2_256_save_key_file("/tmp/dssh_nokey", NULL, NULL);
+	int res = dssh_rsa_sha2_256_save_key_file("/tmp/dssh_nokey", NULL, NULL);
 	ASSERT_TRUE(res < 0);
 	return TEST_PASS;
 }
@@ -1180,10 +1180,10 @@ static int
 test_ed25519_save_key_bad_path(void)
 {
 	dssh_test_reset_global_config();
-	ASSERT_EQ(register_ssh_ed25519(), 0);
-	ASSERT_EQ(ssh_ed25519_generate_key(), 0);
+	ASSERT_EQ(dssh_register_ssh_ed25519(), 0);
+	ASSERT_EQ(dssh_ed25519_generate_key(), 0);
 
-	int res = ssh_ed25519_save_key_file("/nonexistent/dir/key", NULL, NULL);
+	int res = dssh_ed25519_save_key_file("/nonexistent/dir/key", NULL, NULL);
 	ASSERT_TRUE(res < 0);
 	return TEST_PASS;
 }
@@ -1192,10 +1192,10 @@ static int
 test_rsa_save_key_bad_path(void)
 {
 	dssh_test_reset_global_config();
-	ASSERT_EQ(register_rsa_sha2_256(), 0);
-	ASSERT_EQ(rsa_sha2_256_generate_key(2048), 0);
+	ASSERT_EQ(dssh_register_rsa_sha2_256(), 0);
+	ASSERT_EQ(dssh_rsa_sha2_256_generate_key(2048), 0);
 
-	int res = rsa_sha2_256_save_key_file("/nonexistent/dir/key", NULL, NULL);
+	int res = dssh_rsa_sha2_256_save_key_file("/nonexistent/dir/key", NULL, NULL);
 	ASSERT_TRUE(res < 0);
 	return TEST_PASS;
 }
@@ -1204,10 +1204,10 @@ static int
 test_ed25519_save_pub_bad_path(void)
 {
 	dssh_test_reset_global_config();
-	ASSERT_EQ(register_ssh_ed25519(), 0);
-	ASSERT_EQ(ssh_ed25519_generate_key(), 0);
+	ASSERT_EQ(dssh_register_ssh_ed25519(), 0);
+	ASSERT_EQ(dssh_ed25519_generate_key(), 0);
 
-	int res = ssh_ed25519_save_pub_file("/nonexistent/dir/pub");
+	int res = dssh_ed25519_save_pub_file("/nonexistent/dir/pub");
 	ASSERT_TRUE(res < 0);
 	return TEST_PASS;
 }
@@ -1216,10 +1216,10 @@ static int
 test_rsa_save_pub_bad_path(void)
 {
 	dssh_test_reset_global_config();
-	ASSERT_EQ(register_rsa_sha2_256(), 0);
-	ASSERT_EQ(rsa_sha2_256_generate_key(2048), 0);
+	ASSERT_EQ(dssh_register_rsa_sha2_256(), 0);
+	ASSERT_EQ(dssh_rsa_sha2_256_generate_key(2048), 0);
 
-	int res = rsa_sha2_256_save_pub_file("/nonexistent/dir/pub");
+	int res = dssh_rsa_sha2_256_save_pub_file("/nonexistent/dir/pub");
 	ASSERT_TRUE(res < 0);
 	return TEST_PASS;
 }
@@ -1229,9 +1229,9 @@ test_ed25519_generate_twice(void)
 {
 	/* Generate key twice — covers the "replace existing" path */
 	dssh_test_reset_global_config();
-	ASSERT_EQ(register_ssh_ed25519(), 0);
-	ASSERT_EQ(ssh_ed25519_generate_key(), 0);
-	ASSERT_EQ(ssh_ed25519_generate_key(), 0);
+	ASSERT_EQ(dssh_register_ssh_ed25519(), 0);
+	ASSERT_EQ(dssh_ed25519_generate_key(), 0);
+	ASSERT_EQ(dssh_ed25519_generate_key(), 0);
 
 	dssh_key_algo ka = dssh_transport_find_key_algo("ssh-ed25519");
 	ASSERT_NOT_NULL(ka);
@@ -1243,9 +1243,9 @@ static int
 test_rsa_generate_twice(void)
 {
 	dssh_test_reset_global_config();
-	ASSERT_EQ(register_rsa_sha2_256(), 0);
-	ASSERT_EQ(rsa_sha2_256_generate_key(2048), 0);
-	ASSERT_EQ(rsa_sha2_256_generate_key(2048), 0);
+	ASSERT_EQ(dssh_register_rsa_sha2_256(), 0);
+	ASSERT_EQ(dssh_rsa_sha2_256_generate_key(2048), 0);
+	ASSERT_EQ(dssh_rsa_sha2_256_generate_key(2048), 0);
 
 	dssh_key_algo ka = dssh_transport_find_key_algo("rsa-sha2-256");
 	ASSERT_NOT_NULL(ka);
@@ -1258,19 +1258,19 @@ test_ed25519_load_twice(void)
 {
 	/* Load key twice — covers the "replace existing" path in load_key_file */
 	dssh_test_reset_global_config();
-	ASSERT_EQ(register_ssh_ed25519(), 0);
-	ASSERT_EQ(ssh_ed25519_generate_key(), 0);
+	ASSERT_EQ(dssh_register_ssh_ed25519(), 0);
+	ASSERT_EQ(dssh_ed25519_generate_key(), 0);
 
 	char tmppath[] = "/tmp/dssh_test_ed_load2_XXXXXX";
 	int fd = mkstemp(tmppath);
 	ASSERT_TRUE(fd >= 0);
 	close(fd);
-	ASSERT_EQ(ssh_ed25519_save_key_file(tmppath, NULL, NULL), 0);
+	ASSERT_EQ(dssh_ed25519_save_key_file(tmppath, NULL, NULL), 0);
 
 	/* Load it once */
-	ASSERT_EQ(ssh_ed25519_load_key_file(tmppath, NULL, NULL), 0);
+	ASSERT_EQ(dssh_ed25519_load_key_file(tmppath, NULL, NULL), 0);
 	/* Load it again — replaces existing */
-	ASSERT_EQ(ssh_ed25519_load_key_file(tmppath, NULL, NULL), 0);
+	ASSERT_EQ(dssh_ed25519_load_key_file(tmppath, NULL, NULL), 0);
 	unlink(tmppath);
 
 	dssh_key_algo ka = dssh_transport_find_key_algo("ssh-ed25519");
@@ -1283,17 +1283,17 @@ static int
 test_rsa_load_twice(void)
 {
 	dssh_test_reset_global_config();
-	ASSERT_EQ(register_rsa_sha2_256(), 0);
-	ASSERT_EQ(rsa_sha2_256_generate_key(2048), 0);
+	ASSERT_EQ(dssh_register_rsa_sha2_256(), 0);
+	ASSERT_EQ(dssh_rsa_sha2_256_generate_key(2048), 0);
 
 	char tmppath[] = "/tmp/dssh_test_rsa_load2_XXXXXX";
 	int fd = mkstemp(tmppath);
 	ASSERT_TRUE(fd >= 0);
 	close(fd);
-	ASSERT_EQ(rsa_sha2_256_save_key_file(tmppath, NULL, NULL), 0);
+	ASSERT_EQ(dssh_rsa_sha2_256_save_key_file(tmppath, NULL, NULL), 0);
 
-	ASSERT_EQ(rsa_sha2_256_load_key_file(tmppath, NULL, NULL), 0);
-	ASSERT_EQ(rsa_sha2_256_load_key_file(tmppath, NULL, NULL), 0);
+	ASSERT_EQ(dssh_rsa_sha2_256_load_key_file(tmppath, NULL, NULL), 0);
+	ASSERT_EQ(dssh_rsa_sha2_256_load_key_file(tmppath, NULL, NULL), 0);
 	unlink(tmppath);
 
 	dssh_key_algo ka = dssh_transport_find_key_algo("rsa-sha2-256");
@@ -1313,7 +1313,7 @@ test_ed25519_verify_truncated_key(void)
 {
 	/* Key blob too short for algo name length field */
 	dssh_test_reset_global_config();
-	ASSERT_EQ(register_ssh_ed25519(), 0);
+	ASSERT_EQ(dssh_register_ssh_ed25519(), 0);
 	dssh_key_algo ka = dssh_transport_find_key_algo("ssh-ed25519");
 	ASSERT_NOT_NULL(ka);
 
@@ -1330,8 +1330,8 @@ test_ed25519_verify_wrong_key_algo_name(void)
 {
 	/* Key blob with wrong algo name */
 	dssh_test_reset_global_config();
-	ASSERT_EQ(register_ssh_ed25519(), 0);
-	ASSERT_EQ(ssh_ed25519_generate_key(), 0);
+	ASSERT_EQ(dssh_register_ssh_ed25519(), 0);
+	ASSERT_EQ(dssh_ed25519_generate_key(), 0);
 	dssh_key_algo ka = dssh_transport_find_key_algo("ssh-ed25519");
 	ASSERT_NOT_NULL(ka);
 
@@ -1361,8 +1361,8 @@ test_ed25519_verify_wrong_key_length(void)
 {
 	/* Key blob with correct name but wrong raw key length (not 32) */
 	dssh_test_reset_global_config();
-	ASSERT_EQ(register_ssh_ed25519(), 0);
-	ASSERT_EQ(ssh_ed25519_generate_key(), 0);
+	ASSERT_EQ(dssh_register_ssh_ed25519(), 0);
+	ASSERT_EQ(dssh_ed25519_generate_key(), 0);
 	dssh_key_algo ka = dssh_transport_find_key_algo("ssh-ed25519");
 	ASSERT_NOT_NULL(ka);
 
@@ -1392,8 +1392,8 @@ test_ed25519_verify_key_trailing_garbage(void)
 {
 	/* Valid key blob + extra trailing bytes */
 	dssh_test_reset_global_config();
-	ASSERT_EQ(register_ssh_ed25519(), 0);
-	ASSERT_EQ(ssh_ed25519_generate_key(), 0);
+	ASSERT_EQ(dssh_register_ssh_ed25519(), 0);
+	ASSERT_EQ(dssh_ed25519_generate_key(), 0);
 	dssh_key_algo ka = dssh_transport_find_key_algo("ssh-ed25519");
 	ASSERT_NOT_NULL(ka);
 
@@ -1421,8 +1421,8 @@ test_ed25519_verify_sig_wrong_raw_len(void)
 {
 	/* Sig blob with correct algo name but wrong raw sig length (not 64) */
 	dssh_test_reset_global_config();
-	ASSERT_EQ(register_ssh_ed25519(), 0);
-	ASSERT_EQ(ssh_ed25519_generate_key(), 0);
+	ASSERT_EQ(dssh_register_ssh_ed25519(), 0);
+	ASSERT_EQ(dssh_ed25519_generate_key(), 0);
 	dssh_key_algo ka = dssh_transport_find_key_algo("ssh-ed25519");
 	ASSERT_NOT_NULL(ka);
 
@@ -1451,8 +1451,8 @@ test_ed25519_verify_sig_trailing_garbage(void)
 {
 	/* Valid sig blob + trailing bytes */
 	dssh_test_reset_global_config();
-	ASSERT_EQ(register_ssh_ed25519(), 0);
-	ASSERT_EQ(ssh_ed25519_generate_key(), 0);
+	ASSERT_EQ(dssh_register_ssh_ed25519(), 0);
+	ASSERT_EQ(dssh_ed25519_generate_key(), 0);
 	dssh_key_algo ka = dssh_transport_find_key_algo("ssh-ed25519");
 	ASSERT_NOT_NULL(ka);
 
@@ -1478,7 +1478,7 @@ test_rsa_verify_truncated_key(void)
 {
 	/* Key blob too short */
 	dssh_test_reset_global_config();
-	ASSERT_EQ(register_rsa_sha2_256(), 0);
+	ASSERT_EQ(dssh_register_rsa_sha2_256(), 0);
 	dssh_key_algo ka = dssh_transport_find_key_algo("rsa-sha2-256");
 	ASSERT_NOT_NULL(ka);
 
@@ -1495,8 +1495,8 @@ test_rsa_verify_wrong_key_algo_name(void)
 {
 	/* Key blob with wrong algo name */
 	dssh_test_reset_global_config();
-	ASSERT_EQ(register_rsa_sha2_256(), 0);
-	ASSERT_EQ(rsa_sha2_256_generate_key(2048), 0);
+	ASSERT_EQ(dssh_register_rsa_sha2_256(), 0);
+	ASSERT_EQ(dssh_rsa_sha2_256_generate_key(2048), 0);
 	dssh_key_algo ka = dssh_transport_find_key_algo("rsa-sha2-256");
 	ASSERT_NOT_NULL(ka);
 
@@ -1526,8 +1526,8 @@ static int
 test_rsa_verify_key_trailing_garbage(void)
 {
 	dssh_test_reset_global_config();
-	ASSERT_EQ(register_rsa_sha2_256(), 0);
-	ASSERT_EQ(rsa_sha2_256_generate_key(2048), 0);
+	ASSERT_EQ(dssh_register_rsa_sha2_256(), 0);
+	ASSERT_EQ(dssh_rsa_sha2_256_generate_key(2048), 0);
 	dssh_key_algo ka = dssh_transport_find_key_algo("rsa-sha2-256");
 	ASSERT_NOT_NULL(ka);
 
@@ -1552,8 +1552,8 @@ static int
 test_rsa_verify_sig_trailing_garbage(void)
 {
 	dssh_test_reset_global_config();
-	ASSERT_EQ(register_rsa_sha2_256(), 0);
-	ASSERT_EQ(rsa_sha2_256_generate_key(2048), 0);
+	ASSERT_EQ(dssh_register_rsa_sha2_256(), 0);
+	ASSERT_EQ(dssh_rsa_sha2_256_generate_key(2048), 0);
 	dssh_key_algo ka = dssh_transport_find_key_algo("rsa-sha2-256");
 	ASSERT_NOT_NULL(ka);
 
@@ -1582,8 +1582,8 @@ test_ed25519_verify_key_truncated_after_name(void)
 {
 	/* Key blob: correct algo name, but truncated before raw key length */
 	dssh_test_reset_global_config();
-	ASSERT_EQ(register_ssh_ed25519(), 0);
-	ASSERT_EQ(ssh_ed25519_generate_key(), 0);
+	ASSERT_EQ(dssh_register_ssh_ed25519(), 0);
+	ASSERT_EQ(dssh_ed25519_generate_key(), 0);
 	dssh_key_algo ka = dssh_transport_find_key_algo("ssh-ed25519");
 	ASSERT_NOT_NULL(ka);
 
@@ -1610,8 +1610,8 @@ test_ed25519_verify_sig_truncated_after_name(void)
 {
 	/* Sig blob: correct algo name, but truncated before raw sig length */
 	dssh_test_reset_global_config();
-	ASSERT_EQ(register_ssh_ed25519(), 0);
-	ASSERT_EQ(ssh_ed25519_generate_key(), 0);
+	ASSERT_EQ(dssh_register_ssh_ed25519(), 0);
+	ASSERT_EQ(dssh_ed25519_generate_key(), 0);
 	dssh_key_algo ka = dssh_transport_find_key_algo("ssh-ed25519");
 	ASSERT_NOT_NULL(ka);
 
@@ -1637,8 +1637,8 @@ test_ed25519_verify_bad_signature(void)
 {
 	/* Valid format but cryptographically wrong signature */
 	dssh_test_reset_global_config();
-	ASSERT_EQ(register_ssh_ed25519(), 0);
-	ASSERT_EQ(ssh_ed25519_generate_key(), 0);
+	ASSERT_EQ(dssh_register_ssh_ed25519(), 0);
+	ASSERT_EQ(dssh_ed25519_generate_key(), 0);
 	dssh_key_algo ka = dssh_transport_find_key_algo("ssh-ed25519");
 	ASSERT_NOT_NULL(ka);
 
@@ -1664,8 +1664,8 @@ test_rsa_verify_key_truncated_after_name(void)
 {
 	/* Key blob: correct algo name, truncated before e field */
 	dssh_test_reset_global_config();
-	ASSERT_EQ(register_rsa_sha2_256(), 0);
-	ASSERT_EQ(rsa_sha2_256_generate_key(2048), 0);
+	ASSERT_EQ(dssh_register_rsa_sha2_256(), 0);
+	ASSERT_EQ(dssh_rsa_sha2_256_generate_key(2048), 0);
 	dssh_key_algo ka = dssh_transport_find_key_algo("rsa-sha2-256");
 	ASSERT_NOT_NULL(ka);
 
@@ -1692,8 +1692,8 @@ test_rsa_verify_key_truncated_after_e(void)
 {
 	/* Key blob: correct name + e field, truncated before n */
 	dssh_test_reset_global_config();
-	ASSERT_EQ(register_rsa_sha2_256(), 0);
-	ASSERT_EQ(rsa_sha2_256_generate_key(2048), 0);
+	ASSERT_EQ(dssh_register_rsa_sha2_256(), 0);
+	ASSERT_EQ(dssh_rsa_sha2_256_generate_key(2048), 0);
 	dssh_key_algo ka = dssh_transport_find_key_algo("rsa-sha2-256");
 	ASSERT_NOT_NULL(ka);
 
@@ -1722,8 +1722,8 @@ test_rsa_verify_sig_truncated_after_name(void)
 {
 	/* Sig blob: correct algo name, truncated before raw sig */
 	dssh_test_reset_global_config();
-	ASSERT_EQ(register_rsa_sha2_256(), 0);
-	ASSERT_EQ(rsa_sha2_256_generate_key(2048), 0);
+	ASSERT_EQ(dssh_register_rsa_sha2_256(), 0);
+	ASSERT_EQ(dssh_rsa_sha2_256_generate_key(2048), 0);
 	dssh_key_algo ka = dssh_transport_find_key_algo("rsa-sha2-256");
 	ASSERT_NOT_NULL(ka);
 
@@ -1749,7 +1749,7 @@ test_ed25519_generate_before_register(void)
 {
 	dssh_test_reset_global_config();
 	/* Don't register — ka will be NULL */
-	int res = ssh_ed25519_generate_key();
+	int res = dssh_ed25519_generate_key();
 	ASSERT_TRUE(res < 0);
 	return TEST_PASS;
 }
@@ -1758,7 +1758,7 @@ static int
 test_rsa_generate_before_register(void)
 {
 	dssh_test_reset_global_config();
-	int res = rsa_sha2_256_generate_key(2048);
+	int res = dssh_rsa_sha2_256_generate_key(2048);
 	ASSERT_TRUE(res < 0);
 	return TEST_PASS;
 }
@@ -1767,7 +1767,7 @@ static int
 test_ed25519_get_pub_str_before_register(void)
 {
 	dssh_test_reset_global_config();
-	int64_t res = ssh_ed25519_get_pub_str(NULL, 0);
+	int64_t res = dssh_ed25519_get_pub_str(NULL, 0);
 	ASSERT_TRUE(res < 0);
 	return TEST_PASS;
 }
@@ -1776,7 +1776,7 @@ static int
 test_rsa_get_pub_str_before_register(void)
 {
 	dssh_test_reset_global_config();
-	int64_t res = rsa_sha2_256_get_pub_str(NULL, 0);
+	int64_t res = dssh_rsa_sha2_256_get_pub_str(NULL, 0);
 	ASSERT_TRUE(res < 0);
 	return TEST_PASS;
 }
@@ -1790,7 +1790,7 @@ test_ed25519_haskey_null_ctx(void)
 {
 	/* Covers haskey(NULL) — cbd != NULL False branch */
 	dssh_test_reset_global_config();
-	ASSERT_EQ(register_ssh_ed25519(), 0);
+	ASSERT_EQ(dssh_register_ssh_ed25519(), 0);
 
 	dssh_key_algo ka = dssh_transport_find_key_algo("ssh-ed25519");
 	ASSERT_NOT_NULL(ka);
@@ -1805,7 +1805,7 @@ test_ed25519_cleanup_null_ctx(void)
 {
 	/* Covers cleanup(NULL) — cbd != NULL False branch */
 	dssh_test_reset_global_config();
-	ASSERT_EQ(register_ssh_ed25519(), 0);
+	ASSERT_EQ(dssh_register_ssh_ed25519(), 0);
 
 	dssh_key_algo ka = dssh_transport_find_key_algo("ssh-ed25519");
 	ASSERT_NOT_NULL(ka);
@@ -1820,11 +1820,11 @@ test_ed25519_get_pub_str_bufsz_one(void)
 {
 	/* Covers get_pub_str bufsz < needed True branch */
 	dssh_test_reset_global_config();
-	ASSERT_EQ(register_ssh_ed25519(), 0);
-	ASSERT_EQ(ssh_ed25519_generate_key(), 0);
+	ASSERT_EQ(dssh_register_ssh_ed25519(), 0);
+	ASSERT_EQ(dssh_ed25519_generate_key(), 0);
 
 	char buf[1];
-	int64_t res = ssh_ed25519_get_pub_str(buf, 1);
+	int64_t res = dssh_ed25519_get_pub_str(buf, 1);
 	ASSERT_EQ(res, (int64_t)DSSH_ERROR_TOOLONG);
 
 	dssh_test_reset_global_config();
@@ -1836,7 +1836,7 @@ test_rsa_haskey_null_ctx(void)
 {
 	/* Covers haskey(NULL) — cbd != NULL False branch */
 	dssh_test_reset_global_config();
-	ASSERT_EQ(register_rsa_sha2_256(), 0);
+	ASSERT_EQ(dssh_register_rsa_sha2_256(), 0);
 
 	dssh_key_algo ka = dssh_transport_find_key_algo("rsa-sha2-256");
 	ASSERT_NOT_NULL(ka);
@@ -1851,7 +1851,7 @@ test_rsa_cleanup_null_ctx(void)
 {
 	/* Covers cleanup(NULL) — cbd != NULL False branch */
 	dssh_test_reset_global_config();
-	ASSERT_EQ(register_rsa_sha2_256(), 0);
+	ASSERT_EQ(dssh_register_rsa_sha2_256(), 0);
 
 	dssh_key_algo ka = dssh_transport_find_key_algo("rsa-sha2-256");
 	ASSERT_NOT_NULL(ka);
@@ -1866,11 +1866,11 @@ test_rsa_get_pub_str_bufsz_one(void)
 {
 	/* Covers get_pub_str bufsz < needed True branch */
 	dssh_test_reset_global_config();
-	ASSERT_EQ(register_rsa_sha2_256(), 0);
-	ASSERT_EQ(rsa_sha2_256_generate_key(2048), 0);
+	ASSERT_EQ(dssh_register_rsa_sha2_256(), 0);
+	ASSERT_EQ(dssh_rsa_sha2_256_generate_key(2048), 0);
 
 	char buf[1];
-	int64_t res = rsa_sha2_256_get_pub_str(buf, 1);
+	int64_t res = dssh_rsa_sha2_256_get_pub_str(buf, 1);
 	ASSERT_EQ(res, (int64_t)DSSH_ERROR_TOOLONG);
 
 	dssh_test_reset_global_config();
@@ -1891,7 +1891,7 @@ test_ed25519_verify_key_algo_overrun(void)
 {
 	/* key_blob: algo_len=255 but only 4+11 bytes present */
 	dssh_test_reset_global_config();
-	ASSERT_EQ(register_ssh_ed25519(), 0);
+	ASSERT_EQ(dssh_register_ssh_ed25519(), 0);
 	dssh_key_algo ka = dssh_transport_find_key_algo("ssh-ed25519");
 	ASSERT_NOT_NULL(ka);
 
@@ -1911,7 +1911,7 @@ test_ed25519_verify_key_rawpub_overrun(void)
 {
 	/* key_blob: valid algo name, raw_pub_len overruns */
 	dssh_test_reset_global_config();
-	ASSERT_EQ(register_ssh_ed25519(), 0);
+	ASSERT_EQ(dssh_register_ssh_ed25519(), 0);
 	dssh_key_algo ka = dssh_transport_find_key_algo("ssh-ed25519");
 	ASSERT_NOT_NULL(ka);
 
@@ -1934,8 +1934,8 @@ test_ed25519_verify_sig_algo_overrun(void)
 {
 	/* sig_blob: sig_algo_len overruns */
 	dssh_test_reset_global_config();
-	ASSERT_EQ(register_ssh_ed25519(), 0);
-	ASSERT_EQ(ssh_ed25519_generate_key(), 0);
+	ASSERT_EQ(dssh_register_ssh_ed25519(), 0);
+	ASSERT_EQ(dssh_ed25519_generate_key(), 0);
 	dssh_key_algo ka = dssh_transport_find_key_algo("ssh-ed25519");
 	ASSERT_NOT_NULL(ka);
 
@@ -1958,8 +1958,8 @@ test_ed25519_verify_sig_rawsig_overrun(void)
 {
 	/* sig_blob: valid algo, raw_sig_len overruns */
 	dssh_test_reset_global_config();
-	ASSERT_EQ(register_ssh_ed25519(), 0);
-	ASSERT_EQ(ssh_ed25519_generate_key(), 0);
+	ASSERT_EQ(dssh_register_ssh_ed25519(), 0);
+	ASSERT_EQ(dssh_ed25519_generate_key(), 0);
 	dssh_key_algo ka = dssh_transport_find_key_algo("ssh-ed25519");
 	ASSERT_NOT_NULL(ka);
 
@@ -1985,8 +1985,8 @@ test_ed25519_verify_sig_wrong_algo_name(void)
 {
 	/* sig_blob: wrong algo name (hits memcmp != 0 branch) */
 	dssh_test_reset_global_config();
-	ASSERT_EQ(register_ssh_ed25519(), 0);
-	ASSERT_EQ(ssh_ed25519_generate_key(), 0);
+	ASSERT_EQ(dssh_register_ssh_ed25519(), 0);
+	ASSERT_EQ(dssh_ed25519_generate_key(), 0);
 	dssh_key_algo ka = dssh_transport_find_key_algo("ssh-ed25519");
 	ASSERT_NOT_NULL(ka);
 
@@ -2013,7 +2013,7 @@ test_ed25519_verify_key_wrong_algo_len(void)
 {
 	/* key_blob: algo_len=7 (not 11) — hits algo_len != ED25519_NAME_LEN */
 	dssh_test_reset_global_config();
-	ASSERT_EQ(register_ssh_ed25519(), 0);
+	ASSERT_EQ(dssh_register_ssh_ed25519(), 0);
 	dssh_key_algo ka = dssh_transport_find_key_algo("ssh-ed25519");
 	ASSERT_NOT_NULL(ka);
 
@@ -2038,7 +2038,7 @@ test_ed25519_verify_key_wrong_algo_content(void)
 {
 	/* key_blob: algo_len=11 but content mismatch — hits memcmp != 0 */
 	dssh_test_reset_global_config();
-	ASSERT_EQ(register_ssh_ed25519(), 0);
+	ASSERT_EQ(dssh_register_ssh_ed25519(), 0);
 	dssh_key_algo ka = dssh_transport_find_key_algo("ssh-ed25519");
 	ASSERT_NOT_NULL(ka);
 
@@ -2063,8 +2063,8 @@ test_ed25519_verify_sig_wrong_algo_len(void)
 {
 	/* sig_blob: sig_algo_len=7 (not 11) */
 	dssh_test_reset_global_config();
-	ASSERT_EQ(register_ssh_ed25519(), 0);
-	ASSERT_EQ(ssh_ed25519_generate_key(), 0);
+	ASSERT_EQ(dssh_register_ssh_ed25519(), 0);
+	ASSERT_EQ(dssh_ed25519_generate_key(), 0);
 	dssh_key_algo ka = dssh_transport_find_key_algo("ssh-ed25519");
 	ASSERT_NOT_NULL(ka);
 
@@ -2092,7 +2092,7 @@ test_rsa_verify_key_wrong_algo_len(void)
 {
 	/* key_blob: algo_len=11 (not 7) */
 	dssh_test_reset_global_config();
-	ASSERT_EQ(register_rsa_sha2_256(), 0);
+	ASSERT_EQ(dssh_register_rsa_sha2_256(), 0);
 	dssh_key_algo ka = dssh_transport_find_key_algo("rsa-sha2-256");
 	ASSERT_NOT_NULL(ka);
 
@@ -2117,7 +2117,7 @@ static int
 test_rsa_verify_key_algo_overrun(void)
 {
 	dssh_test_reset_global_config();
-	ASSERT_EQ(register_rsa_sha2_256(), 0);
+	ASSERT_EQ(dssh_register_rsa_sha2_256(), 0);
 	dssh_key_algo ka = dssh_transport_find_key_algo("rsa-sha2-256");
 	ASSERT_NOT_NULL(ka);
 
@@ -2137,7 +2137,7 @@ test_rsa_verify_key_e_overrun(void)
 {
 	/* Key blob: valid name, e_len overruns */
 	dssh_test_reset_global_config();
-	ASSERT_EQ(register_rsa_sha2_256(), 0);
+	ASSERT_EQ(dssh_register_rsa_sha2_256(), 0);
 	dssh_key_algo ka = dssh_transport_find_key_algo("rsa-sha2-256");
 	ASSERT_NOT_NULL(ka);
 
@@ -2160,7 +2160,7 @@ test_rsa_verify_key_n_overrun(void)
 {
 	/* Key blob: valid name + e, n_len overruns */
 	dssh_test_reset_global_config();
-	ASSERT_EQ(register_rsa_sha2_256(), 0);
+	ASSERT_EQ(dssh_register_rsa_sha2_256(), 0);
 	dssh_key_algo ka = dssh_transport_find_key_algo("rsa-sha2-256");
 	ASSERT_NOT_NULL(ka);
 
@@ -2184,8 +2184,8 @@ static int
 test_rsa_verify_sig_algo_overrun(void)
 {
 	dssh_test_reset_global_config();
-	ASSERT_EQ(register_rsa_sha2_256(), 0);
-	ASSERT_EQ(rsa_sha2_256_generate_key(2048), 0);
+	ASSERT_EQ(dssh_register_rsa_sha2_256(), 0);
+	ASSERT_EQ(dssh_rsa_sha2_256_generate_key(2048), 0);
 	dssh_key_algo ka = dssh_transport_find_key_algo("rsa-sha2-256");
 	ASSERT_NOT_NULL(ka);
 
@@ -2207,8 +2207,8 @@ static int
 test_rsa_verify_sig_wrong_algo_name(void)
 {
 	dssh_test_reset_global_config();
-	ASSERT_EQ(register_rsa_sha2_256(), 0);
-	ASSERT_EQ(rsa_sha2_256_generate_key(2048), 0);
+	ASSERT_EQ(dssh_register_rsa_sha2_256(), 0);
+	ASSERT_EQ(dssh_rsa_sha2_256_generate_key(2048), 0);
 	dssh_key_algo ka = dssh_transport_find_key_algo("rsa-sha2-256");
 	ASSERT_NOT_NULL(ka);
 
@@ -2232,8 +2232,8 @@ static int
 test_rsa_verify_sig_rawsig_overrun(void)
 {
 	dssh_test_reset_global_config();
-	ASSERT_EQ(register_rsa_sha2_256(), 0);
-	ASSERT_EQ(rsa_sha2_256_generate_key(2048), 0);
+	ASSERT_EQ(dssh_register_rsa_sha2_256(), 0);
+	ASSERT_EQ(dssh_rsa_sha2_256_generate_key(2048), 0);
 	dssh_key_algo ka = dssh_transport_find_key_algo("rsa-sha2-256");
 	ASSERT_NOT_NULL(ka);
 
@@ -2262,7 +2262,7 @@ static int
 test_ed25519_load_before_register(void)
 {
 	dssh_test_reset_global_config();
-	ASSERT_TRUE(ssh_ed25519_load_key_file("/dev/null", NULL, NULL) < 0);
+	ASSERT_TRUE(dssh_ed25519_load_key_file("/dev/null", NULL, NULL) < 0);
 	return TEST_PASS;
 }
 
@@ -2270,7 +2270,7 @@ static int
 test_rsa_load_before_register(void)
 {
 	dssh_test_reset_global_config();
-	ASSERT_TRUE(rsa_sha2_256_load_key_file("/dev/null", NULL, NULL) < 0);
+	ASSERT_TRUE(dssh_rsa_sha2_256_load_key_file("/dev/null", NULL, NULL) < 0);
 	return TEST_PASS;
 }
 
@@ -2279,7 +2279,7 @@ test_ed25519_load_garbage_file(void)
 {
 	/* File exists but is not valid PEM — hits PEM_read fail branch */
 	dssh_test_reset_global_config();
-	ASSERT_EQ(register_ssh_ed25519(), 0);
+	ASSERT_EQ(dssh_register_ssh_ed25519(), 0);
 
 	char tmppath[] = "/tmp/dssh_test_garbage_XXXXXX";
 	int fd = mkstemp(tmppath);
@@ -2287,7 +2287,7 @@ test_ed25519_load_garbage_file(void)
 	write(fd, "not a pem file\n", 15);
 	close(fd);
 
-	int res = ssh_ed25519_load_key_file(tmppath, NULL, NULL);
+	int res = dssh_ed25519_load_key_file(tmppath, NULL, NULL);
 	unlink(tmppath);
 	ASSERT_TRUE(res < 0);
 	return TEST_PASS;
@@ -2297,7 +2297,7 @@ static int
 test_rsa_load_garbage_file(void)
 {
 	dssh_test_reset_global_config();
-	ASSERT_EQ(register_rsa_sha2_256(), 0);
+	ASSERT_EQ(dssh_register_rsa_sha2_256(), 0);
 
 	char tmppath[] = "/tmp/dssh_test_garbage_XXXXXX";
 	int fd = mkstemp(tmppath);
@@ -2305,7 +2305,7 @@ test_rsa_load_garbage_file(void)
 	write(fd, "not a pem file\n", 15);
 	close(fd);
 
-	int res = rsa_sha2_256_load_key_file(tmppath, NULL, NULL);
+	int res = dssh_rsa_sha2_256_load_key_file(tmppath, NULL, NULL);
 	unlink(tmppath);
 	ASSERT_TRUE(res < 0);
 	return TEST_PASS;
@@ -2315,7 +2315,7 @@ static int
 test_ed25519_save_before_register(void)
 {
 	dssh_test_reset_global_config();
-	ASSERT_TRUE(ssh_ed25519_save_key_file("/tmp/x", NULL, NULL) < 0);
+	ASSERT_TRUE(dssh_ed25519_save_key_file("/tmp/x", NULL, NULL) < 0);
 	return TEST_PASS;
 }
 
@@ -2323,7 +2323,7 @@ static int
 test_rsa_save_before_register(void)
 {
 	dssh_test_reset_global_config();
-	ASSERT_TRUE(rsa_sha2_256_save_key_file("/tmp/x", NULL, NULL) < 0);
+	ASSERT_TRUE(dssh_rsa_sha2_256_save_key_file("/tmp/x", NULL, NULL) < 0);
 	return TEST_PASS;
 }
 
@@ -2344,15 +2344,15 @@ test_ed25519_save_with_password(void)
 {
 	/* Covers pw_cb != NULL branch in save_key_file */
 	dssh_test_reset_global_config();
-	ASSERT_EQ(register_ssh_ed25519(), 0);
-	ASSERT_EQ(ssh_ed25519_generate_key(), 0);
+	ASSERT_EQ(dssh_register_ssh_ed25519(), 0);
+	ASSERT_EQ(dssh_ed25519_generate_key(), 0);
 
 	char tmppath[] = "/tmp/dssh_test_ed_pw_XXXXXX";
 	int fd = mkstemp(tmppath);
 	ASSERT_TRUE(fd >= 0);
 	close(fd);
 
-	ASSERT_EQ(ssh_ed25519_save_key_file(tmppath, dummy_pw_cb, NULL), 0);
+	ASSERT_EQ(dssh_ed25519_save_key_file(tmppath, dummy_pw_cb, NULL), 0);
 	unlink(tmppath);
 	return TEST_PASS;
 }
@@ -2361,15 +2361,15 @@ static int
 test_rsa_save_with_password(void)
 {
 	dssh_test_reset_global_config();
-	ASSERT_EQ(register_rsa_sha2_256(), 0);
-	ASSERT_EQ(rsa_sha2_256_generate_key(2048), 0);
+	ASSERT_EQ(dssh_register_rsa_sha2_256(), 0);
+	ASSERT_EQ(dssh_rsa_sha2_256_generate_key(2048), 0);
 
 	char tmppath[] = "/tmp/dssh_test_rsa_pw_XXXXXX";
 	int fd = mkstemp(tmppath);
 	ASSERT_TRUE(fd >= 0);
 	close(fd);
 
-	ASSERT_EQ(rsa_sha2_256_save_key_file(tmppath, dummy_pw_cb, NULL), 0);
+	ASSERT_EQ(dssh_rsa_sha2_256_save_key_file(tmppath, dummy_pw_cb, NULL), 0);
 	unlink(tmppath);
 	return TEST_PASS;
 }
@@ -2379,10 +2379,10 @@ test_ed25519_get_pub_str_null_buf(void)
 {
 	/* Covers buf == NULL with non-zero bufsz */
 	dssh_test_reset_global_config();
-	ASSERT_EQ(register_ssh_ed25519(), 0);
-	ASSERT_EQ(ssh_ed25519_generate_key(), 0);
+	ASSERT_EQ(dssh_register_ssh_ed25519(), 0);
+	ASSERT_EQ(dssh_ed25519_generate_key(), 0);
 
-	int64_t res = ssh_ed25519_get_pub_str(NULL, 256);
+	int64_t res = dssh_ed25519_get_pub_str(NULL, 256);
 	ASSERT_TRUE(res > 0);
 	return TEST_PASS;
 }
@@ -2392,11 +2392,11 @@ test_ed25519_get_pub_str_zero_bufsz(void)
 {
 	/* Covers bufsz == 0 with non-NULL buf */
 	dssh_test_reset_global_config();
-	ASSERT_EQ(register_ssh_ed25519(), 0);
-	ASSERT_EQ(ssh_ed25519_generate_key(), 0);
+	ASSERT_EQ(dssh_register_ssh_ed25519(), 0);
+	ASSERT_EQ(dssh_ed25519_generate_key(), 0);
 
 	char buf[1];
-	int64_t res = ssh_ed25519_get_pub_str(buf, 0);
+	int64_t res = dssh_ed25519_get_pub_str(buf, 0);
 	ASSERT_TRUE(res > 0);
 	return TEST_PASS;
 }
@@ -2405,10 +2405,10 @@ static int
 test_rsa_get_pub_str_null_buf(void)
 {
 	dssh_test_reset_global_config();
-	ASSERT_EQ(register_rsa_sha2_256(), 0);
-	ASSERT_EQ(rsa_sha2_256_generate_key(2048), 0);
+	ASSERT_EQ(dssh_register_rsa_sha2_256(), 0);
+	ASSERT_EQ(dssh_rsa_sha2_256_generate_key(2048), 0);
 
-	int64_t res = rsa_sha2_256_get_pub_str(NULL, 256);
+	int64_t res = dssh_rsa_sha2_256_get_pub_str(NULL, 256);
 	ASSERT_TRUE(res > 0);
 	return TEST_PASS;
 }
@@ -2417,11 +2417,11 @@ static int
 test_rsa_get_pub_str_zero_bufsz(void)
 {
 	dssh_test_reset_global_config();
-	ASSERT_EQ(register_rsa_sha2_256(), 0);
-	ASSERT_EQ(rsa_sha2_256_generate_key(2048), 0);
+	ASSERT_EQ(dssh_register_rsa_sha2_256(), 0);
+	ASSERT_EQ(dssh_rsa_sha2_256_generate_key(2048), 0);
 
 	char buf[1];
-	int64_t res = rsa_sha2_256_get_pub_str(buf, 0);
+	int64_t res = dssh_rsa_sha2_256_get_pub_str(buf, 0);
 	ASSERT_TRUE(res > 0);
 	return TEST_PASS;
 }
@@ -2434,9 +2434,9 @@ static int
 test_ed25519_haskey_wrong_key_type(void)
 {
 	dssh_test_reset_global_config();
-	ASSERT_EQ(register_ssh_ed25519(), 0);
-	ASSERT_EQ(register_rsa_sha2_256(), 0);
-	ASSERT_EQ(rsa_sha2_256_generate_key(2048), 0);
+	ASSERT_EQ(dssh_register_ssh_ed25519(), 0);
+	ASSERT_EQ(dssh_register_rsa_sha2_256(), 0);
+	ASSERT_EQ(dssh_rsa_sha2_256_generate_key(2048), 0);
 
 	/* Grab the RSA pkey */
 	dssh_key_algo rsa_ka = dssh_transport_find_key_algo("rsa-sha2-256");
@@ -2454,9 +2454,9 @@ static int
 test_rsa_haskey_wrong_key_type(void)
 {
 	dssh_test_reset_global_config();
-	ASSERT_EQ(register_ssh_ed25519(), 0);
-	ASSERT_EQ(register_rsa_sha2_256(), 0);
-	ASSERT_EQ(ssh_ed25519_generate_key(), 0);
+	ASSERT_EQ(dssh_register_ssh_ed25519(), 0);
+	ASSERT_EQ(dssh_register_rsa_sha2_256(), 0);
+	ASSERT_EQ(dssh_ed25519_generate_key(), 0);
 
 	dssh_key_algo ed_ka = dssh_transport_find_key_algo("ssh-ed25519");
 	ASSERT_NOT_NULL(ed_ka);
@@ -2478,7 +2478,7 @@ static int
 test_ed25519_haskey_null_pkey(void)
 {
 	dssh_test_reset_global_config();
-	ASSERT_EQ(register_ssh_ed25519(), 0);
+	ASSERT_EQ(dssh_register_ssh_ed25519(), 0);
 
 	dssh_key_algo ka = dssh_transport_find_key_algo("ssh-ed25519");
 	ASSERT_NOT_NULL(ka);
@@ -2492,7 +2492,7 @@ static int
 test_rsa_haskey_null_pkey(void)
 {
 	dssh_test_reset_global_config();
-	ASSERT_EQ(register_rsa_sha2_256(), 0);
+	ASSERT_EQ(dssh_register_rsa_sha2_256(), 0);
 
 	dssh_key_algo ka = dssh_transport_find_key_algo("rsa-sha2-256");
 	ASSERT_NOT_NULL(ka);
@@ -2513,11 +2513,11 @@ static int
 test_ed25519_save_key_write_fail(void)
 {
 	dssh_test_reset_global_config();
-	ASSERT_EQ(register_ssh_ed25519(), 0);
-	ASSERT_EQ(ssh_ed25519_generate_key(), 0);
+	ASSERT_EQ(dssh_register_ssh_ed25519(), 0);
+	ASSERT_EQ(dssh_ed25519_generate_key(), 0);
 
 	/* /dev/full makes write() fail with ENOSPC */
-	int res = ssh_ed25519_save_key_file("/dev/full", NULL, NULL);
+	int res = dssh_ed25519_save_key_file("/dev/full", NULL, NULL);
 	if (res == 0) {
 		/* /dev/full not available or didn't fail — skip */
 		return TEST_SKIP;
@@ -2530,10 +2530,10 @@ static int
 test_rsa_save_key_write_fail(void)
 {
 	dssh_test_reset_global_config();
-	ASSERT_EQ(register_rsa_sha2_256(), 0);
-	ASSERT_EQ(rsa_sha2_256_generate_key(2048), 0);
+	ASSERT_EQ(dssh_register_rsa_sha2_256(), 0);
+	ASSERT_EQ(dssh_rsa_sha2_256_generate_key(2048), 0);
 
-	int res = rsa_sha2_256_save_key_file("/dev/full", NULL, NULL);
+	int res = dssh_rsa_sha2_256_save_key_file("/dev/full", NULL, NULL);
 	if (res == 0)
 		return TEST_SKIP;
 	ASSERT_TRUE(res < 0);
@@ -2544,10 +2544,10 @@ static int
 test_ed25519_save_pub_write_fail(void)
 {
 	dssh_test_reset_global_config();
-	ASSERT_EQ(register_ssh_ed25519(), 0);
-	ASSERT_EQ(ssh_ed25519_generate_key(), 0);
+	ASSERT_EQ(dssh_register_ssh_ed25519(), 0);
+	ASSERT_EQ(dssh_ed25519_generate_key(), 0);
 
-	int res = ssh_ed25519_save_pub_file("/dev/full");
+	int res = dssh_ed25519_save_pub_file("/dev/full");
 	if (res == 0)
 		return TEST_SKIP;
 	ASSERT_TRUE(res < 0);
@@ -2558,10 +2558,10 @@ static int
 test_rsa_save_pub_write_fail(void)
 {
 	dssh_test_reset_global_config();
-	ASSERT_EQ(register_rsa_sha2_256(), 0);
-	ASSERT_EQ(rsa_sha2_256_generate_key(2048), 0);
+	ASSERT_EQ(dssh_register_rsa_sha2_256(), 0);
+	ASSERT_EQ(dssh_rsa_sha2_256_generate_key(2048), 0);
 
-	int res = rsa_sha2_256_save_pub_file("/dev/full");
+	int res = dssh_rsa_sha2_256_save_pub_file("/dev/full");
 	if (res == 0)
 		return TEST_SKIP;
 	ASSERT_TRUE(res < 0);
@@ -2580,7 +2580,7 @@ test_rsa_pubkey_e_pad(void)
 	 * This hits the e_pad=true branch in pubkey().
 	 */
 	dssh_test_reset_global_config();
-	ASSERT_EQ(register_rsa_sha2_256(), 0);
+	ASSERT_EQ(dssh_register_rsa_sha2_256(), 0);
 
 	/* Generate via EVP with exponent = 0x80000003 (MSB set, odd, > 2) */
 	EVP_PKEY_CTX *pctx = EVP_PKEY_CTX_new_from_name(NULL, "RSA", NULL);
@@ -2654,7 +2654,7 @@ static int
 test_rsa_pubkey_n_no_pad(void)
 {
 	dssh_test_reset_global_config();
-	ASSERT_EQ(register_rsa_sha2_256(), 0);
+	ASSERT_EQ(dssh_register_rsa_sha2_256(), 0);
 
 	/*
 	 * Build a minimal RSA key where n has MSB clear.
@@ -2732,7 +2732,7 @@ static int
 test_rsa_pubkey_n_zero(void)
 {
 	dssh_test_reset_global_config();
-	ASSERT_EQ(register_rsa_sha2_256(), 0);
+	ASSERT_EQ(dssh_register_rsa_sha2_256(), 0);
 
 	BIGNUM *e_bn = BN_new();
 	BIGNUM *n_bn = BN_new();
@@ -2790,7 +2790,7 @@ static int
 test_rsa_verify_key_wrong_algo_content(void)
 {
 	dssh_test_reset_global_config();
-	ASSERT_EQ(register_rsa_sha2_256(), 0);
+	ASSERT_EQ(dssh_register_rsa_sha2_256(), 0);
 	dssh_key_algo ka = dssh_transport_find_key_algo("rsa-sha2-256");
 	ASSERT_NOT_NULL(ka);
 
@@ -2822,12 +2822,12 @@ test_ed25519_generate_calloc_fail(void)
 {
 	dssh_test_reset_global_config();
 	dssh_test_alloc_reset();
-	ASSERT_EQ(register_ssh_ed25519(), 0);
+	ASSERT_EQ(dssh_register_ssh_ed25519(), 0);
 
 	/* Iterate alloc failures until generate succeeds */
 	for (int n = 0; n < 100; n++) {
 		dssh_test_alloc_fail_after(n);
-		int res = ssh_ed25519_generate_key();
+		int res = dssh_ed25519_generate_key();
 		dssh_test_alloc_reset();
 		if (res == 0) {
 			dssh_test_reset_global_config();
@@ -2844,11 +2844,11 @@ test_rsa_generate_calloc_fail(void)
 {
 	dssh_test_reset_global_config();
 	dssh_test_alloc_reset();
-	ASSERT_EQ(register_rsa_sha2_256(), 0);
+	ASSERT_EQ(dssh_register_rsa_sha2_256(), 0);
 
 	for (int n = 0; n < 100; n++) {
 		dssh_test_alloc_fail_after(n);
-		int res = rsa_sha2_256_generate_key(2048);
+		int res = dssh_rsa_sha2_256_generate_key(2048);
 		dssh_test_alloc_reset();
 		if (res == 0) {
 			dssh_test_reset_global_config();
@@ -2865,23 +2865,23 @@ test_ed25519_load_calloc_fail(void)
 {
 	dssh_test_reset_global_config();
 	dssh_test_alloc_reset();
-	ASSERT_EQ(register_ssh_ed25519(), 0);
-	ASSERT_EQ(ssh_ed25519_generate_key(), 0);
+	ASSERT_EQ(dssh_register_ssh_ed25519(), 0);
+	ASSERT_EQ(dssh_ed25519_generate_key(), 0);
 
 	char tmppath[] = "/tmp/dssh_test_ed_alloc_XXXXXX";
 	int fd = mkstemp(tmppath);
 	ASSERT_TRUE(fd >= 0);
 	close(fd);
-	ASSERT_EQ(ssh_ed25519_save_key_file(tmppath, NULL, NULL), 0);
+	ASSERT_EQ(dssh_ed25519_save_key_file(tmppath, NULL, NULL), 0);
 
 	/* Reset ctx so load must calloc a new one */
 	dssh_test_reset_global_config();
 	dssh_test_alloc_reset();
-	ASSERT_EQ(register_ssh_ed25519(), 0);
+	ASSERT_EQ(dssh_register_ssh_ed25519(), 0);
 
 	for (int n = 0; n < 100; n++) {
 		dssh_test_alloc_fail_after(n);
-		int res = ssh_ed25519_load_key_file(tmppath, NULL, NULL);
+		int res = dssh_ed25519_load_key_file(tmppath, NULL, NULL);
 		dssh_test_alloc_reset();
 		if (res == 0) {
 			unlink(tmppath);
@@ -2900,22 +2900,22 @@ test_rsa_load_calloc_fail(void)
 {
 	dssh_test_reset_global_config();
 	dssh_test_alloc_reset();
-	ASSERT_EQ(register_rsa_sha2_256(), 0);
-	ASSERT_EQ(rsa_sha2_256_generate_key(2048), 0);
+	ASSERT_EQ(dssh_register_rsa_sha2_256(), 0);
+	ASSERT_EQ(dssh_rsa_sha2_256_generate_key(2048), 0);
 
 	char tmppath[] = "/tmp/dssh_test_rsa_alloc_XXXXXX";
 	int fd = mkstemp(tmppath);
 	ASSERT_TRUE(fd >= 0);
 	close(fd);
-	ASSERT_EQ(rsa_sha2_256_save_key_file(tmppath, NULL, NULL), 0);
+	ASSERT_EQ(dssh_rsa_sha2_256_save_key_file(tmppath, NULL, NULL), 0);
 
 	dssh_test_reset_global_config();
 	dssh_test_alloc_reset();
-	ASSERT_EQ(register_rsa_sha2_256(), 0);
+	ASSERT_EQ(dssh_register_rsa_sha2_256(), 0);
 
 	for (int n = 0; n < 100; n++) {
 		dssh_test_alloc_fail_after(n);
-		int res = rsa_sha2_256_load_key_file(tmppath, NULL, NULL);
+		int res = dssh_rsa_sha2_256_load_key_file(tmppath, NULL, NULL);
 		dssh_test_alloc_reset();
 		if (res == 0) {
 			unlink(tmppath);
@@ -2938,8 +2938,8 @@ test_rsa_save_pub_alloc_fail(void)
 {
 	dssh_test_reset_global_config();
 	dssh_test_alloc_reset();
-	ASSERT_EQ(register_rsa_sha2_256(), 0);
-	ASSERT_EQ(rsa_sha2_256_generate_key(2048), 0);
+	ASSERT_EQ(dssh_register_rsa_sha2_256(), 0);
+	ASSERT_EQ(dssh_rsa_sha2_256_generate_key(2048), 0);
 
 	char tmppath[] = "/tmp/dssh_test_rsa_pub_af_XXXXXX";
 	int fd = mkstemp(tmppath);
@@ -2948,7 +2948,7 @@ test_rsa_save_pub_alloc_fail(void)
 
 	for (int n = 0; n < 100; n++) {
 		dssh_test_alloc_fail_after(n);
-		int res = rsa_sha2_256_save_pub_file(tmppath);
+		int res = dssh_rsa_sha2_256_save_pub_file(tmppath);
 		dssh_test_alloc_reset();
 		if (res == 0) {
 			unlink(tmppath);
@@ -2973,8 +2973,8 @@ test_rsa_sign_padding_fail(void)
 {
 	dssh_test_reset_global_config();
 	dssh_test_ossl_reset();
-	ASSERT_EQ(register_rsa_sha2_256(), 0);
-	ASSERT_EQ(rsa_sha2_256_generate_key(2048), 0);
+	ASSERT_EQ(dssh_register_rsa_sha2_256(), 0);
+	ASSERT_EQ(dssh_rsa_sha2_256_generate_key(2048), 0);
 
 	dssh_key_algo ka = dssh_transport_find_key_algo("rsa-sha2-256");
 	ASSERT_NOT_NULL(ka);
@@ -3005,8 +3005,8 @@ test_rsa_verify_padding_fail(void)
 {
 	dssh_test_reset_global_config();
 	dssh_test_ossl_reset();
-	ASSERT_EQ(register_rsa_sha2_256(), 0);
-	ASSERT_EQ(rsa_sha2_256_generate_key(2048), 0);
+	ASSERT_EQ(dssh_register_rsa_sha2_256(), 0);
+	ASSERT_EQ(dssh_rsa_sha2_256_generate_key(2048), 0);
 
 	dssh_key_algo ka = dssh_transport_find_key_algo("rsa-sha2-256");
 	ASSERT_NOT_NULL(ka);
@@ -3045,7 +3045,7 @@ static int
 test_c25519_handler_null_ka(void)
 {
 	dssh_test_reset_global_config();
-	ASSERT_EQ(register_ssh_ed25519(), 0);
+	ASSERT_EQ(dssh_register_ssh_ed25519(), 0);
 
 	struct dssh_kex_context kctx = {0};
 	kctx.client = false;
@@ -3060,7 +3060,7 @@ static int
 test_dhgex_handler_null_ka(void)
 {
 	dssh_test_reset_global_config();
-	ASSERT_EQ(register_ssh_ed25519(), 0);
+	ASSERT_EQ(dssh_register_ssh_ed25519(), 0);
 
 	struct dssh_kex_context kctx = {0};
 	kctx.client = false;

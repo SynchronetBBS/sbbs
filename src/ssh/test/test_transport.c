@@ -80,21 +80,21 @@ register_all_algorithms(void)
 {
 	int res;
 	if (test_using_dhgex())
-		res = register_dh_gex_sha256();
+		res = dssh_register_dh_gex_sha256();
 	else
-		res = register_curve25519_sha256();
+		res = dssh_register_curve25519_sha256();
 	if (res < 0)
 		return res;
 	res = test_register_key_algos();
 	if (res < 0)
 		return res;
-	res = register_aes256_ctr();
+	res = dssh_register_aes256_ctr();
 	if (res < 0)
 		return res;
-	res = register_hmac_sha2_256();
+	res = dssh_register_hmac_sha2_256();
 	if (res < 0)
 		return res;
-	res = register_none_comp();
+	res = dssh_register_none_comp();
 	if (res < 0)
 		return res;
 	return 0;
@@ -611,7 +611,7 @@ test_version_exchange_basic(void)
 	ASSERT_OK(mock_io_init(&ctx.io, 0));
 
 	/* Need to register at least something so session_init locks the registry */
-	ASSERT_OK(register_none_comp());
+	ASSERT_OK(dssh_register_none_comp());
 
 	ctx.client = dssh_session_init(true, 0);
 	ASSERT_NOT_NULL(ctx.client);
@@ -647,7 +647,7 @@ test_version_exchange_remote_stored(void)
 	struct version_exchange_ctx ctx;
 	memset(&ctx, 0, sizeof(ctx));
 	ASSERT_OK(mock_io_init(&ctx.io, 0));
-	ASSERT_OK(register_none_comp());
+	ASSERT_OK(dssh_register_none_comp());
 
 	ctx.client = dssh_session_init(true, 0);
 	ASSERT_NOT_NULL(ctx.client);
@@ -691,7 +691,7 @@ test_version_exchange_reject_non_20(void)
 
 	struct mock_io_state io;
 	ASSERT_OK(mock_io_init(&io, 0));
-	ASSERT_OK(register_none_comp());
+	ASSERT_OK(dssh_register_none_comp());
 
 	dssh_session client = dssh_session_init(true, 0);
 	ASSERT_NOT_NULL(client);
@@ -719,7 +719,7 @@ test_version_exchange_accept_199(void)
 
 	struct mock_io_state io;
 	ASSERT_OK(mock_io_init(&io, 0));
-	ASSERT_OK(register_none_comp());
+	ASSERT_OK(dssh_register_none_comp());
 
 	dssh_session client = dssh_session_init(true, 0);
 	ASSERT_NOT_NULL(client);
@@ -751,7 +751,7 @@ test_version_exchange_extra_lines(void)
 
 	struct mock_io_state io;
 	ASSERT_OK(mock_io_init(&io, 0));
-	ASSERT_OK(register_none_comp());
+	ASSERT_OK(dssh_register_none_comp());
 
 	dssh_session client = dssh_session_init(true, 0);
 	ASSERT_NOT_NULL(client);
@@ -784,7 +784,7 @@ test_version_exchange_reject_non_ascii(void)
 
 	struct mock_io_state io;
 	ASSERT_OK(mock_io_init(&io, 0));
-	ASSERT_OK(register_none_comp());
+	ASSERT_OK(dssh_register_none_comp());
 
 	dssh_session client = dssh_session_init(true, 0);
 	ASSERT_NOT_NULL(client);
@@ -813,7 +813,7 @@ test_packet_roundtrip(void)
 	dssh_test_reset_global_config();
 	dssh_transport_set_callbacks(mock_tx_dispatch, mock_rx_dispatch,
 	    mock_rxline_dispatch, mock_extra_line_cb);
-	ASSERT_OK(register_none_comp());
+	ASSERT_OK(dssh_register_none_comp());
 
 	struct mock_io_state io;
 	ASSERT_OK(mock_io_init(&io, 0));
@@ -847,7 +847,7 @@ test_packet_roundtrip(void)
 	dssh_test_reset_global_config();
 	dssh_transport_set_callbacks(mock_tx_dispatch, mock_rx_dispatch,
 	    mock_rxline_dispatch, mock_extra_line_cb);
-	ASSERT_OK(register_none_comp());
+	ASSERT_OK(dssh_register_none_comp());
 
 	ASSERT_OK(mock_io_init(&io, 0));
 
@@ -882,7 +882,7 @@ test_packet_alignment(void)
 	dssh_test_reset_global_config();
 	dssh_transport_set_callbacks(mock_tx_dispatch, mock_rx_dispatch,
 	    mock_rxline_dispatch, mock_extra_line_cb);
-	ASSERT_OK(register_none_comp());
+	ASSERT_OK(dssh_register_none_comp());
 
 	struct mock_io_state io;
 	ASSERT_OK(mock_io_init(&io, 0));
@@ -919,7 +919,7 @@ test_packet_min_padding(void)
 	dssh_test_reset_global_config();
 	dssh_transport_set_callbacks(mock_tx_dispatch, mock_rx_dispatch,
 	    mock_rxline_dispatch, mock_extra_line_cb);
-	ASSERT_OK(register_none_comp());
+	ASSERT_OK(dssh_register_none_comp());
 
 	struct mock_io_state io;
 	ASSERT_OK(mock_io_init(&io, 0));
@@ -951,7 +951,7 @@ test_packet_seq_increment(void)
 	dssh_test_reset_global_config();
 	dssh_transport_set_callbacks(mock_tx_dispatch, mock_rx_dispatch,
 	    mock_rxline_dispatch, mock_extra_line_cb);
-	ASSERT_OK(register_none_comp());
+	ASSERT_OK(dssh_register_none_comp());
 
 	struct mock_io_state io;
 	ASSERT_OK(mock_io_init(&io, 0));
@@ -981,7 +981,7 @@ test_packet_server_receives_client(void)
 	dssh_test_reset_global_config();
 	dssh_transport_set_callbacks(mock_tx_dispatch, mock_rx_dispatch,
 	    mock_rxline_dispatch, mock_extra_line_cb);
-	ASSERT_OK(register_none_comp());
+	ASSERT_OK(dssh_register_none_comp());
 
 	struct mock_io_state io;
 	ASSERT_OK(mock_io_init(&io, 0));
@@ -1027,7 +1027,7 @@ test_packet_too_large(void)
 	dssh_test_reset_global_config();
 	dssh_transport_set_callbacks(mock_tx_dispatch, mock_rx_dispatch,
 	    mock_rxline_dispatch, mock_extra_line_cb);
-	ASSERT_OK(register_none_comp());
+	ASSERT_OK(dssh_register_none_comp());
 
 	struct mock_io_state io;
 	ASSERT_OK(mock_io_init(&io, 0));
@@ -1059,7 +1059,7 @@ test_packet_bidirectional(void)
 	dssh_test_reset_global_config();
 	dssh_transport_set_callbacks(mock_tx_dispatch, mock_rx_dispatch,
 	    mock_rxline_dispatch, mock_extra_line_cb);
-	ASSERT_OK(register_none_comp());
+	ASSERT_OK(dssh_register_none_comp());
 
 	struct mock_io_state io;
 	ASSERT_OK(mock_io_init(&io, 0));
@@ -1103,7 +1103,7 @@ test_packet_empty_payload(void)
 	dssh_test_reset_global_config();
 	dssh_transport_set_callbacks(mock_tx_dispatch, mock_rx_dispatch,
 	    mock_rxline_dispatch, mock_extra_line_cb);
-	ASSERT_OK(register_none_comp());
+	ASSERT_OK(dssh_register_none_comp());
 
 	struct mock_io_state io;
 	ASSERT_OK(mock_io_init(&io, 0));
@@ -1144,7 +1144,7 @@ test_ignore_silently_skipped(void)
 	dssh_test_reset_global_config();
 	dssh_transport_set_callbacks(mock_tx_dispatch, mock_rx_dispatch,
 	    mock_rxline_dispatch, mock_extra_line_cb);
-	ASSERT_OK(register_none_comp());
+	ASSERT_OK(dssh_register_none_comp());
 
 	struct mock_io_state io;
 	ASSERT_OK(mock_io_init(&io, 0));
@@ -1184,7 +1184,7 @@ test_disconnect_sets_terminate(void)
 	dssh_test_reset_global_config();
 	dssh_transport_set_callbacks(mock_tx_dispatch, mock_rx_dispatch,
 	    mock_rxline_dispatch, mock_extra_line_cb);
-	ASSERT_OK(register_none_comp());
+	ASSERT_OK(dssh_register_none_comp());
 
 	struct mock_io_state io;
 	ASSERT_OK(mock_io_init(&io, 0));
@@ -1240,7 +1240,7 @@ test_debug_invokes_callback(void)
 	dssh_test_reset_global_config();
 	dssh_transport_set_callbacks(mock_tx_dispatch, mock_rx_dispatch,
 	    mock_rxline_dispatch, mock_extra_line_cb);
-	ASSERT_OK(register_none_comp());
+	ASSERT_OK(dssh_register_none_comp());
 
 	struct mock_io_state io;
 	ASSERT_OK(mock_io_init(&io, 0));
@@ -1309,7 +1309,7 @@ test_unimplemented_invokes_callback(void)
 	dssh_test_reset_global_config();
 	dssh_transport_set_callbacks(mock_tx_dispatch, mock_rx_dispatch,
 	    mock_rxline_dispatch, mock_extra_line_cb);
-	ASSERT_OK(register_none_comp());
+	ASSERT_OK(dssh_register_none_comp());
 
 	struct mock_io_state io;
 	ASSERT_OK(mock_io_init(&io, 0));
@@ -1360,7 +1360,7 @@ test_multiple_ignore_before_real(void)
 	dssh_test_reset_global_config();
 	dssh_transport_set_callbacks(mock_tx_dispatch, mock_rx_dispatch,
 	    mock_rxline_dispatch, mock_extra_line_cb);
-	ASSERT_OK(register_none_comp());
+	ASSERT_OK(dssh_register_none_comp());
 
 	struct mock_io_state io;
 	ASSERT_OK(mock_io_init(&io, 0));
@@ -1520,7 +1520,7 @@ test_rekey_needed_false_initially(void)
 	dssh_test_reset_global_config();
 	dssh_transport_set_callbacks(mock_tx_dispatch, mock_rx_dispatch,
 	    mock_rxline_dispatch, mock_extra_line_cb);
-	ASSERT_OK(register_none_comp());
+	ASSERT_OK(dssh_register_none_comp());
 
 	struct mock_io_state io;
 	ASSERT_OK(mock_io_init(&io, 0));
@@ -1542,7 +1542,7 @@ test_rekey_needed_tx_packets(void)
 	dssh_test_reset_global_config();
 	dssh_transport_set_callbacks(mock_tx_dispatch, mock_rx_dispatch,
 	    mock_rxline_dispatch, mock_extra_line_cb);
-	ASSERT_OK(register_none_comp());
+	ASSERT_OK(dssh_register_none_comp());
 
 	struct mock_io_state io;
 	ASSERT_OK(mock_io_init(&io, 0));
@@ -1565,7 +1565,7 @@ test_rekey_needed_rx_packets(void)
 	dssh_test_reset_global_config();
 	dssh_transport_set_callbacks(mock_tx_dispatch, mock_rx_dispatch,
 	    mock_rxline_dispatch, mock_extra_line_cb);
-	ASSERT_OK(register_none_comp());
+	ASSERT_OK(dssh_register_none_comp());
 
 	struct mock_io_state io;
 	ASSERT_OK(mock_io_init(&io, 0));
@@ -1588,7 +1588,7 @@ test_rekey_needed_bytes(void)
 	dssh_test_reset_global_config();
 	dssh_transport_set_callbacks(mock_tx_dispatch, mock_rx_dispatch,
 	    mock_rxline_dispatch, mock_extra_line_cb);
-	ASSERT_OK(register_none_comp());
+	ASSERT_OK(dssh_register_none_comp());
 
 	struct mock_io_state io;
 	ASSERT_OK(mock_io_init(&io, 0));
@@ -1611,7 +1611,7 @@ test_rekey_needed_time(void)
 	dssh_test_reset_global_config();
 	dssh_transport_set_callbacks(mock_tx_dispatch, mock_rx_dispatch,
 	    mock_rxline_dispatch, mock_extra_line_cb);
-	ASSERT_OK(register_none_comp());
+	ASSERT_OK(dssh_register_none_comp());
 
 	struct mock_io_state io;
 	ASSERT_OK(mock_io_init(&io, 0));
@@ -1635,7 +1635,7 @@ test_rekey_needed_below_threshold(void)
 	dssh_test_reset_global_config();
 	dssh_transport_set_callbacks(mock_tx_dispatch, mock_rx_dispatch,
 	    mock_rxline_dispatch, mock_extra_line_cb);
-	ASSERT_OK(register_none_comp());
+	ASSERT_OK(dssh_register_none_comp());
 
 	struct mock_io_state io;
 	ASSERT_OK(mock_io_init(&io, 0));
@@ -1819,7 +1819,7 @@ test_session_init_cleanup(void)
 	dssh_test_reset_global_config();
 	dssh_transport_set_callbacks(mock_tx_dispatch, mock_rx_dispatch,
 	    mock_rxline_dispatch, mock_extra_line_cb);
-	ASSERT_OK(register_none_comp());
+	ASSERT_OK(dssh_register_none_comp());
 
 	dssh_session sess = dssh_session_init(true, 0);
 	ASSERT_NOT_NULL(sess);
@@ -1840,7 +1840,7 @@ test_session_terminate(void)
 	dssh_test_reset_global_config();
 	dssh_transport_set_callbacks(mock_tx_dispatch, mock_rx_dispatch,
 	    mock_rxline_dispatch, mock_extra_line_cb);
-	ASSERT_OK(register_none_comp());
+	ASSERT_OK(dssh_register_none_comp());
 
 	dssh_session sess = dssh_session_init(true, 0);
 	ASSERT_NOT_NULL(sess);
@@ -3911,17 +3911,17 @@ dhgex_server_setup(struct dhgex_server_ctx *ctx)
 	dssh_test_alloc_reset();
 	dssh_test_ossl_reset();
 
-	if (register_dh_gex_sha256() < 0)
+	if (dssh_register_dh_gex_sha256() < 0)
 		return -1;
-	if (register_ssh_ed25519() < 0)
+	if (dssh_register_ssh_ed25519() < 0)
 		return -1;
-	if (register_aes256_ctr() < 0)
+	if (dssh_register_aes256_ctr() < 0)
 		return -1;
-	if (register_hmac_sha2_256() < 0)
+	if (dssh_register_hmac_sha2_256() < 0)
 		return -1;
-	if (register_none_comp() < 0)
+	if (dssh_register_none_comp() < 0)
 		return -1;
-	if (ssh_ed25519_generate_key() < 0)
+	if (dssh_ed25519_generate_key() < 0)
 		return -1;
 
 	ctx->io = malloc(sizeof(struct mock_io_state));
@@ -4325,17 +4325,17 @@ c25519_server_setup(struct c25519_server_ctx *ctx)
 	dssh_test_alloc_reset();
 	dssh_test_ossl_reset();
 
-	if (register_curve25519_sha256() < 0)
+	if (dssh_register_curve25519_sha256() < 0)
 		return -1;
-	if (register_ssh_ed25519() < 0)
+	if (dssh_register_ssh_ed25519() < 0)
 		return -1;
-	if (register_aes256_ctr() < 0)
+	if (dssh_register_aes256_ctr() < 0)
 		return -1;
-	if (register_hmac_sha2_256() < 0)
+	if (dssh_register_hmac_sha2_256() < 0)
 		return -1;
-	if (register_none_comp() < 0)
+	if (dssh_register_none_comp() < 0)
 		return -1;
-	if (ssh_ed25519_generate_key() < 0)
+	if (dssh_ed25519_generate_key() < 0)
 		return -1;
 
 	ctx->io = malloc(sizeof(struct mock_io_state));
@@ -4868,7 +4868,7 @@ static int
 test_aes256_ctr_null_ctx(void)
 {
 	dssh_test_reset_global_config();
-	ASSERT_EQ(register_aes256_ctr(), 0);
+	ASSERT_EQ(dssh_register_aes256_ctr(), 0);
 
 	dssh_enc enc = gconf.enc_head;
 	ASSERT_NOT_NULL(enc);
@@ -4885,7 +4885,7 @@ static int
 test_aes256_ctr_alloc_fail(void)
 {
 	dssh_test_reset_global_config();
-	ASSERT_EQ(register_aes256_ctr(), 0);
+	ASSERT_EQ(dssh_register_aes256_ctr(), 0);
 
 	dssh_enc enc = gconf.enc_head;
 	ASSERT_NOT_NULL(enc);
@@ -4910,7 +4910,7 @@ static int
 test_hmac_sha2_256_null_ctx(void)
 {
 	dssh_test_reset_global_config();
-	ASSERT_EQ(register_hmac_sha2_256(), 0);
+	ASSERT_EQ(dssh_register_hmac_sha2_256(), 0);
 
 	dssh_mac mac = gconf.mac_head;
 	ASSERT_NOT_NULL(mac);
@@ -4927,7 +4927,7 @@ static int
 test_hmac_sha2_256_alloc_fail(void)
 {
 	dssh_test_reset_global_config();
-	ASSERT_EQ(register_hmac_sha2_256(), 0);
+	ASSERT_EQ(dssh_register_hmac_sha2_256(), 0);
 
 	dssh_mac mac = gconf.mac_head;
 	ASSERT_NOT_NULL(mac);
@@ -4955,7 +4955,7 @@ static int
 test_none_comp(void)
 {
 	dssh_test_reset_global_config();
-	ASSERT_EQ(register_none_comp(), 0);
+	ASSERT_EQ(dssh_register_none_comp(), 0);
 
 	dssh_comp comp = gconf.comp_head;
 	ASSERT_NOT_NULL(comp);
@@ -4973,7 +4973,7 @@ static int
 test_none_enc(void)
 {
 	dssh_test_reset_global_config();
-	ASSERT_EQ(register_none_enc(), 0);
+	ASSERT_EQ(dssh_register_none_enc(), 0);
 
 	dssh_enc enc = gconf.enc_head;
 	ASSERT_NOT_NULL(enc);
@@ -4990,7 +4990,7 @@ static int
 test_none_mac(void)
 {
 	dssh_test_reset_global_config();
-	ASSERT_EQ(register_none_mac(), 0);
+	ASSERT_EQ(dssh_register_none_mac(), 0);
 
 	dssh_mac mac = gconf.mac_head;
 	ASSERT_NOT_NULL(mac);
@@ -5147,7 +5147,7 @@ test_blocksize_lt8(void)
 	enc->key_size = 16;
 	memcpy(enc->name, name, sizeof(name));
 	ASSERT_EQ(dssh_transport_register_enc(enc), 0);
-	ASSERT_EQ(register_none_comp(), 0);
+	ASSERT_EQ(dssh_register_none_comp(), 0);
 
 	dssh_transport_set_callbacks(mock_tx_dispatch, mock_rx_dispatch,
 	    mock_rxline_dispatch, mock_extra_line_cb);
@@ -5187,8 +5187,8 @@ static int
 test_ed25519_sign_small_buf(void)
 {
 	dssh_test_reset_global_config();
-	ASSERT_EQ(register_ssh_ed25519(), 0);
-	ASSERT_EQ(ssh_ed25519_generate_key(), 0);
+	ASSERT_EQ(dssh_register_ssh_ed25519(), 0);
+	ASSERT_EQ(dssh_ed25519_generate_key(), 0);
 
 	dssh_key_algo ka = dssh_transport_find_key_algo("ssh-ed25519");
 	ASSERT_NOT_NULL(ka);
@@ -5207,8 +5207,8 @@ static int
 test_ed25519_pubkey_small_buf(void)
 {
 	dssh_test_reset_global_config();
-	ASSERT_EQ(register_ssh_ed25519(), 0);
-	ASSERT_EQ(ssh_ed25519_generate_key(), 0);
+	ASSERT_EQ(dssh_register_ssh_ed25519(), 0);
+	ASSERT_EQ(dssh_ed25519_generate_key(), 0);
 
 	dssh_key_algo ka = dssh_transport_find_key_algo("ssh-ed25519");
 	ASSERT_NOT_NULL(ka);
@@ -5226,8 +5226,8 @@ static int
 test_rsa_sign_small_buf(void)
 {
 	dssh_test_reset_global_config();
-	ASSERT_EQ(register_rsa_sha2_256(), 0);
-	ASSERT_EQ(rsa_sha2_256_generate_key(2048), 0);
+	ASSERT_EQ(dssh_register_rsa_sha2_256(), 0);
+	ASSERT_EQ(dssh_rsa_sha2_256_generate_key(2048), 0);
 
 	dssh_key_algo ka = dssh_transport_find_key_algo("rsa-sha2-256");
 	ASSERT_NOT_NULL(ka);
@@ -5246,8 +5246,8 @@ static int
 test_rsa_pubkey_small_buf(void)
 {
 	dssh_test_reset_global_config();
-	ASSERT_EQ(register_rsa_sha2_256(), 0);
-	ASSERT_EQ(rsa_sha2_256_generate_key(2048), 0);
+	ASSERT_EQ(dssh_register_rsa_sha2_256(), 0);
+	ASSERT_EQ(dssh_rsa_sha2_256_generate_key(2048), 0);
 
 	dssh_key_algo ka = dssh_transport_find_key_algo("rsa-sha2-256");
 	ASSERT_NOT_NULL(ka);
@@ -5283,9 +5283,9 @@ test_ed25519_haskey_wrong_type(void)
 	/* Load an RSA key into the ed25519 module's ctx — haskey should
 	 * return false because EVP_PKEY_id != EVP_PKEY_ED25519. */
 	dssh_test_reset_global_config();
-	ASSERT_EQ(register_ssh_ed25519(), 0);
-	ASSERT_EQ(register_rsa_sha2_256(), 0);
-	ASSERT_EQ(rsa_sha2_256_generate_key(2048), 0);
+	ASSERT_EQ(dssh_register_ssh_ed25519(), 0);
+	ASSERT_EQ(dssh_register_rsa_sha2_256(), 0);
+	ASSERT_EQ(dssh_rsa_sha2_256_generate_key(2048), 0);
 
 	dssh_key_algo ed = dssh_transport_find_key_algo("ssh-ed25519");
 	dssh_key_algo rsa = dssh_transport_find_key_algo("rsa-sha2-256");
@@ -5306,9 +5306,9 @@ static int
 test_rsa_haskey_wrong_type(void)
 {
 	dssh_test_reset_global_config();
-	ASSERT_EQ(register_ssh_ed25519(), 0);
-	ASSERT_EQ(register_rsa_sha2_256(), 0);
-	ASSERT_EQ(ssh_ed25519_generate_key(), 0);
+	ASSERT_EQ(dssh_register_ssh_ed25519(), 0);
+	ASSERT_EQ(dssh_register_rsa_sha2_256(), 0);
+	ASSERT_EQ(dssh_ed25519_generate_key(), 0);
 
 	dssh_key_algo ed = dssh_transport_find_key_algo("ssh-ed25519");
 	dssh_key_algo rsa = dssh_transport_find_key_algo("rsa-sha2-256");
@@ -5395,12 +5395,12 @@ test_register_two_kex(void)
 	dssh_test_reset_global_config();
 
 	if (test_using_dhgex()) {
-		ASSERT_EQ(register_dh_gex_sha256(), 0);
-		ASSERT_EQ(register_curve25519_sha256(), 0);
+		ASSERT_EQ(dssh_register_dh_gex_sha256(), 0);
+		ASSERT_EQ(dssh_register_curve25519_sha256(), 0);
 	}
 	else {
-		ASSERT_EQ(register_curve25519_sha256(), 0);
-		ASSERT_EQ(register_dh_gex_sha256(), 0);
+		ASSERT_EQ(dssh_register_curve25519_sha256(), 0);
+		ASSERT_EQ(dssh_register_dh_gex_sha256(), 0);
 	}
 
 	dssh_test_reset_global_config();
@@ -5413,7 +5413,7 @@ test_register_two_comp(void)
 	/* Covers comp_tail->next assignment (line 1682) */
 	dssh_test_reset_global_config();
 
-	ASSERT_EQ(register_none_comp(), 0);
+	ASSERT_EQ(dssh_register_none_comp(), 0);
 
 	size_t sz = sizeof(struct dssh_comp_s) + 8;
 	struct dssh_comp_s *comp2 = calloc(1, sz);
@@ -5464,7 +5464,7 @@ test_aes256_ctr_ctx_member_null(void)
 {
 	/* cbd non-NULL but cbd->ctx is NULL — second half of OR at line 46 */
 	dssh_test_reset_global_config();
-	ASSERT_EQ(register_aes256_ctr(), 0);
+	ASSERT_EQ(dssh_register_aes256_ctr(), 0);
 
 	dssh_enc enc = gconf.enc_head;
 	ASSERT_NOT_NULL(enc);
@@ -5499,7 +5499,7 @@ test_aes256_ctr_encrypt_update_failure(void)
 {
 	/* Init succeeds, then EVP_EncryptUpdate fails */
 	dssh_test_reset_global_config();
-	ASSERT_EQ(register_aes256_ctr(), 0);
+	ASSERT_EQ(dssh_register_aes256_ctr(), 0);
 
 	dssh_enc enc = gconf.enc_head;
 	ASSERT_NOT_NULL(enc);
@@ -5532,7 +5532,7 @@ static int
 test_hmac_sha2_256_cleanup_null(void)
 {
 	dssh_test_reset_global_config();
-	ASSERT_EQ(register_hmac_sha2_256(), 0);
+	ASSERT_EQ(dssh_register_hmac_sha2_256(), 0);
 
 	dssh_mac mac = gconf.mac_head;
 	ASSERT_NOT_NULL(mac);
@@ -5549,7 +5549,7 @@ test_hmac_sha2_256_generate_failure(void)
 {
 	/* Init succeeds, then generate fails at EVP_MAC operation */
 	dssh_test_reset_global_config();
-	ASSERT_EQ(register_hmac_sha2_256(), 0);
+	ASSERT_EQ(dssh_register_hmac_sha2_256(), 0);
 
 	dssh_mac mac = gconf.mac_head;
 	ASSERT_NOT_NULL(mac);
@@ -5904,7 +5904,7 @@ test_version_rx_too_long(void)
 
 	struct mock_io_state io;
 	ASSERT_OK(mock_io_init(&io, 0));
-	ASSERT_OK(register_none_comp());
+	ASSERT_OK(dssh_register_none_comp());
 
 	dssh_session client = dssh_session_init(true, 0);
 	ASSERT_NOT_NULL(client);
@@ -5937,7 +5937,7 @@ test_version_rx_non_ascii(void)
 
 	struct mock_io_state io;
 	ASSERT_OK(mock_io_init(&io, 0));
-	ASSERT_OK(register_none_comp());
+	ASSERT_OK(dssh_register_none_comp());
 
 	dssh_session client = dssh_session_init(true, 0);
 	ASSERT_NOT_NULL(client);
@@ -6337,7 +6337,7 @@ static int
 test_hmac_sha2_256_reinit_failure(void)
 {
 	dssh_test_reset_global_config();
-	ASSERT_EQ(register_hmac_sha2_256(), 0);
+	ASSERT_EQ(dssh_register_hmac_sha2_256(), 0);
 
 	dssh_mac mac = gconf.mac_head;
 	ASSERT_NOT_NULL(mac);
@@ -6379,7 +6379,7 @@ static int
 test_hmac_sha2_256_fetch_failure(void)
 {
 	dssh_test_reset_global_config();
-	ASSERT_EQ(register_hmac_sha2_256(), 0);
+	ASSERT_EQ(dssh_register_hmac_sha2_256(), 0);
 
 	dssh_mac mac = gconf.mac_head;
 	ASSERT_NOT_NULL(mac);
@@ -6410,7 +6410,7 @@ static int
 test_hmac_sha2_256_mac_init_failure(void)
 {
 	dssh_test_reset_global_config();
-	ASSERT_EQ(register_hmac_sha2_256(), 0);
+	ASSERT_EQ(dssh_register_hmac_sha2_256(), 0);
 
 	dssh_mac mac = gconf.mac_head;
 	ASSERT_NOT_NULL(mac);

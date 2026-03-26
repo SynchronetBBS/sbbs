@@ -22,7 +22,7 @@ cleanup(dssh_comp_ctx *ctx)
 }
 
 DSSH_PUBLIC int
-register_none_comp(void)
+dssh_register_none_comp(void)
 {
 	static const char   name[] = "none";
 	struct dssh_comp_s *comp = malloc(sizeof(*comp) + sizeof(name));

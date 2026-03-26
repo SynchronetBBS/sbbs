@@ -12,7 +12,7 @@
 
 #include <stdbool.h>
 
-/* Register the test mac module.  Call INSTEAD of register_hmac_sha2_256(). */
+/* Register the test mac module.  Call INSTEAD of dssh_register_hmac_sha2_256(). */
 int register_test_mac(void);
 
 /*

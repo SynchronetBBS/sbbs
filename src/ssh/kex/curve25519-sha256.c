@@ -573,7 +573,7 @@ kex_cleanup(void *kex_data)
 }
 
 DSSH_PUBLIC int
-register_curve25519_sha256(void)
+dssh_register_curve25519_sha256(void)
 {
 	struct dssh_kex_s *kex = malloc(sizeof(*kex) + KEX_NAME_LEN + 1);
 

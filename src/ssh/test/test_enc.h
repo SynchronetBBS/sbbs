@@ -9,7 +9,7 @@
 #ifndef DSSH_TEST_ENC_H
 #define DSSH_TEST_ENC_H
 
-/* Register the test enc module.  Call INSTEAD of register_aes256_ctr(). */
+/* Register the test enc module.  Call INSTEAD of dssh_register_aes256_ctr(). */
 int register_test_enc(void);
 
 /* Reset all failure injection state */

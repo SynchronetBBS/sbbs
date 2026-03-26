@@ -17,7 +17,7 @@ cleanup(dssh_mac_ctx *ctx)
 }
 
 DSSH_PUBLIC int
-register_none_mac(void)
+dssh_register_none_mac(void)
 {
 	static const char  name[] = "none";
 	struct dssh_mac_s *mac = malloc(sizeof(*mac) + sizeof(name));

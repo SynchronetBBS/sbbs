@@ -6,7 +6,7 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-DSSH_PUBLIC int register_hmac_sha2_256(void);
+DSSH_PUBLIC int dssh_register_hmac_sha2_256(void);
 
 #ifdef __cplusplus
 }

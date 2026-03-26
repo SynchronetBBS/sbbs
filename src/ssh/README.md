@@ -76,13 +76,13 @@ int main(void)
 {
     /* 2. Register algorithms (order = preference) */
     dssh_transport_set_callbacks(my_tx, my_rx, my_rxline, NULL);
-    register_curve25519_sha256();
-    register_ssh_ed25519();
-    register_aes256_ctr();
-    register_none_enc();
-    register_hmac_sha2_256();
-    register_none_mac();
-    register_none_comp();
+    dssh_register_curve25519_sha256();
+    dssh_register_ssh_ed25519();
+    dssh_register_aes256_ctr();
+    dssh_register_none_enc();
+    dssh_register_hmac_sha2_256();
+    dssh_register_none_mac();
+    dssh_register_none_comp();
 
     /* 3. Create session (opaque handle) */
     dssh_session sess = dssh_session_init(true, 0);
@@ -145,18 +145,18 @@ int main(void)
 {
     /* 1. Register algorithms and I/O callbacks (same as client) */
     dssh_transport_set_callbacks(my_tx, my_rx, my_rxline, NULL);
-    register_curve25519_sha256();
-    register_dh_gex_sha256();
-    register_ssh_ed25519();
-    register_aes256_ctr();
-    register_none_enc();
-    register_hmac_sha2_256();
-    register_none_mac();
-    register_none_comp();
+    dssh_register_curve25519_sha256();
+    dssh_register_dh_gex_sha256();
+    dssh_register_ssh_ed25519();
+    dssh_register_aes256_ctr();
+    dssh_register_none_enc();
+    dssh_register_hmac_sha2_256();
+    dssh_register_none_mac();
+    dssh_register_none_comp();
 
     /* 2. Load host keys (stored on algorithm entry, not session) */
-    ssh_ed25519_load_key_file("/path/to/host_ed25519.pem", NULL, NULL);
-    rsa_sha2_256_load_key_file("/path/to/host_rsa.pem", NULL, NULL);
+    dssh_ed25519_load_key_file("/path/to/host_ed25519.pem", NULL, NULL);
+    dssh_rsa_sha2_256_load_key_file("/path/to/host_rsa.pem", NULL, NULL);
 
     /* 3. Accept a connection, then create session */
     dssh_session sess = dssh_session_init(false, 0);
@@ -289,7 +289,7 @@ my_passwd_change(const uint8_t *prompt, size_t prompt_len,
 #include "deucessh-algorithms.h"
 
 /* Load the private key (stored on the algorithm entry) */
-ssh_ed25519_load_key_file("/path/to/id_ed25519", NULL, NULL);
+dssh_ed25519_load_key_file("/path/to/id_ed25519", NULL, NULL);
 
 /* Authenticate */
 dssh_auth_publickey(sess, "user", "ssh-ed25519");
@@ -462,14 +462,14 @@ my_pubkey_cb(const uint8_t *username, size_t username_len,
 
 ## Algorithm Registration
 
-Call `register_*()` functions before any session is created.
+Call `dssh_register_*()` functions before any session is created.
 Registration order determines negotiation preference — first registered
 is most preferred.
 
 ```c
 /* Prefer curve25519, fall back to DH-GEX */
-register_curve25519_sha256();
-register_dh_gex_sha256();
+dssh_register_curve25519_sha256();
+dssh_register_dh_gex_sha256();
 ```
 
 You can register your own custom algorithm modules by implementing
@@ -716,7 +716,7 @@ are defined in `deucessh-kex.h`.  KEX modules need no private headers.
 
 ### Registration Rules
 
-- Call `register_*()` before any `dssh_session_init()`.
+- Call `dssh_register_*()` before any `dssh_session_init()`.
 - After the first session init, registration is locked (`DSSH_ERROR_TOOLATE`).
 - Names must be 1–64 printable ASCII characters (no spaces, no control chars).
 - The `next` pointer must be NULL (the library manages the linked list).
@@ -782,19 +782,19 @@ int my_pw_cb(char *buf, int size, int rwflag, void *u)
 }
 
 /* Generate, save encrypted, export public key */
-ssh_ed25519_generate_key();
-ssh_ed25519_save_key_file("/etc/ssh/host_ed25519",
+dssh_ed25519_generate_key();
+dssh_ed25519_save_key_file("/etc/ssh/host_ed25519",
     my_pw_cb, "passphrase");
-ssh_ed25519_save_pub_file("/etc/ssh/host_ed25519.pub");
+dssh_ed25519_save_pub_file("/etc/ssh/host_ed25519.pub");
 
 /* Load encrypted key */
-ssh_ed25519_load_key_file("/etc/ssh/host_ed25519",
+dssh_ed25519_load_key_file("/etc/ssh/host_ed25519",
     my_pw_cb, "passphrase");
 
 /* Get public key string at runtime */
-int64_t len = ssh_ed25519_get_pub_str(NULL, 0);
+int64_t len = dssh_ed25519_get_pub_str(NULL, 0);
 char *pub = malloc(len);
-ssh_ed25519_get_pub_str(pub, len);  /* "ssh-ed25519 AAAA..." */
+dssh_ed25519_get_pub_str(pub, len);  /* "ssh-ed25519 AAAA..." */
 ```
 
 ## Server-Side Channel Setup

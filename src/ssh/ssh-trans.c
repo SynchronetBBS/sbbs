@@ -16,7 +16,7 @@
 #ifndef DSSH_VERSION_STRING
  #define DSSH_VERSION_STRING "0.0"
 #endif
-static const char * const                         sw_ver = "DeuceSSH-" DSSH_VERSION_STRING;
+static const char                                  sw_ver[] = "DeuceSSH-" DSSH_VERSION_STRING;
 
 DSSH_TESTABLE struct dssh_transport_global_config gconf;
 

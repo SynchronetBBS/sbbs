@@ -139,7 +139,7 @@ static int
 test_register_hmac_sha2_256(void)
 {
 	dssh_test_reset_global_config();
-	int ret = register_hmac_sha2_256();
+	int ret = dssh_register_hmac_sha2_256();
 	ASSERT_EQ(ret, 0);
 	return TEST_PASS;
 }
@@ -148,7 +148,7 @@ static int
 test_register_none_mac(void)
 {
 	dssh_test_reset_global_config();
-	int ret = register_none_mac();
+	int ret = dssh_register_none_mac();
 	ASSERT_EQ(ret, 0);
 	return TEST_PASS;
 }
@@ -157,17 +157,17 @@ static int
 test_register_hmac_after_lock(void)
 {
 	dssh_test_reset_global_config();
-	ASSERT_EQ(register_hmac_sha2_256(), 0);
-	ASSERT_EQ(register_none_mac(), 0);
-	ASSERT_EQ(register_aes256_ctr(), 0);
-	ASSERT_EQ(register_none_comp(), 0);
-	ASSERT_EQ(register_curve25519_sha256(), 0);
-	ASSERT_EQ(register_ssh_ed25519(), 0);
+	ASSERT_EQ(dssh_register_hmac_sha2_256(), 0);
+	ASSERT_EQ(dssh_register_none_mac(), 0);
+	ASSERT_EQ(dssh_register_aes256_ctr(), 0);
+	ASSERT_EQ(dssh_register_none_comp(), 0);
+	ASSERT_EQ(dssh_register_curve25519_sha256(), 0);
+	ASSERT_EQ(dssh_register_ssh_ed25519(), 0);
 
 	dssh_session sess = dssh_session_init(true, 0);
 	ASSERT_NOT_NULL(sess);
 
-	int ret = register_hmac_sha2_256();
+	int ret = dssh_register_hmac_sha2_256();
 	ASSERT_EQ(ret, DSSH_ERROR_TOOLATE);
 
 	dssh_session_cleanup(sess);
@@ -178,17 +178,17 @@ static int
 test_register_none_mac_after_lock(void)
 {
 	dssh_test_reset_global_config();
-	ASSERT_EQ(register_hmac_sha2_256(), 0);
-	ASSERT_EQ(register_none_mac(), 0);
-	ASSERT_EQ(register_aes256_ctr(), 0);
-	ASSERT_EQ(register_none_comp(), 0);
-	ASSERT_EQ(register_curve25519_sha256(), 0);
-	ASSERT_EQ(register_ssh_ed25519(), 0);
+	ASSERT_EQ(dssh_register_hmac_sha2_256(), 0);
+	ASSERT_EQ(dssh_register_none_mac(), 0);
+	ASSERT_EQ(dssh_register_aes256_ctr(), 0);
+	ASSERT_EQ(dssh_register_none_comp(), 0);
+	ASSERT_EQ(dssh_register_curve25519_sha256(), 0);
+	ASSERT_EQ(dssh_register_ssh_ed25519(), 0);
 
 	dssh_session sess = dssh_session_init(true, 0);
 	ASSERT_NOT_NULL(sess);
 
-	int ret = register_none_mac();
+	int ret = dssh_register_none_mac();
 	ASSERT_EQ(ret, DSSH_ERROR_TOOLATE);
 
 	dssh_session_cleanup(sess);
@@ -199,8 +199,8 @@ static int
 test_register_both_mac(void)
 {
 	dssh_test_reset_global_config();
-	ASSERT_EQ(register_hmac_sha2_256(), 0);
-	ASSERT_EQ(register_none_mac(), 0);
+	ASSERT_EQ(dssh_register_hmac_sha2_256(), 0);
+	ASSERT_EQ(dssh_register_none_mac(), 0);
 	return TEST_PASS;
 }
 
@@ -434,7 +434,7 @@ static int
 test_none_mac_passthrough(void)
 {
 	dssh_test_reset_global_config();
-	ASSERT_EQ(register_none_mac(), 0);
+	ASSERT_EQ(dssh_register_none_mac(), 0);
 	/* The none MAC has digest_size=0, key_size=0, init=NULL.
 	 * Its generate function returns 0 without writing any output.
 	 * Registration success confirms proper initialization. */
@@ -445,7 +445,7 @@ static int
 test_none_mac_no_init(void)
 {
 	dssh_test_reset_global_config();
-	ASSERT_EQ(register_none_mac(), 0);
+	ASSERT_EQ(dssh_register_none_mac(), 0);
 	/* init is NULL for none MAC — no key setup needed */
 	return TEST_PASS;
 }
@@ -458,12 +458,12 @@ static int
 test_mac_session_creation(void)
 {
 	dssh_test_reset_global_config();
-	ASSERT_EQ(register_hmac_sha2_256(), 0);
-	ASSERT_EQ(register_none_mac(), 0);
-	ASSERT_EQ(register_aes256_ctr(), 0);
-	ASSERT_EQ(register_none_comp(), 0);
-	ASSERT_EQ(register_curve25519_sha256(), 0);
-	ASSERT_EQ(register_ssh_ed25519(), 0);
+	ASSERT_EQ(dssh_register_hmac_sha2_256(), 0);
+	ASSERT_EQ(dssh_register_none_mac(), 0);
+	ASSERT_EQ(dssh_register_aes256_ctr(), 0);
+	ASSERT_EQ(dssh_register_none_comp(), 0);
+	ASSERT_EQ(dssh_register_curve25519_sha256(), 0);
+	ASSERT_EQ(dssh_register_ssh_ed25519(), 0);
 
 	dssh_session sess = dssh_session_init(true, 0);
 	ASSERT_NOT_NULL(sess);
@@ -477,8 +477,8 @@ test_mac_session_creation(void)
 
 static struct dssh_test_entry tests[] = {
 	/* Registration */
-	{ "mac/register_hmac_sha2_256",      test_register_hmac_sha2_256 },
-	{ "mac/register_none_mac",           test_register_none_mac },
+	{ "mac/dssh_register_hmac_sha2_256",      test_register_hmac_sha2_256 },
+	{ "mac/dssh_register_none_mac",           test_register_none_mac },
 	{ "mac/register_both",               test_register_both_mac },
 	{ "mac/register_hmac_after_lock",    test_register_hmac_after_lock },
 	{ "mac/register_none_after_lock",    test_register_none_mac_after_lock },

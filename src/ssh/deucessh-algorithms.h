@@ -17,37 +17,37 @@ extern "C" {
 #endif
 
 /* Key exchange */
-DSSH_PUBLIC int register_curve25519_sha256(void);
-DSSH_PUBLIC int register_dh_gex_sha256(void);
+DSSH_PUBLIC int dssh_register_curve25519_sha256(void);
+DSSH_PUBLIC int dssh_register_dh_gex_sha256(void);
 
 /* Host key algorithms */
-DSSH_PUBLIC int register_ssh_ed25519(void);
-DSSH_PUBLIC int ssh_ed25519_load_key_file(const char *path,
+DSSH_PUBLIC int dssh_register_ssh_ed25519(void);
+DSSH_PUBLIC int dssh_ed25519_load_key_file(const char *path,
     pem_password_cb *pw_cb, void *pw_cbdata);
-DSSH_PUBLIC int ssh_ed25519_save_key_file(const char *path,
+DSSH_PUBLIC int dssh_ed25519_save_key_file(const char *path,
     pem_password_cb *pw_cb, void *pw_cbdata);
-DSSH_PUBLIC int64_t ssh_ed25519_get_pub_str(char *buf, size_t bufsz);
-DSSH_PUBLIC int ssh_ed25519_save_pub_file(const char *path);
-DSSH_PUBLIC int ssh_ed25519_generate_key(void);
-DSSH_PUBLIC int register_rsa_sha2_256(void);
-DSSH_PUBLIC int rsa_sha2_256_load_key_file(const char *path,
+DSSH_PUBLIC int64_t dssh_ed25519_get_pub_str(char *buf, size_t bufsz);
+DSSH_PUBLIC int dssh_ed25519_save_pub_file(const char *path);
+DSSH_PUBLIC int dssh_ed25519_generate_key(void);
+DSSH_PUBLIC int dssh_register_rsa_sha2_256(void);
+DSSH_PUBLIC int dssh_rsa_sha2_256_load_key_file(const char *path,
     pem_password_cb *pw_cb, void *pw_cbdata);
-DSSH_PUBLIC int rsa_sha2_256_save_key_file(const char *path,
+DSSH_PUBLIC int dssh_rsa_sha2_256_save_key_file(const char *path,
     pem_password_cb *pw_cb, void *pw_cbdata);
-DSSH_PUBLIC int64_t rsa_sha2_256_get_pub_str(char *buf, size_t bufsz);
-DSSH_PUBLIC int rsa_sha2_256_save_pub_file(const char *path);
-DSSH_PUBLIC int rsa_sha2_256_generate_key(unsigned int bits);
+DSSH_PUBLIC int64_t dssh_rsa_sha2_256_get_pub_str(char *buf, size_t bufsz);
+DSSH_PUBLIC int dssh_rsa_sha2_256_save_pub_file(const char *path);
+DSSH_PUBLIC int dssh_rsa_sha2_256_generate_key(unsigned int bits);
 
 /* Encryption */
-DSSH_PUBLIC int register_aes256_ctr(void);
-DSSH_PUBLIC int register_none_enc(void);
+DSSH_PUBLIC int dssh_register_aes256_ctr(void);
+DSSH_PUBLIC int dssh_register_none_enc(void);
 
 /* MAC */
-DSSH_PUBLIC int register_hmac_sha2_256(void);
-DSSH_PUBLIC int register_none_mac(void);
+DSSH_PUBLIC int dssh_register_hmac_sha2_256(void);
+DSSH_PUBLIC int dssh_register_none_mac(void);
 
 /* Compression */
-DSSH_PUBLIC int register_none_comp(void);
+DSSH_PUBLIC int dssh_register_none_comp(void);
 
 /*
  * Set the opaque context pointer for a registered key algorithm.

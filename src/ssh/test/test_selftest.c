@@ -101,21 +101,21 @@ register_all_algorithms(void)
 {
 	int res;
 	if (test_using_dhgex())
-		res = register_dh_gex_sha256();
+		res = dssh_register_dh_gex_sha256();
 	else
-		res = register_curve25519_sha256();
+		res = dssh_register_curve25519_sha256();
 	if (res < 0)
 		return res;
 	res = test_register_key_algos();
 	if (res < 0)
 		return res;
-	res = register_aes256_ctr();
+	res = dssh_register_aes256_ctr();
 	if (res < 0)
 		return res;
-	res = register_hmac_sha2_256();
+	res = dssh_register_hmac_sha2_256();
 	if (res < 0)
 		return res;
-	res = register_none_comp();
+	res = dssh_register_none_comp();
 	if (res < 0)
 		return res;
 	return 0;

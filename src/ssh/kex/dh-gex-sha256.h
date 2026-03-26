@@ -28,7 +28,7 @@ struct dssh_dh_gex_provider {
  */
 DSSH_PUBLIC void dssh_dh_gex_set_provider(dssh_session sess,
     struct dssh_dh_gex_provider                       *provider);
-DSSH_PUBLIC int register_dh_gex_sha256(void);
+DSSH_PUBLIC int dssh_register_dh_gex_sha256(void);
 
 #ifdef __cplusplus
 }

@@ -115,7 +115,7 @@ static int
 test_register_aes256_ctr(void)
 {
 	dssh_test_reset_global_config();
-	int ret = register_aes256_ctr();
+	int ret = dssh_register_aes256_ctr();
 	ASSERT_EQ(ret, 0);
 	return TEST_PASS;
 }
@@ -124,7 +124,7 @@ static int
 test_register_none_enc(void)
 {
 	dssh_test_reset_global_config();
-	int ret = register_none_enc();
+	int ret = dssh_register_none_enc();
 	ASSERT_EQ(ret, 0);
 	return TEST_PASS;
 }
@@ -133,19 +133,19 @@ static int
 test_register_aes256_ctr_after_lock(void)
 {
 	dssh_test_reset_global_config();
-	ASSERT_EQ(register_aes256_ctr(), 0);
-	ASSERT_EQ(register_none_enc(), 0);
-	ASSERT_EQ(register_none_comp(), 0);
-	ASSERT_EQ(register_none_mac(), 0);
-	ASSERT_EQ(register_curve25519_sha256(), 0);
-	ASSERT_EQ(register_ssh_ed25519(), 0);
+	ASSERT_EQ(dssh_register_aes256_ctr(), 0);
+	ASSERT_EQ(dssh_register_none_enc(), 0);
+	ASSERT_EQ(dssh_register_none_comp(), 0);
+	ASSERT_EQ(dssh_register_none_mac(), 0);
+	ASSERT_EQ(dssh_register_curve25519_sha256(), 0);
+	ASSERT_EQ(dssh_register_ssh_ed25519(), 0);
 
 	/* Creating a session locks the algorithm registry */
 	dssh_session sess = dssh_session_init(true, 0);
 	ASSERT_NOT_NULL(sess);
 
 	/* Registration must fail with DSSH_ERROR_TOOLATE */
-	int ret = register_aes256_ctr();
+	int ret = dssh_register_aes256_ctr();
 	ASSERT_EQ(ret, DSSH_ERROR_TOOLATE);
 
 	dssh_session_cleanup(sess);
@@ -156,17 +156,17 @@ static int
 test_register_none_enc_after_lock(void)
 {
 	dssh_test_reset_global_config();
-	ASSERT_EQ(register_aes256_ctr(), 0);
-	ASSERT_EQ(register_none_enc(), 0);
-	ASSERT_EQ(register_none_comp(), 0);
-	ASSERT_EQ(register_none_mac(), 0);
-	ASSERT_EQ(register_curve25519_sha256(), 0);
-	ASSERT_EQ(register_ssh_ed25519(), 0);
+	ASSERT_EQ(dssh_register_aes256_ctr(), 0);
+	ASSERT_EQ(dssh_register_none_enc(), 0);
+	ASSERT_EQ(dssh_register_none_comp(), 0);
+	ASSERT_EQ(dssh_register_none_mac(), 0);
+	ASSERT_EQ(dssh_register_curve25519_sha256(), 0);
+	ASSERT_EQ(dssh_register_ssh_ed25519(), 0);
 
 	dssh_session sess = dssh_session_init(true, 0);
 	ASSERT_NOT_NULL(sess);
 
-	int ret = register_none_enc();
+	int ret = dssh_register_none_enc();
 	ASSERT_EQ(ret, DSSH_ERROR_TOOLATE);
 
 	dssh_session_cleanup(sess);
@@ -177,8 +177,8 @@ static int
 test_register_both_enc(void)
 {
 	dssh_test_reset_global_config();
-	ASSERT_EQ(register_aes256_ctr(), 0);
-	ASSERT_EQ(register_none_enc(), 0);
+	ASSERT_EQ(dssh_register_aes256_ctr(), 0);
+	ASSERT_EQ(dssh_register_none_enc(), 0);
 	return TEST_PASS;
 }
 
@@ -441,7 +441,7 @@ static int
 test_none_enc_passthrough(void)
 {
 	dssh_test_reset_global_config();
-	ASSERT_EQ(register_none_enc(), 0);
+	ASSERT_EQ(dssh_register_none_enc(), 0);
 
 	/* Find the registered struct via negotiate_algo.  We pass
 	 * NULL head — negotiate_algo traverses the linked list, but
@@ -449,11 +449,11 @@ test_none_enc_passthrough(void)
 	 * we register all required algos, create a session (which
 	 * locks the registry), and verify the enc name is available
 	 * through the query API. */
-	ASSERT_EQ(register_aes256_ctr(), 0);
-	ASSERT_EQ(register_none_comp(), 0);
-	ASSERT_EQ(register_none_mac(), 0);
-	ASSERT_EQ(register_curve25519_sha256(), 0);
-	ASSERT_EQ(register_ssh_ed25519(), 0);
+	ASSERT_EQ(dssh_register_aes256_ctr(), 0);
+	ASSERT_EQ(dssh_register_none_comp(), 0);
+	ASSERT_EQ(dssh_register_none_mac(), 0);
+	ASSERT_EQ(dssh_register_curve25519_sha256(), 0);
+	ASSERT_EQ(dssh_register_ssh_ed25519(), 0);
 
 	dssh_session sess = dssh_session_init(true, 0);
 	ASSERT_NOT_NULL(sess);
@@ -473,7 +473,7 @@ static int
 test_none_enc_no_init(void)
 {
 	dssh_test_reset_global_config();
-	ASSERT_EQ(register_none_enc(), 0);
+	ASSERT_EQ(dssh_register_none_enc(), 0);
 	/* The none cipher sets init=NULL, blocksize=1, key_size=0.
 	 * Registration success confirms the struct was accepted. */
 	return TEST_PASS;
@@ -487,12 +487,12 @@ static int
 test_enc_session_creation(void)
 {
 	dssh_test_reset_global_config();
-	ASSERT_EQ(register_aes256_ctr(), 0);
-	ASSERT_EQ(register_none_enc(), 0);
-	ASSERT_EQ(register_none_comp(), 0);
-	ASSERT_EQ(register_none_mac(), 0);
-	ASSERT_EQ(register_curve25519_sha256(), 0);
-	ASSERT_EQ(register_ssh_ed25519(), 0);
+	ASSERT_EQ(dssh_register_aes256_ctr(), 0);
+	ASSERT_EQ(dssh_register_none_enc(), 0);
+	ASSERT_EQ(dssh_register_none_comp(), 0);
+	ASSERT_EQ(dssh_register_none_mac(), 0);
+	ASSERT_EQ(dssh_register_curve25519_sha256(), 0);
+	ASSERT_EQ(dssh_register_ssh_ed25519(), 0);
 
 	dssh_session sess = dssh_session_init(true, 0);
 	ASSERT_NOT_NULL(sess);
@@ -537,8 +537,8 @@ test_aes256_ctr_symmetric(void)
 
 static struct dssh_test_entry tests[] = {
 	/* Registration */
-	{ "enc/register_aes256_ctr",        test_register_aes256_ctr },
-	{ "enc/register_none_enc",          test_register_none_enc },
+	{ "enc/dssh_register_aes256_ctr",        test_register_aes256_ctr },
+	{ "enc/dssh_register_none_enc",          test_register_none_enc },
 	{ "enc/register_both",              test_register_both_enc },
 	{ "enc/register_aes256_after_lock", test_register_aes256_ctr_after_lock },
 	{ "enc/register_none_after_lock",   test_register_none_enc_after_lock },

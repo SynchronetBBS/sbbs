@@ -217,7 +217,7 @@ cleanup(dssh_key_algo_ctx *ctx)
 }
 
 DSSH_PUBLIC int
-register_ssh_ed25519(void)
+dssh_register_ssh_ed25519(void)
 {
 	struct dssh_key_algo_s *ka = malloc(sizeof(*ka) + ED25519_NAME_LEN + 1);
 	if (ka == NULL)
@@ -235,7 +235,7 @@ register_ssh_ed25519(void)
 }
 
 DSSH_PUBLIC int
-ssh_ed25519_load_key_file(const char *path, pem_password_cb *pw_cb,
+dssh_ed25519_load_key_file(const char *path, pem_password_cb *pw_cb,
     void *pw_cbdata)
 {
 	FILE *fp = fopen(path, "r");
@@ -278,7 +278,7 @@ ssh_ed25519_load_key_file(const char *path, pem_password_cb *pw_cb,
 }
 
 DSSH_PUBLIC int
-ssh_ed25519_save_key_file(const char *path, pem_password_cb *pw_cb,
+dssh_ed25519_save_key_file(const char *path, pem_password_cb *pw_cb,
     void *pw_cbdata)
 {
 #ifdef DSSH_TESTING
@@ -311,7 +311,7 @@ ssh_ed25519_save_key_file(const char *path, pem_password_cb *pw_cb,
 }
 
 DSSH_PUBLIC int64_t
-ssh_ed25519_get_pub_str(char *buf, size_t bufsz)
+dssh_ed25519_get_pub_str(char *buf, size_t bufsz)
 {
 	uint8_t blob[256];
 	size_t blob_len;
@@ -337,10 +337,10 @@ ssh_ed25519_get_pub_str(char *buf, size_t bufsz)
 }
 
 DSSH_PUBLIC int
-ssh_ed25519_save_pub_file(const char *path)
+dssh_ed25519_save_pub_file(const char *path)
 {
 	char str[256];
-	int64_t len = ssh_ed25519_get_pub_str(str, sizeof(str));
+	int64_t len = dssh_ed25519_get_pub_str(str, sizeof(str));
 	if (len < 0)
 		return (int)len;
 
@@ -354,7 +354,7 @@ ssh_ed25519_save_pub_file(const char *path)
 }
 
 DSSH_PUBLIC int
-ssh_ed25519_generate_key(void)
+dssh_ed25519_generate_key(void)
 {
 	EVP_PKEY *pkey = NULL;
 	EVP_PKEY_CTX *pctx = EVP_PKEY_CTX_new_from_name(NULL, "ED25519", NULL);

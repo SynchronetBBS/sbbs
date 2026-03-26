@@ -105,7 +105,15 @@ if(DEUCESSH_BUILD_SHARED)
 	target_compile_options(deucessh_shared PRIVATE
 		${DEUCESSH_COMPILE_OPTIONS}
 		$<$<OR:$<C_COMPILER_ID:Clang>,$<C_COMPILER_ID:AppleClang>,$<C_COMPILER_ID:GNU>>:
-			-fvisibility=hidden>)
+			-fvisibility=hidden -fno-semantic-interposition>)
+	# ELF shared library hardening and optimization (Linux, FreeBSD)
+	if(UNIX AND NOT APPLE)
+		target_link_options(deucessh_shared PRIVATE
+			-Wl,-z,relro,-z,now
+			-Wl,--hash-style=gnu
+			-Wl,-Bsymbolic-functions
+			-Wl,-O2)
+	endif()
 	list(APPEND DEUCESSH_INSTALL_TARGETS deucessh_shared)
 endif()
 
