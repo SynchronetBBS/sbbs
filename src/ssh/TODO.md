@@ -2,14 +2,6 @@
 
 ## Open
 
-12. `dssh_bytebuf_write` crashed with SIGFPE (`% 0`) in the demux
-    thread — a channel with `chan_type == 0` (type not yet determined)
-    received CHANNEL_DATA.  The `chan_type == 0` early return in
-    `demux_dispatch` drops the data but doesn't replenish the window,
-    so the peer stalls.  The bytebuf capacity-0 guard prevents the
-    crash but doesn't fix the stall.  Investigate why the demux thread
-    can deliver data before the channel type is set.
-
 11. `alloc_channel_id()` (ssh-conn.c) is a bare `next_channel_id++`
     with no collision detection.  If a session opens and closes 2^32
     channels, the counter wraps and the next ID could collide with a
