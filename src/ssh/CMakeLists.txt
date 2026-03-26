@@ -47,11 +47,115 @@ set(DEUCESSH_PUBLIC_HEADERS
 	deucessh-portable.h
 )
 
-set(DEUCESSH_COMPILE_OPTIONS
-	$<$<OR:$<C_COMPILER_ID:Clang>,$<C_COMPILER_ID:AppleClang>,$<C_COMPILER_ID:GNU>>:
-		-Wall -Wpedantic -pedantic -Werror>
-	$<$<C_COMPILER_ID:MSVC>:
-		/W4>)
+include(CheckCCompilerFlag)
+include(CheckLinkerFlag)
+
+# Probe for supported hardening flags (per OpenSSF Compiler Hardening Guide)
+set(DEUCESSH_COMPILE_OPTIONS "")
+set(DEUCESSH_LINK_OPTIONS "")
+
+if(CMAKE_C_COMPILER_ID MATCHES "GNU|Clang|AppleClang")
+	# Baseline warnings (GCC 2.95+, Clang 4+)
+	list(APPEND DEUCESSH_COMPILE_OPTIONS
+		-Wall -Wpedantic -pedantic -Werror
+		-Wformat -Wformat=2
+		-Wimplicit-fallthrough
+		-Werror=format-security
+		-Werror=implicit
+		-Werror=incompatible-pointer-types
+		-Werror=int-conversion)
+
+	# -Wconversion: deferred — requires code changes for implicit
+	# signedness conversions throughout the codebase.
+	# check_c_compiler_flag(-Wconversion HAVE_WCONVERSION)
+	# if(HAVE_WCONVERSION)
+	#	list(APPEND DEUCESSH_COMPILE_OPTIONS -Wconversion)
+	# endif()
+
+	# GCC-only warnings
+	if(CMAKE_C_COMPILER_ID STREQUAL "GNU")
+		check_c_compiler_flag(-Wtrampolines HAVE_WTRAMPOLINES)
+		if(HAVE_WTRAMPOLINES)
+			list(APPEND DEUCESSH_COMPILE_OPTIONS -Wtrampolines)
+		endif()
+		check_c_compiler_flag(-Wbidi-chars=any HAVE_WBIDI)
+		if(HAVE_WBIDI)
+			list(APPEND DEUCESSH_COMPILE_OPTIONS -Wbidi-chars=any)
+		endif()
+		check_c_compiler_flag(-fzero-init-padding-bits=all HAVE_ZERO_PADDING)
+		if(HAVE_ZERO_PADDING)
+			list(APPEND DEUCESSH_COMPILE_OPTIONS
+				-fzero-init-padding-bits=all)
+		endif()
+	endif()
+
+	# Runtime protection — probe each flag
+	check_c_compiler_flag(-fstack-protector-strong HAVE_STACK_PROTECTOR)
+	if(HAVE_STACK_PROTECTOR)
+		list(APPEND DEUCESSH_COMPILE_OPTIONS -fstack-protector-strong)
+	endif()
+
+	check_c_compiler_flag(-fstack-clash-protection HAVE_STACK_CLASH)
+	if(HAVE_STACK_CLASH)
+		list(APPEND DEUCESSH_COMPILE_OPTIONS -fstack-clash-protection)
+	endif()
+
+	check_c_compiler_flag(-fstrict-flex-arrays=3 HAVE_STRICT_FLEX)
+	if(HAVE_STRICT_FLEX)
+		list(APPEND DEUCESSH_COMPILE_OPTIONS -fstrict-flex-arrays=3)
+	endif()
+
+	check_c_compiler_flag(-ftrivial-auto-var-init=zero HAVE_TRIVIAL_INIT)
+	if(HAVE_TRIVIAL_INIT)
+		list(APPEND DEUCESSH_COMPILE_OPTIONS
+			-ftrivial-auto-var-init=zero)
+	endif()
+
+	# UB mitigations
+	list(APPEND DEUCESSH_COMPILE_OPTIONS
+		-fno-delete-null-pointer-checks
+		-fno-strict-overflow
+		-fno-strict-aliasing)
+
+	# FORTIFY_SOURCE (requires -O1+, incompatible with sanitizers)
+	if(NOT CMAKE_BUILD_TYPE STREQUAL "Debug")
+		list(APPEND DEUCESSH_COMPILE_OPTIONS
+			-U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=3)
+	endif()
+
+	# Architecture-specific control-flow protection
+	if(CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64|amd64|AMD64")
+		check_c_compiler_flag(-fcf-protection=full HAVE_CF_PROTECTION)
+		if(HAVE_CF_PROTECTION)
+			list(APPEND DEUCESSH_COMPILE_OPTIONS
+				-fcf-protection=full)
+		endif()
+	elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64|ARM64|arm64")
+		check_c_compiler_flag(-mbranch-protection=standard
+			HAVE_BRANCH_PROTECTION)
+		if(HAVE_BRANCH_PROTECTION)
+			list(APPEND DEUCESSH_COMPILE_OPTIONS
+				-mbranch-protection=standard)
+		endif()
+	endif()
+elseif(MSVC)
+	list(APPEND DEUCESSH_COMPILE_OPTIONS /W4)
+endif()
+
+# Linker hardening flags (ELF only)
+if(UNIX AND NOT APPLE)
+	foreach(flag
+		"-Wl,-z,nodlopen"
+		"-Wl,-z,noexecstack"
+		"-Wl,--as-needed"
+		"-Wl,--no-copy-dt-needed-entries")
+		string(MAKE_C_IDENTIFIER "${flag}" flag_var)
+		check_linker_flag(C "${flag}" ${flag_var})
+		if(${flag_var})
+			list(APPEND DEUCESSH_LINK_OPTIONS "${flag}")
+		endif()
+	endforeach()
+endif()
 
 set(DEUCESSH_INSTALL_TARGETS "")
 
@@ -112,7 +216,8 @@ if(DEUCESSH_BUILD_SHARED)
 			-Wl,-z,relro,-z,now
 			-Wl,--hash-style=gnu
 			-Wl,-Bsymbolic-functions
-			-Wl,-O2)
+			-Wl,-O2
+			${DEUCESSH_LINK_OPTIONS})
 	endif()
 	list(APPEND DEUCESSH_INSTALL_TARGETS deucessh_shared)
 endif()
