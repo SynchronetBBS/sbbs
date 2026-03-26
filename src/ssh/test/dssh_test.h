@@ -131,9 +131,11 @@ struct dssh_test_entry {
  *   };
  *   DSSH_TEST_MAIN(tests)
  */
+#include <signal.h>
 #define DSSH_TEST_MAIN(test_table) \
 int main(int argc, char *argv[]) \
 { \
+	signal(SIGPIPE, SIG_IGN); \
 	const char *filter = (argc > 1) ? argv[1] : NULL; \
 	int total = 0, passed = 0, failed = 0, skipped = 0; \
 	size_t count = sizeof(test_table) / sizeof(test_table[0]); \
