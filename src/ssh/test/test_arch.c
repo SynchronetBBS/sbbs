@@ -504,88 +504,6 @@ test_string_roundtrip(void)
 }
 
 /* ----------------------------------------------------------------
- * bytearray
- * ---------------------------------------------------------------- */
-
-static int
-test_parse_bytearray_basic(void)
-{
-	uint8_t buf[] = { 0xAA, 0xBB, 0xCC, 0xDD };
-	struct dssh_string_s val = { .length = 4 };
-	int64_t ret = dssh_parse_bytearray(buf, sizeof(buf), &val);
-	ASSERT_EQ(ret, 4);
-	ASSERT_TRUE(val.value == buf);
-	ASSERT_MEM_EQ(val.value, buf, 4);
-	return TEST_PASS;
-}
-
-static int
-test_parse_bytearray_too_short(void)
-{
-	uint8_t buf[] = { 0xAA, 0xBB };
-	struct dssh_string_s val = { .length = 4 };
-	ASSERT_ERR(dssh_parse_bytearray(buf, sizeof(buf), &val), DSSH_ERROR_PARSE);
-	return TEST_PASS;
-}
-
-static int
-test_parse_bytearray_min_length(void)
-{
-	/* Minimum length is 2 */
-	uint8_t buf[] = { 0xAA, 0xBB };
-	struct dssh_string_s val = { .length = 2 };
-	int64_t ret = dssh_parse_bytearray(buf, sizeof(buf), &val);
-	ASSERT_EQ(ret, 2);
-	return TEST_PASS;
-}
-
-static int
-test_parse_bytearray_length_too_small(void)
-{
-	/* val->length < 2 is rejected */
-	uint8_t buf[] = { 0xAA };
-	struct dssh_string_s val = { .length = 1 };
-	ASSERT_ERR(dssh_parse_bytearray(buf, sizeof(buf), &val), DSSH_ERROR_PARSE);
-	return TEST_PASS;
-}
-
-static int
-test_serialize_bytearray(void)
-{
-	/* serialize_bytearray writes raw bytes, no length prefix */
-	uint8_t data[] = { 0x01, 0x02, 0x03 };
-	struct dssh_string_s val = { .value = data, .length = 3 };
-	uint8_t buf[16] = { 0 };
-	size_t pos = 0;
-
-	ASSERT_EQ(dssh_serialize_bytearray(&val, buf, sizeof(buf), &pos), 0);
-	ASSERT_EQ_U(pos, 3);
-	ASSERT_MEM_EQ(buf, data, 3);
-	return TEST_PASS;
-}
-
-static int
-test_serialize_bytearray_overflow(void)
-{
-	uint8_t data[] = { 0x01, 0x02, 0x03 };
-	struct dssh_string_s val = { .value = data, .length = 3 };
-	uint8_t buf[2];
-	size_t pos = 0;
-
-	ASSERT_ERR(dssh_serialize_bytearray(&val, buf, sizeof(buf), &pos), DSSH_ERROR_TOOLONG);
-	return TEST_PASS;
-}
-
-static int
-test_serialized_bytearray_length(void)
-{
-	/* serialized_bytearray_length includes +4 */
-	struct dssh_string_s val = { .length = 10 };
-	ASSERT_EQ_U(dssh_serialized_bytearray_length(&val), 14);
-	return TEST_PASS;
-}
-
-/* ----------------------------------------------------------------
  * mpint  —  RFC 4251 section 5 examples
  * ---------------------------------------------------------------- */
 
@@ -809,7 +727,6 @@ test_parse_namelist_basic(void)
 	int64_t ret = dssh_parse_namelist(buf, sizeof(buf), &val);
 	ASSERT_EQ(ret, 13);
 	ASSERT_EQ_U(val.length, 9);
-	ASSERT_EQ_U(val.next, 0);
 	return TEST_PASS;
 }
 
@@ -941,7 +858,7 @@ static int
 test_serialize_namelist(void)
 {
 	uint8_t data[] = "zlib,none";
-	struct dssh_namelist_s val = { .value = data, .length = 9, .next = 0 };
+	struct dssh_namelist_s val = { .value = data, .length = 9 };
 	uint8_t buf[32] = { 0 };
 	size_t pos = 0;
 
@@ -958,7 +875,7 @@ test_serialize_namelist(void)
 static int
 test_serialize_namelist_empty(void)
 {
-	struct dssh_namelist_s val = { .value = NULL, .length = 0, .next = 0 };
+	struct dssh_namelist_s val = { .value = NULL, .length = 0 };
 	uint8_t buf[8] = { 0 };
 	size_t pos = 0;
 
@@ -973,7 +890,7 @@ static int
 test_serialize_namelist_overflow(void)
 {
 	uint8_t data[] = "abc,def";
-	struct dssh_namelist_s val = { .value = data, .length = 7, .next = 0 };
+	struct dssh_namelist_s val = { .value = data, .length = 7 };
 	uint8_t buf[10];
 	size_t pos = 0;
 
@@ -996,7 +913,7 @@ static int
 test_namelist_roundtrip(void)
 {
 	uint8_t data[] = "aes256-ctr,chacha20-poly1305@openssh.com";
-	struct dssh_namelist_s orig = { .value = data, .length = 39, .next = 0 };
+	struct dssh_namelist_s orig = { .value = data, .length = 39 };
 	uint8_t buf[64];
 	size_t pos = 0;
 
@@ -1007,131 +924,6 @@ test_namelist_roundtrip(void)
 	ASSERT_EQ(ret, (int64_t)pos);
 	ASSERT_EQ_U(parsed.length, orig.length);
 	ASSERT_MEM_EQ(parsed.value, orig.value, orig.length);
-	return TEST_PASS;
-}
-
-/* ----------------------------------------------------------------
- * namelist_next  —  iteration
- * ---------------------------------------------------------------- */
-
-static int
-test_namelist_next_basic(void)
-{
-	uint8_t buf[] = {
-		0x00, 0x00, 0x00, 0x09,
-		'a', 'b', 'c', ',', 'd', 'e', 'f', ',', 'g'
-	};
-	struct dssh_namelist_s nl = { 0 };
-	dssh_parse_namelist(buf, sizeof(buf), &nl);
-
-	struct dssh_string_s name = { 0 };
-
-	/* First: "abc" */
-	int64_t ret = dssh_parse_namelist_next(&name, &nl);
-	ASSERT_OK(ret);
-	ASSERT_EQ_U(name.length, 3);
-	ASSERT_MEM_EQ(name.value, "abc", 3);
-
-	/* Second: "def" */
-	ret = dssh_parse_namelist_next(&name, &nl);
-	ASSERT_OK(ret);
-	ASSERT_EQ_U(name.length, 3);
-	ASSERT_MEM_EQ(name.value, "def", 3);
-
-	/* Third: "g" */
-	ret = dssh_parse_namelist_next(&name, &nl);
-	ASSERT_OK(ret);
-	ASSERT_EQ_U(name.length, 1);
-	ASSERT_MEM_EQ(name.value, "g", 1);
-
-	/* Exhausted */
-	ASSERT_ERR(dssh_parse_namelist_next(&name, &nl), DSSH_ERROR_NOMORE);
-	return TEST_PASS;
-}
-
-static int
-test_namelist_next_single(void)
-{
-	uint8_t buf[] = {
-		0x00, 0x00, 0x00, 0x04,
-		'n', 'o', 'n', 'e'
-	};
-	struct dssh_namelist_s nl = { 0 };
-	dssh_parse_namelist(buf, sizeof(buf), &nl);
-
-	struct dssh_string_s name = { 0 };
-
-	int64_t ret = dssh_parse_namelist_next(&name, &nl);
-	ASSERT_OK(ret);
-	ASSERT_EQ_U(name.length, 4);
-	ASSERT_MEM_EQ(name.value, "none", 4);
-
-	ASSERT_ERR(dssh_parse_namelist_next(&name, &nl), DSSH_ERROR_NOMORE);
-	return TEST_PASS;
-}
-
-static int
-test_namelist_next_empty(void)
-{
-	uint8_t buf[] = { 0x00, 0x00, 0x00, 0x00 };
-	struct dssh_namelist_s nl = { 0 };
-	dssh_parse_namelist(buf, sizeof(buf), &nl);
-
-	struct dssh_string_s name = { 0 };
-	ASSERT_ERR(dssh_parse_namelist_next(&name, &nl), DSSH_ERROR_NOMORE);
-	return TEST_PASS;
-}
-
-static int
-test_namelist_next_long_name(void)
-{
-	/* A name > 64 chars should fail per RFC 4251 s6 */
-	char longname[66];
-	memset(longname, 'x', 65);
-	longname[65] = '\0';
-
-	/* Build wire format: length prefix + 65-char name */
-	uint8_t buf[128];
-	buf[0] = 0;
-	buf[1] = 0;
-	buf[2] = 0;
-	buf[3] = 65;
-	memcpy(&buf[4], longname, 65);
-
-	struct dssh_namelist_s nl = { 0 };
-	/* parse_namelist won't reject long names; namelist_next does */
-	int64_t ret = dssh_parse_namelist(buf, 69, &nl);
-	ASSERT_OK(ret);
-
-	struct dssh_string_s name = { 0 };
-	ASSERT_ERR(dssh_parse_namelist_next(&name, &nl), DSSH_ERROR_PARSE);
-	return TEST_PASS;
-}
-
-static int
-test_namelist_next_exactly_64(void)
-{
-	/* Exactly 64 chars is valid */
-	char name64[65];
-	memset(name64, 'a', 64);
-	name64[64] = '\0';
-
-	uint8_t buf[128];
-	buf[0] = 0;
-	buf[1] = 0;
-	buf[2] = 0;
-	buf[3] = 64;
-	memcpy(&buf[4], name64, 64);
-
-	struct dssh_namelist_s nl = { 0 };
-	dssh_parse_namelist(buf, 68, &nl);
-
-	struct dssh_string_s name = { 0 };
-	int64_t ret = dssh_parse_namelist_next(&name, &nl);
-	ASSERT_OK(ret);
-	ASSERT_EQ_U(name.length, 64);
-
-	ASSERT_ERR(dssh_parse_namelist_next(&name, &nl), DSSH_ERROR_NOMORE);
 	return TEST_PASS;
 }
 
@@ -1319,15 +1111,6 @@ static struct dssh_test_entry tests[] = {
 	{ "serialized_string_length",       test_serialized_string_length },
 	{ "string_roundtrip",              test_string_roundtrip },
 
-	/* bytearray */
-	{ "parse_bytearray_basic",          test_parse_bytearray_basic },
-	{ "parse_bytearray_too_short",      test_parse_bytearray_too_short },
-	{ "parse_bytearray_min_length",     test_parse_bytearray_min_length },
-	{ "parse_bytearray_length_too_small", test_parse_bytearray_length_too_small },
-	{ "serialize_bytearray",            test_serialize_bytearray },
-	{ "serialize_bytearray_overflow",   test_serialize_bytearray_overflow },
-	{ "serialized_bytearray_length",    test_serialized_bytearray_length },
-
 	/* mpint */
 	{ "parse_mpint_zero",               test_parse_mpint_zero },
 	{ "parse_mpint_rfc4251_9a378f9b2e332a7", test_parse_mpint_rfc4251_9a378f9b2e332a7 },
@@ -1361,13 +1144,6 @@ static struct dssh_test_entry tests[] = {
 	{ "serialize_namelist_overflow",    test_serialize_namelist_overflow },
 	{ "serialized_namelist_length",     test_serialized_namelist_length },
 	{ "namelist_roundtrip",            test_namelist_roundtrip },
-
-	/* namelist_next iteration */
-	{ "namelist_next_basic",            test_namelist_next_basic },
-	{ "namelist_next_single",           test_namelist_next_single },
-	{ "namelist_next_empty",            test_namelist_next_empty },
-	{ "namelist_next_long_name",        test_namelist_next_long_name },
-	{ "namelist_next_exactly_64",       test_namelist_next_exactly_64 },
 
 	/* multi-field / offset */
 	{ "serialize_multiple_fields",      test_serialize_multiple_fields },

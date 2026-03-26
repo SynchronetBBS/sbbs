@@ -14,6 +14,9 @@ extern "C" {
 #define SSH_MSG_USERAUTH_SUCCESS UINT8_C(52)
 #define SSH_MSG_USERAUTH_BANNER UINT8_C(53)
 
+/* RFC 4252 s7, RFC 4256 s5: message 60 is reused across auth methods.
+ * The meaning depends on which method is in progress (publickey,
+ * password, or keyboard-interactive). */
 #define SSH_MSG_USERAUTH_PK_OK UINT8_C(60)
 #define SSH_MSG_USERAUTH_PASSWD_CHANGEREQ UINT8_C(60)
 #define SSH_MSG_USERAUTH_INFO_REQUEST UINT8_C(60)
@@ -228,9 +231,8 @@ struct dssh_auth_server_cbs {
  * appropriate callback.  Sends SUCCESS, FAILURE, PK_OK, or
  * PASSWD_CHANGEREQ as appropriate.
  *
- * On return, *username and *username_len identify the authenticated
- * user (points into session buffer — valid until next recv_packet).
- * Copy if needed.
+ * On return, username_out and *username_out_len contain the
+ * authenticated user (copied into the caller's buffer).
  *
  * Returns 0 on successful authentication.
  */

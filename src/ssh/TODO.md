@@ -2,15 +2,6 @@
 
 ## Open
 
-1. Remove dead `dssh_bytearray` type.  Not an RFC 4251 data type, unused
-   anywhere in the library or modules.  Remove the typedef, parse/serialize/
-   serialized_length functions, `_Generic` entries, and tests.
-
-3. Remove `dssh_parse_namelist_next` from the public API.  Unused by the
-   library (negotiation uses its own C-string iteration).  Only exercised
-   by tests.  Return value `val->length + 4` mimics wire-format convention
-   but doesn't reflect actual bytes consumed.
-
 4. Every function needs `DSSH_PUBLIC` or `DSSH_PRIVATE` annotation.
    ssh-arch.c has ~30 functions in a public header with no visibility
    markup at all.  Clarify which are part of the consumer API (for
@@ -106,10 +97,6 @@
     not free `ch->setup_payload`.  If the demux thread delivered a
     message that hasn't been consumed by `setup_recv`, it leaks.
 
-25. Stale comment in `open_session_channel()` (lines 1227–1244) says
-    "send the CHANNEL_OPEN, register the channel" but code registers
-    first, then sends.
-
 26. `demux_dispatch()` (~240 lines) and `dssh_session_accept_channel()`
     (~230 lines) are too large.  demux_dispatch handles 8 message types
     with nested request sub-dispatch.  accept_channel mixes allocation,
@@ -164,25 +151,12 @@
     `get_*_name` query functions are declared in both `deucessh.h`
     and `ssh-trans.h`.  Harmless but unclear which is authoritative.
 
-38. `dssh_transport_packet_s` struct in `ssh-trans.h` (lines 64–70)
-    appears unused anywhere in the implementation.  Potentially dead.
-
 39. `ssh-chan.h` includes `<threads.h>` but none of its structures use
     thread types — those are in `dssh_channel_s` in `ssh-internal.h`.
-
-40. `deucessh-auth.h` comment for `dssh_auth_server()` (line 232) says
-    username output "points into session buffer — valid until next
-    recv_packet."  Implementation copies into `saved_user[256]` then
-    into `username_out` — data IS copied, doc is wrong.
 
 41. `extra_line_cb` in `dssh_transport_global_config` (ssh-trans.h:216)
     uses a raw function pointer instead of the existing
     `dssh_transport_extra_line_cb` typedef.  Inconsistent.
-
-42. `SSH_MSG_USERAUTH_PK_OK`, `PASSWD_CHANGEREQ`, and `INFO_REQUEST`
-    all defined to value 60 in `deucessh-auth.h` (lines 17–19).
-    Correct per RFCs (context-dependent aliases) but confusing for
-    consumers.  Add a comment explaining the aliasing.
 
 43. Source files contain non-ASCII characters in comments (em dashes,
     arrows, etc.).  Replace with ASCII equivalents for strict C17
@@ -221,3 +195,23 @@
 - `serialize_namelist_from_str()` overflow and silent truncation
   (was item 21).  Overflow check converted to subtraction form; silent
   truncation to `UINT32_MAX` replaced with `DSSH_ERROR_TOOLONG` error.
+
+- Dead `dssh_bytearray` type removed (was item 1).  Typedef,
+  parse/serialize/serialized_length functions, `_Generic` entries,
+  and tests all removed.
+
+- `dssh_parse_namelist_next` removed from public API (was item 3).
+  Function, `dssh_namelist_s.next` field, and tests all removed.
+  Library negotiation uses its own C-string iteration.
+
+- Unused `dssh_transport_packet_s` struct removed (was item 38).
+
+- Stale comment in `open_session_channel()` fixed (was item 25).
+  Now accurately describes register-then-send order.
+
+- `dssh_auth_server()` doc fixed (was item 40).  Comment incorrectly
+  said username points into session buffer; it is copied to caller.
+
+- Message type 60 aliasing comment added (was item 42).  Explains
+  that PK_OK, PASSWD_CHANGEREQ, and INFO_REQUEST share value 60
+  per RFC 4252 s7 / RFC 4256 s5.

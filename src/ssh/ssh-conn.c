@@ -1229,25 +1229,9 @@ open_session_channel(dssh_session sess, dssh_channel ch)
 	ch->eof_sent = false;
 	ch->eof_received = false;
 
-        /* Send CHANNEL_OPEN via the low-level function.
-         * The demux thread is running, but this message's response
-         * (CHANNEL_OPEN_CONFIRMATION) will be dispatched to our channel
-         * once registered.  However, we're not registered yet and the
-         * demux thread would drop it.
-         *
-         * Solution: use the low-level conn_open_session which does
-         * send + synchronous recv (before the message reaches demux).
-         * This works because recv_packet is called from our thread,
-         * not the demux thread — BUT the demux thread is also calling
-         * recv_packet, so there's a race.
-         *
-         * The correct approach: register the channel first, have
-         * the demux thread handle the CONFIRMATION and wake us via
-         * the poll condition variable.
-         *
-         * For now, use a simpler approach: send the CHANNEL_OPEN,
-         * register the channel, then wait for the open flag.
-         */
+        /* Register the channel first so the demux thread can dispatch
+         * CHANNEL_OPEN_CONFIRMATION to it, then send CHANNEL_OPEN and
+         * wait for the demux thread to set the open flag. */
 	uint8_t msg[256];
 	size_t  pos = 0;
 

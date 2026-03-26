@@ -34,33 +34,6 @@ dssh_serialize_byte(dssh_byte val, uint8_t *buf, size_t bufsz, size_t *pos)
 }
 
 int64_t
-dssh_parse_bytearray(const uint8_t *buf, size_t bufsz, dssh_bytearray val)
-{
-	if (val->length < 2)
-		return DSSH_ERROR_PARSE;
-	if (bufsz < val->length)
-		return DSSH_ERROR_PARSE;
-	val->value = buf;
-	return val->length;
-}
-
-size_t
-dssh_serialized_bytearray_length(dssh_bytearray val)
-{
-	return val->length + 4;
-}
-
-int
-dssh_serialize_bytearray(dssh_bytearray val, uint8_t *buf, size_t bufsz, size_t *pos)
-{
-	if (*pos > bufsz || val->length > bufsz - *pos)
-		return DSSH_ERROR_TOOLONG;
-	memcpy(&buf[*pos], val->value, val->length);
-	*pos += val->length;
-	return 0;
-}
-
-int64_t
 dssh_parse_boolean(const uint8_t *buf, size_t bufsz, dssh_boolean *val)
 {
 	if (bufsz < 1)
@@ -252,7 +225,6 @@ dssh_parse_namelist(const uint8_t *buf, size_t bufsz, dssh_namelist val)
 	}
 	val->value = str.value;
 	val->length = str.length;
-	val->next = 0;
 	return ret;
 }
 
@@ -271,23 +243,4 @@ dssh_serialize_namelist(dssh_namelist val, uint8_t *buf, size_t bufsz, size_t *p
 	};
 
 	return dssh_serialize_string(&str, buf, bufsz, pos);
-}
-
-int64_t
-dssh_parse_namelist_next(dssh_string val, dssh_namelist nl)
-{
-	if (nl->next >= nl->length)
-		return DSSH_ERROR_NOMORE;
-	val->value = &(nl->value[nl->next]);
-	for (val->length = 0; nl->next < nl->length; nl->next++, val->length++) {
-		if (nl->value[nl->next] == ',') {
-			nl->next++;
-			break;
-		}
-	}
-
-        /* RFC 4251 s6: names MUST NOT be longer than 64 characters */
-	if (val->length > 64)
-		return DSSH_ERROR_PARSE;
-	return val->length + 4;
 }

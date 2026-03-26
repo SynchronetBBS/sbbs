@@ -61,14 +61,6 @@ extern "C" {
 #define SSH_BPP_PACKET_SIZE_MIN 33280
 #define SSH_BPP_PACKET_SIZE_MAX (64 * 1024 * 1024) /* 64 MiB */
 
-typedef struct dssh_transport_packet_s {
-	dssh_string   payload;
-	dssh_string   random_padding;
-	dssh_string   mac;
-	dssh_uint32_t packet_length;
-	dssh_byte     padding;
-} *dssh_transport_packet;
-
 /* Module type definitions are now in the public headers above.
  * Language is internal-only (no third-party language modules). */
 typedef struct dssh_language_s {
