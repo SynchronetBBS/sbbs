@@ -9,6 +9,7 @@
 #ifndef DSSH_MOCK_IO_H
 #define DSSH_MOCK_IO_H
 
+#include <stdatomic.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -16,8 +17,8 @@
 #include "deucessh.h"
 
 struct mock_io_pipe {
-	int rfd;    /* read end */
-	int wfd;    /* write end */
+	_Atomic int rfd;    /* read end */
+	_Atomic int wfd;    /* write end */
 };
 
 struct mock_io_state {
@@ -43,6 +44,7 @@ void mock_io_free(struct mock_io_state *io);
 void mock_io_close_c2s(struct mock_io_state *io);
 void mock_io_close_c2s_write(struct mock_io_state *io);
 void mock_io_close_s2c(struct mock_io_state *io);
+void mock_io_close_s2c_write(struct mock_io_state *io);
 
 /*
  * DeuceSSH I/O callbacks for the client side.

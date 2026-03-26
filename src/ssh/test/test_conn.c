@@ -641,8 +641,8 @@ test_open_exec_rejected(void)
 	};
 
 	thrd_t ct, st;
-	thrd_create(&ct, client_open_exec_thread, &oc);
-	thrd_create(&st, server_accept_exec_thread, &oc);
+	ASSERT_THRD_CREATE(&ct, client_open_exec_thread, &oc);
+	ASSERT_THRD_CREATE(&st, server_accept_exec_thread, &oc);
 	thrd_join(ct, NULL);
 	thrd_join(st, NULL);
 
@@ -675,8 +675,8 @@ test_open_shell(void)
 	};
 
 	thrd_t ct, st;
-	thrd_create(&ct, client_open_shell_thread, &oc);
-	thrd_create(&st, server_accept_shell_thread, &oc);
+	ASSERT_THRD_CREATE(&ct, client_open_shell_thread, &oc);
+	ASSERT_THRD_CREATE(&st, server_accept_shell_thread, &oc);
 	thrd_join(ct, NULL);
 	thrd_join(st, NULL);
 
@@ -709,8 +709,8 @@ test_open_subsystem(void)
 	};
 
 	thrd_t ct, st;
-	thrd_create(&ct, client_open_subsys_thread, &oc);
-	thrd_create(&st, server_accept_subsys_thread, &oc);
+	ASSERT_THRD_CREATE(&ct, client_open_subsys_thread, &oc);
+	ASSERT_THRD_CREATE(&st, server_accept_subsys_thread, &oc);
 	thrd_join(ct, NULL);
 	thrd_join(st, NULL);
 
@@ -1084,8 +1084,8 @@ test_subsys_write_read(void)
 	};
 
 	thrd_t ct, st;
-	thrd_create(&ct, client_open_subsys_thread, &oc);
-	thrd_create(&st, server_accept_subsys_thread, &oc);
+	ASSERT_THRD_CREATE(&ct, client_open_subsys_thread, &oc);
+	ASSERT_THRD_CREATE(&st, server_accept_subsys_thread, &oc);
 	thrd_join(ct, NULL);
 	thrd_join(st, NULL);
 
@@ -1135,8 +1135,8 @@ test_subsys_multiple_writes(void)
 	};
 
 	thrd_t ct, st;
-	thrd_create(&ct, client_open_subsys_thread, &oc);
-	thrd_create(&st, server_accept_subsys_thread, &oc);
+	ASSERT_THRD_CREATE(&ct, client_open_subsys_thread, &oc);
+	ASSERT_THRD_CREATE(&st, server_accept_subsys_thread, &oc);
 	thrd_join(ct, NULL);
 	thrd_join(st, NULL);
 
@@ -1199,8 +1199,8 @@ test_subsys_poll(void)
 	};
 
 	thrd_t ct, st;
-	thrd_create(&ct, client_open_subsys_thread, &oc);
-	thrd_create(&st, server_accept_subsys_thread, &oc);
+	ASSERT_THRD_CREATE(&ct, client_open_subsys_thread, &oc);
+	ASSERT_THRD_CREATE(&st, server_accept_subsys_thread, &oc);
 	thrd_join(ct, NULL);
 	thrd_join(st, NULL);
 
@@ -1244,8 +1244,8 @@ test_subsys_large_write(void)
 	};
 
 	thrd_t ct, st;
-	thrd_create(&ct, client_open_subsys_thread, &oc);
-	thrd_create(&st, server_accept_subsys_thread, &oc);
+	ASSERT_THRD_CREATE(&ct, client_open_subsys_thread, &oc);
+	ASSERT_THRD_CREATE(&st, server_accept_subsys_thread, &oc);
 	thrd_join(ct, NULL);
 	thrd_join(st, NULL);
 
@@ -1403,8 +1403,8 @@ test_window_change(void)
 	};
 
 	thrd_t ct, st;
-	thrd_create(&ct, client_open_shell_thread, &oc);
-	thrd_create(&st, server_accept_shell_thread, &oc);
+	ASSERT_THRD_CREATE(&ct, client_open_shell_thread, &oc);
+	ASSERT_THRD_CREATE(&st, server_accept_shell_thread, &oc);
 	thrd_join(ct, NULL);
 	thrd_join(st, NULL);
 
@@ -1493,8 +1493,8 @@ test_channel_close_raw(void)
 	};
 
 	thrd_t ct, st;
-	thrd_create(&ct, client_open_subsys_thread, &oc);
-	thrd_create(&st, server_accept_subsys_thread, &oc);
+	ASSERT_THRD_CREATE(&ct, client_open_subsys_thread, &oc);
+	ASSERT_THRD_CREATE(&st, server_accept_subsys_thread, &oc);
 	thrd_join(ct, NULL);
 	thrd_join(st, NULL);
 
@@ -1691,7 +1691,7 @@ test_two_channels(void)
 	};
 
 	thrd_t st;
-	thrd_create(&st, server_accept_two_channels, &sctx);
+	ASSERT_THRD_CREATE(&st, server_accept_two_channels, &sctx);
 
 	dssh_channel c1 = dssh_session_open_exec(ctx.client, "cmd1");
 	dssh_channel c2 = dssh_session_open_exec(ctx.client, "cmd2");
@@ -1784,7 +1784,7 @@ test_accept_reject(void)
 	};
 
 	thrd_t st;
-	thrd_create(&st, server_reject_first_accept_second, &sctx);
+	ASSERT_THRD_CREATE(&st, server_reject_first_accept_second, &sctx);
 
 	/* First channel should fail */
 	dssh_channel c1 = dssh_session_open_exec(ctx.client, "rejected");
@@ -1817,7 +1817,7 @@ test_channel_independence(void)
 	};
 
 	thrd_t st;
-	thrd_create(&st, server_accept_two_channels, &sctx);
+	ASSERT_THRD_CREATE(&st, server_accept_two_channels, &sctx);
 
 	dssh_channel c1 = dssh_session_open_exec(ctx.client, "cmd1");
 	dssh_channel c2 = dssh_session_open_exec(ctx.client, "cmd2");
@@ -1955,8 +1955,8 @@ test_concurrent_write_read(void)
 	};
 
 	thrd_t wt, rt;
-	thrd_create(&rt, reader_thread_func, &rc);
-	thrd_create(&wt, writer_thread_func, &wc);
+	ASSERT_THRD_CREATE(&rt, reader_thread_func, &rc);
+	ASSERT_THRD_CREATE(&wt, writer_thread_func, &wc);
 
 	thrd_join(wt, NULL);
 
@@ -2000,7 +2000,7 @@ test_terminate_during_io(void)
 		.ch = oc.server_ch,
 	};
 	thrd_t rt;
-	thrd_create(&rt, reader_thread_func, &rc);
+	ASSERT_THRD_CREATE(&rt, reader_thread_func, &rc);
 
 	/* Brief delay, then terminate */
 	struct timespec ts = { .tv_sec = 0, .tv_nsec = 50000000 };
@@ -2050,7 +2050,7 @@ test_connection_drop_during_read(void)
 		.ch = oc.server_ch,
 	};
 	thrd_t rt;
-	thrd_create(&rt, reader_thread_func, &rc);
+	ASSERT_THRD_CREATE(&rt, reader_thread_func, &rc);
 
 	/* Brief delay to let reader block */
 	struct timespec ts = { .tv_sec = 0, .tv_nsec = 50000000 };
@@ -2517,7 +2517,7 @@ test_reject_null_description(void)
 	};
 
 	thrd_t ct;
-	thrd_create(&ct, client_open_exec_thread, &oc);
+	ASSERT_THRD_CREATE(&ct, client_open_exec_thread, &oc);
 
 	/* Server side: accept then reject with NULL description */
 	struct dssh_incoming_open *inc = NULL;
@@ -3137,8 +3137,8 @@ test_raw_channel_write_after_close(void)
 		.subsystem = "test-sub",
 	};
 	thrd_t ct, st;
-	thrd_create(&ct, client_open_subsys_thread, &oc);
-	thrd_create(&st, server_accept_subsys_thread, &oc);
+	ASSERT_THRD_CREATE(&ct, client_open_subsys_thread, &oc);
+	ASSERT_THRD_CREATE(&st, server_accept_subsys_thread, &oc);
 	thrd_join(ct, NULL);
 	thrd_join(st, NULL);
 
@@ -3173,8 +3173,8 @@ test_raw_channel_write_toolong(void)
 		.subsystem = "test-sub",
 	};
 	thrd_t ct, st;
-	thrd_create(&ct, client_open_subsys_thread, &oc);
-	thrd_create(&st, server_accept_subsys_thread, &oc);
+	ASSERT_THRD_CREATE(&ct, client_open_subsys_thread, &oc);
+	ASSERT_THRD_CREATE(&st, server_accept_subsys_thread, &oc);
 	thrd_join(ct, NULL);
 	thrd_join(st, NULL);
 
@@ -3216,8 +3216,8 @@ test_raw_channel_poll_write(void)
 		.subsystem = "test-sub",
 	};
 	thrd_t ct, st;
-	thrd_create(&ct, client_open_subsys_thread, &oc);
-	thrd_create(&st, server_accept_subsys_thread, &oc);
+	ASSERT_THRD_CREATE(&ct, client_open_subsys_thread, &oc);
+	ASSERT_THRD_CREATE(&st, server_accept_subsys_thread, &oc);
 	thrd_join(ct, NULL);
 	thrd_join(st, NULL);
 
@@ -3255,8 +3255,8 @@ test_raw_channel_poll_timeout_zero(void)
 		.subsystem = "test-sub",
 	};
 	thrd_t ct, st;
-	thrd_create(&ct, client_open_subsys_thread, &oc);
-	thrd_create(&st, server_accept_subsys_thread, &oc);
+	ASSERT_THRD_CREATE(&ct, client_open_subsys_thread, &oc);
+	ASSERT_THRD_CREATE(&st, server_accept_subsys_thread, &oc);
 	thrd_join(ct, NULL);
 	thrd_join(st, NULL);
 
@@ -3311,8 +3311,8 @@ test_accept_raw(void)
 		.subsystem = "test-sub",
 	};
 	thrd_t ct, st;
-	thrd_create(&ct, client_open_subsys_thread, &oc);
-	thrd_create(&st, server_accept_raw_thread, &oc);
+	ASSERT_THRD_CREATE(&ct, client_open_subsys_thread, &oc);
+	ASSERT_THRD_CREATE(&st, server_accept_raw_thread, &oc);
 	thrd_join(ct, NULL);
 	thrd_join(st, NULL);
 
@@ -3354,7 +3354,7 @@ test_reject_long_description(void)
 
 	/* We need custom accept thread that rejects with long desc */
 	thrd_t ct;
-	thrd_create(&ct, client_open_exec_thread, &oc);
+	ASSERT_THRD_CREATE(&ct, client_open_exec_thread, &oc);
 
 	struct dssh_incoming_open *inc = NULL;
 	int res = dssh_session_accept(ctx.server, &inc, 5000);
@@ -3887,7 +3887,7 @@ test_accept_timeout_negative(void)
 		return TEST_SKIP;
 
 	thrd_t at;
-	thrd_create(&at, accept_blocking_thread, &ctx);
+	ASSERT_THRD_CREATE(&at, accept_blocking_thread, &ctx);
 
 	/* Brief delay so the accept thread enters cnd_wait */
 	struct timespec ts = { .tv_sec = 0, .tv_nsec = 50000000 };
@@ -3950,8 +3950,8 @@ test_setup_exec_rejected_by_callback(void)
 	};
 
 	thrd_t ct, st;
-	thrd_create(&ct, client_open_exec_thread, &oc);
-	thrd_create(&st, server_accept_reject_exec_thread, &oc);
+	ASSERT_THRD_CREATE(&ct, client_open_exec_thread, &oc);
+	ASSERT_THRD_CREATE(&st, server_accept_reject_exec_thread, &oc);
 	thrd_join(ct, NULL);
 	thrd_join(st, NULL);
 
@@ -5129,8 +5129,8 @@ test_subsystem_roundtrip(void)
 
 	thrd_t ct, st;
 
-	thrd_create(&ct, client_open_subsys_thread, &oc);
-	thrd_create(&st, server_accept_subsys_raw_thread, &oc);
+	ASSERT_THRD_CREATE(&ct, client_open_subsys_thread, &oc);
+	ASSERT_THRD_CREATE(&st, server_accept_subsys_raw_thread, &oc);
 	thrd_join(ct, NULL);
 	thrd_join(st, NULL);
 

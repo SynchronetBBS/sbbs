@@ -4,11 +4,13 @@
  * Each direction (c2s, s2c) is a Unix socketpair.  Blocking
  * read/write with natural close-unblocks-peer behavior — no
  * condvars or timed waits needed.
+ *
+ * Fd fields are _Atomic int so that concurrent close from two
+ * threads (e.g. both handshake threads failing) uses atomic_exchange
+ * to guarantee exactly one close() per fd.
  */
 
 #include <errno.h>
-#include <fcntl.h>
-#include <signal.h>
 #include <string.h>
 #include <sys/socket.h>
 #include <unistd.h>
@@ -25,40 +27,37 @@ pipe_init(struct mock_io_pipe *p)
 	int fds[2];
 	if (socketpair(AF_UNIX, SOCK_STREAM, 0, fds) < 0)
 		return -1;
-	p->wfd = fds[0];
-	p->rfd = fds[1];
+	atomic_store(&p->wfd, fds[0]);
+	atomic_store(&p->rfd, fds[1]);
 	return 0;
 }
 
 static void
 pipe_free(struct mock_io_pipe *p)
 {
-	if (p->rfd >= 0) {
-		close(p->rfd);
-		p->rfd = -1;
-	}
-	if (p->wfd >= 0) {
-		close(p->wfd);
-		p->wfd = -1;
-	}
+	int fd;
+	fd = atomic_exchange(&p->rfd, -1);
+	if (fd >= 0)
+		close(fd);
+	fd = atomic_exchange(&p->wfd, -1);
+	if (fd >= 0)
+		close(fd);
 }
 
 static void
 pipe_close_write(struct mock_io_pipe *p)
 {
-	if (p->wfd >= 0) {
-		close(p->wfd);
-		p->wfd = -1;
-	}
+	int fd = atomic_exchange(&p->wfd, -1);
+	if (fd >= 0)
+		close(fd);
 }
 
 static void
 pipe_close_read(struct mock_io_pipe *p)
 {
-	if (p->rfd >= 0) {
-		close(p->rfd);
-		p->rfd = -1;
-	}
+	int fd = atomic_exchange(&p->rfd, -1);
+	if (fd >= 0)
+		close(fd);
 }
 
 /*
@@ -67,9 +66,12 @@ pipe_close_read(struct mock_io_pipe *p)
 static int
 pipe_write(struct mock_io_pipe *p, const uint8_t *data, size_t len)
 {
+	int fd = atomic_load(&p->wfd);
+	if (fd < 0)
+		return -1;
 	size_t written = 0;
 	while (written < len) {
-		ssize_t n = send(p->wfd, data + written, len - written,
+		ssize_t n = send(fd, data + written, len - written,
 		    MSG_NOSIGNAL);
 		if (n <= 0)
 			return -1;
@@ -84,9 +86,12 @@ pipe_write(struct mock_io_pipe *p, const uint8_t *data, size_t len)
 static int
 pipe_read(struct mock_io_pipe *p, uint8_t *buf, size_t len)
 {
+	int fd = atomic_load(&p->rfd);
+	if (fd < 0)
+		return -1;
 	size_t have = 0;
 	while (have < len) {
-		ssize_t n = read(p->rfd, buf + have, len - have);
+		ssize_t n = read(fd, buf + have, len - have);
 		if (n <= 0)
 			return -1;
 		have += n;
@@ -101,10 +106,13 @@ static int
 pipe_readline(struct mock_io_pipe *p, uint8_t *buf, size_t bufsz,
     size_t *bytes_received)
 {
+	int fd = atomic_load(&p->rfd);
+	if (fd < 0)
+		return -1;
 	size_t have = 0;
 	for (;;) {
 		uint8_t ch;
-		ssize_t n = read(p->rfd, &ch, 1);
+		ssize_t n = read(fd, &ch, 1);
 		if (n <= 0)
 			return -1;
 		if (have < bufsz)
@@ -126,10 +134,10 @@ mock_io_init(struct mock_io_state *io, size_t capacity)
 {
 	(void)capacity;
 	memset(io, 0, sizeof(*io));
-	io->c2s.rfd = -1;
-	io->c2s.wfd = -1;
-	io->s2c.rfd = -1;
-	io->s2c.wfd = -1;
+	atomic_store(&io->c2s.rfd, -1);
+	atomic_store(&io->c2s.wfd, -1);
+	atomic_store(&io->s2c.rfd, -1);
+	atomic_store(&io->s2c.wfd, -1);
 	if (pipe_init(&io->c2s) < 0)
 		return -1;
 	if (pipe_init(&io->s2c) < 0) {
@@ -164,6 +172,12 @@ mock_io_close_s2c(struct mock_io_state *io)
 {
 	pipe_close_write(&io->s2c);
 	pipe_close_read(&io->s2c);
+}
+
+void
+mock_io_close_s2c_write(struct mock_io_state *io)
+{
+	pipe_close_write(&io->s2c);
 }
 
 /* ================================================================
@@ -231,18 +245,20 @@ mock_rxline_server(uint8_t *buf, size_t bufsz, size_t *bytes_received,
 size_t
 mock_io_inject(struct mock_io_pipe *p, const uint8_t *data, size_t len)
 {
-	ssize_t n = send(p->wfd, data, len, MSG_NOSIGNAL);
+	int fd = atomic_load(&p->wfd);
+	if (fd < 0)
+		return 0;
+	ssize_t n = send(fd, data, len, MSG_NOSIGNAL);
 	return n > 0 ? (size_t)n : 0;
 }
 
 size_t
 mock_io_drain(struct mock_io_pipe *p, uint8_t *buf, size_t bufsz)
 {
-	/* Non-blocking read */
-	int flags = fcntl(p->rfd, F_GETFL, 0);
-	fcntl(p->rfd, F_SETFL, flags | O_NONBLOCK);
-	ssize_t n = read(p->rfd, buf, bufsz);
-	fcntl(p->rfd, F_SETFL, flags);
+	int fd = atomic_load(&p->rfd);
+	if (fd < 0)
+		return 0;
+	ssize_t n = recv(fd, buf, bufsz, MSG_DONTWAIT);
 	return n > 0 ? (size_t)n : 0;
 }
 

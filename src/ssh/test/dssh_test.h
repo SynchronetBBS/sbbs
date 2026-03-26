@@ -121,6 +121,15 @@ struct dssh_test_entry {
 	} \
 } while (0)
 
+#include <threads.h>
+#define ASSERT_THRD_CREATE(thr, func, arg) do { \
+	if (thrd_create((thr), (func), (arg)) != thrd_success) { \
+		fprintf(stderr, "  thrd_create failed: %s\n    at %s:%d\n", \
+		    #func, __FILE__, __LINE__); \
+		return TEST_FAIL; \
+	} \
+} while (0)
+
 /*
  * Main loop macro.  Define a tests[] array of dssh_test_entry before
  * calling this.  Usage:

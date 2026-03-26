@@ -458,8 +458,10 @@ handshake_setup(struct handshake_ctx *ctx)
 	    &ctx->io, &ctx->io);
 
 	thrd_t ct, st;
-	thrd_create(&ct, handshake_client_thread, ctx);
-	thrd_create(&st, handshake_server_thread, ctx);
+	if (thrd_create(&ct, handshake_client_thread, ctx) != thrd_success)
+		return -1;
+	if (thrd_create(&st, handshake_server_thread, ctx) != thrd_success)
+		return -1;
 	thrd_join(ct, NULL);
 	thrd_join(st, NULL);
 
@@ -1036,8 +1038,8 @@ test_alloc_handshake_iterate(void)
 		};
 
 		thrd_t ct, st;
-		thrd_create(&ct, hs_alloc_thread, &ca);
-		thrd_create(&st, hs_alloc_thread, &sa);
+		ASSERT_THRD_CREATE(&ct, hs_alloc_thread, &ca);
+		ASSERT_THRD_CREATE(&st, hs_alloc_thread, &sa);
 
 		mtx_lock(&bmtx);
 		while (bcount < 2)
@@ -1194,8 +1196,8 @@ test_alloc_auth_iterate(void)
 			hctx.client = client;
 			hctx.server = server;
 			thrd_t ct, st;
-			thrd_create(&ct, handshake_client_thread, &hctx);
-			thrd_create(&st, handshake_server_thread, &hctx);
+			ASSERT_THRD_CREATE(&ct, handshake_client_thread, &hctx);
+			ASSERT_THRD_CREATE(&st, handshake_server_thread, &hctx);
 			thrd_join(ct, NULL);
 			thrd_join(st, NULL);
 			if (hctx.client_result != 0 || hctx.server_result != 0) {
@@ -1228,8 +1230,8 @@ test_alloc_auth_iterate(void)
 		};
 
 		thrd_t ct, st;
-		thrd_create(&ct, auth_alloc_client_thread, &ca);
-		thrd_create(&st, auth_alloc_server_thread, &sa);
+		ASSERT_THRD_CREATE(&ct, auth_alloc_client_thread, &ca);
+		ASSERT_THRD_CREATE(&st, auth_alloc_server_thread, &sa);
 
 		mtx_lock(&bmtx);
 		while (bcount < 2)
@@ -1439,8 +1441,8 @@ test_alloc_conn_iterate(void)
 				.io = io, .client = client, .server = server,
 			};
 			thrd_t ct, st;
-			thrd_create(&ct, handshake_client_thread, &hctx);
-			thrd_create(&st, handshake_server_thread, &hctx);
+			ASSERT_THRD_CREATE(&ct, handshake_client_thread, &hctx);
+			ASSERT_THRD_CREATE(&st, handshake_server_thread, &hctx);
 			thrd_join(ct, NULL);
 			thrd_join(st, NULL);
 			if (hctx.client_result != 0 || hctx.server_result != 0) {
@@ -1461,8 +1463,8 @@ test_alloc_conn_iterate(void)
 				.io = &io, .sess = server, .cbs = &cbs,
 			};
 			thrd_t ct, st;
-			thrd_create(&ct, auth_only_client_thread, &ca);
-			thrd_create(&st, auth_only_server_thread, &sa);
+			ASSERT_THRD_CREATE(&ct, auth_only_client_thread, &ca);
+			ASSERT_THRD_CREATE(&st, auth_only_server_thread, &sa);
 			thrd_join(ct, NULL);
 			thrd_join(st, NULL);
 			if (ca.result != 0 || sa.result != 0) {
@@ -1487,9 +1489,9 @@ test_alloc_conn_iterate(void)
 		};
 
 		thrd_t ct, st, wt;
-		thrd_create(&wt, watchdog_thread, &wctx);
-		thrd_create(&ct, conn_alloc_client_thread, &cca);
-		thrd_create(&st, conn_alloc_server_thread, &csa);
+		ASSERT_THRD_CREATE(&wt, watchdog_thread, &wctx);
+		ASSERT_THRD_CREATE(&ct, conn_alloc_client_thread, &cca);
+		ASSERT_THRD_CREATE(&st, conn_alloc_server_thread, &csa);
 
 		thrd_join(ct, NULL);
 		thrd_join(st, NULL);
@@ -1592,8 +1594,8 @@ test_ossl_handshake_iterate(void)
 		};
 
 		thrd_t ct, st;
-		thrd_create(&ct, hs_alloc_thread, &ca);
-		thrd_create(&st, hs_alloc_thread, &sa);
+		ASSERT_THRD_CREATE(&ct, hs_alloc_thread, &ca);
+		ASSERT_THRD_CREATE(&st, hs_alloc_thread, &sa);
 
 		mtx_lock(&bmtx);
 		while (bcount < 2)
@@ -2075,8 +2077,8 @@ test_ossl_kex_server_iterate(void)
 		struct ve_ki_ctx ca = { .io = &setup_io, .sess = client };
 		struct ve_ki_ctx sa = { .io = &setup_io, .sess = server };
 		thrd_t ct, st;
-		thrd_create(&ct, ve_ki_thread, &ca);
-		thrd_create(&st, ve_ki_thread, &sa);
+		ASSERT_THRD_CREATE(&ct, ve_ki_thread, &ca);
+		ASSERT_THRD_CREATE(&st, ve_ki_thread, &sa);
 		thrd_join(ct, NULL);
 		thrd_join(st, NULL);
 		if (ca.result != 0 || sa.result != 0) {
@@ -2298,8 +2300,8 @@ test_ossl_kex_client_iterate(void)
 			struct ve_ki_ctx ca = { .io = &io, .sess = client };
 			struct ve_ki_ctx sa = { .io = &io, .sess = server };
 			thrd_t ct, st;
-			thrd_create(&ct, ve_ki_thread, &ca);
-			thrd_create(&st, ve_ki_thread, &sa);
+			ASSERT_THRD_CREATE(&ct, ve_ki_thread, &ca);
+			ASSERT_THRD_CREATE(&st, ve_ki_thread, &sa);
 			thrd_join(ct, NULL);
 			thrd_join(st, NULL);
 			if (ca.result != 0 || sa.result != 0) {
@@ -2322,7 +2324,7 @@ test_ossl_kex_client_iterate(void)
 			.io = &io, .sess = server
 		};
 		thrd_t st;
-		thrd_create(&st, kex_excluded_thread, &sctx);
+		ASSERT_THRD_CREATE(&st, kex_excluded_thread, &sctx);
 		int cres = dssh_transport_kex(client);
 		/* Close client's write pipe so server unblocks on read */
 		mock_io_close_c2s(&io);
@@ -2513,8 +2515,10 @@ dhgex_client_parse_test(int (*server_thread)(void *),
 		struct ve_ki_ctx ca = { .io = &io, .sess = client };
 		struct ve_ki_ctx sa = { .io = &io, .sess = server };
 		thrd_t ct, st;
-		thrd_create(&ct, ve_ki_thread, &ca);
-		thrd_create(&st, ve_ki_thread, &sa);
+		if (thrd_create(&ct, ve_ki_thread, &ca) != thrd_success)
+			return TEST_FAIL;
+		if (thrd_create(&st, ve_ki_thread, &sa) != thrd_success)
+			return TEST_FAIL;
 		thrd_join(ct, NULL);
 		thrd_join(st, NULL);
 		if (ca.result != 0 || sa.result != 0) {
@@ -2533,7 +2537,8 @@ dhgex_client_parse_test(int (*server_thread)(void *),
 		.reply_data = reply, .reply_len = reply_len
 	};
 	thrd_t st;
-	thrd_create(&st, server_thread, &sctx);
+	if (thrd_create(&st, server_thread, &sctx) != thrd_success)
+		return TEST_FAIL;
 	int cres = dssh_transport_kex(client);
 	mock_io_close_c2s(&io);
 	thrd_join(st, NULL);
@@ -2786,8 +2791,10 @@ c25519_client_parse_test(int (*server_thread)(void *),
 		struct ve_ki_ctx ca = { .io = &io, .sess = client };
 		struct ve_ki_ctx sa = { .io = &io, .sess = server };
 		thrd_t ct, st;
-		thrd_create(&ct, ve_ki_thread, &ca);
-		thrd_create(&st, ve_ki_thread, &sa);
+		if (thrd_create(&ct, ve_ki_thread, &ca) != thrd_success)
+			return TEST_FAIL;
+		if (thrd_create(&st, ve_ki_thread, &sa) != thrd_success)
+			return TEST_FAIL;
 		thrd_join(ct, NULL);
 		thrd_join(st, NULL);
 		if (ca.result != 0 || sa.result != 0) {
@@ -2806,7 +2813,8 @@ c25519_client_parse_test(int (*server_thread)(void *),
 		.reply_data = reply, .reply_len = reply_len
 	};
 	thrd_t st;
-	thrd_create(&st, server_thread, &sctx);
+	if (thrd_create(&st, server_thread, &sctx) != thrd_success)
+		return TEST_FAIL;
 	int cres = dssh_transport_kex(client);
 	mock_io_close_c2s(&io);
 	thrd_join(st, NULL);
@@ -3005,8 +3013,8 @@ test_ossl_kex_client_ka_null(void)
 		struct ve_ki_ctx ca = { .io = &io, .sess = client };
 		struct ve_ki_ctx sa = { .io = &io, .sess = server };
 		thrd_t ct, st;
-		thrd_create(&ct, ve_ki_thread, &ca);
-		thrd_create(&st, ve_ki_thread, &sa);
+		ASSERT_THRD_CREATE(&ct, ve_ki_thread, &ca);
+		ASSERT_THRD_CREATE(&st, ve_ki_thread, &sa);
 		thrd_join(ct, NULL);
 		thrd_join(st, NULL);
 		if (ca.result != 0 || sa.result != 0) {
@@ -3027,7 +3035,7 @@ test_ossl_kex_client_ka_null(void)
 		.io = &io, .sess = server
 	};
 	thrd_t st;
-	thrd_create(&st, kex_excluded_thread, &sctx);
+	ASSERT_THRD_CREATE(&st, kex_excluded_thread, &sctx);
 	int cres = dssh_transport_kex(client);
 	mock_io_close_c2s(&io);
 	thrd_join(st, NULL);
@@ -3084,8 +3092,8 @@ test_ossl_kex_client_no_verify(void)
 		struct ve_ki_ctx ca = { .io = &io, .sess = client };
 		struct ve_ki_ctx sa = { .io = &io, .sess = server };
 		thrd_t ct, st;
-		thrd_create(&ct, ve_ki_thread, &ca);
-		thrd_create(&st, ve_ki_thread, &sa);
+		ASSERT_THRD_CREATE(&ct, ve_ki_thread, &ca);
+		ASSERT_THRD_CREATE(&st, ve_ki_thread, &sa);
 		thrd_join(ct, NULL);
 		thrd_join(st, NULL);
 		if (ca.result != 0 || sa.result != 0) {
@@ -3107,7 +3115,7 @@ test_ossl_kex_client_no_verify(void)
 		.io = &io, .sess = server
 	};
 	thrd_t st;
-	thrd_create(&st, kex_excluded_thread, &sctx);
+	ASSERT_THRD_CREATE(&st, kex_excluded_thread, &sctx);
 	int cres = dssh_transport_kex(client);
 	mock_io_close_c2s(&io);
 	thrd_join(st, NULL);
@@ -3178,8 +3186,8 @@ test_alloc_kex_server_iterate(void)
 		struct ve_ki_ctx ca = { .io = &setup_io, .sess = client };
 		struct ve_ki_ctx sa = { .io = &setup_io, .sess = server };
 		thrd_t ct, st;
-		thrd_create(&ct, ve_ki_thread, &ca);
-		thrd_create(&st, ve_ki_thread, &sa);
+		ASSERT_THRD_CREATE(&ct, ve_ki_thread, &ca);
+		ASSERT_THRD_CREATE(&st, ve_ki_thread, &sa);
 		thrd_join(ct, NULL);
 		thrd_join(st, NULL);
 		if (ca.result != 0 || sa.result != 0) {
@@ -3381,8 +3389,8 @@ test_alloc_kex_client_iterate(void)
 			struct ve_ki_ctx ca = { .io = &io, .sess = client };
 			struct ve_ki_ctx sa = { .io = &io, .sess = server };
 			thrd_t ct, st;
-			thrd_create(&ct, ve_ki_thread, &ca);
-			thrd_create(&st, ve_ki_thread, &sa);
+			ASSERT_THRD_CREATE(&ct, ve_ki_thread, &ca);
+			ASSERT_THRD_CREATE(&st, ve_ki_thread, &sa);
 			thrd_join(ct, NULL);
 			thrd_join(st, NULL);
 			if (ca.result != 0 || sa.result != 0) {
@@ -3402,7 +3410,7 @@ test_alloc_kex_client_iterate(void)
 			.io = &io, .sess = server
 		};
 		thrd_t st;
-		thrd_create(&st, alloc_kex_excluded_thread, &sctx);
+		ASSERT_THRD_CREATE(&st, alloc_kex_excluded_thread, &sctx);
 		int cres = dssh_transport_kex(client);
 		mock_io_close_c2s(&io);
 		thrd_join(st, NULL);
@@ -3471,8 +3479,10 @@ kex_server_setup(void)
 	struct ve_ki_ctx ca = { .io = &setup_io, .sess = client };
 	struct ve_ki_ctx sa = { .io = &setup_io, .sess = server };
 	thrd_t ct, st;
-	thrd_create(&ct, ve_ki_thread, &ca);
-	thrd_create(&st, ve_ki_thread, &sa);
+	if (thrd_create(&ct, ve_ki_thread, &ca) != thrd_success)
+		return NULL;
+	if (thrd_create(&st, ve_ki_thread, &sa) != thrd_success)
+		return NULL;
 	thrd_join(ct, NULL);
 	thrd_join(st, NULL);
 

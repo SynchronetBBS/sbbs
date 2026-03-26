@@ -140,8 +140,22 @@ handshake_setup(struct handshake_ctx *ctx)
 	    &ctx->io, &ctx->io);
 
 	thrd_t ct, st;
-	thrd_create(&ct, handshake_client_thread, ctx);
-	thrd_create(&st, handshake_server_thread, ctx);
+	if (thrd_create(&ct, handshake_client_thread, ctx) != thrd_success) {
+		dssh_session_cleanup(ctx->server);
+		dssh_session_cleanup(ctx->client);
+		mock_io_free(&ctx->io);
+		return -1;
+	}
+	if (thrd_create(&st, handshake_server_thread, ctx) != thrd_success) {
+		dssh_session_terminate(ctx->client);
+		mock_io_close_c2s(&ctx->io);
+		mock_io_close_s2c(&ctx->io);
+		thrd_join(ct, NULL);
+		dssh_session_cleanup(ctx->server);
+		dssh_session_cleanup(ctx->client);
+		mock_io_free(&ctx->io);
+		return -1;
+	}
 	thrd_join(ct, NULL);
 	thrd_join(st, NULL);
 
@@ -434,8 +448,8 @@ test_newkeys_enc_init_failure(void)
 
 	struct handshake_ctx ctx = { .io = io, .client = client, .server = server };
 	thrd_t ct, st;
-	thrd_create(&ct, handshake_client_thread, &ctx);
-	thrd_create(&st, handshake_server_thread, &ctx);
+	ASSERT_THRD_CREATE(&ct, handshake_client_thread, &ctx);
+	ASSERT_THRD_CREATE(&st, handshake_server_thread, &ctx);
 	thrd_join(ct, NULL);
 
 	/* Close pipes to unblock the other side */
@@ -494,8 +508,8 @@ test_newkeys_mac_init_failure(void)
 
 	struct handshake_ctx ctx = { .io = io, .client = client, .server = server };
 	thrd_t ct, st;
-	thrd_create(&ct, handshake_client_thread, &ctx);
-	thrd_create(&st, handshake_server_thread, &ctx);
+	ASSERT_THRD_CREATE(&ct, handshake_client_thread, &ctx);
+	ASSERT_THRD_CREATE(&st, handshake_server_thread, &ctx);
 	thrd_join(ct, NULL);
 
 	mock_io_close_c2s(&io);
@@ -616,8 +630,8 @@ test_recv_mac_too_large(void)
 		.io = io, .client = client, .server = server
 	};
 	thrd_t ct, st;
-	thrd_create(&ct, handshake_client_thread, &ctx);
-	thrd_create(&st, handshake_server_thread, &ctx);
+	ASSERT_THRD_CREATE(&ct, handshake_client_thread, &ctx);
+	ASSERT_THRD_CREATE(&st, handshake_server_thread, &ctx);
 	thrd_join(ct, NULL);
 	thrd_join(st, NULL);
 
@@ -700,8 +714,8 @@ test_send_mac_overflow_rejected(void)
 		.io = io, .client = client, .server = server
 	};
 	thrd_t ct, st;
-	thrd_create(&ct, handshake_client_thread, &ctx);
-	thrd_create(&st, handshake_server_thread, &ctx);
+	ASSERT_THRD_CREATE(&ct, handshake_client_thread, &ctx);
+	ASSERT_THRD_CREATE(&st, handshake_server_thread, &ctx);
 	thrd_join(ct, NULL);
 	thrd_join(st, NULL);
 

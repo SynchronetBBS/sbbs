@@ -1954,8 +1954,8 @@ test_rekey_seq_preserved(void)
 	struct rekey_thread_arg client_arg = { &ctx, -1 };
 	struct rekey_thread_arg server_arg = { &ctx, -1 };
 	thrd_t ct, st;
-	thrd_create(&ct, rekey_client_thread, &client_arg);
-	thrd_create(&st, rekey_server_recv_thread, &server_arg);
+	ASSERT_THRD_CREATE(&ct, rekey_client_thread, &client_arg);
+	ASSERT_THRD_CREATE(&st, rekey_server_recv_thread, &server_arg);
 	thrd_join(ct, NULL);
 
 	uint8_t msg2[] = { SSH_MSG_SERVICE_REQUEST, 0xEE };
@@ -2189,8 +2189,8 @@ test_version_exchange_with_comment(void)
 	    &ctx.io, &ctx.io);
 
 	thrd_t ct, st;
-	thrd_create(&ct, handshake_client_thread, &ctx);
-	thrd_create(&st, handshake_server_thread, &ctx);
+	ASSERT_THRD_CREATE(&ct, handshake_client_thread, &ctx);
+	ASSERT_THRD_CREATE(&st, handshake_server_thread, &ctx);
 	thrd_join(ct, NULL);
 	thrd_join(st, NULL);
 
@@ -3961,8 +3961,10 @@ dhgex_server_setup(struct dhgex_server_ctx *ctx)
 	struct ve_ki_ctx ca = { .io = ctx->io, .sess = client };
 	struct ve_ki_ctx sa = { .io = ctx->io, .sess = ctx->server };
 	thrd_t ct, st;
-	thrd_create(&ct, ve_ki_thread, &ca);
-	thrd_create(&st, ve_ki_thread, &sa);
+	if (thrd_create(&ct, ve_ki_thread, &ca) != thrd_success)
+		return -1;
+	if (thrd_create(&st, ve_ki_thread, &sa) != thrd_success)
+		return -1;
 	thrd_join(ct, NULL);
 	thrd_join(st, NULL);
 
@@ -4374,8 +4376,10 @@ c25519_server_setup(struct c25519_server_ctx *ctx)
 	struct ve_ki_ctx ca = { .io = ctx->io, .sess = client };
 	struct ve_ki_ctx sa = { .io = ctx->io, .sess = ctx->server };
 	thrd_t ct, st;
-	thrd_create(&ct, ve_ki_thread, &ca);
-	thrd_create(&st, ve_ki_thread, &sa);
+	if (thrd_create(&ct, ve_ki_thread, &ca) != thrd_success)
+		return -1;
+	if (thrd_create(&st, ve_ki_thread, &sa) != thrd_success)
+		return -1;
 	thrd_join(ct, NULL);
 	thrd_join(st, NULL);
 
@@ -4705,8 +4709,8 @@ test_negotiate_no_common_kex(void)
 		struct ve_ki_ctx ca = { .io = &io, .sess = client };
 		struct ve_ki_ctx sa = { .io = &io, .sess = server };
 		thrd_t ct, st;
-		thrd_create(&ct, ve_ki_thread, &ca);
-		thrd_create(&st, ve_ki_thread, &sa);
+		ASSERT_THRD_CREATE(&ct, ve_ki_thread, &ca);
+		ASSERT_THRD_CREATE(&st, ve_ki_thread, &sa);
 		thrd_join(ct, NULL);
 		thrd_join(st, NULL);
 		if (ca.result != 0 || sa.result != 0) {
@@ -6030,8 +6034,8 @@ test_negotiate_no_common_comp_s2c(void)
 		struct ve_ki_ctx ca = { .io = &io, .sess = client };
 		struct ve_ki_ctx sa = { .io = &io, .sess = server };
 		thrd_t ct, st;
-		thrd_create(&ct, ve_ki_thread, &ca);
-		thrd_create(&st, ve_ki_thread, &sa);
+		ASSERT_THRD_CREATE(&ct, ve_ki_thread, &ca);
+		ASSERT_THRD_CREATE(&st, ve_ki_thread, &sa);
 		thrd_join(ct, NULL);
 		thrd_join(st, NULL);
 		if (ca.result != 0 || sa.result != 0) {
