@@ -1848,6 +1848,17 @@ dssh_transport_cleanup(dssh_session sess)
 	}
 }
 
+DSSH_PUBLIC int
+dssh_key_algo_set_ctx(const char *name, void *ctx)
+{
+	dssh_key_algo ka = dssh_transport_find_key_algo(name);
+
+	if (ka == NULL)
+		return DSSH_ERROR_INIT;
+	ka->ctx = (dssh_key_algo_ctx *)ctx;
+	return 0;
+}
+
 DSSH_PUBLIC void
 dssh_dh_gex_set_provider(dssh_session sess,
     struct dssh_dh_gex_provider *provider)

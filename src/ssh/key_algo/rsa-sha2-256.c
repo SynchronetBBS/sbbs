@@ -9,8 +9,11 @@
 #include <string.h>
 
 #include "deucessh.h"
+#include "deucessh-algorithms.h"
 #include "ssh-trans.h"
+#ifdef DSSH_TESTING
 #include "ssh-internal.h"
+#endif
 
 #define RSA_SHA2_256_NAME     "rsa-sha2-256"
 #define RSA_SHA2_256_NAME_LEN 12
@@ -23,6 +26,8 @@
 struct cbdata {
 	EVP_PKEY *pkey;
 };
+
+static struct cbdata *rsa_ctx;
 
 /*
  * Verify a signature over data using an RSA public host key blob.
@@ -336,26 +341,26 @@ static void
 cleanup(dssh_key_algo_ctx *ctx)
 {
 	struct cbdata *cbd = (struct cbdata *)ctx;
+
 	if (cbd != NULL) {
 		EVP_PKEY_free(cbd->pkey);
 		free(cbd);
 	}
+	if (cbd == rsa_ctx)
+		rsa_ctx = NULL;
 }
 
 DSSH_PUBLIC int
 rsa_sha2_256_load_key_file(const char *path, pem_password_cb *pw_cb,
     void *pw_cbdata)
 {
-	dssh_key_algo ka =
-	    dssh_transport_find_key_algo(RSA_SHA2_256_NAME);
-	if (ka == NULL)
-		return DSSH_ERROR_INIT;
-
 	FILE *fp = fopen(path, "r");
+
 	if (fp == NULL)
 		return DSSH_ERROR_INIT;
 
 	EVP_PKEY *pkey = PEM_read_PrivateKey(fp, NULL, pw_cb, pw_cbdata);
+
 	fclose(fp);
 	if (pkey == NULL)
 		return DSSH_ERROR_INIT;
@@ -365,20 +370,26 @@ rsa_sha2_256_load_key_file(const char *path, pem_password_cb *pw_cb,
 		return DSSH_ERROR_INVALID;
 	}
 
-	struct cbdata *cbd = (struct cbdata *)ka->ctx;
-	if (cbd == NULL) {
-		cbd = calloc(1, sizeof(*cbd));
-		if (cbd == NULL) {
+	if (rsa_ctx == NULL) {
+		rsa_ctx = calloc(1, sizeof(*rsa_ctx));
+		if (rsa_ctx == NULL) {
 			EVP_PKEY_free(pkey);
 			return DSSH_ERROR_ALLOC;
 		}
-		ka->ctx = (dssh_key_algo_ctx *)cbd;
+		int res = dssh_key_algo_set_ctx(RSA_SHA2_256_NAME, rsa_ctx);
+
+		if (res < 0) {
+			free(rsa_ctx);
+			rsa_ctx = NULL;
+			EVP_PKEY_free(pkey);
+			return res;
+		}
 	}
 	else {
-		EVP_PKEY_free(cbd->pkey);
+		EVP_PKEY_free(rsa_ctx->pkey);
 	}
 
-	cbd->pkey = pkey;
+	rsa_ctx->pkey = pkey;
 	return 0;
 }
 
@@ -386,27 +397,21 @@ DSSH_PUBLIC int
 rsa_sha2_256_save_key_file(const char *path, pem_password_cb *pw_cb,
     void *pw_cbdata)
 {
-	dssh_key_algo ka =
-	    dssh_transport_find_key_algo(RSA_SHA2_256_NAME);
-	if (ka == NULL)
-		return DSSH_ERROR_INIT;
-
-	/* If cbd exists, pkey is always set by keygen/load. */
-	struct cbdata *cbd = (struct cbdata *)ka->ctx;
 #ifdef DSSH_TESTING
-	if (cbd == NULL)
+	if (rsa_ctx == NULL)
 #else
-	if (cbd == NULL || cbd->pkey == NULL)
+	if (rsa_ctx == NULL || rsa_ctx->pkey == NULL)
 #endif
 		return DSSH_ERROR_INIT;
 
 	FILE *fp = fopen(path, "w");
+
 	if (fp == NULL)
 		return DSSH_ERROR_INIT;
 
 	const EVP_CIPHER *cipher = pw_cb != NULL ?
 	    EVP_aes_256_cbc() : NULL;
-	int ok = PEM_write_PrivateKey(fp, cbd->pkey,
+	int ok = PEM_write_PrivateKey(fp, rsa_ctx->pkey,
 	    cipher, NULL, 0, pw_cb, pw_cbdata);
 	if (fclose(fp) != 0)
 		ok = 0;
@@ -416,14 +421,10 @@ rsa_sha2_256_save_key_file(const char *path, pem_password_cb *pw_cb,
 DSSH_PUBLIC int64_t
 rsa_sha2_256_get_pub_str(char *buf, size_t bufsz)
 {
-	dssh_key_algo ka =
-	    dssh_transport_find_key_algo(RSA_SHA2_256_NAME);
-	if (ka == NULL)
-		return DSSH_ERROR_INIT;
-
 	uint8_t blob[2048];
 	size_t blob_len;
-	int res = pubkey(blob, sizeof(blob), &blob_len, ka->ctx);
+	int res = pubkey(blob, sizeof(blob), &blob_len,
+	    (dssh_key_algo_ctx *)rsa_ctx);
 	if (res < 0)
 		return res;
 
@@ -474,13 +475,9 @@ rsa_sha2_256_save_pub_file(const char *path)
 DSSH_PUBLIC int
 rsa_sha2_256_generate_key(unsigned int bits)
 {
-	dssh_key_algo ka =
-	    dssh_transport_find_key_algo(RSA_SHA2_256_NAME);
-	if (ka == NULL)
-		return DSSH_ERROR_INIT;
-
 	EVP_PKEY *pkey = NULL;
 	EVP_PKEY_CTX *pctx = EVP_PKEY_CTX_new_from_name(NULL, "RSA", NULL);
+
 	if (pctx == NULL)
 		return DSSH_ERROR_ALLOC;
 
@@ -497,20 +494,26 @@ rsa_sha2_256_generate_key(unsigned int bits)
 	}
 	EVP_PKEY_CTX_free(pctx);
 
-	struct cbdata *cbd = (struct cbdata *)ka->ctx;
-	if (cbd == NULL) {
-		cbd = calloc(1, sizeof(*cbd));
-		if (cbd == NULL) {
+	if (rsa_ctx == NULL) {
+		rsa_ctx = calloc(1, sizeof(*rsa_ctx));
+		if (rsa_ctx == NULL) {
 			EVP_PKEY_free(pkey);
 			return DSSH_ERROR_ALLOC;
 		}
-		ka->ctx = (dssh_key_algo_ctx *)cbd;
+		int res = dssh_key_algo_set_ctx(RSA_SHA2_256_NAME, rsa_ctx);
+
+		if (res < 0) {
+			free(rsa_ctx);
+			rsa_ctx = NULL;
+			EVP_PKEY_free(pkey);
+			return res;
+		}
 	}
 	else {
-		EVP_PKEY_free(cbd->pkey);
+		EVP_PKEY_free(rsa_ctx->pkey);
 	}
 
-	cbd->pkey = pkey;
+	rsa_ctx->pkey = pkey;
 	return 0;
 }
 

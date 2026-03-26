@@ -49,6 +49,13 @@ DSSH_PUBLIC int register_none_mac(void);
 /* Compression */
 DSSH_PUBLIC int register_none_comp(void);
 
+/*
+ * Set the opaque context pointer for a registered key algorithm.
+ * Called by key algorithm modules after generating or loading a key.
+ * Returns 0 on success, DSSH_ERROR_INIT if the algorithm is not registered.
+ */
+DSSH_PUBLIC int dssh_key_algo_set_ctx(const char *name, void *ctx);
+
 /* DH group provider (server-side, for DH-GEX) */
 struct dssh_dh_gex_provider {
 	int   (*select_group)(uint32_t min, uint32_t preferred, uint32_t max,

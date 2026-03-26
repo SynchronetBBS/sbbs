@@ -4,8 +4,11 @@
 #include <string.h>
 
 #include "deucessh.h"
+#include "deucessh-algorithms.h"
 #include "ssh-trans.h"
+#ifdef DSSH_TESTING
 #include "ssh-internal.h"
+#endif
 
 #define ED25519_RAW_PUB_LEN  32
 #define ED25519_RAW_SIG_LEN  64
@@ -15,6 +18,8 @@
 struct cbdata {
 	EVP_PKEY *pkey;
 };
+
+static struct cbdata *ed25519_ctx;
 
 static int
 sign(uint8_t *buf, size_t bufsz, size_t *outlen,
@@ -202,10 +207,13 @@ static void
 cleanup(dssh_key_algo_ctx *ctx)
 {
 	struct cbdata *cbd = (struct cbdata *)ctx;
+
 	if (cbd != NULL) {
 		EVP_PKEY_free(cbd->pkey);
 		free(cbd);
 	}
+	if (cbd == ed25519_ctx)
+		ed25519_ctx = NULL;
 }
 
 DSSH_PUBLIC int
@@ -230,16 +238,13 @@ DSSH_PUBLIC int
 ssh_ed25519_load_key_file(const char *path, pem_password_cb *pw_cb,
     void *pw_cbdata)
 {
-	dssh_key_algo ka =
-	    dssh_transport_find_key_algo(ED25519_NAME);
-	if (ka == NULL)
-		return DSSH_ERROR_INIT;
-
 	FILE *fp = fopen(path, "r");
+
 	if (fp == NULL)
 		return DSSH_ERROR_INIT;
 
 	EVP_PKEY *pkey = PEM_read_PrivateKey(fp, NULL, pw_cb, pw_cbdata);
+
 	fclose(fp);
 	if (pkey == NULL)
 		return DSSH_ERROR_INIT;
@@ -249,20 +254,26 @@ ssh_ed25519_load_key_file(const char *path, pem_password_cb *pw_cb,
 		return DSSH_ERROR_INVALID;
 	}
 
-	struct cbdata *cbd = (struct cbdata *)ka->ctx;
-	if (cbd == NULL) {
-		cbd = calloc(1, sizeof(*cbd));
-		if (cbd == NULL) {
+	if (ed25519_ctx == NULL) {
+		ed25519_ctx = calloc(1, sizeof(*ed25519_ctx));
+		if (ed25519_ctx == NULL) {
 			EVP_PKEY_free(pkey);
 			return DSSH_ERROR_ALLOC;
 		}
-		ka->ctx = (dssh_key_algo_ctx *)cbd;
+		int res = dssh_key_algo_set_ctx(ED25519_NAME, ed25519_ctx);
+
+		if (res < 0) {
+			free(ed25519_ctx);
+			ed25519_ctx = NULL;
+			EVP_PKEY_free(pkey);
+			return res;
+		}
 	}
 	else {
-		EVP_PKEY_free(cbd->pkey);
+		EVP_PKEY_free(ed25519_ctx->pkey);
 	}
 
-	cbd->pkey = pkey;
+	ed25519_ctx->pkey = pkey;
 	return 0;
 }
 
@@ -270,17 +281,10 @@ DSSH_PUBLIC int
 ssh_ed25519_save_key_file(const char *path, pem_password_cb *pw_cb,
     void *pw_cbdata)
 {
-	dssh_key_algo ka =
-	    dssh_transport_find_key_algo(ED25519_NAME);
-	if (ka == NULL)
-		return DSSH_ERROR_INIT;
-
-	/* If cbd exists, pkey is always set by keygen/load. */
-	struct cbdata *cbd = (struct cbdata *)ka->ctx;
 #ifdef DSSH_TESTING
-	if (cbd == NULL)
+	if (ed25519_ctx == NULL)
 #else
-	if (cbd == NULL || cbd->pkey == NULL)
+	if (ed25519_ctx == NULL || ed25519_ctx->pkey == NULL)
 #endif
 		return DSSH_ERROR_INIT;
 
@@ -290,7 +294,7 @@ ssh_ed25519_save_key_file(const char *path, pem_password_cb *pw_cb,
 
 	const EVP_CIPHER *cipher = pw_cb != NULL ?
 	    EVP_aes_256_cbc() : NULL;
-	int ok = PEM_write_PrivateKey(fp, cbd->pkey,
+	int ok = PEM_write_PrivateKey(fp, ed25519_ctx->pkey,
 	    cipher, NULL, 0, pw_cb, pw_cbdata);
 	if (fclose(fp) != 0)
 		ok = 0;
@@ -300,14 +304,10 @@ ssh_ed25519_save_key_file(const char *path, pem_password_cb *pw_cb,
 DSSH_PUBLIC int64_t
 ssh_ed25519_get_pub_str(char *buf, size_t bufsz)
 {
-	dssh_key_algo ka =
-	    dssh_transport_find_key_algo(ED25519_NAME);
-	if (ka == NULL)
-		return DSSH_ERROR_INIT;
-
 	uint8_t blob[256];
 	size_t blob_len;
-	int res = pubkey(blob, sizeof(blob), &blob_len, ka->ctx);
+	int res = pubkey(blob, sizeof(blob), &blob_len,
+	    (dssh_key_algo_ctx *)ed25519_ctx);
 	if (res < 0)
 		return res;
 
@@ -347,13 +347,9 @@ ssh_ed25519_save_pub_file(const char *path)
 DSSH_PUBLIC int
 ssh_ed25519_generate_key(void)
 {
-	dssh_key_algo ka =
-	    dssh_transport_find_key_algo(ED25519_NAME);
-	if (ka == NULL)
-		return DSSH_ERROR_INIT;
-
 	EVP_PKEY *pkey = NULL;
 	EVP_PKEY_CTX *pctx = EVP_PKEY_CTX_new_id(EVP_PKEY_ED25519, NULL);
+
 	if (pctx == NULL)
 		return DSSH_ERROR_ALLOC;
 
@@ -364,19 +360,25 @@ ssh_ed25519_generate_key(void)
 	}
 	EVP_PKEY_CTX_free(pctx);
 
-	struct cbdata *cbd = (struct cbdata *)ka->ctx;
-	if (cbd == NULL) {
-		cbd = calloc(1, sizeof(*cbd));
-		if (cbd == NULL) {
+	if (ed25519_ctx == NULL) {
+		ed25519_ctx = calloc(1, sizeof(*ed25519_ctx));
+		if (ed25519_ctx == NULL) {
 			EVP_PKEY_free(pkey);
 			return DSSH_ERROR_ALLOC;
 		}
-		ka->ctx = (dssh_key_algo_ctx *)cbd;
+		int res = dssh_key_algo_set_ctx(ED25519_NAME, ed25519_ctx);
+
+		if (res < 0) {
+			free(ed25519_ctx);
+			ed25519_ctx = NULL;
+			EVP_PKEY_free(pkey);
+			return res;
+		}
 	}
 	else {
-		EVP_PKEY_free(cbd->pkey);
+		EVP_PKEY_free(ed25519_ctx->pkey);
 	}
 
-	cbd->pkey = pkey;
+	ed25519_ctx->pkey = pkey;
 	return 0;
 }
