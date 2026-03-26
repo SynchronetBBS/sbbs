@@ -1,4 +1,13 @@
-# DeuceSSH — Bugs found during branch coverage work
+# DeuceSSH — TODO / Known Issues
+
+## Open
+
+11. `alloc_channel_id()` (ssh-conn.c) is a bare `next_channel_id++`
+    with no collision detection.  If a session opens and closes 2^32
+    channels, the counter wraps and the next ID could collide with a
+    still-open channel.  Fix: scan the active channel table and skip
+    IDs already in use, or return an error if all 2^32 IDs are
+    exhausted.
 
 ## Fixed
 

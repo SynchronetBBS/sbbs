@@ -453,6 +453,10 @@ dssh_transport_send_packet(dssh_session sess,
 
 	size_t bs = tx_block_size(sess);
 
+	if (payload_len > SIZE_MAX - 5) {
+		ret = DSSH_ERROR_TOOLONG;
+		goto tx_done;
+	}
 	size_t padding_len = bs - ((5 + payload_len) % bs);
 	if (padding_len < 4)
 		padding_len += bs;
@@ -464,6 +468,13 @@ dssh_transport_send_packet(dssh_session sess,
 		goto tx_done;
 	}
 	uint32_t packet_length = (uint32_t)pkt_sz;
+
+#if UINT32_MAX > SIZE_MAX - 4
+	if (packet_length > SIZE_MAX - 4) {
+		ret = DSSH_ERROR_TOOLONG;
+		goto tx_done;
+	}
+#endif
 	size_t total = 4 + packet_length;
 	uint16_t mac_len = tx_mac_size(sess);
 
@@ -1139,10 +1150,12 @@ dssh_transport_kexinit(dssh_session sess)
 		{
 			uint32_t name_start = 0;
 
-			for (uint32_t j = 0; j <= nlen; j++) {
+			for (uint32_t j = 0; ; j++) {
 				if ((j == nlen) || (pk[ppos + j] == ',')) {
 					if (j - name_start > 64)
 						return DSSH_ERROR_PARSE;
+					if (j == nlen)
+						break;
 					name_start = j + 1;
 				}
 			}
