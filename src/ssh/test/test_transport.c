@@ -83,6 +83,8 @@ register_all_algorithms(void)
 		res = dssh_register_dh_gex_sha256();
 	else if (test_using_sntrup())
 		res = dssh_register_sntrup761x25519_sha512();
+	else if (test_using_mlkem())
+		res = dssh_register_mlkem768x25519_sha256();
 	else
 		res = dssh_register_curve25519_sha256();
 	if (res < 0)

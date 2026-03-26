@@ -104,6 +104,16 @@ test_using_sntrup(void)
 }
 
 /*
+ * Returns true if DSSH_TEST_KEX=mlkem is set.
+ */
+static inline bool
+test_using_mlkem(void)
+{
+	const char *kex = getenv("DSSH_TEST_KEX");
+	return (kex != NULL && strcmp(kex, "mlkem") == 0);
+}
+
+/*
  * Call after dssh_session_init(false, 0) on a server session
  * when using DH-GEX.
  */

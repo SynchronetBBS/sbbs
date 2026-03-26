@@ -25,6 +25,7 @@
 #include "mock_alloc.h"
 #include "test_dhgex_provider.h"
 #include "../kex/sntrup761.h"
+#include "../kex/mlkem768.h"
 
 #include <openssl/rand.h>
 
@@ -54,6 +55,8 @@ register_all(void)
 		res = dssh_register_dh_gex_sha256();
 	else if (test_using_sntrup())
 		res = dssh_register_sntrup761x25519_sha512();
+	else if (test_using_mlkem())
+		res = dssh_register_mlkem768x25519_sha256();
 	else
 		res = dssh_register_curve25519_sha256();
 	if (res < 0) return res;
@@ -2135,6 +2138,24 @@ test_ossl_kex_server_iterate(void)
 		wire_total += build_plaintext_packet(init, ip,
 		    &wire_pkts[wire_total], sizeof(wire_pkts) - wire_total);
 	}
+	else if (test_using_mlkem()) {
+		/* mlkem768x25519: ECDH_INIT with Q_C = pk(1184) || x25519(32) */
+		uint8_t mlkem_pk[1184], mlkem_sk[2400];
+		crypto_kem_mlkem768_keypair(mlkem_pk, mlkem_sk);
+		uint8_t x25519_pk[32];
+		RAND_bytes(x25519_pk, sizeof(x25519_pk));
+
+		uint8_t init[1 + 4 + 1216];
+		size_t ip = 0;
+		init[ip++] = SSH_MSG_KEX_ECDH_INIT;
+		dssh_serialize_uint32(1216, init, sizeof(init), &ip);
+		memcpy(&init[ip], mlkem_pk, 1184);
+		ip += 1184;
+		memcpy(&init[ip], x25519_pk, 32);
+		ip += 32;
+		wire_total += build_plaintext_packet(init, ip,
+		    &wire_pkts[wire_total], sizeof(wire_pkts) - wire_total);
+	}
 	else {
 		/* Curve25519: ECDH_INIT(Q_C) */
 		uint8_t qc[32];
@@ -3213,6 +3234,24 @@ test_alloc_kex_server_iterate(void)
 		dssh_serialize_uint32(1190, init, sizeof(init), &ip);
 		memcpy(&init[ip], sntrup_pk, 1158);
 		ip += 1158;
+		memcpy(&init[ip], x25519_pk, 32);
+		ip += 32;
+		wire_total += build_plaintext_packet(init, ip,
+		    &wire_pkts[wire_total], sizeof(wire_pkts) - wire_total);
+	}
+	else if (test_using_mlkem()) {
+		/* mlkem768x25519: ECDH_INIT with Q_C = pk(1184) || x25519(32) */
+		uint8_t mlkem_pk[1184], mlkem_sk[2400];
+		crypto_kem_mlkem768_keypair(mlkem_pk, mlkem_sk);
+		uint8_t x25519_pk[32];
+		RAND_bytes(x25519_pk, sizeof(x25519_pk));
+
+		uint8_t init[1 + 4 + 1216];
+		size_t ip = 0;
+		init[ip++] = SSH_MSG_KEX_ECDH_INIT;
+		dssh_serialize_uint32(1216, init, sizeof(init), &ip);
+		memcpy(&init[ip], mlkem_pk, 1184);
+		ip += 1184;
 		memcpy(&init[ip], x25519_pk, 32);
 		ip += 32;
 		wire_total += build_plaintext_packet(init, ip,

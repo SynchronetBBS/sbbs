@@ -104,6 +104,14 @@ macro(dssh_add_individual_tests executable prefix test_list)
 			COMMAND ${executable} ${t})
 		set_tests_properties(${prefix}_${t}_sntrup_rsa PROPERTIES
 			ENVIRONMENT "DSSH_TEST_KEX=sntrup;DSSH_TEST_KEY=rsa;${DSSH_TEST_KEY_ENV}")
+		add_test(NAME ${prefix}_${t}_mlkem
+			COMMAND ${executable} ${t})
+		set_tests_properties(${prefix}_${t}_mlkem PROPERTIES
+			ENVIRONMENT "DSSH_TEST_KEX=mlkem;${DSSH_TEST_KEY_ENV}")
+		add_test(NAME ${prefix}_${t}_mlkem_rsa
+			COMMAND ${executable} ${t})
+		set_tests_properties(${prefix}_${t}_mlkem_rsa PROPERTIES
+			ENVIRONMENT "DSSH_TEST_KEX=mlkem;DSSH_TEST_KEY=rsa;${DSSH_TEST_KEY_ENV}")
 	endforeach()
 endmacro()
 
@@ -489,6 +497,15 @@ add_test(NAME dssh_unit_alloc_sntrup_rsa COMMAND dssh_test_alloc)
 set_tests_properties(dssh_unit_alloc_sntrup_rsa PROPERTIES
 	COST 400 TIMEOUT 600
 	ENVIRONMENT "DSSH_TEST_KEX=sntrup;DSSH_TEST_KEY=rsa;${DSSH_TEST_KEY_ENV}")
+
+add_test(NAME dssh_unit_alloc_mlkem COMMAND dssh_test_alloc)
+set_tests_properties(dssh_unit_alloc_mlkem PROPERTIES
+	COST 300 TIMEOUT 600
+	ENVIRONMENT "DSSH_TEST_KEX=mlkem;${DSSH_TEST_KEY_ENV}")
+add_test(NAME dssh_unit_alloc_mlkem_rsa COMMAND dssh_test_alloc)
+set_tests_properties(dssh_unit_alloc_mlkem_rsa PROPERTIES
+	COST 300 TIMEOUT 600
+	ENVIRONMENT "DSSH_TEST_KEX=mlkem;DSSH_TEST_KEY=rsa;${DSSH_TEST_KEY_ENV}")
 
 # Targeted coverage tests — run in their own process for clean state
 add_test(NAME dssh_targeted_c25519_server_trunc

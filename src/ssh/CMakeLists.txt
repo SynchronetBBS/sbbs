@@ -33,6 +33,8 @@ set(DEUCESSH_SOURCES
 	kex/dh-gex-sha256.c
 	kex/sntrup761.c
 	kex/sntrup761x25519-sha512.c
+	kex/mlkem768.c
+	kex/mlkem768x25519-sha256.c
 	key_algo/ssh-ed25519.c
 	key_algo/rsa-sha2-256.c
 	enc/aes256-ctr.c
