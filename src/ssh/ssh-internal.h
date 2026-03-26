@@ -14,6 +14,9 @@
 
 /* DSSH_TESTABLE is now defined in deucessh-portable.h */
 
+/* Wire-length of a string literal (excludes NUL terminator) */
+#define DSSH_STRLEN(lit) ((uint32_t)(sizeof(lit) - 1))
+
 /* Set terminate flag and wake all library-owned condvar waiters. */
 DSSH_PRIVATE void dssh_session_set_terminate(dssh_session sess);
 

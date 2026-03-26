@@ -50,6 +50,10 @@ static int
 send_auth_failure(dssh_session sess, const char *methods, bool partial_success)
 {
 	size_t  mlen = strlen(methods);
+
+	if (mlen > UINT32_MAX)
+		return DSSH_ERROR_INVALID;
+
 	uint8_t msg[256];
 	size_t  pos = 0;
 
@@ -73,6 +77,9 @@ static int
 send_passwd_changereq(dssh_session sess,
     const uint8_t *prompt, size_t prompt_len)
 {
+	if (prompt_len > UINT32_MAX)
+		return DSSH_ERROR_INVALID;
+
 	size_t   msg_len = 1 + 4 + prompt_len + 4;
 	uint8_t *msg = malloc(msg_len);
 
@@ -98,6 +105,9 @@ send_pk_ok(dssh_session sess,
     const char *algo_name, size_t algo_len,
     const uint8_t *pubkey_blob, size_t pubkey_blob_len)
 {
+	if (algo_len > UINT32_MAX || pubkey_blob_len > UINT32_MAX)
+		return DSSH_ERROR_INVALID;
+
 	size_t   msg_len = 1 + 4 + algo_len + 4 + pubkey_blob_len;
 	uint8_t *msg = malloc(msg_len);
 
@@ -459,6 +469,10 @@ auth_server_impl(dssh_session sess,
                         * rpos currently points at the sig data, so
                         * rpos - 4 is the offset of the sig_len field. */
 			size_t   before_sig = rpos - 4;
+
+			if (sess->trans.session_id_sz > UINT32_MAX)
+				return DSSH_ERROR_INVALID;
+
 			size_t   sd_len = 4 + sess->trans.session_id_sz + before_sig;
 			uint8_t *sign_data = malloc(sd_len);
 
@@ -551,6 +565,10 @@ static int
 dssh_auth_request_service(dssh_session sess, const char *service)
 {
 	size_t   slen = strlen(service);
+
+	if (slen > UINT32_MAX)
+		return DSSH_ERROR_INVALID;
+
 	size_t   msg_len = 1 + 4 + slen;
 	uint8_t *msg = malloc(msg_len);
 
@@ -608,6 +626,10 @@ get_methods_impl(dssh_session sess,
 		return res;
 
 	size_t            ulen = strlen(username);
+
+	if (ulen > UINT32_MAX)
+		return DSSH_ERROR_INVALID;
+
 	static const char service[] = "ssh-connection";
 	static const char method[] = "none";
 	size_t            msg_len = 1 + 4 + ulen + 4 + (sizeof(service) - 1) + 4 + (sizeof(method) - 1);
@@ -622,10 +644,10 @@ get_methods_impl(dssh_session sess,
 	dssh_serialize_uint32((uint32_t)ulen, msg, msg_len, &pos);
 	memcpy(&msg[pos], username, ulen);
 	pos += ulen;
-	dssh_serialize_uint32((uint32_t)(sizeof(service) - 1), msg, msg_len, &pos);
+	dssh_serialize_uint32(DSSH_STRLEN(service), msg, msg_len, &pos);
 	memcpy(&msg[pos], service, sizeof(service) - 1);
 	pos += sizeof(service) - 1;
-	dssh_serialize_uint32((uint32_t)(sizeof(method) - 1), msg, msg_len, &pos);
+	dssh_serialize_uint32(DSSH_STRLEN(method), msg, msg_len, &pos);
 	memcpy(&msg[pos], method, sizeof(method) - 1);
 	pos += sizeof(method) - 1;
 
@@ -696,6 +718,10 @@ send_password_request(dssh_session sess,
 {
 	size_t            ulen = strlen(username);
 	size_t            oplen = strlen(old_password);
+
+	if (ulen > UINT32_MAX || oplen > UINT32_MAX || new_password_len > UINT32_MAX)
+		return DSSH_ERROR_INVALID;
+
 	static const char service[] = "ssh-connection";
 	static const char method[] = "password";
 	size_t            msg_len = 1 + 4 + ulen + 4 + (sizeof(service) - 1)
@@ -715,10 +741,10 @@ send_password_request(dssh_session sess,
 	dssh_serialize_uint32((uint32_t)ulen, msg, msg_len, &pos);
 	memcpy(&msg[pos], username, ulen);
 	pos += ulen;
-	dssh_serialize_uint32((uint32_t)(sizeof(service) - 1), msg, msg_len, &pos);
+	dssh_serialize_uint32(DSSH_STRLEN(service), msg, msg_len, &pos);
 	memcpy(&msg[pos], service, sizeof(service) - 1);
 	pos += sizeof(service) - 1;
-	dssh_serialize_uint32((uint32_t)(sizeof(method) - 1), msg, msg_len, &pos);
+	dssh_serialize_uint32(DSSH_STRLEN(method), msg, msg_len, &pos);
 	memcpy(&msg[pos], method, sizeof(method) - 1);
 	pos += sizeof(method) - 1;
 	msg[pos++] = change ? 1 : 0;
@@ -851,6 +877,10 @@ auth_kbi_impl(dssh_session sess,
 	}
 
 	size_t            ulen = strlen(username);
+
+	if (ulen > UINT32_MAX)
+		return DSSH_ERROR_INVALID;
+
 	static const char service[] = "ssh-connection";
 	static const char method[] = "keyboard-interactive";
 	size_t            msg_len = 1 + 4 + ulen + 4 + (sizeof(service) - 1)
@@ -866,10 +896,10 @@ auth_kbi_impl(dssh_session sess,
 	dssh_serialize_uint32((uint32_t)ulen, msg, msg_len, &pos);
 	memcpy(&msg[pos], username, ulen);
 	pos += ulen;
-	dssh_serialize_uint32((uint32_t)(sizeof(service) - 1), msg, msg_len, &pos);
+	dssh_serialize_uint32(DSSH_STRLEN(service), msg, msg_len, &pos);
 	memcpy(&msg[pos], service, sizeof(service) - 1);
 	pos += sizeof(service) - 1;
-	dssh_serialize_uint32((uint32_t)(sizeof(method) - 1), msg, msg_len, &pos);
+	dssh_serialize_uint32(DSSH_STRLEN(method), msg, msg_len, &pos);
 	memcpy(&msg[pos], method, sizeof(method) - 1);
 	pos += sizeof(method) - 1;
 	dssh_serialize_uint32(0, msg, msg_len, &pos); /* language */
@@ -1034,8 +1064,16 @@ auth_kbi_impl(dssh_session sess,
                         /* Build INFO_RESPONSE from callback's responses */
 			size_t resp_sz = 1 + 4;
 
-			for (uint32_t i = 0; i < num_prompts; i++)
+			for (uint32_t i = 0; i < num_prompts; i++) {
+				if (response_lens[i] > UINT32_MAX) {
+					for (uint32_t j = 0; j < num_prompts; j++)
+						free(responses[j]);
+					free(responses);
+					free(response_lens);
+					return DSSH_ERROR_INVALID;
+				}
 				resp_sz += 4 + response_lens[i];
+			}
 
 			uint8_t *resp = malloc(resp_sz);
 
@@ -1109,6 +1147,11 @@ auth_publickey_impl(dssh_session sess,
 
 	size_t            ulen = strlen(username);
 	size_t            alen = strlen(algo_name);
+
+	if (ulen > UINT32_MAX || alen > UINT32_MAX
+	    || pubkey_len > UINT32_MAX || sess->trans.session_id_sz > UINT32_MAX)
+		return DSSH_ERROR_INVALID;
+
 	static const char service[] = "ssh-connection";
 	static const char method[] = "publickey";
 
@@ -1141,11 +1184,11 @@ auth_publickey_impl(dssh_session sess,
 	dssh_serialize_uint32((uint32_t)ulen, sign_data, sign_data_len, &sp);
 	memcpy(&sign_data[sp], username, ulen);
 	sp += ulen;
-	dssh_serialize_uint32((uint32_t)(sizeof(service) - 1),
+	dssh_serialize_uint32(DSSH_STRLEN(service),
 	    sign_data, sign_data_len, &sp);
 	memcpy(&sign_data[sp], service, sizeof(service) - 1);
 	sp += sizeof(service) - 1;
-	dssh_serialize_uint32((uint32_t)(sizeof(method) - 1),
+	dssh_serialize_uint32(DSSH_STRLEN(method),
 	    sign_data, sign_data_len, &sp);
 	memcpy(&sign_data[sp], method, sizeof(method) - 1);
 	sp += sizeof(method) - 1;
@@ -1165,6 +1208,8 @@ auth_publickey_impl(dssh_session sess,
 	free(sign_data);
 	if (res < 0)
 		return res;
+	if (sig_len > UINT32_MAX)
+		return DSSH_ERROR_INVALID;
 
         /*
          * Build the auth request message:
@@ -1191,10 +1236,10 @@ auth_publickey_impl(dssh_session sess,
 	dssh_serialize_uint32((uint32_t)ulen, msg, msg_len, &pos);
 	memcpy(&msg[pos], username, ulen);
 	pos += ulen;
-	dssh_serialize_uint32((uint32_t)(sizeof(service) - 1), msg, msg_len, &pos);
+	dssh_serialize_uint32(DSSH_STRLEN(service), msg, msg_len, &pos);
 	memcpy(&msg[pos], service, sizeof(service) - 1);
 	pos += sizeof(service) - 1;
-	dssh_serialize_uint32((uint32_t)(sizeof(method) - 1), msg, msg_len, &pos);
+	dssh_serialize_uint32(DSSH_STRLEN(method), msg, msg_len, &pos);
 	memcpy(&msg[pos], method, sizeof(method) - 1);
 	pos += sizeof(method) - 1;
 	msg[pos++] = 1; /* TRUE */

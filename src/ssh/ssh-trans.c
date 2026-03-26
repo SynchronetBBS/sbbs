@@ -457,7 +457,13 @@ dssh_transport_send_packet(dssh_session sess,
 	if (padding_len < 4)
 		padding_len += bs;
 
-	uint32_t packet_length = (uint32_t)(1 + payload_len + padding_len);
+	size_t pkt_sz = 1 + payload_len + padding_len;
+
+	if (pkt_sz > UINT32_MAX) {
+		ret = DSSH_ERROR_TOOLONG;
+		goto tx_done;
+	}
+	uint32_t packet_length = (uint32_t)pkt_sz;
 	size_t total = 4 + packet_length;
 	uint16_t mac_len = tx_mac_size(sess);
 
@@ -947,7 +953,12 @@ dssh_test_negotiate_algo(const char *client_list, const char *server_list,
 static void
 serialize_namelist_from_str(const char *str, uint8_t *buf, size_t bufsz, size_t *pos)
 {
-	uint32_t len = (uint32_t)strlen(str);
+	size_t slen = strlen(str);
+
+	if (slen > UINT32_MAX)
+		slen = UINT32_MAX;
+
+	uint32_t len = (uint32_t)slen;
 
 	dssh_serialize_uint32(len, buf, bufsz, pos);
 	memcpy(&buf[*pos], str, len);

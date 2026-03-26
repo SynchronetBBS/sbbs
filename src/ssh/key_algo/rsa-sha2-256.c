@@ -234,6 +234,10 @@ sign(uint8_t *buf, size_t bufsz, size_t *outlen,
 		return DSSH_ERROR_INIT;
 	}
 	EVP_MD_CTX_free(mdctx);
+	if (siglen > UINT32_MAX) {
+		free(raw_sig);
+		return DSSH_ERROR_INVALID;
+	}
 
 	/* Serialize SSH signature blob */
 	size_t pos = 0;

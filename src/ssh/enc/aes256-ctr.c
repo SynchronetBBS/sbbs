@@ -60,6 +60,8 @@ do_crypt(uint8_t *buf, size_t bufsz, dssh_enc_ctx *ctx)
 
 	if ((cbd == NULL) || (cbd->ctx == NULL))
 		return DSSH_ERROR_INIT;
+	if (bufsz > INT_MAX)
+		return DSSH_ERROR_INVALID;
 
 	int outlen = 0;
 

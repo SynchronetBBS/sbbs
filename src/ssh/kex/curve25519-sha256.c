@@ -34,6 +34,12 @@ compute_exchange_hash_c25519(const char *v_c, size_t v_c_len,
     const uint8_t *k_mpint, size_t k_mpint_len,
     uint8_t *hash_out)
 {
+	if (v_c_len > UINT32_MAX || v_s_len > UINT32_MAX
+	    || i_c_len > UINT32_MAX || i_s_len > UINT32_MAX
+	    || k_s_len > UINT32_MAX || q_c_len > UINT32_MAX
+	    || q_s_len > UINT32_MAX)
+		return DSSH_ERROR_INVALID;
+
 	EVP_MD_CTX *mdctx = EVP_MD_CTX_new();
 
 	if (mdctx == NULL)

@@ -128,6 +128,11 @@ compute_exchange_hash(const char *v_c, size_t v_c_len,
     const BIGNUM *e, const BIGNUM *f, const BIGNUM *k,
     uint8_t *hash_out)
 {
+	if (v_c_len > UINT32_MAX || v_s_len > UINT32_MAX
+	    || i_c_len > UINT32_MAX || i_s_len > UINT32_MAX
+	    || k_s_len > UINT32_MAX)
+		return DSSH_ERROR_INVALID;
+
 	EVP_MD_CTX *mdctx = EVP_MD_CTX_new();
 
 	if (mdctx == NULL)
