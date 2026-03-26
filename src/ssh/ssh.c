@@ -1,3 +1,4 @@
+#include <openssl/crypto.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -101,6 +102,13 @@ dssh_session_cleanup(dssh_session sess)
 	free(sess->pending_banner_lang);
 	mtx_destroy(&sess->mtx);
 	free(sess);
+}
+
+DSSH_PUBLIC void
+dssh_cleanse(void *buf, size_t len)
+{
+	if (buf != NULL && len > 0)
+		OPENSSL_cleanse(buf, len);
 }
 
 DSSH_PUBLIC void

@@ -251,6 +251,22 @@ Return 0 on success, negative on error.  The `cbdata` is set via
 Callbacks are registered globally once.  Per-session differentiation
 is via the `cbdata` pointers.
 
+## Secure Memory
+
+`dssh_cleanse()` scrubs a buffer to remove sensitive data (passwords,
+keys).  It resists compiler dead-store optimization and does not
+require the application to link against OpenSSL.
+
+```c
+char password[64];
+/* ... fill password ... */
+dssh_auth_password(sess, "user", password, NULL, NULL);
+dssh_cleanse(password, strlen(password));
+```
+
+Do not `realloc()` password buffers — the old allocation won't be
+scrubbed.
+
 ## Authentication — Client Side
 
 ### Password

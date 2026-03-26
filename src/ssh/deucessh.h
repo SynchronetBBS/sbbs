@@ -96,6 +96,14 @@ DSSH_PUBLIC bool dssh_session_is_terminated(dssh_session sess);
 DSSH_PUBLIC void dssh_session_cleanup(dssh_session sess);
 
 /*
+ * Securely scrub a memory buffer (e.g. a password).
+ * Resists compiler optimization.  Does not require the application
+ * to link against OpenSSL.  Do not realloc() password buffers —
+ * the old allocation won't be scrubbed.
+ */
+DSSH_PUBLIC void dssh_cleanse(void *buf, size_t len);
+
+/*
  * Per-session I/O callback data (passed to the global I/O callbacks).
  */
 DSSH_PUBLIC void dssh_session_set_cbdata(dssh_session sess,
