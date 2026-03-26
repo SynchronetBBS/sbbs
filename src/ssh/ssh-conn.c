@@ -600,6 +600,9 @@ demux_dispatch(dssh_session sess, uint8_t msg_type,
          * via the mailbox instead of processing them normally.
          */
 	if (ch->setup_mode) {
+		/* Wait for the accept loop to consume the previous message */
+		while (ch->setup_ready && !sess->terminate)
+			cnd_wait(&ch->poll_cnd, &ch->buf_mtx);
 		free(ch->setup_payload);
 		ch->setup_payload = malloc(payload_len);
 		if (ch->setup_payload != NULL) {
@@ -1666,6 +1669,9 @@ setup_recv(dssh_session sess, dssh_channel ch,
         /* Caller takes ownership of setup_payload and must free it */
 	ch->setup_payload = NULL;
 	ch->setup_payload_len = 0;
+
+        /* Wake demux if it's waiting to deliver the next message */
+	cnd_signal(&ch->poll_cnd);
 	mtx_unlock(&ch->buf_mtx);
 	return 0;
 }

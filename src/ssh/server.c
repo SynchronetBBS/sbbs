@@ -193,6 +193,8 @@ channel_request_cb(const char *type, size_t type_len,
     bool want_reply, const uint8_t *data, size_t data_len,
     void *cbdata)
 {
+	fprintf(stderr, "  REQ: %.*s (want_reply=%d, data_len=%zu)\n",
+	    (int)type_len, type, want_reply, data_len);
 	if ((type_len == 7) && (memcmp(type, "pty-req", 7) == 0)) {
 		struct dssh_pty_req pty;
 
