@@ -164,9 +164,51 @@ static struct dssh_dh_gex_provider dh_provider = {
 /* ================================================================
  * Auth callbacks
  * ================================================================ */
+static const char *reject_quips[] = {
+	"Nope. Try again, champ.\r\n",
+	"Denied! The dice gods are not amused.\r\n",
+	"Wrong! (Just kidding, we rolled a bad number.)\r\n",
+	"Access denied. Have you tried being luckier?\r\n",
+	"The RNG has spoken, and it says no.\r\n",
+	"75% chance of failure. You hit it. Congrats?\r\n",
+	"That's a no from me, dawg.\r\n",
+	"Have you considered a career that doesn't involve computers?\r\n",
+	"I'm not saying your credentials are bad, but... yeah, they're bad.\r\n",
+	"Error 418: I'm a teapot. Also, no.\r\n",
+	"Roses are red, violets are blue, auth denied, try something new.\r\n",
+	"Permission denied (it's not you, it's me. Actually, it IS you).\r\n",
+	"INSERT COIN TO CONTINUE\r\n",
+	"Your princess is in another castle.\r\n",
+	"Did you try turning it off and on again?\r\n",
+	"I asked my magic 8-ball. It said 'outlook not so good'.\r\n",
+};
+#define N_QUIPS (sizeof(reject_quips) / sizeof(reject_quips[0]))
+
+static void
+set_banner(const char *msg)
+{
+	fprintf(stderr, "  BANNER: %s", msg);
+	dssh_auth_set_banner(sess, msg, NULL);
+}
+
 static int
 auth_none(const uint8_t *username, size_t username_len, void *cbdata)
 {
+	char buf[256];
+
+	if (arc4random_uniform(4) != 0) {
+		snprintf(buf, sizeof(buf),
+		    "Oh, '%.*s' wants in without even trying? %s",
+		    (int)username_len, username,
+		    reject_quips[arc4random_uniform(N_QUIPS)]);
+		set_banner(buf);
+		return DSSH_AUTH_FAILURE;
+	}
+	snprintf(buf, sizeof(buf),
+	    "Oh, '%.*s' wants in without even trying? Bold move. "
+	    "Lucky roll though!\r\n",
+	    (int)username_len, username);
+	set_banner(buf);
 	return DSSH_AUTH_SUCCESS;
 }
 
@@ -176,13 +218,59 @@ auth_password(const uint8_t *username, size_t username_len,
     uint8_t **change_prompt, size_t *change_prompt_len,
     void *cbdata)
 {
+	char buf[256];
+
+	if (arc4random_uniform(4) != 0) {
+		snprintf(buf, sizeof(buf),
+		    "'%.*s'/'%.*s'? Pfft. %s",
+		    (int)username_len, username,
+		    (int)password_len, password,
+		    reject_quips[arc4random_uniform(N_QUIPS)]);
+		set_banner(buf);
+		return DSSH_AUTH_FAILURE;
+	}
+	snprintf(buf, sizeof(buf),
+	    "Wow, '%.*s' with password '%.*s'? "
+	    "Security at its finest. But you got lucky!\r\n",
+	    (int)username_len, username,
+	    (int)password_len, password);
+	set_banner(buf);
+	return DSSH_AUTH_SUCCESS;
+}
+
+static int
+auth_publickey(const uint8_t *username, size_t username_len,
+    const char *algo_name,
+    const uint8_t *pubkey_blob, size_t pubkey_blob_len,
+    bool has_signature, void *cbdata)
+{
+	char buf[256];
+
+	if (!has_signature) {
+		/* PK_OK query — just say yes so they send the real attempt */
+		return DSSH_AUTH_SUCCESS;
+	}
+	if (arc4random_uniform(4) != 0) {
+		snprintf(buf, sizeof(buf),
+		    "Nice key, '%.*s'. Shame about the luck. %s",
+		    (int)username_len, username,
+		    reject_quips[arc4random_uniform(N_QUIPS)]);
+		set_banner(buf);
+		return DSSH_AUTH_FAILURE;
+	}
+	snprintf(buf, sizeof(buf),
+	    "Key auth from '%.*s' with %s? "
+	    "Fancy. And lucky!\r\n",
+	    (int)username_len, username, algo_name);
+	set_banner(buf);
 	return DSSH_AUTH_SUCCESS;
 }
 
 static struct dssh_auth_server_cbs auth_cbs = {
-	.methods_str = "password",
+	.methods_str = "publickey,password",
 	.none_cb = auth_none,
 	.password_cb = auth_password,
+	.publickey_cb = auth_publickey,
 };
 
 /* ================================================================
@@ -242,6 +330,34 @@ timeout_handler(int sig)
 }
 
 /* ================================================================
+ * Debug and global request callbacks
+ * ================================================================ */
+static void
+debug_cb(bool always_display, const uint8_t *message, size_t message_len,
+    void *cbdata)
+{
+	fprintf(stderr, "  DEBUG(%s): %.*s\n",
+	    always_display ? "display" : "nodisplay",
+	    (int)message_len, message);
+}
+
+static void
+unimplemented_cb(uint32_t rejected_seq, void *cbdata)
+{
+	fprintf(stderr, "  UNIMPLEMENTED: seq %u\n", rejected_seq);
+}
+
+static int
+global_request_cb(const uint8_t *name, size_t name_len,
+    bool want_reply, const uint8_t *data, size_t data_len,
+    void *cbdata)
+{
+	fprintf(stderr, "  GLOBAL_REQ: %.*s (want_reply=%d, data_len=%zu)\n",
+	    (int)name_len, name, want_reply, data_len);
+	return -1; /* reject all */
+}
+
+/* ================================================================
  * Handle one connection (runs in forked child)
  * ================================================================ */
 static int
@@ -257,6 +373,9 @@ handle_connection(void)
 		fprintf(stderr, "session_init failed\n");
 		return 1;
 	}
+	dssh_session_set_debug_cb(sess, debug_cb, NULL);
+	dssh_session_set_unimplemented_cb(sess, unimplemented_cb, NULL);
+	dssh_session_set_global_request_cb(sess, global_request_cb, NULL);
 	dssh_dh_gex_set_provider(sess, &dh_provider);
 
         /* Handshake */
@@ -275,6 +394,7 @@ handle_connection(void)
 
         /* Auth */
 	fprintf(stderr, "Handling auth...\n");
+	set_banner("Welcome to the DeuceSSH test server, have fun!\r\n");
 
 	uint8_t auth_user[256];
 	size_t  auth_user_len;

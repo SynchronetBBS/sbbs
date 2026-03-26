@@ -147,6 +147,8 @@ struct dssh_session_s {
 	void                         *unimplemented_cbdata;
 	dssh_auth_banner_cb           banner_cb;
 	void                         *banner_cbdata;
+	char                         *pending_banner;
+	char                         *pending_banner_lang;
 	dssh_global_request_cb        global_request_cb;
 	void                         *global_request_cbdata;
 	struct dssh_channel_s       **channels;

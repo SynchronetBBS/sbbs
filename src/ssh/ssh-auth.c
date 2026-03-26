@@ -51,12 +51,19 @@ handle_banner(dssh_session sess, uint8_t *payload, size_t payload_len)
 	return 0;
 }
 
+static int flush_pending_banner(dssh_session sess);
+
 /* ================================================================
  * Server-side helpers
  * ================================================================ */
 static int
 send_auth_failure(dssh_session sess, const char *methods, bool partial_success)
 {
+	int ret = flush_pending_banner(sess);
+
+	if (ret < 0)
+		return ret;
+
 	size_t  mlen = strlen(methods);
 
 	if (mlen > UINT32_MAX)
@@ -64,8 +71,6 @@ send_auth_failure(dssh_session sess, const char *methods, bool partial_success)
 
 	uint8_t msg[256];
 	size_t  pos = 0;
-
-	int ret;
 
 	msg[pos++] = SSH_MSG_USERAUTH_FAILURE;
 	ret = dssh_serialize_uint32((uint32_t)mlen, msg, sizeof(msg), &pos);
@@ -80,6 +85,11 @@ send_auth_failure(dssh_session sess, const char *methods, bool partial_success)
 static int
 send_auth_success(dssh_session sess)
 {
+	int ret = flush_pending_banner(sess);
+
+	if (ret < 0)
+		return ret;
+
 	uint8_t msg = SSH_MSG_USERAUTH_SUCCESS;
 
 	return dssh_transport_send_packet(sess, &msg, 1, NULL);
@@ -212,6 +222,56 @@ parse_userauth_prefix(const uint8_t *payload, size_t payload_len,
 	return (int64_t)rpos;
 }
 
+/*
+ * Send and consume the pending banner, if any.
+ */
+static int
+flush_pending_banner(dssh_session sess)
+{
+	if (sess->pending_banner == NULL)
+		return 0;
+
+	uint32_t msg_len = (uint32_t)strlen(sess->pending_banner);
+	const char *lang = sess->pending_banner_lang != NULL
+	    ? sess->pending_banner_lang : "";
+	uint32_t lang_len = (uint32_t)strlen(lang);
+
+	size_t   pkt_sz = 1 + 4 + msg_len + 4 + lang_len;
+	uint8_t *pkt = malloc(pkt_sz);
+
+	if (pkt == NULL)
+		return DSSH_ERROR_ALLOC;
+
+	size_t pos = 0;
+	int    res;
+
+	pkt[pos++] = SSH_MSG_USERAUTH_BANNER;
+	res = dssh_serialize_uint32(msg_len, pkt, pkt_sz, &pos);
+	if (res < 0) {
+		free(pkt);
+		return res;
+	}
+	memcpy(&pkt[pos], sess->pending_banner, msg_len);
+	pos += msg_len;
+	res = dssh_serialize_uint32(lang_len, pkt, pkt_sz, &pos);
+	if (res < 0) {
+		free(pkt);
+		return res;
+	}
+	memcpy(&pkt[pos], lang, lang_len);
+	pos += lang_len;
+
+	res = dssh_transport_send_packet(sess, pkt, pos, NULL);
+	free(pkt);
+
+	free(sess->pending_banner);
+	free(sess->pending_banner_lang);
+	sess->pending_banner = NULL;
+	sess->pending_banner_lang = NULL;
+
+	return res;
+}
+
 /* ================================================================
  * Server-side authentication loop
  * ================================================================ */
@@ -264,6 +324,11 @@ auth_server_impl(dssh_session sess,
 
         /* Auth loop */
 	for (;;) {
+		/* Send pending banner before next auth exchange */
+		res = flush_pending_banner(sess);
+		if (res < 0)
+			return res;
+
 		res = dssh_transport_recv_packet(sess, &msg_type, &payload, &payload_len);
 		if (res < 0)
 			return res;
@@ -610,6 +675,37 @@ dssh_auth_server(dssh_session sess,
 		return DSSH_ERROR_INIT;
 	return auth_check_terminated(sess,
 	           auth_server_impl(sess, cbs, username_out, username_out_len));
+}
+
+DSSH_PUBLIC int
+dssh_auth_set_banner(dssh_session sess, const char *message,
+    const char *language)
+{
+	if (sess == NULL)
+		return DSSH_ERROR_INIT;
+
+	free(sess->pending_banner);
+	free(sess->pending_banner_lang);
+	sess->pending_banner = NULL;
+	sess->pending_banner_lang = NULL;
+
+	if (message == NULL)
+		return 0;
+	if (message[0] == '\0')
+		return DSSH_ERROR_INVALID;
+
+	sess->pending_banner = strdup(message);
+	if (sess->pending_banner == NULL)
+		return DSSH_ERROR_ALLOC;
+	if (language != NULL) {
+		sess->pending_banner_lang = strdup(language);
+		if (sess->pending_banner_lang == NULL) {
+			free(sess->pending_banner);
+			sess->pending_banner = NULL;
+			return DSSH_ERROR_ALLOC;
+		}
+	}
+	return 0;
 }
 
 /* ================================================================

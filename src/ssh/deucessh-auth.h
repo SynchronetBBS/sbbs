@@ -201,6 +201,15 @@ DSSH_PUBLIC int dssh_auth_server(dssh_session sess,
     const struct dssh_auth_server_cbs *cbs,
     uint8_t *username_out, size_t *username_out_len);
 
+/*
+ * Set a pending banner to be sent before the next auth response.
+ * message is copied (strdup'd).  Pass NULL to cancel a pending banner.
+ * language may be NULL (defaults to empty string per RFC 4252 s5.4).
+ * Can be called before dssh_auth_server() or from within auth callbacks.
+ */
+DSSH_PUBLIC int dssh_auth_set_banner(dssh_session sess,
+    const char *message, const char *language);
+
 /* ================================================================
  * Client-side authentication
  * ================================================================ */

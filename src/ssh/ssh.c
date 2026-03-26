@@ -97,6 +97,8 @@ dssh_session_cleanup(dssh_session sess)
 	dssh_session_terminate(sess);
 	dssh_session_stop(sess);
 	dssh_transport_cleanup(sess);
+	free(sess->pending_banner);
+	free(sess->pending_banner_lang);
 	mtx_destroy(&sess->mtx);
 	free(sess);
 }
