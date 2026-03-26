@@ -71,8 +71,8 @@ int dssh_conn_send_eof(dssh_session sess, struct dssh_channel_s *ch);
 int dssh_conn_close(dssh_session sess, struct dssh_channel_s *ch);
 int dssh_conn_send_window_adjust(dssh_session sess,
     struct dssh_channel_s *ch, uint32_t bytes);
-void maybe_replenish_window(dssh_session sess, struct dssh_channel_s *ch);
-void demux_dispatch(dssh_session sess, uint8_t msg_type,
+int maybe_replenish_window(dssh_session sess, struct dssh_channel_s *ch);
+int demux_dispatch(dssh_session sess, uint8_t msg_type,
     uint8_t *payload, size_t payload_len);
 
 /*

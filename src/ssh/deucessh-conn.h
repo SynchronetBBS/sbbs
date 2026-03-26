@@ -107,7 +107,7 @@ DSSH_PUBLIC int dssh_session_accept(dssh_session sess,
 /*
  * Reject an incoming channel open.
  */
-DSSH_PUBLIC void dssh_session_reject(dssh_session sess,
+DSSH_PUBLIC int dssh_session_reject(dssh_session sess,
     struct dssh_incoming_open *inc, uint32_t reason_code,
     const char *description);
 

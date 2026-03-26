@@ -6,24 +6,26 @@
 #include "deucessh-auth.h"
 #include "ssh-internal.h"
 
-static void
+static int
 handle_banner(dssh_session sess, uint8_t *payload, size_t payload_len)
 {
 	dssh_auth_banner_cb cb = sess->banner_cb;
 
 	if (cb == NULL)
-		return;
+		return 0;
 
 	size_t   rpos = 1;
+	int64_t  pv;
 	uint32_t msg_len;
 
 	if (rpos + 4 > payload_len)
-		return;
-	if (dssh_parse_uint32(&payload[rpos], payload_len - rpos, &msg_len) < 4)
-		return;
+		return DSSH_ERROR_PARSE;
+	pv = dssh_parse_uint32(&payload[rpos], payload_len - rpos, &msg_len);
+	if (pv < 0)
+		return (int)pv;
 	rpos += 4;
 	if (rpos + msg_len > payload_len)
-		return;
+		return DSSH_ERROR_PARSE;
 
 	const uint8_t *message = &payload[rpos];
 
@@ -33,7 +35,8 @@ handle_banner(dssh_session sess, uint8_t *payload, size_t payload_len)
 	const uint8_t *language = NULL;
 
 	if (rpos + 4 <= payload_len) {
-		if (dssh_parse_uint32(&payload[rpos], payload_len - rpos, &lang_len) < 4)
+		pv = dssh_parse_uint32(&payload[rpos], payload_len - rpos, &lang_len);
+		if (pv < 0)
 			lang_len = 0;
 		else
 			rpos += 4;
@@ -44,6 +47,7 @@ handle_banner(dssh_session sess, uint8_t *payload, size_t payload_len)
 	}
 
 	cb(message, msg_len, language, lang_len, sess->banner_cbdata);
+	return 0;
 }
 
 /* ================================================================
@@ -860,7 +864,9 @@ auth_password_impl(dssh_session sess,
 			return res;
 
 		if (msg_type == SSH_MSG_USERAUTH_BANNER) {
-			handle_banner(sess, payload, payload_len);
+			res = handle_banner(sess, payload, payload_len);
+			if (res < 0 && res != DSSH_ERROR_PARSE)
+				return res;
 			continue;
 		}
 
@@ -1007,7 +1013,9 @@ auth_kbi_impl(dssh_session sess,
 			return res;
 
 		if (msg_type == SSH_MSG_USERAUTH_BANNER) {
-			handle_banner(sess, payload, payload_len);
+			res = handle_banner(sess, payload, payload_len);
+			if (res < 0 && res != DSSH_ERROR_PARSE)
+				return res;
 			continue;
 		}
 
@@ -1408,7 +1416,9 @@ auth_publickey_impl(dssh_session sess,
 		if (res < 0)
 			return res;
 		if (msg_type == SSH_MSG_USERAUTH_BANNER) {
-			handle_banner(sess, payload, payload_len);
+			res = handle_banner(sess, payload, payload_len);
+			if (res < 0 && res != DSSH_ERROR_PARSE)
+				return res;
 			continue;
 		}
 		break;

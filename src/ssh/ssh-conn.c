@@ -497,19 +497,20 @@ cleanup_channel_buffers(dssh_channel ch)
  * Window replenishment — called after reads drain buffer
  * ================================================================ */
 
-DSSH_TESTABLE void
+DSSH_TESTABLE int
 maybe_replenish_window(dssh_session sess, dssh_channel ch)
 {
         /* No point replenishing if peer is done sending */
 	if (ch->eof_received || ch->close_received)
-		return;
+		return 0;
 
         /* Replenish when window drops below half the target */
 	if (ch->local_window < ch->window_max / 2) {
 		uint32_t add = ch->window_max - ch->local_window;
 
-		dssh_conn_send_window_adjust(sess, ch, add);
+		return dssh_conn_send_window_adjust(sess, ch, add);
 	}
+	return 0;
 }
 
 /* ================================================================
@@ -520,23 +521,23 @@ maybe_replenish_window(dssh_session sess, dssh_channel ch)
  * Dispatch a received packet to the appropriate channel buffer.
  * Called from the demux thread with no locks held.
  */
-DSSH_TESTABLE void
+DSSH_TESTABLE int
 demux_dispatch(dssh_session sess, uint8_t msg_type,
     uint8_t *payload, size_t payload_len)
 {
         /* All channel messages have the recipient channel at payload[1..4] */
 	if (payload_len < 5)
-		return;
+		return DSSH_ERROR_PARSE;
 
 	uint32_t local_id;
 
 	if (dssh_parse_uint32(&payload[1], payload_len - 1, &local_id) < 4)
-		return;
+		return DSSH_ERROR_PARSE;
 
 	dssh_channel ch = find_channel(sess, local_id);
 
 	if (ch == NULL)
-		return;
+		return 0; /* late message for closed channel */
 
 	mtx_lock(&ch->buf_mtx);
 
@@ -555,12 +556,12 @@ demux_dispatch(dssh_session sess, uint8_t msg_type,
 		}
 		cnd_signal(&ch->poll_cnd);
 		mtx_unlock(&ch->buf_mtx);
-		return;
+		return 0;
 	}
 
 	if (ch->chan_type == 0) {
 		mtx_unlock(&ch->buf_mtx);
-		return;
+		return 0;
 	}
 
 	switch (msg_type) {
@@ -756,44 +757,46 @@ demux_dispatch(dssh_session sess, uint8_t msg_type,
 
 	cnd_signal(&ch->poll_cnd);
 	mtx_unlock(&ch->buf_mtx);
+	return 0;
 }
 
 /*
  * Handle CHANNEL_OPEN_CONFIRMATION — recipient_channel is at offset 1.
  */
-static void
+static int
 demux_open_confirmation(dssh_session sess,
     uint8_t *payload, size_t payload_len)
 {
 	if (payload_len < 1 + 16)
-		return;
+		return DSSH_ERROR_PARSE;
 
 	uint32_t local_id;
 
 	if (dssh_parse_uint32(&payload[1], payload_len - 1, &local_id) < 4)
-		return;
+		return DSSH_ERROR_PARSE;
 
 	dssh_channel ch = find_channel(sess, local_id);
 
 	if (ch == NULL)
-		return;
+		return 0; /* late message for closed channel */
 
 	mtx_lock(&ch->buf_mtx);
 	if (dssh_parse_uint32(&payload[5], payload_len - 5, &ch->remote_id) < 4
 	    || dssh_parse_uint32(&payload[9], payload_len - 9, &ch->remote_window) < 4
 	    || dssh_parse_uint32(&payload[13], payload_len - 13, &ch->remote_max_packet) < 4) {
 		mtx_unlock(&ch->buf_mtx);
-		return;
+		return DSSH_ERROR_PARSE;
 	}
 	ch->open = true;
 	cnd_signal(&ch->poll_cnd);
 	mtx_unlock(&ch->buf_mtx);
+	return 0;
 }
 
 /*
  * Handle incoming CHANNEL_OPEN — either queue for accept or auto-reject.
  */
-static void
+static int
 demux_channel_open(dssh_session sess, uint8_t *payload, size_t payload_len)
 {
         /* Parse: string channel_type, uint32 sender_channel,
@@ -802,30 +805,30 @@ demux_channel_open(dssh_session sess, uint8_t *payload, size_t payload_len)
 	uint32_t type_len;
 
 	if (rpos + 4 > payload_len)
-		return;
+		return DSSH_ERROR_PARSE;
 	if (dssh_parse_uint32(&payload[rpos], payload_len - rpos, &type_len) < 4)
-		return;
+		return DSSH_ERROR_PARSE;
 	rpos += 4;
 	if (rpos + type_len > payload_len)
-		return;
+		return DSSH_ERROR_PARSE;
 
 	const uint8_t *ctype = &payload[rpos];
 
 	rpos += type_len;
 
 	if (rpos + 12 > payload_len)
-		return;
+		return DSSH_ERROR_PARSE;
 
 	uint32_t peer_channel, peer_window, peer_max_packet;
 
 	if (dssh_parse_uint32(&payload[rpos], payload_len - rpos, &peer_channel) < 4)
-		return;
+		return DSSH_ERROR_PARSE;
 	rpos += 4;
 	if (dssh_parse_uint32(&payload[rpos], payload_len - rpos, &peer_window) < 4)
-		return;
+		return DSSH_ERROR_PARSE;
 	rpos += 4;
 	if (dssh_parse_uint32(&payload[rpos], payload_len - rpos, &peer_max_packet) < 4)
-		return;
+		return DSSH_ERROR_PARSE;
 
         /* Auto-reject forbidden channel types */
 	bool reject = false;
@@ -851,9 +854,9 @@ demux_channel_open(dssh_session sess, uint8_t *payload, size_t payload_len)
 		    || dssh_serialize_uint32(SSH_OPEN_ADMINISTRATIVELY_PROHIBITED, fail, sizeof(fail), &fp) < 0
 		    || dssh_serialize_uint32(0, fail, sizeof(fail), &fp) < 0
 		    || dssh_serialize_uint32(0, fail, sizeof(fail), &fp) < 0)
-			return;
+			return DSSH_ERROR_INIT;
 		dssh_transport_send_packet(sess, fail, fp, NULL);
-		return;
+		return 0;
 	}
 
         /* Queue for application's accept() call */
@@ -862,6 +865,7 @@ demux_channel_open(dssh_session sess, uint8_t *payload, size_t payload_len)
 	    peer_channel, peer_window, peer_max_packet, ctype, type_len);
 	cnd_signal(&sess->accept_cnd);
 	mtx_unlock(&sess->accept_mtx);
+	return 0;
 }
 
 static int
@@ -885,13 +889,23 @@ demux_thread_func(void *arg)
 			break;
 		}
 
+		int dres = 0;
+
 		if (msg_type == SSH_MSG_CHANNEL_OPEN)
-			demux_channel_open(sess, payload, payload_len);
+			dres = demux_channel_open(sess, payload, payload_len);
 		else if (msg_type == SSH_MSG_CHANNEL_OPEN_CONFIRMATION)
-			demux_open_confirmation(sess, payload, payload_len);
+			dres = demux_open_confirmation(sess, payload, payload_len);
 		else if ((msg_type >= SSH_MSG_CHANNEL_OPEN_FAILURE)
 		    && (msg_type <= SSH_MSG_CHANNEL_FAILURE))
-			demux_dispatch(sess, msg_type, payload, payload_len);
+			dres = demux_dispatch(sess, msg_type, payload, payload_len);
+
+		/* Parse errors from malformed peer messages are
+		 * non-fatal — skip the packet.  I/O and serialize
+		 * errors mean the connection is broken. */
+		if (dres < 0 && dres != DSSH_ERROR_PARSE) {
+			dssh_session_set_terminate(sess);
+			break;
+		}
                 /* All other message types (GLOBAL_REQUEST, KEXINIT, etc.)
                  * are already handled by recv_packet transparently */
 	}
@@ -1044,7 +1058,7 @@ dssh_session_accept(dssh_session sess,
 	return 0;
 }
 
-DSSH_PUBLIC void
+DSSH_PUBLIC int
 dssh_session_reject(dssh_session sess,
     struct dssh_incoming_open *inc, uint32_t reason_code,
     const char *description)
@@ -1077,9 +1091,10 @@ dssh_session_reject(dssh_session sess,
 	ret = dssh_serialize_uint32(0, msg, sizeof(msg), &pos);
 	if (ret < 0)
 		goto done;
-	dssh_transport_send_packet(sess, msg, pos, NULL);
+	ret = dssh_transport_send_packet(sess, msg, pos, NULL);
 done:
 	free(inc);
+	return ret;
 }
 
 /* ================================================================
@@ -1941,8 +1956,11 @@ dssh_session_read(dssh_session sess,
 	ch->stdout_consumed += n;
 	mtx_unlock(&ch->buf_mtx);
 
-	if (n > 0)
-		maybe_replenish_window(sess, ch);
+	if (n > 0) {
+		int wret = maybe_replenish_window(sess, ch);
+		if (wret < 0)
+			return wret;
+	}
 	return (int64_t)n;
 }
 
@@ -1958,8 +1976,11 @@ dssh_session_read_ext(dssh_session sess,
 	ch->stderr_consumed += n;
 	mtx_unlock(&ch->buf_mtx);
 
-	if (n > 0)
-		maybe_replenish_window(sess, ch);
+	if (n > 0) {
+		int wret = maybe_replenish_window(sess, ch);
+		if (wret < 0)
+			return wret;
+	}
 	return (int64_t)n;
 }
 
@@ -2108,8 +2129,11 @@ dssh_channel_read(dssh_session sess,
 
 	mtx_unlock(&ch->buf_mtx);
 
-	if (n > 0)
-		maybe_replenish_window(sess, ch);
+	if (n > 0) {
+		int wret = maybe_replenish_window(sess, ch);
+		if (wret < 0)
+			return wret;
+	}
 	return n;
 }
 

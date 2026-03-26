@@ -40,6 +40,9 @@ DSSH_PRIVATE size_t
 dssh_bytebuf_write(struct dssh_bytebuf *b,
     const uint8_t *data, size_t len)
 {
+	if (b->capacity == 0)
+		return 0;
+
 	size_t space = b->capacity - b->used;
 
 	if (len > space)
