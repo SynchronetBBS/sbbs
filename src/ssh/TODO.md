@@ -6,11 +6,6 @@
    anywhere in the library or modules.  Remove the typedef, parse/serialize/
    serialized_length functions, `_Generic` entries, and tests.
 
-2. Serialize overflow checks in ssh-arch.c can wrap `size_t` on 32-bit
-   platforms.  `*pos + val->length` (serialize_bytearray:56) and
-   `*pos + 4 + val->length` (serialize_string:193) should use the safe
-   form `bufsz - *pos < needed` (after verifying `*pos <= bufsz`).
-
 3. Remove `dssh_parse_namelist_next` from the public API.  Unused by the
    library (negotiation uses its own C-string iteration).  Only exercised
    by tests.  Return value `val->length + 4` mimics wire-format convention
@@ -29,10 +24,6 @@
 6. ssh-arch.c public functions have no parameter validation.  NULL `buf`,
    `val`, or `pos` pointers crash immediately.  Functions confirmed as
    `DSSH_PUBLIC` need NULL checks and appropriate error returns.
-
-7. `flush_pending_banner()` truncates `strlen()` to `uint32_t` without
-   validation (lines 319, 322).  Inconsistent with the overflow-checking
-   pattern used elsewhere.
 
 8. `dssh_auth_server()` username output has no buffer size parameter.
    Copies up to 255 bytes into `username_out` (capped by internal
@@ -97,9 +88,6 @@
 20. Local `#define KEXINIT_SER_NL` and `FREE_LIST` macros, plus
     `if (0) { kexinit_fail: }` goto target pattern.  Same class of
     issue as item 11 — decomposition would eliminate these.
-
-21. `serialize_namelist_from_str()` has the same `*pos + len > bufsz`
-    32-bit overflow pattern as item 2.
 
 22. `dssh_test_derive_key()` chains six OpenSSL calls
     (DigestInit/Update×4/Final) into a single `if (... != 1 || ...)`
@@ -219,3 +207,17 @@
 - `demux_dispatch()` CHANNEL_DATA/EXTENDED_DATA silent truncation
   (was item 29).  Malformed packets with declared length exceeding
   payload are now rejected instead of silently truncated.
+
+- Serialize overflow checks can wrap `size_t` on 32-bit (was item 2).
+  All `*pos + N > bufsz` checks in ssh-arch.c (6 functions),
+  ssh-trans.c (`serialize_namelist_from_str`, `build_namelist`), and
+  kex/dh-gex-sha256.c (`serialize_bn_mpint`) converted to subtraction
+  form with `*pos > bufsz` guards.
+
+- `flush_pending_banner()` truncates `strlen()` to `uint32_t` without
+  validation (was item 7).  Now uses `size_t` with `#if SIZE_MAX > UINT32_MAX`
+  guarded range check before narrowing; returns `DSSH_ERROR_TOOLONG`.
+
+- `serialize_namelist_from_str()` overflow and silent truncation
+  (was item 21).  Overflow check converted to subtraction form; silent
+  truncation to `UINT32_MAX` replaced with `DSSH_ERROR_TOOLONG` error.

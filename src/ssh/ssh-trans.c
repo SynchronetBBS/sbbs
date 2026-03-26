@@ -943,11 +943,11 @@ dssh_test_build_namelist(void *head, size_t name_offset, char *buf, size_t bufsz
 		size_t      nlen = strlen(name);
 
 		if (!first) {
-			if (pos + 1 + nlen >= bufsz)
+			if (pos >= bufsz || nlen >= bufsz - pos - 1)
 				break;
 			buf[pos++] = ',';
 		}
-		else if (pos + nlen >= bufsz)
+		else if (pos >= bufsz || nlen >= bufsz - pos)
 			break;
 		memcpy(&buf[pos], name, nlen);
 		pos += nlen;
@@ -1021,15 +1021,17 @@ serialize_namelist_from_str(const char *str, uint8_t *buf, size_t bufsz, size_t 
 {
 	size_t slen = strlen(str);
 
+#if SIZE_MAX > UINT32_MAX
 	if (slen > UINT32_MAX)
-		slen = UINT32_MAX;
+		return DSSH_ERROR_TOOLONG;
+#endif
 
 	uint32_t len = (uint32_t)slen;
 
 	int ret = dssh_serialize_uint32(len, buf, bufsz, pos);
 	if (ret < 0)
 		return ret;
-	if (*pos + len > bufsz)
+	if (*pos > bufsz || len > bufsz - *pos)
 		return DSSH_ERROR_TOOLONG;
 	memcpy(&buf[*pos], str, len);
 	*pos += len;

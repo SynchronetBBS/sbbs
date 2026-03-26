@@ -325,10 +325,20 @@ flush_pending_banner(dssh_session sess)
 	if (sess->pending_banner == NULL)
 		return 0;
 
-	uint32_t msg_len = (uint32_t)strlen(sess->pending_banner);
+	size_t msg_sz = strlen(sess->pending_banner);
+#if SIZE_MAX > UINT32_MAX
+	if (msg_sz > UINT32_MAX)
+		return DSSH_ERROR_TOOLONG;
+#endif
+	uint32_t msg_len = (uint32_t)msg_sz;
 	const char *lang = sess->pending_banner_lang != NULL
 	    ? sess->pending_banner_lang : "";
-	uint32_t lang_len = (uint32_t)strlen(lang);
+	size_t lang_sz = strlen(lang);
+#if SIZE_MAX > UINT32_MAX
+	if (lang_sz > UINT32_MAX)
+		return DSSH_ERROR_TOOLONG;
+#endif
+	uint32_t lang_len = (uint32_t)lang_sz;
 
 	size_t   pkt_sz = 1 + 4 + msg_len + 4 + lang_len;
 	uint8_t *pkt = malloc(pkt_sz);

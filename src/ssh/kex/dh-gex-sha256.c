@@ -57,7 +57,7 @@ serialize_bn_mpint(const BIGNUM *bn, uint8_t *buf, size_t bufsz, size_t *pos)
 	uint32_t bn_u32 = (uint32_t)bn_sz;
 	uint32_t mpint_len = bn_u32 + (need_pad ? 1 : 0);
 
-	if (*pos + 4 + mpint_len > bufsz) {
+	if (*pos > bufsz || bufsz - *pos < 4 || mpint_len > bufsz - *pos - 4) {
 		free(tmp);
 		return DSSH_ERROR_TOOLONG;
 	}

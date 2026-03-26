@@ -26,7 +26,7 @@ dssh_serialized_byte_length(dssh_byte val)
 int
 dssh_serialize_byte(dssh_byte val, uint8_t *buf, size_t bufsz, size_t *pos)
 {
-	if (*pos + 1 > bufsz)
+	if (*pos >= bufsz)
 		return DSSH_ERROR_TOOLONG;
 	buf[*pos] = val;
 	*pos += 1;
@@ -53,7 +53,7 @@ dssh_serialized_bytearray_length(dssh_bytearray val)
 int
 dssh_serialize_bytearray(dssh_bytearray val, uint8_t *buf, size_t bufsz, size_t *pos)
 {
-	if (*pos + val->length > bufsz)
+	if (*pos > bufsz || val->length > bufsz - *pos)
 		return DSSH_ERROR_TOOLONG;
 	memcpy(&buf[*pos], val->value, val->length);
 	*pos += val->length;
@@ -78,7 +78,7 @@ dssh_serialized_boolean_length(dssh_boolean val)
 int
 dssh_serialize_boolean(dssh_boolean val, uint8_t *buf, size_t bufsz, size_t *pos)
 {
-	if (*pos + 1 > bufsz)
+	if (*pos >= bufsz)
 		return DSSH_ERROR_TOOLONG;
 	buf[*pos] = val;
 	*pos += 1;
@@ -103,7 +103,7 @@ dssh_serialized_uint32_length(dssh_uint32_t val)
 int
 dssh_serialize_uint32(dssh_uint32_t val, uint8_t *buf, size_t bufsz, size_t *pos)
 {
-	if (*pos + 4 > bufsz)
+	if (*pos > bufsz || bufsz - *pos < 4)
 		return DSSH_ERROR_TOOLONG;
 	buf[(*pos)++] = (val >> 24) & 0xff;
 	buf[(*pos)++] = (val >> 16) & 0xff;
@@ -132,7 +132,7 @@ dssh_serialized_uint64_length(dssh_uint64_t val)
 int
 dssh_serialize_uint64(dssh_uint64_t val, uint8_t *buf, size_t bufsz, size_t *pos)
 {
-	if (*pos + 8 > bufsz)
+	if (*pos > bufsz || bufsz - *pos < 8)
 		return DSSH_ERROR_TOOLONG;
 	buf[(*pos)++] = (val >> 56) & 0xff;
 	buf[(*pos)++] = (val >> 48) & 0xff;
@@ -190,7 +190,7 @@ dssh_serialized_string_length(dssh_string val)
 int
 dssh_serialize_string(dssh_string val, uint8_t *buf, size_t bufsz, size_t *pos)
 {
-	if (*pos + 4 + val->length > bufsz)
+	if (*pos > bufsz || bufsz - *pos < 4 || val->length > bufsz - *pos - 4)
 		return DSSH_ERROR_TOOLONG;
 	int ret = dssh_serialize_uint32(val->length, buf, bufsz, pos);
 	if (ret < 0)
