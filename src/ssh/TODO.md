@@ -1,15 +1,5 @@
 # DeuceSSH — Bugs found during branch coverage work
 
-## Flaky tests (observed in isolated process — real bugs)
-
-8. DH-GEX rekey selftests — intermittent SIGPIPE under `-j8`.
-   Occurs even when running as a standalone process (not shared
-   state from other tests).  Affected tests:
-   - `test_self_rekey_during_data_dhgex_rsa`
-   - `test_self_rekey_preserves_channels_dhgex_rsa`
-   SIGPIPE means a write to a closed socketpair fd — likely a
-   race between the rekey path and session teardown/cleanup.
-
 ## Fixed
 
 7. Removed all 31 `#ifndef DSSH_TESTING` dead-code guards.
@@ -45,3 +35,7 @@
    `void *cb` instead of typed function pointers.  Fixed: both now use
    proper typedefs (`dssh_auth_banner_cb`, `dssh_global_request_cb`).
    Full audit found no other cases.
+
+10. DH-GEX rekey selftests intermittent SIGPIPE.  Test harness was
+    not ignoring SIGPIPE; send() to a closed socketpair killed the
+    process.  Fixed: `signal(SIGPIPE, SIG_IGN)` in test main.

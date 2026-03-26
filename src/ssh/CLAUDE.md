@@ -23,16 +23,17 @@ Produces `libdeucessh.a` (static) and `libdeucessh.so` (shared).
 
 ## Testing
 
-~800+ tests across 11 executables, 26 CTest runs (~22s with `-j8`):
+~1000 tests across 11 executables, ~2150 CTest runs (~23s with `-j8`).
+Layer and integration tests run as individual processes (one test per
+CTest entry × 4 algorithm variants) to eliminate shared-state issues:
 ```sh
 cmake -S . -B build -DDEUCESSH_BUILD_TESTS=ON
 cmake --build build -j8
 cd build
 ctest -j8                    # run all in parallel
 ctest -R dssh_unit           # unit tests only
-ctest -R dssh_layer          # layer tests only
-ctest -R dssh_integration    # integration only
-./dssh_test_arch test_parse  # filter by name
+ctest -R dssh_transport      # transport layer tests
+ctest -R dssh_self           # integration selftests
 ```
 
 **Important: Two build directories.**  `build/` is the normal build.
@@ -80,12 +81,12 @@ cmake --build build-cov -j8
 cd build-cov
 LLVM_PROFILE_FILE="dssh-%p.profraw" ctest -j8
 llvm-profdata merge -sparse dssh-*.profraw -o dssh.profdata
-llvm-cov report ./dssh_test_selftest -instr-profile=dssh.profdata \
-  -object=./dssh_test_transport -object=./dssh_test_auth \
-  -object=./dssh_test_conn -object=./dssh_test_alloc \
-  -object=./dssh_test_transport_errors -object=./dssh_test_arch \
-  -object=./dssh_test_chan -object=./dssh_test_algo_enc \
-  -object=./dssh_test_algo_mac -object=./dssh_test_algo_key \
+llvm-cov report ./test/dssh_test_selftest -instr-profile=dssh.profdata \
+  -object=./test/dssh_test_transport -object=./test/dssh_test_auth \
+  -object=./test/dssh_test_conn -object=./test/dssh_test_alloc \
+  -object=./test/dssh_test_transport_errors -object=./test/dssh_test_arch \
+  -object=./test/dssh_test_chan -object=./test/dssh_test_algo_enc \
+  -object=./test/dssh_test_algo_mac -object=./test/dssh_test_algo_key \
   ../ssh-trans.c ../ssh-auth.c ../ssh-conn.c ../ssh.c ../ssh-arch.c \
   ../ssh-chan.c ../kex/dh-gex-sha256.c ../kex/curve25519-sha256.c \
   ../key_algo/ssh-ed25519.c ../key_algo/rsa-sha2-256.c \
@@ -94,8 +95,11 @@ llvm-cov report ./dssh_test_selftest -instr-profile=dssh.profdata \
 
 ## Architecture
 
-- **Public API**: ~65 `dssh_*` functions across 4 consumer headers
+- **Public API**: ~65 `dssh_*` functions across consumer headers
   (`deucessh.h`, `deucessh-auth.h`, `deucessh-conn.h`, `deucessh-algorithms.h`)
+  plus module headers for third-party algorithm implementations
+  (`deucessh-kex.h`, `deucessh-key-algo.h`, `deucessh-enc.h`,
+  `deucessh-mac.h`, `deucessh-comp.h`)
 - **Opaque handles**: `dssh_session` and `dssh_channel` hide internal structs
 - **I/O callbacks**: library does no I/O — application provides tx/rx/rxline
 - **Demux thread**: single thread per session reads packets, dispatches to channels
@@ -148,6 +152,12 @@ but the API enables conformance.
   broadcasts all library-owned condvars (rekey_cnd, accept_cnd, poll_cnd).
   Fatal errors in send_packet/recv_packet auto-terminate.  Auth functions
   promote errors to `DSSH_ERROR_TERMINATED` when the session is dead.
+- **KEX context struct**: KEX handlers receive `struct dssh_kex_context *`
+  with inputs, outputs, and I/O function pointers — never `dssh_session`.
+  Third-party KEX modules need only `deucessh-kex.h`.
+- **Module decoupling**: All algorithm modules (kex, key_algo, enc, mac,
+  comp) use only public headers.  No module includes `ssh-internal.h` or
+  `ssh-trans.h` in production builds.
 - **Test key caching**: `DSSH_TEST_ED25519_KEY` / `DSSH_TEST_RSA_KEY` env
   vars cache host keys to files, avoiding repeated RSA keygen (~200ms each).
   CMakeLists.txt sets these for all CTest runs.

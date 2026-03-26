@@ -20,27 +20,19 @@ Open questions:
   prefix with "dssh: ") to distinguish from peer debug messages?
 - Or use a separate callback / flag to avoid conflation?
 
-## 2. Reduce internal API exposure for KEX and key_algo modules
+## 2. Reduce internal API exposure for algorithm modules — DONE
 
-**DONE (KEX)**: `struct dssh_kex_context` (defined in `deucessh-kex.h`)
-provides all inputs, outputs, and I/O function pointers.  KEX handlers
-take `struct dssh_kex_context *kctx` instead of `dssh_session`.
-`dssh_transport_kex()` builds the context, calls the handler, and
-copies outputs back.  KEX modules no longer include `ssh-internal.h`
+All algorithm modules (kex, key_algo, enc, mac, comp) now use only
+public headers.  No module includes `ssh-trans.h` or `ssh-internal.h`
 in production builds.
 
-Key algorithm modules still access `dssh_transport_find_key_algo()`
-(an internal function) and store key material on the global
-registration entry's `ctx` field.  Remaining ideas:
-
-- **Key algo lookup**: `dssh_transport_find_key_algo()` is only used
-  by key_algo modules to find their own registration entry (for
-  storing key material on `ctx`).  A dedicated
-  `dssh_key_algo_get_ctx(name)` / `dssh_key_algo_set_ctx(name, ctx)`
-  pair would avoid exposing the full `dssh_key_algo` pointer.
-
-- **Separate key storage**: Move key material out of the global
-  algorithm registry entirely.  Store keys on the session or in a
-  separate key store.  This would allow per-session keys (e.g.,
-  different host keys for different listen addresses) without
-  changing the algorithm registry.
+- **KEX**: `struct dssh_kex_context` provides inputs, outputs, and
+  I/O function pointers.  Handlers take `dssh_kex_context *` not
+  `dssh_session`.  Defined in `deucessh-kex.h`.
+- **Key algo**: `dssh_key_algo_set_ctx()` replaces direct struct
+  access.  Modules keep a file-scope static for their cbdata.
+  Struct/typedefs in `deucessh-key-algo.h`.
+- **Enc/Mac/Comp**: Struct/typedefs and registration in
+  `deucessh-enc.h`, `deucessh-mac.h`, `deucessh-comp.h`.
+- **Per-session keys**: Considered and rejected — SSH host keys
+  identify the server, not the listen address.

@@ -473,22 +473,22 @@ register_dh_gex_sha256();
 ```
 
 You can register your own custom algorithm modules by implementing
-the callback signatures defined in `ssh-trans.h` and calling the
-corresponding `dssh_transport_register_*()` function.
+the callback signatures defined in the public module headers and
+calling the corresponding `dssh_transport_register_*()` function.
 
 ## Custom Algorithm Modules
 
 You can implement custom encryption, MAC, compression, host key, or
 key exchange algorithms by filling in the appropriate struct and
-calling the registration function.  All modules include `ssh-trans.h`
-for the struct definitions and registration API.
+calling the registration function.  Each module type has its own
+public header with the struct definitions and registration API.
 
 ### Encryption Module
 
 Implement four callbacks and register:
 
 ```c
-#include "ssh-trans.h"
+#include "deucessh-enc.h"
 
 static int my_init(const uint8_t *key, const uint8_t *iv,
     bool encrypt, dssh_enc_ctx **ctx)
@@ -530,7 +530,7 @@ int register_my_enc(void)
 }
 ```
 
-The `struct dssh_enc_s` (typedef `dssh_enc`) is defined in `ssh-trans.h`.
+The `struct dssh_enc_s` (typedef `dssh_enc`) is defined in `deucessh-enc.h`.
 
 ### MAC Module
 
@@ -569,7 +569,7 @@ int register_my_mac(void)
 }
 ```
 
-The `struct dssh_mac_s` (typedef `dssh_mac`) is defined in `ssh-trans.h`.
+The `struct dssh_mac_s` (typedef `dssh_mac`) is defined in `deucessh-mac.h`.
 
 ### Compression Module
 
@@ -600,7 +600,7 @@ int register_my_comp(void)
 }
 ```
 
-The `struct dssh_comp_s` (typedef `dssh_comp`) is defined in `ssh-trans.h`.
+The `struct dssh_comp_s` (typedef `dssh_comp`) is defined in `deucessh-comp.h`.
 
 ### Host Key Module
 
@@ -657,53 +657,43 @@ int register_my_key_algo(void)
 ```
 
 The `struct dssh_key_algo_s` (typedef `dssh_key_algo`) is defined in
-`ssh-trans.h`.  Key blobs and signature blobs use the SSH wire format
-defined in the relevant RFC for the algorithm.
+`deucessh-key-algo.h`.  Key blobs and signature blobs use the SSH wire
+format defined in the relevant RFC for the algorithm.  Use
+`dssh_key_algo_set_ctx()` (from `deucessh-algorithms.h`) to store key
+material on the registration entry.
 
 ### KEX Module
 
-KEX modules are the most complex — they drive the key exchange
-protocol after KEXINIT negotiation completes.  A KEX handler receives
-the session handle and must:
-
-1. Exchange KEX-specific messages via `dssh_transport_send_packet()`
-   and `dssh_transport_recv_packet()`
-2. Compute the shared secret and store it in `sess->trans.shared_secret`
-   (malloc'd, big-endian mpint) and `sess->trans.shared_secret_sz`
-3. Compute the exchange hash and store it in `sess->trans.exchange_hash`
-   (malloc'd) and `sess->trans.exchange_hash_sz`
-4. Verify the server's host key signature (client) or sign the
-   exchange hash (server) using `sess->trans.key_algo_selected`
-
-Session fields available to KEX handlers (defined in
-`struct dssh_transport_state_s` in `ssh-trans.h`):
-
-| Field | Purpose |
-|-------|---------|
-| `sess->trans.client` | true if client side |
-| `sess->trans.id_str` / `id_str_sz` | Our version string (V_C or V_S) |
-| `sess->trans.remote_id_str` / `remote_id_str_sz` | Peer's version string |
-| `sess->trans.our_kexinit` / `our_kexinit_sz` | Our KEXINIT payload (I_C or I_S) |
-| `sess->trans.peer_kexinit` / `peer_kexinit_sz` | Peer's KEXINIT payload |
-| `sess->trans.key_algo_selected` | Negotiated host key algorithm |
-| `sess->trans.kex_ctx` | Per-KEX opaque context (e.g., DH-GEX provider) |
-| `sess->trans.shared_secret` | Output: shared secret K (mpint, big-endian) |
-| `sess->trans.exchange_hash` | Output: exchange hash H |
+KEX modules drive the key exchange protocol after KEXINIT negotiation.
+A KEX handler receives a `struct dssh_kex_context *` (defined in
+`deucessh-kex.h`) containing all inputs, I/O function pointers, and
+output fields — no access to session internals.
 
 ```c
-static int my_kex_handler(dssh_session sess)
+#include "deucessh-kex.h"
+
+static int my_kex_handler(struct dssh_kex_context *kctx)
 {
-    /* 1. Generate ephemeral keys
-     * 2. Exchange messages (send_packet / recv_packet)
-     * 3. Compute shared secret → sess->trans.shared_secret
-     * 4. Compute exchange hash → sess->trans.exchange_hash
-     * 5. Verify/sign host key
-     * Return 0 on success, negative on error. */
+    /* Inputs available on kctx:
+     *   client, v_c/v_c_len, v_s/v_s_len (version strings)
+     *   i_c/i_c_len, i_s/i_s_len (KEXINIT payloads)
+     *   key_algo (host key sign/verify/pubkey)
+     *   kex_data (module-specific, e.g. DH-GEX provider)
+     *
+     * I/O:
+     *   kctx->send(payload, len, kctx->io_ctx)
+     *   kctx->recv(&msg_type, &payload, &len, kctx->io_ctx)
+     *
+     * Outputs (malloc'd, caller takes ownership):
+     *   kctx->shared_secret / shared_secret_sz
+     *   kctx->exchange_hash / exchange_hash_sz
+     */
+    return 0;
 }
 
-static void my_kex_cleanup(dssh_session sess)
+static void my_kex_cleanup(void *kex_data)
 {
-    /* Free any per-session KEX state. */
+    /* Free any module-specific state. */
 }
 
 int register_my_kex(void)
@@ -721,10 +711,8 @@ int register_my_kex(void)
 }
 ```
 
-The `struct dssh_kex_s` (typedef `dssh_kex`) is defined in `ssh-trans.h`.
-KEX handlers additionally include `ssh-internal.h` for the session
-struct definition (`struct dssh_session_s`) needed to access
-`sess->trans.*` fields.
+The `struct dssh_kex_s` (typedef `dssh_kex`) and `struct dssh_kex_context`
+are defined in `deucessh-kex.h`.  KEX modules need no private headers.
 
 ### Registration Rules
 
@@ -1016,32 +1004,33 @@ Pass a larger value to support bigger payloads.
 
 ## Testing
 
-~650 tests across 11 executables, 26 CTest runs:
+~1000 tests across 11 executables, ~2150 CTest runs (~23s with `-j8`).
+Layer and integration tests run as individual processes to eliminate
+shared-state issues:
 
 ```sh
-mkdir build && cd build
-cmake .. -DDEUCESSH_BUILD_TESTS=ON
-cmake --build . -j8
-ctest                        # run all
+cmake -S . -B build -DDEUCESSH_BUILD_TESTS=ON
+cmake --build build -j8
+cd build
+ctest -j8                    # run all
 ctest -R dssh_unit           # unit tests only
-ctest -R dssh_layer          # layer tests only
-ctest -R dssh_integration    # integration only
-./dssh_test_arch test_parse  # filter by name
+ctest -R dssh_transport      # transport layer tests
+ctest -R dssh_self           # integration selftests
 ```
 
 | Suite | Tests | Scope |
 |-------|-------|-------|
-| test_arch | 89 | RFC 4251 wire format: parse/serialize/roundtrip for all types |
-| test_chan | 75 | Buffer primitives: bytebuf, msgqueue, signal queue, accept queue |
+| test_arch | ~130 | RFC 4251 wire format: parse/serialize/roundtrip for all types |
+| test_chan | ~80 | Buffer primitives: bytebuf, msgqueue, signal queue, accept queue |
 | test_algo_enc | 23 | AES-256-CTR (NIST vectors), none cipher |
-| test_algo_mac | 18 | HMAC-SHA-256 (RFC 4231 vectors), none MAC |
-| test_algo_key | 67 | Ed25519 + RSA: generate/sign/verify/save/load/parse errors |
-| test_transport | ~140 | Version exchange, packets, KEXINIT, handshake, rekey, registration |
-| test_auth | ~70 | Password, KBI, publickey, server-side auth, banners, parse errors |
-| test_conn | ~90 | Channels, demux, session/raw I/O, signals, close, threading |
-| test_alloc | ~30 | Iterative malloc/OpenSSL/C11 failure injection (×4 KEX/key combos) |
-| test_transport_errors | 9 | Transport error paths with test enc/mac modules |
-| test_selftest | 14 | Full client↔server via socketpair, including rekey under load |
+| test_algo_mac | 19 | HMAC-SHA-256 (RFC 4231 vectors), none MAC |
+| test_algo_key | ~130 | Ed25519 + RSA: generate/sign/verify/save/load/parse/coverage |
+| test_transport | ~170 | Version exchange, packets, KEXINIT, handshake, rekey, registration |
+| test_auth | ~160 | Password, KBI, publickey, server-side auth, banners, parse errors |
+| test_conn | ~120 | Channels, demux, session/raw I/O, signals, close, threading |
+| test_alloc | ~80 | Iterative malloc/OpenSSL/C11 failure injection (×4 KEX/key combos) |
+| test_transport_errors | 11 | Transport error paths with test enc/mac modules |
+| test_selftest | 15 | Full client↔server via socketpair, including rekey under load |
 
 Tests use a custom framework (`test/dssh_test.h`) and mock I/O via
 `socketpair(AF_UNIX)`.  Failure injection uses library-only malloc
@@ -1059,6 +1048,15 @@ deucessh-conn.h          Connection: channels, poll/read/write
 deucessh-algorithms.h    Algorithm registration + key management
 deucessh-portable.h      Visibility macros (included automatically)
 deucessh-arch.h          Wire data types (included automatically)
+```
+
+Public module headers (for third-party algorithm implementations):
+```
+deucessh-kex.h           KEX: context struct, handler, kex_s, registration
+deucessh-key-algo.h      Host key: key_algo_s, sign/verify/pubkey, registration
+deucessh-enc.h           Encryption: enc_s, init/crypt/cleanup, registration
+deucessh-mac.h           MAC: mac_s, init/generate/cleanup, registration
+deucessh-comp.h          Compression: comp_s, compress/uncompress, registration
 ```
 
 Internal headers + sources:
