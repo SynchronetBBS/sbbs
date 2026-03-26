@@ -283,11 +283,7 @@ main(int argc, char **argv)
 		return 1;
 	if (dssh_register_aes256_ctr() != 0)
 		return 1;
-	if (dssh_register_none_enc() != 0)
-		return 1;
 	if (dssh_register_hmac_sha2_256() != 0)
-		return 1;
-	if (dssh_register_none_mac() != 0)
 		return 1;
 	if (dssh_register_none_comp() != 0)
 		return 1;

@@ -240,19 +240,21 @@ main(int argc, char **argv)
         /* Register algorithms */
 	if (dssh_transport_set_callbacks(tx, rx, rxline, NULL) != 0)
 		return 1;
+	if (dssh_register_mlkem768x25519_sha256() != 0)
+		return 1;
+	if (dssh_register_sntrup761x25519_sha512() != 0)
+		return 1;
 	if (dssh_register_curve25519_sha256() != 0)
 		return 1;
 	if (dssh_register_dh_gex_sha256() != 0)
 		return 1;
 	if (dssh_register_ssh_ed25519() != 0)
 		return 1;
+	if (dssh_register_rsa_sha2_256() != 0)
+		return 1;
 	if (dssh_register_aes256_ctr() != 0)
 		return 1;
-	if (dssh_register_none_enc() != 0)
-		return 1;
 	if (dssh_register_hmac_sha2_256() != 0)
-		return 1;
-	if (dssh_register_none_mac() != 0)
 		return 1;
 	if (dssh_register_none_comp() != 0)
 		return 1;
@@ -300,11 +302,16 @@ main(int argc, char **argv)
 		return 1;
 	}
 
-        /* Generate ephemeral host key and set DH group provider */
+        /* Generate ephemeral host keys and set DH group provider */
 	int res = dssh_ed25519_generate_key();
 
 	if (res < 0) {
-		fprintf(stderr, "host key gen failed: %d\n", res);
+		fprintf(stderr, "ed25519 key gen failed: %d\n", res);
+		return 1;
+	}
+	res = dssh_rsa_sha2_256_generate_key(4096);
+	if (res < 0) {
+		fprintf(stderr, "rsa key gen failed: %d\n", res);
 		return 1;
 	}
 	dssh_dh_gex_set_provider(sess, &dh_provider);
@@ -380,8 +387,12 @@ main(int argc, char **argv)
 		}
 	}
 	else {
-                /* Shell mode — echo back until EOF */
+                /* Shell mode — simple line-based command parser */
 		uint8_t buf[4096];
+		size_t  line_len = 0;
+
+		dssh_session_write(sess, ch,
+		    (const uint8_t *)"> ", 2);
 
 		for (;;) {
 			int ev = dssh_session_poll(sess, ch,
@@ -391,11 +402,57 @@ main(int argc, char **argv)
 				break;
 
 			ssize_t n = dssh_session_read(sess, ch,
-			        buf, sizeof(buf));
+			        &buf[line_len],
+			        sizeof(buf) - line_len - 1);
 
 			if (n <= 0)
 				break;
-			dssh_session_write(sess, ch, buf, n);
+
+			/* Echo input back, translating \r to \r\n */
+			for (ssize_t ei = 0; ei < n; ei++) {
+				if (buf[line_len + ei] == '\r')
+					dssh_session_write(sess, ch,
+					    (const uint8_t *)"\r\n", 2);
+				else
+					dssh_session_write(sess, ch,
+					    &buf[line_len + ei], 1);
+			}
+
+			line_len += n;
+
+			/* Look for newline */
+			if (line_len == 0
+			    || (buf[line_len - 1] != '\n'
+			        && buf[line_len - 1] != '\r'))
+				continue;
+
+			/* Strip trailing CR/LF */
+			while (line_len > 0
+			    && (buf[line_len - 1] == '\n'
+			        || buf[line_len - 1] == '\r'))
+				line_len--;
+			buf[line_len] = '\0';
+
+			if (strcmp((char *)buf, "ping") == 0) {
+				dssh_session_write(sess, ch,
+				    (const uint8_t *)"pong\r\n", 6);
+			}
+			else if (strcmp((char *)buf, "quit") == 0
+			    || strcmp((char *)buf, "exit") == 0) {
+				dssh_session_write(sess, ch,
+				    (const uint8_t *)"bye\r\n", 5);
+				break;
+			}
+			else if (line_len > 0) {
+				static const char help[] =
+				    "commands: ping, quit, exit\r\n";
+				dssh_session_write(sess, ch,
+				    (const uint8_t *)help, sizeof(help) - 1);
+			}
+
+			line_len = 0;
+			dssh_session_write(sess, ch,
+			    (const uint8_t *)"> ", 2);
 		}
 	}
 
