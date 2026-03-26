@@ -381,6 +381,15 @@ dssh_test_EVP_PKEY_get_bn_param(const EVP_PKEY *pkey,
 }
 
 int
+dssh_test_EVP_Digest(const void *data, size_t count, unsigned char *md,
+    unsigned int *size, const EVP_MD *type, ENGINE *impl)
+{
+	if (should_fail())
+		return 0;
+	return EVP_Digest(data, count, md, size, type, impl);
+}
+
+int
 dssh_test_RAND_bytes(unsigned char *buf, int num)
 {
 	if (should_fail())

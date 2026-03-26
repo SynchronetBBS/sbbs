@@ -81,6 +81,8 @@ register_all_algorithms(void)
 	int res;
 	if (test_using_dhgex())
 		res = dssh_register_dh_gex_sha256();
+	else if (test_using_sntrup())
+		res = dssh_register_sntrup761x25519_sha512();
 	else
 		res = dssh_register_curve25519_sha256();
 	if (res < 0)
@@ -121,6 +123,10 @@ handshake_client_thread(void *arg)
 {
 	struct handshake_ctx *ctx = arg;
 	ctx->client_result = dssh_transport_handshake(ctx->client);
+	if (ctx->client_result != 0) {
+		mock_io_close_c2s(&ctx->io);
+		mock_io_close_s2c(&ctx->io);
+	}
 	return 0;
 }
 
@@ -129,6 +135,10 @@ handshake_server_thread(void *arg)
 {
 	struct handshake_ctx *ctx = arg;
 	ctx->server_result = dssh_transport_handshake(ctx->server);
+	if (ctx->server_result != 0) {
+		mock_io_close_c2s(&ctx->io);
+		mock_io_close_s2c(&ctx->io);
+	}
 	return 0;
 }
 

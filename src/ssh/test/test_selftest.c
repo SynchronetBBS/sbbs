@@ -102,6 +102,8 @@ register_all_algorithms(void)
 	int res;
 	if (test_using_dhgex())
 		res = dssh_register_dh_gex_sha256();
+	else if (test_using_sntrup())
+		res = dssh_register_sntrup761x25519_sha512();
 	else
 		res = dssh_register_curve25519_sha256();
 	if (res < 0)
@@ -180,6 +182,8 @@ client_handshake_thread(void *arg)
 {
 	struct selftest_ctx *ctx = arg;
 	ctx->client_hs_result = dssh_transport_handshake(ctx->client);
+	if (ctx->client_hs_result != 0)
+		shutdown(ctx->client_fd, SHUT_RDWR);
 	return 0;
 }
 
@@ -188,6 +192,8 @@ server_handshake_thread(void *arg)
 {
 	struct selftest_ctx *ctx = arg;
 	ctx->server_hs_result = dssh_transport_handshake(ctx->server);
+	if (ctx->server_hs_result != 0)
+		shutdown(ctx->server_fd, SHUT_RDWR);
 	return 0;
 }
 
@@ -273,8 +279,9 @@ selftest_setup(struct selftest_ctx *ctx)
 	thrd_join(ct, NULL);
 	thrd_join(st, NULL);
 
-	if (ctx->client_hs_result != 0 || ctx->server_hs_result != 0)
+	if (ctx->client_hs_result != 0 || ctx->server_hs_result != 0) {
 		goto fail;
+	}
 
 	/* Run auth in two threads */
 	if (thrd_create(&ct, client_auth_thread, ctx) != thrd_success)
@@ -640,6 +647,12 @@ test_self_handshake_curve25519(void)
 		    "diffie-hellman-group-exchange-sha256");
 		ASSERT_STR_EQ(dssh_transport_get_kex_name(ctx.server),
 		    "diffie-hellman-group-exchange-sha256");
+	}
+	else if (test_using_sntrup()) {
+		ASSERT_STR_EQ(dssh_transport_get_kex_name(ctx.client),
+		    "sntrup761x25519-sha512");
+		ASSERT_STR_EQ(dssh_transport_get_kex_name(ctx.server),
+		    "sntrup761x25519-sha512");
 	}
 	else {
 		ASSERT_STR_EQ(dssh_transport_get_kex_name(ctx.client),

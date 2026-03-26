@@ -24,6 +24,7 @@
 #include "mock_io.h"
 #include "mock_alloc.h"
 #include "test_dhgex_provider.h"
+#include "../kex/sntrup761.h"
 
 #include <openssl/rand.h>
 
@@ -51,6 +52,8 @@ register_all(void)
 	int res;
 	if (test_using_dhgex())
 		res = dssh_register_dh_gex_sha256();
+	else if (test_using_sntrup())
+		res = dssh_register_sntrup761x25519_sha512();
 	else
 		res = dssh_register_curve25519_sha256();
 	if (res < 0) return res;
@@ -401,11 +404,19 @@ struct handshake_ctx {
 static int handshake_client_thread(void *arg) {
 	struct handshake_ctx *ctx = arg;
 	ctx->client_result = dssh_transport_handshake(ctx->client);
+	if (ctx->client_result != 0) {
+		mock_io_close_c2s(&ctx->io);
+		mock_io_close_s2c(&ctx->io);
+	}
 	return 0;
 }
 static int handshake_server_thread(void *arg) {
 	struct handshake_ctx *ctx = arg;
 	ctx->server_result = dssh_transport_handshake(ctx->server);
+	if (ctx->server_result != 0) {
+		mock_io_close_c2s(&ctx->io);
+		mock_io_close_s2c(&ctx->io);
+	}
 	return 0;
 }
 
@@ -2106,6 +2117,24 @@ test_ossl_kex_server_iterate(void)
 		wire_total += build_plaintext_packet(init, ip,
 		    &wire_pkts[wire_total], sizeof(wire_pkts) - wire_total);
 	}
+	else if (test_using_sntrup()) {
+		/* sntrup761x25519: ECDH_INIT with Q_C = pk(1158) || x25519(32) */
+		uint8_t sntrup_pk[1158], sntrup_sk[1763];
+		crypto_kem_sntrup761_keypair(sntrup_pk, sntrup_sk);
+		uint8_t x25519_pk[32];
+		RAND_bytes(x25519_pk, sizeof(x25519_pk));
+
+		uint8_t init[1 + 4 + 1190];
+		size_t ip = 0;
+		init[ip++] = SSH_MSG_KEX_ECDH_INIT;
+		dssh_serialize_uint32(1190, init, sizeof(init), &ip);
+		memcpy(&init[ip], sntrup_pk, 1158);
+		ip += 1158;
+		memcpy(&init[ip], x25519_pk, 32);
+		ip += 32;
+		wire_total += build_plaintext_packet(init, ip,
+		    &wire_pkts[wire_total], sizeof(wire_pkts) - wire_total);
+	}
 	else {
 		/* Curve25519: ECDH_INIT(Q_C) */
 		uint8_t qc[32];
@@ -2127,7 +2156,8 @@ test_ossl_kex_server_iterate(void)
 
 	/* === ITERATE === */
 	int prev_count = -1;
-	for (int n = 0; n < 500; n++) {
+	int limit = test_using_sntrup() ? 100000 : 500;
+	for (int n = 0; n < limit; n++) {
 		/* Fresh I/O for this iteration */
 		struct mock_io_state iter_io;
 		if (mock_io_init(&iter_io, 0) < 0)
@@ -2175,7 +2205,7 @@ test_ossl_kex_server_iterate(void)
 	}
 
 	fprintf(stderr, "  ossl/kex_server: still incrementing at n=%d "
-	    "(count=%d), raise limit\n", 500, prev_count);
+	    "(count=%d), raise limit\n", limit, prev_count);
 	dssh_session_cleanup(server);
 	dssh_test_reset_global_config();
 	return TEST_FAIL;
@@ -2207,9 +2237,9 @@ kex_excluded_thread(void *arg)
 static int
 test_ossl_kex_client_iterate(void)
 {
-
 	int prev_count = -1;
-	for (int n = 0; n < 500; n++) {
+	int limit = test_using_sntrup() ? 100000 : 500;
+	for (int n = 0; n < limit; n++) {
 		dssh_test_reset_global_config();
 		dssh_test_alloc_reset();
 		dssh_test_ossl_reset();
@@ -2295,7 +2325,7 @@ test_ossl_kex_client_iterate(void)
 	}
 
 	fprintf(stderr, "  ossl/kex_client: still incrementing at n=%d "
-	    "(count=%d), raise limit\n", 500, prev_count);
+	    "(count=%d), raise limit\n", limit, prev_count);
 	return TEST_FAIL;
 }
 
@@ -3085,6 +3115,7 @@ test_ossl_kex_client_no_verify(void)
 static int
 test_alloc_kex_server_iterate(void)
 {
+	int limit = test_using_sntrup() ? 100000 : 200;
 
 	/* === ONE-TIME SETUP (same as ossl/kex_server) === */
 	dssh_test_reset_global_config();
@@ -3169,6 +3200,24 @@ test_alloc_kex_server_iterate(void)
 		wire_total += build_plaintext_packet(init, ip,
 		    &wire_pkts[wire_total], sizeof(wire_pkts) - wire_total);
 	}
+	else if (test_using_sntrup()) {
+		/* sntrup761x25519: ECDH_INIT with Q_C = pk(1158) || x25519(32) */
+		uint8_t sntrup_pk[1158], sntrup_sk[1763];
+		crypto_kem_sntrup761_keypair(sntrup_pk, sntrup_sk);
+		uint8_t x25519_pk[32];
+		RAND_bytes(x25519_pk, sizeof(x25519_pk));
+
+		uint8_t init[1 + 4 + 1190];
+		size_t ip = 0;
+		init[ip++] = SSH_MSG_KEX_ECDH_INIT;
+		dssh_serialize_uint32(1190, init, sizeof(init), &ip);
+		memcpy(&init[ip], sntrup_pk, 1158);
+		ip += 1158;
+		memcpy(&init[ip], x25519_pk, 32);
+		ip += 32;
+		wire_total += build_plaintext_packet(init, ip,
+		    &wire_pkts[wire_total], sizeof(wire_pkts) - wire_total);
+	}
 	else {
 		/* Curve25519: ECDH_INIT(Q_C) */
 		uint8_t qc[32];
@@ -3188,7 +3237,7 @@ test_alloc_kex_server_iterate(void)
 	uint32_t saved_tx_seq = server->trans.tx_seq;
 
 	/* === ITERATE === */
-	for (int n = 0; n < 200; n++) {
+	for (int n = 0; n < limit; n++) {
 		struct mock_io_state iter_io;
 		if (mock_io_init(&iter_io, 0) < 0)
 			break;
@@ -3255,8 +3304,8 @@ alloc_kex_excluded_thread(void *arg)
 static int
 test_alloc_kex_client_iterate(void)
 {
-
-	for (int n = 0; n < 200; n++) {
+	int limit = test_using_sntrup() ? 100000 : 200;
+	for (int n = 0; n < limit; n++) {
 		dssh_test_reset_global_config();
 		dssh_test_alloc_reset();
 		dssh_test_ossl_reset();

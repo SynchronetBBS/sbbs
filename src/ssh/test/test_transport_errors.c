@@ -88,11 +88,19 @@ struct handshake_ctx {
 static int handshake_client_thread(void *arg) {
 	struct handshake_ctx *ctx = arg;
 	ctx->client_result = dssh_transport_handshake(ctx->client);
+	if (ctx->client_result != 0) {
+		mock_io_close_c2s(&ctx->io);
+		mock_io_close_s2c(&ctx->io);
+	}
 	return 0;
 }
 static int handshake_server_thread(void *arg) {
 	struct handshake_ctx *ctx = arg;
 	ctx->server_result = dssh_transport_handshake(ctx->server);
+	if (ctx->server_result != 0) {
+		mock_io_close_c2s(&ctx->io);
+		mock_io_close_s2c(&ctx->io);
+	}
 	return 0;
 }
 

@@ -75,6 +75,8 @@ register_all_algorithms(void)
 	int res;
 	if (test_using_dhgex())
 		res = dssh_register_dh_gex_sha256();
+	else if (test_using_sntrup())
+		res = dssh_register_sntrup761x25519_sha512();
 	else
 		res = dssh_register_curve25519_sha256();
 	if (res < 0)
@@ -206,8 +208,11 @@ client_handshake_auth_thread(void *arg)
 {
 	struct handshake_auth_ctx *ctx = arg;
 	ctx->result = dssh_transport_handshake(ctx->sess);
-	if (ctx->result < 0)
+	if (ctx->result < 0) {
+		mock_io_close_c2s(ctx->io);
+		mock_io_close_s2c(ctx->io);
 		return 0;
+	}
 	ctx->result = dssh_auth_password(ctx->sess, "testuser", "testpass",
 	    NULL, NULL);
 	return 0;
@@ -218,8 +223,11 @@ server_handshake_auth_thread(void *arg)
 {
 	struct handshake_auth_ctx *ctx = arg;
 	ctx->result = dssh_transport_handshake(ctx->sess);
-	if (ctx->result < 0)
+	if (ctx->result < 0) {
+		mock_io_close_c2s(ctx->io);
+		mock_io_close_s2c(ctx->io);
 		return 0;
+	}
 	uint8_t username[256];
 	size_t username_len;
 	ctx->result = dssh_auth_server(ctx->sess, &auth_cbs,

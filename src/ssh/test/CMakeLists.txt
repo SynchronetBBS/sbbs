@@ -77,7 +77,7 @@ function(dssh_add_test test_name source_file)
 	target_compile_options(dssh_test_${test_name} PRIVATE ${DEUCESSH_COMPILE_OPTIONS})
 endfunction()
 
-# Helper: register one test per name × 4 env variants
+# Helper: register one test per name × 6 env variants
 macro(dssh_add_individual_tests executable prefix test_list)
 	foreach(t ${${test_list}})
 		add_test(NAME ${prefix}_${t}
@@ -96,6 +96,14 @@ macro(dssh_add_individual_tests executable prefix test_list)
 			COMMAND ${executable} ${t})
 		set_tests_properties(${prefix}_${t}_dhgex_rsa PROPERTIES
 			ENVIRONMENT "DSSH_TEST_KEX=dh-gex;DSSH_TEST_KEY=rsa;${DSSH_TEST_KEY_ENV}")
+		add_test(NAME ${prefix}_${t}_sntrup
+			COMMAND ${executable} ${t})
+		set_tests_properties(${prefix}_${t}_sntrup PROPERTIES
+			ENVIRONMENT "DSSH_TEST_KEX=sntrup;${DSSH_TEST_KEY_ENV}")
+		add_test(NAME ${prefix}_${t}_sntrup_rsa
+			COMMAND ${executable} ${t})
+		set_tests_properties(${prefix}_${t}_sntrup_rsa PROPERTIES
+			ENVIRONMENT "DSSH_TEST_KEX=sntrup;DSSH_TEST_KEY=rsa;${DSSH_TEST_KEY_ENV}")
 	endforeach()
 endmacro()
 
@@ -458,19 +466,29 @@ target_link_libraries(dssh_test_alloc PRIVATE dssh_mock_io dssh_mock_alloc)
 target_link_options(dssh_test_alloc PRIVATE ${DSSH_WRAP_FLAGS})
 add_test(NAME dssh_unit_alloc COMMAND dssh_test_alloc)
 set_tests_properties(dssh_unit_alloc PROPERTIES
+	COST 100
 	ENVIRONMENT "${DSSH_TEST_KEY_ENV}")
 add_test(NAME dssh_unit_alloc_dhgex COMMAND dssh_test_alloc)
 set_tests_properties(dssh_unit_alloc_dhgex PROPERTIES
-	TIMEOUT 120
+	COST 200 TIMEOUT 120
 	ENVIRONMENT "DSSH_TEST_KEX=dh-gex;${DSSH_TEST_KEY_ENV}")
 add_test(NAME dssh_unit_alloc_rsa COMMAND dssh_test_alloc)
 set_tests_properties(dssh_unit_alloc_rsa PROPERTIES
-	TIMEOUT 120
+	COST 200 TIMEOUT 120
 	ENVIRONMENT "DSSH_TEST_KEY=rsa;${DSSH_TEST_KEY_ENV}")
 add_test(NAME dssh_unit_alloc_dhgex_rsa COMMAND dssh_test_alloc)
 set_tests_properties(dssh_unit_alloc_dhgex_rsa PROPERTIES
-	TIMEOUT 600
+	COST 300 TIMEOUT 600
 	ENVIRONMENT "DSSH_TEST_KEX=dh-gex;DSSH_TEST_KEY=rsa;${DSSH_TEST_KEY_ENV}")
+
+add_test(NAME dssh_unit_alloc_sntrup COMMAND dssh_test_alloc)
+set_tests_properties(dssh_unit_alloc_sntrup PROPERTIES
+	COST 400 TIMEOUT 600
+	ENVIRONMENT "DSSH_TEST_KEX=sntrup;${DSSH_TEST_KEY_ENV}")
+add_test(NAME dssh_unit_alloc_sntrup_rsa COMMAND dssh_test_alloc)
+set_tests_properties(dssh_unit_alloc_sntrup_rsa PROPERTIES
+	COST 400 TIMEOUT 600
+	ENVIRONMENT "DSSH_TEST_KEX=sntrup;DSSH_TEST_KEY=rsa;${DSSH_TEST_KEY_ENV}")
 
 # Targeted coverage tests — run in their own process for clean state
 add_test(NAME dssh_targeted_c25519_server_trunc

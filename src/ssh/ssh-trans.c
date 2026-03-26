@@ -1558,32 +1558,48 @@ dssh_transport_newkeys(dssh_session sess)
 		sess->trans.session_id_sz = sess->trans.exchange_hash_sz;
 	}
 
-        /* Encode shared secret as mpint.
-         * Shared secret is always non-empty after successful KEX. */
+        /* Encode shared secret K for key derivation.
+         *
+         * Most KEX methods encode K as mpint (RFC 4253 s7):
+         *   uint32 length, sign-padded big-endian integer.
+         *
+         * Hybrid post-quantum methods (sntrup761x25519-sha512) encode K
+         * as string (fixed-length, no sign padding) per
+         * draft-josefsson-ntruprime-ssh-02. */
 	size_t   ss_sz = sess->trans.shared_secret_sz;
 	uint8_t *ss = sess->trans.shared_secret;
+	bool     k_as_string = (sess->trans.kex_selected->flags
+	    & DSSH_KEX_FLAG_K_ENCODING_STRING) != 0;
 
+	size_t   k_data_len;
+
+	if (k_as_string) {
+		k_data_len = ss_sz;
+	}
+	else {
 #ifdef DSSH_TESTING
-	bool     need_pad = (ss[0] & 0x80);
+		bool need_pad = (ss[0] & 0x80);
 #else
-	bool     need_pad = (ss_sz > 0 && (ss[0] & 0x80));
+		bool need_pad = (ss_sz > 0 && (ss[0] & 0x80));
 #endif
-	size_t   mpint_data_len = ss_sz + (need_pad ? 1 : 0);
-	size_t   mpint_wire_len = 4 + mpint_data_len;
-	uint8_t *k_mpint = malloc(mpint_wire_len);
+		k_data_len = ss_sz + (need_pad ? 1 : 0);
+	}
+
+	size_t   k_wire_len = 4 + k_data_len;
+	uint8_t *k_mpint = malloc(k_wire_len);
 
 	if (k_mpint == NULL)
 		return DSSH_ERROR_ALLOC;
 
 	size_t kpos = 0;
 
-	int sret = dssh_serialize_uint32((uint32_t)mpint_data_len, k_mpint, mpint_wire_len, &kpos);
+	int sret = dssh_serialize_uint32((uint32_t)k_data_len, k_mpint, k_wire_len, &kpos);
 	if (sret < 0) {
 		free(k_mpint);
 		return sret;
 	}
-	if (need_pad)
-		k_mpint[kpos++] = 0;
+	if (!k_as_string && k_data_len > ss_sz)
+		k_mpint[kpos++] = 0; /* mpint sign-bit padding */
 	memcpy(&k_mpint[kpos], ss, ss_sz);
 
         /* Derive keys using the hash algorithm from the KEX method */
@@ -1655,7 +1671,7 @@ dssh_transport_newkeys(dssh_session sess)
 
 	res = dssh_test_derive_key(hash_name,
 	        k_mpint,
-	        mpint_wire_len,
+	        k_wire_len,
 	        H,
 	        H_sz,
 	        'A',
@@ -1664,12 +1680,12 @@ dssh_transport_newkeys(dssh_session sess)
 	        iv_c2s,
 	        enc_bs);
 	if (res == 0)
-		res = dssh_test_derive_key(hash_name, k_mpint, mpint_wire_len, H, H_sz, 'B', sid, sid_sz, iv_s2c,
+		res = dssh_test_derive_key(hash_name, k_mpint, k_wire_len, H, H_sz, 'B', sid, sid_sz, iv_s2c,
 		        enc_bs);
 	if (res == 0)
 		res = dssh_test_derive_key(hash_name,
 		        k_mpint,
-		        mpint_wire_len,
+		        k_wire_len,
 		        H,
 		        H_sz,
 		        'C',
@@ -1680,7 +1696,7 @@ dssh_transport_newkeys(dssh_session sess)
 	if (res == 0)
 		res = dssh_test_derive_key(hash_name,
 		        k_mpint,
-		        mpint_wire_len,
+		        k_wire_len,
 		        H,
 		        H_sz,
 		        'D',
@@ -1691,7 +1707,7 @@ dssh_transport_newkeys(dssh_session sess)
 	if ((res == 0) && (mac_key_sz > 0))
 		res = dssh_test_derive_key(hash_name,
 		        k_mpint,
-		        mpint_wire_len,
+		        k_wire_len,
 		        H,
 		        H_sz,
 		        'E',
@@ -1702,7 +1718,7 @@ dssh_transport_newkeys(dssh_session sess)
 	if ((res == 0) && (mac_key_sz > 0))
 		res = dssh_test_derive_key(hash_name,
 		        k_mpint,
-		        mpint_wire_len,
+		        k_wire_len,
 		        H,
 		        H_sz,
 		        'F',

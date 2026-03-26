@@ -19,6 +19,7 @@ extern "C" {
 /* Key exchange */
 DSSH_PUBLIC int dssh_register_curve25519_sha256(void);
 DSSH_PUBLIC int dssh_register_dh_gex_sha256(void);
+DSSH_PUBLIC int dssh_register_sntrup761x25519_sha512(void);
 
 /* Host key algorithms */
 DSSH_PUBLIC int dssh_register_ssh_ed25519(void);

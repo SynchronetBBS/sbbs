@@ -269,6 +269,8 @@ main(int argc, char **argv)
         /* Register algorithms */
 	if (dssh_transport_set_callbacks(tx, rx, rxline, extra_line) != 0)
 		return 1;
+	if (dssh_register_sntrup761x25519_sha512() != 0)
+		return 1;
 	if (dssh_register_curve25519_sha256() != 0)
 		return 1;
 	if (dssh_register_dh_gex_sha256() != 0)

@@ -100,6 +100,7 @@ typedef void (*dssh_kex_cleanup)(void *kex_data);
 
 #define DSSH_KEX_FLAG_NEEDS_ENCRYPTION_CAPABLE UINT32_C(1 << 0)
 #define DSSH_KEX_FLAG_NEEDS_SIGNATURE_CAPABLE  UINT32_C(1 << 1)
+#define DSSH_KEX_FLAG_K_ENCODING_STRING        UINT32_C(1 << 2)
 
 typedef struct dssh_kex_s {
 	struct dssh_kex_s *next;

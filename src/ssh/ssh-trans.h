@@ -309,6 +309,7 @@ int dssh_test_EVP_PKEY_fromdata_init(EVP_PKEY_CTX *ctx);
 int dssh_test_EVP_PKEY_fromdata(EVP_PKEY_CTX *ctx, EVP_PKEY **ppkey, int selection, OSSL_PARAM params[]);
 int dssh_test_EVP_PKEY_get_raw_public_key(const EVP_PKEY *pkey, unsigned char *pub, size_t *len);
 int dssh_test_EVP_PKEY_get_bn_param(const EVP_PKEY *pkey, const char *key_name, BIGNUM **bn);
+int dssh_test_EVP_Digest(const void *data, size_t count, unsigned char *md, unsigned int *size, const EVP_MD *type, ENGINE *impl);
 int dssh_test_RAND_bytes(unsigned char *buf, int num);
 int dssh_test_BN_mod_exp(BIGNUM *r, const BIGNUM *a, const BIGNUM *p, const BIGNUM *m, BN_CTX *ctx);
 int dssh_test_BN_rand(BIGNUM *rnd, int bits, int top, int bottom);
@@ -317,6 +318,7 @@ int dssh_test_OSSL_PARAM_BLD_push_BN(OSSL_PARAM_BLD *bld, const char *key, const
 int dssh_test_EVP_CIPHER_CTX_set_padding(EVP_CIPHER_CTX *ctx, int pad);
 int dssh_test_EVP_PKEY_CTX_set_params(EVP_PKEY_CTX *ctx, const OSSL_PARAM *params);
 
+ #define EVP_Digest(d, c, m, s, t, i) dssh_test_EVP_Digest(d, c, m, s, t, i)
  #define EVP_DigestInit_ex(c, t, i) dssh_test_EVP_DigestInit_ex(c, t, i)
  #define EVP_DigestUpdate(c, d, n) dssh_test_EVP_DigestUpdate(c, d, n)
  #define EVP_DigestFinal_ex(c, m, s) dssh_test_EVP_DigestFinal_ex(c, m, s)

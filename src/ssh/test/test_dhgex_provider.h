@@ -94,6 +94,16 @@ test_using_dhgex(void)
 }
 
 /*
+ * Returns true if DSSH_TEST_KEX=sntrup is set.
+ */
+static inline bool
+test_using_sntrup(void)
+{
+	const char *kex = getenv("DSSH_TEST_KEX");
+	return (kex != NULL && strcmp(kex, "sntrup") == 0);
+}
+
+/*
  * Call after dssh_session_init(false, 0) on a server session
  * when using DH-GEX.
  */
