@@ -547,7 +547,10 @@ dssh_transport_send_packet(dssh_session sess,
 			*seq_out = sess->trans.tx_seq;
 		sess->trans.tx_seq++;
 		sess->trans.tx_since_rekey++;
-		sess->trans.bytes_since_rekey += pos;
+		if (pos > SIZE_MAX - sess->trans.bytes_since_rekey)
+			sess->trans.bytes_since_rekey = SIZE_MAX;
+		else
+			sess->trans.bytes_since_rekey += pos;
 	}
 
 tx_done:
@@ -695,7 +698,14 @@ recv_packet_raw(dssh_session sess,
 	sess->trans.last_rx_seq = sess->trans.rx_seq;
 	sess->trans.rx_seq++;
 	sess->trans.rx_since_rekey++;
-	sess->trans.bytes_since_rekey += packet_length + 4 + mac_len;
+	{
+		size_t rx_bytes = (size_t)packet_length + 4 + mac_len;
+
+		if (rx_bytes > SIZE_MAX - sess->trans.bytes_since_rekey)
+			sess->trans.bytes_since_rekey = SIZE_MAX;
+		else
+			sess->trans.bytes_since_rekey += rx_bytes;
+	}
 	ret = 0;
 
 rx_done:

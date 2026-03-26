@@ -77,10 +77,10 @@ static int
 send_passwd_changereq(dssh_session sess,
     const uint8_t *prompt, size_t prompt_len)
 {
-	if (prompt_len > UINT32_MAX)
+	if (prompt_len > UINT32_MAX || prompt_len > SIZE_MAX - 9)
 		return DSSH_ERROR_INVALID;
 
-	size_t   msg_len = 1 + 4 + prompt_len + 4;
+	size_t   msg_len = 9 + prompt_len;
 	uint8_t *msg = malloc(msg_len);
 
 	if (msg == NULL)
@@ -105,10 +105,11 @@ send_pk_ok(dssh_session sess,
     const char *algo_name, size_t algo_len,
     const uint8_t *pubkey_blob, size_t pubkey_blob_len)
 {
-	if (algo_len > UINT32_MAX || pubkey_blob_len > UINT32_MAX)
+	if (algo_len > UINT32_MAX || pubkey_blob_len > UINT32_MAX
+	    || algo_len > SIZE_MAX - 9 || pubkey_blob_len > SIZE_MAX - 9 - algo_len)
 		return DSSH_ERROR_INVALID;
 
-	size_t   msg_len = 1 + 4 + algo_len + 4 + pubkey_blob_len;
+	size_t   msg_len = 9 + algo_len + pubkey_blob_len;
 	uint8_t *msg = malloc(msg_len);
 
 	if (msg == NULL)
@@ -472,6 +473,9 @@ auth_server_impl(dssh_session sess,
 
 			if (sess->trans.session_id_sz > UINT32_MAX)
 				return DSSH_ERROR_INVALID;
+			if (sess->trans.session_id_sz > SIZE_MAX - 4
+			    || before_sig > SIZE_MAX - 4 - sess->trans.session_id_sz)
+				return DSSH_ERROR_INVALID;
 
 			size_t   sd_len = 4 + sess->trans.session_id_sz + before_sig;
 			uint8_t *sign_data = malloc(sd_len);
@@ -566,10 +570,10 @@ dssh_auth_request_service(dssh_session sess, const char *service)
 {
 	size_t   slen = strlen(service);
 
-	if (slen > UINT32_MAX)
+	if (slen > UINT32_MAX || slen > SIZE_MAX - 5)
 		return DSSH_ERROR_INVALID;
 
-	size_t   msg_len = 1 + 4 + slen;
+	size_t   msg_len = 5 + slen;
 	uint8_t *msg = malloc(msg_len);
 
 	if (msg == NULL)
@@ -627,7 +631,7 @@ get_methods_impl(dssh_session sess,
 
 	size_t            ulen = strlen(username);
 
-	if (ulen > UINT32_MAX)
+	if (ulen > UINT32_MAX || ulen > SIZE_MAX - 31)
 		return DSSH_ERROR_INVALID;
 
 	static const char service[] = "ssh-connection";
@@ -721,14 +725,18 @@ send_password_request(dssh_session sess,
 
 	if (ulen > UINT32_MAX || oplen > UINT32_MAX || new_password_len > UINT32_MAX)
 		return DSSH_ERROR_INVALID;
+	if (ulen > SIZE_MAX - 40 || oplen > SIZE_MAX - 40 - ulen)
+		return DSSH_ERROR_INVALID;
 
 	static const char service[] = "ssh-connection";
 	static const char method[] = "password";
-	size_t            msg_len = 1 + 4 + ulen + 4 + (sizeof(service) - 1)
-	    + 4 + (sizeof(method) - 1) + 1 + 4 + oplen;
+	size_t            msg_len = 40 + ulen + oplen;
 
-	if (change)
+	if (change) {
+		if (new_password_len > SIZE_MAX - 4 - msg_len)
+			return DSSH_ERROR_INVALID;
 		msg_len += 4 + new_password_len;
+	}
 
 	uint8_t *msg = malloc(msg_len);
 
@@ -878,7 +886,7 @@ auth_kbi_impl(dssh_session sess,
 
 	size_t            ulen = strlen(username);
 
-	if (ulen > UINT32_MAX)
+	if (ulen > UINT32_MAX || ulen > SIZE_MAX - 55)
 		return DSSH_ERROR_INVALID;
 
 	static const char service[] = "ssh-connection";
@@ -1072,6 +1080,13 @@ auth_kbi_impl(dssh_session sess,
 					free(response_lens);
 					return DSSH_ERROR_INVALID;
 				}
+				if (response_lens[i] > SIZE_MAX - 4 - resp_sz) {
+					for (uint32_t j = 0; j < num_prompts; j++)
+						free(responses[j]);
+					free(responses);
+					free(response_lens);
+					return DSSH_ERROR_INVALID;
+				}
 				resp_sz += 4 + response_lens[i];
 			}
 
@@ -1152,6 +1167,13 @@ auth_publickey_impl(dssh_session sess,
 	    || pubkey_len > UINT32_MAX || sess->trans.session_id_sz > UINT32_MAX)
 		return DSSH_ERROR_INVALID;
 
+	/* Overflow check: 49 bytes fixed + 4 runtime size_t values */
+	size_t rt = sess->trans.session_id_sz;
+
+	if (ulen > SIZE_MAX - 49 - rt || alen > SIZE_MAX - 49 - rt - ulen
+	    || pubkey_len > SIZE_MAX - 49 - rt - ulen - alen)
+		return DSSH_ERROR_INVALID;
+
 	static const char service[] = "ssh-connection";
 	static const char method[] = "publickey";
 
@@ -1208,7 +1230,8 @@ auth_publickey_impl(dssh_session sess,
 	free(sign_data);
 	if (res < 0)
 		return res;
-	if (sig_len > UINT32_MAX)
+	if (sig_len > UINT32_MAX
+	    || sig_len > SIZE_MAX - 49 - ulen - alen - pubkey_len)
 		return DSSH_ERROR_INVALID;
 
         /*

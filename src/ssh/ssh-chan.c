@@ -58,7 +58,10 @@ dssh_bytebuf_write(struct dssh_bytebuf *b,
 
 	b->tail = (b->tail + len) % b->capacity;
 	b->used += len;
-	b->total += len;
+	if (len > SIZE_MAX - b->total)
+		b->total = SIZE_MAX;
+	else
+		b->total += len;
 	return len;
 }
 
@@ -134,6 +137,9 @@ DSSH_PRIVATE int
 dssh_msgqueue_push(struct dssh_msgqueue *q,
     const uint8_t *data, size_t len)
 {
+	if (len > SIZE_MAX - sizeof(struct dssh_msgqueue_entry))
+		return DSSH_ERROR_INVALID;
+
 	struct dssh_msgqueue_entry *e = malloc(sizeof(*e) + len);
 
 	if (e == NULL)
@@ -147,8 +153,12 @@ dssh_msgqueue_push(struct dssh_msgqueue *q,
 	else
 		q->head = e;
 	q->tail = e;
-	q->total_bytes += len;
-	q->count++;
+	if (len > SIZE_MAX - q->total_bytes)
+		q->total_bytes = SIZE_MAX;
+	else
+		q->total_bytes += len;
+	if (q->count < SIZE_MAX)
+		q->count++;
 	return 0;
 }
 

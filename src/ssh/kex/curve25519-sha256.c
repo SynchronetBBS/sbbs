@@ -524,7 +524,8 @@ curve25519_handler(struct dssh_kex_context *kctx)
 			return res;
 		}
 
-                /* Send ECDH_REPLY(K_S, Q_S, sig) */
+                /* Send ECDH_REPLY(K_S, Q_S, sig)
+                 * k_s_len ≤ 1024, sig_len ≤ 1024; sum ≤ ~2100 */
 		size_t   reply_sz = 1 + 4 + k_s_len + 4 + X25519_KEY_LEN + 4 + sig_len;
 		uint8_t *reply_msg = malloc(reply_sz);
 

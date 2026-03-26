@@ -152,6 +152,9 @@ dssh_conn_send_data(dssh_session sess,
 
 	/* len <= remote_window (uint32_t), so fits in uint32_t */
 	uint32_t len_u32 = (uint32_t)len;
+
+	if (len > SIZE_MAX - 9)
+		return DSSH_ERROR_INVALID;
 	size_t   msg_len = 9 + len;
 	uint8_t *msg = malloc(msg_len);
 
@@ -184,6 +187,9 @@ dssh_conn_send_extended_data(dssh_session sess,
 
 	/* len <= remote_window (uint32_t), so fits in uint32_t */
 	uint32_t len_u32 = (uint32_t)len;
+
+	if (len > SIZE_MAX - 13)
+		return DSSH_ERROR_INVALID;
 	size_t   msg_len = 13 + len;
 	uint8_t *msg = malloc(msg_len);
 
@@ -286,7 +292,13 @@ register_channel(dssh_session sess, dssh_channel ch)
 {
 	mtx_lock(&sess->channel_mtx);
 	if (sess->channel_count >= sess->channel_capacity) {
-		size_t                  newcap = sess->channel_capacity ? sess->channel_capacity * 2 : 8;
+		size_t newcap = sess->channel_capacity ? sess->channel_capacity * 2 : 8;
+
+		if (sess->channel_capacity > SIZE_MAX / 2
+		    || newcap > SIZE_MAX / sizeof(struct dssh_channel_s *)) {
+			mtx_unlock(&sess->channel_mtx);
+			return DSSH_ERROR_ALLOC;
+		}
 		struct dssh_channel_s **newt = realloc(sess->channels,
 		        newcap * sizeof(*newt));
 
@@ -1096,8 +1108,10 @@ send_channel_request_wait(dssh_session sess,
 
 	if (rtlen > UINT32_MAX)
 		return DSSH_ERROR_INVALID;
+	if (extra_len > SIZE_MAX - 10 - rtlen)
+		return DSSH_ERROR_INVALID;
 
-	size_t   msg_len = 1 + 4 + 4 + rtlen + 1 + extra_len;
+	size_t   msg_len = 10 + rtlen + extra_len;
 	uint8_t *msg = malloc(msg_len);
 
 	if (msg == NULL)
@@ -1189,7 +1203,14 @@ dssh_session_open_shell(dssh_session sess,
 			return NULL;
 		}
 
-		size_t   extra_len = 4 + tlen + 4 + 4 + 4 + 4 + 4 + mlen;
+		if (tlen > SIZE_MAX - 24 || mlen > SIZE_MAX - 24 - tlen) {
+			dssh_conn_close(sess, ch);
+			unregister_channel(sess, ch);
+			cleanup_channel_buffers(ch);
+			free(ch);
+			return NULL;
+		}
+		size_t   extra_len = 24 + tlen + mlen;
 		uint8_t *extra = malloc(extra_len);
 
 		if (extra == NULL) {
@@ -1260,7 +1281,7 @@ dssh_session_open_exec(dssh_session sess,
         /* Send exec */
 	size_t   cmdlen = strlen(command);
 
-	if (cmdlen > UINT32_MAX) {
+	if (cmdlen > UINT32_MAX || cmdlen > SIZE_MAX - 4) {
 		res = DSSH_ERROR_INVALID;
 		goto open_fail;
 	}
@@ -1319,7 +1340,7 @@ dssh_channel_open_subsystem(dssh_session sess,
         /* Send subsystem */
 	size_t   slen = strlen(subsystem);
 
-	if (slen > UINT32_MAX) {
+	if (slen > UINT32_MAX || slen > SIZE_MAX - 4) {
 		res = DSSH_ERROR_INVALID;
 		goto open_fail;
 	}
@@ -1993,11 +2014,11 @@ dssh_session_send_signal(dssh_session sess,
 {
 	size_t   slen = strlen(signal_name);
 
-	if (slen > UINT32_MAX)
+	if (slen > UINT32_MAX || slen > SIZE_MAX - 20)
 		return DSSH_ERROR_INVALID;
 
 	size_t   rtlen = 6; /* "signal" */
-	size_t   msg_len = 1 + 4 + 4 + rtlen + 1 + 4 + slen;
+	size_t   msg_len = 20 + slen; /* 1 + 4 + 4 + 6 + 1 + 4 */
 	uint8_t *msg = malloc(msg_len);
 
 	if (msg == NULL)

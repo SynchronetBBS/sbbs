@@ -216,7 +216,11 @@ sign(uint8_t *buf, size_t bufsz, size_t *outlen,
 		return DSSH_ERROR_INIT;
 	}
 
-	size_t needed = 4 + RSA_SHA2_256_NAME_LEN + 4 + siglen;
+	if (siglen > SIZE_MAX - 20) { /* 4 + 12 + 4 */
+		EVP_MD_CTX_free(mdctx);
+		return DSSH_ERROR_INVALID;
+	}
+	size_t needed = 20 + siglen;
 	if (bufsz < needed) {
 		EVP_MD_CTX_free(mdctx);
 		return DSSH_ERROR_TOOLONG;
@@ -329,7 +333,12 @@ pubkey(uint8_t *buf, size_t bufsz, size_t *outlen, dssh_key_algo_ctx *ctx)
 	uint32_t e_wire = e_u32 + (e_pad ? 1 : 0);
 	uint32_t n_wire = n_u32 + (n_pad ? 1 : 0);
 
-	size_t needed = 4 + RSA_KEY_TYPE_NAME_LEN + 4 + e_wire + 4 + n_wire;
+	if ((size_t)e_wire + n_wire > SIZE_MAX - 19) {
+		free(e_buf); free(n_buf);
+		BN_free(e_bn); BN_free(n_bn);
+		return DSSH_ERROR_INVALID;
+	}
+	size_t needed = 19 + e_wire + n_wire;
 	if (bufsz < needed) {
 		free(e_buf); free(n_buf);
 		BN_free(e_bn); BN_free(n_bn);

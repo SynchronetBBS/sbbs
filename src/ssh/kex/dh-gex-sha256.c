@@ -691,6 +691,7 @@ dhgex_handler(struct dssh_kex_context *kctx)
 
                 /* 7. Send GEX_REPLY(K_S, f, sig) */
 		{
+			/* k_s_len ≤ 1024, sig_len ≤ 1024; sum ≤ ~6200 */
 			size_t   reply_sz = 1 + 4 + k_s_len + 4096 + 4 + sig_len;
 			uint8_t *reply = malloc(reply_sz);
 
