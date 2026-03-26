@@ -2,14 +2,15 @@
 
 ## Open
 
-11. `alloc_channel_id()` (ssh-conn.c) is a bare `next_channel_id++`
-    with no collision detection.  If a session opens and closes 2^32
-    channels, the counter wraps and the next ID could collide with a
-    still-open channel.  Fix: scan the active channel table and skip
-    IDs already in use, or return an error if all 2^32 IDs are
-    exhausted.
+(none)
 
 ## Fixed
+
+11. `alloc_channel_id()` now scans the active channel table to skip
+    IDs already in use.  Returns `DSSH_ERROR_ALLOC` if all 2^32 IDs
+    are exhausted.
+
+
 
 7. Removed all 31 `#ifndef DSSH_TESTING` dead-code guards.
    Only one legitimate contract-violation guard remains in

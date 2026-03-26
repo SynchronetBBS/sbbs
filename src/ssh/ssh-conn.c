@@ -403,10 +403,32 @@ unregister_channel(dssh_session sess, dssh_channel ch)
 	mtx_unlock(&sess->channel_mtx);
 }
 
-static uint32_t
+static int64_t
 alloc_channel_id(dssh_session sess)
 {
-	return sess->next_channel_id++;
+	mtx_lock(&sess->channel_mtx);
+
+	uint32_t start = sess->next_channel_id;
+
+	for (;;) {
+		uint32_t candidate = sess->next_channel_id++;
+		bool     in_use = false;
+
+		for (size_t i = 0; i < sess->channel_count; i++) {
+			if (sess->channels[i]->local_id == candidate) {
+				in_use = true;
+				break;
+			}
+		}
+		if (!in_use) {
+			mtx_unlock(&sess->channel_mtx);
+			return candidate;
+		}
+		if (sess->next_channel_id == start) {
+			mtx_unlock(&sess->channel_mtx);
+			return DSSH_ERROR_ALLOC;
+		}
+	}
 }
 
 /* ================================================================
@@ -1138,7 +1160,10 @@ open_session_channel(dssh_session sess, dssh_channel ch)
 {
         /* Caller has already initialized buffers (init_session_channel
          * or init_raw_channel).  Set wire-level fields only. */
-	ch->local_id = alloc_channel_id(sess);
+	int64_t cid = alloc_channel_id(sess);
+	if (cid < 0)
+		return (int)cid;
+	ch->local_id = (uint32_t)cid;
 	ch->local_window = INITIAL_WINDOW_SIZE;
 	ch->open = false;
 	ch->close_sent = false;
@@ -1526,7 +1551,12 @@ dssh_channel_accept_raw(dssh_session sess,
 	if (ch == NULL)
 		return NULL;
 
-	ch->local_id = alloc_channel_id(sess);
+	int64_t cid = alloc_channel_id(sess);
+	if (cid < 0) {
+		free(ch);
+		return NULL;
+	}
+	ch->local_id = (uint32_t)cid;
 	ch->local_window = INITIAL_WINDOW_SIZE;
 	ch->remote_id = inc->peer_channel;
 	ch->remote_window = inc->peer_window;
@@ -1621,7 +1651,12 @@ dssh_session_accept_channel(dssh_session sess,
 
 	if (ch == NULL)
 		return NULL;
-	ch->local_id = alloc_channel_id(sess);
+	int64_t cid = alloc_channel_id(sess);
+	if (cid < 0) {
+		free(ch);
+		return NULL;
+	}
+	ch->local_id = (uint32_t)cid;
 	ch->local_window = INITIAL_WINDOW_SIZE;
 	ch->remote_id = inc->peer_channel;
 	ch->remote_window = inc->peer_window;
