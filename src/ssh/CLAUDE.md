@@ -23,14 +23,14 @@ Produces `libdeucessh.a` (static) and `libdeucessh.so` (shared).
 
 ## Testing
 
-~1000 tests across 11 executables, ~2150 CTest runs (~23s with `-j8`).
+~1000 tests across 11 executables, ~4277 CTest runs (~30s with `-j16`).
 Layer and integration tests run as individual processes (one test per
-CTest entry × 4 algorithm variants) to eliminate shared-state issues:
+CTest entry × 8 algorithm variants) to eliminate shared-state issues:
 ```sh
 cmake -S . -B build -DDEUCESSH_BUILD_TESTS=ON
 cmake --build build -j8
 cd build
-ctest -j8                    # run all in parallel
+ctest -j16                   # run all in parallel
 ctest -R dssh_unit           # unit tests only
 ctest -R dssh_transport      # transport layer tests
 ctest -R dssh_self           # integration selftests
@@ -191,8 +191,16 @@ but the API enables conformance.
   with inputs, outputs, and I/O function pointers — never `dssh_session`.
   Third-party KEX modules need only `deucessh-kex.h`.
 - **Module decoupling**: All algorithm modules (kex, key_algo, enc, mac,
-  comp) use only public headers.  No module includes `ssh-internal.h` or
-  `ssh-trans.h` in production builds.
+  comp) use only public headers.  Modules conditionally include
+  `ssh-internal.h` under `#ifdef DSSH_TESTING` for ossl injection
+  macro redirections; production builds see only public headers.
+- **Post-quantum KEX**: `DSSH_KEX_FLAG_K_ENCODING_STRING` flag causes
+  the transport layer to encode K as `string` (not `mpint`) for hybrid
+  PQ methods (sntrup761x25519-sha512, mlkem768x25519-sha256).
+- **Vendor crypto**: sntrup761.c (SUPERCOP, public domain) uses OpenSSL
+  RAND_bytes/EVP_Digest with full error propagation.  libcrux_mlkem768
+  (Cryspen, MIT) is self-contained with its own SHA-3/SHAKE; only
+  RAND_bytes goes through OpenSSL (via mlkem768.c wrapper).
 - **Test key caching**: `DSSH_TEST_ED25519_KEY` / `DSSH_TEST_RSA_KEY` env
   vars cache host keys to files, avoiding repeated RSA keygen (~200ms each).
   CMakeLists.txt sets these for all CTest runs.
