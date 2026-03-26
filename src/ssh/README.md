@@ -6,6 +6,7 @@ A from-scratch SSH library in standard C17 implementing the core SSH protocol:
 - RFC 4252 — SSH Authentication Protocol
 - RFC 4253 — SSH Transport Layer Protocol
 - RFC 4254 — SSH Connection Protocol
+- RFC 4256 — Generic Message Exchange Authentication (keyboard-interactive)
 - RFC 4419 — Diffie-Hellman Group Exchange
 - RFC 8332 — rsa-sha2-256 Host Key Algorithm
 - RFC 8731 — curve25519-sha256 Key Exchange
@@ -147,13 +148,14 @@ int main(void)
 {
     /* 1. Register algorithms and I/O callbacks (same as client) */
     dssh_transport_set_callbacks(my_tx, my_rx, my_rxline, NULL);
+    dssh_register_mlkem768x25519_sha256();
+    dssh_register_sntrup761x25519_sha512();
     dssh_register_curve25519_sha256();
     dssh_register_dh_gex_sha256();
     dssh_register_ssh_ed25519();
+    dssh_register_rsa_sha2_256();
     dssh_register_aes256_ctr();
-    dssh_register_none_enc();
     dssh_register_hmac_sha2_256();
-    dssh_register_none_mac();
     dssh_register_none_comp();
 
     /* 2. Load host keys (stored on algorithm entry, not session) */
@@ -175,11 +177,14 @@ int main(void)
 
     /* 6. Authenticate */
     struct dssh_auth_server_cbs auth_cbs = {
-        .methods_str = "publickey,password",
+        .methods_str = "publickey,password,keyboard-interactive",
         .password_cb = my_password_cb,
+        .publickey_cb = my_publickey_cb,
+        .keyboard_interactive_cb = my_kbi_cb,
     };
     uint8_t username[256];
     size_t username_len;
+    dssh_auth_set_banner(sess, "Welcome!\r\n", NULL);
     dssh_auth_server(sess, &auth_cbs, username, &username_len);
 
     /* 7. Start demux thread */
@@ -383,15 +388,20 @@ responses.
 
 ```c
 struct dssh_auth_server_cbs cbs = {
-    .methods_str = "publickey,password",
+    .methods_str = "publickey,password,keyboard-interactive",
     .password_cb = my_password_cb,
     .passwd_change_cb = my_passwd_change_cb,  /* optional */
     .publickey_cb = my_pubkey_cb,             /* optional */
+    .keyboard_interactive_cb = my_kbi_cb,     /* optional */
     .none_cb = my_none_cb,                    /* optional */
     .cbdata = my_server_context,
 };
 uint8_t username[256];
 size_t username_len;
+
+/* Optional: set a banner shown before the first auth exchange */
+dssh_auth_set_banner(sess, "Welcome to my server!\r\n", NULL);
+
 int r = dssh_auth_server(sess, &cbs, username, &username_len);
 ```
 
@@ -403,6 +413,19 @@ int r = dssh_auth_server(sess, &cbs, username, &username_len);
 | `DSSH_AUTH_FAILURE` | Rejected — library sends FAILURE |
 | `DSSH_AUTH_PARTIAL` | Succeeded, but more auth needed — library sends FAILURE with partial_success=TRUE |
 | `DSSH_AUTH_CHANGE_PASSWORD` | Password expired — library sends PASSWD_CHANGEREQ (password method only) |
+| `DSSH_AUTH_KBI_PROMPT` | Send INFO_REQUEST with prompts (keyboard-interactive only) |
+
+### Banner API
+
+Set a pending banner at any time during auth.  It will be sent
+before the next SUCCESS, FAILURE, or INFO_REQUEST.  Callbacks can
+set new banners dynamically.
+
+```c
+dssh_auth_set_banner(sess, "Message of the day\r\n", NULL);
+/* language tag (2nd arg) may be NULL (defaults to empty) */
+dssh_auth_set_banner(sess, NULL, NULL);  /* cancel pending banner */
+```
 
 ### Password Callback
 
@@ -461,6 +484,47 @@ my_pubkey_cb(const uint8_t *username, size_t username_len,
     return DSSH_AUTH_FAILURE;
 }
 ```
+
+### Keyboard-Interactive Callback (Server)
+
+Called in a loop.  First call has `num_responses=0` and
+`responses=NULL` — provide initial prompts.  Subsequent calls
+have the client's answers.  Return `DSSH_AUTH_KBI_PROMPT` to
+send more prompts, or a final result to end the exchange.
+
+```c
+static int
+my_kbi_cb(const uint8_t *username, size_t username_len,
+    uint32_t num_responses,
+    const uint8_t **responses, const size_t *response_lens,
+    char **name_out, char **instruction_out,
+    uint32_t *num_prompts_out,
+    char ***prompts_out, bool **echo_out,
+    void *cbdata)
+{
+    if (num_responses == 0) {
+        /* First call — send a prompt */
+        *name_out = strdup("Auth");
+        *instruction_out = strdup("Enter your token");
+        *num_prompts_out = 1;
+        *prompts_out = malloc(sizeof(char *));
+        *echo_out = malloc(sizeof(bool));
+        (*prompts_out)[0] = strdup("Token: ");
+        (*echo_out)[0] = false;
+        return DSSH_AUTH_KBI_PROMPT;
+    }
+    /* Check the response */
+    if (num_responses == 1
+        && response_lens[0] == 6
+        && memcmp(responses[0], "secret", 6) == 0)
+        return DSSH_AUTH_SUCCESS;
+    return DSSH_AUTH_FAILURE;
+}
+```
+
+The library frees all out params (`name_out`, `instruction_out`,
+`prompts_out[i]`, `prompts_out`, `echo_out`) after sending
+INFO_REQUEST.
 
 ## Algorithm Registration
 

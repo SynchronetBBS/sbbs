@@ -229,18 +229,43 @@ auth_password(const uint8_t *username, size_t username_len,
 
 	if (arc4random_uniform(4) != 0) {
 		snprintf(buf, sizeof(buf),
-		    "'%.*s'/'%.*s'? Pfft. %s",
+		    "'%.*s'/'%.*s'? Pfft. %s"
+		    "But I'll give you a chance to change it...\r\n",
 		    (int)username_len, username,
 		    (int)password_len, password,
 		    reject_quips[arc4random_uniform(N_QUIPS)]);
 		set_banner(buf);
-		return DSSH_AUTH_FAILURE;
+		static const char prompt[] = "Your password is terrible. Pick a new one.";
+		*change_prompt = malloc(sizeof(prompt));
+		if (*change_prompt != NULL) {
+			memcpy(*change_prompt, prompt, sizeof(prompt));
+			*change_prompt_len = sizeof(prompt) - 1;
+		}
+		return DSSH_AUTH_CHANGE_PASSWORD;
 	}
 	snprintf(buf, sizeof(buf),
 	    "Wow, '%.*s' with password '%.*s'? "
 	    "Security at its finest. But you got lucky!\r\n",
 	    (int)username_len, username,
 	    (int)password_len, password);
+	set_banner(buf);
+	return DSSH_AUTH_SUCCESS;
+}
+
+static int
+auth_passwd_change(const uint8_t *username, size_t username_len,
+    const uint8_t *old_password, size_t old_password_len,
+    const uint8_t *new_password, size_t new_password_len,
+    uint8_t **change_prompt, size_t *change_prompt_len,
+    void *cbdata)
+{
+	char buf[256];
+
+	snprintf(buf, sizeof(buf),
+	    "Password changed from '%.*s' to '%.*s'? "
+	    "Sure, why not. Welcome in!\r\n",
+	    (int)old_password_len, old_password,
+	    (int)new_password_len, new_password);
 	set_banner(buf);
 	return DSSH_AUTH_SUCCESS;
 }
@@ -320,8 +345,9 @@ static const char *tower_prompt = "Tower> ";
 static const char *parapet_prompt = "Parapet> ";
 
 static const char *help_text =
-    "Commands: look, go <direction>, n/s/e/w/u/d,\r\n"
-    "          take, use, read, talk, answer <text>, inventory, help, quit\r\n";
+    "Commands: look [object], examine [object], go <direction>,\r\n"
+    "          n/s/e/w/u/d, take, use, read, talk, answer <text>,\r\n"
+    "          inventory, help, quit\r\n";
 
 static bool
 cmd_eq(const char *input, const char *cmd)
@@ -350,6 +376,18 @@ dir_match(const char *input, const char *dir, const char *abbrev)
 	if (cmd_starts(input, "go"))
 		return cmd_eq(cmd_arg(input, "go"), dir)
 		    || cmd_eq(cmd_arg(input, "go"), abbrev);
+	return false;
+}
+
+static bool
+looking_at(const char *cmd, const char *obj)
+{
+	if (cmd_starts(cmd, "look"))
+		return cmd_eq(cmd_arg(cmd, "look"), obj);
+	if (cmd_starts(cmd, "examine"))
+		return cmd_eq(cmd_arg(cmd, "examine"), obj);
+	if (cmd_starts(cmd, "x"))
+		return cmd_eq(cmd_arg(cmd, "x"), obj);
 	return false;
 }
 
@@ -433,6 +471,59 @@ auth_kbi(const uint8_t *username, size_t username_len,
 			gs.looked = true;
 			goto prompt;
 		}
+		if (looking_at(cmd, "gate") || looking_at(cmd, "door")) {
+			set_banner(
+			    "\r\nThe gate is wrought from black iron, "
+			    "twisted into thorny spirals.\r\n"
+			    "It's cold to the touch and far too heavy "
+			    "to force open.\r\n\r\n");
+			goto prompt;
+		}
+		if (looking_at(cmd, "padlock") || looking_at(cmd, "lock")) {
+			if (gs.has_key)
+				set_banner(
+				    "\r\nA heavy padlock. The keyhole looks "
+				    "like it might accept the key you're "
+				    "carrying.\r\n\r\n");
+			else
+				set_banner(
+				    "\r\nA heavy padlock, green with verdigris. "
+				    "The keyhole is shaped\r\n"
+				    "like an old-fashioned skeleton key. "
+				    "You'll need to find one.\r\n\r\n");
+			goto prompt;
+		}
+		if (looking_at(cmd, "bars")) {
+			set_banner(
+			    "\r\nThrough the bars you can see a softly "
+			    "glowing terminal prompt.\r\n"
+			    "It blinks patiently. It has all the time "
+			    "in the world.\r\n\r\n");
+			goto prompt;
+		}
+		if (looking_at(cmd, "path") || looking_at(cmd, "paths")) {
+			set_banner(
+			    "\r\nA cobblestone path branches north toward "
+			    "an overgrown garden,\r\n"
+			    "and west toward a crumbling stone "
+			    "tower.\r\n\r\n");
+			goto prompt;
+		}
+		if (looking_at(cmd, "tower")) {
+			set_banner(
+			    "\r\nThe tower rises to the west, its upper "
+			    "stones crumbling.\r\n"
+			    "Something dark moves on the parapet.\r\n\r\n");
+			goto prompt;
+		}
+		if (looking_at(cmd, "garden")) {
+			set_banner(
+			    "\r\nTo the north, vines and wildflowers spill "
+			    "over what was once\r\n"
+			    "a formal garden. You can just make out a "
+			    "stone fountain.\r\n\r\n");
+			goto prompt;
+		}
 		if (dir_match(cmd, "north", "n")) {
 			gs.room = ROOM_GARDEN;
 			gs.looked = false;
@@ -479,7 +570,8 @@ auth_kbi(const uint8_t *username, size_t username_len,
 		goto prompt;
 
 	case ROOM_GARDEN:
-		if (cmd_eq(cmd, "look") || cmd_eq(cmd, "l")) {
+		if (cmd_eq(cmd, "look") || cmd_eq(cmd, "l")
+		    || cmd_eq(cmd, "examine")) {
 			if (gs.riddle_solved && !gs.has_key)
 				set_banner(
 				    "\r\n"
@@ -495,6 +587,77 @@ auth_kbi(const uint8_t *username, size_t username_len,
 			else
 				set_banner(garden_desc);
 			gs.looked = true;
+			goto prompt;
+		}
+		if (looking_at(cmd, "fountain")) {
+			set_banner(
+			    "\r\nThe fountain is carved from a single block "
+			    "of grey stone.\r\n"
+			    "It hasn't held water in decades, but the "
+			    "basin is filled with\r\n"
+			    "dead leaves. Strange symbols are carved "
+			    "around the rim.\r\n\r\n");
+			goto prompt;
+		}
+		if (looking_at(cmd, "rim") || looking_at(cmd, "symbols")
+		    || looking_at(cmd, "carvings")) {
+			set_banner(
+			    "\r\nThe symbols look like an ancient script. "
+			    "They seem to form words,\r\n"
+			    "but you can't quite make them out from "
+			    "a glance. Try 'read'.\r\n\r\n");
+			goto prompt;
+		}
+		if (looking_at(cmd, "stones") || looking_at(cmd, "stepping stones")) {
+			set_banner(
+			    "\r\nMoss-covered stepping stones form a path "
+			    "south toward the gate.\r\n"
+			    "They're slippery but solid.\r\n\r\n");
+			goto prompt;
+		}
+		if (looking_at(cmd, "stone") || looking_at(cmd, "loose stone")) {
+			if (gs.riddle_solved && !gs.has_key)
+				set_banner(
+				    "\r\nA loose stone at the fountain's base "
+				    "has shifted, revealing\r\n"
+				    "a rusty iron key underneath.\r\n\r\n");
+			else if (gs.riddle_solved)
+				set_banner(
+				    "\r\nThe loose stone. The key is gone — "
+				    "you have it.\r\n\r\n");
+			else
+				set_banner(
+				    "\r\nThe stones around the fountain's base "
+				    "are tightly fitted.\r\n"
+				    "Nothing seems loose.\r\n\r\n");
+			goto prompt;
+		}
+		if (looking_at(cmd, "key")) {
+			if (gs.riddle_solved && !gs.has_key)
+				set_banner(
+				    "\r\nA rusty iron key, half-buried under "
+				    "the loose stone.\r\n"
+				    "It looks like it would fit an old "
+				    "padlock.\r\n\r\n");
+			else if (gs.has_key)
+				set_banner("You already picked it up.\r\n");
+			else
+				set_banner("You don't see a key here.\r\n");
+			goto prompt;
+		}
+		if (looking_at(cmd, "leaves") || looking_at(cmd, "basin")) {
+			set_banner(
+			    "\r\nDead leaves fill the dry basin. Nothing "
+			    "useful, just the slow\r\n"
+			    "decay of a forgotten place.\r\n\r\n");
+			goto prompt;
+		}
+		if (looking_at(cmd, "vines") || looking_at(cmd, "flowers")
+		    || looking_at(cmd, "wildflowers")) {
+			set_banner(
+			    "\r\nWild morning glories twist through the "
+			    "remains of a trellis.\r\n"
+			    "They're beautiful in a melancholy way.\r\n\r\n");
 			goto prompt;
 		}
 		if (dir_match(cmd, "south", "s")) {
@@ -513,7 +676,7 @@ auth_kbi(const uint8_t *username, size_t username_len,
 			goto prompt;
 		}
 		if (cmd_eq(cmd, "read fountain") || cmd_eq(cmd, "read")
-		    || cmd_eq(cmd, "examine fountain")) {
+		    || cmd_eq(cmd, "read rim") || cmd_eq(cmd, "read symbols")) {
 			set_banner(
 			    "\r\nCarved into the fountain's rim:\r\n\r\n"
 			    "  \"I have cities, but no houses.\r\n"
@@ -565,6 +728,29 @@ auth_kbi(const uint8_t *username, size_t username_len,
 			gs.looked = true;
 			goto prompt;
 		}
+		if (looking_at(cmd, "tower") || looking_at(cmd, "walls")) {
+			set_banner(
+			    "\r\nThe tower is built from rough-hewn stone, "
+			    "crumbling at the edges.\r\n"
+			    "It must have been a watchtower once. Ivy "
+			    "claims the lower walls.\r\n\r\n");
+			goto prompt;
+		}
+		if (looking_at(cmd, "steps") || looking_at(cmd, "stairs")) {
+			set_banner(
+			    "\r\nNarrow stone steps spiral upward into "
+			    "shadow, worn smooth\r\n"
+			    "by centuries of footsteps. They look "
+			    "sturdy enough.\r\n\r\n");
+			goto prompt;
+		}
+		if (looking_at(cmd, "ivy")) {
+			set_banner(
+			    "\r\nThick ivy clings to the stonework. "
+			    "Tiny spiders scurry away\r\n"
+			    "from your gaze.\r\n\r\n");
+			goto prompt;
+		}
 		if (dir_match(cmd, "east", "e")) {
 			gs.room = ROOM_GATE;
 			gs.looked = false;
@@ -593,6 +779,46 @@ auth_kbi(const uint8_t *username, size_t username_len,
 		if (cmd_eq(cmd, "look") || cmd_eq(cmd, "l")) {
 			set_banner(parapet_desc);
 			gs.looked = true;
+			goto prompt;
+		}
+		if (looking_at(cmd, "raven") || looking_at(cmd, "bird")) {
+			if (gs.talked_raven)
+				set_banner(
+				    "\r\nThe raven watches you with one "
+				    "beady eye. It's already said\r\n"
+				    "its piece and seems smugly satisfied "
+				    "about it.\r\n\r\n");
+			else
+				set_banner(
+				    "\r\nA large raven, jet black with an "
+				    "iridescent sheen. It cocks\r\n"
+				    "its head as if waiting for you to "
+				    "speak. Try 'talk'.\r\n\r\n");
+			goto prompt;
+		}
+		if (looking_at(cmd, "battlement") || looking_at(cmd, "wall")
+		    || looking_at(cmd, "parapet")) {
+			set_banner(
+			    "\r\nThe battlement is crumbling badly. "
+			    "Several merlons have fallen\r\n"
+			    "away entirely, leaving gaps through which "
+			    "the wind howls.\r\n\r\n");
+			goto prompt;
+		}
+		if (looking_at(cmd, "view") || looking_at(cmd, "horizon")
+		    || looking_at(cmd, "landscape")) {
+			set_banner(
+			    "\r\nFrom up here you can see the garden to "
+			    "the north-east, the locked\r\n"
+			    "gate below to the east, and beyond it... "
+			    "a blinking cursor.\r\n"
+			    "An endless expanse of terminal awaits.\r\n\r\n");
+			goto prompt;
+		}
+		if (looking_at(cmd, "stairs") || looking_at(cmd, "steps")) {
+			set_banner(
+			    "\r\nThe spiral stairs disappear into shadow "
+			    "below.\r\n\r\n");
 			goto prompt;
 		}
 		if (dir_match(cmd, "down", "d")) {
@@ -651,6 +877,7 @@ static struct dssh_auth_server_cbs auth_cbs = {
 	.methods_str = "publickey,password,keyboard-interactive",
 	.none_cb = auth_none,
 	.password_cb = auth_password,
+	.passwd_change_cb = auth_passwd_change,
 	.publickey_cb = auth_publickey,
 	.keyboard_interactive_cb = auth_kbi,
 };
