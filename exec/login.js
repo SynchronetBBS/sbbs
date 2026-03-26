@@ -45,7 +45,7 @@ for(var c=0; c < options.login_prompts; c++) {
 	str += "\r\nLogin: \x01w";
 	console.print("\r\n"
 		+ legacy_login_prompt
-		+ word_wrap(str, console.screen_columns-1).trimRight());
+		+ word_wrap(options.login_prompt || str, console.screen_columns-1).trimRight());
 
 	// Get login string
 	var str;
@@ -69,7 +69,7 @@ for(var c=0; c < options.login_prompts; c++) {
 		continue;
 	}
 	// Continue normal login (prompting for password)
-	if(bbs.login(str, legacy_password_prompt + "\x01n\x01c\x01hPassword: \x01w")) {
+	if(bbs.login(str, legacy_password_prompt + (options.password_prompt || "\x01n\x01c\x01hPassword: \x01w"))) {
 		bbs.logon();
 		exit();
 	}
