@@ -112,6 +112,7 @@ DSSH_PUBLIC int dssh_auth_keyboard_interactive(dssh_session sess,
 #define DSSH_AUTH_FAILURE -1        /* Wrong credentials */
 #define DSSH_AUTH_PARTIAL 1         /* Succeeded, but more auth needed */
 #define DSSH_AUTH_CHANGE_PASSWORD 2 /* Password expired (password method only) */
+#define DSSH_AUTH_KBI_PROMPT 3      /* Send INFO_REQUEST with prompts (KBI only) */
 
 /*
  * Server-side password verification callback.
@@ -170,10 +171,42 @@ typedef int (*dssh_auth_server_none_cb)(const uint8_t *username, size_t username
     void *cbdata);
 
 /*
+ * Server-side keyboard-interactive callback (RFC 4256).
+ *
+ * Called in a loop.  On the first call, num_responses is 0 and
+ * responses is NULL — the callback should provide initial prompts.
+ * On subsequent calls, responses contains the client's answers to
+ * the previous prompts.
+ *
+ * Return values:
+ *   DSSH_AUTH_KBI_PROMPT — send INFO_REQUEST with the provided prompts
+ *   DSSH_AUTH_SUCCESS    — authentication succeeded
+ *   DSSH_AUTH_FAILURE    — authentication failed
+ *   DSSH_AUTH_PARTIAL    — partial success, more auth needed
+ *
+ * When returning 0, set the out params:
+ *   *name_out, *instruction_out — malloc'd strings (library frees)
+ *   *num_prompts_out — number of prompts
+ *   *prompts_out — malloc'd array of malloc'd strings (library frees)
+ *   *echo_out — malloc'd bool array (library frees)
+ *
+ * Out params are ignored when returning non-zero.
+ */
+typedef int (*dssh_auth_server_kbi_cb)(
+    const uint8_t *username, size_t username_len,
+    uint32_t num_responses,
+    const uint8_t **responses, const size_t *response_lens,
+    char **name_out, char **instruction_out,
+    uint32_t *num_prompts_out,
+    char ***prompts_out, bool **echo_out,
+    void *cbdata);
+
+/*
  * Server-side authentication callbacks and configuration.
  * Set the callbacks you support; leave others NULL.
  * methods_str is a comma-separated list of supported method names
- * (e.g., "publickey,password") sent in FAILURE responses.
+ * (e.g., "publickey,password,keyboard-interactive") sent in FAILURE
+ * responses.
  */
 struct dssh_auth_server_cbs {
 	const char                       *methods_str;
@@ -181,6 +214,7 @@ struct dssh_auth_server_cbs {
 	dssh_auth_server_password_cb      password_cb;
 	dssh_auth_server_passwd_change_cb passwd_change_cb;
 	dssh_auth_server_publickey_cb     publickey_cb;
+	dssh_auth_server_kbi_cb           keyboard_interactive_cb;
 	void                             *cbdata;
 };
 

@@ -194,9 +194,16 @@ set_banner(const char *msg)
 static int
 auth_none(const uint8_t *username, size_t username_len, void *cbdata)
 {
+	static bool tried;
 	char buf[256];
 
-	if (arc4random_uniform(4) != 0) {
+	if (tried) {
+		set_banner("You already tried that. It didn't work then either.\r\n");
+		return DSSH_AUTH_FAILURE;
+	}
+	tried = true;
+
+	if (arc4random_uniform(10) != 0) {
 		snprintf(buf, sizeof(buf),
 		    "Oh, '%.*s' wants in without even trying? %s",
 		    (int)username_len, username,
@@ -205,8 +212,8 @@ auth_none(const uint8_t *username, size_t username_len, void *cbdata)
 		return DSSH_AUTH_FAILURE;
 	}
 	snprintf(buf, sizeof(buf),
-	    "Oh, '%.*s' wants in without even trying? Bold move. "
-	    "Lucky roll though!\r\n",
+	    "Oh, '%.*s' wants in without even trying? "
+	    "1 in 10 chance and you hit it. Buy a lottery ticket!\r\n",
 	    (int)username_len, username);
 	set_banner(buf);
 	return DSSH_AUTH_SUCCESS;
@@ -266,11 +273,386 @@ auth_publickey(const uint8_t *username, size_t username_len,
 	return DSSH_AUTH_SUCCESS;
 }
 
+/* ================================================================
+ * KBI Adventure Game
+ * ================================================================ */
+enum room { ROOM_GATE, ROOM_GARDEN, ROOM_TOWER, ROOM_PARAPET };
+
+struct game_state {
+	enum room  room;
+	bool       has_key;
+	bool       riddle_solved;
+	bool       talked_raven;
+	bool       looked;  /* looked in current room this visit */
+	char       username[64];
+};
+
+static const char *gate_desc =
+    "\r\n"
+    "You stand before a towering iron gate, rusted shut.\r\n"
+    "A heavy padlock secures the latch. Beyond the bars,\r\n"
+    "you can see a warm terminal session, tantalizingly close.\r\n"
+    "A path leads north to an overgrown garden, and\r\n"
+    "a crumbling tower rises to the west.\r\n\r\n";
+
+static const char *garden_desc =
+    "\r\n"
+    "An overgrown garden surrounds an ancient stone fountain.\r\n"
+    "Strange symbols are carved into the fountain's rim.\r\n"
+    "A mossy path leads south back to the gate.\r\n\r\n";
+
+static const char *tower_desc =
+    "\r\n"
+    "You stand at the base of a crumbling watchtower.\r\n"
+    "Stone steps spiral upward into shadow.\r\n"
+    "The path leads east back to the gate.\r\n\r\n";
+
+static const char *parapet_desc =
+    "\r\n"
+    "You emerge onto the windswept parapet atop the tower.\r\n"
+    "A large raven perches on the crumbling battlement,\r\n"
+    "watching you with unsettling intelligence.\r\n"
+    "The stairs lead back down.\r\n\r\n";
+
+static const char *gate_prompt = "Gate> ";
+static const char *garden_prompt = "Garden> ";
+static const char *tower_prompt = "Tower> ";
+static const char *parapet_prompt = "Parapet> ";
+
+static const char *help_text =
+    "Commands: look, go <direction>, n/s/e/w/u/d,\r\n"
+    "          take, use, read, talk, answer <text>, inventory, help, quit\r\n";
+
+static bool
+cmd_eq(const char *input, const char *cmd)
+{
+	return strcasecmp(input, cmd) == 0;
+}
+
+static bool
+cmd_starts(const char *input, const char *prefix)
+{
+	size_t len = strlen(prefix);
+	return strncasecmp(input, prefix, len) == 0 && input[len] == ' ';
+}
+
+static const char *
+cmd_arg(const char *input, const char *prefix)
+{
+	return input + strlen(prefix) + 1;
+}
+
+static bool
+dir_match(const char *input, const char *dir, const char *abbrev)
+{
+	if (cmd_eq(input, dir) || cmd_eq(input, abbrev))
+		return true;
+	if (cmd_starts(input, "go"))
+		return cmd_eq(cmd_arg(input, "go"), dir)
+		    || cmd_eq(cmd_arg(input, "go"), abbrev);
+	return false;
+}
+
+static int
+auth_kbi(const uint8_t *username, size_t username_len,
+    uint32_t num_responses,
+    const uint8_t **responses, const size_t *response_lens,
+    char **name_out, char **instruction_out,
+    uint32_t *num_prompts_out,
+    char ***prompts_out, bool **echo_out,
+    void *cbdata)
+{
+	static struct game_state gs;
+	char banner[1024];
+
+	/* Reset session timeout on each KBI interaction */
+	alarm(60);
+
+	/* First call — initialize game */
+	if (num_responses == 0 && responses == NULL) {
+		memset(&gs, 0, sizeof(gs));
+		gs.room = ROOM_GATE;
+		size_t nlen = username_len < sizeof(gs.username) - 1
+		    ? username_len : sizeof(gs.username) - 1;
+		memcpy(gs.username, username, nlen);
+		gs.username[nlen] = '\0';
+
+		snprintf(banner, sizeof(banner),
+		    "\r\n--- The Gate of Authentication ---\r\n"
+		    "\r\n"
+		    "Welcome, %s. To prove your worth, you must find\r\n"
+		    "the key that unlocks the gate.\r\n"
+		    "%s",
+		    gs.username, gate_desc);
+		set_banner(banner);
+		gs.looked = true;
+		goto prompt;
+	}
+
+	/* Shouldn't happen, but handle gracefully */
+	if (num_responses < 1 || responses == NULL)
+		return DSSH_AUTH_FAILURE;
+
+	/* Get the command — copy to NUL-terminated string */
+	char cmd[256];
+	size_t clen = response_lens[0] < sizeof(cmd) - 1
+	    ? response_lens[0] : sizeof(cmd) - 1;
+	memcpy(cmd, responses[0], clen);
+	cmd[clen] = '\0';
+
+	/* Strip trailing whitespace */
+	while (clen > 0 && (cmd[clen - 1] == ' ' || cmd[clen - 1] == '\t'))
+		cmd[--clen] = '\0';
+
+	/* Empty command */
+	if (clen == 0)
+		goto prompt;
+
+	/* Universal commands */
+	if (cmd_eq(cmd, "quit") || cmd_eq(cmd, "exit")) {
+		set_banner("You walk away from the gate. Maybe next time.\r\n");
+		return DSSH_AUTH_FAILURE;
+	}
+	if (cmd_eq(cmd, "help") || cmd_eq(cmd, "?")) {
+		set_banner(help_text);
+		goto prompt;
+	}
+	if (cmd_eq(cmd, "inventory") || cmd_eq(cmd, "inv") || cmd_eq(cmd, "i")) {
+		if (gs.has_key)
+			set_banner("You are carrying: a rusty iron key\r\n");
+		else
+			set_banner("You are carrying nothing.\r\n");
+		goto prompt;
+	}
+
+	/* Room-specific commands */
+	switch (gs.room) {
+	case ROOM_GATE:
+		if (cmd_eq(cmd, "look") || cmd_eq(cmd, "l")) {
+			set_banner(gate_desc);
+			gs.looked = true;
+			goto prompt;
+		}
+		if (dir_match(cmd, "north", "n")) {
+			gs.room = ROOM_GARDEN;
+			gs.looked = false;
+			set_banner(garden_desc);
+			gs.looked = true;
+			goto prompt;
+		}
+		if (dir_match(cmd, "west", "w")) {
+			gs.room = ROOM_TOWER;
+			gs.looked = false;
+			set_banner(tower_desc);
+			gs.looked = true;
+			goto prompt;
+		}
+		if (dir_match(cmd, "east", "e")
+		    || dir_match(cmd, "south", "s")
+		    || dir_match(cmd, "up", "u")
+		    || dir_match(cmd, "down", "d")) {
+			set_banner("There is no path in that direction.\r\n");
+			goto prompt;
+		}
+		if (cmd_eq(cmd, "use key") || cmd_eq(cmd, "unlock gate")
+		    || cmd_eq(cmd, "unlock door")
+		    || cmd_eq(cmd, "open gate")
+		    || cmd_eq(cmd, "open door")) {
+			if (!gs.has_key) {
+				set_banner(
+				    "You rattle the padlock uselessly. "
+				    "You need a key.\r\n");
+				goto prompt;
+			}
+			snprintf(banner, sizeof(banner),
+			    "\r\nThe rusty key turns in the padlock with a "
+			    "satisfying click.\r\n"
+			    "The gate swings open with a groan.\r\n"
+			    "\r\n"
+			    "Welcome, %s. You have proven yourself worthy.\r\n"
+			    "\r\n",
+			    gs.username);
+			set_banner(banner);
+			return DSSH_AUTH_SUCCESS;
+		}
+		set_banner("You can't do that here.\r\n");
+		goto prompt;
+
+	case ROOM_GARDEN:
+		if (cmd_eq(cmd, "look") || cmd_eq(cmd, "l")) {
+			if (gs.riddle_solved && !gs.has_key)
+				set_banner(
+				    "\r\n"
+				    "The overgrown garden. The fountain's "
+				    "symbols glow faintly.\r\n"
+				    "A rusty key glints beneath a loose "
+				    "stone.\r\n\r\n");
+			else if (gs.has_key)
+				set_banner(
+				    "\r\n"
+				    "The overgrown garden. The fountain is "
+				    "quiet now.\r\n\r\n");
+			else
+				set_banner(garden_desc);
+			gs.looked = true;
+			goto prompt;
+		}
+		if (dir_match(cmd, "south", "s")) {
+			gs.room = ROOM_GATE;
+			gs.looked = false;
+			set_banner(gate_desc);
+			gs.looked = true;
+			goto prompt;
+		}
+		if (dir_match(cmd, "north", "n")
+		    || dir_match(cmd, "east", "e")
+		    || dir_match(cmd, "west", "w")
+		    || dir_match(cmd, "up", "u")
+		    || dir_match(cmd, "down", "d")) {
+			set_banner("There is no path in that direction.\r\n");
+			goto prompt;
+		}
+		if (cmd_eq(cmd, "read fountain") || cmd_eq(cmd, "read")
+		    || cmd_eq(cmd, "examine fountain")) {
+			set_banner(
+			    "\r\nCarved into the fountain's rim:\r\n\r\n"
+			    "  \"I have cities, but no houses.\r\n"
+			    "   I have mountains, but no trees.\r\n"
+			    "   I have water, but no fish.\r\n"
+			    "   What am I?\"\r\n\r\n"
+			    "Below the riddle, a small depression "
+			    "awaits an answer.\r\n");
+			goto prompt;
+		}
+		if (cmd_starts(cmd, "answer")) {
+			const char *ans = cmd_arg(cmd, "answer");
+			if (strcasecmp(ans, "a map") == 0
+			    || strcasecmp(ans, "map") == 0) {
+				gs.riddle_solved = true;
+				set_banner(
+				    "\r\nThe symbols on the fountain glow "
+				    "bright blue!\r\n"
+				    "A stone at the fountain's base shifts, "
+				    "revealing a rusty key.\r\n");
+				goto prompt;
+			}
+			set_banner(
+			    "The fountain remains silent. "
+			    "That is not the answer.\r\n");
+			goto prompt;
+		}
+		if (cmd_eq(cmd, "take key") || cmd_eq(cmd, "get key")) {
+			if (!gs.riddle_solved) {
+				set_banner("You don't see a key here.\r\n");
+				goto prompt;
+			}
+			if (gs.has_key) {
+				set_banner("You already have the key.\r\n");
+				goto prompt;
+			}
+			gs.has_key = true;
+			set_banner(
+			    "You pick up the rusty iron key. "
+			    "It's heavy and cold.\r\n");
+			goto prompt;
+		}
+		set_banner("You can't do that here.\r\n");
+		goto prompt;
+
+	case ROOM_TOWER:
+		if (cmd_eq(cmd, "look") || cmd_eq(cmd, "l")) {
+			set_banner(tower_desc);
+			gs.looked = true;
+			goto prompt;
+		}
+		if (dir_match(cmd, "east", "e")) {
+			gs.room = ROOM_GATE;
+			gs.looked = false;
+			set_banner(gate_desc);
+			gs.looked = true;
+			goto prompt;
+		}
+		if (dir_match(cmd, "up", "u")) {
+			gs.room = ROOM_PARAPET;
+			gs.looked = false;
+			set_banner(parapet_desc);
+			gs.looked = true;
+			goto prompt;
+		}
+		if (dir_match(cmd, "north", "n")
+		    || dir_match(cmd, "south", "s")
+		    || dir_match(cmd, "west", "w")
+		    || dir_match(cmd, "down", "d")) {
+			set_banner("There is no path in that direction.\r\n");
+			goto prompt;
+		}
+		set_banner("You can't do that here.\r\n");
+		goto prompt;
+
+	case ROOM_PARAPET:
+		if (cmd_eq(cmd, "look") || cmd_eq(cmd, "l")) {
+			set_banner(parapet_desc);
+			gs.looked = true;
+			goto prompt;
+		}
+		if (dir_match(cmd, "down", "d")) {
+			gs.room = ROOM_TOWER;
+			gs.looked = false;
+			set_banner(tower_desc);
+			gs.looked = true;
+			goto prompt;
+		}
+		if (dir_match(cmd, "north", "n")
+		    || dir_match(cmd, "south", "s")
+		    || dir_match(cmd, "east", "e")
+		    || dir_match(cmd, "west", "w")
+		    || dir_match(cmd, "up", "u")) {
+			set_banner("There is no path in that direction.\r\n");
+			goto prompt;
+		}
+		if (cmd_eq(cmd, "talk raven") || cmd_eq(cmd, "talk")
+		    || cmd_eq(cmd, "ask raven")) {
+			gs.talked_raven = true;
+			set_banner(
+			    "\r\nThe raven cocks its head and croaks:\r\n\r\n"
+			    "  \"Cartographers know the answer, traveler.\r\n"
+			    "   But you won't find it in any atlas.\"\r\n\r\n"
+			    "The raven ruffles its feathers smugly.\r\n");
+			goto prompt;
+		}
+		set_banner("You can't do that here.\r\n");
+		goto prompt;
+	}
+
+prompt:
+	/* Set up the prompt for this room */
+	*name_out = strdup("The Gate of Authentication");
+	*instruction_out = strdup("");
+	*num_prompts_out = 1;
+	*prompts_out = malloc(sizeof(char *));
+	*echo_out = malloc(sizeof(bool));
+	if (*prompts_out == NULL || *echo_out == NULL)
+		return DSSH_AUTH_FAILURE;
+
+	const char *prompt;
+	switch (gs.room) {
+	case ROOM_GATE:    prompt = gate_prompt;    break;
+	case ROOM_GARDEN:  prompt = garden_prompt;  break;
+	case ROOM_TOWER:   prompt = tower_prompt;   break;
+	case ROOM_PARAPET: prompt = parapet_prompt; break;
+	default:           prompt = "> ";           break;
+	}
+	(*prompts_out)[0] = strdup(prompt);
+	(*echo_out)[0] = true;
+	return DSSH_AUTH_KBI_PROMPT;
+}
+
 static struct dssh_auth_server_cbs auth_cbs = {
-	.methods_str = "publickey,password",
+	.methods_str = "publickey,password,keyboard-interactive",
 	.none_cb = auth_none,
 	.password_cb = auth_password,
 	.publickey_cb = auth_publickey,
+	.keyboard_interactive_cb = auth_kbi,
 };
 
 /* ================================================================

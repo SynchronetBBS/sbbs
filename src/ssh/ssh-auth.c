@@ -166,6 +166,86 @@ done:
 }
 
 /*
+ * Free KBI prompt arrays allocated by the callback.
+ */
+static void
+free_kbi_prompts(char *name, char *instruction,
+    uint32_t num_prompts, char **prompts, bool *echo)
+{
+	free(name);
+	free(instruction);
+	if (prompts != NULL) {
+		for (uint32_t i = 0; i < num_prompts; i++)
+			free(prompts[i]);
+		free(prompts);
+	}
+	free(echo);
+}
+
+/*
+ * Build and send SSH_MSG_USERAUTH_INFO_REQUEST (RFC 4256 s3.2).
+ */
+static int
+send_info_request(dssh_session sess, const char *name,
+    const char *instruction, uint32_t num_prompts,
+    char **prompts, const bool *echo)
+{
+	size_t name_len = name != NULL ? strlen(name) : 0;
+	size_t inst_len = instruction != NULL ? strlen(instruction) : 0;
+
+	/* Calculate total size */
+	size_t msg_len = 1 + 4 + name_len + 4 + inst_len + 4 + 4;
+	for (uint32_t i = 0; i < num_prompts; i++) {
+		size_t plen = prompts[i] != NULL ? strlen(prompts[i]) : 0;
+		if (msg_len > SIZE_MAX - 5 - plen)
+			return DSSH_ERROR_INVALID;
+		msg_len += 4 + plen + 1;
+	}
+
+	uint8_t *msg = malloc(msg_len);
+
+	if (msg == NULL)
+		return DSSH_ERROR_ALLOC;
+
+	size_t pos = 0;
+	int    ret;
+
+	msg[pos++] = SSH_MSG_USERAUTH_INFO_REQUEST;
+
+#define KBI_SER(v) do { ret = dssh_serialize_uint32((v), msg, msg_len, &pos); \
+	if (ret < 0) { free(msg); return ret; } } while (0)
+
+	KBI_SER((uint32_t)name_len);
+	if (name_len > 0) {
+		memcpy(&msg[pos], name, name_len);
+		pos += name_len;
+	}
+	KBI_SER((uint32_t)inst_len);
+	if (inst_len > 0) {
+		memcpy(&msg[pos], instruction, inst_len);
+		pos += inst_len;
+	}
+	KBI_SER(0); /* language tag — always empty */
+	KBI_SER(num_prompts);
+
+	for (uint32_t i = 0; i < num_prompts; i++) {
+		size_t plen = prompts[i] != NULL ? strlen(prompts[i]) : 0;
+		KBI_SER((uint32_t)plen);
+		if (plen > 0) {
+			memcpy(&msg[pos], prompts[i], plen);
+			pos += plen;
+		}
+		msg[pos++] = echo[i] ? 1 : 0;
+	}
+
+#undef KBI_SER
+
+	ret = dssh_transport_send_packet(sess, msg, pos, NULL);
+	free(msg);
+	return ret;
+}
+
+/*
  * Parse the common prefix of a USERAUTH_REQUEST:
  *   string user, string service, string method
  * Returns the offset past the method string, or negative on error.
@@ -475,6 +555,183 @@ auth_server_impl(dssh_session sess,
 			        auth_res == DSSH_AUTH_PARTIAL);
 			if (res < 0)
 				return res;
+			continue;
+		}
+
+		if ((method_len == 20) && (memcmp(method, "keyboard-interactive", 20) == 0)) {
+			if (cbs->keyboard_interactive_cb == NULL) {
+				res = send_auth_failure(sess, cbs->methods_str, false);
+				if (res < 0)
+					return res;
+				continue;
+			}
+
+			/* Parse language + submethods (both ignored) */
+			uint32_t skip_len;
+
+			if (rpos + 4 > payload_len)
+				return DSSH_ERROR_PARSE;
+			pv = dssh_parse_uint32(&payload[rpos], payload_len - rpos, &skip_len);
+			if (pv < 0)
+				return (int)pv;
+			rpos += 4;
+			if (rpos + skip_len > payload_len)
+				return DSSH_ERROR_PARSE;
+			rpos += skip_len; /* language */
+
+			if (rpos + 4 > payload_len)
+				return DSSH_ERROR_PARSE;
+			pv = dssh_parse_uint32(&payload[rpos], payload_len - rpos, &skip_len);
+			if (pv < 0)
+				return (int)pv;
+			rpos += 4;
+			if (rpos + skip_len > payload_len)
+				return DSSH_ERROR_PARSE;
+			rpos += skip_len; /* submethods */
+
+			/* KBI prompt/response loop */
+			uint32_t        num_responses = 0;
+			const uint8_t **responses = NULL;
+			size_t         *response_lens = NULL;
+
+			for (;;) {
+				char    *kbi_name = NULL;
+				char    *kbi_inst = NULL;
+				uint32_t kbi_nprompts = 0;
+				char   **kbi_prompts = NULL;
+				bool    *kbi_echo = NULL;
+
+				int auth_res = cbs->keyboard_interactive_cb(
+				    user, user_len,
+				    num_responses, responses, response_lens,
+				    &kbi_name, &kbi_inst,
+				    &kbi_nprompts, &kbi_prompts, &kbi_echo,
+				    cbs->cbdata);
+
+				free(responses);
+				free(response_lens);
+				responses = NULL;
+				response_lens = NULL;
+				num_responses = 0;
+
+				if (auth_res == DSSH_AUTH_SUCCESS) {
+					free_kbi_prompts(kbi_name, kbi_inst,
+					    kbi_nprompts, kbi_prompts, kbi_echo);
+					res = send_auth_success(sess);
+					if (res < 0)
+						return res;
+					goto done;
+				}
+				if (auth_res != DSSH_AUTH_KBI_PROMPT) {
+					free_kbi_prompts(kbi_name, kbi_inst,
+					    kbi_nprompts, kbi_prompts, kbi_echo);
+					res = send_auth_failure(sess,
+					    cbs->methods_str,
+					    auth_res == DSSH_AUTH_PARTIAL);
+					if (res < 0)
+						return res;
+					break;
+				}
+
+				/* Flush pending banner before INFO_REQUEST */
+				res = flush_pending_banner(sess);
+				if (res < 0) {
+					free_kbi_prompts(kbi_name, kbi_inst,
+					    kbi_nprompts, kbi_prompts, kbi_echo);
+					return res;
+				}
+
+				/* Send INFO_REQUEST */
+				res = send_info_request(sess, kbi_name,
+				    kbi_inst, kbi_nprompts,
+				    kbi_prompts, kbi_echo);
+				free_kbi_prompts(kbi_name, kbi_inst,
+				    kbi_nprompts, kbi_prompts, kbi_echo);
+				if (res < 0)
+					return res;
+
+				/* Receive INFO_RESPONSE */
+				uint8_t  resp_type;
+				uint8_t *resp_payload;
+				size_t   resp_len;
+
+				res = dssh_transport_recv_packet(sess,
+				    &resp_type, &resp_payload, &resp_len);
+				if (res < 0)
+					return res;
+
+				if (resp_type == SSH_MSG_USERAUTH_BANNER) {
+					res = handle_banner(sess, resp_payload, resp_len);
+					if (res < 0)
+						return res;
+					/* Re-recv — expect INFO_RESPONSE */
+					res = dssh_transport_recv_packet(sess,
+					    &resp_type, &resp_payload, &resp_len);
+					if (res < 0)
+						return res;
+				}
+
+				if (resp_type != SSH_MSG_USERAUTH_INFO_RESPONSE) {
+					res = send_auth_failure(sess,
+					    cbs->methods_str, false);
+					if (res < 0)
+						return res;
+					break;
+				}
+
+				/* Parse INFO_RESPONSE */
+				size_t rp = 1; /* skip msg_type */
+
+				if (rp + 4 > resp_len)
+					return DSSH_ERROR_PARSE;
+				pv = dssh_parse_uint32(&resp_payload[rp],
+				    resp_len - rp, &num_responses);
+				if (pv < 0)
+					return (int)pv;
+				rp += 4;
+
+				if (num_responses > 0) {
+					responses = calloc(num_responses,
+					    sizeof(*responses));
+					response_lens = calloc(num_responses,
+					    sizeof(*response_lens));
+					if (responses == NULL
+					    || response_lens == NULL) {
+						free(responses);
+						free(response_lens);
+						responses = NULL;
+						response_lens = NULL;
+						return DSSH_ERROR_ALLOC;
+					}
+				}
+
+				for (uint32_t i = 0; i < num_responses; i++) {
+					uint32_t rlen;
+
+					if (rp + 4 > resp_len) {
+						free(responses);
+						free(response_lens);
+						return DSSH_ERROR_PARSE;
+					}
+					pv = dssh_parse_uint32(
+					    &resp_payload[rp],
+					    resp_len - rp, &rlen);
+					if (pv < 0) {
+						free(responses);
+						free(response_lens);
+						return (int)pv;
+					}
+					rp += 4;
+					if (rp + rlen > resp_len) {
+						free(responses);
+						free(response_lens);
+						return DSSH_ERROR_PARSE;
+					}
+					responses[i] = &resp_payload[rp];
+					response_lens[i] = rlen;
+					rp += rlen;
+				}
+			}
 			continue;
 		}
 
