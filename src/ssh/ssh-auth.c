@@ -1084,10 +1084,19 @@ methods_done:
 	if (res < 0)
 		return res;
 
+	if (msg_type == SSH_MSG_USERAUTH_BANNER) {
+		res = handle_banner(sess, payload, payload_len);
+		if (res < 0)
+			return res;
+		res = dssh_transport_recv_packet(sess, &msg_type, &payload, &payload_len);
+		if (res < 0)
+			return res;
+	}
+
 	if (msg_type == SSH_MSG_USERAUTH_SUCCESS) {
-		if (methods_sz > 0)
+		if (methods != NULL && methods_sz > 0)
 			methods[0] = 0;
-		return 0;
+		return DSSH_AUTH_NONE_ACCEPTED;
 	}
 
 	if (msg_type == SSH_MSG_USERAUTH_FAILURE) {
@@ -1110,11 +1119,13 @@ methods_done:
 				return DSSH_ERROR_PARSE;
 		}
 
-		size_t copylen = mlen < methods_sz - 1 ? mlen : methods_sz - 1;
-
-		memcpy(methods, &payload[5], copylen);
-		methods[copylen] = 0;
-		return 1;
+		if (methods != NULL && methods_sz > 0) {
+			size_t copylen = mlen < methods_sz - 1
+			    ? mlen : methods_sz - 1;
+			memcpy(methods, &payload[5], copylen);
+			methods[copylen] = 0;
+		}
+		return DSSH_AUTH_METHODS_AVAILABLE;
 	}
 
 	return DSSH_ERROR_INIT;

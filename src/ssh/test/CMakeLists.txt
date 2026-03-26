@@ -320,6 +320,16 @@ set(AUTH_TESTS
 	auth/server/method_4_not_none
 	auth/server/method_8_not_password
 	auth/server/method_9_not_publickey
+	auth/server/kbi_roundtrip
+	auth/server/kbi_failure
+	auth/server/kbi_multi_round
+	auth/server/banner
+	auth/server/set_banner_null
+	auth/server/kbi_bad_response
+	auth/server/kbi_trunc_response
+	auth/server/kbi_trunc_lang
+	auth/server/kbi_no_callback
+	auth/server/kbi_with_banner
 	auth/server/no_password_cb auth/server/no_publickey_cb
 	auth/server/pk_probe_rejected auth/server/pk_unknown_algo
 	auth/server/pk_verify_bad_sig
@@ -416,7 +426,7 @@ set(CONN_TESTS
 	test_accept_timeout_zero test_accept_timeout_short
 	test_reject_null_description
 	test_session_poll_timeout_zero
-	test_accept_raw test_accept_nsec_overflow
+	test_accept_raw test_subsystem_roundtrip test_accept_nsec_overflow
 	test_accept_timeout_negative
 	test_session_poll_nsec_overflow
 	test_session_write_not_open test_session_write_after_eof

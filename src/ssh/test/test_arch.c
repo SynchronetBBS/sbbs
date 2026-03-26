@@ -1222,6 +1222,45 @@ test_parse_namelist_zero_bufsz(void)
 }
 
 /* ----------------------------------------------------------------
+ * dssh_cleanse
+ * ---------------------------------------------------------------- */
+static int
+test_cleanse_basic(void)
+{
+	uint8_t buf[16];
+
+	memset(buf, 0xAA, sizeof(buf));
+	dssh_cleanse(buf, sizeof(buf));
+
+	/* Verify all bytes zeroed (OPENSSL_cleanse writes zeros) */
+	for (size_t i = 0; i < sizeof(buf); i++)
+		ASSERT_EQ(buf[i], 0);
+	return TEST_PASS;
+}
+
+static int
+test_cleanse_null(void)
+{
+	/* Should not crash */
+	dssh_cleanse(NULL, 0);
+	dssh_cleanse(NULL, 100);
+	return TEST_PASS;
+}
+
+static int
+test_cleanse_zero_len(void)
+{
+	uint8_t buf[4] = {0xAA, 0xBB, 0xCC, 0xDD};
+
+	dssh_cleanse(buf, 0);
+
+	/* Buffer unchanged */
+	ASSERT_EQ(buf[0], 0xAA);
+	ASSERT_EQ(buf[3], 0xDD);
+	return TEST_PASS;
+}
+
+/* ----------------------------------------------------------------
  * test table
  * ---------------------------------------------------------------- */
 
@@ -1338,6 +1377,11 @@ static struct dssh_test_entry tests[] = {
 	/* parse_namelist edge cases */
 	{ "parse_namelist_tiny_buffer",     test_parse_namelist_tiny_buffer },
 	{ "parse_namelist_zero_bufsz",      test_parse_namelist_zero_bufsz },
+
+	/* dssh_cleanse */
+	{ "cleanse_basic",                  test_cleanse_basic },
+	{ "cleanse_null",                   test_cleanse_null },
+	{ "cleanse_zero_len",               test_cleanse_zero_len },
 };
 
 DSSH_TEST_MAIN(tests)

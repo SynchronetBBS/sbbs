@@ -319,7 +319,7 @@ main(int argc, char **argv)
 		fprintf(stderr, "auth method query failed: %d\n", res);
 		return 1;
 	}
-	if (res == 0) {
+	if (res == DSSH_AUTH_NONE_ACCEPTED) {
 		fprintf(stderr, "No authentication required.\n");
 	}
 	else {

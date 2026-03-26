@@ -47,13 +47,16 @@ typedef int (*dssh_auth_kbi_prompt_cb)(const uint8_t *name, size_t name_len,
 
 /* dssh_auth_banner_cb is defined in deucessh.h */
 
+#define DSSH_AUTH_NONE_ACCEPTED 0    /* No auth required (rare) */
+#define DSSH_AUTH_METHODS_AVAILABLE 1 /* Auth required; methods populated */
+
 /*
  * Query available authentication methods by sending a "none"
  * auth request.  Sends SSH_MSG_SERVICE_REQUEST automatically
  * if not already sent.  On return:
- *   0 = no auth required (rare; methods buffer is empty)
- *   1 = auth required; methods is a comma-separated list
- *       (e.g., "publickey,password,keyboard-interactive")
+ *   DSSH_AUTH_NONE_ACCEPTED   = no auth required (methods empty)
+ *   DSSH_AUTH_METHODS_AVAILABLE = auth required; methods is a
+ *       comma-separated list (e.g., "publickey,password")
  *   <0 = error
  */
 DSSH_PUBLIC int dssh_auth_get_methods(dssh_session sess,

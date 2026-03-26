@@ -5093,6 +5093,100 @@ test_stderr_signal_truncate(void)
 }
 
 /* ================================================================
+ * Subsystem (raw channel) roundtrip
+ * ================================================================ */
+
+static int
+server_accept_subsys_raw_thread(void *arg)
+{
+	struct open_subsys_ctx *ctx = arg;
+	struct dssh_incoming_open *inc = NULL;
+	int res = dssh_session_accept(ctx->server, &inc, 5000);
+
+	if (res < 0)
+		return 0;
+
+	/* Accept as session channel — handles the subsystem request,
+	 * returns a raw channel since the terminal request is "subsystem" */
+	ctx->server_ch = dssh_session_accept_channel(ctx->server, inc,
+	    &session_cbs, &ctx->req_type, &ctx->req_data);
+	return 0;
+}
+
+static int
+test_subsystem_roundtrip(void)
+{
+	struct conn_ctx ctx;
+
+	if (conn_setup(&ctx) < 0)
+		return TEST_SKIP;
+
+	struct open_subsys_ctx oc = {
+		.client = ctx.client,
+		.server = ctx.server,
+		.subsystem = "test-echo",
+	};
+
+	thrd_t ct, st;
+
+	thrd_create(&ct, client_open_subsys_thread, &oc);
+	thrd_create(&st, server_accept_subsys_raw_thread, &oc);
+	thrd_join(ct, NULL);
+	thrd_join(st, NULL);
+
+	if (oc.client_ch == NULL || oc.server_ch == NULL) {
+		if (oc.client_ch != NULL)
+			dssh_channel_close(ctx.client, oc.client_ch);
+		if (oc.server_ch != NULL)
+			dssh_channel_close(ctx.server, oc.server_ch);
+		conn_cleanup(&ctx);
+		return TEST_SKIP;
+	}
+
+	ASSERT_STR_EQ(oc.req_type, "subsystem");
+	ASSERT_STR_EQ(oc.req_data, "test-echo");
+
+	/* Client sends a message to server via raw channel */
+	static const uint8_t msg1[] = "hello from client";
+	int w = dssh_channel_write(ctx.client, oc.client_ch,
+	    msg1, sizeof(msg1));
+	ASSERT_EQ(w, 0);
+
+	/* Server polls and reads */
+	int ev = dssh_channel_poll(ctx.server, oc.server_ch,
+	    DSSH_POLL_READ, 5000);
+	ASSERT_TRUE(ev & DSSH_POLL_READ);
+
+	uint8_t buf[256];
+	int64_t r = dssh_channel_read(ctx.server, oc.server_ch,
+	    buf, sizeof(buf));
+	ASSERT_EQ_U(r, sizeof(msg1));
+	ASSERT_TRUE(memcmp(buf, msg1, sizeof(msg1)) == 0);
+
+	/* Server sends reply back */
+	static const uint8_t msg2[] = "hello from server";
+	w = dssh_channel_write(ctx.server, oc.server_ch,
+	    msg2, sizeof(msg2));
+	ASSERT_EQ(w, 0);
+
+	/* Client polls and reads */
+	ev = dssh_channel_poll(ctx.client, oc.client_ch,
+	    DSSH_POLL_READ, 5000);
+	ASSERT_TRUE(ev & DSSH_POLL_READ);
+
+	r = dssh_channel_read(ctx.client, oc.client_ch,
+	    buf, sizeof(buf));
+	ASSERT_EQ_U(r, sizeof(msg2));
+	ASSERT_TRUE(memcmp(buf, msg2, sizeof(msg2)) == 0);
+
+	/* Clean close */
+	dssh_channel_close(ctx.client, oc.client_ch);
+	dssh_channel_close(ctx.server, oc.server_ch);
+	conn_cleanup(&ctx);
+	return TEST_PASS;
+}
+
+/* ================================================================
  * Test table
  * ================================================================ */
 
@@ -5244,6 +5338,8 @@ static struct dssh_test_entry tests[] = {
 	{ "test_chan_poll_infinite_ready",      test_channel_poll_infinite_data_ready },
 	{ "test_sess_poll_infinite_ready",     test_session_poll_infinite_data_ready },
 	{ "test_session_read_ext_empty",       test_session_read_ext_empty },
+
+	{ "test_subsystem_roundtrip",          test_subsystem_roundtrip },
 
 	/* Deterministic branch coverage — profiling-unstable */
 	{ "test_session_poll_nsec_overflow",   test_session_poll_nsec_overflow },

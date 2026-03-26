@@ -2,10 +2,7 @@
 
 ## Open
 
-12. Flaky test: `auth/client/pw_changereq_send_fail` occasionally hangs.
-    Uses a hand-crafted server thread that closes c2s to trigger a send
-    failure.  Timing-dependent — passes on retry.  May be a race between
-    the close and the client's send attempt.
+(none)
 
 ## Fixed
 

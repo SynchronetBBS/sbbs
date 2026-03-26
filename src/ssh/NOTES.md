@@ -36,3 +36,10 @@ in production builds.
   `deucessh-enc.h`, `deucessh-mac.h`, `deucessh-comp.h`.
 - **Per-session keys**: Considered and rejected — SSH host keys
   identify the server, not the listen address.
+
+## 3. Audit for magic numbers
+
+Bare integer return values and protocol constants should use named
+defines.  Found `return 0` / `return 1` in `get_methods_impl` —
+replaced with `DSSH_AUTH_NONE_ACCEPTED` / `DSSH_AUTH_METHODS_AVAILABLE`.
+Need a full audit of the library and test code for similar cases.
