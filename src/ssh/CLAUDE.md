@@ -136,6 +136,35 @@ but the API enables conformance.
 - `DSSH_ERROR_TERMINATED` returned when session is dead (fatal transport
   error); distinguishes from recoverable auth rejection
 
+## Type Safety & Cast Conventions
+
+- **Casts are only used in initializers**: `uint32_t x_u32 = (uint32_t)x;`
+  Never inline: ~~`func((uint32_t)x)`~~ or ~~`return (int64_t)x;`~~
+- **Exception**: single-use casts backed by provable same-sign invariants
+  (e.g., value clamped to 230, buffer bounded by `sizeof`, ed25519 constant
+  sizes) may stay inline
+- **Exception**: widening casts in deserializers (`(uint32_t)buf[i]` for
+  bit shifts) are fine inline
+- **Range check both bounds** before every narrowing:
+  ```c
+  if (val < 0)
+      return DSSH_ERROR_PARSE;     /* lower bound */
+  #if SIZE_MAX < INT64_MAX
+  if (val > SIZE_MAX)
+      return DSSH_ERROR_INVALID;   /* upper bound */
+  #endif
+  size_t safe = (size_t)val;
+  ```
+- **Overflow check before arithmetic**: `if (a > TYPE_MAX - b) return err;`
+  before `a + b`
+- **Use initializer if narrowed value used more than once**; single use
+  with a prior range check can stay inline
+- **`DSSH_STRLEN(lit)`** macro in `ssh-internal.h` for
+  `(uint32_t)(sizeof(string_literal) - 1)`
+- `-Wconversion -Werror` is enabled; all implicit narrowing is an error
+- `DSSH_ERROR_INVALID` for out-of-range values; `DSSH_ERROR_PARSE` for
+  malformed wire data
+
 ## Key Design Decisions
 
 - **No deprecated algorithms**: 3des-cbc, hmac-sha1, dh-group1/14-sha1,
