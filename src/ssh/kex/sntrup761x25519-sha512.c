@@ -1,4 +1,4 @@
-// draft-josefsson-ntruprime-ssh-02: sntrup761x25519-sha512
+// draft-ietf-sshm-ntruprime-ssh: sntrup761x25519-sha512
 
 #include <openssl/crypto.h>
 #include <openssl/evp.h>

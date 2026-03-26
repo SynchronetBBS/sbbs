@@ -9,6 +9,8 @@ A from-scratch SSH library in standard C17 implementing the core SSH protocol:
 - RFC 4419 — Diffie-Hellman Group Exchange
 - RFC 8332 — rsa-sha2-256 Host Key Algorithm
 - RFC 8731 — curve25519-sha256 Key Exchange
+- draft-ietf-sshm-ntruprime-ssh — sntrup761x25519-sha512 Key Exchange
+- draft-ietf-sshm-mlkem-hybrid-kex — mlkem768x25519-sha256 Key Exchange
 
 No proprietary extensions (no `@` algorithm names).
 
@@ -33,7 +35,7 @@ Produces `libdeucessh.a` (static) and `libdeucessh.so` (shared).
 
 | Category | Algorithms |
 |----------|-----------|
-| Key Exchange | `curve25519-sha256`, `diffie-hellman-group-exchange-sha256` |
+| Key Exchange | `mlkem768x25519-sha256`, `sntrup761x25519-sha512`, `curve25519-sha256`, `diffie-hellman-group-exchange-sha256` |
 | Host Key | `ssh-ed25519`, `rsa-sha2-256` |
 | Encryption | `aes256-ctr`, `none` |
 | MAC | `hmac-sha2-256`, `none` |
@@ -467,7 +469,9 @@ Registration order determines negotiation preference — first registered
 is most preferred.
 
 ```c
-/* Prefer curve25519, fall back to DH-GEX */
+/* Order = preference: post-quantum hybrid first, then classical */
+dssh_register_mlkem768x25519_sha256();
+dssh_register_sntrup761x25519_sha512();
 dssh_register_curve25519_sha256();
 dssh_register_dh_gex_sha256();
 ```
