@@ -72,6 +72,9 @@ DSSH_PRIVATE size_t
 dssh_bytebuf_read(struct dssh_bytebuf *b,
     uint8_t *buf, size_t bufsz, size_t limit)
 {
+	if (b->capacity == 0)
+		return 0;
+
 	size_t avail = b->used;
 
 	if ((limit > 0) && (avail > limit))
