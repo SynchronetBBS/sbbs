@@ -160,13 +160,24 @@ dssh_parse_string(const uint8_t *buf, size_t bufsz, dssh_string val)
 	if (ret < 4)
 		return ret;
 #endif
-	size_t sz = ret + len;
+#if SIZE_MAX < INT64_MAX
+	if (ret > SIZE_MAX)
+		return DSSH_ERROR_INVALID;
+#endif
+	size_t hdr = (size_t)ret;
 
-	if (bufsz < sz)
+	if (len > SIZE_MAX - hdr)
+		return DSSH_ERROR_INVALID;
+	if (hdr + len > bufsz)
 		return DSSH_ERROR_PARSE;
+	size_t sz = hdr + len;
 	val->length = len;
-	val->value = &buf[ret];
-	return sz;
+	val->value = &buf[hdr];
+#if SIZE_MAX > INT64_MAX
+	if (sz > INT64_MAX)
+		return DSSH_ERROR_INVALID;
+#endif
+	return (int64_t)sz;
 }
 
 size_t

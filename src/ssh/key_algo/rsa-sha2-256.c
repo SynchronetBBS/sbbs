@@ -74,7 +74,10 @@ verify(const uint8_t *key_blob, size_t key_blob_len,
 	    kp + 4 + slen > key_blob_len)
 		return DSSH_ERROR_PARSE;
 	kp += 4;
-	e_bn = BN_bin2bn(&key_blob[kp], slen, NULL);
+	if (slen > INT_MAX)
+		return DSSH_ERROR_INVALID;
+	int e_len = (int)slen;
+	e_bn = BN_bin2bn(&key_blob[kp], e_len, NULL);
 	kp += slen;
 
 	/* n (modulus) */
@@ -82,7 +85,10 @@ verify(const uint8_t *key_blob, size_t key_blob_len,
 	    kp + 4 + slen > key_blob_len)
 		goto done;
 	kp += 4;
-	n_bn = BN_bin2bn(&key_blob[kp], slen, NULL);
+	if (slen > INT_MAX)
+		goto done;
+	int n_len = (int)slen;
+	n_bn = BN_bin2bn(&key_blob[kp], n_len, NULL);
 	kp += slen;
 
 	if (e_bn == NULL || n_bn == NULL)
@@ -271,12 +277,26 @@ pubkey(uint8_t *buf, size_t bufsz, size_t *outlen, dssh_key_algo_ctx *ctx)
 
 	int e_bytes = BN_num_bytes(e_bn);
 	int n_bytes = BN_num_bytes(n_bn);
-	uint8_t *e_buf = malloc(e_bytes);
+
+	if (e_bytes < 0 || n_bytes < 0) {
+		BN_free(e_bn); BN_free(n_bn);
+		return DSSH_ERROR_PARSE;
+	}
+#if INT_MAX > SIZE_MAX
+	if (e_bytes > SIZE_MAX || n_bytes > SIZE_MAX) {
+		BN_free(e_bn); BN_free(n_bn);
+		return DSSH_ERROR_INVALID;
+	}
+#endif
+	size_t e_sz = (size_t)e_bytes;
+	size_t n_sz = (size_t)n_bytes;
+
+	uint8_t *e_buf = malloc(e_sz);
 	if (!e_buf) {
 		BN_free(e_bn); BN_free(n_bn);
 		return DSSH_ERROR_ALLOC;
 	}
-	uint8_t *n_buf = malloc(n_bytes);
+	uint8_t *n_buf = malloc(n_sz);
 	if (!n_buf) {
 		free(e_buf);
 		BN_free(e_bn); BN_free(n_bn);
@@ -294,8 +314,16 @@ pubkey(uint8_t *buf, size_t bufsz, size_t *outlen, dssh_key_algo_ctx *ctx)
 	bool e_pad = (e_bytes > 0 && (e_buf[0] & 0x80));
 #endif
 	bool n_pad = (n_bytes > 0 && (n_buf[0] & 0x80));
-	uint32_t e_wire = e_bytes + (e_pad ? 1 : 0);
-	uint32_t n_wire = n_bytes + (n_pad ? 1 : 0);
+
+	if (e_sz > UINT32_MAX - 1 || n_sz > UINT32_MAX - 1) {
+		free(e_buf); free(n_buf);
+		BN_free(e_bn); BN_free(n_bn);
+		return DSSH_ERROR_INVALID;
+	}
+	uint32_t e_u32 = (uint32_t)e_sz;
+	uint32_t n_u32 = (uint32_t)n_sz;
+	uint32_t e_wire = e_u32 + (e_pad ? 1 : 0);
+	uint32_t n_wire = n_u32 + (n_pad ? 1 : 0);
 
 	size_t needed = 4 + RSA_KEY_TYPE_NAME_LEN + 4 + e_wire + 4 + n_wire;
 	if (bufsz < needed) {
@@ -312,14 +340,14 @@ pubkey(uint8_t *buf, size_t bufsz, size_t *outlen, dssh_key_algo_ctx *ctx)
 	dssh_serialize_uint32(e_wire, buf, bufsz, &pos);
 	if (e_pad)
 		buf[pos++] = 0;
-	memcpy(&buf[pos], e_buf, e_bytes);
-	pos += e_bytes;
+	memcpy(&buf[pos], e_buf, e_sz);
+	pos += e_sz;
 
 	dssh_serialize_uint32(n_wire, buf, bufsz, &pos);
 	if (n_pad)
 		buf[pos++] = 0;
-	memcpy(&buf[pos], n_buf, n_bytes);
-	pos += n_bytes;
+	memcpy(&buf[pos], n_buf, n_sz);
+	pos += n_sz;
 
 	free(e_buf); free(n_buf);
 	BN_free(e_bn); BN_free(n_bn);

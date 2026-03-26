@@ -41,7 +41,7 @@ socket_tx(uint8_t *buf, size_t bufsz, dssh_session sess, void *cbdata)
 		ssize_t n = send(fd, buf + sent, bufsz - sent, 0);
 		if (n <= 0)
 			return -1;
-		sent += n;
+		sent += (size_t)n;
 	}
 	return 0;
 }
@@ -57,7 +57,7 @@ socket_rx(uint8_t *buf, size_t bufsz, dssh_session sess, void *cbdata)
 		ssize_t n = recv(fd, buf + got, bufsz - got, 0);
 		if (n <= 0)
 			return -1;
-		got += n;
+		got += (size_t)n;
 	}
 	return 0;
 }
@@ -373,7 +373,7 @@ server_echo_thread(void *arg)
 		    buf, sizeof(buf));
 		if (n <= 0)
 			break;
-		int64_t w = dssh_session_write(ctx->server, ch, buf, n);
+		int64_t w = dssh_session_write(ctx->server, ch, buf, (size_t)n);
 		if (w < 0)
 			break;
 	}
@@ -525,7 +525,7 @@ server_multi_thread(void *arg)
 			int64_t n = dssh_session_read(ctx->server, ch,
 			    buf, sizeof(buf));
 			if (n > 0)
-				dssh_session_write(ctx->server, ch, buf, n);
+				dssh_session_write(ctx->server, ch, buf, (size_t)n);
 		}
 
 		dssh_session_close(ctx->server, ch, 0);
@@ -712,7 +712,7 @@ test_self_exec_echo(void)
 		    buf + recvd, sizeof(buf) - recvd);
 		if (n <= 0)
 			break;
-		recvd += n;
+		recvd += (size_t)n;
 		if (recvd >= sizeof(data) - 1)
 			break;
 	}
@@ -808,7 +808,7 @@ test_self_shell_echo(void)
 		    buf + recvd, sizeof(buf) - recvd);
 		if (n <= 0)
 			break;
-		recvd += n;
+		recvd += (size_t)n;
 		if (recvd >= sizeof(data) - 1)
 			break;
 	}
@@ -871,7 +871,7 @@ test_self_shell_large_data(void)
 		    send_buf + sent, chunk);
 		if (w <= 0)
 			break;
-		sent += w;
+		sent += (size_t)w;
 	}
 	ASSERT_EQ_U(sent, total);
 
@@ -886,7 +886,7 @@ test_self_shell_large_data(void)
 		    recv_buf + recvd, total - recvd);
 		if (n <= 0)
 			break;
-		recvd += n;
+		recvd += (size_t)n;
 	}
 	ASSERT_EQ_U(recvd, total);
 	ASSERT_MEM_EQ(send_buf, recv_buf, total);
@@ -939,7 +939,7 @@ test_self_signal(void)
 			int64_t n = dssh_session_read(ctx.client, ch,
 			    buf, sizeof(buf));
 			if (n > 0)
-				total_read += n;
+				total_read += (size_t)n;
 			else if (!(ev & DSSH_POLL_SIGNAL))
 				break;
 		}
@@ -1048,7 +1048,7 @@ test_self_multiple_channels(void)
 		    buf + recvd, sizeof(buf) - recvd);
 		if (n <= 0)
 			break;
-		recvd += n;
+		recvd += (size_t)n;
 		if (recvd >= sizeof(data1) - 1)
 			break;
 	}
@@ -1074,7 +1074,7 @@ test_self_multiple_channels(void)
 		    buf + recvd, sizeof(buf) - recvd);
 		if (n <= 0)
 			break;
-		recvd += n;
+		recvd += (size_t)n;
 		if (recvd >= sizeof(data2) - 1)
 			break;
 	}
@@ -1205,7 +1205,7 @@ test_self_rekey_during_data(void)
 		    buf + recvd, sizeof(buf) - recvd);
 		if (n <= 0)
 			break;
-		recvd += n;
+		recvd += (size_t)n;
 		if (recvd >= sizeof(data))
 			break;
 	}
@@ -1268,7 +1268,7 @@ test_self_rekey_manual(void)
 		    buf + recvd, sizeof(buf) - recvd);
 		if (n <= 0)
 			break;
-		recvd += n;
+		recvd += (size_t)n;
 		if (recvd >= sizeof(data) - 1)
 			break;
 	}
@@ -1330,7 +1330,7 @@ test_self_rekey_preserves_channels(void)
 		    buf + recvd, sizeof(buf) - recvd);
 		if (n <= 0)
 			break;
-		recvd += n;
+		recvd += (size_t)n;
 		if (recvd >= sizeof(before) - 1)
 			break;
 	}
@@ -1364,7 +1364,7 @@ test_self_rekey_preserves_channels(void)
 		    buf + recvd, sizeof(buf) - recvd);
 		if (n <= 0)
 			break;
-		recvd += n;
+		recvd += (size_t)n;
 		if (recvd >= sizeof(after) - 1)
 			break;
 	}
@@ -1421,7 +1421,7 @@ test_self_connection_drop(void)
 		    buf + recvd, sizeof(buf) - recvd);
 		if (n <= 0)
 			break;
-		recvd += n;
+		recvd += (size_t)n;
 		if (recvd >= sizeof(data) - 1)
 			break;
 	}

@@ -24,7 +24,7 @@ silently omitted, supporting back to GCC 8 and Clang 7.
 | `-Werror=implicit` | YES | C obsolete construct |
 | `-Werror=incompatible-pointer-types` | YES | C obsolete construct |
 | `-Werror=int-conversion` | YES | C obsolete construct |
-| `-Wconversion` | DEFERRED | Requires code changes for signedness conversions |
+| `-Wconversion` | YES | Probed; all narrowing conversions use range-checked locals |
 
 ### GCC-only contextual (probed)
 
@@ -92,20 +92,20 @@ silently omitted, supporting back to GCC 8 and Clang 7.
   runtime for full CET enforcement.
 - `-mbranch-protection=standard` requires ARMv8.3+ for PAC, ARMv8.5+
   for BTI.  Uses hint instructions for backward compatibility.
-- `-Wconversion` deferred — produces many warnings for implicit
-  signedness conversions throughout the codebase.  Staged rollout
-  recommended as a separate effort.
+- `-Wconversion` enabled.  All narrowing conversions in library code
+  use range-checked intermediate variables (never inline casts).
+  Both upper and lower bounds are verified, with overflow checks
+  before arithmetic.  Test code uses explicit casts where safe.
 
 ## Summary
 
-DeuceSSH implements all OpenSSF recommended hardening flags except
-`-Wconversion` (deferred for code changes).  All flags are feature-
-probed for portability across compiler versions.
+DeuceSSH implements all OpenSSF recommended hardening flags.  All
+flags are feature-probed for portability across compiler versions.
 
 | Category | Coverage |
 |----------|----------|
-| Warnings | 12 of 13 (Wconversion deferred) |
+| Warnings | 13 of 13 |
 | Runtime protection | 8 of 8 applicable |
 | Architecture CFI | 2 of 2 (probed per arch) |
 | Linker hardening | 11 of 11 |
-| **Total** | **33 of 34** |
+| **Total** | **34 of 34** |

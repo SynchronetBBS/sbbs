@@ -2335,7 +2335,7 @@ dummy_pw_cb(char *buf, int size, int rwflag, void *userdata)
 	int len = (int)strlen(pw);
 	if (len > size)
 		len = size;
-	memcpy(buf, pw, len);
+	memcpy(buf, pw, (size_t)len);
 	return len;
 }
 
@@ -2599,7 +2599,7 @@ test_rsa_pubkey_e_pad(void)
 	/* Set the BN param properly */
 	unsigned char e_buf[16];
 	int e_len = BN_bn2nativepad(e_bn, e_buf, sizeof(e_buf));
-	params[1] = OSSL_PARAM_construct_BN("e", e_buf, e_len);
+	params[1] = OSSL_PARAM_construct_BN("e", e_buf, (size_t)e_len);
 
 	EVP_PKEY *pkey = NULL;
 	int ok = (EVP_PKEY_keygen_init(pctx) == 1

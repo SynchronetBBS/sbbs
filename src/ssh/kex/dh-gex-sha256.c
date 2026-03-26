@@ -31,14 +31,28 @@ DSSH_TESTABLE int
 serialize_bn_mpint(const BIGNUM *bn, uint8_t *buf, size_t bufsz, size_t *pos)
 {
 	int      bn_bytes = BN_num_bytes(bn);
-	uint8_t *tmp = malloc(bn_bytes);
+
+	if (bn_bytes < 0)
+		return DSSH_ERROR_PARSE;
+#if INT_MAX > SIZE_MAX
+	if (bn_bytes > SIZE_MAX)
+		return DSSH_ERROR_INVALID;
+#endif
+	size_t   bn_sz = (size_t)bn_bytes;
+	uint8_t *tmp = malloc(bn_sz);
 
 	if (tmp == NULL)
 		return DSSH_ERROR_ALLOC;
 	BN_bn2bin(bn, tmp);
 
 	bool     need_pad = (bn_bytes > 0 && (tmp[0] & 0x80));
-	uint32_t mpint_len = bn_bytes + (need_pad ? 1 : 0);
+
+	if (bn_sz > UINT32_MAX - 1) {
+		free(tmp);
+		return DSSH_ERROR_INVALID;
+	}
+	uint32_t bn_u32 = (uint32_t)bn_sz;
+	uint32_t mpint_len = bn_u32 + (need_pad ? 1 : 0);
 
 	if (*pos + 4 + mpint_len > bufsz) {
 		free(tmp);
@@ -48,10 +62,10 @@ serialize_bn_mpint(const BIGNUM *bn, uint8_t *buf, size_t bufsz, size_t *pos)
 	dssh_serialize_uint32(mpint_len, buf, bufsz, pos);
 	if (need_pad)
 		buf[(*pos)++] = 0;
-	memcpy(&buf[*pos], tmp, bn_bytes);
-	*pos += bn_bytes;
+	memcpy(&buf[*pos], tmp, bn_sz);
+	*pos += bn_sz;
 
-	OPENSSL_cleanse(tmp, bn_bytes);
+	OPENSSL_cleanse(tmp, bn_sz);
 	free(tmp);
 	return 0;
 }
@@ -74,7 +88,11 @@ parse_bn_mpint(const uint8_t *buf, size_t bufsz, BIGNUM **bn)
 #endif
 	if (4 + len > bufsz)
 		return DSSH_ERROR_PARSE;
-	*bn = BN_bin2bn(&buf[4], len, NULL);
+	if (len > INT_MAX)
+		return DSSH_ERROR_INVALID;
+	int ilen = (int)len;
+
+	*bn = BN_bin2bn(&buf[4], ilen, NULL);
 	if (*bn == NULL)
 		return DSSH_ERROR_ALLOC;
 	return 4 + len;
@@ -260,7 +278,15 @@ dhgex_handler(struct dssh_kex_context *kctx)
 
 			if (n < 0)
 				return (int)n;
-			rpos += n;
+#if SIZE_MAX < INT64_MAX
+			if (n > SIZE_MAX)
+				return DSSH_ERROR_INVALID;
+#endif
+			size_t n_sz = (size_t)n;
+
+			if (n_sz > SIZE_MAX - rpos)
+				return DSSH_ERROR_INVALID;
+			rpos += n_sz;
 			if (rpos >= payload_len) {
 				BN_free(p);
 				return DSSH_ERROR_PARSE;
@@ -366,7 +392,21 @@ dhgex_handler(struct dssh_kex_context *kctx)
 			res = (int)fn;
 			goto cleanup;
 		}
-		rpos += fn;
+#if SIZE_MAX < INT64_MAX
+		if (fn > SIZE_MAX) {
+			BN_clear_free(x);
+			res = DSSH_ERROR_INVALID;
+			goto cleanup;
+		}
+#endif
+		size_t fn_sz = (size_t)fn;
+
+		if (fn_sz > SIZE_MAX - rpos) {
+			BN_clear_free(x);
+			res = DSSH_ERROR_INVALID;
+			goto cleanup;
+		}
+		rpos += fn_sz;
 
                 /* RFC 4253 s8: f MUST be in [1, p-1] */
 		if (!dh_value_valid(f_bn, p)) {
@@ -412,13 +452,25 @@ dhgex_handler(struct dssh_kex_context *kctx)
                 /* Store shared secret */
 		int k_bytes = BN_num_bytes(k_bn);
 
-		kctx->shared_secret = malloc(k_bytes);
+		if (k_bytes < 0) {
+			res = DSSH_ERROR_PARSE;
+			goto cleanup;
+		}
+#if INT_MAX > SIZE_MAX
+		if (k_bytes > SIZE_MAX) {
+			res = DSSH_ERROR_INVALID;
+			goto cleanup;
+		}
+#endif
+		size_t k_sz = (size_t)k_bytes;
+
+		kctx->shared_secret = malloc(k_sz);
 		if (!kctx->shared_secret) {
 			res = DSSH_ERROR_ALLOC;
 			goto cleanup;
 		}
 		BN_bn2bin(k_bn, kctx->shared_secret);
-		kctx->shared_secret_sz = k_bytes;
+		kctx->shared_secret_sz = k_sz;
 
                 /* 7. Compute and verify exchange hash */
 		uint8_t hash[SHA256_DIGEST_LEN];
@@ -491,14 +543,23 @@ dhgex_handler(struct dssh_kex_context *kctx)
 		        &p_bytes, &p_len, &g_bytes, &g_len, prov->cbdata);
 		if (res < 0)
 			goto cleanup;
-		p = BN_bin2bn(p_bytes, p_len, NULL);
+		if (p_len > INT_MAX || g_len > INT_MAX) {
+			free(p_bytes);
+			free(g_bytes);
+			res = DSSH_ERROR_INVALID;
+			goto cleanup;
+		}
+		int p_ilen = (int)p_len;
+		int g_ilen = (int)g_len;
+
+		p = BN_bin2bn(p_bytes, p_ilen, NULL);
 		free(p_bytes);
 		if (!p) {
 			free(g_bytes);
 			res = DSSH_ERROR_ALLOC;
 			goto cleanup;
 		}
-		g = BN_bin2bn(g_bytes, g_len, NULL);
+		g = BN_bin2bn(g_bytes, g_ilen, NULL);
 		free(g_bytes);
 		if (!g) {
 			res = DSSH_ERROR_ALLOC;
@@ -581,13 +642,25 @@ dhgex_handler(struct dssh_kex_context *kctx)
                 /* Store shared secret */
 		int k_bytes = BN_num_bytes(k_bn);
 
-		kctx->shared_secret = malloc(k_bytes);
+		if (k_bytes < 0) {
+			res = DSSH_ERROR_PARSE;
+			goto cleanup;
+		}
+#if INT_MAX > SIZE_MAX
+		if (k_bytes > SIZE_MAX) {
+			res = DSSH_ERROR_INVALID;
+			goto cleanup;
+		}
+#endif
+		size_t k_sz = (size_t)k_bytes;
+
+		kctx->shared_secret = malloc(k_sz);
 		if (!kctx->shared_secret) {
 			res = DSSH_ERROR_ALLOC;
 			goto cleanup;
 		}
 		BN_bn2bin(k_bn, kctx->shared_secret);
-		kctx->shared_secret_sz = k_bytes;
+		kctx->shared_secret_sz = k_sz;
 
                 /* 5. Compute exchange hash */
 		uint8_t hash[SHA256_DIGEST_LEN];

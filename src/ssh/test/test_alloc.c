@@ -2383,8 +2383,8 @@ bad_server_reply_thread(void *arg)
 
 	/* Build and send GEX_GROUP */
 	{
-		BIGNUM *p = BN_bin2bn(p_bytes, p_len, NULL);
-		BIGNUM *g_bn = BN_bin2bn(g_bytes, g_len, NULL);
+		BIGNUM *p = BN_bin2bn(p_bytes, (int)p_len, NULL);
+		BIGNUM *g_bn = BN_bin2bn(g_bytes, (int)g_len, NULL);
 		free(p_bytes);
 		free(g_bytes);
 		if (!p || !g_bn) {

@@ -4232,7 +4232,7 @@ test_demux_dispatch_chan_type_zero(void)
 
 	/* Temporarily set chan_type to 0 and call demux_dispatch directly.
 	 * It should return early without crashing. */
-	uint8_t saved_type = oc.server_ch->chan_type;
+	int saved_type = oc.server_ch->chan_type;
 	oc.server_ch->chan_type = 0;
 
 	/* Build a CHANNEL_DATA payload targeting this channel */

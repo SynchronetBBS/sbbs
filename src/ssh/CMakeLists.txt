@@ -65,12 +65,10 @@ if(CMAKE_C_COMPILER_ID MATCHES "GNU|Clang|AppleClang")
 		-Werror=incompatible-pointer-types
 		-Werror=int-conversion)
 
-	# -Wconversion: deferred — requires code changes for implicit
-	# signedness conversions throughout the codebase.
-	# check_c_compiler_flag(-Wconversion HAVE_WCONVERSION)
-	# if(HAVE_WCONVERSION)
-	#	list(APPEND DEUCESSH_COMPILE_OPTIONS -Wconversion)
-	# endif()
+	check_c_compiler_flag(-Wconversion HAVE_WCONVERSION)
+	if(HAVE_WCONVERSION)
+		list(APPEND DEUCESSH_COMPILE_OPTIONS -Wconversion)
+	endif()
 
 	# GCC-only warnings
 	if(CMAKE_C_COMPILER_ID STREQUAL "GNU")

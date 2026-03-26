@@ -229,11 +229,16 @@ auth_server_impl(dssh_session sess,
 
 		const uint8_t *user, *method;
 		size_t         user_len, method_len;
-		int64_t        rpos = parse_userauth_prefix(payload, payload_len,
-		        &user, &user_len, &method, &method_len);
+		int64_t        rpos_raw = parse_userauth_prefix(payload,
+		        payload_len, &user, &user_len, &method, &method_len);
 
-		if (rpos < 0)
-			return (int)rpos;
+		if (rpos_raw < 0)
+			return (int)rpos_raw;
+#if SIZE_MAX < INT64_MAX
+		if (rpos_raw > SIZE_MAX)
+			return DSSH_ERROR_INVALID;
+#endif
+		size_t         rpos = (size_t)rpos_raw;
 
                 /* Save username */
 		saved_user_len = user_len < sizeof(saved_user) ? user_len : sizeof(saved_user) - 1;
@@ -267,7 +272,7 @@ auth_server_impl(dssh_session sess,
 			}
 
                         /* Parse: boolean change, string password [, string new_password] */
-			if ((size_t)rpos + 1 > payload_len)
+			if (rpos + 1 > payload_len)
 				return DSSH_ERROR_PARSE;
 
 			bool change = (payload[rpos] != 0);
@@ -276,11 +281,11 @@ auth_server_impl(dssh_session sess,
 
 			uint32_t pw_len;
 
-			if ((size_t)rpos + 4 > payload_len)
+			if (rpos + 4 > payload_len)
 				return DSSH_ERROR_PARSE;
 			dssh_parse_uint32(&payload[rpos], payload_len - rpos, &pw_len);
 			rpos += 4;
-			if ((size_t)rpos + pw_len > payload_len)
+			if (rpos + pw_len > payload_len)
 				return DSSH_ERROR_PARSE;
 
 			const uint8_t *pw = &payload[rpos];
@@ -291,11 +296,11 @@ auth_server_impl(dssh_session sess,
                                 /* Password change request */
 				uint32_t new_pw_len;
 
-				if ((size_t)rpos + 4 > payload_len)
+				if (rpos + 4 > payload_len)
 					return DSSH_ERROR_PARSE;
 				dssh_parse_uint32(&payload[rpos], payload_len - rpos, &new_pw_len);
 				rpos += 4;
-				if ((size_t)rpos + new_pw_len > payload_len)
+				if (rpos + new_pw_len > payload_len)
 					return DSSH_ERROR_PARSE;
 
 				const uint8_t *new_pw = &payload[rpos];
@@ -368,7 +373,7 @@ auth_server_impl(dssh_session sess,
 			}
 
                         /* Parse: boolean has_sig, string algo, string pubkey [, string sig] */
-			if ((size_t)rpos + 1 > payload_len)
+			if (rpos + 1 > payload_len)
 				return DSSH_ERROR_PARSE;
 
 			bool has_sig = (payload[rpos] != 0);
@@ -377,11 +382,11 @@ auth_server_impl(dssh_session sess,
 
 			uint32_t algo_len;
 
-			if ((size_t)rpos + 4 > payload_len)
+			if (rpos + 4 > payload_len)
 				return DSSH_ERROR_PARSE;
 			dssh_parse_uint32(&payload[rpos], payload_len - rpos, &algo_len);
 			rpos += 4;
-			if ((size_t)rpos + algo_len > payload_len)
+			if (rpos + algo_len > payload_len)
 				return DSSH_ERROR_PARSE;
 
 			const uint8_t *algo = &payload[rpos];
@@ -390,11 +395,11 @@ auth_server_impl(dssh_session sess,
 
 			uint32_t pk_len;
 
-			if ((size_t)rpos + 4 > payload_len)
+			if (rpos + 4 > payload_len)
 				return DSSH_ERROR_PARSE;
 			dssh_parse_uint32(&payload[rpos], payload_len - rpos, &pk_len);
 			rpos += 4;
-			if ((size_t)rpos + pk_len > payload_len)
+			if (rpos + pk_len > payload_len)
 				return DSSH_ERROR_PARSE;
 
 			const uint8_t *pk_blob = &payload[rpos];
@@ -428,11 +433,11 @@ auth_server_impl(dssh_session sess,
                         /* Has signature — verify it */
 			uint32_t sig_len;
 
-			if ((size_t)rpos + 4 > payload_len)
+			if (rpos + 4 > payload_len)
 				return DSSH_ERROR_PARSE;
 			dssh_parse_uint32(&payload[rpos], payload_len - rpos, &sig_len);
 			rpos += 4;
-			if ((size_t)rpos + sig_len > payload_len)
+			if (rpos + sig_len > payload_len)
 				return DSSH_ERROR_PARSE;
 
 			const uint8_t *sig_blob = &payload[rpos];
@@ -453,7 +458,7 @@ auth_server_impl(dssh_session sess,
                         * signature string (i.e., before the uint32 sig_len).
                         * rpos currently points at the sig data, so
                         * rpos - 4 is the offset of the sig_len field. */
-			size_t   before_sig = (size_t)rpos - 4;
+			size_t   before_sig = rpos - 4;
 			size_t   sd_len = 4 + sess->trans.session_id_sz + before_sig;
 			uint8_t *sign_data = malloc(sd_len);
 

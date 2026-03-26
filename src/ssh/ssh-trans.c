@@ -1349,7 +1349,21 @@ dssh_test_derive_key(const char *hash_name,
 		return DSSH_ERROR_ALLOC;
 	}
 
-	size_t  md_len = EVP_MD_get_size(md);
+	int     md_len_raw = EVP_MD_get_size(md);
+
+	if (md_len_raw <= 0) {
+		EVP_MD_CTX_free(ctx);
+		EVP_MD_free(md);
+		return DSSH_ERROR_INIT;
+	}
+#if INT_MAX > SIZE_MAX
+	if (md_len_raw > SIZE_MAX) {
+		EVP_MD_CTX_free(ctx);
+		EVP_MD_free(md);
+		return DSSH_ERROR_INVALID;
+	}
+#endif
+	size_t  md_len = (size_t)md_len_raw;
 	uint8_t tmp[EVP_MAX_MD_SIZE];
 	size_t  have = 0;
 
