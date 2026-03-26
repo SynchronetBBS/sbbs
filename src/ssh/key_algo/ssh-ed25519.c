@@ -170,8 +170,8 @@ verify(const uint8_t *key_blob, size_t key_blob_len,
 	if (sp != sig_blob_len)
 		return DSSH_ERROR_PARSE;
 
-	EVP_PKEY *pkey = EVP_PKEY_new_raw_public_key(
-	    EVP_PKEY_ED25519, NULL, raw_pub, raw_pub_len);
+	EVP_PKEY *pkey = EVP_PKEY_new_raw_public_key_ex(
+	    NULL, "ED25519", NULL, raw_pub, raw_pub_len);
 	if (pkey == NULL)
 		return DSSH_ERROR_INIT;
 
@@ -198,9 +198,9 @@ haskey(dssh_key_algo_ctx *ctx)
 {
 	struct cbdata *cbd = (struct cbdata *)ctx;
 	/* Only Ed25519 keys are stored in this module's ctx;
-	 * EVP_PKEY_id always matches. */
+	 * EVP_PKEY_is_a always matches. */
 	return (cbd != NULL && cbd->pkey != NULL
-	    && EVP_PKEY_id(cbd->pkey) == EVP_PKEY_ED25519);
+	    && EVP_PKEY_is_a(cbd->pkey, "ED25519"));
 }
 
 static void
@@ -249,7 +249,7 @@ ssh_ed25519_load_key_file(const char *path, pem_password_cb *pw_cb,
 	if (pkey == NULL)
 		return DSSH_ERROR_INIT;
 
-	if (EVP_PKEY_id(pkey) != EVP_PKEY_ED25519) {
+	if (!EVP_PKEY_is_a(pkey, "ED25519")) {
 		EVP_PKEY_free(pkey);
 		return DSSH_ERROR_INVALID;
 	}
@@ -292,10 +292,19 @@ ssh_ed25519_save_key_file(const char *path, pem_password_cb *pw_cb,
 	if (fp == NULL)
 		return DSSH_ERROR_INIT;
 
-	const EVP_CIPHER *cipher = pw_cb != NULL ?
-	    EVP_aes_256_cbc() : NULL;
+	EVP_CIPHER *cipher = NULL;
+
+	if (pw_cb != NULL) {
+		cipher = EVP_CIPHER_fetch(NULL, "AES-256-CBC", NULL);
+		if (cipher == NULL) {
+			fclose(fp);
+			return DSSH_ERROR_INIT;
+		}
+	}
 	int ok = PEM_write_PrivateKey(fp, ed25519_ctx->pkey,
 	    cipher, NULL, 0, pw_cb, pw_cbdata);
+
+	EVP_CIPHER_free(cipher);
 	if (fclose(fp) != 0)
 		ok = 0;
 	return ok == 1 ? 0 : DSSH_ERROR_INIT;
@@ -348,7 +357,7 @@ DSSH_PUBLIC int
 ssh_ed25519_generate_key(void)
 {
 	EVP_PKEY *pkey = NULL;
-	EVP_PKEY_CTX *pctx = EVP_PKEY_CTX_new_id(EVP_PKEY_ED25519, NULL);
+	EVP_PKEY_CTX *pctx = EVP_PKEY_CTX_new_from_name(NULL, "ED25519", NULL);
 
 	if (pctx == NULL)
 		return DSSH_ERROR_ALLOC;

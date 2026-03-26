@@ -121,7 +121,7 @@ x25519_exchange(const uint8_t *peer_pub, size_t peer_pub_len,
 	EVP_PKEY_CTX *pctx = NULL;
 	int           res;
 
-	pctx = EVP_PKEY_CTX_new_id(EVP_PKEY_X25519, NULL);
+	pctx = EVP_PKEY_CTX_new_from_name(NULL, "X25519", NULL);
 	if (pctx == NULL)
 		return DSSH_ERROR_ALLOC;
 	if ((EVP_PKEY_keygen_init(pctx) != 1)
@@ -138,7 +138,7 @@ x25519_exchange(const uint8_t *peer_pub, size_t peer_pub_len,
 		return DSSH_ERROR_INIT;
 	}
 
-	peer_key = EVP_PKEY_new_raw_public_key(EVP_PKEY_X25519, NULL, peer_pub, peer_pub_len);
+	peer_key = EVP_PKEY_new_raw_public_key_ex(NULL, "X25519", NULL, peer_pub, peer_pub_len);
 	if (peer_key == NULL) {
 		EVP_PKEY_free(our_key);
 		return DSSH_ERROR_INIT;
@@ -241,7 +241,7 @@ curve25519_handler(struct dssh_kex_context *kctx)
 		uint8_t       our_pub[X25519_KEY_LEN];
 
                 /* Generate keypair and send Q_C */
-		EVP_PKEY_CTX *pctx = EVP_PKEY_CTX_new_id(EVP_PKEY_X25519, NULL);
+		EVP_PKEY_CTX *pctx = EVP_PKEY_CTX_new_from_name(NULL, "X25519", NULL);
 		EVP_PKEY     *tmp_key = NULL;
 
 		if (pctx == NULL)
@@ -350,7 +350,7 @@ curve25519_handler(struct dssh_kex_context *kctx)
 		uint8_t  *sig_h = &reply[rpos];
 
                 /* Compute shared secret using our private key + Q_S */
-		EVP_PKEY *peer_key = EVP_PKEY_new_raw_public_key(EVP_PKEY_X25519, NULL, q_s, X25519_KEY_LEN);
+		EVP_PKEY *peer_key = EVP_PKEY_new_raw_public_key_ex(NULL, "X25519", NULL, q_s, X25519_KEY_LEN);
 
 		if (!peer_key) {
 			EVP_PKEY_free(tmp_key);

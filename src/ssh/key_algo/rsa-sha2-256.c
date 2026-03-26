@@ -334,7 +334,7 @@ haskey(dssh_key_algo_ctx *ctx)
 	/* Only RSA keys stored in this module's ctx. */
 	struct cbdata *cbd = (struct cbdata *)ctx;
 	return (cbd != NULL && cbd->pkey != NULL
-	    && EVP_PKEY_id(cbd->pkey) == EVP_PKEY_RSA);
+	    && EVP_PKEY_is_a(cbd->pkey, "RSA"));
 }
 
 static void
@@ -365,7 +365,7 @@ rsa_sha2_256_load_key_file(const char *path, pem_password_cb *pw_cb,
 	if (pkey == NULL)
 		return DSSH_ERROR_INIT;
 
-	if (EVP_PKEY_id(pkey) != EVP_PKEY_RSA) {
+	if (!EVP_PKEY_is_a(pkey, "RSA")) {
 		EVP_PKEY_free(pkey);
 		return DSSH_ERROR_INVALID;
 	}
@@ -409,10 +409,19 @@ rsa_sha2_256_save_key_file(const char *path, pem_password_cb *pw_cb,
 	if (fp == NULL)
 		return DSSH_ERROR_INIT;
 
-	const EVP_CIPHER *cipher = pw_cb != NULL ?
-	    EVP_aes_256_cbc() : NULL;
+	EVP_CIPHER *cipher = NULL;
+
+	if (pw_cb != NULL) {
+		cipher = EVP_CIPHER_fetch(NULL, "AES-256-CBC", NULL);
+		if (cipher == NULL) {
+			fclose(fp);
+			return DSSH_ERROR_INIT;
+		}
+	}
 	int ok = PEM_write_PrivateKey(fp, rsa_ctx->pkey,
 	    cipher, NULL, 0, pw_cb, pw_cbdata);
+
+	EVP_CIPHER_free(cipher);
 	if (fclose(fp) != 0)
 		ok = 0;
 	return ok == 1 ? 0 : DSSH_ERROR_INIT;

@@ -32,8 +32,18 @@ init_ctx(const uint8_t *key, const uint8_t *iv, bool encrypt_dir, dssh_enc_ctx *
 	}
 
 	(void)encrypt_dir;
-	if ((EVP_EncryptInit_ex(cbd->ctx, EVP_aes_256_ctr(), NULL, key, iv) != 1)
-	    || (EVP_CIPHER_CTX_set_padding(cbd->ctx, 0) != 1)) {
+	EVP_CIPHER *cipher = EVP_CIPHER_fetch(NULL, "AES-256-CTR", NULL);
+
+	if (cipher == NULL) {
+		EVP_CIPHER_CTX_free(cbd->ctx);
+		free(cbd);
+		return DSSH_ERROR_INIT;
+	}
+	int ok = (EVP_EncryptInit_ex(cbd->ctx, cipher, NULL, key, iv) == 1)
+	    && (EVP_CIPHER_CTX_set_padding(cbd->ctx, 0) == 1);
+
+	EVP_CIPHER_free(cipher);
+	if (!ok) {
 		EVP_CIPHER_CTX_free(cbd->ctx);
 		free(cbd);
 		return DSSH_ERROR_INIT;
