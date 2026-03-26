@@ -1,16 +1,18 @@
 /*
  * Example SSH server using the high-level DeuceSSH API.
- * Accepts one connection, handles a single session, exits.
+ * Forks per connection, 60-second session timeout.
  * Usage: server [port]
  */
 
 #include <errno.h>
 #include <netinet/in.h>
 #include <poll.h>
+#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/socket.h>
+#include <sys/wait.h>
 #include <unistd.h>
 
 #include "deucessh-algorithms.h"
@@ -227,73 +229,25 @@ static struct dssh_server_session_cbs session_cbs = {
 };
 
 /* ================================================================
- * Main
+ * Session timeout handler
  * ================================================================ */
-int
-main(int argc, char **argv)
+static void
+timeout_handler(int sig)
 {
-	int port = 2222;
+	(void)sig;
+	if (sess != NULL)
+		dssh_session_terminate(sess);
+}
 
-	if (argc > 1)
-		port = atoi(argv[1]);
-
-        /* Register algorithms */
-	if (dssh_transport_set_callbacks(tx, rx, rxline, NULL) != 0)
-		return 1;
-	if (dssh_register_mlkem768x25519_sha256() != 0)
-		return 1;
-	if (dssh_register_sntrup761x25519_sha512() != 0)
-		return 1;
-	if (dssh_register_curve25519_sha256() != 0)
-		return 1;
-	if (dssh_register_dh_gex_sha256() != 0)
-		return 1;
-	if (dssh_register_ssh_ed25519() != 0)
-		return 1;
-	if (dssh_register_rsa_sha2_256() != 0)
-		return 1;
-	if (dssh_register_aes256_ctr() != 0)
-		return 1;
-	if (dssh_register_hmac_sha2_256() != 0)
-		return 1;
-	if (dssh_register_none_comp() != 0)
-		return 1;
-
-        /* Listen */
-	int listen_fd = socket(PF_INET, SOCK_STREAM, 0);
-
-	if (listen_fd == -1) {
-		perror("socket");
-		return 1;
-	}
-
-	int opt = 1;
-
-	setsockopt(listen_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
-
-	struct sockaddr_in sa = {
-		.sin_family = AF_INET,
-		.sin_port = htons(port),
-		.sin_addr = {htonl(INADDR_ANY)},
-	};
-
-	if (bind(listen_fd, (struct sockaddr *)&sa, sizeof(sa)) == -1) {
-		perror("bind");
-		return 1;
-	}
-	if (listen(listen_fd, 1) == -1) {
-		perror("listen");
-		return 1;
-	}
-	fprintf(stderr, "Listening on port %d...\n", port);
-
-	conn_fd = accept(listen_fd, NULL, NULL);
-	close(listen_fd);
-	if (conn_fd == -1) {
-		perror("accept");
-		return 1;
-	}
-	fprintf(stderr, "Connection accepted.\n");
+/* ================================================================
+ * Handle one connection (runs in forked child)
+ * ================================================================ */
+static int
+handle_connection(void)
+{
+	/* 60-second session timeout */
+	signal(SIGALRM, timeout_handler);
+	alarm(60);
 
         /* Initialize session */
 	sess = dssh_session_init(false, 0);
@@ -301,24 +255,11 @@ main(int argc, char **argv)
 		fprintf(stderr, "session_init failed\n");
 		return 1;
 	}
-
-        /* Generate ephemeral host keys and set DH group provider */
-	int res = dssh_ed25519_generate_key();
-
-	if (res < 0) {
-		fprintf(stderr, "ed25519 key gen failed: %d\n", res);
-		return 1;
-	}
-	res = dssh_rsa_sha2_256_generate_key(4096);
-	if (res < 0) {
-		fprintf(stderr, "rsa key gen failed: %d\n", res);
-		return 1;
-	}
 	dssh_dh_gex_set_provider(sess, &dh_provider);
 
         /* Handshake */
 	fprintf(stderr, "Handshake...\n");
-	res = dssh_transport_handshake(sess);
+	int res = dssh_transport_handshake(sess);
 	if (res < 0) {
 		fprintf(stderr, "handshake failed: %d\n", res);
 		return 1;
@@ -443,6 +384,12 @@ main(int argc, char **argv)
 				    (const uint8_t *)"bye\r\n", 5);
 				break;
 			}
+			else if (strcmp((char *)buf, "diediedie") == 0) {
+				dssh_session_write(sess, ch,
+				    (const uint8_t *)"dying...\r\n", 10);
+				kill(getppid(), SIGTERM);
+				break;
+			}
 			else if (line_len > 0) {
 				static const char help[] =
 				    "commands: ping, quit, exit\r\n";
@@ -457,10 +404,125 @@ main(int argc, char **argv)
 	}
 
         /* Clean shutdown */
+	alarm(0);
 	fprintf(stderr, "Channel closed.\n");
 	dssh_session_close(sess, ch, 0);
 	dssh_session_cleanup(sess);
 	close(conn_fd);
-	fprintf(stderr, "Server shutdown complete.\n");
+	return 0;
+}
+
+/* ================================================================
+ * Main
+ * ================================================================ */
+static void
+sigchld_handler(int sig)
+{
+	(void)sig;
+	while (waitpid(-1, NULL, WNOHANG) > 0)
+		;
+}
+
+int
+main(int argc, char **argv)
+{
+	int port = 2222;
+
+	if (argc > 1)
+		port = atoi(argv[1]);
+
+        /* Register algorithms */
+	if (dssh_transport_set_callbacks(tx, rx, rxline, NULL) != 0)
+		return 1;
+	if (dssh_register_mlkem768x25519_sha256() != 0)
+		return 1;
+	if (dssh_register_sntrup761x25519_sha512() != 0)
+		return 1;
+	if (dssh_register_curve25519_sha256() != 0)
+		return 1;
+	if (dssh_register_dh_gex_sha256() != 0)
+		return 1;
+	if (dssh_register_ssh_ed25519() != 0)
+		return 1;
+	if (dssh_register_rsa_sha2_256() != 0)
+		return 1;
+	if (dssh_register_aes256_ctr() != 0)
+		return 1;
+	if (dssh_register_hmac_sha2_256() != 0)
+		return 1;
+	if (dssh_register_none_comp() != 0)
+		return 1;
+
+        /* Generate host keys once (shared across all forks) */
+	int res = dssh_ed25519_generate_key();
+
+	if (res < 0) {
+		fprintf(stderr, "ed25519 key gen failed: %d\n", res);
+		return 1;
+	}
+	res = dssh_rsa_sha2_256_generate_key(4096);
+	if (res < 0) {
+		fprintf(stderr, "rsa key gen failed: %d\n", res);
+		return 1;
+	}
+
+        /* Listen */
+	int listen_fd = socket(PF_INET, SOCK_STREAM, 0);
+
+	if (listen_fd == -1) {
+		perror("socket");
+		return 1;
+	}
+
+	int opt = 1;
+
+	setsockopt(listen_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
+
+	struct sockaddr_in sa = {
+		.sin_family = AF_INET,
+		.sin_port = htons(port),
+		.sin_addr = {htonl(INADDR_ANY)},
+	};
+
+	if (bind(listen_fd, (struct sockaddr *)&sa, sizeof(sa)) == -1) {
+		perror("bind");
+		return 1;
+	}
+	if (listen(listen_fd, 5) == -1) {
+		perror("listen");
+		return 1;
+	}
+
+	signal(SIGCHLD, sigchld_handler);
+	fprintf(stderr, "Listening on port %d...\n", port);
+
+        /* Accept loop */
+	for (;;) {
+		conn_fd = accept(listen_fd, NULL, NULL);
+		if (conn_fd == -1) {
+			if (errno == EINTR)
+				continue;
+			perror("accept");
+			break;
+		}
+		fprintf(stderr, "Connection accepted.\n");
+
+		pid_t pid = fork();
+
+		if (pid < 0) {
+			perror("fork");
+			close(conn_fd);
+			continue;
+		}
+		if (pid == 0) {
+			/* Child — handle connection */
+			close(listen_fd);
+			_exit(handle_connection());
+		}
+		/* Parent — close child's fd, loop */
+		close(conn_fd);
+	}
+
+	close(listen_fd);
 	return 0;
 }
