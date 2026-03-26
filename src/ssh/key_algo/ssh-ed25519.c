@@ -5,7 +5,7 @@
 
 #include "deucessh.h"
 #include "deucessh-algorithms.h"
-#include "ssh-trans.h"
+#include "deucessh-key-algo.h"
 #ifdef DSSH_TESTING
 #include "ssh-internal.h"
 #endif

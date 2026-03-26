@@ -4,8 +4,11 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "deucessh.h"
+#include "deucessh-mac.h"
+#ifdef DSSH_TESTING
 #include "ssh-internal.h"
-#include "ssh-trans.h"
+#endif
 
 #define HMAC_SHA2_256_DIGEST_SIZE 32
 #define HMAC_SHA2_256_KEY_SIZE 32

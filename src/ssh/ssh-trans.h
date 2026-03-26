@@ -13,12 +13,12 @@
 extern "C" {
 #endif
 
-/* Opaque context types for algorithm modules.
- * Each module defines the actual struct contents. */
-typedef struct dssh_enc_ctx dssh_enc_ctx;
-typedef struct dssh_mac_ctx dssh_mac_ctx;
-typedef struct dssh_key_algo_ctx dssh_key_algo_ctx;
-typedef struct dssh_comp_ctx dssh_comp_ctx;
+/* Module type definitions — public headers */
+#include "deucessh-kex.h"
+#include "deucessh-key-algo.h"
+#include "deucessh-enc.h"
+#include "deucessh-mac.h"
+#include "deucessh-comp.h"
 
 /* Transport layer generic */
 #define SSH_MSG_DISCONNECT UINT8_C(1)
@@ -32,9 +32,7 @@ typedef struct dssh_comp_ctx dssh_comp_ctx;
 #define SSH_MSG_KEXINIT UINT8_C(20)
 #define SSH_MSG_NEWKEYS UINT8_C(21)
 
-/* KEX method-specific (ECDH, DH) */
-#define SSH_MSG_KEX_ECDH_INIT UINT8_C(30)
-#define SSH_MSG_KEX_ECDH_REPLY UINT8_C(31)
+/* SSH_MSG_KEX_ECDH_INIT/REPLY are now in deucessh-kex.h */
 
 /* SSH_MSG_DISCONNECT reason codes */
 #define SSH_DISCONNECT_HOST_NOT_ALLOWED_TO_CONNECT UINT32_C(1)
@@ -52,12 +50,6 @@ typedef struct dssh_comp_ctx dssh_comp_ctx;
 #define SSH_DISCONNECT_AUTH_CANCELLED_BY_USER UINT32_C(13)
 #define SSH_DISCONNECT_NO_MORE_AUTH_METHODS_AVAILABLE UINT32_C(14)
 #define SSH_DISCONNECT_ILLEGAL_USER_NAME UINT32_C(15)
-
-#define DSSH_KEX_FLAG_NEEDS_ENCRYPTION_CAPABLE UINT32_C(1 << 0)
-#define DSSH_KEX_FLAG_NEEDS_SIGNATURE_CAPABLE UINT32_C(1 << 1)
-
-#define DSSH_KEY_ALGO_FLAG_ENCRYPTION_CAPABLE UINT32_C(1 << 0)
-#define DSSH_KEY_ALGO_FLAG_SIGNATURE_CAPABLE UINT32_C(1 << 1)
 
 /*
  * RFC 4253 s6.1: implementations MUST be able to process packets with
@@ -77,81 +69,8 @@ typedef struct dssh_transport_packet_s {
 	dssh_byte     padding;
 } *dssh_transport_packet;
 
-/* KEX handler and cleanup types — defined in deucessh-kex.h */
-#include "deucessh-kex.h"
-
-typedef int (*dssh_key_algo_sign)(uint8_t *buf, size_t bufsz, size_t *outlen,
-    const uint8_t *data, size_t data_len, dssh_key_algo_ctx *ctx);
-typedef int (*dssh_key_algo_verify)(const uint8_t *key_blob, size_t key_blob_len,
-    const uint8_t *sig_blob, size_t sig_blob_len,
-    const uint8_t *data, size_t data_len);
-typedef int (*dssh_key_algo_pubkey)(uint8_t *buf, size_t bufsz, size_t *outlen, dssh_key_algo_ctx *ctx);
-typedef int (*dssh_key_algo_haskey)(dssh_key_algo_ctx *ctx);
-typedef void (*dssh_key_algo_cleanup)(dssh_key_algo_ctx *ctx);
-
-typedef int (*dssh_enc_init)(const uint8_t *key, const uint8_t *iv, bool encrypt, dssh_enc_ctx **ctx);
-typedef int (*dssh_enc_crypt)(uint8_t *buf, size_t bufsz, dssh_enc_ctx *ctx);
-typedef void (*dssh_enc_cleanup)(dssh_enc_ctx *ctx);
-
-typedef int (*dssh_mac_init)(const uint8_t *key, dssh_mac_ctx **ctx);
-typedef int (*dssh_mac_generate)(const uint8_t *buf, size_t bufsz, uint8_t *outbuf, dssh_mac_ctx *ctx);
-typedef void (*dssh_mac_cleanup)(dssh_mac_ctx *ctx);
-
-typedef int (*dssh_comp_compress)(uint8_t *buf, size_t *bufsz, dssh_comp_ctx *ctx);
-typedef int (*dssh_comp_uncompress)(uint8_t *buf, size_t *bufsz, dssh_comp_ctx *ctx);
-typedef void (*dssh_comp_cleanup)(dssh_comp_ctx *ctx);
-
-typedef struct dssh_kex_s {
-	struct dssh_kex_s *next;
-	dssh_kex_handler   handler;
-	dssh_kex_cleanup   cleanup;
-	uint32_t           flags;
-	const char        *hash_name; /* OpenSSL digest name, e.g. "SHA256" */
-	char               name[];
-} *dssh_kex;
-
-typedef struct dssh_key_algo_s {
-	struct dssh_key_algo_s *next;
-	dssh_key_algo_sign      sign;
-	dssh_key_algo_verify    verify;
-	dssh_key_algo_pubkey    pubkey;
-	dssh_key_algo_haskey    haskey;
-	dssh_key_algo_cleanup   cleanup;
-	dssh_key_algo_ctx      *ctx;
-	uint32_t                flags;
-	char                    name[];
-} *dssh_key_algo;
-
-typedef struct dssh_enc_s {
-	struct dssh_enc_s *next;
-	dssh_enc_init      init;
-	dssh_enc_crypt     encrypt;
-	dssh_enc_crypt     decrypt;
-	dssh_enc_cleanup   cleanup;
-	uint32_t           flags;
-	uint16_t           blocksize;
-	uint16_t           key_size;
-	char               name[];
-} *dssh_enc;
-
-typedef struct dssh_mac_s {
-	struct dssh_mac_s *next;
-	dssh_mac_init      init;
-	dssh_mac_generate  generate;
-	dssh_mac_cleanup   cleanup;
-	uint16_t           digest_size;
-	uint16_t           key_size;
-	char               name[];
-} *dssh_mac;
-
-typedef struct dssh_comp_s {
-	struct dssh_comp_s  *next;
-	dssh_comp_compress   compress;
-	dssh_comp_uncompress uncompress;
-	dssh_comp_cleanup    cleanup;
-	char                 name[];
-} *dssh_comp;
-
+/* Module type definitions are now in the public headers above.
+ * Language is internal-only (no third-party language modules). */
 typedef struct dssh_language_s {
 	struct dssh_language_s *next;
 	char                    name[];
@@ -238,11 +157,7 @@ typedef struct dssh_transport_state_s {
  * Applications may register their own custom modules alongside or
  * instead of the library's built-in algorithms.
  */
-DSSH_PUBLIC int dssh_transport_register_kex(dssh_kex kex);
-DSSH_PUBLIC int dssh_transport_register_key_algo(dssh_key_algo key_algo);
-DSSH_PUBLIC int dssh_transport_register_enc(dssh_enc enc);
-DSSH_PUBLIC int dssh_transport_register_mac(dssh_mac mac);
-DSSH_PUBLIC int dssh_transport_register_comp(dssh_comp comp);
+/* register_kex/key_algo/enc/mac/comp are now in their public headers */
 DSSH_PUBLIC int dssh_transport_register_lang(dssh_language lang);
 /*
  * Initialize transport state for a session.  Allocates packet buffers

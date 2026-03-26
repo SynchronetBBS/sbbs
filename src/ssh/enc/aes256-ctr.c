@@ -2,8 +2,11 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "deucessh.h"
+#include "deucessh-enc.h"
+#ifdef DSSH_TESTING
 #include "ssh-internal.h"
-#include "ssh-trans.h"
+#endif
 
 #define AES256_CTR_BLOCK_SIZE 16
 #define AES256_CTR_KEY_SIZE 32

@@ -1,8 +1,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "ssh-internal.h"
-#include "ssh-trans.h"
+#include "deucessh.h"
+#include "deucessh-enc.h"
 
 static int
 encrypt(uint8_t *buf, size_t bufsz, dssh_enc_ctx *ctx)

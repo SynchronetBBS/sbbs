@@ -1,8 +1,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "ssh-internal.h"
-#include "ssh-trans.h"
+#include "deucessh.h"
+#include "deucessh-mac.h"
 
 static int
 generate(const uint8_t *buf, size_t bufsz, uint8_t *outbuf,

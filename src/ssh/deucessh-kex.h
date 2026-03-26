@@ -14,13 +14,15 @@
 #include <stdint.h>
 
 #include "deucessh-portable.h"
+#include "deucessh-key-algo.h"
+
+/* KEX method-specific message types (ECDH, DH) */
+#define SSH_MSG_KEX_ECDH_INIT  UINT8_C(30)
+#define SSH_MSG_KEX_ECDH_REPLY UINT8_C(31)
 
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-/* Forward declaration — defined in deucessh.h */
-typedef struct dssh_key_algo_s *dssh_key_algo;
 
 /*
  * I/O function pointers for KEX handlers.
@@ -95,6 +97,20 @@ typedef int (*dssh_kex_handler)(struct dssh_kex_context *kctx);
  * May be NULL if the KEX module has no per-session state to free.
  */
 typedef void (*dssh_kex_cleanup)(void *kex_data);
+
+#define DSSH_KEX_FLAG_NEEDS_ENCRYPTION_CAPABLE UINT32_C(1 << 0)
+#define DSSH_KEX_FLAG_NEEDS_SIGNATURE_CAPABLE  UINT32_C(1 << 1)
+
+typedef struct dssh_kex_s {
+	struct dssh_kex_s *next;
+	dssh_kex_handler   handler;
+	dssh_kex_cleanup   cleanup;
+	uint32_t           flags;
+	const char        *hash_name; /* OpenSSL digest name, e.g. "SHA256" */
+	char               name[];
+} *dssh_kex;
+
+DSSH_PUBLIC int dssh_transport_register_kex(dssh_kex kex);
 
 #ifdef __cplusplus
 }

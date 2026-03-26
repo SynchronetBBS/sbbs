@@ -9,7 +9,7 @@
 
 #include "kex/dh-gex-sha256.h"
 #include "deucessh.h"
-#include "ssh-trans.h"
+#include "deucessh-kex.h"
 #ifdef DSSH_TESTING
 #include "ssh-internal.h"
 #endif

@@ -1,8 +1,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "ssh-internal.h"
-#include "ssh-trans.h"
+#include "deucessh.h"
+#include "deucessh-comp.h"
 
 static int
 compress(uint8_t *buf, size_t *bufsz, dssh_comp_ctx *ctx)
