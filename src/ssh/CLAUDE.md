@@ -162,6 +162,11 @@ but the API enables conformance.
   with a prior range check can stay inline
 - **`DSSH_STRLEN(lit)`** macro in `ssh-internal.h` for
   `(uint32_t)(sizeof(string_literal) - 1)`
+- **Check every error-returning call**: every `dssh_serialize_*` and
+  `dssh_parse_*` return value is checked.  Use a single `int ret` or
+  `int64_t pv` declared at function scope, reused for each call — no
+  `{ type ret = func(); }` block scoping.  Local `#define SER(v)`
+  macros reduce boilerplate; `#undef` immediately after use.
 - `-Wconversion -Werror` is enabled; all implicit narrowing is an error
 - `DSSH_ERROR_INVALID` for out-of-range values; `DSSH_ERROR_PARSE` for
   malformed wire data
