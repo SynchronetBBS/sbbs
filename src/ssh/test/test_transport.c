@@ -3459,13 +3459,12 @@ test_build_namelist_overflow(void)
 	e2->next = NULL;
 
 	/* Buffer fits "alpha," but not "alpha,bravo".
-	 * Comma is written but "bravo" is truncated. */
+	 * Comma+name checked together, so only "alpha" is emitted. */
 	char buf[8];
 	size_t len = dssh_test_build_namelist(e1,
 	    offsetof(struct dssh_kex_s, name), buf, sizeof(buf));
-	/* "alpha," = 6 chars (comma written, name truncated) */
-	ASSERT_STR_EQ(buf, "alpha,");
-	ASSERT_EQ_U(len, 6);
+	ASSERT_STR_EQ(buf, "alpha");
+	ASSERT_EQ_U(len, 5);
 
 	/* Buffer too small for comma after "alpha" — covers pos+1>=bufsz */
 	char exact[6];  /* pos=5 after "alpha", 5+1>=6 so comma not written */
@@ -3479,6 +3478,82 @@ test_build_namelist_overflow(void)
 	len = dssh_test_build_namelist(e1,
 	    offsetof(struct dssh_kex_s, name), tiny, sizeof(tiny));
 	ASSERT_TRUE(len < sizeof(tiny));
+
+	dssh_test_reset_global_config();
+	return TEST_PASS;
+}
+
+/* ================================================================
+ * build_namelist truncation — verify no trailing comma or partial
+ * name when buffer is too small for the next entry.
+ * ================================================================ */
+
+static int
+test_build_namelist_truncation_no_trailing_comma(void)
+{
+	/* Two entries: "alpha" (5) and "bravo" (5).
+	 * "alpha,bravo" = 11 chars + NUL = 12 bytes.
+	 * Buffer of 11 fits "alpha," + comma but not "bravo" —
+	 * must NOT produce a trailing comma. */
+	dssh_test_reset_global_config();
+
+	uint8_t e1buf[sizeof(struct dssh_kex_s) + 16];
+	uint8_t e2buf[sizeof(struct dssh_kex_s) + 16];
+	memset(e1buf, 0, sizeof(e1buf));
+	memset(e2buf, 0, sizeof(e2buf));
+	struct dssh_kex_s *e1 = (struct dssh_kex_s *)e1buf;
+	struct dssh_kex_s *e2 = (struct dssh_kex_s *)e2buf;
+	strcpy(e1->name, "alpha");
+	strcpy(e2->name, "bravo");
+	e1->next = e2;
+	e2->next = NULL;
+
+	/* Exact fit: buf[12] holds "alpha,bravo\0" */
+	char exact_fit[12];
+	size_t len = dssh_test_build_namelist(e1,
+	    offsetof(struct dssh_kex_s, name), exact_fit, sizeof(exact_fit));
+	ASSERT_STR_EQ(exact_fit, "alpha,bravo");
+	ASSERT_EQ_U(len, 11);
+
+	/* One byte short: can't fit "bravo" after comma.
+	 * Must roll back to "alpha" with no trailing comma. */
+	char one_short[11];
+	len = dssh_test_build_namelist(e1,
+	    offsetof(struct dssh_kex_s, name), one_short, sizeof(one_short));
+	ASSERT_STR_EQ(one_short, "alpha");
+	ASSERT_EQ_U(len, 5);
+
+	/* Three entries: "aa", "bb", "cc".  "aa,bb,cc" = 8 + NUL = 9.
+	 * Buffer of 7 fits "aa,bb," but not "cc" — must be "aa,bb". */
+	uint8_t e3buf[sizeof(struct dssh_kex_s) + 16];
+	uint8_t e4buf[sizeof(struct dssh_kex_s) + 16];
+	uint8_t e5buf[sizeof(struct dssh_kex_s) + 16];
+	memset(e3buf, 0, sizeof(e3buf));
+	memset(e4buf, 0, sizeof(e4buf));
+	memset(e5buf, 0, sizeof(e5buf));
+	struct dssh_kex_s *e3 = (struct dssh_kex_s *)e3buf;
+	struct dssh_kex_s *e4 = (struct dssh_kex_s *)e4buf;
+	struct dssh_kex_s *e5 = (struct dssh_kex_s *)e5buf;
+	strcpy(e3->name, "aa");
+	strcpy(e4->name, "bb");
+	strcpy(e5->name, "cc");
+	e3->next = e4;
+	e4->next = e5;
+	e5->next = NULL;
+
+	char three[7];
+	len = dssh_test_build_namelist(e3,
+	    offsetof(struct dssh_kex_s, name), three, sizeof(three));
+	ASSERT_STR_EQ(three, "aa,bb");
+	ASSERT_EQ_U(len, 5);
+
+	/* Buffer fits comma but nothing after: "aa,bb" in buf[6].
+	 * pos=5 after "aa,bb", comma check: 5+1>=6 → break. */
+	char tight[6];
+	len = dssh_test_build_namelist(e3,
+	    offsetof(struct dssh_kex_s, name), tight, sizeof(tight));
+	ASSERT_STR_EQ(tight, "aa,bb");
+	ASSERT_EQ_U(len, 5);
 
 	dssh_test_reset_global_config();
 	return TEST_PASS;
@@ -6673,6 +6748,7 @@ static struct dssh_test_entry tests[] = {
 
 	/* build_namelist overflow */
 	{ "algo/build_namelist_overflow",    test_build_namelist_overflow },
+	{ "algo/build_namelist_truncation",  test_build_namelist_truncation_no_trailing_comma },
 
 	/* Cleanup partial session */
 	{ "cleanup/no_handshake",            test_cleanup_no_handshake },

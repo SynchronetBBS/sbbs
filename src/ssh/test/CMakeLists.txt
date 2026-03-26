@@ -162,7 +162,8 @@ set(TRANSPORT_TESTS
 	algo/negotiate_client_priority algo/negotiate_no_match
 	algo/negotiate_not_registered
 	algo/build_namelist_single algo/build_namelist_multiple
-	algo/build_namelist_overflow algo/build_namelist_empty
+	algo/build_namelist_overflow algo/build_namelist_truncation
+	algo/build_namelist_empty
 	derive/deterministic derive/different_letters
 	derive/extension_loop derive/bad_hash
 	derive_key/ossl_init derive_key/ossl_shared_secret

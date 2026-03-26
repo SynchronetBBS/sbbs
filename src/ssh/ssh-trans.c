@@ -943,11 +943,11 @@ dssh_test_build_namelist(void *head, size_t name_offset, char *buf, size_t bufsz
 		size_t      nlen = strlen(name);
 
 		if (!first) {
-			if (pos + 1 >= bufsz)
+			if (pos + 1 + nlen >= bufsz)
 				break;
 			buf[pos++] = ',';
 		}
-		if (pos + nlen >= bufsz)
+		else if (pos + nlen >= bufsz)
 			break;
 		memcpy(&buf[pos], name, nlen);
 		pos += nlen;
