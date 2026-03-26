@@ -50,9 +50,6 @@ typedef int (*dssh_kex_recv_fn)(uint8_t *msg_type, uint8_t **payload,
  * Output fields must be set by the handler on success.
  */
 struct dssh_kex_context {
-	/* Role: true if this side is the SSH client */
-	bool           client;
-
 	/* Version strings (not NUL-terminated, not owned) */
 	const char    *v_c;
 	size_t         v_c_len;
@@ -84,6 +81,9 @@ struct dssh_kex_context {
 	size_t         shared_secret_sz;
 	uint8_t       *exchange_hash;
 	size_t         exchange_hash_sz;
+
+	/* Role: true if this side is the SSH client */
+	bool           client;
 };
 
 /*
@@ -105,8 +105,8 @@ typedef struct dssh_kex_s {
 	struct dssh_kex_s *next;
 	dssh_kex_handler   handler;
 	dssh_kex_cleanup   cleanup;
-	uint32_t           flags;
 	const char        *hash_name; /* OpenSSL digest name, e.g. "SHA256" */
+	uint32_t           flags;
 	char               name[];
 } *dssh_kex;
 

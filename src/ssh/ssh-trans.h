@@ -83,53 +83,27 @@ typedef struct dssh_language_s {
 #define DSSH_REKEY_SECONDS 3600                    /* 1 hour */
 
 typedef struct dssh_transport_state_s {
-	uint32_t       tx_seq;
-	uint32_t       rx_seq;
-	uint32_t       tx_since_rekey;    /* packets sent since last (re)key */
-	uint32_t       rx_since_rekey;    /* packets received since last (re)key */
+        /* 8-byte fixed */
 	uint64_t       bytes_since_rekey; /* bytes sent+received since last (re)key */
 	time_t         rekey_time;        /* time of last (re)key */
-	uint32_t       last_rx_seq;       /* seq number of last received packet */
-	bool           client;
-	bool           rekey_in_progress; /* true between KEXINIT and NEWKEYS */
-	bool           rekey_pending;     /* deferred auto-rekey (set in recv_packet) */
-	cnd_t          rekey_cnd;         /* wakes senders blocked during rekey */
 
-        /* Packet buffers (dynamically allocated) */
+        /* Pointers and size_t (pointer-sized) */
 	size_t         packet_buf_sz;
 	uint8_t       *tx_packet;
 	uint8_t       *rx_packet;
 	uint8_t       *tx_mac_scratch; /* 4 + packet_buf_sz for MAC computation */
 	uint8_t       *rx_mac_scratch;
-
-        /* Concurrency: separate mutexes for send and receive paths */
-	mtx_t          tx_mtx;
-	mtx_t          rx_mtx;
-
-        /* Transport options */
 	size_t         id_str_sz;
-	char           id_str[254];
-
-        /* Remote peer information (from version exchange) */
 	size_t         remote_id_str_sz;
-	char           remote_id_str[254];
 	char         **remote_languages;
-
-        /* KEX options */
 	void          *kex_ctx;
 	dssh_kex       kex_selected;
-
-        /* KEX outputs */
 	size_t         shared_secret_sz;
 	uint8_t       *shared_secret;
 	size_t         exchange_hash_sz;
 	uint8_t       *exchange_hash;
-
-        /* Session ID (first exchange hash, persists across rekeys) */
 	size_t         session_id_sz;
 	uint8_t       *session_id;
-
-        /* Saved KEXINIT payloads for exchange hash computation */
 	size_t         our_kexinit_sz;
 	uint8_t       *our_kexinit;
 	size_t         peer_kexinit_sz;
@@ -147,6 +121,27 @@ typedef struct dssh_transport_state_s {
 	dssh_comp      comp_c2s_selected;
 	dssh_comp_ctx *comp_s2c_ctx;
 	dssh_comp      comp_s2c_selected;
+
+        /* C11 synchronization (platform-dependent size) */
+	cnd_t          rekey_cnd;         /* wakes senders blocked during rekey */
+	mtx_t          tx_mtx;
+	mtx_t          rx_mtx;
+
+        /* 4-byte */
+	uint32_t       tx_seq;
+	uint32_t       rx_seq;
+	uint32_t       tx_since_rekey;    /* packets sent since last (re)key */
+	uint32_t       rx_since_rekey;    /* packets received since last (re)key */
+	uint32_t       last_rx_seq;       /* seq number of last received packet */
+
+        /* 1-byte */
+	bool           client;
+	bool           rekey_in_progress; /* true between KEXINIT and NEWKEYS */
+	bool           rekey_pending;     /* deferred auto-rekey (set in recv_packet) */
+
+        /* Char arrays (naturally aligned, go last) */
+	char           id_str[254];
+	char           remote_id_str[254];
 } *dssh_transport_state;
 /*
  * Algorithm registration — call before any session is initialized.
@@ -210,7 +205,6 @@ DSSH_PRIVATE dssh_key_algo dssh_transport_find_key_algo(const char *name);
  * Under DSSH_TESTING it is externally visible for test access.
  */
 typedef struct dssh_transport_global_config {
-	atomic_bool              used;
 	const char              *software_version;
 	const char              *version_comment;
 	dssh_transport_io_cb     tx;
@@ -237,6 +231,7 @@ typedef struct dssh_transport_global_config {
 	size_t                   lang_entries;
 	dssh_language            lang_head;
 	dssh_language            lang_tail;
+	atomic_bool              used;
 } *dssh_transport_global_config;
 
 /*

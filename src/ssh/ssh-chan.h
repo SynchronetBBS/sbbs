@@ -113,10 +113,10 @@ DSSH_PRIVATE const char *dssh_sigqueue_pop(struct dssh_signal_queue *q,
  * ================================================================ */
 struct dssh_incoming_open {
 	struct dssh_incoming_open *next;
+	size_t                     channel_type_len;
 	uint32_t                   peer_channel;
 	uint32_t                   peer_window;
 	uint32_t                   peer_max_packet;
-	size_t                     channel_type_len;
 	char                       channel_type[64];
 };
 

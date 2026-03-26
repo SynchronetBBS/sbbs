@@ -21,10 +21,10 @@ typedef struct dssh_channel_s *dssh_channel;
 /* PTY request parameters (client -> server) */
 struct dssh_pty_req {
 	const char    *term;
-	uint32_t       cols, rows;
-	uint32_t       wpx, hpx;
 	const uint8_t *modes;
 	size_t         modes_len;
+	uint32_t       cols, rows;
+	uint32_t       wpx, hpx;
 };
 
 /* Incoming channel open (from session_accept) */

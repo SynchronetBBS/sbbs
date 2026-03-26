@@ -78,50 +78,42 @@ int dssh_test_EVP_CIPHER_CTX_set_padding(EVP_CIPHER_CTX *ctx, int pad);
 #define SSH_OPEN_ADMINISTRATIVELY_PROHIBITED UINT32_C(1)
 
 struct dssh_channel_s {
-        /* Wire-level fields */
+        /* Pointers and size_t (pointer-sized) */
+	uint8_t *setup_payload;
+	size_t   setup_payload_len;
+	size_t   stdout_consumed;
+	size_t   stderr_consumed;
+	void     (*window_change_cb)(uint32_t cols, uint32_t rows,
+	    uint32_t wpx, uint32_t hpx, void *cbdata);
+	void    *window_change_cbdata;
+
+        /* C11 synchronization (platform-dependent size) */
+	mtx_t    buf_mtx;
+	cnd_t    poll_cnd;
+
+        /* 4-byte */
 	uint32_t local_id;
 	uint32_t remote_id;
 	uint32_t local_window;
 	uint32_t remote_window;
 	uint32_t remote_max_packet;
+	uint32_t window_max;
+	uint32_t exit_code;
+	int      chan_type;
+
+        /* 1-byte */
 	bool     open;
 	bool     close_sent;
 	bool     close_received;
 	bool     eof_sent;
 	bool     eof_received;
-
-        /* Buffered mode fields (chan_type > 0) */
-	int      chan_type;
-	mtx_t    buf_mtx;
-	cnd_t    poll_cnd;
-
-        /* Consumed byte counters (for signal mark tracking) */
-	size_t   stdout_consumed;
-	size_t   stderr_consumed;
-
-        /* Window replenishment threshold */
-	uint32_t window_max;
-
-        /* Exit status from peer (session channels) */
-	uint32_t exit_code;
 	bool     exit_code_received;
-
-        /* Channel request response (for send_channel_request_wait) */
 	bool     request_pending;
 	bool     request_responded;
 	bool     request_success;
-
-        /* Setup mailbox (for session_accept_channel) */
 	bool     setup_mode;
 	bool     setup_ready;
 	uint8_t  setup_msg_type;
-	uint8_t *setup_payload;
-	size_t   setup_payload_len;
-
-        /* Window-change callback (server-side, post-setup) */
-	void     (*window_change_cb)(uint32_t cols, uint32_t rows,
-	    uint32_t wpx, uint32_t hpx, void *cbdata);
-	void    *window_change_cbdata;
 
         /* Per-channel string buffers (avoids static storage) */
 	char     last_signal[32];
@@ -141,58 +133,45 @@ struct dssh_channel_s {
 };
 
 struct dssh_session_s {
-	mtx_t                         mtx;
-	atomic_bool                   initialized;
-	atomic_bool                   terminate;
-
-        /* Per-session I/O callback data (passed to the global I/O callbacks) */
+        /* Pointers and size_t (pointer-sized) — callbacks and cbdata */
 	void                         *tx_cbdata;
 	void                         *rx_cbdata;
 	void                         *rx_line_cbdata;
 	void                         *extra_line_cbdata;
-
-        /* Optional notification callbacks */
 	dssh_debug_cb                 debug_cb;
 	void                         *debug_cbdata;
 	dssh_unimplemented_cb         unimplemented_cb;
 	void                         *unimplemented_cbdata;
-
-        /* Auth banner callback (set before authentication) */
 	dssh_auth_banner_cb           banner_cb;
 	void                         *banner_cbdata;
-
-        /*
-         * Optional global request callback (RFC 4254 s4).
-         * If set, called for every SSH_MSG_GLOBAL_REQUEST.
-         * Return 0 for REQUEST_SUCCESS, negative for REQUEST_FAILURE.
-         * If NULL, REQUEST_FAILURE is sent automatically.
-         */
 	dssh_global_request_cb        global_request_cb;
 	void                         *global_request_cbdata;
-
-        /* Auth state */
-	bool                          auth_service_requested;
-
-        /* Transport layer state */
-	struct dssh_transport_state_s trans;
-
-        /* Demux thread and channel table */
-	thrd_t                        demux_thread;
-	atomic_bool                   demux_running;
-	bool                          conn_initialized; /* channel_mtx/accept_mtx/accept_cnd valid */
-
 	struct dssh_channel_s       **channels;
 	size_t                        channel_count;
 	size_t                        channel_capacity;
-	mtx_t                         channel_mtx;
+
+        /* Embedded transport state (large, naturally aligned) */
+	struct dssh_transport_state_s trans;
 
         /* Incoming channel open queue */
 	struct dssh_accept_queue      accept_queue;
+
+        /* C11 synchronization (platform-dependent size) */
+	mtx_t                         mtx;
+	mtx_t                         channel_mtx;
 	mtx_t                         accept_mtx;
 	cnd_t                         accept_cnd;
+	thrd_t                        demux_thread;
 
-        /* Next auto-assigned local channel ID */
+        /* 4-byte */
 	uint32_t                      next_channel_id;
+
+        /* 1-byte */
+	atomic_bool                   initialized;
+	atomic_bool                   terminate;
+	atomic_bool                   demux_running;
+	bool                          auth_service_requested;
+	bool                          conn_initialized;
 };
 
 #endif // ifndef DSSH_INTERNAL_H
