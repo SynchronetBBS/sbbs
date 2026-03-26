@@ -19,7 +19,8 @@ handle_banner(dssh_session sess, uint8_t *payload, size_t payload_len)
 
 	if (rpos + 4 > payload_len)
 		return;
-	dssh_parse_uint32(&payload[rpos], payload_len - rpos, &msg_len);
+	if (dssh_parse_uint32(&payload[rpos], payload_len - rpos, &msg_len) < 4)
+		return;
 	rpos += 4;
 	if (rpos + msg_len > payload_len)
 		return;
@@ -32,8 +33,10 @@ handle_banner(dssh_session sess, uint8_t *payload, size_t payload_len)
 	const uint8_t *language = NULL;
 
 	if (rpos + 4 <= payload_len) {
-		dssh_parse_uint32(&payload[rpos], payload_len - rpos, &lang_len);
-		rpos += 4;
+		if (dssh_parse_uint32(&payload[rpos], payload_len - rpos, &lang_len) < 4)
+			lang_len = 0;
+		else
+			rpos += 4;
 		if (rpos + lang_len <= payload_len)
 			language = &payload[rpos];
 		else
@@ -57,8 +60,12 @@ send_auth_failure(dssh_session sess, const char *methods, bool partial_success)
 	uint8_t msg[256];
 	size_t  pos = 0;
 
+	int ret;
+
 	msg[pos++] = SSH_MSG_USERAUTH_FAILURE;
-	dssh_serialize_uint32((uint32_t)mlen, msg, sizeof(msg), &pos);
+	ret = dssh_serialize_uint32((uint32_t)mlen, msg, sizeof(msg), &pos);
+	if (ret < 0)
+		return ret;
 	memcpy(&msg[pos], methods, mlen);
 	pos += mlen;
 	msg[pos++] = partial_success ? 1 : 0;
@@ -87,17 +94,23 @@ send_passwd_changereq(dssh_session sess,
 		return DSSH_ERROR_ALLOC;
 
 	size_t pos = 0;
+	int    ret;
 
 	msg[pos++] = SSH_MSG_USERAUTH_PASSWD_CHANGEREQ;
-	dssh_serialize_uint32((uint32_t)prompt_len, msg, msg_len, &pos);
+	ret = dssh_serialize_uint32((uint32_t)prompt_len, msg, msg_len, &pos);
+	if (ret < 0)
+		goto done;
 	memcpy(&msg[pos], prompt, prompt_len);
 	pos += prompt_len;
-	dssh_serialize_uint32(0, msg, msg_len, &pos); /* language tag */
+	ret = dssh_serialize_uint32(0, msg, msg_len, &pos);
+	if (ret < 0)
+		goto done;
 
-	int res = dssh_transport_send_packet(sess, msg, pos, NULL);
+	ret = dssh_transport_send_packet(sess, msg, pos, NULL);
 
+done:
 	free(msg);
-	return res;
+	return ret;
 }
 
 static int
@@ -116,19 +129,25 @@ send_pk_ok(dssh_session sess,
 		return DSSH_ERROR_ALLOC;
 
 	size_t pos = 0;
+	int    ret;
 
 	msg[pos++] = SSH_MSG_USERAUTH_PK_OK;
-	dssh_serialize_uint32((uint32_t)algo_len, msg, msg_len, &pos);
+	ret = dssh_serialize_uint32((uint32_t)algo_len, msg, msg_len, &pos);
+	if (ret < 0)
+		goto done;
 	memcpy(&msg[pos], algo_name, algo_len);
 	pos += algo_len;
-	dssh_serialize_uint32((uint32_t)pubkey_blob_len, msg, msg_len, &pos);
+	ret = dssh_serialize_uint32((uint32_t)pubkey_blob_len, msg, msg_len, &pos);
+	if (ret < 0)
+		goto done;
 	memcpy(&msg[pos], pubkey_blob, pubkey_blob_len);
 	pos += pubkey_blob_len;
 
-	int res = dssh_transport_send_packet(sess, msg, pos, NULL);
+	ret = dssh_transport_send_packet(sess, msg, pos, NULL);
 
+done:
 	free(msg);
-	return res;
+	return ret;
 }
 
 /*
@@ -142,11 +161,14 @@ parse_userauth_prefix(const uint8_t *payload, size_t payload_len,
     const uint8_t **method, size_t *method_len)
 {
 	size_t   rpos = 1; /* skip msg_type */
+	int64_t  pv;
 	uint32_t ulen;
 
 	if (rpos + 4 > payload_len)
 		return DSSH_ERROR_PARSE;
-	dssh_parse_uint32(&payload[rpos], payload_len - rpos, &ulen);
+	pv = dssh_parse_uint32(&payload[rpos], payload_len - rpos, &ulen);
+	if (pv < 0)
+		return pv;
 	rpos += 4;
 	if (rpos + ulen > payload_len)
 		return DSSH_ERROR_PARSE;
@@ -159,7 +181,9 @@ parse_userauth_prefix(const uint8_t *payload, size_t payload_len,
 
 	if (rpos + 4 > payload_len)
 		return DSSH_ERROR_PARSE;
-	dssh_parse_uint32(&payload[rpos], payload_len - rpos, &slen);
+	pv = dssh_parse_uint32(&payload[rpos], payload_len - rpos, &slen);
+	if (pv < 0)
+		return pv;
 	rpos += 4;
 	if (rpos + slen > payload_len)
 		return DSSH_ERROR_PARSE;
@@ -170,7 +194,9 @@ parse_userauth_prefix(const uint8_t *payload, size_t payload_len,
 
 	if (rpos + 4 > payload_len)
 		return DSSH_ERROR_PARSE;
-	dssh_parse_uint32(&payload[rpos], payload_len - rpos, &mlen);
+	pv = dssh_parse_uint32(&payload[rpos], payload_len - rpos, &mlen);
+	if (pv < 0)
+		return pv;
 	rpos += 4;
 	if (rpos + mlen > payload_len)
 		return DSSH_ERROR_PARSE;
@@ -193,6 +219,7 @@ auth_server_impl(dssh_session sess,
 	uint8_t *payload;
 	size_t   payload_len;
 	int      res;
+	int64_t  pv;
 
         /* Receive SERVICE_REQUEST */
 	res = dssh_transport_recv_packet(sess, &msg_type, &payload, &payload_len);
@@ -212,9 +239,11 @@ auth_server_impl(dssh_session sess,
 		if (payload_len > 5) {
 			uint32_t slen;
 
-			dssh_parse_uint32(&payload[1], payload_len - 1, &slen);
-			if (5 + slen <= payload_len) {
-				dssh_serialize_uint32(slen, accept, sizeof(accept), &pos);
+			pv = dssh_parse_uint32(&payload[1], payload_len - 1, &slen);
+			if (pv >= 4 && 5 + slen <= payload_len) {
+				res = dssh_serialize_uint32(slen, accept, sizeof(accept), &pos);
+				if (res < 0)
+					return res;
 				memcpy(&accept[pos], &payload[5], slen);
 				pos += slen;
 			}
@@ -294,7 +323,9 @@ auth_server_impl(dssh_session sess,
 
 			if (rpos + 4 > payload_len)
 				return DSSH_ERROR_PARSE;
-			dssh_parse_uint32(&payload[rpos], payload_len - rpos, &pw_len);
+			pv = dssh_parse_uint32(&payload[rpos], payload_len - rpos, &pw_len);
+			if (pv < 0)
+				return (int)pv;
 			rpos += 4;
 			if (rpos + pw_len > payload_len)
 				return DSSH_ERROR_PARSE;
@@ -309,7 +340,9 @@ auth_server_impl(dssh_session sess,
 
 				if (rpos + 4 > payload_len)
 					return DSSH_ERROR_PARSE;
-				dssh_parse_uint32(&payload[rpos], payload_len - rpos, &new_pw_len);
+				pv = dssh_parse_uint32(&payload[rpos], payload_len - rpos, &new_pw_len);
+				if (pv < 0)
+					return (int)pv;
 				rpos += 4;
 				if (rpos + new_pw_len > payload_len)
 					return DSSH_ERROR_PARSE;
@@ -395,7 +428,9 @@ auth_server_impl(dssh_session sess,
 
 			if (rpos + 4 > payload_len)
 				return DSSH_ERROR_PARSE;
-			dssh_parse_uint32(&payload[rpos], payload_len - rpos, &algo_len);
+			pv = dssh_parse_uint32(&payload[rpos], payload_len - rpos, &algo_len);
+			if (pv < 0)
+				return (int)pv;
 			rpos += 4;
 			if (rpos + algo_len > payload_len)
 				return DSSH_ERROR_PARSE;
@@ -408,7 +443,9 @@ auth_server_impl(dssh_session sess,
 
 			if (rpos + 4 > payload_len)
 				return DSSH_ERROR_PARSE;
-			dssh_parse_uint32(&payload[rpos], payload_len - rpos, &pk_len);
+			pv = dssh_parse_uint32(&payload[rpos], payload_len - rpos, &pk_len);
+			if (pv < 0)
+				return (int)pv;
 			rpos += 4;
 			if (rpos + pk_len > payload_len)
 				return DSSH_ERROR_PARSE;
@@ -446,7 +483,9 @@ auth_server_impl(dssh_session sess,
 
 			if (rpos + 4 > payload_len)
 				return DSSH_ERROR_PARSE;
-			dssh_parse_uint32(&payload[rpos], payload_len - rpos, &sig_len);
+			pv = dssh_parse_uint32(&payload[rpos], payload_len - rpos, &sig_len);
+			if (pv < 0)
+				return (int)pv;
 			rpos += 4;
 			if (rpos + sig_len > payload_len)
 				return DSSH_ERROR_PARSE;
@@ -485,8 +524,12 @@ auth_server_impl(dssh_session sess,
 
 			size_t sp = 0;
 
-			dssh_serialize_uint32((uint32_t)sess->trans.session_id_sz,
+			res = dssh_serialize_uint32((uint32_t)sess->trans.session_id_sz,
 			    sign_data, sd_len, &sp);
+			if (res < 0) {
+				free(sign_data);
+				return res;
+			}
 			memcpy(&sign_data[sp], sess->trans.session_id,
 			    sess->trans.session_id_sz);
 			sp += sess->trans.session_id_sz;
@@ -580,25 +623,30 @@ dssh_auth_request_service(dssh_session sess, const char *service)
 		return DSSH_ERROR_ALLOC;
 
 	size_t pos = 0;
+	int    ret;
 
 	msg[pos++] = SSH_MSG_SERVICE_REQUEST;
-	dssh_serialize_uint32((uint32_t)slen, msg, msg_len, &pos);
+	ret = dssh_serialize_uint32((uint32_t)slen, msg, msg_len, &pos);
+	if (ret < 0) {
+		free(msg);
+		return ret;
+	}
 	memcpy(&msg[pos], service, slen);
 	pos += slen;
 
-	int res = dssh_transport_send_packet(sess, msg, pos, NULL);
+	ret = dssh_transport_send_packet(sess, msg, pos, NULL);
 
 	free(msg);
-	if (res < 0)
-		return res;
+	if (ret < 0)
+		return ret;
 
 	uint8_t  msg_type;
 	uint8_t *payload;
 	size_t   payload_len;
 
-	res = dssh_transport_recv_packet(sess, &msg_type, &payload, &payload_len);
-	if (res < 0)
-		return res;
+	ret = dssh_transport_recv_packet(sess, &msg_type, &payload, &payload_len);
+	if (ret < 0)
+		return ret;
 	if (msg_type != SSH_MSG_SERVICE_ACCEPT) {
 		dssh_transport_send_unimplemented(sess, sess->trans.last_rx_seq);
 		return DSSH_ERROR_INIT;
@@ -624,7 +672,8 @@ DSSH_TESTABLE int
 get_methods_impl(dssh_session sess,
     const char *username, char *methods, size_t methods_sz)
 {
-	int res = ensure_auth_service(sess);
+	int     res = ensure_auth_service(sess);
+	int64_t pv;
 
 	if (res < 0)
 		return res;
@@ -645,17 +694,24 @@ get_methods_impl(dssh_session sess,
 	size_t pos = 0;
 
 	msg[pos++] = SSH_MSG_USERAUTH_REQUEST;
-	dssh_serialize_uint32((uint32_t)ulen, msg, msg_len, &pos);
+	res = dssh_serialize_uint32((uint32_t)ulen, msg, msg_len, &pos);
+	if (res < 0)
+		goto methods_done;
 	memcpy(&msg[pos], username, ulen);
 	pos += ulen;
-	dssh_serialize_uint32(DSSH_STRLEN(service), msg, msg_len, &pos);
+	res = dssh_serialize_uint32(DSSH_STRLEN(service), msg, msg_len, &pos);
+	if (res < 0)
+		goto methods_done;
 	memcpy(&msg[pos], service, sizeof(service) - 1);
 	pos += sizeof(service) - 1;
-	dssh_serialize_uint32(DSSH_STRLEN(method), msg, msg_len, &pos);
+	res = dssh_serialize_uint32(DSSH_STRLEN(method), msg, msg_len, &pos);
+	if (res < 0)
+		goto methods_done;
 	memcpy(&msg[pos], method, sizeof(method) - 1);
 	pos += sizeof(method) - 1;
 
 	res = dssh_transport_send_packet(sess, msg, pos, NULL);
+methods_done:
 	free(msg);
 	if (res < 0)
 		return res;
@@ -680,7 +736,9 @@ get_methods_impl(dssh_session sess,
 
 		uint32_t mlen;
 
-		dssh_parse_uint32(&payload[1], payload_len - 1, &mlen);
+		pv = dssh_parse_uint32(&payload[1], payload_len - 1, &mlen);
+		if (pv < 0)
+			return (int)pv;
 		if (1 + 4 + mlen > payload_len)
 			return DSSH_ERROR_PARSE;
 
@@ -744,31 +802,38 @@ send_password_request(dssh_session sess,
 		return DSSH_ERROR_ALLOC;
 
 	size_t pos = 0;
+	int    ret;
+
+#define SER(v) do { ret = dssh_serialize_uint32((v), msg, msg_len, &pos); \
+	if (ret < 0) goto pw_done; } while (0)
 
 	msg[pos++] = SSH_MSG_USERAUTH_REQUEST;
-	dssh_serialize_uint32((uint32_t)ulen, msg, msg_len, &pos);
+	SER((uint32_t)ulen);
 	memcpy(&msg[pos], username, ulen);
 	pos += ulen;
-	dssh_serialize_uint32(DSSH_STRLEN(service), msg, msg_len, &pos);
+	SER(DSSH_STRLEN(service));
 	memcpy(&msg[pos], service, sizeof(service) - 1);
 	pos += sizeof(service) - 1;
-	dssh_serialize_uint32(DSSH_STRLEN(method), msg, msg_len, &pos);
+	SER(DSSH_STRLEN(method));
 	memcpy(&msg[pos], method, sizeof(method) - 1);
 	pos += sizeof(method) - 1;
 	msg[pos++] = change ? 1 : 0;
-	dssh_serialize_uint32((uint32_t)oplen, msg, msg_len, &pos);
+	SER((uint32_t)oplen);
 	memcpy(&msg[pos], old_password, oplen);
 	pos += oplen;
 	if (change) {
-		dssh_serialize_uint32((uint32_t)new_password_len, msg, msg_len, &pos);
+		SER((uint32_t)new_password_len);
 		memcpy(&msg[pos], new_password, new_password_len);
 		pos += new_password_len;
 	}
 
-	int res = dssh_transport_send_packet(sess, msg, pos, NULL);
+#undef SER
 
+	ret = dssh_transport_send_packet(sess, msg, pos, NULL);
+
+pw_done:
 	free(msg);
-	return res;
+	return ret;
 }
 
 DSSH_TESTABLE int
@@ -776,7 +841,8 @@ auth_password_impl(dssh_session sess,
     const char *username, const char *password,
     dssh_auth_passwd_change_cb passwd_change_cb, void *passwd_change_cbdata)
 {
-	int res = ensure_auth_service(sess);
+	int     res = ensure_auth_service(sess);
+	int64_t pv;
 
 	if (res < 0)
 		return res;
@@ -814,7 +880,9 @@ auth_password_impl(dssh_session sess,
 
 			if (rpos + 4 > payload_len)
 				return DSSH_ERROR_PARSE;
-			dssh_parse_uint32(&payload[rpos], payload_len - rpos, &prompt_len);
+			pv = dssh_parse_uint32(&payload[rpos], payload_len - rpos, &prompt_len);
+			if (pv < 0)
+				return (int)pv;
 			rpos += 4;
 			if (rpos + prompt_len > payload_len)
 				return DSSH_ERROR_PARSE;
@@ -827,8 +895,11 @@ auth_password_impl(dssh_session sess,
 			const uint8_t *language = NULL;
 
 			if (rpos + 4 <= payload_len) {
-				dssh_parse_uint32(&payload[rpos], payload_len - rpos, &lang_len);
-				rpos += 4;
+				pv = dssh_parse_uint32(&payload[rpos], payload_len - rpos, &lang_len);
+				if (pv < 0)
+					lang_len = 0;
+				else
+					rpos += 4;
 				if (rpos + lang_len <= payload_len)
 					language = &payload[rpos];
 				else
@@ -898,22 +969,29 @@ auth_kbi_impl(dssh_session sess,
 	if (msg == NULL)
 		return DSSH_ERROR_ALLOC;
 
-	size_t pos = 0;
+	size_t  pos = 0;
+	int     res;
+	int64_t pv;
+
+#define SER(v) do { res = dssh_serialize_uint32((v), msg, msg_len, &pos); \
+	if (res < 0) { free(msg); return res; } } while (0)
 
 	msg[pos++] = SSH_MSG_USERAUTH_REQUEST;
-	dssh_serialize_uint32((uint32_t)ulen, msg, msg_len, &pos);
+	SER((uint32_t)ulen);
 	memcpy(&msg[pos], username, ulen);
 	pos += ulen;
-	dssh_serialize_uint32(DSSH_STRLEN(service), msg, msg_len, &pos);
+	SER(DSSH_STRLEN(service));
 	memcpy(&msg[pos], service, sizeof(service) - 1);
 	pos += sizeof(service) - 1;
-	dssh_serialize_uint32(DSSH_STRLEN(method), msg, msg_len, &pos);
+	SER(DSSH_STRLEN(method));
 	memcpy(&msg[pos], method, sizeof(method) - 1);
 	pos += sizeof(method) - 1;
-	dssh_serialize_uint32(0, msg, msg_len, &pos); /* language */
-	dssh_serialize_uint32(0, msg, msg_len, &pos); /* submethods */
+	SER(0); /* language */
+	SER(0); /* submethods */
 
-	int res = dssh_transport_send_packet(sess, msg, pos, NULL);
+#undef SER
+
+	res = dssh_transport_send_packet(sess, msg, pos, NULL);
 
 	free(msg);
 	if (res < 0)
@@ -946,7 +1024,9 @@ auth_kbi_impl(dssh_session sess,
                         /* Parse name string */
 			if (rpos + 4 > payload_len)
 				return DSSH_ERROR_PARSE;
-			dssh_parse_uint32(&payload[rpos], payload_len - rpos, &slen);
+			pv = dssh_parse_uint32(&payload[rpos], payload_len - rpos, &slen);
+			if (pv < 0)
+				return (int)pv;
 			rpos += 4;
 			if (rpos + slen > payload_len)
 				return DSSH_ERROR_PARSE;
@@ -959,7 +1039,9 @@ auth_kbi_impl(dssh_session sess,
                         /* Parse instruction string */
 			if (rpos + 4 > payload_len)
 				return DSSH_ERROR_PARSE;
-			dssh_parse_uint32(&payload[rpos], payload_len - rpos, &slen);
+			pv = dssh_parse_uint32(&payload[rpos], payload_len - rpos, &slen);
+			if (pv < 0)
+				return (int)pv;
 			rpos += 4;
 			if (rpos + slen > payload_len)
 				return DSSH_ERROR_PARSE;
@@ -972,7 +1054,9 @@ auth_kbi_impl(dssh_session sess,
                         /* Parse language string (ignored) */
 			if (rpos + 4 > payload_len)
 				return DSSH_ERROR_PARSE;
-			dssh_parse_uint32(&payload[rpos], payload_len - rpos, &slen);
+			pv = dssh_parse_uint32(&payload[rpos], payload_len - rpos, &slen);
+			if (pv < 0)
+				return (int)pv;
 			rpos += 4;
 			if (rpos + slen > payload_len)
 				return DSSH_ERROR_PARSE;
@@ -984,7 +1068,9 @@ auth_kbi_impl(dssh_session sess,
 
 			uint32_t num_prompts;
 
-			dssh_parse_uint32(&payload[rpos], payload_len - rpos, &num_prompts);
+			pv = dssh_parse_uint32(&payload[rpos], payload_len - rpos, &num_prompts);
+			if (pv < 0)
+				return (int)pv;
 			rpos += 4;
 
                         /* Parse each prompt + echo flag */
@@ -1034,7 +1120,15 @@ auth_kbi_impl(dssh_session sess,
 						free(response_lens);
 						return DSSH_ERROR_PARSE;
 					}
-					dssh_parse_uint32(&payload[rpos], payload_len - rpos, &slen);
+					pv = dssh_parse_uint32(&payload[rpos], payload_len - rpos, &slen);
+					if (pv < 0) {
+						free(prompts);
+						free(prompt_lens);
+						free(echo);
+						free(responses);
+						free(response_lens);
+						return (int)pv;
+					}
 					rpos += 4;
 					if (rpos + slen + 1 > payload_len) {
 						free(prompts);
@@ -1103,9 +1197,25 @@ auth_kbi_impl(dssh_session sess,
 			size_t rp = 0;
 
 			resp[rp++] = SSH_MSG_USERAUTH_INFO_RESPONSE;
-			dssh_serialize_uint32(num_prompts, resp, resp_sz, &rp);
+			res = dssh_serialize_uint32(num_prompts, resp, resp_sz, &rp);
+			if (res < 0) {
+				for (uint32_t j = 0; j < num_prompts; j++)
+					free(responses[j]);
+				free(responses);
+				free(response_lens);
+				free(resp);
+				return res;
+			}
 			for (uint32_t i = 0; i < num_prompts; i++) {
-				dssh_serialize_uint32((uint32_t)response_lens[i], resp, resp_sz, &rp);
+				res = dssh_serialize_uint32((uint32_t)response_lens[i], resp, resp_sz, &rp);
+				if (res < 0) {
+					for (uint32_t j = i; j < num_prompts; j++)
+						free(responses[j]);
+					free(responses);
+					free(response_lens);
+					free(resp);
+					return res;
+				}
 				if (response_lens[i] > 0)
 					memcpy(&resp[rp], responses[i], response_lens[i]);
 				rp += response_lens[i];
@@ -1198,29 +1308,31 @@ auth_publickey_impl(dssh_session sess,
 
 	size_t sp = 0;
 
-	dssh_serialize_uint32((uint32_t)sess->trans.session_id_sz,
-	    sign_data, sign_data_len, &sp);
+#define SD_SER(v) do { res = dssh_serialize_uint32((v), sign_data, sign_data_len, &sp); \
+	if (res < 0) { free(sign_data); return res; } } while (0)
+
+	SD_SER((uint32_t)sess->trans.session_id_sz);
 	memcpy(&sign_data[sp], sess->trans.session_id, sess->trans.session_id_sz);
 	sp += sess->trans.session_id_sz;
 	sign_data[sp++] = SSH_MSG_USERAUTH_REQUEST;
-	dssh_serialize_uint32((uint32_t)ulen, sign_data, sign_data_len, &sp);
+	SD_SER((uint32_t)ulen);
 	memcpy(&sign_data[sp], username, ulen);
 	sp += ulen;
-	dssh_serialize_uint32(DSSH_STRLEN(service),
-	    sign_data, sign_data_len, &sp);
+	SD_SER(DSSH_STRLEN(service));
 	memcpy(&sign_data[sp], service, sizeof(service) - 1);
 	sp += sizeof(service) - 1;
-	dssh_serialize_uint32(DSSH_STRLEN(method),
-	    sign_data, sign_data_len, &sp);
+	SD_SER(DSSH_STRLEN(method));
 	memcpy(&sign_data[sp], method, sizeof(method) - 1);
 	sp += sizeof(method) - 1;
 	sign_data[sp++] = 1; /* TRUE */
-	dssh_serialize_uint32((uint32_t)alen, sign_data, sign_data_len, &sp);
+	SD_SER((uint32_t)alen);
 	memcpy(&sign_data[sp], algo_name, alen);
 	sp += alen;
-	dssh_serialize_uint32((uint32_t)pubkey_len, sign_data, sign_data_len, &sp);
+	SD_SER((uint32_t)pubkey_len);
 	memcpy(&sign_data[sp], pubkey_buf, pubkey_len);
 	sp += pubkey_len;
+
+#undef SD_SER
 
         /* Sign the data */
 	uint8_t sig_buf[1024];
@@ -1255,26 +1367,31 @@ auth_publickey_impl(dssh_session sess,
 
 	size_t pos = 0;
 
+#define MSG_SER(v) do { res = dssh_serialize_uint32((v), msg, msg_len, &pos); \
+	if (res < 0) { free(msg); return res; } } while (0)
+
 	msg[pos++] = SSH_MSG_USERAUTH_REQUEST;
-	dssh_serialize_uint32((uint32_t)ulen, msg, msg_len, &pos);
+	MSG_SER((uint32_t)ulen);
 	memcpy(&msg[pos], username, ulen);
 	pos += ulen;
-	dssh_serialize_uint32(DSSH_STRLEN(service), msg, msg_len, &pos);
+	MSG_SER(DSSH_STRLEN(service));
 	memcpy(&msg[pos], service, sizeof(service) - 1);
 	pos += sizeof(service) - 1;
-	dssh_serialize_uint32(DSSH_STRLEN(method), msg, msg_len, &pos);
+	MSG_SER(DSSH_STRLEN(method));
 	memcpy(&msg[pos], method, sizeof(method) - 1);
 	pos += sizeof(method) - 1;
 	msg[pos++] = 1; /* TRUE */
-	dssh_serialize_uint32((uint32_t)alen, msg, msg_len, &pos);
+	MSG_SER((uint32_t)alen);
 	memcpy(&msg[pos], algo_name, alen);
 	pos += alen;
-	dssh_serialize_uint32((uint32_t)pubkey_len, msg, msg_len, &pos);
+	MSG_SER((uint32_t)pubkey_len);
 	memcpy(&msg[pos], pubkey_buf, pubkey_len);
 	pos += pubkey_len;
-	dssh_serialize_uint32((uint32_t)sig_len, msg, msg_len, &pos);
+	MSG_SER((uint32_t)sig_len);
 	memcpy(&msg[pos], sig_buf, sig_len);
 	pos += sig_len;
+
+#undef MSG_SER
 
 	res = dssh_transport_send_packet(sess, msg, pos, NULL);
 	free(msg);

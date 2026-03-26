@@ -59,7 +59,11 @@ serialize_bn_mpint(const BIGNUM *bn, uint8_t *buf, size_t bufsz, size_t *pos)
 		return DSSH_ERROR_TOOLONG;
 	}
 
-	dssh_serialize_uint32(mpint_len, buf, bufsz, pos);
+	int sret = dssh_serialize_uint32(mpint_len, buf, bufsz, pos);
+	if (sret < 0) {
+		free(tmp);
+		return sret;
+	}
 	if (need_pad)
 		buf[(*pos)++] = 0;
 	memcpy(&buf[*pos], tmp, bn_sz);
@@ -78,14 +82,8 @@ parse_bn_mpint(const uint8_t *buf, size_t bufsz, BIGNUM **bn)
 
 	uint32_t len;
 
-        /* dssh_parse_uint32 cannot fail here: it only fails when
-         * bufsz < 4, which is already ruled out above. */
-#ifndef DSSH_TESTING
 	if (dssh_parse_uint32(buf, bufsz, &len) < 4)
 		return DSSH_ERROR_PARSE;
-#else
-	dssh_parse_uint32(buf, bufsz, &len);
-#endif
 	if (4 + len > bufsz)
 		return DSSH_ERROR_PARSE;
 	if (len > INT_MAX)
@@ -139,67 +137,32 @@ compute_exchange_hash(const char *v_c, size_t v_c_len,
 		return DSSH_ERROR_ALLOC;
 
 	uint8_t lenbuf[4];
+	size_t  lp;
 	int     ok = EVP_DigestInit_ex(mdctx, EVP_sha256(), NULL);
 
-	{
-		size_t tp = 0;
+#define HASH_U32(val, data, len) do { \
+	lp = 0; \
+	if (dssh_serialize_uint32((val), lenbuf, 4, &lp) < 0) { ok = 0; break; } \
+	ok = ok && EVP_DigestUpdate(mdctx, lenbuf, 4); \
+	ok = ok && EVP_DigestUpdate(mdctx, (data), (len)); \
+} while (0)
+#define HASH_U32_ONLY(val) do { \
+	lp = 0; \
+	if (dssh_serialize_uint32((val), lenbuf, 4, &lp) < 0) { ok = 0; break; } \
+	ok = ok && EVP_DigestUpdate(mdctx, lenbuf, 4); \
+} while (0)
 
-		dssh_serialize_uint32((uint32_t)v_c_len, lenbuf, 4, &tp);
-	}
+	HASH_U32((uint32_t)v_c_len, v_c, v_c_len);
+	HASH_U32((uint32_t)v_s_len, v_s, v_s_len);
+	HASH_U32((uint32_t)i_c_len, i_c, i_c_len);
+	HASH_U32((uint32_t)i_s_len, i_s, i_s_len);
+	HASH_U32((uint32_t)k_s_len, k_s, k_s_len);
+	HASH_U32_ONLY(gex_min);
+	HASH_U32_ONLY(gex_n);
+	HASH_U32_ONLY(gex_max);
 
-	ok = ok && EVP_DigestUpdate(mdctx, lenbuf, 4);
-	ok = ok && EVP_DigestUpdate(mdctx, v_c, v_c_len);
-
-	{
-		size_t tp = 0;
-
-		dssh_serialize_uint32((uint32_t)v_s_len, lenbuf, 4, &tp);
-	}
-	ok = ok && EVP_DigestUpdate(mdctx, lenbuf, 4);
-	ok = ok && EVP_DigestUpdate(mdctx, v_s, v_s_len);
-
-	{
-		size_t tp = 0;
-
-		dssh_serialize_uint32((uint32_t)i_c_len, lenbuf, 4, &tp);
-	}
-	ok = ok && EVP_DigestUpdate(mdctx, lenbuf, 4);
-	ok = ok && EVP_DigestUpdate(mdctx, i_c, i_c_len);
-
-	{
-		size_t tp = 0;
-
-		dssh_serialize_uint32((uint32_t)i_s_len, lenbuf, 4, &tp);
-	}
-	ok = ok && EVP_DigestUpdate(mdctx, lenbuf, 4);
-	ok = ok && EVP_DigestUpdate(mdctx, i_s, i_s_len);
-
-	{
-		size_t tp = 0;
-
-		dssh_serialize_uint32((uint32_t)k_s_len, lenbuf, 4, &tp);
-	}
-	ok = ok && EVP_DigestUpdate(mdctx, lenbuf, 4);
-	ok = ok && EVP_DigestUpdate(mdctx, k_s, k_s_len);
-
-	{
-		size_t tp = 0;
-
-		dssh_serialize_uint32(gex_min, lenbuf, 4, &tp);
-	}
-	ok = ok && EVP_DigestUpdate(mdctx, lenbuf, 4);
-	{
-		size_t tp = 0;
-
-		dssh_serialize_uint32(gex_n, lenbuf, 4, &tp);
-	}
-	ok = ok && EVP_DigestUpdate(mdctx, lenbuf, 4);
-	{
-		size_t tp = 0;
-
-		dssh_serialize_uint32(gex_max, lenbuf, 4, &tp);
-	}
-	ok = ok && EVP_DigestUpdate(mdctx, lenbuf, 4);
+#undef HASH_U32
+#undef HASH_U32_ONLY
 
 	{
 		uint8_t mpbuf[4096];
@@ -259,9 +222,15 @@ dhgex_handler(struct dssh_kex_context *kctx)
 			size_t  pos = 0;
 
 			msg[pos++] = SSH_MSG_KEX_DH_GEX_REQUEST;
-			dssh_serialize_uint32(client_min, msg, sizeof(msg), &pos);
-			dssh_serialize_uint32(client_n, msg, sizeof(msg), &pos);
-			dssh_serialize_uint32(client_max, msg, sizeof(msg), &pos);
+			res = dssh_serialize_uint32(client_min, msg, sizeof(msg), &pos);
+			if (res < 0)
+				return res;
+			res = dssh_serialize_uint32(client_n, msg, sizeof(msg), &pos);
+			if (res < 0)
+				return res;
+			res = dssh_serialize_uint32(client_max, msg, sizeof(msg), &pos);
+			if (res < 0)
+				return res;
 			res = kctx->send(msg, pos, kctx->io_ctx);
 			if (res < 0)
 				return res;
@@ -368,17 +337,11 @@ dhgex_handler(struct dssh_kex_context *kctx)
 			goto cleanup;
 		}
 
-                /* dssh_parse_uint32 cannot fail here: bufsz >= 4
-                 * guaranteed by the check above. */
-#ifndef DSSH_TESTING
 		if (dssh_parse_uint32(&payload[rpos], payload_len - rpos, &ks_len) < 4) {
 			BN_clear_free(x);
 			res = DSSH_ERROR_PARSE;
 			goto cleanup;
 		}
-#else
-		dssh_parse_uint32(&payload[rpos], payload_len - rpos, &ks_len);
-#endif
 		if (rpos + 4 + ks_len > payload_len) {
 			BN_clear_free(x);
 			res = DSSH_ERROR_PARSE;
@@ -427,15 +390,11 @@ dhgex_handler(struct dssh_kex_context *kctx)
 			res = DSSH_ERROR_PARSE;
 			goto cleanup;
 		}
-#ifndef DSSH_TESTING
 		if (dssh_parse_uint32(&payload[rpos], payload_len - rpos, &sig_len) < 4) {
 			BN_clear_free(x);
 			res = DSSH_ERROR_PARSE;
 			goto cleanup;
 		}
-#else
-		dssh_parse_uint32(&payload[rpos], payload_len - rpos, &sig_len);
-#endif
 		if (rpos + 4 + sig_len > payload_len) {
 			BN_clear_free(x);
 			res = DSSH_ERROR_PARSE;
@@ -528,9 +487,10 @@ dhgex_handler(struct dssh_kex_context *kctx)
 			return DSSH_ERROR_PARSE;
 		if (payload_len < 1 + 12)
 			return DSSH_ERROR_PARSE;
-		dssh_parse_uint32(&payload[1], payload_len - 1, &client_min);
-		dssh_parse_uint32(&payload[5], payload_len - 5, &client_n);
-		dssh_parse_uint32(&payload[9], payload_len - 9, &client_max);
+		if (dssh_parse_uint32(&payload[1], payload_len - 1, &client_min) < 4
+		    || dssh_parse_uint32(&payload[5], payload_len - 5, &client_n) < 4
+		    || dssh_parse_uint32(&payload[9], payload_len - 9, &client_max) < 4)
+			return DSSH_ERROR_PARSE;
 
                 /* 2. Select and send a DH group via the application's provider. */
 		struct dssh_dh_gex_provider *prov =
@@ -703,7 +663,11 @@ dhgex_handler(struct dssh_kex_context *kctx)
 			size_t pos = 0;
 
 			reply[pos++] = SSH_MSG_KEX_DH_GEX_REPLY;
-			dssh_serialize_uint32((uint32_t)k_s_len, reply, reply_sz, &pos);
+			res = dssh_serialize_uint32((uint32_t)k_s_len, reply, reply_sz, &pos);
+			if (res < 0) {
+				free(reply);
+				goto cleanup;
+			}
 			memcpy(&reply[pos], k_s_buf, k_s_len);
 			pos += k_s_len;
 
@@ -713,7 +677,11 @@ dhgex_handler(struct dssh_kex_context *kctx)
 				free(reply);
 				goto cleanup;
 			}
-			dssh_serialize_uint32((uint32_t)sig_len, reply, reply_sz, &pos);
+			res = dssh_serialize_uint32((uint32_t)sig_len, reply, reply_sz, &pos);
+			if (res < 0) {
+				free(reply);
+				goto cleanup;
+			}
 			memcpy(&reply[pos], sig_buf, sig_len);
 			pos += sig_len;
 			res = kctx->send(reply, pos, kctx->io_ctx);

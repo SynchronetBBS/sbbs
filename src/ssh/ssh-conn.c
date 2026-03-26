@@ -18,25 +18,38 @@ dssh_parse_pty_req_data(const uint8_t *data, size_t data_len,
     struct dssh_pty_req *pty)
 {
 	size_t   pos = 0;
+	int64_t  pv;
 	uint32_t tlen;
 
 	if (pos + 4 > data_len)
 		return DSSH_ERROR_PARSE;
-	dssh_parse_uint32(&data[pos], data_len - pos, &tlen);
+	pv = dssh_parse_uint32(&data[pos], data_len - pos, &tlen);
+	if (pv < 0)
+		return (int)pv;
 	pos += 4;
 	if (pos + tlen + 16 > data_len)
 		return DSSH_ERROR_PARSE;
 	pty->term = (const char *)&data[pos];
 	pos += tlen;
-	dssh_parse_uint32(&data[pos], data_len - pos, &pty->cols);
-	dssh_parse_uint32(&data[pos + 4], data_len - pos - 4, &pty->rows);
-	dssh_parse_uint32(&data[pos + 8], data_len - pos - 8, &pty->wpx);
-	dssh_parse_uint32(&data[pos + 12], data_len - pos - 12, &pty->hpx);
+	pv = dssh_parse_uint32(&data[pos], data_len - pos, &pty->cols);
+	if (pv < 0)
+		return (int)pv;
+	pv = dssh_parse_uint32(&data[pos + 4], data_len - pos - 4, &pty->rows);
+	if (pv < 0)
+		return (int)pv;
+	pv = dssh_parse_uint32(&data[pos + 8], data_len - pos - 8, &pty->wpx);
+	if (pv < 0)
+		return (int)pv;
+	pv = dssh_parse_uint32(&data[pos + 12], data_len - pos - 12, &pty->hpx);
+	if (pv < 0)
+		return (int)pv;
 	pos += 16;
 	if (pos + 4 <= data_len) {
 		uint32_t mlen;
 
-		dssh_parse_uint32(&data[pos], data_len - pos, &mlen);
+		pv = dssh_parse_uint32(&data[pos], data_len - pos, &mlen);
+		if (pv < 0)
+			return (int)pv;
 		pos += 4;
 		if (pos + mlen <= data_len) {
 			pty->modes = &data[pos];
@@ -60,11 +73,14 @@ dssh_parse_env_data(const uint8_t *data, size_t data_len,
     const uint8_t **value, size_t *value_len)
 {
 	size_t   pos = 0;
+	int64_t  pv;
 	uint32_t nlen;
 
 	if (pos + 4 > data_len)
 		return DSSH_ERROR_PARSE;
-	dssh_parse_uint32(&data[pos], data_len - pos, &nlen);
+	pv = dssh_parse_uint32(&data[pos], data_len - pos, &nlen);
+	if (pv < 0)
+		return (int)pv;
 	pos += 4;
 	if (pos + nlen > data_len)
 		return DSSH_ERROR_PARSE;
@@ -76,7 +92,9 @@ dssh_parse_env_data(const uint8_t *data, size_t data_len,
 
 	if (pos + 4 > data_len)
 		return DSSH_ERROR_PARSE;
-	dssh_parse_uint32(&data[pos], data_len - pos, &vlen);
+	pv = dssh_parse_uint32(&data[pos], data_len - pos, &vlen);
+	if (pv < 0)
+		return (int)pv;
 	pos += 4;
 	if (pos + vlen > data_len)
 		return DSSH_ERROR_PARSE;
@@ -93,8 +111,11 @@ dssh_parse_exec_data(const uint8_t *data, size_t data_len,
 		return DSSH_ERROR_PARSE;
 
 	uint32_t clen;
+	int64_t  pv;
 
-	dssh_parse_uint32(data, data_len, &clen);
+	pv = dssh_parse_uint32(data, data_len, &clen);
+	if (pv < 0)
+		return (int)pv;
 	if (4 + clen > data_len)
 		return DSSH_ERROR_PARSE;
 	*command = &data[4];
@@ -110,8 +131,11 @@ dssh_parse_subsystem_data(const uint8_t *data, size_t data_len,
 		return DSSH_ERROR_PARSE;
 
 	uint32_t slen;
+	int64_t  pv;
 
-	dssh_parse_uint32(data, data_len, &slen);
+	pv = dssh_parse_uint32(data, data_len, &slen);
+	if (pv < 0)
+		return (int)pv;
 	if (4 + slen > data_len)
 		return DSSH_ERROR_PARSE;
 	*name = &data[4];
@@ -162,19 +186,25 @@ dssh_conn_send_data(dssh_session sess,
 		return DSSH_ERROR_ALLOC;
 
 	size_t pos = 0;
+	int    ret;
 
 	msg[pos++] = SSH_MSG_CHANNEL_DATA;
-	dssh_serialize_uint32(ch->remote_id, msg, msg_len, &pos);
-	dssh_serialize_uint32(len_u32, msg, msg_len, &pos);
+	ret = dssh_serialize_uint32(ch->remote_id, msg, msg_len, &pos);
+	if (ret < 0)
+		goto done;
+	ret = dssh_serialize_uint32(len_u32, msg, msg_len, &pos);
+	if (ret < 0)
+		goto done;
 	memcpy(&msg[pos], data, len);
 	pos += len;
 
 	ch->remote_window -= len_u32;
 
-	int res = dssh_transport_send_packet(sess, msg, pos, NULL);
+	ret = dssh_transport_send_packet(sess, msg, pos, NULL);
 
+done:
 	free(msg);
-	return res;
+	return ret;
 }
 
 DSSH_TESTABLE int
@@ -197,20 +227,28 @@ dssh_conn_send_extended_data(dssh_session sess,
 		return DSSH_ERROR_ALLOC;
 
 	size_t pos = 0;
+	int    ret;
 
 	msg[pos++] = SSH_MSG_CHANNEL_EXTENDED_DATA;
-	dssh_serialize_uint32(ch->remote_id, msg, msg_len, &pos);
-	dssh_serialize_uint32(data_type_code, msg, msg_len, &pos);
-	dssh_serialize_uint32(len_u32, msg, msg_len, &pos);
+	ret = dssh_serialize_uint32(ch->remote_id, msg, msg_len, &pos);
+	if (ret < 0)
+		goto done;
+	ret = dssh_serialize_uint32(data_type_code, msg, msg_len, &pos);
+	if (ret < 0)
+		goto done;
+	ret = dssh_serialize_uint32(len_u32, msg, msg_len, &pos);
+	if (ret < 0)
+		goto done;
 	memcpy(&msg[pos], data, len);
 	pos += len;
 
 	ch->remote_window -= len_u32;
 
-	int res = dssh_transport_send_packet(sess, msg, pos, NULL);
+	ret = dssh_transport_send_packet(sess, msg, pos, NULL);
 
+done:
 	free(msg);
-	return res;
+	return ret;
 }
 
 #define SSH_EXTENDED_DATA_STDERR UINT32_C(1)
@@ -222,9 +260,15 @@ dssh_conn_send_window_adjust(dssh_session sess,
 	uint8_t msg[32];
 	size_t  pos = 0;
 
+	int ret;
+
 	msg[pos++] = SSH_MSG_CHANNEL_WINDOW_ADJUST;
-	dssh_serialize_uint32(ch->remote_id, msg, sizeof(msg), &pos);
-	dssh_serialize_uint32(bytes, msg, sizeof(msg), &pos);
+	ret = dssh_serialize_uint32(ch->remote_id, msg, sizeof(msg), &pos);
+	if (ret < 0)
+		return ret;
+	ret = dssh_serialize_uint32(bytes, msg, sizeof(msg), &pos);
+	if (ret < 0)
+		return ret;
 
 	ch->local_window = window_add(ch->local_window, bytes);
 	return dssh_transport_send_packet(sess, msg, pos, NULL);
@@ -238,13 +282,21 @@ dssh_conn_send_exit_status(dssh_session sess,
 	uint8_t           msg[32];
 	size_t            pos = 0;
 
+	int ret;
+
 	msg[pos++] = SSH_MSG_CHANNEL_REQUEST;
-	dssh_serialize_uint32(ch->remote_id, msg, sizeof(msg), &pos);
-	dssh_serialize_uint32(sizeof(req) - 1, msg, sizeof(msg), &pos);
+	ret = dssh_serialize_uint32(ch->remote_id, msg, sizeof(msg), &pos);
+	if (ret < 0)
+		return ret;
+	ret = dssh_serialize_uint32(sizeof(req) - 1, msg, sizeof(msg), &pos);
+	if (ret < 0)
+		return ret;
 	memcpy(&msg[pos], req, sizeof(req) - 1);
 	pos += sizeof(req) - 1;
 	msg[pos++] = 0; /* want_reply = false */
-	dssh_serialize_uint32(exit_code, msg, sizeof(msg), &pos);
+	ret = dssh_serialize_uint32(exit_code, msg, sizeof(msg), &pos);
+	if (ret < 0)
+		return ret;
 	return dssh_transport_send_packet(sess, msg, pos, NULL);
 }
 
@@ -258,8 +310,12 @@ dssh_conn_send_eof(dssh_session sess,
 	uint8_t msg[8];
 	size_t  pos = 0;
 
+	int ret;
+
 	msg[pos++] = SSH_MSG_CHANNEL_EOF;
-	dssh_serialize_uint32(ch->remote_id, msg, sizeof(msg), &pos);
+	ret = dssh_serialize_uint32(ch->remote_id, msg, sizeof(msg), &pos);
+	if (ret < 0)
+		return ret;
 
 	ch->eof_sent = true;
 	return dssh_transport_send_packet(sess, msg, pos, NULL);
@@ -274,9 +330,12 @@ dssh_conn_close(dssh_session sess,
 
 	uint8_t msg[8];
 	size_t  pos = 0;
+	int     ret;
 
 	msg[pos++] = SSH_MSG_CHANNEL_CLOSE;
-	dssh_serialize_uint32(ch->remote_id, msg, sizeof(msg), &pos);
+	ret = dssh_serialize_uint32(ch->remote_id, msg, sizeof(msg), &pos);
+	if (ret < 0)
+		return ret;
 
 	ch->close_sent = true;
 	ch->open = false;
@@ -471,7 +530,8 @@ demux_dispatch(dssh_session sess, uint8_t msg_type,
 
 	uint32_t local_id;
 
-	dssh_parse_uint32(&payload[1], payload_len - 1, &local_id);
+	if (dssh_parse_uint32(&payload[1], payload_len - 1, &local_id) < 4)
+		return;
 
 	dssh_channel ch = find_channel(sess, local_id);
 
@@ -514,7 +574,8 @@ demux_dispatch(dssh_session sess, uint8_t msg_type,
 			{
 				uint32_t dlen;
 
-				dssh_parse_uint32(&payload[5], payload_len - 5, &dlen);
+				if (dssh_parse_uint32(&payload[5], payload_len - 5, &dlen) < 4)
+					break;
 				if (9 + dlen > payload_len)
 					dlen = (uint32_t)(payload_len - 9);
 
@@ -539,11 +600,13 @@ demux_dispatch(dssh_session sess, uint8_t msg_type,
 			{
 				uint32_t data_type;
 
-				dssh_parse_uint32(&payload[5], payload_len - 5, &data_type);
+				if (dssh_parse_uint32(&payload[5], payload_len - 5, &data_type) < 4)
+					break;
 
 				uint32_t dlen;
 
-				dssh_parse_uint32(&payload[9], payload_len - 9, &dlen);
+				if (dssh_parse_uint32(&payload[9], payload_len - 9, &dlen) < 4)
+					break;
 				if (13 + dlen > payload_len)
 					dlen = (uint32_t)(payload_len - 13);
 
@@ -562,8 +625,8 @@ demux_dispatch(dssh_session sess, uint8_t msg_type,
 			if (payload_len >= 9) {
 				uint32_t bytes;
 
-				dssh_parse_uint32(&payload[5], payload_len - 5, &bytes);
-				ch->remote_window = window_add(ch->remote_window, bytes);
+				if (dssh_parse_uint32(&payload[5], payload_len - 5, &bytes) >= 4)
+					ch->remote_window = window_add(ch->remote_window, bytes);
 			}
 			break;
 
@@ -613,8 +676,9 @@ demux_dispatch(dssh_session sess, uint8_t msg_type,
 						if (rpos + 4 <= payload_len) {
 							uint32_t sname_len;
 
-							dssh_parse_uint32(&payload[rpos], payload_len - rpos,
-							    &sname_len);
+							if (dssh_parse_uint32(&payload[rpos], payload_len - rpos,
+							    &sname_len) < 4)
+								break;
 							rpos += 4;
 							if (rpos + sname_len <= payload_len) {
 								char   sname[32];
@@ -632,26 +696,24 @@ demux_dispatch(dssh_session sess, uint8_t msg_type,
 					}
 					else if ((rtype_len == 11) && (memcmp(rtype, "exit-status", 11) == 0)) {
 						if (rpos + 4 <= payload_len) {
-							dssh_parse_uint32(&payload[rpos],
+							if (dssh_parse_uint32(&payload[rpos],
 							    payload_len - rpos,
-							    &ch->exit_code);
-							ch->exit_code_received = true;
+							    &ch->exit_code) >= 4)
+								ch->exit_code_received = true;
 						}
 					}
 					else if ((rtype_len == 13) && (memcmp(rtype, "window-change", 13) == 0)) {
 						if ((ch->window_change_cb != NULL) && (rpos + 16 <= payload_len)) {
 							uint32_t wc_cols, wc_rows, wc_wpx, wc_hpx;
 
-							dssh_parse_uint32(&payload[rpos], payload_len - rpos, &wc_cols);
-							dssh_parse_uint32(&payload[rpos + 4],
-							    payload_len - rpos - 4,
-							    &wc_rows);
-							dssh_parse_uint32(&payload[rpos + 8],
-							    payload_len - rpos - 8,
-							    &wc_wpx);
-							dssh_parse_uint32(&payload[rpos + 12],
-							    payload_len - rpos - 12,
-							    &wc_hpx);
+							if (dssh_parse_uint32(&payload[rpos], payload_len - rpos, &wc_cols) < 4
+							    || dssh_parse_uint32(&payload[rpos + 4],
+							        payload_len - rpos - 4, &wc_rows) < 4
+							    || dssh_parse_uint32(&payload[rpos + 8],
+							        payload_len - rpos - 8, &wc_wpx) < 4
+							    || dssh_parse_uint32(&payload[rpos + 12],
+							        payload_len - rpos - 12, &wc_hpx) < 4)
+								break;
 							mtx_unlock(&ch->buf_mtx);
 							ch->window_change_cb(wc_cols, wc_rows, wc_wpx, wc_hpx,
 							    ch->window_change_cbdata);
@@ -668,10 +730,11 @@ demux_dispatch(dssh_session sess, uint8_t msg_type,
 					size_t  fp = 0;
 
 					fail[fp++] = SSH_MSG_CHANNEL_FAILURE;
-					dssh_serialize_uint32(ch->remote_id, fail, sizeof(fail), &fp);
-					mtx_unlock(&ch->buf_mtx);
-					dssh_transport_send_packet(sess, fail, fp, NULL);
-					mtx_lock(&ch->buf_mtx);
+					if (dssh_serialize_uint32(ch->remote_id, fail, sizeof(fail), &fp) == 0) {
+						mtx_unlock(&ch->buf_mtx);
+						dssh_transport_send_packet(sess, fail, fp, NULL);
+						mtx_lock(&ch->buf_mtx);
+					}
 				}
 			}
 			break;
@@ -707,7 +770,8 @@ demux_open_confirmation(dssh_session sess,
 
 	uint32_t local_id;
 
-	dssh_parse_uint32(&payload[1], payload_len - 1, &local_id);
+	if (dssh_parse_uint32(&payload[1], payload_len - 1, &local_id) < 4)
+		return;
 
 	dssh_channel ch = find_channel(sess, local_id);
 
@@ -715,9 +779,12 @@ demux_open_confirmation(dssh_session sess,
 		return;
 
 	mtx_lock(&ch->buf_mtx);
-	dssh_parse_uint32(&payload[5], payload_len - 5, &ch->remote_id);
-	dssh_parse_uint32(&payload[9], payload_len - 9, &ch->remote_window);
-	dssh_parse_uint32(&payload[13], payload_len - 13, &ch->remote_max_packet);
+	if (dssh_parse_uint32(&payload[5], payload_len - 5, &ch->remote_id) < 4
+	    || dssh_parse_uint32(&payload[9], payload_len - 9, &ch->remote_window) < 4
+	    || dssh_parse_uint32(&payload[13], payload_len - 13, &ch->remote_max_packet) < 4) {
+		mtx_unlock(&ch->buf_mtx);
+		return;
+	}
 	ch->open = true;
 	cnd_signal(&ch->poll_cnd);
 	mtx_unlock(&ch->buf_mtx);
@@ -736,7 +803,8 @@ demux_channel_open(dssh_session sess, uint8_t *payload, size_t payload_len)
 
 	if (rpos + 4 > payload_len)
 		return;
-	dssh_parse_uint32(&payload[rpos], payload_len - rpos, &type_len);
+	if (dssh_parse_uint32(&payload[rpos], payload_len - rpos, &type_len) < 4)
+		return;
 	rpos += 4;
 	if (rpos + type_len > payload_len)
 		return;
@@ -750,11 +818,14 @@ demux_channel_open(dssh_session sess, uint8_t *payload, size_t payload_len)
 
 	uint32_t peer_channel, peer_window, peer_max_packet;
 
-	dssh_parse_uint32(&payload[rpos], payload_len - rpos, &peer_channel);
+	if (dssh_parse_uint32(&payload[rpos], payload_len - rpos, &peer_channel) < 4)
+		return;
 	rpos += 4;
-	dssh_parse_uint32(&payload[rpos], payload_len - rpos, &peer_window);
+	if (dssh_parse_uint32(&payload[rpos], payload_len - rpos, &peer_window) < 4)
+		return;
 	rpos += 4;
-	dssh_parse_uint32(&payload[rpos], payload_len - rpos, &peer_max_packet);
+	if (dssh_parse_uint32(&payload[rpos], payload_len - rpos, &peer_max_packet) < 4)
+		return;
 
         /* Auto-reject forbidden channel types */
 	bool reject = false;
@@ -776,10 +847,11 @@ demux_channel_open(dssh_session sess, uint8_t *payload, size_t payload_len)
 		size_t  fp = 0;
 
 		fail[fp++] = SSH_MSG_CHANNEL_OPEN_FAILURE;
-		dssh_serialize_uint32(peer_channel, fail, sizeof(fail), &fp);
-		dssh_serialize_uint32(SSH_OPEN_ADMINISTRATIVELY_PROHIBITED, fail, sizeof(fail), &fp);
-		dssh_serialize_uint32(0, fail, sizeof(fail), &fp); /* empty description */
-		dssh_serialize_uint32(0, fail, sizeof(fail), &fp); /* empty language */
+		if (dssh_serialize_uint32(peer_channel, fail, sizeof(fail), &fp) < 0
+		    || dssh_serialize_uint32(SSH_OPEN_ADMINISTRATIVELY_PROHIBITED, fail, sizeof(fail), &fp) < 0
+		    || dssh_serialize_uint32(0, fail, sizeof(fail), &fp) < 0
+		    || dssh_serialize_uint32(0, fail, sizeof(fail), &fp) < 0)
+			return;
 		dssh_transport_send_packet(sess, fail, fp, NULL);
 		return;
 	}
@@ -983,20 +1055,30 @@ dssh_session_reject(dssh_session sess,
 	if (dlen > sizeof(msg) - 17) /* msg_type + 3×uint32 + language uint32 */
 		dlen = sizeof(msg) - 17;
 
-	size_t  pos = 0;
+	size_t pos = 0;
+	int    ret;
 
 	msg[pos++] = SSH_MSG_CHANNEL_OPEN_FAILURE;
-	dssh_serialize_uint32(inc->peer_channel, msg, sizeof(msg), &pos);
-	dssh_serialize_uint32(reason_code, msg, sizeof(msg), &pos);
-	dssh_serialize_uint32((uint32_t)dlen, msg, sizeof(msg), &pos);
+	ret = dssh_serialize_uint32(inc->peer_channel, msg, sizeof(msg), &pos);
+	if (ret < 0)
+		goto done;
+	ret = dssh_serialize_uint32(reason_code, msg, sizeof(msg), &pos);
+	if (ret < 0)
+		goto done;
+	ret = dssh_serialize_uint32((uint32_t)dlen, msg, sizeof(msg), &pos);
+	if (ret < 0)
+		goto done;
 	if (dlen > 0) {
 		if (dlen > sizeof(msg) - pos - 4)
 			dlen = sizeof(msg) - pos - 4;
 		memcpy(&msg[pos], description, dlen);
 		pos += dlen;
 	}
-	dssh_serialize_uint32(0, msg, sizeof(msg), &pos); /* language */
+	ret = dssh_serialize_uint32(0, msg, sizeof(msg), &pos);
+	if (ret < 0)
+		goto done;
 	dssh_transport_send_packet(sess, msg, pos, NULL);
+done:
 	free(inc);
 }
 
@@ -1014,11 +1096,21 @@ send_open_confirmation(dssh_session sess,
 	uint8_t msg[32];
 	size_t  pos = 0;
 
+	int ret;
+
 	msg[pos++] = SSH_MSG_CHANNEL_OPEN_CONFIRMATION;
-	dssh_serialize_uint32(peer_channel, msg, sizeof(msg), &pos);
-	dssh_serialize_uint32(ch->local_id, msg, sizeof(msg), &pos);
-	dssh_serialize_uint32(ch->local_window, msg, sizeof(msg), &pos);
-	dssh_serialize_uint32(MAX_PACKET_SIZE, msg, sizeof(msg), &pos);
+	ret = dssh_serialize_uint32(peer_channel, msg, sizeof(msg), &pos);
+	if (ret < 0)
+		return ret;
+	ret = dssh_serialize_uint32(ch->local_id, msg, sizeof(msg), &pos);
+	if (ret < 0)
+		return ret;
+	ret = dssh_serialize_uint32(ch->local_window, msg, sizeof(msg), &pos);
+	if (ret < 0)
+		return ret;
+	ret = dssh_serialize_uint32(MAX_PACKET_SIZE, msg, sizeof(msg), &pos);
+	if (ret < 0)
+		return ret;
 	return dssh_transport_send_packet(sess, msg, pos, NULL);
 }
 
@@ -1062,13 +1154,23 @@ open_session_channel(dssh_session sess, dssh_channel ch)
 	uint8_t           msg[256];
 	size_t            pos = 0;
 
+	int ret;
+
 	msg[pos++] = SSH_MSG_CHANNEL_OPEN;
-	dssh_serialize_uint32(DSSH_STRLEN(type), msg, sizeof(msg), &pos);
+	ret = dssh_serialize_uint32(DSSH_STRLEN(type), msg, sizeof(msg), &pos);
+	if (ret < 0)
+		return ret;
 	memcpy(&msg[pos], type, sizeof(type) - 1);
 	pos += sizeof(type) - 1;
-	dssh_serialize_uint32(ch->local_id, msg, sizeof(msg), &pos);
-	dssh_serialize_uint32(ch->local_window, msg, sizeof(msg), &pos);
-	dssh_serialize_uint32(MAX_PACKET_SIZE, msg, sizeof(msg), &pos);
+	ret = dssh_serialize_uint32(ch->local_id, msg, sizeof(msg), &pos);
+	if (ret < 0)
+		return ret;
+	ret = dssh_serialize_uint32(ch->local_window, msg, sizeof(msg), &pos);
+	if (ret < 0)
+		return ret;
+	ret = dssh_serialize_uint32(MAX_PACKET_SIZE, msg, sizeof(msg), &pos);
+	if (ret < 0)
+		return ret;
 
 	int res = register_channel(sess, ch);
 
@@ -1118,10 +1220,19 @@ send_channel_request_wait(dssh_session sess,
 		return DSSH_ERROR_ALLOC;
 
 	size_t pos = 0;
+	int    ret;
 
 	msg[pos++] = SSH_MSG_CHANNEL_REQUEST;
-	dssh_serialize_uint32(ch->remote_id, msg, msg_len, &pos);
-	dssh_serialize_uint32((uint32_t)rtlen, msg, msg_len, &pos);
+	ret = dssh_serialize_uint32(ch->remote_id, msg, msg_len, &pos);
+	if (ret < 0) {
+		free(msg);
+		return ret;
+	}
+	ret = dssh_serialize_uint32((uint32_t)rtlen, msg, msg_len, &pos);
+	if (ret < 0) {
+		free(msg);
+		return ret;
+	}
 	memcpy(&msg[pos], req_type, rtlen);
 	pos += rtlen;
 	msg[pos++] = 1; /* want_reply = TRUE */
@@ -1223,14 +1334,20 @@ dssh_session_open_shell(dssh_session sess,
 
 		size_t ep = 0;
 
-		dssh_serialize_uint32((uint32_t)tlen, extra, extra_len, &ep);
+#define PTY_SER(v) do { res = dssh_serialize_uint32((v), extra, extra_len, &ep); \
+	if (res < 0) { free(extra); goto open_fail; } } while (0)
+
+		PTY_SER((uint32_t)tlen);
 		memcpy(&extra[ep], pty->term, tlen);
 		ep += tlen;
-		dssh_serialize_uint32(pty->cols, extra, extra_len, &ep);
-		dssh_serialize_uint32(pty->rows, extra, extra_len, &ep);
-		dssh_serialize_uint32(pty->wpx, extra, extra_len, &ep);
-		dssh_serialize_uint32(pty->hpx, extra, extra_len, &ep);
-		dssh_serialize_uint32((uint32_t)mlen, extra, extra_len, &ep);
+		PTY_SER(pty->cols);
+		PTY_SER(pty->rows);
+		PTY_SER(pty->wpx);
+		PTY_SER(pty->hpx);
+		PTY_SER((uint32_t)mlen);
+
+#undef PTY_SER
+
 		if (mlen > 0)
 			memcpy(&extra[ep], pty->modes, mlen);
 		ep += mlen;
@@ -1296,7 +1413,11 @@ dssh_session_open_exec(dssh_session sess,
 
 	size_t ep = 0;
 
-	dssh_serialize_uint32((uint32_t)cmdlen, extra, extra_len, &ep);
+	res = dssh_serialize_uint32((uint32_t)cmdlen, extra, extra_len, &ep);
+	if (res < 0) {
+		free(extra);
+		goto open_fail;
+	}
 	memcpy(&extra[ep], command, cmdlen);
 	ep += cmdlen;
 	res = send_channel_request_wait(sess, ch, "exec", extra, ep);
@@ -1355,7 +1476,11 @@ dssh_channel_open_subsystem(dssh_session sess,
 
 	size_t ep = 0;
 
-	dssh_serialize_uint32((uint32_t)slen, extra, extra_len, &ep);
+	res = dssh_serialize_uint32((uint32_t)slen, extra, extra_len, &ep);
+	if (res < 0) {
+		free(extra);
+		goto open_fail;
+	}
 	memcpy(&extra[ep], subsystem, slen);
 	ep += slen;
 	res = send_channel_request_wait(sess, ch, "subsystem", extra, ep);
@@ -1462,8 +1587,12 @@ setup_reply(dssh_session sess, dssh_channel ch,
 	uint8_t msg[8];
 	size_t  pos = 0;
 
+	int ret;
+
 	msg[pos++] = success ? SSH_MSG_CHANNEL_SUCCESS : SSH_MSG_CHANNEL_FAILURE;
-	dssh_serialize_uint32(ch->remote_id, msg, sizeof(msg), &pos);
+	ret = dssh_serialize_uint32(ch->remote_id, msg, sizeof(msg), &pos);
+	if (ret < 0)
+		return ret;
 	return dssh_transport_send_packet(sess, msg, pos, NULL);
 }
 
@@ -1538,8 +1667,8 @@ dssh_session_accept_channel(dssh_session sess,
 			if ((msg_type == SSH_MSG_CHANNEL_WINDOW_ADJUST) && (payload_len >= 9)) {
 				uint32_t bytes;
 
-				dssh_parse_uint32(&payload[5], payload_len - 5, &bytes);
-				ch->remote_window = window_add(ch->remote_window, bytes);
+				if (dssh_parse_uint32(&payload[5], payload_len - 5, &bytes) >= 4)
+					ch->remote_window = window_add(ch->remote_window, bytes);
 			}
 			free(payload);
 			continue;
@@ -1558,7 +1687,10 @@ dssh_session_accept_channel(dssh_session sess,
 			free(payload);
 			continue;
 		}
-		dssh_parse_uint32(&payload[rpos], payload_len - rpos, &rtype_len);
+		if (dssh_parse_uint32(&payload[rpos], payload_len - rpos, &rtype_len) < 4) {
+			free(payload);
+			continue;
+		}
 		rpos += 4;
 		if (rpos + rtype_len + 1 > payload_len) {
 			free(payload);
@@ -1614,7 +1746,8 @@ dssh_session_accept_channel(dssh_session sess,
 			if (req_data_len >= 4) {
 				uint32_t dlen;
 
-				dssh_parse_uint32(req_data, req_data_len, &dlen);
+				if (dssh_parse_uint32(req_data, req_data_len, &dlen) < 4)
+					dlen = 0;
 
 				size_t dn = dlen < sizeof(ch->req_data) - 1
 				    ? dlen : sizeof(ch->req_data) - 1;
@@ -2025,21 +2158,27 @@ dssh_session_send_signal(dssh_session sess,
 		return DSSH_ERROR_ALLOC;
 
 	size_t pos = 0;
+	int    ret;
+
+#define SIG_SER(v) do { ret = dssh_serialize_uint32((v), msg, msg_len, &pos); \
+	if (ret < 0) { free(msg); return ret; } } while (0)
 
 	msg[pos++] = SSH_MSG_CHANNEL_REQUEST;
-	dssh_serialize_uint32(ch->remote_id, msg, msg_len, &pos);
-	dssh_serialize_uint32((uint32_t)rtlen, msg, msg_len, &pos);
+	SIG_SER(ch->remote_id);
+	SIG_SER((uint32_t)rtlen);
 	memcpy(&msg[pos], "signal", rtlen);
 	pos += rtlen;
 	msg[pos++] = 0; /* want_reply = FALSE */
-	dssh_serialize_uint32((uint32_t)slen, msg, msg_len, &pos);
+	SIG_SER((uint32_t)slen);
 	memcpy(&msg[pos], signal_name, slen);
 	pos += slen;
 
-	int res = dssh_transport_send_packet(sess, msg, pos, NULL);
+#undef SIG_SER
+
+	ret = dssh_transport_send_packet(sess, msg, pos, NULL);
 
 	free(msg);
-	return res;
+	return ret;
 }
 
 DSSH_PUBLIC int
@@ -2049,11 +2188,20 @@ dssh_session_send_window_change(dssh_session sess,
 {
 	uint8_t extra[16];
 	size_t  ep = 0;
+	int     ret;
 
-	dssh_serialize_uint32(cols, extra, sizeof(extra), &ep);
-	dssh_serialize_uint32(rows, extra, sizeof(extra), &ep);
-	dssh_serialize_uint32(wpx, extra, sizeof(extra), &ep);
-	dssh_serialize_uint32(hpx, extra, sizeof(extra), &ep);
+	ret = dssh_serialize_uint32(cols, extra, sizeof(extra), &ep);
+	if (ret < 0)
+		return ret;
+	ret = dssh_serialize_uint32(rows, extra, sizeof(extra), &ep);
+	if (ret < 0)
+		return ret;
+	ret = dssh_serialize_uint32(wpx, extra, sizeof(extra), &ep);
+	if (ret < 0)
+		return ret;
+	ret = dssh_serialize_uint32(hpx, extra, sizeof(extra), &ep);
+	if (ret < 0)
+		return ret;
 
         /* window-change uses want_reply=false */
 	size_t   rtlen = 13; /* "window-change" */
@@ -2066,16 +2214,21 @@ dssh_session_send_window_change(dssh_session sess,
 	size_t pos = 0;
 
 	msg[pos++] = SSH_MSG_CHANNEL_REQUEST;
-	dssh_serialize_uint32(ch->remote_id, msg, msg_len, &pos);
-	dssh_serialize_uint32((uint32_t)rtlen, msg, msg_len, &pos);
+	ret = dssh_serialize_uint32(ch->remote_id, msg, msg_len, &pos);
+	if (ret < 0)
+		goto wc_done;
+	ret = dssh_serialize_uint32((uint32_t)rtlen, msg, msg_len, &pos);
+	if (ret < 0)
+		goto wc_done;
 	memcpy(&msg[pos], "window-change", rtlen);
 	pos += rtlen;
 	msg[pos++] = 0; /* want_reply = FALSE */
 	memcpy(&msg[pos], extra, ep);
 	pos += ep;
 
-	int res = dssh_transport_send_packet(sess, msg, pos, NULL);
+	ret = dssh_transport_send_packet(sess, msg, pos, NULL);
 
+wc_done:
 	free(msg);
-	return res;
+	return ret;
 }

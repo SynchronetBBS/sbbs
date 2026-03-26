@@ -245,10 +245,18 @@ sign(uint8_t *buf, size_t bufsz, size_t *outlen,
 
 	/* Serialize SSH signature blob */
 	size_t pos = 0;
-	dssh_serialize_uint32(RSA_SHA2_256_NAME_LEN, buf, bufsz, &pos);
+	int    sret = dssh_serialize_uint32(RSA_SHA2_256_NAME_LEN, buf, bufsz, &pos);
+	if (sret < 0) {
+		free(raw_sig);
+		return sret;
+	}
 	memcpy(&buf[pos], RSA_SHA2_256_NAME, RSA_SHA2_256_NAME_LEN);
 	pos += RSA_SHA2_256_NAME_LEN;
-	dssh_serialize_uint32((uint32_t)siglen, buf, bufsz, &pos);
+	sret = dssh_serialize_uint32((uint32_t)siglen, buf, bufsz, &pos);
+	if (sret < 0) {
+		free(raw_sig);
+		return sret;
+	}
 	memcpy(&buf[pos], raw_sig, siglen);
 	pos += siglen;
 
@@ -346,21 +354,28 @@ pubkey(uint8_t *buf, size_t bufsz, size_t *outlen, dssh_key_algo_ctx *ctx)
 	}
 
 	size_t pos = 0;
-	dssh_serialize_uint32(RSA_KEY_TYPE_NAME_LEN, buf, bufsz, &pos);
+	int    sret;
+
+#define PK_SER(v) do { sret = dssh_serialize_uint32((v), buf, bufsz, &pos); \
+	if (sret < 0) { free(e_buf); free(n_buf); BN_free(e_bn); BN_free(n_bn); return sret; } } while (0)
+
+	PK_SER(RSA_KEY_TYPE_NAME_LEN);
 	memcpy(&buf[pos], RSA_KEY_TYPE_NAME, RSA_KEY_TYPE_NAME_LEN);
 	pos += RSA_KEY_TYPE_NAME_LEN;
 
-	dssh_serialize_uint32(e_wire, buf, bufsz, &pos);
+	PK_SER(e_wire);
 	if (e_pad)
 		buf[pos++] = 0;
 	memcpy(&buf[pos], e_buf, e_sz);
 	pos += e_sz;
 
-	dssh_serialize_uint32(n_wire, buf, bufsz, &pos);
+	PK_SER(n_wire);
 	if (n_pad)
 		buf[pos++] = 0;
 	memcpy(&buf[pos], n_buf, n_sz);
 	pos += n_sz;
+
+#undef PK_SER
 
 	free(e_buf); free(n_buf);
 	BN_free(e_bn); BN_free(n_bn);

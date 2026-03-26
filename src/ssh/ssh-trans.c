@@ -309,7 +309,9 @@ dssh_transport_send_unimplemented(dssh_session sess,
 	size_t  pos = 0;
 
 	msg[pos++] = SSH_MSG_UNIMPLEMENTED;
-	dssh_serialize_uint32(rejected_seq, msg, sizeof(msg), &pos);
+	int ret = dssh_serialize_uint32(rejected_seq, msg, sizeof(msg), &pos);
+	if (ret < 0)
+		return ret;
 	return dssh_transport_send_packet(sess, msg, pos, NULL);
 }
 
@@ -329,14 +331,23 @@ dssh_transport_disconnect(dssh_session sess,
 	uint8_t msg[256];
 	size_t  pos = 0;
 
+	int ret;
+
 	msg[pos++] = SSH_MSG_DISCONNECT;
-	dssh_serialize_uint32(reason, msg, sizeof(msg), &pos);
-	dssh_serialize_uint32((uint32_t)dlen, msg, sizeof(msg), &pos);
+	ret = dssh_serialize_uint32(reason, msg, sizeof(msg), &pos);
+	if (ret < 0)
+		goto fail;
+	ret = dssh_serialize_uint32((uint32_t)dlen, msg, sizeof(msg), &pos);
+	if (ret < 0)
+		goto fail;
 	memcpy(&msg[pos], desc, dlen);
 	pos += dlen;
-	dssh_serialize_uint32(0, msg, sizeof(msg), &pos); /* language tag */
+	ret = dssh_serialize_uint32(0, msg, sizeof(msg), &pos);
+	if (ret < 0)
+		goto fail;
 
-	dssh_transport_send_packet(sess, msg, pos, NULL);
+	dssh_transport_send_packet(sess, msg, pos, NULL); /* best-effort */
+fail:
 	dssh_session_set_terminate(sess);
 	return 0;
 }
@@ -484,7 +495,9 @@ dssh_transport_send_packet(dssh_session sess,
 	}
 
 	size_t pos = 0;
-	dssh_serialize_uint32(packet_length, sess->trans.tx_packet, sess->trans.packet_buf_sz, &pos);
+	ret = dssh_serialize_uint32(packet_length, sess->trans.tx_packet, sess->trans.packet_buf_sz, &pos);
+	if (ret < 0)
+		goto tx_done;
 	sess->trans.tx_packet[pos++] = (uint8_t)padding_len;
 	memcpy(&sess->trans.tx_packet[pos], payload, payload_len);
 	pos += payload_len;
@@ -499,7 +512,9 @@ dssh_transport_send_packet(dssh_session sess,
 		uint8_t *mac_input = sess->trans.tx_mac_scratch;
 		size_t   mi_pos = 0;
 
-		dssh_serialize_uint32(sess->trans.tx_seq, mac_input, 4 + sess->trans.packet_buf_sz, &mi_pos);
+		ret = dssh_serialize_uint32(sess->trans.tx_seq, mac_input, 4 + sess->trans.packet_buf_sz, &mi_pos);
+		if (ret < 0)
+			goto tx_done;
 		memcpy(&mac_input[mi_pos], sess->trans.tx_packet, total);
 		mi_pos += total;
 
@@ -626,7 +641,11 @@ recv_packet_raw(dssh_session sess,
 	}
 
 	uint32_t packet_length;
-	dssh_parse_uint32(sess->trans.rx_packet, 4, &packet_length);
+	int64_t  pret = dssh_parse_uint32(sess->trans.rx_packet, 4, &packet_length);
+	if (pret < 0) {
+		ret = (int)pret;
+		goto rx_done;
+	}
 
 	if ((packet_length < 2) || (packet_length + 4 > sess->trans.packet_buf_sz)) {
 		ret = DSSH_ERROR_TOOLONG;
@@ -670,7 +689,9 @@ recv_packet_raw(dssh_session sess,
 		uint8_t *mac_input = sess->trans.rx_mac_scratch;
 		size_t   mi_pos = 0;
 
-		dssh_serialize_uint32(sess->trans.rx_seq, mac_input, 4 + sess->trans.packet_buf_sz, &mi_pos);
+		ret = dssh_serialize_uint32(sess->trans.rx_seq, mac_input, 4 + sess->trans.packet_buf_sz, &mi_pos);
+		if (ret < 0)
+			goto rx_done;
 		memcpy(&mac_input[mi_pos], sess->trans.rx_packet, packet_length + 4);
 		mi_pos += packet_length + 4;
 
@@ -807,10 +828,13 @@ dssh_transport_recv_packet(dssh_session sess,
 					uint32_t msg_len = 0;
 
 					if (dpos + 4 <= *payload_len) {
-						dssh_parse_uint32(&(*payload)[dpos], *payload_len - dpos, &msg_len);
-						dpos += 4;
-						if (dpos + msg_len > *payload_len)
+						if (dssh_parse_uint32(&(*payload)[dpos], *payload_len - dpos, &msg_len) < 4)
 							msg_len = 0;
+						else {
+							dpos += 4;
+							if (dpos + msg_len > *payload_len)
+								msg_len = 0;
+						}
 					}
 					sess->debug_cb(always_display,
 					    msg_len > 0 ? &(*payload)[dpos] : NULL,
@@ -821,8 +845,8 @@ dssh_transport_recv_packet(dssh_session sess,
 				if ((sess->unimplemented_cb != NULL) && (*payload_len >= 5)) {
 					uint32_t rejected_seq;
 
-					dssh_parse_uint32(&(*payload)[1], *payload_len - 1, &rejected_seq);
-					sess->unimplemented_cb(rejected_seq, sess->unimplemented_cbdata);
+					if (dssh_parse_uint32(&(*payload)[1], *payload_len - 1, &rejected_seq) >= 4)
+						sess->unimplemented_cb(rejected_seq, sess->unimplemented_cbdata);
 				}
 				continue;
 			case 80: /* SSH_MSG_GLOBAL_REQUEST */
@@ -836,7 +860,8 @@ dssh_transport_recv_packet(dssh_session sess,
 
 				if (gpos + 4 > *payload_len)
 					break; /* malformed, return to caller */
-				dssh_parse_uint32(&(*payload)[gpos], *payload_len - gpos, &gname_len);
+				if (dssh_parse_uint32(&(*payload)[gpos], *payload_len - gpos, &gname_len) < 4)
+					break;
 				gpos += 4;
 				if (gpos + gname_len + 1 > *payload_len)
 					break;
@@ -971,7 +996,7 @@ dssh_test_negotiate_algo(const char *client_list, const char *server_list,
 	return NULL;
 }
 
-static void
+static int
 serialize_namelist_from_str(const char *str, uint8_t *buf, size_t bufsz, size_t *pos)
 {
 	size_t slen = strlen(str);
@@ -981,9 +1006,14 @@ serialize_namelist_from_str(const char *str, uint8_t *buf, size_t bufsz, size_t 
 
 	uint32_t len = (uint32_t)slen;
 
-	dssh_serialize_uint32(len, buf, bufsz, pos);
+	int ret = dssh_serialize_uint32(len, buf, bufsz, pos);
+	if (ret < 0)
+		return ret;
+	if (*pos + len > bufsz)
+		return DSSH_ERROR_TOOLONG;
 	memcpy(&buf[*pos], str, len);
 	*pos += len;
+	return 0;
 }
 
 DSSH_PRIVATE int
@@ -996,11 +1026,14 @@ dssh_transport_kexinit(dssh_session sess)
 		return DSSH_ERROR_ALLOC;
 
 	size_t pos = 0;
+	int    ret;
 
 	kexinit[pos++] = SSH_MSG_KEXINIT;
 
-	if (RAND_bytes(&kexinit[pos], 16) != 1)
+	if (RAND_bytes(&kexinit[pos], 16) != 1) {
+		free(kexinit);
 		return DSSH_ERROR_INIT;
+	}
 	pos += 16;
 
 	char   namelist[1024];
@@ -1008,7 +1041,11 @@ dssh_transport_kexinit(dssh_session sess)
 
 	noff = offsetof(struct dssh_kex_s, name);
 	dssh_test_build_namelist(gconf.kex_head, noff, namelist, sizeof(namelist));
-	serialize_namelist_from_str(namelist, kexinit, sess->trans.packet_buf_sz, &pos);
+	ret = serialize_namelist_from_str(namelist, kexinit, sess->trans.packet_buf_sz, &pos);
+	if (ret < 0) {
+		free(kexinit);
+		return ret;
+	}
 
 	if (sess->trans.client) {
 		noff = offsetof(struct dssh_key_algo_s, name);
@@ -1040,31 +1077,46 @@ dssh_transport_kexinit(dssh_session sess)
 		}
 		namelist[nlpos] = 0;
 	}
-	serialize_namelist_from_str(namelist, kexinit, sess->trans.packet_buf_sz, &pos);
+#define KEXINIT_SER_NL(s) do { \
+	ret = serialize_namelist_from_str((s), kexinit, sess->trans.packet_buf_sz, &pos); \
+	if (ret < 0) goto kexinit_fail; \
+} while (0)
+
+	KEXINIT_SER_NL(namelist);
 
 	noff = offsetof(struct dssh_enc_s, name);
 	dssh_test_build_namelist(gconf.enc_head, noff, namelist, sizeof(namelist));
-	serialize_namelist_from_str(namelist, kexinit, sess->trans.packet_buf_sz, &pos);
-	serialize_namelist_from_str(namelist, kexinit, sess->trans.packet_buf_sz, &pos);
+	KEXINIT_SER_NL(namelist);
+	KEXINIT_SER_NL(namelist);
 
 	noff = offsetof(struct dssh_mac_s, name);
 	dssh_test_build_namelist(gconf.mac_head, noff, namelist, sizeof(namelist));
-	serialize_namelist_from_str(namelist, kexinit, sess->trans.packet_buf_sz, &pos);
-	serialize_namelist_from_str(namelist, kexinit, sess->trans.packet_buf_sz, &pos);
+	KEXINIT_SER_NL(namelist);
+	KEXINIT_SER_NL(namelist);
 
 	noff = offsetof(struct dssh_comp_s, name);
 	dssh_test_build_namelist(gconf.comp_head, noff, namelist, sizeof(namelist));
-	serialize_namelist_from_str(namelist, kexinit, sess->trans.packet_buf_sz, &pos);
-	serialize_namelist_from_str(namelist, kexinit, sess->trans.packet_buf_sz, &pos);
+	KEXINIT_SER_NL(namelist);
+	KEXINIT_SER_NL(namelist);
 
-	serialize_namelist_from_str("", kexinit, sess->trans.packet_buf_sz, &pos);
-	serialize_namelist_from_str("", kexinit, sess->trans.packet_buf_sz, &pos);
+	KEXINIT_SER_NL("");
+	KEXINIT_SER_NL("");
+
+#undef KEXINIT_SER_NL
 
         /* first_kex_packet_follows = false */
 	kexinit[pos++] = 0;
 
         /* reserved */
-	dssh_serialize_uint32(0, kexinit, sess->trans.packet_buf_sz, &pos);
+	ret = dssh_serialize_uint32(0, kexinit, sess->trans.packet_buf_sz, &pos);
+	if (ret < 0)
+		goto kexinit_fail;
+
+	if (0) {
+kexinit_fail:
+		free(kexinit);
+		return ret;
+	}
 
         /* Save our KEXINIT for exchange hash — transfer ownership */
 	free(sess->trans.our_kexinit);
@@ -1493,7 +1545,11 @@ dssh_transport_newkeys(dssh_session sess)
 
 	size_t kpos = 0;
 
-	dssh_serialize_uint32((uint32_t)mpint_data_len, k_mpint, mpint_wire_len, &kpos);
+	int sret = dssh_serialize_uint32((uint32_t)mpint_data_len, k_mpint, mpint_wire_len, &kpos);
+	if (sret < 0) {
+		free(k_mpint);
+		return sret;
+	}
 	if (need_pad)
 		k_mpint[kpos++] = 0;
 	memcpy(&k_mpint[kpos], ss, ss_sz);

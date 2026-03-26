@@ -58,10 +58,14 @@ sign(uint8_t *buf, size_t bufsz, size_t *outlen,
 
 	/* Serialize SSH signature blob */
 	size_t pos = 0;
-	dssh_serialize_uint32(ED25519_NAME_LEN, buf, bufsz, &pos);
+	int    ret = dssh_serialize_uint32(ED25519_NAME_LEN, buf, bufsz, &pos);
+	if (ret < 0)
+		return ret;
 	memcpy(&buf[pos], ED25519_NAME, ED25519_NAME_LEN);
 	pos += ED25519_NAME_LEN;
-	dssh_serialize_uint32((uint32_t)siglen, buf, bufsz, &pos);
+	ret = dssh_serialize_uint32((uint32_t)siglen, buf, bufsz, &pos);
+	if (ret < 0)
+		return ret;
 	memcpy(&buf[pos], raw_sig, siglen);
 	pos += siglen;
 
@@ -98,10 +102,14 @@ pubkey(uint8_t *buf, size_t bufsz, size_t *outlen, dssh_key_algo_ctx *ctx)
 		return DSSH_ERROR_TOOLONG;
 
 	size_t pos = 0;
-	dssh_serialize_uint32(ED25519_NAME_LEN, buf, bufsz, &pos);
+	int    ret = dssh_serialize_uint32(ED25519_NAME_LEN, buf, bufsz, &pos);
+	if (ret < 0)
+		return ret;
 	memcpy(&buf[pos], ED25519_NAME, ED25519_NAME_LEN);
 	pos += ED25519_NAME_LEN;
-	dssh_serialize_uint32((uint32_t)raw_pub_len, buf, bufsz, &pos);
+	ret = dssh_serialize_uint32((uint32_t)raw_pub_len, buf, bufsz, &pos);
+	if (ret < 0)
+		return ret;
 	memcpy(&buf[pos], raw_pub, raw_pub_len);
 	pos += raw_pub_len;
 

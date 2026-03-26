@@ -191,7 +191,9 @@ dssh_serialize_string(dssh_string val, uint8_t *buf, size_t bufsz, size_t *pos)
 {
 	if (*pos + 4 + val->length > bufsz)
 		return DSSH_ERROR_TOOLONG;
-	dssh_serialize_uint32(val->length, buf, bufsz, pos);
+	int ret = dssh_serialize_uint32(val->length, buf, bufsz, pos);
+	if (ret < 0)
+		return ret;
 	memcpy(&buf[*pos], val->value, val->length);
 	*pos += val->length;
 	return 0;
