@@ -1,5 +1,6 @@
 // RFC 4252: SSH Authentication Protocol
 
+#include <openssl/crypto.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -605,6 +606,8 @@ dssh_auth_server(dssh_session sess,
     const struct dssh_auth_server_cbs *cbs,
     uint8_t *username_out, size_t *username_out_len)
 {
+	if (sess == NULL || cbs == NULL)
+		return DSSH_ERROR_INIT;
 	return auth_check_terminated(sess,
 	           auth_server_impl(sess, cbs, username_out, username_out_len));
 }
@@ -768,6 +771,8 @@ DSSH_PUBLIC int
 dssh_auth_get_methods(dssh_session sess,
     const char *username, char *methods, size_t methods_sz)
 {
+	if (sess == NULL || username == NULL)
+		return DSSH_ERROR_INIT;
 	return auth_check_terminated(sess,
 	           get_methods_impl(sess, username, methods, methods_sz));
 }
@@ -836,6 +841,7 @@ send_password_request(dssh_session sess,
 	ret = dssh_transport_send_packet(sess, msg, pos, NULL);
 
 pw_done:
+	OPENSSL_cleanse(msg, msg_len);
 	free(msg);
 	return ret;
 }
@@ -920,12 +926,16 @@ auth_password_impl(dssh_session sess,
 			        &new_password, &new_password_len,
 			        passwd_change_cbdata);
 			if (res < 0) {
+				if (new_password != NULL)
+					OPENSSL_cleanse(new_password, new_password_len);
 				free(new_password);
 				return res;
 			}
 
 			res = send_password_request(sess, username, password,
 			        new_password, new_password_len, true);
+			if (new_password != NULL)
+				OPENSSL_cleanse(new_password, new_password_len);
 			free(new_password);
 			if (res < 0)
 				return res;
@@ -942,6 +952,8 @@ dssh_auth_password(dssh_session sess,
     const char *username, const char *password,
     dssh_auth_passwd_change_cb passwd_change_cb, void *passwd_change_cbdata)
 {
+	if (sess == NULL || username == NULL || password == NULL)
+		return DSSH_ERROR_INIT;
 	return auth_check_terminated(sess,
 	           auth_password_impl(sess, username, password,
 	           passwd_change_cb, passwd_change_cbdata));
@@ -1249,6 +1261,8 @@ dssh_auth_keyboard_interactive(dssh_session sess,
     const char *username, dssh_auth_kbi_prompt_cb prompt_cb,
     void *cbdata)
 {
+	if (sess == NULL || username == NULL || prompt_cb == NULL)
+		return DSSH_ERROR_INIT;
 	return auth_check_terminated(sess,
 	           auth_kbi_impl(sess, username, prompt_cb, cbdata));
 }
@@ -1434,6 +1448,8 @@ DSSH_PUBLIC int
 dssh_auth_publickey(dssh_session sess,
     const char *username, const char *algo_name)
 {
+	if (sess == NULL || username == NULL || algo_name == NULL)
+		return DSSH_ERROR_INIT;
 	return auth_check_terminated(sess,
 	           auth_publickey_impl(sess, username, algo_name));
 }

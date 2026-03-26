@@ -410,6 +410,8 @@ DSSH_PUBLIC int
 dssh_rsa_sha2_256_load_key_file(const char *path, pem_password_cb *pw_cb,
     void *pw_cbdata)
 {
+	if (path == NULL)
+		return DSSH_ERROR_INIT;
 	FILE *fp = fopen(path, "r");
 
 	if (fp == NULL)
@@ -453,6 +455,8 @@ DSSH_PUBLIC int
 dssh_rsa_sha2_256_save_key_file(const char *path, pem_password_cb *pw_cb,
     void *pw_cbdata)
 {
+	if (path == NULL)
+		return DSSH_ERROR_INIT;
 #ifdef DSSH_TESTING
 	if (rsa_ctx == NULL)
 #else
@@ -512,6 +516,8 @@ dssh_rsa_sha2_256_get_pub_str(char *buf, size_t bufsz)
 DSSH_PUBLIC int
 dssh_rsa_sha2_256_save_pub_file(const char *path)
 {
+	if (path == NULL)
+		return DSSH_ERROR_INIT;
 	char *str = NULL;
 	int64_t len = dssh_rsa_sha2_256_get_pub_str(NULL, 0);
 	if (len < 0)

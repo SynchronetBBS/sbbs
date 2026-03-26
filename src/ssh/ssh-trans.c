@@ -1,5 +1,6 @@
 // RFC-4253: SSH Transport Layer Protocol
 
+#include <openssl/crypto.h>
 #include <openssl/evp.h>
 #include <openssl/rand.h>
 #include <stdlib.h>
@@ -10,6 +11,16 @@
 #include "deucessh-algorithms.h"
 
 /* DSSH_TESTABLE is defined in ssh-internal.h */
+
+/* Scrub and free security-sensitive heap buffers. */
+static void
+cleanse_free(void *ptr, size_t len)
+{
+	if (ptr != NULL) {
+		OPENSSL_cleanse(ptr, len);
+		free(ptr);
+	}
+}
 
 /* struct dssh_transport_global_config is defined in ssh-trans.h */
 
@@ -173,30 +184,40 @@ dssh_transport_find_key_algo(const char *name)
 DSSH_PUBLIC const char *
 dssh_transport_get_remote_version(dssh_session sess)
 {
+	if (sess == NULL)
+		return NULL;
 	return sess->trans.remote_id_str;
 }
 
 DSSH_PUBLIC const char *
 dssh_transport_get_kex_name(dssh_session sess)
 {
+	if (sess == NULL)
+		return NULL;
 	return sess->trans.kex_selected ? sess->trans.kex_selected->name : NULL;
 }
 
 DSSH_PUBLIC const char *
 dssh_transport_get_hostkey_name(dssh_session sess)
 {
+	if (sess == NULL)
+		return NULL;
 	return sess->trans.key_algo_selected ? sess->trans.key_algo_selected->name : NULL;
 }
 
 DSSH_PUBLIC const char *
 dssh_transport_get_enc_name(dssh_session sess)
 {
+	if (sess == NULL)
+		return NULL;
 	return sess->trans.enc_c2s_selected ? sess->trans.enc_c2s_selected->name : NULL;
 }
 
 DSSH_PUBLIC const char *
 dssh_transport_get_mac_name(dssh_session sess)
 {
+	if (sess == NULL)
+		return NULL;
 	return sess->trans.mac_c2s_selected ? sess->trans.mac_c2s_selected->name : NULL;
 }
 
@@ -213,6 +234,8 @@ dssh_transport_version_exchange(dssh_session sess)
 DSSH_PUBLIC int
 dssh_transport_handshake(dssh_session sess)
 {
+	if (sess == NULL)
+		return DSSH_ERROR_INIT;
 	int res = dssh_transport_version_exchange(sess);
 
 	if (res < 0)
@@ -263,10 +286,10 @@ dssh_transport_rekey(dssh_session sess)
          * Free old KEX outputs (shared_secret, exchange_hash) but NOT
          * session_id — it persists across rekeys per RFC 4253 s7.2.
          */
-	free(sess->trans.shared_secret);
+	cleanse_free(sess->trans.shared_secret, sess->trans.shared_secret_sz);
 	sess->trans.shared_secret = NULL;
 	sess->trans.shared_secret_sz = 0;
-	free(sess->trans.exchange_hash);
+	cleanse_free(sess->trans.exchange_hash, sess->trans.exchange_hash_sz);
 	sess->trans.exchange_hash = NULL;
 	sess->trans.exchange_hash_sz = 0;
 
@@ -323,6 +346,8 @@ DSSH_PUBLIC int
 dssh_transport_disconnect(dssh_session sess,
     uint32_t reason, const char *desc)
 {
+	if (sess == NULL || desc == NULL)
+		return DSSH_ERROR_INIT;
 	size_t dlen = strlen(desc);
 
 	if (dlen > 230)
@@ -710,12 +735,16 @@ recv_packet_raw(dssh_session sess,
 		ret = mac->generate(mac_input, mi_pos, computed_mac, mac_ctx);
 		if (ret < 0)
 			goto rx_done;
-		if (memcmp(received_mac, computed_mac, mac_len) != 0) {
+		if (CRYPTO_memcmp(received_mac, computed_mac, mac_len) != 0) {
 			dssh_transport_disconnect(sess,
 			    SSH_DISCONNECT_MAC_ERROR, "MAC verification failed");
 			ret = DSSH_ERROR_INVALID;
+			OPENSSL_cleanse(received_mac, sizeof(received_mac));
+			OPENSSL_cleanse(computed_mac, sizeof(computed_mac));
 			goto rx_done;
 		}
+		OPENSSL_cleanse(received_mac, sizeof(received_mac));
+		OPENSSL_cleanse(computed_mac, sizeof(computed_mac));
 	}
 
 	uint8_t padding_length = sess->trans.rx_packet[4];
@@ -1459,6 +1488,7 @@ dssh_test_derive_key(const char *hash_name,
 	    || (EVP_DigestUpdate(ctx, &letter, 1) != 1)
 	    || (EVP_DigestUpdate(ctx, session_id, session_id_sz) != 1)
 	    || (EVP_DigestFinal_ex(ctx, tmp, NULL) != 1)) {
+		OPENSSL_cleanse(tmp, sizeof(tmp));
 		EVP_MD_CTX_free(ctx);
 		EVP_MD_free(md);
 		return DSSH_ERROR_INIT;
@@ -1475,6 +1505,7 @@ dssh_test_derive_key(const char *hash_name,
 		    || (EVP_DigestUpdate(ctx, hash, hash_sz) != 1)
 		    || (EVP_DigestUpdate(ctx, out, have) != 1)
 		    || (EVP_DigestFinal_ex(ctx, tmp, NULL) != 1)) {
+			OPENSSL_cleanse(tmp, sizeof(tmp));
 			EVP_MD_CTX_free(ctx);
 			EVP_MD_free(md);
 			return DSSH_ERROR_INIT;
@@ -1484,6 +1515,7 @@ dssh_test_derive_key(const char *hash_name,
 		have += copy;
 	}
 
+	OPENSSL_cleanse(tmp, sizeof(tmp));
 	EVP_MD_CTX_free(ctx);
 	EVP_MD_free(md);
 	return 0;
@@ -1570,7 +1602,7 @@ dssh_transport_newkeys(dssh_session sess)
 
 	if (!iv_s2c) {
 		free(k_mpint);
-		free(iv_c2s);
+		cleanse_free(iv_c2s, enc_bs);
 		return DSSH_ERROR_ALLOC;
 	}
 
@@ -1578,8 +1610,8 @@ dssh_transport_newkeys(dssh_session sess)
 
 	if (!key_c2s) {
 		free(k_mpint);
-		free(iv_c2s);
-		free(iv_s2c);
+		cleanse_free(iv_c2s, enc_bs);
+		cleanse_free(iv_s2c, enc_bs);
 		return DSSH_ERROR_ALLOC;
 	}
 
@@ -1587,9 +1619,9 @@ dssh_transport_newkeys(dssh_session sess)
 
 	if (!key_s2c) {
 		free(k_mpint);
-		free(iv_c2s);
-		free(iv_s2c);
-		free(key_c2s);
+		cleanse_free(iv_c2s, enc_bs);
+		cleanse_free(iv_s2c, enc_bs);
+		cleanse_free(key_c2s, enc_key_sz);
 		return DSSH_ERROR_ALLOC;
 	}
 
@@ -1597,10 +1629,10 @@ dssh_transport_newkeys(dssh_session sess)
 
 	if (!integ_c2s) {
 		free(k_mpint);
-		free(iv_c2s);
-		free(iv_s2c);
-		free(key_c2s);
-		free(key_s2c);
+		cleanse_free(iv_c2s, enc_bs);
+		cleanse_free(iv_s2c, enc_bs);
+		cleanse_free(key_c2s, enc_key_sz);
+		cleanse_free(key_s2c, enc_key_sz);
 		return DSSH_ERROR_ALLOC;
 	}
 
@@ -1608,11 +1640,11 @@ dssh_transport_newkeys(dssh_session sess)
 
 	if (!integ_s2c) {
 		free(k_mpint);
-		free(iv_c2s);
-		free(iv_s2c);
-		free(key_c2s);
-		free(key_s2c);
-		free(integ_c2s);
+		cleanse_free(iv_c2s, enc_bs);
+		cleanse_free(iv_s2c, enc_bs);
+		cleanse_free(key_c2s, enc_key_sz);
+		cleanse_free(key_s2c, enc_key_sz);
+		cleanse_free(integ_c2s, mac_key_sz);
 		return DSSH_ERROR_ALLOC;
 	}
 
@@ -1682,12 +1714,12 @@ dssh_transport_newkeys(dssh_session sess)
 	free(k_mpint);
 
 	if (res < 0) {
-		free(iv_c2s);
-		free(iv_s2c);
-		free(key_c2s);
-		free(key_s2c);
-		free(integ_c2s);
-		free(integ_s2c);
+		cleanse_free(iv_c2s, enc_bs);
+		cleanse_free(iv_s2c, enc_bs);
+		cleanse_free(key_c2s, enc_key_sz);
+		cleanse_free(key_s2c, enc_key_sz);
+		cleanse_free(integ_c2s, mac_key_sz);
+		cleanse_free(integ_s2c, mac_key_sz);
 		return res;
 	}
 
@@ -1773,12 +1805,12 @@ dssh_transport_newkeys(dssh_session sess)
 	sess->trans.peer_kexinit_sz = 0;
 
 keys_cleanup:
-	free(iv_c2s);
-	free(iv_s2c);
-	free(key_c2s);
-	free(key_s2c);
-	free(integ_c2s);
-	free(integ_s2c);
+	cleanse_free(iv_c2s, enc_bs);
+	cleanse_free(iv_s2c, enc_bs);
+	cleanse_free(key_c2s, enc_key_sz);
+	cleanse_free(key_s2c, enc_key_sz);
+	cleanse_free(integ_c2s, mac_key_sz);
+	cleanse_free(integ_s2c, mac_key_sz);
 	return res;
 }
 
@@ -1931,15 +1963,15 @@ dssh_transport_cleanup(dssh_session sess)
 	sess->trans.rx_mac_scratch = NULL;
 	sess->trans.packet_buf_sz = 0;
 
-	free(sess->trans.session_id);
+	cleanse_free(sess->trans.session_id, sess->trans.session_id_sz);
 	sess->trans.session_id = NULL;
 	free(sess->trans.our_kexinit);
 	sess->trans.our_kexinit = NULL;
 	free(sess->trans.peer_kexinit);
 	sess->trans.peer_kexinit = NULL;
-	free(sess->trans.shared_secret);
+	cleanse_free(sess->trans.shared_secret, sess->trans.shared_secret_sz);
 	sess->trans.shared_secret = NULL;
-	free(sess->trans.exchange_hash);
+	cleanse_free(sess->trans.exchange_hash, sess->trans.exchange_hash_sz);
 	sess->trans.exchange_hash = NULL;
 
 	sess->trans.remote_id_str_sz = 0;
@@ -1955,6 +1987,8 @@ dssh_transport_cleanup(dssh_session sess)
 DSSH_PUBLIC int
 dssh_key_algo_set_ctx(const char *name, void *ctx)
 {
+	if (name == NULL)
+		return DSSH_ERROR_INIT;
 	dssh_key_algo ka = dssh_transport_find_key_algo(name);
 
 	if (ka == NULL)
@@ -1967,12 +2001,16 @@ DSSH_PUBLIC void
 dssh_dh_gex_set_provider(dssh_session sess,
     struct dssh_dh_gex_provider *provider)
 {
+	if (sess == NULL)
+		return;
 	sess->trans.kex_ctx = provider;
 }
 
 DSSH_PUBLIC int
 dssh_transport_register_kex(dssh_kex kex)
 {
+	if (kex == NULL)
+		return DSSH_ERROR_INIT;
 	if (gconf.used)
 		return DSSH_ERROR_TOOLATE;
 	if ((strlen(kex->name) > 64) || (strlen(kex->name) == 0))
@@ -1993,6 +2031,8 @@ dssh_transport_register_kex(dssh_kex kex)
 DSSH_PUBLIC int
 dssh_transport_register_key_algo(dssh_key_algo key_algo)
 {
+	if (key_algo == NULL)
+		return DSSH_ERROR_INIT;
 	if (gconf.used)
 		return DSSH_ERROR_TOOLATE;
 	if ((strlen(key_algo->name) > 64) || (strlen(key_algo->name) == 0))
@@ -2013,6 +2053,8 @@ dssh_transport_register_key_algo(dssh_key_algo key_algo)
 DSSH_PUBLIC int
 dssh_transport_register_enc(dssh_enc enc)
 {
+	if (enc == NULL)
+		return DSSH_ERROR_INIT;
 	if (gconf.used)
 		return DSSH_ERROR_TOOLATE;
 	if ((strlen(enc->name) > 64) || (strlen(enc->name) == 0))
@@ -2033,6 +2075,8 @@ dssh_transport_register_enc(dssh_enc enc)
 DSSH_PUBLIC int
 dssh_transport_register_mac(dssh_mac mac)
 {
+	if (mac == NULL)
+		return DSSH_ERROR_INIT;
 	if (gconf.used)
 		return DSSH_ERROR_TOOLATE;
 	if ((strlen(mac->name) > 64) || (strlen(mac->name) == 0))
@@ -2053,6 +2097,8 @@ dssh_transport_register_mac(dssh_mac mac)
 DSSH_PUBLIC int
 dssh_transport_register_comp(dssh_comp comp)
 {
+	if (comp == NULL)
+		return DSSH_ERROR_INIT;
 	if (gconf.used)
 		return DSSH_ERROR_TOOLATE;
 	if ((strlen(comp->name) > 64) || (strlen(comp->name) == 0))
@@ -2073,6 +2119,8 @@ dssh_transport_register_comp(dssh_comp comp)
 DSSH_PUBLIC int
 dssh_transport_register_lang(dssh_language lang)
 {
+	if (lang == NULL)
+		return DSSH_ERROR_INIT;
 	if (gconf.used)
 		return DSSH_ERROR_TOOLATE;
 	if ((strlen(lang->name) > 64) || (strlen(lang->name) == 0))
@@ -2164,6 +2212,8 @@ dssh_transport_set_callbacks(dssh_transport_io_cb tx,
 {
 	if (gconf.used)
 		return DSSH_ERROR_TOOLATE;
+	if (tx == NULL || rx == NULL || rx_line == NULL)
+		return DSSH_ERROR_INIT;
 	gconf.tx = tx;
 	gconf.rx = rx;
 	gconf.rx_line = rx_line;

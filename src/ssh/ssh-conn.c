@@ -17,6 +17,8 @@ DSSH_PUBLIC int
 dssh_parse_pty_req_data(const uint8_t *data, size_t data_len,
     struct dssh_pty_req *pty)
 {
+	if (pty == NULL || (data == NULL && data_len > 0))
+		return DSSH_ERROR_INIT;
 	size_t   pos = 0;
 	int64_t  pv;
 	uint32_t tlen;
@@ -72,6 +74,8 @@ dssh_parse_env_data(const uint8_t *data, size_t data_len,
     const uint8_t **name, size_t *name_len,
     const uint8_t **value, size_t *value_len)
 {
+	if (name == NULL || value == NULL || (data == NULL && data_len > 0))
+		return DSSH_ERROR_INIT;
 	size_t   pos = 0;
 	int64_t  pv;
 	uint32_t nlen;
@@ -107,6 +111,8 @@ DSSH_PUBLIC int
 dssh_parse_exec_data(const uint8_t *data, size_t data_len,
     const uint8_t **command, size_t *command_len)
 {
+	if (command == NULL || (data == NULL && data_len > 0))
+		return DSSH_ERROR_INIT;
 	if (data_len < 4)
 		return DSSH_ERROR_PARSE;
 
@@ -127,6 +133,8 @@ DSSH_PUBLIC int
 dssh_parse_subsystem_data(const uint8_t *data, size_t data_len,
     const uint8_t **name, size_t *name_len)
 {
+	if (name == NULL || (data == NULL && data_len > 0))
+		return DSSH_ERROR_INIT;
 	if (data_len < 4)
 		return DSSH_ERROR_PARSE;
 
@@ -171,11 +179,17 @@ DSSH_TESTABLE int
 dssh_conn_send_data(dssh_session sess,
     dssh_channel ch, const uint8_t *data, size_t len)
 {
-	if ((len > ch->remote_window) || (len > ch->remote_max_packet))
+	mtx_lock(&ch->buf_mtx);
+	if ((len > ch->remote_window) || (len > ch->remote_max_packet)) {
+		mtx_unlock(&ch->buf_mtx);
 		return DSSH_ERROR_TOOLONG;
+	}
 
 	/* len <= remote_window (uint32_t), so fits in uint32_t */
 	uint32_t len_u32 = (uint32_t)len;
+
+	ch->remote_window -= len_u32;
+	mtx_unlock(&ch->buf_mtx);
 
 	if (len > SIZE_MAX - 9)
 		return DSSH_ERROR_INVALID;
@@ -198,8 +212,6 @@ dssh_conn_send_data(dssh_session sess,
 	memcpy(&msg[pos], data, len);
 	pos += len;
 
-	ch->remote_window -= len_u32;
-
 	ret = dssh_transport_send_packet(sess, msg, pos, NULL);
 
 done:
@@ -212,11 +224,17 @@ dssh_conn_send_extended_data(dssh_session sess,
     dssh_channel ch, uint32_t data_type_code,
     const uint8_t *data, size_t len)
 {
-	if ((len > ch->remote_window) || (len > ch->remote_max_packet))
+	mtx_lock(&ch->buf_mtx);
+	if ((len > ch->remote_window) || (len > ch->remote_max_packet)) {
+		mtx_unlock(&ch->buf_mtx);
 		return DSSH_ERROR_TOOLONG;
+	}
 
 	/* len <= remote_window (uint32_t), so fits in uint32_t */
 	uint32_t len_u32 = (uint32_t)len;
+
+	ch->remote_window -= len_u32;
+	mtx_unlock(&ch->buf_mtx);
 
 	if (len > SIZE_MAX - 13)
 		return DSSH_ERROR_INVALID;
@@ -241,8 +259,6 @@ dssh_conn_send_extended_data(dssh_session sess,
 		goto done;
 	memcpy(&msg[pos], data, len);
 	pos += len;
-
-	ch->remote_window -= len_u32;
 
 	ret = dssh_transport_send_packet(sess, msg, pos, NULL);
 
@@ -304,8 +320,13 @@ DSSH_TESTABLE int
 dssh_conn_send_eof(dssh_session sess,
     dssh_channel                ch)
 {
-	if (ch->eof_sent)
+	mtx_lock(&ch->buf_mtx);
+	if (ch->eof_sent) {
+		mtx_unlock(&ch->buf_mtx);
 		return 0;
+	}
+	ch->eof_sent = true;
+	mtx_unlock(&ch->buf_mtx);
 
 	uint8_t msg[8];
 	size_t  pos = 0;
@@ -317,7 +338,6 @@ dssh_conn_send_eof(dssh_session sess,
 	if (ret < 0)
 		return ret;
 
-	ch->eof_sent = true;
 	return dssh_transport_send_packet(sess, msg, pos, NULL);
 }
 
@@ -325,8 +345,14 @@ DSSH_TESTABLE int
 dssh_conn_close(dssh_session sess,
     dssh_channel             ch)
 {
-	if (ch->close_sent)
+	mtx_lock(&ch->buf_mtx);
+	if (ch->close_sent) {
+		mtx_unlock(&ch->buf_mtx);
 		return 0;
+	}
+	ch->close_sent = true;
+	ch->open = false;
+	mtx_unlock(&ch->buf_mtx);
 
 	uint8_t msg[8];
 	size_t  pos = 0;
@@ -337,8 +363,6 @@ dssh_conn_close(dssh_session sess,
 	if (ret < 0)
 		return ret;
 
-	ch->close_sent = true;
-	ch->open = false;
 	return dssh_transport_send_packet(sess, msg, pos, NULL);
 }
 
@@ -522,16 +546,24 @@ cleanup_channel_buffers(dssh_channel ch)
 DSSH_TESTABLE int
 maybe_replenish_window(dssh_session sess, dssh_channel ch)
 {
+	mtx_lock(&ch->buf_mtx);
+
         /* No point replenishing if peer is done sending */
-	if (ch->eof_received || ch->close_received)
+	if (ch->eof_received || ch->close_received) {
+		mtx_unlock(&ch->buf_mtx);
 		return 0;
+	}
 
         /* Replenish when window drops below half the target */
-	if (ch->local_window < ch->window_max / 2) {
-		uint32_t add = ch->window_max - ch->local_window;
+	uint32_t add = 0;
 
+	if (ch->local_window < ch->window_max / 2)
+		add = ch->window_max - ch->local_window;
+
+	mtx_unlock(&ch->buf_mtx);
+
+	if (add > 0)
 		return dssh_conn_send_window_adjust(sess, ch, add);
-	}
 	return 0;
 }
 
@@ -963,6 +995,8 @@ demux_thread_func(void *arg)
 DSSH_PUBLIC int
 dssh_session_start(dssh_session sess)
 {
+	if (sess == NULL)
+		return DSSH_ERROR_INIT;
 	if (sess->demux_running)
 		return DSSH_ERROR_INIT;
 
@@ -1000,6 +1034,8 @@ dssh_session_start(dssh_session sess)
 DSSH_PUBLIC void
 dssh_session_stop(dssh_session sess)
 {
+	if (sess == NULL)
+		return;
 	if (!sess->demux_running && (sess->channels == NULL))
 		return;
 
@@ -1044,6 +1080,8 @@ DSSH_PUBLIC int
 dssh_session_accept(dssh_session sess,
     struct dssh_incoming_open **inc, int timeout_ms)
 {
+	if (sess == NULL || inc == NULL)
+		return DSSH_ERROR_INIT;
 	mtx_lock(&sess->accept_mtx);
 
 	while (sess->accept_queue.head == NULL) {
@@ -1085,6 +1123,8 @@ dssh_session_reject(dssh_session sess,
     struct dssh_incoming_open *inc, uint32_t reason_code,
     const char *description)
 {
+	if (sess == NULL || inc == NULL)
+		return DSSH_ERROR_INIT;
 	size_t  dlen = description ? strlen(description) : 0;
 	uint8_t msg[256];
 
@@ -1322,6 +1362,8 @@ DSSH_PUBLIC dssh_channel
 dssh_session_open_shell(dssh_session sess,
     const struct dssh_pty_req       *pty)
 {
+	if (sess == NULL || pty == NULL)
+		return NULL;
 	dssh_channel ch = calloc(1, sizeof(*ch));
 
 	if (ch == NULL)
@@ -1416,6 +1458,8 @@ DSSH_PUBLIC dssh_channel
 dssh_session_open_exec(dssh_session sess,
     const char                     *command)
 {
+	if (sess == NULL || command == NULL)
+		return NULL;
 	dssh_channel ch = calloc(1, sizeof(*ch));
 
 	if (ch == NULL)
@@ -1479,6 +1523,8 @@ DSSH_PUBLIC dssh_channel
 dssh_channel_open_subsystem(dssh_session sess,
     const char                          *subsystem)
 {
+	if (sess == NULL || subsystem == NULL)
+		return NULL;
 	dssh_channel ch = calloc(1, sizeof(*ch));
 
 	if (ch == NULL)
@@ -1546,6 +1592,8 @@ DSSH_PUBLIC dssh_channel
 dssh_channel_accept_raw(dssh_session sess,
     struct dssh_incoming_open       *inc)
 {
+	if (sess == NULL || inc == NULL)
+		return NULL;
 	dssh_channel ch = calloc(1, sizeof(*ch));
 
 	if (ch == NULL)
@@ -1647,6 +1695,8 @@ dssh_session_accept_channel(dssh_session sess,
     const struct dssh_server_session_cbs *cbs,
     const char **request_type, const char **request_data)
 {
+	if (sess == NULL || inc == NULL || cbs == NULL)
+		return NULL;
 	dssh_channel ch = calloc(1, sizeof(*ch));
 
 	if (ch == NULL)
@@ -1927,6 +1977,8 @@ DSSH_PUBLIC int
 dssh_session_poll(dssh_session sess,
     dssh_channel ch, int events, int timeout_ms)
 {
+	if (sess == NULL || ch == NULL)
+		return DSSH_ERROR_INIT;
 	mtx_lock(&ch->buf_mtx);
 
 	for (;;) {
@@ -1983,6 +2035,8 @@ DSSH_PUBLIC int64_t
 dssh_session_read(dssh_session sess,
     dssh_channel ch, uint8_t *buf, size_t bufsz)
 {
+	if (sess == NULL || ch == NULL)
+		return DSSH_ERROR_INIT;
 	mtx_lock(&ch->buf_mtx);
 
 	size_t limit = session_stdout_readable(ch);
@@ -2003,6 +2057,8 @@ DSSH_PUBLIC int64_t
 dssh_session_read_ext(dssh_session sess,
     dssh_channel ch, uint8_t *buf, size_t bufsz)
 {
+	if (sess == NULL || ch == NULL)
+		return DSSH_ERROR_INIT;
 	mtx_lock(&ch->buf_mtx);
 
 	size_t limit = session_stderr_readable(ch);
@@ -2023,6 +2079,10 @@ DSSH_PUBLIC int64_t
 dssh_session_write(dssh_session sess,
     dssh_channel ch, const uint8_t *buf, size_t bufsz)
 {
+	if (sess == NULL || ch == NULL)
+		return DSSH_ERROR_INIT;
+	if (bufsz == 0)
+		return 0;
 	if (!ch->open || ch->eof_sent || ch->close_received)
 		return DSSH_ERROR_INIT;
 
@@ -2049,6 +2109,10 @@ DSSH_PUBLIC int64_t
 dssh_session_write_ext(dssh_session sess,
     dssh_channel ch, const uint8_t *buf, size_t bufsz)
 {
+	if (sess == NULL || ch == NULL)
+		return DSSH_ERROR_INIT;
+	if (bufsz == 0)
+		return 0;
 	if (!ch->open || ch->eof_sent || ch->close_received)
 		return DSSH_ERROR_INIT;
 
@@ -2076,6 +2140,8 @@ DSSH_PUBLIC int
 dssh_session_read_signal(dssh_session sess,
     dssh_channel ch, const char **signal_name)
 {
+	if (sess == NULL || ch == NULL)
+		return DSSH_ERROR_INIT;
 	mtx_lock(&ch->buf_mtx);
 
 	const char *name = dssh_sigqueue_pop(&ch->buf.session.signals,
@@ -2094,6 +2160,8 @@ DSSH_PUBLIC int
 dssh_session_close(dssh_session sess,
     dssh_channel ch, uint32_t exit_code)
 {
+	if (sess == NULL || ch == NULL)
+		return DSSH_ERROR_INIT;
 	dssh_conn_send_exit_status(sess, ch, exit_code);
 	dssh_conn_send_eof(sess, ch);
 	dssh_conn_close(sess, ch);
@@ -2111,6 +2179,8 @@ DSSH_PUBLIC int
 dssh_channel_poll(dssh_session sess,
     dssh_channel ch, int events, int timeout_ms)
 {
+	if (sess == NULL || ch == NULL)
+		return DSSH_ERROR_INIT;
 	mtx_lock(&ch->buf_mtx);
 
 	for (;;) {
@@ -2158,6 +2228,8 @@ DSSH_PUBLIC int64_t
 dssh_channel_read(dssh_session sess,
     dssh_channel ch, uint8_t *buf, size_t bufsz)
 {
+	if (sess == NULL || ch == NULL)
+		return DSSH_ERROR_INIT;
 	mtx_lock(&ch->buf_mtx);
 
 	int64_t n = dssh_msgqueue_pop(&ch->buf.raw.queue, buf, bufsz);
@@ -2176,6 +2248,10 @@ DSSH_PUBLIC int
 dssh_channel_write(dssh_session sess,
     dssh_channel ch, const uint8_t *buf, size_t len)
 {
+	if (sess == NULL || ch == NULL)
+		return DSSH_ERROR_INIT;
+	if (len == 0)
+		return 0;
 	if (!ch->open || ch->eof_sent || ch->close_received)
 		return DSSH_ERROR_INIT;
 	if ((len > ch->remote_window) || (len > ch->remote_max_packet))
@@ -2188,6 +2264,8 @@ DSSH_PUBLIC int
 dssh_channel_close(dssh_session sess,
     dssh_channel                ch)
 {
+	if (sess == NULL || ch == NULL)
+		return DSSH_ERROR_INIT;
 	dssh_conn_send_eof(sess, ch);
 	dssh_conn_close(sess, ch);
 	unregister_channel(sess, ch);
@@ -2204,6 +2282,8 @@ DSSH_PUBLIC int
 dssh_session_send_signal(dssh_session sess,
     dssh_channel ch, const char *signal_name)
 {
+	if (sess == NULL || ch == NULL || signal_name == NULL)
+		return DSSH_ERROR_INIT;
 	size_t   slen = strlen(signal_name);
 
 	if (slen > UINT32_MAX || slen > SIZE_MAX - 20)
@@ -2245,6 +2325,8 @@ dssh_session_send_window_change(dssh_session sess,
     dssh_channel ch,
     uint32_t cols, uint32_t rows, uint32_t wpx, uint32_t hpx)
 {
+	if (sess == NULL || ch == NULL)
+		return DSSH_ERROR_INIT;
 	uint8_t extra[16];
 	size_t  ep = 0;
 	int     ret;

@@ -9,7 +9,13 @@
 extern "C" {
 #endif
 
-/* Opaque channel handle.  Created by open/accept, freed by close. */
+/* Opaque channel handle.  Created by open/accept, freed by close.
+ *
+ * Lifetime rules:
+ *   - After dssh_session_close(ch) or dssh_channel_close(ch),
+ *     the handle is freed and MUST NOT be used again.
+ *   - After dssh_session_stop(), ALL channel handles are freed.
+ *   - Passing a previously-closed handle is undefined behavior. */
 typedef struct dssh_channel_s *dssh_channel;
 
 /* Poll event flags */

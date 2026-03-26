@@ -246,6 +246,8 @@ DSSH_PUBLIC int
 dssh_ed25519_load_key_file(const char *path, pem_password_cb *pw_cb,
     void *pw_cbdata)
 {
+	if (path == NULL)
+		return DSSH_ERROR_INIT;
 	FILE *fp = fopen(path, "r");
 
 	if (fp == NULL)
@@ -289,6 +291,8 @@ DSSH_PUBLIC int
 dssh_ed25519_save_key_file(const char *path, pem_password_cb *pw_cb,
     void *pw_cbdata)
 {
+	if (path == NULL)
+		return DSSH_ERROR_INIT;
 #ifdef DSSH_TESTING
 	if (ed25519_ctx == NULL)
 #else
@@ -347,6 +351,8 @@ dssh_ed25519_get_pub_str(char *buf, size_t bufsz)
 DSSH_PUBLIC int
 dssh_ed25519_save_pub_file(const char *path)
 {
+	if (path == NULL)
+		return DSSH_ERROR_INIT;
 	char str[256];
 	int64_t len = dssh_ed25519_get_pub_str(str, sizeof(str));
 	if (len < 0)

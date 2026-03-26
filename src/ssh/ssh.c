@@ -69,6 +69,9 @@ dssh_session_init(bool client, size_t max_packet_size)
 DSSH_PUBLIC bool
 dssh_session_terminate(dssh_session sess)
 {
+	if (sess == NULL)
+		return false;
+
 	bool t = true;
 
 	if (atomic_compare_exchange_strong(&sess->initialized, &t, false)) {
@@ -81,6 +84,8 @@ dssh_session_terminate(dssh_session sess)
 DSSH_PUBLIC bool
 dssh_session_is_terminated(dssh_session sess)
 {
+	if (sess == NULL)
+		return true;
 	return sess->terminate;
 }
 
@@ -101,6 +106,8 @@ dssh_session_set_cbdata(dssh_session sess,
     void *tx_cbdata, void *rx_cbdata, void *rx_line_cbdata,
     void *extra_line_cbdata)
 {
+	if (sess == NULL)
+		return;
 	sess->tx_cbdata = tx_cbdata;
 	sess->rx_cbdata = rx_cbdata;
 	sess->rx_line_cbdata = rx_line_cbdata;
@@ -111,6 +118,8 @@ DSSH_PUBLIC void
 dssh_session_set_debug_cb(dssh_session sess,
     dssh_debug_cb cb, void *cbdata)
 {
+	if (sess == NULL)
+		return;
 	sess->debug_cb = cb;
 	sess->debug_cbdata = cbdata;
 }
@@ -119,6 +128,8 @@ DSSH_PUBLIC void
 dssh_session_set_unimplemented_cb(dssh_session sess,
     dssh_unimplemented_cb cb, void *cbdata)
 {
+	if (sess == NULL)
+		return;
 	sess->unimplemented_cb = cb;
 	sess->unimplemented_cbdata = cbdata;
 }
@@ -127,6 +138,8 @@ DSSH_PUBLIC void
 dssh_session_set_banner_cb(dssh_session sess,
     dssh_auth_banner_cb cb, void *cbdata)
 {
+	if (sess == NULL)
+		return;
 	sess->banner_cb = cb;
 	sess->banner_cbdata = cbdata;
 }
@@ -135,6 +148,8 @@ DSSH_PUBLIC void
 dssh_session_set_global_request_cb(dssh_session sess,
     dssh_global_request_cb cb, void *cbdata)
 {
+	if (sess == NULL)
+		return;
 	sess->global_request_cb = cb;
 	sess->global_request_cbdata = cbdata;
 }
