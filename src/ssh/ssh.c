@@ -30,11 +30,9 @@ dssh_session_set_terminate(dssh_session sess)
 		for (size_t i = 0; i < sess->channel_count; i++) {
 			dssh_channel ch = sess->channels[i];
 
-			if (ch->chan_type != 0) {
-				mtx_lock(&ch->buf_mtx);
-				cnd_signal(&ch->poll_cnd);
-				mtx_unlock(&ch->buf_mtx);
-			}
+			mtx_lock(&ch->buf_mtx);
+			cnd_signal(&ch->poll_cnd);
+			mtx_unlock(&ch->buf_mtx);
 		}
 		mtx_unlock(&sess->channel_mtx);
 	}

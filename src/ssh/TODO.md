@@ -88,14 +88,6 @@
     Should be sequential checks with a single `goto cleanup`, or a
     helper that wraps the digest sequence.
 
-23. Data race in `dssh_session_write()`: reads `ch->remote_window`
-    without holding `buf_mtx`.  Demux thread updates it concurrently
-    via WINDOW_ADJUST.  Not dangerous (send_data re-checks under the
-    lock), but technically undefined behavior.
-
-24. `dssh_session_accept_channel()` fail path (lines 1928–1934) does
-    not free `ch->setup_payload`.  If the demux thread delivered a
-    message that hasn't been consumed by `setup_recv`, it leaks.
 
 26. `demux_dispatch()` (~240 lines) and `dssh_session_accept_channel()`
     (~230 lines) are too large.  demux_dispatch handles 8 message types
@@ -130,12 +122,6 @@
     concurrently.  Either document as set-once-before-start or protect
     with the session mutex.
 
-33. `dssh_session_set_terminate()` channel wakeup loop skips channels
-    with `chan_type == 0` (line 32).  During `dssh_session_accept_channel`,
-    a channel is registered with `chan_type == 0` in setup mode.  The
-    guard skips signaling it, potentially delaying `setup_recv`'s
-    detection of termination.
-
 34. `deucessh-algorithms.h` includes `<openssl/pem.h>` — exposes
     `pem_password_cb` to consumers.  Same class as item 5: public
     headers should not require OpenSSL on the consumer's include path.
@@ -163,6 +149,17 @@
     source character set conformance.
 
 ## Closed
+
+- Data race in `dssh_session_write()` / `write_ext()` (was item 23).
+  Now reads `remote_window` and `remote_max_packet` under `buf_mtx`.
+
+- `dssh_session_accept_channel()` fail path leaked `setup_payload`
+  (was item 24).  Added `free(ch->setup_payload)` before `free(ch)`.
+
+- `dssh_session_set_terminate()` and demux cleanup skipped channels
+  with `chan_type == 0` (was item 33).  Removed the guard; `buf_mtx`
+  and `poll_cnd` are initialized before registration, so signaling
+  setup-mode channels is safe.
 
 - `send_auth_failure()` stack buffer overflow (was item 7).  Switched
   from 256-byte stack buffer to dynamic allocation.

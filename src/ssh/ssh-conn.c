@@ -986,23 +986,17 @@ demux_thread_func(void *arg)
 	cnd_broadcast(&sess->accept_cnd);
 	mtx_unlock(&sess->accept_mtx);
 
-        /* During termination wake, all registered channels have
-         * initialized buffers (chan_type is always set).
+        /* Wake all registered channels.  buf_mtx and poll_cnd are
+         * initialized before register_channel(), so this is safe even
+         * for channels still in setup mode (chan_type == 0).
          * Lock order: channel_mtx then buf_mtx. */
 	mtx_lock(&sess->channel_mtx);
 	for (size_t i = 0; i < sess->channel_count; i++) {
 		dssh_channel ch = sess->channels[i];
-#ifdef DSSH_TESTING
+
 		mtx_lock(&ch->buf_mtx);
 		cnd_signal(&ch->poll_cnd);
 		mtx_unlock(&ch->buf_mtx);
-#else
-		if (ch->chan_type != 0) {
-			mtx_lock(&ch->buf_mtx);
-			cnd_signal(&ch->poll_cnd);
-			mtx_unlock(&ch->buf_mtx);
-		}
-#endif
 	}
 	mtx_unlock(&sess->channel_mtx);
 
@@ -1917,6 +1911,7 @@ dssh_session_accept_channel(dssh_session sess,
 fail:
 	ch->setup_mode = false;
 	unregister_channel(sess, ch);
+	free(ch->setup_payload);
 	cnd_destroy(&ch->poll_cnd);
 	mtx_destroy(&ch->buf_mtx);
 	free(ch);
@@ -2090,7 +2085,10 @@ dssh_session_write(dssh_session sess,
 	if (!ch->open || ch->eof_sent || ch->close_received)
 		return DSSH_ERROR_INIT;
 
+	mtx_lock(&ch->buf_mtx);
 	uint32_t avail = ch->remote_window;
+	uint32_t max_pkt = ch->remote_max_packet;
+	mtx_unlock(&ch->buf_mtx);
 
 	if (avail == 0)
 		return 0;
@@ -2099,8 +2097,8 @@ dssh_session_write(dssh_session sess,
 
 	if (len > avail)
 		len = avail;
-	if (len > ch->remote_max_packet)
-		len = ch->remote_max_packet;
+	if (len > max_pkt)
+		len = max_pkt;
 
 	int res = dssh_conn_send_data(sess, ch, buf, len);
 
@@ -2120,7 +2118,10 @@ dssh_session_write_ext(dssh_session sess,
 	if (!ch->open || ch->eof_sent || ch->close_received)
 		return DSSH_ERROR_INIT;
 
+	mtx_lock(&ch->buf_mtx);
 	uint32_t avail = ch->remote_window;
+	uint32_t max_pkt = ch->remote_max_packet;
+	mtx_unlock(&ch->buf_mtx);
 
 	if (avail == 0)
 		return 0;
@@ -2129,8 +2130,8 @@ dssh_session_write_ext(dssh_session sess,
 
 	if (len > avail)
 		len = avail;
-	if (len > ch->remote_max_packet)
-		len = ch->remote_max_packet;
+	if (len > max_pkt)
+		len = max_pkt;
 
 	int res = dssh_conn_send_extended_data(sess, ch,
 	        SSH_EXTENDED_DATA_STDERR, buf, len);
