@@ -37,9 +37,22 @@ in production builds.
 - **Per-session keys**: Considered and rejected — SSH host keys
   identify the server, not the listen address.
 
-## 3. Audit for magic numbers
+## 3. Audit for magic numbers — IN PROGRESS
 
 Bare integer return values and protocol constants should use named
 defines.  Found `return 0` / `return 1` in `get_methods_impl` —
 replaced with `DSSH_AUTH_NONE_ACCEPTED` / `DSSH_AUTH_METHODS_AVAILABLE`.
-Need a full audit of the library and test code for similar cases.
+
+Full audit in progress.  All bare numeric and string literals in the
+library source are being replaced with `DSSH_`-prefixed macros and
+file-scope `static const char[]` variables.
+
+## 4. Name-list truncation safety
+
+`dssh_test_build_namelist()` (ssh-trans.c) assembles comma-separated
+algorithm name-lists into a fixed-size buffer.  When the buffer fills,
+the function must not append a trailing comma or a partial algorithm
+name.  The current implementation checks `pos + nlen >= bufsz` before
+each name and `pos + 1 >= bufsz` before each comma, then breaks if
+either would overflow — this should be safe, but needs explicit test
+coverage to verify the boundary condition.

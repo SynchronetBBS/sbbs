@@ -9,6 +9,7 @@
 
 #include "ssh-internal.h"
 #include "deucessh-algorithms.h"
+#include "deucessh-auth.h"
 
 /* DSSH_TESTABLE is defined in ssh-internal.h */
 
@@ -28,6 +29,7 @@ cleanse_free(void *ptr, size_t len)
  #define DSSH_VERSION_STRING "0.0"
 #endif
 static const char                                  sw_ver[] = "DeuceSSH-" DSSH_VERSION_STRING;
+static const char                                  ssh_version_prefix[] = "SSH-2.0-";
 
 DSSH_TESTABLE struct dssh_transport_global_config gconf;
 
@@ -110,7 +112,7 @@ version_rx(dssh_session sess)
 			return res;
 		}
 		if (dssh_test_is_version_line(sess->trans.rx_packet, received)) {
-			if ((received > 255) || dssh_test_has_nulls(sess->trans.rx_packet,
+			if ((received > DSSH_VERSION_STRING_MAX) || dssh_test_has_nulls(sess->trans.rx_packet,
 			    received) || dssh_test_missing_crlf(sess->trans.rx_packet,
 			    received) || dssh_test_has_non_ascii(sess->trans.rx_packet,
 			    received - 2) || !dssh_test_is_20(sess->trans.rx_packet, received)) {
@@ -140,12 +142,12 @@ version_tx(dssh_session sess)
 	int    res;
 	size_t sz = 0;
 
-	memcpy(sess->trans.tx_packet, "SSH-2.0-", 8);
-	sz += 8;
+	memcpy(sess->trans.tx_packet, ssh_version_prefix, DSSH_STRLEN(ssh_version_prefix));
+	sz += DSSH_STRLEN(ssh_version_prefix);
 
 	size_t asz = strlen(gconf.software_version);
 
-	if (sz + asz + 2 > 255)
+	if (sz + asz + 2 > DSSH_VERSION_STRING_MAX)
 		return DSSH_ERROR_TOOLONG;
 	memcpy(&sess->trans.tx_packet[sz], gconf.software_version, asz);
 	sz += asz;
@@ -153,7 +155,7 @@ version_tx(dssh_session sess)
 		memcpy(&sess->trans.tx_packet[sz], " ", 1);
 		sz += 1;
 		asz = strlen(gconf.version_comment);
-		if (sz + asz + 2 > 255)
+		if (sz + asz + 2 > DSSH_VERSION_STRING_MAX)
 			return DSSH_ERROR_TOOLONG;
 		memcpy(&sess->trans.tx_packet[sz], gconf.version_comment, asz);
 		sz += asz;
@@ -350,8 +352,8 @@ dssh_transport_disconnect(dssh_session sess,
 		return DSSH_ERROR_INIT;
 	size_t dlen = strlen(desc);
 
-	if (dlen > 230)
-		dlen = 230;
+	if (dlen > DSSH_DISCONNECT_DESC_MAX)
+		dlen = DSSH_DISCONNECT_DESC_MAX;
 
 	uint8_t msg[256];
 	size_t  pos = 0;
@@ -479,9 +481,9 @@ dssh_transport_send_packet(dssh_session sess,
         /* Every SSH packet has at least a 1-byte message type,
          * so payload_len is always > 0 here. */
 #ifdef DSSH_TESTING
-	if (payload[0] >= 50) {
+	if (payload[0] >= SSH_MSG_USERAUTH_REQUEST) {
 #else
-	if ((payload_len > 0) && (payload[0] >= 50)) {
+	if ((payload_len > 0) && (payload[0] >= SSH_MSG_USERAUTH_REQUEST)) {
 #endif
 		while (sess->trans.rekey_in_progress && !sess->terminate)
 			cnd_wait(&sess->trans.rekey_cnd, &sess->trans.tx_mtx);
@@ -701,13 +703,7 @@ recv_packet_raw(dssh_session sess,
         /* Verify MAC */
 	uint16_t mac_len = rx_mac_size(sess);
 	if (mac_len > 0) {
-		uint8_t received_mac[64];
-
-		if (mac_len > sizeof(received_mac)) {
-			ret = DSSH_ERROR_TOOLONG;
-			goto rx_done;
-		}
-		ret = gconf.rx(received_mac, mac_len, sess, sess->rx_cbdata);
+		ret = gconf.rx(sess->trans.rx_mac_buf, mac_len, sess, sess->rx_cbdata);
 		if (ret < 0)
 			goto rx_done;
 
@@ -720,7 +716,6 @@ recv_packet_raw(dssh_session sess,
 		memcpy(&mac_input[mi_pos], sess->trans.rx_packet, packet_length + 4);
 		mi_pos += packet_length + 4;
 
-		uint8_t       computed_mac[64];
 		dssh_mac      mac;
 		dssh_mac_ctx *mac_ctx;
 
@@ -732,19 +727,15 @@ recv_packet_raw(dssh_session sess,
 			mac = sess->trans.mac_c2s_selected;
 			mac_ctx = sess->trans.mac_c2s_ctx;
 		}
-		ret = mac->generate(mac_input, mi_pos, computed_mac, mac_ctx);
+		ret = mac->generate(mac_input, mi_pos, sess->trans.rx_mac_computed, mac_ctx);
 		if (ret < 0)
 			goto rx_done;
-		if (CRYPTO_memcmp(received_mac, computed_mac, mac_len) != 0) {
+		if (CRYPTO_memcmp(sess->trans.rx_mac_buf, sess->trans.rx_mac_computed, mac_len) != 0) {
 			dssh_transport_disconnect(sess,
 			    SSH_DISCONNECT_MAC_ERROR, "MAC verification failed");
 			ret = DSSH_ERROR_INVALID;
-			OPENSSL_cleanse(received_mac, sizeof(received_mac));
-			OPENSSL_cleanse(computed_mac, sizeof(computed_mac));
 			goto rx_done;
 		}
-		OPENSSL_cleanse(received_mac, sizeof(received_mac));
-		OPENSSL_cleanse(computed_mac, sizeof(computed_mac));
 	}
 
 	uint8_t padding_length = sess->trans.rx_packet[4];
@@ -1059,13 +1050,13 @@ dssh_transport_kexinit(dssh_session sess)
 
 	kexinit[pos++] = SSH_MSG_KEXINIT;
 
-	if (RAND_bytes(&kexinit[pos], 16) != 1) {
+	if (RAND_bytes(&kexinit[pos], DSSH_KEXINIT_COOKIE_SIZE) != 1) {
 		free(kexinit);
 		return DSSH_ERROR_INIT;
 	}
-	pos += 16;
+	pos += DSSH_KEXINIT_COOKIE_SIZE;
 
-	char   namelist[1024];
+	char   namelist[DSSH_NAMELIST_BUF_SIZE];
 	size_t noff;
 
 	noff = offsetof(struct dssh_kex_s, name);
@@ -1083,8 +1074,9 @@ dssh_transport_kexinit(dssh_session sess)
 	else {
                 /* Server: only advertise key algorithms we have a key for.
                  * All registered key_algo modules provide haskey. The
-                 * 1024-byte namelist buffer cannot overflow with max 64-char
-                 * names and reasonable registration counts. */
+                 * DSSH_NAMELIST_BUF_SIZE buffer cannot overflow with max
+                 * DSSH_ALGO_NAME_MAX-char names and reasonable registration
+                 * counts. */
 		size_t nlpos = 0;
 		bool   nlfirst = true;
 
@@ -1203,15 +1195,15 @@ kexinit_fail:
 		sess->trans.peer_kexinit_sz = peer_len;
 	}
 
-        /* Parse peer's 10 name-lists (skip msg_type(1) + cookie(16)).
+        /* Parse peer's name-lists (skip msg_type(1) + cookie).
          * RFC 4251 s6: algorithm names MUST NOT contain control characters
-         * (ASCII codes 32 or less) or DEL (127).  Reject violations. */
+         * (ASCII codes 32 or less) or DEL.  Reject violations. */
 	uint8_t *pk = sess->trans.peer_kexinit;
 	size_t   pk_len = sess->trans.peer_kexinit_sz;
-	size_t   ppos = 17;
-	char     peer_lists[10][1024];
+	size_t   ppos = 1 + DSSH_KEXINIT_COOKIE_SIZE;
+	char     peer_lists[DSSH_KEXINIT_NAMELIST_COUNT][DSSH_NAMELIST_BUF_SIZE];
 
-	for (int i = 0; i < 10; i++) {
+	for (int i = 0; i < DSSH_KEXINIT_NAMELIST_COUNT; i++) {
 		uint32_t nlen;
 
 		if (dssh_parse_uint32(&pk[ppos], pk_len - ppos, &nlen) < 4)
@@ -1223,17 +1215,17 @@ kexinit_fail:
 		for (uint32_t j = 0; j < nlen; j++) {
 			uint8_t ch = pk[ppos + j];
 
-			if ((ch <= ' ') || (ch >= 127))
+			if ((ch <= ' ') || (ch >= DSSH_ASCII_DEL))
 				return DSSH_ERROR_PARSE;
 		}
 
-                /* RFC 4251 s6: individual names MUST NOT exceed 64 chars */
+                /* RFC 4251 s6: individual names MUST NOT exceed DSSH_ALGO_NAME_MAX */
 		{
 			uint32_t name_start = 0;
 
 			for (uint32_t j = 0; ; j++) {
 				if ((j == nlen) || (pk[ppos + j] == ',')) {
-					if (j - name_start > 64)
+					if (j - name_start > DSSH_ALGO_NAME_MAX)
 						return DSSH_ERROR_PARSE;
 					if (j == nlen)
 						break;
@@ -1269,7 +1261,7 @@ kexinit_fail:
 	const char *client_mac_s2c, *server_mac_s2c;
 	const char *client_comp_c2s, *server_comp_c2s;
 	const char *client_comp_s2c, *server_comp_s2c;
-	char        our_lists[5][1024];
+	char        our_lists[5][DSSH_NAMELIST_BUF_SIZE];
 
 	dssh_test_build_namelist(gconf.kex_head, offsetof(struct dssh_kex_s, name), our_lists[0], sizeof(our_lists[0]));
 	dssh_test_build_namelist(gconf.key_algo_head, offsetof(struct dssh_key_algo_s,
@@ -1351,8 +1343,8 @@ kexinit_fail:
          * If the peer sent a guessed KEX packet and the guess was wrong
          * (negotiated != peer's first choice), discard it. */
 	if (peer_first_kex_follows) {
-		char peer_guess_kex[256];
-		char peer_guess_hostkey[256];
+		char peer_guess_kex[DSSH_ALGO_NAME_MAX + 1];
+		char peer_guess_hostkey[DSSH_ALGO_NAME_MAX + 1];
 
 		first_name(peer_lists[0], peer_guess_kex, sizeof(peer_guess_kex));
 		first_name(peer_lists[1], peer_guess_hostkey, sizeof(peer_guess_hostkey));
@@ -1578,9 +1570,9 @@ dssh_transport_newkeys(dssh_session sess)
 	}
 	else {
 #ifdef DSSH_TESTING
-		bool need_pad = (ss[0] & 0x80);
+		bool need_pad = (ss[0] & DSSH_MPINT_SIGN_BIT);
 #else
-		bool need_pad = (ss_sz > 0 && (ss[0] & 0x80));
+		bool need_pad = (ss_sz > 0 && (ss[0] & DSSH_MPINT_SIGN_BIT));
 #endif
 		k_data_len = ss_sz + (need_pad ? 1 : 0);
 	}
@@ -1807,6 +1799,27 @@ dssh_transport_newkeys(dssh_session sess)
 			goto keys_cleanup;
 	}
 
+        /* Allocate MAC verification buffers (sized to negotiated digest).
+         * On rekey, free old buffers first (old MAC may differ). */
+	uint16_t mac_digest_sz = sess->trans.mac_c2s_selected->digest_size;
+
+	if (mac_digest_sz > 0) {
+		free(sess->trans.rx_mac_buf);
+		sess->trans.rx_mac_buf = NULL;
+		free(sess->trans.rx_mac_computed);
+		sess->trans.rx_mac_computed = NULL;
+		sess->trans.rx_mac_buf = malloc(mac_digest_sz);
+		if (sess->trans.rx_mac_buf == NULL) {
+			res = DSSH_ERROR_ALLOC;
+			goto keys_cleanup;
+		}
+		sess->trans.rx_mac_computed = malloc(mac_digest_sz);
+		if (sess->trans.rx_mac_computed == NULL) {
+			res = DSSH_ERROR_ALLOC;
+			goto keys_cleanup;
+		}
+	}
+
         /* Reset per-key counters */
 	sess->trans.tx_since_rekey = 0;
 	sess->trans.rx_since_rekey = 0;
@@ -1977,6 +1990,10 @@ dssh_transport_cleanup(dssh_session sess)
 	sess->trans.tx_mac_scratch = NULL;
 	free(sess->trans.rx_mac_scratch);
 	sess->trans.rx_mac_scratch = NULL;
+	free(sess->trans.rx_mac_buf);
+	sess->trans.rx_mac_buf = NULL;
+	free(sess->trans.rx_mac_computed);
+	sess->trans.rx_mac_computed = NULL;
 	sess->trans.packet_buf_sz = 0;
 
 	cleanse_free(sess->trans.session_id, sess->trans.session_id_sz);
@@ -2200,8 +2217,8 @@ dssh_transport_set_version(const char *software_version,
 	if (!is_valid_sw_version(sv, sv_len))
 		return DSSH_ERROR_INVALID;
 
-        /* "SSH-2.0-" (8) + version + " " + comment + CR LF <= 255 */
-	size_t total = 8 + sv_len + 2;
+        /* ssh_version_prefix + version + " " + comment + CR LF <= DSSH_VERSION_STRING_MAX */
+	size_t total = DSSH_STRLEN(ssh_version_prefix) + sv_len + 2;
 
 	if (comment != NULL) {
 		size_t cm_len = strlen(comment);
@@ -2212,7 +2229,7 @@ dssh_transport_set_version(const char *software_version,
 			return DSSH_ERROR_INVALID;
 		total += 1 + cm_len; /* SP + comment */
 	}
-	if (total > 255)
+	if (total > DSSH_VERSION_STRING_MAX)
 		return DSSH_ERROR_TOOLONG;
 
 	gconf.software_version = sv;

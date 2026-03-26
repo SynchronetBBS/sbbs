@@ -15,6 +15,10 @@
 #include "ssh-internal.h"
 #endif
 
+#ifndef DSSH_MPINT_SIGN_BIT
+ #define DSSH_MPINT_SIGN_BIT 0x80
+#endif
+
 #define RSA_SHA2_256_NAME     "rsa-sha2-256"
 #define RSA_SHA2_256_NAME_LEN 12
 
@@ -25,6 +29,8 @@
 
 struct cbdata {
 	EVP_PKEY *pkey;
+	uint8_t  *pub_blob;
+	size_t    pub_blob_len;
 };
 
 static struct cbdata *rsa_ctx;
@@ -183,7 +189,7 @@ done:
  *   string  <raw signature bytes>
  */
 static int
-sign(uint8_t *buf, size_t bufsz, size_t *outlen,
+sign(uint8_t **out, size_t *outlen,
     const uint8_t *data, size_t data_len, dssh_key_algo_ctx *ctx)
 {
 	/* cbd->pkey always set by keygen/load before sign is callable. */
@@ -221,10 +227,6 @@ sign(uint8_t *buf, size_t bufsz, size_t *outlen,
 		return DSSH_ERROR_INVALID;
 	}
 	size_t needed = 20 + siglen;
-	if (bufsz < needed) {
-		EVP_MD_CTX_free(mdctx);
-		return DSSH_ERROR_TOOLONG;
-	}
 
 	uint8_t *raw_sig = malloc(siglen);
 	if (raw_sig == NULL) {
@@ -244,16 +246,24 @@ sign(uint8_t *buf, size_t bufsz, size_t *outlen,
 	}
 
 	/* Serialize SSH signature blob */
+	uint8_t *buf = malloc(needed);
+	if (buf == NULL) {
+		free(raw_sig);
+		return DSSH_ERROR_ALLOC;
+	}
+
 	size_t pos = 0;
-	int    sret = dssh_serialize_uint32(RSA_SHA2_256_NAME_LEN, buf, bufsz, &pos);
+	int    sret = dssh_serialize_uint32(RSA_SHA2_256_NAME_LEN, buf, needed, &pos);
 	if (sret < 0) {
+		free(buf);
 		free(raw_sig);
 		return sret;
 	}
 	memcpy(&buf[pos], RSA_SHA2_256_NAME, RSA_SHA2_256_NAME_LEN);
 	pos += RSA_SHA2_256_NAME_LEN;
-	sret = dssh_serialize_uint32((uint32_t)siglen, buf, bufsz, &pos);
+	sret = dssh_serialize_uint32((uint32_t)siglen, buf, needed, &pos);
 	if (sret < 0) {
+		free(buf);
 		free(raw_sig);
 		return sret;
 	}
@@ -261,6 +271,7 @@ sign(uint8_t *buf, size_t bufsz, size_t *outlen,
 	pos += siglen;
 
 	free(raw_sig);
+	*out = buf;
 	*outlen = pos;
 	return 0;
 }
@@ -272,7 +283,7 @@ sign(uint8_t *buf, size_t bufsz, size_t *outlen,
  *   string  n (modulus)
  */
 static int
-pubkey(uint8_t *buf, size_t bufsz, size_t *outlen, dssh_key_algo_ctx *ctx)
+pubkey(const uint8_t **out, size_t *outlen, dssh_key_algo_ctx *ctx)
 {
 	/* cbd->pkey always set before pubkey is callable. */
 	struct cbdata *cbd = (struct cbdata *)ctx;
@@ -282,6 +293,13 @@ pubkey(uint8_t *buf, size_t bufsz, size_t *outlen, dssh_key_algo_ctx *ctx)
 	if (cbd == NULL || cbd->pkey == NULL)
 #endif
 		return DSSH_ERROR_INIT;
+
+	/* Return cached blob if already computed */
+	if (cbd->pub_blob != NULL) {
+		*out = cbd->pub_blob;
+		*outlen = cbd->pub_blob_len;
+		return 0;
+	}
 
 	BIGNUM *e_bn = NULL, *n_bn = NULL;
 	if (EVP_PKEY_get_bn_param(cbd->pkey, OSSL_PKEY_PARAM_RSA_E, &e_bn) != 1 ||
@@ -323,13 +341,13 @@ pubkey(uint8_t *buf, size_t bufsz, size_t *outlen, dssh_key_algo_ctx *ctx)
 
 	/* mpint encoding: add leading zero if MSB is set.
 	 * RSA public exponent is typically 65537 (0x010001), so e_pad
-	 * is never true in practice.  Caller provides 1024+ byte buffer. */
+	 * is never true in practice. */
 #ifdef DSSH_TESTING
-	bool e_pad = (e_buf[0] & 0x80);
+	bool e_pad = (e_buf[0] & DSSH_MPINT_SIGN_BIT);
 #else
-	bool e_pad = (e_bytes > 0 && (e_buf[0] & 0x80));
+	bool e_pad = (e_bytes > 0 && (e_buf[0] & DSSH_MPINT_SIGN_BIT));
 #endif
-	bool n_pad = (n_bytes > 0 && (n_buf[0] & 0x80));
+	bool n_pad = (n_bytes > 0 && (n_buf[0] & DSSH_MPINT_SIGN_BIT));
 
 	if (e_sz > UINT32_MAX - 1 || n_sz > UINT32_MAX - 1) {
 		free(e_buf); free(n_buf);
@@ -347,17 +365,19 @@ pubkey(uint8_t *buf, size_t bufsz, size_t *outlen, dssh_key_algo_ctx *ctx)
 		return DSSH_ERROR_INVALID;
 	}
 	size_t needed = 19 + e_wire + n_wire;
-	if (bufsz < needed) {
+
+	uint8_t *buf = malloc(needed);
+	if (buf == NULL) {
 		free(e_buf); free(n_buf);
 		BN_free(e_bn); BN_free(n_bn);
-		return DSSH_ERROR_TOOLONG;
+		return DSSH_ERROR_ALLOC;
 	}
 
 	size_t pos = 0;
 	int    sret;
 
-#define PK_SER(v) do { sret = dssh_serialize_uint32((v), buf, bufsz, &pos); \
-	if (sret < 0) { free(e_buf); free(n_buf); BN_free(e_bn); BN_free(n_bn); return sret; } } while (0)
+#define PK_SER(v) do { sret = dssh_serialize_uint32((v), buf, needed, &pos); \
+	if (sret < 0) { free(buf); free(e_buf); free(n_buf); BN_free(e_bn); BN_free(n_bn); return sret; } } while (0)
 
 	PK_SER(RSA_KEY_TYPE_NAME_LEN);
 	memcpy(&buf[pos], RSA_KEY_TYPE_NAME, RSA_KEY_TYPE_NAME_LEN);
@@ -380,6 +400,9 @@ pubkey(uint8_t *buf, size_t bufsz, size_t *outlen, dssh_key_algo_ctx *ctx)
 	free(e_buf); free(n_buf);
 	BN_free(e_bn); BN_free(n_bn);
 
+	cbd->pub_blob = buf;
+	cbd->pub_blob_len = pos;
+	*out = buf;
 	*outlen = pos;
 	return 0;
 }
@@ -400,6 +423,7 @@ cleanup(dssh_key_algo_ctx *ctx)
 
 	if (cbd != NULL) {
 		EVP_PKEY_free(cbd->pkey);
+		free(cbd->pub_blob);
 		free(cbd);
 	}
 	if (cbd == rsa_ctx)
@@ -445,6 +469,9 @@ dssh_rsa_sha2_256_load_key_file(const char *path, pem_password_cb *pw_cb,
 	}
 	else {
 		EVP_PKEY_free(rsa_ctx->pkey);
+		free(rsa_ctx->pub_blob);
+		rsa_ctx->pub_blob = NULL;
+		rsa_ctx->pub_blob_len = 0;
 	}
 
 	rsa_ctx->pkey = pkey;
@@ -490,10 +517,9 @@ dssh_rsa_sha2_256_save_key_file(const char *path, pem_password_cb *pw_cb,
 DSSH_PUBLIC int64_t
 dssh_rsa_sha2_256_get_pub_str(char *buf, size_t bufsz)
 {
-	uint8_t blob[2048];
+	const uint8_t *blob;
 	size_t blob_len;
-	int res = pubkey(blob, sizeof(blob), &blob_len,
-	    (dssh_key_algo_ctx *)rsa_ctx);
+	int res = pubkey(&blob, &blob_len, (dssh_key_algo_ctx *)rsa_ctx);
 	if (res < 0)
 		return res;
 
@@ -582,6 +608,9 @@ dssh_rsa_sha2_256_generate_key(unsigned int bits)
 	}
 	else {
 		EVP_PKEY_free(rsa_ctx->pkey);
+		free(rsa_ctx->pub_blob);
+		rsa_ctx->pub_blob = NULL;
+		rsa_ctx->pub_blob_len = 0;
 	}
 
 	rsa_ctx->pkey = pkey;

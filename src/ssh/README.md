@@ -1086,6 +1086,18 @@ RFC minimum (33280 bytes), which accommodates the RFC-required
 32768-byte uncompressed payload with room for headers and padding.
 Pass a larger value to support bigger payloads.
 
+## Limits
+
+The library enforces several size limits, some from the RFCs and some
+practical choices:
+
+| Constant | Value | Source | Description |
+|----------|-------|--------|-------------|
+| `DSSH_VERSION_STRING_MAX` | 255 | RFC 4253 s4.2 | Maximum SSH identification string length (including `SSH-2.0-` prefix and CR LF). |
+| `DSSH_ALGO_NAME_MAX` | 64 | RFC 4251 s6 | Maximum length of a single algorithm name. Names exceeding this are rejected during KEXINIT parsing. |
+| `DSSH_NAMELIST_BUF_SIZE` | 1024 | Practical | Maximum total length of a comma-separated algorithm name-list. With 64-char names this fits ~15 algorithms per category. Algorithms that would cause the list to exceed this size are silently omitted from negotiation. |
+| `DSSH_DISCONNECT_DESC_MAX` | 230 | Practical | Maximum disconnect description length. Longer descriptions are silently clamped (not rejected). |
+
 ## Testing
 
 ~1000 tests across 11 executables, ~2150 CTest runs (~23s with `-j8`).

@@ -1999,9 +1999,9 @@ test_auth_server_publickey_probe(void)
 	const char *algo_name = test_key_algo_name();
 	dssh_key_algo ka = dssh_transport_find_key_algo(algo_name);
 	ASSERT_NOT_NULL(ka);
-	uint8_t pubkey_buf[2048];
+	const uint8_t *pubkey_buf = NULL;
 	size_t pubkey_len;
-	ASSERT_EQ(ka->pubkey(pubkey_buf, sizeof(pubkey_buf), &pubkey_len, ka->ctx), 0);
+	ASSERT_EQ(ka->pubkey(&pubkey_buf, &pubkey_len, ka->ctx), 0);
 
 	/* Send publickey probe (has_sig = FALSE) */
 	{
@@ -3937,9 +3937,9 @@ test_server_publickey_verify_bad_sig(void)
 		parse_error_cleanup(&pe);
 		return TEST_SKIP;
 	}
-	uint8_t pub_buf[1024];
+	const uint8_t *pub_buf = NULL;
 	size_t pub_len;
-	if (ka->pubkey(pub_buf, sizeof(pub_buf), &pub_len, ka->ctx) < 0) {
+	if (ka->pubkey(&pub_buf, &pub_len, ka->ctx) < 0) {
 		parse_error_cleanup(&pe);
 		return TEST_SKIP;
 	}
@@ -6273,18 +6273,18 @@ test_client_publickey_no_key(void)
  * register it, and attempt publickey auth.
  */
 static int
-stub_pubkey_fail(uint8_t *buf, size_t bufsz, size_t *outlen,
+stub_pubkey_fail(const uint8_t **out, size_t *outlen,
     dssh_key_algo_ctx *ctx)
 {
-	(void)buf; (void)bufsz; (void)outlen; (void)ctx;
+	(void)out; (void)outlen; (void)ctx;
 	return DSSH_ERROR_INIT;
 }
 
 static int
-stub_sign_fail(uint8_t *buf, size_t bufsz, size_t *outlen,
+stub_sign_fail(uint8_t **out, size_t *outlen,
     const uint8_t *data, size_t data_len, dssh_key_algo_ctx *ctx)
 {
-	(void)buf; (void)bufsz; (void)outlen;
+	(void)out; (void)outlen;
 	(void)data; (void)data_len; (void)ctx;
 	return DSSH_ERROR_INIT;
 }
@@ -7169,9 +7169,9 @@ test_server_send_fail_pk_verify_bad_sig(void)
 		handshake_cleanup(&ctx);
 		return TEST_SKIP;
 	}
-	uint8_t pub_buf[1024];
+	const uint8_t *pub_buf = NULL;
 	size_t pub_len;
-	if (ka->pubkey(pub_buf, sizeof(pub_buf), &pub_len, ka->ctx) < 0) {
+	if (ka->pubkey(&pub_buf, &pub_len, ka->ctx) < 0) {
 		mock_io_close_c2s(&ctx.io);
 		mock_io_close_s2c(&ctx.io);
 		thrd_join(st, NULL);
@@ -7376,9 +7376,9 @@ test_server_send_fail_pk_reject_sig(void)
 		handshake_cleanup(&ctx);
 		return TEST_SKIP;
 	}
-	uint8_t pub_buf[1024];
+	const uint8_t *pub_buf = NULL;
 	size_t pub_len;
-	ka->pubkey(pub_buf, sizeof(pub_buf), &pub_len, ka->ctx);
+	ka->pubkey(&pub_buf, &pub_len, ka->ctx);
 
 	/* Build sign data and generate a VALID signature */
 	size_t algo_len = strlen(algo);
@@ -7409,9 +7409,9 @@ test_server_send_fail_pk_reject_sig(void)
 	dssh_serialize_uint32((uint32_t)pub_len, sign_data, sign_data_len, &sp);
 	memcpy(&sign_data[sp], pub_buf, pub_len); sp += pub_len;
 
-	uint8_t sig_buf[1024];
+	uint8_t *sig_buf = NULL;
 	size_t sig_len;
-	int sres = ka->sign(sig_buf, sizeof(sig_buf), &sig_len, sign_data, sp, ka->ctx);
+	int sres = ka->sign(&sig_buf, &sig_len, sign_data, sp, ka->ctx);
 	free(sign_data);
 	if (sres < 0) {
 		mock_io_close_c2s(&ctx.io);
@@ -7435,6 +7435,7 @@ test_server_send_fail_pk_reject_sig(void)
 		dssh_serialize_uint32((uint32_t)sig_len, msg, sizeof(msg), &pos);
 		memcpy(&msg[pos], sig_buf, sig_len);
 		pos += sig_len;
+		free(sig_buf);
 		ASSERT_OK(dssh_transport_send_packet(ctx.client, msg, pos, NULL));
 	}
 

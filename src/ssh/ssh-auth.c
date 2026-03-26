@@ -7,6 +7,11 @@
 #include "deucessh-auth.h"
 #include "ssh-internal.h"
 
+static const char method_none[]                  = "none";
+static const char method_password[]              = "password";
+static const char method_publickey[]             = "publickey";
+static const char method_keyboard_interactive[]  = "keyboard-interactive";
+
 static int
 handle_banner(dssh_session sess, uint8_t *payload, size_t payload_len)
 {
@@ -435,7 +440,7 @@ auth_server_impl(dssh_session sess,
 		memcpy(saved_user, user, saved_user_len);
 
                 /* Dispatch by method */
-		if ((method_len == 4) && (memcmp(method, "none", 4) == 0)) {
+		if ((method_len == DSSH_STRLEN(method_none)) && (memcmp(method, method_none, DSSH_STRLEN(method_none)) == 0)) {
 			int auth_res = DSSH_AUTH_FAILURE;
 
 			if (cbs->none_cb != NULL)
@@ -453,7 +458,7 @@ auth_server_impl(dssh_session sess,
 			continue;
 		}
 
-		if ((method_len == 8) && (memcmp(method, "password", 8) == 0)) {
+		if ((method_len == DSSH_STRLEN(method_password)) && (memcmp(method, method_password, DSSH_STRLEN(method_password)) == 0)) {
 			if (cbs->password_cb == NULL) {
 				res = send_auth_failure(sess, cbs->methods_str, false);
 				if (res < 0)
@@ -558,7 +563,7 @@ auth_server_impl(dssh_session sess,
 			continue;
 		}
 
-		if ((method_len == 20) && (memcmp(method, "keyboard-interactive", 20) == 0)) {
+		if ((method_len == DSSH_STRLEN(method_keyboard_interactive)) && (memcmp(method, method_keyboard_interactive, DSSH_STRLEN(method_keyboard_interactive)) == 0)) {
 			if (cbs->keyboard_interactive_cb == NULL) {
 				res = send_auth_failure(sess, cbs->methods_str, false);
 				if (res < 0)
@@ -735,7 +740,7 @@ auth_server_impl(dssh_session sess,
 			continue;
 		}
 
-		if ((method_len == 9) && (memcmp(method, "publickey", 9) == 0)) {
+		if ((method_len == DSSH_STRLEN(method_publickey)) && (memcmp(method, method_publickey, DSSH_STRLEN(method_publickey)) == 0)) {
 			if (cbs->publickey_cb == NULL) {
 				res = send_auth_failure(sess, cbs->methods_str, false);
 				if (res < 0)
@@ -1044,8 +1049,7 @@ get_methods_impl(dssh_session sess,
 		return DSSH_ERROR_INVALID;
 
 	static const char service[] = "ssh-connection";
-	static const char method[] = "none";
-	size_t            msg_len = 1 + 4 + ulen + 4 + (sizeof(service) - 1) + 4 + (sizeof(method) - 1);
+	size_t            msg_len = 1 + 4 + ulen + 4 + (sizeof(service) - 1) + 4 + DSSH_STRLEN(method_none);
 	uint8_t          *msg = malloc(msg_len);
 
 	if (msg == NULL)
@@ -1064,11 +1068,11 @@ get_methods_impl(dssh_session sess,
 		goto methods_done;
 	memcpy(&msg[pos], service, sizeof(service) - 1);
 	pos += sizeof(service) - 1;
-	res = dssh_serialize_uint32(DSSH_STRLEN(method), msg, msg_len, &pos);
+	res = dssh_serialize_uint32(DSSH_STRLEN(method_none), msg, msg_len, &pos);
 	if (res < 0)
 		goto methods_done;
-	memcpy(&msg[pos], method, sizeof(method) - 1);
-	pos += sizeof(method) - 1;
+	memcpy(&msg[pos], method_none, DSSH_STRLEN(method_none));
+	pos += DSSH_STRLEN(method_none);
 
 	res = dssh_transport_send_packet(sess, msg, pos, NULL);
 methods_done:
@@ -1115,7 +1119,7 @@ methods_done:
 		for (uint32_t j = 0; j < mlen; j++) {
 			uint8_t ch = payload[5 + j];
 
-			if ((ch <= ' ') || (ch >= 127))
+			if ((ch <= ' ') || (ch >= DSSH_ASCII_DEL))
 				return DSSH_ERROR_PARSE;
 		}
 
@@ -1160,7 +1164,6 @@ send_password_request(dssh_session sess,
 		return DSSH_ERROR_INVALID;
 
 	static const char service[] = "ssh-connection";
-	static const char method[] = "password";
 	size_t            msg_len = 40 + ulen + oplen;
 
 	if (change) {
@@ -1187,9 +1190,9 @@ send_password_request(dssh_session sess,
 	SER(DSSH_STRLEN(service));
 	memcpy(&msg[pos], service, sizeof(service) - 1);
 	pos += sizeof(service) - 1;
-	SER(DSSH_STRLEN(method));
-	memcpy(&msg[pos], method, sizeof(method) - 1);
-	pos += sizeof(method) - 1;
+	SER(DSSH_STRLEN(method_password));
+	memcpy(&msg[pos], method_password, DSSH_STRLEN(method_password));
+	pos += DSSH_STRLEN(method_password);
 	msg[pos++] = change ? 1 : 0;
 	SER((uint32_t)oplen);
 	memcpy(&msg[pos], old_password, oplen);
@@ -1343,9 +1346,8 @@ auth_kbi_impl(dssh_session sess,
 		return DSSH_ERROR_INVALID;
 
 	static const char service[] = "ssh-connection";
-	static const char method[] = "keyboard-interactive";
 	size_t            msg_len = 1 + 4 + ulen + 4 + (sizeof(service) - 1)
-	    + 4 + (sizeof(method) - 1) + 4 + 4;
+	    + 4 + DSSH_STRLEN(method_keyboard_interactive) + 4 + 4;
 	uint8_t          *msg = malloc(msg_len);
 
 	if (msg == NULL)
@@ -1365,9 +1367,9 @@ auth_kbi_impl(dssh_session sess,
 	SER(DSSH_STRLEN(service));
 	memcpy(&msg[pos], service, sizeof(service) - 1);
 	pos += sizeof(service) - 1;
-	SER(DSSH_STRLEN(method));
-	memcpy(&msg[pos], method, sizeof(method) - 1);
-	pos += sizeof(method) - 1;
+	SER(DSSH_STRLEN(method_keyboard_interactive));
+	memcpy(&msg[pos], method_keyboard_interactive, DSSH_STRLEN(method_keyboard_interactive));
+	pos += DSSH_STRLEN(method_keyboard_interactive);
 	SER(0); /* language */
 	SER(0); /* submethods */
 
@@ -1649,9 +1651,9 @@ auth_publickey_impl(dssh_session sess,
 		return DSSH_ERROR_INIT;
 
         /* Get the public key blob */
-	uint8_t pubkey_buf[1024];
+	const uint8_t *pubkey_buf = NULL;
 	size_t  pubkey_len;
-	int     res = ka->pubkey(pubkey_buf, sizeof(pubkey_buf), &pubkey_len, ka->ctx);
+	int     res = ka->pubkey(&pubkey_buf, &pubkey_len, ka->ctx);
 
 	if (res < 0)
 		return res;
@@ -1671,7 +1673,6 @@ auth_publickey_impl(dssh_session sess,
 		return DSSH_ERROR_INVALID;
 
 	static const char service[] = "ssh-connection";
-	static const char method[] = "publickey";
 
         /*
          * Build the data to sign (RFC 4252 s7):
@@ -1686,7 +1687,7 @@ auth_publickey_impl(dssh_session sess,
          */
 	size_t   sign_data_len = 4 + sess->trans.session_id_sz
 	    + 1 + 4 + ulen + 4 + (sizeof(service) - 1)
-	    + 4 + (sizeof(method) - 1) + 1 + 4 + alen + 4 + pubkey_len;
+	    + 4 + DSSH_STRLEN(method_publickey) + 1 + 4 + alen + 4 + pubkey_len;
 	uint8_t *sign_data = malloc(sign_data_len);
 
 	if (sign_data == NULL)
@@ -1707,9 +1708,9 @@ auth_publickey_impl(dssh_session sess,
 	SD_SER(DSSH_STRLEN(service));
 	memcpy(&sign_data[sp], service, sizeof(service) - 1);
 	sp += sizeof(service) - 1;
-	SD_SER(DSSH_STRLEN(method));
-	memcpy(&sign_data[sp], method, sizeof(method) - 1);
-	sp += sizeof(method) - 1;
+	SD_SER(DSSH_STRLEN(method_publickey));
+	memcpy(&sign_data[sp], method_publickey, DSSH_STRLEN(method_publickey));
+	sp += DSSH_STRLEN(method_publickey);
 	sign_data[sp++] = 1; /* TRUE */
 	SD_SER((uint32_t)alen);
 	memcpy(&sign_data[sp], algo_name, alen);
@@ -1721,16 +1722,20 @@ auth_publickey_impl(dssh_session sess,
 #undef SD_SER
 
         /* Sign the data */
-	uint8_t sig_buf[1024];
+	uint8_t *sig_buf = NULL;
 	size_t  sig_len;
 
-	res = ka->sign(sig_buf, sizeof(sig_buf), &sig_len, sign_data, sp, ka->ctx);
+	res = ka->sign(&sig_buf, &sig_len, sign_data, sp, ka->ctx);
 	free(sign_data);
-	if (res < 0)
+	if (res < 0) {
+		free(sig_buf);
 		return res;
+	}
 	if (sig_len > UINT32_MAX
-	    || sig_len > SIZE_MAX - 49 - ulen - alen - pubkey_len)
+	    || sig_len > SIZE_MAX - 49 - ulen - alen - pubkey_len) {
+		free(sig_buf);
 		return DSSH_ERROR_INVALID;
+	}
 
         /*
          * Build the auth request message:
@@ -1744,17 +1749,19 @@ auth_publickey_impl(dssh_session sess,
          *   string    signature
          */
 	size_t   msg_len = 1 + 4 + ulen + 4 + (sizeof(service) - 1)
-	    + 4 + (sizeof(method) - 1) + 1 + 4 + alen
+	    + 4 + DSSH_STRLEN(method_publickey) + 1 + 4 + alen
 	    + 4 + pubkey_len + 4 + sig_len;
 	uint8_t *msg = malloc(msg_len);
 
-	if (msg == NULL)
+	if (msg == NULL) {
+		free(sig_buf);
 		return DSSH_ERROR_ALLOC;
+	}
 
 	size_t pos = 0;
 
 #define MSG_SER(v) do { res = dssh_serialize_uint32((v), msg, msg_len, &pos); \
-	if (res < 0) { free(msg); return res; } } while (0)
+	if (res < 0) { free(msg); free(sig_buf); return res; } } while (0)
 
 	msg[pos++] = SSH_MSG_USERAUTH_REQUEST;
 	MSG_SER((uint32_t)ulen);
@@ -1763,9 +1770,9 @@ auth_publickey_impl(dssh_session sess,
 	MSG_SER(DSSH_STRLEN(service));
 	memcpy(&msg[pos], service, sizeof(service) - 1);
 	pos += sizeof(service) - 1;
-	MSG_SER(DSSH_STRLEN(method));
-	memcpy(&msg[pos], method, sizeof(method) - 1);
-	pos += sizeof(method) - 1;
+	MSG_SER(DSSH_STRLEN(method_publickey));
+	memcpy(&msg[pos], method_publickey, DSSH_STRLEN(method_publickey));
+	pos += DSSH_STRLEN(method_publickey);
 	msg[pos++] = 1; /* TRUE */
 	MSG_SER((uint32_t)alen);
 	memcpy(&msg[pos], algo_name, alen);
@@ -1781,6 +1788,7 @@ auth_publickey_impl(dssh_session sess,
 
 	res = dssh_transport_send_packet(sess, msg, pos, NULL);
 	free(msg);
+	free(sig_buf);
 	if (res < 0)
 		return res;
 

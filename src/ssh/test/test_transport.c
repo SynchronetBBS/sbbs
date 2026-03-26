@@ -4032,17 +4032,17 @@ dhgex_server_run(struct dhgex_server_ctx *ctx,
 }
 
 static int
-dummy_sign(uint8_t *b, size_t bs, size_t *ol, const uint8_t *d,
+dummy_sign(uint8_t **b, size_t *ol, const uint8_t *d,
     size_t dl, dssh_key_algo_ctx *c)
 {
-	(void)b; (void)bs; (void)ol; (void)d; (void)dl; (void)c;
+	(void)b; (void)ol; (void)d; (void)dl; (void)c;
 	return 0;
 }
 
 static int
-dummy_pubkey(uint8_t *b, size_t bs, size_t *ol, dssh_key_algo_ctx *c)
+dummy_pubkey(const uint8_t **b, size_t *ol, dssh_key_algo_ctx *c)
 {
-	(void)b; (void)bs; (void)ol; (void)c;
+	(void)b; (void)ol; (void)c;
 	return 0;
 }
 
@@ -5200,7 +5200,7 @@ test_blocksize_lt8(void)
 }
 
 static int
-test_ed25519_sign_small_buf(void)
+test_ed25519_sign_basic(void)
 {
 	dssh_test_reset_global_config();
 	ASSERT_EQ(dssh_register_ssh_ed25519(), 0);
@@ -5210,17 +5210,20 @@ test_ed25519_sign_small_buf(void)
 	ASSERT_NOT_NULL(ka);
 
 	const uint8_t data[] = "test";
-	uint8_t buf[4]; /* way too small */
+	uint8_t *out = NULL;
 	size_t outlen;
-	ASSERT_EQ(ka->sign(buf, sizeof(buf), &outlen, data, sizeof(data) - 1,
-	    ka->ctx), DSSH_ERROR_TOOLONG);
+	ASSERT_EQ(ka->sign(&out, &outlen, data, sizeof(data) - 1,
+	    ka->ctx), 0);
+	ASSERT_NOT_NULL(out);
+	ASSERT_TRUE(outlen > 0);
+	free(out);
 
 	dssh_test_reset_global_config();
 	return TEST_PASS;
 }
 
 static int
-test_ed25519_pubkey_small_buf(void)
+test_ed25519_pubkey_basic(void)
 {
 	dssh_test_reset_global_config();
 	ASSERT_EQ(dssh_register_ssh_ed25519(), 0);
@@ -5229,17 +5232,18 @@ test_ed25519_pubkey_small_buf(void)
 	dssh_key_algo ka = dssh_transport_find_key_algo("ssh-ed25519");
 	ASSERT_NOT_NULL(ka);
 
-	uint8_t buf[4]; /* way too small */
+	const uint8_t *out = NULL;
 	size_t outlen;
-	ASSERT_EQ(ka->pubkey(buf, sizeof(buf), &outlen, ka->ctx),
-	    DSSH_ERROR_TOOLONG);
+	ASSERT_EQ(ka->pubkey(&out, &outlen, ka->ctx), 0);
+	ASSERT_NOT_NULL(out);
+	ASSERT_TRUE(outlen > 0);
 
 	dssh_test_reset_global_config();
 	return TEST_PASS;
 }
 
 static int
-test_rsa_sign_small_buf(void)
+test_rsa_sign_basic(void)
 {
 	dssh_test_reset_global_config();
 	ASSERT_EQ(dssh_register_rsa_sha2_256(), 0);
@@ -5249,17 +5253,20 @@ test_rsa_sign_small_buf(void)
 	ASSERT_NOT_NULL(ka);
 
 	const uint8_t data[] = "test";
-	uint8_t buf[4]; /* way too small */
+	uint8_t *out = NULL;
 	size_t outlen;
-	ASSERT_EQ(ka->sign(buf, sizeof(buf), &outlen, data, sizeof(data) - 1,
-	    ka->ctx), DSSH_ERROR_TOOLONG);
+	ASSERT_EQ(ka->sign(&out, &outlen, data, sizeof(data) - 1,
+	    ka->ctx), 0);
+	ASSERT_NOT_NULL(out);
+	ASSERT_TRUE(outlen > 0);
+	free(out);
 
 	dssh_test_reset_global_config();
 	return TEST_PASS;
 }
 
 static int
-test_rsa_pubkey_small_buf(void)
+test_rsa_pubkey_basic(void)
 {
 	dssh_test_reset_global_config();
 	ASSERT_EQ(dssh_register_rsa_sha2_256(), 0);
@@ -5268,10 +5275,11 @@ test_rsa_pubkey_small_buf(void)
 	dssh_key_algo ka = dssh_transport_find_key_algo("rsa-sha2-256");
 	ASSERT_NOT_NULL(ka);
 
-	uint8_t buf[4]; /* way too small */
+	const uint8_t *out = NULL;
 	size_t outlen;
-	ASSERT_EQ(ka->pubkey(buf, sizeof(buf), &outlen, ka->ctx),
-	    DSSH_ERROR_TOOLONG);
+	ASSERT_EQ(ka->pubkey(&out, &outlen, ka->ctx), 0);
+	ASSERT_NOT_NULL(out);
+	ASSERT_TRUE(outlen > 0);
 
 	dssh_test_reset_global_config();
 	return TEST_PASS;
@@ -6615,10 +6623,10 @@ static struct dssh_test_entry tests[] = {
 	{ "guard/blocksize_lt8",             test_blocksize_lt8 },
 	{ "guard/blocksize_clamp_direct",    test_blocksize_clamp_direct },
 	{ "guard/cleanup_null_cleanup_fn",   test_cleanup_null_cleanup_fn },
-	{ "guard/ed25519_sign_small_buf",    test_ed25519_sign_small_buf },
-	{ "guard/ed25519_pubkey_small_buf",  test_ed25519_pubkey_small_buf },
-	{ "guard/rsa_sign_small_buf",        test_rsa_sign_small_buf },
-	{ "guard/rsa_pubkey_small_buf",      test_rsa_pubkey_small_buf },
+	{ "guard/ed25519_sign_basic",        test_ed25519_sign_basic },
+	{ "guard/ed25519_pubkey_basic",      test_ed25519_pubkey_basic },
+	{ "guard/rsa_sign_basic",            test_rsa_sign_basic },
+	{ "guard/rsa_pubkey_basic",          test_rsa_pubkey_basic },
 	{ "guard/bn_mpint_small_buf",        test_bn_mpint_small_buf },
 	{ "guard/ed25519_haskey_wrong_type", test_ed25519_haskey_wrong_type },
 	{ "guard/rsa_haskey_wrong_type",     test_rsa_haskey_wrong_type },

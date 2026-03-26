@@ -754,9 +754,9 @@ test_alloc_send_pk_ok(void)
 	 * RSA pubkey() internally calls malloc. */
 	dssh_key_algo ka = dssh_transport_find_key_algo(test_key_algo_name());
 	ASSERT_NOT_NULL(ka);
-	uint8_t pubkey_buf[1024];
+	const uint8_t *pubkey_buf = NULL;
 	size_t pubkey_len;
-	ASSERT_EQ(ka->pubkey(pubkey_buf, sizeof(pubkey_buf), &pubkey_len, ka->ctx), 0);
+	ASSERT_EQ(ka->pubkey(&pubkey_buf, &pubkey_len, ka->ctx), 0);
 
 	thrd_t st;
 	ASSERT_TRUE(thrd_create(&st, pk_ok_server_thread, &sa) == thrd_success);
@@ -1669,22 +1669,23 @@ test_ossl_key_sign_verify_iterate(void)
 			return TEST_FAIL;
 
 		const uint8_t data[] = "test data for ossl sign/verify";
-		uint8_t sig_buf[1024];
+		uint8_t *sig_buf = NULL;
 		size_t sig_len = 0;
-		uint8_t pub_buf[1024];
+		const uint8_t *pub_buf = NULL;
 		size_t pub_len = 0;
 
 		dssh_test_ossl_fail_after(n);
 
-		int sign_res = ka->sign(sig_buf, sizeof(sig_buf), &sig_len,
+		int sign_res = ka->sign(&sig_buf, &sig_len,
 		    data, sizeof(data) - 1, ka->ctx);
-		int pub_res = ka->pubkey(pub_buf, sizeof(pub_buf), &pub_len,
+		int pub_res = ka->pubkey(&pub_buf, &pub_len,
 		    ka->ctx);
 		int verify_res = -1;
 		if (sign_res == 0 && pub_res == 0)
 			verify_res = ka->verify(pub_buf, pub_len, sig_buf,
 			    sig_len, data, sizeof(data) - 1);
 
+		free(sig_buf);
 		int cur_count = dssh_test_ossl_count();
 		dssh_test_ossl_reset();
 
@@ -1895,11 +1896,12 @@ test_ossl_key_verify_iterate(void)
 
 	/* Generate valid sig + pubkey blobs with ossl off */
 	const uint8_t data[] = "test data for verify iterate";
-	uint8_t sig_buf[1024], pub_buf[1024];
+	uint8_t *sig_buf = NULL;
+	const uint8_t *pub_buf = NULL;
 	size_t sig_len, pub_len;
-	ASSERT_EQ(ka->sign(sig_buf, sizeof(sig_buf), &sig_len,
+	ASSERT_EQ(ka->sign(&sig_buf, &sig_len,
 	    data, sizeof(data) - 1, ka->ctx), 0);
-	ASSERT_EQ(ka->pubkey(pub_buf, sizeof(pub_buf), &pub_len, ka->ctx), 0);
+	ASSERT_EQ(ka->pubkey(&pub_buf, &pub_len, ka->ctx), 0);
 
 	int prev_count = -1;
 	for (int n = 0; n < 500; n++) {
@@ -1923,6 +1925,7 @@ test_ossl_key_verify_iterate(void)
 
 	fprintf(stderr, "  ossl/key_verify: still incrementing at n=%d "
 	    "(count=%d), raise limit\n", 500, prev_count);
+	free(sig_buf);
 	dssh_test_reset_global_config();
 	return TEST_FAIL;
 }
@@ -1947,9 +1950,9 @@ test_ossl_key_pubkey_iterate(void)
 	int prev_count = -1;
 	for (int n = 0; n < 500; n++) {
 		dssh_test_ossl_fail_after(n);
-		uint8_t buf[1024];
+		const uint8_t *buf = NULL;
 		size_t outlen;
-		int pres = ka->pubkey(buf, sizeof(buf), &outlen, ka->ctx);
+		int pres = ka->pubkey(&buf, &outlen, ka->ctx);
 		int cur_count = dssh_test_ossl_count();
 		dssh_test_ossl_reset();
 

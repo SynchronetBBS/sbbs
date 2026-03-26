@@ -561,15 +561,12 @@ test_roundtrip_with_test_modules(void)
 }
 
 /* ================================================================
- * recv_packet: MAC too large for stack buffer
+ * recv_packet: large MAC (128 bytes)
  *
- * Register the oversized test MAC (digest_size=128) which exceeds
- * the 64-byte received_mac stack buffer in recv_packet_raw.
- * The recv side should return DSSH_ERROR_TOOLONG.
- *
- * This also exercises the send side with a large MAC — send_packet
- * has no bounds check on the MAC write, so if that's a bug, this
- * test will expose it.
+ * Register the oversized test MAC (digest_size=128) to verify that
+ * the library correctly handles MACs larger than SHA-256 (32 bytes).
+ * MAC verification buffers are dynamically allocated to match the
+ * negotiated digest_size, so this should succeed.
  * ================================================================ */
 
 static int
@@ -646,8 +643,8 @@ test_recv_mac_too_large(void)
 	}
 
 	/* Handshake succeeded — send a small packet.  The sender
-	 * includes 128 bytes of MAC which fits in the large buffer.
-	 * The receiver should hit mac_len > 64 and return TOOLONG. */
+	 * includes 128 bytes of MAC.  With dynamically allocated MAC
+	 * buffers, the receiver handles this correctly. */
 	uint8_t msg[] = { SSH_MSG_SERVICE_REQUEST, 0x42 };
 	ASSERT_OK(dssh_transport_send_packet(client, msg,
 	    sizeof(msg), NULL));
@@ -657,7 +654,7 @@ test_recv_mac_too_large(void)
 	size_t payload_len;
 	int recv_res = dssh_transport_recv_packet(server, &msg_type,
 	    &payload, &payload_len);
-	ASSERT_EQ(recv_res, DSSH_ERROR_TOOLONG);
+	ASSERT_OK(recv_res);
 
 	dssh_session_cleanup(server);
 	dssh_session_cleanup(client);

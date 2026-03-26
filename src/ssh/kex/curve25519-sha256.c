@@ -12,6 +12,9 @@
 #include "ssh-internal.h"
 #endif
 
+#ifndef DSSH_MPINT_SIGN_BIT
+ #define DSSH_MPINT_SIGN_BIT 0x80
+#endif
 #define X25519_KEY_LEN 32
 #define SHA256_DIGEST_LEN 32
 #define KEX_NAME "curve25519-sha256"
@@ -165,7 +168,7 @@ encode_shared_secret(uint8_t *raw, size_t raw_len,
 	memcpy(*ss_out, start, raw_len);
 	*ss_len = raw_len;
 
-	bool   need_pad = (start[0] & 0x80) != 0;
+	bool   need_pad = (start[0] & DSSH_MPINT_SIGN_BIT) != 0;
 	size_t mpint_data_len = raw_len + (need_pad ? 1 : 0);
 
 	*mpint_len = 4 + mpint_data_len;
@@ -207,7 +210,7 @@ curve25519_handler(struct dssh_kex_context *kctx)
 	size_t        k_mpint_len;
 
         /* Get host key blob (server signs, client verifies) */
-	uint8_t       k_s_buf[1024];
+	const uint8_t *k_s_buf = NULL;
 	size_t        k_s_len = 0;
 
 	if (kctx->client) {
@@ -422,7 +425,7 @@ curve25519_handler(struct dssh_kex_context *kctx)
 			return DSSH_ERROR_INIT;
 
                 /* Get our host key blob */
-		res = ka->pubkey(k_s_buf, sizeof(k_s_buf), &k_s_len, ka->ctx);
+		res = ka->pubkey(&k_s_buf, &k_s_len, ka->ctx);
 		if (res < 0)
 			return res;
 
@@ -477,10 +480,10 @@ curve25519_handler(struct dssh_kex_context *kctx)
 		}
 
                 /* Sign exchange hash */
-		uint8_t sig_buf[1024];
+		uint8_t *sig_buf = NULL;
 		size_t  sig_len;
 
-		res = ka->sign(sig_buf, sizeof(sig_buf), &sig_len,
+		res = ka->sign(&sig_buf, &sig_len,
 		        hash, SHA256_DIGEST_LEN, ka->ctx);
 		if (res < 0) {
 			OPENSSL_cleanse(ss_copy, ss_len);
@@ -488,12 +491,12 @@ curve25519_handler(struct dssh_kex_context *kctx)
 			return res;
 		}
 
-                /* Send ECDH_REPLY(K_S, Q_S, sig)
-                 * k_s_len ≤ 1024, sig_len ≤ 1024; sum ≤ ~2100 */
+                /* Send ECDH_REPLY(K_S, Q_S, sig) */
 		size_t   reply_sz = 1 + 4 + k_s_len + 4 + X25519_KEY_LEN + 4 + sig_len;
 		uint8_t *reply_msg = malloc(reply_sz);
 
 		if (reply_msg == NULL) {
+			free(sig_buf);
 			OPENSSL_cleanse(ss_copy, ss_len);
 			free(ss_copy);
 			return DSSH_ERROR_ALLOC;
@@ -505,6 +508,7 @@ curve25519_handler(struct dssh_kex_context *kctx)
 		res = dssh_serialize_uint32((uint32_t)k_s_len, reply_msg, reply_sz, &pos);
 		if (res < 0) {
 			free(reply_msg);
+			free(sig_buf);
 			OPENSSL_cleanse(ss_copy, ss_len);
 			free(ss_copy);
 			return res;
@@ -514,6 +518,7 @@ curve25519_handler(struct dssh_kex_context *kctx)
 		res = dssh_serialize_uint32(X25519_KEY_LEN, reply_msg, reply_sz, &pos);
 		if (res < 0) {
 			free(reply_msg);
+			free(sig_buf);
 			OPENSSL_cleanse(ss_copy, ss_len);
 			free(ss_copy);
 			return res;
@@ -523,12 +528,14 @@ curve25519_handler(struct dssh_kex_context *kctx)
 		res = dssh_serialize_uint32((uint32_t)sig_len, reply_msg, reply_sz, &pos);
 		if (res < 0) {
 			free(reply_msg);
+			free(sig_buf);
 			OPENSSL_cleanse(ss_copy, ss_len);
 			free(ss_copy);
 			return res;
 		}
 		memcpy(&reply_msg[pos], sig_buf, sig_len);
 		pos += sig_len;
+		free(sig_buf);
 		res = kctx->send(reply_msg, pos, kctx->io_ctx);
 		free(reply_msg);
 		if (res < 0) {

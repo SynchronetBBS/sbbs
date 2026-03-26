@@ -93,6 +93,8 @@ typedef struct dssh_transport_state_s {
 	uint8_t       *rx_packet;
 	uint8_t       *tx_mac_scratch; /* 4 + packet_buf_sz for MAC computation */
 	uint8_t       *rx_mac_scratch;
+	uint8_t       *rx_mac_buf;     /* received MAC from wire (digest_size bytes) */
+	uint8_t       *rx_mac_computed; /* computed MAC for comparison */
 	size_t         id_str_sz;
 	size_t         remote_id_str_sz;
 	char         **remote_languages;

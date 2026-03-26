@@ -9,6 +9,17 @@
 #define INITIAL_WINDOW_SIZE 0x200000
 #define MAX_PACKET_SIZE 0x8000
 
+static const char str_signal[]          = "signal";
+static const char str_exit_status[]     = "exit-status";
+static const char str_window_change[]   = "window-change";
+static const char str_x11[]             = "x11";
+static const char str_forwarded_tcpip[] = "forwarded-tcpip";
+static const char str_direct_tcpip[]    = "direct-tcpip";
+static const char str_session[]         = "session";
+static const char str_shell[]           = "shell";
+static const char str_exec[]            = "exec";
+static const char str_subsystem[]       = "subsystem";
+
 /* ================================================================
  * Parse helpers for channel request payloads
  * ================================================================ */
@@ -294,9 +305,8 @@ static int
 dssh_conn_send_exit_status(dssh_session sess,
     dssh_channel ch, uint32_t exit_code)
 {
-	static const char req[] = "exit-status";
-	uint8_t           msg[32];
-	size_t            pos = 0;
+	uint8_t msg[32];
+	size_t  pos = 0;
 
 	int ret;
 
@@ -304,11 +314,11 @@ dssh_conn_send_exit_status(dssh_session sess,
 	ret = dssh_serialize_uint32(ch->remote_id, msg, sizeof(msg), &pos);
 	if (ret < 0)
 		return ret;
-	ret = dssh_serialize_uint32(sizeof(req) - 1, msg, sizeof(msg), &pos);
+	ret = dssh_serialize_uint32(DSSH_STRLEN(str_exit_status), msg, sizeof(msg), &pos);
 	if (ret < 0)
 		return ret;
-	memcpy(&msg[pos], req, sizeof(req) - 1);
-	pos += sizeof(req) - 1;
+	memcpy(&msg[pos], str_exit_status, DSSH_STRLEN(str_exit_status));
+	pos += DSSH_STRLEN(str_exit_status);
 	msg[pos++] = 0; /* want_reply = false */
 	ret = dssh_serialize_uint32(exit_code, msg, sizeof(msg), &pos);
 	if (ret < 0)
@@ -729,7 +739,7 @@ demux_dispatch(dssh_session sess, uint8_t msg_type,
 				rpos++;
 
 				if (ch->chan_type == DSSH_CHAN_SESSION) {
-					if ((rtype_len == 6) && (memcmp(rtype, "signal", 6) == 0)) {
+					if ((rtype_len == DSSH_STRLEN(str_signal)) && (memcmp(rtype, str_signal, DSSH_STRLEN(str_signal)) == 0)) {
                                                 /* Queue signal with current stream positions */
 						if (rpos + 4 <= payload_len) {
 							uint32_t sname_len;
@@ -752,7 +762,7 @@ demux_dispatch(dssh_session sess, uint8_t msg_type,
 							}
 						}
 					}
-					else if ((rtype_len == 11) && (memcmp(rtype, "exit-status", 11) == 0)) {
+					else if ((rtype_len == DSSH_STRLEN(str_exit_status)) && (memcmp(rtype, str_exit_status, DSSH_STRLEN(str_exit_status)) == 0)) {
 						if (rpos + 4 <= payload_len) {
 							if (dssh_parse_uint32(&payload[rpos],
 							    payload_len - rpos,
@@ -760,7 +770,7 @@ demux_dispatch(dssh_session sess, uint8_t msg_type,
 								ch->exit_code_received = true;
 						}
 					}
-					else if ((rtype_len == 13) && (memcmp(rtype, "window-change", 13) == 0)) {
+					else if ((rtype_len == DSSH_STRLEN(str_window_change)) && (memcmp(rtype, str_window_change, DSSH_STRLEN(str_window_change)) == 0)) {
 						if ((ch->window_change_cb != NULL) && (rpos + 16 <= payload_len)) {
 							uint32_t wc_cols, wc_rows, wc_wpx, wc_hpx;
 
@@ -890,15 +900,15 @@ demux_channel_open(dssh_session sess, uint8_t *payload, size_t payload_len)
         /* Auto-reject forbidden channel types */
 	bool reject = false;
 
-	if ((type_len == 3) && (memcmp(ctype, "x11", 3) == 0))
+	if ((type_len == DSSH_STRLEN(str_x11)) && (memcmp(ctype, str_x11, DSSH_STRLEN(str_x11)) == 0))
 		reject = true;
-	if ((type_len == 15) && (memcmp(ctype, "forwarded-tcpip", 15) == 0))
+	if ((type_len == DSSH_STRLEN(str_forwarded_tcpip)) && (memcmp(ctype, str_forwarded_tcpip, DSSH_STRLEN(str_forwarded_tcpip)) == 0))
 		reject = true;
-	if ((type_len == 12) && (memcmp(ctype, "direct-tcpip", 12) == 0))
+	if ((type_len == DSSH_STRLEN(str_direct_tcpip)) && (memcmp(ctype, str_direct_tcpip, DSSH_STRLEN(str_direct_tcpip)) == 0))
 		reject = true;
 
         /* Client rejects "session" opens from server (RFC 4254 s6.1) */
-	if (sess->trans.client && (type_len == 7) && (memcmp(ctype, "session", 7) == 0))
+	if (sess->trans.client && (type_len == DSSH_STRLEN(str_session)) && (memcmp(ctype, str_session, DSSH_STRLEN(str_session)) == 0))
 		reject = true;
 
 	if (reject) {
@@ -1233,18 +1243,17 @@ open_session_channel(dssh_session sess, dssh_channel ch)
          * For now, use a simpler approach: send the CHANNEL_OPEN,
          * register the channel, then wait for the open flag.
          */
-	static const char type[] = "session";
-	uint8_t           msg[256];
-	size_t            pos = 0;
+	uint8_t msg[256];
+	size_t  pos = 0;
 
 	int ret;
 
 	msg[pos++] = SSH_MSG_CHANNEL_OPEN;
-	ret = dssh_serialize_uint32(DSSH_STRLEN(type), msg, sizeof(msg), &pos);
+	ret = dssh_serialize_uint32(DSSH_STRLEN(str_session), msg, sizeof(msg), &pos);
 	if (ret < 0)
 		return ret;
-	memcpy(&msg[pos], type, sizeof(type) - 1);
-	pos += sizeof(type) - 1;
+	memcpy(&msg[pos], str_session, DSSH_STRLEN(str_session));
+	pos += DSSH_STRLEN(str_session);
 	ret = dssh_serialize_uint32(ch->local_id, msg, sizeof(msg), &pos);
 	if (ret < 0)
 		return ret;
@@ -1826,9 +1835,9 @@ dssh_session_accept_channel(dssh_session sess,
 
                 /* Is this a terminal request (shell/exec/subsystem)? */
 		bool is_terminal =
-		    (rtype_len == 5 && memcmp(rtype, "shell", 5) == 0)
-		    || (rtype_len == 4 && memcmp(rtype, "exec", 4) == 0)
-		    || (rtype_len == 9 && memcmp(rtype, "subsystem", 9) == 0);
+		    (rtype_len == DSSH_STRLEN(str_shell) && memcmp(rtype, str_shell, DSSH_STRLEN(str_shell)) == 0)
+		    || (rtype_len == DSSH_STRLEN(str_exec) && memcmp(rtype, str_exec, DSSH_STRLEN(str_exec)) == 0)
+		    || (rtype_len == DSSH_STRLEN(str_subsystem) && memcmp(rtype, str_subsystem, DSSH_STRLEN(str_subsystem)) == 0);
 
 		if (want_reply)
 			setup_reply(sess, ch, cb_res >= 0);
@@ -1863,8 +1872,8 @@ dssh_session_accept_channel(dssh_session sess,
 				ch->req_data[dn] = 0;
 			}
 
-			is_subsystem = (rtype_len == 9
-			    && memcmp(rtype, "subsystem", 9) == 0);
+			is_subsystem = (rtype_len == DSSH_STRLEN(str_subsystem)
+			    && memcmp(rtype, str_subsystem, DSSH_STRLEN(str_subsystem)) == 0);
 			free(payload);
 			break;
 		}

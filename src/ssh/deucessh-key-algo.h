@@ -16,13 +16,13 @@ extern "C" {
 
 typedef struct dssh_key_algo_ctx dssh_key_algo_ctx;
 
-typedef int (*dssh_key_algo_sign)(uint8_t *buf, size_t bufsz, size_t *outlen,
+typedef int (*dssh_key_algo_sign)(uint8_t **out, size_t *outlen,
     const uint8_t *data, size_t data_len, dssh_key_algo_ctx *ctx);
 typedef int (*dssh_key_algo_verify)(const uint8_t *key_blob, size_t key_blob_len,
     const uint8_t *sig_blob, size_t sig_blob_len,
     const uint8_t *data, size_t data_len);
-typedef int (*dssh_key_algo_pubkey)(uint8_t *buf, size_t bufsz,
-    size_t *outlen, dssh_key_algo_ctx *ctx);
+typedef int (*dssh_key_algo_pubkey)(const uint8_t **out, size_t *outlen,
+    dssh_key_algo_ctx *ctx);
 typedef int (*dssh_key_algo_haskey)(dssh_key_algo_ctx *ctx);
 typedef void (*dssh_key_algo_cleanup)(dssh_key_algo_ctx *ctx);
 

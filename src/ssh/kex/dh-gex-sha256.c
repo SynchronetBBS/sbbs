@@ -14,6 +14,9 @@
 #include "ssh-internal.h"
 #endif
 
+#ifndef DSSH_MPINT_SIGN_BIT
+ #define DSSH_MPINT_SIGN_BIT 0x80
+#endif
 #define SHA256_DIGEST_LEN 32
 #define KEX_NAME "diffie-hellman-group-exchange-sha256"
 #define KEX_NAME_LEN 36
@@ -45,7 +48,7 @@ serialize_bn_mpint(const BIGNUM *bn, uint8_t *buf, size_t bufsz, size_t *pos)
 		return DSSH_ERROR_ALLOC;
 	BN_bn2bin(bn, tmp);
 
-	bool     need_pad = (bn_bytes > 0 && (tmp[0] & 0x80));
+	bool     need_pad = (bn_bytes > 0 && (tmp[0] & DSSH_MPINT_SIGN_BIT));
 
 	if (bn_sz > UINT32_MAX - 1) {
 		free(tmp);
@@ -472,10 +475,10 @@ dhgex_handler(struct dssh_kex_context *kctx)
 			return DSSH_ERROR_INIT;
 
                 /* Get host key blob */
-		uint8_t k_s_buf[1024];
+		const uint8_t *k_s_buf = NULL;
 		size_t  k_s_len;
 
-		res = ka->pubkey(k_s_buf, sizeof(k_s_buf), &k_s_len, ka->ctx);
+		res = ka->pubkey(&k_s_buf, &k_s_len, ka->ctx);
 		if (res < 0)
 			return res;
 
@@ -641,10 +644,10 @@ dhgex_handler(struct dssh_kex_context *kctx)
 			goto cleanup;
 
                 /* 6. Sign exchange hash */
-		uint8_t sig_buf[1024];
+		uint8_t *sig_buf = NULL;
 		size_t  sig_len;
 
-		res = ka->sign(sig_buf, sizeof(sig_buf), &sig_len,
+		res = ka->sign(&sig_buf, &sig_len,
 		        hash, SHA256_DIGEST_LEN, ka->ctx);
 		if (res < 0)
 			goto cleanup;
@@ -656,6 +659,7 @@ dhgex_handler(struct dssh_kex_context *kctx)
 			uint8_t *reply = malloc(reply_sz);
 
 			if (!reply) {
+				free(sig_buf);
 				res = DSSH_ERROR_ALLOC;
 				goto cleanup;
 			}
@@ -666,6 +670,7 @@ dhgex_handler(struct dssh_kex_context *kctx)
 			res = dssh_serialize_uint32((uint32_t)k_s_len, reply, reply_sz, &pos);
 			if (res < 0) {
 				free(reply);
+				free(sig_buf);
 				goto cleanup;
 			}
 			memcpy(&reply[pos], k_s_buf, k_s_len);
@@ -675,15 +680,18 @@ dhgex_handler(struct dssh_kex_context *kctx)
 			res = serialize_bn_mpint(f_bn, reply, reply_sz, &pos);
 			if (res < 0) {
 				free(reply);
+				free(sig_buf);
 				goto cleanup;
 			}
 			res = dssh_serialize_uint32((uint32_t)sig_len, reply, reply_sz, &pos);
 			if (res < 0) {
 				free(reply);
+				free(sig_buf);
 				goto cleanup;
 			}
 			memcpy(&reply[pos], sig_buf, sig_len);
 			pos += sig_len;
+			free(sig_buf);
 			res = kctx->send(reply, pos, kctx->io_ctx);
 			free(reply);
 			if (res < 0)

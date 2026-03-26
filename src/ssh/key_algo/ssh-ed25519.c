@@ -17,12 +17,14 @@
 
 struct cbdata {
 	EVP_PKEY *pkey;
+	uint8_t  *pub_blob;
+	size_t    pub_blob_len;
 };
 
 static struct cbdata *ed25519_ctx;
 
 static int
-sign(uint8_t *buf, size_t bufsz, size_t *outlen,
+sign(uint8_t **out, size_t *outlen,
     const uint8_t *data, size_t data_len, dssh_key_algo_ctx *ctx)
 {
 	struct cbdata *cbd = (struct cbdata *)ctx;
@@ -34,10 +36,6 @@ sign(uint8_t *buf, size_t bufsz, size_t *outlen,
 	if (cbd == NULL || cbd->pkey == NULL)
 #endif
 		return DSSH_ERROR_INIT;
-
-	size_t needed = 4 + ED25519_NAME_LEN + 4 + ED25519_RAW_SIG_LEN;
-	if (bufsz < needed)
-		return DSSH_ERROR_TOOLONG;
 
 	EVP_MD_CTX *mdctx = EVP_MD_CTX_new();
 	if (mdctx == NULL)
@@ -57,31 +55,42 @@ sign(uint8_t *buf, size_t bufsz, size_t *outlen,
 	EVP_MD_CTX_free(mdctx);
 
 	/* Serialize SSH signature blob */
+	size_t needed = 4 + ED25519_NAME_LEN + 4 + siglen;
+	uint8_t *buf = malloc(needed);
+	if (buf == NULL)
+		return DSSH_ERROR_ALLOC;
+
 	size_t pos = 0;
-	int    ret = dssh_serialize_uint32(ED25519_NAME_LEN, buf, bufsz, &pos);
-	if (ret < 0)
+	int    ret = dssh_serialize_uint32(ED25519_NAME_LEN, buf, needed, &pos);
+	if (ret < 0) {
+		free(buf);
 		return ret;
+	}
 	memcpy(&buf[pos], ED25519_NAME, ED25519_NAME_LEN);
 	pos += ED25519_NAME_LEN;
-	ret = dssh_serialize_uint32((uint32_t)siglen, buf, bufsz, &pos);
-	if (ret < 0)
+	ret = dssh_serialize_uint32((uint32_t)siglen, buf, needed, &pos);
+	if (ret < 0) {
+		free(buf);
 		return ret;
+	}
 	memcpy(&buf[pos], raw_sig, siglen);
 	pos += siglen;
 
+	*out = buf;
 	*outlen = pos;
 	return 0;
 }
 
 /*
- * Write the SSH-format public key blob to buf:
+ * Return a pointer to the cached SSH-format public key blob:
  *   string  "ssh-ed25519"
  *   string  <32-byte raw public key>
  *
+ * The blob is computed once and cached in cbdata.
  * Returns 0 on success, negative error code on failure.
  */
 static int
-pubkey(uint8_t *buf, size_t bufsz, size_t *outlen, dssh_key_algo_ctx *ctx)
+pubkey(const uint8_t **out, size_t *outlen, dssh_key_algo_ctx *ctx)
 {
 	struct cbdata *cbd = (struct cbdata *)ctx;
 	/* cbd->pkey always set before pubkey is callable. */
@@ -92,27 +101,42 @@ pubkey(uint8_t *buf, size_t bufsz, size_t *outlen, dssh_key_algo_ctx *ctx)
 #endif
 		return DSSH_ERROR_INIT;
 
+	/* Return cached blob if already computed */
+	if (cbd->pub_blob != NULL) {
+		*out = cbd->pub_blob;
+		*outlen = cbd->pub_blob_len;
+		return 0;
+	}
+
 	uint8_t raw_pub[ED25519_RAW_PUB_LEN];
 	size_t raw_pub_len = sizeof(raw_pub);
 	if (EVP_PKEY_get_raw_public_key(cbd->pkey, raw_pub, &raw_pub_len) != 1)
 		return DSSH_ERROR_INIT;
 
 	size_t needed = 4 + ED25519_NAME_LEN + 4 + raw_pub_len;
-	if (bufsz < needed)
-		return DSSH_ERROR_TOOLONG;
+	uint8_t *buf = malloc(needed);
+	if (buf == NULL)
+		return DSSH_ERROR_ALLOC;
 
 	size_t pos = 0;
-	int    ret = dssh_serialize_uint32(ED25519_NAME_LEN, buf, bufsz, &pos);
-	if (ret < 0)
+	int    ret = dssh_serialize_uint32(ED25519_NAME_LEN, buf, needed, &pos);
+	if (ret < 0) {
+		free(buf);
 		return ret;
+	}
 	memcpy(&buf[pos], ED25519_NAME, ED25519_NAME_LEN);
 	pos += ED25519_NAME_LEN;
-	ret = dssh_serialize_uint32((uint32_t)raw_pub_len, buf, bufsz, &pos);
-	if (ret < 0)
+	ret = dssh_serialize_uint32((uint32_t)raw_pub_len, buf, needed, &pos);
+	if (ret < 0) {
+		free(buf);
 		return ret;
+	}
 	memcpy(&buf[pos], raw_pub, raw_pub_len);
 	pos += raw_pub_len;
 
+	cbd->pub_blob = buf;
+	cbd->pub_blob_len = pos;
+	*out = buf;
 	*outlen = pos;
 	return 0;
 }
@@ -218,6 +242,7 @@ cleanup(dssh_key_algo_ctx *ctx)
 
 	if (cbd != NULL) {
 		EVP_PKEY_free(cbd->pkey);
+		free(cbd->pub_blob);
 		free(cbd);
 	}
 	if (cbd == ed25519_ctx)
@@ -281,6 +306,9 @@ dssh_ed25519_load_key_file(const char *path, pem_password_cb *pw_cb,
 	}
 	else {
 		EVP_PKEY_free(ed25519_ctx->pkey);
+		free(ed25519_ctx->pub_blob);
+		ed25519_ctx->pub_blob = NULL;
+		ed25519_ctx->pub_blob_len = 0;
 	}
 
 	ed25519_ctx->pkey = pkey;
@@ -325,9 +353,9 @@ dssh_ed25519_save_key_file(const char *path, pem_password_cb *pw_cb,
 DSSH_PUBLIC int64_t
 dssh_ed25519_get_pub_str(char *buf, size_t bufsz)
 {
-	uint8_t blob[256];
+	const uint8_t *blob;
 	size_t blob_len;
-	int res = pubkey(blob, sizeof(blob), &blob_len,
+	int res = pubkey(&blob, &blob_len,
 	    (dssh_key_algo_ctx *)ed25519_ctx);
 	if (res < 0)
 		return res;
@@ -400,6 +428,9 @@ dssh_ed25519_generate_key(void)
 	}
 	else {
 		EVP_PKEY_free(ed25519_ctx->pkey);
+		free(ed25519_ctx->pub_blob);
+		ed25519_ctx->pub_blob = NULL;
+		ed25519_ctx->pub_blob_len = 0;
 	}
 
 	ed25519_ctx->pkey = pkey;

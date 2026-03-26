@@ -58,6 +58,40 @@ int dssh_test_EVP_CIPHER_CTX_set_padding(EVP_CIPHER_CTX *ctx, int pad);
 
 #endif /* DSSH_TESTING */
 
+/* ================================================================
+ * Protocol constants
+ * ================================================================ */
+
+/* RFC 4253 s4.2: identification string max length (including SSH-2.0-
+ * prefix and CR LF terminator) */
+#define DSSH_VERSION_STRING_MAX 255
+
+/* RFC 4253 s7.1: KEXINIT cookie is 16 random bytes */
+#define DSSH_KEXINIT_COOKIE_SIZE 16
+
+/* RFC 4253 s7.1: KEXINIT contains 10 algorithm name-lists */
+#define DSSH_KEXINIT_NAMELIST_COUNT 10
+
+/* RFC 4251 s6: individual algorithm names MUST NOT exceed 64 chars */
+#define DSSH_ALGO_NAME_MAX 64
+
+/* Practical limit for disconnect description length (clamped, not
+ * rejected).  Ensures the DISCONNECT message fits a 256-byte buffer
+ * with room for msg_type, reason, and empty language tag. */
+#define DSSH_DISCONNECT_DESC_MAX 230
+
+/* RFC 4251 s6: names must not contain DEL */
+#define DSSH_ASCII_DEL 127
+
+/* mpint encoding: high bit indicates negative, so a leading 0x80 bit
+ * in a positive value requires a zero-byte prefix (RFC 4251 s5). */
+#define DSSH_MPINT_SIGN_BIT 0x80
+
+/* Practical buffer sizes for algorithm name-lists and per-channel
+ * request data.  See README.md "Limits". */
+#define DSSH_NAMELIST_BUF_SIZE  1024
+#define DSSH_REQ_DATA_BUF_SIZE  1024
+
 /* Channel types */
 #define DSSH_CHAN_SESSION 1
 #define DSSH_CHAN_RAW 2
@@ -121,7 +155,7 @@ struct dssh_channel_s {
         /* Per-channel string buffers (avoids static storage) */
 	char     last_signal[32];
 	char     req_type[32];
-	char     req_data[1024];
+	char     req_data[DSSH_REQ_DATA_BUF_SIZE];
 
 	union {
 		struct {

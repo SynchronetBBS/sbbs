@@ -3,6 +3,7 @@
 #include <string.h>
 
 #include "deucessh.h"
+#include "ssh-internal.h"
 
 /*
  * Required by parse functions
@@ -207,9 +208,9 @@ dssh_parse_mpint(const uint8_t *buf, size_t bufsz, dssh_mpint val)
 	if (ret < 4)
 		return ret;
 	if (val->length >= 2) {
-		if ((val->value[0] == 0) && ((val->value[1] & 0x80) == 0))
+		if ((val->value[0] == 0) && ((val->value[1] & DSSH_MPINT_SIGN_BIT) == 0))
 			return DSSH_ERROR_INVALID;
-		if ((val->value[0] == 0xff) && (val->value[1] & 0x80))
+		if ((val->value[0] == 0xff) && (val->value[1] & DSSH_MPINT_SIGN_BIT))
 			return DSSH_ERROR_INVALID;
 	}
 	return ret;
@@ -241,7 +242,7 @@ dssh_parse_namelist(const uint8_t *buf, size_t bufsz, dssh_namelist val)
 				if ((i == 0) || (str.value[i - 1] == ','))
 					return DSSH_ERROR_PARSE;
 			}
-			if ((str.value[i] <= ' ') || (str.value[i] >= 127))
+			if ((str.value[i] <= ' ') || (str.value[i] >= DSSH_ASCII_DEL))
 				return DSSH_ERROR_PARSE;
 		}
 

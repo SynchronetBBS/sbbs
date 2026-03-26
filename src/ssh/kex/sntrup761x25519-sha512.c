@@ -446,10 +446,10 @@ sntrup761x25519_handler(struct dssh_kex_context *kctx)
 		 * ============================================================ */
 
 		/* 1. Get host key blob */
-		uint8_t k_s_buf[1024];
+		const uint8_t *k_s_buf = NULL;
 		size_t  k_s_len;
 
-		res = ka->pubkey(k_s_buf, sizeof(k_s_buf), &k_s_len, ka->ctx);
+		res = ka->pubkey(&k_s_buf, &k_s_len, ka->ctx);
 		if (res < 0)
 			return res;
 
@@ -540,10 +540,10 @@ sntrup761x25519_handler(struct dssh_kex_context *kctx)
 		}
 
 		/* 9. Sign exchange hash */
-		uint8_t sig_buf[1024];
+		uint8_t *sig_buf = NULL;
 		size_t  sig_len;
 
-		res = ka->sign(sig_buf, sizeof(sig_buf), &sig_len,
+		res = ka->sign(&sig_buf, &sig_len,
 		    hash, SHA512_DIGEST_LEN, ka->ctx);
 		if (res < 0) {
 			OPENSSL_cleanse(K, K_len);
@@ -557,6 +557,7 @@ sntrup761x25519_handler(struct dssh_kex_context *kctx)
 		uint8_t *reply_msg = malloc(reply_sz);
 
 		if (reply_msg == NULL) {
+			free(sig_buf);
 			OPENSSL_cleanse(K, K_len);
 			free(K);
 			return DSSH_ERROR_ALLOC;
@@ -567,7 +568,7 @@ sntrup761x25519_handler(struct dssh_kex_context *kctx)
 		reply_msg[rp++] = SSH_MSG_KEX_ECDH_REPLY;
 
 #define REPLY_SER(v) do { res = dssh_serialize_uint32((v), reply_msg, reply_sz, &rp); \
-	if (res < 0) { free(reply_msg); OPENSSL_cleanse(K, K_len); free(K); return res; } } while (0)
+	if (res < 0) { free(reply_msg); free(sig_buf); OPENSSL_cleanse(K, K_len); free(K); return res; } } while (0)
 
 		REPLY_SER((uint32_t)k_s_len);
 		memcpy(&reply_msg[rp], k_s_buf, k_s_len);
@@ -578,6 +579,7 @@ sntrup761x25519_handler(struct dssh_kex_context *kctx)
 		REPLY_SER((uint32_t)sig_len);
 		memcpy(&reply_msg[rp], sig_buf, sig_len);
 		rp += sig_len;
+		free(sig_buf);
 
 #undef REPLY_SER
 
