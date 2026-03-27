@@ -2203,7 +2203,8 @@ test_ossl_kex_server_iterate(void)
 		server->trans.tx_seq = saved_tx_seq;
 		server->trans.rx_since_rekey = 0;
 		server->trans.tx_since_rekey = 0;
-		server->trans.bytes_since_rekey = 0;
+		server->trans.tx_bytes_since_rekey = 0;
+		server->trans.rx_bytes_since_rekey = 0;
 		server->terminate = false;
 
 		dssh_test_ossl_fail_after(n);
@@ -3304,7 +3305,8 @@ test_alloc_kex_server_iterate(void)
 		server->trans.tx_seq = saved_tx_seq;
 		server->trans.rx_since_rekey = 0;
 		server->trans.tx_since_rekey = 0;
-		server->trans.bytes_since_rekey = 0;
+		server->trans.tx_bytes_since_rekey = 0;
+		server->trans.rx_bytes_since_rekey = 0;
 		server->terminate = false;
 
 		dssh_test_alloc_fail_after(n);
@@ -3621,7 +3623,8 @@ test_dhgex_server_bn_rand_fail(void)
 		server->trans.tx_seq = saved_tx_seq;
 		server->trans.rx_since_rekey = 0;
 		server->trans.tx_since_rekey = 0;
-		server->trans.bytes_since_rekey = 0;
+		server->trans.tx_bytes_since_rekey = 0;
+		server->trans.rx_bytes_since_rekey = 0;
 		server->terminate = false;
 
 		dssh_test_ossl_fail_after(n);

@@ -1608,7 +1608,7 @@ test_rekey_needed_bytes(void)
 	dssh_session sess = dssh_session_init(true, 0);
 	ASSERT_NOT_NULL(sess);
 
-	sess->trans.bytes_since_rekey = DSSH_REKEY_BYTES;
+	sess->trans.tx_bytes_since_rekey = DSSH_REKEY_BYTES;
 	ASSERT_TRUE(dssh_transport_rekey_needed(sess));
 
 	dssh_session_cleanup(sess);
@@ -1658,8 +1658,44 @@ test_rekey_needed_below_threshold(void)
 	/* Set values just below thresholds */
 	sess->trans.tx_since_rekey = DSSH_REKEY_SOFT_LIMIT - 1;
 	sess->trans.rx_since_rekey = DSSH_REKEY_SOFT_LIMIT - 1;
-	sess->trans.bytes_since_rekey = DSSH_REKEY_BYTES - 1;
+	sess->trans.tx_bytes_since_rekey = DSSH_REKEY_BYTES - 1;
 	sess->trans.rekey_time = time(NULL);
+	ASSERT_FALSE(dssh_transport_rekey_needed(sess));
+
+	dssh_session_cleanup(sess);
+	mock_io_free(&io);
+	dssh_test_reset_global_config();
+	return TEST_PASS;
+}
+
+static int
+test_rekey_needed_bytes_split_sum(void)
+{
+	dssh_test_reset_global_config();
+	dssh_transport_set_callbacks(mock_tx_dispatch, mock_rx_dispatch,
+	    mock_rxline_dispatch, mock_extra_line_cb);
+	ASSERT_OK(dssh_register_none_comp());
+
+	struct mock_io_state io;
+	ASSERT_OK(mock_io_init(&io, 0));
+
+	dssh_session sess = dssh_session_init(true, 0);
+	ASSERT_NOT_NULL(sess);
+
+	/* Each half is below threshold, but their sum exceeds it */
+	uint64_t half = DSSH_REKEY_BYTES / 2 + 1;
+	sess->trans.tx_bytes_since_rekey = half;
+	sess->trans.rx_bytes_since_rekey = half;
+	sess->trans.rekey_time = time(NULL);
+	ASSERT_TRUE(dssh_transport_rekey_needed(sess));
+
+	/* Verify each half alone does NOT trigger */
+	sess->trans.tx_bytes_since_rekey = half;
+	sess->trans.rx_bytes_since_rekey = 0;
+	ASSERT_FALSE(dssh_transport_rekey_needed(sess));
+
+	sess->trans.tx_bytes_since_rekey = 0;
+	sess->trans.rx_bytes_since_rekey = half;
 	ASSERT_FALSE(dssh_transport_rekey_needed(sess));
 
 	dssh_session_cleanup(sess);
@@ -2694,6 +2730,29 @@ test_register_key_algo_toolate(void)
 	struct dssh_key_algo_s *ka = (struct dssh_key_algo_s *)buf;
 	strcpy(ka->name, "late-key");
 	ASSERT_EQ(dssh_transport_register_key_algo(ka), DSSH_ERROR_TOOLATE);
+
+	dssh_session_cleanup(sess);
+	dssh_test_reset_global_config();
+	return TEST_PASS;
+}
+
+static int
+test_set_ctx_toolate(void)
+{
+	dssh_test_reset_global_config();
+	ASSERT_EQ(register_all_algorithms(), 0);
+	dssh_transport_set_callbacks(mock_tx_dispatch, mock_rx_dispatch,
+	    mock_rxline_dispatch, mock_extra_line_cb);
+
+	/* Before session init -- should succeed */
+	ASSERT_OK(dssh_key_algo_set_ctx("ssh-ed25519", NULL));
+
+	dssh_session sess = dssh_session_init(true, 0);
+	ASSERT_NOT_NULL(sess);
+
+	/* After session init -- should be refused */
+	ASSERT_EQ(dssh_key_algo_set_ctx("ssh-ed25519", NULL),
+	    DSSH_ERROR_TOOLATE);
 
 	dssh_session_cleanup(sess);
 	dssh_test_reset_global_config();
@@ -6612,6 +6671,7 @@ static struct dssh_test_entry tests[] = {
 	{ "rekey/needed_bytes",              test_rekey_needed_bytes },
 	{ "rekey/needed_time",               test_rekey_needed_time },
 	{ "rekey/needed_below_threshold",    test_rekey_needed_below_threshold },
+	{ "rekey/needed_bytes_split_sum",    test_rekey_needed_bytes_split_sum },
 	{ "rekey/after_handshake",           test_rekey_after_handshake },
 	{ "rekey/session_id_stable",         test_rekey_session_id_stable },
 	{ "rekey/encrypted_roundtrip",       test_rekey_encrypted_roundtrip },
@@ -6659,6 +6719,7 @@ static struct dssh_test_entry tests[] = {
 	{ "register/mac_toolate",            test_register_mac_toolate },
 	{ "register/comp_empty_name",        test_register_comp_empty_name },
 	{ "register/key_algo_toolate",       test_register_key_algo_toolate },
+	{ "register/set_ctx_toolate",        test_set_ctx_toolate },
 	{ "register/key_algo_toolong",       test_register_key_algo_toolong },
 	{ "register/key_algo_next_not_null", test_register_key_algo_next_not_null },
 	{ "register/enc_toolong",            test_register_enc_toolong },

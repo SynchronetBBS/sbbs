@@ -137,6 +137,11 @@ dssh_session_set_cbdata(dssh_session sess,
 	sess->extra_line_cbdata = extra_line_cbdata;
 }
 
+/* Callback setters below must be called before dssh_session_start().
+ * The thrd_create in dssh_session_start() provides the C11
+ * happens-before guarantee that makes these writes visible to the
+ * demux thread.  Calling after start is undefined behavior. */
+
 DSSH_PUBLIC void
 dssh_session_set_debug_cb(dssh_session sess,
     dssh_debug_cb cb, void *cbdata)

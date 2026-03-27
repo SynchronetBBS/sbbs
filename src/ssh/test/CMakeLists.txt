@@ -193,6 +193,7 @@ set(TRANSPORT_TESTS
 	rekey/needed_false_initially rekey/needed_tx_packets
 	rekey/needed_rx_packets rekey/needed_bytes
 	rekey/needed_time rekey/needed_below_threshold
+	rekey/needed_bytes_split_sum
 	rekey/after_handshake rekey/encrypted_roundtrip
 	rekey/seq_preserved rekey/session_id_stable
 	rekey/hard_limit_send rekey/hard_limit_recv
@@ -218,7 +219,8 @@ set(TRANSPORT_TESTS
 	register/comp_toomany register/comp_toolate
 	register/comp_next_not_null
 	register/key_algo_toolong register/key_algo_toomany
-	register/key_algo_toolate register/key_algo_next_not_null
+	register/key_algo_toolate register/set_ctx_toolate
+	register/key_algo_next_not_null
 	register/lang_basic register/lang_empty_name
 	register/lang_toolong register/lang_toomany
 	register/lang_toolate register/lang_next_not_null

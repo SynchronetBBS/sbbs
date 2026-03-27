@@ -76,7 +76,7 @@ typedef struct dssh_language_s {
 
 typedef struct dssh_transport_state_s {
         /* 8-byte fixed */
-	uint64_t       bytes_since_rekey; /* bytes sent+received since last (re)key */
+	uint64_t       rx_bytes_since_rekey; /* bytes received since last (re)key (rx_mtx) */
 	time_t         rekey_time;        /* time of last (re)key */
 
         /* Pointers and size_t (pointer-sized) */
@@ -91,7 +91,7 @@ typedef struct dssh_transport_state_s {
 	size_t         remote_id_str_sz;
 	char         **remote_languages;
 	void          *kex_ctx;
-	dssh_kex       kex_selected;
+	_Atomic dssh_kex       kex_selected;
 	size_t         shared_secret_sz;
 	uint8_t       *shared_secret;
 	size_t         exchange_hash_sz;
@@ -102,30 +102,34 @@ typedef struct dssh_transport_state_s {
 	uint8_t       *our_kexinit;
 	size_t         peer_kexinit_sz;
 	uint8_t       *peer_kexinit;
-	dssh_key_algo  key_algo_selected;
+	_Atomic dssh_key_algo  key_algo_selected;
 	dssh_enc_ctx  *enc_c2s_ctx;
-	dssh_enc       enc_c2s_selected;
+	_Atomic dssh_enc       enc_c2s_selected;
 	dssh_enc_ctx  *enc_s2c_ctx;
-	dssh_enc       enc_s2c_selected;
+	_Atomic dssh_enc       enc_s2c_selected;
 	dssh_mac_ctx  *mac_c2s_ctx;
-	dssh_mac       mac_c2s_selected;
+	_Atomic dssh_mac       mac_c2s_selected;
 	dssh_mac_ctx  *mac_s2c_ctx;
-	dssh_mac       mac_s2c_selected;
+	_Atomic dssh_mac       mac_s2c_selected;
 	dssh_comp_ctx *comp_c2s_ctx;
-	dssh_comp      comp_c2s_selected;
+	_Atomic dssh_comp      comp_c2s_selected;
 	dssh_comp_ctx *comp_s2c_ctx;
-	dssh_comp      comp_s2c_selected;
+	_Atomic dssh_comp      comp_s2c_selected;
 
         /* C11 synchronization (platform-dependent size) */
 	cnd_t          rekey_cnd;         /* wakes senders blocked during rekey */
 	mtx_t          tx_mtx;
 	mtx_t          rx_mtx;
 
+        /* Atomic tx counters -- read lock-free by rekey_needed() (recv
+         * thread), written under tx_mtx by send_packet()/newkeys(). */
+	atomic_uint_fast32_t tx_since_rekey;
+	atomic_uint_fast64_t tx_bytes_since_rekey;
+
         /* 4-byte */
 	uint32_t       tx_seq;
 	uint32_t       rx_seq;
-	uint32_t       tx_since_rekey;    /* packets sent since last (re)key */
-	uint32_t       rx_since_rekey;    /* packets received since last (re)key */
+	uint32_t       rx_since_rekey;    /* packets received since last (re)key (rx_mtx) */
 	uint32_t       last_rx_seq;       /* seq number of last received packet */
 
         /* 1-byte */

@@ -89,53 +89,7 @@
     separate translation unit and header (`ssh-chan.h`) is warranted
     for purely internal buffer primitives.
 
-32. Callback setters in ssh.c (`dssh_session_set_debug_cb`,
-    `set_banner_cb`, `set_unimplemented_cb`, `set_global_request_cb`)
-    store a function pointer and cbdata in two separate non-atomic
-    stores with no synchronization.  The demux thread reads these
-    concurrently.  Either document as set-once-before-start or protect
-    with the session mutex.
-
 ### Thread safety audit (items 51-59)
-
-53. **Data race: rekey counters read by demux without `tx_mtx`.**
-    `dssh_transport_rekey_needed()` (lines 266-277) reads
-    `tx_since_rekey` and `bytes_since_rekey` without any lock.
-    `send_packet()` increments these under `tx_mtx` (lines 602-606).
-    `recv_packet()` increments `rx_since_rekey` and `bytes_since_rekey`
-    under `rx_mtx` (lines 756-763).  `bytes_since_rekey` (uint64_t)
-    is modified under TWO different mutexes — neither alone is sufficient.
-    Torn reads on 32-bit platforms; UB on all.  `newkeys()` (lines 1834-1837)
-    also zeroes all counters without either mutex.  Options: make
-    `bytes_since_rekey` atomic, split into tx/rx halves each protected by
-    its own mutex, or add a dedicated counter mutex.
-
-57. **Data race: algorithm query functions during rekey.**
-    `dssh_transport_get_kex_name()`, `get_hostkey_name()`, `get_enc_name()`,
-    `get_mac_name()` (lines 194-224) read `*_selected` pointers with no
-    lock.  During rekey, `kexinit()` overwrites these from the demux
-    thread.  The pointed-to algorithm structs are global and never freed,
-    so no use-after-free, but the reads are UB per C11 and could return
-    transiently wrong names.  Either document as undefined-during-rekey or
-    protect with `sess->mtx`.
-
-
-60. **Data race: `dssh_key_algo_set_ctx()` modifies global registry
-    entry without synchronization.**  Line 2039 writes `ka->ctx` in the
-    global algorithm registry.  The `gconf.used` flag prevents new
-    registrations but does not prevent `set_ctx`.  If called while a
-    session's `kexinit()` is reading `ka->haskey(ka->ctx)` or while
-    KEX is using `key_algo_selected->ctx`, there is a data race.
-    In practice called before session start, but the API does not
-    enforce this.  Either document as set-before-start or add a check
-    (e.g., refuse if any session is active).
-
-61. **Data race: `dssh_dh_gex_set_provider()` modifies per-session
-    state without mutex.**  Line 2049 writes `sess->trans.kex_ctx`
-    without holding any mutex.  If the demux thread is running a
-    DH-GEX rekey and reads `kex_ctx` (via `kctx.kex_data`), there is
-    a race.  In practice called before session start; either document
-    or protect with `sess->mtx` / `tx_mtx`.
 
 ### Design / liveness audit (items 62-79)
 
@@ -304,6 +258,38 @@
     the session is already in an unrecoverable state.
 
 ## Closed
+
+- Data race: rekey counters (was item 53).  Split `bytes_since_rekey`
+  into `tx_bytes_since_rekey` and `rx_bytes_since_rekey`.  Made
+  `tx_since_rekey` (`atomic_uint_fast32_t`) and `tx_bytes_since_rekey`
+  (`atomic_uint_fast64_t`) atomic so `rekey_needed()` (called from recv
+  thread) can read them lock-free without acquiring `tx_mtx`.  rx
+  counters remain non-atomic (protected by `rx_mtx` held by caller).
+  `newkeys()` uses `atomic_store` for tx counters.  Added test
+  `rekey/needed_bytes_split_sum` verifying sum-of-halves threshold.
+
+- Data race: algorithm query functions (was item 57).  Made all ten
+  `*_selected` pointer fields in `dssh_transport_state_s` `_Atomic`.
+  `dssh_transport_get_kex_name()` etc. now perform implicit atomic
+  loads, eliminating UB during rekey.  Zero runtime cost on x86-64
+  (compiler barrier only).
+
+- Data race: `dssh_key_algo_set_ctx()` global registry (was item 60).
+  Added `gconf.used` check — returns `DSSH_ERROR_TOOLATE` after the
+  first `dssh_session_init()` call, same gate as algorithm registration.
+  Host keys must be loaded before creating any session.  Added test
+  `register/set_ctx_toolate`.
+
+- Data race: `dssh_dh_gex_set_provider()` (was item 61).  Documented
+  as must-call-before-handshake.  The `thrd_create` in
+  `dssh_session_start()` provides the C11 happens-before guarantee.
+
+- Data race: callback setters (was item 32).  Documented as
+  must-call-before-start.  The `thrd_create` in `dssh_session_start()`
+  provides the C11 happens-before guarantee.  Calling after start is
+  undefined behavior (function pointer + cbdata pair cannot be set
+  atomically without a mutex, which is over-engineering for a
+  set-once-before-start pattern).
 
 - Data race: setup-to-normal transition in `dssh_session_accept_channel()`
   (was item 52).  Lines writing `chan_type`, buffer union, `window_max`,

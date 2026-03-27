@@ -1203,10 +1203,10 @@ test_self_rekey_during_data(void)
 	dssh_channel ch = dssh_session_open_shell(ctx.client, &pty);
 	ASSERT_NOT_NULL(ch);
 
-	/* Force bytes_since_rekey near threshold on the CLIENT.
+	/* Force rx_bytes_since_rekey near threshold on the CLIENT.
 	 * Auto-rekey triggers in recv_packet's default path when
 	 * the client demux receives the echoed data. */
-	ctx.client->trans.bytes_since_rekey = DSSH_REKEY_BYTES - 100;
+	ctx.client->trans.rx_bytes_since_rekey = DSSH_REKEY_BYTES - 100;
 
 	uint8_t data[256];
 	memset(data, 'R', sizeof(data));
@@ -1265,13 +1265,13 @@ test_self_rekey_manual(void)
 	dssh_channel ch = dssh_session_open_exec(ctx.client, "rekey");
 	ASSERT_NOT_NULL(ch);
 
-	/* Force bytes_since_rekey just below threshold on both sides.
+	/* Force rx_bytes_since_rekey just below threshold on the client.
 	 * A single encrypted CHANNEL_DATA packet adds ~60-80 bytes of
 	 * wire overhead (packet header + padding + MAC), so set headroom
 	 * small enough that one packet pushes it over. */
 	/* Only force threshold on the client.  The client's demux
 	 * will trigger rekey when it receives the echoed data. */
-	ctx.client->trans.bytes_since_rekey = DSSH_REKEY_BYTES - 50;
+	ctx.client->trans.rx_bytes_since_rekey = DSSH_REKEY_BYTES - 50;
 
 	const uint8_t data[] = "after-rekey";
 	int64_t w = dssh_session_write(ctx.client, ch, data, sizeof(data) - 1);
@@ -1365,7 +1365,7 @@ test_self_rekey_preserves_channels(void)
 	memcpy(sid_before, ctx.client->trans.session_id, sid_sz);
 
 	/* Force rekey */
-	ctx.client->trans.bytes_since_rekey = DSSH_REKEY_BYTES - 100;
+	ctx.client->trans.rx_bytes_since_rekey = DSSH_REKEY_BYTES - 100;
 
 	/* Send data to trigger rekey */
 	const uint8_t after[] = "after-rekey-data!";

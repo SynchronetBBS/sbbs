@@ -113,7 +113,8 @@ DSSH_PUBLIC void dssh_session_set_cbdata(dssh_session sess,
     void *extra_line_cbdata);
 
 /*
- * Optional notification callbacks.  Set before handshake.
+ * Optional notification callbacks.  Must be set before
+ * dssh_session_start(); calling after start is undefined behavior.
  */
 DSSH_PUBLIC void dssh_session_set_debug_cb(dssh_session sess,
     dssh_debug_cb cb, void *cbdata);

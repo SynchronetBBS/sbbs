@@ -265,10 +265,21 @@ fail:
 DSSH_PRIVATE bool
 dssh_transport_rekey_needed(dssh_session sess)
 {
-	if ((sess->trans.tx_since_rekey >= DSSH_REKEY_SOFT_LIMIT)
+	/* tx counters are atomic -- read without tx_mtx.
+	 * rx counters are protected by rx_mtx (held by caller). */
+	uint32_t tx_pkts = atomic_load(&sess->trans.tx_since_rekey);
+	if ((tx_pkts >= DSSH_REKEY_SOFT_LIMIT)
 	    || (sess->trans.rx_since_rekey >= DSSH_REKEY_SOFT_LIMIT))
 		return true;
-	if (sess->trans.bytes_since_rekey >= DSSH_REKEY_BYTES)
+
+	/* Sum tx + rx bytes (saturating) for the byte threshold */
+	uint64_t tx_bytes = atomic_load(&sess->trans.tx_bytes_since_rekey);
+	uint64_t total_bytes;
+	if (tx_bytes > UINT64_MAX - sess->trans.rx_bytes_since_rekey)
+		total_bytes = UINT64_MAX;
+	else
+		total_bytes = tx_bytes + sess->trans.rx_bytes_since_rekey;
+	if (total_bytes >= DSSH_REKEY_BYTES)
 		return true;
 	if (sess->trans.rekey_time == 0)
 		return false;
@@ -588,11 +599,14 @@ dssh_transport_send_packet(dssh_session sess,
 		if (seq_out != NULL)
 			*seq_out = sess->trans.tx_seq;
 		sess->trans.tx_seq++;
-		sess->trans.tx_since_rekey++;
-		if (pos > SIZE_MAX - sess->trans.bytes_since_rekey)
-			sess->trans.bytes_since_rekey = SIZE_MAX;
-		else
-			sess->trans.bytes_since_rekey += pos;
+		atomic_fetch_add(&sess->trans.tx_since_rekey, 1);
+		{
+			uint64_t old_tb = atomic_load(&sess->trans.tx_bytes_since_rekey);
+			if (pos > UINT64_MAX - old_tb)
+				atomic_store(&sess->trans.tx_bytes_since_rekey, UINT64_MAX);
+			else
+				atomic_store(&sess->trans.tx_bytes_since_rekey, old_tb + pos);
+		}
 	}
 
 tx_done:
@@ -737,10 +751,10 @@ recv_packet_raw(dssh_session sess,
 	{
 		size_t rx_bytes = (size_t)packet_length + 4 + mac_len;
 
-		if (rx_bytes > SIZE_MAX - sess->trans.bytes_since_rekey)
-			sess->trans.bytes_since_rekey = SIZE_MAX;
+		if (rx_bytes > UINT64_MAX - sess->trans.rx_bytes_since_rekey)
+			sess->trans.rx_bytes_since_rekey = UINT64_MAX;
 		else
-			sess->trans.bytes_since_rekey += rx_bytes;
+			sess->trans.rx_bytes_since_rekey += rx_bytes;
 	}
 	ret = 0;
 
@@ -1803,10 +1817,14 @@ dssh_transport_newkeys(dssh_session sess)
 		}
 	}
 
-        /* Reset per-key counters */
-	sess->trans.tx_since_rekey = 0;
+        /* Reset per-key counters.  tx counters are atomic (lock-free
+         * reads by rekey_needed).  rx counters are under rx_mtx
+         * (held by caller via recv_packet, or single-threaded in
+         * initial handshake). */
+	atomic_store(&sess->trans.tx_since_rekey, 0);
+	atomic_store(&sess->trans.tx_bytes_since_rekey, (uint64_t)0);
 	sess->trans.rx_since_rekey = 0;
-	sess->trans.bytes_since_rekey = 0;
+	sess->trans.rx_bytes_since_rekey = 0;
 	sess->trans.rekey_time = time(NULL);
 
 	free(sess->trans.our_kexinit);
@@ -1913,9 +1931,10 @@ dssh_transport_init(dssh_session sess, size_t max_packet_size)
 	sess->trans.exchange_hash = NULL;
 	sess->trans.tx_seq = 0;
 	sess->trans.rx_seq = 0;
-	sess->trans.tx_since_rekey = 0;
+	atomic_init(&sess->trans.tx_since_rekey, 0);
 	sess->trans.rx_since_rekey = 0;
-	sess->trans.bytes_since_rekey = 0;
+	atomic_init(&sess->trans.tx_bytes_since_rekey, (uint64_t)0);
+	sess->trans.rx_bytes_since_rekey = 0;
 	sess->trans.rekey_time = time(NULL);
 
 	return 0;
@@ -2012,6 +2031,10 @@ dssh_key_algo_set_ctx(const char *name, void *ctx)
 {
 	if (name == NULL)
 		return DSSH_ERROR_INVALID;
+	/* Refuse after first session init -- the global registry is
+	 * read concurrently by active sessions during KEX. */
+	if (gconf.used)
+		return DSSH_ERROR_TOOLATE;
 	dssh_key_algo ka = dssh_transport_find_key_algo(name);
 
 	if (ka == NULL)
@@ -2020,6 +2043,9 @@ dssh_key_algo_set_ctx(const char *name, void *ctx)
 	return 0;
 }
 
+/* Must be called before dssh_transport_handshake().  The thrd_create
+ * in dssh_session_start() provides the C11 happens-before guarantee
+ * that makes this write visible to the demux thread. */
 DSSH_PUBLIC void
 dssh_dh_gex_set_provider(dssh_session sess,
     struct dssh_dh_gex_provider *provider)

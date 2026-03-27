@@ -61,6 +61,9 @@ DSSH_PUBLIC int dssh_register_none_comp(void);
 /*
  * Set the opaque context pointer for a registered key algorithm.
  * Called by key algorithm modules after generating or loading a key.
+ * Must be called before dssh_session_init() -- returns DSSH_ERROR_TOOLATE
+ * if any session has been created (the global registry is read
+ * concurrently by active sessions during KEX).
  * Returns 0 on success, DSSH_ERROR_INIT if the algorithm is not registered.
  */
 DSSH_PUBLIC int dssh_key_algo_set_ctx(const char *name, void *ctx);
@@ -74,6 +77,7 @@ struct dssh_dh_gex_provider {
 	void *cbdata;
 };
 
+/* Must be called before dssh_transport_handshake(). */
 DSSH_PUBLIC void dssh_dh_gex_set_provider(dssh_session sess,
     struct dssh_dh_gex_provider                       *provider);
 
