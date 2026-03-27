@@ -11,7 +11,6 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
-#include <threads.h>
 
 /* ================================================================
  * Circular byte buffer (session channel stdout/stderr)

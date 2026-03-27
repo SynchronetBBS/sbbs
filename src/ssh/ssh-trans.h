@@ -153,26 +153,12 @@ DSSH_PUBLIC int dssh_transport_register_lang(dssh_language lang);
  * sized to max_packet_size (pass 0 for the RFC minimum of 33280 bytes).
  * Locks the algorithm registry on first call.  Returns 0 on success.
  */
-/*
- * Perform the complete SSH transport handshake: version exchange,
- * algorithm negotiation, key exchange, and NEWKEYS.  On return,
- * the encrypted transport is active and ready for authentication.
- * Returns 0 on success.
+/* Public transport functions declared in deucessh.h:
+ *   dssh_transport_handshake, dssh_transport_disconnect,
+ *   dssh_transport_get_remote_version, dssh_transport_get_kex_name,
+ *   dssh_transport_get_hostkey_name, dssh_transport_get_enc_name,
+ *   dssh_transport_get_mac_name
  */
-DSSH_PUBLIC int dssh_transport_handshake(dssh_session sess);
-/*
- * Send SSH_MSG_DISCONNECT (RFC 4253 s11.1) and set terminate flag.
- * The desc string is clamped to 230 bytes.  The send is best-effort
- * (errors are ignored since we're disconnecting).
- */
-DSSH_PUBLIC int dssh_transport_disconnect(dssh_session sess,
-    uint32_t reason, const char *desc);
-/* Query functions — return negotiated algorithm names or NULL. */
-DSSH_PUBLIC const char *dssh_transport_get_remote_version(dssh_session sess);
-DSSH_PUBLIC const char *dssh_transport_get_kex_name(dssh_session sess);
-DSSH_PUBLIC const char *dssh_transport_get_hostkey_name(dssh_session sess);
-DSSH_PUBLIC const char *dssh_transport_get_enc_name(dssh_session sess);
-DSSH_PUBLIC const char *dssh_transport_get_mac_name(dssh_session sess);
 /* ================================================================
  * Internal functions — used by other library modules, not by
  * applications.  DSSH_PRIVATE in shared builds.
@@ -205,7 +191,7 @@ typedef struct dssh_transport_global_config {
 	dssh_transport_io_cb     rx;
 	dssh_transport_rxline_cb rx_line;
 
-	int (*extra_line_cb)(uint8_t *buf, size_t bufsz, void *cbdata);
+	dssh_transport_extra_line_cb extra_line_cb;
 
 	size_t                   kex_entries;
 	dssh_kex                 kex_head;

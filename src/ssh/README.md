@@ -849,7 +849,7 @@ Each key algorithm provides these functions:
 | `_get_pub_str(buf, bufsz)` | Get OpenSSH public key string (0/NULL to query size) |
 | `_generate_key(...)` | Generate a new key in memory |
 
-The `pw_cb` parameter is OpenSSL's `pem_password_cb` — pass NULL for
+The `pw_cb` parameter is `dssh_pem_password_cb` — pass NULL for
 unencrypted PEM, or a callback to encrypt (save) / decrypt (load)
 with AES-256-CBC:
 

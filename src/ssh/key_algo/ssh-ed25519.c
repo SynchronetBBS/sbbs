@@ -268,7 +268,7 @@ dssh_register_ssh_ed25519(void)
 }
 
 DSSH_PUBLIC int
-dssh_ed25519_load_key_file(const char *path, pem_password_cb *pw_cb,
+dssh_ed25519_load_key_file(const char *path, dssh_pem_password_cb pw_cb,
     void *pw_cbdata)
 {
 	if (path == NULL)
@@ -316,7 +316,7 @@ dssh_ed25519_load_key_file(const char *path, pem_password_cb *pw_cb,
 }
 
 DSSH_PUBLIC int
-dssh_ed25519_save_key_file(const char *path, pem_password_cb *pw_cb,
+dssh_ed25519_save_key_file(const char *path, dssh_pem_password_cb pw_cb,
     void *pw_cbdata)
 {
 	if (path == NULL)

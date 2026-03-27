@@ -2,16 +2,6 @@
 
 ## Open
 
-4. Every function needs `DSSH_PUBLIC` or `DSSH_PRIVATE` annotation.
-   ssh-arch.c has ~30 functions in a public header with no visibility
-   markup at all.  Clarify which are part of the consumer API (for
-   packet-level parse/serialize) and which are internal helpers.
-
-5. deucessh-arch.h includes `<openssl/bn.h>` — likely for mpint — but
-   public headers should not expose OpenSSL.  If mpint needs BIGNUM for
-   consumers, document why; otherwise remove the include and keep the
-   OpenSSL dependency internal.
-
 6. ssh-arch.c public functions have no parameter validation.  NULL `buf`,
    `val`, or `pos` pointers crash immediately.  Functions confirmed as
    `DSSH_PUBLIC` need NULL checks and appropriate error returns.
@@ -122,27 +112,12 @@
     concurrently.  Either document as set-once-before-start or protect
     with the session mutex.
 
-34. `deucessh-algorithms.h` includes `<openssl/pem.h>` — exposes
-    `pem_password_cb` to consumers.  Same class as item 5: public
-    headers should not require OpenSSL on the consumer's include path.
-
 35. `DSSH_CHAN_SESSION` / `DSSH_CHAN_RAW` defined in both `ssh-chan.h`
     (lines 140–141) and `ssh-internal.h` (lines 96–97).  Same values
     but changing one without the other is a silent mismatch.
 
 36. `SSH_OPEN_ADMINISTRATIVELY_PROHIBITED` defined in both `ssh-conn.c`
     (line 166) and `ssh-internal.h` (line 115).  Same duplication hazard.
-
-37. `dssh_transport_handshake`, `dssh_transport_disconnect`, and the
-    `get_*_name` query functions are declared in both `deucessh.h`
-    and `ssh-trans.h`.  Harmless but unclear which is authoritative.
-
-39. `ssh-chan.h` includes `<threads.h>` but none of its structures use
-    thread types — those are in `dssh_channel_s` in `ssh-internal.h`.
-
-41. `extra_line_cb` in `dssh_transport_global_config` (ssh-trans.h:216)
-    uses a raw function pointer instead of the existing
-    `dssh_transport_extra_line_cb` typedef.  Inconsistent.
 
 43. Source files contain non-ASCII characters in comments (em dashes,
     arrows, etc.).  Replace with ASCII equivalents for strict C17
@@ -212,3 +187,25 @@
 - Message type 60 aliasing comment added (was item 42).  Explains
   that PK_OK, PASSWD_CHANGEREQ, and INFO_REQUEST share value 60
   per RFC 4252 s7 / RFC 4256 s5.
+
+- All ssh-arch.c functions already have correct visibility annotations
+  (was item 4).  14 functions: 2 DSSH_PUBLIC (parse/serialize_uint32),
+  12 DSSH_PRIVATE.  deucessh-arch.h declares only the 2 public ones.
+
+- deucessh-arch.h does not include `<openssl/bn.h>` (was item 5).
+  Item was inaccurate; the header was already clean.
+
+- `deucessh-algorithms.h` no longer includes `<openssl/pem.h>`
+  (was item 34).  Replaced `pem_password_cb` with library-owned
+  `dssh_pem_password_cb` typedef (identical signature).  Key algorithm
+  module headers (ssh-ed25519.h, rsa-sha2-256.h) updated to match.
+
+- Duplicate transport function declarations removed from ssh-trans.h
+  (was item 37).  deucessh.h is the authoritative public header;
+  ssh-trans.h now has a comment referencing them.
+
+- Unnecessary `<threads.h>` include removed from ssh-chan.h (was
+  item 39).  No structures in that header use thread types.
+
+- `extra_line_cb` in `dssh_transport_global_config` now uses the
+  `dssh_transport_extra_line_cb` typedef (was item 41).

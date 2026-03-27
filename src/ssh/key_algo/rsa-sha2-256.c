@@ -431,7 +431,7 @@ cleanup(dssh_key_algo_ctx *ctx)
 }
 
 DSSH_PUBLIC int
-dssh_rsa_sha2_256_load_key_file(const char *path, pem_password_cb *pw_cb,
+dssh_rsa_sha2_256_load_key_file(const char *path, dssh_pem_password_cb pw_cb,
     void *pw_cbdata)
 {
 	if (path == NULL)
@@ -479,7 +479,7 @@ dssh_rsa_sha2_256_load_key_file(const char *path, pem_password_cb *pw_cb,
 }
 
 DSSH_PUBLIC int
-dssh_rsa_sha2_256_save_key_file(const char *path, pem_password_cb *pw_cb,
+dssh_rsa_sha2_256_save_key_file(const char *path, dssh_pem_password_cb pw_cb,
     void *pw_cbdata)
 {
 	if (path == NULL)
