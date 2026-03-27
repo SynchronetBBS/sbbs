@@ -4,6 +4,7 @@
 
 #include "dssh_test.h"
 #include "deucessh.h"
+#include "ssh-arch.h"
 
 /* ----------------------------------------------------------------
  * byte
@@ -69,14 +70,6 @@ test_serialize_byte_overflow(void)
 	uint8_t buf[1];
 	size_t pos = 1;
 	ASSERT_ERR(dssh_serialize_byte(0x01, buf, sizeof(buf), &pos), DSSH_ERROR_TOOLONG);
-	return TEST_PASS;
-}
-
-static int
-test_serialized_byte_length(void)
-{
-	ASSERT_EQ_U(dssh_serialized_byte_length(0), 1);
-	ASSERT_EQ_U(dssh_serialized_byte_length(0xFF), 1);
 	return TEST_PASS;
 }
 
@@ -182,14 +175,6 @@ test_serialize_boolean_overflow(void)
 	return TEST_PASS;
 }
 
-static int
-test_serialized_boolean_length(void)
-{
-	ASSERT_EQ_U(dssh_serialized_boolean_length(true), 1);
-	ASSERT_EQ_U(dssh_serialized_boolean_length(false), 1);
-	return TEST_PASS;
-}
-
 /* ----------------------------------------------------------------
  * uint32
  * ---------------------------------------------------------------- */
@@ -262,14 +247,6 @@ test_serialize_uint32_overflow(void)
 	uint8_t buf[3];
 	size_t pos = 0;
 	ASSERT_ERR(dssh_serialize_uint32(1, buf, sizeof(buf), &pos), DSSH_ERROR_TOOLONG);
-	return TEST_PASS;
-}
-
-static int
-test_serialized_uint32_length(void)
-{
-	ASSERT_EQ_U(dssh_serialized_uint32_length(0), 4);
-	ASSERT_EQ_U(dssh_serialized_uint32_length(UINT32_MAX), 4);
 	return TEST_PASS;
 }
 
@@ -349,14 +326,6 @@ test_serialize_uint64_overflow(void)
 	uint8_t buf[7];
 	size_t pos = 0;
 	ASSERT_ERR(dssh_serialize_uint64(1, buf, sizeof(buf), &pos), DSSH_ERROR_TOOLONG);
-	return TEST_PASS;
-}
-
-static int
-test_serialized_uint64_length(void)
-{
-	ASSERT_EQ_U(dssh_serialized_uint64_length(0), 8);
-	ASSERT_EQ_U(dssh_serialized_uint64_length(UINT64_MAX), 8);
 	return TEST_PASS;
 }
 
@@ -471,17 +440,6 @@ test_serialize_string_overflow(void)
 	size_t pos = 0;
 
 	ASSERT_ERR(dssh_serialize_string(&val, buf, sizeof(buf), &pos), DSSH_ERROR_TOOLONG);
-	return TEST_PASS;
-}
-
-static int
-test_serialized_string_length(void)
-{
-	struct dssh_string_s val = { .value = NULL, .length = 10 };
-	ASSERT_EQ_U(dssh_serialized_string_length(&val), 14);
-
-	val.length = 0;
-	ASSERT_EQ_U(dssh_serialized_string_length(&val), 4);
 	return TEST_PASS;
 }
 
@@ -679,17 +637,6 @@ test_serialize_mpint_overflow(void)
 	size_t pos = 0;
 
 	ASSERT_ERR(dssh_serialize_mpint(&val, buf, sizeof(buf), &pos), DSSH_ERROR_TOOLONG);
-	return TEST_PASS;
-}
-
-static int
-test_serialized_mpint_length(void)
-{
-	struct dssh_string_s val = { .length = 8 };
-	ASSERT_EQ_U(dssh_serialized_mpint_length(&val), 12);
-
-	val.length = 0;
-	ASSERT_EQ_U(dssh_serialized_mpint_length(&val), 4);
 	return TEST_PASS;
 }
 
@@ -899,17 +846,6 @@ test_serialize_namelist_overflow(void)
 }
 
 static int
-test_serialized_namelist_length(void)
-{
-	struct dssh_namelist_s val = { .length = 9 };
-	ASSERT_EQ_U(dssh_serialized_namelist_length(&val), 13);
-
-	val.length = 0;
-	ASSERT_EQ_U(dssh_serialized_namelist_length(&val), 4);
-	return TEST_PASS;
-}
-
-static int
 test_namelist_roundtrip(void)
 {
 	uint8_t data[] = "aes256-ctr,chacha20-poly1305@openssh.com";
@@ -1064,7 +1000,6 @@ static struct dssh_test_entry tests[] = {
 	{ "parse_byte_empty_buffer",        test_parse_byte_empty_buffer },
 	{ "serialize_byte",                 test_serialize_byte },
 	{ "serialize_byte_overflow",        test_serialize_byte_overflow },
-	{ "serialized_byte_length",         test_serialized_byte_length },
 	{ "byte_roundtrip",                 test_byte_roundtrip },
 
 	/* boolean */
@@ -1076,7 +1011,6 @@ static struct dssh_test_entry tests[] = {
 	{ "serialize_boolean_true",         test_serialize_boolean_true },
 	{ "serialize_boolean_false",        test_serialize_boolean_false },
 	{ "serialize_boolean_overflow",     test_serialize_boolean_overflow },
-	{ "serialized_boolean_length",      test_serialized_boolean_length },
 
 	/* uint32 */
 	{ "parse_uint32_basic",             test_parse_uint32_basic },
@@ -1086,7 +1020,6 @@ static struct dssh_test_entry tests[] = {
 	{ "parse_uint32_empty_buffer",      test_parse_uint32_empty_buffer },
 	{ "serialize_uint32",               test_serialize_uint32 },
 	{ "serialize_uint32_overflow",      test_serialize_uint32_overflow },
-	{ "serialized_uint32_length",       test_serialized_uint32_length },
 	{ "uint32_roundtrip",              test_uint32_roundtrip },
 
 	/* uint64 */
@@ -1096,7 +1029,6 @@ static struct dssh_test_entry tests[] = {
 	{ "parse_uint64_short_buffer",      test_parse_uint64_short_buffer },
 	{ "serialize_uint64",               test_serialize_uint64 },
 	{ "serialize_uint64_overflow",      test_serialize_uint64_overflow },
-	{ "serialized_uint64_length",       test_serialized_uint64_length },
 	{ "uint64_roundtrip",              test_uint64_roundtrip },
 
 	/* string */
@@ -1108,7 +1040,6 @@ static struct dssh_test_entry tests[] = {
 	{ "serialize_string",               test_serialize_string },
 	{ "serialize_string_empty",         test_serialize_string_empty },
 	{ "serialize_string_overflow",      test_serialize_string_overflow },
-	{ "serialized_string_length",       test_serialized_string_length },
 	{ "string_roundtrip",              test_string_roundtrip },
 
 	/* mpint */
@@ -1124,7 +1055,6 @@ static struct dssh_test_entry tests[] = {
 	{ "serialize_mpint",                test_serialize_mpint },
 	{ "serialize_mpint_zero",           test_serialize_mpint_zero },
 	{ "serialize_mpint_overflow",       test_serialize_mpint_overflow },
-	{ "serialized_mpint_length",        test_serialized_mpint_length },
 	{ "mpint_roundtrip",               test_mpint_roundtrip },
 
 	/* namelist */
@@ -1142,7 +1072,6 @@ static struct dssh_test_entry tests[] = {
 	{ "serialize_namelist",             test_serialize_namelist },
 	{ "serialize_namelist_empty",       test_serialize_namelist_empty },
 	{ "serialize_namelist_overflow",    test_serialize_namelist_overflow },
-	{ "serialized_namelist_length",     test_serialized_namelist_length },
 	{ "namelist_roundtrip",            test_namelist_roundtrip },
 
 	/* multi-field / offset */

@@ -9,6 +9,7 @@
 #include <threads.h>
 
 #include "deucessh.h"
+#include "ssh-arch.h"
 #include "ssh-chan.h"
 #include "ssh-trans.h"
 

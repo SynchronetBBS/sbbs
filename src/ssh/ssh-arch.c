@@ -8,7 +8,7 @@
 /*
  * Required by parse functions
  */
-int64_t
+DSSH_PRIVATE int64_t
 dssh_parse_byte(const uint8_t *buf, size_t bufsz, dssh_byte *val)
 {
 	if (bufsz < 1)
@@ -17,13 +17,7 @@ dssh_parse_byte(const uint8_t *buf, size_t bufsz, dssh_byte *val)
 	return 1;
 }
 
-size_t
-dssh_serialized_byte_length(dssh_byte val)
-{
-	return 1;
-}
-
-int
+DSSH_PRIVATE int
 dssh_serialize_byte(dssh_byte val, uint8_t *buf, size_t bufsz, size_t *pos)
 {
 	if (*pos >= bufsz)
@@ -33,7 +27,7 @@ dssh_serialize_byte(dssh_byte val, uint8_t *buf, size_t bufsz, size_t *pos)
 	return 0;
 }
 
-int64_t
+DSSH_PRIVATE int64_t
 dssh_parse_boolean(const uint8_t *buf, size_t bufsz, dssh_boolean *val)
 {
 	if (bufsz < 1)
@@ -42,13 +36,7 @@ dssh_parse_boolean(const uint8_t *buf, size_t bufsz, dssh_boolean *val)
 	return 1;
 }
 
-size_t
-dssh_serialized_boolean_length(dssh_boolean val)
-{
-	return 1;
-}
-
-int
+DSSH_PRIVATE int
 dssh_serialize_boolean(dssh_boolean val, uint8_t *buf, size_t bufsz, size_t *pos)
 {
 	if (*pos >= bufsz)
@@ -58,7 +46,7 @@ dssh_serialize_boolean(dssh_boolean val, uint8_t *buf, size_t bufsz, size_t *pos
 	return 0;
 }
 
-int64_t
+DSSH_PUBLIC int64_t
 dssh_parse_uint32(const uint8_t *buf, size_t bufsz, dssh_uint32_t *val)
 {
 	if (bufsz < 4)
@@ -67,13 +55,7 @@ dssh_parse_uint32(const uint8_t *buf, size_t bufsz, dssh_uint32_t *val)
 	return 4;
 }
 
-size_t
-dssh_serialized_uint32_length(dssh_uint32_t val)
-{
-	return 4;
-}
-
-int
+DSSH_PUBLIC int
 dssh_serialize_uint32(dssh_uint32_t val, uint8_t *buf, size_t bufsz, size_t *pos)
 {
 	if (*pos > bufsz || bufsz - *pos < 4)
@@ -85,7 +67,7 @@ dssh_serialize_uint32(dssh_uint32_t val, uint8_t *buf, size_t bufsz, size_t *pos
 	return 0;
 }
 
-int64_t
+DSSH_PRIVATE int64_t
 dssh_parse_uint64(const uint8_t *buf, size_t bufsz, dssh_uint64_t *val)
 {
 	if (bufsz < 8)
@@ -96,13 +78,7 @@ dssh_parse_uint64(const uint8_t *buf, size_t bufsz, dssh_uint64_t *val)
 	return 8;
 }
 
-size_t
-dssh_serialized_uint64_length(dssh_uint64_t val)
-{
-	return 8;
-}
-
-int
+DSSH_PRIVATE int
 dssh_serialize_uint64(dssh_uint64_t val, uint8_t *buf, size_t bufsz, size_t *pos)
 {
 	if (*pos > bufsz || bufsz - *pos < 8)
@@ -118,7 +94,7 @@ dssh_serialize_uint64(dssh_uint64_t val, uint8_t *buf, size_t bufsz, size_t *pos
 	return 0;
 }
 
-int64_t
+DSSH_PRIVATE int64_t
 dssh_parse_string(const uint8_t *buf, size_t bufsz, dssh_string val)
 {
 	if (bufsz < 4)
@@ -154,13 +130,7 @@ dssh_parse_string(const uint8_t *buf, size_t bufsz, dssh_string val)
 	return (int64_t)sz;
 }
 
-size_t
-dssh_serialized_string_length(dssh_string val)
-{
-	return val->length + 4;
-}
-
-int
+DSSH_PRIVATE int
 dssh_serialize_string(dssh_string val, uint8_t *buf, size_t bufsz, size_t *pos)
 {
 	if (*pos > bufsz || bufsz - *pos < 4 || val->length > bufsz - *pos - 4)
@@ -173,7 +143,7 @@ dssh_serialize_string(dssh_string val, uint8_t *buf, size_t bufsz, size_t *pos)
 	return 0;
 }
 
-int64_t
+DSSH_PRIVATE int64_t
 dssh_parse_mpint(const uint8_t *buf, size_t bufsz, dssh_mpint val)
 {
 	int64_t ret = dssh_parse_string(buf, bufsz, val);
@@ -189,19 +159,13 @@ dssh_parse_mpint(const uint8_t *buf, size_t bufsz, dssh_mpint val)
 	return ret;
 }
 
-size_t
-dssh_serialized_mpint_length(dssh_mpint val)
-{
-	return val->length + 4;
-}
-
-int
+DSSH_PRIVATE int
 dssh_serialize_mpint(dssh_mpint val, uint8_t *buf, size_t bufsz, size_t *pos)
 {
 	return dssh_serialize_string(val, buf, bufsz, pos);
 }
 
-int64_t
+DSSH_PRIVATE int64_t
 dssh_parse_namelist(const uint8_t *buf, size_t bufsz, dssh_namelist val)
 {
 	struct dssh_string_s str;
@@ -228,13 +192,7 @@ dssh_parse_namelist(const uint8_t *buf, size_t bufsz, dssh_namelist val)
 	return ret;
 }
 
-size_t
-dssh_serialized_namelist_length(dssh_namelist val)
-{
-	return val->length + 4;
-}
-
-int
+DSSH_PRIVATE int
 dssh_serialize_namelist(dssh_namelist val, uint8_t *buf, size_t bufsz, size_t *pos)
 {
 	struct dssh_string_s str = {
