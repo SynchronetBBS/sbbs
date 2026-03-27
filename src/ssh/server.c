@@ -97,7 +97,7 @@ rxline(uint8_t *buf, size_t bufsz, size_t *bytes_received,
 }
 
 /* ================================================================
- * DH group provider — RFC 3526 group 14 (2048-bit MODP)
+ * DH group provider -- RFC 3526 group 14 (2048-bit MODP)
  * ================================================================ */
 
 static const uint8_t group14_prime[] = {
@@ -279,7 +279,7 @@ auth_publickey(const uint8_t *username, size_t username_len,
 	char buf[256];
 
 	if (!has_signature) {
-		/* PK_OK query — just say yes so they send the real attempt */
+		/* PK_OK query -- just say yes so they send the real attempt */
 		return DSSH_AUTH_SUCCESS;
 	}
 	if (arc4random_uniform(4) != 0) {
@@ -406,7 +406,7 @@ auth_kbi(const uint8_t *username, size_t username_len,
 	/* Reset session timeout on each KBI interaction */
 	alarm(60);
 
-	/* First call — initialize game */
+	/* First call -- initialize game */
 	if (num_responses == 0 && responses == NULL) {
 		memset(&gs, 0, sizeof(gs));
 		gs.room = ROOM_GATE;
@@ -431,7 +431,7 @@ auth_kbi(const uint8_t *username, size_t username_len,
 	if (num_responses < 1 || responses == NULL)
 		return DSSH_AUTH_FAILURE;
 
-	/* Get the command — copy to NUL-terminated string */
+	/* Get the command -- copy to NUL-terminated string */
 	char cmd[256];
 	size_t clen = response_lens[0] < sizeof(cmd) - 1
 	    ? response_lens[0] : sizeof(cmd) - 1;
@@ -623,7 +623,7 @@ auth_kbi(const uint8_t *username, size_t username_len,
 				    "a rusty iron key underneath.\r\n\r\n");
 			else if (gs.riddle_solved)
 				set_banner(
-				    "\r\nThe loose stone. The key is gone — "
+				    "\r\nThe loose stone. The key is gone -- "
 				    "you have it.\r\n\r\n");
 			else
 				set_banner(
@@ -1046,7 +1046,7 @@ handle_connection(void)
 	fprintf(stderr, "  Request: %s %s\n", req_type, req_data);
 
 	if (strcmp(req_type, "exec") == 0) {
-                /* Execute command — respond and close */
+                /* Execute command -- respond and close */
 		if (strcmp(req_data, "ping") == 0) {
 			dssh_session_write(sess, ch,
 			    (const uint8_t *)"pong\n", 5);
@@ -1059,7 +1059,7 @@ handle_connection(void)
 		}
 	}
 	else {
-                /* Shell mode — simple line-based command parser */
+                /* Shell mode -- simple line-based command parser */
 		uint8_t buf[4096];
 		size_t  line_len = 0;
 
@@ -1246,11 +1246,11 @@ main(int argc, char **argv)
 			continue;
 		}
 		if (pid == 0) {
-			/* Child — handle connection */
+			/* Child -- handle connection */
 			close(listen_fd);
 			_exit(handle_connection());
 		}
-		/* Parent — close child's fd, loop */
+		/* Parent -- close child's fd, loop */
 		close(conn_fd);
 	}
 

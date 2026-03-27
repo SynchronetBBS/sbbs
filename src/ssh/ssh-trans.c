@@ -62,11 +62,11 @@ dssh_test_is_version_line(uint8_t *buf, size_t buflen)
 /*
  * RFC 4253 s4.2: protoversion and softwareversion MUST consist of
  * printable US-ASCII characters, excluding whitespace and minus sign.
- * (minus is allowed as separator but not "excluded" — re-reading the
- * RFC, the constraint is "printable US-ASCII" which is 0x20–0x7E,
+ * (minus is allowed as separator but not "excluded" -- re-reading the
+ * RFC, the constraint is "printable US-ASCII" which is 0x20--0x7E,
  * but 0x20 (space) is only allowed before comments).
  * We validate that the entire version line (before CR-LF) contains
- * only bytes in 0x20–0x7E (printable ASCII).
+ * only bytes in 0x20--0x7E (printable ASCII).
  */
 DSSH_TESTABLE inline bool
 dssh_test_has_non_ascii(uint8_t *buf, size_t buflen)
@@ -282,11 +282,11 @@ dssh_transport_rekey(dssh_session sess)
 {
         /*
          * RFC 4253 s9: Rekey uses existing encryption until NEWKEYS.
-         * Do NOT free cipher/MAC contexts here — they are needed for
+         * Do NOT free cipher/MAC contexts here -- they are needed for
          * the kexinit/kex packets.  newkeys() will replace them.
          *
          * Free old KEX outputs (shared_secret, exchange_hash) but NOT
-         * session_id — it persists across rekeys per RFC 4253 s7.2.
+         * session_id -- it persists across rekeys per RFC 4253 s7.2.
          */
 	cleanse_free(sess->trans.shared_secret, sess->trans.shared_secret_sz);
 	sess->trans.shared_secret = NULL;
@@ -475,7 +475,7 @@ dssh_transport_send_packet(dssh_session sess,
 
         /*
          * RFC 4253 s7.1: during rekey, only transport/KEX messages
-         * (types 1–49) are allowed.  Block application-layer messages
+         * (types 1--49) are allowed.  Block application-layer messages
          * (types 50+) until rekey completes.
          */
         /* Every SSH packet has at least a 1-byte message type,
@@ -609,7 +609,7 @@ dssh_transport_send_packet(dssh_session sess,
 tx_done:
 
         /* TOOLONG (packet too big) and REKEY_NEEDED (hard limit) are
-        * recoverable — the session is still usable.  All other errors
+        * recoverable -- the session is still usable.  All other errors
         * (I/O callback failure, encrypt/MAC failure) mean the connection
         * is broken and cannot recover without closing the socket. */
 	if ((ret < 0) && (ret != DSSH_ERROR_TOOLONG) && (ret != DSSH_ERROR_REKEY_NEEDED))
@@ -620,7 +620,7 @@ tx_done:
 
 /*
  * Receive a single raw packet.  Does NOT handle transport messages
- * (IGNORE, DEBUG, UNIMPLEMENTED, DISCONNECT) — that's done by the
+ * (IGNORE, DEBUG, UNIMPLEMENTED, DISCONNECT) -- that's done by the
  * public recv_packet wrapper below.
  */
 static int
@@ -778,10 +778,10 @@ rx_done:
 /*
  * Public recv_packet: transparently handles transport messages
  * per RFC 4253 s11:
- *   SSH_MSG_IGNORE (2)        — silently discarded
- *   SSH_MSG_DEBUG (4)         — invokes debug callback if set, then discarded
- *   SSH_MSG_UNIMPLEMENTED (3) — silently discarded (TODO: needs design work)
- *   SSH_MSG_DISCONNECT (1)    — sets terminate, returns error
+ *   SSH_MSG_IGNORE (2)        -- silently discarded
+ *   SSH_MSG_DEBUG (4)         -- invokes debug callback if set, then discarded
+ *   SSH_MSG_UNIMPLEMENTED (3) -- silently discarded (see TODO.md item 44)
+ *   SSH_MSG_DISCONNECT (1)    -- sets terminate, returns error
  */
 DSSH_PRIVATE int
 dssh_transport_recv_packet(dssh_session sess,
@@ -817,10 +817,10 @@ dssh_transport_recv_packet(dssh_session sess,
                                  *
                                  * During a self-initiated rekey (rekey_in_progress
                                  * is true), kexinit() called us to receive the
-                                 * peer's response — return KEXINIT to the caller
+                                 * peer's response -- return KEXINIT to the caller
                                  * so kexinit() can save it and proceed.
                                  *
-                                 * Otherwise this is a peer-initiated rekey — save
+                                 * Otherwise this is a peer-initiated rekey -- save
                                  * the peer's KEXINIT and run the rekey cycle.
                                  */
 				if ((sess->trans.session_id == NULL)
@@ -920,7 +920,7 @@ dssh_transport_recv_packet(dssh_session sess,
                                  * Auto-rekey: if any threshold (packet count,
                                  * bytes, or time) has been exceeded, note it.
                                  * We cannot rekey HERE because *payload points
-                                 * into rx_packet — the rekey would overwrite it.
+                                 * into rx_packet -- the rekey would overwrite it.
                                  * Instead, set the flag and rekey on the NEXT
                                  * recv_packet call, before reading new data.
                                  */
@@ -1145,7 +1145,7 @@ kexinit_fail:
 		return ret;
 	}
 
-        /* Save our KEXINIT for exchange hash — transfer ownership */
+        /* Save our KEXINIT for exchange hash -- transfer ownership */
 	free(sess->trans.our_kexinit);
 	sess->trans.our_kexinit = kexinit;
 	sess->trans.our_kexinit_sz = pos;
@@ -1158,14 +1158,14 @@ kexinit_fail:
 
         /*
          * If peer_kexinit is already populated (peer-initiated rekey),
-         * skip receiving — we already have it.  Otherwise, receive it.
+         * skip receiving -- we already have it.  Otherwise, receive it.
          */
 	if (sess->trans.peer_kexinit == NULL) {
                 /*
                  * Wait for peer's KEXINIT.  During rekey, the peer
                  * may have sent application data (CHANNEL_DATA, etc.)
                  * before seeing our KEXINIT.  Discard non-KEXINIT
-                 * messages — they will have been dispatched to
+                 * messages -- they will have been dispatched to
                  * channel buffers by recv_packet's demux handling,
                  * or we silently drop them here since the channel
                  * data is already in the bytebuf from the prior
@@ -1361,7 +1361,7 @@ kexinit_fail:
 
 		if ((strcmp(sess->trans.kex_selected->name, peer_guess_kex) != 0)
 		    || (strcmp(sess->trans.key_algo_selected->name, peer_guess_hostkey) != 0)) {
-                        /* Wrong guess — discard the next packet */
+                        /* Wrong guess -- discard the next packet */
 			uint8_t  discard_type;
 			uint8_t *discard_payload;
 			size_t   discard_len;
@@ -1742,7 +1742,7 @@ dssh_transport_newkeys(dssh_session sess)
 	}
 
         /*
-         * Free old cipher/MAC contexts (rekey case — during initial
+         * Free old cipher/MAC contexts (rekey case -- during initial
          * key exchange these are NULL so the cleanup calls are no-ops).
          * RFC 4253 s9: old encryption is used until NEWKEYS, which we
          * just exchanged above.  Now switch to new keys.
@@ -1753,7 +1753,7 @@ dssh_transport_newkeys(dssh_session sess)
          * cleanup pattern (EVP_CIPHER_CTX_free), and the cleanup
          * function pointer is per-module, we need to use the enc module
          * that CREATED the context.  For simplicity and correctness,
-         * we use the new module's cleanup — all our enc modules have
+         * we use the new module's cleanup -- all our enc modules have
          * compatible cleanup functions.  If a module's cleanup is NULL,
          * the context was never created.
          */
@@ -2195,7 +2195,7 @@ dssh_transport_register_lang(dssh_language lang)
 
 /*
  * Validate a softwareversion string per RFC 4253 s4.2:
- * printable US-ASCII (0x21–0x7E), no spaces (space is the
+ * printable US-ASCII (0x21--0x7E), no spaces (space is the
  * delimiter between softwareversion and comments).
  */
 static bool
@@ -2210,7 +2210,7 @@ is_valid_sw_version(const char *s, size_t len)
 
 /*
  * Validate a comment string per RFC 4253 s4.2:
- * printable US-ASCII (0x20–0x7E).  Spaces are allowed in comments;
+ * printable US-ASCII (0x20--0x7E).  Spaces are allowed in comments;
  * the comment runs from the SP after softwareversion to CR LF.
  */
 static bool

@@ -1,5 +1,5 @@
 /*
- * deucessh-mac.h — MAC algorithm module interface.
+ * deucessh-mac.h -- MAC algorithm module interface.
  */
 
 #ifndef DSSH_MAC_H

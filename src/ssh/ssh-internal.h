@@ -1,5 +1,5 @@
 /*
- * ssh-internal.h — Internal struct definitions.
+ * ssh-internal.h -- Internal struct definitions.
  * Not a public header.  Included by library .c files only.
  */
 #ifndef DSSH_INTERNAL_H
@@ -27,7 +27,7 @@ DSSH_PRIVATE void dssh_session_set_terminate(dssh_session sess);
  * allocators.  Algorithm module files must include ssh-internal.h
  * to get these redirects.
  *
- * free() is NOT redirected — real free() handles all pointers
+ * free() is NOT redirected -- real free() handles all pointers
  * since dssh_test_malloc returns real malloc'd memory.
  */
 #ifdef DSSH_TESTING
@@ -172,7 +172,7 @@ struct dssh_channel_s {
 };
 
 struct dssh_session_s {
-        /* Pointers and size_t (pointer-sized) — callbacks and cbdata */
+        /* Pointers and size_t (pointer-sized) -- callbacks and cbdata */
 	void                         *tx_cbdata;
 	void                         *rx_cbdata;
 	void                         *rx_line_cbdata;

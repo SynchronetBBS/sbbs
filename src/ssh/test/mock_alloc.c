@@ -1,5 +1,5 @@
 /*
- * mock_alloc.c — Countdown-based allocation failure injection.
+ * mock_alloc.c -- Countdown-based allocation failure injection.
  *
  * Provides __wrap_malloc, __wrap_calloc, __wrap_realloc, and
  * __wrap_free that are activated by the linker's --wrap option.

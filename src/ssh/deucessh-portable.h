@@ -20,8 +20,8 @@
 /*
  * Symbol visibility for shared libraries.
  *
- * DSSH_PUBLIC  — exported from the shared library (public API)
- * DSSH_PRIVATE — hidden, only visible within the library
+ * DSSH_PUBLIC  -- exported from the shared library (public API)
+ * DSSH_PRIVATE -- hidden, only visible within the library
  *
  * When building as a shared library, compile with -DDSSH_SHARED.
  * When building as a static library or consuming the library, these
@@ -50,7 +50,7 @@
  #endif
 #else // if defined(DSSH_SHARED)
 
-/* Static library — no visibility annotations needed */
+/* Static library -- no visibility annotations needed */
  #define DSSH_PUBLIC
  #define DSSH_PRIVATE
 #endif // if defined(DSSH_SHARED)

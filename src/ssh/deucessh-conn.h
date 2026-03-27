@@ -37,7 +37,7 @@ struct dssh_pty_req {
 struct dssh_incoming_open;
 
 /*
- * Channel request callback — called for every SSH_MSG_CHANNEL_REQUEST
+ * Channel request callback -- called for every SSH_MSG_CHANNEL_REQUEST
  * during session setup (pty-req, env, shell, exec, subsystem, etc.).
  *
  * type/type_len: request type string (not NUL-terminated)

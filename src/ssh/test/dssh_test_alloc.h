@@ -1,5 +1,5 @@
 /*
- * dssh_test_alloc.h — Library-only allocation failure injection.
+ * dssh_test_alloc.h -- Library-only allocation failure injection.
  *
  * Controls the countdown in dssh_test_malloc/calloc/realloc.
  * Include this from test code to arm/reset the injection.

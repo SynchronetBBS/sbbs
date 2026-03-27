@@ -67,7 +67,7 @@ generate(const uint8_t *buf, size_t bufsz, uint8_t *outbuf,
 	if ((cbd == NULL) || (cbd->ctx == NULL))
 		return DSSH_ERROR_INIT;
 
-        /* Re-initialize with same key — resets HMAC state */
+        /* Re-initialize with same key -- resets HMAC state */
 	if (EVP_MAC_init(cbd->ctx, NULL, 0, NULL) != 1)
 		return DSSH_ERROR_INIT;
 

@@ -1,5 +1,5 @@
 /*
- * dssh_test_internal.h — Declarations for functions exposed via
+ * dssh_test_internal.h -- Declarations for functions exposed via
  * DSSH_TESTABLE when compiled with -DDSSH_TESTING.
  *
  * Only include this from test code, never from library code.
@@ -56,7 +56,7 @@ size_t dssh_test_build_namelist(void *head, size_t name_offset,
     char *buf, size_t bufsz);
 
 /*
- * Global config — DSSH_TESTABLE in ssh-trans.c.
+ * Global config -- DSSH_TESTABLE in ssh-trans.c.
  */
 extern struct dssh_transport_global_config gconf;
 
@@ -96,7 +96,7 @@ bool dssh_test_has_non_ascii(uint8_t *buf, size_t buflen);
 bool dssh_test_is_20(uint8_t *buf, size_t buflen);
 
 /*
- * version_tx from ssh-trans.c — sends the SSH version string.
+ * version_tx from ssh-trans.c -- sends the SSH version string.
  */
 int version_tx(dssh_session sess);
 

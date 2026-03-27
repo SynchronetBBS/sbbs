@@ -1,5 +1,5 @@
 /*
- * test_mac.c — Test MAC module for DeuceSSH.
+ * test_mac.c -- Test MAC module for DeuceSSH.
  *
  * A minimal MAC that XORs the input into a fixed-size digest.
  * Provides controllable failure injection and deliberate MAC

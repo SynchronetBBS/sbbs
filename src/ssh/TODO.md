@@ -116,11 +116,19 @@
 36. `SSH_OPEN_ADMINISTRATIVELY_PROHIBITED` defined in both `ssh-conn.c`
     (line 166) and `ssh-internal.h` (line 115).  Same duplication hazard.
 
-43. Source files contain non-ASCII characters in comments (em dashes,
-    arrows, etc.).  Replace with ASCII equivalents for strict C17
-    source character set conformance.
+44. `dssh_transport_recv_packet()` silently discards `SSH_MSG_UNIMPLEMENTED`
+    (message type 3).  RFC 4253 s11.4 says implementations SHOULD respond
+    with UNIMPLEMENTED for unrecognized messages, and should handle
+    receiving one — but there is no design for what to do with it.  The
+    `set_unimplemented_cb` callback exists (item 32) but the recv path
+    just drops the message without invoking it.
 
 ## Closed
+
+- Non-ASCII characters in comments replaced with ASCII equivalents
+  (was item 43).  Em/en dashes, arrows, math operators, Greek letters,
+  sub/superscripts, floor/ceil brackets, and accented letters across
+  all 50 .c/.h files including vendored sntrup761 and libcrux headers.
 
 - Error code accuracy audit (was items 9 + 44).  Added
   `DSSH_ERROR_AUTH_REJECTED` (-12) and `DSSH_ERROR_REJECTED` (-13).

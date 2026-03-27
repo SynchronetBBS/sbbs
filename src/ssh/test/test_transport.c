@@ -1,5 +1,5 @@
 /*
- * test_transport.c — Transport layer tests for DeuceSSH.
+ * test_transport.c -- Transport layer tests for DeuceSSH.
  *
  * Tier 2 layer tests with mock I/O.  Covers version validators,
  * algorithm negotiation, key derivation, version exchange, binary
@@ -27,7 +27,7 @@
 /* ================================================================
  * Dispatch callbacks for two-sided tests.
  *
- * The I/O callbacks are global — all sessions share the same
+ * The I/O callbacks are global -- all sessions share the same
  * function pointers.  These dispatch functions inspect the session's
  * client flag to route I/O through the correct pipe direction.
  * ================================================================ */
@@ -802,7 +802,7 @@ test_version_exchange_reject_non_ascii(void)
 	ASSERT_NOT_NULL(client);
 	dssh_session_set_cbdata(client, &io, &io, &io, &io);
 
-	/* Version line with high byte — should be rejected */
+	/* Version line with high byte -- should be rejected */
 	const char *bad = "SSH-2.0-Bad\x80Server\r\n";
 	mock_io_inject(&io.s2c, (const uint8_t *)bad, strlen(bad));
 
@@ -816,7 +816,7 @@ test_version_exchange_reject_non_ascii(void)
 }
 
 /* ================================================================
- * Packet send/recv — unencrypted (~8 tests)
+ * Packet send/recv -- unencrypted (~8 tests)
  * ================================================================ */
 
 static int
@@ -1214,7 +1214,7 @@ test_disconnect_sets_terminate(void)
 	/* Client sends disconnect */
 	dssh_transport_disconnect(client, SSH_DISCONNECT_BY_APPLICATION, "goodbye");
 
-	/* Server tries to recv — should get TERMINATED */
+	/* Server tries to recv -- should get TERMINATED */
 	uint8_t msg_type;
 	uint8_t *recv_payload;
 	size_t recv_len;
@@ -1685,7 +1685,7 @@ static int
 rekey_server_recv_thread(void *arg)
 {
 	struct rekey_thread_arg *a = arg;
-	/* Server receives — recv_packet detects peer KEXINIT and
+	/* Server receives -- recv_packet detects peer KEXINIT and
 	 * handles rekey internally.  We need to send something from
 	 * client after rekey so the server recv returns. */
 	uint8_t msg_type;
@@ -2026,7 +2026,7 @@ test_set_version_valid_comment(void)
 static int
 test_set_version_null(void)
 {
-	/* NULL software_version keeps the default — should succeed */
+	/* NULL software_version keeps the default -- should succeed */
 	dssh_test_reset_global_config();
 	ASSERT_EQ(dssh_transport_set_version(NULL, NULL), 0);
 	dssh_test_reset_global_config();
@@ -2036,7 +2036,7 @@ test_set_version_null(void)
 static int
 test_set_version_null_with_comment(void)
 {
-	/* NULL version + comment — sets comment with default version */
+	/* NULL version + comment -- sets comment with default version */
 	dssh_test_reset_global_config();
 	ASSERT_EQ(dssh_transport_set_version(NULL, "my-comment"), 0);
 	dssh_test_reset_global_config();
@@ -2234,12 +2234,12 @@ test_version_exchange_rx_error(void)
 	}
 	dssh_session_set_cbdata(sess, &io, &io, &io, &io);
 
-	/* Close the s2c pipe before version exchange starts —
+	/* Close the s2c pipe before version exchange starts --
 	 * the rxline callback will fail */
 	mock_io_close_s2c(&io);
 
 	int res = dssh_transport_handshake(sess);
-	/* Should fail — either the tx succeeds but rx fails with pipe closed */
+	/* Should fail -- either the tx succeeds but rx fails with pipe closed */
 	ASSERT_TRUE(res < 0);
 
 	dssh_session_cleanup(sess);
@@ -2335,7 +2335,7 @@ test_packet_recv_bad_padding(void)
 	 * The simplest approach: send a legitimate packet from client,
 	 * then receive it on server side.  This just confirms the
 	 * normal path works.  For bad padding, we'd need to inject
-	 * raw bytes — but with encryption active, crafting raw is
+	 * raw bytes -- but with encryption active, crafting raw is
 	 * extremely hard.  Instead test pre-handshake. */
 	handshake_cleanup(&ctx);
 
@@ -2355,7 +2355,7 @@ test_packet_recv_bad_padding(void)
 	dssh_transport_set_callbacks(mock_tx_dispatch, mock_rx_dispatch,
 	    mock_rxline_dispatch, mock_extra_line_cb);
 
-	/* Create a server session (no handshake — unencrypted) */
+	/* Create a server session (no handshake -- unencrypted) */
 	dssh_session sess = init_server_session();
 	if (sess == NULL) {
 		mock_io_free(&io);
@@ -2499,7 +2499,7 @@ test_version_exchange_extra_line_error(void)
 }
 
 /* ================================================================
- * Registration validation — covers TOOLATE, TOOLONG, MUST_BE_NULL
+ * Registration validation -- covers TOOLATE, TOOLONG, MUST_BE_NULL
  * branches in register_kex/key_algo/enc/mac/comp/lang.
  * ================================================================ */
 
@@ -2514,7 +2514,7 @@ test_register_kex_toolate(void)
 	dssh_session sess = dssh_session_init(true, 0);
 	ASSERT_NOT_NULL(sess);
 
-	/* gconf.used is now true — registration should fail */
+	/* gconf.used is now true -- registration should fail */
 	uint8_t kbuf[sizeof(struct dssh_kex_s) + 16];
 	memset(kbuf, 0, sizeof(kbuf));
 	struct dssh_kex_s *late_kex = (struct dssh_kex_s *)kbuf;
@@ -2859,7 +2859,7 @@ test_register_lang_next_not_null(void)
 }
 
 /* ================================================================
- * Getter-before-handshake — covers NULL ternary branches in
+ * Getter-before-handshake -- covers NULL ternary branches in
  * get_kex_name, get_hostkey_name, get_enc_name, get_mac_name.
  * ================================================================ */
 
@@ -2885,7 +2885,7 @@ test_get_names_before_handshake(void)
 }
 
 /* ================================================================
- * set_callbacks after session — covers TOOLATE branch.
+ * set_callbacks after session -- covers TOOLATE branch.
  * ================================================================ */
 
 static int
@@ -2909,7 +2909,7 @@ test_set_callbacks_after_session(void)
 }
 
 /* ================================================================
- * set_global_request_cb — covers ssh.c:98-103 (never called).
+ * set_global_request_cb -- covers ssh.c:98-103 (never called).
  * ================================================================ */
 
 static int
@@ -2925,7 +2925,7 @@ test_set_global_request_cb(void)
 
 	int dummy = 42;
 	dssh_session_set_global_request_cb(sess, (dssh_global_request_cb)0x1, &dummy);
-	/* Just verify it doesn't crash — the callback pointer is
+	/* Just verify it doesn't crash -- the callback pointer is
 	 * stored in the session struct for later dispatch. */
 
 	dssh_session_cleanup(sess);
@@ -2934,7 +2934,7 @@ test_set_global_request_cb(void)
 }
 
 /* ================================================================
- * GLOBAL_REQUEST handling — covers ssh-trans.c:753-787 (8+ branches)
+ * GLOBAL_REQUEST handling -- covers ssh-trans.c:753-787 (8+ branches)
  * ================================================================ */
 
 static int global_request_cb_result = 0;
@@ -3125,7 +3125,7 @@ test_global_request_no_reply(void)
 	ASSERT_OK(dssh_transport_recv_packet(server, &msg_type, &payload, &payload_len));
 	ASSERT_EQ(msg_type, SSH_MSG_SERVICE_REQUEST);
 
-	/* No reply packet should be generated — client should not receive anything.
+	/* No reply packet should be generated -- client should not receive anything.
 	 * We verify by the fact recv_packet returned the SERVICE_REQUEST directly. */
 
 	dssh_session_cleanup(client);
@@ -3138,7 +3138,7 @@ test_global_request_no_reply(void)
 static int
 test_global_request_no_callback(void)
 {
-	/* No global_request_cb set — should auto-reject with FAILURE */
+	/* No global_request_cb set -- should auto-reject with FAILURE */
 	dssh_test_reset_global_config();
 	ASSERT_OK(register_all_algorithms());
 	if (test_generate_host_key() < 0)
@@ -3177,7 +3177,7 @@ test_global_request_no_callback(void)
 	ASSERT_OK(dssh_transport_recv_packet(server, &msg_type, &payload, &payload_len));
 	ASSERT_EQ(msg_type, SSH_MSG_SERVICE_REQUEST);
 
-	/* No callback → gr_res=-1 → FAILURE reply */
+	/* No callback -> gr_res=-1 -> FAILURE reply */
 	ASSERT_OK(dssh_transport_recv_packet(client, &msg_type, &payload, &payload_len));
 	ASSERT_EQ(msg_type, 82);  /* SSH_MSG_REQUEST_FAILURE */
 
@@ -3191,7 +3191,7 @@ test_global_request_no_callback(void)
 static int
 test_global_request_truncated(void)
 {
-	/* Truncated GLOBAL_REQUEST — too short for name length field */
+	/* Truncated GLOBAL_REQUEST -- too short for name length field */
 	dssh_test_reset_global_config();
 	ASSERT_OK(register_all_algorithms());
 	if (test_generate_host_key() < 0)
@@ -3210,7 +3210,7 @@ test_global_request_truncated(void)
 	ASSERT_NOT_NULL(server);
 	dssh_session_set_cbdata(server, &io, &io, &io, &io);
 
-	/* Just the msg_type byte — not enough for name length */
+	/* Just the msg_type byte -- not enough for name length */
 	uint8_t gr[] = { 80 };
 	ASSERT_OK(dssh_transport_send_packet(client, gr, sizeof(gr), NULL));
 
@@ -3234,7 +3234,7 @@ test_global_request_truncated(void)
 }
 
 /* ================================================================
- * DEBUG edge cases — covers truncated/empty message branches
+ * DEBUG edge cases -- covers truncated/empty message branches
  * ================================================================ */
 
 static bool debug_cb_invoked;
@@ -3276,7 +3276,7 @@ test_debug_truncated_payload(void)
 	debug_msg_len = 999;
 	dssh_session_set_debug_cb(server, mock_debug_cb_track, NULL);
 
-	/* DEBUG: type(4) + always_display(1) — no string */
+	/* DEBUG: type(4) + always_display(1) -- no string */
 	uint8_t dbg[] = { SSH_MSG_DEBUG, 1 };
 	ASSERT_OK(dssh_transport_send_packet(client, dbg, sizeof(dbg), NULL));
 
@@ -3303,7 +3303,7 @@ test_debug_truncated_payload(void)
 static int
 test_debug_no_callback(void)
 {
-	/* DEBUG received without debug_cb set — should be silently skipped */
+	/* DEBUG received without debug_cb set -- should be silently skipped */
 	dssh_test_reset_global_config();
 	ASSERT_OK(register_all_algorithms());
 	if (test_generate_host_key() < 0)
@@ -3345,7 +3345,7 @@ test_debug_no_callback(void)
 static int
 test_unimplemented_short_payload(void)
 {
-	/* UNIMPLEMENTED with payload < 5 bytes — should be silently skipped */
+	/* UNIMPLEMENTED with payload < 5 bytes -- should be silently skipped */
 	dssh_test_reset_global_config();
 	ASSERT_OK(register_all_algorithms());
 	if (test_generate_host_key() < 0)
@@ -3390,7 +3390,7 @@ test_unimplemented_short_payload(void)
 }
 
 /* ================================================================
- * max_packet_size clamping — covers ssh-trans.c:1419-1422
+ * max_packet_size clamping -- covers ssh-trans.c:1419-1422
  * ================================================================ */
 
 static int
@@ -3436,7 +3436,7 @@ test_init_large_packet_size(void)
 }
 
 /* ================================================================
- * build_namelist overflow — covers ssh-trans.c:818-823
+ * build_namelist overflow -- covers ssh-trans.c:818-823
  * ================================================================ */
 
 static int
@@ -3466,7 +3466,7 @@ test_build_namelist_overflow(void)
 	ASSERT_STR_EQ(buf, "alpha");
 	ASSERT_EQ_U(len, 5);
 
-	/* Buffer too small for comma after "alpha" — covers pos+1>=bufsz */
+	/* Buffer too small for comma after "alpha" -- covers pos+1>=bufsz */
 	char exact[6];  /* pos=5 after "alpha", 5+1>=6 so comma not written */
 	len = dssh_test_build_namelist(e1,
 	    offsetof(struct dssh_kex_s, name), exact, sizeof(exact));
@@ -3484,7 +3484,7 @@ test_build_namelist_overflow(void)
 }
 
 /* ================================================================
- * build_namelist truncation — verify no trailing comma or partial
+ * build_namelist truncation -- verify no trailing comma or partial
  * name when buffer is too small for the next entry.
  * ================================================================ */
 
@@ -3493,7 +3493,7 @@ test_build_namelist_truncation_no_trailing_comma(void)
 {
 	/* Two entries: "alpha" (5) and "bravo" (5).
 	 * "alpha,bravo" = 11 chars + NUL = 12 bytes.
-	 * Buffer of 11 fits "alpha," + comma but not "bravo" —
+	 * Buffer of 11 fits "alpha," + comma but not "bravo" --
 	 * must NOT produce a trailing comma. */
 	dssh_test_reset_global_config();
 
@@ -3524,7 +3524,7 @@ test_build_namelist_truncation_no_trailing_comma(void)
 	ASSERT_EQ_U(len, 5);
 
 	/* Three entries: "aa", "bb", "cc".  "aa,bb,cc" = 8 + NUL = 9.
-	 * Buffer of 7 fits "aa,bb," but not "cc" — must be "aa,bb". */
+	 * Buffer of 7 fits "aa,bb," but not "cc" -- must be "aa,bb". */
 	uint8_t e3buf[sizeof(struct dssh_kex_s) + 16];
 	uint8_t e4buf[sizeof(struct dssh_kex_s) + 16];
 	uint8_t e5buf[sizeof(struct dssh_kex_s) + 16];
@@ -3548,7 +3548,7 @@ test_build_namelist_truncation_no_trailing_comma(void)
 	ASSERT_EQ_U(len, 5);
 
 	/* Buffer fits comma but nothing after: "aa,bb" in buf[6].
-	 * pos=5 after "aa,bb", comma check: 5+1>=6 → break. */
+	 * pos=5 after "aa,bb", comma check: 5+1>=6 -> break. */
 	char tight[6];
 	len = dssh_test_build_namelist(e3,
 	    offsetof(struct dssh_kex_s, name), tight, sizeof(tight));
@@ -3560,7 +3560,7 @@ test_build_namelist_truncation_no_trailing_comma(void)
 }
 
 /* ================================================================
- * Cleanup session that never handshaked — covers cleanup branches
+ * Cleanup session that never handshaked -- covers cleanup branches
  * for NULL kex_selected/enc_selected/etc.
  * ================================================================ */
 
@@ -3577,7 +3577,7 @@ test_cleanup_no_handshake(void)
 	dssh_session sess = dssh_session_init(true, 0);
 	ASSERT_NOT_NULL(sess);
 
-	/* All *_selected should be NULL — cleanup should handle gracefully */
+	/* All *_selected should be NULL -- cleanup should handle gracefully */
 	ASSERT_NULL(sess->trans.kex_selected);
 	ASSERT_NULL(sess->trans.enc_c2s_selected);
 	ASSERT_NULL(sess->trans.mac_c2s_selected);
@@ -3588,7 +3588,7 @@ test_cleanup_no_handshake(void)
 }
 
 /* ================================================================
- * set_version with long string — covers version_tx TOOLONG
+ * set_version with long string -- covers version_tx TOOLONG
  * ================================================================ */
 
 static int
@@ -3596,7 +3596,7 @@ test_set_version_long_string(void)
 {
 	dssh_test_reset_global_config();
 
-	/* 250-char version string — should succeed (just under 255 limit with SSH-2.0- prefix) */
+	/* 250-char version string -- should succeed (just under 255 limit with SSH-2.0- prefix) */
 	char long_ver[241];
 	memset(long_ver, 'A', 240);
 	long_ver[240] = 0;
@@ -3604,7 +3604,7 @@ test_set_version_long_string(void)
 
 	dssh_test_reset_global_config();
 
-	/* 249-char version + comment — exceeds 255 combined */
+	/* 249-char version + comment -- exceeds 255 combined */
 	char ver[242];
 	memset(ver, 'B', 241);
 	ver[241] = 0;
@@ -3617,7 +3617,7 @@ test_set_version_long_string(void)
 }
 
 /* ================================================================
- * set_version high-byte validation — covers is_valid_sw_version
+ * set_version high-byte validation -- covers is_valid_sw_version
  * and is_valid_comment > 0x7E branches.
  * ================================================================ */
 
@@ -3626,13 +3626,13 @@ test_set_version_high_byte_version(void)
 {
 	dssh_test_reset_global_config();
 
-	/* Version with DEL (0x7F) — out of range */
+	/* Version with DEL (0x7F) -- out of range */
 	char bad_ver[] = { 't', 'e', 's', 't', 0x7F, 'v', 0 };
 	ASSERT_EQ(dssh_transport_set_version(bad_ver, NULL), DSSH_ERROR_INVALID);
 
 	dssh_test_reset_global_config();
 
-	/* Version with 0x80 — out of range */
+	/* Version with 0x80 -- out of range */
 	char bad_ver2[] = { 't', 'e', 's', 't', (char)0x80, 'v', 0 };
 	ASSERT_EQ(dssh_transport_set_version(bad_ver2, NULL), DSSH_ERROR_INVALID);
 
@@ -3662,14 +3662,14 @@ test_set_version_high_byte_comment(void)
 }
 
 /* ================================================================
- * Version line parsing edge cases — covers short-circuit branches
+ * Version line parsing edge cases -- covers short-circuit branches
  * in is_version_line and is_20.
  * ================================================================ */
 
 static int
 test_is_version_line_ss_not_ssh(void)
 {
-	/* "SSx-..." — starts with SS but not SSH */
+	/* "SSx-..." -- starts with SS but not SSH */
 	uint8_t buf[] = "SSx-2.0-test\r\n";
 	ASSERT_FALSE(dssh_test_is_version_line(buf, sizeof(buf) - 1));
 	return TEST_PASS;
@@ -3678,7 +3678,7 @@ test_is_version_line_ss_not_ssh(void)
 static int
 test_is_20_bad_minor(void)
 {
-	/* "SSH-2.x-test" — major is 2 but separator isn't ".0-" */
+	/* "SSH-2.x-test" -- major is 2 but separator isn't ".0-" */
 	uint8_t buf[] = "SSH-2.x-test\r\n";
 	ASSERT_FALSE(dssh_test_is_20(buf, sizeof(buf) - 1));
 	return TEST_PASS;
@@ -3687,7 +3687,7 @@ test_is_20_bad_minor(void)
 static int
 test_is_20_199_partial(void)
 {
-	/* "SSH-1.9x-test" — starts like 1.99 but isn't */
+	/* "SSH-1.9x-test" -- starts like 1.99 but isn't */
 	uint8_t buf[] = "SSH-1.9x-test\r\n";
 	ASSERT_FALSE(dssh_test_is_20(buf, sizeof(buf) - 1));
 	return TEST_PASS;
@@ -3696,7 +3696,7 @@ test_is_20_199_partial(void)
 static int
 test_is_20_199_short_buf(void)
 {
-	/* 8-byte buffer: "SSH-3.0-" — fails buflen >= 9 on line 78 */
+	/* 8-byte buffer: "SSH-3.0-" -- fails buflen >= 9 on line 78 */
 	uint8_t buf[] = "SSH-3.0-";
 	ASSERT_FALSE(dssh_test_is_20(buf, 8));
 	return TEST_PASS;
@@ -3705,7 +3705,7 @@ test_is_20_199_short_buf(void)
 static int
 test_is_20_199_bad_minor_digit(void)
 {
-	/* "SSH-1.88-test" — buf[6]=='8' not '9' */
+	/* "SSH-1.88-test" -- buf[6]=='8' not '9' */
 	uint8_t buf[] = "SSH-1.88-test\r\n";
 	ASSERT_FALSE(dssh_test_is_20(buf, sizeof(buf) - 1));
 	return TEST_PASS;
@@ -3714,14 +3714,14 @@ test_is_20_199_bad_minor_digit(void)
 static int
 test_is_20_199_no_dash(void)
 {
-	/* "SSH-1.99Xtest" — buf[8]=='X' not '-' */
+	/* "SSH-1.99Xtest" -- buf[8]=='X' not '-' */
 	uint8_t buf[] = "SSH-1.99Xtest\r\n";
 	ASSERT_FALSE(dssh_test_is_20(buf, sizeof(buf) - 1));
 	return TEST_PASS;
 }
 
 /* ================================================================
- * version_tx — defense-in-depth TOOLONG paths
+ * version_tx -- defense-in-depth TOOLONG paths
  *
  * These are unreachable via the public API (set_version validates
  * length first), but the code exists and should be tested.
@@ -3799,7 +3799,7 @@ test_version_tx_toolong_comment(void)
 }
 
 /* ================================================================
- * DH-GEX helpers — parse_bn_mpint and dh_value_valid
+ * DH-GEX helpers -- parse_bn_mpint and dh_value_valid
  * ================================================================ */
 
 static int
@@ -3935,7 +3935,7 @@ test_dh_value_valid_p_minus_one(void)
 }
 
 /* ================================================================
- * DH-GEX server handler — targeted branch coverage tests.
+ * DH-GEX server handler -- targeted branch coverage tests.
  *
  * Each test uses the same one-time setup: version_exchange + kexinit
  * in threads to populate negotiated state, then injects specific
@@ -4168,7 +4168,7 @@ test_dhgex_server_recv_fail(void)
 	if (dhgex_server_setup(&ctx) < 0)
 		return TEST_FAIL;
 
-	/* No packets injected — recv will fail immediately (pipe closed) */
+	/* No packets injected -- recv will fail immediately (pipe closed) */
 	int res = dhgex_server_run(&ctx, NULL, 0);
 	ASSERT_TRUE(res < 0);
 
@@ -4340,7 +4340,7 @@ test_dhgex_server_e_zero(void)
 	uint8_t init[16];
 	size_t ip = 0;
 	init[ip++] = 32; /* GEX_INIT */
-	dssh_serialize_uint32(0, init, sizeof(init), &ip); /* mpint len=0 → value 0 */
+	dssh_serialize_uint32(0, init, sizeof(init), &ip); /* mpint len=0 -> value 0 */
 	wlen += build_plaintext_packet_t(init, ip, &wire[wlen], sizeof(wire) - wlen);
 
 	int res = dhgex_server_run(&ctx, wire, wlen);
@@ -4357,8 +4357,8 @@ test_dhgex_server_recv_init_fail(void)
 	if (dhgex_server_setup(&ctx) < 0)
 		return TEST_FAIL;
 
-	/* Only inject GEX_REQUEST — no GEX_INIT. Server sends GROUP
-	 * then tries to recv INIT from a closed/empty pipe → fail. */
+	/* Only inject GEX_REQUEST -- no GEX_INIT. Server sends GROUP
+	 * then tries to recv INIT from a closed/empty pipe -> fail. */
 	uint8_t req[16];
 	size_t rp = 0;
 	req[rp++] = 34;
@@ -4587,7 +4587,7 @@ test_c25519_server_recv_fail(void)
 	if (c25519_server_setup(&ctx) < 0)
 		return TEST_FAIL;
 
-	/* No packets injected — recv will fail immediately (pipe closed) */
+	/* No packets injected -- recv will fail immediately (pipe closed) */
 	int res = c25519_server_run(&ctx, NULL, 0);
 	ASSERT_TRUE(res < 0);
 
@@ -4672,7 +4672,7 @@ test_c25519_server_qc_overrun(void)
 static int
 test_c25519_encode_shared_secret_leading_zeros(void)
 {
-	/* Raw bytes with leading zeros — exercises the
+	/* Raw bytes with leading zeros -- exercises the
 	 * while (raw_len > 1 && start[0] == 0) loop */
 	uint8_t raw[3] = { 0x00, 0x00, 0x42 };
 	uint8_t *ss_out = NULL;
@@ -4737,12 +4737,12 @@ test_c25519_encode_shared_secret_alloc_fail(void)
 }
 
 /* ================================================================
- * Negotiation failure — deterministic test for the || chain at
+ * Negotiation failure -- deterministic test for the || chain at
  * lines 1131-1138.  After a successful two-threaded kexinit, we
  * null out one gconf algo list head so the NEXT kexinit call
  * builds an empty our_list for that category.  peer_kexinit is
  * already populated from the first run, so kexinit skips recv
- * and goes straight to negotiate — which returns NULL.
+ * and goes straight to negotiate -- which returns NULL.
  * ================================================================ */
 
 static int
@@ -4818,7 +4818,7 @@ test_negotiate_no_common_kex(void)
 	dssh_session_set_cbdata(client, &io2, &io2, &io2, &io2);
 
 	/* Null out the kex list so our_lists[0] is empty.
-	 * negotiate_algo will return NULL for kex → line 1131 fires. */
+	 * negotiate_algo will return NULL for kex -> line 1131 fires. */
 	dssh_kex saved_kex_head = gconf.kex_head;
 	gconf.kex_head = NULL;
 
@@ -4850,7 +4850,7 @@ test_negotiate_no_common_kex(void)
 }
 
 /* ================================================================
- * DH-GEX helper coverage — serialize_bn_mpint edge cases
+ * DH-GEX helper coverage -- serialize_bn_mpint edge cases
  * ================================================================ */
 
 static int
@@ -4888,7 +4888,7 @@ test_serialize_bn_mpint_zero_bn(void)
 }
 
 /* ================================================================
- * DH-GEX compute_exchange_hash — alloc injection for
+ * DH-GEX compute_exchange_hash -- alloc injection for
  * serialize_bn_mpint failures inside the hash computation.
  * ================================================================ */
 
@@ -4947,12 +4947,12 @@ test_compute_exchange_hash_alloc_iterate(void)
 }
 
 /* ================================================================
- * None algorithm module coverage — call the no-op functions
+ * None algorithm module coverage -- call the no-op functions
  * directly to get 100% on comp/none.c, enc/none.c, mac/none.c.
  * ================================================================ */
 
 /* ================================================================
- * aes256-ctr / hmac-sha2-256 edge cases — NULL ctx, alloc failure
+ * aes256-ctr / hmac-sha2-256 edge cases -- NULL ctx, alloc failure
  * ================================================================ */
 
 static int
@@ -5202,7 +5202,7 @@ test_global_request_name_exceeds_payload(void)
 }
 
 /* ================================================================
- * Formerly-guarded paths — now live code, need unit tests
+ * Formerly-guarded paths -- now live code, need unit tests
  * ================================================================ */
 
 static int
@@ -5216,7 +5216,7 @@ test_rekey_time_zero(void)
 	dssh_session sess = dssh_session_init(true, 0);
 	ASSERT_NOT_NULL(sess);
 
-	/* Force rekey_time to 0 — rekey_needed should return false */
+	/* Force rekey_time to 0 -- rekey_needed should return false */
 	sess->trans.rekey_time = 0;
 	ASSERT_FALSE(dssh_transport_rekey_needed(sess));
 
@@ -5228,7 +5228,7 @@ test_rekey_time_zero(void)
 static int
 test_blocksize_lt8(void)
 {
-	/* Register an enc with blocksize < 8 — tx/rx_block_size clamps to 8 */
+	/* Register an enc with blocksize < 8 -- tx/rx_block_size clamps to 8 */
 	dssh_test_reset_global_config();
 
 	static const char name[] = "tiny-enc";
@@ -5257,7 +5257,7 @@ test_blocksize_lt8(void)
 
 	/* send_packet / recv_packet use tx/rx_block_size which should clamp to 8.
 	 * We can't easily call them here without a full handshake, but we can
-	 * verify the behavior by sending a packet — if blocksize were 1,
+	 * verify the behavior by sending a packet -- if blocksize were 1,
 	 * the padding calculation would differ from blocksize=8. Just verify
 	 * the session setup doesn't crash. */
 
@@ -5379,7 +5379,7 @@ test_bn_mpint_small_buf(void)
 static int
 test_ed25519_haskey_wrong_type(void)
 {
-	/* Load an RSA key into the ed25519 module's ctx — haskey should
+	/* Load an RSA key into the ed25519 module's ctx -- haskey should
 	 * return false because EVP_PKEY_id != EVP_PKEY_ED25519. */
 	dssh_test_reset_global_config();
 	ASSERT_EQ(dssh_register_ssh_ed25519(), 0);
@@ -5561,7 +5561,7 @@ test_kexinit_peer_parse_truncated_namelist(void)
 static int
 test_aes256_ctr_ctx_member_null(void)
 {
-	/* cbd non-NULL but cbd->ctx is NULL — second half of OR at line 46 */
+	/* cbd non-NULL but cbd->ctx is NULL -- second half of OR at line 46 */
 	dssh_test_reset_global_config();
 	ASSERT_EQ(dssh_register_aes256_ctr(), 0);
 
@@ -5636,7 +5636,7 @@ test_hmac_sha2_256_cleanup_null(void)
 	dssh_mac mac = gconf.mac_head;
 	ASSERT_NOT_NULL(mac);
 
-	/* Cleanup with NULL ctx — should not crash */
+	/* Cleanup with NULL ctx -- should not crash */
 	mac->cleanup(NULL);
 
 	dssh_test_reset_global_config();
@@ -5875,7 +5875,7 @@ test_register_lang_toomany(void)
 }
 
 /* ================================================================
- * Blocksize clamping — direct tx/rx_block_size tests
+ * Blocksize clamping -- direct tx/rx_block_size tests
  * ================================================================ */
 
 static int
@@ -5892,7 +5892,7 @@ test_blocksize_clamp_direct(void)
 	ASSERT_NOT_NULL(sess);
 	dssh_session_set_cbdata(sess, &io, &io, &io, &io);
 
-	/* No enc selected — should return 8 */
+	/* No enc selected -- should return 8 */
 	ASSERT_EQ_U(tx_block_size(sess), 8);
 	ASSERT_EQ_U(rx_block_size(sess), 8);
 
@@ -5949,7 +5949,7 @@ test_cleanup_null_cleanup_fn(void)
 	struct dssh_mac_s dummy_mac = { 0 };
 	struct dssh_comp_s dummy_comp = { 0 };
 
-	/* Set selected modules with NULL cleanup — dssh_transport_cleanup
+	/* Set selected modules with NULL cleanup -- dssh_transport_cleanup
 	 * should skip the cleanup calls without crashing. */
 	sess->trans.kex_selected = &dummy_kex;
 	sess->trans.enc_c2s_selected = &dummy_enc;
@@ -5967,7 +5967,7 @@ test_cleanup_null_cleanup_fn(void)
 }
 
 /* ================================================================
- * Deterministic branch coverage — profiling-unstable branches
+ * Deterministic branch coverage -- profiling-unstable branches
  *
  * These tests exercise branches that flip between "covered" and
  * "missed" across runs due to non-deterministic thread scheduling
@@ -6042,7 +6042,7 @@ test_version_rx_non_ascii(void)
 	ASSERT_NOT_NULL(client);
 	dssh_session_set_cbdata(client, &io, &io, &io, &io);
 
-	/* Version line with a high byte (0x80) — non-ASCII */
+	/* Version line with a high byte (0x80) -- non-ASCII */
 	char bad_line[] = "SSH-2.0-\x80test\r\n";
 	mock_io_inject(&io.s2c, (const uint8_t *)bad_line,
 	    sizeof(bad_line) - 1);
@@ -6060,7 +6060,7 @@ test_version_rx_non_ascii(void)
  * Negotiation: comp_s2c NULL (line 1138).
  * Same pattern as test_negotiate_no_common_kex, but we null out
  * only the comp list and craft a peer KEXINIT where comp_c2s
- * matches "none" but comp_s2c is "bogus" — so comp_c2s_selected
+ * matches "none" but comp_s2c is "bogus" -- so comp_c2s_selected
  * succeeds but comp_s2c_selected is NULL.
  *
  * peer_kexinit format: msg_type(1) + cookie(16) + 10 name-lists + bool(1) + reserved(4)
@@ -6151,7 +6151,7 @@ test_negotiate_no_common_comp_s2c(void)
 
 	/* Build a crafted peer KEXINIT where comp_s2c (peer_lists[7])
 	 * is "bogus" but all other name-lists match our algorithms.
-	 * peer_lists[6] (comp_c2s) is "none" — matches our comp. */
+	 * peer_lists[6] (comp_c2s) is "none" -- matches our comp. */
 	uint8_t crafted[2048];
 	memset(crafted, 0, sizeof(crafted));
 	crafted[0] = 20;  /* SSH_MSG_KEXINIT */
@@ -6175,8 +6175,8 @@ test_negotiate_no_common_comp_s2c(void)
 	pos = write_namelist(crafted, pos, enc_name);     /* [3] enc s2c */
 	pos = write_namelist(crafted, pos, mac_name);     /* [4] mac c2s */
 	pos = write_namelist(crafted, pos, mac_name);     /* [5] mac s2c */
-	pos = write_namelist(crafted, pos, "none");       /* [6] comp c2s — matches */
-	pos = write_namelist(crafted, pos, "bogus");      /* [7] comp s2c — NO match */
+	pos = write_namelist(crafted, pos, "none");       /* [6] comp c2s -- matches */
+	pos = write_namelist(crafted, pos, "bogus");      /* [7] comp s2c -- NO match */
 	pos = write_namelist(crafted, pos, "");           /* [8] lang c2s */
 	pos = write_namelist(crafted, pos, "");           /* [9] lang s2c */
 	crafted[pos] = 0;  /* first_kex_packet_follows */
@@ -6198,7 +6198,7 @@ test_negotiate_no_common_comp_s2c(void)
 	client->trans.comp_c2s_selected = NULL;
 	client->trans.comp_s2c_selected = NULL;
 
-	/* Re-run kexinit — should fail because comp_s2c has no match */
+	/* Re-run kexinit -- should fail because comp_s2c has no match */
 	int res = dssh_transport_kexinit(client);
 	ASSERT_EQ(res, DSSH_ERROR_INVALID);
 
@@ -6216,7 +6216,7 @@ test_negotiate_no_common_comp_s2c(void)
 }
 
 /*
- * derive_key: fail EVP_DigestUpdate(shared_secret) — line 1208.
+ * derive_key: fail EVP_DigestUpdate(shared_secret) -- line 1208.
  * ossl calls in derive_key:
  *   0: EVP_MD_fetch
  *   1: EVP_MD_CTX_new
@@ -6245,7 +6245,7 @@ test_derive_key_ossl_shared_secret(void)
 }
 
 /*
- * derive_key: fail EVP_DigestUpdate(hash) — line 1209.
+ * derive_key: fail EVP_DigestUpdate(hash) -- line 1209.
  * ossl call 4.
  */
 static int
@@ -6270,7 +6270,7 @@ test_derive_key_ossl_hash(void)
 }
 
 /*
- * derive_key: fail EVP_DigestUpdate(&letter) — line 1210.
+ * derive_key: fail EVP_DigestUpdate(&letter) -- line 1210.
  * ossl call 5.
  */
 static int
@@ -6295,7 +6295,7 @@ test_derive_key_ossl_letter(void)
 }
 
 /*
- * derive_key: fail EVP_DigestUpdate(session_id) — line 1211.
+ * derive_key: fail EVP_DigestUpdate(session_id) -- line 1211.
  * ossl call 6.
  */
 static int
@@ -6320,7 +6320,7 @@ test_derive_key_ossl_session_id(void)
 }
 
 /*
- * derive_key: fail EVP_DigestFinal_ex — line 1212.
+ * derive_key: fail EVP_DigestFinal_ex -- line 1212.
  * ossl call 7.
  */
 static int
@@ -6345,7 +6345,7 @@ test_derive_key_ossl_final(void)
 }
 
 /*
- * derive_key: fail EVP_DigestInit_ex — line 1207.
+ * derive_key: fail EVP_DigestInit_ex -- line 1207.
  * ossl call 2.
  */
 static int
@@ -6410,7 +6410,7 @@ test_derive_key_ossl_extension_loop(void)
  * fail the EVP_MAC_CTX_new during init, but then init returns error
  * and doesn't set *out.  Instead, we test by failing at ossl call 1
  * during init (EVP_MAC_CTX_new), which makes init return error
- * without setting mctx — so mctx stays NULL.
+ * without setting mctx -- so mctx stays NULL.
  *
  * The cbd->ctx == NULL check in generate is a safety net.
  * We exercise it by calling generate after a partial init that
@@ -6422,7 +6422,7 @@ test_derive_key_ossl_extension_loop(void)
  * The only way to reach generate with cbd->ctx == NULL is if
  * something goes very wrong.  Since the existing null_ctx test
  * covers cbd == NULL, let's test with ossl failure at call 2
- * during init (EVP_MAC_init) — this creates cbd and ctx but
+ * during init (EVP_MAC_init) -- this creates cbd and ctx but
  * then MAC_init fails.  Init then frees ctx and cbd, returning
  * error.  So we can't reach generate this way either.
  *
@@ -6801,7 +6801,7 @@ static struct dssh_test_entry tests[] = {
 	{ "c25519/server_bad_qc_len",        test_c25519_server_bad_qc_len },
 	{ "c25519/server_qc_overrun",        test_c25519_server_qc_overrun },
 
-	/* Negotiation failure — deterministic NULL for each || leg */
+	/* Negotiation failure -- deterministic NULL for each || leg */
 	{ "negotiate/no_common_kex",         test_negotiate_no_common_kex },
 	{ "negotiate/no_common_comp_s2c",    test_negotiate_no_common_comp_s2c },
 

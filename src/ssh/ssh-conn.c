@@ -169,7 +169,7 @@ dssh_parse_subsystem_data(const uint8_t *data, size_t data_len,
 #define SSH_OPEN_RESOURCE_SHORTAGE UINT32_C(4)
 
 /*
- * Saturating add for window sizes — clamp at UINT32_MAX per RFC 4254 s5.2.
+ * Saturating add for window sizes -- clamp at UINT32_MAX per RFC 4254 s5.2.
  */
 static inline uint32_t
 window_add(uint32_t current, uint32_t bytes)
@@ -182,7 +182,7 @@ window_add(uint32_t current, uint32_t bytes)
 }
 
 /* ================================================================
- * Low-level wire functions — internal only.
+ * Low-level wire functions -- internal only.
  * Used by the high-level API; not part of the public interface.
  * ================================================================ */
 
@@ -554,7 +554,7 @@ cleanup_channel_buffers(dssh_channel ch)
 }
 
 /* ================================================================
- * Window replenishment — called after reads drain buffer
+ * Window replenishment -- called after reads drain buffer
  * ================================================================ */
 
 DSSH_TESTABLE int
@@ -832,7 +832,7 @@ demux_dispatch(dssh_session sess, uint8_t msg_type,
 }
 
 /*
- * Handle CHANNEL_OPEN_CONFIRMATION — recipient_channel is at offset 1.
+ * Handle CHANNEL_OPEN_CONFIRMATION -- recipient_channel is at offset 1.
  */
 static int
 demux_open_confirmation(dssh_session sess,
@@ -865,7 +865,7 @@ demux_open_confirmation(dssh_session sess,
 }
 
 /*
- * Handle incoming CHANNEL_OPEN — either queue for accept or auto-reject.
+ * Handle incoming CHANNEL_OPEN -- either queue for accept or auto-reject.
  */
 static int
 demux_channel_open(dssh_session sess, uint8_t *payload, size_t payload_len)
@@ -955,7 +955,7 @@ demux_thread_func(void *arg)
 			if (res == DSSH_ERROR_TERMINATED)
 				break;
 
-                        /* Other errors — terminate */
+                        /* Other errors -- terminate */
 			dssh_session_set_terminate(sess);
 			break;
 		}
@@ -971,7 +971,7 @@ demux_thread_func(void *arg)
 			dres = demux_dispatch(sess, msg_type, payload, payload_len);
 
 		/* Parse errors from malformed peer messages are
-		 * non-fatal — skip the packet.  I/O and serialize
+		 * non-fatal -- skip the packet.  I/O and serialize
 		 * errors mean the connection is broken. */
 		if (dres < 0 && dres != DSSH_ERROR_PARSE) {
 			dssh_session_set_terminate(sess);
@@ -1085,7 +1085,7 @@ dssh_session_stop(dssh_session sess)
 }
 
 /* ================================================================
- * Session accept — wait for incoming CHANNEL_OPEN
+ * Session accept -- wait for incoming CHANNEL_OPEN
  * ================================================================ */
 
 DSSH_PUBLIC int
@@ -1140,7 +1140,7 @@ dssh_session_reject(dssh_session sess,
 	size_t  dlen = description ? strlen(description) : 0;
 	uint8_t msg[256];
 
-	if (dlen > sizeof(msg) - 17) /* msg_type + 3×uint32 + language uint32 */
+	if (dlen > sizeof(msg) - 17) /* msg_type + 3xuint32 + language uint32 */
 		dlen = sizeof(msg) - 17;
 
 	size_t pos = 0;
@@ -1205,7 +1205,7 @@ send_open_confirmation(dssh_session sess,
 
 /*
  * Common channel open: send CHANNEL_OPEN "session", wait for confirmation.
- * Does NOT start the demux — the channel is registered for demux dispatch.
+ * Does NOT start the demux -- the channel is registered for demux dispatch.
  */
 static int
 open_session_channel(dssh_session sess, dssh_channel ch)
@@ -1258,7 +1258,7 @@ open_session_channel(dssh_session sess, dssh_channel ch)
 		return res;
 	}
 
-        /* Wait for CONFIRMATION — the demux thread handles it */
+        /* Wait for CONFIRMATION -- the demux thread handles it */
 	mtx_lock(&ch->buf_mtx);
 	while (!ch->open && !ch->close_received && !sess->terminate)
 		cnd_wait(&ch->poll_cnd, &ch->buf_mtx);
@@ -1826,14 +1826,14 @@ dssh_session_accept_channel(dssh_session sess,
 			setup_reply(sess, ch, cb_res >= 0);
 
 		if (is_terminal && (cb_res < 0)) {
-                        /* App rejected the terminal request — close channel */
+                        /* App rejected the terminal request -- close channel */
 			free(payload);
 			dssh_conn_close(sess, ch);
 			goto fail;
 		}
 
 		if (is_terminal && (cb_res >= 0)) {
-                        /* Accepted — save type and data, determine channel kind */
+                        /* Accepted -- save type and data, determine channel kind */
 			size_t tn = rtype_len < sizeof(ch->req_type) - 1
 			    ? rtype_len : sizeof(ch->req_type) - 1;
 
@@ -1867,8 +1867,8 @@ dssh_session_accept_channel(dssh_session sess,
         /* Transition from setup mode to normal buffered mode.
          * buf_mtx and poll_cnd are already initialized from setup.
          * Channel type depends on the terminal request:
-         *   shell/exec → DSSH_CHAN_SESSION (stream-based bytebufs)
-         *   subsystem  → DSSH_CHAN_RAW    (message-based msgqueue)
+         *   shell/exec -> DSSH_CHAN_SESSION (stream-based bytebufs)
+         *   subsystem  -> DSSH_CHAN_RAW    (message-based msgqueue)
          */
 	ch->setup_mode = false;
 	ch->window_max = INITIAL_WINDOW_SIZE;
@@ -1919,7 +1919,7 @@ fail:
 }
 
 /* ================================================================
- * Poll / Read / Write — Session channels (stream-based)
+ * Poll / Read / Write -- Session channels (stream-based)
  * ================================================================ */
 
 /*
@@ -2177,7 +2177,7 @@ dssh_session_close(dssh_session sess,
 }
 
 /* ================================================================
- * Poll / Read / Write — Raw channels (message-based)
+ * Poll / Read / Write -- Raw channels (message-based)
  * ================================================================ */
 
 DSSH_PUBLIC int

@@ -1,5 +1,5 @@
 /*
- * test_arch.c — Tests for RFC 4251 wire format functions (ssh-arch.c).
+ * test_arch.c -- Tests for RFC 4251 wire format functions (ssh-arch.c).
  */
 
 #include "dssh_test.h"
@@ -462,7 +462,7 @@ test_string_roundtrip(void)
 }
 
 /* ----------------------------------------------------------------
- * mpint  —  RFC 4251 section 5 examples
+ * mpint  --  RFC 4251 section 5 examples
  * ---------------------------------------------------------------- */
 
 static int
@@ -864,7 +864,7 @@ test_namelist_roundtrip(void)
 }
 
 /* ----------------------------------------------------------------
- * serialize at offset  —  verify *pos advances correctly
+ * serialize at offset  --  verify *pos advances correctly
  * ---------------------------------------------------------------- */
 
 static int
@@ -926,7 +926,7 @@ test_serialize_overflow_at_offset(void)
 }
 
 /* ----------------------------------------------------------------
- * parse_namelist with tiny buffer — covers ssh-arch.c:215
+ * parse_namelist with tiny buffer -- covers ssh-arch.c:215
  * ---------------------------------------------------------------- */
 
 static int

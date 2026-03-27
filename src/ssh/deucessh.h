@@ -83,7 +83,7 @@ DSSH_PUBLIC dssh_session dssh_session_init(bool client,
 /*
  * Signal a session to terminate.  Sets terminate flag and returns true
  * if the session was initialized, false if already terminated.
- * Does not block — the session's I/O callbacks will see the flag.
+ * Does not block -- the session's I/O callbacks will see the flag.
  */
 DSSH_PUBLIC bool dssh_session_terminate(dssh_session sess);
 
@@ -100,7 +100,7 @@ DSSH_PUBLIC void dssh_session_cleanup(dssh_session sess);
 /*
  * Securely scrub a memory buffer (e.g. a password).
  * Resists compiler optimization.  Does not require the application
- * to link against OpenSSL.  Do not realloc() password buffers —
+ * to link against OpenSSL.  Do not realloc() password buffers --
  * the old allocation won't be scrubbed.
  */
 DSSH_PUBLIC void dssh_cleanse(void *buf, size_t len);
@@ -148,10 +148,10 @@ DSSH_PUBLIC void dssh_session_set_global_request_cb(dssh_session sess,
  * Must be called before any session is initialized.
  *
  * software_version: e.g. "MySSH-1.0".  Must be non-empty printable
- *                   US-ASCII (0x21–0x7E, no spaces).  Pass NULL to
+ *                   US-ASCII (0x21--0x7E, no spaces).  Pass NULL to
  *                   keep the library's built-in default.
  * comment:          optional (pass NULL to omit).  Printable US-ASCII
- *                   (0x20–0x7E); spaces are allowed in comments.
+ *                   (0x20--0x7E); spaces are allowed in comments.
  *
  * The resulting version line "SSH-2.0-<version> <comment>\r\n"
  * must fit in 255 bytes per RFC 4253.
@@ -163,7 +163,7 @@ DSSH_PUBLIC void dssh_session_set_global_request_cb(dssh_session sess,
  * is empty when non-NULL), or DSSH_ERROR_TOOLATE if a session has
  * already been initialized.
  *
- * The strings are not copied — caller must ensure they remain
+ * The strings are not copied -- caller must ensure they remain
  * valid for the lifetime of the library's global configuration.
  */
 DSSH_PUBLIC int dssh_transport_set_version(const char *software_version, const char *comment);

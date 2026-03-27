@@ -1,5 +1,5 @@
 /*
- * deucessh-key-algo.h — Host key algorithm module interface.
+ * deucessh-key-algo.h -- Host key algorithm module interface.
  */
 
 #ifndef DSSH_KEY_ALGO_H

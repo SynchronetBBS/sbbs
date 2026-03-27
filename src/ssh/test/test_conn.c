@@ -1,5 +1,5 @@
 /*
- * test_conn.c — Connection protocol tests for DeuceSSH.
+ * test_conn.c -- Connection protocol tests for DeuceSSH.
  *
  * Tier 2 layer tests with mock I/O.  Covers session start/stop,
  * channel open/accept, session and raw channel I/O, signals,
@@ -190,7 +190,7 @@ reset_callbacks(void)
 }
 
 /* ================================================================
- * Connection setup context — handshake + auth + session_start
+ * Connection setup context -- handshake + auth + session_start
  * ================================================================ */
 
 struct conn_ctx {
@@ -342,7 +342,7 @@ conn_cleanup(struct conn_ctx *ctx)
 	 * Close the write-ends of both pipes first so that any demux
 	 * thread blocked in read() gets EOF and can exit.  With
 	 * socketpair-based mock I/O, condvar broadcasts alone cannot
-	 * unblock a blocking read() — only closing the peer fd does.
+	 * unblock a blocking read() -- only closing the peer fd does.
 	 */
 	mock_io_close_c2s(&ctx->io);
 	mock_io_close_s2c(&ctx->io);
@@ -560,7 +560,7 @@ test_session_start_stop(void)
 }
 
 /* ================================================================
- * Channel open — exec (~5 tests)
+ * Channel open -- exec (~5 tests)
  * ================================================================ */
 
 static int
@@ -1098,7 +1098,7 @@ test_subsys_write_read(void)
 	ASSERT_NOT_NULL(oc.req_type);
 	ASSERT_STR_EQ(oc.req_type, "subsystem");
 
-	/* Both sides are raw channels — use channel I/O */
+	/* Both sides are raw channels -- use channel I/O */
 	const uint8_t msg[] = "subsystem message";
 	int res = dssh_channel_write(ctx.client, oc.client_ch,
 	    msg, sizeof(msg) - 1);
@@ -1209,7 +1209,7 @@ test_subsys_poll(void)
 		return TEST_SKIP;
 	}
 
-	/* No data yet — poll should timeout */
+	/* No data yet -- poll should timeout */
 	int ev = dssh_channel_poll(ctx.server, oc.server_ch,
 	    DSSH_POLL_READ, 100);
 	ASSERT_EQ(ev, 0);
@@ -2056,7 +2056,7 @@ test_connection_drop_during_read(void)
 	struct timespec ts = { .tv_sec = 0, .tv_nsec = 50000000 };
 	thrd_sleep(&ts, NULL);
 
-	/* Kill the connection — close both pipes.
+	/* Kill the connection -- close both pipes.
 	 * The demux thread's recv will get an error,
 	 * setting terminate and unblocking the reader. */
 	mock_io_close_c2s(&ctx.io);
@@ -2116,7 +2116,7 @@ test_connection_drop_during_write(void)
 }
 
 /* Verify cleanup works even if session_stop/cleanup is called
- * without prior terminate — the application just calls cleanup
+ * without prior terminate -- the application just calls cleanup
  * when it detects the socket is dead. */
 static int
 test_cleanup_after_drop(void)
@@ -2138,7 +2138,7 @@ test_cleanup_after_drop(void)
 	}
 
 	/* Kill pipes, then immediately cleanup without explicit
-	 * terminate — dssh_session_cleanup calls session_stop
+	 * terminate -- dssh_session_cleanup calls session_stop
 	 * which sets terminate and joins the demux thread.
 	 * The closed pipes ensure the demux unblocks. */
 	mock_io_close_c2s(&ctx.io);
@@ -2203,7 +2203,7 @@ test_parse_pty_req_no_modes(void)
 	dssh_serialize_uint32(24, data, sizeof(data), &pos);
 	dssh_serialize_uint32(0, data, sizeof(data), &pos);
 	dssh_serialize_uint32(0, data, sizeof(data), &pos);
-	/* No modes string at all — exactly at the boundary */
+	/* No modes string at all -- exactly at the boundary */
 
 	struct dssh_pty_req pty;
 	memset(&pty, 0, sizeof(pty));
@@ -2451,7 +2451,7 @@ test_parse_subsystem_empty(void)
 static int
 test_session_start_twice(void)
 {
-	/* Calling session_start twice — covers demux_running guard */
+	/* Calling session_start twice -- covers demux_running guard */
 	struct conn_ctx ctx;
 	if (conn_setup(&ctx) < 0)
 		return TEST_FAIL;
@@ -2467,7 +2467,7 @@ test_session_start_twice(void)
 static int
 test_accept_timeout_zero(void)
 {
-	/* accept with timeout_ms=0 — non-blocking, should return immediately */
+	/* accept with timeout_ms=0 -- non-blocking, should return immediately */
 	struct conn_ctx ctx;
 	if (conn_setup(&ctx) < 0)
 		return TEST_FAIL;
@@ -2484,7 +2484,7 @@ test_accept_timeout_zero(void)
 static int
 test_accept_timeout_short(void)
 {
-	/* accept with short positive timeout — should time out */
+	/* accept with short positive timeout -- should time out */
 	struct conn_ctx ctx;
 	if (conn_setup(&ctx) < 0)
 		return TEST_FAIL;
@@ -2500,7 +2500,7 @@ test_accept_timeout_short(void)
 static int
 test_reject_null_description(void)
 {
-	/* reject with NULL description — covers the dlen==0 path */
+	/* reject with NULL description -- covers the dlen==0 path */
 	struct conn_ctx ctx;
 	if (conn_setup(&ctx) < 0)
 		return TEST_FAIL;
@@ -2537,7 +2537,7 @@ test_reject_null_description(void)
 static int
 test_session_poll_timeout_zero(void)
 {
-	/* session_poll with timeout_ms=0 — non-blocking */
+	/* session_poll with timeout_ms=0 -- non-blocking */
 	struct conn_ctx ctx;
 	if (conn_setup(&ctx) < 0)
 		return TEST_FAIL;
@@ -2558,7 +2558,7 @@ test_session_poll_timeout_zero(void)
 		return TEST_FAIL;
 	}
 
-	/* Poll with timeout=0 on client — no data pending */
+	/* Poll with timeout=0 on client -- no data pending */
 	int events = dssh_session_poll(ctx.client, oc.client_ch,
 	    DSSH_POLL_READ | DSSH_POLL_WRITE, 0);
 	/* Should return 0 (no events) or just DSSH_POLL_WRITE */
@@ -2569,7 +2569,7 @@ test_session_poll_timeout_zero(void)
 }
 
 /* ================================================================
- * Auto-reject channel types — covers demux_channel_open branches.
+ * Auto-reject channel types -- covers demux_channel_open branches.
  *
  * Send CHANNEL_OPEN with forbidden types from server to client.
  * The client's demux thread should auto-reject with OPEN_FAILURE.
@@ -2682,7 +2682,7 @@ test_auto_reject_session_from_server(void)
 }
 
 /* ================================================================
- * WINDOW_ADJUST from peer — covers demux_dispatch case
+ * WINDOW_ADJUST from peer -- covers demux_dispatch case
  * ================================================================ */
 
 static int
@@ -2731,7 +2731,7 @@ test_window_adjust_from_peer(void)
 }
 
 /* ================================================================
- * Data after EOF — covers demux eof_received/close_received guards
+ * Data after EOF -- covers demux eof_received/close_received guards
  * ================================================================ */
 
 static int
@@ -2763,7 +2763,7 @@ test_data_after_eof(void)
 	}
 
 
-	/* Now server sends CHANNEL_DATA after EOF — should be discarded */
+	/* Now server sends CHANNEL_DATA after EOF -- should be discarded */
 	{
 		uint8_t msg[32];
 		size_t pos = 0;
@@ -2786,7 +2786,7 @@ test_data_after_eof(void)
 }
 
 /* ================================================================
- * Truncated channel messages — covers payload_len guards in demux
+ * Truncated channel messages -- covers payload_len guards in demux
  * ================================================================ */
 
 static int
@@ -2829,7 +2829,7 @@ test_truncated_channel_data(void)
 }
 
 /* ================================================================
- * Extended data after EOF — covers demux ext_data eof_received guard
+ * Extended data after EOF -- covers demux ext_data eof_received guard
  * ================================================================ */
 
 static int
@@ -2861,7 +2861,7 @@ test_ext_data_after_eof(void)
 	}
 
 
-	/* Send EXTENDED_DATA (stderr) after EOF — should be discarded */
+	/* Send EXTENDED_DATA (stderr) after EOF -- should be discarded */
 	{
 		uint8_t msg[32];
 		size_t pos = 0;
@@ -2880,7 +2880,7 @@ test_ext_data_after_eof(void)
 }
 
 /* ================================================================
- * Truncated CHANNEL_EXTENDED_DATA — covers payload_len < 13 guard
+ * Truncated CHANNEL_EXTENDED_DATA -- covers payload_len < 13 guard
  * ================================================================ */
 
 static int
@@ -2908,7 +2908,7 @@ test_truncated_ext_data(void)
 	msg[pos++] = SSH_MSG_CHANNEL_EXTENDED_DATA;
 	dssh_serialize_uint32(oc.client_ch->local_id, msg, sizeof(msg), &pos);
 	dssh_serialize_uint32(1, msg, sizeof(msg), &pos); /* data_type */
-	/* Only 9 bytes — no data_len or data */
+	/* Only 9 bytes -- no data_len or data */
 	ASSERT_OK(dssh_transport_send_packet(ctx.server, msg, pos, NULL));
 
 
@@ -2922,7 +2922,7 @@ test_truncated_ext_data(void)
 }
 
 /* ================================================================
- * Channel request with want_reply=true — covers the FAILURE response
+ * Channel request with want_reply=true -- covers the FAILURE response
  * path in demux_dispatch for unhandled requests.
  * ================================================================ */
 
@@ -2971,7 +2971,7 @@ test_channel_request_want_reply(void)
 }
 
 /* ================================================================
- * Data with dlen > local_window — covers window saturation to 0
+ * Data with dlen > local_window -- covers window saturation to 0
  * ================================================================ */
 
 static int
@@ -2995,7 +2995,7 @@ test_data_exceeds_window(void)
 
 	/* Send CHANNEL_DATA with a dlen larger than the local window
 	 * (which is typically 2MB).  We fake the dlen field to be huge
-	 * but send less actual data — the demux clamps dlen to payload. */
+	 * but send less actual data -- the demux clamps dlen to payload. */
 	{
 		uint8_t msg[32];
 		size_t pos = 0;
@@ -3040,7 +3040,7 @@ test_session_poll_write(void)
 	    DSSH_POLL_WRITE, 0);
 	ASSERT_TRUE(ev & DSSH_POLL_WRITE);
 
-	/* Also poll with timeout — should return immediately */
+	/* Also poll with timeout -- should return immediately */
 	ev = dssh_session_poll(ctx.client, oc.client_ch,
 	    DSSH_POLL_WRITE, 100);
 	ASSERT_TRUE(ev & DSSH_POLL_WRITE);
@@ -3231,7 +3231,7 @@ test_raw_channel_poll_write(void)
 	    DSSH_POLL_WRITE, 0);
 	ASSERT_TRUE(ev & DSSH_POLL_WRITE);
 
-	/* Poll with timeout — should return immediately */
+	/* Poll with timeout -- should return immediately */
 	ev = dssh_channel_poll(ctx.client, oc.client_ch,
 	    DSSH_POLL_WRITE, 100);
 	ASSERT_TRUE(ev & DSSH_POLL_WRITE);
@@ -3265,7 +3265,7 @@ test_raw_channel_poll_timeout_zero(void)
 		return TEST_SKIP;
 	}
 
-	/* No data pending — poll READ with timeout_ms=0 returns 0 */
+	/* No data pending -- poll READ with timeout_ms=0 returns 0 */
 	int ev = dssh_channel_poll(ctx.server, oc.server_ch,
 	    DSSH_POLL_READ, 0);
 	ASSERT_EQ(ev, 0);
@@ -3397,7 +3397,7 @@ test_read_signal_empty(void)
 		return TEST_FAIL;
 	}
 
-	/* No signal pending — should return NOMORE */
+	/* No signal pending -- should return NOMORE */
 	const char *signame = NULL;
 	int res = dssh_session_read_signal(ctx.server, oc.server_ch, &signame);
 	ASSERT_EQ(res, DSSH_ERROR_NOMORE);
@@ -3409,7 +3409,7 @@ test_read_signal_empty(void)
 }
 
 /* ================================================================
- * Coverage: signal interleaving — data then signal then more data
+ * Coverage: signal interleaving -- data then signal then more data
  * The readable amount should be clamped to the signal mark.
  * ================================================================ */
 
@@ -3558,7 +3558,7 @@ test_signal_interleave_read_ext(void)
 	ASSERT_OK(res);
 	ASSERT_STR_EQ(signame, "TERM");
 
-	/* Now the rest of stderr is readable — poll first to ensure arrival */
+	/* Now the rest of stderr is readable -- poll first to ensure arrival */
 	ev = dssh_session_poll(ctx.client, oc.client_ch,
 	    DSSH_POLL_READEXT, 5000);
 	ASSERT_TRUE(ev & DSSH_POLL_READEXT);
@@ -3743,17 +3743,17 @@ test_session_poll_read_empty(void)
 		return TEST_FAIL;
 	}
 
-	/* No data sent yet — poll READ with timeout=0 should return 0 */
+	/* No data sent yet -- poll READ with timeout=0 should return 0 */
 	int ev = dssh_session_poll(ctx.server, oc.server_ch,
 	    DSSH_POLL_READ, 0);
 	ASSERT_EQ(ev, 0);
 
-	/* Also poll READEXT with timeout=0 — no stderr data */
+	/* Also poll READEXT with timeout=0 -- no stderr data */
 	ev = dssh_session_poll(ctx.server, oc.server_ch,
 	    DSSH_POLL_READEXT, 0);
 	ASSERT_EQ(ev, 0);
 
-	/* Poll SIGNAL with timeout=0 — no signals */
+	/* Poll SIGNAL with timeout=0 -- no signals */
 	ev = dssh_session_poll(ctx.server, oc.server_ch,
 	    DSSH_POLL_SIGNAL, 0);
 	ASSERT_EQ(ev, 0);
@@ -3874,7 +3874,7 @@ accept_blocking_thread(void *arg)
 {
 	struct conn_ctx *ctx = arg;
 	struct dssh_incoming_open *inc = NULL;
-	/* Blocking accept — should return when session is terminated */
+	/* Blocking accept -- should return when session is terminated */
 	dssh_session_accept(ctx->server, &inc, -1);
 	return 0;
 }
@@ -4026,7 +4026,7 @@ test_open_confirmation_unknown_channel(void)
 
 /* ================================================================
  * Coverage: unknown msg type dispatched to channel (line 612)
- * — CHANNEL_SUCCESS/FAILURE when no request pending
+ * -- CHANNEL_SUCCESS/FAILURE when no request pending
  * ================================================================ */
 
 static int
@@ -4160,10 +4160,10 @@ test_data_dlen_exceeds_payload(void)
 	struct timespec ts = { .tv_sec = 0, .tv_nsec = 100000000 };
 	thrd_sleep(&ts, NULL);
 
-	/* Session should still be running — dlen is clamped to payload */
+	/* Session should still be running -- dlen is clamped to payload */
 	ASSERT_TRUE(ctx.server->demux_running);
 
-	/* Read whatever arrived — should be clamped data */
+	/* Read whatever arrived -- should be clamped data */
 	uint8_t buf[256];
 	int64_t n = dssh_session_read(ctx.server, oc.server_ch, buf, sizeof(buf));
 	ASSERT_TRUE(n >= 0);
@@ -4175,7 +4175,7 @@ test_data_dlen_exceeds_payload(void)
 }
 
 /* ================================================================
- * Formerly-guarded paths — send_data/ext overflow, chan_type==0
+ * Formerly-guarded paths -- send_data/ext overflow, chan_type==0
  * ================================================================ */
 
 static int
@@ -4285,7 +4285,7 @@ test_send_eof_already_sent(void)
 		return TEST_FAIL;
 	}
 
-	/* Send EOF, then send it again — second call returns 0 immediately */
+	/* Send EOF, then send it again -- second call returns 0 immediately */
 	ASSERT_OK(dssh_conn_send_eof(ctx.client, oc.client_ch));
 	ASSERT_TRUE(oc.client_ch->eof_sent);
 	ASSERT_EQ(dssh_conn_send_eof(ctx.client, oc.client_ch), 0);
@@ -4387,7 +4387,7 @@ test_maybe_replenish_low_window(void)
 static int
 test_demux_window_underflow_to_zero(void)
 {
-	/* Send data that exactly equals local_window → window becomes 0 */
+	/* Send data that exactly equals local_window -> window becomes 0 */
 	struct conn_ctx ctx;
 	if (conn_setup(&ctx) < 0)
 		return TEST_FAIL;
@@ -4406,7 +4406,7 @@ test_demux_window_underflow_to_zero(void)
 	oc.server_ch->local_window = 5;
 	oc.server_ch->window_max = 5;
 
-	/* Client sends exactly 5 bytes — should drain window to 0 */
+	/* Client sends exactly 5 bytes -- should drain window to 0 */
 	const uint8_t data[] = "hello";
 	dssh_session_write(ctx.client, oc.client_ch, data, 5);
 
@@ -4415,7 +4415,7 @@ test_demux_window_underflow_to_zero(void)
 	    DSSH_POLL_READ, 5000);
 	ASSERT_TRUE(ev & DSSH_POLL_READ);
 
-	/* Now send more data that exceeds the 0 window — should
+	/* Now send more data that exceeds the 0 window -- should
 	 * trigger the window underflow (local_window = 0) path */
 	{
 		uint8_t msg[32];
@@ -4471,7 +4471,7 @@ test_window_add_overflow(void)
 }
 
 /* ================================================================
- * Coverage: defensive guard tests — !open, close_received,
+ * Coverage: defensive guard tests -- !open, close_received,
  * empty queue, eof/close in poll, signal mark <= consumed,
  * infinite-wait poll, empty read_ext
  * ================================================================ */
@@ -4765,7 +4765,7 @@ test_stdout_signal_mark_consumed(void)
 {
 	/*
 	 * Test session_stdout_readable when a signal mark is at or before
-	 * the consumed position — the mark should not limit readable bytes.
+	 * the consumed position -- the mark should not limit readable bytes.
 	 * Tested indirectly via dssh_session_poll + dssh_session_read.
 	 */
 	dssh_test_reset_global_config();
@@ -4816,7 +4816,7 @@ test_stderr_signal_mark_consumed(void)
 {
 	/*
 	 * Test session_stderr_readable when a signal mark is at or before
-	 * the consumed position — tested indirectly via dssh_session_read_ext.
+	 * the consumed position -- tested indirectly via dssh_session_read_ext.
 	 */
 	dssh_test_reset_global_config();
 	if (register_all_algorithms() < 0)
@@ -4866,7 +4866,7 @@ test_channel_poll_infinite_data_ready(void)
 {
 	/*
 	 * channel_poll with timeout_ms == -1 (infinite wait) but data
-	 * already in the queue — should return immediately.
+	 * already in the queue -- should return immediately.
 	 */
 	dssh_test_reset_global_config();
 	if (register_all_algorithms() < 0)
@@ -4898,7 +4898,7 @@ test_session_poll_infinite_data_ready(void)
 {
 	/*
 	 * session_poll with timeout_ms == -1 (infinite wait) but data
-	 * already in stdout — should return immediately.
+	 * already in stdout -- should return immediately.
 	 */
 	dssh_test_reset_global_config();
 	if (register_all_algorithms() < 0)
@@ -4966,7 +4966,7 @@ test_session_read_ext_empty(void)
 }
 
 /* ================================================================
- * Deterministic branch coverage — profiling-unstable branches
+ * Deterministic branch coverage -- profiling-unstable branches
  *
  * These tests exercise branches that flip between "covered" and
  * "missed" across runs due to non-deterministic thread scheduling.
@@ -4998,8 +4998,8 @@ test_session_poll_nsec_overflow(void)
 	dssh_bytebuf_init(&ch.buf.session.stderr_buf, 256);
 	dssh_sigqueue_init(&ch.buf.session.signals);
 
-	/* Empty buffers + short timeout → times out.
-	 * timeout_ms=999 adds 999000000 nsec — overflows with >99.9% probability. */
+	/* Empty buffers + short timeout -> times out.
+	 * timeout_ms=999 adds 999000000 nsec -- overflows with >99.9% probability. */
 	for (int i = 0; i < 3; i++) {
 		int r = dssh_session_poll(s, &ch, DSSH_POLL_READ, 1);
 		(void)r;
@@ -5020,7 +5020,7 @@ test_session_poll_nsec_overflow(void)
 
 /*
  * dssh_session_accept nsec overflow (line 871):
- * Same pattern — short timeout with large millisecond fraction.
+ * Same pattern -- short timeout with large millisecond fraction.
  */
 static int
 test_accept_nsec_overflow(void)
@@ -5030,7 +5030,7 @@ test_accept_nsec_overflow(void)
 		return TEST_FAIL;
 
 	struct dssh_incoming_open *inc = NULL;
-	/* 999 ms timeout — adds 999000000 nsec, triggers overflow */
+	/* 999 ms timeout -- adds 999000000 nsec, triggers overflow */
 	for (int i = 0; i < 3; i++) {
 		int res = dssh_session_accept(ctx.server, &inc, 1);
 		(void)res;
@@ -5073,7 +5073,7 @@ test_stderr_signal_truncate(void)
 	/* Push a signal with stderr mark at position 5 */
 	dssh_sigqueue_push(&ch.buf.session.signals, "TERM", 0, 5);
 
-	/* Leave stderr_consumed at 0 — to_mark = 5-0 = 5 < avail = 10 */
+	/* Leave stderr_consumed at 0 -- to_mark = 5-0 = 5 < avail = 10 */
 	ch.stderr_consumed = 0;
 
 	/* read_ext should return only 5 bytes (clamped by signal mark) */
@@ -5106,7 +5106,7 @@ server_accept_subsys_raw_thread(void *arg)
 	if (res < 0)
 		return 0;
 
-	/* Accept as session channel — handles the subsystem request,
+	/* Accept as session channel -- handles the subsystem request,
 	 * returns a raw channel since the terminal request is "subsystem" */
 	ctx->server_ch = dssh_session_accept_channel(ctx->server, inc,
 	    &session_cbs, &ctx->req_type, &ctx->req_data);
@@ -5341,7 +5341,7 @@ static struct dssh_test_entry tests[] = {
 
 	{ "test_subsystem_roundtrip",          test_subsystem_roundtrip },
 
-	/* Deterministic branch coverage — profiling-unstable */
+	/* Deterministic branch coverage -- profiling-unstable */
 	{ "test_session_poll_nsec_overflow",   test_session_poll_nsec_overflow },
 	{ "test_accept_nsec_overflow",         test_accept_nsec_overflow },
 	{ "test_stderr_signal_truncate",       test_stderr_signal_truncate },

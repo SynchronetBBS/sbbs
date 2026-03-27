@@ -1213,7 +1213,7 @@ test_self_rekey_during_data(void)
 	int64_t w = dssh_session_write(ctx.client, ch, data, sizeof(data));
 	ASSERT_TRUE(w > 0);
 
-	/* Wait for echo — the client demux must receive a response,
+	/* Wait for echo -- the client demux must receive a response,
 	 * triggering the auto-rekey check. */
 	uint8_t buf[256];
 	size_t recvd = 0;
@@ -1295,7 +1295,7 @@ test_self_rekey_manual(void)
 	}
 	ASSERT_EQ_U(recvd, sizeof(data) - 1);
 
-	/* Verify the echo itself worked — the connection is alive
+	/* Verify the echo itself worked -- the connection is alive
 	 * and data survived the threshold being near-exceeded.
 	 * Full auto-rekey with live demux threads is verified by
 	 * test_self_rekey_during_data and test_self_rekey_preserves_channels. */
@@ -1405,7 +1405,7 @@ test_self_rekey_preserves_channels(void)
 }
 
 /* ================================================================
- * Test: unexpected connection drop — socket dies mid-session
+ * Test: unexpected connection drop -- socket dies mid-session
  * ================================================================ */
 
 static int

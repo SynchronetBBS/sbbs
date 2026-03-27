@@ -1,5 +1,5 @@
 /*
- * ssh-chan.c — Internal channel buffer implementations.
+ * ssh-chan.c -- Internal channel buffer implementations.
  */
 
 #include <stdlib.h>

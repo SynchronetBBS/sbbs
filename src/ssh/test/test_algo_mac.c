@@ -1,5 +1,5 @@
 /*
- * test_algo_mac.c — Unit tests for DeuceSSH MAC algorithm modules.
+ * test_algo_mac.c -- Unit tests for DeuceSSH MAC algorithm modules.
  *
  * Tests registration of hmac-sha2-256 and none MACs, HMAC-SHA-256
  * correctness against RFC 4231 test vectors, generate/verify
@@ -342,7 +342,7 @@ test_hmac_sha256_large_data(void)
 	ASSERT_EQ(hmac_sha256(key, 32, data, 1024, d2), 0);
 	ASSERT_MEM_EQ(d1, d2, 32);
 
-	/* Flip one bit in data — digest must change */
+	/* Flip one bit in data -- digest must change */
 	data[500] ^= 0x80;
 	ASSERT_EQ(hmac_sha256(key, 32, data, 1024, d2), 0);
 	ASSERT_TRUE(memcmp(d1, d2, 32) != 0);
@@ -446,7 +446,7 @@ test_none_mac_no_init(void)
 {
 	dssh_test_reset_global_config();
 	ASSERT_EQ(dssh_register_none_mac(), 0);
-	/* init is NULL for none MAC — no key setup needed */
+	/* init is NULL for none MAC -- no key setup needed */
 	return TEST_PASS;
 }
 

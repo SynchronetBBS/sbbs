@@ -6848,10 +6848,10 @@ libcrux_ml_kem_vector_portable_cond_subtract_3329_0d(
  Given an input `value`, `barrett_reduce` outputs a representative `result`
  such that:
 
- - result ≡ value (mod FIELD_MODULUS)
+ - result == value (mod FIELD_MODULUS)
  - the absolute value of `result` is bound as follows:
 
- `|result| ≤ FIELD_MODULUS / 2 · (|value|/BARRETT_R + 1)
+ `|result| <= FIELD_MODULUS / 2 * (|value|/BARRETT_R + 1)
 
  In particular, if `|value| < BARRETT_R`, then `|result| < FIELD_MODULUS`.
 */
@@ -6903,12 +6903,12 @@ libcrux_ml_kem_vector_portable_barrett_reduce_0d(
  Given an input `value`, `montgomery_reduce` outputs a representative `o`
  such that:
 
- - o ≡ value · MONTGOMERY_R^(-1) (mod FIELD_MODULUS)
+ - o == value * MONTGOMERY_R^(-1) (mod FIELD_MODULUS)
  - the absolute value of `o` is bound as follows:
 
- `|result| ≤ (|value| / MONTGOMERY_R) + (FIELD_MODULUS / 2)
+ `|result| <= (|value| / MONTGOMERY_R) + (FIELD_MODULUS / 2)
 
- In particular, if `|value| ≤ FIELD_MODULUS * MONTGOMERY_R`, then `|o| < (3 ·
+ In particular, if `|value| <= FIELD_MODULUS * MONTGOMERY_R`, then `|o| < (3 *
  FIELD_MODULUS) / 2`.
 */
 static inline int16_t
@@ -6932,13 +6932,13 @@ libcrux_ml_kem_vector_portable_arithmetic_montgomery_reduce_element(
 
 /**
  If `fe` is some field element 'x' of the Kyber field and `fer` is congruent to
- `y · MONTGOMERY_R`, this procedure outputs a value that is congruent to
- `x · y`, as follows:
+ `y * MONTGOMERY_R`, this procedure outputs a value that is congruent to
+ `x * y`, as follows:
 
-    `fe · fer ≡ x · y · MONTGOMERY_R (mod FIELD_MODULUS)`
+    `fe * fer == x * y * MONTGOMERY_R (mod FIELD_MODULUS)`
 
- `montgomery_reduce` takes the value `x · y · MONTGOMERY_R` and outputs a
- representative `x · y · MONTGOMERY_R * MONTGOMERY_R^{-1} ≡ x · y (mod
+ `montgomery_reduce` takes the value `x * y * MONTGOMERY_R` and outputs a
+ representative `x * y * MONTGOMERY_R * MONTGOMERY_R^{-1} == x * y (mod
  FIELD_MODULUS)`.
 */
 static KRML_MUSTINLINE int16_t
@@ -6977,15 +6977,15 @@ libcrux_ml_kem_vector_portable_montgomery_multiply_by_constant_0d(
  NIST FIPS 203 standard (Page 18, Expression 4.5), which is defined as:
 
  ```plaintext
- Compress_d: ℤq -> ℤ_{2ᵈ}
- Compress_d(x) = ⌈(2ᵈ/q)·x⌋
+ Compress_d: Zq -> Z_{2^d}
+ Compress_d(x) = round((2^d/q)*x)
  ```
 
- Since `⌈x⌋ = ⌊x + 1/2⌋` we have:
+ Since `round(x) = floor(x + 1/2)` we have:
 
  ```plaintext
- Compress_d(x) = ⌊(2ᵈ/q)·x + 1/2⌋
-               = ⌊(2^{d+1}·x + q) / 2q⌋
+ Compress_d(x) = floor((2^d/q)*x + 1/2)
+               = floor((2^{d+1}*x + q) / 2q)
  ```
 
  For further information about the function implementations, consult the
@@ -7270,19 +7270,19 @@ libcrux_ml_kem_vector_portable_inv_ntt_layer_3_step_0d(
 
 /**
  Compute the product of two Kyber binomials with respect to the
- modulus `X² - zeta`.
+ modulus `X^2 - zeta`.
 
  This function almost implements <strong>Algorithm 11</strong> of the
  NIST FIPS 203 standard, which is reproduced below:
 
  ```plaintext
- Input:  a₀, a₁, b₀, b₁ ∈ ℤq.
- Input: γ ∈ ℤq.
- Output: c₀, c₁ ∈ ℤq.
+ Input:  a_0, a_1, b_0, b_1  in  Zq.
+ Input: gamma  in  Zq.
+ Output: c_0, c_1  in  Zq.
 
- c₀ ← a₀·b₀ + a₁·b₁·γ
- c₁ ← a₀·b₁ + a₁·b₀
- return c₀, c₁
+ c_0 <- a_0*b_0 + a_1*b_1*gamma
+ c_1 <- a_0*b_1 + a_1*b_0
+ return c_0, c_1
  ```
  We say "almost" because the coefficients output by this function are in
  the Montgomery domain (unlike in the specification).
@@ -8821,24 +8821,24 @@ libcrux_ml_kem_serialize_deserialize_then_decompress_ring_element_v_56(
 
 /**
  Given two `KyberPolynomialRingElement`s in their NTT representations,
- compute their product. Given two polynomials in the NTT domain `f^` and `ĵ`,
- the `iᵗʰ` coefficient of the product `k̂` is determined by the calculation:
+ compute their product. Given two polynomials in the NTT domain `f^` and `j^`,
+ the `ith` coefficient of the product `k^` is determined by the calculation:
 
  ```plaintext
- ĥ[2·i] + ĥ[2·i + 1]X = (f^[2·i] + f^[2·i + 1]X)·(ĝ[2·i] + ĝ[2·i + 1]X) mod (X²
- - ζ^(2·BitRev₇(i) + 1))
+ h^[2*i] + h^[2*i + 1]X = (f^[2*i] + f^[2*i + 1]X)*(g^[2*i] + g^[2*i + 1]X) mod (X^2
+ - zeta^(2*BitRev_7(i) + 1))
  ```
 
  This function almost implements <strong>Algorithm 10</strong> of the
  NIST FIPS 203 standard, which is reproduced below:
 
  ```plaintext
- Input: Two arrays fˆ ∈ ℤ₂₅₆ and ĝ ∈ ℤ₂₅₆.
- Output: An array ĥ ∈ ℤq.
+ Input: Two arrays f^  in  Z_2_5_6 and g^  in  Z_2_5_6.
+ Output: An array h^  in  Zq.
 
- for(i ← 0; i < 128; i++)
-     (ĥ[2i], ĥ[2i+1]) ← BaseCaseMultiply(fˆ[2i], fˆ[2i+1], ĝ[2i], ĝ[2i+1],
- ζ^(2·BitRev₇(i) + 1)) end for return ĥ
+ for(i <- 0; i < 128; i++)
+     (h^[2i], h^[2i+1]) <- BaseCaseMultiply(f^[2i], f^[2i+1], g^[2i], g^[2i+1],
+ zeta^(2*BitRev_7(i) + 1)) end for return h^
  ```
  We say "almost" because the coefficients of the ring element output by
  this function are in the Montgomery domain.
@@ -9097,7 +9097,7 @@ libcrux_ml_kem_polynomial_subtract_reduce_89_d4(
  The following functions compute various expressions involving
  vectors and matrices. The computation of these expressions has been
  abstracted away into these functions in order to save on loop iterations.
- Compute v − InverseNTT(sᵀ ◦ NTT(u))
+ Compute v - InverseNTT(s^T * NTT(u))
 */
 /**
 A monomorphic instance of libcrux_ml_kem.matrix.compute_message
@@ -9208,17 +9208,17 @@ libcrux_ml_kem_serialize_compress_then_serialize_message_aa(
  Algorithm 14 is reproduced below:
 
  ```plaintext
- Input: decryption key dkₚₖₑ ∈ 𝔹^{384k}.
- Input: ciphertext c ∈ 𝔹^{32(dᵤk + dᵥ)}.
- Output: message m ∈ 𝔹^{32}.
+ Input: decryption key dkpke  in  B^{384k}.
+ Input: ciphertext c  in  B^{32(d_uk + d_v)}.
+ Output: message m  in  B^{32}.
 
- c₁ ← c[0 : 32dᵤk]
- c₂ ← c[32dᵤk : 32(dᵤk + dᵥ)]
- u ← Decompress_{dᵤ}(ByteDecode_{dᵤ}(c₁))
- v ← Decompress_{dᵥ}(ByteDecode_{dᵥ}(c₂))
- ŝ ← ByteDecode₁₂(dkₚₖₑ)
- w ← v - NTT-¹(ŝᵀ ◦ NTT(u))
- m ← ByteEncode₁(Compress₁(w))
+ c_1 <- c[0 : 32d_uk]
+ c_2 <- c[32d_uk : 32(d_uk + d_v)]
+ u <- Decompress_{d_u}(ByteDecode_{d_u}(c_1))
+ v <- Decompress_{d_v}(ByteDecode_{d_v}(c_2))
+ s^ <- ByteDecode_1_2(dkpke)
+ w <- v - NTT-^1(s^^T * NTT(u))
+ m <- ByteEncode_1(Compress_1(w))
  return m
  ```
 
@@ -9533,7 +9533,7 @@ libcrux_ml_kem_hash_functions_portable_shake128_squeeze_three_blocks_f1_69(
 
 /**
  If `bytes` contains a set of uniformly random bytes, this function
- uniformly samples a ring element `â` that is treated as being the NTT
+ uniformly samples a ring element `a^` that is treated as being the NTT
  representation of the corresponding polynomial `a`.
 
  Since rejection sampling is used, it is possible the supplied bytes are
@@ -9548,25 +9548,25 @@ libcrux_ml_kem_hash_functions_portable_shake128_squeeze_three_blocks_f1_69(
  Algorithm 6 is reproduced below:
 
  ```plaintext
- Input: byte stream B ∈ 𝔹*.
- Output: array â ∈ ℤ₂₅₆.
+ Input: byte stream B  in  B*.
+ Output: array a^  in  Z_2_5_6.
 
- i ← 0
- j ← 0
+ i <- 0
+ j <- 0
  while j < 256 do
-     d₁ ← B[i] + 256·(B[i+1] mod 16)
-     d₂ ← ⌊B[i+1]/16⌋ + 16·B[i+2]
-     if d₁ < q then
-         â[j] ← d₁
-         j ← j + 1
+     d_1 <- B[i] + 256*(B[i+1] mod 16)
+     d_2 <- floor(B[i+1]/16) + 16*B[i+2]
+     if d_1 < q then
+         a^[j] <- d_1
+         j <- j + 1
      end if
-     if d₂ < q and j < 256 then
-         â[j] ← d₂
-         j ← j + 1
+     if d_2 < q and j < 256 then
+         a^[j] <- d_2
+         j <- j + 1
      end if
-     i ← i + 3
+     i <- i + 3
  end while
- return â
+ return a^
  ```
 
  The NIST FIPS 203 standard can be found at
@@ -9654,7 +9654,7 @@ libcrux_ml_kem_hash_functions_portable_shake128_squeeze_block_f1_60(
 
 /**
  If `bytes` contains a set of uniformly random bytes, this function
- uniformly samples a ring element `â` that is treated as being the NTT
+ uniformly samples a ring element `a^` that is treated as being the NTT
  representation of the corresponding polynomial `a`.
 
  Since rejection sampling is used, it is possible the supplied bytes are
@@ -9669,25 +9669,25 @@ libcrux_ml_kem_hash_functions_portable_shake128_squeeze_block_f1_60(
  Algorithm 6 is reproduced below:
 
  ```plaintext
- Input: byte stream B ∈ 𝔹*.
- Output: array â ∈ ℤ₂₅₆.
+ Input: byte stream B  in  B*.
+ Output: array a^  in  Z_2_5_6.
 
- i ← 0
- j ← 0
+ i <- 0
+ j <- 0
  while j < 256 do
-     d₁ ← B[i] + 256·(B[i+1] mod 16)
-     d₂ ← ⌊B[i+1]/16⌋ + 16·B[i+2]
-     if d₁ < q then
-         â[j] ← d₁
-         j ← j + 1
+     d_1 <- B[i] + 256*(B[i+1] mod 16)
+     d_2 <- floor(B[i+1]/16) + 16*B[i+2]
+     if d_1 < q then
+         a^[j] <- d_1
+         j <- j + 1
      end if
-     if d₂ < q and j < 256 then
-         â[j] ← d₂
-         j ← j + 1
+     if d_2 < q and j < 256 then
+         a^[j] <- d_2
+         j <- j + 1
      end if
-     i ← i + 3
+     i <- i + 3
  end while
- return â
+ return a^
  ```
 
  The NIST FIPS 203 standard can be found at
@@ -9947,7 +9947,7 @@ static KRML_MUSTINLINE void libcrux_ml_kem_hash_functions_portable_PRFxN_f1_93(
  `eta`, the `sample_from_binomial_distribution_{eta}` functions sample a ring
  element from a binomial distribution centered at 0 that uses two sets of `eta`
  coin flips. If, for example, `eta = ETA`, each ring coefficient is a value `v`
- such such that `v ∈ {-ETA, -ETA + 1, ..., 0, ..., ETA + 1, ETA}` and:
+ such such that `v  in  {-ETA, -ETA + 1, ..., 0, ..., ETA + 1, ETA}` and:
 
  ```plaintext
  - If v < 0, Pr[v] = Pr[-v]
@@ -9976,14 +9976,14 @@ static KRML_MUSTINLINE void libcrux_ml_kem_hash_functions_portable_PRFxN_f1_93(
  standard, which is reproduced below:
 
  ```plaintext
- Input: byte array B ∈ 𝔹^{64η}.
- Output: array f ∈ ℤ₂₅₆.
+ Input: byte array B  in  B^{64eta}.
+ Output: array f  in  Z_2_5_6.
 
- b ← BytesToBits(B)
- for (i ← 0; i < 256; i++)
-     x ← ∑(j=0 to η - 1) b[2iη + j]
-     y ← ∑(j=0 to η - 1) b[2iη + η + j]
-     f[i] ← x−y mod q
+ b <- BytesToBits(B)
+ for (i <- 0; i < 256; i++)
+     x <- sum(j=0 to eta - 1) b[2ieta + j]
+     y <- sum(j=0 to eta - 1) b[2ieta + eta + j]
+     f[i] <- x-y mod q
  end for
  return f
  ```
@@ -10329,7 +10329,7 @@ static KRML_MUSTINLINE void libcrux_ml_kem_polynomial_add_error_reduce_89_38(
 }
 
 /**
- Compute u := InvertNTT(Aᵀ ◦ r̂) + e₁
+ Compute u := InvertNTT(A^T * r^) + e_1
 */
 /**
 A monomorphic instance of libcrux_ml_kem.matrix.compute_vector_u
@@ -10453,7 +10453,7 @@ libcrux_ml_kem_polynomial_add_message_error_reduce_89_ea(
 }
 
 /**
- Compute InverseNTT(tᵀ ◦ r̂) + e₂ + message
+ Compute InverseNTT(t^T * r^) + e_2 + message
 */
 /**
 A monomorphic instance of libcrux_ml_kem.matrix.compute_ring_element_v
@@ -11266,7 +11266,7 @@ libcrux_ml_kem_polynomial_add_standard_error_reduce_89_03(
 }
 
 /**
- Compute Â ◦ ŝ + ê
+ Compute A^ * s^ + e^
 */
 /**
 A monomorphic instance of libcrux_ml_kem.matrix.compute_As_plus_e
@@ -11378,7 +11378,7 @@ static KRML_MUSTINLINE void libcrux_ml_kem_ind_cpa_serialize_secret_key_b5(
 }
 
 /**
- Concatenate `t` and `ρ` into the public key.
+ Concatenate `t` and `rho` into the public key.
 */
 /**
 A monomorphic instance of libcrux_ml_kem.ind_cpa.serialize_public_key

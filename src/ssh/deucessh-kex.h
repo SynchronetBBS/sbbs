@@ -1,5 +1,5 @@
 /*
- * deucessh-kex.h — KEX module interface for DeuceSSH.
+ * deucessh-kex.h -- KEX module interface for DeuceSSH.
  *
  * Defines the context struct passed to KEX handlers, providing all
  * inputs, outputs, and I/O function pointers needed to implement a
@@ -44,7 +44,7 @@ typedef int (*dssh_kex_recv_fn)(uint8_t *msg_type, uint8_t **payload,
     size_t *payload_len, void *io_ctx);
 
 /*
- * KEX context — passed to the handler by the library.
+ * KEX context -- passed to the handler by the library.
  *
  * Input fields are populated by the library before the call.
  * Output fields must be set by the handler on success.
@@ -75,7 +75,7 @@ struct dssh_kex_context {
 	dssh_kex_recv_fn  recv;
 	void             *io_ctx;
 
-	/* Outputs — handler must malloc these on success.
+	/* Outputs -- handler must malloc these on success.
 	 * Caller takes ownership after the handler returns. */
 	uint8_t       *shared_secret;
 	size_t         shared_secret_sz;

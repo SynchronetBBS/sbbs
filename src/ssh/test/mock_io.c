@@ -1,8 +1,8 @@
 /*
- * mock_io.c — Bidirectional mock I/O using socketpair().
+ * mock_io.c -- Bidirectional mock I/O using socketpair().
  *
  * Each direction (c2s, s2c) is a Unix socketpair.  Blocking
- * read/write with natural close-unblocks-peer behavior — no
+ * read/write with natural close-unblocks-peer behavior -- no
  * condvars or timed waits needed.
  *
  * Fd fields are _Atomic int so that concurrent close from two
@@ -181,7 +181,7 @@ mock_io_close_s2c_write(struct mock_io_state *io)
 }
 
 /* ================================================================
- * Client callbacks: TX→c2s, RX←s2c
+ * Client callbacks: TX->c2s, RX<-s2c
  * ================================================================ */
 
 int
@@ -210,7 +210,7 @@ mock_rxline_client(uint8_t *buf, size_t bufsz, size_t *bytes_received,
 }
 
 /* ================================================================
- * Server callbacks: TX→s2c, RX←c2s
+ * Server callbacks: TX->s2c, RX<-c2s
  * ================================================================ */
 
 int

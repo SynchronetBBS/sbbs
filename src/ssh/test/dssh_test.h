@@ -1,5 +1,5 @@
 /*
- * dssh_test.h — Minimal test framework for DeuceSSH.
+ * dssh_test.h -- Minimal test framework for DeuceSSH.
  *
  * Each test is a function returning int: 1=PASS, 0=FAIL, -1=SKIP.
  * Define the test table and call DSSH_TEST_MAIN() from main().

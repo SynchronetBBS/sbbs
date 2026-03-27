@@ -1,5 +1,5 @@
 /*
- * test_transport_errors.c — Transport layer error path tests using
+ * test_transport_errors.c -- Transport layer error path tests using
  * test enc/mac modules with failure injection.
  *
  * These tests exercise error branches in send_packet, recv_packet,
@@ -344,7 +344,7 @@ test_recv_mac_mismatch(void)
 		return TEST_FAIL;
 	}
 
-	/* Send with corrupt MAC output — the sender's MAC will have a
+	/* Send with corrupt MAC output -- the sender's MAC will have a
 	 * flipped bit, so the receiver's computed MAC won't match. */
 	test_mac_set_corrupt(true);
 
@@ -387,14 +387,14 @@ test_recv_mac_mismatch(void)
  * corrupt the decrypted data, which means corrupting before MAC
  * check... but MAC check happens first.
  *
- * This branch (L646-648) is actually guarded by the MAC — if
+ * This branch (L646-648) is actually guarded by the MAC -- if
  * padding is bad, the MAC would also fail.  So this branch is
  * only reachable with MAC disabled (none) or if the MAC somehow
  * passes despite bad padding.  With our test modules, the MAC
  * is a simple XOR that COULD pass despite bad padding if the
  * corruption cancels out.  But that's fragile.
  *
- * Skip this one — it's a defense-in-depth check that can only
+ * Skip this one -- it's a defense-in-depth check that can only
  * be reached if the MAC algorithm itself is broken.
  * ================================================================ */
 
@@ -403,7 +403,7 @@ test_recv_mac_mismatch(void)
  *
  * We can't easily test this post-handshake because newkeys runs
  * during the handshake itself.  Instead, we arm the init failure
- * BEFORE the handshake — the handshake will call newkeys which
+ * BEFORE the handshake -- the handshake will call newkeys which
  * calls enc->init, which will fail.
  * ================================================================ */
 
@@ -439,7 +439,7 @@ test_newkeys_enc_init_failure(void)
 	dssh_session_set_cbdata(server, &io, &io, &io, &io);
 
 	/* Fail the 3rd enc init call (0=client_c2s, 1=client_s2c,
-	 * 2=server_c2s — or similar ordering).
+	 * 2=server_c2s -- or similar ordering).
 	 * Actually, both sides call init twice each (c2s + s2c),
 	 * so we have 4 init calls total.  Let's fail the first one.
 	 * The handshake runs in threads; the init calls happen in
@@ -543,7 +543,7 @@ test_roundtrip_with_test_modules(void)
 	ASSERT_NOT_NULL(ctx.client->trans.enc_c2s_ctx);
 	ASSERT_NOT_NULL(ctx.client->trans.mac_c2s_ctx);
 
-	/* Send and receive a packet — use a non-transport message
+	/* Send and receive a packet -- use a non-transport message
 	 * because SSH_MSG_IGNORE is silently consumed by recv_packet */
 	uint8_t msg[] = { SSH_MSG_SERVICE_REQUEST, 0x42 };
 	ASSERT_OK(dssh_transport_send_packet(ctx.client, msg,
@@ -633,7 +633,7 @@ test_recv_mac_too_large(void)
 	thrd_join(st, NULL);
 
 	if (ctx.client_result != 0 || ctx.server_result != 0) {
-		/* Handshake may fail if send_packet overflows — that's
+		/* Handshake may fail if send_packet overflows -- that's
 		 * still a valid test result (exposes the bug). */
 		dssh_session_cleanup(server);
 		dssh_session_cleanup(client);
@@ -642,7 +642,7 @@ test_recv_mac_too_large(void)
 		return TEST_PASS;
 	}
 
-	/* Handshake succeeded — send a small packet.  The sender
+	/* Handshake succeeded -- send a small packet.  The sender
 	 * includes 128 bytes of MAC.  With dynamically allocated MAC
 	 * buffers, the receiver handles this correctly. */
 	uint8_t msg[] = { SSH_MSG_SERVICE_REQUEST, 0x42 };
@@ -727,8 +727,8 @@ test_send_mac_overflow_rejected(void)
 	/* Send a payload large enough that packet + 128-byte MAC
 	 * exceeds the buffer.  Buffer is 33280 bytes.  We need
 	 * total (4 + 1 + payload + padding) <= 33280 but
-	 * total + 128 > 33280.  payload ≈ 33160 gives
-	 * total ≈ 33180, + 128 = 33308 > 33280. */
+	 * total + 128 > 33280.  payload ~= 33160 gives
+	 * total ~= 33180, + 128 = 33308 > 33280. */
 	size_t big_len = client->trans.packet_buf_sz - 120;
 	uint8_t *big = malloc(big_len);
 	if (big == NULL) {

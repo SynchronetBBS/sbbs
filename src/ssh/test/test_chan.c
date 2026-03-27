@@ -1,5 +1,5 @@
 /*
- * test_chan.c — Unit tests for channel buffer primitives (ssh-chan.h).
+ * test_chan.c -- Unit tests for channel buffer primitives (ssh-chan.h).
  *
  * Tests bytebuf, msgqueue, signal queue, and accept queue.
  */
@@ -9,7 +9,7 @@
 #include "ssh-chan.h"
 
 /* ================================================================
- * Bytebuf — circular byte buffer
+ * Bytebuf -- circular byte buffer
  * ================================================================ */
 
 static int test_bytebuf_init_free(void)
@@ -157,7 +157,7 @@ static int test_bytebuf_wrap_around(void)
 	dssh_bytebuf_read(&b, out, 4, 0);
 	ASSERT_EQ_U(dssh_bytebuf_available(&b), 2);
 
-	/* Write 6 more bytes — wraps around */
+	/* Write 6 more bytes -- wraps around */
 	uint8_t data2[6] = {10, 20, 30, 40, 50, 60};
 	size_t wrote = dssh_bytebuf_write(&b, data2, 6);
 	ASSERT_EQ_U(wrote, 6);
@@ -187,7 +187,7 @@ static int test_bytebuf_wrap_write_split(void)
 	dssh_bytebuf_read(&b, out, 7, 0);
 	/* head=7, tail=7 */
 
-	/* Write 5 bytes — 1 at end, 4 at start */
+	/* Write 5 bytes -- 1 at end, 4 at start */
 	uint8_t data[5] = {10, 20, 30, 40, 50};
 	size_t wrote = dssh_bytebuf_write(&b, data, 5);
 	ASSERT_EQ_U(wrote, 5);
@@ -232,7 +232,7 @@ static int test_bytebuf_read_limit_vs_bufsz(void)
 	memset(data, 'Z', 30);
 	dssh_bytebuf_write(&b, data, 30);
 
-	/* bufsz=10 but limit=20 — bufsz should cap it */
+	/* bufsz=10 but limit=20 -- bufsz should cap it */
 	uint8_t out[10];
 	size_t got = dssh_bytebuf_read(&b, out, 10, 20);
 	ASSERT_EQ_U(got, 10);
@@ -302,7 +302,7 @@ static int test_bytebuf_wrap_read_split(void)
 	uint8_t data[6] = {10, 20, 30, 40, 50, 60};
 	dssh_bytebuf_write(&b, data, 6);
 
-	/* Read all 6 — splits across wrap boundary */
+	/* Read all 6 -- splits across wrap boundary */
 	size_t got = dssh_bytebuf_read(&b, out, sizeof(out), 0);
 	ASSERT_EQ_U(got, 6);
 	ASSERT_MEM_EQ(out, data, 6);
@@ -373,7 +373,7 @@ static int test_bytebuf_read_limit_less_than_available(void)
 		data[i] = (uint8_t)i;
 	dssh_bytebuf_write(&b, data, 20);
 
-	/* limit=3, bufsz=32 — should read exactly 3 */
+	/* limit=3, bufsz=32 -- should read exactly 3 */
 	uint8_t out[32];
 	size_t got = dssh_bytebuf_read(&b, out, sizeof(out), 3);
 	ASSERT_EQ_U(got, 3);
@@ -474,7 +474,7 @@ static int test_bytebuf_read_limit_with_wrap(void)
 	uint8_t data[7] = {1, 2, 3, 4, 5, 6, 7};
 	dssh_bytebuf_write(&b, data, 7);
 
-	/* Read with limit=3 — should cross wrap boundary correctly */
+	/* Read with limit=3 -- should cross wrap boundary correctly */
 	size_t got = dssh_bytebuf_read(&b, out, sizeof(out), 3);
 	ASSERT_EQ_U(got, 3);
 	ASSERT_MEM_EQ(out, data, 3);
@@ -506,7 +506,7 @@ static int test_bytebuf_partial_write_at_wrap(void)
 	ASSERT_EQ_U(dssh_bytebuf_available(&b), 3);
 	ASSERT_EQ_U(dssh_bytebuf_free_space(&b), 5);
 
-	/* Try to write 7 more — only 5 fit */
+	/* Try to write 7 more -- only 5 fit */
 	uint8_t d2[7] = {10, 20, 30, 40, 50, 60, 70};
 	ASSERT_EQ_U(dssh_bytebuf_write(&b, d2, 7), 5);
 	ASSERT_EQ_U(dssh_bytebuf_available(&b), 8);
@@ -537,7 +537,7 @@ static int test_bytebuf_head_tail_reset_after_free(void)
 }
 
 /* ================================================================
- * Msgqueue — linked list message queue
+ * Msgqueue -- linked list message queue
  * ================================================================ */
 
 static int test_msgqueue_init_free(void)
@@ -714,7 +714,7 @@ static int test_msgqueue_free_nonempty(void)
 	dssh_msgqueue_push(&q, msg, 8);
 	dssh_msgqueue_push(&q, msg, 8);
 
-	/* Free without popping — should not leak */
+	/* Free without popping -- should not leak */
 	dssh_msgqueue_free(&q);
 	ASSERT_NULL(q.head);
 	ASSERT_NULL(q.tail);
@@ -943,15 +943,15 @@ static int test_sigqueue_push_ready_pop(void)
 
 	ASSERT_OK(dssh_sigqueue_push(&q, "INT", 100, 50));
 
-	/* Not ready — stdout not consumed enough */
+	/* Not ready -- stdout not consumed enough */
 	ASSERT_FALSE(dssh_sigqueue_ready(&q, 99, 50));
-	/* Not ready — stderr not consumed enough */
+	/* Not ready -- stderr not consumed enough */
 	ASSERT_FALSE(dssh_sigqueue_ready(&q, 100, 49));
-	/* Not ready — neither consumed enough */
+	/* Not ready -- neither consumed enough */
 	ASSERT_FALSE(dssh_sigqueue_ready(&q, 50, 25));
-	/* Ready — both consumed enough */
+	/* Ready -- both consumed enough */
 	ASSERT_TRUE(dssh_sigqueue_ready(&q, 100, 50));
-	/* Ready — both exceeded */
+	/* Ready -- both exceeded */
 	ASSERT_TRUE(dssh_sigqueue_ready(&q, 200, 100));
 
 	char buf[32];
@@ -1103,7 +1103,7 @@ static int test_sigqueue_free_nonempty(void)
 	dssh_sigqueue_push(&q, "HUP", 10, 10);
 	dssh_sigqueue_push(&q, "TERM", 20, 20);
 
-	/* Free without popping — should not leak */
+	/* Free without popping -- should not leak */
 	dssh_sigqueue_free(&q);
 	ASSERT_NULL(q.head);
 	ASSERT_NULL(q.tail);
@@ -1115,7 +1115,7 @@ static int test_sigqueue_name_truncation(void)
 	struct dssh_signal_queue q;
 	dssh_sigqueue_init(&q);
 
-	/* Name field is 32 bytes — push a long name */
+	/* Name field is 32 bytes -- push a long name */
 	ASSERT_OK(dssh_sigqueue_push(&q, "AVERYLONGSIGNALNAMETHATISFORTYCHARS", 0, 0));
 
 	char buf[32];
@@ -1337,7 +1337,7 @@ static int test_acceptqueue_type_truncation(void)
 	struct dssh_accept_queue q;
 	dssh_acceptqueue_init(&q);
 
-	/* channel_type is 64 bytes — push a 70-byte type */
+	/* channel_type is 64 bytes -- push a 70-byte type */
 	uint8_t longtype[70];
 	memset(longtype, 'A', sizeof(longtype));
 
@@ -1489,7 +1489,7 @@ static int test_acceptqueue_type_nul_terminated(void)
 	struct dssh_accept_queue q;
 	dssh_acceptqueue_init(&q);
 
-	/* Push binary data as type — should be NUL-terminated */
+	/* Push binary data as type -- should be NUL-terminated */
 	uint8_t binary[10] = {65, 66, 67, 0, 68, 69, 70, 0, 71, 72};
 	dssh_acceptqueue_push(&q, 0, 0, 0, binary, 10);
 
@@ -1606,7 +1606,7 @@ static int test_msgqueue_pop_null_buf_peek(void)
 
 static int test_sigqueue_pop_stderr_not_ready(void)
 {
-	/* stdout consumed enough, stderr not — covers the second
+	/* stdout consumed enough, stderr not -- covers the second
 	 * half of the OR on ssh-chan.c:247. */
 	struct dssh_signal_queue q;
 	dssh_sigqueue_init(&q);
@@ -1632,7 +1632,7 @@ static int test_sigqueue_pop_stderr_not_ready(void)
 
 static int test_sigqueue_pop_name_truncation(void)
 {
-	/* Pop into a very small buffer — covers ssh-chan.c:257
+	/* Pop into a very small buffer -- covers ssh-chan.c:257
 	 * (nlen >= bufsz truncation path). */
 	struct dssh_signal_queue q;
 	dssh_sigqueue_init(&q);

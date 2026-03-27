@@ -1,5 +1,5 @@
 /*
- * test_auth.c — Authentication layer tests for DeuceSSH.
+ * test_auth.c -- Authentication layer tests for DeuceSSH.
  *
  * Tier 2 layer tests with mock I/O.  Covers password authentication,
  * keyboard-interactive, publickey, server-side auth callbacks, and
@@ -30,7 +30,7 @@
 /* ================================================================
  * Dispatch callbacks for two-sided tests.
  *
- * The I/O callbacks are global — all sessions share the same
+ * The I/O callbacks are global -- all sessions share the same
  * function pointers.  These dispatch functions inspect the session's
  * client flag to route I/O through the correct pipe direction.
  * ================================================================ */
@@ -1155,7 +1155,7 @@ test_auth_server_no_callbacks(void)
 	struct auth_server_arg sa = {0};
 	sa.ctx = &ctx;
 	sa.cbs.methods_str = "password";
-	/* No callbacks set — all NULL */
+	/* No callbacks set -- all NULL */
 
 	thrd_t st;
 	ASSERT_TRUE(thrd_create(&st, auth_server_thread, &sa) == thrd_success);
@@ -1180,7 +1180,7 @@ test_auth_server_no_callbacks(void)
 		ASSERT_EQ(msg_type, SSH_MSG_SERVICE_ACCEPT);
 	}
 
-	/* Send none auth — no none_cb configured, should get FAILURE */
+	/* Send none auth -- no none_cb configured, should get FAILURE */
 	{
 		static const char user[] = "testuser";
 		static const char svc[] = "ssh-connection";
@@ -1775,7 +1775,7 @@ banner_server_thread(void *arg)
 		return 0;
 	}
 
-	/* Send BANNER before SUCCESS — dssh_auth_password handles
+	/* Send BANNER before SUCCESS -- dssh_auth_password handles
 	 * BANNER messages in its recv loop (RFC 4252 s5.4). */
 	const char *banner_msg = "Welcome to DeuceSSH test server!";
 	size_t blen = strlen(banner_msg);
@@ -1819,7 +1819,7 @@ test_auth_banner_delivered(void)
 	thrd_t st;
 	ASSERT_TRUE(thrd_create(&st, banner_server_thread, &sa) == thrd_success);
 
-	/* Client sends password auth — server sends BANNER then SUCCESS.
+	/* Client sends password auth -- server sends BANNER then SUCCESS.
 	 * dssh_auth_password handles BANNER in its recv loop. */
 	int res = dssh_auth_password(ctx.client, "testuser", "pass",
 	    NULL, NULL);
@@ -2192,7 +2192,7 @@ test_auth_server_unexpected_message(void)
 	}
 
 	/* Send an unexpected message type (SERVICE_REQUEST again)
-	 * during the auth loop — server should send UNIMPLEMENTED
+	 * during the auth loop -- server should send UNIMPLEMENTED
 	 * and continue. */
 	{
 		uint8_t msg[8];
@@ -2405,7 +2405,7 @@ kbi_cb_unreachable(const uint8_t *name, size_t name_len,
 	(void)name; (void)name_len; (void)instruction; (void)instruction_len;
 	(void)num_prompts; (void)prompts; (void)prompt_lens; (void)echo;
 	(void)responses; (void)response_lens; (void)cbdata;
-	/* If called, something is wrong — the parse should have failed */
+	/* If called, something is wrong -- the parse should have failed */
 	return -1;
 }
 
@@ -2435,7 +2435,7 @@ kbi_cb_abort(const uint8_t *name, size_t name_len,
 static int
 test_kbi_truncated_name_header(void)
 {
-	/* INFO_REQUEST with only the msg type byte — no name length */
+	/* INFO_REQUEST with only the msg type byte -- no name length */
 	uint8_t payload[] = { SSH_MSG_USERAUTH_INFO_REQUEST };
 	int res = run_kbi_error_test(payload, sizeof(payload),
 	    kbi_cb_unreachable, NULL);
@@ -2864,7 +2864,7 @@ test_kbi_banner_before_info(void)
 }
 
 /* ================================================================
- * Server auth parse error tests — truncated USERAUTH_REQUEST
+ * Server auth parse error tests -- truncated USERAUTH_REQUEST
  *
  * Each test completes a handshake, starts the server auth loop,
  * does the SERVICE_REQUEST/ACCEPT exchange, then sends a
@@ -3209,7 +3209,7 @@ test_server_parse_not_service_request(void)
 static int
 test_server_parse_long_username(void)
 {
-	/* Username >= 256 bytes — tests the saved_user truncation path */
+	/* Username >= 256 bytes -- tests the saved_user truncation path */
 	struct parse_error_ctx pe;
 	if (parse_error_setup(&pe) < 0) {
 		parse_error_cleanup(&pe);
@@ -3235,7 +3235,7 @@ test_server_parse_long_username(void)
 	/* Server should process this (none auth with no none_cb = failure),
 	 * but the username should be truncated to 255 bytes in saved_user. */
 	parse_error_cleanup(&pe);
-	/* Server loops waiting for more auth — it didn't crash */
+	/* Server loops waiting for more auth -- it didn't crash */
 	return TEST_PASS;
 }
 
@@ -3344,7 +3344,7 @@ test_server_no_password_cb(void)
 	struct auth_server_arg sa = {0};
 	sa.ctx = &ctx;
 	sa.cbs.methods_str = "password";
-	/* No password_cb set — NULL */
+	/* No password_cb set -- NULL */
 	sa.cbs.none_cb = test_none_cb;
 	sa.cbs.cbdata = &cbdata;
 
@@ -3370,7 +3370,7 @@ test_server_no_password_cb(void)
 		ASSERT_EQ(msg_type, SSH_MSG_SERVICE_ACCEPT);
 	}
 
-	/* Send password auth — server has no password_cb */
+	/* Send password auth -- server has no password_cb */
 	uint8_t msg[128];
 	size_t pos = build_auth_prefix(msg, sizeof(msg), "password");
 	msg[pos++] = 0; /* change = false */
@@ -3450,7 +3450,7 @@ test_server_no_publickey_cb(void)
 		ASSERT_EQ(msg_type, SSH_MSG_SERVICE_ACCEPT);
 	}
 
-	/* Send publickey probe — server has no publickey_cb */
+	/* Send publickey probe -- server has no publickey_cb */
 	uint8_t msg[256];
 	size_t pos = build_auth_prefix(msg, sizeof(msg), "publickey");
 	msg[pos++] = 0; /* has_sig = false */
@@ -3589,7 +3589,7 @@ test_server_publickey_unknown_algo(void)
 	ASSERT_OK(dssh_transport_send_packet(pe.hctx.client, msg, pos, NULL));
 
 	/* Server should send USERAUTH_FAILURE for unknown algo.
-	 * Then we need to let the server exit — send none. */
+	 * Then we need to let the server exit -- send none. */
 	{
 		uint8_t msg_type;
 		uint8_t *payload;
@@ -3640,7 +3640,7 @@ test_server_publickey_probe_rejected(void)
 }
 
 /* ================================================================
- * Password change flow — server-side branch coverage
+ * Password change flow -- server-side branch coverage
  * ================================================================ */
 
 static int
@@ -3796,7 +3796,7 @@ test_server_password_change_no_change_cb(void)
 	pos += 3;
 	ASSERT_OK(dssh_transport_send_packet(ctx.client, msg, pos, NULL));
 
-	/* No passwd_change_cb → auth_res stays FAILURE → USERAUTH_FAILURE */
+	/* No passwd_change_cb -> auth_res stays FAILURE -> USERAUTH_FAILURE */
 	{
 		uint8_t msg_type;
 		uint8_t *payload;
@@ -3978,7 +3978,7 @@ test_server_publickey_verify_bad_sig(void)
 }
 
 /* ================================================================
- * Coverage: password CHANGEREQ → cb returns CHANGE_PASSWORD again
+ * Coverage: password CHANGEREQ -> cb returns CHANGE_PASSWORD again
  * ================================================================ */
 
 static int
@@ -4128,7 +4128,7 @@ banner_trunc_server_thread(void *arg)
 	}
 
 	/* Send truncated banners before reading the auth request */
-	/* Banner with only msg_type — no msg_len header (line 18) */
+	/* Banner with only msg_type -- no msg_len header (line 18) */
 	{
 		uint8_t b[] = { 53 }; /* SSH_MSG_USERAUTH_BANNER */
 		dssh_transport_send_packet(server, b, sizeof(b), NULL);
@@ -4186,7 +4186,7 @@ test_banner_truncated_variants(void)
 	thrd_t st;
 	ASSERT_TRUE(thrd_create(&st, banner_trunc_server_thread, &sa) == thrd_success);
 
-	/* Client: password auth — will see truncated banners first */
+	/* Client: password auth -- will see truncated banners first */
 	int res = dssh_auth_password(ctx.client, "testuser", "testpass",
 	    NULL, NULL);
 
@@ -4236,7 +4236,7 @@ test_get_methods_none_accepted(void)
 	ASSERT_TRUE(thrd_create(&st, none_accept_server_thread, &sa) == thrd_success);
 
 	/* Client: get_methods sends "none" USERAUTH_REQUEST.
-	 * Server accepts it → sends USERAUTH_SUCCESS.
+	 * Server accepts it -> sends USERAUTH_SUCCESS.
 	 * get_methods should return NONE_ACCEPTED with empty methods string. */
 	char methods[256] = "unchanged";
 	int res = dssh_auth_get_methods(ctx.client, "testuser",
@@ -4271,7 +4271,7 @@ crafted_response_server_thread(void *arg)
 	struct crafted_response_ctx *cr = arg;
 	dssh_session server = cr->hctx->server;
 
-	/* SERVICE_REQUEST → SERVICE_ACCEPT */
+	/* SERVICE_REQUEST -> SERVICE_ACCEPT */
 	uint8_t msg_type;
 	uint8_t *payload;
 	size_t payload_len;
@@ -4307,7 +4307,7 @@ crafted_response_server_thread(void *arg)
 static int
 test_get_methods_failure_truncated(void)
 {
-	/* USERAUTH_FAILURE with only msg_type byte — line 574 */
+	/* USERAUTH_FAILURE with only msg_type byte -- line 574 */
 	struct handshake_ctx ctx;
 	if (handshake_setup(&ctx) < 0) {
 		handshake_cleanup(&ctx);
@@ -4331,7 +4331,7 @@ test_get_methods_failure_truncated(void)
 static int
 test_get_methods_failure_methods_len_exceeds(void)
 {
-	/* USERAUTH_FAILURE with methods_len > payload — line 578 */
+	/* USERAUTH_FAILURE with methods_len > payload -- line 578 */
 	struct handshake_ctx ctx;
 	if (handshake_setup(&ctx) < 0) {
 		handshake_cleanup(&ctx);
@@ -4358,7 +4358,7 @@ test_get_methods_failure_methods_len_exceeds(void)
 static int
 test_get_methods_failure_control_char(void)
 {
-	/* USERAUTH_FAILURE with control char in methods — line 583 */
+	/* USERAUTH_FAILURE with control char in methods -- line 583 */
 	struct handshake_ctx ctx;
 	if (handshake_setup(&ctx) < 0) {
 		handshake_cleanup(&ctx);
@@ -4387,7 +4387,7 @@ test_get_methods_failure_control_char(void)
 static int
 test_get_methods_unexpected_msg(void)
 {
-	/* Server responds with neither SUCCESS nor FAILURE — line 591 */
+	/* Server responds with neither SUCCESS nor FAILURE -- line 591 */
 	struct handshake_ctx ctx;
 	if (handshake_setup(&ctx) < 0) {
 		handshake_cleanup(&ctx);
@@ -4409,7 +4409,7 @@ test_get_methods_unexpected_msg(void)
 }
 
 /* ================================================================
- * Coverage: client password — no change callback, CHANGEREQ parse
+ * Coverage: client password -- no change callback, CHANGEREQ parse
  * ================================================================ */
 
 static int
@@ -4421,7 +4421,7 @@ changereq_server_thread_send(void *arg)
 	uint8_t msg_type;
 	uint8_t *payload;
 	size_t payload_len;
-	/* SERVICE_REQUEST → SERVICE_ACCEPT */
+	/* SERVICE_REQUEST -> SERVICE_ACCEPT */
 	if (dssh_transport_recv_packet(server, &msg_type, &payload, &payload_len) < 0) {
 		mock_io_close_c2s(&cr->hctx->io);
 		mock_io_close_s2c(&cr->hctx->io);
@@ -4452,7 +4452,7 @@ changereq_server_thread_send(void *arg)
 static int
 test_password_changereq_no_callback(void)
 {
-	/* Client receives CHANGEREQ but has no passwd_change_cb — line 683 */
+	/* Client receives CHANGEREQ but has no passwd_change_cb -- line 683 */
 	struct handshake_ctx ctx;
 	if (handshake_setup(&ctx) < 0) {
 		handshake_cleanup(&ctx);
@@ -4481,7 +4481,7 @@ test_password_changereq_no_callback(void)
 static int
 test_password_changereq_truncated_prompt(void)
 {
-	/* CHANGEREQ with only msg_type, no prompt header — line 689 */
+	/* CHANGEREQ with only msg_type, no prompt header -- line 689 */
 	struct handshake_ctx ctx;
 	if (handshake_setup(&ctx) < 0) {
 		handshake_cleanup(&ctx);
@@ -4505,7 +4505,7 @@ test_password_changereq_truncated_prompt(void)
 static int
 test_password_changereq_truncated_prompt_data(void)
 {
-	/* CHANGEREQ with prompt_len=100 but no data — line 693 */
+	/* CHANGEREQ with prompt_len=100 but no data -- line 693 */
 	struct handshake_ctx ctx;
 	if (handshake_setup(&ctx) < 0) {
 		handshake_cleanup(&ctx);
@@ -4532,7 +4532,7 @@ test_password_changereq_truncated_prompt_data(void)
 static int
 test_password_changereq_truncated_lang(void)
 {
-	/* CHANGEREQ with valid prompt but lang_len > remaining — lines 704-705 */
+	/* CHANGEREQ with valid prompt but lang_len > remaining -- lines 704-705 */
 	struct handshake_ctx ctx;
 	if (handshake_setup(&ctx) < 0) {
 		handshake_cleanup(&ctx);
@@ -4565,7 +4565,7 @@ test_password_changereq_truncated_lang(void)
 static int
 test_password_unexpected_msg(void)
 {
-	/* Server responds with bogus msg type — line 727-728 */
+	/* Server responds with bogus msg type -- line 727-728 */
 	struct handshake_ctx ctx;
 	if (handshake_setup(&ctx) < 0) {
 		handshake_cleanup(&ctx);
@@ -4586,7 +4586,7 @@ test_password_unexpected_msg(void)
 }
 
 /* ================================================================
- * Coverage: client SERVICE_ACCEPT unexpected — line 509
+ * Coverage: client SERVICE_ACCEPT unexpected -- line 509
  * ================================================================ */
 
 static int
@@ -5015,7 +5015,7 @@ test_server_send_fail_password_no_cb(void)
 		ASSERT_EQ(msg_type, SSH_MSG_SERVICE_ACCEPT);
 	}
 
-	/* Send password auth — server has no password_cb */
+	/* Send password auth -- server has no password_cb */
 	{
 		static const char user[] = "testuser";
 		static const char svc[] = "ssh-connection";
@@ -5108,7 +5108,7 @@ test_server_send_fail_password_changereq(void)
 		ASSERT_EQ(msg_type, SSH_MSG_SERVICE_ACCEPT);
 	}
 
-	/* Send password auth — cb will return CHANGE_PASSWORD */
+	/* Send password auth -- cb will return CHANGE_PASSWORD */
 	{
 		static const char user[] = "testuser";
 		static const char svc[] = "ssh-connection";
@@ -5180,7 +5180,7 @@ test_server_send_fail_publickey_no_cb(void)
 		ASSERT_EQ(msg_type, SSH_MSG_SERVICE_ACCEPT);
 	}
 
-	/* Send publickey probe — server has no publickey_cb */
+	/* Send publickey probe -- server has no publickey_cb */
 	{
 		uint8_t msg[256];
 		size_t pos = build_auth_prefix(msg, sizeof(msg), "publickey");
@@ -5245,7 +5245,7 @@ test_server_send_fail_pk_ok(void)
 		ASSERT_EQ(msg_type, SSH_MSG_SERVICE_ACCEPT);
 	}
 
-	/* Send publickey probe — cb accepts, server tries to send PK_OK */
+	/* Send publickey probe -- cb accepts, server tries to send PK_OK */
 	{
 		uint8_t msg[256];
 		size_t pos = build_auth_prefix(msg, sizeof(msg), "publickey");
@@ -5310,7 +5310,7 @@ test_server_send_fail_pk_probe_rejected(void)
 		ASSERT_EQ(msg_type, SSH_MSG_SERVICE_ACCEPT);
 	}
 
-	/* Send publickey probe — cb rejects, server tries to send FAILURE */
+	/* Send publickey probe -- cb rejects, server tries to send FAILURE */
 	{
 		uint8_t msg[256];
 		size_t pos = build_auth_prefix(msg, sizeof(msg), "publickey");
@@ -5540,7 +5540,7 @@ test_get_methods_zero_buffer(void)
 	ASSERT_TRUE(thrd_create(&st, none_accept_server_thread, &sa) == thrd_success);
 
 	/* Call get_methods with methods_sz=0.
-	 * Server accepts none → USERAUTH_SUCCESS → line 567 False.
+	 * Server accepts none -> USERAUTH_SUCCESS -> line 567 False.
 	 * The methods buffer is not written to. */
 	char methods[1] = { 'X' };
 	int res = dssh_auth_get_methods(ctx.client, "user", methods, 0);
@@ -5742,7 +5742,7 @@ test_server_change_password_null_prompt(void)
 		ASSERT_EQ(msg_type, SSH_MSG_SERVICE_ACCEPT);
 	}
 
-	/* Send password auth — cb returns CHANGE_PASSWORD with NULL prompt */
+	/* Send password auth -- cb returns CHANGE_PASSWORD with NULL prompt */
 	{
 		uint8_t msg[128];
 		size_t pos = build_auth_prefix(msg, sizeof(msg), "password");
@@ -5907,7 +5907,7 @@ test_server_long_algo_name(void)
 	size_t pos = build_auth_prefix(msg, sizeof(msg), "publickey");
 	msg[pos++] = 0; /* has_sig = false */
 
-	/* Algo name of 80 bytes (> 64 limit) — exercises truncation path */
+	/* Algo name of 80 bytes (> 64 limit) -- exercises truncation path */
 	char long_algo[81];
 	memset(long_algo, 'z', 80);
 	long_algo[80] = 0;
@@ -6254,7 +6254,7 @@ test_client_publickey_no_key(void)
 	ctx.client->auth_service_requested = true;
 
 	/* Try publickey auth with an algo name that doesn't exist.
-	 * dssh_transport_find_key_algo returns NULL → line 971 */
+	 * dssh_transport_find_key_algo returns NULL -> line 971 */
 	int res = dssh_auth_publickey(ctx.client,
 	    "user", "nonexistent-algo");
 	ASSERT_EQ(res, DSSH_ERROR_INIT);
@@ -6434,7 +6434,7 @@ pk_close_after_request_server_thread(void *arg)
 		}
 		dssh_transport_send_packet(server, accept, pos, NULL);
 	}
-	/* Receive none USERAUTH_REQUEST → send FAILURE */
+	/* Receive none USERAUTH_REQUEST -> send FAILURE */
 	dssh_transport_recv_packet(server, &msg_type, &payload, &payload_len);
 	{
 		static const char methods[] = "publickey";
@@ -6449,7 +6449,7 @@ pk_close_after_request_server_thread(void *arg)
 		dssh_transport_send_packet(server, msg, pos, NULL);
 	}
 
-	/* Receive publickey USERAUTH_REQUEST → close pipe */
+	/* Receive publickey USERAUTH_REQUEST -> close pipe */
 	dssh_transport_recv_packet(server, &msg_type, &payload, &payload_len);
 	mock_io_close_s2c(&cr->hctx->io);
 	return 0;
@@ -6519,7 +6519,7 @@ pk_banner_server_thread(void *arg)
 		}
 		dssh_transport_send_packet(server, accept, pos, NULL);
 	}
-	/* Receive none USERAUTH_REQUEST → send FAILURE */
+	/* Receive none USERAUTH_REQUEST -> send FAILURE */
 	dssh_transport_recv_packet(server, &msg_type, &payload, &payload_len);
 	{
 		static const char methods[] = "publickey";
@@ -6642,7 +6642,7 @@ banner_no_lang_server_thread(void *arg)
 		dssh_serialize_uint32(2, b, sizeof(b), &bp);
 		b[bp++] = 'h';
 		b[bp++] = 'i';
-		/* Payload ends here — no room for lang_len (4 bytes) */
+		/* Payload ends here -- no room for lang_len (4 bytes) */
 		dssh_transport_send_packet(server, b, bp, NULL);
 	}
 
@@ -6682,7 +6682,7 @@ test_server_banner_no_lang(void)
 	thrd_join(st, NULL);
 	ASSERT_EQ(res, 0);
 	/* Banner callback should have been called (msg is valid even
-	 * though language is missing — line 28 is False, language
+	 * though language is missing -- line 28 is False, language
 	 * stays NULL/0 but cb still fires). */
 	ASSERT_TRUE(banner_received);
 
@@ -6732,7 +6732,7 @@ test_get_methods_small_buffer(void)
 }
 
 /* ================================================================
- * Direct parse_userauth_prefix tests — called from main thread
+ * Direct parse_userauth_prefix tests -- called from main thread
  * to avoid coverage counter issues with threaded server tests.
  * ================================================================ */
 
@@ -6877,7 +6877,7 @@ test_parse_prefix_valid(void)
  * ================================================================ */
 
 /*
- * Password change: passwd_change_cb returns SUCCESS → send_auth_success
+ * Password change: passwd_change_cb returns SUCCESS -> send_auth_success
  * fails (line 281).
  */
 static int
@@ -6959,7 +6959,7 @@ test_server_send_fail_change_success(void)
 }
 
 /*
- * Password change: passwd_change_cb returns CHANGE_PASSWORD →
+ * Password change: passwd_change_cb returns CHANGE_PASSWORD ->
  * send_passwd_changereq fails (line 287).
  */
 static int
@@ -7047,7 +7047,7 @@ test_server_send_fail_change_changereq(void)
 }
 
 /*
- * Password change: passwd_change_cb returns FAILURE →
+ * Password change: passwd_change_cb returns FAILURE ->
  * send_auth_failure fails (line 293).
  */
 static int
@@ -7115,7 +7115,7 @@ test_server_send_fail_change_failure(void)
 }
 
 /*
- * Publickey with sig: verify fails → send_auth_failure fails (line 418).
+ * Publickey with sig: verify fails -> send_auth_failure fails (line 418).
  * We send a publickey request with has_sig=true and a bad sig, then
  * close s2c so the FAILURE send fails.
  */
@@ -7218,7 +7218,7 @@ test_server_send_fail_pk_verify_bad_sig(void)
 }
 
 /*
- * Publickey with valid sig: publickey_cb returns SUCCESS →
+ * Publickey with valid sig: publickey_cb returns SUCCESS ->
  * send_auth_success fails (line 429).
  * We use a full roundtrip with a real key + signature to reach
  * the success path, then close s2c before the SUCCESS send.
@@ -7232,7 +7232,7 @@ pk_success_send_fail_server_thread(void *arg)
 	uint8_t *payload;
 	size_t payload_len;
 
-	/* SERVICE_REQUEST → SERVICE_ACCEPT */
+	/* SERVICE_REQUEST -> SERVICE_ACCEPT */
 	if (dssh_transport_recv_packet(server, &msg_type, &payload, &payload_len) < 0) {
 		a->result = -1;
 		return 0;
@@ -7251,7 +7251,7 @@ pk_success_send_fail_server_thread(void *arg)
 		dssh_transport_send_packet(server, accept, pos, NULL);
 	}
 
-	/* Receive none USERAUTH_REQUEST → send FAILURE */
+	/* Receive none USERAUTH_REQUEST -> send FAILURE */
 	dssh_transport_recv_packet(server, &msg_type, &payload, &payload_len);
 	{
 		static const char methods[] = "publickey";
@@ -7266,11 +7266,11 @@ pk_success_send_fail_server_thread(void *arg)
 		dssh_transport_send_packet(server, msg, pos, NULL);
 	}
 
-	/* Receive publickey USERAUTH_REQUEST — parse and verify manually,
+	/* Receive publickey USERAUTH_REQUEST -- parse and verify manually,
 	 * then close s2c instead of sending SUCCESS. */
 	dssh_transport_recv_packet(server, &msg_type, &payload, &payload_len);
 
-	/* Close s2c — simulates send failure for the auth success response */
+	/* Close s2c -- simulates send failure for the auth success response */
 	mock_io_close_s2c(&a->ctx->io);
 
 	a->result = 0;
@@ -7298,7 +7298,7 @@ test_server_send_fail_pk_success(void)
 	    methods, sizeof(methods));
 	ASSERT_EQ(mres, DSSH_AUTH_METHODS_AVAILABLE);
 
-	/* Client: publickey auth — server will close pipe before responding */
+	/* Client: publickey auth -- server will close pipe before responding */
 	int res = dssh_auth_publickey(ctx.client, "user",
 	    test_key_algo_name());
 
@@ -7313,7 +7313,7 @@ test_server_send_fail_pk_success(void)
 }
 
 /*
- * Publickey with valid sig: publickey_cb returns FAILURE →
+ * Publickey with valid sig: publickey_cb returns FAILURE ->
  * send_auth_failure fails (line 434).
  * Same as above but the publickey_cb rejects.
  */
@@ -7615,7 +7615,7 @@ test_password_changereq_no_lang_field(void)
 	dssh_serialize_uint32(3, resp, sizeof(resp), &rp);
 	memcpy(&resp[rp], "hey", 3);
 	rp += 3;
-	/* No lang_len field at all — payload ends here */
+	/* No lang_len field at all -- payload ends here */
 	struct crafted_response_ctx cr = { &ctx, resp, rp };
 	thrd_t st;
 	ASSERT_THRD_CREATE(&st, changereq_server_thread_send, &cr);
@@ -7635,7 +7635,7 @@ test_password_changereq_no_lang_field(void)
 /*
  * CLIENT: CHANGEREQ with valid prompt, lang_len present but
  * lang_len + rpos > payload_len.  Exercises line 702 False
- * (rpos + lang_len <= payload_len is false → lang_len = 0).
+ * (rpos + lang_len <= payload_len is false -> lang_len = 0).
  */
 static int
 test_password_changereq_truncated_lang_data(void)
@@ -8051,7 +8051,7 @@ static int test_direct_short_svc_request(void)
 	struct dssh_auth_server_cbs cbs = default_cbs();
 	int res = auth_server_impl(ctx.server, &cbs, NULL, NULL);
 	/* Server sends SERVICE_ACCEPT (without service name), then waits
-	 * for USERAUTH_REQUEST, gets EOF → error */
+	 * for USERAUTH_REQUEST, gets EOF -> error */
 	ASSERT_TRUE(res < 0);
 	mock_io_close_c2s(&ctx.io);
 	mock_io_close_s2c(&ctx.io);
@@ -8085,7 +8085,7 @@ static int test_direct_svc_slen_overflow(void)
 
 static int test_direct_long_username(void)
 {
-	/* Username > 255 bytes — truncation ternary */
+	/* Username > 255 bytes -- truncation ternary */
 	uint8_t msg[512];
 	size_t pos = 0;
 	msg[pos++] = SSH_MSG_USERAUTH_REQUEST;
@@ -8142,7 +8142,7 @@ struct dclient_server_arg {
 	const uint8_t *response;
 	size_t response_len;
 	int result;
-	bool close_s2c;   /* close server→client pipe before returning */
+	bool close_s2c;   /* close server->client pipe before returning */
 };
 
 static int
@@ -8411,7 +8411,7 @@ test_dclient_changereq_no_lang(void)
 	dssh_serialize_uint32(2, resp, sizeof(resp), &rp);
 	memcpy(&resp[rp], "ok", 2);
 	rp += 2;
-	/* No language field — exercises line 699 false branch */
+	/* No language field -- exercises line 699 false branch */
 
 	struct dclient_server_arg sa = { &ctx, resp, rp, 0, true };
 	thrd_t st;
@@ -8421,7 +8421,7 @@ test_dclient_changereq_no_lang(void)
 	}
 
 	/* The change cb fires with lang_len=0, sends new password,
-	 * but server thread closes s2c so recv fails → error */
+	 * but server thread closes s2c so recv fails -> error */
 	int res = auth_password_impl(ctx.client, "user", "pass",
 	    test_client_changereq_cb, NULL);
 
@@ -8699,7 +8699,7 @@ test_dclient_pk_alloc_fail(void)
 static int
 test_direct_bad_prefix_in_loop(void)
 {
-	/* A USERAUTH_REQUEST with only the msg type — prefix parse fails */
+	/* A USERAUTH_REQUEST with only the msg type -- prefix parse fails */
 	uint8_t msg[] = { SSH_MSG_USERAUTH_REQUEST };
 	struct dssh_auth_server_cbs cbs = default_cbs();
 	int res = direct_server_test(msg, 1, &cbs, NULL, NULL);
@@ -8709,7 +8709,7 @@ test_direct_bad_prefix_in_loop(void)
 
 /* L71: send_passwd_changereq malloc fail.
  * Server receives password request, password_cb returns CHANGE_PASSWORD
- * with a change_prompt → send_passwd_changereq mallocs. */
+ * with a change_prompt -> send_passwd_changereq mallocs. */
 static int
 test_server_changereq_alloc(void)
 {
@@ -8829,7 +8829,7 @@ test_server_pk_ok_alloc(void)
 }
 
 /* L388: publickey with has_sig=true but unknown algo name.
- * Server can't find the key algorithm → send FAILURE. */
+ * Server can't find the key algorithm -> send FAILURE. */
 static int
 test_direct_pk_sig_unknown_algo(void)
 {
@@ -8847,7 +8847,7 @@ test_direct_pk_sig_unknown_algo(void)
 	size_t len = build_auth_request("publickey", 9, extra, ep,
 	    msg, sizeof(msg));
 	struct dssh_auth_server_cbs cbs = default_cbs();
-	/* Server sends FAILURE (unknown algo), then gets EOF → error.
+	/* Server sends FAILURE (unknown algo), then gets EOF -> error.
 	 * We just need it to reach L388. */
 	(void)direct_server_test(msg, len, &cbs, NULL, NULL);
 	return TEST_PASS;
@@ -9051,7 +9051,7 @@ test_dclient_changereq_lang_overflow(void)
 		return TEST_FAIL;
 	}
 
-	/* cb fires with lang_len=0 (overflow → 0), sends new pw, fails recv */
+	/* cb fires with lang_len=0 (overflow -> 0), sends new pw, fails recv */
 	int res = auth_password_impl(ctx.client, "user", "pass",
 	    test_client_changereq_cb, NULL);
 
@@ -9073,7 +9073,7 @@ test_dclient_get_methods_unexpected_msg(void)
 		return TEST_FAIL;
 	}
 
-	/* Send INFO_REQUEST (60) — not SUCCESS or FAILURE */
+	/* Send INFO_REQUEST (60) -- not SUCCESS or FAILURE */
 	uint8_t resp[] = { SSH_MSG_USERAUTH_INFO_REQUEST, 0, 0, 0, 0 };
 
 	struct dclient_server_arg sa = { &ctx, resp, sizeof(resp), 0, true };
@@ -9200,7 +9200,7 @@ test_server_kbi_cb(const uint8_t *username, size_t username_len,
 	d->called = true;
 
 	if (num_responses == 0 && responses == NULL) {
-		/* First call — send prompt */
+		/* First call -- send prompt */
 		*name_out = strdup("Test");
 		*instruction_out = strdup("Enter the code");
 		*num_prompts_out = 1;
@@ -9552,7 +9552,7 @@ kbi_bad_client_thread(void *arg)
 	struct handshake_ctx *ctx = arg;
 	dssh_session client = ctx->client;
 
-	/* SERVICE_REQUEST → SERVICE_ACCEPT */
+	/* SERVICE_REQUEST -> SERVICE_ACCEPT */
 	int res = dssh_auth_get_methods(client, "testuser", NULL, 0);
 	if (res < 0)
 		return 0;
@@ -9579,7 +9579,7 @@ kbi_bad_client_thread(void *arg)
 
 	dssh_transport_send_packet(client, msg, pos, NULL);
 
-	/* Receive INFO_REQUEST (60) — discard it */
+	/* Receive INFO_REQUEST (60) -- discard it */
 	uint8_t  rx_type;
 	uint8_t *rx_payload;
 	size_t   rx_len;
@@ -9667,7 +9667,7 @@ kbi_truncated_response_thread(void *arg)
 
 	dssh_transport_send_packet(client, msg, pos, NULL);
 
-	/* Receive INFO_REQUEST — discard */
+	/* Receive INFO_REQUEST -- discard */
 	uint8_t  rx_type;
 	uint8_t *rx_payload;
 	size_t   rx_len;
@@ -9791,7 +9791,7 @@ test_auth_server_kbi_trunc_lang(void)
 }
 
 /*
- * KBI server: no kbi callback registered — should get FAILURE.
+ * KBI server: no kbi callback registered -- should get FAILURE.
  */
 static int
 test_auth_server_kbi_no_callback(void)

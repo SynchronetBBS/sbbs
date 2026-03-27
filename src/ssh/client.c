@@ -161,7 +161,7 @@ extra_line(uint8_t *buf, size_t bufsz, void *cbdata)
 }
 
 /* ================================================================
- * Stdin writer thread — reads from stdin, writes to channel
+ * Stdin writer thread -- reads from stdin, writes to channel
  * ================================================================ */
 static int
 stdin_thread(void *arg)

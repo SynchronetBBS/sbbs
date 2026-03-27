@@ -1,5 +1,5 @@
 /*
- * test_enc.c — Test encryption module for DeuceSSH.
+ * test_enc.c -- Test encryption module for DeuceSSH.
  *
  * A minimal block cipher that XORs with a repeating key.  Provides
  * controllable failure injection: init, encrypt, and decrypt can

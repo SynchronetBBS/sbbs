@@ -1,5 +1,5 @@
 /*
- * test_algo_key.c — Tests for Ed25519 and RSA-SHA2-256 host key algorithm
+ * test_algo_key.c -- Tests for Ed25519 and RSA-SHA2-256 host key algorithm
  * modules in DeuceSSH.
  *
  * Tests key generation, sign/verify, public key export, and file I/O.
@@ -188,7 +188,7 @@ test_ed25519_get_pub_str_format(void)
 	ASSERT_TRUE(len > 12);
 	ASSERT_TRUE(memcmp(buf, "ssh-ed25519 ", 12) == 0);
 
-	/* Rest is base64 — should only contain valid base64 chars */
+	/* Rest is base64 -- should only contain valid base64 chars */
 	for (int64_t i = 12; i < len - 1; i++) {
 		char c = buf[i];
 		ASSERT_TRUE((c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') ||
@@ -849,7 +849,7 @@ test_ed25519_sig_fails_rsa_verify(void)
 	ASSERT_EQ(ed_ka->sign(&ed_sig, &ed_sig_len,
 	    data, sizeof(data) - 1, ed_ka->ctx), 0);
 
-	/* Try to verify with RSA pubkey — must fail */
+	/* Try to verify with RSA pubkey -- must fail */
 	const uint8_t *rsa_pub = NULL;
 	size_t rsa_pub_len;
 	ASSERT_EQ(rsa_ka->pubkey(&rsa_pub, &rsa_pub_len,
@@ -1082,7 +1082,7 @@ test_ed25519_save_pub_before_keygen(void)
 static int
 test_ed25519_load_rsa_key_file(void)
 {
-	/* Load an RSA key into Ed25519 loader — wrong key type */
+	/* Load an RSA key into Ed25519 loader -- wrong key type */
 	dssh_test_reset_global_config();
 	ASSERT_EQ(dssh_register_rsa_sha2_256(), 0);
 	ASSERT_EQ(dssh_rsa_sha2_256_generate_key(2048), 0);
@@ -1133,7 +1133,7 @@ test_rsa_save_pub_before_keygen(void)
 static int
 test_rsa_load_ed25519_key_file(void)
 {
-	/* Load an Ed25519 key into RSA loader — wrong key type */
+	/* Load an Ed25519 key into RSA loader -- wrong key type */
 	dssh_test_reset_global_config();
 	ASSERT_EQ(dssh_register_ssh_ed25519(), 0);
 	ASSERT_EQ(dssh_ed25519_generate_key(), 0);
@@ -1227,7 +1227,7 @@ test_rsa_save_pub_bad_path(void)
 static int
 test_ed25519_generate_twice(void)
 {
-	/* Generate key twice — covers the "replace existing" path */
+	/* Generate key twice -- covers the "replace existing" path */
 	dssh_test_reset_global_config();
 	ASSERT_EQ(dssh_register_ssh_ed25519(), 0);
 	ASSERT_EQ(dssh_ed25519_generate_key(), 0);
@@ -1256,7 +1256,7 @@ test_rsa_generate_twice(void)
 static int
 test_ed25519_load_twice(void)
 {
-	/* Load key twice — covers the "replace existing" path in load_key_file */
+	/* Load key twice -- covers the "replace existing" path in load_key_file */
 	dssh_test_reset_global_config();
 	ASSERT_EQ(dssh_register_ssh_ed25519(), 0);
 	ASSERT_EQ(dssh_ed25519_generate_key(), 0);
@@ -1269,7 +1269,7 @@ test_ed25519_load_twice(void)
 
 	/* Load it once */
 	ASSERT_EQ(dssh_ed25519_load_key_file(tmppath, NULL, NULL), 0);
-	/* Load it again — replaces existing */
+	/* Load it again -- replaces existing */
 	ASSERT_EQ(dssh_ed25519_load_key_file(tmppath, NULL, NULL), 0);
 	unlink(tmppath);
 
@@ -1303,7 +1303,7 @@ test_rsa_load_twice(void)
 }
 
 /* ================================================================
- * Verify parse errors — malformed key/sig blobs
+ * Verify parse errors -- malformed key/sig blobs
  * Covers uncovered branches in ssh-ed25519.c and rsa-sha2-256.c
  * verify() functions.
  * ================================================================ */
@@ -1469,7 +1469,7 @@ test_ed25519_verify_sig_trailing_garbage(void)
 	ASSERT_EQ(ka->sign(&sig, &sig_len,
 	    data, sizeof(data) - 1, ka->ctx), 0);
 
-	/* Append garbage to sig — need room for one extra byte */
+	/* Append garbage to sig -- need room for one extra byte */
 	uint8_t *sig2 = realloc(sig, sig_len + 1);
 	ASSERT_NOT_NULL(sig2);
 	sig2[sig_len] = 0xFF;
@@ -1577,7 +1577,7 @@ test_rsa_verify_sig_trailing_garbage(void)
 	ASSERT_EQ(ka->sign(&sig, &sig_len,
 	    data, sizeof(data) - 1, ka->ctx), 0);
 
-	/* Append garbage — need room for one extra byte */
+	/* Append garbage -- need room for one extra byte */
 	uint8_t *sig2 = realloc(sig, sig_len + 1);
 	ASSERT_NOT_NULL(sig2);
 	sig2[sig_len] = 0xFF;
@@ -1588,7 +1588,7 @@ test_rsa_verify_sig_trailing_garbage(void)
 }
 
 /* ================================================================
- * Deeper verify parse errors — truncation after valid prefix
+ * Deeper verify parse errors -- truncation after valid prefix
  * ================================================================ */
 
 static int
@@ -1666,7 +1666,7 @@ test_ed25519_verify_bad_signature(void)
 	ASSERT_EQ(ka->sign(&sig, &sig_len,
 	    data, sizeof(data) - 1, ka->ctx), 0);
 
-	/* Verify against different data — signature is valid format but wrong */
+	/* Verify against different data -- signature is valid format but wrong */
 	const uint8_t wrong_data[] = "wrong";
 	ASSERT_TRUE(ka->verify(pub, pub_len, sig, sig_len,
 	    wrong_data, sizeof(wrong_data) - 1) < 0);
@@ -1762,7 +1762,7 @@ static int
 test_ed25519_generate_before_register(void)
 {
 	dssh_test_reset_global_config();
-	/* Don't register — ka will be NULL */
+	/* Don't register -- ka will be NULL */
 	int res = dssh_ed25519_generate_key();
 	ASSERT_TRUE(res < 0);
 	return TEST_PASS;
@@ -1796,13 +1796,13 @@ test_rsa_get_pub_str_before_register(void)
 }
 
 /* ================================================================
- * Defensive guard tests — NULL ctx and too-small buffer branches
+ * Defensive guard tests -- NULL ctx and too-small buffer branches
  * ================================================================ */
 
 static int
 test_ed25519_haskey_null_ctx(void)
 {
-	/* Covers haskey(NULL) — cbd != NULL False branch */
+	/* Covers haskey(NULL) -- cbd != NULL False branch */
 	dssh_test_reset_global_config();
 	ASSERT_EQ(dssh_register_ssh_ed25519(), 0);
 
@@ -1817,7 +1817,7 @@ test_ed25519_haskey_null_ctx(void)
 static int
 test_ed25519_cleanup_null_ctx(void)
 {
-	/* Covers cleanup(NULL) — cbd != NULL False branch */
+	/* Covers cleanup(NULL) -- cbd != NULL False branch */
 	dssh_test_reset_global_config();
 	ASSERT_EQ(dssh_register_ssh_ed25519(), 0);
 
@@ -1848,7 +1848,7 @@ test_ed25519_get_pub_str_bufsz_one(void)
 static int
 test_rsa_haskey_null_ctx(void)
 {
-	/* Covers haskey(NULL) — cbd != NULL False branch */
+	/* Covers haskey(NULL) -- cbd != NULL False branch */
 	dssh_test_reset_global_config();
 	ASSERT_EQ(dssh_register_rsa_sha2_256(), 0);
 
@@ -1863,7 +1863,7 @@ test_rsa_haskey_null_ctx(void)
 static int
 test_rsa_cleanup_null_ctx(void)
 {
-	/* Covers cleanup(NULL) — cbd != NULL False branch */
+	/* Covers cleanup(NULL) -- cbd != NULL False branch */
 	dssh_test_reset_global_config();
 	ASSERT_EQ(dssh_register_rsa_sha2_256(), 0);
 
@@ -1892,10 +1892,10 @@ test_rsa_get_pub_str_bufsz_one(void)
 }
 
 /* ================================================================
- * Branch coverage — verify() overrun conditions
+ * Branch coverage -- verify() overrun conditions
  *
  * Each compound parse check has two branches:
- *   (1) dssh_parse_uint32 < 4 — too short for length field
+ *   (1) dssh_parse_uint32 < 4 -- too short for length field
  *   (2) claimed length overruns buffer
  * Existing tests hit (1); these hit (2).
  * ================================================================ */
@@ -2025,7 +2025,7 @@ test_ed25519_verify_sig_wrong_algo_name(void)
 static int
 test_ed25519_verify_key_wrong_algo_len(void)
 {
-	/* key_blob: algo_len=7 (not 11) — hits algo_len != ED25519_NAME_LEN */
+	/* key_blob: algo_len=7 (not 11) -- hits algo_len != ED25519_NAME_LEN */
 	dssh_test_reset_global_config();
 	ASSERT_EQ(dssh_register_ssh_ed25519(), 0);
 	dssh_key_algo ka = dssh_transport_find_key_algo("ssh-ed25519");
@@ -2050,7 +2050,7 @@ test_ed25519_verify_key_wrong_algo_len(void)
 static int
 test_ed25519_verify_key_wrong_algo_content(void)
 {
-	/* key_blob: algo_len=11 but content mismatch — hits memcmp != 0 */
+	/* key_blob: algo_len=11 but content mismatch -- hits memcmp != 0 */
 	dssh_test_reset_global_config();
 	ASSERT_EQ(dssh_register_ssh_ed25519(), 0);
 	dssh_key_algo ka = dssh_transport_find_key_algo("ssh-ed25519");
@@ -2269,7 +2269,7 @@ test_rsa_verify_sig_rawsig_overrun(void)
 }
 
 /* ================================================================
- * Branch coverage — load/save/get_pub_str edge cases
+ * Branch coverage -- load/save/get_pub_str edge cases
  * ================================================================ */
 
 static int
@@ -2291,7 +2291,7 @@ test_rsa_load_before_register(void)
 static int
 test_ed25519_load_garbage_file(void)
 {
-	/* File exists but is not valid PEM — hits PEM_read fail branch */
+	/* File exists but is not valid PEM -- hits PEM_read fail branch */
 	dssh_test_reset_global_config();
 	ASSERT_EQ(dssh_register_ssh_ed25519(), 0);
 
@@ -2441,7 +2441,7 @@ test_rsa_get_pub_str_zero_bufsz(void)
 }
 
 /* ================================================================
- * haskey with wrong key type — hits EVP_PKEY_id mismatch
+ * haskey with wrong key type -- hits EVP_PKEY_id mismatch
  * ================================================================ */
 
 static int
@@ -2521,7 +2521,7 @@ test_rsa_haskey_null_pkey(void)
 }
 
 /* ================================================================
- * fclose/write failure in save_key_file — close fd under fclose
+ * fclose/write failure in save_key_file -- close fd under fclose
  *
  * We save to /dev/full which causes write/fclose to fail with ENOSPC.
  * If /dev/full is unavailable, skip.
@@ -2537,7 +2537,7 @@ test_ed25519_save_key_write_fail(void)
 	/* /dev/full makes write() fail with ENOSPC */
 	int res = dssh_ed25519_save_key_file("/dev/full", NULL, NULL);
 	if (res == 0) {
-		/* /dev/full not available or didn't fail — skip */
+		/* /dev/full not available or didn't fail -- skip */
 		return TEST_SKIP;
 	}
 	ASSERT_TRUE(res < 0);
@@ -2587,7 +2587,7 @@ test_rsa_save_pub_write_fail(void)
 }
 
 /* ================================================================
- * RSA pubkey e_pad branch — exponent with MSB set
+ * RSA pubkey e_pad branch -- exponent with MSB set
  * ================================================================ */
 
 static int
@@ -2661,7 +2661,7 @@ test_rsa_pubkey_e_pad(void)
 }
 
 /* ================================================================
- * RSA pubkey n_pad=false — modulus with MSB clear
+ * RSA pubkey n_pad=false -- modulus with MSB clear
  *
  * Construct an RSA key where n has its top byte < 0x80 so n_pad is
  * false, hitting the branches that are always true with normal keys.
@@ -2678,11 +2678,11 @@ test_rsa_pubkey_n_no_pad(void)
 	 * Build a minimal RSA key where n has MSB clear.
 	 * n = 0x7F...  (top byte < 0x80).
 	 * This is not a cryptographically valid key, but pubkey()
-	 * just serializes the BN values — it doesn't validate.
+	 * just serializes the BN values -- it doesn't validate.
 	 *
-	 * p=0xB, q=0xD → n=0x8F (MSB set, no good)
-	 * p=0x5, q=0xB → n=0x37 (MSB clear, good!)
-	 * e=3, d=19 (3*19 = 57, 57 mod lcm(4,10)=20 → 57 mod 20 = 17 ≠ 1)
+	 * p=0xB, q=0xD -> n=0x8F (MSB set, no good)
+	 * p=0x5, q=0xB -> n=0x37 (MSB clear, good!)
+	 * e=3, d=19 (3*19 = 57, 57 mod lcm(4,10)=20 -> 57 mod 20 = 17 != 1)
 	 * Actually we just need pubkey() to serialize, we don't need
 	 * a mathematically valid key. Just set e and n directly.
 	 */
@@ -2743,7 +2743,7 @@ test_rsa_pubkey_n_no_pad(void)
 }
 
 /* ================================================================
- * RSA pubkey n_bytes==0 — modulus is zero
+ * RSA pubkey n_bytes==0 -- modulus is zero
  * ================================================================ */
 
 static int
@@ -2757,7 +2757,7 @@ test_rsa_pubkey_n_zero(void)
 	ASSERT_NOT_NULL(e_bn);
 	ASSERT_NOT_NULL(n_bn);
 	BN_set_word(e_bn, 65537);
-	/* n = 0 → BN_num_bytes returns 0 */
+	/* n = 0 -> BN_num_bytes returns 0 */
 
 	OSSL_PARAM_BLD *bld = OSSL_PARAM_BLD_new();
 	ASSERT_NOT_NULL(bld);
@@ -2793,7 +2793,7 @@ test_rsa_pubkey_n_zero(void)
 	const uint8_t *blob = NULL;
 	size_t blob_len;
 	int res = ka->pubkey(&blob, &blob_len, ka->ctx);
-	/* Either succeeds with n_bytes=0 or fails — both are fine */
+	/* Either succeeds with n_bytes=0 or fails -- both are fine */
 	(void)res;
 
 	dssh_test_reset_global_config();
@@ -3056,7 +3056,7 @@ test_rsa_verify_padding_fail(void)
 }
 
 /* ================================================================
- * KEX handler with NULL key_algo — hits ka == NULL guard
+ * KEX handler with NULL key_algo -- hits ka == NULL guard
  * ================================================================ */
 
 static int
@@ -3161,7 +3161,7 @@ static struct dssh_test_entry tests[] = {
 	{ "ed25519_load_twice",              test_ed25519_load_twice },
 	{ "rsa_load_twice",                  test_rsa_load_twice },
 
-	/* Verify parse errors — malformed blobs */
+	/* Verify parse errors -- malformed blobs */
 	{ "ed25519_verify_truncated_key",    test_ed25519_verify_truncated_key },
 	{ "ed25519_verify_wrong_key_name",   test_ed25519_verify_wrong_key_algo_name },
 	{ "ed25519_verify_wrong_key_len",    test_ed25519_verify_wrong_key_length },
@@ -3187,7 +3187,7 @@ static struct dssh_test_entry tests[] = {
 	{ "ed25519_pub_str_before_register", test_ed25519_get_pub_str_before_register },
 	{ "rsa_pub_str_before_register",     test_rsa_get_pub_str_before_register },
 
-	/* Defensive guards — NULL ctx and too-small buffer */
+	/* Defensive guards -- NULL ctx and too-small buffer */
 	{ "ed25519_haskey_null_ctx",         test_ed25519_haskey_null_ctx },
 	{ "ed25519_cleanup_null_ctx",        test_ed25519_cleanup_null_ctx },
 	{ "ed25519_pub_str_bufsz_one",       test_ed25519_get_pub_str_bufsz_one },

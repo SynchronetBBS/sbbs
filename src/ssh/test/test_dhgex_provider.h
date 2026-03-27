@@ -1,5 +1,5 @@
 /*
- * test_dhgex_provider.h — Minimal DH-GEX provider for tests.
+ * test_dhgex_provider.h -- Minimal DH-GEX provider for tests.
  *
  * Returns the RFC 3526 group 14 (2048-bit MODP) prime and generator.
  * Include this header and call test_dhgex_setup(server_session) after
@@ -16,7 +16,7 @@
 #include "deucessh-algorithms.h"
 
 /*
- * RFC 3526 s3 — 2048-bit MODP Group (group 14).
+ * RFC 3526 s3 -- 2048-bit MODP Group (group 14).
  * Generator g = 2.
  */
 static const uint8_t rfc3526_grp14_p[] = {

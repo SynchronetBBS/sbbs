@@ -1,8 +1,8 @@
 /*
- * mock_io.h — Bidirectional mock I/O for DeuceSSH layer tests.
+ * mock_io.h -- Bidirectional mock I/O for DeuceSSH layer tests.
  *
  * Uses socketpair() for natural blocking/unblocking behavior.
- * When one side closes, the other gets an error immediately —
+ * When one side closes, the other gets an error immediately --
  * no timed waits or condvar signaling needed.
  */
 

@@ -1,4 +1,4 @@
-/* sntrup761.h — Streamlined NTRU Prime 761 KEM API */
+/* sntrup761.h -- Streamlined NTRU Prime 761 KEM API */
 #ifndef SNTRUP761_H
 #define SNTRUP761_H
 

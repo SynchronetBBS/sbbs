@@ -1,5 +1,5 @@
 /*
- * mock_alloc.h — Countdown-based allocation failure injection.
+ * mock_alloc.h -- Countdown-based allocation failure injection.
  *
  * Uses the --wrap linker option to intercept malloc/calloc/realloc
  * from library code.  When armed, the Nth allocation (counting from

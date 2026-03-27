@@ -34,8 +34,8 @@ extern "C" {
  * num_prompts:      number of prompts
  * prompts[i]/prompt_lens[i]: the prompt text for each prompt
  * echo[i]:          true if the response should be echoed (not a password)
- * responses[i]:     OUT — caller sets each to a malloc'd string
- * response_lens[i]: OUT — caller sets each to the string length
+ * responses[i]:     OUT -- caller sets each to a malloc'd string
+ * response_lens[i]: OUT -- caller sets each to the string length
  * cbdata:           opaque pointer from the caller
  *
  * Return 0 to continue authentication, negative to abort.
@@ -72,9 +72,9 @@ DSSH_PUBLIC int dssh_auth_get_methods(dssh_session sess,
  *
  * prompt/prompt_len: the server's prompt text (UTF-8, not NUL-terminated).
  * language/language_len: the language tag (may be empty).
- * new_password: OUT — caller sets to a malloc'd string containing the
+ * new_password: OUT -- caller sets to a malloc'd string containing the
  *               new password.  The library frees it after sending.
- * new_password_len: OUT — length of the new password.
+ * new_password_len: OUT -- length of the new password.
  * cbdata: opaque pointer from the caller.
  *
  * Return 0 to send the new password, negative to abort authentication.
@@ -156,7 +156,7 @@ typedef int (*dssh_auth_server_passwd_change_cb)(const uint8_t *username, size_t
  * DSSH_AUTH_FAILURE if not, DSSH_AUTH_PARTIAL if more
  * auth is needed.
  *
- * When has_signature is false, this is a key probe (PK_OK query) —
+ * When has_signature is false, this is a key probe (PK_OK query) --
  * return SUCCESS to indicate the key is acceptable (the library
  * sends PK_OK), FAILURE to reject.
  *
@@ -181,21 +181,21 @@ typedef int (*dssh_auth_server_none_cb)(const uint8_t *username, size_t username
  * Server-side keyboard-interactive callback (RFC 4256).
  *
  * Called in a loop.  On the first call, num_responses is 0 and
- * responses is NULL — the callback should provide initial prompts.
+ * responses is NULL -- the callback should provide initial prompts.
  * On subsequent calls, responses contains the client's answers to
  * the previous prompts.
  *
  * Return values:
- *   DSSH_AUTH_KBI_PROMPT — send INFO_REQUEST with the provided prompts
- *   DSSH_AUTH_SUCCESS    — authentication succeeded
- *   DSSH_AUTH_FAILURE    — authentication failed
- *   DSSH_AUTH_PARTIAL    — partial success, more auth needed
+ *   DSSH_AUTH_KBI_PROMPT -- send INFO_REQUEST with the provided prompts
+ *   DSSH_AUTH_SUCCESS    -- authentication succeeded
+ *   DSSH_AUTH_FAILURE    -- authentication failed
+ *   DSSH_AUTH_PARTIAL    -- partial success, more auth needed
  *
  * When returning 0, set the out params:
- *   *name_out, *instruction_out — malloc'd strings (library frees)
- *   *num_prompts_out — number of prompts
- *   *prompts_out — malloc'd array of malloc'd strings (library frees)
- *   *echo_out — malloc'd bool array (library frees)
+ *   *name_out, *instruction_out -- malloc'd strings (library frees)
+ *   *num_prompts_out -- number of prompts
+ *   *prompts_out -- malloc'd array of malloc'd strings (library frees)
+ *   *echo_out -- malloc'd bool array (library frees)
  *
  * Out params are ignored when returning non-zero.
  */

@@ -206,7 +206,7 @@ sntrup761x25519_handler(struct dssh_kex_context *kctx)
 		uint8_t x25519_pk[X25519_KEY_LEN];
 		uint8_t x25519_ss[X25519_KEY_LEN];
 
-		/* We don't have peer yet — generate keypair only.
+		/* We don't have peer yet -- generate keypair only.
 		 * Use EVP_PKEY_keygen + store for later derive. */
 		EVP_PKEY_CTX *pctx = EVP_PKEY_CTX_new_from_name(NULL, "X25519", NULL);
 
@@ -424,7 +424,7 @@ sntrup761x25519_handler(struct dssh_kex_context *kctx)
 			return res;
 		}
 
-		/* 10. Store results — K is the raw shared secret (string, not mpint) */
+		/* 10. Store results -- K is the raw shared secret (string, not mpint) */
 		kctx->shared_secret = K;
 		kctx->shared_secret_sz = K_len;
 
@@ -552,7 +552,7 @@ sntrup761x25519_handler(struct dssh_kex_context *kctx)
 		}
 
 		/* 10. Send REPLY */
-		/* k_s_len ≤ 1024, sig_len ≤ 1024; sum ≤ ~3200 */
+		/* k_s_len <= 1024, sig_len <= 1024; sum <= ~3200 */
 		size_t   reply_sz = 1 + 4 + k_s_len + 4 + Q_S_LEN + 4 + sig_len;
 		uint8_t *reply_msg = malloc(reply_sz);
 

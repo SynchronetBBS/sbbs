@@ -1,5 +1,5 @@
 /*
- * test_mac.h — Test MAC module with failure injection.
+ * test_mac.h -- Test MAC module with failure injection.
  *
  * Registers as "hmac-sha2-256" with a simple XOR-fold MAC.
  * Use the fail_*_at functions to make the Nth call return an error.

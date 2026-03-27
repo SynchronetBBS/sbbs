@@ -1,10 +1,10 @@
 /*
- * test_alloc.c — Allocation failure tests for DeuceSSH.
+ * test_alloc.c -- Allocation failure tests for DeuceSSH.
  *
  * Uses the mock allocator (--wrap=malloc/calloc/realloc/free) to
  * inject NULL returns at every allocation point in the library.
  * For each function under test, we iterate N from 0 upward, failing
- * the Nth allocation, until the function succeeds — confirming that
+ * the Nth allocation, until the function succeeds -- confirming that
  * every intermediate failure is handled gracefully.
  */
 
@@ -579,7 +579,7 @@ changereq_password_cb(const uint8_t *username, size_t username_len,
 	(void)password; (void)password_len;
 
 	/* Return change-password with a prompt.
-	 * The prompt is malloc'd by us — but we need to use __real_malloc
+	 * The prompt is malloc'd by us -- but we need to use __real_malloc
 	 * since the mock allocator might be armed.  Actually, the callback
 	 * runs on the server thread, and we arm the allocator to fail
 	 * the library's internal malloc for the CHANGEREQ message.
@@ -970,7 +970,7 @@ hs_alloc_thread(void *arg)
 
 	ctx->result = dssh_transport_handshake(ctx->sess);
 	/* Close our write pipe so peer unblocks (two independent
-	 * sessions — terminate flag only affects our own session) */
+	 * sessions -- terminate flag only affects our own session) */
 	if (ctx->result < 0) {
 		if (ctx->sess->trans.client)
 			mock_io_close_c2s(ctx->io);
@@ -1082,8 +1082,8 @@ test_alloc_handshake_iterate(void)
 /* ================================================================
  * Iterative auth alloc failures using the library-only allocator.
  *
- * For each N, we: handshake (allocator off) → arm allocator → run
- * two-threaded auth → check.  Auth callbacks are simple accept-all.
+ * For each N, we: handshake (allocator off) -> arm allocator -> run
+ * two-threaded auth -> check.  Auth callbacks are simple accept-all.
  * ================================================================ */
 
 static int
@@ -1627,7 +1627,7 @@ test_ossl_handshake_iterate(void)
 		}
 
 		/* If the call count stopped increasing, all failure
-		 * points have been exercised — no need to keep going
+		 * points have been exercised -- no need to keep going
 		 * through increasingly expensive successful crypto. */
 		if (cur_count == prev_count)
 			return TEST_PASS;
@@ -1643,7 +1643,7 @@ test_ossl_handshake_iterate(void)
  * Isolated OpenSSL failure injection for key algo operations.
  *
  * Single-threaded: generate key, then iterate ossl failures through
- * sign → pubkey → verify.  No handshake, no I/O — fast.
+ * sign -> pubkey -> verify.  No handshake, no I/O -- fast.
  * ================================================================ */
 
 static int
@@ -1755,7 +1755,7 @@ test_ossl_keygen_iterate(void)
  * Isolated OpenSSL failure injection for enc init/encrypt.
  *
  * Single-threaded: register aes256-ctr, iterate ossl failures
- * through init → encrypt → cleanup.
+ * through init -> encrypt -> cleanup.
  * ================================================================ */
 
 static int
@@ -1813,7 +1813,7 @@ test_ossl_enc_iterate(void)
  * Isolated OpenSSL failure injection for mac init/compute/verify.
  *
  * Single-threaded: register hmac-sha2-256, iterate ossl failures
- * through init → compute → verify → cleanup.
+ * through init -> compute -> verify -> cleanup.
  * ================================================================ */
 
 static int
@@ -1872,7 +1872,7 @@ test_ossl_mac_iterate(void)
  * Isolated key_algo ossl iterate: verify and pubkey
  *
  * These exercise OpenSSL error paths in verify() and pubkey()
- * without any session or I/O — just the crypto callbacks.
+ * without any session or I/O -- just the crypto callbacks.
  * ================================================================ */
 
 static int
@@ -2114,7 +2114,7 @@ test_ossl_kex_server_iterate(void)
 		wire_total += build_plaintext_packet(req, rp,
 		    &wire_pkts[wire_total], sizeof(wire_pkts) - wire_total);
 
-		/* GEX_INIT with e=2 (valid: 2 ∈ [1, p-1]) */
+		/* GEX_INIT with e=2 (valid: 2  in  [1, p-1]) */
 		uint8_t init[16];
 		size_t ip = 0;
 		init[ip++] = 32; /* SSH_MSG_KEX_DH_GEX_INIT */
@@ -2420,7 +2420,7 @@ bad_server_reply_thread(void *arg)
 		goto done;
 
 	/* Send a real GEX_GROUP via the real handler's first half.
-	 * Actually, just run the real kex handler — it sends GROUP
+	 * Actually, just run the real kex handler -- it sends GROUP
 	 * and reads INIT internally.  Too complex.
 	 *
 	 * Simpler: send GROUP manually, read INIT, send bad REPLY. */
@@ -2559,7 +2559,7 @@ test_dhgex_client_recv_group_fail(void)
 {
 	if (!test_using_dhgex())
 		return TEST_SKIP;
-	/* Empty reply + close → recv fails */
+	/* Empty reply + close -> recv fails */
 	int res = dhgex_client_parse_test(bad_server_group_thread, NULL, 0);
 	ASSERT_TRUE(res < 0);
 	return TEST_PASS;
@@ -2617,7 +2617,7 @@ test_dhgex_client_reply_short_ks(void)
 {
 	if (!test_using_dhgex())
 		return TEST_SKIP;
-	/* GEX_REPLY with only msg_type byte — no K_S length field */
+	/* GEX_REPLY with only msg_type byte -- no K_S length field */
 	uint8_t reply[1] = { 33 };
 	int res = dhgex_client_parse_test(bad_server_reply_thread, reply, 1);
 	ASSERT_TRUE(res < 0);
@@ -2656,7 +2656,7 @@ test_dhgex_client_reply_f_zero(void)
 	dssh_serialize_uint32(0, reply, sizeof(reply), &rp);
 	/* f: mpint 0 (len=0) */
 	dssh_serialize_uint32(0, reply, sizeof(reply), &rp);
-	/* sig: empty (len=0) — won't be reached since f=0 fails first */
+	/* sig: empty (len=0) -- won't be reached since f=0 fails first */
 	dssh_serialize_uint32(0, reply, sizeof(reply), &rp);
 	int res = dhgex_client_parse_test(bad_server_reply_thread, reply, rp);
 	ASSERT_TRUE(res < 0);
@@ -2678,7 +2678,7 @@ test_dhgex_client_reply_short_sig(void)
 	/* f: mpint 2 */
 	dssh_serialize_uint32(1, reply, sizeof(reply), &rp);
 	reply[rp++] = 0x02;
-	/* No sig at all — payload ends here */
+	/* No sig at all -- payload ends here */
 	int res = dhgex_client_parse_test(bad_server_reply_thread, reply, rp);
 	ASSERT_TRUE(res < 0);
 	return TEST_PASS;
@@ -2835,7 +2835,7 @@ test_c25519_client_recv_reply_fail(void)
 {
 	if (test_using_dhgex())
 		return TEST_SKIP;
-	/* Empty reply + close → recv fails */
+	/* Empty reply + close -> recv fails */
 	int res = c25519_client_parse_test(bad_c25519_server_thread, NULL, 0);
 	ASSERT_TRUE(res < 0);
 	return TEST_PASS;
@@ -2847,7 +2847,7 @@ test_c25519_client_reply_short_ks(void)
 {
 	if (test_using_dhgex())
 		return TEST_SKIP;
-	/* ECDH_REPLY with only msg_type byte — no K_S length field */
+	/* ECDH_REPLY with only msg_type byte -- no K_S length field */
 	uint8_t reply[1] = { 31 }; /* SSH_MSG_KEX_ECDH_REPLY */
 	int res = c25519_client_parse_test(bad_c25519_server_thread, reply, 1);
 	ASSERT_TRUE(res < 0);
@@ -2939,7 +2939,7 @@ test_c25519_client_reply_short_sig(void)
 	dssh_serialize_uint32(32, reply, sizeof(reply), &rp); /* Q_S len=32 */
 	memset(&reply[rp], 0x42, 32);
 	rp += 32;
-	/* No sig at all — payload ends here */
+	/* No sig at all -- payload ends here */
 	int res = c25519_client_parse_test(bad_c25519_server_thread, reply, rp);
 	ASSERT_TRUE(res < 0);
 	return TEST_PASS;

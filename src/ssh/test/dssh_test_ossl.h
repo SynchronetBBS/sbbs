@@ -1,5 +1,5 @@
 /*
- * dssh_test_ossl.h — OpenSSL + C11 threads failure injection.
+ * dssh_test_ossl.h -- OpenSSL + C11 threads failure injection.
  *
  * Under DSSH_TESTING, library calls to OpenSSL and C11 thread
  * functions are redirected via macros in ssh-internal.h.  This
@@ -17,7 +17,7 @@
 #include <stdatomic.h>
 
 /*
- * Control API — call from test code (NOT redirected).
+ * Control API -- call from test code (NOT redirected).
  */
 void dssh_test_ossl_reset(void);
 void dssh_test_ossl_fail_after(int n);

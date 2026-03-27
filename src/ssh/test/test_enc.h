@@ -1,5 +1,5 @@
 /*
- * test_enc.h — Test encryption module with failure injection.
+ * test_enc.h -- Test encryption module with failure injection.
  *
  * Registers as "aes256-ctr" with a simple XOR cipher.
  * Use the fail_*_at functions to make the Nth call return an error.

@@ -13,7 +13,7 @@
 extern "C" {
 #endif
 
-/* Module type definitions — public headers */
+/* Module type definitions -- public headers */
 #include "deucessh-kex.h"
 #include "deucessh-key-algo.h"
 #include "deucessh-enc.h"
@@ -138,7 +138,7 @@ typedef struct dssh_transport_state_s {
 	char           remote_id_str[254];
 } *dssh_transport_state;
 /*
- * Algorithm registration — call before any session is initialized.
+ * Algorithm registration -- call before any session is initialized.
  * Registration order determines negotiation preference (first registered
  * is most preferred).  Returns 0 on success.  After the first
  * dssh_transport_init() call, registration is locked.
@@ -160,7 +160,7 @@ DSSH_PUBLIC int dssh_transport_register_lang(dssh_language lang);
  *   dssh_transport_get_mac_name
  */
 /* ================================================================
- * Internal functions — used by other library modules, not by
+ * Internal functions -- used by other library modules, not by
  * applications.  DSSH_PRIVATE in shared builds.
  * ================================================================ */
 DSSH_PRIVATE int dssh_transport_init(dssh_session sess, size_t max_packet_size);

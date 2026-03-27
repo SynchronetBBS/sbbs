@@ -1,5 +1,5 @@
 /*
- * ssh-chan.h — Internal channel buffer structures for the demux layer.
+ * ssh-chan.h -- Internal channel buffer structures for the demux layer.
  *
  * Not a public header.  Included by ssh-conn.h for the channel struct
  * and by the demux implementation.

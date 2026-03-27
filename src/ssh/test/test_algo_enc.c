@@ -1,5 +1,5 @@
 /*
- * test_algo_enc.c — Unit tests for DeuceSSH encryption algorithm modules.
+ * test_algo_enc.c -- Unit tests for DeuceSSH encryption algorithm modules.
  *
  * Tests registration of aes256-ctr and none ciphers, AES-256-CTR
  * correctness against NIST SP 800-38A test vectors (F.5.5/F.5.6),
@@ -58,7 +58,7 @@ out:
 }
 
 /* ================================================================
- * NIST SP 800-38A F.5.5 — AES-256-CTR Encrypt
+ * NIST SP 800-38A F.5.5 -- AES-256-CTR Encrypt
  *
  * Key:       603deb1015ca71be2b73aef0857d7781
  *            1f352c073b6108d72d9810a30914dff4
@@ -183,7 +183,7 @@ test_register_both_enc(void)
 }
 
 /* ================================================================
- * AES-256-CTR: NIST SP 800-38A F.5.5 — Encrypt single block
+ * AES-256-CTR: NIST SP 800-38A F.5.5 -- Encrypt single block
  * ================================================================ */
 
 static int
@@ -197,7 +197,7 @@ test_aes256_ctr_nist_block1_encrypt(void)
 }
 
 /* ================================================================
- * AES-256-CTR: NIST SP 800-38A F.5.5 — Encrypt all 4 blocks
+ * AES-256-CTR: NIST SP 800-38A F.5.5 -- Encrypt all 4 blocks
  * ================================================================ */
 
 static int
@@ -211,7 +211,7 @@ test_aes256_ctr_nist_4block_encrypt(void)
 }
 
 /* ================================================================
- * AES-256-CTR: NIST SP 800-38A F.5.6 — Decrypt single block
+ * AES-256-CTR: NIST SP 800-38A F.5.6 -- Decrypt single block
  * CTR mode: decrypt == encrypt with same key/iv
  * ================================================================ */
 
@@ -226,7 +226,7 @@ test_aes256_ctr_nist_block1_decrypt(void)
 }
 
 /* ================================================================
- * AES-256-CTR: NIST SP 800-38A F.5.6 — Decrypt all 4 blocks
+ * AES-256-CTR: NIST SP 800-38A F.5.6 -- Decrypt all 4 blocks
  * ================================================================ */
 
 static int
@@ -444,7 +444,7 @@ test_none_enc_passthrough(void)
 	ASSERT_EQ(dssh_register_none_enc(), 0);
 
 	/* Find the registered struct via negotiate_algo.  We pass
-	 * NULL head — negotiate_algo traverses the linked list, but
+	 * NULL head -- negotiate_algo traverses the linked list, but
 	 * we cannot access gconf.enc_head from test code.  Instead
 	 * we register all required algos, create a session (which
 	 * locks the registry), and verify the enc name is available
@@ -458,7 +458,7 @@ test_none_enc_passthrough(void)
 	dssh_session sess = dssh_session_init(true, 0);
 	ASSERT_NOT_NULL(sess);
 
-	/* Session created successfully with none enc registered —
+	/* Session created successfully with none enc registered --
 	 * confirms the struct was properly initialized with valid
 	 * function pointers and properties. */
 	dssh_session_cleanup(sess);
@@ -525,7 +525,7 @@ test_aes256_ctr_symmetric(void)
 	uint8_t ct[16];
 	memcpy(ct, nist_ct, 16);
 
-	/* "Encrypt" the ciphertext — in CTR mode this decrypts it */
+	/* "Encrypt" the ciphertext -- in CTR mode this decrypts it */
 	ASSERT_EQ(aes256_ctr_crypt(nist_key, nist_iv, ct, 16), 0);
 	ASSERT_MEM_EQ(ct, nist_pt, 16);
 	return TEST_PASS;

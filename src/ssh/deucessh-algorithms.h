@@ -1,5 +1,5 @@
 /*
- * deuce-ssh-algorithms.h — Built-in algorithm registration and key management.
+ * deuce-ssh-algorithms.h -- Built-in algorithm registration and key management.
  *
  * Include this header to access register_*() functions for built-in
  * algorithms and key load/save/generate functions for key algorithms.
@@ -16,7 +16,7 @@ extern "C" {
 
 /*
  * Password callback for PEM key files.  Same signature as OpenSSL's
- * pem_password_cb — buf receives the passphrase, size is the buffer
+ * pem_password_cb -- buf receives the passphrase, size is the buffer
  * length, rwflag is 0 for reading / 1 for writing, userdata is the
  * opaque pointer passed alongside.  Return the passphrase length.
  */

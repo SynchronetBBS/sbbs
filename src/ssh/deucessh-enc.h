@@ -1,5 +1,5 @@
 /*
- * deucessh-enc.h — Encryption algorithm module interface.
+ * deucessh-enc.h -- Encryption algorithm module interface.
  */
 
 #ifndef DSSH_ENC_H

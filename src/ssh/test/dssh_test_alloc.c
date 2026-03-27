@@ -1,5 +1,5 @@
 /*
- * dssh_test_alloc.c — Library-only allocation failure injection.
+ * dssh_test_alloc.c -- Library-only allocation failure injection.
  *
  * Provides dssh_test_malloc/calloc/realloc that are redirected from
  * the standard allocators via macros in ssh-internal.h when compiled

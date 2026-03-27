@@ -1,5 +1,5 @@
 /*
- * deucessh-comp.h — Compression algorithm module interface.
+ * deucessh-comp.h -- Compression algorithm module interface.
  */
 
 #ifndef DSSH_COMP_H

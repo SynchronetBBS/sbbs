@@ -1,5 +1,5 @@
 /*
- * dssh_test_ossl.c — OpenSSL + C11 threads failure injection.
+ * dssh_test_ossl.c -- OpenSSL + C11 threads failure injection.
  *
  * Countdown-based wrappers: each failable call decrements a shared
  * atomic counter.  When it reaches zero, the wrapper returns the
@@ -31,7 +31,7 @@ static atomic_int ossl_call_num = 0;
  * Thread-local participation flag.  Defaults to true so all threads
  * participate in the countdown (backward compatible).  A thread can
  * opt out by calling dssh_test_ossl_exclude_thread(), which sets its
- * local flag to false — its ossl calls then pass straight through
+ * local flag to false -- its ossl calls then pass straight through
  * without incrementing the counter.
  */
 static _Thread_local bool ossl_this_thread = true;

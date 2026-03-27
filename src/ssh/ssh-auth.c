@@ -239,7 +239,7 @@ send_info_request(dssh_session sess, const char *name,
 		memcpy(&msg[pos], instruction, inst_len);
 		pos += inst_len;
 	}
-	KBI_SER(0); /* language tag — always empty */
+	KBI_SER(0); /* language tag -- always empty */
 	KBI_SER(num_prompts);
 
 	for (uint32_t i = 0; i < num_prompts; i++) {
@@ -706,7 +706,7 @@ auth_server_impl(dssh_session sess,
 					res = handle_banner(sess, resp_payload, resp_len);
 					if (res < 0)
 						return res;
-					/* Re-recv — expect INFO_RESPONSE */
+					/* Re-recv -- expect INFO_RESPONSE */
 					res = dssh_transport_recv_packet(sess,
 					    &resp_type, &resp_payload, &resp_len);
 					if (res < 0)
@@ -831,7 +831,7 @@ auth_server_impl(dssh_session sess,
 			algo_name[an_len] = 0;
 
 			if (!has_sig) {
-                                /* Key probe — ask app if key is acceptable */
+                                /* Key probe -- ask app if key is acceptable */
 				int auth_res = cbs->publickey_cb(user, user_len,
 				        algo_name, pk_blob, pk_len, false, cbs->cbdata);
 
@@ -847,7 +847,7 @@ auth_server_impl(dssh_session sess,
 				continue;
 			}
 
-                        /* Has signature — verify it */
+                        /* Has signature -- verify it */
 			uint32_t sig_len;
 
 			if (rpos + 4 > payload_len)
@@ -917,7 +917,7 @@ auth_server_impl(dssh_session sess,
 				continue;
 			}
 
-                        /* Signature valid — ask app if user is authorized */
+                        /* Signature valid -- ask app if user is authorized */
 			int auth_res = cbs->publickey_cb(user, user_len,
 			        algo_name, pk_blob, pk_len, true, cbs->cbdata);
 
