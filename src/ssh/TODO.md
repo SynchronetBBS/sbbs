@@ -123,6 +123,359 @@
     `set_unimplemented_cb` callback exists (item 32) but the recv path
     just drops the message without invoking it.
 
+45. ssh-auth.c `dssh_auth_get_methods()` does not validate the `methods`
+    output buffer pointer (NULL dereference if caller passes NULL) or
+    check `methods_sz` for zero.
+
+46. ssh-conn.c parser functions missing NULL checks on output length
+    pointers: `dssh_parse_env_data()` (`name_len`, `value_len`),
+    `dssh_parse_exec_data()` (`command_len`),
+    `dssh_parse_subsystem_data()` (`name_len`).
+
+47. `dssh_session_reject()` dereferences `description` via `strlen()`
+    with no NULL check.
+
+48. `dssh_session_accept_channel()` does not validate the `request_type`
+    and `request_data` output pointers.
+
+49. ssh-conn.c read/write functions missing NULL checks on `buf`:
+    `dssh_session_read()`, `dssh_session_read_ext()`,
+    `dssh_session_write()`, `dssh_session_write_ext()`,
+    `dssh_channel_read()`, `dssh_channel_write()`.
+
+50. `dssh_session_read_signal()` does not validate the `signal_name`
+    output pointer.
+
+### Thread safety audit (items 51-59)
+
+51. **Data race: `local_window` in `dssh_conn_send_window_adjust()`.**
+    `maybe_replenish_window()` (line 574-575) reads `local_window` under
+    `buf_mtx`, unlocks (line 577), then calls `dssh_conn_send_window_adjust()`
+    (line 580) which does a read-modify-write on `ch->local_window` (line 300)
+    with no lock.  The demux thread concurrently subtracts from
+    `local_window` under `buf_mtx` (lines 661, 689).  Lost updates cause
+    flow control accounting drift, eventually over-filling local buffers
+    or starving the peer's send window.
+
+52. **Data race: setup-to-normal transition in `dssh_session_accept_channel()`.**
+    Lines 1873-1903 write `ch->setup_mode = false`, `ch->chan_type`,
+    `ch->window_max`, the buffer union, and `ch->window_change_cb` without
+    holding `buf_mtx`.  The demux thread reads `setup_mode` (line 616) and
+    `chan_type` (line 633) under `buf_mtx`.  If a packet arrives during the
+    transition, the demux thread can see `setup_mode == false` with
+    `chan_type` still 0 (dropped message) or partially initialized buffers
+    (write to uninitialized memory).  Fix: hold `buf_mtx` while setting
+    `chan_type`, initializing buffers, and installing callbacks; set
+    `setup_mode = false` last inside the critical section.
+
+53. **Data race: rekey counters read by demux without `tx_mtx`.**
+    `dssh_transport_rekey_needed()` (lines 266-277) reads
+    `tx_since_rekey` and `bytes_since_rekey` without any lock.
+    `send_packet()` increments these under `tx_mtx` (lines 602-606).
+    `recv_packet()` increments `rx_since_rekey` and `bytes_since_rekey`
+    under `rx_mtx` (lines 756-763).  `bytes_since_rekey` (uint64_t)
+    is modified under TWO different mutexes — neither alone is sufficient.
+    Torn reads on 32-bit platforms; UB on all.  `newkeys()` (lines 1834-1837)
+    also zeroes all counters without either mutex.  Options: make
+    `bytes_since_rekey` atomic, split into tx/rx halves each protected by
+    its own mutex, or add a dedicated counter mutex.
+
+54. **Data race: `rekey_in_progress` read by demux without `tx_mtx`.**
+    `recv_packet()` line 827 reads `rekey_in_progress` (plain `bool`)
+    to decide whether a received KEXINIT is peer-initiated or a response.
+    `dssh_transport_rekey()` sets it under `tx_mtx` (lines 303, 316).
+    Technically UB, though the timing makes wrong decisions unlikely in
+    practice.  Should be `atomic_bool` or read under `tx_mtx`.
+
+55. **Lost wakeup: `set_terminate()` broadcasts `rekey_cnd` without
+    `tx_mtx`.**  `dssh_session_set_terminate()` (ssh.c line 20) calls
+    `cnd_broadcast(&rekey_cnd)` without holding `tx_mtx`.  A sender
+    blocked in `send_packet()` (line 488-489,
+    `while (rekey_in_progress && !terminate) cnd_wait(rekey_cnd, tx_mtx)`)
+    can miss the broadcast if `set_terminate` fires between the `while`
+    condition check and the `cnd_wait` entry.  The sender then blocks
+    until the socket times out or a spurious wakeup occurs.  Fix: lock
+    `tx_mtx` around the `cnd_broadcast`.
+
+56. **Data race: `conn_initialized` is a plain `bool`.**
+    `dssh_session_set_terminate()` (ssh.c line 23) reads `conn_initialized`
+    from any thread.  `dssh_session_start()` writes it once.  The demux
+    thread creation provides a happens-before for the demux thread itself,
+    but an external thread calling `set_terminate()` concurrently with
+    `session_start()` has no synchronization.  Should be `atomic_bool`.
+
+57. **Data race: algorithm query functions during rekey.**
+    `dssh_transport_get_kex_name()`, `get_hostkey_name()`, `get_enc_name()`,
+    `get_mac_name()` (lines 194-224) read `*_selected` pointers with no
+    lock.  During rekey, `kexinit()` overwrites these from the demux
+    thread.  The pointed-to algorithm structs are global and never freed,
+    so no use-after-free, but the reads are UB per C11 and could return
+    transiently wrong names.  Either document as undefined-during-rekey or
+    protect with `sess->mtx`.
+
+58. **Data race: unlocked pre-checks in `dssh_channel_write()`.**
+    Line 2260-2263 reads `ch->open`, `ch->eof_sent`, `ch->close_received`,
+    `ch->remote_window`, and `ch->remote_max_packet` without `buf_mtx`.
+    `dssh_conn_send_data()` re-checks `remote_window` under lock, so no
+    actual window violation occurs, but the caller can get a spurious
+    `DSSH_ERROR_TOOLONG` from a stale `remote_window` read, and
+    `close_received` can transition between the check and the send.
+    Move the pre-checks inside `buf_mtx` (same pattern as the fix for
+    the old item 23 in `dssh_session_write`).
+
+59. **Data race: unlocked flag pre-checks in `dssh_session_write()` /
+    `dssh_session_write_ext()`.**  Lines 2085-2086 / 2118-2119 read
+    `ch->open`, `ch->eof_sent`, `ch->close_received` before acquiring
+    `buf_mtx`.  The subsequent `dssh_conn_send_data()` call re-checks
+    `remote_window` under lock (per the item 23 fix), but the flag checks
+    are still outside.  A `close_received` transition between the check
+    and the send is a protocol violation (sending data after CLOSE).
+    Move the flag checks inside `buf_mtx`.
+
+60. **Data race: `dssh_key_algo_set_ctx()` modifies global registry
+    entry without synchronization.**  Line 2039 writes `ka->ctx` in the
+    global algorithm registry.  The `gconf.used` flag prevents new
+    registrations but does not prevent `set_ctx`.  If called while a
+    session's `kexinit()` is reading `ka->haskey(ka->ctx)` or while
+    KEX is using `key_algo_selected->ctx`, there is a data race.
+    In practice called before session start, but the API does not
+    enforce this.  Either document as set-before-start or add a check
+    (e.g., refuse if any session is active).
+
+61. **Data race: `dssh_dh_gex_set_provider()` modifies per-session
+    state without mutex.**  Line 2049 writes `sess->trans.kex_ctx`
+    without holding any mutex.  If the demux thread is running a
+    DH-GEX rekey and reads `kex_ctx` (via `kctx.kex_data`), there is
+    a race.  In practice called before session start; either document
+    or protect with `sess->mtx` / `tx_mtx`.
+
+### Design / liveness audit (items 62-79)
+
+62. **`dssh_session_close()` / `dssh_channel_close()` free the channel
+    while the demux thread may hold it.**  Both functions call
+    `unregister_channel()`, `cleanup_channel_buffers()` (which destroys
+    `buf_mtx` and `poll_cnd`), and `free(ch)` without synchronizing
+    with the demux thread.  If the demux thread is inside
+    `demux_dispatch()` holding `buf_mtx` via `find_channel()`, the
+    close function destroys the mutex the demux is holding, then frees
+    the memory.  Fix: after `unregister_channel()`, acquire `buf_mtx`
+    (ensuring the demux has exited the critical section) before
+    destroying it.  Alternatively, defer cleanup to `dssh_session_stop`
+    or use reference counting.
+
+63. **`dssh_conn_send_window_adjust()` updates `local_window` before
+    the send succeeds.**  Line 300 does `local_window = window_add()`
+    then line 301 calls `send_packet()`.  If the send fails, the local
+    accounting says the window was increased but the peer never received
+    the WINDOW_ADJUST.  `maybe_replenish_window()` will not re-try
+    because `local_window` is already at `window_max`.  The channel
+    permanently stalls on receive.  Fix: update `local_window` only
+    after `send_packet()` returns 0.
+
+64. **Poll/accept functions hold their mutex across the entire blocking
+    wait, serializing concurrent callers and stacking timeouts.**
+    `dssh_session_poll()` (line 1981) and `dssh_channel_poll()` (line
+    2189) hold `buf_mtx` across `cnd_timedwait`.  A second thread
+    polling the same channel blocks on `mtx_lock` until the first
+    thread's wait completes, extending the effective timeout.  Same
+    pattern in `dssh_session_accept()` (line 1097) with `accept_mtx`.
+    Fix: compute the absolute deadline before acquiring the mutex;
+    inside the loop, use the pre-computed deadline to cap the remaining
+    wait.  Also use `cnd_broadcast` (see item 73) so all waiters
+    re-evaluate.
+
+65. **Unbounded waits with no timeout in channel open / request /
+    setup paths.**  `open_session_channel()` (line 1262) uses
+    `cnd_wait()` with no timeout waiting for CHANNEL_OPEN_CONFIRMATION.
+    `send_channel_request_wait()` (line 1337) similarly waits for
+    `request_responded`.  `setup_recv()` (line 1647) waits for setup
+    messages in the server accept path.  If the peer never responds,
+    the caller hangs indefinitely.  The only escape is
+    `set_terminate()`, but that requires another thread.  Fix: add
+    timeout parameters or use `cnd_timedwait()` with a configurable
+    or session-level default.
+
+66. **Unbounded blocking in `send_packet()` during rekey.**  Line
+    488-489 blocks on `cnd_wait(&rekey_cnd, &tx_mtx)` while
+    `rekey_in_progress`.  Duration depends entirely on the remote
+    peer's cooperation during KEX (multiple network round-trips).
+    No timeout, no escape except `set_terminate()`.  A slow or
+    malicious peer can stall all application senders for the
+    duration of the rekey.  Fix: use `cnd_timedwait` with a
+    configurable upper bound.
+
+67. **Setup mode single-slot mailbox blocks the demux thread.**
+    In `demux_dispatch()` (line 616-631), when a channel is in
+    `setup_mode`, the demux thread delivers via a single-slot mailbox
+    (`setup_payload`/`setup_ready`).  If the previous message has
+    not been consumed, the demux thread blocks on `cnd_wait` until
+    the application's `request_cb` callback returns.  During this
+    time, ALL other channels on the same session are stalled: no
+    data delivery, no window adjusts, no new channel opens.  Fix:
+    use a queue instead of a single slot, or document that
+    `request_cb` must return promptly.
+
+68. **`dssh_session_start()` can be called twice, corrupting state.**
+    The double-start guard (line 1012) checks `demux_running`, which
+    is `atomic_bool` set to `false` when the demux thread exits.
+    After a disconnect, calling `session_start()` again double-inits
+    `channel_mtx`, `accept_mtx`, and `accept_cnd` (undefined behavior),
+    leaks the old channel array, and zeroes `channel_count`.  Fix:
+    guard on `conn_initialized` instead.  Only `dssh_session_stop()`
+    should clear it.
+
+69. **Self-initiated rekey silently drops application data.**
+    In `dssh_transport_kexinit()` (lines 1183-1195), after sending
+    our KEXINIT, the code loops calling `recv_packet` waiting for
+    the peer's KEXINIT.  Non-KEXINIT messages received during this
+    loop are silently discarded.  The peer may have sent CHANNEL_DATA
+    that was in-flight before seeing our KEXINIT.  That data is
+    permanently lost, and the peer's window accounting becomes wrong.
+    Fix: route non-KEXINIT messages through the normal demux dispatch,
+    or buffer them for replay after rekey completes.
+
+70. **Server auth loop has no attempt counter.**  `auth_server_impl()`
+    (line 448) runs `for (;;)` with no limit on failed authentication
+    attempts.  RFC 4252 s4 says implementations SHOULD limit failures.
+    A malicious client can probe credentials indefinitely.  Fix: add
+    a configurable `max_auth_attempts` (default 20) and send
+    DISCONNECT after the limit.
+
+71. **`dssh_session_accept_channel()` leaks `inc` on early errors.**
+    The `inc` parameter (from `dssh_session_accept`) is only freed at
+    line 1737.  Error returns at lines 1700-1732 (NULL ch, failed
+    `alloc_channel_id`, failed `mtx_init`/`cnd_init`, failed
+    `register_channel`) all return NULL without freeing `inc`.  The
+    caller loses its handle to `inc` and cannot free it.  Fix: free
+    `inc` on all early-return paths.
+
+72. **`dssh_transport_init()` leaks `tx_mtx` if `rx_mtx` init fails.**
+    The two `mtx_init` calls are in a single `||` expression (line
+    1901-1907).  If `tx_mtx` succeeds but `rx_mtx` fails, the error
+    path frees packet buffers but never calls `mtx_destroy(&tx_mtx)`.
+    Fix: split into two checks with proper cleanup.
+
+73. **`cnd_signal` on `poll_cnd` should be `cnd_broadcast`.**
+    `demux_dispatch()` (line 829) and `dssh_session_set_terminate()`
+    (ssh.c line 34) use `cnd_signal`, which wakes only one waiter.
+    If multiple threads poll the same channel for different events,
+    `cnd_signal` might wake a thread whose condition is not met,
+    leaving another thread whose condition IS met asleep until the
+    next delivery.  Fix: use `cnd_broadcast`.  There are at most a
+    few waiters per channel, so the cost is negligible.
+
+74. **Bytebuf `dssh_bytebuf_write()` silently truncates when full.**
+    `ssh-chan.c:48-49` returns a short count when the buffer is full.
+    The caller in `demux_dispatch()` (line 657) ignores the return
+    value and decrements `local_window` by the full `dlen`.  Data
+    is lost from the stream.  This should not happen normally because
+    the window and buffer are the same size, but if the window-add
+    race (item 51) causes window accounting drift, or if
+    `maybe_replenish_window` grants more window than free buffer
+    space, truncation occurs silently.  Fix: compute replenishment
+    based on free buffer space, not just `window_max - local_window`,
+    and check/assert the return value of `bytebuf_write`.
+
+75. **Msgqueue unbounded per-message overhead for raw channels.**
+    `dssh_msgqueue_push()` does a separate `malloc` per message with
+    `sizeof(dssh_msgqueue_entry)` overhead (~24 bytes).  The SSH
+    window limits total bytes, but a pathological peer sending many
+    1-byte messages creates ~2M linked-list nodes consuming ~48MB
+    instead of the 2MB window.  Fix: consider coalescing small
+    messages, or decrementing `local_window` by message overhead
+    in addition to data bytes.
+
+76. **I/O callbacks called under `tx_mtx` create head-of-line
+    blocking.**  `send_packet()` holds `tx_mtx` for its entire
+    duration, including the `gconf.tx()` I/O callback (line 597).
+    On a congested link, a slow send holds `tx_mtx` for the full
+    I/O timeout duration, blocking all other senders including the
+    demux thread's protocol responses.  Fix: split `send_packet`
+    into a prepare phase (under `tx_mtx`, builds encrypted packet)
+    and a transmit phase (outside `tx_mtx`, calls I/O callback).
+    Alternatively, document that I/O callbacks should have short
+    timeouts.
+
+77. **DH-GEX `dhgex_handler()` leaks BIGNUM `p` on malformed
+    GEX_GROUP.**  `dh-gex-sha256.c` lines 254-266: if
+    `parse_bn_mpint` for `p` succeeds but the subsequent size check
+    for `g` fails, the function returns `DSSH_ERROR_INVALID` without
+    freeing `p`.  Fix: use `goto cleanup` instead of direct return.
+
+78. **Missing `ka`/`ka->verify` NULL check in sntrup761 and mlkem768
+    client KEX paths.**  `sntrup761x25519-sha512.c` line 419 and
+    `mlkem768x25519-sha256.c` line 408 call `ka->verify()` without
+    checking for NULL.  The DH-GEX and curve25519 handlers have
+    explicit guards.  The `DSSH_KEX_FLAG_NEEDS_SIGNATURE_CAPABLE`
+    flag should prevent `ka == NULL` in practice, but the other
+    modules defend against it anyway.  Fix: add the same guard.
+
+79. **Window-change callback can access freed channel.**  In
+    `demux_dispatch()` lines 789-792, the demux thread unlocks
+    `buf_mtx` before calling the window-change callback, then
+    re-locks.  During the callback, another thread could call
+    `dssh_session_close()` / `dssh_channel_close()`, which frees the
+    channel.  When the demux thread re-locks `buf_mtx` at line 792,
+    it accesses freed memory.  This is a specific instance of the
+    general problem in item 62, but worth noting because the
+    unlock-for-callback pattern creates a wider window than other
+    demux_dispatch paths.
+
+80. **Setup mailbox `malloc` failure silently drops message, causing
+    permanent hang.**  In `demux_dispatch()` (line 621), if `malloc`
+    fails for `ch->setup_payload`, `setup_ready` stays false.  The
+    demux thread signals `poll_cnd` and moves on, but `setup_recv()`
+    is waiting for `setup_ready == true` — it wakes, sees false, and
+    goes back to sleep.  If the dropped message was the terminal
+    request (shell/exec/subsystem), `dssh_session_accept_channel()`
+    hangs forever waiting for a request that was already sent and
+    dropped.  Fix: set an error flag on the channel so `setup_recv()`
+    can return `DSSH_ERROR_ALLOC`.
+
+81. **Accept queue has no size limit — peer can exhaust memory with
+    CHANNEL_OPEN floods.**  Every incoming CHANNEL_OPEN that passes
+    the type filter is queued unconditionally in
+    `demux_channel_open()` (line 935).  A malicious peer can send
+    millions of CHANNEL_OPEN messages, each consuming a
+    `struct dssh_incoming_open` allocation, causing unbounded memory
+    growth.  Fix: add a configurable limit (e.g., 16 pending opens)
+    and auto-reject with `SSH_OPEN_RESOURCE_SHORTAGE` when full.
+
+82. **Auth banner handling only drains one banner before the expected
+    response.**  In `auth_server_impl()` KBI path (lines 705-714),
+    `get_methods_impl()` (lines 1128-1135), and
+    `auth_publickey_impl()` (lines 1841-1848), if a
+    `SSH_MSG_USERAUTH_BANNER` arrives before the expected response,
+    one banner is handled and one re-recv is done.  If the peer sends
+    two consecutive banners (permitted by RFC 4252 s5.4), the second
+    is misinterpreted as an unexpected message type, causing the auth
+    exchange to fail.  Fix: replace the single if-banner-then-re-recv
+    pattern with a `while (msg_type == BANNER)` loop.
+
+83. **`dssh_session_cleanup()` can hang indefinitely on `thrd_join`.**
+    `dssh_session_cleanup()` (ssh.c line 98) calls
+    `dssh_session_terminate()` then `dssh_session_stop()`, which calls
+    `thrd_join()` (ssh-conn.c line 1060).  The demux thread exits when
+    `recv_packet` returns an error, but `recv_packet` blocks on the
+    I/O callback.  If the callback doesn't respect the `terminate` flag
+    promptly (e.g., blocks on `read()` with no timeout on an open
+    socket), `cleanup` hangs forever.  Fix: document that the
+    application MUST close the underlying socket (or set a short
+    timeout) before calling `cleanup`, or provide a non-blocking
+    `session_stop` variant.
+
+84. **`dssh_session_write()` / `dssh_session_write_ext()` double-lock
+    creates stale-window spurious errors.**  Line 2088 locks `buf_mtx`
+    to read `remote_window` and `remote_max_packet`, computes `len`,
+    then unlocks (line 2091).  `dssh_conn_send_data()` re-locks
+    `buf_mtx` to check and decrement `remote_window`.  Between the
+    two locks, the demux thread can deliver a WINDOW_ADJUST (growing
+    the window) or another writer can consume it.  The outer
+    function's `len` is stale, causing spurious `DSSH_ERROR_TOOLONG`
+    or submitting a `len` the inner function rejects.  Fix: combine
+    the window check, len computation, and decrement into a single
+    `buf_mtx` critical section.
+
 ## Closed
 
 - Non-ASCII characters in comments replaced with ASCII equivalents
