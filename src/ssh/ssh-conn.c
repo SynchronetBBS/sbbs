@@ -188,10 +188,22 @@ window_add(uint32_t current, uint32_t bytes)
 
 DSSH_TESTABLE int
 dssh_conn_send_data(dssh_session sess,
-    dssh_channel ch, const uint8_t *data, size_t len)
+    dssh_channel ch, const uint8_t *data, size_t len,
+    size_t *sentp)
 {
 	mtx_lock(&ch->buf_mtx);
-	if ((len > ch->remote_window) || (len > ch->remote_max_packet)) {
+	if (sentp != NULL) {
+		if (len > ch->remote_window)
+			len = ch->remote_window;
+		if (len > ch->remote_max_packet)
+			len = ch->remote_max_packet;
+		if (len == 0) {
+			mtx_unlock(&ch->buf_mtx);
+			*sentp = 0;
+			return 0;
+		}
+	} else if ((len > ch->remote_window)
+	    || (len > ch->remote_max_packet)) {
 		mtx_unlock(&ch->buf_mtx);
 		return DSSH_ERROR_TOOLONG;
 	}
@@ -227,16 +239,30 @@ dssh_conn_send_data(dssh_session sess,
 
 done:
 	free(msg);
+	if (ret == 0 && sentp != NULL)
+		*sentp = len;
 	return ret;
 }
 
 DSSH_TESTABLE int
 dssh_conn_send_extended_data(dssh_session sess,
     dssh_channel ch, uint32_t data_type_code,
-    const uint8_t *data, size_t len)
+    const uint8_t *data, size_t len,
+    size_t *sentp)
 {
 	mtx_lock(&ch->buf_mtx);
-	if ((len > ch->remote_window) || (len > ch->remote_max_packet)) {
+	if (sentp != NULL) {
+		if (len > ch->remote_window)
+			len = ch->remote_window;
+		if (len > ch->remote_max_packet)
+			len = ch->remote_max_packet;
+		if (len == 0) {
+			mtx_unlock(&ch->buf_mtx);
+			*sentp = 0;
+			return 0;
+		}
+	} else if ((len > ch->remote_window)
+	    || (len > ch->remote_max_packet)) {
 		mtx_unlock(&ch->buf_mtx);
 		return DSSH_ERROR_TOOLONG;
 	}
@@ -275,6 +301,8 @@ dssh_conn_send_extended_data(dssh_session sess,
 
 done:
 	free(msg);
+	if (ret == 0 && sentp != NULL)
+		*sentp = len;
 	return ret;
 }
 
@@ -297,8 +325,13 @@ dssh_conn_send_window_adjust(dssh_session sess,
 	if (ret < 0)
 		return ret;
 
-	ch->local_window = window_add(ch->local_window, bytes);
-	return dssh_transport_send_packet(sess, msg, pos, NULL);
+	ret = dssh_transport_send_packet(sess, msg, pos, NULL);
+	if (ret == 0) {
+		mtx_lock(&ch->buf_mtx);
+		ch->local_window = window_add(ch->local_window, bytes);
+		mtx_unlock(&ch->buf_mtx);
+	}
+	return ret;
 }
 
 static int
@@ -2085,26 +2118,13 @@ dssh_session_write(dssh_session sess,
 	if (!ch->open || ch->eof_sent || ch->close_received)
 		return DSSH_ERROR_TERMINATED;
 
-	mtx_lock(&ch->buf_mtx);
-	uint32_t avail = ch->remote_window;
-	uint32_t max_pkt = ch->remote_max_packet;
-	mtx_unlock(&ch->buf_mtx);
-
-	if (avail == 0)
-		return 0;
-
-	size_t len = bufsz;
-
-	if (len > avail)
-		len = avail;
-	if (len > max_pkt)
-		len = max_pkt;
-
-	int res = dssh_conn_send_data(sess, ch, buf, len);
+	size_t sent = 0;
+	int res = dssh_conn_send_data(sess, ch, buf, bufsz, &sent);
 
 	if (res < 0)
 		return res;
-	return (int64_t)len;
+	int64_t sent_i64 = (int64_t)sent;
+	return sent_i64;
 }
 
 DSSH_PUBLIC int64_t
@@ -2118,27 +2138,14 @@ dssh_session_write_ext(dssh_session sess,
 	if (!ch->open || ch->eof_sent || ch->close_received)
 		return DSSH_ERROR_TERMINATED;
 
-	mtx_lock(&ch->buf_mtx);
-	uint32_t avail = ch->remote_window;
-	uint32_t max_pkt = ch->remote_max_packet;
-	mtx_unlock(&ch->buf_mtx);
-
-	if (avail == 0)
-		return 0;
-
-	size_t len = bufsz;
-
-	if (len > avail)
-		len = avail;
-	if (len > max_pkt)
-		len = max_pkt;
-
+	size_t sent = 0;
 	int res = dssh_conn_send_extended_data(sess, ch,
-	        SSH_EXTENDED_DATA_STDERR, buf, len);
+	        SSH_EXTENDED_DATA_STDERR, buf, bufsz, &sent);
 
 	if (res < 0)
 		return res;
-	return (int64_t)len;
+	int64_t sent_i64 = (int64_t)sent;
+	return sent_i64;
 }
 
 DSSH_PUBLIC int
@@ -2259,10 +2266,8 @@ dssh_channel_write(dssh_session sess,
 		return 0;
 	if (!ch->open || ch->eof_sent || ch->close_received)
 		return DSSH_ERROR_TERMINATED;
-	if ((len > ch->remote_window) || (len > ch->remote_max_packet))
-		return DSSH_ERROR_TOOLONG;
 
-	return dssh_conn_send_data(sess, ch, buf, len);
+	return dssh_conn_send_data(sess, ch, buf, len, NULL);
 }
 
 DSSH_PUBLIC int

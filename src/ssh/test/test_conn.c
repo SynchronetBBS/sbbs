@@ -4201,14 +4201,14 @@ test_send_extended_data_toolong(void)
 	uint8_t data[] = "x";
 	oc.server_ch->remote_window = 0;
 	int res = dssh_conn_send_extended_data(ctx.server, oc.server_ch,
-	    1, data, 1);
+	    1, data, 1, NULL);
 	ASSERT_EQ(res, DSSH_ERROR_TOOLONG);
 
 	/* Also len > remote_max_packet */
 	oc.server_ch->remote_window = 0xFFFFFFFF;
 	oc.server_ch->remote_max_packet = 0;
 	res = dssh_conn_send_extended_data(ctx.server, oc.server_ch,
-	    1, data, 1);
+	    1, data, 1, NULL);
 	ASSERT_EQ(res, DSSH_ERROR_TOOLONG);
 
 	/* Restore for cleanup */

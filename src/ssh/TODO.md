@@ -148,15 +148,6 @@
 
 ### Thread safety audit (items 51-59)
 
-51. **Data race: `local_window` in `dssh_conn_send_window_adjust()`.**
-    `maybe_replenish_window()` (line 574-575) reads `local_window` under
-    `buf_mtx`, unlocks (line 577), then calls `dssh_conn_send_window_adjust()`
-    (line 580) which does a read-modify-write on `ch->local_window` (line 300)
-    with no lock.  The demux thread concurrently subtracts from
-    `local_window` under `buf_mtx` (lines 661, 689).  Lost updates cause
-    flow control accounting drift, eventually over-filling local buffers
-    or starving the peer's send window.
-
 52. **Data race: setup-to-normal transition in `dssh_session_accept_channel()`.**
     Lines 1873-1903 write `ch->setup_mode = false`, `ch->chan_type`,
     `ch->window_max`, the buffer union, and `ch->window_change_cb` without
@@ -214,14 +205,10 @@
     protect with `sess->mtx`.
 
 58. **Data race: unlocked pre-checks in `dssh_channel_write()`.**
-    Line 2260-2263 reads `ch->open`, `ch->eof_sent`, `ch->close_received`,
-    `ch->remote_window`, and `ch->remote_max_packet` without `buf_mtx`.
-    `dssh_conn_send_data()` re-checks `remote_window` under lock, so no
-    actual window violation occurs, but the caller can get a spurious
-    `DSSH_ERROR_TOOLONG` from a stale `remote_window` read, and
-    `close_received` can transition between the check and the send.
-    Move the pre-checks inside `buf_mtx` (same pattern as the fix for
-    the old item 23 in `dssh_session_write`).
+    Line 2260-2263 reads `ch->open`, `ch->eof_sent`, `ch->close_received`
+    without `buf_mtx`.  `close_received` can transition between the check
+    and the send.  Move the pre-checks inside `buf_mtx` (same pattern as
+    the fix for the old item 23 in `dssh_session_write`).
 
 59. **Data race: unlocked flag pre-checks in `dssh_session_write()` /
     `dssh_session_write_ext()`.**  Lines 2085-2086 / 2118-2119 read
@@ -262,15 +249,6 @@
     (ensuring the demux has exited the critical section) before
     destroying it.  Alternatively, defer cleanup to `dssh_session_stop`
     or use reference counting.
-
-63. **`dssh_conn_send_window_adjust()` updates `local_window` before
-    the send succeeds.**  Line 300 does `local_window = window_add()`
-    then line 301 calls `send_packet()`.  If the send fails, the local
-    accounting says the window was increased but the peer never received
-    the WINDOW_ADJUST.  `maybe_replenish_window()` will not re-try
-    because `local_window` is already at `window_max`.  The channel
-    permanently stalls on receive.  Fix: update `local_window` only
-    after `send_packet()` returns 0.
 
 64. **Poll/accept functions hold their mutex across the entire blocking
     wait, serializing concurrent callers and stacking timeouts.**
@@ -464,19 +442,18 @@
     timeout) before calling `cleanup`, or provide a non-blocking
     `session_stop` variant.
 
-84. **`dssh_session_write()` / `dssh_session_write_ext()` double-lock
-    creates stale-window spurious errors.**  Line 2088 locks `buf_mtx`
-    to read `remote_window` and `remote_max_packet`, computes `len`,
-    then unlocks (line 2091).  `dssh_conn_send_data()` re-locks
-    `buf_mtx` to check and decrement `remote_window`.  Between the
-    two locks, the demux thread can deliver a WINDOW_ADJUST (growing
-    the window) or another writer can consume it.  The outer
-    function's `len` is stale, causing spurious `DSSH_ERROR_TOOLONG`
-    or submitting a `len` the inner function rejects.  Fix: combine
-    the window check, len computation, and decrement into a single
-    `buf_mtx` critical section.
-
 ## Closed
+
+- Data race and stale-window bugs in window accounting (was items 51,
+  63, 84).  `dssh_conn_send_window_adjust()` now updates `local_window`
+  under `buf_mtx` and only after `send_packet()` succeeds.
+  `dssh_conn_send_data()` and `dssh_conn_send_extended_data()` gained a
+  `size_t *sentp` parameter for clamp-under-lock mode.
+  `dssh_session_write()` / `write_ext()` pass `bufsz` directly, letting
+  the inner function clamp atomically under `buf_mtx` (eliminates the
+  double-lock snapshot gap).  `dssh_channel_write()` racy pre-check of
+  `remote_window` / `remote_max_packet` removed; `dssh_conn_send_data()`
+  performs the check under lock.
 
 - Non-ASCII characters in comments replaced with ASCII equivalents
   (was item 43).  Em/en dashes, arrows, math operators, Greek letters,

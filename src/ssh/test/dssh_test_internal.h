@@ -64,9 +64,10 @@ extern struct dssh_transport_global_config gconf;
  * ssh-conn.c internal functions exposed for testing.
  */
 int dssh_conn_send_data(dssh_session sess, struct dssh_channel_s *ch,
-    const uint8_t *data, size_t len);
+    const uint8_t *data, size_t len, size_t *sentp);
 int dssh_conn_send_extended_data(dssh_session sess, struct dssh_channel_s *ch,
-    uint32_t data_type_code, const uint8_t *data, size_t len);
+    uint32_t data_type_code, const uint8_t *data, size_t len,
+    size_t *sentp);
 int dssh_conn_send_eof(dssh_session sess, struct dssh_channel_s *ch);
 int dssh_conn_close(dssh_session sess, struct dssh_channel_s *ch);
 int dssh_conn_send_window_adjust(dssh_session sess,
