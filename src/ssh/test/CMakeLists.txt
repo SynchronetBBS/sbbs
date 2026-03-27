@@ -137,6 +137,10 @@ add_test(NAME dssh_targeted_dhgex_null_ka
 	COMMAND dssh_test_algo_key dhgex_handler_null_ka)
 add_test(NAME dssh_targeted_c25519_null_ka
 	COMMAND dssh_test_algo_key c25519_handler_null_ka)
+add_test(NAME dssh_targeted_sntrup761_null_ka
+	COMMAND dssh_test_algo_key sntrup761_handler_null_ka)
+add_test(NAME dssh_targeted_mlkem768_null_ka
+	COMMAND dssh_test_algo_key mlkem768_handler_null_ka)
 
 # ================================================================
 # Tier 2: Layer tests (need mock I/O) — one process per test
@@ -385,6 +389,7 @@ set(AUTH_TESTS
 	dclient/changereq_no_lang
 	dclient/changereq_prompt_overflow
 	dclient/changereq_lang_overflow
+	dclient/get_methods_multi_banner
 	dclient/changereq_cb_error
 	dclient/pk_no_sign dclient/pk_alloc_fail
 	dclient/kbi_alloc_fail dclient/kbi_calloc_chain

@@ -702,7 +702,7 @@ auth_server_impl(dssh_session sess,
 				if (res < 0)
 					return res;
 
-				if (resp_type == SSH_MSG_USERAUTH_BANNER) {
+				while (resp_type == SSH_MSG_USERAUTH_BANNER) {
 					res = handle_banner(sess, resp_payload, resp_len);
 					if (res < 0)
 						return res;
@@ -1125,7 +1125,7 @@ methods_done:
 	if (res < 0)
 		return res;
 
-	if (msg_type == SSH_MSG_USERAUTH_BANNER) {
+	while (msg_type == SSH_MSG_USERAUTH_BANNER) {
 		res = handle_banner(sess, payload, payload_len);
 		if (res < 0)
 			return res;

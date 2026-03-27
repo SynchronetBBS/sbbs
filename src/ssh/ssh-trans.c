@@ -1870,8 +1870,15 @@ dssh_transport_init(dssh_session sess, size_t max_packet_size)
 		return DSSH_ERROR_ALLOC;
 	}
 
-	if ((mtx_init(&sess->trans.tx_mtx, mtx_plain) != thrd_success)
-	    || (mtx_init(&sess->trans.rx_mtx, mtx_plain) != thrd_success)) {
+	if (mtx_init(&sess->trans.tx_mtx, mtx_plain) != thrd_success) {
+		free(sess->trans.tx_packet);
+		free(sess->trans.rx_packet);
+		free(sess->trans.tx_mac_scratch);
+		free(sess->trans.rx_mac_scratch);
+		return DSSH_ERROR_INIT;
+	}
+	if (mtx_init(&sess->trans.rx_mtx, mtx_plain) != thrd_success) {
+		mtx_destroy(&sess->trans.tx_mtx);
 		free(sess->trans.tx_packet);
 		free(sess->trans.rx_packet);
 		free(sess->trans.tx_mac_scratch);

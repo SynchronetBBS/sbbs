@@ -140,6 +140,8 @@ int encode_shared_secret(uint8_t *raw, size_t raw_len,
     uint8_t **mpint_out, size_t *mpint_len);
 int curve25519_handler(struct dssh_kex_context *kctx);
 int dhgex_handler(struct dssh_kex_context *kctx);
+int sntrup761x25519_handler(struct dssh_kex_context *kctx);
+int mlkem768x25519_handler(struct dssh_kex_context *kctx);
 
 /*
  * ssh-auth.c helpers exposed for direct testing.

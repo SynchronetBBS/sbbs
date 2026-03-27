@@ -416,6 +416,11 @@ sntrup761x25519_handler(struct dssh_kex_context *kctx)
 		}
 
 		/* 9. Verify signature */
+		if (!ka || !ka->verify) {
+			OPENSSL_cleanse(K, K_len);
+			free(K);
+			return DSSH_ERROR_INIT;
+		}
 		res = ka->verify(k_s, k_s_len, sig_h, sig_len,
 		    hash, SHA512_DIGEST_LEN);
 		if (res < 0) {
@@ -446,6 +451,9 @@ sntrup761x25519_handler(struct dssh_kex_context *kctx)
 		 * ============================================================ */
 
 		/* 1. Get host key blob */
+		if (!ka || !ka->pubkey || !ka->sign)
+			return DSSH_ERROR_INIT;
+
 		const uint8_t *k_s_buf = NULL;
 		size_t  k_s_len;
 

@@ -292,20 +292,6 @@
     a configurable `max_auth_attempts` (default 20) and send
     DISCONNECT after the limit.
 
-71. **`dssh_session_accept_channel()` leaks `inc` on early errors.**
-    The `inc` parameter (from `dssh_session_accept`) is only freed at
-    line 1737.  Error returns at lines 1700-1732 (NULL ch, failed
-    `alloc_channel_id`, failed `mtx_init`/`cnd_init`, failed
-    `register_channel`) all return NULL without freeing `inc`.  The
-    caller loses its handle to `inc` and cannot free it.  Fix: free
-    `inc` on all early-return paths.
-
-72. **`dssh_transport_init()` leaks `tx_mtx` if `rx_mtx` init fails.**
-    The two `mtx_init` calls are in a single `||` expression (line
-    1901-1907).  If `tx_mtx` succeeds but `rx_mtx` fails, the error
-    path frees packet buffers but never calls `mtx_destroy(&tx_mtx)`.
-    Fix: split into two checks with proper cleanup.
-
 73. **`cnd_signal` on `poll_cnd` should be `cnd_broadcast`.**
     `demux_dispatch()` (line 829) and `dssh_session_set_terminate()`
     (ssh.c line 34) use `cnd_signal`, which wakes only one waiter.
@@ -347,20 +333,6 @@
     Alternatively, document that I/O callbacks should have short
     timeouts.
 
-77. **DH-GEX `dhgex_handler()` leaks BIGNUM `p` on malformed
-    GEX_GROUP.**  `dh-gex-sha256.c` lines 254-266: if
-    `parse_bn_mpint` for `p` succeeds but the subsequent size check
-    for `g` fails, the function returns `DSSH_ERROR_INVALID` without
-    freeing `p`.  Fix: use `goto cleanup` instead of direct return.
-
-78. **Missing `ka`/`ka->verify` NULL check in sntrup761 and mlkem768
-    client KEX paths.**  `sntrup761x25519-sha512.c` line 419 and
-    `mlkem768x25519-sha256.c` line 408 call `ka->verify()` without
-    checking for NULL.  The DH-GEX and curve25519 handlers have
-    explicit guards.  The `DSSH_KEX_FLAG_NEEDS_SIGNATURE_CAPABLE`
-    flag should prevent `ka == NULL` in practice, but the other
-    modules defend against it anyway.  Fix: add the same guard.
-
 79. **Window-change callback can access freed channel.**  In
     `demux_dispatch()` lines 789-792, the demux thread unlocks
     `buf_mtx` before calling the window-change callback, then
@@ -372,17 +344,6 @@
     unlock-for-callback pattern creates a wider window than other
     demux_dispatch paths.
 
-80. **Setup mailbox `malloc` failure silently drops message, causing
-    permanent hang.**  In `demux_dispatch()` (line 621), if `malloc`
-    fails for `ch->setup_payload`, `setup_ready` stays false.  The
-    demux thread signals `poll_cnd` and moves on, but `setup_recv()`
-    is waiting for `setup_ready == true` — it wakes, sees false, and
-    goes back to sleep.  If the dropped message was the terminal
-    request (shell/exec/subsystem), `dssh_session_accept_channel()`
-    hangs forever waiting for a request that was already sent and
-    dropped.  Fix: set an error flag on the channel so `setup_recv()`
-    can return `DSSH_ERROR_ALLOC`.
-
 81. **Accept queue has no size limit — peer can exhaust memory with
     CHANNEL_OPEN floods.**  Every incoming CHANNEL_OPEN that passes
     the type filter is queued unconditionally in
@@ -391,17 +352,6 @@
     `struct dssh_incoming_open` allocation, causing unbounded memory
     growth.  Fix: add a configurable limit (e.g., 16 pending opens)
     and auto-reject with `SSH_OPEN_RESOURCE_SHORTAGE` when full.
-
-82. **Auth banner handling only drains one banner before the expected
-    response.**  In `auth_server_impl()` KBI path (lines 705-714),
-    `get_methods_impl()` (lines 1128-1135), and
-    `auth_publickey_impl()` (lines 1841-1848), if a
-    `SSH_MSG_USERAUTH_BANNER` arrives before the expected response,
-    one banner is handled and one re-recv is done.  If the peer sends
-    two consecutive banners (permitted by RFC 4252 s5.4), the second
-    is misinterpreted as an unexpected message type, causing the auth
-    exchange to fail.  Fix: replace the single if-banner-then-re-recv
-    pattern with a `while (msg_type == BANNER)` loop.
 
 83. **`dssh_session_cleanup()` can hang indefinitely on `thrd_join`.**
     `dssh_session_cleanup()` (ssh.c line 98) calls
@@ -541,3 +491,32 @@
 
 - `extra_line_cb` in `dssh_transport_global_config` now uses the
   `dssh_transport_extra_line_cb` typedef (was item 41).
+
+- `dssh_session_accept_channel()` and `dssh_channel_accept_raw()`
+  leaked the `inc` parameter on early-return error paths (was item 71).
+  Added `free(inc)` to all error returns after the NULL-arg check.
+
+- `dssh_transport_init()` leaked `tx_mtx` when `rx_mtx` init failed
+  (was item 72).  Split the combined `mtx_init` `||` into two
+  separate checks with `mtx_destroy(&tx_mtx)` in the second.
+
+- DH-GEX `dhgex_handler()` leaked BIGNUM `p` on malformed GEX_GROUP
+  size-check failures (was item 77).  Added `BN_free(p)` before the
+  two early returns after `parse_bn_mpint` succeeds.
+
+- Missing `ka`/`ka->verify`/`ka->pubkey`/`ka->sign` NULL checks in
+  sntrup761x25519-sha512 and mlkem768x25519-sha256 KEX handlers
+  (was item 78).  Added the same guards that curve25519-sha256 and
+  dh-gex-sha256 already had — both client (verify) and server
+  (pubkey + sign) paths.
+
+- Setup mailbox `malloc` failure in `demux_dispatch()` silently
+  dropped the message, leaving `setup_recv()` blocked forever
+  (was item 80).  Added `setup_error` flag to the channel struct;
+  on malloc failure the demux sets the flag and signals.
+  `setup_recv()` checks it and returns `DSSH_ERROR_ALLOC`.
+
+- Auth banner handling only drained one `SSH_MSG_USERAUTH_BANNER`
+  before the expected response (was item 82).  Changed `if` to
+  `while` in `get_methods_impl()` and `auth_server_impl()` KBI path.
+  `auth_publickey_impl()` already used a `continue` loop correctly.

@@ -3089,6 +3089,36 @@ test_dhgex_handler_null_ka(void)
 	return TEST_PASS;
 }
 
+static int
+test_sntrup761_handler_null_ka(void)
+{
+	dssh_test_reset_global_config();
+	ASSERT_EQ(dssh_register_ssh_ed25519(), 0);
+
+	struct dssh_kex_context kctx = {0};
+	kctx.client = false;
+	kctx.key_algo = NULL;
+
+	int res = sntrup761x25519_handler(&kctx);
+	ASSERT_TRUE(res < 0);
+	return TEST_PASS;
+}
+
+static int
+test_mlkem768_handler_null_ka(void)
+{
+	dssh_test_reset_global_config();
+	ASSERT_EQ(dssh_register_ssh_ed25519(), 0);
+
+	struct dssh_kex_context kctx = {0};
+	kctx.client = false;
+	kctx.key_algo = NULL;
+
+	int res = mlkem768x25519_handler(&kctx);
+	ASSERT_TRUE(res < 0);
+	return TEST_PASS;
+}
+
 /* ================================================================
  * Test table
  * ================================================================ */
@@ -3260,5 +3290,7 @@ static struct dssh_test_entry tests[] = {
 	/* KEX handler NULL ka */
 	{ "c25519_handler_null_ka",           test_c25519_handler_null_ka },
 	{ "dhgex_handler_null_ka",            test_dhgex_handler_null_ka },
+	{ "sntrup761_handler_null_ka",        test_sntrup761_handler_null_ka },
+	{ "mlkem768_handler_null_ka",         test_mlkem768_handler_null_ka },
 };
 DSSH_TEST_MAIN(tests)

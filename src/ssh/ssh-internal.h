@@ -152,6 +152,7 @@ struct dssh_channel_s {
 	bool     request_success;
 	bool     setup_mode;
 	bool     setup_ready;
+	bool     setup_error;
 	uint8_t  setup_msg_type;
 
         /* Per-channel string buffers (avoids static storage) */

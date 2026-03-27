@@ -256,13 +256,17 @@ dhgex_handler(struct dssh_kex_context *kctx)
 			if (n < 0)
 				return (int)n;
 #if SIZE_MAX < INT64_MAX
-			if (n > SIZE_MAX)
+			if (n > SIZE_MAX) {
+				BN_free(p);
 				return DSSH_ERROR_INVALID;
+			}
 #endif
 			size_t n_sz = (size_t)n;
 
-			if (n_sz > SIZE_MAX - rpos)
+			if (n_sz > SIZE_MAX - rpos) {
+				BN_free(p);
 				return DSSH_ERROR_INVALID;
+			}
 			rpos += n_sz;
 			if (rpos >= payload_len) {
 				BN_free(p);

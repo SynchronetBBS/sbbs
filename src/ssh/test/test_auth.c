@@ -9176,6 +9176,153 @@ test_dclient_changereq_prompt_overflow(void)
 }
 
 /* ================================================================
+ * Multi-banner drain test (item 82)
+ *
+ * Server sends two consecutive SSH_MSG_USERAUTH_BANNER messages before
+ * the USERAUTH_FAILURE response.  RFC 4252 s5.4 permits multiple banners.
+ * The client's get_methods_impl must drain all banners (while loop, not if).
+ * ================================================================ */
+
+static int banner_count;
+
+static void
+multi_banner_cb(const uint8_t *message, size_t message_len,
+    const uint8_t *language, size_t language_len, void *cbdata)
+{
+	(void)message;
+	(void)message_len;
+	(void)language;
+	(void)language_len;
+	(void)cbdata;
+	banner_count++;
+}
+
+static int
+multi_banner_server_thread(void *arg)
+{
+	struct dclient_server_arg *a = arg;
+	dssh_session server = a->ctx->server;
+	uint8_t msg_type;
+	uint8_t *payload;
+	size_t payload_len;
+
+	dssh_test_alloc_exclude_thread();
+
+	/* SERVICE_REQUEST -> SERVICE_ACCEPT */
+	int res = dssh_transport_recv_packet(server, &msg_type, &payload,
+	    &payload_len);
+	if (res < 0 || msg_type != SSH_MSG_SERVICE_REQUEST) {
+		a->result = -1;
+		return 0;
+	}
+	{
+		uint8_t accept[64];
+		size_t pos = 0;
+		accept[pos++] = SSH_MSG_SERVICE_ACCEPT;
+		if (payload_len > 5) {
+			uint32_t slen;
+			dssh_parse_uint32(&payload[1], payload_len - 1, &slen);
+			if (5 + slen <= payload_len) {
+				dssh_serialize_uint32(slen, accept,
+				    sizeof(accept), &pos);
+				memcpy(&accept[pos], &payload[5], slen);
+				pos += slen;
+			}
+		}
+		res = dssh_transport_send_packet(server, accept, pos, NULL);
+		if (res < 0) {
+			a->result = -2;
+			return 0;
+		}
+	}
+
+	/* Receive the auth request */
+	res = dssh_transport_recv_packet(server, &msg_type, &payload,
+	    &payload_len);
+	if (res < 0) {
+		a->result = -3;
+		return 0;
+	}
+
+	/* Send banner 1 */
+	{
+		const char *b1 = "Banner one";
+		uint8_t pkt[64];
+		size_t pos = 0;
+		pkt[pos++] = SSH_MSG_USERAUTH_BANNER;
+		dssh_serialize_uint32(10, pkt, sizeof(pkt), &pos);
+		memcpy(&pkt[pos], b1, 10);
+		pos += 10;
+		dssh_serialize_uint32(0, pkt, sizeof(pkt), &pos);
+		dssh_transport_send_packet(server, pkt, pos, NULL);
+	}
+
+	/* Send banner 2 */
+	{
+		const char *b2 = "Banner two";
+		uint8_t pkt[64];
+		size_t pos = 0;
+		pkt[pos++] = SSH_MSG_USERAUTH_BANNER;
+		dssh_serialize_uint32(10, pkt, sizeof(pkt), &pos);
+		memcpy(&pkt[pos], b2, 10);
+		pos += 10;
+		dssh_serialize_uint32(0, pkt, sizeof(pkt), &pos);
+		dssh_transport_send_packet(server, pkt, pos, NULL);
+	}
+
+	/* Send FAILURE with method list */
+	{
+		uint8_t pkt[64];
+		size_t pos = 0;
+		pkt[pos++] = SSH_MSG_USERAUTH_FAILURE;
+		dssh_serialize_uint32(8, pkt, sizeof(pkt), &pos);
+		memcpy(&pkt[pos], "password", 8);
+		pos += 8;
+		pkt[pos++] = 0; /* partial_success = false */
+		dssh_transport_send_packet(server, pkt, pos, NULL);
+	}
+
+	a->result = 0;
+	return 0;
+}
+
+static int
+test_dclient_get_methods_multi_banner(void)
+{
+	struct handshake_ctx ctx;
+	if (handshake_setup(&ctx) < 0) {
+		handshake_cleanup(&ctx);
+		return TEST_FAIL;
+	}
+
+	banner_count = 0;
+	dssh_session_set_banner_cb(ctx.client, multi_banner_cb, NULL);
+
+	struct dclient_server_arg sa = { &ctx, NULL, 0, 0 };
+	thrd_t st;
+	if (thrd_create(&st, multi_banner_server_thread, &sa)
+	    != thrd_success) {
+		handshake_cleanup(&ctx);
+		return TEST_FAIL;
+	}
+
+	char methods[256];
+	int res = get_methods_impl(ctx.client, "user", methods,
+	    sizeof(methods));
+
+	mock_io_close_c2s(&ctx.io);
+	mock_io_close_s2c(&ctx.io);
+	thrd_join(st, NULL);
+	ASSERT_EQ(sa.result, 0);
+	ASSERT_EQ(res, DSSH_AUTH_METHODS_AVAILABLE);
+	ASSERT_EQ(banner_count, 2);
+	ASSERT_STR_EQ(methods, "password");
+
+	handshake_cleanup(&ctx);
+	return TEST_PASS;
+}
+
+/* ================================================================
  * Server-side KBI tests (using dssh_auth_server with kbi callback)
  * ================================================================ */
 
@@ -10125,6 +10272,7 @@ static struct dssh_test_entry tests[] = {
 	{ "dclient/get_methods_unexpected",      test_dclient_get_methods_unexpected_msg },
 	{ "dclient/get_methods_msg_alloc",       test_dclient_get_methods_msg_alloc },
 	{ "dclient/changereq_prompt_overflow",   test_dclient_changereq_prompt_overflow },
+	{ "dclient/get_methods_multi_banner",    test_dclient_get_methods_multi_banner },
 };
 
 DSSH_TEST_MAIN(tests)

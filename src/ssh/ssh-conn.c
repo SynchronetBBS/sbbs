@@ -652,6 +652,9 @@ demux_dispatch(dssh_session sess, uint8_t msg_type,
 			ch->setup_msg_type = msg_type;
 			ch->setup_ready = true;
 		}
+		else {
+			ch->setup_error = true;
+		}
 		cnd_signal(&ch->poll_cnd);
 		mtx_unlock(&ch->buf_mtx);
 		return 0;
@@ -1618,11 +1621,14 @@ dssh_channel_accept_raw(dssh_session sess,
 		return NULL;
 	dssh_channel ch = calloc(1, sizeof(*ch));
 
-	if (ch == NULL)
+	if (ch == NULL) {
+		free(inc);
 		return NULL;
+	}
 
 	int64_t cid = alloc_channel_id(sess);
 	if (cid < 0) {
+		free(inc);
 		free(ch);
 		return NULL;
 	}
@@ -1635,6 +1641,7 @@ dssh_channel_accept_raw(dssh_session sess,
 	int res = init_raw_channel(ch, INITIAL_WINDOW_SIZE);
 
 	if (res < 0) {
+		free(inc);
 		free(ch);
 		return NULL;
 	}
@@ -1642,6 +1649,7 @@ dssh_channel_accept_raw(dssh_session sess,
 	res = register_channel(sess, ch);
 	if (res < 0) {
 		cleanup_channel_buffers(ch);
+		free(inc);
 		free(ch);
 		return NULL;
 	}
@@ -1672,8 +1680,14 @@ setup_recv(dssh_session sess, dssh_channel ch,
     uint8_t *msg_type, uint8_t **payload, size_t *payload_len)
 {
 	mtx_lock(&ch->buf_mtx);
-	while (!ch->setup_ready && !sess->terminate && !ch->close_received)
+	while (!ch->setup_ready && !ch->setup_error
+	    && !sess->terminate && !ch->close_received)
 		cnd_wait(&ch->poll_cnd, &ch->buf_mtx);
+
+	if (ch->setup_error) {
+		mtx_unlock(&ch->buf_mtx);
+		return DSSH_ERROR_ALLOC;
+	}
 
 	if (!ch->setup_ready) {
 		mtx_unlock(&ch->buf_mtx);
@@ -1724,10 +1738,13 @@ dssh_session_accept_channel(dssh_session sess,
 		return NULL;
 	dssh_channel ch = calloc(1, sizeof(*ch));
 
-	if (ch == NULL)
+	if (ch == NULL) {
+		free(inc);
 		return NULL;
+	}
 	int64_t cid = alloc_channel_id(sess);
 	if (cid < 0) {
+		free(inc);
 		free(ch);
 		return NULL;
 	}
@@ -1739,11 +1756,13 @@ dssh_session_accept_channel(dssh_session sess,
 
         /* Set up mailbox for receiving setup messages from demux */
 	if (mtx_init(&ch->buf_mtx, mtx_plain) != thrd_success) {
+		free(inc);
 		free(ch);
 		return NULL;
 	}
 	if (cnd_init(&ch->poll_cnd) != thrd_success) {
 		mtx_destroy(&ch->buf_mtx);
+		free(inc);
 		free(ch);
 		return NULL;
 	}
@@ -1755,6 +1774,7 @@ dssh_session_accept_channel(dssh_session sess,
 	if (res < 0) {
 		cnd_destroy(&ch->poll_cnd);
 		mtx_destroy(&ch->buf_mtx);
+		free(inc);
 		free(ch);
 		return NULL;
 	}
