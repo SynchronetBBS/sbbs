@@ -85,7 +85,8 @@ dssh_parse_env_data(const uint8_t *data, size_t data_len,
     const uint8_t **name, size_t *name_len,
     const uint8_t **value, size_t *value_len)
 {
-	if (name == NULL || value == NULL || (data == NULL && data_len > 0))
+	if (name == NULL || value == NULL || name_len == NULL || value_len == NULL
+	    || (data == NULL && data_len > 0))
 		return DSSH_ERROR_INVALID;
 	size_t   pos = 0;
 	int64_t  pv;
@@ -122,7 +123,7 @@ DSSH_PUBLIC int
 dssh_parse_exec_data(const uint8_t *data, size_t data_len,
     const uint8_t **command, size_t *command_len)
 {
-	if (command == NULL || (data == NULL && data_len > 0))
+	if (command == NULL || command_len == NULL || (data == NULL && data_len > 0))
 		return DSSH_ERROR_INVALID;
 	if (data_len < 4)
 		return DSSH_ERROR_PARSE;
@@ -144,7 +145,7 @@ DSSH_PUBLIC int
 dssh_parse_subsystem_data(const uint8_t *data, size_t data_len,
     const uint8_t **name, size_t *name_len)
 {
-	if (name == NULL || (data == NULL && data_len > 0))
+	if (name == NULL || name_len == NULL || (data == NULL && data_len > 0))
 		return DSSH_ERROR_INVALID;
 	if (data_len < 4)
 		return DSSH_ERROR_PARSE;
@@ -2067,7 +2068,7 @@ DSSH_PUBLIC int64_t
 dssh_session_read(dssh_session sess,
     dssh_channel ch, uint8_t *buf, size_t bufsz)
 {
-	if (sess == NULL || ch == NULL)
+	if (sess == NULL || ch == NULL || buf == NULL)
 		return DSSH_ERROR_INVALID;
 	mtx_lock(&ch->buf_mtx);
 
@@ -2089,7 +2090,7 @@ DSSH_PUBLIC int64_t
 dssh_session_read_ext(dssh_session sess,
     dssh_channel ch, uint8_t *buf, size_t bufsz)
 {
-	if (sess == NULL || ch == NULL)
+	if (sess == NULL || ch == NULL || buf == NULL)
 		return DSSH_ERROR_INVALID;
 	mtx_lock(&ch->buf_mtx);
 
@@ -2111,7 +2112,7 @@ DSSH_PUBLIC int64_t
 dssh_session_write(dssh_session sess,
     dssh_channel ch, const uint8_t *buf, size_t bufsz)
 {
-	if (sess == NULL || ch == NULL)
+	if (sess == NULL || ch == NULL || buf == NULL)
 		return DSSH_ERROR_INVALID;
 	if (bufsz == 0)
 		return 0;
@@ -2131,7 +2132,7 @@ DSSH_PUBLIC int64_t
 dssh_session_write_ext(dssh_session sess,
     dssh_channel ch, const uint8_t *buf, size_t bufsz)
 {
-	if (sess == NULL || ch == NULL)
+	if (sess == NULL || ch == NULL || buf == NULL)
 		return DSSH_ERROR_INVALID;
 	if (bufsz == 0)
 		return 0;
@@ -2152,7 +2153,7 @@ DSSH_PUBLIC int
 dssh_session_read_signal(dssh_session sess,
     dssh_channel ch, const char **signal_name)
 {
-	if (sess == NULL || ch == NULL)
+	if (sess == NULL || ch == NULL || signal_name == NULL)
 		return DSSH_ERROR_INVALID;
 	mtx_lock(&ch->buf_mtx);
 
@@ -2240,7 +2241,7 @@ DSSH_PUBLIC int64_t
 dssh_channel_read(dssh_session sess,
     dssh_channel ch, uint8_t *buf, size_t bufsz)
 {
-	if (sess == NULL || ch == NULL)
+	if (sess == NULL || ch == NULL || buf == NULL)
 		return DSSH_ERROR_INVALID;
 	mtx_lock(&ch->buf_mtx);
 
@@ -2260,7 +2261,7 @@ DSSH_PUBLIC int
 dssh_channel_write(dssh_session sess,
     dssh_channel ch, const uint8_t *buf, size_t len)
 {
-	if (sess == NULL || ch == NULL)
+	if (sess == NULL || ch == NULL || buf == NULL)
 		return DSSH_ERROR_INVALID;
 	if (len == 0)
 		return 0;

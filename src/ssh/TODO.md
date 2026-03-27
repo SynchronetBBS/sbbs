@@ -2,10 +2,6 @@
 
 ## Open
 
-6. ssh-arch.c public functions have no parameter validation.  NULL `buf`,
-   `val`, or `pos` pointers crash immediately.  Functions confirmed as
-   `DSSH_PUBLIC` need NULL checks and appropriate error returns.
-
 8. `dssh_auth_server()` username output has no buffer size parameter.
    Copies up to 255 bytes into `username_out` (capped by internal
    `saved_user[256]`), but caller cannot specify output buffer size.
@@ -122,29 +118,6 @@
     receiving one — but there is no design for what to do with it.  The
     `set_unimplemented_cb` callback exists (item 32) but the recv path
     just drops the message without invoking it.
-
-45. ssh-auth.c `dssh_auth_get_methods()` does not validate the `methods`
-    output buffer pointer (NULL dereference if caller passes NULL) or
-    check `methods_sz` for zero.
-
-46. ssh-conn.c parser functions missing NULL checks on output length
-    pointers: `dssh_parse_env_data()` (`name_len`, `value_len`),
-    `dssh_parse_exec_data()` (`command_len`),
-    `dssh_parse_subsystem_data()` (`name_len`).
-
-47. `dssh_session_reject()` dereferences `description` via `strlen()`
-    with no NULL check.
-
-48. `dssh_session_accept_channel()` does not validate the `request_type`
-    and `request_data` output pointers.
-
-49. ssh-conn.c read/write functions missing NULL checks on `buf`:
-    `dssh_session_read()`, `dssh_session_read_ext()`,
-    `dssh_session_write()`, `dssh_session_write_ext()`,
-    `dssh_channel_read()`, `dssh_channel_write()`.
-
-50. `dssh_session_read_signal()` does not validate the `signal_name`
-    output pointer.
 
 ### Thread safety audit (items 51-59)
 
@@ -443,6 +416,21 @@
     `session_stop` variant.
 
 ## Closed
+
+- NULL parameter validation for public API functions (was items 6, 45,
+  46, 49, 50).  Added NULL checks returning `DSSH_ERROR_INVALID` (or
+  `DSSH_ERROR_INIT` in auth) to: `dssh_parse_uint32()` and
+  `dssh_serialize_uint32()` (`buf`/`val`/`pos`),
+  `dssh_auth_get_methods()` (`methods`),
+  `dssh_parse_env_data()` (`name_len`, `value_len`),
+  `dssh_parse_exec_data()` (`command_len`),
+  `dssh_parse_subsystem_data()` (`name_len`),
+  `dssh_session_read/read_ext/write/write_ext()` (`buf`),
+  `dssh_channel_read/write()` (`buf`),
+  `dssh_session_read_signal()` (`signal_name`).
+  Items 47 and 48 were already safe (`dssh_session_reject()` uses a
+  ternary for NULL `description`; `dssh_session_accept_channel()`
+  already checks `request_type`/`request_data` before dereferencing).
 
 - Data race and stale-window bugs in window accounting (was items 51,
   63, 84).  `dssh_conn_send_window_adjust()` now updates `local_window`

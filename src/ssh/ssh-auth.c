@@ -1176,7 +1176,7 @@ DSSH_PUBLIC int
 dssh_auth_get_methods(dssh_session sess,
     const char *username, char *methods, size_t methods_sz)
 {
-	if (sess == NULL || username == NULL)
+	if (sess == NULL || username == NULL || methods == NULL)
 		return DSSH_ERROR_INIT;
 	return auth_check_terminated(sess,
 	           get_methods_impl(sess, username, methods, methods_sz));
