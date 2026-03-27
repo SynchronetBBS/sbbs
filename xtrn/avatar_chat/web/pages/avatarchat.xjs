@@ -2,18 +2,90 @@
 
 <?xjs
 
+function avatarChatTrimText(value) {
+    return String(value || '').replace(/^\s+|\s+$/g, '');
+}
+
+function avatarChatNormalizeUpper(value) {
+    return avatarChatTrimText(value).toUpperCase();
+}
+
+function avatarChatNormalizeChannelKey(value) {
+    return String(value || '').replace(/[^a-zA-Z0-9_-]/g, '').toUpperCase();
+}
+
+function avatarChatUserIsSysop() {
+    if (user && user.is_sysop === true) {
+        return true;
+    }
+    if (user && user.security && typeof user.security.level === 'number' && user.security.level >= 90) {
+        return true;
+    }
+    if (user && typeof user.compare_ars === 'function') {
+        try {
+            return user.compare_ars('SYSOP') === true;
+        } catch (_compareError) {}
+    }
+    return false;
+}
+
+function avatarChatGetMotdChannelName(config) {
+    var value = avatarChatTrimText(config && config.motdChannel ? config.motdChannel : 'motd');
+    return value.length ? value : 'motd';
+}
+
+function avatarChatIsMotdChannel(value, config) {
+    return avatarChatNormalizeChannelKey(value) === avatarChatNormalizeChannelKey(avatarChatGetMotdChannelName(config));
+}
+
+function avatarChatCanManageMotd(config) {
+    var configuredQwkid = avatarChatNormalizeUpper(config && config.motdHostQwkid ? config.motdHostQwkid : '');
+    var configuredSystem = avatarChatNormalizeUpper(config && config.motdHostSystem ? config.motdHostSystem : '');
+    var configuredHost = avatarChatNormalizeUpper(config && config.host ? config.host : '');
+    var localQwkid = avatarChatNormalizeUpper(system && system.qwk_id ? system.qwk_id : '');
+    var localSystem = avatarChatNormalizeUpper(system && system.name ? system.name : '');
+
+    if (!avatarChatUserIsSysop()) {
+        return false;
+    }
+
+    if (configuredQwkid.length) {
+        return localQwkid === configuredQwkid;
+    }
+
+    if (configuredSystem.length) {
+        return localSystem === configuredSystem;
+    }
+
+    if (configuredHost === '127.0.0.1' || configuredHost === 'LOCALHOST') {
+        return true;
+    }
+
+    return localSystem === configuredHost;
+}
+
 function loadAvatarChatWebConfig() {
     var path = js.exec_dir + '../../xtrn/avatar_chat/avatar_chat.ini';
     var file = new File(path);
     var config = {
-        defaultChannel: 'main'
+        host: '127.0.0.1',
+        port: 10088,
+        defaultChannel: 'main',
+        motdChannel: 'motd',
+        motdHostSystem: '',
+        motdHostQwkid: ''
     };
 
     if (!file.open('r')) {
         return config;
     }
 
+    config.host = String(file.iniGetValue(null, 'host', config.host) || config.host);
+    config.port = parseInt(String(file.iniGetValue(null, 'port', config.port)), 10) || config.port;
     config.defaultChannel = String(file.iniGetValue(null, 'default_channel', config.defaultChannel) || config.defaultChannel);
+    config.motdChannel = String(file.iniGetValue(null, 'motd_channel', config.motdChannel) || config.motdChannel);
+    config.motdHostSystem = String(file.iniGetValue(null, 'motd_host_system', config.motdHostSystem) || config.motdHostSystem);
+    config.motdHostQwkid = String(file.iniGetValue(null, 'motd_host_qwkid', config.motdHostQwkid) || config.motdHostQwkid);
     file.close();
 
     return config;
@@ -22,6 +94,7 @@ function loadAvatarChatWebConfig() {
 var avatarChatWebConfig = loadAvatarChatWebConfig();
 var avatarChatLoggedIn = user.number > 0;
 var avatarChatCanUseRealtime = is_user();
+var avatarChatMotdManager = avatarChatCanManageMotd(avatarChatWebConfig);
 
 ?>
 <style>
@@ -30,6 +103,7 @@ var avatarChatCanUseRealtime = is_user();
     --chat-panel: #111111;
     --chat-panel-alt: #171717;
     --chat-border: #2b2b2b;
+    --chat-border-soft: rgba(255, 255, 255, 0.08);
     --chat-muted: #9e9e9e;
     --chat-fg: #efefef;
     --chat-accent: #34c6d3;
@@ -37,38 +111,64 @@ var avatarChatCanUseRealtime = is_user();
     --chat-other: #2a2a2a;
     --chat-system: #666666;
     color: var(--chat-fg);
+    min-height: 0;
+    padding: 0.9rem 0 0.45rem;
 }
 .avatar-chat-web .avatar-chat-shell {
     display: flex;
     flex-direction: column;
-    gap: 0.75rem;
-    min-height: 70vh;
+    gap: 0;
+    height: calc(100vh - 148px);
+    height: calc(100dvh - 148px);
+    min-height: 0;
+    overflow: hidden;
+    padding: 1rem;
+    border: 1px solid var(--chat-border-soft);
+    border-radius: 1.35rem;
+    background:
+        radial-gradient(circle at top left, rgba(52, 198, 211, 0.12), transparent 32%),
+        linear-gradient(180deg, rgba(15, 15, 18, 0.96), rgba(8, 8, 10, 0.97));
+    box-shadow:
+        0 22px 48px rgba(0, 0, 0, 0.38),
+        inset 0 1px 0 rgba(255, 255, 255, 0.04);
 }
 .avatar-chat-web .avatar-chat-layout {
     display: grid;
     grid-template-columns: 280px minmax(0, 1fr);
-    gap: 1rem;
+    gap: 1.1rem;
     align-items: stretch;
+    flex: 1 1 auto;
+    min-height: 0;
 }
 .avatar-chat-web .avatar-chat-sidebar,
 .avatar-chat-web .avatar-chat-main {
     display: flex;
     flex-direction: column;
     gap: 0.75rem;
+    min-height: 0;
 }
 .avatar-chat-web .avatar-chat-sidebar {
-    border: 1px solid var(--chat-border);
-    border-radius: 1rem;
-    background: var(--chat-panel);
-    padding: 0.9rem;
+    border: 1px solid var(--chat-border-soft);
+    border-radius: 1.1rem;
+    background: linear-gradient(180deg, rgba(18, 18, 20, 0.95), rgba(10, 10, 12, 0.96));
+    padding: 1rem;
+    overflow-y: auto;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
 }
 .avatar-chat-web .avatar-chat-main {
     min-width: 0;
+    overflow: hidden;
+    gap: 0;
 }
 .avatar-chat-web .avatar-chat-sidebar-section {
     display: flex;
     flex-direction: column;
     gap: 0.55rem;
+}
+.avatar-chat-web .avatar-chat-sidebar-section + .avatar-chat-sidebar-section {
+    margin-top: 0.25rem;
+    padding-top: 1rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
 }
 .avatar-chat-web .avatar-chat-sidebar-header {
     display: flex;
@@ -80,6 +180,7 @@ var avatarChatCanUseRealtime = is_user();
     margin: 0;
     font-size: 1rem;
     color: #5555ff;
+    letter-spacing: 0.04em;
 }
 .avatar-chat-web .avatar-chat-sidebar-form {
     display: flex;
@@ -87,18 +188,19 @@ var avatarChatCanUseRealtime = is_user();
 }
 .avatar-chat-web .avatar-chat-sidebar-input {
     flex: 1 1 auto;
-    border: 1px solid var(--chat-border);
-    background: #0b0b0b;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: #0b0b0c;
     color: var(--chat-fg);
-    border-radius: 0.65rem;
-    padding: 0.6rem 0.75rem;
+    border-radius: 0.9rem;
+    padding: 0.75rem 0.9rem;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
 }
 .avatar-chat-web .avatar-chat-sidebar-button {
-    border: 1px solid var(--chat-border);
+    border: 1px solid rgba(255, 255, 255, 0.08);
     background: var(--chat-panel-alt);
     color: var(--chat-fg);
-    border-radius: 0.65rem;
-    padding: 0.6rem 0.8rem;
+    border-radius: 0.85rem;
+    padding: 0.65rem 0.9rem;
 }
 .avatar-chat-web .avatar-chat-nav-list {
     display: flex;
@@ -111,19 +213,20 @@ var avatarChatCanUseRealtime = is_user();
     padding: 0.25rem 0;
 }
 .avatar-chat-web .avatar-chat-nav-item {
-    border: 1px solid var(--chat-border);
-    background: #0d0d0d;
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    background: linear-gradient(180deg, rgba(13, 13, 13, 0.96), rgba(10, 10, 10, 0.96));
     color: var(--chat-fg);
-    border-radius: 0.8rem;
-    padding: 0.7rem 0.8rem;
+    border-radius: 0.95rem;
+    padding: 0.8rem 0.9rem;
     text-align: left;
     display: flex;
     flex-direction: column;
     gap: 0.25rem;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.02);
 }
 .avatar-chat-web .avatar-chat-nav-item.is-active {
     border-color: var(--chat-accent);
-    background: #0c1619;
+    background: linear-gradient(180deg, rgba(10, 24, 28, 0.96), rgba(8, 18, 22, 0.96));
 }
 .avatar-chat-web .avatar-chat-nav-top {
     display: flex;
@@ -146,11 +249,57 @@ var avatarChatCanUseRealtime = is_user();
     overflow: hidden;
     text-overflow: ellipsis;
 }
+.avatar-chat-web .avatar-chat-nav-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    flex-wrap: wrap;
+    margin-top: 0.2rem;
+}
+.avatar-chat-web .avatar-chat-nav-action,
+.avatar-chat-web .avatar-chat-nav-state {
+    border: 1px solid var(--chat-border);
+    border-radius: 999px;
+    padding: 0.32rem 0.72rem;
+    font-size: 0.82rem;
+    line-height: 1.2;
+}
+.avatar-chat-web .avatar-chat-nav-action {
+    background: var(--chat-panel-alt);
+    color: var(--chat-fg);
+    cursor: pointer;
+}
+.avatar-chat-web .avatar-chat-nav-action.is-primary {
+    background: var(--chat-accent);
+    border-color: transparent;
+    color: #041013;
+    font-weight: bold;
+}
+.avatar-chat-web .avatar-chat-nav-state {
+    display: inline-flex;
+    align-items: center;
+    background: #0f1d21;
+    border-color: rgba(52, 198, 211, 0.35);
+    color: var(--chat-accent);
+}
 .avatar-chat-web .avatar-chat-thread-row {
     display: grid;
-    grid-template-columns: 48px minmax(0, 1fr);
+    grid-template-columns: 12px 48px minmax(0, 1fr);
     gap: 0.65rem;
     align-items: center;
+}
+.avatar-chat-web .avatar-chat-presence-dot {
+    width: 0.75rem;
+    height: 0.75rem;
+    border-radius: 999px;
+    border: 2px solid #0a0a0a;
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.08);
+}
+.avatar-chat-web .avatar-chat-presence-dot.is-online {
+    background: #32d46b;
+}
+.avatar-chat-web .avatar-chat-presence-dot.is-offline {
+    background: #d45151;
 }
 .avatar-chat-web .avatar-chat-thread-avatar {
     width: 48px;
@@ -229,36 +378,116 @@ var avatarChatCanUseRealtime = is_user();
 }
 .avatar-chat-web .avatar-chat-topbar {
     display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 0.75rem;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.65rem;
+    padding: 0.85rem 0.95rem 0.8rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    background:
+        linear-gradient(120deg, rgba(18, 72, 51, 0.92), rgba(18, 78, 90, 0.9));
+    color: #f4fff8;
 }
-.avatar-chat-web .avatar-chat-title {
-    margin: 0;
-    font-size: 1.5rem;
+.avatar-chat-web .avatar-chat-topbar-meta {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+.avatar-chat-web .avatar-chat-topbar-brand {
+    font-weight: bold;
+    letter-spacing: 0.04em;
+}
+.avatar-chat-web .avatar-chat-topbar-chip {
+    display: inline-flex;
+    align-items: center;
+    min-height: 1.9rem;
+    padding: 0.3rem 0.7rem;
+    border-radius: 999px;
+    background: rgba(2, 12, 11, 0.22);
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    color: inherit;
+    font-size: 0.88rem;
+}
+.avatar-chat-web .avatar-chat-topbar-chip-muted {
+    color: rgba(244, 255, 248, 0.84);
+}
+.avatar-chat-web .avatar-chat-count {
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    background: rgba(2, 12, 11, 0.22);
+    color: #f4fff8;
+    border-radius: 999px;
+    padding: 0.3rem 0.85rem;
+    cursor: pointer;
+    min-height: 1.9rem;
+    font-size: 0.88rem;
+}
+.avatar-chat-web .avatar-chat-count:disabled {
+    cursor: default;
+    opacity: 0.7;
+}
+.avatar-chat-web .avatar-chat-motd {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    min-width: 0;
+}
+.avatar-chat-web .avatar-chat-motd.is-empty {
+    opacity: 0.88;
+}
+.avatar-chat-web .avatar-chat-motd-label {
+    font-size: 0.74rem;
+    font-weight: bold;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: rgba(244, 255, 248, 0.76);
+}
+.avatar-chat-web .avatar-chat-motd-window {
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    white-space: nowrap;
+}
+.avatar-chat-web .avatar-chat-motd-track {
+    display: inline-flex;
+    align-items: center;
+    gap: 2.5rem;
+    min-width: 100%;
+    --motd-scroll-width: 0px;
+    --motd-duration: 18s;
+}
+.avatar-chat-web .avatar-chat-motd.is-scrolling .avatar-chat-motd-track {
+    animation: avatar-chat-motd-scroll var(--motd-duration) linear infinite;
+}
+.avatar-chat-web .avatar-chat-motd-item {
+    display: inline-block;
+    white-space: nowrap;
+}
+.avatar-chat-web .avatar-chat-motd-item-clone {
+    display: none;
 }
 .avatar-chat-web .avatar-chat-channel {
     color: var(--chat-muted);
     font-size: 0.95rem;
 }
-.avatar-chat-web .avatar-chat-count {
-    border: 1px solid var(--chat-border);
-    background: var(--chat-panel);
-    color: var(--chat-fg);
-    border-radius: 999px;
-    padding: 0.35rem 0.8rem;
-    cursor: pointer;
+@keyframes avatar-chat-motd-scroll {
+    from {
+        transform: translateX(0);
+    }
+    to {
+        transform: translateX(calc(-1 * var(--motd-scroll-width)));
+    }
 }
 .avatar-chat-web .avatar-chat-status {
     display: none;
     align-items: center;
     justify-content: space-between;
     gap: 0.75rem;
-    border: 1px solid var(--chat-border);
-    border-radius: 0.75rem;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 0.9rem;
     padding: 0.75rem 0.9rem;
     background: #101010;
     color: var(--chat-fg);
+    margin: 0.85rem 0.85rem 0;
 }
 .avatar-chat-web .avatar-chat-status.is-visible {
     display: flex;
@@ -291,21 +520,15 @@ var avatarChatCanUseRealtime = is_user();
     border-radius: 0.5rem;
     padding: 0.35rem 0.75rem;
 }
-.avatar-chat-web .avatar-chat-users {
-    display: none;
-    border: 1px solid var(--chat-border);
-    background: var(--chat-panel);
-    border-radius: 0.75rem;
-    padding: 0.75rem;
-}
-.avatar-chat-web .avatar-chat-users.is-open {
-    display: block;
+.avatar-chat-web .avatar-chat-users-modal-card {
+    width: min(560px, 100%);
+    max-height: min(72vh, 640px);
 }
 .avatar-chat-web .avatar-chat-users-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin-bottom: 0.5rem;
+    margin-bottom: 0;
 }
 .avatar-chat-web .avatar-chat-users-close {
     border: 1px solid var(--chat-border);
@@ -317,17 +540,22 @@ var avatarChatCanUseRealtime = is_user();
 .avatar-chat-web .avatar-chat-users-list {
     display: grid;
     gap: 0.5rem;
+    flex: 1 1 auto;
+    min-height: 0;
+    max-height: none;
+    overflow-y: auto;
+    padding-right: 0.15rem;
 }
 .avatar-chat-web .avatar-chat-user {
     display: grid;
     grid-template-columns: 56px 1fr;
     gap: 0.6rem;
     align-items: center;
-    border: 1px solid var(--chat-border);
-    background: #0d0d0d;
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    background: linear-gradient(180deg, rgba(14, 14, 16, 0.96), rgba(10, 10, 12, 0.96));
     color: var(--chat-fg);
     border-radius: 0.75rem;
-    padding: 0.55rem;
+    padding: 0.65rem;
     text-align: left;
 }
 .avatar-chat-web .avatar-chat-user-avatar,
@@ -348,6 +576,18 @@ var avatarChatCanUseRealtime = is_user();
     max-width: 100%;
     max-height: 100%;
     image-rendering: pixelated;
+}
+.avatar-chat-web .avatar-chat-chatpanel {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: hidden;
+    border: 1px solid var(--chat-border-soft);
+    border-radius: 1.15rem;
+    background:
+        linear-gradient(180deg, rgba(6, 6, 7, 0.98), rgba(10, 10, 11, 0.99));
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
 }
 .avatar-chat-web .avatar-chat-avatar-placeholder {
     display: flex;
@@ -376,13 +616,14 @@ var avatarChatCanUseRealtime = is_user();
     gap: 0.2rem;
 }
 .avatar-chat-web .avatar-chat-messages {
-    flex: 1 1 auto;
-    border: 1px solid var(--chat-border);
-    background: var(--chat-bg);
-    border-radius: 1rem;
-    padding: 1rem;
+    flex: 1 1 0;
+    border: 0;
+    background: transparent;
+    border-radius: 0;
+    padding: 1rem 1rem 0.85rem;
     overflow-y: auto;
-    min-height: 420px;
+    min-height: 0;
+    margin: 0;
 }
 .avatar-chat-web .avatar-chat-empty {
     text-align: center;
@@ -439,29 +680,148 @@ var avatarChatCanUseRealtime = is_user();
     background: var(--chat-other);
     color: var(--chat-fg);
 }
+.avatar-chat-web .avatar-chat-bubble.avatar-chat-bitmap-bubble {
+    padding: 0.45rem;
+    overflow: hidden;
+}
+.avatar-chat-web .avatar-chat-bitmap-shell {
+    width: 100%;
+}
+.avatar-chat-web .avatar-chat-bitmap-frame {
+    width: 100%;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 0.65rem;
+    background: #000000;
+    overflow: hidden;
+}
+.avatar-chat-web .avatar-chat-bitmap-stage {
+    width: 100%;
+    background: #000000;
+    position: relative;
+}
+.avatar-chat-web .avatar-chat-bitmap-placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    min-height: 7rem;
+    padding: 0.9rem;
+    color: var(--chat-muted);
+    font-size: 0.82rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    text-align: center;
+}
+.avatar-chat-web .avatar-chat-bitmap-stage.is-error .avatar-chat-bitmap-placeholder {
+    color: #ff8f8f;
+}
+.avatar-chat-web .avatar-chat-bitmap-image {
+    display: block;
+    width: 100%;
+    height: auto;
+    image-rendering: pixelated;
+    background: #000000;
+}
 .avatar-chat-web .avatar-chat-form {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin: 0;
+    padding: 0.85rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.02), rgba(255, 255, 255, 0));
+}
+.avatar-chat-web .avatar-chat-compose-tools {
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+    flex-wrap: wrap;
+}
+.avatar-chat-web .avatar-chat-upload-button,
+.avatar-chat-web .avatar-chat-upload-clear {
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: var(--chat-panel-alt);
+    color: var(--chat-fg);
+    border-radius: 0.85rem;
+    padding: 0.65rem 0.9rem;
+    line-height: 1.2;
+}
+.avatar-chat-web .avatar-chat-upload-clear {
+    color: #f4d7d7;
+}
+.avatar-chat-web .avatar-chat-dropzone {
+    flex: 1 1 240px;
+    min-width: 0;
+    border: 1px dashed rgba(52, 198, 211, 0.32);
+    background: rgba(7, 20, 22, 0.72);
+    color: var(--chat-muted);
+    border-radius: 0.9rem;
+    padding: 0.72rem 0.95rem;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color 120ms ease, background 120ms ease, color 120ms ease, box-shadow 120ms ease;
+}
+.avatar-chat-web .avatar-chat-dropzone:hover,
+.avatar-chat-web .avatar-chat-dropzone:focus {
+    outline: none;
+    color: var(--chat-fg);
+    border-color: rgba(52, 198, 211, 0.6);
+    background: rgba(8, 25, 28, 0.84);
+}
+.avatar-chat-web .avatar-chat-dropzone.is-dragover {
+    color: #f4fff8;
+    border-color: var(--chat-accent);
+    background: rgba(12, 42, 47, 0.92);
+    box-shadow: inset 0 0 0 1px rgba(52, 198, 211, 0.2);
+}
+.avatar-chat-web .avatar-chat-dropzone.is-busy {
+    cursor: progress;
+    opacity: 0.78;
+}
+.avatar-chat-web .avatar-chat-upload-summary {
+    min-height: 1.2rem;
+    font-size: 0.84rem;
+    color: var(--chat-muted);
+}
+.avatar-chat-web .avatar-chat-upload-summary.is-ready {
+    color: var(--chat-accent);
+}
+.avatar-chat-web .avatar-chat-upload-summary.is-error {
+    color: #ff8f8f;
+}
+.avatar-chat-web .avatar-chat-upload-summary.is-busy {
+    color: #f1c12b;
+}
+.avatar-chat-web .avatar-chat-compose-row {
     display: flex;
     gap: 0.5rem;
 }
 .avatar-chat-web .avatar-chat-input {
     flex: 1 1 auto;
-    border: 1px solid var(--chat-border);
-    background: #0b0b0b;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: #0b0b0c;
     color: var(--chat-fg);
-    border-radius: 0.75rem;
+    border-radius: 0.9rem;
     padding: 0.8rem 0.95rem;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
 }
 .avatar-chat-web .avatar-chat-send {
     border: 0;
-    border-radius: 0.75rem;
+    border-radius: 0.9rem;
     padding: 0.8rem 1rem;
     background: var(--chat-accent);
     color: #041013;
     font-weight: bold;
+    min-width: 88px;
 }
 .avatar-chat-web .avatar-chat-login {
     color: var(--chat-muted);
     text-align: center;
+    margin: 0;
+    padding: 1rem 1rem 1.1rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.02), rgba(255, 255, 255, 0));
 }
 .avatar-chat-web .avatar-chat-login a {
     color: var(--chat-accent);
@@ -469,15 +829,39 @@ var avatarChatCanUseRealtime = is_user();
 @media (max-width: 980px) {
     .avatar-chat-web .avatar-chat-layout {
         grid-template-columns: 1fr;
+        grid-template-rows: minmax(0, auto) minmax(0, 1fr);
+        gap: 0.9rem;
+    }
+    .avatar-chat-web .avatar-chat-sidebar {
+        max-height: 34vh;
     }
 }
 @media (max-width: 768px) {
+    .avatar-chat-web {
+        padding-top: 0.7rem;
+    }
+    .avatar-chat-web .avatar-chat-shell {
+        height: calc(100vh - 128px);
+        height: calc(100dvh - 128px);
+        padding: 0.8rem;
+    }
     .avatar-chat-web .avatar-chat-group {
         max-width: 100%;
     }
     .avatar-chat-web .avatar-chat-messages {
-        min-height: 360px;
+        min-height: 0;
+        padding: 0.85rem 0.85rem 0.7rem;
+    }
+    .avatar-chat-web .avatar-chat-form {
         padding: 0.75rem;
+    }
+    .avatar-chat-web .avatar-chat-compose-row {
+        flex-direction: column;
+    }
+    .avatar-chat-web .avatar-chat-send,
+    .avatar-chat-web .avatar-chat-upload-button,
+    .avatar-chat-web .avatar-chat-upload-clear {
+        width: 100%;
     }
 }
 </style>
@@ -505,44 +889,72 @@ var avatarChatCanUseRealtime = is_user();
             </aside>
 
             <div class="avatar-chat-main">
-                <div class="avatar-chat-topbar">
-                    <div>
-                        <h3 class="avatar-chat-title">Avatar Chat</h3>
-                        <div class="avatar-chat-channel">View: <span id="avatar-chat-channel-label"><? write(avatarChatWebConfig.defaultChannel); ?></span></div>
+                <div class="avatar-chat-chatpanel">
+                    <div class="avatar-chat-topbar">
+                        <div class="avatar-chat-topbar-meta">
+                            <span class="avatar-chat-topbar-brand">Avatar Chat</span>
+                            <span id="avatar-chat-channel-label" class="avatar-chat-topbar-chip">#<? write(avatarChatWebConfig.defaultChannel); ?></span>
+                            <button id="avatar-chat-count" class="avatar-chat-count" type="button">0 users</button>
+                            <span id="avatar-chat-room-count" class="avatar-chat-topbar-chip avatar-chat-topbar-chip-muted">rooms 1</span>
+                            <span id="avatar-chat-server" class="avatar-chat-topbar-chip avatar-chat-topbar-chip-muted"></span>
+                        </div>
+                        <div id="avatar-chat-motd" class="avatar-chat-motd">
+                            <span class="avatar-chat-motd-label">MOTD</span>
+                            <div id="avatar-chat-motd-window" class="avatar-chat-motd-window">
+                                <div id="avatar-chat-motd-track" class="avatar-chat-motd-track">
+                                    <span id="avatar-chat-motd-primary" class="avatar-chat-motd-item">Loading MOTD...</span>
+                                    <span id="avatar-chat-motd-clone" class="avatar-chat-motd-item avatar-chat-motd-item-clone" aria-hidden="true"></span>
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                    <button id="avatar-chat-count" class="avatar-chat-count" type="button">0 users</button>
-                </div>
 
-                <div id="avatar-chat-status" class="avatar-chat-status" aria-live="polite">
-                    <div id="avatar-chat-status-text" class="avatar-chat-status-text"></div>
-                    <div class="avatar-chat-status-actions">
-                        <button id="avatar-chat-status-retry" class="avatar-chat-status-button" type="button">Retry now</button>
+                    <div id="avatar-chat-status" class="avatar-chat-status" aria-live="polite">
+                        <div id="avatar-chat-status-text" class="avatar-chat-status-text"></div>
+                        <div class="avatar-chat-status-actions">
+                            <button id="avatar-chat-status-retry" class="avatar-chat-status-button" type="button">Retry now</button>
+                        </div>
                     </div>
-                </div>
 
-                <div id="avatar-chat-users" class="avatar-chat-users">
-                    <div class="avatar-chat-users-header">
-                        <strong>Online Users</strong>
-                        <button id="avatar-chat-users-close" class="avatar-chat-users-close" type="button">x</button>
+                    <div id="avatar-chat-messages" class="avatar-chat-messages">
+                        <div class="avatar-chat-empty">Loading chat history...</div>
                     </div>
-                    <div id="avatar-chat-users-list" class="avatar-chat-users-list"></div>
-                </div>
-
-                <div id="avatar-chat-messages" class="avatar-chat-messages">
-                    <div class="avatar-chat-empty">Loading chat history...</div>
-                </div>
 
 <?xjs if (avatarChatLoggedIn) { ?>
-                <form id="avatar-chat-form" class="avatar-chat-form" autocomplete="off">
-                    <input id="avatar-chat-input" class="avatar-chat-input" type="text" maxlength="500" placeholder="Type a message...">
-                    <button class="avatar-chat-send" type="submit">Send</button>
-                </form>
+                    <form id="avatar-chat-form" class="avatar-chat-form" autocomplete="off">
+                        <input id="avatar-chat-ansi-file" type="file" accept=".ans,.asc,.nfo,.diz,.ice,.txt,text/plain" hidden>
+                        <div class="avatar-chat-compose-tools">
+                            <button id="avatar-chat-ansi-open" class="avatar-chat-upload-button" type="button">ANSI File</button>
+                            <button id="avatar-chat-ansi-clear" class="avatar-chat-upload-clear" type="button" hidden>Clear</button>
+                            <div id="avatar-chat-ansi-dropzone" class="avatar-chat-dropzone" role="button" tabindex="0" aria-label="Upload ANSI file">
+                                Drop ANSI file here or click to choose
+                            </div>
+                        </div>
+                        <div id="avatar-chat-upload-summary" class="avatar-chat-upload-summary" aria-live="polite">
+                            Upload an ANSI file to send it as image art.
+                        </div>
+                        <div class="avatar-chat-compose-row">
+                            <input id="avatar-chat-input" class="avatar-chat-input" type="text" maxlength="500" placeholder="Type a message...">
+                            <button class="avatar-chat-send" type="submit">Send</button>
+                        </div>
+                    </form>
 <?xjs } else { ?>
-                <div class="avatar-chat-login">
-                    Log in from the web interface to send messages and open private chats.
-                </div>
+                    <div class="avatar-chat-login">
+                        Log in from the web interface to send messages and open private chats.
+                    </div>
 <?xjs } ?>
+                </div>
             </div>
+        </div>
+    </div>
+
+    <div id="avatar-chat-users-modal" class="avatar-chat-modal" aria-hidden="true">
+        <div id="avatar-chat-users" class="avatar-chat-modal-card avatar-chat-users-modal-card" role="dialog" aria-modal="true" aria-labelledby="avatar-chat-users-title">
+            <div class="avatar-chat-users-header">
+                <strong id="avatar-chat-users-title">Users in #<? write(avatarChatWebConfig.defaultChannel); ?></strong>
+                <button id="avatar-chat-users-close" class="avatar-chat-users-close" type="button">x</button>
+            </div>
+            <div id="avatar-chat-users-list" class="avatar-chat-users-list"></div>
         </div>
     </div>
 
@@ -570,7 +982,11 @@ var avatarChatCanUseRealtime = is_user();
     'use strict';
 
     var pageConfig = {
+        host: <? write(JSON.stringify(avatarChatWebConfig.host)); ?>,
+        port: <? write(String(avatarChatWebConfig.port || 10088)); ?>,
         defaultChannel: <? write(JSON.stringify(avatarChatWebConfig.defaultChannel)); ?>,
+        motdChannel: <? write(JSON.stringify(avatarChatWebConfig.motdChannel)); ?>,
+        canManageMotd: <? write(avatarChatMotdManager ? 'true' : 'false'); ?>,
         userAlias: <? write(JSON.stringify(String(user.alias || ''))); ?>,
         systemName: <? write(JSON.stringify(String(system.name || ''))); ?>,
         userNumber: <? write(String(user.number || 0)); ?>,
@@ -582,6 +998,9 @@ var avatarChatCanUseRealtime = is_user();
     var initialChannel = sanitizeChannelName(params.get('channel') || pageConfig.defaultChannel || 'main');
     var initialPrivate = trimText(params.get('private') || '');
     var initialPrivateSystem = trimText(params.get('system') || '');
+    if (isMotdChannelName(initialChannel) && !pageConfig.canManageMotd) {
+        initialChannel = getDefaultPublicChannel();
+    }
     var currentPublicChannel = initialChannel;
     var activeView = initialPrivate.length
         ? { type: 'private', name: initialPrivate, system: initialPrivateSystem }
@@ -590,6 +1009,11 @@ var avatarChatCanUseRealtime = is_user();
     var users = [];
     var rooms = [];
     var privateThreads = [];
+    var motdState = {
+        text: '',
+        timestamp: 0
+    };
+    var motdRenderSignature = '';
     var onlinePeerKeys = {};
     var onlinePeerNames = {};
     var unreadChannels = {};
@@ -598,6 +1022,24 @@ var avatarChatCanUseRealtime = is_user();
     var graphicsReady = false;
     var avatarsReady = false;
     var converter = null;
+    var bitmapRecords = {};
+    var bitmapSpritesheet = null;
+    var bitmapSpritesheetCanvas = null;
+    var bitmapSpritesheetContext = null;
+    var bitmapGlyphCache = {};
+    var bitmapSpritesheetLoading = false;
+    var bitmapSpritesheetLoadFailed = false;
+    var bitmapSpritesheetCallbacks = [];
+    var BITMAP_FONT_WIDTH = 8;
+    var BITMAP_FONT_HEIGHT = 16;
+    var BITMAP_SPRITESHEET_COLUMNS = 64;
+    var MAX_BITMAP_CELLS = 40000;
+    var MAX_BITMAP_HEIGHT = 255;
+    var LENGTH_BASE = [3, 4, 5, 6, 7, 8, 9, 10, 11, 13, 15, 17, 19, 23, 27, 31, 35, 43, 51, 59, 67, 83, 99, 115, 131, 163, 195, 227, 258];
+    var LENGTH_EXTRA = [0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4, 5, 5, 5, 5, 0];
+    var DISTANCE_BASE = [1, 2, 3, 4, 5, 7, 9, 13, 17, 25, 33, 49, 65, 97, 129, 193, 257, 385, 513, 769, 1025, 1537, 2049, 3073, 4097, 6145, 8193, 12289, 16385, 24577];
+    var DISTANCE_EXTRA = [0, 0, 0, 0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 7, 7, 8, 8, 9, 9, 10, 10, 11, 11, 12, 12, 13, 13];
+    var XTERM_COLORS = buildXtermPalette();
 
     // --- Avatar localStorage cache ---
     var AVATAR_CACHE_KEY = 'avatarchat_avatars';
@@ -678,6 +1120,8 @@ var avatarChatCanUseRealtime = is_user();
     var usersRefreshTick = 0;
     var lastRoomPollAt = 0;
     var lastPrivatePollAt = 0;
+    var historyRequestToken = 0;
+    var usersRequestToken = 0;
     var RECONCILE_INTERVAL_MS = 15000;
     var RECONNECT_DELAY_MS = 4000;
     var statusState = {
@@ -690,7 +1134,16 @@ var avatarChatCanUseRealtime = is_user();
     var statusBar = document.getElementById('avatar-chat-status');
     var statusText = document.getElementById('avatar-chat-status-text');
     var statusRetry = document.getElementById('avatar-chat-status-retry');
+    var roomCountLabel = document.getElementById('avatar-chat-room-count');
+    var serverLabel = document.getElementById('avatar-chat-server');
+    var motdBar = document.getElementById('avatar-chat-motd');
+    var motdWindow = document.getElementById('avatar-chat-motd-window');
+    var motdTrack = document.getElementById('avatar-chat-motd-track');
+    var motdPrimary = document.getElementById('avatar-chat-motd-primary');
+    var motdClone = document.getElementById('avatar-chat-motd-clone');
+    var usersModal = document.getElementById('avatar-chat-users-modal');
     var usersPanel = document.getElementById('avatar-chat-users');
+    var usersTitle = document.getElementById('avatar-chat-users-title');
     var usersList = document.getElementById('avatar-chat-users-list');
     var usersClose = document.getElementById('avatar-chat-users-close');
     var roomsList = document.getElementById('avatar-chat-rooms');
@@ -702,7 +1155,22 @@ var avatarChatCanUseRealtime = is_user();
     var roomInput = document.getElementById('avatar-chat-room-input');
     var messageContainer = document.getElementById('avatar-chat-messages');
     var form = document.getElementById('avatar-chat-form');
+    var ansiFileInput = document.getElementById('avatar-chat-ansi-file');
+    var ansiOpen = document.getElementById('avatar-chat-ansi-open');
+    var ansiClear = document.getElementById('avatar-chat-ansi-clear');
+    var ansiDropzone = document.getElementById('avatar-chat-ansi-dropzone');
+    var uploadSummary = document.getElementById('avatar-chat-upload-summary');
     var input = document.getElementById('avatar-chat-input');
+    var usersPanelRoom = currentPublicChannel;
+    var panelUsers = Array.isArray(users) ? users.slice() : [];
+    var usersPanelRequestToken = 0;
+    var pendingAnsiUpload = null;
+    var ansiUploadBusy = false;
+    var ansiUploadMessage = '';
+    var ansiUploadMessageType = '';
+    var inputDefaultPlaceholder = input && input.getAttribute('placeholder')
+        ? input.getAttribute('placeholder')
+        : 'Type a message...';
 
     function trimText(value) {
         return String(value || '').replace(/^\s+|\s+$/g, '');
@@ -717,8 +1185,743 @@ var avatarChatCanUseRealtime = is_user();
         return channel.length ? channel : 'main';
     }
 
+    function normalizeChannelKey(value) {
+        return String(value || '').replace(/[^a-zA-Z0-9_-]/g, '').toUpperCase();
+    }
+
+    function isMotdChannelName(value) {
+        return normalizeChannelKey(value) === normalizeChannelKey(pageConfig.motdChannel || 'motd');
+    }
+
+    function getDefaultPublicChannel() {
+        var fallback = sanitizeChannelName(pageConfig.defaultChannel || 'main');
+
+        if (isMotdChannelName(fallback) && !pageConfig.canManageMotd) {
+            return 'main';
+        }
+
+        return fallback;
+    }
+
     function sanitizeAlias(raw) {
         return trimText(String(raw || '')).replace(/[\x00-\x1f]/g, '').substr(0, 60);
+    }
+
+    function isBitmapMessageText(text) {
+        var value = String(text || '');
+        return value.indexOf('[BITMAP|') === 0 && value.charAt(value.length - 1) === ']';
+    }
+
+    function parseBitmapMessage(text) {
+        var value = String(text || '');
+        var inner = '';
+        var parts = [];
+        var width = 0;
+        var height = 0;
+
+        if (!isBitmapMessageText(value)) {
+            return null;
+        }
+
+        inner = value.slice(1, -1);
+        parts = inner.split('|');
+
+        if (parts.length !== 5 || parts[0] !== 'BITMAP') {
+            return null;
+        }
+
+        width = parseInt(parts[1] || '', 10) || 0;
+        height = parseInt(parts[2] || '', 10) || 0;
+
+        if (width < 1 || height < 1 || !(parts[4] || '').length || ((parts[4] || '').length % 2) !== 0) {
+            return null;
+        }
+
+        return {
+            width: width,
+            height: height,
+            fromName: parts[3] || '',
+            hexData: parts[4] || ''
+        };
+    }
+
+    function buildBitmapPreview(parsed) {
+        if (!parsed) {
+            return '[image]';
+        }
+
+        return '[image ' + String(parsed.width || 0) + 'x' + String(parsed.height || 0) + ']';
+    }
+
+    function buildMessagePreview(text) {
+        var parsed = parseBitmapMessage(text);
+
+        if (parsed) {
+            return buildBitmapPreview(parsed);
+        }
+
+        return String(text || '');
+    }
+
+    function bytesToHex(bytes) {
+        var hex = '';
+        var index = 0;
+        var value = '';
+
+        for (index = 0; index < bytes.length; index += 1) {
+            value = bytes[index].toString(16);
+            if (value.length < 2) {
+                value = '0' + value;
+            }
+            hex += value;
+        }
+
+        return hex;
+    }
+
+    function cgaToXterm(color) {
+        var low = color & 7;
+
+        if (low === 1) {
+            low = 4;
+        } else if (low === 4) {
+            low = 1;
+        } else if (low === 3) {
+            low = 6;
+        } else if (low === 6) {
+            low = 3;
+        }
+
+        return (color & 8) | low;
+    }
+
+    function encodeBitmapRaw(cells, width, height) {
+        var total = width * height;
+        var buffer = new Uint8Array(1 + (total * 3));
+        var index = 0;
+        var cell;
+
+        buffer[0] = height & 0xff;
+        for (index = 0; index < total; index += 1) {
+            cell = cells[index] || { code: 32, fg: 7, bg: 0 };
+            buffer[1 + index] = cgaToXterm(cell.fg || 0) & 0xff;
+            buffer[1 + total + index] = cgaToXterm(cell.bg || 0) & 0xff;
+            buffer[1 + (total * 2) + index] = (cell.code || 32) & 0xff;
+        }
+
+        return buffer;
+    }
+
+    function compressZlib(rawBytes) {
+        var responsePromise;
+        var stream;
+        var writer;
+
+        if (typeof CompressionStream !== 'function') {
+            return Promise.reject(new Error('This browser cannot compress ANSI uploads.'));
+        }
+
+        stream = new CompressionStream('deflate');
+        writer = stream.writable.getWriter();
+        responsePromise = new Response(stream.readable).arrayBuffer();
+        return Promise.all([
+            responsePromise,
+            writer.write(rawBytes).then(function () {
+                return writer.close();
+            })
+        ]).then(function (results) {
+            return new Uint8Array(results[0]);
+        });
+    }
+
+    function sanitizeBitmapFromName(name) {
+        return trimText(String(name || '').replace(/[|\[\]\x00-\x1f]/g, '')).substr(0, 60);
+    }
+
+    function buildBitmapPayload(cells, width, height, fromName) {
+        var raw = encodeBitmapRaw(cells, width, height);
+
+        return compressZlib(raw).then(function (compressed) {
+            return '[BITMAP|' + width + '|' + height + '|' + sanitizeBitmapFromName(fromName) + '|' + bytesToHex(compressed) + ']';
+        });
+    }
+
+    function readLittleEndian16(bytes, offset) {
+        return (bytes[offset] || 0) | ((bytes[offset + 1] || 0) << 8);
+    }
+
+    function readLittleEndian32(bytes, offset) {
+        return (bytes[offset] || 0) |
+            ((bytes[offset + 1] || 0) << 8) |
+            ((bytes[offset + 2] || 0) << 16) |
+            ((bytes[offset + 3] || 0) << 24);
+    }
+
+    function decodeAsciiSlice(bytes, offset, length) {
+        var chars = [];
+        var index = 0;
+
+        for (index = 0; index < length; index += 1) {
+            chars.push(String.fromCharCode(bytes[offset + index] || 0));
+        }
+
+        return chars.join('').replace(/\0+$/g, '').replace(/^\s+|\s+$/g, '');
+    }
+
+    function parseSauce(bytes) {
+        var offset;
+
+        if (!bytes || bytes.length < 128) {
+            return null;
+        }
+
+        offset = bytes.length - 128;
+        if (bytes[offset] !== 0x53 || bytes[offset + 1] !== 0x41 || bytes[offset + 2] !== 0x55 || bytes[offset + 3] !== 0x43 || bytes[offset + 4] !== 0x45) {
+            return null;
+        }
+
+        return {
+            title: decodeAsciiSlice(bytes, offset + 7, 35),
+            author: decodeAsciiSlice(bytes, offset + 42, 20),
+            group: decodeAsciiSlice(bytes, offset + 62, 20),
+            date: decodeAsciiSlice(bytes, offset + 82, 8),
+            fileSize: readLittleEndian32(bytes, offset + 90),
+            dataType: bytes[offset + 94] || 0,
+            fileType: bytes[offset + 95] || 0,
+            tInfo1: readLittleEndian16(bytes, offset + 96),
+            tInfo2: readLittleEndian16(bytes, offset + 98),
+            tInfo3: readLittleEndian16(bytes, offset + 100),
+            tInfo4: readLittleEndian16(bytes, offset + 102),
+            comments: bytes[offset + 104] || 0,
+            tFlags: bytes[offset + 105] || 0,
+            tInfoS: decodeAsciiSlice(bytes, offset + 106, 22)
+        };
+    }
+
+    function getContentBytes(bytes, sauce) {
+        var end;
+
+        if (!sauce) {
+            return bytes;
+        }
+
+        end = bytes.length - 128;
+        if (sauce.comments > 0) {
+            end -= 5 + (sauce.comments * 64);
+        }
+        if (end > 0 && bytes[end - 1] === 0x1a) {
+            end -= 1;
+        }
+
+        return bytes.slice(0, end);
+    }
+
+    function ansiToCga(color) {
+        if (color === 1) {
+            return 4;
+        }
+        if (color === 4) {
+            return 1;
+        }
+        if (color === 3) {
+            return 6;
+        }
+        if (color === 6) {
+            return 3;
+        }
+        return color;
+    }
+
+    function loadAnsi(data, columns, maxRows) {
+        var rows = 25;
+        var grid = [];
+        var cx = 0;
+        var cy = 0;
+        var fg = 7;
+        var bg = 0;
+        var savedX = 0;
+        var savedY = 0;
+        var index = 0;
+
+        if (!columns || columns < 1) {
+            columns = 80;
+        }
+        if (typeof maxRows !== 'number' || maxRows < 1) {
+            maxRows = 0;
+        }
+
+        function ensure(row) {
+            while (grid.length < (row + 1) * columns) {
+                grid.push({ code: 32, fg: 7, bg: 0 });
+            }
+            if (row + 1 > rows) {
+                rows = row + 1;
+            }
+        }
+
+        while (index < data.length) {
+            var byte = data[index];
+
+            if (byte === 0x1b && index + 1 < data.length && data[index + 1] === 0x5b) {
+                var params = '';
+                var cmd = '';
+                var nums;
+                var cursorStep = 1;
+                var eraseMode = 0;
+                var sgrIndex = 0;
+                var value = 0;
+
+                index += 2;
+                while (index < data.length && data[index] >= 0x20 && data[index] <= 0x3f) {
+                    params += String.fromCharCode(data[index]);
+                    index += 1;
+                }
+                if (index >= data.length) {
+                    break;
+                }
+                cmd = String.fromCharCode(data[index]);
+                index += 1;
+                nums = params.split(';').map(function (part) {
+                    return part === '' ? undefined : parseInt(part, 10);
+                });
+
+                switch (cmd) {
+                case 'A':
+                    cursorStep = nums[0] || 1;
+                    cy = Math.max(0, cy - cursorStep);
+                    break;
+                case 'B':
+                    cursorStep = nums[0] || 1;
+                    cy += cursorStep;
+                    if (maxRows && cy >= maxRows) {
+                        cy = maxRows - 1;
+                    }
+                    break;
+                case 'C':
+                    cursorStep = nums[0] || 1;
+                    cx += cursorStep;
+                    if (cx >= columns) {
+                        cx = columns - 1;
+                    }
+                    break;
+                case 'D':
+                    cursorStep = nums[0] || 1;
+                    cx = Math.max(0, cx - cursorStep);
+                    break;
+                case 'H':
+                case 'f':
+                    cy = Math.max(0, (nums[0] || 1) - 1);
+                    cx = Math.max(0, (nums[1] || 1) - 1);
+                    if (maxRows && cy >= maxRows) {
+                        cy = maxRows - 1;
+                    }
+                    if (cx >= columns) {
+                        cx = columns - 1;
+                    }
+                    break;
+                case 'J':
+                    eraseMode = nums[0] || 0;
+                    if (eraseMode === 2) {
+                        for (value = 0; value < grid.length; value += 1) {
+                            grid[value] = { code: 32, fg: fg, bg: bg };
+                        }
+                    }
+                    break;
+                case 'K':
+                    eraseMode = nums[0] || 0;
+                    ensure(cy);
+                    if (eraseMode === 0) {
+                        for (value = cx; value < columns; value += 1) {
+                            grid[(cy * columns) + value] = { code: 32, fg: fg, bg: bg };
+                        }
+                    } else if (eraseMode === 1) {
+                        for (value = 0; value <= cx; value += 1) {
+                            grid[(cy * columns) + value] = { code: 32, fg: fg, bg: bg };
+                        }
+                    } else if (eraseMode === 2) {
+                        for (value = 0; value < columns; value += 1) {
+                            grid[(cy * columns) + value] = { code: 32, fg: fg, bg: bg };
+                        }
+                    }
+                    break;
+                case 's':
+                    savedX = cx;
+                    savedY = cy;
+                    break;
+                case 'u':
+                    cx = savedX;
+                    cy = savedY;
+                    break;
+                case 'm':
+                    if (!nums.length || (nums.length === 1 && nums[0] === undefined)) {
+                        fg = 7;
+                        bg = 0;
+                        break;
+                    }
+
+                    for (sgrIndex = 0; sgrIndex < nums.length; sgrIndex += 1) {
+                        value = nums[sgrIndex] === undefined ? 0 : nums[sgrIndex];
+                        if (value === 0) {
+                            fg = 7;
+                            bg = 0;
+                        } else if (value === 1) {
+                            fg |= 8;
+                        } else if (value === 5) {
+                            bg |= 8;
+                        } else if (value === 7) {
+                            var swap = fg;
+                            fg = bg;
+                            bg = swap;
+                        } else if (value === 22) {
+                            fg &= 7;
+                        } else if (value === 25) {
+                            bg &= 7;
+                        } else if (value >= 30 && value <= 37) {
+                            fg = (fg & 8) | ansiToCga(value - 30);
+                        } else if (value >= 40 && value <= 47) {
+                            bg = (bg & 8) | ansiToCga(value - 40);
+                        }
+                    }
+                    break;
+                default:
+                    break;
+                }
+                continue;
+            }
+
+            if (byte === 0x0d) {
+                cx = 0;
+                index += 1;
+                continue;
+            }
+
+            if (byte === 0x0a) {
+                cy += 1;
+                if (maxRows && cy >= maxRows) {
+                    cy = maxRows - 1;
+                }
+                index += 1;
+                continue;
+            }
+
+            if (byte === 0x09) {
+                cx = Math.min(columns - 1, (cx + 8) & ~7);
+                index += 1;
+                continue;
+            }
+
+            if (!maxRows || cy < maxRows) {
+                ensure(cy);
+                grid[(cy * columns) + cx] = { code: byte, fg: fg, bg: bg };
+                cx += 1;
+                if (cx >= columns) {
+                    cx = 0;
+                    cy += 1;
+                    if (maxRows && cy >= maxRows) {
+                        cy = maxRows - 1;
+                    }
+                }
+            }
+
+            index += 1;
+        }
+
+        return {
+            grid: grid,
+            rows: rows
+        };
+    }
+
+    function rowHasAnsiContent(grid, columns, rowIndex) {
+        var start = rowIndex * columns;
+        var index = 0;
+        var cell;
+
+        for (index = 0; index < columns; index += 1) {
+            cell = grid[start + index] || { code: 32, fg: 7, bg: 0 };
+            if (cell.code !== 32 || cell.fg !== 7 || cell.bg !== 0) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    function prepareAnsiBitmap(bytes) {
+        var sauce = parseSauce(bytes);
+        var content = getContentBytes(bytes, sauce);
+        var width = sauce && sauce.tInfo1 ? sauce.tInfo1 : 80;
+        var parsed;
+        var height = 0;
+        var total = 0;
+        var cells = [];
+        var index = 0;
+
+        if (width < 1) {
+            width = 80;
+        }
+
+        parsed = loadAnsi(content, width, 0);
+        if (sauce && sauce.tInfo2) {
+            height = sauce.tInfo2;
+        } else {
+            height = parsed.rows;
+            while (height > 1 && !rowHasAnsiContent(parsed.grid, width, height - 1)) {
+                height -= 1;
+            }
+        }
+
+        if (height < 1) {
+            height = 1;
+        }
+        if (height > MAX_BITMAP_HEIGHT) {
+            throw new Error('ANSI art is too tall. The BITMAP format supports up to 255 rows.');
+        }
+
+        total = width * height;
+        if (total < 1 || total > MAX_BITMAP_CELLS) {
+            throw new Error('ANSI art is too large to send as a BITMAP image.');
+        }
+
+        for (index = 0; index < total; index += 1) {
+            cells.push(parsed.grid[index] || { code: 32, fg: 7, bg: 0 });
+        }
+
+        return {
+            width: width,
+            height: height,
+            cells: cells
+        };
+    }
+
+    function readFileBytes(file) {
+        return new Promise(function (resolve, reject) {
+            var reader = new FileReader();
+
+            reader.onload = function () {
+                resolve(new Uint8Array(reader.result));
+            };
+            reader.onerror = function () {
+                reject(new Error('Unable to read the ANSI file.'));
+            };
+            reader.readAsArrayBuffer(file);
+        });
+    }
+
+    function buildBitmapFromName() {
+        var alias = trimText(pageConfig.userAlias || '');
+        var systemName = trimText(pageConfig.systemName || '');
+
+        if (systemName.length && alias.length) {
+            return systemName + ':' + alias;
+        }
+        return alias || systemName || '';
+    }
+
+    function renderAnsiUploadState() {
+        var hasUpload = !!pendingAnsiUpload;
+        var summaryText = 'Upload an ANSI file to send it as image art.';
+        var dropzoneText = 'Drop ANSI file here or click to choose';
+        var summaryClass = 'avatar-chat-upload-summary';
+
+        if (ansiUploadBusy) {
+            summaryText = ansiUploadMessage || 'Encoding ANSI file...';
+            dropzoneText = 'Working...';
+            summaryClass += ' is-busy';
+        } else if (hasUpload) {
+            summaryText = ansiUploadMessage || ('Ready to send ' + pendingAnsiUpload.fileName + ' (' + pendingAnsiUpload.width + 'x' + pendingAnsiUpload.height + ').');
+            dropzoneText = 'Click to replace or drop another ANSI file';
+            summaryClass += ' is-ready';
+        } else if (ansiUploadMessageType === 'error') {
+            summaryText = ansiUploadMessage || 'Unable to prepare the ANSI file.';
+            summaryClass += ' is-error';
+        } else if (ansiUploadMessage.length) {
+            summaryText = ansiUploadMessage;
+        }
+
+        if (uploadSummary) {
+            uploadSummary.className = summaryClass;
+            uploadSummary.textContent = summaryText;
+            uploadSummary.title = summaryText;
+        }
+        if (ansiDropzone) {
+            ansiDropzone.textContent = dropzoneText;
+            ansiDropzone.classList.toggle('is-busy', ansiUploadBusy);
+        }
+        if (ansiClear) {
+            ansiClear.hidden = !hasUpload;
+            ansiClear.disabled = ansiUploadBusy;
+        }
+        if (ansiOpen) {
+            ansiOpen.disabled = ansiUploadBusy;
+        }
+        if (ansiFileInput) {
+            ansiFileInput.disabled = ansiUploadBusy;
+        }
+        if (input) {
+            input.disabled = ansiUploadBusy || hasUpload;
+            input.placeholder = hasUpload
+                ? 'ANSI upload ready to send'
+                : (ansiUploadBusy ? 'Preparing ANSI upload...' : inputDefaultPlaceholder);
+        }
+    }
+
+    function clearPendingAnsiUpload() {
+        pendingAnsiUpload = null;
+        ansiUploadBusy = false;
+        ansiUploadMessage = '';
+        ansiUploadMessageType = '';
+        if (ansiFileInput) {
+            ansiFileInput.value = '';
+        }
+        renderAnsiUploadState();
+    }
+
+    function queueAnsiUpload(file) {
+        var safeName = trimText(file && file.name ? file.name : 'ansi.ans');
+
+        if (!file) {
+            return;
+        }
+
+        ansiUploadBusy = true;
+        pendingAnsiUpload = null;
+        ansiUploadMessage = 'Encoding ' + safeName + '...';
+        ansiUploadMessageType = 'busy';
+        renderAnsiUploadState();
+
+        readFileBytes(file).then(function (bytes) {
+            var prepared = prepareAnsiBitmap(bytes);
+
+            return buildBitmapPayload(prepared.cells, prepared.width, prepared.height, buildBitmapFromName()).then(function (payload) {
+                return {
+                    fileName: safeName || 'ansi.ans',
+                    width: prepared.width,
+                    height: prepared.height,
+                    payload: payload
+                };
+            });
+        }).then(function (upload) {
+            pendingAnsiUpload = upload;
+            ansiUploadBusy = false;
+            ansiUploadMessage = 'Ready to send ' + upload.fileName + ' (' + upload.width + 'x' + upload.height + ').';
+            ansiUploadMessageType = 'ready';
+            renderAnsiUploadState();
+        }).catch(function (error) {
+            pendingAnsiUpload = null;
+            ansiUploadBusy = false;
+            ansiUploadMessage = error && error.message ? String(error.message) : 'Unable to encode the ANSI file.';
+            ansiUploadMessageType = 'error';
+            renderAnsiUploadState();
+            setStatus('error', ansiUploadMessage, false);
+        });
+    }
+
+    function buildBitmapKey(text) {
+        var value = String(text || '');
+        var hash = 5381;
+        var index = 0;
+        var key;
+        var suffix = 1;
+        var base;
+
+        for (index = 0; index < value.length; index += 1) {
+            hash = (((hash << 5) + hash) + value.charCodeAt(index)) >>> 0;
+        }
+
+        base = 'bmp-' + hash.toString(16) + '-' + String(value.length);
+        key = base;
+
+        while (bitmapRecords[key] && bitmapRecords[key].sourceText !== value) {
+            suffix += 1;
+            key = base + '-' + String(suffix);
+        }
+
+        return key;
+    }
+
+    function ensureBitmapRecord(text) {
+        var parsed = parseBitmapMessage(text);
+        var key;
+
+        if (!parsed) {
+            return null;
+        }
+
+        key = buildBitmapKey(text);
+        if (!bitmapRecords[key]) {
+            bitmapRecords[key] = {
+                key: key,
+                sourceText: String(text || ''),
+                fromName: parsed.fromName || '',
+                width: parsed.width || 0,
+                height: parsed.height || 0,
+                actualWidth: 0,
+                actualHeight: 0,
+                previewText: buildBitmapPreview(parsed),
+                bitmap: null,
+                dataURL: '',
+                renderPending: false,
+                error: ''
+            };
+        }
+
+        return bitmapRecords[key];
+    }
+
+    function copyOwnProperties(source) {
+        var target = {};
+        var key;
+
+        if (!source) {
+            return target;
+        }
+
+        for (key in source) {
+            if (Object.prototype.hasOwnProperty.call(source, key)) {
+                target[key] = source[key];
+            }
+        }
+
+        return target;
+    }
+
+    function normalizeThreadSummary(summary) {
+        var next = copyOwnProperties(summary);
+
+        if (typeof next.preview === 'string' && next.preview.length) {
+            next.preview = buildMessagePreview(next.preview);
+        }
+
+        return next;
+    }
+
+    function normalizeMessage(message) {
+        var next = copyOwnProperties(message);
+        var text = typeof next.text === 'string' ? next.text : '';
+        var record;
+
+        next.text = text;
+        next.previewText = buildMessagePreview(text);
+        next.kind = 'text';
+
+        record = ensureBitmapRecord(text);
+        if (record) {
+            next.kind = 'bitmap';
+            next.bitmapKey = record.key;
+            next.bitmapWidth = record.width || 0;
+            next.bitmapHeight = record.height || 0;
+            next.bitmapFromName = record.fromName || '';
+            next.previewText = record.previewText;
+        }
+
+        return next;
+    }
+
+    function normalizeMessages(list) {
+        return (list || []).map(function (message) {
+            return normalizeMessage(message);
+        });
     }
 
     function buildNameKey(name) {
@@ -734,6 +1937,482 @@ var avatarChatCanUseRealtime = is_user();
             return '';
         }
         return buildThreadKey(activeView.name, activeView.system || '');
+    }
+
+    function buildXtermPalette() {
+        var palette = [
+            '#000000', '#800000', '#008000', '#808000',
+            '#000080', '#800080', '#008080', '#c0c0c0',
+            '#808080', '#ff0000', '#00ff00', '#ffff00',
+            '#0000ff', '#ff00ff', '#00ffff', '#ffffff'
+        ];
+        var cube = [0, 95, 135, 175, 215, 255];
+        var r = 0;
+        var g = 0;
+        var b = 0;
+        var index = 0;
+
+        function componentToHex(value) {
+            var out = value.toString(16);
+            return out.length < 2 ? ('0' + out) : out;
+        }
+
+        for (r = 0; r < 6; r += 1) {
+            for (g = 0; g < 6; g += 1) {
+                for (b = 0; b < 6; b += 1) {
+                    palette.push('#' + componentToHex(cube[r]) + componentToHex(cube[g]) + componentToHex(cube[b]));
+                }
+            }
+        }
+
+        for (index = 0; index < 24; index += 1) {
+            var level = 8 + (index * 10);
+            var hex = componentToHex(level);
+            palette.push('#' + hex + hex + hex);
+        }
+
+        return palette;
+    }
+
+    function clampColor256(value) {
+        var num = Number(value);
+
+        if (!isFinite(num)) {
+            return 0;
+        }
+        if (num < 0) {
+            return 0;
+        }
+        if (num > 255) {
+            return 255;
+        }
+
+        return num | 0;
+    }
+
+    function color256ToCss(value) {
+        return XTERM_COLORS[clampColor256(value)] || XTERM_COLORS[0];
+    }
+
+    function hexToBytes(hex) {
+        var bytes = [];
+        var index = 0;
+
+        for (index = 0; index < hex.length; index += 2) {
+            bytes.push(parseInt(hex.substr(index, 2), 16) || 0);
+        }
+
+        return bytes;
+    }
+
+    function createInflateState(bytes, offset) {
+        return {
+            bytes: bytes,
+            position: offset,
+            bitBuffer: 0,
+            bitCount: 0
+        };
+    }
+
+    function readByte(state) {
+        var value = state.bytes[state.position];
+        state.position += 1;
+        return value === undefined ? 0 : value;
+    }
+
+    function readBits(state, count) {
+        var buffer = state.bitBuffer;
+        var available = state.bitCount;
+        var out = 0;
+
+        while (available < count) {
+            buffer |= readByte(state) << available;
+            available += 8;
+        }
+
+        out = buffer & ((1 << count) - 1);
+        state.bitBuffer = buffer >>> count;
+        state.bitCount = available - count;
+        return out;
+    }
+
+    function alignByte(state) {
+        state.bitBuffer = 0;
+        state.bitCount = 0;
+    }
+
+    function reverseBits(value, count) {
+        var result = 0;
+        var index = 0;
+
+        for (index = 0; index < count; index += 1) {
+            result = (result << 1) | (value & 1);
+            value >>= 1;
+        }
+
+        return result;
+    }
+
+    function buildHuffmanTable(codeLengths) {
+        var table = {
+            maxBits: 0,
+            map: {}
+        };
+        var counts = [];
+        var nextCodes = [];
+        var code = 0;
+        var index = 0;
+
+        for (index = 0; index < codeLengths.length; index += 1) {
+            if ((codeLengths[index] || 0) > table.maxBits) {
+                table.maxBits = codeLengths[index] || 0;
+            }
+        }
+
+        for (index = 0; index <= table.maxBits; index += 1) {
+            counts[index] = 0;
+        }
+
+        for (index = 0; index < codeLengths.length; index += 1) {
+            counts[codeLengths[index] || 0] = (counts[codeLengths[index] || 0] || 0) + 1;
+        }
+
+        counts[0] = 0;
+        for (index = 1; index <= table.maxBits; index += 1) {
+            code = (code + (counts[index - 1] || 0)) << 1;
+            nextCodes[index] = code;
+        }
+
+        for (index = 0; index < codeLengths.length; index += 1) {
+            var length = codeLengths[index] || 0;
+            var nextCode;
+            var key;
+
+            if (!length) {
+                continue;
+            }
+
+            nextCode = nextCodes[length] || 0;
+            key = String(reverseBits(nextCode, length) | (length << 16));
+            table.map[key] = index;
+            nextCodes[length] = nextCode + 1;
+        }
+
+        return table;
+    }
+
+    function readHuffmanCode(table, state) {
+        var code = 0;
+        var length = 0;
+        var key;
+
+        for (length = 1; length <= table.maxBits; length += 1) {
+            code |= readBits(state, 1) << (length - 1);
+            key = String(code | (length << 16));
+            if (table.map[key] !== undefined) {
+                return table.map[key] || 0;
+            }
+        }
+
+        throw new Error('Huffman decode failed');
+    }
+
+    function buildFixedLiteralTable() {
+        var lengths = [];
+        var index = 0;
+
+        for (index = 0; index <= 287; index += 1) {
+            lengths[index] = 0;
+        }
+        for (index = 0; index <= 143; index += 1) {
+            lengths[index] = 8;
+        }
+        for (index = 144; index <= 255; index += 1) {
+            lengths[index] = 9;
+        }
+        for (index = 256; index <= 279; index += 1) {
+            lengths[index] = 7;
+        }
+        for (index = 280; index <= 287; index += 1) {
+            lengths[index] = 8;
+        }
+
+        return buildHuffmanTable(lengths);
+    }
+
+    function buildFixedDistanceTable() {
+        var lengths = [];
+        var index = 0;
+
+        for (index = 0; index < 32; index += 1) {
+            lengths[index] = 5;
+        }
+
+        return buildHuffmanTable(lengths);
+    }
+
+    function decodeDynamicTables(state) {
+        var hlit = readBits(state, 5) + 257;
+        var hdist = readBits(state, 5) + 1;
+        var hclen = readBits(state, 4) + 4;
+        var order = [16, 17, 18, 0, 8, 7, 9, 6, 10, 5, 11, 4, 12, 3, 13, 2, 14, 1, 15];
+        var codeLengths = [];
+        var index = 0;
+        var codeTable;
+
+        for (index = 0; index < 19; index += 1) {
+            codeLengths[index] = 0;
+        }
+
+        for (index = 0; index < hclen; index += 1) {
+            codeLengths[order[index] || 0] = readBits(state, 3);
+        }
+
+        codeTable = buildHuffmanTable(codeLengths);
+
+        function readLengths(count) {
+            var out = [];
+            var previous = 0;
+
+            while (out.length < count) {
+                var symbol = readHuffmanCode(codeTable, state);
+                var repeat = 0;
+                var repeatIndex = 0;
+
+                if (symbol <= 15) {
+                    out.push(symbol);
+                    previous = symbol;
+                    continue;
+                }
+
+                if (symbol === 16) {
+                    repeat = 3 + readBits(state, 2);
+                    for (repeatIndex = 0; repeatIndex < repeat; repeatIndex += 1) {
+                        out.push(previous);
+                    }
+                    continue;
+                }
+
+                if (symbol === 17) {
+                    repeat = 3 + readBits(state, 3);
+                    previous = 0;
+                    for (repeatIndex = 0; repeatIndex < repeat; repeatIndex += 1) {
+                        out.push(0);
+                    }
+                    continue;
+                }
+
+                if (symbol === 18) {
+                    repeat = 11 + readBits(state, 7);
+                    previous = 0;
+                    for (repeatIndex = 0; repeatIndex < repeat; repeatIndex += 1) {
+                        out.push(0);
+                    }
+                    continue;
+                }
+
+                throw new Error('Bad RLE in code lengths');
+            }
+
+            return out;
+        }
+
+        return {
+            lit: buildHuffmanTable(readLengths(hlit)),
+            dist: buildHuffmanTable(readLengths(hdist))
+        };
+    }
+
+    function inflateRaw(bytes, start) {
+        var state = createInflateState(bytes, start);
+        var output = [];
+        var fixedLiterals = buildFixedLiteralTable();
+        var fixedDistances = buildFixedDistanceTable();
+        var done = false;
+
+        while (!done) {
+            var isFinal = readBits(state, 1);
+            var blockType = readBits(state, 2);
+            var literalTable = null;
+            var distanceTable = null;
+            var length = 0;
+            var notLength = 0;
+            var index = 0;
+
+            if (blockType === 0) {
+                alignByte(state);
+                length = readByte(state) | (readByte(state) << 8);
+                notLength = readByte(state) | (readByte(state) << 8);
+                if ((length ^ 65535) !== notLength) {
+                    throw new Error('Stored block length mismatch');
+                }
+                for (index = 0; index < length; index += 1) {
+                    output.push(readByte(state));
+                }
+            } else {
+                if (blockType === 1) {
+                    literalTable = fixedLiterals;
+                    distanceTable = fixedDistances;
+                } else if (blockType === 2) {
+                    var tables = decodeDynamicTables(state);
+                    literalTable = tables.lit;
+                    distanceTable = tables.dist;
+                } else {
+                    throw new Error('Invalid DEFLATE block type');
+                }
+
+                while (literalTable && distanceTable) {
+                    var symbol = readHuffmanCode(literalTable, state);
+                    var lengthIndex;
+                    var distanceSymbol;
+                    var distance;
+                    var base;
+                    var copyIndex;
+
+                    if (symbol < 256) {
+                        output.push(symbol);
+                        continue;
+                    }
+                    if (symbol === 256) {
+                        break;
+                    }
+
+                    lengthIndex = symbol - 257;
+                    length = (LENGTH_BASE[lengthIndex] || 0) + ((LENGTH_EXTRA[lengthIndex] || 0) ? readBits(state, LENGTH_EXTRA[lengthIndex] || 0) : 0);
+                    distanceSymbol = readHuffmanCode(distanceTable, state);
+                    distance = (DISTANCE_BASE[distanceSymbol] || 0) + ((DISTANCE_EXTRA[distanceSymbol] || 0) ? readBits(state, DISTANCE_EXTRA[distanceSymbol] || 0) : 0);
+                    base = output.length - distance;
+
+                    if (base < 0) {
+                        throw new Error('Invalid DEFLATE distance');
+                    }
+
+                    for (copyIndex = 0; copyIndex < length; copyIndex += 1) {
+                        output.push(output[base + copyIndex] || 0);
+                    }
+                }
+            }
+
+            if (isFinal) {
+                done = true;
+            }
+        }
+
+        return output;
+    }
+
+    function inflateZlib(bytes, offset) {
+        var position = offset || 0;
+        var cmf = bytes[position] || 0;
+        var flg = bytes[position + 1] || 0;
+
+        position += 2;
+        if ((cmf & 15) !== 8) {
+            throw new Error('Unsupported zlib compression method');
+        }
+        if (flg & 32) {
+            position += 4;
+        }
+
+        return inflateRaw(bytes, position);
+    }
+
+    function decodeBitmap(hexData, expectedWidth, expectedHeight) {
+        var compressed = hexToBytes(hexData);
+        var decompressed = inflateZlib(compressed, 0);
+        var bitmap = [];
+        var dataHeight = 0;
+        var dataLength = 0;
+        var slicePoint = 0;
+        var totalPixels = 0;
+        var dataWidth = 0;
+        var width = 0;
+        var height = 0;
+        var index = 0;
+
+        if (decompressed.length < 4) {
+            return {
+                bitmap: bitmap,
+                width: 0,
+                height: 0,
+                actualWidth: 0,
+                actualHeight: 0
+            };
+        }
+
+        dataHeight = decompressed[0] || 0;
+        if (dataHeight < 1) {
+            return {
+                bitmap: bitmap,
+                width: 0,
+                height: 0,
+                actualWidth: 0,
+                actualHeight: 0
+            };
+        }
+
+        dataLength = decompressed.length - 1;
+        slicePoint = Math.floor(dataLength / 3);
+        totalPixels = slicePoint;
+        dataWidth = Math.floor(totalPixels / dataHeight);
+        width = expectedWidth || dataWidth;
+        height = expectedHeight || dataHeight;
+
+        if (totalPixels < 1 || totalPixels > MAX_BITMAP_CELLS) {
+            throw new Error('Bitmap exceeds supported size');
+        }
+
+        if (width * height !== totalPixels) {
+            width = dataWidth;
+            height = dataHeight;
+        }
+
+        for (index = 0; index < totalPixels; index += 1) {
+            bitmap.push({
+                charCode: decompressed[1 + slicePoint * 2 + index] || 32,
+                fg: decompressed[1 + index] || 0,
+                bg: decompressed[1 + slicePoint + index] || 0
+            });
+        }
+
+        return {
+            bitmap: bitmap,
+            width: width,
+            height: height,
+            actualWidth: dataWidth,
+            actualHeight: dataHeight
+        };
+    }
+
+    function decodeBitmapRecord(record) {
+        var parsed;
+        var decoded;
+
+        if (!record) {
+            return null;
+        }
+
+        if (record.bitmap && record.width > 0 && record.height > 0) {
+            return record;
+        }
+
+        parsed = parseBitmapMessage(record.sourceText);
+        if (!parsed) {
+            throw new Error('Invalid bitmap payload');
+        }
+
+        decoded = decodeBitmap(parsed.hexData, parsed.width, parsed.height);
+        if (!decoded.bitmap.length || !decoded.width || !decoded.height) {
+            throw new Error('Decoded bitmap was empty');
+        }
+
+        record.bitmap = decoded.bitmap;
+        record.width = decoded.width || parsed.width || 0;
+        record.height = decoded.height || parsed.height || 0;
+        record.actualWidth = decoded.actualWidth || record.width;
+        record.actualHeight = decoded.actualHeight || record.height;
+        record.previewText = buildBitmapPreview({ width: record.width, height: record.height });
+        return record;
     }
 
     function escapeHtml(text) {
@@ -846,6 +2525,229 @@ var avatarChatCanUseRealtime = is_user();
         done();
     }
 
+    function ensureBitmapSpritesheet(callback) {
+        var callbacks;
+        var img;
+
+        if (bitmapSpritesheet && bitmapSpritesheetContext) {
+            callback(true);
+            return;
+        }
+
+        if (bitmapSpritesheetLoadFailed) {
+            callback(false);
+            return;
+        }
+
+        bitmapSpritesheetCallbacks.push(callback);
+        if (bitmapSpritesheetLoading) {
+            return;
+        }
+
+        bitmapSpritesheetLoading = true;
+        img = new Image();
+        img.onload = function () {
+            bitmapSpritesheet = img;
+            bitmapSpritesheetCanvas = document.createElement('canvas');
+            bitmapSpritesheetCanvas.width = img.width;
+            bitmapSpritesheetCanvas.height = img.height;
+            bitmapSpritesheetContext = bitmapSpritesheetCanvas.getContext('2d', { willReadFrequently: true });
+            bitmapSpritesheetContext.drawImage(img, 0, 0);
+            bitmapGlyphCache = {};
+            bitmapSpritesheetLoading = false;
+            callbacks = bitmapSpritesheetCallbacks.slice();
+            bitmapSpritesheetCallbacks = [];
+            callbacks.forEach(function (fn) {
+                fn(true);
+            });
+        };
+        img.onerror = function () {
+            bitmapSpritesheetLoading = false;
+            bitmapSpritesheetLoadFailed = true;
+            callbacks = bitmapSpritesheetCallbacks.slice();
+            bitmapSpritesheetCallbacks = [];
+            callbacks.forEach(function (fn) {
+                fn(false);
+            });
+        };
+        img.src = './images/cp437-ibm-vga8.png';
+    }
+
+    function getBitmapGlyph(charCode) {
+        var key = String(charCode & 0xff);
+        var x = 0;
+        var y = 0;
+
+        if (!bitmapGlyphCache[key]) {
+            x = ((charCode & 0xff) * BITMAP_FONT_WIDTH) % (BITMAP_FONT_WIDTH * BITMAP_SPRITESHEET_COLUMNS);
+            y = BITMAP_FONT_HEIGHT * Math.floor((charCode & 0xff) / BITMAP_SPRITESHEET_COLUMNS);
+            bitmapGlyphCache[key] = bitmapSpritesheetContext.getImageData(x, y, BITMAP_FONT_WIDTH, BITMAP_FONT_HEIGHT);
+        }
+
+        return bitmapGlyphCache[key];
+    }
+
+    function putBitmapGlyph(ctx, glyph, x, y, fg, bg) {
+        ctx.globalCompositeOperation = 'source-over';
+        ctx.putImageData(glyph, x, y);
+        ctx.fillStyle = fg;
+        ctx.globalCompositeOperation = 'source-atop';
+        ctx.fillRect(x, y, BITMAP_FONT_WIDTH, BITMAP_FONT_HEIGHT);
+        ctx.globalCompositeOperation = 'destination-over';
+        ctx.fillStyle = bg;
+        ctx.fillRect(x, y, BITMAP_FONT_WIDTH, BITMAP_FONT_HEIGHT);
+    }
+
+    function renderBitmapCells(cells, cols, rows, callback) {
+        ensureBitmapSpritesheet(function (ready) {
+            var canvas;
+            var ctx;
+            var total;
+            var index = 0;
+
+            if (!ready) {
+                callback('');
+                return;
+            }
+
+            canvas = document.createElement('canvas');
+            canvas.width = cols * BITMAP_FONT_WIDTH;
+            canvas.height = rows * BITMAP_FONT_HEIGHT;
+            ctx = canvas.getContext('2d', { willReadFrequently: true });
+            ctx.fillStyle = '#000000';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            total = cols * rows;
+            for (index = 0; index < total; index += 1) {
+                var cell = Array.isArray(cells) ? (cells[index] || null) : null;
+                var charCode = cell && typeof cell.charCode === 'number' ? (cell.charCode & 0xff) : 32;
+                var x = (index % cols) * BITMAP_FONT_WIDTH;
+                var y = Math.floor(index / cols) * BITMAP_FONT_HEIGHT;
+
+                putBitmapGlyph(
+                    ctx,
+                    getBitmapGlyph(charCode),
+                    x,
+                    y,
+                    color256ToCss(cell && cell.fg),
+                    color256ToCss(cell && cell.bg)
+                );
+            }
+
+            callback(canvas.toDataURL());
+        });
+    }
+
+    function updateBitmapElement(el, record) {
+        var text;
+        var placeholder;
+        var img;
+
+        if (!el) {
+            return;
+        }
+
+        while (el.firstChild) {
+            el.removeChild(el.firstChild);
+        }
+
+        el.classList.remove('is-loading', 'is-ready', 'is-error');
+        text = el.getAttribute('data-avatar-chat-bitmap-alt') || (record && record.previewText) || '[image]';
+
+        if (record && record.width > 0 && record.height > 0) {
+            el.style.aspectRatio = String(record.width * BITMAP_FONT_WIDTH) + ' / ' + String(record.height * BITMAP_FONT_HEIGHT);
+            if (
+                el.parentNode &&
+                el.parentNode.parentNode &&
+                el.parentNode.parentNode.classList &&
+                el.parentNode.parentNode.classList.contains('avatar-chat-bitmap-shell')
+            ) {
+                el.parentNode.parentNode.style.maxWidth = String(record.width * BITMAP_FONT_WIDTH) + 'px';
+            }
+        }
+
+        if (record && record.dataURL) {
+            img = new Image();
+            img.className = 'avatar-chat-bitmap-image';
+            img.alt = text;
+            img.addEventListener('load', scrollToBottom);
+            img.src = record.dataURL;
+            el.classList.add('is-ready');
+            el.appendChild(img);
+            return;
+        }
+
+        placeholder = document.createElement('div');
+        placeholder.className = 'avatar-chat-bitmap-placeholder';
+
+        if (!record || record.error) {
+            placeholder.textContent = 'Image unavailable';
+            el.classList.add('is-error');
+        } else {
+            placeholder.textContent = 'Rendering ' + text + '...';
+            el.classList.add('is-loading');
+        }
+
+        el.appendChild(placeholder);
+    }
+
+    function refreshBitmapElements(key, root) {
+        var scope = root || document;
+        var elements;
+
+        if (!key) {
+            return;
+        }
+
+        elements = scope.querySelectorAll('[data-avatar-chat-bitmap-key="' + key + '"]');
+        elements.forEach(function (el) {
+            updateBitmapElement(el, bitmapRecords[key] || null);
+        });
+    }
+
+    function renderBitmapRecord(record) {
+        if (!record || record.dataURL || record.renderPending || record.error) {
+            return;
+        }
+
+        try {
+            decodeBitmapRecord(record);
+        } catch (err) {
+            record.error = err && err.message ? err.message : 'Decode failed';
+            refreshBitmapElements(record.key);
+            return;
+        }
+
+        record.renderPending = true;
+        renderBitmapCells(record.bitmap, record.width, record.height, function (dataURL) {
+            record.renderPending = false;
+            record.dataURL = dataURL || '';
+            if (!record.dataURL && !record.error) {
+                record.error = 'Render failed';
+            }
+            refreshBitmapElements(record.key);
+        });
+    }
+
+    function renderEmbeddedBitmaps(root) {
+        var scope = root || document;
+        var elements = scope.querySelectorAll('[data-avatar-chat-bitmap-key]');
+
+        if (!elements.length) {
+            return;
+        }
+
+        elements.forEach(function (el) {
+            var key = el.getAttribute('data-avatar-chat-bitmap-key');
+            var record = key ? bitmapRecords[key] : null;
+
+            updateBitmapElement(el, record);
+            if (record && !record.dataURL && !record.renderPending && !record.error) {
+                renderBitmapRecord(record);
+            }
+        });
+    }
+
     function setStatus(type, message, showRetry) {
         if (!statusBar || !statusText) {
             return;
@@ -933,6 +2835,7 @@ var avatarChatCanUseRealtime = is_user();
             loadActiveHistory(true);
             loadRoomSummaries(true);
             loadPrivateThreads(true);
+            loadMotd(true);
         }, 1000);
     }
 
@@ -987,6 +2890,7 @@ var avatarChatCanUseRealtime = is_user();
     }
 
     function upsertPrivateThread(summary) {
+        summary = normalizeThreadSummary(summary);
         var key = buildThreadKey(summary.name, summary.system || '');
         var index = 0;
 
@@ -1012,25 +2916,88 @@ var avatarChatCanUseRealtime = is_user();
         return privateThreads[privateThreads.length - 1];
     }
 
-    function updateChannelLabel() {
-        if (!channelLabel) {
+    function syncMotdTicker() {
+        var primaryWidth = 0;
+        var windowWidth = 0;
+        var gap = 40;
+        var distance = 0;
+        var duration = 0;
+
+        if (!motdBar || !motdWindow || !motdTrack || !motdPrimary || !motdClone) {
             return;
         }
 
-        if (activeView.type === 'private') {
-            channelLabel.textContent = '@' + activeView.name;
+        motdBar.classList.remove('is-scrolling', 'is-empty');
+        motdTrack.style.removeProperty('--motd-scroll-width');
+        motdTrack.style.removeProperty('--motd-duration');
+        motdClone.style.display = 'none';
+
+        if (!trimText(motdState.text || '').length) {
+            motdBar.classList.add('is-empty');
             return;
         }
 
-        channelLabel.textContent = '#' + activeView.name;
+        primaryWidth = motdPrimary.scrollWidth || 0;
+        windowWidth = motdWindow.clientWidth || 0;
+
+        if (primaryWidth <= windowWidth + 8) {
+            return;
+        }
+
+        distance = primaryWidth + gap;
+        duration = Math.max(12, Math.round(distance / 42));
+        motdClone.style.display = 'inline-block';
+        motdBar.classList.add('is-scrolling');
+        motdTrack.style.setProperty('--motd-scroll-width', String(distance) + 'px');
+        motdTrack.style.setProperty('--motd-duration', String(duration) + 's');
     }
 
-    function updateUserCountButton() {
+    function renderMotdBar() {
+        var text = trimText(motdState.text || '');
+        var primaryText = text.length ? text : 'No MOTD set.';
+        var cloneText = text.length ? text : '';
+        var signature = primaryText + '|' + cloneText + '|' + String(motdWindow ? motdWindow.clientWidth || 0 : 0);
+
+        if (!motdPrimary || !motdClone) {
+            return;
+        }
+
+        if (motdRenderSignature === signature) {
+            return;
+        }
+
+        motdRenderSignature = signature;
+        motdPrimary.textContent = primaryText;
+        motdClone.textContent = cloneText;
+        window.requestAnimationFrame(syncMotdTicker);
+    }
+
+    function shouldShowRoom(room) {
+        if (!room || !room.name) {
+            return false;
+        }
+
+        if (isMotdChannelName(room.name) && !pageConfig.canManageMotd) {
+            return false;
+        }
+
+        return normalizeUpper(currentPublicChannel) === normalizeUpper(room.name) ||
+            (room.userCount || 0) > 0 ||
+            (unreadChannels[normalizeUpper(room.name)] || 0) > 0 ||
+            (pageConfig.canManageMotd && isMotdChannelName(room.name));
+    }
+
+    function renderHeaderBar() {
         var count = 0;
         var summary = findRoomSummary(currentPublicChannel);
+        var roomCount = rooms.filter(shouldShowRoom).length;
 
-        if (!countButton) {
-            return;
+        if (channelLabel) {
+            if (activeView.type === 'private') {
+                channelLabel.textContent = '@' + activeView.name;
+            } else {
+                channelLabel.textContent = '#' + activeView.name;
+            }
         }
 
         if (summary && typeof summary.userCount === 'number') {
@@ -1039,7 +3006,99 @@ var avatarChatCanUseRealtime = is_user();
             count = users.length;
         }
 
-        countButton.textContent = String(count) + ' user' + (count === 1 ? '' : 's');
+        if (countButton) {
+            if (activeView.type === 'private') {
+                countButton.textContent = 'Direct';
+                countButton.disabled = true;
+            } else {
+                countButton.textContent = String(count) + ' user' + (count === 1 ? '' : 's');
+                countButton.disabled = false;
+            }
+        }
+
+        if (roomCountLabel) {
+            roomCountLabel.textContent = 'rooms ' + String(roomCount > 0 ? roomCount : 1);
+        }
+
+        if (serverLabel) {
+            serverLabel.textContent = String(pageConfig.host || '') + ':' + String(pageConfig.port || '');
+        }
+
+        renderMotdBar();
+    }
+
+    function updateChannelLabel() {
+        renderHeaderBar();
+    }
+
+    function updateUserCountButton() {
+        renderHeaderBar();
+    }
+
+    function renderUsersTitle() {
+        if (!usersTitle) {
+            return;
+        }
+
+        usersTitle.textContent = 'Users in #' + sanitizeChannelName(usersPanelRoom || currentPublicChannel);
+    }
+
+    function loadUsersPanelRoom(roomName, silent) {
+        var requestedChannel = sanitizeChannelName(roomName || currentPublicChannel);
+        var requestToken = ++usersPanelRequestToken;
+
+        if (isMotdChannelName(requestedChannel) && !pageConfig.canManageMotd) {
+            requestedChannel = getDefaultPublicChannel();
+        }
+
+        return fetchJSON(apiBase + '?action=who&channel=' + encodeURIComponent(requestedChannel)).then(function (response) {
+            if (response && response.error) {
+                throw new Error(String(response.error));
+            }
+            if (
+                requestToken !== usersPanelRequestToken ||
+                normalizeUpper(usersPanelRoom) !== normalizeUpper(requestedChannel)
+            ) {
+                return false;
+            }
+
+            panelUsers = response && Array.isArray(response.users) ? response.users : [];
+            renderUsers();
+            return true;
+        }).catch(function () {
+            if (!silent) {
+                setStatus('error', explainServiceError(), true);
+            }
+            return false;
+        });
+    }
+
+    function openUsersPanelForRoom(roomName) {
+        usersPanelRoom = sanitizeChannelName(roomName || currentPublicChannel);
+        if (isMotdChannelName(usersPanelRoom) && !pageConfig.canManageMotd) {
+            usersPanelRoom = getDefaultPublicChannel();
+        }
+        renderUsersTitle();
+        if (usersModal) {
+            usersModal.classList.add('is-open');
+            usersModal.setAttribute('aria-hidden', 'false');
+        }
+
+        if (normalizeUpper(usersPanelRoom) === normalizeUpper(currentPublicChannel)) {
+            panelUsers = Array.isArray(users) ? users.slice() : [];
+            renderUsers();
+        }
+
+        loadUsersPanelRoom(usersPanelRoom, true);
+    }
+
+    function closeUsersModal() {
+        if (!usersModal) {
+            return;
+        }
+
+        usersModal.classList.remove('is-open');
+        usersModal.setAttribute('aria-hidden', 'true');
     }
 
     function openRoomModal() {
@@ -1102,8 +3161,13 @@ var avatarChatCanUseRealtime = is_user();
     }
 
     function setActiveChannel(nextChannel, reconnectStream) {
-        var safeChannel = sanitizeChannelName(nextChannel || pageConfig.defaultChannel);
+        var safeChannel = sanitizeChannelName(nextChannel || getDefaultPublicChannel());
         var changed = normalizeUpper(currentPublicChannel) !== normalizeUpper(safeChannel);
+
+        if (isMotdChannelName(safeChannel) && !pageConfig.canManageMotd) {
+            safeChannel = getDefaultPublicChannel();
+            changed = normalizeUpper(currentPublicChannel) !== normalizeUpper(safeChannel);
+        }
 
         currentPublicChannel = safeChannel;
         activeView = {
@@ -1236,11 +3300,7 @@ var avatarChatCanUseRealtime = is_user();
     }
 
     function renderRoomsMarkup() {
-        var items = rooms.filter(function (room) {
-            return (activeView.type === 'channel' && normalizeUpper(activeView.name) === normalizeUpper(room.name)) ||
-                (room.userCount || 0) > 0 ||
-                (unreadChannels[normalizeUpper(room.name)] || 0) > 0;
-        }).slice();
+        var items = rooms.filter(shouldShowRoom).slice();
         var html = '';
 
         items.sort(function (a, b) {
@@ -1265,9 +3325,11 @@ var avatarChatCanUseRealtime = is_user();
 
         items.forEach(function (room) {
             var unread = unreadChannels[normalizeUpper(room.name)] || 0;
-            var isActive = activeView.type === 'channel' && normalizeUpper(activeView.name) === normalizeUpper(room.name);
+            var isActive =
+                activeView.type === 'channel' &&
+                normalizeUpper(currentPublicChannel) === normalizeUpper(room.name);
 
-            html += '<button type="button" class="avatar-chat-nav-item' + (isActive ? ' is-active' : '') + '" data-room="' + escapeAttr(room.name) + '">';
+            html += '<div class="avatar-chat-nav-item' + (isActive ? ' is-active' : '') + '">';
             html += '<div class="avatar-chat-nav-top">';
             html += '<span class="avatar-chat-nav-title">#' + escapeHtml(room.name) + '</span>';
             if (unread > 0) {
@@ -1275,17 +3337,22 @@ var avatarChatCanUseRealtime = is_user();
             }
             html += '</div>';
             html += '<div class="avatar-chat-nav-secondary">' + escapeHtml(String(room.userCount || 0)) + ' user' + ((room.userCount || 0) === 1 ? '' : 's') + '</div>';
-            html += '</button>';
+            html += '<div class="avatar-chat-nav-actions">';
+            if (isActive) {
+                html += '<span class="avatar-chat-nav-state">Current</span>';
+            } else {
+                html += '<button type="button" class="avatar-chat-nav-action is-primary" data-room-join="' + escapeAttr(room.name) + '">Join</button>';
+            }
+            html += '<button type="button" class="avatar-chat-nav-action" data-room-users="' + escapeAttr(room.name) + '">Users</button>';
+            html += '</div>';
+            html += '</div>';
         });
 
         roomsList.innerHTML = html;
     }
 
     function renderPrivateMarkup() {
-        var items = privateThreads.filter(function (thread) {
-            var key = buildThreadKey(thread.name, thread.system || '');
-            return (activeView.type === 'private' && key === currentPrivateThreadKey()) || isThreadOnline(thread.name, thread.system || '');
-        }).slice();
+        var items = privateThreads.slice();
         var html = '';
 
         items.sort(function (a, b) {
@@ -1293,9 +3360,14 @@ var avatarChatCanUseRealtime = is_user();
             var bKey = buildThreadKey(b.name, b.system || '');
             var aActive = activeView.type === 'private' && aKey === currentPrivateThreadKey() ? 1 : 0;
             var bActive = activeView.type === 'private' && bKey === currentPrivateThreadKey() ? 1 : 0;
+            var aOnline = isThreadOnline(a.name, a.system || '') ? 1 : 0;
+            var bOnline = isThreadOnline(b.name, b.system || '') ? 1 : 0;
             var aUnread = unreadPrivate[aKey] || 0;
             var bUnread = unreadPrivate[bKey] || 0;
 
+            if (aOnline !== bOnline) {
+                return bOnline - aOnline;
+            }
             if (aActive !== bActive) {
                 return bActive - aActive;
             }
@@ -1306,7 +3378,7 @@ var avatarChatCanUseRealtime = is_user();
         });
 
         if (!items.length) {
-            privateList.innerHTML = '<div class="avatar-chat-nav-empty">No private chats online.</div>';
+            privateList.innerHTML = '<div class="avatar-chat-nav-empty">No private chats yet.</div>';
             return;
         }
 
@@ -1314,10 +3386,12 @@ var avatarChatCanUseRealtime = is_user();
             var key = buildThreadKey(thread.name, thread.system || '');
             var unread = unreadPrivate[key] || 0;
             var isActive = activeView.type === 'private' && key === currentPrivateThreadKey();
+            var isOnline = isThreadOnline(thread.name, thread.system || '');
             var initial = thread.name ? thread.name.charAt(0).toUpperCase() : '?';
 
             html += '<button type="button" class="avatar-chat-nav-item' + (isActive ? ' is-active' : '') + '" data-private-nav="' + escapeAttr(thread.name) + '" data-private-system="' + escapeAttr(thread.system || '') + '" data-private-avatar="' + escapeAttr(thread.avatar || '') + '">';
             html += '<div class="avatar-chat-thread-row">';
+            html += '<span class="avatar-chat-presence-dot ' + (isOnline ? 'is-online' : 'is-offline') + '" aria-hidden="true"></span>';
             html += '<div class="avatar-chat-thread-avatar">';
             if (thread.avatar) {
                 html += '<div data-avatar-bin="' + escapeAttr(thread.avatar) + '"></div>';
@@ -1334,6 +3408,9 @@ var avatarChatCanUseRealtime = is_user();
             html += '</div>';
             if (thread.system) {
                 html += '<div class="avatar-chat-nav-secondary">' + escapeHtml(thread.system) + '</div>';
+            }
+            if (thread.preview) {
+                html += '<div class="avatar-chat-nav-preview">' + escapeHtml(thread.preview) + '</div>';
             }
             html += '</div>';
             html += '</div>';
@@ -1356,17 +3433,20 @@ var avatarChatCanUseRealtime = is_user();
 
     function renderUsers() {
         var html = '';
+        var visibleUsers = Array.isArray(panelUsers) ? panelUsers : [];
 
         if (!usersList) {
             return;
         }
 
-        if (!users.length) {
-            usersList.innerHTML = '<div class="avatar-chat-empty">No users online.</div>';
+        renderUsersTitle();
+
+        if (!visibleUsers.length) {
+            usersList.innerHTML = '<div class="avatar-chat-empty">No users in #' + escapeHtml(sanitizeChannelName(usersPanelRoom || currentPublicChannel)) + '.</div>';
             return;
         }
 
-        users.forEach(function (entry) {
+        visibleUsers.forEach(function (entry) {
             var initial = entry.nick ? entry.nick.charAt(0).toUpperCase() : '?';
 
             html += '<button type="button" class="avatar-chat-user" data-private-user="' + escapeAttr(entry.nick || '') + '" data-private-system="' + escapeAttr(entry.system || '') + '" data-private-avatar="' + escapeAttr(entry.avatar || '') + '">';
@@ -1377,7 +3457,7 @@ var avatarChatCanUseRealtime = is_user();
             } else if (entry.userNumber && entry.userNumber > 0) {
                 html += '<div data-avatar="' + String(entry.userNumber) + '"></div>';
             } else {
-                html += '<div class="avatar-chat-avatar-placeholder" data-initial="' + escapeHtml(initial) + '">' + escapeHtml(initial) + '</div>';
+                html += '<div class="avatar-chat-avatar-placeholder" data-initial="' + escapeAttr(initial) + '">' + escapeHtml(initial) + '</div>';
             }
             html += '</div>';
             html += '<div>';
@@ -1403,6 +3483,22 @@ var avatarChatCanUseRealtime = is_user();
             ' data-private-avatar="' + escapeAttr(message.avatar || '') + '"';
     }
 
+    function renderBitmapBubble(message) {
+        var cols = Math.max(1, message.bitmapWidth || 80);
+        var rows = Math.max(1, message.bitmapHeight || 25);
+        var pixelWidth = cols * BITMAP_FONT_WIDTH;
+        var pixelHeight = rows * BITMAP_FONT_HEIGHT;
+        var label = 'image ' + cols + 'x' + rows;
+
+        return '<div class="avatar-chat-bitmap-shell" style="' + escapeAttr('max-width:' + pixelWidth + 'px;') + '">' +
+            '<div class="avatar-chat-bitmap-frame">' +
+            '<div class="avatar-chat-bitmap-stage" data-avatar-chat-bitmap-key="' + escapeAttr(message.bitmapKey || '') + '" data-avatar-chat-bitmap-alt="' + escapeAttr(label) + '" style="' + escapeAttr('aspect-ratio:' + pixelWidth + ' / ' + pixelHeight + ';') + '">' +
+            '<div class="avatar-chat-bitmap-placeholder">Rendering ' + escapeHtml(label) + '...</div>' +
+            '</div>' +
+            '</div>' +
+            '</div>';
+    }
+
     function renderMessages() {
         var html = '';
         var previousSender = '';
@@ -1415,14 +3511,18 @@ var avatarChatCanUseRealtime = is_user();
         }
 
         messages.forEach(function (message) {
-            var isSystem = !message.sender;
+            var displaySender = message.sender || message.bitmapFromName || '';
+            if (!displaySender && message.kind === 'bitmap' && message.bitmapKey) {
+                displaySender = 'Image';
+            }
+            var isSystem = !displaySender;
             var isSelf = !!message.isSelf;
-            var sameGroup = message.sender === previousSender && Math.abs((message.timestamp || 0) - previousTime) < groupWindow;
-            var avatarInitial = message.sender ? message.sender.charAt(0).toUpperCase() : '?';
+            var sameGroup = displaySender === previousSender && Math.abs((message.timestamp || 0) - previousTime) < groupWindow;
+            var avatarInitial = displaySender ? displaySender.charAt(0).toUpperCase() : '?';
 
             if (!isSelf && pageConfig.userAlias) {
                 isSelf =
-                    normalizeUpper(message.sender) === normalizeUpper(pageConfig.userAlias) &&
+                    normalizeUpper(displaySender) === normalizeUpper(pageConfig.userAlias) &&
                     (!message.system || !pageConfig.systemName || normalizeUpper(message.system) === normalizeUpper(pageConfig.systemName));
             }
 
@@ -1452,7 +3552,7 @@ var avatarChatCanUseRealtime = is_user();
                 } else if (message.userNumber && message.userNumber > 0) {
                     html += '<div data-avatar="' + String(message.userNumber) + '"></div>';
                 } else {
-                    html += '<div class="avatar-chat-avatar-placeholder" data-initial="' + escapeHtml(avatarInitial) + '">' + escapeHtml(avatarInitial) + '</div>';
+                    html += '<div class="avatar-chat-avatar-placeholder" data-initial="' + escapeAttr(avatarInitial) + '">' + escapeHtml(avatarInitial) + '</div>';
                 }
                 html += actorAttrs.length ? '</button>' : '</div>';
                 html += '<div class="avatar-chat-content">';
@@ -1460,7 +3560,7 @@ var avatarChatCanUseRealtime = is_user();
                 if (actorAttrs.length) {
                     html += '<button type="button" class="avatar-chat-sender-button"' + actorAttrs + '>';
                 }
-                html += '<strong>' + escapeHtml(message.sender) + '</strong>';
+                html += '<strong>' + escapeHtml(displaySender) + '</strong>';
                 if (message.system) {
                     html += ' <span class="avatar-chat-system-name">- ' + escapeHtml(message.system) + '</span>';
                 }
@@ -1471,8 +3571,12 @@ var avatarChatCanUseRealtime = is_user();
                 html += '</div>';
             }
 
-            html += '<div class="avatar-chat-bubble">' + linkify(message.text || '') + '</div>';
-            previousSender = message.sender;
+            if (message.kind === 'bitmap' && message.bitmapKey) {
+                html += '<div class="avatar-chat-bubble avatar-chat-bitmap-bubble">' + renderBitmapBubble(message) + '</div>';
+            } else {
+                html += '<div class="avatar-chat-bubble">' + linkify(message.text || '') + '</div>';
+            }
+            previousSender = displaySender;
             previousTime = message.timestamp || 0;
         });
 
@@ -1482,6 +3586,7 @@ var avatarChatCanUseRealtime = is_user();
 
         messageContainer.innerHTML = html;
         renderEmbeddedAvatars(messageContainer);
+        renderEmbeddedBitmaps(messageContainer);
         fetchMissingAvatars(messageContainer);
         renderAvatarFallbacks(messageContainer);
         scrollToBottom();
@@ -1534,6 +3639,7 @@ var avatarChatCanUseRealtime = is_user();
         if (!pageConfig.canUseRealtime) {
             privateThreads = [];
             renderPrivateList();
+            renderHeaderBar();
             return Promise.resolve(true);
         }
 
@@ -1586,6 +3692,7 @@ var avatarChatCanUseRealtime = is_user();
             privateThreads = nextThreads;
             lastPrivatePollAt = serverTime;
             renderPrivateList();
+            renderHeaderBar();
             return true;
         }).catch(function (_error) {
             if (!silent) {
@@ -1595,14 +3702,42 @@ var avatarChatCanUseRealtime = is_user();
         });
     }
 
-    function loadPublicHistory(silent) {
-        return fetchJSON(apiBase + '?action=history&channel=' + encodeURIComponent(currentPublicChannel)).then(function (response) {
+    function loadMotd(silent) {
+        return fetchJSON(apiBase + '?action=motd').then(function (response) {
             if (response && response.error) {
                 throw new Error(String(response.error));
             }
-            messages = response && Array.isArray(response.messages) ? response.messages : [];
+
+            motdState.text = trimText(response && response.previewText ? response.previewText : '');
+            motdState.timestamp = response && response.timestamp ? response.timestamp : 0;
+            renderHeaderBar();
+            return true;
+        }).catch(function () {
+            if (!silent) {
+                setStatus('error', explainServiceError(), true);
+            }
+            return false;
+        });
+    }
+
+    function loadPublicHistory(silent) {
+        var requestedChannel = currentPublicChannel;
+        var requestToken = ++historyRequestToken;
+
+        return fetchJSON(apiBase + '?action=history&channel=' + encodeURIComponent(requestedChannel)).then(function (response) {
+            if (response && response.error) {
+                throw new Error(String(response.error));
+            }
+            if (
+                requestToken !== historyRequestToken ||
+                activeView.type !== 'channel' ||
+                normalizeUpper(currentPublicChannel) !== normalizeUpper(requestedChannel)
+            ) {
+                return false;
+            }
+            messages = normalizeMessages(response && Array.isArray(response.messages) ? response.messages : []);
             cacheAvatarsFromMessages(messages);
-            unreadChannels[normalizeUpper(currentPublicChannel)] = 0;
+            unreadChannels[normalizeUpper(requestedChannel)] = 0;
             renderMessages();
             if (!realtimeHealthy && reconnectAttemptCount > 0 && !silent) {
                 setStatus('warning', 'Realtime updates are not fully healthy, but the current room refreshed successfully.', true);
@@ -1615,9 +3750,12 @@ var avatarChatCanUseRealtime = is_user();
     }
 
     function loadPrivateHistory(silent) {
-        var url = apiBase + '?action=privateHistory&target=' + encodeURIComponent(activeView.name);
-        if (activeView.system) {
-            url += '&system=' + encodeURIComponent(activeView.system);
+        var requestedName = activeView.name;
+        var requestedSystem = activeView.system || '';
+        var requestToken = ++historyRequestToken;
+        var url = apiBase + '?action=privateHistory&target=' + encodeURIComponent(requestedName);
+        if (requestedSystem) {
+            url += '&system=' + encodeURIComponent(requestedSystem);
         }
 
         return fetchJSON(url).then(function (response) {
@@ -1626,8 +3764,17 @@ var avatarChatCanUseRealtime = is_user();
             if (response && response.error) {
                 throw new Error(String(response.error));
             }
+            if (
+                requestToken !== historyRequestToken ||
+                activeView.type !== 'private' ||
+                normalizeUpper(activeView.name || '') !== normalizeUpper(requestedName) ||
+                normalizeUpper(activeView.system || '') !== normalizeUpper(requestedSystem)
+            ) {
+                return false;
+            }
 
             messages = response && Array.isArray(response.messages) ? response.messages : [];
+            messages = normalizeMessages(messages);
             cacheAvatarsFromMessages(messages);
             if (response && response.peer) {
                 activeView.system = response.peer.system || activeView.system || '';
@@ -1656,12 +3803,24 @@ var avatarChatCanUseRealtime = is_user();
     }
 
     function loadUsers(silent) {
-        return fetchJSON(apiBase + '?action=who&channel=' + encodeURIComponent(currentPublicChannel)).then(function (response) {
+        var requestedChannel = currentPublicChannel;
+        var requestToken = ++usersRequestToken;
+
+        return fetchJSON(apiBase + '?action=who&channel=' + encodeURIComponent(requestedChannel)).then(function (response) {
             if (response && response.error) {
                 throw new Error(String(response.error));
             }
+            if (
+                requestToken !== usersRequestToken ||
+                normalizeUpper(currentPublicChannel) !== normalizeUpper(requestedChannel)
+            ) {
+                return false;
+            }
             users = response && Array.isArray(response.users) ? response.users : [];
-            renderUsers();
+            if (normalizeUpper(usersPanelRoom) === normalizeUpper(requestedChannel)) {
+                panelUsers = users.slice();
+                renderUsers();
+            }
             updateUserCountButton();
             if (!realtimeHealthy && reconnectAttemptCount > 0 && !silent) {
                 setStatus('warning', 'Realtime updates are not fully healthy, but the roster refreshed successfully.', true);
@@ -1745,6 +3904,13 @@ var avatarChatCanUseRealtime = is_user();
         });
     }
 
+    function sendActiveMessage(text) {
+        if (activeView.type === 'private') {
+            return sendPrivateMessage(text);
+        }
+        return sendPublicMessage(text);
+    }
+
     function createRoom(name) {
         var body = new URLSearchParams();
         body.set('action', 'createChannel');
@@ -1762,11 +3928,16 @@ var avatarChatCanUseRealtime = is_user();
             var work = [
                 loadPrivateThreads(true),
                 loadActiveHistory(true),
-                loadPresenceMap(true)
+                loadPresenceMap(true),
+                loadMotd(true)
             ];
+            var usersPanelOpen = !!(usersModal && usersModal.classList.contains('is-open'));
 
             usersRefreshTick += 1;
-            if (forceUsers || usersPanel.classList.contains('is-open') || usersRefreshTick >= 2) {
+            if (usersPanelOpen && normalizeUpper(usersPanelRoom) !== normalizeUpper(currentPublicChannel)) {
+                work.push(loadUsersPanelRoom(usersPanelRoom, true));
+            }
+            if (forceUsers || (usersPanelOpen && normalizeUpper(usersPanelRoom) === normalizeUpper(currentPublicChannel)) || usersRefreshTick >= 2) {
                 usersRefreshTick = 0;
                 work.push(loadUsers(true));
             }
@@ -1829,8 +4000,14 @@ var avatarChatCanUseRealtime = is_user();
             }
 
             if (payload.type === 'message') {
+                payload = normalizeMessage(payload);
                 if (payload.sender && payload.avatar) {
                     cacheAvatar(payload.sender, payload.system, payload.avatar);
+                }
+                if (isMotdChannelName(payload.channel || '')) {
+                    motdState.text = trimText(payload.previewText || payload.text || '');
+                    motdState.timestamp = payload.timestamp || Date.now();
+                    renderHeaderBar();
                 }
                 roomSummary = ensureRoomSummary(payload.channel || currentPublicChannel);
                 roomSummary.lastTimestamp = Math.max(roomSummary.lastTimestamp || 0, payload.timestamp || 0);
@@ -1859,6 +4036,7 @@ var avatarChatCanUseRealtime = is_user();
             }
 
             if (payload.type === 'private') {
+                payload = normalizeMessage(payload);
                 if (payload.sender && payload.avatar) {
                     cacheAvatar(payload.sender, payload.system, payload.avatar);
                 }
@@ -1870,12 +4048,12 @@ var avatarChatCanUseRealtime = is_user();
                     system: payload.peerSystem || payload.system || '',
                     avatar: payload.peerAvatar || payload.avatar || undefined,
                     lastTimestamp: payload.timestamp || Date.now(),
-                    preview: payload.text || ''
+                    preview: payload.previewText || payload.text || ''
                 });
                 threadKey = buildThreadKey(thread.name, thread.system || '');
 
                 if (activeView.type === 'private' && threadKey === currentPrivateThreadKey()) {
-                    messages.push({
+                    messages.push(normalizeMessage({
                         sender: payload.sender,
                         system: payload.system,
                         text: payload.text,
@@ -1883,7 +4061,10 @@ var avatarChatCanUseRealtime = is_user();
                         userNumber: payload.userNumber,
                         isSelf: payload.isSelf,
                         avatar: payload.avatar
-                    });
+                    }));
+                    if (messages.length > 200) {
+                        messages.shift();
+                    }
                     unreadPrivate[threadKey] = 0;
                     renderMessages();
                 } else {
@@ -1904,20 +4085,8 @@ var avatarChatCanUseRealtime = is_user();
         };
     }
 
-    if (countButton) {
-        countButton.addEventListener('click', function () {
-            usersPanel.classList.toggle('is-open');
-            if (!usersPanel.classList.contains('is-open')) {
-                return;
-            }
-            loadUsers(true);
-        });
-    }
-
     if (usersClose) {
-        usersClose.addEventListener('click', function () {
-            usersPanel.classList.remove('is-open');
-        });
+        usersClose.addEventListener('click', closeUsersModal);
     }
 
     if (statusRetry) {
@@ -1928,6 +4097,15 @@ var avatarChatCanUseRealtime = is_user();
             if (pageConfig.canUseRealtime) {
                 connectEvents(true);
             }
+        });
+    }
+
+    if (countButton) {
+        countButton.addEventListener('click', function () {
+            if (activeView.type !== 'channel' || countButton.disabled) {
+                return;
+            }
+            openUsersPanelForRoom(currentPublicChannel);
         });
     }
 
@@ -1951,13 +4129,28 @@ var avatarChatCanUseRealtime = is_user();
         });
     }
 
+    if (usersModal) {
+        usersModal.addEventListener('click', function (event) {
+            if (event.target === usersModal) {
+                closeUsersModal();
+            }
+        });
+    }
+
     if (roomsList) {
         roomsList.addEventListener('click', function (event) {
-            var button = event.target.closest('[data-room]');
-            if (!button) {
+            var joinButton = event.target.closest('[data-room-join]');
+            var usersButton = event.target.closest('[data-room-users]');
+
+            if (joinButton) {
+                setActiveChannel(joinButton.getAttribute('data-room-join'), true);
                 return;
             }
-            setActiveChannel(button.getAttribute('data-room'), true);
+
+            if (!usersButton) {
+                return;
+            }
+            openUsersPanelForRoom(usersButton.getAttribute('data-room-users'));
         });
     }
 
@@ -2028,50 +4221,143 @@ var avatarChatCanUseRealtime = is_user();
         });
     }
 
+    renderAnsiUploadState();
+
+    if (ansiOpen) {
+        ansiOpen.addEventListener('click', function () {
+            if (!ansiUploadBusy && ansiFileInput) {
+                ansiFileInput.click();
+            }
+        });
+    }
+
+    if (ansiFileInput) {
+        ansiFileInput.addEventListener('change', function () {
+            var file = ansiFileInput.files && ansiFileInput.files.length ? ansiFileInput.files[0] : null;
+
+            if (file) {
+                queueAnsiUpload(file);
+            }
+        });
+    }
+
+    if (ansiClear) {
+        ansiClear.addEventListener('click', function () {
+            clearPendingAnsiUpload();
+        });
+    }
+
+    if (ansiDropzone) {
+        ansiDropzone.addEventListener('click', function () {
+            if (!ansiUploadBusy && ansiFileInput) {
+                ansiFileInput.click();
+            }
+        });
+        ansiDropzone.addEventListener('keydown', function (event) {
+            if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                if (!ansiUploadBusy && ansiFileInput) {
+                    ansiFileInput.click();
+                }
+            }
+        });
+        ansiDropzone.addEventListener('dragover', function (event) {
+            event.preventDefault();
+            if (!ansiUploadBusy) {
+                ansiDropzone.classList.add('is-dragover');
+            }
+        });
+        ansiDropzone.addEventListener('dragenter', function (event) {
+            event.preventDefault();
+            if (!ansiUploadBusy) {
+                ansiDropzone.classList.add('is-dragover');
+            }
+        });
+        ansiDropzone.addEventListener('dragleave', function (event) {
+            if (event.target === ansiDropzone) {
+                ansiDropzone.classList.remove('is-dragover');
+            }
+        });
+        ansiDropzone.addEventListener('drop', function (event) {
+            var file = null;
+
+            event.preventDefault();
+            ansiDropzone.classList.remove('is-dragover');
+            if (ansiUploadBusy) {
+                return;
+            }
+            file = event.dataTransfer && event.dataTransfer.files && event.dataTransfer.files.length
+                ? event.dataTransfer.files[0]
+                : null;
+            if (file) {
+                queueAnsiUpload(file);
+            }
+        });
+    }
+
     if (form) {
         form.addEventListener('submit', function (event) {
             var text = input.value.replace(/^\s+|\s+$/g, '');
+            var pendingUpload = pendingAnsiUpload;
+            var outgoing = '';
 
             event.preventDefault();
-            if (!text.length) {
+            if (ansiUploadBusy) {
                 return;
             }
 
-            if (activeView.type === 'private') {
-                sendPrivateMessage(text).then(function (response) {
-                    if (response && response.error) {
-                        setStatus('error', String(response.error), true);
-                        return;
-                    }
-                    input.value = '';
-                    scheduleHistoryRefresh();
-                }).catch(function () {
-                    setStatus('error', explainServiceError(), true);
-                });
+            if (!pendingUpload && !text.length) {
                 return;
             }
 
-            sendPublicMessage(text).then(function (response) {
+            outgoing = pendingUpload ? pendingUpload.payload : text;
+            if (pendingUpload) {
+                ansiUploadBusy = true;
+                ansiUploadMessage = 'Sending ' + pendingUpload.fileName + '...';
+                ansiUploadMessageType = 'busy';
+                renderAnsiUploadState();
+            }
+
+            sendActiveMessage(outgoing).then(function (response) {
                 if (response && response.error) {
+                    if (pendingUpload) {
+                        ansiUploadBusy = false;
+                        ansiUploadMessage = 'Ready to send ' + pendingUpload.fileName + ' (' + pendingUpload.width + 'x' + pendingUpload.height + ').';
+                        ansiUploadMessageType = 'ready';
+                        renderAnsiUploadState();
+                    }
                     setStatus('error', String(response.error), true);
                     return;
                 }
-                input.value = '';
+                if (pendingUpload) {
+                    clearPendingAnsiUpload();
+                } else {
+                    input.value = '';
+                }
                 scheduleHistoryRefresh();
             }).catch(function () {
+                if (pendingUpload) {
+                    ansiUploadBusy = false;
+                    ansiUploadMessage = 'Ready to send ' + pendingUpload.fileName + ' (' + pendingUpload.width + 'x' + pendingUpload.height + ').';
+                    ansiUploadMessageType = 'ready';
+                    renderAnsiUploadState();
+                }
                 setStatus('error', explainServiceError(), true);
             });
         });
     }
 
     updateChannelLabel();
+    renderUsersTitle();
     updateQueryString();
+    renderHeaderBar();
 
     ensureDependencies(function () {
         ensureRoomSummary(currentPublicChannel);
         updateChannelLabel();
         renderRoomList();
         renderPrivateList();
+        loadMotd(false);
         loadRoomSummaries(false).then(function () {
             loadPresenceMap(true);
         });
@@ -2098,6 +4384,20 @@ var avatarChatCanUseRealtime = is_user();
             sendRefreshTimer = 0;
         }
         closeEventSource();
+    });
+
+    window.addEventListener('resize', function () {
+        window.requestAnimationFrame(syncMotdTicker);
+    });
+
+    window.addEventListener('keydown', function (event) {
+        if (event.key === 'Escape' && usersModal && usersModal.classList.contains('is-open')) {
+            closeUsersModal();
+            return;
+        }
+        if (event.key === 'Escape' && roomModal && roomModal.classList.contains('is-open')) {
+            closeRoomModal();
+        }
     });
 })();
 </script>

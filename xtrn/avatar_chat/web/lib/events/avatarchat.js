@@ -8,7 +8,10 @@ function loadAvatarChatConfig() {
     var config = {
         host: '127.0.0.1',
         port: 10088,
-        defaultChannel: 'main'
+        defaultChannel: 'main',
+        motdChannel: 'motd',
+        motdHostSystem: '',
+        motdHostQwkid: ''
     };
 
     if (!file.open('r')) {
@@ -18,6 +21,9 @@ function loadAvatarChatConfig() {
     config.host = String(file.iniGetValue(null, 'host', config.host) || config.host);
     config.port = parseInt(String(file.iniGetValue(null, 'port', config.port)), 10) || config.port;
     config.defaultChannel = String(file.iniGetValue(null, 'default_channel', config.defaultChannel) || config.defaultChannel);
+    config.motdChannel = String(file.iniGetValue(null, 'motd_channel', config.motdChannel) || config.motdChannel);
+    config.motdHostSystem = String(file.iniGetValue(null, 'motd_host_system', config.motdHostSystem) || config.motdHostSystem);
+    config.motdHostQwkid = String(file.iniGetValue(null, 'motd_host_qwkid', config.motdHostQwkid) || config.motdHostQwkid);
     file.close();
 
     return config;
@@ -38,6 +44,69 @@ function sanitizeAlias(raw) {
 
 function normalizeUpper(value) {
     return trimText(value).toUpperCase();
+}
+
+function normalizeChannelKey(value) {
+    return String(value || '').replace(/[^a-zA-Z0-9_-]/g, '').toUpperCase();
+}
+
+function userIsSysop() {
+    if (user && user.is_sysop === true) {
+        return true;
+    }
+    if (user && user.security && typeof user.security.level === 'number' && user.security.level >= 90) {
+        return true;
+    }
+    if (user && typeof user.compare_ars === 'function') {
+        try {
+            return user.compare_ars('SYSOP') === true;
+        } catch (_compareError) {}
+    }
+    return false;
+}
+
+function getMotdChannelName(config) {
+    return sanitizeChannel(config && config.motdChannel ? config.motdChannel : 'motd', 'motd');
+}
+
+function isMotdChannelName(name, config) {
+    return normalizeChannelKey(name) === normalizeChannelKey(getMotdChannelName(config));
+}
+
+function canManageMotd(config) {
+    var configuredQwkid = normalizeUpper(config && config.motdHostQwkid ? config.motdHostQwkid : '');
+    var configuredSystem = normalizeUpper(config && config.motdHostSystem ? config.motdHostSystem : '');
+    var configuredHost = normalizeUpper(config && config.host ? config.host : '');
+    var localQwkid = normalizeUpper(system && system.qwk_id ? system.qwk_id : '');
+    var localSystem = normalizeUpper(system && system.name ? system.name : '');
+
+    if (!userIsSysop()) {
+        return false;
+    }
+
+    if (configuredQwkid.length) {
+        return localQwkid === configuredQwkid;
+    }
+
+    if (configuredSystem.length) {
+        return localSystem === configuredSystem;
+    }
+
+    if (configuredHost === '127.0.0.1' || configuredHost === 'LOCALHOST') {
+        return true;
+    }
+
+    return localSystem === configuredHost;
+}
+
+function getDefaultPublicChannel(config) {
+    var fallback = sanitizeChannel(config && config.defaultChannel ? config.defaultChannel : 'main', 'main');
+
+    if (isMotdChannelName(fallback, config) && !canManageMotd(config)) {
+        return 'main';
+    }
+
+    return fallback;
 }
 
 function normalizeNick(nick) {
@@ -83,7 +152,7 @@ function resolvePrivatePeerNick(message, ownAlias) {
 }
 
 var config = loadAvatarChatConfig();
-var channel = config.defaultChannel;
+var channel = getDefaultPublicChannel(config);
 var includeMailbox = false;
 var client = null;
 var publicSubscribed = false;
@@ -96,7 +165,11 @@ var channelPath = '';
 var mailboxPath = '';
 
 if (typeof http_request !== 'undefined' && http_request.query && http_request.query.channel) {
-    channel = sanitizeChannel(http_request.query.channel[0], config.defaultChannel);
+    channel = sanitizeChannel(http_request.query.channel[0], getDefaultPublicChannel(config));
+}
+
+if (isMotdChannelName(channel, config) && !canManageMotd(config)) {
+    channel = getDefaultPublicChannel(config);
 }
 
 if (

@@ -30,6 +30,9 @@ export interface AvatarChatConfig {
   host: string;
   port: number;
   defaultChannel: string;
+  motdChannel: string;
+  motdHostSystem: string;
+  motdHostQwkid: string;
   maxHistory: number;
   pollDelayMs: number;
   reconnectDelayMs: number;
@@ -69,6 +72,9 @@ const DEFAULT_CONFIG: AvatarChatConfig = {
   host: "127.0.0.1",
   port: 10088,
   defaultChannel: "main",
+  motdChannel: "motd",
+  motdHostSystem: "",
+  motdHostQwkid: "",
   maxHistory: 200,
   pollDelayMs: 25,
   reconnectDelayMs: 3000,
@@ -162,6 +168,9 @@ export function loadConfig(): AvatarChatConfig {
     host: DEFAULT_CONFIG.host,
     port: DEFAULT_CONFIG.port,
     defaultChannel: DEFAULT_CONFIG.defaultChannel,
+    motdChannel: DEFAULT_CONFIG.motdChannel,
+    motdHostSystem: DEFAULT_CONFIG.motdHostSystem,
+    motdHostQwkid: DEFAULT_CONFIG.motdHostQwkid,
     maxHistory: DEFAULT_CONFIG.maxHistory,
     pollDelayMs: DEFAULT_CONFIG.pollDelayMs,
     reconnectDelayMs: DEFAULT_CONFIG.reconnectDelayMs,
@@ -176,6 +185,9 @@ export function loadConfig(): AvatarChatConfig {
   config.host = readString(file, "host", DEFAULT_CONFIG.host);
   config.port = readNumber(file, "port", DEFAULT_CONFIG.port);
   config.defaultChannel = readString(file, "default_channel", DEFAULT_CONFIG.defaultChannel);
+  config.motdChannel = readString(file, "motd_channel", DEFAULT_CONFIG.motdChannel);
+  config.motdHostSystem = readString(file, "motd_host_system", DEFAULT_CONFIG.motdHostSystem);
+  config.motdHostQwkid = readString(file, "motd_host_qwkid", DEFAULT_CONFIG.motdHostQwkid);
   config.maxHistory = readNumber(file, "max_history", DEFAULT_CONFIG.maxHistory);
   config.pollDelayMs = readNumber(file, "poll_delay_ms", DEFAULT_CONFIG.pollDelayMs);
   config.reconnectDelayMs = readNumber(file, "reconnect_delay_ms", DEFAULT_CONFIG.reconnectDelayMs);

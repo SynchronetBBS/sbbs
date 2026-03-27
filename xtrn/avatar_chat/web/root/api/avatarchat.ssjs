@@ -4,6 +4,7 @@
  *   GET  ?action=history&channel=main             - public room history
  *   GET  ?action=who&channel=main                 - current public room subscribers
  *   GET  ?action=channels[&since=timestamp]       - public room summaries
+ *   GET  ?action=motd                             - latest message of the day
  *   POST ?action=createChannel                    - initialize/register a public room
  *   POST ?action=send                             - send a public room message
  *   GET  ?action=private[&since=timestamp]        - private thread summaries (auth required)
@@ -28,6 +29,9 @@ function loadAvatarChatConfig() {
         host: '127.0.0.1',
         port: 10088,
         defaultChannel: 'main',
+        motdChannel: 'motd',
+        motdHostSystem: '',
+        motdHostQwkid: '',
         maxHistory: 200
     };
 
@@ -38,6 +42,9 @@ function loadAvatarChatConfig() {
     config.host = String(file.iniGetValue(null, 'host', config.host) || config.host);
     config.port = parseInt(String(file.iniGetValue(null, 'port', config.port)), 10) || config.port;
     config.defaultChannel = String(file.iniGetValue(null, 'default_channel', config.defaultChannel) || config.defaultChannel);
+    config.motdChannel = String(file.iniGetValue(null, 'motd_channel', config.motdChannel) || config.motdChannel);
+    config.motdHostSystem = String(file.iniGetValue(null, 'motd_host_system', config.motdHostSystem) || config.motdHostSystem);
+    config.motdHostQwkid = String(file.iniGetValue(null, 'motd_host_qwkid', config.motdHostQwkid) || config.motdHostQwkid);
     config.maxHistory = parseInt(String(file.iniGetValue(null, 'max_history', config.maxHistory)), 10) || config.maxHistory;
     file.close();
 
@@ -50,6 +57,59 @@ function trimText(value) {
 
 function normalizeUpper(value) {
     return trimText(value).toUpperCase();
+}
+
+function normalizeChannelKey(value) {
+    return String(value || '').replace(/[^a-zA-Z0-9_-]/g, '').toUpperCase();
+}
+
+function userIsSysop() {
+    if (user && user.is_sysop === true) {
+        return true;
+    }
+    if (user && user.security && typeof user.security.level === 'number' && user.security.level >= 90) {
+        return true;
+    }
+    if (user && typeof user.compare_ars === 'function') {
+        try {
+            return user.compare_ars('SYSOP') === true;
+        } catch (_compareError) {}
+    }
+    return false;
+}
+
+function getMotdChannelName(config) {
+    return sanitizeChannel(config && config.motdChannel ? config.motdChannel : 'motd', 'motd');
+}
+
+function isMotdChannelName(name, config) {
+    return normalizeChannelKey(name) === normalizeChannelKey(getMotdChannelName(config));
+}
+
+function canManageMotd(config) {
+    var configuredQwkid = normalizeUpper(config && config.motdHostQwkid ? config.motdHostQwkid : '');
+    var configuredSystem = normalizeUpper(config && config.motdHostSystem ? config.motdHostSystem : '');
+    var configuredHost = normalizeUpper(config && config.host ? config.host : '');
+    var localQwkid = normalizeUpper(system && system.qwk_id ? system.qwk_id : '');
+    var localSystem = normalizeUpper(system && system.name ? system.name : '');
+
+    if (!userIsSysop()) {
+        return false;
+    }
+
+    if (configuredQwkid.length) {
+        return localQwkid === configuredQwkid;
+    }
+
+    if (configuredSystem.length) {
+        return localSystem === configuredSystem;
+    }
+
+    if (configuredHost === '127.0.0.1' || configuredHost === 'LOCALHOST') {
+        return true;
+    }
+
+    return localSystem === configuredHost;
 }
 
 function sanitizeChannel(raw, fallback) {
@@ -119,9 +179,30 @@ function getRequestValue(name, fallback) {
     return typeof fallback === 'undefined' ? '' : String(fallback);
 }
 
+function getRequestedChannel(config) {
+    var fallback = sanitizeChannel(config.defaultChannel, 'main');
+    var raw = hasRequestParam('channel') ? getRequestValue('channel', fallback) : fallback;
+
+    if (isMotdChannelName(fallback, config) && !canManageMotd(config)) {
+        fallback = 'main';
+    }
+
+    return sanitizeChannel(raw, fallback);
+}
+
 function getChannel(config) {
-    var raw = hasRequestParam('channel') ? getRequestValue('channel', config.defaultChannel) : config.defaultChannel;
-    return sanitizeChannel(raw, config.defaultChannel);
+    var fallback = sanitizeChannel(config.defaultChannel, 'main');
+    var channel = getRequestedChannel(config);
+
+    if (isMotdChannelName(fallback, config) && !canManageMotd(config)) {
+        fallback = 'main';
+    }
+
+    if (isMotdChannelName(channel, config) && !canManageMotd(config)) {
+        return fallback;
+    }
+
+    return channel;
 }
 
 function getRequestText(name) {
@@ -362,15 +443,23 @@ function listPublicChannelNames(client, config) {
         names.push(normalized);
     }
 
-    addName(config.defaultChannel);
+    addName(getDefaultPublicChannel(config));
+
+    if (canManageMotd(config)) {
+        addName(getMotdChannelName(config));
+    }
 
     for (index = 0; index < registryKeys.length; index += 1) {
-        addName(registryKeys[index]);
+        name = sanitizeChannel(registryKeys[index], '');
+        if (!name.length || (isMotdChannelName(name, config) && !canManageMotd(config))) {
+            continue;
+        }
+        addName(name);
     }
 
     for (index = 0; index < channelKeys.length; index += 1) {
         name = sanitizeChannel(channelKeys[index], '');
-        if (!name.length || seen[name.toUpperCase()]) {
+        if (!name.length || seen[name.toUpperCase()] || (isMotdChannelName(name, config) && !canManageMotd(config))) {
             continue;
         }
 
@@ -381,6 +470,29 @@ function listPublicChannelNames(client, config) {
     }
 
     return names.sort();
+}
+
+function getDefaultPublicChannel(config) {
+    var fallback = sanitizeChannel(config && config.defaultChannel ? config.defaultChannel : 'main', 'main');
+
+    if (isMotdChannelName(fallback, config) && !canManageMotd(config)) {
+        return 'main';
+    }
+
+    return fallback;
+}
+
+function loadLatestMotdMessage(client, config) {
+    var history = getRecentHistory(client, 'channels.' + getMotdChannelName(config) + '.history', Math.max(10, config.maxHistory));
+    var index = 0;
+
+    for (index = history.length - 1; index >= 0; index -= 1) {
+        if (!isPrivateMessage(history[index])) {
+            return history[index];
+        }
+    }
+
+    return null;
 }
 
 function summarizePublicChannel(client, channelName, sinceTimestamp, ownAlias, config) {
@@ -557,8 +669,14 @@ var reply = { error: 'invalid request' };
 
 switch (action) {
     case 'history':
+        var requestedHistoryChannel = getRequestedChannel(config);
         var historyChannel = getChannel(config);
         var historyCount = 60;
+
+        if (isMotdChannelName(requestedHistoryChannel, config) && !canManageMotd(config)) {
+            reply = { error: 'channel unavailable' };
+            break;
+        }
 
         if (hasRequestParam('count')) {
             var requestedCount = parseInt(getRequestValue('count', ''), 10);
@@ -589,7 +707,13 @@ switch (action) {
         break;
 
     case 'who':
+        var requestedWhoChannel = getRequestedChannel(config);
         var whoChannel = getChannel(config);
+
+        if (isMotdChannelName(requestedWhoChannel, config) && !canManageMotd(config)) {
+            reply = { error: 'channel unavailable' };
+            break;
+        }
 
         reply = withClient(config, function (client) {
             var users = [];
@@ -652,6 +776,22 @@ switch (action) {
         });
         break;
 
+    case 'motd':
+        reply = withClient(config, function (client) {
+            var ownAlias = user.number > 0 ? user.alias : '';
+            var latest = loadLatestMotdMessage(client, config);
+            var formatted = latest ? formatChatMessage(latest, ownAlias) : null;
+
+            return {
+                channel: getMotdChannelName(config),
+                message: formatted,
+                previewText: formatted ? trimText(formatted.text) : '',
+                timestamp: formatted && formatted.timestamp ? formatted.timestamp : 0,
+                serverTime: Date.now()
+            };
+        });
+        break;
+
     case 'private':
         if (user.number < 1 || (settings.guest && user.alias === settings.guest)) {
             reply = { error: 'authentication required' };
@@ -700,7 +840,14 @@ switch (action) {
             break;
         }
 
+        var requestedCreateChannel = getRequestedChannel(config);
         var createChannelName = getChannel(config);
+
+        if (isMotdChannelName(requestedCreateChannel, config) && !canManageMotd(config)) {
+            reply = { error: 'motd is reserved for the host sysop' };
+            break;
+        }
+
         reply = withClient(config, function (client) {
             ensureHistoryArray(client, 'channels.' + createChannelName + '.history');
             registerPublicChannel(client, createChannelName);
@@ -723,16 +870,24 @@ switch (action) {
             break;
         }
 
+        var requestedSendChannel = getRequestedChannel(config);
         var sendChannel = getChannel(config);
         var messageText = getRequestText('message');
+
+        if (isMotdChannelName(requestedSendChannel, config) && !canManageMotd(config)) {
+            reply = { error: 'motd is reserved for the host sysop' };
+            break;
+        }
 
         if (!messageText.length) {
             reply = { error: 'empty message' };
             break;
         }
 
-        if (messageText.length > 1000) {
-            messageText = messageText.substr(0, 1000);
+        var maxMessageLen = messageText.indexOf('[BITMAP|') === 0 ? 32000 : 1000;
+
+        if (messageText.length > maxMessageLen) {
+            messageText = messageText.substr(0, maxMessageLen);
         }
         messageText = messageText.replace(/[\x00-\x08\x0b\x0c\x0e-\x1f]/g, '');
 
@@ -795,8 +950,10 @@ switch (action) {
             break;
         }
 
-        if (privateMessageText.length > 1000) {
-            privateMessageText = privateMessageText.substr(0, 1000);
+        var maxPrivateLen = privateMessageText.indexOf('[BITMAP|') === 0 ? 32000 : 1000;
+
+        if (privateMessageText.length > maxPrivateLen) {
+            privateMessageText = privateMessageText.substr(0, maxPrivateLen);
         }
         privateMessageText = privateMessageText.replace(/[\x00-\x08\x0b\x0c\x0e-\x1f]/g, '');
 

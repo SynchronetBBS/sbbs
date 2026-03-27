@@ -31,10 +31,10 @@ export function trimChannelMessages(channel: ChatChannel, maxHistory: number): v
   }
 }
 
-export function buildNoticeMessage(text: string): ChatMessage {
+export function buildNoticeMessage(text: string, timestamp?: number): ChatMessage {
   return {
     str: text,
-    time: new Date().getTime()
+    time: timestamp || new Date().getTime()
   };
 }
 

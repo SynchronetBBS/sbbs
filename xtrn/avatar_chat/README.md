@@ -96,10 +96,27 @@ Supported keys:
 - `host`
 - `port`
 - `default_channel`
+- `motd_channel`
+- `motd_host_system`
+- `motd_host_qwkid`
 - `max_history`
 - `poll_delay_ms`
 - `reconnect_delay_ms`
 - `input_max_length`
+
+`motd_channel` defaults to `motd`.
+
+Only the host BBS sysop can post to the MOTD channel. Avatar Chat decides that by checking:
+
+- the current user is a sysop
+- the local BBS matches the configured MOTD host identity
+
+If your local `system.name` already matches the chat host, you can usually leave the MOTD host keys blank. If not, set one of these explicitly:
+
+- `motd_host_qwkid` for the host BBS QWK ID
+- `motd_host_system` for the host BBS display/system name
+
+The MOTD itself is still readable by everyone through the Avatar Chat headers, but the `motd` room is hidden from normal room lists unless the current user is the host sysop.
 
 The example local/self-hosted configuration is in:
 
