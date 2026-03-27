@@ -231,7 +231,7 @@ server_handshake_auth_thread(void *arg)
 		return 0;
 	}
 	uint8_t username[256];
-	size_t username_len;
+	size_t username_len = sizeof(username);
 	ctx->result = dssh_auth_server(ctx->sess, &auth_cbs,
 	    username, &username_len);
 	return 0;

@@ -2,11 +2,6 @@
 
 ## Open
 
-8. `dssh_auth_server()` username output has no buffer size parameter.
-   Copies up to 255 bytes into `username_out` (capped by internal
-   `saved_user[256]`), but caller cannot specify output buffer size.
-
-
 10. `auth_server_impl()` is too large — should be split into per-method
     handler functions (none, password, publickey, keyboard-interactive).
     Similarly `get_methods_impl()` and `auth_kbi_impl()` would benefit
@@ -102,17 +97,6 @@
     with the session mutex.
 
 ### Thread safety audit (items 51-59)
-
-52. **Data race: setup-to-normal transition in `dssh_session_accept_channel()`.**
-    Lines 1873-1903 write `ch->setup_mode = false`, `ch->chan_type`,
-    `ch->window_max`, the buffer union, and `ch->window_change_cb` without
-    holding `buf_mtx`.  The demux thread reads `setup_mode` (line 616) and
-    `chan_type` (line 633) under `buf_mtx`.  If a packet arrives during the
-    transition, the demux thread can see `setup_mode == false` with
-    `chan_type` still 0 (dropped message) or partially initialized buffers
-    (write to uninitialized memory).  Fix: hold `buf_mtx` while setting
-    `chan_type`, initializing buffers, and installing callbacks; set
-    `setup_mode = false` last inside the critical section.
 
 53. **Data race: rekey counters read by demux without `tx_mtx`.**
     `dssh_transport_rekey_needed()` (lines 266-277) reads
@@ -320,6 +304,20 @@
     the session is already in an unrecoverable state.
 
 ## Closed
+
+- Data race: setup-to-normal transition in `dssh_session_accept_channel()`
+  (was item 52).  Lines writing `chan_type`, buffer union, `window_max`,
+  and `window_change_cb` now execute under `buf_mtx`.  `setup_mode` set
+  to `false` last inside the critical section, so the demux thread either
+  sees `setup_mode == true` (mailbox path) or a fully initialized channel.
+  Fail path also protected.
+
+- `dssh_auth_server()` username buffer size (was item 8).  Made
+  `username_out_len` an in/out parameter: on input `*username_out_len` is
+  the caller's buffer capacity; on output it is the number of bytes written.
+  Usernames longer than the buffer are truncated.  Internal 255-byte cap
+  retained.  All callers updated to initialize capacity before calling.
+  Added truncation test (`auth/server/small_username_buffer`).
 
 - Data race: unlocked flag pre-checks in write functions (was items 58,
   59).  Moved `!ch->open || ch->eof_sent || ch->close_received` checks

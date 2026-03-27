@@ -183,7 +183,7 @@ int main(void)
         .keyboard_interactive_cb = my_kbi_cb,
     };
     uint8_t username[256];
-    size_t username_len;
+    size_t username_len = sizeof(username);
     dssh_auth_set_banner(sess, "Welcome!\r\n", NULL);
     dssh_auth_server(sess, &auth_cbs, username, &username_len);
 
@@ -413,7 +413,7 @@ struct dssh_auth_server_cbs cbs = {
     .cbdata = my_server_context,
 };
 uint8_t username[256];
-size_t username_len;
+size_t username_len = sizeof(username);
 
 /* Optional: set a banner shown before the first auth exchange */
 dssh_auth_set_banner(sess, "Welcome to my server!\r\n", NULL);

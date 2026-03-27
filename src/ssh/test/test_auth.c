@@ -370,6 +370,7 @@ static int
 auth_server_thread(void *arg)
 {
 	struct auth_server_arg *a = arg;
+	a->username_out_len = sizeof(a->username_out);
 	a->result = dssh_auth_server(a->ctx->server, &a->cbs,
 	    a->username_out, &a->username_out_len);
 	return 0;
@@ -4303,7 +4304,7 @@ none_accept_server_thread(void *arg)
 {
 	struct auth_server_arg *sa = arg;
 	uint8_t username[256];
-	size_t username_len;
+	size_t username_len = sizeof(username);
 	sa->result = dssh_auth_server(sa->ctx->server, &sa->cbs,
 	    username, &username_len);
 	return 0;
@@ -5603,6 +5604,64 @@ test_server_null_username_out(void)
 
 	ASSERT_EQ(res, 0);
 	ASSERT_EQ(sa.result, 0);
+
+	handshake_cleanup(&ctx);
+	return TEST_PASS;
+}
+
+/*
+ * Small username buffer: verify truncation (in/out username_out_len).
+ * Server has a 5-byte buffer, client sends "testuser" (8 bytes).
+ * Output should be clamped to 5 bytes with no overflow.
+ */
+static int
+small_buf_server_thread(void *arg)
+{
+	struct auth_server_arg *a = arg;
+	uint8_t small_buf[5];
+	size_t small_len = sizeof(small_buf);
+	a->result = dssh_auth_server(a->ctx->server, &a->cbs,
+	    small_buf, &small_len);
+	/* Save truncated result back for the test to inspect */
+	a->username_out_len = small_len;
+	if (small_len <= sizeof(a->username_out))
+		memcpy(a->username_out, small_buf, small_len);
+	return 0;
+}
+
+static int
+test_server_small_username_buffer(void)
+{
+	struct handshake_ctx ctx;
+	if (handshake_setup(&ctx) < 0) {
+		handshake_cleanup(&ctx);
+		return TEST_FAIL;
+	}
+
+	struct test_auth_cbdata cbdata = {0};
+	cbdata.password_result = DSSH_AUTH_SUCCESS;
+
+	struct auth_server_arg sa = {0};
+	sa.ctx = &ctx;
+	sa.cbs.methods_str = "password";
+	sa.cbs.password_cb = test_password_cb;
+	sa.cbs.cbdata = &cbdata;
+
+	thrd_t st;
+	ASSERT_TRUE(thrd_create(&st, small_buf_server_thread, &sa) == thrd_success);
+
+	/* Client: auth with an 8-byte username */
+	int res = dssh_auth_password(ctx.client, "testuser", "pass", NULL, NULL);
+
+	mock_io_close_c2s(&ctx.io);
+	mock_io_close_s2c(&ctx.io);
+	thrd_join(st, NULL);
+
+	ASSERT_EQ(res, 0);
+	ASSERT_EQ(sa.result, 0);
+	/* Verify truncation: 5-byte buffer, "testuser" is 8 bytes */
+	ASSERT_EQ_U(sa.username_out_len, 5);
+	ASSERT_MEM_EQ(sa.username_out, "testu", 5);
 
 	handshake_cleanup(&ctx);
 	return TEST_PASS;
@@ -7416,6 +7475,7 @@ static int
 pk_reject_send_fail_server_thread(void *arg)
 {
 	struct auth_server_arg *a = arg;
+	a->username_out_len = sizeof(a->username_out);
 	a->result = dssh_auth_server(a->ctx->server, &a->cbs,
 	    a->username_out, &a->username_out_len);
 	return 0;
@@ -10282,6 +10342,7 @@ static struct dssh_test_entry tests[] = {
 
 	/* Group A: defensive / edge-case tests */
 	{ "auth/server/null_username_out",       test_server_null_username_out },
+	{ "auth/server/small_username_buffer",   test_server_small_username_buffer },
 	{ "auth/get_methods_zero_buf",           test_get_methods_zero_buffer },
 	{ "auth/get_methods_del_char",           test_get_methods_del_char },
 	{ "auth/server/method_4_not_none",       test_server_method_4_not_none },

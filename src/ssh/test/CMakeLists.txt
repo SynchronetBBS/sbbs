@@ -345,6 +345,7 @@ set(AUTH_TESTS
 	auth/server/changepw_null_prompt_chg
 	auth/server/long_algo_name
 	auth/server/null_username_out
+	auth/server/small_username_buffer
 	auth/server_send_fail/svc_accept
 	auth/server_send_fail/none_success auth/server_send_fail/none_failure
 	auth/server_send_fail/pw_success auth/server_send_fail/pw_failure

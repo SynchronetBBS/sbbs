@@ -1950,8 +1950,12 @@ dssh_session_accept_channel(dssh_session sess,
          * Channel type depends on the terminal request:
          *   shell/exec -> DSSH_CHAN_SESSION (stream-based bytebufs)
          *   subsystem  -> DSSH_CHAN_RAW    (message-based msgqueue)
+         *
+         * Hold buf_mtx during the transition so the demux thread
+         * either sees setup_mode==true (mailbox path) or a fully
+         * initialized channel.  Set setup_mode=false last.
          */
-	ch->setup_mode = false;
+	mtx_lock(&ch->buf_mtx);
 	ch->window_max = INITIAL_WINDOW_SIZE;
 
 	if (is_subsystem) {
@@ -1966,12 +1970,15 @@ dssh_session_accept_channel(dssh_session sess,
 		ch->exit_code_received = false;
 		res = dssh_bytebuf_init(&ch->buf.session.stdout_buf,
 		        INITIAL_WINDOW_SIZE);
-		if (res < 0)
+		if (res < 0) {
+			mtx_unlock(&ch->buf_mtx);
 			goto fail;
+		}
 		res = dssh_bytebuf_init(&ch->buf.session.stderr_buf,
 		        INITIAL_WINDOW_SIZE);
 		if (res < 0) {
 			dssh_bytebuf_free(&ch->buf.session.stdout_buf);
+			mtx_unlock(&ch->buf_mtx);
 			goto fail;
 		}
 		dssh_sigqueue_init(&ch->buf.session.signals);
@@ -1983,6 +1990,9 @@ dssh_session_accept_channel(dssh_session sess,
 		ch->window_change_cbdata = cbs->cbdata;
 	}
 
+	ch->setup_mode = false;
+	mtx_unlock(&ch->buf_mtx);
+
 	if (request_type != NULL)
 		*request_type = ch->req_type;
 	if (request_data != NULL)
@@ -1990,7 +2000,9 @@ dssh_session_accept_channel(dssh_session sess,
 	return ch;
 
 fail:
+	mtx_lock(&ch->buf_mtx);
 	ch->setup_mode = false;
+	mtx_unlock(&ch->buf_mtx);
 	unregister_channel(sess, ch);
 	free(ch->setup_payload);
 	cnd_destroy(&ch->poll_cnd);

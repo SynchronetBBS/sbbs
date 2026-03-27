@@ -233,8 +233,12 @@ struct dssh_auth_server_cbs {
  * appropriate callback.  Sends SUCCESS, FAILURE, PK_OK, or
  * PASSWD_CHANGEREQ as appropriate.
  *
- * On return, username_out and *username_out_len contain the
- * authenticated user (copied into the caller's buffer).
+ * username_out_len is in/out: on input *username_out_len is the
+ * buffer capacity; on output it is the number of bytes written.
+ * Usernames longer than the buffer are truncated.  The library
+ * internally caps usernames at 255 bytes.
+ * Pass NULL for both username_out and username_out_len to skip
+ * username output.
  *
  * Returns 0 on successful authentication.
  */

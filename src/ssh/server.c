@@ -1006,7 +1006,7 @@ handle_connection(void)
 	set_banner("Welcome to the DeuceSSH test server, have fun!\r\n");
 
 	uint8_t auth_user[256];
-	size_t  auth_user_len;
+	size_t  auth_user_len = sizeof(auth_user);
 
 	res = dssh_auth_server(sess, &auth_cbs, auth_user, &auth_user_len);
 	if (res < 0) {

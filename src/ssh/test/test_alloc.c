@@ -607,7 +607,7 @@ changereq_server_thread(void *arg)
 {
 	struct changereq_server_arg *a = arg;
 	uint8_t username[256];
-	size_t username_len;
+	size_t username_len = sizeof(username);
 
 	/* Arm the allocator just before calling dssh_auth_server,
 	 * which will internally call send_passwd_changereq. */
@@ -723,7 +723,7 @@ pk_ok_server_thread(void *arg)
 {
 	struct pk_ok_server_arg *a = arg;
 	uint8_t username[256];
-	size_t username_len;
+	size_t username_len = sizeof(username);
 
 	mock_alloc_fail_after(a->fail_at);
 	a->result = dssh_auth_server(a->ctx->server, &a->cbs,
@@ -1139,7 +1139,7 @@ auth_alloc_server_thread(void *arg)
 	mtx_unlock(ctx->barrier_mtx);
 
 	uint8_t username[256];
-	size_t username_len;
+	size_t username_len = sizeof(username);
 	ctx->result = dssh_auth_server(ctx->sess, ctx->cbs,
 	    username, &username_len);
 	if (ctx->result < 0)
@@ -1285,7 +1285,7 @@ auth_only_server_thread(void *arg)
 {
 	struct auth_alloc_ctx *ctx = arg;
 	uint8_t username[256];
-	size_t username_len;
+	size_t username_len = sizeof(username);
 	ctx->result = dssh_auth_server(ctx->sess, ctx->cbs,
 	    username, &username_len);
 	if (ctx->result < 0)

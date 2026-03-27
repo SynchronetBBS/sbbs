@@ -982,8 +982,10 @@ auth_server_impl(dssh_session sess,
 
 done:
 	if ((username_out != NULL) && (username_out_len != NULL)) {
-		memcpy(username_out, saved_user, saved_user_len);
-		*username_out_len = saved_user_len;
+		size_t copy_len = saved_user_len < *username_out_len
+		        ? saved_user_len : *username_out_len;
+		memcpy(username_out, saved_user, copy_len);
+		*username_out_len = copy_len;
 	}
 	return 0;
 }
