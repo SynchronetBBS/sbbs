@@ -971,7 +971,7 @@ dssh_auth_server(dssh_session sess,
     uint8_t *username_out, size_t *username_out_len)
 {
 	if (sess == NULL || cbs == NULL)
-		return DSSH_ERROR_INIT;
+		return DSSH_ERROR_INVALID;
 	return auth_check_terminated(sess,
 	           auth_server_impl(sess, cbs, username_out, username_out_len));
 }
@@ -981,7 +981,7 @@ dssh_auth_set_banner(dssh_session sess, const char *message,
     const char *language)
 {
 	if (sess == NULL)
-		return DSSH_ERROR_INIT;
+		return DSSH_ERROR_INVALID;
 
 	free(sess->pending_banner);
 	free(sess->pending_banner_lang);
@@ -1051,7 +1051,7 @@ dssh_auth_request_service(dssh_session sess, const char *service)
 		return ret;
 	if (msg_type != SSH_MSG_SERVICE_ACCEPT) {
 		dssh_transport_send_unimplemented(sess, sess->trans.last_rx_seq);
-		return DSSH_ERROR_INIT;
+		return DSSH_ERROR_PARSE;
 	}
 
 	return 0;
@@ -1169,7 +1169,7 @@ methods_done:
 		return DSSH_AUTH_METHODS_AVAILABLE;
 	}
 
-	return DSSH_ERROR_INIT;
+	return DSSH_ERROR_PARSE;
 }
 
 DSSH_PUBLIC int
@@ -1284,7 +1284,7 @@ auth_password_impl(dssh_session sess,
 			return 0;
 
 		if (msg_type == SSH_MSG_USERAUTH_FAILURE)
-			return DSSH_ERROR_INIT;
+			return DSSH_ERROR_AUTH_REJECTED;
 
 		if (msg_type == SSH_MSG_USERAUTH_PASSWD_CHANGEREQ) {
 			if (passwd_change_cb == NULL)
@@ -1347,7 +1347,7 @@ auth_password_impl(dssh_session sess,
 		}
 
 		dssh_transport_send_unimplemented(sess, sess->trans.last_rx_seq);
-		return DSSH_ERROR_INIT;
+		return DSSH_ERROR_PARSE;
 	}
 }
 
@@ -1357,7 +1357,7 @@ dssh_auth_password(dssh_session sess,
     dssh_auth_passwd_change_cb passwd_change_cb, void *passwd_change_cbdata)
 {
 	if (sess == NULL || username == NULL || password == NULL)
-		return DSSH_ERROR_INIT;
+		return DSSH_ERROR_INVALID;
 	return auth_check_terminated(sess,
 	           auth_password_impl(sess, username, password,
 	           passwd_change_cb, passwd_change_cbdata));
@@ -1369,7 +1369,7 @@ auth_kbi_impl(dssh_session sess,
     void *cbdata)
 {
 	if (prompt_cb == NULL)
-		return DSSH_ERROR_INIT;
+		return DSSH_ERROR_INVALID;
 	{
 		int svc = ensure_auth_service(sess);
 
@@ -1438,7 +1438,7 @@ auth_kbi_impl(dssh_session sess,
 			return 0;
 
 		if (msg_type == SSH_MSG_USERAUTH_FAILURE)
-			return DSSH_ERROR_INIT;
+			return DSSH_ERROR_AUTH_REJECTED;
 
 		if (msg_type == SSH_MSG_USERAUTH_INFO_REQUEST) {
 			size_t   rpos = 1;
@@ -1665,7 +1665,7 @@ dssh_auth_keyboard_interactive(dssh_session sess,
     void *cbdata)
 {
 	if (sess == NULL || username == NULL || prompt_cb == NULL)
-		return DSSH_ERROR_INIT;
+		return DSSH_ERROR_INVALID;
 	return auth_check_terminated(sess,
 	           auth_kbi_impl(sess, username, prompt_cb, cbdata));
 }
@@ -1850,7 +1850,7 @@ auth_publickey_impl(dssh_session sess,
 	if (msg_type == SSH_MSG_USERAUTH_SUCCESS)
 		return 0;
 
-	return DSSH_ERROR_INIT;
+	return DSSH_ERROR_AUTH_REJECTED;
 }
 
 DSSH_PUBLIC int
@@ -1858,7 +1858,7 @@ dssh_auth_publickey(dssh_session sess,
     const char *username, const char *algo_name)
 {
 	if (sess == NULL || username == NULL || algo_name == NULL)
-		return DSSH_ERROR_INIT;
+		return DSSH_ERROR_INVALID;
 	return auth_check_terminated(sess,
 	           auth_publickey_impl(sess, username, algo_name));
 }

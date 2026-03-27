@@ -10,9 +10,6 @@
    Copies up to 255 bytes into `username_out` (capped by internal
    `saved_user[256]`), but caller cannot specify output buffer size.
 
-9. Client auth functions return `DSSH_ERROR_INIT` for auth rejection
-   (USERAUTH_FAILURE).  Confusing — reads as initialization error, not
-   auth failure.  Should be a distinct error code.
 
 10. `auth_server_impl()` is too large — should be split into per-method
     handler functions (none, password, publickey, keyboard-interactive).
@@ -124,6 +121,15 @@
     source character set conformance.
 
 ## Closed
+
+- Error code accuracy audit (was items 9 + 44).  Added
+  `DSSH_ERROR_AUTH_REJECTED` (-12) and `DSSH_ERROR_REJECTED` (-13).
+  Changed ~50 sites: auth rejection -> AUTH_REJECTED (3), peer channel
+  rejection -> REJECTED (2), unexpected message type -> PARSE (3),
+  NULL-arg checks -> INVALID (~36), wrong-state writes -> TERMINATED (3),
+  channel ID exhaustion -> TOOMANY (1), packet_length<2 -> PARSE (1),
+  negotiation failure -> INVALID (1), empty registration name -> INVALID (6).
+  Updated doxygen in deucessh-auth.h and all test assertions.
 
 - Data race in `dssh_session_write()` / `write_ext()` (was item 23).
   Now reads `remote_window` and `remote_max_packet` under `buf_mtx`.

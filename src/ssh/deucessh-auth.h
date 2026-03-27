@@ -89,8 +89,9 @@ typedef int (*dssh_auth_passwd_change_cb)(const uint8_t *prompt, size_t prompt_l
  * If passwd_change_cb is not NULL and the server requests a password
  * change, the callback is invoked to get the new password.
  * If passwd_change_cb is NULL and the server requests a change,
- * authentication fails with DSSH_ERROR_INIT.
- * Returns 0 on success, negative on failure or rejection.
+ * authentication fails with DSSH_ERROR_INIT (missing prerequisite).
+ * Returns 0 on success, DSSH_ERROR_AUTH_REJECTED if the server
+ * rejected credentials, or another negative error code on failure.
  */
 DSSH_PUBLIC int dssh_auth_password(dssh_session sess,
     const char *username, const char *password,

@@ -23,7 +23,9 @@ extern "C" {
 #define DSSH_ERROR_TOOLONG -8       /* Data exceeds buffer or protocol limit */
 #define DSSH_ERROR_MUST_BE_NULL -9  /* Linked list next pointer was not NULL */
 #define DSSH_ERROR_NOMORE -10       /* No more items in name-list */
-#define DSSH_ERROR_REKEY_NEEDED -11 /* Must rekey before sending more packets */
+#define DSSH_ERROR_REKEY_NEEDED -11    /* Must rekey before sending more packets */
+#define DSSH_ERROR_AUTH_REJECTED -12   /* Authentication rejected by peer */
+#define DSSH_ERROR_REJECTED -13        /* Channel open or request rejected by peer */
 
 /* Opaque session handle.  Created by session_init, freed by session_cleanup. */
 typedef struct dssh_session_s *dssh_session;

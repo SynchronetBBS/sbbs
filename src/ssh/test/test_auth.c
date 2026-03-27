@@ -2727,7 +2727,7 @@ test_kbi_failure_response(void)
 	mock_io_close_s2c(&ctx.io);
 	thrd_join(st, NULL);
 
-	ASSERT_EQ(res, DSSH_ERROR_INIT);
+	ASSERT_EQ(res, DSSH_ERROR_AUTH_REJECTED);
 
 	handshake_cleanup(&ctx);
 	return TEST_PASS;
@@ -9536,7 +9536,7 @@ test_auth_set_banner_null(void)
 	ASSERT_EQ(dssh_auth_set_banner(ctx.server, "test\r\n", NULL), 0);
 	ASSERT_EQ(dssh_auth_set_banner(ctx.server, NULL, NULL), 0);
 	ASSERT_EQ(dssh_auth_set_banner(ctx.server, "", NULL), DSSH_ERROR_INVALID);
-	ASSERT_EQ(dssh_auth_set_banner(NULL, "x\r\n", NULL), DSSH_ERROR_INIT);
+	ASSERT_EQ(dssh_auth_set_banner(NULL, "x\r\n", NULL), DSSH_ERROR_INVALID);
 
 	handshake_cleanup(&ctx);
 	return TEST_PASS;

@@ -2439,7 +2439,7 @@ test_packet_recv_too_small(void)
 	size_t payload_len;
 	int res = dssh_transport_recv_packet(sess, &msg_type,
 	    &payload, &payload_len);
-	ASSERT_EQ(res, DSSH_ERROR_TOOLONG);
+	ASSERT_EQ(res, DSSH_ERROR_PARSE);
 
 	dssh_session_cleanup(sess);
 	mock_io_free(&io);
@@ -2535,7 +2535,7 @@ test_register_kex_empty_name(void)
 	memset(kbuf, 0, sizeof(kbuf));
 	struct dssh_kex_s *bad = (struct dssh_kex_s *)kbuf;
 	bad->name[0] = '\0';
-	ASSERT_EQ(dssh_transport_register_kex(bad), DSSH_ERROR_TOOLONG);
+	ASSERT_EQ(dssh_transport_register_kex(bad), DSSH_ERROR_INVALID);
 
 	dssh_test_reset_global_config();
 	return TEST_PASS;
@@ -2610,7 +2610,7 @@ test_register_comp_empty_name(void)
 	memset(cbuf, 0, sizeof(cbuf));
 	struct dssh_comp_s *bad = (struct dssh_comp_s *)cbuf;
 	bad->name[0] = '\0';
-	ASSERT_EQ(dssh_transport_register_comp(bad), DSSH_ERROR_TOOLONG);
+	ASSERT_EQ(dssh_transport_register_comp(bad), DSSH_ERROR_INVALID);
 
 	dssh_test_reset_global_config();
 	return TEST_PASS;
@@ -2643,7 +2643,7 @@ test_register_lang_empty_name(void)
 	memset(lbuf, 0, sizeof(lbuf));
 	struct dssh_language_s *bad = (struct dssh_language_s *)lbuf;
 	bad->name[0] = '\0';
-	ASSERT_EQ(dssh_transport_register_lang(bad), DSSH_ERROR_TOOLONG);
+	ASSERT_EQ(dssh_transport_register_lang(bad), DSSH_ERROR_INVALID);
 
 	dssh_test_reset_global_config();
 	return TEST_PASS;
@@ -2712,7 +2712,7 @@ test_register_key_algo_toolong(void)
 
 	/* Empty name */
 	ka->name[0] = '\0';
-	ASSERT_EQ(dssh_transport_register_key_algo(ka), DSSH_ERROR_TOOLONG);
+	ASSERT_EQ(dssh_transport_register_key_algo(ka), DSSH_ERROR_INVALID);
 
 	dssh_test_reset_global_config();
 	return TEST_PASS;
@@ -2747,7 +2747,7 @@ test_register_enc_toolong(void)
 	ASSERT_EQ(dssh_transport_register_enc(enc), DSSH_ERROR_TOOLONG);
 
 	enc->name[0] = '\0';
-	ASSERT_EQ(dssh_transport_register_enc(enc), DSSH_ERROR_TOOLONG);
+	ASSERT_EQ(dssh_transport_register_enc(enc), DSSH_ERROR_INVALID);
 
 	dssh_test_reset_global_config();
 	return TEST_PASS;
@@ -2782,7 +2782,7 @@ test_register_mac_toolong(void)
 	ASSERT_EQ(dssh_transport_register_mac(mac), DSSH_ERROR_TOOLONG);
 
 	mac->name[0] = '\0';
-	ASSERT_EQ(dssh_transport_register_mac(mac), DSSH_ERROR_TOOLONG);
+	ASSERT_EQ(dssh_transport_register_mac(mac), DSSH_ERROR_INVALID);
 
 	dssh_test_reset_global_config();
 	return TEST_PASS;
@@ -4835,7 +4835,7 @@ test_negotiate_no_common_kex(void)
 	/* peer_kexinit is still set from the first run, so
 	 * kexinit will skip recv and go straight to negotiate */
 	int res = dssh_transport_kexinit(client);
-	ASSERT_EQ(res, DSSH_ERROR_INIT);
+	ASSERT_EQ(res, DSSH_ERROR_INVALID);
 
 	/* Restore */
 	gconf.kex_head = saved_kex_head;
@@ -6200,7 +6200,7 @@ test_negotiate_no_common_comp_s2c(void)
 
 	/* Re-run kexinit — should fail because comp_s2c has no match */
 	int res = dssh_transport_kexinit(client);
-	ASSERT_EQ(res, DSSH_ERROR_INIT);
+	ASSERT_EQ(res, DSSH_ERROR_INVALID);
 
 	/* Verify comp_c2s succeeded but comp_s2c is NULL */
 	ASSERT_NOT_NULL(client->trans.comp_c2s_selected);

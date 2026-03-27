@@ -237,7 +237,7 @@ DSSH_PUBLIC int
 dssh_transport_handshake(dssh_session sess)
 {
 	if (sess == NULL)
-		return DSSH_ERROR_INIT;
+		return DSSH_ERROR_INVALID;
 	int res = dssh_transport_version_exchange(sess);
 
 	if (res < 0)
@@ -349,7 +349,7 @@ dssh_transport_disconnect(dssh_session sess,
     uint32_t reason, const char *desc)
 {
 	if (sess == NULL || desc == NULL)
-		return DSSH_ERROR_INIT;
+		return DSSH_ERROR_INVALID;
 	size_t dlen = strlen(desc);
 
 	if (dlen > DSSH_DISCONNECT_DESC_MAX)
@@ -674,7 +674,11 @@ recv_packet_raw(dssh_session sess,
 		goto rx_done;
 	}
 
-	if ((packet_length < 2) || (packet_length + 4 > sess->trans.packet_buf_sz)) {
+	if (packet_length < 2) {
+		ret = DSSH_ERROR_PARSE;
+		goto rx_done;
+	}
+	if (packet_length + 4 > sess->trans.packet_buf_sz) {
 		ret = DSSH_ERROR_TOOLONG;
 		goto rx_done;
 	}
@@ -1342,7 +1346,7 @@ kexinit_fail:
 		dssh_transport_disconnect(sess,
 		    SSH_DISCONNECT_KEY_EXCHANGE_FAILED,
 		    "no common algorithm");
-		return DSSH_ERROR_INIT;
+		return DSSH_ERROR_INVALID;
 	}
 
         /* Handle first_kex_packet_follows (RFC 4253 s7.1):
@@ -2027,7 +2031,7 @@ DSSH_PUBLIC int
 dssh_key_algo_set_ctx(const char *name, void *ctx)
 {
 	if (name == NULL)
-		return DSSH_ERROR_INIT;
+		return DSSH_ERROR_INVALID;
 	dssh_key_algo ka = dssh_transport_find_key_algo(name);
 
 	if (ka == NULL)
@@ -2049,10 +2053,12 @@ DSSH_PUBLIC int
 dssh_transport_register_kex(dssh_kex kex)
 {
 	if (kex == NULL)
-		return DSSH_ERROR_INIT;
+		return DSSH_ERROR_INVALID;
 	if (gconf.used)
 		return DSSH_ERROR_TOOLATE;
-	if ((strlen(kex->name) > 64) || (strlen(kex->name) == 0))
+	if (strlen(kex->name) == 0)
+		return DSSH_ERROR_INVALID;
+	if (strlen(kex->name) > 64)
 		return DSSH_ERROR_TOOLONG;
 	if (kex->next)
 		return DSSH_ERROR_MUST_BE_NULL;
@@ -2071,10 +2077,12 @@ DSSH_PUBLIC int
 dssh_transport_register_key_algo(dssh_key_algo key_algo)
 {
 	if (key_algo == NULL)
-		return DSSH_ERROR_INIT;
+		return DSSH_ERROR_INVALID;
 	if (gconf.used)
 		return DSSH_ERROR_TOOLATE;
-	if ((strlen(key_algo->name) > 64) || (strlen(key_algo->name) == 0))
+	if (strlen(key_algo->name) == 0)
+		return DSSH_ERROR_INVALID;
+	if (strlen(key_algo->name) > 64)
 		return DSSH_ERROR_TOOLONG;
 	if (key_algo->next)
 		return DSSH_ERROR_MUST_BE_NULL;
@@ -2093,10 +2101,12 @@ DSSH_PUBLIC int
 dssh_transport_register_enc(dssh_enc enc)
 {
 	if (enc == NULL)
-		return DSSH_ERROR_INIT;
+		return DSSH_ERROR_INVALID;
 	if (gconf.used)
 		return DSSH_ERROR_TOOLATE;
-	if ((strlen(enc->name) > 64) || (strlen(enc->name) == 0))
+	if (strlen(enc->name) == 0)
+		return DSSH_ERROR_INVALID;
+	if (strlen(enc->name) > 64)
 		return DSSH_ERROR_TOOLONG;
 	if (enc->next)
 		return DSSH_ERROR_MUST_BE_NULL;
@@ -2115,10 +2125,12 @@ DSSH_PUBLIC int
 dssh_transport_register_mac(dssh_mac mac)
 {
 	if (mac == NULL)
-		return DSSH_ERROR_INIT;
+		return DSSH_ERROR_INVALID;
 	if (gconf.used)
 		return DSSH_ERROR_TOOLATE;
-	if ((strlen(mac->name) > 64) || (strlen(mac->name) == 0))
+	if (strlen(mac->name) == 0)
+		return DSSH_ERROR_INVALID;
+	if (strlen(mac->name) > 64)
 		return DSSH_ERROR_TOOLONG;
 	if (mac->next)
 		return DSSH_ERROR_MUST_BE_NULL;
@@ -2137,10 +2149,12 @@ DSSH_PUBLIC int
 dssh_transport_register_comp(dssh_comp comp)
 {
 	if (comp == NULL)
-		return DSSH_ERROR_INIT;
+		return DSSH_ERROR_INVALID;
 	if (gconf.used)
 		return DSSH_ERROR_TOOLATE;
-	if ((strlen(comp->name) > 64) || (strlen(comp->name) == 0))
+	if (strlen(comp->name) == 0)
+		return DSSH_ERROR_INVALID;
+	if (strlen(comp->name) > 64)
 		return DSSH_ERROR_TOOLONG;
 	if (comp->next)
 		return DSSH_ERROR_MUST_BE_NULL;
@@ -2159,10 +2173,12 @@ DSSH_PUBLIC int
 dssh_transport_register_lang(dssh_language lang)
 {
 	if (lang == NULL)
-		return DSSH_ERROR_INIT;
+		return DSSH_ERROR_INVALID;
 	if (gconf.used)
 		return DSSH_ERROR_TOOLATE;
-	if ((strlen(lang->name) > 64) || (strlen(lang->name) == 0))
+	if (strlen(lang->name) == 0)
+		return DSSH_ERROR_INVALID;
+	if (strlen(lang->name) > 64)
 		return DSSH_ERROR_TOOLONG;
 	if (lang->next)
 		return DSSH_ERROR_MUST_BE_NULL;
@@ -2252,7 +2268,7 @@ dssh_transport_set_callbacks(dssh_transport_io_cb tx,
 	if (gconf.used)
 		return DSSH_ERROR_TOOLATE;
 	if (tx == NULL || rx == NULL || rx_line == NULL)
-		return DSSH_ERROR_INIT;
+		return DSSH_ERROR_INVALID;
 	gconf.tx = tx;
 	gconf.rx = rx;
 	gconf.rx_line = rx_line;

@@ -4492,7 +4492,7 @@ test_session_write_not_open(void)
 	ch.close_received = false;
 
 	int64_t r = dssh_session_write(s, &ch, (const uint8_t *)"x", 1);
-	ASSERT_EQ(r, DSSH_ERROR_INIT);
+	ASSERT_EQ(r, DSSH_ERROR_TERMINATED);
 
 	dssh_session_cleanup(s);
 	dssh_test_reset_global_config();
@@ -4515,7 +4515,7 @@ test_session_write_ext_not_open(void)
 	ch.close_received = false;
 
 	int64_t r = dssh_session_write_ext(s, &ch, (const uint8_t *)"x", 1);
-	ASSERT_EQ(r, DSSH_ERROR_INIT);
+	ASSERT_EQ(r, DSSH_ERROR_TERMINATED);
 
 	dssh_session_cleanup(s);
 	dssh_test_reset_global_config();
@@ -4538,7 +4538,7 @@ test_session_write_close_received(void)
 	ch.close_received = true;
 
 	int64_t r = dssh_session_write(s, &ch, (const uint8_t *)"x", 1);
-	ASSERT_EQ(r, DSSH_ERROR_INIT);
+	ASSERT_EQ(r, DSSH_ERROR_TERMINATED);
 
 	dssh_session_cleanup(s);
 	dssh_test_reset_global_config();
@@ -4561,7 +4561,7 @@ test_session_write_ext_close_received(void)
 	ch.close_received = true;
 
 	int64_t r = dssh_session_write_ext(s, &ch, (const uint8_t *)"x", 1);
-	ASSERT_EQ(r, DSSH_ERROR_INIT);
+	ASSERT_EQ(r, DSSH_ERROR_TERMINATED);
 
 	dssh_session_cleanup(s);
 	dssh_test_reset_global_config();
@@ -4584,7 +4584,7 @@ test_channel_write_not_open(void)
 	ch.close_received = false;
 
 	int res = dssh_channel_write(s, &ch, (const uint8_t *)"x", 1);
-	ASSERT_EQ(res, DSSH_ERROR_INIT);
+	ASSERT_EQ(res, DSSH_ERROR_TERMINATED);
 
 	dssh_session_cleanup(s);
 	dssh_test_reset_global_config();
@@ -4607,7 +4607,7 @@ test_channel_write_close_received(void)
 	ch.close_received = true;
 
 	int res = dssh_channel_write(s, &ch, (const uint8_t *)"x", 1);
-	ASSERT_EQ(res, DSSH_ERROR_INIT);
+	ASSERT_EQ(res, DSSH_ERROR_TERMINATED);
 
 	dssh_session_cleanup(s);
 	dssh_test_reset_global_config();
