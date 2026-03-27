@@ -1,12 +1,12 @@
 // Avatar Chat - Auto-generated, do not edit directly.
-// Built: 2026-03-22T23:08:08.707Z
+// Built: 2026-03-25T22:59:12.277Z
 load("sbbsdefs.js");
 load("key_defs.js");
 load("frame.js");
 load("json-client.js");
 load("json-chat.js");
 (function() {
-  // build/util/text.js
+  // repo/xtrn/avatar_chat/build/util/text.js
   function clamp(value, minimum, maximum) {
     if (value < minimum) {
       return minimum;
@@ -162,7 +162,7 @@ load("json-chat.js");
     return s;
   }
 
-  // build/domain/chat-model.js
+  // repo/xtrn/avatar_chat/build/domain/chat-model.js
   function normalizeChannelName(name, fallback) {
     var trimmed = trimText(name);
     if (trimmed.length) {
@@ -179,10 +179,10 @@ load("json-chat.js");
       channel.messages.splice(0, overflow);
     }
   }
-  function buildNoticeMessage(text) {
+  function buildNoticeMessage(text, timestamp) {
     return {
       str: text,
-      time: (/* @__PURE__ */ new Date()).getTime()
+      time: timestamp || (/* @__PURE__ */ new Date()).getTime()
     };
   }
   function groupMessages(messages, ownAlias) {
@@ -237,7 +237,375 @@ load("json-chat.js");
     return groups;
   }
 
-  // build/domain/private-messages.js
+  // repo/xtrn/avatar_chat/build/domain/bitmap.js
+  var LENGTH_BASE = [3, 4, 5, 6, 7, 8, 9, 10, 11, 13, 15, 17, 19, 23, 27, 31, 35, 43, 51, 59, 67, 83, 99, 115, 131, 163, 195, 227, 258];
+  var LENGTH_EXTRA = [0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4, 5, 5, 5, 5, 0];
+  var DISTANCE_BASE = [1, 2, 3, 4, 5, 7, 9, 13, 17, 25, 33, 49, 65, 97, 129, 193, 257, 385, 513, 769, 1025, 1537, 2049, 3073, 4097, 6145, 8193, 12289, 16385, 24577];
+  var DISTANCE_EXTRA = [0, 0, 0, 0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 7, 7, 8, 8, 9, 9, 10, 10, 11, 11, 12, 12, 13, 13];
+  function isBitmapMessage(text) {
+    return typeof text === "string" && text.indexOf("[BITMAP|") === 0 && text.charAt(text.length - 1) === "]";
+  }
+  function parseBitmapMessage(text) {
+    var inner = "";
+    var parts = [];
+    var width = 0;
+    var height = 0;
+    if (!isBitmapMessage(text)) {
+      return null;
+    }
+    inner = text.slice(1, -1);
+    parts = inner.split("|");
+    if (parts.length !== 5 || parts[0] !== "BITMAP") {
+      return null;
+    }
+    width = parseInt(parts[1] || "", 10) || 0;
+    height = parseInt(parts[2] || "", 10) || 0;
+    if (width < 1 || height < 1 || !(parts[4] || "").length || (parts[4] || "").length % 2 !== 0) {
+      return null;
+    }
+    return {
+      width: width,
+      height: height,
+      fromName: parts[3] || "",
+      hexData: parts[4] || ""
+    };
+  }
+  function decodeBitmap(hexData, expectedWidth, expectedHeight) {
+    var compressed = hexToBytes(hexData);
+    var decompressed = inflateZlib(compressed, 0);
+    var bitmap = [];
+    var fgs = [];
+    var bgs = [];
+    var chars = [];
+    var dataHeight = 0;
+    var dataLength = 0;
+    var slicePoint = 0;
+    var totalPixels = 0;
+    var dataWidth = 0;
+    var width = 0;
+    var height = 0;
+    var actualWidth = 0;
+    var actualHeight = 0;
+    var index = 0;
+    if (decompressed.length < 4) {
+      return {
+        bitmap: bitmap,
+        width: 0,
+        height: 0,
+        actualWidth: 0,
+        actualHeight: 0
+      };
+    }
+    dataHeight = decompressed[0] || 0;
+    if (dataHeight < 1) {
+      return {
+        bitmap: bitmap,
+        width: 0,
+        height: 0,
+        actualWidth: 0,
+        actualHeight: 0
+      };
+    }
+    dataLength = decompressed.length - 1;
+    slicePoint = Math.floor(dataLength / 3);
+    totalPixels = slicePoint;
+    dataWidth = Math.floor(totalPixels / dataHeight);
+    width = expectedWidth || dataWidth;
+    height = expectedHeight || dataHeight;
+    if (width * height !== totalPixels) {
+      width = dataWidth;
+      height = dataHeight;
+    }
+    actualWidth = dataWidth;
+    actualHeight = dataHeight;
+    for (index = 0; index < slicePoint; index += 1) {
+      fgs.push(decompressed[1 + index] || 0);
+      bgs.push(decompressed[1 + slicePoint + index] || 0);
+      chars.push(decompressed[1 + slicePoint * 2 + index] || 32);
+    }
+    for (index = 0; index < totalPixels; index += 1) {
+      var charCode = chars[index] || 32;
+      var ch = "";
+      try {
+        ch = ascii(charCode);
+      } catch (_error) {
+        ch = String.fromCharCode(charCode);
+      }
+      bitmap.push({
+        ch: ch,
+        charCode: charCode,
+        fg: fgs[index] || 0,
+        bg: bgs[index] || 0
+      });
+    }
+    return {
+      bitmap: bitmap,
+      width: width,
+      height: height,
+      actualWidth: actualWidth,
+      actualHeight: actualHeight
+    };
+  }
+  function hexToBytes(hex) {
+    var bytes = [];
+    var index = 0;
+    for (index = 0; index < hex.length; index += 2) {
+      bytes.push(parseInt(hex.substr(index, 2), 16) || 0);
+    }
+    return bytes;
+  }
+  function createInflateState(bytes, offset) {
+    return {
+      bytes: bytes,
+      position: offset,
+      bitBuffer: 0,
+      bitCount: 0
+    };
+  }
+  function readByte(state) {
+    var value = state.bytes[state.position];
+    state.position += 1;
+    return value === void 0 ? 0 : value;
+  }
+  function readBits(state, count) {
+    var buffer = state.bitBuffer;
+    var available = state.bitCount;
+    var out = 0;
+    while (available < count) {
+      buffer |= readByte(state) << available;
+      available += 8;
+    }
+    out = buffer & (1 << count) - 1;
+    state.bitBuffer = buffer >>> count;
+    state.bitCount = available - count;
+    return out;
+  }
+  function alignByte(state) {
+    state.bitBuffer = 0;
+    state.bitCount = 0;
+  }
+  function reverseBits(value, count) {
+    var result = 0;
+    var index = 0;
+    for (index = 0; index < count; index += 1) {
+      result = result << 1 | value & 1;
+      value >>= 1;
+    }
+    return result;
+  }
+  function buildHuffmanTable(codeLengths) {
+    var table = {
+      maxBits: 0,
+      map: {}
+    };
+    var counts = [];
+    var nextCodes = [];
+    var index = 0;
+    var code = 0;
+    for (index = 0; index < codeLengths.length; index += 1) {
+      if ((codeLengths[index] || 0) > table.maxBits) {
+        table.maxBits = codeLengths[index] || 0;
+      }
+    }
+    for (index = 0; index <= table.maxBits; index += 1) {
+      counts[index] = 0;
+    }
+    for (index = 0; index < codeLengths.length; index += 1) {
+      counts[codeLengths[index] || 0] = (counts[codeLengths[index] || 0] || 0) + 1;
+    }
+    counts[0] = 0;
+    for (index = 1; index <= table.maxBits; index += 1) {
+      code = code + (counts[index - 1] || 0) << 1;
+      nextCodes[index] = code;
+    }
+    for (index = 0; index < codeLengths.length; index += 1) {
+      var length = codeLengths[index] || 0;
+      if (!length) {
+        continue;
+      }
+      var nextCode = nextCodes[length] || 0;
+      var key = String(reverseBits(nextCode, length) | length << 16);
+      table.map[key] = index;
+      nextCodes[length] = nextCode + 1;
+    }
+    return table;
+  }
+  function readHuffmanCode(table, state) {
+    var code = 0;
+    var length = 0;
+    for (length = 1; length <= table.maxBits; length += 1) {
+      code |= readBits(state, 1) << length - 1;
+      if (table.map[String(code | length << 16)] !== void 0) {
+        return table.map[String(code | length << 16)] || 0;
+      }
+    }
+    throw new Error("Huffman decode failed");
+  }
+  function buildFixedLiteralTable() {
+    var lengths = [];
+    var index = 0;
+    for (index = 0; index <= 287; index += 1) {
+      lengths[index] = 0;
+    }
+    for (index = 0; index <= 143; index += 1) {
+      lengths[index] = 8;
+    }
+    for (index = 144; index <= 255; index += 1) {
+      lengths[index] = 9;
+    }
+    for (index = 256; index <= 279; index += 1) {
+      lengths[index] = 7;
+    }
+    for (index = 280; index <= 287; index += 1) {
+      lengths[index] = 8;
+    }
+    return buildHuffmanTable(lengths);
+  }
+  function buildFixedDistanceTable() {
+    var lengths = [];
+    var index = 0;
+    for (index = 0; index < 32; index += 1) {
+      lengths[index] = 5;
+    }
+    return buildHuffmanTable(lengths);
+  }
+  function decodeDynamicTables(state) {
+    var hlit = readBits(state, 5) + 257;
+    var hdist = readBits(state, 5) + 1;
+    var hclen = readBits(state, 4) + 4;
+    var order = [16, 17, 18, 0, 8, 7, 9, 6, 10, 5, 11, 4, 12, 3, 13, 2, 14, 1, 15];
+    var codeLengths = [];
+    var index = 0;
+    for (index = 0; index < 19; index += 1) {
+      codeLengths[index] = 0;
+    }
+    for (index = 0; index < hclen; index += 1) {
+      codeLengths[order[index] || 0] = readBits(state, 3);
+    }
+    var codeTable = buildHuffmanTable(codeLengths);
+    function readLengths(count) {
+      var out = [];
+      var previous = 0;
+      while (out.length < count) {
+        var symbol = readHuffmanCode(codeTable, state);
+        var repeat = 0;
+        var repeatIndex = 0;
+        if (symbol <= 15) {
+          out.push(symbol);
+          previous = symbol;
+          continue;
+        }
+        if (symbol === 16) {
+          repeat = 3 + readBits(state, 2);
+          for (repeatIndex = 0; repeatIndex < repeat; repeatIndex += 1) {
+            out.push(previous);
+          }
+          continue;
+        }
+        if (symbol === 17) {
+          repeat = 3 + readBits(state, 3);
+          previous = 0;
+          for (repeatIndex = 0; repeatIndex < repeat; repeatIndex += 1) {
+            out.push(0);
+          }
+          continue;
+        }
+        if (symbol === 18) {
+          repeat = 11 + readBits(state, 7);
+          previous = 0;
+          for (repeatIndex = 0; repeatIndex < repeat; repeatIndex += 1) {
+            out.push(0);
+          }
+          continue;
+        }
+        throw new Error("Bad RLE in code lengths");
+      }
+      return out;
+    }
+    return {
+      lit: buildHuffmanTable(readLengths(hlit)),
+      dist: buildHuffmanTable(readLengths(hdist))
+    };
+  }
+  function inflateRaw(bytes, start) {
+    var state = createInflateState(bytes, start);
+    var output = [];
+    var fixedLiterals = buildFixedLiteralTable();
+    var fixedDistances = buildFixedDistanceTable();
+    var done = false;
+    while (!done) {
+      var isFinal = readBits(state, 1);
+      var blockType = readBits(state, 2);
+      var literalTable = null;
+      var distanceTable = null;
+      if (blockType === 0) {
+        var length = 0;
+        var notLength = 0;
+        var index = 0;
+        alignByte(state);
+        length = readByte(state) | readByte(state) << 8;
+        notLength = readByte(state) | readByte(state) << 8;
+        if ((length ^ 65535) !== notLength) {
+          throw new Error("Stored block length mismatch");
+        }
+        for (index = 0; index < length; index += 1) {
+          output.push(readByte(state));
+        }
+      } else {
+        if (blockType === 1) {
+          literalTable = fixedLiterals;
+          distanceTable = fixedDistances;
+        } else if (blockType === 2) {
+          var tables = decodeDynamicTables(state);
+          literalTable = tables.lit;
+          distanceTable = tables.dist;
+        } else {
+          throw new Error("Invalid DEFLATE block type");
+        }
+        while (literalTable && distanceTable) {
+          var symbol = readHuffmanCode(literalTable, state);
+          if (symbol < 256) {
+            output.push(symbol);
+            continue;
+          }
+          if (symbol === 256) {
+            break;
+          }
+          var lengthIndex = symbol - 257;
+          var length = (LENGTH_BASE[lengthIndex] || 0) + (LENGTH_EXTRA[lengthIndex] || 0 ? readBits(state, LENGTH_EXTRA[lengthIndex] || 0) : 0);
+          var distanceSymbol = readHuffmanCode(distanceTable, state);
+          var distance = (DISTANCE_BASE[distanceSymbol] || 0) + (DISTANCE_EXTRA[distanceSymbol] || 0 ? readBits(state, DISTANCE_EXTRA[distanceSymbol] || 0) : 0);
+          var base = output.length - distance;
+          var copyIndex = 0;
+          if (base < 0) {
+            throw new Error("Invalid DEFLATE distance");
+          }
+          for (copyIndex = 0; copyIndex < length; copyIndex += 1) {
+            output.push(output[base + copyIndex] || 0);
+          }
+        }
+      }
+      if (isFinal) {
+        done = true;
+      }
+    }
+    return output;
+  }
+  function inflateZlib(bytes, offset) {
+    var position = offset || 0;
+    var cmf = bytes[position] || 0;
+    var flg = bytes[position + 1] || 0;
+    position += 2;
+    if ((cmf & 15) !== 8) {
+      throw new Error("Unsupported zlib compression method");
+    }
+    if (flg & 32) {
+      position += 4;
+    }
+    return inflateRaw(bytes, position);
+  }
+
+  // repo/xtrn/avatar_chat/build/domain/private-messages.js
   function normalizePrivateNick(nick) {
     var name = trimText(String(nick && nick.name ? nick.name : ""));
     var avatar = nick && nick.avatar ? trimText(String(nick.avatar)) : "";
@@ -290,9 +658,10 @@ load("json-chat.js");
     return sender;
   }
 
-  // build/domain/ui.js
+  // repo/xtrn/avatar_chat/build/domain/ui.js
   var ACTION_BAR_ACTIONS = [
     { id: "who", label: "/who" },
+    { id: "img", label: "/img" },
     { id: "channels", label: "/channels" },
     { id: "private", label: "/private" },
     { id: "help", label: "/help" },
@@ -300,7 +669,7 @@ load("json-chat.js");
     { id: "exit", label: "Esc exit" }
   ];
 
-  // build/input/input-buffer.js
+  // repo/xtrn/avatar_chat/build/input/input-buffer.js
   var InputBuffer = (
     /** @class */
     function() {
@@ -414,7 +783,7 @@ load("json-chat.js");
     }()
   );
 
-  // build/render/avatar.js
+  // repo/xtrn/avatar_chat/build/render/avatar.js
   var routeMapCache = null;
   function resolveAvatarDimensions(avatarLib) {
     if (avatarLib && avatarLib.defs) {
@@ -618,7 +987,7 @@ load("json-chat.js");
     }
   }
 
-  // build/render/modal-renderer.js
+  // repo/xtrn/avatar_chat/build/render/modal-renderer.js
   var BOX_TOP_LEFT = "\xDA";
   var BOX_TOP_RIGHT = "\xBF";
   var BOX_BOTTOM_LEFT = "\xC0";
@@ -985,7 +1354,7 @@ load("json-chat.js");
     renderHelpModal(modalFrame, modal);
   }
 
-  // build/render/transcript-renderer.js
+  // repo/xtrn/avatar_chat/build/render/transcript-renderer.js
   function measureBubbleWidth(rows) {
     var width = 0;
     var index = 0;
@@ -1200,7 +1569,7 @@ load("json-chat.js");
     return renderState;
   }
 
-  // build/app/avatar-chat-app.js
+  // repo/xtrn/avatar_chat/build/app/avatar-chat-app.js
   var INPUT_ESCAPE_SEQUENCE_MAP = {
     "\x1B[A": KEY_UP,
     "\x1B[B": KEY_DOWN,
@@ -1224,6 +1593,7 @@ load("json-chat.js");
   var INPUT_ESCAPE_SEQUENCE_PREFIXES = {
     "\x1B": true
   };
+  var BITMAP_MAX_HISTORY = 20;
   (function seedInputEscapePrefixes() {
     var sequence = "";
     var prefixLength = 0;
@@ -1241,6 +1611,7 @@ load("json-chat.js");
     function() {
       function AvatarChatApp2(config) {
         this.config = config;
+        var defaultChannel = this.getDefaultPublicChannel();
         this.inputBuffer = new InputBuffer(config.inputMaxLength);
         this.avatarCache = {};
         this.avatarLib = null;
@@ -1262,8 +1633,8 @@ load("json-chat.js");
           width: 0,
           height: 0
         };
-        this.channelOrder = [normalizeChannelName(config.defaultChannel)];
-        this.currentChannel = normalizeChannelName(config.defaultChannel);
+        this.channelOrder = [defaultChannel];
+        this.currentChannel = defaultChannel;
         this.reconnectAt = 0;
         this.lastError = "";
         this.shouldExit = false;
@@ -1292,6 +1663,16 @@ load("json-chat.js");
         this.lastAnimTickAt = 0;
         this.embeddedAvatars = {};
         this.userBbsCache = {};
+        this.bitmapQueue = [];
+        this.bitmapViewerActive = false;
+        this.bitmapViewerIndex = -1;
+        this.bitmapViewerScrollY = 0;
+        this.bitmapViewerUse256Color = true;
+        this.bitmapViewerSignature = "";
+        this.unviewedBitmapCount = 0;
+        this.motdText = "";
+        this.motdTimestamp = 0;
+        this.lastMotdRefreshAt = 0;
         try {
           this.avatarLib = load({}, "avatar_lib.js");
         } catch (error) {
@@ -1349,9 +1730,19 @@ load("json-chat.js");
           this.publicChannelMessageKeys = {};
           this.publicChannelUnreadCounts = {};
           this.lastPrivateHistorySyncAt = 0;
+          this.bitmapQueue = [];
+          this.bitmapViewerActive = false;
+          this.bitmapViewerIndex = -1;
+          this.bitmapViewerScrollY = 0;
+          this.bitmapViewerUse256Color = true;
+          this.bitmapViewerSignature = "";
+          this.unviewedBitmapCount = 0;
+          this.motdText = "";
+          this.motdTimestamp = 0;
+          this.lastMotdRefreshAt = 0;
           for (index = 0; index < desiredChannels.length; index += 1) {
             var desiredChannel = desiredChannels[index];
-            var channelName = normalizeChannelName(desiredChannel || this.config.defaultChannel, this.config.defaultChannel);
+            var channelName = normalizeChannelName(desiredChannel || this.getDefaultPublicChannel(), this.getDefaultPublicChannel());
             if (!this.getChannelByName(channelName)) {
               this.chat.join(channelName);
             }
@@ -1359,10 +1750,11 @@ load("json-chat.js");
           this.loadPrivateHistory();
           this.syncPublicChannelUnreadCounts(false);
           this.syncChannelOrder();
+          this.refreshMotd(true);
           if (desiredCurrent && (this.getChannelByName(desiredCurrent) || this.getPrivateThreadByName(desiredCurrent))) {
             this.currentChannel = desiredCurrent;
           } else if (this.channelOrder.length > 0) {
-            this.currentChannel = this.channelOrder[0] || this.config.defaultChannel;
+            this.currentChannel = this.channelOrder[0] || this.getDefaultPublicChannel();
           }
           this.markCurrentViewRead(this.currentChannel);
           this.transcriptScrollOffsetBlocks = 0;
@@ -1385,6 +1777,7 @@ load("json-chat.js");
           this.syncPublicChannelUnreadCounts(true);
           this.syncPrivateHistory();
           this.syncChannelOrder();
+          this.refreshMotd(false);
           this.trimHistories();
         } catch (error) {
           try {
@@ -1445,7 +1838,9 @@ load("json-chat.js");
       };
       AvatarChatApp2.prototype.appendPrivateMessage = function(message, markUnread) {
         var peerNick = resolvePrivatePeerNick(message, user.alias);
+        var isIncoming = !this.isOwnMessage(message);
         var thread;
+        var addedBitmap = false;
         if (!peerNick) {
           return;
         }
@@ -1455,6 +1850,11 @@ load("json-chat.js");
         thread = this.ensurePrivateThread(peerNick);
         thread.messages.push(message);
         trimChannelMessages(thread, this.config.maxHistory);
+        addedBitmap = this.processBitmapMessage(thread.name, message);
+        if (addedBitmap && isIncoming) {
+          thread.messages.push(buildNoticeMessage(this.buildPrivateBitmapNoticeText(message), message.time));
+          trimChannelMessages(thread, this.config.maxHistory);
+        }
         if (markUnread && message.nick && message.nick.name && message.nick.name.toUpperCase() !== user.alias.toUpperCase() && this.currentChannel.toUpperCase() !== thread.name.toUpperCase()) {
           thread.unreadCount += 1;
           this.lastPrivateSender = peerNick;
@@ -1502,17 +1902,81 @@ load("json-chat.js");
         }
         return null;
       };
+      AvatarChatApp2.prototype.getMotdChannelName = function() {
+        return normalizeChannelName(this.config.motdChannel || "motd", "motd");
+      };
+      AvatarChatApp2.prototype.isMotdChannelName = function(name) {
+        var trimmed = trimText(String(name || ""));
+        if (!trimmed.length) {
+          return false;
+        }
+        return normalizeChannelName(trimmed, "").toUpperCase() === this.getMotdChannelName().toUpperCase();
+      };
+      AvatarChatApp2.prototype.isCurrentUserSysop = function() {
+        if (user.is_sysop === true) {
+          return true;
+        }
+        if (user.security && typeof user.security.level === "number" && user.security.level >= 90) {
+          return true;
+        }
+        if (typeof user.compare_ars === "function") {
+          try {
+            return user.compare_ars("SYSOP") === true;
+          } catch (_error) {
+          }
+        }
+        return false;
+      };
+      AvatarChatApp2.prototype.isMotdHostSystem = function() {
+        var configuredQwkid = trimText(String(this.config.motdHostQwkid || "")).toUpperCase();
+        var configuredSystem = trimText(String(this.config.motdHostSystem || "")).toUpperCase();
+        var configuredHost = trimText(String(this.config.host || "")).toUpperCase();
+        var localQwkid = trimText(String(system.qwk_id || "")).toUpperCase();
+        var localSystem = trimText(String(system.name || "")).toUpperCase();
+        if (configuredQwkid.length) {
+          return localQwkid === configuredQwkid;
+        }
+        if (configuredSystem.length) {
+          return localSystem === configuredSystem;
+        }
+        if (configuredHost === "127.0.0.1" || configuredHost === "LOCALHOST") {
+          return true;
+        }
+        return localSystem === configuredHost;
+      };
+      AvatarChatApp2.prototype.canManageMotd = function() {
+        return this.isCurrentUserSysop() && this.isMotdHostSystem();
+      };
+      AvatarChatApp2.prototype.getDefaultPublicChannel = function() {
+        var defaultChannel = normalizeChannelName(this.config.defaultChannel || "main", "main");
+        if (this.isMotdChannelName(defaultChannel) && !this.canManageMotd()) {
+          return "main";
+        }
+        return defaultChannel;
+      };
+      AvatarChatApp2.prototype.shouldIncludePublicChannel = function(channelName) {
+        if (!channelName || channelName.charAt(0) === "@") {
+          return false;
+        }
+        if (this.isMotdChannelName(channelName) && !this.canManageMotd()) {
+          return false;
+        }
+        return true;
+      };
       AvatarChatApp2.prototype.getJoinedPublicChannelNames = function() {
         var publicChannels = [];
         var index = 0;
         for (index = 0; index < this.channelOrder.length; index += 1) {
           var channelName = this.channelOrder[index];
-          if (channelName && channelName.charAt(0) !== "@") {
+          if (channelName && this.shouldIncludePublicChannel(channelName)) {
             publicChannels.push(channelName);
           }
         }
+        if (this.canManageMotd() && !this.channelExists(publicChannels, this.getMotdChannelName())) {
+          publicChannels.push(this.getMotdChannelName());
+        }
         if (!publicChannels.length) {
-          publicChannels.push(normalizeChannelName(this.config.defaultChannel));
+          publicChannels.push(this.getDefaultPublicChannel());
         }
         return publicChannels;
       };
@@ -1521,6 +1985,55 @@ load("json-chat.js");
       };
       AvatarChatApp2.prototype.getMailboxHistoryPath = function() {
         return "channels." + user.alias + ".history";
+      };
+      AvatarChatApp2.prototype.buildMotdPreview = function(message) {
+        var text = trimText(String(message && message.str ? message.str : "").replace(/\s+/g, " "));
+        var parsed = parseBitmapMessage(text);
+        if (parsed) {
+          return "[image " + String(parsed.width || 0) + "x" + String(parsed.height || 0) + "]";
+        }
+        return text;
+      };
+      AvatarChatApp2.prototype.refreshMotd = function(force) {
+        var now = (/* @__PURE__ */ new Date()).getTime();
+        var motdChannel = this.getMotdChannelName();
+        var history = [];
+        var nextText = "";
+        var nextTimestamp = 0;
+        var index = 0;
+        if (!this.chat) {
+          if (this.motdText.length || this.motdTimestamp > 0) {
+            this.motdText = "";
+            this.motdTimestamp = 0;
+            this.headerSignature = "";
+          }
+          this.lastMotdRefreshAt = 0;
+          return;
+        }
+        if (!force && now - this.lastMotdRefreshAt < 5e3) {
+          return;
+        }
+        this.lastMotdRefreshAt = now;
+        try {
+          history = this.chat.client.slice("chat", "channels." + motdChannel + ".history", -10, void 0, 1) || [];
+        } catch (_error) {
+          history = [];
+        }
+        for (index = history.length - 1; index >= 0; index -= 1) {
+          var message = history[index];
+          var preview = this.buildMotdPreview(message);
+          if (!message || isPrivateMessage(message) || !preview.length) {
+            continue;
+          }
+          nextText = preview;
+          nextTimestamp = message.time || 0;
+          break;
+        }
+        if (nextText !== this.motdText || nextTimestamp !== this.motdTimestamp) {
+          this.motdText = nextText;
+          this.motdTimestamp = nextTimestamp;
+          this.headerSignature = "";
+        }
       };
       AvatarChatApp2.prototype.ensureHistoryArray = function(location) {
         var existing;
@@ -1536,6 +2049,310 @@ load("json-chat.js");
           return;
         }
         this.chat.client.write("chat", location, [], 2);
+      };
+      AvatarChatApp2.prototype.normalizeBitmapSenderName = function(name) {
+        var trimmed = trimText(name);
+        if (trimmed.indexOf("BLOCKBRAIN:") === 0) {
+          return trimText(trimmed.substr(11));
+        }
+        if (trimmed.indexOf("DISCORD:") === 0) {
+          return trimText(trimmed.substr(8));
+        }
+        return trimmed;
+      };
+      AvatarChatApp2.prototype.isOwnNickName = function(name) {
+        return !!name.length && name.toUpperCase() === user.alias.toUpperCase();
+      };
+      AvatarChatApp2.prototype.isOwnMessage = function(message) {
+        return !!(message && message.nick && message.nick.name && this.isOwnNickName(message.nick.name));
+      };
+      AvatarChatApp2.prototype.buildPrivateBitmapNoticeText = function(message) {
+        var sender = "";
+        if (message && message.nick && message.nick.name) {
+          sender = this.normalizeBitmapSenderName(message.nick.name);
+        }
+        if (!sender.length) {
+          sender = "Someone";
+        }
+        return sender + " sent you a private bitmap. Type /img to see it.";
+      };
+      AvatarChatApp2.prototype.formatBitmapViewerElapsed = function(timestamp) {
+        var diffMs = Math.max(0, (/* @__PURE__ */ new Date()).getTime() - timestamp);
+        var totalMinutes = Math.floor(diffMs / 6e4);
+        var days = Math.floor(totalMinutes / 1440);
+        var hours = Math.floor(totalMinutes % 1440 / 60);
+        var minutes = totalMinutes % 60;
+        if (days > 0) {
+          return String(days) + "d" + (hours > 0 ? " " + String(hours) + "h" : "") + " ago";
+        }
+        if (hours > 0) {
+          return String(hours) + "h" + (minutes > 0 ? " " + String(minutes) + "m" : "") + " ago";
+        }
+        if (minutes > 0) {
+          return String(minutes) + "m ago";
+        }
+        return "now";
+      };
+      AvatarChatApp2.prototype.formatPrivateBitmapViewerTimestamp = function(timestamp) {
+        var friendly = compactTimestamp(formatRelativeTime(timestamp));
+        var elapsed = this.formatBitmapViewerElapsed(timestamp);
+        if (!friendly.length) {
+          return elapsed;
+        }
+        if (!elapsed.length) {
+          return friendly;
+        }
+        return friendly + " - " + elapsed;
+      };
+      AvatarChatApp2.prototype.renderBitmapViewerTitle = function(frame, entry) {
+        var fillAttr = BG_BLACK | LIGHTGRAY;
+        var remaining = frame.width;
+        function writeSegment(text, attr) {
+          var chunk = text || "";
+          if (remaining < 1 || !chunk.length) {
+            return;
+          }
+          if (chunk.length > remaining) {
+            chunk = chunk.substr(0, remaining);
+          }
+          frame.putmsg(chunk, attr);
+          remaining -= chunk.length;
+        }
+        frame.gotoxy(1, 1);
+        if (entry.isIncomingPrivate) {
+          writeSegment("[", BG_BLACK | WHITE);
+          writeSegment("PRIVATE IMAGE", BG_BLACK | LIGHTRED);
+          writeSegment("] ", BG_BLACK | WHITE);
+          writeSegment(entry.fromName, BG_BLACK | YELLOW);
+          writeSegment(" sent to you ", fillAttr);
+          writeSegment(this.formatPrivateBitmapViewerTimestamp(entry.time), BG_BLACK | WHITE);
+          writeSegment(".", fillAttr);
+        } else {
+          writeSegment("Image " + String(this.bitmapViewerIndex + 1) + "/" + String(this.bitmapQueue.length) + " | " + entry.fromName + " | " + entry.sourceChannel, BG_BLACK | LIGHTCYAN);
+        }
+        if (remaining > 0) {
+          frame.putmsg(padRight("", remaining), fillAttr);
+        }
+      };
+      AvatarChatApp2.prototype.processBitmapMessage = function(sourceChannel, message) {
+        var text = message && message.str ? String(message.str) : "";
+        var parsed = parseBitmapMessage(text);
+        var decoded;
+        var sender = "";
+        var entry;
+        if (!parsed) {
+          return false;
+        }
+        try {
+          decoded = decodeBitmap(parsed.hexData, parsed.width, parsed.height);
+        } catch (error) {
+          log("Avatar Chat bitmap decode error: " + String(error));
+          this.appendViewNotice(sourceChannel, "Received an image payload that could not be decoded.");
+          return false;
+        }
+        if (!decoded.bitmap.length) {
+          this.appendViewNotice(sourceChannel, "Received an empty image payload.");
+          return false;
+        }
+        sender = this.normalizeBitmapSenderName(parsed.fromName || (message.nick && message.nick.name ? message.nick.name : "Image"));
+        if (!sender.length) {
+          sender = "Image";
+        }
+        entry = {
+          bitmap: decoded.bitmap,
+          width: decoded.width,
+          height: decoded.height,
+          actualWidth: decoded.actualWidth,
+          actualHeight: decoded.actualHeight,
+          fromName: sender,
+          sourceChannel: sourceChannel,
+          time: message && message.time ? message.time : (/* @__PURE__ */ new Date()).getTime(),
+          isPrivate: sourceChannel.charAt(0) === "@",
+          isIncomingPrivate: sourceChannel.charAt(0) === "@" && !this.isOwnMessage(message)
+        };
+        this.bitmapQueue.push(entry);
+        while (this.bitmapQueue.length > BITMAP_MAX_HISTORY) {
+          this.bitmapQueue.shift();
+          if (this.bitmapViewerIndex > 0) {
+            this.bitmapViewerIndex -= 1;
+          }
+        }
+        if (this.bitmapQueue.length && this.bitmapViewerIndex >= this.bitmapQueue.length) {
+          this.bitmapViewerIndex = this.bitmapQueue.length - 1;
+        }
+        this.unviewedBitmapCount += 1;
+        if (this.unviewedBitmapCount > this.bitmapQueue.length) {
+          this.unviewedBitmapCount = this.bitmapQueue.length;
+        }
+        this.actionSignature = "";
+        this.statusSignature = "";
+        this.bitmapViewerSignature = "";
+        return true;
+      };
+      AvatarChatApp2.prototype.getRenderableMessages = function(messages) {
+        var visible = [];
+        var index = 0;
+        for (index = 0; index < messages.length; index += 1) {
+          var message = messages[index];
+          if (!message) {
+            continue;
+          }
+          if (message.str && isBitmapMessage(String(message.str))) {
+            continue;
+          }
+          visible.push(message);
+        }
+        return visible;
+      };
+      AvatarChatApp2.prototype.hasImagesForView = function(viewName) {
+        var normalized = trimText(viewName).toUpperCase();
+        var index = 0;
+        if (!normalized.length) {
+          return false;
+        }
+        for (index = 0; index < this.bitmapQueue.length; index += 1) {
+          var entry = this.bitmapQueue[index];
+          if (entry && entry.sourceChannel.toUpperCase() === normalized) {
+            return true;
+          }
+        }
+        return false;
+      };
+      AvatarChatApp2.prototype.findLatestBitmapIndexForView = function(viewName) {
+        var normalized = trimText(viewName).toUpperCase();
+        var index = 0;
+        if (!normalized.length) {
+          return -1;
+        }
+        for (index = this.bitmapQueue.length - 1; index >= 0; index -= 1) {
+          var entry = this.bitmapQueue[index];
+          if (entry && entry.sourceChannel.toUpperCase() === normalized) {
+            return index;
+          }
+        }
+        return -1;
+      };
+      AvatarChatApp2.prototype.openBitmapViewer = function() {
+        var startIndex = this.bitmapQueue.length - 1;
+        if (!this.bitmapQueue.length) {
+          if (this.currentChannel.length) {
+            this.appendViewNotice(this.currentChannel, "No images queued yet.");
+          }
+          return;
+        }
+        if (this.modalState) {
+          this.closeModal();
+        }
+        this.bitmapViewerActive = true;
+        if (this.currentChannel.length) {
+          var currentViewIndex = this.findLatestBitmapIndexForView(this.currentChannel);
+          if (currentViewIndex >= 0) {
+            startIndex = currentViewIndex;
+          }
+        }
+        this.bitmapViewerIndex = startIndex;
+        this.bitmapViewerScrollY = 0;
+        this.bitmapViewerUse256Color = true;
+        this.bitmapViewerSignature = "";
+        this.unviewedBitmapCount = 0;
+        this.actionSignature = "";
+        this.statusSignature = "";
+        this.transcriptSignature = "";
+        this.destroyModalFrames();
+      };
+      AvatarChatApp2.prototype.closeBitmapViewer = function() {
+        if (!this.bitmapViewerActive) {
+          return;
+        }
+        this.bitmapViewerActive = false;
+        this.bitmapViewerIndex = -1;
+        this.bitmapViewerScrollY = 0;
+        this.bitmapViewerSignature = "";
+        this.destroyModalFrames();
+        try {
+          console.print("\x1B[0m");
+          console.attributes = WHITE;
+        } catch (_error) {
+        }
+        this.resetRenderSignatures();
+      };
+      AvatarChatApp2.prototype.handleBitmapViewerInput = function(key) {
+        if (!this.bitmapViewerActive) {
+          return false;
+        }
+        switch (key) {
+          case KEY_LEFT:
+          case "[":
+            this.moveBitmapViewer(-1);
+            return true;
+          case KEY_RIGHT:
+          case "]":
+            this.moveBitmapViewer(1);
+            return true;
+          case KEY_UP:
+            this.scrollBitmapViewer(-1);
+            return true;
+          case KEY_DOWN:
+            this.scrollBitmapViewer(1);
+            return true;
+          case KEY_PAGEUP:
+            this.scrollBitmapViewer(-10);
+            return true;
+          case KEY_PAGEDN:
+            this.scrollBitmapViewer(10);
+            return true;
+          case KEY_HOME:
+            this.bitmapViewerScrollY = 0;
+            this.bitmapViewerSignature = "";
+            return true;
+          case KEY_END:
+            this.bitmapViewerScrollY = this.getBitmapViewerMaxScrollY();
+            this.bitmapViewerSignature = "";
+            return true;
+          case "c":
+          case "C":
+            this.bitmapViewerUse256Color = !this.bitmapViewerUse256Color;
+            this.bitmapViewerSignature = "";
+            return true;
+          case "\f":
+            this.bitmapViewerSignature = "";
+            return true;
+          case KEY_ESC:
+          case "\x1B":
+          case "\r":
+          case " ":
+            this.closeBitmapViewer();
+            return true;
+          default:
+            this.closeBitmapViewer();
+            return true;
+        }
+      };
+      AvatarChatApp2.prototype.moveBitmapViewer = function(delta) {
+        var nextIndex = this.bitmapViewerIndex + delta;
+        if (nextIndex < 0 || nextIndex >= this.bitmapQueue.length) {
+          return;
+        }
+        this.bitmapViewerIndex = nextIndex;
+        this.bitmapViewerScrollY = 0;
+        this.bitmapViewerSignature = "";
+      };
+      AvatarChatApp2.prototype.getBitmapViewerMaxScrollY = function() {
+        var entry = this.bitmapViewerIndex >= 0 ? this.bitmapQueue[this.bitmapViewerIndex] : null;
+        var contentHeight = Math.max(1, this.frames.height - 2);
+        if (!entry) {
+          return 0;
+        }
+        return Math.max(0, entry.height - contentHeight);
+      };
+      AvatarChatApp2.prototype.scrollBitmapViewer = function(delta) {
+        var maxScroll = this.getBitmapViewerMaxScrollY();
+        var nextScroll = clamp(this.bitmapViewerScrollY + delta, 0, maxScroll);
+        if (nextScroll === this.bitmapViewerScrollY) {
+          return;
+        }
+        this.bitmapViewerScrollY = nextScroll;
+        this.bitmapViewerSignature = "";
       };
       AvatarChatApp2.prototype.buildPublicMessageKey = function(channelName, message) {
         var sender = normalizePrivateNick(message.nick || null);
@@ -1568,7 +2385,7 @@ load("json-chat.js");
           var channel = this.chat.channels[key];
           var unreadKey = channel && channel.name ? channel.name.toUpperCase() : "";
           var index = 0;
-          if (!channel || !channel.name || channel.name.charAt(0) === "@") {
+          if (!channel || !channel.name || !this.shouldIncludePublicChannel(channel.name)) {
             continue;
           }
           if (this.publicChannelUnreadCounts[unreadKey] === void 0) {
@@ -1585,6 +2402,7 @@ load("json-chat.js");
             if (!message || !this.rememberPublicChannelMessage(channel.name, message)) {
               continue;
             }
+            this.processBitmapMessage(channel.name, message);
             if (!message.nick) {
               this.enrichJoinLeaveNotice(message, channel);
             }
@@ -1664,6 +2482,9 @@ load("json-chat.js");
         this.lastKeyTimestamp = Date.now();
         if (this.idleAnimActive) {
           this.stopIdleAnimations();
+        }
+        if (this.bitmapViewerActive && this.handleBitmapViewerInput(key)) {
+          return;
         }
         if (this.modalState && this.handleModalInput(key)) {
           return;
@@ -1915,6 +2736,9 @@ load("json-chat.js");
         if (!this.chat || !channel) {
           return false;
         }
+        if (this.isMotdChannelName(channel.name) && !this.canManageMotd()) {
+          return false;
+        }
         try {
           this.chat.client.write("chat", "channels." + channel.name + ".messages", message, 2);
           this.chat.client.push("chat", "channels." + channel.name + ".history", message, 2);
@@ -1922,6 +2746,12 @@ load("json-chat.js");
           trimChannelMessages(channel, this.config.maxHistory);
           this.transcriptSignature = "";
           this.statusSignature = "";
+          if (this.isMotdChannelName(channel.name)) {
+            this.motdText = this.buildMotdPreview(message);
+            this.motdTimestamp = timestamp;
+            this.lastMotdRefreshAt = timestamp;
+            this.headerSignature = "";
+          }
           return true;
         } catch (_error) {
           return false;
@@ -1988,6 +2818,14 @@ load("json-chat.js");
           case "HELP":
             this.performAction("help");
             return;
+          case "IMG":
+          case "IMAGE":
+          case "IMAGES":
+          case "ART":
+          case "PIC":
+          case "PICS":
+            this.openBitmapViewer();
+            return;
           case "WHO":
             this.performAction("who");
             return;
@@ -2035,12 +2873,19 @@ load("json-chat.js");
           this.appendNotice(this.currentChannel, "Usage: /me <action>");
           return;
         }
+        if (verb === "JOIN") {
+          targetChannel = normalizeChannelName(args, this.getDefaultPublicChannel());
+          if (this.isMotdChannelName(targetChannel) && !this.canManageMotd()) {
+            this.appendViewNotice(this.currentChannel, "The motd channel is reserved for the host sysop.");
+            return;
+          }
+        }
         if (!this.chat.getcmd(this.currentChannel, commandText)) {
           this.appendNotice(this.currentChannel, "Unknown command: " + commandText);
           return;
         }
         if (verb === "JOIN") {
-          targetChannel = normalizeChannelName(args, this.config.defaultChannel);
+          targetChannel = normalizeChannelName(args, this.getDefaultPublicChannel());
           this.syncChannelOrder();
           if (this.getChannelByName(targetChannel)) {
             this.currentChannel = targetChannel;
@@ -2322,6 +3167,9 @@ load("json-chat.js");
           case "who":
             this.openRosterModal();
             return;
+          case "img":
+            this.openBitmapViewer();
+            return;
           case "channels":
             this.openChannelsModal();
             return;
@@ -2405,12 +3253,13 @@ load("json-chat.js");
           selectedIndex: 0,
           lines: [
             "Slash commands:",
-            "/who, /channels, /private, /help, /join <channel>, /part [channel], /me <action>, /msg <user> <message>, /r <message>, /clear",
+            "/who, /img, /channels, /private, /help, /join <channel>, /part [channel], /me <action>, /msg <user> <message>, /r <message>, /clear",
             "",
             "Keys:",
             "Tab autocompletes user names.",
             "Esc exits the chat or closes a modal.",
             "Arrow keys, Home/End, and Backspace edit the input line.",
+            "Image viewer uses Up/Down to scroll, [ ] to switch images, and C to toggle 256/16 color.",
             "",
             "The top action bar is keyboard-first today and can grow mouse support later."
           ]
@@ -2589,7 +3438,7 @@ load("json-chat.js");
           if (Object.prototype.hasOwnProperty.call(this.chat.channels, key)) {
             var channel = this.chat.channels[key];
             var unreadCount = channel && channel.name ? this.publicChannelUnreadCounts[channel.name.toUpperCase()] || 0 : 0;
-            if (!channel || !channel.name || channel.name.charAt(0) === "@") {
+            if (!channel || !channel.name || !this.shouldIncludePublicChannel(channel.name)) {
               continue;
             }
             entries.push({
@@ -2711,7 +3560,7 @@ load("json-chat.js");
             continue;
           }
           if (channelName.toUpperCase() === this.currentChannel.toUpperCase()) {
-            this.currentChannel = this.channelOrder[(index + 1) % this.channelOrder.length] || this.config.defaultChannel;
+            this.currentChannel = this.channelOrder[(index + 1) % this.channelOrder.length] || this.getDefaultPublicChannel();
             this.markCurrentViewRead(this.currentChannel);
             this.scrollTranscriptToLatest();
             this.transcriptSignature = "";
@@ -2719,7 +3568,7 @@ load("json-chat.js");
             return;
           }
         }
-        this.currentChannel = this.channelOrder[0] || this.config.defaultChannel;
+        this.currentChannel = this.channelOrder[0] || this.getDefaultPublicChannel();
         this.markCurrentViewRead(this.currentChannel);
         this.scrollTranscriptToLatest();
       };
@@ -2733,14 +3582,14 @@ load("json-chat.js");
         for (index = 0; index < this.channelOrder.length; index += 1) {
           var channelName = this.channelOrder[index];
           var existing = channelName ? this.getChannelByName(channelName) : null;
-          if (existing) {
+          if (existing && this.shouldIncludePublicChannel(existing.name)) {
             nextOrder.push(existing.name);
           }
         }
         for (key in this.chat.channels) {
           if (Object.prototype.hasOwnProperty.call(this.chat.channels, key)) {
             var channel = this.chat.channels[key];
-            if (channel && !this.channelExists(nextOrder, channel.name)) {
+            if (channel && this.shouldIncludePublicChannel(channel.name) && !this.channelExists(nextOrder, channel.name)) {
               nextOrder.push(channel.name);
             }
           }
@@ -2760,6 +3609,10 @@ load("json-chat.js");
         }
         if (!this.currentChannel.length || !this.getChannelByName(this.currentChannel) && !this.getPrivateThreadByName(this.currentChannel)) {
           this.currentChannel = this.channelOrder[0] || "";
+          this.markCurrentViewRead(this.currentChannel);
+          this.scrollTranscriptToLatest();
+        } else if (this.isMotdChannelName(this.currentChannel) && !this.canManageMotd()) {
+          this.currentChannel = this.channelOrder[0] || this.getDefaultPublicChannel();
           this.markCurrentViewRead(this.currentChannel);
           this.scrollTranscriptToLatest();
         }
@@ -2849,6 +3702,20 @@ load("json-chat.js");
         this.frames.overlay = new Frame(1, 1, this.frames.width, this.frames.height, BG_BLACK | DARKGRAY, this.frames.root);
         this.frames.overlay.open();
         this.frames.modal = new Frame(geometry.x, geometry.y, geometry.width, geometry.height, BG_BLACK | LIGHTGRAY, this.frames.overlay);
+        this.frames.modal.open();
+      };
+      AvatarChatApp2.prototype.ensureBitmapViewerFrames = function() {
+        if (!this.bitmapViewerActive || !this.frames.root) {
+          this.destroyModalFrames();
+          return;
+        }
+        if (this.frames.overlay && this.frames.modal && this.frames.overlay.width === this.frames.width && this.frames.overlay.height === this.frames.height && this.frames.modal.width === this.frames.width && this.frames.modal.height === this.frames.height) {
+          return;
+        }
+        this.destroyModalFrames();
+        this.frames.overlay = new Frame(1, 1, this.frames.width, this.frames.height, BG_BLACK | BLACK, this.frames.root);
+        this.frames.overlay.open();
+        this.frames.modal = new Frame(1, 1, this.frames.width, this.frames.height, BG_BLACK | BLACK, this.frames.overlay);
         this.frames.modal.open();
       };
       AvatarChatApp2.prototype.getModalGeometry = function() {
@@ -3161,6 +4028,10 @@ load("json-chat.js");
       };
       AvatarChatApp2.prototype.render = function() {
         this.ensureFrames();
+        if (this.bitmapViewerActive) {
+          this.renderBitmapViewer();
+          return;
+        }
         this.renderHeader();
         this.renderActions();
         this.renderTranscript();
@@ -3176,32 +4047,85 @@ load("json-chat.js");
         var channel = this.currentChannel.length ? this.getChannelByName(this.currentChannel) : null;
         var privateThread = this.currentChannel.length ? this.getPrivateThreadByName(this.currentChannel) : null;
         var users = channel && channel.users ? channel.users.length : 0;
+        var infoText = "";
         var text = "";
+        var headerAttr = BG_GREEN | BLACK;
+        var headerState = "";
         if (privateThread) {
-          text = clipText(" Avatar Chat | pm " + privateThread.peerNick.name + " | messages " + String(privateThread.messages.length) + " | joined " + String(this.channelOrder.length) + " | " + this.config.host + ":" + String(this.config.port), this.frames.width);
+          infoText = clipText(" Avatar Chat | pm " + privateThread.peerNick.name + " | messages " + String(privateThread.messages.length) + " | joined " + String(this.channelOrder.length) + " | " + this.config.host + ":" + String(this.config.port), this.frames.width);
         } else {
-          text = clipText(" Avatar Chat | " + (this.currentChannel || "offline") + " | users " + String(users) + " | joined " + String(this.channelOrder.length) + " | " + this.config.host + ":" + String(this.config.port), this.frames.width);
+          infoText = clipText(" Avatar Chat | " + (this.currentChannel || "offline") + " | users " + String(users) + " | joined " + String(this.channelOrder.length) + " | " + this.config.host + ":" + String(this.config.port), this.frames.width);
         }
+        headerState = this.renderHeaderMode(infoText, this.frames.width, this.motdText.length ? " MOTD | " + this.motdText : "");
+        text = headerState.substr(5);
+        headerAttr = headerState.indexOf("motd|") === 0 ? BG_GREEN | WHITE : BG_GREEN | BLACK;
         if (!headerFrame) {
           return;
         }
-        if (text === this.headerSignature) {
+        if (headerState === this.headerSignature) {
           return;
         }
-        headerFrame.clear(BG_GREEN | BLACK);
+        headerFrame.clear(headerAttr);
         headerFrame.gotoxy(1, 1);
-        headerFrame.putmsg(padRight(text, headerFrame.width), BG_GREEN | BLACK);
-        this.headerSignature = text;
+        headerFrame.putmsg(padRight(text, headerFrame.width), headerAttr);
+        this.headerSignature = headerState;
+      };
+      AvatarChatApp2.prototype.renderHeaderMode = function(infoText, width, motdText) {
+        var normalizedMotd = trimText(motdText);
+        var statusText = clipText(infoText, width);
+        var now = (/* @__PURE__ */ new Date()).getTime();
+        var statusDuration = 4500;
+        var motdStartPause = 1250;
+        var motdEndPause = 900;
+        var motdStepMs = 250;
+        var motdBuffer = normalizedMotd + "   ";
+        var maxOffset = Math.max(0, motdBuffer.length - width);
+        var motdDuration = normalizedMotd.length ? maxOffset > 0 ? motdStartPause + (maxOffset + 1) * motdStepMs + motdEndPause : 5e3 : 0;
+        var totalDuration = statusDuration + motdDuration;
+        var motdElapsed = 0;
+        var scrollOffset = 0;
+        var tickerText = "";
+        if (!normalizedMotd.length || width < 12 || totalDuration <= 0) {
+          return "info|" + statusText;
+        }
+        if (now % totalDuration < statusDuration) {
+          return "info|" + statusText;
+        }
+        motdElapsed = now % totalDuration - statusDuration;
+        if (maxOffset <= 0) {
+          return "motd|" + clipText(normalizedMotd, width);
+        }
+        if (motdElapsed <= motdStartPause) {
+          scrollOffset = 0;
+        } else if (motdElapsed >= motdStartPause + (maxOffset + 1) * motdStepMs) {
+          scrollOffset = maxOffset;
+        } else {
+          scrollOffset = Math.floor((motdElapsed - motdStartPause) / motdStepMs);
+          if (scrollOffset > maxOffset) {
+            scrollOffset = maxOffset;
+          }
+        }
+        tickerText = motdBuffer.substr(scrollOffset, width);
+        return "motd|" + padRight(tickerText, width);
       };
       AvatarChatApp2.prototype.renderActions = function() {
         var actionsFrame = this.frames.actions;
         var unreadPmCount = this.getUnreadPrivateThreadCount();
+        var imageCount = this.bitmapQueue.length;
+        var unviewedImageCount = this.unviewedBitmapCount;
         var flashPhase = unreadPmCount > 0 ? Math.floor((/* @__PURE__ */ new Date()).getTime() / 500) % 2 : 0;
+        var imageFlashPhase = unviewedImageCount > 0 ? Math.floor((/* @__PURE__ */ new Date()).getTime() / 500) % 2 : 0;
         var actions = ACTION_BAR_ACTIONS.map(function(action) {
           var nextAction = {
             id: action.id,
             label: action.label
           };
+          if (action.id === "img" && imageCount > 0) {
+            nextAction.label = "/img [" + String(imageCount) + "]";
+            if (unviewedImageCount > 0) {
+              nextAction.attr = imageFlashPhase ? BG_RED | YELLOW : BG_CYAN | BLACK;
+            }
+          }
           if (action.id === "private" && unreadPmCount > 0) {
             nextAction.label = "/private [" + String(unreadPmCount) + "]";
             nextAction.attr = flashPhase ? BG_RED | YELLOW : BG_CYAN | BLACK;
@@ -3224,7 +4148,8 @@ load("json-chat.js");
         var transcriptFrame = this.frames.transcript;
         var channel = this.currentChannel.length ? this.getChannelByName(this.currentChannel) : null;
         var privateThread = this.currentChannel.length ? this.getPrivateThreadByName(this.currentChannel) : null;
-        var messages = channel ? channel.messages : privateThread ? privateThread.messages : [];
+        var rawMessages = channel ? channel.messages : privateThread ? privateThread.messages : [];
+        var messages = this.getRenderableMessages(rawMessages);
         var signature = this.buildTranscriptSignature(messages);
         var renderState;
         var emptyText = "";
@@ -3239,9 +4164,9 @@ load("json-chat.js");
         } else if (!channel && !privateThread) {
           emptyText = "No joined channels. Use /join <channel>.";
         } else if (privateThread) {
-          emptyText = "No private messages yet.";
+          emptyText = this.hasImagesForView(this.currentChannel) ? "No text messages yet. Use /img to view images." : "No private messages yet.";
         } else {
-          emptyText = "No messages yet.";
+          emptyText = this.hasImagesForView(this.currentChannel) ? "No text messages yet. Use /img to view images." : "No messages yet.";
         }
         renderState = renderTranscript(transcriptFrame, messages, {
           ownAlias: user.alias,
@@ -3294,6 +4219,188 @@ load("json-chat.js");
         inputFrame.setData(cursorX - 1, 0, cursorChar, BG_CYAN | BLACK, false);
         this.inputSignature = signature;
       };
+      AvatarChatApp2.prototype.color256To16 = function(color) {
+        var normalized = color;
+        var gray = 0;
+        var index = 0;
+        var red = 0;
+        var green = 0;
+        var blue = 0;
+        var bright = 0;
+        if (normalized < 0) {
+          normalized = 0;
+        }
+        if (normalized < 16) {
+          return normalized;
+        }
+        if (normalized >= 232) {
+          gray = normalized - 232;
+          if (gray < 6) {
+            return 0;
+          }
+          if (gray < 12) {
+            return 8;
+          }
+          if (gray < 18) {
+            return 7;
+          }
+          return 15;
+        }
+        index = normalized - 16;
+        red = Math.floor(index / 36);
+        green = Math.floor(index % 36 / 6);
+        blue = index % 6;
+        bright = red > 2 || green > 2 || blue > 2 ? 8 : 0;
+        return bright | (red > 1 ? 4 : 0) | (green > 1 ? 2 : 0) | (blue > 1 ? 1 : 0);
+      };
+      AvatarChatApp2.prototype.sanitizeBitmapChar = function(cell, fg, bg) {
+        var ch = cell.ch || " ";
+        if (cell.charCode === 7 || cell.charCode === 8 || cell.charCode === 9 || cell.charCode === 10 || cell.charCode === 11 || cell.charCode === 12 || cell.charCode === 13 || cell.charCode === 27) {
+          return " ";
+        }
+        if (fg === bg && (cell.charCode === 220 || cell.charCode === 223)) {
+          try {
+            ch = ascii(219);
+          } catch (_error) {
+            ch = String.fromCharCode(219);
+          }
+        }
+        return ch;
+      };
+      AvatarChatApp2.prototype.buildBitmapViewerSignature = function() {
+        var entry = this.bitmapViewerIndex >= 0 ? this.bitmapQueue[this.bitmapViewerIndex] || null : null;
+        if (!this.bitmapViewerActive || !entry) {
+          return "";
+        }
+        return [
+          String(this.frames.width),
+          String(this.frames.height),
+          String(this.bitmapQueue.length),
+          String(this.bitmapViewerIndex),
+          String(this.bitmapViewerScrollY),
+          String(this.bitmapViewerUse256Color),
+          String(entry.time || 0),
+          String(entry.width),
+          String(entry.height),
+          String(entry.isIncomingPrivate ? Math.floor((/* @__PURE__ */ new Date()).getTime() / 6e4) : 0)
+        ].join("|");
+      };
+      AvatarChatApp2.prototype.renderBitmapViewer = function() {
+        var signature = this.buildBitmapViewerSignature();
+        var entry = this.bitmapViewerIndex >= 0 ? this.bitmapQueue[this.bitmapViewerIndex] || null : null;
+        var modalFrame = this.frames.modal;
+        var status = "";
+        var contentHeight = 0;
+        var maxScrollY = 0;
+        var row = 0;
+        if (!this.bitmapViewerActive) {
+          this.destroyModalFrames();
+          return;
+        }
+        if (!entry) {
+          this.closeBitmapViewer();
+          return;
+        }
+        this.ensureBitmapViewerFrames();
+        modalFrame = this.frames.modal;
+        if (!this.frames.overlay || !modalFrame) {
+          return;
+        }
+        maxScrollY = this.getBitmapViewerMaxScrollY();
+        if (this.bitmapViewerScrollY > maxScrollY) {
+          this.bitmapViewerScrollY = maxScrollY;
+        }
+        entry = this.bitmapQueue[this.bitmapViewerIndex] || null;
+        if (!entry) {
+          this.closeBitmapViewer();
+          return;
+        }
+        if (signature === this.bitmapViewerSignature) {
+          return;
+        }
+        contentHeight = Math.max(1, modalFrame.height - 2);
+        status = "";
+        if (this.bitmapQueue.length > 1) {
+          status += "[ ] " + String(this.bitmapViewerIndex + 1) + "/" + String(this.bitmapQueue.length) + " | ";
+        }
+        if (maxScrollY > 0) {
+          status += "Up/Down scroll | ";
+        }
+        status += "C " + (this.bitmapViewerUse256Color ? "256c" : "16c") + " | Esc close | " + String(entry.width) + "x" + String(entry.height);
+        if (maxScrollY > 0) {
+          status += " | y " + String(this.bitmapViewerScrollY) + "/" + String(maxScrollY);
+        }
+        status = clipText(status, modalFrame.width);
+        this.frames.overlay.clear(BG_BLACK | BLACK);
+        modalFrame.clear(BG_BLACK | BLACK);
+        this.renderBitmapViewerTitle(modalFrame, entry);
+        modalFrame.gotoxy(1, modalFrame.height);
+        modalFrame.putmsg(padRight(status, modalFrame.width), BG_BLACK | LIGHTCYAN);
+        if (!this.bitmapViewerUse256Color) {
+          var displayWidth = modalFrame.width;
+          for (row = 0; row < contentHeight; row += 1) {
+            var srcY = row + this.bitmapViewerScrollY;
+            var column = 0;
+            if (srcY >= entry.height) {
+              continue;
+            }
+            for (column = 0; column < displayWidth && column < entry.width; column += 1) {
+              var cell = entry.bitmap[srcY * entry.width + column];
+              var fg16 = 7;
+              var bg16 = 0;
+              var attr = WHITE;
+              var ch = " ";
+              if (!cell) {
+                continue;
+              }
+              fg16 = this.color256To16(cell.fg);
+              bg16 = this.color256To16(cell.bg);
+              ch = this.sanitizeBitmapChar(cell, fg16, bg16);
+              attr = (bg16 & 7) << 4 | fg16 & 15;
+              modalFrame.setData(column, row + 1, ch, attr, false);
+            }
+          }
+        }
+        if (this.frames.root) {
+          this.frames.root.cycle();
+        }
+        if (this.bitmapViewerUse256Color) {
+          var displayWidth = modalFrame.width;
+          for (row = 0; row < contentHeight; row += 1) {
+            var srcY = row + this.bitmapViewerScrollY;
+            var line = "";
+            var lastFg = -1;
+            var lastBg = -1;
+            var column = 0;
+            if (srcY >= entry.height) {
+              continue;
+            }
+            console.gotoxy(1, row + 2);
+            for (column = 0; column < displayWidth && column < entry.width; column += 1) {
+              var cell = entry.bitmap[srcY * entry.width + column];
+              var fg = 7;
+              var bg = 0;
+              var ch = " ";
+              if (!cell) {
+                continue;
+              }
+              fg = cell.fg;
+              bg = cell.bg;
+              ch = this.sanitizeBitmapChar(cell, fg, bg);
+              if (fg !== lastFg || bg !== lastBg) {
+                line += "\x1B[38;5;" + String(fg) + "m\x1B[48;5;" + String(bg) + "m";
+                lastFg = fg;
+                lastBg = bg;
+              }
+              line += ch;
+            }
+            line += "\x1B[0m";
+            console.print(line);
+          }
+          console.gotoxy(1, modalFrame.height);
+        }
+        this.bitmapViewerSignature = this.buildBitmapViewerSignature();
+      };
       AvatarChatApp2.prototype.renderActiveModal = function() {
         var signature = this.buildModalSignature();
         if (!this.modalState) {
@@ -3338,6 +4445,7 @@ load("json-chat.js");
       };
       AvatarChatApp2.prototype.buildStatusText = function() {
         var unreadPmCount = this.getUnreadPrivateThreadCount();
+        var imageHint = this.buildBitmapStatusHint();
         if (this.modalState) {
           switch (this.modalState.kind) {
             case "roster":
@@ -3353,18 +4461,27 @@ load("json-chat.js");
           }
         }
         if (!this.chat) {
-          return this.buildDisconnectedText() + " | /connect | Esc exit";
+          return this.buildDisconnectedText() + " | /connect | Esc exit" + imageHint;
         }
         if (this.transcriptScrollOffsetBlocks > 0) {
-          return "History " + String(this.transcriptScrollOffsetBlocks) + " back | Up/PgUp older | Down/PgDn newer | End latest";
+          return "History " + String(this.transcriptScrollOffsetBlocks) + " back | Up/PgUp older | Down/PgDn newer | End latest" + imageHint;
         }
         if (this.getPrivateThreadByName(this.currentChannel)) {
-          return "Private chat | /msg <user> <message> | /r <message> | /private | /channels | Tab user | Esc exit";
+          return "Private chat | /img | /msg <user> <message> | /r <message> | /private | /channels | Tab user | Esc exit" + imageHint;
         }
         if (unreadPmCount > 0) {
-          return "Private unread " + String(unreadPmCount) + " | /private | /msg <user> <message> | /r <message> | Tab user | Esc exit";
+          return "Private unread " + String(unreadPmCount) + " | /img | /private | /msg <user> <message> | /r <message> | Tab user | Esc exit" + imageHint;
         }
-        return "Up/PgUp history | /who /channels /private /help | /join /part /me /msg /r /clear | Tab user | Esc exit";
+        return "Up/PgUp history | /who /img /channels /private /help | /join /part /me /msg /r /clear | Tab user | Esc exit" + imageHint;
+      };
+      AvatarChatApp2.prototype.buildBitmapStatusHint = function() {
+        if (this.unviewedBitmapCount > 0) {
+          return " | new img " + String(this.unviewedBitmapCount) + " /img";
+        }
+        if (this.bitmapQueue.length > 0) {
+          return " | /img " + String(this.bitmapQueue.length);
+        }
+        return "";
       };
       AvatarChatApp2.prototype.getUnreadPrivateThreadCount = function() {
         var total = 0;
@@ -3423,6 +4540,7 @@ load("json-chat.js");
         this.statusSignature = "";
         this.inputSignature = "";
         this.modalSignature = "";
+        this.bitmapViewerSignature = "";
       };
       AvatarChatApp2.prototype.buildModalSignature = function() {
         var parts = [];
@@ -3482,7 +4600,7 @@ load("json-chat.js");
     }()
   );
 
-  // build/io/config.js
+  // repo/xtrn/avatar_chat/build/io/config.js
   var DEFAULT_IDLE = {
     enabled: true,
     idleTimeoutSeconds: 180,
@@ -3514,6 +4632,9 @@ load("json-chat.js");
     host: "127.0.0.1",
     port: 10088,
     defaultChannel: "main",
+    motdChannel: "motd",
+    motdHostSystem: "",
+    motdHostQwkid: "",
     maxHistory: 200,
     pollDelayMs: 25,
     reconnectDelayMs: 3e3,
@@ -3602,6 +4723,9 @@ load("json-chat.js");
       host: DEFAULT_CONFIG.host,
       port: DEFAULT_CONFIG.port,
       defaultChannel: DEFAULT_CONFIG.defaultChannel,
+      motdChannel: DEFAULT_CONFIG.motdChannel,
+      motdHostSystem: DEFAULT_CONFIG.motdHostSystem,
+      motdHostQwkid: DEFAULT_CONFIG.motdHostQwkid,
       maxHistory: DEFAULT_CONFIG.maxHistory,
       pollDelayMs: DEFAULT_CONFIG.pollDelayMs,
       reconnectDelayMs: DEFAULT_CONFIG.reconnectDelayMs,
@@ -3614,6 +4738,9 @@ load("json-chat.js");
     config.host = readString(file, "host", DEFAULT_CONFIG.host);
     config.port = readNumber(file, "port", DEFAULT_CONFIG.port);
     config.defaultChannel = readString(file, "default_channel", DEFAULT_CONFIG.defaultChannel);
+    config.motdChannel = readString(file, "motd_channel", DEFAULT_CONFIG.motdChannel);
+    config.motdHostSystem = readString(file, "motd_host_system", DEFAULT_CONFIG.motdHostSystem);
+    config.motdHostQwkid = readString(file, "motd_host_qwkid", DEFAULT_CONFIG.motdHostQwkid);
     config.maxHistory = readNumber(file, "max_history", DEFAULT_CONFIG.maxHistory);
     config.pollDelayMs = readNumber(file, "poll_delay_ms", DEFAULT_CONFIG.pollDelayMs);
     config.reconnectDelayMs = readNumber(file, "reconnect_delay_ms", DEFAULT_CONFIG.reconnectDelayMs);
@@ -3638,7 +4765,7 @@ load("json-chat.js");
     return config;
   }
 
-  // build/main.js
+  // repo/xtrn/avatar_chat/build/main.js
   function loadIdleAnimationModules() {
     try {
       js.global.CanvasAnimations = load(js.exec_dir + "lib/canvas-animations.js");

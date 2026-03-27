@@ -6,6 +6,7 @@ export interface ActionBarAction {
 
 export const ACTION_BAR_ACTIONS: ActionBarAction[] = [
   { id: "who", label: "/who" },
+  { id: "img", label: "/img" },
   { id: "channels", label: "/channels" },
   { id: "private", label: "/private" },
   { id: "help", label: "/help" },

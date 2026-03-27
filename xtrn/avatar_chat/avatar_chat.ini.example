@@ -4,6 +4,9 @@
 host = 127.0.0.1
 port = 10088
 default_channel = main
+motd_channel = motd
+motd_host_system =
+motd_host_qwkid =
 max_history = 200
 poll_delay_ms = 25
 reconnect_delay_ms = 3000
