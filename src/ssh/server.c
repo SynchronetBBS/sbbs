@@ -1162,6 +1162,9 @@ main(int argc, char **argv)
 	if (argc > 1)
 		port = atoi(argv[1]);
 
+	/* Set version */
+	dssh_transport_set_version("Mozilla/5.0", "(Windows NT 12.0; Win32; x32) AppleWebKit/540.70 (KHTML, like Gecko) Chrome/153.0.6626.357 Safari/540.70");
+
         /* Register algorithms */
 	if (dssh_transport_set_callbacks(tx, rx, rxline, NULL) != 0)
 		return 1;
