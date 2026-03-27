@@ -478,13 +478,7 @@ dssh_transport_send_packet(dssh_session sess,
          * (types 1--49) are allowed.  Block application-layer messages
          * (types 50+) until rekey completes.
          */
-        /* Every SSH packet has at least a 1-byte message type,
-         * so payload_len is always > 0 here. */
-#ifdef DSSH_TESTING
-	if (payload[0] >= SSH_MSG_USERAUTH_REQUEST) {
-#else
 	if ((payload_len > 0) && (payload[0] >= SSH_MSG_USERAUTH_REQUEST)) {
-#endif
 		while (sess->trans.rekey_in_progress && !sess->terminate)
 			cnd_wait(&sess->trans.rekey_cnd, &sess->trans.tx_mtx);
 	}
@@ -576,12 +570,7 @@ dssh_transport_send_packet(dssh_session sess,
 			enc_ctx = sess->trans.enc_s2c_ctx;
 		}
 
-                /* All enc modules always provide encrypt/decrypt functions. */
-#ifdef DSSH_TESTING
-		if ((enc != NULL) && (enc_ctx != NULL)) {
-#else
 		if ((enc != NULL) && (enc->encrypt != NULL) && (enc_ctx != NULL)) {
-#endif
 			ret = enc->encrypt(sess->trans.tx_packet, total, enc_ctx);
 			if (ret < 0)
 				goto tx_done;
@@ -656,12 +645,7 @@ recv_packet_raw(dssh_session sess,
 		enc_ctx = sess->trans.enc_c2s_ctx;
 	}
 
-        /* All enc modules always provide encrypt/decrypt functions. */
-#ifdef DSSH_TESTING
-	if ((enc != NULL) && (enc_ctx != NULL)) {
-#else
 	if ((enc != NULL) && (enc->decrypt != NULL) && (enc_ctx != NULL)) {
-#endif
 		ret = enc->decrypt(sess->trans.rx_packet, bs, enc_ctx);
 		if (ret < 0)
 			goto rx_done;
@@ -693,11 +677,7 @@ recv_packet_raw(dssh_session sess,
 		ret = gconf.rx(&sess->trans.rx_packet[bs], remaining, sess, sess->rx_cbdata);
 		if (ret < 0)
 			goto rx_done;
-#ifdef DSSH_TESTING
-		if ((enc != NULL) && (enc_ctx != NULL)) {
-#else
 		if ((enc != NULL) && (enc->decrypt != NULL) && (enc_ctx != NULL)) {
-#endif
 			ret = enc->decrypt(&sess->trans.rx_packet[bs], remaining, enc_ctx);
 			if (ret < 0)
 				goto rx_done;
@@ -1246,11 +1226,7 @@ kexinit_fail:
 
                 /* With individual names capped at 64 bytes above, the
                  * total name-list cannot exceed 1023 bytes. */
-#ifdef DSSH_TESTING
-		size_t copylen = nlen;
-#else
 		size_t copylen = nlen < sizeof(peer_lists[i]) - 1 ? nlen : sizeof(peer_lists[i]) - 1;
-#endif
 		memcpy(peer_lists[i], &pk[ppos], copylen);
 		peer_lists[i][copylen] = 0;
 		ppos += nlen;
@@ -1579,11 +1555,7 @@ dssh_transport_newkeys(dssh_session sess)
 		k_data_len = ss_sz;
 	}
 	else {
-#ifdef DSSH_TESTING
-		bool need_pad = (ss[0] & DSSH_MPINT_SIGN_BIT);
-#else
 		bool need_pad = (ss_sz > 0 && (ss[0] & DSSH_MPINT_SIGN_BIT));
-#endif
 		k_data_len = ss_sz + (need_pad ? 1 : 0);
 	}
 

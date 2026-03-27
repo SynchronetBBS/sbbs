@@ -110,10 +110,8 @@ dssh_parse_string(const uint8_t *buf, size_t bufsz, dssh_string val)
          * bufsz < 4, which is already ruled out above. */
 	int64_t ret = dssh_parse_uint32(buf, bufsz, &len);
 
-#ifndef DSSH_TESTING
 	if (ret < 4)
 		return ret;
-#endif
 #if SIZE_MAX < INT64_MAX
 	if (ret > SIZE_MAX)
 		return DSSH_ERROR_INVALID;

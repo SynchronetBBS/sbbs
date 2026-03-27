@@ -573,18 +573,11 @@ cleanup_channel_buffers(dssh_channel ch)
 	free(ch->setup_payload);
 	ch->setup_payload = NULL;
 
-        /* chan_type is always set (SESSION or RAW) before cleanup. */
-#ifdef DSSH_TESTING
-	cnd_destroy(&ch->poll_cnd);
-	mtx_destroy(&ch->buf_mtx);
-	ch->chan_type = 0;
-#else
 	if (ch->chan_type != 0) {
 		cnd_destroy(&ch->poll_cnd);
 		mtx_destroy(&ch->buf_mtx);
 		ch->chan_type = 0;
 	}
-#endif
 }
 
 /* ================================================================
