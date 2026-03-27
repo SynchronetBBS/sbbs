@@ -603,11 +603,26 @@ maybe_replenish_window(dssh_session sess, dssh_channel ch)
 		return 0;
 	}
 
-        /* Replenish when window drops below half the target */
+        /* Replenish when window drops below half the target.
+         * Cap by free buffer space so we never grant more window
+         * than the buffers can absorb. */
 	uint32_t add = 0;
 
-	if (ch->local_window < ch->window_max / 2)
+	if (ch->local_window < ch->window_max / 2) {
 		add = ch->window_max - ch->local_window;
+		if (ch->chan_type == DSSH_CHAN_SESSION) {
+			size_t buf_free = dssh_bytebuf_free_space(
+			    &ch->buf.session.stdout_buf);
+			size_t err_free = dssh_bytebuf_free_space(
+			    &ch->buf.session.stderr_buf);
+			if (err_free < buf_free)
+				buf_free = err_free;
+			uint32_t buf_cap = buf_free > UINT32_MAX
+			    ? UINT32_MAX : (uint32_t)buf_free;
+			if (add > buf_cap)
+				add = buf_cap;
+		}
+	}
 
 	mtx_unlock(&ch->buf_mtx);
 
@@ -690,13 +705,18 @@ demux_dispatch(dssh_session sess, uint8_t msg_type,
 					break;
 
 				const uint8_t *data = &payload[9];
+				uint32_t consumed = dlen;
 
-				if (ch->chan_type == DSSH_CHAN_SESSION)
-					dssh_bytebuf_write(&ch->buf.session.stdout_buf, data, dlen);
+				if (ch->chan_type == DSSH_CHAN_SESSION) {
+					size_t written = dssh_bytebuf_write(
+					    &ch->buf.session.stdout_buf,
+					    data, dlen);
+					consumed = (uint32_t)written;
+				}
 				else if (ch->chan_type == DSSH_CHAN_RAW)
 					dssh_msgqueue_push(&ch->buf.raw.queue, data, dlen);
-				if (dlen <= ch->local_window)
-					ch->local_window -= dlen;
+				if (consumed <= ch->local_window)
+					ch->local_window -= consumed;
 				else
 					ch->local_window = 0;
 			}
@@ -721,11 +741,16 @@ demux_dispatch(dssh_session sess, uint8_t msg_type,
 					break;
 
 				const uint8_t *data = &payload[13];
+				uint32_t consumed = dlen;
 
-				if ((ch->chan_type == DSSH_CHAN_SESSION) && (data_type == 1))
-					dssh_bytebuf_write(&ch->buf.session.stderr_buf, data, dlen);
-				if (dlen <= ch->local_window)
-					ch->local_window -= dlen;
+				if ((ch->chan_type == DSSH_CHAN_SESSION) && (data_type == 1)) {
+					size_t written = dssh_bytebuf_write(
+					    &ch->buf.session.stderr_buf,
+					    data, dlen);
+					consumed = (uint32_t)written;
+				}
+				if (consumed <= ch->local_window)
+					ch->local_window -= consumed;
 				else
 					ch->local_window = 0;
 			}

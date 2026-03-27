@@ -1924,6 +1924,8 @@ test_rekey_hard_limit_recv(void)
 	int res = dssh_transport_recv_packet(ctx.server, &mt,
 	    &payload, &plen);
 	ASSERT_EQ(res, DSSH_ERROR_REKEY_NEEDED);
+	/* Session must remain usable (matching send_packet's behavior) */
+	ASSERT_FALSE(dssh_session_is_terminated(ctx.server));
 
 	handshake_cleanup(&ctx);
 	return TEST_PASS;

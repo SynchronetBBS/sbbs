@@ -269,15 +269,6 @@
     unlock-for-callback pattern creates a wider window than other
     demux_dispatch paths.
 
-81. **Accept queue has no size limit — peer can exhaust memory with
-    CHANNEL_OPEN floods.**  Every incoming CHANNEL_OPEN that passes
-    the type filter is queued unconditionally in
-    `demux_channel_open()` (line 935).  A malicious peer can send
-    millions of CHANNEL_OPEN messages, each consuming a
-    `struct dssh_incoming_open` allocation, causing unbounded memory
-    growth.  Fix: add a configurable limit (e.g., 16 pending opens)
-    and auto-reject with `SSH_OPEN_RESOURCE_SHORTAGE` when full.
-
 83. **`dssh_session_cleanup()` can hang indefinitely on `thrd_join`.**
     `dssh_session_cleanup()` (ssh.c line 98) calls
     `dssh_session_terminate()` then `dssh_session_stop()`, which calls
@@ -537,3 +528,25 @@
 - Data race: `conn_initialized` changed from `bool` to `atomic_bool`
   (was item 56).  Read by `set_terminate()` from any thread, written by
   `session_start()` / `session_stop()`.
+
+- `recv_packet_raw()` asymmetric termination on REKEY_NEEDED fixed
+  (was item 15).  `send_packet()` already exempted REKEY_NEEDED from
+  session termination; `recv_packet_raw()` now does the same.  The
+  hard packet-count limit is recoverable — the session remains usable
+  for the application to initiate a rekey.
+
+- Bytebuf write truncation caused window accounting drift (was item 74).
+  `demux_dispatch()` CHANNEL_DATA and CHANNEL_EXTENDED_DATA now use the
+  return value of `dssh_bytebuf_write()` to deduct only the bytes
+  actually written from `local_window`.  `maybe_replenish_window()` now
+  caps the WINDOW_ADJUST amount by free buffer space (minimum of stdout
+  and stderr free space for session channels), preventing window grants
+  that exceed what the buffers can absorb.
+
+- Accept queue size is not a library concern (was item 81).  The single
+  demux thread serializes all packet processing.  While blocked on the
+  setup mailbox (delivering CHANNEL_REQUESTs to the application's
+  callback), it cannot process new CHANNEL_OPENs.  The accept queue can
+  only grow while the demux thread is running freely, and the application
+  controls drain rate via `dssh_session_accept()`.  Queue depth management
+  is the application's responsibility.

@@ -746,10 +746,11 @@ recv_packet_raw(dssh_session sess,
 
 rx_done:
 
-        /* All recv errors are fatal: I/O failure, oversized packet,
-         * bad padding, MAC mismatch, or decrypt failure all mean the
+        /* REKEY_NEEDED (hard limit) is recoverable -- the session is
+         * still usable.  All other recv errors (I/O failure, oversized
+         * packet, bad padding, MAC mismatch, decrypt failure) mean the
          * connection is broken. */
-	if (ret < 0)
+	if ((ret < 0) && (ret != DSSH_ERROR_REKEY_NEEDED))
 		dssh_session_set_terminate(sess);
 	mtx_unlock(&sess->trans.rx_mtx);
 	return ret;

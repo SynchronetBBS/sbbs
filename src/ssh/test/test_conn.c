@@ -5187,6 +5187,126 @@ test_subsystem_roundtrip(void)
 }
 
 /* ================================================================
+ * Item 74: bytebuf write truncation + window accounting
+ * ================================================================ */
+
+static int
+test_demux_data_truncation_window(void)
+{
+	/*
+	 * When the buffer is nearly full and demux_dispatch receives
+	 * more data than free space, local_window should only decrease
+	 * by the amount actually written (not the full dlen).
+	 */
+	struct conn_ctx ctx;
+	if (conn_setup(&ctx) < 0)
+		return TEST_SKIP;
+
+	struct open_exec_ctx oc = {
+		.client = ctx.client, .server = ctx.server,
+		.command = "echo trunc", .cbs = &session_cbs,
+		.accept_timeout = 5000,
+	};
+	if (open_exec_channel(&oc) < 0 || !oc.client_ch || !oc.server_ch) {
+		conn_cleanup(&ctx);
+		return TEST_FAIL;
+	}
+
+	/*
+	 * Shrink window_max and buffer to a small value so we can
+	 * test truncation without sending megabytes.
+	 */
+	dssh_bytebuf_free(&oc.server_ch->buf.session.stdout_buf);
+	ASSERT_OK(dssh_bytebuf_init(&oc.server_ch->buf.session.stdout_buf, 16));
+	oc.server_ch->window_max = 16;
+	oc.server_ch->local_window = 16;
+
+	/* Fill 12 of 16 bytes so only 4 remain */
+	uint8_t fill[12];
+	memset(fill, 'A', sizeof(fill));
+	dssh_bytebuf_write(&oc.server_ch->buf.session.stdout_buf, fill, 12);
+	oc.server_ch->local_window = 16; /* reset window for clean accounting */
+
+	/* Build CHANNEL_DATA with 10 bytes -- only 4 should fit */
+	uint8_t payload[32];
+	size_t pos = 0;
+	payload[pos++] = SSH_MSG_CHANNEL_DATA;
+	dssh_serialize_uint32(oc.server_ch->local_id, payload, sizeof(payload), &pos);
+	dssh_serialize_uint32(10, payload, sizeof(payload), &pos);
+	memset(&payload[pos], 'B', 10);
+	pos += 10;
+
+	mtx_lock(&oc.server_ch->buf_mtx);
+	oc.server_ch->setup_mode = false;
+	mtx_unlock(&oc.server_ch->buf_mtx);
+
+	demux_dispatch(ctx.server, SSH_MSG_CHANNEL_DATA, payload, pos);
+
+	/*
+	 * After fix: local_window should decrease by 4 (actual written),
+	 * not 10 (full dlen).  So 16 - 4 = 12.
+	 */
+	ASSERT_EQ(oc.server_ch->local_window, (uint32_t)12);
+
+	dssh_session_close(ctx.server, oc.server_ch, 0);
+	dssh_session_close(ctx.client, oc.client_ch, 0);
+	conn_cleanup(&ctx);
+	return TEST_PASS;
+}
+
+static int
+test_replenish_caps_to_buffer_space(void)
+{
+	/*
+	 * When the buffer is partially full, replenishment should be
+	 * capped by free buffer space, not just window_max - local_window.
+	 */
+	struct conn_ctx ctx;
+	if (conn_setup(&ctx) < 0)
+		return TEST_SKIP;
+
+	struct open_exec_ctx oc = {
+		.client = ctx.client, .server = ctx.server,
+		.command = "echo repcap", .cbs = &session_cbs,
+		.accept_timeout = 5000,
+	};
+	if (open_exec_channel(&oc) < 0 || !oc.client_ch || !oc.server_ch) {
+		conn_cleanup(&ctx);
+		return TEST_FAIL;
+	}
+
+	/* Shrink buffer to 32 bytes */
+	dssh_bytebuf_free(&oc.server_ch->buf.session.stdout_buf);
+	ASSERT_OK(dssh_bytebuf_init(&oc.server_ch->buf.session.stdout_buf, 32));
+	dssh_bytebuf_free(&oc.server_ch->buf.session.stderr_buf);
+	ASSERT_OK(dssh_bytebuf_init(&oc.server_ch->buf.session.stderr_buf, 32));
+	oc.server_ch->window_max = 32;
+
+	/* Fill 28 of 32 bytes -- only 4 free */
+	uint8_t fill[28];
+	memset(fill, 'X', sizeof(fill));
+	dssh_bytebuf_write(&oc.server_ch->buf.session.stdout_buf, fill, 28);
+
+	/* Set window to 0 to trigger replenishment (0 < 32/2 = 16) */
+	oc.server_ch->local_window = 0;
+
+	maybe_replenish_window(ctx.server, oc.server_ch);
+
+	/*
+	 * After fix: window should be replenished by at most 4
+	 * (the free buffer space), not 32 (window_max - 0).
+	 */
+	ASSERT_TRUE(oc.server_ch->local_window <= 4);
+	/* But it should have done *something* since there's free space */
+	ASSERT_TRUE(oc.server_ch->local_window > 0);
+
+	dssh_session_close(ctx.server, oc.server_ch, 0);
+	dssh_session_close(ctx.client, oc.client_ch, 0);
+	conn_cleanup(&ctx);
+	return TEST_PASS;
+}
+
+/* ================================================================
  * Test table
  * ================================================================ */
 
@@ -5345,6 +5465,10 @@ static struct dssh_test_entry tests[] = {
 	{ "test_session_poll_nsec_overflow",   test_session_poll_nsec_overflow },
 	{ "test_accept_nsec_overflow",         test_accept_nsec_overflow },
 	{ "test_stderr_signal_truncate",       test_stderr_signal_truncate },
+
+	/* Item 74: bytebuf truncation + window accounting */
+	{ "test_demux_data_truncation",        test_demux_data_truncation_window },
+	{ "test_replenish_caps_buf_space",     test_replenish_caps_to_buffer_space },
 };
 
 DSSH_TEST_MAIN(tests)
