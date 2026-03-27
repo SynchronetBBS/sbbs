@@ -853,7 +853,7 @@ dssh_transport_recv_packet(dssh_session sess,
 						sess->unimplemented_cb(rejected_seq, sess->unimplemented_cbdata);
 				}
 				continue;
-			case 80: /* SSH_MSG_GLOBAL_REQUEST */
+			case SSH_MSG_GLOBAL_REQUEST:
                                 /*
                                  * RFC 4254 s4: receiver MUST respond appropriately.
                                  * Parse the request name and want_reply flag.
@@ -889,7 +889,7 @@ dssh_transport_recv_packet(dssh_session sess,
 				}
 
 				if (want_reply) {
-					uint8_t reply = (gr_res >= 0) ? 81 : 82;
+					uint8_t reply = (gr_res >= 0) ? SSH_MSG_REQUEST_SUCCESS : SSH_MSG_REQUEST_FAILURE;
 
 					dssh_transport_send_packet(sess, &reply, 1, NULL);
 				}

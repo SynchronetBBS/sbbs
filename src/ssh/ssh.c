@@ -16,8 +16,22 @@ dssh_session_set_terminate(dssh_session sess)
 {
 	sess->terminate = true;
 
-        /* Wake senders blocked during rekey */
-	cnd_broadcast(&sess->trans.rekey_cnd);
+        /* Wake senders blocked during rekey.
+         * Hold tx_mtx so the broadcast cannot land between a sender's
+         * while-condition check and cnd_wait entry.  Use trylock because
+         * send_packet() calls set_terminate on fatal errors while already
+         * holding tx_mtx -- in that case the lock is already held so the
+         * broadcast is safe without re-acquiring. */
+	if (mtx_trylock(&sess->trans.tx_mtx) == thrd_success) {
+		cnd_broadcast(&sess->trans.rekey_cnd);
+		mtx_unlock(&sess->trans.tx_mtx);
+	}
+	else {
+		/* tx_mtx held by our caller -- broadcast is still safe
+		 * because the caller's critical section prevents any
+		 * sender from entering cnd_wait. */
+		cnd_broadcast(&sess->trans.rekey_cnd);
+	}
 
         /* Wake conn-layer waiters if initialized */
 	if (sess->conn_initialized) {

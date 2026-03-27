@@ -93,9 +93,7 @@ int dssh_test_EVP_CIPHER_CTX_set_padding(EVP_CIPHER_CTX *ctx, int pad);
 #define DSSH_NAMELIST_BUF_SIZE  1024
 #define DSSH_REQ_DATA_BUF_SIZE  1024
 
-/* Channel types */
-#define DSSH_CHAN_SESSION 1
-#define DSSH_CHAN_RAW 2
+/* Channel types: defined in ssh-chan.h (included above) */
 
 /* SSH connection protocol message types (RFC 4254) */
 #define SSH_MSG_GLOBAL_REQUEST UINT8_C(80)
@@ -113,7 +111,7 @@ int dssh_test_EVP_CIPHER_CTX_set_padding(EVP_CIPHER_CTX *ctx, int pad);
 #define SSH_MSG_CHANNEL_SUCCESS UINT8_C(99)
 #define SSH_MSG_CHANNEL_FAILURE UINT8_C(100)
 
-#define SSH_OPEN_ADMINISTRATIVELY_PROHIBITED UINT32_C(1)
+/* SSH_OPEN_* reason codes: defined in ssh-conn.c (only consumer) */
 
 struct dssh_channel_s {
         /* Pointers and size_t (pointer-sized) */
@@ -213,8 +211,8 @@ struct dssh_session_s {
 	atomic_bool                   initialized;
 	atomic_bool                   terminate;
 	atomic_bool                   demux_running;
+	atomic_bool                   conn_initialized;
 	bool                          auth_service_requested;
-	bool                          conn_initialized;
 };
 
 #endif // ifndef DSSH_INTERNAL_H

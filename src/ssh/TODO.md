@@ -28,10 +28,6 @@
     the arithmetic from the wire format.  Replace with computed
     expressions or named constants.
 
-14. Magic numbers 80, 81, 82 in `dssh_transport_recv_packet()` for
-    SSH_MSG_GLOBAL_REQUEST / REQUEST_SUCCESS / REQUEST_FAILURE.
-    Should use named constants.
-
 15. `recv_packet_raw()` terminates the session on DSSH_ERROR_REKEY_NEEDED
     (falls through to `dssh_session_set_terminate()`).  `send_packet()`
     explicitly exempts REKEY_NEEDED from termination.  Asymmetric — recv
@@ -105,20 +101,6 @@
     concurrently.  Either document as set-once-before-start or protect
     with the session mutex.
 
-35. `DSSH_CHAN_SESSION` / `DSSH_CHAN_RAW` defined in both `ssh-chan.h`
-    (lines 140–141) and `ssh-internal.h` (lines 96–97).  Same values
-    but changing one without the other is a silent mismatch.
-
-36. `SSH_OPEN_ADMINISTRATIVELY_PROHIBITED` defined in both `ssh-conn.c`
-    (line 166) and `ssh-internal.h` (line 115).  Same duplication hazard.
-
-44. `dssh_transport_recv_packet()` silently discards `SSH_MSG_UNIMPLEMENTED`
-    (message type 3).  RFC 4253 s11.4 says implementations SHOULD respond
-    with UNIMPLEMENTED for unrecognized messages, and should handle
-    receiving one — but there is no design for what to do with it.  The
-    `set_unimplemented_cb` callback exists (item 32) but the recv path
-    just drops the message without invoking it.
-
 ### Thread safety audit (items 51-59)
 
 52. **Data race: setup-to-normal transition in `dssh_session_accept_channel()`.**
@@ -143,30 +125,6 @@
     also zeroes all counters without either mutex.  Options: make
     `bytes_since_rekey` atomic, split into tx/rx halves each protected by
     its own mutex, or add a dedicated counter mutex.
-
-54. **Data race: `rekey_in_progress` read by demux without `tx_mtx`.**
-    `recv_packet()` line 827 reads `rekey_in_progress` (plain `bool`)
-    to decide whether a received KEXINIT is peer-initiated or a response.
-    `dssh_transport_rekey()` sets it under `tx_mtx` (lines 303, 316).
-    Technically UB, though the timing makes wrong decisions unlikely in
-    practice.  Should be `atomic_bool` or read under `tx_mtx`.
-
-55. **Lost wakeup: `set_terminate()` broadcasts `rekey_cnd` without
-    `tx_mtx`.**  `dssh_session_set_terminate()` (ssh.c line 20) calls
-    `cnd_broadcast(&rekey_cnd)` without holding `tx_mtx`.  A sender
-    blocked in `send_packet()` (line 488-489,
-    `while (rekey_in_progress && !terminate) cnd_wait(rekey_cnd, tx_mtx)`)
-    can miss the broadcast if `set_terminate` fires between the `while`
-    condition check and the `cnd_wait` entry.  The sender then blocks
-    until the socket times out or a spurious wakeup occurs.  Fix: lock
-    `tx_mtx` around the `cnd_broadcast`.
-
-56. **Data race: `conn_initialized` is a plain `bool`.**
-    `dssh_session_set_terminate()` (ssh.c line 23) reads `conn_initialized`
-    from any thread.  `dssh_session_start()` writes it once.  The demux
-    thread creation provides a happens-before for the demux thread itself,
-    but an external thread calling `set_terminate()` concurrently with
-    `session_start()` has no synchronization.  Should be `atomic_bool`.
 
 57. **Data race: algorithm query functions during rekey.**
     `dssh_transport_get_kex_name()`, `get_hostkey_name()`, `get_enc_name()`,
@@ -239,7 +197,13 @@
     No timeout, no escape except `set_terminate()`.  A slow or
     malicious peer can stall all application senders for the
     duration of the rekey.  Fix: use `cnd_timedwait` with a
-    configurable upper bound.
+    configurable upper bound.  Note: `set_terminate()` uses
+    `mtx_trylock` on `tx_mtx` (to avoid self-deadlock when called
+    from `send_packet` itself), so if a *different* sender holds
+    `tx_mtx`, the `cnd_broadcast` fires without the lock and the
+    original lost-wakeup window (item 55) still exists for that
+    case.  Switching to `cnd_timedwait` here would eliminate the
+    concern — the sender wakes on timeout regardless.
 
 67. **Setup mode single-slot mailbox blocks the demux thread.**
     In `demux_dispatch()` (line 616-631), when a channel is in
@@ -337,7 +301,12 @@
     the wrong thread).  Every call site should check and, on failure,
     set `terminate` and return a new `DSSH_ERROR_INTERNAL` (-14) error
     code indicating a library logic bug was detected.  The library must
-    never call `abort()` or `exit()`.
+    never call `abort()` or `exit()`.  Note: `dssh_session_set_terminate()`
+    now uses `mtx_trylock(&tx_mtx)` (item 55) but does not distinguish
+    `thrd_busy` (another thread holds the lock -- expected) from
+    `thrd_error` (mutex corrupted -- should trigger best-effort
+    teardown per item 87).  This is a concrete instance of the
+    general problem.
 
 86. **`cnd_wait()` / `cnd_broadcast()` / `cnd_signal()` return values
     never checked.**  7 `cnd_wait()`, 10 `cnd_broadcast()`, and 1
@@ -535,3 +504,36 @@
   before the expected response (was item 82).  Changed `if` to
   `while` in `get_methods_impl()` and `auth_server_impl()` KBI path.
   `auth_publickey_impl()` already used a `continue` loop correctly.
+
+- Magic numbers 80, 81, 82 in `dssh_transport_recv_packet()` replaced
+  with `SSH_MSG_GLOBAL_REQUEST`, `SSH_MSG_REQUEST_SUCCESS`,
+  `SSH_MSG_REQUEST_FAILURE` (was item 14).
+
+- Duplicate `DSSH_CHAN_SESSION` / `DSSH_CHAN_RAW` definitions removed
+  from `ssh-internal.h` (was item 35).  Canonical definitions remain
+  in `ssh-chan.h`, which `ssh-internal.h` includes.
+
+- Duplicate `SSH_OPEN_ADMINISTRATIVELY_PROHIBITED` definition removed
+  from `ssh-internal.h` (was item 36).  Canonical definition (with all
+  four reason codes) remains in `ssh-conn.c`, the only consumer.
+
+- `SSH_MSG_UNIMPLEMENTED` callback already invoked (was item 44).
+  `recv_packet` at ssh-trans.c dispatches to `unimplemented_cb` when
+  set and payload is valid.  The TODO description was stale.
+
+- Data race: `rekey_in_progress` changed from `bool` to `atomic_bool`
+  (was item 54).  The demux thread reads it without `tx_mtx` to decide
+  if a received KEXINIT is peer-initiated or self-initiated; the atomic
+  eliminates the UB.
+
+- Lost wakeup: `set_terminate()` now uses `mtx_trylock` on `tx_mtx`
+  around `cnd_broadcast(&rekey_cnd)` (was item 55).  Prevents the
+  lost-wakeup when no other thread holds `tx_mtx`, and avoids
+  self-deadlock when called from `send_packet()` (which already holds
+  it).  Residual: if a *different* sender holds `tx_mtx`, `trylock`
+  fails and the broadcast fires without the lock — see item 66 for
+  the full fix (switch to `cnd_timedwait`).
+
+- Data race: `conn_initialized` changed from `bool` to `atomic_bool`
+  (was item 56).  Read by `set_terminate()` from any thread, written by
+  `session_start()` / `session_stop()`.

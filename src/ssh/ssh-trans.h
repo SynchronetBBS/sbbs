@@ -130,7 +130,7 @@ typedef struct dssh_transport_state_s {
 
         /* 1-byte */
 	bool           client;
-	bool           rekey_in_progress; /* true between KEXINIT and NEWKEYS */
+	atomic_bool    rekey_in_progress; /* true between KEXINIT and NEWKEYS */
 	bool           rekey_pending;     /* deferred auto-rekey (set in recv_packet) */
 
         /* Char arrays (naturally aligned, go last) */
