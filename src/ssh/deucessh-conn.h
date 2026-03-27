@@ -48,8 +48,8 @@ struct dssh_incoming_open;
  * When a terminal request (shell/exec/subsystem) is accepted, setup
  * ends and the channel is returned to the caller.
  *
- * Use dssh_parse_uint32(), dssh_parse_string(), etc. from deucessh-arch.h
- * and the helpers below to parse the type-specific data.
+ * Use dssh_parse_uint32() from deucessh-arch.h and the helpers below
+ * to parse the type-specific data.
  */
 typedef int (*dssh_channel_request_cb)(const char *type, size_t type_len,
     bool want_reply,

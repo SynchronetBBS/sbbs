@@ -524,6 +524,7 @@ init_session_channel(dssh_channel ch, uint32_t window_max)
 	ch->stderr_consumed = 0;
 	ch->exit_code = 0;
 	ch->exit_code_received = false;
+	atomic_store(&ch->closing, false);
 
 	if (mtx_init(&ch->buf_mtx, mtx_plain) != thrd_success)
 		return DSSH_ERROR_INIT;
@@ -555,6 +556,7 @@ init_raw_channel(dssh_channel ch, uint32_t window_max)
 {
 	ch->chan_type = DSSH_CHAN_RAW;
 	ch->window_max = window_max;
+	atomic_store(&ch->closing, false);
 
 	if (mtx_init(&ch->buf_mtx, mtx_plain) != thrd_success)
 		return DSSH_ERROR_INIT;
@@ -853,6 +855,10 @@ demux_dispatch(dssh_session sess, uint8_t msg_type,
 							ch->window_change_cb(wc_cols, wc_rows, wc_wpx, wc_hpx,
 							    ch->window_change_cbdata);
 							mtx_lock(&ch->buf_mtx);
+							if (atomic_load(&ch->closing)) {
+								mtx_unlock(&ch->buf_mtx);
+								return 0;
+							}
 						}
 					}
 
@@ -869,6 +875,10 @@ demux_dispatch(dssh_session sess, uint8_t msg_type,
 						mtx_unlock(&ch->buf_mtx);
 						dssh_transport_send_packet(sess, fail, fp, NULL);
 						mtx_lock(&ch->buf_mtx);
+						if (atomic_load(&ch->closing)) {
+							mtx_unlock(&ch->buf_mtx);
+							return 0;
+						}
 					}
 				}
 			}
@@ -2233,7 +2243,17 @@ dssh_session_close(dssh_session sess,
 	dssh_conn_send_exit_status(sess, ch, exit_code);
 	dssh_conn_send_eof(sess, ch);
 	dssh_conn_close(sess, ch);
+
+	/* Synchronize with the demux thread before freeing.
+	 * Set closing first so the demux bails out of any
+	 * unlock-relock window (window-change cb, send_packet).
+	 * Then unregister to prevent new find_channel() hits.
+	 * Finally acquire buf_mtx to ensure the demux has
+	 * exited its critical section. */
+	atomic_store(&ch->closing, true);
 	unregister_channel(sess, ch);
+	mtx_lock(&ch->buf_mtx);
+	mtx_unlock(&ch->buf_mtx);
 	cleanup_channel_buffers(ch);
 	free(ch);
 	return 0;
@@ -2332,7 +2352,12 @@ dssh_channel_close(dssh_session sess,
 		return DSSH_ERROR_INVALID;
 	dssh_conn_send_eof(sess, ch);
 	dssh_conn_close(sess, ch);
+
+	/* Same demux synchronization as dssh_session_close(). */
+	atomic_store(&ch->closing, true);
 	unregister_channel(sess, ch);
+	mtx_lock(&ch->buf_mtx);
+	mtx_unlock(&ch->buf_mtx);
 	cleanup_channel_buffers(ch);
 	free(ch);
 	return 0;

@@ -168,14 +168,6 @@ dssh_msgqueue_push(struct dssh_msgqueue *q,
 	return 0;
 }
 
-DSSH_PRIVATE size_t
-dssh_msgqueue_peek_size(const struct dssh_msgqueue *q)
-{
-	if (q->head == NULL)
-		return 0;
-	return q->head->len;
-}
-
 DSSH_PRIVATE int64_t
 dssh_msgqueue_pop(struct dssh_msgqueue *q,
     uint8_t *buf, size_t bufsz)

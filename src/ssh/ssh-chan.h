@@ -66,9 +66,6 @@ DSSH_PRIVATE void dssh_msgqueue_free(struct dssh_msgqueue *q);
 DSSH_PRIVATE int dssh_msgqueue_push(struct dssh_msgqueue *q,
     const uint8_t *data, size_t len);
 
-/* Peek at the next message size. Returns 0 if empty. */
-DSSH_PRIVATE size_t dssh_msgqueue_peek_size(const struct dssh_msgqueue *q);
-
 /* Dequeue a message into buf. Returns message length, or
  * DSSH_ERROR_TOOLONG if bufsz too small (message stays queued),
  * or 0 if empty. */

@@ -483,6 +483,7 @@ set(CONN_TESTS
 	test_auto_reject_forwarded_tcpip
 	test_auto_reject_session_server
 	test_demux_data_truncation test_replenish_caps_buf_space
+	test_close_during_wc_cb
 )
 dssh_add_individual_tests(dssh_test_conn dssh_conn CONN_TESTS)
 

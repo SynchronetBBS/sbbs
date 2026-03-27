@@ -5307,6 +5307,109 @@ test_replenish_caps_to_buffer_space(void)
 }
 
 /* ================================================================
+ * Item 62/79: close during demux callback must not crash
+ * ================================================================ */
+
+/* Window-change callback context for the race test */
+struct close_race_ctx {
+	dssh_session sess;
+	dssh_channel ch;
+	int          close_done;
+};
+
+static void
+slow_window_change_cb(uint32_t cols, uint32_t rows,
+    uint32_t wpx, uint32_t hpx, void *cbdata)
+{
+	struct close_race_ctx *rc = cbdata;
+
+	/* Signal that we're inside the callback, then sleep
+	 * to widen the race window.  The demux thread holds no
+	 * mutex here (buf_mtx is unlocked during the callback). */
+	struct timespec ts = { .tv_sec = 0, .tv_nsec = 50000000 }; /* 50ms */
+	thrd_sleep(&ts, NULL);
+
+	/* Close the channel from INSIDE the callback -- this runs on
+	 * the demux thread, so it tests that the demux bails out
+	 * properly after the callback returns. */
+	dssh_session_close(rc->sess, rc->ch, 0);
+	rc->close_done = 1;
+}
+
+static struct dssh_server_session_cbs slow_wc_cbs = {
+	.request_cb = test_channel_request_cb,
+	.window_change = slow_window_change_cb,
+};
+
+static int
+test_close_during_window_change(void)
+{
+	struct conn_ctx ctx;
+
+	if (conn_setup(&ctx) < 0)
+		return TEST_SKIP;
+
+	struct dssh_pty_req pty = {
+		.term = "vt100",
+		.cols = 80,
+		.rows = 24,
+	};
+
+	struct close_race_ctx rc;
+
+	rc.sess = ctx.server;
+	rc.ch = NULL;
+	rc.close_done = 0;
+
+	/* The slow_wc_cbs uses slow_window_change_cb which gets
+	 * &rc as cbdata via window_change_cbdata. */
+	struct open_shell_ctx oc = {
+		.client = ctx.client,
+		.server = ctx.server,
+		.pty = &pty,
+		.cbs = &slow_wc_cbs,
+	};
+
+	thrd_t ct, st;
+
+	ASSERT_THRD_CREATE(&ct, client_open_shell_thread, &oc);
+	ASSERT_THRD_CREATE(&st, server_accept_shell_thread, &oc);
+	thrd_join(ct, NULL);
+	thrd_join(st, NULL);
+
+	if (oc.client_ch == NULL || oc.server_ch == NULL) {
+		conn_cleanup(&ctx);
+		return TEST_SKIP;
+	}
+
+	/* Set up the race context with the server channel */
+	rc.ch = oc.server_ch;
+
+	/* Set the window_change cbdata to point to our race context */
+	oc.server_ch->window_change_cbdata = &rc;
+
+	/* Client sends window-change -- the server's demux thread
+	 * will deliver it to slow_window_change_cb, which closes
+	 * the channel from inside the callback. */
+	int res = dssh_session_send_window_change(ctx.client, oc.client_ch,
+	    132, 50, 0, 0);
+	ASSERT_OK(res);
+
+	/* Wait for the callback to complete and close the channel.
+	 * If the race fix is missing, the demux thread crashes when
+	 * it tries to re-lock buf_mtx after the callback. */
+	struct timespec ts = { .tv_sec = 0, .tv_nsec = 200000000 }; /* 200ms */
+	thrd_sleep(&ts, NULL);
+
+	ASSERT_TRUE(rc.close_done);
+
+	/* Only close the client channel; server channel was closed in cb */
+	dssh_session_close(ctx.client, oc.client_ch, 0);
+	conn_cleanup(&ctx);
+	return TEST_PASS;
+}
+
+/* ================================================================
  * Test table
  * ================================================================ */
 
@@ -5469,6 +5572,9 @@ static struct dssh_test_entry tests[] = {
 	/* Item 74: bytebuf truncation + window accounting */
 	{ "test_demux_data_truncation",        test_demux_data_truncation_window },
 	{ "test_replenish_caps_buf_space",     test_replenish_caps_to_buffer_space },
+
+	/* Item 62/79: close during demux callback */
+	{ "test_close_during_wc_cb",           test_close_during_window_change },
 };
 
 DSSH_TEST_MAIN(tests)

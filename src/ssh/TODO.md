@@ -93,17 +93,6 @@
 
 ### Design / liveness audit (items 62-79)
 
-62. **`dssh_session_close()` / `dssh_channel_close()` free the channel
-    while the demux thread may hold it.**  Both functions call
-    `unregister_channel()`, `cleanup_channel_buffers()` (which destroys
-    `buf_mtx` and `poll_cnd`), and `free(ch)` without synchronizing
-    with the demux thread.  If the demux thread is inside
-    `demux_dispatch()` holding `buf_mtx` via `find_channel()`, the
-    close function destroys the mutex the demux is holding, then frees
-    the memory.  Fix: after `unregister_channel()`, acquire `buf_mtx`
-    (ensuring the demux has exited the critical section) before
-    destroying it.  Alternatively, defer cleanup to `dssh_session_stop`
-    or use reference counting.
 
 64. **Poll/accept functions hold their mutex across the entire blocking
     wait, serializing concurrent callers and stacking timeouts.**
@@ -196,16 +185,6 @@
     Alternatively, document that I/O callbacks should have short
     timeouts.
 
-79. **Window-change callback can access freed channel.**  In
-    `demux_dispatch()` lines 789-792, the demux thread unlocks
-    `buf_mtx` before calling the window-change callback, then
-    re-locks.  During the callback, another thread could call
-    `dssh_session_close()` / `dssh_channel_close()`, which frees the
-    channel.  When the demux thread re-locks `buf_mtx` at line 792,
-    it accesses freed memory.  This is a specific instance of the
-    general problem in item 62, but worth noting because the
-    unlock-for-callback pattern creates a wider window than other
-    demux_dispatch paths.
 
 83. **`dssh_session_cleanup()` can hang indefinitely on `thrd_join`.**
     `dssh_session_cleanup()` (ssh.c line 98) calls
@@ -218,6 +197,15 @@
     application MUST close the underlying socket (or set a short
     timeout) before calling `cleanup`, or provide a non-blocking
     `session_stop` variant.
+
+88. **Symbol visibility audit.**  Every non-`static` function and global
+    variable across all library .c files should be annotated
+    `DSSH_PUBLIC` or `DSSH_PRIVATE` unless it is only exposed under
+    `#ifdef DSSH_TESTING` (i.e. `DSSH_TESTABLE`).  Unannotated symbols
+    get default ELF visibility and pollute the `.dynsym` table of the
+    shared library.  Audit all .c files and add the appropriate
+    annotation to any symbol that is missing one.
+
 
 ### Unchecked C11 threading return values (items 85-87)
 
@@ -258,6 +246,27 @@
     the session is already in an unrecoverable state.
 
 ## Closed
+
+- Channel close use-after-free with demux thread (was items 62, 79).
+  `dssh_session_close()` and `dssh_channel_close()` freed the channel
+  while the demux thread held `buf_mtx`.  The window-change callback
+  pattern (unlock for callback, relock after) created an even wider race
+  window.  Fix: added `atomic_bool closing` to channel struct.  Close
+  functions set `closing`, unregister the channel, then acquire/release
+  `buf_mtx` to ensure the demux has exited its critical section before
+  cleanup.  `demux_dispatch()` checks `closing` after each unlock-relock
+  window (window-change callback, send CHANNEL_FAILURE) and bails out
+  without touching the channel.  Added regression test
+  `test_close_during_wc_cb`.
+
+- Dead code removal (was item 89).  Removed 14 `DSSH_PRIVATE` functions
+  with no library callers (test-only): `dssh_parse_byte`,
+  `dssh_serialize_byte`, `dssh_parse_boolean`, `dssh_serialize_boolean`,
+  `dssh_parse_uint64`, `dssh_serialize_uint64`, `dssh_parse_string`,
+  `dssh_serialize_string`, `dssh_parse_mpint`, `dssh_serialize_mpint`,
+  `dssh_parse_namelist`, `dssh_serialize_namelist` (all from ssh-arch.c),
+  and `dssh_msgqueue_peek_size` (from ssh-chan.c).  Removed declarations
+  from ssh-arch.h and ssh-chan.h, and corresponding test cases.
 
 - Data race: rekey counters (was item 53).  Split `bytes_since_rekey`
   into `tx_bytes_since_rekey` and `rx_bytes_since_rekey`.  Made

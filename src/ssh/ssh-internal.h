@@ -127,6 +127,7 @@ struct dssh_channel_s {
          * Lock order: channel_mtx then buf_mtx (never reversed). */
 	mtx_t    buf_mtx;
 	cnd_t    poll_cnd;
+	atomic_bool closing;  /* set by close functions before cleanup */
 
         /* 4-byte */
 	uint32_t local_id;

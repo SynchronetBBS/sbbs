@@ -586,30 +586,6 @@ static int test_msgqueue_pop_empty(void)
 	return TEST_PASS;
 }
 
-static int test_msgqueue_peek_empty(void)
-{
-	struct dssh_msgqueue q;
-	dssh_msgqueue_init(&q);
-	ASSERT_EQ_U(dssh_msgqueue_peek_size(&q), 0);
-	dssh_msgqueue_free(&q);
-	return TEST_PASS;
-}
-
-static int test_msgqueue_peek_size(void)
-{
-	struct dssh_msgqueue q;
-	dssh_msgqueue_init(&q);
-
-	const uint8_t msg[10] = {0};
-	dssh_msgqueue_push(&q, msg, 10);
-	ASSERT_EQ_U(dssh_msgqueue_peek_size(&q), 10);
-
-	/* Peek doesn't consume */
-	ASSERT_EQ_U(dssh_msgqueue_peek_size(&q), 10);
-
-	dssh_msgqueue_free(&q);
-	return TEST_PASS;
-}
 
 static int test_msgqueue_pop_toolong(void)
 {
@@ -626,7 +602,6 @@ static int test_msgqueue_pop_toolong(void)
 
 	/* Message should still be queued */
 	ASSERT_EQ_U(q.count, 1);
-	ASSERT_EQ_U(dssh_msgqueue_peek_size(&q), 20);
 
 	dssh_msgqueue_free(&q);
 	return TEST_PASS;
@@ -728,7 +703,6 @@ static int test_msgqueue_zero_len_message(void)
 
 	ASSERT_OK(dssh_msgqueue_push(&q, NULL, 0));
 	ASSERT_EQ_U(q.count, 1);
-	ASSERT_EQ_U(dssh_msgqueue_peek_size(&q), 0);
 
 	uint8_t buf[1];
 	int64_t got = dssh_msgqueue_pop(&q, buf, sizeof(buf));
@@ -758,29 +732,6 @@ static int test_msgqueue_pop_after_toolong(void)
 	got = dssh_msgqueue_pop(&q, big, sizeof(big));
 	ASSERT_EQ(got, (int64_t)sizeof(msg));
 	ASSERT_MEM_EQ(big, msg, sizeof(msg));
-
-	dssh_msgqueue_free(&q);
-	return TEST_PASS;
-}
-
-static int test_msgqueue_peek_after_pop(void)
-{
-	struct dssh_msgqueue q;
-	dssh_msgqueue_init(&q);
-
-	const uint8_t m1[3] = {1, 2, 3};
-	const uint8_t m2[7] = {4, 5, 6, 7, 8, 9, 10};
-	dssh_msgqueue_push(&q, m1, 3);
-	dssh_msgqueue_push(&q, m2, 7);
-
-	ASSERT_EQ_U(dssh_msgqueue_peek_size(&q), 3);
-
-	uint8_t buf[16];
-	dssh_msgqueue_pop(&q, buf, sizeof(buf));
-	ASSERT_EQ_U(dssh_msgqueue_peek_size(&q), 7);
-
-	dssh_msgqueue_pop(&q, buf, sizeof(buf));
-	ASSERT_EQ_U(dssh_msgqueue_peek_size(&q), 0);
 
 	dssh_msgqueue_free(&q);
 	return TEST_PASS;
@@ -824,7 +775,6 @@ static int test_msgqueue_varying_sizes(void)
 
 	/* Pop and verify sizes */
 	for (size_t i = 1; i <= 10; i++) {
-		ASSERT_EQ_U(dssh_msgqueue_peek_size(&q), i);
 		uint8_t buf[16];
 		int64_t got = dssh_msgqueue_pop(&q, buf, sizeof(buf));
 		ASSERT_EQ((size_t)got, i);
@@ -1703,8 +1653,6 @@ static struct dssh_test_entry tests[] = {
 	{ "msgqueue_init_free",               test_msgqueue_init_free },
 	{ "msgqueue_push_pop_single",         test_msgqueue_push_pop_single },
 	{ "msgqueue_pop_empty",               test_msgqueue_pop_empty },
-	{ "msgqueue_peek_empty",              test_msgqueue_peek_empty },
-	{ "msgqueue_peek_size",               test_msgqueue_peek_size },
 	{ "msgqueue_pop_toolong",             test_msgqueue_pop_toolong },
 	{ "msgqueue_fifo_order",              test_msgqueue_fifo_order },
 	{ "msgqueue_total_bytes",             test_msgqueue_total_bytes },
@@ -1712,7 +1660,6 @@ static struct dssh_test_entry tests[] = {
 	{ "msgqueue_free_nonempty",           test_msgqueue_free_nonempty },
 	{ "msgqueue_zero_len_message",        test_msgqueue_zero_len_message },
 	{ "msgqueue_pop_after_toolong",       test_msgqueue_pop_after_toolong },
-	{ "msgqueue_peek_after_pop",          test_msgqueue_peek_after_pop },
 	{ "msgqueue_push_pop_interleaved",    test_msgqueue_push_pop_interleaved },
 	{ "msgqueue_varying_sizes",           test_msgqueue_varying_sizes },
 	{ "msgqueue_exact_bufsz_pop",         test_msgqueue_exact_bufsz_pop },
