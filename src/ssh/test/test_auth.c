@@ -2250,6 +2250,101 @@ test_auth_server_unexpected_message(void)
 }
 
 /* ================================================================
+ * DSSH_AUTH_DISCONNECT -- callback returns disconnect
+ *
+ * Server password callback returns DSSH_AUTH_DISCONNECT.
+ * Server should send DISCONNECT and return DSSH_ERROR_TERMINATED.
+ * Client should see recv_packet fail (session terminated).
+ * ================================================================ */
+
+static int
+test_auth_server_password_disconnect(void)
+{
+	struct handshake_ctx ctx;
+	if (handshake_setup(&ctx) < 0) {
+		handshake_cleanup(&ctx);
+		return TEST_FAIL;
+	}
+
+	struct test_auth_cbdata cbdata = {0};
+	cbdata.password_result = DSSH_AUTH_DISCONNECT;
+
+	struct auth_server_arg sa = {0};
+	sa.ctx = &ctx;
+	sa.cbs.methods_str = "password";
+	sa.cbs.password_cb = test_password_cb;
+	sa.cbs.cbdata = &cbdata;
+
+	thrd_t st;
+	ASSERT_TRUE(thrd_create(&st, auth_server_thread, &sa) == thrd_success);
+
+	/* Client: SERVICE_REQUEST */
+	{
+		static const char svc[] = "ssh-userauth";
+		uint8_t msg[64];
+		size_t pos = 0;
+		msg[pos++] = SSH_MSG_SERVICE_REQUEST;
+		dssh_serialize_uint32((uint32_t)(sizeof(svc) - 1), msg, sizeof(msg), &pos);
+		memcpy(&msg[pos], svc, sizeof(svc) - 1);
+		pos += sizeof(svc) - 1;
+		ASSERT_OK(dssh_transport_send_packet(ctx.client, msg, pos, NULL));
+	}
+
+	{
+		uint8_t msg_type;
+		uint8_t *payload;
+		size_t payload_len;
+		ASSERT_OK(dssh_transport_recv_packet(ctx.client, &msg_type, &payload, &payload_len));
+		ASSERT_EQ(msg_type, SSH_MSG_SERVICE_ACCEPT);
+	}
+
+	/* Send password auth */
+	{
+		static const char user[] = "testuser";
+		static const char svc[] = "ssh-connection";
+		static const char method[] = "password";
+		static const char pw[] = "badpass";
+		uint8_t msg[256];
+		size_t pos = 0;
+		msg[pos++] = SSH_MSG_USERAUTH_REQUEST;
+		dssh_serialize_uint32((uint32_t)(sizeof(user) - 1), msg, sizeof(msg), &pos);
+		memcpy(&msg[pos], user, sizeof(user) - 1);
+		pos += sizeof(user) - 1;
+		dssh_serialize_uint32((uint32_t)(sizeof(svc) - 1), msg, sizeof(msg), &pos);
+		memcpy(&msg[pos], svc, sizeof(svc) - 1);
+		pos += sizeof(svc) - 1;
+		dssh_serialize_uint32((uint32_t)(sizeof(method) - 1), msg, sizeof(msg), &pos);
+		memcpy(&msg[pos], method, sizeof(method) - 1);
+		pos += sizeof(method) - 1;
+		msg[pos++] = 0;
+		dssh_serialize_uint32((uint32_t)(sizeof(pw) - 1), msg, sizeof(msg), &pos);
+		memcpy(&msg[pos], pw, sizeof(pw) - 1);
+		pos += sizeof(pw) - 1;
+		ASSERT_OK(dssh_transport_send_packet(ctx.client, msg, pos, NULL));
+	}
+
+	/* Client should receive DISCONNECT (msg_type 1) */
+	{
+		uint8_t msg_type;
+		uint8_t *payload;
+		size_t payload_len;
+		int res = dssh_transport_recv_packet(ctx.client, &msg_type, &payload, &payload_len);
+		/* recv_packet returns DSSH_ERROR_TERMINATED on DISCONNECT */
+		ASSERT_TRUE(res < 0);
+	}
+
+	ASSERT_TRUE(cbdata.password_called);
+
+	thrd_join(st, NULL);
+
+	/* Server auth should have returned DSSH_ERROR_TERMINATED */
+	ASSERT_EQ(sa.result, DSSH_ERROR_TERMINATED);
+
+	handshake_cleanup(&ctx);
+	return TEST_PASS;
+}
+
+/* ================================================================
  * Client KBI error path tests
  *
  * Generic server thread that does the SERVICE_REQUEST / ACCEPT
@@ -10258,6 +10353,9 @@ static struct dssh_test_entry tests[] = {
 	{ "dclient/kbi_resp_alloc",              test_dclient_kbi_resp_alloc },
 	{ "dclient/pk_no_sign",                  test_dclient_pk_no_sign },
 	{ "dclient/pk_alloc_fail",               test_dclient_pk_alloc_fail },
+
+	/* DSSH_AUTH_DISCONNECT */
+	{ "auth/server/password_disconnect",     test_auth_server_password_disconnect },
 
 	/* Additional coverage */
 	{ "direct/bad_prefix_in_loop",           test_direct_bad_prefix_in_loop },

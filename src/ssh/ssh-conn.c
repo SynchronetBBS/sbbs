@@ -193,6 +193,10 @@ dssh_conn_send_data(dssh_session sess,
     size_t *sentp)
 {
 	mtx_lock(&ch->buf_mtx);
+	if (!ch->open || ch->eof_sent || ch->close_received) {
+		mtx_unlock(&ch->buf_mtx);
+		return DSSH_ERROR_TERMINATED;
+	}
 	if (sentp != NULL) {
 		if (len > ch->remote_window)
 			len = ch->remote_window;
@@ -252,6 +256,10 @@ dssh_conn_send_extended_data(dssh_session sess,
     size_t *sentp)
 {
 	mtx_lock(&ch->buf_mtx);
+	if (!ch->open || ch->eof_sent || ch->close_received) {
+		mtx_unlock(&ch->buf_mtx);
+		return DSSH_ERROR_TERMINATED;
+	}
 	if (sentp != NULL) {
 		if (len > ch->remote_window)
 			len = ch->remote_window;
@@ -655,7 +663,7 @@ demux_dispatch(dssh_session sess, uint8_t msg_type,
 		else {
 			ch->setup_error = true;
 		}
-		cnd_signal(&ch->poll_cnd);
+		cnd_broadcast(&ch->poll_cnd);
 		mtx_unlock(&ch->buf_mtx);
 		return 0;
 	}
@@ -856,7 +864,7 @@ demux_dispatch(dssh_session sess, uint8_t msg_type,
 			break;
 	}
 
-	cnd_signal(&ch->poll_cnd);
+	cnd_broadcast(&ch->poll_cnd);
 	mtx_unlock(&ch->buf_mtx);
 	return 0;
 }
@@ -889,7 +897,7 @@ demux_open_confirmation(dssh_session sess,
 		return DSSH_ERROR_PARSE;
 	}
 	ch->open = true;
-	cnd_signal(&ch->poll_cnd);
+	cnd_broadcast(&ch->poll_cnd);
 	mtx_unlock(&ch->buf_mtx);
 	return 0;
 }
@@ -1025,7 +1033,7 @@ demux_thread_func(void *arg)
 		dssh_channel ch = sess->channels[i];
 
 		mtx_lock(&ch->buf_mtx);
-		cnd_signal(&ch->poll_cnd);
+		cnd_broadcast(&ch->poll_cnd);
 		mtx_unlock(&ch->buf_mtx);
 	}
 	mtx_unlock(&sess->channel_mtx);
@@ -1039,7 +1047,7 @@ dssh_session_start(dssh_session sess)
 {
 	if (sess == NULL)
 		return DSSH_ERROR_INVALID;
-	if (sess->demux_running)
+	if (sess->conn_initialized)
 		return DSSH_ERROR_INIT;
 
 	if (mtx_init(&sess->channel_mtx, mtx_plain) != thrd_success)
@@ -1112,6 +1120,7 @@ dssh_session_stop(dssh_session sess)
 	cnd_destroy(&sess->accept_cnd);
 	mtx_destroy(&sess->accept_mtx);
 	mtx_destroy(&sess->channel_mtx);
+	sess->conn_initialized = false;
 }
 
 /* ================================================================
@@ -1704,7 +1713,7 @@ setup_recv(dssh_session sess, dssh_channel ch,
 	ch->setup_payload_len = 0;
 
         /* Wake demux if it's waiting to deliver the next message */
-	cnd_signal(&ch->poll_cnd);
+	cnd_broadcast(&ch->poll_cnd);
 	mtx_unlock(&ch->buf_mtx);
 	return 0;
 }
@@ -2129,8 +2138,6 @@ dssh_session_write(dssh_session sess,
 		return DSSH_ERROR_INVALID;
 	if (bufsz == 0)
 		return 0;
-	if (!ch->open || ch->eof_sent || ch->close_received)
-		return DSSH_ERROR_TERMINATED;
 
 	size_t sent = 0;
 	int res = dssh_conn_send_data(sess, ch, buf, bufsz, &sent);
@@ -2149,8 +2156,6 @@ dssh_session_write_ext(dssh_session sess,
 		return DSSH_ERROR_INVALID;
 	if (bufsz == 0)
 		return 0;
-	if (!ch->open || ch->eof_sent || ch->close_received)
-		return DSSH_ERROR_TERMINATED;
 
 	size_t sent = 0;
 	int res = dssh_conn_send_extended_data(sess, ch,
@@ -2278,8 +2283,6 @@ dssh_channel_write(dssh_session sess,
 		return DSSH_ERROR_INVALID;
 	if (len == 0)
 		return 0;
-	if (!ch->open || ch->eof_sent || ch->close_received)
-		return DSSH_ERROR_TERMINATED;
 
 	return dssh_conn_send_data(sess, ch, buf, len, NULL);
 }

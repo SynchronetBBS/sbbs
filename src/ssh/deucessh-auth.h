@@ -117,6 +117,7 @@ DSSH_PUBLIC int dssh_auth_keyboard_interactive(dssh_session sess,
  */
 #define DSSH_AUTH_SUCCESS 0         /* User authenticated */
 #define DSSH_AUTH_FAILURE -1        /* Wrong credentials */
+#define DSSH_AUTH_DISCONNECT -2     /* Reject and disconnect (e.g. too many attempts) */
 #define DSSH_AUTH_PARTIAL 1         /* Succeeded, but more auth needed */
 #define DSSH_AUTH_CHANGE_PASSWORD 2 /* Password expired (password method only) */
 #define DSSH_AUTH_KBI_PROMPT 3      /* Send INFO_REQUEST with prompts (KBI only) */

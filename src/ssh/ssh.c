@@ -31,7 +31,7 @@ dssh_session_set_terminate(dssh_session sess)
 			dssh_channel ch = sess->channels[i];
 
 			mtx_lock(&ch->buf_mtx);
-			cnd_signal(&ch->poll_cnd);
+			cnd_broadcast(&ch->poll_cnd);
 			mtx_unlock(&ch->buf_mtx);
 		}
 		mtx_unlock(&sess->channel_mtx);

@@ -394,6 +394,7 @@ set(AUTH_TESTS
 	dclient/pk_no_sign dclient/pk_alloc_fail
 	dclient/kbi_alloc_fail dclient/kbi_calloc_chain
 	dclient/kbi_resp_alloc
+	auth/server/password_disconnect
 )
 dssh_add_individual_tests(dssh_test_auth dssh_auth AUTH_TESTS)
 

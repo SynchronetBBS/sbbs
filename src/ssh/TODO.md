@@ -177,20 +177,6 @@
     transiently wrong names.  Either document as undefined-during-rekey or
     protect with `sess->mtx`.
 
-58. **Data race: unlocked pre-checks in `dssh_channel_write()`.**
-    Line 2260-2263 reads `ch->open`, `ch->eof_sent`, `ch->close_received`
-    without `buf_mtx`.  `close_received` can transition between the check
-    and the send.  Move the pre-checks inside `buf_mtx` (same pattern as
-    the fix for the old item 23 in `dssh_session_write`).
-
-59. **Data race: unlocked flag pre-checks in `dssh_session_write()` /
-    `dssh_session_write_ext()`.**  Lines 2085-2086 / 2118-2119 read
-    `ch->open`, `ch->eof_sent`, `ch->close_received` before acquiring
-    `buf_mtx`.  The subsequent `dssh_conn_send_data()` call re-checks
-    `remote_window` under lock (per the item 23 fix), but the flag checks
-    are still outside.  A `close_received` transition between the check
-    and the send is a protocol violation (sending data after CLOSE).
-    Move the flag checks inside `buf_mtx`.
 
 60. **Data race: `dssh_key_algo_set_ctx()` modifies global registry
     entry without synchronization.**  Line 2039 writes `ka->ctx` in the
@@ -266,15 +252,6 @@
     use a queue instead of a single slot, or document that
     `request_cb` must return promptly.
 
-68. **`dssh_session_start()` can be called twice, corrupting state.**
-    The double-start guard (line 1012) checks `demux_running`, which
-    is `atomic_bool` set to `false` when the demux thread exits.
-    After a disconnect, calling `session_start()` again double-inits
-    `channel_mtx`, `accept_mtx`, and `accept_cnd` (undefined behavior),
-    leaks the old channel array, and zeroes `channel_count`.  Fix:
-    guard on `conn_initialized` instead.  Only `dssh_session_stop()`
-    should clear it.
-
 69. **Self-initiated rekey silently drops application data.**
     In `dssh_transport_kexinit()` (lines 1183-1195), after sending
     our KEXINIT, the code loops calling `recv_packet` waiting for
@@ -284,22 +261,6 @@
     permanently lost, and the peer's window accounting becomes wrong.
     Fix: route non-KEXINIT messages through the normal demux dispatch,
     or buffer them for replay after rekey completes.
-
-70. **Server auth loop has no attempt counter.**  `auth_server_impl()`
-    (line 448) runs `for (;;)` with no limit on failed authentication
-    attempts.  RFC 4252 s4 says implementations SHOULD limit failures.
-    A malicious client can probe credentials indefinitely.  Fix: add
-    a configurable `max_auth_attempts` (default 20) and send
-    DISCONNECT after the limit.
-
-73. **`cnd_signal` on `poll_cnd` should be `cnd_broadcast`.**
-    `demux_dispatch()` (line 829) and `dssh_session_set_terminate()`
-    (ssh.c line 34) use `cnd_signal`, which wakes only one waiter.
-    If multiple threads poll the same channel for different events,
-    `cnd_signal` might wake a thread whose condition is not met,
-    leaving another thread whose condition IS met asleep until the
-    next delivery.  Fix: use `cnd_broadcast`.  There are at most a
-    few waiters per channel, so the cost is negligible.
 
 74. **Bytebuf `dssh_bytebuf_write()` silently truncates when full.**
     `ssh-chan.c:48-49` returns a short count when the buffer is full.
@@ -365,7 +326,61 @@
     timeout) before calling `cleanup`, or provide a non-blocking
     `session_stop` variant.
 
+### Unchecked C11 threading return values (items 85-87)
+
+85. **`mtx_lock()` / `mtx_unlock()` return values never checked.**
+    ~35 `mtx_lock()` and ~60 `mtx_unlock()` calls across `ssh-conn.c`,
+    `ssh-trans.c`, and `ssh.c` discard the return value.  C11
+    `mtx_lock()` returns `thrd_error` on failure (e.g., EDEADLK for
+    recursive lock on a non-recursive mutex — indicates a library bug).
+    `mtx_unlock()` can also fail (unlocking a mutex not held, or from
+    the wrong thread).  Every call site should check and, on failure,
+    set `terminate` and return a new `DSSH_ERROR_INTERNAL` (-14) error
+    code indicating a library logic bug was detected.  The library must
+    never call `abort()` or `exit()`.
+
+86. **`cnd_wait()` / `cnd_broadcast()` / `cnd_signal()` return values
+    never checked.**  7 `cnd_wait()`, 10 `cnd_broadcast()`, and 1
+    `cnd_signal()` calls discard the return value.  (`cnd_timedwait()`
+    is already checked for `thrd_timedout` at all 3 call sites.)  Same
+    fix as item 85: check and return `DSSH_ERROR_INTERNAL` on
+    `thrd_error`.
+
+87. **Shutdown path must tolerate prior lock/condvar failures.**
+    `dssh_session_set_terminate()` (ssh.c) and `dssh_session_stop()`
+    / cleanup paths acquire locks and broadcast condvars.  If a
+    lock/condvar failure triggered the shutdown in the first place,
+    these calls may also fail, and must not loop infinitely or
+    re-trigger the same error handling.  Fix: add an `atomic_bool
+    internal_error` flag to the session.  When a lock/condvar failure
+    is first detected, set it before calling `set_terminate()`.  In
+    the shutdown path, check the flag: if already set, skip
+    lock/condvar operations and proceed directly to resource cleanup
+    (destroy mutexes, free memory).  This is a best-effort teardown —
+    the session is already in an unrecoverable state.
+
 ## Closed
+
+- Data race: unlocked flag pre-checks in write functions (was items 58,
+  59).  Moved `!ch->open || ch->eof_sent || ch->close_received` checks
+  into `dssh_conn_send_data()` and `dssh_conn_send_extended_data()`,
+  which already hold `buf_mtx`.  Removed unlocked pre-checks from
+  `dssh_session_write()`, `dssh_session_write_ext()`, and
+  `dssh_channel_write()`.
+
+- `cnd_signal` on `poll_cnd` changed to `cnd_broadcast` (was item 73).
+  All 6 sites in `ssh-conn.c` and `ssh.c` now use `cnd_broadcast` so
+  multiple threads polling the same channel are all woken.
+
+- `dssh_session_start()` double-start guard fixed (was item 68).
+  Guard changed from `demux_running` to `conn_initialized`.
+  `dssh_session_stop()` now clears `conn_initialized` after cleanup.
+
+- Server auth `DSSH_AUTH_DISCONNECT` callback return value (was item 70).
+  Added `DSSH_AUTH_DISCONNECT = -2` constant.  Any server auth callback
+  can return it to disconnect the client (sends SSH_MSG_DISCONNECT with
+  reason `BY_APPLICATION`).  Application controls attempt-limit policy.
+  Handled in all 6 callback dispatch sites in `auth_server_impl()`.
 
 - NULL parameter validation for public API functions (was items 6, 45,
   46, 49, 50).  Added NULL checks returning `DSSH_ERROR_INVALID` (or

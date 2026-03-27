@@ -482,6 +482,12 @@ auth_server_impl(dssh_session sess,
 
 			if (cbs->none_cb != NULL)
 				auth_res = cbs->none_cb(user, user_len, cbs->cbdata);
+			if (auth_res == DSSH_AUTH_DISCONNECT) {
+				dssh_transport_disconnect(sess,
+				        SSH_DISCONNECT_BY_APPLICATION,
+				        "authentication rejected");
+				return DSSH_ERROR_TERMINATED;
+			}
 			if (auth_res == DSSH_AUTH_SUCCESS) {
 				res = send_auth_success(sess);
 				if (res < 0)
@@ -550,6 +556,13 @@ auth_server_impl(dssh_session sess,
 					        &prompt, &prompt_len, cbs->cbdata);
 				}
 
+				if (auth_res == DSSH_AUTH_DISCONNECT) {
+					free(prompt);
+					dssh_transport_disconnect(sess,
+					        SSH_DISCONNECT_BY_APPLICATION,
+					        "authentication rejected");
+					return DSSH_ERROR_TERMINATED;
+				}
 				if (auth_res == DSSH_AUTH_SUCCESS) {
 					free(prompt);
 					res = send_auth_success(sess);
@@ -578,6 +591,13 @@ auth_server_impl(dssh_session sess,
 			int      auth_res = cbs->password_cb(user, user_len,
 			        pw, pw_len, &prompt, &prompt_len, cbs->cbdata);
 
+			if (auth_res == DSSH_AUTH_DISCONNECT) {
+				free(prompt);
+				dssh_transport_disconnect(sess,
+				        SSH_DISCONNECT_BY_APPLICATION,
+				        "authentication rejected");
+				return DSSH_ERROR_TERMINATED;
+			}
 			if (auth_res == DSSH_AUTH_SUCCESS) {
 				free(prompt);
 				res = send_auth_success(sess);
@@ -656,6 +676,14 @@ auth_server_impl(dssh_session sess,
 				response_lens = NULL;
 				num_responses = 0;
 
+				if (auth_res == DSSH_AUTH_DISCONNECT) {
+					free_kbi_prompts(kbi_name, kbi_inst,
+					    kbi_nprompts, kbi_prompts, kbi_echo);
+					dssh_transport_disconnect(sess,
+					        SSH_DISCONNECT_BY_APPLICATION,
+					        "authentication rejected");
+					return DSSH_ERROR_TERMINATED;
+				}
 				if (auth_res == DSSH_AUTH_SUCCESS) {
 					free_kbi_prompts(kbi_name, kbi_inst,
 					    kbi_nprompts, kbi_prompts, kbi_echo);
@@ -835,6 +863,12 @@ auth_server_impl(dssh_session sess,
 				int auth_res = cbs->publickey_cb(user, user_len,
 				        algo_name, pk_blob, pk_len, false, cbs->cbdata);
 
+				if (auth_res == DSSH_AUTH_DISCONNECT) {
+					dssh_transport_disconnect(sess,
+					        SSH_DISCONNECT_BY_APPLICATION,
+					        "authentication rejected");
+					return DSSH_ERROR_TERMINATED;
+				}
 				if (auth_res == DSSH_AUTH_SUCCESS) {
 					res = send_pk_ok(sess, algo_name, algo_len,
 					        pk_blob, pk_len);
@@ -921,6 +955,12 @@ auth_server_impl(dssh_session sess,
 			int auth_res = cbs->publickey_cb(user, user_len,
 			        algo_name, pk_blob, pk_len, true, cbs->cbdata);
 
+			if (auth_res == DSSH_AUTH_DISCONNECT) {
+				dssh_transport_disconnect(sess,
+				        SSH_DISCONNECT_BY_APPLICATION,
+				        "authentication rejected");
+				return DSSH_ERROR_TERMINATED;
+			}
 			if (auth_res == DSSH_AUTH_SUCCESS) {
 				res = send_auth_success(sess);
 				if (res < 0)
