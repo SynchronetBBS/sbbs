@@ -180,10 +180,10 @@ int main(void)
     dssh_auth_set_banner(sess, "Welcome!\r\n", NULL);
     dssh_auth_server(sess, &auth_cbs, username, &username_len);
 
-    /* 7. Start demux thread */
+    /* 6. Start demux thread */
     dssh_session_start(sess);
 
-    /* 8. Accept incoming channels */
+    /* 7. Accept incoming channels */
     struct dssh_incoming_open *inc;
     while (dssh_session_accept(sess, &inc, -1) == 0) {
         struct dssh_server_session_cbs scbs = {
@@ -222,7 +222,7 @@ int main(void)
         }
     }
 
-    /* 9. Clean up */
+    /* 8. Clean up */
     dssh_session_cleanup(sess);
 }
 ```
@@ -265,6 +265,54 @@ The terminate callback fires exactly once (fatal error, peer disconnect,
 or explicit `dssh_session_terminate()` call), from any thread, before
 library condvar broadcasts.  It must not call any `dssh_*` function on
 this session except `dssh_session_is_terminated()`.
+
+## Version String
+
+Customize the SSH identification string (RFC 4253 s4.2):
+
+```c
+dssh_transport_set_version("MyApp-1.0", "FreeBSD");
+/* Produces: SSH-2.0-MyApp-1.0 FreeBSD\r\n */
+```
+
+Must be called before `dssh_session_init()`.  Pass NULL for
+`software_version` to keep the library default; pass NULL for
+`comment` to omit it.  The resulting line must fit in 255 bytes.
+
+## Session Termination
+
+```c
+/* Graceful disconnect (sends SSH_MSG_DISCONNECT to peer): */
+dssh_transport_disconnect(sess,
+    SSH_DISCONNECT_BY_APPLICATION, "goodbye");
+
+/* Non-graceful (just sets terminate flag, no wire message): */
+dssh_session_terminate(sess);
+
+/* Query: */
+if (dssh_session_is_terminated(sess)) { /* ... */ }
+```
+
+`dssh_transport_disconnect()` sends a disconnect message (best-effort)
+and sets the terminate flag.  `dssh_session_terminate()` sets the flag
+without sending anything.
+
+## Negotiated Algorithm Queries
+
+After a successful handshake, query the negotiated algorithms and
+peer version string.  Returns NULL if not yet negotiated:
+
+```c
+const char *peer = dssh_transport_get_remote_version(sess);
+const char *kex  = dssh_transport_get_kex_name(sess);
+const char *hk   = dssh_transport_get_hostkey_name(sess);
+const char *enc  = dssh_transport_get_enc_name(sess);
+const char *mac  = dssh_transport_get_mac_name(sess);
+```
+
+The returned strings point into internal state and remain valid
+until the session is cleaned up (or until the next rekey, which
+updates them atomically).
 
 ## Secure Memory
 
@@ -708,11 +756,12 @@ optional key management (generate, load, save).  They use the `ctx`
 field on the registered struct to store key material.
 
 ```c
-static int my_sign(uint8_t *buf, size_t bufsz, size_t *outlen,
+static int my_sign(uint8_t **out, size_t *outlen,
     const uint8_t *data, size_t data_len, dssh_key_algo_ctx *ctx)
 {
-    /* Sign data, write SSH-encoded signature blob to buf.
-     * Set *outlen to actual size written.  Return 0 on success. */
+    /* Sign data, malloc the SSH-encoded signature blob into *out.
+     * Set *outlen to the blob size.  Caller frees *out.
+     * Return 0 on success. */
 }
 
 static int my_verify(const uint8_t *key_blob, size_t key_blob_len,
@@ -723,11 +772,12 @@ static int my_verify(const uint8_t *key_blob, size_t key_blob_len,
      * the public key in key_blob.  Return 0 if valid. */
 }
 
-static int my_pubkey(uint8_t *buf, size_t bufsz, size_t *outlen,
+static int my_pubkey(const uint8_t **out, size_t *outlen,
     dssh_key_algo_ctx *ctx)
 {
-    /* Write SSH-encoded public key blob to buf.
-     * Set *outlen to actual size.  Return 0 on success. */
+    /* Set *out to the SSH-encoded public key blob (internal pointer,
+     * NOT malloc'd -- caller must not free).
+     * Set *outlen to the blob size.  Return 0 on success. */
 }
 
 static int my_haskey(dssh_key_algo_ctx *ctx)
@@ -893,7 +943,32 @@ char *pub = malloc(len);
 dssh_ed25519_get_pub_str(pub, len);  /* "ssh-ed25519 AAAA..." */
 ```
 
-## Server-Side Channel Setup
+## Server-Side Channel Accept
+
+### Rejecting a channel
+
+To reject an incoming channel open:
+
+```c
+dssh_session_reject(sess, inc, SSH_OPEN_ADMINISTRATIVELY_PROHIBITED,
+    "not allowed");
+```
+
+The `inc` pointer is freed by this call.  `description` may be NULL.
+
+### Accepting a raw channel
+
+For custom channel types where the application handles all requests
+itself (no shell/exec/subsystem setup):
+
+```c
+dssh_channel ch = dssh_channel_accept_raw(sess, inc);
+```
+
+Returns a raw (message-based) channel immediately.  The `inc` pointer
+is consumed (freed) by this call.
+
+### Accepting a session channel
 
 `dssh_session_accept_channel()` processes incoming `CHANNEL_REQUEST`
 messages until a terminal request (shell/exec/subsystem) arrives.
@@ -936,8 +1011,8 @@ Parse helpers for the `data` payload:
 - `dssh_parse_exec_data(data, len, &command, &clen)`
 - `dssh_parse_subsystem_data(data, len, &name, &nlen)`
 
-You can also use the RFC 4251 primitives directly: `dssh_parse_uint32()`,
-`dssh_parse_string()`, etc. (from `deucessh.h`).
+You can also use the RFC 4251 primitives directly:
+`dssh_parse_uint32()` and `dssh_serialize_uint32()` (from `deucessh.h`).
 
 ## Channel Lifecycle
 
@@ -958,6 +1033,8 @@ dssh_session_write(sess, ch, buf, bufsz);      /* stdin */
 dssh_session_write_ext(sess, ch, buf, bufsz);  /* stderr out */
 dssh_session_read_signal(sess, ch, &name);     /* signals */
 dssh_session_send_signal(sess, ch, "INT");     /* send signal */
+dssh_session_send_window_change(sess, ch,      /* resize */
+    cols, rows, wpx, hpx);
 
 /* Close (sends exit-status + EOF + CLOSE) */
 dssh_session_close(sess, ch, exit_code);
@@ -1129,10 +1206,6 @@ practical choices:
 
 ## Testing
 
-~1000 tests across 11 executables, ~2150 CTest runs (~23s with `-j8`).
-Layer and integration tests run as individual processes to eliminate
-shared-state issues:
-
 ```sh
 cmake -S . -B build -DDEUCESSH_BUILD_TESTS=ON
 cmake --build build -j8
@@ -1142,26 +1215,6 @@ ctest -R dssh_unit           # unit tests only
 ctest -R dssh_transport      # transport layer tests
 ctest -R dssh_self           # integration selftests
 ```
-
-| Suite | Tests | Scope |
-|-------|-------|-------|
-| test_arch | ~130 | RFC 4251 wire format: parse/serialize/roundtrip for all types |
-| test_chan | ~80 | Buffer primitives: bytebuf, msgqueue, signal queue, accept queue |
-| test_algo_enc | 23 | AES-256-CTR (NIST vectors), none cipher |
-| test_algo_mac | 19 | HMAC-SHA-256 (RFC 4231 vectors), none MAC |
-| test_algo_key | ~130 | Ed25519 + RSA: generate/sign/verify/save/load/parse/coverage |
-| test_transport | ~170 | Version exchange, packets, KEXINIT, handshake, rekey, registration |
-| test_auth | ~160 | Password, KBI, publickey, server-side auth, banners, parse errors |
-| test_conn | ~120 | Channels, demux, session/raw I/O, signals, close, threading |
-| test_alloc | ~80 | Iterative malloc/OpenSSL/C11 failure injection (×4 KEX/key combos) |
-| test_transport_errors | 11 | Transport error paths with test enc/mac modules |
-| test_selftest | 15 | Full client↔server via socketpair, including rekey under load |
-
-Tests use a custom framework (`test/dssh_test.h`) and mock I/O via
-`socketpair(AF_UNIX)`.  Failure injection uses library-only malloc
-redirect (`dssh_test_alloc.h`) and OpenSSL/C11 call wrappers
-(`dssh_test_ossl.h`) — both use atomic countdown with plateau
-detection for automatic termination.
 
 ## Files
 
@@ -1204,5 +1257,5 @@ test/               Test suite (built with -DDEUCESSH_BUILD_TESTS=ON)
   dssh_test.h       Test framework (assert macros, runner)
   dssh_test_internal.h  Declarations for exposed static functions
   mock_io.h/.c      Bidirectional mock I/O layer
-  test_*.c          Test source files (9 executables)
+  test_*.c          Test source files
 ```

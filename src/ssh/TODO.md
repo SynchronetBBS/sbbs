@@ -89,6 +89,47 @@
     4. Reject/limit 0-byte messages -- arbitrary restriction,
        potential protocol violation
 
+### API definition gaps (items 92-97)
+
+92. **`dssh_channel_read()` rejects NULL buf, breaking peek.**
+    README documents `dssh_channel_read(sess, ch, NULL, 0)` as a
+    peek operation to query the next message size.  The underlying
+    `msgqueue_pop()` supports this (returns `(int64_t)head->len` when
+    `buf == NULL`), but `dssh_channel_read()` has
+    `if (buf == NULL || ...) return DSSH_ERROR_INVALID;` which rejects
+    the call before it reaches `msgqueue_pop()`.  Fix: allow NULL buf
+    when bufsz == 0 (peek mode).
+
+93. **`dssh_transport_register_lang()` visibility leak.**
+    Declared `DSSH_PUBLIC` in `ssh-trans.h` (internal header) but not
+    in any consumer-facing header.  It's exported from the shared
+    library's symbol table but consumers can't call it without including
+    an internal header.  Either move to a public header or change to
+    `DSSH_PRIVATE`.
+
+94. **Wrong channel type is not detected at runtime.**
+    Using `dssh_session_*` functions on a raw channel or `dssh_channel_*`
+    functions on a session channel accesses the wrong union member.  No
+    runtime check prevents this.  Add `chan_type` checks to all channel
+    I/O functions, returning `DSSH_ERROR_INVALID`.
+
+95. **`dssh_session_read` / `dssh_session_write` return semantics undocumented.**
+    `dssh_session_write()` can return a partial write (less than requested)
+    due to window clamping.  `dssh_session_read()` returns 0 when no data
+    is buffered (not necessarily EOF -- EOF is signaled via poll).
+    `dssh_channel_write()` returns `int` (0/error), not bytes sent,
+    unlike `dssh_session_write()` which returns `int64_t` bytes.  These
+    asymmetries need clear documentation in the header comments.
+
+96. **`dssh_session_read_signal()` pointer lifetime undocumented.**
+    Returns `*signal_name` pointing into a channel-owned buffer
+    (`ch->last_signal`).  Valid until the next `read_signal()` call on
+    the same channel.  This must be documented in the header.
+
+97. **`dssh_parse_uint32()` return value undocumented.**
+    Returns `int64_t`: 4 on success (bytes consumed), negative error
+    code on failure.  Neither the header nor README documents this.
+
 ## Closed
 
 - Redundant `dssh_*` typedefs removed (was item 91).  Deleted all 7
