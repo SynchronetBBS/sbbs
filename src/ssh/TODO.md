@@ -13,11 +13,6 @@
     the need for these.
 
 
-15. `recv_packet_raw()` terminates the session on DSSH_ERROR_REKEY_NEEDED
-    (falls through to `dssh_session_set_terminate()`).  `send_packet()`
-    explicitly exempts REKEY_NEEDED from termination.  Asymmetric — recv
-    hard limit kills the session rather than triggering a rekey.
-
 16. Type-unsafe linked list traversal via
     `memcpy(&node, node, sizeof(void *))` in `dssh_test_build_namelist()`
     and `dssh_test_negotiate_algo()`.  Relies on `next` being the first
@@ -138,17 +133,6 @@
     Fix: route non-KEXINIT messages through the normal demux dispatch,
     or buffer them for replay after rekey completes.
 
-74. **Bytebuf `dssh_bytebuf_write()` silently truncates when full.**
-    `ssh-chan.c:48-49` returns a short count when the buffer is full.
-    The caller in `demux_dispatch()` (line 657) ignores the return
-    value and decrements `local_window` by the full `dlen`.  Data
-    is lost from the stream.  This should not happen normally because
-    the window and buffer are the same size, but if the window-add
-    race (item 51) causes window accounting drift, or if
-    `maybe_replenish_window` grants more window than free buffer
-    space, truncation occurs silently.  Fix: compute replenishment
-    based on free buffer space, not just `window_max - local_window`,
-    and check/assert the return value of `bytebuf_write`.
 
 75. **Msgqueue unbounded per-message overhead for raw channels.**
     `dssh_msgqueue_push()` does a separate `malloc` per message with

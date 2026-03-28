@@ -6295,6 +6295,129 @@ test_server_accept_alloc_sweep(void)
 }
 
 /* ================================================================
+ * Raw channel: write zero bytes, poll with timeout_ms=0
+ * ================================================================ */
+static int
+test_raw_channel_write_zero(void)
+{
+	struct conn_ctx ctx;
+	if (conn_setup(&ctx) < 0)
+		return TEST_SKIP;
+
+	struct open_subsys_ctx oc = {
+		.client = ctx.client,
+		.server = ctx.server,
+		.subsystem = "test-sub",
+	};
+	thrd_t ct, st;
+	ASSERT_THRD_CREATE(&ct, client_open_subsys_thread, &oc);
+	ASSERT_THRD_CREATE(&st, server_accept_raw_thread, &oc);
+	thrd_join(ct, NULL);
+	thrd_join(st, NULL);
+
+	if (oc.server_ch == NULL) {
+		conn_cleanup(&ctx);
+		return TEST_SKIP;
+	}
+
+	/* Write zero bytes should return 0 (no-op) */
+	uint8_t dummy = 0;
+	ASSERT_EQ(dssh_channel_write(ctx.server, oc.server_ch, &dummy, 0), 0);
+
+	/* Poll with timeout_ms=0 exercises the immediate-return path.
+	 * Result depends on whether close_received has been set by the
+	 * peer (race-dependent), so just verify no error. */
+	int ev = dssh_channel_poll(ctx.server, oc.server_ch,
+	    DSSH_POLL_READ, 0);
+	ASSERT_TRUE(ev >= 0);
+
+	dssh_channel_close(ctx.server, oc.server_ch);
+	conn_cleanup(&ctx);
+	return TEST_PASS;
+}
+
+/* ================================================================
+ * accept_raw alloc failure sweep
+ * ================================================================ */
+
+static int
+client_open_subsys_nofail_thread(void *arg)
+{
+	struct open_subsys_ctx *ctx = arg;
+	dssh_test_alloc_exclude_thread();
+	ctx->client_ch = dssh_channel_open_subsystem(ctx->client, ctx->subsystem);
+	return 0;
+}
+
+static int
+server_accept_raw_alloc_inject_thread(void *arg)
+{
+	struct open_subsys_ctx *ctx = arg;
+	struct dssh_incoming_open *inc = NULL;
+	int res = dssh_session_accept(ctx->server, &inc, 3000);
+	if (res < 0)
+		return 0;
+	ctx->server_ch = dssh_channel_accept_raw(ctx->server, inc);
+	return 0;
+}
+
+static int
+test_accept_raw_alloc_sweep(void)
+{
+	int any_failed = 0;
+
+	for (int n = 0; n < 50; n++) {
+		struct conn_ctx ctx;
+
+		dssh_test_alloc_exclude_new_threads();
+
+		if (conn_setup(&ctx) < 0)
+			return TEST_FAIL;
+
+		struct open_subsys_ctx oc = {
+			.client = ctx.client,
+			.server = ctx.server,
+			.subsystem = "test-sub",
+		};
+
+		thrd_t ct, st;
+		ASSERT_THRD_CREATE(&ct, client_open_subsys_nofail_thread, &oc);
+
+		dssh_test_alloc_fail_after(n);
+
+		ASSERT_THRD_CREATE(&st, server_accept_raw_alloc_inject_thread, &oc);
+		thrd_join(st, NULL);
+
+		int count = dssh_test_alloc_count();
+		dssh_test_alloc_reset();
+
+		if (oc.server_ch != NULL) {
+			thrd_join(ct, NULL);
+			dssh_channel_close(ctx.server, oc.server_ch);
+			if (oc.client_ch != NULL)
+				dssh_channel_close(ctx.client, oc.client_ch);
+			conn_cleanup(&ctx);
+			ASSERT_TRUE(any_failed);
+			return TEST_PASS;
+		}
+
+		any_failed = 1;
+		dssh_session_set_terminate(ctx.client);
+		thrd_join(ct, NULL);
+
+		if (oc.client_ch != NULL)
+			dssh_channel_close(ctx.client, oc.client_ch);
+
+		conn_cleanup(&ctx);
+
+		if (n >= count)
+			break;
+	}
+
+	return any_failed ? TEST_PASS : TEST_FAIL;
+}
+
+/* ================================================================
  * Test table
  * ================================================================ */
 
@@ -6492,6 +6615,8 @@ static struct dssh_test_entry tests[] = {
 	{ "alloc/open_shell_sweep",            test_open_shell_alloc_sweep },
 	{ "alloc/open_subsystem_sweep",        test_open_subsystem_alloc_sweep },
 	{ "alloc/server_accept_sweep",         test_server_accept_alloc_sweep },
+	{ "alloc/accept_raw_sweep",            test_accept_raw_alloc_sweep },
+	{ "raw/write_zero_poll_zero",          test_raw_channel_write_zero },
 
 	/* Additional branch coverage */
 	{ "test_data_after_close",             test_data_after_close },

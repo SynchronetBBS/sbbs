@@ -262,6 +262,8 @@ set(AUTH_TESTS
 	auth/server_send_fail/pk_bad_sig auth/server_send_fail/pk_reject_sig
 	auth/server_send_fail/pk_probe_rej
 	auth/server_send_fail/unknown_meth
+	auth/server_send_fail/kbi_success auth/server_send_fail/kbi_failure
+	auth/server_send_fail/kbi_info_req auth/server_send_fail/kbi_no_cb
 	auth/server_send_fail/chg_success auth/server_send_fail/chg_failure
 	auth/server_send_fail/chg_changereq
 	auth/pw_changereq_no_cb auth/pw_changereq_loop

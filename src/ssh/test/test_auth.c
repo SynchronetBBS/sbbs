@@ -7607,6 +7607,316 @@ test_server_send_fail_pk_reject_sig(void)
 }
 
 /* ================================================================
+ * KBI server send failures.
+ * Tests server-side KBI auth when the s2c pipe is closed before the
+ * server can send its response.
+ * ================================================================ */
+
+/*
+ * KBI callback that returns SUCCESS immediately (first call).
+ * Covers line 674: send_auth_success fails.
+ */
+static int
+kbi_immediate_success_cb(const uint8_t *username, size_t username_len,
+    uint32_t num_responses,
+    const uint8_t **responses, const size_t *response_lens,
+    char **name_out, char **instruction_out,
+    uint32_t *num_prompts_out,
+    char ***prompts_out, bool **echo_out,
+    void *cbdata)
+{
+	(void)username; (void)username_len;
+	(void)num_responses; (void)responses; (void)response_lens;
+	(void)name_out; (void)instruction_out;
+	(void)num_prompts_out; (void)prompts_out; (void)echo_out;
+	(void)cbdata;
+	return DSSH_AUTH_SUCCESS;
+}
+
+static int
+test_server_send_fail_kbi_success(void)
+{
+	struct handshake_ctx ctx;
+	if (handshake_setup(&ctx) < 0) {
+		handshake_cleanup(&ctx);
+		return TEST_FAIL;
+	}
+
+	struct auth_server_arg sa = {0};
+	sa.ctx = &ctx;
+	sa.cbs.methods_str = "keyboard-interactive";
+	sa.cbs.keyboard_interactive_cb = kbi_immediate_success_cb;
+
+	thrd_t st;
+	ASSERT_TRUE(thrd_create(&st, auth_server_thread, &sa) == thrd_success);
+
+	/* SERVICE_REQUEST/ACCEPT */
+	{
+		static const char svc[] = "ssh-userauth";
+		uint8_t msg[64];
+		size_t pos = 0;
+		msg[pos++] = SSH_MSG_SERVICE_REQUEST;
+		dssh_serialize_uint32((uint32_t)(sizeof(svc) - 1), msg, sizeof(msg), &pos);
+		memcpy(&msg[pos], svc, sizeof(svc) - 1);
+		pos += sizeof(svc) - 1;
+		ASSERT_OK(dssh_transport_send_packet(ctx.client, msg, pos, NULL));
+	}
+	{
+		uint8_t msg_type;
+		uint8_t *payload;
+		size_t payload_len;
+		ASSERT_OK(dssh_transport_recv_packet(ctx.client, &msg_type, &payload, &payload_len));
+		ASSERT_EQ(msg_type, SSH_MSG_SERVICE_ACCEPT);
+	}
+
+	/* Send KBI auth request */
+	{
+		uint8_t msg[256];
+		size_t pos = build_auth_prefix(msg, sizeof(msg), "keyboard-interactive");
+		/* language tag (empty) */
+		dssh_serialize_uint32(0, msg, sizeof(msg), &pos);
+		/* submethods (empty) */
+		dssh_serialize_uint32(0, msg, sizeof(msg), &pos);
+		ASSERT_OK(dssh_transport_send_packet(ctx.client, msg, pos, NULL));
+	}
+
+	/* Close s2c before server sends SUCCESS */
+	mock_io_close_s2c(&ctx.io);
+
+	thrd_join(st, NULL);
+	ASSERT_TRUE(sa.result < 0);
+
+	mock_io_close_c2s(&ctx.io);
+	handshake_cleanup(&ctx);
+	return TEST_PASS;
+}
+
+/*
+ * KBI callback that returns FAILURE immediately (first call).
+ * Covers line 684: send_auth_failure fails after KBI rejection.
+ */
+static int
+kbi_immediate_failure_cb(const uint8_t *username, size_t username_len,
+    uint32_t num_responses,
+    const uint8_t **responses, const size_t *response_lens,
+    char **name_out, char **instruction_out,
+    uint32_t *num_prompts_out,
+    char ***prompts_out, bool **echo_out,
+    void *cbdata)
+{
+	(void)username; (void)username_len;
+	(void)num_responses; (void)responses; (void)response_lens;
+	(void)name_out; (void)instruction_out;
+	(void)num_prompts_out; (void)prompts_out; (void)echo_out;
+	(void)cbdata;
+	return DSSH_AUTH_FAILURE;
+}
+
+static int
+test_server_send_fail_kbi_failure(void)
+{
+	struct handshake_ctx ctx;
+	if (handshake_setup(&ctx) < 0) {
+		handshake_cleanup(&ctx);
+		return TEST_FAIL;
+	}
+
+	struct auth_server_arg sa = {0};
+	sa.ctx = &ctx;
+	sa.cbs.methods_str = "keyboard-interactive";
+	sa.cbs.keyboard_interactive_cb = kbi_immediate_failure_cb;
+
+	thrd_t st;
+	ASSERT_TRUE(thrd_create(&st, auth_server_thread, &sa) == thrd_success);
+
+	/* SERVICE_REQUEST/ACCEPT */
+	{
+		static const char svc[] = "ssh-userauth";
+		uint8_t msg[64];
+		size_t pos = 0;
+		msg[pos++] = SSH_MSG_SERVICE_REQUEST;
+		dssh_serialize_uint32((uint32_t)(sizeof(svc) - 1), msg, sizeof(msg), &pos);
+		memcpy(&msg[pos], svc, sizeof(svc) - 1);
+		pos += sizeof(svc) - 1;
+		ASSERT_OK(dssh_transport_send_packet(ctx.client, msg, pos, NULL));
+	}
+	{
+		uint8_t msg_type;
+		uint8_t *payload;
+		size_t payload_len;
+		ASSERT_OK(dssh_transport_recv_packet(ctx.client, &msg_type, &payload, &payload_len));
+		ASSERT_EQ(msg_type, SSH_MSG_SERVICE_ACCEPT);
+	}
+
+	/* Send KBI auth request */
+	{
+		uint8_t msg[256];
+		size_t pos = build_auth_prefix(msg, sizeof(msg), "keyboard-interactive");
+		dssh_serialize_uint32(0, msg, sizeof(msg), &pos);
+		dssh_serialize_uint32(0, msg, sizeof(msg), &pos);
+		ASSERT_OK(dssh_transport_send_packet(ctx.client, msg, pos, NULL));
+	}
+
+	/* Close s2c before server sends FAILURE */
+	mock_io_close_s2c(&ctx.io);
+
+	thrd_join(st, NULL);
+	ASSERT_TRUE(sa.result < 0);
+
+	mock_io_close_c2s(&ctx.io);
+	handshake_cleanup(&ctx);
+	return TEST_PASS;
+}
+
+/*
+ * KBI callback that returns KBI_PROMPT with prompts (first call).
+ * Covers lines 691-703: flush_pending_banner + send_info_request fail.
+ */
+static int
+kbi_prompt_cb_for_send_fail(const uint8_t *username, size_t username_len,
+    uint32_t num_responses,
+    const uint8_t **responses, const size_t *response_lens,
+    char **name_out, char **instruction_out,
+    uint32_t *num_prompts_out,
+    char ***prompts_out, bool **echo_out,
+    void *cbdata)
+{
+	(void)username; (void)username_len;
+	(void)num_responses; (void)responses; (void)response_lens;
+	(void)cbdata;
+
+	*name_out = strdup("Test");
+	*instruction_out = strdup("Enter code");
+	*num_prompts_out = 1;
+	*prompts_out = malloc(sizeof(char *));
+	*echo_out = malloc(sizeof(bool));
+	(*prompts_out)[0] = strdup("Code: ");
+	(*echo_out)[0] = false;
+	return DSSH_AUTH_KBI_PROMPT;
+}
+
+static int
+test_server_send_fail_kbi_info_request(void)
+{
+	struct handshake_ctx ctx;
+	if (handshake_setup(&ctx) < 0) {
+		handshake_cleanup(&ctx);
+		return TEST_FAIL;
+	}
+
+	struct auth_server_arg sa = {0};
+	sa.ctx = &ctx;
+	sa.cbs.methods_str = "keyboard-interactive";
+	sa.cbs.keyboard_interactive_cb = kbi_prompt_cb_for_send_fail;
+
+	thrd_t st;
+	ASSERT_TRUE(thrd_create(&st, auth_server_thread, &sa) == thrd_success);
+
+	/* SERVICE_REQUEST/ACCEPT */
+	{
+		static const char svc[] = "ssh-userauth";
+		uint8_t msg[64];
+		size_t pos = 0;
+		msg[pos++] = SSH_MSG_SERVICE_REQUEST;
+		dssh_serialize_uint32((uint32_t)(sizeof(svc) - 1), msg, sizeof(msg), &pos);
+		memcpy(&msg[pos], svc, sizeof(svc) - 1);
+		pos += sizeof(svc) - 1;
+		ASSERT_OK(dssh_transport_send_packet(ctx.client, msg, pos, NULL));
+	}
+	{
+		uint8_t msg_type;
+		uint8_t *payload;
+		size_t payload_len;
+		ASSERT_OK(dssh_transport_recv_packet(ctx.client, &msg_type, &payload, &payload_len));
+		ASSERT_EQ(msg_type, SSH_MSG_SERVICE_ACCEPT);
+	}
+
+	/* Send KBI auth request */
+	{
+		uint8_t msg[256];
+		size_t pos = build_auth_prefix(msg, sizeof(msg), "keyboard-interactive");
+		dssh_serialize_uint32(0, msg, sizeof(msg), &pos);
+		dssh_serialize_uint32(0, msg, sizeof(msg), &pos);
+		ASSERT_OK(dssh_transport_send_packet(ctx.client, msg, pos, NULL));
+	}
+
+	/* Close s2c before server sends INFO_REQUEST */
+	mock_io_close_s2c(&ctx.io);
+
+	thrd_join(st, NULL);
+	ASSERT_TRUE(sa.result < 0);
+
+	mock_io_close_c2s(&ctx.io);
+	handshake_cleanup(&ctx);
+	return TEST_PASS;
+}
+
+/*
+ * No KBI callback set, client sends keyboard-interactive method.
+ * Covers line 613: send_auth_failure fails (no kbi_cb case).
+ */
+static int
+test_server_send_fail_kbi_no_cb(void)
+{
+	struct handshake_ctx ctx;
+	if (handshake_setup(&ctx) < 0) {
+		handshake_cleanup(&ctx);
+		return TEST_FAIL;
+	}
+
+	struct test_auth_cbdata cbdata = {0};
+	cbdata.password_result = DSSH_AUTH_SUCCESS;
+
+	struct auth_server_arg sa = {0};
+	sa.ctx = &ctx;
+	sa.cbs.methods_str = "password";
+	sa.cbs.password_cb = test_password_cb;
+	sa.cbs.cbdata = &cbdata;
+	/* keyboard_interactive_cb intentionally NOT set */
+
+	thrd_t st;
+	ASSERT_TRUE(thrd_create(&st, auth_server_thread, &sa) == thrd_success);
+
+	/* SERVICE_REQUEST/ACCEPT */
+	{
+		static const char svc[] = "ssh-userauth";
+		uint8_t msg[64];
+		size_t pos = 0;
+		msg[pos++] = SSH_MSG_SERVICE_REQUEST;
+		dssh_serialize_uint32((uint32_t)(sizeof(svc) - 1), msg, sizeof(msg), &pos);
+		memcpy(&msg[pos], svc, sizeof(svc) - 1);
+		pos += sizeof(svc) - 1;
+		ASSERT_OK(dssh_transport_send_packet(ctx.client, msg, pos, NULL));
+	}
+	{
+		uint8_t msg_type;
+		uint8_t *payload;
+		size_t payload_len;
+		ASSERT_OK(dssh_transport_recv_packet(ctx.client, &msg_type, &payload, &payload_len));
+		ASSERT_EQ(msg_type, SSH_MSG_SERVICE_ACCEPT);
+	}
+
+	/* Send KBI auth request -- no KBI callback set on server */
+	{
+		uint8_t msg[256];
+		size_t pos = build_auth_prefix(msg, sizeof(msg), "keyboard-interactive");
+		dssh_serialize_uint32(0, msg, sizeof(msg), &pos);
+		dssh_serialize_uint32(0, msg, sizeof(msg), &pos);
+		ASSERT_OK(dssh_transport_send_packet(ctx.client, msg, pos, NULL));
+	}
+
+	/* Close s2c before server sends FAILURE */
+	mock_io_close_s2c(&ctx.io);
+
+	thrd_join(st, NULL);
+	ASSERT_TRUE(sa.result < 0);
+
+	mock_io_close_c2s(&ctx.io);
+	handshake_cleanup(&ctx);
+	return TEST_PASS;
+}
+
+/* ================================================================
  * Group 4 additions: SERVICE_REQUEST with tiny payload (lines 181/184),
  * CHANGEREQ with no lang_len field (lines 699/702), and KBI with
  * empty response (line 932).
@@ -12183,6 +12493,10 @@ static struct dssh_test_entry tests[] = {
 	{ "auth/server_send_fail/pk_bad_sig",    test_server_send_fail_pk_verify_bad_sig },
 	{ "auth/server_send_fail/pk_success",    test_server_send_fail_pk_success },
 	{ "auth/server_send_fail/pk_reject_sig", test_server_send_fail_pk_reject_sig },
+	{ "auth/server_send_fail/kbi_success",   test_server_send_fail_kbi_success },
+	{ "auth/server_send_fail/kbi_failure",   test_server_send_fail_kbi_failure },
+	{ "auth/server_send_fail/kbi_info_req",  test_server_send_fail_kbi_info_request },
+	{ "auth/server_send_fail/kbi_no_cb",     test_server_send_fail_kbi_no_cb },
 
 	/* Group A: defensive / edge-case tests */
 	{ "auth/server/null_username_out",       test_server_null_username_out },
