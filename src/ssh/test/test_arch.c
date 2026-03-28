@@ -132,6 +132,17 @@ test_serialize_overflow_at_offset(void)
 	return TEST_PASS;
 }
 
+static int
+test_serialize_pos_past_bufsz(void)
+{
+	uint8_t buf[8];
+	size_t pos = 10; /* pos > bufsz */
+
+	ASSERT_ERR(dssh_serialize_uint32(1, buf, sizeof(buf), &pos), DSSH_ERROR_TOOLONG);
+	ASSERT_EQ_U(pos, 10);
+	return TEST_PASS;
+}
+
 /* ----------------------------------------------------------------
  * dssh_cleanse
  * ---------------------------------------------------------------- */
@@ -213,6 +224,7 @@ static struct dssh_test_entry tests[] = {
 	/* offset */
 	{ "serialize_at_nonzero_offset",    test_serialize_at_nonzero_offset },
 	{ "serialize_overflow_at_offset",   test_serialize_overflow_at_offset },
+	{ "serialize_pos_past_bufsz",       test_serialize_pos_past_bufsz },
 
 	/* dssh_cleanse */
 	{ "cleanse_basic",                  test_cleanse_basic },

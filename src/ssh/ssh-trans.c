@@ -345,9 +345,7 @@ dssh_transport_send_unimplemented(dssh_session sess,
 	size_t  pos = 0;
 
 	msg[pos++] = SSH_MSG_UNIMPLEMENTED;
-	int ret = dssh_serialize_uint32(rejected_seq, msg, sizeof(msg), &pos);
-	if (ret < 0)
-		return ret;
+	DSSH_PUT_U32(rejected_seq, msg, &pos);
 	return dssh_transport_send_packet(sess, msg, pos, NULL);
 }
 
@@ -369,23 +367,14 @@ dssh_transport_disconnect(dssh_session sess,
 	uint8_t msg[256];
 	size_t  pos = 0;
 
-	int ret;
-
 	msg[pos++] = SSH_MSG_DISCONNECT;
-	ret = dssh_serialize_uint32(reason, msg, sizeof(msg), &pos);
-	if (ret < 0)
-		goto fail;
-	ret = dssh_serialize_uint32((uint32_t)dlen, msg, sizeof(msg), &pos);
-	if (ret < 0)
-		goto fail;
+	DSSH_PUT_U32(reason, msg, &pos);
+	DSSH_PUT_U32((uint32_t)dlen, msg, &pos);
 	memcpy(&msg[pos], desc, dlen);
 	pos += dlen;
-	ret = dssh_serialize_uint32(0, msg, sizeof(msg), &pos);
-	if (ret < 0)
-		goto fail;
+	DSSH_PUT_U32(0, msg, &pos);
 
 	dssh_transport_send_packet(sess, msg, pos, NULL); /* best-effort */
-fail:
 	dssh_session_set_terminate(sess);
 	return 0;
 }
@@ -527,9 +516,7 @@ dssh_transport_send_packet(dssh_session sess,
 	}
 
 	size_t pos = 0;
-	ret = dssh_serialize_uint32(packet_length, sess->trans.tx_packet, sess->trans.packet_buf_sz, &pos);
-	if (ret < 0)
-		goto tx_done;
+	DSSH_PUT_U32(packet_length, sess->trans.tx_packet, &pos);
 	sess->trans.tx_packet[pos++] = (uint8_t)padding_len;
 	memcpy(&sess->trans.tx_packet[pos], payload, payload_len);
 	pos += payload_len;
@@ -544,9 +531,7 @@ dssh_transport_send_packet(dssh_session sess,
 		uint8_t *mac_input = sess->trans.tx_mac_scratch;
 		size_t   mi_pos = 0;
 
-		ret = dssh_serialize_uint32(sess->trans.tx_seq, mac_input, 4 + sess->trans.packet_buf_sz, &mi_pos);
-		if (ret < 0)
-			goto tx_done;
+		DSSH_PUT_U32(sess->trans.tx_seq, mac_input, &mi_pos);
 		memcpy(&mac_input[mi_pos], sess->trans.tx_packet, total);
 		mi_pos += total;
 
@@ -665,12 +650,8 @@ recv_packet_raw(dssh_session sess,
 			goto rx_done;
 	}
 
-	uint32_t packet_length;
-	int64_t  pret = dssh_parse_uint32(sess->trans.rx_packet, 4, &packet_length);
-	if (pret < 0) {
-		ret = (int)pret;
-		goto rx_done;
-	}
+	/* First block (>= 8 bytes) is decrypted; read packet_length */
+	uint32_t packet_length = DSSH_GET_U32(sess->trans.rx_packet);
 
 	if (packet_length < 2) {
 		ret = DSSH_ERROR_PARSE;
@@ -708,9 +689,7 @@ recv_packet_raw(dssh_session sess,
 		uint8_t *mac_input = sess->trans.rx_mac_scratch;
 		size_t   mi_pos = 0;
 
-		ret = dssh_serialize_uint32(sess->trans.rx_seq, mac_input, 4 + sess->trans.packet_buf_sz, &mi_pos);
-		if (ret < 0)
-			goto rx_done;
+		DSSH_PUT_U32(sess->trans.rx_seq, mac_input, &mi_pos);
 		memcpy(&mac_input[mi_pos], sess->trans.rx_packet, packet_length + 4);
 		mi_pos += packet_length + 4;
 
@@ -847,13 +826,10 @@ dssh_transport_recv_packet(dssh_session sess,
 					uint32_t msg_len = 0;
 
 					if (dpos + 4 <= *payload_len) {
-						if (dssh_parse_uint32(&(*payload)[dpos], *payload_len - dpos, &msg_len) < 4)
+						msg_len = DSSH_GET_U32(&(*payload)[dpos]);
+						dpos += 4;
+						if (dpos + msg_len > *payload_len)
 							msg_len = 0;
-						else {
-							dpos += 4;
-							if (dpos + msg_len > *payload_len)
-								msg_len = 0;
-						}
 					}
 					sess->debug_cb(always_display,
 					    msg_len > 0 ? &(*payload)[dpos] : NULL,
@@ -862,10 +838,9 @@ dssh_transport_recv_packet(dssh_session sess,
 				continue;
 			case SSH_MSG_UNIMPLEMENTED:
 				if ((sess->unimplemented_cb != NULL) && (*payload_len >= 5)) {
-					uint32_t rejected_seq;
+					uint32_t rejected_seq = DSSH_GET_U32(&(*payload)[1]);
 
-					if (dssh_parse_uint32(&(*payload)[1], *payload_len - 1, &rejected_seq) >= 4)
-						sess->unimplemented_cb(rejected_seq, sess->unimplemented_cbdata);
+					sess->unimplemented_cb(rejected_seq, sess->unimplemented_cbdata);
 				}
 				continue;
 			case SSH_MSG_GLOBAL_REQUEST:
@@ -879,8 +854,7 @@ dssh_transport_recv_packet(dssh_session sess,
 
 				if (gpos + 4 > *payload_len)
 					break; /* malformed, return to caller */
-				if (dssh_parse_uint32(&(*payload)[gpos], *payload_len - gpos, &gname_len) < 4)
-					break;
+				gname_len = DSSH_GET_U32(&(*payload)[gpos]);
 				gpos += 4;
 				if (gpos + gname_len + 1 > *payload_len)
 					break;
@@ -1027,11 +1001,9 @@ serialize_namelist_from_str(const char *str, uint8_t *buf, size_t bufsz, size_t 
 
 	uint32_t len = (uint32_t)slen;
 
-	int ret = dssh_serialize_uint32(len, buf, bufsz, pos);
-	if (ret < 0)
-		return ret;
-	if (*pos > bufsz || len > bufsz - *pos)
+	if (*pos > bufsz || bufsz - *pos < 4 + len)
 		return DSSH_ERROR_TOOLONG;
+	DSSH_PUT_U32(len, buf, pos);
 	memcpy(&buf[*pos], str, len);
 	*pos += len;
 	return 0;
@@ -1130,9 +1102,7 @@ dssh_transport_kexinit(dssh_session sess)
 	kexinit[pos++] = 0;
 
         /* reserved */
-	ret = dssh_serialize_uint32(0, kexinit, sess->trans.packet_buf_sz, &pos);
-	if (ret < 0)
-		goto kexinit_fail;
+	DSSH_PUT_U32(0, kexinit, &pos);
 
 	if (0) {
 kexinit_fail:
@@ -1209,10 +1179,9 @@ kexinit_fail:
 	char     peer_lists[DSSH_KEXINIT_NAMELIST_COUNT][DSSH_NAMELIST_BUF_SIZE];
 
 	for (int i = 0; i < DSSH_KEXINIT_NAMELIST_COUNT; i++) {
-		uint32_t nlen;
-
-		if (dssh_parse_uint32(&pk[ppos], pk_len - ppos, &nlen) < 4)
+		if (pk_len - ppos < 4)
 			return DSSH_ERROR_PARSE;
+		uint32_t nlen = DSSH_GET_U32(&pk[ppos]);
 		ppos += 4;
 
 		if (ppos + nlen > pk_len)
@@ -1582,11 +1551,7 @@ dssh_transport_newkeys(dssh_session sess)
 
 	size_t kpos = 0;
 
-	int sret = dssh_serialize_uint32((uint32_t)k_data_len, k_mpint, k_wire_len, &kpos);
-	if (sret < 0) {
-		free(k_mpint);
-		return sret;
-	}
+	DSSH_PUT_U32((uint32_t)k_data_len, k_mpint, &kpos);
 	if (!k_as_string && k_data_len > ss_sz)
 		k_mpint[kpos++] = 0; /* mpint sign-bit padding */
 	memcpy(&k_mpint[kpos], ss, ss_sz);

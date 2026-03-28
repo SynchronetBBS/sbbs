@@ -18,6 +18,20 @@
 /* Wire-length of a string literal (excludes NUL terminator) */
 #define DSSH_STRLEN(lit) ((uint32_t)(sizeof(lit) - 1))
 
+/* Unchecked big-endian uint32 read — caller ensures buf has >= 4 bytes */
+#define DSSH_GET_U32(buf) \
+	(((uint32_t)(buf)[0] << 24) | ((uint32_t)(buf)[1] << 16) | \
+	 ((uint32_t)(buf)[2] << 8) | (uint32_t)(buf)[3])
+
+/* Unchecked big-endian uint32 write — caller ensures buf has >= 4 bytes past *pos */
+#define DSSH_PUT_U32(val, buf, pos) do { \
+	uint32_t dssh_put_v_ = (val); \
+	(buf)[(*(pos))++] = (uint8_t)(dssh_put_v_ >> 24); \
+	(buf)[(*(pos))++] = (uint8_t)(dssh_put_v_ >> 16); \
+	(buf)[(*(pos))++] = (uint8_t)(dssh_put_v_ >> 8); \
+	(buf)[(*(pos))++] = (uint8_t)(dssh_put_v_); \
+} while (0)
+
 /* Set terminate flag and wake all library-owned condvar waiters. */
 DSSH_PRIVATE void dssh_session_set_terminate(dssh_session sess);
 
