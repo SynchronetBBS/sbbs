@@ -442,6 +442,83 @@ test_recv_sweep(void)
 }
 
 /* ================================================================
+ * session_start() init failure tests
+ *
+ * dssh_session_start() calls mtx_init × 2, cnd_init × 1,
+ * thrd_create × 1.  These go through the ossl countdown
+ * (not the thrd countdown), so we use dssh_test_ossl_fail_after.
+ * We handshake first with no injection, then arm before start().
+ * ================================================================ */
+
+/*
+ * Sweep all 4 init/create calls in dssh_session_start().
+ * n=0: mtx_init(&channel_mtx) fails
+ * n=1: mtx_init(&accept_mtx) fails
+ * n=2: cnd_init(&accept_cnd) fails
+ * n=3: thrd_create() fails
+ */
+static int
+test_start_init_sweep(void)
+{
+	for (int n = 0; n < 4; n++) {
+		struct handshake_ctx ctx;
+		if (handshake_setup(&ctx) < 0) {
+			handshake_cleanup(&ctx);
+			return TEST_SKIP;
+		}
+
+		/* Arm ossl countdown to fail the Nth init/create call */
+		dssh_test_ossl_fail_after(n);
+		int res = dssh_session_start(ctx.client);
+		dssh_test_ossl_reset();
+
+		ASSERT_ERR(res, DSSH_ERROR_INIT);
+
+		/* session_start failed, so no demux thread to stop.
+		 * Close pipes and clean up. */
+		mock_io_close_c2s(&ctx.io);
+		mock_io_close_s2c(&ctx.io);
+		handshake_cleanup(&ctx);
+	}
+
+	return TEST_PASS;
+}
+
+/*
+ * Verify session_start(NULL) returns DSSH_ERROR_INVALID.
+ */
+static int
+test_start_null(void)
+{
+	ASSERT_ERR(dssh_session_start(NULL), DSSH_ERROR_INVALID);
+	return TEST_PASS;
+}
+
+/*
+ * Verify double-start returns DSSH_ERROR_INIT.
+ */
+static int
+test_start_double(void)
+{
+	struct handshake_ctx ctx;
+	if (handshake_setup(&ctx) < 0) {
+		handshake_cleanup(&ctx);
+		return TEST_SKIP;
+	}
+
+	ASSERT_OK(dssh_session_start(ctx.client));
+	ASSERT_ERR(dssh_session_start(ctx.client), DSSH_ERROR_INIT);
+
+	/* Clean up: close pipes so demux thread exits */
+	mock_io_close_c2s(&ctx.io);
+	mock_io_close_s2c(&ctx.io);
+	dssh_session_stop(ctx.client);
+	dssh_session_stop(ctx.server);
+	handshake_cleanup(&ctx);
+	return TEST_PASS;
+}
+
+/* ================================================================
  * Test list
  * ================================================================ */
 
@@ -452,6 +529,9 @@ static struct dssh_test_entry tests[] = {
 	{ "thrd/set_terminate_fail",  test_set_terminate_lock_fail },
 	{ "thrd/send_sweep",          test_send_sweep },
 	{ "thrd/recv_sweep",          test_recv_sweep },
+	{ "thrd/start_init_sweep",    test_start_init_sweep },
+	{ "thrd/start_null",          test_start_null },
+	{ "thrd/start_double",        test_start_double },
 };
 
 DSSH_TEST_MAIN(tests)

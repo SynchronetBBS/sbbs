@@ -1480,6 +1480,35 @@ test_self_connection_drop(void)
 	return TEST_PASS;
 }
 
+/*
+ * Verify all public API functions in ssh.c handle NULL session gracefully.
+ * Covers 7 NULL-guard branches + dssh_cleanse(NULL).
+ */
+static int
+test_null_session_api(void)
+{
+	/* dssh_session_terminate(NULL) returns false */
+	ASSERT_FALSE(dssh_session_terminate(NULL));
+
+	/* dssh_session_is_terminated(NULL) returns true */
+	ASSERT_TRUE(dssh_session_is_terminated(NULL));
+
+	/* dssh_session_cleanup(NULL) is a no-op (must not crash) */
+	dssh_session_cleanup(NULL);
+
+	/* Setter functions with NULL session are no-ops (must not crash) */
+	dssh_session_set_cbdata(NULL, NULL, NULL, NULL, NULL);
+	dssh_session_set_debug_cb(NULL, NULL, NULL);
+	dssh_session_set_unimplemented_cb(NULL, NULL, NULL);
+	dssh_session_set_banner_cb(NULL, NULL, NULL);
+	dssh_session_set_global_request_cb(NULL, NULL, NULL);
+
+	/* dssh_cleanse(NULL, ...) is a no-op (must not crash) */
+	dssh_cleanse(NULL, 10);
+
+	return TEST_PASS;
+}
+
 /* ================================================================
  * Test table and main
  * ================================================================ */
@@ -1500,6 +1529,7 @@ static struct dssh_test_entry tests[] = {
 	{ "test_self_rekey_manual",            test_self_rekey_manual },
 	{ "test_self_rekey_preserves_channels", test_self_rekey_preserves_channels },
 	{ "test_self_connection_drop",         test_self_connection_drop },
+	{ "test_null_session_api",             test_null_session_api },
 };
 
 DSSH_TEST_MAIN(tests)

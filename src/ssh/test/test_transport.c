@@ -6592,6 +6592,72 @@ test_hmac_sha2_256_mac_init_failure(void)
 	return TEST_PASS;
 }
 
+/*
+ * is_20: "SSH-2X..." -- buf[4]=='2' true but buf[5]!='.' false.
+ * Covers the short-circuit branch in the first condition at line 90.
+ */
+static int
+test_is_20_20_bad_dot(void)
+{
+	uint8_t buf[] = "SSH-2X-test\r\n";
+	ASSERT_FALSE(dssh_test_is_20(buf, sizeof(buf) - 1));
+	return TEST_PASS;
+}
+
+/*
+ * SSH_MSG_DEBUG with only 1 byte payload (just the message type byte).
+ * The callback should NOT be invoked because payload_len < 2 (line 821).
+ */
+static int
+test_debug_short_payload(void)
+{
+	dssh_test_reset_global_config();
+	ASSERT_OK(register_all_algorithms());
+	if (test_generate_host_key() < 0)
+		return TEST_FAIL;
+	dssh_transport_set_callbacks(mock_tx_dispatch, mock_rx_dispatch,
+	    mock_rxline_dispatch, mock_extra_line_cb);
+
+	struct mock_io_state io;
+	ASSERT_OK(mock_io_init(&io, 0));
+
+	dssh_session client = dssh_session_init(true, 0);
+	ASSERT_NOT_NULL(client);
+	dssh_session_set_cbdata(client, &io, &io, &io, &io);
+
+	dssh_session server = init_server_session();
+	ASSERT_NOT_NULL(server);
+	dssh_session_set_cbdata(server, &io, &io, &io, &io);
+
+	debug_cb_invoked = false;
+	dssh_session_set_debug_cb(server, mock_debug_cb_track, NULL);
+
+	/* 1-byte DEBUG: just the message type, no always_display bool */
+	uint8_t dbg[] = { SSH_MSG_DEBUG };
+	ASSERT_OK(dssh_transport_send_packet(client, dbg, sizeof(dbg), NULL));
+
+	/* Follow with a real message so recv_packet returns */
+	uint8_t follow[] = { SSH_MSG_SERVICE_REQUEST, 0x48 };
+	ASSERT_OK(dssh_transport_send_packet(client, follow,
+	    sizeof(follow), NULL));
+
+	uint8_t msg_type;
+	uint8_t *payload;
+	size_t payload_len;
+	ASSERT_OK(dssh_transport_recv_packet(server, &msg_type,
+	    &payload, &payload_len));
+	ASSERT_EQ(msg_type, SSH_MSG_SERVICE_REQUEST);
+
+	/* Callback must NOT have been called */
+	ASSERT_FALSE(debug_cb_invoked);
+
+	dssh_session_cleanup(client);
+	dssh_session_cleanup(server);
+	mock_io_free(&io);
+	dssh_test_reset_global_config();
+	return TEST_PASS;
+}
+
 /* ================================================================
  * Test table
  * ================================================================ */
@@ -6880,8 +6946,10 @@ static struct dssh_test_entry tests[] = {
 	{ "version/is_20_199_short_buf",     test_is_20_199_short_buf },
 	{ "version/is_20_199_bad_minor_d",   test_is_20_199_bad_minor_digit },
 	{ "version/is_20_199_no_dash",       test_is_20_199_no_dash },
+	{ "version/is_20_20_bad_dot",        test_is_20_20_bad_dot },
 	{ "version/rx_too_long",             test_version_rx_too_long },
 	{ "version/rx_non_ascii",            test_version_rx_non_ascii },
+	{ "debug/short_payload",             test_debug_short_payload },
 
 	/* HMAC-SHA2-256 deterministic ossl failures */
 	{ "hmac_sha2_256/reinit_failure",    test_hmac_sha2_256_reinit_failure },
