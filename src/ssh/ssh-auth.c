@@ -7,10 +7,42 @@
 #include "deucessh-auth.h"
 #include "ssh-internal.h"
 
+static const char service_connection[]            = "ssh-connection";
 static const char method_none[]                  = "none";
 static const char method_password[]              = "password";
 static const char method_publickey[]             = "publickey";
 static const char method_keyboard_interactive[]  = "keyboard-interactive";
+
+/* Fixed overhead for each auth message type (excludes variable-length fields).
+ * Used in both overflow checks and msg_len computations. */
+
+/* USERAUTH_FAILURE: msg_type + methods_len + partial */
+#define AUTH_FAILURE_FIXED  (1 + 4 + 1)
+
+/* PASSWD_CHANGEREQ: msg_type + prompt_len + language_len */
+#define PASSWD_CHANGEREQ_FIXED  (1 + 4 + 4)
+
+/* USERAUTH_REQUEST (none): msg_type + user_len + svc_len + svc
+ * + method_len + method */
+#define AUTH_NONE_FIXED  (1 + 4 + 4 + DSSH_STRLEN(service_connection) \
+    + 4 + DSSH_STRLEN(method_none))
+
+/* USERAUTH_REQUEST (password): msg_type + user_len + svc_len + svc
+ * + method_len + method + change_flag + old_pw_len */
+#define AUTH_PASSWORD_FIXED  (1 + 4 + 4 + DSSH_STRLEN(service_connection) \
+    + 4 + DSSH_STRLEN(method_password) + 1 + 4)
+
+/* USERAUTH_REQUEST (keyboard-interactive): msg_type + user_len + svc_len
+ * + svc + method_len + method + language_len + submethods_len */
+#define AUTH_KBI_FIXED  (1 + 4 + 4 + DSSH_STRLEN(service_connection) \
+    + 4 + DSSH_STRLEN(method_keyboard_interactive) + 4 + 4)
+
+/* USERAUTH_REQUEST (publickey) sign data and message share the same
+ * fixed overhead: 4 (session_id_len in sign data, sig_len in message)
+ * + msg_type + user_len + svc_len + svc + method_len + method + TRUE
+ * + algo_len + pubkey_len */
+#define AUTH_PUBLICKEY_FIXED  (4 + 1 + 4 + 4 + DSSH_STRLEN(service_connection) \
+    + 4 + DSSH_STRLEN(method_publickey) + 1 + 4 + 4)
 
 static int
 handle_banner(dssh_session sess, uint8_t *payload, size_t payload_len)
@@ -65,10 +97,10 @@ send_auth_failure(dssh_session sess, const char *methods, bool partial_success)
 
 	size_t mlen = strlen(methods);
 
-	if (mlen > UINT32_MAX || mlen > SIZE_MAX - 6)
+	if (mlen > UINT32_MAX || mlen > SIZE_MAX - AUTH_FAILURE_FIXED)
 		return DSSH_ERROR_INVALID;
 
-	size_t   msg_len = 1 + 4 + mlen + 1;
+	size_t   msg_len = AUTH_FAILURE_FIXED + mlen;
 	uint8_t *msg = malloc(msg_len);
 
 	if (msg == NULL)
@@ -104,10 +136,10 @@ static int
 send_passwd_changereq(dssh_session sess,
     const uint8_t *prompt, size_t prompt_len)
 {
-	if (prompt_len > UINT32_MAX || prompt_len > SIZE_MAX - 9)
+	if (prompt_len > UINT32_MAX || prompt_len > SIZE_MAX - PASSWD_CHANGEREQ_FIXED)
 		return DSSH_ERROR_INVALID;
 
-	size_t   msg_len = 9 + prompt_len;
+	size_t   msg_len = PASSWD_CHANGEREQ_FIXED + prompt_len;
 	uint8_t *msg = malloc(msg_len);
 
 	if (msg == NULL)
@@ -1050,11 +1082,10 @@ get_methods_impl(dssh_session sess,
 
 	size_t            ulen = strlen(username);
 
-	if (ulen > UINT32_MAX || ulen > SIZE_MAX - 31)
+	if (ulen > UINT32_MAX || ulen > SIZE_MAX - AUTH_NONE_FIXED)
 		return DSSH_ERROR_INVALID;
 
-	static const char service[] = "ssh-connection";
-	size_t            msg_len = 1 + 4 + ulen + 4 + (sizeof(service) - 1) + 4 + DSSH_STRLEN(method_none);
+	size_t            msg_len = AUTH_NONE_FIXED + ulen;
 	uint8_t          *msg = malloc(msg_len);
 
 	if (msg == NULL)
@@ -1066,9 +1097,9 @@ get_methods_impl(dssh_session sess,
 	DSSH_PUT_U32((uint32_t)ulen, msg, &pos);
 	memcpy(&msg[pos], username, ulen);
 	pos += ulen;
-	DSSH_PUT_U32(DSSH_STRLEN(service), msg, &pos);
-	memcpy(&msg[pos], service, sizeof(service) - 1);
-	pos += sizeof(service) - 1;
+	DSSH_PUT_U32(DSSH_STRLEN(service_connection), msg, &pos);
+	memcpy(&msg[pos], service_connection, DSSH_STRLEN(service_connection));
+	pos += DSSH_STRLEN(service_connection);
 	DSSH_PUT_U32(DSSH_STRLEN(method_none), msg, &pos);
 	memcpy(&msg[pos], method_none, DSSH_STRLEN(method_none));
 	pos += DSSH_STRLEN(method_none);
@@ -1155,11 +1186,12 @@ send_password_request(dssh_session sess,
 
 	if (ulen > UINT32_MAX || oplen > UINT32_MAX || new_password_len > UINT32_MAX)
 		return DSSH_ERROR_INVALID;
-	if (ulen > SIZE_MAX - 40 || oplen > SIZE_MAX - 40 - ulen)
+
+	if (ulen > SIZE_MAX - AUTH_PASSWORD_FIXED
+	    || oplen > SIZE_MAX - AUTH_PASSWORD_FIXED - ulen)
 		return DSSH_ERROR_INVALID;
 
-	static const char service[] = "ssh-connection";
-	size_t            msg_len = 40 + ulen + oplen;
+	size_t            msg_len = AUTH_PASSWORD_FIXED + ulen + oplen;
 
 	if (change) {
 		if (new_password_len > SIZE_MAX - 4 - msg_len)
@@ -1180,9 +1212,9 @@ send_password_request(dssh_session sess,
 	SER((uint32_t)ulen);
 	memcpy(&msg[pos], username, ulen);
 	pos += ulen;
-	SER(DSSH_STRLEN(service));
-	memcpy(&msg[pos], service, sizeof(service) - 1);
-	pos += sizeof(service) - 1;
+	SER(DSSH_STRLEN(service_connection));
+	memcpy(&msg[pos], service_connection, DSSH_STRLEN(service_connection));
+	pos += DSSH_STRLEN(service_connection);
 	SER(DSSH_STRLEN(method_password));
 	memcpy(&msg[pos], method_password, DSSH_STRLEN(method_password));
 	pos += DSSH_STRLEN(method_password);
@@ -1328,12 +1360,10 @@ auth_kbi_impl(dssh_session sess,
 
 	size_t            ulen = strlen(username);
 
-	if (ulen > UINT32_MAX || ulen > SIZE_MAX - 55)
+	if (ulen > UINT32_MAX || ulen > SIZE_MAX - AUTH_KBI_FIXED)
 		return DSSH_ERROR_INVALID;
 
-	static const char service[] = "ssh-connection";
-	size_t            msg_len = 1 + 4 + ulen + 4 + (sizeof(service) - 1)
-	    + 4 + DSSH_STRLEN(method_keyboard_interactive) + 4 + 4;
+	size_t            msg_len = AUTH_KBI_FIXED + ulen;
 	uint8_t          *msg = malloc(msg_len);
 
 	if (msg == NULL)
@@ -1348,9 +1378,9 @@ auth_kbi_impl(dssh_session sess,
 	SER((uint32_t)ulen);
 	memcpy(&msg[pos], username, ulen);
 	pos += ulen;
-	SER(DSSH_STRLEN(service));
-	memcpy(&msg[pos], service, sizeof(service) - 1);
-	pos += sizeof(service) - 1;
+	SER(DSSH_STRLEN(service_connection));
+	memcpy(&msg[pos], service_connection, DSSH_STRLEN(service_connection));
+	pos += DSSH_STRLEN(service_connection);
 	SER(DSSH_STRLEN(method_keyboard_interactive));
 	memcpy(&msg[pos], method_keyboard_interactive, DSSH_STRLEN(method_keyboard_interactive));
 	pos += DSSH_STRLEN(method_keyboard_interactive);
@@ -1443,53 +1473,26 @@ auth_kbi_impl(dssh_session sess,
 
 			if (num_prompts > 0) {
 				prompts = calloc(num_prompts, sizeof(*prompts));
-				if (!prompts)
-					return DSSH_ERROR_ALLOC;
 				prompt_lens = calloc(num_prompts, sizeof(*prompt_lens));
-				if (!prompt_lens) {
-					free(prompts);
-					return DSSH_ERROR_ALLOC;
-				}
 				echo = calloc(num_prompts, sizeof(*echo));
-				if (!echo) {
-					free(prompts);
-					free(prompt_lens);
-					return DSSH_ERROR_ALLOC;
-				}
 				responses = calloc(num_prompts, sizeof(*responses));
-				if (!responses) {
-					free(prompts);
-					free(prompt_lens);
-					free(echo);
-					return DSSH_ERROR_ALLOC;
-				}
 				response_lens = calloc(num_prompts, sizeof(*response_lens));
-				if (!response_lens) {
-					free(prompts);
-					free(prompt_lens);
-					free(echo);
-					free(responses);
-					return DSSH_ERROR_ALLOC;
+				if (!prompts || !prompt_lens || !echo
+				    || !responses || !response_lens) {
+					res = DSSH_ERROR_ALLOC;
+					goto kbi_cleanup;
 				}
 
 				for (uint32_t i = 0; i < num_prompts; i++) {
 					if (rpos + 4 > payload_len) {
-						free(prompts);
-						free(prompt_lens);
-						free(echo);
-						free(responses);
-						free(response_lens);
-						return DSSH_ERROR_PARSE;
+						res = DSSH_ERROR_PARSE;
+						goto kbi_cleanup;
 					}
 					slen = DSSH_GET_U32(&payload[rpos]);
 					rpos += 4;
 					if (rpos + slen + 1 > payload_len) {
-						free(prompts);
-						free(prompt_lens);
-						free(echo);
-						free(responses);
-						free(response_lens);
-						return DSSH_ERROR_PARSE;
+						res = DSSH_ERROR_PARSE;
+						goto kbi_cleanup;
 					}
 					prompts[i] = &payload[rpos];
 					prompt_lens[i] = slen;
@@ -1507,32 +1510,24 @@ auth_kbi_impl(dssh_session sess,
 			free(prompts);
 			free(prompt_lens);
 			free(echo);
+			prompts = NULL;
+			prompt_lens = NULL;
+			echo = NULL;
 
-			if (res < 0) {
-				for (uint32_t i = 0; i < num_prompts; i++)
-					free(responses[i]);
-				free(responses);
-				free(response_lens);
-				return res;
-			}
+			if (res < 0)
+				goto kbi_cleanup;
 
                         /* Build INFO_RESPONSE from callback's responses */
 			size_t resp_sz = 1 + 4;
 
 			for (uint32_t i = 0; i < num_prompts; i++) {
 				if (response_lens[i] > UINT32_MAX) {
-					for (uint32_t j = 0; j < num_prompts; j++)
-						free(responses[j]);
-					free(responses);
-					free(response_lens);
-					return DSSH_ERROR_INVALID;
+					res = DSSH_ERROR_INVALID;
+					goto kbi_cleanup;
 				}
 				if (response_lens[i] > SIZE_MAX - 4 - resp_sz) {
-					for (uint32_t j = 0; j < num_prompts; j++)
-						free(responses[j]);
-					free(responses);
-					free(response_lens);
-					return DSSH_ERROR_INVALID;
+					res = DSSH_ERROR_INVALID;
+					goto kbi_cleanup;
 				}
 				resp_sz += 4 + response_lens[i];
 			}
@@ -1540,11 +1535,8 @@ auth_kbi_impl(dssh_session sess,
 			uint8_t *resp = malloc(resp_sz);
 
 			if (resp == NULL) {
-				for (uint32_t i = 0; i < num_prompts; i++)
-					free(responses[i]);
-				free(responses);
-				free(response_lens);
-				return DSSH_ERROR_ALLOC;
+				res = DSSH_ERROR_ALLOC;
+				goto kbi_cleanup;
 			}
 
 			size_t rp = 0;
@@ -1566,6 +1558,18 @@ auth_kbi_impl(dssh_session sess,
 			if (res < 0)
 				return res;
 			continue;
+
+		kbi_cleanup:
+			free(prompts);
+			free(prompt_lens);
+			free(echo);
+			if (responses != NULL) {
+				for (uint32_t i = 0; i < num_prompts; i++)
+					free(responses[i]);
+			}
+			free(responses);
+			free(response_lens);
+			return res;
 		}
 
 		dssh_transport_send_unimplemented(sess, sess->trans.last_rx_seq);
@@ -1616,14 +1620,12 @@ auth_publickey_impl(dssh_session sess,
 	    || pubkey_len > UINT32_MAX || sess->trans.session_id_sz > UINT32_MAX)
 		return DSSH_ERROR_INVALID;
 
-	/* Overflow check: 49 bytes fixed + 4 runtime size_t values */
 	size_t rt = sess->trans.session_id_sz;
 
-	if (ulen > SIZE_MAX - 49 - rt || alen > SIZE_MAX - 49 - rt - ulen
-	    || pubkey_len > SIZE_MAX - 49 - rt - ulen - alen)
+	if (ulen > SIZE_MAX - AUTH_PUBLICKEY_FIXED - rt
+	    || alen > SIZE_MAX - AUTH_PUBLICKEY_FIXED - rt - ulen
+	    || pubkey_len > SIZE_MAX - AUTH_PUBLICKEY_FIXED - rt - ulen - alen)
 		return DSSH_ERROR_INVALID;
-
-	static const char service[] = "ssh-connection";
 
         /*
          * Build the data to sign (RFC 4252 s7):
@@ -1636,9 +1638,7 @@ auth_publickey_impl(dssh_session sess,
          *   string    public key algorithm name
          *   string    public key blob
          */
-	size_t   sign_data_len = 4 + sess->trans.session_id_sz
-	    + 1 + 4 + ulen + 4 + (sizeof(service) - 1)
-	    + 4 + DSSH_STRLEN(method_publickey) + 1 + 4 + alen + 4 + pubkey_len;
+	size_t   sign_data_len = AUTH_PUBLICKEY_FIXED + rt + ulen + alen + pubkey_len;
 	uint8_t *sign_data = malloc(sign_data_len);
 
 	if (sign_data == NULL)
@@ -1655,9 +1655,9 @@ auth_publickey_impl(dssh_session sess,
 	SD_SER((uint32_t)ulen);
 	memcpy(&sign_data[sp], username, ulen);
 	sp += ulen;
-	SD_SER(DSSH_STRLEN(service));
-	memcpy(&sign_data[sp], service, sizeof(service) - 1);
-	sp += sizeof(service) - 1;
+	SD_SER(DSSH_STRLEN(service_connection));
+	memcpy(&sign_data[sp], service_connection, DSSH_STRLEN(service_connection));
+	sp += DSSH_STRLEN(service_connection);
 	SD_SER(DSSH_STRLEN(method_publickey));
 	memcpy(&sign_data[sp], method_publickey, DSSH_STRLEN(method_publickey));
 	sp += DSSH_STRLEN(method_publickey);
@@ -1682,7 +1682,7 @@ auth_publickey_impl(dssh_session sess,
 		return res;
 	}
 	if (sig_len > UINT32_MAX
-	    || sig_len > SIZE_MAX - 49 - ulen - alen - pubkey_len) {
+	    || sig_len > SIZE_MAX - AUTH_PUBLICKEY_FIXED - ulen - alen - pubkey_len) {
 		free(sig_buf);
 		return DSSH_ERROR_INVALID;
 	}
@@ -1698,9 +1698,7 @@ auth_publickey_impl(dssh_session sess,
          *   string    public key blob
          *   string    signature
          */
-	size_t   msg_len = 1 + 4 + ulen + 4 + (sizeof(service) - 1)
-	    + 4 + DSSH_STRLEN(method_publickey) + 1 + 4 + alen
-	    + 4 + pubkey_len + 4 + sig_len;
+	size_t   msg_len = AUTH_PUBLICKEY_FIXED + ulen + alen + pubkey_len + sig_len;
 	uint8_t *msg = malloc(msg_len);
 
 	if (msg == NULL) {
@@ -1716,9 +1714,9 @@ auth_publickey_impl(dssh_session sess,
 	MSG_SER((uint32_t)ulen);
 	memcpy(&msg[pos], username, ulen);
 	pos += ulen;
-	MSG_SER(DSSH_STRLEN(service));
-	memcpy(&msg[pos], service, sizeof(service) - 1);
-	pos += sizeof(service) - 1;
+	MSG_SER(DSSH_STRLEN(service_connection));
+	memcpy(&msg[pos], service_connection, DSSH_STRLEN(service_connection));
+	pos += DSSH_STRLEN(service_connection);
 	MSG_SER(DSSH_STRLEN(method_publickey));
 	memcpy(&msg[pos], method_publickey, DSSH_STRLEN(method_publickey));
 	pos += DSSH_STRLEN(method_publickey);

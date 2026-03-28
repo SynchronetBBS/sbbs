@@ -12,16 +12,6 @@
     message building into helper functions (item 10) would eliminate
     the need for these.
 
-12. KBI client-side allocation/cleanup duplication (lines 1469–1532).
-    Five arrays allocated individually with cascading cleanup on each
-    failure.  A single `goto cleanup` pattern would reduce ~60 lines
-    to ~15.
-
-13. ssh-auth.c is full of magic numbers for message fixed-overhead sizes:
-    5 (msg_type + uint32), 9, 31, 40, 49, 55.  Each is a manually
-    pre-computed sum of fixed-size fields — opaque without re-deriving
-    the arithmetic from the wire format.  Replace with computed
-    expressions or named constants.
 
 15. `recv_packet_raw()` terminates the session on DSSH_ERROR_REKEY_NEEDED
     (falls through to `dssh_session_set_terminate()`).  `send_packet()`
@@ -68,17 +58,12 @@
     with nested request sub-dispatch.  accept_channel mixes allocation,
     registration, mailbox loop, parsing, callback, and buffer init.
 
-27. Timeout computation (timespec_get + ms addition + ns normalization)
-    duplicated identically in `dssh_session_accept()`,
-    `dssh_session_poll()`, and `dssh_channel_poll()`.  Extract a helper.
 
 28. Near-duplicate read/write pairs: `dssh_session_read()` /
     `dssh_session_read_ext()` and `dssh_session_write()` /
     `dssh_session_write_ext()` differ only in which buffer or send
     function they use.
 
-29. ssh-conn.c magic numbers: 9, 13, 10, 16, 20, 24 for message
-    fixed-overhead sizes.  Same class of issue as item 13.
 
 30. Local `#define PTY_SER()` and `#define SIG_SER()` macros in
     ssh-conn.c.  Same class of issue as item 11.
@@ -199,6 +184,28 @@
     `session_stop` variant.
 
 ## Closed
+
+- KBI client-side allocation cleanup (was item 12).  Replaced cascading
+  5-calloc/free pattern with `goto kbi_cleanup`.  Eliminates ~45 lines
+  of duplicated `free()` calls across 7 error paths.
+
+- ssh-auth.c magic numbers replaced with named macros (was item 13).
+  Added `AUTH_FAILURE_FIXED`, `PASSWD_CHANGEREQ_FIXED`, `AUTH_NONE_FIXED`,
+  `AUTH_PASSWORD_FIXED`, `AUTH_KBI_FIXED`, `AUTH_PUBLICKEY_FIXED` — each
+  is a computed expression showing field breakdown.  Added
+  `service_connection` static global, replacing 5 per-function
+  `static const char service[]` declarations.
+
+- Timeout computation helper extracted (was item 27).  Added
+  `deadline_from_ms()` in ssh-conn.c, replacing 3 identical
+  timespec_get + ms-to-ns + normalize blocks in `dssh_session_accept()`,
+  `dssh_session_poll()`, and `dssh_channel_poll()`.
+
+- ssh-conn.c magic numbers replaced with computed expressions (was
+  item 29).  6 sites: `send_data` (9), `send_extended_data` (13),
+  `send_channel_request_wait` (10), PTY request (24), signal (20),
+  window-change (16).  Each now uses a named local or inline expression
+  showing the field breakdown.
 
 - Symbol visibility audit complete (was item 88).  Audited all 17 library
   .c files.  Added `DSSH_PRIVATE` to 9 unannotated non-static functions:

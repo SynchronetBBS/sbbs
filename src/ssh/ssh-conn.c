@@ -14,6 +14,23 @@
 #define INITIAL_WINDOW_SIZE 0x200000
 #define MAX_PACKET_SIZE 0x8000
 
+/* Fixed overhead for channel messages (excludes variable-length fields). */
+
+/* CHANNEL_DATA: msg_type + channel + data_len */
+#define CHAN_DATA_FIXED  (1 + 4 + 4)
+
+/* CHANNEL_EXTENDED_DATA: msg_type + channel + data_type + data_len */
+#define CHAN_EXT_DATA_FIXED  (1 + 4 + 4 + 4)
+
+/* CHANNEL_REQUEST: msg_type + channel + rtype_len + want_reply */
+#define CHAN_REQUEST_FIXED  (1 + 4 + 4 + 1)
+
+/* pty-req extra data: term_len + cols + rows + wpx + hpx + modes_len */
+#define PTY_REQ_FIXED  (4 + 4 + 4 + 4 + 4 + 4)
+
+/* window-change extra data: cols + rows + wpx + hpx */
+#define WINDOW_CHANGE_FIXED  (4 + 4 + 4 + 4)
+
 static const char str_signal[]          = "signal";
 static const char str_exit_status[]     = "exit-status";
 static const char str_window_change[]   = "window-change";
@@ -24,6 +41,22 @@ static const char str_session[]         = "session";
 static const char str_shell[]           = "shell";
 static const char str_exec[]            = "exec";
 static const char str_subsystem[]       = "subsystem";
+
+/* ================================================================
+ * Timeout helper -- convert millisecond timeout to absolute deadline
+ * ================================================================ */
+
+static void
+deadline_from_ms(struct timespec *ts, int timeout_ms)
+{
+	timespec_get(ts, TIME_UTC);
+	ts->tv_sec += timeout_ms / 1000;
+	ts->tv_nsec += (timeout_ms % 1000) * 1000000L;
+	if (ts->tv_nsec >= 1000000000L) {
+		ts->tv_sec++;
+		ts->tv_nsec -= 1000000000L;
+	}
+}
 
 /* ================================================================
  * Parse helpers for channel request payloads
@@ -214,9 +247,9 @@ dssh_conn_send_data(dssh_session sess,
 	ch->remote_window -= len_u32;
 	dssh_thrd_check(sess, mtx_unlock(&ch->buf_mtx));
 
-	if (len > SIZE_MAX - 9)
+	if (len > SIZE_MAX - CHAN_DATA_FIXED)
 		return DSSH_ERROR_INVALID;
-	size_t   msg_len = 9 + len;
+	size_t   msg_len = CHAN_DATA_FIXED + len;
 	uint8_t *msg = malloc(msg_len);
 
 	if (msg == NULL)
@@ -271,9 +304,9 @@ dssh_conn_send_extended_data(dssh_session sess,
 	ch->remote_window -= len_u32;
 	dssh_thrd_check(sess, mtx_unlock(&ch->buf_mtx));
 
-	if (len > SIZE_MAX - 13)
+	if (len > SIZE_MAX - CHAN_EXT_DATA_FIXED)
 		return DSSH_ERROR_INVALID;
-	size_t   msg_len = 13 + len;
+	size_t   msg_len = CHAN_EXT_DATA_FIXED + len;
 	uint8_t *msg = malloc(msg_len);
 
 	if (msg == NULL)
@@ -1119,13 +1152,7 @@ dssh_session_accept(dssh_session sess,
 		else {
 			struct timespec ts;
 
-			timespec_get(&ts, TIME_UTC);
-			ts.tv_sec += timeout_ms / 1000;
-			ts.tv_nsec += (timeout_ms % 1000) * 1000000L;
-			if (ts.tv_nsec >= 1000000000L) {
-				ts.tv_sec++;
-				ts.tv_nsec -= 1000000000L;
-			}
+			deadline_from_ms(&ts, timeout_ms);
 			if (dssh_thrd_check(sess, cnd_timedwait(&sess->accept_cnd, &sess->accept_mtx, &ts)) == thrd_timedout) {
 				dssh_thrd_check(sess, mtx_unlock(&sess->accept_mtx));
 				return DSSH_ERROR_NOMORE;
@@ -1264,10 +1291,10 @@ send_channel_request_wait(dssh_session sess,
 
 	if (rtlen > UINT32_MAX)
 		return DSSH_ERROR_INVALID;
-	if (extra_len > SIZE_MAX - 10 - rtlen)
+	if (extra_len > SIZE_MAX - CHAN_REQUEST_FIXED - rtlen)
 		return DSSH_ERROR_INVALID;
 
-	size_t   msg_len = 10 + rtlen + extra_len;
+	size_t   msg_len = CHAN_REQUEST_FIXED + rtlen + extra_len;
 	uint8_t *msg = malloc(msg_len);
 
 	if (msg == NULL)
@@ -1361,14 +1388,15 @@ dssh_session_open_shell(dssh_session sess,
 			return NULL;
 		}
 
-		if (tlen > SIZE_MAX - 24 || mlen > SIZE_MAX - 24 - tlen) {
+		if (tlen > SIZE_MAX - PTY_REQ_FIXED
+		    || mlen > SIZE_MAX - PTY_REQ_FIXED - tlen) {
 			dssh_conn_close(sess, ch);
 			unregister_channel(sess, ch);
 			cleanup_channel_buffers(ch);
 			free(ch);
 			return NULL;
 		}
-		size_t   extra_len = 24 + tlen + mlen;
+		size_t   extra_len = PTY_REQ_FIXED + tlen + mlen;
 		uint8_t *extra = malloc(extra_len);
 
 		if (extra == NULL) {
@@ -1995,13 +2023,7 @@ dssh_session_poll(dssh_session sess,
 		else {
 			struct timespec ts;
 
-			timespec_get(&ts, TIME_UTC);
-			ts.tv_sec += timeout_ms / 1000;
-			ts.tv_nsec += (timeout_ms % 1000) * 1000000L;
-			if (ts.tv_nsec >= 1000000000L) {
-				ts.tv_sec++;
-				ts.tv_nsec -= 1000000000L;
-			}
+			deadline_from_ms(&ts, timeout_ms);
 			if (dssh_thrd_check(sess, cnd_timedwait(&ch->poll_cnd, &ch->buf_mtx, &ts)) == thrd_timedout) {
 				dssh_thrd_check(sess, mtx_unlock(&ch->buf_mtx));
 				return 0;
@@ -2174,13 +2196,7 @@ dssh_channel_poll(dssh_session sess,
 		else {
 			struct timespec ts;
 
-			timespec_get(&ts, TIME_UTC);
-			ts.tv_sec += timeout_ms / 1000;
-			ts.tv_nsec += (timeout_ms % 1000) * 1000000L;
-			if (ts.tv_nsec >= 1000000000L) {
-				ts.tv_sec++;
-				ts.tv_nsec -= 1000000000L;
-			}
+			deadline_from_ms(&ts, timeout_ms);
 			if (dssh_thrd_check(sess, cnd_timedwait(&ch->poll_cnd, &ch->buf_mtx, &ts)) == thrd_timedout) {
 				dssh_thrd_check(sess, mtx_unlock(&ch->buf_mtx));
 				return 0;
@@ -2252,11 +2268,13 @@ dssh_session_send_signal(dssh_session sess,
 		return DSSH_ERROR_INVALID;
 	size_t   slen = strlen(signal_name);
 
-	if (slen > UINT32_MAX || slen > SIZE_MAX - 20)
+	size_t   rtlen = DSSH_STRLEN(str_signal);
+	size_t   fixed = CHAN_REQUEST_FIXED + rtlen + 4;
+
+	if (slen > UINT32_MAX || slen > SIZE_MAX - fixed)
 		return DSSH_ERROR_INVALID;
 
-	size_t   rtlen = 6; /* "signal" */
-	size_t   msg_len = 20 + slen; /* 1 + 4 + 4 + 6 + 1 + 4 */
+	size_t   msg_len = fixed + slen;
 	uint8_t *msg = malloc(msg_len);
 
 	if (msg == NULL)
@@ -2292,7 +2310,7 @@ dssh_session_send_window_change(dssh_session sess,
 {
 	if (ch == NULL || sess == NULL)
 		return DSSH_ERROR_INVALID;
-	uint8_t extra[16];
+	uint8_t extra[WINDOW_CHANGE_FIXED];
 	size_t  ep = 0;
 	int     ret;
 
@@ -2302,7 +2320,7 @@ dssh_session_send_window_change(dssh_session sess,
 	DSSH_PUT_U32(hpx, extra, &ep);
 
         /* window-change uses want_reply=false */
-	size_t   rtlen = 13; /* "window-change" */
+	size_t   rtlen = DSSH_STRLEN(str_window_change);
 	size_t   msg_len = 1 + 4 + 4 + rtlen + 1 + ep;
 	uint8_t *msg = malloc(msg_len);
 
