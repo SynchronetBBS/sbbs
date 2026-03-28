@@ -208,8 +208,11 @@ int do_cmd(char *cmd)
 /* Edit terminal settings
  *       Auto-Detect
  *       Extended ASCII
+ *       UTF-8
  *       ANSI
+ *       PETSCII
  *       Color
+ *       ICE Color
  *       RIP
  *       Pause
  *       Hot Keys
@@ -223,9 +226,9 @@ int edit_terminal(scfg_t *cfg, user_t *user)
 	char 	**opt;
 	char	str[256];
 
-	if((opt=(char **)alloca(sizeof(char *)*(11+1)))==NULL)
-		allocfail(sizeof(char *)*(11+1));
-	for(i=0;i<11;i++)
+	if((opt=(char **)alloca(sizeof(char *)*(12+1)))==NULL)
+		allocfail(sizeof(char *)*(12+1));
+	for(i=0;i<12;i++)
 		if((opt[i]=(char *)alloca(MAX_OPLN))==NULL)
 			allocfail(MAX_OPLN);
 
@@ -234,8 +237,11 @@ int edit_terminal(scfg_t *cfg, user_t *user)
 		i=0;
 		sprintf(opt[i++],"Auto-detect      %s",user->misc & AUTOTERM?"Yes":"No");
 		sprintf(opt[i++],"Extended ASCII   %s",user->misc & NO_EXASCII?"No":"Yes");
+		sprintf(opt[i++],"UTF-8            %s",user->misc & UTF8?"Yes":"No");
 		sprintf(opt[i++],"ANSI             %s",user->misc & ANSI?"Yes":"No");
+		sprintf(opt[i++],"PETSCII          %s",user->misc & PETSCII?"Yes":"No");
 		sprintf(opt[i++],"Color            %s",user->misc & COLOR?"Yes":"No");
+		sprintf(opt[i++],"ICE Color        %s",user->misc & ICE_COLOR?"Yes":"No");
 		sprintf(opt[i++],"RIP              %s",user->misc & RIP?"Yes":"No");
 		sprintf(opt[i++],"Pause            %s",user->misc & UPAUSE?"Yes":"No");
 		sprintf(opt[i++],"Spinning Cursor  %s",user->misc & SPIN?"Yes":"No");
@@ -259,31 +265,43 @@ int edit_terminal(scfg_t *cfg, user_t *user)
 				putusermisc(cfg, user->number, user->misc);
 				break;
 			case 2:
+				user->misc ^= UTF8;
+				putusermisc(cfg, user->number, user->misc);
+				break;
+			case 3:
 				/* ANSI */
 				user->misc ^= ANSI;
 				putusermisc(cfg, user->number, user->misc);
 				break;
-			case 3:
+			case 4:
+				user->misc ^= PETSCII;
+				putusermisc(cfg, user->number, user->misc);
+				break;
+			case 5:
 				/* Colour */
 				user->misc ^= COLOR;
 				putusermisc(cfg, user->number, user->misc);
 				break;
-			case 4:
+			case 6:
+				user->misc ^= ICE_COLOR;
+				putusermisc(cfg, user->number, user->misc);
+				break;
+			case 7:
 				/* RIP */
 				user->misc ^= RIP;
 				putusermisc(cfg, user->number, user->misc);
 				break;
-			case 5:
+			case 8:
 				/* Pause */
 				user->misc ^= UPAUSE;
 				putusermisc(cfg, user->number, user->misc);
 				break;
-			case 6:
+			case 9:
 				/* Spinning Cursor */
 				user->misc ^= SPIN;
 				putusermisc(cfg, user->number, user->misc);
 				break;
-			case 7:
+			case 10:
 				/* Columns */
 				SAFEPRINTF(str,"%u",user->cols);
 				uifc.input(WIN_MID|WIN_ACT|WIN_SAV,0,0, "Columns (0=auto-detect)", str, 3, K_EDIT|K_NUMBER);
@@ -292,7 +310,7 @@ int edit_terminal(scfg_t *cfg, user_t *user)
 					putuserdec32(cfg, user->number, USER_COLS, user->cols);
 				}
 				break;
-			case 8:
+			case 11:
 				/* Rows */
 				SAFEPRINTF(str,"%u",user->rows);
 				uifc.input(WIN_MID|WIN_ACT|WIN_SAV,0,0, "Rows (0=auto-detect)", str, 3, K_EDIT|K_NUMBER);
