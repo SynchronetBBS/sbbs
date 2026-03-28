@@ -21,19 +21,6 @@
     protocol-ordering trade-offs that don't have obvious right answers.
     **Not suitable for automatic planning.**
 
-91. **Redundant `dssh_*` typedefs for standard types.**
-    `dssh_byte` (`uint8_t`), `dssh_boolean` (`bool`), `dssh_uint32_t`
-    (`uint32_t`), and `dssh_uint64_t` (`uint64_t`) in `deucessh.h` add
-    a layer of indirection over standard C types with no semantic benefit.
-    Consider replacing them with the standard types throughout the library
-    and public API.  `dssh_string`, `dssh_mpint`, and `dssh_namelist`
-    (struct typedefs) are distinct and should stay.
-
-28. Near-duplicate read/write pairs: `dssh_session_read()` /
-    `dssh_session_read_ext()` and `dssh_session_write()` /
-    `dssh_session_write_ext()` differ only in which buffer or send
-    function they use.
-
 ### Thread safety audit (items 51-59)
 
 ### Design / liveness audit (items 62-79)
@@ -103,6 +90,25 @@
        potential protocol violation
 
 ## Closed
+
+- Redundant `dssh_*` typedefs removed (was item 91).  Deleted all 7
+  unused type aliases from `deucessh.h`: `dssh_byte` (`uint8_t`),
+  `dssh_boolean` (`bool`), `dssh_uint32_t` (`uint32_t`), `dssh_uint64_t`
+  (`uint64_t`), `dssh_string` / `dssh_mpint` (pointer-to-struct), and
+  `dssh_namelist` (pointer-to-struct).  The struct types (`dssh_string_s`,
+  `dssh_namelist_s`) were also unused — removed entirely.  Updated
+  `dssh_parse_uint32()` and `dssh_serialize_uint32()` signatures in
+  `deucessh.h`, `ssh.c`, and `test/test_chan.c` to use `uint32_t` directly.
+
+- Near-duplicate read/write pairs merged (was item 28).
+  `session_stdout_readable()` and `session_stderr_readable()` merged into
+  `session_readable(ch, ext)`.  `dssh_session_read()` and
+  `dssh_session_read_ext()` bodies merged into `session_read_impl()`;
+  public functions are now thin wrappers.  `dssh_session_poll()` updated
+  to call `session_readable()`.  Write pair left as-is — `send_data()`
+  and `send_extended_data()` build different wire messages
+  (`SSH_MSG_CHANNEL_DATA` vs `SSH_MSG_CHANNEL_EXTENDED_DATA` with extra
+  u32 field), so the duplication is structural, not accidental.
 
 - Symbol prefix cleanup (was item 90).  Established consistent naming:
   `dssh_` prefix for `DSSH_PUBLIC` symbols only, `dssh_test_` prefix for

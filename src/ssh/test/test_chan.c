@@ -1627,7 +1627,7 @@ static int
 test_parse_uint32_basic(void)
 {
 	uint8_t buf[] = { 0x01, 0x02, 0x03, 0x04 };
-	dssh_uint32_t val = 0;
+	uint32_t val = 0;
 	int64_t ret = dssh_parse_uint32(buf, sizeof(buf), &val);
 	ASSERT_EQ(ret, 4);
 	ASSERT_EQ_U(val, 0x01020304);
@@ -1638,7 +1638,7 @@ static int
 test_parse_uint32_zero(void)
 {
 	uint8_t buf[] = { 0x00, 0x00, 0x00, 0x00 };
-	dssh_uint32_t val = 1;
+	uint32_t val = 1;
 	dssh_parse_uint32(buf, sizeof(buf), &val);
 	ASSERT_EQ_U(val, 0);
 	return TEST_PASS;
@@ -1648,7 +1648,7 @@ static int
 test_parse_uint32_max(void)
 {
 	uint8_t buf[] = { 0xFF, 0xFF, 0xFF, 0xFF };
-	dssh_uint32_t val = 0;
+	uint32_t val = 0;
 	dssh_parse_uint32(buf, sizeof(buf), &val);
 	ASSERT_EQ_U(val, UINT32_MAX);
 	return TEST_PASS;
@@ -1658,7 +1658,7 @@ static int
 test_parse_uint32_short_buffer(void)
 {
 	uint8_t buf[] = { 0x01, 0x02, 0x03 };
-	dssh_uint32_t val = 0;
+	uint32_t val = 0;
 	ASSERT_ERR(dssh_parse_uint32(buf, sizeof(buf), &val), DSSH_ERROR_PARSE);
 	return TEST_PASS;
 }
@@ -1667,7 +1667,7 @@ static int
 test_parse_uint32_empty_buffer(void)
 {
 	uint8_t buf[] = { 0 };
-	dssh_uint32_t val = 0;
+	uint32_t val = 0;
 	ASSERT_ERR(dssh_parse_uint32(buf, 0, &val), DSSH_ERROR_PARSE);
 	return TEST_PASS;
 }
@@ -1698,8 +1698,8 @@ test_uint32_roundtrip(void)
 {
 	uint8_t buf[8];
 	size_t pos = 0;
-	dssh_uint32_t orig = 0x12345678;
-	dssh_uint32_t parsed = 0;
+	uint32_t orig = 0x12345678;
+	uint32_t parsed = 0;
 
 	ASSERT_EQ(dssh_serialize_uint32(orig, buf, sizeof(buf), &pos), 0);
 	ASSERT_EQ(dssh_parse_uint32(buf, pos, &parsed), 4);
@@ -1783,7 +1783,7 @@ static int
 test_parse_uint32_null(void)
 {
 	uint8_t buf[4] = {0, 0, 0, 1};
-	dssh_uint32_t val;
+	uint32_t val;
 
 	ASSERT_EQ(dssh_parse_uint32(buf, 4, NULL), DSSH_ERROR_INVALID);
 	ASSERT_EQ(dssh_parse_uint32(NULL, 4, &val), DSSH_ERROR_INVALID);

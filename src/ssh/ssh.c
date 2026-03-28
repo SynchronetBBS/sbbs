@@ -10,7 +10,7 @@
  * ================================================================ */
 
 DSSH_PUBLIC int64_t
-dssh_parse_uint32(const uint8_t *buf, size_t bufsz, dssh_uint32_t *val)
+dssh_parse_uint32(const uint8_t *buf, size_t bufsz, uint32_t *val)
 {
 	if (val == NULL || buf == NULL)
 		return DSSH_ERROR_INVALID;
@@ -21,7 +21,7 @@ dssh_parse_uint32(const uint8_t *buf, size_t bufsz, dssh_uint32_t *val)
 }
 
 DSSH_PUBLIC int
-dssh_serialize_uint32(dssh_uint32_t val, uint8_t *buf, size_t bufsz, size_t *pos)
+dssh_serialize_uint32(uint32_t val, uint8_t *buf, size_t bufsz, size_t *pos)
 {
 	if (pos == NULL || buf == NULL)
 		return DSSH_ERROR_INVALID;

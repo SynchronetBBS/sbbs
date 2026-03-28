@@ -2380,13 +2380,16 @@ fail:
  * ================================================================ */
 
 /*
- * Compute how many bytes are readable on stdout before hitting
- * a signal mark.
+ * Compute how many bytes are readable on stdout (ext=false) or
+ * stderr (ext=true) before hitting a signal mark.
  */
 static size_t
-session_stdout_readable(dssh_channel ch)
+session_readable(dssh_channel ch, bool ext)
 {
-	size_t avail = bytebuf_available(&ch->buf.session.stdout_buf);
+	struct dssh_bytebuf *bb = ext
+	    ? &ch->buf.session.stderr_buf
+	    : &ch->buf.session.stdout_buf;
+	size_t avail = bytebuf_available(bb);
 
 	if (avail == 0)
 		return 0;
@@ -2394,33 +2397,15 @@ session_stdout_readable(dssh_channel ch)
 	struct dssh_signal_queue *sq = &ch->buf.session.signals;
 
 	if (sq->head != NULL) {
-		size_t mark = sq->head->stdout_pos;
+		size_t mark = ext
+		    ? sq->head->stderr_pos
+		    : sq->head->stdout_pos;
+		size_t consumed = ext
+		    ? ch->stderr_consumed
+		    : ch->stdout_consumed;
 
-		if (mark > ch->stdout_consumed) {
-			size_t to_mark = mark - ch->stdout_consumed;
-
-			if (to_mark < avail)
-				avail = to_mark;
-		}
-	}
-	return avail;
-}
-
-static size_t
-session_stderr_readable(dssh_channel ch)
-{
-	size_t avail = bytebuf_available(&ch->buf.session.stderr_buf);
-
-	if (avail == 0)
-		return 0;
-
-	struct dssh_signal_queue *sq = &ch->buf.session.signals;
-
-	if (sq->head != NULL) {
-		size_t mark = sq->head->stderr_pos;
-
-		if (mark > ch->stderr_consumed) {
-			size_t to_mark = mark - ch->stderr_consumed;
+		if (mark > consumed) {
+			size_t to_mark = mark - consumed;
 
 			if (to_mark < avail)
 				avail = to_mark;
@@ -2445,11 +2430,11 @@ dssh_session_poll(dssh_session sess,
 		int ready = 0;
 
 		if ((events & DSSH_POLL_READ)
-		    && ((session_stdout_readable(ch) > 0) || ch->eof_received || ch->close_received))
+		    && ((session_readable(ch, false) > 0) || ch->eof_received || ch->close_received))
 			ready |= DSSH_POLL_READ;
 
 		if ((events & DSSH_POLL_READEXT)
-		    && ((session_stderr_readable(ch) > 0) || ch->eof_received || ch->close_received))
+		    && ((session_readable(ch, true) > 0) || ch->eof_received || ch->close_received))
 			ready |= DSSH_POLL_READEXT;
 
 		if ((events & DSSH_POLL_WRITE) && (ch->remote_window > 0) && ch->open && !ch->close_received)
@@ -2482,18 +2467,24 @@ dssh_session_poll(dssh_session sess,
 	}
 }
 
-DSSH_PUBLIC int64_t
-dssh_session_read(dssh_session sess,
-    dssh_channel ch, uint8_t *buf, size_t bufsz)
+static int64_t
+session_read_impl(dssh_session sess,
+    dssh_channel ch, uint8_t *buf, size_t bufsz, bool ext)
 {
 	if (buf == NULL || ch == NULL || sess == NULL)
 		return DSSH_ERROR_INVALID;
 	dssh_thrd_check(sess, mtx_lock(&ch->buf_mtx));
 
-	size_t limit = session_stdout_readable(ch);
-	size_t n = bytebuf_read(&ch->buf.session.stdout_buf, buf, bufsz, limit);
+	struct dssh_bytebuf *bb = ext
+	    ? &ch->buf.session.stderr_buf
+	    : &ch->buf.session.stdout_buf;
+	size_t limit = session_readable(ch, ext);
+	size_t n = bytebuf_read(bb, buf, bufsz, limit);
 
-	ch->stdout_consumed += n;
+	if (ext)
+		ch->stderr_consumed += n;
+	else
+		ch->stdout_consumed += n;
 	dssh_thrd_check(sess, mtx_unlock(&ch->buf_mtx));
 
 	if (n > 0) {
@@ -2505,25 +2496,17 @@ dssh_session_read(dssh_session sess,
 }
 
 DSSH_PUBLIC int64_t
+dssh_session_read(dssh_session sess,
+    dssh_channel ch, uint8_t *buf, size_t bufsz)
+{
+	return session_read_impl(sess, ch, buf, bufsz, false);
+}
+
+DSSH_PUBLIC int64_t
 dssh_session_read_ext(dssh_session sess,
     dssh_channel ch, uint8_t *buf, size_t bufsz)
 {
-	if (buf == NULL || ch == NULL || sess == NULL)
-		return DSSH_ERROR_INVALID;
-	dssh_thrd_check(sess, mtx_lock(&ch->buf_mtx));
-
-	size_t limit = session_stderr_readable(ch);
-	size_t n = bytebuf_read(&ch->buf.session.stderr_buf, buf, bufsz, limit);
-
-	ch->stderr_consumed += n;
-	dssh_thrd_check(sess, mtx_unlock(&ch->buf_mtx));
-
-	if (n > 0) {
-		int wret = maybe_replenish_window(sess, ch);
-		if (wret < 0)
-			return wret;
-	}
-	return (int64_t)n;
+	return session_read_impl(sess, ch, buf, bufsz, true);
 }
 
 DSSH_PUBLIC int64_t
