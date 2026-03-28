@@ -43,19 +43,13 @@ static const char str_exec[]            = "exec";
 static const char str_subsystem[]       = "subsystem";
 
 /* ================================================================
- * Timeout helper -- convert millisecond timeout to absolute deadline
+ * Timeout helper -- thin wrapper around dssh_deadline_from_ms()
  * ================================================================ */
 
 static void
 deadline_from_ms(struct timespec *ts, int timeout_ms)
 {
-	timespec_get(ts, TIME_UTC);
-	ts->tv_sec += timeout_ms / 1000;
-	ts->tv_nsec += (timeout_ms % 1000) * 1000000L;
-	if (ts->tv_nsec >= 1000000000L) {
-		ts->tv_sec++;
-		ts->tv_nsec -= 1000000000L;
-	}
+	dssh_deadline_from_ms(ts, timeout_ms);
 }
 
 /* ================================================================
@@ -1266,9 +1260,25 @@ open_session_channel(dssh_session sess, dssh_channel ch)
 	}
 
         /* Wait for CONFIRMATION -- the demux thread handles it */
+	struct timespec ts;
+	if (sess->timeout_ms > 0)
+		deadline_from_ms(&ts, sess->timeout_ms);
 	dssh_thrd_check(sess, mtx_lock(&ch->buf_mtx));
-	while (!ch->open && !ch->close_received && !sess->terminate)
-		dssh_thrd_check(sess, cnd_wait(&ch->poll_cnd, &ch->buf_mtx));
+	while (!ch->open && !ch->close_received && !sess->terminate) {
+		if (sess->timeout_ms <= 0) {
+			dssh_thrd_check(sess, cnd_wait(&ch->poll_cnd,
+			    &ch->buf_mtx));
+		}
+		else {
+			if (dssh_thrd_check(sess, cnd_timedwait(&ch->poll_cnd,
+			    &ch->buf_mtx, &ts)) == thrd_timedout) {
+				dssh_thrd_check(sess,
+				    mtx_unlock(&ch->buf_mtx));
+				unregister_channel(sess, ch);
+				return DSSH_ERROR_TIMEOUT;
+			}
+		}
+	}
 	dssh_thrd_check(sess, mtx_unlock(&ch->buf_mtx));
 
 	if (!ch->open) {
@@ -1332,9 +1342,27 @@ send_channel_request_wait(dssh_session sess,
 	}
 
         /* Wait for the demux thread to deliver the response */
+	struct timespec rts;
+	if (sess->timeout_ms > 0)
+		deadline_from_ms(&rts, sess->timeout_ms);
 	dssh_thrd_check(sess, mtx_lock(&ch->buf_mtx));
-	while (!ch->request_responded && !sess->terminate && !ch->close_received)
-		dssh_thrd_check(sess, cnd_wait(&ch->poll_cnd, &ch->buf_mtx));
+	while (!ch->request_responded && !sess->terminate
+	    && !ch->close_received) {
+		if (sess->timeout_ms <= 0) {
+			dssh_thrd_check(sess, cnd_wait(&ch->poll_cnd,
+			    &ch->buf_mtx));
+		}
+		else {
+			if (dssh_thrd_check(sess, cnd_timedwait(&ch->poll_cnd,
+			    &ch->buf_mtx, &rts)) == thrd_timedout) {
+				ch->request_pending = false;
+				ch->request_responded = false;
+				dssh_thrd_check(sess,
+				    mtx_unlock(&ch->buf_mtx));
+				return DSSH_ERROR_TIMEOUT;
+			}
+		}
+	}
 
 	bool success = ch->request_success;
 
@@ -1639,10 +1667,25 @@ static int
 setup_recv(dssh_session sess, dssh_channel ch,
     uint8_t *msg_type, uint8_t **payload, size_t *payload_len)
 {
+	struct timespec sts;
+	if (sess->timeout_ms > 0)
+		deadline_from_ms(&sts, sess->timeout_ms);
 	dssh_thrd_check(sess, mtx_lock(&ch->buf_mtx));
 	while (!ch->setup_ready && !ch->setup_error
-	    && !sess->terminate && !ch->close_received)
-		dssh_thrd_check(sess, cnd_wait(&ch->poll_cnd, &ch->buf_mtx));
+	    && !sess->terminate && !ch->close_received) {
+		if (sess->timeout_ms <= 0) {
+			dssh_thrd_check(sess, cnd_wait(&ch->poll_cnd,
+			    &ch->buf_mtx));
+		}
+		else {
+			if (dssh_thrd_check(sess, cnd_timedwait(&ch->poll_cnd,
+			    &ch->buf_mtx, &sts)) == thrd_timedout) {
+				dssh_thrd_check(sess,
+				    mtx_unlock(&ch->buf_mtx));
+				return DSSH_ERROR_TIMEOUT;
+			}
+		}
+	}
 
 	if (ch->setup_error) {
 		dssh_thrd_check(sess, mtx_unlock(&ch->buf_mtx));

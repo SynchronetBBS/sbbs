@@ -75,32 +75,6 @@
 
 
 
-65. **Unbounded waits with no timeout in channel open / request /
-    setup paths.**  `open_session_channel()` (line 1262) uses
-    `cnd_wait()` with no timeout waiting for CHANNEL_OPEN_CONFIRMATION.
-    `send_channel_request_wait()` (line 1337) similarly waits for
-    `request_responded`.  `setup_recv()` (line 1647) waits for setup
-    messages in the server accept path.  If the peer never responds,
-    the caller hangs indefinitely.  The only escape is
-    `set_terminate()`, but that requires another thread.  Fix: add
-    timeout parameters or use `cnd_timedwait()` with a configurable
-    or session-level default.
-
-66. **Unbounded blocking in `send_packet()` during rekey.**  Line
-    488-489 blocks on `cnd_wait(&rekey_cnd, &tx_mtx)` while
-    `rekey_in_progress`.  Duration depends entirely on the remote
-    peer's cooperation during KEX (multiple network round-trips).
-    No timeout, no escape except `set_terminate()`.  A slow or
-    malicious peer can stall all application senders for the
-    duration of the rekey.  Fix: use `cnd_timedwait` with a
-    configurable upper bound.  Note: `set_terminate()` uses
-    `mtx_trylock` on `tx_mtx` (to avoid self-deadlock when called
-    from `send_packet` itself), so if a *different* sender holds
-    `tx_mtx`, the `cnd_broadcast` fires without the lock and the
-    original lost-wakeup window (item 55) still exists for that
-    case.  Switching to `cnd_timedwait` here would eliminate the
-    concern — the sender wakes on timeout regardless.
-
 67. **Setup mode single-slot mailbox blocks the demux thread.**
     In `demux_dispatch()` (line 616-631), when a channel is in
     `setup_mode`, the demux thread delivers via a single-slot mailbox
@@ -157,6 +131,18 @@
     `session_stop` variant.
 
 ## Closed
+
+- Session-wide inactivity timeout (was items 65, 66).  Added
+  `dssh_session_set_timeout()` and `DSSH_ERROR_TIMEOUT`.  Default
+  75000ms (standard BSD TCP connect timeout).  Converted 4 unbounded
+  `cnd_wait()` sites to `cnd_timedwait()`: `open_session_channel()`,
+  `send_channel_request_wait()`, and `setup_recv()` in ssh-conn.c
+  return `DSSH_ERROR_TIMEOUT`; `send_packet()` rekey wait in
+  ssh-trans.c terminates the session on timeout (rekey failure is
+  fatal).  Moved `deadline_from_ms()` to ssh-internal.h as shared
+  `dssh_deadline_from_ms()` static inline.  4 new tests:
+  `test_set_timeout`, `test_open_channel_timeout`,
+  `test_setup_recv_timeout`, `test_rekey_send_timeout`.
 
 - Poll/accept deadline reset on spurious wakeup (was item 64).
   `dssh_session_poll()`, `dssh_channel_poll()`, and `dssh_session_accept()`

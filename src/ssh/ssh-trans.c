@@ -479,8 +479,26 @@ dssh_transport_send_packet(dssh_session sess,
          * (types 50+) until rekey completes.
          */
 	if ((payload_len > 0) && (payload[0] >= SSH_MSG_USERAUTH_REQUEST)) {
-		while (sess->trans.rekey_in_progress && !sess->terminate)
-			dssh_thrd_check(sess, cnd_wait(&sess->trans.rekey_cnd, &sess->trans.tx_mtx));
+		struct timespec rk_ts;
+		if (sess->timeout_ms > 0)
+			dssh_deadline_from_ms(&rk_ts, sess->timeout_ms);
+		while (sess->trans.rekey_in_progress && !sess->terminate) {
+			if (sess->timeout_ms <= 0) {
+				dssh_thrd_check(sess, cnd_wait(
+				    &sess->trans.rekey_cnd,
+				    &sess->trans.tx_mtx));
+			}
+			else {
+				if (dssh_thrd_check(sess, cnd_timedwait(
+				    &sess->trans.rekey_cnd,
+				    &sess->trans.tx_mtx, &rk_ts))
+				    == thrd_timedout) {
+					dssh_session_set_terminate(sess);
+					ret = DSSH_ERROR_TERMINATED;
+					goto tx_done;
+				}
+			}
+		}
 	}
 
 	size_t bs = tx_block_size(sess);

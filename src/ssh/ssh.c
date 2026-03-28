@@ -94,6 +94,7 @@ dssh_session_init(bool client, size_t max_packet_size)
 		return NULL;
 	}
 
+	sess->timeout_ms = 75000;
 	sess->initialized = true;
 	return sess;
 }
@@ -198,4 +199,12 @@ dssh_session_set_global_request_cb(dssh_session sess,
 		return;
 	sess->global_request_cb = cb;
 	sess->global_request_cbdata = cbdata;
+}
+
+DSSH_PUBLIC void
+dssh_session_set_timeout(dssh_session sess, int timeout_ms)
+{
+	if (sess == NULL)
+		return;
+	sess->timeout_ms = timeout_ms;
 }

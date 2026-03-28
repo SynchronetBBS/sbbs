@@ -1510,6 +1510,213 @@ test_null_session_api(void)
 }
 
 /* ================================================================
+ * Timeout tests (items 65 + 66)
+ * ================================================================ */
+
+/*
+ * Verify dssh_session_set_timeout(NULL, ...) does not crash,
+ * and that the default is 75000ms.
+ */
+static int
+test_set_timeout(void)
+{
+	/* NULL session: no crash */
+	dssh_session_set_timeout(NULL, 1000);
+
+	/* Verify default */
+	dssh_session sess = dssh_session_init(true, 0);
+	ASSERT_NOT_NULL(sess);
+	ASSERT_EQ(sess->timeout_ms, 75000);
+
+	/* Set and verify */
+	dssh_session_set_timeout(sess, 200);
+	ASSERT_EQ(sess->timeout_ms, 200);
+
+	/* Disable timeout */
+	dssh_session_set_timeout(sess, 0);
+	ASSERT_EQ(sess->timeout_ms, 0);
+
+	dssh_session_cleanup(sess);
+	return TEST_PASS;
+}
+
+/*
+ * open_session_channel times out when the server never responds
+ * with CHANNEL_OPEN_CONFIRMATION.  The server's demux thread runs
+ * but dssh_session_accept() is never called, so the queued
+ * CHANNEL_OPEN is never answered.
+ */
+static int
+test_open_channel_timeout(void)
+{
+	struct selftest_ctx ctx;
+	if (selftest_setup(&ctx) < 0)
+		return TEST_SKIP;
+
+	/* Short timeout so the test completes quickly */
+	dssh_session_set_timeout(ctx.client, 200);
+
+	ASSERT_OK(dssh_session_start(ctx.client));
+	ASSERT_OK(dssh_session_start(ctx.server));
+
+	struct timespec t0;
+	timespec_get(&t0, TIME_UTC);
+
+	/* Server never calls accept, so no CONFIRMATION is sent */
+	dssh_channel ch = dssh_session_open_exec(ctx.client, "cmd");
+	ASSERT_NULL(ch);
+
+	struct timespec t1;
+	timespec_get(&t1, TIME_UTC);
+	long elapsed_ms = (t1.tv_sec - t0.tv_sec) * 1000L
+	    + (t1.tv_nsec - t0.tv_nsec) / 1000000L;
+
+	/* Should complete in ~200ms, allow generous slack but under 2s */
+	ASSERT_TRUE(elapsed_ms < 2000);
+
+	selftest_cleanup(&ctx);
+	return TEST_PASS;
+}
+
+/*
+ * setup_recv times out when the client opens a channel but never
+ * sends any CHANNEL_REQUEST (pty-req, shell, exec, etc.).
+ * The server's accept_channel -> setup_recv path should time out.
+ */
+struct setup_timeout_server_arg {
+	struct selftest_ctx *ctx;
+	dssh_channel ch;
+	int result;
+};
+
+static int
+setup_timeout_server_thread(void *arg)
+{
+	struct setup_timeout_server_arg *a = arg;
+	struct selftest_ctx *ctx = a->ctx;
+	a->ch = NULL;
+
+	struct dssh_incoming_open *inc;
+	a->result = dssh_session_accept(ctx->server, &inc, 5000);
+	if (a->result < 0)
+		return 0;
+
+	const char *req_type, *req_data;
+	a->ch = dssh_session_accept_channel(ctx->server, inc,
+	    &server_session_cbs, &req_type, &req_data);
+	a->result = (a->ch == NULL) ? 0 : -1;
+	return 0;
+}
+
+static int
+test_setup_recv_timeout(void)
+{
+	struct selftest_ctx ctx;
+	if (selftest_setup(&ctx) < 0)
+		return TEST_SKIP;
+
+	/* Short timeout on the server (where setup_recv runs) */
+	dssh_session_set_timeout(ctx.server, 200);
+
+	ASSERT_OK(dssh_session_start(ctx.client));
+	ASSERT_OK(dssh_session_start(ctx.server));
+
+	/* Start server accept in a thread */
+	struct setup_timeout_server_arg sarg = { .ctx = &ctx };
+	thrd_t st;
+	ASSERT_THRD_CREATE(&st, setup_timeout_server_thread, &sarg);
+
+	/*
+	 * Send a raw CHANNEL_OPEN from the client but never follow up
+	 * with any CHANNEL_REQUEST.  The server accepts the channel open
+	 * (sends CONFIRMATION) then blocks in setup_recv waiting for
+	 * pty-req/shell/exec/subsystem -- which never arrive.
+	 */
+	dssh_session_set_timeout(ctx.client, 5000);
+
+	struct timespec t0;
+	timespec_get(&t0, TIME_UTC);
+
+	/* Build and send a raw CHANNEL_OPEN packet */
+	uint8_t msg[64];
+	size_t pos = 0;
+	static const char chan_session[] = "session";
+	msg[pos++] = SSH_MSG_CHANNEL_OPEN;
+	DSSH_PUT_U32(DSSH_STRLEN(chan_session), msg, &pos);
+	memcpy(&msg[pos], chan_session, DSSH_STRLEN(chan_session));
+	pos += DSSH_STRLEN(chan_session);
+	DSSH_PUT_U32(0, msg, &pos);    /* sender channel */
+	DSSH_PUT_U32(32768, msg, &pos); /* initial window */
+	DSSH_PUT_U32(32768, msg, &pos); /* max packet */
+
+	int res = dssh_transport_send_packet(ctx.client, msg, pos, NULL);
+	ASSERT_OK(res);
+
+	/* Wait for server thread to complete (it should time out) */
+	thrd_join(st, NULL);
+
+	struct timespec t1;
+	timespec_get(&t1, TIME_UTC);
+	long elapsed_ms = (t1.tv_sec - t0.tv_sec) * 1000L
+	    + (t1.tv_nsec - t0.tv_nsec) / 1000000L;
+
+	/* Server's setup_recv should have timed out in ~200ms */
+	ASSERT_TRUE(elapsed_ms < 2000);
+	ASSERT_EQ(sarg.result, 0); /* ch == NULL, result set to 0 */
+	ASSERT_NULL(sarg.ch);
+
+	selftest_cleanup(&ctx);
+	return TEST_PASS;
+}
+
+/*
+ * send_packet blocks during rekey; with a session timeout set,
+ * the rekey wait should time out and terminate the session.
+ * We simulate this by setting rekey_in_progress = true without
+ * actually performing a rekey, then sending an application message.
+ */
+static int
+test_rekey_send_timeout(void)
+{
+	struct selftest_ctx ctx;
+	if (selftest_setup(&ctx) < 0)
+		return TEST_SKIP;
+
+	/* Short timeout */
+	dssh_session_set_timeout(ctx.client, 200);
+
+	/* Pretend a rekey is in progress (no actual KEX running) */
+	ctx.client->trans.rekey_in_progress = true;
+
+	struct timespec t0;
+	timespec_get(&t0, TIME_UTC);
+
+	/* Try to send an application-layer message (type >= 50).
+	 * This should block on the rekey wait, time out, terminate,
+	 * and return DSSH_ERROR_TERMINATED. */
+	uint8_t msg[8];
+	msg[0] = SSH_MSG_CHANNEL_DATA; /* type 94, above threshold */
+	msg[1] = 0;
+	msg[2] = 0;
+	msg[3] = 0;
+	msg[4] = 0;
+
+	int res = dssh_transport_send_packet(ctx.client, msg, 5, NULL);
+	ASSERT_EQ(res, DSSH_ERROR_TERMINATED);
+
+	struct timespec t1;
+	timespec_get(&t1, TIME_UTC);
+	long elapsed_ms = (t1.tv_sec - t0.tv_sec) * 1000L
+	    + (t1.tv_nsec - t0.tv_nsec) / 1000000L;
+
+	ASSERT_TRUE(elapsed_ms < 2000);
+	ASSERT_TRUE(dssh_session_is_terminated(ctx.client));
+
+	selftest_cleanup(&ctx);
+	return TEST_PASS;
+}
+
+/* ================================================================
  * Test table and main
  * ================================================================ */
 
@@ -1530,6 +1737,10 @@ static struct dssh_test_entry tests[] = {
 	{ "test_self_rekey_preserves_channels", test_self_rekey_preserves_channels },
 	{ "test_self_connection_drop",         test_self_connection_drop },
 	{ "test_null_session_api",             test_null_session_api },
+	{ "test_set_timeout",                  test_set_timeout },
+	{ "test_open_channel_timeout",         test_open_channel_timeout },
+	{ "test_setup_recv_timeout",           test_setup_recv_timeout },
+	{ "test_rekey_send_timeout",           test_rekey_send_timeout },
 };
 
 DSSH_TEST_MAIN(tests)

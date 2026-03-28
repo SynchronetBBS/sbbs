@@ -1066,6 +1066,22 @@ dssh_session_set_banner_cb(sess, my_banner_handler, my_context);
 dssh_session_set_global_request_cb(sess, my_global_req_handler, my_context);
 ```
 
+## Inactivity Timeout
+
+Internal waits for peer responses (channel open confirmation, channel
+request replies, setup messages, rekey completion) use a configurable
+timeout.  Set it after init, before start:
+
+```c
+dssh_session_set_timeout(sess, 10000);   /* 10 seconds */
+```
+
+The default is **75000 ms** (75 seconds), matching the standard BSD
+TCP connect timeout.  Values <= 0 disable the timeout (wait
+indefinitely).  On timeout, channel-open and setup functions return
+`DSSH_ERROR_TIMEOUT` (non-fatal, the session remains usable).
+A rekey timeout is fatal and terminates the session.
+
 ## Error Handling
 
 All functions return 0 on success, negative `DSSH_ERROR_*` codes

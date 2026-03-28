@@ -236,6 +236,7 @@ struct dssh_session_s {
 
         /* 4-byte */
 	uint32_t                      next_channel_id;
+	int                           timeout_ms;
 
         /* 1-byte */
 	atomic_bool                   initialized;
@@ -261,6 +262,20 @@ dssh_thrd_check(dssh_session sess, int ret)
 	    && ret != thrd_timedout && !sess->terminate)
 		dssh_session_set_terminate(sess);
 	return ret;
+}
+
+/* Convert a millisecond timeout to an absolute deadline timespec.
+ * Caller must ensure timeout_ms > 0. */
+static inline void
+dssh_deadline_from_ms(struct timespec *ts, int timeout_ms)
+{
+	timespec_get(ts, TIME_UTC);
+	ts->tv_sec += timeout_ms / 1000;
+	ts->tv_nsec += (timeout_ms % 1000) * 1000000L;
+	if (ts->tv_nsec >= 1000000000L) {
+		ts->tv_sec++;
+		ts->tv_nsec -= 1000000000L;
+	}
 }
 
 #endif // ifndef DSSH_INTERNAL_H

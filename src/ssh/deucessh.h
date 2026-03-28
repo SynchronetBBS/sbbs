@@ -26,6 +26,7 @@ extern "C" {
 #define DSSH_ERROR_REKEY_NEEDED -11    /* Must rekey before sending more packets */
 #define DSSH_ERROR_AUTH_REJECTED -12   /* Authentication rejected by peer */
 #define DSSH_ERROR_REJECTED -13        /* Channel open or request rejected by peer */
+#define DSSH_ERROR_TIMEOUT -14         /* Operation timed out waiting for peer */
 
 /* Opaque session handle.  Created by session_init, freed by session_cleanup. */
 typedef struct dssh_session_s *dssh_session;
@@ -143,6 +144,18 @@ DSSH_PUBLIC void dssh_session_set_banner_cb(dssh_session sess,
     dssh_auth_banner_cb cb, void *cbdata);
 DSSH_PUBLIC void dssh_session_set_global_request_cb(dssh_session sess,
     dssh_global_request_cb cb, void *cbdata);
+
+/*
+ * Set the session inactivity timeout in milliseconds.
+ * Applies to internal waits for peer responses (channel open
+ * confirmation, channel request replies, setup messages, and
+ * rekey completion).  Default is 75000 (75 seconds, matching
+ * the standard BSD TCP connect timeout).  Values <= 0 disable
+ * the timeout (wait indefinitely).
+ * Must be set before dssh_session_start().
+ */
+DSSH_PUBLIC void dssh_session_set_timeout(dssh_session sess,
+    int timeout_ms);
 
 /*
  * Set the SSH version identification strings (RFC 4253 s4.2).
