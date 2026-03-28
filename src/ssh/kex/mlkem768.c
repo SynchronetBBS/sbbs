@@ -11,7 +11,7 @@
 
 #include "libcrux_mlkem768_sha3.h"
 
-int
+DSSH_PRIVATE int
 crypto_kem_mlkem768_keypair(unsigned char *pk, unsigned char *sk)
 {
 	uint8_t rnd[LIBCRUX_ML_KEM_KEY_PAIR_PRNG_LEN];
@@ -30,7 +30,7 @@ crypto_kem_mlkem768_keypair(unsigned char *pk, unsigned char *sk)
 	return 0;
 }
 
-int
+DSSH_PRIVATE int
 crypto_kem_mlkem768_enc(unsigned char *ct, unsigned char *ss,
     const unsigned char *pk)
 {
@@ -57,7 +57,7 @@ crypto_kem_mlkem768_enc(unsigned char *ct, unsigned char *ss,
 	return 0;
 }
 
-int
+DSSH_PRIVATE int
 crypto_kem_mlkem768_dec(unsigned char *ss, const unsigned char *ct,
     const unsigned char *sk)
 {

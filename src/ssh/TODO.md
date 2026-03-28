@@ -198,16 +198,20 @@
     timeout) before calling `cleanup`, or provide a non-blocking
     `session_stop` variant.
 
-88. **Symbol visibility audit.**  Every non-`static` function and global
-    variable across all library .c files should be annotated
-    `DSSH_PUBLIC` or `DSSH_PRIVATE` unless it is only exposed under
-    `#ifdef DSSH_TESTING` (i.e. `DSSH_TESTABLE`).  Unannotated symbols
-    get default ELF visibility and pollute the `.dynsym` table of the
-    shared library.  Audit all .c files and add the appropriate
-    annotation to any symbol that is missing one.
-
-
 ## Closed
+
+- Symbol visibility audit complete (was item 88).  Audited all 17 library
+  .c files.  Added `DSSH_PRIVATE` to 9 unannotated non-static functions:
+  3 in `kex/mlkem768.c` (crypto_kem_mlkem768_{keypair,enc,dec}),
+  3 in `kex/sntrup761.c` (crypto_kem_sntrup761_{keypair,enc,dec}),
+  3 in `ssh-trans.c` (dssh_test_{reset_global_config,set_sw_version,
+  set_version_comment}).  Updated corresponding headers (`mlkem768.h`,
+  `sntrup761.h`) with `DSSH_PRIVATE` declarations and
+  `#include "deucessh-portable.h"`.  Moved stale `extern` declarations
+  from `test_transport.c` to `dssh_test_internal.h`.  All other symbols
+  were already correctly annotated.  The shared library `.dynsym` was
+  already clean due to `-fvisibility=hidden` in the CMake build.
+
 
 - C11 threading return values now checked (was items 85, 86).
   Added `dssh_thrd_check()` inline wrapper in `ssh-internal.h` that

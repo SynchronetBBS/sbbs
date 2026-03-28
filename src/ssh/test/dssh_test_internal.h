@@ -88,6 +88,14 @@ size_t tx_block_size(dssh_session sess);
 size_t rx_block_size(dssh_session sess);
 
 /*
+ * Test accessors for injecting version strings that bypass
+ * set_version validation, allowing version_tx defense-in-depth
+ * tests to reach the TOOLONG branches.
+ */
+void dssh_test_set_sw_version(const char *v);
+void dssh_test_set_version_comment(const char *c);
+
+/*
  * Version string validators from ssh-trans.c.
  */
 bool dssh_test_has_nulls(uint8_t *buf, size_t buflen);

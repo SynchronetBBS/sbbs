@@ -2254,7 +2254,7 @@ dssh_transport_set_callbacks(dssh_transport_io_cb tx,
  * Frees all registered algorithm entries, zeros the config,
  * and unlocks registration.
  */
-void
+DSSH_PRIVATE void
 dssh_test_reset_global_config(void)
 {
         /* Free linked list helpers */
@@ -2290,13 +2290,13 @@ dssh_test_reset_global_config(void)
  * set_version validation, allowing version_tx defense-in-depth
  * tests to reach the TOOLONG branches.
  */
-void
+DSSH_PRIVATE void
 dssh_test_set_sw_version(const char *v)
 {
 	gconf.software_version = v;
 }
 
-void
+DSSH_PRIVATE void
 dssh_test_set_version_comment(const char *c)
 {
 	gconf.version_comment = c;

@@ -2123,7 +2123,7 @@ static int HashSession(unsigned char *k, int b, const unsigned char *y, const un
   return Hash_prefix(k, b, x, sizeof x);
 }
 
-int crypto_kem_sntrup761_keypair(unsigned char *pk, unsigned char *sk) {
+DSSH_PRIVATE int crypto_kem_sntrup761_keypair(unsigned char *pk, unsigned char *sk) {
   int i;
   if (ZKeyGen(pk, sk) < 0) return -1;
   sk += SecretKeys_bytes;
@@ -2139,7 +2139,7 @@ static int Hide(unsigned char *c, unsigned char *r_enc, const Inputs r, const un
   return HashConfirm(c + crypto_kem_sntrup761_CIPHERTEXTBYTES - Confirm_bytes, r_enc, cache);
 }
 
-int crypto_kem_sntrup761_enc(unsigned char *c, unsigned char *k, const unsigned char *pk) {
+DSSH_PRIVATE int crypto_kem_sntrup761_enc(unsigned char *c, unsigned char *k, const unsigned char *pk) {
   Inputs r;
   unsigned char r_enc[Small_bytes], cache[Hash_bytes];
   if (Hash_prefix(cache, 4, pk, crypto_kem_sntrup761_PUBLICKEYBYTES) < 0) return -1;
@@ -2155,7 +2155,7 @@ static int Ciphertexts_diff_mask(const unsigned char *c, const unsigned char *c2
   return (int)((crypto_int64_bitmod_01((differentbits - 1),8)) - 1);
 }
 
-int crypto_kem_sntrup761_dec(unsigned char *k, const unsigned char *c, const unsigned char *sk) {
+DSSH_PRIVATE int crypto_kem_sntrup761_dec(unsigned char *k, const unsigned char *c, const unsigned char *sk) {
   const unsigned char *pk = sk + SecretKeys_bytes;
   const unsigned char *rho = pk + crypto_kem_sntrup761_PUBLICKEYBYTES;
   const unsigned char *cache = rho + Small_bytes;

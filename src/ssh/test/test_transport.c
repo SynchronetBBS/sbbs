@@ -3790,11 +3790,8 @@ test_is_20_199_no_dash(void)
  * We bypass set_version by writing directly to the global config.
  * ================================================================ */
 
-/* Access to gconf fields for test injection.  These are normally
- * set by dssh_transport_set_version; we bypass it here. */
-extern const char *dssh_test_get_sw_version(void);
-extern void dssh_test_set_sw_version(const char *v);
-extern void dssh_test_set_version_comment(const char *c);
+/* dssh_test_set_sw_version/dssh_test_set_version_comment declared
+ * in dssh_test_internal.h */
 
 static int
 test_version_tx_toolong_version(void)
