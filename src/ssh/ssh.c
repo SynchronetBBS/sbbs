@@ -237,7 +237,7 @@ dssh_session_set_global_request_cb(dssh_session sess,
 }
 
 DSSH_PUBLIC void
-session_set_terminate_cb(dssh_session sess,
+dssh_session_set_terminate_cb(dssh_session sess,
     dssh_terminate_cb cb, void *cbdata)
 {
 	if (sess == NULL)
