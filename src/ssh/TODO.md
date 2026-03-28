@@ -33,20 +33,11 @@
 
 
 
-26. `demux_dispatch()` (~240 lines) and `dssh_session_accept_channel()`
-    (~230 lines) are too large.  demux_dispatch handles 8 message types
-    with nested request sub-dispatch.  accept_channel mixes allocation,
-    registration, mailbox loop, parsing, callback, and buffer init.
-
-
 28. Near-duplicate read/write pairs: `dssh_session_read()` /
     `dssh_session_read_ext()` and `dssh_session_write()` /
     `dssh_session_write_ext()` differ only in which buffer or send
     function they use.
 
-
-30. Local `#define PTY_SER()` and `#define SIG_SER()` macros in
-    ssh-conn.c.  Same class of issue as item 11.
 
 31. ssh-chan.c has no public API — every function is `DSSH_PRIVATE`.
     Only consumer is ssh-conn.c (and tests).  Consider inlining as
@@ -106,6 +97,25 @@
     `session_stop` variant.
 
 ## Closed
+
+- `demux_dispatch()` and `dssh_session_accept_channel()` decomposed
+  (was items 26, 30).  `demux_dispatch()` (~240 lines) split into 4
+  helpers: `handle_channel_data()` (CHANNEL_DATA to stdout/raw queue),
+  `handle_channel_extended_data()` (CHANNEL_EXTENDED_DATA to stderr),
+  `handle_channel_request()` (signal/exit-status/window-change dispatch
+  + FAILURE reply), and `dssh_test_parse_channel_request()` (DSSH_TESTABLE
+  pure parser for the common CHANNEL_REQUEST wire format).  Switch body
+  reduced from ~140 lines to ~15 lines.
+  `dssh_session_accept_channel()` (~230 lines) split into
+  `accept_channel_init()` (alloc, init sync, register, send confirmation)
+  and `accept_setup_loop()` (for-loop processing setup requests via the
+  shared parser).  Main function reduced to ~50 lines: null check, init,
+  setup loop, transition, return.  Both sites now use the shared parser
+  instead of duplicating the CHANNEL_REQUEST parse logic.
+  `PTY_SER()` and `SIG_SER()` local macros replaced with direct
+  `DSSH_PUT_U32()` calls (11 sites).  6 new unit tests for the parser
+  (valid, empty type, no data, truncated type length, truncated type,
+  truncated want_reply).
 
 - Cascading allocation/cleanup duplication (was item 17).
   `dssh_transport_init()` used cascading free/destroy calls at each of 7

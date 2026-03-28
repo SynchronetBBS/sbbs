@@ -6520,6 +6520,188 @@ test_poll_deadline_not_reset(void)
 }
 
 /* ================================================================
+ * Channel request parser unit tests
+ * ================================================================ */
+
+/*
+ * Build a CHANNEL_REQUEST payload:
+ *   byte    msg_type (98)
+ *   uint32  recipient_channel
+ *   string  request_type
+ *   boolean want_reply
+ *   ...     type-specific data
+ */
+static size_t
+build_channel_request(uint8_t *buf, size_t bufsz,
+    uint32_t channel, const char *rtype, bool want_reply,
+    const uint8_t *extra, size_t extra_len)
+{
+	size_t pos = 0;
+
+	buf[pos++] = SSH_MSG_CHANNEL_REQUEST;
+	DSSH_PUT_U32(channel, buf, &pos);
+	uint32_t rtlen = (uint32_t)strlen(rtype);
+	DSSH_PUT_U32(rtlen, buf, &pos);
+	memcpy(&buf[pos], rtype, rtlen);
+	pos += rtlen;
+	buf[pos++] = want_reply ? 1 : 0;
+	if (extra != NULL && extra_len > 0) {
+		memcpy(&buf[pos], extra, extra_len);
+		pos += extra_len;
+	}
+	(void)bufsz;
+	return pos;
+}
+
+static int
+test_chanreq_parse_valid(void)
+{
+	uint8_t buf[128];
+	uint8_t extra[] = { 0x00, 0x00, 0x00, 0x04, 'b', 'a', 's', 'h' };
+	size_t len = build_channel_request(buf, sizeof(buf),
+	    42, "exec", true, extra, sizeof(extra));
+
+	const uint8_t *rtype;
+	uint32_t rtype_len;
+	bool want_reply;
+	const uint8_t *rdata;
+	size_t rdata_len;
+
+	ASSERT_OK(dssh_test_parse_channel_request(buf, len,
+	    &rtype, &rtype_len, &want_reply, &rdata, &rdata_len));
+	ASSERT_EQ(rtype_len, 4U);
+	ASSERT_MEM_EQ(rtype, "exec", 4);
+	ASSERT_TRUE(want_reply);
+	ASSERT_EQ(rdata_len, sizeof(extra));
+	ASSERT_MEM_EQ(rdata, extra, sizeof(extra));
+
+	return TEST_PASS;
+}
+
+static int
+test_chanreq_parse_empty_type(void)
+{
+	uint8_t buf[32];
+	size_t len = build_channel_request(buf, sizeof(buf),
+	    0, "", false, NULL, 0);
+
+	const uint8_t *rtype;
+	uint32_t rtype_len;
+	bool want_reply;
+	const uint8_t *rdata;
+	size_t rdata_len;
+
+	ASSERT_OK(dssh_test_parse_channel_request(buf, len,
+	    &rtype, &rtype_len, &want_reply, &rdata, &rdata_len));
+	ASSERT_EQ(rtype_len, 0U);
+	ASSERT_FALSE(want_reply);
+	ASSERT_EQ(rdata_len, 0U);
+
+	return TEST_PASS;
+}
+
+static int
+test_chanreq_parse_no_data(void)
+{
+	uint8_t buf[32];
+	size_t len = build_channel_request(buf, sizeof(buf),
+	    7, "shell", true, NULL, 0);
+
+	const uint8_t *rtype;
+	uint32_t rtype_len;
+	bool want_reply;
+	const uint8_t *rdata;
+	size_t rdata_len;
+
+	ASSERT_OK(dssh_test_parse_channel_request(buf, len,
+	    &rtype, &rtype_len, &want_reply, &rdata, &rdata_len));
+	ASSERT_EQ(rtype_len, 5U);
+	ASSERT_MEM_EQ(rtype, "shell", 5);
+	ASSERT_TRUE(want_reply);
+	ASSERT_EQ(rdata_len, 0U);
+
+	return TEST_PASS;
+}
+
+static int
+test_chanreq_parse_truncated_type_len(void)
+{
+	/* Only msg_type + channel, no room for type length */
+	uint8_t buf[5];
+
+	buf[0] = SSH_MSG_CHANNEL_REQUEST;
+	size_t pos = 1;
+	DSSH_PUT_U32(0, buf, &pos);
+
+	const uint8_t *rtype;
+	uint32_t rtype_len;
+	bool want_reply;
+	const uint8_t *rdata;
+	size_t rdata_len;
+
+	ASSERT_ERR(dssh_test_parse_channel_request(buf, pos,
+	    &rtype, &rtype_len, &want_reply, &rdata, &rdata_len),
+	    DSSH_ERROR_PARSE);
+
+	return TEST_PASS;
+}
+
+static int
+test_chanreq_parse_truncated_type(void)
+{
+	/* Type length says 10 but only 3 bytes follow */
+	uint8_t buf[16];
+	size_t pos = 0;
+
+	buf[pos++] = SSH_MSG_CHANNEL_REQUEST;
+	DSSH_PUT_U32(0, buf, &pos);
+	DSSH_PUT_U32(10, buf, &pos); /* rtype_len = 10 */
+	buf[pos++] = 'a';
+	buf[pos++] = 'b';
+	buf[pos++] = 'c';
+	/* No want_reply byte, and type is truncated */
+
+	const uint8_t *rtype;
+	uint32_t rtype_len;
+	bool want_reply;
+	const uint8_t *rdata;
+	size_t rdata_len;
+
+	ASSERT_ERR(dssh_test_parse_channel_request(buf, pos,
+	    &rtype, &rtype_len, &want_reply, &rdata, &rdata_len),
+	    DSSH_ERROR_PARSE);
+
+	return TEST_PASS;
+}
+
+static int
+test_chanreq_parse_truncated_want_reply(void)
+{
+	/* Type is present but want_reply byte is missing */
+	uint8_t buf[16];
+	size_t pos = 0;
+
+	buf[pos++] = SSH_MSG_CHANNEL_REQUEST;
+	DSSH_PUT_U32(0, buf, &pos);
+	DSSH_PUT_U32(2, buf, &pos); /* rtype_len = 2 */
+	buf[pos++] = 'o';
+	buf[pos++] = 'k';
+	/* No want_reply byte */
+
+	const uint8_t *rtype;
+	uint32_t rtype_len;
+	bool want_reply;
+	const uint8_t *rdata;
+	size_t rdata_len;
+
+	ASSERT_ERR(dssh_test_parse_channel_request(buf, pos,
+	    &rtype, &rtype_len, &want_reply, &rdata, &rdata_len),
+	    DSSH_ERROR_PARSE);
+
+	return TEST_PASS;
+}
+
+/* ================================================================
  * Test table
  * ================================================================ */
 
@@ -6728,6 +6910,14 @@ static struct dssh_test_entry tests[] = {
 
 	/* Item 64: deadline must not reset on spurious wakeup */
 	{ "test_poll_deadline_not_reset",      test_poll_deadline_not_reset },
+
+	/* Channel request parser unit tests */
+	{ "chanreq/parse_valid",               test_chanreq_parse_valid },
+	{ "chanreq/parse_empty_type",          test_chanreq_parse_empty_type },
+	{ "chanreq/parse_no_data",             test_chanreq_parse_no_data },
+	{ "chanreq/parse_truncated_type_len",  test_chanreq_parse_truncated_type_len },
+	{ "chanreq/parse_truncated_type",      test_chanreq_parse_truncated_type },
+	{ "chanreq/parse_truncated_want_reply", test_chanreq_parse_truncated_want_reply },
 };
 
 DSSH_TEST_MAIN(tests)

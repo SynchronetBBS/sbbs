@@ -75,6 +75,10 @@ int dssh_conn_send_window_adjust(dssh_session sess,
 int maybe_replenish_window(dssh_session sess, struct dssh_channel_s *ch);
 int demux_dispatch(dssh_session sess, uint8_t msg_type,
     uint8_t *payload, size_t payload_len);
+int dssh_test_parse_channel_request(const uint8_t *payload, size_t payload_len,
+    const uint8_t **rtype, uint32_t *rtype_len,
+    bool *want_reply,
+    const uint8_t **req_data, size_t *req_data_len);
 
 /*
  * ssh-trans.c internal functions exposed for testing.
