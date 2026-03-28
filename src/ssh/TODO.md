@@ -58,9 +58,24 @@
     not been consumed, the demux thread blocks on `cnd_wait` until
     the application's `request_cb` callback returns.  During this
     time, ALL other channels on the same session are stalled: no
-    data delivery, no window adjusts, no new channel opens.  Fix:
-    use a queue instead of a single slot, or document that
-    `request_cb` must return promptly.
+    data delivery, no window adjusts, no new channel opens.
+
+    The deeper problem: a peer can legally open up to 2^32 channels,
+    each entering setup mode.  If the demux thread blocks on any one
+    channel's mailbox, all other channels are stalled.  Replacing the
+    single slot with a per-channel queue doesn't help — that's 2^32
+    queues.  A shared queue for all setup deliveries changes the app
+    processing model.  The most natural fix is probably an explicit
+    `dssh_channel_accept()` API where the app pulls pending channels
+    and the demux thread never blocks on setup delivery — but this is
+    a significant API change.
+
+    This is fundamentally the same class of problem as item 75: SSH
+    flow control counts bytes, not messages or channels.  Any
+    message/channel-granularity buffering requires either an arbitrary
+    count limit (not in the protocol), unbounded allocation (current
+    approach), or accepting bounded waste.  Research what other SSH
+    implementations do before attempting a fix.
 
 
 75. **Msgqueue unbounded per-message overhead for raw channels.**
@@ -101,20 +116,32 @@
     4. Reject/limit 0-byte messages -- arbitrary restriction,
        potential protocol violation
 
-76. **I/O callbacks called under `tx_mtx` create head-of-line
-    blocking.**  `send_packet()` holds `tx_mtx` for its entire
-    duration, including the `gconf.tx()` I/O callback (line 597).
-    On a congested link, a slow send holds `tx_mtx` for the full
-    I/O timeout duration, blocking all other senders including the
-    demux thread's protocol responses.  Fix: split `send_packet`
-    into a prepare phase (under `tx_mtx`, builds encrypted packet)
-    and a transmit phase (outside `tx_mtx`, calls I/O callback).
-    Alternatively, document that I/O callbacks should have short
-    timeouts.
+
+
+
 
 
 
 ## Closed
+
+- Demux head-of-line blocking under `tx_mtx` (was item 76).
+  `send_packet()` held `tx_mtx` for its entire duration including the
+  blocking `gconf.tx()` I/O callback.  On a congested link, the demux
+  thread blocked on `tx_mtx` for fire-and-forget protocol responses
+  (CHANNEL_FAILURE, OPEN_FAILURE, REQUEST_SUCCESS/FAILURE), stalling all
+  incoming packet processing.  The original fix proposal (split
+  send_packet into prepare + transmit phases) doesn't work cleanly
+  because SSH MACs use implicit sequence numbers: packets must arrive on
+  the wire in sequence-number order, so any split requires a second
+  ordering mechanism that effectively re-serializes the I/O.  Fix:
+  extracted `send_packet_inner()` (core build/MAC/encrypt/I/O logic),
+  added `dssh_transport_send_or_queue()` for non-blocking demux sends.
+  Uses `mtx_trylock` on `tx_mtx` -- fast path sends immediately,
+  slow path enqueues the payload (linked list under `tx_queue_mtx`).
+  `send_packet()` drains the queue under `tx_mtx` before each send,
+  preserving sequence-number ordering.  3 demux call sites updated:
+  `handle_channel_request()` CHANNEL_FAILURE, `demux_channel_open()`
+  OPEN_FAILURE, and `recv_packet()` GLOBAL_REQUEST reply.
 
 - `dssh_session_cleanup()` hang on `thrd_join` (was item 83).  Added
   `dssh_terminate_cb` callback typedef and `dssh_session_set_terminate_cb()`

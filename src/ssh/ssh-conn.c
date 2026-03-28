@@ -737,7 +737,7 @@ handle_channel_request(dssh_session sess, dssh_channel ch,
 		fail[fp++] = SSH_MSG_CHANNEL_FAILURE;
 		DSSH_PUT_U32(ch->remote_id, fail, &fp);
 		dssh_thrd_check(sess, mtx_unlock(&ch->buf_mtx));
-		dssh_transport_send_packet(sess, fail, fp, NULL);
+		dssh_transport_send_or_queue(sess, fail, fp);
 		dssh_thrd_check(sess, mtx_lock(&ch->buf_mtx));
 		if (atomic_load(&ch->closing)) {
 			dssh_thrd_check(sess, mtx_unlock(&ch->buf_mtx));
@@ -1008,7 +1008,7 @@ demux_channel_open(dssh_session sess, uint8_t *payload, size_t payload_len)
 		DSSH_PUT_U32(SSH_OPEN_ADMINISTRATIVELY_PROHIBITED, fail, &fp);
 		DSSH_PUT_U32(0, fail, &fp);
 		DSSH_PUT_U32(0, fail, &fp);
-		dssh_transport_send_packet(sess, fail, fp, NULL);
+		dssh_transport_send_or_queue(sess, fail, fp);
 		return 0;
 	}
 

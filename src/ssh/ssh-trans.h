@@ -81,6 +81,19 @@ struct dssh_rekey_msg {
 	uint8_t                data[];
 };
 
+/*
+ * Queued payloads for non-blocking demux sends.  The demux thread
+ * uses dssh_transport_send_or_queue() for fire-and-forget protocol
+ * responses (CHANNEL_FAILURE, OPEN_FAILURE, REQUEST_SUCCESS/FAILURE).
+ * If tx_mtx is busy, the payload is queued and drained by the next
+ * send_packet() call.
+ */
+struct dssh_tx_queue_entry {
+	struct dssh_tx_queue_entry *next;
+	size_t                      len;
+	uint8_t                     data[];
+};
+
 /* Rekey thresholds (RFC 4253 s9, RFC 4251 s9.3.2) */
 #define DSSH_REKEY_SOFT_LIMIT UINT32_C(0x10000000) /* 2^28 packets */
 #define DSSH_REKEY_HARD_LIMIT UINT32_C(0x80000000) /* 2^31 packets */
@@ -116,6 +129,8 @@ typedef struct dssh_transport_state_s {
 	uint8_t       *peer_kexinit;
 	struct dssh_rekey_msg *rekey_queue_head; /* buffered msgs during kexinit */
 	struct dssh_rekey_msg *rekey_queue_tail;
+	struct dssh_tx_queue_entry *tx_queue_head; /* queued fire-and-forget sends */
+	struct dssh_tx_queue_entry *tx_queue_tail;
 	_Atomic dssh_key_algo  key_algo_selected;
 	dssh_enc_ctx  *enc_c2s_ctx;
 	_Atomic dssh_enc       enc_c2s_selected;
@@ -133,6 +148,7 @@ typedef struct dssh_transport_state_s {
         /* C11 synchronization (platform-dependent size) */
 	cnd_t          rekey_cnd;         /* wakes senders blocked during rekey */
 	mtx_t          tx_mtx;
+	mtx_t          tx_queue_mtx;     /* protects tx_queue (independent of tx_mtx) */
 	mtx_t          rx_mtx;
 
         /* Atomic tx counters -- read lock-free by rekey_needed() (recv
@@ -185,6 +201,8 @@ DSSH_PRIVATE int dssh_transport_init(dssh_session sess, size_t max_packet_size);
 DSSH_PRIVATE void dssh_transport_cleanup(dssh_session sess);
 DSSH_PRIVATE int dssh_transport_send_packet(dssh_session sess,
     const uint8_t *payload, size_t payload_len, uint32_t *seq_out);
+DSSH_PRIVATE int dssh_transport_send_or_queue(dssh_session sess,
+    const uint8_t *payload, size_t payload_len);
 DSSH_PRIVATE int dssh_transport_recv_packet(dssh_session sess,
     uint8_t *msg_type, uint8_t **payload, size_t *payload_len);
 DSSH_PRIVATE int dssh_transport_send_unimplemented(dssh_session sess,

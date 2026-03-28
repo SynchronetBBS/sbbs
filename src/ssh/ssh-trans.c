@@ -475,6 +475,212 @@ rx_mac_size(dssh_session sess)
 	return mac->digest_size;
 }
 
+/*
+ * Core send logic.  Caller MUST hold tx_mtx.  Builds the packet,
+ * computes MAC, encrypts, calls the I/O callback, updates counters.
+ */
+static int
+send_packet_inner(dssh_session sess,
+    const uint8_t *payload, size_t payload_len, uint32_t *seq_out)
+{
+	int ret;
+
+	size_t bs = tx_block_size(sess);
+
+	if (payload_len > SIZE_MAX - 5) {
+		ret = DSSH_ERROR_TOOLONG;
+		goto inner_done;
+	}
+	size_t padding_len = bs - ((5 + payload_len) % bs);
+	if (padding_len < 4)
+		padding_len += bs;
+
+	size_t pkt_sz = 1 + payload_len + padding_len;
+
+	if (pkt_sz > UINT32_MAX) {
+		ret = DSSH_ERROR_TOOLONG;
+		goto inner_done;
+	}
+	uint32_t packet_length = (uint32_t)pkt_sz;
+
+#if UINT32_MAX > SIZE_MAX - 4
+	if (packet_length > SIZE_MAX - 4) {
+		ret = DSSH_ERROR_TOOLONG;
+		goto inner_done;
+	}
+#endif
+	size_t total = 4 + packet_length;
+	uint16_t mac_len = tx_mac_size(sess);
+
+	if (total + mac_len > sess->trans.packet_buf_sz) {
+		ret = DSSH_ERROR_TOOLONG;
+		goto inner_done;
+	}
+
+	size_t pos = 0;
+	DSSH_PUT_U32(packet_length, sess->trans.tx_packet, &pos);
+	sess->trans.tx_packet[pos++] = (uint8_t)padding_len;
+	memcpy(&sess->trans.tx_packet[pos], payload, payload_len);
+	pos += payload_len;
+	if (RAND_bytes(&sess->trans.tx_packet[pos], (int)padding_len) != 1) {
+		ret = DSSH_ERROR_INIT;
+		goto inner_done;
+	}
+	pos += padding_len;
+
+        /* MAC: mac(key, seq || unencrypted_packet) */
+	if (mac_len > 0) {
+		uint8_t *mac_input = sess->trans.tx_mac_scratch;
+		size_t   mi_pos = 0;
+
+		DSSH_PUT_U32(sess->trans.tx_seq, mac_input, &mi_pos);
+		memcpy(&mac_input[mi_pos], sess->trans.tx_packet, total);
+		mi_pos += total;
+
+		dssh_mac      mac;
+		dssh_mac_ctx *mac_ctx;
+
+		if (sess->trans.client) {
+			mac = sess->trans.mac_c2s_selected;
+			mac_ctx = sess->trans.mac_c2s_ctx;
+		}
+		else {
+			mac = sess->trans.mac_s2c_selected;
+			mac_ctx = sess->trans.mac_s2c_ctx;
+		}
+		ret = mac->generate(mac_input, mi_pos, &sess->trans.tx_packet[pos], mac_ctx);
+		if (ret < 0)
+			goto inner_done;
+		pos += mac_len;
+	}
+
+        /* Encrypt (the packet, not the MAC) */
+	{
+		dssh_enc_ctx *enc_ctx;
+		dssh_enc      enc;
+
+		if (sess->trans.client) {
+			enc = sess->trans.enc_c2s_selected;
+			enc_ctx = sess->trans.enc_c2s_ctx;
+		}
+		else {
+			enc = sess->trans.enc_s2c_selected;
+			enc_ctx = sess->trans.enc_s2c_ctx;
+		}
+
+		if ((enc != NULL) && (enc->encrypt != NULL) && (enc_ctx != NULL)) {
+			ret = enc->encrypt(sess->trans.tx_packet, total, enc_ctx);
+			if (ret < 0)
+				goto inner_done;
+		}
+	}
+
+        /* Refuse to send if per-key packet count would exceed hard limit */
+	if (sess->trans.tx_since_rekey >= DSSH_REKEY_HARD_LIMIT) {
+		ret = DSSH_ERROR_REKEY_NEEDED;
+		goto inner_done;
+	}
+
+	ret = gconf.tx(sess->trans.tx_packet, pos, sess, sess->tx_cbdata);
+	if (ret == 0) {
+		if (seq_out != NULL)
+			*seq_out = sess->trans.tx_seq;
+		sess->trans.tx_seq++;
+		atomic_fetch_add(&sess->trans.tx_since_rekey, 1);
+		{
+			uint64_t old_tb = atomic_load(&sess->trans.tx_bytes_since_rekey);
+			if (pos > UINT64_MAX - old_tb)
+				atomic_store(&sess->trans.tx_bytes_since_rekey, UINT64_MAX);
+			else
+				atomic_store(&sess->trans.tx_bytes_since_rekey, old_tb + pos);
+		}
+	}
+
+inner_done:
+	return ret;
+}
+
+/*
+ * Drain the tx queue under tx_mtx.  Caller MUST hold tx_mtx.
+ * Sends all queued fire-and-forget payloads in FIFO order.
+ */
+static void
+drain_tx_queue(dssh_session sess)
+{
+	dssh_thrd_check(sess, mtx_lock(&sess->trans.tx_queue_mtx));
+	struct dssh_tx_queue_entry *list = sess->trans.tx_queue_head;
+	sess->trans.tx_queue_head = NULL;
+	sess->trans.tx_queue_tail = NULL;
+	dssh_thrd_check(sess, mtx_unlock(&sess->trans.tx_queue_mtx));
+
+	while (list != NULL) {
+		struct dssh_tx_queue_entry *e = list;
+		list = list->next;
+		int qret = send_packet_inner(sess, e->data, e->len, NULL);
+		free(e);
+		if ((qret < 0) && (qret != DSSH_ERROR_TOOLONG)
+		    && (qret != DSSH_ERROR_REKEY_NEEDED)) {
+			dssh_session_set_terminate(sess);
+			/* Free remaining entries */
+			while (list != NULL) {
+				struct dssh_tx_queue_entry *rem = list;
+				list = list->next;
+				free(rem);
+			}
+			return;
+		}
+	}
+}
+
+/*
+ * Enqueue a payload for later sending by the next send_packet() caller.
+ * Returns 0 on success, DSSH_ERROR_ALLOC on allocation failure.
+ */
+static int
+enqueue_tx(dssh_session sess,
+    const uint8_t *payload, size_t payload_len)
+{
+	struct dssh_tx_queue_entry *e = malloc(
+	    sizeof(*e) + payload_len);
+	if (!e)
+		return DSSH_ERROR_ALLOC;
+	e->next = NULL;
+	e->len = payload_len;
+	memcpy(e->data, payload, payload_len);
+
+	dssh_thrd_check(sess, mtx_lock(&sess->trans.tx_queue_mtx));
+	if (sess->trans.tx_queue_tail)
+		sess->trans.tx_queue_tail->next = e;
+	else
+		sess->trans.tx_queue_head = e;
+	sess->trans.tx_queue_tail = e;
+	dssh_thrd_check(sess, mtx_unlock(&sess->trans.tx_queue_mtx));
+	return 0;
+}
+
+/*
+ * Non-blocking send for the demux thread's fire-and-forget protocol
+ * responses (CHANNEL_FAILURE, OPEN_FAILURE, REQUEST_SUCCESS/FAILURE).
+ * Tries to send immediately; if tx_mtx is busy, queues the payload
+ * for the next send_packet() caller to drain.
+ */
+DSSH_PRIVATE int
+dssh_transport_send_or_queue(dssh_session sess,
+    const uint8_t *payload, size_t payload_len)
+{
+	int tr = dssh_thrd_check(sess, mtx_trylock(&sess->trans.tx_mtx));
+	if (tr == thrd_success) {
+		drain_tx_queue(sess);
+		int ret = send_packet_inner(sess, payload, payload_len, NULL);
+		if ((ret < 0) && (ret != DSSH_ERROR_TOOLONG)
+		    && (ret != DSSH_ERROR_REKEY_NEEDED))
+			dssh_session_set_terminate(sess);
+		dssh_thrd_check(sess, mtx_unlock(&sess->trans.tx_mtx));
+		return ret;
+	}
+	return enqueue_tx(sess, payload, payload_len);
+}
+
 DSSH_PRIVATE int
 dssh_transport_send_packet(dssh_session sess,
     const uint8_t *payload, size_t payload_len, uint32_t *seq_out)
@@ -511,116 +717,8 @@ dssh_transport_send_packet(dssh_session sess,
 		}
 	}
 
-	size_t bs = tx_block_size(sess);
-
-	if (payload_len > SIZE_MAX - 5) {
-		ret = DSSH_ERROR_TOOLONG;
-		goto tx_done;
-	}
-	size_t padding_len = bs - ((5 + payload_len) % bs);
-	if (padding_len < 4)
-		padding_len += bs;
-
-	size_t pkt_sz = 1 + payload_len + padding_len;
-
-	if (pkt_sz > UINT32_MAX) {
-		ret = DSSH_ERROR_TOOLONG;
-		goto tx_done;
-	}
-	uint32_t packet_length = (uint32_t)pkt_sz;
-
-#if UINT32_MAX > SIZE_MAX - 4
-	if (packet_length > SIZE_MAX - 4) {
-		ret = DSSH_ERROR_TOOLONG;
-		goto tx_done;
-	}
-#endif
-	size_t total = 4 + packet_length;
-	uint16_t mac_len = tx_mac_size(sess);
-
-	if (total + mac_len > sess->trans.packet_buf_sz) {
-		ret = DSSH_ERROR_TOOLONG;
-		goto tx_done;
-	}
-
-	size_t pos = 0;
-	DSSH_PUT_U32(packet_length, sess->trans.tx_packet, &pos);
-	sess->trans.tx_packet[pos++] = (uint8_t)padding_len;
-	memcpy(&sess->trans.tx_packet[pos], payload, payload_len);
-	pos += payload_len;
-	if (RAND_bytes(&sess->trans.tx_packet[pos], (int)padding_len) != 1) {
-		ret = DSSH_ERROR_INIT;
-		goto tx_done;
-	}
-	pos += padding_len;
-
-        /* MAC: mac(key, seq || unencrypted_packet) */
-	if (mac_len > 0) {
-		uint8_t *mac_input = sess->trans.tx_mac_scratch;
-		size_t   mi_pos = 0;
-
-		DSSH_PUT_U32(sess->trans.tx_seq, mac_input, &mi_pos);
-		memcpy(&mac_input[mi_pos], sess->trans.tx_packet, total);
-		mi_pos += total;
-
-		dssh_mac      mac;
-		dssh_mac_ctx *mac_ctx;
-
-		if (sess->trans.client) {
-			mac = sess->trans.mac_c2s_selected;
-			mac_ctx = sess->trans.mac_c2s_ctx;
-		}
-		else {
-			mac = sess->trans.mac_s2c_selected;
-			mac_ctx = sess->trans.mac_s2c_ctx;
-		}
-		ret = mac->generate(mac_input, mi_pos, &sess->trans.tx_packet[pos], mac_ctx);
-		if (ret < 0)
-			goto tx_done;
-		pos += mac_len;
-	}
-
-        /* Encrypt (the packet, not the MAC) */
-	{
-		dssh_enc_ctx *enc_ctx;
-		dssh_enc      enc;
-
-		if (sess->trans.client) {
-			enc = sess->trans.enc_c2s_selected;
-			enc_ctx = sess->trans.enc_c2s_ctx;
-		}
-		else {
-			enc = sess->trans.enc_s2c_selected;
-			enc_ctx = sess->trans.enc_s2c_ctx;
-		}
-
-		if ((enc != NULL) && (enc->encrypt != NULL) && (enc_ctx != NULL)) {
-			ret = enc->encrypt(sess->trans.tx_packet, total, enc_ctx);
-			if (ret < 0)
-				goto tx_done;
-		}
-	}
-
-        /* Refuse to send if per-key packet count would exceed hard limit */
-	if (sess->trans.tx_since_rekey >= DSSH_REKEY_HARD_LIMIT) {
-		ret = DSSH_ERROR_REKEY_NEEDED;
-		goto tx_done;
-	}
-
-	ret = gconf.tx(sess->trans.tx_packet, pos, sess, sess->tx_cbdata);
-	if (ret == 0) {
-		if (seq_out != NULL)
-			*seq_out = sess->trans.tx_seq;
-		sess->trans.tx_seq++;
-		atomic_fetch_add(&sess->trans.tx_since_rekey, 1);
-		{
-			uint64_t old_tb = atomic_load(&sess->trans.tx_bytes_since_rekey);
-			if (pos > UINT64_MAX - old_tb)
-				atomic_store(&sess->trans.tx_bytes_since_rekey, UINT64_MAX);
-			else
-				atomic_store(&sess->trans.tx_bytes_since_rekey, old_tb + pos);
-		}
-	}
+	drain_tx_queue(sess);
+	ret = send_packet_inner(sess, payload, payload_len, seq_out);
 
 tx_done:
 
@@ -928,7 +1026,7 @@ dssh_transport_recv_packet(dssh_session sess,
 				if (want_reply) {
 					uint8_t reply = (gr_res >= 0) ? SSH_MSG_REQUEST_SUCCESS : SSH_MSG_REQUEST_FAILURE;
 
-					dssh_transport_send_packet(sess, &reply, 1, NULL);
+					dssh_transport_send_or_queue(sess, &reply, 1);
 				}
 			}
 				continue;
@@ -1939,6 +2037,7 @@ dssh_transport_init(dssh_session sess, size_t max_packet_size)
 
 	int  ret = DSSH_ERROR_ALLOC;
 	bool tx_mtx_ok = false;
+	bool tx_queue_mtx_ok = false;
 	bool rx_mtx_ok = false;
 
 	sess->trans.packet_buf_sz = max_packet_size;
@@ -1959,6 +2058,9 @@ dssh_transport_init(dssh_session sess, size_t max_packet_size)
 	if (mtx_init(&sess->trans.tx_mtx, mtx_plain) != thrd_success)
 		goto init_cleanup;
 	tx_mtx_ok = true;
+	if (mtx_init(&sess->trans.tx_queue_mtx, mtx_plain) != thrd_success)
+		goto init_cleanup;
+	tx_queue_mtx_ok = true;
 	if (mtx_init(&sess->trans.rx_mtx, mtx_plain) != thrd_success)
 		goto init_cleanup;
 	rx_mtx_ok = true;
@@ -1976,6 +2078,8 @@ dssh_transport_init(dssh_session sess, size_t max_packet_size)
 	sess->trans.mac_s2c_selected = NULL;
 	sess->trans.comp_c2s_selected = NULL;
 	sess->trans.comp_s2c_selected = NULL;
+	sess->trans.tx_queue_head = NULL;
+	sess->trans.tx_queue_tail = NULL;
 	sess->trans.session_id = NULL;
 	sess->trans.our_kexinit = NULL;
 	sess->trans.peer_kexinit = NULL;
@@ -1994,6 +2098,8 @@ dssh_transport_init(dssh_session sess, size_t max_packet_size)
 init_cleanup:
 	if (rx_mtx_ok)
 		mtx_destroy(&sess->trans.rx_mtx);
+	if (tx_queue_mtx_ok)
+		mtx_destroy(&sess->trans.tx_queue_mtx);
 	if (tx_mtx_ok)
 		mtx_destroy(&sess->trans.tx_mtx);
 	free(sess->trans.tx_packet);
@@ -2053,7 +2159,22 @@ dssh_transport_cleanup(dssh_session sess)
 
 	cnd_destroy(&sess->trans.rekey_cnd);
 	mtx_destroy(&sess->trans.tx_mtx);
+	mtx_destroy(&sess->trans.tx_queue_mtx);
 	mtx_destroy(&sess->trans.rx_mtx);
+
+        /* Free tx queue (non-empty only if session terminated mid-flight) */
+	{
+		struct dssh_tx_queue_entry *tqe = sess->trans.tx_queue_head;
+
+		while (tqe != NULL) {
+			struct dssh_tx_queue_entry *next = tqe->next;
+
+			free(tqe);
+			tqe = next;
+		}
+		sess->trans.tx_queue_head = NULL;
+		sess->trans.tx_queue_tail = NULL;
+	}
 
         /* Free rekey queue (non-empty only if rekey failed mid-flight) */
 	{
