@@ -84,6 +84,11 @@ handle_banner(dssh_session sess, uint8_t *payload, size_t payload_len)
 
 static int flush_pending_banner(dssh_session sess);
 
+/* Handler return values for per-method auth dispatch */
+#define AUTH_HANDLER_CONTINUE  0   /* failure/partial sent, keep looping */
+#define AUTH_HANDLER_SUCCESS   1   /* auth succeeded, goto done */
+/* negative values = DSSH_ERROR_* (caller returns directly) */
+
 /* ================================================================
  * Server-side helpers
  * ================================================================ */
@@ -239,32 +244,28 @@ send_info_request(dssh_session sess, const char *name,
 
 	msg[pos++] = SSH_MSG_USERAUTH_INFO_REQUEST;
 
-#define KBI_SER(v) DSSH_PUT_U32((v), msg, &pos)
-
-	KBI_SER((uint32_t)name_len);
+	DSSH_PUT_U32((uint32_t)name_len, msg, &pos);
 	if (name_len > 0) {
 		memcpy(&msg[pos], name, name_len);
 		pos += name_len;
 	}
-	KBI_SER((uint32_t)inst_len);
+	DSSH_PUT_U32((uint32_t)inst_len, msg, &pos);
 	if (inst_len > 0) {
 		memcpy(&msg[pos], instruction, inst_len);
 		pos += inst_len;
 	}
-	KBI_SER(0); /* language tag -- always empty */
-	KBI_SER(num_prompts);
+	DSSH_PUT_U32(0, msg, &pos); /* language tag -- always empty */
+	DSSH_PUT_U32(num_prompts, msg, &pos);
 
 	for (uint32_t i = 0; i < num_prompts; i++) {
 		size_t plen = prompts[i] != NULL ? strlen(prompts[i]) : 0;
-		KBI_SER((uint32_t)plen);
+		DSSH_PUT_U32((uint32_t)plen, msg, &pos);
 		if (plen > 0) {
 			memcpy(&msg[pos], prompts[i], plen);
 			pos += plen;
 		}
 		msg[pos++] = echo[i] ? 1 : 0;
 	}
-
-#undef KBI_SER
 
 	ret = dssh_transport_send_packet(sess, msg, pos, NULL);
 	free(msg);
@@ -373,6 +374,508 @@ flush_pending_banner(dssh_session sess)
 }
 
 /* ================================================================
+ * Per-method server auth handlers
+ *
+ * Each returns AUTH_HANDLER_SUCCESS, AUTH_HANDLER_CONTINUE, or a
+ * negative DSSH_ERROR_* code.
+ * ================================================================ */
+
+/*
+ * Handle "none" authentication method.
+ */
+static int
+handle_auth_none(dssh_session sess,
+    const struct dssh_auth_server_cbs *cbs,
+    const uint8_t *user, size_t user_len)
+{
+	int auth_res = DSSH_AUTH_FAILURE;
+	int res;
+
+	if (cbs->none_cb != NULL)
+		auth_res = cbs->none_cb(user, user_len, cbs->cbdata);
+	if (auth_res == DSSH_AUTH_DISCONNECT) {
+		dssh_transport_disconnect(sess,
+		        SSH_DISCONNECT_BY_APPLICATION,
+		        "authentication rejected");
+		return DSSH_ERROR_TERMINATED;
+	}
+	if (auth_res == DSSH_AUTH_SUCCESS) {
+		res = send_auth_success(sess);
+		if (res < 0)
+			return res;
+		return AUTH_HANDLER_SUCCESS;
+	}
+	res = send_auth_failure(sess, cbs->methods_str,
+	        auth_res == DSSH_AUTH_PARTIAL);
+	if (res < 0)
+		return res;
+	return AUTH_HANDLER_CONTINUE;
+}
+
+/*
+ * Dispatch auth result for password (normal and change) paths.
+ * Handles SUCCESS, DISCONNECT, CHANGE_PASSWORD, and FAILURE/PARTIAL.
+ */
+static int
+password_dispatch(dssh_session sess,
+    const struct dssh_auth_server_cbs *cbs,
+    int auth_res, uint8_t *prompt, size_t prompt_len)
+{
+	int res;
+
+	if (auth_res == DSSH_AUTH_DISCONNECT) {
+		free(prompt);
+		dssh_transport_disconnect(sess,
+		        SSH_DISCONNECT_BY_APPLICATION,
+		        "authentication rejected");
+		return DSSH_ERROR_TERMINATED;
+	}
+	if (auth_res == DSSH_AUTH_SUCCESS) {
+		free(prompt);
+		res = send_auth_success(sess);
+		if (res < 0)
+			return res;
+		return AUTH_HANDLER_SUCCESS;
+	}
+	if ((auth_res == DSSH_AUTH_CHANGE_PASSWORD) && (prompt != NULL)) {
+		res = send_passwd_changereq(sess, prompt, prompt_len);
+		free(prompt);
+		if (res < 0)
+			return res;
+		return AUTH_HANDLER_CONTINUE;
+	}
+	free(prompt);
+	res = send_auth_failure(sess, cbs->methods_str,
+	        auth_res == DSSH_AUTH_PARTIAL);
+	if (res < 0)
+		return res;
+	return AUTH_HANDLER_CONTINUE;
+}
+
+/*
+ * Handle "password" authentication method (normal + change).
+ */
+static int
+handle_auth_password(dssh_session sess,
+    const struct dssh_auth_server_cbs *cbs,
+    const uint8_t *user, size_t user_len,
+    const uint8_t *payload, size_t payload_len, size_t rpos)
+{
+	int res;
+
+	if (cbs->password_cb == NULL) {
+		res = send_auth_failure(sess, cbs->methods_str, false);
+		if (res < 0)
+			return res;
+		return AUTH_HANDLER_CONTINUE;
+	}
+
+	/* Parse: boolean change, string password [, string new_password] */
+	if (rpos + 1 > payload_len)
+		return DSSH_ERROR_PARSE;
+
+	bool change = (payload[rpos] != 0);
+
+	rpos++;
+
+	uint32_t pw_len;
+
+	if (rpos + 4 > payload_len)
+		return DSSH_ERROR_PARSE;
+	pw_len = DSSH_GET_U32(&payload[rpos]);
+	rpos += 4;
+	if (rpos + pw_len > payload_len)
+		return DSSH_ERROR_PARSE;
+
+	const uint8_t *pw = &payload[rpos];
+
+	rpos += pw_len;
+
+	if (change) {
+		/* Password change request */
+		uint32_t new_pw_len;
+
+		if (rpos + 4 > payload_len)
+			return DSSH_ERROR_PARSE;
+		new_pw_len = DSSH_GET_U32(&payload[rpos]);
+		rpos += 4;
+		if (rpos + new_pw_len > payload_len)
+			return DSSH_ERROR_PARSE;
+
+		const uint8_t *new_pw = &payload[rpos];
+		int            auth_res = DSSH_AUTH_FAILURE;
+		uint8_t       *prompt = NULL;
+		size_t         prompt_len = 0;
+
+		if (cbs->passwd_change_cb != NULL) {
+			auth_res = cbs->passwd_change_cb(user, user_len,
+			        pw, pw_len, new_pw, new_pw_len,
+			        &prompt, &prompt_len, cbs->cbdata);
+		}
+
+		return password_dispatch(sess, cbs, auth_res,
+		        prompt, prompt_len);
+	}
+
+	/* Normal password auth */
+	uint8_t *prompt = NULL;
+	size_t   prompt_len = 0;
+	int      auth_res = cbs->password_cb(user, user_len,
+	        pw, pw_len, &prompt, &prompt_len, cbs->cbdata);
+
+	return password_dispatch(sess, cbs, auth_res, prompt, prompt_len);
+}
+
+/*
+ * Handle "keyboard-interactive" authentication method.
+ */
+static int
+handle_auth_kbi(dssh_session sess,
+    const struct dssh_auth_server_cbs *cbs,
+    const uint8_t *user, size_t user_len,
+    const uint8_t *payload, size_t payload_len, size_t rpos)
+{
+	int res;
+
+	if (cbs->keyboard_interactive_cb == NULL) {
+		res = send_auth_failure(sess, cbs->methods_str, false);
+		if (res < 0)
+			return res;
+		return AUTH_HANDLER_CONTINUE;
+	}
+
+	/* Parse language + submethods (both ignored) */
+	uint32_t skip_len;
+
+	if (rpos + 4 > payload_len)
+		return DSSH_ERROR_PARSE;
+	skip_len = DSSH_GET_U32(&payload[rpos]);
+	rpos += 4;
+	if (rpos + skip_len > payload_len)
+		return DSSH_ERROR_PARSE;
+	rpos += skip_len; /* language */
+
+	if (rpos + 4 > payload_len)
+		return DSSH_ERROR_PARSE;
+	skip_len = DSSH_GET_U32(&payload[rpos]);
+	rpos += 4;
+	if (rpos + skip_len > payload_len)
+		return DSSH_ERROR_PARSE;
+	rpos += skip_len; /* submethods */
+
+	/* KBI prompt/response loop */
+	uint32_t        num_responses = 0;
+	const uint8_t **responses = NULL;
+	size_t         *response_lens = NULL;
+
+	for (;;) {
+		char    *kbi_name = NULL;
+		char    *kbi_inst = NULL;
+		uint32_t kbi_nprompts = 0;
+		char   **kbi_prompts = NULL;
+		bool    *kbi_echo = NULL;
+
+		int auth_res = cbs->keyboard_interactive_cb(
+		    user, user_len,
+		    num_responses, responses, response_lens,
+		    &kbi_name, &kbi_inst,
+		    &kbi_nprompts, &kbi_prompts, &kbi_echo,
+		    cbs->cbdata);
+
+		free(responses);
+		free(response_lens);
+		responses = NULL;
+		response_lens = NULL;
+		num_responses = 0;
+
+		if (auth_res == DSSH_AUTH_DISCONNECT) {
+			free_kbi_prompts(kbi_name, kbi_inst,
+			    kbi_nprompts, kbi_prompts, kbi_echo);
+			dssh_transport_disconnect(sess,
+			        SSH_DISCONNECT_BY_APPLICATION,
+			        "authentication rejected");
+			return DSSH_ERROR_TERMINATED;
+		}
+		if (auth_res == DSSH_AUTH_SUCCESS) {
+			free_kbi_prompts(kbi_name, kbi_inst,
+			    kbi_nprompts, kbi_prompts, kbi_echo);
+			res = send_auth_success(sess);
+			if (res < 0)
+				return res;
+			return AUTH_HANDLER_SUCCESS;
+		}
+		if (auth_res != DSSH_AUTH_KBI_PROMPT) {
+			free_kbi_prompts(kbi_name, kbi_inst,
+			    kbi_nprompts, kbi_prompts, kbi_echo);
+			res = send_auth_failure(sess,
+			    cbs->methods_str,
+			    auth_res == DSSH_AUTH_PARTIAL);
+			if (res < 0)
+				return res;
+			return AUTH_HANDLER_CONTINUE;
+		}
+
+		/* Flush pending banner before INFO_REQUEST */
+		res = flush_pending_banner(sess);
+		if (res < 0) {
+			free_kbi_prompts(kbi_name, kbi_inst,
+			    kbi_nprompts, kbi_prompts, kbi_echo);
+			return res;
+		}
+
+		/* Send INFO_REQUEST */
+		res = send_info_request(sess, kbi_name,
+		    kbi_inst, kbi_nprompts,
+		    kbi_prompts, kbi_echo);
+		free_kbi_prompts(kbi_name, kbi_inst,
+		    kbi_nprompts, kbi_prompts, kbi_echo);
+		if (res < 0)
+			return res;
+
+		/* Receive INFO_RESPONSE */
+		uint8_t  resp_type;
+		uint8_t *resp_payload;
+		size_t   resp_len;
+
+		res = dssh_transport_recv_packet(sess,
+		    &resp_type, &resp_payload, &resp_len);
+		if (res < 0)
+			return res;
+
+		while (resp_type == SSH_MSG_USERAUTH_BANNER) {
+			res = handle_banner(sess, resp_payload, resp_len);
+			if (res < 0)
+				return res;
+			/* Re-recv -- expect INFO_RESPONSE */
+			res = dssh_transport_recv_packet(sess,
+			    &resp_type, &resp_payload, &resp_len);
+			if (res < 0)
+				return res;
+		}
+
+		if (resp_type != SSH_MSG_USERAUTH_INFO_RESPONSE) {
+			res = send_auth_failure(sess,
+			    cbs->methods_str, false);
+			if (res < 0)
+				return res;
+			return AUTH_HANDLER_CONTINUE;
+		}
+
+		/* Parse INFO_RESPONSE */
+		size_t rp = 1; /* skip msg_type */
+
+		if (rp + 4 > resp_len)
+			return DSSH_ERROR_PARSE;
+		num_responses = DSSH_GET_U32(&resp_payload[rp]);
+		rp += 4;
+
+		if (num_responses > 0) {
+			responses = calloc(num_responses,
+			    sizeof(*responses));
+			response_lens = calloc(num_responses,
+			    sizeof(*response_lens));
+			if (responses == NULL
+			    || response_lens == NULL) {
+				free(responses);
+				free(response_lens);
+				responses = NULL;
+				response_lens = NULL;
+				return DSSH_ERROR_ALLOC;
+			}
+		}
+
+		for (uint32_t i = 0; i < num_responses; i++) {
+			uint32_t rlen;
+
+			if (rp + 4 > resp_len) {
+				free(responses);
+				free(response_lens);
+				return DSSH_ERROR_PARSE;
+			}
+			rlen = DSSH_GET_U32(&resp_payload[rp]);
+			rp += 4;
+			if (rp + rlen > resp_len) {
+				free(responses);
+				free(response_lens);
+				return DSSH_ERROR_PARSE;
+			}
+			responses[i] = &resp_payload[rp];
+			response_lens[i] = rlen;
+			rp += rlen;
+		}
+	}
+}
+
+/*
+ * Handle "publickey" authentication method (probe + verify).
+ */
+static int
+handle_auth_publickey(dssh_session sess,
+    const struct dssh_auth_server_cbs *cbs,
+    const uint8_t *user, size_t user_len,
+    const uint8_t *payload, size_t payload_len, size_t rpos)
+{
+	int res;
+
+	if (cbs->publickey_cb == NULL) {
+		res = send_auth_failure(sess, cbs->methods_str, false);
+		if (res < 0)
+			return res;
+		return AUTH_HANDLER_CONTINUE;
+	}
+
+	/* Parse: boolean has_sig, string algo, string pubkey [, string sig] */
+	if (rpos + 1 > payload_len)
+		return DSSH_ERROR_PARSE;
+
+	bool has_sig = (payload[rpos] != 0);
+
+	rpos++;
+
+	uint32_t algo_len;
+
+	if (rpos + 4 > payload_len)
+		return DSSH_ERROR_PARSE;
+	algo_len = DSSH_GET_U32(&payload[rpos]);
+	rpos += 4;
+	if (rpos + algo_len > payload_len)
+		return DSSH_ERROR_PARSE;
+
+	const uint8_t *algo = &payload[rpos];
+
+	rpos += algo_len;
+
+	uint32_t pk_len;
+
+	if (rpos + 4 > payload_len)
+		return DSSH_ERROR_PARSE;
+	pk_len = DSSH_GET_U32(&payload[rpos]);
+	rpos += 4;
+	if (rpos + pk_len > payload_len)
+		return DSSH_ERROR_PARSE;
+
+	const uint8_t *pk_blob = &payload[rpos];
+
+	rpos += pk_len;
+
+	/* NUL-terminate algo name for lookup */
+	char   algo_name[65];
+	size_t an_len = algo_len < sizeof(algo_name) - 1
+	    ? algo_len : sizeof(algo_name) - 1;
+
+	memcpy(algo_name, algo, an_len);
+	algo_name[an_len] = 0;
+
+	if (!has_sig) {
+		/* Key probe -- ask app if key is acceptable */
+		int auth_res = cbs->publickey_cb(user, user_len,
+		        algo_name, pk_blob, pk_len, false, cbs->cbdata);
+
+		if (auth_res == DSSH_AUTH_DISCONNECT) {
+			dssh_transport_disconnect(sess,
+			        SSH_DISCONNECT_BY_APPLICATION,
+			        "authentication rejected");
+			return DSSH_ERROR_TERMINATED;
+		}
+		if (auth_res == DSSH_AUTH_SUCCESS)
+			res = send_pk_ok(sess, algo_name, algo_len,
+			        pk_blob, pk_len);
+		else
+			res = send_auth_failure(sess,
+			        cbs->methods_str, false);
+		if (res < 0)
+			return res;
+		return AUTH_HANDLER_CONTINUE;
+	}
+
+	/* Has signature -- verify it */
+	uint32_t sig_len;
+
+	if (rpos + 4 > payload_len)
+		return DSSH_ERROR_PARSE;
+	sig_len = DSSH_GET_U32(&payload[rpos]);
+	rpos += 4;
+	if (rpos + sig_len > payload_len)
+		return DSSH_ERROR_PARSE;
+
+	const uint8_t *sig_blob = &payload[rpos];
+
+	/* Find the key algorithm to verify the signature */
+	dssh_key_algo  ka = dssh_transport_find_key_algo(algo_name);
+
+	if ((ka == NULL) || (ka->verify == NULL)) {
+		res = send_auth_failure(sess, cbs->methods_str, false);
+		if (res < 0)
+			return res;
+		return AUTH_HANDLER_CONTINUE;
+	}
+
+	/* Build the signed data (same as client builds):
+	 * session_id_string + payload[0..before_sig]
+	 * where before_sig is everything before the
+	 * signature string (i.e., before the uint32 sig_len).
+	 * rpos currently points at the sig data, so
+	 * rpos - 4 is the offset of the sig_len field. */
+	size_t   before_sig = rpos - 4;
+
+	if (sess->trans.session_id_sz > UINT32_MAX)
+		return DSSH_ERROR_INVALID;
+	if (sess->trans.session_id_sz > SIZE_MAX - 4
+	    || before_sig > SIZE_MAX - 4 - sess->trans.session_id_sz)
+		return DSSH_ERROR_INVALID;
+
+	size_t   sd_len = 4 + sess->trans.session_id_sz + before_sig;
+	uint8_t *sign_data = malloc(sd_len);
+
+	if (sign_data == NULL)
+		return DSSH_ERROR_ALLOC;
+
+	size_t sp = 0;
+
+	DSSH_PUT_U32((uint32_t)sess->trans.session_id_sz,
+	    sign_data, &sp);
+	memcpy(&sign_data[sp], sess->trans.session_id,
+	    sess->trans.session_id_sz);
+	sp += sess->trans.session_id_sz;
+	memcpy(&sign_data[sp], payload, before_sig);
+	sp += before_sig;
+
+	int vres = ka->verify(pk_blob, pk_len, sig_blob, sig_len,
+	        sign_data, sp);
+
+	free(sign_data);
+
+	if (vres < 0) {
+		res = send_auth_failure(sess, cbs->methods_str, false);
+		if (res < 0)
+			return res;
+		return AUTH_HANDLER_CONTINUE;
+	}
+
+	/* Signature valid -- ask app if user is authorized */
+	int auth_res = cbs->publickey_cb(user, user_len,
+	        algo_name, pk_blob, pk_len, true, cbs->cbdata);
+
+	if (auth_res == DSSH_AUTH_DISCONNECT) {
+		dssh_transport_disconnect(sess,
+		        SSH_DISCONNECT_BY_APPLICATION,
+		        "authentication rejected");
+		return DSSH_ERROR_TERMINATED;
+	}
+	if (auth_res == DSSH_AUTH_SUCCESS) {
+		res = send_auth_success(sess);
+		if (res < 0)
+			return res;
+		return AUTH_HANDLER_SUCCESS;
+	}
+	res = send_auth_failure(sess, cbs->methods_str,
+	        auth_res == DSSH_AUTH_PARTIAL);
+	if (res < 0)
+		return res;
+	return AUTH_HANDLER_CONTINUE;
+}
+
+/* ================================================================
  * Server-side authentication loop
  * ================================================================ */
 DSSH_TESTABLE int
@@ -468,479 +971,47 @@ auth_server_impl(dssh_session sess,
 		memcpy(saved_user, user, saved_user_len);
 
                 /* Dispatch by method */
-		if ((method_len == DSSH_STRLEN(method_none)) && (memcmp(method, method_none, DSSH_STRLEN(method_none)) == 0)) {
-			int auth_res = DSSH_AUTH_FAILURE;
+		int r;
 
-			if (cbs->none_cb != NULL)
-				auth_res = cbs->none_cb(user, user_len, cbs->cbdata);
-			if (auth_res == DSSH_AUTH_DISCONNECT) {
-				dssh_transport_disconnect(sess,
-				        SSH_DISCONNECT_BY_APPLICATION,
-				        "authentication rejected");
-				return DSSH_ERROR_TERMINATED;
-			}
-			if (auth_res == DSSH_AUTH_SUCCESS) {
-				res = send_auth_success(sess);
-				if (res < 0)
-					return res;
-				goto done;
-			}
-			res = send_auth_failure(sess, cbs->methods_str,
-			        auth_res == DSSH_AUTH_PARTIAL);
-			if (res < 0)
-				return res;
+		if ((method_len == DSSH_STRLEN(method_none))
+		    && (memcmp(method, method_none,
+		        DSSH_STRLEN(method_none)) == 0)) {
+			r = handle_auth_none(sess, cbs, user, user_len);
+		}
+		else if ((method_len == DSSH_STRLEN(method_password))
+		    && (memcmp(method, method_password,
+		        DSSH_STRLEN(method_password)) == 0)) {
+			r = handle_auth_password(sess, cbs,
+			        user, user_len,
+			        payload, payload_len, rpos);
+		}
+		else if ((method_len == DSSH_STRLEN(method_keyboard_interactive))
+		    && (memcmp(method, method_keyboard_interactive,
+		        DSSH_STRLEN(method_keyboard_interactive)) == 0)) {
+			r = handle_auth_kbi(sess, cbs,
+			        user, user_len,
+			        payload, payload_len, rpos);
+		}
+		else if ((method_len == DSSH_STRLEN(method_publickey))
+		    && (memcmp(method, method_publickey,
+		        DSSH_STRLEN(method_publickey)) == 0)) {
+			r = handle_auth_publickey(sess, cbs,
+			        user, user_len,
+			        payload, payload_len, rpos);
+		}
+		else {
+			/* Unknown method */
+			r = send_auth_failure(sess,
+			        cbs->methods_str, false);
+			if (r < 0)
+				return r;
 			continue;
 		}
 
-		if ((method_len == DSSH_STRLEN(method_password)) && (memcmp(method, method_password, DSSH_STRLEN(method_password)) == 0)) {
-			if (cbs->password_cb == NULL) {
-				res = send_auth_failure(sess, cbs->methods_str, false);
-				if (res < 0)
-					return res;
-				continue;
-			}
-
-                        /* Parse: boolean change, string password [, string new_password] */
-			if (rpos + 1 > payload_len)
-				return DSSH_ERROR_PARSE;
-
-			bool change = (payload[rpos] != 0);
-
-			rpos++;
-
-			uint32_t pw_len;
-
-			if (rpos + 4 > payload_len)
-				return DSSH_ERROR_PARSE;
-			pw_len = DSSH_GET_U32(&payload[rpos]);
-			rpos += 4;
-			if (rpos + pw_len > payload_len)
-				return DSSH_ERROR_PARSE;
-
-			const uint8_t *pw = &payload[rpos];
-
-			rpos += pw_len;
-
-			if (change) {
-                                /* Password change request */
-				uint32_t new_pw_len;
-
-				if (rpos + 4 > payload_len)
-					return DSSH_ERROR_PARSE;
-				new_pw_len = DSSH_GET_U32(&payload[rpos]);
-				rpos += 4;
-				if (rpos + new_pw_len > payload_len)
-					return DSSH_ERROR_PARSE;
-
-				const uint8_t *new_pw = &payload[rpos];
-				int            auth_res = DSSH_AUTH_FAILURE;
-				uint8_t       *prompt = NULL;
-				size_t         prompt_len = 0;
-
-				if (cbs->passwd_change_cb != NULL) {
-					auth_res = cbs->passwd_change_cb(user, user_len,
-					        pw, pw_len, new_pw, new_pw_len,
-					        &prompt, &prompt_len, cbs->cbdata);
-				}
-
-				if (auth_res == DSSH_AUTH_DISCONNECT) {
-					free(prompt);
-					dssh_transport_disconnect(sess,
-					        SSH_DISCONNECT_BY_APPLICATION,
-					        "authentication rejected");
-					return DSSH_ERROR_TERMINATED;
-				}
-				if (auth_res == DSSH_AUTH_SUCCESS) {
-					free(prompt);
-					res = send_auth_success(sess);
-					if (res < 0)
-						return res;
-					goto done;
-				}
-				if ((auth_res == DSSH_AUTH_CHANGE_PASSWORD) && (prompt != NULL)) {
-					res = send_passwd_changereq(sess, prompt, prompt_len);
-					free(prompt);
-					if (res < 0)
-						return res;
-					continue;
-				}
-				free(prompt);
-				res = send_auth_failure(sess, cbs->methods_str,
-				        auth_res == DSSH_AUTH_PARTIAL);
-				if (res < 0)
-					return res;
-				continue;
-			}
-
-                        /* Normal password auth */
-			uint8_t *prompt = NULL;
-			size_t   prompt_len = 0;
-			int      auth_res = cbs->password_cb(user, user_len,
-			        pw, pw_len, &prompt, &prompt_len, cbs->cbdata);
-
-			if (auth_res == DSSH_AUTH_DISCONNECT) {
-				free(prompt);
-				dssh_transport_disconnect(sess,
-				        SSH_DISCONNECT_BY_APPLICATION,
-				        "authentication rejected");
-				return DSSH_ERROR_TERMINATED;
-			}
-			if (auth_res == DSSH_AUTH_SUCCESS) {
-				free(prompt);
-				res = send_auth_success(sess);
-				if (res < 0)
-					return res;
-				goto done;
-			}
-			if ((auth_res == DSSH_AUTH_CHANGE_PASSWORD) && (prompt != NULL)) {
-				res = send_passwd_changereq(sess, prompt, prompt_len);
-				free(prompt);
-				if (res < 0)
-					return res;
-				continue;
-			}
-			free(prompt);
-			res = send_auth_failure(sess, cbs->methods_str,
-			        auth_res == DSSH_AUTH_PARTIAL);
-			if (res < 0)
-				return res;
-			continue;
-		}
-
-		if ((method_len == DSSH_STRLEN(method_keyboard_interactive)) && (memcmp(method, method_keyboard_interactive, DSSH_STRLEN(method_keyboard_interactive)) == 0)) {
-			if (cbs->keyboard_interactive_cb == NULL) {
-				res = send_auth_failure(sess, cbs->methods_str, false);
-				if (res < 0)
-					return res;
-				continue;
-			}
-
-			/* Parse language + submethods (both ignored) */
-			uint32_t skip_len;
-
-			if (rpos + 4 > payload_len)
-				return DSSH_ERROR_PARSE;
-			skip_len = DSSH_GET_U32(&payload[rpos]);
-			rpos += 4;
-			if (rpos + skip_len > payload_len)
-				return DSSH_ERROR_PARSE;
-			rpos += skip_len; /* language */
-
-			if (rpos + 4 > payload_len)
-				return DSSH_ERROR_PARSE;
-			skip_len = DSSH_GET_U32(&payload[rpos]);
-			rpos += 4;
-			if (rpos + skip_len > payload_len)
-				return DSSH_ERROR_PARSE;
-			rpos += skip_len; /* submethods */
-
-			/* KBI prompt/response loop */
-			uint32_t        num_responses = 0;
-			const uint8_t **responses = NULL;
-			size_t         *response_lens = NULL;
-
-			for (;;) {
-				char    *kbi_name = NULL;
-				char    *kbi_inst = NULL;
-				uint32_t kbi_nprompts = 0;
-				char   **kbi_prompts = NULL;
-				bool    *kbi_echo = NULL;
-
-				int auth_res = cbs->keyboard_interactive_cb(
-				    user, user_len,
-				    num_responses, responses, response_lens,
-				    &kbi_name, &kbi_inst,
-				    &kbi_nprompts, &kbi_prompts, &kbi_echo,
-				    cbs->cbdata);
-
-				free(responses);
-				free(response_lens);
-				responses = NULL;
-				response_lens = NULL;
-				num_responses = 0;
-
-				if (auth_res == DSSH_AUTH_DISCONNECT) {
-					free_kbi_prompts(kbi_name, kbi_inst,
-					    kbi_nprompts, kbi_prompts, kbi_echo);
-					dssh_transport_disconnect(sess,
-					        SSH_DISCONNECT_BY_APPLICATION,
-					        "authentication rejected");
-					return DSSH_ERROR_TERMINATED;
-				}
-				if (auth_res == DSSH_AUTH_SUCCESS) {
-					free_kbi_prompts(kbi_name, kbi_inst,
-					    kbi_nprompts, kbi_prompts, kbi_echo);
-					res = send_auth_success(sess);
-					if (res < 0)
-						return res;
-					goto done;
-				}
-				if (auth_res != DSSH_AUTH_KBI_PROMPT) {
-					free_kbi_prompts(kbi_name, kbi_inst,
-					    kbi_nprompts, kbi_prompts, kbi_echo);
-					res = send_auth_failure(sess,
-					    cbs->methods_str,
-					    auth_res == DSSH_AUTH_PARTIAL);
-					if (res < 0)
-						return res;
-					break;
-				}
-
-				/* Flush pending banner before INFO_REQUEST */
-				res = flush_pending_banner(sess);
-				if (res < 0) {
-					free_kbi_prompts(kbi_name, kbi_inst,
-					    kbi_nprompts, kbi_prompts, kbi_echo);
-					return res;
-				}
-
-				/* Send INFO_REQUEST */
-				res = send_info_request(sess, kbi_name,
-				    kbi_inst, kbi_nprompts,
-				    kbi_prompts, kbi_echo);
-				free_kbi_prompts(kbi_name, kbi_inst,
-				    kbi_nprompts, kbi_prompts, kbi_echo);
-				if (res < 0)
-					return res;
-
-				/* Receive INFO_RESPONSE */
-				uint8_t  resp_type;
-				uint8_t *resp_payload;
-				size_t   resp_len;
-
-				res = dssh_transport_recv_packet(sess,
-				    &resp_type, &resp_payload, &resp_len);
-				if (res < 0)
-					return res;
-
-				while (resp_type == SSH_MSG_USERAUTH_BANNER) {
-					res = handle_banner(sess, resp_payload, resp_len);
-					if (res < 0)
-						return res;
-					/* Re-recv -- expect INFO_RESPONSE */
-					res = dssh_transport_recv_packet(sess,
-					    &resp_type, &resp_payload, &resp_len);
-					if (res < 0)
-						return res;
-				}
-
-				if (resp_type != SSH_MSG_USERAUTH_INFO_RESPONSE) {
-					res = send_auth_failure(sess,
-					    cbs->methods_str, false);
-					if (res < 0)
-						return res;
-					break;
-				}
-
-				/* Parse INFO_RESPONSE */
-				size_t rp = 1; /* skip msg_type */
-
-				if (rp + 4 > resp_len)
-					return DSSH_ERROR_PARSE;
-				num_responses = DSSH_GET_U32(&resp_payload[rp]);
-				rp += 4;
-
-				if (num_responses > 0) {
-					responses = calloc(num_responses,
-					    sizeof(*responses));
-					response_lens = calloc(num_responses,
-					    sizeof(*response_lens));
-					if (responses == NULL
-					    || response_lens == NULL) {
-						free(responses);
-						free(response_lens);
-						responses = NULL;
-						response_lens = NULL;
-						return DSSH_ERROR_ALLOC;
-					}
-				}
-
-				for (uint32_t i = 0; i < num_responses; i++) {
-					uint32_t rlen;
-
-					if (rp + 4 > resp_len) {
-						free(responses);
-						free(response_lens);
-						return DSSH_ERROR_PARSE;
-					}
-					rlen = DSSH_GET_U32(&resp_payload[rp]);
-					rp += 4;
-					if (rp + rlen > resp_len) {
-						free(responses);
-						free(response_lens);
-						return DSSH_ERROR_PARSE;
-					}
-					responses[i] = &resp_payload[rp];
-					response_lens[i] = rlen;
-					rp += rlen;
-				}
-			}
-			continue;
-		}
-
-		if ((method_len == DSSH_STRLEN(method_publickey)) && (memcmp(method, method_publickey, DSSH_STRLEN(method_publickey)) == 0)) {
-			if (cbs->publickey_cb == NULL) {
-				res = send_auth_failure(sess, cbs->methods_str, false);
-				if (res < 0)
-					return res;
-				continue;
-			}
-
-                        /* Parse: boolean has_sig, string algo, string pubkey [, string sig] */
-			if (rpos + 1 > payload_len)
-				return DSSH_ERROR_PARSE;
-
-			bool has_sig = (payload[rpos] != 0);
-
-			rpos++;
-
-			uint32_t algo_len;
-
-			if (rpos + 4 > payload_len)
-				return DSSH_ERROR_PARSE;
-			algo_len = DSSH_GET_U32(&payload[rpos]);
-			rpos += 4;
-			if (rpos + algo_len > payload_len)
-				return DSSH_ERROR_PARSE;
-
-			const uint8_t *algo = &payload[rpos];
-
-			rpos += algo_len;
-
-			uint32_t pk_len;
-
-			if (rpos + 4 > payload_len)
-				return DSSH_ERROR_PARSE;
-			pk_len = DSSH_GET_U32(&payload[rpos]);
-			rpos += 4;
-			if (rpos + pk_len > payload_len)
-				return DSSH_ERROR_PARSE;
-
-			const uint8_t *pk_blob = &payload[rpos];
-
-			rpos += pk_len;
-
-                        /* NUL-terminate algo name for lookup */
-			char   algo_name[65];
-			size_t an_len = algo_len < sizeof(algo_name) - 1 ? algo_len : sizeof(algo_name) - 1;
-
-			memcpy(algo_name, algo, an_len);
-			algo_name[an_len] = 0;
-
-			if (!has_sig) {
-                                /* Key probe -- ask app if key is acceptable */
-				int auth_res = cbs->publickey_cb(user, user_len,
-				        algo_name, pk_blob, pk_len, false, cbs->cbdata);
-
-				if (auth_res == DSSH_AUTH_DISCONNECT) {
-					dssh_transport_disconnect(sess,
-					        SSH_DISCONNECT_BY_APPLICATION,
-					        "authentication rejected");
-					return DSSH_ERROR_TERMINATED;
-				}
-				if (auth_res == DSSH_AUTH_SUCCESS) {
-					res = send_pk_ok(sess, algo_name, algo_len,
-					        pk_blob, pk_len);
-				}
-				else {
-					res = send_auth_failure(sess, cbs->methods_str, false);
-				}
-				if (res < 0)
-					return res;
-				continue;
-			}
-
-                        /* Has signature -- verify it */
-			uint32_t sig_len;
-
-			if (rpos + 4 > payload_len)
-				return DSSH_ERROR_PARSE;
-			sig_len = DSSH_GET_U32(&payload[rpos]);
-			rpos += 4;
-			if (rpos + sig_len > payload_len)
-				return DSSH_ERROR_PARSE;
-
-			const uint8_t *sig_blob = &payload[rpos];
-
-                        /* Find the key algorithm to verify the signature */
-			dssh_key_algo  ka = dssh_transport_find_key_algo(algo_name);
-
-			if ((ka == NULL) || (ka->verify == NULL)) {
-				res = send_auth_failure(sess, cbs->methods_str, false);
-				if (res < 0)
-					return res;
-				continue;
-			}
-
-                        /* Build the signed data (same as client builds):
-                        * session_id_string + payload[0..before_sig]
-                        * where before_sig is everything before the
-                        * signature string (i.e., before the uint32 sig_len).
-                        * rpos currently points at the sig data, so
-                        * rpos - 4 is the offset of the sig_len field. */
-			size_t   before_sig = rpos - 4;
-
-			if (sess->trans.session_id_sz > UINT32_MAX)
-				return DSSH_ERROR_INVALID;
-			if (sess->trans.session_id_sz > SIZE_MAX - 4
-			    || before_sig > SIZE_MAX - 4 - sess->trans.session_id_sz)
-				return DSSH_ERROR_INVALID;
-
-			size_t   sd_len = 4 + sess->trans.session_id_sz + before_sig;
-			uint8_t *sign_data = malloc(sd_len);
-
-			if (sign_data == NULL)
-				return DSSH_ERROR_ALLOC;
-
-			size_t sp = 0;
-
-			DSSH_PUT_U32((uint32_t)sess->trans.session_id_sz,
-			    sign_data, &sp);
-			memcpy(&sign_data[sp], sess->trans.session_id,
-			    sess->trans.session_id_sz);
-			sp += sess->trans.session_id_sz;
-			memcpy(&sign_data[sp], payload, before_sig);
-			sp += before_sig;
-
-			int vres = ka->verify(pk_blob, pk_len, sig_blob, sig_len,
-			        sign_data, sp);
-
-			free(sign_data);
-
-			if (vres < 0) {
-				res = send_auth_failure(sess, cbs->methods_str, false);
-				if (res < 0)
-					return res;
-				continue;
-			}
-
-                        /* Signature valid -- ask app if user is authorized */
-			int auth_res = cbs->publickey_cb(user, user_len,
-			        algo_name, pk_blob, pk_len, true, cbs->cbdata);
-
-			if (auth_res == DSSH_AUTH_DISCONNECT) {
-				dssh_transport_disconnect(sess,
-				        SSH_DISCONNECT_BY_APPLICATION,
-				        "authentication rejected");
-				return DSSH_ERROR_TERMINATED;
-			}
-			if (auth_res == DSSH_AUTH_SUCCESS) {
-				res = send_auth_success(sess);
-				if (res < 0)
-					return res;
-				goto done;
-			}
-			res = send_auth_failure(sess, cbs->methods_str,
-			        auth_res == DSSH_AUTH_PARTIAL);
-			if (res < 0)
-				return res;
-			continue;
-		}
-
-                /* Unknown method */
-		res = send_auth_failure(sess, cbs->methods_str, false);
-		if (res < 0)
-			return res;
+		if (r < 0)
+			return r;
+		if (r == AUTH_HANDLER_SUCCESS)
+			goto done;
 	}
 
 done:
@@ -1071,6 +1142,35 @@ ensure_auth_service(dssh_session sess)
 	return res;
 }
 
+/*
+ * Serialize the common USERAUTH_REQUEST prefix into buf:
+ *   byte      SSH_MSG_USERAUTH_REQUEST
+ *   string    username
+ *   string    "ssh-connection"
+ *   string    method
+ * Returns the number of bytes written.  Caller must ensure buf is large
+ * enough (1 + 4 + ulen + 4 + sizeof(service_connection)-1 + 4 + method_len).
+ */
+static size_t
+build_userauth_request(uint8_t *buf,
+    const char *username, size_t ulen,
+    const char *method, size_t method_len)
+{
+	size_t pos = 0;
+
+	buf[pos++] = SSH_MSG_USERAUTH_REQUEST;
+	DSSH_PUT_U32((uint32_t)ulen, buf, &pos);
+	memcpy(&buf[pos], username, ulen);
+	pos += ulen;
+	DSSH_PUT_U32(DSSH_STRLEN(service_connection), buf, &pos);
+	memcpy(&buf[pos], service_connection, DSSH_STRLEN(service_connection));
+	pos += DSSH_STRLEN(service_connection);
+	DSSH_PUT_U32((uint32_t)method_len, buf, &pos);
+	memcpy(&buf[pos], method, method_len);
+	pos += method_len;
+	return pos;
+}
+
 DSSH_TESTABLE int
 get_methods_impl(dssh_session sess,
     const char *username, char *methods, size_t methods_sz)
@@ -1091,18 +1191,8 @@ get_methods_impl(dssh_session sess,
 	if (msg == NULL)
 		return DSSH_ERROR_ALLOC;
 
-	size_t pos = 0;
-
-	msg[pos++] = SSH_MSG_USERAUTH_REQUEST;
-	DSSH_PUT_U32((uint32_t)ulen, msg, &pos);
-	memcpy(&msg[pos], username, ulen);
-	pos += ulen;
-	DSSH_PUT_U32(DSSH_STRLEN(service_connection), msg, &pos);
-	memcpy(&msg[pos], service_connection, DSSH_STRLEN(service_connection));
-	pos += DSSH_STRLEN(service_connection);
-	DSSH_PUT_U32(DSSH_STRLEN(method_none), msg, &pos);
-	memcpy(&msg[pos], method_none, DSSH_STRLEN(method_none));
-	pos += DSSH_STRLEN(method_none);
+	size_t pos = build_userauth_request(msg, username, ulen,
+	        method_none, DSSH_STRLEN(method_none));
 
 	res = dssh_transport_send_packet(sess, msg, pos, NULL);
 	free(msg);
@@ -1204,31 +1294,18 @@ send_password_request(dssh_session sess,
 	if (msg == NULL)
 		return DSSH_ERROR_ALLOC;
 
-	size_t pos = 0;
+	size_t pos = build_userauth_request(msg, username, ulen,
+	        method_password, DSSH_STRLEN(method_password));
 
-#define SER(v) DSSH_PUT_U32((v), msg, &pos)
-
-	msg[pos++] = SSH_MSG_USERAUTH_REQUEST;
-	SER((uint32_t)ulen);
-	memcpy(&msg[pos], username, ulen);
-	pos += ulen;
-	SER(DSSH_STRLEN(service_connection));
-	memcpy(&msg[pos], service_connection, DSSH_STRLEN(service_connection));
-	pos += DSSH_STRLEN(service_connection);
-	SER(DSSH_STRLEN(method_password));
-	memcpy(&msg[pos], method_password, DSSH_STRLEN(method_password));
-	pos += DSSH_STRLEN(method_password);
 	msg[pos++] = change ? 1 : 0;
-	SER((uint32_t)oplen);
+	DSSH_PUT_U32((uint32_t)oplen, msg, &pos);
 	memcpy(&msg[pos], old_password, oplen);
 	pos += oplen;
 	if (change) {
-		SER((uint32_t)new_password_len);
+		DSSH_PUT_U32((uint32_t)new_password_len, msg, &pos);
 		memcpy(&msg[pos], new_password, new_password_len);
 		pos += new_password_len;
 	}
-
-#undef SER
 
 	int ret = dssh_transport_send_packet(sess, msg, pos, NULL);
 
@@ -1369,25 +1446,13 @@ auth_kbi_impl(dssh_session sess,
 	if (msg == NULL)
 		return DSSH_ERROR_ALLOC;
 
-	size_t  pos = 0;
 	int     res;
+	size_t  pos = build_userauth_request(msg, username, ulen,
+	        method_keyboard_interactive,
+	        DSSH_STRLEN(method_keyboard_interactive));
 
-#define SER(v) DSSH_PUT_U32((v), msg, &pos)
-
-	msg[pos++] = SSH_MSG_USERAUTH_REQUEST;
-	SER((uint32_t)ulen);
-	memcpy(&msg[pos], username, ulen);
-	pos += ulen;
-	SER(DSSH_STRLEN(service_connection));
-	memcpy(&msg[pos], service_connection, DSSH_STRLEN(service_connection));
-	pos += DSSH_STRLEN(service_connection);
-	SER(DSSH_STRLEN(method_keyboard_interactive));
-	memcpy(&msg[pos], method_keyboard_interactive, DSSH_STRLEN(method_keyboard_interactive));
-	pos += DSSH_STRLEN(method_keyboard_interactive);
-	SER(0); /* language */
-	SER(0); /* submethods */
-
-#undef SER
+	DSSH_PUT_U32(0, msg, &pos); /* language */
+	DSSH_PUT_U32(0, msg, &pos); /* submethods */
 
 	res = dssh_transport_send_packet(sess, msg, pos, NULL);
 
@@ -1646,30 +1711,18 @@ auth_publickey_impl(dssh_session sess,
 
 	size_t sp = 0;
 
-#define SD_SER(v) DSSH_PUT_U32((v), sign_data, &sp)
-
-	SD_SER((uint32_t)sess->trans.session_id_sz);
+	DSSH_PUT_U32((uint32_t)sess->trans.session_id_sz, sign_data, &sp);
 	memcpy(&sign_data[sp], sess->trans.session_id, sess->trans.session_id_sz);
 	sp += sess->trans.session_id_sz;
-	sign_data[sp++] = SSH_MSG_USERAUTH_REQUEST;
-	SD_SER((uint32_t)ulen);
-	memcpy(&sign_data[sp], username, ulen);
-	sp += ulen;
-	SD_SER(DSSH_STRLEN(service_connection));
-	memcpy(&sign_data[sp], service_connection, DSSH_STRLEN(service_connection));
-	sp += DSSH_STRLEN(service_connection);
-	SD_SER(DSSH_STRLEN(method_publickey));
-	memcpy(&sign_data[sp], method_publickey, DSSH_STRLEN(method_publickey));
-	sp += DSSH_STRLEN(method_publickey);
+	sp += build_userauth_request(&sign_data[sp], username, ulen,
+	        method_publickey, DSSH_STRLEN(method_publickey));
 	sign_data[sp++] = 1; /* TRUE */
-	SD_SER((uint32_t)alen);
+	DSSH_PUT_U32((uint32_t)alen, sign_data, &sp);
 	memcpy(&sign_data[sp], algo_name, alen);
 	sp += alen;
-	SD_SER((uint32_t)pubkey_len);
+	DSSH_PUT_U32((uint32_t)pubkey_len, sign_data, &sp);
 	memcpy(&sign_data[sp], pubkey_buf, pubkey_len);
 	sp += pubkey_len;
-
-#undef SD_SER
 
         /* Sign the data */
 	uint8_t *sig_buf = NULL;
@@ -1706,32 +1759,19 @@ auth_publickey_impl(dssh_session sess,
 		return DSSH_ERROR_ALLOC;
 	}
 
-	size_t pos = 0;
+	size_t pos = build_userauth_request(msg, username, ulen,
+	        method_publickey, DSSH_STRLEN(method_publickey));
 
-#define MSG_SER(v) DSSH_PUT_U32((v), msg, &pos)
-
-	msg[pos++] = SSH_MSG_USERAUTH_REQUEST;
-	MSG_SER((uint32_t)ulen);
-	memcpy(&msg[pos], username, ulen);
-	pos += ulen;
-	MSG_SER(DSSH_STRLEN(service_connection));
-	memcpy(&msg[pos], service_connection, DSSH_STRLEN(service_connection));
-	pos += DSSH_STRLEN(service_connection);
-	MSG_SER(DSSH_STRLEN(method_publickey));
-	memcpy(&msg[pos], method_publickey, DSSH_STRLEN(method_publickey));
-	pos += DSSH_STRLEN(method_publickey);
 	msg[pos++] = 1; /* TRUE */
-	MSG_SER((uint32_t)alen);
+	DSSH_PUT_U32((uint32_t)alen, msg, &pos);
 	memcpy(&msg[pos], algo_name, alen);
 	pos += alen;
-	MSG_SER((uint32_t)pubkey_len);
+	DSSH_PUT_U32((uint32_t)pubkey_len, msg, &pos);
 	memcpy(&msg[pos], pubkey_buf, pubkey_len);
 	pos += pubkey_len;
-	MSG_SER((uint32_t)sig_len);
+	DSSH_PUT_U32((uint32_t)sig_len, msg, &pos);
 	memcpy(&msg[pos], sig_buf, sig_len);
 	pos += sig_len;
-
-#undef MSG_SER
 
 	res = dssh_transport_send_packet(sess, msg, pos, NULL);
 	free(msg);

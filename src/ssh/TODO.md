@@ -2,15 +2,6 @@
 
 ## Open
 
-10. `auth_server_impl()` is too large — should be split into per-method
-    handler functions (none, password, publickey, keyboard-interactive).
-    Similarly `get_methods_impl()` and `auth_kbi_impl()` would benefit
-    from extraction of message-building helpers.
-
-11. Local `#define SER()` / `SD_SER()` / `MSG_SER()` / `KBI_SER()`
-    macros are hard to read and have non-obvious names.  Splitting
-    message building into helper functions (item 10) would eliminate
-    the need for these.
 
 
 16. Type-unsafe linked list traversal via
@@ -519,3 +510,17 @@
   only grow while the demux thread is running freely, and the application
   controls drain rate via `dssh_session_accept()`.  Queue depth management
   is the application's responsibility.
+
+- `auth_server_impl()` decomposed into per-method handlers (was items 10,
+  11).  Extracted 4 static functions: `handle_auth_none()`,
+  `handle_auth_password()`, `handle_auth_kbi()`,
+  `handle_auth_publickey()`, plus a `password_dispatch()` helper for the
+  shared password/change result handling.  `auth_server_impl()` reduced
+  from ~575 lines to ~80 lines of dispatch using `AUTH_HANDLER_CONTINUE`
+  / `AUTH_HANDLER_SUCCESS` return macros.  All 5 local `SER`/`SD_SER`/
+  `MSG_SER`/`KBI_SER` macros replaced with direct `DSSH_PUT_U32()` calls.
+  Client-side USERAUTH_REQUEST prefix extracted into
+  `build_userauth_request()` helper, used in `get_methods_impl()`,
+  `send_password_request()`, `auth_kbi_impl()`, and
+  `auth_publickey_impl()`.  Eliminates ~60 lines of duplicated
+  serialization code.
