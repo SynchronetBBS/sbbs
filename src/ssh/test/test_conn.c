@@ -5926,6 +5926,375 @@ test_open_shell_alloc_sweep(void)
 }
 
 /* ================================================================
+ * Coverage: data/ext after CLOSE (covers close_received in demux)
+ * ================================================================ */
+
+static int
+test_data_after_close(void)
+{
+	struct conn_ctx ctx;
+	if (conn_setup(&ctx) < 0)
+		return TEST_FAIL;
+
+	struct open_exec_ctx oc = {
+		.client = ctx.client,
+		.server = ctx.server,
+		.command = "echo closetest",
+		.cbs = &session_cbs,
+		.accept_timeout = 5000,
+	};
+	if (open_exec_channel(&oc) < 0 || oc.client_ch == NULL || oc.server_ch == NULL) {
+		conn_cleanup(&ctx);
+		return TEST_FAIL;
+	}
+
+	/* Server sends CLOSE to client */
+	{
+		uint8_t msg[8];
+		size_t pos = 0;
+		msg[pos++] = SSH_MSG_CHANNEL_CLOSE;
+		DSSH_PUT_U32(oc.client_ch->local_id, msg, &pos);
+		ASSERT_OK(dssh_transport_send_packet(ctx.server, msg, pos, NULL));
+	}
+
+	/* Now server sends CHANNEL_DATA after CLOSE -- should be discarded */
+	{
+		uint8_t msg[32];
+		size_t pos = 0;
+		msg[pos++] = SSH_MSG_CHANNEL_DATA;
+		DSSH_PUT_U32(oc.client_ch->local_id, msg, &pos);
+		DSSH_PUT_U32(5, msg, &pos);
+		memcpy(&msg[pos], "stale", 5);
+		pos += 5;
+		ASSERT_OK(dssh_transport_send_packet(ctx.server, msg, pos, NULL));
+	}
+
+	/* Wait for close_received to propagate */
+	struct timespec ts = { .tv_sec = 0, .tv_nsec = 20000000 };
+	thrd_sleep(&ts, NULL);
+
+	/* Client read should return 0 (no data, close received) */
+	uint8_t buf[32];
+	int64_t got = dssh_session_read(ctx.client, oc.client_ch, buf, sizeof(buf));
+	ASSERT_EQ(got, 0);
+
+	conn_cleanup(&ctx);
+	return TEST_PASS;
+}
+
+static int
+test_ext_data_after_close(void)
+{
+	struct conn_ctx ctx;
+	if (conn_setup(&ctx) < 0)
+		return TEST_FAIL;
+
+	struct open_exec_ctx oc = {
+		.client = ctx.client,
+		.server = ctx.server,
+		.command = "echo extclose",
+		.cbs = &session_cbs,
+		.accept_timeout = 5000,
+	};
+	if (open_exec_channel(&oc) < 0 || oc.client_ch == NULL || oc.server_ch == NULL) {
+		conn_cleanup(&ctx);
+		return TEST_FAIL;
+	}
+
+	/* Server sends CLOSE to client */
+	{
+		uint8_t msg[8];
+		size_t pos = 0;
+		msg[pos++] = SSH_MSG_CHANNEL_CLOSE;
+		DSSH_PUT_U32(oc.client_ch->local_id, msg, &pos);
+		ASSERT_OK(dssh_transport_send_packet(ctx.server, msg, pos, NULL));
+	}
+
+	/* Server sends EXTENDED_DATA after CLOSE */
+	{
+		uint8_t msg[32];
+		size_t pos = 0;
+		msg[pos++] = SSH_MSG_CHANNEL_EXTENDED_DATA;
+		DSSH_PUT_U32(oc.client_ch->local_id, msg, &pos);
+		DSSH_PUT_U32(1, msg, &pos); /* data_type = stderr */
+		DSSH_PUT_U32(5, msg, &pos);
+		memcpy(&msg[pos], "stale", 5);
+		pos += 5;
+		ASSERT_OK(dssh_transport_send_packet(ctx.server, msg, pos, NULL));
+	}
+
+	struct timespec ts = { .tv_sec = 0, .tv_nsec = 20000000 };
+	thrd_sleep(&ts, NULL);
+
+	uint8_t buf[32];
+	int64_t got = dssh_session_read_ext(ctx.client, oc.client_ch, buf, sizeof(buf));
+	ASSERT_EQ(got, 0);
+
+	conn_cleanup(&ctx);
+	return TEST_PASS;
+}
+
+/* ================================================================
+ * Coverage: replenish window with close_received
+ * ================================================================ */
+
+static int
+test_replenish_after_close(void)
+{
+	dssh_test_reset_global_config();
+	if (register_all_algorithms() < 0)
+		return TEST_SKIP;
+	dssh_session s = dssh_session_init(false, 0);
+	if (s == NULL)
+		return TEST_SKIP;
+
+	struct dssh_channel_s ch = {0};
+	ch.chan_type = DSSH_CHAN_SESSION;
+	mtx_init(&ch.buf_mtx, mtx_plain);
+	cnd_init(&ch.poll_cnd);
+	dssh_bytebuf_init(&ch.buf.session.stdout_buf, 256);
+	dssh_bytebuf_init(&ch.buf.session.stderr_buf, 256);
+	dssh_sigqueue_init(&ch.buf.session.signals);
+	ch.close_received = true;
+	ch.window_max = 256;
+	ch.local_window = 0;
+
+	/* Replenish should be a no-op when close_received is set */
+	int r = maybe_replenish_window(s, &ch);
+	ASSERT_EQ(r, 0);
+	ASSERT_EQ_U(ch.local_window, 0);
+
+	dssh_sigqueue_free(&ch.buf.session.signals);
+	dssh_bytebuf_free(&ch.buf.session.stdout_buf);
+	dssh_bytebuf_free(&ch.buf.session.stderr_buf);
+	cnd_destroy(&ch.poll_cnd);
+	mtx_destroy(&ch.buf_mtx);
+	dssh_session_cleanup(s);
+	dssh_test_reset_global_config();
+	return TEST_PASS;
+}
+
+/* ================================================================
+ * Coverage: truncated WINDOW_ADJUST (line 745 payload guard)
+ * ================================================================ */
+
+static int
+test_truncated_window_adjust(void)
+{
+	struct conn_ctx ctx;
+	if (conn_setup(&ctx) < 0)
+		return TEST_FAIL;
+
+	struct open_exec_ctx oc = {
+		.client = ctx.client,
+		.server = ctx.server,
+		.command = "echo winadj",
+		.cbs = &session_cbs,
+		.accept_timeout = 5000,
+	};
+	if (open_exec_channel(&oc) < 0 || oc.client_ch == NULL || oc.server_ch == NULL) {
+		conn_cleanup(&ctx);
+		return TEST_FAIL;
+	}
+
+	/* Send WINDOW_ADJUST with payload too short (need 9, send 6) */
+	{
+		uint8_t msg[8];
+		size_t pos = 0;
+		msg[pos++] = SSH_MSG_CHANNEL_WINDOW_ADJUST;
+		DSSH_PUT_U32(oc.client_ch->local_id, msg, &pos);
+		msg[pos++] = 0; /* partial bytes_to_add field */
+		ASSERT_OK(dssh_transport_send_packet(ctx.server, msg, pos, NULL));
+	}
+
+	struct timespec ts = { .tv_sec = 0, .tv_nsec = 10000000 };
+	thrd_sleep(&ts, NULL);
+
+	/* Session should still be functional */
+	ASSERT_TRUE(ctx.client->demux_running);
+
+	dssh_session_close(ctx.server, oc.server_ch, 0);
+	dssh_session_close(ctx.client, oc.client_ch, 0);
+	conn_cleanup(&ctx);
+	return TEST_PASS;
+}
+
+/* ================================================================
+ * Coverage: subsystem channel alloc failure sweep
+ * ================================================================ */
+
+static int
+client_open_subsys_alloc_thread(void *arg)
+{
+	struct open_subsys_ctx *ctx = arg;
+	ctx->client_ch = dssh_channel_open_subsystem(ctx->client, ctx->subsystem);
+	return 0;
+}
+
+static int
+server_accept_subsys_alloc_thread(void *arg)
+{
+	struct open_subsys_ctx *ctx = arg;
+
+	dssh_test_alloc_exclude_thread();
+
+	struct dssh_incoming_open *inc = NULL;
+	int res = dssh_session_accept(ctx->server, &inc, 3000);
+
+	if (res < 0)
+		return 0;
+	ctx->server_ch = dssh_session_accept_channel(ctx->server, inc,
+	    &session_cbs, &ctx->req_type, &ctx->req_data);
+	return 0;
+}
+
+static int
+test_open_subsystem_alloc_sweep(void)
+{
+	int any_failed = 0;
+
+	for (int n = 0; n < 50; n++) {
+		struct conn_ctx ctx;
+
+		dssh_test_alloc_exclude_new_threads();
+
+		if (conn_setup(&ctx) < 0)
+			return TEST_FAIL;
+
+		struct open_subsys_ctx oc = {
+			.client = ctx.client,
+			.server = ctx.server,
+			.client_ch = NULL,
+			.server_ch = NULL,
+			.subsystem = "sftp",
+		};
+
+		dssh_test_alloc_fail_after(n);
+
+		thrd_t ct, st;
+		ASSERT_THRD_CREATE(&ct, client_open_subsys_alloc_thread, &oc);
+		ASSERT_THRD_CREATE(&st, server_accept_subsys_alloc_thread, &oc);
+		thrd_join(ct, NULL);
+
+		int count = dssh_test_alloc_count();
+		dssh_test_alloc_reset();
+
+		if (oc.client_ch != NULL) {
+			thrd_join(st, NULL);
+			if (oc.server_ch != NULL)
+				dssh_channel_close(ctx.server, oc.server_ch);
+			dssh_channel_close(ctx.client, oc.client_ch);
+			conn_cleanup(&ctx);
+			ASSERT_TRUE(any_failed);
+			return TEST_PASS;
+		}
+
+		any_failed = 1;
+		dssh_session_set_terminate(ctx.server);
+		thrd_join(st, NULL);
+
+		if (oc.server_ch != NULL)
+			dssh_channel_close(ctx.server, oc.server_ch);
+
+		conn_cleanup(&ctx);
+
+		if (n >= count)
+			break;
+	}
+
+	return any_failed ? TEST_PASS : TEST_FAIL;
+}
+
+/* ================================================================
+ * Coverage: server-side accept alloc sweep (init_session_channel)
+ * ================================================================ */
+
+static int
+client_open_exec_nofail_thread(void *arg)
+{
+	struct open_exec_ctx *ctx = arg;
+	dssh_test_alloc_exclude_thread();
+	ctx->client_ch = dssh_session_open_exec(ctx->client, ctx->command);
+	return 0;
+}
+
+static int
+server_accept_alloc_inject_thread(void *arg)
+{
+	struct open_exec_ctx *ctx = arg;
+
+	struct dssh_incoming_open *inc = NULL;
+	int res = dssh_session_accept(ctx->server, &inc, 3000);
+
+	if (res < 0)
+		return 0;
+	ctx->server_ch = dssh_session_accept_channel(ctx->server, inc,
+	    ctx->cbs, &ctx->req_type, &ctx->req_data);
+	return 0;
+}
+
+static int
+test_server_accept_alloc_sweep(void)
+{
+	int any_failed = 0;
+
+	for (int n = 0; n < 50; n++) {
+		struct conn_ctx ctx;
+
+		dssh_test_alloc_exclude_new_threads();
+
+		if (conn_setup(&ctx) < 0)
+			return TEST_FAIL;
+
+		struct open_exec_ctx oc = {
+			.client = ctx.client,
+			.server = ctx.server,
+			.client_ch = NULL,
+			.server_ch = NULL,
+			.command = "echo srvalloc",
+			.cbs = &session_cbs,
+		};
+
+		thrd_t ct, st;
+		ASSERT_THRD_CREATE(&ct, client_open_exec_nofail_thread, &oc);
+
+		/* Arm alloc failure for the server accept path */
+		dssh_test_alloc_fail_after(n);
+
+		ASSERT_THRD_CREATE(&st, server_accept_alloc_inject_thread, &oc);
+		thrd_join(st, NULL);
+
+		int count = dssh_test_alloc_count();
+		dssh_test_alloc_reset();
+
+		if (oc.server_ch != NULL) {
+			thrd_join(ct, NULL);
+			dssh_session_close(ctx.server, oc.server_ch, 0);
+			if (oc.client_ch != NULL)
+				dssh_session_close(ctx.client, oc.client_ch, 0);
+			conn_cleanup(&ctx);
+			ASSERT_TRUE(any_failed);
+			return TEST_PASS;
+		}
+
+		/* Server failed — terminate to unblock client open */
+		any_failed = 1;
+		dssh_session_set_terminate(ctx.client);
+		thrd_join(ct, NULL);
+
+		if (oc.client_ch != NULL)
+			dssh_session_close(ctx.client, oc.client_ch, 0);
+
+		conn_cleanup(&ctx);
+
+		if (n >= count)
+			break;
+	}
+
+	return any_failed ? TEST_PASS : TEST_FAIL;
+}
+
+/* ================================================================
  * Test table
  * ================================================================ */
 
@@ -6121,6 +6490,14 @@ static struct dssh_test_entry tests[] = {
 	/* Allocation failure injection */
 	{ "alloc/open_exec_sweep",             test_open_exec_alloc_sweep },
 	{ "alloc/open_shell_sweep",            test_open_shell_alloc_sweep },
+	{ "alloc/open_subsystem_sweep",        test_open_subsystem_alloc_sweep },
+	{ "alloc/server_accept_sweep",         test_server_accept_alloc_sweep },
+
+	/* Additional branch coverage */
+	{ "test_data_after_close",             test_data_after_close },
+	{ "test_ext_data_after_close",         test_ext_data_after_close },
+	{ "test_replenish_after_close",        test_replenish_after_close },
+	{ "test_truncated_window_adjust",      test_truncated_window_adjust },
 };
 
 DSSH_TEST_MAIN(tests)

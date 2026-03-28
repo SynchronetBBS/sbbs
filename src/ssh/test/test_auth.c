@@ -10083,7 +10083,9 @@ test_auth_server_kbi_trunc_lang(void)
 	ASSERT_TRUE(thrd_create(&ct, kbi_trunc_lang_thread, &ctx) == thrd_success);
 
 	thrd_join(ct, NULL);
-	mock_io_close_c2s(&ctx.io);
+	/* Close write-end only so server can drain the truncated packet
+	 * from the pipe buffer before seeing EOF. */
+	mock_io_close_c2s_write(&ctx.io);
 	mock_io_close_s2c(&ctx.io);
 	thrd_join(st, NULL);
 
@@ -10934,7 +10936,8 @@ test_direct_kbi_resp_parse_error(void)
 		dssh_transport_send_packet(ctx.client, resp, 1, NULL);
 	}
 
-	mock_io_close_c2s(&ctx.io);
+	/* Close write-end only so server can drain the truncated packet. */
+	mock_io_close_c2s_write(&ctx.io);
 	mock_io_close_s2c(&ctx.io);
 	thrd_join(st, NULL);
 
@@ -11071,7 +11074,7 @@ test_dclient_pk_banner_in_response(void)
 
 	uint8_t success_resp[] = { SSH_MSG_USERAUTH_SUCCESS };
 	struct dclient_server_arg sa = { &ctx, success_resp,
-	    sizeof(success_resp), 0, true };
+	    sizeof(success_resp), 0, false };
 	thrd_t st;
 	if (thrd_create(&st, dclient_pk_banner_server, &sa) != thrd_success) {
 		handshake_cleanup(&ctx);
@@ -11362,7 +11365,7 @@ test_dclient_kbi_resp_overflow(void)
 	}
 
 	struct dclient_server_arg sa = { &ctx, info_payload, info_len,
-	    0, true };
+	    0, false };
 	thrd_t st;
 	if (thrd_create(&st, dclient_server_thread, &sa) != thrd_success) {
 		handshake_cleanup(&ctx);
@@ -11437,7 +11440,7 @@ test_dclient_kbi_resp_size_overflow(void)
 	}
 
 	struct dclient_server_arg sa = { &ctx, info_payload, info_len,
-	    0, true };
+	    0, false };
 	thrd_t st;
 	if (thrd_create(&st, dclient_server_thread, &sa) != thrd_success) {
 		handshake_cleanup(&ctx);
@@ -11451,6 +11454,601 @@ test_dclient_kbi_resp_size_overflow(void)
 	thrd_join(st, NULL);
 
 	ASSERT_EQ(res, DSSH_ERROR_INVALID);
+
+	handshake_cleanup(&ctx);
+	return TEST_PASS;
+}
+
+/* ================================================================
+ * Coverage: KBI server truncation -- direct-call pattern
+ *
+ * These use the same direct-call pattern as test_direct_send_failure_alloc:
+ * inject packets into the pipe from the client session, close c2s write
+ * so the server sees EOF, then call auth_server_impl from the main thread.
+ * No threading, no races.
+ * ================================================================ */
+
+static int
+test_direct_kbi_trunc_lang_hdr(void)
+{
+	/* KBI request with NO language/submethods (truncated after method) */
+	uint8_t msg[128];
+	size_t len = build_auth_request("keyboard-interactive", 20,
+	    NULL, 0, msg, sizeof(msg));
+
+	struct handshake_ctx ctx;
+	if (handshake_setup(&ctx) < 0) {
+		handshake_cleanup(&ctx);
+		return TEST_FAIL;
+	}
+
+	/* Inject SERVICE_REQUEST */
+	{
+		static const char svc[] = "ssh-userauth";
+		uint8_t svc_msg[64];
+		size_t pos = 0;
+		svc_msg[pos++] = SSH_MSG_SERVICE_REQUEST;
+		dssh_serialize_uint32((uint32_t)(sizeof(svc) - 1), svc_msg,
+		    sizeof(svc_msg), &pos);
+		memcpy(&svc_msg[pos], svc, sizeof(svc) - 1);
+		pos += sizeof(svc) - 1;
+		dssh_transport_send_packet(ctx.client, svc_msg, pos, NULL);
+	}
+	dssh_transport_send_packet(ctx.client, msg, len, NULL);
+	mock_io_close_c2s_write(&ctx.io);
+
+	struct test_server_kbi_data kbi_sdata = {
+		.expect_response = "x",
+		.prompt_text = "Code: ",
+	};
+	struct dssh_auth_server_cbs cbs = {0};
+	cbs.methods_str = "keyboard-interactive";
+	cbs.keyboard_interactive_cb = test_server_kbi_cb;
+	cbs.cbdata = &kbi_sdata;
+
+	int res = auth_server_impl(ctx.server, &cbs, NULL, NULL);
+	ASSERT_EQ(res, DSSH_ERROR_PARSE);
+
+	mock_io_close_c2s(&ctx.io);
+	mock_io_close_s2c(&ctx.io);
+	handshake_cleanup(&ctx);
+	return TEST_PASS;
+}
+
+static int
+test_direct_kbi_trunc_lang_data(void)
+{
+	/* KBI request: language_len=100 but no data follows */
+	uint8_t extra[4];
+	size_t ep = 0;
+	dssh_serialize_uint32(100, extra, sizeof(extra), &ep);
+
+	uint8_t msg[128];
+	size_t len = build_auth_request("keyboard-interactive", 20,
+	    extra, ep, msg, sizeof(msg));
+
+	struct handshake_ctx ctx;
+	if (handshake_setup(&ctx) < 0) {
+		handshake_cleanup(&ctx);
+		return TEST_FAIL;
+	}
+
+	{
+		static const char svc[] = "ssh-userauth";
+		uint8_t svc_msg[64];
+		size_t pos = 0;
+		svc_msg[pos++] = SSH_MSG_SERVICE_REQUEST;
+		dssh_serialize_uint32((uint32_t)(sizeof(svc) - 1), svc_msg,
+		    sizeof(svc_msg), &pos);
+		memcpy(&svc_msg[pos], svc, sizeof(svc) - 1);
+		pos += sizeof(svc) - 1;
+		dssh_transport_send_packet(ctx.client, svc_msg, pos, NULL);
+	}
+	dssh_transport_send_packet(ctx.client, msg, len, NULL);
+	mock_io_close_c2s_write(&ctx.io);
+
+	struct test_server_kbi_data kbi_sdata = {
+		.expect_response = "x",
+		.prompt_text = "Code: ",
+	};
+	struct dssh_auth_server_cbs cbs = {0};
+	cbs.methods_str = "keyboard-interactive";
+	cbs.keyboard_interactive_cb = test_server_kbi_cb;
+	cbs.cbdata = &kbi_sdata;
+
+	int res = auth_server_impl(ctx.server, &cbs, NULL, NULL);
+	ASSERT_EQ(res, DSSH_ERROR_PARSE);
+
+	mock_io_close_c2s(&ctx.io);
+	mock_io_close_s2c(&ctx.io);
+	handshake_cleanup(&ctx);
+	return TEST_PASS;
+}
+
+static int
+test_direct_kbi_trunc_submethods(void)
+{
+	/* KBI request: valid language (empty), but no submethods */
+	uint8_t extra[4];
+	size_t ep = 0;
+	dssh_serialize_uint32(0, extra, sizeof(extra), &ep); /* language = empty */
+
+	uint8_t msg[128];
+	size_t len = build_auth_request("keyboard-interactive", 20,
+	    extra, ep, msg, sizeof(msg));
+
+	struct handshake_ctx ctx;
+	if (handshake_setup(&ctx) < 0) {
+		handshake_cleanup(&ctx);
+		return TEST_FAIL;
+	}
+
+	{
+		static const char svc[] = "ssh-userauth";
+		uint8_t svc_msg[64];
+		size_t pos = 0;
+		svc_msg[pos++] = SSH_MSG_SERVICE_REQUEST;
+		dssh_serialize_uint32((uint32_t)(sizeof(svc) - 1), svc_msg,
+		    sizeof(svc_msg), &pos);
+		memcpy(&svc_msg[pos], svc, sizeof(svc) - 1);
+		pos += sizeof(svc) - 1;
+		dssh_transport_send_packet(ctx.client, svc_msg, pos, NULL);
+	}
+	dssh_transport_send_packet(ctx.client, msg, len, NULL);
+	mock_io_close_c2s_write(&ctx.io);
+
+	struct test_server_kbi_data kbi_sdata = {
+		.expect_response = "x",
+		.prompt_text = "Code: ",
+	};
+	struct dssh_auth_server_cbs cbs = {0};
+	cbs.methods_str = "keyboard-interactive";
+	cbs.keyboard_interactive_cb = test_server_kbi_cb;
+	cbs.cbdata = &kbi_sdata;
+
+	int res = auth_server_impl(ctx.server, &cbs, NULL, NULL);
+	ASSERT_EQ(res, DSSH_ERROR_PARSE);
+
+	mock_io_close_c2s(&ctx.io);
+	mock_io_close_s2c(&ctx.io);
+	handshake_cleanup(&ctx);
+	return TEST_PASS;
+}
+
+static int
+test_direct_kbi_trunc_submethods_data(void)
+{
+	/* KBI request: valid language (empty), submethods_len=50 but no data */
+	uint8_t extra[8];
+	size_t ep = 0;
+	dssh_serialize_uint32(0, extra, sizeof(extra), &ep); /* language = empty */
+	dssh_serialize_uint32(50, extra, sizeof(extra), &ep); /* submethods_len=50 */
+
+	uint8_t msg[128];
+	size_t len = build_auth_request("keyboard-interactive", 20,
+	    extra, ep, msg, sizeof(msg));
+
+	struct handshake_ctx ctx;
+	if (handshake_setup(&ctx) < 0) {
+		handshake_cleanup(&ctx);
+		return TEST_FAIL;
+	}
+
+	{
+		static const char svc[] = "ssh-userauth";
+		uint8_t svc_msg[64];
+		size_t pos = 0;
+		svc_msg[pos++] = SSH_MSG_SERVICE_REQUEST;
+		dssh_serialize_uint32((uint32_t)(sizeof(svc) - 1), svc_msg,
+		    sizeof(svc_msg), &pos);
+		memcpy(&svc_msg[pos], svc, sizeof(svc) - 1);
+		pos += sizeof(svc) - 1;
+		dssh_transport_send_packet(ctx.client, svc_msg, pos, NULL);
+	}
+	dssh_transport_send_packet(ctx.client, msg, len, NULL);
+	mock_io_close_c2s_write(&ctx.io);
+
+	struct test_server_kbi_data kbi_sdata = {
+		.expect_response = "x",
+		.prompt_text = "Code: ",
+	};
+	struct dssh_auth_server_cbs cbs = {0};
+	cbs.methods_str = "keyboard-interactive";
+	cbs.keyboard_interactive_cb = test_server_kbi_cb;
+	cbs.cbdata = &kbi_sdata;
+
+	int res = auth_server_impl(ctx.server, &cbs, NULL, NULL);
+	ASSERT_EQ(res, DSSH_ERROR_PARSE);
+
+	mock_io_close_c2s(&ctx.io);
+	mock_io_close_s2c(&ctx.io);
+	handshake_cleanup(&ctx);
+	return TEST_PASS;
+}
+
+/* ================================================================
+ * Coverage: KBI server truncation -- language header missing (threaded)
+ *
+ * Existing kbi_trunc_lang sends language_len=100 (truncated data).
+ * This test truncates at the language header itself (no 4-byte len).
+ * ================================================================ */
+static int
+kbi_trunc_lang_hdr_thread(void *arg)
+{
+	struct handshake_ctx *ctx = arg;
+	dssh_session client = ctx->client;
+
+	int res = dssh_auth_get_methods(client, "testuser", NULL, 0);
+	if (res < 0)
+		return 0;
+
+	/* Build KBI USERAUTH_REQUEST but stop after method name */
+	static const char svc[] = "ssh-connection";
+	static const char method[] = "keyboard-interactive";
+	uint8_t msg[128];
+	size_t pos = 0;
+
+	msg[pos++] = SSH_MSG_USERAUTH_REQUEST;
+	dssh_serialize_uint32(8, msg, sizeof(msg), &pos);
+	memcpy(&msg[pos], "testuser", 8);
+	pos += 8;
+	dssh_serialize_uint32(sizeof(svc) - 1, msg, sizeof(msg), &pos);
+	memcpy(&msg[pos], svc, sizeof(svc) - 1);
+	pos += sizeof(svc) - 1;
+	dssh_serialize_uint32(sizeof(method) - 1, msg, sizeof(msg), &pos);
+	memcpy(&msg[pos], method, sizeof(method) - 1);
+	pos += sizeof(method) - 1;
+	/* No language header at all -- truncated before language len */
+
+	dssh_transport_send_packet(client, msg, pos, NULL);
+	return 0;
+}
+
+static int
+test_kbi_server_trunc_lang_hdr(void)
+{
+	struct handshake_ctx ctx;
+	if (handshake_setup(&ctx) < 0) {
+		handshake_cleanup(&ctx);
+		return TEST_FAIL;
+	}
+
+	struct test_server_kbi_data kbi_sdata = {
+		.expect_response = "x",
+		.prompt_text = "Code: ",
+	};
+
+	struct auth_server_arg sa = {0};
+	sa.ctx = &ctx;
+	sa.cbs.methods_str = "keyboard-interactive";
+	sa.cbs.keyboard_interactive_cb = test_server_kbi_cb;
+	sa.cbs.cbdata = &kbi_sdata;
+
+	thrd_t ct, st;
+	ASSERT_TRUE(thrd_create(&st, auth_server_thread, &sa) == thrd_success);
+	ASSERT_TRUE(thrd_create(&ct, kbi_trunc_lang_hdr_thread, &ctx) == thrd_success);
+
+	thrd_join(ct, NULL);
+	/* Close write-end only so server can drain buffered data.
+	 * Also close s2c write so server's send_auth_failure unblocks. */
+	mock_io_close_c2s_write(&ctx.io);
+	mock_io_close_s2c(&ctx.io);
+	thrd_join(st, NULL);
+
+	ASSERT_TRUE(sa.result < 0);
+
+	handshake_cleanup(&ctx);
+	return TEST_PASS;
+}
+
+/* ================================================================
+ * Coverage: KBI server truncation -- submethods header missing
+ *
+ * Valid language (empty, 4-byte len 0), but no submethods field.
+ * Covers line 597: rpos + 4 > payload_len
+ * ================================================================ */
+static int
+kbi_trunc_submethods_thread(void *arg)
+{
+	struct handshake_ctx *ctx = arg;
+	dssh_session client = ctx->client;
+
+	int res = dssh_auth_get_methods(client, "testuser", NULL, 0);
+	if (res < 0)
+		return 0;
+
+	static const char svc[] = "ssh-connection";
+	static const char method[] = "keyboard-interactive";
+	uint8_t msg[128];
+	size_t pos = 0;
+
+	msg[pos++] = SSH_MSG_USERAUTH_REQUEST;
+	dssh_serialize_uint32(8, msg, sizeof(msg), &pos);
+	memcpy(&msg[pos], "testuser", 8);
+	pos += 8;
+	dssh_serialize_uint32(sizeof(svc) - 1, msg, sizeof(msg), &pos);
+	memcpy(&msg[pos], svc, sizeof(svc) - 1);
+	pos += sizeof(svc) - 1;
+	dssh_serialize_uint32(sizeof(method) - 1, msg, sizeof(msg), &pos);
+	memcpy(&msg[pos], method, sizeof(method) - 1);
+	pos += sizeof(method) - 1;
+	dssh_serialize_uint32(0, msg, sizeof(msg), &pos); /* language: empty */
+	/* No submethods header -- truncated */
+
+	dssh_transport_send_packet(client, msg, pos, NULL);
+	return 0;
+}
+
+static int
+test_kbi_server_trunc_submethods(void)
+{
+	struct handshake_ctx ctx;
+	if (handshake_setup(&ctx) < 0) {
+		handshake_cleanup(&ctx);
+		return TEST_FAIL;
+	}
+
+	struct test_server_kbi_data kbi_sdata = {
+		.expect_response = "x",
+		.prompt_text = "Code: ",
+	};
+
+	struct auth_server_arg sa = {0};
+	sa.ctx = &ctx;
+	sa.cbs.methods_str = "keyboard-interactive";
+	sa.cbs.keyboard_interactive_cb = test_server_kbi_cb;
+	sa.cbs.cbdata = &kbi_sdata;
+
+	thrd_t ct, st;
+	ASSERT_TRUE(thrd_create(&st, auth_server_thread, &sa) == thrd_success);
+	ASSERT_TRUE(thrd_create(&ct, kbi_trunc_submethods_thread, &ctx) == thrd_success);
+
+	thrd_join(ct, NULL);
+	mock_io_close_c2s_write(&ctx.io);
+	mock_io_close_s2c(&ctx.io);
+	thrd_join(st, NULL);
+
+	ASSERT_TRUE(sa.result < 0);
+
+	handshake_cleanup(&ctx);
+	return TEST_PASS;
+}
+
+/* ================================================================
+ * Coverage: KBI server response calloc + info_request alloc failures
+ *
+ * Direct-call pattern: client injects packets into the pipe, then
+ * calls auth_server_impl from the main thread with alloc injection.
+ * A helper thread sends the KBI INFO_RESPONSE after the server
+ * sends INFO_REQUEST.
+ * ================================================================ */
+static int
+kbi_alloc_responder_thread(void *arg)
+{
+	struct handshake_ctx *ctx = arg;
+
+	/* Exclude this thread from alloc injection */
+	dssh_test_alloc_exclude_thread();
+
+	/* Read SERVICE_ACCEPT */
+	uint8_t msg_type;
+	uint8_t *payload;
+	size_t payload_len;
+	int res = dssh_transport_recv_packet(ctx->client, &msg_type,
+	    &payload, &payload_len);
+	if (res < 0)
+		return 0;
+
+	/* Read the INFO_REQUEST (or FAILURE if alloc hit early) */
+	res = dssh_transport_recv_packet(ctx->client, &msg_type,
+	    &payload, &payload_len);
+	if (res < 0)
+		return 0;
+
+	if (msg_type == 60) {
+		/* Send INFO_RESPONSE with one response "testcode" */
+		uint8_t resp[64];
+		size_t rp = 0;
+		resp[rp++] = 61; /* SSH_MSG_USERAUTH_INFO_RESPONSE */
+		dssh_serialize_uint32(1, resp, sizeof(resp), &rp);
+		dssh_serialize_uint32(8, resp, sizeof(resp), &rp);
+		memcpy(&resp[rp], "testcode", 8);
+		rp += 8;
+		dssh_transport_send_packet(ctx->client, resp, rp, NULL);
+	}
+
+	/* Close write end so server sees EOF if it loops for more */
+	mock_io_close_c2s_write(&ctx->io);
+
+	return 0;
+}
+
+static int
+test_kbi_server_resp_alloc_fail(void)
+{
+	/* Build KBI USERAUTH_REQUEST for the pipe */
+	static const char svc[] = "ssh-connection";
+	static const char method[] = "keyboard-interactive";
+
+	bool saw_alloc_error = false;
+
+	for (int n = 0; n < 30; n++) {
+		struct handshake_ctx ctx;
+		if (handshake_setup(&ctx) < 0) {
+			handshake_cleanup(&ctx);
+			dssh_test_alloc_reset();
+			continue;
+		}
+
+		/* Inject SERVICE_REQUEST */
+		{
+			static const char svc_auth[] = "ssh-userauth";
+			uint8_t svc_msg[64];
+			size_t pos = 0;
+			svc_msg[pos++] = SSH_MSG_SERVICE_REQUEST;
+			dssh_serialize_uint32(
+			    (uint32_t)(sizeof(svc_auth) - 1), svc_msg,
+			    sizeof(svc_msg), &pos);
+			memcpy(&svc_msg[pos], svc_auth, sizeof(svc_auth) - 1);
+			pos += sizeof(svc_auth) - 1;
+			dssh_transport_send_packet(ctx.client, svc_msg, pos,
+			    NULL);
+		}
+		/* Inject KBI auth request */
+		{
+			uint8_t msg[128];
+			size_t pos = 0;
+			msg[pos++] = SSH_MSG_USERAUTH_REQUEST;
+			dssh_serialize_uint32(8, msg, sizeof(msg), &pos);
+			memcpy(&msg[pos], "testuser", 8);
+			pos += 8;
+			dssh_serialize_uint32(sizeof(svc) - 1, msg,
+			    sizeof(msg), &pos);
+			memcpy(&msg[pos], svc, sizeof(svc) - 1);
+			pos += sizeof(svc) - 1;
+			dssh_serialize_uint32(sizeof(method) - 1, msg,
+			    sizeof(msg), &pos);
+			memcpy(&msg[pos], method, sizeof(method) - 1);
+			pos += sizeof(method) - 1;
+			dssh_serialize_uint32(0, msg, sizeof(msg), &pos);
+			dssh_serialize_uint32(0, msg, sizeof(msg), &pos);
+			dssh_transport_send_packet(ctx.client, msg, pos,
+			    NULL);
+		}
+
+		/* Responder thread reads INFO_REQUEST and sends response */
+		thrd_t rt;
+		if (thrd_create(&rt, kbi_alloc_responder_thread,
+		    &ctx) != thrd_success) {
+			handshake_cleanup(&ctx);
+			dssh_test_alloc_reset();
+			continue;
+		}
+
+		struct test_server_kbi_data kbi_sdata = {
+			.expect_response = "testcode",
+			.prompt_text = "Code: ",
+		};
+		struct dssh_auth_server_cbs cbs = {0};
+		cbs.methods_str = "keyboard-interactive";
+		cbs.keyboard_interactive_cb = test_server_kbi_cb;
+		cbs.cbdata = &kbi_sdata;
+
+		dssh_test_alloc_fail_after(n);
+		uint8_t username[256];
+		size_t ulen = sizeof(username);
+		int res = auth_server_impl(ctx.server, &cbs, username, &ulen);
+		int count = dssh_test_alloc_count();
+		dssh_test_alloc_reset();
+
+		/* Close pipes to unblock responder if it's still waiting */
+		mock_io_close_c2s(&ctx.io);
+		mock_io_close_s2c(&ctx.io);
+		thrd_join(rt, NULL);
+
+		if (res == 0) {
+			handshake_cleanup(&ctx);
+			ASSERT_TRUE(saw_alloc_error);
+			return TEST_PASS;
+		}
+
+		if (res == DSSH_ERROR_ALLOC)
+			saw_alloc_error = true;
+
+		handshake_cleanup(&ctx);
+
+		if (n >= count)
+			break;
+	}
+
+	return saw_alloc_error ? TEST_PASS : TEST_FAIL;
+}
+
+/* ================================================================
+ * Coverage: KBI server -- truncated response body
+ *
+ * Client sends INFO_RESPONSE with num_responses=1 but no response
+ * data.  Covers lines 729-732.
+ * ================================================================ */
+static int
+kbi_trunc_resp_body_thread(void *arg)
+{
+	struct handshake_ctx *ctx = arg;
+	dssh_session client = ctx->client;
+
+	int res = dssh_auth_get_methods(client, "testuser", NULL, 0);
+	if (res < 0)
+		return 0;
+
+	/* Send KBI USERAUTH_REQUEST */
+	static const char svc[] = "ssh-connection";
+	static const char method[] = "keyboard-interactive";
+	uint8_t msg[128];
+	size_t pos = 0;
+	msg[pos++] = SSH_MSG_USERAUTH_REQUEST;
+	dssh_serialize_uint32(8, msg, sizeof(msg), &pos);
+	memcpy(&msg[pos], "testuser", 8);
+	pos += 8;
+	dssh_serialize_uint32(sizeof(svc) - 1, msg, sizeof(msg), &pos);
+	memcpy(&msg[pos], svc, sizeof(svc) - 1);
+	pos += sizeof(svc) - 1;
+	dssh_serialize_uint32(sizeof(method) - 1, msg, sizeof(msg), &pos);
+	memcpy(&msg[pos], method, sizeof(method) - 1);
+	pos += sizeof(method) - 1;
+	dssh_serialize_uint32(0, msg, sizeof(msg), &pos);
+	dssh_serialize_uint32(0, msg, sizeof(msg), &pos);
+	if (dssh_transport_send_packet(client, msg, pos, NULL) < 0)
+		return 0;
+
+	/* Receive INFO_REQUEST */
+	uint8_t msg_type;
+	uint8_t *payload;
+	size_t payload_len;
+	if (dssh_transport_recv_packet(client, &msg_type, &payload,
+	    &payload_len) < 0)
+		return 0;
+
+	/* Send INFO_RESPONSE with num_responses=1 but no response data */
+	uint8_t resp[8];
+	size_t rp = 0;
+	resp[rp++] = 61; /* SSH_MSG_USERAUTH_INFO_RESPONSE */
+	dssh_serialize_uint32(1, resp, sizeof(resp), &rp); /* 1 response */
+	/* No response data follows -- truncated */
+	dssh_transport_send_packet(client, resp, rp, NULL);
+
+	return 0;
+}
+
+static int
+test_kbi_server_trunc_resp_body(void)
+{
+	struct handshake_ctx ctx;
+	if (handshake_setup(&ctx) < 0) {
+		handshake_cleanup(&ctx);
+		return TEST_FAIL;
+	}
+
+	struct test_server_kbi_data kbi_sdata = {
+		.expect_response = "x",
+		.prompt_text = "Code: ",
+	};
+
+	struct auth_server_arg sa = {0};
+	sa.ctx = &ctx;
+	sa.cbs.methods_str = "keyboard-interactive";
+	sa.cbs.keyboard_interactive_cb = test_server_kbi_cb;
+	sa.cbs.cbdata = &kbi_sdata;
+
+	thrd_t ct, st;
+	ASSERT_TRUE(thrd_create(&st, auth_server_thread, &sa) == thrd_success);
+	ASSERT_TRUE(thrd_create(&ct, kbi_trunc_resp_body_thread, &ctx) == thrd_success);
+
+	thrd_join(ct, NULL);
+	mock_io_close_c2s_write(&ctx.io);
+	mock_io_close_s2c(&ctx.io);
+	thrd_join(st, NULL);
+
+	ASSERT_TRUE(sa.result < 0);
 
 	handshake_cleanup(&ctx);
 	return TEST_PASS;
@@ -11685,6 +12283,18 @@ static struct dssh_test_entry tests[] = {
 	/* KBI response validation */
 	{ "dclient/kbi_resp_overflow",           test_dclient_kbi_resp_overflow },
 	{ "dclient/kbi_resp_size_overflow",      test_dclient_kbi_resp_size_overflow },
+
+	/* KBI server truncation (direct-call, no threading races) */
+	{ "direct/kbi_trunc_lang_hdr",           test_direct_kbi_trunc_lang_hdr },
+	{ "direct/kbi_trunc_lang_data",          test_direct_kbi_trunc_lang_data },
+	{ "direct/kbi_trunc_submethods",         test_direct_kbi_trunc_submethods },
+	{ "direct/kbi_trunc_submethods_data",    test_direct_kbi_trunc_submethods_data },
+
+	/* KBI server truncation and alloc coverage (threaded) */
+	{ "auth/server/kbi_trunc_lang_hdr",      test_kbi_server_trunc_lang_hdr },
+	{ "auth/server/kbi_trunc_submethods",    test_kbi_server_trunc_submethods },
+	{ "auth/server/kbi_resp_alloc",          test_kbi_server_resp_alloc_fail },
+	{ "auth/server/kbi_trunc_resp_body",     test_kbi_server_trunc_resp_body },
 
 	/* Additional coverage */
 	{ "direct/bad_prefix_in_loop",           test_direct_bad_prefix_in_loop },

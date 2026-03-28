@@ -313,6 +313,10 @@ set(AUTH_TESTS
 	dclient/pk_banner_in_response dclient/pk_banner_parse_error
 	direct/send_failure_alloc direct/flush_banner_alloc
 	dclient/kbi_resp_overflow dclient/kbi_resp_size_overflow
+	direct/kbi_trunc_lang_hdr direct/kbi_trunc_lang_data
+	direct/kbi_trunc_submethods direct/kbi_trunc_submethods_data
+	auth/server/kbi_trunc_lang_hdr auth/server/kbi_trunc_submethods
+	auth/server/kbi_resp_alloc auth/server/kbi_trunc_resp_body
 )
 dssh_add_individual_tests(dssh_test_auth dssh_auth AUTH_TESTS)
 
