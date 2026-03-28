@@ -68,9 +68,38 @@
     `sizeof(dssh_msgqueue_entry)` overhead (~24 bytes).  The SSH
     window limits total bytes, but a pathological peer sending many
     1-byte messages creates ~2M linked-list nodes consuming ~48MB
-    instead of the 2MB window.  Fix: consider coalescing small
-    messages, or decrementing `local_window` by message overhead
-    in addition to data bytes.
+    instead of the 2MB window.
+
+    **Desired fix**: replace the linked list with a ring buffer
+    (split-memcpy for wrap-around) storing `[u32 len][data]` per
+    message.  The 4-byte length prefix is already validated in
+    `handle_channel_data()` (`payload[5..8]`); push from
+    `&payload[5]` to get self-framing entries.  No per-message
+    malloc, no linked-list overhead, O(1) push/pop.
+
+    **Unsolved sizing problem**: the SSH window is not synchronous.
+    The initial window grant (`INITIAL_WINDOW_SIZE`, 2MB) is already
+    committed -- the peer decrements its own copy on send and we
+    cannot claw it back; we can only influence future grants via
+    `WINDOW_ADJUST`.  Each message costs 4 bytes of ring buffer
+    overhead beyond the data bytes the window tracks:
+    - 1-byte messages: 5 bytes each, 2M messages = 10MB in a
+      2MB buffer
+    - 0-byte messages (legal per RFC -- `string` may be empty):
+      consume zero window, so the peer can send unlimited messages.
+      No finite buffer suffices.  The current malloc queue is
+      equally vulnerable to this flood.
+
+    Options explored, none satisfactory:
+    1. Over-provision ring buffer (e.g. 5x `window_max`) -- handles
+       1-byte case but not 0-byte; wastes 10MB per channel
+    2. Advertise smaller initial window (e.g. `window_max / 5`) --
+       effective data window drops to ~400KB; hurts throughput on
+       high-latency/high-bandwidth links
+    3. Charge 4-byte overhead to window in `WINDOW_ADJUST` -- only
+       helps for future grants, not the initial window
+    4. Reject/limit 0-byte messages -- arbitrary restriction,
+       potential protocol violation
 
 76. **I/O callbacks called under `tx_mtx` create head-of-line
     blocking.**  `send_packet()` holds `tx_mtx` for its entire
