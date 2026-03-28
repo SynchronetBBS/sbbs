@@ -1604,6 +1604,7 @@ test_null_session_api(void)
 	dssh_session_set_unimplemented_cb(NULL, NULL, NULL);
 	dssh_session_set_banner_cb(NULL, NULL, NULL);
 	dssh_session_set_global_request_cb(NULL, NULL, NULL);
+	dssh_session_set_terminate_cb(NULL, NULL, NULL);
 
 	/* dssh_cleanse(NULL, ...) is a no-op (must not crash) */
 	dssh_cleanse(NULL, 10);
@@ -1637,6 +1638,39 @@ test_set_timeout(void)
 	/* Disable timeout */
 	dssh_session_set_timeout(sess, 0);
 	ASSERT_EQ(sess->timeout_ms, 0);
+
+	dssh_session_cleanup(sess);
+	return TEST_PASS;
+}
+
+/*
+ * Verify dssh_session_set_terminate_cb() stores the callback and
+ * that session_set_terminate() invokes it exactly once.
+ */
+static void
+terminate_test_cb(dssh_session sess, void *cbdata)
+{
+	(void)sess;
+	int *count = cbdata;
+	(*count)++;
+}
+
+static int
+test_set_terminate_cb(void)
+{
+	dssh_session sess = dssh_session_init(true, 0);
+	ASSERT_NOT_NULL(sess);
+
+	int count = 0;
+	dssh_session_set_terminate_cb(sess, terminate_test_cb, &count);
+
+	/* Terminate fires the callback */
+	dssh_session_terminate(sess);
+	ASSERT_EQ(count, 1);
+
+	/* Second terminate is a no-op (single-fire) */
+	ASSERT_FALSE(dssh_session_terminate(sess));
+	ASSERT_EQ(count, 1);
 
 	dssh_session_cleanup(sess);
 	return TEST_PASS;
@@ -1841,6 +1875,7 @@ static struct dssh_test_entry tests[] = {
 	{ "test_self_connection_drop",         test_self_connection_drop },
 	{ "test_null_session_api",             test_null_session_api },
 	{ "test_set_timeout",                  test_set_timeout },
+	{ "test_set_terminate_cb",             test_set_terminate_cb },
 	{ "test_open_channel_timeout",         test_open_channel_timeout },
 	{ "test_setup_recv_timeout",           test_setup_recv_timeout },
 	{ "test_rekey_send_timeout",           test_rekey_send_timeout },
