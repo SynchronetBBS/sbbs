@@ -5603,12 +5603,306 @@ test_register_two_lang(void)
 	return TEST_PASS;
 }
 
+/* ================================================================
+ * KEXINIT parsing -- direct unit tests via dssh_test_parse_peer_kexinit
+ * ================================================================ */
+
+/*
+ * Build a minimal valid KEXINIT buffer with 10 empty name-lists.
+ * Returns total size.  buf must be at least 1 + 16 + 10*4 + 1 = 58 bytes.
+ */
+static size_t
+build_minimal_kexinit(uint8_t *buf, size_t bufsz)
+{
+	size_t pos = 0;
+
+	buf[pos++] = 20; /* SSH_MSG_KEXINIT */
+	memset(&buf[pos], 0xAA, DSSH_KEXINIT_COOKIE_SIZE);
+	pos += DSSH_KEXINIT_COOKIE_SIZE;
+
+	/* 10 empty name-lists (each: uint32 length = 0) */
+	for (int i = 0; i < 10; i++) {
+		DSSH_PUT_U32(0, buf, &pos);
+	}
+
+	/* first_kex_packet_follows = false */
+	buf[pos++] = 0;
+	(void)bufsz;
+	return pos;
+}
+
+static int
+test_kexinit_parse_valid(void)
+{
+	/* Build a KEXINIT with known name-lists */
+	uint8_t buf[512];
+	size_t pos = 0;
+
+	buf[pos++] = 20; /* SSH_MSG_KEXINIT */
+	memset(&buf[pos], 0xAA, DSSH_KEXINIT_COOKIE_SIZE);
+	pos += DSSH_KEXINIT_COOKIE_SIZE;
+
+	/* kex algorithms */
+	const char *names[10] = {
+		"curve25519-sha256", "ssh-ed25519",
+		"aes256-ctr", "aes256-ctr",
+		"hmac-sha2-256", "hmac-sha2-256",
+		"none", "none",
+		"", ""
+	};
+
+	for (int i = 0; i < 10; i++) {
+		uint32_t nlen = (uint32_t)strlen(names[i]);
+
+		DSSH_PUT_U32(nlen, buf, &pos);
+		if (nlen > 0)
+			memcpy(&buf[pos], names[i], nlen);
+		pos += nlen;
+	}
+
+	buf[pos++] = 0; /* first_kex_packet_follows = false */
+
+	char peer_lists[10][1024];
+	bool first_kex_follows = true;
+
+	ASSERT_EQ(dssh_test_parse_peer_kexinit(buf, pos, peer_lists,
+	    &first_kex_follows), 0);
+	ASSERT_STR_EQ(peer_lists[0], "curve25519-sha256");
+	ASSERT_STR_EQ(peer_lists[1], "ssh-ed25519");
+	ASSERT_STR_EQ(peer_lists[2], "aes256-ctr");
+	ASSERT_STR_EQ(peer_lists[6], "none");
+	ASSERT_STR_EQ(peer_lists[8], "");
+	ASSERT_EQ(first_kex_follows, false);
+
+	return TEST_PASS;
+}
+
+static int
+test_kexinit_parse_control_char(void)
+{
+	uint8_t buf[128];
+	size_t pos = build_minimal_kexinit(buf, sizeof(buf));
+
+	/* Overwrite first name-list with a control character */
+	size_t nl_pos = 1 + DSSH_KEXINIT_COOKIE_SIZE;
+
+	DSSH_PUT_U32(3, buf, &nl_pos);
+	buf[nl_pos] = 'a';
+	buf[nl_pos + 1] = '\x01'; /* control char */
+	buf[nl_pos + 2] = 'b';
+
+	char peer_lists[10][1024];
+	bool first_kex_follows;
+
+	ASSERT_EQ(dssh_test_parse_peer_kexinit(buf, pos + 3, peer_lists,
+	    &first_kex_follows), DSSH_ERROR_PARSE);
+
+	return TEST_PASS;
+}
+
+static int
+test_kexinit_parse_name_too_long(void)
+{
+	/* Build KEXINIT with a name > 64 bytes in the first list */
+	uint8_t buf[512];
+	size_t pos = 0;
+
+	buf[pos++] = 20;
+	memset(&buf[pos], 0xAA, DSSH_KEXINIT_COOKIE_SIZE);
+	pos += DSSH_KEXINIT_COOKIE_SIZE;
+
+	/* First list: single name of 65 'x' characters */
+	uint32_t nlen = 65;
+
+	DSSH_PUT_U32(nlen, buf, &pos);
+	memset(&buf[pos], 'x', nlen);
+	pos += nlen;
+
+	/* Fill remaining 9 lists as empty */
+	for (int i = 1; i < 10; i++)
+		DSSH_PUT_U32(0, buf, &pos);
+
+	buf[pos++] = 0;
+
+	char peer_lists[10][1024];
+	bool first_kex_follows;
+
+	ASSERT_EQ(dssh_test_parse_peer_kexinit(buf, pos, peer_lists,
+	    &first_kex_follows), DSSH_ERROR_PARSE);
+
+	return TEST_PASS;
+}
+
+static int
+test_kexinit_parse_truncated(void)
+{
+	uint8_t buf[128];
+	size_t pos = 0;
+
+	buf[pos++] = 20;
+	memset(&buf[pos], 0xAA, DSSH_KEXINIT_COOKIE_SIZE);
+	pos += DSSH_KEXINIT_COOKIE_SIZE;
+
+	/* First list claims 100 bytes but buffer ends */
+	DSSH_PUT_U32(100, buf, &pos);
+
+	char peer_lists[10][1024];
+	bool first_kex_follows;
+
+	ASSERT_EQ(dssh_test_parse_peer_kexinit(buf, pos, peer_lists,
+	    &first_kex_follows), DSSH_ERROR_PARSE);
+
+	return TEST_PASS;
+}
+
+static int
+test_kexinit_parse_too_short(void)
+{
+	/* Buffer shorter than msg_type + cookie */
+	uint8_t buf[10] = {20};
+	char peer_lists[10][1024];
+	bool first_kex_follows;
+
+	ASSERT_EQ(dssh_test_parse_peer_kexinit(buf, 5, peer_lists,
+	    &first_kex_follows), DSSH_ERROR_PARSE);
+
+	return TEST_PASS;
+}
+
+static int
+test_kexinit_parse_first_kex_follows(void)
+{
+	uint8_t buf[128];
+	size_t pos = build_minimal_kexinit(buf, sizeof(buf));
+
+	/* Set first_kex_packet_follows to true */
+	buf[pos - 1] = 1;
+
+	char peer_lists[10][1024];
+	bool first_kex_follows = false;
+
+	ASSERT_EQ(dssh_test_parse_peer_kexinit(buf, pos, peer_lists,
+	    &first_kex_follows), 0);
+	ASSERT_EQ(first_kex_follows, true);
+
+	return TEST_PASS;
+}
+
 static int
 test_kexinit_peer_parse_truncated_namelist(void)
 {
-	/* Needs bridge infrastructure to inject a malformed KEXINIT
-	 * into a live handshake. */
-	return TEST_SKIP;
+	/* Buffer has header + first list length but no data */
+	uint8_t buf[128];
+	size_t pos = 0;
+
+	buf[pos++] = 20;
+	memset(&buf[pos], 0xAA, DSSH_KEXINIT_COOKIE_SIZE);
+	pos += DSSH_KEXINIT_COOKIE_SIZE;
+
+	/* Length field says 10 but only 2 bytes follow */
+	DSSH_PUT_U32(10, buf, &pos);
+	buf[pos++] = 'a';
+	buf[pos++] = 'b';
+
+	char peer_lists[10][1024];
+	bool first_kex_follows;
+
+	ASSERT_EQ(dssh_test_parse_peer_kexinit(buf, pos, peer_lists,
+	    &first_kex_follows), DSSH_ERROR_PARSE);
+
+	return TEST_PASS;
+}
+
+/* ================================================================
+ * K wire encoding -- direct unit tests via dssh_test_encode_k_wire
+ * ================================================================ */
+
+static int
+test_encode_k_mpint_no_pad(void)
+{
+	/* High bit clear -- no sign padding needed */
+	uint8_t raw[] = {0x01, 0x02};
+	uint8_t *out = NULL;
+	size_t out_sz = 0;
+
+	ASSERT_EQ(dssh_test_encode_k_wire(raw, sizeof(raw), false,
+	    &out, &out_sz), 0);
+	ASSERT_EQ(out_sz, 6u);
+	ASSERT_EQ(out[0], 0); ASSERT_EQ(out[1], 0);
+	ASSERT_EQ(out[2], 0); ASSERT_EQ(out[3], 2);
+	ASSERT_EQ(out[4], 0x01); ASSERT_EQ(out[5], 0x02);
+	free(out);
+	return TEST_PASS;
+}
+
+static int
+test_encode_k_mpint_sign_pad(void)
+{
+	/* High bit set -- mpint needs sign padding */
+	uint8_t raw[] = {0x80, 0x01};
+	uint8_t *out = NULL;
+	size_t out_sz = 0;
+
+	ASSERT_EQ(dssh_test_encode_k_wire(raw, sizeof(raw), false,
+	    &out, &out_sz), 0);
+	ASSERT_EQ(out_sz, 7u);
+	/* Length = 3 (2 data bytes + 1 padding) */
+	ASSERT_EQ(out[0], 0); ASSERT_EQ(out[1], 0);
+	ASSERT_EQ(out[2], 0); ASSERT_EQ(out[3], 3);
+	ASSERT_EQ(out[4], 0x00); /* sign padding */
+	ASSERT_EQ(out[5], 0x80); ASSERT_EQ(out[6], 0x01);
+	free(out);
+	return TEST_PASS;
+}
+
+static int
+test_encode_k_mpint_empty(void)
+{
+	uint8_t *out = NULL;
+	size_t out_sz = 0;
+
+	ASSERT_EQ(dssh_test_encode_k_wire(NULL, 0, false,
+	    &out, &out_sz), 0);
+	ASSERT_EQ(out_sz, 4u);
+	/* Length = 0 */
+	ASSERT_EQ(out[0], 0); ASSERT_EQ(out[1], 0);
+	ASSERT_EQ(out[2], 0); ASSERT_EQ(out[3], 0);
+	free(out);
+	return TEST_PASS;
+}
+
+static int
+test_encode_k_string(void)
+{
+	/* String encoding -- no sign padding even with high bit */
+	uint8_t raw[] = {0x80, 0x01};
+	uint8_t *out = NULL;
+	size_t out_sz = 0;
+
+	ASSERT_EQ(dssh_test_encode_k_wire(raw, sizeof(raw), true,
+	    &out, &out_sz), 0);
+	ASSERT_EQ(out_sz, 6u);
+	/* Length = 2 (no padding) */
+	ASSERT_EQ(out[0], 0); ASSERT_EQ(out[1], 0);
+	ASSERT_EQ(out[2], 0); ASSERT_EQ(out[3], 2);
+	ASSERT_EQ(out[4], 0x80); ASSERT_EQ(out[5], 0x01);
+	free(out);
+	return TEST_PASS;
+}
+
+static int
+test_encode_k_string_empty(void)
+{
+	uint8_t *out = NULL;
+	size_t out_sz = 0;
+
+	ASSERT_EQ(dssh_test_encode_k_wire(NULL, 0, true,
+	    &out, &out_sz), 0);
+	ASSERT_EQ(out_sz, 4u);
+	ASSERT_EQ(out[0], 0); ASSERT_EQ(out[1], 0);
+	ASSERT_EQ(out[2], 0); ASSERT_EQ(out[3], 0);
+	free(out);
+	return TEST_PASS;
 }
 
 /* ================================================================
@@ -6839,7 +7133,20 @@ static struct dssh_test_entry tests[] = {
 	{ "register/two_kex",               test_register_two_kex },
 	{ "register/two_comp",              test_register_two_comp },
 	{ "register/two_lang",              test_register_two_lang },
+	{ "kexinit/parse_valid",            test_kexinit_parse_valid },
+	{ "kexinit/parse_control_char",     test_kexinit_parse_control_char },
+	{ "kexinit/parse_name_too_long",    test_kexinit_parse_name_too_long },
+	{ "kexinit/parse_truncated",        test_kexinit_parse_truncated },
+	{ "kexinit/parse_too_short",        test_kexinit_parse_too_short },
+	{ "kexinit/parse_first_kex_follows", test_kexinit_parse_first_kex_follows },
 	{ "kexinit/peer_trunc_namelist",    test_kexinit_peer_parse_truncated_namelist },
+
+	/* K wire encoding */
+	{ "encode_k/mpint_no_pad",          test_encode_k_mpint_no_pad },
+	{ "encode_k/mpint_sign_pad",        test_encode_k_mpint_sign_pad },
+	{ "encode_k/mpint_empty",           test_encode_k_mpint_empty },
+	{ "encode_k/string_encoding",       test_encode_k_string },
+	{ "encode_k/string_empty",          test_encode_k_string_empty },
 	{ "aes256_ctr/ctx_member_null",     test_aes256_ctr_ctx_member_null },
 	{ "aes256_ctr/encrypt_update_fail", test_aes256_ctr_encrypt_update_failure },
 	{ "hmac_sha2_256/cleanup_null",     test_hmac_sha2_256_cleanup_null },

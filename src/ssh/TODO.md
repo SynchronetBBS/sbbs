@@ -14,24 +14,6 @@
     key_algo, enc, mac, comp, lang).  Same structure, different linked
     list and type.  Could be a single helper with type-specific wrappers.
 
-19. `dssh_transport_kexinit()` is ~330 lines covering KEXINIT send,
-    receive, peer name-list parsing, algorithm negotiation, and
-    first_kex_packet_follows handling.  Should be decomposed into
-    smaller functions.  Similarly `dssh_transport_newkeys()` (~340 lines)
-    combines NEWKEYS exchange, K encoding, key derivation (6 calls),
-    old context cleanup, new context init, and MAC buffer allocation.
-
-20. Local `#define KEXINIT_SER_NL` and `FREE_LIST` macros, plus
-    `if (0) { kexinit_fail: }` goto target pattern.  Same class of
-    issue as item 11 — decomposition would eliminate these.
-
-22. `dssh_test_derive_key()` chains six OpenSSL calls
-    (DigestInit/Update×4/Final) into a single `if (... != 1 || ...)`
-    condition.  Non-obvious control flow, impossible to distinguish which
-    call failed, and the identical cleanup block (cleanse + ctx free +
-    md free) is duplicated for the initial hash and the extension loop.
-    Should be sequential checks with a single `goto cleanup`, or a
-    helper that wraps the digest sequence.
 
 
 26. `demux_dispatch()` (~240 lines) and `dssh_session_accept_channel()`
@@ -524,3 +506,24 @@
   `send_password_request()`, `auth_kbi_impl()`, and
   `auth_publickey_impl()`.  Eliminates ~60 lines of duplicated
   serialization code.
+
+- `dssh_transport_kexinit()` and `dssh_transport_newkeys()` decomposed
+  (was items 19, 20, 22).  `kexinit()` (~330 lines) split into 4
+  static helpers: `build_kexinit_packet()` (packet construction),
+  `receive_peer_kexinit()` (receive + rekey buffering),
+  `dssh_test_parse_peer_kexinit()` (DSSH_TESTABLE pure parser for
+  10 name-lists + validation), `negotiate_algorithms()` (8-way
+  negotiation + first_kex_packet_follows discard).  Reduces `kexinit()`
+  to ~30 lines of linear calls.  Eliminates `KEXINIT_SER_NL` macro
+  and `if (0) { kexinit_fail: }` goto pattern.  `newkeys()` (~280
+  lines) split into `dssh_test_encode_k_wire()` (DSSH_TESTABLE pure
+  K wire encoder for mpint/string), `derive_and_apply_keys()` (derive
+  6 keys, init cipher/MAC, alloc MAC bufs, reset counters).  Reduces
+  `newkeys()` to ~40 lines.  `dssh_test_derive_key()` refactored:
+  chained `||` OpenSSL calls replaced with sequential checks, 3
+  duplicated cleanup blocks unified via `goto cleanup`.  11 new unit
+  tests: 6 for `parse_peer_kexinit` (valid, control char, name too
+  long, truncated, too short, first_kex_follows), 5 for
+  `encode_k_wire` (mpint no pad, mpint sign pad, mpint empty, string,
+  string empty).  Previously-SKIP `kexinit/peer_trunc_namelist` test
+  now implemented via extracted parser.

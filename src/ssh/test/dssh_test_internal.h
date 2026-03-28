@@ -79,6 +79,10 @@ int demux_dispatch(dssh_session sess, uint8_t msg_type,
 /*
  * ssh-trans.c internal functions exposed for testing.
  */
+int dssh_test_parse_peer_kexinit(const uint8_t *buf, size_t bufsz,
+    char lists[][1024], bool *first_kex_follows);
+int dssh_test_encode_k_wire(const uint8_t *raw, size_t raw_sz,
+    bool k_as_string, uint8_t **out, size_t *out_sz);
 size_t first_name(const char *list, char *buf, size_t bufsz);
 
 /*
