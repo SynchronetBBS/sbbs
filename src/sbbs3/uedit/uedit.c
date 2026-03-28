@@ -238,7 +238,6 @@ int edit_terminal(scfg_t *cfg, user_t *user)
 		sprintf(opt[i++],"Color            %s",user->misc & COLOR?"Yes":"No");
 		sprintf(opt[i++],"RIP              %s",user->misc & RIP?"Yes":"No");
 		sprintf(opt[i++],"Pause            %s",user->misc & UPAUSE?"Yes":"No");
-		sprintf(opt[i++],"Hot Keys         %s",user->misc & COLDKEYS?"No":"Yes");
 		sprintf(opt[i++],"Spinning Cursor  %s",user->misc & SPIN?"Yes":"No");
 		sprintf(str,"%u",user->cols);
 		sprintf(opt[i++],"Screen Columns   %s",user->cols?str:"Auto");
@@ -280,16 +279,11 @@ int edit_terminal(scfg_t *cfg, user_t *user)
 				putusermisc(cfg, user->number, user->misc);
 				break;
 			case 6:
-				/* Hot Keys */
-				user->misc ^= COLDKEYS;
-				putusermisc(cfg, user->number, user->misc);
-				break;
-			case 7:
 				/* Spinning Cursor */
 				user->misc ^= SPIN;
 				putusermisc(cfg, user->number, user->misc);
 				break;
-			case 8:
+			case 7:
 				/* Columns */
 				SAFEPRINTF(str,"%u",user->cols);
 				uifc.input(WIN_MID|WIN_ACT|WIN_SAV,0,0, "Columns (0=auto-detect)", str, 3, K_EDIT|K_NUMBER);
@@ -298,7 +292,7 @@ int edit_terminal(scfg_t *cfg, user_t *user)
 					putuserdec32(cfg, user->number, USER_COLS, user->cols);
 				}
 				break;
-			case 9:
+			case 8:
 				/* Rows */
 				SAFEPRINTF(str,"%u",user->rows);
 				uifc.input(WIN_MID|WIN_ACT|WIN_SAV,0,0, "Rows (0=auto-detect)", str, 3, K_EDIT|K_NUMBER);
