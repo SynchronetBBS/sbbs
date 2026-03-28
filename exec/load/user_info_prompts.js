@@ -391,7 +391,7 @@ function get_address(user)
 		}
 		if (user.address)
 			break;
-		ask_to_cancel(gettext("Sorry, that address is not acceptable"));
+		ask_to_cancel(gettext("Sorry, that address is not acceptable", "bad_user_address"));
 	}
 }
 
@@ -463,7 +463,7 @@ function get_phone(user)
 				continue;
 			}
 			if (phone.length < 5) {
-				ask_to_cancel(gettext("Sorry, that phone number is not acceptable"));
+				ask_to_cancel(gettext("Sorry, that phone number is not acceptable", "bad_user_phone"));
 				continue;
 			}
 		}
@@ -476,7 +476,7 @@ function get_phone(user)
 				continue;
 			}
 			if (phone.length < system.phonenumber_template.length) {
-				ask_to_cancel(gettext("Sorry, that phone number is not acceptable"));
+				ask_to_cancel(gettext("Sorry, that phone number is not acceptable", "bad_user_phone"));
 				continue;
 			}
 		}
@@ -484,7 +484,7 @@ function get_phone(user)
 			user.phone = phone;
 			break;
 		}
-		ask_to_cancel(gettext("Sorry, that phone number is not acceptable"));
+		ask_to_cancel(gettext("Sorry, that phone number is not acceptable", "bad_user_phone"));
 	}
 }
 
@@ -530,7 +530,7 @@ function get_birthdate(user)
 			user.birthdate = birthdate;
 			break;
 		}
-		ask_to_cancel(gettext("Sorry, that birthdate is not acceptable"));
+		ask_to_cancel(gettext("Sorry, that birthdate is not acceptable", "bad_user_birth"));
 	}
 }
 
