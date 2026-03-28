@@ -889,8 +889,11 @@ object MainForm: TMainForm
             Items.Strings = (
               'Auto-Detect'
               'Extended ASCII'
+			  'UTF-8'
               'ANSI'
+			  'PETSCII'
               'Color'
+			  'ICE Color'
               'RIP'
               'Pause'
               'Spinning Cursor')
