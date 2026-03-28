@@ -177,8 +177,7 @@ void __fastcall TMainForm::GetUserData(int number)
     TerminalCheckListBox->Checked[3] = user.misc & COLOR;
     TerminalCheckListBox->Checked[4] = user.misc & RIP;
     TerminalCheckListBox->Checked[5] = user.misc & UPAUSE;
-    TerminalCheckListBox->Checked[6] = !(user.misc & COLDKEYS);
-    TerminalCheckListBox->Checked[7] = user.misc & SPIN;
+    TerminalCheckListBox->Checked[6] = user.misc & SPIN;
     TerminalCheckListBox->Tag = false;
 
     MessageCheckListBox->Checked[0] = user.misc & NETMAIL;

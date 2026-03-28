@@ -893,7 +893,6 @@ object MainForm: TMainForm
               'Color'
               'RIP'
               'Pause'
-              'Hot Keys'
               'Spinning Cursor')
             TabOrder = 1
           end
