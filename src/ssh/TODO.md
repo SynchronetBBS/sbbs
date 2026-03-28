@@ -2,7 +2,24 @@
 
 ## Open
 
-
+84. **DH-GEX group size vs cipher strength mismatch.**
+    The client's GEX_REQUEST parameters (`GEX_MIN 2048`, `GEX_N 4096`,
+    `GEX_MAX 8192`) are compile-time constants that don't account for the
+    negotiated cipher.  A 2048-bit group provides ~112 bits of security,
+    which is a poor match for AES-256 (256-bit).  OpenSSH has the same
+    mismatch, but we should investigate whether to:
+    - Bump `GEX_MIN` to 3072 (NIST 128-bit floor)
+    - Tie `GEX_N` (preferred) to the cipher's key size
+    - Consider that cipher negotiation happens in the same KEXINIT as KEX
+      negotiation, so the client doesn't know the cipher result before
+      sending GEX_REQUEST — the server could enforce a floor, but the
+      client can only guess
+    - Decide whether the built-in `default_select_group()` should enforce
+      a minimum based on cipher strength, and if so, how it learns the
+      cipher (it currently only sees min/preferred/max from the client)
+    This needs interactive discussion — there are compatibility and
+    protocol-ordering trade-offs that don't have obvious right answers.
+    **Not suitable for automatic planning.**
 
 16. Type-unsafe linked list traversal via
     `memcpy(&node, node, sizeof(void *))` in `dssh_test_build_namelist()`
@@ -241,6 +258,9 @@
 - Data race: `dssh_dh_gex_set_provider()` (was item 61).  Documented
   as must-call-before-handshake.  The `thrd_create` in
   `dssh_session_start()` provides the C11 happens-before guarantee.
+  **Update:** `dssh_dh_gex_set_provider()` removed.  DH-GEX now uses a
+  built-in RFC 3526 default provider; override via `dssh_kex_set_ctx()`
+  (global, pre-init, same gate as `dssh_key_algo_set_ctx()`).
 
 - Data race: callback setters (was item 32).  Documented as
   must-call-before-start.  The `thrd_create` in `dssh_session_start()`

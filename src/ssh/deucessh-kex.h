@@ -108,6 +108,7 @@ typedef struct dssh_kex_s {
 	dssh_kex_cleanup   cleanup;
 	const char        *hash_name; /* OpenSSL digest name, e.g. "SHA256" */
 	uint32_t           flags;
+	void              *ctx;
 	char               name[];
 } *dssh_kex;
 

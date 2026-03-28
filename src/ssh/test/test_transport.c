@@ -17,6 +17,7 @@
 #include "dssh_test_alloc.h"
 #include "deucessh.h"
 #include "deucessh-algorithms.h"
+#include "kex/dh-gex-sha256.h"
 #include "ssh-trans.h"
 #include "ssh-internal.h"
 #include "dssh_test_internal.h"
@@ -4296,7 +4297,7 @@ test_dhgex_server_null_provider(void)
 
 	/* Set provider with NULL select_group */
 	struct dssh_dh_gex_provider bad_prov = { .select_group = NULL };
-	ctx.server->trans.kex_ctx = &bad_prov;
+	ctx.server->trans.kex_selected->ctx = &bad_prov;
 
 	int res = dhgex_server_run(&ctx, wire, wlen);
 	ASSERT_EQ(res, DSSH_ERROR_INIT);
@@ -4333,7 +4334,7 @@ test_dhgex_server_provider_error(void)
 	struct dssh_dh_gex_provider err_prov = {
 		.select_group = provider_error_cb
 	};
-	ctx.server->trans.kex_ctx = &err_prov;
+	ctx.server->trans.kex_selected->ctx = &err_prov;
 
 	int res = dhgex_server_run(&ctx, wire, wlen);
 	ASSERT_EQ(res, DSSH_ERROR_INIT);

@@ -173,6 +173,16 @@ version_tx(dssh_session sess)
 	return 0;
 }
 
+DSSH_PRIVATE dssh_kex
+dssh_transport_find_kex(const char *name)
+{
+	for (dssh_kex k = gconf.kex_head; k != NULL; k = k->next) {
+		if (strcmp(k->name, name) == 0)
+			return k;
+	}
+	return NULL;
+}
+
 DSSH_PRIVATE dssh_key_algo
 dssh_transport_find_key_algo(const char *name)
 {
@@ -1529,7 +1539,7 @@ dssh_transport_kex(dssh_session sess)
 		.i_s_len   = sess->trans.client ?
 		    sess->trans.peer_kexinit_sz : sess->trans.our_kexinit_sz,
 		.key_algo  = sess->trans.key_algo_selected,
-		.kex_data  = sess->trans.kex_ctx,
+		.kex_data  = sess->trans.kex_selected->ctx,
 		.send      = kex_send_wrapper,
 		.recv      = kex_recv_wrapper,
 		.io_ctx    = sess,
@@ -2000,11 +2010,8 @@ init_cleanup:
 DSSH_PRIVATE void
 dssh_transport_cleanup(dssh_session sess)
 {
-	if (sess->trans.kex_selected) {
-		if (sess->trans.kex_selected->cleanup != NULL)
-			sess->trans.kex_selected->cleanup(sess->trans.kex_ctx);
+	if (sess->trans.kex_selected)
 		sess->trans.kex_selected = NULL;
-	}
 	if (sess->trans.key_algo_selected)
 		sess->trans.key_algo_selected = NULL;
 	if (sess->trans.enc_c2s_selected) {
@@ -2114,16 +2121,21 @@ dssh_key_algo_set_ctx(const char *name, void *ctx)
 	return 0;
 }
 
-/* Must be called before dssh_transport_handshake().  The thrd_create
- * in dssh_session_start() provides the C11 happens-before guarantee
- * that makes this write visible to the demux thread. */
-DSSH_PUBLIC void
-dssh_dh_gex_set_provider(dssh_session sess,
-    struct dssh_dh_gex_provider *provider)
+DSSH_PUBLIC int
+dssh_kex_set_ctx(const char *name, void *ctx)
 {
-	if (sess == NULL)
-		return;
-	sess->trans.kex_ctx = provider;
+	if (name == NULL)
+		return DSSH_ERROR_INVALID;
+	/* Refuse after first session init -- the global registry is
+	 * read concurrently by active sessions during KEX. */
+	if (gconf.used)
+		return DSSH_ERROR_TOOLATE;
+	dssh_kex k = dssh_transport_find_kex(name);
+
+	if (k == NULL)
+		return DSSH_ERROR_INIT;
+	k->ctx = ctx;
+	return 0;
 }
 
 DSSH_PUBLIC int

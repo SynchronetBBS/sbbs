@@ -103,7 +103,6 @@ typedef struct dssh_transport_state_s {
 	size_t         id_str_sz;
 	size_t         remote_id_str_sz;
 	char         **remote_languages;
-	void          *kex_ctx;
 	_Atomic dssh_kex       kex_selected;
 	size_t         shared_secret_sz;
 	uint8_t       *shared_secret;
@@ -196,6 +195,7 @@ DSSH_PRIVATE int dssh_transport_kex(dssh_session sess);
 DSSH_PRIVATE int dssh_transport_newkeys(dssh_session sess);
 DSSH_PRIVATE int dssh_transport_rekey(dssh_session sess);
 DSSH_PRIVATE bool dssh_transport_rekey_needed(dssh_session sess);
+DSSH_PRIVATE dssh_kex dssh_transport_find_kex(const char *name);
 DSSH_PRIVATE dssh_key_algo dssh_transport_find_key_algo(const char *name);
 
 /*

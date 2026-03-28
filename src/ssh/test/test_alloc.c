@@ -15,6 +15,7 @@
 #include "dssh_test.h"
 #include "deucessh.h"
 #include "deucessh-algorithms.h"
+#include "kex/dh-gex-sha256.h"
 #include "deucessh-auth.h"
 #include "deucessh-conn.h"
 #include "ssh-trans.h"
@@ -2477,7 +2478,7 @@ bad_server_reply_thread(void *arg)
 
 	/* Get the DH group from the provider */
 	struct dssh_dh_gex_provider *prov =
-	    (struct dssh_dh_gex_provider *)ctx->sess->trans.kex_ctx;
+	    (struct dssh_dh_gex_provider *)ctx->sess->trans.kex_selected->ctx;
 	uint8_t *p_bytes = NULL, *g_bytes = NULL;
 	size_t p_len, g_len;
 	ctx->result = prov->select_group(2048, 4096, 8192,

@@ -165,17 +165,10 @@ int main(void)
     /* 3. Accept a connection, then create session */
     dssh_session sess = dssh_session_init(false, 0);
 
-    /* 4. If offering DH-GEX, provide a group selection callback */
-    struct dssh_dh_gex_provider provider = {
-        .select_group = my_group_selector,
-        .cbdata = NULL,
-    };
-    dssh_dh_gex_set_provider(sess, &provider);
-
-    /* 5. Handshake */
+    /* 4. Handshake (DH-GEX uses built-in RFC 3526 groups by default) */
     dssh_transport_handshake(sess);
 
-    /* 6. Authenticate */
+    /* 5. Authenticate */
     struct dssh_auth_server_cbs auth_cbs = {
         .methods_str = "publickey,password,keyboard-interactive",
         .password_cb = my_password_cb,
@@ -762,7 +755,7 @@ static int my_kex_handler(struct dssh_kex_context *kctx)
      *   client, v_c/v_c_len, v_s/v_s_len (version strings)
      *   i_c/i_c_len, i_s/i_s_len (KEXINIT payloads)
      *   key_algo (host key sign/verify/pubkey)
-     *   kex_data (module-specific, e.g. DH-GEX provider)
+     *   kex_data (from kex->ctx, set via dssh_kex_set_ctx())
      *
      * I/O:
      *   kctx->send(payload, len, kctx->io_ctx)
@@ -806,31 +799,28 @@ are defined in `deucessh-kex.h`.  KEX modules need no private headers.
 - The `next` pointer must be NULL (the library manages the linked list).
 - Registration order determines negotiation preference.
 
-## DH Group Provider (Server)
+## DH Group Exchange (Server)
 
-If the server offers `diffie-hellman-group-exchange-sha256`, it must
-provide a callback that selects a safe prime for the requested size:
+DH-GEX works out of the box — the built-in default selects from
+RFC 3526 groups 14–18 (2048–8192-bit) based on the client's requested
+min/preferred/max range.
 
-```c
-int my_group_selector(uint32_t min, uint32_t preferred, uint32_t max,
-    uint8_t **p, size_t *p_len,
-    uint8_t **g, size_t *g_len, void *cbdata)
-{
-    /* Return p and g as big-endian byte arrays (caller frees).
-     * Select based on min/preferred/max.
-     * No OpenSSL dependency needed here — just return bytes. */
-}
-```
-
-Set it on the session before key exchange:
+To override with custom groups (e.g. from a moduli file), include
+`kex/dh-gex-sha256.h` and call `dssh_kex_set_ctx()` before
+`dssh_session_init()`:
 
 ```c
+#include "kex/dh-gex-sha256.h"
+
 struct dssh_dh_gex_provider prov = {
     .select_group = my_group_selector,
     .cbdata = NULL,
 };
-dssh_dh_gex_set_provider(sess, &prov);
+dssh_kex_set_ctx("diffie-hellman-group-exchange-sha256", &prov);
 ```
+
+The `select_group` callback receives the client's min/preferred/max
+bit sizes and returns p and g as big-endian byte arrays (caller frees).
 
 ## Key Management
 

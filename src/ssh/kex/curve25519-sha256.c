@@ -580,6 +580,7 @@ dssh_register_curve25519_sha256(void)
 	kex->cleanup = kex_cleanup;
 	kex->flags = DSSH_KEX_FLAG_NEEDS_SIGNATURE_CAPABLE;
 	kex->hash_name = "SHA256";
+	kex->ctx = NULL;
 	memcpy(kex->name, KEX_NAME, KEX_NAME_LEN + 1);
 	return dssh_transport_register_kex(kex);
 }

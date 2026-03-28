@@ -68,18 +68,14 @@ DSSH_PUBLIC int dssh_register_none_comp(void);
  */
 DSSH_PUBLIC int dssh_key_algo_set_ctx(const char *name, void *ctx);
 
-/* DH group provider (server-side, for DH-GEX) */
-struct dssh_dh_gex_provider {
-	int   (*select_group)(uint32_t min, uint32_t preferred, uint32_t max,
-	    uint8_t **p, size_t *p_len,
-	    uint8_t **g, size_t *g_len,
-	    void *cbdata);
-	void *cbdata;
-};
-
-/* Must be called before dssh_transport_handshake(). */
-DSSH_PUBLIC void dssh_dh_gex_set_provider(dssh_session sess,
-    struct dssh_dh_gex_provider                       *provider);
+/*
+ * Set the opaque context pointer for a registered KEX algorithm.
+ * Must be called before dssh_session_init() -- returns DSSH_ERROR_TOOLATE
+ * if any session has been created (the global registry is read
+ * concurrently by active sessions during KEX).
+ * Returns 0 on success, DSSH_ERROR_INIT if the algorithm is not registered.
+ */
+DSSH_PUBLIC int dssh_kex_set_ctx(const char *name, void *ctx);
 
 #ifdef __cplusplus
 }
