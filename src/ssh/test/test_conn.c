@@ -7,6 +7,7 @@
  */
 
 #include <stddef.h>
+#include <stdint.h>
 #include <string.h>
 #include <threads.h>
 
@@ -5410,6 +5411,331 @@ test_close_during_window_change(void)
 }
 
 /* ================================================================
+ * NULL parameter validation
+ * ================================================================ */
+
+static int
+test_parse_pty_req_null(void)
+{
+	struct dssh_pty_req pty = {0};
+	uint8_t data[32] = {0};
+
+	ASSERT_EQ(dssh_parse_pty_req_data(NULL, 10, &pty), DSSH_ERROR_INVALID);
+	ASSERT_EQ(dssh_parse_pty_req_data(data, 10, NULL), DSSH_ERROR_INVALID);
+	return TEST_PASS;
+}
+
+static int
+test_parse_env_null(void)
+{
+	uint8_t data[32] = {0};
+	const uint8_t *name, *value;
+	size_t nlen, vlen;
+
+	ASSERT_EQ(dssh_parse_env_data(NULL, 10, &name, &nlen, &value, &vlen),
+	    DSSH_ERROR_INVALID);
+	ASSERT_EQ(dssh_parse_env_data(data, 10, NULL, &nlen, &value, &vlen),
+	    DSSH_ERROR_INVALID);
+	ASSERT_EQ(dssh_parse_env_data(data, 10, &name, NULL, &value, &vlen),
+	    DSSH_ERROR_INVALID);
+	ASSERT_EQ(dssh_parse_env_data(data, 10, &name, &nlen, NULL, &vlen),
+	    DSSH_ERROR_INVALID);
+	ASSERT_EQ(dssh_parse_env_data(data, 10, &name, &nlen, &value, NULL),
+	    DSSH_ERROR_INVALID);
+	return TEST_PASS;
+}
+
+static int
+test_parse_exec_null(void)
+{
+	uint8_t data[32] = {0};
+	const uint8_t *cmd;
+	size_t clen;
+
+	ASSERT_EQ(dssh_parse_exec_data(NULL, 10, &cmd, &clen),
+	    DSSH_ERROR_INVALID);
+	ASSERT_EQ(dssh_parse_exec_data(data, 10, NULL, &clen),
+	    DSSH_ERROR_INVALID);
+	ASSERT_EQ(dssh_parse_exec_data(data, 10, &cmd, NULL),
+	    DSSH_ERROR_INVALID);
+	return TEST_PASS;
+}
+
+static int
+test_parse_subsystem_null(void)
+{
+	uint8_t data[32] = {0};
+	const uint8_t *name;
+	size_t nlen;
+
+	ASSERT_EQ(dssh_parse_subsystem_data(NULL, 10, &name, &nlen),
+	    DSSH_ERROR_INVALID);
+	ASSERT_EQ(dssh_parse_subsystem_data(data, 10, NULL, &nlen),
+	    DSSH_ERROR_INVALID);
+	ASSERT_EQ(dssh_parse_subsystem_data(data, 10, &name, NULL),
+	    DSSH_ERROR_INVALID);
+	return TEST_PASS;
+}
+
+/*
+ * NULL parameter tests.
+ *
+ * The || chains in NULL guards are ordered with non-sess args first
+ * (e.g. buf == NULL || ch == NULL || sess == NULL) so that each
+ * operand can be reached by passing fake non-NULL pointers for the
+ * earlier args.  The function returns before any dereference, so
+ * the fake pointers are never touched.
+ *
+ * FAKE_SESS / FAKE_CH are non-NULL sentinels that are never
+ * dereferenced -- used only to reach later branches in || chains.
+ */
+#define FAKE_SESS ((dssh_session)(uintptr_t)1)
+#define FAKE_CH   ((dssh_channel)(uintptr_t)1)
+
+/* if (buf == NULL || ch == NULL || sess == NULL) */
+static int
+test_session_read_null(void)
+{
+	uint8_t buf[16];
+
+	ASSERT_EQ(dssh_session_read(NULL, NULL, NULL, sizeof(buf)),
+	    DSSH_ERROR_INVALID);              /* buf == NULL */
+	ASSERT_EQ(dssh_session_read(NULL, NULL, buf, sizeof(buf)),
+	    DSSH_ERROR_INVALID);              /* ch == NULL */
+	ASSERT_EQ(dssh_session_read(NULL, FAKE_CH, buf, sizeof(buf)),
+	    DSSH_ERROR_INVALID);              /* sess == NULL */
+	return TEST_PASS;
+}
+
+static int
+test_session_read_ext_null(void)
+{
+	uint8_t buf[16];
+
+	ASSERT_EQ(dssh_session_read_ext(NULL, NULL, NULL, sizeof(buf)),
+	    DSSH_ERROR_INVALID);
+	ASSERT_EQ(dssh_session_read_ext(NULL, NULL, buf, sizeof(buf)),
+	    DSSH_ERROR_INVALID);
+	ASSERT_EQ(dssh_session_read_ext(NULL, FAKE_CH, buf, sizeof(buf)),
+	    DSSH_ERROR_INVALID);
+	return TEST_PASS;
+}
+
+static int
+test_session_write_null(void)
+{
+	uint8_t buf[16] = {0};
+
+	ASSERT_EQ(dssh_session_write(NULL, NULL, NULL, sizeof(buf)),
+	    DSSH_ERROR_INVALID);
+	ASSERT_EQ(dssh_session_write(NULL, NULL, buf, sizeof(buf)),
+	    DSSH_ERROR_INVALID);
+	ASSERT_EQ(dssh_session_write(NULL, FAKE_CH, buf, sizeof(buf)),
+	    DSSH_ERROR_INVALID);
+	return TEST_PASS;
+}
+
+static int
+test_session_write_ext_null(void)
+{
+	uint8_t buf[16] = {0};
+
+	ASSERT_EQ(dssh_session_write_ext(NULL, NULL, NULL, sizeof(buf)),
+	    DSSH_ERROR_INVALID);
+	ASSERT_EQ(dssh_session_write_ext(NULL, NULL, buf, sizeof(buf)),
+	    DSSH_ERROR_INVALID);
+	ASSERT_EQ(dssh_session_write_ext(NULL, FAKE_CH, buf, sizeof(buf)),
+	    DSSH_ERROR_INVALID);
+	return TEST_PASS;
+}
+
+/* if (signal_name == NULL || ch == NULL || sess == NULL) */
+static int
+test_session_read_signal_null(void)
+{
+	const char *sig;
+
+	ASSERT_EQ(dssh_session_read_signal(NULL, NULL, NULL),
+	    DSSH_ERROR_INVALID);              /* signal_name == NULL */
+	ASSERT_EQ(dssh_session_read_signal(NULL, NULL, &sig),
+	    DSSH_ERROR_INVALID);              /* ch == NULL */
+	ASSERT_EQ(dssh_session_read_signal(NULL, FAKE_CH, &sig),
+	    DSSH_ERROR_INVALID);              /* sess == NULL */
+	return TEST_PASS;
+}
+
+/* if (buf == NULL || ch == NULL || sess == NULL) */
+static int
+test_channel_read_null(void)
+{
+	uint8_t buf[16];
+
+	ASSERT_EQ(dssh_channel_read(NULL, NULL, NULL, sizeof(buf)),
+	    DSSH_ERROR_INVALID);
+	ASSERT_EQ(dssh_channel_read(NULL, NULL, buf, sizeof(buf)),
+	    DSSH_ERROR_INVALID);
+	ASSERT_EQ(dssh_channel_read(NULL, FAKE_CH, buf, sizeof(buf)),
+	    DSSH_ERROR_INVALID);
+	return TEST_PASS;
+}
+
+static int
+test_channel_write_null(void)
+{
+	uint8_t buf[16] = {0};
+
+	ASSERT_EQ(dssh_channel_write(NULL, NULL, NULL, sizeof(buf)),
+	    DSSH_ERROR_INVALID);
+	ASSERT_EQ(dssh_channel_write(NULL, NULL, buf, sizeof(buf)),
+	    DSSH_ERROR_INVALID);
+	ASSERT_EQ(dssh_channel_write(NULL, FAKE_CH, buf, sizeof(buf)),
+	    DSSH_ERROR_INVALID);
+	return TEST_PASS;
+}
+
+/* if (ch == NULL || sess == NULL) */
+static int
+test_session_poll_null(void)
+{
+	ASSERT_EQ(dssh_session_poll(NULL, NULL, DSSH_POLL_READ, 0),
+	    DSSH_ERROR_INVALID);              /* ch == NULL */
+	ASSERT_EQ(dssh_session_poll(NULL, FAKE_CH, DSSH_POLL_READ, 0),
+	    DSSH_ERROR_INVALID);              /* sess == NULL */
+	return TEST_PASS;
+}
+
+static int
+test_channel_poll_null(void)
+{
+	ASSERT_EQ(dssh_channel_poll(NULL, NULL, DSSH_POLL_READ, 0),
+	    DSSH_ERROR_INVALID);
+	ASSERT_EQ(dssh_channel_poll(NULL, FAKE_CH, DSSH_POLL_READ, 0),
+	    DSSH_ERROR_INVALID);
+	return TEST_PASS;
+}
+
+static int
+test_session_close_null(void)
+{
+	ASSERT_EQ(dssh_session_close(NULL, NULL, 0),
+	    DSSH_ERROR_INVALID);
+	ASSERT_EQ(dssh_session_close(NULL, FAKE_CH, 0),
+	    DSSH_ERROR_INVALID);
+	return TEST_PASS;
+}
+
+static int
+test_channel_close_null(void)
+{
+	ASSERT_EQ(dssh_channel_close(NULL, NULL),
+	    DSSH_ERROR_INVALID);
+	ASSERT_EQ(dssh_channel_close(NULL, FAKE_CH),
+	    DSSH_ERROR_INVALID);
+	return TEST_PASS;
+}
+
+/* if (signal_name == NULL || ch == NULL || sess == NULL) */
+static int
+test_session_send_signal_null(void)
+{
+	ASSERT_EQ(dssh_session_send_signal(NULL, NULL, NULL),
+	    DSSH_ERROR_INVALID);              /* signal_name == NULL */
+	ASSERT_EQ(dssh_session_send_signal(NULL, NULL, "HUP"),
+	    DSSH_ERROR_INVALID);              /* ch == NULL */
+	ASSERT_EQ(dssh_session_send_signal(NULL, FAKE_CH, "HUP"),
+	    DSSH_ERROR_INVALID);              /* sess == NULL */
+	return TEST_PASS;
+}
+
+static int
+test_session_send_window_change_null(void)
+{
+	ASSERT_EQ(dssh_session_send_window_change(NULL, NULL, 80, 24, 0, 0),
+	    DSSH_ERROR_INVALID);
+	ASSERT_EQ(dssh_session_send_window_change(NULL, FAKE_CH, 80, 24, 0, 0),
+	    DSSH_ERROR_INVALID);
+	return TEST_PASS;
+}
+
+/* if (inc == NULL || sess == NULL) */
+static int
+test_session_accept_null(void)
+{
+	struct dssh_incoming_open *inc;
+
+	ASSERT_EQ(dssh_session_accept(NULL, NULL, 0),
+	    DSSH_ERROR_INVALID);              /* inc == NULL */
+	ASSERT_EQ(dssh_session_accept(NULL, &inc, 0),
+	    DSSH_ERROR_INVALID);              /* sess == NULL */
+	return TEST_PASS;
+}
+
+static int
+test_session_reject_null(void)
+{
+	ASSERT_EQ(dssh_session_reject(NULL, NULL, 1, "denied"),
+	    DSSH_ERROR_INVALID);
+	ASSERT_EQ(dssh_session_reject(NULL,
+	    (struct dssh_incoming_open *)(uintptr_t)1, 1, "denied"),
+	    DSSH_ERROR_INVALID);
+	return TEST_PASS;
+}
+
+/* Return-NULL functions: if (X == NULL || sess == NULL) */
+static int
+test_open_shell_null(void)
+{
+	struct dssh_pty_req pty = {0};
+
+	ASSERT_TRUE(dssh_session_open_shell(NULL, NULL) == NULL);
+	ASSERT_TRUE(dssh_session_open_shell(NULL, &pty) == NULL);
+	return TEST_PASS;
+}
+
+static int
+test_open_exec_null(void)
+{
+	ASSERT_TRUE(dssh_session_open_exec(NULL, NULL) == NULL);
+	ASSERT_TRUE(dssh_session_open_exec(NULL, "ls") == NULL);
+	return TEST_PASS;
+}
+
+static int
+test_open_subsystem_null(void)
+{
+	ASSERT_TRUE(dssh_channel_open_subsystem(NULL, NULL) == NULL);
+	ASSERT_TRUE(dssh_channel_open_subsystem(NULL, "sftp") == NULL);
+	return TEST_PASS;
+}
+
+/* if (cbs == NULL || inc == NULL || sess == NULL) */
+static int
+test_accept_channel_null(void)
+{
+	struct dssh_server_session_cbs cbs = {0};
+	struct dssh_incoming_open inc = {0};
+
+	ASSERT_TRUE(dssh_session_accept_channel(NULL, NULL, NULL, NULL, NULL)
+	    == NULL);                          /* cbs == NULL */
+	ASSERT_TRUE(dssh_session_accept_channel(NULL, NULL, &cbs, NULL, NULL)
+	    == NULL);                          /* inc == NULL */
+	ASSERT_TRUE(dssh_session_accept_channel(NULL, &inc, &cbs, NULL, NULL)
+	    == NULL);                          /* sess == NULL */
+	return TEST_PASS;
+}
+
+/* if (inc == NULL || sess == NULL) */
+static int
+test_accept_raw_null(void)
+{
+	struct dssh_incoming_open inc = {0};
+
+	ASSERT_TRUE(dssh_channel_accept_raw(NULL, NULL) == NULL);
+	ASSERT_TRUE(dssh_channel_accept_raw(NULL, &inc) == NULL);
+	return TEST_PASS;
+}
+
+/* ================================================================
  * Test table
  * ================================================================ */
 
@@ -5575,6 +5901,32 @@ static struct dssh_test_entry tests[] = {
 
 	/* Item 62/79: close during demux callback */
 	{ "test_close_during_wc_cb",           test_close_during_window_change },
+
+	/* NULL parameter validation */
+	{ "parse/pty_req_null",                test_parse_pty_req_null },
+	{ "parse/env_null",                    test_parse_env_null },
+	{ "parse/exec_null",                   test_parse_exec_null },
+	{ "parse/subsystem_null",              test_parse_subsystem_null },
+	{ "null/session_read",                 test_session_read_null },
+	{ "null/session_read_ext",             test_session_read_ext_null },
+	{ "null/session_write",                test_session_write_null },
+	{ "null/session_write_ext",            test_session_write_ext_null },
+	{ "null/session_read_signal",          test_session_read_signal_null },
+	{ "null/channel_read",                 test_channel_read_null },
+	{ "null/channel_write",                test_channel_write_null },
+	{ "null/session_poll",                 test_session_poll_null },
+	{ "null/channel_poll",                 test_channel_poll_null },
+	{ "null/session_close",                test_session_close_null },
+	{ "null/channel_close",                test_channel_close_null },
+	{ "null/send_signal",                  test_session_send_signal_null },
+	{ "null/send_window_change",           test_session_send_window_change_null },
+	{ "null/session_accept",               test_session_accept_null },
+	{ "null/session_reject",               test_session_reject_null },
+	{ "null/open_shell",                   test_open_shell_null },
+	{ "null/open_exec",                    test_open_exec_null },
+	{ "null/open_subsystem",               test_open_subsystem_null },
+	{ "null/accept_channel",               test_accept_channel_null },
+	{ "null/accept_raw",                   test_accept_raw_null },
 };
 
 DSSH_TEST_MAIN(tests)

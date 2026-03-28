@@ -11,6 +11,7 @@
  */
 
 #include <stddef.h>
+#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 #include <threads.h>
@@ -10211,6 +10212,86 @@ test_auth_server_kbi_with_banner(void)
 }
 
 /* ================================================================
+ * NULL parameter validation
+ * ================================================================ */
+
+#define FAKE_SESS ((dssh_session)(uintptr_t)1)
+
+/* if (cbs == NULL || sess == NULL) */
+static int
+test_auth_server_null(void)
+{
+	struct dssh_auth_server_cbs cbs = {0};
+	uint8_t user[64];
+	size_t ulen = sizeof(user);
+
+	ASSERT_EQ(dssh_auth_server(NULL, NULL, user, &ulen),
+	    DSSH_ERROR_INVALID);              /* cbs == NULL */
+	ASSERT_EQ(dssh_auth_server(NULL, &cbs, user, &ulen),
+	    DSSH_ERROR_INVALID);              /* sess == NULL */
+	return TEST_PASS;
+}
+
+/* if (methods == NULL || username == NULL || sess == NULL) */
+static int
+test_auth_get_methods_null(void)
+{
+	char methods[64];
+
+	ASSERT_EQ(dssh_auth_get_methods(NULL, NULL, NULL, sizeof(methods)),
+	    DSSH_ERROR_INIT);                 /* methods == NULL */
+	ASSERT_EQ(dssh_auth_get_methods(NULL, NULL, methods, sizeof(methods)),
+	    DSSH_ERROR_INIT);                 /* username == NULL */
+	ASSERT_EQ(dssh_auth_get_methods(NULL, "user", methods, sizeof(methods)),
+	    DSSH_ERROR_INIT);                 /* sess == NULL */
+	return TEST_PASS;
+}
+
+/* if (password == NULL || username == NULL || sess == NULL) */
+static int
+test_auth_password_null(void)
+{
+	ASSERT_EQ(dssh_auth_password(NULL, NULL, NULL, NULL, NULL),
+	    DSSH_ERROR_INVALID);              /* password == NULL */
+	ASSERT_EQ(dssh_auth_password(NULL, NULL, "pw", NULL, NULL),
+	    DSSH_ERROR_INVALID);              /* username == NULL */
+	ASSERT_EQ(dssh_auth_password(NULL, "user", "pw", NULL, NULL),
+	    DSSH_ERROR_INVALID);              /* sess == NULL */
+	return TEST_PASS;
+}
+
+/* if (prompt_cb == NULL || username == NULL || sess == NULL) */
+static int
+test_auth_kbi_null(void)
+{
+	/* Use FAKE_SESS as a non-NULL function pointer sentinel.
+	 * Cast to the callback type; never called. */
+	dssh_auth_kbi_prompt_cb fake_cb =
+	    (dssh_auth_kbi_prompt_cb)(uintptr_t)1;
+
+	ASSERT_EQ(dssh_auth_keyboard_interactive(NULL, NULL, NULL, NULL),
+	    DSSH_ERROR_INVALID);              /* prompt_cb == NULL */
+	ASSERT_EQ(dssh_auth_keyboard_interactive(NULL, NULL, fake_cb, NULL),
+	    DSSH_ERROR_INVALID);              /* username == NULL */
+	ASSERT_EQ(dssh_auth_keyboard_interactive(NULL, "user", fake_cb, NULL),
+	    DSSH_ERROR_INVALID);              /* sess == NULL */
+	return TEST_PASS;
+}
+
+/* if (algo_name == NULL || username == NULL || sess == NULL) */
+static int
+test_auth_publickey_null(void)
+{
+	ASSERT_EQ(dssh_auth_publickey(NULL, NULL, NULL),
+	    DSSH_ERROR_INVALID);              /* algo_name == NULL */
+	ASSERT_EQ(dssh_auth_publickey(NULL, NULL, "ssh-ed25519"),
+	    DSSH_ERROR_INVALID);              /* username == NULL */
+	ASSERT_EQ(dssh_auth_publickey(NULL, "user", "ssh-ed25519"),
+	    DSSH_ERROR_INVALID);              /* sess == NULL */
+	return TEST_PASS;
+}
+
+/* ================================================================
  * Test table and main
  * ================================================================ */
 
@@ -10432,6 +10513,13 @@ static struct dssh_test_entry tests[] = {
 	{ "dclient/get_methods_msg_alloc",       test_dclient_get_methods_msg_alloc },
 	{ "dclient/changereq_prompt_overflow",   test_dclient_changereq_prompt_overflow },
 	{ "dclient/get_methods_multi_banner",    test_dclient_get_methods_multi_banner },
+
+	/* NULL parameter validation */
+	{ "null/auth_server",                    test_auth_server_null },
+	{ "null/auth_get_methods",               test_auth_get_methods_null },
+	{ "null/auth_password",                  test_auth_password_null },
+	{ "null/auth_kbi",                       test_auth_kbi_null },
+	{ "null/auth_publickey",                 test_auth_publickey_null },
 };
 
 DSSH_TEST_MAIN(tests)

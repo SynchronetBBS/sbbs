@@ -207,21 +207,6 @@
     annotation to any symbol that is missing one.
 
 
-### Unchecked C11 threading return values (items 85-87)
-
-87. **Shutdown path must tolerate prior lock/condvar failures.**
-    `dssh_session_set_terminate()` (ssh.c) and `dssh_session_stop()`
-    / cleanup paths acquire locks and broadcast condvars.  If a
-    lock/condvar failure triggered the shutdown in the first place,
-    these calls may also fail, and must not loop infinitely or
-    re-trigger the same error handling.  Fix: add an `atomic_bool
-    internal_error` flag to the session.  When a lock/condvar failure
-    is first detected, set it before calling `set_terminate()`.  In
-    the shutdown path, check the flag: if already set, skip
-    lock/condvar operations and proceed directly to resource cleanup
-    (destroy mutexes, free memory).  This is a best-effort teardown —
-    the session is already in an unrecoverable state.
-
 ## Closed
 
 - C11 threading return values now checked (was items 85, 86).
@@ -238,6 +223,15 @@
   a separate countdown (`dssh_test_thrd_fail_after`) from the existing
   OpenSSL countdown.  6 new tests in `test_thread_errors.c` (48 CTest
   entries across 8 algo variants).
+
+- Shutdown path already tolerates prior lock/condvar failures (was
+  item 87).  `dssh_thrd_check()` (items 85-86) sets `terminate = true`
+  before any lock operations in `set_terminate()`, preventing recursion.
+  Every lock/broadcast/unlock in `set_terminate()` checks its return
+  value and skips on failure (best-effort wakeup).  `mtx_trylock` on
+  `tx_mtx` handles the self-deadlock case.  No additional
+  `internal_error` flag needed — the `terminate` atomic already serves
+  as the recursion guard.
 
 - Channel close use-after-free with demux thread (was items 62, 79).
   `dssh_session_close()` and `dssh_channel_close()` freed the channel
