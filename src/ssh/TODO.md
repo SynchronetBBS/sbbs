@@ -19,11 +19,6 @@
     field of every algorithm struct.  Silently breaks if any struct
     reorders its fields.
 
-17. Cascading allocation/cleanup duplication in `dssh_transport_init()`
-    (4 buffers + 3 sync primitives) and `dssh_transport_newkeys()`
-    (6 key buffers).  Each new allocation requires cleanup of all prior.
-    A `goto cleanup` pattern would simplify both.
-
 18. Six near-identical `dssh_transport_register_*()` functions (kex,
     key_algo, enc, mac, comp, lang).  Same structure, different linked
     list and type.  Could be a single helper with type-specific wrappers.
@@ -121,6 +116,17 @@
     `session_stop` variant.
 
 ## Closed
+
+- Cascading allocation/cleanup duplication (was item 17).
+  `dssh_transport_init()` used cascading free/destroy calls at each of 7
+  allocation failure points (4 buffers + 3 sync primitives); replaced
+  with a single `goto init_cleanup` label that frees all non-NULL buffers
+  and destroys only initialized sync primitives (tracked by bool flags).
+  `dssh_transport_newkeys()` had the same pattern for 6 key buffer mallocs
+  plus a duplicate cleanse_free block after key derivation; replaced with
+  NULL-initialized pointers and `goto keys_cleanup` (reusing the existing
+  label).  Eliminates ~50 lines of duplicated cleanup code across 8 error
+  paths.
 
 - Self-initiated rekey data loss (was item 69).  The kexinit wait loop
   silently discarded non-KEXINIT messages received between sending our
