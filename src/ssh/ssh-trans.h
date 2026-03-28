@@ -68,6 +68,19 @@ typedef struct dssh_language_s {
 	char                    name[];
 } *dssh_language;
 
+/*
+ * Messages buffered during self-initiated rekey (kexinit wait loop).
+ * RFC 4253 s7.1: the peer may send connection-layer messages before
+ * seeing our KEXINIT.  These are replayed through recv_packet() after
+ * rekey completes.
+ */
+struct dssh_rekey_msg {
+	struct dssh_rekey_msg *next;
+	uint8_t                msg_type;
+	size_t                 len;
+	uint8_t                data[];
+};
+
 /* Rekey thresholds (RFC 4253 s9, RFC 4251 s9.3.2) */
 #define DSSH_REKEY_SOFT_LIMIT UINT32_C(0x10000000) /* 2^28 packets */
 #define DSSH_REKEY_HARD_LIMIT UINT32_C(0x80000000) /* 2^31 packets */
@@ -102,6 +115,8 @@ typedef struct dssh_transport_state_s {
 	uint8_t       *our_kexinit;
 	size_t         peer_kexinit_sz;
 	uint8_t       *peer_kexinit;
+	struct dssh_rekey_msg *rekey_queue_head; /* buffered msgs during kexinit */
+	struct dssh_rekey_msg *rekey_queue_tail;
 	_Atomic dssh_key_algo  key_algo_selected;
 	dssh_enc_ctx  *enc_c2s_ctx;
 	_Atomic dssh_enc       enc_c2s_selected;

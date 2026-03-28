@@ -86,16 +86,6 @@
     use a queue instead of a single slot, or document that
     `request_cb` must return promptly.
 
-69. **Self-initiated rekey silently drops application data.**
-    In `dssh_transport_kexinit()` (lines 1183-1195), after sending
-    our KEXINIT, the code loops calling `recv_packet` waiting for
-    the peer's KEXINIT.  Non-KEXINIT messages received during this
-    loop are silently discarded.  The peer may have sent CHANNEL_DATA
-    that was in-flight before seeing our KEXINIT.  That data is
-    permanently lost, and the peer's window accounting becomes wrong.
-    Fix: route non-KEXINIT messages through the normal demux dispatch,
-    or buffer them for replay after rekey completes.
-
 
 75. **Msgqueue unbounded per-message overhead for raw channels.**
     `dssh_msgqueue_push()` does a separate `malloc` per message with
@@ -131,6 +121,20 @@
     `session_stop` variant.
 
 ## Closed
+
+- Self-initiated rekey data loss (was item 69).  The kexinit wait loop
+  silently discarded non-KEXINIT messages received between sending our
+  KEXINIT and receiving the peer's.  RFC 4253 s7.1 restricts the SENDER
+  only; the peer may have valid in-flight connection-layer messages.
+  Fix: added `dssh_rekey_msg` queue in `dssh_transport_state_s`.  The
+  kexinit wait loop buffers non-KEXINIT messages; `recv_packet()` replays
+  them after rekey completes (guarded by `!rekey_in_progress`).  Also
+  fixed a latent bug where `recv_packet`'s default case set
+  `rekey_pending` during an active rekey, which would have caused nested
+  rekey attempts.  Cleanup in `dssh_transport_cleanup()` frees any
+  residual queue entries.  Added regression test
+  `test_self_rekey_inflight_data` (server burst-sends 500 bytes; client
+  triggers auto-rekey on first packet; all 500 bytes arrive).
 
 - Session-wide inactivity timeout (was items 65, 66).  Added
   `dssh_session_set_timeout()` and `DSSH_ERROR_TIMEOUT`.  Default

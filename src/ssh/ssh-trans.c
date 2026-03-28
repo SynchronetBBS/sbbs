@@ -790,6 +790,26 @@ dssh_transport_recv_packet(dssh_session sess,
 			return rk;
 	}
 
+        /* Replay messages buffered during kexinit wait loop.
+         * These were valid connection-layer messages sent by the
+         * peer before it saw our KEXINIT (RFC 4253 s7.1).
+         * Skip during rekey itself (rekey_in_progress) to avoid
+         * re-buffering messages that the kexinit loop is filling. */
+	if (!sess->trans.rekey_in_progress
+	    && sess->trans.rekey_queue_head != NULL) {
+		struct dssh_rekey_msg *rmsg = sess->trans.rekey_queue_head;
+
+		sess->trans.rekey_queue_head = rmsg->next;
+		if (sess->trans.rekey_queue_head == NULL)
+			sess->trans.rekey_queue_tail = NULL;
+		memcpy(&sess->trans.rx_packet[5], rmsg->data, rmsg->len);
+		*payload = &sess->trans.rx_packet[5];
+		*payload_len = rmsg->len;
+		*msg_type = rmsg->msg_type;
+		free(rmsg);
+		return 0;
+	}
+
 	for (;;) {
 		int res = recv_packet_raw(sess, msg_type, payload, payload_len);
 
@@ -912,6 +932,7 @@ dssh_transport_recv_packet(dssh_session sess,
                                  * recv_packet call, before reading new data.
                                  */
 				if ((sess->trans.session_id != NULL)
+				    && !sess->trans.rekey_in_progress
 				    && dssh_transport_rekey_needed(sess))
 					sess->trans.rekey_pending = true;
 				return 0;
@@ -1145,17 +1166,14 @@ kexinit_fail:
          */
 	if (sess->trans.peer_kexinit == NULL) {
                 /*
-                 * Wait for peer's KEXINIT.  During rekey, the peer
-                 * may have sent application data (CHANNEL_DATA, etc.)
-                 * before seeing our KEXINIT.  Discard non-KEXINIT
-                 * messages -- they will have been dispatched to
-                 * channel buffers by recv_packet's demux handling,
-                 * or we silently drop them here since the channel
-                 * data is already in the bytebuf from the prior
-                 * recv_packet call that triggered the rekey.
+                 * Wait for peer's KEXINIT.  RFC 4253 s7.1: the
+                 * restriction on message types applies to the SENDER
+                 * only.  The peer may have sent connection-layer
+                 * messages before seeing our KEXINIT, and those
+                 * are valid.  Buffer them for replay after rekey.
                  *
-                 * Note: recv_packet handles DISCONNECT, IGNORE,
-                 * DEBUG, UNIMPLEMENTED, and GLOBAL_REQUEST internally.
+                 * recv_packet handles DISCONNECT, IGNORE, DEBUG,
+                 * UNIMPLEMENTED, and GLOBAL_REQUEST internally.
                  * Only application-layer messages (types 50+) reach
                  * the default case.
                  */
@@ -1171,10 +1189,20 @@ kexinit_fail:
 			if (msg_type == SSH_MSG_KEXINIT)
 				break;
 
-                        /* Discard non-KEXINIT during rekey.
-                         * Application data that arrived between our
-                         * KEXINIT and the peer's is lost.  This is a
-                         * race inherent in the SSH rekey protocol. */
+                        /* Buffer for replay after rekey completes */
+			struct dssh_rekey_msg *rmsg = malloc(
+			    sizeof(struct dssh_rekey_msg) + peer_len);
+			if (rmsg == NULL)
+				return DSSH_ERROR_ALLOC;
+			rmsg->next = NULL;
+			rmsg->msg_type = msg_type;
+			rmsg->len = peer_len;
+			memcpy(rmsg->data, peer_payload, peer_len);
+			if (sess->trans.rekey_queue_tail != NULL)
+				sess->trans.rekey_queue_tail->next = rmsg;
+			else
+				sess->trans.rekey_queue_head = rmsg;
+			sess->trans.rekey_queue_tail = rmsg;
 		}
 
 		sess->trans.peer_kexinit = malloc(peer_len);
@@ -1973,6 +2001,20 @@ dssh_transport_cleanup(dssh_session sess)
 	cnd_destroy(&sess->trans.rekey_cnd);
 	mtx_destroy(&sess->trans.tx_mtx);
 	mtx_destroy(&sess->trans.rx_mtx);
+
+        /* Free rekey queue (non-empty only if rekey failed mid-flight) */
+	{
+		struct dssh_rekey_msg *rmsg = sess->trans.rekey_queue_head;
+
+		while (rmsg != NULL) {
+			struct dssh_rekey_msg *next = rmsg->next;
+
+			free(rmsg);
+			rmsg = next;
+		}
+		sess->trans.rekey_queue_head = NULL;
+		sess->trans.rekey_queue_tail = NULL;
+	}
 
 	free(sess->trans.tx_packet);
 	sess->trans.tx_packet = NULL;

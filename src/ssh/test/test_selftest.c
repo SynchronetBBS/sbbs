@@ -1405,6 +1405,108 @@ test_self_rekey_preserves_channels(void)
 }
 
 /* ================================================================
+ * Test: rekey in-flight data -- data sent by peer before seeing
+ * our KEXINIT must not be dropped (close item 69)
+ * ================================================================ */
+
+/* Server: accept channel, send burst of data, close */
+struct server_burst_arg {
+	struct selftest_ctx *ctx;
+	int result;
+};
+
+static int
+server_burst_thread(void *arg)
+{
+	struct server_burst_arg *a = arg;
+	struct selftest_ctx *ctx = a->ctx;
+	a->result = -1;
+
+	struct dssh_incoming_open *inc;
+	if (dssh_session_accept(ctx->server, &inc, 5000) < 0)
+		return 0;
+
+	const char *req_type, *req_data;
+	dssh_channel ch = dssh_session_accept_channel(ctx->server, inc,
+	    &server_session_cbs, &req_type, &req_data);
+	if (ch == NULL)
+		return 0;
+
+	/* Send 10 chunks of 50 bytes each as fast as possible.
+	 * Some will be in the socket buffer when the client
+	 * starts its self-initiated rekey. */
+	uint8_t chunk[50];
+	memset(chunk, 'D', sizeof(chunk));
+	for (int i = 0; i < 10; i++) {
+		int64_t w = dssh_session_write(ctx->server, ch,
+		    chunk, sizeof(chunk));
+		if (w <= 0)
+			break;
+	}
+
+	dssh_session_close(ctx->server, ch, 0);
+	a->result = 0;
+	return 0;
+}
+
+static int
+test_self_rekey_inflight_data(void)
+{
+	struct selftest_ctx ctx;
+	if (selftest_setup(&ctx) < 0)
+		return TEST_FAIL;
+
+	ASSERT_OK(dssh_session_start(ctx.client));
+	ASSERT_OK(dssh_session_start(ctx.server));
+
+	struct server_burst_arg sarg = { .ctx = &ctx };
+	thrd_t st;
+	ASSERT_TRUE(thrd_create(&st, server_burst_thread, &sarg) == thrd_success);
+
+	dssh_channel ch = dssh_session_open_exec(ctx.client, "burst");
+	ASSERT_NOT_NULL(ch);
+
+	/* Force rx_bytes near threshold so the FIRST received packet
+	 * triggers rekey_pending.  The client's demux dispatches that
+	 * packet, then on the next recv_packet call starts rekey.
+	 * Remaining packets in the socket buffer arrive during the
+	 * kexinit wait loop. */
+	ctx.client->trans.rx_bytes_since_rekey = DSSH_REKEY_BYTES - 50;
+
+	/* Collect all data -- expect 500 bytes total */
+	uint8_t buf[1024];
+	size_t recvd = 0;
+	const size_t expected = 10 * 50;
+	for (int i = 0; i < 200; i++) {
+		int ev = dssh_session_poll(ctx.client, ch,
+		    DSSH_POLL_READ, 100);
+		if (ev <= 0)
+			continue;
+		int64_t n = dssh_session_read(ctx.client, ch,
+		    buf + recvd, sizeof(buf) - recvd);
+		if (n <= 0)
+			break;
+		recvd += (size_t)n;
+		if (recvd >= expected)
+			break;
+	}
+	ASSERT_EQ_U(recvd, expected);
+
+	/* Verify data integrity */
+	for (size_t i = 0; i < recvd; i++)
+		ASSERT_EQ(buf[i], 'D');
+
+	ASSERT_FALSE(dssh_session_is_terminated(ctx.client));
+
+	dssh_session_close(ctx.client, ch, 0);
+	thrd_join(st, NULL);
+	ASSERT_EQ(sarg.result, 0);
+
+	selftest_cleanup(&ctx);
+	return TEST_PASS;
+}
+
+/* ================================================================
  * Test: unexpected connection drop -- socket dies mid-session
  * ================================================================ */
 
@@ -1735,6 +1837,7 @@ static struct dssh_test_entry tests[] = {
 	{ "test_self_rekey_during_data",       test_self_rekey_during_data },
 	{ "test_self_rekey_manual",            test_self_rekey_manual },
 	{ "test_self_rekey_preserves_channels", test_self_rekey_preserves_channels },
+	{ "test_self_rekey_inflight_data",     test_self_rekey_inflight_data },
 	{ "test_self_connection_drop",         test_self_connection_drop },
 	{ "test_null_session_api",             test_null_session_api },
 	{ "test_set_timeout",                  test_set_timeout },
