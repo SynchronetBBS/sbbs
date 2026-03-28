@@ -303,6 +303,16 @@ set(AUTH_TESTS
 	dclient/kbi_alloc_fail dclient/kbi_calloc_chain
 	dclient/kbi_resp_alloc
 	auth/server/password_disconnect
+	auth/server/none_disconnect
+	auth/server/pk_probe_disconnect
+	auth/server/pk_verify_disconnect
+	auth/server/kbi_disconnect
+	auth/server/passwd_change_disconnect
+	direct/kbi_wrong_resp_type direct/kbi_resp_parse_error
+	dclient/pk_no_key
+	dclient/pk_banner_in_response dclient/pk_banner_parse_error
+	direct/send_failure_alloc direct/flush_banner_alloc
+	dclient/kbi_resp_overflow dclient/kbi_resp_size_overflow
 )
 dssh_add_individual_tests(dssh_test_auth dssh_auth AUTH_TESTS)
 
