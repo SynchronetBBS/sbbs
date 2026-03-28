@@ -36,6 +36,13 @@ typedef struct dssh_session_s *dssh_session;
  * Must block until all bytes are transferred or
  * dssh_session_is_terminated(sess) returns true.
  * Returns 0 on success, negative error code on failure.
+ *
+ * When dssh_session_is_terminated() returns true, the callback
+ * MUST return a negative error code within a reasonable period.
+ * Failure to do so will cause dssh_session_cleanup() to hang
+ * on thread join.  Use the terminate callback
+ * (dssh_session_set_terminate_cb) to be notified when the
+ * session terminates, e.g. to close the underlying socket.
  */
 typedef int (*dssh_transport_io_cb)(uint8_t *buf, size_t bufsz,
     dssh_session sess, void *cbdata);
@@ -70,6 +77,22 @@ typedef void (*dssh_debug_cb)(bool always_display,
  */
 typedef void (*dssh_unimplemented_cb)(uint32_t rejected_seq,
     void                                      *cbdata);
+
+/*
+ * Optional callback invoked exactly once when the session
+ * terminates (fatal error, peer disconnect, or explicit
+ * dssh_session_terminate() call).  Intended for closing the
+ * underlying socket or signaling an event loop so that
+ * blocked I/O callbacks return promptly.
+ *
+ * The callback may be invoked from any thread, including from
+ * within an I/O callback on the same session.  It must not
+ * call any dssh_* function on this session except
+ * dssh_session_is_terminated().
+ *
+ * Must be set before dssh_session_start().
+ */
+typedef void (*dssh_terminate_cb)(dssh_session sess, void *cbdata);
 
 #include "deucessh-arch.h"
 
@@ -144,6 +167,8 @@ DSSH_PUBLIC void dssh_session_set_banner_cb(dssh_session sess,
     dssh_auth_banner_cb cb, void *cbdata);
 DSSH_PUBLIC void dssh_session_set_global_request_cb(dssh_session sess,
     dssh_global_request_cb cb, void *cbdata);
+DSSH_PUBLIC void dssh_session_set_terminate_cb(dssh_session sess,
+    dssh_terminate_cb cb, void *cbdata);
 
 /*
  * Set the session inactivity timeout in milliseconds.

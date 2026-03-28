@@ -54,6 +54,16 @@ kbi_prompt(const uint8_t *name, size_t name_len,
 }
 
 /* ================================================================
+ * Terminate callback -- unblock I/O callbacks
+ * ================================================================ */
+static void
+on_terminate(dssh_session s, void *cbdata)
+{
+	if (sock != -1)
+		shutdown(sock, SHUT_RDWR);
+}
+
+/* ================================================================
  * I/O callbacks for the transport layer
  * ================================================================ */
 static int
@@ -294,6 +304,7 @@ main(int argc, char **argv)
 		fprintf(stderr, "session_init failed\n");
 		return 1;
 	}
+	dssh_session_set_terminate_cb(sess, on_terminate, NULL);
 
         /* Handshake */
 	fprintf(stderr, "Handshake...\n");

@@ -84,19 +84,25 @@
     timeouts.
 
 
-83. **`dssh_session_cleanup()` can hang indefinitely on `thrd_join`.**
-    `dssh_session_cleanup()` (ssh.c line 98) calls
-    `dssh_session_terminate()` then `dssh_session_stop()`, which calls
-    `thrd_join()` (ssh-conn.c line 1060).  The demux thread exits when
-    `recv_packet` returns an error, but `recv_packet` blocks on the
-    I/O callback.  If the callback doesn't respect the `terminate` flag
-    promptly (e.g., blocks on `read()` with no timeout on an open
-    socket), `cleanup` hangs forever.  Fix: document that the
-    application MUST close the underlying socket (or set a short
-    timeout) before calling `cleanup`, or provide a non-blocking
-    `session_stop` variant.
 
 ## Closed
+
+- `dssh_session_cleanup()` hang on `thrd_join` (was item 83).  Added
+  `dssh_terminate_cb` callback typedef and `dssh_session_set_terminate_cb()`
+  setter.  The callback fires exactly once when the session terminates
+  (fatal error, peer disconnect, or explicit `dssh_session_terminate()`),
+  before condvar broadcasts, so the application can close sockets or
+  signal its event loop to unblock I/O callbacks.  Made
+  `dssh_session_set_terminate()` single-fire via `atomic_exchange` —
+  previously it unconditionally re-broadcast all condvars on every call.
+  Updated I/O callback documentation to state that callbacks MUST return
+  promptly when `dssh_session_is_terminated()` is true.
+
+- `dssh_session_set_terminate()` called redundantly (was item 83,
+  related).  The internal function ran all condvar broadcasts on every
+  call, even when `terminate` was already true.  The `atomic_exchange`
+  guard now returns early on subsequent calls.  All 15+ internal callers
+  tolerate the no-op (they check `terminate` independently).
 
 - `demux_dispatch()` and `dssh_session_accept_channel()` decomposed
   (was items 26, 30).  `demux_dispatch()` (~240 lines) split into 4

@@ -244,6 +244,28 @@ Return 0 on success, negative on error.  The `cbdata` is set via
 Callbacks are registered globally once.  Per-session differentiation
 is via the `cbdata` pointers.
 
+**Important:** When `dssh_session_is_terminated(sess)` returns true,
+I/O callbacks **must** return a negative error code within a reasonable
+period.  Failure to do so will cause `dssh_session_cleanup()` to hang
+on thread join.  Use the terminate callback to be notified:
+
+```c
+static int my_sock;
+
+static void on_terminate(dssh_session sess, void *cbdata)
+{
+    shutdown(my_sock, SHUT_RDWR);  /* unblock pending recv/send */
+}
+
+/* Register before dssh_session_start(): */
+dssh_session_set_terminate_cb(sess, on_terminate, NULL);
+```
+
+The terminate callback fires exactly once (fatal error, peer disconnect,
+or explicit `dssh_session_terminate()` call), from any thread, before
+library condvar broadcasts.  It must not call any `dssh_*` function on
+this session except `dssh_session_is_terminated()`.
+
 ## Secure Memory
 
 `dssh_cleanse()` scrubs a buffer to remove sensitive data (passwords,
@@ -1054,6 +1076,7 @@ dssh_session_set_debug_cb(sess, my_debug_handler, my_context);
 dssh_session_set_unimplemented_cb(sess, my_unimpl_handler, my_context);
 dssh_session_set_banner_cb(sess, my_banner_handler, my_context);
 dssh_session_set_global_request_cb(sess, my_global_req_handler, my_context);
+dssh_session_set_terminate_cb(sess, my_terminate_handler, my_context);
 ```
 
 ## Inactivity Timeout

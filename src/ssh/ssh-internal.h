@@ -216,6 +216,8 @@ struct dssh_session_s {
 	char                         *pending_banner_lang;
 	dssh_global_request_cb        global_request_cb;
 	void                         *global_request_cbdata;
+	dssh_terminate_cb             terminate_cb;
+	void                         *terminate_cbdata;
 	struct dssh_channel_s       **channels;
 	size_t                        channel_count;
 	size_t                        channel_capacity;

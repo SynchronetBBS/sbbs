@@ -14,7 +14,13 @@
 DSSH_PRIVATE void
 dssh_session_set_terminate(dssh_session sess)
 {
-	sess->terminate = true;
+	if (atomic_exchange(&sess->terminate, true))
+		return;
+
+	/* Notify the application so it can close sockets or signal
+	 * its event loop, unblocking any I/O callbacks. */
+	if (sess->terminate_cb)
+		sess->terminate_cb(sess, sess->terminate_cbdata);
 
         /* Wake senders blocked during rekey.
          * Hold tx_mtx so the broadcast cannot land between a sender's
@@ -24,8 +30,8 @@ dssh_session_set_terminate(dssh_session sess)
          * broadcast is safe without re-acquiring.
          *
          * All lock/broadcast/unlock operations here are best-effort.
-         * dssh_thrd_check will not recurse because terminate is already
-         * true (set above). */
+         * dssh_thrd_check will not recurse because the atomic_exchange
+         * above ensures this function runs at most once. */
 	int tr = mtx_trylock(&sess->trans.tx_mtx);
 	if (tr == thrd_success) {
 		dssh_thrd_check(sess, cnd_broadcast(&sess->trans.rekey_cnd));
@@ -199,6 +205,16 @@ dssh_session_set_global_request_cb(dssh_session sess,
 		return;
 	sess->global_request_cb = cb;
 	sess->global_request_cbdata = cbdata;
+}
+
+DSSH_PUBLIC void
+dssh_session_set_terminate_cb(dssh_session sess,
+    dssh_terminate_cb cb, void *cbdata)
+{
+	if (sess == NULL)
+		return;
+	sess->terminate_cb = cb;
+	sess->terminate_cbdata = cbdata;
 }
 
 DSSH_PUBLIC void

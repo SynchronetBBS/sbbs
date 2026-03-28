@@ -24,6 +24,16 @@ static int          conn_fd = -1;
 static dssh_session sess;
 
 /* ================================================================
+ * Terminate callback -- unblock I/O callbacks
+ * ================================================================ */
+static void
+on_terminate(dssh_session s, void *cbdata)
+{
+	if (conn_fd != -1)
+		shutdown(conn_fd, SHUT_RDWR);
+}
+
+/* ================================================================
  * I/O callbacks
  * ================================================================ */
 static int
@@ -917,6 +927,7 @@ handle_connection(void)
 		fprintf(stderr, "session_init failed\n");
 		return 1;
 	}
+	dssh_session_set_terminate_cb(sess, on_terminate, NULL);
 	dssh_session_set_debug_cb(sess, debug_cb, NULL);
 	dssh_session_set_unimplemented_cb(sess, unimplemented_cb, NULL);
 	dssh_session_set_global_request_cb(sess, global_request_cb, NULL);
