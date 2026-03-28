@@ -8,8 +8,7 @@
 #ifndef DSSH_TEST_INTERNAL_H
 #define DSSH_TEST_INTERNAL_H
 
-#include "deucessh.h"
-#include "ssh-trans.h"
+#include "ssh-internal.h"
 
 struct dssh_channel_s;
 
@@ -59,6 +58,40 @@ size_t build_namelist(void *head, size_t name_offset,
  * Global config -- DSSH_TESTABLE in ssh-trans.c.
  */
 extern struct dssh_transport_global_config gconf;
+
+/*
+ * Channel buffer primitives from ssh-conn.c (DSSH_TESTABLE).
+ */
+int bytebuf_init(struct dssh_bytebuf *b, size_t capacity);
+void bytebuf_free(struct dssh_bytebuf *b);
+size_t bytebuf_write(struct dssh_bytebuf *b,
+    const uint8_t *data, size_t len);
+size_t bytebuf_read(struct dssh_bytebuf *b,
+    uint8_t *buf, size_t bufsz, size_t limit);
+size_t bytebuf_available(const struct dssh_bytebuf *b);
+size_t bytebuf_free_space(const struct dssh_bytebuf *b);
+void msgqueue_init(struct dssh_msgqueue *q);
+void msgqueue_free(struct dssh_msgqueue *q);
+int msgqueue_push(struct dssh_msgqueue *q,
+    const uint8_t *data, size_t len);
+int64_t msgqueue_pop(struct dssh_msgqueue *q,
+    uint8_t *buf, size_t bufsz);
+void sigqueue_init(struct dssh_signal_queue *q);
+void sigqueue_free(struct dssh_signal_queue *q);
+int sigqueue_push(struct dssh_signal_queue *q,
+    const char *name, size_t stdout_pos, size_t stderr_pos);
+bool sigqueue_ready(const struct dssh_signal_queue *q,
+    size_t stdout_consumed, size_t stderr_consumed);
+const char *sigqueue_pop(struct dssh_signal_queue *q,
+    size_t stdout_consumed, size_t stderr_consumed,
+    char *buf, size_t bufsz);
+void acceptqueue_init(struct dssh_accept_queue *q);
+void acceptqueue_free(struct dssh_accept_queue *q);
+int acceptqueue_push(struct dssh_accept_queue *q,
+    uint32_t peer_channel, uint32_t peer_window,
+    uint32_t peer_max_packet,
+    const uint8_t *type, size_t type_len);
+struct dssh_incoming_open *acceptqueue_pop(struct dssh_accept_queue *q);
 
 /*
  * ssh-conn.c internal functions exposed for testing.

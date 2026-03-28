@@ -249,10 +249,10 @@ C's `_Bool` conversion guarantees any non-zero value becomes `true` (1).
 > Represents a 32-bit unsigned integer. Stored as four bytes in the
 > order of decreasing significance (network byte order).
 
-**CONFORMS** — `dssh_parse_uint32()` at `ssh-arch.c:94` reads four
+**CONFORMS** — `dssh_parse_uint32()` in `ssh.c` reads four
 bytes in big-endian order with explicit shifts: `(buf[0]<<24) |
 (buf[1]<<16) | (buf[2]<<8) | buf[3]`.  `dssh_serialize_uint32()`
-at `ssh-arch.c:109-113` writes in the same order.
+in `ssh.c` writes in the same order.
 
 ### 5-3 (uint64)
 > Represents a 64-bit unsigned integer. Stored as eight bytes in the

@@ -9,11 +9,69 @@
 #include <threads.h>
 
 #include "deucessh.h"
-#include "ssh-arch.h"
-#include "ssh-chan.h"
 #include "ssh-trans.h"
 
 /* DSSH_TESTABLE is now defined in deucessh-portable.h */
+
+/* ================================================================
+ * Channel buffer structures (formerly ssh-chan.h)
+ * ================================================================ */
+
+/* Circular byte buffer (session channel stdout/stderr) */
+struct dssh_bytebuf {
+	uint8_t *data;
+	size_t   capacity;
+	size_t   head;   /* next read position */
+	size_t   tail;   /* next write position */
+	size_t   used;   /* bytes available to read */
+	size_t   total;  /* total bytes ever written (for signal marks) */
+};
+
+/* Message queue entry (raw channel data) */
+struct dssh_msgqueue_entry {
+	struct dssh_msgqueue_entry *next;
+	size_t                      len;
+	uint8_t                     data[];
+};
+
+struct dssh_msgqueue {
+	struct dssh_msgqueue_entry *head;
+	struct dssh_msgqueue_entry *tail;
+	size_t                      total_bytes;
+	size_t                      count;
+};
+
+/* Signal queue with stream position marks */
+struct dssh_signal_mark {
+	struct dssh_signal_mark *next;
+	size_t                   stdout_pos;
+	size_t                   stderr_pos;
+	char                     name[32];
+};
+
+struct dssh_signal_queue {
+	struct dssh_signal_mark *head;
+	struct dssh_signal_mark *tail;
+};
+
+/* Incoming channel open queue (for session_accept) */
+struct dssh_incoming_open {
+	struct dssh_incoming_open *next;
+	size_t                     channel_type_len;
+	uint32_t                   peer_channel;
+	uint32_t                   peer_window;
+	uint32_t                   peer_max_packet;
+	char                       channel_type[64];
+};
+
+struct dssh_accept_queue {
+	struct dssh_incoming_open *head;
+	struct dssh_incoming_open *tail;
+};
+
+/* Channel types */
+#define DSSH_CHAN_SESSION 1
+#define DSSH_CHAN_RAW 2
 
 /* Wire-length of a string literal (excludes NUL terminator) */
 #define DSSH_STRLEN(lit) ((uint32_t)(sizeof(lit) - 1))

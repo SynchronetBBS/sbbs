@@ -23,7 +23,7 @@ Produces `libdeucessh.a` (static) and `libdeucessh.so` (shared).
 
 ## Testing
 
-~1000 tests across 11 executables, ~4277 CTest runs (~30s with `-j16`).
+~1000 tests across 10 executables, ~1758 CTest runs (~22s with `-j16`).
 Layer and integration tests run as individual processes (one test per
 CTest entry × 8 algorithm variants) to eliminate shared-state issues:
 ```sh
@@ -84,11 +84,11 @@ llvm-profdata merge -sparse dssh-*.profraw -o dssh.profdata
 llvm-cov report ./test/dssh_test_selftest -instr-profile=dssh.profdata \
   -object=./test/dssh_test_transport -object=./test/dssh_test_auth \
   -object=./test/dssh_test_conn -object=./test/dssh_test_alloc \
-  -object=./test/dssh_test_transport_errors -object=./test/dssh_test_arch \
+  -object=./test/dssh_test_transport_errors \
   -object=./test/dssh_test_chan -object=./test/dssh_test_algo_enc \
   -object=./test/dssh_test_algo_mac -object=./test/dssh_test_algo_key \
-  ../ssh-trans.c ../ssh-auth.c ../ssh-conn.c ../ssh.c ../ssh-arch.c \
-  ../ssh-chan.c ../kex/dh-gex-sha256.c ../kex/curve25519-sha256.c \
+  ../ssh-trans.c ../ssh-auth.c ../ssh-conn.c ../ssh.c \
+  ../kex/dh-gex-sha256.c ../kex/curve25519-sha256.c \
   ../key_algo/ssh-ed25519.c ../key_algo/rsa-sha2-256.c \
   ../enc/aes256-ctr.c ../mac/hmac-sha2-256.c
 ```
@@ -111,8 +111,7 @@ llvm-cov report ./test/dssh_test_selftest -instr-profile=dssh.profdata \
 Key source files:
 - `ssh-trans.c` — transport layer (packets, KEX, keys, rekey)
 - `ssh-auth.c` — authentication (client + server)
-- `ssh-conn.c` — connection protocol (channels, demux, I/O)
-- `ssh-chan.c` — buffer primitives (bytebuf, msgqueue, signal queue)
+- `ssh-conn.c` — connection protocol (channels, demux, I/O, buffer primitives)
 - `ssh.c` — session lifecycle, `dssh_session_set_terminate()`
 
 See `README.md` for the full API reference with code examples.

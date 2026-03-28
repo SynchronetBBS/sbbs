@@ -28,7 +28,7 @@ else()
 endif()
 
 set(DEUCESSH_SOURCES
-	ssh-arch.c ssh-trans.c ssh.c ssh-auth.c ssh-conn.c ssh-chan.c
+	ssh-trans.c ssh.c ssh-auth.c ssh-conn.c
 	kex/curve25519-sha256.c
 	kex/dh-gex-sha256.c
 	kex/sntrup761.c
@@ -45,7 +45,7 @@ set(DEUCESSH_SOURCES
 )
 
 set(DEUCESSH_PUBLIC_HEADERS
-	deucessh.h deucessh-arch.h deucessh-auth.h deucessh-conn.h
+	deucessh.h deucessh-auth.h deucessh-conn.h
 	deucessh-algorithms.h deucessh-kex.h deucessh-key-algo.h
 	deucessh-enc.h deucessh-mac.h deucessh-comp.h
 	deucessh-portable.h

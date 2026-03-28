@@ -937,7 +937,7 @@ Parse helpers for the `data` payload:
 - `dssh_parse_subsystem_data(data, len, &name, &nlen)`
 
 You can also use the RFC 4251 primitives directly: `dssh_parse_uint32()`,
-`dssh_parse_string()`, etc. (from `deucessh-arch.h`).
+`dssh_parse_string()`, etc. (from `deucessh.h`).
 
 ## Channel Lifecycle
 
@@ -1172,7 +1172,6 @@ deucessh-auth.h          Authentication (client + server)
 deucessh-conn.h          Connection: channels, poll/read/write
 deucessh-algorithms.h    Algorithm registration + key management
 deucessh-portable.h      Visibility macros (included automatically)
-deucessh-arch.h          Wire data types (included automatically)
 ```
 
 Public module headers (for third-party algorithm implementations):
@@ -1189,9 +1188,8 @@ Internal headers + sources:
 ssh-internal.h      Session + channel struct definitions
 ssh-trans.h/.c      RFC 4253 transport (packets, KEX, keys)
 ssh-auth.c          RFC 4252 authentication
-ssh-conn.c          RFC 4254 connection
-ssh-chan.h/.c       Buffer primitives (bytebuf, msgqueue, signals)
-ssh.c               Session lifecycle
+ssh-conn.c          RFC 4254 connection + buffer primitives
+ssh.c               Session lifecycle + wire format
 
 kex/                Key exchange modules
 key_algo/           Host key algorithm modules

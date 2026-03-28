@@ -21,17 +21,18 @@
     protocol-ordering trade-offs that don't have obvious right answers.
     **Not suitable for automatic planning.**
 
+91. **Redundant `dssh_*` typedefs for standard types.**
+    `dssh_byte` (`uint8_t`), `dssh_boolean` (`bool`), `dssh_uint32_t`
+    (`uint32_t`), and `dssh_uint64_t` (`uint64_t`) in `deucessh.h` add
+    a layer of indirection over standard C types with no semantic benefit.
+    Consider replacing them with the standard types throughout the library
+    and public API.  `dssh_string`, `dssh_mpint`, and `dssh_namelist`
+    (struct typedefs) are distinct and should stay.
 
 28. Near-duplicate read/write pairs: `dssh_session_read()` /
     `dssh_session_read_ext()` and `dssh_session_write()` /
     `dssh_session_write_ext()` differ only in which buffer or send
     function they use.
-
-31. ssh-chan.c has no public API — every function is `DSSH_PRIVATE`.
-    Only consumer is ssh-conn.c (and tests).  Consider inlining as
-    static functions in ssh-conn.c, or at minimum question whether a
-    separate translation unit and header (`ssh-chan.h`) is warranted
-    for purely internal buffer primitives.
 
 ### Thread safety audit (items 51-59)
 
@@ -629,3 +630,17 @@
   `encode_k_wire` (mpint no pad, mpint sign pad, mpint empty, string,
   string empty).  Previously-SKIP `kexinit/peer_trunc_namelist` test
   now implemented via extracted parser.
+
+- ssh-chan.c/h folded into ssh-conn.c (was item 31).  All 19
+  `DSSH_PRIVATE` buffer primitives (bytebuf, msgqueue, sigqueue,
+  acceptqueue) moved into ssh-conn.c as `DSSH_TESTABLE` functions.
+  Struct definitions moved into ssh-internal.h.  ssh-chan.c and
+  ssh-chan.h deleted.  test/test_chan.c updated to include
+  dssh_test_internal.h; declarations added there.
+
+- ssh-arch.c/h and deucessh-arch.h eliminated.  `dssh_parse_uint32()`
+  and `dssh_serialize_uint32()` moved into ssh.c.  deucessh-arch.h
+  content (type definitions and function declarations) inlined into
+  deucessh.h.  All three files deleted.  test/test_arch.c tests
+  (16 tests: uint32 parse/serialize, cleanse, NULL checks) absorbed
+  into test/test_chan.c.  dssh_test_arch test executable removed.

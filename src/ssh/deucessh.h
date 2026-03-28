@@ -94,7 +94,29 @@ typedef void (*dssh_unimplemented_cb)(uint32_t rejected_seq,
  */
 typedef void (*dssh_terminate_cb)(dssh_session sess, void *cbdata);
 
-#include "deucessh-arch.h"
+/* ================================================================
+ * SSH Data Types (RFC 4251)
+ *
+ * TODO: review whether dssh_byte, dssh_boolean, dssh_uint32_t, and
+ * dssh_uint64_t (which just alias standard types) add value, or
+ * should be eliminated in favor of uint8_t/bool/uint32_t/uint64_t.
+ * ================================================================ */
+typedef uint8_t dssh_byte;
+typedef bool dssh_boolean;
+typedef uint32_t dssh_uint32_t;
+typedef uint64_t dssh_uint64_t;
+typedef struct dssh_string_s {
+	const dssh_byte *value;
+	dssh_uint32_t    length;
+} *dssh_string;
+typedef struct dssh_string_s *dssh_mpint;
+typedef struct dssh_namelist_s {
+	const dssh_byte *value;
+	dssh_uint32_t    length;
+} *dssh_namelist;
+
+DSSH_PUBLIC int64_t dssh_parse_uint32(const uint8_t *buf, size_t bufsz, dssh_uint32_t *val);
+DSSH_PUBLIC int dssh_serialize_uint32(dssh_uint32_t val, uint8_t *buf, size_t bufsz, size_t *pos);
 
 /*
  * Create a new session.  Allocates all internal state including

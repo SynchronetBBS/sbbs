@@ -20,7 +20,6 @@
 #include "deucessh-conn.h"
 #include "ssh-trans.h"
 #include "ssh-internal.h"
-#include "ssh-chan.h"
 #include "dssh_test_internal.h"
 #include "mock_io.h"
 #include "mock_alloc.h"

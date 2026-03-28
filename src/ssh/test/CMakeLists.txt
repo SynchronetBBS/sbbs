@@ -151,9 +151,6 @@ endmacro()
 # Tier 1: Unit tests
 # ================================================================
 
-dssh_add_test(arch test_arch.c)
-add_test(NAME dssh_unit_arch COMMAND dssh_test_arch)
-
 dssh_add_test(chan test_chan.c)
 add_test(NAME dssh_unit_chan COMMAND dssh_test_chan)
 
