@@ -1133,8 +1133,12 @@ DSSH_PUBLIC int
 dssh_session_accept(dssh_session sess,
     struct dssh_incoming_open **inc, int timeout_ms)
 {
+	struct timespec ts;
+
 	if (inc == NULL || sess == NULL)
 		return DSSH_ERROR_INVALID;
+	if (timeout_ms > 0)
+		deadline_from_ms(&ts, timeout_ms);
 	dssh_thrd_check(sess, mtx_lock(&sess->accept_mtx));
 
 	while (sess->accept_queue.head == NULL) {
@@ -1150,9 +1154,6 @@ dssh_session_accept(dssh_session sess,
 			dssh_thrd_check(sess, cnd_wait(&sess->accept_cnd, &sess->accept_mtx));
 		}
 		else {
-			struct timespec ts;
-
-			deadline_from_ms(&ts, timeout_ms);
 			if (dssh_thrd_check(sess, cnd_timedwait(&sess->accept_cnd, &sess->accept_mtx, &ts)) == thrd_timedout) {
 				dssh_thrd_check(sess, mtx_unlock(&sess->accept_mtx));
 				return DSSH_ERROR_NOMORE;
@@ -1984,8 +1985,12 @@ DSSH_PUBLIC int
 dssh_session_poll(dssh_session sess,
     dssh_channel ch, int events, int timeout_ms)
 {
+	struct timespec ts;
+
 	if (ch == NULL || sess == NULL)
 		return DSSH_ERROR_INVALID;
+	if (timeout_ms > 0)
+		deadline_from_ms(&ts, timeout_ms);
 	dssh_thrd_check(sess, mtx_lock(&ch->buf_mtx));
 
 	for (;;) {
@@ -2021,9 +2026,6 @@ dssh_session_poll(dssh_session sess,
 			dssh_thrd_check(sess, cnd_wait(&ch->poll_cnd, &ch->buf_mtx));
 		}
 		else {
-			struct timespec ts;
-
-			deadline_from_ms(&ts, timeout_ms);
 			if (dssh_thrd_check(sess, cnd_timedwait(&ch->poll_cnd, &ch->buf_mtx, &ts)) == thrd_timedout) {
 				dssh_thrd_check(sess, mtx_unlock(&ch->buf_mtx));
 				return 0;
@@ -2166,8 +2168,12 @@ DSSH_PUBLIC int
 dssh_channel_poll(dssh_session sess,
     dssh_channel ch, int events, int timeout_ms)
 {
+	struct timespec ts;
+
 	if (ch == NULL || sess == NULL)
 		return DSSH_ERROR_INVALID;
+	if (timeout_ms > 0)
+		deadline_from_ms(&ts, timeout_ms);
 	dssh_thrd_check(sess, mtx_lock(&ch->buf_mtx));
 
 	for (;;) {
@@ -2194,9 +2200,6 @@ dssh_channel_poll(dssh_session sess,
 			dssh_thrd_check(sess, cnd_wait(&ch->poll_cnd, &ch->buf_mtx));
 		}
 		else {
-			struct timespec ts;
-
-			deadline_from_ms(&ts, timeout_ms);
 			if (dssh_thrd_check(sess, cnd_timedwait(&ch->poll_cnd, &ch->buf_mtx, &ts)) == thrd_timedout) {
 				dssh_thrd_check(sess, mtx_unlock(&ch->buf_mtx));
 				return 0;

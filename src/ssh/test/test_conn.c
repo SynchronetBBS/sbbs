@@ -9,6 +9,7 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <string.h>
+#include <time.h>
 #include <threads.h>
 
 #include "dssh_test.h"
@@ -6418,6 +6419,107 @@ test_accept_raw_alloc_sweep(void)
 }
 
 /* ================================================================
+ * Item 64: poll deadline must not reset on spurious wakeup
+ * ================================================================ */
+
+struct spam_cnd_arg {
+	cnd_t *cnd;
+	mtx_t *mtx;
+	_Atomic bool stop;
+};
+
+static int
+spam_cnd_thread(void *arg)
+{
+	struct spam_cnd_arg *sa = arg;
+	const struct timespec dur = { .tv_sec = 0, .tv_nsec = 50000000L };
+
+	while (!sa->stop) {
+		thrd_sleep(&dur, NULL);
+
+		mtx_lock(sa->mtx);
+		cnd_broadcast(sa->cnd);
+		mtx_unlock(sa->mtx);
+	}
+
+	return 0;
+}
+
+/*
+ * Verify that dssh_session_poll returns within its requested timeout
+ * even when cnd_broadcast fires repeatedly (simulating spurious wakeups).
+ * Before the fix, each broadcast recomputed the deadline from "now",
+ * effectively resetting the timeout.
+ */
+static int
+test_poll_deadline_not_reset(void)
+{
+	struct conn_ctx ctx;
+
+	if (conn_setup(&ctx) < 0)
+		return TEST_SKIP;
+
+	struct open_exec_ctx oc = {
+		.client = ctx.client,
+		.server = ctx.server,
+		.command = "cmd",
+		.cbs = &session_cbs,
+		.accept_timeout = 5000,
+	};
+	if (open_exec_channel(&oc) < 0) {
+		conn_cleanup(&ctx);
+		return TEST_SKIP;
+	}
+
+	/* Spam poll_cnd from a separate thread */
+	struct spam_cnd_arg sa = {
+		.cnd = &oc.server_ch->poll_cnd,
+		.mtx = &oc.server_ch->buf_mtx,
+		.stop = false,
+	};
+	thrd_t spammer;
+
+	ASSERT_THRD_CREATE(&spammer, spam_cnd_thread, &sa);
+
+	struct timespec t0;
+
+	timespec_get(&t0, TIME_UTC);
+
+	/* Poll with 500ms timeout -- no data is ready */
+	int ev = dssh_session_poll(ctx.server, oc.server_ch,
+	    DSSH_POLL_READ, 500);
+	ASSERT_EQ(ev, 0);
+
+	struct timespec t1;
+
+	timespec_get(&t1, TIME_UTC);
+	sa.stop = true;
+	thrd_join(spammer, NULL);
+
+	long elapsed_ms = (t1.tv_sec - t0.tv_sec) * 1000L
+	    + (t1.tv_nsec - t0.tv_nsec) / 1000000L;
+
+	/*
+	 * Should complete in ~500ms.  Allow generous slack (800ms) but
+	 * must be well under 2000ms (which is what happens when the
+	 * deadline resets on each of the ~40 spurious wakeups).
+	 */
+	if (elapsed_ms > 1200) {
+		fprintf(stderr, "  poll took %ldms (expected ~500ms)\n",
+		    elapsed_ms);
+		dssh_session_close(ctx.client, oc.client_ch, 0);
+		dssh_session_close(ctx.server, oc.server_ch, 0);
+		conn_cleanup(&ctx);
+		return TEST_FAIL;
+	}
+
+	dssh_session_close(ctx.client, oc.client_ch, 0);
+	dssh_session_close(ctx.server, oc.server_ch, 0);
+	conn_cleanup(&ctx);
+	return TEST_PASS;
+}
+
+/* ================================================================
  * Test table
  * ================================================================ */
 
@@ -6623,6 +6725,9 @@ static struct dssh_test_entry tests[] = {
 	{ "test_ext_data_after_close",         test_ext_data_after_close },
 	{ "test_replenish_after_close",        test_replenish_after_close },
 	{ "test_truncated_window_adjust",      test_truncated_window_adjust },
+
+	/* Item 64: deadline must not reset on spurious wakeup */
+	{ "test_poll_deadline_not_reset",      test_poll_deadline_not_reset },
 };
 
 DSSH_TEST_MAIN(tests)

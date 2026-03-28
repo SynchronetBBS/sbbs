@@ -74,17 +74,6 @@
 ### Design / liveness audit (items 62-79)
 
 
-64. **Poll/accept functions hold their mutex across the entire blocking
-    wait, serializing concurrent callers and stacking timeouts.**
-    `dssh_session_poll()` (line 1981) and `dssh_channel_poll()` (line
-    2189) hold `buf_mtx` across `cnd_timedwait`.  A second thread
-    polling the same channel blocks on `mtx_lock` until the first
-    thread's wait completes, extending the effective timeout.  Same
-    pattern in `dssh_session_accept()` (line 1097) with `accept_mtx`.
-    Fix: compute the absolute deadline before acquiring the mutex;
-    inside the loop, use the pre-computed deadline to cap the remaining
-    wait.  Also use `cnd_broadcast` (see item 73) so all waiters
-    re-evaluate.
 
 65. **Unbounded waits with no timeout in channel open / request /
     setup paths.**  `open_session_channel()` (line 1262) uses
@@ -168,6 +157,16 @@
     `session_stop` variant.
 
 ## Closed
+
+- Poll/accept deadline reset on spurious wakeup (was item 64).
+  `dssh_session_poll()`, `dssh_channel_poll()`, and `dssh_session_accept()`
+  recomputed the absolute deadline from "now" on every loop iteration.
+  With `cnd_broadcast` (closed item 73), each spurious wakeup reset the
+  timeout, causing indefinite blocking.  Fix: compute deadline once before
+  acquiring the mutex; reuse the pre-computed `struct timespec` for all
+  `cnd_timedwait` calls in the loop.  Added regression test
+  `test_poll_deadline_not_reset` that broadcasts `poll_cnd` every 50ms
+  and verifies a 500ms poll returns within 1200ms.
 
 - KBI client-side allocation cleanup (was item 12).  Replaced cascading
   5-calloc/free pattern with `goto kbi_cleanup`.  Eliminates ~45 lines
