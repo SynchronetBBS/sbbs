@@ -21,23 +21,18 @@
     protocol-ordering trade-offs that don't have obvious right answers.
     **Not suitable for automatic planning.**
 
-16. Type-unsafe linked list traversal via
-    `memcpy(&node, node, sizeof(void *))` in `dssh_test_build_namelist()`
-    and `dssh_test_negotiate_algo()`.  Relies on `next` being the first
-    field of every algorithm struct.  Silently breaks if any struct
-    reorders its fields.
-
-18. Six near-identical `dssh_transport_register_*()` functions (kex,
-    key_algo, enc, mac, comp, lang).  Same structure, different linked
-    list and type.  Could be a single helper with type-specific wrappers.
-
-
+90. **`DSSH_TESTABLE` functions use misleading `dssh_test_` prefix.**
+    Functions like `dssh_test_build_namelist()`, `dssh_test_negotiate_algo()`,
+    `dssh_test_parse_peer_kexinit()`, `dssh_test_encode_k_wire()`, and
+    `dssh_test_parse_channel_request()` are production library code called
+    from handshake and connection paths.  The `dssh_test_` prefix implies
+    they are test-only.  Rename to a neutral prefix (e.g. `dssh_internal_*`)
+    and update all call sites and test declarations.
 
 28. Near-duplicate read/write pairs: `dssh_session_read()` /
     `dssh_session_read_ext()` and `dssh_session_write()` /
     `dssh_session_write_ext()` differ only in which buffer or send
     function they use.
-
 
 31. ssh-chan.c has no public API — every function is `DSSH_PRIVATE`.
     Only consumer is ssh-conn.c (and tests).  Consider inlining as
@@ -48,8 +43,6 @@
 ### Thread safety audit (items 51-59)
 
 ### Design / liveness audit (items 62-79)
-
-
 
 67. **Setup mode single-slot mailbox blocks the demux thread.**
     In `demux_dispatch()` (line 616-631), when a channel is in
@@ -76,7 +69,6 @@
     count limit (not in the protocol), unbounded allocation (current
     approach), or accepting bounded waste.  Research what other SSH
     implementations do before attempting a fix.
-
 
 75. **Msgqueue unbounded per-message overhead for raw channels.**
     `dssh_msgqueue_push()` does a separate `malloc` per message with
@@ -116,13 +108,21 @@
     4. Reject/limit 0-byte messages -- arbitrary restriction,
        potential protocol violation
 
-
-
-
-
-
-
 ## Closed
+
+- Type-unsafe linked list traversal (was item 16).  Added
+  `_Static_assert(!offsetof(..., next))` to all 6 algorithm struct
+  headers (`dssh_kex_s`, `dssh_key_algo_s`, `dssh_enc_s`, `dssh_mac_s`,
+  `dssh_comp_s`, `dssh_language_s`) and the test struct
+  `test_algo_node`.  Added "must be first" comments on all `next`
+  fields.  Updated `FREE_LIST()` macro to take a type parameter and
+  use typed `->next` access instead of `memcpy` cast.
+
+- Six near-identical `dssh_transport_register_*()` functions (was item 18).
+  Replaced with `DEFINE_REGISTER(func_name, param_type, head, tail,
+  entries)` macro.  ~140 lines of duplicated code reduced to ~25.
+  Type-safe via typed `param_type` parameter accessing `item->name`
+  and `item->next` directly.
 
 - Demux head-of-line blocking under `tx_mtx` (was item 76).
   `send_packet()` held `tx_mtx` for its entire duration including the

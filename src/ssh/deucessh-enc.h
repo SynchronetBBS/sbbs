@@ -23,7 +23,7 @@ typedef int (*dssh_enc_crypt)(uint8_t *buf, size_t bufsz, dssh_enc_ctx *ctx);
 typedef void (*dssh_enc_cleanup)(dssh_enc_ctx *ctx);
 
 typedef struct dssh_enc_s {
-	struct dssh_enc_s *next;
+	struct dssh_enc_s *next;       /* must be first -- generic traversal assumes offsetof(next) == 0 */
 	dssh_enc_init      init;
 	dssh_enc_crypt     encrypt;
 	dssh_enc_crypt     decrypt;
@@ -33,6 +33,8 @@ typedef struct dssh_enc_s {
 	uint16_t           key_size;
 	char               name[];
 } *dssh_enc;
+_Static_assert(!offsetof(struct dssh_enc_s, next),
+    "next must be at offset 0 for generic list traversal");
 
 DSSH_PUBLIC int dssh_transport_register_enc(dssh_enc enc);
 

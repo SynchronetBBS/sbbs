@@ -23,12 +23,14 @@ typedef int (*dssh_comp_uncompress)(uint8_t *buf, size_t *bufsz,
 typedef void (*dssh_comp_cleanup)(dssh_comp_ctx *ctx);
 
 typedef struct dssh_comp_s {
-	struct dssh_comp_s  *next;
+	struct dssh_comp_s  *next;     /* must be first -- generic traversal assumes offsetof(next) == 0 */
 	dssh_comp_compress   compress;
 	dssh_comp_uncompress uncompress;
 	dssh_comp_cleanup    cleanup;
 	char                 name[];
 } *dssh_comp;
+_Static_assert(!offsetof(struct dssh_comp_s, next),
+    "next must be at offset 0 for generic list traversal");
 
 DSSH_PUBLIC int dssh_transport_register_comp(dssh_comp comp);
 

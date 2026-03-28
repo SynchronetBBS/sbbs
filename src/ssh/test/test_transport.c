@@ -369,6 +369,8 @@ struct test_algo_node {
 	struct test_algo_node *next;
 	char name[64];
 };
+_Static_assert(!offsetof(struct test_algo_node, next),
+    "next must be at offset 0 for generic list traversal");
 
 static int
 test_negotiate_first_client_match(void)

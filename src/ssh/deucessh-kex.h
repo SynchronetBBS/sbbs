@@ -103,7 +103,7 @@ typedef void (*dssh_kex_cleanup)(void *kex_data);
 #define DSSH_KEX_FLAG_K_ENCODING_STRING        UINT32_C(1 << 2)
 
 typedef struct dssh_kex_s {
-	struct dssh_kex_s *next;
+	struct dssh_kex_s *next;     /* must be first -- generic traversal assumes offsetof(next) == 0 */
 	dssh_kex_handler   handler;
 	dssh_kex_cleanup   cleanup;
 	const char        *hash_name; /* OpenSSL digest name, e.g. "SHA256" */
@@ -111,6 +111,8 @@ typedef struct dssh_kex_s {
 	void              *ctx;
 	char               name[];
 } *dssh_kex;
+_Static_assert(!offsetof(struct dssh_kex_s, next),
+    "next must be at offset 0 for generic list traversal");
 
 DSSH_PUBLIC int dssh_transport_register_kex(dssh_kex kex);
 

@@ -64,9 +64,11 @@ extern "C" {
 /* Module type definitions are now in the public headers above.
  * Language is internal-only (no third-party language modules). */
 typedef struct dssh_language_s {
-	struct dssh_language_s *next;
+	struct dssh_language_s *next;  /* must be first -- generic traversal assumes offsetof(next) == 0 */
 	char                    name[];
 } *dssh_language;
+_Static_assert(!offsetof(struct dssh_language_s, next),
+    "next must be at offset 0 for generic list traversal");
 
 /*
  * Messages buffered during self-initiated rekey (kexinit wait loop).

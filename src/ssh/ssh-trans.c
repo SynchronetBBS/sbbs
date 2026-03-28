@@ -2259,149 +2259,38 @@ dssh_kex_set_ctx(const char *name, void *ctx)
 	return 0;
 }
 
-DSSH_PUBLIC int
-dssh_transport_register_kex(dssh_kex kex)
-{
-	if (kex == NULL)
-		return DSSH_ERROR_INVALID;
-	if (gconf.used)
-		return DSSH_ERROR_TOOLATE;
-	if (strlen(kex->name) == 0)
-		return DSSH_ERROR_INVALID;
-	if (strlen(kex->name) > 64)
-		return DSSH_ERROR_TOOLONG;
-	if (kex->next)
-		return DSSH_ERROR_MUST_BE_NULL;
-	if (gconf.kex_entries + 1 == SIZE_MAX)
-		return DSSH_ERROR_TOOMANY;
-	if (gconf.kex_head == NULL)
-		gconf.kex_head = kex;
-	if (gconf.kex_tail != NULL)
-		gconf.kex_tail->next = kex;
-	gconf.kex_tail = kex;
-	gconf.kex_entries++;
-	return 0;
+#define DEFINE_REGISTER(func_name, param_type, head, tail, entries) \
+DSSH_PUBLIC int                                                     \
+func_name(param_type item)                                          \
+{                                                                   \
+	if (item == NULL)                                           \
+		return DSSH_ERROR_INVALID;                          \
+	if (gconf.used)                                             \
+		return DSSH_ERROR_TOOLATE;                          \
+	if (strlen(item->name) == 0)                                \
+		return DSSH_ERROR_INVALID;                          \
+	if (strlen(item->name) > 64)                                \
+		return DSSH_ERROR_TOOLONG;                          \
+	if (item->next)                                             \
+		return DSSH_ERROR_MUST_BE_NULL;                     \
+	if (gconf.entries + 1 == SIZE_MAX)                          \
+		return DSSH_ERROR_TOOMANY;                          \
+	if (gconf.head == NULL)                                     \
+		gconf.head = item;                                  \
+	if (gconf.tail != NULL)                                     \
+		gconf.tail->next = item;                            \
+	gconf.tail = item;                                          \
+	gconf.entries++;                                            \
+	return 0;                                                   \
 }
 
-DSSH_PUBLIC int
-dssh_transport_register_key_algo(dssh_key_algo key_algo)
-{
-	if (key_algo == NULL)
-		return DSSH_ERROR_INVALID;
-	if (gconf.used)
-		return DSSH_ERROR_TOOLATE;
-	if (strlen(key_algo->name) == 0)
-		return DSSH_ERROR_INVALID;
-	if (strlen(key_algo->name) > 64)
-		return DSSH_ERROR_TOOLONG;
-	if (key_algo->next)
-		return DSSH_ERROR_MUST_BE_NULL;
-	if (gconf.key_algo_entries + 1 == SIZE_MAX)
-		return DSSH_ERROR_TOOMANY;
-	if (gconf.key_algo_head == NULL)
-		gconf.key_algo_head = key_algo;
-	if (gconf.key_algo_tail != NULL)
-		gconf.key_algo_tail->next = key_algo;
-	gconf.key_algo_tail = key_algo;
-	gconf.key_algo_entries++;
-	return 0;
-}
-
-DSSH_PUBLIC int
-dssh_transport_register_enc(dssh_enc enc)
-{
-	if (enc == NULL)
-		return DSSH_ERROR_INVALID;
-	if (gconf.used)
-		return DSSH_ERROR_TOOLATE;
-	if (strlen(enc->name) == 0)
-		return DSSH_ERROR_INVALID;
-	if (strlen(enc->name) > 64)
-		return DSSH_ERROR_TOOLONG;
-	if (enc->next)
-		return DSSH_ERROR_MUST_BE_NULL;
-	if (gconf.enc_entries + 1 == SIZE_MAX)
-		return DSSH_ERROR_TOOMANY;
-	if (gconf.enc_head == NULL)
-		gconf.enc_head = enc;
-	if (gconf.enc_tail != NULL)
-		gconf.enc_tail->next = enc;
-	gconf.enc_tail = enc;
-	gconf.enc_entries++;
-	return 0;
-}
-
-DSSH_PUBLIC int
-dssh_transport_register_mac(dssh_mac mac)
-{
-	if (mac == NULL)
-		return DSSH_ERROR_INVALID;
-	if (gconf.used)
-		return DSSH_ERROR_TOOLATE;
-	if (strlen(mac->name) == 0)
-		return DSSH_ERROR_INVALID;
-	if (strlen(mac->name) > 64)
-		return DSSH_ERROR_TOOLONG;
-	if (mac->next)
-		return DSSH_ERROR_MUST_BE_NULL;
-	if (gconf.mac_entries + 1 == SIZE_MAX)
-		return DSSH_ERROR_TOOMANY;
-	if (gconf.mac_head == NULL)
-		gconf.mac_head = mac;
-	if (gconf.mac_tail != NULL)
-		gconf.mac_tail->next = mac;
-	gconf.mac_tail = mac;
-	gconf.mac_entries++;
-	return 0;
-}
-
-DSSH_PUBLIC int
-dssh_transport_register_comp(dssh_comp comp)
-{
-	if (comp == NULL)
-		return DSSH_ERROR_INVALID;
-	if (gconf.used)
-		return DSSH_ERROR_TOOLATE;
-	if (strlen(comp->name) == 0)
-		return DSSH_ERROR_INVALID;
-	if (strlen(comp->name) > 64)
-		return DSSH_ERROR_TOOLONG;
-	if (comp->next)
-		return DSSH_ERROR_MUST_BE_NULL;
-	if (gconf.comp_entries + 1 == SIZE_MAX)
-		return DSSH_ERROR_TOOMANY;
-	if (gconf.comp_head == NULL)
-		gconf.comp_head = comp;
-	if (gconf.comp_tail != NULL)
-		gconf.comp_tail->next = comp;
-	gconf.comp_tail = comp;
-	gconf.comp_entries++;
-	return 0;
-}
-
-DSSH_PUBLIC int
-dssh_transport_register_lang(dssh_language lang)
-{
-	if (lang == NULL)
-		return DSSH_ERROR_INVALID;
-	if (gconf.used)
-		return DSSH_ERROR_TOOLATE;
-	if (strlen(lang->name) == 0)
-		return DSSH_ERROR_INVALID;
-	if (strlen(lang->name) > 64)
-		return DSSH_ERROR_TOOLONG;
-	if (lang->next)
-		return DSSH_ERROR_MUST_BE_NULL;
-	if (gconf.lang_entries + 1 == SIZE_MAX)
-		return DSSH_ERROR_TOOMANY;
-	if (gconf.lang_head == NULL)
-		gconf.lang_head = lang;
-	if (gconf.lang_tail != NULL)
-		gconf.lang_tail->next = lang;
-	gconf.lang_tail = lang;
-	gconf.lang_entries++;
-	return 0;
-}
+DEFINE_REGISTER(dssh_transport_register_kex,      dssh_kex,      kex_head,      kex_tail,      kex_entries)
+DEFINE_REGISTER(dssh_transport_register_key_algo, dssh_key_algo, key_algo_head, key_algo_tail, key_algo_entries)
+DEFINE_REGISTER(dssh_transport_register_enc,      dssh_enc,      enc_head,      enc_tail,      enc_entries)
+DEFINE_REGISTER(dssh_transport_register_mac,      dssh_mac,      mac_head,      mac_tail,      mac_entries)
+DEFINE_REGISTER(dssh_transport_register_comp,     dssh_comp,     comp_head,     comp_tail,     comp_entries)
+DEFINE_REGISTER(dssh_transport_register_lang,     dssh_language,  lang_head,     lang_tail,     lang_entries)
+#undef DEFINE_REGISTER
 
 /*
  * Validate a softwareversion string per RFC 4253 s4.2:
@@ -2496,28 +2385,26 @@ dssh_transport_set_callbacks(dssh_transport_io_cb tx,
 DSSH_PRIVATE void
 dssh_test_reset_global_config(void)
 {
-        /* Free linked list helpers */
- #define FREE_LIST(head) do { \
-	for (void *_n = (head); _n != NULL;) { \
-	void *_next; \
-	memcpy(&_next, _n, sizeof(void *)); \
-	free(_n); \
-	_n = _next; \
+ #define FREE_LIST(type, head) do { \
+	for (type _n = (head); _n != NULL;) { \
+		type _next = _n->next; \
+		free(_n); \
+		_n = _next; \
 	} \
 } while (0)
 
-        /* Clean up key_algo contexts before freeing */
+	/* Clean up key_algo contexts before freeing */
 	for (dssh_key_algo ka = gconf.key_algo_head; ka != NULL; ka = ka->next) {
 		if ((ka->cleanup != NULL) && (ka->ctx != NULL))
 			ka->cleanup(ka->ctx);
 	}
 
-	FREE_LIST(gconf.kex_head);
-	FREE_LIST(gconf.key_algo_head);
-	FREE_LIST(gconf.enc_head);
-	FREE_LIST(gconf.mac_head);
-	FREE_LIST(gconf.comp_head);
-	FREE_LIST(gconf.lang_head);
+	FREE_LIST(dssh_kex, gconf.kex_head);
+	FREE_LIST(dssh_key_algo, gconf.key_algo_head);
+	FREE_LIST(dssh_enc, gconf.enc_head);
+	FREE_LIST(dssh_mac, gconf.mac_head);
+	FREE_LIST(dssh_comp, gconf.comp_head);
+	FREE_LIST(dssh_language, gconf.lang_head);
  #undef FREE_LIST
 
 	memset(&gconf, 0, sizeof(gconf));
