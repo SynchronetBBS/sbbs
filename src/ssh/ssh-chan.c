@@ -12,7 +12,7 @@
  * Circular byte buffer
  * ================================================================ */
 DSSH_PRIVATE int
-dssh_bytebuf_init(struct dssh_bytebuf *b, size_t capacity)
+bytebuf_init(struct dssh_bytebuf *b, size_t capacity)
 {
 	b->data = malloc(capacity);
 	if (b->data == NULL)
@@ -26,7 +26,7 @@ dssh_bytebuf_init(struct dssh_bytebuf *b, size_t capacity)
 }
 
 DSSH_PRIVATE void
-dssh_bytebuf_free(struct dssh_bytebuf *b)
+bytebuf_free(struct dssh_bytebuf *b)
 {
 	free(b->data);
 	b->data = NULL;
@@ -37,7 +37,7 @@ dssh_bytebuf_free(struct dssh_bytebuf *b)
 }
 
 DSSH_PRIVATE size_t
-dssh_bytebuf_write(struct dssh_bytebuf *b,
+bytebuf_write(struct dssh_bytebuf *b,
     const uint8_t *data, size_t len)
 {
 	if (b->capacity == 0)
@@ -69,7 +69,7 @@ dssh_bytebuf_write(struct dssh_bytebuf *b,
 }
 
 DSSH_PRIVATE size_t
-dssh_bytebuf_read(struct dssh_bytebuf *b,
+bytebuf_read(struct dssh_bytebuf *b,
     uint8_t *buf, size_t bufsz, size_t limit)
 {
 	if (b->capacity == 0)
@@ -99,13 +99,13 @@ dssh_bytebuf_read(struct dssh_bytebuf *b,
 }
 
 DSSH_PRIVATE size_t
-dssh_bytebuf_available(const struct dssh_bytebuf *b)
+bytebuf_available(const struct dssh_bytebuf *b)
 {
 	return b->used;
 }
 
 DSSH_PRIVATE size_t
-dssh_bytebuf_free_space(const struct dssh_bytebuf *b)
+bytebuf_free_space(const struct dssh_bytebuf *b)
 {
 	return b->capacity - b->used;
 }
@@ -114,7 +114,7 @@ dssh_bytebuf_free_space(const struct dssh_bytebuf *b)
  * Message queue
  * ================================================================ */
 DSSH_PRIVATE void
-dssh_msgqueue_init(struct dssh_msgqueue *q)
+msgqueue_init(struct dssh_msgqueue *q)
 {
 	q->head = NULL;
 	q->tail = NULL;
@@ -123,7 +123,7 @@ dssh_msgqueue_init(struct dssh_msgqueue *q)
 }
 
 DSSH_PRIVATE void
-dssh_msgqueue_free(struct dssh_msgqueue *q)
+msgqueue_free(struct dssh_msgqueue *q)
 {
 	struct dssh_msgqueue_entry *e = q->head;
 
@@ -140,7 +140,7 @@ dssh_msgqueue_free(struct dssh_msgqueue *q)
 }
 
 DSSH_PRIVATE int
-dssh_msgqueue_push(struct dssh_msgqueue *q,
+msgqueue_push(struct dssh_msgqueue *q,
     const uint8_t *data, size_t len)
 {
 	if (len > SIZE_MAX - sizeof(struct dssh_msgqueue_entry))
@@ -169,7 +169,7 @@ dssh_msgqueue_push(struct dssh_msgqueue *q,
 }
 
 DSSH_PRIVATE int64_t
-dssh_msgqueue_pop(struct dssh_msgqueue *q,
+msgqueue_pop(struct dssh_msgqueue *q,
     uint8_t *buf, size_t bufsz)
 {
 	if (q->head == NULL)
@@ -197,14 +197,14 @@ dssh_msgqueue_pop(struct dssh_msgqueue *q,
  * Signal queue
  * ================================================================ */
 DSSH_PRIVATE void
-dssh_sigqueue_init(struct dssh_signal_queue *q)
+sigqueue_init(struct dssh_signal_queue *q)
 {
 	q->head = NULL;
 	q->tail = NULL;
 }
 
 DSSH_PRIVATE void
-dssh_sigqueue_free(struct dssh_signal_queue *q)
+sigqueue_free(struct dssh_signal_queue *q)
 {
 	struct dssh_signal_mark *m = q->head;
 
@@ -219,7 +219,7 @@ dssh_sigqueue_free(struct dssh_signal_queue *q)
 }
 
 DSSH_PRIVATE int
-dssh_sigqueue_push(struct dssh_signal_queue *q,
+sigqueue_push(struct dssh_signal_queue *q,
     const char *name, size_t stdout_pos, size_t stderr_pos)
 {
 	struct dssh_signal_mark *m = malloc(sizeof(*m));
@@ -246,7 +246,7 @@ dssh_sigqueue_push(struct dssh_signal_queue *q,
 }
 
 DSSH_PRIVATE bool
-dssh_sigqueue_ready(const struct dssh_signal_queue *q,
+sigqueue_ready(const struct dssh_signal_queue *q,
     size_t stdout_consumed, size_t stderr_consumed)
 {
 	if (q->head == NULL)
@@ -256,7 +256,7 @@ dssh_sigqueue_ready(const struct dssh_signal_queue *q,
 }
 
 DSSH_PRIVATE const char *
-dssh_sigqueue_pop(struct dssh_signal_queue *q,
+sigqueue_pop(struct dssh_signal_queue *q,
     size_t stdout_consumed, size_t stderr_consumed,
     char *buf, size_t bufsz)
 {
@@ -286,14 +286,14 @@ dssh_sigqueue_pop(struct dssh_signal_queue *q,
  * Accept queue
  * ================================================================ */
 DSSH_PRIVATE void
-dssh_acceptqueue_init(struct dssh_accept_queue *q)
+acceptqueue_init(struct dssh_accept_queue *q)
 {
 	q->head = NULL;
 	q->tail = NULL;
 }
 
 DSSH_PRIVATE void
-dssh_acceptqueue_free(struct dssh_accept_queue *q)
+acceptqueue_free(struct dssh_accept_queue *q)
 {
 	struct dssh_incoming_open *e = q->head;
 
@@ -308,7 +308,7 @@ dssh_acceptqueue_free(struct dssh_accept_queue *q)
 }
 
 DSSH_PRIVATE int
-dssh_acceptqueue_push(struct dssh_accept_queue *q,
+acceptqueue_push(struct dssh_accept_queue *q,
     uint32_t peer_channel, uint32_t peer_window,
     uint32_t peer_max_packet,
     const uint8_t *type, size_t type_len)
@@ -337,7 +337,7 @@ dssh_acceptqueue_push(struct dssh_accept_queue *q,
 
 DSSH_PRIVATE struct dssh_incoming_open *
 
-dssh_acceptqueue_pop(struct dssh_accept_queue *q)
+acceptqueue_pop(struct dssh_accept_queue *q)
 {
 	struct dssh_incoming_open *e = q->head;
 

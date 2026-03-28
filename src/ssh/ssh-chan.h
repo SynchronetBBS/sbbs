@@ -25,23 +25,23 @@ struct dssh_bytebuf {
 	size_t   total;  /* total bytes ever written (for signal marks) */
 };
 
-DSSH_PRIVATE int dssh_bytebuf_init(struct dssh_bytebuf *b, size_t capacity);
-DSSH_PRIVATE void dssh_bytebuf_free(struct dssh_bytebuf *b);
+DSSH_PRIVATE int bytebuf_init(struct dssh_bytebuf *b, size_t capacity);
+DSSH_PRIVATE void bytebuf_free(struct dssh_bytebuf *b);
 
 /* Returns bytes actually written (may be less than len if full) */
-DSSH_PRIVATE size_t dssh_bytebuf_write(struct dssh_bytebuf *b,
+DSSH_PRIVATE size_t bytebuf_write(struct dssh_bytebuf *b,
     const uint8_t *data, size_t len);
 
 /* Returns bytes actually read (may be less than bufsz if empty).
  * limit: max bytes to read (0 = no limit beyond buffer contents) */
-DSSH_PRIVATE size_t dssh_bytebuf_read(struct dssh_bytebuf *b,
+DSSH_PRIVATE size_t bytebuf_read(struct dssh_bytebuf *b,
     uint8_t *buf, size_t bufsz, size_t limit);
 
 /* Returns number of bytes available to read */
-DSSH_PRIVATE size_t dssh_bytebuf_available(const struct dssh_bytebuf *b);
+DSSH_PRIVATE size_t bytebuf_available(const struct dssh_bytebuf *b);
 
 /* Returns free space */
-DSSH_PRIVATE size_t dssh_bytebuf_free_space(const struct dssh_bytebuf *b);
+DSSH_PRIVATE size_t bytebuf_free_space(const struct dssh_bytebuf *b);
 
 /* ================================================================
  * Message queue (raw channel data)
@@ -59,17 +59,17 @@ struct dssh_msgqueue {
 	size_t                      count;       /* number of messages */
 };
 
-DSSH_PRIVATE void dssh_msgqueue_init(struct dssh_msgqueue *q);
-DSSH_PRIVATE void dssh_msgqueue_free(struct dssh_msgqueue *q);
+DSSH_PRIVATE void msgqueue_init(struct dssh_msgqueue *q);
+DSSH_PRIVATE void msgqueue_free(struct dssh_msgqueue *q);
 
 /* Enqueue a message (copies data). Returns 0 on success. */
-DSSH_PRIVATE int dssh_msgqueue_push(struct dssh_msgqueue *q,
+DSSH_PRIVATE int msgqueue_push(struct dssh_msgqueue *q,
     const uint8_t *data, size_t len);
 
 /* Dequeue a message into buf. Returns message length, or
  * DSSH_ERROR_TOOLONG if bufsz too small (message stays queued),
  * or 0 if empty. */
-DSSH_PRIVATE int64_t dssh_msgqueue_pop(struct dssh_msgqueue *q,
+DSSH_PRIVATE int64_t msgqueue_pop(struct dssh_msgqueue *q,
     uint8_t *buf, size_t bufsz);
 
 /* ================================================================
@@ -87,20 +87,20 @@ struct dssh_signal_queue {
 	struct dssh_signal_mark *tail;
 };
 
-DSSH_PRIVATE void dssh_sigqueue_init(struct dssh_signal_queue *q);
-DSSH_PRIVATE void dssh_sigqueue_free(struct dssh_signal_queue *q);
+DSSH_PRIVATE void sigqueue_init(struct dssh_signal_queue *q);
+DSSH_PRIVATE void sigqueue_free(struct dssh_signal_queue *q);
 
 /* Record a signal at the current stream positions */
-DSSH_PRIVATE int dssh_sigqueue_push(struct dssh_signal_queue *q,
+DSSH_PRIVATE int sigqueue_push(struct dssh_signal_queue *q,
     const char *name, size_t stdout_pos, size_t stderr_pos);
 
 /* Check if the front signal is ready (both streams drained past mark) */
-DSSH_PRIVATE bool dssh_sigqueue_ready(const struct dssh_signal_queue *q,
+DSSH_PRIVATE bool sigqueue_ready(const struct dssh_signal_queue *q,
     size_t stdout_consumed, size_t stderr_consumed);
 
 /* Consume the front signal. Copies name into buf (bufsz >= 32).
  * Returns buf on success, or NULL if not ready. */
-DSSH_PRIVATE const char *dssh_sigqueue_pop(struct dssh_signal_queue *q,
+DSSH_PRIVATE const char *sigqueue_pop(struct dssh_signal_queue *q,
     size_t stdout_consumed, size_t stderr_consumed,
     char *buf, size_t bufsz);
 
@@ -121,13 +121,13 @@ struct dssh_accept_queue {
 	struct dssh_incoming_open *tail;
 };
 
-DSSH_PRIVATE void dssh_acceptqueue_init(struct dssh_accept_queue *q);
-DSSH_PRIVATE void dssh_acceptqueue_free(struct dssh_accept_queue *q);
-DSSH_PRIVATE int dssh_acceptqueue_push(struct dssh_accept_queue *q,
+DSSH_PRIVATE void acceptqueue_init(struct dssh_accept_queue *q);
+DSSH_PRIVATE void acceptqueue_free(struct dssh_accept_queue *q);
+DSSH_PRIVATE int acceptqueue_push(struct dssh_accept_queue *q,
     uint32_t peer_channel, uint32_t peer_window,
     uint32_t peer_max_packet,
     const uint8_t *type, size_t type_len);
-DSSH_PRIVATE struct dssh_incoming_open *dssh_acceptqueue_pop(struct dssh_accept_queue *q);
+DSSH_PRIVATE struct dssh_incoming_open *acceptqueue_pop(struct dssh_accept_queue *q);
 
 /* ================================================================
  * Channel types

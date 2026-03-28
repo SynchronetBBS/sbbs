@@ -1751,7 +1751,7 @@ test_setup_recv_timeout(void)
 	DSSH_PUT_U32(32768, msg, &pos); /* initial window */
 	DSSH_PUT_U32(32768, msg, &pos); /* max packet */
 
-	int res = dssh_transport_send_packet(ctx.client, msg, pos, NULL);
+	int res = send_packet(ctx.client, msg, pos, NULL);
 	ASSERT_OK(res);
 
 	/* Wait for server thread to complete (it should time out) */
@@ -1803,7 +1803,7 @@ test_rekey_send_timeout(void)
 	msg[3] = 0;
 	msg[4] = 0;
 
-	int res = dssh_transport_send_packet(ctx.client, msg, 5, NULL);
+	int res = send_packet(ctx.client, msg, 5, NULL);
 	ASSERT_EQ(res, DSSH_ERROR_TERMINATED);
 
 	struct timespec t1;

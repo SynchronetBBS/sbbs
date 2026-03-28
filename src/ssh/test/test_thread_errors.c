@@ -228,7 +228,7 @@ test_send_lock_fail(void)
 
 	dssh_test_thrd_fail_after(0);
 	uint8_t msg[] = { SSH_MSG_SERVICE_REQUEST, 0x42 };
-	dssh_transport_send_packet(ctx.client, msg, sizeof(msg), NULL);
+	send_packet(ctx.client, msg, sizeof(msg), NULL);
 	dssh_test_thrd_reset();
 
 	ASSERT_TRUE(ctx.client->terminate);
@@ -256,7 +256,7 @@ test_send_unlock_fail(void)
 	/* Count how many thrd calls a normal send does */
 	dssh_test_thrd_fail_after(1000);
 	uint8_t msg[] = { SSH_MSG_SERVICE_REQUEST, 0x42 };
-	dssh_transport_send_packet(ctx.client, msg, sizeof(msg), NULL);
+	send_packet(ctx.client, msg, sizeof(msg), NULL);
 	int count = dssh_test_thrd_count();
 	dssh_test_thrd_reset();
 
@@ -265,7 +265,7 @@ test_send_unlock_fail(void)
 
 	/* Fail the last thrd call (mtx_unlock) */
 	dssh_test_thrd_fail_after(count - 1);
-	dssh_transport_send_packet(ctx.client, msg, sizeof(msg), NULL);
+	send_packet(ctx.client, msg, sizeof(msg), NULL);
 	dssh_test_thrd_reset();
 
 	ASSERT_TRUE(ctx.client->terminate);
@@ -289,7 +289,7 @@ test_recv_lock_fail(void)
 
 	/* Send a packet from client so server has something to receive */
 	uint8_t msg[] = { SSH_MSG_SERVICE_REQUEST, 0x42 };
-	ASSERT_OK(dssh_transport_send_packet(ctx.client, msg,
+	ASSERT_OK(send_packet(ctx.client, msg,
 	    sizeof(msg), NULL));
 
 	ASSERT_FALSE(ctx.server->terminate);
@@ -298,7 +298,7 @@ test_recv_lock_fail(void)
 	uint8_t mt;
 	uint8_t *payload;
 	size_t plen;
-	dssh_transport_recv_packet(ctx.server, &mt, &payload, &plen);
+	recv_packet(ctx.server, &mt, &payload, &plen);
 	dssh_test_thrd_reset();
 
 	ASSERT_TRUE(ctx.server->terminate);
@@ -330,7 +330,7 @@ test_set_terminate_lock_fail(void)
 	/* Fail the first lock/broadcast call inside set_terminate.
 	 * It should still set terminate and not crash. */
 	dssh_test_thrd_fail_after(0);
-	dssh_session_set_terminate(ctx.client);
+	session_set_terminate(ctx.client);
 	dssh_test_thrd_reset();
 
 	ASSERT_TRUE(ctx.client->terminate);
@@ -363,7 +363,7 @@ test_send_sweep(void)
 	/* Count thrd calls in a normal send */
 	dssh_test_thrd_fail_after(1000);
 	uint8_t msg[] = { SSH_MSG_SERVICE_REQUEST, 0x42 };
-	dssh_transport_send_packet(ctx.client, msg, sizeof(msg), NULL);
+	send_packet(ctx.client, msg, sizeof(msg), NULL);
 	int count = dssh_test_thrd_count();
 	dssh_test_thrd_reset();
 	ASSERT_TRUE(count >= 2);
@@ -378,7 +378,7 @@ test_send_sweep(void)
 		}
 
 		dssh_test_thrd_fail_after(n);
-		dssh_transport_send_packet(ctx.client, msg,
+		send_packet(ctx.client, msg,
 		    sizeof(msg), NULL);
 		dssh_test_thrd_reset();
 
@@ -404,7 +404,7 @@ test_recv_sweep(void)
 
 	/* Send a packet */
 	uint8_t msg[] = { SSH_MSG_SERVICE_REQUEST, 0x42 };
-	ASSERT_OK(dssh_transport_send_packet(ctx.client, msg,
+	ASSERT_OK(send_packet(ctx.client, msg,
 	    sizeof(msg), NULL));
 
 	/* Count thrd calls in a normal recv */
@@ -412,7 +412,7 @@ test_recv_sweep(void)
 	uint8_t mt;
 	uint8_t *payload;
 	size_t plen;
-	dssh_transport_recv_packet(ctx.server, &mt, &payload, &plen);
+	recv_packet(ctx.server, &mt, &payload, &plen);
 	int count = dssh_test_thrd_count();
 	dssh_test_thrd_reset();
 	ASSERT_TRUE(count >= 2);
@@ -425,11 +425,11 @@ test_recv_sweep(void)
 			return TEST_SKIP;
 		}
 
-		ASSERT_OK(dssh_transport_send_packet(ctx.client, msg,
+		ASSERT_OK(send_packet(ctx.client, msg,
 		    sizeof(msg), NULL));
 
 		dssh_test_thrd_fail_after(n);
-		dssh_transport_recv_packet(ctx.server, &mt, &payload,
+		recv_packet(ctx.server, &mt, &payload,
 		    &plen);
 		dssh_test_thrd_reset();
 

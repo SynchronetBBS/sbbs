@@ -230,7 +230,7 @@ static int
 test_has_nulls_true(void)
 {
 	uint8_t buf[] = "SSH-2.0\x00-test\r\n";
-	ASSERT_TRUE(dssh_test_has_nulls(buf, sizeof(buf) - 1));
+	ASSERT_TRUE(has_nulls(buf, sizeof(buf) - 1));
 	return TEST_PASS;
 }
 
@@ -238,7 +238,7 @@ static int
 test_has_nulls_false(void)
 {
 	uint8_t buf[] = "SSH-2.0-test\r\n";
-	ASSERT_FALSE(dssh_test_has_nulls(buf, sizeof(buf) - 1));
+	ASSERT_FALSE(has_nulls(buf, sizeof(buf) - 1));
 	return TEST_PASS;
 }
 
@@ -246,7 +246,7 @@ static int
 test_missing_crlf_short(void)
 {
 	uint8_t buf[] = "X";
-	ASSERT_TRUE(dssh_test_missing_crlf(buf, 1));
+	ASSERT_TRUE(missing_crlf(buf, 1));
 	return TEST_PASS;
 }
 
@@ -254,7 +254,7 @@ static int
 test_missing_crlf_no_cr(void)
 {
 	uint8_t buf[] = "SSH-2.0-test\n";
-	ASSERT_TRUE(dssh_test_missing_crlf(buf, sizeof(buf) - 1));
+	ASSERT_TRUE(missing_crlf(buf, sizeof(buf) - 1));
 	return TEST_PASS;
 }
 
@@ -262,7 +262,7 @@ static int
 test_missing_crlf_no_lf(void)
 {
 	uint8_t buf[] = "SSH-2.0-test\r";
-	ASSERT_TRUE(dssh_test_missing_crlf(buf, sizeof(buf) - 1));
+	ASSERT_TRUE(missing_crlf(buf, sizeof(buf) - 1));
 	return TEST_PASS;
 }
 
@@ -270,7 +270,7 @@ static int
 test_missing_crlf_valid(void)
 {
 	uint8_t buf[] = "SSH-2.0-test\r\n";
-	ASSERT_FALSE(dssh_test_missing_crlf(buf, sizeof(buf) - 1));
+	ASSERT_FALSE(missing_crlf(buf, sizeof(buf) - 1));
 	return TEST_PASS;
 }
 
@@ -278,7 +278,7 @@ static int
 test_is_version_line_true(void)
 {
 	uint8_t buf[] = "SSH-2.0-test\r\n";
-	ASSERT_TRUE(dssh_test_is_version_line(buf, sizeof(buf) - 1));
+	ASSERT_TRUE(is_version_line(buf, sizeof(buf) - 1));
 	return TEST_PASS;
 }
 
@@ -286,7 +286,7 @@ static int
 test_is_version_line_false_get(void)
 {
 	uint8_t buf[] = "GET / HTTP/1.1\r\n";
-	ASSERT_FALSE(dssh_test_is_version_line(buf, sizeof(buf) - 1));
+	ASSERT_FALSE(is_version_line(buf, sizeof(buf) - 1));
 	return TEST_PASS;
 }
 
@@ -294,7 +294,7 @@ static int
 test_is_version_line_false_short(void)
 {
 	uint8_t buf[] = "SS";
-	ASSERT_FALSE(dssh_test_is_version_line(buf, 2));
+	ASSERT_FALSE(is_version_line(buf, 2));
 	return TEST_PASS;
 }
 
@@ -302,7 +302,7 @@ static int
 test_has_non_ascii_ctrl(void)
 {
 	uint8_t buf[] = "SSH-2.0-\x01test";
-	ASSERT_TRUE(dssh_test_has_non_ascii(buf, sizeof(buf) - 1));
+	ASSERT_TRUE(has_non_ascii(buf, sizeof(buf) - 1));
 	return TEST_PASS;
 }
 
@@ -310,7 +310,7 @@ static int
 test_has_non_ascii_high(void)
 {
 	uint8_t buf[] = "SSH-2.0-\x80test";
-	ASSERT_TRUE(dssh_test_has_non_ascii(buf, sizeof(buf) - 1));
+	ASSERT_TRUE(has_non_ascii(buf, sizeof(buf) - 1));
 	return TEST_PASS;
 }
 
@@ -318,7 +318,7 @@ static int
 test_has_non_ascii_false(void)
 {
 	uint8_t buf[] = "SSH-2.0-OpenSSH_9.0";
-	ASSERT_FALSE(dssh_test_has_non_ascii(buf, sizeof(buf) - 1));
+	ASSERT_FALSE(has_non_ascii(buf, sizeof(buf) - 1));
 	return TEST_PASS;
 }
 
@@ -326,7 +326,7 @@ static int
 test_is_20_true(void)
 {
 	uint8_t buf[] = "SSH-2.0-test\r\n";
-	ASSERT_TRUE(dssh_test_is_20(buf, sizeof(buf) - 1));
+	ASSERT_TRUE(is_20(buf, sizeof(buf) - 1));
 	return TEST_PASS;
 }
 
@@ -334,7 +334,7 @@ static int
 test_is_20_true_199(void)
 {
 	uint8_t buf[] = "SSH-1.99-compat\r\n";
-	ASSERT_TRUE(dssh_test_is_20(buf, sizeof(buf) - 1));
+	ASSERT_TRUE(is_20(buf, sizeof(buf) - 1));
 	return TEST_PASS;
 }
 
@@ -342,7 +342,7 @@ static int
 test_is_20_false_10(void)
 {
 	uint8_t buf[] = "SSH-1.0-old\r\n";
-	ASSERT_FALSE(dssh_test_is_20(buf, sizeof(buf) - 1));
+	ASSERT_FALSE(is_20(buf, sizeof(buf) - 1));
 	return TEST_PASS;
 }
 
@@ -350,7 +350,7 @@ static int
 test_is_20_false_short(void)
 {
 	uint8_t buf[] = "SSH-2.";
-	ASSERT_FALSE(dssh_test_is_20(buf, 6));
+	ASSERT_FALSE(is_20(buf, 6));
 	return TEST_PASS;
 }
 
@@ -380,7 +380,7 @@ test_negotiate_first_client_match(void)
 	struct test_algo_node a = { &b, "chacha20" };
 
 	size_t noff = offsetof(struct test_algo_node, name);
-	void *result = dssh_test_negotiate_algo(
+	void *result = negotiate_algo(
 	    "aes128-ctr,aes256-ctr", "aes256-ctr,aes128-ctr",
 	    &a, noff);
 	ASSERT_NOT_NULL(result);
@@ -396,7 +396,7 @@ test_negotiate_no_match(void)
 	struct test_algo_node a = { &b, "aes256-ctr" };
 
 	size_t noff = offsetof(struct test_algo_node, name);
-	void *result = dssh_test_negotiate_algo(
+	void *result = negotiate_algo(
 	    "aes256-ctr,chacha20", "3des-cbc,blowfish-cbc",
 	    &a, noff);
 	ASSERT_NULL(result);
@@ -411,7 +411,7 @@ test_negotiate_client_priority(void)
 
 	size_t noff = offsetof(struct test_algo_node, name);
 	/* Client lists B first, server lists A first */
-	void *result = dssh_test_negotiate_algo(
+	void *result = negotiate_algo(
 	    "algo-B,algo-A", "algo-A,algo-B",
 	    &a, noff);
 	ASSERT_NOT_NULL(result);
@@ -426,7 +426,7 @@ test_negotiate_single_match(void)
 	struct test_algo_node a = { NULL, "the-only-one" };
 
 	size_t noff = offsetof(struct test_algo_node, name);
-	void *result = dssh_test_negotiate_algo(
+	void *result = negotiate_algo(
 	    "the-only-one", "the-only-one",
 	    &a, noff);
 	ASSERT_NOT_NULL(result);
@@ -441,7 +441,7 @@ test_negotiate_not_registered(void)
 
 	size_t noff = offsetof(struct test_algo_node, name);
 	/* Both lists agree on "unregistered" but it is not in the linked list */
-	void *result = dssh_test_negotiate_algo(
+	void *result = negotiate_algo(
 	    "unregistered", "unregistered",
 	    &a, noff);
 	ASSERT_NULL(result);
@@ -455,7 +455,7 @@ test_build_namelist_single(void)
 	char buf[256];
 
 	size_t noff = offsetof(struct test_algo_node, name);
-	size_t len = dssh_test_build_namelist(&a, noff, buf, sizeof(buf));
+	size_t len = build_namelist(&a, noff, buf, sizeof(buf));
 	ASSERT_STR_EQ(buf, "aes256-ctr");
 	ASSERT_EQ_U(len, strlen("aes256-ctr"));
 	return TEST_PASS;
@@ -470,7 +470,7 @@ test_build_namelist_multiple(void)
 	char buf[256];
 
 	size_t noff = offsetof(struct test_algo_node, name);
-	size_t len = dssh_test_build_namelist(&a, noff, buf, sizeof(buf));
+	size_t len = build_namelist(&a, noff, buf, sizeof(buf));
 	ASSERT_STR_EQ(buf, "aes256-ctr,hmac-sha2-256,none");
 	ASSERT_EQ_U(len, strlen("aes256-ctr,hmac-sha2-256,none"));
 	return TEST_PASS;
@@ -481,7 +481,7 @@ test_build_namelist_empty(void)
 {
 	char buf[256];
 	buf[0] = 'X';
-	size_t len = dssh_test_build_namelist(NULL, 0, buf, sizeof(buf));
+	size_t len = build_namelist(NULL, 0, buf, sizeof(buf));
 	ASSERT_EQ_U(len, 0);
 	ASSERT_EQ(buf[0], '\0');
 	return TEST_PASS;
@@ -502,10 +502,10 @@ test_derive_key_deterministic(void)
 	memset(session_id, 0xBB, sizeof(session_id));
 
 	uint8_t out1[32], out2[32];
-	ASSERT_OK(dssh_test_derive_key("SHA256", secret, sizeof(secret),
+	ASSERT_OK(derive_key("SHA256", secret, sizeof(secret),
 	    hash, sizeof(hash), 'A', session_id, sizeof(session_id),
 	    out1, sizeof(out1)));
-	ASSERT_OK(dssh_test_derive_key("SHA256", secret, sizeof(secret),
+	ASSERT_OK(derive_key("SHA256", secret, sizeof(secret),
 	    hash, sizeof(hash), 'A', session_id, sizeof(session_id),
 	    out2, sizeof(out2)));
 	ASSERT_MEM_EQ(out1, out2, sizeof(out1));
@@ -523,10 +523,10 @@ test_derive_key_different_letters(void)
 	memset(session_id, 0x33, sizeof(session_id));
 
 	uint8_t out_a[32], out_b[32];
-	ASSERT_OK(dssh_test_derive_key("SHA256", secret, sizeof(secret),
+	ASSERT_OK(derive_key("SHA256", secret, sizeof(secret),
 	    hash, sizeof(hash), 'A', session_id, sizeof(session_id),
 	    out_a, sizeof(out_a)));
-	ASSERT_OK(dssh_test_derive_key("SHA256", secret, sizeof(secret),
+	ASSERT_OK(derive_key("SHA256", secret, sizeof(secret),
 	    hash, sizeof(hash), 'B', session_id, sizeof(session_id),
 	    out_b, sizeof(out_b)));
 	/* Different letters must produce different output */
@@ -548,7 +548,7 @@ test_derive_key_extension_loop(void)
 
 	uint8_t out[64];
 	memset(out, 0, sizeof(out));
-	ASSERT_OK(dssh_test_derive_key("SHA256", secret, sizeof(secret),
+	ASSERT_OK(derive_key("SHA256", secret, sizeof(secret),
 	    hash, sizeof(hash), 'C', session_id, sizeof(session_id),
 	    out, sizeof(out)));
 
@@ -564,7 +564,7 @@ test_derive_key_extension_loop(void)
 
 	/* First 32 bytes should match a 32-byte derivation */
 	uint8_t out32[32];
-	ASSERT_OK(dssh_test_derive_key("SHA256", secret, sizeof(secret),
+	ASSERT_OK(derive_key("SHA256", secret, sizeof(secret),
 	    hash, sizeof(hash), 'C', session_id, sizeof(session_id),
 	    out32, sizeof(out32)));
 	ASSERT_MEM_EQ(out, out32, 32);
@@ -579,7 +579,7 @@ test_derive_key_bad_hash(void)
 	uint8_t session_id[32] = {0};
 	uint8_t out[32];
 
-	int res = dssh_test_derive_key("NO_SUCH_HASH", secret, sizeof(secret),
+	int res = derive_key("NO_SUCH_HASH", secret, sizeof(secret),
 	    hash, sizeof(hash), 'A', session_id, sizeof(session_id),
 	    out, sizeof(out));
 	ASSERT_TRUE(res < 0);
@@ -602,7 +602,7 @@ static int
 version_client_thread(void *arg)
 {
 	struct version_exchange_ctx *ctx = arg;
-	ctx->client_result = dssh_transport_version_exchange(ctx->client);
+	ctx->client_result = version_exchange(ctx->client);
 	return 0;
 }
 
@@ -610,7 +610,7 @@ static int
 version_server_thread(void *arg)
 {
 	struct version_exchange_ctx *ctx = arg;
-	ctx->server_result = dssh_transport_version_exchange(ctx->server);
+	ctx->server_result = version_exchange(ctx->server);
 	return 0;
 }
 
@@ -716,7 +716,7 @@ test_version_exchange_reject_non_20(void)
 	const char *bad_ver = "SSH-1.0-OldServer\r\n";
 	mock_io_inject(&io.s2c, (const uint8_t *)bad_ver, strlen(bad_ver));
 
-	int res = dssh_transport_version_exchange(client);
+	int res = version_exchange(client);
 	ASSERT_TRUE(res < 0);
 
 	dssh_session_cleanup(client);
@@ -744,7 +744,7 @@ test_version_exchange_accept_199(void)
 	const char *ver199 = "SSH-1.99-CompatServer\r\n";
 	mock_io_inject(&io.s2c, (const uint8_t *)ver199, strlen(ver199));
 
-	int res = dssh_transport_version_exchange(client);
+	int res = version_exchange(client);
 	ASSERT_OK(res);
 
 	const char *remote = dssh_transport_get_remote_version(client);
@@ -778,7 +778,7 @@ test_version_exchange_extra_lines(void)
 	mock_io_inject(&io.s2c, (const uint8_t *)banner, strlen(banner));
 	mock_io_inject(&io.s2c, (const uint8_t *)ver, strlen(ver));
 
-	int res = dssh_transport_version_exchange(client);
+	int res = version_exchange(client);
 	ASSERT_OK(res);
 
 	const char *remote = dssh_transport_get_remote_version(client);
@@ -809,7 +809,7 @@ test_version_exchange_reject_non_ascii(void)
 	const char *bad = "SSH-2.0-Bad\x80Server\r\n";
 	mock_io_inject(&io.s2c, (const uint8_t *)bad, strlen(bad));
 
-	int res = dssh_transport_version_exchange(client);
+	int res = version_exchange(client);
 	ASSERT_TRUE(res < 0);
 
 	dssh_session_cleanup(client);
@@ -844,7 +844,7 @@ test_packet_roundtrip(void)
 	/* Client sends a payload */
 	uint8_t payload[] = { SSH_MSG_IGNORE, 0x41, 0x42, 0x43 };
 	uint32_t seq;
-	ASSERT_OK(dssh_transport_send_packet(client, payload, sizeof(payload), &seq));
+	ASSERT_OK(send_packet(client, payload, sizeof(payload), &seq));
 	ASSERT_EQ_U(seq, 0);
 
 	/* Server receives it (use raw recv to get IGNORE too) */
@@ -876,10 +876,10 @@ test_packet_roundtrip(void)
 
 	/* Use SSH_MSG_SERVICE_REQUEST (5) which is not auto-handled */
 	uint8_t payload2[] = { SSH_MSG_SERVICE_REQUEST, 0xDE, 0xAD };
-	ASSERT_OK(dssh_transport_send_packet(client, payload2, sizeof(payload2), &seq));
+	ASSERT_OK(send_packet(client, payload2, sizeof(payload2), &seq));
 	ASSERT_EQ_U(seq, 0);
 
-	ASSERT_OK(dssh_transport_recv_packet(server, &msg_type, &recv_payload, &recv_len));
+	ASSERT_OK(recv_packet(server, &msg_type, &recv_payload, &recv_len));
 	ASSERT_EQ(msg_type, SSH_MSG_SERVICE_REQUEST);
 	ASSERT_EQ_U(recv_len, sizeof(payload2));
 	ASSERT_MEM_EQ(recv_payload, payload2, sizeof(payload2));
@@ -908,7 +908,7 @@ test_packet_alignment(void)
 
 	/* Send a small payload; verify wire format is aligned to block size (8) */
 	uint8_t payload[] = { SSH_MSG_SERVICE_REQUEST };
-	ASSERT_OK(dssh_transport_send_packet(client, payload, sizeof(payload), NULL));
+	ASSERT_OK(send_packet(client, payload, sizeof(payload), NULL));
 
 	/* Drain the c2s pipe and inspect wire format */
 	uint8_t wire[256];
@@ -944,7 +944,7 @@ test_packet_min_padding(void)
 	dssh_session_set_cbdata(client, &io, &io, &io, &io);
 
 	uint8_t payload[] = { SSH_MSG_SERVICE_REQUEST, 0x01, 0x02 };
-	ASSERT_OK(dssh_transport_send_packet(client, payload, sizeof(payload), NULL));
+	ASSERT_OK(send_packet(client, payload, sizeof(payload), NULL));
 
 	uint8_t wire[256];
 	size_t drained = mock_io_drain(&io.c2s, wire, sizeof(wire));
@@ -977,9 +977,9 @@ test_packet_seq_increment(void)
 
 	uint8_t payload[] = { SSH_MSG_SERVICE_REQUEST };
 	uint32_t seq1, seq2, seq3;
-	ASSERT_OK(dssh_transport_send_packet(client, payload, 1, &seq1));
-	ASSERT_OK(dssh_transport_send_packet(client, payload, 1, &seq2));
-	ASSERT_OK(dssh_transport_send_packet(client, payload, 1, &seq3));
+	ASSERT_OK(send_packet(client, payload, 1, &seq1));
+	ASSERT_OK(send_packet(client, payload, 1, &seq2));
+	ASSERT_OK(send_packet(client, payload, 1, &seq3));
 	ASSERT_EQ_U(seq1, 0);
 	ASSERT_EQ_U(seq2, 1);
 	ASSERT_EQ_U(seq3, 2);
@@ -1012,19 +1012,19 @@ test_packet_server_receives_client(void)
 	/* Send multiple packets, verify all arrive in order */
 	uint8_t p1[] = { SSH_MSG_SERVICE_REQUEST, 0x01 };
 	uint8_t p2[] = { SSH_MSG_SERVICE_ACCEPT, 0x02 };
-	ASSERT_OK(dssh_transport_send_packet(client, p1, sizeof(p1), NULL));
-	ASSERT_OK(dssh_transport_send_packet(client, p2, sizeof(p2), NULL));
+	ASSERT_OK(send_packet(client, p1, sizeof(p1), NULL));
+	ASSERT_OK(send_packet(client, p2, sizeof(p2), NULL));
 
 	uint8_t msg_type;
 	uint8_t *recv_payload;
 	size_t recv_len;
 
-	ASSERT_OK(dssh_transport_recv_packet(server, &msg_type, &recv_payload, &recv_len));
+	ASSERT_OK(recv_packet(server, &msg_type, &recv_payload, &recv_len));
 	ASSERT_EQ(msg_type, SSH_MSG_SERVICE_REQUEST);
 	ASSERT_EQ_U(recv_len, 2);
 	ASSERT_EQ(recv_payload[1], 0x01);
 
-	ASSERT_OK(dssh_transport_recv_packet(server, &msg_type, &recv_payload, &recv_len));
+	ASSERT_OK(recv_packet(server, &msg_type, &recv_payload, &recv_len));
 	ASSERT_EQ(msg_type, SSH_MSG_SERVICE_ACCEPT);
 	ASSERT_EQ_U(recv_len, 2);
 	ASSERT_EQ(recv_payload[1], 0x02);
@@ -1058,7 +1058,7 @@ test_packet_too_large(void)
 	memset(big_payload, 0x42, too_big);
 	big_payload[0] = SSH_MSG_SERVICE_REQUEST;
 
-	int res = dssh_transport_send_packet(client, big_payload, too_big, NULL);
+	int res = send_packet(client, big_payload, too_big, NULL);
 	ASSERT_ERR(res, DSSH_ERROR_TOOLONG);
 
 	free(big_payload);
@@ -1089,19 +1089,19 @@ test_packet_bidirectional(void)
 
 	/* Client to server */
 	uint8_t c2s_payload[] = { SSH_MSG_SERVICE_REQUEST, 0xC0 };
-	ASSERT_OK(dssh_transport_send_packet(client, c2s_payload, sizeof(c2s_payload), NULL));
+	ASSERT_OK(send_packet(client, c2s_payload, sizeof(c2s_payload), NULL));
 
 	uint8_t msg_type;
 	uint8_t *recv_payload;
 	size_t recv_len;
-	ASSERT_OK(dssh_transport_recv_packet(server, &msg_type, &recv_payload, &recv_len));
+	ASSERT_OK(recv_packet(server, &msg_type, &recv_payload, &recv_len));
 	ASSERT_EQ(msg_type, SSH_MSG_SERVICE_REQUEST);
 
 	/* Server to client */
 	uint8_t s2c_pay[] = { SSH_MSG_SERVICE_ACCEPT, 0xA0 };
-	ASSERT_OK(dssh_transport_send_packet(server, s2c_pay, sizeof(s2c_pay), NULL));
+	ASSERT_OK(send_packet(server, s2c_pay, sizeof(s2c_pay), NULL));
 
-	ASSERT_OK(dssh_transport_recv_packet(client, &msg_type, &recv_payload, &recv_len));
+	ASSERT_OK(recv_packet(client, &msg_type, &recv_payload, &recv_len));
 	ASSERT_EQ(msg_type, SSH_MSG_SERVICE_ACCEPT);
 	ASSERT_EQ(recv_payload[1], 0xA0);
 
@@ -1133,12 +1133,12 @@ test_packet_empty_payload(void)
 
 	/* Send a single-byte payload (just msg type) */
 	uint8_t payload[] = { SSH_MSG_SERVICE_REQUEST };
-	ASSERT_OK(dssh_transport_send_packet(client, payload, 1, NULL));
+	ASSERT_OK(send_packet(client, payload, 1, NULL));
 
 	uint8_t msg_type;
 	uint8_t *recv_payload;
 	size_t recv_len;
-	ASSERT_OK(dssh_transport_recv_packet(server, &msg_type, &recv_payload, &recv_len));
+	ASSERT_OK(recv_packet(server, &msg_type, &recv_payload, &recv_len));
 	ASSERT_EQ(msg_type, SSH_MSG_SERVICE_REQUEST);
 	ASSERT_EQ_U(recv_len, 1);
 
@@ -1175,14 +1175,14 @@ test_ignore_silently_skipped(void)
 	/* Send IGNORE, then a real message */
 	uint8_t ignore_msg[] = { SSH_MSG_IGNORE, 0x00, 0x00, 0x00, 0x02, 'h', 'i' };
 	uint8_t real_msg[] = { SSH_MSG_SERVICE_REQUEST, 0xBE };
-	ASSERT_OK(dssh_transport_send_packet(client, ignore_msg, sizeof(ignore_msg), NULL));
-	ASSERT_OK(dssh_transport_send_packet(client, real_msg, sizeof(real_msg), NULL));
+	ASSERT_OK(send_packet(client, ignore_msg, sizeof(ignore_msg), NULL));
+	ASSERT_OK(send_packet(client, real_msg, sizeof(real_msg), NULL));
 
 	/* Server's recv_packet should skip IGNORE and return real message */
 	uint8_t msg_type;
 	uint8_t *recv_payload;
 	size_t recv_len;
-	ASSERT_OK(dssh_transport_recv_packet(server, &msg_type, &recv_payload, &recv_len));
+	ASSERT_OK(recv_packet(server, &msg_type, &recv_payload, &recv_len));
 	ASSERT_EQ(msg_type, SSH_MSG_SERVICE_REQUEST);
 	ASSERT_EQ(recv_payload[1], 0xBE);
 
@@ -1221,7 +1221,7 @@ test_disconnect_sets_terminate(void)
 	uint8_t msg_type;
 	uint8_t *recv_payload;
 	size_t recv_len;
-	int res = dssh_transport_recv_packet(server, &msg_type, &recv_payload, &recv_len);
+	int res = recv_packet(server, &msg_type, &recv_payload, &recv_len);
 	ASSERT_ERR(res, DSSH_ERROR_TERMINATED);
 	ASSERT_TRUE(dssh_session_is_terminated(server));
 
@@ -1284,16 +1284,16 @@ test_debug_invokes_callback(void)
 	pos += text_len;
 	dssh_serialize_uint32(0, debug_msg, sizeof(debug_msg), &pos); /* language tag */
 
-	ASSERT_OK(dssh_transport_send_packet(client, debug_msg, pos, NULL));
+	ASSERT_OK(send_packet(client, debug_msg, pos, NULL));
 
 	/* Send a real message after so recv_packet returns */
 	uint8_t real_msg[] = { SSH_MSG_SERVICE_REQUEST, 0xFF };
-	ASSERT_OK(dssh_transport_send_packet(client, real_msg, sizeof(real_msg), NULL));
+	ASSERT_OK(send_packet(client, real_msg, sizeof(real_msg), NULL));
 
 	uint8_t msg_type;
 	uint8_t *recv_payload;
 	size_t recv_len;
-	ASSERT_OK(dssh_transport_recv_packet(server, &msg_type, &recv_payload, &recv_len));
+	ASSERT_OK(recv_packet(server, &msg_type, &recv_payload, &recv_len));
 	ASSERT_EQ(msg_type, SSH_MSG_SERVICE_REQUEST);
 
 	ASSERT_TRUE(test_debug_called);
@@ -1347,16 +1347,16 @@ test_unimplemented_invokes_callback(void)
 	unimpl_msg[pos++] = SSH_MSG_UNIMPLEMENTED;
 	dssh_serialize_uint32(42, unimpl_msg, sizeof(unimpl_msg), &pos);
 
-	ASSERT_OK(dssh_transport_send_packet(client, unimpl_msg, pos, NULL));
+	ASSERT_OK(send_packet(client, unimpl_msg, pos, NULL));
 
 	/* Send a real message after */
 	uint8_t real_msg[] = { SSH_MSG_SERVICE_REQUEST, 0x01 };
-	ASSERT_OK(dssh_transport_send_packet(client, real_msg, sizeof(real_msg), NULL));
+	ASSERT_OK(send_packet(client, real_msg, sizeof(real_msg), NULL));
 
 	uint8_t msg_type;
 	uint8_t *recv_payload;
 	size_t recv_len;
-	ASSERT_OK(dssh_transport_recv_packet(server, &msg_type, &recv_payload, &recv_len));
+	ASSERT_OK(recv_packet(server, &msg_type, &recv_payload, &recv_len));
 	ASSERT_EQ(msg_type, SSH_MSG_SERVICE_REQUEST);
 
 	ASSERT_TRUE(test_unimpl_called);
@@ -1390,17 +1390,17 @@ test_multiple_ignore_before_real(void)
 
 	/* Send 3 IGNORE messages then one real message */
 	uint8_t ignore[] = { SSH_MSG_IGNORE };
-	ASSERT_OK(dssh_transport_send_packet(client, ignore, 1, NULL));
-	ASSERT_OK(dssh_transport_send_packet(client, ignore, 1, NULL));
-	ASSERT_OK(dssh_transport_send_packet(client, ignore, 1, NULL));
+	ASSERT_OK(send_packet(client, ignore, 1, NULL));
+	ASSERT_OK(send_packet(client, ignore, 1, NULL));
+	ASSERT_OK(send_packet(client, ignore, 1, NULL));
 
 	uint8_t real[] = { SSH_MSG_SERVICE_REQUEST, 0x77 };
-	ASSERT_OK(dssh_transport_send_packet(client, real, sizeof(real), NULL));
+	ASSERT_OK(send_packet(client, real, sizeof(real), NULL));
 
 	uint8_t msg_type;
 	uint8_t *recv_payload;
 	size_t recv_len;
-	ASSERT_OK(dssh_transport_recv_packet(server, &msg_type, &recv_payload, &recv_len));
+	ASSERT_OK(recv_packet(server, &msg_type, &recv_payload, &recv_len));
 	ASSERT_EQ(msg_type, SSH_MSG_SERVICE_REQUEST);
 	ASSERT_EQ(recv_payload[1], 0x77);
 
@@ -1511,12 +1511,12 @@ test_handshake_encrypted_roundtrip(void)
 	/* After handshake, encryption is active.  Send a packet
 	 * from client to server and verify it arrives intact. */
 	uint8_t payload[] = { SSH_MSG_SERVICE_REQUEST, 0xCA, 0xFE, 0xBA, 0xBE };
-	ASSERT_OK(dssh_transport_send_packet(ctx.client, payload, sizeof(payload), NULL));
+	ASSERT_OK(send_packet(ctx.client, payload, sizeof(payload), NULL));
 
 	uint8_t msg_type;
 	uint8_t *recv_payload;
 	size_t recv_len;
-	ASSERT_OK(dssh_transport_recv_packet(ctx.server, &msg_type, &recv_payload, &recv_len));
+	ASSERT_OK(recv_packet(ctx.server, &msg_type, &recv_payload, &recv_len));
 	ASSERT_EQ(msg_type, SSH_MSG_SERVICE_REQUEST);
 	ASSERT_EQ_U(recv_len, sizeof(payload));
 	ASSERT_MEM_EQ(recv_payload, payload, sizeof(payload));
@@ -1543,7 +1543,7 @@ test_rekey_needed_false_initially(void)
 	dssh_session sess = dssh_session_init(true, 0);
 	ASSERT_NOT_NULL(sess);
 
-	ASSERT_FALSE(dssh_transport_rekey_needed(sess));
+	ASSERT_FALSE(rekey_needed(sess));
 
 	dssh_session_cleanup(sess);
 	mock_io_free(&io);
@@ -1566,7 +1566,7 @@ test_rekey_needed_tx_packets(void)
 	ASSERT_NOT_NULL(sess);
 
 	sess->trans.tx_since_rekey = DSSH_REKEY_SOFT_LIMIT;
-	ASSERT_TRUE(dssh_transport_rekey_needed(sess));
+	ASSERT_TRUE(rekey_needed(sess));
 
 	dssh_session_cleanup(sess);
 	mock_io_free(&io);
@@ -1589,7 +1589,7 @@ test_rekey_needed_rx_packets(void)
 	ASSERT_NOT_NULL(sess);
 
 	sess->trans.rx_since_rekey = DSSH_REKEY_SOFT_LIMIT;
-	ASSERT_TRUE(dssh_transport_rekey_needed(sess));
+	ASSERT_TRUE(rekey_needed(sess));
 
 	dssh_session_cleanup(sess);
 	mock_io_free(&io);
@@ -1612,7 +1612,7 @@ test_rekey_needed_bytes(void)
 	ASSERT_NOT_NULL(sess);
 
 	sess->trans.tx_bytes_since_rekey = DSSH_REKEY_BYTES;
-	ASSERT_TRUE(dssh_transport_rekey_needed(sess));
+	ASSERT_TRUE(rekey_needed(sess));
 
 	dssh_session_cleanup(sess);
 	mock_io_free(&io);
@@ -1636,7 +1636,7 @@ test_rekey_needed_time(void)
 
 	/* Set rekey_time to more than DSSH_REKEY_SECONDS ago */
 	sess->trans.rekey_time = time(NULL) - DSSH_REKEY_SECONDS - 1;
-	ASSERT_TRUE(dssh_transport_rekey_needed(sess));
+	ASSERT_TRUE(rekey_needed(sess));
 
 	dssh_session_cleanup(sess);
 	mock_io_free(&io);
@@ -1663,7 +1663,7 @@ test_rekey_needed_below_threshold(void)
 	sess->trans.rx_since_rekey = DSSH_REKEY_SOFT_LIMIT - 1;
 	sess->trans.tx_bytes_since_rekey = DSSH_REKEY_BYTES - 1;
 	sess->trans.rekey_time = time(NULL);
-	ASSERT_FALSE(dssh_transport_rekey_needed(sess));
+	ASSERT_FALSE(rekey_needed(sess));
 
 	dssh_session_cleanup(sess);
 	mock_io_free(&io);
@@ -1690,16 +1690,16 @@ test_rekey_needed_bytes_split_sum(void)
 	sess->trans.tx_bytes_since_rekey = half;
 	sess->trans.rx_bytes_since_rekey = half;
 	sess->trans.rekey_time = time(NULL);
-	ASSERT_TRUE(dssh_transport_rekey_needed(sess));
+	ASSERT_TRUE(rekey_needed(sess));
 
 	/* Verify each half alone does NOT trigger */
 	sess->trans.tx_bytes_since_rekey = half;
 	sess->trans.rx_bytes_since_rekey = 0;
-	ASSERT_FALSE(dssh_transport_rekey_needed(sess));
+	ASSERT_FALSE(rekey_needed(sess));
 
 	sess->trans.tx_bytes_since_rekey = 0;
 	sess->trans.rx_bytes_since_rekey = half;
-	ASSERT_FALSE(dssh_transport_rekey_needed(sess));
+	ASSERT_FALSE(rekey_needed(sess));
 
 	dssh_session_cleanup(sess);
 	mock_io_free(&io);
@@ -1716,7 +1716,7 @@ static int
 rekey_client_thread(void *arg)
 {
 	struct rekey_thread_arg *a = arg;
-	a->result = dssh_transport_rekey(a->ctx->client);
+	a->result = rekey(a->ctx->client);
 	return 0;
 }
 
@@ -1730,7 +1730,7 @@ rekey_server_recv_thread(void *arg)
 	uint8_t msg_type;
 	uint8_t *payload;
 	size_t payload_len;
-	a->result = dssh_transport_recv_packet(a->ctx->server,
+	a->result = recv_packet(a->ctx->server,
 	    &msg_type, &payload, &payload_len);
 	return 0;
 }
@@ -1763,7 +1763,7 @@ test_rekey_after_handshake(void)
 	ASSERT_EQ(client_arg.result, 0);
 
 	uint8_t real_msg[] = { SSH_MSG_SERVICE_REQUEST, 0xEE };
-	ASSERT_OK(dssh_transport_send_packet(ctx.client, real_msg, sizeof(real_msg), NULL));
+	ASSERT_OK(send_packet(ctx.client, real_msg, sizeof(real_msg), NULL));
 
 	thrd_join(st, NULL);
 	ASSERT_EQ(server_arg.result, 0);
@@ -1805,7 +1805,7 @@ test_rekey_session_id_stable(void)
 	thrd_join(ct, NULL);
 
 	uint8_t msg[] = { SSH_MSG_SERVICE_REQUEST, 0x01 };
-	ASSERT_OK(dssh_transport_send_packet(ctx.client, msg, sizeof(msg), NULL));
+	ASSERT_OK(send_packet(ctx.client, msg, sizeof(msg), NULL));
 
 	thrd_join(st, NULL);
 
@@ -1840,18 +1840,18 @@ test_rekey_encrypted_roundtrip(void)
 
 	/* Send a message after rekey so server recv returns */
 	uint8_t payload[] = { SSH_MSG_SERVICE_REQUEST, 0xDE, 0xAD, 0xBE, 0xEF };
-	ASSERT_OK(dssh_transport_send_packet(ctx.client, payload, sizeof(payload), NULL));
+	ASSERT_OK(send_packet(ctx.client, payload, sizeof(payload), NULL));
 	thrd_join(st, NULL);
 	ASSERT_EQ(server_arg.result, 0);
 
 	/* Now send another message and verify roundtrip with new keys */
 	uint8_t payload2[] = { SSH_MSG_SERVICE_ACCEPT, 0x12, 0x34 };
-	ASSERT_OK(dssh_transport_send_packet(ctx.server, payload2, sizeof(payload2), NULL));
+	ASSERT_OK(send_packet(ctx.server, payload2, sizeof(payload2), NULL));
 
 	uint8_t msg_type;
 	uint8_t *recv_payload;
 	size_t recv_len;
-	ASSERT_OK(dssh_transport_recv_packet(ctx.client, &msg_type, &recv_payload, &recv_len));
+	ASSERT_OK(recv_packet(ctx.client, &msg_type, &recv_payload, &recv_len));
 	ASSERT_EQ(msg_type, SSH_MSG_SERVICE_ACCEPT);
 	ASSERT_EQ_U(recv_len, sizeof(payload2));
 	ASSERT_MEM_EQ(recv_payload, payload2, sizeof(payload2));
@@ -1931,7 +1931,7 @@ test_rekey_hard_limit_send(void)
 
 	ctx.client->trans.tx_since_rekey = DSSH_REKEY_HARD_LIMIT;
 	uint8_t msg[] = { SSH_MSG_SERVICE_REQUEST, 0x42 };
-	int res = dssh_transport_send_packet(ctx.client, msg,
+	int res = send_packet(ctx.client, msg,
 	    sizeof(msg), NULL);
 	ASSERT_EQ(res, DSSH_ERROR_REKEY_NEEDED);
 
@@ -1951,7 +1951,7 @@ test_rekey_hard_limit_recv(void)
 
 	/* Client sends a packet before we set the limit */
 	uint8_t msg[] = { SSH_MSG_SERVICE_REQUEST, 0x42 };
-	ASSERT_OK(dssh_transport_send_packet(ctx.client, msg,
+	ASSERT_OK(send_packet(ctx.client, msg,
 	    sizeof(msg), NULL));
 
 	/* Set hard limit on server AFTER packet is in flight */
@@ -1960,7 +1960,7 @@ test_rekey_hard_limit_recv(void)
 	uint8_t mt;
 	uint8_t *payload;
 	size_t plen;
-	int res = dssh_transport_recv_packet(ctx.server, &mt,
+	int res = recv_packet(ctx.server, &mt,
 	    &payload, &plen);
 	ASSERT_EQ(res, DSSH_ERROR_REKEY_NEEDED);
 	/* Session must remain usable (matching send_packet's behavior) */
@@ -1983,7 +1983,7 @@ test_rekey_seq_preserved(void)
 	/* Send a few packets to advance sequence numbers */
 	for (int i = 0; i < 5; i++) {
 		uint8_t msg[] = { SSH_MSG_IGNORE, 0 };
-		ASSERT_OK(dssh_transport_send_packet(ctx.client, msg,
+		ASSERT_OK(send_packet(ctx.client, msg,
 		    sizeof(msg), NULL));
 	}
 
@@ -2000,7 +2000,7 @@ test_rekey_seq_preserved(void)
 	thrd_join(ct, NULL);
 
 	uint8_t msg2[] = { SSH_MSG_SERVICE_REQUEST, 0xEE };
-	dssh_transport_send_packet(ctx.client, msg2, sizeof(msg2), NULL);
+	send_packet(ctx.client, msg2, sizeof(msg2), NULL);
 	thrd_join(st, NULL);
 
 	/* Sequence numbers must NOT have been reset */
@@ -2425,7 +2425,7 @@ test_packet_recv_bad_padding(void)
 	uint8_t msg_type;
 	uint8_t *payload;
 	size_t payload_len;
-	int res = dssh_transport_recv_packet(sess, &msg_type,
+	int res = recv_packet(sess, &msg_type,
 	    &payload, &payload_len);
 	ASSERT_EQ(res, DSSH_ERROR_PARSE);
 
@@ -2478,7 +2478,7 @@ test_packet_recv_too_small(void)
 	uint8_t msg_type;
 	uint8_t *payload;
 	size_t payload_len;
-	int res = dssh_transport_recv_packet(sess, &msg_type,
+	int res = recv_packet(sess, &msg_type,
 	    &payload, &payload_len);
 	ASSERT_EQ(res, DSSH_ERROR_PARSE);
 
@@ -3059,17 +3059,17 @@ test_global_request_with_reply(void)
 	gr[gp++] = 1;  /* want_reply = true */
 
 	/* Send GLOBAL_REQUEST from client */
-	ASSERT_OK(dssh_transport_send_packet(client, gr, gp, NULL));
+	ASSERT_OK(send_packet(client, gr, gp, NULL));
 
 	/* Send a follow-up SERVICE_REQUEST so recv_packet returns */
 	uint8_t follow[] = { SSH_MSG_SERVICE_REQUEST, 0x42 };
-	ASSERT_OK(dssh_transport_send_packet(client, follow, sizeof(follow), NULL));
+	ASSERT_OK(send_packet(client, follow, sizeof(follow), NULL));
 
 	/* Server recv_packet: processes GLOBAL_REQUEST internally, returns SERVICE_REQUEST */
 	uint8_t msg_type;
 	uint8_t *payload;
 	size_t payload_len;
-	ASSERT_OK(dssh_transport_recv_packet(server, &msg_type, &payload, &payload_len));
+	ASSERT_OK(recv_packet(server, &msg_type, &payload, &payload_len));
 	ASSERT_EQ(msg_type, SSH_MSG_SERVICE_REQUEST);
 
 	/* Verify callback was invoked */
@@ -3078,7 +3078,7 @@ test_global_request_with_reply(void)
 
 	/* Server should have sent REQUEST_SUCCESS (81) reply.
 	 * Client reads it. */
-	ASSERT_OK(dssh_transport_recv_packet(client, &msg_type, &payload, &payload_len));
+	ASSERT_OK(recv_packet(client, &msg_type, &payload, &payload_len));
 	ASSERT_EQ(msg_type, 81);  /* SSH_MSG_REQUEST_SUCCESS */
 
 	dssh_session_cleanup(client);
@@ -3122,19 +3122,19 @@ test_global_request_rejected(void)
 	gp += 4;
 	gr[gp++] = 1;  /* want_reply */
 
-	ASSERT_OK(dssh_transport_send_packet(client, gr, gp, NULL));
+	ASSERT_OK(send_packet(client, gr, gp, NULL));
 
 	uint8_t follow[] = { SSH_MSG_SERVICE_REQUEST, 0x43 };
-	ASSERT_OK(dssh_transport_send_packet(client, follow, sizeof(follow), NULL));
+	ASSERT_OK(send_packet(client, follow, sizeof(follow), NULL));
 
 	uint8_t msg_type;
 	uint8_t *payload;
 	size_t payload_len;
-	ASSERT_OK(dssh_transport_recv_packet(server, &msg_type, &payload, &payload_len));
+	ASSERT_OK(recv_packet(server, &msg_type, &payload, &payload_len));
 	ASSERT_EQ(msg_type, SSH_MSG_SERVICE_REQUEST);
 
 	/* Server sent REQUEST_FAILURE (82) */
-	ASSERT_OK(dssh_transport_recv_packet(client, &msg_type, &payload, &payload_len));
+	ASSERT_OK(recv_packet(client, &msg_type, &payload, &payload_len));
 	ASSERT_EQ(msg_type, 82);  /* SSH_MSG_REQUEST_FAILURE */
 
 	dssh_session_cleanup(client);
@@ -3178,15 +3178,15 @@ test_global_request_no_reply(void)
 	gp += 5;
 	gr[gp++] = 0;  /* want_reply = false */
 
-	ASSERT_OK(dssh_transport_send_packet(client, gr, gp, NULL));
+	ASSERT_OK(send_packet(client, gr, gp, NULL));
 
 	uint8_t follow[] = { SSH_MSG_SERVICE_REQUEST, 0x44 };
-	ASSERT_OK(dssh_transport_send_packet(client, follow, sizeof(follow), NULL));
+	ASSERT_OK(send_packet(client, follow, sizeof(follow), NULL));
 
 	uint8_t msg_type;
 	uint8_t *payload;
 	size_t payload_len;
-	ASSERT_OK(dssh_transport_recv_packet(server, &msg_type, &payload, &payload_len));
+	ASSERT_OK(recv_packet(server, &msg_type, &payload, &payload_len));
 	ASSERT_EQ(msg_type, SSH_MSG_SERVICE_REQUEST);
 
 	/* No reply packet should be generated -- client should not receive anything.
@@ -3230,19 +3230,19 @@ test_global_request_no_callback(void)
 	gp += 6;
 	gr[gp++] = 1;  /* want_reply = true */
 
-	ASSERT_OK(dssh_transport_send_packet(client, gr, gp, NULL));
+	ASSERT_OK(send_packet(client, gr, gp, NULL));
 
 	uint8_t follow[] = { SSH_MSG_SERVICE_REQUEST, 0x45 };
-	ASSERT_OK(dssh_transport_send_packet(client, follow, sizeof(follow), NULL));
+	ASSERT_OK(send_packet(client, follow, sizeof(follow), NULL));
 
 	uint8_t msg_type;
 	uint8_t *payload;
 	size_t payload_len;
-	ASSERT_OK(dssh_transport_recv_packet(server, &msg_type, &payload, &payload_len));
+	ASSERT_OK(recv_packet(server, &msg_type, &payload, &payload_len));
 	ASSERT_EQ(msg_type, SSH_MSG_SERVICE_REQUEST);
 
 	/* No callback -> gr_res=-1 -> FAILURE reply */
-	ASSERT_OK(dssh_transport_recv_packet(client, &msg_type, &payload, &payload_len));
+	ASSERT_OK(recv_packet(client, &msg_type, &payload, &payload_len));
 	ASSERT_EQ(msg_type, 82);  /* SSH_MSG_REQUEST_FAILURE */
 
 	dssh_session_cleanup(client);
@@ -3276,16 +3276,16 @@ test_global_request_truncated(void)
 
 	/* Just the msg_type byte -- not enough for name length */
 	uint8_t gr[] = { 80 };
-	ASSERT_OK(dssh_transport_send_packet(client, gr, sizeof(gr), NULL));
+	ASSERT_OK(send_packet(client, gr, sizeof(gr), NULL));
 
 	/* Follow-up so recv_packet returns */
 	uint8_t follow[] = { SSH_MSG_SERVICE_REQUEST, 0x46 };
-	ASSERT_OK(dssh_transport_send_packet(client, follow, sizeof(follow), NULL));
+	ASSERT_OK(send_packet(client, follow, sizeof(follow), NULL));
 
 	uint8_t msg_type;
 	uint8_t *payload;
 	size_t payload_len;
-	ASSERT_OK(dssh_transport_recv_packet(server, &msg_type, &payload, &payload_len));
+	ASSERT_OK(recv_packet(server, &msg_type, &payload, &payload_len));
 	/* Truncated GLOBAL_REQUEST is silently dropped (break from switch
 	 * falls through to loop top), so we get the follow-up packet */
 	ASSERT_EQ(msg_type, SSH_MSG_SERVICE_REQUEST);
@@ -3342,15 +3342,15 @@ test_debug_truncated_payload(void)
 
 	/* DEBUG: type(4) + always_display(1) -- no string */
 	uint8_t dbg[] = { SSH_MSG_DEBUG, 1 };
-	ASSERT_OK(dssh_transport_send_packet(client, dbg, sizeof(dbg), NULL));
+	ASSERT_OK(send_packet(client, dbg, sizeof(dbg), NULL));
 
 	uint8_t follow[] = { SSH_MSG_SERVICE_REQUEST, 0x47 };
-	ASSERT_OK(dssh_transport_send_packet(client, follow, sizeof(follow), NULL));
+	ASSERT_OK(send_packet(client, follow, sizeof(follow), NULL));
 
 	uint8_t msg_type;
 	uint8_t *payload;
 	size_t payload_len;
-	ASSERT_OK(dssh_transport_recv_packet(server, &msg_type, &payload, &payload_len));
+	ASSERT_OK(recv_packet(server, &msg_type, &payload, &payload_len));
 	ASSERT_EQ(msg_type, SSH_MSG_SERVICE_REQUEST);
 
 	/* Callback should have been called with msg_len=0 */
@@ -3388,15 +3388,15 @@ test_debug_no_callback(void)
 	/* No debug_cb set */
 
 	uint8_t dbg[] = { SSH_MSG_DEBUG, 0, 0, 0, 0, 5, 'h', 'e', 'l', 'l', 'o' };
-	ASSERT_OK(dssh_transport_send_packet(client, dbg, sizeof(dbg), NULL));
+	ASSERT_OK(send_packet(client, dbg, sizeof(dbg), NULL));
 
 	uint8_t follow[] = { SSH_MSG_SERVICE_REQUEST, 0x48 };
-	ASSERT_OK(dssh_transport_send_packet(client, follow, sizeof(follow), NULL));
+	ASSERT_OK(send_packet(client, follow, sizeof(follow), NULL));
 
 	uint8_t msg_type;
 	uint8_t *payload;
 	size_t payload_len;
-	ASSERT_OK(dssh_transport_recv_packet(server, &msg_type, &payload, &payload_len));
+	ASSERT_OK(recv_packet(server, &msg_type, &payload, &payload_len));
 	ASSERT_EQ(msg_type, SSH_MSG_SERVICE_REQUEST);
 
 	dssh_session_cleanup(client);
@@ -3436,15 +3436,15 @@ test_unimplemented_short_payload(void)
 
 	/* UNIMPLEMENTED with just 2 bytes (needs 5 for seq number) */
 	uint8_t unimp[] = { SSH_MSG_UNIMPLEMENTED, 0x00 };
-	ASSERT_OK(dssh_transport_send_packet(client, unimp, sizeof(unimp), NULL));
+	ASSERT_OK(send_packet(client, unimp, sizeof(unimp), NULL));
 
 	uint8_t follow[] = { SSH_MSG_SERVICE_REQUEST, 0x49 };
-	ASSERT_OK(dssh_transport_send_packet(client, follow, sizeof(follow), NULL));
+	ASSERT_OK(send_packet(client, follow, sizeof(follow), NULL));
 
 	uint8_t msg_type;
 	uint8_t *payload;
 	size_t payload_len;
-	ASSERT_OK(dssh_transport_recv_packet(server, &msg_type, &payload, &payload_len));
+	ASSERT_OK(recv_packet(server, &msg_type, &payload, &payload_len));
 	ASSERT_EQ(msg_type, SSH_MSG_SERVICE_REQUEST);
 
 	dssh_session_cleanup(client);
@@ -3526,21 +3526,21 @@ test_build_namelist_overflow(void)
 	/* Buffer fits "alpha," but not "alpha,bravo".
 	 * Comma+name checked together, so only "alpha" is emitted. */
 	char buf[8];
-	size_t len = dssh_test_build_namelist(e1,
+	size_t len = build_namelist(e1,
 	    offsetof(struct dssh_kex_s, name), buf, sizeof(buf));
 	ASSERT_STR_EQ(buf, "alpha");
 	ASSERT_EQ_U(len, 5);
 
 	/* Buffer too small for comma after "alpha" -- covers pos+1>=bufsz */
 	char exact[6];  /* pos=5 after "alpha", 5+1>=6 so comma not written */
-	len = dssh_test_build_namelist(e1,
+	len = build_namelist(e1,
 	    offsetof(struct dssh_kex_s, name), exact, sizeof(exact));
 	ASSERT_STR_EQ(exact, "alpha");
 	ASSERT_EQ_U(len, 5);
 
 	/* Buffer too small even for "alpha" */
 	char tiny[4];
-	len = dssh_test_build_namelist(e1,
+	len = build_namelist(e1,
 	    offsetof(struct dssh_kex_s, name), tiny, sizeof(tiny));
 	ASSERT_TRUE(len < sizeof(tiny));
 
@@ -3575,7 +3575,7 @@ test_build_namelist_truncation_no_trailing_comma(void)
 
 	/* Exact fit: buf[12] holds "alpha,bravo\0" */
 	char exact_fit[12];
-	size_t len = dssh_test_build_namelist(e1,
+	size_t len = build_namelist(e1,
 	    offsetof(struct dssh_kex_s, name), exact_fit, sizeof(exact_fit));
 	ASSERT_STR_EQ(exact_fit, "alpha,bravo");
 	ASSERT_EQ_U(len, 11);
@@ -3583,7 +3583,7 @@ test_build_namelist_truncation_no_trailing_comma(void)
 	/* One byte short: can't fit "bravo" after comma.
 	 * Must roll back to "alpha" with no trailing comma. */
 	char one_short[11];
-	len = dssh_test_build_namelist(e1,
+	len = build_namelist(e1,
 	    offsetof(struct dssh_kex_s, name), one_short, sizeof(one_short));
 	ASSERT_STR_EQ(one_short, "alpha");
 	ASSERT_EQ_U(len, 5);
@@ -3607,7 +3607,7 @@ test_build_namelist_truncation_no_trailing_comma(void)
 	e5->next = NULL;
 
 	char three[7];
-	len = dssh_test_build_namelist(e3,
+	len = build_namelist(e3,
 	    offsetof(struct dssh_kex_s, name), three, sizeof(three));
 	ASSERT_STR_EQ(three, "aa,bb");
 	ASSERT_EQ_U(len, 5);
@@ -3615,7 +3615,7 @@ test_build_namelist_truncation_no_trailing_comma(void)
 	/* Buffer fits comma but nothing after: "aa,bb" in buf[6].
 	 * pos=5 after "aa,bb", comma check: 5+1>=6 -> break. */
 	char tight[6];
-	len = dssh_test_build_namelist(e3,
+	len = build_namelist(e3,
 	    offsetof(struct dssh_kex_s, name), tight, sizeof(tight));
 	ASSERT_STR_EQ(tight, "aa,bb");
 	ASSERT_EQ_U(len, 5);
@@ -3736,7 +3736,7 @@ test_is_version_line_ss_not_ssh(void)
 {
 	/* "SSx-..." -- starts with SS but not SSH */
 	uint8_t buf[] = "SSx-2.0-test\r\n";
-	ASSERT_FALSE(dssh_test_is_version_line(buf, sizeof(buf) - 1));
+	ASSERT_FALSE(is_version_line(buf, sizeof(buf) - 1));
 	return TEST_PASS;
 }
 
@@ -3745,7 +3745,7 @@ test_is_20_bad_minor(void)
 {
 	/* "SSH-2.x-test" -- major is 2 but separator isn't ".0-" */
 	uint8_t buf[] = "SSH-2.x-test\r\n";
-	ASSERT_FALSE(dssh_test_is_20(buf, sizeof(buf) - 1));
+	ASSERT_FALSE(is_20(buf, sizeof(buf) - 1));
 	return TEST_PASS;
 }
 
@@ -3754,7 +3754,7 @@ test_is_20_199_partial(void)
 {
 	/* "SSH-1.9x-test" -- starts like 1.99 but isn't */
 	uint8_t buf[] = "SSH-1.9x-test\r\n";
-	ASSERT_FALSE(dssh_test_is_20(buf, sizeof(buf) - 1));
+	ASSERT_FALSE(is_20(buf, sizeof(buf) - 1));
 	return TEST_PASS;
 }
 
@@ -3763,7 +3763,7 @@ test_is_20_199_short_buf(void)
 {
 	/* 8-byte buffer: "SSH-3.0-" -- fails buflen >= 9 on line 78 */
 	uint8_t buf[] = "SSH-3.0-";
-	ASSERT_FALSE(dssh_test_is_20(buf, 8));
+	ASSERT_FALSE(is_20(buf, 8));
 	return TEST_PASS;
 }
 
@@ -3772,7 +3772,7 @@ test_is_20_199_bad_minor_digit(void)
 {
 	/* "SSH-1.88-test" -- buf[6]=='8' not '9' */
 	uint8_t buf[] = "SSH-1.88-test\r\n";
-	ASSERT_FALSE(dssh_test_is_20(buf, sizeof(buf) - 1));
+	ASSERT_FALSE(is_20(buf, sizeof(buf) - 1));
 	return TEST_PASS;
 }
 
@@ -3781,7 +3781,7 @@ test_is_20_199_no_dash(void)
 {
 	/* "SSH-1.99Xtest" -- buf[8]=='X' not '-' */
 	uint8_t buf[] = "SSH-1.99Xtest\r\n";
-	ASSERT_FALSE(dssh_test_is_20(buf, sizeof(buf) - 1));
+	ASSERT_FALSE(is_20(buf, sizeof(buf) - 1));
 	return TEST_PASS;
 }
 
@@ -4016,9 +4016,9 @@ static int
 ve_ki_thread(void *arg)
 {
 	struct ve_ki_ctx *ctx = arg;
-	ctx->result = dssh_transport_version_exchange(ctx->sess);
+	ctx->result = version_exchange(ctx->sess);
 	if (ctx->result == 0)
-		ctx->result = dssh_transport_kexinit(ctx->sess);
+		ctx->result = kexinit(ctx->sess);
 	if (ctx->result < 0) {
 		if (ctx->sess->trans.client)
 			mock_io_close_c2s(ctx->io);
@@ -4157,7 +4157,7 @@ dhgex_server_run(struct dhgex_server_ctx *ctx,
 	ctx->server->trans.exchange_hash_sz = 0;
 	ctx->server->terminate = false;
 
-	int res = dssh_transport_kex(ctx->server);
+	int res = kex(ctx->server);
 
 	uint8_t drain[16384];
 	mock_io_drain(&iter_io.s2c, drain, sizeof(drain));
@@ -4572,7 +4572,7 @@ c25519_server_run(struct c25519_server_ctx *ctx,
 	ctx->server->trans.exchange_hash_sz = 0;
 	ctx->server->terminate = false;
 
-	int res = dssh_transport_kex(ctx->server);
+	int res = kex(ctx->server);
 
 	uint8_t drain[16384];
 	mock_io_drain(&iter_io.s2c, drain, sizeof(drain));
@@ -4896,7 +4896,7 @@ test_negotiate_no_common_kex(void)
 
 	/* peer_kexinit is still set from the first run, so
 	 * kexinit will skip recv and go straight to negotiate */
-	int res = dssh_transport_kexinit(client);
+	int res = kexinit(client);
 	ASSERT_EQ(res, DSSH_ERROR_INVALID);
 
 	/* Restore */
@@ -5190,16 +5190,16 @@ test_debug_msg_len_exceeds_payload(void)
 	dbg[1] = 1; /* always_display */
 	size_t dp = 2;
 	dssh_serialize_uint32(100, dbg, sizeof(dbg), &dp); /* msg_len=100 */
-	ASSERT_OK(dssh_transport_send_packet(client, dbg, sizeof(dbg), NULL));
+	ASSERT_OK(send_packet(client, dbg, sizeof(dbg), NULL));
 
 	/* Send a follow-up so recv_packet returns */
 	uint8_t follow[] = { SSH_MSG_SERVICE_REQUEST, 0x47 };
-	ASSERT_OK(dssh_transport_send_packet(client, follow, sizeof(follow), NULL));
+	ASSERT_OK(send_packet(client, follow, sizeof(follow), NULL));
 
 	uint8_t msg_type;
 	uint8_t *payload;
 	size_t payload_len;
-	dssh_transport_recv_packet(server, &msg_type, &payload, &payload_len);
+	recv_packet(server, &msg_type, &payload, &payload_len);
 
 	/* Debug callback should have been invoked with msg_len clamped to 0 */
 	ASSERT_TRUE(debug_cb_invoked);
@@ -5245,16 +5245,16 @@ test_global_request_name_exceeds_payload(void)
 	gr[gp++] = 'a';
 	gr[gp++] = 'b';
 	/* Missing: rest of name + want_reply byte */
-	ASSERT_OK(dssh_transport_send_packet(client, gr, gp, NULL));
+	ASSERT_OK(send_packet(client, gr, gp, NULL));
 
 	/* Follow-up packet to flush */
 	uint8_t follow[] = { SSH_MSG_SERVICE_REQUEST, 0x47 };
-	ASSERT_OK(dssh_transport_send_packet(client, follow, sizeof(follow), NULL));
+	ASSERT_OK(send_packet(client, follow, sizeof(follow), NULL));
 
 	uint8_t msg_type;
 	uint8_t *payload;
 	size_t payload_len;
-	dssh_transport_recv_packet(server, &msg_type, &payload, &payload_len);
+	recv_packet(server, &msg_type, &payload, &payload_len);
 
 	dssh_session_cleanup(server);
 	dssh_session_cleanup(client);
@@ -5280,7 +5280,7 @@ test_rekey_time_zero(void)
 
 	/* Force rekey_time to 0 -- rekey_needed should return false */
 	sess->trans.rekey_time = 0;
-	ASSERT_FALSE(dssh_transport_rekey_needed(sess));
+	ASSERT_FALSE(rekey_needed(sess));
 
 	dssh_session_cleanup(sess);
 	dssh_test_reset_global_config();
@@ -5343,7 +5343,7 @@ test_ed25519_sign_basic(void)
 	ASSERT_EQ(dssh_register_ssh_ed25519(), 0);
 	ASSERT_EQ(dssh_ed25519_generate_key(), 0);
 
-	dssh_key_algo ka = dssh_transport_find_key_algo("ssh-ed25519");
+	dssh_key_algo ka = find_key_algo("ssh-ed25519");
 	ASSERT_NOT_NULL(ka);
 
 	const uint8_t data[] = "test";
@@ -5366,7 +5366,7 @@ test_ed25519_pubkey_basic(void)
 	ASSERT_EQ(dssh_register_ssh_ed25519(), 0);
 	ASSERT_EQ(dssh_ed25519_generate_key(), 0);
 
-	dssh_key_algo ka = dssh_transport_find_key_algo("ssh-ed25519");
+	dssh_key_algo ka = find_key_algo("ssh-ed25519");
 	ASSERT_NOT_NULL(ka);
 
 	const uint8_t *out = NULL;
@@ -5386,7 +5386,7 @@ test_rsa_sign_basic(void)
 	ASSERT_EQ(dssh_register_rsa_sha2_256(), 0);
 	ASSERT_EQ(dssh_rsa_sha2_256_generate_key(2048), 0);
 
-	dssh_key_algo ka = dssh_transport_find_key_algo("rsa-sha2-256");
+	dssh_key_algo ka = find_key_algo("rsa-sha2-256");
 	ASSERT_NOT_NULL(ka);
 
 	const uint8_t data[] = "test";
@@ -5409,7 +5409,7 @@ test_rsa_pubkey_basic(void)
 	ASSERT_EQ(dssh_register_rsa_sha2_256(), 0);
 	ASSERT_EQ(dssh_rsa_sha2_256_generate_key(2048), 0);
 
-	dssh_key_algo ka = dssh_transport_find_key_algo("rsa-sha2-256");
+	dssh_key_algo ka = find_key_algo("rsa-sha2-256");
 	ASSERT_NOT_NULL(ka);
 
 	const uint8_t *out = NULL;
@@ -5448,8 +5448,8 @@ test_ed25519_haskey_wrong_type(void)
 	ASSERT_EQ(dssh_register_rsa_sha2_256(), 0);
 	ASSERT_EQ(dssh_rsa_sha2_256_generate_key(2048), 0);
 
-	dssh_key_algo ed = dssh_transport_find_key_algo("ssh-ed25519");
-	dssh_key_algo rsa = dssh_transport_find_key_algo("rsa-sha2-256");
+	dssh_key_algo ed = find_key_algo("ssh-ed25519");
+	dssh_key_algo rsa = find_key_algo("rsa-sha2-256");
 	ASSERT_NOT_NULL(ed);
 	ASSERT_NOT_NULL(rsa);
 
@@ -5471,8 +5471,8 @@ test_rsa_haskey_wrong_type(void)
 	ASSERT_EQ(dssh_register_rsa_sha2_256(), 0);
 	ASSERT_EQ(dssh_ed25519_generate_key(), 0);
 
-	dssh_key_algo ed = dssh_transport_find_key_algo("ssh-ed25519");
-	dssh_key_algo rsa = dssh_transport_find_key_algo("rsa-sha2-256");
+	dssh_key_algo ed = find_key_algo("ssh-ed25519");
+	dssh_key_algo rsa = find_key_algo("rsa-sha2-256");
 	ASSERT_NOT_NULL(ed);
 	ASSERT_NOT_NULL(rsa);
 
@@ -5607,7 +5607,7 @@ test_register_two_lang(void)
 }
 
 /* ================================================================
- * KEXINIT parsing -- direct unit tests via dssh_test_parse_peer_kexinit
+ * KEXINIT parsing -- direct unit tests via parse_peer_kexinit
  * ================================================================ */
 
 /*
@@ -5668,7 +5668,7 @@ test_kexinit_parse_valid(void)
 	char peer_lists[10][1024];
 	bool first_kex_follows = true;
 
-	ASSERT_EQ(dssh_test_parse_peer_kexinit(buf, pos, peer_lists,
+	ASSERT_EQ(parse_peer_kexinit(buf, pos, peer_lists,
 	    &first_kex_follows), 0);
 	ASSERT_STR_EQ(peer_lists[0], "curve25519-sha256");
 	ASSERT_STR_EQ(peer_lists[1], "ssh-ed25519");
@@ -5697,7 +5697,7 @@ test_kexinit_parse_control_char(void)
 	char peer_lists[10][1024];
 	bool first_kex_follows;
 
-	ASSERT_EQ(dssh_test_parse_peer_kexinit(buf, pos + 3, peer_lists,
+	ASSERT_EQ(parse_peer_kexinit(buf, pos + 3, peer_lists,
 	    &first_kex_follows), DSSH_ERROR_PARSE);
 
 	return TEST_PASS;
@@ -5730,7 +5730,7 @@ test_kexinit_parse_name_too_long(void)
 	char peer_lists[10][1024];
 	bool first_kex_follows;
 
-	ASSERT_EQ(dssh_test_parse_peer_kexinit(buf, pos, peer_lists,
+	ASSERT_EQ(parse_peer_kexinit(buf, pos, peer_lists,
 	    &first_kex_follows), DSSH_ERROR_PARSE);
 
 	return TEST_PASS;
@@ -5752,7 +5752,7 @@ test_kexinit_parse_truncated(void)
 	char peer_lists[10][1024];
 	bool first_kex_follows;
 
-	ASSERT_EQ(dssh_test_parse_peer_kexinit(buf, pos, peer_lists,
+	ASSERT_EQ(parse_peer_kexinit(buf, pos, peer_lists,
 	    &first_kex_follows), DSSH_ERROR_PARSE);
 
 	return TEST_PASS;
@@ -5766,7 +5766,7 @@ test_kexinit_parse_too_short(void)
 	char peer_lists[10][1024];
 	bool first_kex_follows;
 
-	ASSERT_EQ(dssh_test_parse_peer_kexinit(buf, 5, peer_lists,
+	ASSERT_EQ(parse_peer_kexinit(buf, 5, peer_lists,
 	    &first_kex_follows), DSSH_ERROR_PARSE);
 
 	return TEST_PASS;
@@ -5784,7 +5784,7 @@ test_kexinit_parse_first_kex_follows(void)
 	char peer_lists[10][1024];
 	bool first_kex_follows = false;
 
-	ASSERT_EQ(dssh_test_parse_peer_kexinit(buf, pos, peer_lists,
+	ASSERT_EQ(parse_peer_kexinit(buf, pos, peer_lists,
 	    &first_kex_follows), 0);
 	ASSERT_EQ(first_kex_follows, true);
 
@@ -5810,14 +5810,14 @@ test_kexinit_peer_parse_truncated_namelist(void)
 	char peer_lists[10][1024];
 	bool first_kex_follows;
 
-	ASSERT_EQ(dssh_test_parse_peer_kexinit(buf, pos, peer_lists,
+	ASSERT_EQ(parse_peer_kexinit(buf, pos, peer_lists,
 	    &first_kex_follows), DSSH_ERROR_PARSE);
 
 	return TEST_PASS;
 }
 
 /* ================================================================
- * K wire encoding -- direct unit tests via dssh_test_encode_k_wire
+ * K wire encoding -- direct unit tests via encode_k_wire
  * ================================================================ */
 
 static int
@@ -5828,7 +5828,7 @@ test_encode_k_mpint_no_pad(void)
 	uint8_t *out = NULL;
 	size_t out_sz = 0;
 
-	ASSERT_EQ(dssh_test_encode_k_wire(raw, sizeof(raw), false,
+	ASSERT_EQ(encode_k_wire(raw, sizeof(raw), false,
 	    &out, &out_sz), 0);
 	ASSERT_EQ(out_sz, 6u);
 	ASSERT_EQ(out[0], 0); ASSERT_EQ(out[1], 0);
@@ -5846,7 +5846,7 @@ test_encode_k_mpint_sign_pad(void)
 	uint8_t *out = NULL;
 	size_t out_sz = 0;
 
-	ASSERT_EQ(dssh_test_encode_k_wire(raw, sizeof(raw), false,
+	ASSERT_EQ(encode_k_wire(raw, sizeof(raw), false,
 	    &out, &out_sz), 0);
 	ASSERT_EQ(out_sz, 7u);
 	/* Length = 3 (2 data bytes + 1 padding) */
@@ -5864,7 +5864,7 @@ test_encode_k_mpint_empty(void)
 	uint8_t *out = NULL;
 	size_t out_sz = 0;
 
-	ASSERT_EQ(dssh_test_encode_k_wire(NULL, 0, false,
+	ASSERT_EQ(encode_k_wire(NULL, 0, false,
 	    &out, &out_sz), 0);
 	ASSERT_EQ(out_sz, 4u);
 	/* Length = 0 */
@@ -5882,7 +5882,7 @@ test_encode_k_string(void)
 	uint8_t *out = NULL;
 	size_t out_sz = 0;
 
-	ASSERT_EQ(dssh_test_encode_k_wire(raw, sizeof(raw), true,
+	ASSERT_EQ(encode_k_wire(raw, sizeof(raw), true,
 	    &out, &out_sz), 0);
 	ASSERT_EQ(out_sz, 6u);
 	/* Length = 2 (no padding) */
@@ -5899,7 +5899,7 @@ test_encode_k_string_empty(void)
 	uint8_t *out = NULL;
 	size_t out_sz = 0;
 
-	ASSERT_EQ(dssh_test_encode_k_wire(NULL, 0, true,
+	ASSERT_EQ(encode_k_wire(NULL, 0, true,
 	    &out, &out_sz), 0);
 	ASSERT_EQ(out_sz, 4u);
 	ASSERT_EQ(out[0], 0); ASSERT_EQ(out[1], 0);
@@ -6305,7 +6305,7 @@ test_cleanup_null_cleanup_fn(void)
 	struct dssh_mac_s dummy_mac = { 0 };
 	struct dssh_comp_s dummy_comp = { 0 };
 
-	/* Set selected modules with NULL cleanup -- dssh_transport_cleanup
+	/* Set selected modules with NULL cleanup -- transport_cleanup
 	 * should skip the cleanup calls without crashing. */
 	sess->trans.kex_selected = &dummy_kex;
 	sess->trans.enc_c2s_selected = &dummy_enc;
@@ -6315,7 +6315,7 @@ test_cleanup_null_cleanup_fn(void)
 	sess->trans.comp_c2s_selected = &dummy_comp;
 	sess->trans.comp_s2c_selected = &dummy_comp;
 
-	/* dssh_session_cleanup calls dssh_transport_cleanup internally */
+	/* dssh_session_cleanup calls transport_cleanup internally */
 	dssh_session_cleanup(sess);
 	mock_io_free(&io);
 	dssh_test_reset_global_config();
@@ -6340,14 +6340,14 @@ static int
 test_is_20_version_199(void)
 {
 	uint8_t buf[] = "SSH-1.99-test\r\n";
-	ASSERT_TRUE(dssh_test_is_20(buf, sizeof(buf) - 1));
+	ASSERT_TRUE(is_20(buf, sizeof(buf) - 1));
 	return TEST_PASS;
 }
 
 /*
  * version_rx: received > 255 branch (line 96).
  * Inject a 256-byte SSH version line into the s2c pipe and call
- * dssh_transport_version_exchange as a client.  The line exceeds
+ * version_exchange as a client.  The line exceeds
  * the 255-byte RFC limit, so version_rx must reject it.
  */
 static int
@@ -6374,7 +6374,7 @@ test_version_rx_too_long(void)
 	long_line[258] = '\0';
 	mock_io_inject(&io.s2c, (const uint8_t *)long_line, 258);
 
-	int res = dssh_transport_version_exchange(client);
+	int res = version_exchange(client);
 	ASSERT_TRUE(res < 0);
 
 	dssh_session_cleanup(client);
@@ -6403,7 +6403,7 @@ test_version_rx_non_ascii(void)
 	mock_io_inject(&io.s2c, (const uint8_t *)bad_line,
 	    sizeof(bad_line) - 1);
 
-	int res = dssh_transport_version_exchange(client);
+	int res = version_exchange(client);
 	ASSERT_TRUE(res < 0);
 
 	dssh_session_cleanup(client);
@@ -6515,13 +6515,13 @@ test_negotiate_no_common_comp_s2c(void)
 
 	/* Determine our algorithm names for the matching lists */
 	char kex_name[64], ka_name[64], enc_name[64], mac_name[64];
-	dssh_test_build_namelist(gconf.kex_head,
+	build_namelist(gconf.kex_head,
 	    offsetof(struct dssh_kex_s, name), kex_name, sizeof(kex_name));
-	dssh_test_build_namelist(gconf.key_algo_head,
+	build_namelist(gconf.key_algo_head,
 	    offsetof(struct dssh_key_algo_s, name), ka_name, sizeof(ka_name));
-	dssh_test_build_namelist(gconf.enc_head,
+	build_namelist(gconf.enc_head,
 	    offsetof(struct dssh_enc_s, name), enc_name, sizeof(enc_name));
-	dssh_test_build_namelist(gconf.mac_head,
+	build_namelist(gconf.mac_head,
 	    offsetof(struct dssh_mac_s, name), mac_name, sizeof(mac_name));
 
 	size_t pos = 17;  /* skip msg_type + cookie */
@@ -6555,7 +6555,7 @@ test_negotiate_no_common_comp_s2c(void)
 	client->trans.comp_s2c_selected = NULL;
 
 	/* Re-run kexinit -- should fail because comp_s2c has no match */
-	int res = dssh_transport_kexinit(client);
+	int res = kexinit(client);
 	ASSERT_EQ(res, DSSH_ERROR_INVALID);
 
 	/* Verify comp_c2s succeeded but comp_s2c is NULL */
@@ -6588,7 +6588,7 @@ test_derive_key_ossl_shared_secret(void)
 	memset(session_id, 0x33, sizeof(session_id));
 
 	dssh_test_ossl_fail_after(3);
-	int res = dssh_test_derive_key("SHA256",
+	int res = derive_key("SHA256",
 	    shared_secret, sizeof(shared_secret),
 	    hash, sizeof(hash),
 	    'A',
@@ -6613,7 +6613,7 @@ test_derive_key_ossl_hash(void)
 	memset(session_id, 0x33, sizeof(session_id));
 
 	dssh_test_ossl_fail_after(4);
-	int res = dssh_test_derive_key("SHA256",
+	int res = derive_key("SHA256",
 	    shared_secret, sizeof(shared_secret),
 	    hash, sizeof(hash),
 	    'A',
@@ -6638,7 +6638,7 @@ test_derive_key_ossl_letter(void)
 	memset(session_id, 0x33, sizeof(session_id));
 
 	dssh_test_ossl_fail_after(5);
-	int res = dssh_test_derive_key("SHA256",
+	int res = derive_key("SHA256",
 	    shared_secret, sizeof(shared_secret),
 	    hash, sizeof(hash),
 	    'A',
@@ -6663,7 +6663,7 @@ test_derive_key_ossl_session_id(void)
 	memset(session_id, 0x33, sizeof(session_id));
 
 	dssh_test_ossl_fail_after(6);
-	int res = dssh_test_derive_key("SHA256",
+	int res = derive_key("SHA256",
 	    shared_secret, sizeof(shared_secret),
 	    hash, sizeof(hash),
 	    'A',
@@ -6688,7 +6688,7 @@ test_derive_key_ossl_final(void)
 	memset(session_id, 0x33, sizeof(session_id));
 
 	dssh_test_ossl_fail_after(7);
-	int res = dssh_test_derive_key("SHA256",
+	int res = derive_key("SHA256",
 	    shared_secret, sizeof(shared_secret),
 	    hash, sizeof(hash),
 	    'A',
@@ -6713,7 +6713,7 @@ test_derive_key_ossl_init(void)
 	memset(session_id, 0x33, sizeof(session_id));
 
 	dssh_test_ossl_fail_after(2);
-	int res = dssh_test_derive_key("SHA256",
+	int res = derive_key("SHA256",
 	    shared_secret, sizeof(shared_secret),
 	    hash, sizeof(hash),
 	    'A',
@@ -6742,7 +6742,7 @@ test_derive_key_ossl_extension_loop(void)
 
 	/* Fail the EVP_DigestInit_ex in the extension loop (call 8) */
 	dssh_test_ossl_fail_after(8);
-	int res = dssh_test_derive_key("SHA256",
+	int res = derive_key("SHA256",
 	    shared_secret, sizeof(shared_secret),
 	    hash, sizeof(hash),
 	    'A',
@@ -6897,7 +6897,7 @@ static int
 test_is_20_20_bad_dot(void)
 {
 	uint8_t buf[] = "SSH-2X-test\r\n";
-	ASSERT_FALSE(dssh_test_is_20(buf, sizeof(buf) - 1));
+	ASSERT_FALSE(is_20(buf, sizeof(buf) - 1));
 	return TEST_PASS;
 }
 
@@ -6931,17 +6931,17 @@ test_debug_short_payload(void)
 
 	/* 1-byte DEBUG: just the message type, no always_display bool */
 	uint8_t dbg[] = { SSH_MSG_DEBUG };
-	ASSERT_OK(dssh_transport_send_packet(client, dbg, sizeof(dbg), NULL));
+	ASSERT_OK(send_packet(client, dbg, sizeof(dbg), NULL));
 
 	/* Follow with a real message so recv_packet returns */
 	uint8_t follow[] = { SSH_MSG_SERVICE_REQUEST, 0x48 };
-	ASSERT_OK(dssh_transport_send_packet(client, follow,
+	ASSERT_OK(send_packet(client, follow,
 	    sizeof(follow), NULL));
 
 	uint8_t msg_type;
 	uint8_t *payload;
 	size_t payload_len;
-	ASSERT_OK(dssh_transport_recv_packet(server, &msg_type,
+	ASSERT_OK(recv_packet(server, &msg_type,
 	    &payload, &payload_len));
 	ASSERT_EQ(msg_type, SSH_MSG_SERVICE_REQUEST);
 

@@ -2608,7 +2608,7 @@ test_auto_reject_x11(void)
 
 	uint8_t msg[64];
 	size_t len = build_channel_open(msg, sizeof(msg), "x11", 0, 65536, 32768);
-	ASSERT_OK(dssh_transport_send_packet(ctx.server, msg, len, NULL));
+	ASSERT_OK(send_packet(ctx.server, msg, len, NULL));
 
 	/* Give the demux threads time to process */
 
@@ -2631,7 +2631,7 @@ test_auto_reject_forwarded_tcpip(void)
 	uint8_t msg[64];
 	size_t len = build_channel_open(msg, sizeof(msg), "forwarded-tcpip",
 	    0, 65536, 32768);
-	ASSERT_OK(dssh_transport_send_packet(ctx.server, msg, len, NULL));
+	ASSERT_OK(send_packet(ctx.server, msg, len, NULL));
 
 
 	struct dssh_incoming_open *inc = NULL;
@@ -2652,7 +2652,7 @@ test_auto_reject_direct_tcpip(void)
 	uint8_t msg[64];
 	size_t len = build_channel_open(msg, sizeof(msg), "direct-tcpip",
 	    0, 65536, 32768);
-	ASSERT_OK(dssh_transport_send_packet(ctx.server, msg, len, NULL));
+	ASSERT_OK(send_packet(ctx.server, msg, len, NULL));
 
 
 	struct dssh_incoming_open *inc = NULL;
@@ -2673,7 +2673,7 @@ test_auto_reject_session_from_server(void)
 	uint8_t msg[64];
 	size_t len = build_channel_open(msg, sizeof(msg), "session",
 	    0, 65536, 32768);
-	ASSERT_OK(dssh_transport_send_packet(ctx.server, msg, len, NULL));
+	ASSERT_OK(send_packet(ctx.server, msg, len, NULL));
 
 
 	struct dssh_incoming_open *inc = NULL;
@@ -2714,7 +2714,7 @@ test_window_adjust_from_peer(void)
 	msg[pos++] = SSH_MSG_CHANNEL_WINDOW_ADJUST;
 	dssh_serialize_uint32(oc.client_ch->local_id, msg, sizeof(msg), &pos);
 	dssh_serialize_uint32(1000, msg, sizeof(msg), &pos);
-	ASSERT_OK(dssh_transport_send_packet(ctx.server, msg, pos, NULL));
+	ASSERT_OK(send_packet(ctx.server, msg, pos, NULL));
 
 	/* Give demux time to process */
 
@@ -2762,7 +2762,7 @@ test_data_after_eof(void)
 		size_t pos = 0;
 		msg[pos++] = SSH_MSG_CHANNEL_EOF;
 		dssh_serialize_uint32(oc.client_ch->local_id, msg, sizeof(msg), &pos);
-		ASSERT_OK(dssh_transport_send_packet(ctx.server, msg, pos, NULL));
+		ASSERT_OK(send_packet(ctx.server, msg, pos, NULL));
 	}
 
 
@@ -2775,7 +2775,7 @@ test_data_after_eof(void)
 		dssh_serialize_uint32(5, msg, sizeof(msg), &pos);
 		memcpy(&msg[pos], "stale", 5);
 		pos += 5;
-		ASSERT_OK(dssh_transport_send_packet(ctx.server, msg, pos, NULL));
+		ASSERT_OK(send_packet(ctx.server, msg, pos, NULL));
 	}
 
 
@@ -2818,7 +2818,7 @@ test_truncated_channel_data(void)
 	msg[pos++] = SSH_MSG_CHANNEL_DATA;
 	dssh_serialize_uint32(oc.client_ch->local_id, msg, sizeof(msg), &pos);
 	msg[pos++] = 0; /* partial data_len field */
-	ASSERT_OK(dssh_transport_send_packet(ctx.server, msg, pos, NULL));
+	ASSERT_OK(send_packet(ctx.server, msg, pos, NULL));
 
 
 	/* Session should still be functional */
@@ -2860,7 +2860,7 @@ test_ext_data_after_eof(void)
 		size_t pos = 0;
 		msg[pos++] = SSH_MSG_CHANNEL_EOF;
 		dssh_serialize_uint32(oc.client_ch->local_id, msg, sizeof(msg), &pos);
-		ASSERT_OK(dssh_transport_send_packet(ctx.server, msg, pos, NULL));
+		ASSERT_OK(send_packet(ctx.server, msg, pos, NULL));
 	}
 
 
@@ -2874,7 +2874,7 @@ test_ext_data_after_eof(void)
 		dssh_serialize_uint32(5, msg, sizeof(msg), &pos);
 		memcpy(&msg[pos], "stale", 5);
 		pos += 5;
-		ASSERT_OK(dssh_transport_send_packet(ctx.server, msg, pos, NULL));
+		ASSERT_OK(send_packet(ctx.server, msg, pos, NULL));
 	}
 
 
@@ -2912,7 +2912,7 @@ test_truncated_ext_data(void)
 	dssh_serialize_uint32(oc.client_ch->local_id, msg, sizeof(msg), &pos);
 	dssh_serialize_uint32(1, msg, sizeof(msg), &pos); /* data_type */
 	/* Only 9 bytes -- no data_len or data */
-	ASSERT_OK(dssh_transport_send_packet(ctx.server, msg, pos, NULL));
+	ASSERT_OK(send_packet(ctx.server, msg, pos, NULL));
 
 
 	/* Session should still work */
@@ -2959,7 +2959,7 @@ test_channel_request_want_reply(void)
 		memcpy(&msg[pos], "unknown", 7);
 		pos += 7;
 		msg[pos++] = 1; /* want_reply = true */
-		ASSERT_OK(dssh_transport_send_packet(ctx.server, msg, pos, NULL));
+		ASSERT_OK(send_packet(ctx.server, msg, pos, NULL));
 	}
 
 
@@ -3007,7 +3007,7 @@ test_data_exceeds_window(void)
 		dssh_serialize_uint32(0xFFFFFFFF, msg, sizeof(msg), &pos); /* huge dlen */
 		memcpy(&msg[pos], "x", 1);
 		pos += 1;
-		ASSERT_OK(dssh_transport_send_packet(ctx.server, msg, pos, NULL));
+		ASSERT_OK(send_packet(ctx.server, msg, pos, NULL));
 	}
 
 
@@ -3593,7 +3593,7 @@ test_truncated_channel_open(void)
 		uint8_t msg[2];
 		msg[0] = SSH_MSG_CHANNEL_OPEN;
 		msg[1] = 0;
-		ASSERT_OK(dssh_transport_send_packet(ctx.client, msg, 2, NULL));
+		ASSERT_OK(send_packet(ctx.client, msg, 2, NULL));
 	}
 
 	/* Send a CHANNEL_OPEN with valid type_len but truncated type string */
@@ -3602,7 +3602,7 @@ test_truncated_channel_open(void)
 		size_t pos = 0;
 		msg[pos++] = SSH_MSG_CHANNEL_OPEN;
 		dssh_serialize_uint32(100, msg, sizeof(msg), &pos); /* type_len=100 */
-		ASSERT_OK(dssh_transport_send_packet(ctx.client, msg, pos, NULL));
+		ASSERT_OK(send_packet(ctx.client, msg, pos, NULL));
 	}
 
 	/* Send a CHANNEL_OPEN with valid type but truncated channel fields */
@@ -3614,7 +3614,7 @@ test_truncated_channel_open(void)
 		memcpy(&msg[pos], "test", 4);
 		pos += 4;
 		/* Missing: sender_channel, initial_window, max_packet (12 bytes) */
-		ASSERT_OK(dssh_transport_send_packet(ctx.client, msg, pos, NULL));
+		ASSERT_OK(send_packet(ctx.client, msg, pos, NULL));
 	}
 
 	/* Brief delay to let demux process the packets */
@@ -3658,7 +3658,7 @@ test_truncated_channel_request(void)
 		msg[pos++] = SSH_MSG_CHANNEL_REQUEST;
 		dssh_serialize_uint32(oc.server_ch->local_id, msg, sizeof(msg), &pos);
 		/* Missing: request type string */
-		ASSERT_OK(dssh_transport_send_packet(ctx.client, msg, pos, NULL));
+		ASSERT_OK(send_packet(ctx.client, msg, pos, NULL));
 	}
 
 	/* Send CHANNEL_REQUEST with valid type_len but truncated type+want_reply */
@@ -3669,7 +3669,7 @@ test_truncated_channel_request(void)
 		dssh_serialize_uint32(oc.server_ch->local_id, msg, sizeof(msg), &pos);
 		dssh_serialize_uint32(100, msg, sizeof(msg), &pos); /* rtype_len=100 */
 		/* Missing: actual type string + want_reply */
-		ASSERT_OK(dssh_transport_send_packet(ctx.client, msg, pos, NULL));
+		ASSERT_OK(send_packet(ctx.client, msg, pos, NULL));
 	}
 
 	struct timespec ts = { .tv_sec = 0, .tv_nsec = 10000000 };
@@ -3702,7 +3702,7 @@ test_demux_short_payload(void)
 		msg[pos++] = SSH_MSG_CHANNEL_DATA;
 		msg[pos++] = 0;
 		msg[pos++] = 0;
-		ASSERT_OK(dssh_transport_send_packet(ctx.client, msg, pos, NULL));
+		ASSERT_OK(send_packet(ctx.client, msg, pos, NULL));
 	}
 
 	/* Also send a short CHANNEL_CLOSE */
@@ -3710,7 +3710,7 @@ test_demux_short_payload(void)
 		uint8_t msg[2];
 		msg[0] = SSH_MSG_CHANNEL_CLOSE;
 		msg[1] = 0;
-		ASSERT_OK(dssh_transport_send_packet(ctx.client, msg, 2, NULL));
+		ASSERT_OK(send_packet(ctx.client, msg, 2, NULL));
 	}
 
 	struct timespec ts = { .tv_sec = 0, .tv_nsec = 10000000 };
@@ -3985,7 +3985,7 @@ test_truncated_open_confirmation(void)
 		msg[pos++] = SSH_MSG_CHANNEL_OPEN_CONFIRMATION;
 		dssh_serialize_uint32(0, msg, sizeof(msg), &pos); /* local_id */
 		/* Missing: remote_id, window, max_packet (12 bytes) */
-		ASSERT_OK(dssh_transport_send_packet(ctx.client, msg, pos, NULL));
+		ASSERT_OK(send_packet(ctx.client, msg, pos, NULL));
 	}
 
 	struct timespec ts = { .tv_sec = 0, .tv_nsec = 10000000 };
@@ -4016,7 +4016,7 @@ test_open_confirmation_unknown_channel(void)
 		dssh_serialize_uint32(0, msg, sizeof(msg), &pos);
 		dssh_serialize_uint32(0x200000, msg, sizeof(msg), &pos);
 		dssh_serialize_uint32(0x8000, msg, sizeof(msg), &pos);
-		ASSERT_OK(dssh_transport_send_packet(ctx.client, msg, pos, NULL));
+		ASSERT_OK(send_packet(ctx.client, msg, pos, NULL));
 	}
 
 	struct timespec ts = { .tv_sec = 0, .tv_nsec = 10000000 };
@@ -4057,7 +4057,7 @@ test_channel_success_no_request(void)
 		size_t pos = 0;
 		msg[pos++] = SSH_MSG_CHANNEL_SUCCESS;
 		dssh_serialize_uint32(oc.server_ch->local_id, msg, sizeof(msg), &pos);
-		ASSERT_OK(dssh_transport_send_packet(ctx.client, msg, pos, NULL));
+		ASSERT_OK(send_packet(ctx.client, msg, pos, NULL));
 	}
 	/* Also CHANNEL_FAILURE */
 	{
@@ -4065,7 +4065,7 @@ test_channel_success_no_request(void)
 		size_t pos = 0;
 		msg[pos++] = SSH_MSG_CHANNEL_FAILURE;
 		dssh_serialize_uint32(oc.server_ch->local_id, msg, sizeof(msg), &pos);
-		ASSERT_OK(dssh_transport_send_packet(ctx.client, msg, pos, NULL));
+		ASSERT_OK(send_packet(ctx.client, msg, pos, NULL));
 	}
 
 	struct timespec ts = { .tv_sec = 0, .tv_nsec = 10000000 };
@@ -4143,7 +4143,7 @@ test_data_dlen_exceeds_payload(void)
 		dssh_serialize_uint32(100, msg, sizeof(msg), &pos); /* dlen=100 */
 		memcpy(&msg[pos], "abc", 3);
 		pos += 3;
-		ASSERT_OK(dssh_transport_send_packet(ctx.client, msg, pos, NULL));
+		ASSERT_OK(send_packet(ctx.client, msg, pos, NULL));
 	}
 
 	/* Send CHANNEL_EXTENDED_DATA with dlen=100 but only 2 bytes */
@@ -4156,7 +4156,7 @@ test_data_dlen_exceeds_payload(void)
 		dssh_serialize_uint32(100, msg, sizeof(msg), &pos); /* dlen=100 */
 		memcpy(&msg[pos], "xy", 2);
 		pos += 2;
-		ASSERT_OK(dssh_transport_send_packet(ctx.client, msg, pos, NULL));
+		ASSERT_OK(send_packet(ctx.client, msg, pos, NULL));
 	}
 
 	/* Brief delay for demux to process */
@@ -4203,14 +4203,14 @@ test_send_extended_data_toolong(void)
 	/* Call send_extended_data directly with len > remote_window */
 	uint8_t data[] = "x";
 	oc.server_ch->remote_window = 0;
-	int res = dssh_conn_send_extended_data(ctx.server, oc.server_ch,
+	int res = send_extended_data(ctx.server, oc.server_ch,
 	    1, data, 1, NULL);
 	ASSERT_EQ(res, DSSH_ERROR_TOOLONG);
 
 	/* Also len > remote_max_packet */
 	oc.server_ch->remote_window = 0xFFFFFFFF;
 	oc.server_ch->remote_max_packet = 0;
-	res = dssh_conn_send_extended_data(ctx.server, oc.server_ch,
+	res = send_extended_data(ctx.server, oc.server_ch,
 	    1, data, 1, NULL);
 	ASSERT_EQ(res, DSSH_ERROR_TOOLONG);
 
@@ -4289,9 +4289,9 @@ test_send_eof_already_sent(void)
 	}
 
 	/* Send EOF, then send it again -- second call returns 0 immediately */
-	ASSERT_OK(dssh_conn_send_eof(ctx.client, oc.client_ch));
+	ASSERT_OK(send_eof(ctx.client, oc.client_ch));
 	ASSERT_TRUE(oc.client_ch->eof_sent);
-	ASSERT_EQ(dssh_conn_send_eof(ctx.client, oc.client_ch), 0);
+	ASSERT_EQ(send_eof(ctx.client, oc.client_ch), 0);
 
 	dssh_session_close(ctx.server, oc.server_ch, 0);
 	conn_cleanup(&ctx);
@@ -4315,9 +4315,9 @@ test_send_close_already_sent(void)
 		return TEST_FAIL;
 	}
 
-	ASSERT_OK(dssh_conn_close(ctx.client, oc.client_ch));
+	ASSERT_OK(conn_close(ctx.client, oc.client_ch));
 	ASSERT_TRUE(oc.client_ch->close_sent);
-	ASSERT_EQ(dssh_conn_close(ctx.client, oc.client_ch), 0);
+	ASSERT_EQ(conn_close(ctx.client, oc.client_ch), 0);
 
 	dssh_session_close(ctx.server, oc.server_ch, 0);
 	conn_cleanup(&ctx);
@@ -4428,7 +4428,7 @@ test_demux_window_underflow_to_zero(void)
 		dssh_serialize_uint32(3, msg, sizeof(msg), &pos);
 		memcpy(&msg[pos], "abc", 3);
 		pos += 3;
-		ASSERT_OK(dssh_transport_send_packet(ctx.client, msg, pos, NULL));
+		ASSERT_OK(send_packet(ctx.client, msg, pos, NULL));
 	}
 
 	struct timespec ts = { .tv_sec = 0, .tv_nsec = 10000000 };
@@ -4463,7 +4463,7 @@ test_window_add_overflow(void)
 
 	/* Set local_window near UINT32_MAX, then add enough to overflow */
 	oc.server_ch->local_window = UINT32_MAX - 10;
-	dssh_conn_send_window_adjust(ctx.server, oc.server_ch, 20);
+	send_window_adjust(ctx.server, oc.server_ch, 20);
 	/* window_add should clamp to UINT32_MAX */
 	ASSERT_EQ(oc.server_ch->local_window, UINT32_MAX);
 
@@ -4630,13 +4630,13 @@ test_channel_read_empty_queue(void)
 	struct dssh_channel_s ch = {0};
 	ch.chan_type = DSSH_CHAN_RAW;
 	mtx_init(&ch.buf_mtx, mtx_plain);
-	dssh_msgqueue_init(&ch.buf.raw.queue);
+	msgqueue_init(&ch.buf.raw.queue);
 
 	uint8_t buf[64];
 	int64_t n = dssh_channel_read(s, &ch, buf, sizeof(buf));
 	ASSERT_EQ(n, (int64_t)0);
 
-	dssh_msgqueue_free(&ch.buf.raw.queue);
+	msgqueue_free(&ch.buf.raw.queue);
 	mtx_destroy(&ch.buf_mtx);
 	dssh_session_cleanup(s);
 	dssh_test_reset_global_config();
@@ -4657,13 +4657,13 @@ test_channel_poll_eof(void)
 	ch.chan_type = DSSH_CHAN_RAW;
 	mtx_init(&ch.buf_mtx, mtx_plain);
 	cnd_init(&ch.poll_cnd);
-	dssh_msgqueue_init(&ch.buf.raw.queue);
+	msgqueue_init(&ch.buf.raw.queue);
 	ch.eof_received = true;
 
 	int r = dssh_channel_poll(s, &ch, DSSH_POLL_READ, 0);
 	ASSERT_TRUE(r & DSSH_POLL_READ);
 
-	dssh_msgqueue_free(&ch.buf.raw.queue);
+	msgqueue_free(&ch.buf.raw.queue);
 	cnd_destroy(&ch.poll_cnd);
 	mtx_destroy(&ch.buf_mtx);
 	dssh_session_cleanup(s);
@@ -4685,13 +4685,13 @@ test_channel_poll_close_received(void)
 	ch.chan_type = DSSH_CHAN_RAW;
 	mtx_init(&ch.buf_mtx, mtx_plain);
 	cnd_init(&ch.poll_cnd);
-	dssh_msgqueue_init(&ch.buf.raw.queue);
+	msgqueue_init(&ch.buf.raw.queue);
 	ch.close_received = true;
 
 	int r = dssh_channel_poll(s, &ch, DSSH_POLL_READ, 0);
 	ASSERT_TRUE(r & DSSH_POLL_READ);
 
-	dssh_msgqueue_free(&ch.buf.raw.queue);
+	msgqueue_free(&ch.buf.raw.queue);
 	cnd_destroy(&ch.poll_cnd);
 	mtx_destroy(&ch.buf_mtx);
 	dssh_session_cleanup(s);
@@ -4713,17 +4713,17 @@ test_session_poll_close_read(void)
 	ch.chan_type = DSSH_CHAN_SESSION;
 	mtx_init(&ch.buf_mtx, mtx_plain);
 	cnd_init(&ch.poll_cnd);
-	dssh_bytebuf_init(&ch.buf.session.stdout_buf, 256);
-	dssh_bytebuf_init(&ch.buf.session.stderr_buf, 256);
-	dssh_sigqueue_init(&ch.buf.session.signals);
+	bytebuf_init(&ch.buf.session.stdout_buf, 256);
+	bytebuf_init(&ch.buf.session.stderr_buf, 256);
+	sigqueue_init(&ch.buf.session.signals);
 	ch.close_received = true;
 
 	int r = dssh_session_poll(s, &ch, DSSH_POLL_READ, 0);
 	ASSERT_TRUE(r & DSSH_POLL_READ);
 
-	dssh_sigqueue_free(&ch.buf.session.signals);
-	dssh_bytebuf_free(&ch.buf.session.stdout_buf);
-	dssh_bytebuf_free(&ch.buf.session.stderr_buf);
+	sigqueue_free(&ch.buf.session.signals);
+	bytebuf_free(&ch.buf.session.stdout_buf);
+	bytebuf_free(&ch.buf.session.stderr_buf);
 	cnd_destroy(&ch.poll_cnd);
 	mtx_destroy(&ch.buf_mtx);
 	dssh_session_cleanup(s);
@@ -4745,17 +4745,17 @@ test_session_poll_close_readext(void)
 	ch.chan_type = DSSH_CHAN_SESSION;
 	mtx_init(&ch.buf_mtx, mtx_plain);
 	cnd_init(&ch.poll_cnd);
-	dssh_bytebuf_init(&ch.buf.session.stdout_buf, 256);
-	dssh_bytebuf_init(&ch.buf.session.stderr_buf, 256);
-	dssh_sigqueue_init(&ch.buf.session.signals);
+	bytebuf_init(&ch.buf.session.stdout_buf, 256);
+	bytebuf_init(&ch.buf.session.stderr_buf, 256);
+	sigqueue_init(&ch.buf.session.signals);
 	ch.close_received = true;
 
 	int r = dssh_session_poll(s, &ch, DSSH_POLL_READEXT, 0);
 	ASSERT_TRUE(r & DSSH_POLL_READEXT);
 
-	dssh_sigqueue_free(&ch.buf.session.signals);
-	dssh_bytebuf_free(&ch.buf.session.stdout_buf);
-	dssh_bytebuf_free(&ch.buf.session.stderr_buf);
+	sigqueue_free(&ch.buf.session.signals);
+	bytebuf_free(&ch.buf.session.stdout_buf);
+	bytebuf_free(&ch.buf.session.stderr_buf);
 	cnd_destroy(&ch.poll_cnd);
 	mtx_destroy(&ch.buf_mtx);
 	dssh_session_cleanup(s);
@@ -4782,15 +4782,15 @@ test_stdout_signal_mark_consumed(void)
 	ch.chan_type = DSSH_CHAN_SESSION;
 	mtx_init(&ch.buf_mtx, mtx_plain);
 	cnd_init(&ch.poll_cnd);
-	dssh_bytebuf_init(&ch.buf.session.stdout_buf, 256);
-	dssh_bytebuf_init(&ch.buf.session.stderr_buf, 256);
-	dssh_sigqueue_init(&ch.buf.session.signals);
+	bytebuf_init(&ch.buf.session.stdout_buf, 256);
+	bytebuf_init(&ch.buf.session.stderr_buf, 256);
+	sigqueue_init(&ch.buf.session.signals);
 
 	/* Write 5 bytes to stdout */
-	dssh_bytebuf_write(&ch.buf.session.stdout_buf, (const uint8_t *)"hello", 5);
+	bytebuf_write(&ch.buf.session.stdout_buf, (const uint8_t *)"hello", 5);
 
 	/* Push a signal with stdout mark at position 2 */
-	dssh_sigqueue_push(&ch.buf.session.signals, "TERM", 2, 0);
+	sigqueue_push(&ch.buf.session.signals, "TERM", 2, 0);
 
 	/* Set consumed past the mark */
 	ch.stdout_consumed = 3;
@@ -4804,9 +4804,9 @@ test_stdout_signal_mark_consumed(void)
 	int64_t n = dssh_session_read(s, &ch, buf, sizeof(buf));
 	ASSERT_EQ(n, (int64_t)5);
 
-	dssh_sigqueue_free(&ch.buf.session.signals);
-	dssh_bytebuf_free(&ch.buf.session.stdout_buf);
-	dssh_bytebuf_free(&ch.buf.session.stderr_buf);
+	sigqueue_free(&ch.buf.session.signals);
+	bytebuf_free(&ch.buf.session.stdout_buf);
+	bytebuf_free(&ch.buf.session.stderr_buf);
 	cnd_destroy(&ch.poll_cnd);
 	mtx_destroy(&ch.buf_mtx);
 	dssh_session_cleanup(s);
@@ -4832,15 +4832,15 @@ test_stderr_signal_mark_consumed(void)
 	ch.chan_type = DSSH_CHAN_SESSION;
 	mtx_init(&ch.buf_mtx, mtx_plain);
 	cnd_init(&ch.poll_cnd);
-	dssh_bytebuf_init(&ch.buf.session.stdout_buf, 256);
-	dssh_bytebuf_init(&ch.buf.session.stderr_buf, 256);
-	dssh_sigqueue_init(&ch.buf.session.signals);
+	bytebuf_init(&ch.buf.session.stdout_buf, 256);
+	bytebuf_init(&ch.buf.session.stderr_buf, 256);
+	sigqueue_init(&ch.buf.session.signals);
 
 	/* Write 5 bytes to stderr */
-	dssh_bytebuf_write(&ch.buf.session.stderr_buf, (const uint8_t *)"error", 5);
+	bytebuf_write(&ch.buf.session.stderr_buf, (const uint8_t *)"error", 5);
 
 	/* Push a signal with stderr mark at position 2 */
-	dssh_sigqueue_push(&ch.buf.session.signals, "TERM", 0, 2);
+	sigqueue_push(&ch.buf.session.signals, "TERM", 0, 2);
 
 	/* Set consumed past the mark */
 	ch.stderr_consumed = 3;
@@ -4854,9 +4854,9 @@ test_stderr_signal_mark_consumed(void)
 	int64_t n = dssh_session_read_ext(s, &ch, buf, sizeof(buf));
 	ASSERT_EQ(n, (int64_t)5);
 
-	dssh_sigqueue_free(&ch.buf.session.signals);
-	dssh_bytebuf_free(&ch.buf.session.stdout_buf);
-	dssh_bytebuf_free(&ch.buf.session.stderr_buf);
+	sigqueue_free(&ch.buf.session.signals);
+	bytebuf_free(&ch.buf.session.stdout_buf);
+	bytebuf_free(&ch.buf.session.stderr_buf);
 	cnd_destroy(&ch.poll_cnd);
 	mtx_destroy(&ch.buf_mtx);
 	dssh_session_cleanup(s);
@@ -4882,13 +4882,13 @@ test_channel_poll_infinite_data_ready(void)
 	ch.chan_type = DSSH_CHAN_RAW;
 	mtx_init(&ch.buf_mtx, mtx_plain);
 	cnd_init(&ch.poll_cnd);
-	dssh_msgqueue_init(&ch.buf.raw.queue);
-	dssh_msgqueue_push(&ch.buf.raw.queue, (const uint8_t *)"x", 1);
+	msgqueue_init(&ch.buf.raw.queue);
+	msgqueue_push(&ch.buf.raw.queue, (const uint8_t *)"x", 1);
 
 	int r = dssh_channel_poll(s, &ch, DSSH_POLL_READ, -1);
 	ASSERT_TRUE(r & DSSH_POLL_READ);
 
-	dssh_msgqueue_free(&ch.buf.raw.queue);
+	msgqueue_free(&ch.buf.raw.queue);
 	cnd_destroy(&ch.poll_cnd);
 	mtx_destroy(&ch.buf_mtx);
 	dssh_session_cleanup(s);
@@ -4914,17 +4914,17 @@ test_session_poll_infinite_data_ready(void)
 	ch.chan_type = DSSH_CHAN_SESSION;
 	mtx_init(&ch.buf_mtx, mtx_plain);
 	cnd_init(&ch.poll_cnd);
-	dssh_bytebuf_init(&ch.buf.session.stdout_buf, 256);
-	dssh_bytebuf_init(&ch.buf.session.stderr_buf, 256);
-	dssh_sigqueue_init(&ch.buf.session.signals);
-	dssh_bytebuf_write(&ch.buf.session.stdout_buf, (const uint8_t *)"hi", 2);
+	bytebuf_init(&ch.buf.session.stdout_buf, 256);
+	bytebuf_init(&ch.buf.session.stderr_buf, 256);
+	sigqueue_init(&ch.buf.session.signals);
+	bytebuf_write(&ch.buf.session.stdout_buf, (const uint8_t *)"hi", 2);
 
 	int r = dssh_session_poll(s, &ch, DSSH_POLL_READ, -1);
 	ASSERT_TRUE(r & DSSH_POLL_READ);
 
-	dssh_sigqueue_free(&ch.buf.session.signals);
-	dssh_bytebuf_free(&ch.buf.session.stdout_buf);
-	dssh_bytebuf_free(&ch.buf.session.stderr_buf);
+	sigqueue_free(&ch.buf.session.signals);
+	bytebuf_free(&ch.buf.session.stdout_buf);
+	bytebuf_free(&ch.buf.session.stderr_buf);
 	cnd_destroy(&ch.poll_cnd);
 	mtx_destroy(&ch.buf_mtx);
 	dssh_session_cleanup(s);
@@ -4950,17 +4950,17 @@ test_session_read_ext_empty(void)
 	ch.chan_type = DSSH_CHAN_SESSION;
 	mtx_init(&ch.buf_mtx, mtx_plain);
 	cnd_init(&ch.poll_cnd);
-	dssh_bytebuf_init(&ch.buf.session.stdout_buf, 256);
-	dssh_bytebuf_init(&ch.buf.session.stderr_buf, 256);
-	dssh_sigqueue_init(&ch.buf.session.signals);
+	bytebuf_init(&ch.buf.session.stdout_buf, 256);
+	bytebuf_init(&ch.buf.session.stderr_buf, 256);
+	sigqueue_init(&ch.buf.session.signals);
 
 	uint8_t buf[64];
 	int64_t n = dssh_session_read_ext(s, &ch, buf, sizeof(buf));
 	ASSERT_EQ(n, (int64_t)0);
 
-	dssh_sigqueue_free(&ch.buf.session.signals);
-	dssh_bytebuf_free(&ch.buf.session.stdout_buf);
-	dssh_bytebuf_free(&ch.buf.session.stderr_buf);
+	sigqueue_free(&ch.buf.session.signals);
+	bytebuf_free(&ch.buf.session.stdout_buf);
+	bytebuf_free(&ch.buf.session.stderr_buf);
 	cnd_destroy(&ch.poll_cnd);
 	mtx_destroy(&ch.buf_mtx);
 	dssh_session_cleanup(s);
@@ -4997,9 +4997,9 @@ test_session_poll_nsec_overflow(void)
 	ch.chan_type = DSSH_CHAN_SESSION;
 	mtx_init(&ch.buf_mtx, mtx_plain);
 	cnd_init(&ch.poll_cnd);
-	dssh_bytebuf_init(&ch.buf.session.stdout_buf, 256);
-	dssh_bytebuf_init(&ch.buf.session.stderr_buf, 256);
-	dssh_sigqueue_init(&ch.buf.session.signals);
+	bytebuf_init(&ch.buf.session.stdout_buf, 256);
+	bytebuf_init(&ch.buf.session.stderr_buf, 256);
+	sigqueue_init(&ch.buf.session.signals);
 
 	/* Empty buffers + short timeout -> times out.
 	 * timeout_ms=999 adds 999000000 nsec -- overflows with >99.9% probability. */
@@ -5011,9 +5011,9 @@ test_session_poll_nsec_overflow(void)
 	int r = dssh_session_poll(s, &ch, DSSH_POLL_READ, 999);
 	ASSERT_EQ(r, 0);
 
-	dssh_sigqueue_free(&ch.buf.session.signals);
-	dssh_bytebuf_free(&ch.buf.session.stdout_buf);
-	dssh_bytebuf_free(&ch.buf.session.stderr_buf);
+	sigqueue_free(&ch.buf.session.signals);
+	bytebuf_free(&ch.buf.session.stdout_buf);
+	bytebuf_free(&ch.buf.session.stderr_buf);
 	cnd_destroy(&ch.poll_cnd);
 	mtx_destroy(&ch.buf_mtx);
 	dssh_session_cleanup(s);
@@ -5065,16 +5065,16 @@ test_stderr_signal_truncate(void)
 	ch.chan_type = DSSH_CHAN_SESSION;
 	mtx_init(&ch.buf_mtx, mtx_plain);
 	cnd_init(&ch.poll_cnd);
-	dssh_bytebuf_init(&ch.buf.session.stdout_buf, 256);
-	dssh_bytebuf_init(&ch.buf.session.stderr_buf, 256);
-	dssh_sigqueue_init(&ch.buf.session.signals);
+	bytebuf_init(&ch.buf.session.stdout_buf, 256);
+	bytebuf_init(&ch.buf.session.stderr_buf, 256);
+	sigqueue_init(&ch.buf.session.signals);
 
 	/* Write 10 bytes to stderr */
-	dssh_bytebuf_write(&ch.buf.session.stderr_buf,
+	bytebuf_write(&ch.buf.session.stderr_buf,
 	    (const uint8_t *)"0123456789", 10);
 
 	/* Push a signal with stderr mark at position 5 */
-	dssh_sigqueue_push(&ch.buf.session.signals, "TERM", 0, 5);
+	sigqueue_push(&ch.buf.session.signals, "TERM", 0, 5);
 
 	/* Leave stderr_consumed at 0 -- to_mark = 5-0 = 5 < avail = 10 */
 	ch.stderr_consumed = 0;
@@ -5085,9 +5085,9 @@ test_stderr_signal_truncate(void)
 	ASSERT_EQ(n, (int64_t)5);
 	ASSERT_MEM_EQ(buf, "01234", 5);
 
-	dssh_sigqueue_free(&ch.buf.session.signals);
-	dssh_bytebuf_free(&ch.buf.session.stdout_buf);
-	dssh_bytebuf_free(&ch.buf.session.stderr_buf);
+	sigqueue_free(&ch.buf.session.signals);
+	bytebuf_free(&ch.buf.session.stdout_buf);
+	bytebuf_free(&ch.buf.session.stderr_buf);
 	cnd_destroy(&ch.poll_cnd);
 	mtx_destroy(&ch.buf_mtx);
 	dssh_session_cleanup(s);
@@ -5219,15 +5219,15 @@ test_demux_data_truncation_window(void)
 	 * Shrink window_max and buffer to a small value so we can
 	 * test truncation without sending megabytes.
 	 */
-	dssh_bytebuf_free(&oc.server_ch->buf.session.stdout_buf);
-	ASSERT_OK(dssh_bytebuf_init(&oc.server_ch->buf.session.stdout_buf, 16));
+	bytebuf_free(&oc.server_ch->buf.session.stdout_buf);
+	ASSERT_OK(bytebuf_init(&oc.server_ch->buf.session.stdout_buf, 16));
 	oc.server_ch->window_max = 16;
 	oc.server_ch->local_window = 16;
 
 	/* Fill 12 of 16 bytes so only 4 remain */
 	uint8_t fill[12];
 	memset(fill, 'A', sizeof(fill));
-	dssh_bytebuf_write(&oc.server_ch->buf.session.stdout_buf, fill, 12);
+	bytebuf_write(&oc.server_ch->buf.session.stdout_buf, fill, 12);
 	oc.server_ch->local_window = 16; /* reset window for clean accounting */
 
 	/* Build CHANNEL_DATA with 10 bytes -- only 4 should fit */
@@ -5279,16 +5279,16 @@ test_replenish_caps_to_buffer_space(void)
 	}
 
 	/* Shrink buffer to 32 bytes */
-	dssh_bytebuf_free(&oc.server_ch->buf.session.stdout_buf);
-	ASSERT_OK(dssh_bytebuf_init(&oc.server_ch->buf.session.stdout_buf, 32));
-	dssh_bytebuf_free(&oc.server_ch->buf.session.stderr_buf);
-	ASSERT_OK(dssh_bytebuf_init(&oc.server_ch->buf.session.stderr_buf, 32));
+	bytebuf_free(&oc.server_ch->buf.session.stdout_buf);
+	ASSERT_OK(bytebuf_init(&oc.server_ch->buf.session.stdout_buf, 32));
+	bytebuf_free(&oc.server_ch->buf.session.stderr_buf);
+	ASSERT_OK(bytebuf_init(&oc.server_ch->buf.session.stderr_buf, 32));
 	oc.server_ch->window_max = 32;
 
 	/* Fill 28 of 32 bytes -- only 4 free */
 	uint8_t fill[28];
 	memset(fill, 'X', sizeof(fill));
-	dssh_bytebuf_write(&oc.server_ch->buf.session.stdout_buf, fill, 28);
+	bytebuf_write(&oc.server_ch->buf.session.stdout_buf, fill, 28);
 
 	/* Set window to 0 to trigger replenishment (0 < 32/2 = 16) */
 	oc.server_ch->local_window = 0;
@@ -5821,7 +5821,7 @@ test_open_exec_alloc_sweep(void)
 
 		/* Client failed — terminate server to unblock setup_recv */
 		any_failed = 1;
-		dssh_session_set_terminate(ctx.server);
+		session_set_terminate(ctx.server);
 		thrd_join(st, NULL);
 
 		if (oc.server_ch != NULL)
@@ -5913,7 +5913,7 @@ test_open_shell_alloc_sweep(void)
 		}
 
 		any_failed = 1;
-		dssh_session_set_terminate(ctx.server);
+		session_set_terminate(ctx.server);
 		thrd_join(st, NULL);
 		if (oc.server_ch != NULL)
 			dssh_session_close(ctx.server, oc.server_ch, 0);
@@ -5955,7 +5955,7 @@ test_data_after_close(void)
 		size_t pos = 0;
 		msg[pos++] = SSH_MSG_CHANNEL_CLOSE;
 		DSSH_PUT_U32(oc.client_ch->local_id, msg, &pos);
-		ASSERT_OK(dssh_transport_send_packet(ctx.server, msg, pos, NULL));
+		ASSERT_OK(send_packet(ctx.server, msg, pos, NULL));
 	}
 
 	/* Now server sends CHANNEL_DATA after CLOSE -- should be discarded */
@@ -5967,7 +5967,7 @@ test_data_after_close(void)
 		DSSH_PUT_U32(5, msg, &pos);
 		memcpy(&msg[pos], "stale", 5);
 		pos += 5;
-		ASSERT_OK(dssh_transport_send_packet(ctx.server, msg, pos, NULL));
+		ASSERT_OK(send_packet(ctx.server, msg, pos, NULL));
 	}
 
 	/* Wait for close_received to propagate */
@@ -6008,7 +6008,7 @@ test_ext_data_after_close(void)
 		size_t pos = 0;
 		msg[pos++] = SSH_MSG_CHANNEL_CLOSE;
 		DSSH_PUT_U32(oc.client_ch->local_id, msg, &pos);
-		ASSERT_OK(dssh_transport_send_packet(ctx.server, msg, pos, NULL));
+		ASSERT_OK(send_packet(ctx.server, msg, pos, NULL));
 	}
 
 	/* Server sends EXTENDED_DATA after CLOSE */
@@ -6021,7 +6021,7 @@ test_ext_data_after_close(void)
 		DSSH_PUT_U32(5, msg, &pos);
 		memcpy(&msg[pos], "stale", 5);
 		pos += 5;
-		ASSERT_OK(dssh_transport_send_packet(ctx.server, msg, pos, NULL));
+		ASSERT_OK(send_packet(ctx.server, msg, pos, NULL));
 	}
 
 	struct timespec ts = { .tv_sec = 0, .tv_nsec = 20000000 };
@@ -6053,9 +6053,9 @@ test_replenish_after_close(void)
 	ch.chan_type = DSSH_CHAN_SESSION;
 	mtx_init(&ch.buf_mtx, mtx_plain);
 	cnd_init(&ch.poll_cnd);
-	dssh_bytebuf_init(&ch.buf.session.stdout_buf, 256);
-	dssh_bytebuf_init(&ch.buf.session.stderr_buf, 256);
-	dssh_sigqueue_init(&ch.buf.session.signals);
+	bytebuf_init(&ch.buf.session.stdout_buf, 256);
+	bytebuf_init(&ch.buf.session.stderr_buf, 256);
+	sigqueue_init(&ch.buf.session.signals);
 	ch.close_received = true;
 	ch.window_max = 256;
 	ch.local_window = 0;
@@ -6065,9 +6065,9 @@ test_replenish_after_close(void)
 	ASSERT_EQ(r, 0);
 	ASSERT_EQ_U(ch.local_window, 0);
 
-	dssh_sigqueue_free(&ch.buf.session.signals);
-	dssh_bytebuf_free(&ch.buf.session.stdout_buf);
-	dssh_bytebuf_free(&ch.buf.session.stderr_buf);
+	sigqueue_free(&ch.buf.session.signals);
+	bytebuf_free(&ch.buf.session.stdout_buf);
+	bytebuf_free(&ch.buf.session.stderr_buf);
 	cnd_destroy(&ch.poll_cnd);
 	mtx_destroy(&ch.buf_mtx);
 	dssh_session_cleanup(s);
@@ -6105,7 +6105,7 @@ test_truncated_window_adjust(void)
 		msg[pos++] = SSH_MSG_CHANNEL_WINDOW_ADJUST;
 		DSSH_PUT_U32(oc.client_ch->local_id, msg, &pos);
 		msg[pos++] = 0; /* partial bytes_to_add field */
-		ASSERT_OK(dssh_transport_send_packet(ctx.server, msg, pos, NULL));
+		ASSERT_OK(send_packet(ctx.server, msg, pos, NULL));
 	}
 
 	struct timespec ts = { .tv_sec = 0, .tv_nsec = 10000000 };
@@ -6191,7 +6191,7 @@ test_open_subsystem_alloc_sweep(void)
 		}
 
 		any_failed = 1;
-		dssh_session_set_terminate(ctx.server);
+		session_set_terminate(ctx.server);
 		thrd_join(st, NULL);
 
 		if (oc.server_ch != NULL)
@@ -6280,7 +6280,7 @@ test_server_accept_alloc_sweep(void)
 
 		/* Server failed — terminate to unblock client open */
 		any_failed = 1;
-		dssh_session_set_terminate(ctx.client);
+		session_set_terminate(ctx.client);
 		thrd_join(ct, NULL);
 
 		if (oc.client_ch != NULL)
@@ -6403,7 +6403,7 @@ test_accept_raw_alloc_sweep(void)
 		}
 
 		any_failed = 1;
-		dssh_session_set_terminate(ctx.client);
+		session_set_terminate(ctx.client);
 		thrd_join(ct, NULL);
 
 		if (oc.client_ch != NULL)
@@ -6567,7 +6567,7 @@ test_chanreq_parse_valid(void)
 	const uint8_t *rdata;
 	size_t rdata_len;
 
-	ASSERT_OK(dssh_test_parse_channel_request(buf, len,
+	ASSERT_OK(parse_channel_request(buf, len,
 	    &rtype, &rtype_len, &want_reply, &rdata, &rdata_len));
 	ASSERT_EQ(rtype_len, 4U);
 	ASSERT_MEM_EQ(rtype, "exec", 4);
@@ -6591,7 +6591,7 @@ test_chanreq_parse_empty_type(void)
 	const uint8_t *rdata;
 	size_t rdata_len;
 
-	ASSERT_OK(dssh_test_parse_channel_request(buf, len,
+	ASSERT_OK(parse_channel_request(buf, len,
 	    &rtype, &rtype_len, &want_reply, &rdata, &rdata_len));
 	ASSERT_EQ(rtype_len, 0U);
 	ASSERT_FALSE(want_reply);
@@ -6613,7 +6613,7 @@ test_chanreq_parse_no_data(void)
 	const uint8_t *rdata;
 	size_t rdata_len;
 
-	ASSERT_OK(dssh_test_parse_channel_request(buf, len,
+	ASSERT_OK(parse_channel_request(buf, len,
 	    &rtype, &rtype_len, &want_reply, &rdata, &rdata_len));
 	ASSERT_EQ(rtype_len, 5U);
 	ASSERT_MEM_EQ(rtype, "shell", 5);
@@ -6639,7 +6639,7 @@ test_chanreq_parse_truncated_type_len(void)
 	const uint8_t *rdata;
 	size_t rdata_len;
 
-	ASSERT_ERR(dssh_test_parse_channel_request(buf, pos,
+	ASSERT_ERR(parse_channel_request(buf, pos,
 	    &rtype, &rtype_len, &want_reply, &rdata, &rdata_len),
 	    DSSH_ERROR_PARSE);
 
@@ -6667,7 +6667,7 @@ test_chanreq_parse_truncated_type(void)
 	const uint8_t *rdata;
 	size_t rdata_len;
 
-	ASSERT_ERR(dssh_test_parse_channel_request(buf, pos,
+	ASSERT_ERR(parse_channel_request(buf, pos,
 	    &rtype, &rtype_len, &want_reply, &rdata, &rdata_len),
 	    DSSH_ERROR_PARSE);
 
@@ -6694,7 +6694,7 @@ test_chanreq_parse_truncated_want_reply(void)
 	const uint8_t *rdata;
 	size_t rdata_len;
 
-	ASSERT_ERR(dssh_test_parse_channel_request(buf, pos,
+	ASSERT_ERR(parse_channel_request(buf, pos,
 	    &rtype, &rtype_len, &want_reply, &rdata, &rdata_len),
 	    DSSH_ERROR_PARSE);
 

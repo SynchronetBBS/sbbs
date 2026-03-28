@@ -21,11 +21,11 @@
  * plain (non-static) inline functions, and C requires an extern
  * definition in exactly one translation unit to satisfy the linker.
  */
-extern bool dssh_test_has_nulls(uint8_t *buf, size_t buflen);
-extern bool dssh_test_missing_crlf(uint8_t *buf, size_t buflen);
-extern bool dssh_test_is_version_line(uint8_t *buf, size_t buflen);
-extern bool dssh_test_has_non_ascii(uint8_t *buf, size_t buflen);
-extern bool dssh_test_is_20(uint8_t *buf, size_t buflen);
+extern bool has_nulls(uint8_t *buf, size_t buflen);
+extern bool missing_crlf(uint8_t *buf, size_t buflen);
+extern bool is_version_line(uint8_t *buf, size_t buflen);
+extern bool has_non_ascii(uint8_t *buf, size_t buflen);
+extern bool is_20(uint8_t *buf, size_t buflen);
 
 /* ----------------------------------------------------------------
  * Helper: encrypt or decrypt a buffer in-place using AES-256-CTR

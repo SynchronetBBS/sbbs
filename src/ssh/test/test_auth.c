@@ -719,7 +719,7 @@ test_auth_password_long(void)
 /*
  * For server-only tests, we run the server in a thread and
  * manually drive the client side from the main thread via
- * dssh_transport_send_packet / dssh_transport_recv_packet.
+ * send_packet / recv_packet.
  */
 
 static int
@@ -752,7 +752,7 @@ test_auth_server_none_accept(void)
 		dssh_serialize_uint32((uint32_t)(sizeof(svc) - 1), msg, sizeof(msg), &pos);
 		memcpy(&msg[pos], svc, sizeof(svc) - 1);
 		pos += sizeof(svc) - 1;
-		ASSERT_OK(dssh_transport_send_packet(ctx.client, msg, pos, NULL));
+		ASSERT_OK(send_packet(ctx.client, msg, pos, NULL));
 	}
 
 	/* Receive SERVICE_ACCEPT */
@@ -760,7 +760,7 @@ test_auth_server_none_accept(void)
 		uint8_t msg_type;
 		uint8_t *payload;
 		size_t payload_len;
-		ASSERT_OK(dssh_transport_recv_packet(ctx.client, &msg_type, &payload, &payload_len));
+		ASSERT_OK(recv_packet(ctx.client, &msg_type, &payload, &payload_len));
 		ASSERT_EQ(msg_type, SSH_MSG_SERVICE_ACCEPT);
 	}
 
@@ -781,7 +781,7 @@ test_auth_server_none_accept(void)
 		dssh_serialize_uint32((uint32_t)(sizeof(method) - 1), msg, sizeof(msg), &pos);
 		memcpy(&msg[pos], method, sizeof(method) - 1);
 		pos += sizeof(method) - 1;
-		ASSERT_OK(dssh_transport_send_packet(ctx.client, msg, pos, NULL));
+		ASSERT_OK(send_packet(ctx.client, msg, pos, NULL));
 	}
 
 	/* Receive USERAUTH_SUCCESS */
@@ -789,7 +789,7 @@ test_auth_server_none_accept(void)
 		uint8_t msg_type;
 		uint8_t *payload;
 		size_t payload_len;
-		ASSERT_OK(dssh_transport_recv_packet(ctx.client, &msg_type, &payload, &payload_len));
+		ASSERT_OK(recv_packet(ctx.client, &msg_type, &payload, &payload_len));
 		ASSERT_EQ(msg_type, SSH_MSG_USERAUTH_SUCCESS);
 	}
 
@@ -832,7 +832,7 @@ test_auth_server_none_reject(void)
 		dssh_serialize_uint32((uint32_t)(sizeof(svc) - 1), msg, sizeof(msg), &pos);
 		memcpy(&msg[pos], svc, sizeof(svc) - 1);
 		pos += sizeof(svc) - 1;
-		ASSERT_OK(dssh_transport_send_packet(ctx.client, msg, pos, NULL));
+		ASSERT_OK(send_packet(ctx.client, msg, pos, NULL));
 	}
 
 	/* Receive SERVICE_ACCEPT */
@@ -840,7 +840,7 @@ test_auth_server_none_reject(void)
 		uint8_t msg_type;
 		uint8_t *payload;
 		size_t payload_len;
-		ASSERT_OK(dssh_transport_recv_packet(ctx.client, &msg_type, &payload, &payload_len));
+		ASSERT_OK(recv_packet(ctx.client, &msg_type, &payload, &payload_len));
 		ASSERT_EQ(msg_type, SSH_MSG_SERVICE_ACCEPT);
 	}
 
@@ -861,7 +861,7 @@ test_auth_server_none_reject(void)
 		dssh_serialize_uint32((uint32_t)(sizeof(method) - 1), msg, sizeof(msg), &pos);
 		memcpy(&msg[pos], method, sizeof(method) - 1);
 		pos += sizeof(method) - 1;
-		ASSERT_OK(dssh_transport_send_packet(ctx.client, msg, pos, NULL));
+		ASSERT_OK(send_packet(ctx.client, msg, pos, NULL));
 	}
 
 	/* Should receive USERAUTH_FAILURE */
@@ -869,7 +869,7 @@ test_auth_server_none_reject(void)
 		uint8_t msg_type;
 		uint8_t *payload;
 		size_t payload_len;
-		ASSERT_OK(dssh_transport_recv_packet(ctx.client, &msg_type, &payload, &payload_len));
+		ASSERT_OK(recv_packet(ctx.client, &msg_type, &payload, &payload_len));
 		ASSERT_EQ(msg_type, SSH_MSG_USERAUTH_FAILURE);
 	}
 
@@ -914,7 +914,7 @@ test_auth_server_password_accept(void)
 		dssh_serialize_uint32((uint32_t)(sizeof(svc) - 1), msg, sizeof(msg), &pos);
 		memcpy(&msg[pos], svc, sizeof(svc) - 1);
 		pos += sizeof(svc) - 1;
-		ASSERT_OK(dssh_transport_send_packet(ctx.client, msg, pos, NULL));
+		ASSERT_OK(send_packet(ctx.client, msg, pos, NULL));
 	}
 
 	/* Receive SERVICE_ACCEPT */
@@ -922,7 +922,7 @@ test_auth_server_password_accept(void)
 		uint8_t msg_type;
 		uint8_t *payload;
 		size_t payload_len;
-		ASSERT_OK(dssh_transport_recv_packet(ctx.client, &msg_type, &payload, &payload_len));
+		ASSERT_OK(recv_packet(ctx.client, &msg_type, &payload, &payload_len));
 		ASSERT_EQ(msg_type, SSH_MSG_SERVICE_ACCEPT);
 	}
 
@@ -948,7 +948,7 @@ test_auth_server_password_accept(void)
 		dssh_serialize_uint32((uint32_t)(sizeof(pw) - 1), msg, sizeof(msg), &pos);
 		memcpy(&msg[pos], pw, sizeof(pw) - 1);
 		pos += sizeof(pw) - 1;
-		ASSERT_OK(dssh_transport_send_packet(ctx.client, msg, pos, NULL));
+		ASSERT_OK(send_packet(ctx.client, msg, pos, NULL));
 	}
 
 	/* Should receive USERAUTH_SUCCESS */
@@ -956,7 +956,7 @@ test_auth_server_password_accept(void)
 		uint8_t msg_type;
 		uint8_t *payload;
 		size_t payload_len;
-		ASSERT_OK(dssh_transport_recv_packet(ctx.client, &msg_type, &payload, &payload_len));
+		ASSERT_OK(recv_packet(ctx.client, &msg_type, &payload, &payload_len));
 		ASSERT_EQ(msg_type, SSH_MSG_USERAUTH_SUCCESS);
 	}
 
@@ -1000,14 +1000,14 @@ test_auth_server_password_reject(void)
 		dssh_serialize_uint32((uint32_t)(sizeof(svc) - 1), msg, sizeof(msg), &pos);
 		memcpy(&msg[pos], svc, sizeof(svc) - 1);
 		pos += sizeof(svc) - 1;
-		ASSERT_OK(dssh_transport_send_packet(ctx.client, msg, pos, NULL));
+		ASSERT_OK(send_packet(ctx.client, msg, pos, NULL));
 	}
 
 	{
 		uint8_t msg_type;
 		uint8_t *payload;
 		size_t payload_len;
-		ASSERT_OK(dssh_transport_recv_packet(ctx.client, &msg_type, &payload, &payload_len));
+		ASSERT_OK(recv_packet(ctx.client, &msg_type, &payload, &payload_len));
 		ASSERT_EQ(msg_type, SSH_MSG_SERVICE_ACCEPT);
 	}
 
@@ -1033,7 +1033,7 @@ test_auth_server_password_reject(void)
 		dssh_serialize_uint32((uint32_t)(sizeof(pw) - 1), msg, sizeof(msg), &pos);
 		memcpy(&msg[pos], pw, sizeof(pw) - 1);
 		pos += sizeof(pw) - 1;
-		ASSERT_OK(dssh_transport_send_packet(ctx.client, msg, pos, NULL));
+		ASSERT_OK(send_packet(ctx.client, msg, pos, NULL));
 	}
 
 	/* Should receive USERAUTH_FAILURE */
@@ -1041,7 +1041,7 @@ test_auth_server_password_reject(void)
 		uint8_t msg_type;
 		uint8_t *payload;
 		size_t payload_len;
-		ASSERT_OK(dssh_transport_recv_packet(ctx.client, &msg_type, &payload, &payload_len));
+		ASSERT_OK(recv_packet(ctx.client, &msg_type, &payload, &payload_len));
 		ASSERT_EQ(msg_type, SSH_MSG_USERAUTH_FAILURE);
 	}
 
@@ -1171,14 +1171,14 @@ test_auth_server_no_callbacks(void)
 		dssh_serialize_uint32((uint32_t)(sizeof(svc) - 1), msg, sizeof(msg), &pos);
 		memcpy(&msg[pos], svc, sizeof(svc) - 1);
 		pos += sizeof(svc) - 1;
-		ASSERT_OK(dssh_transport_send_packet(ctx.client, msg, pos, NULL));
+		ASSERT_OK(send_packet(ctx.client, msg, pos, NULL));
 	}
 
 	{
 		uint8_t msg_type;
 		uint8_t *payload;
 		size_t payload_len;
-		ASSERT_OK(dssh_transport_recv_packet(ctx.client, &msg_type, &payload, &payload_len));
+		ASSERT_OK(recv_packet(ctx.client, &msg_type, &payload, &payload_len));
 		ASSERT_EQ(msg_type, SSH_MSG_SERVICE_ACCEPT);
 	}
 
@@ -1199,7 +1199,7 @@ test_auth_server_no_callbacks(void)
 		dssh_serialize_uint32((uint32_t)(sizeof(method) - 1), msg, sizeof(msg), &pos);
 		memcpy(&msg[pos], method, sizeof(method) - 1);
 		pos += sizeof(method) - 1;
-		ASSERT_OK(dssh_transport_send_packet(ctx.client, msg, pos, NULL));
+		ASSERT_OK(send_packet(ctx.client, msg, pos, NULL));
 	}
 
 	/* Should get USERAUTH_FAILURE since none_cb is NULL */
@@ -1207,7 +1207,7 @@ test_auth_server_no_callbacks(void)
 		uint8_t msg_type;
 		uint8_t *payload;
 		size_t payload_len;
-		ASSERT_OK(dssh_transport_recv_packet(ctx.client, &msg_type, &payload, &payload_len));
+		ASSERT_OK(recv_packet(ctx.client, &msg_type, &payload, &payload_len));
 		ASSERT_EQ(msg_type, SSH_MSG_USERAUTH_FAILURE);
 	}
 
@@ -1488,7 +1488,7 @@ kbi_server_thread(void *arg)
 	int res;
 
 	/* Receive SERVICE_REQUEST */
-	res = dssh_transport_recv_packet(sess, &msg_type, &payload, &payload_len);
+	res = recv_packet(sess, &msg_type, &payload, &payload_len);
 	if (res < 0 || msg_type != SSH_MSG_SERVICE_REQUEST) {
 		a->result = -1;
 		return 0;
@@ -1508,7 +1508,7 @@ kbi_server_thread(void *arg)
 				pos += slen;
 			}
 		}
-		res = dssh_transport_send_packet(sess, accept, pos, NULL);
+		res = send_packet(sess, accept, pos, NULL);
 		if (res < 0) {
 			a->result = -2;
 			return 0;
@@ -1516,7 +1516,7 @@ kbi_server_thread(void *arg)
 	}
 
 	/* Receive USERAUTH_REQUEST (none from get_methods) */
-	res = dssh_transport_recv_packet(sess, &msg_type, &payload, &payload_len);
+	res = recv_packet(sess, &msg_type, &payload, &payload_len);
 	if (res < 0 || msg_type != SSH_MSG_USERAUTH_REQUEST) {
 		a->result = -3;
 		return 0;
@@ -1532,7 +1532,7 @@ kbi_server_thread(void *arg)
 		memcpy(&msg[pos], methods, sizeof(methods) - 1);
 		pos += sizeof(methods) - 1;
 		msg[pos++] = 0; /* partial_success = false */
-		res = dssh_transport_send_packet(sess, msg, pos, NULL);
+		res = send_packet(sess, msg, pos, NULL);
 		if (res < 0) {
 			a->result = -4;
 			return 0;
@@ -1540,7 +1540,7 @@ kbi_server_thread(void *arg)
 	}
 
 	/* Receive USERAUTH_REQUEST (keyboard-interactive) */
-	res = dssh_transport_recv_packet(sess, &msg_type, &payload, &payload_len);
+	res = recv_packet(sess, &msg_type, &payload, &payload_len);
 	if (res < 0 || msg_type != SSH_MSG_USERAUTH_REQUEST) {
 		a->result = -5;
 		return 0;
@@ -1566,7 +1566,7 @@ kbi_server_thread(void *arg)
 		memcpy(&msg[pos], prompt, sizeof(prompt) - 1);
 		pos += sizeof(prompt) - 1;
 		msg[pos++] = 0; /* echo = false */
-		res = dssh_transport_send_packet(sess, msg, pos, NULL);
+		res = send_packet(sess, msg, pos, NULL);
 		if (res < 0) {
 			a->result = -6;
 			return 0;
@@ -1574,7 +1574,7 @@ kbi_server_thread(void *arg)
 	}
 
 	/* Receive INFO_RESPONSE */
-	res = dssh_transport_recv_packet(sess, &msg_type, &payload, &payload_len);
+	res = recv_packet(sess, &msg_type, &payload, &payload_len);
 	if (res < 0 || msg_type != SSH_MSG_USERAUTH_INFO_RESPONSE) {
 		a->result = -7;
 		return 0;
@@ -1610,7 +1610,7 @@ kbi_server_thread(void *arg)
 	/* Send SUCCESS or FAILURE based on the response */
 	if (a->got_correct_response) {
 		uint8_t msg = SSH_MSG_USERAUTH_SUCCESS;
-		res = dssh_transport_send_packet(sess, &msg, 1, NULL);
+		res = send_packet(sess, &msg, 1, NULL);
 	}
 	else {
 		static const char methods[] = "keyboard-interactive";
@@ -1621,7 +1621,7 @@ kbi_server_thread(void *arg)
 		memcpy(&msg[pos], methods, sizeof(methods) - 1);
 		pos += sizeof(methods) - 1;
 		msg[pos++] = 0;
-		res = dssh_transport_send_packet(sess, msg, pos, NULL);
+		res = send_packet(sess, msg, pos, NULL);
 	}
 
 	a->result = (res < 0) ? res : 0;
@@ -1751,7 +1751,7 @@ banner_server_thread(void *arg)
 	uint8_t msg_type;
 	uint8_t *payload;
 	size_t payload_len;
-	int res = dssh_transport_recv_packet(sess, &msg_type,
+	int res = recv_packet(sess, &msg_type,
 	    &payload, &payload_len);
 	if (res < 0) {
 		a->result = res;
@@ -1767,10 +1767,10 @@ banner_server_thread(void *arg)
 		memcpy(&accept[pos], &payload[5], slen);
 		pos += slen;
 	}
-	dssh_transport_send_packet(sess, accept, pos, NULL);
+	send_packet(sess, accept, pos, NULL);
 
 	/* Receive the password auth request */
-	res = dssh_transport_recv_packet(sess, &msg_type,
+	res = recv_packet(sess, &msg_type,
 	    &payload, &payload_len);
 	if (res < 0) {
 		a->result = res;
@@ -1788,12 +1788,12 @@ banner_server_thread(void *arg)
 	memcpy(&banner[pos], banner_msg, blen);
 	pos += blen;
 	dssh_serialize_uint32(0, banner, sizeof(banner), &pos);
-	dssh_transport_send_packet(sess, banner, pos, NULL);
+	send_packet(sess, banner, pos, NULL);
 
 	/* Now send SUCCESS */
 	{
 		uint8_t succ = SSH_MSG_USERAUTH_SUCCESS;
-		dssh_transport_send_packet(sess, &succ, 1, NULL);
+		send_packet(sess, &succ, 1, NULL);
 	}
 	a->result = 0;
 	return 0;
@@ -1985,7 +1985,7 @@ test_auth_server_publickey_probe(void)
 		dssh_serialize_uint32((uint32_t)(sizeof(svc) - 1), msg, sizeof(msg), &pos);
 		memcpy(&msg[pos], svc, sizeof(svc) - 1);
 		pos += sizeof(svc) - 1;
-		ASSERT_OK(dssh_transport_send_packet(ctx.client, msg, pos, NULL));
+		ASSERT_OK(send_packet(ctx.client, msg, pos, NULL));
 	}
 
 	/* Receive SERVICE_ACCEPT */
@@ -1993,13 +1993,13 @@ test_auth_server_publickey_probe(void)
 		uint8_t msg_type;
 		uint8_t *payload;
 		size_t payload_len;
-		ASSERT_OK(dssh_transport_recv_packet(ctx.client, &msg_type, &payload, &payload_len));
+		ASSERT_OK(recv_packet(ctx.client, &msg_type, &payload, &payload_len));
 		ASSERT_EQ(msg_type, SSH_MSG_SERVICE_ACCEPT);
 	}
 
 	/* Get the key algo and public key blob */
 	const char *algo_name = test_key_algo_name();
-	dssh_key_algo ka = dssh_transport_find_key_algo(algo_name);
+	dssh_key_algo ka = find_key_algo(algo_name);
 	ASSERT_NOT_NULL(ka);
 	const uint8_t *pubkey_buf = NULL;
 	size_t pubkey_len;
@@ -2030,7 +2030,7 @@ test_auth_server_publickey_probe(void)
 		dssh_serialize_uint32((uint32_t)pubkey_len, msg, sizeof(msg), &pos);
 		memcpy(&msg[pos], pubkey_buf, pubkey_len);
 		pos += pubkey_len;
-		ASSERT_OK(dssh_transport_send_packet(ctx.client, msg, pos, NULL));
+		ASSERT_OK(send_packet(ctx.client, msg, pos, NULL));
 	}
 
 	/* Should receive PK_OK (msg type 60) */
@@ -2038,7 +2038,7 @@ test_auth_server_publickey_probe(void)
 		uint8_t msg_type;
 		uint8_t *payload;
 		size_t payload_len;
-		ASSERT_OK(dssh_transport_recv_packet(ctx.client, &msg_type, &payload, &payload_len));
+		ASSERT_OK(recv_packet(ctx.client, &msg_type, &payload, &payload_len));
 		ASSERT_EQ(msg_type, SSH_MSG_USERAUTH_PK_OK);
 	}
 
@@ -2094,14 +2094,14 @@ test_auth_server_unknown_method(void)
 		dssh_serialize_uint32((uint32_t)(sizeof(svc) - 1), msg, sizeof(msg), &pos);
 		memcpy(&msg[pos], svc, sizeof(svc) - 1);
 		pos += sizeof(svc) - 1;
-		ASSERT_OK(dssh_transport_send_packet(ctx.client, msg, pos, NULL));
+		ASSERT_OK(send_packet(ctx.client, msg, pos, NULL));
 	}
 
 	{
 		uint8_t msg_type;
 		uint8_t *payload;
 		size_t payload_len;
-		ASSERT_OK(dssh_transport_recv_packet(ctx.client, &msg_type, &payload, &payload_len));
+		ASSERT_OK(recv_packet(ctx.client, &msg_type, &payload, &payload_len));
 		ASSERT_EQ(msg_type, SSH_MSG_SERVICE_ACCEPT);
 	}
 
@@ -2124,7 +2124,7 @@ test_auth_server_unknown_method(void)
 		pos += sizeof(method) - 1;
 		dssh_serialize_uint32(0, msg, sizeof(msg), &pos); /* language */
 		dssh_serialize_uint32(0, msg, sizeof(msg), &pos); /* submethods */
-		ASSERT_OK(dssh_transport_send_packet(ctx.client, msg, pos, NULL));
+		ASSERT_OK(send_packet(ctx.client, msg, pos, NULL));
 	}
 
 	/* Should get FAILURE (unknown method falls through) */
@@ -2132,7 +2132,7 @@ test_auth_server_unknown_method(void)
 		uint8_t msg_type;
 		uint8_t *payload;
 		size_t payload_len;
-		ASSERT_OK(dssh_transport_recv_packet(ctx.client, &msg_type, &payload, &payload_len));
+		ASSERT_OK(recv_packet(ctx.client, &msg_type, &payload, &payload_len));
 		ASSERT_EQ(msg_type, SSH_MSG_USERAUTH_FAILURE);
 	}
 
@@ -2182,14 +2182,14 @@ test_auth_server_unexpected_message(void)
 		dssh_serialize_uint32((uint32_t)(sizeof(svc) - 1), msg, sizeof(msg), &pos);
 		memcpy(&msg[pos], svc, sizeof(svc) - 1);
 		pos += sizeof(svc) - 1;
-		ASSERT_OK(dssh_transport_send_packet(ctx.client, msg, pos, NULL));
+		ASSERT_OK(send_packet(ctx.client, msg, pos, NULL));
 	}
 
 	{
 		uint8_t msg_type;
 		uint8_t *payload;
 		size_t payload_len;
-		ASSERT_OK(dssh_transport_recv_packet(ctx.client, &msg_type, &payload, &payload_len));
+		ASSERT_OK(recv_packet(ctx.client, &msg_type, &payload, &payload_len));
 		ASSERT_EQ(msg_type, SSH_MSG_SERVICE_ACCEPT);
 	}
 
@@ -2204,7 +2204,7 @@ test_auth_server_unexpected_message(void)
 		msg[pos++] = 'f';
 		msg[pos++] = 'o';
 		msg[pos++] = 'o';
-		ASSERT_OK(dssh_transport_send_packet(ctx.client, msg, pos, NULL));
+		ASSERT_OK(send_packet(ctx.client, msg, pos, NULL));
 	}
 
 	/* Server sends UNIMPLEMENTED; client's recv_packet handles it
@@ -2232,7 +2232,7 @@ test_auth_server_unexpected_message(void)
 		dssh_serialize_uint32((uint32_t)(sizeof(pw) - 1), msg, sizeof(msg), &pos);
 		memcpy(&msg[pos], pw, sizeof(pw) - 1);
 		pos += sizeof(pw) - 1;
-		ASSERT_OK(dssh_transport_send_packet(ctx.client, msg, pos, NULL));
+		ASSERT_OK(send_packet(ctx.client, msg, pos, NULL));
 	}
 
 	/* Should receive USERAUTH_SUCCESS */
@@ -2240,7 +2240,7 @@ test_auth_server_unexpected_message(void)
 		uint8_t msg_type;
 		uint8_t *payload;
 		size_t payload_len;
-		ASSERT_OK(dssh_transport_recv_packet(ctx.client, &msg_type, &payload, &payload_len));
+		ASSERT_OK(recv_packet(ctx.client, &msg_type, &payload, &payload_len));
 		ASSERT_EQ(msg_type, SSH_MSG_USERAUTH_SUCCESS);
 	}
 
@@ -2289,14 +2289,14 @@ test_auth_server_password_disconnect(void)
 		dssh_serialize_uint32((uint32_t)(sizeof(svc) - 1), msg, sizeof(msg), &pos);
 		memcpy(&msg[pos], svc, sizeof(svc) - 1);
 		pos += sizeof(svc) - 1;
-		ASSERT_OK(dssh_transport_send_packet(ctx.client, msg, pos, NULL));
+		ASSERT_OK(send_packet(ctx.client, msg, pos, NULL));
 	}
 
 	{
 		uint8_t msg_type;
 		uint8_t *payload;
 		size_t payload_len;
-		ASSERT_OK(dssh_transport_recv_packet(ctx.client, &msg_type, &payload, &payload_len));
+		ASSERT_OK(recv_packet(ctx.client, &msg_type, &payload, &payload_len));
 		ASSERT_EQ(msg_type, SSH_MSG_SERVICE_ACCEPT);
 	}
 
@@ -2322,7 +2322,7 @@ test_auth_server_password_disconnect(void)
 		dssh_serialize_uint32((uint32_t)(sizeof(pw) - 1), msg, sizeof(msg), &pos);
 		memcpy(&msg[pos], pw, sizeof(pw) - 1);
 		pos += sizeof(pw) - 1;
-		ASSERT_OK(dssh_transport_send_packet(ctx.client, msg, pos, NULL));
+		ASSERT_OK(send_packet(ctx.client, msg, pos, NULL));
 	}
 
 	/* Client should receive DISCONNECT (msg_type 1) */
@@ -2330,7 +2330,7 @@ test_auth_server_password_disconnect(void)
 		uint8_t msg_type;
 		uint8_t *payload;
 		size_t payload_len;
-		int res = dssh_transport_recv_packet(ctx.client, &msg_type, &payload, &payload_len);
+		int res = recv_packet(ctx.client, &msg_type, &payload, &payload_len);
 		/* recv_packet returns DSSH_ERROR_TERMINATED on DISCONNECT */
 		ASSERT_TRUE(res < 0);
 	}
@@ -2370,7 +2370,7 @@ kbi_error_service_exchange(dssh_session sess)
 	int res;
 
 	/* SERVICE_REQUEST */
-	res = dssh_transport_recv_packet(sess, &msg_type, &payload, &payload_len);
+	res = recv_packet(sess, &msg_type, &payload, &payload_len);
 	if (res < 0 || msg_type != SSH_MSG_SERVICE_REQUEST)
 		return -1;
 
@@ -2387,12 +2387,12 @@ kbi_error_service_exchange(dssh_session sess)
 			pos += slen;
 		}
 	}
-	res = dssh_transport_send_packet(sess, accept, pos, NULL);
+	res = send_packet(sess, accept, pos, NULL);
 	if (res < 0)
 		return -2;
 
 	/* Receive USERAUTH_REQUEST (keyboard-interactive) */
-	res = dssh_transport_recv_packet(sess, &msg_type, &payload, &payload_len);
+	res = recv_packet(sess, &msg_type, &payload, &payload_len);
 	if (res < 0 || msg_type != SSH_MSG_USERAUTH_REQUEST)
 		return -3;
 
@@ -2413,7 +2413,7 @@ kbi_error_server_thread(void *arg)
 	}
 
 	/* Send the crafted INFO_REQUEST payload */
-	res = dssh_transport_send_packet(sess, a->info_payload,
+	res = send_packet(sess, a->info_payload,
 	    a->info_payload_len, NULL);
 	a->result = res;
 	return 0;
@@ -2721,7 +2721,7 @@ kbi_zero_server_thread(void *arg)
 	if (res < 0) { a->result = res; return 0; }
 
 	/* Send INFO_REQUEST with 0 prompts */
-	res = dssh_transport_send_packet(sess, a->info_payload,
+	res = send_packet(sess, a->info_payload,
 	    a->info_payload_len, NULL);
 	if (res < 0) { a->result = res; return 0; }
 
@@ -2729,7 +2729,7 @@ kbi_zero_server_thread(void *arg)
 	uint8_t msg_type;
 	uint8_t *payload;
 	size_t payload_len;
-	res = dssh_transport_recv_packet(sess, &msg_type, &payload, &payload_len);
+	res = recv_packet(sess, &msg_type, &payload, &payload_len);
 	if (res < 0 || msg_type != SSH_MSG_USERAUTH_INFO_RESPONSE) {
 		a->result = -10;
 		return 0;
@@ -2737,7 +2737,7 @@ kbi_zero_server_thread(void *arg)
 
 	/* Send SUCCESS */
 	uint8_t succ = SSH_MSG_USERAUTH_SUCCESS;
-	a->result = dssh_transport_send_packet(sess, &succ, 1, NULL);
+	a->result = send_packet(sess, &succ, 1, NULL);
 	return 0;
 }
 
@@ -2798,7 +2798,7 @@ kbi_failure_server_thread(void *arg)
 	memcpy(&msg[pos], methods, sizeof(methods) - 1);
 	pos += sizeof(methods) - 1;
 	msg[pos++] = 0;
-	a->result = dssh_transport_send_packet(sess, msg, pos, NULL);
+	a->result = send_packet(sess, msg, pos, NULL);
 	return 0;
 }
 
@@ -2848,7 +2848,7 @@ kbi_unexpected_server_thread(void *arg)
 	msg[pos++] = SSH_MSG_SERVICE_REQUEST;
 	dssh_serialize_uint32(1, msg, sizeof(msg), &pos);
 	msg[pos++] = 'x';
-	a->result = dssh_transport_send_packet(sess, msg, pos, NULL);
+	a->result = send_packet(sess, msg, pos, NULL);
 	return 0;
 }
 
@@ -2902,12 +2902,12 @@ kbi_banner_server_thread(void *arg)
 		memcpy(&msg[pos], bmsg, sizeof(bmsg) - 1);
 		pos += sizeof(bmsg) - 1;
 		dssh_serialize_uint32(0, msg, sizeof(msg), &pos); /* language */
-		res = dssh_transport_send_packet(sess, msg, pos, NULL);
+		res = send_packet(sess, msg, pos, NULL);
 		if (res < 0) { a->result = res; return 0; }
 	}
 
 	/* Then send INFO_REQUEST with 0 prompts + SUCCESS */
-	res = dssh_transport_send_packet(sess, a->info_payload,
+	res = send_packet(sess, a->info_payload,
 	    a->info_payload_len, NULL);
 	if (res < 0) { a->result = res; return 0; }
 
@@ -2915,12 +2915,12 @@ kbi_banner_server_thread(void *arg)
 	uint8_t msg_type;
 	uint8_t *payload;
 	size_t payload_len;
-	res = dssh_transport_recv_packet(sess, &msg_type, &payload, &payload_len);
+	res = recv_packet(sess, &msg_type, &payload, &payload_len);
 	if (res < 0) { a->result = res; return 0; }
 
 	/* Send SUCCESS */
 	uint8_t succ = SSH_MSG_USERAUTH_SUCCESS;
-	a->result = dssh_transport_send_packet(sess, &succ, 1, NULL);
+	a->result = send_packet(sess, &succ, 1, NULL);
 	return 0;
 }
 
@@ -3008,14 +3008,14 @@ parse_error_setup(struct parse_error_ctx *pe)
 		dssh_serialize_uint32((uint32_t)(sizeof(svc) - 1), msg, sizeof(msg), &pos);
 		memcpy(&msg[pos], svc, sizeof(svc) - 1);
 		pos += sizeof(svc) - 1;
-		if (dssh_transport_send_packet(pe->hctx.client, msg, pos, NULL) < 0)
+		if (send_packet(pe->hctx.client, msg, pos, NULL) < 0)
 			return -1;
 	}
 	{
 		uint8_t msg_type;
 		uint8_t *payload;
 		size_t payload_len;
-		if (dssh_transport_recv_packet(pe->hctx.client, &msg_type,
+		if (recv_packet(pe->hctx.client, &msg_type,
 		    &payload, &payload_len) < 0)
 			return -1;
 		if (msg_type != SSH_MSG_SERVICE_ACCEPT)
@@ -3044,7 +3044,7 @@ test_server_parse_empty_request(void)
 	}
 
 	uint8_t msg[] = { SSH_MSG_USERAUTH_REQUEST };
-	ASSERT_OK(dssh_transport_send_packet(pe.hctx.client, msg, sizeof(msg), NULL));
+	ASSERT_OK(send_packet(pe.hctx.client, msg, sizeof(msg), NULL));
 
 	parse_error_cleanup(&pe);
 	ASSERT_TRUE(pe.sa.result < 0);
@@ -3067,7 +3067,7 @@ test_server_parse_truncated_username(void)
 	dssh_serialize_uint32(100, msg, sizeof(msg), &pos); /* username len */
 	msg[pos++] = 'u';
 	msg[pos++] = 's';
-	ASSERT_OK(dssh_transport_send_packet(pe.hctx.client, msg, pos, NULL));
+	ASSERT_OK(send_packet(pe.hctx.client, msg, pos, NULL));
 
 	parse_error_cleanup(&pe);
 	ASSERT_TRUE(pe.sa.result < 0);
@@ -3090,7 +3090,7 @@ test_server_parse_no_service(void)
 	dssh_serialize_uint32(1, msg, sizeof(msg), &pos);
 	msg[pos++] = 'u';
 	/* No service name length field */
-	ASSERT_OK(dssh_transport_send_packet(pe.hctx.client, msg, pos, NULL));
+	ASSERT_OK(send_packet(pe.hctx.client, msg, pos, NULL));
 
 	parse_error_cleanup(&pe);
 	ASSERT_TRUE(pe.sa.result < 0);
@@ -3114,7 +3114,7 @@ test_server_parse_truncated_service(void)
 	msg[pos++] = 'u';
 	dssh_serialize_uint32(50, msg, sizeof(msg), &pos); /* service len */
 	/* No service data */
-	ASSERT_OK(dssh_transport_send_packet(pe.hctx.client, msg, pos, NULL));
+	ASSERT_OK(send_packet(pe.hctx.client, msg, pos, NULL));
 
 	parse_error_cleanup(&pe);
 	ASSERT_TRUE(pe.sa.result < 0);
@@ -3141,7 +3141,7 @@ test_server_parse_no_method(void)
 	memcpy(&msg[pos], svc, sizeof(svc) - 1);
 	pos += sizeof(svc) - 1;
 	/* No method name */
-	ASSERT_OK(dssh_transport_send_packet(pe.hctx.client, msg, pos, NULL));
+	ASSERT_OK(send_packet(pe.hctx.client, msg, pos, NULL));
 
 	parse_error_cleanup(&pe);
 	ASSERT_TRUE(pe.sa.result < 0);
@@ -3169,7 +3169,7 @@ test_server_parse_truncated_method(void)
 	pos += sizeof(svc) - 1;
 	dssh_serialize_uint32(50, msg, sizeof(msg), &pos); /* method len */
 	/* No method data */
-	ASSERT_OK(dssh_transport_send_packet(pe.hctx.client, msg, pos, NULL));
+	ASSERT_OK(send_packet(pe.hctx.client, msg, pos, NULL));
 
 	parse_error_cleanup(&pe);
 	ASSERT_TRUE(pe.sa.result < 0);
@@ -3200,7 +3200,7 @@ test_server_parse_password_no_bool(void)
 	memcpy(&msg[pos], method, sizeof(method) - 1);
 	pos += sizeof(method) - 1;
 	/* No change boolean or password */
-	ASSERT_OK(dssh_transport_send_packet(pe.hctx.client, msg, pos, NULL));
+	ASSERT_OK(send_packet(pe.hctx.client, msg, pos, NULL));
 
 	parse_error_cleanup(&pe);
 	ASSERT_TRUE(pe.sa.result < 0);
@@ -3232,7 +3232,7 @@ test_server_parse_password_no_password(void)
 	pos += sizeof(method) - 1;
 	msg[pos++] = 0; /* change = false */
 	/* No password length */
-	ASSERT_OK(dssh_transport_send_packet(pe.hctx.client, msg, pos, NULL));
+	ASSERT_OK(send_packet(pe.hctx.client, msg, pos, NULL));
 
 	parse_error_cleanup(&pe);
 	ASSERT_TRUE(pe.sa.result < 0);
@@ -3263,7 +3263,7 @@ test_server_parse_publickey_no_has_sig(void)
 	memcpy(&msg[pos], method, sizeof(method) - 1);
 	pos += sizeof(method) - 1;
 	/* No has_signature boolean */
-	ASSERT_OK(dssh_transport_send_packet(pe.hctx.client, msg, pos, NULL));
+	ASSERT_OK(send_packet(pe.hctx.client, msg, pos, NULL));
 
 	parse_error_cleanup(&pe);
 	ASSERT_TRUE(pe.sa.result < 0);
@@ -3292,7 +3292,7 @@ test_server_parse_not_service_request(void)
 
 	/* Send USERAUTH_REQUEST instead of SERVICE_REQUEST */
 	uint8_t msg[] = { SSH_MSG_USERAUTH_REQUEST, 0, 0, 0, 0 };
-	ASSERT_OK(dssh_transport_send_packet(ctx.client, msg, sizeof(msg), NULL));
+	ASSERT_OK(send_packet(ctx.client, msg, sizeof(msg), NULL));
 
 	mock_io_close_c2s(&ctx.io);
 	mock_io_close_s2c(&ctx.io);
@@ -3327,7 +3327,7 @@ test_server_parse_long_username(void)
 	dssh_serialize_uint32((uint32_t)(sizeof(method) - 1), msg, sizeof(msg), &pos);
 	memcpy(&msg[pos], method, sizeof(method) - 1);
 	pos += sizeof(method) - 1;
-	ASSERT_OK(dssh_transport_send_packet(pe.hctx.client, msg, pos, NULL));
+	ASSERT_OK(send_packet(pe.hctx.client, msg, pos, NULL));
 
 	/* Server should process this (none auth with no none_cb = failure),
 	 * but the username should be truncated to 255 bytes in saved_user. */
@@ -3371,7 +3371,7 @@ test_server_parse_password_truncated_pw(void)
 	msg[pos++] = 0; /* change = false */
 	dssh_serialize_uint32(100, msg, sizeof(msg), &pos); /* pw_len */
 	msg[pos++] = 'p'; /* only 1 byte of "password" data */
-	ASSERT_OK(dssh_transport_send_packet(pe.hctx.client, msg, pos, NULL));
+	ASSERT_OK(send_packet(pe.hctx.client, msg, pos, NULL));
 
 	parse_error_cleanup(&pe);
 	ASSERT_TRUE(pe.sa.result < 0);
@@ -3395,7 +3395,7 @@ test_server_parse_password_change_no_newpw(void)
 	memcpy(&msg[pos], "old!", 4);
 	pos += 4;
 	/* No new_password length field */
-	ASSERT_OK(dssh_transport_send_packet(pe.hctx.client, msg, pos, NULL));
+	ASSERT_OK(send_packet(pe.hctx.client, msg, pos, NULL));
 
 	parse_error_cleanup(&pe);
 	ASSERT_TRUE(pe.sa.result < 0);
@@ -3419,7 +3419,7 @@ test_server_parse_password_change_truncated_newpw(void)
 	memcpy(&msg[pos], "old", 3);
 	pos += 3;
 	dssh_serialize_uint32(200, msg, sizeof(msg), &pos); /* new_pw_len too large */
-	ASSERT_OK(dssh_transport_send_packet(pe.hctx.client, msg, pos, NULL));
+	ASSERT_OK(send_packet(pe.hctx.client, msg, pos, NULL));
 
 	parse_error_cleanup(&pe);
 	ASSERT_TRUE(pe.sa.result < 0);
@@ -3457,13 +3457,13 @@ test_server_no_password_cb(void)
 		dssh_serialize_uint32((uint32_t)(sizeof(svc) - 1), msg, sizeof(msg), &pos);
 		memcpy(&msg[pos], svc, sizeof(svc) - 1);
 		pos += sizeof(svc) - 1;
-		ASSERT_OK(dssh_transport_send_packet(ctx.client, msg, pos, NULL));
+		ASSERT_OK(send_packet(ctx.client, msg, pos, NULL));
 	}
 	{
 		uint8_t msg_type;
 		uint8_t *payload;
 		size_t payload_len;
-		ASSERT_OK(dssh_transport_recv_packet(ctx.client, &msg_type, &payload, &payload_len));
+		ASSERT_OK(recv_packet(ctx.client, &msg_type, &payload, &payload_len));
 		ASSERT_EQ(msg_type, SSH_MSG_SERVICE_ACCEPT);
 	}
 
@@ -3474,14 +3474,14 @@ test_server_no_password_cb(void)
 	dssh_serialize_uint32(4, msg, sizeof(msg), &pos);
 	memcpy(&msg[pos], "pass", 4);
 	pos += 4;
-	ASSERT_OK(dssh_transport_send_packet(ctx.client, msg, pos, NULL));
+	ASSERT_OK(send_packet(ctx.client, msg, pos, NULL));
 
 	/* Server should send USERAUTH_FAILURE (no password_cb) */
 	{
 		uint8_t msg_type;
 		uint8_t *payload;
 		size_t payload_len;
-		ASSERT_OK(dssh_transport_recv_packet(ctx.client, &msg_type, &payload, &payload_len));
+		ASSERT_OK(recv_packet(ctx.client, &msg_type, &payload, &payload_len));
 		ASSERT_EQ(msg_type, SSH_MSG_USERAUTH_FAILURE);
 	}
 
@@ -3489,13 +3489,13 @@ test_server_no_password_cb(void)
 	{
 		uint8_t nmsg[64];
 		size_t npos = build_auth_prefix(nmsg, sizeof(nmsg), "none");
-		ASSERT_OK(dssh_transport_send_packet(ctx.client, nmsg, npos, NULL));
+		ASSERT_OK(send_packet(ctx.client, nmsg, npos, NULL));
 	}
 	{
 		uint8_t msg_type;
 		uint8_t *payload;
 		size_t payload_len;
-		ASSERT_OK(dssh_transport_recv_packet(ctx.client, &msg_type, &payload, &payload_len));
+		ASSERT_OK(recv_packet(ctx.client, &msg_type, &payload, &payload_len));
 		ASSERT_EQ(msg_type, SSH_MSG_USERAUTH_SUCCESS);
 	}
 
@@ -3537,13 +3537,13 @@ test_server_no_publickey_cb(void)
 		dssh_serialize_uint32((uint32_t)(sizeof(svc) - 1), msg, sizeof(msg), &pos);
 		memcpy(&msg[pos], svc, sizeof(svc) - 1);
 		pos += sizeof(svc) - 1;
-		ASSERT_OK(dssh_transport_send_packet(ctx.client, msg, pos, NULL));
+		ASSERT_OK(send_packet(ctx.client, msg, pos, NULL));
 	}
 	{
 		uint8_t msg_type;
 		uint8_t *payload;
 		size_t payload_len;
-		ASSERT_OK(dssh_transport_recv_packet(ctx.client, &msg_type, &payload, &payload_len));
+		ASSERT_OK(recv_packet(ctx.client, &msg_type, &payload, &payload_len));
 		ASSERT_EQ(msg_type, SSH_MSG_SERVICE_ACCEPT);
 	}
 
@@ -3557,14 +3557,14 @@ test_server_no_publickey_cb(void)
 	dssh_serialize_uint32(4, msg, sizeof(msg), &pos);
 	memcpy(&msg[pos], "fake", 4);
 	pos += 4;
-	ASSERT_OK(dssh_transport_send_packet(ctx.client, msg, pos, NULL));
+	ASSERT_OK(send_packet(ctx.client, msg, pos, NULL));
 
 	/* Server should send USERAUTH_FAILURE */
 	{
 		uint8_t msg_type;
 		uint8_t *payload;
 		size_t payload_len;
-		ASSERT_OK(dssh_transport_recv_packet(ctx.client, &msg_type, &payload, &payload_len));
+		ASSERT_OK(recv_packet(ctx.client, &msg_type, &payload, &payload_len));
 		ASSERT_EQ(msg_type, SSH_MSG_USERAUTH_FAILURE);
 	}
 
@@ -3572,13 +3572,13 @@ test_server_no_publickey_cb(void)
 	{
 		uint8_t nmsg[64];
 		size_t npos = build_auth_prefix(nmsg, sizeof(nmsg), "none");
-		ASSERT_OK(dssh_transport_send_packet(ctx.client, nmsg, npos, NULL));
+		ASSERT_OK(send_packet(ctx.client, nmsg, npos, NULL));
 	}
 	{
 		uint8_t msg_type;
 		uint8_t *payload;
 		size_t payload_len;
-		ASSERT_OK(dssh_transport_recv_packet(ctx.client, &msg_type, &payload, &payload_len));
+		ASSERT_OK(recv_packet(ctx.client, &msg_type, &payload, &payload_len));
 		ASSERT_EQ(msg_type, SSH_MSG_USERAUTH_SUCCESS);
 	}
 
@@ -3603,7 +3603,7 @@ test_server_parse_publickey_no_algo(void)
 	size_t pos = build_auth_prefix(msg, sizeof(msg), "publickey");
 	msg[pos++] = 0; /* has_sig = false */
 	/* No algo length */
-	ASSERT_OK(dssh_transport_send_packet(pe.hctx.client, msg, pos, NULL));
+	ASSERT_OK(send_packet(pe.hctx.client, msg, pos, NULL));
 
 	parse_error_cleanup(&pe);
 	ASSERT_TRUE(pe.sa.result < 0);
@@ -3627,7 +3627,7 @@ test_server_parse_publickey_no_blob(void)
 	memcpy(&msg[pos], "ssh-ed25519", 11);
 	pos += 11;
 	/* No pubkey blob length */
-	ASSERT_OK(dssh_transport_send_packet(pe.hctx.client, msg, pos, NULL));
+	ASSERT_OK(send_packet(pe.hctx.client, msg, pos, NULL));
 
 	parse_error_cleanup(&pe);
 	ASSERT_TRUE(pe.sa.result < 0);
@@ -3654,7 +3654,7 @@ test_server_parse_publickey_sig_no_siglen(void)
 	memcpy(&msg[pos], "fake", 4);
 	pos += 4;
 	/* No signature length */
-	ASSERT_OK(dssh_transport_send_packet(pe.hctx.client, msg, pos, NULL));
+	ASSERT_OK(send_packet(pe.hctx.client, msg, pos, NULL));
 
 	parse_error_cleanup(&pe);
 	ASSERT_TRUE(pe.sa.result < 0);
@@ -3683,7 +3683,7 @@ test_server_publickey_unknown_algo(void)
 	dssh_serialize_uint32(4, msg, sizeof(msg), &pos);
 	memcpy(&msg[pos], "sig!", 4);
 	pos += 4;
-	ASSERT_OK(dssh_transport_send_packet(pe.hctx.client, msg, pos, NULL));
+	ASSERT_OK(send_packet(pe.hctx.client, msg, pos, NULL));
 
 	/* Server should send USERAUTH_FAILURE for unknown algo.
 	 * Then we need to let the server exit -- send none. */
@@ -3691,7 +3691,7 @@ test_server_publickey_unknown_algo(void)
 		uint8_t msg_type;
 		uint8_t *payload;
 		size_t payload_len;
-		ASSERT_OK(dssh_transport_recv_packet(pe.hctx.client, &msg_type, &payload, &payload_len));
+		ASSERT_OK(recv_packet(pe.hctx.client, &msg_type, &payload, &payload_len));
 		ASSERT_EQ(msg_type, SSH_MSG_USERAUTH_FAILURE);
 	}
 
@@ -3721,14 +3721,14 @@ test_server_publickey_probe_rejected(void)
 	dssh_serialize_uint32(4, msg, sizeof(msg), &pos);
 	memcpy(&msg[pos], "blob", 4);
 	pos += 4;
-	ASSERT_OK(dssh_transport_send_packet(pe.hctx.client, msg, pos, NULL));
+	ASSERT_OK(send_packet(pe.hctx.client, msg, pos, NULL));
 
 	/* Should get FAILURE, not PK_OK */
 	{
 		uint8_t msg_type;
 		uint8_t *payload;
 		size_t payload_len;
-		ASSERT_OK(dssh_transport_recv_packet(pe.hctx.client, &msg_type, &payload, &payload_len));
+		ASSERT_OK(recv_packet(pe.hctx.client, &msg_type, &payload, &payload_len));
 		ASSERT_EQ(msg_type, SSH_MSG_USERAUTH_FAILURE);
 	}
 
@@ -3787,13 +3787,13 @@ test_server_password_change_rejected(void)
 		dssh_serialize_uint32((uint32_t)(sizeof(svc) - 1), msg, sizeof(msg), &pos);
 		memcpy(&msg[pos], svc, sizeof(svc) - 1);
 		pos += sizeof(svc) - 1;
-		ASSERT_OK(dssh_transport_send_packet(ctx.client, msg, pos, NULL));
+		ASSERT_OK(send_packet(ctx.client, msg, pos, NULL));
 	}
 	{
 		uint8_t msg_type;
 		uint8_t *payload;
 		size_t payload_len;
-		ASSERT_OK(dssh_transport_recv_packet(ctx.client, &msg_type, &payload, &payload_len));
+		ASSERT_OK(recv_packet(ctx.client, &msg_type, &payload, &payload_len));
 		ASSERT_EQ(msg_type, SSH_MSG_SERVICE_ACCEPT);
 	}
 
@@ -3807,14 +3807,14 @@ test_server_password_change_rejected(void)
 	dssh_serialize_uint32(3, msg, sizeof(msg), &pos);
 	memcpy(&msg[pos], "new", 3);
 	pos += 3;
-	ASSERT_OK(dssh_transport_send_packet(ctx.client, msg, pos, NULL));
+	ASSERT_OK(send_packet(ctx.client, msg, pos, NULL));
 
 	/* Should get FAILURE (callback rejected the change) */
 	{
 		uint8_t msg_type;
 		uint8_t *payload;
 		size_t payload_len;
-		ASSERT_OK(dssh_transport_recv_packet(ctx.client, &msg_type, &payload, &payload_len));
+		ASSERT_OK(recv_packet(ctx.client, &msg_type, &payload, &payload_len));
 		ASSERT_EQ(msg_type, SSH_MSG_USERAUTH_FAILURE);
 	}
 
@@ -3822,13 +3822,13 @@ test_server_password_change_rejected(void)
 	{
 		uint8_t nmsg[64];
 		size_t npos = build_auth_prefix(nmsg, sizeof(nmsg), "none");
-		ASSERT_OK(dssh_transport_send_packet(ctx.client, nmsg, npos, NULL));
+		ASSERT_OK(send_packet(ctx.client, nmsg, npos, NULL));
 	}
 	{
 		uint8_t msg_type;
 		uint8_t *payload;
 		size_t payload_len;
-		ASSERT_OK(dssh_transport_recv_packet(ctx.client, &msg_type, &payload, &payload_len));
+		ASSERT_OK(recv_packet(ctx.client, &msg_type, &payload, &payload_len));
 		ASSERT_EQ(msg_type, SSH_MSG_USERAUTH_SUCCESS);
 	}
 
@@ -3871,13 +3871,13 @@ test_server_password_change_no_change_cb(void)
 		dssh_serialize_uint32((uint32_t)(sizeof(svc) - 1), msg, sizeof(msg), &pos);
 		memcpy(&msg[pos], svc, sizeof(svc) - 1);
 		pos += sizeof(svc) - 1;
-		ASSERT_OK(dssh_transport_send_packet(ctx.client, msg, pos, NULL));
+		ASSERT_OK(send_packet(ctx.client, msg, pos, NULL));
 	}
 	{
 		uint8_t msg_type;
 		uint8_t *payload;
 		size_t payload_len;
-		ASSERT_OK(dssh_transport_recv_packet(ctx.client, &msg_type, &payload, &payload_len));
+		ASSERT_OK(recv_packet(ctx.client, &msg_type, &payload, &payload_len));
 		ASSERT_EQ(msg_type, SSH_MSG_SERVICE_ACCEPT);
 	}
 
@@ -3891,14 +3891,14 @@ test_server_password_change_no_change_cb(void)
 	dssh_serialize_uint32(3, msg, sizeof(msg), &pos);
 	memcpy(&msg[pos], "new", 3);
 	pos += 3;
-	ASSERT_OK(dssh_transport_send_packet(ctx.client, msg, pos, NULL));
+	ASSERT_OK(send_packet(ctx.client, msg, pos, NULL));
 
 	/* No passwd_change_cb -> auth_res stays FAILURE -> USERAUTH_FAILURE */
 	{
 		uint8_t msg_type;
 		uint8_t *payload;
 		size_t payload_len;
-		ASSERT_OK(dssh_transport_recv_packet(ctx.client, &msg_type, &payload, &payload_len));
+		ASSERT_OK(recv_packet(ctx.client, &msg_type, &payload, &payload_len));
 		ASSERT_EQ(msg_type, SSH_MSG_USERAUTH_FAILURE);
 	}
 
@@ -3906,13 +3906,13 @@ test_server_password_change_no_change_cb(void)
 	{
 		uint8_t nmsg[64];
 		size_t npos = build_auth_prefix(nmsg, sizeof(nmsg), "none");
-		ASSERT_OK(dssh_transport_send_packet(ctx.client, nmsg, npos, NULL));
+		ASSERT_OK(send_packet(ctx.client, nmsg, npos, NULL));
 	}
 	{
 		uint8_t msg_type;
 		uint8_t *payload;
 		size_t payload_len;
-		ASSERT_OK(dssh_transport_recv_packet(ctx.client, &msg_type, &payload, &payload_len));
+		ASSERT_OK(recv_packet(ctx.client, &msg_type, &payload, &payload_len));
 		ASSERT_EQ(msg_type, SSH_MSG_USERAUTH_SUCCESS);
 	}
 
@@ -3949,7 +3949,7 @@ test_server_parse_publickey_sig_truncated(void)
 	dssh_serialize_uint32(100, msg, sizeof(msg), &pos);
 	msg[pos++] = 0;
 	msg[pos++] = 0;
-	ASSERT_OK(dssh_transport_send_packet(pe.hctx.client, msg, pos, NULL));
+	ASSERT_OK(send_packet(pe.hctx.client, msg, pos, NULL));
 
 	parse_error_cleanup(&pe);
 	ASSERT_TRUE(pe.sa.result < 0);
@@ -3976,7 +3976,7 @@ test_server_parse_publickey_sig_trunc_algo(void)
 	dssh_serialize_uint32(100, msg, sizeof(msg), &pos);
 	memcpy(&msg[pos], "xx", 2);
 	pos += 2;
-	ASSERT_OK(dssh_transport_send_packet(pe.hctx.client, msg, pos, NULL));
+	ASSERT_OK(send_packet(pe.hctx.client, msg, pos, NULL));
 
 	parse_error_cleanup(&pe);
 	ASSERT_TRUE(pe.sa.result < 0);
@@ -4006,7 +4006,7 @@ test_server_parse_publickey_sig_trunc_blob(void)
 	dssh_serialize_uint32(100, msg, sizeof(msg), &pos);
 	memcpy(&msg[pos], "xx", 2);
 	pos += 2;
-	ASSERT_OK(dssh_transport_send_packet(pe.hctx.client, msg, pos, NULL));
+	ASSERT_OK(send_packet(pe.hctx.client, msg, pos, NULL));
 
 	parse_error_cleanup(&pe);
 	ASSERT_TRUE(pe.sa.result < 0);
@@ -4029,7 +4029,7 @@ test_server_publickey_verify_bad_sig(void)
 
 	/* Get real public key blob for the registered key algo */
 	const char *algo = test_key_algo_name();
-	dssh_key_algo ka = dssh_transport_find_key_algo(algo);
+	dssh_key_algo ka = find_key_algo(algo);
 	if (ka == NULL || !ka->haskey(ka->ctx)) {
 		parse_error_cleanup(&pe);
 		return TEST_SKIP;
@@ -4064,7 +4064,7 @@ test_server_publickey_verify_bad_sig(void)
 	dssh_serialize_uint32((uint32_t)fspos, msg, sizeof(msg), &pos);
 	memcpy(&msg[pos], fake_sig, fspos);
 	pos += fspos;
-	ASSERT_OK(dssh_transport_send_packet(pe.hctx.client, msg, pos, NULL));
+	ASSERT_OK(send_packet(pe.hctx.client, msg, pos, NULL));
 
 	/* Server should verify the sig, fail, and send FAILURE.
 	 * Then the pipe closes and auth returns error. */
@@ -4208,7 +4208,7 @@ banner_trunc_server_thread(void *arg)
 	uint8_t msg_type;
 	uint8_t *payload;
 	size_t payload_len;
-	if (dssh_transport_recv_packet(server, &msg_type, &payload, &payload_len) < 0)
+	if (recv_packet(server, &msg_type, &payload, &payload_len) < 0)
 		{ sa->result = -1; return 0; }
 	{
 		uint8_t accept[64];
@@ -4221,14 +4221,14 @@ banner_trunc_server_thread(void *arg)
 			memcpy(&accept[pos], &payload[5], slen);
 			pos += slen;
 		}
-		dssh_transport_send_packet(server, accept, pos, NULL);
+		send_packet(server, accept, pos, NULL);
 	}
 
 	/* Send truncated banners before reading the auth request */
 	/* Banner with only msg_type -- no msg_len header (line 18) */
 	{
 		uint8_t b[] = { 53 }; /* SSH_MSG_USERAUTH_BANNER */
-		dssh_transport_send_packet(server, b, sizeof(b), NULL);
+		send_packet(server, b, sizeof(b), NULL);
 	}
 	/* Banner with msg_len=100 but no msg data (line 22) */
 	{
@@ -4236,7 +4236,7 @@ banner_trunc_server_thread(void *arg)
 		size_t bp = 0;
 		b[bp++] = 53;
 		dssh_serialize_uint32(100, b, sizeof(b), &bp);
-		dssh_transport_send_packet(server, b, bp, NULL);
+		send_packet(server, b, bp, NULL);
 	}
 	/* Banner with valid msg but truncated lang (line 33-34) */
 	{
@@ -4248,7 +4248,7 @@ banner_trunc_server_thread(void *arg)
 		bp += 5;
 		/* lang_len=100 but no lang data */
 		dssh_serialize_uint32(100, b, sizeof(b), &bp);
-		dssh_transport_send_packet(server, b, bp, NULL);
+		send_packet(server, b, bp, NULL);
 	}
 
 	/* Now send USERAUTH_SUCCESS so the client returns */
@@ -4256,9 +4256,9 @@ banner_trunc_server_thread(void *arg)
 		uint8_t msg_type2;
 		uint8_t *p2;
 		size_t p2_len;
-		dssh_transport_recv_packet(server, &msg_type2, &p2, &p2_len);
+		recv_packet(server, &msg_type2, &p2, &p2_len);
 		uint8_t success[] = { 52 }; /* SSH_MSG_USERAUTH_SUCCESS */
-		dssh_transport_send_packet(server, success, 1, NULL);
+		send_packet(server, success, 1, NULL);
 	}
 
 	sa->result = 0;
@@ -4372,7 +4372,7 @@ crafted_response_server_thread(void *arg)
 	uint8_t msg_type;
 	uint8_t *payload;
 	size_t payload_len;
-	if (dssh_transport_recv_packet(server, &msg_type, &payload, &payload_len) < 0) {
+	if (recv_packet(server, &msg_type, &payload, &payload_len) < 0) {
 		mock_io_close_c2s(&cr->hctx->io);
 		mock_io_close_s2c(&cr->hctx->io);
 		return 0;
@@ -4388,14 +4388,14 @@ crafted_response_server_thread(void *arg)
 			memcpy(&accept[pos], &payload[5], slen);
 			pos += slen;
 		}
-		dssh_transport_send_packet(server, accept, pos, NULL);
+		send_packet(server, accept, pos, NULL);
 	}
 
 	/* Receive USERAUTH_REQUEST */
-	dssh_transport_recv_packet(server, &msg_type, &payload, &payload_len);
+	recv_packet(server, &msg_type, &payload, &payload_len);
 
 	/* Send the crafted response */
-	dssh_transport_send_packet(server, cr->response, cr->response_len, NULL);
+	send_packet(server, cr->response, cr->response_len, NULL);
 	/* Close pipe so client's read() gets EOF instead of blocking */
 	mock_io_close_s2c(&cr->hctx->io);
 	return 0;
@@ -4519,7 +4519,7 @@ changereq_server_thread_send(void *arg)
 	uint8_t *payload;
 	size_t payload_len;
 	/* SERVICE_REQUEST -> SERVICE_ACCEPT */
-	if (dssh_transport_recv_packet(server, &msg_type, &payload, &payload_len) < 0) {
+	if (recv_packet(server, &msg_type, &payload, &payload_len) < 0) {
 		mock_io_close_c2s(&cr->hctx->io);
 		mock_io_close_s2c(&cr->hctx->io);
 		return 0;
@@ -4535,13 +4535,13 @@ changereq_server_thread_send(void *arg)
 			memcpy(&accept[pos], &payload[5], slen);
 			pos += slen;
 		}
-		dssh_transport_send_packet(server, accept, pos, NULL);
+		send_packet(server, accept, pos, NULL);
 	}
 	/* Receive password USERAUTH_REQUEST */
-	dssh_transport_recv_packet(server, &msg_type, &payload, &payload_len);
+	recv_packet(server, &msg_type, &payload, &payload_len);
 
 	/* Send PASSWD_CHANGEREQ */
-	dssh_transport_send_packet(server, cr->response, cr->response_len, NULL);
+	send_packet(server, cr->response, cr->response_len, NULL);
 	mock_io_close_s2c(&cr->hctx->io);
 	return 0;
 }
@@ -4694,13 +4694,13 @@ service_bogus_server_thread(void *arg)
 	uint8_t msg_type;
 	uint8_t *payload;
 	size_t payload_len;
-	if (dssh_transport_recv_packet(server, &msg_type, &payload, &payload_len) < 0) {
+	if (recv_packet(server, &msg_type, &payload, &payload_len) < 0) {
 		mock_io_close_c2s(&cr->hctx->io);
 		mock_io_close_s2c(&cr->hctx->io);
 		return 0;
 	}
 	/* Send bogus response instead of SERVICE_ACCEPT */
-	dssh_transport_send_packet(server, cr->response, cr->response_len, NULL);
+	send_packet(server, cr->response, cr->response_len, NULL);
 	mock_io_close_s2c(&cr->hctx->io);
 	return 0;
 }
@@ -4767,7 +4767,7 @@ test_server_send_fail_service_accept(void)
 		dssh_serialize_uint32((uint32_t)(sizeof(svc) - 1), msg, sizeof(msg), &pos);
 		memcpy(&msg[pos], svc, sizeof(svc) - 1);
 		pos += sizeof(svc) - 1;
-		ASSERT_OK(dssh_transport_send_packet(ctx.client, msg, pos, NULL));
+		ASSERT_OK(send_packet(ctx.client, msg, pos, NULL));
 	}
 
 	/* Close s2c before the server sends SERVICE_ACCEPT */
@@ -4811,13 +4811,13 @@ test_server_send_fail_none_success(void)
 		dssh_serialize_uint32((uint32_t)(sizeof(svc) - 1), msg, sizeof(msg), &pos);
 		memcpy(&msg[pos], svc, sizeof(svc) - 1);
 		pos += sizeof(svc) - 1;
-		ASSERT_OK(dssh_transport_send_packet(ctx.client, msg, pos, NULL));
+		ASSERT_OK(send_packet(ctx.client, msg, pos, NULL));
 	}
 	{
 		uint8_t msg_type;
 		uint8_t *payload;
 		size_t payload_len;
-		ASSERT_OK(dssh_transport_recv_packet(ctx.client, &msg_type, &payload, &payload_len));
+		ASSERT_OK(recv_packet(ctx.client, &msg_type, &payload, &payload_len));
 		ASSERT_EQ(msg_type, SSH_MSG_SERVICE_ACCEPT);
 	}
 
@@ -4838,7 +4838,7 @@ test_server_send_fail_none_success(void)
 		dssh_serialize_uint32((uint32_t)(sizeof(method) - 1), msg, sizeof(msg), &pos);
 		memcpy(&msg[pos], method, sizeof(method) - 1);
 		pos += sizeof(method) - 1;
-		ASSERT_OK(dssh_transport_send_packet(ctx.client, msg, pos, NULL));
+		ASSERT_OK(send_packet(ctx.client, msg, pos, NULL));
 	}
 
 	/* Close s2c before server sends USERAUTH_SUCCESS */
@@ -4883,13 +4883,13 @@ test_server_send_fail_none_failure(void)
 		dssh_serialize_uint32((uint32_t)(sizeof(svc) - 1), msg, sizeof(msg), &pos);
 		memcpy(&msg[pos], svc, sizeof(svc) - 1);
 		pos += sizeof(svc) - 1;
-		ASSERT_OK(dssh_transport_send_packet(ctx.client, msg, pos, NULL));
+		ASSERT_OK(send_packet(ctx.client, msg, pos, NULL));
 	}
 	{
 		uint8_t msg_type;
 		uint8_t *payload;
 		size_t payload_len;
-		ASSERT_OK(dssh_transport_recv_packet(ctx.client, &msg_type, &payload, &payload_len));
+		ASSERT_OK(recv_packet(ctx.client, &msg_type, &payload, &payload_len));
 		ASSERT_EQ(msg_type, SSH_MSG_SERVICE_ACCEPT);
 	}
 
@@ -4910,7 +4910,7 @@ test_server_send_fail_none_failure(void)
 		dssh_serialize_uint32((uint32_t)(sizeof(method) - 1), msg, sizeof(msg), &pos);
 		memcpy(&msg[pos], method, sizeof(method) - 1);
 		pos += sizeof(method) - 1;
-		ASSERT_OK(dssh_transport_send_packet(ctx.client, msg, pos, NULL));
+		ASSERT_OK(send_packet(ctx.client, msg, pos, NULL));
 	}
 
 	/* Close s2c before server sends USERAUTH_FAILURE */
@@ -4954,13 +4954,13 @@ test_server_send_fail_password_success(void)
 		dssh_serialize_uint32((uint32_t)(sizeof(svc) - 1), msg, sizeof(msg), &pos);
 		memcpy(&msg[pos], svc, sizeof(svc) - 1);
 		pos += sizeof(svc) - 1;
-		ASSERT_OK(dssh_transport_send_packet(ctx.client, msg, pos, NULL));
+		ASSERT_OK(send_packet(ctx.client, msg, pos, NULL));
 	}
 	{
 		uint8_t msg_type;
 		uint8_t *payload;
 		size_t payload_len;
-		ASSERT_OK(dssh_transport_recv_packet(ctx.client, &msg_type, &payload, &payload_len));
+		ASSERT_OK(recv_packet(ctx.client, &msg_type, &payload, &payload_len));
 		ASSERT_EQ(msg_type, SSH_MSG_SERVICE_ACCEPT);
 	}
 
@@ -4986,7 +4986,7 @@ test_server_send_fail_password_success(void)
 		dssh_serialize_uint32((uint32_t)(sizeof(pw) - 1), msg, sizeof(msg), &pos);
 		memcpy(&msg[pos], pw, sizeof(pw) - 1);
 		pos += sizeof(pw) - 1;
-		ASSERT_OK(dssh_transport_send_packet(ctx.client, msg, pos, NULL));
+		ASSERT_OK(send_packet(ctx.client, msg, pos, NULL));
 	}
 
 	/* Close s2c before server sends USERAUTH_SUCCESS */
@@ -5030,13 +5030,13 @@ test_server_send_fail_password_failure(void)
 		dssh_serialize_uint32((uint32_t)(sizeof(svc) - 1), msg, sizeof(msg), &pos);
 		memcpy(&msg[pos], svc, sizeof(svc) - 1);
 		pos += sizeof(svc) - 1;
-		ASSERT_OK(dssh_transport_send_packet(ctx.client, msg, pos, NULL));
+		ASSERT_OK(send_packet(ctx.client, msg, pos, NULL));
 	}
 	{
 		uint8_t msg_type;
 		uint8_t *payload;
 		size_t payload_len;
-		ASSERT_OK(dssh_transport_recv_packet(ctx.client, &msg_type, &payload, &payload_len));
+		ASSERT_OK(recv_packet(ctx.client, &msg_type, &payload, &payload_len));
 		ASSERT_EQ(msg_type, SSH_MSG_SERVICE_ACCEPT);
 	}
 
@@ -5062,7 +5062,7 @@ test_server_send_fail_password_failure(void)
 		dssh_serialize_uint32((uint32_t)(sizeof(pw) - 1), msg, sizeof(msg), &pos);
 		memcpy(&msg[pos], pw, sizeof(pw) - 1);
 		pos += sizeof(pw) - 1;
-		ASSERT_OK(dssh_transport_send_packet(ctx.client, msg, pos, NULL));
+		ASSERT_OK(send_packet(ctx.client, msg, pos, NULL));
 	}
 
 	/* Close s2c before server sends USERAUTH_FAILURE */
@@ -5102,13 +5102,13 @@ test_server_send_fail_password_no_cb(void)
 		dssh_serialize_uint32((uint32_t)(sizeof(svc) - 1), msg, sizeof(msg), &pos);
 		memcpy(&msg[pos], svc, sizeof(svc) - 1);
 		pos += sizeof(svc) - 1;
-		ASSERT_OK(dssh_transport_send_packet(ctx.client, msg, pos, NULL));
+		ASSERT_OK(send_packet(ctx.client, msg, pos, NULL));
 	}
 	{
 		uint8_t msg_type;
 		uint8_t *payload;
 		size_t payload_len;
-		ASSERT_OK(dssh_transport_recv_packet(ctx.client, &msg_type, &payload, &payload_len));
+		ASSERT_OK(recv_packet(ctx.client, &msg_type, &payload, &payload_len));
 		ASSERT_EQ(msg_type, SSH_MSG_SERVICE_ACCEPT);
 	}
 
@@ -5134,7 +5134,7 @@ test_server_send_fail_password_no_cb(void)
 		dssh_serialize_uint32((uint32_t)(sizeof(pw) - 1), msg, sizeof(msg), &pos);
 		memcpy(&msg[pos], pw, sizeof(pw) - 1);
 		pos += sizeof(pw) - 1;
-		ASSERT_OK(dssh_transport_send_packet(ctx.client, msg, pos, NULL));
+		ASSERT_OK(send_packet(ctx.client, msg, pos, NULL));
 	}
 
 	/* Close s2c before server sends USERAUTH_FAILURE */
@@ -5195,13 +5195,13 @@ test_server_send_fail_password_changereq(void)
 		dssh_serialize_uint32((uint32_t)(sizeof(svc) - 1), msg, sizeof(msg), &pos);
 		memcpy(&msg[pos], svc, sizeof(svc) - 1);
 		pos += sizeof(svc) - 1;
-		ASSERT_OK(dssh_transport_send_packet(ctx.client, msg, pos, NULL));
+		ASSERT_OK(send_packet(ctx.client, msg, pos, NULL));
 	}
 	{
 		uint8_t msg_type;
 		uint8_t *payload;
 		size_t payload_len;
-		ASSERT_OK(dssh_transport_recv_packet(ctx.client, &msg_type, &payload, &payload_len));
+		ASSERT_OK(recv_packet(ctx.client, &msg_type, &payload, &payload_len));
 		ASSERT_EQ(msg_type, SSH_MSG_SERVICE_ACCEPT);
 	}
 
@@ -5227,7 +5227,7 @@ test_server_send_fail_password_changereq(void)
 		dssh_serialize_uint32((uint32_t)(sizeof(pw) - 1), msg, sizeof(msg), &pos);
 		memcpy(&msg[pos], pw, sizeof(pw) - 1);
 		pos += sizeof(pw) - 1;
-		ASSERT_OK(dssh_transport_send_packet(ctx.client, msg, pos, NULL));
+		ASSERT_OK(send_packet(ctx.client, msg, pos, NULL));
 	}
 
 	/* Close s2c before server sends PASSWD_CHANGEREQ */
@@ -5267,13 +5267,13 @@ test_server_send_fail_publickey_no_cb(void)
 		dssh_serialize_uint32((uint32_t)(sizeof(svc) - 1), msg, sizeof(msg), &pos);
 		memcpy(&msg[pos], svc, sizeof(svc) - 1);
 		pos += sizeof(svc) - 1;
-		ASSERT_OK(dssh_transport_send_packet(ctx.client, msg, pos, NULL));
+		ASSERT_OK(send_packet(ctx.client, msg, pos, NULL));
 	}
 	{
 		uint8_t msg_type;
 		uint8_t *payload;
 		size_t payload_len;
-		ASSERT_OK(dssh_transport_recv_packet(ctx.client, &msg_type, &payload, &payload_len));
+		ASSERT_OK(recv_packet(ctx.client, &msg_type, &payload, &payload_len));
 		ASSERT_EQ(msg_type, SSH_MSG_SERVICE_ACCEPT);
 	}
 
@@ -5288,7 +5288,7 @@ test_server_send_fail_publickey_no_cb(void)
 		dssh_serialize_uint32(4, msg, sizeof(msg), &pos);
 		memcpy(&msg[pos], "blob", 4);
 		pos += 4;
-		ASSERT_OK(dssh_transport_send_packet(ctx.client, msg, pos, NULL));
+		ASSERT_OK(send_packet(ctx.client, msg, pos, NULL));
 	}
 
 	/* Close s2c before server sends USERAUTH_FAILURE */
@@ -5332,13 +5332,13 @@ test_server_send_fail_pk_ok(void)
 		dssh_serialize_uint32((uint32_t)(sizeof(svc) - 1), msg, sizeof(msg), &pos);
 		memcpy(&msg[pos], svc, sizeof(svc) - 1);
 		pos += sizeof(svc) - 1;
-		ASSERT_OK(dssh_transport_send_packet(ctx.client, msg, pos, NULL));
+		ASSERT_OK(send_packet(ctx.client, msg, pos, NULL));
 	}
 	{
 		uint8_t msg_type;
 		uint8_t *payload;
 		size_t payload_len;
-		ASSERT_OK(dssh_transport_recv_packet(ctx.client, &msg_type, &payload, &payload_len));
+		ASSERT_OK(recv_packet(ctx.client, &msg_type, &payload, &payload_len));
 		ASSERT_EQ(msg_type, SSH_MSG_SERVICE_ACCEPT);
 	}
 
@@ -5353,7 +5353,7 @@ test_server_send_fail_pk_ok(void)
 		dssh_serialize_uint32(4, msg, sizeof(msg), &pos);
 		memcpy(&msg[pos], "blob", 4);
 		pos += 4;
-		ASSERT_OK(dssh_transport_send_packet(ctx.client, msg, pos, NULL));
+		ASSERT_OK(send_packet(ctx.client, msg, pos, NULL));
 	}
 
 	/* Close s2c before server sends PK_OK */
@@ -5397,13 +5397,13 @@ test_server_send_fail_pk_probe_rejected(void)
 		dssh_serialize_uint32((uint32_t)(sizeof(svc) - 1), msg, sizeof(msg), &pos);
 		memcpy(&msg[pos], svc, sizeof(svc) - 1);
 		pos += sizeof(svc) - 1;
-		ASSERT_OK(dssh_transport_send_packet(ctx.client, msg, pos, NULL));
+		ASSERT_OK(send_packet(ctx.client, msg, pos, NULL));
 	}
 	{
 		uint8_t msg_type;
 		uint8_t *payload;
 		size_t payload_len;
-		ASSERT_OK(dssh_transport_recv_packet(ctx.client, &msg_type, &payload, &payload_len));
+		ASSERT_OK(recv_packet(ctx.client, &msg_type, &payload, &payload_len));
 		ASSERT_EQ(msg_type, SSH_MSG_SERVICE_ACCEPT);
 	}
 
@@ -5418,7 +5418,7 @@ test_server_send_fail_pk_probe_rejected(void)
 		dssh_serialize_uint32(4, msg, sizeof(msg), &pos);
 		memcpy(&msg[pos], "blob", 4);
 		pos += 4;
-		ASSERT_OK(dssh_transport_send_packet(ctx.client, msg, pos, NULL));
+		ASSERT_OK(send_packet(ctx.client, msg, pos, NULL));
 	}
 
 	/* Close s2c before server sends USERAUTH_FAILURE */
@@ -5462,13 +5462,13 @@ test_server_send_fail_pk_unknown_algo(void)
 		dssh_serialize_uint32((uint32_t)(sizeof(svc) - 1), msg, sizeof(msg), &pos);
 		memcpy(&msg[pos], svc, sizeof(svc) - 1);
 		pos += sizeof(svc) - 1;
-		ASSERT_OK(dssh_transport_send_packet(ctx.client, msg, pos, NULL));
+		ASSERT_OK(send_packet(ctx.client, msg, pos, NULL));
 	}
 	{
 		uint8_t msg_type;
 		uint8_t *payload;
 		size_t payload_len;
-		ASSERT_OK(dssh_transport_recv_packet(ctx.client, &msg_type, &payload, &payload_len));
+		ASSERT_OK(recv_packet(ctx.client, &msg_type, &payload, &payload_len));
 		ASSERT_EQ(msg_type, SSH_MSG_SERVICE_ACCEPT);
 	}
 
@@ -5486,7 +5486,7 @@ test_server_send_fail_pk_unknown_algo(void)
 		dssh_serialize_uint32(4, msg, sizeof(msg), &pos);
 		memcpy(&msg[pos], "sig!", 4);
 		pos += 4;
-		ASSERT_OK(dssh_transport_send_packet(ctx.client, msg, pos, NULL));
+		ASSERT_OK(send_packet(ctx.client, msg, pos, NULL));
 	}
 
 	/* Close s2c before server sends USERAUTH_FAILURE */
@@ -5530,13 +5530,13 @@ test_server_send_fail_unknown_method(void)
 		dssh_serialize_uint32((uint32_t)(sizeof(svc) - 1), msg, sizeof(msg), &pos);
 		memcpy(&msg[pos], svc, sizeof(svc) - 1);
 		pos += sizeof(svc) - 1;
-		ASSERT_OK(dssh_transport_send_packet(ctx.client, msg, pos, NULL));
+		ASSERT_OK(send_packet(ctx.client, msg, pos, NULL));
 	}
 	{
 		uint8_t msg_type;
 		uint8_t *payload;
 		size_t payload_len;
-		ASSERT_OK(dssh_transport_recv_packet(ctx.client, &msg_type, &payload, &payload_len));
+		ASSERT_OK(recv_packet(ctx.client, &msg_type, &payload, &payload_len));
 		ASSERT_EQ(msg_type, SSH_MSG_SERVICE_ACCEPT);
 	}
 
@@ -5544,7 +5544,7 @@ test_server_send_fail_unknown_method(void)
 	{
 		uint8_t msg[128];
 		size_t pos = build_auth_prefix(msg, sizeof(msg), "bogus");
-		ASSERT_OK(dssh_transport_send_packet(ctx.client, msg, pos, NULL));
+		ASSERT_OK(send_packet(ctx.client, msg, pos, NULL));
 	}
 
 	/* Close s2c before server sends USERAUTH_FAILURE */
@@ -5760,14 +5760,14 @@ test_server_method_4_not_none(void)
 
 	uint8_t msg[128];
 	size_t pos = build_auth_prefix(msg, sizeof(msg), "fake");
-	ASSERT_OK(dssh_transport_send_packet(pe.hctx.client, msg, pos, NULL));
+	ASSERT_OK(send_packet(pe.hctx.client, msg, pos, NULL));
 
 	/* Server should send USERAUTH_FAILURE (unknown method) */
 	{
 		uint8_t msg_type;
 		uint8_t *payload;
 		size_t payload_len;
-		ASSERT_OK(dssh_transport_recv_packet(pe.hctx.client,
+		ASSERT_OK(recv_packet(pe.hctx.client,
 		    &msg_type, &payload, &payload_len));
 		ASSERT_EQ(msg_type, SSH_MSG_USERAUTH_FAILURE);
 	}
@@ -5791,14 +5791,14 @@ test_server_method_8_not_password(void)
 
 	uint8_t msg[128];
 	size_t pos = build_auth_prefix(msg, sizeof(msg), "notapass");
-	ASSERT_OK(dssh_transport_send_packet(pe.hctx.client, msg, pos, NULL));
+	ASSERT_OK(send_packet(pe.hctx.client, msg, pos, NULL));
 
 	/* Server should send USERAUTH_FAILURE (unknown method) */
 	{
 		uint8_t msg_type;
 		uint8_t *payload;
 		size_t payload_len;
-		ASSERT_OK(dssh_transport_recv_packet(pe.hctx.client,
+		ASSERT_OK(recv_packet(pe.hctx.client,
 		    &msg_type, &payload, &payload_len));
 		ASSERT_EQ(msg_type, SSH_MSG_USERAUTH_FAILURE);
 	}
@@ -5822,14 +5822,14 @@ test_server_method_9_not_publickey(void)
 
 	uint8_t msg[128];
 	size_t pos = build_auth_prefix(msg, sizeof(msg), "notpubkey");
-	ASSERT_OK(dssh_transport_send_packet(pe.hctx.client, msg, pos, NULL));
+	ASSERT_OK(send_packet(pe.hctx.client, msg, pos, NULL));
 
 	/* Server should send USERAUTH_FAILURE (unknown method) */
 	{
 		uint8_t msg_type;
 		uint8_t *payload;
 		size_t payload_len;
-		ASSERT_OK(dssh_transport_recv_packet(pe.hctx.client,
+		ASSERT_OK(recv_packet(pe.hctx.client,
 		    &msg_type, &payload, &payload_len));
 		ASSERT_EQ(msg_type, SSH_MSG_USERAUTH_FAILURE);
 	}
@@ -5887,13 +5887,13 @@ test_server_change_password_null_prompt(void)
 		dssh_serialize_uint32((uint32_t)(sizeof(svc) - 1), msg, sizeof(msg), &pos);
 		memcpy(&msg[pos], svc, sizeof(svc) - 1);
 		pos += sizeof(svc) - 1;
-		ASSERT_OK(dssh_transport_send_packet(ctx.client, msg, pos, NULL));
+		ASSERT_OK(send_packet(ctx.client, msg, pos, NULL));
 	}
 	{
 		uint8_t msg_type;
 		uint8_t *payload;
 		size_t payload_len;
-		ASSERT_OK(dssh_transport_recv_packet(ctx.client, &msg_type, &payload, &payload_len));
+		ASSERT_OK(recv_packet(ctx.client, &msg_type, &payload, &payload_len));
 		ASSERT_EQ(msg_type, SSH_MSG_SERVICE_ACCEPT);
 	}
 
@@ -5905,7 +5905,7 @@ test_server_change_password_null_prompt(void)
 		dssh_serialize_uint32(4, msg, sizeof(msg), &pos);
 		memcpy(&msg[pos], "pass", 4);
 		pos += 4;
-		ASSERT_OK(dssh_transport_send_packet(ctx.client, msg, pos, NULL));
+		ASSERT_OK(send_packet(ctx.client, msg, pos, NULL));
 	}
 
 	/* Should get USERAUTH_FAILURE (prompt was NULL, so falls through) */
@@ -5913,7 +5913,7 @@ test_server_change_password_null_prompt(void)
 		uint8_t msg_type;
 		uint8_t *payload;
 		size_t payload_len;
-		ASSERT_OK(dssh_transport_recv_packet(ctx.client, &msg_type, &payload, &payload_len));
+		ASSERT_OK(recv_packet(ctx.client, &msg_type, &payload, &payload_len));
 		ASSERT_EQ(msg_type, SSH_MSG_USERAUTH_FAILURE);
 	}
 
@@ -5921,13 +5921,13 @@ test_server_change_password_null_prompt(void)
 	{
 		uint8_t nmsg[64];
 		size_t npos = build_auth_prefix(nmsg, sizeof(nmsg), "none");
-		ASSERT_OK(dssh_transport_send_packet(ctx.client, nmsg, npos, NULL));
+		ASSERT_OK(send_packet(ctx.client, nmsg, npos, NULL));
 	}
 	{
 		uint8_t msg_type;
 		uint8_t *payload;
 		size_t payload_len;
-		ASSERT_OK(dssh_transport_recv_packet(ctx.client, &msg_type, &payload, &payload_len));
+		ASSERT_OK(recv_packet(ctx.client, &msg_type, &payload, &payload_len));
 		ASSERT_EQ(msg_type, SSH_MSG_USERAUTH_SUCCESS);
 	}
 
@@ -5988,13 +5988,13 @@ test_server_change_password_null_prompt_change(void)
 		dssh_serialize_uint32((uint32_t)(sizeof(svc) - 1), msg, sizeof(msg), &pos);
 		memcpy(&msg[pos], svc, sizeof(svc) - 1);
 		pos += sizeof(svc) - 1;
-		ASSERT_OK(dssh_transport_send_packet(ctx.client, msg, pos, NULL));
+		ASSERT_OK(send_packet(ctx.client, msg, pos, NULL));
 	}
 	{
 		uint8_t msg_type;
 		uint8_t *payload;
 		size_t payload_len;
-		ASSERT_OK(dssh_transport_recv_packet(ctx.client, &msg_type, &payload, &payload_len));
+		ASSERT_OK(recv_packet(ctx.client, &msg_type, &payload, &payload_len));
 		ASSERT_EQ(msg_type, SSH_MSG_SERVICE_ACCEPT);
 	}
 
@@ -6009,7 +6009,7 @@ test_server_change_password_null_prompt_change(void)
 		dssh_serialize_uint32(3, msg, sizeof(msg), &pos);
 		memcpy(&msg[pos], "new", 3);
 		pos += 3;
-		ASSERT_OK(dssh_transport_send_packet(ctx.client, msg, pos, NULL));
+		ASSERT_OK(send_packet(ctx.client, msg, pos, NULL));
 	}
 
 	/* Should get USERAUTH_FAILURE (change cb returned CHANGE_PASSWORD
@@ -6018,7 +6018,7 @@ test_server_change_password_null_prompt_change(void)
 		uint8_t msg_type;
 		uint8_t *payload;
 		size_t payload_len;
-		ASSERT_OK(dssh_transport_recv_packet(ctx.client, &msg_type, &payload, &payload_len));
+		ASSERT_OK(recv_packet(ctx.client, &msg_type, &payload, &payload_len));
 		ASSERT_EQ(msg_type, SSH_MSG_USERAUTH_FAILURE);
 	}
 
@@ -6026,13 +6026,13 @@ test_server_change_password_null_prompt_change(void)
 	{
 		uint8_t nmsg[64];
 		size_t npos = build_auth_prefix(nmsg, sizeof(nmsg), "none");
-		ASSERT_OK(dssh_transport_send_packet(ctx.client, nmsg, npos, NULL));
+		ASSERT_OK(send_packet(ctx.client, nmsg, npos, NULL));
 	}
 	{
 		uint8_t msg_type;
 		uint8_t *payload;
 		size_t payload_len;
-		ASSERT_OK(dssh_transport_recv_packet(ctx.client, &msg_type, &payload, &payload_len));
+		ASSERT_OK(recv_packet(ctx.client, &msg_type, &payload, &payload_len));
 		ASSERT_EQ(msg_type, SSH_MSG_USERAUTH_SUCCESS);
 	}
 
@@ -6074,14 +6074,14 @@ test_server_long_algo_name(void)
 	dssh_serialize_uint32(4, msg, sizeof(msg), &pos);
 	memcpy(&msg[pos], "blob", 4);
 	pos += 4;
-	ASSERT_OK(dssh_transport_send_packet(pe.hctx.client, msg, pos, NULL));
+	ASSERT_OK(send_packet(pe.hctx.client, msg, pos, NULL));
 
 	/* Server should send USERAUTH_FAILURE (probe rejected) */
 	{
 		uint8_t msg_type;
 		uint8_t *payload;
 		size_t payload_len;
-		ASSERT_OK(dssh_transport_recv_packet(pe.hctx.client,
+		ASSERT_OK(recv_packet(pe.hctx.client,
 		    &msg_type, &payload, &payload_len));
 		ASSERT_EQ(msg_type, SSH_MSG_USERAUTH_FAILURE);
 	}
@@ -6233,7 +6233,7 @@ changereq_send_fail_server_thread(void *arg)
 	size_t payload_len;
 
 	/* SERVICE_REQUEST -> SERVICE_ACCEPT */
-	if (dssh_transport_recv_packet(server, &msg_type, &payload, &payload_len) < 0) {
+	if (recv_packet(server, &msg_type, &payload, &payload_len) < 0) {
 		mock_io_close_c2s(&cr->hctx->io);
 		mock_io_close_s2c(&cr->hctx->io);
 		return 0;
@@ -6249,13 +6249,13 @@ changereq_send_fail_server_thread(void *arg)
 			memcpy(&accept[pos], &payload[5], slen);
 			pos += slen;
 		}
-		dssh_transport_send_packet(server, accept, pos, NULL);
+		send_packet(server, accept, pos, NULL);
 	}
 	/* Receive password USERAUTH_REQUEST */
-	dssh_transport_recv_packet(server, &msg_type, &payload, &payload_len);
+	recv_packet(server, &msg_type, &payload, &payload_len);
 
 	/* Send PASSWD_CHANGEREQ */
-	dssh_transport_send_packet(server, cr->response, cr->response_len, NULL);
+	send_packet(server, cr->response, cr->response_len, NULL);
 
 	/* Close c2s so client's send of new password fails */
 	mock_io_close_c2s(&cr->hctx->io);
@@ -6409,7 +6409,7 @@ test_client_publickey_no_key(void)
 	ctx.client->auth_service_requested = true;
 
 	/* Try publickey auth with an algo name that doesn't exist.
-	 * dssh_transport_find_key_algo returns NULL -> line 971 */
+	 * find_key_algo returns NULL -> line 971 */
 	int res = dssh_auth_publickey(ctx.client,
 	    "user", "nonexistent-algo");
 	ASSERT_EQ(res, DSSH_ERROR_INIT);
@@ -6455,7 +6455,7 @@ test_client_publickey_pubkey_fail(void)
 
 	/* Temporarily replace the registered key algo's pubkey function */
 	const char *algo = test_key_algo_name();
-	dssh_key_algo ka = dssh_transport_find_key_algo(algo);
+	dssh_key_algo ka = find_key_algo(algo);
 	ASSERT_NOT_NULL(ka);
 
 	dssh_key_algo_pubkey saved_pubkey = ka->pubkey;
@@ -6491,7 +6491,7 @@ test_client_publickey_sign_fail(void)
 
 	/* Temporarily replace the registered key algo's sign function */
 	const char *algo = test_key_algo_name();
-	dssh_key_algo ka = dssh_transport_find_key_algo(algo);
+	dssh_key_algo ka = find_key_algo(algo);
 	ASSERT_NOT_NULL(ka);
 
 	dssh_key_algo_sign saved_sign = ka->sign;
@@ -6571,7 +6571,7 @@ pk_close_after_request_server_thread(void *arg)
 	size_t payload_len;
 
 	/* SERVICE_REQUEST -> SERVICE_ACCEPT */
-	if (dssh_transport_recv_packet(server, &msg_type, &payload, &payload_len) < 0) {
+	if (recv_packet(server, &msg_type, &payload, &payload_len) < 0) {
 		mock_io_close_c2s(&cr->hctx->io);
 		mock_io_close_s2c(&cr->hctx->io);
 		return 0;
@@ -6587,10 +6587,10 @@ pk_close_after_request_server_thread(void *arg)
 			memcpy(&accept[pos], &payload[5], slen);
 			pos += slen;
 		}
-		dssh_transport_send_packet(server, accept, pos, NULL);
+		send_packet(server, accept, pos, NULL);
 	}
 	/* Receive none USERAUTH_REQUEST -> send FAILURE */
-	dssh_transport_recv_packet(server, &msg_type, &payload, &payload_len);
+	recv_packet(server, &msg_type, &payload, &payload_len);
 	{
 		static const char methods[] = "publickey";
 		uint8_t msg[64];
@@ -6601,11 +6601,11 @@ pk_close_after_request_server_thread(void *arg)
 		memcpy(&msg[pos], methods, sizeof(methods) - 1);
 		pos += sizeof(methods) - 1;
 		msg[pos++] = 0;
-		dssh_transport_send_packet(server, msg, pos, NULL);
+		send_packet(server, msg, pos, NULL);
 	}
 
 	/* Receive publickey USERAUTH_REQUEST -> close pipe */
-	dssh_transport_recv_packet(server, &msg_type, &payload, &payload_len);
+	recv_packet(server, &msg_type, &payload, &payload_len);
 	mock_io_close_s2c(&cr->hctx->io);
 	return 0;
 }
@@ -6656,7 +6656,7 @@ pk_banner_server_thread(void *arg)
 	size_t payload_len;
 
 	/* SERVICE_REQUEST -> SERVICE_ACCEPT */
-	if (dssh_transport_recv_packet(server, &msg_type, &payload, &payload_len) < 0) {
+	if (recv_packet(server, &msg_type, &payload, &payload_len) < 0) {
 		mock_io_close_c2s(&cr->hctx->io);
 		mock_io_close_s2c(&cr->hctx->io);
 		return 0;
@@ -6672,10 +6672,10 @@ pk_banner_server_thread(void *arg)
 			memcpy(&accept[pos], &payload[5], slen);
 			pos += slen;
 		}
-		dssh_transport_send_packet(server, accept, pos, NULL);
+		send_packet(server, accept, pos, NULL);
 	}
 	/* Receive none USERAUTH_REQUEST -> send FAILURE */
-	dssh_transport_recv_packet(server, &msg_type, &payload, &payload_len);
+	recv_packet(server, &msg_type, &payload, &payload_len);
 	{
 		static const char methods[] = "publickey";
 		uint8_t msg[64];
@@ -6686,11 +6686,11 @@ pk_banner_server_thread(void *arg)
 		memcpy(&msg[pos], methods, sizeof(methods) - 1);
 		pos += sizeof(methods) - 1;
 		msg[pos++] = 0;
-		dssh_transport_send_packet(server, msg, pos, NULL);
+		send_packet(server, msg, pos, NULL);
 	}
 
 	/* Receive publickey USERAUTH_REQUEST */
-	dssh_transport_recv_packet(server, &msg_type, &payload, &payload_len);
+	recv_packet(server, &msg_type, &payload, &payload_len);
 
 	/* Send BANNER before SUCCESS */
 	{
@@ -6703,13 +6703,13 @@ pk_banner_server_thread(void *arg)
 		memcpy(&msg[pos], bmsg, sizeof(bmsg) - 1);
 		pos += sizeof(bmsg) - 1;
 		dssh_serialize_uint32(0, msg, sizeof(msg), &pos);
-		dssh_transport_send_packet(server, msg, pos, NULL);
+		send_packet(server, msg, pos, NULL);
 	}
 
 	/* Send SUCCESS */
 	{
 		uint8_t succ = SSH_MSG_USERAUTH_SUCCESS;
-		dssh_transport_send_packet(server, &succ, 1, NULL);
+		send_packet(server, &succ, 1, NULL);
 	}
 	return 0;
 }
@@ -6771,7 +6771,7 @@ banner_no_lang_server_thread(void *arg)
 	uint8_t *payload;
 	size_t payload_len;
 
-	if (dssh_transport_recv_packet(server, &msg_type, &payload, &payload_len) < 0) {
+	if (recv_packet(server, &msg_type, &payload, &payload_len) < 0) {
 		sa->result = -1;
 		return 0;
 	}
@@ -6786,7 +6786,7 @@ banner_no_lang_server_thread(void *arg)
 			memcpy(&accept[pos], &payload[5], slen);
 			pos += slen;
 		}
-		dssh_transport_send_packet(server, accept, pos, NULL);
+		send_packet(server, accept, pos, NULL);
 	}
 
 	/* Send banner with valid msg but no room for lang_len at all */
@@ -6798,14 +6798,14 @@ banner_no_lang_server_thread(void *arg)
 		b[bp++] = 'h';
 		b[bp++] = 'i';
 		/* Payload ends here -- no room for lang_len (4 bytes) */
-		dssh_transport_send_packet(server, b, bp, NULL);
+		send_packet(server, b, bp, NULL);
 	}
 
 	/* Read the password request and send SUCCESS */
-	dssh_transport_recv_packet(server, &msg_type, &payload, &payload_len);
+	recv_packet(server, &msg_type, &payload, &payload_len);
 	{
 		uint8_t succ = SSH_MSG_USERAUTH_SUCCESS;
-		dssh_transport_send_packet(server, &succ, 1, NULL);
+		send_packet(server, &succ, 1, NULL);
 	}
 
 	sa->result = 0;
@@ -7078,13 +7078,13 @@ test_server_send_fail_change_success(void)
 		dssh_serialize_uint32((uint32_t)(sizeof(svc) - 1), msg, sizeof(msg), &pos);
 		memcpy(&msg[pos], svc, sizeof(svc) - 1);
 		pos += sizeof(svc) - 1;
-		ASSERT_OK(dssh_transport_send_packet(ctx.client, msg, pos, NULL));
+		ASSERT_OK(send_packet(ctx.client, msg, pos, NULL));
 	}
 	{
 		uint8_t msg_type;
 		uint8_t *payload;
 		size_t payload_len;
-		ASSERT_OK(dssh_transport_recv_packet(ctx.client, &msg_type, &payload, &payload_len));
+		ASSERT_OK(recv_packet(ctx.client, &msg_type, &payload, &payload_len));
 		ASSERT_EQ(msg_type, SSH_MSG_SERVICE_ACCEPT);
 	}
 
@@ -7099,7 +7099,7 @@ test_server_send_fail_change_success(void)
 		dssh_serialize_uint32(3, msg, sizeof(msg), &pos);
 		memcpy(&msg[pos], "new", 3);
 		pos += 3;
-		ASSERT_OK(dssh_transport_send_packet(ctx.client, msg, pos, NULL));
+		ASSERT_OK(send_packet(ctx.client, msg, pos, NULL));
 	}
 
 	/* Close s2c before server sends SUCCESS */
@@ -7166,13 +7166,13 @@ test_server_send_fail_change_changereq(void)
 		dssh_serialize_uint32((uint32_t)(sizeof(svc) - 1), msg, sizeof(msg), &pos);
 		memcpy(&msg[pos], svc, sizeof(svc) - 1);
 		pos += sizeof(svc) - 1;
-		ASSERT_OK(dssh_transport_send_packet(ctx.client, msg, pos, NULL));
+		ASSERT_OK(send_packet(ctx.client, msg, pos, NULL));
 	}
 	{
 		uint8_t msg_type;
 		uint8_t *payload;
 		size_t payload_len;
-		ASSERT_OK(dssh_transport_recv_packet(ctx.client, &msg_type, &payload, &payload_len));
+		ASSERT_OK(recv_packet(ctx.client, &msg_type, &payload, &payload_len));
 		ASSERT_EQ(msg_type, SSH_MSG_SERVICE_ACCEPT);
 	}
 
@@ -7187,7 +7187,7 @@ test_server_send_fail_change_changereq(void)
 		dssh_serialize_uint32(3, msg, sizeof(msg), &pos);
 		memcpy(&msg[pos], "new", 3);
 		pos += 3;
-		ASSERT_OK(dssh_transport_send_packet(ctx.client, msg, pos, NULL));
+		ASSERT_OK(send_packet(ctx.client, msg, pos, NULL));
 	}
 
 	/* Close s2c before server sends CHANGEREQ */
@@ -7234,13 +7234,13 @@ test_server_send_fail_change_failure(void)
 		dssh_serialize_uint32((uint32_t)(sizeof(svc) - 1), msg, sizeof(msg), &pos);
 		memcpy(&msg[pos], svc, sizeof(svc) - 1);
 		pos += sizeof(svc) - 1;
-		ASSERT_OK(dssh_transport_send_packet(ctx.client, msg, pos, NULL));
+		ASSERT_OK(send_packet(ctx.client, msg, pos, NULL));
 	}
 	{
 		uint8_t msg_type;
 		uint8_t *payload;
 		size_t payload_len;
-		ASSERT_OK(dssh_transport_recv_packet(ctx.client, &msg_type, &payload, &payload_len));
+		ASSERT_OK(recv_packet(ctx.client, &msg_type, &payload, &payload_len));
 		ASSERT_EQ(msg_type, SSH_MSG_SERVICE_ACCEPT);
 	}
 
@@ -7255,7 +7255,7 @@ test_server_send_fail_change_failure(void)
 		dssh_serialize_uint32(3, msg, sizeof(msg), &pos);
 		memcpy(&msg[pos], "new", 3);
 		pos += 3;
-		ASSERT_OK(dssh_transport_send_packet(ctx.client, msg, pos, NULL));
+		ASSERT_OK(send_packet(ctx.client, msg, pos, NULL));
 	}
 
 	/* Close s2c before server sends FAILURE */
@@ -7304,19 +7304,19 @@ test_server_send_fail_pk_verify_bad_sig(void)
 		dssh_serialize_uint32((uint32_t)(sizeof(svc) - 1), msg, sizeof(msg), &pos);
 		memcpy(&msg[pos], svc, sizeof(svc) - 1);
 		pos += sizeof(svc) - 1;
-		ASSERT_OK(dssh_transport_send_packet(ctx.client, msg, pos, NULL));
+		ASSERT_OK(send_packet(ctx.client, msg, pos, NULL));
 	}
 	{
 		uint8_t msg_type;
 		uint8_t *payload;
 		size_t payload_len;
-		ASSERT_OK(dssh_transport_recv_packet(ctx.client, &msg_type, &payload, &payload_len));
+		ASSERT_OK(recv_packet(ctx.client, &msg_type, &payload, &payload_len));
 		ASSERT_EQ(msg_type, SSH_MSG_SERVICE_ACCEPT);
 	}
 
 	/* Get the real public key blob */
 	const char *algo = test_key_algo_name();
-	dssh_key_algo ka = dssh_transport_find_key_algo(algo);
+	dssh_key_algo ka = find_key_algo(algo);
 	if (ka == NULL || !ka->haskey(ka->ctx)) {
 		mock_io_close_c2s(&ctx.io);
 		mock_io_close_s2c(&ctx.io);
@@ -7358,7 +7358,7 @@ test_server_send_fail_pk_verify_bad_sig(void)
 		dssh_serialize_uint32((uint32_t)fspos, msg, sizeof(msg), &pos);
 		memcpy(&msg[pos], fake_sig, fspos);
 		pos += fspos;
-		ASSERT_OK(dssh_transport_send_packet(ctx.client, msg, pos, NULL));
+		ASSERT_OK(send_packet(ctx.client, msg, pos, NULL));
 	}
 
 	/* Close s2c before server sends FAILURE after verify failure */
@@ -7388,7 +7388,7 @@ pk_success_send_fail_server_thread(void *arg)
 	size_t payload_len;
 
 	/* SERVICE_REQUEST -> SERVICE_ACCEPT */
-	if (dssh_transport_recv_packet(server, &msg_type, &payload, &payload_len) < 0) {
+	if (recv_packet(server, &msg_type, &payload, &payload_len) < 0) {
 		a->result = -1;
 		return 0;
 	}
@@ -7403,11 +7403,11 @@ pk_success_send_fail_server_thread(void *arg)
 			memcpy(&accept[pos], &payload[5], slen);
 			pos += slen;
 		}
-		dssh_transport_send_packet(server, accept, pos, NULL);
+		send_packet(server, accept, pos, NULL);
 	}
 
 	/* Receive none USERAUTH_REQUEST -> send FAILURE */
-	dssh_transport_recv_packet(server, &msg_type, &payload, &payload_len);
+	recv_packet(server, &msg_type, &payload, &payload_len);
 	{
 		static const char methods[] = "publickey";
 		uint8_t msg[64];
@@ -7418,12 +7418,12 @@ pk_success_send_fail_server_thread(void *arg)
 		memcpy(&msg[pos], methods, sizeof(methods) - 1);
 		pos += sizeof(methods) - 1;
 		msg[pos++] = 0;
-		dssh_transport_send_packet(server, msg, pos, NULL);
+		send_packet(server, msg, pos, NULL);
 	}
 
 	/* Receive publickey USERAUTH_REQUEST -- parse and verify manually,
 	 * then close s2c instead of sending SUCCESS. */
-	dssh_transport_recv_packet(server, &msg_type, &payload, &payload_len);
+	recv_packet(server, &msg_type, &payload, &payload_len);
 
 	/* Close s2c -- simulates send failure for the auth success response */
 	mock_io_close_s2c(&a->ctx->io);
@@ -7512,19 +7512,19 @@ test_server_send_fail_pk_reject_sig(void)
 		dssh_serialize_uint32((uint32_t)(sizeof(svc) - 1), msg, sizeof(msg), &pos);
 		memcpy(&msg[pos], svc, sizeof(svc) - 1);
 		pos += sizeof(svc) - 1;
-		ASSERT_OK(dssh_transport_send_packet(ctx.client, msg, pos, NULL));
+		ASSERT_OK(send_packet(ctx.client, msg, pos, NULL));
 	}
 	{
 		uint8_t msg_type;
 		uint8_t *payload;
 		size_t payload_len;
-		ASSERT_OK(dssh_transport_recv_packet(ctx.client, &msg_type, &payload, &payload_len));
+		ASSERT_OK(recv_packet(ctx.client, &msg_type, &payload, &payload_len));
 		ASSERT_EQ(msg_type, SSH_MSG_SERVICE_ACCEPT);
 	}
 
 	/* Get the real public key blob */
 	const char *algo = test_key_algo_name();
-	dssh_key_algo ka = dssh_transport_find_key_algo(algo);
+	dssh_key_algo ka = find_key_algo(algo);
 	if (ka == NULL || !ka->haskey(ka->ctx)) {
 		mock_io_close_c2s(&ctx.io);
 		mock_io_close_s2c(&ctx.io);
@@ -7592,7 +7592,7 @@ test_server_send_fail_pk_reject_sig(void)
 		memcpy(&msg[pos], sig_buf, sig_len);
 		pos += sig_len;
 		free(sig_buf);
-		ASSERT_OK(dssh_transport_send_packet(ctx.client, msg, pos, NULL));
+		ASSERT_OK(send_packet(ctx.client, msg, pos, NULL));
 	}
 
 	/* Close s2c before server sends FAILURE (publickey_cb rejects) */
@@ -7659,13 +7659,13 @@ test_server_send_fail_kbi_success(void)
 		dssh_serialize_uint32((uint32_t)(sizeof(svc) - 1), msg, sizeof(msg), &pos);
 		memcpy(&msg[pos], svc, sizeof(svc) - 1);
 		pos += sizeof(svc) - 1;
-		ASSERT_OK(dssh_transport_send_packet(ctx.client, msg, pos, NULL));
+		ASSERT_OK(send_packet(ctx.client, msg, pos, NULL));
 	}
 	{
 		uint8_t msg_type;
 		uint8_t *payload;
 		size_t payload_len;
-		ASSERT_OK(dssh_transport_recv_packet(ctx.client, &msg_type, &payload, &payload_len));
+		ASSERT_OK(recv_packet(ctx.client, &msg_type, &payload, &payload_len));
 		ASSERT_EQ(msg_type, SSH_MSG_SERVICE_ACCEPT);
 	}
 
@@ -7677,7 +7677,7 @@ test_server_send_fail_kbi_success(void)
 		dssh_serialize_uint32(0, msg, sizeof(msg), &pos);
 		/* submethods (empty) */
 		dssh_serialize_uint32(0, msg, sizeof(msg), &pos);
-		ASSERT_OK(dssh_transport_send_packet(ctx.client, msg, pos, NULL));
+		ASSERT_OK(send_packet(ctx.client, msg, pos, NULL));
 	}
 
 	/* Close s2c before server sends SUCCESS */
@@ -7738,13 +7738,13 @@ test_server_send_fail_kbi_failure(void)
 		dssh_serialize_uint32((uint32_t)(sizeof(svc) - 1), msg, sizeof(msg), &pos);
 		memcpy(&msg[pos], svc, sizeof(svc) - 1);
 		pos += sizeof(svc) - 1;
-		ASSERT_OK(dssh_transport_send_packet(ctx.client, msg, pos, NULL));
+		ASSERT_OK(send_packet(ctx.client, msg, pos, NULL));
 	}
 	{
 		uint8_t msg_type;
 		uint8_t *payload;
 		size_t payload_len;
-		ASSERT_OK(dssh_transport_recv_packet(ctx.client, &msg_type, &payload, &payload_len));
+		ASSERT_OK(recv_packet(ctx.client, &msg_type, &payload, &payload_len));
 		ASSERT_EQ(msg_type, SSH_MSG_SERVICE_ACCEPT);
 	}
 
@@ -7754,7 +7754,7 @@ test_server_send_fail_kbi_failure(void)
 		size_t pos = build_auth_prefix(msg, sizeof(msg), "keyboard-interactive");
 		dssh_serialize_uint32(0, msg, sizeof(msg), &pos);
 		dssh_serialize_uint32(0, msg, sizeof(msg), &pos);
-		ASSERT_OK(dssh_transport_send_packet(ctx.client, msg, pos, NULL));
+		ASSERT_OK(send_packet(ctx.client, msg, pos, NULL));
 	}
 
 	/* Close s2c before server sends FAILURE */
@@ -7821,13 +7821,13 @@ test_server_send_fail_kbi_info_request(void)
 		dssh_serialize_uint32((uint32_t)(sizeof(svc) - 1), msg, sizeof(msg), &pos);
 		memcpy(&msg[pos], svc, sizeof(svc) - 1);
 		pos += sizeof(svc) - 1;
-		ASSERT_OK(dssh_transport_send_packet(ctx.client, msg, pos, NULL));
+		ASSERT_OK(send_packet(ctx.client, msg, pos, NULL));
 	}
 	{
 		uint8_t msg_type;
 		uint8_t *payload;
 		size_t payload_len;
-		ASSERT_OK(dssh_transport_recv_packet(ctx.client, &msg_type, &payload, &payload_len));
+		ASSERT_OK(recv_packet(ctx.client, &msg_type, &payload, &payload_len));
 		ASSERT_EQ(msg_type, SSH_MSG_SERVICE_ACCEPT);
 	}
 
@@ -7837,7 +7837,7 @@ test_server_send_fail_kbi_info_request(void)
 		size_t pos = build_auth_prefix(msg, sizeof(msg), "keyboard-interactive");
 		dssh_serialize_uint32(0, msg, sizeof(msg), &pos);
 		dssh_serialize_uint32(0, msg, sizeof(msg), &pos);
-		ASSERT_OK(dssh_transport_send_packet(ctx.client, msg, pos, NULL));
+		ASSERT_OK(send_packet(ctx.client, msg, pos, NULL));
 	}
 
 	/* Close s2c before server sends INFO_REQUEST */
@@ -7886,13 +7886,13 @@ test_server_send_fail_kbi_no_cb(void)
 		dssh_serialize_uint32((uint32_t)(sizeof(svc) - 1), msg, sizeof(msg), &pos);
 		memcpy(&msg[pos], svc, sizeof(svc) - 1);
 		pos += sizeof(svc) - 1;
-		ASSERT_OK(dssh_transport_send_packet(ctx.client, msg, pos, NULL));
+		ASSERT_OK(send_packet(ctx.client, msg, pos, NULL));
 	}
 	{
 		uint8_t msg_type;
 		uint8_t *payload;
 		size_t payload_len;
-		ASSERT_OK(dssh_transport_recv_packet(ctx.client, &msg_type, &payload, &payload_len));
+		ASSERT_OK(recv_packet(ctx.client, &msg_type, &payload, &payload_len));
 		ASSERT_EQ(msg_type, SSH_MSG_SERVICE_ACCEPT);
 	}
 
@@ -7902,7 +7902,7 @@ test_server_send_fail_kbi_no_cb(void)
 		size_t pos = build_auth_prefix(msg, sizeof(msg), "keyboard-interactive");
 		dssh_serialize_uint32(0, msg, sizeof(msg), &pos);
 		dssh_serialize_uint32(0, msg, sizeof(msg), &pos);
-		ASSERT_OK(dssh_transport_send_packet(ctx.client, msg, pos, NULL));
+		ASSERT_OK(send_packet(ctx.client, msg, pos, NULL));
 	}
 
 	/* Close s2c before server sends FAILURE */
@@ -7954,7 +7954,7 @@ test_server_tiny_service_request(void)
 		size_t pos = 0;
 		msg[pos++] = SSH_MSG_SERVICE_REQUEST;
 		dssh_serialize_uint32(0, msg, sizeof(msg), &pos);
-		ASSERT_OK(dssh_transport_send_packet(ctx.client, msg, pos, NULL));
+		ASSERT_OK(send_packet(ctx.client, msg, pos, NULL));
 	}
 
 	/* Server sends SERVICE_ACCEPT with just the msg_type (no service
@@ -7963,7 +7963,7 @@ test_server_tiny_service_request(void)
 		uint8_t msg_type;
 		uint8_t *payload;
 		size_t payload_len;
-		ASSERT_OK(dssh_transport_recv_packet(ctx.client, &msg_type, &payload, &payload_len));
+		ASSERT_OK(recv_packet(ctx.client, &msg_type, &payload, &payload_len));
 		ASSERT_EQ(msg_type, SSH_MSG_SERVICE_ACCEPT);
 	}
 
@@ -7975,13 +7975,13 @@ test_server_tiny_service_request(void)
 		dssh_serialize_uint32(4, msg, sizeof(msg), &pos);
 		memcpy(&msg[pos], "pass", 4);
 		pos += 4;
-		ASSERT_OK(dssh_transport_send_packet(ctx.client, msg, pos, NULL));
+		ASSERT_OK(send_packet(ctx.client, msg, pos, NULL));
 	}
 	{
 		uint8_t msg_type;
 		uint8_t *payload;
 		size_t payload_len;
-		ASSERT_OK(dssh_transport_recv_packet(ctx.client, &msg_type, &payload, &payload_len));
+		ASSERT_OK(recv_packet(ctx.client, &msg_type, &payload, &payload_len));
 		ASSERT_EQ(msg_type, SSH_MSG_USERAUTH_SUCCESS);
 	}
 
@@ -8025,13 +8025,13 @@ test_server_short_service_request(void)
 		msg[1] = 0;
 		msg[2] = 0;
 		msg[3] = 0;
-		ASSERT_OK(dssh_transport_send_packet(ctx.client, msg, 4, NULL));
+		ASSERT_OK(send_packet(ctx.client, msg, 4, NULL));
 	}
 	{
 		uint8_t msg_type;
 		uint8_t *payload;
 		size_t payload_len;
-		ASSERT_OK(dssh_transport_recv_packet(ctx.client, &msg_type, &payload, &payload_len));
+		ASSERT_OK(recv_packet(ctx.client, &msg_type, &payload, &payload_len));
 		ASSERT_EQ(msg_type, SSH_MSG_SERVICE_ACCEPT);
 	}
 
@@ -8043,13 +8043,13 @@ test_server_short_service_request(void)
 		dssh_serialize_uint32(4, msg, sizeof(msg), &pos);
 		memcpy(&msg[pos], "pass", 4);
 		pos += 4;
-		ASSERT_OK(dssh_transport_send_packet(ctx.client, msg, pos, NULL));
+		ASSERT_OK(send_packet(ctx.client, msg, pos, NULL));
 	}
 	{
 		uint8_t msg_type;
 		uint8_t *payload;
 		size_t payload_len;
-		ASSERT_OK(dssh_transport_recv_packet(ctx.client, &msg_type, &payload, &payload_len));
+		ASSERT_OK(recv_packet(ctx.client, &msg_type, &payload, &payload_len));
 		ASSERT_EQ(msg_type, SSH_MSG_USERAUTH_SUCCESS);
 	}
 
@@ -8174,7 +8174,7 @@ kbi_empty_resp_server_thread(void *arg)
 	if (res < 0) { a->result = res; return 0; }
 
 	/* Send INFO_REQUEST with one prompt */
-	res = dssh_transport_send_packet(sess, a->info_payload,
+	res = send_packet(sess, a->info_payload,
 	    a->info_payload_len, NULL);
 	if (res < 0) { a->result = res; return 0; }
 
@@ -8182,12 +8182,12 @@ kbi_empty_resp_server_thread(void *arg)
 	uint8_t msg_type;
 	uint8_t *payload;
 	size_t payload_len;
-	res = dssh_transport_recv_packet(sess, &msg_type, &payload, &payload_len);
+	res = recv_packet(sess, &msg_type, &payload, &payload_len);
 	if (res < 0) { a->result = res; return 0; }
 
 	/* Send SUCCESS */
 	uint8_t succ = SSH_MSG_USERAUTH_SUCCESS;
-	a->result = dssh_transport_send_packet(sess, &succ, 1, NULL);
+	a->result = send_packet(sess, &succ, 1, NULL);
 	return 0;
 }
 
@@ -8253,12 +8253,12 @@ direct_server_test(const uint8_t *auth_msg, size_t auth_msg_len,
 		dssh_serialize_uint32((uint32_t)(sizeof(svc) - 1), msg, sizeof(msg), &pos);
 		memcpy(&msg[pos], svc, sizeof(svc) - 1);
 		pos += sizeof(svc) - 1;
-		dssh_transport_send_packet(ctx.client, msg, pos, NULL);
+		send_packet(ctx.client, msg, pos, NULL);
 	}
 
 	/* Inject the auth message (if any) */
 	if (auth_msg != NULL && auth_msg_len > 0)
-		dssh_transport_send_packet(ctx.client, auth_msg, auth_msg_len, NULL);
+		send_packet(ctx.client, auth_msg, auth_msg_len, NULL);
 
 	/* Close write end so server gets EOF after reading buffered data */
 	mock_io_close_c2s_write(&ctx.io);
@@ -8490,7 +8490,7 @@ static int test_direct_wrong_first_msg(void)
 		return TEST_FAIL;
 	}
 	uint8_t msg[] = { SSH_MSG_USERAUTH_REQUEST };
-	dssh_transport_send_packet(ctx.client, msg, 1, NULL);
+	send_packet(ctx.client, msg, 1, NULL);
 	mock_io_close_c2s_write(&ctx.io);
 	struct dssh_auth_server_cbs cbs = default_cbs();
 	int res = auth_server_impl(ctx.server, &cbs, NULL, NULL);
@@ -8512,7 +8512,7 @@ static int test_direct_short_svc_request(void)
 	uint8_t msg[4];
 	msg[0] = SSH_MSG_SERVICE_REQUEST;
 	msg[1] = 0; msg[2] = 0; msg[3] = 0; /* truncated slen */
-	dssh_transport_send_packet(ctx.client, msg, 4, NULL);
+	send_packet(ctx.client, msg, 4, NULL);
 	mock_io_close_c2s_write(&ctx.io);
 	struct dssh_auth_server_cbs cbs = default_cbs();
 	int res = auth_server_impl(ctx.server, &cbs, NULL, NULL);
@@ -8538,7 +8538,7 @@ static int test_direct_svc_slen_overflow(void)
 	msg[pos++] = SSH_MSG_SERVICE_REQUEST;
 	dssh_serialize_uint32(1000, msg, sizeof(msg), &pos);
 	msg[pos++] = 'x'; msg[pos++] = 'y';
-	dssh_transport_send_packet(ctx.client, msg, pos, NULL);
+	send_packet(ctx.client, msg, pos, NULL);
 	mock_io_close_c2s_write(&ctx.io);
 	struct dssh_auth_server_cbs cbs = default_cbs();
 	int res = auth_server_impl(ctx.server, &cbs, NULL, NULL);
@@ -8623,7 +8623,7 @@ dclient_server_thread(void *arg)
 	dssh_test_alloc_exclude_thread();
 
 	/* SERVICE_REQUEST -> SERVICE_ACCEPT */
-	int res = dssh_transport_recv_packet(server, &msg_type, &payload,
+	int res = recv_packet(server, &msg_type, &payload,
 	    &payload_len);
 	if (res < 0 || msg_type != SSH_MSG_SERVICE_REQUEST) {
 		a->result = -1;
@@ -8643,7 +8643,7 @@ dclient_server_thread(void *arg)
 				pos += slen;
 			}
 		}
-		res = dssh_transport_send_packet(server, accept, pos, NULL);
+		res = send_packet(server, accept, pos, NULL);
 		if (res < 0) {
 			a->result = -2;
 			return 0;
@@ -8651,7 +8651,7 @@ dclient_server_thread(void *arg)
 	}
 
 	/* Receive the auth request */
-	res = dssh_transport_recv_packet(server, &msg_type, &payload,
+	res = recv_packet(server, &msg_type, &payload,
 	    &payload_len);
 	if (res < 0) {
 		a->result = -3;
@@ -8660,7 +8660,7 @@ dclient_server_thread(void *arg)
 
 	/* Send the crafted response */
 	if (a->response != NULL && a->response_len > 0)
-		dssh_transport_send_packet(server, a->response,
+		send_packet(server, a->response,
 		    a->response_len, NULL);
 	if (a->close_s2c)
 		mock_io_close_s2c(&a->ctx->io);
@@ -8677,14 +8677,14 @@ dclient_wrong_svc_server(void *arg)
 	uint8_t msg_type;
 	uint8_t *payload;
 	size_t payload_len;
-	int res = dssh_transport_recv_packet(server, &msg_type, &payload,
+	int res = recv_packet(server, &msg_type, &payload,
 	    &payload_len);
 	if (res < 0) {
 		a->result = -1;
 		return 0;
 	}
 	uint8_t bogus[] = { 99 };
-	dssh_transport_send_packet(server, bogus, sizeof(bogus), NULL);
+	send_packet(server, bogus, sizeof(bogus), NULL);
 	a->result = 0;
 	return 0;
 }
@@ -9207,9 +9207,9 @@ test_server_changereq_alloc(void)
 			    smsg, sizeof(smsg), &sp);
 			memcpy(&smsg[sp], svc, sizeof(svc) - 1);
 			sp += sizeof(svc) - 1;
-			dssh_transport_send_packet(ctx.client, smsg, sp, NULL);
+			send_packet(ctx.client, smsg, sp, NULL);
 		}
-		dssh_transport_send_packet(ctx.client, msg, len, NULL);
+		send_packet(ctx.client, msg, len, NULL);
 		mock_io_close_c2s_write(&ctx.io);
 
 		struct dssh_auth_server_cbs cbs = default_cbs();
@@ -9269,9 +9269,9 @@ test_server_pk_ok_alloc(void)
 			    smsg, sizeof(smsg), &sp);
 			memcpy(&smsg[sp], svc, sizeof(svc) - 1);
 			sp += sizeof(svc) - 1;
-			dssh_transport_send_packet(ctx.client, smsg, sp, NULL);
+			send_packet(ctx.client, smsg, sp, NULL);
 		}
-		dssh_transport_send_packet(ctx.client, msg, len, NULL);
+		send_packet(ctx.client, msg, len, NULL);
 		mock_io_close_c2s_write(&ctx.io);
 
 		struct dssh_auth_server_cbs cbs = default_cbs();
@@ -9675,7 +9675,7 @@ multi_banner_server_thread(void *arg)
 	dssh_test_alloc_exclude_thread();
 
 	/* SERVICE_REQUEST -> SERVICE_ACCEPT */
-	int res = dssh_transport_recv_packet(server, &msg_type, &payload,
+	int res = recv_packet(server, &msg_type, &payload,
 	    &payload_len);
 	if (res < 0 || msg_type != SSH_MSG_SERVICE_REQUEST) {
 		a->result = -1;
@@ -9695,7 +9695,7 @@ multi_banner_server_thread(void *arg)
 				pos += slen;
 			}
 		}
-		res = dssh_transport_send_packet(server, accept, pos, NULL);
+		res = send_packet(server, accept, pos, NULL);
 		if (res < 0) {
 			a->result = -2;
 			return 0;
@@ -9703,7 +9703,7 @@ multi_banner_server_thread(void *arg)
 	}
 
 	/* Receive the auth request */
-	res = dssh_transport_recv_packet(server, &msg_type, &payload,
+	res = recv_packet(server, &msg_type, &payload,
 	    &payload_len);
 	if (res < 0) {
 		a->result = -3;
@@ -9720,7 +9720,7 @@ multi_banner_server_thread(void *arg)
 		memcpy(&pkt[pos], b1, 10);
 		pos += 10;
 		dssh_serialize_uint32(0, pkt, sizeof(pkt), &pos);
-		dssh_transport_send_packet(server, pkt, pos, NULL);
+		send_packet(server, pkt, pos, NULL);
 	}
 
 	/* Send banner 2 */
@@ -9733,7 +9733,7 @@ multi_banner_server_thread(void *arg)
 		memcpy(&pkt[pos], b2, 10);
 		pos += 10;
 		dssh_serialize_uint32(0, pkt, sizeof(pkt), &pos);
-		dssh_transport_send_packet(server, pkt, pos, NULL);
+		send_packet(server, pkt, pos, NULL);
 	}
 
 	/* Send FAILURE with method list */
@@ -9745,7 +9745,7 @@ multi_banner_server_thread(void *arg)
 		memcpy(&pkt[pos], "password", 8);
 		pos += 8;
 		pkt[pos++] = 0; /* partial_success = false */
-		dssh_transport_send_packet(server, pkt, pos, NULL);
+		send_packet(server, pkt, pos, NULL);
 	}
 
 	a->result = 0;
@@ -10190,21 +10190,21 @@ kbi_bad_client_thread(void *arg)
 	dssh_serialize_uint32(0, msg, sizeof(msg), &pos); /* language */
 	dssh_serialize_uint32(0, msg, sizeof(msg), &pos); /* submethods */
 
-	dssh_transport_send_packet(client, msg, pos, NULL);
+	send_packet(client, msg, pos, NULL);
 
 	/* Receive INFO_REQUEST (60) -- discard it */
 	uint8_t  rx_type;
 	uint8_t *rx_payload;
 	size_t   rx_len;
-	dssh_transport_recv_packet(client, &rx_type, &rx_payload, &rx_len);
+	recv_packet(client, &rx_type, &rx_payload, &rx_len);
 
 	/* Send garbage USERAUTH_REQUEST instead of INFO_RESPONSE */
 	uint8_t bad[1];
 	bad[0] = SSH_MSG_USERAUTH_REQUEST;
-	dssh_transport_send_packet(client, bad, 1, NULL);
+	send_packet(client, bad, 1, NULL);
 
 	/* Should get FAILURE back */
-	dssh_transport_recv_packet(client, &rx_type, &rx_payload, &rx_len);
+	recv_packet(client, &rx_type, &rx_payload, &rx_len);
 
 	return 0;
 }
@@ -10278,18 +10278,18 @@ kbi_truncated_response_thread(void *arg)
 	dssh_serialize_uint32(0, msg, sizeof(msg), &pos);
 	dssh_serialize_uint32(0, msg, sizeof(msg), &pos);
 
-	dssh_transport_send_packet(client, msg, pos, NULL);
+	send_packet(client, msg, pos, NULL);
 
 	/* Receive INFO_REQUEST -- discard */
 	uint8_t  rx_type;
 	uint8_t *rx_payload;
 	size_t   rx_len;
-	dssh_transport_recv_packet(client, &rx_type, &rx_payload, &rx_len);
+	recv_packet(client, &rx_type, &rx_payload, &rx_len);
 
 	/* Send truncated INFO_RESPONSE (just the type byte, no num_responses) */
 	uint8_t trunc[1];
 	trunc[0] = SSH_MSG_USERAUTH_INFO_RESPONSE;
-	dssh_transport_send_packet(client, trunc, 1, NULL);
+	send_packet(client, trunc, 1, NULL);
 
 	return 0;
 }
@@ -10363,7 +10363,7 @@ kbi_trunc_lang_thread(void *arg)
 	/* Language: claims 100 bytes but packet ends here */
 	dssh_serialize_uint32(100, msg, sizeof(msg), &pos);
 
-	dssh_transport_send_packet(client, msg, pos, NULL);
+	send_packet(client, msg, pos, NULL);
 
 	return 0;
 }
@@ -10638,7 +10638,7 @@ test_auth_server_none_disconnect(void)
 		    sizeof(msg), &pos);
 		memcpy(&msg[pos], svc, sizeof(svc) - 1);
 		pos += sizeof(svc) - 1;
-		ASSERT_OK(dssh_transport_send_packet(ctx.client, msg, pos,
+		ASSERT_OK(send_packet(ctx.client, msg, pos,
 		    NULL));
 	}
 
@@ -10646,7 +10646,7 @@ test_auth_server_none_disconnect(void)
 		uint8_t msg_type;
 		uint8_t *payload;
 		size_t payload_len;
-		ASSERT_OK(dssh_transport_recv_packet(ctx.client, &msg_type,
+		ASSERT_OK(recv_packet(ctx.client, &msg_type,
 		    &payload, &payload_len));
 		ASSERT_EQ(msg_type, SSH_MSG_SERVICE_ACCEPT);
 	}
@@ -10671,7 +10671,7 @@ test_auth_server_none_disconnect(void)
 		    sizeof(msg), &pos);
 		memcpy(&msg[pos], method, sizeof(method) - 1);
 		pos += sizeof(method) - 1;
-		ASSERT_OK(dssh_transport_send_packet(ctx.client, msg, pos,
+		ASSERT_OK(send_packet(ctx.client, msg, pos,
 		    NULL));
 	}
 
@@ -10680,7 +10680,7 @@ test_auth_server_none_disconnect(void)
 		uint8_t msg_type;
 		uint8_t *payload;
 		size_t payload_len;
-		int res = dssh_transport_recv_packet(ctx.client, &msg_type,
+		int res = recv_packet(ctx.client, &msg_type,
 		    &payload, &payload_len);
 		ASSERT_TRUE(res < 0);
 	}
@@ -10728,14 +10728,14 @@ test_auth_server_pk_probe_disconnect(void)
 		    sizeof(msg), &pos);
 		memcpy(&msg[pos], svc, sizeof(svc) - 1);
 		pos += sizeof(svc) - 1;
-		ASSERT_OK(dssh_transport_send_packet(ctx.client, msg, pos,
+		ASSERT_OK(send_packet(ctx.client, msg, pos,
 		    NULL));
 	}
 	{
 		uint8_t msg_type;
 		uint8_t *payload;
 		size_t payload_len;
-		ASSERT_OK(dssh_transport_recv_packet(ctx.client, &msg_type,
+		ASSERT_OK(recv_packet(ctx.client, &msg_type,
 		    &payload, &payload_len));
 		ASSERT_EQ(msg_type, SSH_MSG_SERVICE_ACCEPT);
 	}
@@ -10770,7 +10770,7 @@ test_auth_server_pk_probe_disconnect(void)
 		dssh_serialize_uint32(4, msg, sizeof(msg), &pos);
 		msg[pos++] = 0; msg[pos++] = 0;
 		msg[pos++] = 0; msg[pos++] = 0;
-		ASSERT_OK(dssh_transport_send_packet(ctx.client, msg, pos,
+		ASSERT_OK(send_packet(ctx.client, msg, pos,
 		    NULL));
 	}
 
@@ -10779,7 +10779,7 @@ test_auth_server_pk_probe_disconnect(void)
 		uint8_t msg_type;
 		uint8_t *payload;
 		size_t payload_len;
-		int res = dssh_transport_recv_packet(ctx.client, &msg_type,
+		int res = recv_packet(ctx.client, &msg_type,
 		    &payload, &payload_len);
 		ASSERT_TRUE(res < 0);
 	}
@@ -10984,14 +10984,14 @@ test_auth_server_passwd_change_disconnect(void)
 		    sizeof(msg), &pos);
 		memcpy(&msg[pos], svc, sizeof(svc) - 1);
 		pos += sizeof(svc) - 1;
-		ASSERT_OK(dssh_transport_send_packet(ctx.client, msg, pos,
+		ASSERT_OK(send_packet(ctx.client, msg, pos,
 		    NULL));
 	}
 	{
 		uint8_t msg_type;
 		uint8_t *payload;
 		size_t payload_len;
-		ASSERT_OK(dssh_transport_recv_packet(ctx.client, &msg_type,
+		ASSERT_OK(recv_packet(ctx.client, &msg_type,
 		    &payload, &payload_len));
 		ASSERT_EQ(msg_type, SSH_MSG_SERVICE_ACCEPT);
 	}
@@ -11027,7 +11027,7 @@ test_auth_server_passwd_change_disconnect(void)
 		    sizeof(msg), &pos);
 		memcpy(&msg[pos], new_pw, sizeof(new_pw) - 1);
 		pos += sizeof(new_pw) - 1;
-		ASSERT_OK(dssh_transport_send_packet(ctx.client, msg, pos,
+		ASSERT_OK(send_packet(ctx.client, msg, pos,
 		    NULL));
 	}
 
@@ -11036,7 +11036,7 @@ test_auth_server_passwd_change_disconnect(void)
 		uint8_t msg_type;
 		uint8_t *payload;
 		size_t payload_len;
-		int res = dssh_transport_recv_packet(ctx.client, &msg_type,
+		int res = recv_packet(ctx.client, &msg_type,
 		    &payload, &payload_len);
 		ASSERT_TRUE(res < 0);
 	}
@@ -11087,14 +11087,14 @@ test_direct_kbi_wrong_resp_type(void)
 		    sizeof(msg), &pos);
 		memcpy(&msg[pos], svc, sizeof(svc) - 1);
 		pos += sizeof(svc) - 1;
-		ASSERT_OK(dssh_transport_send_packet(ctx.client, msg, pos,
+		ASSERT_OK(send_packet(ctx.client, msg, pos,
 		    NULL));
 	}
 	{
 		uint8_t msg_type;
 		uint8_t *payload;
 		size_t payload_len;
-		ASSERT_OK(dssh_transport_recv_packet(ctx.client, &msg_type,
+		ASSERT_OK(recv_packet(ctx.client, &msg_type,
 		    &payload, &payload_len));
 		ASSERT_EQ(msg_type, SSH_MSG_SERVICE_ACCEPT);
 	}
@@ -11119,7 +11119,7 @@ test_direct_kbi_wrong_resp_type(void)
 		/* language + submethods (empty) */
 		dssh_serialize_uint32(0, msg, sizeof(msg), &pos);
 		dssh_serialize_uint32(0, msg, sizeof(msg), &pos);
-		ASSERT_OK(dssh_transport_send_packet(ctx.client, msg, pos,
+		ASSERT_OK(send_packet(ctx.client, msg, pos,
 		    NULL));
 	}
 
@@ -11128,7 +11128,7 @@ test_direct_kbi_wrong_resp_type(void)
 		uint8_t msg_type;
 		uint8_t *payload;
 		size_t payload_len;
-		ASSERT_OK(dssh_transport_recv_packet(ctx.client, &msg_type,
+		ASSERT_OK(recv_packet(ctx.client, &msg_type,
 		    &payload, &payload_len));
 		/* Could be FAILURE (from get_methods "none") or INFO_REQUEST */
 		if (msg_type == SSH_MSG_USERAUTH_FAILURE) {
@@ -11143,7 +11143,7 @@ test_direct_kbi_wrong_resp_type(void)
 			bad[bp++] = 0;
 			bad[bp++] = 0;
 			bad[bp++] = 0;
-			dssh_transport_send_packet(ctx.client, bad, bp, NULL);
+			send_packet(ctx.client, bad, bp, NULL);
 		}
 	}
 
@@ -11194,14 +11194,14 @@ test_direct_kbi_resp_parse_error(void)
 		    sizeof(msg), &pos);
 		memcpy(&msg[pos], svc, sizeof(svc) - 1);
 		pos += sizeof(svc) - 1;
-		ASSERT_OK(dssh_transport_send_packet(ctx.client, msg, pos,
+		ASSERT_OK(send_packet(ctx.client, msg, pos,
 		    NULL));
 	}
 	{
 		uint8_t msg_type;
 		uint8_t *payload;
 		size_t payload_len;
-		ASSERT_OK(dssh_transport_recv_packet(ctx.client, &msg_type,
+		ASSERT_OK(recv_packet(ctx.client, &msg_type,
 		    &payload, &payload_len));
 		ASSERT_EQ(msg_type, SSH_MSG_SERVICE_ACCEPT);
 	}
@@ -11225,7 +11225,7 @@ test_direct_kbi_resp_parse_error(void)
 		pos += sizeof(method) - 1;
 		dssh_serialize_uint32(0, msg, sizeof(msg), &pos);
 		dssh_serialize_uint32(0, msg, sizeof(msg), &pos);
-		ASSERT_OK(dssh_transport_send_packet(ctx.client, msg, pos,
+		ASSERT_OK(send_packet(ctx.client, msg, pos,
 		    NULL));
 	}
 
@@ -11234,7 +11234,7 @@ test_direct_kbi_resp_parse_error(void)
 		uint8_t msg_type;
 		uint8_t *payload;
 		size_t payload_len;
-		ASSERT_OK(dssh_transport_recv_packet(ctx.client, &msg_type,
+		ASSERT_OK(recv_packet(ctx.client, &msg_type,
 		    &payload, &payload_len));
 		ASSERT_EQ(msg_type, 60); /* INFO_REQUEST == 60 */
 	}
@@ -11243,7 +11243,7 @@ test_direct_kbi_resp_parse_error(void)
 	{
 		uint8_t resp[1];
 		resp[0] = 61; /* SSH_MSG_USERAUTH_INFO_RESPONSE */
-		dssh_transport_send_packet(ctx.client, resp, 1, NULL);
+		send_packet(ctx.client, resp, 1, NULL);
 	}
 
 	/* Close write-end only so server can drain the truncated packet. */
@@ -11312,7 +11312,7 @@ dclient_pk_banner_server(void *arg)
 	dssh_test_alloc_exclude_thread();
 
 	/* SERVICE_REQUEST -> SERVICE_ACCEPT */
-	int res = dssh_transport_recv_packet(server, &msg_type, &payload,
+	int res = recv_packet(server, &msg_type, &payload,
 	    &payload_len);
 	if (res < 0 || msg_type != SSH_MSG_SERVICE_REQUEST) {
 		a->result = -1;
@@ -11332,7 +11332,7 @@ dclient_pk_banner_server(void *arg)
 				pos += slen;
 			}
 		}
-		res = dssh_transport_send_packet(server, accept, pos, NULL);
+		res = send_packet(server, accept, pos, NULL);
 		if (res < 0) {
 			a->result = -2;
 			return 0;
@@ -11340,7 +11340,7 @@ dclient_pk_banner_server(void *arg)
 	}
 
 	/* Receive the auth request */
-	res = dssh_transport_recv_packet(server, &msg_type, &payload,
+	res = recv_packet(server, &msg_type, &payload,
 	    &payload_len);
 	if (res < 0) {
 		a->result = -3;
@@ -11358,12 +11358,12 @@ dclient_pk_banner_server(void *arg)
 		memcpy(&banner[pos], banner_msg, sizeof(banner_msg) - 1);
 		pos += sizeof(banner_msg) - 1;
 		dssh_serialize_uint32(0, banner, sizeof(banner), &pos);
-		dssh_transport_send_packet(server, banner, pos, NULL);
+		send_packet(server, banner, pos, NULL);
 	}
 
 	/* Then send the real response */
 	if (a->response != NULL && a->response_len > 0)
-		dssh_transport_send_packet(server, a->response,
+		send_packet(server, a->response,
 		    a->response_len, NULL);
 	if (a->close_s2c)
 		mock_io_close_s2c(&a->ctx->io);
@@ -11415,7 +11415,7 @@ dclient_pk_bad_banner_server(void *arg)
 	dssh_test_alloc_exclude_thread();
 
 	/* SERVICE_REQUEST -> SERVICE_ACCEPT */
-	int res = dssh_transport_recv_packet(server, &msg_type, &payload,
+	int res = recv_packet(server, &msg_type, &payload,
 	    &payload_len);
 	if (res < 0 || msg_type != SSH_MSG_SERVICE_REQUEST) {
 		a->result = -1;
@@ -11435,7 +11435,7 @@ dclient_pk_bad_banner_server(void *arg)
 				pos += slen;
 			}
 		}
-		res = dssh_transport_send_packet(server, accept, pos, NULL);
+		res = send_packet(server, accept, pos, NULL);
 		if (res < 0) {
 			a->result = -2;
 			return 0;
@@ -11443,7 +11443,7 @@ dclient_pk_bad_banner_server(void *arg)
 	}
 
 	/* Receive the auth request */
-	res = dssh_transport_recv_packet(server, &msg_type, &payload,
+	res = recv_packet(server, &msg_type, &payload,
 	    &payload_len);
 	if (res < 0) {
 		a->result = -3;
@@ -11456,12 +11456,12 @@ dclient_pk_bad_banner_server(void *arg)
 		bad_banner[0] = SSH_MSG_USERAUTH_BANNER;
 		bad_banner[1] = 0;
 		bad_banner[2] = 0;
-		dssh_transport_send_packet(server, bad_banner, 3, NULL);
+		send_packet(server, bad_banner, 3, NULL);
 	}
 
 	/* Then send SUCCESS */
 	if (a->response != NULL && a->response_len > 0)
-		dssh_transport_send_packet(server, a->response,
+		send_packet(server, a->response,
 		    a->response_len, NULL);
 	if (a->close_s2c)
 		mock_io_close_s2c(&a->ctx->io);
@@ -11536,11 +11536,11 @@ test_direct_send_failure_alloc(void)
 			    sizeof(svc_msg), &pos);
 			memcpy(&svc_msg[pos], svc, sizeof(svc) - 1);
 			pos += sizeof(svc) - 1;
-			dssh_transport_send_packet(ctx.client, svc_msg,
+			send_packet(ctx.client, svc_msg,
 			    pos, NULL);
 		}
 		if (len > 0)
-			dssh_transport_send_packet(ctx.client, msg, len,
+			send_packet(ctx.client, msg, len,
 			    NULL);
 		mock_io_close_c2s_write(&ctx.io);
 
@@ -11599,11 +11599,11 @@ test_direct_flush_banner_alloc(void)
 			    sizeof(svc_msg), &pos);
 			memcpy(&svc_msg[pos], svc, sizeof(svc) - 1);
 			pos += sizeof(svc) - 1;
-			dssh_transport_send_packet(ctx.client, svc_msg,
+			send_packet(ctx.client, svc_msg,
 			    pos, NULL);
 		}
 		if (len > 0)
-			dssh_transport_send_packet(ctx.client, msg, len,
+			send_packet(ctx.client, msg, len,
 			    NULL);
 		mock_io_close_c2s_write(&ctx.io);
 
@@ -11802,9 +11802,9 @@ test_direct_kbi_trunc_lang_hdr(void)
 		    sizeof(svc_msg), &pos);
 		memcpy(&svc_msg[pos], svc, sizeof(svc) - 1);
 		pos += sizeof(svc) - 1;
-		dssh_transport_send_packet(ctx.client, svc_msg, pos, NULL);
+		send_packet(ctx.client, svc_msg, pos, NULL);
 	}
-	dssh_transport_send_packet(ctx.client, msg, len, NULL);
+	send_packet(ctx.client, msg, len, NULL);
 	mock_io_close_c2s_write(&ctx.io);
 
 	struct test_server_kbi_data kbi_sdata = {
@@ -11852,9 +11852,9 @@ test_direct_kbi_trunc_lang_data(void)
 		    sizeof(svc_msg), &pos);
 		memcpy(&svc_msg[pos], svc, sizeof(svc) - 1);
 		pos += sizeof(svc) - 1;
-		dssh_transport_send_packet(ctx.client, svc_msg, pos, NULL);
+		send_packet(ctx.client, svc_msg, pos, NULL);
 	}
-	dssh_transport_send_packet(ctx.client, msg, len, NULL);
+	send_packet(ctx.client, msg, len, NULL);
 	mock_io_close_c2s_write(&ctx.io);
 
 	struct test_server_kbi_data kbi_sdata = {
@@ -11902,9 +11902,9 @@ test_direct_kbi_trunc_submethods(void)
 		    sizeof(svc_msg), &pos);
 		memcpy(&svc_msg[pos], svc, sizeof(svc) - 1);
 		pos += sizeof(svc) - 1;
-		dssh_transport_send_packet(ctx.client, svc_msg, pos, NULL);
+		send_packet(ctx.client, svc_msg, pos, NULL);
 	}
-	dssh_transport_send_packet(ctx.client, msg, len, NULL);
+	send_packet(ctx.client, msg, len, NULL);
 	mock_io_close_c2s_write(&ctx.io);
 
 	struct test_server_kbi_data kbi_sdata = {
@@ -11953,9 +11953,9 @@ test_direct_kbi_trunc_submethods_data(void)
 		    sizeof(svc_msg), &pos);
 		memcpy(&svc_msg[pos], svc, sizeof(svc) - 1);
 		pos += sizeof(svc) - 1;
-		dssh_transport_send_packet(ctx.client, svc_msg, pos, NULL);
+		send_packet(ctx.client, svc_msg, pos, NULL);
 	}
-	dssh_transport_send_packet(ctx.client, msg, len, NULL);
+	send_packet(ctx.client, msg, len, NULL);
 	mock_io_close_c2s_write(&ctx.io);
 
 	struct test_server_kbi_data kbi_sdata = {
@@ -12010,7 +12010,7 @@ kbi_trunc_lang_hdr_thread(void *arg)
 	pos += sizeof(method) - 1;
 	/* No language header at all -- truncated before language len */
 
-	dssh_transport_send_packet(client, msg, pos, NULL);
+	send_packet(client, msg, pos, NULL);
 	return 0;
 }
 
@@ -12085,7 +12085,7 @@ kbi_trunc_submethods_thread(void *arg)
 	dssh_serialize_uint32(0, msg, sizeof(msg), &pos); /* language: empty */
 	/* No submethods header -- truncated */
 
-	dssh_transport_send_packet(client, msg, pos, NULL);
+	send_packet(client, msg, pos, NULL);
 	return 0;
 }
 
@@ -12144,13 +12144,13 @@ kbi_alloc_responder_thread(void *arg)
 	uint8_t msg_type;
 	uint8_t *payload;
 	size_t payload_len;
-	int res = dssh_transport_recv_packet(ctx->client, &msg_type,
+	int res = recv_packet(ctx->client, &msg_type,
 	    &payload, &payload_len);
 	if (res < 0)
 		return 0;
 
 	/* Read the INFO_REQUEST (or FAILURE if alloc hit early) */
-	res = dssh_transport_recv_packet(ctx->client, &msg_type,
+	res = recv_packet(ctx->client, &msg_type,
 	    &payload, &payload_len);
 	if (res < 0)
 		return 0;
@@ -12164,7 +12164,7 @@ kbi_alloc_responder_thread(void *arg)
 		dssh_serialize_uint32(8, resp, sizeof(resp), &rp);
 		memcpy(&resp[rp], "testcode", 8);
 		rp += 8;
-		dssh_transport_send_packet(ctx->client, resp, rp, NULL);
+		send_packet(ctx->client, resp, rp, NULL);
 	}
 
 	/* Close write end so server sees EOF if it loops for more */
@@ -12201,7 +12201,7 @@ test_kbi_server_resp_alloc_fail(void)
 			    sizeof(svc_msg), &pos);
 			memcpy(&svc_msg[pos], svc_auth, sizeof(svc_auth) - 1);
 			pos += sizeof(svc_auth) - 1;
-			dssh_transport_send_packet(ctx.client, svc_msg, pos,
+			send_packet(ctx.client, svc_msg, pos,
 			    NULL);
 		}
 		/* Inject KBI auth request */
@@ -12222,7 +12222,7 @@ test_kbi_server_resp_alloc_fail(void)
 			pos += sizeof(method) - 1;
 			dssh_serialize_uint32(0, msg, sizeof(msg), &pos);
 			dssh_serialize_uint32(0, msg, sizeof(msg), &pos);
-			dssh_transport_send_packet(ctx.client, msg, pos,
+			send_packet(ctx.client, msg, pos,
 			    NULL);
 		}
 
@@ -12307,14 +12307,14 @@ kbi_trunc_resp_body_thread(void *arg)
 	pos += sizeof(method) - 1;
 	dssh_serialize_uint32(0, msg, sizeof(msg), &pos);
 	dssh_serialize_uint32(0, msg, sizeof(msg), &pos);
-	if (dssh_transport_send_packet(client, msg, pos, NULL) < 0)
+	if (send_packet(client, msg, pos, NULL) < 0)
 		return 0;
 
 	/* Receive INFO_REQUEST */
 	uint8_t msg_type;
 	uint8_t *payload;
 	size_t payload_len;
-	if (dssh_transport_recv_packet(client, &msg_type, &payload,
+	if (recv_packet(client, &msg_type, &payload,
 	    &payload_len) < 0)
 		return 0;
 
@@ -12324,7 +12324,7 @@ kbi_trunc_resp_body_thread(void *arg)
 	resp[rp++] = 61; /* SSH_MSG_USERAUTH_INFO_RESPONSE */
 	dssh_serialize_uint32(1, resp, sizeof(resp), &rp); /* 1 response */
 	/* No response data follows -- truncated */
-	dssh_transport_send_packet(client, resp, rp, NULL);
+	send_packet(client, resp, rp, NULL);
 
 	return 0;
 }

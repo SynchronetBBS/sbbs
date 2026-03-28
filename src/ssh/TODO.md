@@ -21,13 +21,6 @@
     protocol-ordering trade-offs that don't have obvious right answers.
     **Not suitable for automatic planning.**
 
-90. **`DSSH_TESTABLE` functions use misleading `dssh_test_` prefix.**
-    Functions like `dssh_test_build_namelist()`, `dssh_test_negotiate_algo()`,
-    `dssh_test_parse_peer_kexinit()`, `dssh_test_encode_k_wire()`, and
-    `dssh_test_parse_channel_request()` are production library code called
-    from handshake and connection paths.  The `dssh_test_` prefix implies
-    they are test-only.  Rename to a neutral prefix (e.g. `dssh_internal_*`)
-    and update all call sites and test declarations.
 
 28. Near-duplicate read/write pairs: `dssh_session_read()` /
     `dssh_session_read_ext()` and `dssh_session_write()` /
@@ -109,6 +102,23 @@
        potential protocol violation
 
 ## Closed
+
+- Symbol prefix cleanup (was item 90).  Established consistent naming:
+  `dssh_` prefix for `DSSH_PUBLIC` symbols only, `dssh_test_` prefix for
+  symbols inside `#ifdef DSSH_TESTING` blocks, no prefix for internal
+  symbols (`DSSH_PRIVATE`, `DSSH_TESTABLE`).  Renamed ~50 functions:
+  10 `dssh_test_*` DSSH_TESTABLE functions in ssh-trans.c (e.g.
+  `dssh_test_build_namelist` -> `build_namelist`), 14 `dssh_transport_*`
+  DSSH_PRIVATE functions in ssh-trans.c/ssh-trans.h (e.g.
+  `dssh_transport_send_packet` -> `send_packet`), 6 `dssh_conn_*` /
+  `dssh_test_*` DSSH_TESTABLE functions in ssh-conn.c, 19 `dssh_*`
+  DSSH_PRIVATE functions in ssh-chan.c/ssh-chan.h (e.g.
+  `dssh_bytebuf_write` -> `bytebuf_write`), and `dssh_session_set_terminate`
+  in ssh.c/ssh-internal.h.  Updated all call sites in library code
+  (ssh-auth.c, ssh-conn.c, ssh.c) and test code.  Functions inside
+  `#ifdef DSSH_TESTING` (`dssh_test_reset_global_config`,
+  `dssh_test_set_sw_version`, `dssh_test_set_version_comment`) retained
+  their `dssh_test_` prefix.
 
 - Type-unsafe linked list traversal (was item 16).  Added
   `_Static_assert(!offsetof(..., next))` to all 6 algorithm struct

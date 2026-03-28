@@ -194,7 +194,7 @@ test_send_encrypt_error(void)
 	test_enc_fail_encrypt_at(0);
 
 	uint8_t msg[] = { SSH_MSG_IGNORE, 0 };
-	int res = dssh_transport_send_packet(ctx.client, msg,
+	int res = send_packet(ctx.client, msg,
 	    sizeof(msg), NULL);
 	ASSERT_TRUE(res < 0);
 
@@ -219,7 +219,7 @@ test_send_mac_error(void)
 	test_mac_fail_generate_at(0);
 
 	uint8_t msg[] = { SSH_MSG_IGNORE, 0 };
-	int res = dssh_transport_send_packet(ctx.client, msg,
+	int res = send_packet(ctx.client, msg,
 	    sizeof(msg), NULL);
 	ASSERT_TRUE(res < 0);
 
@@ -243,7 +243,7 @@ test_recv_decrypt_error_first_block(void)
 
 	/* Client sends a valid packet */
 	uint8_t msg[] = { SSH_MSG_IGNORE, 0 };
-	ASSERT_OK(dssh_transport_send_packet(ctx.client, msg,
+	ASSERT_OK(send_packet(ctx.client, msg,
 	    sizeof(msg), NULL));
 
 	/* Arm: fail the first decrypt on the server side */
@@ -252,7 +252,7 @@ test_recv_decrypt_error_first_block(void)
 	uint8_t msg_type;
 	uint8_t *payload;
 	size_t payload_len;
-	int res = dssh_transport_recv_packet(ctx.server, &msg_type,
+	int res = recv_packet(ctx.server, &msg_type,
 	    &payload, &payload_len);
 	ASSERT_TRUE(res < 0);
 
@@ -279,7 +279,7 @@ test_recv_decrypt_error_remaining(void)
 	uint8_t msg[64];
 	msg[0] = SSH_MSG_IGNORE;
 	memset(&msg[1], 0x42, sizeof(msg) - 1);
-	ASSERT_OK(dssh_transport_send_packet(ctx.client, msg,
+	ASSERT_OK(send_packet(ctx.client, msg,
 	    sizeof(msg), NULL));
 
 	/* Fail the second decrypt call (first block succeeds) */
@@ -288,7 +288,7 @@ test_recv_decrypt_error_remaining(void)
 	uint8_t msg_type;
 	uint8_t *payload;
 	size_t payload_len;
-	int res = dssh_transport_recv_packet(ctx.server, &msg_type,
+	int res = recv_packet(ctx.server, &msg_type,
 	    &payload, &payload_len);
 	ASSERT_TRUE(res < 0);
 
@@ -312,7 +312,7 @@ test_recv_mac_generate_error(void)
 
 	/* Client sends a valid packet (MAC is generated successfully) */
 	uint8_t msg[] = { SSH_MSG_IGNORE, 0 };
-	ASSERT_OK(dssh_transport_send_packet(ctx.client, msg,
+	ASSERT_OK(send_packet(ctx.client, msg,
 	    sizeof(msg), NULL));
 
 	/* Arm: fail the next generate call on the server side
@@ -322,7 +322,7 @@ test_recv_mac_generate_error(void)
 	uint8_t msg_type;
 	uint8_t *payload;
 	size_t payload_len;
-	int res = dssh_transport_recv_packet(ctx.server, &msg_type,
+	int res = recv_packet(ctx.server, &msg_type,
 	    &payload, &payload_len);
 	ASSERT_TRUE(res < 0);
 
@@ -349,7 +349,7 @@ test_recv_mac_mismatch(void)
 	test_mac_set_corrupt(true);
 
 	uint8_t msg[] = { SSH_MSG_IGNORE, 0 };
-	ASSERT_OK(dssh_transport_send_packet(ctx.client, msg,
+	ASSERT_OK(send_packet(ctx.client, msg,
 	    sizeof(msg), NULL));
 
 	test_mac_set_corrupt(false);
@@ -357,7 +357,7 @@ test_recv_mac_mismatch(void)
 	uint8_t msg_type;
 	uint8_t *payload;
 	size_t payload_len;
-	int res = dssh_transport_recv_packet(ctx.server, &msg_type,
+	int res = recv_packet(ctx.server, &msg_type,
 	    &payload, &payload_len);
 	ASSERT_EQ(res, DSSH_ERROR_INVALID);
 
@@ -546,13 +546,13 @@ test_roundtrip_with_test_modules(void)
 	/* Send and receive a packet -- use a non-transport message
 	 * because SSH_MSG_IGNORE is silently consumed by recv_packet */
 	uint8_t msg[] = { SSH_MSG_SERVICE_REQUEST, 0x42 };
-	ASSERT_OK(dssh_transport_send_packet(ctx.client, msg,
+	ASSERT_OK(send_packet(ctx.client, msg,
 	    sizeof(msg), NULL));
 
 	uint8_t msg_type;
 	uint8_t *payload;
 	size_t payload_len;
-	ASSERT_OK(dssh_transport_recv_packet(ctx.server, &msg_type,
+	ASSERT_OK(recv_packet(ctx.server, &msg_type,
 	    &payload, &payload_len));
 	ASSERT_EQ(msg_type, SSH_MSG_SERVICE_REQUEST);
 
@@ -646,13 +646,13 @@ test_recv_mac_too_large(void)
 	 * includes 128 bytes of MAC.  With dynamically allocated MAC
 	 * buffers, the receiver handles this correctly. */
 	uint8_t msg[] = { SSH_MSG_SERVICE_REQUEST, 0x42 };
-	ASSERT_OK(dssh_transport_send_packet(client, msg,
+	ASSERT_OK(send_packet(client, msg,
 	    sizeof(msg), NULL));
 
 	uint8_t msg_type;
 	uint8_t *payload;
 	size_t payload_len;
-	int recv_res = dssh_transport_recv_packet(server, &msg_type,
+	int recv_res = recv_packet(server, &msg_type,
 	    &payload, &payload_len);
 	ASSERT_OK(recv_res);
 
@@ -741,7 +741,7 @@ test_send_mac_overflow_rejected(void)
 	big[0] = SSH_MSG_SERVICE_REQUEST;
 	memset(&big[1], 0x42, big_len - 1);
 
-	int res = dssh_transport_send_packet(client, big, big_len, NULL);
+	int res = send_packet(client, big, big_len, NULL);
 	free(big);
 	ASSERT_EQ(res, DSSH_ERROR_TOOLONG);
 

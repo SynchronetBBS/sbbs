@@ -12,7 +12,7 @@
  * blocking until an external event (like a socket close) wakes it.
  */
 DSSH_PRIVATE void
-dssh_session_set_terminate(dssh_session sess)
+session_set_terminate(dssh_session sess)
 {
 	if (atomic_exchange(&sess->terminate, true))
 		return;
@@ -93,7 +93,7 @@ dssh_session_init(bool client, size_t max_packet_size)
 		return NULL;
 	}
 
-	res = dssh_transport_init(sess, max_packet_size);
+	res = transport_init(sess, max_packet_size);
 	if (res < 0) {
 		mtx_destroy(&sess->mtx);
 		free(sess);
@@ -114,7 +114,7 @@ dssh_session_terminate(dssh_session sess)
 	bool t = true;
 
 	if (atomic_compare_exchange_strong(&sess->initialized, &t, false)) {
-		dssh_session_set_terminate(sess);
+		session_set_terminate(sess);
 		return true;
 	}
 	return false;
@@ -135,7 +135,7 @@ dssh_session_cleanup(dssh_session sess)
 		return;
 	dssh_session_terminate(sess);
 	dssh_session_stop(sess);
-	dssh_transport_cleanup(sess);
+	transport_cleanup(sess);
 	free(sess->pending_banner);
 	free(sess->pending_banner_lang);
 	mtx_destroy(&sess->mtx);
@@ -208,7 +208,7 @@ dssh_session_set_global_request_cb(dssh_session sess,
 }
 
 DSSH_PUBLIC void
-dssh_session_set_terminate_cb(dssh_session sess,
+session_set_terminate_cb(dssh_session sess,
     dssh_terminate_cb cb, void *cbdata)
 {
 	if (sess == NULL)

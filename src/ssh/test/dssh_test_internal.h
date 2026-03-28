@@ -30,7 +30,7 @@ void dssh_test_reset_global_config(void);
  * Key derivation (RFC 4253 s7.2).
  * Exposed from ssh-trans.c via DSSH_TESTABLE.
  */
-int dssh_test_derive_key(const char *hash_name,
+int derive_key(const char *hash_name,
     const uint8_t *shared_secret, size_t shared_secret_sz,
     const uint8_t *hash, size_t hash_sz,
     uint8_t letter,
@@ -44,7 +44,7 @@ int dssh_test_derive_key(const char *hash_name,
  * name_offset is the byte offset of the name[] flex member in the struct.
  * Returns node pointer or NULL.
  */
-void *dssh_test_negotiate_algo(const char *client_list,
+void *negotiate_algo(const char *client_list,
     const char *server_list, void *head, size_t name_offset);
 
 /*
@@ -52,7 +52,7 @@ void *dssh_test_negotiate_algo(const char *client_list,
  * entries.  head is the first node, name_offset is the offset of
  * the name[] flex member.  Returns the length written.
  */
-size_t dssh_test_build_namelist(void *head, size_t name_offset,
+size_t build_namelist(void *head, size_t name_offset,
     char *buf, size_t bufsz);
 
 /*
@@ -63,19 +63,19 @@ extern struct dssh_transport_global_config gconf;
 /*
  * ssh-conn.c internal functions exposed for testing.
  */
-int dssh_conn_send_data(dssh_session sess, struct dssh_channel_s *ch,
+int send_data(dssh_session sess, struct dssh_channel_s *ch,
     const uint8_t *data, size_t len, size_t *sentp);
-int dssh_conn_send_extended_data(dssh_session sess, struct dssh_channel_s *ch,
+int send_extended_data(dssh_session sess, struct dssh_channel_s *ch,
     uint32_t data_type_code, const uint8_t *data, size_t len,
     size_t *sentp);
-int dssh_conn_send_eof(dssh_session sess, struct dssh_channel_s *ch);
-int dssh_conn_close(dssh_session sess, struct dssh_channel_s *ch);
-int dssh_conn_send_window_adjust(dssh_session sess,
+int send_eof(dssh_session sess, struct dssh_channel_s *ch);
+int conn_close(dssh_session sess, struct dssh_channel_s *ch);
+int send_window_adjust(dssh_session sess,
     struct dssh_channel_s *ch, uint32_t bytes);
 int maybe_replenish_window(dssh_session sess, struct dssh_channel_s *ch);
 int demux_dispatch(dssh_session sess, uint8_t msg_type,
     uint8_t *payload, size_t payload_len);
-int dssh_test_parse_channel_request(const uint8_t *payload, size_t payload_len,
+int parse_channel_request(const uint8_t *payload, size_t payload_len,
     const uint8_t **rtype, uint32_t *rtype_len,
     bool *want_reply,
     const uint8_t **req_data, size_t *req_data_len);
@@ -83,11 +83,17 @@ int dssh_test_parse_channel_request(const uint8_t *payload, size_t payload_len,
 /*
  * ssh-trans.c internal functions exposed for testing.
  */
-int dssh_test_parse_peer_kexinit(const uint8_t *buf, size_t bufsz,
+int parse_peer_kexinit(const uint8_t *buf, size_t bufsz,
     char lists[][1024], bool *first_kex_follows);
-int dssh_test_encode_k_wire(const uint8_t *raw, size_t raw_sz,
+int encode_k_wire(const uint8_t *raw, size_t raw_sz,
     bool k_as_string, uint8_t **out, size_t *out_sz);
 size_t first_name(const char *list, char *buf, size_t bufsz);
+
+/*
+ * Algorithm lookup helpers from ssh-trans.c.
+ */
+dssh_kex find_kex(const char *name);
+dssh_key_algo find_key_algo(const char *name);
 
 /*
  * Block size helpers from ssh-trans.c (BPP minimum clamping).
@@ -106,11 +112,11 @@ void dssh_test_set_version_comment(const char *c);
 /*
  * Version string validators from ssh-trans.c.
  */
-bool dssh_test_has_nulls(uint8_t *buf, size_t buflen);
-bool dssh_test_missing_crlf(uint8_t *buf, size_t buflen);
-bool dssh_test_is_version_line(uint8_t *buf, size_t buflen);
-bool dssh_test_has_non_ascii(uint8_t *buf, size_t buflen);
-bool dssh_test_is_20(uint8_t *buf, size_t buflen);
+bool has_nulls(uint8_t *buf, size_t buflen);
+bool missing_crlf(uint8_t *buf, size_t buflen);
+bool is_version_line(uint8_t *buf, size_t buflen);
+bool has_non_ascii(uint8_t *buf, size_t buflen);
+bool is_20(uint8_t *buf, size_t buflen);
 
 /*
  * version_tx from ssh-trans.c -- sends the SSH version string.
@@ -179,6 +185,28 @@ int auth_kbi_impl(dssh_session sess,
     dssh_auth_kbi_prompt_cb prompt_cb, void *cbdata);
 int auth_publickey_impl(dssh_session sess,
     const char *username, const char *algo_name);
+
+/*
+ * ssh-trans.c DSSH_PRIVATE internal functions exposed for testing.
+ */
+int send_packet(dssh_session sess,
+    const uint8_t *payload, size_t payload_len, uint32_t *seq_out);
+int recv_packet(dssh_session sess,
+    uint8_t *msg_type, uint8_t **payload, size_t *payload_len);
+int send_or_queue(dssh_session sess,
+    const uint8_t *payload, size_t payload_len);
+int version_exchange(dssh_session sess);
+int kexinit(dssh_session sess);
+int kex(dssh_session sess);
+int newkeys(dssh_session sess);
+int rekey(dssh_session sess);
+bool rekey_needed(dssh_session sess);
+void transport_cleanup(dssh_session sess);
+
+/*
+ * ssh.c internal function.
+ */
+void session_set_terminate(dssh_session sess);
 
 #ifdef __cplusplus
 }

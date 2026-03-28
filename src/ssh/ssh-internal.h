@@ -33,7 +33,7 @@
 } while (0)
 
 /* Set terminate flag and wake all library-owned condvar waiters. */
-DSSH_PRIVATE void dssh_session_set_terminate(dssh_session sess);
+DSSH_PRIVATE void session_set_terminate(dssh_session sess);
 
 /*
  * Test allocation redirection.  Under DSSH_TESTING, library code
@@ -262,7 +262,7 @@ dssh_thrd_check(dssh_session sess, int ret)
 {
 	if (ret != thrd_success && ret != thrd_busy
 	    && ret != thrd_timedout && !sess->terminate)
-		dssh_session_set_terminate(sess);
+		session_set_terminate(sess);
 	return ret;
 }
 

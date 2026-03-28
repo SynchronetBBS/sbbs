@@ -118,7 +118,7 @@ send_auth_failure(dssh_session sess, const char *methods, bool partial_success)
 	memcpy(&msg[pos], methods, mlen);
 	pos += mlen;
 	msg[pos++] = partial_success ? 1 : 0;
-	ret = dssh_transport_send_packet(sess, msg, pos, NULL);
+	ret = send_packet(sess, msg, pos, NULL);
 
 	free(msg);
 	return ret;
@@ -134,7 +134,7 @@ send_auth_success(dssh_session sess)
 
 	uint8_t msg = SSH_MSG_USERAUTH_SUCCESS;
 
-	return dssh_transport_send_packet(sess, &msg, 1, NULL);
+	return send_packet(sess, &msg, 1, NULL);
 }
 
 static int
@@ -159,7 +159,7 @@ send_passwd_changereq(dssh_session sess,
 	pos += prompt_len;
 	DSSH_PUT_U32(0, msg, &pos);
 
-	ret = dssh_transport_send_packet(sess, msg, pos, NULL);
+	ret = send_packet(sess, msg, pos, NULL);
 
 	free(msg);
 	return ret;
@@ -191,7 +191,7 @@ send_pk_ok(dssh_session sess,
 	memcpy(&msg[pos], pubkey_blob, pubkey_blob_len);
 	pos += pubkey_blob_len;
 
-	ret = dssh_transport_send_packet(sess, msg, pos, NULL);
+	ret = send_packet(sess, msg, pos, NULL);
 
 	free(msg);
 	return ret;
@@ -267,7 +267,7 @@ send_info_request(dssh_session sess, const char *name,
 		msg[pos++] = echo[i] ? 1 : 0;
 	}
 
-	ret = dssh_transport_send_packet(sess, msg, pos, NULL);
+	ret = send_packet(sess, msg, pos, NULL);
 	free(msg);
 	return ret;
 }
@@ -362,7 +362,7 @@ flush_pending_banner(dssh_session sess)
 	memcpy(&pkt[pos], lang, lang_len);
 	pos += lang_len;
 
-	int res = dssh_transport_send_packet(sess, pkt, pos, NULL);
+	int res = send_packet(sess, pkt, pos, NULL);
 	free(pkt);
 
 	free(sess->pending_banner);
@@ -637,7 +637,7 @@ handle_auth_kbi(dssh_session sess,
 		uint8_t *resp_payload;
 		size_t   resp_len;
 
-		res = dssh_transport_recv_packet(sess,
+		res = recv_packet(sess,
 		    &resp_type, &resp_payload, &resp_len);
 		if (res < 0)
 			return res;
@@ -647,7 +647,7 @@ handle_auth_kbi(dssh_session sess,
 			if (res < 0)
 				return res;
 			/* Re-recv -- expect INFO_RESPONSE */
-			res = dssh_transport_recv_packet(sess,
+			res = recv_packet(sess,
 			    &resp_type, &resp_payload, &resp_len);
 			if (res < 0)
 				return res;
@@ -801,7 +801,7 @@ handle_auth_publickey(dssh_session sess,
 	const uint8_t *sig_blob = &payload[rpos];
 
 	/* Find the key algorithm to verify the signature */
-	dssh_key_algo  ka = dssh_transport_find_key_algo(algo_name);
+	dssh_key_algo  ka = find_key_algo(algo_name);
 
 	if ((ka == NULL) || (ka->verify == NULL)) {
 		res = send_auth_failure(sess, cbs->methods_str, false);
@@ -889,11 +889,11 @@ auth_server_impl(dssh_session sess,
 	int      res;
 
         /* Receive SERVICE_REQUEST */
-	res = dssh_transport_recv_packet(sess, &msg_type, &payload, &payload_len);
+	res = recv_packet(sess, &msg_type, &payload, &payload_len);
 	if (res < 0)
 		return res;
 	if (msg_type != SSH_MSG_SERVICE_REQUEST) {
-		dssh_transport_send_unimplemented(sess, sess->trans.last_rx_seq);
+		send_unimplemented(sess, sess->trans.last_rx_seq);
 		return DSSH_ERROR_PARSE;
 	}
 
@@ -928,7 +928,7 @@ auth_server_impl(dssh_session sess,
 			memcpy(&accept[pos], &payload[5], slen);
 			pos += slen;
 		}
-		res = dssh_transport_send_packet(sess, accept, pos, NULL);
+		res = send_packet(sess, accept, pos, NULL);
 		free(accept);
 		if (res < 0)
 			return res;
@@ -945,11 +945,11 @@ auth_server_impl(dssh_session sess,
 		if (res < 0)
 			return res;
 
-		res = dssh_transport_recv_packet(sess, &msg_type, &payload, &payload_len);
+		res = recv_packet(sess, &msg_type, &payload, &payload_len);
 		if (res < 0)
 			return res;
 		if (msg_type != SSH_MSG_USERAUTH_REQUEST) {
-			dssh_transport_send_unimplemented(sess, sess->trans.last_rx_seq);
+			send_unimplemented(sess, sess->trans.last_rx_seq);
 			continue;
 		}
 
@@ -1108,7 +1108,7 @@ dssh_auth_request_service(dssh_session sess, const char *service)
 	memcpy(&msg[pos], service, slen);
 	pos += slen;
 
-	ret = dssh_transport_send_packet(sess, msg, pos, NULL);
+	ret = send_packet(sess, msg, pos, NULL);
 
 	free(msg);
 	if (ret < 0)
@@ -1118,11 +1118,11 @@ dssh_auth_request_service(dssh_session sess, const char *service)
 	uint8_t *payload;
 	size_t   payload_len;
 
-	ret = dssh_transport_recv_packet(sess, &msg_type, &payload, &payload_len);
+	ret = recv_packet(sess, &msg_type, &payload, &payload_len);
 	if (ret < 0)
 		return ret;
 	if (msg_type != SSH_MSG_SERVICE_ACCEPT) {
-		dssh_transport_send_unimplemented(sess, sess->trans.last_rx_seq);
+		send_unimplemented(sess, sess->trans.last_rx_seq);
 		return DSSH_ERROR_PARSE;
 	}
 
@@ -1194,7 +1194,7 @@ get_methods_impl(dssh_session sess,
 	size_t pos = build_userauth_request(msg, username, ulen,
 	        method_none, DSSH_STRLEN(method_none));
 
-	res = dssh_transport_send_packet(sess, msg, pos, NULL);
+	res = send_packet(sess, msg, pos, NULL);
 	free(msg);
 	if (res < 0)
 		return res;
@@ -1203,7 +1203,7 @@ get_methods_impl(dssh_session sess,
 	uint8_t *payload;
 	size_t   payload_len;
 
-	res = dssh_transport_recv_packet(sess, &msg_type, &payload, &payload_len);
+	res = recv_packet(sess, &msg_type, &payload, &payload_len);
 	if (res < 0)
 		return res;
 
@@ -1211,7 +1211,7 @@ get_methods_impl(dssh_session sess,
 		res = handle_banner(sess, payload, payload_len);
 		if (res < 0)
 			return res;
-		res = dssh_transport_recv_packet(sess, &msg_type, &payload, &payload_len);
+		res = recv_packet(sess, &msg_type, &payload, &payload_len);
 		if (res < 0)
 			return res;
 	}
@@ -1307,7 +1307,7 @@ send_password_request(dssh_session sess,
 		pos += new_password_len;
 	}
 
-	int ret = dssh_transport_send_packet(sess, msg, pos, NULL);
+	int ret = send_packet(sess, msg, pos, NULL);
 
 	OPENSSL_cleanse(msg, msg_len);
 	free(msg);
@@ -1332,7 +1332,7 @@ auth_password_impl(dssh_session sess,
 		uint8_t *payload;
 		size_t   payload_len;
 
-		res = dssh_transport_recv_packet(sess, &msg_type, &payload, &payload_len);
+		res = recv_packet(sess, &msg_type, &payload, &payload_len);
 		if (res < 0)
 			return res;
 
@@ -1404,7 +1404,7 @@ auth_password_impl(dssh_session sess,
 			continue;
 		}
 
-		dssh_transport_send_unimplemented(sess, sess->trans.last_rx_seq);
+		send_unimplemented(sess, sess->trans.last_rx_seq);
 		return DSSH_ERROR_PARSE;
 	}
 }
@@ -1454,7 +1454,7 @@ auth_kbi_impl(dssh_session sess,
 	DSSH_PUT_U32(0, msg, &pos); /* language */
 	DSSH_PUT_U32(0, msg, &pos); /* submethods */
 
-	res = dssh_transport_send_packet(sess, msg, pos, NULL);
+	res = send_packet(sess, msg, pos, NULL);
 
 	free(msg);
 	if (res < 0)
@@ -1465,7 +1465,7 @@ auth_kbi_impl(dssh_session sess,
 		uint8_t *payload;
 		size_t   payload_len;
 
-		res = dssh_transport_recv_packet(sess, &msg_type, &payload, &payload_len);
+		res = recv_packet(sess, &msg_type, &payload, &payload_len);
 		if (res < 0)
 			return res;
 
@@ -1618,7 +1618,7 @@ auth_kbi_impl(dssh_session sess,
 			free(responses);
 			free(response_lens);
 
-			res = dssh_transport_send_packet(sess, resp, rp, NULL);
+			res = send_packet(sess, resp, rp, NULL);
 			free(resp);
 			if (res < 0)
 				return res;
@@ -1637,7 +1637,7 @@ auth_kbi_impl(dssh_session sess,
 			return res;
 		}
 
-		dssh_transport_send_unimplemented(sess, sess->trans.last_rx_seq);
+		send_unimplemented(sess, sess->trans.last_rx_seq);
 		return DSSH_ERROR_PARSE;
 	}
 }
@@ -1663,7 +1663,7 @@ auth_publickey_impl(dssh_session sess,
 		if (svc < 0)
 			return svc;
 	}
-	dssh_key_algo ka = dssh_transport_find_key_algo(algo_name);
+	dssh_key_algo ka = find_key_algo(algo_name);
 
 	if ((ka == NULL) || (ka->sign == NULL) || (ka->pubkey == NULL))
 		return DSSH_ERROR_INIT;
@@ -1773,7 +1773,7 @@ auth_publickey_impl(dssh_session sess,
 	memcpy(&msg[pos], sig_buf, sig_len);
 	pos += sig_len;
 
-	res = dssh_transport_send_packet(sess, msg, pos, NULL);
+	res = send_packet(sess, msg, pos, NULL);
 	free(msg);
 	free(sig_buf);
 	if (res < 0)
@@ -1785,7 +1785,7 @@ auth_publickey_impl(dssh_session sess,
 	size_t   payload_len;
 
 	for (;;) {
-		res = dssh_transport_recv_packet(sess, &msg_type, &payload, &payload_len);
+		res = recv_packet(sess, &msg_type, &payload, &payload_len);
 		if (res < 0)
 			return res;
 		if (msg_type == SSH_MSG_USERAUTH_BANNER) {

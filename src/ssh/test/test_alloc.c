@@ -294,8 +294,8 @@ test_ossl_session_init(void)
 /* ================================================================
  * Channel buffer alloc failures (ssh-chan.c)
  *
- * dssh_bytebuf_init does one malloc for the data buffer.
- * dssh_msgqueue_push does one malloc for the entry.
+ * bytebuf_init does one malloc for the data buffer.
+ * msgqueue_push does one malloc for the entry.
  * dssh_signal_push does one malloc for the mark.
  * dssh_accept_queue_push does one malloc for the entry.
  * ================================================================ */
@@ -307,14 +307,14 @@ test_alloc_bytebuf_init(void)
 	memset(&buf, 0, sizeof(buf));
 
 	mock_alloc_fail_after(0);
-	int res = dssh_bytebuf_init(&buf, 1024);
+	int res = bytebuf_init(&buf, 1024);
 	mock_alloc_reset();
 	ASSERT_EQ(res, DSSH_ERROR_ALLOC);
 
 	/* Succeed */
-	res = dssh_bytebuf_init(&buf, 1024);
+	res = bytebuf_init(&buf, 1024);
 	ASSERT_EQ(res, 0);
-	dssh_bytebuf_free(&buf);
+	bytebuf_free(&buf);
 	return TEST_PASS;
 }
 
@@ -322,18 +322,18 @@ static int
 test_alloc_msgqueue_push(void)
 {
 	struct dssh_msgqueue q;
-	dssh_msgqueue_init(&q);
+	msgqueue_init(&q);
 
 	const uint8_t data[] = "hello";
 	mock_alloc_fail_after(0);
-	int res = dssh_msgqueue_push(&q, data, sizeof(data));
+	int res = msgqueue_push(&q, data, sizeof(data));
 	mock_alloc_reset();
 	ASSERT_EQ(res, DSSH_ERROR_ALLOC);
 
 	/* Succeed */
-	res = dssh_msgqueue_push(&q, data, sizeof(data));
+	res = msgqueue_push(&q, data, sizeof(data));
 	ASSERT_EQ(res, 0);
-	dssh_msgqueue_free(&q);
+	msgqueue_free(&q);
 	return TEST_PASS;
 }
 
@@ -341,17 +341,17 @@ static int
 test_alloc_signal_push(void)
 {
 	struct dssh_signal_queue q;
-	dssh_sigqueue_init(&q);
+	sigqueue_init(&q);
 
 	mock_alloc_fail_after(0);
-	int res = dssh_sigqueue_push(&q, "INT", 0, 0);
+	int res = sigqueue_push(&q, "INT", 0, 0);
 	mock_alloc_reset();
 	ASSERT_EQ(res, DSSH_ERROR_ALLOC);
 
 	/* Succeed */
-	res = dssh_sigqueue_push(&q, "INT", 0, 0);
+	res = sigqueue_push(&q, "INT", 0, 0);
 	ASSERT_EQ(res, 0);
-	dssh_sigqueue_free(&q);
+	sigqueue_free(&q);
 	return TEST_PASS;
 }
 
@@ -651,13 +651,13 @@ test_alloc_send_passwd_changereq(void)
 		dssh_serialize_uint32((uint32_t)(sizeof(svc) - 1), msg, sizeof(msg), &pos);
 		memcpy(&msg[pos], svc, sizeof(svc) - 1);
 		pos += sizeof(svc) - 1;
-		ASSERT_OK(dssh_transport_send_packet(ctx.client, msg, pos, NULL));
+		ASSERT_OK(send_packet(ctx.client, msg, pos, NULL));
 	}
 	{
 		uint8_t msg_type;
 		uint8_t *payload;
 		size_t payload_len;
-		ASSERT_OK(dssh_transport_recv_packet(ctx.client, &msg_type, &payload, &payload_len));
+		ASSERT_OK(recv_packet(ctx.client, &msg_type, &payload, &payload_len));
 		ASSERT_EQ(msg_type, SSH_MSG_SERVICE_ACCEPT);
 	}
 	{
@@ -677,7 +677,7 @@ test_alloc_send_passwd_changereq(void)
 		msg[pos++] = 0; /* not a change */
 		dssh_serialize_uint32(1, msg, sizeof(msg), &pos);
 		msg[pos++] = 'p';
-		ASSERT_OK(dssh_transport_send_packet(ctx.client, msg, pos, NULL));
+		ASSERT_OK(send_packet(ctx.client, msg, pos, NULL));
 	}
 
 	/* Server will try to send CHANGEREQ and may fail */
@@ -751,7 +751,7 @@ test_alloc_send_pk_ok(void)
 	/* Get the public key blob BEFORE starting the server thread,
 	 * since the server thread arms the process-wide allocator and
 	 * RSA pubkey() internally calls malloc. */
-	dssh_key_algo ka = dssh_transport_find_key_algo(test_key_algo_name());
+	dssh_key_algo ka = find_key_algo(test_key_algo_name());
 	ASSERT_NOT_NULL(ka);
 	const uint8_t *pubkey_buf = NULL;
 	size_t pubkey_len;
@@ -769,13 +769,13 @@ test_alloc_send_pk_ok(void)
 		dssh_serialize_uint32((uint32_t)(sizeof(svc) - 1), msg, sizeof(msg), &pos);
 		memcpy(&msg[pos], svc, sizeof(svc) - 1);
 		pos += sizeof(svc) - 1;
-		ASSERT_OK(dssh_transport_send_packet(ctx.client, msg, pos, NULL));
+		ASSERT_OK(send_packet(ctx.client, msg, pos, NULL));
 	}
 	{
 		uint8_t msg_type;
 		uint8_t *payload;
 		size_t payload_len;
-		ASSERT_OK(dssh_transport_recv_packet(ctx.client, &msg_type, &payload, &payload_len));
+		ASSERT_OK(recv_packet(ctx.client, &msg_type, &payload, &payload_len));
 		ASSERT_EQ(msg_type, SSH_MSG_SERVICE_ACCEPT);
 	}
 
@@ -803,7 +803,7 @@ test_alloc_send_pk_ok(void)
 		dssh_serialize_uint32((uint32_t)pubkey_len, msg, sizeof(msg), &pos);
 		memcpy(&msg[pos], pubkey_buf, pubkey_len);
 		pos += pubkey_len;
-		ASSERT_OK(dssh_transport_send_packet(ctx.client, msg, pos, NULL));
+		ASSERT_OK(send_packet(ctx.client, msg, pos, NULL));
 	}
 
 	mock_io_close_c2s(&ctx.io);
@@ -820,7 +820,7 @@ test_alloc_send_pk_ok(void)
 /* ================================================================
  * Connection protocol alloc failures (ssh-conn.c)
  *
- * dssh_acceptqueue_push does one malloc for the entry struct.
+ * acceptqueue_push does one malloc for the entry struct.
  * Failing it must return DSSH_ERROR_ALLOC.
  * ================================================================ */
 
@@ -828,19 +828,19 @@ static int
 test_alloc_acceptqueue_push(void)
 {
 	struct dssh_accept_queue q;
-	dssh_acceptqueue_init(&q);
+	acceptqueue_init(&q);
 
 	mock_alloc_fail_after(0);
-	int res = dssh_acceptqueue_push(&q, 0, 0x200000, 0x8000,
+	int res = acceptqueue_push(&q, 0, 0x200000, 0x8000,
 	    (const uint8_t *)"session", 7);
 	mock_alloc_reset();
 	ASSERT_EQ(res, DSSH_ERROR_ALLOC);
 
 	/* Succeed */
-	res = dssh_acceptqueue_push(&q, 0, 0x200000, 0x8000,
+	res = acceptqueue_push(&q, 0, 0x200000, 0x8000,
 	    (const uint8_t *)"session", 7);
 	ASSERT_EQ(res, 0);
-	dssh_acceptqueue_free(&q);
+	acceptqueue_free(&q);
 	return TEST_PASS;
 }
 
@@ -898,7 +898,7 @@ test_alloc_auth_kbi(void)
 
 /*
  * Targeted kexinit malloc failure.
- * dssh_transport_kexinit does one malloc for its packet buffer.
+ * kexinit does one malloc for its packet buffer.
  * We call it directly (single-threaded, no OpenSSL involvement)
  * after setting up the session.
  */
@@ -929,7 +929,7 @@ test_alloc_kexinit(void)
 
 	/* Fail the kexinit packet buffer malloc */
 	mock_alloc_fail_after(0);
-	int res = dssh_transport_kexinit(sess);
+	int res = kexinit(sess);
 	mock_alloc_reset();
 	ASSERT_EQ(res, DSSH_ERROR_ALLOC);
 
@@ -1433,9 +1433,9 @@ watchdog_thread(void *arg)
 		mock_io_close_c2s(ctx->io);
 		mock_io_close_s2c(ctx->io);
 		if (ctx->client->conn_initialized)
-			dssh_session_set_terminate(ctx->client);
+			session_set_terminate(ctx->client);
 		if (ctx->server->conn_initialized)
-			dssh_session_set_terminate(ctx->server);
+			session_set_terminate(ctx->server);
 	}
 	return 0;
 }
@@ -1711,7 +1711,7 @@ test_ossl_key_sign_verify_iterate(void)
 		if (test_generate_host_key() < 0)
 			return TEST_FAIL;
 
-		dssh_key_algo ka = dssh_transport_find_key_algo(
+		dssh_key_algo ka = find_key_algo(
 		    test_key_algo_name());
 		if (ka == NULL)
 			return TEST_FAIL;
@@ -1938,7 +1938,7 @@ test_ossl_key_verify_iterate(void)
 	if (test_generate_host_key() < 0)
 		return TEST_FAIL;
 
-	dssh_key_algo ka = dssh_transport_find_key_algo(test_key_algo_name());
+	dssh_key_algo ka = find_key_algo(test_key_algo_name());
 	if (ka == NULL)
 		return TEST_FAIL;
 
@@ -1991,7 +1991,7 @@ test_ossl_key_pubkey_iterate(void)
 	if (test_generate_host_key() < 0)
 		return TEST_FAIL;
 
-	dssh_key_algo ka = dssh_transport_find_key_algo(test_key_algo_name());
+	dssh_key_algo ka = find_key_algo(test_key_algo_name());
 	if (ka == NULL)
 		return TEST_FAIL;
 
@@ -2072,9 +2072,9 @@ static int
 ve_ki_thread(void *arg)
 {
 	struct ve_ki_ctx *ctx = arg;
-	ctx->result = dssh_transport_version_exchange(ctx->sess);
+	ctx->result = version_exchange(ctx->sess);
 	if (ctx->result == 0)
-		ctx->result = dssh_transport_kexinit(ctx->sess);
+		ctx->result = kexinit(ctx->sess);
 	if (ctx->result < 0) {
 		/* Close our write pipe so peer unblocks */
 		if (ctx->sess->trans.client)
@@ -2258,7 +2258,7 @@ test_ossl_kex_server_iterate(void)
 		server->terminate = false;
 
 		dssh_test_ossl_fail_after(n);
-		int res = dssh_transport_kex(server);
+		int res = kex(server);
 		int cur_count = dssh_test_ossl_count();
 		dssh_test_ossl_reset();
 
@@ -2302,7 +2302,7 @@ kex_excluded_thread(void *arg)
 {
 	struct kex_excluded_ctx *ctx = arg;
 	dssh_test_ossl_exclude_thread();
-	ctx->result = dssh_transport_kex(ctx->sess);
+	ctx->result = kex(ctx->sess);
 	if (ctx->result < 0) {
 		mock_io_close_s2c(ctx->io);
 	}
@@ -2377,7 +2377,7 @@ test_ossl_kex_client_iterate(void)
 		};
 		thrd_t st;
 		ASSERT_THRD_CREATE(&st, kex_excluded_thread, &sctx);
-		int cres = dssh_transport_kex(client);
+		int cres = kex(client);
 		/* Close client's write pipe so server unblocks on read */
 		mock_io_close_c2s(&io);
 		thrd_join(st, NULL);
@@ -2432,7 +2432,7 @@ bad_server_group_thread(void *arg)
 	uint8_t msg_type;
 	uint8_t *payload;
 	size_t payload_len;
-	ctx->result = dssh_transport_recv_packet(ctx->sess,
+	ctx->result = recv_packet(ctx->sess,
 	    &msg_type, &payload, &payload_len);
 	if (ctx->result < 0) {
 		mock_io_close_s2c(ctx->io);
@@ -2441,7 +2441,7 @@ bad_server_group_thread(void *arg)
 
 	/* Send the crafted reply (if any) */
 	if (ctx->reply_data != NULL && ctx->reply_len > 0) {
-		ctx->result = dssh_transport_send_packet(ctx->sess,
+		ctx->result = send_packet(ctx->sess,
 		    ctx->reply_data, ctx->reply_len, NULL);
 	}
 
@@ -2465,7 +2465,7 @@ bad_server_reply_thread(void *arg)
 	uint8_t msg_type;
 	uint8_t *payload;
 	size_t payload_len;
-	ctx->result = dssh_transport_recv_packet(ctx->sess,
+	ctx->result = recv_packet(ctx->sess,
 	    &msg_type, &payload, &payload_len);
 	if (ctx->result < 0)
 		goto done;
@@ -2505,20 +2505,20 @@ bad_server_reply_thread(void *arg)
 		serialize_bn_mpint(g_bn, group_msg, sizeof(group_msg), &gp);
 		BN_free(p);
 		BN_free(g_bn);
-		ctx->result = dssh_transport_send_packet(ctx->sess,
+		ctx->result = send_packet(ctx->sess,
 		    group_msg, gp, NULL);
 		if (ctx->result < 0)
 			goto done;
 	}
 
 	/* Read GEX_INIT (client's e value) */
-	ctx->result = dssh_transport_recv_packet(ctx->sess,
+	ctx->result = recv_packet(ctx->sess,
 	    &msg_type, &payload, &payload_len);
 	if (ctx->result < 0)
 		goto done;
 
 	/* Send the crafted bad REPLY */
-	ctx->result = dssh_transport_send_packet(ctx->sess,
+	ctx->result = send_packet(ctx->sess,
 	    ctx->reply_data, ctx->reply_len, NULL);
 
 done:
@@ -2591,7 +2591,7 @@ dhgex_client_parse_test(int (*server_thread)(void *),
 	thrd_t st;
 	if (thrd_create(&st, server_thread, &sctx) != thrd_success)
 		return TEST_FAIL;
-	int cres = dssh_transport_kex(client);
+	int cres = kex(client);
 	mock_io_close_c2s(&io);
 	thrd_join(st, NULL);
 
@@ -2776,7 +2776,7 @@ bad_c25519_server_thread(void *arg)
 	uint8_t msg_type;
 	uint8_t *payload;
 	size_t payload_len;
-	ctx->result = dssh_transport_recv_packet(ctx->sess,
+	ctx->result = recv_packet(ctx->sess,
 	    &msg_type, &payload, &payload_len);
 	if (ctx->result < 0) {
 		mock_io_close_s2c(ctx->io);
@@ -2785,7 +2785,7 @@ bad_c25519_server_thread(void *arg)
 
 	/* Send the crafted reply (if any) */
 	if (ctx->reply_data != NULL && ctx->reply_len > 0) {
-		ctx->result = dssh_transport_send_packet(ctx->sess,
+		ctx->result = send_packet(ctx->sess,
 		    ctx->reply_data, ctx->reply_len, NULL);
 	}
 
@@ -2867,7 +2867,7 @@ c25519_client_parse_test(int (*server_thread)(void *),
 	thrd_t st;
 	if (thrd_create(&st, server_thread, &sctx) != thrd_success)
 		return TEST_FAIL;
-	int cres = dssh_transport_kex(client);
+	int cres = kex(client);
 	mock_io_close_c2s(&io);
 	thrd_join(st, NULL);
 
@@ -3088,7 +3088,7 @@ test_ossl_kex_client_ka_null(void)
 	};
 	thrd_t st;
 	ASSERT_THRD_CREATE(&st, kex_excluded_thread, &sctx);
-	int cres = dssh_transport_kex(client);
+	int cres = kex(client);
 	mock_io_close_c2s(&io);
 	thrd_join(st, NULL);
 
@@ -3168,7 +3168,7 @@ test_ossl_kex_client_no_verify(void)
 	};
 	thrd_t st;
 	ASSERT_THRD_CREATE(&st, kex_excluded_thread, &sctx);
-	int cres = dssh_transport_kex(client);
+	int cres = kex(client);
 	mock_io_close_c2s(&io);
 	thrd_join(st, NULL);
 
@@ -3360,7 +3360,7 @@ test_alloc_kex_server_iterate(void)
 		server->terminate = false;
 
 		dssh_test_alloc_fail_after(n);
-		int res = dssh_transport_kex(server);
+		int res = kex(server);
 		dssh_test_alloc_reset();
 
 		uint8_t drain[16384];
@@ -3395,7 +3395,7 @@ alloc_kex_excluded_thread(void *arg)
 	struct kex_excluded_ctx *ctx = arg;
 	dssh_test_ossl_exclude_thread();
 	dssh_test_alloc_exclude_thread();
-	ctx->result = dssh_transport_kex(ctx->sess);
+	ctx->result = kex(ctx->sess);
 	if (ctx->result < 0)
 		mock_io_close_s2c(ctx->io);
 	return 0;
@@ -3464,7 +3464,7 @@ test_alloc_kex_client_iterate(void)
 		};
 		thrd_t st;
 		ASSERT_THRD_CREATE(&st, alloc_kex_excluded_thread, &sctx);
-		int cres = dssh_transport_kex(client);
+		int cres = kex(client);
 		mock_io_close_c2s(&io);
 		thrd_join(st, NULL);
 
@@ -3489,7 +3489,7 @@ test_alloc_kex_client_iterate(void)
 /* ================================================================
  * Helper: set up a negotiated server session (version exchange +
  * kexinit done) and discard the client.  Returns the server session
- * ready for dssh_transport_kex(), or NULL on failure.
+ * ready for kex(), or NULL on failure.
  * ================================================================ */
 
 static dssh_session
@@ -3583,7 +3583,7 @@ test_c25519_server_truncated_init(void)
 	dssh_session_set_cbdata(server, &io, &io, &io, &io);
 	mock_io_inject(&io.c2s, wire, wire_len);
 
-	int res = dssh_transport_kex(server);
+	int res = kex(server);
 
 	mock_io_close_c2s(&io);
 	mock_io_close_s2c(&io);
@@ -3678,7 +3678,7 @@ test_dhgex_server_bn_rand_fail(void)
 		server->terminate = false;
 
 		dssh_test_ossl_fail_after(n);
-		int res = dssh_transport_kex(server);
+		int res = kex(server);
 		int cur_count = dssh_test_ossl_count();
 		dssh_test_ossl_reset();
 
