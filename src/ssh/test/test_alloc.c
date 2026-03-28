@@ -872,7 +872,11 @@ test_alloc_auth_kbi(void)
 	/* We need to pass the NULL check first, so use a dummy callback.
 	 * But ensure_auth_service will malloc for SERVICE_REQUEST.
 	 * fail_after(0) will fail that malloc. */
-	dssh_auth_kbi_prompt_cb dummy_cb = (dssh_auth_kbi_prompt_cb)(void *)1;
+	dssh_auth_kbi_prompt_cb dummy_cb;
+	{
+		void *p = (void *)1;
+		memcpy(&dummy_cb, &p, sizeof(dummy_cb));
+	}
 	mock_alloc_fail_after(0);
 	res = dssh_auth_keyboard_interactive(ctx.client, "user",
 	    dummy_cb, NULL);

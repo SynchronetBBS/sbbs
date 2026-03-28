@@ -539,11 +539,11 @@ __attribute__((unused))
 static inline
 int crypto_int16_ones_num(crypto_int16 crypto_int16_x) {
   crypto_int16_unsigned crypto_int16_y = (crypto_int16_unsigned)crypto_int16_x;
-  const crypto_int16 C0 = 0x5555;
-  const crypto_int16 C1 = 0x3333;
-  const crypto_int16 C2 = 0x0f0f;
-  crypto_int16_y -= ((crypto_int16_y >> 1) & C0);
-  crypto_int16_y = (crypto_int16_y & C1) + ((crypto_int16_y >> 2) & C1);
+  const crypto_int16_unsigned C0 = 0x5555;
+  const crypto_int16_unsigned C1 = 0x3333;
+  const crypto_int16_unsigned C2 = 0x0f0f;
+  crypto_int16_y -= (uint16_t)((crypto_int16_y >> 1) & C0);
+  crypto_int16_y = (uint16_t)((crypto_int16_y & C1) + ((crypto_int16_y >> 2) & C1));
   crypto_int16_y = (crypto_int16_y + (crypto_int16_y >> 4)) & C2;
   crypto_int16_y = (crypto_int16_y + (crypto_int16_y >> 8)) & 0xff;
   return crypto_int16_y;
@@ -1064,11 +1064,11 @@ __attribute__((unused))
 static inline
 int crypto_int32_ones_num(crypto_int32 crypto_int32_x) {
   crypto_int32_unsigned crypto_int32_y = (crypto_int32_unsigned)crypto_int32_x;
-  const crypto_int32 C0 = 0x55555555;
-  const crypto_int32 C1 = 0x33333333;
-  const crypto_int32 C2 = 0x0f0f0f0f;
-  crypto_int32_y -= ((crypto_int32_y >> 1) & C0);
-  crypto_int32_y = (crypto_int32_y & C1) + ((crypto_int32_y >> 2) & C1);
+  const crypto_int32_unsigned C0 = 0x55555555;
+  const crypto_int32_unsigned C1 = 0x33333333;
+  const crypto_int32_unsigned C2 = 0x0f0f0f0f;
+  crypto_int32_y -= (uint32_t)((crypto_int32_y >> 1) & C0);
+  crypto_int32_y = (uint32_t)((crypto_int32_y & C1) + ((crypto_int32_y >> 2) & C1));
   crypto_int32_y = (crypto_int32_y + (crypto_int32_y >> 4)) & C2;
   crypto_int32_y += crypto_int32_y >> 8;
   crypto_int32_y = (crypto_int32_y + (crypto_int32_y >> 16)) & 0xff;
@@ -1598,11 +1598,11 @@ __attribute__((unused))
 static inline
 int crypto_int64_ones_num(crypto_int64 crypto_int64_x) {
   crypto_int64_unsigned crypto_int64_y = (crypto_int64_unsigned)crypto_int64_x;
-  const crypto_int64 C0 = 0x5555555555555555;
-  const crypto_int64 C1 = 0x3333333333333333;
-  const crypto_int64 C2 = 0x0f0f0f0f0f0f0f0f;
-  crypto_int64_y -= ((crypto_int64_y >> 1) & C0);
-  crypto_int64_y = (crypto_int64_y & C1) + ((crypto_int64_y >> 2) & C1);
+  const crypto_int64_unsigned C0 = 0x5555555555555555;
+  const crypto_int64_unsigned C1 = 0x3333333333333333;
+  const crypto_int64_unsigned C2 = 0x0f0f0f0f0f0f0f0f;
+  crypto_int64_y -= (uint64_t)((crypto_int64_y >> 1) & C0);
+  crypto_int64_y = (uint64_t)((crypto_int64_y & C1) + ((crypto_int64_y >> 2) & C1));
   crypto_int64_y = (crypto_int64_y + (crypto_int64_y >> 4)) & C2;
   crypto_int64_y += crypto_int64_y >> 8;
   crypto_int64_y += crypto_int64_y >> 16;
@@ -1734,7 +1734,7 @@ static Fq Fq_freeze(int32_t x) {
 
 static int Weightw_mask(small *r) {
   int i, weight = 0;
-  for (i = 0; i < p; ++i) weight += crypto_int64_bottombit_01(r[i]);
+  for (i = 0; i < p; ++i) weight += (int)crypto_int64_bottombit_01(r[i]);
   return (int16_t)crypto_int16_nonzero_mask((crypto_int16)(weight - w));
 }
 
@@ -1767,7 +1767,7 @@ static void Encode(unsigned char *out, const uint16_t *R, const uint16_t *M, lon
     while (m > 1) {
       *out++ = (unsigned char)r;
       r >>= 8;
-      m = (m + 255) >> 8;
+      m = (uint16_t)((m + 255) >> 8);
     }
   }
   if (len > 1) {
@@ -1810,7 +1810,7 @@ static void Decode(uint16_t *out, const unsigned char *S, const uint16_t *M, lon
       uint32_t m = M[i] * (uint32_t)M[i + 1];
       if (m > 256 * 16383) {
         bottomt[i / 2] = 256 * 256;
-        bottomr[i / 2] = S[0] + 256 * S[1];
+        bottomr[i / 2] = (uint16_t)(S[0] + 256 * S[1]);
         S += 2;
         M2[i / 2] = (uint16_t)((((m + 255) >> 8) + 255) >> 8);
       } else if (m >= 16384) {
@@ -1849,7 +1849,7 @@ static void R3_mult(small *h, const small *f, const small *g) {
   int i, j;
   for (i = 0; i < p + p - 1; ++i) fg[i] = 0;
   for (i = 0; i < p; ++i)
-    for (j = 0; j < p; ++j) fg[i + j] += f[i] * (int16_t)g[j];
+    for (j = 0; j < p; ++j) fg[i + j] = (int16_t)(fg[i + j] + f[i] * (int16_t)g[j]);
   for (i = p; i < p + p - 1; ++i) fg[i - p] += fg[i];
   for (i = p; i < p + p - 1; ++i) fg[i - p + 1] += fg[i];
   for (i = 0; i < p; ++i) h[i] = F3_freeze(fg[i]);
@@ -1875,11 +1875,11 @@ static int R3_recip(small *out, const small *in) {
     delta += 1;
     for (i = 0; i < p + 1; ++i) {
       t = swap & (f[i] ^ g[i]);
-      f[i] ^= t;
-      g[i] ^= t;
+      f[i] = (small)(f[i] ^ t);
+      g[i] = (small)(g[i] ^ t);
       t = swap & (v[i] ^ r[i]);
-      v[i] ^= t;
-      r[i] ^= t;
+      v[i] = (small)(v[i] ^ t);
+      r[i] = (small)(r[i] ^ t);
     }
     for (i = 0; i < p + 1; ++i) g[i] = F3_freeze((int16_t)(g[i] + sign * f[i]));
     for (i = 0; i < p + 1; ++i) r[i] = F3_freeze((int16_t)(r[i] + sign * v[i]));
@@ -1937,11 +1937,11 @@ static int Rq_recip3(Fq *out, const small *in) {
     delta += 1;
     for (i = 0; i < p + 1; ++i) {
       t = swap & (f[i] ^ g[i]);
-      f[i] ^= t;
-      g[i] ^= t;
+      f[i] = (Fq)(f[i] ^ t);
+      g[i] = (Fq)(g[i] ^ t);
       t = swap & (v[i] ^ r[i]);
-      v[i] ^= t;
-      r[i] ^= t;
+      v[i] = (Fq)(v[i] ^ t);
+      r[i] = (Fq)(r[i] ^ t);
     }
     f0 = f[0];
     g0 = g[0];
@@ -1966,7 +1966,7 @@ static void Short_fromlist(small *out, const uint32_t *in) {
   for (i = 0; i < w; ++i) L[i] = in[i] & (uint32_t)-2;
   for (i = w; i < p; ++i) L[i] = (in[i] & (uint32_t)-3) | 1;
   crypto_sort_uint32(L, p);
-  for (i = 0; i < p; ++i) out[i] = (L[i] & 3) - 1;
+  for (i = 0; i < p; ++i) out[i] = (small)((L[i] & 3) - 1);
 }
 
 static int Hash_prefix(unsigned char *out, int b, const unsigned char *in, int inlen) {
@@ -1991,7 +1991,7 @@ static int Small_random(small *out) {
   int i;
   uint32_t L[p];
   if (randombytes(L, sizeof(L)) < 0) return -1;
-  for (i = 0; i < p; ++i) out[i] = (((L[i] & 0x3fffffff) * 3) >> 30) - 1;
+  for (i = 0; i < p; ++i) out[i] = (small)((((L[i] & 0x3fffffff) * 3) >> 30) - 1);
   explicit_bzero(L, sizeof(L));
   return 0;
 }
@@ -2034,7 +2034,7 @@ static void Small_encode(unsigned char *s, const small *f) {
   int i, j;
   for (i = 0; i < p / 4; ++i) {
     small x = 0;
-    for (j = 0;j < 4;++j) x += (*f++ + 1) << (2 * j);
+    for (j = 0;j < 4;++j) x = (small)(x + ((*f++ + 1) << (2 * j)));
     *s++ = (unsigned char)x;
   }
   *s = (unsigned char)(*f++ + 1);
@@ -2078,7 +2078,7 @@ static void Rounded_decode(Fq *r, const unsigned char *s) {
   int i;
   for (i = 0; i < p; ++i) M[i] = (q + 2) / 3;
   Decode(R, s, M, p);
-  for (i = 0; i < p; ++i) r[i] = R[i] * 3 - q12;
+  for (i = 0; i < p; ++i) r[i] = (Fq)(R[i] * 3 - q12);
 }
 
 static int ZKeyGen(unsigned char *pk, unsigned char *sk) {
@@ -2165,7 +2165,7 @@ int crypto_kem_sntrup761_dec(unsigned char *k, const unsigned char *c, const uns
   ZDecrypt(r, c, sk);
   if (Hide(cnew, r_enc, r, pk, cache) < 0) return -1;
   mask = Ciphertexts_diff_mask(c, cnew);
-  for (i = 0; i < Small_bytes; ++i) r_enc[i] ^= mask & (r_enc[i] ^ rho[i]);
+  for (i = 0; i < Small_bytes; ++i) r_enc[i] = (unsigned char)(r_enc[i] ^ (mask & (r_enc[i] ^ rho[i])));
   return HashSession(k, 1 + mask, r_enc, c);
 }
 

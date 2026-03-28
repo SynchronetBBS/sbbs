@@ -3427,8 +3427,9 @@ test_unimplemented_short_payload(void)
 
 	bool unimpl_invoked = false;
 	/* Set callback so we can verify it was NOT invoked */
-	dssh_session_set_unimplemented_cb(server,
-	    (dssh_unimplemented_cb)(void *)&unimpl_invoked, NULL);
+	dssh_unimplemented_cb unimp_cb;
+	memcpy(&unimp_cb, &(void *){&unimpl_invoked}, sizeof(unimp_cb));
+	dssh_session_set_unimplemented_cb(server, unimp_cb, NULL);
 
 	/* UNIMPLEMENTED with just 2 bytes (needs 5 for seq number) */
 	uint8_t unimp[] = { SSH_MSG_UNIMPLEMENTED, 0x00 };
@@ -6131,10 +6132,10 @@ static size_t
 write_namelist(uint8_t *buf, size_t pos, const char *str)
 {
 	uint32_t len = (uint32_t)strlen(str);
-	buf[pos]     = (len >> 24) & 0xFF;
-	buf[pos + 1] = (len >> 16) & 0xFF;
-	buf[pos + 2] = (len >>  8) & 0xFF;
-	buf[pos + 3] = (len      ) & 0xFF;
+	buf[pos]     = (uint8_t)((len >> 24) & 0xFF);
+	buf[pos + 1] = (uint8_t)((len >> 16) & 0xFF);
+	buf[pos + 2] = (uint8_t)((len >>  8) & 0xFF);
+	buf[pos + 3] = (uint8_t)(len & 0xFF);
 	memcpy(&buf[pos + 4], str, len);
 	return pos + 4 + len;
 }

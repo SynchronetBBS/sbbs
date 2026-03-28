@@ -21,10 +21,10 @@ dssh_serialize_uint32(dssh_uint32_t val, uint8_t *buf, size_t bufsz, size_t *pos
 		return DSSH_ERROR_INVALID;
 	if (*pos > bufsz || bufsz - *pos < 4)
 		return DSSH_ERROR_TOOLONG;
-	buf[(*pos)++] = (val >> 24) & 0xff;
-	buf[(*pos)++] = (val >> 16) & 0xff;
-	buf[(*pos)++] = (val >> 8) & 0xff;
-	buf[(*pos)++] = (val) & 0xff;
+	buf[(*pos)++] = (uint8_t)((val >> 24) & 0xff);
+	buf[(*pos)++] = (uint8_t)((val >> 16) & 0xff);
+	buf[(*pos)++] = (uint8_t)((val >> 8) & 0xff);
+	buf[(*pos)++] = (uint8_t)(val & 0xff);
 	return 0;
 }
 

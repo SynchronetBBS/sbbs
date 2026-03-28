@@ -6865,7 +6865,7 @@ libcrux_ml_kem_vector_portable_arithmetic_barrett_reduce_element(
       (int16_t)(t >>
                 (uint32_t)
                     LIBCRUX_ML_KEM_VECTOR_PORTABLE_ARITHMETIC_BARRETT_SHIFT);
-  return value - quotient * LIBCRUX_ML_KEM_VECTOR_TRAITS_FIELD_MODULUS;
+  return (int16_t)(value - quotient * LIBCRUX_ML_KEM_VECTOR_TRAITS_FIELD_MODULUS);
 }
 
 static KRML_MUSTINLINE libcrux_ml_kem_vector_portable_vector_type_PortableVector
