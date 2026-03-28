@@ -18,13 +18,27 @@
 static atomic_int dssh_alloc_fail_at = -1;
 static atomic_int dssh_alloc_num = 0;
 static _Thread_local bool dssh_alloc_this_thread = true;
+static atomic_bool dssh_alloc_exclude_new = false;
 
 void
 dssh_test_alloc_reset(void)
 {
 	atomic_store(&dssh_alloc_fail_at, -1);
 	atomic_store(&dssh_alloc_num, 0);
+	atomic_store(&dssh_alloc_exclude_new, false);
 	dssh_alloc_this_thread = true;
+}
+
+void
+dssh_test_alloc_exclude_new_threads(void)
+{
+	atomic_store(&dssh_alloc_exclude_new, true);
+}
+
+bool
+dssh_test_alloc_new_threads_excluded(void)
+{
+	return atomic_load(&dssh_alloc_exclude_new);
 }
 
 void

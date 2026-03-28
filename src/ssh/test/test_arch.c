@@ -171,6 +171,28 @@ test_cleanse_zero_len(void)
 	return TEST_PASS;
 }
 
+static int
+test_parse_uint32_null(void)
+{
+	uint8_t buf[4] = {0, 0, 0, 1};
+	dssh_uint32_t val;
+
+	ASSERT_EQ(dssh_parse_uint32(buf, 4, NULL), DSSH_ERROR_INVALID);
+	ASSERT_EQ(dssh_parse_uint32(NULL, 4, &val), DSSH_ERROR_INVALID);
+	return TEST_PASS;
+}
+
+static int
+test_serialize_uint32_null(void)
+{
+	uint8_t buf[4];
+	size_t pos = 0;
+
+	ASSERT_EQ(dssh_serialize_uint32(1, buf, 4, NULL), DSSH_ERROR_INVALID);
+	ASSERT_EQ(dssh_serialize_uint32(1, NULL, 4, &pos), DSSH_ERROR_INVALID);
+	return TEST_PASS;
+}
+
 /* ----------------------------------------------------------------
  * test table
  * ---------------------------------------------------------------- */
@@ -184,6 +206,8 @@ static struct dssh_test_entry tests[] = {
 	{ "parse_uint32_empty_buffer",      test_parse_uint32_empty_buffer },
 	{ "serialize_uint32",               test_serialize_uint32 },
 	{ "serialize_uint32_overflow",      test_serialize_uint32_overflow },
+	{ "parse_uint32_null",             test_parse_uint32_null },
+	{ "serialize_uint32_null",         test_serialize_uint32_null },
 	{ "uint32_roundtrip",              test_uint32_roundtrip },
 
 	/* offset */

@@ -19,6 +19,7 @@
 #include "ssh-trans.h"
 #include "ssh-internal.h"
 #include "dssh_test_internal.h"
+#include "dssh_test_alloc.h"
 #include "mock_io.h"
 #include "test_dhgex_provider.h"
 
@@ -5736,6 +5737,195 @@ test_accept_raw_null(void)
 }
 
 /* ================================================================
+ * Allocation failure injection during channel open
+ * ================================================================ */
+
+/*
+ * Server accept thread that excludes itself from alloc injection.
+ * Uses a short timeout so it doesn't hang when the client fails.
+ */
+static int
+server_accept_alloc_thread(void *arg)
+{
+	struct open_exec_ctx *ctx = arg;
+
+	dssh_test_alloc_exclude_thread();
+
+	struct dssh_incoming_open *inc = NULL;
+	int res = dssh_session_accept(ctx->server, &inc, 3000);
+
+	if (res < 0)
+		return 0;
+	ctx->server_ch = dssh_session_accept_channel(ctx->server, inc,
+	    ctx->cbs, &ctx->req_type, &ctx->req_data);
+	return 0;
+}
+
+/*
+ * Sweep alloc failure points during dssh_session_open_exec().
+ * For each N, fail the Nth library malloc and verify the client
+ * returns NULL without crashing.  Stop when a success is seen.
+ *
+ * When the client fails mid-open, the server accept thread may be
+ * blocked in setup_recv (cnd_wait) waiting for channel requests
+ * that will never arrive.  Terminate the server session to unblock.
+ */
+static int
+test_open_exec_alloc_sweep(void)
+{
+	int any_failed = 0;
+
+	for (int n = 0; n < 50; n++) {
+		struct conn_ctx ctx;
+
+		/* Exclude demux threads from alloc injection so only
+		 * the client open_exec path is tested. */
+		dssh_test_alloc_exclude_new_threads();
+
+		if (conn_setup(&ctx) < 0)
+			return TEST_FAIL;
+
+		struct open_exec_ctx oc = {
+			.client = ctx.client,
+			.server = ctx.server,
+			.client_ch = NULL,
+			.server_ch = NULL,
+			.command = "echo alloc",
+			.cbs = &session_cbs,
+		};
+
+		/* Arm: fail the Nth library malloc */
+		dssh_test_alloc_fail_after(n);
+
+		thrd_t ct, st;
+		ASSERT_THRD_CREATE(&ct, client_open_exec_thread, &oc);
+		ASSERT_THRD_CREATE(&st, server_accept_alloc_thread, &oc);
+		thrd_join(ct, NULL);
+
+		int count = dssh_test_alloc_count();
+		dssh_test_alloc_reset();
+
+		/* If client got a channel, the Nth alloc wasn't reached */
+		if (oc.client_ch != NULL) {
+			thrd_join(st, NULL);
+			if (oc.server_ch != NULL)
+				dssh_session_close(ctx.server, oc.server_ch, 0);
+			dssh_session_close(ctx.client, oc.client_ch, 0);
+			conn_cleanup(&ctx);
+
+			/* Must have failed at least once to be useful */
+			ASSERT_TRUE(any_failed);
+			return TEST_PASS;
+		}
+
+		/* Client failed — terminate server to unblock setup_recv */
+		any_failed = 1;
+		dssh_session_set_terminate(ctx.server);
+		thrd_join(st, NULL);
+
+		if (oc.server_ch != NULL)
+			dssh_session_close(ctx.server, oc.server_ch, 0);
+
+		conn_cleanup(&ctx);
+
+		if (n >= count)
+			break;
+	}
+
+	return any_failed ? TEST_PASS : TEST_FAIL;
+}
+
+/*
+ * Same sweep but for dssh_session_open_shell() (session channels).
+ */
+static int
+client_open_shell_alloc_thread(void *arg)
+{
+	struct open_shell_ctx *ctx = arg;
+	ctx->client_ch = dssh_session_open_shell(ctx->client, ctx->pty);
+	return 0;
+}
+
+static int
+server_accept_shell_alloc_thread(void *arg)
+{
+	struct open_shell_ctx *ctx = arg;
+
+	dssh_test_alloc_exclude_thread();
+
+	struct dssh_incoming_open *inc = NULL;
+	int res = dssh_session_accept(ctx->server, &inc, 3000);
+
+	if (res < 0)
+		return 0;
+	ctx->server_ch = dssh_session_accept_channel(ctx->server, inc,
+	    ctx->cbs, &ctx->req_type, &ctx->req_data);
+	return 0;
+}
+
+static int
+test_open_shell_alloc_sweep(void)
+{
+	int any_failed = 0;
+
+	struct dssh_pty_req pty = {
+		.term = "xterm",
+		.cols = 80,
+		.rows = 24,
+	};
+
+	for (int n = 0; n < 50; n++) {
+		struct conn_ctx ctx;
+
+		dssh_test_alloc_exclude_new_threads();
+
+		if (conn_setup(&ctx) < 0)
+			return TEST_FAIL;
+
+		struct open_shell_ctx oc = {
+			.client = ctx.client,
+			.server = ctx.server,
+			.client_ch = NULL,
+			.server_ch = NULL,
+			.pty = &pty,
+			.cbs = &session_cbs,
+		};
+
+		dssh_test_alloc_fail_after(n);
+
+		thrd_t ct, st;
+		ASSERT_THRD_CREATE(&ct, client_open_shell_alloc_thread, &oc);
+		ASSERT_THRD_CREATE(&st, server_accept_shell_alloc_thread, &oc);
+		thrd_join(ct, NULL);
+
+		int count = dssh_test_alloc_count();
+		dssh_test_alloc_reset();
+
+		if (oc.client_ch != NULL) {
+			thrd_join(st, NULL);
+			if (oc.server_ch != NULL)
+				dssh_session_close(ctx.server, oc.server_ch, 0);
+			dssh_session_close(ctx.client, oc.client_ch, 0);
+			conn_cleanup(&ctx);
+			ASSERT_TRUE(any_failed);
+			return TEST_PASS;
+		}
+
+		any_failed = 1;
+		dssh_session_set_terminate(ctx.server);
+		thrd_join(st, NULL);
+		if (oc.server_ch != NULL)
+			dssh_session_close(ctx.server, oc.server_ch, 0);
+		conn_cleanup(&ctx);
+
+		if (n >= count)
+			break;
+	}
+
+	return any_failed ? TEST_PASS : TEST_FAIL;
+}
+
+/* ================================================================
  * Test table
  * ================================================================ */
 
@@ -5927,6 +6117,10 @@ static struct dssh_test_entry tests[] = {
 	{ "null/open_subsystem",               test_open_subsystem_null },
 	{ "null/accept_channel",               test_accept_channel_null },
 	{ "null/accept_raw",                   test_accept_raw_null },
+
+	/* Allocation failure injection */
+	{ "alloc/open_exec_sweep",             test_open_exec_alloc_sweep },
+	{ "alloc/open_shell_sweep",            test_open_shell_alloc_sweep },
 };
 
 DSSH_TEST_MAIN(tests)

@@ -8,6 +8,7 @@
 
 #ifdef DSSH_TESTING
 #include "dssh_test_ossl.h"
+#include "dssh_test_alloc.h"
 #endif
 
 #define INITIAL_WINDOW_SIZE 0x200000
@@ -1043,6 +1044,8 @@ demux_thread_func(void *arg)
 
 #ifdef DSSH_TESTING
 	dssh_test_ossl_exclude_thread();
+	if (dssh_test_alloc_new_threads_excluded())
+		dssh_test_alloc_exclude_thread();
 #endif
 
 	while (!sess->terminate) {
