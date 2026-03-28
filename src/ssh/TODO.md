@@ -98,13 +98,15 @@
     an internal header.  Either move to a public header or change to
     `DSSH_PRIVATE`.
 
-95. **`dssh_session_read` / `dssh_session_write` return semantics undocumented.**
-    `dssh_session_write()` can return a partial write (less than requested)
-    due to window clamping.  `dssh_session_read()` returns 0 when no data
-    is buffered (not necessarily EOF -- EOF is signaled via poll).
-    `dssh_channel_write()` returns `int` (0/error), not bytes sent,
-    unlike `dssh_session_write()` which returns `int64_t` bytes.  These
-    asymmetries need clear documentation in the header comments.
+95. **Unify channel I/O API under `dssh_channel_*`.**
+    See `design-channel-io-api.md` for full design.  Subsumes old
+    items 95 (return type asymmetry), 98 (peek semantics), plus naming
+    confusion, poll merge, and close function design.  Summary:
+    - Merge `dssh_session_read/write/read_ext/write_ext/poll` and
+      `dssh_channel_read/write/poll` into one `dssh_channel_*` family
+    - All read/write return `int64_t` uniformly
+    - Peek (`NULL, 0`) works on both channel types
+    - Close API needs further design (3 options in the doc)
 
 96. **`dssh_session_read_signal()` pointer lifetime undocumented.**
     Returns `*signal_name` pointing into a channel-owned buffer
@@ -114,15 +116,6 @@
 97. **`dssh_parse_uint32()` return value undocumented.**
     Returns `int64_t`: 4 on success (bytes consumed), negative error
     code on failure.  Neither the header nor README documents this.
-
-98. **Re-evaluate peek semantics for session (bytebuf) channels.**
-    `dssh_channel_read(sess, ch, NULL, 0)` supports peek on raw
-    (message-based) channels, returning the next message size.
-    Session channels use bytebuf (byte-stream) and currently reject
-    `buf == NULL`.  Evaluate whether a peek operation makes sense for
-    session channels (e.g. "how many bytes are available?") and whether
-    `dssh_session_read()` should support it, or if `dssh_session_poll()`
-    already covers that use case adequately.
 
 99. **Callback setters after `dssh_session_start()` are undefined behavior.**
     `ssh.c` and `deucessh.h` documents "must be called before `dssh_session_start()`" and
