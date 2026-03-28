@@ -21,34 +21,52 @@ dssh_session_set_terminate(dssh_session sess)
          * while-condition check and cnd_wait entry.  Use trylock because
          * send_packet() calls set_terminate on fatal errors while already
          * holding tx_mtx -- in that case the lock is already held so the
-         * broadcast is safe without re-acquiring. */
-	if (mtx_trylock(&sess->trans.tx_mtx) == thrd_success) {
-		cnd_broadcast(&sess->trans.rekey_cnd);
-		mtx_unlock(&sess->trans.tx_mtx);
+         * broadcast is safe without re-acquiring.
+         *
+         * All lock/broadcast/unlock operations here are best-effort.
+         * dssh_thrd_check will not recurse because terminate is already
+         * true (set above). */
+	int tr = mtx_trylock(&sess->trans.tx_mtx);
+	if (tr == thrd_success) {
+		dssh_thrd_check(sess, cnd_broadcast(&sess->trans.rekey_cnd));
+		dssh_thrd_check(sess, mtx_unlock(&sess->trans.tx_mtx));
 	}
-	else {
+	else if (tr == thrd_busy) {
 		/* tx_mtx held by our caller -- broadcast is still safe
 		 * because the caller's critical section prevents any
 		 * sender from entering cnd_wait. */
-		cnd_broadcast(&sess->trans.rekey_cnd);
+		dssh_thrd_check(sess, cnd_broadcast(&sess->trans.rekey_cnd));
 	}
+	/* thrd_error: mutex corrupted, skip broadcast */
 
         /* Wake conn-layer waiters if initialized */
 	if (sess->conn_initialized) {
-		mtx_lock(&sess->accept_mtx);
-		cnd_broadcast(&sess->accept_cnd);
-		mtx_unlock(&sess->accept_mtx);
+		if (dssh_thrd_check(sess, mtx_lock(&sess->accept_mtx))
+		    == thrd_success) {
+			dssh_thrd_check(sess,
+			    cnd_broadcast(&sess->accept_cnd));
+			dssh_thrd_check(sess,
+			    mtx_unlock(&sess->accept_mtx));
+		}
 
 		/* Lock order: channel_mtx then buf_mtx. */
-		mtx_lock(&sess->channel_mtx);
-		for (size_t i = 0; i < sess->channel_count; i++) {
-			dssh_channel ch = sess->channels[i];
+		if (dssh_thrd_check(sess, mtx_lock(&sess->channel_mtx))
+		    == thrd_success) {
+			for (size_t i = 0; i < sess->channel_count; i++) {
+				dssh_channel ch = sess->channels[i];
 
-			mtx_lock(&ch->buf_mtx);
-			cnd_broadcast(&ch->poll_cnd);
-			mtx_unlock(&ch->buf_mtx);
+				if (dssh_thrd_check(sess,
+				    mtx_lock(&ch->buf_mtx))
+				    == thrd_success) {
+					dssh_thrd_check(sess,
+					    cnd_broadcast(&ch->poll_cnd));
+					dssh_thrd_check(sess,
+					    mtx_unlock(&ch->buf_mtx));
+				}
+			}
+			dssh_thrd_check(sess,
+			    mtx_unlock(&sess->channel_mtx));
 		}
-		mtx_unlock(&sess->channel_mtx);
 	}
 }
 

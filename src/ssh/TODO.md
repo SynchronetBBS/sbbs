@@ -209,29 +209,6 @@
 
 ### Unchecked C11 threading return values (items 85-87)
 
-85. **`mtx_lock()` / `mtx_unlock()` return values never checked.**
-    ~35 `mtx_lock()` and ~60 `mtx_unlock()` calls across `ssh-conn.c`,
-    `ssh-trans.c`, and `ssh.c` discard the return value.  C11
-    `mtx_lock()` returns `thrd_error` on failure (e.g., EDEADLK for
-    recursive lock on a non-recursive mutex — indicates a library bug).
-    `mtx_unlock()` can also fail (unlocking a mutex not held, or from
-    the wrong thread).  Every call site should check and, on failure,
-    set `terminate` and return a new `DSSH_ERROR_INTERNAL` (-14) error
-    code indicating a library logic bug was detected.  The library must
-    never call `abort()` or `exit()`.  Note: `dssh_session_set_terminate()`
-    now uses `mtx_trylock(&tx_mtx)` (item 55) but does not distinguish
-    `thrd_busy` (another thread holds the lock -- expected) from
-    `thrd_error` (mutex corrupted -- should trigger best-effort
-    teardown per item 87).  This is a concrete instance of the
-    general problem.
-
-86. **`cnd_wait()` / `cnd_broadcast()` / `cnd_signal()` return values
-    never checked.**  7 `cnd_wait()`, 10 `cnd_broadcast()`, and 1
-    `cnd_signal()` calls discard the return value.  (`cnd_timedwait()`
-    is already checked for `thrd_timedout` at all 3 call sites.)  Same
-    fix as item 85: check and return `DSSH_ERROR_INTERNAL` on
-    `thrd_error`.
-
 87. **Shutdown path must tolerate prior lock/condvar failures.**
     `dssh_session_set_terminate()` (ssh.c) and `dssh_session_stop()`
     / cleanup paths acquire locks and broadcast condvars.  If a
@@ -246,6 +223,21 @@
     the session is already in an unrecoverable state.
 
 ## Closed
+
+- C11 threading return values now checked (was items 85, 86).
+  Added `dssh_thrd_check()` inline wrapper in `ssh-internal.h` that
+  calls the real C11 function, checks the result, and calls
+  `set_terminate()` on failure (`thrd_error`/`thrd_nomem`).  All ~133
+  `mtx_lock`/`mtx_unlock`/`cnd_wait`/`cnd_timedwait`/`cnd_broadcast`/
+  `cnd_signal` calls across `ssh-conn.c` (113), `ssh-trans.c` (10),
+  and `ssh.c` (13) wrapped.  Library code ignores the return value;
+  the wrapper handles termination internally.  `set_terminate()` is
+  the one exception: it checks returns to skip blocks whose lock was
+  not acquired (best-effort wakeup).  No recursion risk because
+  `terminate` is set before any lock operations.  Test injection uses
+  a separate countdown (`dssh_test_thrd_fail_after`) from the existing
+  OpenSSL countdown.  6 new tests in `test_thread_errors.c` (48 CTest
+  entries across 8 algo variants).
 
 - Channel close use-after-free with demux thread (was items 62, 79).
   `dssh_session_close()` and `dssh_channel_close()` freed the channel

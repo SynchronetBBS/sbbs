@@ -24,4 +24,13 @@ void dssh_test_ossl_fail_after(int n);
 void dssh_test_ossl_exclude_thread(void);
 int  dssh_test_ossl_count(void);
 
+/*
+ * Separate countdown for lock/unlock/condvar wrappers (items 85-86).
+ * Independent of the OpenSSL + init countdown.
+ * dssh_test_ossl_reset() resets both countdowns.
+ */
+void dssh_test_thrd_fail_after(int n);
+void dssh_test_thrd_reset(void);
+int  dssh_test_thrd_count(void);
+
 #endif /* DSSH_TEST_OSSL_H */

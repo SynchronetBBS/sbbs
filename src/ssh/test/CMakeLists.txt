@@ -17,7 +17,7 @@ set_property(TARGET deucessh_test_lib PROPERTY C_STANDARD_REQUIRED ON)
 target_compile_definitions(deucessh_test_lib PRIVATE DSSH_TESTING)
 target_include_directories(deucessh_test_lib
 	PUBLIC ${PROJECT_SOURCE_DIR}
-	PRIVATE ${OPENSSL_INCLUDE_DIR})
+	PRIVATE ${OPENSSL_INCLUDE_DIR} ${CMAKE_CURRENT_SOURCE_DIR})
 target_link_libraries(deucessh_test_lib
 	INTERFACE ${OPENSSL_CRYPTO_LIBRARIES} ${THREADS_LINK_LIB})
 target_compile_options(deucessh_test_lib PRIVATE
@@ -575,6 +575,19 @@ foreach(t ${TRANSPORT_ERROR_TESTS})
 	set_tests_properties(dssh_transport_errors_${t} PROPERTIES
 		ENVIRONMENT "${DSSH_TEST_KEY_ENV}")
 endforeach()
+
+# ================================================================
+# Tier 2c: Thread error tests (lock/unlock/condvar failure injection)
+# ================================================================
+
+dssh_add_test(thread_errors test_thread_errors.c)
+target_link_libraries(dssh_test_thread_errors PRIVATE dssh_mock_io)
+set(THREAD_ERROR_TESTS
+	thrd/send_lock_fail thrd/send_unlock_fail
+	thrd/recv_lock_fail thrd/set_terminate_fail
+	thrd/send_sweep thrd/recv_sweep
+)
+dssh_add_individual_tests(dssh_test_thread_errors dssh_thrd THREAD_ERROR_TESTS)
 
 # ================================================================
 # Tier 3a: Self-test (integration) — one process per test

@@ -310,9 +310,9 @@ dssh_transport_rekey(dssh_session sess)
          * Block application-layer sends during rekey (RFC 4253 s7.1).
          * Set the flag under tx_mtx since send_packet checks it there.
          */
-	mtx_lock(&sess->trans.tx_mtx);
+	dssh_thrd_check(sess, mtx_lock(&sess->trans.tx_mtx));
 	sess->trans.rekey_in_progress = true;
-	mtx_unlock(&sess->trans.tx_mtx);
+	dssh_thrd_check(sess, mtx_unlock(&sess->trans.tx_mtx));
 
         /* Re-negotiate algorithms */
 	int res = dssh_transport_kexinit(sess);
@@ -323,10 +323,10 @@ dssh_transport_rekey(dssh_session sess)
 		res = dssh_transport_newkeys(sess);
 
         /* Clear the flag and wake any blocked senders */
-	mtx_lock(&sess->trans.tx_mtx);
+	dssh_thrd_check(sess, mtx_lock(&sess->trans.tx_mtx));
 	sess->trans.rekey_in_progress = false;
-	cnd_broadcast(&sess->trans.rekey_cnd);
-	mtx_unlock(&sess->trans.tx_mtx);
+	dssh_thrd_check(sess, cnd_broadcast(&sess->trans.rekey_cnd));
+	dssh_thrd_check(sess, mtx_unlock(&sess->trans.tx_mtx));
 
 	if (res < 0)
 		dssh_session_set_terminate(sess);
@@ -482,7 +482,7 @@ dssh_transport_send_packet(dssh_session sess,
 {
 	int ret;
 
-	mtx_lock(&sess->trans.tx_mtx);
+	dssh_thrd_check(sess, mtx_lock(&sess->trans.tx_mtx));
 
         /*
          * RFC 4253 s7.1: during rekey, only transport/KEX messages
@@ -491,7 +491,7 @@ dssh_transport_send_packet(dssh_session sess,
          */
 	if ((payload_len > 0) && (payload[0] >= SSH_MSG_USERAUTH_REQUEST)) {
 		while (sess->trans.rekey_in_progress && !sess->terminate)
-			cnd_wait(&sess->trans.rekey_cnd, &sess->trans.tx_mtx);
+			dssh_thrd_check(sess, cnd_wait(&sess->trans.rekey_cnd, &sess->trans.tx_mtx));
 	}
 
 	size_t bs = tx_block_size(sess);
@@ -617,7 +617,7 @@ tx_done:
         * is broken and cannot recover without closing the socket. */
 	if ((ret < 0) && (ret != DSSH_ERROR_TOOLONG) && (ret != DSSH_ERROR_REKEY_NEEDED))
 		dssh_session_set_terminate(sess);
-	mtx_unlock(&sess->trans.tx_mtx);
+	dssh_thrd_check(sess, mtx_unlock(&sess->trans.tx_mtx));
 	return ret;
 }
 
@@ -632,7 +632,7 @@ recv_packet_raw(dssh_session sess,
 {
 	int ret;
 
-	mtx_lock(&sess->trans.rx_mtx);
+	dssh_thrd_check(sess, mtx_lock(&sess->trans.rx_mtx));
 
         /* Refuse to receive if per-key packet count would exceed hard limit */
 	if (sess->trans.rx_since_rekey >= DSSH_REKEY_HARD_LIMIT) {
@@ -766,7 +766,7 @@ rx_done:
          * connection is broken. */
 	if ((ret < 0) && (ret != DSSH_ERROR_REKEY_NEEDED))
 		dssh_session_set_terminate(sess);
-	mtx_unlock(&sess->trans.rx_mtx);
+	dssh_thrd_check(sess, mtx_unlock(&sess->trans.rx_mtx));
 	return ret;
 }
 

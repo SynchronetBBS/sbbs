@@ -48,6 +48,21 @@ int dssh_test_thrd_create(thrd_t *thr, thrd_start_t func, void *arg);
  #define cnd_init(c) dssh_test_cnd_init(c)
  #define thrd_create(t, f, a) dssh_test_thrd_create(t, f, a)
 
+int dssh_test_mtx_lock(mtx_t *mtx);
+int dssh_test_mtx_unlock(mtx_t *mtx);
+int dssh_test_cnd_wait(cnd_t *cond, mtx_t *mtx);
+int dssh_test_cnd_timedwait(cnd_t *cond, mtx_t *mtx,
+    const struct timespec *ts);
+int dssh_test_cnd_broadcast(cnd_t *cond);
+int dssh_test_cnd_signal(cnd_t *cond);
+
+ #define mtx_lock(m) dssh_test_mtx_lock(m)
+ #define mtx_unlock(m) dssh_test_mtx_unlock(m)
+ #define cnd_wait(c, m) dssh_test_cnd_wait(c, m)
+ #define cnd_timedwait(c, m, t) dssh_test_cnd_timedwait(c, m, t)
+ #define cnd_broadcast(c) dssh_test_cnd_broadcast(c)
+ #define cnd_signal(c) dssh_test_cnd_signal(c)
+
 /* OpenSSL */
 int dssh_test_BN_rand(BIGNUM *rnd, int bits, int top, int bottom);
 int dssh_test_EVP_PKEY_CTX_set_rsa_padding(EVP_PKEY_CTX *ctx, int pad_mode);
@@ -215,5 +230,23 @@ struct dssh_session_s {
 	atomic_bool                   conn_initialized;
 	bool                          auth_service_requested;
 };
+
+/*
+ * Generic C11 thread-call checker.  Call the real function, check the
+ * result.  thrd_success, thrd_busy, and thrd_timedout are non-errors;
+ * anything else (thrd_error, thrd_nomem) triggers session termination.
+ *
+ * Library code ignores the return — the wrapper handles set_terminate.
+ * Exception: set_terminate() itself checks returns to skip blocks whose
+ * lock was not acquired.
+ */
+static inline int
+dssh_thrd_check(dssh_session sess, int ret)
+{
+	if (ret != thrd_success && ret != thrd_busy
+	    && ret != thrd_timedout && !sess->terminate)
+		dssh_session_set_terminate(sess);
+	return ret;
+}
 
 #endif // ifndef DSSH_INTERNAL_H
