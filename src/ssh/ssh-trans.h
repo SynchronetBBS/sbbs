@@ -199,8 +199,6 @@ DSSH_PUBLIC int dssh_transport_register_lang(dssh_language lang);
  * Internal functions -- used by other library modules, not by
  * applications.  DSSH_PRIVATE in shared builds.
  * ================================================================ */
-DSSH_PRIVATE int transport_init(dssh_session sess, size_t max_packet_size);
-DSSH_PRIVATE void transport_cleanup(dssh_session sess);
 DSSH_PRIVATE int send_packet(dssh_session sess,
     const uint8_t *payload, size_t payload_len, uint32_t *seq_out);
 DSSH_PRIVATE int send_or_queue(dssh_session sess,
@@ -209,13 +207,6 @@ DSSH_PRIVATE int recv_packet(dssh_session sess,
     uint8_t *msg_type, uint8_t **payload, size_t *payload_len);
 DSSH_PRIVATE int send_unimplemented(dssh_session sess,
     uint32_t                                                    rejected_seq);
-DSSH_PRIVATE int version_exchange(dssh_session sess);
-DSSH_PRIVATE int kexinit(dssh_session sess);
-DSSH_PRIVATE int kex(dssh_session sess);
-DSSH_PRIVATE int newkeys(dssh_session sess);
-DSSH_PRIVATE int rekey(dssh_session sess);
-DSSH_PRIVATE bool rekey_needed(dssh_session sess);
-DSSH_PRIVATE dssh_kex find_kex(const char *name);
 DSSH_PRIVATE dssh_key_algo find_key_algo(const char *name);
 
 /*

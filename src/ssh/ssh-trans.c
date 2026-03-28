@@ -10,8 +10,17 @@
 #include "ssh-internal.h"
 #include "deucessh-algorithms.h"
 #include "deucessh-auth.h"
+#include "deucessh-conn.h"
 
 /* DSSH_TESTABLE is defined in ssh-internal.h */
+
+/* Forward declarations for functions defined later in this file
+ * but called before their definitions. */
+static int transport_init(dssh_session sess, size_t max_packet_size);
+static void transport_cleanup(dssh_session sess);
+DSSH_TESTABLE int kexinit(dssh_session sess);
+DSSH_TESTABLE int kex(dssh_session sess);
+DSSH_TESTABLE int newkeys(dssh_session sess);
 
 /* Scrub and free security-sensitive heap buffers. */
 static void
@@ -173,7 +182,7 @@ version_tx(dssh_session sess)
 	return 0;
 }
 
-DSSH_PRIVATE dssh_kex
+static dssh_kex
 find_kex(const char *name)
 {
 	for (dssh_kex k = gconf.kex_head; k != NULL; k = k->next) {
@@ -233,7 +242,7 @@ dssh_transport_get_mac_name(dssh_session sess)
 	return sess->trans.mac_c2s_selected ? sess->trans.mac_c2s_selected->name : NULL;
 }
 
-DSSH_PRIVATE int
+DSSH_TESTABLE int
 version_exchange(dssh_session sess)
 {
 	int res = version_tx(sess);
@@ -272,7 +281,7 @@ fail:
  * Rekeying (RFC 4253 s9)
  * ================================================================ */
 
-DSSH_PRIVATE bool
+DSSH_TESTABLE bool
 rekey_needed(dssh_session sess)
 {
 	/* tx counters are atomic -- read without tx_mtx.
@@ -298,7 +307,7 @@ rekey_needed(dssh_session sess)
 	return false;
 }
 
-DSSH_PRIVATE int
+DSSH_TESTABLE int
 rekey(dssh_session sess)
 {
         /*
@@ -1556,7 +1565,7 @@ negotiate_algorithms(dssh_session sess,
 	return 0;
 }
 
-DSSH_PRIVATE int
+DSSH_TESTABLE int
 kexinit(dssh_session sess)
 {
 	uint8_t *kexinit;
@@ -1611,7 +1620,7 @@ kex_recv_wrapper(uint8_t *msg_type, uint8_t **payload,
 	    msg_type, payload, payload_len);
 }
 
-DSSH_PRIVATE int
+DSSH_TESTABLE int
 kex(dssh_session sess)
 {
 	if ((sess->trans.kex_selected == NULL)
@@ -1960,7 +1969,7 @@ keys_cleanup:
 	return res;
 }
 
-DSSH_PRIVATE int
+DSSH_TESTABLE int
 newkeys(dssh_session sess)
 {
 	/* Save references to OLD modules for cleanup after rekey */
@@ -2023,7 +2032,7 @@ newkeys(dssh_session sess)
  * Init / cleanup / registration
  * ================================================================ */
 
-DSSH_PRIVATE int
+static int
 transport_init(dssh_session sess, size_t max_packet_size)
 {
 	gconf.used = true;
@@ -2113,7 +2122,7 @@ init_cleanup:
 	return ret;
 }
 
-DSSH_PRIVATE void
+static void
 transport_cleanup(dssh_session sess)
 {
 	if (sess->trans.kex_selected)
@@ -2223,6 +2232,76 @@ transport_cleanup(dssh_session sess)
 		free(sess->trans.remote_languages);
 		sess->trans.remote_languages = NULL;
 	}
+}
+
+/* ================================================================
+ * Session lifecycle (formerly in ssh.c)
+ * ================================================================ */
+
+DSSH_PUBLIC dssh_session
+dssh_session_init(bool client, size_t max_packet_size)
+{
+	dssh_session sess = calloc(1, sizeof(*sess));
+
+	if (sess == NULL)
+		return NULL;
+
+	sess->trans.client = client;
+
+	int res = mtx_init(&sess->mtx, mtx_plain);
+
+	if (res != thrd_success) {
+		free(sess);
+		return NULL;
+	}
+
+	res = transport_init(sess, max_packet_size);
+	if (res < 0) {
+		mtx_destroy(&sess->mtx);
+		free(sess);
+		return NULL;
+	}
+
+	sess->timeout_ms = 75000;
+	sess->initialized = true;
+	return sess;
+}
+
+DSSH_PUBLIC bool
+dssh_session_terminate(dssh_session sess)
+{
+	if (sess == NULL)
+		return false;
+
+	bool t = true;
+
+	if (atomic_compare_exchange_strong(&sess->initialized, &t, false)) {
+		session_set_terminate(sess);
+		return true;
+	}
+	return false;
+}
+
+DSSH_PUBLIC bool
+dssh_session_is_terminated(dssh_session sess)
+{
+	if (sess == NULL)
+		return true;
+	return sess->terminate;
+}
+
+DSSH_PUBLIC void
+dssh_session_cleanup(dssh_session sess)
+{
+	if (sess == NULL)
+		return;
+	dssh_session_terminate(sess);
+	dssh_session_stop(sess);
+	transport_cleanup(sess);
+	free(sess->pending_banner);
+	free(sess->pending_banner_lang);
+	mtx_destroy(&sess->mtx);
+	free(sess);
 }
 
 DSSH_PUBLIC int

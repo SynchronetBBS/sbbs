@@ -2,7 +2,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "deucessh-conn.h"
 #include "ssh-internal.h"
 
 /* ================================================================
@@ -88,7 +87,7 @@ session_set_terminate(dssh_session sess)
 		if (dssh_thrd_check(sess, mtx_lock(&sess->channel_mtx))
 		    == thrd_success) {
 			for (size_t i = 0; i < sess->channel_count; i++) {
-				dssh_channel ch = sess->channels[i];
+				struct dssh_channel_s *ch = sess->channels[i];
 
 				if (dssh_thrd_check(sess,
 				    mtx_lock(&ch->buf_mtx))
@@ -103,72 +102,6 @@ session_set_terminate(dssh_session sess)
 			    mtx_unlock(&sess->channel_mtx));
 		}
 	}
-}
-
-DSSH_PUBLIC dssh_session
-dssh_session_init(bool client, size_t max_packet_size)
-{
-	dssh_session sess = calloc(1, sizeof(*sess));
-
-	if (sess == NULL)
-		return NULL;
-
-	sess->trans.client = client;
-
-	int res = mtx_init(&sess->mtx, mtx_plain);
-
-	if (res != thrd_success) {
-		free(sess);
-		return NULL;
-	}
-
-	res = transport_init(sess, max_packet_size);
-	if (res < 0) {
-		mtx_destroy(&sess->mtx);
-		free(sess);
-		return NULL;
-	}
-
-	sess->timeout_ms = 75000;
-	sess->initialized = true;
-	return sess;
-}
-
-DSSH_PUBLIC bool
-dssh_session_terminate(dssh_session sess)
-{
-	if (sess == NULL)
-		return false;
-
-	bool t = true;
-
-	if (atomic_compare_exchange_strong(&sess->initialized, &t, false)) {
-		session_set_terminate(sess);
-		return true;
-	}
-	return false;
-}
-
-DSSH_PUBLIC bool
-dssh_session_is_terminated(dssh_session sess)
-{
-	if (sess == NULL)
-		return true;
-	return sess->terminate;
-}
-
-DSSH_PUBLIC void
-dssh_session_cleanup(dssh_session sess)
-{
-	if (sess == NULL)
-		return;
-	dssh_session_terminate(sess);
-	dssh_session_stop(sess);
-	transport_cleanup(sess);
-	free(sess->pending_banner);
-	free(sess->pending_banner_lang);
-	mtx_destroy(&sess->mtx);
-	free(sess);
 }
 
 DSSH_PUBLIC void

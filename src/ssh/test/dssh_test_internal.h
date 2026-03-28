@@ -123,12 +123,6 @@ int encode_k_wire(const uint8_t *raw, size_t raw_sz,
 size_t first_name(const char *list, char *buf, size_t bufsz);
 
 /*
- * Algorithm lookup helpers from ssh-trans.c.
- */
-dssh_kex find_kex(const char *name);
-dssh_key_algo find_key_algo(const char *name);
-
-/*
  * Block size helpers from ssh-trans.c (BPP minimum clamping).
  */
 size_t tx_block_size(dssh_session sess);
@@ -220,7 +214,7 @@ int auth_publickey_impl(dssh_session sess,
     const char *username, const char *algo_name);
 
 /*
- * ssh-trans.c DSSH_PRIVATE internal functions exposed for testing.
+ * ssh-trans.c DSSH_PRIVATE functions (still cross-file, need declarations).
  */
 int send_packet(dssh_session sess,
     const uint8_t *payload, size_t payload_len, uint32_t *seq_out);
@@ -228,13 +222,16 @@ int recv_packet(dssh_session sess,
     uint8_t *msg_type, uint8_t **payload, size_t *payload_len);
 int send_or_queue(dssh_session sess,
     const uint8_t *payload, size_t payload_len);
+
+/*
+ * ssh-trans.c DSSH_TESTABLE functions (visible under -DDSSH_TESTING).
+ */
 int version_exchange(dssh_session sess);
 int kexinit(dssh_session sess);
 int kex(dssh_session sess);
 int newkeys(dssh_session sess);
 int rekey(dssh_session sess);
 bool rekey_needed(dssh_session sess);
-void transport_cleanup(dssh_session sess);
 
 /*
  * ssh.c internal function.

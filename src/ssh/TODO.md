@@ -130,6 +130,27 @@
     Returns `int64_t`: 4 on success (bytes consumed), negative error
     code on failure.  Neither the header nor README documents this.
 
+98. **Callback setters after `dssh_session_start()` are undefined behavior.**
+    `ssh.c` and `deucessh.h` documents "must be called before `dssh_session_start()`" and
+    relies on `thrd_create`'s happens-before for visibility.  But there's
+    no reason this has to be UB — the session struct already has `sess->mtx`.
+    Protect the callback fields with that mutex (or atomics) so setters
+    are safe to call at any time, and the demux thread reads a consistent
+    snapshot.  Remove the UB caveat from the comment.  Alternatively, just don't
+    allow changing them after session start. As part of the same effort, evaluate
+    if there's a need to prevent NULL for the parameters.
+
+99. **Opaque-handle typedefs live in public headers but internal code needs them.**
+    `dssh_session` (`typedef struct dssh_session_s *`) is in `deucessh.h`;
+    `dssh_channel` (`typedef struct dssh_channel_s *`) is in `deucessh-conn.h`.
+    Internal code has the full struct definitions via `ssh-internal.h` but
+    depends on transitively included public headers for the pointer typedefs.
+    This forces internal files to include consumer headers they otherwise
+    wouldn't need (e.g. ssh.c needed `deucessh-conn.h` solely for the
+    `dssh_channel` typedef).  Fix: provide the opaque-handle typedefs in
+    `ssh-internal.h` (or a shared forward-declaration header) so internal
+    code never pulls in public consumer headers just for a typedef.
+
 ## Closed
 
 - Redundant `dssh_*` typedefs removed (was item 91).  Deleted all 7
