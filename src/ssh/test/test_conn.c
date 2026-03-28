@@ -1418,7 +1418,7 @@ test_window_change(void)
 	ASSERT_OK(res);
 
 	/* Give demux time to deliver the window-change callback */
-	struct timespec ts = { .tv_sec = 0, .tv_nsec = 200000000 };
+	struct timespec ts = { .tv_sec = 0, .tv_nsec = 20000000 };
 	thrd_sleep(&ts, NULL);
 
 	ASSERT_TRUE(wc_received);
@@ -1461,7 +1461,7 @@ test_session_close_exit_code(void)
 	ASSERT_OK(res);
 
 	/* Client should see close; give demux time */
-	struct timespec ts = { .tv_sec = 0, .tv_nsec = 200000000 };
+	struct timespec ts = { .tv_sec = 0, .tv_nsec = 20000000 };
 	thrd_sleep(&ts, NULL);
 
 	/* Client reads should return 0 (EOF) */
@@ -1507,7 +1507,7 @@ test_channel_close_raw(void)
 	ASSERT_OK(res);
 
 	/* Server should see close */
-	struct timespec ts = { .tv_sec = 0, .tv_nsec = 200000000 };
+	struct timespec ts = { .tv_sec = 0, .tv_nsec = 20000000 };
 	thrd_sleep(&ts, NULL);
 
 	dssh_channel_close(ctx.server, oc.server_ch);
@@ -1630,7 +1630,7 @@ test_graceful_disconnect(void)
 	dssh_session_terminate(ctx.client);
 
 	/* Give demux time to see termination */
-	struct timespec ts = { .tv_sec = 0, .tv_nsec = 200000000 };
+	struct timespec ts = { .tv_sec = 0, .tv_nsec = 20000000 };
 	thrd_sleep(&ts, NULL);
 
 	/* Server poll should return error or see termination */
@@ -2003,7 +2003,7 @@ test_terminate_during_io(void)
 	ASSERT_THRD_CREATE(&rt, reader_thread_func, &rc);
 
 	/* Brief delay, then terminate */
-	struct timespec ts = { .tv_sec = 0, .tv_nsec = 50000000 };
+	struct timespec ts = { .tv_sec = 0, .tv_nsec = 10000000 };
 	thrd_sleep(&ts, NULL);
 
 	dssh_session_terminate(ctx.server);
@@ -2053,7 +2053,7 @@ test_connection_drop_during_read(void)
 	ASSERT_THRD_CREATE(&rt, reader_thread_func, &rc);
 
 	/* Brief delay to let reader block */
-	struct timespec ts = { .tv_sec = 0, .tv_nsec = 50000000 };
+	struct timespec ts = { .tv_sec = 0, .tv_nsec = 10000000 };
 	thrd_sleep(&ts, NULL);
 
 	/* Kill the connection -- close both pipes.
@@ -2096,7 +2096,7 @@ test_connection_drop_during_write(void)
 	mock_io_close_c2s(&ctx.io);
 	mock_io_close_s2c(&ctx.io);
 
-	/* Brief delay for demux to notice */
+	/* Brief delay for demux to notice I/O error */
 	struct timespec ts = { .tv_sec = 0, .tv_nsec = 100000000 };
 	thrd_sleep(&ts, NULL);
 
@@ -3457,7 +3457,7 @@ test_signal_interleave_read(void)
 	ASSERT_TRUE(ev & DSSH_POLL_READ);
 
 	/* Brief delay so signal + second data arrive through demux */
-	struct timespec ts = { .tv_sec = 0, .tv_nsec = 100000000 };
+	struct timespec ts = { .tv_sec = 0, .tv_nsec = 10000000 };
 	thrd_sleep(&ts, NULL);
 
 	/* First read: signal mark at stdout_pos=6 should clamp the
@@ -3538,7 +3538,7 @@ test_signal_interleave_read_ext(void)
 	    DSSH_POLL_READEXT, 5000);
 	ASSERT_TRUE(ev & DSSH_POLL_READEXT);
 
-	struct timespec ts = { .tv_sec = 0, .tv_nsec = 100000000 };
+	struct timespec ts = { .tv_sec = 0, .tv_nsec = 10000000 };
 	thrd_sleep(&ts, NULL);
 
 	/* First read_ext: signal mark at stderr_pos=4 clamps the read */
@@ -3615,7 +3615,7 @@ test_truncated_channel_open(void)
 	}
 
 	/* Brief delay to let demux process the packets */
-	struct timespec ts = { .tv_sec = 0, .tv_nsec = 100000000 };
+	struct timespec ts = { .tv_sec = 0, .tv_nsec = 10000000 };
 	thrd_sleep(&ts, NULL);
 
 	/* Session should still be operational */
@@ -3669,7 +3669,7 @@ test_truncated_channel_request(void)
 		ASSERT_OK(dssh_transport_send_packet(ctx.client, msg, pos, NULL));
 	}
 
-	struct timespec ts = { .tv_sec = 0, .tv_nsec = 100000000 };
+	struct timespec ts = { .tv_sec = 0, .tv_nsec = 10000000 };
 	thrd_sleep(&ts, NULL);
 
 	ASSERT_TRUE(ctx.server->demux_running);
@@ -3710,7 +3710,7 @@ test_demux_short_payload(void)
 		ASSERT_OK(dssh_transport_send_packet(ctx.client, msg, 2, NULL));
 	}
 
-	struct timespec ts = { .tv_sec = 0, .tv_nsec = 100000000 };
+	struct timespec ts = { .tv_sec = 0, .tv_nsec = 10000000 };
 	thrd_sleep(&ts, NULL);
 
 	ASSERT_TRUE(ctx.server->demux_running);
@@ -3985,7 +3985,7 @@ test_truncated_open_confirmation(void)
 		ASSERT_OK(dssh_transport_send_packet(ctx.client, msg, pos, NULL));
 	}
 
-	struct timespec ts = { .tv_sec = 0, .tv_nsec = 100000000 };
+	struct timespec ts = { .tv_sec = 0, .tv_nsec = 10000000 };
 	thrd_sleep(&ts, NULL);
 	ASSERT_TRUE(ctx.server->demux_running);
 
@@ -4016,7 +4016,7 @@ test_open_confirmation_unknown_channel(void)
 		ASSERT_OK(dssh_transport_send_packet(ctx.client, msg, pos, NULL));
 	}
 
-	struct timespec ts = { .tv_sec = 0, .tv_nsec = 100000000 };
+	struct timespec ts = { .tv_sec = 0, .tv_nsec = 10000000 };
 	thrd_sleep(&ts, NULL);
 	ASSERT_TRUE(ctx.server->demux_running);
 
@@ -4065,7 +4065,7 @@ test_channel_success_no_request(void)
 		ASSERT_OK(dssh_transport_send_packet(ctx.client, msg, pos, NULL));
 	}
 
-	struct timespec ts = { .tv_sec = 0, .tv_nsec = 100000000 };
+	struct timespec ts = { .tv_sec = 0, .tv_nsec = 10000000 };
 	thrd_sleep(&ts, NULL);
 	ASSERT_TRUE(ctx.server->demux_running);
 
@@ -4157,7 +4157,7 @@ test_data_dlen_exceeds_payload(void)
 	}
 
 	/* Brief delay for demux to process */
-	struct timespec ts = { .tv_sec = 0, .tv_nsec = 100000000 };
+	struct timespec ts = { .tv_sec = 0, .tv_nsec = 10000000 };
 	thrd_sleep(&ts, NULL);
 
 	/* Session should still be running -- dlen is clamped to payload */
@@ -4428,7 +4428,7 @@ test_demux_window_underflow_to_zero(void)
 		ASSERT_OK(dssh_transport_send_packet(ctx.client, msg, pos, NULL));
 	}
 
-	struct timespec ts = { .tv_sec = 0, .tv_nsec = 100000000 };
+	struct timespec ts = { .tv_sec = 0, .tv_nsec = 10000000 };
 	thrd_sleep(&ts, NULL);
 
 	dssh_session_close(ctx.server, oc.server_ch, 0);

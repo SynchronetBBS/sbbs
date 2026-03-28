@@ -1017,7 +1017,7 @@ test_self_window_change(void)
 	    132, 50, 1056, 800));
 
 	/* Give server time to process */
-	struct timespec ts = { .tv_nsec = 100000000 }; /* 100ms */
+	struct timespec ts = { .tv_nsec = 10000000 }; /* 10ms */
 	thrd_sleep(&ts, NULL);
 
 	dssh_session_close(ctx.client, ch, 0);
@@ -1456,7 +1456,7 @@ test_self_connection_drop(void)
 	shutdown(ctx.server_fd, SHUT_RDWR);
 
 	/* Give the demux threads time to see the error */
-	struct timespec ts = { .tv_sec = 0, .tv_nsec = 200000000 };
+	struct timespec ts = { .tv_sec = 0, .tv_nsec = 20000000 };
 	thrd_sleep(&ts, NULL);
 
 	/* Both sessions should be terminated */

@@ -1371,29 +1371,71 @@ conn_alloc_server_thread(void *arg)
 /*
  * Watchdog: after a delay, closes pipes and sets terminate on both
  * sessions to break any deadlocks from alloc-failure mid-protocol.
+ * Cancellable: signal watchdog_cancel() after conn threads finish
+ * so we don't sleep the full timeout on every iteration.
  */
 struct watchdog_ctx {
 	struct mock_io_state *io;
 	dssh_session client;
 	dssh_session server;
 	int delay_ms;
+	mtx_t mtx;
+	cnd_t cnd;
+	bool cancel;
 };
+
+static void
+watchdog_init(struct watchdog_ctx *ctx)
+{
+	mtx_init(&ctx->mtx, mtx_plain);
+	cnd_init(&ctx->cnd);
+	ctx->cancel = false;
+}
+
+static void
+watchdog_destroy(struct watchdog_ctx *ctx)
+{
+	cnd_destroy(&ctx->cnd);
+	mtx_destroy(&ctx->mtx);
+}
+
+static void
+watchdog_cancel(struct watchdog_ctx *ctx)
+{
+	mtx_lock(&ctx->mtx);
+	ctx->cancel = true;
+	cnd_signal(&ctx->cnd);
+	mtx_unlock(&ctx->mtx);
+}
 
 static int
 watchdog_thread(void *arg)
 {
 	struct watchdog_ctx *ctx = arg;
-	struct timespec ts = {
-		.tv_sec = ctx->delay_ms / 1000,
-		.tv_nsec = (ctx->delay_ms % 1000) * 1000000L,
-	};
-	thrd_sleep(&ts, NULL);
-	mock_io_close_c2s(ctx->io);
-	mock_io_close_s2c(ctx->io);
-	if (ctx->client->conn_initialized)
-		dssh_session_set_terminate(ctx->client);
-	if (ctx->server->conn_initialized)
-		dssh_session_set_terminate(ctx->server);
+	struct timespec ts;
+	timespec_get(&ts, TIME_UTC);
+	ts.tv_sec += ctx->delay_ms / 1000;
+	ts.tv_nsec += (ctx->delay_ms % 1000) * 1000000L;
+	if (ts.tv_nsec >= 1000000000L) {
+		ts.tv_sec++;
+		ts.tv_nsec -= 1000000000L;
+	}
+
+	mtx_lock(&ctx->mtx);
+	while (!ctx->cancel)
+		if (cnd_timedwait(&ctx->cnd, &ctx->mtx, &ts) == thrd_timedout)
+			break;
+	bool cancelled = ctx->cancel;
+	mtx_unlock(&ctx->mtx);
+
+	if (!cancelled) {
+		mock_io_close_c2s(ctx->io);
+		mock_io_close_s2c(ctx->io);
+		if (ctx->client->conn_initialized)
+			dssh_session_set_terminate(ctx->client);
+		if (ctx->server->conn_initialized)
+			dssh_session_set_terminate(ctx->server);
+	}
 	return 0;
 }
 
@@ -1489,6 +1531,7 @@ test_alloc_conn_iterate(void)
 			.io = &io, .client = client, .server = server,
 			.delay_ms = 3000,
 		};
+		watchdog_init(&wctx);
 
 		thrd_t ct, st, wt;
 		ASSERT_THRD_CREATE(&wt, watchdog_thread, &wctx);
@@ -1497,7 +1540,9 @@ test_alloc_conn_iterate(void)
 
 		thrd_join(ct, NULL);
 		thrd_join(st, NULL);
+		watchdog_cancel(&wctx);
 		thrd_join(wt, NULL);
+		watchdog_destroy(&wctx);
 
 		int cur_count = dssh_test_alloc_count();
 		dssh_test_alloc_reset();
