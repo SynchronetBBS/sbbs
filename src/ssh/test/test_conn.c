@@ -4490,6 +4490,7 @@ test_session_write_not_open(void)
 		return TEST_SKIP;
 
 	struct dssh_channel_s ch = {0};
+	ch.chan_type = DSSH_CHAN_SESSION;
 	ch.open = false;
 	ch.eof_sent = false;
 	ch.close_received = false;
@@ -4513,6 +4514,7 @@ test_session_write_ext_not_open(void)
 		return TEST_SKIP;
 
 	struct dssh_channel_s ch = {0};
+	ch.chan_type = DSSH_CHAN_SESSION;
 	ch.open = false;
 	ch.eof_sent = false;
 	ch.close_received = false;
@@ -4536,6 +4538,7 @@ test_session_write_close_received(void)
 		return TEST_SKIP;
 
 	struct dssh_channel_s ch = {0};
+	ch.chan_type = DSSH_CHAN_SESSION;
 	ch.open = true;
 	ch.eof_sent = false;
 	ch.close_received = true;
@@ -4559,6 +4562,7 @@ test_session_write_ext_close_received(void)
 		return TEST_SKIP;
 
 	struct dssh_channel_s ch = {0};
+	ch.chan_type = DSSH_CHAN_SESSION;
 	ch.open = true;
 	ch.eof_sent = false;
 	ch.close_received = true;
@@ -4582,6 +4586,7 @@ test_channel_write_not_open(void)
 		return TEST_SKIP;
 
 	struct dssh_channel_s ch = {0};
+	ch.chan_type = DSSH_CHAN_RAW;
 	ch.open = false;
 	ch.eof_sent = false;
 	ch.close_received = false;
@@ -4605,6 +4610,7 @@ test_channel_write_close_received(void)
 		return TEST_SKIP;
 
 	struct dssh_channel_s ch = {0};
+	ch.chan_type = DSSH_CHAN_RAW;
 	ch.open = true;
 	ch.eof_sent = false;
 	ch.close_received = true;
@@ -5734,6 +5740,119 @@ test_accept_raw_null(void)
 
 	ASSERT_TRUE(dssh_channel_accept_raw(NULL, NULL) == NULL);
 	ASSERT_TRUE(dssh_channel_accept_raw(NULL, &inc) == NULL);
+	return TEST_PASS;
+}
+
+/* ================================================================
+ * Channel type mismatch rejection (issue 94)
+ * ================================================================ */
+
+/*
+ * Using session-channel functions on a raw channel must fail.
+ * Using raw-channel functions on a session channel must fail.
+ * These checks happen before any mutex operation, so we only need
+ * a channel struct with chan_type set -- no initialization needed.
+ */
+static int
+test_session_funcs_reject_raw_channel(void)
+{
+	struct dssh_channel_s ch = {0};
+
+	ch.chan_type = DSSH_CHAN_RAW;
+
+	uint8_t buf[16] = {0};
+	const char *sig;
+
+	ASSERT_EQ(dssh_session_read(FAKE_SESS, &ch, buf, sizeof(buf)),
+	    DSSH_ERROR_INVALID);
+	ASSERT_EQ(dssh_session_read_ext(FAKE_SESS, &ch, buf, sizeof(buf)),
+	    DSSH_ERROR_INVALID);
+	ASSERT_EQ(dssh_session_write(FAKE_SESS, &ch, buf, sizeof(buf)),
+	    DSSH_ERROR_INVALID);
+	ASSERT_EQ(dssh_session_write_ext(FAKE_SESS, &ch, buf, sizeof(buf)),
+	    DSSH_ERROR_INVALID);
+	ASSERT_EQ(dssh_session_read_signal(FAKE_SESS, &ch, &sig),
+	    DSSH_ERROR_INVALID);
+	ASSERT_EQ(dssh_session_poll(FAKE_SESS, &ch, DSSH_POLL_READ, 0),
+	    DSSH_ERROR_INVALID);
+	ASSERT_EQ(dssh_session_close(FAKE_SESS, &ch, 0),
+	    DSSH_ERROR_INVALID);
+	return TEST_PASS;
+}
+
+static int
+test_channel_funcs_reject_session_channel(void)
+{
+	struct dssh_channel_s ch = {0};
+
+	ch.chan_type = DSSH_CHAN_SESSION;
+
+	uint8_t buf[16] = {0};
+
+	ASSERT_EQ(dssh_channel_read(FAKE_SESS, &ch, buf, sizeof(buf)),
+	    DSSH_ERROR_INVALID);
+	ASSERT_EQ(dssh_channel_write(FAKE_SESS, &ch, buf, sizeof(buf)),
+	    DSSH_ERROR_INVALID);
+	ASSERT_EQ(dssh_channel_poll(FAKE_SESS, &ch, DSSH_POLL_READ, 0),
+	    DSSH_ERROR_INVALID);
+	ASSERT_EQ(dssh_channel_close(FAKE_SESS, &ch),
+	    DSSH_ERROR_INVALID);
+	return TEST_PASS;
+}
+
+/* ================================================================
+ * Peek mode for dssh_channel_read (issue 92)
+ * ================================================================ */
+
+static int
+test_channel_read_peek(void)
+{
+	dssh_test_reset_global_config();
+	if (register_all_algorithms() < 0)
+		return TEST_SKIP;
+	dssh_session s = dssh_session_init(false, 0);
+	if (s == NULL)
+		return TEST_SKIP;
+
+	struct dssh_channel_s ch = {0};
+	ch.chan_type = DSSH_CHAN_RAW;
+	mtx_init(&ch.buf_mtx, mtx_plain);
+	msgqueue_init(&ch.buf.raw.queue);
+
+	/* Empty queue: peek returns 0 */
+	int64_t n = dssh_channel_read(s, &ch, NULL, 0);
+	ASSERT_EQ(n, (int64_t)0);
+
+	/* Push a 5-byte message */
+	uint8_t msg[5] = {1, 2, 3, 4, 5};
+	msgqueue_push(&ch.buf.raw.queue, msg, sizeof(msg));
+
+	/* Peek returns message size without consuming */
+	n = dssh_channel_read(s, &ch, NULL, 0);
+	ASSERT_EQ(n, (int64_t)5);
+
+	/* Message is still there -- peek again */
+	n = dssh_channel_read(s, &ch, NULL, 0);
+	ASSERT_EQ(n, (int64_t)5);
+
+	/* Consume it */
+	uint8_t out[16];
+	n = dssh_channel_read(s, &ch, out, sizeof(out));
+	ASSERT_EQ(n, (int64_t)5);
+	ASSERT_EQ(memcmp(out, msg, 5), 0);
+
+	/* Queue empty again */
+	n = dssh_channel_read(s, &ch, NULL, 0);
+	ASSERT_EQ(n, (int64_t)0);
+
+	/* NULL buf with non-zero bufsz is still invalid */
+	n = dssh_channel_read(s, &ch, NULL, 16);
+	ASSERT_EQ(n, DSSH_ERROR_INVALID);
+
+	msgqueue_free(&ch.buf.raw.queue);
+	mtx_destroy(&ch.buf_mtx);
+	dssh_session_cleanup(s);
+	dssh_test_reset_global_config();
 	return TEST_PASS;
 }
 
@@ -6893,6 +7012,13 @@ static struct dssh_test_entry tests[] = {
 	{ "null/open_subsystem",               test_open_subsystem_null },
 	{ "null/accept_channel",               test_accept_channel_null },
 	{ "null/accept_raw",                   test_accept_raw_null },
+
+	/* Channel type mismatch rejection */
+	{ "type/session_funcs_reject_raw",     test_session_funcs_reject_raw_channel },
+	{ "type/channel_funcs_reject_session", test_channel_funcs_reject_session_channel },
+
+	/* Peek mode */
+	{ "raw/read_peek",                     test_channel_read_peek },
 
 	/* Allocation failure injection */
 	{ "alloc/open_exec_sweep",             test_open_exec_alloc_sweep },

@@ -89,16 +89,7 @@
     4. Reject/limit 0-byte messages -- arbitrary restriction,
        potential protocol violation
 
-### API definition gaps (items 92-97)
-
-92. **`dssh_channel_read()` rejects NULL buf, breaking peek.**
-    README documents `dssh_channel_read(sess, ch, NULL, 0)` as a
-    peek operation to query the next message size.  The underlying
-    `msgqueue_pop()` supports this (returns `(int64_t)head->len` when
-    `buf == NULL`), but `dssh_channel_read()` has
-    `if (buf == NULL || ...) return DSSH_ERROR_INVALID;` which rejects
-    the call before it reaches `msgqueue_pop()`.  Fix: allow NULL buf
-    when bufsz == 0 (peek mode).
+### API definition gaps (items 92-100)
 
 93. **`dssh_transport_register_lang()` visibility leak.**
     Declared `DSSH_PUBLIC` in `ssh-trans.h` (internal header) but not
@@ -106,12 +97,6 @@
     library's symbol table but consumers can't call it without including
     an internal header.  Either move to a public header or change to
     `DSSH_PRIVATE`.
-
-94. **Wrong channel type is not detected at runtime.**
-    Using `dssh_session_*` functions on a raw channel or `dssh_channel_*`
-    functions on a session channel accesses the wrong union member.  No
-    runtime check prevents this.  Add `chan_type` checks to all channel
-    I/O functions, returning `DSSH_ERROR_INVALID`.
 
 95. **`dssh_session_read` / `dssh_session_write` return semantics undocumented.**
     `dssh_session_write()` can return a partial write (less than requested)
@@ -130,7 +115,16 @@
     Returns `int64_t`: 4 on success (bytes consumed), negative error
     code on failure.  Neither the header nor README documents this.
 
-98. **Callback setters after `dssh_session_start()` are undefined behavior.**
+98. **Re-evaluate peek semantics for session (bytebuf) channels.**
+    `dssh_channel_read(sess, ch, NULL, 0)` supports peek on raw
+    (message-based) channels, returning the next message size.
+    Session channels use bytebuf (byte-stream) and currently reject
+    `buf == NULL`.  Evaluate whether a peek operation makes sense for
+    session channels (e.g. "how many bytes are available?") and whether
+    `dssh_session_read()` should support it, or if `dssh_session_poll()`
+    already covers that use case adequately.
+
+99. **Callback setters after `dssh_session_start()` are undefined behavior.**
     `ssh.c` and `deucessh.h` documents "must be called before `dssh_session_start()`" and
     relies on `thrd_create`'s happens-before for visibility.  But there's
     no reason this has to be UB — the session struct already has `sess->mtx`.
@@ -140,7 +134,7 @@
     allow changing them after session start. As part of the same effort, evaluate
     if there's a need to prevent NULL for the parameters.
 
-99. **Opaque-handle typedefs live in public headers but internal code needs them.**
+100. **Opaque-handle typedefs live in public headers but internal code needs them.**
     `dssh_session` (`typedef struct dssh_session_s *`) is in `deucessh.h`;
     `dssh_channel` (`typedef struct dssh_channel_s *`) is in `deucessh-conn.h`.
     Internal code has the full struct definitions via `ssh-internal.h` but
@@ -152,6 +146,25 @@
     code never pulls in public consumer headers just for a typedef.
 
 ## Closed
+
+- `dssh_channel_read()` peek mode fixed (was item 92).  Changed NULL
+  check from `buf == NULL` to `buf == NULL && bufsz != 0`, allowing
+  `dssh_channel_read(sess, ch, NULL, 0)` to reach `msgqueue_pop()` for
+  peek (returns next message size without consuming).  Added `buf != NULL`
+  guard on `maybe_replenish_window()` to avoid spurious window replenish
+  on peek path.  3 new tests: peek empty queue, peek with data (twice
+  to verify non-consuming), and NULL buf with non-zero bufsz rejection.
+
+- Wrong channel type now detected at runtime (was item 94).  Added
+  `chan_type` checks to all 10 channel I/O functions: `dssh_session_poll`,
+  `dssh_session_read`, `dssh_session_read_ext`, `dssh_session_write`,
+  `dssh_session_write_ext`, `dssh_session_read_signal`,
+  `dssh_session_close` (require `DSSH_CHAN_SESSION`);
+  `dssh_channel_poll`, `dssh_channel_read`, `dssh_channel_write`,
+  `dssh_channel_close` (require `DSSH_CHAN_RAW`).  Returns
+  `DSSH_ERROR_INVALID` on mismatch.  2 new tests:
+  `type/session_funcs_reject_raw` and `type/channel_funcs_reject_session`.
+  Updated 6 existing write-path tests to set `chan_type`.
 
 - Redundant `dssh_*` typedefs removed (was item 91).  Deleted all 7
   unused type aliases from `deucessh.h`: `dssh_byte` (`uint8_t`),

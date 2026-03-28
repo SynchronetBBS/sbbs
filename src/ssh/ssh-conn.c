@@ -2422,6 +2422,8 @@ dssh_session_poll(dssh_session sess,
 
 	if (ch == NULL || sess == NULL)
 		return DSSH_ERROR_INVALID;
+	if (ch->chan_type != DSSH_CHAN_SESSION)
+		return DSSH_ERROR_INVALID;
 	if (timeout_ms > 0)
 		deadline_from_ms(&ts, timeout_ms);
 	dssh_thrd_check(sess, mtx_lock(&ch->buf_mtx));
@@ -2473,6 +2475,8 @@ session_read_impl(dssh_session sess,
 {
 	if (buf == NULL || ch == NULL || sess == NULL)
 		return DSSH_ERROR_INVALID;
+	if (ch->chan_type != DSSH_CHAN_SESSION)
+		return DSSH_ERROR_INVALID;
 	dssh_thrd_check(sess, mtx_lock(&ch->buf_mtx));
 
 	struct dssh_bytebuf *bb = ext
@@ -2515,6 +2519,8 @@ dssh_session_write(dssh_session sess,
 {
 	if (buf == NULL || ch == NULL || sess == NULL)
 		return DSSH_ERROR_INVALID;
+	if (ch->chan_type != DSSH_CHAN_SESSION)
+		return DSSH_ERROR_INVALID;
 	if (bufsz == 0)
 		return 0;
 
@@ -2532,6 +2538,8 @@ dssh_session_write_ext(dssh_session sess,
     dssh_channel ch, const uint8_t *buf, size_t bufsz)
 {
 	if (buf == NULL || ch == NULL || sess == NULL)
+		return DSSH_ERROR_INVALID;
+	if (ch->chan_type != DSSH_CHAN_SESSION)
 		return DSSH_ERROR_INVALID;
 	if (bufsz == 0)
 		return 0;
@@ -2552,6 +2560,8 @@ dssh_session_read_signal(dssh_session sess,
 {
 	if (signal_name == NULL || ch == NULL || sess == NULL)
 		return DSSH_ERROR_INVALID;
+	if (ch->chan_type != DSSH_CHAN_SESSION)
+		return DSSH_ERROR_INVALID;
 	dssh_thrd_check(sess, mtx_lock(&ch->buf_mtx));
 
 	const char *name = sigqueue_pop(&ch->buf.session.signals,
@@ -2571,6 +2581,8 @@ dssh_session_close(dssh_session sess,
     dssh_channel ch, uint32_t exit_code)
 {
 	if (ch == NULL || sess == NULL)
+		return DSSH_ERROR_INVALID;
+	if (ch->chan_type != DSSH_CHAN_SESSION)
 		return DSSH_ERROR_INVALID;
 	dssh_conn_send_exit_status(sess, ch, exit_code);
 	send_eof(sess, ch);
@@ -2602,6 +2614,8 @@ dssh_channel_poll(dssh_session sess,
 	struct timespec ts;
 
 	if (ch == NULL || sess == NULL)
+		return DSSH_ERROR_INVALID;
+	if (ch->chan_type != DSSH_CHAN_RAW)
 		return DSSH_ERROR_INVALID;
 	if (timeout_ms > 0)
 		deadline_from_ms(&ts, timeout_ms);
@@ -2643,7 +2657,11 @@ DSSH_PUBLIC int64_t
 dssh_channel_read(dssh_session sess,
     dssh_channel ch, uint8_t *buf, size_t bufsz)
 {
-	if (buf == NULL || ch == NULL || sess == NULL)
+	if (ch == NULL || sess == NULL)
+		return DSSH_ERROR_INVALID;
+	if (buf == NULL && bufsz != 0)
+		return DSSH_ERROR_INVALID;
+	if (ch->chan_type != DSSH_CHAN_RAW)
 		return DSSH_ERROR_INVALID;
 	dssh_thrd_check(sess, mtx_lock(&ch->buf_mtx));
 
@@ -2651,7 +2669,7 @@ dssh_channel_read(dssh_session sess,
 
 	dssh_thrd_check(sess, mtx_unlock(&ch->buf_mtx));
 
-	if (n > 0) {
+	if (n > 0 && buf != NULL) {
 		int wret = maybe_replenish_window(sess, ch);
 		if (wret < 0)
 			return wret;
@@ -2665,6 +2683,8 @@ dssh_channel_write(dssh_session sess,
 {
 	if (buf == NULL || ch == NULL || sess == NULL)
 		return DSSH_ERROR_INVALID;
+	if (ch->chan_type != DSSH_CHAN_RAW)
+		return DSSH_ERROR_INVALID;
 	if (len == 0)
 		return 0;
 
@@ -2676,6 +2696,8 @@ dssh_channel_close(dssh_session sess,
     dssh_channel                ch)
 {
 	if (ch == NULL || sess == NULL)
+		return DSSH_ERROR_INVALID;
+	if (ch->chan_type != DSSH_CHAN_RAW)
 		return DSSH_ERROR_INVALID;
 	send_eof(sess, ch);
 	conn_close(sess, ch);
