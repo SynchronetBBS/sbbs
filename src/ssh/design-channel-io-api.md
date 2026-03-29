@@ -41,9 +41,21 @@ or lifecycle constraints.  The conventions everyone follows — one pty-req,
 then exactly one of shell/exec/subsystem, then data flows — are de facto
 behavior, not protocol requirements.
 
+What the RFC does specify (buried in the text):
+- "Only one of these requests can succeed per channel" (s6.5) —
+  exactly one terminal request (shell/exec/subsystem) per channel
+- "Environment variables may be passed to the shell/command to be
+  started later" (s6.4) — env requests come before the terminal request
+- Terminal mode opcodes 160-255 "cause parsing to stop (they should
+  only be used after any other data)" (s8) — weak ordering constraint
+  on mode encoding; opcodes 1-159 can be in any order
+- RFC 8160 adds IUTF8 (opcode 42) and clarifies: "the client SHOULD
+  transmit a value for this mode if it knows about one" — don't guess
+
 Specific gaps in the RFC:
 - No restriction on sending data before any CHANNEL_REQUEST
-- No restriction on multiple pty-req, shell, exec, or subsystem requests
+- No restriction on multiple pty-req requests (OpenSSH disconnects
+  on a second one, but the RFC doesn't prohibit it)
 - No defined relationship between EOF, exit-status, and CLOSE
 - Signal and window-change are independent mechanisms with no defined
   interaction (SIGWINCH vs window-change are the same event split into
@@ -56,24 +68,26 @@ Specific gaps in the RFC:
 
 **Server side** (`session.c`, `channels.c`, `serverloop.c`):
 
-1. CHANNEL_OPEN received → create channel in **LARVAL** state with
+1. CHANNEL_OPEN received → create channel in setup state with
    **`initial_window=0`** — no data can flow
 2. Send CHANNEL_OPEN_CONFIRMATION with `initial_window=0`
-3. While LARVAL: accept setup requests (pty-req, env, x11-req,
+3. While in setup: accept setup requests (pty-req, env, x11-req,
    auth-agent-req, shell, exec, subsystem)
 4. shell/exec/subsystem → `do_exec()` → fork process →
-   `channel_set_fds()` → transition to OPEN, set window to
+   `channel_set_fds()` → transition to open, set window to
    `CHAN_SES_WINDOW_DEFAULT` (2 MiB), send WINDOW_ADJUST
-5. After OPEN: only window-change, break, signal accepted
+5. After open: only window-change, break, signal accepted
 6. Second pty-req = **protocol disconnect** (not reject — kills the
    whole session)
+
+(OpenSSH calls the setup state "LARVAL"; DeuceSSH uses `setup_mode`.)
 
 **Client side** (`ssh.c`):
 
 - Sends `CHAN_SES_WINDOW_DEFAULT` (2 MiB) in CHANNEL_OPEN — non-zero,
   unlike the server
 - Halves window and packet size for PTY sessions (1 MiB / 16 KiB)
-- No LARVAL state — fds attached at channel creation, data written
+- No setup state — fds attached at channel creation, data written
   to stdout as soon as it arrives
 - **Vulnerability**: a malicious server could send data before any
   channel request is processed; the client would blindly write it
@@ -97,8 +111,8 @@ Specific gaps in the RFC:
 
 ### Design implications
 
-DeuceSSH should follow the OpenSSH server model (LARVAL + zero window)
-on **both** sides.  This is strictly safer than the OpenSSH client
+DeuceSSH follows the OpenSSH server model (setup + zero window) on
+**both** sides.  This is strictly safer than the OpenSSH client
 behavior and matches what the dominant server implementation expects:
 
 - Both sides send `initial_window=0` in CHANNEL_OPEN / CONFIRMATION
@@ -129,66 +143,118 @@ not one function with behavioral differences based on a NULL check or
 flag.  They allocate different internal buffers and unlock different
 I/O functions.
 
-- **Stream** (`dssh_chan_*`): byte-stream with ring buffers.  App
-  reads/writes at its own pace.  POSIX read/write semantics.
-- **Zero-copy** (`dssh_chan_zc_*`): inbound data delivered via callback;
-  outbound writes go directly into the transport packet buffer.
-  No intermediate copies.
+- **Zero-copy** (`dssh_chan_zc_*`): the core implementation.  Callback
+  for all channel events; outbound writes go directly into the
+  transport packet buffer; inbound data delivered as pointer into the
+  decrypted packet buffer.  No library-side copies or accumulation
+  buffers.
+- **Stream** (`dssh_chan_*`): convenience layer built on top of the ZC
+  internals.  Adds ring buffers and POSIX read/write/poll semantics.
+  One memcpy per direction (ring buffer on RX, memcpy into tx_packet
+  on TX).
 
-### Channel type as parameter, not separate functions
-
-`dssh_chan_open()` and `dssh_chan_zc_open()` each take a channel type
-constant (shell/exec/subsystem) and a union pointer for type-specific
-parameters.  NULL means defaults.  This replaces the current
-`open_shell` / `open_exec` / `open_subsystem` split.
-
-```c
-dssh_channel dssh_chan_open(dssh_session sess,
-    int type, const union dssh_chan_params *params,
-    uint32_t max_window);
-
-dssh_channel dssh_chan_zc_open(dssh_session sess,
-    int type, const union dssh_chan_params *params,
-    uint32_t max_window,
-    dssh_chan_zc_data_cb data_cb, void *cbdata);
-```
-
-Type constants (representation TBD — could be int, could be
-`const char[]` matching the wire name):
-
-- `DSSH_CHAN_SHELL` — pty-req (from params or defaults) + shell request
-- `DSSH_CHAN_EXEC` — exec request with command string
-- `DSSH_CHAN_SUBSYSTEM` — subsystem request with name
-
-The params union:
+### Channel type: `enum dssh_chan_type`
 
 ```c
-union dssh_chan_params {
-    struct dssh_pty_req shell;    /* DSSH_CHAN_SHELL */
-    struct {                      /* DSSH_CHAN_EXEC */
-        const char *command;
-    } exec;
-    struct {                      /* DSSH_CHAN_SUBSYSTEM */
-        const char *name;
-    } subsystem;
+enum dssh_chan_type {
+    DSSH_CHAN_SHELL,
+    DSSH_CHAN_EXEC,
+    DSSH_CHAN_SUBSYSTEM
 };
 ```
 
-`max_window` with value 0 means library default (currently 2 MiB,
-matching OpenSSH's `CHAN_SES_WINDOW_DEFAULT`).
+Closed set — RFC s6.5: "only one of these requests can succeed per
+channel."  Library maps enum to wire strings internally.
 
-### Open does the full LARVAL → OPEN sequence
+### Channel params: builder pattern
 
-Both `dssh_chan_open()` and `dssh_chan_zc_open()` perform the complete
-channel lifecycle internally:
+Channel configuration is expressed via `struct dssh_chan_params`,
+populated through a builder API.  The type is part of the struct.
+PTY is orthogonal to type (exec can have a pty; shell can omit one).
+The library does what it's told — subsystem with a pty is allowed
+if the protocol allows it.
+
+```c
+struct dssh_chan_params {
+    enum dssh_chan_type type;
+    uint32_t           flags;       /* DSSH_PARAM_HAS_PTY, etc. */
+    uint32_t           max_window;  /* 0 = library default (2 MiB) */
+    struct dssh_pty_req pty;        /* valid if HAS_PTY */
+    char               *command;    /* DSSH_CHAN_EXEC (copied) */
+    char               *subsystem;  /* DSSH_CHAN_SUBSYSTEM (copied) */
+    struct dssh_chan_env *env;       /* malloc'd array (copied) */
+    size_t              env_count;
+};
+```
+
+Builder API (all strings are copied in, `free` releases them):
+
+```c
+int  dssh_chan_params_init(struct dssh_chan_params *p,
+         enum dssh_chan_type type);
+void dssh_chan_params_free(struct dssh_chan_params *p);
+
+int  dssh_chan_params_set_max_window(struct dssh_chan_params *p,
+         uint32_t max_window);
+int  dssh_chan_params_set_pty(struct dssh_chan_params *p, bool enable);
+int  dssh_chan_params_set_term(struct dssh_chan_params *p,
+         const char *term);
+int  dssh_chan_params_set_size(struct dssh_chan_params *p,
+         uint32_t cols, uint32_t rows, uint32_t wpx, uint32_t hpx);
+int  dssh_chan_params_set_mode(struct dssh_chan_params *p,
+         uint8_t opcode, uint32_t value);
+int  dssh_chan_params_set_command(struct dssh_chan_params *p,
+         const char *command);
+int  dssh_chan_params_set_subsystem(struct dssh_chan_params *p,
+         const char *name);
+int  dssh_chan_params_add_env(struct dssh_chan_params *p,
+         const char *name, const char *value);
+```
+
+`init` sets the type and defaults: `term="dumb"`, dimensions `0x0`,
+pty enabled for shell (disabled for exec/subsystem), no modes, no
+env.  **Zero terminal mode opcodes by default** — the library cannot
+know the app's terminal state (RFC 8160: "transmit a value if it
+knows about one").  The app calls `set_mode()` to populate modes
+from its actual terminal state (e.g. by reading `struct termios`
+and translating flags to SSH opcodes — POSIX-specific, so the
+translation is the app's responsibility, not the library's).
+
+`set_mode()` accumulates opcode/value pairs.  Duplicates: last-wins.
+Encoding (at open time) emits opcodes 1-159 first, then 160+, then
+TTY_OP_END (RFC s8 ordering constraint).
+
+The params struct is consumed at open time — the library reads
+everything, sends the wire messages, and does not keep references.
+After open returns, the app calls `free` and the struct is dead.
+
+Env vars are sent as individual CHANNEL_REQUEST "env" before the
+terminal request (RFC s6.4: "passed to the shell/command to be
+started later").
+
+### Open functions
+
+```c
+dssh_channel dssh_chan_open(dssh_session sess,
+    const struct dssh_chan_params *params);
+
+dssh_channel dssh_chan_zc_open(dssh_session sess,
+    const struct dssh_chan_params *params,
+    dssh_chan_zc_cb cb, void *cbdata);
+```
+
+### Open does the full setup → open sequence
+
+Both open functions perform the complete channel lifecycle internally:
 
 1. Send CHANNEL_OPEN "session" with `initial_window=0`
 2. Wait for CHANNEL_OPEN_CONFIRMATION
-3. Send setup requests (pty-req for shell, etc.) from params
-4. Send terminal request (shell/exec/subsystem)
-5. Allocate I/O buffers (stream: ring buffers; zc: linear buffer)
-6. Send WINDOW_ADJUST to open the window
-7. Return live channel
+3. Send env requests (from params, in order)
+4. Send pty-req (if `DSSH_PARAM_HAS_PTY` flag set)
+5. Send terminal request (shell/exec/subsystem per type)
+6. Allocate I/O buffers (stream: ring buffers; zc: none)
+7. Send WINDOW_ADJUST to open the window
+8. Return live channel
 
 The app calls one function and gets a ready-to-use channel.  The
 internal implementation is decomposed into steps so a lower-level
@@ -200,65 +266,467 @@ Max packet size is a transport-layer concern (packet framing), not a
 channel concern.  It's used immediately at session init to allocate
 transport buffers.  Stays as the second arg to `dssh_session_init()`.
 
-### Max window size: per-channel, at open time
+### Max window size: per-channel, in params
 
-The `max_window` parameter on `dssh_chan_open()` / `dssh_chan_zc_open()`
-controls buffer allocation and the WINDOW_ADJUST sent after the
-terminal request succeeds.  Pass 0 for the library default.
+`max_window` in the params struct controls buffer allocation (stream
+mode) and the WINDOW_ADJUST sent after the terminal request succeeds.
+`init` sets it to 0; `set_max_window` overrides.  0 means library
+default (currently 2 MiB, matching OpenSSH's
+`CHAN_SES_WINDOW_DEFAULT`).
 
-## Stream API (`dssh_chan_*`)
+### Stream select via parameter, not separate functions
+
+Read and write take a `stream` parameter instead of having `_ext`
+variants.  Consistent across both stream and zero-copy APIs:
+
+- `stream == 0`: stdout/stdin (SSH_MSG_CHANNEL_DATA)
+- `stream == 1`: stderr (SSH_MSG_CHANNEL_EXTENDED_DATA)
+
+## API summary
+
+All functions except the two open calls take `dssh_channel` only —
+the channel carries its session internally.  This prevents
+mismatched sess/ch pairs.  If the app needs the session handle,
+a `dssh_chan_get_session(ch)` getter can be added later.
+
+All functions that can fail return an error code or typed result.
+Infallible operations (e.g. `dssh_chan_params_free`) may return void.
+
+### Stream-only
 
 ```c
 dssh_channel dssh_chan_open(dssh_session sess,
-    int type, const union dssh_chan_params *params,
-    uint32_t max_window);
+    const struct dssh_chan_params *params);
 
-int64_t dssh_chan_read(dssh_session sess,
-    dssh_channel ch, uint8_t *buf, size_t bufsz);
+int64_t dssh_chan_read(dssh_channel ch, int stream,
+    uint8_t *buf, size_t bufsz);
 
-int64_t dssh_chan_write(dssh_session sess,
-    dssh_channel ch, const uint8_t *buf, size_t bufsz);
+int64_t dssh_chan_write(dssh_channel ch, int stream,
+    const uint8_t *buf, size_t bufsz);
 
-int64_t dssh_chan_read_ext(dssh_session sess,
-    dssh_channel ch, uint8_t *buf, size_t bufsz);
-
-int64_t dssh_chan_write_ext(dssh_session sess,
-    dssh_channel ch, const uint8_t *buf, size_t bufsz);
-
-int dssh_chan_poll(dssh_session sess,
-    dssh_channel ch, int events, int timeout_ms);
+int dssh_chan_poll(dssh_channel ch, int events, int timeout_ms);
 ```
+
+### ZC-only
+
+```c
+dssh_channel dssh_chan_zc_open(dssh_session sess,
+    const struct dssh_chan_params *params,
+    dssh_chan_zc_cb cb, void *cbdata);
+
+int dssh_chan_zc_getbuf(dssh_channel ch, int stream,
+    uint8_t **buf, size_t *max_len);
+
+int dssh_chan_zc_send(dssh_channel ch, size_t len);
+
+int dssh_chan_zc_cancel(dssh_channel ch);
+```
+
+`zc_getbuf` stashes the stream selection on the channel struct.
+`zc_send` and `zc_cancel` use it — no redundant `stream` parameter
+that could mismatch.
+
+### Shared (both stream and ZC)
+
+```c
+/* Sending */
+int dssh_chan_shutwr(dssh_channel ch);
+int dssh_chan_close(dssh_channel ch, int64_t exit_code);
+int dssh_chan_send_signal(dssh_channel ch,
+    const char *signal_name);
+int dssh_chan_send_window_change(dssh_channel ch,
+    uint32_t cols, uint32_t rows, uint32_t wpx, uint32_t hpx);
+int dssh_chan_send_break(dssh_channel ch, uint32_t length);
+
+/* Events — separate from data, signalfd()-style.
+ * Events are queued by the demux thread.  The app polls for
+ * DSSH_POLL_EVENT and pulls events with read_event().
+ * Each event carries advisory stream positions (bytes of
+ * stdout/stderr received before the event) so the app can
+ * correlate with the data stream if it wants to.
+ * Data always flows freely — events never gate reads. */
+int dssh_chan_read_event(dssh_channel ch,
+    struct dssh_chan_event *event);
+
+/* Optional event callback — fires from the demux thread when
+ * an event is queued.  If set, the app can handle events
+ * immediately without polling.  Optional — poll + read_event
+ * covers all traffic patterns without callbacks. */
+int dssh_chan_set_event_cb(dssh_channel ch,
+    dssh_chan_event_cb cb, void *cbdata);
+```
+
+### Event struct
+
+```c
+/* Event types */
+#define DSSH_EVENT_SIGNAL       1
+#define DSSH_EVENT_WINDOW_CHANGE 2
+#define DSSH_EVENT_BREAK        3
+#define DSSH_EVENT_EOF          4
+#define DSSH_EVENT_CLOSE        5
+#define DSSH_EVENT_EXIT_STATUS  6
+#define DSSH_EVENT_EXIT_SIGNAL  7
+
+struct dssh_chan_event {
+    int    type;
+    size_t stdout_pos;  /* bytes of stdout received before event */
+    size_t stderr_pos;  /* bytes of stderr received before event */
+    union {
+        struct { const char *name; } signal;
+        struct { uint32_t cols, rows, wpx, hpx; } window_change;
+        struct { uint32_t length; } brk;
+        struct { uint32_t exit_code; } exit_status;
+        struct {
+            const char *signal_name;
+            bool        core_dumped;
+            const char *error_message;
+        } exit_signal;
+    };
+};
+```
+
+### Event lifecycle: poll freezes, read_event consumes
+
+`dssh_chan_poll()` with `DSSH_POLL_EVENT` computes and freezes the
+next pending event's stream positions (bytes of unread stdout/stderr
+at poll time).  The frozen event is guaranteed available until the
+next poll.  `dssh_chan_read_event()` returns that frozen event.
+
+**One event per poll/read_event cycle.**  If multiple events are
+pending, the next `dssh_chan_poll()` returns `DSSH_POLL_EVENT` again
+immediately with the next event's positions.  The app handles one
+event at a time:
+
+```c
+if (ev & DSSH_POLL_EVENT) {
+    struct dssh_chan_event event;
+    dssh_chan_read_event(ch, &event);
+    drain_stdout(ch, event.stdout_pos);
+    drain_stderr(ch, event.stderr_pos);
+    handle_event(&event);
+    continue;  /* poll again — might be more events */
+}
+```
+
+**Event discard**: events not consumed via `read_event()` between
+polls are discarded — the app chose to ignore them by polling again
+without reading.  No memory leak, no unbounded queue growth.
+
+**Positions are advisory**: the app CAN drain exactly N/M bytes
+before handling the event (position-aware), or ignore positions
+entirely and just process the event (position-unaware).  Data
+always flows freely — `dssh_chan_read()` never stops at event
+boundaries, never returns fake EOF, never does short reads due to
+events.
+
+String pointers in events (signal name, exit-signal name,
+error message) point into channel-owned buffers, valid from
+`dssh_chan_read_event()` until the next `dssh_chan_read_event()`
+or `dssh_chan_poll()` call on the same channel.
+
+### Callback types
+
+```c
+/* ZC data callback — fires on every inbound CHANNEL_DATA or
+ * CHANNEL_EXTENDED_DATA for this channel.  Receives a pointer
+ * directly into the decrypted rx_packet (valid only for the
+ * duration of the callback).  Runs on demux thread with no
+ * library mutex held.  CANNOT call any TX function (deadlock
+ * risk — see locking section; enforced via _Thread_local guard).
+ * Must not block for long.
+ *
+ * Return: number of bytes consumed for WINDOW_ADJUST, or 0 to
+ * defer window replenishment. */
+typedef uint32_t (*dssh_chan_zc_cb)(dssh_channel ch,
+    int stream, const uint8_t *data, size_t len,
+    void *cbdata);
+
+/* Event callback — fires from the demux thread when an event
+ * is queued (both stream and ZC modes).  Optional — poll +
+ * read_event covers all traffic patterns without callbacks.
+ * The event struct is populated with stream positions computed
+ * at queue time (the moment the demux thread processes the
+ * event's packet).  Valid for the duration of the callback.
+ * Same restrictions as ZC callbacks: cannot call TX functions,
+ * must not block.
+ *
+ * If the app uses callbacks, it doesn't need poll+read_event
+ * for events — the callback delivers everything.  The two
+ * paths have different position scopes: callback positions are
+ * computed at queue time, poll positions at poll time. */
+typedef void (*dssh_chan_event_cb)(dssh_channel ch,
+    const struct dssh_chan_event *event, void *cbdata);
+```
+
+## Stream API details
 
 ### Return type: all read/write return `int64_t`
 
-- `>= 0`: bytes transferred
+- `> 0`: bytes transferred
+- `0`: EOF (read only — all data drained and peer sent CHANNEL_EOF)
 - `< 0`: `DSSH_ERROR_*`
 
 POSIX semantics: read returns what's available (up to bufsz), write
 returns what was accepted (may be less than bufsz due to window
 clamping).  Caller loops for complete delivery.
 
-### Peek: `dssh_chan_read(sess, ch, NULL, 0)`
+Read returning 0 means EOF, same as POSIX `read()`.  "No data yet"
+is not a read return value — the app uses `dssh_chan_poll` to wait
+for readiness before calling read.
 
-Returns bytes available in stdout buffer without consuming.
-`dssh_chan_read_ext(sess, ch, NULL, 0)`: same for stderr.
+### Peek: `dssh_chan_read(ch, stream, NULL, 0)`
 
-### Half-close: `dssh_chan_shutwr()`
+Returns bytes available in the specified stream's buffer without
+consuming.
+
+### Data and events are separate channels
+
+Data and events are independent.  This is the `signalfd()` model —
+events are a separate pollable channel, not inline in the data
+stream.
+
+**Data** arrives in two streams (stdout, stderr) via `dssh_chan_read`.
+Read never stops at event boundaries.  Data always flows freely.
+
+**Events** (signal, window-change, break, EOF, close, exit-status,
+exit-signal) are queued separately.  `DSSH_POLL_EVENT` tells the app
+one is ready.  `dssh_chan_read_event()` pulls it off the queue.
+Each event carries advisory stream positions (bytes of unread
+stdout/stderr at the time of the event) so the app CAN correlate
+if it wants to, but is not required to.
+
+This avoids the two-pointer problem: with independent read pointers
+for stdout and stderr, stream-position callbacks can't work — a
+CHANNEL_REQUEST has one wire position but two independent buffer
+positions.  Gating reads on events (fake EOF, short reads at event
+boundaries) creates state confusion.  Separating data and events
+eliminates all of this.
+
+### Receive-side lifecycle (stream mode)
+
+**Event-driven I/O (poll + read + read_event, no callbacks needed):**
+
+**Position-aware** (e.g. terminal emulator processing SIGWINCH):
 
 ```c
-int dssh_chan_shutwr(dssh_session sess, dssh_channel ch);
+for (;;) {
+    int ev = dssh_chan_poll(ch,
+        DSSH_POLL_READ | DSSH_POLL_READEXT
+        | DSSH_POLL_EVENT, -1);
+
+    if (ev & DSSH_POLL_EVENT) {
+        struct dssh_chan_event event;
+        dssh_chan_read_event(ch, &event);
+        drain_stdout(ch, event.stdout_pos);
+        drain_stderr(ch, event.stderr_pos);
+        handle_event(&event);
+        continue;  /* poll again — might be more events */
+    }
+    if (ev & DSSH_POLL_READ) {
+        n = dssh_chan_read(ch, 0, buf, sizeof(buf));
+        if (n == 0) break; /* EOF */
+        process_stdout(buf, n);
+    }
+    if (ev & DSSH_POLL_READEXT) {
+        n = dssh_chan_read(ch, 1, buf, sizeof(buf));
+        if (n > 0) process_stderr(buf, n);
+    }
+}
 ```
+
+The `continue` is the key: after handling one event, go back to poll.
+If another event is pending, poll returns immediately with
+`DSSH_POLL_EVENT`.  If not, poll returns with `DSSH_POLL_READ` or
+whatever else is ready.
+
+**Position-unaware** (e.g. simple exec, SFTP): same loop but skip
+the drain calls — just read events and handle them, read data
+freely.  Positions are ignored.
+
+**Optional event callback:** if set via `dssh_chan_set_event_cb`,
+fires from the demux thread when an event is queued, with the
+event struct passed directly (positions computed at queue time).
+The app handles the event in the callback and doesn't need
+poll+read_event for events at all.  Not required for any traffic
+pattern — poll+read_event is the alternative.
+
+## Zero-copy API details
+
+### Inbound data: direct pointer into rx_packet
+
+The ZC data callback receives inbound data as parameters: `stream`,
+`data` (pointer directly into decrypted `rx_packet`), and `len`.
+No library-side accumulation buffer, no copies.  The pointer is valid
+only for the duration of the callback (the demux thread reuses
+`rx_packet` for the next packet).
+
+The data starts at offset 9 (CHANNEL_DATA) or 13
+(CHANNEL_EXTENDED_DATA) within `rx_packet`, past the SSH headers.
+
+For protocols where messages fit in one packet: truly zero-copy.
+For protocols that need reassembly across packets (e.g. SFTP messages
+larger than max_packet): the app manages its own accumulation buffer.
+The library isn't in a better position to do that copy than the app.
+
+Events use the same model as stream mode: queued separately,
+pulled via `dssh_chan_read_event()`, with advisory stream positions.
+The optional `dssh_chan_event_cb` fires from the demux thread when
+an event is queued (same as in stream mode).  All events fire in
+wire order.
+
+### Outbound data: direct buffer access
+
+The app builds data directly in the transport packet buffer via
+`dssh_chan_zc_getbuf()` / `dssh_chan_zc_send()`.
+
+**`dssh_chan_zc_getbuf(ch, stream, &buf, &max_len)`**:
+1. Acquires `tx_mtx`
+2. If `rekey_in_progress`, waits on `rekey_cnd` (same as `send_packet`)
+3. Computes `max_len = min(remote_window, remote_max_packet)`
+4. If `max_len == 0`: releases `tx_mtx`, returns error (window full)
+5. Stashes `stream` on the channel struct
+6. Sets `*buf = &tx_packet[4 + 5 + chan_header]`; sets `*max_len`
+7. Returns 0
+
+The returned pointer is past the seq prefix (4), packet_length (4),
+padding_length (1), and channel data header (9 for CHANNEL_DATA,
+13 for CHANNEL_EXTENDED_DATA).  The app writes up to `max_len` bytes.
+**Must not block between getbuf and send** — `tx_mtx` is held.
+
+**`dssh_chan_zc_send(ch, len)`**:
+1. Fills channel header bytes (msg type, channel ID, data_type_code,
+   length) at `&tx_packet[4 + 5]` using the stashed stream
+2. Fills packet_length and padding_length at `tx_packet[4]`
+3. Generates random padding
+4. Writes seq at `tx_packet[0]`
+5. Computes MAC over contiguous `tx_packet[0 .. 4 + total)` — no copy
+6. Encrypts in-place `tx_packet[4 .. 4 + total)` — no copy
+7. Sends `tx_packet[4 .. 4 + total + mac_len)` via I/O callback
+8. Deducts `len` from `remote_window` (atomic)
+9. Releases `tx_mtx`
+
+**`dssh_chan_zc_cancel(ch)`**:
+1. Releases `tx_mtx` without sending
+
+**Zero memcpy on the send path.**  The current code has two copies
+that are both eliminated:
+
+1. **Payload copy** (`memcpy(tx_packet, payload)` at line 532):
+   eliminated by `zc_getbuf` — the app writes directly at the right
+   offset in `tx_packet`.
+
+2. **MAC input copy** (`memcpy(tx_mac_scratch, tx_packet)` at line
+   546): the MAC input is `seq(4) || unencrypted_packet`, and the
+   4-byte sequence number wasn't contiguous with the packet.
+   Eliminated by allocating `tx_packet` with 4 extra bytes at the
+   front:
+
+```
+offset:  0       4                  9               9+payloadlen
+         [seq]   [pkt_length(4)]   [pad_len(1)]   [payload...]  [padding]  [MAC]
+         |<---- MAC input (contiguous) ---------->|
+                 |<---- encrypt in-place -------->|
+                 |<---- send on wire ---------------------------------------->|
+```
+
+   `tx_mac_scratch` is eliminated entirely.  The same optimization
+   applies to non-ZC sends and the RX MAC path (`rx_mac_scratch`).
+
+### Locking
+
+**Lock order**: `channel_mtx` → `buf_mtx` → `cb_mtx` → `tx_mtx`
+
+**TX path** (`zc_getbuf` → `zc_send`): app holds `tx_mtx` for the
+duration of filling one packet.  This is bounded (generating at most
+`remote_max_packet` bytes, typically 32 KiB).  During this time:
+
+- Other application senders block on `tx_mtx` — acceptable, the
+  transport is inherently serialized
+- Demux fire-and-forget sends (CHANNEL_FAILURE, etc.) go to the
+  `tx_queue` via `mtx_trylock` — already handled by existing
+  `send_or_queue` mechanism
+- Rekey cannot start (needs `tx_mtx` to send KEXINIT) — bounded
+  stall, not a security concern at rekey thresholds (1 GiB /
+  2^31 packets)
+
+Contract: **getbuf and send/cancel must be called in quick
+succession.**  Violating this degrades throughput for other channels
+but doesn't cause correctness issues.
+
+**RX path** (demux → callback): the ZC data callback and event
+callbacks run on the demux thread with **no library mutex held**.
+The demux thread is the sole writer of everything the callback reads
+(rx_packet data, local_window, channel state flags).  No contention,
+no lock needed.
+
+The one shared variable between the demux thread and the app's TX
+thread is `remote_window` (incremented by demux on
+CHANNEL_WINDOW_ADJUST from peer, decremented by app in `zc_send`).
+This is `atomic_uint32_t` — no mutex needed.
+
+Channel state flags (`eof_received`, `close_received`, etc.) are
+also shared with the app thread and are atomic.
+
+**The RX callback CANNOT call any TX function** (`zc_getbuf`,
+`zc_send`, `zc_cancel`, `send_signal`, `send_window_change`,
+`send_break`, `shutwr`, `close`).  Doing so risks deadlock:
+
+- `zc_getbuf` acquires `tx_mtx` and waits for rekey to complete.
+  Rekey needs the demux thread to process KEXINIT/NEWKEYS packets.
+  The demux thread is blocked in the callback.  **Deadlock.**
+- Even without rekey, `zc_send` calls the I/O tx callback under
+  `tx_mtx`.  If the network is congested, the demux thread stalls.
+
+Enforced at runtime via `_Thread_local bool in_zc_rx`.  The demux
+thread sets it before calling the callback and clears it after.
+All TX-path functions check it and return `DSSH_ERROR_INVALID` if
+set.  From a worker thread the flag is always false — TX always
+works.  The guard only fires when the app calls TX from inside the
+callback (same thread as demux), which is always a programming
+error, never a transient condition.
+
+The app must queue work from the callback and send from another
+thread.  Typical pattern for SFTP: callback copies the request
+(or just notes its type and parameters), returns.  A worker thread
+picks up the queued request, calls `zc_getbuf`, builds the response
+directly in `tx_packet`, calls `zc_send`.
+
+**Callback restrictions** (ZC data callback and event callback):
+- **Can** read callback parameters (data pointer, length, stream)
+- **Can** return consumed byte count for WINDOW_ADJUST (zc_cb only)
+- **Cannot** call any TX function (enforced by `in_zc_rx` flag)
+- **Cannot** call `dssh_chan_read` / `write` / `poll` /
+  `read_event` / `close`
+- **Must be fast** — the demux thread is stalled for ALL channels
+
+**Callback pointer protection**: `cb_mtx` is a per-channel mutex
+protecting all callback function pointer + cbdata pairs.  The demux
+thread (or `dssh_chan_read`) acquires `cb_mtx` briefly to read the
+pointer, then calls the callback outside the lock.  The setter
+acquires `cb_mtx` alone.
+
+### Window management in ZC mode
+
+The ZC callback return value controls WINDOW_ADJUST.  The callback
+returns the number of bytes consumed (typically the data length if the
+app processed the packet, 0 if it copied the data for later
+processing and will manage flow control separately).
+
+The library sends WINDOW_ADJUST for the consumed amount after the
+callback returns.  This requires `tx_mtx`.  No library mutex is held
+when the callback returns, so the demux thread acquires `tx_mtx`
+directly (or uses `send_or_queue` if contended).
+
+## Shared function details
+
+### Half-close: `dssh_chan_shutwr()`
 
 Sends SSH_MSG_CHANNEL_EOF.  Stops writes, keeps reading.
 `shutdown(fd, SHUT_WR)` semantics — the name makes the direction
 unambiguous (unlike `dssh_chan_eof()` which could mean send or receive).
 
 ### Close: `dssh_chan_close()`
-
-```c
-int dssh_chan_close(dssh_session sess, dssh_channel ch,
-    int64_t exit_code);
-```
 
 - `exit_code >= 0 && exit_code <= UINT32_MAX`: send exit-status +
   EOF + CLOSE
@@ -274,165 +742,69 @@ avoids the OpenSSH bug where exit-status 0 and no-exit-status are
 conflated (OpenSSH client uses -1/255 as sentinel, which collides
 with legitimate exit code 255).
 
-### Stream-position callbacks: signal, window-change, break
+### Callback defaults from session
 
-All three post-setup channel requests are delivered via callbacks that
-fire at the correct **stream position** during `dssh_chan_read()`.
-This matters because the data before and after a window-change may be
-formatted for different terminal dimensions — the resize must be
-processed between the right bytes, not when the wire message arrives.
-
-```c
-typedef void (*dssh_chan_signal_cb)(dssh_session sess,
-    dssh_channel ch, const char *signal_name, void *cbdata);
-
-typedef void (*dssh_chan_window_change_cb)(dssh_session sess,
-    dssh_channel ch, uint32_t cols, uint32_t rows,
-    uint32_t wpx, uint32_t hpx, void *cbdata);
-
-typedef void (*dssh_chan_break_cb)(dssh_session sess,
-    dssh_channel ch, uint32_t length, void *cbdata);
-```
-
-Setters (call before or after open — TBD):
+Session-level event callback setter establishes the default inherited
+by all channels created on that session.  Set before opening channels;
+`dssh_chan_open` / `dssh_chan_zc_open` copies it to the new channel
+at creation time (before the window opens, so no race).  Per-channel
+`dssh_chan_set_event_cb` overrides after open.
 
 ```c
-void dssh_chan_set_signal_cb(dssh_session sess, dssh_channel ch,
-    dssh_chan_signal_cb cb, void *cbdata);
-
-void dssh_chan_set_window_change_cb(dssh_session sess, dssh_channel ch,
-    dssh_chan_window_change_cb cb, void *cbdata);
-
-void dssh_chan_set_break_cb(dssh_session sess, dssh_channel ch,
-    dssh_chan_break_cb cb, void *cbdata);
+int dssh_session_set_event_cb(dssh_session sess,
+    dssh_chan_event_cb cb, void *cbdata);
 ```
 
-The library records each event with a stream position mark (byte offset
-in the stdout buffer at the time the CHANNEL_REQUEST arrives).  When
-`dssh_chan_read()` advances the read pointer past a mark, the
-corresponding callback fires before returning the data after that point.
+## Implementation architecture
 
-Window-change = SIGWINCH: it has a position in the stream and must be
-delivered between the data formatted for the old and new dimensions.
-Signal and break follow the same model.
+The stream API is built on top of the ZC internals, not a separate
+implementation.  One code path handles the transport interaction;
+two interfaces sit on top.  Bugs fixed in the ZC layer fix stream
+mode too.
 
-Outbound signal/window-change/break are sent via:
+### Public vs internal split
+
+Each public ZC function has an internal counterpart that skips
+parameter validation:
 
 ```c
-int dssh_chan_send_signal(dssh_session sess, dssh_channel ch,
-    const char *signal_name);
+/* Public — validates ch, checks in_zc_rx, verifies state */
+DSSH_PUBLIC int
+dssh_chan_zc_getbuf(dssh_channel ch, int stream,
+    uint8_t **buf, size_t *max_len);
 
-int dssh_chan_send_window_change(dssh_session sess, dssh_channel ch,
-    uint32_t cols, uint32_t rows, uint32_t wpx, uint32_t hpx);
-
-int dssh_chan_send_break(dssh_session sess, dssh_channel ch,
-    uint32_t length);
+/* Internal — called by stream layer, skips checks */
+DSSH_TESTABLE int
+zc_getbuf_inner(dssh_channel ch, int stream,
+    uint8_t **buf, size_t *max_len);
 ```
 
-## Zero-copy API (`dssh_chan_zc_*`)
+The stream layer calls the inner functions directly — it created
+the channel and knows it's valid.
 
-### Open
+### Stream receive path
 
-```c
-dssh_channel dssh_chan_zc_open(dssh_session sess,
-    int type, const union dssh_chan_params *params,
-    uint32_t max_window,
-    dssh_chan_zc_data_cb data_cb, void *cbdata);
-```
+The library registers an internal `dssh_chan_zc_cb` on stream
+channels.  This callback copies data from `rx_packet` into the
+per-channel ring buffer and broadcasts `poll_cnd`.  The app's
+`dssh_chan_read` drains the ring buffer.
 
-Same LARVAL → OPEN sequence as `dssh_chan_open()`, but allocates a
-linear accumulation buffer instead of ring buffers, and stores the
-data callback.
+Events (signal, window-change, break, EOF, close, exit-status,
+exit-signal) are queued by the internal callback with the current
+ring buffer positions for both streams.  The app pulls them via
+`dssh_chan_read_event()`.
 
-### Inbound data: callback
+### Stream send path
 
-```c
-typedef int (*dssh_chan_zc_data_cb)(dssh_session sess,
-    dssh_channel ch, uint32_t data_type_code,
-    const uint8_t *buf, size_t len, void *cbdata);
-```
+`dssh_chan_write` calls `zc_getbuf_inner`, memcpys the app's data
+into `tx_packet`, calls `zc_send_inner`.  One memcpy, same cost as
+today (minus the eliminated malloc and MAC scratch copy).
 
-- `data_type_code == 0`: stdout (SSH_MSG_CHANNEL_DATA)
-- `data_type_code == 1`: stderr (SSH_MSG_CHANNEL_EXTENDED_DATA)
-- Callback runs on the demux thread — must not block for long
-- Return value signals consumed vs accumulating (see linear
-  accumulation buffer below)
+### Stream poll
 
-**Open issue**: the current linear accumulation buffer design does not
-track stdout vs stderr separately.  CHANNEL_DATA and
-CHANNEL_EXTENDED_DATA arrive interleaved and share the same window, but
-the callback needs to know which stream each byte belongs to.  TBD:
-may need separate accumulation for each stream, or deliver each
-CHANNEL_DATA/EXTENDED_DATA payload individually without accumulation.
-
-### Outbound data: direct buffer access
-
-Instead of the app providing data that the library copies into a
-packet, the app writes directly into the transport packet buffer:
-
-```c
-uint8_t *dssh_chan_zc_write_buf(dssh_session sess,
-    dssh_channel ch, int stream);
-
-int dssh_chan_zc_send(dssh_session sess,
-    dssh_channel ch, int stream, size_t len);
-```
-
-`dssh_chan_zc_write_buf()` returns a pointer to the data area of the
-pre-allocated `tx_packet`, after the header bytes.  The app writes
-payload data directly there.  `dssh_chan_zc_send()` fills in the
-header (msg type, channel ID, data_type_code if ext, length) and
-sends the packet.  `stream` selects stdout (0) or stderr (1).
-
-Zero memcpy on the send path (app writes directly into the packet
-buffer; `send_packet_inner` encrypts in-place).
-
-### Linear accumulation buffer
-
-For zero-copy channels, the window buffer is a **linear** (not ring)
-buffer.  Incoming CHANNEL_DATA payloads are appended at the write
-pointer.  The callback receives the entire accumulated contents as a
-single contiguous pointer each time new data arrives:
-
-1. CHANNEL_DATA payload written into buffer at write pointer
-   (single copy from network — unavoidable)
-2. Write pointer advances
-3. Callback fires with `(buf, total_accumulated_len)`
-4. Callback returns **consumed**: write pointer resets to 0, library
-   sends WINDOW_ADJUST for the consumed amount, full buffer available
-   again
-5. Callback returns **not yet**: data stays in buffer, next
-   CHANNEL_DATA appends after it, callback fires again with the
-   larger accumulated view
-
-This means the subsystem protocol (e.g. SFTP) doesn't need its own
-reassembly buffer — the window buffer *is* the reassembly buffer.
-Flow control falls out naturally: if the callback is accumulating a
-large message, the window fills, WINDOW_ADJUST stops, and the sender
-blocks.
-
-**Constraint**: a single subsystem protocol message cannot exceed the
-max window size.
-
-### Close
-
-`dssh_chan_close()` works on both stream and zero-copy channels.
-Same `int64_t exit_code` semantics.
-
-### Shared functions
-
-The following work on both stream and zero-copy channels:
-
-- `dssh_chan_poll()` — for zero-copy, useful for EOF/close signaling
-  and write-readiness (DSSH_POLL_READ may not be meaningful)
-- `dssh_chan_shutwr()`
-- `dssh_chan_close()`
-- `dssh_chan_send_signal()`
-- `dssh_chan_send_window_change()`
-- `dssh_chan_send_break()`
-
-Signal/window-change/break callbacks also work on zero-copy channels
-(stream position marks are tracked against the accumulation buffer).
+Waits on `poll_cnd` for ring buffer state changes (data available,
+space available, EOF/close).  The internal ZC callback broadcasts
+`poll_cnd` after updating the ring buffer.
 
 ## Allocation summary (current vs new)
 
@@ -450,27 +822,35 @@ Receive (raw): decrypt→rx_packet, rx_packet→msgqueue_entry (malloc'd),
 entry→app buffer on read (free'd).  One malloc per packet.
 
 Send (both): app→temp buffer (malloc'd to prepend 9/13-byte header),
-temp→tx_packet (pre-alloc), free temp.  One malloc per packet.
+temp→tx_packet (pre-alloc), tx_packet→tx_mac_scratch (MAC input copy),
+free temp.  One malloc + two memcpys per packet.
 
 ### New (stream)
 
-Same as current stream.  TODO item 101 will eliminate the send-path
-malloc by teaching `send_packet_inner()` to accept scatter (header +
-data).
+Built on ZC internals.  Ring buffers add one memcpy per direction.
+The send-path malloc (TODO item 101) and MAC scratch copy are both
+eliminated by the tx_packet layout change (4-byte seq prefix).
+
+| Path | Stream (new) |
+|------|-------------|
+| **Receive** | 0 mallocs, 1 copy (rx_packet → ring buffer) |
+| **Send** | 0 mallocs, 1 copy (app buf → tx_packet via zc_getbuf_inner) |
 
 ### New (zero-copy)
 
 | Path | Zero-copy |
 |------|-----------|
-| **Receive** | 0 mallocs, 1 copy |
+| **Receive** | 0 mallocs, 0 copies |
 | **Send** | 0 mallocs, 0 copies |
 
-Receive: decrypt→rx_packet, rx_packet→linear buffer, callback gets
-pointer into linear buffer.  One copy (unavoidable: decryption
-requires the rx_packet buffer).
+Receive: decrypt in-place→rx_packet, callback gets pointer directly
+into rx_packet at data offset (9 or 13 bytes past start).  Zero
+copies.
 
-Send: app writes directly into tx_packet via `zc_write_buf()`,
-`zc_send()` fills header and encrypts in-place.  Zero copies.
+Send: app writes directly into tx_packet via `zc_getbuf()`.
+`zc_send()` fills headers, writes seq prefix at `tx_packet[0]`,
+computes MAC over contiguous buffer (no copy to `tx_mac_scratch`),
+encrypts in-place, sends.  Zero copies.
 
 ## Server-side API
 
@@ -478,7 +858,7 @@ TBD — to be designed separately.  Key differences from client:
 
 - Channel type comes *out* of the accept, not in
 - Either side can initiate channels (server/client naming breaks down)
-- Accept path needs to expose the LARVAL → OPEN transition
+- Accept path needs to expose the setup → open transition
   with the type determined by the incoming terminal request
 
 The parse helpers (`dssh_parse_pty_req_data`, `dssh_parse_env_data`,
@@ -487,42 +867,119 @@ for server-side setup request processing.
 
 ## Functions deleted (old → new mapping)
 
-- `dssh_session_read` → `dssh_chan_read`
-- `dssh_session_read_ext` → `dssh_chan_read_ext`
-- `dssh_session_write` → `dssh_chan_write`
-- `dssh_session_write_ext` → `dssh_chan_write_ext`
-- `dssh_session_poll` → `dssh_chan_poll`
-- `dssh_channel_poll` → `dssh_chan_poll`
-- `dssh_session_open_shell` → `dssh_chan_open(sess, DSSH_CHAN_SHELL, ...)`
-- `dssh_session_open_exec` → `dssh_chan_open(sess, DSSH_CHAN_EXEC, ...)`
+- `dssh_session_read` → `dssh_chan_read(ch, 0, ...)`
+- `dssh_session_read_ext` → `dssh_chan_read(ch, 1, ...)`
+- `dssh_session_write` → `dssh_chan_write(ch, 0, ...)`
+- `dssh_session_write_ext` → `dssh_chan_write(ch, 1, ...)`
+- `dssh_session_poll` → `dssh_chan_poll(ch, ...)`
+- `dssh_channel_poll` → `dssh_chan_poll(ch, ...)`
+- `dssh_session_open_shell` → `dssh_chan_open(sess, &params, ...)`
+- `dssh_session_open_exec` → `dssh_chan_open(sess, &params, ...)`
 - `dssh_channel_open_subsystem` → `dssh_chan_open` or `dssh_chan_zc_open`
-- `dssh_session_close` → `dssh_chan_close`
-- `dssh_channel_close` → `dssh_chan_close`
-- `dssh_channel_read` (old raw) → `dssh_chan_zc_open` callback
-- `dssh_channel_write` (old raw) → `dssh_chan_zc_write_buf` + `dssh_chan_zc_send`
-- `dssh_session_read_signal` → stream-position callback
-- `dssh_session_send_signal` → `dssh_chan_send_signal`
-- `dssh_session_send_window_change` → `dssh_chan_send_window_change`
+- `dssh_session_close` → `dssh_chan_close(ch, ...)`
+- `dssh_channel_close` → `dssh_chan_close(ch, ...)`
+- `dssh_channel_read` (old raw) → zc data callback
+- `dssh_channel_write` (old raw) → `dssh_chan_zc_getbuf(ch, ...)` + `dssh_chan_zc_send(ch, ...)`
+- `dssh_session_read_signal` → `dssh_chan_read_event(ch, ...)`
+- `dssh_session_send_signal` → `dssh_chan_send_signal(ch, ...)`
+- `dssh_session_send_window_change` → `dssh_chan_send_window_change(ch, ...)`
 
 New functions with no old equivalent:
-- `dssh_chan_shutwr` — half-close (send EOF)
-- `dssh_chan_send_break` — RFC 4335
-- `dssh_chan_set_signal_cb` — replaces pull-based `read_signal`
-- `dssh_chan_set_window_change_cb` — replaces direct send
-- `dssh_chan_set_break_cb` — new
-- `dssh_chan_zc_write_buf` — direct packet buffer access
-- `dssh_chan_zc_send` — send with header fill
+- `dssh_chan_params_init` / `set_*` / `free` — builder API
+- `dssh_chan_shutwr(ch)` — half-close (send EOF)
+- `dssh_chan_send_break(ch, ...)` — RFC 4335
+- `dssh_chan_read_event(ch, ...)` — pull next event from queue
+- `dssh_chan_set_event_cb(ch, ...)` — optional event notification callback
+- `dssh_session_set_event_cb(sess, ...)` — session-level event callback default
+- `dssh_chan_zc_getbuf(ch, ...)` — get pointer into tx_packet data area
+- `dssh_chan_zc_send(ch, ...)` — fill header and send
+- `dssh_chan_zc_cancel(ch)` — release tx_packet without sending
 
 ## Open items
 
-- **Server-side accept API**: type comes out, LARVAL → OPEN transition,
-  either side can initiate.  Design separately.
-- **Zero-copy inbound stdout/stderr separation**: the linear
-  accumulation buffer doesn't track which stream each byte belongs to.
-  Options: separate buffers per stream, or deliver each payload
-  individually to the callback without accumulation.
-- **Channel type representation**: `int` constants, `const char[]`
-  matching wire names, or something else.
-- **Callback setter timing**: before open only, or also after?
-- **`dssh_chan_zc_write_buf` locking**: must hold tx_mtx to write into
-  `tx_packet`.  How does this interact with the rekey wait?
+### Client-side
+
+None — all items resolved.
+
+### Server-side (deferred)
+
+- **Accept API**: type comes out, setup → open transition, either
+  side can initiate.  Design separately.
+- **Second pty-req semantics**: update existing pty or reject?
+- **Post-terminal-request env**: what does the server do with env
+  requests that arrive after shell/exec/subsystem?
+- **Params struct lifetime**: could support re-sending pty-req or
+  env mid-session (protocol allows it).  Defer to server-side design.
+
+## Resolved items
+
+- **Channel type representation**: `enum dssh_chan_type` with values
+  `DSSH_CHAN_SHELL`, `DSSH_CHAN_EXEC`, `DSSH_CHAN_SUBSYSTEM`.  Closed
+  set (RFC s6.5: "only one of these requests can succeed per channel").
+  Library maps enum to wire strings internally.
+
+- **Callback setter timing**: both before and after open.  Session-
+  level default callbacks set before opening channels; open copies
+  session defaults to the new channel at creation time (before the
+  window opens, so no race).  Per-channel overrides after open,
+  protected by `cb_mtx`.
+
+- **ZC status struct**: eliminated.  The `dssh_chan_zc_cb` takes data
+  parameters directly (`stream`, `data`, `len`).  Events use a
+  unified queue + `dssh_chan_read_event()` model, same for both
+  stream and ZC modes.  No shared struct needed.
+
+- **Receive-side lifecycle**: data and events are separate channels
+  (signalfd model).  Data flows freely via read(); events are
+  queued and pulled via poll(DSSH_POLL_EVENT) + read_event().
+  Events carry advisory stream positions (bytes of unread
+  stdout/stderr before the event).  Positions are computed at
+  poll() time.  Data never stops at event boundaries.
+  Optional event callback provides push notification but is never
+  required.  All event types (signal, window-change, break, EOF,
+  close, exit-status, exit-signal) go through the same queue.
+  Eliminates the two-pointer problem (independent stdout/stderr
+  read pointers can't support stream-position callbacks).
+
+- **Per-event-type callbacks eliminated**: replaced by unified
+  `dssh_chan_event_cb` (pure notification) + `dssh_chan_read_event`
+  (pulls typed event struct).  Simplifies callback surface from
+  7 setter pairs (session + channel) to 1.
+
+- **RFC 4254 ordering constraints** (found on closer reading):
+  - "Only one of these requests can succeed per channel" (s6.5) —
+    one terminal request per channel
+  - Env before terminal request (s6.4: "started later")
+  - Terminal mode opcodes 160+ must come after 1-159 (s8)
+  - RFC 8160: IUTF8 opcode 42; "transmit a value if it knows about
+    one" — library should not guess mode defaults
+
+- **Params struct design**: builder pattern with `dssh_chan_params`.
+  Type in struct (enum).  PTY orthogonal to type.  All strings
+  copied in, `free` releases them.  `init` sets type + defaults
+  (term="dumb", 0x0, pty on for shell, off for exec/subsystem,
+  zero terminal modes).  Consumed at open time, library keeps no
+  references.  Modes: `set_mode` accumulates, dedup last-wins,
+  encodes 1-159 then 160+ then TTY_OP_END.
+
+- **Event lifecycle**: poll-freezes model.  `dssh_chan_poll()` with
+  `DSSH_POLL_EVENT` computes and freezes the next event's stream
+  positions.  `dssh_chan_read_event()` returns it.  One event per
+  poll/read_event cycle; multiple events require multiple cycles
+  (poll returns immediately if more are pending).  Events not
+  consumed between polls are discarded — no memory leak, no
+  unbounded queue.  String pointers valid until next read_event
+  or poll.  Replaces the stale expiry model (which had race
+  conditions between read and read_event).  Event callback
+  (`dssh_chan_event_cb`) is an alternative path: receives the full
+  event struct with positions computed at queue time.  Two scopes,
+  both correct — app picks one model.
+
+- **Error/termination mid-operation**: `zc_send` and `zc_cancel`
+  always release `tx_mtx` on every code path, including errors.
+  If the session terminates while the app is between getbuf and
+  send, `zc_send` checks the terminate flag, releases `tx_mtx`,
+  and returns `DSSH_ERROR_TERMINATED`.  If the app forgets to call
+  send or cancel after getbuf, that's an app bug (same as
+  forgetting to call `free`) — the library documents "getbuf must
+  be followed by send or cancel."
