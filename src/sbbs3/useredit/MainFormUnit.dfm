@@ -861,6 +861,23 @@ object MainForm: TMainForm
           DesignSize = (
             209
             153)
+          object ColsLabel: TLabel
+            Left = 50
+            Top = 120
+            Width = 40
+            Height = 21
+            AutoSize = False
+            Caption = 'Columns'
+          end
+          object ColsEdit: TEdit
+            Left = 100
+            Top = 120
+            Width = 25
+            Height = 21
+            MaxLength = 2
+            TabOrder = 0
+            OnChange = EditChange
+          end
           object Label3: TLabel
             Left = 136
             Top = 120
@@ -895,7 +912,9 @@ object MainForm: TMainForm
               'Color'
 			  'ICE Color'
               'RIP'
-              'Pause'
+			  'Mouse'
+			  'Delete/Backspace Swap'
+              'Screen Pause'
               'Spinning Cursor')
             TabOrder = 1
           end

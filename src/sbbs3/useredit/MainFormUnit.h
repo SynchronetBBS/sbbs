@@ -106,6 +106,7 @@ __published:	// IDE-managed Components
     TEdit* DownloadedBytesEdit;
     TEdit* LeechEdit;
     TEdit* RowsEdit;
+	TEdit* ColsEdit;
     TEdit* ShellEdit;
     TEdit* EditorEdit;
     TEdit* TempFileExtEdit;
