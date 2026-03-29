@@ -25,80 +25,37 @@
 
 ### Design / liveness audit (items 62-79)
 
-67. **Setup mode single-slot mailbox blocks the demux thread.**
-    In `demux_dispatch()` (line 616-631), when a channel is in
-    `setup_mode`, the demux thread delivers via a single-slot mailbox
-    (`setup_payload`/`setup_ready`).  If the previous message has
-    not been consumed, the demux thread blocks on `cnd_wait` until
-    the application's `request_cb` callback returns.  During this
-    time, ALL other channels on the same session are stalled: no
-    data delivery, no window adjusts, no new channel opens.
+101. **Implement channel I/O redesign (`design-channel-io-api.md`).**
+    Complete redesign of the channel API.  Subsumes items 67 (setup
+    mailbox blocking demux), 75 (msgqueue per-message malloc), and
+    95 (channel I/O API unification).  See `design-channel-io-api.md`
+    for the full design.  Summary of what changes:
 
-    The deeper problem: a peer can legally open up to 2^32 channels,
-    each entering setup mode.  If the demux thread blocks on any one
-    channel's mailbox, all other channels are stalled.  Replacing the
-    single slot with a per-channel queue doesn't help — that's 2^32
-    queues.  A shared queue for all setup deliveries changes the app
-    processing model.  The most natural fix is probably an explicit
-    `dssh_channel_accept()` API where the app pulls pending channels
-    and the demux thread never blocks on setup delivery — but this is
-    a significant API change.
+    - `dssh_chan_*` prefix; ZC API adds `dssh_chan_zc_*`
+    - Stream API (open/read/write/poll) built on ZC internals
+    - ZC API: zero-copy TX (app writes into tx_packet via getbuf/send)
+      and RX (callback gets pointer into rx_packet)
+    - Events separate from data (signalfd model): poll + read_event,
+      or event callback with full event struct
+    - `dssh_chan_accept()` for server: callback-driven setup, library
+      populates `dssh_chan_params` (same struct as client open)
+    - Params builder: type + pty + modes + env + max_window in struct
+    - `dssh_chan_close(ch, int64_t exit_code)`: negative = no exit-status
+    - `dssh_chan_shutwr(ch)`: half-close (EOF)
+    - tx_mac_scratch eliminated via 4-byte seq prefix in tx_packet
+    - Send-path malloc eliminated (ZC: zero copies; stream: one memcpy)
+    - Msgqueue eliminated (ZC: no buffer; stream: ring buffer)
+    - Setup mailbox eliminated (accept runs on app's thread)
 
-    This is fundamentally the same class of problem as item 75: SSH
-    flow control counts bytes, not messages or channels.  Any
-    message/channel-granularity buffering requires either an arbitrary
-    count limit (not in the protocol), unbounded allocation (current
-    approach), or accepting bounded waste.  Research what other SSH
-    implementations do before attempting a fix.
+    **Item 67 resolved by**: `dssh_chan_accept()` runs on the app's
+    thread.  The demux thread queues setup messages; accept pulls
+    from the queue.  Demux never blocks on a callback.
 
-75. **Msgqueue unbounded per-message overhead for raw channels.**
-    `dssh_msgqueue_push()` does a separate `malloc` per message with
-    `sizeof(dssh_msgqueue_entry)` overhead (~24 bytes).  The SSH
-    window limits total bytes, but a pathological peer sending many
-    1-byte messages creates ~2M linked-list nodes consuming ~48MB
-    instead of the 2MB window.
-
-    **Desired fix**: replace the linked list with a ring buffer
-    (split-memcpy for wrap-around) storing `[u32 len][data]` per
-    message.  The 4-byte length prefix is already validated in
-    `handle_channel_data()` (`payload[5..8]`); push from
-    `&payload[5]` to get self-framing entries.  No per-message
-    malloc, no linked-list overhead, O(1) push/pop.
-
-    **Unsolved sizing problem**: the SSH window is not synchronous.
-    The initial window grant (`INITIAL_WINDOW_SIZE`, 2MB) is already
-    committed -- the peer decrements its own copy on send and we
-    cannot claw it back; we can only influence future grants via
-    `WINDOW_ADJUST`.  Each message costs 4 bytes of ring buffer
-    overhead beyond the data bytes the window tracks:
-    - 1-byte messages: 5 bytes each, 2M messages = 10MB in a
-      2MB buffer
-    - 0-byte messages (legal per RFC -- `string` may be empty):
-      consume zero window, so the peer can send unlimited messages.
-      No finite buffer suffices.  The current malloc queue is
-      equally vulnerable to this flood.
-
-    Options explored, none satisfactory:
-    1. Over-provision ring buffer (e.g. 5x `window_max`) -- handles
-       1-byte case but not 0-byte; wastes 10MB per channel
-    2. Advertise smaller initial window (e.g. `window_max / 5`) --
-       effective data window drops to ~400KB; hurts throughput on
-       high-latency/high-bandwidth links
-    3. Charge 4-byte overhead to window in `WINDOW_ADJUST` -- only
-       helps for future grants, not the initial window
-    4. Reject/limit 0-byte messages -- arbitrary restriction,
-       potential protocol violation
-
-101. **Eliminate per-packet malloc in channel send path.**
-    `conn_send_data()` and `send_extended_data()` malloc a temporary
-    buffer to prepend the 9-byte (or 13-byte) header before the app's
-    payload, memcpy the payload in, pass it to `send_packet_inner()`
-    (which copies it again into the pre-allocated `tx_packet`), then
-    free it.  That's 1 malloc + 1 free + 2 memcpys per sent packet.
-    Fix: have `send_packet_inner()` accept a two-part payload (header +
-    data) and assemble directly into `tx_packet`, eliminating the
-    temporary buffer entirely.  The header is always small and
-    stack-allocated; only the data pointer needs to be passed through.
+    **Item 75 resolved by**: message queue eliminated entirely.  ZC
+    mode has no library-side buffer (callback gets pointer into
+    rx_packet).  Stream mode uses ring buffers (no per-message
+    malloc).  The 0-byte message flood is bounded by initial_window=0
+    (no data flows until the channel is finalized).
 
 ### API definition gaps (items 92-100)
 
@@ -109,15 +66,7 @@
     an internal header.  Either move to a public header or change to
     `DSSH_PRIVATE`.
 
-95. **Unify channel I/O API under `dssh_channel_*`.**
-    See `design-channel-io-api.md` for full design.  Subsumes old
-    items 95 (return type asymmetry), 98 (peek semantics), plus naming
-    confusion, poll merge, and close function design.  Summary:
-    - Merge `dssh_session_read/write/read_ext/write_ext/poll` and
-      `dssh_channel_read/write/poll` into one `dssh_channel_*` family
-    - All read/write return `int64_t` uniformly
-    - Peek (`NULL, 0`) works on both channel types
-    - Close API needs further design (3 options in the doc)
+95. Subsumed by item 101 (channel I/O redesign).
 
 96. **`dssh_session_read_signal()` pointer lifetime undocumented.**
     Returns `*signal_name` pointing into a channel-owned buffer
