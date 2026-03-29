@@ -89,6 +89,17 @@
     4. Reject/limit 0-byte messages -- arbitrary restriction,
        potential protocol violation
 
+101. **Eliminate per-packet malloc in channel send path.**
+    `conn_send_data()` and `send_extended_data()` malloc a temporary
+    buffer to prepend the 9-byte (or 13-byte) header before the app's
+    payload, memcpy the payload in, pass it to `send_packet_inner()`
+    (which copies it again into the pre-allocated `tx_packet`), then
+    free it.  That's 1 malloc + 1 free + 2 memcpys per sent packet.
+    Fix: have `send_packet_inner()` accept a two-part payload (header +
+    data) and assemble directly into `tx_packet`, eliminating the
+    temporary buffer entirely.  The header is always small and
+    stack-allocated; only the data pointer needs to be passed through.
+
 ### API definition gaps (items 92-100)
 
 93. **`dssh_transport_register_lang()` visibility leak.**
