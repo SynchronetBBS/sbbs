@@ -525,7 +525,8 @@ send_packet_inner(struct dssh_session_s *sess,
 		goto inner_done;
 	}
 
-	size_t pos = 0;
+	/* Build packet at tx_packet[4..], leaving [0..4) for seq prefix */
+	size_t pos = 4;
 	DSSH_PUT_U32(packet_length, sess->trans.tx_packet, &pos);
 	sess->trans.tx_packet[pos++] = (uint8_t)padding_len;
 	memcpy(&sess->trans.tx_packet[pos], payload, payload_len);
@@ -534,16 +535,13 @@ send_packet_inner(struct dssh_session_s *sess,
 		ret = DSSH_ERROR_INIT;
 		goto inner_done;
 	}
-	pos += padding_len;
 
-        /* MAC: mac(key, seq || unencrypted_packet) */
+        /* MAC: mac(key, seq || unencrypted_packet)
+         * Write seq at tx_packet[0]; MAC input is contiguous at [0..4+total). */
 	if (mac_len > 0) {
-		uint8_t *mac_input = sess->trans.tx_mac_scratch;
-		size_t   mi_pos = 0;
+		size_t seq_pos = 0;
 
-		DSSH_PUT_U32(sess->trans.tx_seq, mac_input, &mi_pos);
-		memcpy(&mac_input[mi_pos], sess->trans.tx_packet, total);
-		mi_pos += total;
+		DSSH_PUT_U32(sess->trans.tx_seq, sess->trans.tx_packet, &seq_pos);
 
 		dssh_mac      mac;
 		dssh_mac_ctx *mac_ctx;
@@ -556,13 +554,13 @@ send_packet_inner(struct dssh_session_s *sess,
 			mac = sess->trans.mac_s2c_selected;
 			mac_ctx = sess->trans.mac_s2c_ctx;
 		}
-		ret = mac->generate(mac_input, mi_pos, &sess->trans.tx_packet[pos], mac_ctx);
+		ret = mac->generate(sess->trans.tx_packet, 4 + total,
+		    &sess->trans.tx_packet[4 + total], mac_ctx);
 		if (ret < 0)
 			goto inner_done;
-		pos += mac_len;
 	}
 
-        /* Encrypt (the packet, not the MAC) */
+        /* Encrypt (the packet at [4..4+total), not the seq prefix or MAC) */
 	{
 		dssh_enc_ctx *enc_ctx;
 		dssh_enc      enc;
@@ -577,7 +575,7 @@ send_packet_inner(struct dssh_session_s *sess,
 		}
 
 		if ((enc != NULL) && (enc->encrypt != NULL) && (enc_ctx != NULL)) {
-			ret = enc->encrypt(sess->trans.tx_packet, total, enc_ctx);
+			ret = enc->encrypt(&sess->trans.tx_packet[4], total, enc_ctx);
 			if (ret < 0)
 				goto inner_done;
 		}
@@ -589,18 +587,29 @@ send_packet_inner(struct dssh_session_s *sess,
 		goto inner_done;
 	}
 
-	ret = gconf.tx(sess->trans.tx_packet, pos, sess, sess->tx_cbdata);
-	if (ret == 0) {
-		if (seq_out != NULL)
-			*seq_out = sess->trans.tx_seq;
-		sess->trans.tx_seq++;
-		atomic_fetch_add(&sess->trans.tx_since_rekey, 1);
-		{
-			uint64_t old_tb = atomic_load(&sess->trans.tx_bytes_since_rekey);
-			if (pos > UINT64_MAX - old_tb)
-				atomic_store(&sess->trans.tx_bytes_since_rekey, UINT64_MAX);
-			else
-				atomic_store(&sess->trans.tx_bytes_since_rekey, old_tb + pos);
+	/* Send [4..4+total+mac_len) — skip the seq prefix */
+	{
+		size_t wire_len = total + mac_len;
+
+		ret = gconf.tx(&sess->trans.tx_packet[4], wire_len, sess,
+		    sess->tx_cbdata);
+		if (ret == 0) {
+			if (seq_out != NULL)
+				*seq_out = sess->trans.tx_seq;
+			sess->trans.tx_seq++;
+			atomic_fetch_add(&sess->trans.tx_since_rekey, 1);
+			{
+				uint64_t old_tb = atomic_load(
+				    &sess->trans.tx_bytes_since_rekey);
+				if (wire_len > UINT64_MAX - old_tb)
+					atomic_store(
+					    &sess->trans.tx_bytes_since_rekey,
+					    UINT64_MAX);
+				else
+					atomic_store(
+					    &sess->trans.tx_bytes_since_rekey,
+					    old_tb + wire_len);
+			}
 		}
 	}
 
@@ -761,7 +770,8 @@ recv_packet_raw(struct dssh_session_s *sess,
 
 	size_t bs = rx_block_size(sess);
 
-	ret = gconf.rx(sess->trans.rx_packet, bs, sess, sess->rx_cbdata);
+	/* Receive into rx_packet[4..], leaving [0..4) for seq prefix */
+	ret = gconf.rx(&sess->trans.rx_packet[4], bs, sess, sess->rx_cbdata);
 	if (ret < 0)
 		goto rx_done;
 
@@ -779,13 +789,13 @@ recv_packet_raw(struct dssh_session_s *sess,
 	}
 
 	if ((enc != NULL) && (enc->decrypt != NULL) && (enc_ctx != NULL)) {
-		ret = enc->decrypt(sess->trans.rx_packet, bs, enc_ctx);
+		ret = enc->decrypt(&sess->trans.rx_packet[4], bs, enc_ctx);
 		if (ret < 0)
 			goto rx_done;
 	}
 
 	/* First block (>= 8 bytes) is decrypted; read packet_length */
-	uint32_t packet_length = DSSH_GET_U32(sess->trans.rx_packet);
+	uint32_t packet_length = DSSH_GET_U32(&sess->trans.rx_packet[4]);
 
 	if (packet_length < 2) {
 		ret = DSSH_ERROR_PARSE;
@@ -803,29 +813,29 @@ recv_packet_raw(struct dssh_session_s *sess,
 
 	size_t remaining = packet_length + 4 - bs;
 	if (remaining > 0) {
-		ret = gconf.rx(&sess->trans.rx_packet[bs], remaining, sess, sess->rx_cbdata);
+		ret = gconf.rx(&sess->trans.rx_packet[4 + bs], remaining,
+		    sess, sess->rx_cbdata);
 		if (ret < 0)
 			goto rx_done;
 		if ((enc != NULL) && (enc->decrypt != NULL) && (enc_ctx != NULL)) {
-			ret = enc->decrypt(&sess->trans.rx_packet[bs], remaining, enc_ctx);
+			ret = enc->decrypt(&sess->trans.rx_packet[4 + bs],
+			    remaining, enc_ctx);
 			if (ret < 0)
 				goto rx_done;
 		}
 	}
 
-        /* Verify MAC */
+        /* Verify MAC.  Write seq at rx_packet[0]; MAC input is
+         * contiguous at rx_packet[0..4 + packet_length + 4). */
 	uint16_t mac_len = rx_mac_size(sess);
 	if (mac_len > 0) {
 		ret = gconf.rx(sess->trans.rx_mac_buf, mac_len, sess, sess->rx_cbdata);
 		if (ret < 0)
 			goto rx_done;
 
-		uint8_t *mac_input = sess->trans.rx_mac_scratch;
-		size_t   mi_pos = 0;
+		size_t seq_pos = 0;
 
-		DSSH_PUT_U32(sess->trans.rx_seq, mac_input, &mi_pos);
-		memcpy(&mac_input[mi_pos], sess->trans.rx_packet, packet_length + 4);
-		mi_pos += packet_length + 4;
+		DSSH_PUT_U32(sess->trans.rx_seq, sess->trans.rx_packet, &seq_pos);
 
 		dssh_mac      mac;
 		dssh_mac_ctx *mac_ctx;
@@ -838,7 +848,9 @@ recv_packet_raw(struct dssh_session_s *sess,
 			mac = sess->trans.mac_c2s_selected;
 			mac_ctx = sess->trans.mac_c2s_ctx;
 		}
-		ret = mac->generate(mac_input, mi_pos, sess->trans.rx_mac_computed, mac_ctx);
+		ret = mac->generate(sess->trans.rx_packet,
+		    4 + packet_length + 4, sess->trans.rx_mac_computed,
+		    mac_ctx);
 		if (ret < 0)
 			goto rx_done;
 		if (CRYPTO_memcmp(sess->trans.rx_mac_buf, sess->trans.rx_mac_computed, mac_len) != 0) {
@@ -849,14 +861,14 @@ recv_packet_raw(struct dssh_session_s *sess,
 		}
 	}
 
-	uint8_t padding_length = sess->trans.rx_packet[4];
+	uint8_t padding_length = sess->trans.rx_packet[8];
 	if (padding_length + 1 >= packet_length) {
 		ret = DSSH_ERROR_PARSE;
 		goto rx_done;
 	}
-	*payload = &sess->trans.rx_packet[5];
+	*payload = &sess->trans.rx_packet[9];
 	*payload_len = packet_length - padding_length - 1;
-	*msg_type = sess->trans.rx_packet[5];
+	*msg_type = sess->trans.rx_packet[9];
 
 	sess->trans.last_rx_seq = sess->trans.rx_seq;
 	sess->trans.rx_seq++;
@@ -2058,17 +2070,11 @@ transport_init(struct dssh_session_s *sess, size_t max_packet_size)
 	bool rx_mtx_ok = false;
 
 	sess->trans.packet_buf_sz = max_packet_size;
-	sess->trans.tx_packet = malloc(max_packet_size);
+	sess->trans.tx_packet = malloc(4 + max_packet_size);
 	if (!sess->trans.tx_packet)
 		goto init_cleanup;
-	sess->trans.rx_packet = malloc(max_packet_size);
+	sess->trans.rx_packet = malloc(4 + max_packet_size);
 	if (!sess->trans.rx_packet)
-		goto init_cleanup;
-	sess->trans.tx_mac_scratch = malloc(4 + max_packet_size);
-	if (!sess->trans.tx_mac_scratch)
-		goto init_cleanup;
-	sess->trans.rx_mac_scratch = malloc(4 + max_packet_size);
-	if (!sess->trans.rx_mac_scratch)
 		goto init_cleanup;
 
 	ret = DSSH_ERROR_INIT;
@@ -2123,10 +2129,6 @@ init_cleanup:
 	sess->trans.tx_packet = NULL;
 	free(sess->trans.rx_packet);
 	sess->trans.rx_packet = NULL;
-	free(sess->trans.tx_mac_scratch);
-	sess->trans.tx_mac_scratch = NULL;
-	free(sess->trans.rx_mac_scratch);
-	sess->trans.rx_mac_scratch = NULL;
 	return ret;
 }
 
@@ -2211,10 +2213,6 @@ transport_cleanup(struct dssh_session_s *sess)
 	sess->trans.tx_packet = NULL;
 	free(sess->trans.rx_packet);
 	sess->trans.rx_packet = NULL;
-	free(sess->trans.tx_mac_scratch);
-	sess->trans.tx_mac_scratch = NULL;
-	free(sess->trans.rx_mac_scratch);
-	sess->trans.rx_mac_scratch = NULL;
 	free(sess->trans.rx_mac_buf);
 	sess->trans.rx_mac_buf = NULL;
 	free(sess->trans.rx_mac_computed);

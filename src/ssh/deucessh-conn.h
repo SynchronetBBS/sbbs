@@ -22,75 +22,7 @@ typedef struct dssh_channel_s *dssh_channel;
 #define DSSH_POLL_READ 0x01    /* stdout data (or EOF) */
 #define DSSH_POLL_READEXT 0x02 /* stderr data (or EOF) */
 #define DSSH_POLL_WRITE 0x04   /* send window has space */
-#define DSSH_POLL_SIGNAL 0x08  /* signal ready (streams drained to mark) */
-
-/* PTY request parameters (client -> server) */
-struct dssh_pty_req {
-	const char    *term;
-	const uint8_t *modes;
-	size_t         modes_len;
-	uint32_t       cols, rows;
-	uint32_t       wpx, hpx;
-};
-
-/* Incoming channel open (from session_accept) */
-struct dssh_incoming_open;
-
-/*
- * Channel request callback -- called for every SSH_MSG_CHANNEL_REQUEST
- * during session setup (pty-req, env, shell, exec, subsystem, etc.).
- *
- * type/type_len: request type string (not NUL-terminated)
- * want_reply:    peer expects SUCCESS/FAILURE
- * data/data_len: type-specific payload after the want_reply byte
- *
- * Return 0 to accept, negative to reject.
- * When a terminal request (shell/exec/subsystem) is accepted, setup
- * ends and the channel is returned to the caller.
- *
- * Use dssh_parse_uint32() from deucessh.h and the helpers below
- * to parse the type-specific data.
- */
-typedef int (*dssh_channel_request_cb)(const char *type, size_t type_len,
-    bool want_reply,
-    const uint8_t *data, size_t data_len,
-    void *cbdata);
-
-/*
- * Session setup callbacks.
- * request_cb: called for every CHANNEL_REQUEST during setup.
- *             If NULL, all requests are accepted.
- * window_change: called for window-change requests AFTER setup
- *                completes (post-channel establishment).
- *                May be NULL.
- */
-struct dssh_server_session_cbs {
-	dssh_channel_request_cb request_cb;
-	void                    (*window_change)(uint32_t cols, uint32_t rows,
-	    uint32_t wpx, uint32_t hpx, void *cbdata);
-	void                   *cbdata;
-};
-
-/* Parse helpers for well-known channel request payloads.
- * Call these from your request_cb to extract structured data.
- * All return 0 on success, negative on parse error. */
-
-/* Parse pty-req data.  Pointers in pty->term point into data[]. */
-DSSH_PUBLIC int dssh_parse_pty_req_data(const uint8_t *data, size_t data_len,
-    struct dssh_pty_req *pty);
-
-/* Parse env data.  *name and *value point into data[]. */
-DSSH_PUBLIC int dssh_parse_env_data(const uint8_t *data, size_t data_len,
-    const uint8_t **name, size_t *name_len,
-    const uint8_t **value, size_t *value_len);
-
-/* Parse exec data.  *command points into data[]. */
-DSSH_PUBLIC int dssh_parse_exec_data(const uint8_t *data, size_t data_len,
-    const uint8_t **command, size_t *command_len);
-
-/* Parse subsystem data.  *name points into data[]. */
-DSSH_PUBLIC int dssh_parse_subsystem_data(const uint8_t *data, size_t data_len,
-    const uint8_t **name, size_t *name_len);
+/* 0x08 reserved (was DSSH_POLL_SIGNAL) */
 
 /*
  * Start the demux thread.  Call after handshake and auth are complete.
@@ -103,99 +35,217 @@ DSSH_PUBLIC int dssh_session_start(dssh_session sess);
  */
 DSSH_PUBLIC void dssh_session_stop(dssh_session sess);
 
-/*
- * Wait for an incoming CHANNEL_OPEN from the peer.
- * timeout_ms: -1 = block, 0 = non-blocking.
- */
-DSSH_PUBLIC int dssh_session_accept(dssh_session sess,
-    struct dssh_incoming_open **inc, int timeout_ms);
+/* ================================================================
+ * New channel API (dssh_chan_*) — types and builder functions.
+ * See design-channel-io-api.md for the full design.
+ * ================================================================ */
+
+/* Channel type: one terminal request per channel (RFC 4254 s6.5) */
+enum dssh_chan_type {
+	DSSH_CHAN_SHELL,
+	DSSH_CHAN_EXEC,
+	DSSH_CHAN_SUBSYSTEM
+};
+
+/* Environment variable name/value pair */
+struct dssh_chan_env {
+	char *name;
+	char *value;
+};
+
+/* Terminal mode opcode/value pair (RFC 4254 s8) */
+struct dssh_chan_mode_entry {
+	/* 4-byte */
+	uint32_t value;
+	/* 1-byte */
+	uint8_t  opcode;
+};
+
+/* Params flag bits */
+#define DSSH_PARAM_HAS_PTY 0x01
 
 /*
- * Reject an incoming channel open.
+ * Channel parameters — populated via builder API, consumed at open time.
+ * After dssh_chan_open() or dssh_chan_accept() returns, call
+ * dssh_chan_params_free() to release heap storage.
  */
-DSSH_PUBLIC int dssh_session_reject(dssh_session sess,
-    struct dssh_incoming_open *inc, uint32_t reason_code,
-    const char *description);
+struct dssh_chan_params {
+	/* Pointers */
+	char                       *command;    /* DSSH_CHAN_EXEC (copied) */
+	char                       *subsystem;  /* DSSH_CHAN_SUBSYSTEM (copied) */
+	struct dssh_chan_env        *env;        /* malloc'd array (copied) */
+	struct dssh_chan_mode_entry *modes;      /* malloc'd array */
+	/* Pointer-sized */
+	size_t                      env_count;
+	size_t                      env_capacity;
+	size_t                      mode_count;
+	size_t                      mode_capacity;
+	/* 4-byte */
+	enum dssh_chan_type          type;
+	uint32_t                    flags;
+	uint32_t                    max_window; /* 0 = library default (2 MiB) */
+	uint32_t                    cols, rows;
+	uint32_t                    wpx, hpx;
+	/* Char arrays */
+	char                        term[64];   /* TERM env value */
+};
 
-/* --- Client-side channel open --- */
-
-/*
- * Open a shell session with a PTY.
- * Returns the channel on success, NULL on failure.
- */
-DSSH_PUBLIC dssh_channel dssh_session_open_shell(dssh_session sess, const struct dssh_pty_req *pty);
-
-/*
- * Open an exec session (no PTY).
- * Returns the channel on success, NULL on failure.
- */
-DSSH_PUBLIC dssh_channel dssh_session_open_exec(dssh_session sess, const char *command);
-
-/*
- * Open a raw channel for a subsystem.
- * Returns the channel on success, NULL on failure.
- */
-DSSH_PUBLIC dssh_channel dssh_channel_open_subsystem(dssh_session sess, const char *subsystem);
-
-/* --- Server-side channel accept --- */
-
-/*
- * Accept an incoming session channel.  Processes pty-req, env, and
- * waits for shell/exec/subsystem.
- * Returns the channel on success, NULL on failure.
- * *request_type is "shell", "exec", or "subsystem".
- * *request_data is the command/subsystem name (for exec/subsystem).
- */
-DSSH_PUBLIC dssh_channel dssh_session_accept_channel(dssh_session sess, struct dssh_incoming_open *inc,
-    const struct dssh_server_session_cbs *cbs,
-    const char **request_type, const char **request_data);
-
-/*
- * Accept an incoming channel as a raw (message-based) channel.
- * Returns the channel on success, NULL on failure.
- */
-DSSH_PUBLIC dssh_channel dssh_channel_accept_raw(dssh_session sess, struct dssh_incoming_open *inc);
-
-/* --- Session channel I/O (stream-based) --- */
-DSSH_PUBLIC int dssh_session_poll(dssh_session sess,
-    dssh_channel ch, int events, int timeout_ms);
-DSSH_PUBLIC int64_t dssh_session_read(dssh_session sess,
-    dssh_channel ch, uint8_t *buf, size_t bufsz);
-DSSH_PUBLIC int64_t dssh_session_read_ext(dssh_session sess,
-    dssh_channel ch, uint8_t *buf, size_t bufsz);
-DSSH_PUBLIC int64_t dssh_session_write(dssh_session sess,
-    dssh_channel ch, const uint8_t *buf, size_t bufsz);
-DSSH_PUBLIC int64_t dssh_session_write_ext(dssh_session sess,
-    dssh_channel ch, const uint8_t *buf, size_t bufsz);
-DSSH_PUBLIC int dssh_session_read_signal(dssh_session sess,
-    dssh_channel ch, const char **signal_name);
-
-/*
- * Graceful session close: sends exit-status + EOF + CLOSE.
- * Frees the channel.
- */
-DSSH_PUBLIC int dssh_session_close(dssh_session sess,
-    dssh_channel ch, uint32_t exit_code);
-
-/* --- Raw channel I/O (message-based) --- */
-DSSH_PUBLIC int dssh_channel_poll(dssh_session sess,
-    dssh_channel ch, int events, int timeout_ms);
-DSSH_PUBLIC int64_t dssh_channel_read(dssh_session sess,
-    dssh_channel ch, uint8_t *buf, size_t bufsz);
-DSSH_PUBLIC int dssh_channel_write(dssh_session sess,
-    dssh_channel ch, const uint8_t *buf, size_t len);
-
-/*
- * Close a raw channel: sends EOF + CLOSE.  Frees the channel.
- */
-DSSH_PUBLIC int dssh_channel_close(dssh_session sess,
-    dssh_channel                                ch);
-
-/* --- Signals and window change --- */
-DSSH_PUBLIC int dssh_session_send_signal(dssh_session sess,
-    dssh_channel ch, const char *signal_name);
-DSSH_PUBLIC int dssh_session_send_window_change(dssh_session sess, dssh_channel ch,
+/* Params builder API.  All strings are copied in.
+ * dssh_chan_params_free() releases heap storage. */
+DSSH_PUBLIC int dssh_chan_params_init(struct dssh_chan_params *p,
+    enum dssh_chan_type type);
+DSSH_PUBLIC void dssh_chan_params_free(struct dssh_chan_params *p);
+DSSH_PUBLIC int dssh_chan_params_set_max_window(struct dssh_chan_params *p,
+    uint32_t max_window);
+DSSH_PUBLIC int dssh_chan_params_set_pty(struct dssh_chan_params *p,
+    bool enable);
+DSSH_PUBLIC int dssh_chan_params_set_term(struct dssh_chan_params *p,
+    const char *term);
+DSSH_PUBLIC int dssh_chan_params_set_size(struct dssh_chan_params *p,
     uint32_t cols, uint32_t rows, uint32_t wpx, uint32_t hpx);
+DSSH_PUBLIC int dssh_chan_params_set_mode(struct dssh_chan_params *p,
+    uint8_t opcode, uint32_t value);
+DSSH_PUBLIC int dssh_chan_params_set_command(struct dssh_chan_params *p,
+    const char *command);
+DSSH_PUBLIC int dssh_chan_params_set_subsystem(struct dssh_chan_params *p,
+    const char *name);
+DSSH_PUBLIC int dssh_chan_params_add_env(struct dssh_chan_params *p,
+    const char *name, const char *value);
+
+/* Event poll flag (in addition to DSSH_POLL_READ etc.) */
+#define DSSH_POLL_EVENT 0x10
+
+/* Event types */
+#define DSSH_EVENT_SIGNAL        1
+#define DSSH_EVENT_WINDOW_CHANGE 2
+#define DSSH_EVENT_BREAK         3
+#define DSSH_EVENT_EOF           4
+#define DSSH_EVENT_CLOSE         5
+#define DSSH_EVENT_EXIT_STATUS   6
+#define DSSH_EVENT_EXIT_SIGNAL   7
+
+/* Event struct — returned by dssh_chan_read_event().
+ * String pointers are valid until the next dssh_chan_read_event() or
+ * dssh_chan_poll() on the same channel. */
+struct dssh_chan_event {
+	/* Pointer-sized */
+	size_t stdout_pos; /* bytes of stdout received before event */
+	size_t stderr_pos; /* bytes of stderr received before event */
+	/* 4-byte */
+	int    type;
+	/* Union (mixed sizes, largest member determines layout) */
+	union {
+		struct {
+			const char *name;
+		} signal;
+		struct {
+			uint32_t cols, rows, wpx, hpx;
+		} window_change;
+		struct {
+			uint32_t length;
+		} brk;
+		struct {
+			uint32_t exit_code;
+		} exit_status;
+		struct {
+			const char *signal_name;
+			bool        core_dumped;
+			const char *error_message;
+		} exit_signal;
+	};
+};
+
+/* ZC data callback — fires on demux thread for each inbound
+ * CHANNEL_DATA/EXTENDED_DATA.  Returns bytes consumed for
+ * WINDOW_ADJUST. */
+typedef uint32_t (*dssh_chan_zc_cb)(dssh_channel ch,
+    int stream, const uint8_t *data, size_t len,
+    void *cbdata);
+
+/* Event callback — fires from demux thread when an event is queued.
+ * Optional alternative to poll + read_event. */
+typedef void (*dssh_chan_event_cb)(dssh_channel ch,
+    const struct dssh_chan_event *event, void *cbdata);
+
+/* Server accept: result struct filled by terminal request callback */
+struct dssh_chan_accept_result {
+	/* Pointers */
+	dssh_chan_zc_cb zc_cb;      /* NULL = stream mode */
+	void           *zc_cbdata;
+	/* 4-byte */
+	uint32_t        max_window; /* 0 = default */
+};
+
+/* ---- New dssh_chan_* API ---- */
+
+/* Open a stream-mode channel.  Performs the full setup sequence:
+ * CHANNEL_OPEN, env, pty-req, shell/exec/subsystem, WINDOW_ADJUST.
+ * Returns the channel on success, NULL on failure. */
+DSSH_PUBLIC dssh_channel dssh_chan_open(dssh_session sess,
+    const struct dssh_chan_params *params);
+
+/* Stream I/O.  stream: 0=stdout/stdin, 1=stderr.
+ * read returns bytes read (>0), 0 on EOF, negative on error.
+ * Peek: dssh_chan_read(ch, stream, NULL, 0) returns available bytes.
+ * write returns bytes sent (>0), negative on error. */
+DSSH_PUBLIC int64_t dssh_chan_read(dssh_channel ch, int stream,
+    uint8_t *buf, size_t bufsz);
+DSSH_PUBLIC int64_t dssh_chan_write(dssh_channel ch, int stream,
+    const uint8_t *buf, size_t bufsz);
+DSSH_PUBLIC int dssh_chan_poll(dssh_channel ch, int events,
+    int timeout_ms);
+
+/* Read the next frozen event (from the most recent poll with
+ * DSSH_POLL_EVENT).  Returns 0 on success, DSSH_ERROR_NOMORE if
+ * no event is frozen.  String pointers in the event are valid
+ * until the next dssh_chan_read_event or dssh_chan_poll call. */
+DSSH_PUBLIC int dssh_chan_read_event(dssh_channel ch,
+    struct dssh_chan_event *event);
+
+/* Half-close: send EOF, keep reading. */
+DSSH_PUBLIC int dssh_chan_shutwr(dssh_channel ch);
+
+/* Close: send exit-status (if exit_code >= 0) + EOF + CLOSE.
+ * Frees the channel handle. */
+DSSH_PUBLIC int dssh_chan_close(dssh_channel ch, int64_t exit_code);
+
+/* Control: signal, window-change, break (RFC 4335). */
+DSSH_PUBLIC int dssh_chan_send_signal(dssh_channel ch,
+    const char *signal_name);
+DSSH_PUBLIC int dssh_chan_send_window_change(dssh_channel ch,
+    uint32_t cols, uint32_t rows, uint32_t wpx, uint32_t hpx);
+DSSH_PUBLIC int dssh_chan_send_break(dssh_channel ch,
+    uint32_t length);
+
+/* Getters -- valid after open or accept, until close. */
+DSSH_PUBLIC enum dssh_chan_type dssh_chan_get_type(dssh_channel ch);
+DSSH_PUBLIC const char *dssh_chan_get_command(dssh_channel ch);
+DSSH_PUBLIC const char *dssh_chan_get_subsystem(dssh_channel ch);
+DSSH_PUBLIC bool dssh_chan_has_pty(dssh_channel ch);
+
+/* Server accept: callback struct */
+struct dssh_chan_accept_cbs {
+	int (*pty_req)(dssh_channel ch,
+	    const struct dssh_chan_params *params, void *cbdata);
+	int (*env)(dssh_channel ch,
+	    const struct dssh_chan_params *params, void *cbdata);
+	int (*shell)(dssh_channel ch,
+	    const struct dssh_chan_params *params,
+	    struct dssh_chan_accept_result *result, void *cbdata);
+	int (*exec)(dssh_channel ch,
+	    const struct dssh_chan_params *params,
+	    struct dssh_chan_accept_result *result, void *cbdata);
+	int (*subsystem)(dssh_channel ch,
+	    const struct dssh_chan_params *params,
+	    struct dssh_chan_accept_result *result, void *cbdata);
+	void *cbdata;
+};
+
+/* Server accept: callback-driven setup.  Blocks until a channel is
+ * fully set up (terminal request accepted) or timeout/error.
+ * Returns the channel on success, NULL on failure. */
+DSSH_PUBLIC dssh_channel dssh_chan_accept(dssh_session sess,
+    const struct dssh_chan_accept_cbs *cbs, int timeout_ms);
 
 #ifdef __cplusplus
 }

@@ -8,6 +8,7 @@
 
 #include "dssh_test.h"
 #include "dssh_test_internal.h"
+#include "deucessh-conn.h"
 
 /* ================================================================
  * Bytebuf -- circular byte buffer
@@ -538,665 +539,6 @@ static int test_bytebuf_head_tail_reset_after_free(void)
 }
 
 /* ================================================================
- * Msgqueue -- linked list message queue
- * ================================================================ */
-
-static int test_msgqueue_init_free(void)
-{
-	struct dssh_msgqueue q;
-	msgqueue_init(&q);
-	ASSERT_NULL(q.head);
-	ASSERT_NULL(q.tail);
-	ASSERT_EQ_U(q.total_bytes, 0);
-	ASSERT_EQ_U(q.count, 0);
-	msgqueue_free(&q);
-	return TEST_PASS;
-}
-
-static int test_msgqueue_push_pop_single(void)
-{
-	struct dssh_msgqueue q;
-	msgqueue_init(&q);
-
-	const uint8_t msg[] = "test message";
-	ASSERT_OK(msgqueue_push(&q, msg, sizeof(msg)));
-	ASSERT_EQ_U(q.count, 1);
-	ASSERT_EQ_U(q.total_bytes, sizeof(msg));
-
-	uint8_t buf[64];
-	int64_t got = msgqueue_pop(&q, buf, sizeof(buf));
-	ASSERT_EQ(got, (int64_t)sizeof(msg));
-	ASSERT_MEM_EQ(buf, msg, sizeof(msg));
-	ASSERT_EQ_U(q.count, 0);
-	ASSERT_EQ_U(q.total_bytes, 0);
-
-	msgqueue_free(&q);
-	return TEST_PASS;
-}
-
-static int test_msgqueue_pop_empty(void)
-{
-	struct dssh_msgqueue q;
-	msgqueue_init(&q);
-
-	uint8_t buf[16];
-	int64_t got = msgqueue_pop(&q, buf, sizeof(buf));
-	ASSERT_EQ(got, 0);
-
-	msgqueue_free(&q);
-	return TEST_PASS;
-}
-
-
-static int test_msgqueue_pop_toolong(void)
-{
-	struct dssh_msgqueue q;
-	msgqueue_init(&q);
-
-	const uint8_t msg[20] = {0};
-	msgqueue_push(&q, msg, 20);
-
-	/* Buffer too small */
-	uint8_t buf[10];
-	int64_t got = msgqueue_pop(&q, buf, sizeof(buf));
-	ASSERT_EQ(got, (int64_t)DSSH_ERROR_TOOLONG);
-
-	/* Message should still be queued */
-	ASSERT_EQ_U(q.count, 1);
-
-	msgqueue_free(&q);
-	return TEST_PASS;
-}
-
-static int test_msgqueue_fifo_order(void)
-{
-	struct dssh_msgqueue q;
-	msgqueue_init(&q);
-
-	const uint8_t m1[] = "first";
-	const uint8_t m2[] = "second";
-	const uint8_t m3[] = "third";
-	msgqueue_push(&q, m1, sizeof(m1));
-	msgqueue_push(&q, m2, sizeof(m2));
-	msgqueue_push(&q, m3, sizeof(m3));
-	ASSERT_EQ_U(q.count, 3);
-
-	uint8_t buf[64];
-	msgqueue_pop(&q, buf, sizeof(buf));
-	ASSERT_MEM_EQ(buf, m1, sizeof(m1));
-	msgqueue_pop(&q, buf, sizeof(buf));
-	ASSERT_MEM_EQ(buf, m2, sizeof(m2));
-	msgqueue_pop(&q, buf, sizeof(buf));
-	ASSERT_MEM_EQ(buf, m3, sizeof(m3));
-	ASSERT_EQ_U(q.count, 0);
-
-	msgqueue_free(&q);
-	return TEST_PASS;
-}
-
-static int test_msgqueue_total_bytes(void)
-{
-	struct dssh_msgqueue q;
-	msgqueue_init(&q);
-
-	const uint8_t m1[5] = {0};
-	const uint8_t m2[10] = {0};
-	msgqueue_push(&q, m1, 5);
-	msgqueue_push(&q, m2, 10);
-	ASSERT_EQ_U(q.total_bytes, 15);
-
-	uint8_t buf[16];
-	msgqueue_pop(&q, buf, sizeof(buf));
-	ASSERT_EQ_U(q.total_bytes, 10);
-
-	msgqueue_pop(&q, buf, sizeof(buf));
-	ASSERT_EQ_U(q.total_bytes, 0);
-
-	msgqueue_free(&q);
-	return TEST_PASS;
-}
-
-static int test_msgqueue_many_messages(void)
-{
-	struct dssh_msgqueue q;
-	msgqueue_init(&q);
-
-	for (int i = 0; i < 100; i++) {
-		uint8_t val = (uint8_t)i;
-		ASSERT_OK(msgqueue_push(&q, &val, 1));
-	}
-	ASSERT_EQ_U(q.count, 100);
-	ASSERT_EQ_U(q.total_bytes, 100);
-
-	for (int i = 0; i < 100; i++) {
-		uint8_t buf;
-		int64_t got = msgqueue_pop(&q, &buf, 1);
-		ASSERT_EQ(got, 1);
-		ASSERT_EQ(buf, (uint8_t)i);
-	}
-	ASSERT_EQ_U(q.count, 0);
-
-	msgqueue_free(&q);
-	return TEST_PASS;
-}
-
-static int test_msgqueue_free_nonempty(void)
-{
-	struct dssh_msgqueue q;
-	msgqueue_init(&q);
-
-	const uint8_t msg[8] = {1, 2, 3, 4, 5, 6, 7, 8};
-	msgqueue_push(&q, msg, 8);
-	msgqueue_push(&q, msg, 8);
-	msgqueue_push(&q, msg, 8);
-
-	/* Free without popping -- should not leak */
-	msgqueue_free(&q);
-	ASSERT_NULL(q.head);
-	ASSERT_NULL(q.tail);
-	return TEST_PASS;
-}
-
-static int test_msgqueue_zero_len_message(void)
-{
-	struct dssh_msgqueue q;
-	msgqueue_init(&q);
-
-	ASSERT_OK(msgqueue_push(&q, NULL, 0));
-	ASSERT_EQ_U(q.count, 1);
-
-	uint8_t buf[1];
-	int64_t got = msgqueue_pop(&q, buf, sizeof(buf));
-	ASSERT_EQ(got, 0);
-	/* count should now be 0 after consuming the zero-length message */
-	ASSERT_EQ_U(q.count, 0);
-
-	msgqueue_free(&q);
-	return TEST_PASS;
-}
-
-static int test_msgqueue_pop_after_toolong(void)
-{
-	struct dssh_msgqueue q;
-	msgqueue_init(&q);
-
-	const uint8_t msg[] = "retained";
-	msgqueue_push(&q, msg, sizeof(msg));
-
-	/* Fail with small buffer */
-	uint8_t small[2];
-	int64_t got = msgqueue_pop(&q, small, sizeof(small));
-	ASSERT_EQ(got, (int64_t)DSSH_ERROR_TOOLONG);
-
-	/* Succeed with larger buffer */
-	uint8_t big[64];
-	got = msgqueue_pop(&q, big, sizeof(big));
-	ASSERT_EQ(got, (int64_t)sizeof(msg));
-	ASSERT_MEM_EQ(big, msg, sizeof(msg));
-
-	msgqueue_free(&q);
-	return TEST_PASS;
-}
-
-static int test_msgqueue_push_pop_interleaved(void)
-{
-	struct dssh_msgqueue q;
-	msgqueue_init(&q);
-
-	uint8_t buf[16];
-	for (int i = 0; i < 50; i++) {
-		uint8_t data[4];
-		memset(data, (uint8_t)i, 4);
-		ASSERT_OK(msgqueue_push(&q, data, 4));
-
-		int64_t got = msgqueue_pop(&q, buf, sizeof(buf));
-		ASSERT_EQ(got, 4);
-		for (int j = 0; j < 4; j++)
-			ASSERT_EQ(buf[j], (uint8_t)i);
-	}
-	ASSERT_EQ_U(q.count, 0);
-
-	msgqueue_free(&q);
-	return TEST_PASS;
-}
-
-static int test_msgqueue_varying_sizes(void)
-{
-	struct dssh_msgqueue q;
-	msgqueue_init(&q);
-
-	/* Push messages of increasing size */
-	for (size_t i = 1; i <= 10; i++) {
-		uint8_t data[10];
-		memset(data, (uint8_t)i, i);
-		ASSERT_OK(msgqueue_push(&q, data, i));
-	}
-	ASSERT_EQ_U(q.count, 10);
-	ASSERT_EQ_U(q.total_bytes, 55);  /* 1+2+...+10 */
-
-	/* Pop and verify sizes */
-	for (size_t i = 1; i <= 10; i++) {
-		uint8_t buf[16];
-		int64_t got = msgqueue_pop(&q, buf, sizeof(buf));
-		ASSERT_EQ((size_t)got, i);
-		for (size_t j = 0; j < i; j++)
-			ASSERT_EQ(buf[j], (uint8_t)i);
-	}
-
-	msgqueue_free(&q);
-	return TEST_PASS;
-}
-
-static int test_msgqueue_exact_bufsz_pop(void)
-{
-	struct dssh_msgqueue q;
-	msgqueue_init(&q);
-
-	const uint8_t msg[5] = {10, 20, 30, 40, 50};
-	msgqueue_push(&q, msg, 5);
-
-	/* Pop with bufsz exactly equal to message length */
-	uint8_t buf[5];
-	int64_t got = msgqueue_pop(&q, buf, 5);
-	ASSERT_EQ(got, 5);
-	ASSERT_MEM_EQ(buf, msg, 5);
-
-	msgqueue_free(&q);
-	return TEST_PASS;
-}
-
-static int test_msgqueue_count_tracking(void)
-{
-	struct dssh_msgqueue q;
-	msgqueue_init(&q);
-
-	const uint8_t msg[1] = {0};
-	for (int i = 0; i < 5; i++) {
-		msgqueue_push(&q, msg, 1);
-		ASSERT_EQ_U(q.count, (size_t)(i + 1));
-	}
-
-	uint8_t buf[1];
-	for (int i = 5; i > 0; i--) {
-		ASSERT_EQ_U(q.count, (size_t)i);
-		msgqueue_pop(&q, buf, 1);
-	}
-	ASSERT_EQ_U(q.count, 0);
-
-	msgqueue_free(&q);
-	return TEST_PASS;
-}
-
-static int test_msgqueue_large_message(void)
-{
-	struct dssh_msgqueue q;
-	msgqueue_init(&q);
-
-	uint8_t big[4096];
-	for (size_t i = 0; i < sizeof(big); i++)
-		big[i] = (uint8_t)(i & 0xFF);
-
-	ASSERT_OK(msgqueue_push(&q, big, sizeof(big)));
-	ASSERT_EQ_U(q.total_bytes, 4096);
-
-	uint8_t out[4096];
-	int64_t got = msgqueue_pop(&q, out, sizeof(out));
-	ASSERT_EQ(got, 4096);
-	ASSERT_MEM_EQ(out, big, 4096);
-
-	msgqueue_free(&q);
-	return TEST_PASS;
-}
-
-static int test_msgqueue_toolong_preserves_count(void)
-{
-	struct dssh_msgqueue q;
-	msgqueue_init(&q);
-
-	const uint8_t m1[10] = {0};
-	const uint8_t m2[5] = {1, 2, 3, 4, 5};
-	msgqueue_push(&q, m1, 10);
-	msgqueue_push(&q, m2, 5);
-	ASSERT_EQ_U(q.count, 2);
-	ASSERT_EQ_U(q.total_bytes, 15);
-
-	/* Fail to pop first (too small) */
-	uint8_t small[4];
-	ASSERT_EQ(msgqueue_pop(&q, small, sizeof(small)),
-	    (int64_t)DSSH_ERROR_TOOLONG);
-
-	/* Count and total_bytes unchanged */
-	ASSERT_EQ_U(q.count, 2);
-	ASSERT_EQ_U(q.total_bytes, 15);
-
-	msgqueue_free(&q);
-	return TEST_PASS;
-}
-
-/* ================================================================
- * Signal queue
- * ================================================================ */
-
-static int test_sigqueue_init_free(void)
-{
-	struct dssh_signal_queue q;
-	sigqueue_init(&q);
-	ASSERT_NULL(q.head);
-	ASSERT_NULL(q.tail);
-	sigqueue_free(&q);
-	return TEST_PASS;
-}
-
-static int test_sigqueue_push_ready_pop(void)
-{
-	struct dssh_signal_queue q;
-	sigqueue_init(&q);
-
-	ASSERT_OK(sigqueue_push(&q, "INT", 100, 50));
-
-	/* Not ready -- stdout not consumed enough */
-	ASSERT_FALSE(sigqueue_ready(&q, 99, 50));
-	/* Not ready -- stderr not consumed enough */
-	ASSERT_FALSE(sigqueue_ready(&q, 100, 49));
-	/* Not ready -- neither consumed enough */
-	ASSERT_FALSE(sigqueue_ready(&q, 50, 25));
-	/* Ready -- both consumed enough */
-	ASSERT_TRUE(sigqueue_ready(&q, 100, 50));
-	/* Ready -- both exceeded */
-	ASSERT_TRUE(sigqueue_ready(&q, 200, 100));
-
-	char buf[32];
-	const char *name = sigqueue_pop(&q, 100, 50, buf, sizeof(buf));
-	ASSERT_NOT_NULL(name);
-	ASSERT_STR_EQ(buf, "INT");
-
-	sigqueue_free(&q);
-	return TEST_PASS;
-}
-
-static int test_sigqueue_pop_not_ready(void)
-{
-	struct dssh_signal_queue q;
-	sigqueue_init(&q);
-
-	ASSERT_OK(sigqueue_push(&q, "TERM", 10, 10));
-
-	char buf[32];
-	const char *name = sigqueue_pop(&q, 5, 5, buf, sizeof(buf));
-	ASSERT_NULL(name);
-
-	/* Signal should still be queued */
-	ASSERT_TRUE(sigqueue_ready(&q, 10, 10));
-
-	sigqueue_free(&q);
-	return TEST_PASS;
-}
-
-static int test_sigqueue_pop_empty(void)
-{
-	struct dssh_signal_queue q;
-	sigqueue_init(&q);
-
-	char buf[32];
-	const char *name = sigqueue_pop(&q, 1000, 1000, buf, sizeof(buf));
-	ASSERT_NULL(name);
-
-	sigqueue_free(&q);
-	return TEST_PASS;
-}
-
-static int test_sigqueue_ready_empty(void)
-{
-	struct dssh_signal_queue q;
-	sigqueue_init(&q);
-
-	ASSERT_FALSE(sigqueue_ready(&q, 1000, 1000));
-
-	sigqueue_free(&q);
-	return TEST_PASS;
-}
-
-static int test_sigqueue_fifo_order(void)
-{
-	struct dssh_signal_queue q;
-	sigqueue_init(&q);
-
-	sigqueue_push(&q, "HUP", 0, 0);
-	sigqueue_push(&q, "INT", 0, 0);
-	sigqueue_push(&q, "TERM", 0, 0);
-
-	char buf[32];
-	sigqueue_pop(&q, 0, 0, buf, sizeof(buf));
-	ASSERT_STR_EQ(buf, "HUP");
-	sigqueue_pop(&q, 0, 0, buf, sizeof(buf));
-	ASSERT_STR_EQ(buf, "INT");
-	sigqueue_pop(&q, 0, 0, buf, sizeof(buf));
-	ASSERT_STR_EQ(buf, "TERM");
-
-	sigqueue_free(&q);
-	return TEST_PASS;
-}
-
-static int test_sigqueue_ordered_positions(void)
-{
-	struct dssh_signal_queue q;
-	sigqueue_init(&q);
-
-	/* Signals at increasing stream positions */
-	sigqueue_push(&q, "FIRST", 10, 5);
-	sigqueue_push(&q, "SECOND", 20, 15);
-	sigqueue_push(&q, "THIRD", 30, 25);
-
-	/* Only first is ready */
-	ASSERT_TRUE(sigqueue_ready(&q, 10, 5));
-
-	char buf[32];
-	sigqueue_pop(&q, 10, 5, buf, sizeof(buf));
-	ASSERT_STR_EQ(buf, "FIRST");
-
-	/* Second not ready yet */
-	ASSERT_FALSE(sigqueue_ready(&q, 15, 10));
-
-	/* Second now ready */
-	sigqueue_pop(&q, 20, 15, buf, sizeof(buf));
-	ASSERT_STR_EQ(buf, "SECOND");
-
-	/* Third ready */
-	sigqueue_pop(&q, 30, 25, buf, sizeof(buf));
-	ASSERT_STR_EQ(buf, "THIRD");
-
-	sigqueue_free(&q);
-	return TEST_PASS;
-}
-
-static int test_sigqueue_stdout_only_gate(void)
-{
-	struct dssh_signal_queue q;
-	sigqueue_init(&q);
-
-	sigqueue_push(&q, "USR1", 100, 0);
-
-	/* stderr at 0 is fine (mark is 0), but stdout must reach 100 */
-	ASSERT_FALSE(sigqueue_ready(&q, 99, 0));
-	ASSERT_TRUE(sigqueue_ready(&q, 100, 0));
-
-	char buf[32];
-	sigqueue_pop(&q, 100, 0, buf, sizeof(buf));
-	ASSERT_STR_EQ(buf, "USR1");
-
-	sigqueue_free(&q);
-	return TEST_PASS;
-}
-
-static int test_sigqueue_stderr_only_gate(void)
-{
-	struct dssh_signal_queue q;
-	sigqueue_init(&q);
-
-	sigqueue_push(&q, "USR2", 0, 200);
-
-	ASSERT_FALSE(sigqueue_ready(&q, 0, 199));
-	ASSERT_TRUE(sigqueue_ready(&q, 0, 200));
-
-	char buf[32];
-	sigqueue_pop(&q, 0, 200, buf, sizeof(buf));
-	ASSERT_STR_EQ(buf, "USR2");
-
-	sigqueue_free(&q);
-	return TEST_PASS;
-}
-
-static int test_sigqueue_free_nonempty(void)
-{
-	struct dssh_signal_queue q;
-	sigqueue_init(&q);
-
-	sigqueue_push(&q, "HUP", 10, 10);
-	sigqueue_push(&q, "TERM", 20, 20);
-
-	/* Free without popping -- should not leak */
-	sigqueue_free(&q);
-	ASSERT_NULL(q.head);
-	ASSERT_NULL(q.tail);
-	return TEST_PASS;
-}
-
-static int test_sigqueue_name_truncation(void)
-{
-	struct dssh_signal_queue q;
-	sigqueue_init(&q);
-
-	/* Name field is 32 bytes -- push a long name */
-	ASSERT_OK(sigqueue_push(&q, "AVERYLONGSIGNALNAMETHATISFORTYCHARS", 0, 0));
-
-	char buf[32];
-	sigqueue_pop(&q, 0, 0, buf, sizeof(buf));
-	/* Should be truncated to 31 chars + NUL */
-	ASSERT_EQ_U(strlen(buf), 31);
-
-	sigqueue_free(&q);
-	return TEST_PASS;
-}
-
-static int test_sigqueue_many_signals(void)
-{
-	struct dssh_signal_queue q;
-	sigqueue_init(&q);
-
-	for (int i = 0; i < 50; i++) {
-		char name[8];
-		snprintf(name, sizeof(name), "S%d", i);
-		ASSERT_OK(sigqueue_push(&q, name, (size_t)i, 0));
-	}
-
-	char buf[32];
-	for (int i = 0; i < 50; i++) {
-		char expected[8];
-		snprintf(expected, sizeof(expected), "S%d", i);
-		const char *got = sigqueue_pop(&q, (size_t)i, 0, buf, sizeof(buf));
-		ASSERT_NOT_NULL(got);
-		ASSERT_STR_EQ(buf, expected);
-	}
-
-	sigqueue_free(&q);
-	return TEST_PASS;
-}
-
-static int test_sigqueue_both_streams_must_drain(void)
-{
-	struct dssh_signal_queue q;
-	sigqueue_init(&q);
-
-	sigqueue_push(&q, "PIPE", 50, 75);
-
-	/* stdout drained, stderr not */
-	ASSERT_FALSE(sigqueue_ready(&q, 50, 74));
-	/* stderr drained, stdout not */
-	ASSERT_FALSE(sigqueue_ready(&q, 49, 75));
-	/* Both drained */
-	ASSERT_TRUE(sigqueue_ready(&q, 50, 75));
-
-	sigqueue_free(&q);
-	return TEST_PASS;
-}
-
-static int test_sigqueue_zero_positions(void)
-{
-	struct dssh_signal_queue q;
-	sigqueue_init(&q);
-
-	sigqueue_push(&q, "ZERO", 0, 0);
-
-	/* Immediately ready at position 0 */
-	ASSERT_TRUE(sigqueue_ready(&q, 0, 0));
-
-	char buf[32];
-	const char *name = sigqueue_pop(&q, 0, 0, buf, sizeof(buf));
-	ASSERT_NOT_NULL(name);
-	ASSERT_STR_EQ(buf, "ZERO");
-
-	sigqueue_free(&q);
-	return TEST_PASS;
-}
-
-static int test_sigqueue_pop_returns_buf(void)
-{
-	struct dssh_signal_queue q;
-	sigqueue_init(&q);
-
-	sigqueue_push(&q, "ALRM", 0, 0);
-
-	char buf[32];
-	const char *ret = sigqueue_pop(&q, 0, 0, buf, sizeof(buf));
-	/* Return value should be the buf pointer */
-	ASSERT_TRUE(ret == buf);
-
-	sigqueue_free(&q);
-	return TEST_PASS;
-}
-
-static int test_sigqueue_second_blocked_by_first(void)
-{
-	struct dssh_signal_queue q;
-	sigqueue_init(&q);
-
-	sigqueue_push(&q, "FIRST", 100, 100);
-	sigqueue_push(&q, "SECOND", 50, 50);
-
-	/* Second has lower positions but first must be consumed first.
-	 * ready() checks the head, which is FIRST. */
-	ASSERT_FALSE(sigqueue_ready(&q, 50, 50));
-	ASSERT_TRUE(sigqueue_ready(&q, 100, 100));
-
-	char buf[32];
-	sigqueue_pop(&q, 100, 100, buf, sizeof(buf));
-	ASSERT_STR_EQ(buf, "FIRST");
-
-	/* Now second is head and ready */
-	ASSERT_TRUE(sigqueue_ready(&q, 50, 50));
-	sigqueue_pop(&q, 50, 50, buf, sizeof(buf));
-	ASSERT_STR_EQ(buf, "SECOND");
-
-	sigqueue_free(&q);
-	return TEST_PASS;
-}
-
-static int test_sigqueue_single_char_name(void)
-{
-	struct dssh_signal_queue q;
-	sigqueue_init(&q);
-
-	ASSERT_OK(sigqueue_push(&q, "X", 0, 0));
-
-	char buf[32];
-	sigqueue_pop(&q, 0, 0, buf, sizeof(buf));
-	ASSERT_STR_EQ(buf, "X");
-
-	sigqueue_free(&q);
-	return TEST_PASS;
-}
-
-/* ================================================================
  * Accept queue
  * ================================================================ */
 
@@ -1522,102 +864,6 @@ static int test_acceptqueue_pop_does_not_affect_remaining(void)
 	return TEST_PASS;
 }
 
-/* ================================================================
- * Coverage: msgqueue_pop NULL buf (peek), sigqueue_pop edge cases
- * ================================================================ */
-
-static int test_msgqueue_pop_null_buf_peek(void)
-{
-	/* Passing buf=NULL returns the message length without consuming.
-	 * Covers ssh-chan.c:164 (buf == NULL branch). */
-	struct dssh_msgqueue q;
-	msgqueue_init(&q);
-
-	const uint8_t msg[] = "peek test";
-	ASSERT_OK(msgqueue_push(&q, msg, sizeof(msg)));
-
-	/* Peek: buf=NULL should return length */
-	int64_t len = msgqueue_pop(&q, NULL, 0);
-	ASSERT_EQ(len, (int64_t)sizeof(msg));
-
-	/* Message should still be queued */
-	ASSERT_EQ_U(q.count, 1);
-	ASSERT_EQ_U(q.total_bytes, sizeof(msg));
-
-	/* Now actually consume it */
-	uint8_t buf[64];
-	int64_t got = msgqueue_pop(&q, buf, sizeof(buf));
-	ASSERT_EQ(got, (int64_t)sizeof(msg));
-	ASSERT_MEM_EQ(buf, msg, sizeof(msg));
-	ASSERT_EQ_U(q.count, 0);
-
-	msgqueue_free(&q);
-	return TEST_PASS;
-}
-
-static int test_sigqueue_pop_stderr_not_ready(void)
-{
-	/* stdout consumed enough, stderr not -- covers the second
-	 * half of the OR on ssh-chan.c:247. */
-	struct dssh_signal_queue q;
-	sigqueue_init(&q);
-
-	ASSERT_OK(sigqueue_push(&q, "TST", 10, 100));
-
-	/* stdout sufficient, stderr insufficient */
-	char buf[32];
-	const char *name = sigqueue_pop(&q, 10, 50, buf, sizeof(buf));
-	ASSERT_NULL(name);
-
-	/* Signal should still be queued */
-	ASSERT_TRUE(sigqueue_ready(&q, 10, 100));
-
-	/* Now pop with both sufficient */
-	name = sigqueue_pop(&q, 10, 100, buf, sizeof(buf));
-	ASSERT_NOT_NULL(name);
-	ASSERT_STR_EQ(buf, "TST");
-
-	sigqueue_free(&q);
-	return TEST_PASS;
-}
-
-static int test_sigqueue_pop_name_truncation(void)
-{
-	/* Pop into a very small buffer -- covers ssh-chan.c:257
-	 * (nlen >= bufsz truncation path). */
-	struct dssh_signal_queue q;
-	sigqueue_init(&q);
-
-	ASSERT_OK(sigqueue_push(&q, "LONGNAME", 0, 0));
-
-	/* Pop into a 4-byte buffer: "LON" + NUL */
-	char buf[4];
-	const char *name = sigqueue_pop(&q, 0, 0, buf, sizeof(buf));
-	ASSERT_NOT_NULL(name);
-	ASSERT_EQ_U(strlen(buf), 3);
-	ASSERT_MEM_EQ(buf, "LON", 3);
-
-	sigqueue_free(&q);
-	return TEST_PASS;
-}
-
-static int test_sigqueue_pop_tiny_buf(void)
-{
-	/* Pop into a 2-byte buffer: "L" + NUL */
-	struct dssh_signal_queue q;
-	sigqueue_init(&q);
-
-	ASSERT_OK(sigqueue_push(&q, "LONGNAME", 0, 0));
-
-	char buf[2];
-	const char *name = sigqueue_pop(&q, 0, 0, buf, sizeof(buf));
-	ASSERT_NOT_NULL(name);
-	ASSERT_EQ_U(strlen(buf), 1);
-	ASSERT_EQ(buf[0], 'L');
-
-	sigqueue_free(&q);
-	return TEST_PASS;
-}
 
 /* ================================================================
  * RFC 4251 wire format: uint32 parse/serialize (formerly test_arch.c)
@@ -1802,6 +1048,215 @@ test_serialize_uint32_null(void)
 }
 
 /* ================================================================
+ * Params builder tests
+ * ================================================================ */
+
+static int test_params_init_shell(void)
+{
+	struct dssh_chan_params p;
+
+	ASSERT_OK(dssh_chan_params_init(&p, DSSH_CHAN_SHELL));
+	ASSERT_EQ(p.type, DSSH_CHAN_SHELL);
+	ASSERT_TRUE(p.flags & DSSH_PARAM_HAS_PTY);
+	ASSERT_STR_EQ(p.term, "dumb");
+	ASSERT_EQ_U(p.cols, 0);
+	ASSERT_EQ_U(p.max_window, 0);
+	ASSERT_NULL(p.command);
+	ASSERT_NULL(p.subsystem);
+	ASSERT_NULL(p.env);
+	ASSERT_EQ_U(p.env_count, 0);
+	ASSERT_NULL(p.modes);
+	ASSERT_EQ_U(p.mode_count, 0);
+	dssh_chan_params_free(&p);
+	return TEST_PASS;
+}
+
+static int test_params_init_exec(void)
+{
+	struct dssh_chan_params p;
+
+	ASSERT_OK(dssh_chan_params_init(&p, DSSH_CHAN_EXEC));
+	ASSERT_EQ(p.type, DSSH_CHAN_EXEC);
+	ASSERT_FALSE(p.flags & DSSH_PARAM_HAS_PTY);
+	dssh_chan_params_free(&p);
+	return TEST_PASS;
+}
+
+static int test_params_init_subsystem(void)
+{
+	struct dssh_chan_params p;
+
+	ASSERT_OK(dssh_chan_params_init(&p, DSSH_CHAN_SUBSYSTEM));
+	ASSERT_EQ(p.type, DSSH_CHAN_SUBSYSTEM);
+	ASSERT_FALSE(p.flags & DSSH_PARAM_HAS_PTY);
+	dssh_chan_params_free(&p);
+	return TEST_PASS;
+}
+
+static int test_params_set_pty(void)
+{
+	struct dssh_chan_params p;
+
+	ASSERT_OK(dssh_chan_params_init(&p, DSSH_CHAN_EXEC));
+	ASSERT_FALSE(p.flags & DSSH_PARAM_HAS_PTY);
+
+	ASSERT_OK(dssh_chan_params_set_pty(&p, true));
+	ASSERT_TRUE(p.flags & DSSH_PARAM_HAS_PTY);
+
+	ASSERT_OK(dssh_chan_params_set_pty(&p, false));
+	ASSERT_FALSE(p.flags & DSSH_PARAM_HAS_PTY);
+
+	dssh_chan_params_free(&p);
+	return TEST_PASS;
+}
+
+static int test_params_set_term(void)
+{
+	struct dssh_chan_params p;
+
+	ASSERT_OK(dssh_chan_params_init(&p, DSSH_CHAN_SHELL));
+	ASSERT_OK(dssh_chan_params_set_term(&p, "xterm-256color"));
+	ASSERT_STR_EQ(p.term, "xterm-256color");
+
+	/* Truncation at sizeof(term)-1 */
+	char longterm[128];
+	memset(longterm, 'x', sizeof(longterm) - 1);
+	longterm[sizeof(longterm) - 1] = '\0';
+	ASSERT_OK(dssh_chan_params_set_term(&p, longterm));
+	ASSERT_EQ_U(strlen(p.term), sizeof(p.term) - 1);
+
+	dssh_chan_params_free(&p);
+	return TEST_PASS;
+}
+
+static int test_params_set_size(void)
+{
+	struct dssh_chan_params p;
+
+	ASSERT_OK(dssh_chan_params_init(&p, DSSH_CHAN_SHELL));
+	ASSERT_OK(dssh_chan_params_set_size(&p, 80, 24, 640, 480));
+	ASSERT_EQ_U(p.cols, 80);
+	ASSERT_EQ_U(p.rows, 24);
+	ASSERT_EQ_U(p.wpx, 640);
+	ASSERT_EQ_U(p.hpx, 480);
+	dssh_chan_params_free(&p);
+	return TEST_PASS;
+}
+
+static int test_params_set_command(void)
+{
+	struct dssh_chan_params p;
+
+	ASSERT_OK(dssh_chan_params_init(&p, DSSH_CHAN_EXEC));
+	ASSERT_OK(dssh_chan_params_set_command(&p, "ls -la"));
+	ASSERT_NOT_NULL(p.command);
+	ASSERT_STR_EQ(p.command, "ls -la");
+
+	/* Replace */
+	ASSERT_OK(dssh_chan_params_set_command(&p, "uname -a"));
+	ASSERT_STR_EQ(p.command, "uname -a");
+
+	dssh_chan_params_free(&p);
+	ASSERT_NULL(p.command);
+	return TEST_PASS;
+}
+
+static int test_params_set_subsystem(void)
+{
+	struct dssh_chan_params p;
+
+	ASSERT_OK(dssh_chan_params_init(&p, DSSH_CHAN_SUBSYSTEM));
+	ASSERT_OK(dssh_chan_params_set_subsystem(&p, "sftp"));
+	ASSERT_STR_EQ(p.subsystem, "sftp");
+	dssh_chan_params_free(&p);
+	ASSERT_NULL(p.subsystem);
+	return TEST_PASS;
+}
+
+static int test_params_add_env(void)
+{
+	struct dssh_chan_params p;
+
+	ASSERT_OK(dssh_chan_params_init(&p, DSSH_CHAN_SHELL));
+
+	ASSERT_OK(dssh_chan_params_add_env(&p, "LANG", "en_US.UTF-8"));
+	ASSERT_OK(dssh_chan_params_add_env(&p, "TERM", "xterm"));
+	ASSERT_OK(dssh_chan_params_add_env(&p, "FOO", "bar"));
+
+	ASSERT_EQ_U(p.env_count, 3);
+	ASSERT_STR_EQ(p.env[0].name, "LANG");
+	ASSERT_STR_EQ(p.env[0].value, "en_US.UTF-8");
+	ASSERT_STR_EQ(p.env[1].name, "TERM");
+	ASSERT_STR_EQ(p.env[1].value, "xterm");
+	ASSERT_STR_EQ(p.env[2].name, "FOO");
+	ASSERT_STR_EQ(p.env[2].value, "bar");
+
+	dssh_chan_params_free(&p);
+	ASSERT_NULL(p.env);
+	ASSERT_EQ_U(p.env_count, 0);
+	return TEST_PASS;
+}
+
+static int test_params_set_mode(void)
+{
+	struct dssh_chan_params p;
+
+	ASSERT_OK(dssh_chan_params_init(&p, DSSH_CHAN_SHELL));
+
+	/* Add several modes */
+	ASSERT_OK(dssh_chan_params_set_mode(&p, 1, 100));
+	ASSERT_OK(dssh_chan_params_set_mode(&p, 42, 200));
+	ASSERT_OK(dssh_chan_params_set_mode(&p, 160, 300));
+
+	ASSERT_EQ_U(p.mode_count, 3);
+	ASSERT_EQ(p.modes[0].opcode, 1);
+	ASSERT_EQ_U(p.modes[0].value, 100);
+	ASSERT_EQ(p.modes[1].opcode, 42);
+	ASSERT_EQ_U(p.modes[1].value, 200);
+	ASSERT_EQ(p.modes[2].opcode, 160);
+	ASSERT_EQ_U(p.modes[2].value, 300);
+
+	dssh_chan_params_free(&p);
+	ASSERT_NULL(p.modes);
+	return TEST_PASS;
+}
+
+static int test_params_mode_dedup(void)
+{
+	struct dssh_chan_params p;
+
+	ASSERT_OK(dssh_chan_params_init(&p, DSSH_CHAN_SHELL));
+
+	ASSERT_OK(dssh_chan_params_set_mode(&p, 1, 100));
+	ASSERT_OK(dssh_chan_params_set_mode(&p, 42, 200));
+	/* Overwrite opcode 1 -- last-wins */
+	ASSERT_OK(dssh_chan_params_set_mode(&p, 1, 999));
+
+	ASSERT_EQ_U(p.mode_count, 2);
+	ASSERT_EQ(p.modes[0].opcode, 1);
+	ASSERT_EQ_U(p.modes[0].value, 999);
+	ASSERT_EQ(p.modes[1].opcode, 42);
+	ASSERT_EQ_U(p.modes[1].value, 200);
+
+	dssh_chan_params_free(&p);
+	return TEST_PASS;
+}
+
+static int test_params_free_null(void)
+{
+	/* Must not crash */
+	dssh_chan_params_free(NULL);
+	return TEST_PASS;
+}
+
+static int test_params_init_null(void)
+{
+	ASSERT_ERR(dssh_chan_params_init(NULL, DSSH_CHAN_SHELL),
+	    DSSH_ERROR_INVALID);
+	return TEST_PASS;
+}
+
+/* ================================================================
  * Test table
  * ================================================================ */
 
@@ -1833,43 +1288,6 @@ static struct dssh_test_entry tests[] = {
 	{ "bytebuf_head_tail_reset_free",     test_bytebuf_head_tail_reset_after_free },
 
 	/* Msgqueue */
-	{ "msgqueue_init_free",               test_msgqueue_init_free },
-	{ "msgqueue_push_pop_single",         test_msgqueue_push_pop_single },
-	{ "msgqueue_pop_empty",               test_msgqueue_pop_empty },
-	{ "msgqueue_pop_toolong",             test_msgqueue_pop_toolong },
-	{ "msgqueue_fifo_order",              test_msgqueue_fifo_order },
-	{ "msgqueue_total_bytes",             test_msgqueue_total_bytes },
-	{ "msgqueue_many_messages",           test_msgqueue_many_messages },
-	{ "msgqueue_free_nonempty",           test_msgqueue_free_nonempty },
-	{ "msgqueue_zero_len_message",        test_msgqueue_zero_len_message },
-	{ "msgqueue_pop_after_toolong",       test_msgqueue_pop_after_toolong },
-	{ "msgqueue_push_pop_interleaved",    test_msgqueue_push_pop_interleaved },
-	{ "msgqueue_varying_sizes",           test_msgqueue_varying_sizes },
-	{ "msgqueue_exact_bufsz_pop",         test_msgqueue_exact_bufsz_pop },
-	{ "msgqueue_count_tracking",          test_msgqueue_count_tracking },
-	{ "msgqueue_large_message",           test_msgqueue_large_message },
-	{ "msgqueue_toolong_preserves_count", test_msgqueue_toolong_preserves_count },
-
-	/* Signal queue */
-	{ "sigqueue_init_free",               test_sigqueue_init_free },
-	{ "sigqueue_push_ready_pop",          test_sigqueue_push_ready_pop },
-	{ "sigqueue_pop_not_ready",           test_sigqueue_pop_not_ready },
-	{ "sigqueue_pop_empty",               test_sigqueue_pop_empty },
-	{ "sigqueue_ready_empty",             test_sigqueue_ready_empty },
-	{ "sigqueue_fifo_order",              test_sigqueue_fifo_order },
-	{ "sigqueue_ordered_positions",       test_sigqueue_ordered_positions },
-	{ "sigqueue_stdout_only_gate",        test_sigqueue_stdout_only_gate },
-	{ "sigqueue_stderr_only_gate",        test_sigqueue_stderr_only_gate },
-	{ "sigqueue_free_nonempty",           test_sigqueue_free_nonempty },
-	{ "sigqueue_name_truncation",         test_sigqueue_name_truncation },
-	{ "sigqueue_many_signals",            test_sigqueue_many_signals },
-	{ "sigqueue_both_streams_must_drain", test_sigqueue_both_streams_must_drain },
-	{ "sigqueue_zero_positions",          test_sigqueue_zero_positions },
-	{ "sigqueue_pop_returns_buf",         test_sigqueue_pop_returns_buf },
-	{ "sigqueue_second_blocked_by_first", test_sigqueue_second_blocked_by_first },
-	{ "sigqueue_single_char_name",        test_sigqueue_single_char_name },
-
-	/* Accept queue */
 	{ "acceptqueue_init_free",            test_acceptqueue_init_free },
 	{ "acceptqueue_push_pop_single",      test_acceptqueue_push_pop_single },
 	{ "acceptqueue_pop_empty",            test_acceptqueue_pop_empty },
@@ -1887,10 +1305,6 @@ static struct dssh_test_entry tests[] = {
 	{ "acceptqueue_pop_no_affect_rest",   test_acceptqueue_pop_does_not_affect_remaining },
 
 	/* Coverage tests */
-	{ "msgqueue_pop_null_buf_peek",       test_msgqueue_pop_null_buf_peek },
-	{ "sigqueue_pop_stderr_not_ready",    test_sigqueue_pop_stderr_not_ready },
-	{ "sigqueue_pop_name_truncation",     test_sigqueue_pop_name_truncation },
-	{ "sigqueue_pop_tiny_buf",            test_sigqueue_pop_tiny_buf },
 
 	/* uint32 wire format */
 	{ "parse_uint32_basic",             test_parse_uint32_basic },
@@ -1911,6 +1325,21 @@ static struct dssh_test_entry tests[] = {
 	{ "cleanse_basic",                  test_cleanse_basic },
 	{ "cleanse_null",                   test_cleanse_null },
 	{ "cleanse_zero_len",               test_cleanse_zero_len },
+
+	/* Params builder */
+	{ "params_init_shell",              test_params_init_shell },
+	{ "params_init_exec",               test_params_init_exec },
+	{ "params_init_subsystem",          test_params_init_subsystem },
+	{ "params_set_pty",                 test_params_set_pty },
+	{ "params_set_term",                test_params_set_term },
+	{ "params_set_size",                test_params_set_size },
+	{ "params_set_command",             test_params_set_command },
+	{ "params_set_subsystem",           test_params_set_subsystem },
+	{ "params_add_env",                 test_params_add_env },
+	{ "params_set_mode",                test_params_set_mode },
+	{ "params_mode_dedup",              test_params_mode_dedup },
+	{ "params_free_null",               test_params_free_null },
+	{ "params_init_null",               test_params_init_null },
 };
 
 DSSH_TEST_MAIN(tests)

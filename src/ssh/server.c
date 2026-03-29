@@ -828,48 +828,52 @@ static struct dssh_auth_server_cbs auth_cbs = {
 };
 
 /* ================================================================
- * Session channel request callback
+ * Channel accept callbacks (new dssh_chan_* API)
  * ================================================================ */
 static int
-channel_request_cb(const char *type, size_t type_len,
-    bool want_reply, const uint8_t *data, size_t data_len,
-    void *cbdata)
+accept_pty_cb(dssh_channel ch,
+    const struct dssh_chan_params *p, void *cbdata)
 {
-	fprintf(stderr, "  REQ: %.*s (want_reply=%d, data_len=%zu)\n",
-	    (int)type_len, type, want_reply, data_len);
-	if ((type_len == 7) && (memcmp(type, "pty-req", 7) == 0)) {
-		struct dssh_pty_req pty;
-
-		if (dssh_parse_pty_req_data(data, data_len, &pty) == 0) {
-			fprintf(stderr, "  PTY: %.*s %ux%u\n",
-			    (int)strlen(pty.term), pty.term,
-			    pty.cols, pty.rows);
-		}
-		return 0;
-	}
-	if ((type_len == 3) && (memcmp(type, "env", 3) == 0)) {
-		const uint8_t *name, *value;
-		size_t         nlen, vlen;
-
-		if (dssh_parse_env_data(data, data_len,
-		    &name, &nlen, &value, &vlen) == 0)
-			fprintf(stderr, "  ENV: %.*s=%.*s\n",
-			    (int)nlen, name, (int)vlen, value);
-		return 0;
-	}
-	if ((type_len == 5) && (memcmp(type, "shell", 5) == 0))
-		return 0;
-	if ((type_len == 4) && (memcmp(type, "exec", 4) == 0))
-		return 0;
-	if ((type_len == 9) && (memcmp(type, "subsystem", 9) == 0))
-		return 0;
-
-        /* Reject unknown requests */
-	return -1;
+	fprintf(stderr, "  PTY: %s %ux%u\n",
+	    p->term, p->cols, p->rows);
+	return 0;
 }
 
-static struct dssh_server_session_cbs session_cbs = {
-	.request_cb = channel_request_cb,
+static int
+accept_env_cb(dssh_channel ch,
+    const struct dssh_chan_params *p, void *cbdata)
+{
+	if (p->env_count > 0)
+		fprintf(stderr, "  ENV: %s=%s\n",
+		    p->env[p->env_count - 1].name,
+		    p->env[p->env_count - 1].value);
+	return 0;
+}
+
+static int
+accept_shell_cb(dssh_channel ch,
+    const struct dssh_chan_params *p,
+    struct dssh_chan_accept_result *result, void *cbdata)
+{
+	(void)ch; (void)p; (void)result; (void)cbdata;
+	return 0;
+}
+
+static int
+accept_exec_cb(dssh_channel ch,
+    const struct dssh_chan_params *p,
+    struct dssh_chan_accept_result *result, void *cbdata)
+{
+	(void)ch; (void)result; (void)cbdata;
+	fprintf(stderr, "  EXEC: %s\n", p->command ? p->command : "(null)");
+	return 0;
+}
+
+static struct dssh_chan_accept_cbs accept_cbs = {
+	.pty_req = accept_pty_cb,
+	.env = accept_env_cb,
+	.shell = accept_shell_cb,
+	.exec = accept_exec_cb,
 };
 
 /* ================================================================
@@ -967,38 +971,33 @@ handle_connection(void)
 	}
 
         /* Accept incoming channel */
-	struct dssh_incoming_open *inc;
-
-	res = dssh_session_accept(sess, &inc, -1);
-	if (res < 0) {
-		fprintf(stderr, "accept failed: %d\n", res);
-		return 1;
-	}
-
-        /* Accept as session channel */
-	const char *req_type, *req_data;
-
 	fprintf(stderr, "Handling channel...\n");
 
-	dssh_channel ch = dssh_session_accept_channel(sess, inc,
-	        &session_cbs, &req_type, &req_data);
+	dssh_channel ch = dssh_chan_accept(sess, &accept_cbs, -1);
 
 	if (ch == NULL) {
-		fprintf(stderr, "session_accept_channel failed\n");
+		fprintf(stderr, "chan_accept failed\n");
 		return 1;
 	}
-	fprintf(stderr, "  Request: %s %s\n", req_type, req_data);
 
-	if (strcmp(req_type, "exec") == 0) {
+	enum dssh_chan_type ctype = dssh_chan_get_type(ch);
+
+	fprintf(stderr, "  Type: %s\n",
+	    ctype == DSSH_CHAN_EXEC ? "exec" :
+	    ctype == DSSH_CHAN_SHELL ? "shell" : "subsystem");
+
+	if (ctype == DSSH_CHAN_EXEC) {
                 /* Execute command -- respond and close */
-		if (strcmp(req_data, "ping") == 0) {
-			dssh_session_write(sess, ch,
+		const char *cmd = dssh_chan_get_command(ch);
+
+		if (cmd != NULL && strcmp(cmd, "ping") == 0) {
+			dssh_chan_write(ch, 0,
 			    (const uint8_t *)"pong\n", 5);
-			dssh_session_write_ext(sess, ch,
+			dssh_chan_write(ch, 1,
 			    (const uint8_t *)"gnop\n", 5);
 		}
 		else {
-			dssh_session_write(sess, ch,
+			dssh_chan_write(ch, 0,
 			    (const uint8_t *)"unknown command\n", 16);
 		}
 	}
@@ -1007,17 +1006,17 @@ handle_connection(void)
 		uint8_t buf[4096];
 		size_t  line_len = 0;
 
-		dssh_session_write(sess, ch,
+		dssh_chan_write(ch, 0,
 		    (const uint8_t *)"> ", 2);
 
 		for (;;) {
-			int ev = dssh_session_poll(sess, ch,
+			int ev = dssh_chan_poll(ch,
 			        DSSH_POLL_READ, -1);
 
 			if (ev <= 0)
 				break;
 
-			ssize_t n = dssh_session_read(sess, ch,
+			ssize_t n = dssh_chan_read(ch, 0,
 			        &buf[line_len],
 			        sizeof(buf) - line_len - 1);
 
@@ -1027,10 +1026,10 @@ handle_connection(void)
 			/* Echo input back, translating \r to \r\n */
 			for (ssize_t ei = 0; ei < n; ei++) {
 				if (buf[line_len + ei] == '\r')
-					dssh_session_write(sess, ch,
+					dssh_chan_write(ch, 0,
 					    (const uint8_t *)"\r\n", 2);
 				else
-					dssh_session_write(sess, ch,
+					dssh_chan_write(ch, 0,
 					    &buf[line_len + ei], 1);
 			}
 
@@ -1050,17 +1049,17 @@ handle_connection(void)
 			buf[line_len] = '\0';
 
 			if (strcmp((char *)buf, "ping") == 0) {
-				dssh_session_write(sess, ch,
+				dssh_chan_write(ch, 0,
 				    (const uint8_t *)"pong\r\n", 6);
 			}
 			else if (strcmp((char *)buf, "quit") == 0
 			    || strcmp((char *)buf, "exit") == 0) {
-				dssh_session_write(sess, ch,
+				dssh_chan_write(ch, 0,
 				    (const uint8_t *)"bye\r\n", 5);
 				break;
 			}
 			else if (strcmp((char *)buf, "diediedie") == 0) {
-				dssh_session_write(sess, ch,
+				dssh_chan_write(ch, 0,
 				    (const uint8_t *)"dying...\r\n", 10);
 				kill(getppid(), SIGTERM);
 				break;
@@ -1068,12 +1067,12 @@ handle_connection(void)
 			else if (line_len > 0) {
 				static const char help[] =
 				    "commands: ping, quit, exit\r\n";
-				dssh_session_write(sess, ch,
+				dssh_chan_write(ch, 0,
 				    (const uint8_t *)help, sizeof(help) - 1);
 			}
 
 			line_len = 0;
-			dssh_session_write(sess, ch,
+			dssh_chan_write(ch, 0,
 			    (const uint8_t *)"> ", 2);
 		}
 	}
@@ -1081,7 +1080,7 @@ handle_connection(void)
         /* Clean shutdown */
 	alarm(0);
 	fprintf(stderr, "Channel closed.\n");
-	dssh_session_close(sess, ch, 0);
+	dssh_chan_close(ch, 0);
 	dssh_session_cleanup(sess);
 	close(conn_fd);
 	return 0;

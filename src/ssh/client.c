@@ -198,15 +198,14 @@ stdin_thread(void *arg)
 
                 /* Wait for channel write space, then send */
 		while (n > 0) {
-			int ev = dssh_session_poll(sess, ch,
-			        DSSH_POLL_WRITE, 1000);
+			int ev = dssh_chan_poll(ch, DSSH_POLL_WRITE, 1000);
 
 			if ((ev < 0) || dssh_session_is_terminated(sess))
 				goto done;
 			if (!(ev & DSSH_POLL_WRITE))
 				continue;
 
-			ssize_t w = dssh_session_write(sess, ch, buf, n);
+			ssize_t w = dssh_chan_write(ch, 0, buf, n);
 
 			if (w < 0)
 				goto done;
@@ -355,23 +354,24 @@ main(int argc, char **argv)
 	}
 
         /* Open channel */
-	dssh_channel ch;
+	struct dssh_chan_params cp;
 
 	if (command != NULL) {
 		fprintf(stderr, "Executing: %s\n", command);
-		ch = dssh_session_open_exec(sess, command);
+		dssh_chan_params_init(&cp, DSSH_CHAN_EXEC);
+		dssh_chan_params_set_command(&cp, command);
+		dssh_chan_params_set_pty(&cp, false);
 	}
 	else {
 		fprintf(stderr, "Opening shell...\n");
-
-		struct dssh_pty_req pty = {
-			.term = "xterm-256color",
-			.cols = 80, .rows = 24,
-			.wpx = 0, .hpx = 0,
-		};
-
-		ch = dssh_session_open_shell(sess, &pty);
+		dssh_chan_params_init(&cp, DSSH_CHAN_SHELL);
+		dssh_chan_params_set_term(&cp, "xterm-256color");
+		dssh_chan_params_set_size(&cp, 80, 24, 0, 0);
 	}
+
+	dssh_channel ch = dssh_chan_open(sess, &cp);
+
+	dssh_chan_params_free(&cp);
 	if (ch == NULL) {
 		fprintf(stderr, "channel open failed\n");
 		return 1;
@@ -386,35 +386,39 @@ main(int argc, char **argv)
 			have_writer = true;
 	}
 
-        /* Read stdout/stderr/signals via poll */
+        /* Read stdout/stderr/events via poll */
 	uint8_t buf[4096];
 	int     poll_events = DSSH_POLL_READ | DSSH_POLL_READEXT
-	    | DSSH_POLL_SIGNAL;
+	    | DSSH_POLL_EVENT;
 
 	for (;;) {
-		int ev = dssh_session_poll(sess, ch, poll_events, -1);
+		int ev = dssh_chan_poll(ch, poll_events, -1);
 
 		if (ev <= 0)
 			break;
 
+		if (ev & DSSH_POLL_EVENT) {
+			struct dssh_chan_event event;
+
+			if (dssh_chan_read_event(ch, &event) == 0) {
+				if (event.type == DSSH_EVENT_SIGNAL)
+					fprintf(stderr, "[signal: SIG%s]\n",
+					    event.signal.name);
+			}
+			continue;
+		}
 		if (ev & DSSH_POLL_READ) {
-			ssize_t n = dssh_session_read(sess, ch, buf, sizeof(buf));
+			ssize_t n = dssh_chan_read(ch, 0, buf, sizeof(buf));
 
 			if (n <= 0)
 				break;
 			write(STDOUT_FILENO, buf, n);
 		}
 		if (ev & DSSH_POLL_READEXT) {
-			ssize_t n = dssh_session_read_ext(sess, ch, buf, sizeof(buf));
+			ssize_t n = dssh_chan_read(ch, 1, buf, sizeof(buf));
 
 			if (n > 0)
 				write(STDERR_FILENO, buf, n);
-		}
-		if (ev & DSSH_POLL_SIGNAL) {
-			const char *signame;
-
-			if (dssh_session_read_signal(sess, ch, &signame) == 0)
-				fprintf(stderr, "[signal: SIG%s]\n", signame);
 		}
 	}
 
@@ -426,7 +430,7 @@ main(int argc, char **argv)
 
 		thrd_join(writer, &wr);
 	}
-	dssh_session_close(sess, ch, 0);
+	dssh_chan_close(ch, 0);
 	dssh_session_cleanup(sess);
 	close(sock);
 	return 0;

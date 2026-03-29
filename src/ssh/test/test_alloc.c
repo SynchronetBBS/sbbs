@@ -217,8 +217,8 @@ test_alloc_register_dh_gex(void)
 /* ================================================================
  * dssh_session_init alloc failures
  *
- * session_init does one calloc for the session struct, then four
- * mallocs for tx_packet, rx_packet, tx_mac_scratch, rx_mac_scratch.
+ * session_init does one calloc for the session struct, then two
+ * mallocs for tx_packet and rx_packet (each with 4-byte seq prefix).
  * Failing any of these must return NULL.
  * ================================================================ */
 
@@ -291,50 +291,8 @@ test_ossl_session_init(void)
 }
 
 /* ================================================================
- * Channel buffer alloc failures (ssh-chan.c)
- *
- * bytebuf_init does one malloc for the data buffer.
- * msgqueue_push does one malloc for the entry.
- * dssh_signal_push does one malloc for the mark.
- * dssh_accept_queue_push does one malloc for the entry.
+ * Channel buffer alloc failures
  * ================================================================ */
-
-static int
-test_alloc_bytebuf_init(void)
-{
-	struct dssh_bytebuf buf;
-	memset(&buf, 0, sizeof(buf));
-
-	mock_alloc_fail_after(0);
-	int res = bytebuf_init(&buf, 1024);
-	mock_alloc_reset();
-	ASSERT_EQ(res, DSSH_ERROR_ALLOC);
-
-	/* Succeed */
-	res = bytebuf_init(&buf, 1024);
-	ASSERT_EQ(res, 0);
-	bytebuf_free(&buf);
-	return TEST_PASS;
-}
-
-static int
-test_alloc_msgqueue_push(void)
-{
-	struct dssh_msgqueue q;
-	msgqueue_init(&q);
-
-	const uint8_t data[] = "hello";
-	mock_alloc_fail_after(0);
-	int res = msgqueue_push(&q, data, sizeof(data));
-	mock_alloc_reset();
-	ASSERT_EQ(res, DSSH_ERROR_ALLOC);
-
-	/* Succeed */
-	res = msgqueue_push(&q, data, sizeof(data));
-	ASSERT_EQ(res, 0);
-	msgqueue_free(&q);
-	return TEST_PASS;
-}
 
 static int
 test_alloc_signal_push(void)
@@ -1305,17 +1263,15 @@ auth_only_server_thread(void *arg)
  * ================================================================ */
 
 static int
-session_channel_request_cb(const char *type, size_t type_len,
-    bool want_reply, const uint8_t *data, size_t data_len,
-    void *cbdata)
+iter_accept_exec(dssh_channel ch, const struct dssh_chan_params *p,
+    struct dssh_chan_accept_result *result, void *cbdata)
 {
-	(void)type; (void)type_len; (void)want_reply;
-	(void)data; (void)data_len; (void)cbdata;
-	return 0;  /* accept */
+	(void)ch; (void)p; (void)result; (void)cbdata;
+	return 0;
 }
 
-static const struct dssh_server_session_cbs iter_session_cbs = {
-	.request_cb = session_channel_request_cb,
+static const struct dssh_chan_accept_cbs iter_accept_cbs = {
+	.exec = iter_accept_exec,
 };
 
 struct conn_alloc_ctx {
@@ -1335,7 +1291,12 @@ conn_alloc_client_thread(void *arg)
 		mock_io_close_c2s(ctx->io);
 		return 0;
 	}
-	ctx->ch = dssh_session_open_exec(ctx->sess, "echo test");
+	struct dssh_chan_params p;
+	dssh_chan_params_init(&p, DSSH_CHAN_EXEC);
+	dssh_chan_params_set_command(&p, "echo test");
+	dssh_chan_params_set_pty(&p, false);
+	ctx->ch = dssh_chan_open(ctx->sess, &p);
+	dssh_chan_params_free(&p);
 	ctx->result = ctx->ch ? 0 : -1;
 	if (ctx->result < 0)
 		mock_io_close_c2s(ctx->io);
@@ -1352,16 +1313,7 @@ conn_alloc_server_thread(void *arg)
 		mock_io_close_s2c(ctx->io);
 		return 0;
 	}
-	struct dssh_incoming_open *inc = NULL;
-	res = dssh_session_accept(ctx->sess, &inc, 2000);
-	if (res < 0 || inc == NULL) {
-		ctx->result = -1;
-		mock_io_close_s2c(ctx->io);
-		return 0;
-	}
-	const char *req_type = NULL, *req_data = NULL;
-	ctx->ch = dssh_session_accept_channel(ctx->sess, inc,
-	    &iter_session_cbs, &req_type, &req_data);
+	ctx->ch = dssh_chan_accept(ctx->sess, &iter_accept_cbs, 2000);
 	ctx->result = ctx->ch ? 0 : -1;
 	if (ctx->result < 0)
 		mock_io_close_s2c(ctx->io);
@@ -1552,9 +1504,9 @@ test_alloc_conn_iterate(void)
 		mock_io_close_c2s(&io);
 		mock_io_close_s2c(&io);
 		if (ok && cca.ch != NULL)
-			dssh_session_close(client, cca.ch, 0);
+			dssh_chan_close(cca.ch, 0);
 		if (ok && csa.ch != NULL)
-			dssh_session_close(server, csa.ch, 0);
+			dssh_chan_close(csa.ch, 0);
 		if (client->demux_running)
 			dssh_session_stop(client);
 		if (server->demux_running)
@@ -3730,8 +3682,6 @@ static struct dssh_test_entry tests[] = {
 	{ "ossl/session_init",            test_ossl_session_init },
 
 	/* Channel buffers */
-	{ "alloc/bytebuf_init",           test_alloc_bytebuf_init },
-	{ "alloc/msgqueue_push",          test_alloc_msgqueue_push },
 	{ "alloc/signal_push",            test_alloc_signal_push },
 
 	/* Auth */

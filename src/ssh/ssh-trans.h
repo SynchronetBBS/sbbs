@@ -104,10 +104,17 @@ struct dssh_transport_state_s {
 
         /* Pointers and size_t (pointer-sized) */
 	size_t         packet_buf_sz;
+	/*
+	 * Packet buffer layout (tx_packet and rx_packet):
+	 *   [seq(4)][pkt_length(4)][padding_length(1)][payload][padding][MAC]
+	 * Allocated as 4 + packet_buf_sz bytes.  The 4-byte seq prefix
+	 * makes the MAC input (seq || unencrypted_packet) contiguous,
+	 * eliminating the separate mac_scratch buffers.
+	 * Only [pkt_length..padding] is encrypted; only [pkt_length..MAC]
+	 * is sent on the wire (seq prefix is local-only).
+	 */
 	uint8_t       *tx_packet;
 	uint8_t       *rx_packet;
-	uint8_t       *tx_mac_scratch; /* 4 + packet_buf_sz for MAC computation */
-	uint8_t       *rx_mac_scratch;
 	uint8_t       *rx_mac_buf;     /* received MAC from wire (digest_size bytes) */
 	uint8_t       *rx_mac_computed; /* computed MAC for comparison */
 	size_t         id_str_sz;

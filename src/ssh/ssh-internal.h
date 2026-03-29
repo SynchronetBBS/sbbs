@@ -9,6 +9,7 @@
 #include <threads.h>
 
 #include "ssh-trans.h"
+#include "deucessh-conn.h"
 
 /* DSSH_TESTABLE is now defined in deucessh-portable.h */
 
@@ -51,6 +52,40 @@ struct dssh_signal_mark {
 struct dssh_signal_queue {
 	struct dssh_signal_mark *head;
 	struct dssh_signal_mark *tail;
+};
+
+/* Event queue for the new dssh_chan_* API (circular buffer).
+ * Events are pushed by the demux thread, pulled by the app via
+ * dssh_chan_poll(DSSH_POLL_EVENT) + dssh_chan_read_event(). */
+struct dssh_event_entry {
+	/* Pointer-sized */
+	size_t   stdout_pos;
+	size_t   stderr_pos;
+	/* 4-byte */
+	int      type;
+	uint32_t u32_a;  /* exit_code, cols, break length */
+	uint32_t u32_b;  /* rows */
+	uint32_t u32_c;  /* wpx */
+	uint32_t u32_d;  /* hpx */
+	/* 1-byte */
+	bool     flag_a; /* core_dumped */
+	/* Char arrays */
+	char     str_a[64];  /* signal name */
+	char     str_b[256]; /* error message */
+};
+
+struct dssh_event_queue {
+	/* Pointers */
+	struct dssh_event_entry *entries;
+	/* Pointer-sized */
+	size_t                   capacity;
+	size_t                   head;
+	size_t                   tail;
+	size_t                   count;
+	/* Embedded struct (large) */
+	struct dssh_event_entry  frozen; /* frozen event for poll/read_event */
+	/* 1-byte */
+	bool                     has_frozen;
 };
 
 /* Incoming channel open queue (for session_accept) */
@@ -203,8 +238,14 @@ int dssh_test_EVP_CIPHER_CTX_set_padding(EVP_CIPHER_CTX *ctx, int pad);
 
 /* SSH_OPEN_* reason codes: defined in ssh-conn.c (only consumer) */
 
+/* I/O model for channel dispatch (old API vs new dssh_chan_* API) */
+#define DSSH_IO_OLD    0  /* old dssh_session_ / dssh_channel_ API */
+#define DSSH_IO_STREAM 1  /* new dssh_chan_ stream API */
+#define DSSH_IO_ZC     2  /* new dssh_chan_zc_ zero-copy API */
+
 struct dssh_channel_s {
         /* Pointers and size_t (pointer-sized) */
+	struct dssh_session_s *sess; /* back-pointer (new API takes ch only) */
 	uint8_t *setup_payload;
 	size_t   setup_payload_len;
 	size_t   stdout_consumed;
@@ -228,6 +269,7 @@ struct dssh_channel_s {
 	uint32_t window_max;
 	uint32_t exit_code;
 	int      chan_type;
+	int      io_model;  /* DSSH_IO_OLD, DSSH_IO_STREAM, DSSH_IO_ZC */
 
         /* 1-byte */
 	bool     open;
@@ -248,6 +290,10 @@ struct dssh_channel_s {
 	char     last_signal[32];
 	char     req_type[32];
 	char     req_data[DSSH_REQ_DATA_BUF_SIZE];
+
+        /* Embedded structs (contain pointers, large) */
+	struct dssh_chan_params params;  /* new API: getters after open/accept */
+	struct dssh_event_queue events; /* new API: event queue */
 
 	union {
 		struct {
