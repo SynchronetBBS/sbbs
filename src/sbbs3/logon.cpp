@@ -174,7 +174,7 @@ bool sbbs_t::logon_process()
 	    || ((useron.misc & manual_term) && (useron.misc & manual_term) != (autoterm & manual_term))
 		|| ((autoterm & UTF8) && !(useron.misc & UTF8))) {
 		useron.misc &= ~manual_term;
-		useron.misc |= (AUTOTERM | autoterm);
+		useron.misc |= (AUTOTERM | (autoterm & ~NO_EXASCII));
 	}
 
 	if (!chk_ar(cfg.shell[useron.shell]->ar, &useron, &client)) {
