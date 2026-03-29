@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "deucessh.h"
 #include "ssh-internal.h"
 
 /* ================================================================
@@ -40,15 +41,17 @@ dssh_serialize_uint32(uint32_t val, uint8_t *buf, size_t bufsz, size_t *pos)
  * blocking until an external event (like a socket close) wakes it.
  */
 DSSH_PRIVATE void
-session_set_terminate(dssh_session sess)
+session_set_terminate(struct dssh_session_s *sess)
 {
 	if (atomic_exchange(&sess->terminate, true))
 		return;
 
 	/* Notify the application so it can close sockets or signal
 	 * its event loop, unblocking any I/O callbacks. */
-	if (sess->terminate_cb)
-		sess->terminate_cb(sess, sess->terminate_cbdata);
+	dssh_terminate_cb tcb = sess->terminate_cb;
+
+	if (tcb)
+		tcb(sess, sess->terminate_cbdata);
 
         /* Wake senders blocked during rekey.
          * Hold tx_mtx so the broadcast cannot land between a sender's
@@ -112,7 +115,7 @@ dssh_cleanse(void *buf, size_t len)
 }
 
 DSSH_PUBLIC void
-dssh_session_set_cbdata(dssh_session sess,
+dssh_session_set_cbdata(struct dssh_session_s *sess,
     void *tx_cbdata, void *rx_cbdata, void *rx_line_cbdata,
     void *extra_line_cbdata)
 {
@@ -130,7 +133,7 @@ dssh_session_set_cbdata(dssh_session sess,
  * demux thread.  Calling after start is undefined behavior. */
 
 DSSH_PUBLIC void
-dssh_session_set_debug_cb(dssh_session sess,
+dssh_session_set_debug_cb(struct dssh_session_s *sess,
     dssh_debug_cb cb, void *cbdata)
 {
 	if (sess == NULL)
@@ -140,7 +143,7 @@ dssh_session_set_debug_cb(dssh_session sess,
 }
 
 DSSH_PUBLIC void
-dssh_session_set_unimplemented_cb(dssh_session sess,
+dssh_session_set_unimplemented_cb(struct dssh_session_s *sess,
     dssh_unimplemented_cb cb, void *cbdata)
 {
 	if (sess == NULL)
@@ -150,7 +153,7 @@ dssh_session_set_unimplemented_cb(dssh_session sess,
 }
 
 DSSH_PUBLIC void
-dssh_session_set_banner_cb(dssh_session sess,
+dssh_session_set_banner_cb(struct dssh_session_s *sess,
     dssh_auth_banner_cb cb, void *cbdata)
 {
 	if (sess == NULL)
@@ -160,7 +163,7 @@ dssh_session_set_banner_cb(dssh_session sess,
 }
 
 DSSH_PUBLIC void
-dssh_session_set_global_request_cb(dssh_session sess,
+dssh_session_set_global_request_cb(struct dssh_session_s *sess,
     dssh_global_request_cb cb, void *cbdata)
 {
 	if (sess == NULL)
@@ -170,7 +173,7 @@ dssh_session_set_global_request_cb(dssh_session sess,
 }
 
 DSSH_PUBLIC void
-dssh_session_set_terminate_cb(dssh_session sess,
+dssh_session_set_terminate_cb(struct dssh_session_s *sess,
     dssh_terminate_cb cb, void *cbdata)
 {
 	if (sess == NULL)
@@ -180,7 +183,7 @@ dssh_session_set_terminate_cb(dssh_session sess,
 }
 
 DSSH_PUBLIC void
-dssh_session_set_timeout(dssh_session sess, int timeout_ms)
+dssh_session_set_timeout(struct dssh_session_s *sess, int timeout_ms)
 {
 	if (sess == NULL)
 		return;

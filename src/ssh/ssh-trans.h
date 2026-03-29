@@ -7,11 +7,12 @@
 #include <threads.h>
 #include <time.h>
 
-#include "deucessh.h"
-
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+/* Forward declaration -- full definition in ssh-internal.h */
+struct dssh_session_s;
 
 /* Module type definitions -- public headers */
 #include "deucessh-kex.h"
@@ -19,6 +20,7 @@ extern "C" {
 #include "deucessh-enc.h"
 #include "deucessh-mac.h"
 #include "deucessh-comp.h"
+#include "deucessh-lang.h"
 
 /* Transport layer generic */
 #define SSH_MSG_DISCONNECT UINT8_C(1)
@@ -61,14 +63,7 @@ extern "C" {
 #define SSH_BPP_PACKET_SIZE_MIN 33280
 #define SSH_BPP_PACKET_SIZE_MAX (64 * 1024 * 1024) /* 64 MiB */
 
-/* Module type definitions are now in the public headers above.
- * Language is internal-only (no third-party language modules). */
-typedef struct dssh_language_s {
-	struct dssh_language_s *next;  /* must be first -- generic traversal assumes offsetof(next) == 0 */
-	char                    name[];
-} *dssh_language;
-_Static_assert(!offsetof(struct dssh_language_s, next),
-    "next must be at offset 0 for generic list traversal");
+/* Module type definitions are now in the public headers above. */
 
 /*
  * Messages buffered during self-initiated rekey (kexinit wait loop).
@@ -102,7 +97,7 @@ struct dssh_tx_queue_entry {
 #define DSSH_REKEY_BYTES UINT64_C(0x40000000)      /* 1 GiB */
 #define DSSH_REKEY_SECONDS 3600                    /* 1 hour */
 
-typedef struct dssh_transport_state_s {
+struct dssh_transport_state_s {
         /* 8-byte fixed */
 	uint64_t       rx_bytes_since_rekey; /* bytes received since last (re)key (rx_mtx) */
 	time_t         rekey_time;        /* time of last (re)key */
@@ -172,7 +167,7 @@ typedef struct dssh_transport_state_s {
         /* Char arrays (naturally aligned, go last) */
 	char           id_str[254];
 	char           remote_id_str[254];
-} *dssh_transport_state;
+};
 /*
  * Algorithm registration -- call before any session is initialized.
  * Registration order determines negotiation preference (first registered
@@ -182,8 +177,7 @@ typedef struct dssh_transport_state_s {
  * Applications may register their own custom modules alongside or
  * instead of the library's built-in algorithms.
  */
-/* register_kex/key_algo/enc/mac/comp are now in their public headers */
-DSSH_PUBLIC int dssh_transport_register_lang(dssh_language lang);
+/* register_kex/key_algo/enc/mac/comp/lang are now in their public headers */
 /*
  * Initialize transport state for a session.  Allocates packet buffers
  * sized to max_packet_size (pass 0 for the RFC minimum of 33280 bytes).
@@ -199,13 +193,13 @@ DSSH_PUBLIC int dssh_transport_register_lang(dssh_language lang);
  * Internal functions -- used by other library modules, not by
  * applications.  DSSH_PRIVATE in shared builds.
  * ================================================================ */
-DSSH_PRIVATE int send_packet(dssh_session sess,
+DSSH_PRIVATE int send_packet(struct dssh_session_s *sess,
     const uint8_t *payload, size_t payload_len, uint32_t *seq_out);
-DSSH_PRIVATE int send_or_queue(dssh_session sess,
+DSSH_PRIVATE int send_or_queue(struct dssh_session_s *sess,
     const uint8_t *payload, size_t payload_len);
-DSSH_PRIVATE int recv_packet(dssh_session sess,
+DSSH_PRIVATE int recv_packet(struct dssh_session_s *sess,
     uint8_t *msg_type, uint8_t **payload, size_t *payload_len);
-DSSH_PRIVATE int send_unimplemented(dssh_session sess,
+DSSH_PRIVATE int send_unimplemented(struct dssh_session_s *sess,
     uint32_t                                                    rejected_seq);
 DSSH_PRIVATE dssh_key_algo find_key_algo(const char *name);
 
@@ -214,14 +208,19 @@ DSSH_PRIVATE dssh_key_algo find_key_algo(const char *name);
  * In library code this is a file-scope variable in ssh-trans.c.
  * Under DSSH_TESTING it is externally visible for test access.
  */
-typedef struct dssh_transport_global_config {
+struct dssh_transport_global_config {
 	const char              *software_version;
 	const char              *version_comment;
-	dssh_transport_io_cb     tx;
-	dssh_transport_io_cb     rx;
-	dssh_transport_rxline_cb rx_line;
+	int (*tx)(uint8_t *buf, size_t bufsz,
+	    struct dssh_session_s *sess, void *cbdata);
+	int (*rx)(uint8_t *buf, size_t bufsz,
+	    struct dssh_session_s *sess, void *cbdata);
+	int (*rx_line)(uint8_t *buf, size_t bufsz,
+	    size_t *bytes_received, struct dssh_session_s *sess,
+	    void *cbdata);
 
-	dssh_transport_extra_line_cb extra_line_cb;
+	int (*extra_line_cb)(uint8_t *buf, size_t bufsz,
+	    void *cbdata);
 
 	size_t                   kex_entries;
 	dssh_kex                 kex_head;
@@ -242,7 +241,7 @@ typedef struct dssh_transport_global_config {
 	dssh_language            lang_head;
 	dssh_language            lang_tail;
 	atomic_bool              used;
-} *dssh_transport_global_config;
+};
 
 /*
  * OpenSSL failure injection.  Under DSSH_TESTING, failable OpenSSL

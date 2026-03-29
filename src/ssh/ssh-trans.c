@@ -10,17 +10,16 @@
 #include "ssh-internal.h"
 #include "deucessh-algorithms.h"
 #include "deucessh-auth.h"
-#include "deucessh-conn.h"
 
 /* DSSH_TESTABLE is defined in ssh-internal.h */
 
 /* Forward declarations for functions defined later in this file
  * but called before their definitions. */
-static int transport_init(dssh_session sess, size_t max_packet_size);
-static void transport_cleanup(dssh_session sess);
-DSSH_TESTABLE int kexinit(dssh_session sess);
-DSSH_TESTABLE int kex(dssh_session sess);
-DSSH_TESTABLE int newkeys(dssh_session sess);
+static int transport_init(struct dssh_session_s *sess, size_t max_packet_size);
+static void transport_cleanup(struct dssh_session_s *sess);
+DSSH_TESTABLE int kexinit(struct dssh_session_s *sess);
+DSSH_TESTABLE int kex(struct dssh_session_s *sess);
+DSSH_TESTABLE int newkeys(struct dssh_session_s *sess);
 
 /* Scrub and free security-sensitive heap buffers. */
 static void
@@ -105,7 +104,7 @@ is_20(uint8_t *buf, size_t buflen)
 }
 
 static int
-version_rx(dssh_session sess)
+version_rx(struct dssh_session_s *sess)
 {
 	size_t received;
 	int    res;
@@ -146,7 +145,7 @@ version_rx(dssh_session sess)
 }
 
 DSSH_TESTABLE int
-version_tx(dssh_session sess)
+version_tx(struct dssh_session_s *sess)
 {
 	int    res;
 	size_t sz = 0;
@@ -203,7 +202,7 @@ find_key_algo(const char *name)
 }
 
 DSSH_PUBLIC const char *
-dssh_transport_get_remote_version(dssh_session sess)
+dssh_transport_get_remote_version(struct dssh_session_s *sess)
 {
 	if (sess == NULL)
 		return NULL;
@@ -211,7 +210,7 @@ dssh_transport_get_remote_version(dssh_session sess)
 }
 
 DSSH_PUBLIC const char *
-dssh_transport_get_kex_name(dssh_session sess)
+dssh_transport_get_kex_name(struct dssh_session_s *sess)
 {
 	if (sess == NULL)
 		return NULL;
@@ -219,7 +218,7 @@ dssh_transport_get_kex_name(dssh_session sess)
 }
 
 DSSH_PUBLIC const char *
-dssh_transport_get_hostkey_name(dssh_session sess)
+dssh_transport_get_hostkey_name(struct dssh_session_s *sess)
 {
 	if (sess == NULL)
 		return NULL;
@@ -227,7 +226,7 @@ dssh_transport_get_hostkey_name(dssh_session sess)
 }
 
 DSSH_PUBLIC const char *
-dssh_transport_get_enc_name(dssh_session sess)
+dssh_transport_get_enc_name(struct dssh_session_s *sess)
 {
 	if (sess == NULL)
 		return NULL;
@@ -235,7 +234,7 @@ dssh_transport_get_enc_name(dssh_session sess)
 }
 
 DSSH_PUBLIC const char *
-dssh_transport_get_mac_name(dssh_session sess)
+dssh_transport_get_mac_name(struct dssh_session_s *sess)
 {
 	if (sess == NULL)
 		return NULL;
@@ -243,7 +242,7 @@ dssh_transport_get_mac_name(dssh_session sess)
 }
 
 DSSH_TESTABLE int
-version_exchange(dssh_session sess)
+version_exchange(struct dssh_session_s *sess)
 {
 	int res = version_tx(sess);
 
@@ -253,7 +252,7 @@ version_exchange(dssh_session sess)
 }
 
 DSSH_PUBLIC int
-dssh_transport_handshake(dssh_session sess)
+dssh_transport_handshake(struct dssh_session_s *sess)
 {
 	if (sess == NULL)
 		return DSSH_ERROR_INVALID;
@@ -282,7 +281,7 @@ fail:
  * ================================================================ */
 
 DSSH_TESTABLE bool
-rekey_needed(dssh_session sess)
+rekey_needed(struct dssh_session_s *sess)
 {
 	/* tx counters are atomic -- read without tx_mtx.
 	 * rx counters are protected by rx_mtx (held by caller). */
@@ -308,7 +307,7 @@ rekey_needed(dssh_session sess)
 }
 
 DSSH_TESTABLE int
-rekey(dssh_session sess)
+rekey(struct dssh_session_s *sess)
 {
         /*
          * RFC 4253 s9: Rekey uses existing encryption until NEWKEYS.
@@ -357,7 +356,7 @@ rekey(dssh_session sess)
  * ================================================================ */
 
 DSSH_PRIVATE int
-send_unimplemented(dssh_session sess,
+send_unimplemented(struct dssh_session_s *sess,
     uint32_t                                   rejected_seq)
 {
 	uint8_t msg[8];
@@ -373,7 +372,7 @@ send_unimplemented(dssh_session sess,
  * ================================================================ */
 
 DSSH_PUBLIC int
-dssh_transport_disconnect(dssh_session sess,
+dssh_transport_disconnect(struct dssh_session_s *sess,
     uint32_t reason, const char *desc)
 {
 	if (sess == NULL || desc == NULL)
@@ -403,7 +402,7 @@ dssh_transport_disconnect(dssh_session sess,
  * ================================================================ */
 
 DSSH_TESTABLE size_t
-tx_block_size(dssh_session sess)
+tx_block_size(struct dssh_session_s *sess)
 {
 	dssh_enc enc;
 	void    *cbd;
@@ -424,7 +423,7 @@ tx_block_size(dssh_session sess)
 }
 
 DSSH_TESTABLE size_t
-rx_block_size(dssh_session sess)
+rx_block_size(struct dssh_session_s *sess)
 {
 	dssh_enc enc;
 	void    *cbd;
@@ -447,7 +446,7 @@ rx_block_size(dssh_session sess)
 }
 
 static uint16_t
-tx_mac_size(dssh_session sess)
+tx_mac_size(struct dssh_session_s *sess)
 {
 	dssh_mac mac;
 	void    *cbd;
@@ -466,7 +465,7 @@ tx_mac_size(dssh_session sess)
 }
 
 static uint16_t
-rx_mac_size(dssh_session sess)
+rx_mac_size(struct dssh_session_s *sess)
 {
 	dssh_mac mac;
 	void    *cbd;
@@ -489,7 +488,7 @@ rx_mac_size(dssh_session sess)
  * computes MAC, encrypts, calls the I/O callback, updates counters.
  */
 static int
-send_packet_inner(dssh_session sess,
+send_packet_inner(struct dssh_session_s *sess,
     const uint8_t *payload, size_t payload_len, uint32_t *seq_out)
 {
 	int ret;
@@ -614,7 +613,7 @@ inner_done:
  * Sends all queued fire-and-forget payloads in FIFO order.
  */
 static void
-drain_tx_queue(dssh_session sess)
+drain_tx_queue(struct dssh_session_s *sess)
 {
 	dssh_thrd_check(sess, mtx_lock(&sess->trans.tx_queue_mtx));
 	struct dssh_tx_queue_entry *list = sess->trans.tx_queue_head;
@@ -646,7 +645,7 @@ drain_tx_queue(dssh_session sess)
  * Returns 0 on success, DSSH_ERROR_ALLOC on allocation failure.
  */
 static int
-enqueue_tx(dssh_session sess,
+enqueue_tx(struct dssh_session_s *sess,
     const uint8_t *payload, size_t payload_len)
 {
 	struct dssh_tx_queue_entry *e = malloc(
@@ -674,7 +673,7 @@ enqueue_tx(dssh_session sess,
  * for the next send_packet() caller to drain.
  */
 DSSH_PRIVATE int
-send_or_queue(dssh_session sess,
+send_or_queue(struct dssh_session_s *sess,
     const uint8_t *payload, size_t payload_len)
 {
 	int tr = dssh_thrd_check(sess, mtx_trylock(&sess->trans.tx_mtx));
@@ -691,7 +690,7 @@ send_or_queue(dssh_session sess,
 }
 
 DSSH_PRIVATE int
-send_packet(dssh_session sess,
+send_packet(struct dssh_session_s *sess,
     const uint8_t *payload, size_t payload_len, uint32_t *seq_out)
 {
 	int ret;
@@ -747,7 +746,7 @@ tx_done:
  * public recv_packet wrapper below.
  */
 static int
-recv_packet_raw(dssh_session sess,
+recv_packet_raw(struct dssh_session_s *sess,
     uint8_t *msg_type, uint8_t **payload, size_t *payload_len)
 {
 	int ret;
@@ -893,7 +892,7 @@ rx_done:
  *   SSH_MSG_DISCONNECT (1)    -- sets terminate, returns error
  */
 DSSH_PRIVATE int
-recv_packet(dssh_session sess,
+recv_packet(struct dssh_session_s *sess,
     uint8_t *msg_type, uint8_t **payload, size_t *payload_len)
 {
         /* Handle deferred auto-rekey before reading new data.
@@ -973,7 +972,10 @@ recv_packet(dssh_session sess,
 				}
 				continue;
 			case SSH_MSG_DEBUG:
-				if ((sess->debug_cb != NULL) && (*payload_len >= 2)) {
+			{
+				dssh_debug_cb dcb = sess->debug_cb;
+
+				if ((dcb != NULL) && (*payload_len >= 2)) {
 					bool     always_display = (*payload)[1];
 
                                         /* Parse: msg_type(1) + bool(1) + string message */
@@ -986,18 +988,23 @@ recv_packet(dssh_session sess,
 						if (dpos + msg_len > *payload_len)
 							msg_len = 0;
 					}
-					sess->debug_cb(always_display,
+					dcb(always_display,
 					    msg_len > 0 ? &(*payload)[dpos] : NULL,
 					    msg_len, sess->debug_cbdata);
 				}
 				continue;
+			}
 			case SSH_MSG_UNIMPLEMENTED:
-				if ((sess->unimplemented_cb != NULL) && (*payload_len >= 5)) {
+			{
+				dssh_unimplemented_cb ucb = sess->unimplemented_cb;
+
+				if ((ucb != NULL) && (*payload_len >= 5)) {
 					uint32_t rejected_seq = DSSH_GET_U32(&(*payload)[1]);
 
-					sess->unimplemented_cb(rejected_seq, sess->unimplemented_cbdata);
+					ucb(rejected_seq, sess->unimplemented_cbdata);
 				}
 				continue;
+			}
 			case SSH_MSG_GLOBAL_REQUEST:
                                 /*
                                  * RFC 4254 s4: receiver MUST respond appropriately.
@@ -1023,9 +1030,10 @@ recv_packet(dssh_session sess,
 				gpos++;
 
 				int gr_res = -1;
+				dssh_global_request_cb grcb = sess->global_request_cb;
 
-				if (sess->global_request_cb != NULL) {
-					gr_res = sess->global_request_cb(
+				if (grcb != NULL) {
+					gr_res = grcb(
 					        gname, gname_len, want_reply,
 					        &(*payload)[gpos],
 					        *payload_len - gpos,
@@ -1171,7 +1179,7 @@ serialize_namelist_from_str(const char *str, uint8_t *buf, size_t bufsz, size_t 
  * is the caller-owned packet and *pos_out is its length.
  */
 static int
-build_kexinit_packet(dssh_session sess, uint8_t **buf_out, size_t *pos_out)
+build_kexinit_packet(struct dssh_session_s *sess, uint8_t **buf_out, size_t *pos_out)
 {
 	size_t   bufsz = sess->trans.packet_buf_sz;
 	uint8_t *buf = malloc(bufsz);
@@ -1311,7 +1319,7 @@ build_kexinit_packet(dssh_session sess, uint8_t **buf_out, size_t *pos_out)
  * buffered in the rekey queue for replay after rekey completes.
  */
 static int
-receive_peer_kexinit(dssh_session sess)
+receive_peer_kexinit(struct dssh_session_s *sess)
 {
 	if (sess->trans.peer_kexinit != NULL)
 		return 0;
@@ -1428,7 +1436,7 @@ parse_peer_kexinit(const uint8_t *buf, size_t bufsz,
  * first_kex_packet_follows discard if the peer guessed wrong.
  */
 static int
-negotiate_algorithms(dssh_session sess,
+negotiate_algorithms(struct dssh_session_s *sess,
     char peer_lists[][DSSH_NAMELIST_BUF_SIZE],
     bool peer_first_kex_follows)
 {
@@ -1566,7 +1574,7 @@ negotiate_algorithms(dssh_session sess,
 }
 
 DSSH_TESTABLE int
-kexinit(dssh_session sess)
+kexinit(struct dssh_session_s *sess)
 {
 	uint8_t *kexinit;
 	size_t   kexinit_sz;
@@ -1608,7 +1616,7 @@ kexinit(dssh_session sess)
 static int
 kex_send_wrapper(const uint8_t *payload, size_t len, void *io_ctx)
 {
-	return send_packet((dssh_session)io_ctx,
+	return send_packet((struct dssh_session_s *)io_ctx,
 	    payload, len, NULL);
 }
 
@@ -1616,12 +1624,12 @@ static int
 kex_recv_wrapper(uint8_t *msg_type, uint8_t **payload,
     size_t *payload_len, void *io_ctx)
 {
-	return recv_packet((dssh_session)io_ctx,
+	return recv_packet((struct dssh_session_s *)io_ctx,
 	    msg_type, payload, payload_len);
 }
 
 DSSH_TESTABLE int
-kex(dssh_session sess)
+kex(struct dssh_session_s *sess)
 {
 	if ((sess->trans.kex_selected == NULL)
 	    || (sess->trans.kex_selected->handler == NULL))
@@ -1811,7 +1819,7 @@ encode_k_wire(const uint8_t *raw, size_t raw_sz,
  * cleansed on exit.
  */
 static int
-derive_and_apply_keys(dssh_session sess, const uint8_t *k_mpint,
+derive_and_apply_keys(struct dssh_session_s *sess, const uint8_t *k_mpint,
     size_t k_mpint_sz,
     dssh_enc old_enc_c2s, dssh_enc old_enc_s2c,
     dssh_mac old_mac_c2s, dssh_mac old_mac_s2c)
@@ -1970,7 +1978,7 @@ keys_cleanup:
 }
 
 DSSH_TESTABLE int
-newkeys(dssh_session sess)
+newkeys(struct dssh_session_s *sess)
 {
 	/* Save references to OLD modules for cleanup after rekey */
 	dssh_enc old_enc_c2s = sess->trans.enc_c2s_selected;
@@ -2033,7 +2041,7 @@ newkeys(dssh_session sess)
  * ================================================================ */
 
 static int
-transport_init(dssh_session sess, size_t max_packet_size)
+transport_init(struct dssh_session_s *sess, size_t max_packet_size)
 {
 	gconf.used = true;
 	if (gconf.software_version == NULL)
@@ -2123,7 +2131,7 @@ init_cleanup:
 }
 
 static void
-transport_cleanup(dssh_session sess)
+transport_cleanup(struct dssh_session_s *sess)
 {
 	if (sess->trans.kex_selected)
 		sess->trans.kex_selected = NULL;
@@ -2238,10 +2246,10 @@ transport_cleanup(dssh_session sess)
  * Session lifecycle (formerly in ssh.c)
  * ================================================================ */
 
-DSSH_PUBLIC dssh_session
+DSSH_PUBLIC struct dssh_session_s *
 dssh_session_init(bool client, size_t max_packet_size)
 {
-	dssh_session sess = calloc(1, sizeof(*sess));
+	struct dssh_session_s *sess = calloc(1, sizeof(*sess));
 
 	if (sess == NULL)
 		return NULL;
@@ -2268,7 +2276,7 @@ dssh_session_init(bool client, size_t max_packet_size)
 }
 
 DSSH_PUBLIC bool
-dssh_session_terminate(dssh_session sess)
+dssh_session_terminate(struct dssh_session_s *sess)
 {
 	if (sess == NULL)
 		return false;
@@ -2283,7 +2291,7 @@ dssh_session_terminate(dssh_session sess)
 }
 
 DSSH_PUBLIC bool
-dssh_session_is_terminated(dssh_session sess)
+dssh_session_is_terminated(struct dssh_session_s *sess)
 {
 	if (sess == NULL)
 		return true;
@@ -2291,7 +2299,7 @@ dssh_session_is_terminated(dssh_session sess)
 }
 
 DSSH_PUBLIC void
-dssh_session_cleanup(dssh_session sess)
+dssh_session_cleanup(struct dssh_session_s *sess)
 {
 	if (sess == NULL)
 		return;

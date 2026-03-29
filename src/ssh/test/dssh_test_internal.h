@@ -8,6 +8,7 @@
 #ifndef DSSH_TEST_INTERNAL_H
 #define DSSH_TEST_INTERNAL_H
 
+#include "deucessh.h"
 #include "ssh-internal.h"
 
 struct dssh_channel_s;

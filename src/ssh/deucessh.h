@@ -94,7 +94,21 @@ typedef void (*dssh_unimplemented_cb)(uint32_t rejected_seq,
  */
 typedef void (*dssh_terminate_cb)(dssh_session sess, void *cbdata);
 
+/*
+ * Parse a big-endian uint32 from buf[0..bufsz-1] into *val.
+ * Returns 4 (bytes consumed) on success, or a negative
+ * DSSH_ERROR_* code on failure (DSSH_ERROR_INVALID if buf or
+ * val is NULL, DSSH_ERROR_PARSE if bufsz < 4).
+ */
 DSSH_PUBLIC int64_t dssh_parse_uint32(const uint8_t *buf, size_t bufsz, uint32_t *val);
+
+/*
+ * Serialize val as a big-endian uint32 into buf at offset *pos.
+ * Advances *pos by 4.  Returns 0 on success, or a negative
+ * DSSH_ERROR_* code on failure (DSSH_ERROR_INVALID if buf or
+ * pos is NULL, DSSH_ERROR_TOOLONG if the buffer has fewer than
+ * 4 bytes remaining at *pos).
+ */
 DSSH_PUBLIC int dssh_serialize_uint32(uint32_t val, uint8_t *buf, size_t bufsz, size_t *pos);
 
 /*

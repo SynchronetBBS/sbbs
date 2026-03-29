@@ -557,8 +557,8 @@ window_add(uint32_t current, uint32_t bytes)
  * ================================================================ */
 
 DSSH_TESTABLE int
-send_data(dssh_session sess,
-    dssh_channel ch, const uint8_t *data, size_t len,
+send_data(struct dssh_session_s *sess,
+    struct dssh_channel_s *ch, const uint8_t *data, size_t len,
     size_t *sentp)
 {
 	dssh_thrd_check(sess, mtx_lock(&ch->buf_mtx));
@@ -613,8 +613,8 @@ send_data(dssh_session sess,
 }
 
 DSSH_TESTABLE int
-send_extended_data(dssh_session sess,
-    dssh_channel ch, uint32_t data_type_code,
+send_extended_data(struct dssh_session_s *sess,
+    struct dssh_channel_s *ch, uint32_t data_type_code,
     const uint8_t *data, size_t len,
     size_t *sentp)
 {
@@ -673,8 +673,8 @@ send_extended_data(dssh_session sess,
 #define SSH_EXTENDED_DATA_STDERR UINT32_C(1)
 
 DSSH_TESTABLE int
-send_window_adjust(dssh_session sess,
-    dssh_channel ch, uint32_t bytes)
+send_window_adjust(struct dssh_session_s *sess,
+    struct dssh_channel_s *ch, uint32_t bytes)
 {
 	uint8_t msg[32];
 	size_t  pos = 0;
@@ -695,8 +695,8 @@ send_window_adjust(dssh_session sess,
 }
 
 static int
-dssh_conn_send_exit_status(dssh_session sess,
-    dssh_channel ch, uint32_t exit_code)
+dssh_conn_send_exit_status(struct dssh_session_s *sess,
+    struct dssh_channel_s *ch, uint32_t exit_code)
 {
 	uint8_t msg[32];
 	size_t  pos = 0;
@@ -712,8 +712,8 @@ dssh_conn_send_exit_status(dssh_session sess,
 }
 
 DSSH_TESTABLE int
-send_eof(dssh_session sess,
-    dssh_channel                ch)
+send_eof(struct dssh_session_s *sess,
+    struct dssh_channel_s *ch)
 {
 	dssh_thrd_check(sess, mtx_lock(&ch->buf_mtx));
 	if (ch->eof_sent) {
@@ -733,8 +733,8 @@ send_eof(dssh_session sess,
 }
 
 DSSH_TESTABLE int
-conn_close(dssh_session sess,
-    dssh_channel             ch)
+conn_close(struct dssh_session_s *sess,
+    struct dssh_channel_s *ch)
 {
 	dssh_thrd_check(sess, mtx_lock(&ch->buf_mtx));
 	if (ch->close_sent) {
@@ -759,7 +759,7 @@ conn_close(dssh_session sess,
  * ================================================================ */
 
 static int
-register_channel(dssh_session sess, dssh_channel ch)
+register_channel(struct dssh_session_s *sess, struct dssh_channel_s *ch)
 {
 	dssh_thrd_check(sess, mtx_lock(&sess->channel_mtx));
 	if (sess->channel_count >= sess->channel_capacity) {
@@ -787,7 +787,7 @@ register_channel(dssh_session sess, dssh_channel ch)
 
 static struct dssh_channel_s *
 
-find_channel(dssh_session sess, uint32_t local_id)
+find_channel(struct dssh_session_s *sess, uint32_t local_id)
 {
 	/* Lock order: channel_mtx then buf_mtx (hand-over-hand).
 	 * Acquire buf_mtx before releasing channel_mtx so the
@@ -795,7 +795,7 @@ find_channel(dssh_session sess, uint32_t local_id)
 	dssh_thrd_check(sess, mtx_lock(&sess->channel_mtx));
 	for (size_t i = 0; i < sess->channel_count; i++) {
 		if (sess->channels[i]->local_id == local_id) {
-			dssh_channel ch = sess->channels[i];
+			struct dssh_channel_s *ch = sess->channels[i];
 
 			dssh_thrd_check(sess, mtx_lock(&ch->buf_mtx));
 			dssh_thrd_check(sess, mtx_unlock(&sess->channel_mtx));
@@ -807,7 +807,7 @@ find_channel(dssh_session sess, uint32_t local_id)
 }
 
 static void
-unregister_channel(dssh_session sess, dssh_channel ch)
+unregister_channel(struct dssh_session_s *sess, struct dssh_channel_s *ch)
 {
 	dssh_thrd_check(sess, mtx_lock(&sess->channel_mtx));
 	for (size_t i = 0; i < sess->channel_count; i++) {
@@ -820,7 +820,7 @@ unregister_channel(dssh_session sess, dssh_channel ch)
 }
 
 static int64_t
-alloc_channel_id(dssh_session sess)
+alloc_channel_id(struct dssh_session_s *sess)
 {
 	dssh_thrd_check(sess, mtx_lock(&sess->channel_mtx));
 
@@ -852,7 +852,7 @@ alloc_channel_id(dssh_session sess)
  * ================================================================ */
 
 static int
-init_session_channel(dssh_channel ch, uint32_t window_max)
+init_session_channel(struct dssh_channel_s *ch, uint32_t window_max)
 {
 	ch->chan_type = DSSH_CHAN_SESSION;
 	ch->window_max = window_max;
@@ -888,7 +888,7 @@ init_session_channel(dssh_channel ch, uint32_t window_max)
 }
 
 static int
-init_raw_channel(dssh_channel ch, uint32_t window_max)
+init_raw_channel(struct dssh_channel_s *ch, uint32_t window_max)
 {
 	ch->chan_type = DSSH_CHAN_RAW;
 	ch->window_max = window_max;
@@ -906,7 +906,7 @@ init_raw_channel(dssh_channel ch, uint32_t window_max)
 }
 
 static void
-cleanup_channel_buffers(dssh_channel ch)
+cleanup_channel_buffers(struct dssh_channel_s *ch)
 {
 	if (ch->chan_type == DSSH_CHAN_SESSION) {
 		bytebuf_free(&ch->buf.session.stdout_buf);
@@ -931,7 +931,7 @@ cleanup_channel_buffers(dssh_channel ch)
  * ================================================================ */
 
 DSSH_TESTABLE int
-maybe_replenish_window(dssh_session sess, dssh_channel ch)
+maybe_replenish_window(struct dssh_session_s *sess, struct dssh_channel_s *ch)
 {
 	dssh_thrd_check(sess, mtx_lock(&ch->buf_mtx));
 
@@ -1016,7 +1016,7 @@ parse_channel_request(const uint8_t *payload, size_t payload_len,
  * immediately (channel closing detected during unlock-relock), 0 otherwise.
  */
 static int
-handle_channel_request(dssh_session sess, dssh_channel ch,
+handle_channel_request(struct dssh_session_s *sess, struct dssh_channel_s *ch,
     const uint8_t *payload, size_t payload_len)
 {
 	const uint8_t *rtype;
@@ -1056,14 +1056,17 @@ handle_channel_request(dssh_session sess, dssh_channel ch,
 			}
 		}
 		else if ((rtype_len == DSSH_STRLEN(str_window_change)) && (memcmp(rtype, str_window_change, DSSH_STRLEN(str_window_change)) == 0)) {
-			if ((ch->window_change_cb != NULL) && (rdata_len >= 16)) {
+			void (*wc_cb)(uint32_t, uint32_t, uint32_t, uint32_t,
+				    void *) = ch->window_change_cb;
+
+			if ((wc_cb != NULL) && (rdata_len >= 16)) {
 				uint32_t wc_cols = DSSH_GET_U32(rdata);
 				uint32_t wc_rows = DSSH_GET_U32(&rdata[4]);
 				uint32_t wc_wpx = DSSH_GET_U32(&rdata[8]);
 				uint32_t wc_hpx = DSSH_GET_U32(&rdata[12]);
 
 				dssh_thrd_check(sess, mtx_unlock(&ch->buf_mtx));
-				ch->window_change_cb(wc_cols, wc_rows, wc_wpx, wc_hpx,
+				wc_cb(wc_cols, wc_rows, wc_wpx, wc_hpx,
 				    ch->window_change_cbdata);
 				dssh_thrd_check(sess, mtx_lock(&ch->buf_mtx));
 				if (atomic_load(&ch->closing)) {
@@ -1099,7 +1102,7 @@ handle_channel_request(dssh_session sess, dssh_channel ch,
  * Called under buf_mtx.
  */
 static void
-handle_channel_data(dssh_channel ch,
+handle_channel_data(struct dssh_channel_s *ch,
     const uint8_t *payload, size_t payload_len)
 {
 	if (payload_len < 9)
@@ -1133,7 +1136,7 @@ handle_channel_data(dssh_channel ch,
  * Called under buf_mtx.
  */
 static void
-handle_channel_extended_data(dssh_channel ch,
+handle_channel_extended_data(struct dssh_channel_s *ch,
     const uint8_t *payload, size_t payload_len)
 {
 	if (payload_len < 13)
@@ -1166,7 +1169,7 @@ handle_channel_extended_data(dssh_channel ch,
  * Called from the demux thread with no locks held.
  */
 DSSH_TESTABLE int
-demux_dispatch(dssh_session sess, uint8_t msg_type,
+demux_dispatch(struct dssh_session_s *sess, uint8_t msg_type,
     uint8_t *payload, size_t payload_len)
 {
         /* All channel messages have the recipient channel at payload[1..4] */
@@ -1175,7 +1178,7 @@ demux_dispatch(dssh_session sess, uint8_t msg_type,
 
 	uint32_t local_id = DSSH_GET_U32(&payload[1]);
 
-	dssh_channel ch = find_channel(sess, local_id);
+	struct dssh_channel_s *ch = find_channel(sess, local_id);
 
 	if (ch == NULL)
 		return 0; /* late message for closed channel */
@@ -1275,7 +1278,7 @@ demux_dispatch(dssh_session sess, uint8_t msg_type,
  * Handle CHANNEL_OPEN_CONFIRMATION -- recipient_channel is at offset 1.
  */
 static int
-demux_open_confirmation(dssh_session sess,
+demux_open_confirmation(struct dssh_session_s *sess,
     uint8_t *payload, size_t payload_len)
 {
 	if (payload_len < 1 + 16)
@@ -1283,7 +1286,7 @@ demux_open_confirmation(dssh_session sess,
 
 	uint32_t local_id = DSSH_GET_U32(&payload[1]);
 
-	dssh_channel ch = find_channel(sess, local_id);
+	struct dssh_channel_s *ch = find_channel(sess, local_id);
 
 	if (ch == NULL)
 		return 0; /* late message for closed channel */
@@ -1302,7 +1305,7 @@ demux_open_confirmation(dssh_session sess,
  * Handle incoming CHANNEL_OPEN -- either queue for accept or auto-reject.
  */
 static int
-demux_channel_open(dssh_session sess, uint8_t *payload, size_t payload_len)
+demux_channel_open(struct dssh_session_s *sess, uint8_t *payload, size_t payload_len)
 {
         /* Parse: string channel_type, uint32 sender_channel,
          * uint32 initial_window, uint32 max_packet */
@@ -1371,7 +1374,7 @@ demux_channel_open(dssh_session sess, uint8_t *payload, size_t payload_len)
 static int
 demux_thread_func(void *arg)
 {
-	dssh_session sess = arg;
+	struct dssh_session_s *sess = arg;
 	uint8_t      msg_type;
 	uint8_t     *payload;
 	size_t       payload_len;
@@ -1427,7 +1430,7 @@ demux_thread_func(void *arg)
          * Lock order: channel_mtx then buf_mtx. */
 	dssh_thrd_check(sess, mtx_lock(&sess->channel_mtx));
 	for (size_t i = 0; i < sess->channel_count; i++) {
-		dssh_channel ch = sess->channels[i];
+		struct dssh_channel_s *ch = sess->channels[i];
 
 		dssh_thrd_check(sess, mtx_lock(&ch->buf_mtx));
 		dssh_thrd_check(sess, cnd_broadcast(&ch->poll_cnd));
@@ -1440,7 +1443,7 @@ demux_thread_func(void *arg)
 }
 
 DSSH_PUBLIC int
-dssh_session_start(dssh_session sess)
+dssh_session_start(struct dssh_session_s *sess)
 {
 	if (sess == NULL)
 		return DSSH_ERROR_INVALID;
@@ -1479,7 +1482,7 @@ dssh_session_start(dssh_session sess)
 }
 
 DSSH_PUBLIC void
-dssh_session_stop(dssh_session sess)
+dssh_session_stop(struct dssh_session_s *sess)
 {
 	if (sess == NULL)
 		return;
@@ -1500,7 +1503,7 @@ dssh_session_stop(dssh_session sess)
                 /* Channels in the array are never NULL; registration
                  * always stores a valid pointer. */
 		for (size_t i = 0; i < sess->channel_count; i++) {
-			dssh_channel ch = sess->channels[i];
+			struct dssh_channel_s *ch = sess->channels[i];
 
 			if (ch != NULL) {
 				cleanup_channel_buffers(ch);
@@ -1525,7 +1528,7 @@ dssh_session_stop(dssh_session sess)
  * ================================================================ */
 
 DSSH_PUBLIC int
-dssh_session_accept(dssh_session sess,
+dssh_session_accept(struct dssh_session_s *sess,
     struct dssh_incoming_open **inc, int timeout_ms)
 {
 	struct timespec ts;
@@ -1562,7 +1565,7 @@ dssh_session_accept(dssh_session sess,
 }
 
 DSSH_PUBLIC int
-dssh_session_reject(dssh_session sess,
+dssh_session_reject(struct dssh_session_s *sess,
     struct dssh_incoming_open *inc, uint32_t reason_code,
     const char *description)
 {
@@ -1601,8 +1604,8 @@ dssh_session_reject(dssh_session sess,
  * Send CHANNEL_OPEN_CONFIRMATION for an incoming channel.
  */
 static int
-send_open_confirmation(dssh_session sess,
-    dssh_channel ch, uint32_t peer_channel)
+send_open_confirmation(struct dssh_session_s *sess,
+    struct dssh_channel_s *ch, uint32_t peer_channel)
 {
 	uint8_t msg[32];
 	size_t  pos = 0;
@@ -1620,7 +1623,7 @@ send_open_confirmation(dssh_session sess,
  * Does NOT start the demux -- the channel is registered for demux dispatch.
  */
 static int
-open_session_channel(dssh_session sess, dssh_channel ch)
+open_session_channel(struct dssh_session_s *sess, struct dssh_channel_s *ch)
 {
         /* Caller has already initialized buffers (init_session_channel
          * or init_raw_channel).  Set wire-level fields only. */
@@ -1695,8 +1698,8 @@ open_session_channel(dssh_session sess, dssh_channel ch)
  * DSSH_ERROR_INIT on FAILURE.
  */
 static int
-send_channel_request_wait(dssh_session sess,
-    dssh_channel ch,
+send_channel_request_wait(struct dssh_session_s *sess,
+    struct dssh_channel_s *ch,
     const char *req_type, const uint8_t *extra, size_t extra_len)
 {
 	size_t   rtlen = strlen(req_type);
@@ -1780,13 +1783,13 @@ send_channel_request_wait(dssh_session sess,
  * High-level open functions
  * ================================================================ */
 
-DSSH_PUBLIC dssh_channel
-dssh_session_open_shell(dssh_session sess,
+DSSH_PUBLIC struct dssh_channel_s *
+dssh_session_open_shell(struct dssh_session_s *sess,
     const struct dssh_pty_req       *pty)
 {
 	if (pty == NULL || sess == NULL)
 		return NULL;
-	dssh_channel ch = calloc(1, sizeof(*ch));
+	struct dssh_channel_s *ch = calloc(1, sizeof(*ch));
 
 	if (ch == NULL)
 		return NULL;
@@ -1872,13 +1875,13 @@ open_fail:
 	return NULL;
 }
 
-DSSH_PUBLIC dssh_channel
-dssh_session_open_exec(dssh_session sess,
+DSSH_PUBLIC struct dssh_channel_s *
+dssh_session_open_exec(struct dssh_session_s *sess,
     const char                     *command)
 {
 	if (command == NULL || sess == NULL)
 		return NULL;
-	dssh_channel ch = calloc(1, sizeof(*ch));
+	struct dssh_channel_s *ch = calloc(1, sizeof(*ch));
 
 	if (ch == NULL)
 		return NULL;
@@ -1933,13 +1936,13 @@ open_fail:
 	return NULL;
 }
 
-DSSH_PUBLIC dssh_channel
-dssh_channel_open_subsystem(dssh_session sess,
+DSSH_PUBLIC struct dssh_channel_s *
+dssh_channel_open_subsystem(struct dssh_session_s *sess,
     const char                          *subsystem)
 {
 	if (subsystem == NULL || sess == NULL)
 		return NULL;
-	dssh_channel ch = calloc(1, sizeof(*ch));
+	struct dssh_channel_s *ch = calloc(1, sizeof(*ch));
 
 	if (ch == NULL)
 		return NULL;
@@ -1998,13 +2001,13 @@ open_fail:
  * Server-side accept helpers
  * ================================================================ */
 
-DSSH_PUBLIC dssh_channel
-dssh_channel_accept_raw(dssh_session sess,
+DSSH_PUBLIC struct dssh_channel_s *
+dssh_channel_accept_raw(struct dssh_session_s *sess,
     struct dssh_incoming_open       *inc)
 {
 	if (inc == NULL || sess == NULL)
 		return NULL;
-	dssh_channel ch = calloc(1, sizeof(*ch));
+	struct dssh_channel_s *ch = calloc(1, sizeof(*ch));
 
 	if (ch == NULL) {
 		free(inc);
@@ -2061,7 +2064,7 @@ dssh_channel_accept_raw(dssh_session sess,
  * Returns 0 on success, negative on error/termination.
  */
 static int
-setup_recv(dssh_session sess, dssh_channel ch,
+setup_recv(struct dssh_session_s *sess, struct dssh_channel_s *ch,
     uint8_t *msg_type, uint8_t **payload, size_t *payload_len)
 {
 	struct timespec sts;
@@ -2113,7 +2116,7 @@ setup_recv(dssh_session sess, dssh_channel ch,
  * Send CHANNEL_SUCCESS or CHANNEL_FAILURE for a setup request.
  */
 static int
-setup_reply(dssh_session sess, dssh_channel ch,
+setup_reply(struct dssh_session_s *sess, struct dssh_channel_s *ch,
     bool success)
 {
 	uint8_t msg[8];
@@ -2129,10 +2132,10 @@ setup_reply(dssh_session sess, dssh_channel ch,
  * and send CHANNEL_OPEN_CONFIRMATION.  Frees `inc` on all paths.
  * Returns the channel or NULL on failure.
  */
-static dssh_channel
-accept_channel_init(dssh_session sess, struct dssh_incoming_open *inc)
+static struct dssh_channel_s *
+accept_channel_init(struct dssh_session_s *sess, struct dssh_incoming_open *inc)
 {
-	dssh_channel ch = calloc(1, sizeof(*ch));
+	struct dssh_channel_s *ch = calloc(1, sizeof(*ch));
 
 	if (ch == NULL) {
 		free(inc);
@@ -2193,7 +2196,7 @@ accept_channel_init(dssh_session sess, struct dssh_incoming_open *inc)
  * On success, sets ch->req_type, ch->req_data, and *is_subsystem.
  */
 static int
-accept_setup_loop(dssh_session sess, dssh_channel ch,
+accept_setup_loop(struct dssh_session_s *sess, struct dssh_channel_s *ch,
     const struct dssh_server_session_cbs *cbs, bool *is_subsystem)
 {
 	ch->req_type[0] = 0;
@@ -2289,8 +2292,8 @@ accept_setup_loop(dssh_session sess, dssh_channel ch,
 	}
 }
 
-DSSH_PUBLIC dssh_channel
-dssh_session_accept_channel(dssh_session sess,
+DSSH_PUBLIC struct dssh_channel_s *
+dssh_session_accept_channel(struct dssh_session_s *sess,
     struct dssh_incoming_open *inc,
     const struct dssh_server_session_cbs *cbs,
     const char **request_type, const char **request_data)
@@ -2298,7 +2301,7 @@ dssh_session_accept_channel(dssh_session sess,
 	if (cbs == NULL || inc == NULL || sess == NULL)
 		return NULL;
 
-	dssh_channel ch = accept_channel_init(sess, inc);
+	struct dssh_channel_s *ch = accept_channel_init(sess, inc);
 
 	if (ch == NULL)
 		return NULL;
@@ -2384,7 +2387,7 @@ fail:
  * stderr (ext=true) before hitting a signal mark.
  */
 static size_t
-session_readable(dssh_channel ch, bool ext)
+session_readable(struct dssh_channel_s *ch, bool ext)
 {
 	struct dssh_bytebuf *bb = ext
 	    ? &ch->buf.session.stderr_buf
@@ -2415,8 +2418,8 @@ session_readable(dssh_channel ch, bool ext)
 }
 
 DSSH_PUBLIC int
-dssh_session_poll(dssh_session sess,
-    dssh_channel ch, int events, int timeout_ms)
+dssh_session_poll(struct dssh_session_s *sess,
+    struct dssh_channel_s *ch, int events, int timeout_ms)
 {
 	struct timespec ts;
 
@@ -2470,8 +2473,8 @@ dssh_session_poll(dssh_session sess,
 }
 
 static int64_t
-session_read_impl(dssh_session sess,
-    dssh_channel ch, uint8_t *buf, size_t bufsz, bool ext)
+session_read_impl(struct dssh_session_s *sess,
+    struct dssh_channel_s *ch, uint8_t *buf, size_t bufsz, bool ext)
 {
 	if (buf == NULL || ch == NULL || sess == NULL)
 		return DSSH_ERROR_INVALID;
@@ -2500,22 +2503,22 @@ session_read_impl(dssh_session sess,
 }
 
 DSSH_PUBLIC int64_t
-dssh_session_read(dssh_session sess,
-    dssh_channel ch, uint8_t *buf, size_t bufsz)
+dssh_session_read(struct dssh_session_s *sess,
+    struct dssh_channel_s *ch, uint8_t *buf, size_t bufsz)
 {
 	return session_read_impl(sess, ch, buf, bufsz, false);
 }
 
 DSSH_PUBLIC int64_t
-dssh_session_read_ext(dssh_session sess,
-    dssh_channel ch, uint8_t *buf, size_t bufsz)
+dssh_session_read_ext(struct dssh_session_s *sess,
+    struct dssh_channel_s *ch, uint8_t *buf, size_t bufsz)
 {
 	return session_read_impl(sess, ch, buf, bufsz, true);
 }
 
 DSSH_PUBLIC int64_t
-dssh_session_write(dssh_session sess,
-    dssh_channel ch, const uint8_t *buf, size_t bufsz)
+dssh_session_write(struct dssh_session_s *sess,
+    struct dssh_channel_s *ch, const uint8_t *buf, size_t bufsz)
 {
 	if (buf == NULL || ch == NULL || sess == NULL)
 		return DSSH_ERROR_INVALID;
@@ -2534,8 +2537,8 @@ dssh_session_write(dssh_session sess,
 }
 
 DSSH_PUBLIC int64_t
-dssh_session_write_ext(dssh_session sess,
-    dssh_channel ch, const uint8_t *buf, size_t bufsz)
+dssh_session_write_ext(struct dssh_session_s *sess,
+    struct dssh_channel_s *ch, const uint8_t *buf, size_t bufsz)
 {
 	if (buf == NULL || ch == NULL || sess == NULL)
 		return DSSH_ERROR_INVALID;
@@ -2555,8 +2558,8 @@ dssh_session_write_ext(dssh_session sess,
 }
 
 DSSH_PUBLIC int
-dssh_session_read_signal(dssh_session sess,
-    dssh_channel ch, const char **signal_name)
+dssh_session_read_signal(struct dssh_session_s *sess,
+    struct dssh_channel_s *ch, const char **signal_name)
 {
 	if (signal_name == NULL || ch == NULL || sess == NULL)
 		return DSSH_ERROR_INVALID;
@@ -2577,8 +2580,8 @@ dssh_session_read_signal(dssh_session sess,
 }
 
 DSSH_PUBLIC int
-dssh_session_close(dssh_session sess,
-    dssh_channel ch, uint32_t exit_code)
+dssh_session_close(struct dssh_session_s *sess,
+    struct dssh_channel_s *ch, uint32_t exit_code)
 {
 	if (ch == NULL || sess == NULL)
 		return DSSH_ERROR_INVALID;
@@ -2608,8 +2611,8 @@ dssh_session_close(dssh_session sess,
  * ================================================================ */
 
 DSSH_PUBLIC int
-dssh_channel_poll(dssh_session sess,
-    dssh_channel ch, int events, int timeout_ms)
+dssh_channel_poll(struct dssh_session_s *sess,
+    struct dssh_channel_s *ch, int events, int timeout_ms)
 {
 	struct timespec ts;
 
@@ -2654,8 +2657,8 @@ dssh_channel_poll(dssh_session sess,
 }
 
 DSSH_PUBLIC int64_t
-dssh_channel_read(dssh_session sess,
-    dssh_channel ch, uint8_t *buf, size_t bufsz)
+dssh_channel_read(struct dssh_session_s *sess,
+    struct dssh_channel_s *ch, uint8_t *buf, size_t bufsz)
 {
 	if (ch == NULL || sess == NULL)
 		return DSSH_ERROR_INVALID;
@@ -2678,8 +2681,8 @@ dssh_channel_read(dssh_session sess,
 }
 
 DSSH_PUBLIC int
-dssh_channel_write(dssh_session sess,
-    dssh_channel ch, const uint8_t *buf, size_t len)
+dssh_channel_write(struct dssh_session_s *sess,
+    struct dssh_channel_s *ch, const uint8_t *buf, size_t len)
 {
 	if (buf == NULL || ch == NULL || sess == NULL)
 		return DSSH_ERROR_INVALID;
@@ -2692,8 +2695,8 @@ dssh_channel_write(dssh_session sess,
 }
 
 DSSH_PUBLIC int
-dssh_channel_close(dssh_session sess,
-    dssh_channel                ch)
+dssh_channel_close(struct dssh_session_s *sess,
+    struct dssh_channel_s *ch)
 {
 	if (ch == NULL || sess == NULL)
 		return DSSH_ERROR_INVALID;
@@ -2717,8 +2720,8 @@ dssh_channel_close(dssh_session sess,
  * ================================================================ */
 
 DSSH_PUBLIC int
-dssh_session_send_signal(dssh_session sess,
-    dssh_channel ch, const char *signal_name)
+dssh_session_send_signal(struct dssh_session_s *sess,
+    struct dssh_channel_s *ch, const char *signal_name)
 {
 	if (signal_name == NULL || ch == NULL || sess == NULL)
 		return DSSH_ERROR_INVALID;
@@ -2756,8 +2759,8 @@ dssh_session_send_signal(dssh_session sess,
 }
 
 DSSH_PUBLIC int
-dssh_session_send_window_change(dssh_session sess,
-    dssh_channel ch,
+dssh_session_send_window_change(struct dssh_session_s *sess,
+    struct dssh_channel_s *ch,
     uint32_t cols, uint32_t rows, uint32_t wpx, uint32_t hpx)
 {
 	if (ch == NULL || sess == NULL)

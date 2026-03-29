@@ -59,23 +59,12 @@
 
 ### API definition gaps (items 92-100)
 
-93. **`dssh_transport_register_lang()` visibility leak.**
-    Declared `DSSH_PUBLIC` in `ssh-trans.h` (internal header) but not
-    in any consumer-facing header.  It's exported from the shared
-    library's symbol table but consumers can't call it without including
-    an internal header.  Either move to a public header or change to
-    `DSSH_PRIVATE`.
-
 95. Subsumed by item 101 (channel I/O redesign).
 
 96. **`dssh_session_read_signal()` pointer lifetime undocumented.**
     Returns `*signal_name` pointing into a channel-owned buffer
     (`ch->last_signal`).  Valid until the next `read_signal()` call on
     the same channel.  This must be documented in the header.
-
-97. **`dssh_parse_uint32()` return value undocumented.**
-    Returns `int64_t`: 4 on success (bytes consumed), negative error
-    code on failure.  Neither the header nor README documents this.
 
 99. **Callback setters after `dssh_session_start()` are undefined behavior.**
     `ssh.c` and `deucessh.h` documents "must be called before `dssh_session_start()`" and
@@ -87,18 +76,31 @@
     allow changing them after session start. As part of the same effort, evaluate
     if there's a need to prevent NULL for the parameters.
 
-100. **Opaque-handle typedefs live in public headers but internal code needs them.**
-    `dssh_session` (`typedef struct dssh_session_s *`) is in `deucessh.h`;
-    `dssh_channel` (`typedef struct dssh_channel_s *`) is in `deucessh-conn.h`.
-    Internal code has the full struct definitions via `ssh-internal.h` but
-    depends on transitively included public headers for the pointer typedefs.
-    This forces internal files to include consumer headers they otherwise
-    wouldn't need (e.g. ssh.c needed `deucessh-conn.h` solely for the
-    `dssh_channel` typedef).  Fix: provide the opaque-handle typedefs in
-    `ssh-internal.h` (or a shared forward-declaration header) so internal
-    code never pulls in public consumer headers just for a typedef.
-
 ## Closed
+
+- `dssh_transport_register_lang()` moved to public header (was item 93).
+  Created `deucessh-lang.h` following the pattern of other module headers
+  (`deucessh-comp.h`, etc.).  Moved `dssh_language_s` struct, typedef,
+  `_Static_assert`, and `dssh_transport_register_lang()` declaration from
+  `ssh-trans.h` into the new public header.  Languages are external-only
+  (apps parse language tags from strings), so the function belongs in a
+  consumer-facing header alongside the other `register_*` functions.
+
+- `dssh_parse_uint32()` return value documented (was item 97).  Added
+  doc comments to both `dssh_parse_uint32()` and `dssh_serialize_uint32()`
+  declarations in `deucessh.h`.  `dssh_parse_uint32()` returns `int64_t`:
+  4 (bytes consumed) on success, negative `DSSH_ERROR_*` on failure.
+  `dssh_serialize_uint32()` returns `int`: 0 on success, negative on
+  failure.  Updated `README.md` with the same information.
+
+- Opaque-handle typedefs replaced with struct pointers in internal code
+  (was item 100).  All internal library files (`ssh-internal.h`, `ssh.c`,
+  `ssh-trans.c`, `ssh-auth.c`, `ssh-conn.c`) now use `struct dssh_session_s *`
+  and `struct dssh_channel_s *` directly instead of the `dssh_session` and
+  `dssh_channel` typedefs.  Public headers (`deucessh.h`, `deucessh-conn.h`)
+  retain the typedefs for the external API.  Removed `#include "deucessh-conn.h"`
+  from `ssh-trans.c`; added a forward declaration of `dssh_session_stop()`
+  in `ssh-internal.h` so internal code doesn't need consumer headers.
 
 - `dssh_channel_read()` peek mode fixed (was item 92).  Changed NULL
   check from `buf == NULL` to `buf == NULL && bufsz != 0`, allowing

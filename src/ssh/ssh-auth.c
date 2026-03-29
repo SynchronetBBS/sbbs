@@ -45,7 +45,7 @@ static const char method_keyboard_interactive[]  = "keyboard-interactive";
     + 4 + DSSH_STRLEN(method_publickey) + 1 + 4 + 4)
 
 static int
-handle_banner(dssh_session sess, uint8_t *payload, size_t payload_len)
+handle_banner(struct dssh_session_s *sess, uint8_t *payload, size_t payload_len)
 {
 	dssh_auth_banner_cb cb = sess->banner_cb;
 
@@ -82,7 +82,7 @@ handle_banner(dssh_session sess, uint8_t *payload, size_t payload_len)
 	return 0;
 }
 
-static int flush_pending_banner(dssh_session sess);
+static int flush_pending_banner(struct dssh_session_s *sess);
 
 /* Handler return values for per-method auth dispatch */
 #define AUTH_HANDLER_CONTINUE  0   /* failure/partial sent, keep looping */
@@ -93,7 +93,7 @@ static int flush_pending_banner(dssh_session sess);
  * Server-side helpers
  * ================================================================ */
 static int
-send_auth_failure(dssh_session sess, const char *methods, bool partial_success)
+send_auth_failure(struct dssh_session_s *sess, const char *methods, bool partial_success)
 {
 	int ret = flush_pending_banner(sess);
 
@@ -125,7 +125,7 @@ send_auth_failure(dssh_session sess, const char *methods, bool partial_success)
 }
 
 static int
-send_auth_success(dssh_session sess)
+send_auth_success(struct dssh_session_s *sess)
 {
 	int ret = flush_pending_banner(sess);
 
@@ -138,7 +138,7 @@ send_auth_success(dssh_session sess)
 }
 
 static int
-send_passwd_changereq(dssh_session sess,
+send_passwd_changereq(struct dssh_session_s *sess,
     const uint8_t *prompt, size_t prompt_len)
 {
 	if (prompt_len > UINT32_MAX || prompt_len > SIZE_MAX - PASSWD_CHANGEREQ_FIXED)
@@ -166,7 +166,7 @@ send_passwd_changereq(dssh_session sess,
 }
 
 static int
-send_pk_ok(dssh_session sess,
+send_pk_ok(struct dssh_session_s *sess,
     const char *algo_name, size_t algo_len,
     const uint8_t *pubkey_blob, size_t pubkey_blob_len)
 {
@@ -218,7 +218,7 @@ free_kbi_prompts(char *name, char *instruction,
  * Build and send SSH_MSG_USERAUTH_INFO_REQUEST (RFC 4256 s3.2).
  */
 static int
-send_info_request(dssh_session sess, const char *name,
+send_info_request(struct dssh_session_s *sess, const char *name,
     const char *instruction, uint32_t num_prompts,
     char **prompts, const bool *echo)
 {
@@ -326,7 +326,7 @@ parse_userauth_prefix(const uint8_t *payload, size_t payload_len,
  * Send and consume the pending banner, if any.
  */
 static int
-flush_pending_banner(dssh_session sess)
+flush_pending_banner(struct dssh_session_s *sess)
 {
 	if (sess->pending_banner == NULL)
 		return 0;
@@ -384,7 +384,7 @@ flush_pending_banner(dssh_session sess)
  * Handle "none" authentication method.
  */
 static int
-handle_auth_none(dssh_session sess,
+handle_auth_none(struct dssh_session_s *sess,
     const struct dssh_auth_server_cbs *cbs,
     const uint8_t *user, size_t user_len)
 {
@@ -417,7 +417,7 @@ handle_auth_none(dssh_session sess,
  * Handles SUCCESS, DISCONNECT, CHANGE_PASSWORD, and FAILURE/PARTIAL.
  */
 static int
-password_dispatch(dssh_session sess,
+password_dispatch(struct dssh_session_s *sess,
     const struct dssh_auth_server_cbs *cbs,
     int auth_res, uint8_t *prompt, size_t prompt_len)
 {
@@ -456,7 +456,7 @@ password_dispatch(dssh_session sess,
  * Handle "password" authentication method (normal + change).
  */
 static int
-handle_auth_password(dssh_session sess,
+handle_auth_password(struct dssh_session_s *sess,
     const struct dssh_auth_server_cbs *cbs,
     const uint8_t *user, size_t user_len,
     const uint8_t *payload, size_t payload_len, size_t rpos)
@@ -530,7 +530,7 @@ handle_auth_password(dssh_session sess,
  * Handle "keyboard-interactive" authentication method.
  */
 static int
-handle_auth_kbi(dssh_session sess,
+handle_auth_kbi(struct dssh_session_s *sess,
     const struct dssh_auth_server_cbs *cbs,
     const uint8_t *user, size_t user_len,
     const uint8_t *payload, size_t payload_len, size_t rpos)
@@ -710,7 +710,7 @@ handle_auth_kbi(dssh_session sess,
  * Handle "publickey" authentication method (probe + verify).
  */
 static int
-handle_auth_publickey(dssh_session sess,
+handle_auth_publickey(struct dssh_session_s *sess,
     const struct dssh_auth_server_cbs *cbs,
     const uint8_t *user, size_t user_len,
     const uint8_t *payload, size_t payload_len, size_t rpos)
@@ -879,7 +879,7 @@ handle_auth_publickey(dssh_session sess,
  * Server-side authentication loop
  * ================================================================ */
 DSSH_TESTABLE int
-auth_server_impl(dssh_session sess,
+auth_server_impl(struct dssh_session_s *sess,
     const struct dssh_auth_server_cbs *cbs,
     uint8_t *username_out, size_t *username_out_len)
 {
@@ -1034,7 +1034,7 @@ done:
  * terminate, so those errors pass through unchanged.
  */
 static inline int
-auth_check_terminated(dssh_session sess, int res)
+auth_check_terminated(struct dssh_session_s *sess, int res)
 {
 	if ((res < 0) && sess->terminate)
 		return DSSH_ERROR_TERMINATED;
@@ -1042,7 +1042,7 @@ auth_check_terminated(dssh_session sess, int res)
 }
 
 DSSH_PUBLIC int
-dssh_auth_server(dssh_session sess,
+dssh_auth_server(struct dssh_session_s *sess,
     const struct dssh_auth_server_cbs *cbs,
     uint8_t *username_out, size_t *username_out_len)
 {
@@ -1053,7 +1053,7 @@ dssh_auth_server(dssh_session sess,
 }
 
 DSSH_PUBLIC int
-dssh_auth_set_banner(dssh_session sess, const char *message,
+dssh_auth_set_banner(struct dssh_session_s *sess, const char *message,
     const char *language)
 {
 	if (sess == NULL)
@@ -1087,7 +1087,7 @@ dssh_auth_set_banner(dssh_session sess, const char *message,
  * Client-side authentication
  * ================================================================ */
 static int
-dssh_auth_request_service(dssh_session sess, const char *service)
+dssh_auth_request_service(struct dssh_session_s *sess, const char *service)
 {
 	size_t   slen = strlen(service);
 
@@ -1130,7 +1130,7 @@ dssh_auth_request_service(dssh_session sess, const char *service)
 }
 
 static int
-ensure_auth_service(dssh_session sess)
+ensure_auth_service(struct dssh_session_s *sess)
 {
 	if (sess->auth_service_requested)
 		return 0;
@@ -1172,7 +1172,7 @@ build_userauth_request(uint8_t *buf,
 }
 
 DSSH_TESTABLE int
-get_methods_impl(dssh_session sess,
+get_methods_impl(struct dssh_session_s *sess,
     const char *username, char *methods, size_t methods_sz)
 {
 	int     res = ensure_auth_service(sess);
@@ -1252,7 +1252,7 @@ get_methods_impl(dssh_session sess,
 }
 
 DSSH_PUBLIC int
-dssh_auth_get_methods(dssh_session sess,
+dssh_auth_get_methods(struct dssh_session_s *sess,
     const char *username, char *methods, size_t methods_sz)
 {
 	if (methods == NULL || username == NULL || sess == NULL)
@@ -1267,7 +1267,7 @@ dssh_auth_get_methods(dssh_session sess,
  * If change is true: password change (boolean TRUE, old_password, new_password).
  */
 static int
-send_password_request(dssh_session sess,
+send_password_request(struct dssh_session_s *sess,
     const char *username, const char *old_password,
     const uint8_t *new_password, size_t new_password_len, bool change)
 {
@@ -1315,7 +1315,7 @@ send_password_request(dssh_session sess,
 }
 
 DSSH_TESTABLE int
-auth_password_impl(dssh_session sess,
+auth_password_impl(struct dssh_session_s *sess,
     const char *username, const char *password,
     dssh_auth_passwd_change_cb passwd_change_cb, void *passwd_change_cbdata)
 {
@@ -1410,7 +1410,7 @@ auth_password_impl(dssh_session sess,
 }
 
 DSSH_PUBLIC int
-dssh_auth_password(dssh_session sess,
+dssh_auth_password(struct dssh_session_s *sess,
     const char *username, const char *password,
     dssh_auth_passwd_change_cb passwd_change_cb, void *passwd_change_cbdata)
 {
@@ -1422,7 +1422,7 @@ dssh_auth_password(dssh_session sess,
 }
 
 DSSH_TESTABLE int
-auth_kbi_impl(dssh_session sess,
+auth_kbi_impl(struct dssh_session_s *sess,
     const char *username, dssh_auth_kbi_prompt_cb prompt_cb,
     void *cbdata)
 {
@@ -1643,7 +1643,7 @@ auth_kbi_impl(dssh_session sess,
 }
 
 DSSH_PUBLIC int
-dssh_auth_keyboard_interactive(dssh_session sess,
+dssh_auth_keyboard_interactive(struct dssh_session_s *sess,
     const char *username, dssh_auth_kbi_prompt_cb prompt_cb,
     void *cbdata)
 {
@@ -1654,7 +1654,7 @@ dssh_auth_keyboard_interactive(dssh_session sess,
 }
 
 DSSH_TESTABLE int
-auth_publickey_impl(dssh_session sess,
+auth_publickey_impl(struct dssh_session_s *sess,
     const char *username, const char *algo_name)
 {
 	{
@@ -1804,7 +1804,7 @@ auth_publickey_impl(dssh_session sess,
 }
 
 DSSH_PUBLIC int
-dssh_auth_publickey(dssh_session sess,
+dssh_auth_publickey(struct dssh_session_s *sess,
     const char *username, const char *algo_name)
 {
 	if (algo_name == NULL || username == NULL || sess == NULL)

@@ -8,7 +8,6 @@
 #include <stdatomic.h>
 #include <threads.h>
 
-#include "deucessh.h"
 #include "ssh-trans.h"
 
 /* DSSH_TESTABLE is now defined in deucessh-portable.h */
@@ -91,7 +90,11 @@ struct dssh_accept_queue {
 } while (0)
 
 /* Set terminate flag and wake all library-owned condvar waiters. */
-DSSH_PRIVATE void session_set_terminate(dssh_session sess);
+DSSH_PRIVATE void session_set_terminate(struct dssh_session_s *sess);
+
+/* Forward declaration of public function called from internal code
+ * (ssh-trans.c cleanup path).  Avoids needing deucessh-conn.h. */
+DSSH_PUBLIC void dssh_session_stop(struct dssh_session_s *sess);
 
 /*
  * Test allocation redirection.  Under DSSH_TESTING, library code
@@ -264,17 +267,22 @@ struct dssh_session_s {
 	void                         *rx_cbdata;
 	void                         *rx_line_cbdata;
 	void                         *extra_line_cbdata;
-	dssh_debug_cb                 debug_cb;
+	void (*debug_cb)(bool always_display,
+	    const uint8_t *message, size_t message_len, void *cbdata);
 	void                         *debug_cbdata;
-	dssh_unimplemented_cb         unimplemented_cb;
+	void (*unimplemented_cb)(uint32_t rejected_seq, void *cbdata);
 	void                         *unimplemented_cbdata;
-	dssh_auth_banner_cb           banner_cb;
+	void (*banner_cb)(const uint8_t *message,
+	    size_t message_len, const uint8_t *language,
+	    size_t language_len, void *cbdata);
 	void                         *banner_cbdata;
 	char                         *pending_banner;
 	char                         *pending_banner_lang;
-	dssh_global_request_cb        global_request_cb;
+	int (*global_request_cb)(const uint8_t *name,
+	    size_t name_len, bool want_reply, const uint8_t *data,
+	    size_t data_len, void *cbdata);
 	void                         *global_request_cbdata;
-	dssh_terminate_cb             terminate_cb;
+	void (*terminate_cb)(struct dssh_session_s *sess, void *cbdata);
 	void                         *terminate_cbdata;
 	struct dssh_channel_s       **channels;
 	size_t                        channel_count;
@@ -316,7 +324,7 @@ struct dssh_session_s {
  * lock was not acquired.
  */
 static inline int
-dssh_thrd_check(dssh_session sess, int ret)
+dssh_thrd_check(struct dssh_session_s *sess, int ret)
 {
 	if (ret != thrd_success && ret != thrd_busy
 	    && ret != thrd_timedout && !sess->terminate)

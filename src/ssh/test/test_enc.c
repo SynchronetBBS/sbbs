@@ -12,6 +12,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "deucessh.h"
 #include "ssh-trans.h"
 #include "test_enc.h"
 

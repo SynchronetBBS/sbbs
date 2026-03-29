@@ -1011,8 +1011,11 @@ Parse helpers for the `data` payload:
 - `dssh_parse_exec_data(data, len, &command, &clen)`
 - `dssh_parse_subsystem_data(data, len, &name, &nlen)`
 
-You can also use the RFC 4251 primitives directly:
-`dssh_parse_uint32()` and `dssh_serialize_uint32()` (from `deucessh.h`).
+You can also use the RFC 4251 primitives directly (from `deucessh.h`):
+- `dssh_parse_uint32(buf, bufsz, &val)` — returns `int64_t`: 4 (bytes
+  consumed) on success, negative `DSSH_ERROR_*` on failure.
+- `dssh_serialize_uint32(val, buf, bufsz, &pos)` — returns `int`: 0 on
+  success, negative `DSSH_ERROR_*` on failure.  Advances `pos` by 4.
 
 ## Channel Lifecycle
 
