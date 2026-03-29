@@ -1235,8 +1235,14 @@ void get_ini_values(str_list_t ini, const char* section, js_callback_t* cb)
 /*********************/
 /* Entry point (duh) */
 /*********************/
+#if defined(__DARWIN__)
 extern char **environ;
-extern "C" int main(int argc, char **argv)
+#endif
+extern "C" int main(int argc, char **argv
+#if !defined(__DARWIN__)
+	, char** environ
+#endif
+)
 {
 #ifndef JSDOOR
 	char             error[512];
