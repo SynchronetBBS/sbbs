@@ -143,11 +143,12 @@ not one function with behavioral differences based on a NULL check or
 flag.  They allocate different internal buffers and unlock different
 I/O functions.
 
-- **Zero-copy** (`dssh_chan_zc_*`): the core implementation.  Callback
-  for all channel events; outbound writes go directly into the
+- **Zero-copy** (`dssh_chan_zc_*`): the core implementation.  Data
+  callback for inbound data; outbound writes go directly into the
   transport packet buffer; inbound data delivered as pointer into the
   decrypted packet buffer.  No library-side copies or accumulation
-  buffers.
+  buffers.  Events delivered via the same event queue/callback as
+  stream mode.
 - **Stream** (`dssh_chan_*`): convenience layer built on top of the ZC
   internals.  Adds ring buffers and POSIX read/write/poll semantics.
   One memcpy per direction (ring buffer on RX, memcpy into tx_packet
@@ -854,27 +855,194 @@ encrypts in-place, sends.  Zero copies.
 
 ## Server-side API
 
-TBD — to be designed separately.  Key differences from client:
+### Accept: callback-driven setup with shared params struct
 
-- Channel type comes *out* of the accept, not in
-- Either side can initiate channels (server/client naming breaks down)
-- Accept path needs to expose the setup → open transition
-  with the type determined by the incoming terminal request
+The server receives incoming channels via `dssh_chan_accept()`.
+The library drives the setup state machine, populating a
+`struct dssh_chan_params` as setup requests arrive — the same
+struct type the client uses for `dssh_chan_open()`.  Each callback
+receives the accumulated params so the app can see everything
+the peer has sent so far.
 
-The parse helpers (`dssh_parse_pty_req_data`, `dssh_parse_env_data`,
-`dssh_parse_exec_data`, `dssh_parse_subsystem_data`) remain useful
-for server-side setup request processing.
+```c
+struct dssh_chan_accept_result {
+    uint32_t        max_window;  /* 0 = default */
+    dssh_chan_zc_cb  zc_cb;      /* NULL = stream mode */
+    void            *zc_cbdata;
+};
+
+struct dssh_chan_accept_cbs {
+    int (*pty_req)(dssh_channel ch,
+        const struct dssh_chan_params *params, void *cbdata);
+    int (*env)(dssh_channel ch,
+        const struct dssh_chan_params *params, void *cbdata);
+    int (*shell)(dssh_channel ch,
+        const struct dssh_chan_params *params,
+        struct dssh_chan_accept_result *result, void *cbdata);
+    int (*exec)(dssh_channel ch,
+        const struct dssh_chan_params *params,
+        struct dssh_chan_accept_result *result, void *cbdata);
+    int (*subsystem)(dssh_channel ch,
+        const struct dssh_chan_params *params,
+        struct dssh_chan_accept_result *result, void *cbdata);
+    void *cbdata;
+};
+
+dssh_channel dssh_chan_accept(dssh_session sess,
+    const struct dssh_chan_accept_cbs *cbs,
+    int timeout_ms);
+```
+
+### Shared params struct
+
+The library builds a `dssh_chan_params` internally during accept,
+using the same builder functions the client app would use.  As
+each setup request arrives, the library populates the struct:
+
+- pty-req → `set_pty(true)`, `set_term()`, `set_size()`, modes
+  populated via `set_mode()` for each opcode
+- env → `add_env()` for each variable
+- shell/exec/subsystem → type set, command/name stored
+
+Every callback receives `const struct dssh_chan_params *params`
+showing the accumulated state.  The pty_req callback sees the pty
+fields just populated.  The env callback sees the full env array
+so far.  The terminal request callback sees the complete picture.
+
+After accept returns, the channel owns the populated params.
+The getters (`get_type`, `get_command`, `get_pty`, etc.) read
+from this struct.  Same struct, same accessors, regardless of
+whether the channel was opened by the client or accepted by the
+server.
+
+This also benefits testing: in a selftest where client and server
+are in the same process, the client's builder-constructed params
+and the server's wire-populated params can be compared directly —
+round-trip verification that the library serialized and parsed
+correctly.
+
+### Accept flow
+
+1. `dssh_chan_accept()` blocks until CHANNEL_OPEN arrives
+2. Library creates channel in setup mode, sends
+   CHANNEL_OPEN_CONFIRMATION with `initial_window=0`
+3. Library receives setup requests, populates params, calls
+   app callbacks:
+   - `pty_req` → return 0 to accept, negative to reject
+     (CHANNEL_FAILURE sent, setup continues — channel works
+     without a pty)
+   - `env` → return 0 to accept, negative to reject
+     (CHANNEL_FAILURE sent, setup continues)
+4. Library receives terminal request, populates params, calls
+   the matching callback:
+   - `shell` / `exec` / `subsystem` → return 0 to accept, negative
+     to reject
+   - `result` is pre-filled with defaults (`max_window=0`,
+     `zc_cb=NULL`).  The callback sets what it cares about.
+     Return 0 without touching result = stream mode, default window.
+5. On accept: library allocates buffers, sends WINDOW_ADJUST,
+   returns live channel
+6. On terminal request reject: channel closed, accept keeps waiting
+   for the next CHANNEL_OPEN
+7. On timeout or session terminate: returns NULL
+
+The I/O model decision (stream vs ZC, max_window) is deferred to
+the terminal request callback — the last possible moment, when the
+app has full context: pty state, env vars, and channel purpose.
+
+### Callback semantics
+
+**NULL callback behavior depends on the request type:**
+
+- `pty_req = NULL`: **auto-accept**.  Benign setup request; the
+  app can query pty state via `dssh_chan_get_pty()` after accept.
+- `env = NULL`: **auto-reject** (CHANNEL_FAILURE).  Uncontrolled
+  env vars are a security hazard (RFC s6.4: `LD_PRELOAD`, `PATH`,
+  etc.).  App must provide a callback and whitelist what it accepts.
+- `shell = NULL`: **auto-reject** (CHANNEL_FAILURE).
+- `exec = NULL`: **auto-reject** (CHANNEL_FAILURE).
+- `subsystem = NULL`: **auto-reject** (CHANNEL_FAILURE).
+
+Only `pty_req` is benign enough to auto-accept.  Everything else
+defaults to reject so the app must explicitly declare what it
+accepts.  The minimal useful server sets one terminal callback:
+
+```c
+struct dssh_chan_accept_cbs cbs = {
+    .shell = my_shell_cb,
+};
+dssh_channel ch = dssh_chan_accept(sess, &cbs, -1);
+```
+
+This accepts shell channels (with whatever pty and env the peer
+sends) and rejects exec and subsystem.
+
+For ZC mode, the terminal request callback is required — it's the
+only way to provide the `dssh_chan_accept_result` with `zc_cb`.
+
+**Callbacks run on the app's thread** (inside `dssh_chan_accept`),
+not the demux thread.  No `in_zc_rx` restriction.  But the channel
+is in setup mode — read/write/poll return errors until accept
+returns the live channel.
+
+### Lifecycle enforcement
+
+The library enforces the RFC and OpenSSH conventions during setup:
+
+- **Env before terminal request** (RFC s6.4): env requests after
+  the terminal request are rejected with CHANNEL_FAILURE
+- **One terminal request per channel** (RFC s6.5): second
+  shell/exec/subsystem is rejected with CHANNEL_FAILURE
+- **Second pty-req**: reject and disconnect (matches OpenSSH)
+- **Post-setup**: only window-change, break, signal accepted
+  (delivered via the event queue, same as client)
+
+### Getters
+
+The channel carries its populated `dssh_chan_params` after setup.
+These work for both client-opened and server-accepted channels:
+
+```c
+enum dssh_chan_type dssh_chan_get_type(dssh_channel ch);
+const char *dssh_chan_get_command(dssh_channel ch);
+const char *dssh_chan_get_subsystem(dssh_channel ch);
+const struct dssh_pty_req *dssh_chan_get_pty(dssh_channel ch);
+```
+
+`get_command` returns NULL if the type isn't exec; `get_subsystem`
+returns NULL if not subsystem; `get_pty` returns NULL if no pty
+was requested.  All returned pointers are into channel-owned storage
+and remain valid for the lifetime of the channel.
+
+`dssh_chan_accept` also copies the session-level event callback
+default (set via `dssh_session_set_event_cb`) to the new channel,
+same as `dssh_chan_open` does.  After accept returns, post-setup
+events (window-change, break, signal, EOF, close, exit-status,
+exit-signal) arrive through the normal event queue / event callback,
+same as for client-opened channels.
+
+### Server initiating channels
+
+Either side can open channels.  The server uses `dssh_chan_open()`
+/ `dssh_chan_zc_open()` to initiate a channel to the peer — same
+functions the client uses.  `dssh_chan_accept()` is only for
+receiving incoming channels.
+
+The `dssh_chan_` API is side-neutral.  "Client" and "server" only
+matter for `dssh_session_init(client=true/false)` and the
+auth layer.  The channel API works the same either way.
 
 ## Functions deleted (old → new mapping)
 
+### Client channel I/O
 - `dssh_session_read` → `dssh_chan_read(ch, 0, ...)`
 - `dssh_session_read_ext` → `dssh_chan_read(ch, 1, ...)`
 - `dssh_session_write` → `dssh_chan_write(ch, 0, ...)`
 - `dssh_session_write_ext` → `dssh_chan_write(ch, 1, ...)`
 - `dssh_session_poll` → `dssh_chan_poll(ch, ...)`
 - `dssh_channel_poll` → `dssh_chan_poll(ch, ...)`
-- `dssh_session_open_shell` → `dssh_chan_open(sess, &params, ...)`
-- `dssh_session_open_exec` → `dssh_chan_open(sess, &params, ...)`
+- `dssh_session_open_shell` → `dssh_chan_open(sess, &params)`
+- `dssh_session_open_exec` → `dssh_chan_open(sess, &params)`
 - `dssh_channel_open_subsystem` → `dssh_chan_open` or `dssh_chan_zc_open`
 - `dssh_session_close` → `dssh_chan_close(ch, ...)`
 - `dssh_channel_close` → `dssh_chan_close(ch, ...)`
@@ -884,8 +1052,23 @@ for server-side setup request processing.
 - `dssh_session_send_signal` → `dssh_chan_send_signal(ch, ...)`
 - `dssh_session_send_window_change` → `dssh_chan_send_window_change(ch, ...)`
 
+### Server accept
+- `dssh_session_accept` → `dssh_chan_accept(sess, &cbs, timeout)`
+- `dssh_session_reject` → eliminated (callback return values)
+- `dssh_session_accept_channel` → `dssh_chan_accept`
+- `dssh_channel_accept_raw` → `dssh_chan_accept` with `zc_cb` in result
+- `dssh_parse_pty_req_data` → eliminated (library populates params)
+- `dssh_parse_env_data` → eliminated (same)
+- `dssh_parse_exec_data` → eliminated (same)
+- `dssh_parse_subsystem_data` → eliminated (same)
+
 New functions with no old equivalent:
-- `dssh_chan_params_init` / `set_*` / `free` — builder API
+- `dssh_chan_params_init` / `set_*` / `free` — builder API (client open)
+- `dssh_chan_accept(sess, &cbs, timeout)` — server accept with callbacks
+- `dssh_chan_get_type(ch)` — query channel type after accept
+- `dssh_chan_get_command(ch)` — query exec command after accept
+- `dssh_chan_get_subsystem(ch)` — query subsystem name after accept
+- `dssh_chan_get_pty(ch)` — query pty state after accept
 - `dssh_chan_shutwr(ch)` — half-close (send EOF)
 - `dssh_chan_send_break(ch, ...)` — RFC 4335
 - `dssh_chan_read_event(ch, ...)` — pull next event from queue
@@ -901,15 +1084,9 @@ New functions with no old equivalent:
 
 None — all items resolved.
 
-### Server-side (deferred)
+### Server-side
 
-- **Accept API**: type comes out, setup → open transition, either
-  side can initiate.  Design separately.
-- **Second pty-req semantics**: update existing pty or reject?
-- **Post-terminal-request env**: what does the server do with env
-  requests that arrive after shell/exec/subsystem?
-- **Params struct lifetime**: could support re-sending pty-req or
-  env mid-session (protocol allows it).  Defer to server-side design.
+None — all items resolved.
 
 ## Resolved items
 
@@ -942,9 +1119,10 @@ None — all items resolved.
   read pointers can't support stream-position callbacks).
 
 - **Per-event-type callbacks eliminated**: replaced by unified
-  `dssh_chan_event_cb` (pure notification) + `dssh_chan_read_event`
-  (pulls typed event struct).  Simplifies callback surface from
-  7 setter pairs (session + channel) to 1.
+  `dssh_chan_event_cb` (receives full event struct with positions)
+  + `dssh_chan_read_event` (pulls typed event struct for poll-based
+  path).  Simplifies callback surface from 7 setter pairs
+  (session + channel) to 1.
 
 - **RFC 4254 ordering constraints** (found on closer reading):
   - "Only one of these requests can succeed per channel" (s6.5) —
@@ -983,3 +1161,39 @@ None — all items resolved.
   send or cancel after getbuf, that's an app bug (same as
   forgetting to call `free`) — the library documents "getbuf must
   be followed by send or cancel."
+
+- **Server-side accept API**: callback-driven setup via
+  `dssh_chan_accept()`.  Per-request callbacks (pty_req, env,
+  shell, exec, subsystem) — library drives the state machine,
+  app just provides handlers.  NULL = auto-reject for everything
+  except pty_req (benign).  App must explicitly declare what it
+  accepts — no accidental open-everything servers, no unfiltered
+  env vars (RFC s6.4 security hazard).  Terminal request callbacks
+  receive
+  `dssh_chan_accept_result` for I/O model selection (stream/ZC,
+  max_window).  Callbacks run on app's thread, not demux.
+  Library populates a `dssh_chan_params` during accept using the
+  same builder functions the client uses — every callback receives
+  the accumulated params.  Channel owns the params after accept.
+  Getters read from it.  Same struct round-trips through the wire
+  for testability.
+
+- **Second pty-req**: reject and disconnect (matches OpenSSH).
+
+- **Post-terminal-request env**: rejected with CHANNEL_FAILURE.
+  Library enforces RFC s6.4 ordering (env before terminal request).
+
+- **Params struct lifetime**: one-shot, consumed at open time.
+  Mid-session pty-req/env re-sending is not supported — the
+  library enforces one terminal request per channel and rejects
+  setup requests after the terminal request.
+
+- **Server initiating channels**: uses `dssh_chan_open()` /
+  `dssh_chan_zc_open()` — same as client.  The channel API is
+  side-neutral.
+
+- **Parse helpers eliminated**: `dssh_parse_pty_req_data`,
+  `dssh_parse_env_data`, `dssh_parse_exec_data`,
+  `dssh_parse_subsystem_data` no longer needed — the library
+  parses setup requests internally and passes structured data
+  to accept callbacks.
