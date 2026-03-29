@@ -21,6 +21,7 @@
 
 //---------------------------------------------------------------------
 #include <vcl.h>
+#include "netwrap.h"
 #pragma hdrstop
 
 #include "MainFormUnit.h"
@@ -50,12 +51,7 @@ void __fastcall TFtpCfgDlg::FormShow(TObject *Sender)
     if(MainForm->ftp_startup.pasv_ip_addr.s_addr==0)
         PasvIPv4AddrEdit->Text="<unspecified>";
     else {
-        sprintf(str,"%d.%d.%d.%d"
-            ,(MainForm->ftp_startup.pasv_ip_addr.s_addr>>24)&0xff
-            ,(MainForm->ftp_startup.pasv_ip_addr.s_addr>>16)&0xff
-            ,(MainForm->ftp_startup.pasv_ip_addr.s_addr>>8)&0xff
-            ,MainForm->ftp_startup.pasv_ip_addr.s_addr&0xff
-        );
+		IPv4AddressToStr(MainForm->ftp_startup.pasv_ip_addr.s_addr, str, sizeof str);
         PasvIPv4AddrEdit->Text=AnsiString(str);
     }
 
@@ -94,29 +90,9 @@ void __fastcall TFtpCfgDlg::FormShow(TObject *Sender)
 
 void __fastcall TFtpCfgDlg::OKBtnClick(TObject *Sender)
 {
-    char    str[128],*p;
-    DWORD   addr;
-
     iniFreeStringList(MainForm->ftp_startup.interfaces);
     MainForm->ftp_startup.interfaces = strListSplitCopy(NULL, NetworkInterfaceEdit->Text.c_str(), ",");
-
-    SAFECOPY(str,PasvIPv4AddrEdit->Text.c_str());
-    p=str;
-    while(*p && *p<=' ') p++;
-    if(*p && isdigit(*p)) {
-        addr=atoi(p)<<24;
-        while(*p && *p!='.') p++;
-        if(*p=='.') p++;
-        addr|=atoi(p)<<16;
-        while(*p && *p!='.') p++;
-        if(*p=='.') p++;
-        addr|=atoi(p)<<8;
-        while(*p && *p!='.') p++;
-        if(*p=='.') p++;
-        addr|=atoi(p);
-        MainForm->ftp_startup.pasv_ip_addr.s_addr=addr;
-    } else
-        MainForm->ftp_startup.pasv_ip_addr.s_addr=0;
+    MainForm->ftp_startup.pasv_ip_addr.s_addr=parseIPv4Address(PasvIPv4AddrEdit->Text.c_str());
 
     MainForm->ftp_startup.max_clients=MaxClientsEdit->Text.ToIntDef(FTP_DEFAULT_MAX_CLIENTS);
     MainForm->ftp_startup.max_inactivity = parse_duration(MaxInactivityEdit->Text.c_str());
