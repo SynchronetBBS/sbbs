@@ -260,7 +260,7 @@ bool sbbs_t::telnet_gate(char* destaddr, uint mode, unsigned timeout, str_list_t
 		port = atoi(p + 1);
 	}
 
-	ip_addr = resolve_ip(destaddr);
+	ip_addr = resolve_ipv4(destaddr);
 	if (ip_addr == INADDR_NONE) {
 		lprintf(LOG_NOTICE, "!TELGATE Failed to resolve address: %s", destaddr);
 		bprintf("!Failed to resolve address: %s\r\n", destaddr);

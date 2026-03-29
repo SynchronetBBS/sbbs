@@ -479,10 +479,9 @@ int close_socket(SOCKET sock)
 	return result;
 }
 
-/* TODO: IPv6 */
-in_addr_t resolve_ip(char *addr)
+in_addr_t resolve_ipv4(const char *addr)
 {
-	char*    p;
+	const char* p;
 	struct addrinfo* res;
 	struct addrinfo hints = {0};
 	in_addr_t ipa = INADDR_NONE;

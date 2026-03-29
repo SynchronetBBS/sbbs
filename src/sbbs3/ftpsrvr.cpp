@@ -2233,7 +2233,6 @@ static void ctrl_thread(void* arg)
 	CRYPT_SESSION     pasv_sess = -1;
 	SOCKET            data_sock = INVALID_SOCKET;
 	CRYPT_SESSION     data_sess = -1;
-	HOSTENT*          host;
 	union xp_sockaddr addr;
 	union xp_sockaddr data_addr;
 	union xp_sockaddr pasv_addr;
@@ -3133,15 +3132,13 @@ static void ctrl_thread(void* arg)
 				}
 			}
 			else {
-				/* Choose IP address to use in passive response */
+				/* Choose IPv4 address to use in passive response */
 				ip_addr = 0;
-				/* TODO: IPv6 this here lookup */
-				if (startup->options & FTP_OPT_LOOKUP_PASV_IP
-				    && (host = gethostbyname(server_host_name())) != NULL
-				    && host->h_addr_list[0] != NULL)
-					ip_addr = ntohl(*((in_addr_t*)host->h_addr_list[0]));
+				if (startup->options & FTP_OPT_LOOKUP_PASV_IP)
+					ip_addr = resolve_ipv4(server_host_name());
 				if (ip_addr == 0 && (ip_addr = startup->pasv_ip_addr.s_addr) == 0)
-					ip_addr = ntohl(pasv_addr.in.sin_addr.s_addr);
+					ip_addr = pasv_addr.in.sin_addr.s_addr;
+				ip_addr = ntohl(ip_addr);
 
 				if (startup->options & FTP_OPT_DEBUG_DATA)
 					lprintf(LOG_INFO, "%04d <%s> PASV DATA IP address in response: %u.%u.%u.%u (subject to NAT)"

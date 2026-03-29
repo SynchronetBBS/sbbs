@@ -1391,6 +1391,7 @@ extern "C" {
 	DLLEXPORT int		sbbs_random(int);
 	DLLEXPORT void		sbbs_srand(void);
 	DLLEXPORT uint 		repeated_error(int line, const char* function);
+	DLLEXPORT in_addr_t resolve_ipv4(const char *addr);
 
 	/* postmsg.cpp */
 	DLLEXPORT int		savemsg(scfg_t*, smb_t*, smbmsg_t*, client_t*, const char* server, char* msgbuf, smbmsg_t* remsg);
@@ -1648,7 +1649,7 @@ extern "C" {
 
 #ifdef SBBS /* These aren't exported */
 
-	/* main.c */
+	/* main.cpp */
 	int 	lputs(int level, const char *);			/* log output */
 	int 	lprintf(int level, const char *fmt, ...)	/* log output */
 #if defined(__GNUC__)   // Catch printf-format errors
@@ -1659,7 +1660,6 @@ extern "C" {
 	SOCKET	open_socket(int domain, int type, const char* protocol);
 	SOCKET	accept_socket(SOCKET s, union xp_sockaddr* addr, socklen_t* addrlen);
 	int		close_socket(SOCKET);
-	in_addr_t resolve_ip(char *addr);
 
 	/* ver.cpp */
 	char*	socklib_version(char* str, size_t, const char* winsock_ver);
