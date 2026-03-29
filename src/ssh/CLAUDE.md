@@ -5,9 +5,21 @@ This file provides guidance to Claude Code (claude.ai/code) when working on Deuc
 ## Project Overview
 
 **DeuceSSH** is a from-scratch SSH library in standard C17, implementing
-RFCs 4250-4254, 4419, 8332, and 8731.  No proprietary extensions (no `@`
-algorithm names).  Uses OpenSSL 3.0+ libcrypto and C11 threads internally;
-public headers expose neither.
+RFCs 4250-4254, 4256, 4335, 4419, 6668, 8160, 8308, 8332, 8709, 8731,
+and drafts draft-ietf-sshm-ntruprime-ssh (sntrup761x25519-sha512) and
+draft-ietf-sshm-mlkem-hybrid-kex (mlkem768x25519-sha256).  No proprietary
+extensions (no `@` algorithm names).  Uses OpenSSL 3.0+ libcrypto and C11
+threads internally; public headers expose neither.
+
+Local copies of all implemented and referenced RFCs/drafts are in the
+`RFCs/` directory for offline reference:
+- **Core**: 4250-4254 (protocol architecture, transport, auth, connection)
+- **Implemented**: 4256 (keyboard-interactive), 4335 (break), 4419
+  (DH-GEX), 6668 (SHA-2 MAC), 8160 (IUTF8), 8308 (ext negotiation),
+  8332 (RSA-SHA2), 8709 (Ed25519), 8731 (curve25519-sha256),
+  draft-ietf-sshm-ntruprime-ssh, draft-ietf-sshm-mlkem-hybrid-kex
+- **Reference**: 4344 (encryption modes/CTR), 4716 (key file format),
+  5647 (AES-GCM), 5656 (EC integration), 8270 (DH modulus sizes)
 
 ## Build
 
