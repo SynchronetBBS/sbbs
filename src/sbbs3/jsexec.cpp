@@ -1237,10 +1237,11 @@ void get_ini_values(str_list_t ini, const char* section, js_callback_t* cb)
 /*********************/
 #if defined(__DARWIN__)
 extern char **environ;
+char** env = environ;
 #endif
 extern "C" int main(int argc, char **argv
 #if !defined(__DARWIN__)
-	, char** environ
+	, char** env
 #endif
 )
 {
@@ -1611,7 +1612,7 @@ extern "C" int main(int argc, char **argv
 
 		recycled = false;
 
-		if (!js_init(environ)) {
+		if (!js_init(env)) {
 			lprintf(LOG_ERR, "!JavaScript initialization failure");
 			return do_bail(1);
 		}
