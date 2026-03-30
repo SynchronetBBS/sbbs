@@ -97,7 +97,7 @@ int matchuser(scfg_t* cfg, const char *name, bool sysop_alias)
 	    (!stricmp(name, "SYSOP") || !stricmp(name, "POSTMASTER") || !stricmp(name, cfg->sys_id)))
 		return 1;
 
-	SAFEPRINTF(str, "%suser/" USER_INDEX_FILENAME, cfg->data_dir);
+	useridx_filename(cfg, str, sizeof str);
 	if ((stream = fnopen(&file, str, O_RDONLY)) == NULL)
 		return 0;
 	length = filelength(file);
@@ -298,6 +298,7 @@ bool del_lastuser(scfg_t* cfg)
 	}
 	int result = chsize(file, (long)length - USER_RECORD_LINE_LEN);
 	close(file);
+
 	return result == 0;
 }
 
@@ -894,7 +895,7 @@ char* username(scfg_t* cfg, int usernumber, char *name)
 		name[0] = 0;
 		return name;
 	}
-	SAFEPRINTF(str, "%suser/" USER_INDEX_FILENAME, cfg->data_dir);
+	useridx_filename(cfg, str, sizeof str);
 	if (flength(str) < 1L) {
 		name[0] = 0;
 		return name;
@@ -935,7 +936,7 @@ int putusername(scfg_t* cfg, int number, const char *name)
 	if (!VALID_CFG(cfg) || name == NULL || !VALID_USER_NUMBER(number))
 		return USER_INVALID_ARG;
 
-	SAFEPRINTF(str, "%suser/" USER_INDEX_FILENAME, cfg->data_dir);
+	useridx_filename(cfg, str, sizeof str);
 	if ((file = nopen(str, O_RDWR | O_CREAT)) == -1)
 		return USER_OPEN_ERROR;
 	length = filelength(file);
@@ -3629,7 +3630,7 @@ int newuserdat(scfg_t* cfg, user_t* user)
 	if (!VALID_CFG(cfg) || user == NULL)
 		return USER_INVALID_ARG;
 
-	SAFEPRINTF(str, "%suser/" USER_INDEX_FILENAME, cfg->data_dir);
+	useridx_filename(cfg, str, sizeof str);
 	if (fexist(str)) {
 		if ((stream = fnopen(&file, str, O_RDONLY)) == NULL) {
 			return USER_OPEN_ERROR;
