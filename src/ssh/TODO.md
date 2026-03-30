@@ -29,34 +29,40 @@
 
 ### Malformed message reply audit (items 102, 102a-c)
 
-### Selftest failures under parallel load (item 104)
+### Selftest failures under parallel load (items 104, 106)
 
-104. **Selftest echo tests fail under `-j16`.**
-    `dssh_self_rsa` and `dssh_self_mlkem_rsa` variants; ~40% failure
-    rate across 10 consecutive `-j16` runs.  Two distinct symptoms:
-    - `test_self_shell_echo`: `recvd == 0, expected 10` at
-      `test/test_selftest.c:887`.  The poll loop receives zero bytes.
-    - `test_self_exec_echo`: `ASSERT_TRUE failed: w > 0` at
-      `test/test_selftest.c:782`.  `dssh_chan_write` returns ≤ 0
-      immediately after `dssh_chan_open` succeeds.
-    The write failure is the stronger clue.  Both sides use
-    `initial_window=0` in CHANNEL_OPEN / CHANNEL_OPEN_CONFIRMATION,
-    then send WINDOW_ADJUST after setup completes.  The client's
-    `dssh_chan_open` sends WINDOW_ADJUST and returns; the server's
-    `dssh_chan_accept` independently sends its own WINDOW_ADJUST.
-    If the client calls `dssh_chan_write` before the server's
-    WINDOW_ADJUST arrives, `remote_window` is still 0 — there is no
-    room to send.  Under `-j16` contention the server's WINDOW_ADJUST
-    can be delayed enough for the client to attempt a write into a
-    zero-sized window.  This would also explain the shell_echo read
-    failure: the client's write succeeds (shell has pty setup overhead
-    giving the WINDOW_ADJUST time to arrive), but the server's echo
-    write back fails for the same reason in reverse.
-    Not yet confirmed — needs investigation of `dssh_chan_write`
-    behavior when `remote_window == 0` (does it block/poll or return
-    an error immediately?).
+106. **`dssh_self_dhgex` intermittent failure under `-j16`.**
+    Observed once during 10× `--repeat until-fail` with all 8 variants
+    running simultaneously under `-j16`.  Did not reproduce in 5
+    consecutive isolated reruns of `dssh_self_dhgex` alone, nor in 3
+    subsequent full 10× `-j16` runs.  Only the `dhgex` (non-RSA)
+    variant was affected.  No output captured — needs `--output-on-failure`
+    to identify which test function and assertion.  May be a different
+    manifestation of scheduling contention (DH-GEX is the slowest KEX
+    due to prime generation), or an unrelated race.  Needs investigation.
 
 ## Closed
+
+- Selftest echo tests failing under `-j16` (was item 104).
+  `dssh_self_rsa` and `dssh_self_mlkem_rsa` variants failed ~40% of the
+  time.  Root cause: both sides open channels with `initial_window=0`
+  (correct for deferred channel type), then send WINDOW_ADJUST after
+  setup.  The client's `dssh_chan_open` sends WINDOW_ADJUST and returns;
+  the server's `dssh_chan_accept` independently sends its own.  Under
+  `-j16` contention (especially RSA keygen), the server's WINDOW_ADJUST
+  hadn't been processed by the client's demux thread before the test
+  called `dssh_chan_write`, which returned 0 (non-blocking, by design —
+  `remote_window` still 0).  `test_self_exec_echo` asserted `w > 0` on
+  the return; `test_self_shell_echo` ignored it, so no data reached the
+  server.  The server side was unaffected: it processes the client's
+  WINDOW_ADJUST inline during the accept setup loop, so `remote_window`
+  is already populated by the time `dssh_chan_accept` returns.  Fix:
+  added `dssh_chan_poll(DSSH_POLL_WRITE)` before the first write in both
+  tests (matching the pattern already used by `test_self_shell_large_data`).
+  Made `server_echo_thread` (and the chan_accept variant) use a
+  poll-then-retry write loop to avoid silently dropping data on partial
+  writes.  Library unchanged — the non-blocking write API is correct;
+  callers must poll for `DSSH_POLL_WRITE` before writing.
 
 - `send_channel_request_wait` race: CHANNEL_CLOSE clobbers successful
   response (was item 105).  `test_self_exec_exit_code` failed under

@@ -409,11 +409,25 @@ server_echo_thread(void *arg)
 		if (n <= 0)
 			break;
 
-		int64_t w = dssh_chan_write(ch, 0, buf, (size_t)n);
+		/* Write all read data, polling for window if needed */
+		size_t off = 0;
 
-		if (w < 0)
-			break;
+		while (off < (size_t)n) {
+			int wev = dssh_chan_poll(ch,
+			    DSSH_POLL_WRITE, 30000);
+
+			if (wev <= 0)
+				goto done;
+
+			int64_t w = dssh_chan_write(ch, 0,
+			    buf + off, (size_t)n - off);
+
+			if (w < 0)
+				goto done;
+			off += (size_t)w;
+		}
 	}
+done:
 
 	dssh_chan_close(ch, 0);
 	a->result = 0;
@@ -777,6 +791,10 @@ test_self_exec_echo(void)
 	dssh_channel ch = open_exec(ctx.client,"echo");
 	ASSERT_NOT_NULL(ch);
 
+	/* Wait for server's WINDOW_ADJUST (remote_window starts at 0) */
+	int wev = dssh_chan_poll(ch, DSSH_POLL_WRITE, 5000);
+	ASSERT_TRUE(wev > 0);
+
 	const uint8_t data[] = "Hello, DeuceSSH!";
 	int64_t w = dssh_chan_write(ch, 0, data, sizeof(data) - 1);
 	ASSERT_TRUE(w > 0);
@@ -871,8 +889,13 @@ test_self_shell_echo(void)
 	dssh_channel ch = open_shell(ctx.client, "xterm", 80, 24);
 	ASSERT_NOT_NULL(ch);
 
+	/* Wait for server's WINDOW_ADJUST (remote_window starts at 0) */
+	int wev = dssh_chan_poll(ch, DSSH_POLL_WRITE, 5000);
+	ASSERT_TRUE(wev > 0);
+
 	const uint8_t data[] = "shell-test";
-	dssh_chan_write(ch, 0, data, sizeof(data) - 1);
+	int64_t w = dssh_chan_write(ch, 0, data, sizeof(data) - 1);
+	ASSERT_TRUE(w > 0);
 
 	uint8_t buf[256];
 	size_t recvd = 0;
@@ -2111,11 +2134,25 @@ server_chan_echo_thread(void *arg)
 		if (n <= 0)
 			break;
 
-		int64_t w = dssh_chan_write(ch, 0, buf, (size_t)n);
+		/* Write all read data, polling for window if needed */
+		size_t off = 0;
 
-		if (w < 0)
-			break;
+		while (off < (size_t)n) {
+			int wev = dssh_chan_poll(ch,
+			    DSSH_POLL_WRITE, 30000);
+
+			if (wev <= 0)
+				goto done;
+
+			int64_t w = dssh_chan_write(ch, 0,
+			    buf + off, (size_t)n - off);
+
+			if (w < 0)
+				goto done;
+			off += (size_t)w;
+		}
 	}
+done:
 
 	dssh_chan_close(ch, 0);
 	a->result = 0;
