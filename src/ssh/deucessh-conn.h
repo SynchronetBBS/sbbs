@@ -223,6 +223,33 @@ DSSH_PUBLIC const char *dssh_chan_get_command(dssh_channel ch);
 DSSH_PUBLIC const char *dssh_chan_get_subsystem(dssh_channel ch);
 DSSH_PUBLIC bool dssh_chan_has_pty(dssh_channel ch);
 
+/* ---- Zero-copy API ---- */
+
+/* Open a zero-copy channel.  cb fires from the demux thread for each
+ * inbound CHANNEL_DATA/EXTENDED_DATA with a pointer directly into
+ * rx_packet.  The callback MUST NOT call any TX function. */
+DSSH_PUBLIC dssh_channel dssh_chan_zc_open(dssh_session sess,
+    const struct dssh_chan_params *params,
+    dssh_chan_zc_cb cb, void *cbdata);
+
+/* Get pointer into tx_packet data area.  Acquires tx_mtx.
+ * Caller MUST call dssh_chan_zc_send or dssh_chan_zc_cancel promptly. */
+DSSH_PUBLIC int dssh_chan_zc_getbuf(dssh_channel ch, int stream,
+    uint8_t **buf, size_t *max_len);
+
+/* Fill channel header, MAC, encrypt, send.  Releases tx_mtx. */
+DSSH_PUBLIC int dssh_chan_zc_send(dssh_channel ch, size_t len);
+
+/* Release tx_mtx without sending. */
+DSSH_PUBLIC int dssh_chan_zc_cancel(dssh_channel ch);
+
+/* ---- Event callbacks (optional, alternative to poll + read_event) ---- */
+
+DSSH_PUBLIC int dssh_chan_set_event_cb(dssh_channel ch,
+    dssh_chan_event_cb cb, void *cbdata);
+DSSH_PUBLIC int dssh_session_set_event_cb(dssh_session sess,
+    dssh_chan_event_cb cb, void *cbdata);
+
 /* Server accept: callback struct */
 struct dssh_chan_accept_cbs {
 	int (*pty_req)(dssh_channel ch,

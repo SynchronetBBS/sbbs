@@ -484,12 +484,21 @@ rx_mac_size(struct dssh_session_s *sess)
 }
 
 /*
- * Core send logic.  Caller MUST hold tx_mtx.  Builds the packet,
- * computes MAC, encrypts, calls the I/O callback, updates counters.
+ * Finalize and send a packet whose payload is already in tx_packet.
+ * Caller MUST hold tx_mtx.  The payload starts at tx_packet[9]
+ * (past seq(4) + pkt_length(4) + pad_len(1)).  This function:
+ *   - computes padding, writes pkt_length and pad_len
+ *   - generates random padding
+ *   - computes MAC (seq || unencrypted_packet, contiguous)
+ *   - encrypts the packet (not seq prefix or MAC)
+ *   - sends via I/O callback
+ *   - updates seq, packet count, byte count
+ *
+ * Used by send_packet_inner (copies payload then calls this) and by
+ * zc_send_inner (payload already written by app via zc_getbuf).
  */
-static int
-send_packet_inner(struct dssh_session_s *sess,
-    const uint8_t *payload, size_t payload_len, uint32_t *seq_out)
+DSSH_PRIVATE int
+tx_finalize(struct dssh_session_s *sess, size_t payload_len)
 {
 	int ret;
 
@@ -497,7 +506,7 @@ send_packet_inner(struct dssh_session_s *sess,
 
 	if (payload_len > SIZE_MAX - 5) {
 		ret = DSSH_ERROR_TOOLONG;
-		goto inner_done;
+		goto done;
 	}
 	size_t padding_len = bs - ((5 + payload_len) % bs);
 	if (padding_len < 4)
@@ -507,14 +516,14 @@ send_packet_inner(struct dssh_session_s *sess,
 
 	if (pkt_sz > UINT32_MAX) {
 		ret = DSSH_ERROR_TOOLONG;
-		goto inner_done;
+		goto done;
 	}
 	uint32_t packet_length = (uint32_t)pkt_sz;
 
 #if UINT32_MAX > SIZE_MAX - 4
 	if (packet_length > SIZE_MAX - 4) {
 		ret = DSSH_ERROR_TOOLONG;
-		goto inner_done;
+		goto done;
 	}
 #endif
 	size_t total = 4 + packet_length;
@@ -522,18 +531,19 @@ send_packet_inner(struct dssh_session_s *sess,
 
 	if (total + mac_len > sess->trans.packet_buf_sz) {
 		ret = DSSH_ERROR_TOOLONG;
-		goto inner_done;
+		goto done;
 	}
 
-	/* Build packet at tx_packet[4..], leaving [0..4) for seq prefix */
+	/* Write pkt_length and pad_len at tx_packet[4..8] */
 	size_t pos = 4;
 	DSSH_PUT_U32(packet_length, sess->trans.tx_packet, &pos);
-	sess->trans.tx_packet[pos++] = (uint8_t)padding_len;
-	memcpy(&sess->trans.tx_packet[pos], payload, payload_len);
-	pos += payload_len;
-	if (RAND_bytes(&sess->trans.tx_packet[pos], (int)padding_len) != 1) {
+	sess->trans.tx_packet[pos] = (uint8_t)padding_len;
+
+	/* Random padding after payload: tx_packet[9 + payload_len] */
+	if (RAND_bytes(&sess->trans.tx_packet[9 + payload_len],
+	    (int)padding_len) != 1) {
 		ret = DSSH_ERROR_INIT;
-		goto inner_done;
+		goto done;
 	}
 
         /* MAC: mac(key, seq || unencrypted_packet)
@@ -541,7 +551,8 @@ send_packet_inner(struct dssh_session_s *sess,
 	if (mac_len > 0) {
 		size_t seq_pos = 0;
 
-		DSSH_PUT_U32(sess->trans.tx_seq, sess->trans.tx_packet, &seq_pos);
+		DSSH_PUT_U32(sess->trans.tx_seq, sess->trans.tx_packet,
+		    &seq_pos);
 
 		dssh_mac      mac;
 		dssh_mac_ctx *mac_ctx;
@@ -557,7 +568,7 @@ send_packet_inner(struct dssh_session_s *sess,
 		ret = mac->generate(sess->trans.tx_packet, 4 + total,
 		    &sess->trans.tx_packet[4 + total], mac_ctx);
 		if (ret < 0)
-			goto inner_done;
+			goto done;
 	}
 
         /* Encrypt (the packet at [4..4+total), not the seq prefix or MAC) */
@@ -574,17 +585,19 @@ send_packet_inner(struct dssh_session_s *sess,
 			enc_ctx = sess->trans.enc_s2c_ctx;
 		}
 
-		if ((enc != NULL) && (enc->encrypt != NULL) && (enc_ctx != NULL)) {
-			ret = enc->encrypt(&sess->trans.tx_packet[4], total, enc_ctx);
+		if ((enc != NULL) && (enc->encrypt != NULL)
+		    && (enc_ctx != NULL)) {
+			ret = enc->encrypt(&sess->trans.tx_packet[4],
+			    total, enc_ctx);
 			if (ret < 0)
-				goto inner_done;
+				goto done;
 		}
 	}
 
         /* Refuse to send if per-key packet count would exceed hard limit */
 	if (sess->trans.tx_since_rekey >= DSSH_REKEY_HARD_LIMIT) {
 		ret = DSSH_ERROR_REKEY_NEEDED;
-		goto inner_done;
+		goto done;
 	}
 
 	/* Send [4..4+total+mac_len) — skip the seq prefix */
@@ -594,8 +607,6 @@ send_packet_inner(struct dssh_session_s *sess,
 		ret = gconf.tx(&sess->trans.tx_packet[4], wire_len, sess,
 		    sess->tx_cbdata);
 		if (ret == 0) {
-			if (seq_out != NULL)
-				*seq_out = sess->trans.tx_seq;
 			sess->trans.tx_seq++;
 			atomic_fetch_add(&sess->trans.tx_since_rekey, 1);
 			{
@@ -613,7 +624,28 @@ send_packet_inner(struct dssh_session_s *sess,
 		}
 	}
 
-inner_done:
+done:
+	return ret;
+}
+
+/*
+ * Core send logic.  Caller MUST hold tx_mtx.  Copies payload into
+ * tx_packet then calls tx_finalize for MAC/encrypt/send.
+ */
+static int
+send_packet_inner(struct dssh_session_s *sess,
+    const uint8_t *payload, size_t payload_len, uint32_t *seq_out)
+{
+	if (payload_len > sess->trans.packet_buf_sz - 9)
+		return DSSH_ERROR_TOOLONG;
+
+	/* Copy payload into tx_packet[9] (past seq + pkt_length + pad_len) */
+	memcpy(&sess->trans.tx_packet[9], payload, payload_len);
+
+	int ret = tx_finalize(sess, payload_len);
+
+	if (ret == 0 && seq_out != NULL)
+		*seq_out = sess->trans.tx_seq - 1;
 	return ret;
 }
 
@@ -621,7 +653,7 @@ inner_done:
  * Drain the tx queue under tx_mtx.  Caller MUST hold tx_mtx.
  * Sends all queued fire-and-forget payloads in FIFO order.
  */
-static void
+DSSH_PRIVATE void
 drain_tx_queue(struct dssh_session_s *sess)
 {
 	dssh_thrd_check(sess, mtx_lock(&sess->trans.tx_queue_mtx));

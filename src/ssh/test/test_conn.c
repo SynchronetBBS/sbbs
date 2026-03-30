@@ -3547,49 +3547,6 @@ test_data_dlen_exceeds_payload(void)
 	return TEST_PASS;
 }
 
-/* ================================================================
- * Formerly-guarded paths -- send_data/ext overflow, chan_type==0
- * ================================================================ */
-
-static int
-test_send_extended_data_toolong(void)
-{
-	struct conn_ctx ctx;
-	if (conn_setup(&ctx) < 0)
-		return TEST_SKIP;
-
-	struct open_exec_ctx oc = {
-		.client = ctx.client,
-		.server = ctx.server,
-		.command = "echo extlen",
-		.cbs = &accept_cbs_all,
-		.accept_timeout = 5000,
-	};
-	if (open_exec_channel(&oc) < 0 || oc.client_ch == NULL || oc.server_ch == NULL) {
-		conn_cleanup(&ctx);
-		return TEST_FAIL;
-	}
-
-	uint8_t data[] = "x";
-	oc.server_ch->remote_window = 0;
-	int res = send_extended_data(ctx.server, oc.server_ch,
-	    1, data, 1, NULL);
-	ASSERT_EQ(res, DSSH_ERROR_TOOLONG);
-
-	oc.server_ch->remote_window = 0xFFFFFFFF;
-	oc.server_ch->remote_max_packet = 0;
-	res = send_extended_data(ctx.server, oc.server_ch,
-	    1, data, 1, NULL);
-	ASSERT_EQ(res, DSSH_ERROR_TOOLONG);
-
-	oc.server_ch->remote_window = 0x200000;
-	oc.server_ch->remote_max_packet = 0x8000;
-
-	dssh_chan_close(oc.server_ch, 0);
-	dssh_chan_close(oc.client_ch, 0);
-	conn_cleanup(&ctx);
-	return TEST_PASS;
-}
 
 static int
 test_demux_dispatch_chan_type_zero(void)
@@ -3834,14 +3791,17 @@ test_chan_write_not_open(void)
 		return TEST_SKIP;
 
 	struct dssh_channel_s ch = {0};
+	ch.sess = s;
 	ch.io_model = DSSH_IO_STREAM;
 	ch.open = false;
 	ch.eof_sent = false;
 	ch.close_received = false;
+	mtx_init(&ch.buf_mtx, mtx_plain);
 
 	int64_t r = dssh_chan_write(&ch, 0, (const uint8_t *)"x", 1);
 	ASSERT_EQ(r, DSSH_ERROR_TERMINATED);
 
+	mtx_destroy(&ch.buf_mtx);
 	dssh_session_cleanup(s);
 	dssh_test_reset_global_config();
 	return TEST_PASS;
@@ -3858,14 +3818,17 @@ test_chan_write_close_received(void)
 		return TEST_SKIP;
 
 	struct dssh_channel_s ch = {0};
+	ch.sess = s;
 	ch.io_model = DSSH_IO_STREAM;
 	ch.open = true;
 	ch.eof_sent = false;
 	ch.close_received = true;
+	mtx_init(&ch.buf_mtx, mtx_plain);
 
 	int64_t r = dssh_chan_write(&ch, 0, (const uint8_t *)"x", 1);
 	ASSERT_EQ(r, DSSH_ERROR_TERMINATED);
 
+	mtx_destroy(&ch.buf_mtx);
 	dssh_session_cleanup(s);
 	dssh_test_reset_global_config();
 	return TEST_PASS;
@@ -5075,7 +5038,6 @@ static struct dssh_test_entry tests[] = {
 	{ "test_channel_success_no_request",   test_channel_success_no_request },
 	{ "test_double_eof_close",              test_double_eof_close },
 	{ "test_data_dlen_exceeds_payload",     test_data_dlen_exceeds_payload },
-	{ "test_send_ext_data_toolong",        test_send_extended_data_toolong },
 	{ "test_demux_chan_type_zero",          test_demux_dispatch_chan_type_zero },
 	{ "test_send_eof_already_sent",        test_send_eof_already_sent },
 	{ "test_send_close_already_sent",      test_send_close_already_sent },

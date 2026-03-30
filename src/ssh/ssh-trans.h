@@ -200,6 +200,9 @@ struct dssh_transport_state_s {
  * Internal functions -- used by other library modules, not by
  * applications.  DSSH_PRIVATE in shared builds.
  * ================================================================ */
+DSSH_PRIVATE int tx_finalize(struct dssh_session_s *sess,
+    size_t payload_len);
+DSSH_PRIVATE void drain_tx_queue(struct dssh_session_s *sess);
 DSSH_PRIVATE int send_packet(struct dssh_session_s *sess,
     const uint8_t *payload, size_t payload_len, uint32_t *seq_out);
 DSSH_PRIVATE int send_or_queue(struct dssh_session_s *sess,

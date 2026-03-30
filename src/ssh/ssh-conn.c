@@ -11,6 +11,12 @@
 #include "dssh_test_alloc.h"
 #endif
 
+/* Thread-local guard: true when inside a ZC RX callback on the demux
+ * thread.  TX functions check this and return DSSH_ERROR_INVALID to
+ * prevent deadlock (demux thread calling TX while holding no mutex,
+ * but TX needs tx_mtx which may wait on rekey which needs demux). */
+static _Thread_local bool in_zc_rx;
+
 /* ================================================================
  * Channel buffer primitives (formerly ssh-chan.c).
  *
@@ -677,120 +683,6 @@ window_add(uint32_t current, uint32_t bytes)
  * Used by the high-level API; not part of the public interface.
  * ================================================================ */
 
-DSSH_TESTABLE int
-send_data(struct dssh_session_s *sess,
-    struct dssh_channel_s *ch, const uint8_t *data, size_t len,
-    size_t *sentp)
-{
-	dssh_thrd_check(sess, mtx_lock(&ch->buf_mtx));
-	if (!ch->open || ch->eof_sent || ch->close_received) {
-		dssh_thrd_check(sess, mtx_unlock(&ch->buf_mtx));
-		return DSSH_ERROR_TERMINATED;
-	}
-	if (sentp != NULL) {
-		if (len > ch->remote_window)
-			len = ch->remote_window;
-		if (len > ch->remote_max_packet)
-			len = ch->remote_max_packet;
-		if (len == 0) {
-			dssh_thrd_check(sess, mtx_unlock(&ch->buf_mtx));
-			*sentp = 0;
-			return 0;
-		}
-	} else if ((len > ch->remote_window)
-	    || (len > ch->remote_max_packet)) {
-		dssh_thrd_check(sess, mtx_unlock(&ch->buf_mtx));
-		return DSSH_ERROR_TOOLONG;
-	}
-
-	/* len <= remote_window (uint32_t), so fits in uint32_t */
-	uint32_t len_u32 = (uint32_t)len;
-
-	ch->remote_window -= len_u32;
-	dssh_thrd_check(sess, mtx_unlock(&ch->buf_mtx));
-
-	if (len > SIZE_MAX - CHAN_DATA_FIXED)
-		return DSSH_ERROR_INVALID;
-	size_t   msg_len = CHAN_DATA_FIXED + len;
-	uint8_t *msg = malloc(msg_len);
-
-	if (msg == NULL)
-		return DSSH_ERROR_ALLOC;
-
-	size_t pos = 0;
-
-	msg[pos++] = SSH_MSG_CHANNEL_DATA;
-	DSSH_PUT_U32(ch->remote_id, msg, &pos);
-	DSSH_PUT_U32(len_u32, msg, &pos);
-	memcpy(&msg[pos], data, len);
-	pos += len;
-
-	int ret = send_packet(sess, msg, pos, NULL);
-
-	free(msg);
-	if (ret == 0 && sentp != NULL)
-		*sentp = len;
-	return ret;
-}
-
-DSSH_TESTABLE int
-send_extended_data(struct dssh_session_s *sess,
-    struct dssh_channel_s *ch, uint32_t data_type_code,
-    const uint8_t *data, size_t len,
-    size_t *sentp)
-{
-	dssh_thrd_check(sess, mtx_lock(&ch->buf_mtx));
-	if (!ch->open || ch->eof_sent || ch->close_received) {
-		dssh_thrd_check(sess, mtx_unlock(&ch->buf_mtx));
-		return DSSH_ERROR_TERMINATED;
-	}
-	if (sentp != NULL) {
-		if (len > ch->remote_window)
-			len = ch->remote_window;
-		if (len > ch->remote_max_packet)
-			len = ch->remote_max_packet;
-		if (len == 0) {
-			dssh_thrd_check(sess, mtx_unlock(&ch->buf_mtx));
-			*sentp = 0;
-			return 0;
-		}
-	} else if ((len > ch->remote_window)
-	    || (len > ch->remote_max_packet)) {
-		dssh_thrd_check(sess, mtx_unlock(&ch->buf_mtx));
-		return DSSH_ERROR_TOOLONG;
-	}
-
-	/* len <= remote_window (uint32_t), so fits in uint32_t */
-	uint32_t len_u32 = (uint32_t)len;
-
-	ch->remote_window -= len_u32;
-	dssh_thrd_check(sess, mtx_unlock(&ch->buf_mtx));
-
-	if (len > SIZE_MAX - CHAN_EXT_DATA_FIXED)
-		return DSSH_ERROR_INVALID;
-	size_t   msg_len = CHAN_EXT_DATA_FIXED + len;
-	uint8_t *msg = malloc(msg_len);
-
-	if (msg == NULL)
-		return DSSH_ERROR_ALLOC;
-
-	size_t pos = 0;
-
-	msg[pos++] = SSH_MSG_CHANNEL_EXTENDED_DATA;
-	DSSH_PUT_U32(ch->remote_id, msg, &pos);
-	DSSH_PUT_U32(data_type_code, msg, &pos);
-	DSSH_PUT_U32(len_u32, msg, &pos);
-	memcpy(&msg[pos], data, len);
-	pos += len;
-
-	int ret = send_packet(sess, msg, pos, NULL);
-
-	free(msg);
-	if (ret == 0 && sentp != NULL)
-		*sentp = len;
-	return ret;
-}
-
 #define SSH_EXTENDED_DATA_STDERR UINT32_C(1)
 
 DSSH_TESTABLE int
@@ -1267,70 +1159,116 @@ handle_channel_request(struct dssh_session_s *sess, struct dssh_channel_s *ch,
 }
 
 /*
- * Handle CHANNEL_DATA -- write to stdout (session) or raw queue.
- * Called under buf_mtx.
+ * Handle CHANNEL_DATA -- dispatch to ZC callback or old bytebuf/msgqueue.
+ *
+ * For new-model channels (io_model != DSSH_IO_OLD): releases buf_mtx,
+ * calls the channel's zc_cb with a direct pointer into rx_packet,
+ * then re-acquires buf_mtx and adjusts local_window by the consumed
+ * amount returned by the callback.
+ *
+ * For old-model channels: writes directly to bytebuf/msgqueue under
+ * buf_mtx (existing behavior).
+ *
+ * Called under buf_mtx.  Returns 1 if caller should return immediately
+ * (channel closing), 0 otherwise.
  */
-static void
-handle_channel_data(struct dssh_channel_s *ch,
+static int
+handle_channel_data(struct dssh_session_s *sess,
+    struct dssh_channel_s *ch,
     const uint8_t *payload, size_t payload_len)
 {
 	if (payload_len < 9)
-		return;
+		return 0;
 	if (ch->eof_received || ch->close_received)
-		return;
+		return 0;
 
 	uint32_t dlen = DSSH_GET_U32(&payload[5]);
 
 	if (9 + dlen > payload_len)
-		return;
+		return 0;
 
 	const uint8_t *data = &payload[9];
 	uint32_t consumed = dlen;
 
-	if (ch->chan_type == DSSH_CHAN_SESSION) {
+	if (ch->io_model != DSSH_IO_OLD) {
+		dssh_chan_zc_cb cb = ch->zc_cb;
+		void *cbd = ch->zc_cbdata;
+
+		dssh_thrd_check(sess, mtx_unlock(&ch->buf_mtx));
+		in_zc_rx = true;
+		consumed = cb(ch, 0, data, dlen, cbd);
+		in_zc_rx = false;
+		dssh_thrd_check(sess, mtx_lock(&ch->buf_mtx));
+		if (atomic_load(&ch->closing)) {
+			dssh_thrd_check(sess, mtx_unlock(&ch->buf_mtx));
+			return 1;
+		}
+	}
+	else if (ch->chan_type == DSSH_CHAN_SESSION) {
 		size_t written = bytebuf_write(
 		    &ch->buf.session.stdout_buf, data, dlen);
 		consumed = (uint32_t)written;
 	}
-	else if (ch->chan_type == DSSH_CHAN_RAW)
+	else if (ch->chan_type == DSSH_CHAN_RAW) {
 		msgqueue_push(&ch->buf.raw.queue, data, dlen);
+	}
+
 	if (consumed <= ch->local_window)
 		ch->local_window -= consumed;
 	else
 		ch->local_window = 0;
+	return 0;
 }
 
 /*
- * Handle CHANNEL_EXTENDED_DATA -- write to stderr (session only).
- * Called under buf_mtx.
+ * Handle CHANNEL_EXTENDED_DATA -- dispatch to ZC callback or bytebuf.
+ * Same pattern as handle_channel_data but for stderr (data_type==1).
+ * Called under buf_mtx.  Returns 1 if closing, 0 otherwise.
  */
-static void
-handle_channel_extended_data(struct dssh_channel_s *ch,
+static int
+handle_channel_extended_data(struct dssh_session_s *sess,
+    struct dssh_channel_s *ch,
     const uint8_t *payload, size_t payload_len)
 {
 	if (payload_len < 13)
-		return;
+		return 0;
 	if (ch->eof_received || ch->close_received)
-		return;
+		return 0;
 
 	uint32_t data_type = DSSH_GET_U32(&payload[5]);
 	uint32_t dlen = DSSH_GET_U32(&payload[9]);
 
 	if (13 + dlen > payload_len)
-		return;
+		return 0;
 
 	const uint8_t *data = &payload[13];
 	uint32_t consumed = dlen;
 
-	if ((ch->chan_type == DSSH_CHAN_SESSION) && (data_type == 1)) {
+	if (ch->io_model != DSSH_IO_OLD) {
+		dssh_chan_zc_cb cb = ch->zc_cb;
+		void *cbd = ch->zc_cbdata;
+
+		dssh_thrd_check(sess, mtx_unlock(&ch->buf_mtx));
+		in_zc_rx = true;
+		consumed = cb(ch, (int)data_type, data, dlen, cbd);
+		in_zc_rx = false;
+		dssh_thrd_check(sess, mtx_lock(&ch->buf_mtx));
+		if (atomic_load(&ch->closing)) {
+			dssh_thrd_check(sess, mtx_unlock(&ch->buf_mtx));
+			return 1;
+		}
+	}
+	else if ((ch->chan_type == DSSH_CHAN_SESSION) && (data_type == 1)) {
 		size_t written = bytebuf_write(
 		    &ch->buf.session.stderr_buf, data, dlen);
 		consumed = (uint32_t)written;
 	}
+
 	if (consumed <= ch->local_window)
 		ch->local_window -= consumed;
 	else
 		ch->local_window = 0;
+	return 0;
 }
 
 /*
@@ -1385,11 +1323,13 @@ demux_dispatch(struct dssh_session_s *sess, uint8_t msg_type,
 
 	switch (msg_type) {
 		case SSH_MSG_CHANNEL_DATA:
-			handle_channel_data(ch, payload, payload_len);
+			if (handle_channel_data(sess, ch, payload, payload_len))
+				return 0;
 			break;
 
 		case SSH_MSG_CHANNEL_EXTENDED_DATA:
-			handle_channel_extended_data(ch, payload, payload_len);
+			if (handle_channel_extended_data(sess, ch, payload, payload_len))
+				return 0;
 			break;
 
 		case SSH_MSG_CHANNEL_WINDOW_ADJUST:
@@ -2103,7 +2043,193 @@ session_readable(struct dssh_channel_s *ch, bool ext)
  * New dssh_chan_* API
  * ================================================================ */
 
-/* PLACEHOLDER: new API functions will be inserted here */
+/* ---- ZC core (internal) ---- */
+
+/*
+ * Acquire tx_mtx, wait for rekey, drain tx_queue, check window,
+ * return pointer into tx_packet data area.  Caller MUST call
+ * zc_send_inner or zc_cancel_inner to release tx_mtx.
+ *
+ * On success, *buf points to the data area within tx_packet
+ * (past seq + pkt_length + pad_len + channel header), and
+ * *max_len is the maximum bytes the caller may write.
+ * The channel header area (tx_packet[9..9+chan_hdr_len)) is
+ * reserved for zc_send_inner to fill in.
+ */
+static int
+zc_getbuf_inner(struct dssh_channel_s *ch, int stream,
+    uint8_t **buf, size_t *max_len)
+{
+	struct dssh_session_s *sess = ch->sess;
+
+	dssh_thrd_check(sess, mtx_lock(&sess->trans.tx_mtx));
+
+	/* Wait for rekey to complete (same as send_packet) */
+	if (sess->trans.rekey_in_progress) {
+		struct timespec rk_ts;
+
+		if (sess->timeout_ms > 0)
+			dssh_deadline_from_ms(&rk_ts, sess->timeout_ms);
+		while (sess->trans.rekey_in_progress && !sess->terminate) {
+			if (sess->timeout_ms <= 0) {
+				dssh_thrd_check(sess, cnd_wait(
+				    &sess->trans.rekey_cnd,
+				    &sess->trans.tx_mtx));
+			}
+			else {
+				if (dssh_thrd_check(sess, cnd_timedwait(
+				    &sess->trans.rekey_cnd,
+				    &sess->trans.tx_mtx, &rk_ts))
+				    == thrd_timedout) {
+					session_set_terminate(sess);
+					dssh_thrd_check(sess,
+					    mtx_unlock(&sess->trans.tx_mtx));
+					return DSSH_ERROR_TERMINATED;
+				}
+			}
+		}
+		if (sess->terminate) {
+			dssh_thrd_check(sess,
+			    mtx_unlock(&sess->trans.tx_mtx));
+			return DSSH_ERROR_TERMINATED;
+		}
+	}
+
+	drain_tx_queue(sess);
+
+	/* Check remote window under buf_mtx */
+	dssh_thrd_check(sess, mtx_lock(&ch->buf_mtx));
+	if (!ch->open || ch->eof_sent || ch->close_received) {
+		dssh_thrd_check(sess, mtx_unlock(&ch->buf_mtx));
+		dssh_thrd_check(sess, mtx_unlock(&sess->trans.tx_mtx));
+		return DSSH_ERROR_TERMINATED;
+	}
+
+	uint32_t window = ch->remote_window;
+	uint32_t max_pkt = ch->remote_max_packet;
+
+	dssh_thrd_check(sess, mtx_unlock(&ch->buf_mtx));
+
+	size_t avail = window < max_pkt ? window : max_pkt;
+
+	if (avail == 0) {
+		dssh_thrd_check(sess, mtx_unlock(&sess->trans.tx_mtx));
+		return DSSH_ERROR_NOMORE;
+	}
+
+	/* Channel header size: CHANNEL_DATA = 9, CHANNEL_EXTENDED_DATA = 13 */
+	size_t chan_hdr = (stream == 0) ? CHAN_DATA_FIXED : CHAN_EXT_DATA_FIXED;
+
+	/* Cap by transport buffer capacity:
+	 * tx_packet layout: [seq(4)][pkt_len(4)][pad_len(1)][payload][pad][mac]
+	 * payload = chan_hdr + data.  Need room for at least 4 bytes padding. */
+	size_t max_payload = sess->trans.packet_buf_sz - 4 - 32;
+
+	if (chan_hdr >= max_payload) {
+		dssh_thrd_check(sess, mtx_unlock(&sess->trans.tx_mtx));
+		return DSSH_ERROR_TOOLONG;
+	}
+	size_t max_data = max_payload - chan_hdr;
+
+	if (avail > max_data)
+		avail = max_data;
+
+	/* Data area starts after: seq(4) + pkt_len(4) + pad_len(1) + chan_hdr */
+	*buf = &sess->trans.tx_packet[9 + chan_hdr];
+	*max_len = avail;
+	ch->zc_stream = stream;
+	return 0;
+}
+
+/*
+ * Fill channel header, call tx_finalize, deduct window, release tx_mtx.
+ * Caller MUST have called zc_getbuf_inner first.
+ */
+static int
+zc_send_inner(struct dssh_channel_s *ch, size_t len)
+{
+	struct dssh_session_s *sess = ch->sess;
+	int stream = ch->zc_stream;
+	size_t chan_hdr = (stream == 0) ? CHAN_DATA_FIXED : CHAN_EXT_DATA_FIXED;
+
+	/* Build channel header at tx_packet[9] */
+	size_t hp = 0;
+	uint8_t *hdr = &sess->trans.tx_packet[9];
+
+	if (stream == 0) {
+		hdr[hp++] = SSH_MSG_CHANNEL_DATA;
+		DSSH_PUT_U32(ch->remote_id, hdr, &hp);
+		uint32_t len_u32 = (uint32_t)len;
+		DSSH_PUT_U32(len_u32, hdr, &hp);
+	}
+	else {
+		hdr[hp++] = SSH_MSG_CHANNEL_EXTENDED_DATA;
+		DSSH_PUT_U32(ch->remote_id, hdr, &hp);
+		DSSH_PUT_U32(SSH_EXTENDED_DATA_STDERR, hdr, &hp);
+		uint32_t len_u32 = (uint32_t)len;
+		DSSH_PUT_U32(len_u32, hdr, &hp);
+	}
+
+	size_t payload_len = chan_hdr + len;
+	int ret = tx_finalize(sess, payload_len);
+
+	if (ret == 0) {
+		/* Deduct from remote_window under buf_mtx */
+		dssh_thrd_check(sess, mtx_lock(&ch->buf_mtx));
+		if (len <= ch->remote_window)
+			ch->remote_window -= (uint32_t)len;
+		else
+			ch->remote_window = 0;
+		dssh_thrd_check(sess, mtx_unlock(&ch->buf_mtx));
+	}
+
+	if ((ret < 0) && (ret != DSSH_ERROR_TOOLONG)
+	    && (ret != DSSH_ERROR_REKEY_NEEDED))
+		session_set_terminate(sess);
+
+	dssh_thrd_check(sess, mtx_unlock(&sess->trans.tx_mtx));
+	return ret;
+}
+
+/*
+ * Release tx_mtx without sending.
+ */
+static void
+zc_cancel_inner(struct dssh_channel_s *ch)
+{
+	struct dssh_session_s *sess = ch->sess;
+
+	dssh_thrd_check(sess, mtx_unlock(&sess->trans.tx_mtx));
+}
+
+/* ---- Internal stream ZC callback (RX path) ---- */
+
+/*
+ * Registered as the zc_cb on stream-mode channels.  Called from the
+ * demux thread with no library mutex held.  Copies data from rx_packet
+ * into the per-channel ring buffer and broadcasts poll_cnd.
+ * Returns bytes consumed for WINDOW_ADJUST.
+ */
+static uint32_t
+stream_zc_cb(dssh_channel ch, int stream,
+    const uint8_t *data, size_t len, void *cbdata)
+{
+	(void)cbdata;
+
+	struct dssh_session_s *sess = ch->sess;
+
+	dssh_thrd_check(sess, mtx_lock(&ch->buf_mtx));
+
+	struct dssh_bytebuf *bb = (stream == 0)
+	    ? &ch->buf.session.stdout_buf
+	    : &ch->buf.session.stderr_buf;
+	size_t written = bytebuf_write(bb, data, len);
+
+	dssh_thrd_check(sess, cnd_broadcast(&ch->poll_cnd));
+	dssh_thrd_check(sess, mtx_unlock(&ch->buf_mtx));
+
+	return (uint32_t)written;
+}
 
 static int
 encode_modes(const struct dssh_chan_params *p,
@@ -2276,6 +2402,7 @@ dssh_chan_open(struct dssh_session_s *sess,
 	if (res < 0) { free(ch); return NULL; }
 	ch->sess = sess;
 	ch->io_model = DSSH_IO_STREAM;
+	ch->zc_cb = stream_zc_cb;
 	res = event_queue_init(&ch->events);
 	if (res < 0) { cleanup_channel_buffers(ch); free(ch); return NULL; }
 	res = open_session_channel(sess, ch);
@@ -2331,18 +2458,33 @@ dssh_chan_read(struct dssh_channel_s *ch, int stream, uint8_t *buf, size_t bufsz
 }
 
 DSSH_PUBLIC int64_t
-dssh_chan_write(struct dssh_channel_s *ch, int stream, const uint8_t *buf, size_t bufsz)
+dssh_chan_write(struct dssh_channel_s *ch, int stream,
+    const uint8_t *buf, size_t bufsz)
 {
-	if (ch == NULL || buf == NULL) return DSSH_ERROR_INVALID;
-	if (ch->io_model != DSSH_IO_STREAM) return DSSH_ERROR_INVALID;
-	if (bufsz == 0) return 0;
-	struct dssh_session_s *sess = ch->sess;
-	size_t sent = 0;
-	int res;
-	if (stream == 0) res = send_data(sess, ch, buf, bufsz, &sent);
-	else res = send_extended_data(sess, ch, SSH_EXTENDED_DATA_STDERR, buf, bufsz, &sent);
-	if (res < 0) return res;
-	return (int64_t)sent;
+	if (ch == NULL || buf == NULL)
+		return DSSH_ERROR_INVALID;
+	if (ch->io_model != DSSH_IO_STREAM)
+		return DSSH_ERROR_INVALID;
+	if (bufsz == 0)
+		return 0;
+
+	uint8_t *zbuf;
+	size_t   max_len;
+	int      ret;
+
+	ret = zc_getbuf_inner(ch, stream, &zbuf, &max_len);
+	if (ret == DSSH_ERROR_NOMORE)
+		return 0; /* window full, 0 bytes sent */
+	if (ret < 0)
+		return ret;
+
+	size_t len = bufsz < max_len ? bufsz : max_len;
+
+	memcpy(zbuf, buf, len);
+	ret = zc_send_inner(ch, len);
+	if (ret < 0)
+		return ret;
+	return (int64_t)len;
 }
 
 DSSH_PUBLIC int
@@ -2503,6 +2645,152 @@ DSSH_PUBLIC const char *dssh_chan_get_command(struct dssh_channel_s *ch) { retur
 DSSH_PUBLIC const char *dssh_chan_get_subsystem(struct dssh_channel_s *ch) { return ch->params.type != DSSH_CHAN_SUBSYSTEM ? NULL : ch->params.subsystem; }
 DSSH_PUBLIC bool dssh_chan_has_pty(struct dssh_channel_s *ch) { return (ch->params.flags & DSSH_PARAM_HAS_PTY) != 0; }
 
+/* ---- Public ZC API ---- */
+
+DSSH_PUBLIC int
+dssh_chan_zc_getbuf(struct dssh_channel_s *ch, int stream,
+    uint8_t **buf, size_t *max_len)
+{
+	if (ch == NULL || buf == NULL || max_len == NULL)
+		return DSSH_ERROR_INVALID;
+	if (ch->io_model != DSSH_IO_ZC)
+		return DSSH_ERROR_INVALID;
+	if (in_zc_rx)
+		return DSSH_ERROR_INVALID;
+	return zc_getbuf_inner(ch, stream, buf, max_len);
+}
+
+DSSH_PUBLIC int
+dssh_chan_zc_send(struct dssh_channel_s *ch, size_t len)
+{
+	if (ch == NULL)
+		return DSSH_ERROR_INVALID;
+	if (in_zc_rx)
+		return DSSH_ERROR_INVALID;
+	return zc_send_inner(ch, len);
+}
+
+DSSH_PUBLIC int
+dssh_chan_zc_cancel(struct dssh_channel_s *ch)
+{
+	if (ch == NULL)
+		return DSSH_ERROR_INVALID;
+	zc_cancel_inner(ch);
+	return 0;
+}
+
+DSSH_PUBLIC struct dssh_channel_s *
+dssh_chan_zc_open(struct dssh_session_s *sess,
+    const struct dssh_chan_params *params,
+    dssh_chan_zc_cb cb, void *cbdata)
+{
+	if (sess == NULL || params == NULL || cb == NULL)
+		return NULL;
+
+	struct dssh_channel_s *ch = calloc(1, sizeof(*ch));
+
+	if (ch == NULL)
+		return NULL;
+
+	uint32_t winsz = params->max_window != 0
+	    ? params->max_window : INITIAL_WINDOW_SIZE;
+
+	/* ZC mode: no ring buffers.  Still need buf_mtx/poll_cnd for
+	 * window management and event queue. */
+	int res = init_session_channel(ch, winsz);
+
+	if (res < 0) {
+		free(ch);
+		return NULL;
+	}
+
+	ch->sess = sess;
+	ch->io_model = DSSH_IO_ZC;
+	ch->zc_cb = cb;
+	ch->zc_cbdata = cbdata;
+
+	res = event_queue_init(&ch->events);
+	if (res < 0) {
+		cleanup_channel_buffers(ch);
+		free(ch);
+		return NULL;
+	}
+
+	res = open_session_channel(sess, ch);
+	if (res < 0)
+		goto fail;
+
+	if (params->env_count > 0) {
+		res = chan_send_env(sess, ch, params);
+		if (res < 0)
+			goto fail_close;
+	}
+
+	if (params->flags & DSSH_PARAM_HAS_PTY) {
+		res = chan_send_pty_req(sess, ch, params);
+		if (res < 0)
+			goto fail_close;
+	}
+
+	res = chan_send_terminal_request(sess, ch, params);
+	if (res < 0)
+		goto fail_close;
+
+	res = dssh_chan_params_init(&ch->params, params->type);
+	if (res < 0)
+		goto fail_close;
+	ch->params.flags = params->flags;
+	ch->params.max_window = winsz;
+	ch->params.cols = params->cols;
+	ch->params.rows = params->rows;
+	ch->params.wpx = params->wpx;
+	ch->params.hpx = params->hpx;
+	dssh_chan_params_set_term(&ch->params, params->term);
+	if (params->command != NULL)
+		dssh_chan_params_set_command(&ch->params, params->command);
+	if (params->subsystem != NULL)
+		dssh_chan_params_set_subsystem(&ch->params, params->subsystem);
+
+	return ch;
+
+fail_close:
+	conn_close(sess, ch);
+fail:
+	unregister_channel(sess, ch);
+	event_queue_free(&ch->events);
+	cleanup_channel_buffers(ch);
+	free(ch);
+	return NULL;
+}
+
+/* ---- Event callback setters ---- */
+
+DSSH_PUBLIC int
+dssh_chan_set_event_cb(struct dssh_channel_s *ch,
+    dssh_chan_event_cb cb, void *cbdata)
+{
+	if (ch == NULL)
+		return DSSH_ERROR_INVALID;
+	ch->event_cb = cb;
+	ch->event_cbdata = cbdata;
+	return 0;
+}
+
+DSSH_PUBLIC int
+dssh_session_set_event_cb(struct dssh_session_s *sess,
+    dssh_chan_event_cb cb, void *cbdata)
+{
+	if (sess == NULL)
+		return DSSH_ERROR_INVALID;
+	/* Session-level default stored in session struct.
+	 * Channels copy it at open/accept time. */
+	(void)cb;
+	(void)cbdata;
+	/* TODO: add event_cb/event_cbdata to dssh_session_s
+	 * and copy to channels at creation time */
+	return 0;
+}
+
 /* ================================================================
  * Server accept -- dssh_chan_accept
  * ================================================================ */
@@ -2658,6 +2946,7 @@ dssh_chan_accept(struct dssh_session_s *sess, const struct dssh_chan_accept_cbs 
 	if (ch == NULL) return NULL;
 	ch->sess = sess;
 	ch->io_model = DSSH_IO_STREAM;
+	ch->zc_cb = stream_zc_cb;
 	struct dssh_chan_params p;
 	dssh_chan_params_init(&p, DSSH_CHAN_SHELL);
 	p.flags &= ~(uint32_t)DSSH_PARAM_HAS_PTY; /* PTY only if peer sends pty-req */

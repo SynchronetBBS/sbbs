@@ -253,6 +253,10 @@ struct dssh_channel_s {
 	void     (*window_change_cb)(uint32_t cols, uint32_t rows,
 	    uint32_t wpx, uint32_t hpx, void *cbdata);
 	void    *window_change_cbdata;
+	dssh_chan_zc_cb    zc_cb;      /* ZC data callback (or internal for stream) */
+	void             *zc_cbdata;
+	dssh_chan_event_cb event_cb;   /* optional event push callback */
+	void             *event_cbdata;
 
         /* C11 synchronization (platform-dependent size).
          * Lock order: channel_mtx then buf_mtx (never reversed). */
@@ -270,6 +274,7 @@ struct dssh_channel_s {
 	uint32_t exit_code;
 	int      chan_type;
 	int      io_model;  /* DSSH_IO_OLD, DSSH_IO_STREAM, DSSH_IO_ZC */
+	int      zc_stream; /* stashed stream from zc_getbuf */
 
         /* 1-byte */
 	bool     open;

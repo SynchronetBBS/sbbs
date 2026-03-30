@@ -89,11 +89,8 @@ struct dssh_incoming_open *acceptqueue_pop(struct dssh_accept_queue *q);
 /*
  * ssh-conn.c internal functions exposed for testing.
  */
-int send_data(dssh_session sess, struct dssh_channel_s *ch,
-    const uint8_t *data, size_t len, size_t *sentp);
-int send_extended_data(dssh_session sess, struct dssh_channel_s *ch,
-    uint32_t data_type_code, const uint8_t *data, size_t len,
-    size_t *sentp);
+int tx_finalize(dssh_session sess, size_t payload_len);
+void drain_tx_queue(dssh_session sess);
 int send_eof(dssh_session sess, struct dssh_channel_s *ch);
 int conn_close(dssh_session sess, struct dssh_channel_s *ch);
 int send_window_adjust(dssh_session sess,
