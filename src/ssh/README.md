@@ -7,8 +7,13 @@ A from-scratch SSH library in standard C17 implementing the core SSH protocol:
 - RFC 4253 — SSH Transport Layer Protocol
 - RFC 4254 — SSH Connection Protocol
 - RFC 4256 — Generic Message Exchange Authentication (keyboard-interactive)
+- RFC 4335 — SSH Session Channel Break Extension
 - RFC 4419 — Diffie-Hellman Group Exchange
+- RFC 6668 — SHA-2 Data Integrity Verification
+- RFC 8160 — IUTF8 Terminal Mode
+- RFC 8308 — Extension Negotiation
 - RFC 8332 — rsa-sha2-256 Host Key Algorithm
+- RFC 8709 — Ed25519 Host Key Algorithm
 - RFC 8731 — curve25519-sha256 Key Exchange
 - draft-ietf-sshm-ntruprime-ssh — sntrup761x25519-sha512 Key Exchange
 - draft-ietf-sshm-mlkem-hybrid-kex — mlkem768x25519-sha256 Key Exchange
@@ -23,14 +28,14 @@ No proprietary extensions (no `@` algorithm names).
 ## Building
 
 ```sh
-mkdir build && cd build
-cmake ..
-cmake --build . -j8                    # library only
-cmake --build . --target client -j8    # + test client
-cmake --build . --target server -j8    # + test server
+cmake -S . -B build
+cmake --build build -j8
 ```
 
 Produces `libdeucessh.a` (static) and `libdeucessh.so` (shared).
+
+Use `-S . -B build` to prevent cmake from discovering the parent
+`src/CMakeLists.txt`.
 
 ## Built-in Algorithms
 
@@ -89,7 +94,7 @@ int main(void)
 
     /* 3. Create session (opaque handle) */
     dssh_session sess = dssh_session_init(true, 0);
-    /* dssh_session_set_cbdata(sess, sock_ptr, sock_ptr, sock_ptr, NULL); */
+    dssh_session_set_terminate_cb(sess, on_terminate, NULL);
 
     /* 4. Handshake */
     dssh_transport_handshake(sess);
@@ -102,30 +107,56 @@ int main(void)
             dssh_auth_password(sess, "user", "pass", NULL, NULL);
         else if (strstr(methods, "keyboard-interactive"))
             dssh_auth_keyboard_interactive(sess, "user",
-                my_kbi_prompt, my_context);  /* see KBI section below */
+                my_kbi_prompt, my_context);
     }
 
     /* 6. Start the demux thread */
     dssh_session_start(sess);
 
-    /* 7. Open channel and execute command */
-    dssh_channel ch = dssh_session_open_exec(sess, "echo hello");
+    /* 7. Open channel via params builder */
+    struct dssh_chan_params cp;
+    dssh_chan_params_init(&cp, DSSH_CHAN_EXEC);
+    dssh_chan_params_set_command(&cp, "echo hello");
+    dssh_chan_params_set_pty(&cp, false);
+
+    dssh_channel ch = dssh_chan_open(sess, &cp);
+    dssh_chan_params_free(&cp);
 
     /* 8. Read output using poll/read */
     uint8_t buf[4096];
     int ev;
-    while ((ev = dssh_session_poll(sess, ch,
-            DSSH_POLL_READ, -1)) & DSSH_POLL_READ) {
-        int64_t n = dssh_session_read(sess, ch, buf, sizeof(buf));
-        if (n <= 0)
-            break;  /* EOF or closed */
-        write(STDOUT_FILENO, buf, n);
+    while ((ev = dssh_chan_poll(ch,
+            DSSH_POLL_READ | DSSH_POLL_EVENT, -1)) > 0) {
+        if (ev & DSSH_POLL_EVENT) {
+            struct dssh_chan_event event;
+            dssh_chan_read_event(ch, &event);
+            continue;
+        }
+        if (ev & DSSH_POLL_READ) {
+            int64_t n = dssh_chan_read(ch, 0, buf, sizeof(buf));
+            if (n <= 0)
+                break;
+            write(STDOUT_FILENO, buf, n);
+        }
     }
 
-    /* 9. Clean up (close frees the channel, cleanup frees the session) */
-    dssh_session_close(sess, ch, 0);
+    /* 9. Clean up */
+    dssh_chan_close(ch, 0);
     dssh_session_cleanup(sess);
 }
+```
+
+For an interactive shell instead of exec:
+
+```c
+struct dssh_chan_params cp;
+dssh_chan_params_init(&cp, DSSH_CHAN_SHELL);
+dssh_chan_params_set_term(&cp, "xterm-256color");
+dssh_chan_params_set_size(&cp, 80, 24, 0, 0);
+/* PTY is enabled by default for DSSH_CHAN_SHELL */
+
+dssh_channel ch = dssh_chan_open(sess, &cp);
+dssh_chan_params_free(&cp);
 ```
 
 ## Quick Start — Server
@@ -144,14 +175,26 @@ static int my_password_cb(const uint8_t *username, size_t username_len,
     return DSSH_AUTH_SUCCESS;
 }
 
+/* Channel accept callbacks */
+static int my_shell_cb(dssh_channel ch,
+    const struct dssh_chan_params *params,
+    struct dssh_chan_accept_result *result, void *cbdata)
+{
+    return 0;  /* accept */
+}
+
+static int my_exec_cb(dssh_channel ch,
+    const struct dssh_chan_params *params,
+    struct dssh_chan_accept_result *result, void *cbdata)
+{
+    return 0;  /* accept */
+}
+
 int main(void)
 {
     /* 1. Register algorithms and I/O callbacks (same as client) */
     dssh_transport_set_callbacks(my_tx, my_rx, my_rxline, NULL);
-    dssh_register_mlkem768x25519_sha256();
-    dssh_register_sntrup761x25519_sha512();
     dssh_register_curve25519_sha256();
-    dssh_register_dh_gex_sha256();
     dssh_register_ssh_ed25519();
     dssh_register_rsa_sha2_256();
     dssh_register_aes256_ctr();
@@ -162,18 +205,17 @@ int main(void)
     dssh_ed25519_load_key_file("/path/to/host_ed25519.pem", NULL, NULL);
     dssh_rsa_sha2_256_load_key_file("/path/to/host_rsa.pem", NULL, NULL);
 
-    /* 3. Accept a connection, then create session */
+    /* 3. Create session */
     dssh_session sess = dssh_session_init(false, 0);
+    dssh_session_set_terminate_cb(sess, on_terminate, NULL);
 
-    /* 4. Handshake (DH-GEX uses built-in RFC 3526 groups by default) */
+    /* 4. Handshake */
     dssh_transport_handshake(sess);
 
     /* 5. Authenticate */
     struct dssh_auth_server_cbs auth_cbs = {
-        .methods_str = "publickey,password,keyboard-interactive",
+        .methods_str = "publickey,password",
         .password_cb = my_password_cb,
-        .publickey_cb = my_publickey_cb,
-        .keyboard_interactive_cb = my_kbi_cb,
     };
     uint8_t username[256];
     size_t username_len = sizeof(username);
@@ -184,45 +226,38 @@ int main(void)
     dssh_session_start(sess);
 
     /* 7. Accept incoming channels */
-    struct dssh_incoming_open *inc;
-    while (dssh_session_accept(sess, &inc, -1) == 0) {
-        struct dssh_server_session_cbs scbs = {
-            .request_cb = my_channel_request_cb,
-        };
-        const char *req_type, *req_data;
-        dssh_channel ch = dssh_session_accept_channel(sess, inc,
-            &scbs, &req_type, &req_data);
-        if (ch == NULL) continue;
+    struct dssh_chan_accept_cbs accept_cbs = {
+        .shell = my_shell_cb,
+        .exec = my_exec_cb,
+    };
 
-        if (strcmp(req_type, "subsystem") == 0) {
-            /* Subsystem channels are raw (message-based) */
-            int ev;
-            while ((ev = dssh_channel_poll(sess, ch,
-                    DSSH_POLL_READ, -1)) & DSSH_POLL_READ) {
-                uint8_t msg[4096];
-                int64_t len = dssh_channel_read(sess, ch,
-                    msg, sizeof(msg));
-                if (len <= 0) break;
-                /* process and respond... */
-                dssh_channel_write(sess, ch, response, resp_len);
-            }
-            dssh_channel_close(sess, ch);
-        } else {
-            /* Shell/exec channels are session (stream-based) */
-            uint8_t buf[4096];
-            int ev;
-            while ((ev = dssh_session_poll(sess, ch,
-                    DSSH_POLL_READ, -1)) & DSSH_POLL_READ) {
-                int64_t n = dssh_session_read(sess, ch,
-                    buf, sizeof(buf));
-                if (n <= 0) break;
-                dssh_session_write(sess, ch, buf, n);
-            }
-            dssh_session_close(sess, ch, 0);
+    dssh_channel ch = dssh_chan_accept(sess, &accept_cbs, -1);
+    if (ch == NULL)
+        return 1;
+
+    enum dssh_chan_type ctype = dssh_chan_get_type(ch);
+
+    if (ctype == DSSH_CHAN_EXEC) {
+        const char *cmd = dssh_chan_get_command(ch);
+        /* ... handle exec ... */
+        dssh_chan_write(ch, 0,
+            (const uint8_t *)"done\n", 5);
+    } else {
+        /* Shell — echo loop */
+        uint8_t buf[4096];
+        for (;;) {
+            int ev = dssh_chan_poll(ch, DSSH_POLL_READ, -1);
+            if (ev <= 0)
+                break;
+            int64_t n = dssh_chan_read(ch, 0, buf, sizeof(buf));
+            if (n <= 0)
+                break;
+            dssh_chan_write(ch, 0, buf, n);
         }
     }
 
     /* 8. Clean up */
+    dssh_chan_close(ch, 0);
     dssh_session_cleanup(sess);
 }
 ```
@@ -243,6 +278,9 @@ Return 0 on success, negative on error.  The `cbdata` is set via
 
 Callbacks are registered globally once.  Per-session differentiation
 is via the `cbdata` pointers.
+
+An optional fourth callback (`extra_line_cb`) is called for non-SSH
+lines received before the version string during version exchange.
 
 **Important:** When `dssh_session_is_terminated(sess)` returns true,
 I/O callbacks **must** return a negative error code within a reasonable
@@ -428,36 +466,6 @@ dssh_auth_keyboard_interactive(sess, "user",
     my_kbi_prompt, my_context);
 ```
 
-For simple password-only authentication, the callback can ignore the
-prompts and return the password for every response:
-
-```c
-static int
-simple_kbi(const uint8_t *name, size_t name_len,
-    const uint8_t *instruction, size_t instruction_len,
-    uint32_t num_prompts,
-    const uint8_t **prompts, const size_t *prompt_lens,
-    const bool *echo,
-    uint8_t **responses, size_t *response_lens,
-    void *cbdata)
-{
-    const char *password = cbdata;
-    size_t plen = strlen(password);
-    for (uint32_t i = 0; i < num_prompts; i++) {
-        responses[i] = malloc(plen);
-        if (responses[i] == NULL)
-            return DSSH_ERROR_ALLOC;
-        memcpy(responses[i], password, plen);
-        response_lens[i] = plen;
-    }
-    return 0;
-}
-
-/* Usage: */
-dssh_auth_keyboard_interactive(sess, "user",
-    simple_kbi, (void *)"mypassword");
-```
-
 ## Authentication — Server Side
 
 `dssh_auth_server()` drives the server-side authentication loop.
@@ -491,6 +499,7 @@ int r = dssh_auth_server(sess, &cbs, username, &username_len);
 | `DSSH_AUTH_SUCCESS` | User authenticated — library sends SUCCESS |
 | `DSSH_AUTH_FAILURE` | Rejected — library sends FAILURE |
 | `DSSH_AUTH_PARTIAL` | Succeeded, but more auth needed — library sends FAILURE with partial_success=TRUE |
+| `DSSH_AUTH_DISCONNECT` | Reject and disconnect (too many attempts, etc.) |
 | `DSSH_AUTH_CHANGE_PASSWORD` | Password expired — library sends PASSWD_CHANGEREQ (password method only) |
 | `DSSH_AUTH_KBI_PROMPT` | Send INFO_REQUEST with prompts (keyboard-interactive only) |
 
@@ -623,6 +632,14 @@ You can register your own custom algorithm modules by implementing
 the callback signatures defined in the public module headers and
 calling the corresponding `dssh_transport_register_*()` function.
 
+### Registration Rules
+
+- Call `dssh_register_*()` before any `dssh_session_init()`.
+- After the first session init, registration is locked (`DSSH_ERROR_TOOLATE`).
+- Names must be 1–64 printable ASCII characters (no spaces, no control chars).
+- The `next` pointer must be NULL (the library manages the linked list).
+- Registration order determines negotiation preference.
+
 ## Custom Algorithm Modules
 
 You can implement custom encryption, MAC, compression, host key, or
@@ -684,6 +701,8 @@ The `struct dssh_enc_s` (typedef `dssh_enc`) is defined in `deucessh-enc.h`.
 Implement three callbacks:
 
 ```c
+#include "deucessh-mac.h"
+
 static int my_mac_init(const uint8_t *key, dssh_mac_ctx **ctx)
 {
     /* Allocate and initialize MAC context with key.
@@ -721,6 +740,8 @@ The `struct dssh_mac_s` (typedef `dssh_mac`) is defined in `deucessh-mac.h`.
 ### Compression Module
 
 ```c
+#include "deucessh-comp.h"
+
 static int my_compress(uint8_t *buf, size_t *bufsz, dssh_comp_ctx *ctx)
 {
     /* Compress buf in place, update *bufsz.  Return 0 on success. */
@@ -756,6 +777,8 @@ optional key management (generate, load, save).  They use the `ctx`
 field on the registered struct to store key material.
 
 ```c
+#include "deucessh-key-algo.h"
+
 static int my_sign(uint8_t **out, size_t *outlen,
     const uint8_t *data, size_t data_len, dssh_key_algo_ctx *ctx)
 {
@@ -863,14 +886,6 @@ int register_my_kex(void)
 The `struct dssh_kex_s` (typedef `dssh_kex`) and `struct dssh_kex_context`
 are defined in `deucessh-kex.h`.  KEX modules need no private headers.
 
-### Registration Rules
-
-- Call `dssh_register_*()` before any `dssh_session_init()`.
-- After the first session init, registration is locked (`DSSH_ERROR_TOOLATE`).
-- Names must be 1–64 printable ASCII characters (no spaces, no control chars).
-- The `next` pointer must be NULL (the library manages the linked list).
-- Registration order determines negotiation preference.
-
 ## DH Group Exchange (Server)
 
 DH-GEX works out of the box — the built-in default selects from
@@ -943,155 +958,147 @@ char *pub = malloc(len);
 dssh_ed25519_get_pub_str(pub, len);  /* "ssh-ed25519 AAAA..." */
 ```
 
-## Server-Side Channel Accept
+## Channel Params Builder
 
-### Rejecting a channel
-
-To reject an incoming channel open:
-
-```c
-dssh_session_reject(sess, inc, SSH_OPEN_ADMINISTRATIVELY_PROHIBITED,
-    "not allowed");
-```
-
-The `inc` pointer is freed by this call.  `description` may be NULL.
-
-### Accepting a raw channel
-
-For custom channel types where the application handles all requests
-itself (no shell/exec/subsystem setup):
+Channel parameters are configured via `struct dssh_chan_params`,
+populated through a builder API.  The params are consumed at
+`dssh_chan_open()` time — call `dssh_chan_params_free()` after open.
 
 ```c
-dssh_channel ch = dssh_channel_accept_raw(sess, inc);
+struct dssh_chan_params cp;
+
+/* Initialize with type — sets defaults */
+dssh_chan_params_init(&cp, DSSH_CHAN_SHELL);
+
+/* Configure */
+dssh_chan_params_set_term(&cp, "xterm-256color");
+dssh_chan_params_set_size(&cp, 80, 24, 0, 0);
+dssh_chan_params_set_mode(&cp, 53, 1);    /* ECHO = 1 */
+dssh_chan_params_set_max_window(&cp, 4 * 1024 * 1024);  /* 4 MiB */
+dssh_chan_params_add_env(&cp, "LANG", "en_US.UTF-8");
+
+/* Open and free */
+dssh_channel ch = dssh_chan_open(sess, &cp);
+dssh_chan_params_free(&cp);
 ```
 
-Returns a raw (message-based) channel immediately.  The `inc` pointer
-is consumed (freed) by this call.
+### Builder Functions
 
-### Accepting a session channel
+| Function | Purpose |
+|----------|---------|
+| `dssh_chan_params_init(p, type)` | Set type and defaults |
+| `dssh_chan_params_free(p)` | Release heap storage |
+| `dssh_chan_params_set_max_window(p, max)` | Max window size (0 = 2 MiB default) |
+| `dssh_chan_params_set_pty(p, enable)` | Enable/disable PTY |
+| `dssh_chan_params_set_term(p, term)` | Terminal type string |
+| `dssh_chan_params_set_size(p, cols, rows, wpx, hpx)` | Terminal dimensions |
+| `dssh_chan_params_set_mode(p, opcode, value)` | Terminal mode (RFC 4254 s8) |
+| `dssh_chan_params_set_command(p, cmd)` | Exec command (DSSH_CHAN_EXEC) |
+| `dssh_chan_params_set_subsystem(p, name)` | Subsystem name (DSSH_CHAN_SUBSYSTEM) |
+| `dssh_chan_params_add_env(p, name, value)` | Environment variable |
 
-`dssh_session_accept_channel()` processes incoming `CHANNEL_REQUEST`
-messages until a terminal request (shell/exec/subsystem) arrives.
-Every request is passed to a single callback:
+`init` sets defaults: `term="dumb"`, dimensions `0x0`, PTY enabled
+for shell (disabled for exec/subsystem), no modes, no env.  Zero
+terminal mode opcodes by default — the library cannot know the app's
+terminal state.
 
-```c
-static int
-my_channel_request_cb(const char *type, size_t type_len,
-    bool want_reply, const uint8_t *data, size_t data_len,
-    void *cbdata)
-{
-    if (type_len == 7 && memcmp(type, "pty-req", 7) == 0) {
-        struct dssh_pty_req pty;
-        dssh_parse_pty_req_data(data, data_len, &pty);
-        printf("PTY: %.*s %ux%u\n",
-            /* pty.term points into data, NOT NUL-terminated */
-            (int)(data_len >= 4 ? *(uint32_t*)data : 0), pty.term,
-            pty.cols, pty.rows);
-        return 0;  /* accept */
-    }
-    if (type_len == 3 && memcmp(type, "env", 3) == 0)
-        return 0;  /* accept env */
-    if (type_len == 5 && memcmp(type, "shell", 5) == 0)
-        return 0;  /* accept → DSSH_CHAN_SESSION */
-    if (type_len == 4 && memcmp(type, "exec", 4) == 0)
-        return 0;  /* accept → DSSH_CHAN_SESSION */
-    if (type_len == 9 && memcmp(type, "subsystem", 9) == 0)
-        return 0;  /* accept → DSSH_CHAN_RAW */
-    return -1;     /* reject unknown */
-}
-```
-
-The channel type is determined by the terminal request:
-- **shell** or **exec** → `DSSH_CHAN_SESSION` (stream-based, use `dssh_session_*` API)
-- **subsystem** → `DSSH_CHAN_RAW` (message-based, use `dssh_channel_*` API)
-
-Parse helpers for the `data` payload:
-- `dssh_parse_pty_req_data(data, len, &pty)` — fills `struct dssh_pty_req`
-- `dssh_parse_env_data(data, len, &name, &nlen, &value, &vlen)`
-- `dssh_parse_exec_data(data, len, &command, &clen)`
-- `dssh_parse_subsystem_data(data, len, &name, &nlen)`
-
-You can also use the RFC 4251 primitives directly (from `deucessh.h`):
-- `dssh_parse_uint32(buf, bufsz, &val)` — returns `int64_t`: 4 (bytes
-  consumed) on success, negative `DSSH_ERROR_*` on failure.
-- `dssh_serialize_uint32(val, buf, bufsz, &pos)` — returns `int`: 0 on
-  success, negative `DSSH_ERROR_*` on failure.  Advances `pos` by 4.
+`set_mode()` accumulates opcode/value pairs.  Encoding at open time
+emits opcodes 1–159 first, then 160+, then TTY_OP_END (RFC 4254 s8).
 
 ## Channel Lifecycle
 
-### Two channel types
+### Open sequence
 
-**Session channels** (shell/exec) — stream-based, three logical
-streams (stdin/stdout/stderr), signal synchronization, exit status:
+`dssh_chan_open()` performs the full setup sequence internally:
 
-```c
-/* Open (returns opaque channel handle, NULL on failure) */
-dssh_channel ch = dssh_session_open_shell(sess, &pty);
+1. Send CHANNEL_OPEN "session" with `initial_window=0`
+2. Wait for CHANNEL_OPEN_CONFIRMATION
+3. Send env requests (from params)
+4. Send pty-req (if enabled in params)
+5. Send terminal request (shell/exec/subsystem per type)
+6. Allocate I/O buffers
+7. Send WINDOW_ADJUST to open the window
+8. Return live channel
 
-/* I/O */
-dssh_session_poll(sess, ch, events, timeout_ms);
-dssh_session_read(sess, ch, buf, bufsz);       /* stdout */
-dssh_session_read_ext(sess, ch, buf, bufsz);   /* stderr */
-dssh_session_write(sess, ch, buf, bufsz);      /* stdin */
-dssh_session_write_ext(sess, ch, buf, bufsz);  /* stderr out */
-dssh_session_read_signal(sess, ch, &name);     /* signals */
-dssh_session_send_signal(sess, ch, "INT");     /* send signal */
-dssh_session_send_window_change(sess, ch,      /* resize */
-    cols, rows, wpx, hpx);
+### Stream I/O
 
-/* Close (sends exit-status + EOF + CLOSE) */
-dssh_session_close(sess, ch, exit_code);
-```
-
-**Raw channels** (subsystems) — message-based, bidirectional, no
-partial reads or writes:
+All channel I/O uses the unified `dssh_chan_*` prefix.  The `stream`
+parameter selects stdout/stdin (0) or stderr (1):
 
 ```c
-/* Open (returns opaque channel handle, NULL on failure) */
-dssh_channel ch = dssh_channel_open_subsystem(sess, "sftp");
+/* Read stdout */
+int64_t n = dssh_chan_read(ch, 0, buf, sizeof(buf));
 
-/* I/O */
-dssh_channel_poll(sess, ch, events, timeout_ms);
-len = dssh_channel_read(sess, ch, NULL, 0);   /* peek size */
-dssh_channel_read(sess, ch, buf, bufsz);      /* read msg */
-dssh_channel_write(sess, ch, buf, len);        /* write msg */
+/* Read stderr */
+int64_t n = dssh_chan_read(ch, 1, buf, sizeof(buf));
 
-/* Close (sends EOF + CLOSE) */
-dssh_channel_close(sess, ch);
+/* Peek: returns bytes available without consuming */
+int64_t avail = dssh_chan_read(ch, 0, NULL, 0);
+
+/* Write stdin */
+int64_t w = dssh_chan_write(ch, 0, buf, len);
+
+/* Write stderr (server side) */
+int64_t w = dssh_chan_write(ch, 1, buf, len);
 ```
+
+Return values follow POSIX semantics:
+- `> 0`: bytes transferred
+- `0`: EOF (read only — peer sent CHANNEL_EOF)
+- `< 0`: `DSSH_ERROR_*`
 
 ### Poll events
 
 | Flag | Meaning |
 |------|---------|
-| `DSSH_POLL_READ` | stdout data (session) or message (raw) available, or EOF |
-| `DSSH_POLL_READEXT` | stderr data available, or EOF (session only) |
+| `DSSH_POLL_READ` | stdout data or EOF available |
+| `DSSH_POLL_READEXT` | stderr data or EOF available |
 | `DSSH_POLL_WRITE` | send window has space |
-| `DSSH_POLL_SIGNAL` | signal ready — both streams drained to mark (session only) |
+| `DSSH_POLL_EVENT` | event ready (signal, window-change, etc.) |
 
-A read that returns 0 means EOF or closed.
+### Channel getters
+
+After open or accept, query channel properties:
+
+```c
+enum dssh_chan_type dssh_chan_get_type(ch);       /* shell/exec/subsystem */
+const char *dssh_chan_get_command(ch);            /* exec command (or NULL) */
+const char *dssh_chan_get_subsystem(ch);          /* subsystem name (or NULL) */
+bool dssh_chan_has_pty(ch);                       /* PTY enabled? */
+const struct dssh_chan_params *dssh_chan_get_pty(ch);  /* PTY params (or NULL) */
+```
+
+### Half-close and close
+
+```c
+/* Half-close: send EOF, keep reading */
+dssh_chan_shutwr(ch);
+
+/* Close with exit status (sends exit-status + EOF + CLOSE) */
+dssh_chan_close(ch, 0);
+
+/* Close without exit status (exit_code < 0: no exit-status sent) */
+dssh_chan_close(ch, -1);
+```
+
+`dssh_chan_close()` frees the channel handle — do not use it
+after close.
+
+### Control messages
+
+```c
+dssh_chan_send_signal(ch, "INT");
+dssh_chan_send_window_change(ch, cols, rows, wpx, hpx);
+dssh_chan_send_break(ch, 0);  /* RFC 4335 */
+```
 
 ### Windowing
 
-The library manages flow control automatically.  The application sets
-a max window size at channel creation (or uses the default 2 MiB).
-WINDOW_ADJUST messages are sent automatically when the application
-drains the read buffers.  The application never sees window messages.
-Window arithmetic is clamped at 2^32-1.
-
-### Channel close
-
-Channels are bidirectional — each direction closes independently.
-EOF indicates "I'm done sending"; CLOSE tears down the channel.
-
-When the peer sends CLOSE, the library sets `close_received` and
-wakes poll (reads return 0).  The library does NOT auto-send the
-reciprocal CLOSE — the application gets a chance to drain remaining
-data, send exit-status, and clean up before calling `session_close()`
-or `channel_close()` to send the reciprocal CLOSE.
-
-Data received after the peer's EOF or CLOSE is silently discarded.
-Writes are blocked after `close_received`.
+The library manages flow control automatically.  The max window size
+is set per-channel via `dssh_chan_params_set_max_window()` (default
+2 MiB).  WINDOW_ADJUST messages are sent automatically when the
+application drains read buffers.  Window arithmetic is clamped at
+2^32-1.
 
 ### Demux thread
 
@@ -1099,35 +1106,233 @@ Writes are blocked after `close_received`.
 all incoming packets and dispatches them to per-channel buffers.  The
 demux thread also handles:
 
-- Incoming CHANNEL_OPEN — queued for `session_accept()`
+- Incoming CHANNEL_OPEN — queued for `dssh_chan_accept()`
 - CHANNEL_EOF / CHANNEL_CLOSE — sets flags, wakes poll
-- CHANNEL_REQUEST "signal" — queued with stream position marks
-- CHANNEL_REQUEST "exit-status" — stored on channel
-- CHANNEL_REQUEST "window-change" — server callback
-- Forbidden channel types (x11, forwarded-tcpip, direct-tcpip,
-  session-from-server) — auto-rejected
+- CHANNEL_REQUEST "signal", "exit-status", "exit-signal", "window-change", "break" — queued as events
+- Forbidden channel types (x11, forwarded-tcpip, direct-tcpip, session-from-server) — auto-rejected
 - Data after peer EOF/CLOSE — discarded
 - Rekeying, global requests, IGNORE/DEBUG/UNIMPLEMENTED — transparent
 
 `dssh_session_stop()` terminates the demux thread and frees all
-channel resources.  Called automatically by `session_cleanup()`.
+channel resources.  Called automatically by `dssh_session_cleanup()`.
+
+## Event Model
+
+Events (signal, window-change, break, EOF, close, exit-status,
+exit-signal) are separate from data — the `signalfd()` model.
+Data always flows freely via `dssh_chan_read()`.  Events are
+queued and pulled independently.
+
+### Poll + read_event
+
+```c
+int ev = dssh_chan_poll(ch,
+    DSSH_POLL_READ | DSSH_POLL_READEXT | DSSH_POLL_EVENT, -1);
+
+if (ev & DSSH_POLL_EVENT) {
+    struct dssh_chan_event event;
+    dssh_chan_read_event(ch, &event);
+
+    /* Advisory stream positions: bytes of stdout/stderr
+     * received before this event */
+    drain_stdout(ch, event.stdout_pos);
+    drain_stderr(ch, event.stderr_pos);
+
+    switch (event.type) {
+    case DSSH_EVENT_SIGNAL:
+        printf("Signal: SIG%s\n", event.signal.name);
+        break;
+    case DSSH_EVENT_WINDOW_CHANGE:
+        resize(event.window_change.cols, event.window_change.rows);
+        break;
+    case DSSH_EVENT_EXIT_STATUS:
+        exit_code = event.exit_status.exit_code;
+        break;
+    /* ... */
+    }
+    continue;  /* poll again — might be more events */
+}
+```
+
+One event per poll/read_event cycle.  If multiple events are pending,
+the next poll returns `DSSH_POLL_EVENT` immediately.
+
+Stream positions are advisory — the app can drain to the position for
+correlation, or ignore positions entirely.
+
+String pointers in events (`signal.name`, `exit_signal.signal_name`,
+`exit_signal.error_message`) are valid until the next
+`dssh_chan_read_event()` or `dssh_chan_poll()` on the same channel.
+
+### Event callback (optional)
+
+As an alternative to poll + read_event, set a callback that fires
+from the demux thread when an event is queued:
+
+```c
+dssh_chan_set_event_cb(ch, my_event_cb, my_context);
+
+/* Or set a default for all channels on the session: */
+dssh_session_set_event_cb(sess, my_event_cb, my_context);
+```
+
+The callback receives the full event struct with positions computed
+at queue time.  Same restrictions as ZC callbacks: cannot call TX
+functions, must be fast.
+
+## Zero-Copy API
+
+For high-throughput protocols (e.g. SFTP), the zero-copy API
+eliminates all library-side copies.
+
+### Open
+
+```c
+dssh_channel ch = dssh_chan_zc_open(sess, &cp, my_zc_cb, my_ctx);
+```
+
+### Inbound: data callback
+
+The ZC callback fires on the demux thread with a pointer directly
+into the decrypted `rx_packet`:
+
+```c
+static uint32_t
+my_zc_cb(dssh_channel ch, int stream,
+    const uint8_t *data, size_t len, void *cbdata)
+{
+    /* data is valid only for the duration of this callback.
+     * Process or copy the data.
+     * Return bytes consumed for WINDOW_ADJUST (usually len). */
+    return len;
+}
+```
+
+**Restrictions:** The callback MUST NOT call any TX function
+(`dssh_chan_zc_getbuf`, `dssh_chan_write`, `dssh_chan_close`, etc.)
+— the demux thread would deadlock during rekey.  Queue work for a
+separate thread instead.
+
+### Outbound: direct buffer access
+
+```c
+uint8_t *buf;
+size_t max_len;
+
+/* Get pointer into tx_packet — acquires tx_mtx */
+dssh_chan_zc_getbuf(ch, 0, &buf, &max_len);
+
+/* Build data directly in the buffer */
+memcpy(buf, my_data, my_len);
+
+/* Send — fills headers, MAC, encrypt, releases tx_mtx */
+dssh_chan_zc_send(ch, my_len);
+
+/* Or cancel without sending */
+dssh_chan_zc_cancel(ch);
+```
+
+**Contract:** `zc_getbuf` holds `tx_mtx`.  Call `zc_send` or
+`zc_cancel` promptly — do not block between them.
+
+## Server-Side Channel Accept
+
+`dssh_chan_accept()` receives incoming channels via callback-driven
+setup.  The library drives the setup state machine and populates
+a `struct dssh_chan_params` as requests arrive.
+
+### Accept callbacks
+
+```c
+struct dssh_chan_accept_cbs cbs = {
+    .pty_req = my_pty_cb,       /* optional — auto-accepts if NULL */
+    .env = my_env_cb,           /* optional — auto-rejects if NULL */
+    .shell = my_shell_cb,       /* optional — auto-rejects if NULL */
+    .exec = my_exec_cb,         /* optional — auto-rejects if NULL */
+    .subsystem = my_sub_cb,     /* optional — auto-rejects if NULL */
+    .cbdata = my_context,
+};
+
+dssh_channel ch = dssh_chan_accept(sess, &cbs, -1);
+```
+
+Setup callbacks (`pty_req`, `env`) receive the accumulated params
+and return 0 to accept, negative to reject.  Terminal request
+callbacks (`shell`, `exec`, `subsystem`) additionally receive a
+`struct dssh_chan_accept_result` to set the I/O model:
+
+```c
+static int
+my_shell_cb(dssh_channel ch,
+    const struct dssh_chan_params *params,
+    struct dssh_chan_accept_result *result, void *cbdata)
+{
+    /* result is pre-filled with defaults:
+     *   max_window = 0 (2 MiB default)
+     *   zc_cb = NULL (stream mode)
+     * Set zc_cb for zero-copy mode. */
+    return 0;  /* accept */
+}
+```
+
+### NULL callback behavior
+
+| Callback | If NULL |
+|----------|---------|
+| `pty_req` | Auto-accept (benign) |
+| `env` | Auto-reject (security: uncontrolled env vars) |
+| `shell` | Auto-reject |
+| `exec` | Auto-reject |
+| `subsystem` | Auto-reject |
+
+The minimal useful server sets one terminal callback:
+
+```c
+struct dssh_chan_accept_cbs cbs = { .shell = my_shell_cb };
+dssh_channel ch = dssh_chan_accept(sess, &cbs, -1);
+```
+
+### Lifecycle enforcement
+
+The library enforces during setup:
+- Env requests only before the terminal request
+- Exactly one terminal request per channel
+- Second pty-req: reject and disconnect
+- Post-setup: only window-change, break, signal accepted
+
+### ZC mode on accept
+
+For zero-copy accept, set `zc_cb` in the result struct:
+
+```c
+static int
+my_subsystem_cb(dssh_channel ch,
+    const struct dssh_chan_params *params,
+    struct dssh_chan_accept_result *result, void *cbdata)
+{
+    result->zc_cb = my_zc_data_cb;
+    result->zc_cbdata = my_context;
+    return 0;
+}
+```
 
 ## Thread Safety
 
-The library uses two concurrency models:
-
-**Before `session_start()`**: single-threaded.  Handshake and auth
+**Before `dssh_session_start()`**: single-threaded.  Handshake and auth
 are sequential — no concurrent calls.
 
-**After `session_start()`**: the demux thread handles all receiving.
+**After `dssh_session_start()`**: the demux thread handles all receiving.
 The application calls `poll()` / `read()` / `write()` from any
 thread.  Per-channel `buf_mtx` protects buffer access; `poll_cnd`
-wakes waiters.  Transport-layer `tx_mtx` serializes sends.  The
-demux thread and application threads never contend on the data path
-beyond brief mutex acquisitions.
+wakes waiters.  Transport-layer `tx_mtx` serializes sends.
 
 During rekeying, application-layer sends (message type >= 50) are
-blocked until NEWKEYS completes.  Transport messages pass through.
+blocked until NEWKEYS completes.
+
+**ZC callback restrictions:** The data callback and event callback
+run on the demux thread.  They MUST NOT call any TX function
+(`dssh_chan_write`, `dssh_chan_zc_getbuf`, `dssh_chan_close`, etc.)
+— enforced at runtime via a thread-local guard.
 
 ## Rekeying
 
@@ -1149,7 +1354,7 @@ For send-only sessions without a receive thread, a hard packet limit
 
 ## Optional Callbacks
 
-Set these on the session after init, before handshake:
+Set these on the session after init, before start:
 
 ```c
 dssh_session_set_debug_cb(sess, my_debug_handler, my_context);
@@ -1187,6 +1392,22 @@ Received `SSH_MSG_DISCONNECT` from the peer returns
 initiated rekey (`KEXINIT`) are handled transparently by the library
 and never returned to the caller.
 
+| Error Code | Value | Meaning |
+|------------|-------|---------|
+| `DSSH_ERROR_PARSE` | -1 | Malformed packet or field |
+| `DSSH_ERROR_INVALID` | -2 | Valid parse but invalid value |
+| `DSSH_ERROR_ALLOC` | -3 | Memory allocation failure |
+| `DSSH_ERROR_INIT` | -4 | Initialization or crypto failure |
+| `DSSH_ERROR_TERMINATED` | -5 | Session terminated |
+| `DSSH_ERROR_TOOLATE` | -6 | Operation not allowed after session started |
+| `DSSH_ERROR_TOOMANY` | -7 | Too many registered algorithms |
+| `DSSH_ERROR_TOOLONG` | -8 | Data exceeds buffer or protocol limit |
+| `DSSH_ERROR_NOMORE` | -10 | No more items in name-list |
+| `DSSH_ERROR_REKEY_NEEDED` | -11 | Must rekey before sending more packets |
+| `DSSH_ERROR_AUTH_REJECTED` | -12 | Authentication rejected by peer |
+| `DSSH_ERROR_REJECTED` | -13 | Channel open or request rejected |
+| `DSSH_ERROR_TIMEOUT` | -14 | Operation timed out |
+
 ## Packet Buffer Size
 
 `dssh_session_init()` takes a `max_packet_size` parameter that
@@ -1197,15 +1418,12 @@ Pass a larger value to support bigger payloads.
 
 ## Limits
 
-The library enforces several size limits, some from the RFCs and some
-practical choices:
-
 | Constant | Value | Source | Description |
 |----------|-------|--------|-------------|
-| `DSSH_VERSION_STRING_MAX` | 255 | RFC 4253 s4.2 | Maximum SSH identification string length (including `SSH-2.0-` prefix and CR LF). |
-| `DSSH_ALGO_NAME_MAX` | 64 | RFC 4251 s6 | Maximum length of a single algorithm name. Names exceeding this are rejected during KEXINIT parsing. |
-| `DSSH_NAMELIST_BUF_SIZE` | 1024 | Practical | Maximum total length of a comma-separated algorithm name-list. With 64-char names this fits ~15 algorithms per category. Algorithms that would cause the list to exceed this size are silently omitted from negotiation. |
-| `DSSH_DISCONNECT_DESC_MAX` | 230 | Practical | Maximum disconnect description length. Longer descriptions are silently clamped (not rejected). |
+| `DSSH_VERSION_STRING_MAX` | 255 | RFC 4253 s4.2 | Maximum SSH identification string length. |
+| `DSSH_ALGO_NAME_MAX` | 64 | RFC 4251 s6 | Maximum algorithm name length. |
+| `DSSH_NAMELIST_BUF_SIZE` | 1024 | Practical | Maximum total algorithm name-list length. |
+| `DSSH_DISCONNECT_DESC_MAX` | 230 | Practical | Maximum disconnect description (clamped, not rejected). |
 
 ## Testing
 
@@ -1213,7 +1431,7 @@ practical choices:
 cmake -S . -B build -DDEUCESSH_BUILD_TESTS=ON
 cmake --build build -j8
 cd build
-ctest -j8                    # run all
+ctest -j16                   # run all in parallel
 ctest -R dssh_unit           # unit tests only
 ctest -R dssh_transport      # transport layer tests
 ctest -R dssh_self           # integration selftests
@@ -1225,7 +1443,7 @@ Public headers (consumers include these):
 ```
 deucessh.h               Core: errors, session lifecycle, transport queries
 deucessh-auth.h          Authentication (client + server)
-deucessh-conn.h          Connection: channels, poll/read/write
+deucessh-conn.h          Connection: channels, params, poll/read/write, accept
 deucessh-algorithms.h    Algorithm registration + key management
 deucessh-portable.h      Visibility macros (included automatically)
 ```
@@ -1244,7 +1462,7 @@ Internal headers + sources:
 ssh-internal.h      Session + channel struct definitions
 ssh-trans.h/.c      RFC 4253 transport (packets, KEX, keys)
 ssh-auth.c          RFC 4252 authentication
-ssh-conn.c          RFC 4254 connection + buffer primitives
+ssh-conn.c          RFC 4254 connection + channel I/O
 ssh.c               Session lifecycle + wire format
 
 kex/                Key exchange modules
@@ -1258,7 +1476,6 @@ server.c            Example server
 
 test/               Test suite (built with -DDEUCESSH_BUILD_TESTS=ON)
   dssh_test.h       Test framework (assert macros, runner)
-  dssh_test_internal.h  Declarations for exposed static functions
   mock_io.h/.c      Bidirectional mock I/O layer
   test_*.c          Test source files
 ```
