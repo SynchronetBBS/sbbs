@@ -1989,13 +1989,14 @@ send_channel_request_wait(struct dssh_session_s *sess,
 		}
 	}
 
+	bool responded = ch->request_responded;
 	bool success = ch->request_success;
 
 	ch->request_pending = false;
 	ch->request_responded = false;
 	dssh_thrd_check(sess, mtx_unlock(&ch->buf_mtx));
 
-	if (sess->terminate || ch->close_received)
+	if (!responded)
 		return DSSH_ERROR_TERMINATED;
 	return success ? 0 : DSSH_ERROR_REJECTED;
 }

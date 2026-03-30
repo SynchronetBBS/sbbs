@@ -29,38 +29,50 @@
 
 ### Malformed message reply audit (items 102, 102a-c)
 
-### Selftest failures under parallel load (items 104-105)
+### Selftest failures under parallel load (item 104)
 
-104. **`test_self_shell_echo` fails under `-j16`: zero bytes received.**
-    `dssh_self_rsa` and `dssh_self_mlkem_rsa` variants observed failing.
-    `ASSERT_EQ_U failed: recvd == 0, expected sizeof(data) - 1 == 10`
-    at `test/test_selftest.c:887`.  The test writes `"shell-test"`
-    (10 bytes) to a shell channel, then polls in a loop (up to 50
-    iterations, 1000ms timeout each) for the server echo.  Under heavy
-    parallel load the poll loop receives zero bytes total — either the
-    server echo thread never echoed the data, the echo arrived but was
-    lost, or all 50 poll attempts timed out without data becoming
-    readable.  The server echo thread (`server_echo_thread`) reads via
-    `dssh_chan_read` and writes back via `dssh_chan_write` in a loop.
-    Possible causes: demux thread starvation preventing delivery,
-    window adjust not sent or not processed in time, or the server
-    thread's `dssh_chan_accept` or `dssh_chan_poll` timing out before
-    the client's data arrives.
-
-105. **`test_self_exec_exit_code` fails under `-j16`: channel open returns NULL.**
-    `dssh_self_rsa` variant observed failing.
-    `ASSERT_NOT_NULL failed: ch is NULL`
-    at `test/test_selftest.c:830`.  The test calls `open_exec(ctx.client,
-    "exit42")` which returns NULL, meaning the channel open was rejected
-    or timed out.  The server side runs `server_exit_thread` which calls
-    `dssh_chan_accept` then immediately `dssh_chan_close`.  Under heavy
-    parallel load the server's accept or the client's open may time out
-    (default 30s, but CPU starvation under `-j16` can cause effective
-    stalls), or the server thread may not have started accepting before
-    the client sends CHANNEL_OPEN, causing a race where the open request
-    hits the server before its accept callback is registered.
+104. **Selftest echo tests fail under `-j16`.**
+    `dssh_self_rsa` and `dssh_self_mlkem_rsa` variants; ~40% failure
+    rate across 10 consecutive `-j16` runs.  Two distinct symptoms:
+    - `test_self_shell_echo`: `recvd == 0, expected 10` at
+      `test/test_selftest.c:887`.  The poll loop receives zero bytes.
+    - `test_self_exec_echo`: `ASSERT_TRUE failed: w > 0` at
+      `test/test_selftest.c:782`.  `dssh_chan_write` returns ≤ 0
+      immediately after `dssh_chan_open` succeeds.
+    The write failure is the stronger clue.  Both sides use
+    `initial_window=0` in CHANNEL_OPEN / CHANNEL_OPEN_CONFIRMATION,
+    then send WINDOW_ADJUST after setup completes.  The client's
+    `dssh_chan_open` sends WINDOW_ADJUST and returns; the server's
+    `dssh_chan_accept` independently sends its own WINDOW_ADJUST.
+    If the client calls `dssh_chan_write` before the server's
+    WINDOW_ADJUST arrives, `remote_window` is still 0 — there is no
+    room to send.  Under `-j16` contention the server's WINDOW_ADJUST
+    can be delayed enough for the client to attempt a write into a
+    zero-sized window.  This would also explain the shell_echo read
+    failure: the client's write succeeds (shell has pty setup overhead
+    giving the WINDOW_ADJUST time to arrive), but the server's echo
+    write back fails for the same reason in reverse.
+    Not yet confirmed — needs investigation of `dssh_chan_write`
+    behavior when `remote_window == 0` (does it block/poll or return
+    an error immediately?).
 
 ## Closed
+
+- `send_channel_request_wait` race: CHANNEL_CLOSE clobbers successful
+  response (was item 105).  `test_self_exec_exit_code` failed under
+  `-j16` because `dssh_chan_open()` returned NULL.  Root cause: in
+  `send_channel_request_wait()` (ssh-conn.c), after the wait loop exits,
+  the code checked `ch->close_received` unconditionally and returned
+  `DSSH_ERROR_TERMINATED` even when `request_responded` was true.  When
+  the server accepted a channel request (CHANNEL_SUCCESS) and then
+  immediately closed the channel (CHANNEL_CLOSE), the client's demux
+  thread could process both messages before the client thread woke up.
+  The client saw `request_responded=true` (exited the loop correctly)
+  but then the post-loop `close_received` check discarded the successful
+  response.  Fix: capture `responded` under `buf_mtx`, check it first;
+  only return `DSSH_ERROR_TERMINATED` when the loop exited without a
+  response.  RSA variants were disproportionately affected because RSA
+  keygen creates CPU contention that widens the scheduling window.
 
 - Selftest race: cleanup while server echo thread still sending (was
   item 103).  Two bugs: (1) the server thread handle (`thrd_t st`) was
