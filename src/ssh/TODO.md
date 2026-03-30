@@ -76,6 +76,17 @@
     allow changing them after session start. As part of the same effort, evaluate
     if there's a need to prevent NULL for the parameters.
 
+102. **Malformed GLOBAL_REQUEST with want_reply silently dropped.**
+    `recv_packet` (ssh-trans.c:1061-1066) breaks out of the switch on
+    truncated name-length or name, falling through to the `default:`
+    case which returns the raw packet to the caller.  A malformed
+    GLOBAL_REQUEST with `want_reply=true` gets no response, violating
+    RFC 4254 s4: "the recipient MUST respond with either
+    SSH_MSG_REQUEST_SUCCESS, SSH_MSG_REQUEST_FAILURE, or some
+    request-specific continuation message."  Fix: send REQUEST_FAILURE
+    on parse failure when the packet is identifiably a GLOBAL_REQUEST
+    (msg_type byte is already known at that point).
+
 ## Closed
 
 - `dssh_transport_register_lang()` moved to public header (was item 93).

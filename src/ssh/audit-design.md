@@ -1,83 +1,141 @@
 # Design Conformance Audit: design-channel-io-api.md
 
-Audited implementation against every item in the design document.
-Updated after fix pass (items 1-5, 7-10 fixed; 12 noted; 6, 11 resolved).
+Fresh re-audit of implementation against every design claim.
+Previous items 1-5, 7-10 fixed; 6, 11 resolved; 12 noted.
 
 ## PASS
 
-- `dssh_chan_` prefix on all channel functions (line 132)
-- `dssh_chan_zc_` prefix on ZC functions (line 137)
-- Two separate open functions: stream + ZC (lines 139-155)
-- `enum dssh_chan_type` with SHELL/EXEC/SUBSYSTEM (lines 157-168)
-- All 10 params builder functions (lines 191-213)
-- Init defaults: term="dumb", dims 0x0, pty on for shell only, zero modes (lines 215-222)
-- Mode dedup last-wins (line 224)
-- Mode encoding: 1-159 before 160+, then TTY_OP_END (lines 225-226)
-- Open sequence order: env, pty-req, terminal request (lines 253-255)
-- initial_window=0 in CHANNEL_OPEN and CHANNEL_OPEN_CONFIRMATION (lines 118, 251, 928)
-- WINDOW_ADJUST sent after terminal request succeeds (lines 257, 943)
-- Buffer allocation deferred until after terminal request (line 256)
-- `term` field: `char *` with strdup, no truncation (line 183)
-- `dssh_chan_get_pty` getter: returns `const struct dssh_chan_params *` (lines 1009, 1071)
-- Stream API signatures: read/write return int64_t, stream param, ch-only (lines 296-309)
-- ZC API signatures: getbuf/send/cancel (lines 311-324)
-- zc_getbuf stashes stream, zc_send uses it (lines 326-328)
-- All 7 shared control functions present (lines 330-357)
-- All 7 event types defined (lines 360-387)
-- Event struct union members match design (lines 372-387)
-- Event discard on re-poll (lines 413-415)
-- Both callback typedefs match design signatures (lines 429-461)
-- Peek via `dssh_chan_read(ch, stream, NULL, 0)` (lines 479-482)
-- Data and events separate, signalfd model (lines 484-495)
-- ZC getbuf: acquires tx_mtx, rekey wait, min(window,max_pkt), correct offset (lines 584-591)
-- ZC send: fills header at tx_packet[9], calls tx_finalize (lines 598-608)
-- buf_mtx released before ZC/event callbacks (lines 658-662)
-- `_Thread_local in_zc_rx` exists and guards ZC RX callback (lines 682-688)
-- `in_zc_rx` guard on all TX functions (lines 672-688)
-- WINDOW_ADJUST sent for ZC callback consumed bytes (lines 710-720)
-- `dssh_session_set_event_cb` stores in session, propagates to new channels (lines 746-757)
-- `cb_mtx` per-channel mutex protecting callback pointers (lines 639, 704-708)
-- Half-close: dssh_chan_shutwr sends EOF (lines 722-728)
-- Close: int64_t exit_code, negative = no exit-status (lines 730-744)
-- Accept callback struct matches design exactly (lines 867-893)
-- NULL pty_req = auto-accept (line 957)
-- NULL env/shell/exec/subsystem = auto-reject (lines 959-964)
-- Second pty-req = disconnect (line 996)
-- Post-terminal env = CHANNEL_FAILURE (lines 992-993)
-- One terminal request per channel (lines 994-995)
-- All "functions deleted" items gone from public header (lines 1037-1063)
-- All "new functions" items present (lines 1065-1079)
-- Stream write uses ZC internals: zc_getbuf_inner + memcpy + zc_send_inner (lines 798-802)
-- Stream RX uses internal stream_zc_cb copying to ring buffer (lines 786-791)
-- tx_mac_scratch and rx_mac_scratch eliminated (lines 620-635)
-- tx_packet/rx_packet 4-byte seq prefix for contiguous MAC input (lines 626-632)
-- Event queue initialized before channel registration (immune to early demux dispatch)
+### Naming (design lines 130-137)
+- `dssh_chan_` prefix on all channel functions
+- `dssh_chan_zc_` prefix on ZC functions
 
-## DELIBERATE DEVIATIONS
+### Two I/O models (design lines 139-155)
+- Separate open functions: `dssh_chan_open` (stream) and `dssh_chan_zc_open` (ZC)
+- Stream mode registers internal `stream_zc_cb` (ssh-conn.c:2518)
+- ZC mode uses app-supplied callback (ssh-conn.c:2883)
 
-6. ~~**`remote_window` not atomic (lines 607, 666-667)**~~
-   RESOLVED — `remote_window` converted to `atomic_uint_least32_t`.
-   All access sites updated: `window_atomic_add` (CAS saturating add)
-   for demux WINDOW_ADJUST, `window_atomic_sub` (CAS saturating sub)
-   for ZC send deduction, `atomic_load`/`atomic_store` for reads/init.
-   `zc_send_inner` no longer acquires `buf_mtx` for the deduction.
-   Also fixed 20 `test_server_send_fail_*` tests in test_auth.c that
-   had a race: only s2c was closed before `thrd_join`, so if the
-   server's send won the race the server looped to `recv_packet` on
-   the still-open c2s pipe and hung.  Fix: close both pipes before join.
+### Channel type (design lines 157-168)
+- `enum dssh_chan_type` with SHELL/EXEC/SUBSYSTEM (deucessh-conn.h:44-48)
 
-11. ~~**Event positions: design inconsistency (lines 347 vs 392)**~~
-    RESOLVED — line 392 ("bytes of unread stdout/stderr at poll time")
-    is the correct interpretation.  Design doc lines 345-346, 374-375,
-    and 1112 updated to match.  Implementation fixed in
-    `dssh_chan_poll()`: `event_queue_freeze` still copies the entry,
-    then poll overwrites `stdout_pos`/`stderr_pos` with current
-    `.used` (unread bytes) instead of the queue-time `.total`.
+### Params builder (design lines 170-235)
+- `dssh_chan_params_init` sets type and defaults: term="dumb", dims 0x0,
+  pty on for shell only, zero modes (ssh-conn.c:367-379)
+- `dssh_chan_params_free` releases all heap storage (ssh-conn.c:381-404)
+- All 10 setter functions present (ssh-conn.c:406-532)
+- Mode dedup last-wins (ssh-conn.c:481-496)
+- Mode encoding: opcodes 1-159 before 160+, then TTY_OP_END (ssh-conn.c:2348-2360)
 
-12. **Accept loops on terminal reject (line 945-946)**
+### Open functions (design lines 237-268)
+- Both open functions perform full setup sequence:
+  CHANNEL_OPEN(initial_window=0) → env → pty-req → terminal request →
+  allocate buffers → WINDOW_ADJUST (ssh-conn.c:2528-2558, 2895-2918)
+- initial_window=0 in both CHANNEL_OPEN and CHANNEL_OPEN_CONFIRMATION
+
+### Max packet/window (design lines 264-276)
+- Max packet stays in `dssh_session_init` (transport concern)
+- Max window per-channel in params; default INITIAL_WINDOW_SIZE = 2 MiB (ssh-conn.c:536)
+
+### Stream select (design lines 278-284)
+- `stream` parameter (0=stdout, 1=stderr) instead of `_ext` variants
+
+### API summary — stream (design lines 296-309)
+- `dssh_chan_open`, `dssh_chan_read`, `dssh_chan_write`, `dssh_chan_poll`
+- All return types match design (int64_t for read/write, int for poll)
+- All take `dssh_channel` only (no session handle)
+
+### API summary — ZC (design lines 311-328)
+- `dssh_chan_zc_open`, `dssh_chan_zc_getbuf`, `dssh_chan_zc_send`, `dssh_chan_zc_cancel`
+- `zc_getbuf` stashes stream, `zc_send` uses it (ssh-conn.c:2250, 2263)
+
+### Shared functions (design lines 330-358)
+- All 7 present: shutwr, close, send_signal, send_window_change,
+  send_break, read_event, set_event_cb
+- `dssh_chan_read_event` returns frozen event (ssh-conn.c:2682)
+- `dssh_chan_set_event_cb` protected by cb_mtx (ssh-conn.c:2956)
+
+### Event struct (design lines 360-388)
+- All 7 event types defined (deucessh-conn.h:120-128)
+- Union members match design: signal, window_change, brk, exit_status, exit_signal
+- stdout_pos/stderr_pos fields present
+
+### Event lifecycle (design lines 390-428)
+- Poll-freezes model: `event_queue_freeze` copies entry (ssh-conn.c:352)
+- Poll overwrites frozen positions with current `.used` (unread bytes at poll time)
+- One event per poll/read_event cycle
+- Event discard on re-poll (stale frozen event replaced)
+- String pointers valid until next read_event or poll
+
+### Callback types (design lines 429-461)
+- `dssh_chan_zc_cb` typedef matches design (deucessh-conn.h:161)
+- `dssh_chan_event_cb` typedef matches design (deucessh-conn.h:167)
+
+### Stream API details (design lines 463-553)
+- Read/write return int64_t: >0 bytes, 0 EOF, <0 error
+- Peek: `dssh_chan_read(ch, stream, NULL, 0)` returns available (ssh-conn.c:2601)
+- Data and events separate (signalfd model)
+- Position-aware and position-unaware usage patterns both supported
+
+### ZC API details (design lines 555-720)
+- Inbound: callback receives pointer into rx_packet, valid only during callback
+- Outbound: `zc_getbuf` acquires tx_mtx, computes max_len from
+  min(remote_window, remote_max_packet, transport buffer) (ssh-conn.c:2212-2204)
+- tx_packet layout: [seq(4)][pkt_len(4)][pad_len(1)][chan_hdr][data][pad][mac]
+- tx_mac_scratch and rx_mac_scratch eliminated; contiguous MAC input via seq prefix
+- Lock order: channel_mtx → buf_mtx → cb_mtx → tx_mtx (ssh-internal.h:262)
+- `_Thread_local in_zc_rx` guards all TX functions from RX callback context
+- WINDOW_ADJUST sent for ZC callback consumed bytes
+- `remote_window` is `atomic_uint_least32_t` with CAS saturating helpers;
+  `zc_send_inner` deducts atomically without buf_mtx
+
+### Shared function details (design lines 722-757)
+- `dssh_chan_shutwr` sends EOF (ssh-conn.c:2707)
+- `dssh_chan_close(ch, exit_code)`: exit_code ≥ 0 sends exit-status + EOF + CLOSE;
+  exit_code < 0 sends EOF + CLOSE only (ssh-conn.c:2711-2718)
+- `dssh_session_set_event_cb` stores default; propagated to new channels at
+  open/accept time (ssh-conn.c:2519, 2971, 3152)
+- Per-channel override via `dssh_chan_set_event_cb` protected by cb_mtx
+
+### Implementation architecture (design lines 759-855)
+- Public ZC functions validate + call inner; stream layer calls inner directly
+- Stream RX: internal `stream_zc_cb` copies into ring buffer, broadcasts poll_cnd
+- Stream TX: `dssh_chan_write` → `zc_getbuf_inner` + memcpy + `zc_send_inner`
+- Stream poll: waits on poll_cnd for ring buffer state changes
+- buf_mtx released before ZC and event callbacks (demux thread)
+
+### Server accept — structure (design lines 857-999)
+- `dssh_chan_accept_cbs` struct matches design (deucessh-conn.h:256-271)
+- `dssh_chan_accept_result` struct present (deucessh-conn.h:171-177)
+- NULL pty_req = auto-accept; NULL env/shell/exec/subsystem = auto-reject
+- Second pty-req = protocol disconnect (ssh-conn.c:3070)
+- Post-terminal env = CHANNEL_FAILURE (ssh-conn.c:3082)
+- One terminal request per channel (ssh-conn.c:3089, 3099, 3110)
+- Library populates dssh_chan_params during accept using builder functions
+- Callbacks run on app thread (inside dssh_chan_accept), not demux thread
+- Session event callback default inherited by accepted channels (ssh-conn.c:3152)
+
+### Getters (design lines 1000-1016)
+- `dssh_chan_get_type`, `dssh_chan_get_command`, `dssh_chan_get_subsystem`,
+  `dssh_chan_has_pty`, `dssh_chan_get_pty` all implemented (ssh-conn.c:2810-2815)
+- Work for both client-opened and server-accepted channels (params stored on channel)
+
+### Functions deleted (design lines 1035-1080)
+- All old API functions removed from public headers
+- All new API functions present
+
+## DEVIATIONS
+
+13. **Server accept ignores ZC mode (design lines 949-951, 979-982)**
+    Design: terminal request callbacks receive `dssh_chan_accept_result`
+    with `zc_cb` field; non-NULL selects ZC mode for the accepted channel.
+    Implementation: `dssh_chan_accept` hardcodes `DSSH_IO_STREAM` at
+    ssh-conn.c:3150 and ignores `result.zc_cb` after the setup loop
+    returns (ssh-conn.c:3184 only reads `result.max_window`).  Server
+    cannot accept ZC channels.
+
+14. **Accept returns NULL on terminal reject (design lines 945-946)**
     Design: "On terminal request reject: channel closed, accept keeps
     waiting for the next CHANNEL_OPEN."
-    Implementation: `dssh_chan_accept` returns NULL on reject.  The
-    looping version requires waiting for the peer's reciprocal CLOSE
+    Implementation: returns NULL on reject (ssh-conn.c:3180-3182).
+    The looping version requires waiting for the peer's reciprocal CLOSE
     before freeing the channel, which needs careful demux synchronization
-    to avoid use-after-free.  Noted with TODO in code.
+    to avoid use-after-free.  Noted with TODO in code (ssh-conn.c:3131-3136).
