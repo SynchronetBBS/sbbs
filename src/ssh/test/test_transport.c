@@ -3274,21 +3274,16 @@ test_global_request_truncated(void)
 	ASSERT_NOT_NULL(server);
 	dssh_session_set_cbdata(server, &io, &io, &io, &io);
 
-	/* Just the msg_type byte -- not enough for name length */
+	/* Just the msg_type byte -- not enough for name length.
+	 * Malformed GLOBAL_REQUEST sends REQUEST_FAILURE then
+	 * disconnects, so recv_packet returns an error. */
 	uint8_t gr[] = { 80 };
 	ASSERT_OK(send_packet(client, gr, sizeof(gr), NULL));
-
-	/* Follow-up so recv_packet returns */
-	uint8_t follow[] = { SSH_MSG_SERVICE_REQUEST, 0x46 };
-	ASSERT_OK(send_packet(client, follow, sizeof(follow), NULL));
 
 	uint8_t msg_type;
 	uint8_t *payload;
 	size_t payload_len;
-	ASSERT_OK(recv_packet(server, &msg_type, &payload, &payload_len));
-	/* Truncated GLOBAL_REQUEST is silently dropped (break from switch
-	 * falls through to loop top), so we get the follow-up packet */
-	ASSERT_EQ(msg_type, SSH_MSG_SERVICE_REQUEST);
+	ASSERT_TRUE(recv_packet(server, &msg_type, &payload, &payload_len) < 0);
 
 	dssh_session_cleanup(client);
 	dssh_session_cleanup(server);
@@ -5237,7 +5232,8 @@ test_global_request_name_exceeds_payload(void)
 	ASSERT_NOT_NULL(server);
 	dssh_session_set_cbdata(server, &io, &io, &io, &io);
 
-	/* GLOBAL_REQUEST: name_len=100 but only 2 bytes of name + no want_reply */
+	/* GLOBAL_REQUEST: name_len=100 but only 2 bytes of name + no want_reply.
+	 * Malformed GLOBAL_REQUEST sends REQUEST_FAILURE then disconnects. */
 	uint8_t gr[16];
 	size_t gp = 0;
 	gr[gp++] = 80; /* SSH_MSG_GLOBAL_REQUEST */
@@ -5247,14 +5243,10 @@ test_global_request_name_exceeds_payload(void)
 	/* Missing: rest of name + want_reply byte */
 	ASSERT_OK(send_packet(client, gr, gp, NULL));
 
-	/* Follow-up packet to flush */
-	uint8_t follow[] = { SSH_MSG_SERVICE_REQUEST, 0x47 };
-	ASSERT_OK(send_packet(client, follow, sizeof(follow), NULL));
-
 	uint8_t msg_type;
 	uint8_t *payload;
 	size_t payload_len;
-	recv_packet(server, &msg_type, &payload, &payload_len);
+	ASSERT_TRUE(recv_packet(server, &msg_type, &payload, &payload_len) < 0);
 
 	dssh_session_cleanup(server);
 	dssh_session_cleanup(client);

@@ -31,7 +31,11 @@ parses the request name and `want_reply` flag, and for `want_reply=true`
 sends SSH_MSG_REQUEST_FAILURE (or SUCCESS if the optional
 `global_request_cb` callback returns >= 0).  Requests are consumed
 transparently — the application never sees them unless it sets a
-callback.
+callback.  Malformed GLOBAL_REQUEST (truncated name-length or name)
+sends REQUEST_FAILURE then disconnects with PROTOCOL_ERROR — a
+truncated message means the peer is broken, and sending a speculative
+reply without disconnecting would risk corrupting the reply ordering
+if `want_reply` was actually false.
 
 ### 4-2
 > Replies to SSH_MSG_GLOBAL_REQUESTS **MUST** be sent in the same order
@@ -71,7 +75,10 @@ setting `close_received` and waking the poll condition, causing
 CHANNEL_OPEN (queued by the demux thread).
 `dssh_channel_accept_raw()` sends CHANNEL_OPEN_CONFIRMATION.
 `dssh_session_reject()` sends CHANNEL_OPEN_FAILURE.  The demux
-thread auto-rejects forbidden channel types.
+thread auto-rejects forbidden channel types.  Malformed CHANNEL_OPEN
+sends OPEN_FAILURE (when the peer's sender-channel is extractable)
+then disconnects with PROTOCOL_ERROR.  When the packet is too short
+to extract the sender-channel, only disconnect is possible.
 
 ---
 
@@ -208,8 +215,12 @@ the response arrives.
 **CONFORMS** — The demux thread handles incoming CHANNEL_REQUEST:
 signals are queued with stream marks, exit-status is stored,
 window-change is consumed.  Unrecognized requests with `want_reply`
-get CHANNEL_FAILURE.  Low-level `conn_send_success()` and
-`conn_send_failure()` are available for server-side use.
+get CHANNEL_FAILURE.  Malformed CHANNEL_REQUEST (truncated type-length,
+type, or want_reply) sends CHANNEL_FAILURE then disconnects with
+PROTOCOL_ERROR — same rationale as GLOBAL_REQUEST (4-1).  The accept
+setup loop (`chan_accept_setup_loop`) applies the same treatment.
+Low-level `conn_send_success()` and `conn_send_failure()` are
+available for server-side use.
 
 ---
 
@@ -413,6 +424,12 @@ application's responsibility.
 
 - **Global request handling** (4-1, 4-2) — handled transparently in
   `recv_packet()`, auto-replies REQUEST_FAILURE, optional callback.
+  Malformed GLOBAL_REQUEST sends FAILURE then disconnects.
+- **Malformed request/open reply + disconnect** (4-1, 5.1-4, 5.4-3) —
+  parse failures in GLOBAL_REQUEST, CHANNEL_REQUEST, and CHANNEL_OPEN
+  now send the required reply (when constructible) then disconnect with
+  PROTOCOL_ERROR.  Prevents reply-ordering corruption from speculative
+  replies when `want_reply` is unknowable.
 - **CHANNEL_CLOSE reciprocal** (5.3-2) — `close_sent`/`close_received`
   tracking, idempotent `conn_close()` (internal); application calls
   `session_close()` / `channel_close()`.

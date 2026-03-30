@@ -1058,12 +1058,24 @@ recv_packet(struct dssh_session_s *sess,
 				size_t   gpos = 1;
 				uint32_t gname_len;
 
-				if (gpos + 4 > *payload_len)
-					break; /* malformed, return to caller */
+				if (gpos + 4 > *payload_len) {
+					uint8_t fail = SSH_MSG_REQUEST_FAILURE;
+					send_or_queue(sess, &fail, 1);
+					dssh_transport_disconnect(sess,
+					    SSH_DISCONNECT_PROTOCOL_ERROR,
+					    "malformed GLOBAL_REQUEST");
+					return DSSH_ERROR_PARSE;
+				}
 				gname_len = DSSH_GET_U32(&(*payload)[gpos]);
 				gpos += 4;
-				if (gpos + gname_len + 1 > *payload_len)
-					break;
+				if (gpos + gname_len + 1 > *payload_len) {
+					uint8_t fail = SSH_MSG_REQUEST_FAILURE;
+					send_or_queue(sess, &fail, 1);
+					dssh_transport_disconnect(sess,
+					    SSH_DISCONNECT_PROTOCOL_ERROR,
+					    "malformed GLOBAL_REQUEST");
+					return DSSH_ERROR_PARSE;
+				}
 
 				const uint8_t *gname = &(*payload)[gpos];
 

@@ -27,19 +27,7 @@
 
 ### API definition gaps (items 92-100)
 
-102. **Malformed GLOBAL_REQUEST with want_reply silently dropped.**
-    `recv_packet` (ssh-trans.c:1061-1066) breaks out of the switch on
-    truncated name-length or name, falling through to the `default:`
-    case which returns the raw packet to the caller.  A malformed
-    GLOBAL_REQUEST with `want_reply=true` gets no response, violating
-    RFC 4254 s4: "the recipient MUST respond with either
-    SSH_MSG_REQUEST_SUCCESS, SSH_MSG_REQUEST_FAILURE, or some
-    request-specific continuation message."  The `want_reply` byte is
-    only extracted after all truncation checks (line 1072), so on parse
-    failure the code doesn't know if a reply is needed.  Fix: send
-    REQUEST_FAILURE on parse failure when the packet is identifiably a
-    GLOBAL_REQUEST (msg_type byte is already known at that point).
-    Update audit-4254.md section 4-1 which incorrectly claims CONFORMS.
+### Malformed message reply audit (items 102, 102a-c)
 
 103. **Selftest race: cleanup while server echo thread still sending.**
     `dssh_self_rsa` (and occasionally `dssh_self_dhgex_rsa`) segfaults
@@ -55,6 +43,23 @@
     library should block cleanup until in-flight sends complete.
 
 ## Closed
+
+- Malformed message parse failures now send required replies (was items
+  102, 102a-c).  Audited all SSH message types that require a response:
+  GLOBAL_REQUEST (want_reply), CHANNEL_REQUEST (want_reply), and
+  CHANNEL_OPEN (always requires CONFIRMATION or FAILURE).  Four parse-
+  failure paths silently dropped the required reply because `want_reply`
+  was never extracted from the truncated payload.  Fix: each path now
+  sends the appropriate failure reply (REQUEST_FAILURE, CHANNEL_FAILURE,
+  or CHANNEL_OPEN_FAILURE) then disconnects with PROTOCOL_ERROR.  The
+  disconnect is necessary because a speculative reply when `want_reply`
+  was actually false would corrupt the reply ordering (RFC 4254 s4, s5.4
+  match replies by order, not content).  CHANNEL_OPEN is different —
+  OPEN_FAILURE carries the peer's channel ID, so it's matched by ID,
+  but the session is still terminated since truncated messages indicate
+  a broken peer.  For CHANNEL_OPEN truncations where the sender-channel
+  cannot be extracted (too short), only disconnect is sent.  Updated
+  audit-4254.md sections 4-1, 5.1-4, and 5.4-3.
 
 - Callback setters after `dssh_session_start()` now rejected (was item 99).
   All 8 session-level setters return `int` and check `sess->demux_running`;

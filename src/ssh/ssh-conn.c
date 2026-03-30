@@ -1076,8 +1076,19 @@ handle_channel_request(struct dssh_session_s *sess, struct dssh_channel_s *ch,
 	size_t rdata_len;
 
 	if (parse_channel_request(payload, payload_len,
-	    &rtype, &rtype_len, &want_reply, &rdata, &rdata_len) < 0)
-		return 0;
+	    &rtype, &rtype_len, &want_reply, &rdata, &rdata_len) < 0) {
+		uint8_t fail[8];
+		size_t  fp = 0;
+
+		fail[fp++] = SSH_MSG_CHANNEL_FAILURE;
+		DSSH_PUT_U32(ch->remote_id, fail, &fp);
+		dssh_thrd_check(sess, mtx_unlock(&ch->buf_mtx));
+		send_or_queue(sess, fail, fp);
+		dssh_transport_disconnect(sess,
+		    SSH_DISCONNECT_PROTOCOL_ERROR,
+		    "malformed CHANNEL_REQUEST");
+		return 1;
+	}
 
 	if (ch->chan_type == DSSH_CHAN_SESSION) {
 		bool new_api = (ch->io_model != DSSH_IO_OLD);
@@ -1533,19 +1544,43 @@ demux_channel_open(struct dssh_session_s *sess, uint8_t *payload, size_t payload
 	size_t   rpos = 1;
 	uint32_t type_len;
 
-	if (rpos + 4 > payload_len)
-		return DSSH_ERROR_PARSE;
+	if (rpos + 4 > payload_len) {
+		dssh_transport_disconnect(sess,
+		    SSH_DISCONNECT_PROTOCOL_ERROR,
+		    "malformed CHANNEL_OPEN");
+		return DSSH_ERROR_TERMINATED;
+	}
 	type_len = DSSH_GET_U32(&payload[rpos]);
 	rpos += 4;
-	if (rpos + type_len > payload_len)
-		return DSSH_ERROR_PARSE;
+	if (rpos + type_len > payload_len) {
+		dssh_transport_disconnect(sess,
+		    SSH_DISCONNECT_PROTOCOL_ERROR,
+		    "malformed CHANNEL_OPEN");
+		return DSSH_ERROR_TERMINATED;
+	}
 
 	const uint8_t *ctype = &payload[rpos];
 
 	rpos += type_len;
 
-	if (rpos + 12 > payload_len)
-		return DSSH_ERROR_PARSE;
+	if (rpos + 12 > payload_len) {
+		if (rpos + 4 <= payload_len) {
+			uint32_t pc = DSSH_GET_U32(&payload[rpos]);
+			uint8_t fail[64];
+			size_t  fp = 0;
+
+			fail[fp++] = SSH_MSG_CHANNEL_OPEN_FAILURE;
+			DSSH_PUT_U32(pc, fail, &fp);
+			DSSH_PUT_U32(SSH_OPEN_ADMINISTRATIVELY_PROHIBITED, fail, &fp);
+			DSSH_PUT_U32(0, fail, &fp);
+			DSSH_PUT_U32(0, fail, &fp);
+			send_or_queue(sess, fail, fp);
+		}
+		dssh_transport_disconnect(sess,
+		    SSH_DISCONNECT_PROTOCOL_ERROR,
+		    "malformed CHANNEL_OPEN");
+		return DSSH_ERROR_TERMINATED;
+	}
 
 	uint32_t peer_channel = DSSH_GET_U32(&payload[rpos]);
 
@@ -3088,7 +3123,12 @@ chan_accept_setup_loop(struct dssh_session_s *sess, struct dssh_channel_s *ch,
 		}
 		if (msg_type != SSH_MSG_CHANNEL_REQUEST) { free(payload); continue; }
 		const uint8_t *rtype; uint32_t rtype_len; bool want_reply; const uint8_t *req_data; size_t req_data_len;
-		if (parse_channel_request(payload, payload_len, &rtype, &rtype_len, &want_reply, &req_data, &req_data_len) < 0) { free(payload); continue; }
+		if (parse_channel_request(payload, payload_len, &rtype, &rtype_len, &want_reply, &req_data, &req_data_len) < 0) {
+			setup_reply(sess, ch, false);
+			free(payload);
+			dssh_transport_disconnect(sess, SSH_DISCONNECT_PROTOCOL_ERROR, "malformed CHANNEL_REQUEST");
+			return DSSH_ERROR_TERMINATED;
+		}
 
 		if (rtype_len == DSSH_STRLEN(str_pty_req) && memcmp(rtype, str_pty_req, DSSH_STRLEN(str_pty_req)) == 0) {
 			if (had_pty) { free(payload); dssh_transport_disconnect(sess, SSH_DISCONNECT_PROTOCOL_ERROR, "duplicate pty-req"); return DSSH_ERROR_TERMINATED; }

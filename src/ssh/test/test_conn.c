@@ -3030,41 +3030,72 @@ test_signal_interleave_read_ext(void)
 static int
 test_truncated_channel_open(void)
 {
-	struct conn_ctx ctx;
-	if (conn_setup(&ctx) < 0)
-		return TEST_FAIL;
-
+	/*
+	 * Malformed CHANNEL_OPEN now sends OPEN_FAILURE (when
+	 * sender-channel is extractable) then disconnects.
+	 * Test each truncation point individually.
+	 */
+	/* Case 1: too short to read type_len -- disconnect only */
 	{
+		struct conn_ctx ctx;
+		if (conn_setup(&ctx) < 0)
+			return TEST_FAIL;
+
 		uint8_t msg[2];
 		msg[0] = SSH_MSG_CHANNEL_OPEN;
 		msg[1] = 0;
 		ASSERT_OK(send_packet(ctx.client, msg, 2, NULL));
+
+		struct timespec ts = { .tv_sec = 0, .tv_nsec = 50000000 };
+		thrd_sleep(&ts, NULL);
+
+		ASSERT_TRUE(!ctx.server->demux_running);
+		conn_cleanup(&ctx);
 	}
 
+	/* Case 2: type_len exceeds payload -- disconnect only */
 	{
+		struct conn_ctx ctx;
+		if (conn_setup(&ctx) < 0)
+			return TEST_FAIL;
+
 		uint8_t msg[8];
 		size_t pos = 0;
 		msg[pos++] = SSH_MSG_CHANNEL_OPEN;
 		dssh_serialize_uint32(100, msg, sizeof(msg), &pos);
 		ASSERT_OK(send_packet(ctx.client, msg, pos, NULL));
+
+		struct timespec ts = { .tv_sec = 0, .tv_nsec = 50000000 };
+		thrd_sleep(&ts, NULL);
+
+		ASSERT_TRUE(!ctx.server->demux_running);
+		conn_cleanup(&ctx);
 	}
 
+	/* Case 3: type OK but missing sender/window/maxpacket --
+	 * sends OPEN_FAILURE (sender-channel extractable) then disconnects */
 	{
+		struct conn_ctx ctx;
+		if (conn_setup(&ctx) < 0)
+			return TEST_FAIL;
+
 		uint8_t msg[16];
 		size_t pos = 0;
 		msg[pos++] = SSH_MSG_CHANNEL_OPEN;
 		dssh_serialize_uint32(4, msg, sizeof(msg), &pos);
 		memcpy(&msg[pos], "test", 4);
 		pos += 4;
+		/* Include sender-channel so OPEN_FAILURE can be sent */
+		dssh_serialize_uint32(42, msg, sizeof(msg), &pos);
 		ASSERT_OK(send_packet(ctx.client, msg, pos, NULL));
+
+		struct timespec ts = { .tv_sec = 0, .tv_nsec = 50000000 };
+		thrd_sleep(&ts, NULL);
+
+		ASSERT_TRUE(!ctx.server->demux_running);
+		conn_cleanup(&ctx);
 	}
 
-	struct timespec ts = { .tv_sec = 0, .tv_nsec = 10000000 };
-	thrd_sleep(&ts, NULL);
-
-	ASSERT_TRUE(ctx.server->demux_running);
-
-	conn_cleanup(&ctx);
 	return TEST_PASS;
 }
 
@@ -3075,6 +3106,10 @@ test_truncated_channel_open(void)
 static int
 test_truncated_channel_request(void)
 {
+	/*
+	 * Malformed CHANNEL_REQUEST now sends CHANNEL_FAILURE
+	 * then disconnects.  Test truncated type-length.
+	 */
 	struct conn_ctx ctx;
 	if (conn_setup(&ctx) < 0)
 		return TEST_FAIL;
@@ -3099,22 +3134,11 @@ test_truncated_channel_request(void)
 		ASSERT_OK(send_packet(ctx.client, msg, pos, NULL));
 	}
 
-	{
-		uint8_t msg[16];
-		size_t pos = 0;
-		msg[pos++] = SSH_MSG_CHANNEL_REQUEST;
-		dssh_serialize_uint32(oc.server_ch->local_id, msg, sizeof(msg), &pos);
-		dssh_serialize_uint32(100, msg, sizeof(msg), &pos);
-		ASSERT_OK(send_packet(ctx.client, msg, pos, NULL));
-	}
-
-	struct timespec ts = { .tv_sec = 0, .tv_nsec = 10000000 };
+	struct timespec ts = { .tv_sec = 0, .tv_nsec = 50000000 };
 	thrd_sleep(&ts, NULL);
 
-	ASSERT_TRUE(ctx.server->demux_running);
+	ASSERT_TRUE(!ctx.server->demux_running);
 
-	dssh_chan_close(oc.server_ch, 0);
-	dssh_chan_close(oc.client_ch, 0);
 	conn_cleanup(&ctx);
 	return TEST_PASS;
 }
