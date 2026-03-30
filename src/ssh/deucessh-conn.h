@@ -86,8 +86,8 @@ struct dssh_chan_params {
 	uint32_t                    max_window; /* 0 = library default (2 MiB) */
 	uint32_t                    cols, rows;
 	uint32_t                    wpx, hpx;
-	/* Char arrays */
-	char                        term[64];   /* TERM env value */
+	/* Char array — dynamically allocated, freed by dssh_chan_params_free */
+	char                       *term;
 };
 
 /* Params builder API.  All strings are copied in.
@@ -222,6 +222,8 @@ DSSH_PUBLIC enum dssh_chan_type dssh_chan_get_type(dssh_channel ch);
 DSSH_PUBLIC const char *dssh_chan_get_command(dssh_channel ch);
 DSSH_PUBLIC const char *dssh_chan_get_subsystem(dssh_channel ch);
 DSSH_PUBLIC bool dssh_chan_has_pty(dssh_channel ch);
+DSSH_PUBLIC const struct dssh_chan_params *dssh_chan_get_pty(
+    dssh_channel ch);
 
 /* ---- Zero-copy API ---- */
 

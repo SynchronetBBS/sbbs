@@ -259,8 +259,9 @@ struct dssh_channel_s {
 	void             *event_cbdata;
 
         /* C11 synchronization (platform-dependent size).
-         * Lock order: channel_mtx then buf_mtx (never reversed). */
+         * Lock order: channel_mtx -> buf_mtx -> cb_mtx -> tx_mtx. */
 	mtx_t    buf_mtx;
+	mtx_t    cb_mtx;  /* protects callback function pointer + cbdata pairs */
 	cnd_t    poll_cnd;
 	atomic_bool closing;  /* set by close functions before cleanup */
 
@@ -335,6 +336,8 @@ struct dssh_session_s {
 	void                         *global_request_cbdata;
 	void (*terminate_cb)(struct dssh_session_s *sess, void *cbdata);
 	void                         *terminate_cbdata;
+	dssh_chan_event_cb            default_event_cb;
+	void                         *default_event_cbdata;
 	struct dssh_channel_s       **channels;
 	size_t                        channel_count;
 	size_t                        channel_capacity;

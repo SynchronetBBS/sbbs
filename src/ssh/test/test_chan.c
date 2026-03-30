@@ -1118,12 +1118,12 @@ static int test_params_set_term(void)
 	ASSERT_OK(dssh_chan_params_set_term(&p, "xterm-256color"));
 	ASSERT_STR_EQ(p.term, "xterm-256color");
 
-	/* Truncation at sizeof(term)-1 */
+	/* Long term string preserved in full (dynamic allocation) */
 	char longterm[128];
 	memset(longterm, 'x', sizeof(longterm) - 1);
 	longterm[sizeof(longterm) - 1] = '\0';
 	ASSERT_OK(dssh_chan_params_set_term(&p, longterm));
-	ASSERT_EQ_U(strlen(p.term), sizeof(p.term) - 1);
+	ASSERT_EQ_U(strlen(p.term), 127);
 
 	dssh_chan_params_free(&p);
 	return TEST_PASS;
