@@ -77,12 +77,15 @@ function(dssh_add_test test_name source_file)
 	target_compile_options(dssh_test_${test_name} PRIVATE ${DEUCESSH_COMPILE_OPTIONS})
 endfunction()
 
-# Helper: register one executable × 12 KEX/key variants as CTest entries.
+# Helper: register one executable × 16 KEX/key/MAC variants as CTest entries.
 # Each entry runs the full executable (all tests in one process).
 macro(dssh_add_variant_tests test_name executable)
 	add_test(NAME ${test_name} COMMAND ${executable})
 	set_tests_properties(${test_name} PROPERTIES
 		ENVIRONMENT "${DSSH_TEST_KEY_ENV}")
+	add_test(NAME ${test_name}_hmac256 COMMAND ${executable})
+	set_tests_properties(${test_name}_hmac256 PROPERTIES
+		ENVIRONMENT "DSSH_TEST_MAC=hmac256;${DSSH_TEST_KEY_ENV}")
 	add_test(NAME ${test_name}_dhgex COMMAND ${executable})
 	set_tests_properties(${test_name}_dhgex PROPERTIES
 		ENVIRONMENT "DSSH_TEST_KEX=dh-gex;${DSSH_TEST_KEY_ENV}")
@@ -116,9 +119,18 @@ macro(dssh_add_variant_tests test_name executable)
 	add_test(NAME ${test_name}_mlkem_rsa512 COMMAND ${executable})
 	set_tests_properties(${test_name}_mlkem_rsa512 PROPERTIES
 		ENVIRONMENT "DSSH_TEST_KEX=mlkem;DSSH_TEST_KEY=rsa512;${DSSH_TEST_KEY_ENV}")
+	add_test(NAME ${test_name}_rsa_hmac256 COMMAND ${executable})
+	set_tests_properties(${test_name}_rsa_hmac256 PROPERTIES
+		ENVIRONMENT "DSSH_TEST_KEY=rsa;DSSH_TEST_MAC=hmac256;${DSSH_TEST_KEY_ENV}")
+	add_test(NAME ${test_name}_dhgex_hmac256 COMMAND ${executable})
+	set_tests_properties(${test_name}_dhgex_hmac256 PROPERTIES
+		ENVIRONMENT "DSSH_TEST_KEX=dh-gex;DSSH_TEST_MAC=hmac256;${DSSH_TEST_KEY_ENV}")
+	add_test(NAME ${test_name}_sntrup_hmac256 COMMAND ${executable})
+	set_tests_properties(${test_name}_sntrup_hmac256 PROPERTIES
+		ENVIRONMENT "DSSH_TEST_KEX=sntrup;DSSH_TEST_MAC=hmac256;${DSSH_TEST_KEY_ENV}")
 endmacro()
 
-# Helper: register one test per name × 8 KEX/key variants as separate
+# Helper: register one test per name × KEX/key/MAC variants as separate
 # CTest entries.  Each entry runs one test in its own process.
 # Use for test suites where per-test parallelism matters (e.g. auth
 # with expensive sntrup handshakes).
@@ -172,6 +184,22 @@ macro(dssh_add_individual_tests executable prefix test_list)
 			COMMAND ${executable} ${t})
 		set_tests_properties(${prefix}_${t}_mlkem_rsa512 PROPERTIES
 			ENVIRONMENT "DSSH_TEST_KEX=mlkem;DSSH_TEST_KEY=rsa512;${DSSH_TEST_KEY_ENV}")
+		add_test(NAME ${prefix}_${t}_hmac256
+			COMMAND ${executable} ${t})
+		set_tests_properties(${prefix}_${t}_hmac256 PROPERTIES
+			ENVIRONMENT "DSSH_TEST_MAC=hmac256;${DSSH_TEST_KEY_ENV}")
+		add_test(NAME ${prefix}_${t}_rsa_hmac256
+			COMMAND ${executable} ${t})
+		set_tests_properties(${prefix}_${t}_rsa_hmac256 PROPERTIES
+			ENVIRONMENT "DSSH_TEST_KEY=rsa;DSSH_TEST_MAC=hmac256;${DSSH_TEST_KEY_ENV}")
+		add_test(NAME ${prefix}_${t}_dhgex_hmac256
+			COMMAND ${executable} ${t})
+		set_tests_properties(${prefix}_${t}_dhgex_hmac256 PROPERTIES
+			ENVIRONMENT "DSSH_TEST_KEX=dh-gex;DSSH_TEST_MAC=hmac256;${DSSH_TEST_KEY_ENV}")
+		add_test(NAME ${prefix}_${t}_sntrup_hmac256
+			COMMAND ${executable} ${t})
+		set_tests_properties(${prefix}_${t}_sntrup_hmac256 PROPERTIES
+			ENVIRONMENT "DSSH_TEST_KEX=sntrup;DSSH_TEST_MAC=hmac256;${DSSH_TEST_KEY_ENV}")
 	endforeach()
 endmacro()
 
@@ -457,7 +485,14 @@ dssh_add_test(selftest test_selftest.c)
 dssh_add_variant_tests(dssh_self dssh_test_selftest)
 
 # ================================================================
-# Tier 3b/3c: Optional interop tests
+# Tier 3b: Asymmetric MAC negotiation (fork-based, separate registries)
+# ================================================================
+
+dssh_add_test(asymmetric_mac test_asymmetric_mac.c)
+add_test(NAME dssh_asymmetric_mac COMMAND dssh_test_asymmetric_mac)
+
+# ================================================================
+# Tier 3c/3d: Optional interop tests
 # ================================================================
 
 if(DEUCESSH_TEST_OPENSSH)

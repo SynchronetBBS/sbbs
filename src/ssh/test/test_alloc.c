@@ -64,9 +64,7 @@ register_all(void)
 	if (res < 0) return res;
 	res = dssh_register_aes256_ctr();
 	if (res < 0) return res;
-	res = dssh_register_hmac_sha2_512();
-	if (res < 0) return res;
-	res = dssh_register_hmac_sha2_256();
+	res = test_register_mac_algos();
 	if (res < 0) return res;
 	res = dssh_register_none_comp();
 	if (res < 0) return res;
@@ -2792,9 +2790,7 @@ c25519_client_parse_test(int (*server_thread)(void *),
 		return TEST_FAIL;
 	if (dssh_register_aes256_ctr() < 0)
 		return TEST_FAIL;
-	if (dssh_register_hmac_sha2_512() < 0)
-		return TEST_FAIL;
-	if (dssh_register_hmac_sha2_256() < 0)
+	if (test_register_mac_algos() < 0)
 		return TEST_FAIL;
 	if (dssh_register_none_comp() < 0)
 		return TEST_FAIL;

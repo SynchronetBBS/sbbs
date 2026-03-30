@@ -96,10 +96,7 @@ register_all_algorithms(void)
 	res = dssh_register_aes256_ctr();
 	if (res < 0)
 		return res;
-	res = dssh_register_hmac_sha2_512();
-	if (res < 0)
-		return res;
-	res = dssh_register_hmac_sha2_256();
+	res = test_register_mac_algos();
 	if (res < 0)
 		return res;
 	res = dssh_register_none_comp();
@@ -4066,9 +4063,7 @@ dhgex_server_setup(struct dhgex_server_ctx *ctx)
 		return -1;
 	if (dssh_register_aes256_ctr() < 0)
 		return -1;
-	if (dssh_register_hmac_sha2_512() < 0)
-		return -1;
-	if (dssh_register_hmac_sha2_256() < 0)
+	if (test_register_mac_algos() < 0)
 		return -1;
 	if (dssh_register_none_comp() < 0)
 		return -1;
@@ -4484,9 +4479,7 @@ c25519_server_setup(struct c25519_server_ctx *ctx)
 		return -1;
 	if (dssh_register_aes256_ctr() < 0)
 		return -1;
-	if (dssh_register_hmac_sha2_512() < 0)
-		return -1;
-	if (dssh_register_hmac_sha2_256() < 0)
+	if (test_register_mac_algos() < 0)
 		return -1;
 	if (dssh_register_none_comp() < 0)
 		return -1;

@@ -56,6 +56,41 @@ test_dhgex_setup(dssh_session server)
 }
 
 /*
+ * Returns true if DSSH_TEST_MAC=hmac256 is set.
+ * When set, tests register hmac-sha2-256 before hmac-sha2-512 so the
+ * weaker MAC wins negotiation.
+ */
+static inline bool
+test_using_hmac256(void)
+{
+	const char *mac = getenv("DSSH_TEST_MAC");
+	return (mac != NULL && strcmp(mac, "hmac256") == 0);
+}
+
+/*
+ * Register MAC algorithms in the order appropriate for the current
+ * test configuration.  When DSSH_TEST_MAC=hmac256, registers
+ * hmac-sha2-256 first so it wins negotiation; otherwise
+ * hmac-sha2-512 first (default).
+ */
+static inline int
+test_register_mac_algos(void)
+{
+	int res;
+	if (test_using_hmac256()) {
+		res = dssh_register_hmac_sha2_256();
+		if (res < 0) return res;
+		res = dssh_register_hmac_sha2_512();
+	}
+	else {
+		res = dssh_register_hmac_sha2_512();
+		if (res < 0) return res;
+		res = dssh_register_hmac_sha2_256();
+	}
+	return res;
+}
+
+/*
  * Returns true if DSSH_TEST_KEY=rsa or DSSH_TEST_KEY=rsa512 is set.
  * When set, tests register an RSA algorithm before ssh-ed25519 so RSA
  * wins host key negotiation, and generate an RSA key instead of ed25519.
