@@ -2475,6 +2475,44 @@ dssh_transport_set_version(const char *software_version,
 	return 0;
 }
 
+/*
+ * Default rx_line implementation: reads one byte at a time via the rx
+ * callback until CR-LF is found or the buffer is full.
+ *
+ * Strict: every CR must be immediately followed by LF, and every LF
+ * must be preceded by CR.  Returns DSSH_ERROR_PARSE on bare CR or LF.
+ */
+static int
+rxline_from_rx(uint8_t *buf, size_t bufsz,
+    size_t *bytes_received, struct dssh_session_s *sess,
+    void *cbdata)
+{
+	size_t have = 0;
+	int    res;
+
+	while (have < bufsz) {
+		res = gconf.rx(&buf[have], 1, sess, cbdata);
+		if (res < 0)
+			return res;
+		have++;
+		if (buf[have - 1] == '\r') {
+			if (have >= bufsz)
+				return DSSH_ERROR_TOOLONG;
+			res = gconf.rx(&buf[have], 1, sess, cbdata);
+			if (res < 0)
+				return res;
+			have++;
+			if (buf[have - 1] != '\n')
+				return DSSH_ERROR_PARSE;
+			*bytes_received = have;
+			return 0;
+		}
+		if (buf[have - 1] == '\n')
+			return DSSH_ERROR_PARSE;
+	}
+	return DSSH_ERROR_TOOLONG;
+}
+
 DSSH_PUBLIC int
 dssh_transport_set_callbacks(dssh_transport_io_cb tx,
     dssh_transport_io_cb                          rx,
@@ -2483,11 +2521,11 @@ dssh_transport_set_callbacks(dssh_transport_io_cb tx,
 {
 	if (gconf.used)
 		return DSSH_ERROR_TOOLATE;
-	if (tx == NULL || rx == NULL || rx_line == NULL)
+	if (tx == NULL || rx == NULL)
 		return DSSH_ERROR_INVALID;
 	gconf.tx = tx;
 	gconf.rx = rx;
-	gconf.rx_line = rx_line;
+	gconf.rx_line = (rx_line != NULL) ? rx_line : rxline_from_rx;
 	gconf.extra_line_cb = extra_line_cb;
 	return 0;
 }

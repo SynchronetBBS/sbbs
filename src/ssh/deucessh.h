@@ -51,6 +51,10 @@ typedef int (*dssh_transport_io_cb)(uint8_t *buf, size_t bufsz,
  * Line-oriented receive callback for version exchange.
  * Reads until CR-LF is found.  Sets *bytes_received to the number
  * of bytes including the CR-LF.  Returns 0 on success.
+ *
+ * Optional: pass NULL to dssh_transport_set_callbacks() to use a
+ * default implementation that reads one byte at a time via the rx
+ * callback.
  */
 typedef int (*dssh_transport_rxline_cb)(uint8_t *buf, size_t bufsz,
     size_t *bytes_received, dssh_session sess, void *cbdata);
@@ -227,6 +231,8 @@ DSSH_PUBLIC int dssh_transport_set_version(const char *software_version, const c
  * Must be called before any session is initialized.
  * All sessions share the same callback functions; per-session
  * differentiation is via the cbdata pointers set above.
+ * rx_line may be NULL — a default that reads one byte at a time
+ * via the rx callback is used.
  */
 DSSH_PUBLIC int dssh_transport_set_callbacks(dssh_transport_io_cb tx, dssh_transport_io_cb rx,
     dssh_transport_rxline_cb rx_line,

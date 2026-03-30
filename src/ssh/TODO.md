@@ -87,6 +87,19 @@
     on parse failure when the packet is identifiably a GLOBAL_REQUEST
     (msg_type byte is already known at that point).
 
+103. **Selftest race: cleanup while server echo thread still sending.**
+    `dssh_self_rsa` (and occasionally `dssh_self_dhgex_rsa`) segfaults
+    under heavy parallel load (`ctest -j16`) but passes when run alone.
+    Core dump shows thread 1 in `tx_finalize` → `send_packet_inner` →
+    `dssh_conn_send_exit_status` → `dssh_chan_close` from
+    `server_echo_thread`, while thread 2 (main) is in
+    `dssh_session_cleanup` → `dssh_session_terminate`, freeing the
+    session's tx buffer out from under the send.  The test's
+    `selftest_cleanup` calls `dssh_session_cleanup` without waiting for
+    the server echo thread to finish its `dssh_chan_close`.  Fix: the
+    test should `thrd_join` the server thread before cleanup, or the
+    library should block cleanup until in-flight sends complete.
+
 ## Closed
 
 - `dssh_transport_register_lang()` moved to public header (was item 93).

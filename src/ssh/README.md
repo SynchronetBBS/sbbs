@@ -72,18 +72,10 @@ static int my_rx(uint8_t *buf, size_t bufsz,
     /* Receive exactly bufsz bytes.  Same contract as tx. */
 }
 
-static int my_rxline(uint8_t *buf, size_t bufsz,
-    size_t *bytes_received, dssh_session sess, void *cbdata)
-{
-    /* Receive bytes one at a time until CR-LF.
-     * Set *bytes_received to total including CR-LF.
-     * Only used during version exchange. */
-}
-
 int main(void)
 {
     /* 2. Register algorithms (order = preference) */
-    dssh_transport_set_callbacks(my_tx, my_rx, my_rxline, NULL);
+    dssh_transport_set_callbacks(my_tx, my_rx, NULL, NULL);
     dssh_register_curve25519_sha256();
     dssh_register_ssh_ed25519();
     dssh_register_aes256_ctr();
@@ -193,7 +185,7 @@ static int my_exec_cb(dssh_channel ch,
 int main(void)
 {
     /* 1. Register algorithms and I/O callbacks (same as client) */
-    dssh_transport_set_callbacks(my_tx, my_rx, my_rxline, NULL);
+    dssh_transport_set_callbacks(my_tx, my_rx, NULL, NULL);
     dssh_register_curve25519_sha256();
     dssh_register_ssh_ed25519();
     dssh_register_rsa_sha2_256();
@@ -264,13 +256,14 @@ int main(void)
 
 ## I/O Callbacks
 
-The library does no I/O itself.  You provide three callbacks:
+The library does no I/O itself.  You provide two required callbacks
+and one optional:
 
 | Callback | Purpose |
 |----------|---------|
 | `tx` | Send exactly N bytes.  Block until done or `dssh_session_is_terminated(sess)`. |
 | `rx` | Receive exactly N bytes.  Same contract as tx. |
-| `rx_line` | Receive until CR-LF (version exchange only). |
+| `rx_line` | Receive until CR-LF (version exchange only).  **Optional** — pass NULL to use a built-in default that calls `rx` one byte at a time. |
 
 All callbacks receive the session handle and a `cbdata` pointer.
 Return 0 on success, negative on error.  The `cbdata` is set via
