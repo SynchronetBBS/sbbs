@@ -249,6 +249,8 @@ DSSH_PUBLIC int dssh_chan_zc_cancel(dssh_channel ch);
 
 DSSH_PUBLIC int dssh_chan_set_event_cb(dssh_channel ch,
     dssh_chan_event_cb cb, void *cbdata);
+/* Must be set before dssh_session_start(); returns DSSH_ERROR_TOOLATE
+ * after start.  Copied to each new channel at open/accept time. */
 DSSH_PUBLIC int dssh_session_set_event_cb(dssh_session sess,
     dssh_chan_event_cb cb, void *cbdata);
 

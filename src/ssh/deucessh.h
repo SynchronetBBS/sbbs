@@ -150,18 +150,20 @@ DSSH_PUBLIC void dssh_cleanse(void *buf, size_t len);
 
 /*
  * Per-session I/O callback data (passed to the global I/O callbacks).
+ * Must be set before dssh_session_start(); returns DSSH_ERROR_TOOLATE
+ * if the session has already started.
  */
-DSSH_PUBLIC void dssh_session_set_cbdata(dssh_session sess,
+DSSH_PUBLIC int dssh_session_set_cbdata(dssh_session sess,
     void *tx_cbdata, void *rx_cbdata, void *rx_line_cbdata,
     void *extra_line_cbdata);
 
 /*
  * Optional notification callbacks.  Must be set before
- * dssh_session_start(); calling after start is undefined behavior.
+ * dssh_session_start(); returns DSSH_ERROR_TOOLATE after start.
  */
-DSSH_PUBLIC void dssh_session_set_debug_cb(dssh_session sess,
+DSSH_PUBLIC int dssh_session_set_debug_cb(dssh_session sess,
     dssh_debug_cb cb, void *cbdata);
-DSSH_PUBLIC void dssh_session_set_unimplemented_cb(dssh_session sess, dssh_unimplemented_cb cb, void *cbdata);
+DSSH_PUBLIC int dssh_session_set_unimplemented_cb(dssh_session sess, dssh_unimplemented_cb cb, void *cbdata);
 /*
  * Optional callback for SSH_MSG_USERAUTH_BANNER (RFC 4252 s5.4).
  * message/message_len: the banner text (UTF-8, not NUL-terminated).
@@ -182,11 +184,11 @@ typedef int (*dssh_global_request_cb)(const uint8_t *name,
     size_t name_len, bool want_reply, const uint8_t *data,
     size_t data_len, void *cbdata);
 
-DSSH_PUBLIC void dssh_session_set_banner_cb(dssh_session sess,
+DSSH_PUBLIC int dssh_session_set_banner_cb(dssh_session sess,
     dssh_auth_banner_cb cb, void *cbdata);
-DSSH_PUBLIC void dssh_session_set_global_request_cb(dssh_session sess,
+DSSH_PUBLIC int dssh_session_set_global_request_cb(dssh_session sess,
     dssh_global_request_cb cb, void *cbdata);
-DSSH_PUBLIC void dssh_session_set_terminate_cb(dssh_session sess,
+DSSH_PUBLIC int dssh_session_set_terminate_cb(dssh_session sess,
     dssh_terminate_cb cb, void *cbdata);
 
 /*
@@ -196,9 +198,10 @@ DSSH_PUBLIC void dssh_session_set_terminate_cb(dssh_session sess,
  * rekey completion).  Default is 75000 (75 seconds, matching
  * the standard BSD TCP connect timeout).  Values <= 0 disable
  * the timeout (wait indefinitely).
- * Must be set before dssh_session_start().
+ * Must be set before dssh_session_start(); returns
+ * DSSH_ERROR_TOOLATE after start.
  */
-DSSH_PUBLIC void dssh_session_set_timeout(dssh_session sess,
+DSSH_PUBLIC int dssh_session_set_timeout(dssh_session sess,
     int timeout_ms);
 
 /*

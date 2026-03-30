@@ -1347,7 +1347,9 @@ For send-only sessions without a receive thread, a hard packet limit
 
 ## Optional Callbacks
 
-Set these on the session after init, before start:
+Set these on the session after init, before start.  All return 0 on
+success or `DSSH_ERROR_TOOLATE` if `dssh_session_start()` has already
+been called:
 
 ```c
 dssh_session_set_debug_cb(sess, my_debug_handler, my_context);
@@ -1361,7 +1363,8 @@ dssh_session_set_terminate_cb(sess, my_terminate_handler, my_context);
 
 Internal waits for peer responses (channel open confirmation, channel
 request replies, setup messages, rekey completion) use a configurable
-timeout.  Set it after init, before start:
+timeout.  Set it after init, before start (returns `DSSH_ERROR_TOOLATE`
+after start):
 
 ```c
 dssh_session_set_timeout(sess, 10000);   /* 10 seconds */

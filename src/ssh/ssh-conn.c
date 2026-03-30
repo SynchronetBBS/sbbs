@@ -2972,6 +2972,8 @@ dssh_session_set_event_cb(struct dssh_session_s *sess,
 {
 	if (sess == NULL)
 		return DSSH_ERROR_INVALID;
+	if (sess->demux_running)
+		return DSSH_ERROR_TOOLATE;
 	sess->default_event_cb = cb;
 	sess->default_event_cbdata = cbdata;
 	return 0;

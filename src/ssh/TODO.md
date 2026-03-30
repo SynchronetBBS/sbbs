@@ -25,56 +25,7 @@
 
 ### Design / liveness audit (items 62-79)
 
-101. **Implement channel I/O redesign (`design-channel-io-api.md`).**
-    Complete redesign of the channel API.  Subsumes items 67 (setup
-    mailbox blocking demux), 75 (msgqueue per-message malloc), and
-    95 (channel I/O API unification).  See `design-channel-io-api.md`
-    for the full design.  Summary of what changes:
-
-    - `dssh_chan_*` prefix; ZC API adds `dssh_chan_zc_*`
-    - Stream API (open/read/write/poll) built on ZC internals
-    - ZC API: zero-copy TX (app writes into tx_packet via getbuf/send)
-      and RX (callback gets pointer into rx_packet)
-    - Events separate from data (signalfd model): poll + read_event,
-      or event callback with full event struct
-    - `dssh_chan_accept()` for server: callback-driven setup, library
-      populates `dssh_chan_params` (same struct as client open)
-    - Params builder: type + pty + modes + env + max_window in struct
-    - `dssh_chan_close(ch, int64_t exit_code)`: negative = no exit-status
-    - `dssh_chan_shutwr(ch)`: half-close (EOF)
-    - tx_mac_scratch eliminated via 4-byte seq prefix in tx_packet
-    - Send-path malloc eliminated (ZC: zero copies; stream: one memcpy)
-    - Msgqueue eliminated (ZC: no buffer; stream: ring buffer)
-    - Setup mailbox eliminated (accept runs on app's thread)
-
-    **Item 67 resolved by**: `dssh_chan_accept()` runs on the app's
-    thread.  The demux thread queues setup messages; accept pulls
-    from the queue.  Demux never blocks on a callback.
-
-    **Item 75 resolved by**: message queue eliminated entirely.  ZC
-    mode has no library-side buffer (callback gets pointer into
-    rx_packet).  Stream mode uses ring buffers (no per-message
-    malloc).  The 0-byte message flood is bounded by initial_window=0
-    (no data flows until the channel is finalized).
-
 ### API definition gaps (items 92-100)
-
-95. Subsumed by item 101 (channel I/O redesign).
-
-96. **`dssh_session_read_signal()` pointer lifetime undocumented.**
-    Returns `*signal_name` pointing into a channel-owned buffer
-    (`ch->last_signal`).  Valid until the next `read_signal()` call on
-    the same channel.  This must be documented in the header.
-
-99. **Callback setters after `dssh_session_start()` are undefined behavior.**
-    `ssh.c` and `deucessh.h` documents "must be called before `dssh_session_start()`" and
-    relies on `thrd_create`'s happens-before for visibility.  But there's
-    no reason this has to be UB — the session struct already has `sess->mtx`.
-    Protect the callback fields with that mutex (or atomics) so setters
-    are safe to call at any time, and the demux thread reads a consistent
-    snapshot.  Remove the UB caveat from the comment.  Alternatively, just don't
-    allow changing them after session start. As part of the same effort, evaluate
-    if there's a need to prevent NULL for the parameters.
 
 102. **Malformed GLOBAL_REQUEST with want_reply silently dropped.**
     `recv_packet` (ssh-trans.c:1061-1066) breaks out of the switch on
@@ -83,9 +34,12 @@
     GLOBAL_REQUEST with `want_reply=true` gets no response, violating
     RFC 4254 s4: "the recipient MUST respond with either
     SSH_MSG_REQUEST_SUCCESS, SSH_MSG_REQUEST_FAILURE, or some
-    request-specific continuation message."  Fix: send REQUEST_FAILURE
-    on parse failure when the packet is identifiably a GLOBAL_REQUEST
-    (msg_type byte is already known at that point).
+    request-specific continuation message."  The `want_reply` byte is
+    only extracted after all truncation checks (line 1072), so on parse
+    failure the code doesn't know if a reply is needed.  Fix: send
+    REQUEST_FAILURE on parse failure when the packet is identifiably a
+    GLOBAL_REQUEST (msg_type byte is already known at that point).
+    Update audit-4254.md section 4-1 which incorrectly claims CONFORMS.
 
 103. **Selftest race: cleanup while server echo thread still sending.**
     `dssh_self_rsa` (and occasionally `dssh_self_dhgex_rsa`) segfaults
@@ -101,6 +55,37 @@
     library should block cleanup until in-flight sends complete.
 
 ## Closed
+
+- Callback setters after `dssh_session_start()` now rejected (was item 99).
+  All 8 session-level setters return `int` and check `sess->demux_running`;
+  return `DSSH_ERROR_TOOLATE` after start.  NULL cb intentionally allowed
+  (means "no callback").
+
+- Signal pointer lifetime now documented (was item 96).
+  `dssh_session_read_signal()` no longer exists — the channel I/O
+  redesign (item 101) replaced it with event-based signal delivery via
+  `dssh_chan_read_event()`.  Pointer lifetime is documented in
+  `deucessh-conn.h` (lines 127-129, 198-201), `README.md`
+  (lines 1156-1158), and `design-channel-io-api.md` (lines 424-427):
+  string pointers in events are valid until the next
+  `dssh_chan_read_event()` or `dssh_chan_poll()` on the same channel.
+
+- Channel I/O redesign fully implemented (was items 95, 101).  Complete
+  replacement of the channel API per `design-channel-io-api.md`.
+  `dssh_chan_*` prefix for all channel functions; stream API
+  (open/read/write/poll) built on ZC internals; ZC API with zero-copy
+  TX (getbuf/send) and RX (callback into rx_packet); events separated
+  from data (signalfd model) with poll + read_event or event callback;
+  `dssh_chan_accept()` for server with callback-driven setup; shared
+  `dssh_chan_params` struct with builder functions; `dssh_chan_close()`
+  with exit code and `dssh_chan_shutwr()` for half-close.  tx_mac_scratch
+  eliminated via 4-byte seq prefix in tx_packet; send-path malloc
+  eliminated; msgqueue eliminated (ZC: no buffer; stream: ring buffer);
+  setup mailbox eliminated (accept runs on app's thread).  Old API
+  (`dssh_session_read/write/poll`, `dssh_channel_read/write`,
+  `dssh_session_accept_channel`) completely removed.  Subsumes items 67
+  (setup mailbox blocking demux), 75 (msgqueue per-message malloc), and
+  95 (channel I/O API unification).
 
 - `dssh_transport_register_lang()` moved to public header (was item 93).
   Created `deucessh-lang.h` following the pattern of other module headers

@@ -114,78 +114,99 @@ dssh_cleanse(void *buf, size_t len)
 		OPENSSL_cleanse(buf, len);
 }
 
-DSSH_PUBLIC void
+DSSH_PUBLIC int
 dssh_session_set_cbdata(struct dssh_session_s *sess,
     void *tx_cbdata, void *rx_cbdata, void *rx_line_cbdata,
     void *extra_line_cbdata)
 {
 	if (sess == NULL)
-		return;
+		return DSSH_ERROR_INVALID;
+	if (sess->demux_running)
+		return DSSH_ERROR_TOOLATE;
 	sess->tx_cbdata = tx_cbdata;
 	sess->rx_cbdata = rx_cbdata;
 	sess->rx_line_cbdata = rx_line_cbdata;
 	sess->extra_line_cbdata = extra_line_cbdata;
+	return 0;
 }
 
 /* Callback setters below must be called before dssh_session_start().
  * The thrd_create in dssh_session_start() provides the C11
  * happens-before guarantee that makes these writes visible to the
- * demux thread.  Calling after start is undefined behavior. */
+ * demux thread.  Returns DSSH_ERROR_TOOLATE if called after start. */
 
-DSSH_PUBLIC void
+DSSH_PUBLIC int
 dssh_session_set_debug_cb(struct dssh_session_s *sess,
     dssh_debug_cb cb, void *cbdata)
 {
 	if (sess == NULL)
-		return;
+		return DSSH_ERROR_INVALID;
+	if (sess->demux_running)
+		return DSSH_ERROR_TOOLATE;
 	sess->debug_cb = cb;
 	sess->debug_cbdata = cbdata;
+	return 0;
 }
 
-DSSH_PUBLIC void
+DSSH_PUBLIC int
 dssh_session_set_unimplemented_cb(struct dssh_session_s *sess,
     dssh_unimplemented_cb cb, void *cbdata)
 {
 	if (sess == NULL)
-		return;
+		return DSSH_ERROR_INVALID;
+	if (sess->demux_running)
+		return DSSH_ERROR_TOOLATE;
 	sess->unimplemented_cb = cb;
 	sess->unimplemented_cbdata = cbdata;
+	return 0;
 }
 
-DSSH_PUBLIC void
+DSSH_PUBLIC int
 dssh_session_set_banner_cb(struct dssh_session_s *sess,
     dssh_auth_banner_cb cb, void *cbdata)
 {
 	if (sess == NULL)
-		return;
+		return DSSH_ERROR_INVALID;
+	if (sess->demux_running)
+		return DSSH_ERROR_TOOLATE;
 	sess->banner_cb = cb;
 	sess->banner_cbdata = cbdata;
+	return 0;
 }
 
-DSSH_PUBLIC void
+DSSH_PUBLIC int
 dssh_session_set_global_request_cb(struct dssh_session_s *sess,
     dssh_global_request_cb cb, void *cbdata)
 {
 	if (sess == NULL)
-		return;
+		return DSSH_ERROR_INVALID;
+	if (sess->demux_running)
+		return DSSH_ERROR_TOOLATE;
 	sess->global_request_cb = cb;
 	sess->global_request_cbdata = cbdata;
+	return 0;
 }
 
-DSSH_PUBLIC void
+DSSH_PUBLIC int
 dssh_session_set_terminate_cb(struct dssh_session_s *sess,
     dssh_terminate_cb cb, void *cbdata)
 {
 	if (sess == NULL)
-		return;
+		return DSSH_ERROR_INVALID;
+	if (sess->demux_running)
+		return DSSH_ERROR_TOOLATE;
 	sess->terminate_cb = cb;
 	sess->terminate_cbdata = cbdata;
+	return 0;
 }
 
-DSSH_PUBLIC void
+DSSH_PUBLIC int
 dssh_session_set_timeout(struct dssh_session_s *sess, int timeout_ms)
 {
 	if (sess == NULL)
-		return;
+		return DSSH_ERROR_INVALID;
+	if (sess->demux_running)
+		return DSSH_ERROR_TOOLATE;
 	sess->timeout_ms = timeout_ms;
+	return 0;
 }
