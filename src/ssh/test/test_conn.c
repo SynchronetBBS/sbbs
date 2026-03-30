@@ -3977,6 +3977,177 @@ test_subsystem_roundtrip(void)
 }
 
 /* ================================================================
+ * Audit item 13: ZC accept — server accepts a zero-copy channel
+ * ================================================================ */
+
+struct zc_rx_state {
+	mtx_t    mtx;
+	cnd_t    cnd;
+	uint8_t  buf[256];
+	size_t   len;
+	bool     done;
+};
+
+static uint32_t
+test_zc_data_cb(dssh_channel ch, int stream,
+    const uint8_t *data, size_t len, void *cbdata)
+{
+	(void)ch;
+	(void)stream;
+	struct zc_rx_state *st = cbdata;
+	mtx_lock(&st->mtx);
+	size_t avail = sizeof(st->buf) - st->len;
+	size_t n = len < avail ? len : avail;
+	memcpy(&st->buf[st->len], data, n);
+	st->len += n;
+	st->done = true;
+	cnd_signal(&st->cnd);
+	mtx_unlock(&st->mtx);
+	uint32_t n_u32 = (uint32_t)n;
+	return n_u32;
+}
+
+static int
+accept_subsys_zc(dssh_channel ch, const struct dssh_chan_params *p,
+    struct dssh_chan_accept_result *result, void *cbdata)
+{
+	(void)ch;
+	(void)p;
+	result->zc_cb = test_zc_data_cb;
+	result->zc_cbdata = cbdata;
+	return 0;
+}
+
+struct zc_accept_ctx {
+	dssh_session server;
+	const struct dssh_chan_accept_cbs *cbs;
+	dssh_channel server_ch;
+};
+
+static int
+server_accept_zc_thread(void *arg)
+{
+	struct zc_accept_ctx *ctx = arg;
+	ctx->server_ch = dssh_chan_accept(ctx->server, ctx->cbs, 30000);
+	return 0;
+}
+
+static int
+test_accept_zc(void)
+{
+	struct conn_ctx ctx;
+
+	if (conn_setup(&ctx) < 0)
+		return TEST_SKIP;
+
+	/* Set up ZC receive state for the server */
+	struct zc_rx_state zc_st;
+	memset(&zc_st, 0, sizeof(zc_st));
+	if (mtx_init(&zc_st.mtx, mtx_plain) != thrd_success) {
+		conn_cleanup(&ctx);
+		return TEST_SKIP;
+	}
+	if (cnd_init(&zc_st.cnd) != thrd_success) {
+		mtx_destroy(&zc_st.mtx);
+		conn_cleanup(&ctx);
+		return TEST_SKIP;
+	}
+
+	struct dssh_chan_accept_cbs zc_cbs = {
+		.subsystem = accept_subsys_zc,
+		.cbdata = &zc_st,
+	};
+
+	struct zc_accept_ctx sa = {
+		.server = ctx.server,
+		.cbs = &zc_cbs,
+		.server_ch = NULL,
+	};
+
+	/* Client opens a subsystem channel (stream mode) */
+	struct open_subsys_ctx oc = {
+		.client = ctx.client,
+		.server = ctx.server,
+		.subsystem = "test-zc",
+	};
+
+	thrd_t ct, st;
+	ASSERT_THRD_CREATE(&ct, client_open_subsys_thread, &oc);
+	ASSERT_THRD_CREATE(&st, server_accept_zc_thread, &sa);
+	thrd_join(ct, NULL);
+	thrd_join(st, NULL);
+
+	if (oc.client_ch == NULL || sa.server_ch == NULL) {
+		if (oc.client_ch != NULL)
+			dssh_chan_close(oc.client_ch, -1);
+		if (sa.server_ch != NULL)
+			dssh_chan_close(sa.server_ch, -1);
+		cnd_destroy(&zc_st.cnd);
+		mtx_destroy(&zc_st.mtx);
+		conn_cleanup(&ctx);
+		return TEST_SKIP;
+	}
+
+	/* Verify server channel is ZC mode */
+	ASSERT_EQ(sa.server_ch->io_model, DSSH_IO_ZC);
+	ASSERT_EQ(dssh_chan_get_type(sa.server_ch), DSSH_CHAN_SUBSYSTEM);
+	ASSERT_STR_EQ(dssh_chan_get_subsystem(sa.server_ch), "test-zc");
+
+	/* Client sends data (stream mode) */
+	static const uint8_t msg1[] = "hello from client to zc";
+	int64_t w = dssh_chan_write(oc.client_ch, 0,
+	    msg1, sizeof(msg1));
+	ASSERT_TRUE(w > 0);
+
+	/* Wait for ZC callback to fire on server */
+	mtx_lock(&zc_st.mtx);
+	struct timespec deadline;
+	timespec_get(&deadline, TIME_UTC);
+	deadline.tv_sec += 5;
+	while (!zc_st.done)
+		cnd_timedwait(&zc_st.cnd, &zc_st.mtx, &deadline);
+	ASSERT_TRUE(zc_st.done);
+	ASSERT_EQ_U(zc_st.len, sizeof(msg1));
+	ASSERT_TRUE(memcmp(zc_st.buf, msg1, sizeof(msg1)) == 0);
+	mtx_unlock(&zc_st.mtx);
+
+	/* Server sends reply via ZC getbuf/send */
+	static const uint8_t msg2[] = "zc reply from server";
+	uint8_t *txbuf;
+	size_t max_len;
+	int res = dssh_chan_zc_getbuf(sa.server_ch, 0, &txbuf, &max_len);
+	ASSERT_OK(res);
+	ASSERT_TRUE(max_len >= sizeof(msg2));
+	memcpy(txbuf, msg2, sizeof(msg2));
+	res = dssh_chan_zc_send(sa.server_ch, sizeof(msg2));
+	ASSERT_OK(res);
+
+	/* Client reads reply (stream mode) */
+	int ev = dssh_chan_poll(oc.client_ch, DSSH_POLL_READ, 5000);
+	ASSERT_TRUE(ev & DSSH_POLL_READ);
+
+	uint8_t rbuf[256];
+	size_t got = 0;
+	while (got < sizeof(msg2)) {
+		int64_t r = dssh_chan_read(oc.client_ch, 0,
+		    &rbuf[got], sizeof(rbuf) - got);
+		if (r <= 0)
+			break;
+		got += (size_t)r;
+	}
+	ASSERT_EQ_U(got, sizeof(msg2));
+	ASSERT_TRUE(memcmp(rbuf, msg2, sizeof(msg2)) == 0);
+
+	/* Clean close */
+	dssh_chan_close(oc.client_ch, -1);
+	dssh_chan_close(sa.server_ch, -1);
+	cnd_destroy(&zc_st.cnd);
+	mtx_destroy(&zc_st.mtx);
+	conn_cleanup(&ctx);
+	return TEST_PASS;
+}
+
+/* ================================================================
  * Item 74: bytebuf write truncation + window accounting
  * ================================================================ */
 
@@ -5051,6 +5222,7 @@ static struct dssh_test_entry tests[] = {
 	{ "test_chan_write_close_recv",         test_chan_write_close_received },
 
 	{ "test_subsystem_roundtrip",          test_subsystem_roundtrip },
+	{ "test_accept_zc",                    test_accept_zc },
 
 	/* Deterministic branch coverage -- profiling-unstable */
 	{ "test_session_poll_nsec_overflow",   test_session_poll_nsec_overflow },

@@ -3181,16 +3181,29 @@ dssh_chan_accept(struct dssh_session_s *sess, const struct dssh_chan_accept_cbs 
 		goto fail;
 	}
 	uint32_t winsz = result.max_window != 0 ? result.max_window : INITIAL_WINDOW_SIZE;
+
+	/* Commit I/O model based on app's terminal request callback.
+	 * ZC mode: app callback, no ring buffers.
+	 * Stream mode: internal adapter + ring buffers. */
+	if (result.zc_cb != NULL) {
+		ch->io_model = DSSH_IO_ZC;
+		ch->zc_cb = result.zc_cb;
+		ch->zc_cbdata = result.zc_cbdata;
+	}
+	/* else: stream mode already set before setup loop */
+
 	dssh_thrd_check(sess, mtx_lock(&ch->buf_mtx));
 	ch->window_max = winsz;
 	ch->chan_type = DSSH_CHAN_SESSION;
 	ch->stdout_consumed = 0; ch->stderr_consumed = 0;
 	ch->exit_code = 0; ch->exit_code_received = false;
-	res = bytebuf_init(&ch->buf.session.stdout_buf, winsz);
-	if (res < 0) { dssh_thrd_check(sess, mtx_unlock(&ch->buf_mtx)); dssh_chan_params_free(&p); goto fail; }
-	res = bytebuf_init(&ch->buf.session.stderr_buf, winsz);
-	if (res < 0) { bytebuf_free(&ch->buf.session.stdout_buf); dssh_thrd_check(sess, mtx_unlock(&ch->buf_mtx)); dssh_chan_params_free(&p); goto fail; }
-	sigqueue_init(&ch->buf.session.signals);
+	if (ch->io_model == DSSH_IO_STREAM) {
+		res = bytebuf_init(&ch->buf.session.stdout_buf, winsz);
+		if (res < 0) { dssh_thrd_check(sess, mtx_unlock(&ch->buf_mtx)); dssh_chan_params_free(&p); goto fail; }
+		res = bytebuf_init(&ch->buf.session.stderr_buf, winsz);
+		if (res < 0) { bytebuf_free(&ch->buf.session.stdout_buf); dssh_thrd_check(sess, mtx_unlock(&ch->buf_mtx)); dssh_chan_params_free(&p); goto fail; }
+		sigqueue_init(&ch->buf.session.signals);
+	}
 	ch->setup_mode = false;
 	dssh_thrd_check(sess, mtx_unlock(&ch->buf_mtx));
 
