@@ -12,7 +12,7 @@ extensions (no `@` algorithm names).  Uses OpenSSL 3.0+ libcrypto and C11
 threads internally; public headers expose neither.
 
 Local copies of all implemented and referenced RFCs/drafts are in the
-`RFCs/` directory for offline reference:
+`standards/` directory for offline reference:
 - **Core**: 4250-4254 (protocol architecture, transport, auth, connection)
 - **Implemented**: 4256 (keyboard-interactive), 4335 (break), 4419
   (DH-GEX), 6668 (SHA-2 MAC), 8160 (IUTF8), 8308 (ext negotiation),
@@ -130,7 +130,7 @@ See `README.md` for the full API reference with code examples.
 
 ## RFC Conformance
 
-Audit files (`audit-4250.md` through `audit-4254.md`) document every
+Audit files (`docs/audit-4250.md` through `docs/audit-4254.md`) document every
 MUST/SHOULD/MAY requirement and the library's conformance status.
 Tests cover all CONFORMS items; APPLICATION items are the app's responsibility
 but the API enables conformance.

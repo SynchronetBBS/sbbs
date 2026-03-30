@@ -1,0 +1,22 @@
+# Build directories
+build/
+build-*/
+
+# Claude Code (local settings)
+.claude/
+
+# Coverage artifacts
+*.profraw
+*.profdata
+*.gcda
+*.gcno
+
+# CTest
+Testing/
+
+# Editor / IDE
+*.swp
+*~
+
+# OS junk
+.DS_Store
