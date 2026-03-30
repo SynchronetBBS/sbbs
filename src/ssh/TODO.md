@@ -31,17 +31,31 @@
 
 ### Selftest failures under parallel load (items 104, 106)
 
-106. **`dssh_self_dhgex` intermittent failure under `-j16`.**
-    Observed once during 10× `--repeat until-fail` with all 8 variants
-    running simultaneously under `-j16`.  Did not reproduce in 5
-    consecutive isolated reruns of `dssh_self_dhgex` alone, nor in 3
-    subsequent full 10× `-j16` runs.  Only the `dhgex` (non-RSA)
-    variant was affected.  No output captured — needs `--output-on-failure`
-    to identify which test function and assertion.  May be a different
-    manifestation of scheduling contention (DH-GEX is the slowest KEX
-    due to prime generation), or an unrelated race.  Needs investigation.
-
 ## Closed
+
+- Selftest write-before-window races across 12 tests (was item 106).
+  100× `-j16` stress test revealed 3 distinct failures: `dssh_self_mlkem`
+  Bus error in `test_self_connection_drop`, `dssh_self_rsa` FAIL in
+  `test_self_rekey_during_data`, and `dssh_self` FAIL in
+  `test_self_chan_accept_shell_pty`.  All three were the same root cause
+  as item 104: client-side `dssh_chan_write` called before the server's
+  `WINDOW_ADJUST` was processed by the client's demux thread, so
+  `remote_window` was still 0 and the non-blocking write returned 0.
+  The Bus error was a secondary crash: when the ASSERT bailed out of
+  `test_self_connection_drop` without joining the server echo thread,
+  `dssh_test_after_each` called `selftest_cleanup` on a stack-local
+  `selftest_ctx` whose frame had been overwritten by the still-running
+  server thread's stack growth, producing a garbage session pointer.
+  Fix: added `dssh_chan_poll(ch, DSSH_POLL_WRITE, 5000)` before the
+  first client-side write in 12 test functions: `test_self_multiple_channels`
+  (2 channels), `test_self_eof_half_close`, `test_self_rekey_during_data`,
+  `test_self_rekey_manual`, `test_self_rekey_preserves_channels`,
+  `test_self_connection_drop`, `test_self_chan_exec_echo`,
+  `test_self_chan_shell_pty`, `test_self_chan_accept_exec`,
+  `test_self_chan_accept_shell_pty`, `test_self_chan_read_peek`.
+  50 consecutive 100%-pass runs under `-j16` after the fix.
+  Library unchanged — the non-blocking write API is correct; callers
+  must poll for `DSSH_POLL_WRITE` before writing.
 
 - Selftest echo tests failing under `-j16` (was item 104).
   `dssh_self_rsa` and `dssh_self_mlkem_rsa` variants failed ~40% of the

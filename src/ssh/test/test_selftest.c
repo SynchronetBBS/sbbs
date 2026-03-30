@@ -1132,6 +1132,7 @@ test_self_multiple_channels(void)
 	dssh_channel ch1 = open_exec(ctx.client,"cmd1");
 	ASSERT_NOT_NULL(ch1);
 
+	dssh_chan_poll(ch1, DSSH_POLL_WRITE, 5000);
 	const uint8_t data1[] = "channel-one";
 	dssh_chan_write(ch1, 0, data1, sizeof(data1) - 1);
 
@@ -1159,6 +1160,7 @@ test_self_multiple_channels(void)
 	dssh_channel ch2 = open_exec(ctx.client,"cmd2");
 	ASSERT_NOT_NULL(ch2);
 
+	dssh_chan_poll(ch2, DSSH_POLL_WRITE, 5000);
 	const uint8_t data2[] = "channel-two";
 	dssh_chan_write(ch2, 0, data2, sizeof(data2) - 1);
 
@@ -1244,6 +1246,7 @@ test_self_eof_half_close(void)
 	ASSERT_NOT_NULL(ch);
 
 	/* Write some data then close */
+	dssh_chan_poll(ch, DSSH_POLL_WRITE, 5000);
 	const uint8_t data[] = "client-data";
 	dssh_chan_write(ch, 0, data, sizeof(data) - 1);
 	dssh_chan_close(ch, 0);
@@ -1281,6 +1284,7 @@ test_self_rekey_during_data(void)
 	 * the client demux receives the echoed data. */
 	ctx.client->trans.rx_bytes_since_rekey = DSSH_REKEY_BYTES - 100;
 
+	dssh_chan_poll(ch, DSSH_POLL_WRITE, 5000);
 	uint8_t data[256];
 	memset(data, 'R', sizeof(data));
 	int64_t w = dssh_chan_write(ch, 0, data, sizeof(data));
@@ -1346,6 +1350,7 @@ test_self_rekey_manual(void)
 	 * will trigger rekey when it receives the echoed data. */
 	ctx.client->trans.rx_bytes_since_rekey = DSSH_REKEY_BYTES - 50;
 
+	dssh_chan_poll(ch, DSSH_POLL_WRITE, 5000);
 	const uint8_t data[] = "after-rekey";
 	int64_t w = dssh_chan_write(ch, 0, data, sizeof(data) - 1);
 	ASSERT_TRUE(w > 0);
@@ -1403,6 +1408,7 @@ test_self_rekey_preserves_channels(void)
 	ASSERT_NOT_NULL(ch);
 
 	/* Send data before rekey */
+	dssh_chan_poll(ch, DSSH_POLL_WRITE, 5000);
 	const uint8_t before[] = "before-rekey-data";
 	int64_t w = dssh_chan_write(ch, 0,
 	    before, sizeof(before) - 1);
@@ -1598,6 +1604,7 @@ test_self_connection_drop(void)
 	ASSERT_NOT_NULL(ch);
 
 	/* Write some data to confirm the channel works */
+	dssh_chan_poll(ch, DSSH_POLL_WRITE, 5000);
 	const uint8_t data[] = "before drop";
 	int64_t w = dssh_chan_write(ch, 0, data, sizeof(data) - 1);
 	ASSERT_TRUE(w > 0);
@@ -1958,6 +1965,7 @@ test_self_chan_exec_echo(void)
 	ASSERT_FALSE(dssh_chan_has_pty(ch));
 
 	/* Write data using new API */
+	dssh_chan_poll(ch, DSSH_POLL_WRITE, 5000);
 	const uint8_t data[] = "Hello, dssh_chan!";
 	int64_t w = dssh_chan_write(ch, 0, data, sizeof(data) - 1);
 
@@ -2029,6 +2037,7 @@ test_self_chan_shell_pty(void)
 	ASSERT_NULL(dssh_chan_get_command(ch));
 
 	/* Write and read echo */
+	dssh_chan_poll(ch, DSSH_POLL_WRITE, 5000);
 	const uint8_t data[] = "pty-test";
 	int64_t w = dssh_chan_write(ch, 0, data, sizeof(data) - 1);
 
@@ -2189,6 +2198,7 @@ test_self_chan_accept_exec(void)
 	ASSERT_NOT_NULL(ch);
 
 	/* Write and read echo */
+	dssh_chan_poll(ch, DSSH_POLL_WRITE, 5000);
 	const uint8_t data[] = "round-trip-test";
 	int64_t w = dssh_chan_write(ch, 0, data, sizeof(data) - 1);
 
@@ -2307,6 +2317,7 @@ test_self_chan_accept_shell_pty(void)
 
 	const uint8_t data[] = "ping";
 
+	dssh_chan_poll(ch, DSSH_POLL_WRITE, 5000);
 	dssh_chan_write(ch, 0, data, sizeof(data) - 1);
 
 	uint8_t buf[256];
@@ -2477,6 +2488,7 @@ test_self_chan_read_peek(void)
 
 	const uint8_t data[] = "hello";
 
+	dssh_chan_poll(ch, DSSH_POLL_WRITE, 5000);
 	dssh_chan_write(ch, 0, data, sizeof(data) - 1);
 
 	/* Wait for echo data to arrive */
