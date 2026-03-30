@@ -783,4 +783,5 @@ static struct dssh_test_entry tests[] = {
 	{ "newkeys/mac_init_failure",          test_newkeys_mac_init_failure },
 };
 
+DSSH_TEST_NO_CLEANUP
 DSSH_TEST_MAIN(tests)

@@ -3307,4 +3307,6 @@ static struct dssh_test_entry tests[] = {
 	{ "sntrup761_handler_null_ka",        test_sntrup761_handler_null_ka },
 	{ "mlkem768_handler_null_ka",         test_mlkem768_handler_null_ka },
 };
+
+DSSH_TEST_NO_CLEANUP
 DSSH_TEST_MAIN(tests)

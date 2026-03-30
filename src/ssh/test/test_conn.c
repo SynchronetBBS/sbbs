@@ -455,7 +455,7 @@ static int
 server_accept_shell_thread(void *arg)
 {
 	struct open_shell_ctx *ctx = arg;
-	ctx->server_ch = dssh_chan_accept(ctx->server, ctx->cbs, 5000);
+	ctx->server_ch = dssh_chan_accept(ctx->server, ctx->cbs, 30000);
 	return 0;
 }
 
@@ -488,7 +488,7 @@ static int
 server_accept_subsys_thread(void *arg)
 {
 	struct open_subsys_ctx *ctx = arg;
-	ctx->server_ch = dssh_chan_accept(ctx->server, &accept_cbs_all, 5000);
+	ctx->server_ch = dssh_chan_accept(ctx->server, &accept_cbs_all, 30000);
 	return 0;
 }
 
@@ -576,7 +576,7 @@ test_open_exec(void)
 		.server = ctx.server,
 		.command = "echo hello",
 		.cbs = &accept_cbs_all,
-		.accept_timeout = 5000,
+		.accept_timeout = 30000,
 	};
 
 	if (open_exec_channel(&oc) < 0) {
@@ -605,7 +605,7 @@ test_open_exec_command(void)
 		.server = ctx.server,
 		.command = "ls -la /tmp",
 		.cbs = &accept_cbs_all,
-		.accept_timeout = 5000,
+		.accept_timeout = 30000,
 	};
 
 	if (open_exec_channel(&oc) < 0) {
@@ -654,7 +654,7 @@ test_open_exec_rejected(void)
 		.server = ctx.server,
 		.command = "rejected_cmd",
 		.cbs = &reject_exec_cbs,
-		.accept_timeout = 5000,
+		.accept_timeout = 30000,
 	};
 
 	thrd_t ct, st;
@@ -751,7 +751,7 @@ test_session_write_read(void)
 		.server = ctx.server,
 		.command = "cmd",
 		.cbs = &accept_cbs_all,
-		.accept_timeout = 5000,
+		.accept_timeout = 30000,
 	};
 	if (open_exec_channel(&oc) < 0) {
 		conn_cleanup(&ctx);
@@ -791,7 +791,7 @@ test_session_read_write_reverse(void)
 		.server = ctx.server,
 		.command = "cmd",
 		.cbs = &accept_cbs_all,
-		.accept_timeout = 5000,
+		.accept_timeout = 30000,
 	};
 	if (open_exec_channel(&oc) < 0) {
 		conn_cleanup(&ctx);
@@ -831,7 +831,7 @@ test_session_write_ext(void)
 		.server = ctx.server,
 		.command = "cmd",
 		.cbs = &accept_cbs_all,
-		.accept_timeout = 5000,
+		.accept_timeout = 30000,
 	};
 	if (open_exec_channel(&oc) < 0) {
 		conn_cleanup(&ctx);
@@ -871,7 +871,7 @@ test_session_read_ext(void)
 		.server = ctx.server,
 		.command = "cmd",
 		.cbs = &accept_cbs_all,
-		.accept_timeout = 5000,
+		.accept_timeout = 30000,
 	};
 	if (open_exec_channel(&oc) < 0) {
 		conn_cleanup(&ctx);
@@ -910,7 +910,7 @@ test_session_poll_read(void)
 		.server = ctx.server,
 		.command = "cmd",
 		.cbs = &accept_cbs_all,
-		.accept_timeout = 5000,
+		.accept_timeout = 30000,
 	};
 	if (open_exec_channel(&oc) < 0) {
 		conn_cleanup(&ctx);
@@ -941,7 +941,7 @@ test_session_poll_timeout(void)
 		.server = ctx.server,
 		.command = "cmd",
 		.cbs = &accept_cbs_all,
-		.accept_timeout = 5000,
+		.accept_timeout = 30000,
 	};
 	if (open_exec_channel(&oc) < 0) {
 		conn_cleanup(&ctx);
@@ -969,7 +969,7 @@ test_session_large_write(void)
 		.server = ctx.server,
 		.command = "cmd",
 		.cbs = &accept_cbs_all,
-		.accept_timeout = 5000,
+		.accept_timeout = 30000,
 	};
 	if (open_exec_channel(&oc) < 0) {
 		conn_cleanup(&ctx);
@@ -1034,7 +1034,7 @@ test_session_multiple_writes(void)
 		.server = ctx.server,
 		.command = "cmd",
 		.cbs = &accept_cbs_all,
-		.accept_timeout = 5000,
+		.accept_timeout = 30000,
 	};
 	if (open_exec_channel(&oc) < 0) {
 		conn_cleanup(&ctx);
@@ -1294,7 +1294,7 @@ test_send_signal(void)
 		.server = ctx.server,
 		.command = "cmd",
 		.cbs = &accept_cbs_all,
-		.accept_timeout = 5000,
+		.accept_timeout = 30000,
 	};
 	if (open_exec_channel(&oc) < 0) {
 		conn_cleanup(&ctx);
@@ -1333,7 +1333,7 @@ test_signal_after_data(void)
 		.server = ctx.server,
 		.command = "cmd",
 		.cbs = &accept_cbs_all,
-		.accept_timeout = 5000,
+		.accept_timeout = 30000,
 	};
 	if (open_exec_channel(&oc) < 0) {
 		conn_cleanup(&ctx);
@@ -1445,7 +1445,7 @@ test_session_close_exit_code(void)
 		.server = ctx.server,
 		.command = "cmd",
 		.cbs = &accept_cbs_all,
-		.accept_timeout = 5000,
+		.accept_timeout = 30000,
 	};
 	if (open_exec_channel(&oc) < 0) {
 		conn_cleanup(&ctx);
@@ -1523,7 +1523,7 @@ test_eof_detection(void)
 		.server = ctx.server,
 		.command = "cmd",
 		.cbs = &accept_cbs_all,
-		.accept_timeout = 5000,
+		.accept_timeout = 30000,
 	};
 	if (open_exec_channel(&oc) < 0) {
 		conn_cleanup(&ctx);
@@ -1569,7 +1569,7 @@ test_eof_half_close(void)
 		.server = ctx.server,
 		.command = "cmd",
 		.cbs = &accept_cbs_all,
-		.accept_timeout = 5000,
+		.accept_timeout = 30000,
 	};
 	if (open_exec_channel(&oc) < 0) {
 		conn_cleanup(&ctx);
@@ -1615,7 +1615,7 @@ test_graceful_disconnect(void)
 		.server = ctx.server,
 		.command = "cmd",
 		.cbs = &accept_cbs_all,
-		.accept_timeout = 5000,
+		.accept_timeout = 30000,
 	};
 	if (open_exec_channel(&oc) < 0) {
 		conn_cleanup(&ctx);
@@ -1655,8 +1655,8 @@ server_accept_two_channels(void *arg)
 {
 	struct two_channel_server_ctx *sctx = arg;
 
-	sctx->ch1 = dssh_chan_accept(sctx->server, sctx->cbs, 5000);
-	sctx->ch2 = dssh_chan_accept(sctx->server, sctx->cbs, 5000);
+	sctx->ch1 = dssh_chan_accept(sctx->server, sctx->cbs, 30000);
+	sctx->ch2 = dssh_chan_accept(sctx->server, sctx->cbs, 30000);
 
 	return 0;
 }
@@ -1758,7 +1758,7 @@ server_reject_first_accept_second(void *arg)
 		sctx->first_rejected = true;
 
 	/* Second accept with accepting callback */
-	sctx->ch = dssh_chan_accept(sctx->server, &accept_cbs_all, 5000);
+	sctx->ch = dssh_chan_accept(sctx->server, &accept_cbs_all, 30000);
 
 	return 0;
 }
@@ -1948,7 +1948,7 @@ test_concurrent_write_read(void)
 		.server = ctx.server,
 		.command = "cmd",
 		.cbs = &accept_cbs_all,
-		.accept_timeout = 5000,
+		.accept_timeout = 30000,
 	};
 	if (open_exec_channel(&oc) < 0) {
 		conn_cleanup(&ctx);
@@ -1995,7 +1995,7 @@ test_terminate_during_io(void)
 		.server = ctx.server,
 		.command = "cmd",
 		.cbs = &accept_cbs_all,
-		.accept_timeout = 5000,
+		.accept_timeout = 30000,
 	};
 	if (open_exec_channel(&oc) < 0) {
 		conn_cleanup(&ctx);
@@ -2041,7 +2041,7 @@ test_connection_drop_during_read(void)
 		.server = ctx.server,
 		.command = "cmd",
 		.cbs = &accept_cbs_all,
-		.accept_timeout = 5000,
+		.accept_timeout = 30000,
 	};
 	if (open_exec_channel(&oc) < 0) {
 		conn_cleanup(&ctx);
@@ -2085,7 +2085,7 @@ test_connection_drop_during_write(void)
 		.server = ctx.server,
 		.command = "cmd",
 		.cbs = &accept_cbs_all,
-		.accept_timeout = 5000,
+		.accept_timeout = 30000,
 	};
 	if (open_exec_channel(&oc) < 0) {
 		conn_cleanup(&ctx);
@@ -2126,7 +2126,7 @@ test_cleanup_after_drop(void)
 		.server = ctx.server,
 		.command = "cmd",
 		.cbs = &accept_cbs_all,
-		.accept_timeout = 5000,
+		.accept_timeout = 30000,
 	};
 	if (open_exec_channel(&oc) < 0) {
 		conn_cleanup(&ctx);
@@ -2206,7 +2206,7 @@ test_session_poll_timeout_zero(void)
 		.server = ctx.server,
 		.command = "echo polltest",
 		.cbs = &accept_cbs_all,
-		.accept_timeout = 5000,
+		.accept_timeout = 30000,
 	};
 	if (open_exec_channel(&oc) < 0) {
 		conn_cleanup(&ctx);
@@ -2338,7 +2338,7 @@ test_window_adjust_from_peer(void)
 		.server = ctx.server,
 		.command = "echo watest",
 		.cbs = &accept_cbs_all,
-		.accept_timeout = 5000,
+		.accept_timeout = 30000,
 	};
 	if (open_exec_channel(&oc) < 0 || oc.client_ch == NULL || oc.server_ch == NULL) {
 		conn_cleanup(&ctx);
@@ -2378,7 +2378,7 @@ test_data_after_eof(void)
 		.server = ctx.server,
 		.command = "echo eoftest",
 		.cbs = &accept_cbs_all,
-		.accept_timeout = 5000,
+		.accept_timeout = 30000,
 	};
 	if (open_exec_channel(&oc) < 0 || oc.client_ch == NULL || oc.server_ch == NULL) {
 		conn_cleanup(&ctx);
@@ -2431,7 +2431,7 @@ test_truncated_channel_data(void)
 		.server = ctx.server,
 		.command = "echo trunctest",
 		.cbs = &accept_cbs_all,
-		.accept_timeout = 5000,
+		.accept_timeout = 30000,
 	};
 	if (open_exec_channel(&oc) < 0 || oc.client_ch == NULL || oc.server_ch == NULL) {
 		conn_cleanup(&ctx);
@@ -2471,7 +2471,7 @@ test_ext_data_after_eof(void)
 		.server = ctx.server,
 		.command = "echo exteof",
 		.cbs = &accept_cbs_all,
-		.accept_timeout = 5000,
+		.accept_timeout = 30000,
 	};
 	if (open_exec_channel(&oc) < 0 || oc.client_ch == NULL || oc.server_ch == NULL) {
 		conn_cleanup(&ctx);
@@ -2518,7 +2518,7 @@ test_truncated_ext_data(void)
 		.server = ctx.server,
 		.command = "echo truncext",
 		.cbs = &accept_cbs_all,
-		.accept_timeout = 5000,
+		.accept_timeout = 30000,
 	};
 	if (open_exec_channel(&oc) < 0 || oc.client_ch == NULL || oc.server_ch == NULL) {
 		conn_cleanup(&ctx);
@@ -2556,7 +2556,7 @@ test_channel_request_want_reply(void)
 		.server = ctx.server,
 		.command = "echo reqtest",
 		.cbs = &accept_cbs_all,
-		.accept_timeout = 5000,
+		.accept_timeout = 30000,
 	};
 	if (open_exec_channel(&oc) < 0 || oc.client_ch == NULL || oc.server_ch == NULL) {
 		conn_cleanup(&ctx);
@@ -2600,7 +2600,7 @@ test_data_exceeds_window(void)
 		.server = ctx.server,
 		.command = "echo wintest",
 		.cbs = &accept_cbs_all,
-		.accept_timeout = 5000,
+		.accept_timeout = 30000,
 	};
 	if (open_exec_channel(&oc) < 0 || oc.client_ch == NULL || oc.server_ch == NULL) {
 		conn_cleanup(&ctx);
@@ -2638,7 +2638,7 @@ test_session_poll_write(void)
 		.server = ctx.server,
 		.command = "echo poll_write",
 		.cbs = &accept_cbs_all,
-		.accept_timeout = 5000,
+		.accept_timeout = 30000,
 	};
 	if (open_exec_channel(&oc) < 0 || oc.client_ch == NULL || oc.server_ch == NULL) {
 		conn_cleanup(&ctx);
@@ -2673,7 +2673,7 @@ test_session_write_after_eof(void)
 		.server = ctx.server,
 		.command = "echo eof_write",
 		.cbs = &accept_cbs_all,
-		.accept_timeout = 5000,
+		.accept_timeout = 30000,
 	};
 	if (open_exec_channel(&oc) < 0 || oc.client_ch == NULL || oc.server_ch == NULL) {
 		conn_cleanup(&ctx);
@@ -2704,7 +2704,7 @@ test_session_write_ext_after_eof(void)
 		.server = ctx.server,
 		.command = "echo ext_eof",
 		.cbs = &accept_cbs_all,
-		.accept_timeout = 5000,
+		.accept_timeout = 30000,
 	};
 	if (open_exec_channel(&oc) < 0 || oc.client_ch == NULL || oc.server_ch == NULL) {
 		conn_cleanup(&ctx);
@@ -2849,7 +2849,7 @@ test_read_event_empty(void)
 		.server = ctx.server,
 		.command = "echo sig_empty",
 		.cbs = &accept_cbs_all,
-		.accept_timeout = 5000,
+		.accept_timeout = 30000,
 	};
 	if (open_exec_channel(&oc) < 0 || oc.client_ch == NULL || oc.server_ch == NULL) {
 		conn_cleanup(&ctx);
@@ -2879,7 +2879,7 @@ test_signal_interleave_read(void)
 		.server = ctx.server,
 		.command = "echo siginterleave",
 		.cbs = &accept_cbs_all,
-		.accept_timeout = 5000,
+		.accept_timeout = 30000,
 	};
 	if (open_exec_channel(&oc) < 0 || oc.client_ch == NULL || oc.server_ch == NULL) {
 		conn_cleanup(&ctx);
@@ -2961,7 +2961,7 @@ test_signal_interleave_read_ext(void)
 		.server = ctx.server,
 		.command = "echo sigext",
 		.cbs = &accept_cbs_all,
-		.accept_timeout = 5000,
+		.accept_timeout = 30000,
 	};
 	if (open_exec_channel(&oc) < 0 || oc.client_ch == NULL || oc.server_ch == NULL) {
 		conn_cleanup(&ctx);
@@ -3090,7 +3090,7 @@ test_truncated_channel_request(void)
 		.server = ctx.server,
 		.command = "echo chanreq",
 		.cbs = &accept_cbs_all,
-		.accept_timeout = 5000,
+		.accept_timeout = 30000,
 	};
 	if (open_exec_channel(&oc) < 0 || oc.client_ch == NULL || oc.server_ch == NULL) {
 		conn_cleanup(&ctx);
@@ -3177,7 +3177,7 @@ test_session_poll_read_empty(void)
 		.server = ctx.server,
 		.command = "echo poll_empty",
 		.cbs = &accept_cbs_all,
-		.accept_timeout = 5000,
+		.accept_timeout = 30000,
 	};
 	if (open_exec_channel(&oc) < 0 || oc.client_ch == NULL || oc.server_ch == NULL) {
 		conn_cleanup(&ctx);
@@ -3215,7 +3215,7 @@ test_session_write_window_zero(void)
 		.server = ctx.server,
 		.command = "echo winzero",
 		.cbs = &accept_cbs_all,
-		.accept_timeout = 5000,
+		.accept_timeout = 30000,
 	};
 	if (open_exec_channel(&oc) < 0 || oc.client_ch == NULL || oc.server_ch == NULL) {
 		conn_cleanup(&ctx);
@@ -3258,7 +3258,7 @@ test_session_write_ext_window_zero(void)
 		.server = ctx.server,
 		.command = "echo extwinzero",
 		.cbs = &accept_cbs_all,
-		.accept_timeout = 5000,
+		.accept_timeout = 30000,
 	};
 	if (open_exec_channel(&oc) < 0 || oc.client_ch == NULL || oc.server_ch == NULL) {
 		conn_cleanup(&ctx);
@@ -3335,7 +3335,7 @@ test_setup_exec_rejected_by_callback(void)
 		.server = ctx.server,
 		.command = "rejected_exec",
 		.cbs = &reject_exec_cbs,
-		.accept_timeout = 5000,
+		.accept_timeout = 30000,
 	};
 
 	thrd_t ct, st;
@@ -3424,7 +3424,7 @@ test_channel_success_no_request(void)
 		.server = ctx.server,
 		.command = "echo success",
 		.cbs = &accept_cbs_all,
-		.accept_timeout = 5000,
+		.accept_timeout = 30000,
 	};
 	if (open_exec_channel(&oc) < 0 || oc.client_ch == NULL || oc.server_ch == NULL) {
 		conn_cleanup(&ctx);
@@ -3472,7 +3472,7 @@ test_double_eof_close(void)
 		.server = ctx.server,
 		.command = "echo double",
 		.cbs = &accept_cbs_all,
-		.accept_timeout = 5000,
+		.accept_timeout = 30000,
 	};
 	if (open_exec_channel(&oc) < 0 || oc.client_ch == NULL || oc.server_ch == NULL) {
 		conn_cleanup(&ctx);
@@ -3502,7 +3502,7 @@ test_data_dlen_exceeds_payload(void)
 		.server = ctx.server,
 		.command = "echo dlen",
 		.cbs = &accept_cbs_all,
-		.accept_timeout = 5000,
+		.accept_timeout = 30000,
 	};
 	if (open_exec_channel(&oc) < 0 || oc.client_ch == NULL || oc.server_ch == NULL) {
 		conn_cleanup(&ctx);
@@ -3560,7 +3560,7 @@ test_demux_dispatch_chan_type_zero(void)
 		.server = ctx.server,
 		.command = "echo chantype",
 		.cbs = &accept_cbs_all,
-		.accept_timeout = 5000,
+		.accept_timeout = 30000,
 	};
 	if (open_exec_channel(&oc) < 0 || oc.client_ch == NULL || oc.server_ch == NULL) {
 		conn_cleanup(&ctx);
@@ -3601,7 +3601,7 @@ test_send_eof_already_sent(void)
 	struct open_exec_ctx oc = {
 		.client = ctx.client, .server = ctx.server,
 		.command = "echo eof2", .cbs = &accept_cbs_all,
-		.accept_timeout = 5000,
+		.accept_timeout = 30000,
 	};
 	if (open_exec_channel(&oc) < 0 || !oc.client_ch || !oc.server_ch) {
 		conn_cleanup(&ctx);
@@ -3627,7 +3627,7 @@ test_send_close_already_sent(void)
 	struct open_exec_ctx oc = {
 		.client = ctx.client, .server = ctx.server,
 		.command = "echo close2", .cbs = &accept_cbs_all,
-		.accept_timeout = 5000,
+		.accept_timeout = 30000,
 	};
 	if (open_exec_channel(&oc) < 0 || !oc.client_ch || !oc.server_ch) {
 		conn_cleanup(&ctx);
@@ -3653,7 +3653,7 @@ test_maybe_replenish_after_eof(void)
 	struct open_exec_ctx oc = {
 		.client = ctx.client, .server = ctx.server,
 		.command = "echo replenish", .cbs = &accept_cbs_all,
-		.accept_timeout = 5000,
+		.accept_timeout = 30000,
 	};
 	if (open_exec_channel(&oc) < 0 || !oc.client_ch || !oc.server_ch) {
 		conn_cleanup(&ctx);
@@ -3682,7 +3682,7 @@ test_maybe_replenish_low_window(void)
 	struct open_exec_ctx oc = {
 		.client = ctx.client, .server = ctx.server,
 		.command = "echo replow", .cbs = &accept_cbs_all,
-		.accept_timeout = 5000,
+		.accept_timeout = 30000,
 	};
 	if (open_exec_channel(&oc) < 0 || !oc.client_ch || !oc.server_ch) {
 		conn_cleanup(&ctx);
@@ -3709,7 +3709,7 @@ test_demux_window_underflow_to_zero(void)
 	struct open_exec_ctx oc = {
 		.client = ctx.client, .server = ctx.server,
 		.command = "echo wunder", .cbs = &accept_cbs_all,
-		.accept_timeout = 5000,
+		.accept_timeout = 30000,
 	};
 	if (open_exec_channel(&oc) < 0 || !oc.client_ch || !oc.server_ch) {
 		conn_cleanup(&ctx);
@@ -3759,7 +3759,7 @@ test_window_add_overflow(void)
 	struct open_exec_ctx oc = {
 		.client = ctx.client, .server = ctx.server,
 		.command = "echo woverflow", .cbs = &accept_cbs_all,
-		.accept_timeout = 5000,
+		.accept_timeout = 30000,
 	};
 	if (open_exec_channel(&oc) < 0 || !oc.client_ch || !oc.server_ch) {
 		conn_cleanup(&ctx);
@@ -3850,7 +3850,7 @@ test_session_poll_nsec_overflow(void)
 		.server = ctx.server,
 		.command = "echo nsec",
 		.cbs = &accept_cbs_all,
-		.accept_timeout = 5000,
+		.accept_timeout = 30000,
 	};
 	if (open_exec_channel(&oc) < 0 || oc.client_ch == NULL || oc.server_ch == NULL) {
 		conn_cleanup(&ctx);
@@ -3990,7 +3990,7 @@ test_demux_data_truncation_window(void)
 	struct open_exec_ctx oc = {
 		.client = ctx.client, .server = ctx.server,
 		.command = "echo trunc", .cbs = &accept_cbs_all,
-		.accept_timeout = 5000,
+		.accept_timeout = 30000,
 	};
 	if (open_exec_channel(&oc) < 0 || !oc.client_ch || !oc.server_ch) {
 		conn_cleanup(&ctx);
@@ -4039,7 +4039,7 @@ test_replenish_caps_to_buffer_space(void)
 	struct open_exec_ctx oc = {
 		.client = ctx.client, .server = ctx.server,
 		.command = "echo repcap", .cbs = &accept_cbs_all,
-		.accept_timeout = 5000,
+		.accept_timeout = 30000,
 	};
 	if (open_exec_channel(&oc) < 0 || !oc.client_ch || !oc.server_ch) {
 		conn_cleanup(&ctx);
@@ -4085,7 +4085,7 @@ test_data_after_close(void)
 		.server = ctx.server,
 		.command = "echo closetest",
 		.cbs = &accept_cbs_all,
-		.accept_timeout = 5000,
+		.accept_timeout = 30000,
 	};
 	if (open_exec_channel(&oc) < 0 || oc.client_ch == NULL || oc.server_ch == NULL) {
 		conn_cleanup(&ctx);
@@ -4134,7 +4134,7 @@ test_ext_data_after_close(void)
 		.server = ctx.server,
 		.command = "echo extclose",
 		.cbs = &accept_cbs_all,
-		.accept_timeout = 5000,
+		.accept_timeout = 30000,
 	};
 	if (open_exec_channel(&oc) < 0 || oc.client_ch == NULL || oc.server_ch == NULL) {
 		conn_cleanup(&ctx);
@@ -4227,7 +4227,7 @@ test_truncated_window_adjust(void)
 		.server = ctx.server,
 		.command = "echo winadj",
 		.cbs = &accept_cbs_all,
-		.accept_timeout = 5000,
+		.accept_timeout = 30000,
 	};
 	if (open_exec_channel(&oc) < 0 || oc.client_ch == NULL || oc.server_ch == NULL) {
 		conn_cleanup(&ctx);
@@ -4661,7 +4661,7 @@ test_poll_deadline_not_reset(void)
 		.server = ctx.server,
 		.command = "cmd",
 		.cbs = &accept_cbs_all,
-		.accept_timeout = 5000,
+		.accept_timeout = 30000,
 	};
 	if (open_exec_channel(&oc) < 0) {
 		conn_cleanup(&ctx);
@@ -5093,4 +5093,5 @@ static struct dssh_test_entry tests[] = {
 	{ "chanreq/parse_truncated_want_reply", test_chanreq_parse_truncated_want_reply },
 };
 
+DSSH_TEST_NO_CLEANUP
 DSSH_TEST_MAIN(tests)

@@ -73,9 +73,11 @@ pipe_write(struct mock_io_pipe *p, const uint8_t *data, size_t len)
 	while (written < len) {
 		ssize_t n = send(fd, data + written, len - written,
 		    MSG_NOSIGNAL);
+		if (n < 0 && errno == EINTR)
+			continue;
 		if (n <= 0)
 			return -1;
-		written += n;
+		written += (size_t)n;
 	}
 	return 0;
 }
@@ -92,9 +94,11 @@ pipe_read(struct mock_io_pipe *p, uint8_t *buf, size_t len)
 	size_t have = 0;
 	while (have < len) {
 		ssize_t n = read(fd, buf + have, len - have);
+		if (n < 0 && errno == EINTR)
+			continue;
 		if (n <= 0)
 			return -1;
-		have += n;
+		have += (size_t)n;
 	}
 	return 0;
 }
@@ -113,6 +117,8 @@ pipe_readline(struct mock_io_pipe *p, uint8_t *buf, size_t bufsz,
 	for (;;) {
 		uint8_t ch;
 		ssize_t n = read(fd, &ch, 1);
+		if (n < 0 && errno == EINTR)
+			continue;
 		if (n <= 0)
 			return -1;
 		if (have < bufsz)

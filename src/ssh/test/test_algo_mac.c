@@ -503,4 +503,5 @@ static struct dssh_test_entry tests[] = {
 	{ "mac/none/no_init",                test_none_mac_no_init },
 };
 
+DSSH_TEST_NO_CLEANUP
 DSSH_TEST_MAIN(tests)

@@ -140,6 +140,17 @@ struct dssh_test_entry {
  *   };
  *   DSSH_TEST_MAIN(tests)
  */
+/*
+ * Optional per-test cleanup hook.  If the test file defines
+ * dssh_test_after_each(int result) before DSSH_TEST_MAIN, it is
+ * called after every test — passing the result (PASS/FAIL/SKIP).
+ * Use it to clean up leaked threads/sessions when an ASSERT bails
+ * out of a test without running the normal cleanup path.
+ * Files that don't need it define a no-op via DSSH_TEST_NO_CLEANUP.
+ */
+#define DSSH_TEST_NO_CLEANUP \
+	static void dssh_test_after_each(int r) { (void)r; }
+
 #include <signal.h>
 #define DSSH_TEST_MAIN(test_table) \
 int main(int argc, char *argv[]) \
@@ -155,6 +166,7 @@ int main(int argc, char *argv[]) \
 		printf("%-60s ", test_table[i].name); \
 		fflush(stdout); \
 		int result = test_table[i].fn(); \
+		dssh_test_after_each(result); \
 		if (result > 0) { \
 			printf("PASS\n"); \
 			passed++; \

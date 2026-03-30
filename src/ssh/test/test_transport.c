@@ -7272,4 +7272,5 @@ static struct dssh_test_entry tests[] = {
 	{ "c25519/encode_ss_alloc_fail",     test_c25519_encode_shared_secret_alloc_fail },
 };
 
+DSSH_TEST_NO_CLEANUP
 DSSH_TEST_MAIN(tests)

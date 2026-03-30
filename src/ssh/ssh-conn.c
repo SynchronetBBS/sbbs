@@ -680,6 +680,44 @@ window_add(uint32_t current, uint32_t bytes)
 	return result;
 }
 
+/*
+ * Atomic saturating add for remote_window.
+ * Only the demux thread increments (WINDOW_ADJUST); only the app
+ * thread decrements (zc_send).  CAS loop handles the rare concurrent
+ * case where both happen simultaneously.
+ */
+static inline void
+window_atomic_add(atomic_uint_least32_t *win, uint32_t bytes)
+{
+	uint32_t old = atomic_load_explicit(win, memory_order_relaxed);
+
+	for (;;) {
+		uint32_t nv = window_add(old, bytes);
+
+		if (atomic_compare_exchange_weak_explicit(win, &old, nv,
+		    memory_order_release, memory_order_relaxed))
+			break;
+	}
+}
+
+/*
+ * Atomic saturating subtract for remote_window.
+ * Deducts up to `bytes` from the window, clamping at 0.
+ */
+static inline void
+window_atomic_sub(atomic_uint_least32_t *win, uint32_t bytes)
+{
+	uint32_t old = atomic_load_explicit(win, memory_order_relaxed);
+
+	for (;;) {
+		uint32_t nv = (bytes <= old) ? old - bytes : 0;
+
+		if (atomic_compare_exchange_weak_explicit(win, &old, nv,
+		    memory_order_release, memory_order_relaxed))
+			break;
+	}
+}
+
 /* ================================================================
  * Low-level wire functions -- internal only.
  * Used by the high-level API; not part of the public interface.
@@ -1391,7 +1429,7 @@ demux_dispatch(struct dssh_session_s *sess, uint8_t msg_type,
 			if (payload_len >= 9) {
 				uint32_t bytes = DSSH_GET_U32(&payload[5]);
 
-				ch->remote_window = window_add(ch->remote_window, bytes);
+				window_atomic_add(&ch->remote_window, bytes);
 			}
 			break;
 
@@ -1475,7 +1513,8 @@ demux_open_confirmation(struct dssh_session_s *sess,
 
 	/* find_channel() returns with buf_mtx held */
 	ch->remote_id = DSSH_GET_U32(&payload[5]);
-	ch->remote_window = DSSH_GET_U32(&payload[9]);
+	atomic_store_explicit(&ch->remote_window,
+	    DSSH_GET_U32(&payload[9]), memory_order_release);
 	ch->remote_max_packet = DSSH_GET_U32(&payload[13]);
 	ch->open = true;
 	dssh_thrd_check(sess, cnd_broadcast(&ch->poll_cnd));
@@ -2018,7 +2057,7 @@ accept_channel_init(struct dssh_session_s *sess, struct dssh_incoming_open *inc)
 	ch->local_id = (uint32_t)cid;
 	ch->local_window = 0; /* initial_window=0; WINDOW_ADJUST after setup */
 	ch->remote_id = inc->peer_channel;
-	ch->remote_window = inc->peer_window;
+	atomic_init(&ch->remote_window, inc->peer_window);
 	ch->remote_max_packet = inc->peer_max_packet;
 
 	if (mtx_init(&ch->buf_mtx, mtx_plain) != thrd_success) {
@@ -2170,7 +2209,8 @@ zc_getbuf_inner(struct dssh_channel_s *ch, int stream,
 		return DSSH_ERROR_TERMINATED;
 	}
 
-	uint32_t window = ch->remote_window;
+	uint32_t window = atomic_load_explicit(&ch->remote_window,
+	    memory_order_acquire);
 	uint32_t max_pkt = ch->remote_max_packet;
 
 	dssh_thrd_check(sess, mtx_unlock(&ch->buf_mtx));
@@ -2239,13 +2279,9 @@ zc_send_inner(struct dssh_channel_s *ch, size_t len)
 	int ret = tx_finalize(sess, payload_len);
 
 	if (ret == 0) {
-		/* Deduct from remote_window under buf_mtx */
-		dssh_thrd_check(sess, mtx_lock(&ch->buf_mtx));
-		if (len <= ch->remote_window)
-			ch->remote_window -= (uint32_t)len;
-		else
-			ch->remote_window = 0;
-		dssh_thrd_check(sess, mtx_unlock(&ch->buf_mtx));
+		/* Deduct from remote_window atomically — no buf_mtx needed */
+		uint32_t len_u32 = (uint32_t)len;
+		window_atomic_sub(&ch->remote_window, len_u32);
 	}
 
 	if ((ret < 0) && (ret != DSSH_ERROR_TOOLONG)
@@ -2620,10 +2656,18 @@ dssh_chan_poll(struct dssh_channel_s *ch, int events, int timeout_ms)
 			ready |= DSSH_POLL_READ;
 		if ((events & DSSH_POLL_READEXT) && ((session_readable(ch, true) > 0) || ch->eof_received || ch->close_received))
 			ready |= DSSH_POLL_READEXT;
-		if ((events & DSSH_POLL_WRITE) && (ch->remote_window > 0) && ch->open && !ch->close_received)
+		if ((events & DSSH_POLL_WRITE) && (atomic_load_explicit(&ch->remote_window, memory_order_acquire) > 0) && ch->open && !ch->close_received)
 			ready |= DSSH_POLL_WRITE;
 		if ((events & DSSH_POLL_EVENT) && (ch->events.count > 0 || ch->events.has_frozen)) {
-			if (!ch->events.has_frozen) event_queue_freeze(&ch->events);
+			if (!ch->events.has_frozen) {
+				event_queue_freeze(&ch->events);
+				/* Overwrite queue-time positions with unread
+				 * byte counts at poll time (design line 392). */
+				if (ch->events.has_frozen && ch->chan_type == DSSH_CHAN_SESSION) {
+					ch->events.frozen.stdout_pos = ch->buf.session.stdout_buf.used;
+					ch->events.frozen.stderr_pos = ch->buf.session.stderr_buf.used;
+				}
+			}
 			if (ch->events.has_frozen) ready |= DSSH_POLL_EVENT;
 		}
 		if (ready || sess->terminate) { dssh_thrd_check(sess, mtx_unlock(&ch->buf_mtx)); return ready; }
@@ -3014,7 +3058,7 @@ chan_accept_setup_loop(struct dssh_session_s *sess, struct dssh_channel_s *ch,
 		int res = setup_recv(sess, ch, &msg_type, &payload, &payload_len);
 		if (res < 0) return res;
 		if (msg_type == SSH_MSG_CHANNEL_WINDOW_ADJUST) {
-			if (payload_len >= 9) ch->remote_window = window_add(ch->remote_window, DSSH_GET_U32(&payload[5]));
+			if (payload_len >= 9) window_atomic_add(&ch->remote_window, DSSH_GET_U32(&payload[5]));
 			free(payload); continue;
 		}
 		if (msg_type != SSH_MSG_CHANNEL_REQUEST) { free(payload); continue; }

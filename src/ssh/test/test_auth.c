@@ -4772,11 +4772,10 @@ test_server_send_fail_service_accept(void)
 
 	/* Close s2c before the server sends SERVICE_ACCEPT */
 	mock_io_close_s2c(&ctx.io);
+	mock_io_close_c2s(&ctx.io);
 
 	thrd_join(st, NULL);
 	ASSERT_TRUE(sa.result < 0);
-
-	mock_io_close_c2s(&ctx.io);
 	handshake_cleanup(&ctx);
 	return TEST_PASS;
 }
@@ -4843,11 +4842,10 @@ test_server_send_fail_none_success(void)
 
 	/* Close s2c before server sends USERAUTH_SUCCESS */
 	mock_io_close_s2c(&ctx.io);
+	mock_io_close_c2s(&ctx.io);
 
 	thrd_join(st, NULL);
 	ASSERT_TRUE(sa.result < 0);
-
-	mock_io_close_c2s(&ctx.io);
 	handshake_cleanup(&ctx);
 	return TEST_PASS;
 }
@@ -4915,11 +4913,10 @@ test_server_send_fail_none_failure(void)
 
 	/* Close s2c before server sends USERAUTH_FAILURE */
 	mock_io_close_s2c(&ctx.io);
+	mock_io_close_c2s(&ctx.io);
 
 	thrd_join(st, NULL);
 	ASSERT_TRUE(sa.result < 0);
-
-	mock_io_close_c2s(&ctx.io);
 	handshake_cleanup(&ctx);
 	return TEST_PASS;
 }
@@ -4991,11 +4988,10 @@ test_server_send_fail_password_success(void)
 
 	/* Close s2c before server sends USERAUTH_SUCCESS */
 	mock_io_close_s2c(&ctx.io);
+	mock_io_close_c2s(&ctx.io);
 
 	thrd_join(st, NULL);
 	ASSERT_TRUE(sa.result < 0);
-
-	mock_io_close_c2s(&ctx.io);
 	handshake_cleanup(&ctx);
 	return TEST_PASS;
 }
@@ -5067,11 +5063,10 @@ test_server_send_fail_password_failure(void)
 
 	/* Close s2c before server sends USERAUTH_FAILURE */
 	mock_io_close_s2c(&ctx.io);
+	mock_io_close_c2s(&ctx.io);
 
 	thrd_join(st, NULL);
 	ASSERT_TRUE(sa.result < 0);
-
-	mock_io_close_c2s(&ctx.io);
 	handshake_cleanup(&ctx);
 	return TEST_PASS;
 }
@@ -5139,11 +5134,10 @@ test_server_send_fail_password_no_cb(void)
 
 	/* Close s2c before server sends USERAUTH_FAILURE */
 	mock_io_close_s2c(&ctx.io);
+	mock_io_close_c2s(&ctx.io);
 
 	thrd_join(st, NULL);
 	ASSERT_TRUE(sa.result < 0);
-
-	mock_io_close_c2s(&ctx.io);
 	handshake_cleanup(&ctx);
 	return TEST_PASS;
 }
@@ -5232,11 +5226,10 @@ test_server_send_fail_password_changereq(void)
 
 	/* Close s2c before server sends PASSWD_CHANGEREQ */
 	mock_io_close_s2c(&ctx.io);
+	mock_io_close_c2s(&ctx.io);
 
 	thrd_join(st, NULL);
 	ASSERT_TRUE(sa.result < 0);
-
-	mock_io_close_c2s(&ctx.io);
 	handshake_cleanup(&ctx);
 	return TEST_PASS;
 }
@@ -5293,11 +5286,10 @@ test_server_send_fail_publickey_no_cb(void)
 
 	/* Close s2c before server sends USERAUTH_FAILURE */
 	mock_io_close_s2c(&ctx.io);
+	mock_io_close_c2s(&ctx.io);
 
 	thrd_join(st, NULL);
 	ASSERT_TRUE(sa.result < 0);
-
-	mock_io_close_c2s(&ctx.io);
 	handshake_cleanup(&ctx);
 	return TEST_PASS;
 }
@@ -5358,11 +5350,10 @@ test_server_send_fail_pk_ok(void)
 
 	/* Close s2c before server sends PK_OK */
 	mock_io_close_s2c(&ctx.io);
+	mock_io_close_c2s(&ctx.io);
 
 	thrd_join(st, NULL);
 	ASSERT_TRUE(sa.result < 0);
-
-	mock_io_close_c2s(&ctx.io);
 	handshake_cleanup(&ctx);
 	return TEST_PASS;
 }
@@ -5423,11 +5414,10 @@ test_server_send_fail_pk_probe_rejected(void)
 
 	/* Close s2c before server sends USERAUTH_FAILURE */
 	mock_io_close_s2c(&ctx.io);
+	mock_io_close_c2s(&ctx.io);
 
 	thrd_join(st, NULL);
 	ASSERT_TRUE(sa.result < 0);
-
-	mock_io_close_c2s(&ctx.io);
 	handshake_cleanup(&ctx);
 	return TEST_PASS;
 }
@@ -5491,11 +5481,10 @@ test_server_send_fail_pk_unknown_algo(void)
 
 	/* Close s2c before server sends USERAUTH_FAILURE */
 	mock_io_close_s2c(&ctx.io);
+	mock_io_close_c2s(&ctx.io);
 
 	thrd_join(st, NULL);
 	ASSERT_TRUE(sa.result < 0);
-
-	mock_io_close_c2s(&ctx.io);
 	handshake_cleanup(&ctx);
 	return TEST_PASS;
 }
@@ -5549,11 +5538,10 @@ test_server_send_fail_unknown_method(void)
 
 	/* Close s2c before server sends USERAUTH_FAILURE */
 	mock_io_close_s2c(&ctx.io);
+	mock_io_close_c2s(&ctx.io);
 
 	thrd_join(st, NULL);
 	ASSERT_TRUE(sa.result < 0);
-
-	mock_io_close_c2s(&ctx.io);
 	handshake_cleanup(&ctx);
 	return TEST_PASS;
 }
@@ -7104,11 +7092,10 @@ test_server_send_fail_change_success(void)
 
 	/* Close s2c before server sends SUCCESS */
 	mock_io_close_s2c(&ctx.io);
+	mock_io_close_c2s(&ctx.io);
 
 	thrd_join(st, NULL);
 	ASSERT_TRUE(sa.result < 0);
-
-	mock_io_close_c2s(&ctx.io);
 	handshake_cleanup(&ctx);
 	return TEST_PASS;
 }
@@ -7192,11 +7179,10 @@ test_server_send_fail_change_changereq(void)
 
 	/* Close s2c before server sends CHANGEREQ */
 	mock_io_close_s2c(&ctx.io);
+	mock_io_close_c2s(&ctx.io);
 
 	thrd_join(st, NULL);
 	ASSERT_TRUE(sa.result < 0);
-
-	mock_io_close_c2s(&ctx.io);
 	handshake_cleanup(&ctx);
 	return TEST_PASS;
 }
@@ -7260,11 +7246,10 @@ test_server_send_fail_change_failure(void)
 
 	/* Close s2c before server sends FAILURE */
 	mock_io_close_s2c(&ctx.io);
+	mock_io_close_c2s(&ctx.io);
 
 	thrd_join(st, NULL);
 	ASSERT_TRUE(sa.result < 0);
-
-	mock_io_close_c2s(&ctx.io);
 	handshake_cleanup(&ctx);
 	return TEST_PASS;
 }
@@ -7361,13 +7346,13 @@ test_server_send_fail_pk_verify_bad_sig(void)
 		ASSERT_OK(send_packet(ctx.client, msg, pos, NULL));
 	}
 
-	/* Close s2c before server sends FAILURE after verify failure */
+	/* Close both pipes — s2c so server's send fails, c2s so server's
+	 * recv also fails if the send wins the race and loops back. */
 	mock_io_close_s2c(&ctx.io);
+	mock_io_close_c2s(&ctx.io);
 
 	thrd_join(st, NULL);
 	ASSERT_TRUE(sa.result < 0);
-
-	mock_io_close_c2s(&ctx.io);
 	handshake_cleanup(&ctx);
 	return TEST_PASS;
 }
@@ -7597,11 +7582,10 @@ test_server_send_fail_pk_reject_sig(void)
 
 	/* Close s2c before server sends FAILURE (publickey_cb rejects) */
 	mock_io_close_s2c(&ctx.io);
+	mock_io_close_c2s(&ctx.io);
 
 	thrd_join(st, NULL);
 	ASSERT_TRUE(sa.result < 0);
-
-	mock_io_close_c2s(&ctx.io);
 	handshake_cleanup(&ctx);
 	return TEST_PASS;
 }
@@ -7682,11 +7666,10 @@ test_server_send_fail_kbi_success(void)
 
 	/* Close s2c before server sends SUCCESS */
 	mock_io_close_s2c(&ctx.io);
+	mock_io_close_c2s(&ctx.io);
 
 	thrd_join(st, NULL);
 	ASSERT_TRUE(sa.result < 0);
-
-	mock_io_close_c2s(&ctx.io);
 	handshake_cleanup(&ctx);
 	return TEST_PASS;
 }
@@ -7759,11 +7742,10 @@ test_server_send_fail_kbi_failure(void)
 
 	/* Close s2c before server sends FAILURE */
 	mock_io_close_s2c(&ctx.io);
+	mock_io_close_c2s(&ctx.io);
 
 	thrd_join(st, NULL);
 	ASSERT_TRUE(sa.result < 0);
-
-	mock_io_close_c2s(&ctx.io);
 	handshake_cleanup(&ctx);
 	return TEST_PASS;
 }
@@ -7842,11 +7824,10 @@ test_server_send_fail_kbi_info_request(void)
 
 	/* Close s2c before server sends INFO_REQUEST */
 	mock_io_close_s2c(&ctx.io);
+	mock_io_close_c2s(&ctx.io);
 
 	thrd_join(st, NULL);
 	ASSERT_TRUE(sa.result < 0);
-
-	mock_io_close_c2s(&ctx.io);
 	handshake_cleanup(&ctx);
 	return TEST_PASS;
 }
@@ -7907,11 +7888,10 @@ test_server_send_fail_kbi_no_cb(void)
 
 	/* Close s2c before server sends FAILURE */
 	mock_io_close_s2c(&ctx.io);
+	mock_io_close_c2s(&ctx.io);
 
 	thrd_join(st, NULL);
 	ASSERT_TRUE(sa.result < 0);
-
-	mock_io_close_c2s(&ctx.io);
 	handshake_cleanup(&ctx);
 	return TEST_PASS;
 }
@@ -8663,7 +8643,7 @@ dclient_server_thread(void *arg)
 		send_packet(server, a->response,
 		    a->response_len, NULL);
 	if (a->close_s2c)
-		mock_io_close_s2c(&a->ctx->io);
+		mock_io_close_s2c_write(&a->ctx->io);
 	a->result = 0;
 	return 0;
 }
@@ -11366,7 +11346,7 @@ dclient_pk_banner_server(void *arg)
 		send_packet(server, a->response,
 		    a->response_len, NULL);
 	if (a->close_s2c)
-		mock_io_close_s2c(&a->ctx->io);
+		mock_io_close_s2c_write(&a->ctx->io);
 	a->result = 0;
 	return 0;
 }
@@ -11464,7 +11444,7 @@ dclient_pk_bad_banner_server(void *arg)
 		send_packet(server, a->response,
 		    a->response_len, NULL);
 	if (a->close_s2c)
-		mock_io_close_s2c(&a->ctx->io);
+		mock_io_close_s2c_write(&a->ctx->io);
 	a->result = 0;
 	return 0;
 }
@@ -12633,4 +12613,5 @@ static struct dssh_test_entry tests[] = {
 	{ "null/auth_publickey",                 test_auth_publickey_null },
 };
 
+DSSH_TEST_NO_CLEANUP
 DSSH_TEST_MAIN(tests)

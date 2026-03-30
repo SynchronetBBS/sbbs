@@ -1,7 +1,7 @@
 # Design Conformance Audit: design-channel-io-api.md
 
 Audited implementation against every item in the design document.
-Updated after fix pass (items 1-5, 7-10 fixed; 6, 11-12 noted).
+Updated after fix pass (items 1-5, 7-10 fixed; 12 noted; 6, 11 resolved).
 
 ## PASS
 
@@ -55,27 +55,24 @@ Updated after fix pass (items 1-5, 7-10 fixed; 6, 11-12 noted).
 
 ## DELIBERATE DEVIATIONS
 
-6. **`remote_window` not atomic (lines 607, 666-667)**
-   Design: "`remote_window`... `atomic_uint32_t` -- no mutex needed."
-   Implementation: `uint32_t remote_window` protected by `buf_mtx`.
-   Functionally correct — both demux (WINDOW_ADJUST increment) and
-   ZC send (deduction) hold `buf_mtx`.  The design's lock-free approach
-   is a performance optimization for the ZC send path that would allow
-   deducting without acquiring `buf_mtx`.  Deferred: converting to
-   atomic requires careful review of all `remote_window` access sites.
+6. ~~**`remote_window` not atomic (lines 607, 666-667)**~~
+   RESOLVED — `remote_window` converted to `atomic_uint_least32_t`.
+   All access sites updated: `window_atomic_add` (CAS saturating add)
+   for demux WINDOW_ADJUST, `window_atomic_sub` (CAS saturating sub)
+   for ZC send deduction, `atomic_load`/`atomic_store` for reads/init.
+   `zc_send_inner` no longer acquires `buf_mtx` for the deduction.
+   Also fixed 20 `test_server_send_fail_*` tests in test_auth.c that
+   had a race: only s2c was closed before `thrd_join`, so if the
+   server's send won the race the server looped to `recv_packet` on
+   the still-open c2s pipe and hung.  Fix: close both pipes before join.
 
-11. **Event positions: design inconsistency (lines 347 vs 392)**
-    DESIGN ERROR — the design contradicts itself:
-    - Line 347: "bytes of stdout/stderr received before the event"
-      (total received at queue time)
-    - Line 392: "bytes of unread stdout/stderr at poll time"
-      (currently buffered at poll time)
-    These are different values.  The usage example (lines 402-410)
-    uses `drain_stdout(ch, event.stdout_pos)` which makes sense only
-    with the line 347 interpretation.
-    Implementation follows line 347: positions are total bytes received
-    at queue time.  This is correct for the intended usage pattern.
-    Line 392 wording should be corrected in the design doc.
+11. ~~**Event positions: design inconsistency (lines 347 vs 392)**~~
+    RESOLVED — line 392 ("bytes of unread stdout/stderr at poll time")
+    is the correct interpretation.  Design doc lines 345-346, 374-375,
+    and 1112 updated to match.  Implementation fixed in
+    `dssh_chan_poll()`: `event_queue_freeze` still copies the entry,
+    then poll overwrites `stdout_pos`/`stderr_pos` with current
+    `.used` (unread bytes) instead of the queue-time `.total`.
 
 12. **Accept loops on terminal reject (line 945-946)**
     Design: "On terminal request reject: channel closed, accept keeps

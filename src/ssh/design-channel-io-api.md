@@ -343,7 +343,7 @@ int dssh_chan_send_break(dssh_channel ch, uint32_t length);
  * Events are queued by the demux thread.  The app polls for
  * DSSH_POLL_EVENT and pulls events with read_event().
  * Each event carries advisory stream positions (bytes of
- * stdout/stderr received before the event) so the app can
+ * unread stdout/stderr at poll time) so the app can
  * correlate with the data stream if it wants to.
  * Data always flows freely — events never gate reads. */
 int dssh_chan_read_event(dssh_channel ch,
@@ -371,8 +371,8 @@ int dssh_chan_set_event_cb(dssh_channel ch,
 
 struct dssh_chan_event {
     int    type;
-    size_t stdout_pos;  /* bytes of stdout received before event */
-    size_t stderr_pos;  /* bytes of stderr received before event */
+    size_t stdout_pos;  /* bytes of unread stdout at poll time */
+    size_t stderr_pos;  /* bytes of unread stderr at poll time */
     union {
         struct { const char *name; } signal;
         struct { uint32_t cols, rows, wpx, hpx; } window_change;
@@ -1110,8 +1110,7 @@ None — all items resolved.
   (signalfd model).  Data flows freely via read(); events are
   queued and pulled via poll(DSSH_POLL_EVENT) + read_event().
   Events carry advisory stream positions (bytes of unread
-  stdout/stderr before the event).  Positions are computed at
-  poll() time.  Data never stops at event boundaries.
+  stdout/stderr at poll time).  Data never stops at event boundaries.
   Optional event callback provides push notification but is never
   required.  All event types (signal, window-change, break, EOF,
   close, exit-status, exit-signal) go through the same queue.

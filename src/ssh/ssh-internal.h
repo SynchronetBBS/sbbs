@@ -269,7 +269,7 @@ struct dssh_channel_s {
 	uint32_t local_id;
 	uint32_t remote_id;
 	uint32_t local_window;
-	uint32_t remote_window;
+	atomic_uint_least32_t remote_window;
 	uint32_t remote_max_packet;
 	uint32_t window_max;
 	uint32_t exit_code;

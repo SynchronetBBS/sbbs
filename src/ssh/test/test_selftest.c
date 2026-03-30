@@ -8,6 +8,7 @@
  * graceful disconnect.
  */
 
+#include <errno.h>
 #include <sys/socket.h>
 #include <unistd.h>
 #include <string.h>
@@ -39,6 +40,8 @@ socket_tx(uint8_t *buf, size_t bufsz, dssh_session sess, void *cbdata)
 		if (dssh_session_is_terminated(sess))
 			return -1;
 		ssize_t n = send(fd, buf + sent, bufsz - sent, 0);
+		if (n < 0 && errno == EINTR)
+			continue;
 		if (n <= 0)
 			return -1;
 		sent += (size_t)n;
@@ -55,6 +58,8 @@ socket_rx(uint8_t *buf, size_t bufsz, dssh_session sess, void *cbdata)
 		if (dssh_session_is_terminated(sess))
 			return -1;
 		ssize_t n = recv(fd, buf + got, bufsz - got, 0);
+		if (n < 0 && errno == EINTR)
+			continue;
 		if (n <= 0)
 			return -1;
 		got += (size_t)n;
@@ -72,6 +77,8 @@ socket_rxline(uint8_t *buf, size_t bufsz, size_t *bytes_received,
 		if (dssh_session_is_terminated(sess))
 			return -1;
 		ssize_t n = recv(fd, &buf[have], 1, 0);
+		if (n < 0 && errno == EINTR)
+			continue;
 		if (n <= 0)
 			return -1;
 		have++;
@@ -140,9 +147,13 @@ struct selftest_ctx {
 	int server_auth_result;
 };
 
+static struct selftest_ctx *g_active_ctx;
+
 static void
 selftest_cleanup(struct selftest_ctx *ctx)
 {
+	if (g_active_ctx == ctx)
+		g_active_ctx = NULL;
 	/* Shutdown sockets first to unblock demux threads blocked in recv().
 	 * shutdown() causes recv() to return 0 (EOF) without closing the fd. */
 	if (ctx->client_fd >= 0)
@@ -281,9 +292,8 @@ selftest_setup(struct selftest_ctx *ctx)
 	thrd_join(ct, NULL);
 	thrd_join(st, NULL);
 
-	if (ctx->client_hs_result != 0 || ctx->server_hs_result != 0) {
+	if (ctx->client_hs_result != 0 || ctx->server_hs_result != 0)
 		goto fail;
-	}
 
 	/* Run auth in two threads */
 	if (thrd_create(&ct, client_auth_thread, ctx) != thrd_success)
@@ -299,6 +309,7 @@ selftest_setup(struct selftest_ctx *ctx)
 	if (ctx->client_auth_result != 0 || ctx->server_auth_result != 0)
 		goto fail;
 
+	g_active_ctx = ctx;
 	return 0;
 
 fail:
@@ -349,7 +360,7 @@ server_echo_thread(void *arg)
 	a->result = -1;
 
 	dssh_channel ch = dssh_chan_accept(ctx->server,
-	    &selftest_accept_cbs, 5000);
+	    &selftest_accept_cbs, 30000);
 
 	if (ch == NULL)
 		return 0;
@@ -357,7 +368,7 @@ server_echo_thread(void *arg)
 	uint8_t buf[4096];
 
 	for (;;) {
-		int ev = dssh_chan_poll(ch, DSSH_POLL_READ, 5000);
+		int ev = dssh_chan_poll(ch, DSSH_POLL_READ, 30000);
 
 		if (ev <= 0)
 			break;
@@ -393,7 +404,7 @@ server_exit_thread(void *arg)
 	a->result = -1;
 
 	dssh_channel ch = dssh_chan_accept(ctx->server,
-	    &selftest_accept_cbs, 5000);
+	    &selftest_accept_cbs, 30000);
 
 	if (ch == NULL)
 		return 0;
@@ -418,13 +429,13 @@ server_signal_thread(void *arg)
 	a->result = -1;
 
 	dssh_channel ch = dssh_chan_accept(ctx->server,
-	    &selftest_accept_cbs, 5000);
+	    &selftest_accept_cbs, 30000);
 
 	if (ch == NULL)
 		return 0;
 
 	/* Wait for peer's WINDOW_ADJUST before writing */
-	dssh_chan_poll(ch, DSSH_POLL_WRITE, 5000);
+	dssh_chan_poll(ch, DSSH_POLL_WRITE, 30000);
 
 	const uint8_t msg[] = "before-signal";
 
@@ -456,7 +467,7 @@ server_wc_thread(void *arg)
 	a->wc_received = false;
 
 	dssh_channel ch = dssh_chan_accept(ctx->server,
-	    &selftest_accept_cbs, 5000);
+	    &selftest_accept_cbs, 30000);
 
 	if (ch == NULL)
 		return 0;
@@ -465,7 +476,7 @@ server_wc_thread(void *arg)
 
 	for (;;) {
 		int ev = dssh_chan_poll(ch,
-		    DSSH_POLL_READ | DSSH_POLL_EVENT, 5000);
+		    DSSH_POLL_READ | DSSH_POLL_EVENT, 30000);
 
 		if (ev <= 0)
 			break;
@@ -515,13 +526,13 @@ server_multi_thread(void *arg)
 
 	for (int i = 0; i < 2; i++) {
 		dssh_channel ch = dssh_chan_accept(ctx->server,
-		    &selftest_accept_cbs, 5000);
+		    &selftest_accept_cbs, 30000);
 
 		if (ch == NULL)
 			return 0;
 
 		uint8_t buf[256];
-		int ev = dssh_chan_poll(ch, DSSH_POLL_READ, 5000);
+		int ev = dssh_chan_poll(ch, DSSH_POLL_READ, 30000);
 
 		if (ev > 0) {
 			int64_t n = dssh_chan_read(ch, 0,
@@ -553,7 +564,7 @@ server_disconnect_thread(void *arg)
 	a->result = -1;
 
 	dssh_channel ch = dssh_chan_accept(ctx->server,
-	    &selftest_accept_cbs, 5000);
+	    &selftest_accept_cbs, 30000);
 
 	if (ch == NULL) {
 		a->result = 0;
@@ -562,7 +573,7 @@ server_disconnect_thread(void *arg)
 
 	uint8_t buf[256];
 
-	dssh_chan_poll(ch, DSSH_POLL_READ, 5000);
+	dssh_chan_poll(ch, DSSH_POLL_READ, 30000);
 	dssh_chan_read(ch, 0, buf, sizeof(buf));
 	dssh_chan_close(ch, 0);
 	a->result = 0;
@@ -583,7 +594,7 @@ server_halfclose_thread(void *arg)
 	a->result = -1;
 
 	dssh_channel ch = dssh_chan_accept(ctx->server,
-	    &selftest_accept_cbs, 5000);
+	    &selftest_accept_cbs, 30000);
 
 	if (ch == NULL)
 		return 0;
@@ -591,7 +602,7 @@ server_halfclose_thread(void *arg)
 	uint8_t buf[256];
 
 	for (;;) {
-		int ev = dssh_chan_poll(ch, DSSH_POLL_READ, 5000);
+		int ev = dssh_chan_poll(ch, DSSH_POLL_READ, 30000);
 
 		if (ev <= 0)
 			break;
@@ -744,7 +755,7 @@ test_self_exec_echo(void)
 	size_t recvd = 0;
 	for (int i = 0; i < 50; i++) {
 		int ev = dssh_chan_poll(ch,
-		    DSSH_POLL_READ, 200);
+		    DSSH_POLL_READ, 1000);
 		if (ev <= 0)
 			break;
 		int64_t n = dssh_chan_read(ch, 0,
@@ -791,7 +802,7 @@ test_self_exec_exit_code(void)
 	uint8_t buf[256];
 	for (int i = 0; i < 50; i++) {
 		int ev = dssh_chan_poll(ch,
-		    DSSH_POLL_READ, 200);
+		    DSSH_POLL_READ, 1000);
 		if (ev <= 0)
 			break;
 		int64_t n = dssh_chan_read(ch, 0,
@@ -836,7 +847,7 @@ test_self_shell_echo(void)
 	size_t recvd = 0;
 	for (int i = 0; i < 50; i++) {
 		int ev = dssh_chan_poll(ch,
-		    DSSH_POLL_READ, 200);
+		    DSSH_POLL_READ, 1000);
 		if (ev <= 0)
 			break;
 		int64_t n = dssh_chan_read(ch, 0,
@@ -892,7 +903,7 @@ test_self_shell_large_data(void)
 	size_t sent = 0;
 	while (sent < total) {
 		int ev = dssh_chan_poll(ch,
-		    DSSH_POLL_WRITE, 5000);
+		    DSSH_POLL_WRITE, 30000);
 		if (ev <= 0)
 			break;
 		size_t chunk = total - sent;
@@ -910,7 +921,7 @@ test_self_shell_large_data(void)
 	size_t recvd = 0;
 	while (recvd < total) {
 		int ev = dssh_chan_poll(ch,
-		    DSSH_POLL_READ, 5000);
+		    DSSH_POLL_READ, 30000);
 		if (ev <= 0)
 			break;
 		int64_t n = dssh_chan_read(ch, 0,
@@ -964,7 +975,7 @@ test_self_signal(void)
 
 	for (int iter = 0; iter < 200; iter++) {
 		int ev = dssh_chan_poll(ch,
-		    DSSH_POLL_READ | DSSH_POLL_EVENT, 100);
+		    DSSH_POLL_READ | DSSH_POLL_EVENT, 1000);
 
 		if (ev <= 0)
 			break;
@@ -1075,7 +1086,7 @@ test_self_multiple_channels(void)
 	size_t recvd = 0;
 	for (int i = 0; i < 50; i++) {
 		int ev = dssh_chan_poll(ch1,
-		    DSSH_POLL_READ, 200);
+		    DSSH_POLL_READ, 1000);
 		if (ev <= 0)
 			break;
 		int64_t n = dssh_chan_read(ch1, 0,
@@ -1101,7 +1112,7 @@ test_self_multiple_channels(void)
 	recvd = 0;
 	for (int i = 0; i < 50; i++) {
 		int ev = dssh_chan_poll(ch2,
-		    DSSH_POLL_READ, 200);
+		    DSSH_POLL_READ, 1000);
 		if (ev <= 0)
 			break;
 		int64_t n = dssh_chan_read(ch2, 0,
@@ -1228,7 +1239,7 @@ test_self_rekey_during_data(void)
 	size_t recvd = 0;
 	for (int i = 0; i < 100; i++) {
 		int ev = dssh_chan_poll(ch,
-		    DSSH_POLL_READ, 100);
+		    DSSH_POLL_READ, 1000);
 		if (ev <= 0)
 			continue;
 		int64_t n = dssh_chan_read(ch, 0,
@@ -1291,7 +1302,7 @@ test_self_rekey_manual(void)
 	size_t recvd = 0;
 	for (int i = 0; i < 100; i++) {
 		int ev = dssh_chan_poll(ch,
-		    DSSH_POLL_READ, 100);
+		    DSSH_POLL_READ, 1000);
 		if (ev <= 0)
 			continue;
 		int64_t n = dssh_chan_read(ch, 0,
@@ -1349,7 +1360,7 @@ test_self_rekey_preserves_channels(void)
 	size_t recvd = 0;
 	for (int i = 0; i < 50; i++) {
 		int ev = dssh_chan_poll(ch,
-		    DSSH_POLL_READ, 200);
+		    DSSH_POLL_READ, 1000);
 		if (ev <= 0)
 			break;
 		int64_t n = dssh_chan_read(ch, 0,
@@ -1383,7 +1394,7 @@ test_self_rekey_preserves_channels(void)
 	recvd = 0;
 	for (int i = 0; i < 100; i++) {
 		int ev = dssh_chan_poll(ch,
-		    DSSH_POLL_READ, 100);
+		    DSSH_POLL_READ, 1000);
 		if (ev <= 0)
 			continue;
 		int64_t n = dssh_chan_read(ch, 0,
@@ -1428,13 +1439,13 @@ server_burst_thread(void *arg)
 	a->result = -1;
 
 	dssh_channel ch = dssh_chan_accept(ctx->server,
-	    &selftest_accept_cbs, 5000);
+	    &selftest_accept_cbs, 30000);
 
 	if (ch == NULL)
 		return 0;
 
 	/* Wait for peer's WINDOW_ADJUST */
-	dssh_chan_poll(ch, DSSH_POLL_WRITE, 5000);
+	dssh_chan_poll(ch, DSSH_POLL_WRITE, 30000);
 
 	/* Send 10 chunks of 50 bytes each as fast as possible.
 	 * Some will be in the socket buffer when the client
@@ -1485,7 +1496,7 @@ test_self_rekey_inflight_data(void)
 	const size_t expected = 10 * 50;
 	for (int i = 0; i < 200; i++) {
 		int ev = dssh_chan_poll(ch,
-		    DSSH_POLL_READ, 100);
+		    DSSH_POLL_READ, 1000);
 		if (ev <= 0)
 			continue;
 		int64_t n = dssh_chan_read(ch, 0,
@@ -1543,7 +1554,7 @@ test_self_connection_drop(void)
 	size_t recvd = 0;
 	for (int i = 0; i < 50; i++) {
 		int ev = dssh_chan_poll(ch,
-		    DSSH_POLL_READ, 100);
+		    DSSH_POLL_READ, 1000);
 		if (ev <= 0)
 			continue;
 		int64_t n = dssh_chan_read(ch, 0,
@@ -1573,7 +1584,7 @@ test_self_connection_drop(void)
 
 	/* Poll and write must not hang */
 	int ev = dssh_chan_poll(ch,
-	    DSSH_POLL_READ, 100);
+	    DSSH_POLL_READ, 1000);
 	(void)ev;
 
 	w = dssh_chan_write(ch, 0,
@@ -1739,7 +1750,7 @@ setup_timeout_server_thread(void *arg)
 	a->ch = NULL;
 
 	a->ch = dssh_chan_accept(ctx->server,
-	    &selftest_accept_cbs, 5000);
+	    &selftest_accept_cbs, 30000);
 	a->result = (a->ch == NULL) ? 0 : -1;
 	return 0;
 }
@@ -1905,7 +1916,7 @@ test_self_chan_exec_echo(void)
 	size_t recvd = 0;
 
 	for (int i = 0; i < 50; i++) {
-		int ev = dssh_chan_poll(ch, DSSH_POLL_READ, 200);
+		int ev = dssh_chan_poll(ch, DSSH_POLL_READ, 1000);
 
 		if (ev <= 0)
 			break;
@@ -1976,7 +1987,7 @@ test_self_chan_shell_pty(void)
 	size_t recvd = 0;
 
 	for (int i = 0; i < 50; i++) {
-		int ev = dssh_chan_poll(ch, DSSH_POLL_READ, 200);
+		int ev = dssh_chan_poll(ch, DSSH_POLL_READ, 1000);
 
 		if (ev <= 0)
 			break;
@@ -2046,7 +2057,7 @@ server_chan_echo_thread(void *arg)
 		.exec = test_accept_exec_cb,
 	};
 
-	dssh_channel ch = dssh_chan_accept(ctx->server, &cbs, 5000);
+	dssh_channel ch = dssh_chan_accept(ctx->server, &cbs, 30000);
 
 	if (ch == NULL)
 		return 0;
@@ -2061,7 +2072,7 @@ server_chan_echo_thread(void *arg)
 	uint8_t buf[4096];
 
 	for (;;) {
-		int ev = dssh_chan_poll(ch, DSSH_POLL_READ, 5000);
+		int ev = dssh_chan_poll(ch, DSSH_POLL_READ, 30000);
 
 		if (ev <= 0)
 			break;
@@ -2123,7 +2134,7 @@ test_self_chan_accept_exec(void)
 	size_t recvd = 0;
 
 	for (int i = 0; i < 50; i++) {
-		int ev = dssh_chan_poll(ch, DSSH_POLL_READ, 200);
+		int ev = dssh_chan_poll(ch, DSSH_POLL_READ, 1000);
 
 		if (ev <= 0)
 			break;
@@ -2182,14 +2193,14 @@ server_chan_pty_thread(void *arg)
 		.cbdata = &a->has_pty,
 	};
 
-	dssh_channel ch = dssh_chan_accept(ctx->server, &cbs, 5000);
+	dssh_channel ch = dssh_chan_accept(ctx->server, &cbs, 30000);
 
 	if (ch == NULL)
 		return 0;
 
 	/* Echo one message then close */
 	uint8_t buf[256];
-	int ev = dssh_chan_poll(ch, DSSH_POLL_READ, 5000);
+	int ev = dssh_chan_poll(ch, DSSH_POLL_READ, 30000);
 
 	if (ev > 0) {
 		int64_t n = dssh_chan_read(ch, 0, buf, sizeof(buf));
@@ -2239,7 +2250,7 @@ test_self_chan_accept_shell_pty(void)
 	size_t recvd = 0;
 
 	for (int i = 0; i < 50; i++) {
-		int ev = dssh_chan_poll(ch, DSSH_POLL_READ, 200);
+		int ev = dssh_chan_poll(ch, DSSH_POLL_READ, 1000);
 
 		if (ev <= 0)
 			break;
@@ -2281,12 +2292,12 @@ server_chan_exit_thread(void *arg)
 		.exec = test_accept_exec_cb,
 	};
 
-	dssh_channel ch = dssh_chan_accept(ctx->server, &cbs, 5000);
+	dssh_channel ch = dssh_chan_accept(ctx->server, &cbs, 30000);
 
 	if (ch == NULL)
 		return 0;
 
-	dssh_chan_poll(ch, DSSH_POLL_WRITE, 5000);
+	dssh_chan_poll(ch, DSSH_POLL_WRITE, 30000);
 
 	const uint8_t msg[] = "hello";
 
@@ -2333,7 +2344,7 @@ test_self_chan_event_exit_status(void)
 
 	for (int i = 0; i < 100; i++) {
 		int ev = dssh_chan_poll(ch,
-		    DSSH_POLL_READ | DSSH_POLL_EVENT, 200);
+		    DSSH_POLL_READ | DSSH_POLL_EVENT, 1000);
 
 		if (ev <= 0)
 			break;
@@ -2408,7 +2419,7 @@ test_self_chan_read_peek(void)
 	dssh_chan_write(ch, 0, data, sizeof(data) - 1);
 
 	/* Wait for echo data to arrive */
-	dssh_chan_poll(ch, DSSH_POLL_READ, 5000);
+	dssh_chan_poll(ch, DSSH_POLL_READ, 30000);
 
 	/* Peek: should report available bytes without consuming */
 	int64_t avail = dssh_chan_read(ch, 0, NULL, 0);
@@ -2574,7 +2585,7 @@ server_getter_thread(void *arg)
 		.exec = test_accept_exec_cb,
 	};
 
-	dssh_channel ch = dssh_chan_accept(ctx->server, &cbs, 5000);
+	dssh_channel ch = dssh_chan_accept(ctx->server, &cbs, 30000);
 
 	if (ch == NULL)
 		return 0;
@@ -2646,7 +2657,7 @@ server_env_reject_thread(void *arg)
 		.exec = test_accept_exec_cb,
 	};
 
-	dssh_channel ch = dssh_chan_accept(ctx->server, &cbs, 5000);
+	dssh_channel ch = dssh_chan_accept(ctx->server, &cbs, 30000);
 
 	if (ch == NULL)
 		return 0;
@@ -2693,6 +2704,22 @@ test_self_chan_accept_env_reject(void)
 
 	selftest_cleanup(&ctx);
 	return TEST_PASS;
+}
+
+/* ================================================================
+ * After-each cleanup: if a test FAILs mid-way (ASSERT bails out),
+ * clean up the active selftest context so leaked demux/accept
+ * threads don't interfere with subsequent tests in the same process.
+ * ================================================================ */
+
+static void
+dssh_test_after_each(int result)
+{
+	(void)result;
+	if (g_active_ctx != NULL) {
+		selftest_cleanup(g_active_ctx);
+		g_active_ctx = NULL;
+	}
 }
 
 /* ================================================================

@@ -568,4 +568,5 @@ static struct dssh_test_entry tests[] = {
 	{ "enc/none/no_init",               test_none_enc_no_init },
 };
 
+DSSH_TEST_NO_CLEANUP
 DSSH_TEST_MAIN(tests)

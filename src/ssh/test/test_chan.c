@@ -1342,4 +1342,5 @@ static struct dssh_test_entry tests[] = {
 	{ "params_init_null",               test_params_init_null },
 };
 
+DSSH_TEST_NO_CLEANUP
 DSSH_TEST_MAIN(tests)

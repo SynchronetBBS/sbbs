@@ -534,4 +534,5 @@ static struct dssh_test_entry tests[] = {
 	{ "thrd/start_double",        test_start_double },
 };
 
+DSSH_TEST_NO_CLEANUP
 DSSH_TEST_MAIN(tests)

@@ -3745,4 +3745,5 @@ static struct dssh_test_entry tests[] = {
 	{ "dhgex/server_bn_rand_fail",    test_dhgex_server_bn_rand_fail },
 };
 
+DSSH_TEST_NO_CLEANUP
 DSSH_TEST_MAIN(tests)
