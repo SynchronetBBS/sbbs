@@ -56,29 +56,50 @@ test_dhgex_setup(dssh_session server)
 }
 
 /*
- * Returns true if DSSH_TEST_KEY=rsa is set.
- * When set, tests register rsa-sha2-256 before ssh-ed25519 so RSA
+ * Returns true if DSSH_TEST_KEY=rsa or DSSH_TEST_KEY=rsa512 is set.
+ * When set, tests register an RSA algorithm before ssh-ed25519 so RSA
  * wins host key negotiation, and generate an RSA key instead of ed25519.
  */
 static inline bool
 test_using_rsa(void)
 {
 	const char *key = getenv("DSSH_TEST_KEY");
-	return (key != NULL && strcmp(key, "rsa") == 0);
+	return (key != NULL && (strcmp(key, "rsa") == 0 ||
+	    strcmp(key, "rsa512") == 0));
+}
+
+/*
+ * Returns true if DSSH_TEST_KEY=rsa512 is set specifically.
+ */
+static inline bool
+test_using_rsa512(void)
+{
+	const char *key = getenv("DSSH_TEST_KEY");
+	return (key != NULL && strcmp(key, "rsa512") == 0);
 }
 
 /*
  * Register key algorithms in the order appropriate for the current
- * test configuration.  When DSSH_TEST_KEY=rsa, registers RSA first
- * so it wins negotiation; otherwise ed25519 first.  Both are always
- * registered so cross-algorithm scenarios still work.
+ * test configuration.  When DSSH_TEST_KEY=rsa or rsa512, registers
+ * the corresponding RSA variant first so it wins negotiation;
+ * otherwise ed25519 first.  All are always registered so
+ * cross-algorithm scenarios still work.
  */
 static inline int
 test_register_key_algos(void)
 {
 	int res;
-	if (test_using_rsa()) {
+	if (test_using_rsa512()) {
+		res = dssh_register_rsa_sha2_512();
+		if (res < 0) return res;
 		res = dssh_register_rsa_sha2_256();
+		if (res < 0) return res;
+		res = dssh_register_ssh_ed25519();
+	}
+	else if (test_using_rsa()) {
+		res = dssh_register_rsa_sha2_256();
+		if (res < 0) return res;
+		res = dssh_register_rsa_sha2_512();
 		if (res < 0) return res;
 		res = dssh_register_ssh_ed25519();
 	}
@@ -86,6 +107,8 @@ test_register_key_algos(void)
 		res = dssh_register_ssh_ed25519();
 		if (res < 0) return res;
 		res = dssh_register_rsa_sha2_256();
+		if (res < 0) return res;
+		res = dssh_register_rsa_sha2_512();
 	}
 	return res;
 }
@@ -112,14 +135,31 @@ test_generate_host_key(void)
 			FILE *fp = fopen(keyfile, "r");
 			if (fp != NULL) {
 				fclose(fp);
-				return dssh_rsa_sha2_256_load_key_file(keyfile,
+				int res;
+				if (test_using_rsa512()) {
+					res = dssh_rsa_sha2_512_load_key_file(
+					    keyfile, NULL, NULL);
+				}
+				else {
+					res = dssh_rsa_sha2_256_load_key_file(
+					    keyfile, NULL, NULL);
+				}
+				return res;
+			}
+			int res;
+			if (test_using_rsa512()) {
+				res = dssh_rsa_sha2_512_generate_key(2048);
+				if (res < 0) return res;
+				return dssh_rsa_sha2_512_save_key_file(keyfile,
 				    NULL, NULL);
 			}
-			int res = dssh_rsa_sha2_256_generate_key(2048);
+			res = dssh_rsa_sha2_256_generate_key(2048);
 			if (res < 0) return res;
 			return dssh_rsa_sha2_256_save_key_file(keyfile,
 			    NULL, NULL);
 		}
+		if (test_using_rsa512())
+			return dssh_rsa_sha2_512_generate_key(2048);
 		return dssh_rsa_sha2_256_generate_key(2048);
 	}
 	keyfile = getenv("DSSH_TEST_ED25519_KEY");
@@ -143,6 +183,8 @@ test_generate_host_key(void)
 static inline const char *
 test_key_algo_name(void)
 {
+	if (test_using_rsa512())
+		return "rsa-sha2-512";
 	return test_using_rsa() ? "rsa-sha2-256" : "ssh-ed25519";
 }
 

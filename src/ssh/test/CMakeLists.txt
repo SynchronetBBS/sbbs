@@ -77,7 +77,7 @@ function(dssh_add_test test_name source_file)
 	target_compile_options(dssh_test_${test_name} PRIVATE ${DEUCESSH_COMPILE_OPTIONS})
 endfunction()
 
-# Helper: register one executable × 8 KEX/key variants as CTest entries.
+# Helper: register one executable × 12 KEX/key variants as CTest entries.
 # Each entry runs the full executable (all tests in one process).
 macro(dssh_add_variant_tests test_name executable)
 	add_test(NAME ${test_name} COMMAND ${executable})
@@ -89,21 +89,33 @@ macro(dssh_add_variant_tests test_name executable)
 	add_test(NAME ${test_name}_rsa COMMAND ${executable})
 	set_tests_properties(${test_name}_rsa PROPERTIES
 		ENVIRONMENT "DSSH_TEST_KEY=rsa;${DSSH_TEST_KEY_ENV}")
+	add_test(NAME ${test_name}_rsa512 COMMAND ${executable})
+	set_tests_properties(${test_name}_rsa512 PROPERTIES
+		ENVIRONMENT "DSSH_TEST_KEY=rsa512;${DSSH_TEST_KEY_ENV}")
 	add_test(NAME ${test_name}_dhgex_rsa COMMAND ${executable})
 	set_tests_properties(${test_name}_dhgex_rsa PROPERTIES
 		ENVIRONMENT "DSSH_TEST_KEX=dh-gex;DSSH_TEST_KEY=rsa;${DSSH_TEST_KEY_ENV}")
+	add_test(NAME ${test_name}_dhgex_rsa512 COMMAND ${executable})
+	set_tests_properties(${test_name}_dhgex_rsa512 PROPERTIES
+		ENVIRONMENT "DSSH_TEST_KEX=dh-gex;DSSH_TEST_KEY=rsa512;${DSSH_TEST_KEY_ENV}")
 	add_test(NAME ${test_name}_sntrup COMMAND ${executable})
 	set_tests_properties(${test_name}_sntrup PROPERTIES
 		ENVIRONMENT "DSSH_TEST_KEX=sntrup;${DSSH_TEST_KEY_ENV}")
 	add_test(NAME ${test_name}_sntrup_rsa COMMAND ${executable})
 	set_tests_properties(${test_name}_sntrup_rsa PROPERTIES
 		ENVIRONMENT "DSSH_TEST_KEX=sntrup;DSSH_TEST_KEY=rsa;${DSSH_TEST_KEY_ENV}")
+	add_test(NAME ${test_name}_sntrup_rsa512 COMMAND ${executable})
+	set_tests_properties(${test_name}_sntrup_rsa512 PROPERTIES
+		ENVIRONMENT "DSSH_TEST_KEX=sntrup;DSSH_TEST_KEY=rsa512;${DSSH_TEST_KEY_ENV}")
 	add_test(NAME ${test_name}_mlkem COMMAND ${executable})
 	set_tests_properties(${test_name}_mlkem PROPERTIES
 		ENVIRONMENT "DSSH_TEST_KEX=mlkem;${DSSH_TEST_KEY_ENV}")
 	add_test(NAME ${test_name}_mlkem_rsa COMMAND ${executable})
 	set_tests_properties(${test_name}_mlkem_rsa PROPERTIES
 		ENVIRONMENT "DSSH_TEST_KEX=mlkem;DSSH_TEST_KEY=rsa;${DSSH_TEST_KEY_ENV}")
+	add_test(NAME ${test_name}_mlkem_rsa512 COMMAND ${executable})
+	set_tests_properties(${test_name}_mlkem_rsa512 PROPERTIES
+		ENVIRONMENT "DSSH_TEST_KEX=mlkem;DSSH_TEST_KEY=rsa512;${DSSH_TEST_KEY_ENV}")
 endmacro()
 
 # Helper: register one test per name × 8 KEX/key variants as separate
@@ -124,10 +136,18 @@ macro(dssh_add_individual_tests executable prefix test_list)
 			COMMAND ${executable} ${t})
 		set_tests_properties(${prefix}_${t}_rsa PROPERTIES
 			ENVIRONMENT "DSSH_TEST_KEY=rsa;${DSSH_TEST_KEY_ENV}")
+		add_test(NAME ${prefix}_${t}_rsa512
+			COMMAND ${executable} ${t})
+		set_tests_properties(${prefix}_${t}_rsa512 PROPERTIES
+			ENVIRONMENT "DSSH_TEST_KEY=rsa512;${DSSH_TEST_KEY_ENV}")
 		add_test(NAME ${prefix}_${t}_dhgex_rsa
 			COMMAND ${executable} ${t})
 		set_tests_properties(${prefix}_${t}_dhgex_rsa PROPERTIES
 			ENVIRONMENT "DSSH_TEST_KEX=dh-gex;DSSH_TEST_KEY=rsa;${DSSH_TEST_KEY_ENV}")
+		add_test(NAME ${prefix}_${t}_dhgex_rsa512
+			COMMAND ${executable} ${t})
+		set_tests_properties(${prefix}_${t}_dhgex_rsa512 PROPERTIES
+			ENVIRONMENT "DSSH_TEST_KEX=dh-gex;DSSH_TEST_KEY=rsa512;${DSSH_TEST_KEY_ENV}")
 		add_test(NAME ${prefix}_${t}_sntrup
 			COMMAND ${executable} ${t})
 		set_tests_properties(${prefix}_${t}_sntrup PROPERTIES
@@ -136,6 +156,10 @@ macro(dssh_add_individual_tests executable prefix test_list)
 			COMMAND ${executable} ${t})
 		set_tests_properties(${prefix}_${t}_sntrup_rsa PROPERTIES
 			ENVIRONMENT "DSSH_TEST_KEX=sntrup;DSSH_TEST_KEY=rsa;${DSSH_TEST_KEY_ENV}")
+		add_test(NAME ${prefix}_${t}_sntrup_rsa512
+			COMMAND ${executable} ${t})
+		set_tests_properties(${prefix}_${t}_sntrup_rsa512 PROPERTIES
+			ENVIRONMENT "DSSH_TEST_KEX=sntrup;DSSH_TEST_KEY=rsa512;${DSSH_TEST_KEY_ENV}")
 		add_test(NAME ${prefix}_${t}_mlkem
 			COMMAND ${executable} ${t})
 		set_tests_properties(${prefix}_${t}_mlkem PROPERTIES
@@ -144,6 +168,10 @@ macro(dssh_add_individual_tests executable prefix test_list)
 			COMMAND ${executable} ${t})
 		set_tests_properties(${prefix}_${t}_mlkem_rsa PROPERTIES
 			ENVIRONMENT "DSSH_TEST_KEX=mlkem;DSSH_TEST_KEY=rsa;${DSSH_TEST_KEY_ENV}")
+		add_test(NAME ${prefix}_${t}_mlkem_rsa512
+			COMMAND ${executable} ${t})
+		set_tests_properties(${prefix}_${t}_mlkem_rsa512 PROPERTIES
+			ENVIRONMENT "DSSH_TEST_KEX=mlkem;DSSH_TEST_KEY=rsa512;${DSSH_TEST_KEY_ENV}")
 	endforeach()
 endmacro()
 
@@ -358,6 +386,13 @@ set_tests_properties(dssh_unit_alloc_mlkem PROPERTIES
 add_test(NAME dssh_unit_alloc_mlkem_rsa COMMAND dssh_test_alloc)
 set_tests_properties(dssh_unit_alloc_mlkem_rsa PROPERTIES
 	ENVIRONMENT "DSSH_TEST_KEX=mlkem;DSSH_TEST_KEY=rsa;${DSSH_TEST_KEY_ENV}")
+
+add_test(NAME dssh_unit_alloc_rsa512 COMMAND dssh_test_alloc)
+set_tests_properties(dssh_unit_alloc_rsa512 PROPERTIES
+	ENVIRONMENT "DSSH_TEST_KEY=rsa512;${DSSH_TEST_KEY_ENV}")
+add_test(NAME dssh_unit_alloc_dhgex_rsa512 COMMAND dssh_test_alloc)
+set_tests_properties(dssh_unit_alloc_dhgex_rsa512 PROPERTIES
+	ENVIRONMENT "DSSH_TEST_KEX=dh-gex;DSSH_TEST_KEY=rsa512;${DSSH_TEST_KEY_ENV}")
 
 # Targeted coverage tests — run in their own process for clean state
 add_test(NAME dssh_targeted_c25519_server_trunc

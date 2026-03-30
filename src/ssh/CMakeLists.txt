@@ -37,9 +37,11 @@ set(DEUCESSH_SOURCES
 	kex/mlkem768x25519-sha256.c
 	key_algo/ssh-ed25519.c
 	key_algo/rsa-sha2-256.c
+	key_algo/rsa-sha2-512.c
 	enc/aes256-ctr.c
 	enc/none.c
 	mac/hmac-sha2-256.c
+	mac/hmac-sha2-512.c
 	mac/none.c
 	comp/none.c
 )

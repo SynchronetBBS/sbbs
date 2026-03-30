@@ -96,6 +96,9 @@ register_all_algorithms(void)
 	res = dssh_register_aes256_ctr();
 	if (res < 0)
 		return res;
+	res = dssh_register_hmac_sha2_512();
+	if (res < 0)
+		return res;
 	res = dssh_register_hmac_sha2_256();
 	if (res < 0)
 		return res;
@@ -2030,9 +2033,11 @@ test_handshake_mac_active(void)
 	ASSERT_NOT_NULL(ctx.client->trans.mac_c2s_selected);
 	ASSERT_NOT_NULL(ctx.client->trans.mac_s2c_selected);
 
-	/* Digest size should be 32 (HMAC-SHA-256) */
-	ASSERT_EQ(ctx.client->trans.mac_c2s_selected->digest_size, 32);
-	ASSERT_EQ(ctx.client->trans.mac_s2c_selected->digest_size, 32);
+	/* Digest size should be 64 (HMAC-SHA-512) or 32 (HMAC-SHA-256) */
+	ASSERT_TRUE(ctx.client->trans.mac_c2s_selected->digest_size == 64 ||
+	    ctx.client->trans.mac_c2s_selected->digest_size == 32);
+	ASSERT_TRUE(ctx.client->trans.mac_s2c_selected->digest_size == 64 ||
+	    ctx.client->trans.mac_s2c_selected->digest_size == 32);
 
 	/* Encryption should also be active */
 	ASSERT_NOT_NULL(ctx.client->trans.enc_c2s_ctx);
@@ -4061,6 +4066,8 @@ dhgex_server_setup(struct dhgex_server_ctx *ctx)
 		return -1;
 	if (dssh_register_aes256_ctr() < 0)
 		return -1;
+	if (dssh_register_hmac_sha2_512() < 0)
+		return -1;
 	if (dssh_register_hmac_sha2_256() < 0)
 		return -1;
 	if (dssh_register_none_comp() < 0)
@@ -4476,6 +4483,8 @@ c25519_server_setup(struct c25519_server_ctx *ctx)
 	if (dssh_register_ssh_ed25519() < 0)
 		return -1;
 	if (dssh_register_aes256_ctr() < 0)
+		return -1;
+	if (dssh_register_hmac_sha2_512() < 0)
 		return -1;
 	if (dssh_register_hmac_sha2_256() < 0)
 		return -1;

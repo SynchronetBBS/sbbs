@@ -1881,9 +1881,12 @@ derive_and_apply_keys(struct dssh_session_s *sess, const uint8_t *k_mpint,
     dssh_mac old_mac_c2s, dssh_mac old_mac_s2c)
 {
 	const char *hash_name = sess->trans.kex_selected->hash_name;
-	uint16_t    enc_key_sz = sess->trans.enc_c2s_selected->key_size;
-	uint16_t    enc_bs = sess->trans.enc_c2s_selected->blocksize;
-	uint16_t    mac_key_sz = sess->trans.mac_c2s_selected->key_size;
+	uint16_t    enc_key_c2s = sess->trans.enc_c2s_selected->key_size;
+	uint16_t    enc_key_s2c = sess->trans.enc_s2c_selected->key_size;
+	uint16_t    enc_bs_c2s = sess->trans.enc_c2s_selected->blocksize;
+	uint16_t    enc_bs_s2c = sess->trans.enc_s2c_selected->blocksize;
+	uint16_t    mac_key_c2s = sess->trans.mac_c2s_selected->key_size;
+	uint16_t    mac_key_s2c = sess->trans.mac_s2c_selected->key_size;
 	uint8_t    *iv_c2s = NULL;
 	uint8_t    *iv_s2c = NULL;
 	uint8_t    *key_c2s = NULL;
@@ -1892,12 +1895,12 @@ derive_and_apply_keys(struct dssh_session_s *sess, const uint8_t *k_mpint,
 	uint8_t    *integ_s2c = NULL;
 	int         res;
 
-	iv_c2s = malloc(enc_bs);
-	iv_s2c = malloc(enc_bs);
-	key_c2s = malloc(enc_key_sz);
-	key_s2c = malloc(enc_key_sz);
-	integ_c2s = calloc(1, mac_key_sz > 0 ? mac_key_sz : 1);
-	integ_s2c = calloc(1, mac_key_sz > 0 ? mac_key_sz : 1);
+	iv_c2s = malloc(enc_bs_c2s);
+	iv_s2c = malloc(enc_bs_s2c);
+	key_c2s = malloc(enc_key_c2s);
+	key_s2c = malloc(enc_key_s2c);
+	integ_c2s = calloc(1, mac_key_c2s > 0 ? mac_key_c2s : 1);
+	integ_s2c = calloc(1, mac_key_s2c > 0 ? mac_key_s2c : 1);
 
 	if (!iv_c2s || !iv_s2c || !key_c2s || !key_s2c
 	    || !integ_c2s || !integ_s2c) {
@@ -1912,22 +1915,22 @@ derive_and_apply_keys(struct dssh_session_s *sess, const uint8_t *k_mpint,
 	size_t         sid_sz = sess->trans.session_id_sz;
 
 	res = derive_key(hash_name, k_mpint, k_mpint_sz,
-	    H, H_sz, 'A', sid, sid_sz, iv_c2s, enc_bs);
+	    H, H_sz, 'A', sid, sid_sz, iv_c2s, enc_bs_c2s);
 	if (res == 0)
 		res = derive_key(hash_name, k_mpint, k_mpint_sz,
-		    H, H_sz, 'B', sid, sid_sz, iv_s2c, enc_bs);
+		    H, H_sz, 'B', sid, sid_sz, iv_s2c, enc_bs_s2c);
 	if (res == 0)
 		res = derive_key(hash_name, k_mpint, k_mpint_sz,
-		    H, H_sz, 'C', sid, sid_sz, key_c2s, enc_key_sz);
+		    H, H_sz, 'C', sid, sid_sz, key_c2s, enc_key_c2s);
 	if (res == 0)
 		res = derive_key(hash_name, k_mpint, k_mpint_sz,
-		    H, H_sz, 'D', sid, sid_sz, key_s2c, enc_key_sz);
-	if ((res == 0) && (mac_key_sz > 0))
+		    H, H_sz, 'D', sid, sid_sz, key_s2c, enc_key_s2c);
+	if ((res == 0) && (mac_key_c2s > 0))
 		res = derive_key(hash_name, k_mpint, k_mpint_sz,
-		    H, H_sz, 'E', sid, sid_sz, integ_c2s, mac_key_sz);
-	if ((res == 0) && (mac_key_sz > 0))
+		    H, H_sz, 'E', sid, sid_sz, integ_c2s, mac_key_c2s);
+	if ((res == 0) && (mac_key_s2c > 0))
 		res = derive_key(hash_name, k_mpint, k_mpint_sz,
-		    H, H_sz, 'F', sid, sid_sz, integ_s2c, mac_key_sz);
+		    H, H_sz, 'F', sid, sid_sz, integ_s2c, mac_key_s2c);
 
 	if (res < 0)
 		goto keys_cleanup;
@@ -1973,14 +1976,14 @@ derive_and_apply_keys(struct dssh_session_s *sess, const uint8_t *k_mpint,
 	}
 
 	/* Initialize MAC contexts */
-	if ((mac_key_sz > 0)
+	if ((mac_key_c2s > 0)
 	    && (sess->trans.mac_c2s_selected->init != NULL)) {
 		res = sess->trans.mac_c2s_selected->init(integ_c2s,
 		    &sess->trans.mac_c2s_ctx);
 		if (res < 0)
 			goto keys_cleanup;
 	}
-	if ((mac_key_sz > 0)
+	if ((mac_key_s2c > 0)
 	    && (sess->trans.mac_s2c_selected->init != NULL)) {
 		res = sess->trans.mac_s2c_selected->init(integ_s2c,
 		    &sess->trans.mac_s2c_ctx);
@@ -1988,21 +1991,23 @@ derive_and_apply_keys(struct dssh_session_s *sess, const uint8_t *k_mpint,
 			goto keys_cleanup;
 	}
 
-	/* Allocate MAC verification buffers */
-	uint16_t mac_digest_sz =
-	    sess->trans.mac_c2s_selected->digest_size;
+	/* Allocate MAC verification buffers.
+	 * rx direction is s2c for clients, c2s for servers. */
+	uint16_t mac_digest_rx = sess->trans.client
+	    ? sess->trans.mac_s2c_selected->digest_size
+	    : sess->trans.mac_c2s_selected->digest_size;
 
-	if (mac_digest_sz > 0) {
+	if (mac_digest_rx > 0) {
 		free(sess->trans.rx_mac_buf);
 		sess->trans.rx_mac_buf = NULL;
 		free(sess->trans.rx_mac_computed);
 		sess->trans.rx_mac_computed = NULL;
-		sess->trans.rx_mac_buf = malloc(mac_digest_sz);
+		sess->trans.rx_mac_buf = malloc(mac_digest_rx);
 		if (sess->trans.rx_mac_buf == NULL) {
 			res = DSSH_ERROR_ALLOC;
 			goto keys_cleanup;
 		}
-		sess->trans.rx_mac_computed = malloc(mac_digest_sz);
+		sess->trans.rx_mac_computed = malloc(mac_digest_rx);
 		if (sess->trans.rx_mac_computed == NULL) {
 			res = DSSH_ERROR_ALLOC;
 			goto keys_cleanup;
@@ -2024,12 +2029,12 @@ derive_and_apply_keys(struct dssh_session_s *sess, const uint8_t *k_mpint,
 	sess->trans.peer_kexinit_sz = 0;
 
 keys_cleanup:
-	cleanse_free(iv_c2s, enc_bs);
-	cleanse_free(iv_s2c, enc_bs);
-	cleanse_free(key_c2s, enc_key_sz);
-	cleanse_free(key_s2c, enc_key_sz);
-	cleanse_free(integ_c2s, mac_key_sz);
-	cleanse_free(integ_s2c, mac_key_sz);
+	cleanse_free(iv_c2s, enc_bs_c2s);
+	cleanse_free(iv_s2c, enc_bs_s2c);
+	cleanse_free(key_c2s, enc_key_c2s);
+	cleanse_free(key_s2c, enc_key_s2c);
+	cleanse_free(integ_c2s, mac_key_c2s);
+	cleanse_free(integ_s2c, mac_key_s2c);
 	return res;
 }
 

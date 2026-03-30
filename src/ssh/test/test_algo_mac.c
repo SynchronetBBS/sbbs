@@ -427,6 +427,208 @@ test_hmac_sha256_single_byte(void)
 }
 
 /* ================================================================
+ * HMAC-SHA-512: Registration
+ * ================================================================ */
+
+static int
+test_register_hmac_sha2_512(void)
+{
+	dssh_test_reset_global_config();
+	int ret = dssh_register_hmac_sha2_512();
+	ASSERT_EQ(ret, 0);
+	return TEST_PASS;
+}
+
+static int
+test_register_hmac_after_lock_512(void)
+{
+	dssh_test_reset_global_config();
+	ASSERT_EQ(dssh_register_hmac_sha2_512(), 0);
+	ASSERT_EQ(dssh_register_hmac_sha2_256(), 0);
+	ASSERT_EQ(dssh_register_none_mac(), 0);
+	ASSERT_EQ(dssh_register_aes256_ctr(), 0);
+	ASSERT_EQ(dssh_register_none_comp(), 0);
+	ASSERT_EQ(dssh_register_curve25519_sha256(), 0);
+	ASSERT_EQ(dssh_register_ssh_ed25519(), 0);
+
+	dssh_session sess = dssh_session_init(true, 0);
+	ASSERT_NOT_NULL(sess);
+
+	int ret = dssh_register_hmac_sha2_512();
+	ASSERT_EQ(ret, DSSH_ERROR_TOOLATE);
+
+	dssh_session_cleanup(sess);
+	return TEST_PASS;
+}
+
+/* ================================================================
+ * HMAC-SHA-512: RFC 4231 Test Case 1 (SHA-512 truncated to 256 not
+ * used here -- we verify full 64-byte HMAC-SHA-512 output)
+ *
+ * Key  = 20 bytes of 0x0b
+ * Data = "Hi There"
+ * HMAC-SHA-512 = 87aa7cdea5ef619d4ff0b4241a1d6cb0
+ *                2379f4e2ce4ec2787ad0b30545e17cde
+ *                daa833b7d6b8a702038b274eaea3f4e4
+ *                be9d914eeb61f1702e696c203a126854
+ * ================================================================ */
+
+static const uint8_t rfc4231_tc1_hmac512[64] = {
+	0x87, 0xaa, 0x7c, 0xde, 0xa5, 0xef, 0x61, 0x9d,
+	0x4f, 0xf0, 0xb4, 0x24, 0x1a, 0x1d, 0x6c, 0xb0,
+	0x23, 0x79, 0xf4, 0xe2, 0xce, 0x4e, 0xc2, 0x78,
+	0x7a, 0xd0, 0xb3, 0x05, 0x45, 0xe1, 0x7c, 0xde,
+	0xda, 0xa8, 0x33, 0xb7, 0xd6, 0xb8, 0xa7, 0x02,
+	0x03, 0x8b, 0x27, 0x4e, 0xae, 0xa3, 0xf4, 0xe4,
+	0xbe, 0x9d, 0x91, 0x4e, 0xeb, 0x61, 0xf1, 0x70,
+	0x2e, 0x69, 0x6c, 0x20, 0x3a, 0x12, 0x68, 0x54
+};
+
+/* ================================================================
+ * HMAC-SHA-512: RFC 4231 Test Case 2
+ *
+ * Key  = "Jefe"
+ * Data = "what do ya want for nothing?"
+ * HMAC-SHA-512 = 164b7a7bfcf819e2e395fbe73b56e0a3
+ *                87bd64222e831fd610270cd7ea250554
+ *                9758bf75c05a994a6d034f65f8f0e6fd
+ *                caeab1a34d4a6b4b636e070a38bce737
+ * ================================================================ */
+
+static const uint8_t rfc4231_tc2_hmac512[64] = {
+	0x16, 0x4b, 0x7a, 0x7b, 0xfc, 0xf8, 0x19, 0xe2,
+	0xe3, 0x95, 0xfb, 0xe7, 0x3b, 0x56, 0xe0, 0xa3,
+	0x87, 0xbd, 0x64, 0x22, 0x2e, 0x83, 0x1f, 0xd6,
+	0x10, 0x27, 0x0c, 0xd7, 0xea, 0x25, 0x05, 0x54,
+	0x97, 0x58, 0xbf, 0x75, 0xc0, 0x5a, 0x99, 0x4a,
+	0x6d, 0x03, 0x4f, 0x65, 0xf8, 0xf0, 0xe6, 0xfd,
+	0xca, 0xea, 0xb1, 0xa3, 0x4d, 0x4a, 0x6b, 0x4b,
+	0x63, 0x6e, 0x07, 0x0a, 0x38, 0xbc, 0xe7, 0x37
+};
+
+/* ================================================================
+ * HMAC-SHA-512: RFC 4231 Test Case 3
+ *
+ * Key  = 20 bytes of 0xaa
+ * Data = 50 bytes of 0xdd
+ * HMAC-SHA-512 = fa73b0089d56a284efb0f0756c890be9
+ *                b1b5dbdd8ee81a3655f83e33b2279d39
+ *                bf3e848279a722c806b485a47e67c807
+ *                b946a337bee8942674278859e13292fb
+ * ================================================================ */
+
+static const uint8_t rfc4231_tc3_hmac512[64] = {
+	0xfa, 0x73, 0xb0, 0x08, 0x9d, 0x56, 0xa2, 0x84,
+	0xef, 0xb0, 0xf0, 0x75, 0x6c, 0x89, 0x0b, 0xe9,
+	0xb1, 0xb5, 0xdb, 0xdd, 0x8e, 0xe8, 0x1a, 0x36,
+	0x55, 0xf8, 0x3e, 0x33, 0xb2, 0x27, 0x9d, 0x39,
+	0xbf, 0x3e, 0x84, 0x82, 0x79, 0xa7, 0x22, 0xc8,
+	0x06, 0xb4, 0x85, 0xa4, 0x7e, 0x67, 0xc8, 0x07,
+	0xb9, 0x46, 0xa3, 0x37, 0xbe, 0xe8, 0x94, 0x26,
+	0x74, 0x27, 0x88, 0x59, 0xe1, 0x32, 0x92, 0xfb
+};
+
+static int
+hmac_sha512(const uint8_t *key, size_t key_len,
+    const uint8_t *data, size_t data_len,
+    uint8_t *outbuf)
+{
+	int ret = -1;
+	EVP_MAC *mac = EVP_MAC_fetch(NULL, "HMAC", NULL);
+	if (mac == NULL)
+		return -1;
+
+	EVP_MAC_CTX *ctx = EVP_MAC_CTX_new(mac);
+	if (ctx == NULL)
+		goto out_mac;
+
+	OSSL_PARAM params[] = {
+		OSSL_PARAM_construct_utf8_string(
+		    OSSL_MAC_PARAM_DIGEST, "SHA512", 0),
+		OSSL_PARAM_construct_end(),
+	};
+
+	if (EVP_MAC_init(ctx, key, key_len, params) != 1)
+		goto out_ctx;
+	if (EVP_MAC_update(ctx, data, data_len) != 1)
+		goto out_ctx;
+
+	size_t outlen = 0;
+	if (EVP_MAC_final(ctx, outbuf, &outlen, 64) != 1)
+		goto out_ctx;
+
+	ret = 0;
+
+out_ctx:
+	EVP_MAC_CTX_free(ctx);
+out_mac:
+	EVP_MAC_free(mac);
+	return ret;
+}
+
+static int
+test_hmac_sha512_rfc4231_tc1(void)
+{
+	uint8_t digest[64];
+	ASSERT_EQ(hmac_sha512(rfc4231_tc1_key, sizeof(rfc4231_tc1_key),
+	    rfc4231_tc1_data, rfc4231_tc1_data_len, digest), 0);
+	ASSERT_MEM_EQ(digest, rfc4231_tc1_hmac512, 64);
+	return TEST_PASS;
+}
+
+static int
+test_hmac_sha512_rfc4231_tc2(void)
+{
+	uint8_t digest[64];
+	ASSERT_EQ(hmac_sha512(rfc4231_tc2_key, rfc4231_tc2_key_len,
+	    rfc4231_tc2_data, rfc4231_tc2_data_len, digest), 0);
+	ASSERT_MEM_EQ(digest, rfc4231_tc2_hmac512, 64);
+	return TEST_PASS;
+}
+
+static int
+test_hmac_sha512_rfc4231_tc3(void)
+{
+	uint8_t key[20];
+	memset(key, 0xaa, 20);
+	uint8_t data[50];
+	memset(data, 0xdd, 50);
+
+	uint8_t digest[64];
+	ASSERT_EQ(hmac_sha512(key, 20, data, 50, digest), 0);
+	ASSERT_MEM_EQ(digest, rfc4231_tc3_hmac512, 64);
+	return TEST_PASS;
+}
+
+static int
+test_hmac_sha512_deterministic(void)
+{
+	uint8_t d1[64], d2[64];
+	ASSERT_EQ(hmac_sha512(rfc4231_tc1_key, sizeof(rfc4231_tc1_key),
+	    rfc4231_tc1_data, rfc4231_tc1_data_len, d1), 0);
+	ASSERT_EQ(hmac_sha512(rfc4231_tc1_key, sizeof(rfc4231_tc1_key),
+	    rfc4231_tc1_data, rfc4231_tc1_data_len, d2), 0);
+	ASSERT_MEM_EQ(d1, d2, 64);
+	return TEST_PASS;
+}
+
+static int
+test_hmac_sha512_different_key(void)
+{
+	uint8_t key2[20];
+	memcpy(key2, rfc4231_tc1_key, 20);
+	key2[0] ^= 0x01;
+
+	uint8_t d1[64], d2[64];
+	ASSERT_EQ(hmac_sha512(rfc4231_tc1_key, 20,
+	    rfc4231_tc1_data, rfc4231_tc1_data_len, d1), 0);
+	ASSERT_EQ(hmac_sha512(key2, 20,
+	    rfc4231_tc1_data, rfc4231_tc1_data_len, d2), 0);
+	ASSERT_TRUE(memcmp(d1, d2, 64) != 0);
+	return TEST_PASS;
+}
+
+/* ================================================================
  * None MAC: registration and properties
  * ================================================================ */
 
@@ -497,6 +699,19 @@ static struct dssh_test_entry tests[] = {
 	{ "mac/hmac_sha256/large_data",      test_hmac_sha256_large_data },
 	{ "mac/hmac_sha256/persistent_ctx",  test_hmac_sha256_persistent_ctx },
 	{ "mac/hmac_sha256/single_byte",     test_hmac_sha256_single_byte },
+
+	/* HMAC-SHA-512: registration */
+	{ "mac/dssh_register_hmac_sha2_512",      test_register_hmac_sha2_512 },
+	{ "mac/register_hmac_after_lock_512",    test_register_hmac_after_lock_512 },
+
+	/* HMAC-SHA-512: RFC 4231 test vectors */
+	{ "mac/hmac_sha512/rfc4231_tc1",     test_hmac_sha512_rfc4231_tc1 },
+	{ "mac/hmac_sha512/rfc4231_tc2",     test_hmac_sha512_rfc4231_tc2 },
+	{ "mac/hmac_sha512/rfc4231_tc3",     test_hmac_sha512_rfc4231_tc3 },
+
+	/* HMAC-SHA-512: behavioral */
+	{ "mac/hmac_sha512/deterministic",   test_hmac_sha512_deterministic },
+	{ "mac/hmac_sha512/different_key",   test_hmac_sha512_different_key },
 
 	/* None MAC */
 	{ "mac/none/passthrough",            test_none_mac_passthrough },
