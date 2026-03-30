@@ -29,20 +29,52 @@
 
 ### Malformed message reply audit (items 102, 102a-c)
 
-103. **Selftest race: cleanup while server echo thread still sending.**
-    `dssh_self_rsa` (and occasionally `dssh_self_dhgex_rsa`) segfaults
-    under heavy parallel load (`ctest -j16`) but passes when run alone.
-    Core dump shows thread 1 in `tx_finalize` → `send_packet_inner` →
-    `dssh_conn_send_exit_status` → `dssh_chan_close` from
-    `server_echo_thread`, while thread 2 (main) is in
-    `dssh_session_cleanup` → `dssh_session_terminate`, freeing the
-    session's tx buffer out from under the send.  The test's
-    `selftest_cleanup` calls `dssh_session_cleanup` without waiting for
-    the server echo thread to finish its `dssh_chan_close`.  Fix: the
-    test should `thrd_join` the server thread before cleanup, or the
-    library should block cleanup until in-flight sends complete.
+### Selftest failures under parallel load (items 104-105)
+
+104. **`test_self_shell_echo` fails under `-j16`: zero bytes received.**
+    `dssh_self_rsa` and `dssh_self_mlkem_rsa` variants observed failing.
+    `ASSERT_EQ_U failed: recvd == 0, expected sizeof(data) - 1 == 10`
+    at `test/test_selftest.c:887`.  The test writes `"shell-test"`
+    (10 bytes) to a shell channel, then polls in a loop (up to 50
+    iterations, 1000ms timeout each) for the server echo.  Under heavy
+    parallel load the poll loop receives zero bytes total — either the
+    server echo thread never echoed the data, the echo arrived but was
+    lost, or all 50 poll attempts timed out without data becoming
+    readable.  The server echo thread (`server_echo_thread`) reads via
+    `dssh_chan_read` and writes back via `dssh_chan_write` in a loop.
+    Possible causes: demux thread starvation preventing delivery,
+    window adjust not sent or not processed in time, or the server
+    thread's `dssh_chan_accept` or `dssh_chan_poll` timing out before
+    the client's data arrives.
+
+105. **`test_self_exec_exit_code` fails under `-j16`: channel open returns NULL.**
+    `dssh_self_rsa` variant observed failing.
+    `ASSERT_NOT_NULL failed: ch is NULL`
+    at `test/test_selftest.c:830`.  The test calls `open_exec(ctx.client,
+    "exit42")` which returns NULL, meaning the channel open was rejected
+    or timed out.  The server side runs `server_exit_thread` which calls
+    `dssh_chan_accept` then immediately `dssh_chan_close`.  Under heavy
+    parallel load the server's accept or the client's open may time out
+    (default 30s, but CPU starvation under `-j16` can cause effective
+    stalls), or the server thread may not have started accepting before
+    the client sends CHANNEL_OPEN, causing a race where the open request
+    hits the server before its accept callback is registered.
 
 ## Closed
+
+- Selftest race: cleanup while server echo thread still sending (was
+  item 103).  Two bugs: (1) the server thread handle (`thrd_t st`) was
+  a local variable lost when an ASSERT failed mid-test, so
+  `dssh_test_after_each` cleanup could not join it; (2) `g_active_ctx`
+  pointed to a stack-local `selftest_ctx` whose frame was popped on
+  test return, so cleanup's deeper function calls (terminate, join,
+  session_cleanup) grew the stack and overwrote the dangling ctx data.
+  Fix: added `server_thread` and `server_thread_active` fields to
+  `selftest_ctx`; added `selftest_start_thread()` helper; restructured
+  `selftest_cleanup()` to snapshot all ctx fields into a local copy
+  before any function calls, then terminate both sessions, join the
+  server thread, and finally cleanup sessions.  All 27 test functions
+  updated to use the helper and clear the active flag after joining.
 
 - Malformed message parse failures now send required replies (was items
   102, 102a-c).  Audited all SSH message types that require a response:
