@@ -298,7 +298,14 @@ bool del_lastuser(scfg_t* cfg)
 	}
 	int result = chsize(file, (long)length - USER_RECORD_LINE_LEN);
 	close(file);
-
+	if (result != 0)
+		return false;
+	int count = ((long)length - USER_RECORD_LINE_LEN) / USER_RECORD_LINE_LEN;
+	char path[MAX_PATH + 1];
+	if ((file = nopen(useridx_filename(cfg, path, sizeof path), O_RDWR)) == -1)
+		return false;
+	result = chsize(file, count * USER_INDEX_RECORD_LEN);
+	close(file);
 	return result == 0;
 }
 
