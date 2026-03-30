@@ -423,6 +423,9 @@ server_signal_thread(void *arg)
 	if (ch == NULL)
 		return 0;
 
+	/* Wait for peer's WINDOW_ADJUST before writing */
+	dssh_chan_poll(ch, DSSH_POLL_WRITE, 5000);
+
 	const uint8_t msg[] = "before-signal";
 
 	dssh_chan_write(ch, 0, msg, sizeof(msg) - 1);
@@ -1430,6 +1433,9 @@ server_burst_thread(void *arg)
 	if (ch == NULL)
 		return 0;
 
+	/* Wait for peer's WINDOW_ADJUST */
+	dssh_chan_poll(ch, DSSH_POLL_WRITE, 5000);
+
 	/* Send 10 chunks of 50 bytes each as fast as possible.
 	 * Some will be in the socket buffer when the client
 	 * starts its self-initiated rekey. */
@@ -2279,6 +2285,8 @@ server_chan_exit_thread(void *arg)
 
 	if (ch == NULL)
 		return 0;
+
+	dssh_chan_poll(ch, DSSH_POLL_WRITE, 5000);
 
 	const uint8_t msg[] = "hello";
 

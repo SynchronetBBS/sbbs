@@ -865,10 +865,13 @@ alloc_channel_id(struct dssh_session_s *sess)
  * ================================================================ */
 
 static int
-init_session_channel(struct dssh_channel_s *ch, uint32_t window_max)
+/*
+ * Phase 1: init sync primitives only.  Called before CHANNEL_OPEN
+ * so the demux thread can signal the channel.  No buffer allocation.
+ */
+init_channel_sync(struct dssh_channel_s *ch)
 {
 	ch->chan_type = DSSH_CHAN_SESSION;
-	ch->window_max = window_max;
 	ch->stdout_consumed = 0;
 	ch->stderr_consumed = 0;
 	ch->exit_code = 0;
@@ -881,19 +884,25 @@ init_session_channel(struct dssh_channel_s *ch, uint32_t window_max)
 		mtx_destroy(&ch->buf_mtx);
 		return DSSH_ERROR_INIT;
 	}
+	return 0;
+}
+
+/*
+ * Phase 2: allocate ring buffers after the terminal request succeeds.
+ * Called with sync primitives already initialized.
+ */
+static int
+init_channel_buffers(struct dssh_channel_s *ch, uint32_t window_max)
+{
+	ch->window_max = window_max;
 
 	int res = bytebuf_init(&ch->buf.session.stdout_buf, window_max);
 
-	if (res < 0) {
-		cnd_destroy(&ch->poll_cnd);
-		mtx_destroy(&ch->buf_mtx);
+	if (res < 0)
 		return res;
-	}
 	res = bytebuf_init(&ch->buf.session.stderr_buf, window_max);
 	if (res < 0) {
 		bytebuf_free(&ch->buf.session.stdout_buf);
-		cnd_destroy(&ch->poll_cnd);
-		mtx_destroy(&ch->buf_mtx);
 		return res;
 	}
 	sigqueue_init(&ch->buf.session.signals);
@@ -1716,13 +1725,14 @@ send_open_confirmation(struct dssh_session_s *sess,
 static int
 open_session_channel(struct dssh_session_s *sess, struct dssh_channel_s *ch)
 {
-        /* Caller has already initialized buffers (init_session_channel
-         * or init_raw_channel).  Set wire-level fields only. */
+        /* Caller has initialized sync primitives (init_channel_sync).
+         * Send initial_window=0 per design -- no data flows until the
+         * terminal request succeeds and we send WINDOW_ADJUST. */
 	int64_t cid = alloc_channel_id(sess);
 	if (cid < 0)
 		return (int)cid;
 	ch->local_id = (uint32_t)cid;
-	ch->local_window = INITIAL_WINDOW_SIZE;
+	ch->local_window = 0;
 	ch->open = false;
 	ch->close_sent = false;
 	ch->close_received = false;
@@ -1960,7 +1970,7 @@ accept_channel_init(struct dssh_session_s *sess, struct dssh_incoming_open *inc)
 		return NULL;
 	}
 	ch->local_id = (uint32_t)cid;
-	ch->local_window = INITIAL_WINDOW_SIZE;
+	ch->local_window = 0; /* initial_window=0; WINDOW_ADJUST after setup */
 	ch->remote_id = inc->peer_channel;
 	ch->remote_window = inc->peer_window;
 	ch->remote_max_packet = inc->peer_max_packet;
@@ -2394,25 +2404,70 @@ dssh_chan_open(struct dssh_session_s *sess,
 {
 	if (sess == NULL || params == NULL)
 		return NULL;
+
 	struct dssh_channel_s *ch = calloc(1, sizeof(*ch));
+
 	if (ch == NULL)
 		return NULL;
-	uint32_t winsz = params->max_window != 0 ? params->max_window : INITIAL_WINDOW_SIZE;
-	int res = init_session_channel(ch, winsz);
-	if (res < 0) { free(ch); return NULL; }
+
+	uint32_t winsz = params->max_window != 0
+	    ? params->max_window : INITIAL_WINDOW_SIZE;
+
+	/* Phase 1: sync primitives only (no buffers yet) */
+	int res = init_channel_sync(ch);
+
+	if (res < 0) {
+		free(ch);
+		return NULL;
+	}
+
 	ch->sess = sess;
 	ch->io_model = DSSH_IO_STREAM;
 	ch->zc_cb = stream_zc_cb;
-	res = event_queue_init(&ch->events);
-	if (res < 0) { cleanup_channel_buffers(ch); free(ch); return NULL; }
+
+	/* CHANNEL_OPEN with initial_window=0 */
 	res = open_session_channel(sess, ch);
-	if (res < 0) goto fail;
-	if (params->env_count > 0) { res = chan_send_env(sess, ch, params); if (res < 0) goto fail_close; }
-	if (params->flags & DSSH_PARAM_HAS_PTY) { res = chan_send_pty_req(sess, ch, params); if (res < 0) goto fail_close; }
+	if (res < 0)
+		goto fail_sync;
+
+	/* Setup: env, pty-req, terminal request */
+	if (params->env_count > 0) {
+		res = chan_send_env(sess, ch, params);
+		if (res < 0)
+			goto fail_close;
+	}
+	if (params->flags & DSSH_PARAM_HAS_PTY) {
+		res = chan_send_pty_req(sess, ch, params);
+		if (res < 0)
+			goto fail_close;
+	}
 	res = chan_send_terminal_request(sess, ch, params);
-	if (res < 0) goto fail_close;
+	if (res < 0)
+		goto fail_close;
+
+	/* Phase 2: allocate buffers now that I/O model is committed */
+	res = init_channel_buffers(ch, winsz);
+	if (res < 0)
+		goto fail_close;
+
+	res = event_queue_init(&ch->events);
+	if (res < 0) {
+		cleanup_channel_buffers(ch);
+		goto fail_close;
+	}
+
+	/* Open the window -- data can flow now */
+	res = send_window_adjust(sess, ch, winsz);
+	if (res < 0) {
+		event_queue_free(&ch->events);
+		cleanup_channel_buffers(ch);
+		goto fail_close;
+	}
+
+	/* Copy params for getters */
 	res = dssh_chan_params_init(&ch->params, params->type);
-	if (res < 0) goto fail_close;
+	if (res < 0)
+		goto fail_close;
 	ch->params.flags = params->flags;
 	ch->params.max_window = winsz;
 	ch->params.cols = params->cols;
@@ -2420,15 +2475,19 @@ dssh_chan_open(struct dssh_session_s *sess,
 	ch->params.wpx = params->wpx;
 	ch->params.hpx = params->hpx;
 	dssh_chan_params_set_term(&ch->params, params->term);
-	if (params->command != NULL) dssh_chan_params_set_command(&ch->params, params->command);
-	if (params->subsystem != NULL) dssh_chan_params_set_subsystem(&ch->params, params->subsystem);
+	if (params->command != NULL)
+		dssh_chan_params_set_command(&ch->params, params->command);
+	if (params->subsystem != NULL)
+		dssh_chan_params_set_subsystem(&ch->params, params->subsystem);
+
 	return ch;
+
 fail_close:
 	conn_close(sess, ch);
-fail:
 	unregister_channel(sess, ch);
-	event_queue_free(&ch->events);
-	cleanup_channel_buffers(ch);
+fail_sync:
+	cnd_destroy(&ch->poll_cnd);
+	mtx_destroy(&ch->buf_mtx);
 	free(ch);
 	return NULL;
 }
@@ -2695,9 +2754,8 @@ dssh_chan_zc_open(struct dssh_session_s *sess,
 	uint32_t winsz = params->max_window != 0
 	    ? params->max_window : INITIAL_WINDOW_SIZE;
 
-	/* ZC mode: no ring buffers.  Still need buf_mtx/poll_cnd for
-	 * window management and event queue. */
-	int res = init_session_channel(ch, winsz);
+	/* Phase 1: sync primitives only (ZC has no ring buffers) */
+	int res = init_channel_sync(ch);
 
 	if (res < 0) {
 		free(ch);
@@ -2709,33 +2767,40 @@ dssh_chan_zc_open(struct dssh_session_s *sess,
 	ch->zc_cb = cb;
 	ch->zc_cbdata = cbdata;
 
-	res = event_queue_init(&ch->events);
-	if (res < 0) {
-		cleanup_channel_buffers(ch);
-		free(ch);
-		return NULL;
-	}
-
+	/* CHANNEL_OPEN with initial_window=0 */
 	res = open_session_channel(sess, ch);
 	if (res < 0)
-		goto fail;
+		goto fail_sync;
 
+	/* Setup: env, pty-req, terminal request */
 	if (params->env_count > 0) {
 		res = chan_send_env(sess, ch, params);
 		if (res < 0)
 			goto fail_close;
 	}
-
 	if (params->flags & DSSH_PARAM_HAS_PTY) {
 		res = chan_send_pty_req(sess, ch, params);
 		if (res < 0)
 			goto fail_close;
 	}
-
 	res = chan_send_terminal_request(sess, ch, params);
 	if (res < 0)
 		goto fail_close;
 
+	/* ZC mode: no ring buffers, just event queue + window */
+	ch->window_max = winsz;
+	res = event_queue_init(&ch->events);
+	if (res < 0)
+		goto fail_close;
+
+	/* Open the window */
+	res = send_window_adjust(sess, ch, winsz);
+	if (res < 0) {
+		event_queue_free(&ch->events);
+		goto fail_close;
+	}
+
+	/* Copy params for getters */
 	res = dssh_chan_params_init(&ch->params, params->type);
 	if (res < 0)
 		goto fail_close;
@@ -2755,10 +2820,10 @@ dssh_chan_zc_open(struct dssh_session_s *sess,
 
 fail_close:
 	conn_close(sess, ch);
-fail:
 	unregister_channel(sess, ch);
-	event_queue_free(&ch->events);
-	cleanup_channel_buffers(ch);
+fail_sync:
+	cnd_destroy(&ch->poll_cnd);
+	mtx_destroy(&ch->buf_mtx);
 	free(ch);
 	return NULL;
 }
@@ -2968,6 +3033,11 @@ dssh_chan_accept(struct dssh_session_s *sess, const struct dssh_chan_accept_cbs 
 	dssh_thrd_check(sess, mtx_unlock(&ch->buf_mtx));
 	res = event_queue_init(&ch->events);
 	if (res < 0) { dssh_chan_params_free(&p); unregister_channel(sess, ch); cleanup_channel_buffers(ch); free(ch); return NULL; }
+
+	/* Open the window -- data can flow now */
+	res = send_window_adjust(sess, ch, winsz);
+	if (res < 0) { event_queue_free(&ch->events); dssh_chan_params_free(&p); unregister_channel(sess, ch); cleanup_channel_buffers(ch); free(ch); return NULL; }
+
 	ch->params = p;
 	return ch;
 fail:
