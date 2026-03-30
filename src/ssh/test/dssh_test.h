@@ -152,6 +152,7 @@ struct dssh_test_entry {
 	static void dssh_test_after_each(int r) { (void)r; }
 
 #include <signal.h>
+#include <time.h>
 #define DSSH_TEST_MAIN(test_table) \
 int main(int argc, char *argv[]) \
 { \
@@ -165,20 +166,22 @@ int main(int argc, char *argv[]) \
 		total++; \
 		printf("%-60s ", test_table[i].name); \
 		fflush(stdout); \
+		struct timespec _t0, _t1; \
+		clock_gettime(CLOCK_MONOTONIC, &_t0); \
 		int result = test_table[i].fn(); \
+		clock_gettime(CLOCK_MONOTONIC, &_t1); \
 		dssh_test_after_each(result); \
-		if (result > 0) { \
-			printf("PASS\n"); \
-			passed++; \
-		} \
-		else if (result == 0) { \
-			printf("FAIL\n"); \
-			failed++; \
-		} \
-		else { \
-			printf("SKIP\n"); \
-			skipped++; \
-		} \
+		long _ms = (_t1.tv_sec - _t0.tv_sec) * 1000L \
+		    + (_t1.tv_nsec - _t0.tv_nsec) / 1000000L; \
+		const char *_label = result > 0 ? "PASS" \
+		    : result == 0 ? "FAIL" : "SKIP"; \
+		if (_ms >= 100) \
+			printf("%s (%ldms)\n", _label, _ms); \
+		else \
+			printf("%s\n", _label); \
+		if (result > 0) passed++; \
+		else if (result == 0) failed++; \
+		else skipped++; \
 	} \
 	printf("\n%d tests: %d passed, %d failed, %d skipped\n", \
 	    total, passed, failed, skipped); \

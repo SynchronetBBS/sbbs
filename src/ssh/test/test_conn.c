@@ -661,6 +661,10 @@ test_open_exec_rejected(void)
 	ASSERT_THRD_CREATE(&ct, client_open_exec_thread, &oc);
 	ASSERT_THRD_CREATE(&st, server_accept_exec_thread, &oc);
 	thrd_join(ct, NULL);
+
+	/* After rejection, dssh_chan_accept loops back to wait for the
+	 * next CHANNEL_OPEN.  Terminate to unblock it. */
+	session_set_terminate(ctx.server);
 	thrd_join(st, NULL);
 
 	ASSERT_NULL(oc.client_ch);
@@ -1585,7 +1589,7 @@ test_eof_half_close(void)
 	size_t got = 0;
 	while (got < sizeof(msg) - 1) {
 		int ev = dssh_chan_poll(oc.client_ch,
-		    DSSH_POLL_READ, 5000);
+		    DSSH_POLL_READ, 1000);
 		if (ev <= 0)
 			break;
 		int64_t n = dssh_chan_read(oc.client_ch, 0,
@@ -3311,11 +3315,17 @@ test_session_write_ext_window_zero(void)
  * Coverage: accept with negative timeout (blocking)
  * ================================================================ */
 
+struct accept_blocking_ctx {
+	struct conn_ctx *ctx;
+	_Atomic bool entered;
+};
+
 static int
 accept_blocking_thread(void *arg)
 {
-	struct conn_ctx *ctx = arg;
-	dssh_chan_accept(ctx->server, &accept_cbs_all, -1);
+	struct accept_blocking_ctx *bc = arg;
+	atomic_store(&bc->entered, true);
+	dssh_chan_accept(bc->ctx->server, &accept_cbs_all, -1);
 	return 0;
 }
 
@@ -3326,11 +3336,17 @@ test_accept_timeout_negative(void)
 	if (conn_setup(&ctx) < 0)
 		return TEST_SKIP;
 
-	thrd_t at;
-	ASSERT_THRD_CREATE(&at, accept_blocking_thread, &ctx);
+	struct accept_blocking_ctx bc = {
+		.ctx = &ctx,
+	};
+	atomic_init(&bc.entered, false);
 
-	struct timespec ts = { .tv_sec = 0, .tv_nsec = 50000000 };
-	thrd_sleep(&ts, NULL);
+	thrd_t at;
+	ASSERT_THRD_CREATE(&at, accept_blocking_thread, &bc);
+
+	/* Wait for the accept thread to enter dssh_chan_accept */
+	while (!atomic_load(&bc.entered))
+		thrd_yield();
 
 	conn_cleanup(&ctx);
 	thrd_join(at, NULL);
@@ -3360,6 +3376,10 @@ test_setup_exec_rejected_by_callback(void)
 	ASSERT_THRD_CREATE(&ct, client_open_exec_thread, &oc);
 	ASSERT_THRD_CREATE(&st, server_accept_exec_thread, &oc);
 	thrd_join(ct, NULL);
+
+	/* After rejection, dssh_chan_accept loops back to wait for the
+	 * next CHANNEL_OPEN.  Terminate to unblock it. */
+	session_set_terminate(ctx.server);
 	thrd_join(st, NULL);
 
 	ASSERT_NULL(oc.client_ch);
@@ -4121,7 +4141,7 @@ test_accept_zc(void)
 	mtx_lock(&zc_st.mtx);
 	struct timespec deadline;
 	timespec_get(&deadline, TIME_UTC);
-	deadline.tv_sec += 5;
+	deadline.tv_sec += 1;
 	while (!zc_st.done)
 		cnd_timedwait(&zc_st.cnd, &zc_st.mtx, &deadline);
 	ASSERT_TRUE(zc_st.done);
@@ -4141,7 +4161,7 @@ test_accept_zc(void)
 	ASSERT_OK(res);
 
 	/* Client reads reply (stream mode) */
-	int ev = dssh_chan_poll(oc.client_ch, DSSH_POLL_READ, 5000);
+	int ev = dssh_chan_poll(oc.client_ch, DSSH_POLL_READ, 1000);
 	ASSERT_TRUE(ev & DSSH_POLL_READ);
 
 	uint8_t rbuf[256];
@@ -4454,7 +4474,7 @@ server_accept_alloc_thread(void *arg)
 
 	dssh_test_alloc_exclude_thread();
 
-	ctx->server_ch = dssh_chan_accept(ctx->server, ctx->cbs, 3000);
+	ctx->server_ch = dssh_chan_accept(ctx->server, ctx->cbs, 1000);
 	return 0;
 }
 
@@ -4537,7 +4557,7 @@ server_accept_shell_alloc_thread(void *arg)
 
 	dssh_test_alloc_exclude_thread();
 
-	ctx->server_ch = dssh_chan_accept(ctx->server, ctx->cbs, 3000);
+	ctx->server_ch = dssh_chan_accept(ctx->server, ctx->cbs, 1000);
 	return 0;
 }
 
@@ -4623,7 +4643,7 @@ server_accept_subsys_alloc_thread(void *arg)
 
 	dssh_test_alloc_exclude_thread();
 
-	ctx->server_ch = dssh_chan_accept(ctx->server, &accept_cbs_all, 3000);
+	ctx->server_ch = dssh_chan_accept(ctx->server, &accept_cbs_all, 1000);
 	return 0;
 }
 
@@ -4706,7 +4726,7 @@ static int
 server_accept_alloc_inject_thread(void *arg)
 {
 	struct open_exec_ctx *ctx = arg;
-	ctx->server_ch = dssh_chan_accept(ctx->server, ctx->cbs, 3000);
+	ctx->server_ch = dssh_chan_accept(ctx->server, ctx->cbs, 1000);
 	return 0;
 }
 
