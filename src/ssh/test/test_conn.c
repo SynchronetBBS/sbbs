@@ -1736,29 +1736,24 @@ test_two_channels(void)
 }
 
 /*
- * Accept-reject test: the new API uses a callback that returns -1
- * to reject.  We use reject_exec_cbs for the first accept, then
- * accept_cbs_all for the second.
+ * Accept-reject test: server calls dssh_chan_accept once with
+ * reject_exec_cbs.  Client opens exec (rejected by callback),
+ * then shell (accepted).  Accept loops internally past the
+ * rejected channel and returns the shell channel.
  */
 struct accept_reject_server_ctx {
 	dssh_session server;
 	dssh_channel ch;
-	bool first_rejected;
 };
 
 static int
-server_reject_first_accept_second(void *arg)
+server_accept_loops_on_reject(void *arg)
 {
 	struct accept_reject_server_ctx *sctx = arg;
 
-	/* First accept with rejecting callback */
-	dssh_channel ch1 = dssh_chan_accept(sctx->server,
-	    &reject_exec_cbs, 5000);
-	if (ch1 == NULL)
-		sctx->first_rejected = true;
-
-	/* Second accept with accepting callback */
-	sctx->ch = dssh_chan_accept(sctx->server, &accept_cbs_all, 30000);
+	/* Single accept: loops past rejected exec, returns shell */
+	sctx->ch = dssh_chan_accept(sctx->server,
+	    &reject_exec_cbs, 30000);
 
 	return 0;
 }
@@ -1775,9 +1770,9 @@ test_accept_reject(void)
 	};
 
 	thrd_t st;
-	ASSERT_THRD_CREATE(&st, server_reject_first_accept_second, &sctx);
+	ASSERT_THRD_CREATE(&st, server_accept_loops_on_reject, &sctx);
 
-	/* First channel should fail (exec rejected by callback) */
+	/* First channel: exec, rejected by server callback */
 	struct dssh_chan_params p1;
 	dssh_chan_params_init(&p1, DSSH_CHAN_EXEC);
 	dssh_chan_params_set_command(&p1, "rejected");
@@ -1785,10 +1780,9 @@ test_accept_reject(void)
 	dssh_channel c1 = dssh_chan_open(ctx.client, &p1);
 	dssh_chan_params_free(&p1);
 
-	/* Second channel should succeed */
+	/* Second channel: shell, accepted */
 	struct dssh_chan_params p2;
-	dssh_chan_params_init(&p2, DSSH_CHAN_EXEC);
-	dssh_chan_params_set_command(&p2, "accepted");
+	dssh_chan_params_init(&p2, DSSH_CHAN_SHELL);
 	dssh_chan_params_set_pty(&p2, false);
 	dssh_channel c2 = dssh_chan_open(ctx.client, &p2);
 	dssh_chan_params_free(&p2);
@@ -1798,7 +1792,7 @@ test_accept_reject(void)
 	ASSERT_NULL(c1);
 	ASSERT_NOT_NULL(c2);
 	ASSERT_NOT_NULL(sctx.ch);
-	ASSERT_TRUE(sctx.first_rejected);
+	ASSERT_EQ(DSSH_CHAN_SHELL, dssh_chan_get_type(sctx.ch));
 
 	dssh_chan_close(c2, 0);
 	dssh_chan_close(sctx.ch, 0);

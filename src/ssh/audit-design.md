@@ -126,10 +126,4 @@ Previous items 1-5, 7-10 fixed; 6, 11 resolved; 12 noted.
 
 ## DEVIATIONS
 
-14. **Accept returns NULL on terminal reject (design lines 945-946)**
-    Design: "On terminal request reject: channel closed, accept keeps
-    waiting for the next CHANNEL_OPEN."
-    Implementation: returns NULL on reject (ssh-conn.c:3179-3181).
-    The looping version requires waiting for the peer's reciprocal CLOSE
-    before freeing the channel, which needs careful demux synchronization
-    to avoid use-after-free.  Noted with TODO in code (ssh-conn.c:3130-3135).
+None.

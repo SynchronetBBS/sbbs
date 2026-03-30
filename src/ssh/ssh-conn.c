@@ -3047,6 +3047,29 @@ static int accept_parse_subsystem(const uint8_t *data, size_t data_len, struct d
 	return ret;
 }
 
+/*
+ * After sending CHANNEL_CLOSE for a rejected channel, drain the setup
+ * mailbox until the peer's reciprocal CHANNEL_CLOSE arrives.  Best-effort:
+ * on timeout or session termination we give up and let the channel be freed
+ * (the demux will silently discard the late CLOSE via find_channel→NULL).
+ */
+static void
+wait_for_close(struct dssh_session_s *sess, struct dssh_channel_s *ch)
+{
+	for (;;) {
+		uint8_t msg_type;
+		uint8_t *payload;
+		size_t payload_len;
+		int ret = setup_recv(sess, ch, &msg_type, &payload, &payload_len);
+
+		if (ret < 0)
+			break;
+		free(payload);
+		if (msg_type == SSH_MSG_CHANNEL_CLOSE)
+			break;
+	}
+}
+
 static int
 chan_accept_setup_loop(struct dssh_session_s *sess, struct dssh_channel_s *ch,
     const struct dssh_chan_accept_cbs *cbs, struct dssh_chan_params *p,
@@ -3092,7 +3115,7 @@ chan_accept_setup_loop(struct dssh_session_s *sess, struct dssh_channel_s *ch,
 			if (want_reply) setup_reply(sess, ch, cb_res >= 0);
 			free(payload);
 			if (cb_res >= 0) return 0;
-			conn_close(sess, ch); return DSSH_ERROR_REJECTED;
+			conn_close(sess, ch); wait_for_close(sess, ch); return DSSH_ERROR_REJECTED;
 		}
 		if (rtype_len == DSSH_STRLEN(str_exec) && memcmp(rtype, str_exec, DSSH_STRLEN(str_exec)) == 0) {
 			if (had_terminal) { if (want_reply) setup_reply(sess, ch, false); free(payload); continue; }
@@ -3103,7 +3126,7 @@ chan_accept_setup_loop(struct dssh_session_s *sess, struct dssh_channel_s *ch,
 			if (want_reply) setup_reply(sess, ch, cb_res >= 0);
 			free(payload);
 			if (cb_res >= 0) return 0;
-			conn_close(sess, ch); return DSSH_ERROR_REJECTED;
+			conn_close(sess, ch); wait_for_close(sess, ch); return DSSH_ERROR_REJECTED;
 		}
 		if (rtype_len == DSSH_STRLEN(str_subsystem) && memcmp(rtype, str_subsystem, DSSH_STRLEN(str_subsystem)) == 0) {
 			if (had_terminal) { if (want_reply) setup_reply(sess, ch, false); free(payload); continue; }
@@ -3114,7 +3137,7 @@ chan_accept_setup_loop(struct dssh_session_s *sess, struct dssh_channel_s *ch,
 			if (want_reply) setup_reply(sess, ch, cb_res >= 0);
 			free(payload);
 			if (cb_res >= 0) return 0;
-			conn_close(sess, ch); return DSSH_ERROR_REJECTED;
+			conn_close(sess, ch); wait_for_close(sess, ch); return DSSH_ERROR_REJECTED;
 		}
 		if (want_reply) setup_reply(sess, ch, false);
 		free(payload);
@@ -3127,13 +3150,7 @@ dssh_chan_accept(struct dssh_session_s *sess, const struct dssh_chan_accept_cbs 
 	if (sess == NULL || cbs == NULL)
 		return NULL;
 
-	/* TODO: design says loop on reject (line 945-946): close the
-	 * rejected channel, then loop back to accept the next
-	 * CHANNEL_OPEN.  Currently returns NULL on reject.  The
-	 * looping version requires waiting for the peer's reciprocal
-	 * CLOSE before freeing the channel, which needs careful demux
-	 * synchronization. */
-	{
+	for (;;) {
 	struct dssh_incoming_open *inc;
 	int res = accept_incoming(sess, &inc, timeout_ms);
 
@@ -3178,7 +3195,25 @@ dssh_chan_accept(struct dssh_session_s *sess, const struct dssh_chan_accept_cbs 
 	res = chan_accept_setup_loop(sess, ch, cbs, &p, &result);
 	if (res < 0) {
 		dssh_chan_params_free(&p);
-		goto fail;
+
+		/* On reject, clean up this channel and loop back to
+		 * accept the next CHANNEL_OPEN (design lines 945-946).
+		 * wait_for_close() already drained the peer's reciprocal
+		 * CLOSE in chan_accept_setup_loop's reject path. */
+		dssh_thrd_check(sess, mtx_lock(&ch->buf_mtx));
+		ch->setup_mode = false;
+		dssh_thrd_check(sess, mtx_unlock(&ch->buf_mtx));
+		event_queue_free(&ch->events);
+		unregister_channel(sess, ch);
+		free(ch->setup_payload);
+		cnd_destroy(&ch->poll_cnd);
+		mtx_destroy(&ch->cb_mtx);
+		mtx_destroy(&ch->buf_mtx);
+		free(ch);
+
+		if (res == DSSH_ERROR_REJECTED)
+			continue;
+		return NULL;
 	}
 	uint32_t winsz = result.max_window != 0 ? result.max_window : INITIAL_WINDOW_SIZE;
 
@@ -3199,9 +3234,9 @@ dssh_chan_accept(struct dssh_session_s *sess, const struct dssh_chan_accept_cbs 
 	ch->exit_code = 0; ch->exit_code_received = false;
 	if (ch->io_model == DSSH_IO_STREAM) {
 		res = bytebuf_init(&ch->buf.session.stdout_buf, winsz);
-		if (res < 0) { dssh_thrd_check(sess, mtx_unlock(&ch->buf_mtx)); dssh_chan_params_free(&p); goto fail; }
+		if (res < 0) { ch->setup_mode = false; dssh_thrd_check(sess, mtx_unlock(&ch->buf_mtx)); dssh_chan_params_free(&p); event_queue_free(&ch->events); unregister_channel(sess, ch); free(ch->setup_payload); cnd_destroy(&ch->poll_cnd); mtx_destroy(&ch->cb_mtx); mtx_destroy(&ch->buf_mtx); free(ch); return NULL; }
 		res = bytebuf_init(&ch->buf.session.stderr_buf, winsz);
-		if (res < 0) { bytebuf_free(&ch->buf.session.stdout_buf); dssh_thrd_check(sess, mtx_unlock(&ch->buf_mtx)); dssh_chan_params_free(&p); goto fail; }
+		if (res < 0) { bytebuf_free(&ch->buf.session.stdout_buf); ch->setup_mode = false; dssh_thrd_check(sess, mtx_unlock(&ch->buf_mtx)); dssh_chan_params_free(&p); event_queue_free(&ch->events); unregister_channel(sess, ch); free(ch->setup_payload); cnd_destroy(&ch->poll_cnd); mtx_destroy(&ch->cb_mtx); mtx_destroy(&ch->buf_mtx); free(ch); return NULL; }
 		sigqueue_init(&ch->buf.session.signals);
 	}
 	ch->setup_mode = false;
@@ -3213,18 +3248,5 @@ dssh_chan_accept(struct dssh_session_s *sess, const struct dssh_chan_accept_cbs 
 
 	ch->params = p;
 	return ch;
-
-fail:
-	dssh_thrd_check(sess, mtx_lock(&ch->buf_mtx));
-	ch->setup_mode = false;
-	dssh_thrd_check(sess, mtx_unlock(&ch->buf_mtx));
-	event_queue_free(&ch->events);
-	unregister_channel(sess, ch);
-	free(ch->setup_payload);
-	cnd_destroy(&ch->poll_cnd);
-	mtx_destroy(&ch->cb_mtx);
-	mtx_destroy(&ch->buf_mtx);
-	free(ch);
-	return NULL;
-	} /* accept scope */
+	} /* accept loop */
 }
