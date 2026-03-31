@@ -5519,6 +5519,8 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 												if (*tmp)
 													cterm_respond(cterm, tmp, strlen(tmp));
 											}
+											else
+												cterm_respond(cterm, "\x1bP0$r\x1b\\", 7);
 											break;
 										case 'r':
 											if (cterm->strbuf[3] == 0) {
@@ -5526,6 +5528,8 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 												if (*tmp)
 													cterm_respond(cterm, tmp, strlen(tmp));
 											}
+											else
+												cterm_respond(cterm, "\x1bP0$r\x1b\\", 7);
 											break;
 										case 's':
 											if (cterm->strbuf[3] == 0) {
@@ -5533,6 +5537,8 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 												if (*tmp)
 													cterm_respond(cterm, tmp, strlen(tmp));
 											}
+											else
+												cterm_respond(cterm, "\x1bP0$r\x1b\\", 7);
 											break;
 										case 't':
 											if (cterm->strbuf[3] == 0) {
@@ -5540,6 +5546,8 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 												if (*tmp)
 													cterm_respond(cterm, tmp, strlen(tmp));
 											}
+											else
+												cterm_respond(cterm, "\x1bP0$r\x1b\\", 7);
 											break;
 										case '$':
 											if (cterm->strbuf[3] == '|' && cterm->strbuf[4] == 0) {
@@ -5547,6 +5555,8 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 												if (*tmp)
 													cterm_respond(cterm, tmp, strlen(tmp));
 											}
+											else
+												cterm_respond(cterm, "\x1bP0$r\x1b\\", 7);
 											break;
 										case '*':
 											if (cterm->strbuf[3] == '|' && cterm->strbuf[4] == 0) {
@@ -5576,6 +5586,8 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 												sprintf(tmp, "\x1bP1$r;%d*r\x1b\\", ps2);
 												cterm_respond(cterm, tmp, strlen(tmp));
 											}
+											else
+												cterm_respond(cterm, "\x1bP0$r\x1b\\", 7);
 											break;
 										case ' ':
 											if (cterm->strbuf[3] == 'q' && cterm->strbuf[4] == 0) {
@@ -5595,11 +5607,12 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 												if (*tmp)
 													cterm_respond(cterm, tmp, strlen(tmp));
 											}
+											else
+												cterm_respond(cterm, "\x1bP0$r\x1b\\", 7);
 											break;
 										default:
-											cterm_respond(cterm, "\x1bP0$r", 5);
-											cterm_respond(cterm, &cterm->strbuf[2], strlen(&cterm->strbuf[2]));
-											cterm_respond(cterm, "\x1b_", 2);
+											cterm_respond(cterm, "\x1bP0$r\x1b\\", 7);
+											break;
 									}
 								}
 							}
