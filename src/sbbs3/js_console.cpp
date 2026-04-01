@@ -2028,6 +2028,9 @@ js_gotoxy(JSContext *cx, uintN argc, jsval *arglist)
 	sbbs_t*    sbbs;
 	jsrefcount rc;
 
+	if (js_argcIsInsufficient(cx, argc, 1))
+		return JS_FALSE;
+
 	if ((sbbs = (sbbs_t*)js_GetClassPrivate(cx, JS_THIS_OBJECT(cx, arglist), &js_console_class)) == NULL)
 		return JS_FALSE;
 
@@ -2036,19 +2039,34 @@ js_gotoxy(JSContext *cx, uintN argc, jsval *arglist)
 	if (JSVAL_IS_OBJECT(argv[0])) {
 		JSObject* obj = JSVAL_TO_OBJECT(argv[0]);
 		if (obj == nullptr) {
-			JS_ReportError(cx, "invalid object argument in call to %s", __FUNCTION__);
+			JS_ReportError(cx, "console.gotoxy: invalid object argument");
 			return JS_FALSE;
 		}
-		if (!JS_GetProperty(cx, obj, "x", &val)
-		    || !JS_ValueToInt32(cx, val, &x))
+		if (!JS_GetProperty(cx, obj, "x", &val))
 			return JS_FALSE;
-		if (!JS_GetProperty(cx, obj, "y", &val)
-		    || !JS_ValueToInt32(cx, val, &y))
+		if (JSVAL_NULL_OR_VOID(val)) {
+			JS_ReportError(cx, "console.gotoxy: object argument 'x' property is an unexpected 'null' or 'undefined' value");
 			return JS_FALSE;
-	} else {
+		}
+		if (!JS_ValueToInt32(cx, val, &x))
+			return JS_FALSE;
+		if (!JS_GetProperty(cx, obj, "y", &val))
+			return JS_FALSE;
+		if (JSVAL_NULL_OR_VOID(val)) {
+			JS_ReportError(cx, "console.gotoxy: object argument 'y' property is an unexpected 'null' or 'undefined' value");
+			return JS_FALSE;
+		}
+		if (!JS_ValueToInt32(cx, val, &y))
+			return JS_FALSE;
+	} else if (JSVAL_IS_NUMBER(argv[0])) {
+		if (js_argcIsInsufficient(cx, argc, 2))
+			return JS_FALSE;
 		if ((!JS_ValueToInt32(cx, argv[0], &x)) ||
 		    (!JS_ValueToInt32(cx, argv[1], &y)))
 			return JS_FALSE;
+	} else {
+		JS_ReportError(cx, "console.gotoxy: invalid argument type (expected object or number-pair)");
+		return JS_FALSE;
 	}
 
 	rc = JS_SUSPENDREQUEST(cx);
