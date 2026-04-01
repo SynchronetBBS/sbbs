@@ -2847,6 +2847,7 @@ dssh_session_init(bool client, size_t max_packet_size)
 	}
 
 	sess->timeout_ms = 75000;
+	sess->default_max_events = DSSH_DEFAULT_MAX_EVENTS;
 	sess->initialized = true;
 	return sess;
 }

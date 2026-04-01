@@ -71,6 +71,10 @@ size_t bytebuf_read(struct dssh_bytebuf *b,
     uint8_t *buf, size_t bufsz, size_t limit);
 size_t bytebuf_available(const struct dssh_bytebuf *b);
 size_t bytebuf_free_space(const struct dssh_bytebuf *b);
+int event_queue_init(struct dssh_event_queue *q, size_t max_events);
+void event_queue_free(struct dssh_event_queue *q);
+int event_queue_push(struct dssh_event_queue *q,
+    const struct dssh_event_entry *e);
 void acceptqueue_init(struct dssh_accept_queue *q);
 void acceptqueue_free(struct dssh_accept_queue *q);
 int acceptqueue_push(struct dssh_accept_queue *q,

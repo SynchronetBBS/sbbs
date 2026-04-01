@@ -2,7 +2,7 @@
  * test_chan.c -- Unit tests for channel buffer primitives and
  * RFC 4251 wire format functions.
  *
- * Tests bytebuf, accept queue,
+ * Tests bytebuf, event queue, accept queue,
  * dssh_parse_uint32, dssh_serialize_uint32, and dssh_cleanse.
  */
 
@@ -1266,6 +1266,81 @@ static int test_params_init_null(void)
 }
 
 /* ================================================================
+ * Event queue cap
+ * ================================================================ */
+
+static int
+test_event_queue_cap_enforced(void)
+{
+	struct dssh_event_queue q;
+	int res = event_queue_init(&q, 4);
+
+	ASSERT_EQ(res, 0);
+
+	struct dssh_event_entry ev = { .type = 1 };
+
+	for (int i = 0; i < 4; i++) {
+		res = event_queue_push(&q, &ev);
+		ASSERT_EQ(res, 0);
+	}
+
+	/* 5th push should fail */
+	res = event_queue_push(&q, &ev);
+	ASSERT_EQ(res, DSSH_ERROR_TOOMANY);
+
+	/* Queue still has 4 entries */
+	ASSERT_EQ_U(q.count, 4);
+
+	event_queue_free(&q);
+	return TEST_PASS;
+}
+
+static int
+test_event_queue_no_cap(void)
+{
+	struct dssh_event_queue q;
+	int res = event_queue_init(&q, 0);
+
+	ASSERT_EQ(res, 0);
+
+	struct dssh_event_entry ev = { .type = 1 };
+
+	/* Should grow past initial capacity (8) without limit */
+	for (int i = 0; i < 16; i++) {
+		res = event_queue_push(&q, &ev);
+		ASSERT_EQ(res, 0);
+	}
+
+	ASSERT_EQ_U(q.count, 16);
+
+	event_queue_free(&q);
+	return TEST_PASS;
+}
+
+static int
+test_event_queue_cap_at_initial_capacity(void)
+{
+	/* Cap exactly at initial capacity (8) — no realloc needed */
+	struct dssh_event_queue q;
+	int res = event_queue_init(&q, 8);
+
+	ASSERT_EQ(res, 0);
+
+	struct dssh_event_entry ev = { .type = 1 };
+
+	for (int i = 0; i < 8; i++) {
+		res = event_queue_push(&q, &ev);
+		ASSERT_EQ(res, 0);
+	}
+
+	res = event_queue_push(&q, &ev);
+	ASSERT_EQ(res, DSSH_ERROR_TOOMANY);
+
+	event_queue_free(&q);
+	return TEST_PASS;
+}
+
+/* ================================================================
  * Test table
  * ================================================================ */
 
@@ -1312,6 +1387,11 @@ static struct dssh_test_entry tests[] = {
 	{ "acceptqueue_zero_window_packet",   test_acceptqueue_zero_window_packet },
 	{ "acceptqueue_single_char_type",     test_acceptqueue_single_char_type },
 	{ "acceptqueue_pop_no_affect_rest",   test_acceptqueue_pop_does_not_affect_remaining },
+
+	/* Event queue */
+	{ "event_queue_cap_enforced",         test_event_queue_cap_enforced },
+	{ "event_queue_no_cap",               test_event_queue_no_cap },
+	{ "event_queue_cap_at_initial",       test_event_queue_cap_at_initial_capacity },
 
 	/* Coverage tests */
 

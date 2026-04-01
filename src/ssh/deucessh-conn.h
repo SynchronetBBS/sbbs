@@ -254,6 +254,19 @@ DSSH_PUBLIC int dssh_chan_set_event_cb(dssh_channel ch,
 DSSH_PUBLIC int dssh_session_set_event_cb(dssh_session sess,
     dssh_chan_event_cb cb, void *cbdata);
 
+/* ---- Event queue limits ---- */
+
+/* Set the maximum number of queued events per channel (default 64).
+ * Session-level: must be set before dssh_session_start(); applies to
+ * all channels created after this call. */
+DSSH_PUBLIC int dssh_session_set_max_events(dssh_session sess,
+    size_t max_events);
+/* Per-channel override.  Returns DSSH_ERROR_INVALID if max_events is
+ * less than the current number of queued events (drain events first).
+ * Pass 0 to disable the cap. */
+DSSH_PUBLIC int dssh_chan_set_max_events(dssh_channel ch,
+    size_t max_events);
+
 /* Server accept: callback struct */
 struct dssh_chan_accept_cbs {
 	int (*pty_req)(dssh_channel ch,

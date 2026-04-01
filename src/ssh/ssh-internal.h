@@ -27,6 +27,8 @@ struct dssh_bytebuf {
 	size_t   total;  /* total bytes ever written */
 };
 
+#define DSSH_DEFAULT_MAX_EVENTS 64
+
 /* Event queue for the dssh_chan_* API (circular buffer).
  * Events are pushed by the demux thread, pulled by the app via
  * dssh_chan_poll(DSSH_POLL_EVENT) + dssh_chan_read_event(). */
@@ -52,6 +54,7 @@ struct dssh_event_queue {
 	struct dssh_event_entry *entries;
 	/* Pointer-sized */
 	size_t                   capacity;
+	size_t                   max_events; /* 0 = no cap */
 	size_t                   head;
 	size_t                   tail;
 	size_t                   count;
@@ -303,6 +306,7 @@ struct dssh_session_s {
 	void                         *terminate_cbdata;
 	dssh_chan_event_cb            default_event_cb;
 	void                         *default_event_cbdata;
+	size_t                        default_max_events;
 	struct dssh_channel_s       **channels;
 	size_t                        channel_count;
 	size_t                        channel_capacity;

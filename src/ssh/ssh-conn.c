@@ -190,14 +190,15 @@ acceptqueue_pop(struct dssh_accept_queue *q, struct dssh_incoming_open *out)
 
 #define EVENT_QUEUE_INITIAL_CAPACITY 8
 
-static int
-event_queue_init(struct dssh_event_queue *q)
+DSSH_TESTABLE int
+event_queue_init(struct dssh_event_queue *q, size_t max_events)
 {
 	q->entries = calloc(EVENT_QUEUE_INITIAL_CAPACITY,
 	    sizeof(struct dssh_event_entry));
 	if (q->entries == NULL)
 		return DSSH_ERROR_ALLOC;
 	q->capacity = EVENT_QUEUE_INITIAL_CAPACITY;
+	q->max_events = max_events;
 	q->head = 0;
 	q->tail = 0;
 	q->count = 0;
@@ -205,7 +206,7 @@ event_queue_init(struct dssh_event_queue *q)
 	return 0;
 }
 
-static void
+DSSH_TESTABLE void
 event_queue_free(struct dssh_event_queue *q)
 {
 	free(q->entries);
@@ -215,10 +216,12 @@ event_queue_free(struct dssh_event_queue *q)
 	q->has_frozen = false;
 }
 
-static int
+DSSH_TESTABLE int
 event_queue_push(struct dssh_event_queue *q,
     const struct dssh_event_entry *e)
 {
+	if (q->max_events != 0 && q->count >= q->max_events)
+		return DSSH_ERROR_TOOMANY;
 	if (q->count >= q->capacity) {
 		size_t new_cap = q->capacity * 2;
 		struct dssh_event_entry *newbuf = calloc(new_cap,
@@ -994,6 +997,8 @@ handle_channel_request(struct dssh_session_s *sess, struct dssh_channel_s *ch,
 		return 1;
 	}
 
+	int push_ret = 0;
+
 	if (ch->chan_type == DSSH_CHAN_SESSION) {
 		if ((rtype_len == DSSH_STRLEN(str_signal)) && (memcmp(rtype, str_signal, DSSH_STRLEN(str_signal)) == 0)) {
 			if (rdata_len >= 4) {
@@ -1007,7 +1012,7 @@ handle_channel_request(struct dssh_session_s *sess, struct dssh_channel_s *ch,
 
 					memcpy(ev.str_a, &rdata[4], sn);
 					ev.str_a[sn] = '\0';
-					event_queue_push(&ch->events, &ev);
+					push_ret = event_queue_push(&ch->events, &ev);
 				}
 			}
 		}
@@ -1020,7 +1025,7 @@ handle_channel_request(struct dssh_session_s *sess, struct dssh_channel_s *ch,
 				    .stderr_pos = ch->buf.stderr_buf.total,
 				    .u32_a = ch->exit_code };
 
-				event_queue_push(&ch->events, &ev);
+				push_ret = event_queue_push(&ch->events, &ev);
 			}
 		}
 		else if ((rtype_len == DSSH_STRLEN(str_window_change)) && (memcmp(rtype, str_window_change, DSSH_STRLEN(str_window_change)) == 0)) {
@@ -1035,7 +1040,7 @@ handle_channel_request(struct dssh_session_s *sess, struct dssh_channel_s *ch,
 				    .stderr_pos = ch->buf.stderr_buf.total,
 				    .u32_a = wc_cols, .u32_b = wc_rows, .u32_c = wc_wpx, .u32_d = wc_hpx };
 
-				event_queue_push(&ch->events, &ev);
+				push_ret = event_queue_push(&ch->events, &ev);
 			}
 		}
 		else if ((rtype_len == DSSH_STRLEN(str_exit_signal)) && (memcmp(rtype, str_exit_signal, DSSH_STRLEN(str_exit_signal)) == 0)) {
@@ -1070,7 +1075,7 @@ handle_channel_request(struct dssh_session_s *sess, struct dssh_channel_s *ch,
 					}
 				}
 			}
-			event_queue_push(&ch->events, &ev);
+			push_ret = event_queue_push(&ch->events, &ev);
 		}
 		else if ((rtype_len == DSSH_STRLEN(str_break)) && (memcmp(rtype, str_break, DSSH_STRLEN(str_break)) == 0)) {
 			struct dssh_event_entry ev = { .type = DSSH_EVENT_BREAK,
@@ -1079,8 +1084,17 @@ handle_channel_request(struct dssh_session_s *sess, struct dssh_channel_s *ch,
 
 			if (rdata_len >= 4)
 				ev.u32_a = DSSH_GET_U32(rdata);
-			event_queue_push(&ch->events, &ev);
+			push_ret = event_queue_push(&ch->events, &ev);
 		}
+	}
+
+	/* Event queue overflow — close the channel */
+	if (push_ret == DSSH_ERROR_TOOMANY) {
+		ch->open = false;
+		dssh_thrd_check(sess, cnd_broadcast(&ch->poll_cnd));
+		dssh_thrd_check(sess, mtx_unlock(&ch->buf_mtx));
+		conn_close(sess, ch);
+		return 1;
 	}
 
 	/* Send FAILURE for unhandled requests with want_reply */
@@ -1292,8 +1306,15 @@ demux_dispatch(struct dssh_session_s *sess, uint8_t msg_type,
 				struct dssh_event_entry ev = { .type = DSSH_EVENT_EOF,
 				    .stdout_pos = ch->buf.stdout_buf.total,
 				    .stderr_pos = ch->buf.stderr_buf.total };
+				int ret = event_queue_push(&ch->events, &ev);
 
-				event_queue_push(&ch->events, &ev);
+				if (ret == DSSH_ERROR_TOOMANY) {
+					ch->open = false;
+					dssh_thrd_check(sess, cnd_broadcast(&ch->poll_cnd));
+					dssh_thrd_check(sess, mtx_unlock(&ch->buf_mtx));
+					conn_close(sess, ch);
+					return 0;
+				}
 			}
 			break;
 
@@ -1303,8 +1324,15 @@ demux_dispatch(struct dssh_session_s *sess, uint8_t msg_type,
 				struct dssh_event_entry ev = { .type = DSSH_EVENT_CLOSE,
 				    .stdout_pos = ch->buf.stdout_buf.total,
 				    .stderr_pos = ch->buf.stderr_buf.total };
+				int ret = event_queue_push(&ch->events, &ev);
 
-				event_queue_push(&ch->events, &ev);
+				if (ret == DSSH_ERROR_TOOMANY) {
+					ch->open = false;
+					dssh_thrd_check(sess, cnd_broadcast(&ch->poll_cnd));
+					dssh_thrd_check(sess, mtx_unlock(&ch->buf_mtx));
+					conn_close(sess, ch);
+					return 0;
+				}
 			}
 
                         /*
@@ -2383,7 +2411,7 @@ dssh_chan_open(struct dssh_session_s *sess,
 
 	/* Init event queue early — demux can dispatch EOF/CLOSE events
 	 * to this channel as soon as it's registered. */
-	res = event_queue_init(&ch->events);
+	res = event_queue_init(&ch->events, sess->default_max_events);
 	if (res < 0)
 		goto fail_sync;
 
@@ -2742,7 +2770,7 @@ dssh_chan_zc_open(struct dssh_session_s *sess,
 
 	/* Init event queue early — demux can dispatch EOF/CLOSE events
 	 * to this channel as soon as it's registered. */
-	res = event_queue_init(&ch->events);
+	res = event_queue_init(&ch->events, sess->default_max_events);
 	if (res < 0)
 		goto fail_sync;
 
@@ -2832,6 +2860,36 @@ dssh_session_set_event_cb(struct dssh_session_s *sess,
 		return DSSH_ERROR_TOOLATE;
 	sess->default_event_cb = cb;
 	sess->default_event_cbdata = cbdata;
+	return 0;
+}
+
+DSSH_PUBLIC int
+dssh_session_set_max_events(struct dssh_session_s *sess,
+    size_t max_events)
+{
+	if (sess == NULL)
+		return DSSH_ERROR_INVALID;
+	if (sess->demux_running)
+		return DSSH_ERROR_TOOLATE;
+	sess->default_max_events = max_events;
+	return 0;
+}
+
+DSSH_PUBLIC int
+dssh_chan_set_max_events(struct dssh_channel_s *ch,
+    size_t max_events)
+{
+	if (ch == NULL)
+		return DSSH_ERROR_INVALID;
+	struct dssh_session_s *sess = ch->sess;
+
+	dssh_thrd_check(sess, mtx_lock(&ch->buf_mtx));
+	if (max_events != 0 && max_events < ch->events.count) {
+		dssh_thrd_check(sess, mtx_unlock(&ch->buf_mtx));
+		return DSSH_ERROR_INVALID;
+	}
+	ch->events.max_events = max_events;
+	dssh_thrd_check(sess, mtx_unlock(&ch->buf_mtx));
 	return 0;
 }
 
@@ -3033,7 +3091,7 @@ dssh_chan_accept(struct dssh_session_s *sess, const struct dssh_chan_accept_cbs 
 
 	/* Init event queue before setup loop — demux can dispatch
 	 * EOF/CLOSE events to this channel during reject cleanup. */
-	res = event_queue_init(&ch->events);
+	res = event_queue_init(&ch->events, sess->default_max_events);
 	if (res < 0) {
 		unregister_channel(sess, ch);
 		free(ch->setup_payload);
