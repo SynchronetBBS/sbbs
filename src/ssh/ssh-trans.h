@@ -214,6 +214,11 @@ DSSH_PRIVATE int tx_finalize(struct dssh_session_s *sess,
 DSSH_PRIVATE void drain_tx_slots(struct dssh_session_s *sess);
 DSSH_PRIVATE int send_packet(struct dssh_session_s *sess,
     const uint8_t *payload, size_t payload_len, uint32_t *seq_out);
+DSSH_PRIVATE uint8_t *send_begin(struct dssh_session_s *sess,
+    uint8_t msg_type, size_t *max_len, int *err_out);
+DSSH_PRIVATE int send_commit(struct dssh_session_s *sess,
+    size_t payload_len, uint32_t *seq_out);
+DSSH_PRIVATE void send_cancel(struct dssh_session_s *sess);
 DSSH_PRIVATE int send_to_slot(struct dssh_session_s *sess,
     struct dssh_tx_slot *slot, const uint8_t *payload, size_t payload_len);
 DSSH_PRIVATE int send_to_wa_slot(struct dssh_session_s *sess,

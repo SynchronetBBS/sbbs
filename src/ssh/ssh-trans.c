@@ -1192,16 +1192,37 @@ DSSH_PRIVATE int
 send_packet(struct dssh_session_s *sess,
     const uint8_t *payload, size_t payload_len, uint32_t *seq_out)
 {
-	int ret;
+	int err;
+	uint8_t msg_type = (payload_len > 0) ? payload[0] : 0;
+	size_t max;
+	uint8_t *buf = send_begin(sess, msg_type, &max, &err);
 
+	if (buf == NULL)
+		return err;
+	if (payload_len > max) {
+		send_cancel(sess);
+		return DSSH_ERROR_TOOLONG;
+	}
+	memcpy(buf, payload, payload_len);
+	return send_commit(sess, payload_len, seq_out);
+}
+
+/*
+ * Acquire tx_mtx, block on rekey for application messages (type >= 50),
+ * drain pending tx slots.  Returns a pointer into tx_packet[9] where the
+ * caller serializes the payload directly.  *max_len is the maximum
+ * payload the caller may write.  Caller MUST call send_commit() or
+ * send_cancel() to release tx_mtx.
+ *
+ * Returns NULL on error (timeout, terminate); *err_out is set.
+ */
+DSSH_PRIVATE uint8_t *
+send_begin(struct dssh_session_s *sess, uint8_t msg_type,
+    size_t *max_len, int *err_out)
+{
 	dssh_thrd_check(sess, mtx_lock(&sess->trans.tx_mtx));
 
-        /*
-         * RFC 4253 s7.1: during rekey, only transport/KEX messages
-         * (types 1--49) are allowed.  Block application-layer messages
-         * (types 50+) until rekey completes.
-         */
-	if ((payload_len > 0) && (payload[0] >= SSH_MSG_USERAUTH_REQUEST)) {
+	if (msg_type >= SSH_MSG_USERAUTH_REQUEST) {
 		struct timespec rk_ts;
 		if (sess->timeout_ms > 0)
 			dssh_deadline_from_ms(&rk_ts, sess->timeout_ms);
@@ -1217,41 +1238,74 @@ send_packet(struct dssh_session_s *sess,
 				    &sess->trans.tx_mtx, &rk_ts))
 				    == thrd_timedout) {
 					session_set_terminate(sess);
-					ret = DSSH_ERROR_TERMINATED;
-					goto tx_done;
+					dssh_thrd_check(sess,
+					    mtx_unlock(&sess->trans.tx_mtx));
+					*err_out = DSSH_ERROR_TERMINATED;
+					return NULL;
 				}
 			}
 		}
+		if (sess->terminate) {
+			dssh_thrd_check(sess,
+			    mtx_unlock(&sess->trans.tx_mtx));
+			*err_out = DSSH_ERROR_TERMINATED;
+			return NULL;
+		}
 	}
 
-	if (gconf.tx_gather != NULL) {
-		if (payload_len > sess->trans.packet_buf_sz - 9) {
-			ret = DSSH_ERROR_TOOLONG;
-			goto tx_done;
-		}
+	if (!tx_gather_enabled())
+		drain_tx_slots(sess);
+
+	*max_len = sess->trans.packet_buf_sz - 9;
+	return &sess->trans.tx_packet[9];
+}
+
+/*
+ * Finalize and send the payload already at tx_packet[9].
+ * Releases tx_mtx.  Caller MUST have called send_begin() first.
+ */
+DSSH_PRIVATE int
+send_commit(struct dssh_session_s *sess,
+    size_t payload_len, uint32_t *seq_out)
+{
+	int ret;
+
+	if (payload_len > sess->trans.packet_buf_sz - 9) {
+		ret = DSSH_ERROR_TOOLONG;
+		goto done;
+	}
+
+	if (tx_gather_enabled()) {
 		uint32_t caller_seq = sess->trans.tx_seq;
 
-		memcpy(&sess->trans.tx_packet[9], payload, payload_len);
 		ret = tx_gather_with_packet(sess,
 		    sess->trans.tx_packet, payload_len);
 		if (ret == 0 && seq_out != NULL)
 			*seq_out = caller_seq;
-		goto tx_done;
+	}
+	else {
+		ret = tx_finalize(sess, sess->trans.tx_packet,
+		    payload_len);
+		if (ret == 0 && seq_out != NULL)
+			*seq_out = sess->trans.tx_seq - 1;
 	}
 
-	drain_tx_slots(sess);
-	ret = send_packet_inner(sess, payload, payload_len, seq_out);
-
-tx_done:
-
-        /* TOOLONG (packet too big) and REKEY_NEEDED (hard limit) are
-        * recoverable -- the session is still usable.  All other errors
-        * (I/O callback failure, encrypt/MAC failure) mean the connection
-        * is broken and cannot recover without closing the socket. */
-	if ((ret < 0) && (ret != DSSH_ERROR_TOOLONG) && (ret != DSSH_ERROR_REKEY_NEEDED))
+done:
+	if ((ret < 0) && (ret != DSSH_ERROR_TOOLONG)
+	    && (ret != DSSH_ERROR_REKEY_NEEDED))
 		session_set_terminate(sess);
 	dssh_thrd_check(sess, mtx_unlock(&sess->trans.tx_mtx));
 	return ret;
+}
+
+/*
+ * Release tx_mtx without sending.  Use when serialization fails
+ * after send_begin() but before send_commit().
+ */
+DSSH_PRIVATE void
+send_cancel(struct dssh_session_s *sess)
+{
+	dssh_thrd_check(sess, mtx_unlock(&sess->trans.tx_mtx));
 }
 
 /*

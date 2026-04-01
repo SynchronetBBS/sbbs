@@ -1943,11 +1943,12 @@ send_channel_request_wait(struct dssh_session_s *sess,
 	if (extra_len > SIZE_MAX - CHAN_REQUEST_FIXED - rtlen)
 		return DSSH_ERROR_INVALID;
 
-	size_t   msg_len = CHAN_REQUEST_FIXED + rtlen + extra_len;
-	uint8_t *msg = malloc(msg_len);
+	size_t max;
+	int    err;
+	uint8_t *msg = send_begin(sess, SSH_MSG_CHANNEL_REQUEST, &max, &err);
 
 	if (msg == NULL)
-		return DSSH_ERROR_ALLOC;
+		return err;
 
 	size_t pos = 0;
 
@@ -1969,9 +1970,7 @@ send_channel_request_wait(struct dssh_session_s *sess,
 	ch->request_success = false;
 	dssh_thrd_check(sess, mtx_unlock(&ch->buf_mtx));
 
-	int res = send_packet(sess, msg, pos, NULL);
-
-	free(msg);
+	int res = send_commit(sess, pos, NULL);
 	if (res < 0) {
 		dssh_thrd_check(sess, mtx_lock(&ch->buf_mtx));
 		ch->request_pending = false;
@@ -2796,9 +2795,10 @@ dssh_chan_send_signal(struct dssh_channel_s *ch, const char *signal_name)
 	size_t rtlen = DSSH_STRLEN(str_signal);
 	size_t fixed = CHAN_REQUEST_FIXED + rtlen + 4;
 	if (slen > UINT32_MAX || slen > SIZE_MAX - fixed) return DSSH_ERROR_INVALID;
-	size_t msg_len = fixed + slen;
-	uint8_t *msg = malloc(msg_len);
-	if (msg == NULL) return DSSH_ERROR_ALLOC;
+	size_t max;
+	int    err;
+	uint8_t *msg = send_begin(sess, SSH_MSG_CHANNEL_REQUEST, &max, &err);
+	if (msg == NULL) return err;
 	size_t pos = 0;
 	msg[pos++] = SSH_MSG_CHANNEL_REQUEST;
 	DSSH_PUT_U32(ch->remote_id, msg, &pos);
@@ -2807,9 +2807,7 @@ dssh_chan_send_signal(struct dssh_channel_s *ch, const char *signal_name)
 	msg[pos++] = 0;
 	DSSH_PUT_U32((uint32_t)slen, msg, &pos);
 	memcpy(&msg[pos], signal_name, slen); pos += slen;
-	int ret = send_packet(sess, msg, pos, NULL);
-	free(msg);
-	return ret;
+	return send_commit(sess, pos, NULL);
 }
 
 DSSH_PUBLIC int
@@ -2826,9 +2824,10 @@ dssh_chan_send_window_change(struct dssh_channel_s *ch,
 	DSSH_PUT_U32(wpx, extra, &ep);
 	DSSH_PUT_U32(hpx, extra, &ep);
 	size_t rtlen = DSSH_STRLEN(str_window_change);
-	size_t msg_len = 1 + 4 + 4 + rtlen + 1 + ep;
-	uint8_t *msg = malloc(msg_len);
-	if (msg == NULL) return DSSH_ERROR_ALLOC;
+	size_t max;
+	int    err;
+	uint8_t *msg = send_begin(sess, SSH_MSG_CHANNEL_REQUEST, &max, &err);
+	if (msg == NULL) return err;
 	size_t pos = 0;
 	msg[pos++] = SSH_MSG_CHANNEL_REQUEST;
 	DSSH_PUT_U32(ch->remote_id, msg, &pos);
@@ -2836,9 +2835,7 @@ dssh_chan_send_window_change(struct dssh_channel_s *ch,
 	memcpy(&msg[pos], str_window_change, rtlen); pos += rtlen;
 	msg[pos++] = 0;
 	memcpy(&msg[pos], extra, ep); pos += ep;
-	int ret = send_packet(sess, msg, pos, NULL);
-	free(msg);
-	return ret;
+	return send_commit(sess, pos, NULL);
 }
 
 DSSH_PUBLIC int
@@ -2851,9 +2848,10 @@ dssh_chan_send_break(struct dssh_channel_s *ch, uint32_t length)
 	size_t ep = 0;
 	DSSH_PUT_U32(length, extra, &ep);
 	size_t rtlen = 5;
-	size_t msg_len = 1 + 4 + 4 + rtlen + 1 + ep;
-	uint8_t *msg = malloc(msg_len);
-	if (msg == NULL) return DSSH_ERROR_ALLOC;
+	size_t max;
+	int    err;
+	uint8_t *msg = send_begin(sess, SSH_MSG_CHANNEL_REQUEST, &max, &err);
+	if (msg == NULL) return err;
 	size_t pos = 0;
 	msg[pos++] = SSH_MSG_CHANNEL_REQUEST;
 	DSSH_PUT_U32(ch->remote_id, msg, &pos);
@@ -2861,9 +2859,7 @@ dssh_chan_send_break(struct dssh_channel_s *ch, uint32_t length)
 	memcpy(&msg[pos], "break", rtlen); pos += rtlen;
 	msg[pos++] = 0;
 	memcpy(&msg[pos], extra, ep); pos += ep;
-	int ret = send_packet(sess, msg, pos, NULL);
-	free(msg);
-	return ret;
+	return send_commit(sess, pos, NULL);
 }
 
 DSSH_PUBLIC enum dssh_chan_type dssh_chan_get_type(struct dssh_channel_s *ch) { return ch->params.type; }

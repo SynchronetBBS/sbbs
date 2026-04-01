@@ -8697,45 +8697,6 @@ test_dclient_wrong_svc_reply(void)
 	return TEST_PASS;
 }
 
-/* L539: get_methods malloc fail */
-static int
-test_dclient_get_methods_alloc_fail(void)
-{
-	struct handshake_ctx ctx;
-	if (handshake_setup(&ctx) < 0) {
-		handshake_cleanup(&ctx);
-		return TEST_FAIL;
-	}
-
-	uint8_t failure_resp[32];
-	size_t rp = 0;
-	failure_resp[rp++] = SSH_MSG_USERAUTH_FAILURE;
-	dssh_serialize_uint32(8, failure_resp, sizeof(failure_resp), &rp);
-	memcpy(&failure_resp[rp], "password", 8);
-	rp += 8;
-	failure_resp[rp++] = 0;
-
-	struct dclient_server_arg sa = { &ctx, failure_resp, rp, 0 };
-	thrd_t st;
-	if (thrd_create(&st, dclient_server_thread, &sa) != thrd_success) {
-		handshake_cleanup(&ctx);
-		return TEST_FAIL;
-	}
-
-	dssh_test_alloc_fail_after(0);
-	char methods[256];
-	int res = get_methods_impl(ctx.client, "user", methods, sizeof(methods));
-	dssh_test_alloc_reset();
-
-	mock_io_close_c2s(&ctx.io);
-	mock_io_close_s2c(&ctx.io);
-	thrd_join(st, NULL);
-	ASSERT_EQ(res, DSSH_ERROR_ALLOC);
-
-	handshake_cleanup(&ctx);
-	return TEST_PASS;
-}
-
 /* L572/582: get_methods FAILURE with DEL char (0x7F) */
 static int
 test_dclient_get_methods_del(void)
@@ -9153,127 +9114,6 @@ test_direct_bad_prefix_in_loop(void)
 	return TEST_PASS;
 }
 
-/* L71: send_passwd_changereq malloc fail.
- * Server receives password request, password_cb returns CHANGE_PASSWORD
- * with a change_prompt -> send_passwd_changereq mallocs. */
-static int
-test_server_changereq_alloc(void)
-{
-	/* Build normal password request: bool=false, pw="pass" */
-	uint8_t extra[16];
-	size_t ep = 0;
-	extra[ep++] = 0; /* change=false */
-	dssh_serialize_uint32(4, extra, sizeof(extra), &ep);
-	memcpy(&extra[ep], "pass", 4);
-	ep += 4;
-	uint8_t msg[128];
-	size_t len = build_auth_request("password", 8, extra, ep,
-	    msg, sizeof(msg));
-
-	bool saw_alloc = false;
-	for (int n = 0; n < 5; n++) {
-		struct handshake_ctx ctx;
-		if (handshake_setup(&ctx) < 0) {
-			handshake_cleanup(&ctx);
-			continue;
-		}
-		/* Inject SERVICE_REQUEST + auth msg */
-		{
-			static const char svc[] = "ssh-userauth";
-			uint8_t smsg[64];
-			size_t sp = 0;
-			smsg[sp++] = SSH_MSG_SERVICE_REQUEST;
-			dssh_serialize_uint32((uint32_t)(sizeof(svc) - 1),
-			    smsg, sizeof(smsg), &sp);
-			memcpy(&smsg[sp], svc, sizeof(svc) - 1);
-			sp += sizeof(svc) - 1;
-			send_packet(ctx.client, smsg, sp, NULL);
-		}
-		send_packet(ctx.client, msg, len, NULL);
-		mock_io_close_c2s_write(&ctx.io);
-
-		struct dssh_auth_server_cbs cbs = default_cbs();
-		cbs.password_cb = test_password_change_cb_server;
-
-		dssh_test_alloc_fail_after(n);
-		int res = auth_server_impl(ctx.server, &cbs, NULL, NULL);
-		dssh_test_alloc_reset();
-
-		mock_io_close_c2s(&ctx.io);
-		mock_io_close_s2c(&ctx.io);
-		handshake_cleanup(&ctx);
-
-		if (res == DSSH_ERROR_ALLOC)
-			saw_alloc = true;
-	}
-	ASSERT_TRUE(saw_alloc);
-	return TEST_PASS;
-}
-
-/* L91: send_pk_ok malloc fail.
- * Server receives publickey probe (has_sig=false), calls send_pk_ok
- * which mallocs. Inject alloc failure. */
-static int
-test_server_pk_ok_alloc(void)
-{
-	const char *algo = test_key_algo_name();
-	size_t algo_len = strlen(algo);
-
-	uint8_t extra[256];
-	size_t ep = 0;
-	extra[ep++] = 0; /* has_sig=false (probe) */
-	dssh_serialize_uint32((uint32_t)algo_len, extra, sizeof(extra), &ep);
-	memcpy(&extra[ep], algo, algo_len);
-	ep += algo_len;
-	/* dummy pubkey blob */
-	dssh_serialize_uint32(4, extra, sizeof(extra), &ep);
-	memcpy(&extra[ep], "fake", 4);
-	ep += 4;
-	uint8_t msg[512];
-	size_t len = build_auth_request("publickey", 9, extra, ep,
-	    msg, sizeof(msg));
-
-	bool saw_alloc = false;
-	for (int n = 0; n < 5; n++) {
-		struct handshake_ctx ctx;
-		if (handshake_setup(&ctx) < 0) {
-			handshake_cleanup(&ctx);
-			continue;
-		}
-		{
-			static const char svc[] = "ssh-userauth";
-			uint8_t smsg[64];
-			size_t sp = 0;
-			smsg[sp++] = SSH_MSG_SERVICE_REQUEST;
-			dssh_serialize_uint32((uint32_t)(sizeof(svc) - 1),
-			    smsg, sizeof(smsg), &sp);
-			memcpy(&smsg[sp], svc, sizeof(svc) - 1);
-			sp += sizeof(svc) - 1;
-			send_packet(ctx.client, smsg, sp, NULL);
-		}
-		send_packet(ctx.client, msg, len, NULL);
-		mock_io_close_c2s_write(&ctx.io);
-
-		struct dssh_auth_server_cbs cbs = default_cbs();
-		struct test_auth_cbdata cbdata = {0};
-		cbdata.publickey_result = DSSH_AUTH_SUCCESS;
-		cbs.cbdata = &cbdata;
-
-		dssh_test_alloc_fail_after(n);
-		int res = auth_server_impl(ctx.server, &cbs, NULL, NULL);
-		dssh_test_alloc_reset();
-
-		mock_io_close_c2s(&ctx.io);
-		mock_io_close_s2c(&ctx.io);
-		handshake_cleanup(&ctx);
-
-		if (res == DSSH_ERROR_ALLOC)
-			saw_alloc = true;
-	}
-	ASSERT_TRUE(saw_alloc);
-	return TEST_PASS;
-}
-
 /* L388: publickey with has_sig=true but unknown algo name.
  * Server can't find the key algorithm -> send FAILURE. */
 static int
@@ -9357,46 +9197,6 @@ test_server_pk_verify_alloc(void)
 			saw_alloc = true;
 	}
 	ASSERT_TRUE(saw_alloc);
-	return TEST_PASS;
-}
-
-/* L539: get_methods_impl malloc fail */
-static int
-test_dclient_get_methods_malloc(void)
-{
-	struct handshake_ctx ctx;
-	if (handshake_setup(&ctx) < 0) {
-		handshake_cleanup(&ctx);
-		return TEST_FAIL;
-	}
-
-	/* Build USERAUTH_FAILURE response */
-	uint8_t resp[32];
-	size_t rp = 0;
-	resp[rp++] = SSH_MSG_USERAUTH_FAILURE;
-	dssh_serialize_uint32(8, resp, sizeof(resp), &rp);
-	memcpy(&resp[rp], "password", 8);
-	rp += 8;
-	resp[rp++] = 0;
-
-	struct dclient_server_arg sa = { &ctx, resp, rp, 0, true };
-	thrd_t st;
-	if (thrd_create(&st, dclient_server_thread, &sa) != thrd_success) {
-		handshake_cleanup(&ctx);
-		return TEST_FAIL;
-	}
-
-	dssh_test_alloc_fail_after(0);
-	char methods[128];
-	int res = get_methods_impl(ctx.client, "user", methods,
-	    sizeof(methods));
-	dssh_test_alloc_reset();
-
-	mock_io_close_c2s(&ctx.io);
-	thrd_join(st, NULL);
-	ASSERT_EQ(res, DSSH_ERROR_ALLOC);
-
-	handshake_cleanup(&ctx);
 	return TEST_PASS;
 }
 
@@ -9538,53 +9338,6 @@ test_dclient_get_methods_unexpected_msg(void)
 	ASSERT_TRUE(res < 0);
 
 	handshake_cleanup(&ctx);
-	return TEST_PASS;
-}
-
-/* L539: get_methods_impl msg malloc fail */
-static int
-test_dclient_get_methods_msg_alloc(void)
-{
-	bool saw_alloc = false;
-
-	for (int n = 0; n < 5; n++) {
-		struct handshake_ctx ctx;
-		if (handshake_setup(&ctx) < 0) {
-			handshake_cleanup(&ctx);
-			dssh_test_alloc_reset();
-			continue;
-		}
-
-		uint8_t resp[32];
-		size_t rp = 0;
-		resp[rp++] = SSH_MSG_USERAUTH_FAILURE;
-		dssh_serialize_uint32(8, resp, sizeof(resp), &rp);
-		memcpy(&resp[rp], "password", 8);
-		rp += 8;
-		resp[rp++] = 0;
-
-		struct dclient_server_arg sa = { &ctx, resp, rp, 0, true };
-		thrd_t st;
-		if (thrd_create(&st, dclient_server_thread, &sa) !=
-		    thrd_success) {
-			handshake_cleanup(&ctx);
-			continue;
-		}
-
-		dssh_test_alloc_fail_after(n);
-		char methods[128];
-		int res = get_methods_impl(ctx.client, "user", methods,
-		    sizeof(methods));
-		dssh_test_alloc_reset();
-
-		mock_io_close_c2s(&ctx.io);
-		thrd_join(st, NULL);
-		handshake_cleanup(&ctx);
-
-		if (res == DSSH_ERROR_ALLOC)
-			saw_alloc = true;
-	}
-	ASSERT_TRUE(saw_alloc);
 	return TEST_PASS;
 }
 
@@ -11481,129 +11234,6 @@ test_dclient_pk_banner_parse_error(void)
 }
 
 /* ================================================================
- * send_auth_failure alloc failure
- * ================================================================ */
-static int
-test_direct_send_failure_alloc(void)
-{
-	/* Send a valid "none" auth request.  The server has no none_cb,
-	 * so it falls through to send_auth_failure.  Inject alloc failure
-	 * to hit the malloc fail path in send_auth_failure. */
-	uint8_t msg[128];
-	size_t len = build_auth_request("none", 4, NULL, 0, msg, sizeof(msg));
-	struct dssh_auth_server_cbs cbs = {0};
-	cbs.methods_str = "password";
-	cbs.password_cb = test_password_cb;
-
-	bool saw_alloc_error = false;
-
-	for (int n = 0; n < 10; n++) {
-		struct handshake_ctx ctx;
-		if (handshake_setup(&ctx) < 0) {
-			handshake_cleanup(&ctx);
-			dssh_test_alloc_reset();
-			continue;
-		}
-
-		/* Inject SERVICE_REQUEST + auth message */
-		{
-			static const char svc[] = "ssh-userauth";
-			uint8_t svc_msg[64];
-			size_t pos = 0;
-			svc_msg[pos++] = SSH_MSG_SERVICE_REQUEST;
-			dssh_serialize_uint32(
-			    (uint32_t)(sizeof(svc) - 1), svc_msg,
-			    sizeof(svc_msg), &pos);
-			memcpy(&svc_msg[pos], svc, sizeof(svc) - 1);
-			pos += sizeof(svc) - 1;
-			send_packet(ctx.client, svc_msg,
-			    pos, NULL);
-		}
-		if (len > 0)
-			send_packet(ctx.client, msg, len,
-			    NULL);
-		mock_io_close_c2s_write(&ctx.io);
-
-		/* Inject alloc failure AFTER setup */
-		dssh_test_alloc_fail_after(n);
-		int res = auth_server_impl(ctx.server, &cbs, NULL, NULL);
-		dssh_test_alloc_reset();
-
-		mock_io_close_c2s(&ctx.io);
-		mock_io_close_s2c(&ctx.io);
-		handshake_cleanup(&ctx);
-
-		if (res == DSSH_ERROR_ALLOC)
-			saw_alloc_error = true;
-	}
-
-	ASSERT_TRUE(saw_alloc_error);
-	return TEST_PASS;
-}
-
-/* ================================================================
- * flush_pending_banner alloc failure
- * ================================================================ */
-static int
-test_direct_flush_banner_alloc(void)
-{
-	/* Set a banner on the server, then trigger auth which calls
-	 * flush_pending_banner.  Inject alloc failure in the flush. */
-	uint8_t msg[128];
-	size_t len = build_auth_request("none", 4, NULL, 0, msg, sizeof(msg));
-	struct dssh_auth_server_cbs cbs = {0};
-	cbs.methods_str = "password";
-	cbs.password_cb = test_password_cb;
-
-	bool saw_alloc_error = false;
-
-	for (int n = 0; n < 10; n++) {
-		struct handshake_ctx ctx;
-		if (handshake_setup(&ctx) < 0) {
-			handshake_cleanup(&ctx);
-			dssh_test_alloc_reset();
-			continue;
-		}
-
-		/* Set banner before auth */
-		dssh_auth_set_banner(ctx.server, "Welcome!", NULL);
-
-		/* Inject SERVICE_REQUEST + auth message */
-		{
-			static const char svc[] = "ssh-userauth";
-			uint8_t svc_msg[64];
-			size_t pos = 0;
-			svc_msg[pos++] = SSH_MSG_SERVICE_REQUEST;
-			dssh_serialize_uint32(
-			    (uint32_t)(sizeof(svc) - 1), svc_msg,
-			    sizeof(svc_msg), &pos);
-			memcpy(&svc_msg[pos], svc, sizeof(svc) - 1);
-			pos += sizeof(svc) - 1;
-			send_packet(ctx.client, svc_msg,
-			    pos, NULL);
-		}
-		if (len > 0)
-			send_packet(ctx.client, msg, len,
-			    NULL);
-		mock_io_close_c2s_write(&ctx.io);
-
-		dssh_test_alloc_fail_after(n);
-		int res = auth_server_impl(ctx.server, &cbs, NULL, NULL);
-		dssh_test_alloc_reset();
-
-		mock_io_close_c2s(&ctx.io);
-		mock_io_close_s2c(&ctx.io);
-		handshake_cleanup(&ctx);
-
-		if (res == DSSH_ERROR_ALLOC)
-			saw_alloc_error = true;
-	}
-
-	ASSERT_TRUE(saw_alloc_error);
-	return TEST_PASS;
-}
-
-/* ================================================================
  * Client KBI: response_lens[i] > UINT32_MAX validation
  * ================================================================ */
 static int
@@ -11752,10 +11382,9 @@ test_dclient_kbi_resp_size_overflow(void)
 /* ================================================================
  * Coverage: KBI server truncation -- direct-call pattern
  *
- * These use the same direct-call pattern as test_direct_send_failure_alloc:
- * inject packets into the pipe from the client session, close c2s write
- * so the server sees EOF, then call auth_server_impl from the main thread.
- * No threading, no races.
+ * These use the direct-call pattern: inject packets into the pipe from
+ * the client session, close c2s write so the server sees EOF, then call
+ * auth_server_impl from the main thread.  No threading, no races.
  * ================================================================ */
 
 static int
@@ -12541,7 +12170,6 @@ static struct dssh_test_entry tests[] = {
 
 	/* Direct-call client-side tests (_impl from main thread) */
 	{ "dclient/wrong_svc_reply",             test_dclient_wrong_svc_reply },
-	{ "dclient/get_methods_alloc",           test_dclient_get_methods_alloc_fail },
 	{ "dclient/get_methods_del",             test_dclient_get_methods_del },
 	{ "dclient/changereq_no_cb",             test_dclient_changereq_no_cb },
 	{ "dclient/changereq_trunc",             test_dclient_changereq_trunc },
@@ -12570,9 +12198,6 @@ static struct dssh_test_entry tests[] = {
 	{ "dclient/pk_banner_in_response",       test_dclient_pk_banner_in_response },
 	{ "dclient/pk_banner_parse_error",       test_dclient_pk_banner_parse_error },
 
-	/* send_auth_failure / flush_banner alloc */
-	{ "direct/send_failure_alloc",           test_direct_send_failure_alloc },
-	{ "direct/flush_banner_alloc",           test_direct_flush_banner_alloc },
 
 	/* KBI response validation */
 	{ "dclient/kbi_resp_overflow",           test_dclient_kbi_resp_overflow },
@@ -12592,16 +12217,12 @@ static struct dssh_test_entry tests[] = {
 
 	/* Additional coverage */
 	{ "direct/bad_prefix_in_loop",           test_direct_bad_prefix_in_loop },
-	{ "direct/changereq_alloc",              test_server_changereq_alloc },
-	{ "direct/pk_ok_alloc",                  test_server_pk_ok_alloc },
 	{ "direct/pk_sig_unknown_algo",          test_direct_pk_sig_unknown_algo },
 	{ "direct/pk_verify_alloc",              test_server_pk_verify_alloc },
-	{ "dclient/get_methods_malloc",          test_dclient_get_methods_malloc },
 	{ "dclient/get_methods_trunc_payload",   test_dclient_get_methods_trunc_payload },
 	{ "dclient/get_methods_ctrl_char",       test_dclient_get_methods_ctrl_char },
 	{ "dclient/changereq_lang_overflow",     test_dclient_changereq_lang_overflow },
 	{ "dclient/get_methods_unexpected",      test_dclient_get_methods_unexpected_msg },
-	{ "dclient/get_methods_msg_alloc",       test_dclient_get_methods_msg_alloc },
 	{ "dclient/changereq_prompt_overflow",   test_dclient_changereq_prompt_overflow },
 	{ "dclient/get_methods_multi_banner",    test_dclient_get_methods_multi_banner },
 

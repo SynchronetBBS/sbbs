@@ -105,11 +105,12 @@ send_auth_failure(struct dssh_session_s *sess, const char *methods, bool partial
 	if (mlen > UINT32_MAX || mlen > SIZE_MAX - AUTH_FAILURE_FIXED)
 		return DSSH_ERROR_INVALID;
 
-	size_t   msg_len = AUTH_FAILURE_FIXED + mlen;
-	uint8_t *msg = malloc(msg_len);
+	size_t max;
+	int    err;
+	uint8_t *msg = send_begin(sess, SSH_MSG_USERAUTH_FAILURE, &max, &err);
 
 	if (msg == NULL)
-		return DSSH_ERROR_ALLOC;
+		return err;
 
 	size_t pos = 0;
 
@@ -118,10 +119,7 @@ send_auth_failure(struct dssh_session_s *sess, const char *methods, bool partial
 	memcpy(&msg[pos], methods, mlen);
 	pos += mlen;
 	msg[pos++] = partial_success ? 1 : 0;
-	ret = send_packet(sess, msg, pos, NULL);
-
-	free(msg);
-	return ret;
+	return send_commit(sess, pos, NULL);
 }
 
 static int
@@ -144,14 +142,15 @@ send_passwd_changereq(struct dssh_session_s *sess,
 	if (prompt_len > UINT32_MAX || prompt_len > SIZE_MAX - PASSWD_CHANGEREQ_FIXED)
 		return DSSH_ERROR_INVALID;
 
-	size_t   msg_len = PASSWD_CHANGEREQ_FIXED + prompt_len;
-	uint8_t *msg = malloc(msg_len);
+	size_t max;
+	int    err;
+	uint8_t *msg = send_begin(sess, SSH_MSG_USERAUTH_PASSWD_CHANGEREQ,
+	    &max, &err);
 
 	if (msg == NULL)
-		return DSSH_ERROR_ALLOC;
+		return err;
 
 	size_t pos = 0;
-	int    ret;
 
 	msg[pos++] = SSH_MSG_USERAUTH_PASSWD_CHANGEREQ;
 	DSSH_PUT_U32((uint32_t)prompt_len, msg, &pos);
@@ -159,10 +158,7 @@ send_passwd_changereq(struct dssh_session_s *sess,
 	pos += prompt_len;
 	DSSH_PUT_U32(0, msg, &pos);
 
-	ret = send_packet(sess, msg, pos, NULL);
-
-	free(msg);
-	return ret;
+	return send_commit(sess, pos, NULL);
 }
 
 static int
@@ -174,14 +170,14 @@ send_pk_ok(struct dssh_session_s *sess,
 	    || algo_len > SIZE_MAX - 9 || pubkey_blob_len > SIZE_MAX - 9 - algo_len)
 		return DSSH_ERROR_INVALID;
 
-	size_t   msg_len = 9 + algo_len + pubkey_blob_len;
-	uint8_t *msg = malloc(msg_len);
+	size_t max;
+	int    err;
+	uint8_t *msg = send_begin(sess, SSH_MSG_USERAUTH_PK_OK, &max, &err);
 
 	if (msg == NULL)
-		return DSSH_ERROR_ALLOC;
+		return err;
 
 	size_t pos = 0;
-	int    ret;
 
 	msg[pos++] = SSH_MSG_USERAUTH_PK_OK;
 	DSSH_PUT_U32((uint32_t)algo_len, msg, &pos);
@@ -191,10 +187,7 @@ send_pk_ok(struct dssh_session_s *sess,
 	memcpy(&msg[pos], pubkey_blob, pubkey_blob_len);
 	pos += pubkey_blob_len;
 
-	ret = send_packet(sess, msg, pos, NULL);
-
-	free(msg);
-	return ret;
+	return send_commit(sess, pos, NULL);
 }
 
 /*
@@ -234,13 +227,15 @@ send_info_request(struct dssh_session_s *sess, const char *name,
 		msg_len += 4 + plen + 1;
 	}
 
-	uint8_t *msg = malloc(msg_len);
+	size_t max;
+	int    err;
+	uint8_t *msg = send_begin(sess, SSH_MSG_USERAUTH_INFO_REQUEST,
+	    &max, &err);
 
 	if (msg == NULL)
-		return DSSH_ERROR_ALLOC;
+		return err;
 
 	size_t pos = 0;
-	int    ret;
 
 	msg[pos++] = SSH_MSG_USERAUTH_INFO_REQUEST;
 
@@ -267,9 +262,7 @@ send_info_request(struct dssh_session_s *sess, const char *name,
 		msg[pos++] = echo[i] ? 1 : 0;
 	}
 
-	ret = send_packet(sess, msg, pos, NULL);
-	free(msg);
-	return ret;
+	return send_commit(sess, pos, NULL);
 }
 
 /*
@@ -346,11 +339,12 @@ flush_pending_banner(struct dssh_session_s *sess)
 #endif
 	uint32_t lang_len = (uint32_t)lang_sz;
 
-	size_t   pkt_sz = 1 + 4 + msg_len + 4 + lang_len;
-	uint8_t *pkt = malloc(pkt_sz);
+	size_t max;
+	int    err;
+	uint8_t *pkt = send_begin(sess, SSH_MSG_USERAUTH_BANNER, &max, &err);
 
 	if (pkt == NULL)
-		return DSSH_ERROR_ALLOC;
+		return err;
 
 	size_t pos = 0;
 
@@ -362,8 +356,7 @@ flush_pending_banner(struct dssh_session_s *sess)
 	memcpy(&pkt[pos], lang, lang_len);
 	pos += lang_len;
 
-	int res = send_packet(sess, pkt, pos, NULL);
-	free(pkt);
+	int res = send_commit(sess, pos, NULL);
 
 	free(sess->pending_banner);
 	free(sess->pending_banner_lang);
@@ -899,7 +892,6 @@ auth_server_impl(struct dssh_session_s *sess,
 
         /* Send SERVICE_ACCEPT (echo back the service name) */
 	{
-		size_t   accept_len = 1;
 		uint32_t slen = 0;
 		bool     have_name = false;
 
@@ -910,15 +902,17 @@ auth_server_impl(struct dssh_session_s *sess,
 				if (slen > SIZE_MAX - 5)
 					return DSSH_ERROR_INVALID;
 			#endif
-				accept_len = 1 + 4 + slen;
 				have_name = true;
 			}
 		}
 
-		uint8_t *accept = malloc(accept_len);
+		size_t max;
+		int    err;
+		uint8_t *accept = send_begin(sess, SSH_MSG_SERVICE_ACCEPT,
+		    &max, &err);
 
 		if (accept == NULL)
-			return DSSH_ERROR_ALLOC;
+			return err;
 
 		size_t pos = 0;
 
@@ -928,8 +922,7 @@ auth_server_impl(struct dssh_session_s *sess,
 			memcpy(&accept[pos], &payload[5], slen);
 			pos += slen;
 		}
-		res = send_packet(sess, accept, pos, NULL);
-		free(accept);
+		res = send_commit(sess, pos, NULL);
 		if (res < 0)
 			return res;
 	}
@@ -1094,11 +1087,12 @@ dssh_auth_request_service(struct dssh_session_s *sess, const char *service)
 	if (slen > UINT32_MAX || slen > SIZE_MAX - 5)
 		return DSSH_ERROR_INVALID;
 
-	size_t   msg_len = 5 + slen;
-	uint8_t *msg = malloc(msg_len);
+	size_t max;
+	int    err;
+	uint8_t *msg = send_begin(sess, SSH_MSG_SERVICE_REQUEST, &max, &err);
 
 	if (msg == NULL)
-		return DSSH_ERROR_ALLOC;
+		return err;
 
 	size_t pos = 0;
 	int    ret;
@@ -1108,9 +1102,7 @@ dssh_auth_request_service(struct dssh_session_s *sess, const char *service)
 	memcpy(&msg[pos], service, slen);
 	pos += slen;
 
-	ret = send_packet(sess, msg, pos, NULL);
-
-	free(msg);
+	ret = send_commit(sess, pos, NULL);
 	if (ret < 0)
 		return ret;
 
@@ -1185,17 +1177,18 @@ get_methods_impl(struct dssh_session_s *sess,
 	if (ulen > UINT32_MAX || ulen > SIZE_MAX - AUTH_NONE_FIXED)
 		return DSSH_ERROR_INVALID;
 
-	size_t            msg_len = AUTH_NONE_FIXED + ulen;
-	uint8_t          *msg = malloc(msg_len);
+	size_t            max;
+	int               err;
+	uint8_t          *msg = send_begin(sess, SSH_MSG_USERAUTH_REQUEST,
+	    &max, &err);
 
 	if (msg == NULL)
-		return DSSH_ERROR_ALLOC;
+		return err;
 
 	size_t pos = build_userauth_request(msg, username, ulen,
 	        method_none, DSSH_STRLEN(method_none));
 
-	res = send_packet(sess, msg, pos, NULL);
-	free(msg);
+	res = send_commit(sess, pos, NULL);
 	if (res < 0)
 		return res;
 
@@ -1289,10 +1282,13 @@ send_password_request(struct dssh_session_s *sess,
 		msg_len += 4 + new_password_len;
 	}
 
-	uint8_t *msg = malloc(msg_len);
+	size_t max;
+	int    err;
+	uint8_t *msg = send_begin(sess, SSH_MSG_USERAUTH_REQUEST,
+	    &max, &err);
 
 	if (msg == NULL)
-		return DSSH_ERROR_ALLOC;
+		return err;
 
 	size_t pos = build_userauth_request(msg, username, ulen,
 	        method_password, DSSH_STRLEN(method_password));
@@ -1307,10 +1303,9 @@ send_password_request(struct dssh_session_s *sess,
 		pos += new_password_len;
 	}
 
-	int ret = send_packet(sess, msg, pos, NULL);
+	int ret = send_commit(sess, pos, NULL);
 
-	dssh_cleanse(msg, msg_len);
-	free(msg);
+	dssh_cleanse(msg, pos);
 	return ret;
 }
 
@@ -1440,11 +1435,13 @@ auth_kbi_impl(struct dssh_session_s *sess,
 	if (ulen > UINT32_MAX || ulen > SIZE_MAX - AUTH_KBI_FIXED)
 		return DSSH_ERROR_INVALID;
 
-	size_t            msg_len = AUTH_KBI_FIXED + ulen;
-	uint8_t          *msg = malloc(msg_len);
+	size_t            max;
+	int               err;
+	uint8_t          *msg = send_begin(sess, SSH_MSG_USERAUTH_REQUEST,
+	    &max, &err);
 
 	if (msg == NULL)
-		return DSSH_ERROR_ALLOC;
+		return err;
 
 	int     res;
 	size_t  pos = build_userauth_request(msg, username, ulen,
@@ -1454,9 +1451,7 @@ auth_kbi_impl(struct dssh_session_s *sess,
 	DSSH_PUT_U32(0, msg, &pos); /* language */
 	DSSH_PUT_U32(0, msg, &pos); /* submethods */
 
-	res = send_packet(sess, msg, pos, NULL);
-
-	free(msg);
+	res = send_commit(sess, pos, NULL);
 	if (res < 0)
 		return res;
 
@@ -1597,10 +1592,14 @@ auth_kbi_impl(struct dssh_session_s *sess,
 				resp_sz += 4 + response_lens[i];
 			}
 
-			uint8_t *resp = malloc(resp_sz);
+			size_t resp_max;
+			int    resp_err;
+			uint8_t *resp = send_begin(sess,
+			    SSH_MSG_USERAUTH_INFO_RESPONSE,
+			    &resp_max, &resp_err);
 
 			if (resp == NULL) {
-				res = DSSH_ERROR_ALLOC;
+				res = resp_err;
 				goto kbi_cleanup;
 			}
 
@@ -1618,8 +1617,7 @@ auth_kbi_impl(struct dssh_session_s *sess,
 			free(responses);
 			free(response_lens);
 
-			res = send_packet(sess, resp, rp, NULL);
-			free(resp);
+			res = send_commit(sess, rp, NULL);
 			if (res < 0)
 				return res;
 			continue;
@@ -1751,12 +1749,14 @@ auth_publickey_impl(struct dssh_session_s *sess,
          *   string    public key blob
          *   string    signature
          */
-	size_t   msg_len = AUTH_PUBLICKEY_FIXED + ulen + alen + pubkey_len + sig_len;
-	uint8_t *msg = malloc(msg_len);
+	size_t max;
+	int    err;
+	uint8_t *msg = send_begin(sess, SSH_MSG_USERAUTH_REQUEST,
+	    &max, &err);
 
 	if (msg == NULL) {
 		free(sig_buf);
-		return DSSH_ERROR_ALLOC;
+		return err;
 	}
 
 	size_t pos = build_userauth_request(msg, username, ulen,
@@ -1773,8 +1773,7 @@ auth_publickey_impl(struct dssh_session_s *sess,
 	memcpy(&msg[pos], sig_buf, sig_len);
 	pos += sig_len;
 
-	res = send_packet(sess, msg, pos, NULL);
-	free(msg);
+	res = send_commit(sess, pos, NULL);
 	free(sig_buf);
 	if (res < 0)
 		return res;

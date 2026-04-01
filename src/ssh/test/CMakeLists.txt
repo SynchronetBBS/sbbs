@@ -410,13 +410,10 @@ set(AUTH_TESTS
 	direct/pk_no_hassig direct/pk_no_pk_len direct/pk_pk_overflow
 	direct/pk_sig_no_sig_len direct/pk_sig_overflow
 	direct/pk_sig_unknown_algo
-	direct/pk_ok_alloc direct/pk_verify_alloc
-	direct/changereq_alloc
+	direct/pk_verify_alloc
 	dclient/wrong_svc_reply dclient/get_methods_unexpected
 	dclient/get_methods_trunc_payload
 	dclient/get_methods_ctrl_char dclient/get_methods_del
-	dclient/get_methods_alloc dclient/get_methods_malloc
-	dclient/get_methods_msg_alloc
 	dclient/changereq_no_cb dclient/changereq_trunc
 	dclient/changereq_no_lang
 	dclient/changereq_prompt_overflow
@@ -435,7 +432,6 @@ set(AUTH_TESTS
 	direct/kbi_wrong_resp_type direct/kbi_resp_parse_error
 	dclient/pk_no_key
 	dclient/pk_banner_in_response dclient/pk_banner_parse_error
-	direct/send_failure_alloc direct/flush_banner_alloc
 	dclient/kbi_resp_overflow dclient/kbi_resp_size_overflow
 	direct/kbi_trunc_lang_hdr direct/kbi_trunc_lang_data
 	direct/kbi_trunc_submethods direct/kbi_trunc_submethods_data

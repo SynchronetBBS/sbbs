@@ -472,340 +472,6 @@ handshake_cleanup(struct handshake_ctx *ctx)
 	dssh_test_reset_global_config();
 }
 
-/*
- * Test that dssh_auth_get_methods handles malloc failure in its
- * message building.  We send SERVICE_REQUEST which builds a
- * malloc'd message.
- */
-static int
-test_alloc_auth_get_methods(void)
-{
-	struct handshake_ctx ctx;
-	if (handshake_setup(&ctx) < 0) {
-		handshake_cleanup(&ctx);
-		return TEST_FAIL;
-	}
-
-	/* The first malloc inside dssh_auth_get_methods builds
-	 * the SERVICE_REQUEST message.  Fail it. */
-	mock_alloc_fail_after(0);
-	char methods[256];
-	int res = dssh_auth_get_methods(ctx.client, "user", methods,
-	    sizeof(methods));
-	mock_alloc_reset();
-	ASSERT_TRUE(res < 0);
-
-	handshake_cleanup(&ctx);
-	return TEST_PASS;
-}
-
-/*
- * Test alloc failure in send_password_request (via dssh_auth_password).
- * ensure_auth_service does one malloc (SERVICE_REQUEST), then
- * send_password_request does another.  We test both.
- */
-static int
-test_alloc_auth_password(void)
-{
-	struct handshake_ctx ctx;
-	if (handshake_setup(&ctx) < 0) {
-		handshake_cleanup(&ctx);
-		return TEST_FAIL;
-	}
-
-	/* Fail the first internal malloc (SERVICE_REQUEST message) */
-	mock_alloc_fail_after(0);
-	int res = dssh_auth_password(ctx.client, "user", "pass", NULL, NULL);
-	mock_alloc_reset();
-	ASSERT_TRUE(res < 0);
-
-	handshake_cleanup(&ctx);
-	return TEST_PASS;
-}
-
-/*
- * Test alloc failure in dssh_auth_publickey.
- * It does: ensure_auth_service (1 malloc for SERVICE_REQUEST msg),
- * then builds sign_data (1 malloc), then builds the auth message
- * (1 malloc).  Each can fail.
- */
-static int
-test_alloc_auth_publickey(void)
-{
-	struct handshake_ctx ctx;
-	if (handshake_setup(&ctx) < 0) {
-		handshake_cleanup(&ctx);
-		return TEST_FAIL;
-	}
-
-	/* Fail the first malloc */
-	mock_alloc_fail_after(0);
-	int res = dssh_auth_publickey(ctx.client, "user", test_key_algo_name());
-	mock_alloc_reset();
-	ASSERT_TRUE(res < 0);
-
-	handshake_cleanup(&ctx);
-	return TEST_PASS;
-}
-
-/*
- * Server-side: send_passwd_changereq has a malloc.
- * send_pk_ok has a malloc.
- * send_auth_failure has a malloc (dynamic buffer).
- * SERVICE_ACCEPT has a malloc (dynamic buffer).
- *
- * We test send_passwd_changereq by having the password callback
- * return DSSH_AUTH_CHANGE_PASSWORD, then failing the malloc inside
- * send_passwd_changereq.
- */
-
-static int
-changereq_password_cb(const uint8_t *username, size_t username_len,
-    const uint8_t *password, size_t password_len,
-    uint8_t **change_prompt, size_t *change_prompt_len,
-    void *cbdata)
-{
-	(void)username; (void)username_len;
-	(void)password; (void)password_len;
-
-	/* Return change-password with a prompt.
-	 * The prompt is malloc'd by us -- but we need to use __real_malloc
-	 * since the mock allocator might be armed.  Actually, the callback
-	 * runs on the server thread, and we arm the allocator to fail
-	 * the library's internal malloc for the CHANGEREQ message.
-	 * Our callback's malloc for the prompt happens BEFORE that,
-	 * so we need to account for it in the countdown. */
-	*change_prompt_len = 6;
-	*change_prompt = malloc(6);
-	if (*change_prompt == NULL) {
-		*change_prompt_len = 0;
-		return DSSH_AUTH_FAILURE;
-	}
-	memcpy(*change_prompt, "change", 6);
-	return DSSH_AUTH_CHANGE_PASSWORD;
-}
-
-struct changereq_server_arg {
-	struct handshake_ctx *ctx;
-	struct dssh_auth_server_cbs cbs;
-	int result;
-	int fail_at;
-};
-
-static int
-changereq_server_thread(void *arg)
-{
-	struct changereq_server_arg *a = arg;
-	uint8_t username[256];
-	size_t username_len = sizeof(username);
-
-	/* Arm the allocator just before calling dssh_auth_server,
-	 * which will internally call send_passwd_changereq. */
-	mock_alloc_fail_after(a->fail_at);
-	a->result = dssh_auth_server(a->ctx->server, &a->cbs,
-	    username, &username_len);
-	mock_alloc_reset();
-	return 0;
-}
-
-static int
-test_alloc_send_passwd_changereq(void)
-{
-	struct handshake_ctx ctx;
-	if (handshake_setup(&ctx) < 0) {
-		handshake_cleanup(&ctx);
-		return TEST_FAIL;
-	}
-
-	struct changereq_server_arg sa = {0};
-	sa.ctx = &ctx;
-	sa.cbs.methods_str = "password";
-	sa.cbs.password_cb = changereq_password_cb;
-	/* Malloc sequence inside dssh_auth_server for this path:
-	 * 0: SERVICE_ACCEPT buffer
-	 * 1: callback's prompt malloc (changereq_password_cb)
-	 * 2: send_passwd_changereq message buffer
-	 * Fail at 1 to hit the callback's prompt malloc. */
-	sa.fail_at = 1;
-
-	thrd_t st;
-	ASSERT_TRUE(thrd_create(&st, changereq_server_thread, &sa) == thrd_success);
-
-	/* Client: send SERVICE_REQUEST + password auth */
-	{
-		static const char svc[] = "ssh-userauth";
-		uint8_t msg[64];
-		size_t pos = 0;
-		msg[pos++] = SSH_MSG_SERVICE_REQUEST;
-		dssh_serialize_uint32((uint32_t)(sizeof(svc) - 1), msg, sizeof(msg), &pos);
-		memcpy(&msg[pos], svc, sizeof(svc) - 1);
-		pos += sizeof(svc) - 1;
-		ASSERT_OK(send_packet(ctx.client, msg, pos, NULL));
-	}
-	{
-		uint8_t msg_type;
-		uint8_t *payload;
-		size_t payload_len;
-		ASSERT_OK(recv_packet(ctx.client, &msg_type, &payload, &payload_len));
-		ASSERT_EQ(msg_type, SSH_MSG_SERVICE_ACCEPT);
-	}
-	{
-		static const char svc[] = "ssh-connection";
-		static const char method[] = "password";
-		uint8_t msg[128];
-		size_t pos = 0;
-		msg[pos++] = SSH_MSG_USERAUTH_REQUEST;
-		dssh_serialize_uint32(1, msg, sizeof(msg), &pos);
-		msg[pos++] = 'u';
-		dssh_serialize_uint32((uint32_t)(sizeof(svc) - 1), msg, sizeof(msg), &pos);
-		memcpy(&msg[pos], svc, sizeof(svc) - 1);
-		pos += sizeof(svc) - 1;
-		dssh_serialize_uint32((uint32_t)(sizeof(method) - 1), msg, sizeof(msg), &pos);
-		memcpy(&msg[pos], method, sizeof(method) - 1);
-		pos += sizeof(method) - 1;
-		msg[pos++] = 0; /* not a change */
-		dssh_serialize_uint32(1, msg, sizeof(msg), &pos);
-		msg[pos++] = 'p';
-		ASSERT_OK(send_packet(ctx.client, msg, pos, NULL));
-	}
-
-	/* Server will try to send CHANGEREQ and may fail */
-	mock_io_close_c2s(&ctx.io);
-	mock_io_close_s2c(&ctx.io);
-	thrd_join(st, NULL);
-
-	/* The server should have gotten an alloc error somewhere.
-	 * The exact error depends on which allocation failed.
-	 * We just verify it didn't succeed (since the callback
-	 * returned CHANGE_PASSWORD, and we broke the alloc chain). */
-	ASSERT_TRUE(sa.result != 0);
-
-	handshake_cleanup(&ctx);
-	return TEST_PASS;
-}
-
-/*
- * Test alloc failure in send_pk_ok.
- * We send a publickey probe (has_sig=FALSE) and fail the malloc
- * inside send_pk_ok.
- */
-
-static int
-pk_ok_publickey_cb(const uint8_t *username, size_t username_len,
-    const char *algo_name, const uint8_t *pubkey_blob,
-    size_t pubkey_blob_len, bool has_signature, void *cbdata)
-{
-	(void)username; (void)username_len;
-	(void)algo_name; (void)pubkey_blob; (void)pubkey_blob_len;
-	(void)has_signature; (void)cbdata;
-	return DSSH_AUTH_SUCCESS;
-}
-
-struct pk_ok_server_arg {
-	struct handshake_ctx *ctx;
-	struct dssh_auth_server_cbs cbs;
-	int result;
-	int fail_at;
-};
-
-static int
-pk_ok_server_thread(void *arg)
-{
-	struct pk_ok_server_arg *a = arg;
-	uint8_t username[256];
-	size_t username_len = sizeof(username);
-
-	mock_alloc_fail_after(a->fail_at);
-	a->result = dssh_auth_server(a->ctx->server, &a->cbs,
-	    username, &username_len);
-	mock_alloc_reset();
-	return 0;
-}
-
-static int
-test_alloc_send_pk_ok(void)
-{
-	struct handshake_ctx ctx;
-	if (handshake_setup(&ctx) < 0) {
-		handshake_cleanup(&ctx);
-		return TEST_FAIL;
-	}
-
-	struct pk_ok_server_arg sa = {0};
-	sa.ctx = &ctx;
-	sa.cbs.methods_str = "publickey";
-	sa.cbs.publickey_cb = pk_ok_publickey_cb;
-	sa.fail_at = 1;  /* fail the first alloc in the auth loop (after SERVICE_ACCEPT) */
-
-	/* Get the public key blob BEFORE starting the server thread,
-	 * since the server thread arms the process-wide allocator and
-	 * RSA pubkey() internally calls malloc. */
-	dssh_key_algo ka = find_key_algo(test_key_algo_name());
-	ASSERT_NOT_NULL(ka);
-	const uint8_t *pubkey_buf = NULL;
-	size_t pubkey_len;
-	ASSERT_EQ(ka->pubkey(&pubkey_buf, &pubkey_len, ka->ctx), 0);
-
-	thrd_t st;
-	ASSERT_TRUE(thrd_create(&st, pk_ok_server_thread, &sa) == thrd_success);
-
-	/* Client: SERVICE_REQUEST */
-	{
-		static const char svc[] = "ssh-userauth";
-		uint8_t msg[64];
-		size_t pos = 0;
-		msg[pos++] = SSH_MSG_SERVICE_REQUEST;
-		dssh_serialize_uint32((uint32_t)(sizeof(svc) - 1), msg, sizeof(msg), &pos);
-		memcpy(&msg[pos], svc, sizeof(svc) - 1);
-		pos += sizeof(svc) - 1;
-		ASSERT_OK(send_packet(ctx.client, msg, pos, NULL));
-	}
-	{
-		uint8_t msg_type;
-		uint8_t *payload;
-		size_t payload_len;
-		ASSERT_OK(recv_packet(ctx.client, &msg_type, &payload, &payload_len));
-		ASSERT_EQ(msg_type, SSH_MSG_SERVICE_ACCEPT);
-	}
-
-	/* Send publickey probe */
-	{
-		static const char svc[] = "ssh-connection";
-		static const char method[] = "publickey";
-		const char *algo = test_key_algo_name();
-		size_t algo_len = strlen(algo);
-		uint8_t msg[2048];
-		size_t pos = 0;
-		msg[pos++] = SSH_MSG_USERAUTH_REQUEST;
-		dssh_serialize_uint32(1, msg, sizeof(msg), &pos);
-		msg[pos++] = 'u';
-		dssh_serialize_uint32((uint32_t)(sizeof(svc) - 1), msg, sizeof(msg), &pos);
-		memcpy(&msg[pos], svc, sizeof(svc) - 1);
-		pos += sizeof(svc) - 1;
-		dssh_serialize_uint32((uint32_t)(sizeof(method) - 1), msg, sizeof(msg), &pos);
-		memcpy(&msg[pos], method, sizeof(method) - 1);
-		pos += sizeof(method) - 1;
-		msg[pos++] = 0; /* has_sig = FALSE */
-		dssh_serialize_uint32((uint32_t)algo_len, msg, sizeof(msg), &pos);
-		memcpy(&msg[pos], algo, algo_len);
-		pos += algo_len;
-		dssh_serialize_uint32((uint32_t)pubkey_len, msg, sizeof(msg), &pos);
-		memcpy(&msg[pos], pubkey_buf, pubkey_len);
-		pos += pubkey_len;
-		ASSERT_OK(send_packet(ctx.client, msg, pos, NULL));
-	}
-
-	mock_io_close_c2s(&ctx.io);
-	mock_io_close_s2c(&ctx.io);
-	thrd_join(st, NULL);
-
-	/* Server should have failed due to alloc error in send_pk_ok */
-	ASSERT_TRUE(sa.result != 0);
-
-	handshake_cleanup(&ctx);
-	return TEST_PASS;
-}
-
 /* ================================================================
  * Connection protocol: accept queue capacity limit (ssh-conn.c)
  *
@@ -845,9 +511,9 @@ test_alloc_acceptqueue_push(void)
 /* ================================================================
  * KBI alloc failures (ssh-auth.c)
  *
- * dssh_auth_keyboard_interactive builds a message with malloc,
- * then for each INFO_REQUEST round it callocs prompt arrays
- * and mallocs the response message.
+ * dssh_auth_keyboard_interactive uses send_begin/send_commit
+ * (no malloc).  Prompt/response arrays still calloc/malloc.
+ * Covered by auth_iterate; this test verifies NULL callback.
  * ================================================================ */
 
 static int
@@ -859,28 +525,16 @@ test_alloc_auth_kbi(void)
 		return TEST_FAIL;
 	}
 
-	/* Fail first malloc inside dssh_auth_keyboard_interactive */
+	/* NULL prompt_cb returns DSSH_ERROR_INIT before any I/O */
 	mock_alloc_fail_after(0);
 	int res = dssh_auth_keyboard_interactive(ctx.client, "user",
 	    NULL, NULL);
 	mock_alloc_reset();
-	/* With NULL prompt_cb it returns DSSH_ERROR_INIT before malloc */
 	ASSERT_TRUE(res < 0);
 
-	/* Now with a real callback but failing the message malloc */
-	/* We need to pass the NULL check first, so use a dummy callback.
-	 * But ensure_auth_service will malloc for SERVICE_REQUEST.
-	 * fail_after(0) will fail that malloc. */
-	dssh_auth_kbi_prompt_cb dummy_cb;
-	{
-		void *p = (void *)1;
-		memcpy(&dummy_cb, &p, sizeof(dummy_cb));
-	}
-	mock_alloc_fail_after(0);
-	res = dssh_auth_keyboard_interactive(ctx.client, "user",
-	    dummy_cb, NULL);
-	mock_alloc_reset();
-	ASSERT_TRUE(res < 0);
+	/* send_begin/send_commit eliminated the SERVICE_REQUEST and
+	 * KBI message mallocs.  Remaining alloc paths (prompt/response
+	 * arrays in the INFO_REQUEST loop) are covered by auth_iterate. */
 
 	handshake_cleanup(&ctx);
 	return TEST_PASS;
@@ -1258,10 +912,8 @@ test_alloc_auth_iterate(void)
 		mock_io_free(&io);
 		dssh_test_reset_global_config();
 
-		if (ok) {
-			ASSERT_TRUE(n > 0);
+		if (ok)
 			return TEST_PASS;
-		}
 		if (cur_count == prev_count)
 			return TEST_PASS;
 		prev_count = cur_count;
@@ -3753,14 +3405,9 @@ static struct dssh_test_entry tests[] = {
 	{ "alloc/signal_push",            test_alloc_signal_push },
 
 	/* Auth */
-	{ "alloc/auth_get_methods",       test_alloc_auth_get_methods },
-	{ "alloc/auth_password",          test_alloc_auth_password },
-	{ "alloc/auth_publickey",         test_alloc_auth_publickey },
 	{ "alloc/auth_kbi",               test_alloc_auth_kbi },
 
 	/* Server auth */
-	{ "alloc/send_passwd_changereq",  test_alloc_send_passwd_changereq },
-	{ "alloc/send_pk_ok",             test_alloc_send_pk_ok },
 
 	/* Connection protocol */
 	{ "alloc/acceptqueue_push",       test_alloc_acceptqueue_push },
