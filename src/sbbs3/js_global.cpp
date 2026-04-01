@@ -2265,6 +2265,8 @@ js_html_encode(JSContext *cx, uintN argc, jsval *arglist)
 						case 'I':
 							blink = TRUE;
 							break;
+						case 'E': /* Bright background (iCE colors - TODO) */
+							break;
 						case '+':
 							if (attr_sp < (int)sizeof(attr_stack))
 								attr_stack[attr_sp++] = (blink?(1 << 7):0) | (bg << 4) | (bold?(1 << 3):0) | (int)fg;
