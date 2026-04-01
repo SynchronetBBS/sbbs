@@ -153,8 +153,8 @@ var hexdump = load('hexdump_lib.js');
 
 
 // Reader version information
-var READER_VERSION = "1.97j";
-var READER_DATE = "2026-03-14";
+var READER_VERSION = "1.97k";
+var READER_DATE = "2026-04-01";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
