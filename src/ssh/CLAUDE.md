@@ -100,9 +100,9 @@ llvm-cov report ./test/dssh_test_selftest -instr-profile=dssh.profdata \
   -object=./test/dssh_test_chan -object=./test/dssh_test_algo_enc \
   -object=./test/dssh_test_algo_mac -object=./test/dssh_test_algo_key \
   ../ssh-trans.c ../ssh-auth.c ../ssh-conn.c ../ssh.c \
-  ../kex/dh-gex-sha256.c ../kex/curve25519-sha256.c \
-  ../key_algo/ssh-ed25519.c ../key_algo/rsa-sha2-256.c \
-  ../enc/aes256-ctr.c ../mac/hmac-sha2-256.c
+  ../kex/dh-gex-sha256-openssl.c ../kex/curve25519-sha256-openssl.c \
+  ../key_algo/ssh-ed25519-openssl.c ../key_algo/rsa-sha2-256-openssl.c \
+  ../enc/aes256-ctr-openssl.c ../mac/hmac-sha2-256-openssl.c
 ```
 
 ## Architecture

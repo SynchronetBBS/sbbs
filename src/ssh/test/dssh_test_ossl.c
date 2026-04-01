@@ -15,6 +15,7 @@
 #include <stddef.h>
 #include <threads.h>
 
+#ifdef DSSH_CRYPTO_OPENSSL
 #include <openssl/bn.h>
 #include <openssl/core_names.h>
 #include <openssl/evp.h>
@@ -22,6 +23,7 @@
 #include <openssl/param_build.h>
 #include <openssl/params.h>
 #include <openssl/rand.h>
+#endif
 
 #include "dssh_test_ossl.h"
 
@@ -127,6 +129,7 @@ should_fail(void)
 	return (n == fa);
 }
 
+#ifdef DSSH_CRYPTO_OPENSSL
 /* ================================================================
  * OpenSSL creation wrappers (return NULL on failure)
  * ================================================================ */
@@ -502,6 +505,8 @@ dssh_test_EVP_PKEY_CTX_set_rsa_padding(EVP_PKEY_CTX *ctx, int pad_mode)
 		return 0;
 	return EVP_PKEY_CTX_set_rsa_padding(ctx, pad_mode);
 }
+
+#endif /* DSSH_CRYPTO_OPENSSL */
 
 /* ================================================================
  * C11 threads wrappers

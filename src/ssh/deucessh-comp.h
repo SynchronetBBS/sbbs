@@ -29,7 +29,7 @@ typedef struct dssh_comp_s {
 	dssh_comp_cleanup    cleanup;
 	char                 name[];
 } *dssh_comp;
-_Static_assert(!offsetof(struct dssh_comp_s, next),
+static_assert(!offsetof(struct dssh_comp_s, next),
     "next must be at offset 0 for generic list traversal");
 
 DSSH_PUBLIC int dssh_transport_register_comp(dssh_comp comp);

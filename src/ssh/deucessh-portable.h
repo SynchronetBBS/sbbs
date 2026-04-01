@@ -1,6 +1,7 @@
 #ifndef DSSH_PORTABLE_H
 #define DSSH_PORTABLE_H
 
+#include <assert.h>
 #include <stddef.h>
 
 /*

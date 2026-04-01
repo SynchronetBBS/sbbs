@@ -106,12 +106,12 @@ typedef struct dssh_kex_s {
 	struct dssh_kex_s *next;     /* must be first -- generic traversal assumes offsetof(next) == 0 */
 	dssh_kex_handler   handler;
 	dssh_kex_cleanup   cleanup;
-	const char        *hash_name; /* OpenSSL digest name, e.g. "SHA256" */
+	const char        *hash_name; /* digest name, e.g. "SHA-256" */
 	uint32_t           flags;
 	void              *ctx;
 	char               name[];
 } *dssh_kex;
-_Static_assert(!offsetof(struct dssh_kex_s, next),
+static_assert(!offsetof(struct dssh_kex_s, next),
     "next must be at offset 0 for generic list traversal");
 
 DSSH_PUBLIC int dssh_transport_register_kex(dssh_kex kex);

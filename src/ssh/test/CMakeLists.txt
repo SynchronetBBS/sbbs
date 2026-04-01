@@ -14,12 +14,20 @@ endforeach()
 add_library(deucessh_test_lib STATIC ${DSSH_TEST_LIB_SOURCES})
 set_property(TARGET deucessh_test_lib PROPERTY C_STANDARD 17)
 set_property(TARGET deucessh_test_lib PROPERTY C_STANDARD_REQUIRED ON)
-target_compile_definitions(deucessh_test_lib PRIVATE DSSH_TESTING)
+if(DEUCESSH_CRYPTO_BACKEND STREQUAL "Botan")
+	set_property(TARGET deucessh_test_lib PROPERTY CXX_STANDARD 20)
+	set_property(TARGET deucessh_test_lib PROPERTY CXX_STANDARD_REQUIRED ON)
+endif()
+target_compile_definitions(deucessh_test_lib PRIVATE DSSH_TESTING
+	$<$<STREQUAL:${DEUCESSH_CRYPTO_BACKEND},OpenSSL>:DSSH_CRYPTO_OPENSSL>
+	$<$<STREQUAL:${DEUCESSH_CRYPTO_BACKEND},Botan>:DSSH_CRYPTO_BOTAN>)
 target_include_directories(deucessh_test_lib
 	PUBLIC ${PROJECT_SOURCE_DIR}
-	PRIVATE ${OPENSSL_INCLUDE_DIR} ${CMAKE_CURRENT_SOURCE_DIR})
+	PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+target_include_directories(deucessh_test_lib SYSTEM
+	PRIVATE ${DSSH_CRYPTO_INCLUDE})
 target_link_libraries(deucessh_test_lib
-	INTERFACE ${OPENSSL_CRYPTO_LIBRARIES} ${THREADS_LINK_LIB})
+	INTERFACE ${DSSH_CRYPTO_LIB_INTERFACE} ${THREADS_LINK_LIB})
 target_compile_options(deucessh_test_lib PRIVATE
 	${DEUCESSH_COMPILE_OPTIONS}
 	$<$<OR:$<C_COMPILER_ID:Clang>,$<C_COMPILER_ID:AppleClang>,$<C_COMPILER_ID:GNU>>:
@@ -40,15 +48,20 @@ set_property(TARGET dssh_test_allocator PROPERTY C_STANDARD 17)
 set_property(TARGET dssh_test_allocator PROPERTY C_STANDARD_REQUIRED ON)
 target_include_directories(dssh_test_allocator PUBLIC
 	${CMAKE_CURRENT_SOURCE_DIR})
-# OpenSSL + C11 threads failure injection library
+# Crypto + C11 threads failure injection library
 add_library(dssh_test_ossl STATIC dssh_test_ossl.c)
 set_property(TARGET dssh_test_ossl PROPERTY C_STANDARD 17)
 set_property(TARGET dssh_test_ossl PROPERTY C_STANDARD_REQUIRED ON)
 target_include_directories(dssh_test_ossl PUBLIC
 	${CMAKE_CURRENT_SOURCE_DIR})
-target_link_libraries(dssh_test_ossl PRIVATE OpenSSL::Crypto)
+if(DEUCESSH_CRYPTO_BACKEND STREQUAL "OpenSSL")
+	target_link_libraries(dssh_test_ossl PRIVATE OpenSSL::Crypto)
+	target_compile_definitions(dssh_test_ossl PRIVATE DSSH_CRYPTO_OPENSSL)
+elseif(DEUCESSH_CRYPTO_BACKEND STREQUAL "Botan")
+	target_compile_definitions(dssh_test_ossl PRIVATE DSSH_CRYPTO_BOTAN)
+endif()
 
-# Link both allocator and ossl injection into the test library
+# Link allocator and injection into the test library
 # so all test executables get the definitions library code references.
 target_link_libraries(deucessh_test_lib INTERFACE
 	dssh_test_allocator dssh_test_ossl)
@@ -70,11 +83,17 @@ function(dssh_add_test test_name source_file)
 	set_property(TARGET dssh_test_${test_name} PROPERTY C_STANDARD_REQUIRED ON)
 	target_include_directories(dssh_test_${test_name} PRIVATE
 		${PROJECT_SOURCE_DIR}
-		${CMAKE_CURRENT_SOURCE_DIR}
-		${OPENSSL_INCLUDE_DIR})
+		${CMAKE_CURRENT_SOURCE_DIR})
+	target_include_directories(dssh_test_${test_name} SYSTEM
+		PRIVATE ${DSSH_CRYPTO_INCLUDE})
 	target_link_libraries(dssh_test_${test_name} PRIVATE
-		deucessh_test_lib ${OPENSSL_CRYPTO_LIBRARIES} ${THREADS_LINK_LIB})
+		deucessh_test_lib ${DSSH_CRYPTO_LIB_INTERFACE} ${THREADS_LINK_LIB})
 	target_compile_options(dssh_test_${test_name} PRIVATE ${DEUCESSH_COMPILE_OPTIONS})
+	if(DEUCESSH_CRYPTO_BACKEND STREQUAL "OpenSSL")
+		target_compile_definitions(dssh_test_${test_name} PRIVATE DSSH_CRYPTO_OPENSSL)
+	elseif(DEUCESSH_CRYPTO_BACKEND STREQUAL "Botan")
+		target_compile_definitions(dssh_test_${test_name} PRIVATE DSSH_CRYPTO_BOTAN)
+	endif()
 endfunction()
 
 # Helper: register one executable × 16 KEX/key/MAC variants as CTest entries.
@@ -210,13 +229,32 @@ endmacro()
 dssh_add_test(chan test_chan.c)
 add_test(NAME dssh_unit_chan COMMAND dssh_test_chan)
 
+dssh_add_test(crypto test_crypto.c)
+add_test(NAME dssh_unit_crypto COMMAND dssh_test_crypto)
+
+# Algorithm validation tests — reference helpers are backend-conditional
 dssh_add_test(algo_enc test_algo_enc.c)
+if(DEUCESSH_CRYPTO_BACKEND STREQUAL "OpenSSL")
+	target_link_libraries(dssh_test_algo_enc PRIVATE OpenSSL::Crypto)
+elseif(DEUCESSH_CRYPTO_BACKEND STREQUAL "Botan")
+	target_link_libraries(dssh_test_algo_enc PRIVATE PkgConfig::BOTAN3)
+endif()
 add_test(NAME dssh_unit_algo_enc COMMAND dssh_test_algo_enc)
 
 dssh_add_test(algo_mac test_algo_mac.c)
+if(DEUCESSH_CRYPTO_BACKEND STREQUAL "OpenSSL")
+	target_link_libraries(dssh_test_algo_mac PRIVATE OpenSSL::Crypto)
+elseif(DEUCESSH_CRYPTO_BACKEND STREQUAL "Botan")
+	target_link_libraries(dssh_test_algo_mac PRIVATE PkgConfig::BOTAN3)
+endif()
 add_test(NAME dssh_unit_algo_mac COMMAND dssh_test_algo_mac)
 
 dssh_add_test(algo_key test_algo_key.c)
+if(DEUCESSH_CRYPTO_BACKEND STREQUAL "OpenSSL")
+	target_link_libraries(dssh_test_algo_key PRIVATE OpenSSL::Crypto)
+elseif(DEUCESSH_CRYPTO_BACKEND STREQUAL "Botan")
+	target_link_libraries(dssh_test_algo_key PRIVATE PkgConfig::BOTAN3)
+endif()
 add_test(NAME dssh_unit_algo_key COMMAND dssh_test_algo_key)
 set_tests_properties(dssh_unit_algo_key PROPERTIES COST 20
 	ENVIRONMENT "${DSSH_TEST_KEY_ENV}")
@@ -228,6 +266,37 @@ add_test(NAME dssh_targeted_sntrup761_null_ka
 	COMMAND dssh_test_algo_key sntrup761_handler_null_ka)
 add_test(NAME dssh_targeted_mlkem768_null_ka
 	COMMAND dssh_test_algo_key mlkem768_handler_null_ka)
+
+# Botan-specific C++ unit tests
+if(DEUCESSH_CRYPTO_BACKEND STREQUAL "Botan")
+	add_executable(dssh_test_botan_algo_key test_botan_algo_key.cpp)
+	set_property(TARGET dssh_test_botan_algo_key PROPERTY CXX_STANDARD 20)
+	set_property(TARGET dssh_test_botan_algo_key PROPERTY CXX_STANDARD_REQUIRED ON)
+	target_include_directories(dssh_test_botan_algo_key PRIVATE
+		${PROJECT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR})
+	target_include_directories(dssh_test_botan_algo_key SYSTEM
+		PRIVATE ${DSSH_CRYPTO_INCLUDE})
+	target_link_libraries(dssh_test_botan_algo_key PRIVATE
+		deucessh_test_lib PkgConfig::BOTAN3 ${THREADS_LINK_LIB})
+	target_compile_options(dssh_test_botan_algo_key PRIVATE ${DEUCESSH_COMPILE_OPTIONS})
+	target_compile_definitions(dssh_test_botan_algo_key PRIVATE DSSH_CRYPTO_BOTAN)
+	add_test(NAME dssh_unit_botan_algo_key COMMAND dssh_test_botan_algo_key)
+	set_tests_properties(dssh_unit_botan_algo_key PROPERTIES COST 20
+		ENVIRONMENT "${DSSH_TEST_KEY_ENV}")
+
+	add_executable(dssh_test_botan_transport test_botan_transport.cpp)
+	set_property(TARGET dssh_test_botan_transport PROPERTY CXX_STANDARD 20)
+	set_property(TARGET dssh_test_botan_transport PROPERTY CXX_STANDARD_REQUIRED ON)
+	target_include_directories(dssh_test_botan_transport PRIVATE
+		${PROJECT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR})
+	target_include_directories(dssh_test_botan_transport SYSTEM
+		PRIVATE ${DSSH_CRYPTO_INCLUDE})
+	target_link_libraries(dssh_test_botan_transport PRIVATE
+		deucessh_test_lib PkgConfig::BOTAN3 ${THREADS_LINK_LIB})
+	target_compile_options(dssh_test_botan_transport PRIVATE ${DEUCESSH_COMPILE_OPTIONS})
+	target_compile_definitions(dssh_test_botan_transport PRIVATE DSSH_CRYPTO_BOTAN)
+	add_test(NAME dssh_unit_botan_transport COMMAND dssh_test_botan_transport)
+endif()
 
 # ================================================================
 # Tier 2: Layer tests (need mock I/O) — one process per variant
@@ -383,6 +452,7 @@ set_tests_properties(dssh_conn_sntrup_rsa PROPERTIES COST 12)
 
 # ================================================================
 # Tier 1b: Alloc failure tests (need mock allocator + mock I/O)
+# ossl_iterate tests are OpenSSL-only (guarded with #ifdef in source)
 # ================================================================
 
 dssh_add_test(alloc test_alloc.c)
@@ -431,10 +501,12 @@ add_test(NAME dssh_targeted_c25519_client_bad_qs
 	COMMAND dssh_test_alloc c25519/client_bad_qs_length)
 set_tests_properties(dssh_targeted_c25519_client_bad_qs PROPERTIES
 	ENVIRONMENT "${DSSH_TEST_KEY_ENV}")
+if(DEUCESSH_CRYPTO_BACKEND STREQUAL "OpenSSL")
 add_test(NAME dssh_targeted_dhgex_bn_rand_fail
 	COMMAND dssh_test_alloc dhgex/server_bn_rand_fail)
 set_tests_properties(dssh_targeted_dhgex_bn_rand_fail PROPERTIES
 	ENVIRONMENT "DSSH_TEST_KEX=dh-gex;${DSSH_TEST_KEY_ENV}")
+endif()
 
 # ================================================================
 # Test algorithm modules (enc/mac with failure injection)

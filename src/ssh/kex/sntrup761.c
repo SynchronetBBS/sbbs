@@ -4,15 +4,15 @@
  *   Tanja Lange, Christine van Vredendaal
  *
  * Adapted from OpenSSH sntrup761.c (SUPERCOP reference implementation).
- * Random source changed from arc4random_buf to OpenSSL RAND_bytes.
+ * Random source changed from arc4random_buf to dssh_random/dssh_hash
+ * (backend-neutral via deucessh-crypto.h).
  */
 
-#include <openssl/rand.h>
 #include <stdint.h>
 #include <string.h>
 
-#include <openssl/evp.h>
-
+#include "deucessh-crypto.h"
+#include "deucessh.h"
 #include "sntrup761.h"
 #ifdef DSSH_TESTING
 #include "ssh-internal.h"
@@ -23,16 +23,15 @@
 static int
 randombytes(void *buf, long long len)
 {
-	return RAND_bytes(buf, (int)len) == 1 ? 0 : -1;
+	return dssh_random(buf, (size_t)len) == 0 ? 0 : -1;
 }
 
 static int
 crypto_hash_sha512(unsigned char *out, const unsigned char *in,
     unsigned long long inlen)
 {
-	unsigned int olen = 0;
-
-	return EVP_Digest(in, (size_t)inlen, out, &olen, EVP_sha512(), NULL) == 1 ? 0 : -1;
+	return dssh_hash_oneshot("SHA-512", in, (size_t)inlen, out, 64) < 0
+	    ? -1 : 0;
 }
 
 #define int8 crypto_int8

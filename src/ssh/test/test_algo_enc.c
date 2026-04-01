@@ -12,7 +12,11 @@
 #include "ssh-trans.h"
 #include "test/dssh_test_internal.h"
 
+#ifdef DSSH_CRYPTO_OPENSSL
 #include <openssl/evp.h>
+#elif defined(DSSH_CRYPTO_BOTAN)
+#include <botan/ffi.h>
+#endif
 #include <string.h>
 
 /*
@@ -29,10 +33,11 @@ extern bool is_20(uint8_t *buf, size_t buflen);
 
 /* ----------------------------------------------------------------
  * Helper: encrypt or decrypt a buffer in-place using AES-256-CTR
- * via OpenSSL EVP (mirrors what aes256-ctr.c does internally).
- * CTR mode uses EncryptInit for both directions.
+ * via an independent crypto implementation.
+ * CTR mode is symmetric (encrypt == decrypt).
  * Returns 0 on success.
  * ---------------------------------------------------------------- */
+#ifdef DSSH_CRYPTO_OPENSSL
 static int
 aes256_ctr_crypt(const uint8_t *key, const uint8_t *iv,
     uint8_t *buf, int bufsz)
@@ -56,6 +61,36 @@ out:
 	EVP_CIPHER_CTX_free(ctx);
 	return ok ? 0 : -1;
 }
+#elif defined(DSSH_CRYPTO_BOTAN)
+static int
+aes256_ctr_crypt(const uint8_t *key, const uint8_t *iv,
+    uint8_t *buf, int bufsz)
+{
+	botan_cipher_t cipher;
+
+	if (botan_cipher_init(&cipher, "AES-256/CTR-BE",
+	    BOTAN_CIPHER_INIT_FLAG_ENCRYPT) != 0)
+		return -1;
+
+	int ok = 0;
+	if (botan_cipher_set_key(cipher, key, 32) != 0)
+		goto out;
+	if (botan_cipher_start(cipher, iv, 16) != 0)
+		goto out;
+
+	size_t outwritten = 0;
+	size_t inconsumed = 0;
+	size_t bsz = (size_t)bufsz;
+	if (botan_cipher_update(cipher, 0, buf, bsz, &outwritten,
+	    buf, bsz, &inconsumed) != 0)
+		goto out;
+	ok = 1;
+
+out:
+	botan_cipher_destroy(cipher);
+	return ok ? 0 : -1;
+}
+#endif
 
 /* ================================================================
  * NIST SP 800-38A F.5.5 -- AES-256-CTR Encrypt
@@ -267,6 +302,7 @@ test_aes256_ctr_roundtrip(void)
  * 4-block call.
  * ================================================================ */
 
+#ifdef DSSH_CRYPTO_OPENSSL
 static int
 test_aes256_ctr_streaming(void)
 {
@@ -291,6 +327,31 @@ test_aes256_ctr_streaming(void)
 	ASSERT_MEM_EQ(buf, nist_ct, 64);
 	return TEST_PASS;
 }
+#elif defined(DSSH_CRYPTO_BOTAN)
+static int
+test_aes256_ctr_streaming(void)
+{
+	uint8_t buf[64];
+	memcpy(buf, nist_pt, 64);
+
+	botan_cipher_t cipher;
+	ASSERT_EQ(botan_cipher_init(&cipher, "AES-256/CTR-BE",
+	    BOTAN_CIPHER_INIT_FLAG_ENCRYPT), 0);
+	ASSERT_EQ(botan_cipher_set_key(cipher, nist_key, 32), 0);
+	ASSERT_EQ(botan_cipher_start(cipher, nist_iv, 16), 0);
+
+	size_t outwritten = 0, inconsumed = 0;
+	ASSERT_EQ(botan_cipher_update(cipher, 0, buf, 32, &outwritten,
+	    buf, 32, &inconsumed), 0);
+	ASSERT_EQ(botan_cipher_update(cipher, 0, buf + 32, 32, &outwritten,
+	    buf + 32, 32, &inconsumed), 0);
+
+	botan_cipher_destroy(cipher);
+
+	ASSERT_MEM_EQ(buf, nist_ct, 64);
+	return TEST_PASS;
+}
+#endif
 
 /* ================================================================
  * AES-256-CTR: Partial block (non-multiple of blocksize)

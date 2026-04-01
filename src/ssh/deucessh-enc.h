@@ -33,7 +33,7 @@ typedef struct dssh_enc_s {
 	uint16_t           key_size;
 	char               name[];
 } *dssh_enc;
-_Static_assert(!offsetof(struct dssh_enc_s, next),
+static_assert(!offsetof(struct dssh_enc_s, next),
     "next must be at offset 0 for generic list traversal");
 
 DSSH_PUBLIC int dssh_transport_register_enc(dssh_enc enc);

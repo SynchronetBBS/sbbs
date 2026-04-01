@@ -7,10 +7,12 @@
 
 #include <unistd.h>
 
+#ifdef DSSH_CRYPTO_OPENSSL
 #include <openssl/bn.h>
 #include <openssl/core_names.h>
 #include <openssl/evp.h>
 #include <openssl/param_build.h>
+#endif
 
 #include "dssh_test.h"
 #include "deucessh.h"
@@ -1318,7 +1320,7 @@ test_rsa_load_twice(void)
 
 /* ================================================================
  * Verify parse errors -- malformed key/sig blobs
- * Covers uncovered branches in ssh-ed25519.c and rsa-sha2-256.c
+ * Covers uncovered branches in ssh-ed25519-openssl.c and rsa-sha2-256-openssl.c
  * verify() functions.
  * ================================================================ */
 
@@ -2209,6 +2211,34 @@ test_rsa_verify_key_n_overrun(void)
 }
 
 static int
+test_rsa_verify_key_n_parse_error(void)
+{
+	/* Key blob: valid name + valid e, truncated n → must return DSSH_ERROR_PARSE */
+	dssh_test_reset_global_config();
+	ASSERT_EQ(dssh_register_rsa_sha2_256(), 0);
+	dssh_key_algo ka = find_key_algo("rsa-sha2-256");
+	ASSERT_NOT_NULL(ka);
+
+	uint8_t key[32];
+	size_t kp = 0;
+	dssh_serialize_uint32(7, key, sizeof(key), &kp);
+	memcpy(&key[kp], "ssh-rsa", 7);
+	kp += 7;
+	dssh_serialize_uint32(3, key, sizeof(key), &kp);
+	key[kp++] = 0x01;
+	key[kp++] = 0x00;
+	key[kp++] = 0x01;
+	/* n length field claims 255 bytes but blob ends here */
+	dssh_serialize_uint32(255, key, sizeof(key), &kp);
+
+	const uint8_t data[] = "x";
+	uint8_t sig[4] = {0, 0, 0, 0};
+	int ret = ka->verify(key, kp, sig, sizeof(sig), data, 1);
+	ASSERT_EQ(ret, DSSH_ERROR_PARSE);
+	return TEST_PASS;
+}
+
+static int
 test_rsa_verify_sig_algo_overrun(void)
 {
 	dssh_test_reset_global_config();
@@ -2368,6 +2398,40 @@ dummy_pw_cb(char *buf, int size, int rwflag, void *userdata)
 }
 
 static int
+overflow_pw_cb(char *buf, int size, int rwflag, void *userdata)
+{
+	(void)rwflag; (void)userdata;
+	/* Return exactly size (256) — fills buffer with no room for '\0' */
+	memset(buf, 'A', (size_t)size);
+	return size;
+}
+
+static int
+test_ed25519_load_key_pw_overflow(void)
+{
+	/* Bug 141: pw_cb returning sizeof(pw_buf) must not write past buffer.
+	 * Save an encrypted key, then load with overflow_pw_cb.
+	 * Should fail gracefully (wrong/no password), not crash. */
+	dssh_test_reset_global_config();
+	ASSERT_EQ(dssh_register_ssh_ed25519(), 0);
+	ASSERT_EQ(dssh_ed25519_generate_key(), 0);
+
+	char tmppath[] = "/tmp/dssh_test_ed_pwov_XXXXXX";
+	int fd = mkstemp(tmppath);
+	ASSERT_TRUE(fd >= 0);
+	close(fd);
+
+	/* Save with a real password (encrypted PEM) */
+	ASSERT_EQ(dssh_ed25519_save_key_file(tmppath, dummy_pw_cb, NULL), 0);
+
+	/* Load with overflow callback — must not crash */
+	int ret = dssh_ed25519_load_key_file(tmppath, overflow_pw_cb, NULL);
+	ASSERT_TRUE(ret < 0);
+	unlink(tmppath);
+	return TEST_PASS;
+}
+
+static int
 test_ed25519_save_with_password(void)
 {
 	/* Covers pw_cb != NULL branch in save_key_file */
@@ -2500,11 +2564,25 @@ test_rsa_haskey_wrong_key_type(void)
  * haskey with cbdata allocated but pkey == NULL
  * ================================================================ */
 
+#ifdef DSSH_CRYPTO_OPENSSL
 struct key_cbdata {
 	EVP_PKEY *pkey;
 	uint8_t  *pub_blob;
 	size_t    pub_blob_len;
 };
+#elif defined(DSSH_CRYPTO_BOTAN)
+/*
+ * The real Botan cbdata has std::unique_ptr<Botan::Private_Key> as the
+ * first member.  We can't spell that from C, but all we need is a
+ * struct whose first pointer-sized member is NULL so haskey/sign/pubkey
+ * see a null key.  A void* at offset 0 matches unique_ptr's layout.
+ */
+struct key_cbdata {
+	void     *privkey;
+	uint8_t  *pub_blob;
+	size_t    pub_blob_len;
+};
+#endif
 
 static int
 test_ed25519_haskey_null_pkey(void)
@@ -2515,7 +2593,7 @@ test_ed25519_haskey_null_pkey(void)
 	dssh_key_algo ka = find_key_algo("ssh-ed25519");
 	ASSERT_NOT_NULL(ka);
 
-	struct key_cbdata cbd = { .pkey = NULL };
+	struct key_cbdata cbd = { 0 };
 	ASSERT_FALSE(ka->haskey((dssh_key_algo_ctx *)&cbd));
 	return TEST_PASS;
 }
@@ -2529,7 +2607,7 @@ test_rsa_haskey_null_pkey(void)
 	dssh_key_algo ka = find_key_algo("rsa-sha2-256");
 	ASSERT_NOT_NULL(ka);
 
-	struct key_cbdata cbd = { .pkey = NULL };
+	struct key_cbdata cbd = { 0 };
 	ASSERT_FALSE(ka->haskey((dssh_key_algo_ctx *)&cbd));
 	return TEST_PASS;
 }
@@ -2602,8 +2680,11 @@ test_rsa_save_pub_write_fail(void)
 
 /* ================================================================
  * RSA pubkey e_pad branch -- exponent with MSB set
+ * These tests construct synthetic RSA keys via backend-specific APIs
+ * to hit edge cases in pubkey() serialization.
  * ================================================================ */
 
+#ifdef DSSH_CRYPTO_OPENSSL
 static int
 test_rsa_pubkey_e_pad(void)
 {
@@ -2813,6 +2894,7 @@ test_rsa_pubkey_n_zero(void)
 	dssh_test_reset_global_config();
 	return TEST_PASS;
 }
+#endif /* DSSH_CRYPTO_OPENSSL -- e_pad / n_no_pad / n_zero */
 
 /* ================================================================
  * RSA verify: wrong key algo content (correct length)
@@ -2849,6 +2931,7 @@ test_rsa_verify_key_wrong_algo_content(void)
 
 #include "dssh_test_alloc.h"
 
+#ifdef DSSH_CRYPTO_OPENSSL
 static int
 test_ed25519_generate_calloc_fail(void)
 {
@@ -2993,13 +3076,16 @@ test_rsa_save_pub_alloc_fail(void)
 	dssh_test_reset_global_config();
 	return TEST_FAIL;
 }
+#endif /* DSSH_CRYPTO_OPENSSL -- alloc failure tests */
 
 /* ================================================================
  * RSA set_rsa_padding failure via ossl injection
+ * OpenSSL-only: ossl injection wraps OpenSSL functions.
  * ================================================================ */
 
 #include "dssh_test_ossl.h"
 
+#ifdef DSSH_CRYPTO_OPENSSL
 static int
 test_rsa_sign_padding_fail(void)
 {
@@ -3068,6 +3154,7 @@ test_rsa_verify_padding_fail(void)
 	dssh_test_reset_global_config();
 	return TEST_FAIL;
 }
+#endif /* DSSH_CRYPTO_OPENSSL -- ossl injection tests */
 
 /* ================================================================
  * KEX handler with NULL key_algo -- hits ka == NULL guard
@@ -3248,6 +3335,7 @@ static struct dssh_test_entry tests[] = {
 	{ "rsa_verify_key_algo_overrun",      test_rsa_verify_key_algo_overrun },
 	{ "rsa_verify_key_e_overrun",         test_rsa_verify_key_e_overrun },
 	{ "rsa_verify_key_n_overrun",         test_rsa_verify_key_n_overrun },
+	{ "rsa_verify_key_n_parse_error",     test_rsa_verify_key_n_parse_error },
 	{ "rsa_verify_sig_algo_overrun",      test_rsa_verify_sig_algo_overrun },
 	{ "rsa_verify_sig_wrong_name",        test_rsa_verify_sig_wrong_algo_name },
 	{ "rsa_verify_sig_rawsig_overrun",    test_rsa_verify_sig_rawsig_overrun },
@@ -3263,6 +3351,7 @@ static struct dssh_test_entry tests[] = {
 	{ "rsa_load_garbage_file",            test_rsa_load_garbage_file },
 	{ "ed25519_save_before_register",     test_ed25519_save_before_register },
 	{ "rsa_save_before_register",         test_rsa_save_before_register },
+	{ "ed25519_load_key_pw_overflow",    test_ed25519_load_key_pw_overflow },
 	{ "ed25519_save_with_password",       test_ed25519_save_with_password },
 	{ "rsa_save_with_password",           test_rsa_save_with_password },
 	{ "ed25519_get_pub_str_null_buf",     test_ed25519_get_pub_str_null_buf },
@@ -3282,24 +3371,31 @@ static struct dssh_test_entry tests[] = {
 	{ "ed25519_save_pub_write_fail",      test_ed25519_save_pub_write_fail },
 	{ "rsa_save_pub_write_fail",          test_rsa_save_pub_write_fail },
 
-	/* RSA pubkey e_pad / n_pad */
+	/* RSA pubkey e_pad / n_pad (backend-specific synthetic keys) */
+#ifdef DSSH_CRYPTO_OPENSSL
 	{ "rsa_pubkey_e_pad",                 test_rsa_pubkey_e_pad },
 	{ "rsa_pubkey_n_no_pad",              test_rsa_pubkey_n_no_pad },
 	{ "rsa_pubkey_n_zero",                test_rsa_pubkey_n_zero },
+#endif
 
 	/* RSA verify wrong key algo content */
 	{ "rsa_verify_key_wrong_content",     test_rsa_verify_key_wrong_algo_content },
 
-	/* Alloc failures in load/generate */
+	/* Alloc failures in load/generate -- tests --wrap=malloc injection
+	 * which only intercepts C allocator calls, not C++ new. */
+#ifdef DSSH_CRYPTO_OPENSSL
 	{ "ed25519_generate_calloc_fail",     test_ed25519_generate_calloc_fail },
 	{ "rsa_generate_calloc_fail",         test_rsa_generate_calloc_fail },
 	{ "ed25519_load_calloc_fail",         test_ed25519_load_calloc_fail },
 	{ "rsa_load_calloc_fail",             test_rsa_load_calloc_fail },
 	{ "rsa_save_pub_alloc_fail",          test_rsa_save_pub_alloc_fail },
+#endif
 
 	/* RSA set_rsa_padding ossl failures */
+#ifdef DSSH_CRYPTO_OPENSSL
 	{ "rsa_sign_padding_fail",            test_rsa_sign_padding_fail },
 	{ "rsa_verify_padding_fail",          test_rsa_verify_padding_fail },
+#endif
 
 	/* KEX handler NULL ka */
 	{ "c25519_handler_null_ka",           test_c25519_handler_null_ka },

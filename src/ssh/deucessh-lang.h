@@ -23,7 +23,7 @@ typedef struct dssh_language_s {
 	struct dssh_language_s *next;  /* must be first -- generic traversal assumes offsetof(next) == 0 */
 	char                    name[];
 } *dssh_language;
-_Static_assert(!offsetof(struct dssh_language_s, next),
+static_assert(!offsetof(struct dssh_language_s, next),
     "next must be at offset 0 for generic list traversal");
 
 DSSH_PUBLIC int dssh_transport_register_lang(dssh_language lang);

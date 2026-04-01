@@ -1,4 +1,3 @@
-#include <openssl/crypto.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -105,13 +104,6 @@ session_set_terminate(struct dssh_session_s *sess)
 			    mtx_unlock(&sess->channel_mtx));
 		}
 	}
-}
-
-DSSH_PUBLIC void
-dssh_cleanse(void *buf, size_t len)
-{
-	if (buf != NULL && len > 0)
-		OPENSSL_cleanse(buf, len);
 }
 
 DSSH_PUBLIC int

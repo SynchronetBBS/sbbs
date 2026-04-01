@@ -762,7 +762,7 @@ receive-direction cipher/MAC contexts.  All subsequent
 > Values of 'e' or 'f' that are not in the range [1, p-1] **MUST NOT**
 > be sent or accepted by either side.
 
-**CONFORMS** — The DH-GEX implementation (`kex/dh-gex-sha256.c`)
+**CONFORMS** — The DH-GEX implementation (`kex/dh-gex-sha256-openssl.c`)
 validates received values using `dh_value_valid()`, which checks that
 the value is not zero, not negative, and less than p.  This is done
 for both `f` (client side, after receiving GEX_REPLY) and `e` (server
@@ -782,9 +782,9 @@ is only the first exchange hash and is needed for authentication).
 > data.
 
 **CONFORMS** — Both KEX handlers sign/verify the exchange hash `H`
-directly.  In `curve25519-sha256.c`: `ka->sign(... hash,
+directly.  In `curve25519-sha256-openssl.c`: `ka->sign(... hash,
 SHA256_DIGEST_LEN ...)` and `ka->verify(... hash, SHA256_DIGEST_LEN
-...)`.  In `dh-gex-sha256.c`: same pattern.
+...)`.  In `dh-gex-sha256-openssl.c`: same pattern.
 
 ---
 

@@ -1,8 +1,5 @@
 // RFC-4253: SSH Transport Layer Protocol
 
-#include <openssl/crypto.h>
-#include <openssl/evp.h>
-#include <openssl/rand.h>
 #include <stdlib.h>
 #include <string.h>
 #include <threads.h>
@@ -10,6 +7,7 @@
 #include "ssh-internal.h"
 #include "deucessh-algorithms.h"
 #include "deucessh-auth.h"
+#include "deucessh-crypto.h"
 
 /* DSSH_TESTABLE is defined in ssh-internal.h */
 
@@ -26,7 +24,7 @@ static void
 cleanse_free(void *ptr, size_t len)
 {
 	if (ptr != NULL) {
-		OPENSSL_cleanse(ptr, len);
+		dssh_cleanse(ptr, len);
 		free(ptr);
 	}
 }
@@ -540,9 +538,9 @@ tx_finalize(struct dssh_session_s *sess, size_t payload_len)
 	sess->trans.tx_packet[pos] = (uint8_t)padding_len;
 
 	/* Random padding after payload: tx_packet[9 + payload_len] */
-	if (RAND_bytes(&sess->trans.tx_packet[9 + payload_len],
-	    (int)padding_len) != 1) {
-		ret = DSSH_ERROR_INIT;
+	ret = dssh_random(&sess->trans.tx_packet[9 + payload_len],
+	    padding_len);
+	if (ret < 0) {
 		goto done;
 	}
 
@@ -567,8 +565,9 @@ tx_finalize(struct dssh_session_s *sess, size_t payload_len)
 		}
 		ret = mac->generate(sess->trans.tx_packet, 4 + total,
 		    &sess->trans.tx_packet[4 + total], mac_ctx);
-		if (ret < 0)
+		if (ret < 0) {
 			goto done;
+		}
 	}
 
         /* Encrypt (the packet at [4..4+total), not the seq prefix or MAC) */
@@ -589,8 +588,9 @@ tx_finalize(struct dssh_session_s *sess, size_t payload_len)
 		    && (enc_ctx != NULL)) {
 			ret = enc->encrypt(&sess->trans.tx_packet[4],
 			    total, enc_ctx);
-			if (ret < 0)
+			if (ret < 0) {
 				goto done;
+			}
 		}
 	}
 
@@ -885,7 +885,7 @@ recv_packet_raw(struct dssh_session_s *sess,
 		    mac_ctx);
 		if (ret < 0)
 			goto rx_done;
-		if (CRYPTO_memcmp(sess->trans.rx_mac_buf, sess->trans.rx_mac_computed, mac_len) != 0) {
+		if (dssh_crypto_memcmp(sess->trans.rx_mac_buf, sess->trans.rx_mac_computed, mac_len) != 0) {
 			dssh_transport_disconnect(sess,
 			    SSH_DISCONNECT_MAC_ERROR, "MAC verification failed");
 			ret = DSSH_ERROR_INVALID;
@@ -1248,9 +1248,11 @@ build_kexinit_packet(struct dssh_session_s *sess, uint8_t **buf_out, size_t *pos
 
 	buf[pos++] = SSH_MSG_KEXINIT;
 
-	if (RAND_bytes(&buf[pos], DSSH_KEXINIT_COOKIE_SIZE) != 1) {
+	int rret = dssh_random(&buf[pos], DSSH_KEXINIT_COOKIE_SIZE);
+
+	if (rret < 0) {
 		free(buf);
-		return DSSH_ERROR_INIT;
+		return rret;
 	}
 	pos += DSSH_KEXINIT_COOKIE_SIZE;
 
@@ -1744,48 +1746,30 @@ derive_key(const char *hash_name,
     const uint8_t *session_id, size_t session_id_sz,
     uint8_t *out, size_t needed)
 {
-	EVP_MD *md = EVP_MD_fetch(NULL, hash_name, NULL);
+	dssh_hash_ctx *ctx = NULL;
+	size_t md_len;
+	int res = dssh_hash_init(&ctx, hash_name, &md_len);
 
-	if (md == NULL)
-		return DSSH_ERROR_INIT;
+	if (res < 0)
+		return res;
 
-	EVP_MD_CTX *ctx = EVP_MD_CTX_new();
+	uint8_t *tmp = malloc(md_len);
 
-	if (ctx == NULL) {
-		EVP_MD_free(md);
+	if (tmp == NULL) {
+		dssh_hash_free(ctx);
 		return DSSH_ERROR_ALLOC;
 	}
 
-	int md_len_raw = EVP_MD_get_size(md);
-	int res;
+	size_t have = 0;
 
-	if (md_len_raw <= 0) {
-		res = DSSH_ERROR_INIT;
-		goto cleanup;
-	}
-#if INT_MAX > SIZE_MAX
-	if (md_len_raw > SIZE_MAX) {
-		res = DSSH_ERROR_INVALID;
-		goto cleanup;
-	}
-#endif
-	size_t  md_len = (size_t)md_len_raw;
-	uint8_t tmp[EVP_MAX_MD_SIZE];
-	size_t  have = 0;
+#define DK(call) do { res = (call); if (res < 0) goto cleanup; } while (0)
 
 	/* Initial hash: H(K || H || letter || session_id) */
-	if (EVP_DigestInit_ex(ctx, md, NULL) != 1)
-		goto digest_fail;
-	if (EVP_DigestUpdate(ctx, shared_secret, shared_secret_sz) != 1)
-		goto digest_fail;
-	if (EVP_DigestUpdate(ctx, hash, hash_sz) != 1)
-		goto digest_fail;
-	if (EVP_DigestUpdate(ctx, &letter, 1) != 1)
-		goto digest_fail;
-	if (EVP_DigestUpdate(ctx, session_id, session_id_sz) != 1)
-		goto digest_fail;
-	if (EVP_DigestFinal_ex(ctx, tmp, NULL) != 1)
-		goto digest_fail;
+	DK(dssh_hash_update(ctx, shared_secret, shared_secret_sz));
+	DK(dssh_hash_update(ctx, hash, hash_sz));
+	DK(dssh_hash_update(ctx, &letter, 1));
+	DK(dssh_hash_update(ctx, session_id, session_id_sz));
+	DK(dssh_hash_final(ctx, tmp, md_len));
 
 	size_t copy = md_len < needed ? md_len : needed;
 
@@ -1794,33 +1778,25 @@ derive_key(const char *hash_name,
 
 	/* Extension loop: H(K || H || K1 || K2 || ...) */
 	while (have < needed) {
-		if (EVP_DigestInit_ex(ctx, md, NULL) != 1)
-			goto digest_fail;
-		if (EVP_DigestUpdate(ctx, shared_secret,
-		    shared_secret_sz) != 1)
-			goto digest_fail;
-		if (EVP_DigestUpdate(ctx, hash, hash_sz) != 1)
-			goto digest_fail;
-		if (EVP_DigestUpdate(ctx, out, have) != 1)
-			goto digest_fail;
-		if (EVP_DigestFinal_ex(ctx, tmp, NULL) != 1)
-			goto digest_fail;
+		DK(dssh_hash_update(ctx, shared_secret,
+		    shared_secret_sz));
+		DK(dssh_hash_update(ctx, hash, hash_sz));
+		DK(dssh_hash_update(ctx, out, have));
+		DK(dssh_hash_final(ctx, tmp, md_len));
 		copy = md_len < (needed - have)
 		    ? md_len : (needed - have);
 		memcpy(&out[have], tmp, copy);
 		have += copy;
 	}
 
-	res = 0;
-	goto cleanup;
+#undef DK
 
-digest_fail:
-	res = DSSH_ERROR_INIT;
+	res = 0;
 
 cleanup:
-	OPENSSL_cleanse(tmp, sizeof(tmp));
-	EVP_MD_CTX_free(ctx);
-	EVP_MD_free(md);
+	dssh_cleanse(tmp, md_len);
+	free(tmp);
+	dssh_hash_free(ctx);
 	return res;
 }
 

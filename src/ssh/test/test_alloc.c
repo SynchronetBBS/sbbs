@@ -27,7 +27,7 @@
 #include "../kex/sntrup761.h"
 #include "../kex/mlkem768.h"
 
-#include <openssl/rand.h>
+#include "deucessh-crypto.h"
 
 
 /* ================================================================
@@ -291,6 +291,7 @@ test_alloc_session_init(void)
 
 #include "dssh_test_ossl.h"
 
+#ifdef DSSH_CRYPTO_OPENSSL
 static int
 test_ossl_session_init(void)
 {
@@ -319,6 +320,7 @@ test_ossl_session_init(void)
 	dssh_test_reset_global_config();
 	return TEST_FAIL;
 }
+#endif /* DSSH_CRYPTO_OPENSSL */
 
 /* ================================================================
  * Channel buffer alloc failures
@@ -1560,6 +1562,7 @@ test_alloc_conn_iterate(void)
 	return TEST_FAIL;
 }
 
+#ifdef DSSH_CRYPTO_OPENSSL
 /* ================================================================
  * Iterative OpenSSL/C11 failure injection during handshake.
  *
@@ -2003,6 +2006,8 @@ test_ossl_key_pubkey_iterate(void)
 	return TEST_FAIL;
 }
 
+#endif /* DSSH_CRYPTO_OPENSSL -- ossl key/enc/mac iterate */
+
 /* ================================================================
  * Server-side KEX handler iterate with packet replay.
  *
@@ -2066,6 +2071,7 @@ ve_ki_thread(void *arg)
 	return 0;
 }
 
+#ifdef DSSH_CRYPTO_OPENSSL
 static int
 test_ossl_kex_server_iterate(void)
 {
@@ -2159,7 +2165,7 @@ test_ossl_kex_server_iterate(void)
 		uint8_t sntrup_pk[1158], sntrup_sk[1763];
 		crypto_kem_sntrup761_keypair(sntrup_pk, sntrup_sk);
 		uint8_t x25519_pk[32];
-		RAND_bytes(x25519_pk, sizeof(x25519_pk));
+		dssh_random(x25519_pk, sizeof(x25519_pk));
 
 		uint8_t init[1 + 4 + 1190];
 		size_t ip = 0;
@@ -2177,7 +2183,7 @@ test_ossl_kex_server_iterate(void)
 		uint8_t mlkem_pk[1184], mlkem_sk[2400];
 		crypto_kem_mlkem768_keypair(mlkem_pk, mlkem_sk);
 		uint8_t x25519_pk[32];
-		RAND_bytes(x25519_pk, sizeof(x25519_pk));
+		dssh_random(x25519_pk, sizeof(x25519_pk));
 
 		uint8_t init[1 + 4 + 1216];
 		size_t ip = 0;
@@ -2193,7 +2199,7 @@ test_ossl_kex_server_iterate(void)
 	else {
 		/* Curve25519: ECDH_INIT(Q_C) */
 		uint8_t qc[32];
-		RAND_bytes(qc, sizeof(qc)); /* any 32 bytes is valid X25519 */
+		dssh_random(qc, sizeof(qc)); /* any 32 bytes is valid X25519 */
 
 		uint8_t init[1 + 4 + 32];
 		size_t ip = 0;
@@ -2267,10 +2273,10 @@ test_ossl_kex_server_iterate(void)
 	return TEST_FAIL;
 }
 
+#endif /* DSSH_CRYPTO_OPENSSL -- ossl kex_server iterate */
+
 /*
- * Server kex thread that excludes itself from ossl injection.
- * The server runs with real OpenSSL; only the client thread
- * (which called dssh_test_ossl_fail_after) is affected.
+ * Server kex thread context — shared between ossl and alloc tests.
  */
 struct kex_excluded_ctx {
 	struct mock_io_state *io;
@@ -2278,6 +2284,7 @@ struct kex_excluded_ctx {
 	int result;
 };
 
+#ifdef DSSH_CRYPTO_OPENSSL
 static int
 kex_excluded_thread(void *arg)
 {
@@ -2384,6 +2391,7 @@ test_ossl_kex_client_iterate(void)
 	    "(count=%d), raise limit\n", limit, prev_count);
 	return TEST_FAIL;
 }
+#endif /* DSSH_CRYPTO_OPENSSL -- ossl iterate tests */
 
 /* ================================================================
  * Client-side parse/validate tests.  A "bad server" thread sends
@@ -2464,28 +2472,41 @@ bad_server_reply_thread(void *arg)
 	size_t p_len, g_len;
 	ctx->result = prov->select_group(2048, 4096, 8192,
 	    &p_bytes, &p_len, &g_bytes, &g_len, prov->cbdata);
-	if (ctx->result < 0)
-		goto done;
-
-	/* Build and send GEX_GROUP */
-	{
-		BIGNUM *p = BN_bin2bn(p_bytes, (int)p_len, NULL);
-		BIGNUM *g_bn = BN_bin2bn(g_bytes, (int)g_len, NULL);
+	if (ctx->result < 0) {
 		free(p_bytes);
 		free(g_bytes);
-		if (!p || !g_bn) {
-			BN_free(p);
-			BN_free(g_bn);
-			ctx->result = -1;
-			goto done;
-		}
+		goto done;
+	}
+
+	/* Build and send GEX_GROUP -- serialize raw bytes as SSH mpint */
+	{
 		uint8_t group_msg[4096];
 		size_t gp = 0;
+
 		group_msg[gp++] = 31; /* GEX_GROUP */
-		serialize_bn_mpint(p, group_msg, sizeof(group_msg), &gp);
-		serialize_bn_mpint(g_bn, group_msg, sizeof(group_msg), &gp);
-		BN_free(p);
-		BN_free(g_bn);
+
+		/* Serialize p as mpint (add zero-pad if high bit set) */
+		bool p_pad = (p_len > 0 && (p_bytes[0] & 0x80));
+		uint32_t p_mpint_len = (uint32_t)p_len + (p_pad ? 1 : 0);
+
+		dssh_serialize_uint32(p_mpint_len, group_msg, sizeof(group_msg), &gp);
+		if (p_pad)
+			group_msg[gp++] = 0;
+		memcpy(&group_msg[gp], p_bytes, p_len);
+		gp += p_len;
+
+		/* Serialize g as mpint */
+		bool g_pad = (g_len > 0 && (g_bytes[0] & 0x80));
+		uint32_t g_mpint_len = (uint32_t)g_len + (g_pad ? 1 : 0);
+
+		dssh_serialize_uint32(g_mpint_len, group_msg, sizeof(group_msg), &gp);
+		if (g_pad)
+			group_msg[gp++] = 0;
+		memcpy(&group_msg[gp], g_bytes, g_len);
+		gp += g_len;
+
+		free(p_bytes);
+		free(g_bytes);
 		ctx->result = send_packet(ctx->sess,
 		    group_msg, gp, NULL);
 		if (ctx->result < 0)
@@ -2998,6 +3019,7 @@ test_c25519_client_reply_trunc_sig(void)
 	return TEST_PASS;
 }
 
+#ifdef DSSH_CRYPTO_OPENSSL
 /*
  * Client kex with ka==NULL or ka->verify==NULL.  Uses two threads
  * with the server excluded.  The client runs through the full
@@ -3164,6 +3186,7 @@ test_ossl_kex_client_no_verify(void)
 	ASSERT_TRUE(cres < 0);
 	return TEST_PASS;
 }
+#endif /* DSSH_CRYPTO_OPENSSL -- ossl kex ka_null/no_verify */
 
 /* ================================================================
  * Library alloc injection iterates for KEX server/client.
@@ -3267,7 +3290,7 @@ test_alloc_kex_server_iterate(void)
 		uint8_t sntrup_pk[1158], sntrup_sk[1763];
 		crypto_kem_sntrup761_keypair(sntrup_pk, sntrup_sk);
 		uint8_t x25519_pk[32];
-		RAND_bytes(x25519_pk, sizeof(x25519_pk));
+		dssh_random(x25519_pk, sizeof(x25519_pk));
 
 		uint8_t init[1 + 4 + 1190];
 		size_t ip = 0;
@@ -3285,7 +3308,7 @@ test_alloc_kex_server_iterate(void)
 		uint8_t mlkem_pk[1184], mlkem_sk[2400];
 		crypto_kem_mlkem768_keypair(mlkem_pk, mlkem_sk);
 		uint8_t x25519_pk[32];
-		RAND_bytes(x25519_pk, sizeof(x25519_pk));
+		dssh_random(x25519_pk, sizeof(x25519_pk));
 
 		uint8_t init[1 + 4 + 1216];
 		size_t ip = 0;
@@ -3301,7 +3324,7 @@ test_alloc_kex_server_iterate(void)
 	else {
 		/* Curve25519: ECDH_INIT(Q_C) */
 		uint8_t qc[32];
-		RAND_bytes(qc, sizeof(qc));
+		dssh_random(qc, sizeof(qc));
 
 		uint8_t init[1 + 4 + 32];
 		size_t ip = 0;
@@ -3598,6 +3621,7 @@ test_c25519_client_bad_qs_length(void)
 	return TEST_PASS;
 }
 
+#ifdef DSSH_CRYPTO_OPENSSL
 /* ================================================================
  * dh-gex: BN_rand failure during server-side KEX
  * ================================================================ */
@@ -3690,6 +3714,7 @@ test_dhgex_server_bn_rand_fail(void)
 	dssh_test_reset_global_config();
 	return TEST_FAIL;
 }
+#endif /* DSSH_CRYPTO_OPENSSL -- dhgex bn_rand_fail */
 
 /* ================================================================
  * Test table
@@ -3711,7 +3736,9 @@ static struct dssh_test_entry tests[] = {
 
 	/* Session init */
 	{ "alloc/session_init",           test_alloc_session_init },
+#ifdef DSSH_CRYPTO_OPENSSL
 	{ "ossl/session_init",            test_ossl_session_init },
+#endif
 
 	/* Channel buffers */
 	{ "alloc/signal_push",            test_alloc_signal_push },
@@ -3742,6 +3769,7 @@ static struct dssh_test_entry tests[] = {
 	{ "alloc/conn_iterate",           test_alloc_conn_iterate },
 
 	/* Iterative OpenSSL/C11 failure injection */
+#ifdef DSSH_CRYPTO_OPENSSL
 	{ "ossl/handshake_iterate",       test_ossl_handshake_iterate },
 	{ "ossl/key_sign_verify",         test_ossl_key_sign_verify_iterate },
 	{ "ossl/keygen",                  test_ossl_keygen_iterate },
@@ -3753,6 +3781,7 @@ static struct dssh_test_entry tests[] = {
 	{ "ossl/kex_client",              test_ossl_kex_client_iterate },
 	{ "ossl/kex_client_ka_null",      test_ossl_kex_client_ka_null },
 	{ "ossl/kex_client_no_verify",    test_ossl_kex_client_no_verify },
+#endif
 	{ "dhgex/client_recv_group_fail", test_dhgex_client_recv_group_fail },
 	{ "dhgex/client_group_empty",     test_dhgex_client_group_empty },
 	{ "dhgex/client_group_no_g",      test_dhgex_client_group_no_g },
@@ -3774,7 +3803,9 @@ static struct dssh_test_entry tests[] = {
 	{ "alloc/kex_client",             test_alloc_kex_client_iterate },
 	{ "c25519/server_truncated_init", test_c25519_server_truncated_init },
 	{ "c25519/client_bad_qs_length",  test_c25519_client_bad_qs_length },
+#ifdef DSSH_CRYPTO_OPENSSL
 	{ "dhgex/server_bn_rand_fail",    test_dhgex_server_bn_rand_fail },
+#endif
 };
 
 DSSH_TEST_NO_CLEANUP

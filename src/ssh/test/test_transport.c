@@ -502,10 +502,10 @@ test_derive_key_deterministic(void)
 	memset(session_id, 0xBB, sizeof(session_id));
 
 	uint8_t out1[32], out2[32];
-	ASSERT_OK(derive_key("SHA256", secret, sizeof(secret),
+	ASSERT_OK(derive_key("SHA-256", secret, sizeof(secret),
 	    hash, sizeof(hash), 'A', session_id, sizeof(session_id),
 	    out1, sizeof(out1)));
-	ASSERT_OK(derive_key("SHA256", secret, sizeof(secret),
+	ASSERT_OK(derive_key("SHA-256", secret, sizeof(secret),
 	    hash, sizeof(hash), 'A', session_id, sizeof(session_id),
 	    out2, sizeof(out2)));
 	ASSERT_MEM_EQ(out1, out2, sizeof(out1));
@@ -523,10 +523,10 @@ test_derive_key_different_letters(void)
 	memset(session_id, 0x33, sizeof(session_id));
 
 	uint8_t out_a[32], out_b[32];
-	ASSERT_OK(derive_key("SHA256", secret, sizeof(secret),
+	ASSERT_OK(derive_key("SHA-256", secret, sizeof(secret),
 	    hash, sizeof(hash), 'A', session_id, sizeof(session_id),
 	    out_a, sizeof(out_a)));
-	ASSERT_OK(derive_key("SHA256", secret, sizeof(secret),
+	ASSERT_OK(derive_key("SHA-256", secret, sizeof(secret),
 	    hash, sizeof(hash), 'B', session_id, sizeof(session_id),
 	    out_b, sizeof(out_b)));
 	/* Different letters must produce different output */
@@ -548,7 +548,7 @@ test_derive_key_extension_loop(void)
 
 	uint8_t out[64];
 	memset(out, 0, sizeof(out));
-	ASSERT_OK(derive_key("SHA256", secret, sizeof(secret),
+	ASSERT_OK(derive_key("SHA-256", secret, sizeof(secret),
 	    hash, sizeof(hash), 'C', session_id, sizeof(session_id),
 	    out, sizeof(out)));
 
@@ -564,7 +564,7 @@ test_derive_key_extension_loop(void)
 
 	/* First 32 bytes should match a 32-byte derivation */
 	uint8_t out32[32];
-	ASSERT_OK(derive_key("SHA256", secret, sizeof(secret),
+	ASSERT_OK(derive_key("SHA-256", secret, sizeof(secret),
 	    hash, sizeof(hash), 'C', session_id, sizeof(session_id),
 	    out32, sizeof(out32)));
 	ASSERT_MEM_EQ(out, out32, 32);
@@ -3858,142 +3858,6 @@ test_version_tx_toolong_comment(void)
 }
 
 /* ================================================================
- * DH-GEX helpers -- parse_bn_mpint and dh_value_valid
- * ================================================================ */
-
-static int
-test_parse_bn_mpint_valid(void)
-{
-	/* Valid mpint: length=1, value=42 */
-	uint8_t buf[] = { 0, 0, 0, 1, 42 };
-	BIGNUM *bn = NULL;
-	int64_t ret = parse_bn_mpint(buf, sizeof(buf), &bn);
-	ASSERT_EQ(ret, 5);
-	ASSERT_NOT_NULL(bn);
-	ASSERT_TRUE(BN_is_word(bn, 42));
-	BN_free(bn);
-	return TEST_PASS;
-}
-
-static int
-test_parse_bn_mpint_short_header(void)
-{
-	/* bufsz < 4 */
-	uint8_t buf[] = { 0, 0 };
-	BIGNUM *bn = NULL;
-	int64_t ret = parse_bn_mpint(buf, sizeof(buf), &bn);
-	ASSERT_EQ(ret, (int64_t)DSSH_ERROR_PARSE);
-	return TEST_PASS;
-}
-
-static int
-test_parse_bn_mpint_truncated_data(void)
-{
-	/* Length says 10, only 2 bytes of data */
-	uint8_t buf[] = { 0, 0, 0, 10, 1, 2 };
-	BIGNUM *bn = NULL;
-	int64_t ret = parse_bn_mpint(buf, sizeof(buf), &bn);
-	ASSERT_EQ(ret, (int64_t)DSSH_ERROR_PARSE);
-	return TEST_PASS;
-}
-
-static int
-test_dh_value_valid_zero(void)
-{
-	BIGNUM *val = BN_new();
-	BIGNUM *p = BN_new();
-	BN_zero(val);
-	BN_set_word(p, 23);
-	ASSERT_FALSE(dh_value_valid(val, p));
-	BN_free(val);
-	BN_free(p);
-	return TEST_PASS;
-}
-
-static int
-test_dh_value_valid_negative(void)
-{
-	BIGNUM *val = BN_new();
-	BIGNUM *p = BN_new();
-	BN_set_word(val, 5);
-	BN_set_negative(val, 1);
-	BN_set_word(p, 23);
-	ASSERT_FALSE(dh_value_valid(val, p));
-	BN_free(val);
-	BN_free(p);
-	return TEST_PASS;
-}
-
-static int
-test_dh_value_valid_equal_to_p(void)
-{
-	BIGNUM *val = BN_new();
-	BIGNUM *p = BN_new();
-	BN_set_word(val, 23);
-	BN_set_word(p, 23);
-	/* val == p is not in [1, p-1] */
-	ASSERT_FALSE(dh_value_valid(val, p));
-	BN_free(val);
-	BN_free(p);
-	return TEST_PASS;
-}
-
-static int
-test_dh_value_valid_greater_than_p(void)
-{
-	BIGNUM *val = BN_new();
-	BIGNUM *p = BN_new();
-	BN_set_word(val, 24);
-	BN_set_word(p, 23);
-	ASSERT_FALSE(dh_value_valid(val, p));
-	BN_free(val);
-	BN_free(p);
-	return TEST_PASS;
-}
-
-static int
-test_dh_value_valid_ok(void)
-{
-	BIGNUM *val = BN_new();
-	BIGNUM *p = BN_new();
-	BN_set_word(val, 5);
-	BN_set_word(p, 23);
-	/* 5 is in [1, 22] */
-	ASSERT_TRUE(dh_value_valid(val, p));
-	BN_free(val);
-	BN_free(p);
-	return TEST_PASS;
-}
-
-static int
-test_dh_value_valid_one(void)
-{
-	BIGNUM *val = BN_new();
-	BIGNUM *p = BN_new();
-	BN_set_word(val, 1);
-	BN_set_word(p, 23);
-	/* 1 is the minimum valid value */
-	ASSERT_TRUE(dh_value_valid(val, p));
-	BN_free(val);
-	BN_free(p);
-	return TEST_PASS;
-}
-
-static int
-test_dh_value_valid_p_minus_one(void)
-{
-	BIGNUM *val = BN_new();
-	BIGNUM *p = BN_new();
-	BN_set_word(val, 22);
-	BN_set_word(p, 23);
-	/* p-1 is the maximum valid value */
-	ASSERT_TRUE(dh_value_valid(val, p));
-	BN_free(val);
-	BN_free(p);
-	return TEST_PASS;
-}
-
-/* ================================================================
  * DH-GEX server handler -- targeted branch coverage tests.
  *
  * Each test uses the same one-time setup: version_exchange + kexinit
@@ -4045,6 +3909,7 @@ build_plaintext_packet_t(const uint8_t *payload, size_t payload_len,
 	return pos;
 }
 
+/* DH-GEX server handler infrastructure */
 struct dhgex_server_ctx {
 	dssh_session server;
 	struct mock_io_state *io;
@@ -4164,6 +4029,7 @@ dhgex_server_run(struct dhgex_server_ctx *ctx,
 
 	return res;
 }
+/* end DH-GEX server handler infra */
 
 static int
 dummy_sign(uint8_t **b, size_t *ol, const uint8_t *d,
@@ -4180,6 +4046,7 @@ dummy_pubkey(const uint8_t **b, size_t *ol, dssh_key_algo_ctx *c)
 	return 0;
 }
 
+/* DH-GEX server handler tests */
 static int
 test_dhgex_server_null_pubkey_fn(void)
 {
@@ -4452,6 +4319,7 @@ test_dhgex_server_ka_null(void)
 	dhgex_server_teardown(&ctx);
 	return TEST_PASS;
 }
+/* end DH-GEX server handler tests */
 
 /* ================================================================
  * Curve25519 server handler targeted tests
@@ -4752,6 +4620,7 @@ test_c25519_encode_shared_secret_leading_zeros(void)
 	return TEST_PASS;
 }
 
+#ifdef DSSH_CRYPTO_OPENSSL
 static int
 test_c25519_x25519_exchange_alloc_fail(void)
 {
@@ -4767,6 +4636,7 @@ test_c25519_x25519_exchange_alloc_fail(void)
 	ASSERT_TRUE(res < 0);
 	return TEST_PASS;
 }
+#endif
 
 static int
 test_c25519_encode_shared_secret_alloc_fail(void)
@@ -4908,102 +4778,6 @@ test_negotiate_no_common_kex(void)
 	return TEST_PASS;
 }
 
-/* ================================================================
- * DH-GEX helper coverage -- serialize_bn_mpint edge cases
- * ================================================================ */
-
-static int
-test_serialize_bn_mpint_alloc_fail(void)
-{
-	BIGNUM *bn = BN_new();
-	BN_set_word(bn, 42);
-	uint8_t buf[64];
-	size_t pos = 0;
-	dssh_test_alloc_fail_after(0);
-	int res = serialize_bn_mpint(bn, buf, sizeof(buf), &pos);
-	dssh_test_alloc_reset();
-	BN_free(bn);
-	ASSERT_EQ(res, DSSH_ERROR_ALLOC);
-	return TEST_PASS;
-}
-
-static int
-test_serialize_bn_mpint_zero_bn(void)
-{
-	BIGNUM *bn = BN_new();
-	/* BN_new() returns a BIGNUM with value 0.  BN_num_bytes(0) == 0,
-	 * so bn_bytes == 0, hitting the bn_bytes > 0 False branch. */
-	uint8_t buf[64];
-	size_t pos = 0;
-	int res = serialize_bn_mpint(bn, buf, sizeof(buf), &pos);
-	ASSERT_EQ(res, 0);
-	/* mpint encoding of 0: length=0, no data bytes */
-	ASSERT_EQ(pos, 4);
-	uint32_t mpint_len;
-	dssh_parse_uint32(buf, 4, &mpint_len);
-	ASSERT_EQ(mpint_len, 0);
-	BN_free(bn);
-	return TEST_PASS;
-}
-
-/* ================================================================
- * DH-GEX compute_exchange_hash -- alloc injection for
- * serialize_bn_mpint failures inside the hash computation.
- * ================================================================ */
-
-static int
-test_compute_exchange_hash_alloc_iterate(void)
-{
-	/* Create small BIGNUMs for p, g, e, f, k */
-	BIGNUM *p = BN_new();
-	BIGNUM *g = BN_new();
-	BIGNUM *e = BN_new();
-	BIGNUM *f = BN_new();
-	BIGNUM *k = BN_new();
-	BN_set_word(p, 23);
-	BN_set_word(g, 5);
-	BN_set_word(e, 8);
-	BN_set_word(f, 10);
-	BN_set_word(k, 16);
-
-	const char v_c[] = "SSH-2.0-test";
-	const char v_s[] = "SSH-2.0-test";
-	uint8_t i_c[4] = {0};
-	uint8_t i_s[4] = {0};
-	uint8_t k_s[4] = {0};
-	uint8_t hash[32];
-
-	/* First call without injection to confirm it works */
-	int res = compute_exchange_hash(
-	    v_c, sizeof(v_c) - 1, v_s, sizeof(v_s) - 1,
-	    i_c, sizeof(i_c), i_s, sizeof(i_s), k_s, sizeof(k_s),
-	    2048, 4096, 8192, p, g, e, f, k, hash);
-	ASSERT_EQ(res, 0);
-
-	/* Iterate alloc failures.  serialize_bn_mpint calls malloc
-	 * for each of the 5 BIGNUMs (p, g, e, f, k).  Failing each
-	 * one produces mres != 0, covering the (mres == 0) False branches
-	 * at lines 143, 146, 149, 152, 155. */
-	for (int n = 0; n < 20; n++) {
-		dssh_test_alloc_fail_after(n);
-		res = compute_exchange_hash(
-		    v_c, sizeof(v_c) - 1, v_s, sizeof(v_s) - 1,
-		    i_c, sizeof(i_c), i_s, sizeof(i_s), k_s, sizeof(k_s),
-		    2048, 4096, 8192, p, g, e, f, k, hash);
-		dssh_test_alloc_reset();
-		if (res == 0)
-			break;
-	}
-	/* Should eventually succeed */
-	ASSERT_EQ(res, 0);
-
-	BN_free(p);
-	BN_free(g);
-	BN_free(e);
-	BN_free(f);
-	BN_free(k);
-	return TEST_PASS;
-}
 
 /* ================================================================
  * None algorithm module coverage -- call the no-op functions
@@ -5031,6 +4805,7 @@ test_aes256_ctr_null_ctx(void)
 	return TEST_PASS;
 }
 
+#ifdef DSSH_CRYPTO_OPENSSL /* OpenSSL alloc injection tests */
 static int
 test_aes256_ctr_alloc_fail(void)
 {
@@ -5055,6 +4830,7 @@ test_aes256_ctr_alloc_fail(void)
 	dssh_test_reset_global_config();
 	return TEST_PASS;
 }
+#endif /* DSSH_CRYPTO_OPENSSL */
 
 static int
 test_hmac_sha2_256_null_ctx(void)
@@ -5073,6 +4849,7 @@ test_hmac_sha2_256_null_ctx(void)
 	return TEST_PASS;
 }
 
+#ifdef DSSH_CRYPTO_OPENSSL
 static int
 test_hmac_sha2_256_alloc_fail(void)
 {
@@ -5096,6 +4873,7 @@ test_hmac_sha2_256_alloc_fail(void)
 	dssh_test_reset_global_config();
 	return TEST_PASS;
 }
+#endif /* DSSH_CRYPTO_OPENSSL */
 
 /* ================================================================
  * None algorithm module coverage
@@ -5416,21 +5194,6 @@ test_rsa_pubkey_basic(void)
 	return TEST_PASS;
 }
 
-static int
-test_bn_mpint_small_buf(void)
-{
-	BIGNUM *bn = BN_new();
-	ASSERT_NOT_NULL(bn);
-	BN_set_word(bn, 0xFFFFFFFF);
-
-	uint8_t buf[4]; /* too small for 4-byte length + 4-byte value */
-	size_t pos = 0;
-	int res = serialize_bn_mpint(bn, buf, sizeof(buf), &pos);
-	ASSERT_EQ(res, DSSH_ERROR_TOOLONG);
-
-	BN_free(bn);
-	return TEST_PASS;
-}
 
 static int
 test_ed25519_haskey_wrong_type(void)
@@ -5908,6 +5671,7 @@ test_encode_k_string_empty(void)
 
 #include "dssh_test_ossl.h"
 
+#ifdef DSSH_CRYPTO_OPENSSL
 static int
 test_aes256_ctr_ctx_member_null(void)
 {
@@ -5942,7 +5706,9 @@ test_aes256_ctr_ctx_member_null(void)
 	dssh_test_reset_global_config();
 	return TEST_PASS;
 }
+#endif
 
+#ifdef DSSH_CRYPTO_OPENSSL /* OpenSSL encrypt/MAC injection tests */
 static int
 test_aes256_ctr_encrypt_update_failure(void)
 {
@@ -5972,6 +5738,7 @@ test_aes256_ctr_encrypt_update_failure(void)
 	dssh_test_reset_global_config();
 	return TEST_PASS;
 }
+#endif /* DSSH_CRYPTO_OPENSSL -- encrypt injection */
 
 /* ================================================================
  * Coverage: hmac-sha2-256 cleanup with NULL, MAC_final failure
@@ -5993,6 +5760,7 @@ test_hmac_sha2_256_cleanup_null(void)
 	return TEST_PASS;
 }
 
+#ifdef DSSH_CRYPTO_OPENSSL /* OpenSSL MAC generate injection */
 static int
 test_hmac_sha2_256_generate_failure(void)
 {
@@ -6021,6 +5789,8 @@ test_hmac_sha2_256_generate_failure(void)
 	dssh_test_reset_global_config();
 	return TEST_PASS;
 }
+
+#endif /* DSSH_CRYPTO_OPENSSL -- encrypt/MAC injection tests */
 
 /* ================================================================
  * Registration toolong guards (kex, comp, lang)
@@ -6565,6 +6335,7 @@ test_negotiate_no_common_comp_s2c(void)
 	return TEST_PASS;
 }
 
+#ifdef DSSH_CRYPTO_OPENSSL /* derive_key + MAC ossl injection tests */
 /*
  * derive_key: fail EVP_DigestUpdate(shared_secret) -- line 1208.
  * ossl calls in derive_key:
@@ -6582,7 +6353,7 @@ test_derive_key_ossl_shared_secret(void)
 	memset(session_id, 0x33, sizeof(session_id));
 
 	dssh_test_ossl_fail_after(3);
-	int res = derive_key("SHA256",
+	int res = derive_key("SHA-256",
 	    shared_secret, sizeof(shared_secret),
 	    hash, sizeof(hash),
 	    'A',
@@ -6607,7 +6378,7 @@ test_derive_key_ossl_hash(void)
 	memset(session_id, 0x33, sizeof(session_id));
 
 	dssh_test_ossl_fail_after(4);
-	int res = derive_key("SHA256",
+	int res = derive_key("SHA-256",
 	    shared_secret, sizeof(shared_secret),
 	    hash, sizeof(hash),
 	    'A',
@@ -6632,7 +6403,7 @@ test_derive_key_ossl_letter(void)
 	memset(session_id, 0x33, sizeof(session_id));
 
 	dssh_test_ossl_fail_after(5);
-	int res = derive_key("SHA256",
+	int res = derive_key("SHA-256",
 	    shared_secret, sizeof(shared_secret),
 	    hash, sizeof(hash),
 	    'A',
@@ -6657,7 +6428,7 @@ test_derive_key_ossl_session_id(void)
 	memset(session_id, 0x33, sizeof(session_id));
 
 	dssh_test_ossl_fail_after(6);
-	int res = derive_key("SHA256",
+	int res = derive_key("SHA-256",
 	    shared_secret, sizeof(shared_secret),
 	    hash, sizeof(hash),
 	    'A',
@@ -6682,7 +6453,7 @@ test_derive_key_ossl_final(void)
 	memset(session_id, 0x33, sizeof(session_id));
 
 	dssh_test_ossl_fail_after(7);
-	int res = derive_key("SHA256",
+	int res = derive_key("SHA-256",
 	    shared_secret, sizeof(shared_secret),
 	    hash, sizeof(hash),
 	    'A',
@@ -6707,7 +6478,7 @@ test_derive_key_ossl_init(void)
 	memset(session_id, 0x33, sizeof(session_id));
 
 	dssh_test_ossl_fail_after(2);
-	int res = derive_key("SHA256",
+	int res = derive_key("SHA-256",
 	    shared_secret, sizeof(shared_secret),
 	    hash, sizeof(hash),
 	    'A',
@@ -6736,7 +6507,7 @@ test_derive_key_ossl_extension_loop(void)
 
 	/* Fail the EVP_DigestInit_ex in the extension loop (call 8) */
 	dssh_test_ossl_fail_after(8);
-	int res = derive_key("SHA256",
+	int res = derive_key("SHA-256",
 	    shared_secret, sizeof(shared_secret),
 	    hash, sizeof(hash),
 	    'A',
@@ -6882,6 +6653,7 @@ test_hmac_sha2_256_mac_init_failure(void)
 	dssh_test_reset_global_config();
 	return TEST_PASS;
 }
+#endif /* DSSH_CRYPTO_OPENSSL -- derive_key + MAC injection tests */
 
 /*
  * is_20: "SSH-2X..." -- buf[4]=='2' true but buf[5]!='.' false.
@@ -7099,9 +6871,13 @@ static struct dssh_test_entry tests[] = {
 
 	/* Algorithm edge cases */
 	{ "aes256_ctr/null_ctx",             test_aes256_ctr_null_ctx },
+#ifdef DSSH_CRYPTO_OPENSSL
 	{ "aes256_ctr/alloc_fail",           test_aes256_ctr_alloc_fail },
+#endif
 	{ "hmac_sha2_256/null_ctx",          test_hmac_sha2_256_null_ctx },
+#ifdef DSSH_CRYPTO_OPENSSL
 	{ "hmac_sha2_256/alloc_fail",        test_hmac_sha2_256_alloc_fail },
+#endif
 
 	/* None module coverage */
 	{ "debug/msg_len_exceeds_payload",   test_debug_msg_len_exceeds_payload },
@@ -7120,7 +6896,6 @@ static struct dssh_test_entry tests[] = {
 	{ "guard/ed25519_pubkey_basic",      test_ed25519_pubkey_basic },
 	{ "guard/rsa_sign_basic",            test_rsa_sign_basic },
 	{ "guard/rsa_pubkey_basic",          test_rsa_pubkey_basic },
-	{ "guard/bn_mpint_small_buf",        test_bn_mpint_small_buf },
 	{ "guard/ed25519_haskey_wrong_type", test_ed25519_haskey_wrong_type },
 	{ "guard/rsa_haskey_wrong_type",     test_rsa_haskey_wrong_type },
 	{ "guard/remote_languages_cleanup",  test_remote_languages_cleanup },
@@ -7144,10 +6919,16 @@ static struct dssh_test_entry tests[] = {
 	{ "encode_k/mpint_empty",           test_encode_k_mpint_empty },
 	{ "encode_k/string_encoding",       test_encode_k_string },
 	{ "encode_k/string_empty",          test_encode_k_string_empty },
+#ifdef DSSH_CRYPTO_OPENSSL
 	{ "aes256_ctr/ctx_member_null",     test_aes256_ctr_ctx_member_null },
+#endif
+#ifdef DSSH_CRYPTO_OPENSSL
 	{ "aes256_ctr/encrypt_update_fail", test_aes256_ctr_encrypt_update_failure },
+#endif
 	{ "hmac_sha2_256/cleanup_null",     test_hmac_sha2_256_cleanup_null },
+#ifdef DSSH_CRYPTO_OPENSSL
 	{ "hmac_sha2_256/generate_failure", test_hmac_sha2_256_generate_failure },
+#endif
 
 	/* Getter before handshake */
 	{ "getter/names_before_handshake",   test_get_names_before_handshake },
@@ -7195,21 +6976,6 @@ static struct dssh_test_entry tests[] = {
 	{ "vex/tx_toolong_version",          test_version_tx_toolong_version },
 	{ "vex/tx_toolong_comment",          test_version_tx_toolong_comment },
 
-	/* DH-GEX parse/validate helpers */
-	{ "dhgex/parse_bn_mpint_valid",      test_parse_bn_mpint_valid },
-	{ "dhgex/parse_bn_mpint_short",      test_parse_bn_mpint_short_header },
-	{ "dhgex/parse_bn_mpint_truncated",  test_parse_bn_mpint_truncated_data },
-	{ "dhgex/dh_value_zero",             test_dh_value_valid_zero },
-	{ "dhgex/dh_value_negative",         test_dh_value_valid_negative },
-	{ "dhgex/dh_value_equal_p",          test_dh_value_valid_equal_to_p },
-	{ "dhgex/dh_value_greater_p",        test_dh_value_valid_greater_than_p },
-	{ "dhgex/dh_value_ok",              test_dh_value_valid_ok },
-	{ "dhgex/dh_value_one",             test_dh_value_valid_one },
-	{ "dhgex/dh_value_p_minus_one",      test_dh_value_valid_p_minus_one },
-	{ "dhgex/serialize_alloc_fail",      test_serialize_bn_mpint_alloc_fail },
-	{ "dhgex/serialize_zero_bn",         test_serialize_bn_mpint_zero_bn },
-	{ "dhgex/exchange_hash_alloc_iter",  test_compute_exchange_hash_alloc_iterate },
-
 	/* DH-GEX server handler targeted tests */
 	{ "dhgex/server_null_pubkey_fn",     test_dhgex_server_null_pubkey_fn },
 	{ "dhgex/server_null_sign_fn",       test_dhgex_server_null_sign_fn },
@@ -7236,6 +7002,7 @@ static struct dssh_test_entry tests[] = {
 	{ "negotiate/no_common_kex",         test_negotiate_no_common_kex },
 	{ "negotiate/no_common_comp_s2c",    test_negotiate_no_common_comp_s2c },
 
+#ifdef DSSH_CRYPTO_OPENSSL
 	/* Deterministic derive_key ossl failure for each DigestUpdate */
 	{ "derive_key/ossl_init",            test_derive_key_ossl_init },
 	{ "derive_key/ossl_shared_secret",   test_derive_key_ossl_shared_secret },
@@ -7244,6 +7011,7 @@ static struct dssh_test_entry tests[] = {
 	{ "derive_key/ossl_session_id",      test_derive_key_ossl_session_id },
 	{ "derive_key/ossl_final",           test_derive_key_ossl_final },
 	{ "derive_key/ossl_extension_loop",  test_derive_key_ossl_extension_loop },
+#endif
 
 	/* Deterministic version parsing */
 	{ "version/is_20_199_valid",         test_is_20_version_199 },
@@ -7255,14 +7023,18 @@ static struct dssh_test_entry tests[] = {
 	{ "version/rx_non_ascii",            test_version_rx_non_ascii },
 	{ "debug/short_payload",             test_debug_short_payload },
 
+#ifdef DSSH_CRYPTO_OPENSSL
 	/* HMAC-SHA2-256 deterministic ossl failures */
 	{ "hmac_sha2_256/reinit_failure",    test_hmac_sha2_256_reinit_failure },
 	{ "hmac_sha2_256/fetch_failure",     test_hmac_sha2_256_fetch_failure },
 	{ "hmac_sha2_256/mac_init_failure",  test_hmac_sha2_256_mac_init_failure },
+#endif
 
 	/* Curve25519 helper function tests */
 	{ "c25519/encode_ss_leading_zeros",  test_c25519_encode_shared_secret_leading_zeros },
+#ifdef DSSH_CRYPTO_OPENSSL
 	{ "c25519/x25519_exchange_alloc",    test_c25519_x25519_exchange_alloc_fail },
+#endif
 	{ "c25519/encode_ss_alloc_fail",     test_c25519_encode_shared_secret_alloc_fail },
 };
 

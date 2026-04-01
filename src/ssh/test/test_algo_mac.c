@@ -12,9 +12,13 @@
 #include "ssh-trans.h"
 #include "test/dssh_test_internal.h"
 
+#ifdef DSSH_CRYPTO_OPENSSL
 #include <openssl/core_names.h>
 #include <openssl/evp.h>
 #include <openssl/params.h>
+#elif defined(DSSH_CRYPTO_BOTAN)
+#include <botan/ffi.h>
+#endif
 #include <string.h>
 
 /*
@@ -30,10 +34,10 @@ extern bool has_non_ascii(uint8_t *buf, size_t buflen);
 extern bool is_20(uint8_t *buf, size_t buflen);
 
 /* ----------------------------------------------------------------
- * Helper: compute HMAC-SHA-256 via OpenSSL EVP_MAC (mirrors what
- * hmac-sha2-256.c does internally).
+ * Helper: compute HMAC-SHA-256 via an independent crypto implementation.
  * Returns 0 on success, fills outbuf with 32-byte digest.
  * ---------------------------------------------------------------- */
+#ifdef DSSH_CRYPTO_OPENSSL
 static int
 hmac_sha256(const uint8_t *key, size_t key_len,
     const uint8_t *data, size_t data_len,
@@ -71,6 +75,31 @@ out_mac:
 	EVP_MAC_free(mac);
 	return ret;
 }
+#elif defined(DSSH_CRYPTO_BOTAN)
+static int
+hmac_sha256(const uint8_t *key, size_t key_len,
+    const uint8_t *data, size_t data_len,
+    uint8_t *outbuf)
+{
+	botan_mac_t mac;
+
+	if (botan_mac_init(&mac, "HMAC(SHA-256)", 0) != 0)
+		return -1;
+
+	int ret = -1;
+	if (botan_mac_set_key(mac, key, key_len) != 0)
+		goto out;
+	if (botan_mac_update(mac, data, data_len) != 0)
+		goto out;
+	if (botan_mac_final(mac, outbuf) != 0)
+		goto out;
+	ret = 0;
+
+out:
+	botan_mac_destroy(mac);
+	return ret;
+}
+#endif
 
 /* ================================================================
  * RFC 4231 Test Case 1
@@ -352,10 +381,11 @@ test_hmac_sha256_large_data(void)
 /* ================================================================
  * HMAC-SHA-256: Persistent context (re-init without key)
  *
- * This mirrors how hmac-sha2-256.c works: init once with key,
+ * This mirrors how hmac-sha2-256-openssl.c works: init once with key,
  * then call EVP_MAC_init(ctx, NULL, 0, NULL) before each generate.
  * ================================================================ */
 
+#ifdef DSSH_CRYPTO_OPENSSL
 static int
 test_hmac_sha256_persistent_ctx(void)
 {
@@ -407,6 +437,40 @@ test_hmac_sha256_persistent_ctx(void)
 	EVP_MAC_free(mac);
 	return TEST_PASS;
 }
+#elif defined(DSSH_CRYPTO_BOTAN)
+static int
+test_hmac_sha256_persistent_ctx(void)
+{
+	/* Botan: botan_mac_final resets state for reuse with same key */
+	botan_mac_t mac;
+	ASSERT_EQ(botan_mac_init(&mac, "HMAC(SHA-256)", 0), 0);
+	ASSERT_EQ(botan_mac_set_key(mac, rfc4231_tc1_key,
+	    sizeof(rfc4231_tc1_key)), 0);
+
+	/* First generate: TC1 data under TC1 key */
+	ASSERT_EQ(botan_mac_update(mac, rfc4231_tc1_data,
+	    rfc4231_tc1_data_len), 0);
+	uint8_t d1[32];
+	ASSERT_EQ(botan_mac_final(mac, d1), 0);
+	ASSERT_MEM_EQ(d1, rfc4231_tc1_hmac, 32);
+
+	/* Second generate: TC2 data under TC1 key (auto-reset by final) */
+	ASSERT_EQ(botan_mac_update(mac, rfc4231_tc2_data,
+	    rfc4231_tc2_data_len), 0);
+	uint8_t d2[32];
+	ASSERT_EQ(botan_mac_final(mac, d2), 0);
+
+	/* Repeat to verify deterministic */
+	ASSERT_EQ(botan_mac_update(mac, rfc4231_tc2_data,
+	    rfc4231_tc2_data_len), 0);
+	uint8_t d3[32];
+	ASSERT_EQ(botan_mac_final(mac, d3), 0);
+	ASSERT_MEM_EQ(d2, d3, 32);
+
+	botan_mac_destroy(mac);
+	return TEST_PASS;
+}
+#endif
 
 /* ================================================================
  * HMAC-SHA-256: Single byte data
@@ -528,6 +592,7 @@ static const uint8_t rfc4231_tc3_hmac512[64] = {
 	0x74, 0x27, 0x88, 0x59, 0xe1, 0x32, 0x92, 0xfb
 };
 
+#ifdef DSSH_CRYPTO_OPENSSL
 static int
 hmac_sha512(const uint8_t *key, size_t key_len,
     const uint8_t *data, size_t data_len,
@@ -565,6 +630,31 @@ out_mac:
 	EVP_MAC_free(mac);
 	return ret;
 }
+#elif defined(DSSH_CRYPTO_BOTAN)
+static int
+hmac_sha512(const uint8_t *key, size_t key_len,
+    const uint8_t *data, size_t data_len,
+    uint8_t *outbuf)
+{
+	botan_mac_t mac;
+
+	if (botan_mac_init(&mac, "HMAC(SHA-512)", 0) != 0)
+		return -1;
+
+	int ret = -1;
+	if (botan_mac_set_key(mac, key, key_len) != 0)
+		goto out;
+	if (botan_mac_update(mac, data, data_len) != 0)
+		goto out;
+	if (botan_mac_final(mac, outbuf) != 0)
+		goto out;
+	ret = 0;
+
+out:
+	botan_mac_destroy(mac);
+	return ret;
+}
+#endif
 
 static int
 test_hmac_sha512_rfc4231_tc1(void)

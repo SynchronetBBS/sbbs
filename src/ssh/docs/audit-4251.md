@@ -285,10 +285,10 @@ names, etc.) are serialized with explicit length calculation via
 > If the most significant bit would be set for a positive number, the
 > number **MUST** be preceded by a zero byte.
 
-**CONFORMS** — `encode_shared_secret()` in `kex/curve25519-sha256.c:166`
+**CONFORMS** — `encode_shared_secret()` in `kex/curve25519-sha256-openssl.c:166`
 checks `start[0] & 0x80` and prepends a zero byte.
 `dssh_transport_newkeys()` at `ssh-trans.c:939` does the same for
-key derivation.  `serialize_bn_mpint()` in `kex/dh-gex-sha256.c:34`
+key derivation.  `serialize_bn_mpint()` in `kex/dh-gex-sha256-openssl.c:34`
 also handles this.
 
 ### 5-7 (mpint)
@@ -302,8 +302,8 @@ a leading 0xFF where the next byte has the high bit set (unnecessary
 leading 0xFF).
 
 For serialization: `encode_shared_secret()` in
-`kex/curve25519-sha256.c:156-159` strips leading zeros before encoding.
-`BN_bn2bin()` in `kex/dh-gex-sha256.c` produces minimal representation
+`kex/curve25519-sha256-openssl.c:156-159` strips leading zeros before encoding.
+`BN_bn2bin()` in `kex/dh-gex-sha256-openssl.c` produces minimal representation
 (no leading zeros) by definition, and the padding is only added when
 the MSB is set.
 
@@ -438,7 +438,7 @@ them to 0–255.  Message type 0 is not used.  All defined constants use
 
 **CONFORMS** — `SSH_MSG_KEX_ECDH_INIT` (30) and `SSH_MSG_KEX_ECDH_REPLY`
 (31) are defined in `ssh-trans.h`.  DH-GEX message numbers (31–34) are
-defined locally in `kex/dh-gex-sha256.c`.  Message number reuse between
+defined locally in `kex/dh-gex-sha256-openssl.c`.  Message number reuse between
 KEX methods is correctly handled since only one KEX method is active per
 session.
 

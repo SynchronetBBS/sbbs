@@ -10,13 +10,10 @@
 
 #include "deucessh.h"
 #include "deucessh-algorithms.h"
+#include "deucessh-crypto.h"
 #include "deucessh-key-algo.h"
 #ifdef DSSH_TESTING
 #include "ssh-internal.h"
-#endif
-
-#ifndef DSSH_MPINT_SIGN_BIT
- #define DSSH_MPINT_SIGN_BIT 0x80
 #endif
 
 #define RSA_SHA2_512_NAME     "rsa-sha2-512"
@@ -88,11 +85,15 @@ verify(const uint8_t *key_blob, size_t key_blob_len,
 
 	/* n (modulus) */
 	if (dssh_parse_uint32(&key_blob[kp], key_blob_len - kp, &slen) < 4 ||
-	    kp + 4 + slen > key_blob_len)
+	    kp + 4 + slen > key_blob_len) {
+		result = DSSH_ERROR_PARSE;
 		goto done;
+	}
 	kp += 4;
-	if (slen > INT_MAX)
+	if (slen > INT_MAX) {
+		result = DSSH_ERROR_INVALID;
 		goto done;
+	}
 	int n_len = (int)slen;
 	n_bn = BN_bin2bn(&key_blob[kp], n_len, NULL);
 	kp += slen;

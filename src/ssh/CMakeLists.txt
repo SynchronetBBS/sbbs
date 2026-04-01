@@ -8,7 +8,62 @@ if(NOT DEUCESSH_BUILD_STATIC AND NOT DEUCESSH_BUILD_SHARED)
 	message(FATAL_ERROR "At least one of DEUCESSH_BUILD_STATIC or DEUCESSH_BUILD_SHARED must be ON")
 endif()
 
-find_package(OpenSSL REQUIRED)
+set(DEUCESSH_CRYPTO_BACKEND "" CACHE STRING
+	"Crypto backend: Botan, OpenSSL, or empty for auto-detect (prefer Botan)")
+set_property(CACHE DEUCESSH_CRYPTO_BACKEND
+	PROPERTY STRINGS "" "Botan" "OpenSSL")
+
+if(DEUCESSH_CRYPTO_BACKEND STREQUAL "")
+	# Auto-detect: try Botan first, then OpenSSL
+	find_package(PkgConfig QUIET)
+	if(PkgConfig_FOUND)
+		pkg_check_modules(BOTAN3 QUIET IMPORTED_TARGET botan-3)
+	endif()
+	if(BOTAN3_FOUND)
+		set(DEUCESSH_CRYPTO_BACKEND "Botan")
+		message(STATUS "Auto-detected crypto backend: Botan")
+	else()
+		find_package(OpenSSL QUIET)
+		if(OpenSSL_FOUND)
+			set(DEUCESSH_CRYPTO_BACKEND "OpenSSL")
+			message(STATUS "Auto-detected crypto backend: OpenSSL")
+		else()
+			message(FATAL_ERROR
+				"No crypto backend found. Install Botan 3 or OpenSSL 3.0+, "
+				"or set -DDEUCESSH_CRYPTO_BACKEND=Botan|OpenSSL")
+		endif()
+	endif()
+elseif(DEUCESSH_CRYPTO_BACKEND STREQUAL "Botan")
+	find_package(PkgConfig REQUIRED)
+	pkg_check_modules(BOTAN3 REQUIRED IMPORTED_TARGET botan-3)
+elseif(DEUCESSH_CRYPTO_BACKEND STREQUAL "OpenSSL")
+	find_package(OpenSSL REQUIRED)
+else()
+	message(FATAL_ERROR
+		"Unknown crypto backend: ${DEUCESSH_CRYPTO_BACKEND} "
+		"(expected Botan, OpenSSL, or empty)")
+endif()
+
+if(DEUCESSH_CRYPTO_BACKEND STREQUAL "Botan")
+	set(DSSH_CRYPTO_LIB_PRIVATE PkgConfig::BOTAN3)
+	set(DSSH_CRYPTO_LIB_INTERFACE ${BOTAN3_LDFLAGS})
+	set(DSSH_CRYPTO_INCLUDE ${BOTAN3_INCLUDE_DIRS})
+	set(DSSH_CRYPTO_IMPL crypto/botan.cpp)
+	set(DSSH_CONFIG_FIND_DEPENDENCY "find_dependency(PkgConfig)\npkg_check_modules(BOTAN3 REQUIRED IMPORTED_TARGET botan-3)")
+	set(DSSH_PC_REQUIRES_PRIVATE "botan-3")
+elseif(DEUCESSH_CRYPTO_BACKEND STREQUAL "OpenSSL")
+	set(DSSH_CRYPTO_LIB_PRIVATE OpenSSL::Crypto)
+	set(DSSH_CRYPTO_LIB_INTERFACE ${OPENSSL_CRYPTO_LIBRARIES})
+	set(DSSH_CRYPTO_INCLUDE ${OPENSSL_INCLUDE_DIR})
+	set(DSSH_CRYPTO_IMPL crypto/openssl.c)
+	set(DSSH_CONFIG_FIND_DEPENDENCY "find_dependency(OpenSSL)")
+	set(DSSH_PC_REQUIRES_PRIVATE "libcrypto")
+endif()
+
+# Botan backend uses C++ sources; enable CXX only when needed
+if(DEUCESSH_CRYPTO_BACKEND STREQUAL "Botan")
+	enable_language(CXX)
+endif()
 
 # C11 threads: FreeBSD needs -lstdthreads, Linux/macOS have it in libc
 include(CheckCSourceCompiles)
@@ -27,30 +82,65 @@ else()
 	set(THREADS_LINK_LIB "")
 endif()
 
+# Algorithm modules -- backend-specific
+if(DEUCESSH_CRYPTO_BACKEND STREQUAL "OpenSSL")
+	set(DSSH_ALG_SOURCES
+		kex/curve25519-sha256-openssl.c
+		kex/dh-gex-sha256-openssl.c
+		kex/sntrup761x25519-sha512-openssl.c
+		kex/mlkem768x25519-sha256-openssl.c
+		key_algo/ssh-ed25519-openssl.c
+		key_algo/rsa-sha2-256-openssl.c
+		key_algo/rsa-sha2-512-openssl.c
+		enc/aes256-ctr-openssl.c
+		mac/hmac-sha2-256-openssl.c
+		mac/hmac-sha2-512-openssl.c
+	)
+elseif(DEUCESSH_CRYPTO_BACKEND STREQUAL "Botan")
+	set(DSSH_ALG_SOURCES
+		kex/curve25519-sha256-botan.c
+		kex/curve25519-sha256-botan.cpp
+		kex/dh-gex-sha256-botan.c
+		kex/dh-gex-sha256-botan.cpp
+		kex/sntrup761x25519-sha512-botan.c
+		kex/sntrup761x25519-sha512-botan.cpp
+		kex/mlkem768x25519-sha256-botan.c
+		kex/mlkem768x25519-sha256-botan.cpp
+		key_algo/ssh-ed25519-botan.c
+		key_algo/ssh-ed25519-botan.cpp
+		key_algo/rsa-sha2-256-botan.c
+		key_algo/rsa-sha2-256-botan.cpp
+		key_algo/rsa-sha2-512-botan.c
+		key_algo/rsa-sha2-512-botan.cpp
+		enc/aes256-ctr-botan.c
+		enc/aes256-ctr-botan.cpp
+		mac/hmac-sha2-256-botan.c
+		mac/hmac-sha2-256-botan.cpp
+		mac/hmac-sha2-512-botan.c
+		mac/hmac-sha2-512-botan.cpp
+	)
+endif()
+
 set(DEUCESSH_SOURCES
 	ssh-trans.c ssh.c ssh-auth.c ssh-conn.c
+	${DSSH_CRYPTO_IMPL}
 	kex/curve25519-sha256.c
+	kex/hybrid-pq-kex.c
 	kex/dh-gex-sha256.c
+	kex/dh-gex-groups.c
 	kex/sntrup761.c
-	kex/sntrup761x25519-sha512.c
 	kex/mlkem768.c
-	kex/mlkem768x25519-sha256.c
-	key_algo/ssh-ed25519.c
-	key_algo/rsa-sha2-256.c
-	key_algo/rsa-sha2-512.c
-	enc/aes256-ctr.c
+	${DSSH_ALG_SOURCES}
 	enc/none.c
-	mac/hmac-sha2-256.c
-	mac/hmac-sha2-512.c
 	mac/none.c
 	comp/none.c
 )
 
 set(DEUCESSH_PUBLIC_HEADERS
 	deucessh.h deucessh-auth.h deucessh-conn.h
-	deucessh-algorithms.h deucessh-kex.h deucessh-key-algo.h
-	deucessh-enc.h deucessh-mac.h deucessh-comp.h
-	deucessh-portable.h
+	deucessh-algorithms.h deucessh-crypto.h deucessh-kex.h
+	deucessh-key-algo.h deucessh-enc.h deucessh-mac.h
+	deucessh-comp.h deucessh-portable.h
 )
 
 include(CheckCCompilerFlag)
@@ -170,15 +260,19 @@ if(DEUCESSH_BUILD_STATIC)
 	add_library(deucessh::static ALIAS deucessh_static)
 	set_property(TARGET deucessh_static PROPERTY C_STANDARD 17)
 	set_property(TARGET deucessh_static PROPERTY C_STANDARD_REQUIRED ON)
+	if(DEUCESSH_CRYPTO_BACKEND STREQUAL "Botan")
+		set_property(TARGET deucessh_static PROPERTY CXX_STANDARD 20)
+		set_property(TARGET deucessh_static PROPERTY CXX_STANDARD_REQUIRED ON)
+	endif()
 	set_property(TARGET deucessh_static PROPERTY OUTPUT_NAME deucessh)
 	target_include_directories(deucessh_static
 		PUBLIC
 			$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
-			$<INSTALL_INTERFACE:include/deucessh>
-		PRIVATE
-			${OPENSSL_INCLUDE_DIR})
+			$<INSTALL_INTERFACE:include/deucessh>)
+	target_include_directories(deucessh_static SYSTEM
+		PRIVATE ${DSSH_CRYPTO_INCLUDE})
 	target_link_libraries(deucessh_static
-		INTERFACE ${OPENSSL_CRYPTO_LIBRARIES} ${THREADS_LINK_LIB})
+		INTERFACE ${DSSH_CRYPTO_LIB_INTERFACE} ${THREADS_LINK_LIB})
 	target_compile_definitions(deucessh_static
 		PRIVATE DSSH_VERSION_STRING="${PROJECT_VERSION}"
 		$<$<CONFIG:Release>:NDEBUG>)
@@ -193,6 +287,10 @@ if(DEUCESSH_BUILD_SHARED)
 	add_library(deucessh::shared ALIAS deucessh_shared)
 	set_property(TARGET deucessh_shared PROPERTY C_STANDARD 17)
 	set_property(TARGET deucessh_shared PROPERTY C_STANDARD_REQUIRED ON)
+	if(DEUCESSH_CRYPTO_BACKEND STREQUAL "Botan")
+		set_property(TARGET deucessh_shared PROPERTY CXX_STANDARD 20)
+		set_property(TARGET deucessh_shared PROPERTY CXX_STANDARD_REQUIRED ON)
+	endif()
 	set_property(TARGET deucessh_shared PROPERTY OUTPUT_NAME deucessh)
 	set_property(TARGET deucessh_shared PROPERTY POSITION_INDEPENDENT_CODE ON)
 	set_property(TARGET deucessh_shared PROPERTY VERSION ${PROJECT_VERSION})
@@ -200,11 +298,11 @@ if(DEUCESSH_BUILD_SHARED)
 	target_include_directories(deucessh_shared
 		PUBLIC
 			$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
-			$<INSTALL_INTERFACE:include/deucessh>
-		PRIVATE
-			${OPENSSL_INCLUDE_DIR})
+			$<INSTALL_INTERFACE:include/deucessh>)
+	target_include_directories(deucessh_shared SYSTEM
+		PRIVATE ${DSSH_CRYPTO_INCLUDE})
 	target_link_libraries(deucessh_shared
-		PRIVATE ${OPENSSL_CRYPTO_LIBRARIES} ${THREADS_LINK_LIB})
+		PRIVATE ${DSSH_CRYPTO_LIB_PRIVATE} ${THREADS_LINK_LIB})
 	target_compile_definitions(deucessh_shared
 		PRIVATE
 			DSSH_SHARED
@@ -249,11 +347,14 @@ write_basic_package_version_file(
 	VERSION ${PROJECT_VERSION}
 	COMPATIBILITY SameMajorVersion)
 
+configure_file(deucesshConfig.cmake.in
+	${CMAKE_CURRENT_BINARY_DIR}/deucesshConfig.cmake @ONLY)
+
 configure_file(deucessh.pc.in
 	${CMAKE_CURRENT_BINARY_DIR}/deucessh.pc @ONLY)
 
 install(FILES
-	${CMAKE_CURRENT_SOURCE_DIR}/deucesshConfig.cmake
+	${CMAKE_CURRENT_BINARY_DIR}/deucesshConfig.cmake
 	${CMAKE_CURRENT_BINARY_DIR}/deucesshConfigVersion.cmake
 	DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/deucessh)
 
@@ -263,11 +364,12 @@ install(FILES ${CMAKE_CURRENT_BINARY_DIR}/deucessh.pc
 # --- Example executables (not installed) ---
 
 if(DEUCESSH_BUILD_STATIC)
-	add_executable(client EXCLUDE_FROM_ALL client.c)
+	add_executable(client EXCLUDE_FROM_ALL examples/client.c)
 	target_link_libraries(client PRIVATE deucessh_static)
 
-	add_executable(server EXCLUDE_FROM_ALL server.c)
+	add_executable(server EXCLUDE_FROM_ALL examples/server.c)
 	target_link_libraries(server PRIVATE deucessh_static)
+
 endif()
 
 # --- Test suite ---
@@ -279,4 +381,7 @@ option(DEUCESSH_TEST_SYNCHRONET "Build Synchronet interop tests" OFF)
 if(DEUCESSH_BUILD_TESTS)
 	enable_testing()
 	add_subdirectory(test)
+
+	add_executable(kex_test EXCLUDE_FROM_ALL test/kex_test.c)
+	target_link_libraries(kex_test PRIVATE deucessh_test_lib)
 endif()

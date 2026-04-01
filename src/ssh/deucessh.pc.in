@@ -6,6 +6,6 @@ includedir=${prefix}/@CMAKE_INSTALL_INCLUDEDIR@/deucessh
 Name: deucessh
 Description: SSH protocol library (RFCs 4250-4254)
 Version: @PROJECT_VERSION@
-Requires.private: libcrypto
+Requires.private: @DSSH_PC_REQUIRES_PRIVATE@
 Libs: -L${libdir} -ldeucessh
 Cflags: -I${includedir}

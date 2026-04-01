@@ -209,10 +209,6 @@ int dssh_test_EVP_CIPHER_CTX_set_padding(EVP_CIPHER_CTX *ctx, int pad);
 /* RFC 4251 s6: names must not contain DEL */
 #define DSSH_ASCII_DEL 127
 
-/* mpint encoding: high bit indicates negative, so a leading 0x80 bit
- * in a positive value requires a zero-byte prefix (RFC 4251 s5). */
-#define DSSH_MPINT_SIGN_BIT 0x80
-
 /* Practical buffer sizes for algorithm name-lists and per-channel
  * request data.  See README.md "Limits". */
 #define DSSH_NAMELIST_BUF_SIZE  1024

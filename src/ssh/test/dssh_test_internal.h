@@ -141,26 +141,13 @@ bool is_20(uint8_t *buf, size_t buflen);
 int version_tx(dssh_session sess);
 
 /*
- * DH-GEX helpers from kex/dh-gex-sha256.c.
+ * DH-GEX shared handler from kex/dh-gex-sha256.c.
+ * Bignum helpers are now static in the backend files.
  */
-#include <openssl/bn.h>
-
-int64_t parse_bn_mpint(const uint8_t *buf, size_t bufsz, BIGNUM **bn);
-int serialize_bn_mpint(const BIGNUM *bn, uint8_t *buf, size_t bufsz, size_t *pos);
-bool dh_value_valid(const BIGNUM *val, const BIGNUM *p);
-int compute_exchange_hash(
-    const char *v_c, size_t v_c_len,
-    const char *v_s, size_t v_s_len,
-    const uint8_t *i_c, size_t i_c_len,
-    const uint8_t *i_s, size_t i_s_len,
-    const uint8_t *k_s, size_t k_s_len,
-    uint32_t gex_min, uint32_t gex_n, uint32_t gex_max,
-    const BIGNUM *p, const BIGNUM *g,
-    const BIGNUM *e, const BIGNUM *f, const BIGNUM *k,
-    uint8_t *hash_out);
 
 /*
- * Curve25519 helpers from kex/curve25519-sha256.c.
+ * Curve25519 helpers from kex/curve25519-sha256.c (shared protocol)
+ * and kex/curve25519-sha256-{openssl,botan}.c (backend ops).
  */
 int compute_exchange_hash_c25519(
     const char *v_c, size_t v_c_len,
@@ -172,15 +159,33 @@ int compute_exchange_hash_c25519(
     const uint8_t *q_s, size_t q_s_len,
     const uint8_t *k_mpint, size_t k_mpint_len,
     uint8_t *hash_out);
-int x25519_exchange(const uint8_t *peer_pub, size_t peer_pub_len,
-    uint8_t *our_pub, uint8_t **secret, size_t *secret_len);
 int encode_shared_secret(uint8_t *raw, size_t raw_len,
     uint8_t **ss_out, size_t *ss_len,
     uint8_t **mpint_out, size_t *mpint_len);
+
+#ifdef DSSH_CRYPTO_OPENSSL
+/*
+ * OpenSSL backend: DSSH_TESTABLE functions with original names.
+ */
+int x25519_exchange(const uint8_t *peer_pub, size_t peer_pub_len,
+    uint8_t *our_pub, uint8_t **secret, size_t *secret_len);
 int curve25519_handler(struct dssh_kex_context *kctx);
 int dhgex_handler(struct dssh_kex_context *kctx);
 int sntrup761x25519_handler(struct dssh_kex_context *kctx);
 int mlkem768x25519_handler(struct dssh_kex_context *kctx);
+#elif defined(DSSH_CRYPTO_BOTAN)
+/*
+ * Botan backend: extern "C" wrappers in the .cpp files.
+ */
+int dssh_botan_curve25519_handler(struct dssh_kex_context *kctx);
+int dssh_botan_dhgex_handler(struct dssh_kex_context *kctx);
+int dssh_botan_sntrup761x25519_handler(struct dssh_kex_context *kctx);
+int dssh_botan_mlkem768x25519_handler(struct dssh_kex_context *kctx);
+#define curve25519_handler       dssh_botan_curve25519_handler
+#define dhgex_handler            dssh_botan_dhgex_handler
+#define sntrup761x25519_handler  dssh_botan_sntrup761x25519_handler
+#define mlkem768x25519_handler   dssh_botan_mlkem768x25519_handler
+#endif
 
 /*
  * ssh-auth.c helpers exposed for direct testing.

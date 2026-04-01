@@ -1,10 +1,10 @@
 // RFC 4252: SSH Authentication Protocol
 
-#include <openssl/crypto.h>
 #include <stdlib.h>
 #include <string.h>
 
 #include "deucessh-auth.h"
+#include "deucessh-crypto.h"
 #include "ssh-internal.h"
 
 static const char service_connection[]            = "ssh-connection";
@@ -1309,7 +1309,7 @@ send_password_request(struct dssh_session_s *sess,
 
 	int ret = send_packet(sess, msg, pos, NULL);
 
-	OPENSSL_cleanse(msg, msg_len);
+	dssh_cleanse(msg, msg_len);
 	free(msg);
 	return ret;
 }
@@ -1389,7 +1389,7 @@ auth_password_impl(struct dssh_session_s *sess,
 			        passwd_change_cbdata);
 			if (res < 0) {
 				if (new_password != NULL)
-					OPENSSL_cleanse(new_password, new_password_len);
+					dssh_cleanse(new_password, new_password_len);
 				free(new_password);
 				return res;
 			}
@@ -1397,7 +1397,7 @@ auth_password_impl(struct dssh_session_s *sess,
 			res = send_password_request(sess, username, password,
 			        new_password, new_password_len, true);
 			if (new_password != NULL)
-				OPENSSL_cleanse(new_password, new_password_len);
+				dssh_cleanse(new_password, new_password_len);
 			free(new_password);
 			if (res < 0)
 				return res;
