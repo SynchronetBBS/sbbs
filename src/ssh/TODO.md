@@ -3,52 +3,6 @@
 
 ## Open
 
-### RULES.md audit fixes (items 163-169, see docs/audit-rules.md)
-
-163. **`send_info_request`: missing UINT32\_MAX check on string lengths.**
-     `ssh-auth.c:238,243,254` — `name_len`, `inst_len`, and per-prompt
-     `plen` are `size_t` from `strlen()`, cast to `uint32_t` via
-     `DSSH_PUT_U32` without range check.  Silently truncates on 64-bit
-     if the server app's KBI callback returns a >4 GiB string.  Add
-     `#if SIZE_MAX > UINT32_MAX` guards like `flush_pending_banner`
-     (line 326).  (Rules: Input Validation, Type Safety)
-
-164. **Server KBI: unbounded `calloc` from remote `num_responses`.**
-     `ssh-auth.c:625–638` — `num_responses` read from wire with no cap.
-     `calloc(UINT32_MAX, sizeof(*))` requests ~32 GiB.  Reject when
-     `num_responses > num_prompts` (the server knows how many prompts it
-     sent) or impose a hard cap (e.g., 256).
-     (Rules: Input Validation, Memory Allocation)
-
-165. **Client KBI: unbounded `calloc` from remote `num_prompts`.**
-     `ssh-auth.c:1432–1448` — `num_prompts` from server's INFO\_REQUEST
-     drives five `calloc` calls with no cap.  Impose a hard cap (e.g.,
-     256) and return `DSSH_ERROR_PARSE` if exceeded.
-     (Rules: Input Validation, Memory Allocation)
-
-166. **`event_queue_push`: unchecked capacity overflow.**
-     `ssh-conn.c:219` — `size_t new_cap = q->capacity * 2` can wrap
-     if capacity approaches `SIZE_MAX / 2`.  Add
-     `if (q->capacity > SIZE_MAX / 2) return DSSH_ERROR_ALLOC;`
-     before the multiplication.  (Rule: Arithmetic Safety)
-
-167. **`send_to_slot`: unchecked narrowing to `uint8_t`.**
-     `ssh-trans.c:1029,1054` — `slot->payload_len = (uint8_t)payload_len`
-     narrows `size_t` without range check.  All callers pass ≤ 16 but
-     the function signature accepts any `size_t`.  Add
-     `if (payload_len > UINT8_MAX) return DSSH_ERROR_INVALID;` at top.
-     (Rule: Type Safety)
-
-168. **`stream_zc_cb`: narrowing cast in return statement.**
-     `ssh-conn.c:2160` — `return (uint32_t)written;` should use an
-     initializer: `uint32_t ret = (uint32_t)written; return ret;`
-     Value is bounded by `window_max` (uint32\_t) so it always fits.
-     (Rule: Type Safety)
-
-169. **`handle_channel_extended_data`: inline cast in function argument.**
-     `ssh-conn.c:1182` — `cb(ch, (int)data_type, ...)` has an inline
-     cast.  Hoist to: `int stream = (int)data_type;` then
-     `cb(ch, stream, ...)`.  (Rule: Type Safety)
 
 ### Post-commit review (items 141-162)
 
@@ -88,6 +42,13 @@
 
 Items are listed newest-first.  Detailed write-ups are in git history.
 
+- 163: `send_info_request` UINT32_MAX checks on `name_len`, `inst_len`, `plen` — `#if SIZE_MAX > UINT32_MAX` guards added (follows `flush_pending_banner` pattern)
+- 164: Server KBI unbounded `calloc` from `num_responses` — rejected when `num_responses > last_nprompts`; new test `kbi_excess_responses`
+- 165: Client KBI unbounded `calloc` from `num_prompts` — hard cap of 256 with `DSSH_ERROR_PARSE`; new test `kbi_too_many_prompts`
+- 166: `event_queue_push` capacity overflow — `SIZE_MAX / 2` guard before `capacity * 2`
+- 167: `send_to_slot` unchecked narrowing — `UINT8_MAX` range check on `payload_len` at function entry
+- 168: `stream_zc_cb` inline cast → initializer (`uint32_t ret = (uint32_t)written; return ret;`)
+- 169: `handle_channel_extended_data` inline cast → initializer (`int stream = (int)data_type;`)
 - 160: Split `dhgex_handler_impl()` and `hybrid_pq_handler_impl()` into separate client/server static helpers with single `goto cleanup` labels — eliminates ~40 repetitive free-block error sites
 - 161: `mlkem768.c` byte-swap `#undef htole64`/`le64toh`/`le32toh` replaced with libcrux-local `lcx_htole64`/`lcx_le64toh`/`lcx_le32toh` — no longer overrides system macros
 - 159: `derive_key` `tmp` buffer changed from `uint8_t tmp[64]` stack array to `malloc(md_len)` — forward-compatible with any hash digest size, no hardcoded limit

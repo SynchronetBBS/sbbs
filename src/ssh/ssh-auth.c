@@ -213,12 +213,23 @@ send_info_request(struct dssh_session_s *sess, const char *name, const char *ins
 	size_t name_len = name != NULL ? strlen(name) : 0;
 	size_t inst_len = instruction != NULL ? strlen(instruction) : 0;
 
+#if SIZE_MAX > UINT32_MAX
+	if (name_len > UINT32_MAX)
+		return DSSH_ERROR_TOOLONG;
+	if (inst_len > UINT32_MAX)
+		return DSSH_ERROR_TOOLONG;
+#endif
+
 	/* Calculate total size */
 	size_t msg_len = 1 + 4 + name_len + 4 + inst_len + 4 + 4;
 
 	for (uint32_t i = 0; i < num_prompts; i++) {
 		size_t plen = prompts[i] != NULL ? strlen(prompts[i]) : 0;
 
+#if SIZE_MAX > UINT32_MAX
+		if (plen > UINT32_MAX)
+			return DSSH_ERROR_TOOLONG;
+#endif
 		if (msg_len > SIZE_MAX - 5 - plen)
 			return DSSH_ERROR_INVALID;
 		msg_len += 4 + plen + 1;
@@ -538,7 +549,8 @@ handle_auth_kbi(struct dssh_session_s *sess, const struct dssh_auth_server_cbs *
 	rpos += skip_len; /* submethods */
 
 			  /* KBI prompt/response loop */
-	uint32_t        num_responses = 0;
+	uint32_t        num_responses  = 0;
+	uint32_t        last_nprompts  = 0;
 	const uint8_t **responses     = NULL;
 	size_t         *response_lens = NULL;
 
@@ -586,6 +598,7 @@ handle_auth_kbi(struct dssh_session_s *sess, const struct dssh_auth_server_cbs *
 
 		/* Send INFO_REQUEST */
 		res = send_info_request(sess, kbi_name, kbi_inst, kbi_nprompts, kbi_prompts, kbi_echo);
+		last_nprompts = kbi_nprompts;
 		free_kbi_prompts(kbi_name, kbi_inst, kbi_nprompts, kbi_prompts, kbi_echo);
 		if (res < 0)
 			return res;
@@ -624,6 +637,9 @@ handle_auth_kbi(struct dssh_session_s *sess, const struct dssh_auth_server_cbs *
 			return DSSH_ERROR_PARSE;
 		num_responses = DSSH_GET_U32(&resp_payload[rp]);
 		rp += 4;
+
+		if (num_responses > last_nprompts)
+			return DSSH_ERROR_PARSE;
 
 		if (num_responses > 0) {
 			responses     = calloc(num_responses, sizeof(*responses));
@@ -1432,6 +1448,9 @@ auth_kbi_impl(struct dssh_session_s *sess, const char *username, dssh_auth_kbi_p
 			uint32_t num_prompts = DSSH_GET_U32(&payload[rpos]);
 
 			rpos += 4;
+
+			if (num_prompts > 256)
+				return DSSH_ERROR_PARSE;
 
 			/* Parse each prompt + echo flag */
 			const uint8_t **prompts       = NULL;

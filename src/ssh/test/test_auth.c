@@ -11974,6 +11974,137 @@ test_kbi_server_trunc_resp_body(void)
 }
 
 /* ================================================================
+ * Coverage: KBI server -- num_responses exceeds num_prompts
+ *
+ * Client sends INFO_RESPONSE with num_responses=100 when only 1
+ * prompt was sent.  Server should reject with DSSH_ERROR_PARSE.
+ * ================================================================ */
+static int
+kbi_excess_responses_thread(void *arg)
+{
+	struct handshake_ctx *ctx = arg;
+	dssh_session client = ctx->client;
+
+	int res = dssh_auth_get_methods(client, "testuser", NULL, 0);
+	if (res < 0)
+		return 0;
+
+	/* Send KBI USERAUTH_REQUEST */
+	static const char svc[] = "ssh-connection";
+	static const char method[] = "keyboard-interactive";
+	uint8_t msg[128];
+	size_t pos = 0;
+	msg[pos++] = SSH_MSG_USERAUTH_REQUEST;
+	dssh_serialize_uint32(8, msg, sizeof(msg), &pos);
+	memcpy(&msg[pos], "testuser", 8);
+	pos += 8;
+	dssh_serialize_uint32(sizeof(svc) - 1, msg, sizeof(msg), &pos);
+	memcpy(&msg[pos], svc, sizeof(svc) - 1);
+	pos += sizeof(svc) - 1;
+	dssh_serialize_uint32(sizeof(method) - 1, msg, sizeof(msg), &pos);
+	memcpy(&msg[pos], method, sizeof(method) - 1);
+	pos += sizeof(method) - 1;
+	dssh_serialize_uint32(0, msg, sizeof(msg), &pos);
+	dssh_serialize_uint32(0, msg, sizeof(msg), &pos);
+	if (send_packet(client, msg, pos, NULL) < 0)
+		return 0;
+
+	/* Receive INFO_REQUEST (server sends 1 prompt) */
+	uint8_t msg_type;
+	uint8_t *payload;
+	size_t payload_len;
+	if (recv_packet(client, &msg_type, &payload, &payload_len) < 0)
+		return 0;
+
+	/* Send INFO_RESPONSE with num_responses=100 (exceeds 1 prompt) */
+	uint8_t resp[8];
+	size_t rp = 0;
+	resp[rp++] = 61; /* SSH_MSG_USERAUTH_INFO_RESPONSE */
+	dssh_serialize_uint32(100, resp, sizeof(resp), &rp);
+	send_packet(client, resp, rp, NULL);
+
+	return 0;
+}
+
+static int
+test_kbi_server_responses_exceed_prompts(void)
+{
+	struct handshake_ctx ctx;
+	if (handshake_setup(&ctx) < 0) {
+		handshake_cleanup(&ctx);
+		return TEST_FAIL;
+	}
+
+	struct test_server_kbi_data kbi_sdata = {
+		.expect_response = "x",
+		.prompt_text = "Code: ",
+	};
+
+	struct auth_server_arg sa = {0};
+	sa.ctx = &ctx;
+	sa.cbs.methods_str = "keyboard-interactive";
+	sa.cbs.keyboard_interactive_cb = test_server_kbi_cb;
+	sa.cbs.cbdata = &kbi_sdata;
+
+	thrd_t ct, st;
+	ASSERT_TRUE(thrd_create(&st, auth_server_thread, &sa) == thrd_success);
+	ASSERT_TRUE(thrd_create(&ct, kbi_excess_responses_thread, &ctx) == thrd_success);
+
+	thrd_join(ct, NULL);
+	mock_io_close_c2s_write(&ctx.io);
+	mock_io_close_s2c(&ctx.io);
+	thrd_join(st, NULL);
+
+	ASSERT_TRUE(sa.result < 0);
+
+	handshake_cleanup(&ctx);
+	return TEST_PASS;
+}
+
+/* ================================================================
+ * Coverage: KBI client -- num_prompts exceeds cap (256)
+ *
+ * Server sends INFO_REQUEST with num_prompts=1000.  Client should
+ * reject with DSSH_ERROR_PARSE.
+ * ================================================================ */
+static int
+test_kbi_client_too_many_prompts(void)
+{
+	struct handshake_ctx ctx;
+	if (handshake_setup(&ctx) < 0) {
+		handshake_cleanup(&ctx);
+		return TEST_FAIL;
+	}
+
+	/* Build INFO_REQUEST with num_prompts=1000 */
+	uint8_t info_payload[64];
+	size_t pos = 0;
+	info_payload[pos++] = SSH_MSG_USERAUTH_INFO_REQUEST;
+	dssh_serialize_uint32(0, info_payload, sizeof(info_payload), &pos); /* name */
+	dssh_serialize_uint32(0, info_payload, sizeof(info_payload), &pos); /* instruction */
+	dssh_serialize_uint32(0, info_payload, sizeof(info_payload), &pos); /* language */
+	dssh_serialize_uint32(1000, info_payload, sizeof(info_payload), &pos); /* num_prompts */
+
+	struct dclient_server_arg sa = { &ctx, info_payload, pos, 0 };
+	thrd_t st;
+	ASSERT_TRUE(thrd_create(&st, dclient_server_thread, &sa) == thrd_success);
+
+	struct test_kbi_cbdata kbi_data = {0};
+	kbi_data.response = "anything";
+
+	int res = auth_kbi_impl(ctx.client, "testuser", test_kbi_prompt_cb, &kbi_data);
+
+	mock_io_close_c2s(&ctx.io);
+	mock_io_close_s2c(&ctx.io);
+	thrd_join(st, NULL);
+
+	ASSERT_EQ(res, DSSH_ERROR_PARSE);
+
+	handshake_cleanup(&ctx);
+	return TEST_PASS;
+}
+
+/* ================================================================
  * Test table and main
  * ================================================================ */
 
@@ -12214,6 +12345,8 @@ static struct dssh_test_entry tests[] = {
 	{ "auth/server/kbi_trunc_submethods",    test_kbi_server_trunc_submethods },
 	{ "auth/server/kbi_resp_alloc",          test_kbi_server_resp_alloc_fail },
 	{ "auth/server/kbi_trunc_resp_body",     test_kbi_server_trunc_resp_body },
+	{ "auth/server/kbi_excess_responses",    test_kbi_server_responses_exceed_prompts },
+	{ "auth/client/kbi_too_many_prompts",    test_kbi_client_too_many_prompts },
 
 	/* Additional coverage */
 	{ "direct/bad_prefix_in_loop",           test_direct_bad_prefix_in_loop },

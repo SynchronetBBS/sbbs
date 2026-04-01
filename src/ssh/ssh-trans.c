@@ -1001,6 +1001,9 @@ tx_gather_with_packet(struct dssh_session_s *sess, uint8_t *buf, size_t payload_
 DSSH_PRIVATE int
 send_to_slot(struct dssh_session_s *sess, struct dssh_tx_slot *slot, const uint8_t *payload, size_t payload_len)
 {
+	if (payload_len > UINT8_MAX)
+		return DSSH_ERROR_INVALID;
+
 	if (sess->terminate)
 		return DSSH_ERROR_TERMINATED;
 

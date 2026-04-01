@@ -437,6 +437,7 @@ set(AUTH_TESTS
 	direct/kbi_trunc_submethods direct/kbi_trunc_submethods_data
 	auth/server/kbi_trunc_lang_hdr auth/server/kbi_trunc_submethods
 	auth/server/kbi_resp_alloc auth/server/kbi_trunc_resp_body
+	auth/server/kbi_excess_responses auth/client/kbi_too_many_prompts
 )
 dssh_add_individual_tests(dssh_test_auth dssh_auth AUTH_TESTS)
 

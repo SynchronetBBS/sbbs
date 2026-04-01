@@ -216,6 +216,8 @@ event_queue_push(struct dssh_event_queue *q, const struct dssh_event_entry *e)
 	if (q->max_events != 0 && q->count >= q->max_events)
 		return DSSH_ERROR_TOOMANY;
 	if (q->count >= q->capacity) {
+		if (q->capacity > SIZE_MAX / 2)
+			return DSSH_ERROR_ALLOC;
 		size_t                   new_cap = q->capacity * 2;
 		struct dssh_event_entry *newbuf  = calloc(new_cap, sizeof(struct dssh_event_entry));
 
@@ -1179,7 +1181,8 @@ handle_channel_extended_data(struct dssh_session_s *sess, struct dssh_channel_s 
 
 	dssh_thrd_check(sess, mtx_unlock(&ch->buf_mtx));
 	in_zc_rx          = true;
-	uint32_t consumed = cb(ch, (int)data_type, data, dlen, cbd);
+	int      stream   = (int)data_type;
+	uint32_t consumed = cb(ch, stream, data, dlen, cbd);
 	in_zc_rx          = false;
 	dssh_thrd_check(sess, mtx_lock(&ch->buf_mtx));
 	if (atomic_load(&ch->closing)) {
@@ -2157,7 +2160,9 @@ stream_zc_cb(dssh_channel ch, int stream, const uint8_t *data, size_t len, void 
 	dssh_thrd_check(sess, cnd_broadcast(&ch->poll_cnd));
 	dssh_thrd_check(sess, mtx_unlock(&ch->buf_mtx));
 
-	return (uint32_t)written;
+	uint32_t ret = (uint32_t)written;
+
+	return ret;
 }
 
 static int
