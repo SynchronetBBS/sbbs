@@ -7,6 +7,7 @@
  * rekeying.
  */
 
+#include <stdatomic.h>
 #include <stddef.h>
 #include <string.h>
 #include <time.h>
@@ -6722,6 +6723,324 @@ test_debug_short_payload(void)
 }
 
 /* ================================================================
+ * kex_set_ctx / tx_gather coverage
+ * ================================================================ */
+
+/*
+ * Helper: return the KEX algorithm name for the current test variant.
+ */
+static const char *
+current_kex_name(void)
+{
+	if (test_using_dhgex())
+		return "diffie-hellman-group-exchange-sha256";
+	if (test_using_sntrup())
+		return "sntrup761x25519-sha512";
+	if (test_using_mlkem())
+		return "mlkem768x25519-sha256";
+	return "curve25519-sha256";
+}
+
+static int
+test_kex_set_ctx(void)
+{
+	dssh_test_reset_global_config();
+
+	if (register_all_algorithms() < 0)
+		return TEST_SKIP;
+
+	/* Should succeed before any session is created */
+	int dummy_ctx = 42;
+	ASSERT_OK(dssh_kex_set_ctx(current_kex_name(), &dummy_ctx));
+
+	/* NULL name is rejected */
+	ASSERT_ERR(dssh_kex_set_ctx(NULL, &dummy_ctx),
+	    DSSH_ERROR_INVALID);
+
+	/* Unregistered name is rejected */
+	ASSERT_ERR(dssh_kex_set_ctx("no-such-kex@example.com", &dummy_ctx),
+	    DSSH_ERROR_INIT);
+
+	/* Reset ctx back to NULL so it doesn't affect other tests */
+	ASSERT_OK(dssh_kex_set_ctx(current_kex_name(), NULL));
+
+	dssh_test_reset_global_config();
+	return TEST_PASS;
+}
+
+static int
+test_kex_set_ctx_toolate(void)
+{
+	dssh_test_reset_global_config();
+
+	if (register_all_algorithms() < 0)
+		return TEST_SKIP;
+	if (test_generate_host_key() < 0)
+		return TEST_SKIP;
+
+	dssh_transport_set_callbacks(mock_tx_dispatch, mock_rx_dispatch,
+	    mock_rxline_dispatch, mock_extra_line_cb);
+
+	/* Before session init -- should succeed */
+	ASSERT_OK(dssh_kex_set_ctx(current_kex_name(), NULL));
+
+	dssh_session sess = dssh_session_init(true, 0);
+	ASSERT_NOT_NULL(sess);
+
+	/* After session init -- should be refused */
+	ASSERT_ERR(dssh_kex_set_ctx(current_kex_name(), NULL),
+	    DSSH_ERROR_TOOLATE);
+
+	dssh_session_cleanup(sess);
+	dssh_test_reset_global_config();
+	return TEST_PASS;
+}
+
+static _Atomic int gather_invoked;
+
+static int
+test_gather_cb(const struct dssh_tx_iov *iov, size_t iovcnt,
+    dssh_session sess, void *cbdata)
+{
+	struct mock_io_state *io = cbdata;
+
+	atomic_store(&gather_invoked, 1);
+
+	/* Send each iov entry through the per-packet TX path */
+	for (size_t i = 0; i < iovcnt; i++) {
+		if (sess->trans.client) {
+			if (mock_tx_client((uint8_t *)(uintptr_t)iov[i].base,
+			    iov[i].len, sess, io) != 0)
+				return -1;
+		}
+		else {
+			if (mock_tx_server((uint8_t *)(uintptr_t)iov[i].base,
+			    iov[i].len, sess, io) != 0)
+				return -1;
+		}
+	}
+	return 0;
+}
+
+static int
+test_tx_gather_set(void)
+{
+	dssh_test_reset_global_config();
+
+	/* Set to NULL (disable) should work */
+	ASSERT_OK(dssh_transport_set_tx_gather(NULL));
+
+	/* Set to non-NULL should work */
+	ASSERT_OK(dssh_transport_set_tx_gather(test_gather_cb));
+
+	/* Set back to NULL */
+	ASSERT_OK(dssh_transport_set_tx_gather(NULL));
+
+	dssh_test_reset_global_config();
+	return TEST_PASS;
+}
+
+static int
+test_tx_gather_toolate(void)
+{
+	dssh_test_reset_global_config();
+
+	if (register_all_algorithms() < 0)
+		return TEST_SKIP;
+	if (test_generate_host_key() < 0)
+		return TEST_SKIP;
+
+	dssh_transport_set_callbacks(mock_tx_dispatch, mock_rx_dispatch,
+	    mock_rxline_dispatch, mock_extra_line_cb);
+
+	/* Before session init -- should succeed */
+	ASSERT_OK(dssh_transport_set_tx_gather(NULL));
+
+	dssh_session sess = dssh_session_init(true, 0);
+	ASSERT_NOT_NULL(sess);
+
+	/* After session init -- should be refused */
+	ASSERT_ERR(dssh_transport_set_tx_gather(NULL),
+	    DSSH_ERROR_TOOLATE);
+
+	dssh_session_cleanup(sess);
+	dssh_test_reset_global_config();
+	return TEST_PASS;
+}
+
+static int
+test_tx_gather_roundtrip(void)
+{
+	dssh_test_reset_global_config();
+
+	/* Set gather callback BEFORE registering algorithms or creating sessions */
+	ASSERT_OK(dssh_transport_set_tx_gather(test_gather_cb));
+
+	if (register_all_algorithms() < 0) {
+		dssh_test_reset_global_config();
+		return TEST_SKIP;
+	}
+	if (test_generate_host_key() < 0) {
+		dssh_test_reset_global_config();
+		return TEST_SKIP;
+	}
+
+	struct mock_io_state io;
+	if (mock_io_init(&io, 0) < 0) {
+		dssh_test_reset_global_config();
+		return TEST_SKIP;
+	}
+
+	dssh_transport_set_callbacks(mock_tx_dispatch, mock_rx_dispatch,
+	    mock_rxline_dispatch, mock_extra_line_cb);
+
+	atomic_store(&gather_invoked, 0);
+
+	dssh_session client = dssh_session_init(true, 0);
+	if (client == NULL) {
+		mock_io_free(&io);
+		dssh_test_reset_global_config();
+		return TEST_SKIP;
+	}
+	dssh_session_set_cbdata(client, &io, &io, &io, &io);
+
+	dssh_session server = init_server_session();
+	if (server == NULL) {
+		dssh_session_cleanup(client);
+		mock_io_free(&io);
+		dssh_test_reset_global_config();
+		return TEST_SKIP;
+	}
+	dssh_session_set_cbdata(server, &io, &io, &io, &io);
+
+	/* Run handshake in threads */
+	struct handshake_ctx hctx;
+	hctx.io = io;
+	hctx.client = client;
+	hctx.server = server;
+	hctx.client_result = -1;
+	hctx.server_result = -1;
+
+	thrd_t ct, st;
+	if (thrd_create(&ct, handshake_client_thread, &hctx) != thrd_success) {
+		dssh_session_cleanup(server);
+		dssh_session_cleanup(client);
+		mock_io_free(&io);
+		dssh_test_reset_global_config();
+		return TEST_SKIP;
+	}
+	if (thrd_create(&st, handshake_server_thread, &hctx) != thrd_success) {
+		dssh_session_terminate(client);
+		mock_io_close_c2s(&hctx.io);
+		mock_io_close_s2c(&hctx.io);
+		thrd_join(ct, NULL);
+		dssh_session_cleanup(server);
+		dssh_session_cleanup(client);
+		mock_io_free(&io);
+		dssh_test_reset_global_config();
+		return TEST_SKIP;
+	}
+
+	thrd_join(ct, NULL);
+	thrd_join(st, NULL);
+
+	/* Handshake must succeed */
+	ASSERT_OK(hctx.client_result);
+	ASSERT_OK(hctx.server_result);
+
+	/* Gather callback must have been invoked at least once */
+	ASSERT_TRUE(atomic_load(&gather_invoked));
+
+	dssh_session_cleanup(server);
+	dssh_session_cleanup(client);
+	mock_io_free(&hctx.io);
+	dssh_test_reset_global_config();
+	return TEST_PASS;
+}
+
+/* ================================================================
+ * rxline_from_rx fallback: handshake with rx_line = NULL
+ * ================================================================ */
+
+static int
+test_rxline_from_rx_handshake(void)
+{
+	dssh_test_reset_global_config();
+
+	if (register_all_algorithms() < 0)
+		return TEST_SKIP;
+	if (test_generate_host_key() < 0)
+		return TEST_SKIP;
+
+	struct mock_io_state io;
+	if (mock_io_init(&io, 0) < 0) {
+		dssh_test_reset_global_config();
+		return TEST_SKIP;
+	}
+
+	/* Pass NULL for rx_line -- forces rxline_from_rx fallback */
+	dssh_transport_set_callbacks(mock_tx_dispatch, mock_rx_dispatch,
+	    NULL, mock_extra_line_cb);
+
+	dssh_session client = dssh_session_init(true, 0);
+	if (client == NULL) {
+		mock_io_free(&io);
+		dssh_test_reset_global_config();
+		return TEST_SKIP;
+	}
+	dssh_session_set_cbdata(client, &io, &io, &io, &io);
+
+	dssh_session server = init_server_session();
+	if (server == NULL) {
+		dssh_session_cleanup(client);
+		mock_io_free(&io);
+		dssh_test_reset_global_config();
+		return TEST_SKIP;
+	}
+	dssh_session_set_cbdata(server, &io, &io, &io, &io);
+
+	/* Run handshake in threads — version exchange uses rxline_from_rx */
+	struct handshake_ctx hctx;
+	hctx.io = io;
+	hctx.client = client;
+	hctx.server = server;
+	hctx.client_result = -1;
+	hctx.server_result = -1;
+
+	thrd_t ct, st;
+	if (thrd_create(&ct, handshake_client_thread, &hctx) != thrd_success) {
+		dssh_session_cleanup(server);
+		dssh_session_cleanup(client);
+		mock_io_free(&io);
+		dssh_test_reset_global_config();
+		return TEST_SKIP;
+	}
+	if (thrd_create(&st, handshake_server_thread, &hctx) != thrd_success) {
+		dssh_session_terminate(client);
+		mock_io_close_c2s(&hctx.io);
+		mock_io_close_s2c(&hctx.io);
+		thrd_join(ct, NULL);
+		dssh_session_cleanup(server);
+		dssh_session_cleanup(client);
+		mock_io_free(&io);
+		dssh_test_reset_global_config();
+		return TEST_SKIP;
+	}
+
+	thrd_join(ct, NULL);
+	thrd_join(st, NULL);
+
+	ASSERT_OK(hctx.client_result);
+	ASSERT_OK(hctx.server_result);
+
+	dssh_session_cleanup(server);
+	dssh_session_cleanup(client);
+	mock_io_free(&hctx.io);
+	dssh_test_reset_global_config();
+	return TEST_PASS;
+}
+
+/* ================================================================
  * Test table
  * ================================================================ */
 
@@ -7036,6 +7355,16 @@ static struct dssh_test_entry tests[] = {
 	{ "c25519/x25519_exchange_alloc",    test_c25519_x25519_exchange_alloc_fail },
 #endif
 	{ "c25519/encode_ss_alloc_fail",     test_c25519_encode_shared_secret_alloc_fail },
+
+	/* kex_set_ctx and tx_gather coverage */
+	{ "kex/set_ctx",                     test_kex_set_ctx },
+	{ "kex/set_ctx_toolate",             test_kex_set_ctx_toolate },
+	{ "gather/set",                      test_tx_gather_set },
+	{ "gather/toolate",                  test_tx_gather_toolate },
+	{ "gather/roundtrip",                test_tx_gather_roundtrip },
+
+	/* rxline_from_rx fallback */
+	{ "rxline/from_rx_handshake",        test_rxline_from_rx_handshake },
 };
 
 DSSH_TEST_NO_CLEANUP

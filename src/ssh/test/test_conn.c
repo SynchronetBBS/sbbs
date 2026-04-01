@@ -5141,6 +5141,728 @@ test_chan_send_window_change_null(void)
 }
 
 /* ================================================================
+ * conn_setup_no_start: handshake + auth but no session_start.
+ * Allows setting session-level callbacks before demux thread runs.
+ * ================================================================ */
+
+static int
+conn_setup_no_start(struct conn_ctx *ctx)
+{
+	memset(ctx, 0, sizeof(*ctx));
+	reset_callbacks();
+
+	dssh_test_reset_global_config();
+
+	if (register_all_algorithms() < 0)
+		return -1;
+	if (test_generate_host_key() < 0)
+		return -1;
+
+	if (mock_io_init(&ctx->io, 0) < 0)
+		return -1;
+
+	dssh_transport_set_callbacks(mock_tx_dispatch, mock_rx_dispatch,
+	    mock_rxline_dispatch, mock_extra_line_cb);
+
+	ctx->client = dssh_session_init(true, 0);
+	if (ctx->client == NULL) {
+		mock_io_free(&ctx->io);
+		return -1;
+	}
+	dssh_session_set_cbdata(ctx->client, &ctx->io, &ctx->io,
+	    &ctx->io, &ctx->io);
+
+	ctx->server = init_server_session();
+	if (ctx->server == NULL) {
+		dssh_session_cleanup(ctx->client);
+		mock_io_free(&ctx->io);
+		return -1;
+	}
+	dssh_session_set_cbdata(ctx->server, &ctx->io, &ctx->io,
+	    &ctx->io, &ctx->io);
+
+	struct handshake_auth_ctx client_ha = {
+		.io = &ctx->io,
+		.sess = ctx->client,
+		.result = -1,
+	};
+	struct handshake_auth_ctx server_ha = {
+		.io = &ctx->io,
+		.sess = ctx->server,
+		.result = -1,
+	};
+
+	thrd_t ct, st;
+	if (thrd_create(&ct, client_handshake_auth_thread, &client_ha) != thrd_success) {
+		dssh_session_cleanup(ctx->server);
+		dssh_session_cleanup(ctx->client);
+		mock_io_free(&ctx->io);
+		return -1;
+	}
+	if (thrd_create(&st, server_handshake_auth_thread, &server_ha) != thrd_success) {
+		dssh_session_terminate(ctx->client);
+		mock_io_close_c2s(&ctx->io);
+		mock_io_close_s2c(&ctx->io);
+		thrd_join(ct, NULL);
+		dssh_session_cleanup(ctx->server);
+		dssh_session_cleanup(ctx->client);
+		mock_io_free(&ctx->io);
+		return -1;
+	}
+
+	thrd_join(ct, NULL);
+	thrd_join(st, NULL);
+
+	if (client_ha.result != 0 || server_ha.result != 0) {
+		dssh_session_cleanup(ctx->server);
+		dssh_session_cleanup(ctx->client);
+		mock_io_free(&ctx->io);
+		return -1;
+	}
+
+	return 0;
+}
+
+static void
+conn_cleanup_no_start(struct conn_ctx *ctx)
+{
+	dssh_session_cleanup(ctx->server);
+	dssh_session_cleanup(ctx->client);
+	mock_io_free(&ctx->io);
+}
+
+/* ================================================================
+ * Zero-copy client-side open (dssh_chan_zc_open)
+ * ================================================================ */
+
+/* ZC RX state for client-side receive */
+struct client_zc_rx_state {
+	mtx_t    mtx;
+	cnd_t    cnd;
+	uint8_t  buf[4096];
+	size_t   len;
+	bool     done;
+};
+
+static uint32_t
+client_zc_data_cb(dssh_channel ch, int stream,
+    const uint8_t *data, size_t len, void *cbdata)
+{
+	(void)ch;
+	(void)stream;
+	struct client_zc_rx_state *st = cbdata;
+	mtx_lock(&st->mtx);
+	size_t avail = sizeof(st->buf) - st->len;
+	size_t n = len < avail ? len : avail;
+	memcpy(&st->buf[st->len], data, n);
+	st->len += n;
+	st->done = true;
+	cnd_signal(&st->cnd);
+	mtx_unlock(&st->mtx);
+	uint32_t n_u32 = (uint32_t)n;
+	return n_u32;
+}
+
+struct client_zc_open_ctx {
+	dssh_session client;
+	dssh_channel client_ch;
+	dssh_chan_zc_cb zc_cb;
+	void *zc_cbdata;
+};
+
+static int
+client_zc_open_thread(void *arg)
+{
+	struct client_zc_open_ctx *ctx = arg;
+	struct dssh_chan_params p;
+	dssh_chan_params_init(&p, DSSH_CHAN_SUBSYSTEM);
+	dssh_chan_params_set_subsystem(&p, "test-zc-client");
+	dssh_chan_params_set_pty(&p, false);
+	ctx->client_ch = dssh_chan_zc_open(ctx->client, &p,
+	    ctx->zc_cb, ctx->zc_cbdata);
+	dssh_chan_params_free(&p);
+	return 0;
+}
+
+static int
+test_zc_open_client(void)
+{
+	struct conn_ctx ctx;
+	if (conn_setup(&ctx) < 0)
+		return TEST_SKIP;
+
+	/* Set up ZC receive state for the client */
+	struct client_zc_rx_state zc_st;
+	memset(&zc_st, 0, sizeof(zc_st));
+	if (mtx_init(&zc_st.mtx, mtx_plain) != thrd_success) {
+		conn_cleanup(&ctx);
+		return TEST_SKIP;
+	}
+	if (cnd_init(&zc_st.cnd) != thrd_success) {
+		mtx_destroy(&zc_st.mtx);
+		conn_cleanup(&ctx);
+		return TEST_SKIP;
+	}
+
+	/* Client opens ZC channel */
+	struct client_zc_open_ctx oc = {
+		.client = ctx.client,
+		.client_ch = NULL,
+		.zc_cb = client_zc_data_cb,
+		.zc_cbdata = &zc_st,
+	};
+
+	/* Server accepts with stream mode */
+	struct open_subsys_ctx sc = {
+		.client = ctx.client,
+		.server = ctx.server,
+		.subsystem = "test-zc-client",
+	};
+
+	thrd_t ct, st;
+	ASSERT_THRD_CREATE(&ct, client_zc_open_thread, &oc);
+	ASSERT_THRD_CREATE(&st, server_accept_subsys_thread, &sc);
+	thrd_join(ct, NULL);
+	thrd_join(st, NULL);
+
+	if (oc.client_ch == NULL || sc.server_ch == NULL) {
+		if (oc.client_ch != NULL)
+			dssh_chan_close(oc.client_ch, -1);
+		if (sc.server_ch != NULL)
+			dssh_chan_close(sc.server_ch, -1);
+		cnd_destroy(&zc_st.cnd);
+		mtx_destroy(&zc_st.mtx);
+		conn_cleanup(&ctx);
+		return TEST_SKIP;
+	}
+
+	/* Verify client channel is ZC mode */
+	ASSERT_EQ(oc.client_ch->io_model, DSSH_IO_ZC);
+
+	/* Server sends data (stream mode) -- should trigger client ZC callback */
+	static const uint8_t msg1[] = "hello to zc client";
+	int64_t w = dssh_chan_write(sc.server_ch, 0, msg1, sizeof(msg1));
+	ASSERT_TRUE(w > 0);
+
+	/* Wait for ZC callback to fire on client */
+	mtx_lock(&zc_st.mtx);
+	struct timespec deadline;
+	timespec_get(&deadline, TIME_UTC);
+	deadline.tv_sec += 5;
+	while (!zc_st.done) {
+		if (cnd_timedwait(&zc_st.cnd, &zc_st.mtx, &deadline)
+		    == thrd_timedout)
+			break;
+	}
+	ASSERT_TRUE(zc_st.done);
+	ASSERT_TRUE(zc_st.len >= sizeof(msg1));
+	ASSERT_TRUE(memcmp(zc_st.buf, msg1, sizeof(msg1)) == 0);
+	mtx_unlock(&zc_st.mtx);
+
+	/* Client sends data via ZC getbuf/send */
+	static const uint8_t msg2[] = "zc reply from client";
+	uint8_t *txbuf;
+	size_t max_len;
+	int res = dssh_chan_zc_getbuf(oc.client_ch, 0, &txbuf, &max_len);
+	ASSERT_OK(res);
+	ASSERT_TRUE(max_len >= sizeof(msg2));
+	memcpy(txbuf, msg2, sizeof(msg2));
+	res = dssh_chan_zc_send(oc.client_ch, sizeof(msg2));
+	ASSERT_OK(res);
+
+	/* Server reads reply (stream mode) */
+	int ev = dssh_chan_poll(sc.server_ch, DSSH_POLL_READ, 5000);
+	ASSERT_TRUE(ev & DSSH_POLL_READ);
+
+	uint8_t rbuf[256];
+	size_t got = 0;
+	while (got < sizeof(msg2)) {
+		int64_t r = dssh_chan_read(sc.server_ch, 0,
+		    &rbuf[got], sizeof(rbuf) - got);
+		if (r <= 0)
+			break;
+		got += (size_t)r;
+	}
+	ASSERT_EQ_U(got, sizeof(msg2));
+	ASSERT_TRUE(memcmp(rbuf, msg2, sizeof(msg2)) == 0);
+
+	/* Clean close */
+	dssh_chan_close(oc.client_ch, -1);
+	dssh_chan_close(sc.server_ch, -1);
+	cnd_destroy(&zc_st.cnd);
+	mtx_destroy(&zc_st.mtx);
+	conn_cleanup(&ctx);
+	return TEST_PASS;
+}
+
+/* ================================================================
+ * ZC cancel
+ * ================================================================ */
+
+static int
+test_zc_cancel(void)
+{
+	struct conn_ctx ctx;
+	if (conn_setup(&ctx) < 0)
+		return TEST_SKIP;
+
+	struct client_zc_rx_state zc_st;
+	memset(&zc_st, 0, sizeof(zc_st));
+	if (mtx_init(&zc_st.mtx, mtx_plain) != thrd_success) {
+		conn_cleanup(&ctx);
+		return TEST_SKIP;
+	}
+	if (cnd_init(&zc_st.cnd) != thrd_success) {
+		mtx_destroy(&zc_st.mtx);
+		conn_cleanup(&ctx);
+		return TEST_SKIP;
+	}
+
+	struct client_zc_open_ctx oc = {
+		.client = ctx.client,
+		.client_ch = NULL,
+		.zc_cb = client_zc_data_cb,
+		.zc_cbdata = &zc_st,
+	};
+
+	struct open_subsys_ctx sc = {
+		.client = ctx.client,
+		.server = ctx.server,
+		.subsystem = "test-zc-cancel",
+	};
+
+	thrd_t ct, st;
+	ASSERT_THRD_CREATE(&ct, client_zc_open_thread, &oc);
+	ASSERT_THRD_CREATE(&st, server_accept_subsys_thread, &sc);
+	thrd_join(ct, NULL);
+	thrd_join(st, NULL);
+
+	if (oc.client_ch == NULL || sc.server_ch == NULL) {
+		if (oc.client_ch != NULL)
+			dssh_chan_close(oc.client_ch, -1);
+		if (sc.server_ch != NULL)
+			dssh_chan_close(sc.server_ch, -1);
+		cnd_destroy(&zc_st.cnd);
+		mtx_destroy(&zc_st.mtx);
+		conn_cleanup(&ctx);
+		return TEST_SKIP;
+	}
+
+	/* Get a TX buffer, then cancel without sending */
+	uint8_t *txbuf;
+	size_t max_len;
+	int res = dssh_chan_zc_getbuf(oc.client_ch, 0, &txbuf, &max_len);
+	ASSERT_OK(res);
+	ASSERT_NOT_NULL(txbuf);
+	ASSERT_TRUE(max_len > 0);
+
+	/* Cancel -- should release tx_mtx without sending */
+	res = dssh_chan_zc_cancel(oc.client_ch);
+	ASSERT_OK(res);
+
+	/* Verify channel is still usable: getbuf/send should work */
+	static const uint8_t msg[] = "after cancel";
+	res = dssh_chan_zc_getbuf(oc.client_ch, 0, &txbuf, &max_len);
+	ASSERT_OK(res);
+	ASSERT_TRUE(max_len >= sizeof(msg));
+	memcpy(txbuf, msg, sizeof(msg));
+	res = dssh_chan_zc_send(oc.client_ch, sizeof(msg));
+	ASSERT_OK(res);
+
+	/* Server reads the data to confirm it arrived */
+	int ev = dssh_chan_poll(sc.server_ch, DSSH_POLL_READ, 5000);
+	ASSERT_TRUE(ev & DSSH_POLL_READ);
+
+	uint8_t rbuf[256];
+	size_t got = 0;
+	while (got < sizeof(msg)) {
+		int64_t r = dssh_chan_read(sc.server_ch, 0,
+		    &rbuf[got], sizeof(rbuf) - got);
+		if (r <= 0)
+			break;
+		got += (size_t)r;
+	}
+	ASSERT_EQ_U(got, sizeof(msg));
+	ASSERT_TRUE(memcmp(rbuf, msg, sizeof(msg)) == 0);
+
+	dssh_chan_close(oc.client_ch, -1);
+	dssh_chan_close(sc.server_ch, -1);
+	cnd_destroy(&zc_st.cnd);
+	mtx_destroy(&zc_st.mtx);
+	conn_cleanup(&ctx);
+	return TEST_PASS;
+}
+
+/* ================================================================
+ * ZC NULL parameter guards
+ * ================================================================ */
+
+static int
+test_zc_open_null(void)
+{
+	struct dssh_chan_params p;
+	dssh_chan_params_init(&p, DSSH_CHAN_SUBSYSTEM);
+	dssh_chan_params_set_subsystem(&p, "test");
+
+	/* NULL session */
+	ASSERT_NULL(dssh_chan_zc_open(NULL, &p, client_zc_data_cb, NULL));
+	/* NULL params (sess=NULL triggers first, so this is a combined check) */
+	ASSERT_NULL(dssh_chan_zc_open(NULL, NULL, client_zc_data_cb, NULL));
+	/* NULL callback */
+	ASSERT_NULL(dssh_chan_zc_open(NULL, &p, NULL, NULL));
+
+	/* ZC getbuf/send/cancel NULL guards */
+	uint8_t *buf;
+	size_t max_len;
+	ASSERT_ERR(dssh_chan_zc_getbuf(NULL, 0, &buf, &max_len),
+	    DSSH_ERROR_INVALID);
+	ASSERT_ERR(dssh_chan_zc_send(NULL, 0),
+	    DSSH_ERROR_INVALID);
+	ASSERT_ERR(dssh_chan_zc_cancel(NULL),
+	    DSSH_ERROR_INVALID);
+
+	dssh_chan_params_free(&p);
+	return TEST_PASS;
+}
+
+/* ================================================================
+ * Event callback coverage
+ * ================================================================ */
+
+/* Dummy event callback for verifying setter stores the pointer */
+static void
+test_event_cb(dssh_channel ch, const struct dssh_chan_event *event,
+    void *cbdata)
+{
+	(void)ch;
+	(void)event;
+	(void)cbdata;
+}
+
+/* Dummy state for verifying cbdata storage */
+struct event_cb_state {
+	int dummy;
+};
+
+static int
+test_session_set_event_cb(void)
+{
+	struct conn_ctx ctx;
+	if (conn_setup_no_start(&ctx) < 0)
+		return TEST_SKIP;
+
+	/* NULL sess returns error */
+	ASSERT_ERR(dssh_session_set_event_cb(NULL, test_event_cb, NULL),
+	    DSSH_ERROR_INVALID);
+
+	/* Set event callback before session_start -- should succeed */
+	struct event_cb_state es;
+	memset(&es, 0, sizeof(es));
+	ASSERT_OK(dssh_session_set_event_cb(ctx.client, test_event_cb, &es));
+
+	/* Verify the callback is stored on the session */
+	ASSERT_TRUE(ctx.client->default_event_cb == test_event_cb);
+	ASSERT_TRUE(ctx.client->default_event_cbdata == &es);
+
+	/* Set to NULL (disable) */
+	ASSERT_OK(dssh_session_set_event_cb(ctx.client, NULL, NULL));
+	ASSERT_NULL(ctx.client->default_event_cb);
+
+	conn_cleanup_no_start(&ctx);
+	return TEST_PASS;
+}
+
+static int
+test_session_set_event_cb_toolate(void)
+{
+	struct conn_ctx ctx;
+	if (conn_setup(&ctx) < 0)
+		return TEST_SKIP;
+
+	/* After session_start, setting event callback should be refused */
+	ASSERT_ERR(dssh_session_set_event_cb(ctx.client, test_event_cb, NULL),
+	    DSSH_ERROR_TOOLATE);
+
+	conn_cleanup(&ctx);
+	return TEST_PASS;
+}
+
+static int
+test_chan_set_event_cb(void)
+{
+	struct conn_ctx ctx;
+	if (conn_setup(&ctx) < 0)
+		return TEST_SKIP;
+
+	/* NULL guard */
+	ASSERT_ERR(dssh_chan_set_event_cb(NULL, test_event_cb, NULL),
+	    DSSH_ERROR_INVALID);
+
+	/* Open a channel and set per-channel event callback */
+	struct open_exec_ctx oc = {
+		.client = ctx.client,
+		.server = ctx.server,
+		.command = "cmd",
+		.cbs = &accept_cbs_all,
+		.accept_timeout = 30000,
+	};
+	if (open_exec_channel(&oc) < 0) {
+		conn_cleanup(&ctx);
+		return TEST_SKIP;
+	}
+
+	struct event_cb_state es;
+	memset(&es, 0, sizeof(es));
+
+	/* Set per-channel event callback -- should succeed */
+	ASSERT_OK(dssh_chan_set_event_cb(oc.client_ch, test_event_cb, &es));
+
+	/* Verify it's stored on the channel */
+	ASSERT_TRUE(oc.client_ch->event_cb == test_event_cb);
+	ASSERT_TRUE(oc.client_ch->event_cbdata == &es);
+
+	/* Set to NULL (disable) */
+	ASSERT_OK(dssh_chan_set_event_cb(oc.client_ch, NULL, NULL));
+	ASSERT_NULL(oc.client_ch->event_cb);
+
+	dssh_chan_close(oc.client_ch, 0);
+	dssh_chan_close(oc.server_ch, 0);
+	conn_cleanup(&ctx);
+	return TEST_PASS;
+}
+
+/* ================================================================
+ * Event queue limits coverage
+ * ================================================================ */
+
+static int
+test_session_set_max_events(void)
+{
+	struct conn_ctx ctx;
+	if (conn_setup_no_start(&ctx) < 0)
+		return TEST_SKIP;
+
+	/* NULL guard */
+	ASSERT_ERR(dssh_session_set_max_events(NULL, 128),
+	    DSSH_ERROR_INVALID);
+
+	/* Set custom limit */
+	ASSERT_OK(dssh_session_set_max_events(ctx.client, 128));
+
+	/* Set to 0 (unlimited) */
+	ASSERT_OK(dssh_session_set_max_events(ctx.client, 0));
+
+	conn_cleanup_no_start(&ctx);
+	return TEST_PASS;
+}
+
+static int
+test_session_set_max_events_toolate(void)
+{
+	struct conn_ctx ctx;
+	if (conn_setup(&ctx) < 0)
+		return TEST_SKIP;
+
+	ASSERT_ERR(dssh_session_set_max_events(ctx.client, 128),
+	    DSSH_ERROR_TOOLATE);
+
+	conn_cleanup(&ctx);
+	return TEST_PASS;
+}
+
+static int
+test_chan_set_max_events(void)
+{
+	struct conn_ctx ctx;
+	if (conn_setup(&ctx) < 0)
+		return TEST_SKIP;
+
+	/* NULL guard */
+	ASSERT_ERR(dssh_chan_set_max_events(NULL, 32),
+	    DSSH_ERROR_INVALID);
+
+	struct open_exec_ctx oc = {
+		.client = ctx.client,
+		.server = ctx.server,
+		.command = "cmd",
+		.cbs = &accept_cbs_all,
+		.accept_timeout = 30000,
+	};
+	if (open_exec_channel(&oc) < 0) {
+		conn_cleanup(&ctx);
+		return TEST_SKIP;
+	}
+
+	/* Set per-channel limit */
+	ASSERT_OK(dssh_chan_set_max_events(oc.client_ch, 32));
+
+	/* Set to 0 (unlimited) */
+	ASSERT_OK(dssh_chan_set_max_events(oc.client_ch, 0));
+
+	dssh_chan_close(oc.client_ch, 0);
+	dssh_chan_close(oc.server_ch, 0);
+	conn_cleanup(&ctx);
+	return TEST_PASS;
+}
+
+/* ================================================================
+ * dssh_chan_get_pty coverage
+ * ================================================================ */
+
+static int
+test_chan_get_pty(void)
+{
+	struct conn_ctx ctx;
+	if (conn_setup(&ctx) < 0)
+		return TEST_SKIP;
+
+	/* Open shell with PTY */
+	struct open_shell_ctx oc = {
+		.client = ctx.client,
+		.server = ctx.server,
+		.term = "vt100",
+		.cols = 132,
+		.rows = 43,
+		.wpx = 800,
+		.hpx = 600,
+		.cbs = &accept_cbs_all,
+	};
+
+	thrd_t ct, st;
+	ASSERT_THRD_CREATE(&ct, client_open_shell_thread, &oc);
+	ASSERT_THRD_CREATE(&st, server_accept_shell_thread, &oc);
+	thrd_join(ct, NULL);
+	thrd_join(st, NULL);
+
+	if (oc.client_ch == NULL || oc.server_ch == NULL) {
+		if (oc.client_ch != NULL)
+			dssh_chan_close(oc.client_ch, -1);
+		if (oc.server_ch != NULL)
+			dssh_chan_close(oc.server_ch, -1);
+		conn_cleanup(&ctx);
+		return TEST_SKIP;
+	}
+
+	/* Server channel should have PTY info */
+	ASSERT_TRUE(dssh_chan_has_pty(oc.server_ch));
+	const struct dssh_chan_params *pty = dssh_chan_get_pty(oc.server_ch);
+	ASSERT_NOT_NULL(pty);
+	ASSERT_STR_EQ(pty->term, "vt100");
+	ASSERT_EQ_U(pty->cols, 132);
+	ASSERT_EQ_U(pty->rows, 43);
+	ASSERT_EQ_U(pty->wpx, 800);
+	ASSERT_EQ_U(pty->hpx, 600);
+
+	/* Client channel should also have PTY (it requested it) */
+	ASSERT_TRUE(dssh_chan_has_pty(oc.client_ch));
+	const struct dssh_chan_params *cpty = dssh_chan_get_pty(oc.client_ch);
+	ASSERT_NOT_NULL(cpty);
+
+	/* Subsystem channel without PTY should return NULL */
+	struct open_subsys_ctx sc = {
+		.client = ctx.client,
+		.server = ctx.server,
+		.subsystem = "test-no-pty",
+	};
+	ASSERT_THRD_CREATE(&ct, client_open_subsys_thread, &sc);
+	ASSERT_THRD_CREATE(&st, server_accept_subsys_thread, &sc);
+	thrd_join(ct, NULL);
+	thrd_join(st, NULL);
+
+	if (sc.client_ch != NULL && sc.server_ch != NULL) {
+		ASSERT_FALSE(dssh_chan_has_pty(sc.server_ch));
+		ASSERT_NULL(dssh_chan_get_pty(sc.server_ch));
+		dssh_chan_close(sc.client_ch, -1);
+		dssh_chan_close(sc.server_ch, -1);
+	}
+
+	dssh_chan_close(oc.client_ch, 0);
+	dssh_chan_close(oc.server_ch, 0);
+	conn_cleanup(&ctx);
+	return TEST_PASS;
+}
+
+/* ================================================================
+ * Environment variable roundtrip (exercises accept_parse_env +
+ * parse_env_data on the server side)
+ * ================================================================ */
+
+static int
+accept_env_cb(dssh_channel ch, const struct dssh_chan_params *p, void *cbdata)
+{
+	(void)ch;
+	(void)p;
+	(void)cbdata;
+	return 0;
+}
+
+static int
+client_open_exec_with_env_thread(void *arg)
+{
+	struct open_exec_ctx *ctx = arg;
+	struct dssh_chan_params p;
+	dssh_chan_params_init(&p, DSSH_CHAN_EXEC);
+	dssh_chan_params_set_command(&p, ctx->command);
+	dssh_chan_params_set_pty(&p, false);
+	dssh_chan_params_add_env(&p, "LANG", "en_US.UTF-8");
+	dssh_chan_params_add_env(&p, "TERM", "xterm");
+	ctx->client_ch = dssh_chan_open(ctx->client, &p);
+	dssh_chan_params_free(&p);
+	return 0;
+}
+
+static struct dssh_chan_accept_cbs accept_cbs_with_env = {
+	.pty_req = accept_pty_cb,
+	.env = accept_env_cb,
+	.shell = accept_all_shell,
+	.exec = accept_all_exec,
+	.subsystem = accept_all_subsystem,
+};
+
+static int
+test_env_roundtrip(void)
+{
+	struct conn_ctx ctx;
+	if (conn_setup(&ctx) < 0)
+		return TEST_SKIP;
+
+	struct open_exec_ctx oc = {
+		.client = ctx.client,
+		.server = ctx.server,
+		.command = "env",
+		.cbs = &accept_cbs_with_env,
+		.accept_timeout = 30000,
+	};
+
+	thrd_t ct, st;
+	ASSERT_THRD_CREATE(&ct, client_open_exec_with_env_thread, &oc);
+	ASSERT_THRD_CREATE(&st, server_accept_exec_thread, &oc);
+	thrd_join(ct, NULL);
+	thrd_join(st, NULL);
+
+	if (oc.client_ch == NULL || oc.server_ch == NULL) {
+		if (oc.client_ch != NULL)
+			dssh_chan_close(oc.client_ch, -1);
+		if (oc.server_ch != NULL)
+			dssh_chan_close(oc.server_ch, -1);
+		conn_cleanup(&ctx);
+		return TEST_SKIP;
+	}
+
+	/* Server channel should have received the env vars */
+	ASSERT_EQ_U(oc.server_ch->params.env_count, 2);
+	ASSERT_STR_EQ(oc.server_ch->params.env[0].name, "LANG");
+	ASSERT_STR_EQ(oc.server_ch->params.env[0].value, "en_US.UTF-8");
+	ASSERT_STR_EQ(oc.server_ch->params.env[1].name, "TERM");
+	ASSERT_STR_EQ(oc.server_ch->params.env[1].value, "xterm");
+
+	dssh_chan_close(oc.client_ch, 0);
+	dssh_chan_close(oc.server_ch, 0);
+	conn_cleanup(&ctx);
+	return TEST_PASS;
+}
+
+/* ================================================================
  * Test table
  * ================================================================ */
 
@@ -5299,6 +6021,25 @@ static struct dssh_test_entry tests[] = {
 	{ "chanreq/parse_truncated_type_len",  test_chanreq_parse_truncated_type_len },
 	{ "chanreq/parse_truncated_type",      test_chanreq_parse_truncated_type },
 	{ "chanreq/parse_truncated_want_reply", test_chanreq_parse_truncated_want_reply },
+
+	/* Zero-copy client-side open */
+	{ "zc/open_client",                    test_zc_open_client },
+	{ "zc/cancel",                         test_zc_cancel },
+	{ "null/zc_open",                      test_zc_open_null },
+
+	/* Event callback coverage */
+	{ "event/session_set_cb",              test_session_set_event_cb },
+	{ "event/session_set_cb_toolate",      test_session_set_event_cb_toolate },
+	{ "event/chan_set_cb",                 test_chan_set_event_cb },
+
+	/* Event queue limits */
+	{ "event/session_set_max",             test_session_set_max_events },
+	{ "event/session_set_max_toolate",     test_session_set_max_events_toolate },
+	{ "event/chan_set_max",                test_chan_set_max_events },
+
+	/* PTY getter and env roundtrip */
+	{ "pty/get_pty",                       test_chan_get_pty },
+	{ "env/roundtrip",                     test_env_roundtrip },
 };
 
 DSSH_TEST_NO_CLEANUP

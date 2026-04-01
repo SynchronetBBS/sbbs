@@ -1265,6 +1265,34 @@ static int test_params_init_null(void)
 	return TEST_PASS;
 }
 
+static int test_params_set_max_window(void)
+{
+	struct dssh_chan_params p;
+	ASSERT_OK(dssh_chan_params_init(&p, DSSH_CHAN_SHELL));
+
+	/* Default is 0 (library default) */
+	ASSERT_EQ_U(p.max_window, 0);
+
+	/* Set custom value */
+	ASSERT_OK(dssh_chan_params_set_max_window(&p, 65536));
+	ASSERT_EQ_U(p.max_window, 65536);
+
+	/* Set to 0 (back to default) */
+	ASSERT_OK(dssh_chan_params_set_max_window(&p, 0));
+	ASSERT_EQ_U(p.max_window, 0);
+
+	/* Set to UINT32_MAX */
+	ASSERT_OK(dssh_chan_params_set_max_window(&p, UINT32_MAX));
+	ASSERT_EQ_U(p.max_window, UINT32_MAX);
+
+	/* NULL returns DSSH_ERROR_INVALID */
+	ASSERT_ERR(dssh_chan_params_set_max_window(NULL, 1000),
+	    DSSH_ERROR_INVALID);
+
+	dssh_chan_params_free(&p);
+	return TEST_PASS;
+}
+
 /* ================================================================
  * Event queue cap
  * ================================================================ */
@@ -1429,6 +1457,7 @@ static struct dssh_test_entry tests[] = {
 	{ "params_mode_dedup",              test_params_mode_dedup },
 	{ "params_free_null",               test_params_free_null },
 	{ "params_init_null",               test_params_init_null },
+	{ "params_set_max_window",          test_params_set_max_window },
 };
 
 DSSH_TEST_NO_CLEANUP
