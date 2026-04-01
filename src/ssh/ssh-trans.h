@@ -14,6 +14,7 @@ extern "C" {
 /* Forward declarations -- full definitions in ssh-internal.h */
 struct dssh_session_s;
 struct dssh_channel_s;
+struct dssh_tx_iov;  /* full definition in deucessh.h */
 
 /* Module type definitions -- public headers */
 #include "deucessh-kex.h"
@@ -171,6 +172,9 @@ struct dssh_transport_state_s {
 	uint32_t       rx_since_rekey;    /* packets received since last (re)key (rx_mtx) */
 	uint32_t       last_rx_seq;       /* seq number of last received packet */
 
+        /* Pointer-sized — round-robin index for fair channel slot drain */
+	size_t         drain_next_ch;
+
         /* 1-byte */
 	bool           client;
 	atomic_bool    rekey_in_progress; /* true between KEXINIT and NEWKEYS */
@@ -219,6 +223,9 @@ DSSH_PRIVATE size_t tx_slot_buf_size(size_t max_payload,
 DSSH_PRIVATE int alloc_tx_slot(struct dssh_tx_slot *slot,
     size_t max_payload, size_t block_size, uint16_t mac_digest);
 DSSH_PRIVATE void free_tx_slot(struct dssh_tx_slot *slot);
+DSSH_PRIVATE bool tx_gather_enabled(void);
+DSSH_PRIVATE int tx_gather_with_packet(struct dssh_session_s *sess,
+    uint8_t *buf, size_t payload_len);
 DSSH_PRIVATE int alloc_channel_slots(struct dssh_session_s *sess,
     struct dssh_channel_s *ch);
 DSSH_PRIVATE int recv_packet(struct dssh_session_s *sess,
@@ -245,6 +252,9 @@ struct dssh_transport_global_config {
 
 	int (*extra_line_cb)(uint8_t *buf, size_t bufsz,
 	    void *cbdata);
+
+	int (*tx_gather)(const struct dssh_tx_iov *iov, size_t iovcnt,
+	    struct dssh_session_s *sess, void *cbdata); /* optional */
 
 	size_t                   kex_entries;
 	dssh_kex                 kex_head;

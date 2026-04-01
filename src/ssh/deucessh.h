@@ -68,6 +68,28 @@ typedef int (*dssh_transport_extra_line_cb)(uint8_t *buf, size_t bufsz,
     void *cbdata);
 
 /*
+ * Scatter/gather TX iov entry.  Each entry is one complete wire packet
+ * (pkt_length + encrypted payload + padding + MAC).
+ */
+struct dssh_tx_iov {
+	const uint8_t *base;
+	size_t         len;
+};
+
+/*
+ * Optional scatter/gather TX callback.  When set, the library batches
+ * pending fire-and-forget slot packets with the caller's data packet
+ * into a single callback, enabling writev()-style sends.
+ *
+ * Returns 0 on success (all iovs sent) or negative on error.  On error
+ * an unknown number of bytes may have been sent — the session will be
+ * terminated.
+ */
+typedef int (*dssh_transport_tx_gather_cb)(
+    const struct dssh_tx_iov *iov, size_t iovcnt,
+    dssh_session sess, void *cbdata);
+
+/*
  * Optional callback for SSH_MSG_DEBUG (RFC 4253 s11.3).
  * always_display: the sender's hint about whether to show the message.
  * message/message_len: the debug text (UTF-8, not NUL-terminated).
@@ -240,6 +262,15 @@ DSSH_PUBLIC int dssh_transport_set_version(const char *software_version, const c
 DSSH_PUBLIC int dssh_transport_set_callbacks(dssh_transport_io_cb tx, dssh_transport_io_cb rx,
     dssh_transport_rxline_cb rx_line,
     dssh_transport_extra_line_cb extra_line_cb);
+
+/*
+ * Set an optional scatter/gather TX callback.  When set, the library
+ * batches multiple pending packets into a single callback instead of
+ * calling the per-packet TX callback for each one.  Must be called
+ * before dssh_session_init().  Pass NULL to disable (default).
+ */
+DSSH_PUBLIC int dssh_transport_set_tx_gather(
+    dssh_transport_tx_gather_cb cb);
 
 /*
  * Perform the SSH transport handshake (version exchange, KEXINIT,

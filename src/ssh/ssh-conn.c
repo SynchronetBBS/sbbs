@@ -2250,7 +2250,10 @@ zc_getbuf_inner(struct dssh_channel_s *ch, int stream,
 		}
 	}
 
-	drain_tx_slots(sess);
+	/* Drain slots now (per-packet path) or defer to zc_send_inner
+	 * (gather path — slots will be batched with the data packet). */
+	if (!tx_gather_enabled())
+		drain_tx_slots(sess);
 
 	/* Check remote window under buf_mtx */
 	dssh_thrd_check(sess, mtx_lock(&ch->buf_mtx));
@@ -2327,10 +2330,16 @@ zc_send_inner(struct dssh_channel_s *ch, size_t len)
 	}
 
 	size_t payload_len = chan_hdr + len;
-	int ret = tx_finalize(sess, sess->trans.tx_packet, payload_len);
+	int ret;
+
+	if (tx_gather_enabled())
+		ret = tx_gather_with_packet(sess,
+		    sess->trans.tx_packet, payload_len);
+	else
+		ret = tx_finalize(sess, sess->trans.tx_packet,
+		    payload_len);
 
 	if (ret == 0) {
-		/* Deduct from remote_window atomically — no buf_mtx needed */
 		uint32_t len_u32 = (uint32_t)len;
 		window_atomic_sub(&ch->remote_window, len_u32);
 	}
