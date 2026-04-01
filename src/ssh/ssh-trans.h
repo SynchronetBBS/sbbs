@@ -207,6 +207,8 @@ DSSH_PRIVATE int send_packet(struct dssh_session_s *sess,
     const uint8_t *payload, size_t payload_len, uint32_t *seq_out);
 DSSH_PRIVATE int send_or_queue(struct dssh_session_s *sess,
     const uint8_t *payload, size_t payload_len);
+DSSH_PRIVATE int send_or_queue_wa(struct dssh_session_s *sess,
+    uint32_t remote_id, uint32_t bytes, uint32_t window_max);
 DSSH_PRIVATE int recv_packet(struct dssh_session_s *sess,
     uint8_t *msg_type, uint8_t **payload, size_t *payload_len);
 DSSH_PRIVATE int send_unimplemented(struct dssh_session_s *sess,

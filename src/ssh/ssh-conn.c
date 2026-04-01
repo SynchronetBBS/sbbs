@@ -1288,14 +1288,11 @@ handle_channel_data(struct dssh_session_s *sess,
 	 * Stream mode uses maybe_replenish_window() after app reads. */
 	if (ch->io_model == DSSH_IO_ZC && consumed > 0) {
 		ch->local_window += consumed;
-		uint8_t wa[16];
-		size_t wp = 0;
+		uint32_t rid = ch->remote_id;
+		uint32_t wmax = ch->window_max;
 
-		wa[wp++] = SSH_MSG_CHANNEL_WINDOW_ADJUST;
-		DSSH_PUT_U32(ch->remote_id, wa, &wp);
-		DSSH_PUT_U32(consumed, wa, &wp);
 		dssh_thrd_check(sess, mtx_unlock(&ch->buf_mtx));
-		send_or_queue(sess, wa, wp);
+		send_or_queue_wa(sess, rid, consumed, wmax);
 		dssh_thrd_check(sess, mtx_lock(&ch->buf_mtx));
 		if (atomic_load(&ch->closing)) {
 			dssh_thrd_check(sess, mtx_unlock(&ch->buf_mtx));
@@ -1358,14 +1355,11 @@ handle_channel_extended_data(struct dssh_session_s *sess,
 	 * Stream mode uses maybe_replenish_window() after app reads. */
 	if (ch->io_model == DSSH_IO_ZC && consumed > 0) {
 		ch->local_window += consumed;
-		uint8_t wa[16];
-		size_t wp = 0;
+		uint32_t rid = ch->remote_id;
+		uint32_t wmax = ch->window_max;
 
-		wa[wp++] = SSH_MSG_CHANNEL_WINDOW_ADJUST;
-		DSSH_PUT_U32(ch->remote_id, wa, &wp);
-		DSSH_PUT_U32(consumed, wa, &wp);
 		dssh_thrd_check(sess, mtx_unlock(&ch->buf_mtx));
-		send_or_queue(sess, wa, wp);
+		send_or_queue_wa(sess, rid, consumed, wmax);
 		dssh_thrd_check(sess, mtx_lock(&ch->buf_mtx));
 		if (atomic_load(&ch->closing)) {
 			dssh_thrd_check(sess, mtx_unlock(&ch->buf_mtx));

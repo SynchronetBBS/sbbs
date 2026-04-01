@@ -730,6 +730,107 @@ send_or_queue(struct dssh_session_s *sess,
 	return enqueue_tx(sess, payload, payload_len);
 }
 
+/*
+ * Enqueue a WINDOW_ADJUST, coalescing with any already-queued
+ * WINDOW_ADJUST for the same channel.  If the coalesced total is
+ * less than half of window_max, move the entry to the tail
+ * (low priority); otherwise leave it in place.
+ */
+static int
+enqueue_or_coalesce_wa(struct dssh_session_s *sess,
+    uint32_t remote_id, uint32_t bytes, uint32_t window_max)
+{
+	dssh_thrd_check(sess, mtx_lock(&sess->trans.tx_queue_mtx));
+
+	struct dssh_tx_queue_entry *prev = NULL;
+	struct dssh_tx_queue_entry *cur = sess->trans.tx_queue_head;
+
+	while (cur != NULL) {
+		if ((cur->len == 9)
+		    && (cur->data[0] == SSH_MSG_CHANNEL_WINDOW_ADJUST)
+		    && (DSSH_GET_U32(&cur->data[1]) == remote_id))
+			break;
+		prev = cur;
+		cur = cur->next;
+	}
+
+	if (cur != NULL) {
+		/* Coalesce: saturating add */
+		uint32_t old = DSSH_GET_U32(&cur->data[5]);
+		uint32_t total = (bytes > UINT32_MAX - old)
+		    ? UINT32_MAX : old + bytes;
+		size_t wpos = 5;
+
+		DSSH_PUT_U32(total, cur->data, &wpos);
+
+		/* If less than half the window, move to tail (low prio) */
+		if ((total < window_max / 2)
+		    && (cur != sess->trans.tx_queue_tail)) {
+			/* Unlink from current position */
+			if (prev != NULL)
+				prev->next = cur->next;
+			else
+				sess->trans.tx_queue_head = cur->next;
+			if (cur->next == NULL)
+				sess->trans.tx_queue_tail = prev;
+
+			/* Append at tail */
+			cur->next = NULL;
+			if (sess->trans.tx_queue_tail != NULL)
+				sess->trans.tx_queue_tail->next = cur;
+			else
+				sess->trans.tx_queue_head = cur;
+			sess->trans.tx_queue_tail = cur;
+		}
+
+		dssh_thrd_check(sess, mtx_unlock(&sess->trans.tx_queue_mtx));
+		return 0;
+	}
+
+	dssh_thrd_check(sess, mtx_unlock(&sess->trans.tx_queue_mtx));
+
+	/* No existing entry -- build and enqueue a fresh one */
+	uint8_t wa[16];
+	size_t wp = 0;
+
+	wa[wp++] = SSH_MSG_CHANNEL_WINDOW_ADJUST;
+	DSSH_PUT_U32(remote_id, wa, &wp);
+	DSSH_PUT_U32(bytes, wa, &wp);
+	return enqueue_tx(sess, wa, wp);
+}
+
+/*
+ * Non-blocking send of CHANNEL_WINDOW_ADJUST with queue coalescing.
+ * Fast path: acquire tx_mtx and send immediately.
+ * Slow path: coalesce with any queued WINDOW_ADJUST for the same channel.
+ */
+DSSH_PRIVATE int
+send_or_queue_wa(struct dssh_session_s *sess,
+    uint32_t remote_id, uint32_t bytes, uint32_t window_max)
+{
+	int tr = dssh_thrd_check(sess, mtx_trylock(&sess->trans.tx_mtx));
+
+	if (tr == thrd_success) {
+		drain_tx_queue(sess);
+
+		uint8_t wa[16];
+		size_t wp = 0;
+
+		wa[wp++] = SSH_MSG_CHANNEL_WINDOW_ADJUST;
+		DSSH_PUT_U32(remote_id, wa, &wp);
+		DSSH_PUT_U32(bytes, wa, &wp);
+
+		int ret = send_packet_inner(sess, wa, wp, NULL);
+
+		if ((ret < 0) && (ret != DSSH_ERROR_TOOLONG)
+		    && (ret != DSSH_ERROR_REKEY_NEEDED))
+			session_set_terminate(sess);
+		dssh_thrd_check(sess, mtx_unlock(&sess->trans.tx_mtx));
+		return ret;
+	}
+	return enqueue_or_coalesce_wa(sess, remote_id, bytes, window_max);
+}
+
 DSSH_PRIVATE int
 send_packet(struct dssh_session_s *sess,
     const uint8_t *payload, size_t payload_len, uint32_t *seq_out)
