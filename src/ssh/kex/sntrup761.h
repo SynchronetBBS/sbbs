@@ -25,10 +25,8 @@ extern "C" {
 #endif
 
 DSSH_PRIVATE int crypto_kem_sntrup761_keypair(unsigned char *pk, unsigned char *sk);
-DSSH_PRIVATE int crypto_kem_sntrup761_enc(unsigned char *c, unsigned char *k,
-    const unsigned char *pk);
-DSSH_PRIVATE int crypto_kem_sntrup761_dec(unsigned char *k, const unsigned char *c,
-    const unsigned char *sk);
+DSSH_PRIVATE int crypto_kem_sntrup761_enc(unsigned char *c, unsigned char *k, const unsigned char *pk);
+DSSH_PRIVATE int crypto_kem_sntrup761_dec(unsigned char *k, const unsigned char *c, const unsigned char *sk);
 
 #ifdef __cplusplus
 }

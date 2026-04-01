@@ -3,17 +3,18 @@
 #include <openssl/bn.h>
 #include <openssl/crypto.h>
 #include <openssl/evp.h>
+
 #include <stdlib.h>
 #include <string.h>
 
-#include "deucessh.h"
 #include "deucessh-crypto.h"
 #include "deucessh-kex.h"
+#include "deucessh.h"
+#include "kex/dh-gex-groups.h"
 #include "kex/dh-gex-sha256-ops.h"
 #include "kex/dh-gex-sha256.h"
-#include "kex/dh-gex-groups.h"
 #ifdef DSSH_TESTING
-#include "ssh-internal.h"
+ #include "ssh-internal.h"
 #endif
 
 /* ----------------------------------------------------------------
@@ -63,8 +64,8 @@ dh_value_valid(const BIGNUM *val, const BIGNUM *p)
 struct ossl_dhgex_ctx {
 	BIGNUM *p;
 	BIGNUM *g;
-	BIGNUM *x;        /* secret exponent (client or server) */
-	BIGNUM *our_pub;  /* e (client) or f (server) */
+	BIGNUM *x;       /* secret exponent (client or server) */
+	BIGNUM *our_pub; /* e (client) or f (server) */
 	BN_CTX *bnctx;
 };
 
@@ -89,7 +90,7 @@ serialize_bn_to_mpint(const BIGNUM *bn, uint8_t **out, size_t *out_len)
 		return DSSH_ERROR_INVALID;
 #endif
 	size_t   bn_sz = (size_t)bn_bytes;
-	uint8_t *tmp = malloc(bn_sz);
+	uint8_t *tmp   = malloc(bn_sz);
 
 	if (tmp == NULL)
 		return DSSH_ERROR_ALLOC;
@@ -102,7 +103,7 @@ serialize_bn_to_mpint(const BIGNUM *bn, uint8_t **out, size_t *out_len)
 		free(tmp);
 		return DSSH_ERROR_INVALID;
 	}
-	uint32_t bn_u32 = (uint32_t)bn_sz;
+	uint32_t bn_u32    = (uint32_t)bn_sz;
 	uint32_t mpint_len = bn_u32 + (need_pad ? 1 : 0);
 
 	/* Total wire size: 4-byte length prefix + mpint_len */
@@ -123,7 +124,7 @@ serialize_bn_to_mpint(const BIGNUM *bn, uint8_t **out, size_t *out_len)
 	}
 
 	size_t pos = 0;
-	int ret = dssh_serialize_uint32(mpint_len, buf, total, &pos);
+	int    ret = dssh_serialize_uint32(mpint_len, buf, total, &pos);
 
 	if (ret < 0) {
 		OPENSSL_cleanse(tmp, bn_sz);
@@ -139,7 +140,7 @@ serialize_bn_to_mpint(const BIGNUM *bn, uint8_t **out, size_t *out_len)
 	OPENSSL_cleanse(tmp, bn_sz);
 	free(tmp);
 
-	*out = buf;
+	*out     = buf;
 	*out_len = pos;
 	return 0;
 }
@@ -166,7 +167,7 @@ bn_to_raw(const BIGNUM *bn, uint8_t **out, size_t *out_len)
 		return DSSH_ERROR_ALLOC;
 	BN_bn2bin(bn, buf);
 
-	*out = buf;
+	*out     = buf;
 	*out_len = bn_sz;
 	return 0;
 }
@@ -176,15 +177,13 @@ bn_to_raw(const BIGNUM *bn, uint8_t **out, size_t *out_len)
  * ---------------------------------------------------------------- */
 
 static int
-ossl_client_keygen(const uint8_t *group_payload, size_t group_len,
-    size_t *consumed,
-    uint8_t **e_mpint, size_t *e_mpint_len,
-    void **dh_ctx)
+ossl_client_keygen(const uint8_t *group_payload, size_t group_len, size_t *consumed, uint8_t **e_mpint,
+    size_t *e_mpint_len, void **dh_ctx)
 {
-	BIGNUM *p = NULL;
-	BIGNUM *g = NULL;
-	BIGNUM *x = NULL;
-	BIGNUM *e = NULL;
+	BIGNUM *p     = NULL;
+	BIGNUM *g     = NULL;
+	BIGNUM *x     = NULL;
+	BIGNUM *e     = NULL;
 	BN_CTX *bnctx = NULL;
 	int     ret;
 
@@ -265,15 +264,15 @@ ossl_client_keygen(const uint8_t *group_payload, size_t group_len,
 	if (ctx == NULL) {
 		free(*e_mpint);
 		*e_mpint = NULL;
-		ret = DSSH_ERROR_ALLOC;
+		ret      = DSSH_ERROR_ALLOC;
 		goto fail;
 	}
-	ctx->p = p;
-	ctx->g = g;
-	ctx->x = x;
+	ctx->p       = p;
+	ctx->g       = g;
+	ctx->x       = x;
 	ctx->our_pub = e;
-	ctx->bnctx = bnctx;
-	*dh_ctx = ctx;
+	ctx->bnctx   = bnctx;
+	*dh_ctx      = ctx;
 	return 0;
 
 fail:
@@ -286,16 +285,13 @@ fail:
 }
 
 static int
-ossl_client_derive(void *dh_ctx,
-    const uint8_t *f_buf, size_t f_bufsz,
-    int64_t *f_consumed,
-    uint8_t **k_raw, size_t *k_raw_len,
-    uint8_t **k_mpint, size_t *k_mpint_len)
+ossl_client_derive(void *dh_ctx, const uint8_t *f_buf, size_t f_bufsz, int64_t *f_consumed, uint8_t **k_raw,
+    size_t *k_raw_len, uint8_t **k_mpint, size_t *k_mpint_len)
 {
 	struct ossl_dhgex_ctx *ctx = dh_ctx;
-	BIGNUM *f = NULL;
-	BIGNUM *k = NULL;
-	int     ret;
+	BIGNUM                *f   = NULL;
+	BIGNUM                *k   = NULL;
+	int                    ret;
 
 	/* Parse f */
 	int64_t pv = parse_bn_mpint(f_buf, f_bufsz, &f);
@@ -349,17 +345,14 @@ ossl_client_derive(void *dh_ctx,
 }
 
 static int
-ossl_server_keygen(const uint8_t *p_bytes, size_t p_len,
-    const uint8_t *g_bytes, size_t g_len,
-    uint8_t **p_mpint, size_t *p_mpint_len,
-    uint8_t **g_mpint, size_t *g_mpint_len,
-    uint8_t **f_mpint, size_t *f_mpint_len,
+ossl_server_keygen(const uint8_t *p_bytes, size_t p_len, const uint8_t *g_bytes, size_t g_len, uint8_t **p_mpint,
+    size_t *p_mpint_len, uint8_t **g_mpint, size_t *g_mpint_len, uint8_t **f_mpint, size_t *f_mpint_len,
     void **dh_ctx)
 {
-	BIGNUM *p = NULL;
-	BIGNUM *g = NULL;
-	BIGNUM *y = NULL;
-	BIGNUM *f = NULL;
+	BIGNUM *p     = NULL;
+	BIGNUM *g     = NULL;
+	BIGNUM *y     = NULL;
+	BIGNUM *f     = NULL;
 	BN_CTX *bnctx = NULL;
 	int     ret;
 
@@ -431,15 +424,15 @@ ossl_server_keygen(const uint8_t *p_bytes, size_t p_len,
 		*g_mpint = NULL;
 		free(*f_mpint);
 		*f_mpint = NULL;
-		ret = DSSH_ERROR_ALLOC;
+		ret      = DSSH_ERROR_ALLOC;
 		goto fail;
 	}
-	ctx->p = p;
-	ctx->g = g;
-	ctx->x = y;
+	ctx->p       = p;
+	ctx->g       = g;
+	ctx->x       = y;
 	ctx->our_pub = f;
-	ctx->bnctx = bnctx;
-	*dh_ctx = ctx;
+	ctx->bnctx   = bnctx;
+	*dh_ctx      = ctx;
 	return 0;
 
 fail:
@@ -452,16 +445,13 @@ fail:
 }
 
 static int
-ossl_server_derive(void *dh_ctx,
-    const uint8_t *e_buf, size_t e_bufsz,
-    int64_t *e_consumed,
-    uint8_t **k_raw, size_t *k_raw_len,
-    uint8_t **k_mpint, size_t *k_mpint_len)
+ossl_server_derive(void *dh_ctx, const uint8_t *e_buf, size_t e_bufsz, int64_t *e_consumed, uint8_t **k_raw,
+    size_t *k_raw_len, uint8_t **k_mpint, size_t *k_mpint_len)
 {
 	struct ossl_dhgex_ctx *ctx = dh_ctx;
-	BIGNUM *e = NULL;
-	BIGNUM *k = NULL;
-	int     ret;
+	BIGNUM                *e   = NULL;
+	BIGNUM                *k   = NULL;
+	int                    ret;
 
 	/* Parse e */
 	int64_t pv = parse_bn_mpint(e_buf, e_bufsz, &e);
@@ -535,11 +525,11 @@ ossl_free_ctx(void *dh_ctx)
  * ---------------------------------------------------------------- */
 
 static const struct dhgex_ops ossl_dhgex_ops = {
-	.client_keygen = ossl_client_keygen,
-	.client_derive = ossl_client_derive,
-	.server_keygen = ossl_server_keygen,
-	.server_derive = ossl_server_derive,
-	.free_ctx = ossl_free_ctx,
+    .client_keygen = ossl_client_keygen,
+    .client_derive = ossl_client_derive,
+    .server_keygen = ossl_server_keygen,
+    .server_derive = ossl_server_derive,
+    .free_ctx      = ossl_free_ctx,
 };
 
 /* ----------------------------------------------------------------
@@ -565,12 +555,12 @@ dssh_register_dh_gex_sha256(void)
 
 	if (kex == NULL)
 		return DSSH_ERROR_ALLOC;
-	kex->next = NULL;
-	kex->handler = dhgex_handler;
-	kex->cleanup = kex_cleanup;
-	kex->flags = DSSH_KEX_FLAG_NEEDS_SIGNATURE_CAPABLE;
+	kex->next      = NULL;
+	kex->handler   = dhgex_handler;
+	kex->cleanup   = kex_cleanup;
+	kex->flags     = DSSH_KEX_FLAG_NEEDS_SIGNATURE_CAPABLE;
 	kex->hash_name = "SHA-256";
-	kex->ctx = &default_provider;
+	kex->ctx       = &default_provider;
 	memcpy(kex->name, DHGEX_KEX_NAME, DHGEX_KEX_NAME_LEN + 1);
 	return dssh_transport_register_kex(kex);
 }

@@ -7,13 +7,13 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "deucessh.h"
 #include "deucessh-crypto.h"
 #include "deucessh-kex.h"
+#include "deucessh.h"
 #include "dh-gex-sha256-ops.h"
 #include "kex/dh-gex-sha256.h"
 #ifdef DSSH_TESTING
-#include "ssh-internal.h"
+ #include "ssh-internal.h"
 #endif
 
 /*
@@ -26,22 +26,13 @@
  * include the 4-byte length prefix), written directly into the hash.
  */
 static int
-compute_exchange_hash(
-    const char *v_c, size_t v_c_len,
-    const char *v_s, size_t v_s_len,
-    const uint8_t *i_c, size_t i_c_len,
-    const uint8_t *i_s, size_t i_s_len,
-    const uint8_t *k_s, size_t k_s_len,
-    uint32_t gex_min, uint32_t gex_n, uint32_t gex_max,
-    const uint8_t *p_mpint, size_t p_mpint_len,
-    const uint8_t *g_mpint, size_t g_mpint_len,
-    const uint8_t *e_mpint, size_t e_mpint_len,
-    const uint8_t *f_mpint, size_t f_mpint_len,
-    const uint8_t *k_mpint, size_t k_mpint_len,
-    uint8_t *hash_out)
+compute_exchange_hash(const char *v_c, size_t v_c_len, const char *v_s, size_t v_s_len, const uint8_t *i_c,
+    size_t i_c_len, const uint8_t *i_s, size_t i_s_len, const uint8_t *k_s, size_t k_s_len, uint32_t gex_min,
+    uint32_t gex_n, uint32_t gex_max, const uint8_t *p_mpint, size_t p_mpint_len, const uint8_t *g_mpint,
+    size_t g_mpint_len, const uint8_t *e_mpint, size_t e_mpint_len, const uint8_t *f_mpint, size_t f_mpint_len,
+    const uint8_t *k_mpint, size_t k_mpint_len, uint8_t *hash_out)
 {
-	if (v_c_len > UINT32_MAX || v_s_len > UINT32_MAX
-	    || i_c_len > UINT32_MAX || i_s_len > UINT32_MAX
+	if (v_c_len > UINT32_MAX || v_s_len > UINT32_MAX || i_c_len > UINT32_MAX || i_s_len > UINT32_MAX
 	    || k_s_len > UINT32_MAX)
 		return DSSH_ERROR_INVALID;
 
@@ -57,17 +48,34 @@ compute_exchange_hash(
 	size_t  lp;
 	int     ok = 1;
 
-#define HASH_U32(val, data, len) do { \
-	lp = 0; \
-	if (dssh_serialize_uint32((val), lenbuf, 4, &lp) < 0) { ok = 0; break; } \
-	if (dssh_hash_update(hctx, lenbuf, 4) < 0) { ok = 0; break; } \
-	if (dssh_hash_update(hctx, (const uint8_t *)(data), (len)) < 0) { ok = 0; break; } \
-} while (0)
-#define HASH_U32_ONLY(val) do { \
-	lp = 0; \
-	if (dssh_serialize_uint32((val), lenbuf, 4, &lp) < 0) { ok = 0; break; } \
-	if (dssh_hash_update(hctx, lenbuf, 4) < 0) { ok = 0; break; } \
-} while (0)
+#define HASH_U32(val, data, len)                                                  \
+	do {                                                                      \
+		lp = 0;                                                           \
+		if (dssh_serialize_uint32((val), lenbuf, 4, &lp) < 0) {           \
+			ok = 0;                                                   \
+			break;                                                    \
+		}                                                                 \
+		if (dssh_hash_update(hctx, lenbuf, 4) < 0) {                      \
+			ok = 0;                                                   \
+			break;                                                    \
+		}                                                                 \
+		if (dssh_hash_update(hctx, (const uint8_t *)(data), (len)) < 0) { \
+			ok = 0;                                                   \
+			break;                                                    \
+		}                                                                 \
+	} while (0)
+#define HASH_U32_ONLY(val)                                              \
+	do {                                                            \
+		lp = 0;                                                 \
+		if (dssh_serialize_uint32((val), lenbuf, 4, &lp) < 0) { \
+			ok = 0;                                         \
+			break;                                          \
+		}                                                       \
+		if (dssh_hash_update(hctx, lenbuf, 4) < 0) {            \
+			ok = 0;                                         \
+			break;                                          \
+		}                                                       \
+	} while (0)
 
 	HASH_U32((uint32_t)v_c_len, v_c, v_c_len);
 	HASH_U32((uint32_t)v_s_len, v_s, v_s_len);
@@ -102,17 +110,17 @@ compute_exchange_hash(
 static int
 dhgex_client(struct dssh_kex_context *kctx, const struct dhgex_ops *ops)
 {
-	int            res;
-	dssh_key_algo  ka = kctx->key_algo;
-	void          *dh_ctx = NULL;
-	uint8_t       *e_mpint = NULL;
-	uint8_t       *p_mpint = NULL;
-	uint8_t       *g_mpint = NULL;
-	uint8_t       *k_raw = NULL;
-	uint8_t       *k_mpint = NULL;
-	size_t         e_mpint_len = 0;
-	size_t         k_raw_len = 0;
-	size_t         k_mpint_len = 0;
+	int           res;
+	dssh_key_algo ka          = kctx->key_algo;
+	void         *dh_ctx      = NULL;
+	uint8_t      *e_mpint     = NULL;
+	uint8_t      *p_mpint     = NULL;
+	uint8_t      *g_mpint     = NULL;
+	uint8_t      *k_raw       = NULL;
+	uint8_t      *k_mpint     = NULL;
+	size_t        e_mpint_len = 0;
+	size_t        k_raw_len   = 0;
+	size_t        k_mpint_len = 0;
 
 	uint32_t client_min = GEX_MIN;
 	uint32_t client_n   = GEX_N;
@@ -127,7 +135,7 @@ dhgex_client(struct dssh_kex_context *kctx, const struct dhgex_ops *ops)
 		size_t  pos = 0;
 
 		msg[pos++] = SSH_MSG_KEX_DH_GEX_REQUEST;
-		res = dssh_serialize_uint32(client_min, msg, sizeof(msg), &pos);
+		res        = dssh_serialize_uint32(client_min, msg, sizeof(msg), &pos);
 		if (res < 0)
 			return res;
 		res = dssh_serialize_uint32(client_n, msg, sizeof(msg), &pos);
@@ -153,8 +161,7 @@ dhgex_client(struct dssh_kex_context *kctx, const struct dhgex_ops *ops)
 	/* 3. Parse group, generate keypair → e_mpint */
 	size_t group_consumed;
 
-	res = ops->client_keygen(&payload[1], payload_len - 1,
-	    &group_consumed, &e_mpint, &e_mpint_len, &dh_ctx);
+	res = ops->client_keygen(&payload[1], payload_len - 1, &group_consumed, &e_mpint, &e_mpint_len, &dh_ctx);
 	if (res < 0)
 		return res;
 
@@ -163,7 +170,7 @@ dhgex_client(struct dssh_kex_context *kctx, const struct dhgex_ops *ops)
 	 * Must copy now because the next recv will overwrite the payload
 	 * buffer. */
 	const uint8_t *pg_start = &payload[1];
-	uint32_t p_mpint_data_len;
+	uint32_t       p_mpint_data_len;
 
 	if (dssh_parse_uint32(pg_start, group_consumed, &p_mpint_data_len) < 4) {
 		res = DSSH_ERROR_PARSE;
@@ -188,7 +195,7 @@ dhgex_client(struct dssh_kex_context *kctx, const struct dhgex_ops *ops)
 
 	/* 4. Send GEX_INIT(e) */
 	{
-		size_t   init_sz = 1 + e_mpint_len;
+		size_t   init_sz  = 1 + e_mpint_len;
 		uint8_t *init_msg = malloc(init_sz);
 
 		if (init_msg == NULL) {
@@ -236,17 +243,16 @@ dhgex_client(struct dssh_kex_context *kctx, const struct dhgex_ops *ops)
 	/* 6. Derive K from f → also validates f */
 	int64_t f_consumed;
 
-	res = ops->client_derive(dh_ctx, &payload[rpos],
-	    payload_len - rpos, &f_consumed,
-	    &k_raw, &k_raw_len, &k_mpint, &k_mpint_len);
+	res = ops->client_derive(dh_ctx, &payload[rpos], payload_len - rpos, &f_consumed, &k_raw, &k_raw_len,
+	    &k_mpint, &k_mpint_len);
 	ops->free_ctx(dh_ctx);
 	dh_ctx = NULL;
 	if (res < 0)
 		goto cleanup;
 
 	/* f mpint for the hash */
-	const uint8_t *f_mpint = &payload[rpos];
-	size_t f_mpint_len = (size_t)f_consumed;
+	const uint8_t *f_mpint     = &payload[rpos];
+	size_t         f_mpint_len = (size_t)f_consumed;
 
 	rpos += f_mpint_len;
 
@@ -271,19 +277,9 @@ dhgex_client(struct dssh_kex_context *kctx, const struct dhgex_ops *ops)
 	/* 7. Compute exchange hash */
 	uint8_t hash[SHA256_DIGEST_LEN];
 
-	res = compute_exchange_hash(
-	    kctx->v_c, kctx->v_c_len,
-	    kctx->v_s, kctx->v_s_len,
-	    kctx->i_c, kctx->i_c_len,
-	    kctx->i_s, kctx->i_s_len,
-	    k_s, ks_len,
-	    client_min, client_n, client_max,
-	    p_mpint, p_mpint_len,
-	    g_mpint, g_mpint_len,
-	    e_mpint, e_mpint_len,
-	    f_mpint, f_mpint_len,
-	    k_mpint, k_mpint_len,
-	    hash);
+	res = compute_exchange_hash(kctx->v_c, kctx->v_c_len, kctx->v_s, kctx->v_s_len, kctx->i_c, kctx->i_c_len,
+	    kctx->i_s, kctx->i_s_len, k_s, ks_len, client_min, client_n, client_max, p_mpint, p_mpint_len, g_mpint,
+	    g_mpint_len, e_mpint, e_mpint_len, f_mpint, f_mpint_len, k_mpint, k_mpint_len, hash);
 	free(p_mpint);
 	p_mpint = NULL;
 	free(g_mpint);
@@ -301,8 +297,7 @@ dhgex_client(struct dssh_kex_context *kctx, const struct dhgex_ops *ops)
 		res = DSSH_ERROR_INIT;
 		goto cleanup;
 	}
-	res = ka->verify(k_s, ks_len, sig_h, sig_len,
-	    hash, SHA256_DIGEST_LEN);
+	res = ka->verify(k_s, ks_len, sig_h, sig_len, hash, SHA256_DIGEST_LEN);
 	if (res < 0)
 		goto cleanup;
 
@@ -314,10 +309,10 @@ dhgex_client(struct dssh_kex_context *kctx, const struct dhgex_ops *ops)
 	}
 	memcpy(kctx->exchange_hash, hash, SHA256_DIGEST_LEN);
 	kctx->exchange_hash_sz = SHA256_DIGEST_LEN;
-	kctx->shared_secret = k_raw;
+	kctx->shared_secret    = k_raw;
 	kctx->shared_secret_sz = k_raw_len;
-	k_raw = NULL;
-	res = 0;
+	k_raw                  = NULL;
+	res                    = 0;
 
 cleanup:
 	free(e_mpint);
@@ -339,21 +334,21 @@ cleanup:
 static int
 dhgex_server(struct dssh_kex_context *kctx, const struct dhgex_ops *ops)
 {
-	int            res;
-	dssh_key_algo  ka = kctx->key_algo;
-	void          *dh_ctx = NULL;
-	uint8_t       *p_mpint = NULL;
-	uint8_t       *g_mpint = NULL;
-	uint8_t       *f_mpint = NULL;
-	uint8_t       *k_raw = NULL;
-	uint8_t       *k_mpint = NULL;
-	uint8_t       *sig_buf = NULL;
-	size_t         p_mpint_len = 0;
-	size_t         g_mpint_len = 0;
-	size_t         f_mpint_len = 0;
-	size_t         k_raw_len = 0;
-	size_t         k_mpint_len = 0;
-	size_t         sig_len = 0;
+	int           res;
+	dssh_key_algo ka          = kctx->key_algo;
+	void         *dh_ctx      = NULL;
+	uint8_t      *p_mpint     = NULL;
+	uint8_t      *g_mpint     = NULL;
+	uint8_t      *f_mpint     = NULL;
+	uint8_t      *k_raw       = NULL;
+	uint8_t      *k_mpint     = NULL;
+	uint8_t      *sig_buf     = NULL;
+	size_t        p_mpint_len = 0;
+	size_t        g_mpint_len = 0;
+	size_t        f_mpint_len = 0;
+	size_t        k_raw_len   = 0;
+	size_t        k_mpint_len = 0;
+	size_t        sig_len     = 0;
 
 	uint32_t client_min, client_n, client_max;
 	uint8_t  msg_type;
@@ -364,7 +359,7 @@ dhgex_server(struct dssh_kex_context *kctx, const struct dhgex_ops *ops)
 		return DSSH_ERROR_INIT;
 
 	const uint8_t *k_s_buf = NULL;
-	size_t  k_s_len;
+	size_t         k_s_len;
 
 	res = ka->pubkey(&k_s_buf, &k_s_len, ka->ctx);
 	if (res < 0)
@@ -384,8 +379,7 @@ dhgex_server(struct dssh_kex_context *kctx, const struct dhgex_ops *ops)
 		return DSSH_ERROR_PARSE;
 
 	/* 2. Select group via provider */
-	struct dssh_dh_gex_provider *prov =
-	    (struct dssh_dh_gex_provider *)kctx->kex_data;
+	struct dssh_dh_gex_provider *prov = (struct dssh_dh_gex_provider *)kctx->kex_data;
 
 	if ((prov == NULL) || (prov->select_group == NULL))
 		return DSSH_ERROR_INIT;
@@ -393,14 +387,13 @@ dhgex_server(struct dssh_kex_context *kctx, const struct dhgex_ops *ops)
 	uint8_t *p_bytes = NULL, *g_bytes = NULL;
 	size_t   p_len, g_len;
 
-	res = prov->select_group(client_min, client_n, client_max,
-	    &p_bytes, &p_len, &g_bytes, &g_len, prov->cbdata);
+	res =
+	    prov->select_group(client_min, client_n, client_max, &p_bytes, &p_len, &g_bytes, &g_len, prov->cbdata);
 	if (res < 0)
 		return res;
 
 	/* 3. Load group, generate keypair → p_mpint, g_mpint, f_mpint */
-	res = ops->server_keygen(p_bytes, p_len, g_bytes, g_len,
-	    &p_mpint, &p_mpint_len, &g_mpint, &g_mpint_len,
+	res = ops->server_keygen(p_bytes, p_len, g_bytes, g_len, &p_mpint, &p_mpint_len, &g_mpint, &g_mpint_len,
 	    &f_mpint, &f_mpint_len, &dh_ctx);
 	free(p_bytes);
 	free(g_bytes);
@@ -409,7 +402,7 @@ dhgex_server(struct dssh_kex_context *kctx, const struct dhgex_ops *ops)
 
 	/* 4. Send GEX_GROUP(p, g) */
 	{
-		size_t   group_sz = 1 + p_mpint_len + g_mpint_len;
+		size_t   group_sz  = 1 + p_mpint_len + g_mpint_len;
 		uint8_t *group_msg = malloc(group_sz);
 
 		if (group_msg == NULL) {
@@ -441,34 +434,23 @@ dhgex_server(struct dssh_kex_context *kctx, const struct dhgex_ops *ops)
 	/* 6. Parse e, validate, derive K */
 	int64_t e_consumed;
 
-	res = ops->server_derive(dh_ctx, &payload[1],
-	    payload_len - 1, &e_consumed,
-	    &k_raw, &k_raw_len, &k_mpint, &k_mpint_len);
+	res = ops->server_derive(dh_ctx, &payload[1], payload_len - 1, &e_consumed, &k_raw, &k_raw_len, &k_mpint,
+	    &k_mpint_len);
 	ops->free_ctx(dh_ctx);
 	dh_ctx = NULL;
 	if (res < 0)
 		goto cleanup;
 
 	/* e mpint for the hash */
-	const uint8_t *e_mpint = &payload[1];
-	size_t e_mpint_len = (size_t)e_consumed;
+	const uint8_t *e_mpint     = &payload[1];
+	size_t         e_mpint_len = (size_t)e_consumed;
 
 	/* 7. Compute exchange hash */
 	uint8_t hash[SHA256_DIGEST_LEN];
 
-	res = compute_exchange_hash(
-	    kctx->v_c, kctx->v_c_len,
-	    kctx->v_s, kctx->v_s_len,
-	    kctx->i_c, kctx->i_c_len,
-	    kctx->i_s, kctx->i_s_len,
-	    k_s_buf, k_s_len,
-	    client_min, client_n, client_max,
-	    p_mpint, p_mpint_len,
-	    g_mpint, g_mpint_len,
-	    e_mpint, e_mpint_len,
-	    f_mpint, f_mpint_len,
-	    k_mpint, k_mpint_len,
-	    hash);
+	res = compute_exchange_hash(kctx->v_c, kctx->v_c_len, kctx->v_s, kctx->v_s_len, kctx->i_c, kctx->i_c_len,
+	    kctx->i_s, kctx->i_s_len, k_s_buf, k_s_len, client_min, client_n, client_max, p_mpint, p_mpint_len,
+	    g_mpint, g_mpint_len, e_mpint, e_mpint_len, f_mpint, f_mpint_len, k_mpint, k_mpint_len, hash);
 	free(p_mpint);
 	p_mpint = NULL;
 	free(g_mpint);
@@ -480,8 +462,7 @@ dhgex_server(struct dssh_kex_context *kctx, const struct dhgex_ops *ops)
 		goto cleanup;
 
 	/* 8. Sign exchange hash */
-	res = ka->sign(&sig_buf, &sig_len,
-	    hash, SHA256_DIGEST_LEN, ka->ctx);
+	res = ka->sign(&sig_buf, &sig_len, hash, SHA256_DIGEST_LEN, ka->ctx);
 	if (res < 0)
 		goto cleanup;
 
@@ -516,12 +497,12 @@ dhgex_server(struct dssh_kex_context *kctx, const struct dhgex_ops *ops)
 			goto cleanup;
 		}
 
-		size_t pos = 0;
+		size_t   pos         = 0;
 		uint32_t k_s_len_u32 = (uint32_t)k_s_len;
 		uint32_t sig_len_u32 = (uint32_t)sig_len;
 
 		reply[pos++] = SSH_MSG_KEX_DH_GEX_REPLY;
-		res = dssh_serialize_uint32(k_s_len_u32, reply, reply_sz, &pos);
+		res          = dssh_serialize_uint32(k_s_len_u32, reply, reply_sz, &pos);
 		if (res < 0) {
 			free(reply);
 			goto cleanup;
@@ -532,7 +513,7 @@ dhgex_server(struct dssh_kex_context *kctx, const struct dhgex_ops *ops)
 		pos += f_mpint_len;
 		free(f_mpint);
 		f_mpint = NULL;
-		res = dssh_serialize_uint32(sig_len_u32, reply, reply_sz, &pos);
+		res     = dssh_serialize_uint32(sig_len_u32, reply, reply_sz, &pos);
 		if (res < 0) {
 			free(reply);
 			goto cleanup;
@@ -541,7 +522,7 @@ dhgex_server(struct dssh_kex_context *kctx, const struct dhgex_ops *ops)
 		pos += sig_len;
 		free(sig_buf);
 		sig_buf = NULL;
-		res = kctx->send(reply, pos, kctx->io_ctx);
+		res     = kctx->send(reply, pos, kctx->io_ctx);
 		free(reply);
 		if (res < 0)
 			goto cleanup;
@@ -555,10 +536,10 @@ dhgex_server(struct dssh_kex_context *kctx, const struct dhgex_ops *ops)
 	}
 	memcpy(kctx->exchange_hash, hash, SHA256_DIGEST_LEN);
 	kctx->exchange_hash_sz = SHA256_DIGEST_LEN;
-	kctx->shared_secret = k_raw;
+	kctx->shared_secret    = k_raw;
 	kctx->shared_secret_sz = k_raw_len;
-	k_raw = NULL;
-	res = 0;
+	k_raw                  = NULL;
+	res                    = 0;
 
 cleanup:
 	free(p_mpint);

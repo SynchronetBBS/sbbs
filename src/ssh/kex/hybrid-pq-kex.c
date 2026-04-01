@@ -7,12 +7,12 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "deucessh.h"
 #include "deucessh-crypto.h"
 #include "deucessh-kex.h"
+#include "deucessh.h"
 #include "hybrid-pq-kex-ops.h"
 #ifdef DSSH_TESTING
-#include "ssh-internal.h"
+ #include "ssh-internal.h"
 #endif
 
 /*
@@ -23,21 +23,13 @@
  * K is encoded as string (not mpint) for hybrid PQ methods.
  */
 static int
-compute_exchange_hash(const struct hybrid_pq_params *p,
-    const char *v_c, size_t v_c_len,
-    const char *v_s, size_t v_s_len,
-    const uint8_t *i_c, size_t i_c_len,
-    const uint8_t *i_s, size_t i_s_len,
-    const uint8_t *k_s, size_t k_s_len,
-    const uint8_t *q_c, size_t q_c_len,
-    const uint8_t *q_s, size_t q_s_len,
-    const uint8_t *k, size_t k_len,
-    uint8_t *hash_out)
+compute_exchange_hash(const struct hybrid_pq_params *p, const char *v_c, size_t v_c_len, const char *v_s,
+    size_t v_s_len, const uint8_t *i_c, size_t i_c_len, const uint8_t *i_s, size_t i_s_len, const uint8_t *k_s,
+    size_t k_s_len, const uint8_t *q_c, size_t q_c_len, const uint8_t *q_s, size_t q_s_len, const uint8_t *k,
+    size_t k_len, uint8_t *hash_out)
 {
-	if (v_c_len > UINT32_MAX || v_s_len > UINT32_MAX
-	    || i_c_len > UINT32_MAX || i_s_len > UINT32_MAX
-	    || k_s_len > UINT32_MAX || q_c_len > UINT32_MAX
-	    || q_s_len > UINT32_MAX || k_len > UINT32_MAX)
+	if (v_c_len > UINT32_MAX || v_s_len > UINT32_MAX || i_c_len > UINT32_MAX || i_s_len > UINT32_MAX
+	    || k_s_len > UINT32_MAX || q_c_len > UINT32_MAX || q_s_len > UINT32_MAX || k_len > UINT32_MAX)
 		return DSSH_ERROR_INVALID;
 
 	dssh_hash_ctx *hctx = NULL;
@@ -52,12 +44,22 @@ compute_exchange_hash(const struct hybrid_pq_params *p,
 	size_t  lp;
 	int     ok = 1;
 
-#define HASH_U32(val, data, len) do { \
-	lp = 0; \
-	if (dssh_serialize_uint32((val), lenbuf, 4, &lp) < 0) { ok = 0; break; } \
-	if (dssh_hash_update(hctx, lenbuf, 4) < 0) { ok = 0; break; } \
-	if (dssh_hash_update(hctx, (const uint8_t *)(data), (len)) < 0) { ok = 0; break; } \
-} while (0)
+#define HASH_U32(val, data, len)                                                  \
+	do {                                                                      \
+		lp = 0;                                                           \
+		if (dssh_serialize_uint32((val), lenbuf, 4, &lp) < 0) {           \
+			ok = 0;                                                   \
+			break;                                                    \
+		}                                                                 \
+		if (dssh_hash_update(hctx, lenbuf, 4) < 0) {                      \
+			ok = 0;                                                   \
+			break;                                                    \
+		}                                                                 \
+		if (dssh_hash_update(hctx, (const uint8_t *)(data), (len)) < 0) { \
+			ok = 0;                                                   \
+			break;                                                    \
+		}                                                                 \
+	} while (0)
 
 	HASH_U32((uint32_t)v_c_len, v_c, v_c_len);
 	HASH_U32((uint32_t)v_s_len, v_s, v_s_len);
@@ -82,14 +84,13 @@ compute_exchange_hash(const struct hybrid_pq_params *p,
  * Returns malloc'd buffer in *k_out, caller frees.
  */
 static int
-compute_shared_secret(const struct hybrid_pq_params *p,
-    const uint8_t *ss_pq, const uint8_t *ss_cl,
+compute_shared_secret(const struct hybrid_pq_params *p, const uint8_t *ss_pq, const uint8_t *ss_cl,
     uint8_t **k_out, size_t *k_len)
 {
 	if (p->pq_ss_len > SIZE_MAX - HYBRID_PQ_X25519_KEY_LEN)
 		return DSSH_ERROR_INVALID;
-	size_t combined_len = p->pq_ss_len + HYBRID_PQ_X25519_KEY_LEN;
-	uint8_t *combined = malloc(combined_len);
+	size_t   combined_len = p->pq_ss_len + HYBRID_PQ_X25519_KEY_LEN;
+	uint8_t *combined     = malloc(combined_len);
 
 	if (combined == NULL)
 		return DSSH_ERROR_ALLOC;
@@ -137,22 +138,20 @@ compute_shared_secret(const struct hybrid_pq_params *p,
 }
 
 static int
-hybrid_pq_client(struct dssh_kex_context *kctx,
-    const struct hybrid_pq_params *p,
-    const struct hybrid_pq_ops *ops)
+hybrid_pq_client(struct dssh_kex_context *kctx, const struct hybrid_pq_params *p, const struct hybrid_pq_ops *ops)
 {
-	dssh_key_algo  ka = kctx->key_algo;
-	int            res;
-	uint8_t       *pq_pk = NULL;
-	void          *pq_sk_ctx = NULL;
-	void          *x25519_priv = NULL;
-	uint8_t       *ss_pq = NULL;
-	uint8_t       *K = NULL;
-	uint8_t       *q_c_raw = NULL;
-	uint8_t       *hash = NULL;
-	size_t         K_len = 0;
-	uint8_t        x25519_pk[HYBRID_PQ_X25519_KEY_LEN];
-	uint8_t        x25519_ss[HYBRID_PQ_X25519_KEY_LEN];
+	dssh_key_algo ka = kctx->key_algo;
+	int           res;
+	uint8_t      *pq_pk       = NULL;
+	void         *pq_sk_ctx   = NULL;
+	void         *x25519_priv = NULL;
+	uint8_t      *ss_pq       = NULL;
+	uint8_t      *K           = NULL;
+	uint8_t      *q_c_raw     = NULL;
+	uint8_t      *hash        = NULL;
+	size_t        K_len       = 0;
+	uint8_t       x25519_pk[HYBRID_PQ_X25519_KEY_LEN];
+	uint8_t       x25519_ss[HYBRID_PQ_X25519_KEY_LEN];
 
 	memset(x25519_ss, 0, sizeof(x25519_ss));
 
@@ -172,7 +171,7 @@ hybrid_pq_client(struct dssh_kex_context *kctx,
 
 	/* 3. Send INIT: Q_C = pq_pk || x25519_pk */
 	{
-		size_t   init_sz = 1 + 4 + p->q_c_len;
+		size_t   init_sz  = 1 + 4 + p->q_c_len;
 		uint8_t *init_msg = malloc(init_sz);
 
 		if (init_msg == NULL) {
@@ -180,11 +179,11 @@ hybrid_pq_client(struct dssh_kex_context *kctx,
 			goto cleanup;
 		}
 
-		size_t pos = 0;
+		size_t   pos         = 0;
 		uint32_t q_c_len_u32 = (uint32_t)p->q_c_len;
 
 		init_msg[pos++] = SSH_MSG_KEX_ECDH_INIT;
-		res = dssh_serialize_uint32(q_c_len_u32, init_msg, init_sz, &pos);
+		res             = dssh_serialize_uint32(q_c_len_u32, init_msg, init_sz, &pos);
 		if (res < 0) {
 			free(init_msg);
 			goto cleanup;
@@ -226,7 +225,7 @@ hybrid_pq_client(struct dssh_kex_context *kctx,
 		res = DSSH_ERROR_PARSE;
 		goto cleanup;
 	}
-	const uint8_t *k_s = &reply[rpos];
+	const uint8_t *k_s     = &reply[rpos];
 	size_t         k_s_len = ks_len;
 
 	rpos += ks_len;
@@ -247,7 +246,7 @@ hybrid_pq_client(struct dssh_kex_context *kctx,
 		res = DSSH_ERROR_PARSE;
 		goto cleanup;
 	}
-	const uint8_t *pq_ct = &reply[rpos];
+	const uint8_t *pq_ct          = &reply[rpos];
 	const uint8_t *peer_x25519_pk = &reply[rpos + p->pq_ct_len];
 
 	rpos += qs_len;
@@ -311,16 +310,9 @@ hybrid_pq_client(struct dssh_kex_context *kctx,
 		goto cleanup;
 	}
 
-	res = compute_exchange_hash(p,
-	    kctx->v_c, kctx->v_c_len,
-	    kctx->v_s, kctx->v_s_len,
-	    kctx->i_c, kctx->i_c_len,
-	    kctx->i_s, kctx->i_s_len,
-	    k_s, k_s_len,
-	    q_c_raw, p->q_c_len,
-	    pq_ct, p->q_s_len,
-	    K, K_len,
-	    hash);
+	res =
+	    compute_exchange_hash(p, kctx->v_c, kctx->v_c_len, kctx->v_s, kctx->v_s_len, kctx->i_c, kctx->i_c_len,
+		kctx->i_s, kctx->i_s_len, k_s, k_s_len, q_c_raw, p->q_c_len, pq_ct, p->q_s_len, K, K_len, hash);
 	free(q_c_raw);
 	q_c_raw = NULL;
 	if (res < 0)
@@ -331,19 +323,18 @@ hybrid_pq_client(struct dssh_kex_context *kctx,
 		res = DSSH_ERROR_INIT;
 		goto cleanup;
 	}
-	res = ka->verify(k_s, k_s_len, sig_h, sig_len,
-	    hash, p->digest_len);
+	res = ka->verify(k_s, k_s_len, sig_h, sig_len, hash, p->digest_len);
 	if (res < 0)
 		goto cleanup;
 
 	/* 10. Store results */
-	kctx->shared_secret = K;
+	kctx->shared_secret    = K;
 	kctx->shared_secret_sz = K_len;
-	kctx->exchange_hash = hash;
+	kctx->exchange_hash    = hash;
 	kctx->exchange_hash_sz = p->digest_len;
-	K = NULL;
-	hash = NULL;
-	res = 0;
+	K                      = NULL;
+	hash                   = NULL;
+	res                    = 0;
 
 cleanup:
 	free(pq_pk);
@@ -366,21 +357,19 @@ cleanup:
 }
 
 static int
-hybrid_pq_server(struct dssh_kex_context *kctx,
-    const struct hybrid_pq_params *p,
-    const struct hybrid_pq_ops *ops)
+hybrid_pq_server(struct dssh_kex_context *kctx, const struct hybrid_pq_params *p, const struct hybrid_pq_ops *ops)
 {
-	dssh_key_algo  ka = kctx->key_algo;
-	int            res;
-	uint8_t       *pq_ct = NULL;
-	uint8_t       *ss_pq = NULL;
-	uint8_t       *K = NULL;
-	uint8_t       *q_s_raw = NULL;
-	uint8_t       *hash = NULL;
-	uint8_t       *sig_buf = NULL;
-	size_t         K_len = 0;
-	size_t         sig_len = 0;
-	uint8_t        x25519_ss[HYBRID_PQ_X25519_KEY_LEN];
+	dssh_key_algo ka = kctx->key_algo;
+	int           res;
+	uint8_t      *pq_ct   = NULL;
+	uint8_t      *ss_pq   = NULL;
+	uint8_t      *K       = NULL;
+	uint8_t      *q_s_raw = NULL;
+	uint8_t      *hash    = NULL;
+	uint8_t      *sig_buf = NULL;
+	size_t        K_len   = 0;
+	size_t        sig_len = 0;
+	uint8_t       x25519_ss[HYBRID_PQ_X25519_KEY_LEN];
 
 	memset(x25519_ss, 0, sizeof(x25519_ss));
 
@@ -389,7 +378,7 @@ hybrid_pq_server(struct dssh_kex_context *kctx,
 		return DSSH_ERROR_INIT;
 
 	const uint8_t *k_s_buf = NULL;
-	size_t  k_s_len;
+	size_t         k_s_len;
 
 	res = ka->pubkey(&k_s_buf, &k_s_len, ka->ctx);
 	if (res < 0)
@@ -418,9 +407,9 @@ hybrid_pq_server(struct dssh_kex_context *kctx,
 	if (rpos + qc_len > payload_len)
 		return DSSH_ERROR_PARSE;
 
-	const uint8_t *client_pq_pk = &payload[rpos];
+	const uint8_t *client_pq_pk     = &payload[rpos];
 	const uint8_t *client_x25519_pk = &payload[rpos + p->pq_pk_len];
-	const uint8_t *q_c_raw = &payload[rpos];
+	const uint8_t *q_c_raw          = &payload[rpos];
 
 	/* 4. PQ encapsulate */
 	pq_ct = malloc(p->pq_ct_len);
@@ -438,8 +427,7 @@ hybrid_pq_server(struct dssh_kex_context *kctx,
 	/* 5. X25519 exchange */
 	uint8_t x25519_pk[HYBRID_PQ_X25519_KEY_LEN];
 
-	res = ops->x25519_exchange(client_x25519_pk,
-	    HYBRID_PQ_X25519_KEY_LEN, x25519_pk, x25519_ss);
+	res = ops->x25519_exchange(client_x25519_pk, HYBRID_PQ_X25519_KEY_LEN, x25519_pk, x25519_ss);
 	if (res < 0)
 		goto cleanup;
 
@@ -470,28 +458,20 @@ hybrid_pq_server(struct dssh_kex_context *kctx,
 		goto cleanup;
 	}
 
-	res = compute_exchange_hash(p,
-	    kctx->v_c, kctx->v_c_len,
-	    kctx->v_s, kctx->v_s_len,
-	    kctx->i_c, kctx->i_c_len,
-	    kctx->i_s, kctx->i_s_len,
-	    k_s_buf, k_s_len,
-	    q_c_raw, p->q_c_len,
-	    q_s_raw, p->q_s_len,
-	    K, K_len,
-	    hash);
+	res = compute_exchange_hash(p, kctx->v_c, kctx->v_c_len, kctx->v_s, kctx->v_s_len, kctx->i_c,
+	    kctx->i_c_len, kctx->i_s, kctx->i_s_len, k_s_buf, k_s_len, q_c_raw, p->q_c_len, q_s_raw, p->q_s_len, K,
+	    K_len, hash);
 	if (res < 0)
 		goto cleanup;
 
 	/* 9. Sign exchange hash */
-	res = ka->sign(&sig_buf, &sig_len,
-	    hash, p->digest_len, ka->ctx);
+	res = ka->sign(&sig_buf, &sig_len, hash, p->digest_len, ka->ctx);
 	if (res < 0)
 		goto cleanup;
 
 	/* 10. Send REPLY */
 	{
-		size_t   reply_sz = 1 + 4 + k_s_len + 4 + p->q_s_len + 4 + sig_len;
+		size_t   reply_sz  = 1 + 4 + k_s_len + 4 + p->q_s_len + 4 + sig_len;
 		uint8_t *reply_msg = malloc(reply_sz);
 
 		if (reply_msg == NULL) {
@@ -503,13 +483,14 @@ hybrid_pq_server(struct dssh_kex_context *kctx,
 
 		reply_msg[rp++] = SSH_MSG_KEX_ECDH_REPLY;
 
-#define REPLY_SER(v) do { \
-	res = dssh_serialize_uint32((v), reply_msg, reply_sz, &rp); \
-	if (res < 0) { \
-		free(reply_msg); \
-		goto cleanup; \
-	} \
-} while (0)
+#define REPLY_SER(v)                                                        \
+	do {                                                                \
+		res = dssh_serialize_uint32((v), reply_msg, reply_sz, &rp); \
+		if (res < 0) {                                              \
+			free(reply_msg);                                    \
+			goto cleanup;                                       \
+		}                                                           \
+	} while (0)
 
 		REPLY_SER((uint32_t)k_s_len);
 		memcpy(&reply_msg[rp], k_s_buf, k_s_len);
@@ -534,13 +515,13 @@ hybrid_pq_server(struct dssh_kex_context *kctx,
 	}
 
 	/* Store results */
-	kctx->shared_secret = K;
+	kctx->shared_secret    = K;
 	kctx->shared_secret_sz = K_len;
-	kctx->exchange_hash = hash;
+	kctx->exchange_hash    = hash;
 	kctx->exchange_hash_sz = p->digest_len;
-	K = NULL;
-	hash = NULL;
-	res = 0;
+	K                      = NULL;
+	hash                   = NULL;
+	res                    = 0;
 
 cleanup:
 	free(pq_ct);
@@ -560,8 +541,7 @@ cleanup:
 }
 
 DSSH_PRIVATE int
-hybrid_pq_handler_impl(struct dssh_kex_context *kctx,
-    const struct hybrid_pq_params *p,
+hybrid_pq_handler_impl(struct dssh_kex_context *kctx, const struct hybrid_pq_params *p,
     const struct hybrid_pq_ops *ops)
 {
 	if (kctx->client)

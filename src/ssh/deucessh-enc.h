@@ -17,13 +17,12 @@ extern "C" {
 
 typedef struct dssh_enc_ctx dssh_enc_ctx;
 
-typedef int (*dssh_enc_init)(const uint8_t *key, const uint8_t *iv,
-    bool encrypt, dssh_enc_ctx **ctx);
-typedef int (*dssh_enc_crypt)(uint8_t *buf, size_t bufsz, dssh_enc_ctx *ctx);
+typedef int  (*dssh_enc_init)(const uint8_t *key, const uint8_t *iv, bool encrypt, dssh_enc_ctx **ctx);
+typedef int  (*dssh_enc_crypt)(uint8_t *buf, size_t bufsz, dssh_enc_ctx *ctx);
 typedef void (*dssh_enc_cleanup)(dssh_enc_ctx *ctx);
 
 typedef struct dssh_enc_s {
-	struct dssh_enc_s *next;       /* must be first -- generic traversal assumes offsetof(next) == 0 */
+	struct dssh_enc_s *next; /* must be first -- generic traversal assumes offsetof(next) == 0 */
 	dssh_enc_init      init;
 	dssh_enc_crypt     encrypt;
 	dssh_enc_crypt     decrypt;
@@ -33,9 +32,8 @@ typedef struct dssh_enc_s {
 	uint16_t           key_size;
 	char               name[];
 } *dssh_enc;
-static_assert(!offsetof(struct dssh_enc_s, next),
-    "next must be at offset 0 for generic list traversal");
 
+static_assert(!offsetof(struct dssh_enc_s, next), "next must be at offset 0 for generic list traversal");
 DSSH_PUBLIC int dssh_transport_register_enc(dssh_enc enc);
 
 #ifdef __cplusplus

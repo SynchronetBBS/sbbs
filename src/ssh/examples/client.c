@@ -5,15 +5,17 @@
  * If omitted, opens an interactive shell with pty.
  */
 
+#include <sys/socket.h>
+#include <sys/types.h>
+
+#include <netinet/in.h>
+
 #include <errno.h>
 #include <netdb.h>
-#include <netinet/in.h>
 #include <poll.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/socket.h>
-#include <sys/types.h>
 #include <threads.h>
 #include <unistd.h>
 
@@ -29,16 +31,12 @@ static dssh_session sess;
  * Keyboard-interactive callback: answer every prompt with password
  * ================================================================ */
 static int
-kbi_prompt(const uint8_t *name, size_t name_len,
-    const uint8_t *instruction, size_t instruction_len,
-    uint32_t num_prompts,
-    const uint8_t **prompts, const size_t *prompt_lens,
-    const bool *echo,
-    uint8_t **responses, size_t *response_lens,
-    void *cbdata)
+kbi_prompt(const uint8_t *name, size_t name_len, const uint8_t *instruction, size_t instruction_len,
+    uint32_t num_prompts, const uint8_t **prompts, const size_t *prompt_lens, const bool *echo,
+    uint8_t **responses, size_t *response_lens, void *cbdata)
 {
 	const char *password = cbdata;
-	size_t      plen = strlen(password);
+	size_t      plen     = strlen(password);
 
 	for (uint32_t i = 0; i < num_prompts; i++) {
 		responses[i] = malloc(plen);
@@ -73,11 +71,11 @@ tx(uint8_t *buf, size_t bufsz, dssh_session s, void *cbdata)
 
 	while (sent_total < bufsz && !dssh_session_is_terminated(s)) {
 		struct pollfd fd = {
-			.fd = sock,
-			.events = POLLOUT,
-			.revents = 0,
+		    .fd      = sock,
+		    .events  = POLLOUT,
+		    .revents = 0,
 		};
-		int           pr = poll(&fd, 1, 5000);
+		int pr = poll(&fd, 1, 5000);
 
 		if (pr < 0)
 			return DSSH_ERROR_INIT;
@@ -107,11 +105,11 @@ rx(uint8_t *buf, size_t bufsz, dssh_session s, void *cbdata)
 
 	while (rxlen < bufsz && !dssh_session_is_terminated(s)) {
 		struct pollfd fd = {
-			.fd = sock,
-			.events = POLLIN,
-			.revents = 0,
+		    .fd      = sock,
+		    .events  = POLLIN,
+		    .revents = 0,
 		};
-		int           pr = poll(&fd, 1, 5000);
+		int pr = poll(&fd, 1, 5000);
 
 		if (pr < 0)
 			return DSSH_ERROR_INIT;
@@ -138,10 +136,9 @@ rx(uint8_t *buf, size_t bufsz, dssh_session s, void *cbdata)
 }
 
 static int
-rxline(uint8_t *buf, size_t bufsz, size_t *bytes_received,
-    dssh_session s, void *cbdata)
+rxline(uint8_t *buf, size_t bufsz, size_t *bytes_received, dssh_session s, void *cbdata)
 {
-	size_t pos = 0;
+	size_t pos    = 0;
 	bool   lastcr = false;
 
 	while (!dssh_session_is_terminated(s)) {
@@ -180,11 +177,11 @@ stdin_thread(void *arg)
 	uint8_t      buf[4096];
 
 	for (;;) {
-                /* Wait for stdin data */
+		/* Wait for stdin data */
 		struct pollfd fds[1] = {
-			{.fd = STDIN_FILENO, .events = POLLIN},
+		    {.fd = STDIN_FILENO, .events = POLLIN},
 		};
-		int           pr = poll(fds, 1, 1000);
+		int pr = poll(fds, 1, 1000);
 
 		if (dssh_session_is_terminated(sess))
 			break;
@@ -196,7 +193,7 @@ stdin_thread(void *arg)
 		if (n <= 0)
 			break;
 
-                /* Wait for channel write space, then send */
+		/* Wait for channel write space, then send */
 		while (n > 0) {
 			int ev = dssh_chan_poll(ch, DSSH_POLL_WRITE, 1000);
 
@@ -222,13 +219,13 @@ done:
 int
 main(int argc, char **argv)
 {
-	const char *host = "127.0.0.1";
-	int         port = 22;
+	const char *host     = "127.0.0.1";
+	int         port     = 22;
 	const char *username = NULL;
 	const char *password = NULL;
-	const char *command = NULL;
+	const char *command  = NULL;
 
-        /* client user pass [host] [port] [command] */
+	/* client user pass [host] [port] [command] */
 	if (argc > 1)
 		username = argv[1];
 	if (argc > 2)
@@ -245,14 +242,14 @@ main(int argc, char **argv)
 		return 1;
 	}
 
-        /* Connect */
+	/* Connect */
 	char port_str[16];
 
 	snprintf(port_str, sizeof(port_str), "%d", port);
 
-	struct addrinfo  hints = {
-		.ai_family = AF_UNSPEC,
-		.ai_socktype = SOCK_STREAM,
+	struct addrinfo hints = {
+	    .ai_family   = AF_UNSPEC,
+	    .ai_socktype = SOCK_STREAM,
 	};
 	struct addrinfo *ai;
 	int              gai = getaddrinfo(host, port_str, &hints, &ai);
@@ -275,7 +272,7 @@ main(int argc, char **argv)
 	freeaddrinfo(ai);
 	fprintf(stderr, "Connected to %s:%d\n", host, port);
 
-        /* Register algorithms */
+	/* Register algorithms */
 	if (dssh_transport_set_callbacks(tx, rx, rxline, extra_line) != 0)
 		return 1;
 	if (dssh_register_mlkem768x25519_sha256() != 0)
@@ -297,7 +294,7 @@ main(int argc, char **argv)
 	if (dssh_register_none_comp() != 0)
 		return 1;
 
-        /* Initialize session */
+	/* Initialize session */
 	sess = dssh_session_init(true, 0);
 	if (sess == NULL) {
 		fprintf(stderr, "session_init failed\n");
@@ -305,7 +302,7 @@ main(int argc, char **argv)
 	}
 	dssh_session_set_terminate_cb(sess, on_terminate, NULL);
 
-        /* Handshake */
+	/* Handshake */
 	fprintf(stderr, "Handshake...\n");
 
 	int res = dssh_transport_handshake(sess);
@@ -315,13 +312,11 @@ main(int argc, char **argv)
 		return 1;
 	}
 	fprintf(stderr, "Remote: %s\n", dssh_transport_get_remote_version(sess));
-	fprintf(stderr, "KEX: %s, Host key: %s, Enc: %s, MAC: %s\n",
-	    dssh_transport_get_kex_name(sess),
-	    dssh_transport_get_hostkey_name(sess),
-	    dssh_transport_get_enc_name(sess),
+	fprintf(stderr, "KEX: %s, Host key: %s, Enc: %s, MAC: %s\n", dssh_transport_get_kex_name(sess),
+	    dssh_transport_get_hostkey_name(sess), dssh_transport_get_enc_name(sess),
 	    dssh_transport_get_mac_name(sess));
 
-        /* Authenticate */
+	/* Authenticate */
 	char methods[256];
 
 	res = dssh_auth_get_methods(sess, username, methods, sizeof(methods));
@@ -346,14 +341,14 @@ main(int argc, char **argv)
 		fprintf(stderr, "Authenticated.\n");
 	}
 
-        /* Start the demux thread */
+	/* Start the demux thread */
 	res = dssh_session_start(sess);
 	if (res < 0) {
 		fprintf(stderr, "session_start failed: %d\n", res);
 		return 1;
 	}
 
-        /* Open channel */
+	/* Open channel */
 	struct dssh_chan_params cp;
 
 	if (command != NULL) {
@@ -377,7 +372,7 @@ main(int argc, char **argv)
 		return 1;
 	}
 
-        /* Interactive mode: spawn a stdin writer thread */
+	/* Interactive mode: spawn a stdin writer thread */
 	thrd_t writer;
 	bool   have_writer = false;
 
@@ -386,10 +381,9 @@ main(int argc, char **argv)
 			have_writer = true;
 	}
 
-        /* Read stdout/stderr/events via poll */
+	/* Read stdout/stderr/events via poll */
 	uint8_t buf[4096];
-	int     poll_events = DSSH_POLL_READ | DSSH_POLL_READEXT
-	    | DSSH_POLL_EVENT;
+	int     poll_events = DSSH_POLL_READ | DSSH_POLL_READEXT | DSSH_POLL_EVENT;
 
 	for (;;) {
 		int ev = dssh_chan_poll(ch, poll_events, -1);
@@ -402,8 +396,7 @@ main(int argc, char **argv)
 
 			if (dssh_chan_read_event(ch, &event) == 0) {
 				if (event.type == DSSH_EVENT_SIGNAL)
-					fprintf(stderr, "[signal: SIG%s]\n",
-					    event.signal.name);
+					fprintf(stderr, "[signal: SIG%s]\n", event.signal.name);
 			}
 			continue;
 		}
@@ -422,7 +415,7 @@ main(int argc, char **argv)
 		}
 	}
 
-        /* Clean up */
+	/* Clean up */
 	if (have_writer) {
 		dssh_session_terminate(sess);
 

@@ -1,8 +1,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "deucessh.h"
 #include "deucessh-comp.h"
+#include "deucessh.h"
 
 static int
 compress(uint8_t *buf, size_t *bufsz, dssh_comp_ctx *ctx)
@@ -25,14 +25,14 @@ DSSH_PUBLIC int
 dssh_register_none_comp(void)
 {
 	static const char   name[] = "none";
-	struct dssh_comp_s *comp = malloc(sizeof(*comp) + sizeof(name));
+	struct dssh_comp_s *comp   = malloc(sizeof(*comp) + sizeof(name));
 
 	if (comp == NULL)
 		return DSSH_ERROR_ALLOC;
-	comp->next = NULL;
-	comp->compress = compress;
+	comp->next       = NULL;
+	comp->compress   = compress;
 	comp->uncompress = uncompress;
-	comp->cleanup = cleanup;
+	comp->cleanup    = cleanup;
 	memcpy(comp->name, name, sizeof(name));
 	return dssh_transport_register_comp(comp);
 }

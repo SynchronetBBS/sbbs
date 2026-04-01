@@ -1,19 +1,20 @@
 #include <openssl/evp.h>
 #include <openssl/pem.h>
+
 #include <stdlib.h>
 #include <string.h>
 
-#include "deucessh.h"
 #include "deucessh-algorithms.h"
 #include "deucessh-key-algo.h"
+#include "deucessh.h"
 #ifdef DSSH_TESTING
-#include "ssh-internal.h"
+ #include "ssh-internal.h"
 #endif
 
-#define ED25519_RAW_PUB_LEN  32
-#define ED25519_RAW_SIG_LEN  64
-#define ED25519_NAME         "ssh-ed25519"
-#define ED25519_NAME_LEN     11
+#define ED25519_RAW_PUB_LEN 32
+#define ED25519_RAW_SIG_LEN 64
+#define ED25519_NAME        "ssh-ed25519"
+#define ED25519_NAME_LEN    11
 
 struct cbdata {
 	EVP_PKEY *pkey;
@@ -24,8 +25,7 @@ struct cbdata {
 static struct cbdata *ed25519_ctx;
 
 static int
-sign(uint8_t **out, size_t *outlen,
-    const uint8_t *data, size_t data_len, dssh_key_algo_ctx *ctx)
+sign(uint8_t **out, size_t *outlen, const uint8_t *data, size_t data_len, dssh_key_algo_ctx *ctx)
 {
 	struct cbdata *cbd = (struct cbdata *)ctx;
 	/* cbd->pkey is always set by generate_key/load_key_file
@@ -47,7 +47,7 @@ sign(uint8_t **out, size_t *outlen,
 	}
 
 	uint8_t raw_sig[ED25519_RAW_SIG_LEN];
-	size_t siglen = sizeof(raw_sig);
+	size_t  siglen = sizeof(raw_sig);
 	if (EVP_DigestSign(mdctx, raw_sig, &siglen, data, data_len) != 1) {
 		EVP_MD_CTX_free(mdctx);
 		return DSSH_ERROR_INIT;
@@ -55,8 +55,8 @@ sign(uint8_t **out, size_t *outlen,
 	EVP_MD_CTX_free(mdctx);
 
 	/* Serialize SSH signature blob */
-	size_t needed = 4 + ED25519_NAME_LEN + 4 + siglen;
-	uint8_t *buf = malloc(needed);
+	size_t   needed = 4 + ED25519_NAME_LEN + 4 + siglen;
+	uint8_t *buf    = malloc(needed);
 	if (buf == NULL)
 		return DSSH_ERROR_ALLOC;
 
@@ -76,7 +76,7 @@ sign(uint8_t **out, size_t *outlen,
 	memcpy(&buf[pos], raw_sig, siglen);
 	pos += siglen;
 
-	*out = buf;
+	*out    = buf;
 	*outlen = pos;
 	return 0;
 }
@@ -103,18 +103,18 @@ pubkey(const uint8_t **out, size_t *outlen, dssh_key_algo_ctx *ctx)
 
 	/* Return cached blob if already computed */
 	if (cbd->pub_blob != NULL) {
-		*out = cbd->pub_blob;
+		*out    = cbd->pub_blob;
 		*outlen = cbd->pub_blob_len;
 		return 0;
 	}
 
 	uint8_t raw_pub[ED25519_RAW_PUB_LEN];
-	size_t raw_pub_len = sizeof(raw_pub);
+	size_t  raw_pub_len = sizeof(raw_pub);
 	if (EVP_PKEY_get_raw_public_key(cbd->pkey, raw_pub, &raw_pub_len) != 1)
 		return DSSH_ERROR_INIT;
 
-	size_t needed = 4 + ED25519_NAME_LEN + 4 + raw_pub_len;
-	uint8_t *buf = malloc(needed);
+	size_t   needed = 4 + ED25519_NAME_LEN + 4 + raw_pub_len;
+	uint8_t *buf    = malloc(needed);
 	if (buf == NULL)
 		return DSSH_ERROR_ALLOC;
 
@@ -134,10 +134,10 @@ pubkey(const uint8_t **out, size_t *outlen, dssh_key_algo_ctx *ctx)
 	memcpy(&buf[pos], raw_pub, raw_pub_len);
 	pos += raw_pub_len;
 
-	cbd->pub_blob = buf;
+	cbd->pub_blob     = buf;
 	cbd->pub_blob_len = pos;
-	*out = buf;
-	*outlen = pos;
+	*out              = buf;
+	*outlen           = pos;
 	return 0;
 }
 
@@ -148,25 +148,22 @@ pubkey(const uint8_t **out, size_t *outlen, dssh_key_algo_ctx *ctx)
  * data/data_len: the data that was signed (exchange hash)
  */
 static int
-verify(const uint8_t *key_blob, size_t key_blob_len,
-    const uint8_t *sig_blob, size_t sig_blob_len,
+verify(const uint8_t *key_blob, size_t key_blob_len, const uint8_t *sig_blob, size_t sig_blob_len,
     const uint8_t *data, size_t data_len)
 {
 	/* Parse public key from key_blob:
 	 * string algo_name, string raw_public_key */
-	size_t kp = 0;
+	size_t   kp = 0;
 	uint32_t algo_len;
-	if (dssh_parse_uint32(&key_blob[kp], key_blob_len, &algo_len) < 4 ||
-	    kp + 4 + algo_len > key_blob_len)
+	if (dssh_parse_uint32(&key_blob[kp], key_blob_len, &algo_len) < 4 || kp + 4 + algo_len > key_blob_len)
 		return DSSH_ERROR_PARSE;
 	kp += 4;
-	if (algo_len != ED25519_NAME_LEN ||
-	    memcmp(&key_blob[kp], ED25519_NAME, ED25519_NAME_LEN) != 0)
+	if (algo_len != ED25519_NAME_LEN || memcmp(&key_blob[kp], ED25519_NAME, ED25519_NAME_LEN) != 0)
 		return DSSH_ERROR_INVALID;
 	kp += algo_len;
 	uint32_t raw_pub_len;
-	if (dssh_parse_uint32(&key_blob[kp], key_blob_len - kp, &raw_pub_len) < 4 ||
-	    kp + 4 + raw_pub_len > key_blob_len)
+	if (dssh_parse_uint32(&key_blob[kp], key_blob_len - kp, &raw_pub_len) < 4
+	    || kp + 4 + raw_pub_len > key_blob_len)
 		return DSSH_ERROR_PARSE;
 	kp += 4;
 	const uint8_t *raw_pub = &key_blob[kp];
@@ -179,19 +176,18 @@ verify(const uint8_t *key_blob, size_t key_blob_len,
 
 	/* Parse signature from sig_blob:
 	 * string algo_name, string raw_signature */
-	size_t sp = 0;
+	size_t   sp = 0;
 	uint32_t sig_algo_len;
-	if (dssh_parse_uint32(&sig_blob[sp], sig_blob_len, &sig_algo_len) < 4 ||
-	    sp + 4 + sig_algo_len > sig_blob_len)
+	if (dssh_parse_uint32(&sig_blob[sp], sig_blob_len, &sig_algo_len) < 4
+	    || sp + 4 + sig_algo_len > sig_blob_len)
 		return DSSH_ERROR_PARSE;
 	sp += 4;
-	if (sig_algo_len != ED25519_NAME_LEN ||
-	    memcmp(&sig_blob[sp], ED25519_NAME, ED25519_NAME_LEN) != 0)
+	if (sig_algo_len != ED25519_NAME_LEN || memcmp(&sig_blob[sp], ED25519_NAME, ED25519_NAME_LEN) != 0)
 		return DSSH_ERROR_INVALID;
 	sp += sig_algo_len;
 	uint32_t raw_sig_len;
-	if (dssh_parse_uint32(&sig_blob[sp], sig_blob_len - sp, &raw_sig_len) < 4 ||
-	    sp + 4 + raw_sig_len > sig_blob_len)
+	if (dssh_parse_uint32(&sig_blob[sp], sig_blob_len - sp, &raw_sig_len) < 4
+	    || sp + 4 + raw_sig_len > sig_blob_len)
 		return DSSH_ERROR_PARSE;
 	sp += 4;
 	const uint8_t *raw_sig = &sig_blob[sp];
@@ -202,8 +198,7 @@ verify(const uint8_t *key_blob, size_t key_blob_len,
 	if (sp != sig_blob_len)
 		return DSSH_ERROR_PARSE;
 
-	EVP_PKEY *pkey = EVP_PKEY_new_raw_public_key_ex(
-	    NULL, "ED25519", NULL, raw_pub, raw_pub_len);
+	EVP_PKEY *pkey = EVP_PKEY_new_raw_public_key_ex(NULL, "ED25519", NULL, raw_pub, raw_pub_len);
 	if (pkey == NULL)
 		return DSSH_ERROR_INIT;
 
@@ -214,8 +209,8 @@ verify(const uint8_t *key_blob, size_t key_blob_len,
 	}
 
 	int result;
-	if (EVP_DigestVerifyInit(mdctx, NULL, NULL, NULL, pkey) != 1 ||
-	    EVP_DigestVerify(mdctx, raw_sig, raw_sig_len, data, data_len) != 1)
+	if (EVP_DigestVerifyInit(mdctx, NULL, NULL, NULL, pkey) != 1
+	    || EVP_DigestVerify(mdctx, raw_sig, raw_sig_len, data, data_len) != 1)
 		result = DSSH_ERROR_INVALID;
 	else
 		result = 0;
@@ -231,8 +226,7 @@ haskey(dssh_key_algo_ctx *ctx)
 	struct cbdata *cbd = (struct cbdata *)ctx;
 	/* Only Ed25519 keys are stored in this module's ctx;
 	 * EVP_PKEY_is_a always matches. */
-	return (cbd != NULL && cbd->pkey != NULL
-	    && EVP_PKEY_is_a(cbd->pkey, "ED25519"));
+	return (cbd != NULL && cbd->pkey != NULL && EVP_PKEY_is_a(cbd->pkey, "ED25519"));
 }
 
 static void
@@ -255,21 +249,20 @@ dssh_register_ssh_ed25519(void)
 	struct dssh_key_algo_s *ka = malloc(sizeof(*ka) + ED25519_NAME_LEN + 1);
 	if (ka == NULL)
 		return DSSH_ERROR_ALLOC;
-	ka->next = NULL;
-	ka->sign = sign;
-	ka->verify = verify;
-	ka->pubkey = pubkey;
-	ka->haskey = haskey;
+	ka->next    = NULL;
+	ka->sign    = sign;
+	ka->verify  = verify;
+	ka->pubkey  = pubkey;
+	ka->haskey  = haskey;
 	ka->cleanup = cleanup;
-	ka->ctx = NULL;
-	ka->flags = DSSH_KEY_ALGO_FLAG_SIGNATURE_CAPABLE;
+	ka->ctx     = NULL;
+	ka->flags   = DSSH_KEY_ALGO_FLAG_SIGNATURE_CAPABLE;
 	memcpy(ka->name, ED25519_NAME, ED25519_NAME_LEN + 1);
 	return dssh_transport_register_key_algo(ka);
 }
 
 DSSH_PUBLIC int
-dssh_ed25519_load_key_file(const char *path, dssh_pem_password_cb pw_cb,
-    void *pw_cbdata)
+dssh_ed25519_load_key_file(const char *path, dssh_pem_password_cb pw_cb, void *pw_cbdata)
 {
 	if (path == NULL)
 		return DSSH_ERROR_INIT;
@@ -307,7 +300,7 @@ dssh_ed25519_load_key_file(const char *path, dssh_pem_password_cb pw_cb,
 	else {
 		EVP_PKEY_free(ed25519_ctx->pkey);
 		free(ed25519_ctx->pub_blob);
-		ed25519_ctx->pub_blob = NULL;
+		ed25519_ctx->pub_blob     = NULL;
 		ed25519_ctx->pub_blob_len = 0;
 	}
 
@@ -316,8 +309,7 @@ dssh_ed25519_load_key_file(const char *path, dssh_pem_password_cb pw_cb,
 }
 
 DSSH_PUBLIC int
-dssh_ed25519_save_key_file(const char *path, dssh_pem_password_cb pw_cb,
-    void *pw_cbdata)
+dssh_ed25519_save_key_file(const char *path, dssh_pem_password_cb pw_cb, void *pw_cbdata)
 {
 	if (path == NULL)
 		return DSSH_ERROR_INIT;
@@ -341,8 +333,7 @@ dssh_ed25519_save_key_file(const char *path, dssh_pem_password_cb pw_cb,
 			return DSSH_ERROR_INIT;
 		}
 	}
-	int ok = PEM_write_PrivateKey(fp, ed25519_ctx->pkey,
-	    cipher, NULL, 0, pw_cb, pw_cbdata);
+	int ok = PEM_write_PrivateKey(fp, ed25519_ctx->pkey, cipher, NULL, 0, pw_cb, pw_cbdata);
 
 	EVP_CIPHER_free(cipher);
 	if (fclose(fp) != 0)
@@ -354,9 +345,8 @@ DSSH_PUBLIC int64_t
 dssh_ed25519_get_pub_str(char *buf, size_t bufsz)
 {
 	const uint8_t *blob;
-	size_t blob_len;
-	int res = pubkey(&blob, &blob_len,
-	    (dssh_key_algo_ctx *)ed25519_ctx);
+	size_t         blob_len;
+	int            res = pubkey(&blob, &blob_len, (dssh_key_algo_ctx *)ed25519_ctx);
 	if (res < 0)
 		return res;
 
@@ -371,8 +361,7 @@ dssh_ed25519_get_pub_str(char *buf, size_t bufsz)
 
 	memcpy(buf, ED25519_NAME, ED25519_NAME_LEN);
 	buf[ED25519_NAME_LEN] = ' ';
-	EVP_EncodeBlock((unsigned char *)&buf[ED25519_NAME_LEN + 1],
-	    blob, (int)blob_len);
+	EVP_EncodeBlock((unsigned char *)&buf[ED25519_NAME_LEN + 1], blob, (int)blob_len);
 	return (int64_t)needed;
 }
 
@@ -381,7 +370,7 @@ dssh_ed25519_save_pub_file(const char *path)
 {
 	if (path == NULL)
 		return DSSH_ERROR_INIT;
-	char str[256];
+	char    str[256];
 	int64_t len = dssh_ed25519_get_pub_str(str, sizeof(str));
 	if (len < 0)
 		return (int)len;
@@ -398,14 +387,13 @@ dssh_ed25519_save_pub_file(const char *path)
 DSSH_PUBLIC int
 dssh_ed25519_generate_key(void)
 {
-	EVP_PKEY *pkey = NULL;
+	EVP_PKEY     *pkey = NULL;
 	EVP_PKEY_CTX *pctx = EVP_PKEY_CTX_new_from_name(NULL, "ED25519", NULL);
 
 	if (pctx == NULL)
 		return DSSH_ERROR_ALLOC;
 
-	if (EVP_PKEY_keygen_init(pctx) != 1 ||
-	    EVP_PKEY_keygen(pctx, &pkey) != 1) {
+	if (EVP_PKEY_keygen_init(pctx) != 1 || EVP_PKEY_keygen(pctx, &pkey) != 1) {
 		EVP_PKEY_CTX_free(pctx);
 		return DSSH_ERROR_INIT;
 	}
@@ -429,7 +417,7 @@ dssh_ed25519_generate_key(void)
 	else {
 		EVP_PKEY_free(ed25519_ctx->pkey);
 		free(ed25519_ctx->pub_blob);
-		ed25519_ctx->pub_blob = NULL;
+		ed25519_ctx->pub_blob     = NULL;
 		ed25519_ctx->pub_blob_len = 0;
 	}
 

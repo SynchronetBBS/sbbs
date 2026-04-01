@@ -2,10 +2,10 @@
  * mac/hmac-sha2-256-botan.cpp -- HMAC-SHA-256 via Botan3 native C++ API.
  */
 
+#include <botan/mac.h>
+
 #include <cstdlib>
 #include <memory>
-
-#include <botan/mac.h>
 
 #include "deucessh.h"
 
@@ -19,8 +19,7 @@ extern "C" int
 dssh_botan_hmac256_init(const uint8_t *key, dssh_mac_ctx **out)
 {
 	try {
-		auto mac = Botan::MessageAuthenticationCode::create_or_throw(
-		    "HMAC(SHA-256)");
+		auto mac = Botan::MessageAuthenticationCode::create_or_throw("HMAC(SHA-256)");
 		mac->set_key(key, HMAC_SHA2_256_KEY_SIZE);
 
 		dssh_mac_ctx *cbd = new (std::nothrow) dssh_mac_ctx;
@@ -28,16 +27,16 @@ dssh_botan_hmac256_init(const uint8_t *key, dssh_mac_ctx **out)
 		if (cbd == NULL)
 			return DSSH_ERROR_ALLOC;
 		cbd->mac = std::move(mac);
-		*out = cbd;
+		*out     = cbd;
 		return 0;
-	} catch (...) {
+	}
+	catch (...) {
 		return DSSH_ERROR_INIT;
 	}
 }
 
 extern "C" int
-dssh_botan_hmac256_generate(const uint8_t *buf, size_t bufsz,
-    uint8_t *outbuf, dssh_mac_ctx *ctx)
+dssh_botan_hmac256_generate(const uint8_t *buf, size_t bufsz, uint8_t *outbuf, dssh_mac_ctx *ctx)
 {
 	if (ctx == NULL)
 		return DSSH_ERROR_INIT;
@@ -46,7 +45,8 @@ dssh_botan_hmac256_generate(const uint8_t *buf, size_t bufsz,
 		ctx->mac->update(buf, bufsz);
 		ctx->mac->final(outbuf);
 		return 0;
-	} catch (...) {
+	}
+	catch (...) {
 		return DSSH_ERROR_INIT;
 	}
 }
@@ -56,6 +56,7 @@ dssh_botan_hmac256_cleanup(dssh_mac_ctx *ctx)
 {
 	try {
 		delete ctx;
-	} catch (...) {
+	}
+	catch (...) {
 	}
 }

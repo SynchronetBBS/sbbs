@@ -19,8 +19,8 @@
 extern "C" {
 #endif
 
-#define X25519_KEY_LEN    32
-#define SHA256_DIGEST_LEN 32
+#define X25519_KEY_LEN      32
+#define SHA256_DIGEST_LEN   32
 #define C25519_KEX_NAME     "curve25519-sha256"
 #define C25519_KEX_NAME_LEN 17
 
@@ -47,10 +47,10 @@ struct dssh_kex_context;
  */
 struct dssh_c25519_ops {
 	int  (*keygen)(uint8_t pub_out[X25519_KEY_LEN], void **priv_ctx);
-	int  (*derive)(void *priv_ctx, const uint8_t *peer_pub,
-	         size_t peer_pub_len, uint8_t **secret, size_t *secret_len);
-	int  (*exchange)(const uint8_t *peer_pub, size_t peer_pub_len,
-	         uint8_t *our_pub, uint8_t **secret, size_t *secret_len);
+	int  (*derive)(void *priv_ctx, const uint8_t *peer_pub, size_t peer_pub_len, uint8_t **secret,
+            size_t *secret_len);
+	int  (*exchange)(const uint8_t *peer_pub, size_t peer_pub_len, uint8_t *our_pub, uint8_t **secret,
+            size_t *secret_len);
 	void (*free_priv)(void *priv_ctx);
 };
 
@@ -58,8 +58,7 @@ struct dssh_c25519_ops {
  * Shared protocol handler.  Called by backend-specific wrappers.
  * DSSH_PRIVATE: library-internal, not exported to consumers.
  */
-DSSH_PRIVATE int curve25519_handler_impl(struct dssh_kex_context *kctx,
-    const struct dssh_c25519_ops *ops);
+DSSH_PRIVATE int curve25519_handler_impl(struct dssh_kex_context *kctx, const struct dssh_c25519_ops *ops);
 
 #ifdef __cplusplus
 }

@@ -5,15 +5,16 @@
 
 #include <openssl/crypto.h>
 #include <openssl/evp.h>
+
 #include <stdlib.h>
 #include <string.h>
 
-#include "deucessh.h"
+#include "curve25519-sha256-ops.h"
 #include "deucessh-crypto.h"
 #include "deucessh-kex.h"
-#include "curve25519-sha256-ops.h"
+#include "deucessh.h"
 #ifdef DSSH_TESTING
-#include "ssh-internal.h"
+ #include "ssh-internal.h"
 #endif
 
 /*
@@ -25,12 +26,11 @@ static int
 ossl_keygen(uint8_t pub_out[X25519_KEY_LEN], void **priv_ctx)
 {
 	EVP_PKEY_CTX *pctx = EVP_PKEY_CTX_new_from_name(NULL, "X25519", NULL);
-	EVP_PKEY     *key = NULL;
+	EVP_PKEY     *key  = NULL;
 
 	if (pctx == NULL)
 		return DSSH_ERROR_ALLOC;
-	if ((EVP_PKEY_keygen_init(pctx) != 1)
-	    || (EVP_PKEY_keygen(pctx, &key) != 1)) {
+	if ((EVP_PKEY_keygen_init(pctx) != 1) || (EVP_PKEY_keygen(pctx, &key) != 1)) {
 		EVP_PKEY_CTX_free(pctx);
 		return DSSH_ERROR_INIT;
 	}
@@ -52,16 +52,14 @@ ossl_keygen(uint8_t pub_out[X25519_KEY_LEN], void **priv_ctx)
  * Does NOT free priv_ctx -- caller must call ossl_free_priv.
  */
 static int
-ossl_derive(void *priv_ctx, const uint8_t *peer_pub,
-    size_t peer_pub_len, uint8_t **secret, size_t *secret_len)
+ossl_derive(void *priv_ctx, const uint8_t *peer_pub, size_t peer_pub_len, uint8_t **secret, size_t *secret_len)
 {
-	EVP_PKEY     *our_key = priv_ctx;
+	EVP_PKEY     *our_key  = priv_ctx;
 	EVP_PKEY     *peer_key = NULL;
-	EVP_PKEY_CTX *pctx = NULL;
+	EVP_PKEY_CTX *pctx     = NULL;
 	int           res;
 
-	peer_key = EVP_PKEY_new_raw_public_key_ex(NULL, "X25519", NULL,
-	    peer_pub, peer_pub_len);
+	peer_key = EVP_PKEY_new_raw_public_key_ex(NULL, "X25519", NULL, peer_pub, peer_pub_len);
 	if (peer_key == NULL)
 		return DSSH_ERROR_INIT;
 
@@ -86,7 +84,7 @@ ossl_derive(void *priv_ctx, const uint8_t *peer_pub,
 		OPENSSL_cleanse(*secret, *secret_len);
 		free(*secret);
 		*secret = NULL;
-		res = DSSH_ERROR_INIT;
+		res     = DSSH_ERROR_INIT;
 		goto done;
 	}
 	res = 0;
@@ -103,8 +101,8 @@ done:
  * and computes the shared secret from peer_pub.
  */
 DSSH_TESTABLE int
-x25519_exchange(const uint8_t *peer_pub, size_t peer_pub_len,
-    uint8_t *our_pub, uint8_t **secret, size_t *secret_len)
+x25519_exchange(const uint8_t *peer_pub, size_t peer_pub_len, uint8_t *our_pub, uint8_t **secret,
+    size_t *secret_len)
 {
 	void *priv_ctx = NULL;
 
@@ -123,10 +121,10 @@ ossl_free_priv(void *priv_ctx)
 }
 
 static const struct dssh_c25519_ops ossl_ops = {
-	.keygen    = ossl_keygen,
-	.derive    = ossl_derive,
-	.exchange  = x25519_exchange,
-	.free_priv = ossl_free_priv,
+    .keygen    = ossl_keygen,
+    .derive    = ossl_derive,
+    .exchange  = x25519_exchange,
+    .free_priv = ossl_free_priv,
 };
 
 DSSH_TESTABLE int
@@ -148,12 +146,12 @@ dssh_register_curve25519_sha256(void)
 
 	if (kex == NULL)
 		return DSSH_ERROR_ALLOC;
-	kex->next = NULL;
-	kex->handler = curve25519_handler;
-	kex->cleanup = kex_cleanup;
-	kex->flags = DSSH_KEX_FLAG_NEEDS_SIGNATURE_CAPABLE;
+	kex->next      = NULL;
+	kex->handler   = curve25519_handler;
+	kex->cleanup   = kex_cleanup;
+	kex->flags     = DSSH_KEX_FLAG_NEEDS_SIGNATURE_CAPABLE;
 	kex->hash_name = "SHA-256";
-	kex->ctx = NULL;
+	kex->ctx       = NULL;
 	memcpy(kex->name, C25519_KEX_NAME, C25519_KEX_NAME_LEN + 1);
 	return dssh_transport_register_kex(kex);
 }

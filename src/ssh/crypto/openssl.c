@@ -5,15 +5,16 @@
 #include <openssl/crypto.h>
 #include <openssl/evp.h>
 #include <openssl/rand.h>
+
 #include <limits.h>
 #include <stdlib.h>
 #include <string.h>
 
-#include "deucessh.h"
 #include "deucessh-crypto.h"
+#include "deucessh.h"
 
 #ifdef DSSH_TESTING
-#include "ssh-internal.h"
+ #include "ssh-internal.h"
 #endif
 
 struct dssh_hash_ctx {
@@ -34,8 +35,8 @@ map_hash_name(const char *name)
 		const char *in;
 		const char *out;
 	} table[] = {
-		{ "SHA-256", "SHA256" },
-		{ "SHA-512", "SHA512" },
+	    {"SHA-256", "SHA256"},
+	    {"SHA-512", "SHA512"},
 	};
 
 	for (size_t i = 0; i < sizeof(table) / sizeof(table[0]); i++) {
@@ -46,8 +47,7 @@ map_hash_name(const char *name)
 }
 
 DSSH_PUBLIC int
-dssh_hash_init(dssh_hash_ctx **ctx, const char *name,
-    size_t *out_digest_len)
+dssh_hash_init(dssh_hash_ctx **ctx, const char *name, size_t *out_digest_len)
 {
 	if (ctx == NULL || name == NULL || out_digest_len == NULL)
 		return DSSH_ERROR_INVALID;
@@ -87,11 +87,11 @@ dssh_hash_init(dssh_hash_ctx **ctx, const char *name,
 		return DSSH_ERROR_ALLOC;
 	}
 
-	hctx->mdctx = mdctx;
-	hctx->md = md;
+	hctx->mdctx      = mdctx;
+	hctx->md         = md;
 	hctx->digest_len = (size_t)md_size;
 
-	*ctx = hctx;
+	*ctx            = hctx;
 	*out_digest_len = hctx->digest_len;
 	return 0;
 }
@@ -141,8 +141,7 @@ dssh_hash_free(dssh_hash_ctx *ctx)
 }
 
 DSSH_PUBLIC int
-dssh_hash_oneshot(const char *name, const uint8_t *data, size_t len,
-    uint8_t *out, size_t outlen)
+dssh_hash_oneshot(const char *name, const uint8_t *data, size_t len, uint8_t *out, size_t outlen)
 {
 	if (name == NULL || out == NULL)
 		return DSSH_ERROR_INVALID;
@@ -171,7 +170,7 @@ dssh_hash_oneshot(const char *name, const uint8_t *data, size_t len,
 	}
 
 	unsigned int actual = 0;
-	int ok = EVP_Digest(data, len, out, &actual, md, NULL);
+	int          ok     = EVP_Digest(data, len, out, &actual, md, NULL);
 
 	EVP_MD_free(md);
 
@@ -236,7 +235,7 @@ dssh_base64_encode(const uint8_t *in, size_t len, char *out, size_t outlen)
 		return DSSH_ERROR_TOOLONG;
 
 	int len_i = (int)len;
-	int ret = EVP_EncodeBlock((unsigned char *)out, in, len_i);
+	int ret   = EVP_EncodeBlock((unsigned char *)out, in, len_i);
 
 	if (ret < 0)
 		return DSSH_ERROR_INIT;

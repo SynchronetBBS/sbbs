@@ -36,15 +36,13 @@ typedef struct dssh_hash_ctx dssh_hash_ctx;
  * set to the hash output size in bytes.
  * Returns 0 on success, negative DSSH_ERROR_* on failure.
  */
-DSSH_PUBLIC int dssh_hash_init(dssh_hash_ctx **ctx, const char *name,
-    size_t *out_digest_len);
+DSSH_PUBLIC int dssh_hash_init(dssh_hash_ctx **ctx, const char *name, size_t *out_digest_len);
 
 /*
  * Feed data into the hash context.
  * Returns 0 on success, negative DSSH_ERROR_* on failure.
  */
-DSSH_PUBLIC int dssh_hash_update(dssh_hash_ctx *ctx,
-    const uint8_t *data, size_t len);
+DSSH_PUBLIC int dssh_hash_update(dssh_hash_ctx *ctx, const uint8_t *data, size_t len);
 
 /*
  * Finalize the hash and write the digest to out, then reset the
@@ -53,8 +51,7 @@ DSSH_PUBLIC int dssh_hash_update(dssh_hash_ctx *ctx,
  * out must be at least out_digest_len bytes (from dssh_hash_init).
  * Returns 0 on success, negative DSSH_ERROR_* on failure.
  */
-DSSH_PUBLIC int dssh_hash_final(dssh_hash_ctx *ctx,
-    uint8_t *out, size_t outlen);
+DSSH_PUBLIC int dssh_hash_final(dssh_hash_ctx *ctx, uint8_t *out, size_t outlen);
 
 /*
  * Free a hash context.  Use when the context is no longer needed
@@ -69,9 +66,7 @@ DSSH_PUBLIC void dssh_hash_free(dssh_hash_ctx *ctx);
  * out must be at least as large as the algorithm's digest length.
  * Returns 0 on success, negative DSSH_ERROR_* on failure.
  */
-DSSH_PUBLIC int dssh_hash_oneshot(const char *name,
-    const uint8_t *data, size_t len,
-    uint8_t *out, size_t outlen);
+DSSH_PUBLIC int dssh_hash_oneshot(const char *name, const uint8_t *data, size_t len, uint8_t *out, size_t outlen);
 
 /*
  * Fill buf with len cryptographically secure random bytes.
@@ -92,8 +87,7 @@ DSSH_PUBLIC int dssh_crypto_memcmp(const void *a, const void *b, size_t len);
  * Returns the number of characters written (excluding NUL terminator),
  * or negative DSSH_ERROR_* on failure.
  */
-DSSH_PUBLIC int dssh_base64_encode(const uint8_t *in, size_t len,
-    char *out, size_t outlen);
+DSSH_PUBLIC int dssh_base64_encode(const uint8_t *in, size_t len, char *out, size_t outlen);
 
 #ifdef __cplusplus
 }

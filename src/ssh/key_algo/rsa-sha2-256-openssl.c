@@ -5,15 +5,16 @@
 #include <openssl/param_build.h>
 #include <openssl/pem.h>
 #include <openssl/rsa.h>
+
 #include <stdlib.h>
 #include <string.h>
 
-#include "deucessh.h"
 #include "deucessh-algorithms.h"
 #include "deucessh-crypto.h"
 #include "deucessh-key-algo.h"
+#include "deucessh.h"
 #ifdef DSSH_TESTING
-#include "ssh-internal.h"
+ #include "ssh-internal.h"
 #endif
 
 #define RSA_SHA2_256_NAME     "rsa-sha2-256"
@@ -45,47 +46,42 @@ static struct cbdata *rsa_ctx;
  *   string  <RSASSA-PKCS1-v1_5 signature bytes>
  */
 static int
-verify(const uint8_t *key_blob, size_t key_blob_len,
-    const uint8_t *sig_blob, size_t sig_blob_len,
+verify(const uint8_t *key_blob, size_t key_blob_len, const uint8_t *sig_blob, size_t sig_blob_len,
     const uint8_t *data, size_t data_len)
 {
-	int result = DSSH_ERROR_INIT;
-	BIGNUM *e_bn = NULL;
-	BIGNUM *n_bn = NULL;
-	OSSL_PARAM_BLD *bld = NULL;
-	OSSL_PARAM *params = NULL;
-	EVP_PKEY_CTX *pctx = NULL;
-	EVP_PKEY *pkey = NULL;
-	EVP_MD_CTX *mdctx = NULL;
+	int             result = DSSH_ERROR_INIT;
+	BIGNUM         *e_bn   = NULL;
+	BIGNUM         *n_bn   = NULL;
+	OSSL_PARAM_BLD *bld    = NULL;
+	OSSL_PARAM     *params = NULL;
+	EVP_PKEY_CTX   *pctx   = NULL;
+	EVP_PKEY       *pkey   = NULL;
+	EVP_MD_CTX     *mdctx  = NULL;
 
 	/* Parse public key from key_blob */
-	size_t kp = 0;
+	size_t   kp = 0;
 	uint32_t slen;
 
 	/* Validate algorithm name ("ssh-rsa") */
-	if (dssh_parse_uint32(&key_blob[kp], key_blob_len - kp, &slen) < 4 ||
-	    kp + 4 + slen > key_blob_len)
+	if (dssh_parse_uint32(&key_blob[kp], key_blob_len - kp, &slen) < 4 || kp + 4 + slen > key_blob_len)
 		return DSSH_ERROR_PARSE;
 	kp += 4;
-	if (slen != RSA_KEY_TYPE_NAME_LEN ||
-	    memcmp(&key_blob[kp], RSA_KEY_TYPE_NAME, RSA_KEY_TYPE_NAME_LEN) != 0)
+	if (slen != RSA_KEY_TYPE_NAME_LEN || memcmp(&key_blob[kp], RSA_KEY_TYPE_NAME, RSA_KEY_TYPE_NAME_LEN) != 0)
 		return DSSH_ERROR_INVALID;
 	kp += slen;
 
 	/* e (public exponent) */
-	if (dssh_parse_uint32(&key_blob[kp], key_blob_len - kp, &slen) < 4 ||
-	    kp + 4 + slen > key_blob_len)
+	if (dssh_parse_uint32(&key_blob[kp], key_blob_len - kp, &slen) < 4 || kp + 4 + slen > key_blob_len)
 		return DSSH_ERROR_PARSE;
 	kp += 4;
 	if (slen > INT_MAX)
 		return DSSH_ERROR_INVALID;
 	int e_len = (int)slen;
-	e_bn = BN_bin2bn(&key_blob[kp], e_len, NULL);
+	e_bn      = BN_bin2bn(&key_blob[kp], e_len, NULL);
 	kp += slen;
 
 	/* n (modulus) */
-	if (dssh_parse_uint32(&key_blob[kp], key_blob_len - kp, &slen) < 4 ||
-	    kp + 4 + slen > key_blob_len) {
+	if (dssh_parse_uint32(&key_blob[kp], key_blob_len - kp, &slen) < 4 || kp + 4 + slen > key_blob_len) {
 		result = DSSH_ERROR_PARSE;
 		goto done;
 	}
@@ -95,7 +91,7 @@ verify(const uint8_t *key_blob, size_t key_blob_len,
 		goto done;
 	}
 	int n_len = (int)slen;
-	n_bn = BN_bin2bn(&key_blob[kp], n_len, NULL);
+	n_bn      = BN_bin2bn(&key_blob[kp], n_len, NULL);
 	kp += slen;
 
 	if (e_bn == NULL || n_bn == NULL)
@@ -109,8 +105,8 @@ verify(const uint8_t *key_blob, size_t key_blob_len,
 	bld = OSSL_PARAM_BLD_new();
 	if (bld == NULL)
 		goto done;
-	if (OSSL_PARAM_BLD_push_BN(bld, OSSL_PKEY_PARAM_RSA_N, n_bn) != 1 ||
-	    OSSL_PARAM_BLD_push_BN(bld, OSSL_PKEY_PARAM_RSA_E, e_bn) != 1)
+	if (OSSL_PARAM_BLD_push_BN(bld, OSSL_PKEY_PARAM_RSA_N, n_bn) != 1
+	    || OSSL_PARAM_BLD_push_BN(bld, OSSL_PKEY_PARAM_RSA_E, e_bn) != 1)
 		goto done;
 	params = OSSL_PARAM_BLD_to_param(bld);
 	if (params == NULL)
@@ -119,22 +115,20 @@ verify(const uint8_t *key_blob, size_t key_blob_len,
 	pctx = EVP_PKEY_CTX_new_from_name(NULL, "RSA", NULL);
 	if (pctx == NULL)
 		goto done;
-	if (EVP_PKEY_fromdata_init(pctx) != 1 ||
-	    EVP_PKEY_fromdata(pctx, &pkey, EVP_PKEY_PUBLIC_KEY, params) != 1)
+	if (EVP_PKEY_fromdata_init(pctx) != 1 || EVP_PKEY_fromdata(pctx, &pkey, EVP_PKEY_PUBLIC_KEY, params) != 1)
 		goto done;
 
 	/* Parse signature from sig_blob */
 	size_t sp = 0;
 
 	/* Validate algorithm name ("rsa-sha2-256") */
-	if (dssh_parse_uint32(&sig_blob[sp], sig_blob_len - sp, &slen) < 4 ||
-	    sp + 4 + slen > sig_blob_len) {
+	if (dssh_parse_uint32(&sig_blob[sp], sig_blob_len - sp, &slen) < 4 || sp + 4 + slen > sig_blob_len) {
 		result = DSSH_ERROR_PARSE;
 		goto done;
 	}
 	sp += 4;
-	if (slen != RSA_SHA2_256_NAME_LEN ||
-	    memcmp(&sig_blob[sp], RSA_SHA2_256_NAME, RSA_SHA2_256_NAME_LEN) != 0) {
+	if (slen != RSA_SHA2_256_NAME_LEN
+	    || memcmp(&sig_blob[sp], RSA_SHA2_256_NAME, RSA_SHA2_256_NAME_LEN) != 0) {
 		result = DSSH_ERROR_INVALID;
 		goto done;
 	}
@@ -142,8 +136,8 @@ verify(const uint8_t *key_blob, size_t key_blob_len,
 
 	/* Raw signature bytes */
 	uint32_t raw_sig_len;
-	if (dssh_parse_uint32(&sig_blob[sp], sig_blob_len - sp, &raw_sig_len) < 4 ||
-	    sp + 4 + raw_sig_len > sig_blob_len) {
+	if (dssh_parse_uint32(&sig_blob[sp], sig_blob_len - sp, &raw_sig_len) < 4
+	    || sp + 4 + raw_sig_len > sig_blob_len) {
 		result = DSSH_ERROR_PARSE;
 		goto done;
 	}
@@ -166,8 +160,7 @@ verify(const uint8_t *key_blob, size_t key_blob_len,
 	if (EVP_PKEY_CTX_set_rsa_padding(vctx, RSA_PKCS1_PADDING) != 1)
 		goto done;
 
-	if (EVP_DigestVerify(mdctx, raw_sig, raw_sig_len,
-	    data, data_len) == 1)
+	if (EVP_DigestVerify(mdctx, raw_sig, raw_sig_len, data, data_len) == 1)
 		result = 0;
 	else
 		result = DSSH_ERROR_INVALID;
@@ -190,8 +183,7 @@ done:
  *   string  <raw signature bytes>
  */
 static int
-sign(uint8_t **out, size_t *outlen,
-    const uint8_t *data, size_t data_len, dssh_key_algo_ctx *ctx)
+sign(uint8_t **out, size_t *outlen, const uint8_t *data, size_t data_len, dssh_key_algo_ctx *ctx)
 {
 	/* cbd->pkey always set by keygen/load before sign is callable. */
 	struct cbdata *cbd = (struct cbdata *)ctx;
@@ -253,7 +245,7 @@ sign(uint8_t **out, size_t *outlen,
 		return DSSH_ERROR_ALLOC;
 	}
 
-	size_t pos = 0;
+	size_t pos  = 0;
 	int    sret = dssh_serialize_uint32(RSA_SHA2_256_NAME_LEN, buf, needed, &pos);
 	if (sret < 0) {
 		free(buf);
@@ -272,7 +264,7 @@ sign(uint8_t **out, size_t *outlen,
 	pos += siglen;
 
 	free(raw_sig);
-	*out = buf;
+	*out    = buf;
 	*outlen = pos;
 	return 0;
 }
@@ -297,14 +289,14 @@ pubkey(const uint8_t **out, size_t *outlen, dssh_key_algo_ctx *ctx)
 
 	/* Return cached blob if already computed */
 	if (cbd->pub_blob != NULL) {
-		*out = cbd->pub_blob;
+		*out    = cbd->pub_blob;
 		*outlen = cbd->pub_blob_len;
 		return 0;
 	}
 
 	BIGNUM *e_bn = NULL, *n_bn = NULL;
-	if (EVP_PKEY_get_bn_param(cbd->pkey, OSSL_PKEY_PARAM_RSA_E, &e_bn) != 1 ||
-	    EVP_PKEY_get_bn_param(cbd->pkey, OSSL_PKEY_PARAM_RSA_N, &n_bn) != 1) {
+	if (EVP_PKEY_get_bn_param(cbd->pkey, OSSL_PKEY_PARAM_RSA_E, &e_bn) != 1
+	    || EVP_PKEY_get_bn_param(cbd->pkey, OSSL_PKEY_PARAM_RSA_N, &n_bn) != 1) {
 		BN_free(e_bn);
 		BN_free(n_bn);
 		return DSSH_ERROR_INIT;
@@ -314,12 +306,14 @@ pubkey(const uint8_t **out, size_t *outlen, dssh_key_algo_ctx *ctx)
 	int n_bytes = BN_num_bytes(n_bn);
 
 	if (e_bytes < 0 || n_bytes < 0) {
-		BN_free(e_bn); BN_free(n_bn);
+		BN_free(e_bn);
+		BN_free(n_bn);
 		return DSSH_ERROR_PARSE;
 	}
 #if INT_MAX > SIZE_MAX
 	if (e_bytes > SIZE_MAX || n_bytes > SIZE_MAX) {
-		BN_free(e_bn); BN_free(n_bn);
+		BN_free(e_bn);
+		BN_free(n_bn);
 		return DSSH_ERROR_INVALID;
 	}
 #endif
@@ -328,13 +322,15 @@ pubkey(const uint8_t **out, size_t *outlen, dssh_key_algo_ctx *ctx)
 
 	uint8_t *e_buf = malloc(e_sz);
 	if (!e_buf) {
-		BN_free(e_bn); BN_free(n_bn);
+		BN_free(e_bn);
+		BN_free(n_bn);
 		return DSSH_ERROR_ALLOC;
 	}
 	uint8_t *n_buf = malloc(n_sz);
 	if (!n_buf) {
 		free(e_buf);
-		BN_free(e_bn); BN_free(n_bn);
+		BN_free(e_bn);
+		BN_free(n_bn);
 		return DSSH_ERROR_ALLOC;
 	}
 	BN_bn2bin(e_bn, e_buf);
@@ -351,34 +347,50 @@ pubkey(const uint8_t **out, size_t *outlen, dssh_key_algo_ctx *ctx)
 	bool n_pad = (n_bytes > 0 && (n_buf[0] & DSSH_MPINT_SIGN_BIT));
 
 	if (e_sz > UINT32_MAX - 1 || n_sz > UINT32_MAX - 1) {
-		free(e_buf); free(n_buf);
-		BN_free(e_bn); BN_free(n_bn);
+		free(e_buf);
+		free(n_buf);
+		BN_free(e_bn);
+		BN_free(n_bn);
 		return DSSH_ERROR_INVALID;
 	}
-	uint32_t e_u32 = (uint32_t)e_sz;
-	uint32_t n_u32 = (uint32_t)n_sz;
+	uint32_t e_u32  = (uint32_t)e_sz;
+	uint32_t n_u32  = (uint32_t)n_sz;
 	uint32_t e_wire = e_u32 + (e_pad ? 1 : 0);
 	uint32_t n_wire = n_u32 + (n_pad ? 1 : 0);
 
 	if ((size_t)e_wire + n_wire > SIZE_MAX - 19) {
-		free(e_buf); free(n_buf);
-		BN_free(e_bn); BN_free(n_bn);
+		free(e_buf);
+		free(n_buf);
+		BN_free(e_bn);
+		BN_free(n_bn);
 		return DSSH_ERROR_INVALID;
 	}
 	size_t needed = 19 + e_wire + n_wire;
 
 	uint8_t *buf = malloc(needed);
 	if (buf == NULL) {
-		free(e_buf); free(n_buf);
-		BN_free(e_bn); BN_free(n_bn);
+		free(e_buf);
+		free(n_buf);
+		BN_free(e_bn);
+		BN_free(n_bn);
 		return DSSH_ERROR_ALLOC;
 	}
 
 	size_t pos = 0;
 	int    sret;
 
-#define PK_SER(v) do { sret = dssh_serialize_uint32((v), buf, needed, &pos); \
-	if (sret < 0) { free(buf); free(e_buf); free(n_buf); BN_free(e_bn); BN_free(n_bn); return sret; } } while (0)
+#define PK_SER(v)                                                     \
+	do {                                                          \
+		sret = dssh_serialize_uint32((v), buf, needed, &pos); \
+		if (sret < 0) {                                       \
+			free(buf);                                    \
+			free(e_buf);                                  \
+			free(n_buf);                                  \
+			BN_free(e_bn);                                \
+			BN_free(n_bn);                                \
+			return sret;                                  \
+		}                                                     \
+	} while (0)
 
 	PK_SER(RSA_KEY_TYPE_NAME_LEN);
 	memcpy(&buf[pos], RSA_KEY_TYPE_NAME, RSA_KEY_TYPE_NAME_LEN);
@@ -398,13 +410,15 @@ pubkey(const uint8_t **out, size_t *outlen, dssh_key_algo_ctx *ctx)
 
 #undef PK_SER
 
-	free(e_buf); free(n_buf);
-	BN_free(e_bn); BN_free(n_bn);
+	free(e_buf);
+	free(n_buf);
+	BN_free(e_bn);
+	BN_free(n_bn);
 
-	cbd->pub_blob = buf;
+	cbd->pub_blob     = buf;
 	cbd->pub_blob_len = pos;
-	*out = buf;
-	*outlen = pos;
+	*out              = buf;
+	*outlen           = pos;
 	return 0;
 }
 
@@ -413,8 +427,7 @@ haskey(dssh_key_algo_ctx *ctx)
 {
 	/* Only RSA keys stored in this module's ctx. */
 	struct cbdata *cbd = (struct cbdata *)ctx;
-	return (cbd != NULL && cbd->pkey != NULL
-	    && EVP_PKEY_is_a(cbd->pkey, "RSA"));
+	return (cbd != NULL && cbd->pkey != NULL && EVP_PKEY_is_a(cbd->pkey, "RSA"));
 }
 
 static void
@@ -432,8 +445,7 @@ cleanup(dssh_key_algo_ctx *ctx)
 }
 
 DSSH_PUBLIC int
-dssh_rsa_sha2_256_load_key_file(const char *path, dssh_pem_password_cb pw_cb,
-    void *pw_cbdata)
+dssh_rsa_sha2_256_load_key_file(const char *path, dssh_pem_password_cb pw_cb, void *pw_cbdata)
 {
 	if (path == NULL)
 		return DSSH_ERROR_INIT;
@@ -471,7 +483,7 @@ dssh_rsa_sha2_256_load_key_file(const char *path, dssh_pem_password_cb pw_cb,
 	else {
 		EVP_PKEY_free(rsa_ctx->pkey);
 		free(rsa_ctx->pub_blob);
-		rsa_ctx->pub_blob = NULL;
+		rsa_ctx->pub_blob     = NULL;
 		rsa_ctx->pub_blob_len = 0;
 	}
 
@@ -480,8 +492,7 @@ dssh_rsa_sha2_256_load_key_file(const char *path, dssh_pem_password_cb pw_cb,
 }
 
 DSSH_PUBLIC int
-dssh_rsa_sha2_256_save_key_file(const char *path, dssh_pem_password_cb pw_cb,
-    void *pw_cbdata)
+dssh_rsa_sha2_256_save_key_file(const char *path, dssh_pem_password_cb pw_cb, void *pw_cbdata)
 {
 	if (path == NULL)
 		return DSSH_ERROR_INIT;
@@ -506,8 +517,7 @@ dssh_rsa_sha2_256_save_key_file(const char *path, dssh_pem_password_cb pw_cb,
 			return DSSH_ERROR_INIT;
 		}
 	}
-	int ok = PEM_write_PrivateKey(fp, rsa_ctx->pkey,
-	    cipher, NULL, 0, pw_cb, pw_cbdata);
+	int ok = PEM_write_PrivateKey(fp, rsa_ctx->pkey, cipher, NULL, 0, pw_cb, pw_cbdata);
 
 	EVP_CIPHER_free(cipher);
 	if (fclose(fp) != 0)
@@ -519,8 +529,8 @@ DSSH_PUBLIC int64_t
 dssh_rsa_sha2_256_get_pub_str(char *buf, size_t bufsz)
 {
 	const uint8_t *blob;
-	size_t blob_len;
-	int res = pubkey(&blob, &blob_len, (dssh_key_algo_ctx *)rsa_ctx);
+	size_t         blob_len;
+	int            res = pubkey(&blob, &blob_len, (dssh_key_algo_ctx *)rsa_ctx);
 	if (res < 0)
 		return res;
 
@@ -535,8 +545,7 @@ dssh_rsa_sha2_256_get_pub_str(char *buf, size_t bufsz)
 
 	memcpy(buf, RSA_KEY_TYPE_NAME, RSA_KEY_TYPE_NAME_LEN);
 	buf[RSA_KEY_TYPE_NAME_LEN] = ' ';
-	EVP_EncodeBlock((unsigned char *)&buf[RSA_KEY_TYPE_NAME_LEN + 1],
-	    blob, (int)blob_len);
+	EVP_EncodeBlock((unsigned char *)&buf[RSA_KEY_TYPE_NAME_LEN + 1], blob, (int)blob_len);
 	return (int64_t)needed;
 }
 
@@ -545,7 +554,7 @@ dssh_rsa_sha2_256_save_pub_file(const char *path)
 {
 	if (path == NULL)
 		return DSSH_ERROR_INIT;
-	char *str = NULL;
+	char   *str = NULL;
 	int64_t len = dssh_rsa_sha2_256_get_pub_str(NULL, 0);
 	if (len < 0)
 		return (int)len;
@@ -573,20 +582,19 @@ dssh_rsa_sha2_256_save_pub_file(const char *path)
 DSSH_PUBLIC int
 dssh_rsa_sha2_256_generate_key(unsigned int bits)
 {
-	EVP_PKEY *pkey = NULL;
+	EVP_PKEY     *pkey = NULL;
 	EVP_PKEY_CTX *pctx = EVP_PKEY_CTX_new_from_name(NULL, "RSA", NULL);
 
 	if (pctx == NULL)
 		return DSSH_ERROR_ALLOC;
 
 	OSSL_PARAM params[] = {
-		OSSL_PARAM_construct_uint("bits", &bits),
-		OSSL_PARAM_construct_end(),
+	    OSSL_PARAM_construct_uint("bits", &bits),
+	    OSSL_PARAM_construct_end(),
 	};
 
-	if (EVP_PKEY_keygen_init(pctx) != 1 ||
-	    EVP_PKEY_CTX_set_params(pctx, params) != 1 ||
-	    EVP_PKEY_keygen(pctx, &pkey) != 1) {
+	if (EVP_PKEY_keygen_init(pctx) != 1 || EVP_PKEY_CTX_set_params(pctx, params) != 1
+	    || EVP_PKEY_keygen(pctx, &pkey) != 1) {
 		EVP_PKEY_CTX_free(pctx);
 		return DSSH_ERROR_INIT;
 	}
@@ -610,7 +618,7 @@ dssh_rsa_sha2_256_generate_key(unsigned int bits)
 	else {
 		EVP_PKEY_free(rsa_ctx->pkey);
 		free(rsa_ctx->pub_blob);
-		rsa_ctx->pub_blob = NULL;
+		rsa_ctx->pub_blob     = NULL;
 		rsa_ctx->pub_blob_len = 0;
 	}
 
@@ -624,14 +632,14 @@ dssh_register_rsa_sha2_256(void)
 	struct dssh_key_algo_s *ka = malloc(sizeof(*ka) + RSA_SHA2_256_NAME_LEN + 1);
 	if (ka == NULL)
 		return DSSH_ERROR_ALLOC;
-	ka->next = NULL;
-	ka->sign = sign;
-	ka->verify = verify;
-	ka->pubkey = pubkey;
-	ka->haskey = haskey;
+	ka->next    = NULL;
+	ka->sign    = sign;
+	ka->verify  = verify;
+	ka->pubkey  = pubkey;
+	ka->haskey  = haskey;
 	ka->cleanup = cleanup;
-	ka->ctx = NULL;
-	ka->flags = DSSH_KEY_ALGO_FLAG_SIGNATURE_CAPABLE;
+	ka->ctx     = NULL;
+	ka->flags   = DSSH_KEY_ALGO_FLAG_SIGNATURE_CAPABLE;
 	memcpy(ka->name, RSA_SHA2_256_NAME, RSA_SHA2_256_NAME_LEN + 1);
 	return dssh_transport_register_key_algo(ka);
 }

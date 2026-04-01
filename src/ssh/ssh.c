@@ -52,7 +52,7 @@ session_set_terminate(struct dssh_session_s *sess)
 	if (tcb)
 		tcb(sess, sess->terminate_cbdata);
 
-        /* Wake senders blocked during rekey.
+	/* Wake senders blocked during rekey.
          * Hold tx_mtx so the broadcast cannot land between a sender's
          * while-condition check and cnd_wait entry.  Use trylock because
          * send_packet() calls set_terminate on fatal errors while already
@@ -76,57 +76,44 @@ session_set_terminate(struct dssh_session_s *sess)
 	/* thrd_error: mutex corrupted, skip broadcast */
 
 	/* Wake demux thread stalled on an occupied TX slot */
-	if (dssh_thrd_check(sess, mtx_lock(&sess->trans.tx_queue_mtx))
-	    == thrd_success) {
-		dssh_thrd_check(sess,
-		    cnd_broadcast(&sess->trans.tx_slot_cnd));
-		dssh_thrd_check(sess,
-		    mtx_unlock(&sess->trans.tx_queue_mtx));
+	if (dssh_thrd_check(sess, mtx_lock(&sess->trans.tx_queue_mtx)) == thrd_success) {
+		dssh_thrd_check(sess, cnd_broadcast(&sess->trans.tx_slot_cnd));
+		dssh_thrd_check(sess, mtx_unlock(&sess->trans.tx_queue_mtx));
 	}
 
-        /* Wake conn-layer waiters if initialized */
+	/* Wake conn-layer waiters if initialized */
 	if (sess->conn_initialized) {
-		if (dssh_thrd_check(sess, mtx_lock(&sess->accept_mtx))
-		    == thrd_success) {
-			dssh_thrd_check(sess,
-			    cnd_broadcast(&sess->accept_cnd));
-			dssh_thrd_check(sess,
-			    mtx_unlock(&sess->accept_mtx));
+		if (dssh_thrd_check(sess, mtx_lock(&sess->accept_mtx)) == thrd_success) {
+			dssh_thrd_check(sess, cnd_broadcast(&sess->accept_cnd));
+			dssh_thrd_check(sess, mtx_unlock(&sess->accept_mtx));
 		}
 
 		/* Lock order: channel_mtx then buf_mtx. */
-		if (dssh_thrd_check(sess, mtx_lock(&sess->channel_mtx))
-		    == thrd_success) {
+		if (dssh_thrd_check(sess, mtx_lock(&sess->channel_mtx)) == thrd_success) {
 			for (size_t i = 0; i < sess->channel_count; i++) {
 				struct dssh_channel_s *ch = sess->channels[i];
 
-				if (dssh_thrd_check(sess,
-				    mtx_lock(&ch->buf_mtx))
-				    == thrd_success) {
-					dssh_thrd_check(sess,
-					    cnd_broadcast(&ch->poll_cnd));
-					dssh_thrd_check(sess,
-					    mtx_unlock(&ch->buf_mtx));
+				if (dssh_thrd_check(sess, mtx_lock(&ch->buf_mtx)) == thrd_success) {
+					dssh_thrd_check(sess, cnd_broadcast(&ch->poll_cnd));
+					dssh_thrd_check(sess, mtx_unlock(&ch->buf_mtx));
 				}
 			}
-			dssh_thrd_check(sess,
-			    mtx_unlock(&sess->channel_mtx));
+			dssh_thrd_check(sess, mtx_unlock(&sess->channel_mtx));
 		}
 	}
 }
 
 DSSH_PUBLIC int
-dssh_session_set_cbdata(struct dssh_session_s *sess,
-    void *tx_cbdata, void *rx_cbdata, void *rx_line_cbdata,
+dssh_session_set_cbdata(struct dssh_session_s *sess, void *tx_cbdata, void *rx_cbdata, void *rx_line_cbdata,
     void *extra_line_cbdata)
 {
 	if (sess == NULL)
 		return DSSH_ERROR_INVALID;
 	if (sess->demux_running)
 		return DSSH_ERROR_TOOLATE;
-	sess->tx_cbdata = tx_cbdata;
-	sess->rx_cbdata = rx_cbdata;
-	sess->rx_line_cbdata = rx_line_cbdata;
+	sess->tx_cbdata         = tx_cbdata;
+	sess->rx_cbdata         = rx_cbdata;
+	sess->rx_line_cbdata    = rx_line_cbdata;
 	sess->extra_line_cbdata = extra_line_cbdata;
 	return 0;
 }
@@ -137,66 +124,61 @@ dssh_session_set_cbdata(struct dssh_session_s *sess,
  * demux thread.  Returns DSSH_ERROR_TOOLATE if called after start. */
 
 DSSH_PUBLIC int
-dssh_session_set_debug_cb(struct dssh_session_s *sess,
-    dssh_debug_cb cb, void *cbdata)
+dssh_session_set_debug_cb(struct dssh_session_s *sess, dssh_debug_cb cb, void *cbdata)
 {
 	if (sess == NULL)
 		return DSSH_ERROR_INVALID;
 	if (sess->demux_running)
 		return DSSH_ERROR_TOOLATE;
-	sess->debug_cb = cb;
+	sess->debug_cb     = cb;
 	sess->debug_cbdata = cbdata;
 	return 0;
 }
 
 DSSH_PUBLIC int
-dssh_session_set_unimplemented_cb(struct dssh_session_s *sess,
-    dssh_unimplemented_cb cb, void *cbdata)
+dssh_session_set_unimplemented_cb(struct dssh_session_s *sess, dssh_unimplemented_cb cb, void *cbdata)
 {
 	if (sess == NULL)
 		return DSSH_ERROR_INVALID;
 	if (sess->demux_running)
 		return DSSH_ERROR_TOOLATE;
-	sess->unimplemented_cb = cb;
+	sess->unimplemented_cb     = cb;
 	sess->unimplemented_cbdata = cbdata;
 	return 0;
 }
 
 DSSH_PUBLIC int
-dssh_session_set_banner_cb(struct dssh_session_s *sess,
-    dssh_auth_banner_cb cb, void *cbdata)
+dssh_session_set_banner_cb(struct dssh_session_s *sess, dssh_auth_banner_cb cb, void *cbdata)
 {
 	if (sess == NULL)
 		return DSSH_ERROR_INVALID;
 	if (sess->demux_running)
 		return DSSH_ERROR_TOOLATE;
-	sess->banner_cb = cb;
+	sess->banner_cb     = cb;
 	sess->banner_cbdata = cbdata;
 	return 0;
 }
 
 DSSH_PUBLIC int
-dssh_session_set_global_request_cb(struct dssh_session_s *sess,
-    dssh_global_request_cb cb, void *cbdata)
+dssh_session_set_global_request_cb(struct dssh_session_s *sess, dssh_global_request_cb cb, void *cbdata)
 {
 	if (sess == NULL)
 		return DSSH_ERROR_INVALID;
 	if (sess->demux_running)
 		return DSSH_ERROR_TOOLATE;
-	sess->global_request_cb = cb;
+	sess->global_request_cb     = cb;
 	sess->global_request_cbdata = cbdata;
 	return 0;
 }
 
 DSSH_PUBLIC int
-dssh_session_set_terminate_cb(struct dssh_session_s *sess,
-    dssh_terminate_cb cb, void *cbdata)
+dssh_session_set_terminate_cb(struct dssh_session_s *sess, dssh_terminate_cb cb, void *cbdata)
 {
 	if (sess == NULL)
 		return DSSH_ERROR_INVALID;
 	if (sess->demux_running)
 		return DSSH_ERROR_TOOLATE;
-	sess->terminate_cb = cb;
+	sess->terminate_cb     = cb;
 	sess->terminate_cbdata = cbdata;
 	return 0;
 }

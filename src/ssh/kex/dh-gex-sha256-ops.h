@@ -21,7 +21,7 @@
 extern "C" {
 #endif
 
-#define SHA256_DIGEST_LEN 32
+#define SHA256_DIGEST_LEN  32
 #define DHGEX_KEX_NAME     "diffie-hellman-group-exchange-sha256"
 #define DHGEX_KEX_NAME_LEN 36
 
@@ -68,29 +68,18 @@ struct dssh_kex_context;
  * free_ctx: Free all backend state.  Must be safe with NULL.
  */
 struct dhgex_ops {
-	int (*client_keygen)(const uint8_t *group_payload, size_t group_len,
-	        size_t *consumed,
-	        uint8_t **e_mpint, size_t *e_mpint_len,
-	        void **dh_ctx);
+	int (*client_keygen)(const uint8_t *group_payload, size_t group_len, size_t *consumed, uint8_t **e_mpint,
+	    size_t *e_mpint_len, void **dh_ctx);
 
-	int (*client_derive)(void *dh_ctx,
-	        const uint8_t *f_buf, size_t f_bufsz,
-	        int64_t *f_consumed,
-	        uint8_t **k_raw, size_t *k_raw_len,
-	        uint8_t **k_mpint, size_t *k_mpint_len);
+	int (*client_derive)(void *dh_ctx, const uint8_t *f_buf, size_t f_bufsz, int64_t *f_consumed,
+	    uint8_t **k_raw, size_t *k_raw_len, uint8_t **k_mpint, size_t *k_mpint_len);
 
-	int (*server_keygen)(const uint8_t *p_bytes, size_t p_len,
-	        const uint8_t *g_bytes, size_t g_len,
-	        uint8_t **p_mpint, size_t *p_mpint_len,
-	        uint8_t **g_mpint, size_t *g_mpint_len,
-	        uint8_t **f_mpint, size_t *f_mpint_len,
-	        void **dh_ctx);
+	int (*server_keygen)(const uint8_t *p_bytes, size_t p_len, const uint8_t *g_bytes, size_t g_len,
+	    uint8_t **p_mpint, size_t *p_mpint_len, uint8_t **g_mpint, size_t *g_mpint_len, uint8_t **f_mpint,
+	    size_t *f_mpint_len, void **dh_ctx);
 
-	int (*server_derive)(void *dh_ctx,
-	        const uint8_t *e_buf, size_t e_bufsz,
-	        int64_t *e_consumed,
-	        uint8_t **k_raw, size_t *k_raw_len,
-	        uint8_t **k_mpint, size_t *k_mpint_len);
+	int (*server_derive)(void *dh_ctx, const uint8_t *e_buf, size_t e_bufsz, int64_t *e_consumed,
+	    uint8_t **k_raw, size_t *k_raw_len, uint8_t **k_mpint, size_t *k_mpint_len);
 
 	void (*free_ctx)(void *dh_ctx);
 };
@@ -98,8 +87,7 @@ struct dhgex_ops {
 /*
  * Shared protocol handler.  Called by backend-specific wrappers.
  */
-DSSH_PRIVATE int dhgex_handler_impl(struct dssh_kex_context *kctx,
-    const struct dhgex_ops *ops);
+DSSH_PRIVATE int dhgex_handler_impl(struct dssh_kex_context *kctx, const struct dhgex_ops *ops);
 
 #ifdef __cplusplus
 }

@@ -8,39 +8,30 @@
 static inline uint64_t
 lcx_bswap64(uint64_t x)
 {
-	return (x & 0xFF) << 56
-	    | (x >> 8 & 0xFF) << 48
-	    | (x >> 16 & 0xFF) << 40
-	    | (x >> 24 & 0xFF) << 32
-	    | (x >> 32 & 0xFF) << 24
-	    | (x >> 40 & 0xFF) << 16
-	    | (x >> 48 & 0xFF) << 8
-	    | (x >> 56 & 0xFF);
+	return (x & 0xFF) << 56 | (x >> 8 & 0xFF) << 48 | (x >> 16 & 0xFF) << 40 | (x >> 24 & 0xFF) << 32
+	       | (x >> 32 & 0xFF) << 24 | (x >> 40 & 0xFF) << 16 | (x >> 48 & 0xFF) << 8 | (x >> 56 & 0xFF);
 }
 
 static inline uint32_t
 lcx_bswap32(uint32_t x)
 {
-	return (x & 0xFF) << 24
-	    | (x >> 8 & 0xFF) << 16
-	    | (x >> 16 & 0xFF) << 8
-	    | (x >> 24 & 0xFF);
+	return (x & 0xFF) << 24 | (x >> 8 & 0xFF) << 16 | (x >> 16 & 0xFF) << 8 | (x >> 24 & 0xFF);
 }
 
-#define lcx_htole64(x) lcx_bswap64(x)
-#define lcx_le64toh(x) lcx_bswap64(x)
-#define lcx_le32toh(x) lcx_bswap32(x)
+ #define lcx_htole64(x) lcx_bswap64(x)
+ #define lcx_le64toh(x) lcx_bswap64(x)
+ #define lcx_le32toh(x) lcx_bswap32(x)
 #else
-#define lcx_htole64(x) (x)
-#define lcx_le64toh(x) (x)
-#define lcx_le32toh(x) (x)
+ #define lcx_htole64(x) (x)
+ #define lcx_le64toh(x) (x)
+ #define lcx_le32toh(x) (x)
 #endif
 
 #include "deucessh-crypto.h"
 #include "deucessh.h"
 #include "mlkem768.h"
 #ifdef DSSH_TESTING
-#include "ssh-internal.h"
+ #include "ssh-internal.h"
 #endif
 
 #include "libcrux_mlkem768_sha3.h"
@@ -53,8 +44,7 @@ crypto_kem_mlkem768_keypair(unsigned char *pk, unsigned char *sk)
 	if (dssh_random(rnd, sizeof(rnd)) != 0)
 		return -1;
 
-	libcrux_ml_kem_mlkem768_MlKem768KeyPair kp =
-	    libcrux_ml_kem_mlkem768_portable_generate_key_pair(rnd);
+	libcrux_ml_kem_mlkem768_MlKem768KeyPair kp = libcrux_ml_kem_mlkem768_portable_generate_key_pair(rnd);
 
 	memcpy(pk, kp.pk.value, crypto_kem_mlkem768_PUBLICKEYBYTES);
 	memcpy(sk, kp.sk.value, crypto_kem_mlkem768_SECRETKEYBYTES);
@@ -65,8 +55,7 @@ crypto_kem_mlkem768_keypair(unsigned char *pk, unsigned char *sk)
 }
 
 DSSH_PRIVATE int
-crypto_kem_mlkem768_enc(unsigned char *ct, unsigned char *ss,
-    const unsigned char *pk)
+crypto_kem_mlkem768_enc(unsigned char *ct, unsigned char *ss, const unsigned char *pk)
 {
 	libcrux_ml_kem_types_MlKemPublicKey_15 mlkem_pk;
 
@@ -80,8 +69,7 @@ crypto_kem_mlkem768_enc(unsigned char *ct, unsigned char *ss,
 	if (dssh_random(rnd, sizeof(rnd)) != 0)
 		return -1;
 
-	tuple_3c enc =
-	    libcrux_ml_kem_mlkem768_portable_encapsulate(&mlkem_pk, rnd);
+	tuple_3c enc = libcrux_ml_kem_mlkem768_portable_encapsulate(&mlkem_pk, rnd);
 
 	memcpy(ct, enc.fst.value, crypto_kem_mlkem768_CIPHERTEXTBYTES);
 	memcpy(ss, enc.snd, crypto_kem_mlkem768_BYTES);
@@ -92,10 +80,9 @@ crypto_kem_mlkem768_enc(unsigned char *ct, unsigned char *ss,
 }
 
 DSSH_PRIVATE int
-crypto_kem_mlkem768_dec(unsigned char *ss, const unsigned char *ct,
-    const unsigned char *sk)
+crypto_kem_mlkem768_dec(unsigned char *ss, const unsigned char *ct, const unsigned char *sk)
 {
-	libcrux_ml_kem_types_MlKemPrivateKey_55 mlkem_sk;
+	libcrux_ml_kem_types_MlKemPrivateKey_55    mlkem_sk;
 	libcrux_ml_kem_mlkem768_MlKem768Ciphertext mlkem_ct;
 
 	memcpy(mlkem_sk.value, sk, crypto_kem_mlkem768_SECRETKEYBYTES);

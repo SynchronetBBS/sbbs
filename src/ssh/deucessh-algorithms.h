@@ -20,8 +20,7 @@ extern "C" {
  * length, rwflag is 0 for reading / 1 for writing, userdata is the
  * opaque pointer passed alongside.  Return the passphrase length.
  */
-typedef int (*dssh_pem_password_cb)(char *buf, int size, int rwflag,
-    void *userdata);
+typedef int (*dssh_pem_password_cb)(char *buf, int size, int rwflag, void *userdata);
 
 /* Key exchange */
 DSSH_PUBLIC int dssh_register_curve25519_sha256(void);
@@ -30,30 +29,24 @@ DSSH_PUBLIC int dssh_register_sntrup761x25519_sha512(void);
 DSSH_PUBLIC int dssh_register_mlkem768x25519_sha256(void);
 
 /* Host key algorithms */
-DSSH_PUBLIC int dssh_register_ssh_ed25519(void);
-DSSH_PUBLIC int dssh_ed25519_load_key_file(const char *path,
-    dssh_pem_password_cb pw_cb, void *pw_cbdata);
-DSSH_PUBLIC int dssh_ed25519_save_key_file(const char *path,
-    dssh_pem_password_cb pw_cb, void *pw_cbdata);
+DSSH_PUBLIC int     dssh_register_ssh_ed25519(void);
+DSSH_PUBLIC int     dssh_ed25519_load_key_file(const char *path, dssh_pem_password_cb pw_cb, void *pw_cbdata);
+DSSH_PUBLIC int     dssh_ed25519_save_key_file(const char *path, dssh_pem_password_cb pw_cb, void *pw_cbdata);
 DSSH_PUBLIC int64_t dssh_ed25519_get_pub_str(char *buf, size_t bufsz);
-DSSH_PUBLIC int dssh_ed25519_save_pub_file(const char *path);
-DSSH_PUBLIC int dssh_ed25519_generate_key(void);
-DSSH_PUBLIC int dssh_register_rsa_sha2_256(void);
-DSSH_PUBLIC int dssh_rsa_sha2_256_load_key_file(const char *path,
-    dssh_pem_password_cb pw_cb, void *pw_cbdata);
-DSSH_PUBLIC int dssh_rsa_sha2_256_save_key_file(const char *path,
-    dssh_pem_password_cb pw_cb, void *pw_cbdata);
+DSSH_PUBLIC int     dssh_ed25519_save_pub_file(const char *path);
+DSSH_PUBLIC int     dssh_ed25519_generate_key(void);
+DSSH_PUBLIC int     dssh_register_rsa_sha2_256(void);
+DSSH_PUBLIC int     dssh_rsa_sha2_256_load_key_file(const char *path, dssh_pem_password_cb pw_cb, void *pw_cbdata);
+DSSH_PUBLIC int     dssh_rsa_sha2_256_save_key_file(const char *path, dssh_pem_password_cb pw_cb, void *pw_cbdata);
 DSSH_PUBLIC int64_t dssh_rsa_sha2_256_get_pub_str(char *buf, size_t bufsz);
-DSSH_PUBLIC int dssh_rsa_sha2_256_save_pub_file(const char *path);
-DSSH_PUBLIC int dssh_rsa_sha2_256_generate_key(unsigned int bits);
-DSSH_PUBLIC int dssh_register_rsa_sha2_512(void);
-DSSH_PUBLIC int dssh_rsa_sha2_512_load_key_file(const char *path,
-    dssh_pem_password_cb pw_cb, void *pw_cbdata);
-DSSH_PUBLIC int dssh_rsa_sha2_512_save_key_file(const char *path,
-    dssh_pem_password_cb pw_cb, void *pw_cbdata);
+DSSH_PUBLIC int     dssh_rsa_sha2_256_save_pub_file(const char *path);
+DSSH_PUBLIC int     dssh_rsa_sha2_256_generate_key(unsigned int bits);
+DSSH_PUBLIC int     dssh_register_rsa_sha2_512(void);
+DSSH_PUBLIC int     dssh_rsa_sha2_512_load_key_file(const char *path, dssh_pem_password_cb pw_cb, void *pw_cbdata);
+DSSH_PUBLIC int     dssh_rsa_sha2_512_save_key_file(const char *path, dssh_pem_password_cb pw_cb, void *pw_cbdata);
 DSSH_PUBLIC int64_t dssh_rsa_sha2_512_get_pub_str(char *buf, size_t bufsz);
-DSSH_PUBLIC int dssh_rsa_sha2_512_save_pub_file(const char *path);
-DSSH_PUBLIC int dssh_rsa_sha2_512_generate_key(unsigned int bits);
+DSSH_PUBLIC int     dssh_rsa_sha2_512_save_pub_file(const char *path);
+DSSH_PUBLIC int     dssh_rsa_sha2_512_generate_key(unsigned int bits);
 
 /* Encryption */
 DSSH_PUBLIC int dssh_register_aes256_ctr(void);
@@ -90,4 +83,4 @@ DSSH_PUBLIC int dssh_kex_set_ctx(const char *name, void *ctx);
 }
 #endif
 
-#endif // ifndef DSSH_ALGORITHMS_H
+#endif   // ifndef DSSH_ALGORITHMS_H

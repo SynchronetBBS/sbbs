@@ -5,18 +5,18 @@
  * All exported functions use C linkage (via the extern "C" in the headers).
  */
 
-#include <climits>
-#include <cstdlib>
-#include <memory>
-#include <string>
-
 #include <botan/base64.h>
 #include <botan/hash.h>
 #include <botan/mem_ops.h>
 #include <botan/system_rng.h>
 
-#include "deucessh.h"
+#include <climits>
+#include <cstdlib>
+#include <memory>
+#include <string>
+
 #include "deucessh-crypto.h"
+#include "deucessh.h"
 
 struct dssh_hash_ctx {
 	std::unique_ptr<Botan::HashFunction> hash;
@@ -24,8 +24,7 @@ struct dssh_hash_ctx {
 };
 
 DSSH_PUBLIC int
-dssh_hash_init(dssh_hash_ctx **ctx, const char *name,
-    size_t *out_digest_len)
+dssh_hash_init(dssh_hash_ctx **ctx, const char *name, size_t *out_digest_len)
 {
 	if (ctx == NULL || name == NULL || out_digest_len == NULL)
 		return DSSH_ERROR_INVALID;
@@ -34,7 +33,8 @@ dssh_hash_init(dssh_hash_ctx **ctx, const char *name,
 
 	try {
 		h = Botan::HashFunction::create_or_throw(name);
-	} catch (...) {
+	}
+	catch (...) {
 		return DSSH_ERROR_INIT;
 	}
 
@@ -46,9 +46,9 @@ dssh_hash_init(dssh_hash_ctx **ctx, const char *name,
 		return DSSH_ERROR_ALLOC;
 
 	hctx->digest_len = digest_len;
-	hctx->hash = std::move(h);
+	hctx->hash       = std::move(h);
 
-	*ctx = hctx;
+	*ctx            = hctx;
 	*out_digest_len = digest_len;
 	return 0;
 }
@@ -62,7 +62,8 @@ dssh_hash_update(dssh_hash_ctx *ctx, const uint8_t *data, size_t len)
 		return DSSH_ERROR_INVALID;
 	try {
 		ctx->hash->update(data, len);
-	} catch (...) {
+	}
+	catch (...) {
 		return DSSH_ERROR_INIT;
 	}
 	return 0;
@@ -79,7 +80,8 @@ dssh_hash_final(dssh_hash_ctx *ctx, uint8_t *out, size_t outlen)
 	try {
 		/* final() resets the context for reuse. */
 		ctx->hash->final(out);
-	} catch (...) {
+	}
+	catch (...) {
 		return DSSH_ERROR_INIT;
 	}
 
@@ -93,8 +95,7 @@ dssh_hash_free(dssh_hash_ctx *ctx)
 }
 
 DSSH_PUBLIC int
-dssh_hash_oneshot(const char *name, const uint8_t *data, size_t len,
-    uint8_t *out, size_t outlen)
+dssh_hash_oneshot(const char *name, const uint8_t *data, size_t len, uint8_t *out, size_t outlen)
 {
 	if (name == NULL || out == NULL)
 		return DSSH_ERROR_INVALID;
@@ -105,7 +106,8 @@ dssh_hash_oneshot(const char *name, const uint8_t *data, size_t len,
 
 	try {
 		h = Botan::HashFunction::create_or_throw(name);
-	} catch (...) {
+	}
+	catch (...) {
 		return DSSH_ERROR_INIT;
 	}
 
@@ -116,7 +118,8 @@ dssh_hash_oneshot(const char *name, const uint8_t *data, size_t len,
 		if (data != NULL && len > 0)
 			h->update(data, len);
 		h->final(out);
-	} catch (...) {
+	}
+	catch (...) {
 		return DSSH_ERROR_INIT;
 	}
 	return 0;
@@ -138,7 +141,8 @@ dssh_random(uint8_t *buf, size_t len)
 		return 0;
 	try {
 		Botan::system_rng().randomize(buf, len);
-	} catch (...) {
+	}
+	catch (...) {
 		return DSSH_ERROR_INIT;
 	}
 	return 0;
@@ -149,9 +153,9 @@ dssh_crypto_memcmp(const void *a, const void *b, size_t len)
 {
 	if (len > 0 && (a == NULL || b == NULL))
 		return 1;
-	return Botan::constant_time_compare(
-	    static_cast<const uint8_t *>(a),
-	    static_cast<const uint8_t *>(b), len) ? 0 : 1;
+	return Botan::constant_time_compare(static_cast<const uint8_t *>(a), static_cast<const uint8_t *>(b), len)
+	           ? 0
+	           : 1;
 }
 
 DSSH_PUBLIC int
@@ -176,7 +180,8 @@ dssh_base64_encode(const uint8_t *in, size_t len, char *out, size_t outlen)
 
 	try {
 		encoded = Botan::base64_encode(in, len);
-	} catch (...) {
+	}
+	catch (...) {
 		return DSSH_ERROR_INIT;
 	}
 

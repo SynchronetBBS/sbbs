@@ -30,7 +30,7 @@
  */
 #if defined(DSSH_SHARED)
  #if defined(__GNUC__) || defined(__clang__)
-  #define DSSH_PUBLIC __attribute__((visibility("default")))
+  #define DSSH_PUBLIC  __attribute__((visibility("default")))
   #define DSSH_PRIVATE __attribute__((visibility("hidden")))
  #elif defined(_MSC_VER)
   #define DSSH_PUBLIC __declspec(dllexport)
@@ -41,7 +41,7 @@
  #endif
 #elif defined(DSSH_SHARED_IMPORT)
 
-/* Consumer of the shared library on Windows */
+	/* Consumer of the shared library on Windows */
  #if defined(_MSC_VER)
   #define DSSH_PUBLIC __declspec(dllimport)
   #define DSSH_PRIVATE
@@ -49,12 +49,12 @@
   #define DSSH_PUBLIC
   #define DSSH_PRIVATE
  #endif
-#else // if defined(DSSH_SHARED)
+#else   // if defined(DSSH_SHARED)
 
-/* Static library -- no visibility annotations needed */
+	/* Static library -- no visibility annotations needed */
  #define DSSH_PUBLIC
  #define DSSH_PRIVATE
-#endif // if defined(DSSH_SHARED)
+#endif   // if defined(DSSH_SHARED)
 
 /*
  * DSSH_TESTABLE: marks internal functions that need to be linkable
@@ -66,4 +66,4 @@
  #define DSSH_TESTABLE static
 #endif
 
-#endif // ifndef DSSH_PORTABLE_H
+#endif   // ifndef DSSH_PORTABLE_H

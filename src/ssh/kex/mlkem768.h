@@ -19,13 +19,11 @@ DSSH_PRIVATE int crypto_kem_mlkem768_keypair(unsigned char *pk, unsigned char *s
 /* Encapsulate: encrypt a shared secret to the given public key.
  * ct must be CIPHERTEXTBYTES, ss must be BYTES.
  * Returns 0 on success, -1 on error (incl. invalid pk). */
-DSSH_PRIVATE int crypto_kem_mlkem768_enc(unsigned char *ct, unsigned char *ss,
-    const unsigned char *pk);
+DSSH_PRIVATE int crypto_kem_mlkem768_enc(unsigned char *ct, unsigned char *ss, const unsigned char *pk);
 
 /* Decapsulate: recover shared secret from ciphertext + secret key.
  * ss must be BYTES.
  * Returns 0 on success. */
-DSSH_PRIVATE int crypto_kem_mlkem768_dec(unsigned char *ss, const unsigned char *ct,
-    const unsigned char *sk);
+DSSH_PRIVATE int crypto_kem_mlkem768_dec(unsigned char *ss, const unsigned char *ct, const unsigned char *sk);
 
 #endif /* MLKEM768_H */
