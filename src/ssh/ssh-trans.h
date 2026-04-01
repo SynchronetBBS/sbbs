@@ -11,8 +11,9 @@
 extern "C" {
 #endif
 
-/* Forward declaration -- full definition in ssh-internal.h */
+/* Forward declarations -- full definitions in ssh-internal.h */
 struct dssh_session_s;
+struct dssh_channel_s;
 
 /* Module type definitions -- public headers */
 #include "deucessh-kex.h"
@@ -79,16 +80,19 @@ struct dssh_rekey_msg {
 };
 
 /*
- * Queued payloads for non-blocking demux sends.  The demux thread
- * uses send_or_queue() for fire-and-forget protocol
- * responses (CHANNEL_FAILURE, OPEN_FAILURE, REQUEST_SUCCESS/FAILURE).
- * If tx_mtx is busy, the payload is queued and drained by the next
- * send_packet() call.
+ * Pre-allocated TX slot for fire-and-forget demux responses.
+ * Each slot holds a complete packet buffer (same layout as tx_packet)
+ * sized to the negotiated block_size and mac_digest.  The demux thread
+ * writes the payload at buf[9]; drain_tx_slots() finalizes and sends.
+ *
+ * Session-level: global_reply (1 B), open_fail (16 B).
+ * Channel-level: wa (9 B), chan_fail (8 B).
  */
-struct dssh_tx_queue_entry {
-	struct dssh_tx_queue_entry *next;
-	size_t                      len;
-	uint8_t                     data[];
+struct dssh_tx_slot {
+	_Atomic bool  ready;        /* demux sets true; drain clears        */
+	uint8_t       payload_len;  /* bytes written at buf[9]              */
+	size_t        buf_sz;       /* current allocation (for rekey resize)*/
+	uint8_t      *buf;          /* packet buffer, or NULL before KEX    */
 };
 
 /* Rekey thresholds (RFC 4253 s9, RFC 4251 s9.3.2) */
@@ -133,8 +137,8 @@ struct dssh_transport_state_s {
 	uint8_t       *peer_kexinit;
 	struct dssh_rekey_msg *rekey_queue_head; /* buffered msgs during kexinit */
 	struct dssh_rekey_msg *rekey_queue_tail;
-	struct dssh_tx_queue_entry *tx_queue_head; /* queued fire-and-forget sends */
-	struct dssh_tx_queue_entry *tx_queue_tail;
+	struct dssh_tx_slot global_reply_slot; /* REQUEST_SUCCESS/FAILURE (1 B) */
+	struct dssh_tx_slot open_fail_slot;   /* CHANNEL_OPEN_FAILURE (16 B)   */
 	_Atomic dssh_key_algo  key_algo_selected;
 	dssh_enc_ctx  *enc_c2s_ctx;
 	_Atomic dssh_enc       enc_c2s_selected;
@@ -152,7 +156,8 @@ struct dssh_transport_state_s {
         /* C11 synchronization (platform-dependent size) */
 	cnd_t          rekey_cnd;         /* wakes senders blocked during rekey */
 	mtx_t          tx_mtx;
-	mtx_t          tx_queue_mtx;     /* protects tx_queue (independent of tx_mtx) */
+	mtx_t          tx_queue_mtx;     /* protects tx_queue and tx_slot_cnd */
+	cnd_t          tx_slot_cnd;      /* wakes demux stalled on occupied slot */
 	mtx_t          rx_mtx;
 
         /* Atomic tx counters -- read lock-free by rekey_needed() (recv
@@ -201,14 +206,21 @@ struct dssh_transport_state_s {
  * applications.  DSSH_PRIVATE in shared builds.
  * ================================================================ */
 DSSH_PRIVATE int tx_finalize(struct dssh_session_s *sess,
-    size_t payload_len);
-DSSH_PRIVATE void drain_tx_queue(struct dssh_session_s *sess);
+    uint8_t *buf, size_t payload_len);
+DSSH_PRIVATE void drain_tx_slots(struct dssh_session_s *sess);
 DSSH_PRIVATE int send_packet(struct dssh_session_s *sess,
     const uint8_t *payload, size_t payload_len, uint32_t *seq_out);
-DSSH_PRIVATE int send_or_queue(struct dssh_session_s *sess,
-    const uint8_t *payload, size_t payload_len);
-DSSH_PRIVATE int send_or_queue_wa(struct dssh_session_s *sess,
-    uint32_t remote_id, uint32_t bytes, uint32_t window_max);
+DSSH_PRIVATE int send_to_slot(struct dssh_session_s *sess,
+    struct dssh_tx_slot *slot, const uint8_t *payload, size_t payload_len);
+DSSH_PRIVATE int send_to_wa_slot(struct dssh_session_s *sess,
+    struct dssh_channel_s *ch, uint32_t bytes);
+DSSH_PRIVATE size_t tx_slot_buf_size(size_t max_payload,
+    size_t block_size, uint16_t mac_digest);
+DSSH_PRIVATE int alloc_tx_slot(struct dssh_tx_slot *slot,
+    size_t max_payload, size_t block_size, uint16_t mac_digest);
+DSSH_PRIVATE void free_tx_slot(struct dssh_tx_slot *slot);
+DSSH_PRIVATE int alloc_channel_slots(struct dssh_session_s *sess,
+    struct dssh_channel_s *ch);
 DSSH_PRIVATE int recv_packet(struct dssh_session_s *sess,
     uint8_t *msg_type, uint8_t **payload, size_t *payload_len);
 DSSH_PRIVATE int send_unimplemented(struct dssh_session_s *sess,

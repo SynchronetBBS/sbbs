@@ -807,10 +807,10 @@ test_alloc_send_pk_ok(void)
 }
 
 /* ================================================================
- * Connection protocol alloc failures (ssh-conn.c)
+ * Connection protocol: accept queue capacity limit (ssh-conn.c)
  *
- * acceptqueue_push does one malloc for the entry struct.
- * Failing it must return DSSH_ERROR_ALLOC.
+ * acceptqueue_push uses a fixed-capacity ring buffer.  Pushing
+ * beyond DSSH_ACCEPT_QUEUE_CAP must return DSSH_ERROR_TOOMANY.
  * ================================================================ */
 
 static int
@@ -819,16 +819,25 @@ test_alloc_acceptqueue_push(void)
 	struct dssh_accept_queue q;
 	acceptqueue_init(&q);
 
-	mock_alloc_fail_after(0);
-	int res = acceptqueue_push(&q, 0, 0x200000, 0x8000,
-	    (const uint8_t *)"session", 7);
-	mock_alloc_reset();
-	ASSERT_EQ(res, DSSH_ERROR_ALLOC);
+	/* Fill to capacity -- all should succeed */
+	for (size_t i = 0; i < DSSH_ACCEPT_QUEUE_CAP; i++) {
+		int res = acceptqueue_push(&q, (uint32_t)i, 0x200000, 0x8000,
+		    (const uint8_t *)"session", 7);
+		ASSERT_EQ(res, 0);
+	}
 
-	/* Succeed */
-	res = acceptqueue_push(&q, 0, 0x200000, 0x8000,
+	/* One more should fail */
+	int res = acceptqueue_push(&q, 99, 0x200000, 0x8000,
+	    (const uint8_t *)"session", 7);
+	ASSERT_EQ(res, DSSH_ERROR_TOOMANY);
+
+	/* Pop one and push again -- should succeed */
+	struct dssh_incoming_open e;
+	ASSERT_EQ(acceptqueue_pop(&q, &e), 0);
+	res = acceptqueue_push(&q, 100, 0x200000, 0x8000,
 	    (const uint8_t *)"session", 7);
 	ASSERT_EQ(res, 0);
+
 	acceptqueue_free(&q);
 	return TEST_PASS;
 }

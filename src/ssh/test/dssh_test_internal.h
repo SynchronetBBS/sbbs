@@ -84,13 +84,14 @@ int acceptqueue_push(struct dssh_accept_queue *q,
     uint32_t peer_channel, uint32_t peer_window,
     uint32_t peer_max_packet,
     const uint8_t *type, size_t type_len);
-struct dssh_incoming_open *acceptqueue_pop(struct dssh_accept_queue *q);
+int acceptqueue_pop(struct dssh_accept_queue *q,
+    struct dssh_incoming_open *out);
 
 /*
  * ssh-conn.c internal functions exposed for testing.
  */
-int tx_finalize(dssh_session sess, size_t payload_len);
-void drain_tx_queue(dssh_session sess);
+int tx_finalize(dssh_session sess, uint8_t *buf, size_t payload_len);
+void drain_tx_slots(dssh_session sess);
 int send_eof(dssh_session sess, struct dssh_channel_s *ch);
 int conn_close(dssh_session sess, struct dssh_channel_s *ch);
 int send_window_adjust(dssh_session sess,
@@ -215,7 +216,7 @@ int send_packet(dssh_session sess,
     const uint8_t *payload, size_t payload_len, uint32_t *seq_out);
 int recv_packet(dssh_session sess,
     uint8_t *msg_type, uint8_t **payload, size_t *payload_len);
-int send_or_queue(dssh_session sess,
+int send_to_slot(dssh_session sess, struct dssh_tx_slot *slot,
     const uint8_t *payload, size_t payload_len);
 
 /*

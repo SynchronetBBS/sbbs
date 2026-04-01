@@ -546,8 +546,7 @@ static int test_acceptqueue_init_free(void)
 {
 	struct dssh_accept_queue q;
 	acceptqueue_init(&q);
-	ASSERT_NULL(q.head);
-	ASSERT_NULL(q.tail);
+	ASSERT_EQ_U(q.count, 0);
 	acceptqueue_free(&q);
 	return TEST_PASS;
 }
@@ -561,14 +560,14 @@ static int test_acceptqueue_push_pop_single(void)
 	ASSERT_OK(acceptqueue_push(&q, 42, 65536, 32768,
 	    type, sizeof(type) - 1));
 
-	struct dssh_incoming_open *entry = acceptqueue_pop(&q);
-	ASSERT_NOT_NULL(entry);
-	ASSERT_EQ(entry->peer_channel, 42);
-	ASSERT_EQ(entry->peer_window, 65536);
-	ASSERT_EQ(entry->peer_max_packet, 32768);
-	ASSERT_EQ_U(entry->channel_type_len, 7);
-	ASSERT_STR_EQ(entry->channel_type, "session");
-	free(entry);
+	struct dssh_incoming_open entry;
+	int pop_ret = acceptqueue_pop(&q, &entry);
+	ASSERT_EQ(pop_ret, 0);
+	ASSERT_EQ(entry.peer_channel, 42);
+	ASSERT_EQ(entry.peer_window, 65536);
+	ASSERT_EQ(entry.peer_max_packet, 32768);
+	ASSERT_EQ_U(entry.channel_type_len, 7);
+	ASSERT_STR_EQ(entry.channel_type, "session");
 
 	acceptqueue_free(&q);
 	return TEST_PASS;
@@ -579,8 +578,8 @@ static int test_acceptqueue_pop_empty(void)
 	struct dssh_accept_queue q;
 	acceptqueue_init(&q);
 
-	struct dssh_incoming_open *entry = acceptqueue_pop(&q);
-	ASSERT_NULL(entry);
+	struct dssh_incoming_open entry;
+	ASSERT_EQ(acceptqueue_pop(&q, &entry), -1);
 
 	acceptqueue_free(&q);
 	return TEST_PASS;
@@ -598,28 +597,26 @@ static int test_acceptqueue_fifo_order(void)
 	acceptqueue_push(&q, 3, 300, 150,
 	    (const uint8_t *)"forwarded-tcpip", 15);
 
-	struct dssh_incoming_open *e;
+	struct dssh_incoming_open e;
+	int pop_ret;
 
-	e = acceptqueue_pop(&q);
-	ASSERT_NOT_NULL(e);
-	ASSERT_EQ(e->peer_channel, 1);
-	ASSERT_STR_EQ(e->channel_type, "session");
-	free(e);
+	pop_ret = acceptqueue_pop(&q, &e);
+	ASSERT_EQ(pop_ret, 0);
+	ASSERT_EQ(e.peer_channel, 1);
+	ASSERT_STR_EQ(e.channel_type, "session");
 
-	e = acceptqueue_pop(&q);
-	ASSERT_NOT_NULL(e);
-	ASSERT_EQ(e->peer_channel, 2);
-	ASSERT_STR_EQ(e->channel_type, "direct-tcpip");
-	free(e);
+	pop_ret = acceptqueue_pop(&q, &e);
+	ASSERT_EQ(pop_ret, 0);
+	ASSERT_EQ(e.peer_channel, 2);
+	ASSERT_STR_EQ(e.channel_type, "direct-tcpip");
 
-	e = acceptqueue_pop(&q);
-	ASSERT_NOT_NULL(e);
-	ASSERT_EQ(e->peer_channel, 3);
-	ASSERT_STR_EQ(e->channel_type, "forwarded-tcpip");
-	free(e);
+	pop_ret = acceptqueue_pop(&q, &e);
+	ASSERT_EQ(pop_ret, 0);
+	ASSERT_EQ(e.peer_channel, 3);
+	ASSERT_STR_EQ(e.channel_type, "forwarded-tcpip");
 
 	/* Now empty */
-	ASSERT_NULL(acceptqueue_pop(&q));
+	ASSERT_EQ(acceptqueue_pop(&q, &e), -1);
 
 	acceptqueue_free(&q);
 	return TEST_PASS;
@@ -637,15 +634,15 @@ static int test_acceptqueue_type_truncation(void)
 	ASSERT_OK(acceptqueue_push(&q, 0, 0, 0,
 	    longtype, sizeof(longtype)));
 
-	struct dssh_incoming_open *e = acceptqueue_pop(&q);
-	ASSERT_NOT_NULL(e);
-	ASSERT_EQ_U(e->channel_type_len, 63);
-	ASSERT_EQ_U(strlen(e->channel_type), 63);
+	struct dssh_incoming_open e;
+	int pop_ret = acceptqueue_pop(&q, &e);
+	ASSERT_EQ(pop_ret, 0);
+	ASSERT_EQ_U(e.channel_type_len, 63);
+	ASSERT_EQ_U(strlen(e.channel_type), 63);
 	/* All chars should be 'A' */
 	for (size_t i = 0; i < 63; i++)
-		ASSERT_EQ(e->channel_type[i], 'A');
-	ASSERT_EQ(e->channel_type[63], '\0');
-	free(e);
+		ASSERT_EQ(e.channel_type[i], 'A');
+	ASSERT_EQ(e.channel_type[63], '\0');
 
 	acceptqueue_free(&q);
 	return TEST_PASS;
@@ -662,11 +659,11 @@ static int test_acceptqueue_exact_63_type(void)
 	ASSERT_OK(acceptqueue_push(&q, 5, 500, 250,
 	    type63, 63));
 
-	struct dssh_incoming_open *e = acceptqueue_pop(&q);
-	ASSERT_NOT_NULL(e);
-	ASSERT_EQ_U(e->channel_type_len, 63);
-	ASSERT_EQ_U(strlen(e->channel_type), 63);
-	free(e);
+	struct dssh_incoming_open e;
+	int pop_ret = acceptqueue_pop(&q, &e);
+	ASSERT_EQ(pop_ret, 0);
+	ASSERT_EQ_U(e.channel_type_len, 63);
+	ASSERT_EQ_U(strlen(e.channel_type), 63);
 
 	acceptqueue_free(&q);
 	return TEST_PASS;
@@ -680,11 +677,11 @@ static int test_acceptqueue_empty_type(void)
 	ASSERT_OK(acceptqueue_push(&q, 10, 1000, 500,
 	    (const uint8_t *)"", 0));
 
-	struct dssh_incoming_open *e = acceptqueue_pop(&q);
-	ASSERT_NOT_NULL(e);
-	ASSERT_EQ_U(e->channel_type_len, 0);
-	ASSERT_EQ(e->channel_type[0], '\0');
-	free(e);
+	struct dssh_incoming_open e;
+	int pop_ret = acceptqueue_pop(&q, &e);
+	ASSERT_EQ(pop_ret, 0);
+	ASSERT_EQ_U(e.channel_type_len, 0);
+	ASSERT_EQ(e.channel_type[0], '\0');
 
 	acceptqueue_free(&q);
 	return TEST_PASS;
@@ -695,27 +692,39 @@ static int test_acceptqueue_many_entries(void)
 	struct dssh_accept_queue q;
 	acceptqueue_init(&q);
 
-	for (uint32_t i = 0; i < 30; i++) {
-		char type[16];
-		snprintf(type, sizeof(type), "ch%u", i);
-		ASSERT_OK(acceptqueue_push(&q, i, i * 100, i * 50,
-		    (const uint8_t *)type, strlen(type)));
+	/* Ring buffer capacity is DSSH_ACCEPT_QUEUE_CAP (8).
+	 * Push/pop in batches to exercise wrap-around. */
+	uint32_t seq = 0;
+	for (int batch = 0; batch < 4; batch++) {
+		/* Fill to capacity */
+		for (uint32_t i = 0; i < DSSH_ACCEPT_QUEUE_CAP; i++) {
+			char type[16];
+			snprintf(type, sizeof(type), "ch%u", seq + i);
+			ASSERT_OK(acceptqueue_push(&q, seq + i,
+			    (seq + i) * 100, (seq + i) * 50,
+			    (const uint8_t *)type, strlen(type)));
+		}
+
+		/* Drain all */
+		for (uint32_t i = 0; i < DSSH_ACCEPT_QUEUE_CAP; i++) {
+			struct dssh_incoming_open e;
+			int pop_ret = acceptqueue_pop(&q, &e);
+			ASSERT_EQ(pop_ret, 0);
+			ASSERT_EQ(e.peer_channel, seq + i);
+			ASSERT_EQ(e.peer_window, (seq + i) * 100);
+			ASSERT_EQ(e.peer_max_packet, (seq + i) * 50);
+
+			char expected[16];
+			snprintf(expected, sizeof(expected), "ch%u",
+			    seq + i);
+			ASSERT_STR_EQ(e.channel_type, expected);
+		}
+
+		seq += DSSH_ACCEPT_QUEUE_CAP;
 	}
 
-	for (uint32_t i = 0; i < 30; i++) {
-		struct dssh_incoming_open *e = acceptqueue_pop(&q);
-		ASSERT_NOT_NULL(e);
-		ASSERT_EQ(e->peer_channel, i);
-		ASSERT_EQ(e->peer_window, i * 100);
-		ASSERT_EQ(e->peer_max_packet, i * 50);
-
-		char expected[16];
-		snprintf(expected, sizeof(expected), "ch%u", i);
-		ASSERT_STR_EQ(e->channel_type, expected);
-		free(e);
-	}
-
-	ASSERT_NULL(acceptqueue_pop(&q));
+	struct dssh_incoming_open e;
+	ASSERT_EQ(acceptqueue_pop(&q, &e), -1);
 
 	acceptqueue_free(&q);
 	return TEST_PASS;
@@ -732,8 +741,7 @@ static int test_acceptqueue_free_nonempty(void)
 	    (const uint8_t *)"session", 7);
 
 	acceptqueue_free(&q);
-	ASSERT_NULL(q.head);
-	ASSERT_NULL(q.tail);
+	ASSERT_EQ_U(q.count, 0);
 	return TEST_PASS;
 }
 
@@ -746,12 +754,12 @@ static int test_acceptqueue_peer_values(void)
 	ASSERT_OK(acceptqueue_push(&q, UINT32_MAX, UINT32_MAX,
 	    UINT32_MAX, (const uint8_t *)"x", 1));
 
-	struct dssh_incoming_open *e = acceptqueue_pop(&q);
-	ASSERT_NOT_NULL(e);
-	ASSERT_EQ_U(e->peer_channel, UINT32_MAX);
-	ASSERT_EQ_U(e->peer_window, UINT32_MAX);
-	ASSERT_EQ_U(e->peer_max_packet, UINT32_MAX);
-	free(e);
+	struct dssh_incoming_open e;
+	int pop_ret = acceptqueue_pop(&q, &e);
+	ASSERT_EQ(pop_ret, 0);
+	ASSERT_EQ_U(e.peer_channel, UINT32_MAX);
+	ASSERT_EQ_U(e.peer_window, UINT32_MAX);
+	ASSERT_EQ_U(e.peer_max_packet, UINT32_MAX);
 
 	acceptqueue_free(&q);
 	return TEST_PASS;
@@ -765,13 +773,14 @@ static int test_acceptqueue_push_pop_interleaved(void)
 	for (uint32_t i = 0; i < 10; i++) {
 		ASSERT_OK(acceptqueue_push(&q, i, 0, 0,
 		    (const uint8_t *)"s", 1));
-		struct dssh_incoming_open *e = acceptqueue_pop(&q);
-		ASSERT_NOT_NULL(e);
-		ASSERT_EQ(e->peer_channel, i);
-		free(e);
+		struct dssh_incoming_open e;
+		int pop_ret = acceptqueue_pop(&q, &e);
+		ASSERT_EQ(pop_ret, 0);
+		ASSERT_EQ(e.peer_channel, i);
 	}
 
-	ASSERT_NULL(acceptqueue_pop(&q));
+	struct dssh_incoming_open e;
+	ASSERT_EQ(acceptqueue_pop(&q, &e), -1);
 
 	acceptqueue_free(&q);
 	return TEST_PASS;
@@ -786,14 +795,14 @@ static int test_acceptqueue_type_nul_terminated(void)
 	uint8_t binary[10] = {65, 66, 67, 0, 68, 69, 70, 0, 71, 72};
 	acceptqueue_push(&q, 0, 0, 0, binary, 10);
 
-	struct dssh_incoming_open *e = acceptqueue_pop(&q);
-	ASSERT_NOT_NULL(e);
-	ASSERT_EQ_U(e->channel_type_len, 10);
+	struct dssh_incoming_open e;
+	int pop_ret = acceptqueue_pop(&q, &e);
+	ASSERT_EQ(pop_ret, 0);
+	ASSERT_EQ_U(e.channel_type_len, 10);
 	/* NUL terminator at position 63 max, but data has embedded NULs */
-	ASSERT_EQ(e->channel_type[0], 'A');
-	ASSERT_EQ(e->channel_type[1], 'B');
-	ASSERT_EQ(e->channel_type[2], 'C');
-	free(e);
+	ASSERT_EQ(e.channel_type[0], 'A');
+	ASSERT_EQ(e.channel_type[1], 'B');
+	ASSERT_EQ(e.channel_type[2], 'C');
 
 	acceptqueue_free(&q);
 	return TEST_PASS;
@@ -807,12 +816,12 @@ static int test_acceptqueue_zero_window_packet(void)
 	ASSERT_OK(acceptqueue_push(&q, 0, 0, 0,
 	    (const uint8_t *)"session", 7));
 
-	struct dssh_incoming_open *e = acceptqueue_pop(&q);
-	ASSERT_NOT_NULL(e);
-	ASSERT_EQ(e->peer_channel, 0);
-	ASSERT_EQ(e->peer_window, 0);
-	ASSERT_EQ(e->peer_max_packet, 0);
-	free(e);
+	struct dssh_incoming_open e;
+	int pop_ret = acceptqueue_pop(&q, &e);
+	ASSERT_EQ(pop_ret, 0);
+	ASSERT_EQ(e.peer_channel, 0);
+	ASSERT_EQ(e.peer_window, 0);
+	ASSERT_EQ(e.peer_max_packet, 0);
 
 	acceptqueue_free(&q);
 	return TEST_PASS;
@@ -826,11 +835,11 @@ static int test_acceptqueue_single_char_type(void)
 	ASSERT_OK(acceptqueue_push(&q, 7, 1024, 512,
 	    (const uint8_t *)"x", 1));
 
-	struct dssh_incoming_open *e = acceptqueue_pop(&q);
-	ASSERT_NOT_NULL(e);
-	ASSERT_EQ_U(e->channel_type_len, 1);
-	ASSERT_STR_EQ(e->channel_type, "x");
-	free(e);
+	struct dssh_incoming_open e;
+	int pop_ret = acceptqueue_pop(&q, &e);
+	ASSERT_EQ(pop_ret, 0);
+	ASSERT_EQ_U(e.channel_type_len, 1);
+	ASSERT_STR_EQ(e.channel_type, "x");
 
 	acceptqueue_free(&q);
 	return TEST_PASS;
@@ -846,19 +855,19 @@ static int test_acceptqueue_pop_does_not_affect_remaining(void)
 	acceptqueue_push(&q, 2, 200, 100,
 	    (const uint8_t *)"bravo", 5);
 
-	struct dssh_incoming_open *e1 = acceptqueue_pop(&q);
-	ASSERT_NOT_NULL(e1);
-	ASSERT_STR_EQ(e1->channel_type, "alpha");
-	free(e1);
+	struct dssh_incoming_open e1;
+	int pop_ret = acceptqueue_pop(&q, &e1);
+	ASSERT_EQ(pop_ret, 0);
+	ASSERT_STR_EQ(e1.channel_type, "alpha");
 
 	/* Second entry still intact */
-	struct dssh_incoming_open *e2 = acceptqueue_pop(&q);
-	ASSERT_NOT_NULL(e2);
-	ASSERT_EQ(e2->peer_channel, 2);
-	ASSERT_EQ(e2->peer_window, 200);
-	ASSERT_EQ(e2->peer_max_packet, 100);
-	ASSERT_STR_EQ(e2->channel_type, "bravo");
-	free(e2);
+	struct dssh_incoming_open e2;
+	pop_ret = acceptqueue_pop(&q, &e2);
+	ASSERT_EQ(pop_ret, 0);
+	ASSERT_EQ(e2.peer_channel, 2);
+	ASSERT_EQ(e2.peer_window, 200);
+	ASSERT_EQ(e2.peer_max_packet, 100);
+	ASSERT_STR_EQ(e2.channel_type, "bravo");
 
 	acceptqueue_free(&q);
 	return TEST_PASS;

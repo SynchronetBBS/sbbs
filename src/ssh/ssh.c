@@ -75,6 +75,15 @@ session_set_terminate(struct dssh_session_s *sess)
 	}
 	/* thrd_error: mutex corrupted, skip broadcast */
 
+	/* Wake demux thread stalled on an occupied TX slot */
+	if (dssh_thrd_check(sess, mtx_lock(&sess->trans.tx_queue_mtx))
+	    == thrd_success) {
+		dssh_thrd_check(sess,
+		    cnd_broadcast(&sess->trans.tx_slot_cnd));
+		dssh_thrd_check(sess,
+		    mtx_unlock(&sess->trans.tx_queue_mtx));
+	}
+
         /* Wake conn-layer waiters if initialized */
 	if (sess->conn_initialized) {
 		if (dssh_thrd_check(sess, mtx_lock(&sess->accept_mtx))

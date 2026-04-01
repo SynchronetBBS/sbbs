@@ -88,9 +88,13 @@ struct dssh_event_queue {
 	bool                     has_frozen;
 };
 
-/* Incoming channel open queue (for session_accept) */
+/* Incoming channel open queue (for session_accept).
+ * Fixed-capacity ring buffer — no malloc.  Demux thread stalls on
+ * accept_cnd when full, providing RX backpressure against a malicious
+ * peer flooding CHANNEL_OPEN messages. */
+#define DSSH_ACCEPT_QUEUE_CAP 8
+
 struct dssh_incoming_open {
-	struct dssh_incoming_open *next;
 	size_t                     channel_type_len;
 	uint32_t                   peer_channel;
 	uint32_t                   peer_window;
@@ -99,8 +103,9 @@ struct dssh_incoming_open {
 };
 
 struct dssh_accept_queue {
-	struct dssh_incoming_open *head;
-	struct dssh_incoming_open *tail;
+	struct dssh_incoming_open entries[DSSH_ACCEPT_QUEUE_CAP];
+	size_t head;    /* next pop index  */
+	size_t count;   /* current depth   */
 };
 
 /* Channel types */
@@ -292,6 +297,10 @@ struct dssh_channel_s {
 	char     last_signal[32];
 	char     req_type[32];
 	char     req_data[DSSH_REQ_DATA_BUF_SIZE];
+
+        /* Pre-allocated TX slots for demux fire-and-forget responses */
+	struct dssh_tx_slot wa_slot;        /* CHANNEL_WINDOW_ADJUST (9 B) */
+	struct dssh_tx_slot chan_fail_slot;  /* CHANNEL_FAILURE (8 B)       */
 
         /* Embedded structs (contain pointers, large) */
 	struct dssh_chan_params params;  /* new API: getters after open/accept */
