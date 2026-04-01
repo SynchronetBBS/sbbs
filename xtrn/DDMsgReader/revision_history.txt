@@ -5,6 +5,8 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
+1.97k    2026-04-01   Internal/bug fix: Updated getting the cursor position with
+                      console.getxy() to prevent errors with that
 1.97j    2026-03-14   Bug fixex: Messages appearing more than once in a newscan
                       or new-to-you scan (with help from Cursor AI). Message
                       scan pointer(s) going back to the beginning or early in a

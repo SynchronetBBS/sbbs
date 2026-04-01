@@ -42,6 +42,8 @@
  *                              Reported by Keyop.
  * 2026-03-14                   Version 1.97j
  *                              Releasing this version
+ * 2026-04-01                   Version 1.97k
+ *                              Updated usages of console.getxy() to prevent errors with that
  */
 
 "use strict";
@@ -3465,7 +3467,7 @@ function DigDistMsgReader_ListMessages_Traditional(pAllowChgSubBoard)
 		// then update curpos.
 		console.gotoxy(1, nListStartLine);
 		lastScreen = this.ListScreenfulOfMessages(this.tradListTopMsgIdx, this.tradMsgListNumLines);
-		curpos = console.getxy();
+		curpos = console.getxy()  || { x: 1, y: console.screen_rows };
 		clearToEOS(curpos.y);
 		console.gotoxy(curpos);
 		// Prompt the user whether or not to continue or to read a message
@@ -4691,7 +4693,7 @@ function DigDistMsgReader_PrintMessageInfo(pMsgHeader, pHighlight, pMsgNum, pRet
 			// Temporary
 			if (user.is_sysop)
 			{
-				var curPos = console.getxy();
+				var curPos = console.getxy() || { x: 1, y: console.screen_rows };
 				if (fromName[0] == "D")
 				{
 					for (var tmpI = 0; tmpI < fromName.length; ++tmpI)
@@ -5342,7 +5344,7 @@ function DigDistMsgReader_ReadMessageEnhanced_Scrollable(msgHeader, allowChgMsgA
 			case this.enhReaderKeys.deleteMessage: // Delete message
 			case '\x7f':
 			case '\x08':
-				var originalCurpos = console.getxy();
+				var originalCurpos = console.getxy() || { x: 1, y: console.screen_rows };
 				// The 2nd to last row of the screen is where the user will
 				// be prompted for confirmation to delete the message.
 				// Ideally, I'd like to put the cursor on the last row of
@@ -5389,7 +5391,7 @@ function DigDistMsgReader_ReadMessageEnhanced_Scrollable(msgHeader, allowChgMsgA
 				}
 				break;
 			case this.enhReaderKeys.selectMessage: // Select message (for batch delete, etc.)
-				var originalCurpos = console.getxy();
+				//var originalCurpos = console.getxy() || { x: 1, y: console.screen_rows }; // TODO: Not sure why this was here
 				var promptPos = this.EnhReaderPrepLast2LinesForPrompt();
 				var selected = this.EnhReaderPromptYesNo("Select this message", msgInfo.messageLines, topMsgLineIdx, msgLineFormatStr, solidBlockStartRow, numSolidScrollBlocks, true);
 				this.ToggleSelectedMessage(this.subBoardCode, pOffset, selected);
@@ -5653,7 +5655,7 @@ function DigDistMsgReader_ReadMessageEnhanced_Scrollable(msgHeader, allowChgMsgA
 			case "7":
 			case "8":
 			case "9":
-				var originalCurpos = console.getxy();
+				var originalCurpos = console.getxy() || { x: 1, y: console.screen_rows };
 				// Put the user's input back in the input buffer to
 				// be used for getting the rest of the message number.
 				console.ungetstr(retObj.lastKeypress);
@@ -6125,7 +6127,7 @@ function DigDistMsgReader_ReadMessageEnhanced_Scrollable(msgHeader, allowChgMsgA
 				break;
 			case this.enhReaderKeys.closePoll: // Close a poll message
 				// Save the original cursor position
-				var originalCurPos = console.getxy();
+				var originalCurPos = console.getxy() || { x: 1, y: console.screen_rows };
 				var pollCloseMsg = "";
 				// If this message is a poll, then allow closing it.
 				if ((typeof(MSG_TYPE_POLL) != "undefined") && Boolean(msgHeader.type & MSG_TYPE_POLL))
@@ -6229,7 +6231,7 @@ function DigDistMsgReader_ReadMessageEnhanced_Scrollable(msgHeader, allowChgMsgA
 				if (this.doingMsgScan)
 				{
 					console.attributes = "N";
-					var originalCurpos = console.getxy();
+					var originalCurpos = console.getxy() || { x: 1, y: console.screen_rows };
 					// The 2nd to last row of the screen is where the user will
 					// be prompted for confirmation to delete the message.
 					// Ideally, I'd like to put the cursor on the last row of
@@ -6700,7 +6702,7 @@ function DigDistMsgReader_ShowHdrOrKludgeLines_Scrollable(pOnlyKludgeLines, msgH
 	var writeMessage = false;
 
 	// Save the original cursor position
-	var originalCurPos = console.getxy();
+	var originalCurPos = console.getxy() || { x: 1, y: console.screen_rows };
 
 	// Get an array of the extended header info/kludge lines and then
 	// allow the user to scroll through them.
@@ -6731,7 +6733,8 @@ function DigDistMsgReader_ShowHdrOrKludgeLines_Scrollable(pOnlyKludgeLines, msgH
 		// There are no header/kludge lines for this message
 		var msgText = pOnlyKludgeLines ? this.text.noKludgeLinesForThisMsgText : this.text.noHdrLinesForThisMsgText;
 		this.DisplayEnhReaderError(replaceAtCodesInStr(msgText), msgInfo.messageLines, topMsgLineIdx, msgLineFormatStr);
-		console.gotoxy(originalCurPos);
+		if (typeof(originalCurPos) === "object" && typeof(originalCurPos.x) === "number" && typeof(originalCurPos.y) === "number")
+			console.gotoxy(originalCurPos);
 	}
 
 	return writeMessage;
@@ -6756,7 +6759,7 @@ function DigDistMsgReader_ShowVoteInfo_Scrollable(pMsgHeader, pMsgAreaWidth, pMs
 	};
 
 	// Save the original cursor position
-	var originalCurPos = console.getxy();
+	var originalCurPos = console.getxy() || { x: 1, y: console.screen_rows };
 	if (retObj.hasVoteProps)
 	{
 		var voteInfo = this.GetVoteResponseInfo(pMsgHeader);
@@ -6787,7 +6790,8 @@ function DigDistMsgReader_ShowVoteInfo_Scrollable(pMsgHeader, pMsgAreaWidth, pMs
 	else
 	{
 		this.DisplayEnhReaderError("There is no voting information for this message", msgInfo.messageLines, topMsgLineIdx, msgLineFormatStr);
-		console.gotoxy(originalCurPos);
+		if (typeof(originalCurPos) === "object" && originalCurPos.hasOwnProperty("x") && originalCurPos.hasOwnProperty("Y"))
+			console.gotoxy(originalCurPos);
 	}
 	return retObj;
 }
@@ -8134,7 +8138,7 @@ function DigDistMsgReader_ShowSubBoardInfo_Scrollable(msgAreaWidth, msgAreaHeigh
 	var writeMessage = false;
 
 	// Save the original cursor position
-	var originalCurPos = console.getxy();
+	var originalCurPos = console.getxy() || { x: 1, y: console.screen_rows };
 
 	// Create an array containing the sub-board information lines and then
 	// allow the user to scroll through them.
@@ -8185,7 +8189,8 @@ function DigDistMsgReader_ShowSubBoardInfo_Scrollable(msgAreaWidth, msgAreaHeigh
 		// There are no sub-board information lines for some reason (this probably shouldn't happen)
 		var msgText = pOnlyKludgeLines ? this.text.noKludgeLinesForThisMsgText : this.text.noHdrLinesForThisMsgText;
 		this.DisplayEnhReaderError(replaceAtCodesInStr(msgText), msgInfo.messageLines, topMsgLineIdx, msgLineFormatStr);
-		console.gotoxy(originalCurPos);
+		if (typeof(originalCurPos) === "object" && typeof(originalCurPos.x) === "number" && typeof(originalCurPos.y) === "number")
+			console.gotoxy(originalCurPos);
 	}
 
 	return writeMessage;
@@ -8826,7 +8831,7 @@ function DigDistMsgReader_WriteMsgListScreenTopHeader()
 	// update nMaxLines and nListStartLine to account for this.
 	if (this.displayBoardInfoInHeader && console.term_supports(USER_ANSI))
 	{
-		var curpos = console.getxy();
+		var curpos = console.getxy() || { x: 1, y: 1 };
 		// Figure out the message group name & sub-board name
 		// For the message group name, we can also use msgbase.cfg.grp_name in
 		// Synchronet 3.12 and higher.
@@ -8881,7 +8886,7 @@ function DigDistMsgReader_ListScreenfulOfMessages(pTopIndex, pMaxLines)
 {
 	var atLastPage = false;
 
-	var curpos = console.getxy();
+	var curpos = console.getxy() || { x: 1, y: 1 };
 	var msgIndex = 0;
 	if (this.userSettings.listMessagesInReverse)
 	{
@@ -12348,7 +12353,7 @@ function DigDistMsgReader_DisplayEnhReaderError(pErrorMsg, pMessageLines, pTopLi
    else
       msgLineFormatStr = "%-" + this.msgAreaWidth + "s";
 
-   var originalCurpos = console.getxy();
+   console.pushxy();
    // Move the cursor to the 2nd to last row of the screen and
    // show the error.  Ideally, I'd like
    // to put the cursor on the last row of the screen for this, but
@@ -12398,7 +12403,7 @@ function DigDistMsgReader_DisplayEnhReaderError(pErrorMsg, pMessageLines, pTopLi
       ++promptPos.y;
    }
    // Move the cursor back to its original position
-   console.gotoxy(originalCurpos);
+   console.popxy();
 }
 
 // For the DigDistMsgReader class enhanced reader mode: Prompts for a yes/no
@@ -12434,7 +12439,7 @@ function DigDistMsgReader_EnhReaderPromptYesNo(pQuestion, pMessageLines, pTopLin
 	else
 		msgLineFormatStr = "%-" + +(this.msgAreaWidth) + "s";
 
-	var originalCurpos = console.getxy();
+	console.pushxy();
 	// Move the cursor to the 2nd to last row of the screen and
 	// show the error.  Ideally, I'd like
 	// to put the cursor on the last row of the screen for this, but
@@ -12503,7 +12508,7 @@ function DigDistMsgReader_EnhReaderPromptYesNo(pQuestion, pMessageLines, pTopLin
 		++promptPos.y;
 	}
 	// Move the cursor back to its original position
-	console.gotoxy(originalCurpos);
+	console.popxy();
 
 	return yesNoResponse;
 }
@@ -16216,7 +16221,7 @@ function DigDistMsgReader_ShowIndexedListHelp()
 // Handler function to show the "Are you there?" warning to the user for the ANSI/scrollable interface
 function DigDistMsgReader_ScrollableModeAreYouThereWarning()
 {
-	var originalCurPos = console.getxy();
+	console.pushxy();
 
 	console.beep();
 	//var warningTxt = "Are you there??";
@@ -16254,7 +16259,7 @@ function DigDistMsgReader_ScrollableModeAreYouThereWarning()
 		console.attributes = "N";
 	}
 
-	console.gotoxy(originalCurPos);
+	console.popxy();
 }
 
 // Helper for IndexedModeChooseSubBoard(): Returns an object with the widest text length of the
@@ -22027,13 +22032,13 @@ function getStrWithTimeout(pMode, pMaxLength, pTimeout)
 	var setNormalAttrAtEnd = false;
 	if (((mode & K_LINE) == K_LINE) && (maxWidth > 0) && console.term_supports(USER_ANSI))
 	{
-		var curPos = console.getxy();
+		var curPos = console.getxy() || { x: 1, y: console.screen_rows };
 		printf("\x01n\x01w\x01h\x01" + "4%" + maxWidth + "s", "");
 		console.gotoxy(curPos);
 		setNormalAttrAtEnd = true;
 	}
 
-	var curPos = console.getxy();
+	var curPos = console.getxy() || { x: 1, y: console.screen_rows };
 	var userKey = "";
 	do
 	{
