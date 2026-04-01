@@ -2,7 +2,7 @@
  * test_chan.c -- Unit tests for channel buffer primitives and
  * RFC 4251 wire format functions.
  *
- * Tests bytebuf, msgqueue, signal queue, accept queue,
+ * Tests bytebuf, accept queue,
  * dssh_parse_uint32, dssh_serialize_uint32, and dssh_cleanse.
  */
 

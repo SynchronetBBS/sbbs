@@ -4206,14 +4206,14 @@ test_demux_data_truncation_window(void)
 		return TEST_FAIL;
 	}
 
-	bytebuf_free(&oc.server_ch->buf.session.stdout_buf);
-	ASSERT_OK(bytebuf_init(&oc.server_ch->buf.session.stdout_buf, 16));
+	bytebuf_free(&oc.server_ch->buf.stdout_buf);
+	ASSERT_OK(bytebuf_init(&oc.server_ch->buf.stdout_buf, 16));
 	oc.server_ch->window_max = 16;
 	oc.server_ch->local_window = 16;
 
 	uint8_t fill[12];
 	memset(fill, 'A', sizeof(fill));
-	bytebuf_write(&oc.server_ch->buf.session.stdout_buf, fill, 12);
+	bytebuf_write(&oc.server_ch->buf.stdout_buf, fill, 12);
 	oc.server_ch->local_window = 16;
 
 	uint8_t payload[32];
@@ -4255,15 +4255,15 @@ test_replenish_caps_to_buffer_space(void)
 		return TEST_FAIL;
 	}
 
-	bytebuf_free(&oc.server_ch->buf.session.stdout_buf);
-	ASSERT_OK(bytebuf_init(&oc.server_ch->buf.session.stdout_buf, 32));
-	bytebuf_free(&oc.server_ch->buf.session.stderr_buf);
-	ASSERT_OK(bytebuf_init(&oc.server_ch->buf.session.stderr_buf, 32));
+	bytebuf_free(&oc.server_ch->buf.stdout_buf);
+	ASSERT_OK(bytebuf_init(&oc.server_ch->buf.stdout_buf, 32));
+	bytebuf_free(&oc.server_ch->buf.stderr_buf);
+	ASSERT_OK(bytebuf_init(&oc.server_ch->buf.stderr_buf, 32));
 	oc.server_ch->window_max = 32;
 
 	uint8_t fill[28];
 	memset(fill, 'X', sizeof(fill));
-	bytebuf_write(&oc.server_ch->buf.session.stdout_buf, fill, 28);
+	bytebuf_write(&oc.server_ch->buf.stdout_buf, fill, 28);
 
 	oc.server_ch->local_window = 0;
 
@@ -4399,9 +4399,8 @@ test_replenish_after_close(void)
 	ch.chan_type = DSSH_CHAN_SESSION;
 	mtx_init(&ch.buf_mtx, mtx_plain);
 	cnd_init(&ch.poll_cnd);
-	bytebuf_init(&ch.buf.session.stdout_buf, 256);
-	bytebuf_init(&ch.buf.session.stderr_buf, 256);
-	sigqueue_init(&ch.buf.session.signals);
+	bytebuf_init(&ch.buf.stdout_buf, 256);
+	bytebuf_init(&ch.buf.stderr_buf, 256);
 	ch.close_received = true;
 	ch.window_max = 256;
 	ch.local_window = 0;
@@ -4410,9 +4409,8 @@ test_replenish_after_close(void)
 	ASSERT_EQ(r, 0);
 	ASSERT_EQ_U(ch.local_window, 0);
 
-	sigqueue_free(&ch.buf.session.signals);
-	bytebuf_free(&ch.buf.session.stdout_buf);
-	bytebuf_free(&ch.buf.session.stderr_buf);
+	bytebuf_free(&ch.buf.stdout_buf);
+	bytebuf_free(&ch.buf.stderr_buf);
 	cnd_destroy(&ch.poll_cnd);
 	mtx_destroy(&ch.buf_mtx);
 	dssh_session_cleanup(s);

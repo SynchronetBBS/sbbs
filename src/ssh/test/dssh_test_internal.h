@@ -71,13 +71,6 @@ size_t bytebuf_read(struct dssh_bytebuf *b,
     uint8_t *buf, size_t bufsz, size_t limit);
 size_t bytebuf_available(const struct dssh_bytebuf *b);
 size_t bytebuf_free_space(const struct dssh_bytebuf *b);
-void msgqueue_free(struct dssh_msgqueue *q);
-int msgqueue_push(struct dssh_msgqueue *q,
-    const uint8_t *data, size_t len);
-void sigqueue_init(struct dssh_signal_queue *q);
-void sigqueue_free(struct dssh_signal_queue *q);
-int sigqueue_push(struct dssh_signal_queue *q,
-    const char *name, size_t stdout_pos, size_t stderr_pos);
 void acceptqueue_init(struct dssh_accept_queue *q);
 void acceptqueue_free(struct dssh_accept_queue *q);
 int acceptqueue_push(struct dssh_accept_queue *q,

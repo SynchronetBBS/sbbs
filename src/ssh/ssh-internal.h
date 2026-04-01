@@ -24,37 +24,10 @@ struct dssh_bytebuf {
 	size_t   head;   /* next read position */
 	size_t   tail;   /* next write position */
 	size_t   used;   /* bytes available to read */
-	size_t   total;  /* total bytes ever written (for signal marks) */
+	size_t   total;  /* total bytes ever written */
 };
 
-/* Message queue entry (raw channel data) */
-struct dssh_msgqueue_entry {
-	struct dssh_msgqueue_entry *next;
-	size_t                      len;
-	uint8_t                     data[];
-};
-
-struct dssh_msgqueue {
-	struct dssh_msgqueue_entry *head;
-	struct dssh_msgqueue_entry *tail;
-	size_t                      total_bytes;
-	size_t                      count;
-};
-
-/* Signal queue with stream position marks */
-struct dssh_signal_mark {
-	struct dssh_signal_mark *next;
-	size_t                   stdout_pos;
-	size_t                   stderr_pos;
-	char                     name[32];
-};
-
-struct dssh_signal_queue {
-	struct dssh_signal_mark *head;
-	struct dssh_signal_mark *tail;
-};
-
-/* Event queue for the new dssh_chan_* API (circular buffer).
+/* Event queue for the dssh_chan_* API (circular buffer).
  * Events are pushed by the demux thread, pulled by the app via
  * dssh_chan_poll(DSSH_POLL_EVENT) + dssh_chan_read_event(). */
 struct dssh_event_entry {
@@ -110,7 +83,6 @@ struct dssh_accept_queue {
 
 /* Channel types */
 #define DSSH_CHAN_SESSION 1
-#define DSSH_CHAN_RAW 2
 
 /* Wire-length of a string literal (excludes NUL terminator) */
 #define DSSH_STRLEN(lit) ((uint32_t)(sizeof(lit) - 1))
@@ -239,21 +211,15 @@ int dssh_test_EVP_CIPHER_CTX_set_padding(EVP_CIPHER_CTX *ctx, int pad);
 
 /* SSH_OPEN_* reason codes: defined in ssh-conn.c (only consumer) */
 
-/* I/O model for channel dispatch (old API vs new dssh_chan_* API) */
-#define DSSH_IO_OLD    0  /* old dssh_session_ / dssh_channel_ API */
-#define DSSH_IO_STREAM 1  /* new dssh_chan_ stream API */
-#define DSSH_IO_ZC     2  /* new dssh_chan_zc_ zero-copy API */
+/* I/O model for channel dispatch */
+#define DSSH_IO_STREAM 1  /* dssh_chan_ stream API */
+#define DSSH_IO_ZC     2  /* dssh_chan_zc_ zero-copy API */
 
 struct dssh_channel_s {
         /* Pointers and size_t (pointer-sized) */
 	struct dssh_session_s *sess; /* back-pointer (new API takes ch only) */
 	uint8_t *setup_payload;
 	size_t   setup_payload_len;
-	size_t   stdout_consumed;
-	size_t   stderr_consumed;
-	void     (*window_change_cb)(uint32_t cols, uint32_t rows,
-	    uint32_t wpx, uint32_t hpx, void *cbdata);
-	void    *window_change_cbdata;
 	dssh_chan_zc_cb    zc_cb;      /* ZC data callback (or internal for stream) */
 	void             *zc_cbdata;
 	dssh_chan_event_cb event_cb;   /* optional event push callback */
@@ -275,7 +241,7 @@ struct dssh_channel_s {
 	uint32_t window_max;
 	uint32_t exit_code;
 	int      chan_type;
-	int      io_model;  /* DSSH_IO_OLD, DSSH_IO_STREAM, DSSH_IO_ZC */
+	int      io_model;  /* DSSH_IO_STREAM or DSSH_IO_ZC */
 	int      zc_stream; /* stashed stream from zc_getbuf */
 
         /* 1-byte */
@@ -306,15 +272,9 @@ struct dssh_channel_s {
 	struct dssh_chan_params params;  /* new API: getters after open/accept */
 	struct dssh_event_queue events; /* new API: event queue */
 
-	union {
-		struct {
-			struct dssh_bytebuf      stdout_buf;
-			struct dssh_bytebuf      stderr_buf;
-			struct dssh_signal_queue signals;
-		} session;
-		struct {
-			struct dssh_msgqueue queue;
-		} raw;
+	struct {
+		struct dssh_bytebuf stdout_buf;
+		struct dssh_bytebuf stderr_buf;
 	} buf;
 };
 

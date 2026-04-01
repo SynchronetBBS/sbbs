@@ -323,28 +323,6 @@ test_ossl_session_init(void)
 #endif /* DSSH_CRYPTO_OPENSSL */
 
 /* ================================================================
- * Channel buffer alloc failures
- * ================================================================ */
-
-static int
-test_alloc_signal_push(void)
-{
-	struct dssh_signal_queue q;
-	sigqueue_init(&q);
-
-	mock_alloc_fail_after(0);
-	int res = sigqueue_push(&q, "INT", 0, 0);
-	mock_alloc_reset();
-	ASSERT_EQ(res, DSSH_ERROR_ALLOC);
-
-	/* Succeed */
-	res = sigqueue_push(&q, "INT", 0, 0);
-	ASSERT_EQ(res, 0);
-	sigqueue_free(&q);
-	return TEST_PASS;
-}
-
-/* ================================================================
  * Auth message building alloc failures (ssh-auth.c)
  *
  * Each client auth function builds one or more malloc'd messages.
@@ -3401,8 +3379,6 @@ static struct dssh_test_entry tests[] = {
 	{ "ossl/session_init",            test_ossl_session_init },
 #endif
 
-	/* Channel buffers */
-	{ "alloc/signal_push",            test_alloc_signal_push },
 
 	/* Auth */
 	{ "alloc/auth_kbi",               test_alloc_auth_kbi },
