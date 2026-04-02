@@ -10415,9 +10415,162 @@ reinit_screen(uint8_t *font, int fx, int fy)
 	freepixels(pix);
 }
 
-// BGI ellipse algorithm — reverse-engineered from RIPTERM.EXE.
+// BGI ellipse algorithm — reverse-engineered
 // Two-region Bresenham with x100 decimal fixed-point scaling.
-// All arithmetic is 32-bit
+// All arithmetic is 32-bit (matching the original 16-bit 8086 `long`).
+
+// BGI arc clipping metric
+// Uses a linear x±y metric with quadrant offsets of 0/2000/4000/6000,
+// NOT atan().  Each quadrant point is tested individually.
+//
+// For the four quadrant points emitted per (x,y):
+//   top-right    (+x, -y on screen):  metric = y - x
+//   top-left     (-x, -y on screen):  metric = x - y + 2000
+//   bottom-left  (-x, +y on screen):  metric = y - x + 4000
+//   bottom-right (+x, +y on screen):  metric = x - y + 6000
+//
+// The metric increases monotonically counter-clockwise from 0° to 360°.
+// Start/end limits are precomputed from sa/ea using the same metric.
+
+// Compute the BGI arc clipping limit for a given angle (in degrees)
+// on an ellipse with semi-axes (a, b).  Uses the same linear metric
+// as 0xFA0: at angle θ, find the integer (x,y) on the ellipse and
+// apply the quadrant formula.
+// Exact reimplementation of BGI's metric function.
+// Takes SIGNED screen-coordinate offsets (ax_val, bx_val) and returns
+// a monotonically increasing metric for counter-clockwise arc position.
+static int
+bgi_metric(int ax_val, int bx_val)
+{
+	bx_val = -bx_val;                        // neg bx
+	if (ax_val >= 0) {
+		if (bx_val >= 0)
+			return bx_val - ax_val;           // TR: y_up - x
+		else
+			return ax_val + 6000 + bx_val;    // BR: x + 6000 - y_up
+	}
+	else {
+		if (bx_val >= 0)
+			return (-ax_val) + 2000 - bx_val; // TL: |x| + 2000 - y_up
+		else
+			return ax_val + 4000 - bx_val;    // BL: x + 4000 + y_up
+	}
+}
+
+// BGI sin table: sin(0°)..sin(90°) scaled by 32768 (Q1.15).
+// Extracted from EGAVGA.BGI v2.00, March 1988.
+// cos(θ) = sin(θ + 90°).  The lookup function handles angle
+// reduction, quadrant sign, and expansion to 32-bit.
+static const int16_t bgi_sin_table[91] = {
+	0x0000, 0x023B, 0x0477, 0x06B2, 0x08ED, 0x0B27, 0x0D61, 0x0F99, 0x11D0, 0x1406,
+	0x163A, 0x186C, 0x1A9C, 0x1CCB, 0x1EF7, 0x2120, 0x2348, 0x256C, 0x278D, 0x29AC,
+	0x2BC7, 0x2DDF, 0x2FF3, 0x3203, 0x340F, 0x3618, 0x381C, 0x3A1C, 0x3C17, 0x3E0E,
+	0x4000, 0x41EC, 0x43D4, 0x45B6, 0x4793, 0x496A, 0x4B3C, 0x4D08, 0x4ECD, 0x508D,
+	0x5246, 0x53F9, 0x55A6, 0x574B, 0x58EA, 0x5A82, 0x5C13, 0x5D9C, 0x5F1F, 0x609A,
+	0x620D, 0x6379, 0x64DD, 0x6639, 0x678D, 0x68D9, 0x6A1D, 0x6B59, 0x6C8C, 0x6DB7,
+	0x6ED9, 0x6FF3, 0x7104, 0x720C, 0x730B, 0x7401, 0x74EF, 0x75D3, 0x76AD, 0x777F,
+	0x7847, 0x7906, 0x79BC, 0x7A68, 0x7B0A, 0x7BA3, 0x7C32, 0x7CB8, 0x7D33, 0x7DA5,
+	0x7E0E, 0x7E6C, 0x7EC1, 0x7F0B, 0x7F4C, 0x7F83, 0x7FB0, 0x7FD3, 0x7FEC, 0x7FFB,
+	0x8000,
+};
+
+// BGI's sin/cos lookup with angle reduction
+// Returns a 32-bit signed fixed-point value: table_entry * 2.
+// Multiply by radius and take high 16 bits to get the integer result.
+static int32_t
+bgi_sin32(int angle_deg)
+{
+	int neg = 0;
+
+	// Reduce to 0..359
+	angle_deg %= 360;
+	if (angle_deg < 0)
+		angle_deg += 360;
+
+	// Handle sign: sin is negative for 180..359
+	if (angle_deg > 180) {
+		angle_deg -= 180;
+		neg = 1;
+	}
+	// Mirror: sin(180-x) = sin(x)
+	if (angle_deg > 90)
+		angle_deg = 180 - angle_deg;
+
+	// BGI uses unsigned RCL to double the table value, so cast to
+	// uint16_t first to avoid sign-extension of 0x8000 (sin 90°).
+	int32_t val = (int32_t)((uint16_t)bgi_sin_table[angle_deg]) << 1;
+	return neg ? -val : val;
+}
+
+static int32_t
+bgi_cos32(int angle_deg)
+{
+	return bgi_sin32(angle_deg + 90);
+}
+
+// Compute the arc endpoint coordinate using BGI's exact integer math.
+// result = (trig_value_32 * radius) >> 16
+static int16_t
+bgi_trig_mul(int32_t trig32, int16_t radius)
+{
+	// 32x16 unsigned multiply, take high 16 bits
+	uint16_t lo = (uint16_t)(trig32 & 0xFFFF);
+	uint16_t hi = (uint16_t)((trig32 >> 16) & 0xFFFF);
+	uint32_t r1 = (uint32_t)hi * (uint16_t)radius;
+	uint32_t r2 = (uint32_t)lo * (uint16_t)radius;
+	return (int16_t)((r1 & 0xFFFF) + (r2 >> 16));
+}
+
+// Compute the arc clipping limit for a given angle on ellipse (a, b).
+// Uses BGI's exact integer trig table and metric function.
+static int
+bgi_arc_limit(int a, int b, int angle_deg)
+{
+	int16_t sx = bgi_trig_mul(bgi_cos32(angle_deg), (int16_t)a);
+	int16_t sy = -bgi_trig_mul(bgi_sin32(angle_deg), (int16_t)b);
+	return bgi_metric(sx, sy);
+}
+
+static bool
+bgi_arc_in_range(int metric, int start_limit, int end_limit, bool inv)
+{
+	if (!inv)
+		return (metric >= start_limit) && (metric <= end_limit);
+	else
+		return (metric >= start_limit) || (metric <= end_limit);
+}
+
+static void
+ellipse_plot(int xc, int yc, int x, int y, int a, int b, int sa, int ea,
+    int start_limit, int end_limit, bool fill, bool inv, uint32_t colour)
+{
+	int fy;
+
+	if (fill) {
+		if ((x == 0) && ((y != 0) || (x != 0))) {
+			for (fy = yc - y + 1; fy < yc + y; fy++)
+				fill_pixel(xc, fy);
+		}
+		if ((x != 0) && (y != 0)) {
+			for (fy = yc - y + 1; fy < yc + y; fy++) {
+				fill_pixel(xc - x, fy);
+				fill_pixel(xc + x, fy);
+			}
+		}
+	}
+	if (rip.borders) {
+		// BGI tests all four quadrant points unconditionally —
+		// the metric-based clipping handles duplicates at the axes.
+		if (bgi_arc_in_range(y - x, start_limit, end_limit, inv))
+			set_pixel(xc + x, yc - y, colour);
+		if (bgi_arc_in_range(x - y + 2000, start_limit, end_limit, inv))
+			set_pixel(xc - x, yc - y, colour);
+		if (bgi_arc_in_range(y - x + 4000, start_limit, end_limit, inv))
+			set_pixel(xc - x, yc + y, colour);
+		if (bgi_arc_in_range(x - y + 6000, start_limit, end_limit, inv))
+			set_pixel(xc + x, yc + y, colour);
+	}
+}
 
 static void
 full_ellipse(int xc, int yc, int sa, int ea, int a, int b, bool fill, uint32_t colour)
@@ -10428,10 +10581,12 @@ full_ellipse(int xc, int yc, int sa, int ea, int a, int b, bool fill, uint32_t c
 		b = 1;
 
 	int    x = 0, y = b;
-	int    fy;
-	bool   inv = ea < sa;
-	double angle;
-	double qangle;
+	// BGI: [bp-26] = metric(sa endpoint) = lower bound,
+	//       [bp-28] = metric(ea endpoint) = upper bound.
+	// inv = (upper <= lower), i.e. the range wraps around.
+	int    start_limit = bgi_arc_limit(a, b, sa);
+	int    end_limit = bgi_arc_limit(a, b, ea);
+	bool   inv = (end_limit <= start_limit);
 
 	// BGI setup: scale by 100 to maintain precision without fractions.
 	long   bigger = (a > b) ? a : b;
@@ -10445,57 +10600,11 @@ full_ellipse(int xc, int yc, int sa, int ea, int a, int b, bool fill, uint32_t c
 	long   incr_accum = 0;
 	long   threshold = 0;
 
-	// update_incr: incr = incr_accum + step; threshold = delta - step_const
-	// do_inc_x:    x++; error += incr; incr_accum = incr + step
-	// do_dec_y:    y--; error -= threshold; delta = threshold - step_const
-
 #define update_incr() (incr = incr_accum + step, threshold = delta - step_const)
 #define do_inc_x()    (x++, error += incr, incr_accum = incr + step)
 #define do_dec_y()    (y--, error -= threshold, delta = threshold - step_const)
-
-#define plot_4() do {                                                        \
-	angle = atan((x * M_PI / 180.0) / (y * M_PI / 180.0));              \
-	angle *= 180.0;                                                      \
-	angle /= M_PI;                                                       \
-	angle = lround(90.0 - angle);                                        \
-	if ((x != 0) || (y != 0)) {                                          \
-		qangle = 180 - angle;                                        \
-		if (fill) {                                                  \
-			if (x == 0) {                                        \
-				for (fy = yc - y + 1; fy < yc + y; fy++)     \
-					fill_pixel(xc, fy);                  \
-			}                                                    \
-		}                                                            \
-		if (rip.borders) {                                           \
-			if (((sa <= qangle) && (ea >= qangle))               \
-			    || (inv && (ea <= qangle) && (sa >= qangle)))    \
-				set_pixel(xc - x, yc - y, colour);          \
-		}                                                            \
-	}                                                                    \
-	if ((x != 0) && (y != 0)) {                                          \
-		if (fill) {                                                  \
-			for (fy = yc - y + 1; fy < yc + y; fy++) {          \
-				fill_pixel(xc - x, fy);                      \
-				fill_pixel(xc + x, fy);                      \
-			}                                                    \
-		}                                                            \
-		if (rip.borders) {                                           \
-			if (((sa <= angle) && (ea >= angle))                 \
-			    || (inv && (ea <= angle) && (sa >= angle)))       \
-				set_pixel(xc + x, yc - y, colour);          \
-			qangle = 180 + angle;                                \
-			if (((sa <= qangle) && (ea >= qangle))               \
-			    || (inv && (ea <= qangle) && (sa >= qangle)))    \
-				set_pixel(xc - x, yc + y, colour);          \
-		}                                                            \
-	}                                                                    \
-	qangle = 360 - angle;                                                \
-	if (rip.borders) {                                                   \
-		if (((sa <= qangle) && (ea >= qangle))                       \
-		    || (inv && (ea <= qangle) && (sa >= qangle)))            \
-			set_pixel(xc + x, yc + y, colour);                  \
-	}                                                                    \
-} while (0)
+#define plot_4()      ellipse_plot(xc, yc, x, y, a, b, sa, ea, \
+                          start_limit, end_limit, fill, inv, colour)
 
 	// Loop 1: x-major region — always inc_x, conditionally dec_y
 	plot_4();
