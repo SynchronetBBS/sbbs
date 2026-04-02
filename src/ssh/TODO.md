@@ -1,8 +1,60 @@
 # DeuceSSH — TODO / Known Issues
-<!-- Next item: 170 -->
+<!-- Next item: 179 -->
 
 ## Open
 
+### Vendor portability findings (docs/audit-portability-vendor.md)
+
+174. **sntrup761.c: `optblocker` symbols undefined — linker failure on non-x86\_64/aarch64.**
+     `crypto_int{16,32,64}_optblocker` declared `extern volatile` (line
+     45–47) but never defined.  Used in `#else` fallback paths of
+     constant-time helpers.  On x86\_64 and aarch64 the asm branches are
+     taken and the symbols are dead, but on any other architecture the
+     link fails.  Fix: add `kex/sntrup761_optblocker.c` with three
+     zero-initialized volatile globals (or pull from SUPERCOP's
+     `cryptoint/optblocker.c`).
+
+175. **libcrux\_mlkem768\_sha3.h: `__builtin_popcount` has no portable fallback.**
+     Line 178 — the `#else` (non-MSVC) branch uses
+     `__builtin_popcount`, which is GCC/Clang-specific.  Fails on
+     strict C17 compilers (TCC, CompCert, etc.).  Fix: add a
+     bit-twiddling fallback in a `#elif !defined(__GNUC__)` branch.
+
+176. **mlkem768.c: `__BYTE_ORDER__` detection assumes GCC/Clang or little-endian.**
+     Line 7 — `__BYTE_ORDER__` is undefined on non-GCC big-endian
+     compilers (xlc, aCC), causing the `#else` identity macros to be
+     used and producing silently wrong SHA-3 state.  Fix: extend the
+     detection chain with `__BIG_ENDIAN__`, `_BIG_ENDIAN`, etc.
+
+177. **sntrup761.c: `__attribute__((unused))` is non-standard.**
+     102 occurrences.  Causes warnings on non-GCC/Clang compilers.
+     Not blocking.
+
+178. **libcrux\_mlkem768\_sha3.h: `#pragma once` is non-standard.**
+     Line 48.  Widely supported but not C17.  Not blocking (header
+     included from one .c file only).
+
+### Module audit findings (docs/audit-rules-modules.md)
+
+170. **curve25519-sha256.c: unchecked reply\_sz overflow (server side).**
+     Line 360 — `reply_sz = 1 + 4 + k_s_len + 4 + X25519_KEY_LEN + 4 + sig_len`
+     computed without overflow checks.  `sig_len` from `ka->sign()` is
+     never range-checked.  Fix: check each addend against `SIZE_MAX`
+     before accumulating, following the pattern in
+     `dh-gex-sha256.c:478–492`.
+
+171. **hybrid-pq-kex.c: unchecked reply\_sz overflow (server side).**
+     Line 474 — same pattern as 170.  Fix: same.
+
+172. **curve25519-sha256.c: unchecked sig\_len narrowing to uint32\_t.**
+     Lines 373, 393 — `(uint32_t)sig_len` cast inline without prior
+     `UINT32_MAX` check.  `k_s_len` is checked in
+     `compute_exchange_hash` but `sig_len` is not.  Fix: add
+     `if (sig_len > UINT32_MAX)` check, use initializer style.
+
+173. **hybrid-pq-kex.c: unchecked sig\_len narrowing in REPLY\_SER.**
+     Lines 495, 498, 501 — `(uint32_t)sig_len` via `REPLY_SER` macro
+     without `UINT32_MAX` check.  Fix: same as 172.
 
 ### Post-commit review (items 141-162)
 

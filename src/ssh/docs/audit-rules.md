@@ -11,7 +11,7 @@ gap requiring attention.
 
 ## 1. Input Validation
 
-**CONFORMS** with exceptions noted below.
+**CONFORMS.**
 
 Every public API function validates its pointer and enum parameters,
 returning `DSSH_ERROR_INVALID` on NULL sessions/buffers/callbacks.
@@ -26,39 +26,9 @@ at every field boundary.  KEXINIT parsing validates control characters,
 individual algorithm name lengths, and buffer bounds.  Version exchange
 validates length, CRLF, printable ASCII, and protocol version.
 
-### FINDING 1.1 — `send_info_request`: missing UINT32\_MAX check on server KBI strings
-
-`ssh-auth.c:213–254` — `name_len`, `inst_len`, and per-prompt `plen`
-are `size_t` values from `strlen()`, cast to `uint32_t` via
-`DSSH_PUT_U32((uint32_t)name_len, ...)` without a prior range check.
-On 64-bit platforms where the server application's KBI callback returns
-a string longer than 4 GiB, the cast silently truncates.
-
-The overflow check on line 222 (`msg_len > SIZE_MAX - 5 - plen`)
-guards against `size_t` overflow but does not catch individual fields
-exceeding `UINT32_MAX`.
-
-**Fix**: Add `#if SIZE_MAX > UINT32_MAX` guards checking each
-`strlen()` result against `UINT32_MAX` before the narrowing cast, as
-is already done in `flush_pending_banner` (line 326).
-
-### FINDING 1.2 — Server KBI: no bound on remote `num_responses`
-
-`ssh-auth.c:625–638` — In the server-side KBI handler, `num_responses`
-is a `uint32_t` read directly from the client's INFO\_RESPONSE packet.
-No check enforces `num_responses <= num_prompts` (or any other bound)
-before `calloc(num_responses, ...)`.  A malicious client can claim
-billions of responses, causing a multi-GiB allocation attempt.
-
-See also **Finding 6.1** (Memory Allocation).
-
-### FINDING 1.3 — Client KBI: no bound on remote `num_prompts`
-
-`ssh-auth.c:1432–1448` — Client-side KBI reads `num_prompts` from the
-server's INFO\_REQUEST and immediately `calloc`s five arrays of that
-size.  A malicious server can trigger a multi-GiB allocation.
-
-See also **Finding 6.2** (Memory Allocation).
+`send_info_request` checks `name_len > UINT32_MAX` before narrowing
+(line 217).  Server KBI rejects `num_responses > last_nprompts`
+(line 641).  Client KBI caps `num_prompts` at 256 (line 1452).
 
 ---
 
@@ -83,7 +53,7 @@ See also **Finding 6.2** (Memory Allocation).
 
 ## 3. Arithmetic Safety
 
-**CONFORMS** with one exception.
+**CONFORMS.**
 
 Overflow checks are present before every `size_t` addition used as a
 malloc size.  Saturating adds are used for cumulative byte counters
@@ -91,23 +61,8 @@ malloc size.  Saturating adds are used for cumulative byte counters
 window arithmetic (`window_add`, `window_atomic_add`).
 
 `register_channel` correctly checks `channel_capacity > SIZE_MAX / 2`
-before doubling.
-
-### FINDING 3.1 — `event_queue_push`: unchecked capacity doubling
-
-`ssh-conn.c:219` — `size_t new_cap = q->capacity * 2;` can overflow
-to a small value if `capacity` approaches `SIZE_MAX / 2`.  The
-subsequent `calloc(new_cap, sizeof(...))` might succeed with a too-small
-buffer, and the copy loop would write past the allocation.
-
-In practice, the default `max_events = 64` cap prevents unbounded
-growth, and `max_events = 0` (uncapped) would require petabytes of
-prior allocations to reach the overflow.  Nevertheless, the rule states
-"Only IMPOSSIBLE over/underflow may be unchecked; UNLIKELY over/underflow
-MUST be checked."
-
-**Fix**: Add `if (q->capacity > SIZE_MAX / 2) return DSSH_ERROR_ALLOC;`
-before the multiplication.
+before doubling.  `event_queue_push` checks `capacity > SIZE_MAX / 2`
+before doubling (line 219).
 
 ---
 
@@ -128,49 +83,38 @@ before the multiplication.
 
 ## 5. Pointer Ownership
 
-**CONFORMS.**
+**CONFORMS** with documented exception.
 
 - Application-provided callback data pointers are never freed by the
   library.
-- Cross-boundary ownership transfers are documented and consistent:
-  the application `malloc`s KBI responses, password-change prompts,
-  and server KBI prompt arrays; the library `free`s them after use.
-  The API contracts in `deucessh-auth.h` explicitly state this for
-  each callback typedef.
 - `dssh_chan_params` copies all strings via `strdup`; the library owns
   the copies and frees them in `dssh_chan_params_free`.
 - `dssh_auth_set_banner` copies the message via `strdup`; the library
   owns and frees the copy.
 
+### Exception — KBI ownership transfer
+
+The KBI authentication API intentionally transfers ownership across
+the library boundary: the application `malloc`s KBI responses,
+password-change prompts, and server KBI prompt arrays; the library
+`free`s them after use.  The API contracts in `deucessh-auth.h`
+explicitly document this for each callback typedef.  This is a
+deliberate design choice (avoiding an extra copy of potentially many
+variable-length strings) rather than an oversight, but it does violate
+the strict rule.
+
 ---
 
 ## 6. Memory Allocation
 
-**CONFORMS** with exceptions noted below.
+**CONFORMS.**
 
 Packet buffers are bounded by `packet_buf_sz` (clamped to 33 KiB –
 64 MiB).  The accept queue uses a fixed-capacity ring buffer
 (`DSSH_ACCEPT_QUEUE_CAP = 8`).  Event queues have a configurable cap
 (default 64).  Algorithm name-lists are capped at 1024 bytes.  Version
-strings are capped at 255 bytes.
-
-### FINDING 6.1 — Server KBI: unbounded allocation from remote `num_responses`
-
-`ssh-auth.c:628–638` — `num_responses` is read from the wire with no
-upper bound.  `calloc(num_responses, sizeof(*responses))` with
-`num_responses = UINT32_MAX` requests ~32 GiB on 64-bit.
-
-**Fix**: Reject packets where `num_responses` exceeds the
-`num_prompts` that were sent in the preceding INFO\_REQUEST (the
-server knows this value), or impose a hard cap (e.g., 256).
-
-### FINDING 6.2 — Client KBI: unbounded allocation from remote `num_prompts`
-
-`ssh-auth.c:1432–1448` — `num_prompts` from the server's
-INFO\_REQUEST drives five `calloc` calls with no cap.
-
-**Fix**: Impose a hard cap (e.g., 256 prompts) with a protocol error
-return if exceeded.
+strings are capped at 255 bytes.  Server KBI bounds `num_responses`
+to `last_nprompts`.  Client KBI caps `num_prompts` at 256.
 
 ---
 
@@ -220,46 +164,16 @@ definitions leak into public headers.  `ssh-internal.h` and
 
 ## 10. Type Safety
 
-**CONFORMS** with exceptions noted below.
+**CONFORMS.**
 
 The codebase consistently uses initializer-based casts with range
 checks.  `-Wconversion -Werror` is enforced.  `DSSH_STRLEN` provides
 safe literal-to-`uint32_t` conversion.  `#if SIZE_MAX > UINT32_MAX`
-guards protect narrowing paths.
-
-### FINDING 10.1 — `send_to_slot`: unchecked narrowing to `uint8_t`
-
-`ssh-trans.c:1029,1054` — `slot->payload_len = (uint8_t)payload_len;`
-narrows `size_t` to `uint8_t` without a range check.  All current
-callers pass values ≤ 16, but the function signature accepts any
-`size_t`.
-
-**Fix**: Add `if (payload_len > UINT8_MAX) return DSSH_ERROR_INVALID;`
-at the top of `send_to_slot`.
-
-### FINDING 10.2 — `send_info_request`: inline narrowing casts
-
-`ssh-auth.c:238,243,254` — `(uint32_t)name_len`, `(uint32_t)inst_len`,
-and `(uint32_t)plen` are inline narrowing casts in `DSSH_PUT_U32`
-macro arguments without prior range checks.  (See also Finding 1.1.)
-
-### FINDING 10.3 — `stream_zc_cb`: narrowing cast in return statement
-
-`ssh-conn.c:2160` — `return (uint32_t)written;` narrows `size_t` in a
-return statement rather than an initializer.  The value is bounded by
-`window_max` (uint32\_t), so it always fits, but the style rule
-requires initializer placement.
-
-**Fix**: `uint32_t ret = (uint32_t)written; return ret;`
-
-### FINDING 10.4 — `handle_channel_extended_data`: inline cast in argument
-
-`ssh-conn.c:1182` — `cb(ch, (int)data_type, data, dlen, cbd)` has an
-inline `(int)` cast of `uint32_t data_type` in a function argument.
-`data_type` is always `SSH_EXTENDED_DATA_STDERR` (1), so it fits, but
-the inline cast violates the style rule.
-
-**Fix**: `int stream = (int)data_type;` then `cb(ch, stream, ...)`.
+guards protect narrowing paths.  `send_to_slot` checks
+`payload_len > UINT8_MAX` before narrowing.  `send_info_request`
+checks string lengths against `UINT32_MAX` before the narrowing cast.
+`stream_zc_cb` and `handle_channel_extended_data` use
+initializer-style casts.
 
 ---
 
@@ -317,21 +231,20 @@ are intentionally absent.
 
 ## Summary
 
-| Rule | Status | Findings |
-|------|--------|----------|
-| 1. Input Validation | CONFORMS with findings | 1.1, 1.2, 1.3 |
-| 2. Portability | CONFORMS | — |
-| 3. Arithmetic Safety | CONFORMS with finding | 3.1 |
-| 4. Error Handling | CONFORMS | — |
-| 5. Pointer Ownership | CONFORMS | — |
-| 6. Memory Allocation | CONFORMS with findings | 6.1, 6.2 |
-| 7. Memory Copies | CONFORMS | — |
-| 8. No Library I/O | CONFORMS | — |
-| 9. Opaque Public API | CONFORMS | — |
-| 10. Type Safety | CONFORMS with findings | 10.1, 10.2, 10.3, 10.4 |
-| 11. Thread Safety | CONFORMS | — |
-| 12. No Deprecated Crypto | CONFORMS | — |
+| Rule | Status |
+|------|--------|
+| 1. Input Validation | CONFORMS |
+| 2. Portability | CONFORMS |
+| 3. Arithmetic Safety | CONFORMS |
+| 4. Error Handling | CONFORMS |
+| 5. Pointer Ownership | CONFORMS with exception |
+| 6. Memory Allocation | CONFORMS |
+| 7. Memory Copies | CONFORMS |
+| 8. No Library I/O | CONFORMS |
+| 9. Opaque Public API | CONFORMS |
+| 10. Type Safety | CONFORMS |
+| 11. Thread Safety | CONFORMS |
+| 12. No Deprecated Crypto | CONFORMS |
 
-**Total findings: 9** (3 input validation, 1 arithmetic, 2 memory
-allocation, 4 type safety).  Findings 1.2/6.1 and 1.3/6.2 overlap
-(same issue, two rules).  **7 unique code locations** require fixes.
+**11 rules: CONFORMS.  1 rule (Pointer Ownership): CONFORMS with
+documented exception** (KBI ownership transfer by design).
