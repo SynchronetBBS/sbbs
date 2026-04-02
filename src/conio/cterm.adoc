@@ -2326,7 +2326,7 @@ response in the format
 function and 0 if it does not.
 
 `pt` is the characters in the control function except the `CSI`
-characters.
+characters. If `p1` is zero, `pt` is zero-length.
 
 .Currently supported values of pt:
 [%autowidth]
