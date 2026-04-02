@@ -3,74 +3,6 @@
 
 ## Open
 
-### Vendor portability findings (docs/audit-portability-vendor.md)
-
-174. **sntrup761.c: `optblocker` symbols undefined — linker failure on non-x86\_64/aarch64.**
-     `crypto_int{16,32,64}_optblocker` declared `extern volatile` (line
-     45–47) but never defined.  Used in `#else` fallback paths of
-     constant-time helpers.  On x86\_64 and aarch64 the asm branches are
-     taken and the symbols are dead, but on any other architecture the
-     link fails.  Fix: add `kex/sntrup761_optblocker.c` with three
-     zero-initialized volatile globals (or pull from SUPERCOP's
-     `cryptoint/optblocker.c`).
-
-175. **libcrux\_mlkem768\_sha3.h: `__builtin_popcount` has no portable fallback.**
-     Line 178 — the `#else` (non-MSVC) branch uses
-     `__builtin_popcount`, which is GCC/Clang-specific.  Fails on
-     strict C17 compilers (TCC, CompCert, etc.).  Fix: add a
-     bit-twiddling fallback in a `#elif !defined(__GNUC__)` branch.
-
-176. **mlkem768.c: `__BYTE_ORDER__` detection assumes GCC/Clang or little-endian.**
-     Line 7 — `__BYTE_ORDER__` is undefined on non-GCC big-endian
-     compilers (xlc, aCC), causing the `#else` identity macros to be
-     used and producing silently wrong SHA-3 state.  Fix: extend the
-     detection chain with `__BIG_ENDIAN__`, `_BIG_ENDIAN`, etc.
-
-177. **sntrup761.c: `__attribute__((unused))` is non-standard.**
-     102 occurrences.  Causes warnings on non-GCC/Clang compilers.
-     Not blocking.
-
-178. **libcrux\_mlkem768\_sha3.h: `#pragma once` is non-standard.**
-     Line 48.  Widely supported but not C17.  Not blocking (header
-     included from one .c file only).
-
-### Module audit findings (docs/audit-rules-modules.md)
-
-170. **curve25519-sha256.c: unchecked reply\_sz overflow (server side).**
-     Line 360 — `reply_sz = 1 + 4 + k_s_len + 4 + X25519_KEY_LEN + 4 + sig_len`
-     computed without overflow checks.  `sig_len` from `ka->sign()` is
-     never range-checked.  Fix: check each addend against `SIZE_MAX`
-     before accumulating, following the pattern in
-     `dh-gex-sha256.c:478–492`.
-
-171. **hybrid-pq-kex.c: unchecked reply\_sz overflow (server side).**
-     Line 474 — same pattern as 170.  Fix: same.
-
-172. **curve25519-sha256.c: unchecked sig\_len narrowing to uint32\_t.**
-     Lines 373, 393 — `(uint32_t)sig_len` cast inline without prior
-     `UINT32_MAX` check.  `k_s_len` is checked in
-     `compute_exchange_hash` but `sig_len` is not.  Fix: add
-     `if (sig_len > UINT32_MAX)` check, use initializer style.
-
-173. **hybrid-pq-kex.c: unchecked sig\_len narrowing in REPLY\_SER.**
-     Lines 495, 498, 501 — `(uint32_t)sig_len` via `REPLY_SER` macro
-     without `UINT32_MAX` check.  Fix: same as 172.
-
-### Post-commit review (items 141-162)
-
-### Crypto abstraction layer (items 107-123)
-
-122. **Full RFC conformance re-audit.**
-     The existing audit files (`docs/audit-4250.md` through
-     `docs/audit-4254.md`) were written early in development and only
-     cover RFCs 4250–4254.  Re-audit all code against every
-     implemented RFC/draft (4256, 4335, 4419, 6668, 8160, 8308, 8332,
-     8709, 8731, draft-ietf-sshm-ntruprime-ssh,
-     draft-ietf-sshm-mlkem-hybrid-kex), create new audit files where
-     missing, update existing audits to be backend-agnostic (current
-     ones reference only `*-openssl.c` paths), and verify all
-     MUST/SHOULD/MAY requirements against the current implementation.
-
 84. **DH-GEX group size vs cipher strength mismatch.**
     The client's GEX_REQUEST parameters (`GEX_MIN 2048`, `GEX_N 4096`,
     `GEX_MAX 8192`) are compile-time constants that don't account for the
@@ -90,10 +22,30 @@
     protocol-ordering trade-offs that don't have obvious right answers.
     **Not suitable for automatic planning.**
 
+122. **Full RFC conformance re-audit.**
+     The existing audit files (`docs/audit-4250.md` through
+     `docs/audit-4254.md`) were written early in development and only
+     cover RFCs 4250–4254.  Re-audit all code against every
+     implemented RFC/draft (4256, 4335, 4419, 6668, 8160, 8308, 8332,
+     8709, 8731, draft-ietf-sshm-ntruprime-ssh,
+     draft-ietf-sshm-mlkem-hybrid-kex), create new audit files where
+     missing, update existing audits to be backend-agnostic (current
+     ones reference only `*-openssl.c` paths), and verify all
+     MUST/SHOULD/MAY requirements against the current implementation.
+
 ## Closed
 
 Items are listed newest-first.  Detailed write-ups are in git history.
 
+- 178: `libcrux_mlkem768_sha3.h` `#pragma once` replaced with standard `#ifndef LIBCRUX_MLKEM768_SHA3_H` include guard
+- 177: `sntrup761.c` — stripped 91 unused cryptoint functions (~1600 lines); 9 kept (5 directly called + 4 transitive deps); `CRYPTOINT_MAYBE_UNUSED` macro replaces `__attribute__((unused))` on 2 generic-path-only helpers
+- 174: `kex/sntrup761_optblocker.c` added — defines `crypto_int{16,32,64}_optblocker` volatile globals for non-x86\_64/aarch64 architectures (matches SUPERCOP `cryptoint/optblocker.c`)
+- 175: `libcrux_mlkem768_sha3.h` `core_num__u8_6__count_ones` — added `#elif !defined(__GNUC__)` branch with portable bit-twiddling popcount for strict C17 compilers
+- 176: `mlkem768.c` byte-order detection extended — `__BIG_ENDIAN__`, `_BIG_ENDIAN`, `__BYTE_ORDER`/`__BIG_ENDIAN` added alongside GCC/Clang's `__BYTE_ORDER__`
+- 170: `curve25519-sha256.c` server ECDH_REPLY `reply_sz` sum overflow-checked with sequential SIZE_MAX guards (follows `dh-gex-sha256.c` pattern)
+- 171: `hybrid-pq-kex.c` server REPLY `reply_sz` sum overflow-checked with sequential SIZE_MAX guards; UINT32_MAX pre-flight on `k_s_len`, `q_s_len`, `sig_len`
+- 172: `curve25519-sha256.c` `k_s_len`/`sig_len` range-checked against UINT32_MAX before narrowing; inline casts replaced with initializer-style
+- 173: `hybrid-pq-kex.c` `k_s_len`/`q_s_len`/`sig_len` range-checked against UINT32_MAX before narrowing; REPLY_SER macro now takes pre-checked uint32_t variables
 - 163: `send_info_request` UINT32_MAX checks on `name_len`, `inst_len`, `plen` — `#if SIZE_MAX > UINT32_MAX` guards added (follows `flush_pending_banner` pattern)
 - 164: Server KBI unbounded `calloc` from `num_responses` — rejected when `num_responses > last_nprompts`; new test `kbi_excess_responses`
 - 165: Client KBI unbounded `calloc` from `num_prompts` — hard cap of 256 with `DSSH_ERROR_PARSE`; new test `kbi_too_many_prompts`

@@ -4,7 +4,17 @@
 #include <stdint.h>
 #include <string.h>
 
-#if defined(__BYTE_ORDER__) && __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
+/* Detect big-endian across compiler families:
+ * __BYTE_ORDER__ / __ORDER_BIG_ENDIAN__  — GCC, Clang
+ * __BIG_ENDIAN__                         — some embedded compilers
+ * _BIG_ENDIAN                            — Solaris (sys/isa_defs.h), AIX
+ * __BYTE_ORDER / __BIG_ENDIAN            — glibc/BSD (endian.h)
+ */
+#if (defined(__BYTE_ORDER__) && __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__) \
+ || defined(__BIG_ENDIAN__) \
+ || defined(_BIG_ENDIAN) \
+ || (defined(__BYTE_ORDER) && defined(__BIG_ENDIAN) \
+     && __BYTE_ORDER == __BIG_ENDIAN)
 static inline uint64_t
 lcx_bswap64(uint64_t x)
 {

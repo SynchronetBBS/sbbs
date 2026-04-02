@@ -2,6 +2,9 @@
 
 /* Extracted from libcrux revision 84c5d87b3092c59294345aa269ceefe0eb97cc35 */
 
+#ifndef LIBCRUX_MLKEM768_SHA3_H
+#define LIBCRUX_MLKEM768_SHA3_H
+
 /*
  * MIT License
  *
@@ -45,7 +48,7 @@
  * SPDX-License-Identifier: MIT or Apache-2.0
  */
 
-#pragma once
+/* #pragma once — replaced by outer LIBCRUX_MLKEM768_SHA3_H guard */
 
 #if defined(__cplusplus)
 extern "C" {
@@ -174,8 +177,14 @@ core_num__u8_6__count_ones(uint8_t x0)
 {
 #ifdef _MSC_VER
 	return __popcnt(x0);
-#else
+#elif defined(__GNUC__)
 	return (uint32_t)__builtin_popcount(x0);
+#else
+	/* Portable bit-twiddling popcount for uint8_t */
+	uint8_t v = x0;
+	v = (uint8_t)(v - ((v >> 1) & 0x55));
+	v = (uint8_t)((v & 0x33) + ((v >> 2) & 0x33));
+	return (uint32_t)((v + (v >> 4)) & 0x0F);
 #endif
 }
 
@@ -11627,3 +11636,5 @@ typedef int16_t libcrux_ml_kem_vector_portable_arithmetic_FieldElementTimesMontg
 /* defines for PRNG inputs */
 #define LIBCRUX_ML_KEM_KEY_PAIR_PRNG_LEN 64
 #define LIBCRUX_ML_KEM_ENC_PRNG_LEN      32
+
+#endif /* LIBCRUX_MLKEM768_SHA3_H */

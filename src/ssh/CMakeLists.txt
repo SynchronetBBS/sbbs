@@ -129,6 +129,7 @@ set(DEUCESSH_SOURCES
 	kex/dh-gex-sha256.c
 	kex/dh-gex-groups.c
 	kex/sntrup761.c
+	kex/sntrup761_optblocker.c
 	kex/mlkem768.c
 	${DSSH_ALG_SOURCES}
 	enc/none.c

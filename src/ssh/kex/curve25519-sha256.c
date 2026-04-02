@@ -357,9 +357,30 @@ curve25519_handler_impl(struct dssh_kex_context *kctx, const struct dssh_c25519_
 		}
 
 		/* Send ECDH_REPLY(K_S, Q_S, sig) */
-		size_t   reply_sz  = 1 + 4 + k_s_len + 4 + X25519_KEY_LEN + 4 + sig_len;
-		uint8_t *reply_msg = malloc(reply_sz);
+		if (k_s_len > UINT32_MAX || sig_len > UINT32_MAX) {
+			free(sig_buf);
+			dssh_cleanse(ss_copy, ss_len);
+			free(ss_copy);
+			return DSSH_ERROR_INVALID;
+		}
+		/* 1 (msg) + 4 (k_s len) + k_s + 4 (Q_S len) + Q_S + 4 (sig len) + sig */
+		size_t reply_sz = 1 + 4 + 4 + X25519_KEY_LEN + 4;
+		if (k_s_len > SIZE_MAX - reply_sz) {
+			free(sig_buf);
+			dssh_cleanse(ss_copy, ss_len);
+			free(ss_copy);
+			return DSSH_ERROR_INVALID;
+		}
+		reply_sz += k_s_len;
+		if (sig_len > SIZE_MAX - reply_sz) {
+			free(sig_buf);
+			dssh_cleanse(ss_copy, ss_len);
+			free(ss_copy);
+			return DSSH_ERROR_INVALID;
+		}
+		reply_sz += sig_len;
 
+		uint8_t *reply_msg = malloc(reply_sz);
 		if (reply_msg == NULL) {
 			free(sig_buf);
 			dssh_cleanse(ss_copy, ss_len);
@@ -367,10 +388,12 @@ curve25519_handler_impl(struct dssh_kex_context *kctx, const struct dssh_c25519_
 			return DSSH_ERROR_ALLOC;
 		}
 
-		size_t pos = 0;
+		size_t   pos         = 0;
+		uint32_t k_s_len_u32 = (uint32_t)k_s_len;
+		uint32_t sig_len_u32 = (uint32_t)sig_len;
 
 		reply_msg[pos++] = SSH_MSG_KEX_ECDH_REPLY;
-		res              = dssh_serialize_uint32((uint32_t)k_s_len, reply_msg, reply_sz, &pos);
+		res              = dssh_serialize_uint32(k_s_len_u32, reply_msg, reply_sz, &pos);
 		if (res < 0) {
 			free(reply_msg);
 			free(sig_buf);
@@ -390,7 +413,7 @@ curve25519_handler_impl(struct dssh_kex_context *kctx, const struct dssh_c25519_
 		}
 		memcpy(&reply_msg[pos], q_s, X25519_KEY_LEN);
 		pos += X25519_KEY_LEN;
-		res = dssh_serialize_uint32((uint32_t)sig_len, reply_msg, reply_sz, &pos);
+		res = dssh_serialize_uint32(sig_len_u32, reply_msg, reply_sz, &pos);
 		if (res < 0) {
 			free(reply_msg);
 			free(sig_buf);
