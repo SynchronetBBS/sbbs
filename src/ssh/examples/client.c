@@ -52,6 +52,40 @@ kbi_prompt(const uint8_t *name, size_t name_len, const uint8_t *instruction, siz
 }
 
 /* ================================================================
+ * Host key verification callback -- print fingerprint, accept all
+ * ================================================================ */
+static dssh_hostkey_decision
+verify_hostkey(const char *algo_name, unsigned int key_bits, const uint8_t *sha256_hash,
+    const uint8_t *key_blob, size_t key_blob_len, void *cbdata)
+{
+	(void)key_blob;
+	(void)key_blob_len;
+	(void)cbdata;
+
+	/* Base64-encode the SHA-256 fingerprint for display */
+	static const char b64[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+	char              fp[44]; /* ceil(32/3)*4 + 1 */
+	size_t            o = 0;
+
+	for (int i = 0; i < 32; i += 3) {
+		uint32_t v = (uint32_t)sha256_hash[i] << 16;
+
+		if (i + 1 < 32)
+			v |= (uint32_t)sha256_hash[i + 1] << 8;
+		if (i + 2 < 32)
+			v |= sha256_hash[i + 2];
+		fp[o++] = b64[(v >> 18) & 0x3F];
+		fp[o++] = b64[(v >> 12) & 0x3F];
+		fp[o++] = (i + 1 < 32) ? b64[(v >> 6) & 0x3F] : '=';
+		fp[o++] = (i + 2 < 32) ? b64[v & 0x3F] : '=';
+	}
+	fp[o] = '\0';
+
+	fprintf(stderr, "Host key: %s %u SHA256:%s\n", algo_name, key_bits, fp);
+	return DSSH_HOSTKEY_ACCEPT;
+}
+
+/* ================================================================
  * Terminate callback -- unblock I/O callbacks
  * ================================================================ */
 static void
@@ -301,6 +335,7 @@ main(int argc, char **argv)
 		return 1;
 	}
 	dssh_session_set_terminate_cb(sess, on_terminate, NULL);
+	dssh_session_set_hostkey_verify_cb(sess, verify_hostkey, NULL);
 
 	/* Handshake */
 	fprintf(stderr, "Handshake...\n");

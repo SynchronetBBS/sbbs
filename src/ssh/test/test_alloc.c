@@ -415,6 +415,7 @@ handshake_setup(struct handshake_ctx *ctx)
 	}
 	dssh_session_set_cbdata(ctx->client, &ctx->io, &ctx->io,
 	    &ctx->io, &ctx->io);
+	dssh_session_set_hostkey_verify_cb(ctx->client, dssh_test_accept_hostkey, NULL);
 
 	ctx->server = init_server_session();
 	if (ctx->server == NULL) {
@@ -642,6 +643,7 @@ test_alloc_handshake_iterate(void)
 			continue;
 		}
 		dssh_session_set_cbdata(client, &io, &io, &io, &io);
+		dssh_session_set_hostkey_verify_cb(client, dssh_test_accept_hostkey, NULL);
 
 		dssh_session server = init_server_session();
 		if (server == NULL) {
@@ -813,6 +815,7 @@ test_alloc_auth_iterate(void)
 			continue;
 		}
 		dssh_session_set_cbdata(client, &io, &io, &io, &io);
+		dssh_session_set_hostkey_verify_cb(client, dssh_test_accept_hostkey, NULL);
 
 		dssh_session server = init_server_session();
 		if (server == NULL) {
@@ -1093,6 +1096,7 @@ test_alloc_conn_iterate(void)
 			continue;
 		}
 		dssh_session_set_cbdata(client, &io, &io, &io, &io);
+		dssh_session_set_hostkey_verify_cb(client, dssh_test_accept_hostkey, NULL);
 
 		dssh_session server = init_server_session();
 		if (server == NULL) {
@@ -1237,6 +1241,7 @@ test_ossl_handshake_iterate(void)
 			continue;
 		}
 		dssh_session_set_cbdata(client, &io, &io, &io, &io);
+		dssh_session_set_hostkey_verify_cb(client, dssh_test_accept_hostkey, NULL);
 
 		dssh_session server = init_server_session();
 		if (server == NULL) {
@@ -1739,6 +1744,7 @@ test_ossl_kex_server_iterate(void)
 	}
 	dssh_session_set_cbdata(client, &setup_io, &setup_io,
 	    &setup_io, &setup_io);
+	dssh_session_set_hostkey_verify_cb(client, dssh_test_accept_hostkey, NULL);
 
 	dssh_session server = init_server_session();
 	if (server == NULL) {
@@ -1965,6 +1971,7 @@ test_ossl_kex_client_iterate(void)
 			continue;
 		}
 		dssh_session_set_cbdata(client, &io, &io, &io, &io);
+		dssh_session_set_hostkey_verify_cb(client, dssh_test_accept_hostkey, NULL);
 
 		dssh_session server = init_server_session();
 		if (server == NULL) {
@@ -2194,6 +2201,7 @@ dhgex_client_parse_test(int (*server_thread)(void *),
 		return TEST_FAIL;
 	}
 	dssh_session_set_cbdata(client, &io, &io, &io, &io);
+	dssh_session_set_hostkey_verify_cb(client, dssh_test_accept_hostkey, NULL);
 
 	dssh_session server = init_server_session();
 	if (server == NULL) {
@@ -2470,6 +2478,7 @@ c25519_client_parse_test(int (*server_thread)(void *),
 		return TEST_FAIL;
 	}
 	dssh_session_set_cbdata(client, &io, &io, &io, &io);
+	dssh_session_set_hostkey_verify_cb(client, dssh_test_accept_hostkey, NULL);
 
 	dssh_session server = dssh_session_init(false, 0);
 	if (server == NULL) {
@@ -2693,6 +2702,7 @@ test_ossl_kex_client_ka_null(void)
 		return TEST_FAIL;
 	}
 	dssh_session_set_cbdata(client, &io, &io, &io, &io);
+	dssh_session_set_hostkey_verify_cb(client, dssh_test_accept_hostkey, NULL);
 
 	dssh_session server = init_server_session();
 	if (server == NULL) {
@@ -2773,6 +2783,7 @@ test_ossl_kex_client_no_verify(void)
 		return TEST_FAIL;
 	}
 	dssh_session_set_cbdata(client, &io, &io, &io, &io);
+	dssh_session_set_hostkey_verify_cb(client, dssh_test_accept_hostkey, NULL);
 
 	dssh_session server = init_server_session();
 	if (server == NULL) {
@@ -2866,6 +2877,7 @@ test_alloc_kex_server_iterate(void)
 	}
 	dssh_session_set_cbdata(client, &setup_io, &setup_io,
 	    &setup_io, &setup_io);
+	dssh_session_set_hostkey_verify_cb(client, dssh_test_accept_hostkey, NULL);
 
 	dssh_session server = init_server_session();
 	if (server == NULL) {
@@ -3072,6 +3084,7 @@ test_alloc_kex_client_iterate(void)
 			continue;
 		}
 		dssh_session_set_cbdata(client, &io, &io, &io, &io);
+		dssh_session_set_hostkey_verify_cb(client, dssh_test_accept_hostkey, NULL);
 
 		dssh_session server = init_server_session();
 		if (server == NULL) {
@@ -3162,6 +3175,7 @@ kex_server_setup(void)
 	}
 	dssh_session_set_cbdata(client, &setup_io, &setup_io,
 	    &setup_io, &setup_io);
+	dssh_session_set_hostkey_verify_cb(client, dssh_test_accept_hostkey, NULL);
 
 	dssh_session server = init_server_session();
 	if (server == NULL) {

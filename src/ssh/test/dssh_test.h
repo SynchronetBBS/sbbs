@@ -13,6 +13,26 @@
 #include <string.h>
 #include <inttypes.h>
 
+#include "deucessh.h"
+
+/*
+ * Accept-all host key verification callback for tests.
+ * Set on client sessions before handshake.
+ */
+static inline dssh_hostkey_decision
+dssh_test_accept_hostkey(const char *algo_name, unsigned int key_bits,
+    const uint8_t *sha256_hash, const uint8_t *key_blob,
+    size_t key_blob_len, void *cbdata)
+{
+	(void)algo_name;
+	(void)key_bits;
+	(void)sha256_hash;
+	(void)key_blob;
+	(void)key_blob_len;
+	(void)cbdata;
+	return DSSH_HOSTKEY_ACCEPT;
+}
+
 #define TEST_PASS  1
 #define TEST_FAIL  0
 #define TEST_SKIP -1

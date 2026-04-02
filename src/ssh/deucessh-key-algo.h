@@ -24,6 +24,13 @@ typedef int  (*dssh_key_algo_pubkey)(const uint8_t **out, size_t *outlen, dssh_k
 typedef int  (*dssh_key_algo_haskey)(dssh_key_algo_ctx *ctx);
 typedef void (*dssh_key_algo_cleanup)(dssh_key_algo_ctx *ctx);
 
+/*
+ * Return the key strength in bits from a public key blob (wire format).
+ * For RSA: the modulus bit count.  For Ed25519: 256.
+ * Returns 0 if the blob cannot be parsed.
+ */
+typedef unsigned int (*dssh_key_algo_keybits)(const uint8_t *key_blob, size_t key_blob_len);
+
 #define DSSH_KEY_ALGO_FLAG_ENCRYPTION_CAPABLE UINT32_C(1 << 0)
 #define DSSH_KEY_ALGO_FLAG_SIGNATURE_CAPABLE  UINT32_C(1 << 1)
 
@@ -34,6 +41,7 @@ typedef struct dssh_key_algo_s {
 	dssh_key_algo_pubkey    pubkey;
 	dssh_key_algo_haskey    haskey;
 	dssh_key_algo_cleanup   cleanup;
+	dssh_key_algo_keybits   key_bits;
 	dssh_key_algo_ctx      *ctx;
 	uint32_t                flags;
 	char                    name[];

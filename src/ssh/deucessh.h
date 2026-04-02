@@ -116,6 +116,27 @@ typedef void (*dssh_unimplemented_cb)(uint32_t rejected_seq, void *cbdata);
 typedef void (*dssh_terminate_cb)(dssh_session sess, void *cbdata);
 
 /*
+ * Host key verification callback.  Mandatory for client sessions.
+ * Called during KEX with the server's host key information.
+ * Return DSSH_HOSTKEY_ACCEPT to proceed, DSSH_HOSTKEY_REJECT to abort.
+ *
+ * algo_name:    NUL-terminated key algorithm name (e.g. "rsa-sha2-256")
+ * key_bits:     key strength in bits (e.g. 2048, 4096 for RSA; 256 for Ed25519).
+ *               0 if the key algorithm module does not provide this.
+ * sha256_hash:  SHA-256 fingerprint of the raw key blob (32 bytes).
+ * key_blob:     raw SSH public key blob (wire format).
+ * key_blob_len: length of key_blob in bytes.
+ * cbdata:       application data passed to dssh_session_set_hostkey_verify_cb().
+ */
+typedef enum {
+	DSSH_HOSTKEY_ACCEPT,
+	DSSH_HOSTKEY_REJECT
+} dssh_hostkey_decision;
+
+typedef dssh_hostkey_decision (*dssh_hostkey_verify_cb)(const char *algo_name, unsigned int key_bits,
+    const uint8_t *sha256_hash, const uint8_t *key_blob, size_t key_blob_len, void *cbdata);
+
+/*
  * Parse a big-endian uint32 from buf[0..bufsz-1] into *val.
  * Returns 4 (bytes consumed) on success, or a negative
  * DSSH_ERROR_* code on failure (DSSH_ERROR_INVALID if buf or
@@ -199,6 +220,14 @@ typedef int (*dssh_global_request_cb)(const uint8_t *name, size_t name_len, bool
 DSSH_PUBLIC int dssh_session_set_banner_cb(dssh_session sess, dssh_auth_banner_cb cb, void *cbdata);
 DSSH_PUBLIC int dssh_session_set_global_request_cb(dssh_session sess, dssh_global_request_cb cb, void *cbdata);
 DSSH_PUBLIC int dssh_session_set_terminate_cb(dssh_session sess, dssh_terminate_cb cb, void *cbdata);
+
+/*
+ * Set the host key verification callback.  Mandatory for client sessions;
+ * dssh_transport_handshake() returns DSSH_ERROR_INIT if not set on a
+ * client session.  Ignored for server sessions.
+ * Must be set before dssh_transport_handshake().
+ */
+DSSH_PUBLIC int dssh_session_set_hostkey_verify_cb(dssh_session sess, dssh_hostkey_verify_cb cb, void *cbdata);
 
 /*
  * Set the session inactivity timeout in milliseconds.

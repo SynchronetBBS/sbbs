@@ -129,6 +129,7 @@ handshake_setup(struct handshake_ctx *ctx)
 	}
 	dssh_session_set_cbdata(ctx->client, &ctx->io, &ctx->io,
 	    &ctx->io, &ctx->io);
+	dssh_session_set_hostkey_verify_cb(ctx->client, dssh_test_accept_hostkey, NULL);
 
 	ctx->server = dssh_session_init(false, 0);
 	if (ctx->server == NULL) {
@@ -436,6 +437,7 @@ test_newkeys_enc_init_failure(void)
 		return TEST_FAIL;
 	}
 	dssh_session_set_cbdata(client, &io, &io, &io, &io);
+	dssh_session_set_hostkey_verify_cb(client, dssh_test_accept_hostkey, NULL);
 	dssh_session_set_cbdata(server, &io, &io, &io, &io);
 
 	/* Fail the 3rd enc init call (0=client_c2s, 1=client_s2c,
@@ -501,6 +503,7 @@ test_newkeys_mac_init_failure(void)
 		return TEST_FAIL;
 	}
 	dssh_session_set_cbdata(client, &io, &io, &io, &io);
+	dssh_session_set_hostkey_verify_cb(client, dssh_test_accept_hostkey, NULL);
 	dssh_session_set_cbdata(server, &io, &io, &io, &io);
 
 	/* Fail the first mac init call */
@@ -621,6 +624,7 @@ test_recv_mac_too_large(void)
 		return TEST_FAIL;
 	}
 	dssh_session_set_cbdata(client, &io, &io, &io, &io);
+	dssh_session_set_hostkey_verify_cb(client, dssh_test_accept_hostkey, NULL);
 	dssh_session_set_cbdata(server, &io, &io, &io, &io);
 
 	struct handshake_ctx ctx = {
@@ -705,6 +709,7 @@ test_send_mac_overflow_rejected(void)
 		return TEST_FAIL;
 	}
 	dssh_session_set_cbdata(client, &io, &io, &io, &io);
+	dssh_session_set_hostkey_verify_cb(client, dssh_test_accept_hostkey, NULL);
 	dssh_session_set_cbdata(server, &io, &io, &io, &io);
 
 	struct handshake_ctx ctx = {

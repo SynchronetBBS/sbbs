@@ -20,6 +20,14 @@ extern int  dssh_botan_ed25519_pubkey(const uint8_t **out, size_t *outlen, dssh_
 extern int  dssh_botan_ed25519_haskey(dssh_key_algo_ctx *ctx);
 extern void dssh_botan_ed25519_cleanup(dssh_key_algo_ctx *ctx);
 
+static unsigned int
+key_bits(const uint8_t *key_blob, size_t key_blob_len)
+{
+	(void)key_blob;
+	(void)key_blob_len;
+	return 256;
+}
+
 DSSH_PUBLIC int
 dssh_register_ssh_ed25519(void)
 {
@@ -31,9 +39,10 @@ dssh_register_ssh_ed25519(void)
 	ka->verify  = dssh_botan_ed25519_verify;
 	ka->pubkey  = dssh_botan_ed25519_pubkey;
 	ka->haskey  = dssh_botan_ed25519_haskey;
-	ka->cleanup = dssh_botan_ed25519_cleanup;
-	ka->ctx     = NULL;
-	ka->flags   = DSSH_KEY_ALGO_FLAG_SIGNATURE_CAPABLE;
+	ka->cleanup  = dssh_botan_ed25519_cleanup;
+	ka->key_bits = key_bits;
+	ka->ctx      = NULL;
+	ka->flags    = DSSH_KEY_ALGO_FLAG_SIGNATURE_CAPABLE;
 	memcpy(ka->name, ED25519_NAME, ED25519_NAME_LEN + 1);
 	return dssh_transport_register_key_algo(ka);
 }

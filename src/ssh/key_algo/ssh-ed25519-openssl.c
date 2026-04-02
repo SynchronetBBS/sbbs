@@ -220,6 +220,14 @@ verify(const uint8_t *key_blob, size_t key_blob_len, const uint8_t *sig_blob, si
 	return result;
 }
 
+static unsigned int
+key_bits(const uint8_t *key_blob, size_t key_blob_len)
+{
+	(void)key_blob;
+	(void)key_blob_len;
+	return 256;
+}
+
 static int
 haskey(dssh_key_algo_ctx *ctx)
 {
@@ -254,9 +262,10 @@ dssh_register_ssh_ed25519(void)
 	ka->verify  = verify;
 	ka->pubkey  = pubkey;
 	ka->haskey  = haskey;
-	ka->cleanup = cleanup;
-	ka->ctx     = NULL;
-	ka->flags   = DSSH_KEY_ALGO_FLAG_SIGNATURE_CAPABLE;
+	ka->cleanup  = cleanup;
+	ka->key_bits = key_bits;
+	ka->ctx      = NULL;
+	ka->flags    = DSSH_KEY_ALGO_FLAG_SIGNATURE_CAPABLE;
 	memcpy(ka->name, ED25519_NAME, ED25519_NAME_LEN + 1);
 	return dssh_transport_register_key_algo(ka);
 }

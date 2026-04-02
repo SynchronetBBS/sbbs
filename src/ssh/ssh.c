@@ -184,6 +184,18 @@ dssh_session_set_terminate_cb(struct dssh_session_s *sess, dssh_terminate_cb cb,
 }
 
 DSSH_PUBLIC int
+dssh_session_set_hostkey_verify_cb(struct dssh_session_s *sess, dssh_hostkey_verify_cb cb, void *cbdata)
+{
+	if (sess == NULL)
+		return DSSH_ERROR_INVALID;
+	if (sess->demux_running)
+		return DSSH_ERROR_TOOLATE;
+	sess->hostkey_verify_cb     = cb;
+	sess->hostkey_verify_cbdata = cbdata;
+	return 0;
+}
+
+DSSH_PUBLIC int
 dssh_session_set_timeout(struct dssh_session_s *sess, int timeout_ms)
 {
 	if (sess == NULL)

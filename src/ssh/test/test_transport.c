@@ -175,6 +175,7 @@ handshake_setup(struct handshake_ctx *ctx)
 	}
 	dssh_session_set_cbdata(ctx->client, &ctx->io, &ctx->io,
 	    &ctx->io, &ctx->io);
+	dssh_session_set_hostkey_verify_cb(ctx->client, dssh_test_accept_hostkey, NULL);
 
 	ctx->server = init_server_session();
 	if (ctx->server == NULL) {
@@ -2221,6 +2222,7 @@ test_version_exchange_with_comment(void)
 	}
 	dssh_session_set_cbdata(ctx.client, &ctx.io, &ctx.io,
 	    &ctx.io, &ctx.io);
+	dssh_session_set_hostkey_verify_cb(ctx.client, dssh_test_accept_hostkey, NULL);
 
 	ctx.server = init_server_session();
 	if (ctx.server == NULL) {
@@ -2277,6 +2279,7 @@ test_version_exchange_rx_error(void)
 		return TEST_FAIL;
 	}
 	dssh_session_set_cbdata(sess, &io, &io, &io, &io);
+	dssh_session_set_hostkey_verify_cb(sess, dssh_test_accept_hostkey, NULL);
 
 	/* Close the s2c pipe before version exchange starts --
 	 * the rxline callback will fail */
@@ -2319,6 +2322,7 @@ test_version_exchange_terminate(void)
 		return TEST_FAIL;
 	}
 	dssh_session_set_cbdata(sess, &io, &io, &io, &io);
+	dssh_session_set_hostkey_verify_cb(sess, dssh_test_accept_hostkey, NULL);
 
 	/* Set terminate flag before handshake */
 	dssh_session_terminate(sess);
@@ -2527,6 +2531,7 @@ test_version_exchange_extra_line_error(void)
 		return TEST_FAIL;
 	}
 	dssh_session_set_cbdata(sess, &io, &io, &io, &io);
+	dssh_session_set_hostkey_verify_cb(sess, dssh_test_accept_hostkey, NULL);
 
 	/* Inject a non-SSH line followed by the real version.
 	 * The extra_line_cb will return -1, aborting version_rx. */
@@ -6903,6 +6908,7 @@ test_tx_gather_roundtrip(void)
 		return TEST_SKIP;
 	}
 	dssh_session_set_cbdata(client, &io, &io, &io, &io);
+	dssh_session_set_hostkey_verify_cb(client, dssh_test_accept_hostkey, NULL);
 
 	dssh_session server = init_server_session();
 	if (server == NULL) {
@@ -6989,6 +6995,7 @@ test_rxline_from_rx_handshake(void)
 		return TEST_SKIP;
 	}
 	dssh_session_set_cbdata(client, &io, &io, &io, &io);
+	dssh_session_set_hostkey_verify_cb(client, dssh_test_accept_hostkey, NULL);
 
 	dssh_session server = init_server_session();
 	if (server == NULL) {

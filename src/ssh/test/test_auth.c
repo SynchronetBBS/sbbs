@@ -169,6 +169,7 @@ handshake_setup(struct handshake_ctx *ctx)
 	}
 	dssh_session_set_cbdata(ctx->client, &ctx->io, &ctx->io,
 	    &ctx->io, &ctx->io);
+	dssh_session_set_hostkey_verify_cb(ctx->client, dssh_test_accept_hostkey, NULL);
 
 	ctx->server = init_server_session();
 	if (ctx->server == NULL) {

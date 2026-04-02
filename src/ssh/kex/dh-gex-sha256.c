@@ -292,11 +292,29 @@ dhgex_client(struct dssh_kex_context *kctx, const struct dhgex_ops *ops)
 	if (res < 0)
 		goto cleanup;
 
-	/* 8. Verify signature */
+	/* 8. Verify key algorithm and host key */
 	if (!ka || !ka->verify) {
 		res = DSSH_ERROR_INIT;
 		goto cleanup;
 	}
+
+	if (kctx->hostkey_verify) {
+		uint8_t fp[32];
+
+		if (dssh_hash_oneshot("SHA-256", k_s, ks_len, fp, sizeof(fp)) < 0) {
+			res = DSSH_ERROR_INIT;
+			goto cleanup;
+		}
+		unsigned int bits = ka->key_bits ? ka->key_bits(k_s, ks_len) : 0;
+
+		if (kctx->hostkey_verify(ka->name, bits, fp, k_s, ks_len,
+		        kctx->hostkey_verify_cbdata) != DSSH_HOSTKEY_ACCEPT) {
+			res = DSSH_ERROR_INVALID;
+			goto cleanup;
+		}
+	}
+
+	/* 9. Verify signature */
 	res = ka->verify(k_s, ks_len, sig_h, sig_len, hash, SHA256_DIGEST_LEN);
 	if (res < 0)
 		goto cleanup;

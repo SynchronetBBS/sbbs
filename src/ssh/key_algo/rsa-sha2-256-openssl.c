@@ -422,6 +422,43 @@ pubkey(const uint8_t **out, size_t *outlen, dssh_key_algo_ctx *ctx)
 	return 0;
 }
 
+/*
+ * Return the RSA key strength from a public key blob (wire format).
+ * Parses the modulus n and returns its bit count.
+ */
+static unsigned int
+key_bits(const uint8_t *key_blob, size_t key_blob_len)
+{
+	size_t   kp = 0;
+	uint32_t slen;
+
+	/* Skip algorithm name ("ssh-rsa") */
+	if (dssh_parse_uint32(&key_blob[kp], key_blob_len, &slen) < 4 || kp + 4 + slen > key_blob_len)
+		return 0;
+	kp += 4 + slen;
+
+	/* Skip e (public exponent) */
+	if (dssh_parse_uint32(&key_blob[kp], key_blob_len - kp, &slen) < 4 || kp + 4 + slen > key_blob_len)
+		return 0;
+	kp += 4 + slen;
+
+	/* Parse n (modulus) */
+	if (dssh_parse_uint32(&key_blob[kp], key_blob_len - kp, &slen) < 4 || kp + 4 + slen > key_blob_len)
+		return 0;
+	kp += 4;
+	if (slen > INT_MAX)
+		return 0;
+	int     n_len = (int)slen;
+	BIGNUM *n_bn  = BN_bin2bn(&key_blob[kp], n_len, NULL);
+
+	if (n_bn == NULL)
+		return 0;
+	int bits = BN_num_bits(n_bn);
+
+	BN_free(n_bn);
+	return bits > 0 ? (unsigned int)bits : 0;
+}
+
 static int
 haskey(dssh_key_algo_ctx *ctx)
 {
@@ -637,9 +674,10 @@ dssh_register_rsa_sha2_256(void)
 	ka->verify  = verify;
 	ka->pubkey  = pubkey;
 	ka->haskey  = haskey;
-	ka->cleanup = cleanup;
-	ka->ctx     = NULL;
-	ka->flags   = DSSH_KEY_ALGO_FLAG_SIGNATURE_CAPABLE;
+	ka->cleanup  = cleanup;
+	ka->key_bits = key_bits;
+	ka->ctx      = NULL;
+	ka->flags    = DSSH_KEY_ALGO_FLAG_SIGNATURE_CAPABLE;
 	memcpy(ka->name, RSA_SHA2_256_NAME, RSA_SHA2_256_NAME_LEN + 1);
 	return dssh_transport_register_key_algo(ka);
 }

@@ -318,11 +318,29 @@ hybrid_pq_client(struct dssh_kex_context *kctx, const struct hybrid_pq_params *p
 	if (res < 0)
 		goto cleanup;
 
-	/* 9. Verify signature */
+	/* 9. Verify key algorithm and host key */
 	if (!ka || !ka->verify) {
 		res = DSSH_ERROR_INIT;
 		goto cleanup;
 	}
+
+	if (kctx->hostkey_verify) {
+		uint8_t fp[32];
+
+		if (dssh_hash_oneshot("SHA-256", k_s, k_s_len, fp, sizeof(fp)) < 0) {
+			res = DSSH_ERROR_INIT;
+			goto cleanup;
+		}
+		unsigned int bits = ka->key_bits ? ka->key_bits(k_s, k_s_len) : 0;
+
+		if (kctx->hostkey_verify(ka->name, bits, fp, k_s, k_s_len,
+		        kctx->hostkey_verify_cbdata) != DSSH_HOSTKEY_ACCEPT) {
+			res = DSSH_ERROR_INVALID;
+			goto cleanup;
+		}
+	}
+
+	/* 10. Verify signature */
 	res = ka->verify(k_s, k_s_len, sig_h, sig_len, hash, p->digest_len);
 	if (res < 0)
 		goto cleanup;

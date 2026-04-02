@@ -87,6 +87,7 @@ int main(void)
     /* 3. Create session (opaque handle) */
     dssh_session sess = dssh_session_init(true, 0);
     dssh_session_set_terminate_cb(sess, on_terminate, NULL);
+    dssh_session_set_hostkey_verify_cb(sess, my_hostkey_verify, NULL);
 
     /* 4. Handshake */
     dssh_transport_handshake(sess);
@@ -269,6 +270,10 @@ All callbacks receive the session handle and a `cbdata` pointer.
 Return 0 on success, negative on error.  The `cbdata` is set via
 `dssh_session_set_cbdata()`.
 
+Client sessions also **require** a host key verification callback
+(see [Host Key Verification](#host-key-verification-client-only)
+below).  The handshake will not proceed without it.
+
 Callbacks are registered globally once.  Per-session differentiation
 is via the `cbdata` pointers.
 
@@ -296,6 +301,40 @@ The terminate callback fires exactly once (fatal error, peer disconnect,
 or explicit `dssh_session_terminate()` call), from any thread, before
 library condvar broadcasts.  It must not call any `dssh_*` function on
 this session except `dssh_session_is_terminated()`.
+
+## Host Key Verification (Client Only)
+
+Client sessions **must** set a host key verification callback before
+`dssh_transport_handshake()`.  The callback fires during KEX with the
+server's host key information:
+
+```c
+static dssh_hostkey_decision
+my_hostkey_verify(const char *algo_name, unsigned int key_bits,
+    const uint8_t *sha256_hash, const uint8_t *key_blob,
+    size_t key_blob_len, void *cbdata)
+{
+    /* algo_name:    "ssh-ed25519", "rsa-sha2-256", etc. */
+    /* key_bits:     256 (Ed25519), 2048/4096 (RSA), etc. */
+    /* sha256_hash:  32-byte SHA-256 fingerprint of key_blob */
+    /* key_blob/len: raw SSH wire-format public key blob */
+
+    /* Example: reject weak RSA keys */
+    if (key_bits > 0 && key_bits < 2048)
+        return DSSH_HOSTKEY_REJECT;
+
+    /* ... compare sha256_hash against known_hosts ... */
+
+    return DSSH_HOSTKEY_ACCEPT;
+}
+
+dssh_session_set_hostkey_verify_cb(sess, my_hostkey_verify, NULL);
+```
+
+If the callback is not set on a client session,
+`dssh_transport_handshake()` returns `DSSH_ERROR_INIT`.  Server
+sessions ignore this callback (the server's own host key is not
+verified this way).
 
 ## Version String
 
@@ -803,6 +842,14 @@ static int my_haskey(dssh_key_algo_ctx *ctx)
 
 static void my_key_cleanup(dssh_key_algo_ctx *ctx) { /* ... */ }
 
+static unsigned int my_key_bits(const uint8_t *key_blob,
+    size_t key_blob_len)
+{
+    /* Return the key strength in bits from the wire-format public
+     * key blob.  E.g. RSA: modulus bit count; Ed25519: 256.
+     * Return 0 if the blob cannot be parsed. */
+}
+
 int register_my_key_algo(void)
 {
     static const char name[] = "my-key-type";
@@ -814,6 +861,7 @@ int register_my_key_algo(void)
     ka->pubkey = my_pubkey;
     ka->haskey = my_haskey;
     ka->cleanup = my_key_cleanup;
+    ka->key_bits = my_key_bits; /* NULL ok: 0 passed to verify cb */
     ka->ctx = NULL;     /* set by generate/load */
     ka->flags = DSSH_KEY_ALGO_FLAG_SIGNATURE_CAPABLE;
     memcpy(ka->name, name, sizeof(name));

@@ -251,6 +251,8 @@ dssh_transport_handshake(struct dssh_session_s *sess)
 {
 	if (sess == NULL)
 		return DSSH_ERROR_INVALID;
+	if (sess->trans.client && sess->hostkey_verify_cb == NULL)
+		return DSSH_ERROR_INIT;
 	int res = version_exchange(sess);
 
 	if (res < 0)
@@ -2095,6 +2097,8 @@ kex(struct dssh_session_s *sess)
 	    .send     = kex_send_wrapper,
 	    .recv     = kex_recv_wrapper,
 	    .io_ctx   = sess,
+	    .hostkey_verify        = sess->hostkey_verify_cb,
+	    .hostkey_verify_cbdata = sess->hostkey_verify_cbdata,
 	};
 
 	int res = sess->trans.kex_selected->handler(&kctx);

@@ -24,6 +24,20 @@
 static _Atomic int  sock_fd = -1;
 static dssh_session sess;
 
+static dssh_hostkey_decision
+accept_hostkey(const char *algo_name, unsigned int key_bits,
+    const uint8_t *sha256_hash, const uint8_t *key_blob,
+    size_t key_blob_len, void *cbdata)
+{
+	(void)algo_name;
+	(void)key_bits;
+	(void)sha256_hash;
+	(void)key_blob;
+	(void)key_blob_len;
+	(void)cbdata;
+	return DSSH_HOSTKEY_ACCEPT;
+}
+
 static void
 on_terminate(dssh_session s, void *cbdata)
 {
@@ -191,6 +205,7 @@ main(int argc, char **argv)
 			continue;
 		}
 		dssh_session_set_terminate_cb(sess, on_terminate, NULL);
+		dssh_session_set_hostkey_verify_cb(sess, accept_hostkey, NULL);
 
 		int res = dssh_transport_handshake(sess);
 

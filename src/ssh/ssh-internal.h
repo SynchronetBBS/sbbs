@@ -300,6 +300,8 @@ struct dssh_session_s {
 	void *global_request_cbdata;
 	void  (*terminate_cb)(struct dssh_session_s *sess, void *cbdata);
 	void *terminate_cbdata;
+	dssh_hostkey_verify_cb hostkey_verify_cb;
+	void                  *hostkey_verify_cbdata;
 	dssh_chan_event_cb      default_event_cb;
 	void                   *default_event_cbdata;
 	size_t                  default_max_events;

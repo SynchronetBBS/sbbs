@@ -303,6 +303,7 @@ selftest_setup(struct selftest_ctx *ctx)
 	dssh_session_set_cbdata(ctx->client,
 	    &ctx->client_fd, &ctx->client_fd,
 	    &ctx->client_fd, &ctx->client_fd);
+	dssh_session_set_hostkey_verify_cb(ctx->client, dssh_test_accept_hostkey, NULL);
 
 	ctx->server = init_server_session();
 	if (ctx->server == NULL)

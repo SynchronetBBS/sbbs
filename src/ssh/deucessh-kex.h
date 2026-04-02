@@ -13,6 +13,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#include "deucessh.h"
 #include "deucessh-key-algo.h"
 #include "deucessh-portable.h"
 
@@ -82,6 +83,11 @@ struct dssh_kex_context {
 
 	/* Role: true if this side is the SSH client */
 	bool client;
+
+	/* Host key verification callback (client-side only).
+	 * Set by the transport layer from the session's callback. */
+	dssh_hostkey_verify_cb hostkey_verify;
+	void                  *hostkey_verify_cbdata;
 };
 
 /*

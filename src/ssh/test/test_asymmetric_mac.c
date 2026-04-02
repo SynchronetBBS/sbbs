@@ -289,6 +289,7 @@ run_client(int fd, bool prefer_512, uint16_t expected_digest)
 	if (sess == NULL)
 		return 1;
 	dssh_session_set_cbdata(sess, &fd, &fd, &fd, &fd);
+	dssh_session_set_hostkey_verify_cb(sess, dssh_test_accept_hostkey, NULL);
 
 	int rc = 1;
 
