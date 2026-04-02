@@ -2267,6 +2267,18 @@ js_html_encode(JSContext *cx, uintN argc, jsval *arglist)
 							break;
 						case 'E': /* Bright background (iCE colors - TODO) */
 							break;
+						case 'U':
+							fg = p->cfg->color[tmpbuf[i + 1] == 'u' ? clr_userlow : clr_userhigh] & 0x0f;
+							bold = (fg & HIGH);
+							bg = p->cfg->color[tmpbuf[i + 1] == 'u' ? clr_userlow : clr_userhigh] >> 4;
+							blink = (bg & HIGH);
+							break;
+						case 'V':
+							fg = p->cfg->color[tmpbuf[i + 1] == 'v' ? clr_mnelow : clr_mnehigh] & 0x0f;
+							bold = (fg & HIGH);
+							bg = p->cfg->color[tmpbuf[i + 1] == 'v' ? clr_mnelow : clr_mnehigh] >> 4;
+							blink = (bg & HIGH);
+							break;
 						case '+':
 							if (attr_sp < (int)sizeof(attr_stack))
 								attr_stack[attr_sp++] = (blink?(1 << 7):0) | (bg << 4) | (bold?(1 << 3):0) | (int)fg;
