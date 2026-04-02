@@ -12,6 +12,7 @@ Usage:
 
 import argparse
 import os
+import struct
 import subprocess
 import sys
 from PIL import Image
@@ -97,8 +98,86 @@ def interpolate_height_up(img, newheight):
 	return dst
 
 
+def load_xwd(path):
+	"""Load an XWD file natively (format version 7, 32bpp)."""
+	with open(path, 'rb') as f:
+		data = f.read()
+
+	header_size, file_version = struct.unpack_from('>II', data, 0)
+	if file_version != 7:
+		return None
+
+	fields = struct.unpack_from('>13I', data, 0)
+	pixmap_depth = fields[3]
+	width = fields[4]
+	height = fields[5]
+	byte_order = fields[7]  # 0=LSBFirst, 1=MSBFirst
+	bits_per_pixel = fields[11]
+	bytes_per_line = fields[12]
+
+	more = struct.unpack_from('>7I', data, 52)
+	visual_class = more[0]
+	red_mask = more[1]
+	green_mask = more[2]
+	blue_mask = more[3]
+	ncolors = more[6]
+
+	# Colormap follows header: ncolors entries, each 12 bytes
+	cmap_offset = header_size
+	colormap = []
+	for i in range(ncolors):
+		off = cmap_offset + i * 12
+		# XWD colormap entry: pixel(4), red(2), green(2), blue(2), flags(1), pad(1)
+		pixel, r, g, b = struct.unpack_from('>IHHH', data, off)
+		colormap.append((r >> 8, g >> 8, b >> 8))
+
+	pixel_offset = cmap_offset + ncolors * 12
+	img = Image.new('RGB', (width, height))
+	pix = img.load()
+
+	for y in range(height):
+		row_off = pixel_offset + y * bytes_per_line
+		for x in range(width):
+			poff = row_off + x * (bits_per_pixel // 8)
+			if byte_order == 0:  # LSBFirst
+				val = struct.unpack_from('<I', data, poff)[0]
+			else:
+				val = struct.unpack_from('>I', data, poff)[0]
+
+			if visual_class in (4, 3):  # PseudoColor / StaticColor
+				idx = val & 0xFFFFFF
+				if idx < len(colormap):
+					pix[x, y] = colormap[idx]
+				else:
+					pix[x, y] = (0, 0, 0)
+			else:  # DirectColor / TrueColor
+				r = (val & red_mask) >> 16
+				g = (val & green_mask) >> 8
+				b = val & blue_mask
+				pix[x, y] = (r, g, b)
+
+	return img
+
+
 def load_image(path):
-	"""Load an image, converting XWD via ImageMagick if needed."""
+	"""Load an image: try PIL first, then native XWD, then ImageMagick."""
+	if not path.lower().endswith('.xwd'):
+		try:
+			img = Image.open(path)
+			img.load()
+			return img.convert('RGB')
+		except Exception:
+			pass
+
+	# Try native XWD reader
+	try:
+		img = load_xwd(path)
+		if img is not None:
+			return img
+	except Exception as e:
+		print(f"Warning: native XWD reader failed on {path}: {e}", file=sys.stderr)
+
+	# Fallback: PIL then ImageMagick
 	try:
 		img = Image.open(path)
 		img.load()
@@ -106,18 +185,22 @@ def load_image(path):
 	except Exception:
 		pass
 
-	try:
-		result = subprocess.run(
-			['magick', 'xwd:' + path, 'png:-'],
-			capture_output=True, check=True
-		)
-		from io import BytesIO
-		img = Image.open(BytesIO(result.stdout))
-		img.load()
-		return img.convert('RGB')
-	except (subprocess.CalledProcessError, FileNotFoundError) as e:
-		print(f"Error: Cannot load {path}: {e}", file=sys.stderr)
-		sys.exit(1)
+	for cmd in ['magick', 'convert']:
+		try:
+			result = subprocess.run(
+				[cmd, 'xwd:' + path, 'png:-'],
+				capture_output=True, check=True
+			)
+			from io import BytesIO
+			img = Image.open(BytesIO(result.stdout))
+			img.load()
+			return img.convert('RGB')
+		except FileNotFoundError:
+			continue
+		except subprocess.CalledProcessError:
+			continue
+	print(f"Error: Cannot load {path}", file=sys.stderr)
+	sys.exit(1)
 
 
 def snap_image(img):
