@@ -10415,106 +10415,115 @@ reinit_screen(uint8_t *font, int fx, int fy)
 	freepixels(pix);
 }
 
-// M. Douglas McIlroy
-// There Is No Royal Road to Programs - A Trilogy on Raster Ellipses and Programming Methodology
-#define incx() x++, dxt += d2xt, t += dxt
-#define incy() y--, dyt += d2yt, t += dyt
+// BGI ellipse algorithm — reverse-engineered from RIPTERM.EXE.
+// Two-region Bresenham with x100 decimal fixed-point scaling.
+// All arithmetic is 32-bit
 
 static void
 full_ellipse(int xc, int yc, int sa, int ea, int a, int b, bool fill, uint32_t colour)
 {
-	if (b == 0) {
-		b = 1;
-		a--;
-	}
-	if (a <= 0)
+	if (a == 0)
 		a = 1;
+	if (b == 0)
+		b = 1;
 
 	int    x = 0, y = b;
-	long   a2 = (long)a * a;
-	long   b2 = (long)b * b;
-	long   crit1 = -(a2 / 4 + a % 2 + b2);
-	long   crit2 = -(b2 / 4 + b % 2 + a2);
-	long   crit3 = -(b2 / 4 + b % 2);
-	long   t = -(a2 * y); /* t = e(x+1/2,y-1/2) - (a²+b²)/4 */
-	long   dxt = 2 * b2 * x, dyt = -2 * a2 * y;
-	long   d2xt = 2 * b2, d2yt = 2 * a2;
 	int    fy;
 	bool   inv = ea < sa;
-	bool   skip = false;
 	double angle;
 	double qangle;
 
-	while (y >= 0 && x <= a) {
-		angle = atan((x * M_PI / 180.0) / (y * M_PI / 180.0));
-		angle *= 180.0;
-		angle /= M_PI;
-		angle = lround(90.0 - angle);
-		if (!skip) {
-			if ((x != 0) || (y != 0)) {
-                                // Top-left quadrant.
-				qangle = 180 - angle;
-				if (fill) {
-					if (x == 0) {
-						for (fy = yc - y + 1; fy < yc + y; fy++)
-							fill_pixel(xc, fy);
-					}
-				}
-				if (rip.borders) {
-					if (((sa <= qangle) && (ea >= qangle))
-					    || (inv && (ea <= qangle) && (sa >= qangle)))
-						set_pixel(xc - x, yc - y, colour);
-				}
-			}
-			if ((x != 0) && (y != 0)) {
-				if (fill) {
-					for (fy = yc - y + 1; fy < yc + y; fy++) {
-						fill_pixel(xc - x, fy);
-						fill_pixel(xc + x, fy);
-					}
-				}
-				if (rip.borders) {
-                                        // Top-right quadrant.
-					if (((sa <= angle) && (ea >= angle))
-					    || (inv && (ea <= angle) && (sa >= angle)))
-						set_pixel(xc + x, yc - y, colour);
+	// BGI setup: scale by 100 to maintain precision without fractions.
+	long   bigger = (a > b) ? a : b;
+	long   a_sq_100 = bigger * bigger * 100;
+	long   step = a_sq_100 / a / a;
+	long   step_const = a_sq_100 / b / b;
+	long   temp = step_const * b;
+	long   error = temp * b - a_sq_100;
+	long   delta = 2 * temp;
+	long   incr = 0;
+	long   incr_accum = 0;
+	long   threshold = 0;
 
-                                        // Bottom-left quadrant.
-					qangle = 180 + angle;
-					if (((sa <= qangle) && (ea >= qangle))
-					    || (inv && (ea <= qangle) && (sa >= qangle)))
-						set_pixel(xc - x, yc + y, colour);
-				}
-			}
+	// update_incr: incr = incr_accum + step; threshold = delta - step_const
+	// do_inc_x:    x++; error += incr; incr_accum = incr + step
+	// do_dec_y:    y--; error -= threshold; delta = threshold - step_const
 
-                        // Bottom-right quadrant
-			qangle = 360 - angle;
-			if (rip.borders) {
-				if (((sa <= qangle) && (ea >= qangle)) || (inv && (ea <= qangle) && (sa >= qangle)))
-					set_pixel(xc + x, yc + y, colour);
-			}
-		}
-		skip = false;
-		if ((t + b2 * x <= crit1)       /* e(x+1,y-1/2) <= 0 */
-		    || (t + a2 * y <= crit3)) { /* e(x+1/2,y) <= 0 */
-			incx();
+#define update_incr() (incr = incr_accum + step, threshold = delta - step_const)
+#define do_inc_x()    (x++, error += incr, incr_accum = incr + step)
+#define do_dec_y()    (y--, error -= threshold, delta = threshold - step_const)
 
-                        // Angle move, skip next...
-			if (!((t + b2 * x <= crit1) || (t + a2 * y <= crit3)) && (t - a2 * y > crit2))
-				skip = true;
-		}
-		else if (t - a2 * y > crit2) { /* e(x+1/2,y-1) > 0 */
-			incy();
+#define plot_4() do {                                                        \
+	angle = atan((x * M_PI / 180.0) / (y * M_PI / 180.0));              \
+	angle *= 180.0;                                                      \
+	angle /= M_PI;                                                       \
+	angle = lround(90.0 - angle);                                        \
+	if ((x != 0) || (y != 0)) {                                          \
+		qangle = 180 - angle;                                        \
+		if (fill) {                                                  \
+			if (x == 0) {                                        \
+				for (fy = yc - y + 1; fy < yc + y; fy++)     \
+					fill_pixel(xc, fy);                  \
+			}                                                    \
+		}                                                            \
+		if (rip.borders) {                                           \
+			if (((sa <= qangle) && (ea >= qangle))               \
+			    || (inv && (ea <= qangle) && (sa >= qangle)))    \
+				set_pixel(xc - x, yc - y, colour);          \
+		}                                                            \
+	}                                                                    \
+	if ((x != 0) && (y != 0)) {                                          \
+		if (fill) {                                                  \
+			for (fy = yc - y + 1; fy < yc + y; fy++) {          \
+				fill_pixel(xc - x, fy);                      \
+				fill_pixel(xc + x, fy);                      \
+			}                                                    \
+		}                                                            \
+		if (rip.borders) {                                           \
+			if (((sa <= angle) && (ea >= angle))                 \
+			    || (inv && (ea <= angle) && (sa >= angle)))       \
+				set_pixel(xc + x, yc - y, colour);          \
+			qangle = 180 + angle;                                \
+			if (((sa <= qangle) && (ea >= qangle))               \
+			    || (inv && (ea <= qangle) && (sa >= qangle)))    \
+				set_pixel(xc - x, yc + y, colour);          \
+		}                                                            \
+	}                                                                    \
+	qangle = 360 - angle;                                                \
+	if (rip.borders) {                                                   \
+		if (((sa <= qangle) && (ea >= qangle))                       \
+		    || (inv && (ea <= qangle) && (sa >= qangle)))            \
+			set_pixel(xc + x, yc + y, colour);                  \
+	}                                                                    \
+} while (0)
 
-                        // Angle move, skip next...
-			if ((t + b2 * x <= crit1) || (t + a2 * y <= crit3))
-				skip = true;
-		}
-		else {
-			incx();
-			incy();
-		}
+	// Loop 1: x-major region — always inc_x, conditionally dec_y
+	plot_4();
+	update_incr();
+	if (2 * error + 2 * incr >= threshold)
+		do_dec_y();
+	do_inc_x();
+	while (incr_accum < delta) {
+		plot_4();
+		update_incr();
+		if (2 * error + 2 * incr >= threshold)
+			do_dec_y();
+		do_inc_x();
 	}
+
+	// Loop 2: y-major region — always dec_y, conditionally inc_x
+	while (y >= 0) {
+		plot_4();
+		update_incr();
+		if (incr / 2 + error <= threshold)
+			do_inc_x();
+		do_dec_y();
+	}
+
+#undef update_incr
+#undef do_inc_x
+#undef do_dec_y
+#undef plot_4
 	if ((rip.line_width == 3) && rip.borders) {
 		rip.line_width = 1;
 		full_ellipse(xc, yc, sa, ea, a - 1, b - 1, false, colour & 0xcfffffff);
