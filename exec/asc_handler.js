@@ -18,11 +18,11 @@ else
 	filename = argv[0];
 
 var file = new File(filename);
-if(!file.open("r",true,8192)) {
+if(!file.open("r",true)) {
 	writeln("!ERROR " + file.error + " opening " + filename);
 	exit();
 }
-var text = file.readAll(8192);
+var text = file.readAll(256 * 1024);
 file.close();
 writeln('<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN">');
 writeln("<html>");
