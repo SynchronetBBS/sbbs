@@ -11043,18 +11043,20 @@ rip_bezier(int x1, int y1, int x2, int y2, int x3, int y3, int x4, int y4, int c
 	i = 0;
 	targets[i++] = x1;
 	targets[i++] = y1;
+	double step_size = 1.0 / cnt;
+	double t = 0.0;
 	for (step = 1; step < cnt; step++) {
-		double tf = ((double)step) / cnt;
-		double tr = ((double)(cnt - step)) / cnt;
-		double tfs = pow(tf, 2);
-		double tfstr = tfs * tr;
-		double tfc = pow(tf, 3);
-		double trs = pow(tr, 2);
-		double tftrs = tf * trs;
-		double trc = pow(tr, 3);
+		t += step_size;
+		double t_sq = t * t;
+		double t_cu = t * t_sq;
+		double r = 1.0 - t;
+		double r_sq = r * r;
+		double r_cu = r_sq * r;
+		double c1 = 3.0 * t * r_sq;
+		double c2 = 3.0 * t_sq * r;
 
-		targets[i++] = trc * x1 + 3 * tftrs * x2 + 3 * tfstr * x3 + tfc * x4;
-		targets[i++] = trc * y1 + 3 * tftrs * y2 + 3 * tfstr * y3 + tfc * y4;
+		targets[i++] = r_cu * x1 + c1 * x2 + c2 * x3 + t_cu * x4;
+		targets[i++] = r_cu * y1 + c1 * y2 + c2 * y3 + t_cu * y4;
 	}
 	targets[i++] = x4;
 	targets[i++] = y4;
