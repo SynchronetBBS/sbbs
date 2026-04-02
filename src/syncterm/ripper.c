@@ -10540,6 +10540,162 @@ bgi_arc_in_range(int metric, int start_limit, int end_limit, bool inv)
 		return (metric >= start_limit) || (metric <= end_limit);
 }
 
+// Arc point collection buffer for polygon-based pie fill.
+// When arc_collect.xy is non-NULL, ellipse_plot() records border points
+// along with their metric values for later sorting into arc order.
+static struct {
+	int *xy;       // (x, y, metric) triples
+	int  count;
+	int  capacity; // number of triples
+} arc_collect;
+
+static void
+arc_collect_init(void)
+{
+	arc_collect.count = 0;
+	if (arc_collect.xy == NULL) {
+		arc_collect.capacity = 64;
+		arc_collect.xy = malloc(arc_collect.capacity * 3 * sizeof(int));
+	}
+}
+
+static void
+arc_collect_add(int px, int py, int metric)
+{
+	if (arc_collect.xy == NULL)
+		return;
+	if (arc_collect.count >= arc_collect.capacity) {
+		arc_collect.capacity *= 2;
+		arc_collect.xy = realloc(arc_collect.xy,
+		    arc_collect.capacity * 3 * sizeof(int));
+	}
+	int i = arc_collect.count * 3;
+	arc_collect.xy[i] = px;
+	arc_collect.xy[i + 1] = py;
+	arc_collect.xy[i + 2] = metric;
+	arc_collect.count++;
+}
+
+static int
+arc_collect_cmp(const void *a, const void *b)
+{
+	const int *pa = (const int *)a;
+	const int *pb = (const int *)b;
+	return (pa[2] > pb[2]) - (pa[2] < pb[2]);
+}
+
+static void scanline_poly_fill(const int *points, int npoints);
+
+// Build a filled pie polygon from collected arc boundary points.
+// Sorts points into arc-traversal order, appends center, and fills.
+static void
+pie_poly_fill(int cx, int cy, int start_limit, bool inv)
+{
+	if (arc_collect.count == 0)
+		return;
+
+	// For wrapped arcs (inv=true), points that wrapped past 0° have
+	// metrics below start_limit.  Shift them above the main arc's
+	// metrics so they sort into correct traversal order.
+	if (inv) {
+		for (int i = 0; i < arc_collect.count; i++) {
+			int m = arc_collect.xy[i * 3 + 2];
+			if (m < start_limit)
+				arc_collect.xy[i * 3 + 2] = m + 10000;
+		}
+	}
+
+	qsort(arc_collect.xy, arc_collect.count, 3 * sizeof(int),
+	    arc_collect_cmp);
+
+	int npts = arc_collect.count + 1;
+	int *poly = malloc(npts * 2 * sizeof(int));
+	if (poly == NULL)
+		return;
+
+	for (int i = 0; i < arc_collect.count; i++) {
+		poly[i * 2] = arc_collect.xy[i * 3];
+		poly[i * 2 + 1] = arc_collect.xy[i * 3 + 1];
+	}
+	poly[arc_collect.count * 2] = cx;
+	poly[arc_collect.count * 2 + 1] = cy;
+
+	scanline_poly_fill(poly, npts);
+	free(poly);
+}
+
+// Scanline polygon fill using even-odd rule.
+// points is an array of npoints (x, y) pairs forming a closed polygon.
+// Fills interior pixels using the current RIP fill pattern via fill_pixel().
+static void
+scanline_poly_fill(const int *points, int npoints)
+{
+	if (npoints < 3)
+		return;
+
+	// Find bounding box
+	int min_y = points[1], max_y = points[1];
+	for (int i = 1; i < npoints; i++) {
+		int py = points[i * 2 + 1];
+		if (py < min_y)
+			min_y = py;
+		if (py > max_y)
+			max_y = py;
+	}
+
+	// Allocate intersection buffer (worst case: one per edge)
+	int *isects = malloc(npoints * sizeof(int));
+	if (isects == NULL)
+		return;
+
+	for (int y = min_y; y <= max_y; y++) {
+		int nisects = 0;
+
+		for (int i = 0; i < npoints; i++) {
+			int j = (i + 1) % npoints;
+			int y0 = points[i * 2 + 1];
+			int y1 = points[j * 2 + 1];
+
+			// Skip horizontal edges and edges that don't cross this scanline
+			if (y0 == y1)
+				continue;
+			// Edge must straddle y: one endpoint strictly above, one at or below
+			if (!((y0 <= y && y1 > y) || (y1 <= y && y0 > y)))
+				continue;
+
+			int x0 = points[i * 2];
+			int x1 = points[j * 2];
+			// Interpolate from the min-y endpoint to match BGI's
+			// integer truncation behavior (swap before divide).
+			int ix;
+			if (y0 < y1)
+				ix = x0 + (long)(y - y0) * (x1 - x0) / (y1 - y0);
+			else
+				ix = x1 + (long)(y - y1) * (x0 - x1) / (y0 - y1);
+			isects[nisects++] = ix;
+		}
+
+		// Sort intersections
+		for (int a = 0; a < nisects - 1; a++) {
+			for (int b = a + 1; b < nisects; b++) {
+				if (isects[b] < isects[a]) {
+					int tmp = isects[a];
+					isects[a] = isects[b];
+					isects[b] = tmp;
+				}
+			}
+		}
+
+		// Fill between pairs (even-odd rule), inclusive on both edges
+		for (int k = 0; k + 1 < nisects; k += 2) {
+			for (int fx = isects[k]; fx <= isects[k + 1]; fx++)
+				fill_pixel(fx, y);
+		}
+	}
+
+	free(isects);
+}
+
 static void
 ellipse_plot(int xc, int yc, int x, int y, int a, int b, int sa, int ea,
     int start_limit, int end_limit, bool fill, bool inv, uint32_t colour)
@@ -10547,7 +10703,7 @@ ellipse_plot(int xc, int yc, int x, int y, int a, int b, int sa, int ea,
 	int fy;
 
 	if (fill) {
-		if ((x == 0) && ((y != 0) || (x != 0))) {
+		if ((x == 0) && (y != 0)) {
 			for (fy = yc - y + 1; fy < yc + y; fy++)
 				fill_pixel(xc, fy);
 		}
@@ -10558,9 +10714,20 @@ ellipse_plot(int xc, int yc, int x, int y, int a, int b, int sa, int ea,
 			}
 		}
 	}
+	// Arc point collection runs independently of border drawing.
+	// This allows collecting points in a first pass, filling the
+	// polygon, then drawing borders on top in a second pass.
+	if (arc_collect.xy != NULL) {
+		if (bgi_arc_in_range(y - x, start_limit, end_limit, inv))
+			arc_collect_add(xc + x, yc - y, y - x);
+		if (bgi_arc_in_range(x - y + 2000, start_limit, end_limit, inv))
+			arc_collect_add(xc - x, yc - y, x - y + 2000);
+		if (bgi_arc_in_range(y - x + 4000, start_limit, end_limit, inv))
+			arc_collect_add(xc - x, yc + y, y - x + 4000);
+		if (bgi_arc_in_range(x - y + 6000, start_limit, end_limit, inv))
+			arc_collect_add(xc + x, yc + y, x - y + 6000);
+	}
 	if (rip.borders) {
-		// BGI tests all four quadrant points unconditionally —
-		// the metric-based clipping handles duplicates at the axes.
 		if (bgi_arc_in_range(y - x, start_limit, end_limit, inv))
 			set_pixel(xc + x, yc - y, colour);
 		if (bgi_arc_in_range(x - y + 2000, start_limit, end_limit, inv))
@@ -10575,6 +10742,11 @@ ellipse_plot(int xc, int yc, int x, int y, int a, int b, int sa, int ea,
 static void
 full_ellipse(int xc, int yc, int sa, int ea, int a, int b, bool fill, uint32_t colour)
 {
+	// Zero-span arc (sa == ea modulo 360) draws nothing,
+	// unless it's an explicit full circle (sa=0, ea=360).
+	if (sa % 360 == ea % 360 && !(sa == 0 && ea == 360))
+		return;
+
 	if (a == 0)
 		a = 1;
 	if (b == 0)
@@ -10861,10 +11033,12 @@ struct point {
 static void
 rip_bezier(int x1, int y1, int x2, int y2, int x3, int y3, int x4, int y4, int cnt, uint32_t fg)
 {
-	int  x, y;
 	int  step;
 	int  i, j;
 	int *targets = malloc((cnt + 2) * 2 * sizeof(*targets));
+
+	if (targets == NULL)
+		return;
 
 	i = 0;
 	targets[i++] = x1;
@@ -10879,10 +11053,8 @@ rip_bezier(int x1, int y1, int x2, int y2, int x3, int y3, int x4, int y4, int c
 		double tftrs = tf * trs;
 		double trc = pow(tr, 3);
 
-		x = trc * x1 + 3 * tftrs * x2 + 3 * tfstr * x3 + tfc * x4;
-		y = trc * y1 + 3 * tftrs * y2 + 3 * tfstr * y3 + tfc * y4;
-		targets[i++] = x;
-		targets[i++] = y;
+		targets[i++] = trc * x1 + 3 * tftrs * x2 + 3 * tfstr * x3 + tfc * x4;
+		targets[i++] = trc * y1 + 3 * tftrs * y2 + 3 * tfstr * y3 + tfc * y4;
 	}
 	targets[i++] = x4;
 	targets[i++] = y4;
@@ -11414,50 +11586,35 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 							}
 							assert_rwlock_unlock(&vstatlock);
 							fg = map_rip_color(rip.color) | 0x40000000;
+
+							// Pass 1: collect arc boundary points (no drawing)
+							arc_collect_init();
+							{
+								bool save_borders = rip.borders;
+								rip.borders = false;
+								full_ellipse(x1, y1, x2, y2, arg1, arg3, false, fg);
+								rip.borders = save_borders;
+							}
+
+							// Fill the pie polygon
+							{
+								int sl = bgi_arc_limit(arg1, arg3, x2);
+								int el = bgi_arc_limit(arg1, arg3, y2);
+								pie_poly_fill(x1, y1, sl, el <= sl);
+							}
+
+							// Pass 2: draw arc border on top of fill
+							arc_collect.xy = NULL;
 							full_ellipse(x1, y1, x2, y2, arg1, arg3, false, fg);
 
-                                                        // This circle may not actually be circular... can't just use
-                                                        // sin/cos
-							ex =
-							    roundl((x2 * y2)
-							        / (sqrt(y2 * y2 + x2 * x2
-							        * pow((tan(arg1 * (M_PI / 180.0))), 2))));
-							if ((arg1 > 90) && (arg1 < 270))
-								ex = 0 - ex;
-							ex += x1;
-							ey =
-							    roundl((x2 * y2 * tan(arg1 * (M_PI / 180.0)))
-							        / (sqrt(y2 * y2 + x2 * x2
-							        * pow((tan(arg1 * (M_PI / 180.0))), 2))));
-							if ((arg1 > 90) && (arg1 < 270))
-								ey = 0 - ey;
-							ey = y1 - ey;
-
+							// Radial lines on top
+							ex = x1 + bgi_trig_mul(bgi_cos32(x2), (int16_t)arg1);
+							ey = y1 - bgi_trig_mul(bgi_sin32(x2), (int16_t)arg3);
 							set_line(x1, y1, ex, ey, fg, 0xffff, rip.line_width);
-							ex =
-							    round((x2 * y2)
-							        / (sqrt(y2 * y2 + x2 * x2
-							        * pow((tan(arg3 * (M_PI / 180.0))), 2))));
-							if ((arg3 > 90) && (arg3 < 270))
-								ex = 0 - ex;
-							ex += x1;
-							ey =
-							    roundl((x2 * y2 * tan(arg3 * (M_PI / 180.0)))
-							        / (sqrt(y2 * y2 + x2 * x2
-							        * pow((tan(arg3 * (M_PI / 180.0))), 2))));
-							if ((arg3 > 90) && (arg3 < 270))
-								ey = 0 - ey;
-							ey = y1 - ey;
-							set_line(x1,
-							    y1,
-							    x1 + nearbyint(cos(M_PI / 180.0) * arg3) * x2,
-							    y1 + nearbyint(sin(M_PI / 180.0) * arg3) * y2,
-							    fg,
-							    0xffff,
-							    rip.line_width);
 
-                                                        // TODO: Lazy lazy fill...
-							do_fill(false);
+							ex = x1 + bgi_trig_mul(bgi_cos32(y2), (int16_t)arg1);
+							ey = y1 - bgi_trig_mul(bgi_sin32(y2), (int16_t)arg3);
+							set_line(x1, y1, ex, ey, fg, 0xffff, rip.line_width);
 							break;
 						case 'L': // RIP_LINE !|L <x0> <y0> <x1> <y1>
                                                         /* This command will draw a line in the current drawing color,
@@ -12158,45 +12315,34 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 								break;
 							fg = map_rip_color(rip.color) | 0x40000000;
 
-							ex =
-							    roundl((x2 * y2)
-							        / (sqrt(y2 * y2 + x2 * x2
-							        * pow((tan(arg1 * (M_PI / 180.0))), 2))));
-							if (((arg1 % 360) > 90) && ((arg1 % 360) < 270))
-								ex = 0 - ex;
-							ex += x1;
-							ey =
-							    roundl((x2 * y2 * tan(arg1 * (M_PI / 180.0)))
-							        / (sqrt(y2 * y2 + x2 * x2
-							        * pow((tan(arg1 * (M_PI / 180.0))), 2))));
-							if (((arg1 % 360) > 90) && ((arg1 % 360) < 270))
-								ey = 0 - ey;
-							ey = y1 - ey;
+							// Pass 1: collect arc boundary points (no drawing)
+							arc_collect_init();
+							{
+								bool save_borders = rip.borders;
+								rip.borders = false;
+								full_ellipse(x1, y1, arg1, arg2, x2, y2, false, fg);
+								rip.borders = save_borders;
+							}
 
-                                                        // ex = x1 + (x2 * cos(arg1 * (M_PI / 180.0)));
-                                                        // ey = y1 - (y2 * sin(arg1 * (M_PI / 180.0)));
-							set_line(x1, y1, ex, ey, fg, 0xffff, rip.line_width);
+							// Fill the pie polygon
+							{
+								int sl = bgi_arc_limit(x2, y2, arg1);
+								int el = bgi_arc_limit(x2, y2, arg2);
+								pie_poly_fill(x1, y1, sl, el <= sl);
+							}
+
+							// Pass 2: draw arc border on top of fill
+							arc_collect.xy = NULL;
 							full_ellipse(x1, y1, arg1, arg2, x2, y2, false, fg);
 
-							ex =
-							    round((x2 * y2)
-							        / (sqrt(y2 * y2 + x2 * x2
-							        * pow((tan(arg2 * (M_PI / 180.0))), 2))));
-							if (((arg2 % 360) > 90) && ((arg2 % 360) < 270))
-								ex = 0 - ex;
-							ex += x1;
-							ey =
-							    roundl((x2 * y2 * tan(arg2 * (M_PI / 180.0)))
-							        / (sqrt(y2 * y2 + x2 * x2
-							        * pow((tan(arg2 * (M_PI / 180.0))), 2))));
-							if (((arg2 % 360) > 90) && ((arg2 % 360) < 270))
-								ey = 0 - ey;
-							ey = y1 - ey;
-
-                                                        // ex = x1 + (x2 * cos(arg2 * (M_PI / 180.0)));
-                                                        // ey = y1 - (y2 * sin(arg2 * (M_PI / 180.0)));
+							// Radial lines on top
+							ex = x1 + bgi_trig_mul(bgi_cos32(arg1), (int16_t)x2);
+							ey = y1 - bgi_trig_mul(bgi_sin32(arg1), (int16_t)y2);
 							set_line(x1, y1, ex, ey, fg, 0xffff, rip.line_width);
-							do_fill(false);
+
+							ex = x1 + bgi_trig_mul(bgi_cos32(arg2), (int16_t)x2);
+							ey = y1 - bgi_trig_mul(bgi_sin32(arg2), (int16_t)y2);
+							set_line(x1, y1, ex, ey, fg, 0xffff, rip.line_width);
 							break;
 						case 'j': // RIP_POINT (Not in Alpha docs)
                                                         /* This command will draw a single point in the current line
