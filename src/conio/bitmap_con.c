@@ -1795,6 +1795,8 @@ bitmap_movetext_screen(int x, int y, int tox, int toy, int direction, int height
 			screenb.toprow -= screenb.screenheight;
 		if (screenb.toprow < 0)
 			screenb.toprow += screenb.screenheight;
+		/* Include gap rows below text area (e.g. EGA 350 - 43*8 = 6) */
+		pheight += screena.screenheight - vstat.rows * vstat.charheight;
 	}
 
 	int maxpos = screena.screenwidth * screena.screenheight;
