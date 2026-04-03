@@ -534,4 +534,11 @@ following table summarizes the available fonts.
 |√
 |
 |Atari ST
+
+|RIPterm
+|
+|√
+|√
+|
+|CP437
 |===

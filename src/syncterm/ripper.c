@@ -7590,7 +7590,7 @@ rip_text_window(int x1, int y1, int x2, int y2, int arg1, int arg2)
 	switch (arg2) {
 		case 0:
 			reinit_screen(
-				(uint8_t *)conio_fontdata[0].eight_by_eight,
+				(uint8_t *)conio_fontdata[45].eight_by_eight,
 				8,
 				8);
 			break;
@@ -7599,7 +7599,7 @@ rip_text_window(int x1, int y1, int x2, int y2, int arg1, int arg2)
 			break;
 		case 2:
 			reinit_screen(
-				(uint8_t *)conio_fontdata[0].eight_by_fourteen,
+				(uint8_t *)conio_fontdata[45].eight_by_fourteen,
 				8,
 				14);
 			break;
@@ -8655,7 +8655,7 @@ char_top_base(char ch, int *top, int *bottom)
 	int      y;
 
 	if (rip.font.num == 0) {
-		this_font = (uint8_t *)conio_fontdata[0].eight_by_eight;
+		this_font = (uint8_t *)conio_fontdata[45].eight_by_eight;
 		fontoffset = ('A') * 8;
 		*top = -1;
 		*bottom = -1;
@@ -8682,7 +8682,7 @@ char_top_bottom(char ch, int *top, int *bottom)
 	int      y;
 
 	if (rip.font.num == 0) {
-		this_font = (uint8_t *)conio_fontdata[0].eight_by_eight;
+		this_font = (uint8_t *)conio_fontdata[45].eight_by_eight;
 		fontoffset = ((uint8_t)ch) * 8;
 		*top = -1;
 		*bottom = -1;
@@ -8749,7 +8749,7 @@ write_char(char ch)
 			return;
 
                 // Bitmap 8x8 font
-		this_font = (uint8_t *)conio_fontdata[0].eight_by_eight;
+		this_font = (uint8_t *)conio_fontdata[45].eight_by_eight;
 		fontoffset = (uch) * 8;
 
 		for (y = 0; y < 8; y++) {
@@ -9612,7 +9612,7 @@ draw_button(struct rip_button_style *but, bool inverted)
 					bottom++;
 				}
 				height = bottom - top + 1;
-				x = but->box.x1 + (but->box.x2 - but->box.x1 - width) / 2;
+				x = but->box.x1 + (but->box.x2 - but->box.x1 - width + 1) / 2;
 				y = but->box.y1 + (but->box.y2 - but->box.y1 + 1 - height) / 2 - top;
 
                                 // TODO: Does this leave the text position in the button?
@@ -12133,10 +12133,10 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 								fnt = conio_fontdata[0].eight_by_sixteen;
 							}
 							else if ((maxwidth == 8) && (maxheight == 14)) {
-								fnt = conio_fontdata[0].eight_by_fourteen;
+								fnt = conio_fontdata[45].eight_by_fourteen;
 							}
 							else if ((maxwidth == 8) && (maxheight == 8)) {
-								fnt = conio_fontdata[0].eight_by_eight;
+								fnt = conio_fontdata[45].eight_by_eight;
 							}
 							else if ((maxwidth == 7) && (maxheight == 14)) {
 								fnt = ripfnt7x14;
@@ -15390,7 +15390,7 @@ draw_glyph(uint8_t ch)
 		}
 
                 // Bitmap 8x8 font
-		this_font = (uint8_t *)conio_fontdata[0].eight_by_eight;
+		this_font = (uint8_t *)conio_fontdata[45].eight_by_eight;
 		fontoffset = ((uint8_t)ch) * 8;
 
 		for (i = 0; i < 8; i++) {
@@ -16725,7 +16725,7 @@ init_rip_ver(int ripver)
 		rip.viewport.ex = rip.x_dim - 1;
 		rip.viewport.ey = rip.y_dim - 1;
 		if (rip.version == RIP_VERSION_1) {
-			rip.default_font = conio_fontdata[0].eight_by_eight;
+			rip.default_font = conio_fontdata[45].eight_by_eight;
 			rip.default_font_width = 8;
 			rip.default_font_height = 8;
 		}
