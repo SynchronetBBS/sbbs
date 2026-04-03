@@ -2975,6 +2975,9 @@ edit_list(struct bbslist **list, struct bbslist *item, char *listpath, int isdef
 					           screen_modes_enum,
 					           item->screen_mode,
 					           &ini_style);
+					SAFECOPY(item->font, font_names[45]);
+					iniSetString(&inifile, itemname, "Font", item->font,
+					             &ini_style);
 				}
 				iniSetEnum(&inifile, itemname, "RIP", rip_versions, item->rip, &ini_style);
 				break;

@@ -336,7 +336,7 @@ struct ciolib_screen {
 	uint32_t		palette[16];
 };
 
-#define CONIO_FIRST_FREE_FONT	45
+#define CONIO_FIRST_FREE_FONT	46
 
 typedef struct {
 	int		mode;

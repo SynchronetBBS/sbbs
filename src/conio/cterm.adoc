@@ -557,6 +557,15 @@ font selection.  Only X11 and SDL currently do.
 
 |42
 |Topaz (Amiga)
+
+|43
+|Prestel
+
+|44
+|Atari ST
+
+|45
+|RIPterm
 |===
 
 Not all fonts are supported in all modes.  If a font is not supported
