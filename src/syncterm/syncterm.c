@@ -1406,7 +1406,8 @@ enum xdg_paths {
 	XDG_DATA_HOME,
 	XDG_CONFIG_HOME,
 	XDG_CACHE_HOME,
-	XDG_NONE, // Download dir
+	XDG_DOWNLOAD_DIR,
+	XDG_NONE, // Bare home directory DO NOT USE
 };
 static char *
 get_xdg_path(enum xdg_paths type, char *buf, size_t bufsz)
@@ -1423,6 +1424,9 @@ get_xdg_path(enum xdg_paths type, char *buf, size_t bufsz)
 			break;
 		case XDG_CACHE_HOME:
 			env = getenv("XDG_CACHE_HOME");
+			break;
+		case XDG_DOWNLOAD_DIR:
+			env = getenv("XDG_DOWNLOAD_DIR");
 			break;
 		case XDG_NONE:
 			// Always use HOME...
@@ -1449,6 +1453,9 @@ get_xdg_path(enum xdg_paths type, char *buf, size_t bufsz)
 			case XDG_CACHE_HOME:
 				snprintf(buf, bufsz, "%s/.cache", home);
 				break;
+			case XDG_DOWNLOAD_DIR:
+				snprintf(buf, bufsz, "%s/Downloads", home);
+				break;
 			case XDG_NONE:
 				snprintf(buf, bufsz, "%s", home);
 				break;
@@ -1459,7 +1466,7 @@ get_xdg_path(enum xdg_paths type, char *buf, size_t bufsz)
 	}
 
 	// Add "syncterm" to the end
-	if (type != XDG_NONE) {
+	if (type != XDG_NONE && type != XDG_DOWNLOAD_DIR) {
 		backslash(buf);
 		if (strlen(buf) + strlen("syncterm") >= bufsz)
 			return NULL;
@@ -1483,7 +1490,7 @@ get_unix_filename(char *fn, int fnlen, int type, int shared)
 					return NULL;
 				break;
 			case SYNCTERM_DEFAULT_TRANSFER_PATH:
-				if (get_xdg_path(XDG_NONE, fn, fnlen) == NULL)
+				if (get_xdg_path(XDG_DOWNLOAD_DIR, fn, fnlen) == NULL)
 					return NULL;
 				break;
 			case SYNCTERM_PATH_CACHE:
