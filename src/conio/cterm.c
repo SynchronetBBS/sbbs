@@ -1747,9 +1747,9 @@ static void parse_sixel_string(struct cterminal *cterm, bool finish)
 						if (cterm->sx_mask != NULL) {
 							cterm->sx_mask->width = cterm->sx_pixels->width;
 							cterm->sx_mask->height = cterm->sx_pixels->height;
-							cterm->sx_mask->bits = malloc((cterm->sx_iv * 6 * ti.screenwidth * vparams[vmode].charwidth * 6 + 7)/8);
+							cterm->sx_mask->bits = malloc((cterm->sx_iv * 6 * ti.screenwidth * vparams[vmode].charwidth + 7)/8);
 							if (cterm->sx_mask->bits != NULL)
-								memset(cterm->sx_mask->bits, 0, (cterm->sx_iv * 6 * ti.screenwidth * vparams[vmode].charwidth * 6 + 7)/8);
+								memset(cterm->sx_mask->bits, 0, (cterm->sx_iv * 6 * ti.screenwidth * vparams[vmode].charwidth + 7)/8);
 							else {
 								FREE_AND_NULL(cterm->sx_mask);
 								free(cterm->sx_pixels->pixels);
@@ -1770,7 +1770,7 @@ static void parse_sixel_string(struct cterminal *cterm, bool finish)
 				fprintf(stderr, "Error allocating memory for sixel data\n");
 				return;
 			}
-			if (cterm->sx_x == cterm->sx_left && cterm->sx_height && cterm->sx_width && cterm->sx_first_pass) {
+			if (cterm->sx_x == cterm->sx_left && cterm->sx_height && cterm->sx_width && cterm->sx_first_pass && cterm->sx_x + cterm->sx_ih <= cterm->sx_pixels->width) {
 				/* Fill in the background of the line */
 				for (i = 0; i < (cterm->sx_height > 6 ? 6 : cterm->sx_height); i++) {
 					for (j = 0; j < cterm->sx_iv; j++) {
@@ -1782,7 +1782,7 @@ static void parse_sixel_string(struct cterminal *cterm, bool finish)
 					}
 				}
 			}
-			if (cterm->sx_x < ti.screenwidth * vparams[vmode].charwidth) {
+			if (cterm->sx_x + cterm->sx_ih <= ti.screenwidth * vparams[vmode].charwidth) {
 				for (i=0; i<6; i++) {
 					if (data & (1<<i)) {
 						for (j = 0; j < cterm->sx_iv; j++) {
@@ -1842,6 +1842,20 @@ static void parse_sixel_string(struct cterminal *cterm, bool finish)
 						if (*p == ';') {
 							p++;
 							cterm->sx_height = strtoul(p, &p, 10);
+						}
+						gettextinfo(&ti);
+						vmode = find_vmode(ti.currmode);
+						if (vmode != -1) {
+							int max_w = ti.screenwidth * vparams[vmode].charwidth;
+							int max_h = ti.screenheight * vparams[vmode].charheight;
+							if (cterm->sx_iv < 1)
+								cterm->sx_iv = 1;
+							if (cterm->sx_iv > max_h)
+								cterm->sx_iv = max_h;
+							if (cterm->sx_ih < 1)
+								cterm->sx_ih = 1;
+							if (cterm->sx_ih > max_w)
+								cterm->sx_ih = max_w;
 						}
 					}
 					else
