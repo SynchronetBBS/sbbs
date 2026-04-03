@@ -1703,7 +1703,7 @@ char* node_activity(scfg_t* cfg, node_t* node, char* str, size_t size, int num)
 					xtrnnum = node->aux - 1;
 			}
 			if (xtrnnum_is_valid(cfg, xtrnnum))
-				snprintf(str, size, "%s external program %s"
+				snprintf(str, size, "%s %s"
 				         , cfg->text != NULL ? cfg->text[NodeActivityRunningXtrn] : "running"
 				         , cfg->xtrn[xtrnnum]->name);
 			else if (xtrncode != NULL)
