@@ -7392,7 +7392,7 @@ static void kill_saved_mouse_fields(void);
 static void copy_mouse_fields(struct mouse_field *from, struct mouse_field **to);
 static void shadow_palette(void);
 static void normal_palette(void);
-static void draw_line(int x1, int y1, int x2, int y2, bool final);
+static void draw_line(int x1, int y1, int x2, int y2);
 static void reinit_screen(uint8_t *font, int fontx, int fonty);
 static bool no_viewport(void);
 
@@ -8567,25 +8567,14 @@ draw_pixel(int x, int y)
 		pix = getpixels(rip.viewport.sx + x, rip.viewport.sy + y, rip.viewport.sx + x, rip.viewport.sy + y, 0);
 		if (pix == NULL)
 			return;
-		if (pix->pixels[0] & 0x40000000) {
-			freepixels(pix);
-			return;
-		}
 		rip_setpixel(rip.viewport.sx + x, rip.viewport.sy + y, pixel2color(pix->pixels[0]) ^ rip.color);
 		freepixels(pix);
-		pix = getpixels(rip.viewport.sx + x, rip.viewport.sy + y, rip.viewport.sx + x, rip.viewport.sy + y, 0);
-		if (pix) {
-			pix->pixels[0] |= 0x40000000;
-			setpixels(rip.viewport.sx + x, rip.viewport.sy + y, rip.viewport.sx + x, rip.viewport.sy + y, 0, 0, 0, 0, pix, NULL);
-			freepixels(pix);
-		}
 	}
 	else {
 		rip_setpixel(rip.viewport.sx + x, rip.viewport.sy + y, rip.color);
 	}
 }
 
-// TODO: Should should only be used by things that use the write mode.
 static void
 set_pixel(int x, int y, uint32_t fg)
 {
@@ -8856,7 +8845,7 @@ write_char(char ch)
 					puts("TODO: \"Do scan\"\n");
 					break;
 				case 3:
-					draw_line(rip.x, rip.y, xs + dx, ys + dy, true);
+					draw_line(rip.x, rip.y, xs + dx, ys + dy);
 
                                 // Fall-through...
 				case 2:
@@ -8915,7 +8904,7 @@ write_text(const char *str)
 }
 
 static void
-draw_line(int x1, int y1, int x2, int y2, bool final)
+draw_line(int x1, int y1, int x2, int y2)
 {
 	int *minc, *mins, *mino, *mind;
 	int *maxc, *maxs, *maxe, *maxo, *maxd;
@@ -9012,34 +9001,23 @@ draw_line(int x1, int y1, int x2, int y2, bool final)
 // else {
                 // I-shape...
 		if (dx >= dy) {
-			draw_line(x1, y1 + 1, x2, y2 + 1, false);
-			draw_line(x1, y1 - 1, x2, y2 - 1, false);
+			draw_line(x1, y1 + 1, x2, y2 + 1);
+			draw_line(x1, y1 - 1, x2, y2 - 1);
 		}
 		else {
-			draw_line(x1 + 1, y1, x2 + 1, y2, false);
-			draw_line(x1 - 1, y1, x2 - 1, y2, false);
+			draw_line(x1 + 1, y1, x2 + 1, y2);
+			draw_line(x1 - 1, y1, x2 - 1, y2);
 		}
 
 // }
 		rip.line_width = 3;
 	}
 
-	if (final && rip.xor) {
-		struct ciolib_pixels *pix = getpixels(0, 0, rip.x_max - 1, rip.y_max - 1, false);
-		if (pix) {
-			size_t off = 0;
-			for (y = 0; y < pix->height; y++) {
-				for (x = 0; x < pix->width; x++)
-					pix->pixels[off++] &= ~0x40000000;
-			}
-			setpixels(0, 0, rip.x_max - 1, rip.y_max - 1, 0, 0, 0, 0, pix, NULL);
-			freepixels(pix);
-		}
-	}
 }
 
 /*
- * TODO: This is an egregious copy/paste just for the XOR draw mode
+ * Parameterized line draw: explicit color, pattern, and width.
+ * Companion to draw_line() which uses rip.color/rip.line_pattern/rip.line_width.
  */
 static void
 set_line(int x1, int y1, int x2, int y2, uint32_t color, uint16_t pat, int width)
@@ -9048,7 +9026,6 @@ set_line(int x1, int y1, int x2, int y2, uint32_t color, uint16_t pat, int width
 	int *maxc, *maxs, *maxe, *maxo, *maxd;
 	int  x, y;
 	int  swap = 0;
-	int  lx, ly;
 	int  dx = abs(x2 - x1);
 	int  dy = abs(y2 - y1);
 
@@ -9113,23 +9090,8 @@ set_line(int x1, int y1, int x2, int y2, uint32_t color, uint16_t pat, int width
 	*minc = *mins;
 
 	for ((*maxc) = *maxs; (((*maxs) < (*maxe)) ? ((*maxc) <= (*maxe)) : ((*maxc) >= (*maxe))); (*maxc) += *maxo) {
-		if (pat & (0x8000 >> ppos)) {
+		if (pat & (0x8000 >> ppos))
 			set_pixel(x, y, color);
-		}
-		else {
-                        // Set fill border...
-			if (color & 0x40000000) {
-				lx = map_rip_x(x);
-				ly = map_rip_y(y);
-
-				struct ciolib_pixels *pixels = getpixels(lx, ly, lx, ly, false);
-				if (pixels == NULL)
-					continue;
-
-				set_pixel(x, y, pixels->pixels[0] | 0x40000000);
-				freepixels(pixels);
-			}
-		}
 		if (de >= 0) {
 			*minc = (*minc) + *mino;
 			de = de - ((2 * *maxd) & INT_MAX);
@@ -11060,14 +11022,13 @@ rip_bezier(int x1, int y1, int x2, int y2, int x3, int y3, int x4, int y4, int c
 	}
 	targets[i++] = x4;
 	targets[i++] = y4;
+	if (rip.xor)
+		draw_line(x1, y1, x1, y1);
 	for (j = 2; j < i; j += 2)
-		set_line(targets[j - 2],
+		draw_line(targets[j - 2],
 		    targets[j - 1],
 		    targets[j],
-		    targets[j + 1],
-		    fg,
-		    rip.line_pattern,
-		    rip.line_width);
+		    targets[j + 1]);
 	free(targets);
 }
 
@@ -11587,7 +11548,7 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 								    / vstat.aspect_height);
 							}
 							assert_rwlock_unlock(&vstatlock);
-							fg = map_rip_color(rip.color) | 0x40000000;
+							fg = map_rip_color(rip.color);
 
 							// Pass 1: collect arc boundary points (no drawing)
 							arc_collect_init();
@@ -11627,7 +11588,7 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
                                                          */
 							handled = true;
 							GET_XY2();
-							draw_line(x1, y1, x2, y2, true);
+							draw_line(x1, y1, x2, y2);
 							break;
 						case 'K': // RIP_FILLED_RECTANGLE (v2.A2)
 							handled = true;
@@ -11652,10 +11613,10 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 									fill_pixel(arg2, arg1);
 							}
 							if (rip.borders) {
-								draw_line(x1, y1, x2, y1, false);
-								draw_line(x2, y1, x2, y2, false);
-								draw_line(x2, y2, x1, y2, false);
-								draw_line(x1, y2, x1, y1, true);
+								draw_line(x1, y1, x2, y1);
+								draw_line(x2, y1, x2, y2);
+								draw_line(x2, y2, x1, y2);
+								draw_line(x1, y2, x1, y1);
 							}
 							break;
 						case 'N': // RIP_SET_BORDER (v2.A3)
@@ -11735,7 +11696,7 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 									y2 = parse_mega(&args[4 + i * 4], 2);
 									if (y2 == -1)
 										break;
-									draw_line(x1, y1, x2, y2, false);
+									draw_line(x1, y1, x2, y2);
 									x1 = x2;
 									y1 = y2;
 								}
@@ -11747,7 +11708,7 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 								y2 = parse_mega(&args[4], 2);
 								if (y2 == -1)
 									break;
-								draw_line(x1, y1, x2, y2, true);
+								draw_line(x1, y1, x2, y2);
 							}
 							break;
 						case 'Q': // RIP_SET_PALETTE !|Q <c1> <c2> ... <c16>
@@ -11789,10 +11750,10 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
                                                          */
 							handled = true;
 							GET_XY2();
-							draw_line(x1, y1, x2, y1, false);
-							draw_line(x2, y1, x2, y2, false);
-							draw_line(x2, y2, x1, y2, false);
-							draw_line(x1, y2, x1, y1, true);
+							draw_line(x1, y1, x2, y1);
+							draw_line(x2, y1, x2, y2);
+							draw_line(x2, y2, x1, y2);
+							draw_line(x1, y2, x1, y1);
 							break;
 						case 'S': // RIP_FILL_STYLE !|S <pattern> <color>
                                                         /*
@@ -12051,6 +12012,8 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 								yp[i] = parse_mega(&args[2 + i * 4], 2);
 							}
 							arg1 = parse_mega(&args[16], 2);
+							if (arg1 <= 0)
+								arg1 = 0x3FC; // RIPterm bug: residual DX from COM1 MCR I/O
 							rip_bezier(xp[0],
 							    yp[0],
 							    xp[1],
@@ -12315,7 +12278,7 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 								break;
 							if ((x2 == 0) && (y2 == 0))
 								break;
-							fg = map_rip_color(rip.color) | 0x40000000;
+							fg = map_rip_color(rip.color);
 
 							// Pass 1: collect arc boundary points (no drawing)
 							arc_collect_init();
@@ -12354,7 +12317,7 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 							if (no_viewport())
 								break;
 							GET_XY();
-							draw_line(x1, y1, x1, y1, true);
+							draw_line(x1, y1, x1, y1);
 							break;
 						case 'l': // RIP_POLYLINE !|l <npoints> <x1> <y1> ... <xn> <yn>
                                                         /* This command will draw a multi-faceted line.  It is identical
@@ -12398,7 +12361,7 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 									y2 = parse_mega(&args[4 + i * 4], 2);
 									if (y2 == -1)
 										break;
-									draw_line(x1, y1, x2, y2, true);
+									draw_line(x1, y1, x2, y2);
 									x1 = x2;
 									y1 = y2;
 								}
@@ -12460,156 +12423,34 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
                                                            * polygon
                                                            *        does.
                                                            */
-#if 0
-							if (rip.version == RIP_VERSION_3) {
-								handled = true;
-								if (no_viewport())
-									break;
-								fg = map_rip_color(rip.color) | 0x40000000;
-								arg1 = parse_mega(&args[0], 2);
-								for (i = 0; i < arg1; i++) {
-									if (i == 0) {
-										x1 = parse_mega(&args[2], 2);
-										if (x1 == -1)
-											break;
-										y1 = parse_mega(&args[4], 2);
-										if (y1 == -1)
-											break;
-									}
-									else {
-										x2 = parse_mega(&args[2 + i * 4], 2);
-										if (x2 == -1)
-											break;
-										y2 = parse_mega(&args[4 + i * 4], 2);
-										if (y2 == -1)
-											break;
-										set_line(x1, y1, x2, y2, fg,
-										    rip.line_pattern, rip.line_width);
-										x1 = x2;
-										y1 = y2;
-									}
-								}
-								if (i > 0) {
-									x2 = parse_mega(&args[2], 2);
-									if (x1 == -1)
-										break;
-									y2 = parse_mega(&args[4], 2);
-									if (y1 == -1)
-										break;
-									set_line(x1, y1, x2, y2, fg,
-									    rip.line_pattern, rip.line_width);
-									do_fill(false);
-								}
-								break;
-							}
-#endif /* if 0 */
-
-                                                        // DOES NOT DRAW LINES IN COLOR ZERO!!!
-                                                        // Not bug-compliant with RIPterm (But getting very close!)
 							handled = true;
 							if (no_viewport())
 								break;
 							arg1 = parse_mega(&args[0], 2);
-							if(arg1 < 1)
+							if (arg1 < 1)
 								break;
-							struct point *argv = malloc(sizeof(struct point) * arg1);
-							x1 = rip.x_dim - 1;
-							y1 = rip.y_dim - 1;
-							x2 = 0;
-							y2 = 0;
-
-                                                        // Read lines and calculate extents
-							for (i = 0; i < arg1; i++) {
-								argv[i].x = parse_mega(&args[2 + i * 4], 2);
-								if (argv[i].x < x1)
-									x1 = argv[i].x;
-								if (argv[i].x > x2)
-									x2 = argv[i].x;
-								argv[i].y = parse_mega(&args[4 + i * 4], 2);
-								if (argv[i].y < y1)
-									y1 = argv[i].y;
-								if (argv[i].y > y2)
-									y2 = argv[i].y;
-							}
-
-                                                        /*
-                                                         * Now, count how many lines are crossed in a row and for odd
-                                                         * numbers fill the point and for even numbers do not fill.
-                                                         *
-                                                         * (As described in RIP docs)
-                                                         */
-							for (y = y1; y <= y2; y++) {
-								for (x = x1; x <= x2; x++) {
-									arg2 = 0;
-									int gt = 0;
-									int eq = 0;
-									int lt = 0;
-
-                                                                        // Loop through all the polylines...
-                                                                        // It appears required that this be in order.
-									for (j = 0; j < arg1; j++) {
-										i = j + 1;
-										if (i == arg1)
-											i = 0;
-
-										int sx, sy, ex, ey;
-
-										if (argv[j].y < argv[i].y) {
-											sx = argv[j].x;
-											sy = argv[j].y;
-											ex = argv[i].x;
-											ey = argv[i].y;
-										}
-										else {
-											sx = argv[i].x;
-											sy = argv[i].y;
-											ex = argv[j].x;
-											ey = argv[j].y;
-										}
-
-                                                                                // Ensure the line crosses the current
-                                                                                // row...
-										if ((y < argv[j].y)
-										    != (y < argv[i].y)) {
-											int xintc;
-
-											xintc = (ex - sx) * (y - sy)
-											    / (ey - sy) + sx;
-
-											if (x > xintc) {
-												gt++;
-												arg2 = !arg2;
-											}
-											else if (x == xintc) {
-                                                                                                // Only if this is a
-                                                                                                // left edge(?)
-												eq++;
-											}
-											else {
-												lt++;
-											}
-										}
-									}
-									if (eq && ((lt & 1) > (gt & 1)))
-										arg2 = !arg2;
-									else if (eq > 1)
-										arg2 = 1;
-									if (arg2)
-										fill_pixel(x, y);
+							{
+								int *poly = malloc(arg1 * 2 * sizeof(int));
+								if (poly == NULL)
+									break;
+								for (i = 0; i < arg1; i++) {
+									poly[i * 2] = parse_mega(&args[2 + i * 4], 2);
+									poly[i * 2 + 1] = parse_mega(&args[4 + i * 4], 2);
 								}
+								scanline_poly_fill(poly, arg1);
+								if (rip.color != 0) {
+									for (i = 1; i < arg1; i++)
+										draw_line(poly[(i - 1) * 2],
+										    poly[(i - 1) * 2 + 1],
+										    poly[i * 2],
+										    poly[i * 2 + 1]);
+									draw_line(poly[(arg1 - 1) * 2],
+									    poly[(arg1 - 1) * 2 + 1],
+									    poly[0],
+									    poly[1]);
+								}
+								free(poly);
 							}
-							if (rip.color != 0) {
-								for (i = 1; i < arg1; i++)
-									draw_line(argv[i - 1].x,
-									    argv[i - 1].y,
-									    argv[i].x,
-									    argv[i].y, false);
-								draw_line(argv[arg1 - 1].x,
-								    argv[arg1 - 1].y,
-								    argv[0].x,
-								    argv[0].y, true);
-							}
-							free(argv);
 							break;
 						case 's': // RIP_FILL_PATTERN !|s <c1> <c2> <c3> <c4> <c5> <c6> <c7>
                                                           // <c8> <col>
