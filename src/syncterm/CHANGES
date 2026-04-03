@@ -39,6 +39,7 @@ Fix hyperlink IDs not cleared on erase/scroll operations
 Fix 9 termcap/terminfo entry bugs, add 5 missing capabilities
 Fix custom entry palette lost on terminal reset
 Full code audit by Claude Opus, many fixes
+Fix many security issues found by jquast
 
 Version 1.7
 --------------
