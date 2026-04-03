@@ -615,6 +615,7 @@ calc_charstate(struct blockstate *bs, struct vmem_cell *vc, struct charstate *cs
 
 	if (vstat.forced_font) {
 		switch (vc->font) {
+			default:
 			case 0:
 				cs->font = vstat.forced_font;
 				break;
