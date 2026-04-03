@@ -144,13 +144,13 @@ def load_xwd(path):
 			else:
 				val = struct.unpack_from('>I', data, poff)[0]
 
-			if visual_class in (4, 3):  # PseudoColor / StaticColor
-				idx = val & 0xFFFFFF
+			if visual_class in (4, 3) and pixmap_depth <= 8:  # PseudoColor / StaticColor
+				idx = val & ((1 << pixmap_depth) - 1)
 				if idx < len(colormap):
 					pix[x, y] = colormap[idx]
 				else:
 					pix[x, y] = (0, 0, 0)
-			else:  # DirectColor / TrueColor
+			else:  # DirectColor / TrueColor / deep PseudoColor (packed RGB)
 				r = (val & red_mask) >> 16
 				g = (val & green_mask) >> 8
 				b = val & blue_mask
