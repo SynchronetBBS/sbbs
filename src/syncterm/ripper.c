@@ -10685,7 +10685,7 @@ ellipse_plot(int xc, int yc, int x, int y, int a, int b, int sa, int ea,
 		if (bgi_arc_in_range(x - y + 6000, start_limit, end_limit, inv))
 			arc_collect_add(xc + x, yc + y, x - y + 6000);
 	}
-	if (rip.borders) {
+	if (rip.borders && rip.line_width != 3) {
 		if (bgi_arc_in_range(y - x, start_limit, end_limit, inv))
 			set_pixel(xc + x, yc - y, colour);
 		if (bgi_arc_in_range(x - y + 2000, start_limit, end_limit, inv))
@@ -10764,10 +10764,17 @@ full_ellipse(int xc, int yc, int sa, int ea, int a, int b, bool fill, uint32_t c
 #undef do_dec_y
 #undef plot_4
 	if ((rip.line_width == 3) && rip.borders) {
-		rip.line_width = 1;
-		full_ellipse(xc, yc, sa, ea, a - 1, b - 1, false, colour & 0xcfffffff);
-		full_ellipse(xc, yc, sa, ea, a + 1, b + 1, false, colour & 0xcfffffff);
-		rip.line_width = 3;
+		// Thick ellipse border: sweep angles using BGI sin/cos
+		// table, draw thick lines between consecutive points.
+		int prev_x = xc + bgi_trig_mul(bgi_cos32(sa), a);
+		int prev_y = yc - bgi_trig_mul(bgi_sin32(sa), b);
+		for (int deg = sa + 1; deg <= ea; deg++) {
+			int cur_x = xc + bgi_trig_mul(bgi_cos32(deg), a);
+			int cur_y = yc - bgi_trig_mul(bgi_sin32(deg), b);
+			draw_line(prev_x, prev_y, cur_x, cur_y);
+			prev_x = cur_x;
+			prev_y = cur_y;
+		}
 	}
 }
 
