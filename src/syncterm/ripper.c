@@ -9691,8 +9691,8 @@ add_button(int x1, int y1, int x2, int y2, int hotkey, int flags, char *text)
 	but->box.x1 = x1 + rip.viewport.sx;
 	but->box.y1 = y1 + rip.viewport.sy;
 	if ((x2 == 0) && (y2 == 0) && rip.bstyle.width && rip.bstyle.height) {
-		but->box.x2 = but->box.x1 + rip.bstyle.width - 1;
-		but->box.y2 = but->box.y1 + rip.bstyle.height - 1;
+		but->box.x2 = but->box.x1 + rip.bstyle.width;
+		but->box.y2 = but->box.y1 + rip.bstyle.height;
 	}
 	else {
 		but->box.x2 = x2 + rip.viewport.sx;
