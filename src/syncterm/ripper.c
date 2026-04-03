@@ -14,6 +14,7 @@
 #include <genwrap.h>
 #include <math.h>
 #include <sockwrap.h>
+#include <stdarg.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -8426,6 +8427,61 @@ parse_mega(const char *buf, int fieldwidth)
 	return ret;
 }
 
+static int
+parse_mega_strict(const char *buf, int fieldwidth)
+{
+	int i;
+	int ret = 0;
+
+	for (i = 0; i < fieldwidth; i++) {
+		ret *= 36;
+		if ((buf[i] >= '0') && (buf[i] <= '9'))
+			ret += (buf[i] - '0');
+		else if ((buf[i] >= 'A') && (buf[i] <= 'Z'))
+			ret += (buf[i] - 'A' + 10);
+		else if ((buf[i] >= 'a') && (buf[i] <= 'z'))
+			ret += (buf[i] - 'a' + 10);
+		else
+			return -1;
+	}
+	return ret;
+}
+
+static int
+parse_megas(const char *args, ...)
+{
+	va_list ap, ap2;
+	int    *dest;
+	int     width;
+	int     offset = 0;
+	int     count = 0;
+	int     idx = 0;
+
+	va_start(ap, args);
+	va_copy(ap2, ap);
+	while (va_arg(ap2, int *) != NULL) {
+		va_arg(ap2, int);
+		count++;
+	}
+	va_end(ap2);
+
+	while ((dest = va_arg(ap, int *)) != NULL) {
+		width = va_arg(ap, int);
+		idx++;
+		if (idx < count)
+			*dest = parse_mega_strict(&args[offset], width);
+		else
+			*dest = parse_mega(&args[offset], width);
+		if (*dest == -1) {
+			va_end(ap);
+			return -1;
+		}
+		offset += width;
+	}
+	va_end(ap);
+	return 0;
+}
+
 static char *
 parse_string(const char *buf)
 {
@@ -10973,27 +11029,6 @@ struct point {
 	int y;
 };
 
-#define GET_XY() \
-	x1 = parse_mega(&args[0], 2); \
-	if (x1 == -1) \
-	break; \
-	y1 = parse_mega(&args[2], 2); \
-	if (y1 == -1) \
-	break
-
-#define GET_XY2() \
-	x1 = parse_mega(&args[0], 2); \
-	if (x1 == -1) \
-	break; \
-	y1 = parse_mega(&args[2], 2); \
-	if (y1 == -1) \
-	break; \
-	x2 = parse_mega(&args[4], 2); \
-	if (x2 == -1) \
-	break; \
-	y2 = parse_mega(&args[6], 2); \
-	if (y2 == -1) \
-	break;
 
 static void
 rip_bezier(int x1, int y1, int x2, int y2, int x3, int y3, int x4, int y4, int cnt, uint32_t fg)
@@ -11038,18 +11073,31 @@ rip_bezier(int x1, int y1, int x2, int y2, int x3, int y3, int x4, int y4, int c
 static void
 rip_poly_bezier(const char *args, bool filled, bool closed)
 {
-	int      num = parse_mega(&args[0], 2);
-	int      count = parse_mega(&args[2], 2);
+	int      num;
+	int      count;
 	int      i;
 	int      type;
 	int      x1, y1, x2, y2, x3, y3, x4, y4;
-	int      sx = parse_mega(&args[5], 2);
-	int      sy = parse_mega(&args[7], 2);
-	int      lx = sx;
-	int      ly = sy;
+	int      sx, sy;
+	int      lx, ly;
 	uint32_t fg = map_rip_color(rip.color);
 	int      ch = 4;
 	bool     last_was_bez = false;
+
+	num = parse_mega_strict(&args[0], 2);
+	if (num < 0)
+		return;
+	count = parse_mega_strict(&args[2], 2);
+	if (count <= 0)
+		return;
+	sx = parse_mega_strict(&args[5], 2);
+	if (sx < 0)
+		return;
+	sy = parse_mega_strict(&args[7], 2);
+	if (sy < 0)
+		return;
+	lx = sx;
+	ly = sy;
 
 	if (filled)
 		fg |= 0x40000000;
@@ -11062,8 +11110,12 @@ rip_poly_bezier(const char *args, bool filled, bool closed)
 				printf("Stopping at %d of %d\n", i, num);
 				break;
 			case 0:  // Straight
-				x1 = parse_mega(&args[ch], 2);
-				y1 = parse_mega(&args[ch + 2], 2);
+				x1 = parse_mega_strict(&args[ch], 2);
+				if (x1 == -1)
+					return;
+				y1 = parse_mega_strict(&args[ch + 2], 2);
+				if (y1 == -1)
+					return;
 				ch += 4;
 				if (!last_was_bez)
 					set_line(lx, ly, x1, y1, fg, rip.line_pattern, rip.line_width);
@@ -11075,20 +11127,36 @@ rip_poly_bezier(const char *args, bool filled, bool closed)
 			case 2: // Other bezier.
 			case 5: // ??? yet another bezier...
 			case 6: // ??? yet another bezier...
-				x1 = parse_mega(&args[ch], 2);
-				y1 = parse_mega(&args[ch + 2], 2);
-				x2 = parse_mega(&args[ch + 4], 2);
-				y2 = parse_mega(&args[ch + 6], 2);
-				x3 = parse_mega(&args[ch + 8], 2);
-				y3 = parse_mega(&args[ch + 10], 2);
+				x1 = parse_mega_strict(&args[ch], 2);
+				if (x1 == -1)
+					return;
+				y1 = parse_mega_strict(&args[ch + 2], 2);
+				if (y1 == -1)
+					return;
+				x2 = parse_mega_strict(&args[ch + 4], 2);
+				if (x2 == -1)
+					return;
+				y2 = parse_mega_strict(&args[ch + 6], 2);
+				if (y2 == -1)
+					return;
+				x3 = parse_mega_strict(&args[ch + 8], 2);
+				if (x3 == -1)
+					return;
+				y3 = parse_mega_strict(&args[ch + 10], 2);
+				if (y3 == -1)
+					return;
 				ch += 12;
 				if (args[ch] == 0) {
 					x4 = sx;
 					y4 = sy;
 				}
 				else {
-					x4 = parse_mega(&args[ch + 1], 2);
-					y4 = parse_mega(&args[ch + 3], 2);
+					x4 = parse_mega_strict(&args[ch + 1], 2);
+					if (x4 == -1)
+						return;
+					y4 = parse_mega_strict(&args[ch + 3], 2);
+					if (y4 == -1)
+						return;
 				}
 				rip_bezier(x1, y1, x2, y2, x3, y3, x4, y4, count, fg);
 				lx = x4;
@@ -11232,13 +11300,12 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
                                                          * ignored.
                                                          */
 							handled = true;
-							arg1 = parse_mega(&args[0], 2);
-							if ((arg1 < 0) || (arg1 > 4))
+							if (parse_megas(args, &arg1, 2, &arg2, 4, &arg3, 2, NULL))
 								break;
-							arg2 = parse_mega(&args[2], 4);
-							if ((arg2 < 0) || (arg2 > 65535))
+							if (arg1 > 4)
 								break;
-							arg3 = parse_mega(&args[6], 2);
+							if (arg2 > 65535)
+								break;
 							if ((arg3 != 1) && (arg3 != 3))
 								break;
 							if (arg1 < 4)
@@ -11285,7 +11352,8 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
                                                          * text.
                                                          */
 							handled = true;
-							GET_XY();
+							if (parse_megas(args, &x1, 2, &y1, 2, NULL))
+								break;
 							rip.x = x1;
 							rip.y = y1;
 							write_text(&args[4]);
@@ -11319,8 +11387,8 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 							handled = true;
 							if (no_viewport())
 								break;
-							GET_XY2();
-							arg1 = parse_mega(&args[8], 2);
+							if (parse_megas(args, &x1, 2, &y1, 2, &x2, 2, &y2, 2, &arg1, 2, NULL))
+								break;
 							assert_rwlock_rdlock(&vstatlock);
 							if ((vstat.scrnwidth == 640) && (vstat.scrnheight == 350)) {
                                                                 // Detect EGA mode and use the same value as RIPterm
@@ -11346,7 +11414,8 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 							handled = true;
 							if (no_viewport())
 								break;
-							GET_XY2();
+							if (parse_megas(args, &x1, 2, &y1, 2, &x2, 2, &y2, 2, NULL))
+								break;
 
                                                         // Yes, it really works this way... TODO: Check if others do
                                                         // too.
@@ -11380,8 +11449,8 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 							handled = true;
 							if (no_viewport())
 								break;
-							GET_XY();
-							arg1 = parse_mega(&args[4], 2);
+							if (parse_megas(args, &x1, 2, &y1, 2, &arg1, 2, NULL))
+								break;
 							assert_rwlock_rdlock(&vstatlock);
 							if ((vstat.scrnwidth == 640) && (vstat.scrnheight == 350)) {
                                                                 // Detect EGA mode and use the same value as RIPterm
@@ -11439,12 +11508,12 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
                                                          * like Microsoft Windows, etc).
                                                          */
 							handled = true;
-							GET_XY();
+							if (parse_megas(args, &x1, 2, &y1, 2, &arg1, 2, NULL))
+								break;
 							if ((x1 > (rip.viewport.ex - rip.viewport.sx))
 							    || (y1 > (rip.viewport.ey - rip.viewport.sy)))
 								break;
-							arg1 = parse_mega(&args[4], 2);
-							if ((arg1 < 0) || (arg1 > 255))
+							if (arg1 > 255)
 								break;
 							arg2 = rip.viewport.ey;
 							assert_rwlock_rdlock(&vstatlock);
@@ -11536,8 +11605,8 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 							handled = true;
 							if (no_viewport())
 								break;
-							GET_XY2();
-							arg1 = parse_mega(&args[8], 2);
+							if (parse_megas(args, &x1, 2, &y1, 2, &x2, 2, &y2, 2, &arg1, 2, NULL))
+								break;
 							assert_rwlock_rdlock(&vstatlock);
 							if ((vstat.scrnwidth == 640) && (vstat.scrnheight == 350)) {
                                                                 // Detect EGA mode and use the same value as RIPterm
@@ -11590,14 +11659,16 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
                                                          * (x0,y0) to (x1,y1) in the graphics viewport.
                                                          */
 							handled = true;
-							GET_XY2();
+							if (parse_megas(args, &x1, 2, &y1, 2, &x2, 2, &y2, 2, NULL))
+								break;
 							draw_line(x1, y1, x2, y2);
 							break;
 						case 'K': // RIP_FILLED_RECTANGLE (v2.A2)
 							handled = true;
 							if (no_viewport())
 								break;
-							GET_XY2();
+							if (parse_megas(args, &x1, 2, &y1, 2, &x2, 2, &y2, 2, NULL))
+								break;
 
                                                         // Yes, it really works this way... TODO: Check if others do
                                                         // too.
@@ -11624,8 +11695,7 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 							break;
 						case 'N': // RIP_SET_BORDER (v2.A3)
 							handled = true;
-							arg1 = parse_mega(&args[0], 2);
-							if (arg1 == -1)
+							if (parse_megas(args, &arg1, 2, NULL))
 								break;
 							rip.borders = arg1;
 							break;
@@ -11647,12 +11717,7 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
                                                          * line thickness, but the current line pattern has no effect.
                                                          */
 							handled = true;
-							GET_XY();
-							arg1 = parse_mega(&args[4], 2);
-							arg2 = parse_mega(&args[6], 2);
-							x2 = parse_mega(&args[8], 2);
-							y2 = parse_mega(&args[10], 2);
-							if ((x2 < 0) || (y2 < 0))
+							if (parse_megas(args, &x1, 2, &y1, 2, &arg1, 2, &arg2, 2, &x2, 2, &y2, 2, NULL))
 								break;
 							full_ellipse(x1, y1, arg1, arg2, x2, y2, false,
 							    map_rip_color(rip.color));
@@ -11679,24 +11744,28 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 							if (no_viewport())
 								break;
 							fg = map_rip_color(rip.color);
-							arg1 = parse_mega(&args[0], 2);
+							arg1 = parse_mega_strict(&args[0], 2);
 							// TODO: Does this draw a point if there's a single point?
 							if (arg1 < 1)
 								break;
 							for (i = 0; i < arg1; i++) {
 								if (i == 0) {
-									x1 = parse_mega(&args[2], 2);
+									x1 = parse_mega_strict(&args[2], 2);
 									if (x1 == -1)
 										break;
-									y1 = parse_mega(&args[4], 2);
+									y1 = (arg1 == 1) ?
+									    parse_mega(&args[4], 2) :
+									    parse_mega_strict(&args[4], 2);
 									if (y1 == -1)
 										break;
 								}
 								else {
-									x2 = parse_mega(&args[2 + i * 4], 2);
+									x2 = parse_mega_strict(&args[2 + i * 4], 2);
 									if (x2 == -1)
 										break;
-									y2 = parse_mega(&args[4 + i * 4], 2);
+									y2 = (i == arg1 - 1) ?
+									    parse_mega(&args[4 + i * 4], 2) :
+									    parse_mega_strict(&args[4 + i * 4], 2);
 									if (y2 == -1)
 										break;
 									draw_line(x1, y1, x2, y2);
@@ -11705,10 +11774,10 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 								}
 							}
 							if (i > 0) {
-								x2 = parse_mega(&args[2], 2);
+								x2 = parse_mega_strict(&args[2], 2);
 								if (x2 == -1)
 									break;
-								y2 = parse_mega(&args[4], 2);
+								y2 = parse_mega_strict(&args[4], 2);
 								if (y2 == -1)
 									break;
 								draw_line(x1, y1, x2, y2);
@@ -11733,7 +11802,9 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
                                                          */
 							handled = true;
 							for (i = 0; i < 16; i++) {
-								arg1 = parse_mega(&args[i * 2], 2);
+								arg1 = (i < 15) ?
+								    parse_mega_strict(&args[i * 2], 2) :
+								    parse_mega(&args[i * 2], 2);
 								if ((arg1 < 0) || (arg1 > 63))
 									break;
 								curr_ega_palette[i] = arg1;
@@ -11752,7 +11823,8 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
                                                          * rectangle interior is not filled by RIP_RECTANGLE.
                                                          */
 							handled = true;
-							GET_XY2();
+							if (parse_megas(args, &x1, 2, &y1, 2, &x2, 2, &y2, 2, NULL))
+								break;
 							draw_line(x1, y1, x2, y1);
 							draw_line(x2, y1, x2, y2);
 							draw_line(x2, y2, x1, y2);
@@ -11807,11 +11879,9 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
                                                          * matter.)
                                                          */
 							handled = true;
-							arg1 = parse_mega(&args[0], 2);
-							if ((arg1 < 0) || (arg1 > 0x0b))
+							if (parse_megas(args, &arg1, 2, &arg2, 2, NULL))
 								break;
-							arg2 = parse_mega(&args[2], 2);
-							if (arg2 == -1)
+							if (arg1 > 0x0b)
 								break;
 							if (arg2 > 255)
 								break;
@@ -11873,6 +11943,8 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 								arg1 = parse_mega(&args[0], 2);
 							else
 								arg1 = parse_mega(&args[0], 1);
+							if (arg1 < 0)
+								break;
 							if (arg1 == 0)
 								rip.xor = false;
 							else if (arg1 == 1)
@@ -11890,7 +11962,8 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 							handled = true;
 							if (no_viewport())
 								break;
-							GET_XY();
+							if (parse_megas(args, &x1, 2, &y1, 2, NULL))
+								break;
 							set_pixel(x1, y1, map_rip_color(rip.color));
 							break;
 						case 'Y': // RIP_FONT_STYLE !|Y <font> <direction> <size> <res>
@@ -11922,19 +11995,9 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
                                                          * magnification.
                                                          */
 							handled = true;
-							arg1 = parse_mega(&args[0], 2);
-							if (arg1 == -1)
+							if (parse_megas(args, &arg1, 2, &arg2, 2, &arg3, 2, &arg4, 2, NULL))
 								break;
-							arg2 = parse_mega(&args[2], 2);
-							if (arg2 == -1)
-								break;
-							arg3 = parse_mega(&args[4], 2);
-							if (arg3 == -1)
-								break;
-							arg4 = parse_mega(&args[6], 2);
-							if (arg4 == -1)
-								break;
-							if ((arg1 >= 0) && (arg1 <= 10))
+							if (arg1 <= 10)
 								rip.font.num = arg1;
 							if (arg2 >= 0)
 								rip.font.vertical = arg2;
@@ -12011,9 +12074,15 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 							handled = true;
 							int xp[4], yp[4];
 							for (i = 0; i < 4; i++) {
-								xp[i] = parse_mega(&args[0 + i * 4], 2);
-								yp[i] = parse_mega(&args[2 + i * 4], 2);
+								xp[i] = parse_mega_strict(&args[0 + i * 4], 2);
+								if (xp[i] == -1)
+									break;
+								yp[i] = parse_mega_strict(&args[2 + i * 4], 2);
+								if (yp[i] == -1)
+									break;
 							}
+							if (i < 4)
+								break;
 							arg1 = parse_mega(&args[16], 2);
 							if (arg1 <= 0)
 								arg1 = 0x3FC; // RIPterm bug: residual DX from COM1 MCR I/O
@@ -12045,11 +12114,11 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
                                                          * RIP_RESET_WINDOWS.
                                                          */
 							handled = true;
-							arg1 = parse_mega(&args[0], 2);
-							arg2 = parse_mega(&args[2], 2);
-							if ((arg1 < 0) || (arg1 > 15))
+							if (parse_megas(args, &arg1, 2, &arg2, 2, NULL))
 								break;
-							if ((arg2 < 0) || (arg2 > 63))
+							if (arg1 > 15)
+								break;
+							if (arg2 > 63)
 								break;
 							curr_ega_palette[arg1] = arg2;
 							attr2palette(arg1, &fg, NULL);
@@ -12064,11 +12133,8 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 							break;
 						case 'b': // RIP_EXTENDED_TEXT_WINDOW (v2.A4)
 							handled = true;
-							GET_XY2();
-							arg1 = parse_mega(&args[8], 2);
-							arg2 = parse_mega(&args[10], 2);
-							arg3 = parse_mega(&args[12], 1);
-							arg4 = parse_mega(&args[13], 4);
+							if (parse_megas(args, &x1, 2, &y1, 2, &x2, 2, &y2, 2, &arg1, 2, &arg2, 2, &arg3, 1, &arg4, 4, NULL))
+								break;
 							x1 = map_rip_x(x1);
 							x2 = map_rip_x(x2);
 							y1 = map_rip_y(y1);
@@ -12193,8 +12259,9 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
                                                          * the most recent RIP_FILL_STYLE command.)
                                                          */
 							handled = true;
-							arg1 = parse_mega(&args[0], 2);
-							if ((arg1 >= 0) && (arg1 <= 255))
+							if (parse_megas(args, &arg1, 2, NULL))
+								break;
+							if (arg1 <= 255)
 								rip.color = arg1;
 							break;
 						case 'e': // RIP_ERASE_WINDOW !|e
@@ -12212,7 +12279,8 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 							break;
 						case 'f': // RIP_SET_WORLD_FRAME (v2.A0)
 							handled = true;
-							GET_XY();
+							if (parse_megas(args, &x1, 2, &y1, 2, NULL))
+								break;
 							if (x1 < 1 || y1 < 1)
 								break;
 							rip.x_dim = x1;
@@ -12249,7 +12317,8 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
                                                          * this RIPscrip command are 0-based.
                                                          */
 							handled = true;
-							GET_XY();
+							if (parse_megas(args, &x1, 2, &y1, 2, NULL))
+								break;
 							cterm_gotoxy(cterm, x1 + 1, y1 + 1);
 							break;
 						case 'i': // RIP_OVAL_PIE_SLICE !|i <x> <y> <st_ang> <e_ang> <radx>
@@ -12272,12 +12341,7 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
                                                          * does not apply to this command.
                                                          */
 							handled = true;
-							GET_XY();
-							arg1 = parse_mega(&args[4], 2);
-							arg2 = parse_mega(&args[6], 2);
-							x2 = parse_mega(&args[8], 2);
-							y2 = parse_mega(&args[10], 2);
-							if ((arg1 < 0) || (arg2 < 0) || (x2 < 0) || (y2 < 0))
+							if (parse_megas(args, &x1, 2, &y1, 2, &arg1, 2, &arg2, 2, &x2, 2, &y2, 2, NULL))
 								break;
 							if ((x2 == 0) && (y2 == 0))
 								break;
@@ -12319,7 +12383,8 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 							handled = true;
 							if (no_viewport())
 								break;
-							GET_XY();
+							if (parse_megas(args, &x1, 2, &y1, 2, NULL))
+								break;
 							draw_line(x1, y1, x1, y1);
 							break;
 						case 'l': // RIP_POLYLINE !|l <npoints> <x1> <y1> ... <xn> <yn>
@@ -12347,21 +12412,27 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 							handled = true;
 							if (no_viewport())
 								break;
-							arg1 = parse_mega(&args[0], 2);
+							arg1 = parse_mega_strict(&args[0], 2);
+							if (arg1 < 1)
+								break;
 							for (i = 0; i < arg1; i++) {
 								if (i == 0) {
-									x1 = parse_mega(&args[2], 2);
+									x1 = parse_mega_strict(&args[2], 2);
 									if (x1 == -1)
 										break;
-									y1 = parse_mega(&args[4], 2);
+									y1 = (arg1 == 1) ?
+									    parse_mega(&args[4], 2) :
+									    parse_mega_strict(&args[4], 2);
 									if (y1 == -1)
 										break;
 								}
 								else {
-									x2 = parse_mega(&args[2 + i * 4], 2);
+									x2 = parse_mega_strict(&args[2 + i * 4], 2);
 									if (x2 == -1)
 										break;
-									y2 = parse_mega(&args[4 + i * 4], 2);
+									y2 = (i == arg1 - 1) ?
+									    parse_mega(&args[4 + i * 4], 2) :
+									    parse_mega_strict(&args[4 + i * 4], 2);
 									if (y2 == -1)
 										break;
 									draw_line(x1, y1, x2, y2);
@@ -12382,7 +12453,8 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
                                                          * current drawing position without physically drawing anything.
                                                          */
 							handled = true;
-							GET_XY();
+							if (parse_megas(args, &x1, 2, &y1, 2, NULL))
+								break;
 							if (x1 > rip.viewport.ex - rip.viewport.sx + 1)
 								break;
 							if (y1 > rip.viewport.ey - rip.viewport.sy + 1)
@@ -12392,14 +12464,9 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 							break;
 						case 'o': // RIP_FILLED_OVAL
 							handled = true;
-							GET_XY();
-							full_ellipse(x1,
-							    y1,
-							    0,
-							    360,
-							    parse_mega(&args[4], 2),
-							    parse_mega(&args[6], 2),
-							    true,
+							if (parse_megas(args, &x1, 2, &y1, 2, &arg1, 2, &arg2, 2, NULL))
+								break;
+							full_ellipse(x1, y1, 0, 360, arg1, arg2, true,
 							    map_rip_color(rip.color));
 							break;
 						case 'p': // RIP_FILL_POLYGON !|p <npoints> <x1> <y1> ... <xn> <yn>
@@ -12429,7 +12496,7 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 							handled = true;
 							if (no_viewport())
 								break;
-							arg1 = parse_mega(&args[0], 2);
+							arg1 = parse_mega_strict(&args[0], 2);
 							if (arg1 < 1)
 								break;
 							{
@@ -12437,8 +12504,18 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 								if (poly == NULL)
 									break;
 								for (i = 0; i < arg1; i++) {
-									poly[i * 2] = parse_mega(&args[2 + i * 4], 2);
-									poly[i * 2 + 1] = parse_mega(&args[4 + i * 4], 2);
+									poly[i * 2] = parse_mega_strict(&args[2 + i * 4], 2);
+									if (poly[i * 2] == -1)
+										break;
+									poly[i * 2 + 1] = (i == arg1 - 1) ?
+									    parse_mega(&args[4 + i * 4], 2) :
+									    parse_mega_strict(&args[4 + i * 4], 2);
+									if (poly[i * 2 + 1] == -1)
+										break;
+								}
+								if (i < arg1) {
+									free(poly);
+									break;
 								}
 								scanline_poly_fill(poly, arg1);
 								if (rip.color != 0) {
@@ -12497,33 +12574,41 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
                                                          *        each other's effects.
                                                          */
 							handled = true;
-							if (parse_mega(&args[0], 2) < 0)
+							arg1 = parse_mega_strict(&args[0], 2);
+							if (arg1 < 0)
 								break;
-							if (parse_mega(&args[2], 2) < 0)
+							rip.fill_pattern[0] = arg1 & 0xff;
+							arg1 = parse_mega_strict(&args[2], 2);
+							if (arg1 < 0)
 								break;
-							if (parse_mega(&args[4], 2) < 0)
+							rip.fill_pattern[1] = arg1 & 0xff;
+							arg1 = parse_mega_strict(&args[4], 2);
+							if (arg1 < 0)
 								break;
-							if (parse_mega(&args[6], 2) < 0)
+							rip.fill_pattern[2] = arg1 & 0xff;
+							arg1 = parse_mega_strict(&args[6], 2);
+							if (arg1 < 0)
 								break;
-							if (parse_mega(&args[8], 2) < 0)
+							rip.fill_pattern[3] = arg1 & 0xff;
+							arg1 = parse_mega_strict(&args[8], 2);
+							if (arg1 < 0)
 								break;
-							if (parse_mega(&args[10], 2) < 0)
+							rip.fill_pattern[4] = arg1 & 0xff;
+							arg1 = parse_mega_strict(&args[10], 2);
+							if (arg1 < 0)
 								break;
-							if (parse_mega(&args[12], 2) < 0)
+							rip.fill_pattern[5] = arg1 & 0xff;
+							arg1 = parse_mega_strict(&args[12], 2);
+							if (arg1 < 0)
 								break;
-							if (parse_mega(&args[14], 2) < 0)
+							rip.fill_pattern[6] = arg1 & 0xff;
+							arg1 = parse_mega_strict(&args[14], 2);
+							if (arg1 < 0)
 								break;
+							rip.fill_pattern[7] = arg1 & 0xff;
 							arg1 = parse_mega(&args[16], 2);
 							if ((arg1 < 0) || (arg1 > 255))
 								break;
-							rip.fill_pattern[0] = parse_mega(&args[0], 2) & 0xff;
-							rip.fill_pattern[1] = parse_mega(&args[2], 2) & 0xff;
-							rip.fill_pattern[2] = parse_mega(&args[4], 2) & 0xff;
-							rip.fill_pattern[3] = parse_mega(&args[6], 2) & 0xff;
-							rip.fill_pattern[4] = parse_mega(&args[8], 2) & 0xff;
-							rip.fill_pattern[5] = parse_mega(&args[10], 2) & 0xff;
-							rip.fill_pattern[6] = parse_mega(&args[12], 2) & 0xff;
-							rip.fill_pattern[7] = parse_mega(&args[14], 2) & 0xff;
 							rip.fill_color = arg1;
 							break;
 						case 't': // RIP_POLY_BEZIER_LINE (v2.A2)
@@ -12568,7 +12653,8 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
                                                            */
 
 							handled = true;
-							GET_XY2();
+							if (parse_megas(args, &x1, 2, &y1, 2, &x2, 2, &y2, 2, NULL))
+								break;
 
 							if (x1 == 0 && y1 == 0
 							    && x2 == 0 && y2 == 0) {
@@ -12657,7 +12743,8 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
                                                          * the same.
                                                          */
 							handled = true;
-							GET_XY2();
+							if (parse_megas(args, &x1, 2, &y1, 2, &x2, 2, &y2, 2, NULL))
+								break;
 							if ((x1 == 0) && (x2 == 0) && (y1 == 0) && (y2 == 0)) {
 								rip.text_disabled = true;
 								rip.ansi_state = ANSI_STATE_NONE;
@@ -12665,7 +12752,7 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 							}
 							rip.text_disabled = false;
 
-							arg1 = parse_mega(&args[8], 1);
+							arg1 = parse_mega_strict(&args[8], 1);
 							if ((arg1 < 0) || (arg1 > 1))
 								break;
 							arg2 = parse_mega(&args[9], 1);
@@ -12801,8 +12888,8 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
                                                          *        compatibility with future releases.
                                                          */
 							handled = true;
-							arg1 = parse_mega(&args[0], 1);
-							arg2 = parse_mega(&args[1], 3);
+							if (parse_megas(args, &arg1, 1, &arg2, 3, NULL))
+								break;
 							switch (arg1) {
 								case 0:
 									handle_command_str(&args[4]);
@@ -13591,7 +13678,7 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 							int              i;
 							int              off;
 							for (i = 0, off = 0; i < sizeof(argv) / sizeof(argv[0]); i++) {
-								argv[i] = parse_mega(&args[off], argslen[i]);
+								argv[i] = parse_mega_strict(&args[off], argslen[i]);
 								off += argslen[i];
 								if (argv[i] < 0)
 									break;
@@ -13690,7 +13777,8 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
                                                          */
 							handled = true;
 							struct text_info ti;
-							GET_XY2();
+							if (parse_megas(args, &x1, 2, &y1, 2, &x2, 2, &y2, 2, NULL))
+								break;
 							freepixels(rip.clipboard);
 							gettextinfo(&ti);
 							rip.clipboard = getpixels(x1 + rip.viewport.sx,
@@ -13893,8 +13981,9 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
                                                          * text.
                                                          */
 							handled = true;
-							arg1 = parse_mega(&args[0], 2);
-							if ((arg1 < 0) || (arg1 > 4))
+							if (parse_megas(args, &arg1, 2, NULL))
+								break;
+							if (arg1 > 4)
 								break;
 #ifndef SYNCVIEW
 							if (strstr(&args[6], ".."))
@@ -14103,9 +14192,8 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 							if (!get_cache_fn_subdir(rip.bbs, cache_path,
 							    sizeof(cache_path), "RIP"))
 								break;
-							GET_XY();
-							arg1 = parse_mega(&args[4], 2);
-							arg2 = parse_mega(&args[6], 1);
+							if (parse_megas(args, &x1, 2, &y1, 2, &arg1, 2, &arg2, 1, NULL))
+								break;
 							if (arg1 != 0) {
 								printf("TODO: Support paste mode %d\n", arg1);
 								break;
@@ -14304,23 +14392,23 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
                                                          *        FUTURE USE, and should be set to zeros (00000).
                                                          */
 							handled = true;
-							x1 = parse_mega(&args[2], 2);
+							x1 = parse_mega_strict(&args[2], 2);
 							if (x1 < 0)
 								break;
-							y1 = parse_mega(&args[4], 2);
+							y1 = parse_mega_strict(&args[4], 2);
 							if (y1 < 0)
 								break;
-							x2 = parse_mega(&args[6], 2);
+							x2 = parse_mega_strict(&args[6], 2);
 							if (x2 < 0)
 								break;
 							if (x2 > rip.viewport.ex - rip.viewport.sx)
 								break;
-							y2 = parse_mega(&args[8], 2);
+							y2 = parse_mega_strict(&args[8], 2);
 							if (y2 < 0)
 								break;
 							if (y2 > rip.viewport.ey - rip.viewport.sy)
 								break;
-							arg1 = parse_mega(&args[10], 1);
+							arg1 = parse_mega_strict(&args[10], 1);
 							if ((arg1 < 0) || (arg1 > 1))
 								break;
 							arg2 = parse_mega(&args[11], 1);
@@ -14382,9 +14470,9 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
                                                          *        and should be set to zero.
                                                          */
 							handled = true;
-							GET_XY();
-							arg1 = parse_mega(&args[4], 2);
-							if ((arg1 < 0) || (arg1 > 4)) {
+							if (parse_megas(args, &x1, 2, &y1, 2, &arg1, 2, NULL))
+								break;
+							if (arg1 > 4) {
 								printf("TODO: Put Image type %d\n", arg1);
 								break;
 							}
@@ -14579,7 +14667,8 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
                                                          *        future use.
                                                          */
 							handled = true;
-							GET_XY2();
+							if (parse_megas(args, &x1, 2, &y1, 2, &x2, 2, &y2, 2, NULL))
+								break;
 							rip.text_region.sx = x1;
 							rip.text_region.sy = y1;
 							rip.text_region.ex = x2;
@@ -14649,6 +14738,8 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
                                                         // TODO: The things that are justified...
 							handled = true;
 							arg1 = parse_mega(&args[0], 1);
+							if (arg1 < 0)
+								break;
 							if (arg1)
 								printf("TODO: Justify %d\n", arg1);
 							{
@@ -14877,11 +14968,7 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
                                                          *        with future releases.
                                                          */
 							handled = true;
-							GET_XY2();
-							arg1 = parse_mega(&args[8], 2);  // hotkey
-							arg2 = parse_mega(&args[10], 1); // flags
-							arg3 = parse_mega(&args[11], 1); // res
-							if (arg1 < 0 || arg2 < 0 || arg3 < 0)
+							if (parse_megas(args, &x1, 2, &y1, 2, &x2, 2, &y2, 2, &arg1, 2, &arg2, 1, &arg3, 1, NULL))
 								break;
 							add_button(x1, y1, x2, y2, arg1, arg2, &args[12]);
 							break;
@@ -15087,16 +15174,14 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
                                                          *        command on a line of text.  The protocol must begin on
                                                          *        the very next line.
                                                          */
-							arg1 = parse_mega(&args[0], 1);
-							arg2 = parse_mega(&args[1], 1);
-							arg3 = parse_mega(&args[2], 2);
-							arg4 = parse_mega(&args[4], 4);
 							handled = true;
-							if ((arg1 < 0) || (arg1 > 1))
+							if (parse_megas(args, &arg1, 1, &arg2, 1, &arg3, 2, &arg4, 4, NULL))
 								break;
-							if ((arg2 < 0) || (arg2 == 4) || (arg2 > 7))
+							if (arg1 > 1)
 								break;
-							if ((arg3 < 0) || (arg3 == 0) || (arg3 == 5))
+							if ((arg2 == 4) || (arg2 > 7))
+								break;
+							if ((arg3 == 0) || (arg3 == 5))
 								break;
 							if (strstr(&args[8], ".."))
 								break;
