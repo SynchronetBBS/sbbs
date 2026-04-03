@@ -9459,10 +9459,6 @@ draw_button(struct rip_button_style *but, bool inverted)
 		set_line(ox + 1, oy + 1, ox + 1, oy + height - 2, bg, 0xffff, 1);
 		set_line(ox + width - 2, oy + 1, ox + width - 2, oy + height - 2, bg, 0xffff, 1);
 		set_line(ox + 1, oy + height - 2, ox + width - 2, oy + height - 2, bg, 0xffff, 1);
-		set_pixel(ox + 1, oy + 1, cc);
-		set_pixel(ox + width - 2, oy + 1, cc);
-		set_pixel(ox, oy + height - 2, cc);
-		set_pixel(ox + width - 2, oy + height - 2, cc);
 	}
 	if (but->flags.bevel) {
 		for (i = 1; i <= but->bevel_size; i++) {
@@ -9503,7 +9499,7 @@ draw_button(struct rip_button_style *but, bool inverted)
 		set_pixel(but->box.x1, but->box.y2 - 1, cc);
 	}
 	if (but->flags.chisel) {
-		chisel_inset(but->box.y2 - but->box.y1 + 1, &xinset, &yinset);
+		chisel_inset(but->box.y2 - but->box.y1, &xinset, &yinset);
 		set_line(but->box.x1 + xinset,
 		    but->box.y1 + yinset,
 		    but->box.x2 - xinset - 1,
@@ -14875,9 +14871,12 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
                                                          */
 							handled = true;
 							GET_XY2();
-							arg1 = parse_mega(&args[8], 2);
-							arg2 = parse_mega(&args[10], 1);
-							add_button(x1, y1, x2, y2, arg1, arg2, &args[11]);
+							arg1 = parse_mega(&args[8], 2);  // hotkey
+							arg2 = parse_mega(&args[10], 1); // flags
+							arg3 = parse_mega(&args[11], 1); // res
+							if (arg1 < 0 || arg2 < 0 || arg3 < 0)
+								break;
+							add_button(x1, y1, x2, y2, arg1, arg2, &args[12]);
 							break;
 						case 'W': // RIP_WRITE_ICON !|1W <res> <filename>
                                                         /* This command takes the contents of the Clipboard and writes
