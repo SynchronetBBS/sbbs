@@ -3222,7 +3222,7 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 	char last = cterm->lastch;
 	char	*p;
 	char	*p2;
-	char	tmp[1024];
+	char	tmp[3072];
 	int		i,j,k,l;
 	int	flags;
 	int		row,col;
