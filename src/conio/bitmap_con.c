@@ -1570,6 +1570,7 @@ void bitmap_setcursortype(int type)
 	if(!bitmap_initialized)
 		return;
 	assert_rwlock_wrlock(&vstatlock);
+	force_cursor = 1;
 	switch(type) {
 		case _NOCURSOR:
 			vstat.curs_start=0xff;
@@ -1578,12 +1579,10 @@ void bitmap_setcursortype(int type)
 		case _SOLIDCURSOR:
 			vstat.curs_start=0;
 			vstat.curs_end=vstat.charheight-1;
-			force_cursor = 1;
 			break;
 		default:
 		    vstat.curs_start = vstat.default_curs_start;
 		    vstat.curs_end = vstat.default_curs_end;
-			force_cursor = 1;
 			break;
 	}
 	assert_rwlock_unlock(&vstatlock);
