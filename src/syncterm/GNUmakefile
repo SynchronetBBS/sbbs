@@ -279,17 +279,27 @@ $(TERMTEST): termtest.c | $(EXEODIR)
 	@echo Compiling termtest
 	${QUIET}$(CC) -o $@ $<
 
-.PHONY: termtest test
+.PHONY: termtest test parser_vectors
 termtest: $(TERMTEST)
 
 test: $(SYNCTERM) $(TERMTEST)
 	./run_termtest.sh $(SYNCTERM) $(TERMTEST)
+
+# M1 RIP parser vectors.  Drives rip_test/parser_vectors/* through the
+# running harness on $RIP_HARNESS_HOST:$RIP_HARNESS_PORT (default
+# portable:1516).  Requires the harness and both terminals connected;
+# does NOT start them itself.  See rip_test/parser_vectors/README.md.
+parser_vectors:
+	@echo Running RIP parser_vectors against harness
+	${QUIET}python3 rip_test/parser_vectors/run_vectors.py
 else
-.PHONY: termtest test
+.PHONY: termtest test parser_vectors
 termtest:
 	@echo "termtest requires SDL (skipped)"
 test:
 	@echo "termtest requires SDL (skipped)"
+parser_vectors:
+	@echo "parser_vectors requires SDL (skipped)"
 endif
 
 devel: tags cscope.out
