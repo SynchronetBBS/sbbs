@@ -1386,7 +1386,7 @@ extern "C" {
 #ifdef SBBS
 	extern const char* nulstr;
 	extern const char* crlf;
-	extern int64_t uptime;
+	extern time_t uptime;
 #endif
 	DLLEXPORT int		sbbs_random(int);
 	DLLEXPORT void		sbbs_srand(void);
@@ -1484,7 +1484,7 @@ extern "C" {
 													,scfg_t* cfg				/* common */
 													,scfg_t* node_cfg			/* node-specific */
 													,jsSyncMethodSpec* methods	/* global */
-													,int64_t uptime				/* system */
+													,time_t uptime				/* system */
 													,const char* host_name		/* system */
 													,const char* socklib_desc	/* system */
 													,js_callback_t*				/* js */
@@ -1540,7 +1540,7 @@ extern "C" {
 
 	/* js_system.c */
 	DLLEXPORT JSObject* js_CreateSystemObject(JSContext* cx, JSObject* parent
-													,scfg_t* cfg, int64_t uptime
+													,scfg_t* cfg, time_t uptime
 													,const char* host_name
 													,const char* socklib_desc
 													,struct mqtt*);

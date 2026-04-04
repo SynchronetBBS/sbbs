@@ -3128,7 +3128,7 @@ JSClass js_system_class = {
 };
 
 JSObject* js_CreateSystemObject(JSContext* cx, JSObject* parent
-                                , scfg_t* cfg, int64_t uptime, const char* host_name, const char* socklib_desc, struct mqtt* mqtt)
+                                , scfg_t* cfg, time_t uptime, const char* host_name, const char* socklib_desc, struct mqtt* mqtt)
 {
 	jsval     val;
 	JSObject* sysobj;

@@ -88,7 +88,7 @@ void ssh_session_destroy(SOCKET sock, CRYPT_SESSION session, int line)
 	#define SSH_END(x)
 #endif
 
-int64_t                    uptime = 0;
+time_t                     uptime = 0;
 volatile uint              served = 0;
 
 static std::atomic<time_t> event_thread_tick;
@@ -1547,7 +1547,7 @@ bool js_CreateCommonObjects(JSContext* js_cx
                                        , scfg_t* cfg                /* common */
                                        , scfg_t* node_cfg           /* node-specific */
                                        , jsSyncMethodSpec* methods  /* global */
-                                       , int64_t uptime             /* system */
+                                       , time_t uptime              /* system */
                                        , const char* host_name      /* system */
                                        , const char* socklib_desc   /* system */
                                        , js_callback_t* cb          /* js */
@@ -5208,7 +5208,7 @@ void bbs_thread(void* arg)
 			        , startup->max_session_inactivity, scfg.max_getkey_inactivity);
 		}
 		if (uptime == 0)
-			uptime = xp_fast_timer64();
+			uptime = time(NULL);
 
 		if (startup->last_node > scfg.sys_nodes) {
 			lprintf(LOG_NOTICE, "Specified last_node (%d) > sys_nodes (%d), auto-corrected"

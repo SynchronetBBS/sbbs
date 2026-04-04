@@ -121,7 +121,7 @@ static char               error_dir[MAX_PATH + 1];
 static char               cgi_dir[MAX_PATH + 1];
 static char               cgi_env_ini[MAX_PATH + 1];
 static char               default_auth_list[MAX_PATH + 1];
-static int64_t            uptime = 0;
+static time_t             uptime = 0;
 static volatile ulong     served = 0;
 static web_startup_t*     startup = NULL;
 static js_server_props_t  js_server_props;
@@ -7583,7 +7583,7 @@ void web_server(void* arg)
 		}
 
 		if (uptime == 0)
-			uptime = xp_fast_timer64();
+			uptime = time(NULL);
 
 		update_clients();
 

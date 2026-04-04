@@ -62,7 +62,7 @@ static services_startup_t* startup = NULL;
 static scfg_t              scfg;
 static char*               text[TOTAL_TEXT];
 static bool                terminated = false;
-static int64_t             uptime = 0;
+static time_t              uptime = 0;
 static ulong               served = 0;
 static volatile uint32_t   client_highwater = 0;
 static str_list_t          pause_semfiles;
@@ -2070,7 +2070,7 @@ void services_thread(void* arg)
 		}
 
 		if (uptime == 0)
-			uptime = xp_fast_timer64();
+			uptime = time(NULL);
 
 		iniFileName(services_ini, sizeof(services_ini), scfg.ctrl_dir, startup->services_ini);
 

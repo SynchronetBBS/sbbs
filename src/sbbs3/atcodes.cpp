@@ -624,7 +624,7 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 		return __TIME__;
 
 	if (code_match(sp, "UPTIME", &param)) {
-		return duration((uint)(xp_fast_timer64() - uptime), str, maxlen, param, DURATION_MINIMAL_VERBAL);
+		return duration((uint)(time(NULL) - uptime), str, maxlen, param, DURATION_MINIMAL_VERBAL);
 	}
 
 	if (!strcmp(sp, "SERVED")) {

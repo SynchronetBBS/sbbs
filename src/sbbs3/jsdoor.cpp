@@ -475,7 +475,7 @@ bool DLLCALL js_CreateCommonObjects(JSContext* js_cx
                                     , scfg_t *unused1
                                     , scfg_t *unused2
                                     , jsSyncMethodSpec* methods     /* global */
-                                    , int64_t uptime                 /* system */
+                                    , time_t uptime                 /* system */
                                     , const char* host_name         /* system */
                                     , const char* socklib_desc      /* system */
                                     , js_callback_t* cb             /* js */
