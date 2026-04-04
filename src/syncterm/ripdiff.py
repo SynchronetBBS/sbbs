@@ -214,6 +214,21 @@ def snap_image(img):
 	return img
 
 
+def count_diffs(img_a, img_b):
+	"""Count mismatching pixels without creating a diff image."""
+	w, h = img_a.size
+	pix_a = img_a.load()
+	pix_b = img_b.load()
+	mismatches = 0
+
+	for y in range(h):
+		for x in range(w):
+			if pix_a[x, y] != pix_b[x, y]:
+				mismatches += 1
+
+	return mismatches
+
+
 def make_diff(img_a, img_b):
 	"""Create a diff image: matching pixels dimmed, differing pixels bright red."""
 	w, h = img_a.size
