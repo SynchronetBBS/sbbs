@@ -281,7 +281,7 @@ function enter_file_section()
 	if(user.new_file_time == 0)
 		return;
 	console.cond_blankline();
-	if(console.yesno("Search all libraries for new files"))
+	if(console.yesno(gettext("Search all libraries for new files")))
 		bbs.scan_dirs(FL_ULTIME, /* all */true);
 }
 
@@ -504,7 +504,7 @@ function logoff(fast)
 				if(bbs.batch_clear(/* upload_queue */false))
 					console.putmsg(bbs.text(bbs.text.DownloadQueueCleared));
 				else
-					alert("Failed to clear batch download queue!");
+					alert(gettext("Failed to clear batch download queue!"));
 		}
 	}
 	if(fast) {
@@ -535,7 +535,7 @@ function upload_file()
 		bbs.upload_file(i, fname);
 	else if(!console.aborted
 		&& (file_area.upload_dir !== undefined || bbs.batch_upload_total)
-		&& confirm("\r\nStart batch upload"))
+		&& confirm("\r\n" + gettext("Start batch upload")))
 		bbs.batch_upload();
 }
 
@@ -606,7 +606,7 @@ function send_netmail()
 	const ini_section = "netmail sent";
 	console.crlf();
 	var wm_mode = WM_NONE;
-	if((netmail&NMAIL_FILE) && !console.noyes("Attach a file"))
+	if((netmail&NMAIL_FILE) && !console.noyes(gettext("Attach a file")))
 		wm_mode = WM_FILE;
 	if(console.aborted)
 		return false;
