@@ -5843,8 +5843,10 @@ doterm(struct bbslist *bbs)
 	oldmc = hold_update;
 	showmouse();
 	init_rip(bbs);
-	if (bbs->rip)
+	if (bbs->rip) {
 		ms.mode = MM_RIP;
+		cterm->last_column_flag |= (CTERM_LCF_FORCED | CTERM_LCF_ENABLED);
+	}
 	setup_mouse_events(&ms);
 	force_status_update = true;
 	for (; !quitting;) {
