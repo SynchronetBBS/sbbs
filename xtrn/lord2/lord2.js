@@ -743,7 +743,7 @@ function insane_run_ref(sec, fname, refret)
 				} while(ch !== 'Q' && ch !== 'CONNECTION_CLOSED');
 			}
 
-			while(1) {
+			while(!js.terminated) {
 				choice = items_menu(itms, cur, true, false, '', y+1, 22)
 				cur = choice.cur;
 				switch(choice.ch) {
@@ -1675,7 +1675,7 @@ rescan:
 				if (cur >= inv.length)
 					cur = 0;
 
-				while(1) {
+				while(!js.terminated) {
 					choice = items_menu(inv, cur, false, true, '', y + 1, 22);
 					cur = choice.cur;
 					switch(choice.ch) {
@@ -1746,7 +1746,7 @@ rescan:
 				if (pages > parseInt(pages, 10))
 					pages = parseInt(pages, 10) + 1;
 
-				while(1) {
+				while(!js.terminated) {
 					sclrscr();
 					dk.console.attr.value = sattr;
 					for (i = 0; i < 22; i++) {
@@ -1895,7 +1895,7 @@ rescan:
 			throw new Error('Unable to open '+f.name);
 		if (enc) {
 			obj.lines = [];
-			while(1) {
+			while(!js.terminated) {
 				i = f.read(2);
 				if (i === '')
 					break;
@@ -2147,7 +2147,7 @@ function mail_check(messenger)
 	file_rename(fn, f.name);
 	if (!f.open('r'))
 		throw new Error('Unable to open '+f.name);
-	while(1) {
+	while(!js.terminated) {
 		l = f.readln();
 		if (l === null)
 			break;
@@ -2218,7 +2218,7 @@ function chat(op)
 	lln('`r0`c`2  You sit down and talk with '+op.name+'`2.');
 	sln('  (enter q or x to exit)');
 	sln('');
-	while(1) {
+	while(!js.terminated) {
 		if (ch.open('r')) {
 			ch.position = pos;
 			l = ch.readln();
@@ -2705,7 +2705,7 @@ function view_inventory()
 	var y;
 
 rescan:
-	while(1) {
+	while(!js.terminated) {
 		run_ref('stats', 'gametxt.ref');
 		y = scr.pos.y + 1;
 		inv = get_inventory();
@@ -2976,7 +2976,7 @@ function offline_battle(no_super, skip_see)
 		lw('`r0`2');
 	else
 		lw('`r0`2'+enm.see);
-	while(1) {
+	while(!js.terminated) {
 		if (skip_see) {
 			ch = 0;
 			skip_see = 0;
@@ -3238,7 +3238,7 @@ function vbar(choices, args)
 	}
 	dk.console.gotoxy(opt.x, opt.y + ret.cur);
 
-	while(1) {
+	while(!js.terminated) {
 		if (oldcur !== ret.cur) {
 			draw_choice(oldcur);
 			draw_choice(ret.cur);
@@ -3384,7 +3384,7 @@ function items_menu(itms, cur, buying, selling, extras, starty, endy)
 	}
 
 	draw_page();
-	while(1) {
+	while(!js.terminated) {
 		choice = vbar(choices, {cur:cur % cnt, drawall:false, extras:keys, x:0, y:starty, return_on_wrap:true, highlight:'`r1`2', norm:'`r0`2'});
 		oldcur = cur;
 		cur = off + choice.cur;
