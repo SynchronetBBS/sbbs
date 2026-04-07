@@ -33,17 +33,26 @@
  *                              Bug fix: Newscans sometimes start early in a sub-board
  *                              even when the user has read most of the messages (with
  *                              the help of Cursor AI)
- * 2026-03-01                   Bug fixex: Messages appearing more than once in a newscan
+ * 2026-03-01 Eric Oulashin     Bug fixex: Messages appearing more than once in a newscan
  *                              or new-to-you scan (with help from Cursor AI). Message scan
  *                              pointer(s) going back to the beginning or early in a sub-board
  *                              (should at least be improved, if not totally fixed).
- * 2026-03-09                   Bug fix: msg_area.sub object undefined when viewing sub-board
+ * 2026-03-09 Eric Oulashin     Bug fix: msg_area.sub object undefined when viewing sub-board
  *                              information (shouldn't happen, but a check was added just in case).
  *                              Reported by Keyop.
- * 2026-03-14                   Version 1.97j
+ * 2026-03-14 Eric Oulashin     Version 1.97j
  *                              Releasing this version
- * 2026-04-01                   Version 1.97k
+ * 2026-04-01 Eric Oulashin     Version 1.97k
  *                              Updated usages of console.getxy() to prevent errors with that
+ * 2026-04-02 Eric Oulashin     Version 1.97L Beta
+ *                              Experimenting with a RIP interface when reading messages
+ * 2026-04-07 Eric Oulashin     Version 1.97L
+ *                              Bug fix: When scrolling a message, in the scrollTextLines()
+ *                              function, it now passes P_AUTO_UTF8 to console.strlen()
+ *                              when blanking the remainder of the lines so that the length of
+ *                              blank spaces is correct.  Added P_AUTO_UTF8 when calling
+ *                              console.strlen() elsewhere for similar preventative bug
+ *                              fixes.
  */
 
 "use strict";
@@ -150,11 +159,17 @@ require("scrollbar.js", "ScrollBar");
 require("choice_scroll_box.js", "ChoiceScrollbox");
 var ansiterm = require("ansiterm_lib.js", 'expand_ctrl_a');
 var hexdump = load('hexdump_lib.js');
+// RIP GUI libraries (for the RIP enhanced reader interface)
+require("rip_lib.js", "RIPWindow");
+require("rip_gui_common.js", "RIPGUITheme");
+require("rip_tab_control.js", "RIPTabControl");
+require("rip_calendar.js", "RIPCalendar");
+require("rip_scrollbar.js", "RIPScrollbar");
 
 
 // Reader version information
-var READER_VERSION = "1.97k";
-var READER_DATE = "2026-04-01";
+var READER_VERSION = "1.97L Beta";
+var READER_DATE = "2026-04-02";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
@@ -695,6 +710,8 @@ function DigDistMsgReader(pSubBoardCode, pScriptArgs)
 	this.WriteMsgListScreenTopHeader = DigDistMsgReader_WriteMsgListScreenTopHeader;
 	this.ReadMessageEnhanced = DigDistMsgReader_ReadMessageEnhanced;
 	this.ReadMessageEnhanced_Scrollable = DigDistMsgReader_ReadMessageEnhanced_Scrollable;
+	// TODO: The tabbed RIP interface is experimental
+	//this.ReadMessageEnhanced_TabbedRIP = DigDistMsgReader_ReadMessageEnhanced_TabbedRIP;
 	this.ShowHdrOrKludgeLines_Scrollable = DigDistMsgReader_ShowHdrOrKludgeLines_Scrollable;
 	this.ShowVoteInfo_Scrollable = DigDistMsgReader_ShowVoteInfo_Scrollable;
 	this.ShowSubBoardInfo_Scrollable = DigDistMsgReader_ShowSubBoardInfo_Scrollable;
@@ -898,6 +915,11 @@ function DigDistMsgReader(pSubBoardCode, pScriptArgs)
 	// Whether or not to use the scrolling interface when reading a message
 	// (will only be used for ANSI terminals).
 	this.scrollingReaderInterface = true;
+
+	// Whether or not to use an interface with tabs for reading messages with RIP, if
+	// readerInterfaceStyle is Scrollable
+	// TODO: This is experimental
+	this.useRIPTabbedReaderInterface = true;
 
 	// displayBoardInfoInHeader specifies whether or not to display
 	// the message group and sub-board lines in the header at the
@@ -1255,7 +1277,7 @@ function DigDistMsgReader(pSubBoardCode, pScriptArgs)
 		for (var i = 0; i < numChars; ++i)
 			hdrLine1 += "#";
 		hdrLine1 += "@\x01k";
-		numChars = console.screen_columns - console.strlen(hdrLine1) - 4;
+		numChars = console.screen_columns - console.strlen(hdrLine1, P_AUTO_UTF8) - 4;
 		for (var i = 0; i < numChars; ++i)
 			hdrLine1 += CP437_BOX_DRAWINGS_HORIZONTAL_SINGLE;
 		hdrLine1 += "\x01n\x01c" + CP437_BOX_DRAWINGS_HORIZONTAL_SINGLE + CP437_BOX_DRAWINGS_HORIZONTAL_SINGLE + "\x01h"
@@ -1350,7 +1372,7 @@ function DigDistMsgReader(pSubBoardCode, pScriptArgs)
 		var lineLen = 0;
 		for (var i = 0; i < this.enhMsgHeaderLines.length; ++i)
 		{
-			lineLen = console.strlen(this.enhMsgHeaderLines[i]);
+			lineLen = console.strlen(this.enhMsgHeaderLines[i], P_AUTO_UTF8);
 			if (lineLen > this.enhMsgHeaderWidth)
 				this.enhMsgHeaderWidth = lineLen;
 		}
@@ -5182,7 +5204,16 @@ function DigDistMsgReader_ReadMessageEnhanced(pOffset, pAllowChgArea)
 	// Use the scrollable reader interface if the setting is enabled & the user's
 	// terminal supports ANSI.  Otherwise, use a more traditional user interface.
 	if (useScrollingInterface)
+	{
 		retObj = this.ReadMessageEnhanced_Scrollable(msgHeader, allowChgMsgArea, messageText, pOffset, getMsgBodyRetObj.pmode);
+		// TODO: The tabbed RIP reader interface is experimental
+		/*
+		if (console.term_supports(USER_RIP) && this.useRIPTabbedReaderInterface)
+			retObj = this.ReadMessageEnhanced_TabbedRIP(msgHeader, allowChgMsgArea, messageText, pOffset, getMsgBodyRetObj.pmode);
+		else
+			retObj = this.ReadMessageEnhanced_Scrollable(msgHeader, allowChgMsgArea, messageText, pOffset, getMsgBodyRetObj.pmode);
+		*/
+	}
 	else
 		retObj = this.ReadMessageEnhanced_Traditional(msgHeader, allowChgMsgArea, messageText, pOffset, getMsgBodyRetObj.pmode);
 
@@ -6685,6 +6716,1299 @@ function DigDistMsgReader_ReadMessageEnhanced_Scrollable(msgHeader, allowChgMsgA
 
 	return retObj;
 }
+/*
+// Helper method for ReadMessageEnhanced() - Uses a trabbed RIP graphical reader interface.
+// Modeled after DigDistMsgReader_ReadMessageEnhanced_Scrollable but with a RIP GUI
+// frame, tab control (Message/Settings/Calendar), and RIPScrollbar.
+function DigDistMsgReader_ReadMessageEnhanced_TabbedRIP(msgHeader, allowChgMsgArea, messageText, pOffset, pmode)
+{
+	if (!console.term_supports(USER_RIP))
+		return this.ReadMessageEnhanced_Scrollable(msgHeader, allowChgMsgArea, messageText, pOffset, pmode);
+
+	var retObj = {
+		offsetValid: true,
+		msgNotReadable: false,
+		userReplied: false,
+		lastKeypress: "",
+		newMsgOffset: -1,
+		nextAction: ACTION_NONE,
+		refreshEnhancedRdrHelpLine: false
+	};
+
+	var msgReaderObj = this;
+
+	// Data for the AreYouThere handler for the scrollable/ANSI interface
+	this.scrollableReadingData.header = msgHeader;
+	this.scrollableReadingData.msgOffset = pOffset;
+	this.scrollableReadingData.allowChgMsgArea = allowChgMsgArea;
+
+	this.currentAction = ACTION_READING_MSG;
+
+	// ---- RIP GUI Setup ----
+	// TODO: Update/change defs for GUI style?
+	var STYLE = RIP_GUI_STYLE_OS2_WARP3;
+	var theme = RIPGUITheme(STYLE);
+
+	// Frame geometry - sized to leave the last text row (row 25 at 8x14 font,
+	// pixels 336-349) fully visible below the frame for the key help line.
+	var FRAME_X = 0;
+	var FRAME_Y = 0;
+	var FRAME_W = 640;
+	var FRAME_H = 336;
+	var TITLE_H = 18;
+	var BEVEL_W = 2;
+
+	// Content area inside the frame
+	var CX = FRAME_X + BEVEL_W + 2;
+	var CY = FRAME_Y + TITLE_H + BEVEL_W + 2;
+	var CW = FRAME_W - (BEVEL_W + 2) * 2;
+	var CH = FRAME_H - TITLE_H - (BEVEL_W + 2) * 2;
+
+	// Close button [X] in the title bar
+	var CLOSE_BTN_SIZE = TITLE_H - 4;
+	var CLOSE_BTN_X = FRAME_X + FRAME_W - BEVEL_W - CLOSE_BTN_SIZE - 2;
+	var CLOSE_BTN_Y = FRAME_Y + BEVEL_W + 2;
+	var MOUSE_CLOSE_BTN = RIP_GUI_MOUSE_FRAME_BASE; // 0xF8
+
+	// ---- Tab control (fills content area) ----
+	var tabCtrl = new RIPTabControl(CX + 2, CY + 2, CW - 4, CH - 4);
+	tabCtrl.setStyle(STYLE);
+	tabCtrl.mouseCharBase = RIP_GUI_MOUSE_TAB_BASE; // 0xE0
+	tabCtrl.addTab("Message");
+	tabCtrl.addTab("Settings");
+	tabCtrl.addTab("Calendar");
+
+	// Panel bounds for positioning child widgets
+	var panel = tabCtrl.getPanelBounds();
+	var PX = panel.x;
+	var PY = panel.y;
+	var PW = panel.width;
+	var PH = panel.height;
+
+	// ---- Calendar widget (tab index 2) ----
+	var calendarWidth = Math.min(280, PW - 8);
+	var calendarHeight = Math.min(220, PH - 8);
+	var calendar = new RIPCalendar(PX + 6, PY + 4, calendarWidth, calendarHeight);
+	calendar.setStyle(STYLE);
+	calendar.mouseCharBase = 0x80; // Uses 0x80-0xA1 (34 chars)
+	tabCtrl.addChildToTab(2, calendar);
+
+	// ---- RIP scrollbar and text area dimensions ----
+	// Map pixel coordinates to text rows (assuming 8x14 font, size 2)
+	var TEXT_CELL_W = 8;
+	var TEXT_CELL_H = 14;
+	var SB_WIDTH = 16;
+	// Scrollbar pixel position: right side of panel, inset 2px
+	var SB_PIXEL_X = PX + PW - SB_WIDTH - 2;
+	var SB_PIXEL_Y = PY + 2;
+	var SB_PIXEL_H = PH - 4;
+	// Compute the text row range that fits inside the panel interior.
+	// msgAreaTop: first text row (1-based) whose top pixel >= panel interior top + inset
+	var msgAreaTop = Math.ceil(SB_PIXEL_Y / TEXT_CELL_H) + 1; // 1-based
+	--msgAreaTop; // It seems it could be adjusted by this much and still fit within the "Message" tab UI area
+	if (msgAreaTop < 1) msgAreaTop = 1;
+	// msgAreaBottom: last text row (1-based) whose bottom pixel is fully inside
+	// the panel interior (PY to PY+PH-1), with one row of margin so text
+	// doesn't visually bleed into the panel's bottom bevel.
+	var panelBottomPixel = PY + PH - 1;
+	var msgAreaBottom = Math.floor(panelBottomPixel / TEXT_CELL_H) - 1; // 1-based, with 1-row margin
+	if (msgAreaBottom > console.screen_rows - 2)
+		msgAreaBottom = console.screen_rows - 2;
+	msgAreaBottom -= 2; // It seems it needed to be adjusted by this much to fit inside the "Message" tab UI area
+	// msgAreaLeft: first text column (1-based) fully inside the panel interior
+	var msgAreaLeft = Math.ceil(PX / TEXT_CELL_W) + 1;
+	if (msgAreaLeft < 1) msgAreaLeft = 1;
+	// Text width: columns from msgAreaLeft up to (but not overlapping) the scrollbar.
+	// The rightmost column is the last one whose right pixel edge is fully before
+	// the scrollbar's left pixel.  Column c (1-based) has right pixel c*8-1,
+	// so we need c*8-1 < SB_PIXEL_X, i.e. c < (SB_PIXEL_X+1)/8, i.e. c <= floor(SB_PIXEL_X/8).
+	var msgAreaRightCol = Math.floor(SB_PIXEL_X / TEXT_CELL_W); // 1-based
+	if (msgAreaRightCol > console.screen_columns)
+		msgAreaRightCol = console.screen_columns;
+	var msgAreaWidth = msgAreaRightCol - msgAreaLeft + 1;
+	if (msgAreaWidth < 40) msgAreaWidth = 40; // Minimum usable width
+	var msgAreaHeight = msgAreaBottom - msgAreaTop + 1;
+	this.scrollableReadingData.msgAreaWidth = msgAreaWidth;
+	var SB_MOUSE_SCROLL_UP   = 0xA2;
+	var SB_MOUSE_SCROLL_DN   = 0xA3;
+	var SB_MOUSE_TRACK_PG_UP = 0xA4;
+	var SB_MOUSE_TRACK_PG_DN = 0xA5;
+	var SB_MOUSE_THUMB_DRAG  = 0xA6;
+	var scrollbar = new RIPScrollbar(SB_PIXEL_X, SB_PIXEL_Y, SB_WIDTH, SB_PIXEL_H);
+	scrollbar.mouseChars = {
+		scrollUp:  SB_MOUSE_SCROLL_UP,
+		scrollDn:  SB_MOUSE_SCROLL_DN,
+		trackPgUp: SB_MOUSE_TRACK_PG_UP,
+		trackPgDn: SB_MOUSE_TRACK_PG_DN,
+		thumbDrag: SB_MOUSE_THUMB_DRAG
+	};
+	scrollbar.computeLayout();
+
+	// ---- Scrollbar update function for scrollTextLines() ----
+	var topMsgLineIdxForLastPage = 0; // Will be set after message prep
+	function ripScrollbarUpdateFn(pFractionToLastPage)
+	{
+		var newTopIdx = Math.round(pFractionToLastPage * topMsgLineIdxForLastPage);
+		scrollbar.setScrollState(msgInfo.messageLines.length, msgAreaHeight, newTopIdx);
+		RIPGUISendRIP(scrollbar.buildThumbRIP());
+		console.gotoxy(1, msgAreaBottom);
+	}
+
+	// ---- Message text preparation (same as Scrollable version) ----
+	var msgHasANSICodes = messageText.indexOf("\x1b[") >= 0;
+	if (msgHasANSICodes)
+	{
+		messageText = messageText.replace(/\u001b\[[012]J/gi, "");
+		var graphicWidth = (msgAreaWidth < console.screen_columns ? msgAreaWidth + 1 : console.screen_columns);
+		var graphic = new Graphic(graphicWidth, msgAreaHeight - 1);
+		graphic.auto_extend = true;
+		graphic.ANSI = ansiterm.expand_ctrl_a(messageText);
+		graphic.width = graphicWidth - 1;
+		messageText = graphic.MSG;
+	}
+
+	// Get message info (word-wrapped text, line array, scroll metrics).
+	// Temporarily override the instance msgAreaWidth/Height so GetMsgInfoForEnhancedReader
+	// word-wraps and trims lines to our narrower RIP text area dimensions.
+	var savedMsgAreaWidth = this.msgAreaWidth;
+	var savedMsgAreaHeight = this.msgAreaHeight;
+	this.msgAreaWidth = msgAreaWidth;
+	this.msgAreaHeight = msgAreaHeight;
+	var getMsgTail = true;
+	var msgInfo = this.GetMsgInfoForEnhancedReader(msgHeader, true, true, true, messageText, getMsgTail);
+	this.msgAreaWidth = savedMsgAreaWidth;
+	this.msgAreaHeight = savedMsgAreaHeight;
+	// Recalculate topMsgLineIdxForLastPage for our RIP message area height
+	topMsgLineIdxForLastPage = msgInfo.messageLines.length - msgAreaHeight;
+	if (topMsgLineIdxForLastPage < 0)
+		topMsgLineIdxForLastPage = 0;
+	var topMsgLineIdx = 0;
+	var fractionToLastPage = 0;
+
+	// Initialize scrollbar state
+	scrollbar.setScrollState(msgInfo.messageLines.length, msgAreaHeight, 0);
+
+	var msgHasAttachments = msgHdrHasAttachmentFlag(msgHeader);
+	var msgLineFormatStr = "%-" + msgAreaWidth + "s";
+
+	// ---- RIP Drawing Functions ----
+
+	// Build the frame border, title bar, and close button
+	function buildFrameRIP()
+	{
+		var rip = "";
+		var x0 = FRAME_X;
+		var y0 = FRAME_Y;
+		var x1 = FRAME_X + FRAME_W - 1;
+		var y1 = FRAME_Y + FRAME_H - 1;
+
+		// Fill the entire frame area with the surface color
+		rip += RIPFillStyleNumeric(1, theme.surface);
+		rip += RIPBarNumeric(x0, y0, x1, y1);
+
+		// Outer raised bevel
+		rip += RIPGUIBevelBox(x0, y0, x1, y1,
+		                      theme.bevelBright, theme.bevelDark, BEVEL_W, true);
+
+		// Title bar
+		var tbX0 = x0 + BEVEL_W;
+		var tbY0 = y0 + BEVEL_W;
+		var tbX1 = x1 - BEVEL_W;
+		var tbY1 = y0 + BEVEL_W + TITLE_H - 1;
+		rip += RIPFillStyleNumeric(1, theme.titleBarActive);
+		rip += RIPBarNumeric(tbX0, tbY0, tbX1, tbY1);
+
+		// Title text centered in the title bar
+		var titleText = "Message Reader";
+		var titlePixW = titleText.length * 8;
+		var titleX = tbX0 + Math.floor((tbX1 - tbX0 + 1 - titlePixW) / 2);
+		var titleY = tbY0 + Math.floor((TITLE_H - 8) / 2);
+		rip += RIPGUILabel(titleX, titleY, titleText, theme.titleTextActive);
+
+		// Close button [X] at right end of title bar
+		rip += RIPFillStyleNumeric(1, theme.buttonFace);
+		rip += RIPBarNumeric(CLOSE_BTN_X, CLOSE_BTN_Y,
+		                     CLOSE_BTN_X + CLOSE_BTN_SIZE - 1,
+		                     CLOSE_BTN_Y + CLOSE_BTN_SIZE - 1);
+		rip += RIPGUIBevelBox(CLOSE_BTN_X, CLOSE_BTN_Y,
+		                      CLOSE_BTN_X + CLOSE_BTN_SIZE - 1,
+		                      CLOSE_BTN_Y + CLOSE_BTN_SIZE - 1,
+		                      theme.bevelBright, theme.bevelDark, 1, true);
+		// Draw the "X" glyph
+		var xIn = 3;
+		rip += RIPColorNumeric(RIP_COLOR_BLACK);
+		rip += RIPLineNumeric(CLOSE_BTN_X + xIn, CLOSE_BTN_Y + xIn,
+		                       CLOSE_BTN_X + CLOSE_BTN_SIZE - 1 - xIn,
+		                       CLOSE_BTN_Y + CLOSE_BTN_SIZE - 1 - xIn);
+		rip += RIPLineNumeric(CLOSE_BTN_X + CLOSE_BTN_SIZE - 1 - xIn, CLOSE_BTN_Y + xIn,
+		                       CLOSE_BTN_X + xIn,
+		                       CLOSE_BTN_Y + CLOSE_BTN_SIZE - 1 - xIn);
+
+		// Content area background
+		rip += RIPFillStyleNumeric(1, theme.contentBg);
+		rip += RIPBarNumeric(CX, CY, CX + CW - 1, CY + CH - 1);
+
+		// Sunken inner bevel around the content area
+		rip += RIPGUIBevelBox(CX - 1, CY - 1, CX + CW, CY + CH,
+		                      theme.bevelBright, theme.bevelDark, 1, false);
+
+		return rip;
+	}
+
+	// Build the complete screen: frame + tab control + scrollbar (if Message tab) + mouse regions
+	function buildFullScreenRIP()
+	{
+		var rip = RIPKillMouseFields();
+
+		// Frame chrome
+		rip += buildFrameRIP();
+
+		// Tab control (tab labels + panel + active tab's children)
+		rip += tabCtrl.buildFullRIP();
+
+		// If on the Message tab, draw the scrollbar
+		if (tabCtrl.activeTabIndex === 0)
+		{
+			scrollbar.setScrollState(msgInfo.messageLines.length, msgAreaHeight, topMsgLineIdx);
+			rip += scrollbar.buildFullRIP();
+		}
+
+		// Note: We intentionally avoid RIPWindowNumeric() and RIPResetWindows()
+		// because those commands trigger SyncTERM's reinit_screen(), which
+		// causes a noticeable input/display delay.  Instead, text-area clearing
+		// for tab switches is handled in refreshRIPScreen() via console.print().
+
+		// Close button mouse region
+		rip += RIPMouseNumeric(0, CLOSE_BTN_X, CLOSE_BTN_Y,
+		                       CLOSE_BTN_X + CLOSE_BTN_SIZE - 1,
+		                       CLOSE_BTN_Y + CLOSE_BTN_SIZE - 1,
+		                       true, false, 0,
+		                       String.fromCharCode(MOUSE_CLOSE_BTN));
+
+		// Tab control mouse regions (tab labels + active tab's children)
+		rip += tabCtrl.buildMouseRegionsRIP();
+
+		// If on the Message tab, add scrollbar mouse regions
+		if (tabCtrl.activeTabIndex === 0)
+			rip += scrollbar.buildMouseRegionsRIP();
+
+		rip += RIPGotoXYNumeric(0, 0);
+		return rip;
+	}
+
+	// Redraw the full RIP screen and optionally clear the text area
+	function refreshRIPScreen(clearTextArea)
+	{
+		// For the Calendar tab, clear text BEFORE sending RIP so that old
+		// message text doesn't cover the calendar graphics.  In SyncTERM,
+		// empty text cells don't occlude RIP graphics behind them.
+		if (clearTextArea && tabCtrl.activeTabIndex === 2)
+		{
+			console.attributes = "N";
+			for (var row = msgAreaTop; row <= msgAreaBottom; ++row)
+			{
+				console.gotoxy(1, row);
+				printf("%-*s", console.screen_columns, "");
+			}
+		}
+		RIPGUISendRIP(buildFullScreenRIP());
+		// For Message/Settings tabs, clear text AFTER the RIP draw
+		if (clearTextArea && tabCtrl.activeTabIndex !== 2)
+		{
+			console.attributes = "N";
+			for (var row = msgAreaTop; row <= msgAreaBottom; ++row)
+			{
+				console.gotoxy(msgAreaLeft, row);
+				printf("%-*s", msgAreaWidth, "");
+			}
+		}
+		// Redraw the key help line on the last text row (below the frame)
+		if (tabCtrl.activeTabIndex === 0)
+			msgReaderObj.DisplayEnhancedMsgReadHelpLine(console.screen_rows, allowChgMsgArea);
+	}
+
+	// For editing a user account (sysop only)
+	function userEdit(msgHdr, offset, reader)
+	{
+		prepareForExternalOperation();
+		console.attributes = "N";
+		console.crlf();
+		console.print("- Edit user " + msgHdr.from);
+		console.crlf();
+		var editObj = editUser(msgHdr.from);
+		if (editObj.errorMsg.length != 0)
+		{
+			console.attributes = "N";
+			console.crlf();
+			console.print("\x01y\x01h" + editObj.errorMsg + "\x01n");
+			console.crlf();
+			console.pause();
+		}
+	}
+
+	// Prepare the terminal for an external operation (reply, post, edit,
+	// help, download, etc.) by killing RIP mouse fields.  This ensures that
+	// the external operation gets a clean text environment with no stale
+	// mouse regions that could interfere with input.
+	// Note: We intentionally avoid RIPResetWindows() and RIPWindowNumeric()
+	// here because those commands trigger SyncTERM's reinit_screen(), which
+	// causes a noticeable input/display delay.
+	function prepareForExternalOperation()
+	{
+		RIPGUISendRIP(RIPKillMouseFields() + RIPNoMore());
+	}
+
+	// ---- Initial screen draw ----
+	// Suppress message output during RIP drawing
+	var origSysStatus = bbs.sys_status;
+	bbs.sys_status |= SS_MOFF;
+
+	// Clear the RIP viewport
+	RIPGUISendRIP(RIPKillMouseFields()
+	              + RIPFillStyleNumeric(1, RIP_COLOR_LT_GRAY)
+	              + RIPBarNumeric(0, 0, 639, 349)
+	              + RIPNoMore());
+	// Draw the full application screen
+	RIPGUISendRIP(buildFullScreenRIP());
+	// Display the key help line on the last text row (below the frame)
+	this.DisplayEnhancedMsgReadHelpLine(console.screen_rows, allowChgMsgArea);
+
+	bbs.sys_status = origSysStatus;
+
+	// ---- Main Input Loop ----
+	var continueOn = true;
+	var writeMessage = true;
+	// For viewing hex dump info (sysop)
+	var msgHexInfo = null;
+
+	while (continueOn)
+	{
+		if (tabCtrl.activeTabIndex === 0)
+		{
+			// ==== MESSAGE TAB ====
+			// Display message lines and handle scroll keys via scrollTextLines()
+			var scrollRetObj = scrollTextLines(msgInfo.messageLines, topMsgLineIdx,
+			                                   this.colors.msgBodyColor, writeMessage,
+			                                   msgAreaLeft, msgAreaTop, msgAreaWidth,
+			                                   msgAreaHeight, 1, console.screen_rows,
+			                                   true, ripScrollbarUpdateFn, pmode);
+			topMsgLineIdx = scrollRetObj.topLineIdx;
+			retObj.lastKeypress = scrollRetObj.lastKeypress;
+
+			// Check for RIP scrollbar mouse chars
+			var keyCode = retObj.lastKeypress.charCodeAt(0);
+			if (keyCode === SB_MOUSE_SCROLL_UP)
+			{
+				if (topMsgLineIdx > 0)
+					--topMsgLineIdx;
+				writeMessage = true;
+				continue;
+			}
+			else if (keyCode === SB_MOUSE_SCROLL_DN)
+			{
+				if (topMsgLineIdx < topMsgLineIdxForLastPage)
+					++topMsgLineIdx;
+				writeMessage = true;
+				continue;
+			}
+			else if (keyCode === SB_MOUSE_TRACK_PG_UP)
+			{
+				topMsgLineIdx = Math.max(0, topMsgLineIdx - msgAreaHeight);
+				writeMessage = true;
+				continue;
+			}
+			else if (keyCode === SB_MOUSE_TRACK_PG_DN)
+			{
+				topMsgLineIdx = Math.min(topMsgLineIdxForLastPage, topMsgLineIdx + msgAreaHeight);
+				writeMessage = true;
+				continue;
+			}
+			else if (keyCode === SB_MOUSE_THUMB_DRAG)
+			{
+				// Thumb drag sends a Y coordinate after the char; consume extra input
+				writeMessage = false;
+				continue;
+			}
+
+			// Check for close button click
+			if (keyCode === MOUSE_CLOSE_BTN)
+			{
+				retObj.nextAction = ACTION_QUIT;
+				continueOn = false;
+				break;
+			}
+
+			// Check for tab label clicks
+			var tabResult = tabCtrl.handleMouseChar(keyCode);
+			if (tabResult && tabResult.consumed)
+			{
+				if (tabResult.action === "tabchange")
+				{
+					refreshRIPScreen(true);
+					if (tabCtrl.activeTabIndex === 1)
+					{
+						// Settings tab - enter settings immediately
+						writeMessage = false;
+					}
+					else
+					{
+						writeMessage = (tabCtrl.activeTabIndex === 0);
+					}
+				}
+				continue;
+			}
+
+			// Handle message keys (same as Scrollable version)
+			writeMessage = false; // Default: don't redraw unless a case sets it
+			switch (retObj.lastKeypress)
+			{
+				case this.enhReaderKeys.deleteMessage: // Delete message
+				case '\x7f':
+				case '\x08':
+					var originalCurpos = console.getxy() || { x: 1, y: console.screen_rows };
+					var promptPos = this.EnhReaderPrepLast2LinesForPrompt();
+					var msgWasDeleted = this.PromptAndDeleteOrUndeleteMessage(pOffset, promptPos, true, true, msgAreaWidth, true);
+					if (msgWasDeleted && !canViewDeletedMsgs())
+					{
+						var msgSearchObj = this.LookForNextOrPriorNonDeletedMsg(pOffset);
+						continueOn = msgSearchObj.continueInputLoop;
+						retObj.newMsgOffset = msgSearchObj.newMsgOffset;
+						retObj.nextAction = msgSearchObj.nextAction;
+						if (msgSearchObj.promptGoToNextArea)
+						{
+							if (this.EnhReaderPromptYesNo(replaceAtCodesInStr(this.text.goToNextMsgAreaPromptText), msgInfo.messageLines, topMsgLineIdx, msgLineFormatStr, 0, 0))
+							{
+								continueOn = false;
+								retObj.nextAction = ACTION_GO_NEXT_MSG;
+							}
+							else
+								writeMessage = false;
+						}
+					}
+					else
+					{
+						this.DisplayEnhReaderError("", msgInfo.messageLines, topMsgLineIdx, msgLineFormatStr);
+						console.gotoxy(originalCurpos);
+						writeMessage = false;
+					}
+					break;
+				case this.enhReaderKeys.selectMessage:
+					var promptPos = this.EnhReaderPrepLast2LinesForPrompt();
+					var selected = this.EnhReaderPromptYesNo("Select this message", msgInfo.messageLines, topMsgLineIdx, msgLineFormatStr, 0, 0, true);
+					this.ToggleSelectedMessage(this.subBoardCode, pOffset, selected);
+					writeMessage = false;
+					break;
+				case this.enhReaderKeys.batchDelete:
+					writeMessage = false;
+					break;
+				case this.enhReaderKeys.editMsg:
+					if (this.CanEdit())
+					{
+						prepareForExternalOperation();
+						var promptPos = this.EnhReaderPrepLast2LinesForPrompt();
+						var editReturnObj = this.EditExistingMsg(pOffset);
+						if (!editReturnObj.userConfirmed)
+						{
+							this.DisplayEnhReaderError("", msgInfo.messageLines, topMsgLineIdx, msgLineFormatStr);
+							writeMessage = false;
+						}
+						else
+						{
+							if (editReturnObj.msgEdited && (editReturnObj.newMsgIdx > -1))
+							{
+								continueOn = false;
+								retObj.newMsgOffset = editReturnObj.newMsgIdx;
+							}
+							else
+							{
+								refreshRIPScreen(false);
+								writeMessage = true;
+							}
+						}
+					}
+					else
+						writeMessage = false;
+					break;
+				case this.enhReaderKeys.showHelp:
+					prepareForExternalOperation();
+					this.DisplayEnhancedReaderHelp(allowChgMsgArea, msgHasAttachments);
+					refreshRIPScreen(false);
+					writeMessage = true;
+					break;
+				case this.enhReaderKeys.reply:
+				case this.enhReaderKeys.privateReply:
+					var privateReply = (retObj.lastKeypress == this.enhReaderKeys.privateReply);
+					var userQuitOrAborted = false;
+					if (privateReply && this.readingPersonalEmail)
+						writeMessage = false;
+					else
+					{
+						prepareForExternalOperation();
+						var msgbase = new MsgBase(this.subBoardCode);
+						if (msgbase.open())
+						{
+							var extdMsgHdr = msgbase.get_msg_header(false, msgHeader.number, true);
+							msgbase.close();
+							var replyRetObj = this.ReplyToMsg(extdMsgHdr, messageText, privateReply, pOffset);
+							retObj.userReplied = replyRetObj.postSucceeded;
+							userQuitOrAborted = replyRetObj.userQuitOrAborted;
+							var msgWasDeleted = replyRetObj.msgWasDeleted;
+							if (msgWasDeleted && !canViewDeletedMsgs())
+							{
+								var msgSearchObj = this.LookForNextOrPriorNonDeletedMsg(pOffset);
+								continueOn = msgSearchObj.continueInputLoop;
+								retObj.newMsgOffset = msgSearchObj.newMsgOffset;
+								retObj.nextAction = msgSearchObj.nextAction;
+								if (msgSearchObj.promptGoToNextArea)
+								{
+									if (this.EnhReaderPromptYesNo(replaceAtCodesInStr(this.text.goToNextMsgAreaPromptText), msgInfo.messageLines, topMsgLineIdx, msgLineFormatStr, 0, 0))
+									{
+										continueOn = false;
+										retObj.nextAction = ACTION_GO_NEXT_MSG;
+									}
+									else
+										writeMessage = true;
+								}
+							}
+							else
+							{
+								refreshRIPScreen(false);
+								writeMessage = true;
+							}
+						}
+						else
+							this.DisplayEnhReaderError("Messagebase failed to open", msgInfo.messageLines, topMsgLineIdx, msgLineFormatStr);
+					}
+					// Reset console state after reply
+					var consoleWasAborted = console.aborted;
+					console.aborted = false;
+					console.line_counter = 0;
+					if (userQuitOrAborted)
+					{
+						if (this.userSettings.quitFromReaderGoesToMsgList)
+						{
+							console.attributes = "N";
+							console.crlf();
+							console.print("Loading...");
+							retObj.nextAction = ACTION_DISPLAY_MSG_LIST;
+						}
+						else
+							retObj.nextAction = ACTION_QUIT;
+						continueOn = false;
+					}
+					break;
+				case this.enhReaderKeys.postMsg:
+					if (!this.readingPersonalEmail)
+					{
+						prepareForExternalOperation();
+						if (bbs.post_msg(this.subBoardCode))
+						{
+							console.pause();
+						}
+						refreshRIPScreen(false);
+						writeMessage = true;
+					}
+					else
+						writeMessage = false;
+					break;
+				// Numeric digit: go to a specific message number
+				case "0":
+				case "1":
+				case "2":
+				case "3":
+				case "4":
+				case "5":
+				case "6":
+				case "7":
+				case "8":
+				case "9":
+					var originalCurpos = console.getxy() || { x: 1, y: console.screen_rows };
+					console.ungetstr(retObj.lastKeypress);
+					var promptPos = this.EnhReaderPrepLast2LinesForPrompt();
+					var msgNumInput = this.PromptForMsgNum(promptPos, replaceAtCodesInStr(this.text.readMsgNumPromptText), false, ERROR_PAUSE_WAIT_MS, false);
+					if ((msgNumInput > 0) && (msgNumInput - 1 != pOffset))
+					{
+						if (this.MessageIsDeleted(msgNumInput - 1))
+						{
+							writeWithPause(msgAreaLeft, console.screen_rows - 1,
+							               "\x01n" + replaceAtCodesInStr(format(this.text.msgHasBeenDeletedText, msgNumInput)) + "\x01n",
+							               ERROR_PAUSE_WAIT_MS, "\x01n", true);
+						}
+						else
+						{
+							var readMsg = true;
+							if (this.promptToReadMessage)
+							{
+								var sReadMsgConfirmText = this.colors["readMsgConfirmColor"]
+								                        + "Read message "
+								                        + this.colors["readMsgConfirmNumberColor"]
+								                        + msgNumInput + this.colors["readMsgConfirmColor"]
+								                        + ": Are you sure";
+								console.gotoxy(promptPos);
+								console.attributes = "N";
+								readMsg = console.yesno(sReadMsgConfirmText);
+							}
+							if (readMsg)
+							{
+								continueOn = false;
+								retObj.newMsgOffset = msgNumInput - 1;
+								retObj.nextAction = ACTION_GO_SPECIFIC_MSG;
+							}
+							else
+								writeMessage = false;
+						}
+					}
+					else
+						writeMessage = false;
+					if (continueOn)
+					{
+						this.DisplayEnhReaderError("", msgInfo.messageLines, topMsgLineIdx, msgLineFormatStr);
+						console.gotoxy(originalCurpos);
+					}
+					break;
+				case this.enhReaderKeys.prevMsgByTitle:
+				case this.enhReaderKeys.prevMsgByAuthor:
+				case this.enhReaderKeys.prevMsgByToUser:
+				case this.enhReaderKeys.prevMsgByThreadID:
+					if (!this.SearchingAndResultObjsDefinedForCurSub())
+					{
+						var threadPrevMsgOffset = this.FindThreadPrevOffset(msgHeader,
+						                          keypressToThreadType(retObj.lastKeypress, this.enhReaderKeys), true);
+						if (threadPrevMsgOffset > -1)
+						{
+							retObj.newMsgOffset = threadPrevMsgOffset;
+							retObj.nextAction = ACTION_GO_SPECIFIC_MSG;
+							continueOn = false;
+						}
+						else
+							writeMessage = false;
+					}
+					else
+						writeMessage = false;
+					break;
+				case this.enhReaderKeys.nextMsgByTitle:
+				case this.enhReaderKeys.nextMsgByAuthor:
+				case this.enhReaderKeys.nextMsgByToUser:
+				case this.enhReaderKeys.nextMsgByThreadID:
+					if (!this.SearchingAndResultObjsDefinedForCurSub())
+					{
+						var threadNextMsgOffset = this.FindThreadNextOffset(msgHeader,
+						                          keypressToThreadType(retObj.lastKeypress, this.enhReaderKeys), true);
+						if (threadNextMsgOffset > -1)
+						{
+							retObj.newMsgOffset = threadNextMsgOffset;
+							retObj.nextAction = ACTION_GO_SPECIFIC_MSG;
+							continueOn = false;
+						}
+						else
+							writeMessage = false;
+					}
+					else
+						writeMessage = false;
+					break;
+				case this.enhReaderKeys.previousMsg:
+					retObj.newMsgOffset = this.FindNextReadableMsgIdx(pOffset, false);
+					var goToPrevMessage = false;
+					if ((retObj.newMsgOffset > -1) || allowChgMsgArea)
+					{
+						if (retObj.newMsgOffset == -1 && !curMsgSubBoardIsLast())
+						{
+							goToPrevMessage = this.EnhReaderPromptYesNo(replaceAtCodesInStr(this.text.goToPrevMsgAreaPromptText),
+							                  msgInfo.messageLines, topMsgLineIdx, msgLineFormatStr, 0, 0);
+						}
+						else
+							goToPrevMessage = true;
+					}
+					if (goToPrevMessage)
+					{
+						continueOn = false;
+						retObj.nextAction = ACTION_GO_PREVIOUS_MSG;
+					}
+					else
+						writeMessage = false;
+					break;
+				case this.enhReaderKeys.nextMsg:
+				case KEY_ENTER:
+					var findNextMsgRetObj = this.ScrollableReaderNextReadableMessage(pOffset, msgInfo, topMsgLineIdx, msgLineFormatStr, 0, 0);
+					if (findNextMsgRetObj.newMsgOffset > -1)
+						retObj.newMsgOffset = findNextMsgRetObj.newMsgOffset;
+					writeMessage = findNextMsgRetObj.writeMessage;
+					continueOn = findNextMsgRetObj.continueOn;
+					retObj.nextAction = findNextMsgRetObj.nextAction;
+					break;
+				case this.enhReaderKeys.firstMsg:
+					if (pOffset > 0)
+					{
+						continueOn = false;
+						retObj.nextAction = ACTION_GO_FIRST_MSG;
+					}
+					else
+						writeMessage = false;
+					break;
+				case this.enhReaderKeys.lastMsg:
+					if (pOffset < this.NumMessages() - 1)
+					{
+						continueOn = false;
+						retObj.nextAction = ACTION_GO_LAST_MSG;
+					}
+					else
+						writeMessage = false;
+					break;
+				case this.enhReaderKeys.prevSubBoard:
+					if (allowChgMsgArea)
+					{
+						continueOn = false;
+						retObj.nextAction = ACTION_GO_PREV_MSG_AREA;
+					}
+					else
+						writeMessage = false;
+					break;
+				case this.enhReaderKeys.nextSubBoard:
+					if (allowChgMsgArea || this.doingMultiSubBoardScan)
+					{
+						continueOn = false;
+						retObj.nextAction = ACTION_GO_NEXT_MSG_AREA;
+					}
+					else
+						writeMessage = false;
+					break;
+				case this.enhReaderKeys.showHdrInfo:
+				case this.enhReaderKeys.showKludgeLines:
+					if (user.is_sysop)
+					{
+						prepareForExternalOperation();
+						writeMessage = this.ShowHdrOrKludgeLines_Scrollable(retObj.lastKeypress == this.enhReaderKeys.showKludgeLines, msgHeader, msgAreaWidth, msgAreaHeight);
+						if (writeMessage)
+							refreshRIPScreen(false);
+					}
+					else
+						writeMessage = false;
+					break;
+				case this.enhReaderKeys.showMsgList:
+					console.attributes = "N";
+					console.crlf();
+					console.print("Loading...");
+					retObj.nextAction = ACTION_DISPLAY_MSG_LIST;
+					continueOn = false;
+					break;
+				case this.enhReaderKeys.chgMsgArea:
+					if (allowChgMsgArea)
+					{
+						retObj.nextAction = ACTION_CHG_MSG_AREA;
+						continueOn = false;
+					}
+					else
+						writeMessage = false;
+					break;
+				case this.enhReaderKeys.downloadAttachments:
+					if (msgHasAttachments)
+					{
+						prepareForExternalOperation();
+						console.attributes = "N";
+						console.gotoxy(1, console.screen_rows);
+						console.crlf();
+						allowUserToDownloadMessage_NewInterface(msgHeader, this.subBoardCode);
+						refreshRIPScreen(false);
+						writeMessage = true;
+					}
+					else
+						writeMessage = false;
+					break;
+				case this.enhReaderKeys.saveToBBSMachine:
+					if (user.is_sysop)
+					{
+						var promptPos = this.EnhReaderPrepLast2LinesForPrompt();
+						console.print("\x01n\x01cFilename:\x01h");
+						var inputLen = console.screen_columns - 10;
+						var filename = console.getstr(inputLen, K_NOCRLF);
+						console.attributes = "N";
+						if (filename.length > 0)
+						{
+							var saveMsgRetObj = this.SaveMsgToFile(msgHeader, filename, promptPos);
+							console.gotoxy(promptPos);
+							console.cleartoeol("\x01n");
+							console.gotoxy(promptPos);
+							if (saveMsgRetObj.succeeded)
+							{
+								var statusMsg = "\x01n\x01cThe message has been saved.";
+								if (msgHdrHasAttachmentFlag(msgHeader))
+									statusMsg += " Attachments not saved.";
+								statusMsg += "\x01n";
+								console.print(statusMsg);
+							}
+							else
+								console.print("\x01n\x01y\x01hFailed: " + saveMsgRetObj.errorMsg + "\x01n");
+							mswait(ERROR_PAUSE_WAIT_MS);
+						}
+						else
+						{
+							console.gotoxy(promptPos);
+							console.print("\x01n\x01y\x01hMessage not exported\x01n");
+							mswait(ERROR_PAUSE_WAIT_MS);
+						}
+						this.DisplayEnhReaderError("", msgInfo.messageLines, topMsgLineIdx, msgLineFormatStr);
+					}
+					writeMessage = false;
+					break;
+				case this.enhReaderKeys.userEdit:
+					if (user.is_sysop)
+					{
+						userEdit(msgHeader, pOffset, this);
+						refreshRIPScreen(false);
+						writeMessage = true;
+					}
+					else
+						writeMessage = false;
+					break;
+				case this.enhReaderKeys.forwardMsg:
+					prepareForExternalOperation();
+					console.attributes = "N";
+					console.crlf();
+					console.print("\x01c- Forward message\x01n");
+					console.crlf();
+					var retStr = this.ForwardMessage(msgHeader, messageText);
+					if (retStr.length > 0)
+					{
+						console.print("\x01n\x01h\x01y* " + retStr + "\x01n");
+						console.crlf();
+						console.pause();
+					}
+					refreshRIPScreen(false);
+					writeMessage = true;
+					break;
+				case this.enhReaderKeys.vote:
+					prepareForExternalOperation();
+					var promptPos = this.EnhReaderPrepLast2LinesForPrompt();
+					console.gotoxy(1, console.screen_rows - 1);
+					var voteRetObj = this.VoteOnMessage(msgHeader, true);
+					if (voteRetObj.BBSHasVoteFunction)
+					{
+						if (!voteRetObj.userQuit)
+						{
+							retObj.newMsgOffset = pOffset;
+							retObj.nextAction = ACTION_GO_SPECIFIC_MSG;
+							continueOn = false;
+						}
+						else
+						{
+							retObj.newMsgOffset = pOffset;
+							retObj.nextAction = ACTION_GO_SPECIFIC_MSG;
+							continueOn = false;
+						}
+					}
+					else
+						writeMessage = false;
+					break;
+				case this.enhReaderKeys.showVotes:
+					prepareForExternalOperation();
+					var DVRetObj = this.ShowVoteInfo_Scrollable(msgHeader, msgAreaWidth, msgAreaHeight);
+					writeMessage = DVRetObj.writeMessage;
+					if (writeMessage)
+						refreshRIPScreen(false);
+					break;
+				case this.enhReaderKeys.closePoll:
+					var originalCurPos = console.getxy() || { x: 1, y: console.screen_rows };
+					var pollCloseMsg = "";
+					if ((typeof(MSG_TYPE_POLL) != "undefined") && Boolean(msgHeader.type & MSG_TYPE_POLL))
+					{
+						if ((msgHeader.auxattr & POLL_CLOSED) == 0)
+						{
+							if (userHandleAliasNameMatch(msgHeader.from))
+							{
+								console.gotoxy(1, console.screen_rows - 1);
+								printf("\x01n%" + +(console.screen_columns - 1) + "s", "");
+								console.gotoxy(1, console.screen_rows - 1);
+								if (!console.noyes("Close poll"))
+								{
+									var msgbase = new MsgBase(this.subBoardCode);
+									if (msgbase.open())
+									{
+										if (closePollWithOpenMsgbase(msgbase, msgHeader.number))
+										{
+											msgHeader.auxattr |= POLL_CLOSED;
+											pollCloseMsg = "\x01n\x01cThis poll was successfully closed.";
+										}
+										else
+											pollCloseMsg = "\x01n\x01r\x01h* Failed to close this poll!";
+										msgbase.close();
+									}
+									else
+										pollCloseMsg = "\x01n\x01y\x01hUnable to open sub-board to close the poll";
+								}
+							}
+							else
+								pollCloseMsg = "\x01n\x01y\x01hCan't close this poll because it's not yours";
+						}
+						else
+							pollCloseMsg = "\x01n\x01y\x01hThis poll is already closed";
+					}
+					else
+						pollCloseMsg = "This message is not a poll";
+					this.DisplayEnhReaderError(pollCloseMsg, msgInfo.messageLines, topMsgLineIdx, msgLineFormatStr);
+					console.gotoxy(originalCurPos);
+					writeMessage = false;
+					break;
+				case this.enhReaderKeys.validateMsg:
+					if (user.is_sysop && (this.subBoardCode != "mail") && msg_area.sub[this.subBoardCode].is_moderated)
+					{
+						var message = "";
+						if (this.ValidateMsg(this.subBoardCode, msgHeader.number))
+						{
+							message = "\x01n\x01cMessage validation successful";
+							this.RefreshMsgHdrInArrays(msgHeader.number);
+							retObj.newMsgOffset = pOffset;
+							retObj.nextAction = ACTION_GO_SPECIFIC_MSG;
+							continueOn = false;
+						}
+						else
+							message = "\x01n\x01y\x01hMessage validation failed!";
+						this.DisplayEnhReaderError(message, msgInfo.messageLines, topMsgLineIdx, msgLineFormatStr);
+					}
+					else
+						writeMessage = false;
+					break;
+				case this.enhReaderKeys.quickValUser:
+					if (user.is_sysop)
+					{
+						var valRetObj = quickValidateLocalUser(msgHeader.from, true, this.quickUserValSetIndex);
+						if (valRetObj.needWholeScreenRefresh)
+						{
+							refreshRIPScreen(false);
+							writeMessage = true;
+						}
+						else
+						{
+							writeMessage = false;
+							if (valRetObj.optionBoxTopLeftX > 0 && valRetObj.optionBoxTopLeftY > 0 && valRetObj.optionBoxWidth > 0 && valRetObj.optionBoxHeight > 0)
+								this.RefreshMsgAreaRectangle(msgInfo.messageLines, topMsgLineIdx, valRetObj.optionBoxTopLeftX, valRetObj.optionBoxTopLeftY, valRetObj.optionBoxWidth, valRetObj.optionBoxHeight);
+						}
+					}
+					else
+						writeMessage = false;
+					break;
+				case this.enhReaderKeys.bypassSubBoardInNewScan:
+					writeMessage = false;
+					break;
+				case this.enhReaderKeys.userSettings:
+					// Switch to the Settings tab
+					tabCtrl.activeTabIndex = 1;
+					refreshRIPScreen(true);
+					// Settings tab will be handled on next loop iteration
+					writeMessage = false;
+					continue;
+				case this.enhReaderKeys.subBoardInfo:
+					prepareForExternalOperation();
+					writeMessage = this.ShowSubBoardInfo_Scrollable(msgAreaWidth, msgAreaHeight);
+					if (writeMessage)
+						refreshRIPScreen(false);
+					break;
+				case this.enhReaderKeys.showMsgHex:
+					if (user.is_sysop)
+					{
+						prepareForExternalOperation();
+						writeMessage = false;
+						if (msgHexInfo == null)
+							msgHexInfo = this.GetMsgHexInfo(messageText, true);
+						if (msgHexInfo.msgHexArray.length > 0)
+						{
+							this.ShowMsgHex_Scrolling(msgHexInfo);
+							refreshRIPScreen(false);
+							writeMessage = true;
+						}
+					}
+					else
+						writeMessage = false;
+					break;
+				case this.enhReaderKeys.hexDump:
+					if (user.is_sysop)
+					{
+						var promptPos = this.EnhReaderPrepLast2LinesForPrompt();
+						console.print("\x01n\x01cFilename:\x01h");
+						var inputLen = console.screen_columns - 10;
+						var filename = console.getstr(inputLen, K_NOCRLF);
+						console.attributes = "N";
+						if (filename.length > 0)
+						{
+							console.gotoxy(promptPos);
+							console.cleartoeol("\x01n");
+							console.gotoxy(promptPos);
+							var saveHexRetObj = this.SaveMsgHexDumpToFile(msgHeader, filename);
+							if (saveHexRetObj.saveSucceeded)
+								console.print("\x01n\x01cThe hex dump has been saved.\x01n");
+							else if (saveHexRetObj.errorMsg != "")
+								console.print("\x01n\x01y\x01h" + saveHexRetObj.errorMsg + "\x01n");
+							else
+								console.print("\x01n\x01y\x01hFailed!\x01n");
+						}
+						else
+						{
+							console.gotoxy(promptPos);
+							console.print("\x01n\x01y\x01hHex dump not exported\x01n");
+						}
+						mswait(ERROR_PAUSE_WAIT_MS);
+						this.DisplayEnhReaderError("", msgInfo.messageLines, topMsgLineIdx, msgLineFormatStr);
+					}
+					writeMessage = false;
+					break;
+				case this.enhReaderKeys.quit:
+				case KEY_ESC:
+					if (this.userSettings.quitFromReaderGoesToMsgList)
+					{
+						console.attributes = "N";
+						console.crlf();
+						console.print("Loading...");
+						retObj.nextAction = ACTION_DISPLAY_MSG_LIST;
+					}
+					else
+						retObj.nextAction = ACTION_QUIT;
+					continueOn = false;
+					break;
+				case "": // User input timeout
+					retObj.nextAction = ACTION_QUIT;
+					continueOn = false;
+					break;
+				default:
+					writeMessage = false;
+					break;
+			}
+		}
+		else if (tabCtrl.activeTabIndex === 1)
+		{
+			// ==== SETTINGS TAB ====
+			// Call DoUserSettings_Scrollable to display and handle user settings.
+			// Kill existing mouse fields then re-register only the tab label
+			// click regions so clicking a different tab will exit settings and
+			// switch to that tab.
+			RIPGUISendRIP(RIPKillMouseFields() + tabCtrl.buildMouseRegionsRIP()
+			              + RIPGotoXYNumeric(0, 0));
+			var userSettingsRetObj = this.DoUserSettings_Scrollable(function(pReader) {  }); // No bottom help line for RIP
+			retObj.lastKeypress = "";
+
+			// In case the user changed their twitlist, handle similarly to Scrollable version
+			if (userSettingsRetObj.userTwitListChanged)
+			{
+				console.gotoxy(1, console.screen_rows);
+				console.crlf();
+				console.print("\x01nTwitlist changed; re-filtering..");
+				var tmpMsgbase = new MsgBase(this.subBoardCode);
+				if (tmpMsgbase.open())
+				{
+					var tmpAllMsgHdrs = tmpMsgbase.get_all_msg_headers(true);
+					tmpMsgbase.close();
+					this.FilterMsgHdrsIntoHdrsForCurrentSubBoard(tmpAllMsgHdrs, true);
+					if (this.MsgHdrFromOrToInUserTwitlist(msgHeader))
+					{
+						var findNextMsgRetObj = this.ScrollableReaderNextReadableMessage(pOffset, msgInfo, topMsgLineIdx, msgLineFormatStr, 0, 0);
+						if (findNextMsgRetObj.newMsgOffset > -1)
+						{
+							retObj.newMsgOffset = findNextMsgRetObj.newMsgOffset;
+							retObj.nextAction = ACTION_GO_SPECIFIC_MSG;
+						}
+						else
+							retObj.nextAction = ACTION_GO_NEXT_MSG_AREA;
+						continueOn = false;
+					}
+					else
+					{
+						if (this.hdrsForCurrentSubBoard.length > 0)
+						{
+							if (pOffset > this.hdrsForCurrentSubBoard.length)
+							{
+								retObj.newMsgOffset = this.hdrsForCurrentSubBoard.length - 1;
+								retObj.nextAction = ACTION_GO_SPECIFIC_MSG;
+								continueOn = false;
+							}
+						}
+						else
+						{
+							retObj.nextAction = ACTION_GO_NEXT_MSG_AREA;
+							continueOn = false;
+						}
+					}
+				}
+				this.SetUpLightbarMsgListVars();
+			}
+
+			// If the scrollbar setting changed, recalculate message area width
+			if (userSettingsRetObj.needWholeScreenRefresh)
+			{
+				// Recalculate msgAreaWidth if scrollbar preference changed
+				msgAreaWidth = Math.floor((SB_PIXEL_X - PX) / TEXT_CELL_W);
+				if (msgAreaWidth > console.screen_columns - 2)
+					msgAreaWidth = console.screen_columns - 2;
+				if (msgAreaWidth < 40) msgAreaWidth = 40;
+				msgLineFormatStr = "%-" + msgAreaWidth + "s";
+			}
+
+			// Check if the user exited settings by clicking a different tab
+			var switchedTab = false;
+			if (typeof(userSettingsRetObj.lastKeypress) === "string" && userSettingsRetObj.lastKeypress.length > 0)
+			{
+				var settingsExitCode = userSettingsRetObj.lastKeypress.charCodeAt(0);
+				var settingsTabResult = tabCtrl.handleMouseChar(settingsExitCode);
+				if (settingsTabResult && settingsTabResult.consumed && settingsTabResult.action === "tabchange")
+					switchedTab = true;
+			}
+			if (!switchedTab)
+				tabCtrl.activeTabIndex = 0; // Default: back to Message tab
+			refreshRIPScreen(true);
+			writeMessage = (tabCtrl.activeTabIndex === 0);
+		}
+		else if (tabCtrl.activeTabIndex === 2)
+		{
+			// ==== CALENDAR TAB ====
+			// Input loop for the calendar widget
+			var calWidgets = tabCtrl.getActiveChildren();
+			var calFocusIdx = 0;
+			// Focus the calendar
+			if (calWidgets.length > 0 && typeof calWidgets[0].setFocused === "function")
+				calWidgets[0].setFocused(true);
+
+			var calRunning = true;
+			while (calRunning && bbs.online && !js.terminated)
+			{
+				var key = console.getkey(K_NOCRLF | K_NOECHO | K_NOSPIN);
+				if (key === undefined || key === null)
+					continue;
+				var code = key.charCodeAt(0);
+
+				// Close button
+				if (code === MOUSE_CLOSE_BTN)
+				{
+					retObj.nextAction = ACTION_QUIT;
+					continueOn = false;
+					calRunning = false;
+					break;
+				}
+
+				// ESC - switch back to Message tab
+				if (key === "\x1b")
+				{
+					tabCtrl.activeTabIndex = 0;
+					refreshRIPScreen(true);
+					writeMessage = true;
+					calRunning = false;
+					break;
+				}
+
+				// Route keyboard input to the focused calendar widget
+				var handled = false;
+				if (calFocusIdx >= 0 && calFocusIdx < calWidgets.length)
+				{
+					var widget = calWidgets[calFocusIdx];
+					if (typeof widget.handleKey === "function")
+					{
+						var result = widget.handleKey(key);
+						if (result && result.consumed)
+						{
+							handled = true;
+							if (result.action === "select")
+							{
+								// Date selected via Enter - show the selected date
+								var val = widget.getValue();
+								if (val.day > 0)
+								{
+									// Display date briefly on the last text row
+									console.gotoxy(1, console.screen_rows);
+									console.print("\x01n\x01cSelected: " + val.month + "/" + val.day + "/" + val.year + "  \x01n");
+									mswait(1500);
+									// Clear the status line
+									console.gotoxy(1, console.screen_rows);
+									printf("\x01n%-*s", console.screen_columns - 1, "");
+								}
+							}
+							else if (result.action === "monthChange" || result.action === "change")
+							{
+								// Redraw the full screen for layout changes
+								RIPGUISendRIP(buildFullScreenRIP());
+							}
+							else if (result.rip && result.rip.length > 0)
+							{
+								// Simple visual update
+								RIPGUISendRIP(result.rip + RIPGotoXYNumeric(0, 0));
+							}
+						}
+					}
+				}
+				if (handled)
+					continue;
+
+				// Check for mouse clicks on calendar widgets
+				var mouseHandled = false;
+				for (var i = 0; i < calWidgets.length; ++i)
+				{
+					if (typeof calWidgets[i].handleMouseChar !== "function")
+						continue;
+					var mResult = calWidgets[i].handleMouseChar(code);
+					if (mResult && mResult.consumed)
+					{
+						mouseHandled = true;
+						if (mResult.action === "select")
+						{
+							var val2 = calWidgets[i].getValue();
+							if (val2.day > 0)
+							{
+								console.gotoxy(1, console.screen_rows);
+								console.print("\x01n\x01cSelected: " + val2.month + "/" + val2.day + "/" + val2.year + "  \x01n");
+								mswait(1500);
+								console.gotoxy(1, console.screen_rows);
+								printf("\x01n%-*s", console.screen_columns - 1, "");
+							}
+						}
+						else
+						{
+							// Rebuild for any other action
+							RIPGUISendRIP(buildFullScreenRIP());
+						}
+						break;
+					}
+				}
+				if (mouseHandled)
+					continue;
+
+				// Check for tab label clicks
+				var tabResult = tabCtrl.handleMouseChar(code);
+				if (tabResult && tabResult.consumed && tabResult.action === "tabchange")
+				{
+					// Unfocus calendar
+					if (calWidgets.length > 0 && typeof calWidgets[0].setFocused === "function")
+						calWidgets[0].setFocused(false);
+					refreshRIPScreen(true);
+					calRunning = false;
+					if (tabCtrl.activeTabIndex === 0)
+						writeMessage = true;
+					break;
+				}
+			}
+		}
+	}
+
+	this.currentAction = ACTION_NONE;
+
+	// Revert the AreYouThere warning string
+	bbs.revert_text(AreYouThere);
+
+	// Cleanup: kill mouse fields and clear the RIP viewport.
+	// Note: We intentionally avoid RIPWindowNumeric() and RIPResetWindows()
+	// on exit because those commands trigger SyncTERM's reinit_screen(),
+	// which causes a noticeable post-exit input/display delay.  Since we
+	// never changed the text window font, the calling shell's font is still
+	// intact and no window restoration is needed.
+	RIPGUISendRIP(RIPKillMouseFields()
+	              + RIPFillStyleNumeric(1, RIP_COLOR_BLACK)
+	              + RIPBarNumeric(0, 0, 639, 349)
+	              + RIPNoMore());
+	// Reset internal console tracking state to prevent stale values from
+	// affecting the calling shell (e.g., a non-zero last_line_length could
+	// cause line_counter to accumulate on every newline, potentially
+	// triggering an unwanted "more?" pause).
+	console.line_counter = 0;
+	console.last_line_length = 0;
+	console.current_column = 0;
+
+	return retObj;
+}
+*/
 // Helper method for ReadMessageEnhanced_Scrollable(): Shows header or kludge lines for the scrollable interface. For the sysop.
 function DigDistMsgReader_ShowHdrOrKludgeLines_Scrollable(pOnlyKludgeLines, msgHeader, msgAreaWidth, msgAreaHeight)
 {
@@ -9576,6 +10900,8 @@ function DigDistMsgReader_ReadConfigFile()
 			this.msgListUseLightbarListInterface = (settingsObj.listInterfaceStyle.toUpperCase() == "LIGHTBAR");
 		if (typeof(settingsObj.readerInterfaceStyle) === "string")
 			this.scrollingReaderInterface = (settingsObj.readerInterfaceStyle.toUpperCase() == "SCROLLABLE");
+		if (typeof(settingsObj.useRIPTabbedReaderInterface) === "boolean")
+			this.useRIPTabbedReaderInterface = settingsObj.useRIPTabbedReaderInterface;
 		if (typeof(settingsObj.displayBoardInfoInHeader) === "boolean")
 			this.displayBoardInfoInHeader = settingsObj.displayBoardInfoInHeader;
 		if (typeof(settingsObj.promptToContinueListingMessages) === "boolean")
@@ -10552,7 +11878,7 @@ function DigDistMsgReader_PromptForMsgNum(pCurPos, pPromptText, pClearToEOLAfter
 	var msgNum = 0;
 	var promptCount = 0;
 	var lastErrorLen = 0; // The length of the last error message
-	var promptTextLen = console.strlen(pPromptText);
+	var promptTextLen = console.strlen(pPromptText, P_AUTO_UTF8);
 	var continueAskingMsgNum = false;
 	do
 	{
@@ -12396,7 +13722,7 @@ function DigDistMsgReader_DisplayEnhReaderError(pErrorMsg, pMessageLines, pTopLi
          console.print(pMessageLines[msgLineIndex]); // Already shortened to fit
          console.print("\x01n" + this.colors["msgBodyColor"]); // In case colors changed
          // Clear the rest of the line
-         printf("%" + +(this.msgAreaWidth-console.strlen(pMessageLines[msgLineIndex])) + "s", "");
+         printf("%" + +(this.msgAreaWidth-console.strlen(pMessageLines[msgLineIndex], P_AUTO_UTF8)) + "s", "");
       }
       else
          printf(msgLineFormatStr, "");
@@ -12501,7 +13827,7 @@ function DigDistMsgReader_EnhReaderPromptYesNo(pQuestion, pMessageLines, pTopLin
 			console.print(pMessageLines[msgLineIndex]); // Already shortened to fit
 			console.print("\x01n" + this.colors["msgBodyColor"]); // In case colors changed
 			// Clear the rest of the line
-			printf("%" + +(this.msgAreaWidth-console.strlen(pMessageLines[msgLineIndex])) + "s", "");
+			printf("%" + +(this.msgAreaWidth-console.strlen(pMessageLines[msgLineIndex], P_AUTO_UTF8)) + "s", "");
 		}
 		else
 			printf(msgLineFormatStr, "");
@@ -12766,7 +14092,7 @@ function DigDistMsgReader_PromptAndDeleteOrUndeleteSelectedMessages(pPromptLoc, 
 				{
 					// Adding 5 to the prompt text to account for the ? and "[X] " that
 					// will be added when console.noyes() is called
-					var promptTxtLen = console.strlen(promptText) + 5;
+					var promptTxtLen = console.strlen(promptText, P_AUTO_UTF8) + 5;
 					var numCharsRemaining = 0;
 					if (typeof(pPromptRowWidth) == "number")
 						numCharsRemaining = pPromptRowWidth - promptTxtLen;
@@ -13226,7 +14552,7 @@ function DigDistMsgReader_GetMsgHdrFieldListText(pHdrFieldList, pUseColors)
 				}
 				textLines.push(hdrItem);
 				/*
-				if (console.strlen((hdrItem) < this.msgAreaWidth)
+				if (console.strlen((hdrItem, P_AUTO_UTF8) < this.msgAreaWidth)
 					textLines.push(hdrItem);
 				else
 				{
@@ -13606,6 +14932,36 @@ function DigDistMsgReader_GetMsgInfoForEnhancedReader(pMsgHdr, pWordWrap, pDeter
 		retObj.messageLines = [];
 		retObj.messageLines.push(msgTextAltered);
 	}
+
+	// Ensure the message lines don't end with a CRLF
+	if (user.is_sysop) // Temporary
+	{
+		/*
+		// Temporary
+		if (pMsgHdr.from == "Plt" && (pMsgHdr.to == "Nightfox" || pMsgHdr.to == "All"))
+		{
+			//console.print("\x01n\r\nHere\r\n\x01p");
+			console.clear("N");
+			for (var i = 0; i < retObj.messageLines.length; ++i)
+				printf(":%s:\r\n", retObj.messageLines[i]);
+			console.pause();
+		}
+		// End Temporary
+		for (var i = 0; i < retObj.messageLines.length; ++i)
+		{
+			//retObj.messageLines[i] = retObj.messageLines[i].replace(/\r\n/g, "");
+			//retObj.messageLines[i] = retObj.messageLines[i].replace("\r\n", "");
+			//retObj.messageLines[i] = "";
+			if (/\r\n$/.test(retObj.messageLines[i]))
+			{
+				console.print("\x01n\r\nFound it on this line:\r\n");
+				printf("%s\r\n", retObj.messageLines[i]);
+				console.pause();
+			}
+		}
+		*/
+	}
+
 	retObj.numNonSolidScrollBlocks = this.msgAreaHeight - retObj.numSolidScrollBlocks;
 	retObj.solidBlockStartRow = this.msgAreaTop;
 
@@ -14686,7 +16042,8 @@ function DigDistMsgReader_DoUserSettings_Scrollable(pDrawBottomhelpLineFn, pTopR
 		optionBoxTopLeftY: 1,
 		optionBoxWidth: 0,
 		optionBoxHeight: 0,
-		userTwitListChanged: false
+		userTwitListChanged: false,
+		lastKeypress: ""
 	};
 
 	if (!console.term_supports(USER_ANSI))
@@ -14735,6 +16092,13 @@ function DigDistMsgReader_DoUserSettings_Scrollable(pDrawBottomhelpLineFn, pTopR
 	var optionBox = new ChoiceScrollbox(optBoxStartX, optBoxTopRow, optBoxWidth, optBoxHeight, optBoxTitle,
 										null/*gConfigSettings*/, false, true);
 	optionBox.addInputLoopExitKey(CTRL_U);
+	// For RIP terminals: add tab label mouse chars as exit keys so clicking
+	// a different tab closes the settings dialog (like pressing ESC)
+	if (console.term_supports(USER_RIP) && typeof(RIP_GUI_MOUSE_TAB_BASE) !== "undefined")
+	{
+		for (var tabExitI = 0; tabExitI < 16; ++tabExitI)
+			optionBox.addInputLoopExitKey(String.fromCharCode(RIP_GUI_MOUSE_TAB_BASE + tabExitI));
+	}
 	// Update the bottom help text to be more specific to the user settings box
 	var bottomBorderText = "\x01n\x01h\x01cUp\x01b, \x01cDn\x01b, \x01cEnter\x01y=\x01bSelect\x01n\x01c/\x01h\x01btoggle, "
 	                     + "\x01cESC\x01n\x01c/\x01hQ\x01n\x01c/\x01hCtrl-U\x01y=\x01bClose";
@@ -14980,6 +16344,7 @@ function DigDistMsgReader_DoUserSettings_Scrollable(pDrawBottomhelpLineFn, pTopR
 	retObj.optionBoxTopLeftY = optionBox.dimensions.topLeftY;
 	retObj.optionBoxWidth = optionBox.dimensions.width;
 	retObj.optionBoxHeight = optionBox.dimensions.height;
+	retObj.lastKeypress = boxRetObj.lastKeypress;
 	return retObj;
 }
 // Helper function for DigDistMsgReader_DoUserSettings_Scrollable(): Creates the
@@ -15753,7 +17118,7 @@ function DigDistMsgReader_IndexedModeChooseSubBoard(pClearScreen, pDrawMenu, pWr
 				var menuItemText = "\x01n" + this.colors.indexMenuSeparatorLine + charStr(CP437_BOX_DRAWINGS_HORIZONTAL_SINGLE, 5);
 				menuItemText += "\x01n" + this.colors.indexMenuSeparatorText + " ";
 				menuItemText += grpDesc;
-				var menuItemLen = console.strlen(menuItemText);
+				var menuItemLen = console.strlen(menuItemText, P_AUTO_UTF8);
 				if (menuItemLen < this.indexedModeMenu.size.width)
 				{
 					menuItemText += " \x01n" + this.colors.indexMenuSeparatorLine;
@@ -16226,9 +17591,9 @@ function DigDistMsgReader_ScrollableModeAreYouThereWarning()
 	console.beep();
 	//var warningTxt = "Are you there??";
 	var warningTxt = replaceAtCodesInStr(this.text.areYouThere);
-	if (console.strlen(warningTxt) > console.screen_columns)
+	if (console.strlen(warningTxt, P_AUTO_UTF8) > console.screen_columns)
 		warningTxt = "\x01n\x01hAre you really there?\x01n";
-	var numSpaces = Math.floor(this.scrollableReadingData.msgAreaWidth / 2) - Math.floor(console.strlen(warningTxt) / 2);
+	var numSpaces = Math.floor(this.scrollableReadingData.msgAreaWidth / 2) - Math.floor(console.strlen(warningTxt, P_AUTO_UTF8) / 2);
 	if (numSpaces > 0)
 		warningTxt = format("%*s", numSpaces, "") + warningTxt;
 	this.WriteLightbarKeyHelpMsg(warningTxt, "\x01n\x01h\x01y\x01h", ERROR_WAIT_MS);
@@ -16947,7 +18312,7 @@ function DigDistMsgReader_ForwardMessage(pMsgHdr, pMsgBody)
 		var subjPromptText = bbs.text(SubjectPrompt);
 		console.putmsg(subjPromptText);
 		var initialMsgSubject = (this.prependFowardMsgSubject ? "Fwd: " + pMsgHdr.subject : pMsgHdr.subject);
-		var msgSubject = console.getstr(initialMsgSubject, console.screen_columns - console.strlen(subjPromptText) - 1, K_LINE | K_EDIT);
+		var msgSubject = console.getstr(initialMsgSubject, console.screen_columns - console.strlen(subjPromptText, P_AUTO_UTF8) - 1, K_LINE | K_EDIT);
 
 		var tmpMsgbase = new MsgBase("mail");
 		if (tmpMsgbase.open())
@@ -18323,14 +19688,14 @@ function DigDistMsgReader_RefreshMsgAreaRectangle(pTxtLines, pTopLineIdx, pTopLe
 		// text line.  Otherwise, output an empty string.
 		if (txtLineIdx < pTxtLines.length)
 		{
-			if (txtLineStartIdx < console.strlen(pTxtLines[txtLineIdx]))
+			if (txtLineStartIdx < console.strlen(pTxtLines[txtLineIdx], P_AUTO_UTF8))
 			{
 				// Get the text attributes up to the current point and output them
 				//console.print(getAllEditLineAttrsUntilLineIdx(pTxtLines, txtLineIdx, true, txtLineStartIdx));
 				// Get the section of line (and make sure it can fill the needed width), and print it
 				// Note: substrWithAttrCodes() is defined in dd_lightbar_menu.js
 				var lineText = "\x01n" + substrWithAttrCodes(pTxtLines[txtLineIdx].replace(/[\r\n]+/g, ""), txtLineStartIdx, pWidth);
-				var printableTxtLen = console.strlen(lineText);
+				var printableTxtLen = console.strlen(lineText, P_AUTO_UTF8);
 				if (printableTxtLen < pWidth)
 					lineText += format("\x01n%*s", pWidth - printableTxtLen, "");
 				console.print(lineText);
@@ -18698,7 +20063,7 @@ function displayTextWithLineBelow(pText, pCenter, pTextColor, pLineColor)
 	{
 		console.center(textColor + pText);
 		var solidLine = "";
-		var textLength = console.strlen(pText);
+		var textLength = console.strlen(pText, P_AUTO_UTF8);
 		for (var i = 0; i < textLength; ++i)
 			solidLine += CP437_BOX_DRAWINGS_HORIZONTAL_SINGLE;
 		console.center(lineColor + solidLine);
@@ -18708,7 +20073,7 @@ function displayTextWithLineBelow(pText, pCenter, pTextColor, pLineColor)
 		console.print(textColor + pText);
 		console.crlf();
 		console.print(lineColor);
-		var textLength = console.strlen(pText);
+		var textLength = console.strlen(pText, P_AUTO_UTF8);
 		for (var i = 0; i < textLength; ++i)
 			console.print(CP437_BOX_DRAWINGS_HORIZONTAL_SINGLE);
 		console.crlf();
@@ -18994,7 +20359,7 @@ function shortenStrWithAttrCodes(pStr, pNewLength, pFromLeft)
 		return "";
 	if (typeof(pNewLength) != "number")
 		return pStr;
-	if (pNewLength >= console.strlen(pStr))
+	if (pNewLength >= console.strlen(pStr, P_AUTO_UTF8))
 		return pStr;
 
 	var fromLeft = (typeof(pFromLeft) == "boolean" ? pFromLeft : true);
@@ -19007,7 +20372,7 @@ function shortenStrWithAttrCodes(pStr, pNewLength, pFromLeft)
 		while (lengthGood && (strIdx < pStr.length))
 		{
 			tmpStr = strCopy + pStr.charAt(strIdx++);
-			if (console.strlen(tmpStr) <= pNewLength)
+			if (console.strlen(tmpStr, P_AUTO_UTF8) <= pNewLength)
 				strCopy = tmpStr;
 			else
 				lengthGood = false;
@@ -19019,7 +20384,7 @@ function shortenStrWithAttrCodes(pStr, pNewLength, pFromLeft)
 		while (lengthGood && (strIdx >= 0))
 		{
 			tmpStr = pStr.charAt(strIdx--) + strCopy;
-			if (console.strlen(tmpStr) <= pNewLength)
+			if (console.strlen(tmpStr, P_AUTO_UTF8) <= pNewLength)
 				strCopy = tmpStr;
 			else
 				lengthGood = false;
@@ -19200,7 +20565,7 @@ function scrollTextLines(pTxtLines, pTopLineIdx, pTxtAttrib, pWriteTxtLines, pTo
 				console.gotoxy(pTopLeftX, screenY++);
 				// Print the text line, then clear the rest of the line
 				console.print(pTxtAttrib + pTxtLines[lineIdx], pMode);
-				printf("\x01n%*s", pWidth-console.strlen(pTxtLines[lineIdx]), "");
+				printf("\x01n%*s", pWidth-console.strlen(pTxtLines[lineIdx], P_AUTO_UTF8), "");
 			}
 			// If there are still some lines left in the message reading area, then
 			// clear the lines.
@@ -23970,7 +25335,7 @@ function drawBorder(pX, pY, pWidth, pHeight, pColor, pLineStyle, pTitle, pTitleC
 	console.print(borderChars.UL);
 	var innerWidth = pWidth - 2;
 	// Include the title text in the top border, if there is any specified
-	var titleLen = console.strlen(pTitle);
+	var titleLen = console.strlen(pTitle, P_AUTO_UTF8);
 	if (typeof(pTitle) === "string" && titleLen > 0)
 	{
 		if (titleLen > pWidth - 4)
