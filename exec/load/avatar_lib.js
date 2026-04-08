@@ -356,6 +356,6 @@ function show_bin(data)
 	return true;
 }
 
-var options = load({}, "modopts.js", "avatars", {});
+var options = load("modopts.js", "avatars", {});
 
 this;

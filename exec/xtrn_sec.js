@@ -26,7 +26,7 @@ var xsec=-1;
 }
 
 var options;
-if((options=load({}, "modopts.js","xtrn_sec")) == null)
+if((options=load("modopts.js","xtrn_sec")) == null)
 	options = {multicolumn: true, sort: false};	// default values
 
 if(options.multicolumn === undefined)

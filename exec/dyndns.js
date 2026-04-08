@@ -21,7 +21,7 @@ function writeln(str)
 		log(tx_log_level, "TX: " + str);
 }
 
-var options=load({}, "modopts.js", "dyndns");
+var options=load("modopts.js", "dyndns");
 if(!options)
 	options = {};
 

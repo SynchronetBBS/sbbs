@@ -40,7 +40,7 @@ if(argc < 1) {
 	exit(1);
 }
 
-var options = load({}, "modopts.js", "emailfiles");
+var options = load("modopts.js", "emailfiles");
 if(!options)
 	options = {};
 if(!options.maxfiles)

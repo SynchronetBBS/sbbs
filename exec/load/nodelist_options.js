@@ -2,7 +2,7 @@
 
 var options = bbs.mods.nodelist_options;
 if(!options) {
-    options = load({}, "modopts.js", "nodelist");
+    options = load("modopts.js", "nodelist");
     if(!options)
         options = {};
     if(!options.format)
@@ -14,7 +14,7 @@ if(!options) {
     if(!options.errors_prefix)
         options.errors_prefix = '\x01h\x01r';
     if(!options.web_inactivity)
-        options.web_inactivity = load({}, "modopts.js", "web", "inactivity");
+        options.web_inactivity = load("modopts.js", "web", "inactivity");
     bbs.mods.nodelist_options = options;	// cache the options
 }
 options;

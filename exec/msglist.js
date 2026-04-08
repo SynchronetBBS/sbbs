@@ -1737,9 +1737,9 @@ if(!msgbase.open() && !all_subs) {
 	exit();
 }
 
-var options=load({}, "modopts.js", "msglist:" + msgbase_code);
+var options=load("modopts.js", "msglist:" + msgbase_code);
 if(!options)
-	options=load({}, "modopts.js", "msglist");
+	options=load("modopts.js", "msglist");
 if(!options)
 	options = {};
 if(options.large_msg_threshold === undefined)

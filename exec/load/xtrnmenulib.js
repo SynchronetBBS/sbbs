@@ -45,12 +45,12 @@ ExternalMenus.prototype.getOptions = function(menutype, menuid) {
 	}
 
 	// Get xtrn_sec options from modopts.ini [xtrn_sec]
-	if ((this.options = load({}, "modopts.js", "xtrn_sec")) == null) {
+	if ((this.options = load("modopts.js", "xtrn_sec")) == null) {
 		this.options = { multicolumn: true, sort: false };
 	}
 
 	// Get xtrn_custommenu options from modopts.d/xtrnmenu.ini [xtrnmenu]
-	if ((this.xtrn_custommenu_options = load({}, "modopts.js", "xtrnmenu")) == null) {
+	if ((this.xtrn_custommenu_options = load("modopts.js", "xtrnmenu")) == null) {
 		this.xtrn_custommenu_options = { };
 	}
 
@@ -236,7 +236,7 @@ ExternalMenus.prototype.getOptions = function(menutype, menuid) {
 		? this.xtrn_custommenu_options.custom_return_msg : 'Return to Previous Menu';
 
 	// Allow overriding on a per-menu basis
-	var menuoptions = load({}, "modopts.js", "xtrnmenu:" + menuid);
+	var menuoptions = load("modopts.js", "xtrnmenu:" + menuid);
 	if ((typeof menuid !== "undefined") && (menuoptions !== null)) {
 		for (var m in menuoptions) {
 			this.options[m] = menuoptions[m];

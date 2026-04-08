@@ -10,7 +10,7 @@ var fidoaddr = load({}, 'fidoaddr.js');
 var export_freq = 7;	// minimum days between exports
 var verbosity = 0;
 
-var options=load({}, "modopts.js", "avatars", {});
+var options=load("modopts.js", "avatars", {});
 if(!options.sub)
     options.sub = load({}, "syncdata.js").find();
 if(options && options.export_freq > 0)

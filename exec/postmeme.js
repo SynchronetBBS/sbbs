@@ -12,7 +12,7 @@
 require("sbbsdefs.js", "K_LINEWRAP");
 "use strict";
 
-var options = load({}, "modopts.js", "postmeme");
+var options = load("modopts.js", "postmeme");
 if (!options) options = {};
 
 

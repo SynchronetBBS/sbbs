@@ -29,7 +29,7 @@ if(js.global.console==undefined || !console.term_supports(USER_ANSI))
 
 var debug = false;
 
-var options=load({}, "modopts.js", "sbbslist", {});
+var options=load("modopts.js", "sbbslist", {});
 if(!options.sub)
     options.sub = load({}, "syncdata.js").find();
 if(!options.max_inactivity)
