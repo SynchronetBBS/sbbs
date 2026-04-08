@@ -26,9 +26,10 @@ function display_menu(thisuser)
 
 	const curspin = (thisuser.settings & USER_SPIN) ? bbs.text(bbs.text.On)
 		: (thisuser.settings & USER_NOPAUSESPIN) ? bbs.text(bbs.text.Off) : gettext("Pause Prompt") + " " + bbs.text(bbs.text.Only);
+	var cmdshell;
 	for (var i = 0; i < main_cfg.shell.length; i++) {
 		if (main_cfg.shell[i].code === thisuser.command_shell.toUpperCase()) {
-			const cmdshell = main_cfg.shell[i].name;
+			cmdshell = main_cfg.shell[i].name;
 			break;
 		}
 	}
