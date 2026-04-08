@@ -3,7 +3,7 @@
 // Converts ctrl/sbbsecho.cfg (or other file if specified)
 // to ctrl/sbbsecho.ini
 
-const REVISION = "1.15";
+var REVISION = "1.15";
 
 var debug =  false;
 

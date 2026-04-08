@@ -1,7 +1,7 @@
 // $Id: vga_defs.js,v 1.1 2018/02/06 04:50:56 rswindell Exp $
 // VGA (IBM Video Graphics Array) definitions
 
-const color_palette = [ 
+var color_palette = [ 
 	[0	,0	,0	],	// black
 	[0	,0	,42	],	// blue
 	[0	,42	,0	],	// green

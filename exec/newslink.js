@@ -24,7 +24,7 @@
 // s		no subject filtering
 // m		Moderate imported messages
 
-const REVISION = "1.2";
+var REVISION = "1.2";
 
 printf("Synchronet NewsLink %s session started\r\n", REVISION);
 

@@ -5,8 +5,8 @@
 load("sbbsdefs.js");
 load("mailproc_util.js");	// import parse_msg_header() and get_msg_body()
 
-const REVISION = "1.47";
-const user_list_ext = ".list.sub";
+var REVISION = "1.47";
+var user_list_ext = ".list.sub";
 
 log(LOG_INFO,"ListServer " + REVISION);
 

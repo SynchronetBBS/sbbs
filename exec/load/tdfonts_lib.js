@@ -20,8 +20,8 @@ var FONT_EXT = "tdf";
 var DEFAULT_FONT = "brndamgx";
 // Character list
 var charlist = "!\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~";
-const fonthdr_magic = "\x13TheDraw FONTS file\x1a"; // TheDraw font file magic number
-const newfont_sequence = "\x55\xaa\x00\xff";
+var fonthdr_magic = "\x13TheDraw FONTS file\x1a"; // TheDraw font file magic number
+var newfont_sequence = "\x55\xaa\x00\xff";
 
 function readfont(fn_arg) {
 	var fn = null;

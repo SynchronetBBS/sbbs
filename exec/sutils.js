@@ -1,6 +1,6 @@
 "use strict";
 
-const REVISION = "$Revision: 1.0 $".split(' ')[1];
+var REVISION = "$Revision: 1.0 $".split(' ')[1];
 
 load("sbbsdefs.js");
 

@@ -7,7 +7,7 @@
 // Usage: ?qnet-ftp <hub-id> [address] [password] [port]
 // Example: ?qnet-ftp VERT vert.synchro.net YOURPASS 21
 
-const REVISION = "1.5";
+var REVISION = "1.5";
 
 require('ftp.js', 'FTP');
 

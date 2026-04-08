@@ -20,20 +20,20 @@
 */
 
 /* Channel Modes */
-const CHANMODE_NONE     =(1<<0);
-const CHANMODE_BAN      =(1<<1); /* +b */
-const CHANMODE_INVITE   =(1<<2); /* +i */
-const CHANMODE_KEY      =(1<<3); /* +k */
-const CHANMODE_LIMIT    =(1<<4); /* +l */
-const CHANMODE_MODERATED=(1<<5); /* +m */
-const CHANMODE_NOOUTSIDE=(1<<6); /* +n */
-const CHANMODE_OP       =(1<<7); /* +o */
-const CHANMODE_PRIVATE  =(1<<8); /* +p */
-const CHANMODE_SECRET   =(1<<9); /* +s */
-const CHANMODE_TOPIC    =(1<<10); /* +t */
-const CHANMODE_VOICE    =(1<<11); /* +v */
+var CHANMODE_NONE     =(1<<0);
+var CHANMODE_BAN      =(1<<1); /* +b */
+var CHANMODE_INVITE   =(1<<2); /* +i */
+var CHANMODE_KEY      =(1<<3); /* +k */
+var CHANMODE_LIMIT    =(1<<4); /* +l */
+var CHANMODE_MODERATED=(1<<5); /* +m */
+var CHANMODE_NOOUTSIDE=(1<<6); /* +n */
+var CHANMODE_OP       =(1<<7); /* +o */
+var CHANMODE_PRIVATE  =(1<<8); /* +p */
+var CHANMODE_SECRET   =(1<<9); /* +s */
+var CHANMODE_TOPIC    =(1<<10); /* +t */
+var CHANMODE_VOICE    =(1<<11); /* +v */
 
-const MODE = {};
+var MODE = {};
 MODE[CHANMODE_BAN]      = new IRC_Channel_Mode("b",true,false,true,false);
 MODE[CHANMODE_INVITE]   = new IRC_Channel_Mode("i",false,true,false,false);
 MODE[CHANMODE_KEY]      = new IRC_Channel_Mode("k",true,true,false,false);

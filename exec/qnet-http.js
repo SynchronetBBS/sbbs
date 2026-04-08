@@ -4,13 +4,13 @@
 //
 //                  ?qnet-http %s dove.synchro.net YOURPASS
 
-const REVISION = "1.4";
+var REVISION = "1.4";
 log(LOG_INFO, "QNET-HTTP " + REVISION + " invoked with options: " + argv.join(' '));
 
 load("http.js");
 
-const HTTP_RESPONSE_SUCCESS = 200;
-const HTTP_RESPONSE_NO_CONTENT = 204;
+var HTTP_RESPONSE_SUCCESS = 200;
+var HTTP_RESPONSE_NO_CONTENT = 204;
 
 if(argc < 3) {
 	alert("usage: [-s] <hub-id> <host-name>[:port] <your-password>");

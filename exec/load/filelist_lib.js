@@ -4,7 +4,7 @@ require("sbbsdefs.js", 'LEN_FDESC');
 
 "use strict";
 
-const filenames = [
+var filenames = [
 	"FILES.BBS",
 	"DESCRIPT.ION",
 	"00_INDEX.TXT",

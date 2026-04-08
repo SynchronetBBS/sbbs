@@ -2,16 +2,16 @@
 
 require("sbbsdefs.js", "U_NAME");
 
-const defs = {
+var defs = {
 	width: 10,
 	height: 6,
 };
 
-const QWK_ID_PATTERN = /^[A-Z][\w|-]{1,7}$/;
-const FTN_3D_PATTERN = /^(\d+):(\d+)\/(\d+)$/;
-const FTN_4D_PATTERN = /^(\d+):(\d+)\/(\d+)\.(\d+)$/;
+var QWK_ID_PATTERN = /^[A-Z][\w|-]{1,7}$/;
+var FTN_3D_PATTERN = /^(\d+):(\d+)\/(\d+)$/;
+var FTN_4D_PATTERN = /^(\d+):(\d+)\/(\d+)\.(\d+)$/;
 
-const size = defs.width * defs.height * 2;	// 2 bytes per cell for char and attributes
+var size = defs.width * defs.height * 2;	// 2 bytes per cell for char and attributes
 
 var cache = {};
 

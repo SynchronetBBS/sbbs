@@ -2,7 +2,7 @@
 
 // Currently, only supports Telnet and RLogin
 
-const ESC = 27
+var ESC = 27
 
 var telnet=load(new Object, "telnet_lib.js");
 

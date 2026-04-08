@@ -67,10 +67,10 @@ else
 }
 
 
-const EDITOR_PROGRAM_NAME = "SlyEdit";
-const ERRORMSG_PAUSE_MS = 1500;
-const TEXT_SEARCH_PAUSE_MS = 1500;
-const SPELL_CHECK_PAUSE_MS = 1000;
+var EDITOR_PROGRAM_NAME = "SlyEdit";
+var ERRORMSG_PAUSE_MS = 1500;
+var TEXT_SEARCH_PAUSE_MS = 1500;
+var SPELL_CHECK_PAUSE_MS = 1000;
 
 // This script requires Synchronet version 3.14 or higher.
 // Exit if the Synchronet version is below the minimum.
@@ -346,8 +346,8 @@ var gEditLines = [];
 var gEditLinesIndex = 0;      // Index into gEditLines for the line being edited
 var gTextLineIndex = 0;       // Index into the current text line being edited
 // Format strings used for printf() to display text in the edit area
-const gFormatStr = "%-" + gEditWidth + "s";
-const gFormatStrWithAttr = "%s%-" + gEditWidth + "s";
+var gFormatStr = "%-" + gEditWidth + "s";
+var gFormatStrWithAttr = "%s%-" + gEditWidth + "s";
 // Will contain valid word characters, for spell checking
 var gValidWordChars = "";
 
@@ -356,11 +356,11 @@ var gValidWordChars = "";
 var gUploadedMessageFile = false;
 
 // Definitions for actions to take after the Enter key is pressed
-const ENTER_ACTION_NONE = 0;
-const ENTER_ACTION_DO_QUOTE_SELECTION = 1;
-const ENTER_ACTION_DO_CROSS_POST_SELECTION = 2;
-const ENTER_ACTION_DO_MEME_INPUT = 3;
-const ENTER_ACTION_SHOW_HELP = 4;
+var ENTER_ACTION_NONE = 0;
+var ENTER_ACTION_DO_QUOTE_SELECTION = 1;
+var ENTER_ACTION_DO_CROSS_POST_SELECTION = 2;
+var ENTER_ACTION_DO_MEME_INPUT = 3;
+var ENTER_ACTION_SHOW_HELP = 4;
 
 // gEditAreaBuffer will be an array of strings for the edit area, which
 // will be checked by displayEditLines() before outputting text lines

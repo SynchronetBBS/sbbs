@@ -39,10 +39,10 @@ var items = console.uselect_items;
 for(var i = 0; i < items.length; ++i )
 	width = Math.max(items[i].name.length + 6, width);
 
-const frame = new Frame(1, 1, width, Math.min(console.screen_rows, items.length + 4), BG_BLUE|WHITE);
-const main_frame = new Frame(1, 2, frame.width, frame.height - 1, BG_BLUE|LIGHTGRAY, frame);
-const tree_frame = new Frame(2, main_frame.y + 1, main_frame.width - 2, main_frame.height - 2, BG_BLACK|LIGHTGRAY, main_frame);
-const tree = new Tree(tree_frame);
+var frame = new Frame(1, 1, width, Math.min(console.screen_rows, items.length + 4), BG_BLUE|WHITE);
+var main_frame = new Frame(1, 2, frame.width, frame.height - 1, BG_BLUE|LIGHTGRAY, frame);
+var tree_frame = new Frame(2, main_frame.y + 1, main_frame.width - 2, main_frame.height - 2, BG_BLACK|LIGHTGRAY, main_frame);
+var tree = new Tree(tree_frame);
 
 frame.putmsg(header);
 

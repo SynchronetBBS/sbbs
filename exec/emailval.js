@@ -52,7 +52,7 @@ That's it!
 
 // Configure in ctrl/modopts/emailval.ini
 
-const module = "emailval";
+var module = "emailval";
 var prompts = bbs.mods.prompts || load(bbs.mods.prompts = {}, "user_info_prompts.js");
 var userprops = bbs.mods.userprops || load(bbs.mods.userprops = {}, "userprops.js");
 var options = load("modopts.js", module);

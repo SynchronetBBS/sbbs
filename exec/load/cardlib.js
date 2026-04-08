@@ -4,59 +4,59 @@
 	Licensed under the GPLv2 by Randolph E. Sommerfeld <cyan@rrx.ca>
 */
 
-const CLUBS = 0;
-const DIAMONDS = 1;
-const HEARTS = 2;
-const SPADES = 3;
+var CLUBS = 0;
+var DIAMONDS = 1;
+var HEARTS = 2;
+var SPADES = 3;
 
-const SUITS = new Array(CLUBS, DIAMONDS, HEARTS, SPADES);
-const SUIT_CHAR = new Array("c", "d", "h", "s");
-const SUIT_STR = new Array("clubs", "diamonds", "hearts", "spades");
+var SUITS = new Array(CLUBS, DIAMONDS, HEARTS, SPADES);
+var SUIT_CHAR = new Array("c", "d", "h", "s");
+var SUIT_STR = new Array("clubs", "diamonds", "hearts", "spades");
 
-const TWO = 0;
-const THREE = 1;
-const FOUR = 2;
-const FIVE = 3;
-const SIX = 4;
-const SEVEN = 5;
-const EIGHT = 6;
-const NINE = 7;
-const TEN = 8;
-const JACK = 9;
-const QUEEN = 10;
-const KING = 11;
-const ACE = 12;
+var TWO = 0;
+var THREE = 1;
+var FOUR = 2;
+var FIVE = 3;
+var SIX = 4;
+var SEVEN = 5;
+var EIGHT = 6;
+var NINE = 7;
+var TEN = 8;
+var JACK = 9;
+var QUEEN = 10;
+var KING = 11;
+var ACE = 12;
 
-const VALUES = new Array(TWO, THREE, FOUR, FIVE, SIX, SEVEN, EIGHT, NINE, TEN,
+var VALUES = new Array(TWO, THREE, FOUR, FIVE, SIX, SEVEN, EIGHT, NINE, TEN,
 	JACK, QUEEN, KING, ACE);
-const VALUE_CHAR = new Array("2", "3", "4", "5", "6", "7", "8", "9", "T", "J",
+var VALUE_CHAR = new Array("2", "3", "4", "5", "6", "7", "8", "9", "T", "J",
 	"Q", "K", "A");
-const VALUE_STR = new Array("deuce", "trey", "four", "five", "six", "seven",
+var VALUE_STR = new Array("deuce", "trey", "four", "five", "six", "seven",
 	"eight", "nine", "ten", "jack", "queen", "king", "ace");
 
-const HIGH_CARD = (1<<0);
-const PAIR = (1<<1);
-const TWO_PAIR = (1<<2);
-const THREE_OF_A_KIND = (1<<3);
-const STRAIGHT = (1<<4);
-const FLUSH = (1<<5);
-const FULL_HOUSE = (1<<6);
-const FOUR_OF_A_KIND = (1<<7);
-const STRAIGHT_FLUSH = (1<<8);
-const ROYAL_FLUSH = (1<<9);
+var HIGH_CARD = (1<<0);
+var PAIR = (1<<1);
+var TWO_PAIR = (1<<2);
+var THREE_OF_A_KIND = (1<<3);
+var STRAIGHT = (1<<4);
+var FLUSH = (1<<5);
+var FULL_HOUSE = (1<<6);
+var FOUR_OF_A_KIND = (1<<7);
+var STRAIGHT_FLUSH = (1<<8);
+var ROYAL_FLUSH = (1<<9);
 
-const HC = 0;
-const PR = 1;
-const TP = 2;
-const TK = 3;
-const ST = 4;
-const FL = 5;
-const FH = 6;
-const FK = 7;
-const SF = 8;
-const RF = 9;
+var HC = 0;
+var PR = 1;
+var TP = 2;
+var TK = 3;
+var ST = 4;
+var FL = 5;
+var FH = 6;
+var FK = 7;
+var SF = 8;
+var RF = 9;
 
-const RANKS = new Array("high card", "a pair", "two pair", "three of a kind",
+var RANKS = new Array("high card", "a pair", "two pair", "three of a kind",
 	"a straight", "a flush", "a full house", "four of a kind", "a straight flush",
 	"a royal flush");
 

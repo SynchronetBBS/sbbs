@@ -3,7 +3,7 @@
 
 "use strict";
 
-const default_topic = "sbbs/#"
+var default_topic = "sbbs/#"
 var mqtt = new MQTT;
 var json = false;
 var verbose = false;

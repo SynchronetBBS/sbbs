@@ -7,7 +7,7 @@ var sauce_lib = load({}, 'sauce_lib.js');
 var xbin = load({}, 'xbin_lib.js');
 var cga = load({}, 'cga_defs.js');
 
-const illegal_chars = [0, 7, 8, 9, 10, 12, 13, 27, 32];
+var illegal_chars = [0, 7, 8, 9, 10, 12, 13, 27, 32];
 
 var max_glyphs = (0x100 - illegal_chars.length) * 4;
 

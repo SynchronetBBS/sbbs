@@ -41,10 +41,10 @@
 // disable those elements.
 
 "use strict";
-const REVISION = "1.49";
+var REVISION = "1.49";
 
 var active_users = false;	// Active-Users/SYSTAT protocol mode (Finger when false)
-var options = load({}, 'modopts.js', 'fingerservice');
+var options = load('modopts.js', 'fingerservice');
 if(!options)
 	options = {};
 if(options.include_age === undefined)

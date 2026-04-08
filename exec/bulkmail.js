@@ -6,7 +6,7 @@
 
 load("sbbsdefs.js");
 
-const REVISION = "1.7";
+var REVISION = "1.7";
 
 print("Synchronet BulkMailer " + REVISION);
 

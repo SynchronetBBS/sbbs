@@ -17,7 +17,7 @@ var options = {
 	sort: false,
 	json: false,
 };
-const defaults = JSON.parse(JSON.stringify(options));
+var defaults = JSON.parse(JSON.stringify(options));
 // property options (per property)
 var popts = {
 	upper: [],		// uppercase

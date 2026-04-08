@@ -9,9 +9,9 @@
 load("sbbsdefs.js");
 load("text.js");
 
-const PCHAT_LEN = 1000;
-const clr_chatlocal = 13;
-const clr_chatremote = 14;
+var PCHAT_LEN = 1000;
+var clr_chatlocal = 13;
+var clr_chatremote = 14;
 var debug = false;
 var local = false;
 var node = 1;

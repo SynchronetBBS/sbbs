@@ -7,8 +7,8 @@ var mqtt = new MQTT;
 var topic = '';
 var msg;
 var retain = false;
-const bbs_prefix = "sbbs/" + system.qwk_id + "/";
-const host_prefix = bbs_prefix + "host/" + system.local_host_name + "/";
+var bbs_prefix = "sbbs/" + system.qwk_id + "/";
+var host_prefix = bbs_prefix + "host/" + system.local_host_name + "/";
 
 function usage()
 {

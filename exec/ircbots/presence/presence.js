@@ -24,7 +24,7 @@
 
 */
 
-const MODULE_NAME = 'presence';	// The name of the module
+var MODULE_NAME = 'presence';	// The name of the module
 
 // Load this module's configuration from ircbot.ini
 function get_config(module) {

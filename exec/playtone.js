@@ -2,9 +2,9 @@
 
 /* Tone Generation Utility (using PC speaker, not sound card) */
 
-const REVISION = "$Revision: 1.4 $".split(' ')[1];
+var REVISION = "$Revision: 1.4 $".split(' ')[1];
 
-const NO_VISUAL		=(1<<3)
+var NO_VISUAL		=(1<<3)
 
 var mode=0; 	/* Optional modes */
 var t=1;		/* Timing */

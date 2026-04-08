@@ -110,8 +110,8 @@ for(var i in text) {
 }
 
 /* Add list of imported objects into the .cnf file */
-const cnf_obj = cfgtypes[cfgtype];
-const cnf_fname = system.ctrl_dir + cnf_fnames[cfgtype];
+var cnf_obj = cfgtypes[cfgtype];
+var cnf_fname = system.ctrl_dir + cnf_fnames[cfgtype];
 var cnf = cnflib.read(cnf_fname);
 if(!cnf) {
 	alert("Failed to read " + cnf_fname);

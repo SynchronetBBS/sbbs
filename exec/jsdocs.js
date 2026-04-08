@@ -3,9 +3,9 @@
 // This script generates HTML documentation of the Synchronet JavaScript object model
 // Requires a Debug build of the Synchronet executable(s)
 
-const table_tag = "<table border=1 width=100%>";
+var table_tag = "<table border=1 width=100%>";
 
-const li_tag =	"<li onclick = 'this.className = (this.className == \"showList\") ? \"defaultStyles\" : \"showList\";'\n" +
+var li_tag =	"<li onclick = 'this.className = (this.className == \"showList\") ? \"defaultStyles\" : \"showList\";'\n" +
 				"\tonselectstart = 'event.returnValue = false;'" +
 				">";
 

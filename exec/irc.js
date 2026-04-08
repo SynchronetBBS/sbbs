@@ -8,9 +8,9 @@ var old_auto_terminate=js.auto_terminate;
 js.on_exit("js.auto_terminate=old_auto_terminate");
 js.auto_terminate=false;
 
-const REVISION = "1.62";
-const SPACEx80 = "                                                                                ";
-const MAX_HIST = 50;
+var REVISION = "1.62";
+var SPACEx80 = "                                                                                ";
+var MAX_HIST = 50;
 
 load("sbbsdefs.js");
 load("nodedefs.js");

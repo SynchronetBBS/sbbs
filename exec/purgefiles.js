@@ -1,6 +1,6 @@
 // Utility for deleting old files (e.g. log files) based on age/date
 
-const default_max_age=30;	// days
+var default_max_age=30;	// days
 
 var testing = false;
 var verbose = false;

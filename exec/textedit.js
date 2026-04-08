@@ -1,6 +1,6 @@
 require("key_defs.js", "KEY_UP");
 
-const a = "\x01";
+var a = "\x01";
 var msg = 1;
 var msgstr = '';
 var tnames = ["None"];

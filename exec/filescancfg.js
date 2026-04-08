@@ -9,7 +9,7 @@ var options = load("modopts.js", "filescancfg");
 if (!options)
 	options = {};
 
-const menufile = "xfercfg";
+var menufile = "xfercfg";
 
 while(bbs.online && !js.terminated) {
 	if(!(user.settings & USER_EXPERT))

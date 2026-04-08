@@ -4,9 +4,9 @@
 
 // usage: ?dyndns [password] [ip_address] [[-option] | [-option value] [...]]
 
-const REVISION = "2.0";
-const rx_log_level = LOG_INFO;
-const tx_log_level = LOG_DEBUG;
+var REVISION = "2.0";
+var rx_log_level = LOG_INFO;
+var tx_log_level = LOG_DEBUG;
 
 printf("Synchronet Dynamic DNS Client %s\r\n", REVISION);
 

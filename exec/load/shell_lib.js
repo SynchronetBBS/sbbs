@@ -598,7 +598,7 @@ function send_email()
 }
 
 // From email_sec.js
-const NetmailAddressHistoryLength = 10;
+var NetmailAddressHistoryLength = 10;
 function send_netmail()
 {
 	var userprops = bbs.mods.userprops || load(bbs.mods.userprops = {}, "userprops.js");

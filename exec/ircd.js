@@ -37,38 +37,38 @@ load("ircd/server.js");
 load("ircd/config.js");
 
 /*** Global Constants - Always in ALL_UPPERCASE ***/
-const VERSION = "SynchronetIRCd-2.0";
-const VERSION_STR = format(
+var VERSION = "SynchronetIRCd-2.0";
+var VERSION_STR = format(
 	"Synchronet %s%s-%s%s (IRCd by Randy Sommerfeld)",
 	system.version, system.revision,
 	system.platform, system.beta_version
 );
 /* This will be replaced with a dynamic CAPAB system */
-const SERVER_CAPAB = "TS3 NOQUIT SSJOIN BURST UNCONNECT NICKIP NICKIPSTR TSMODE";
+var SERVER_CAPAB = "TS3 NOQUIT SSJOIN BURST UNCONNECT NICKIP NICKIPSTR TSMODE";
 /* This will be in the configuration for 2.0 */
-const SUMMON = true;
+var SUMMON = true;
 
 /* Need to detect when a server doesn't line up with these on the network. */
-const MAX_CHANLEN = 100;      /* Maximum channel name length. */
-const MAX_NICKLEN = 30;       /* Maximum nickname length. */
-const MAX_MODES = 6;          /* Maximum modes on single MODE command */
-const MAX_USER_CHANS = 100;   /* Maximum channels users can join */
-const MAX_BANS = 25;          /* Maximum bans (+b) per channel */
-const MAX_TOPICLEN = 307;     /* Maximum length of topic per channel */
-const MAX_KICKLEN = 307;      /* Maximum length of kick reasons */
-const MAX_WHO = 100;          /* Maximum replies to WHO for non-oper users */
-const MAX_SILENCE = 10;       /* Maximum entries on a user's SILENCE list */
-const MAX_WHOWAS = 1000;      /* Size of the WHOWAS buffer */
-const MAX_NICKHISTORY = 1000; /* Size of the nick change history buffer */
-const MAX_CLIENT_RECVQ = 2560;/* Maximum size of unregistered & user recvq */
-const MAX_AWAYLEN = 80;       /* Maximum away message length */
-const MAX_USERHOST = 6;       /* Maximum arguments to USERHOST command */
-const MAX_REALNAME = 50;      /* Maximum length of users real name field */
+var MAX_CHANLEN = 100;      /* Maximum channel name length. */
+var MAX_NICKLEN = 30;       /* Maximum nickname length. */
+var MAX_MODES = 6;          /* Maximum modes on single MODE command */
+var MAX_USER_CHANS = 100;   /* Maximum channels users can join */
+var MAX_BANS = 25;          /* Maximum bans (+b) per channel */
+var MAX_TOPICLEN = 307;     /* Maximum length of topic per channel */
+var MAX_KICKLEN = 307;      /* Maximum length of kick reasons */
+var MAX_WHO = 100;          /* Maximum replies to WHO for non-oper users */
+var MAX_SILENCE = 10;       /* Maximum entries on a user's SILENCE list */
+var MAX_WHOWAS = 1000;      /* Size of the WHOWAS buffer */
+var MAX_NICKHISTORY = 1000; /* Size of the nick change history buffer */
+var MAX_CLIENT_RECVQ = 2560;/* Maximum size of unregistered & user recvq */
+var MAX_AWAYLEN = 80;       /* Maximum away message length */
+var MAX_USERHOST = 6;       /* Maximum arguments to USERHOST command */
+var MAX_REALNAME = 50;      /* Maximum length of users real name field */
 
-const SERVER_UPTIME = system.timer;
-const SERVER_UPTIME_STRF = strftime("%a %b %d %Y at %H:%M:%S %Z",Epoch());
+var SERVER_UPTIME = system.timer;
+var SERVER_UPTIME_STRF = strftime("%a %b %d %Y at %H:%M:%S %Z",Epoch());
 
-const IRCDCFG_Editor = false;
+var IRCDCFG_Editor = false;
 
 /*** Global Objects, Arrays and Variables - Always in Mixed_Case ***/
 

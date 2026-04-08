@@ -1,6 +1,6 @@
 /* Synchronet v3.15+ update script (to be executed with jsexec) */
 
-const REVISION = "3.0";
+var REVISION = "3.0";
 
 var test = argv.indexOf("-test") >= 0;
 

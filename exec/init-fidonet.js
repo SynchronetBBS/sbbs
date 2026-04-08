@@ -20,11 +20,11 @@
 
 "use strict";
 
-const REVISION = "2.1";
+var REVISION = "2.1";
 require('sbbsdefs.js', 'SUB_NAME');
 require('dns.js', 'DNS');
-const dns = new DNS(/* synchronous: */true);
-const temp_node = 9999;
+var dns = new DNS(/* synchronous: */true);
+var temp_node = 9999;
 var netname;
 var netdns;
 var netzone = parseInt(argv[0], 10);
