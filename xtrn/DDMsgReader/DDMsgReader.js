@@ -159,12 +159,15 @@ require("scrollbar.js", "ScrollBar");
 require("choice_scroll_box.js", "ChoiceScrollbox");
 var ansiterm = require("ansiterm_lib.js", 'expand_ctrl_a');
 var hexdump = load('hexdump_lib.js');
+// TODO: The tabbed RIP interface is experimental
+/*
 // RIP GUI libraries (for the RIP enhanced reader interface)
 require("rip_lib.js", "RIPWindow");
 require("rip_gui_common.js", "RIPGUITheme");
 require("rip_tab_control.js", "RIPTabControl");
 require("rip_calendar.js", "RIPCalendar");
 require("rip_scrollbar.js", "RIPScrollbar");
+*/
 
 
 // Reader version information
