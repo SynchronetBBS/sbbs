@@ -113,7 +113,7 @@
 
 load("http.js");
 
-const Item = function (i) {
+var Item = function (i) {
 
 	this.id = i.guid.length() ? i.guid[0].toString() : (i.id.length() ? i.id[0].toString() : '');
 	this.title = i.title.length() ? i.title[0].toString() : ''; // uh ...
@@ -139,7 +139,7 @@ const Item = function (i) {
 
 }
 
-const Channel = function (c) {
+var Channel = function (c) {
 
 	this.title = c.title.length() ? c.title[0].toString() : '';
 	this.description = c.description.length() ? c.description[0].toString() : (c.subtitle.length() ? c.subtitle[0].toString() : '');
@@ -167,7 +167,7 @@ function toLocal(x) {
     return x;
 }
 
-const Feed = function (url, follow_redirects) {
+var Feed = function (url, follow_redirects) {
 
 	this.channels = [];
 

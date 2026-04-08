@@ -24,15 +24,15 @@ load("ftelnethelper.js");
 load("sha1.js");
 
 // State flags
-const WEBSOCKET_NEED_PACKET_START   = 0;
-const WEBSOCKET_NEED_PAYLOAD_LENGTH = 1;
-const WEBSOCKET_NEED_MASKING_KEY	= 2;
-const WEBSOCKET_DATA                = 3;
+var WEBSOCKET_NEED_PACKET_START   = 0;
+var WEBSOCKET_NEED_PAYLOAD_LENGTH = 1;
+var WEBSOCKET_NEED_MASKING_KEY	= 2;
+var WEBSOCKET_DATA                = 3;
 
 // Frame types
-const WEBSOCKET_FRAME_UNKNOWN = 0;
-const WEBSOCKET_FRAME_TEXT    = 1;
-const WEBSOCKET_FRAME_BINARY  = 2;
+var WEBSOCKET_FRAME_UNKNOWN = 0;
+var WEBSOCKET_FRAME_TEXT    = 1;
+var WEBSOCKET_FRAME_BINARY  = 2;
 
 // Global variables
 var FFrameMask = [];

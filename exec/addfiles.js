@@ -3,11 +3,11 @@
 
 require("sbbsdefs.js", 'LEN_FDESC');
 
-const lib = load({}, "filelist_lib.js");
+var lib = load({}, "filelist_lib.js");
 
 "use strict";
 
-const default_excludes = lib.filenames.concat([
+var default_excludes = lib.filenames.concat([
 	"FILE_ID.DIZ",
 ]);
 

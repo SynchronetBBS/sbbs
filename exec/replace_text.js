@@ -21,7 +21,7 @@
 }
 ******************************************/
 
-const text = require('text.js', 'TOTAL_TEXT');
+var text = require('text.js', 'TOTAL_TEXT');
 
 "use strict";
 

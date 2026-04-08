@@ -1,7 +1,7 @@
 // Helper load-library for configuration (ctrl/????.ini) files
 // Replacement for cnflib.js use in SBBS v3.20+
 
-const backup_level = 10;
+var backup_level = 10;
 
 function read_sections(f, prefix)
 {

@@ -2,7 +2,7 @@
 
 load("sbbsdefs.js");
 
-const REVISION = "1.105";
+var REVISION = "1.105";
 require("text.js", 'FileNotReceived');
 
 if(!bbs.mods.userprops)

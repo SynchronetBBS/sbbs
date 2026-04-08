@@ -2,7 +2,7 @@
 if (js.global.podcast_get_info == undefined)
 	js.global.load("podcast_routines.js");
 if (js.global.podcast_opts == undefined) {
-	js.global.podcast_opts = load({}, "modopts.js", "Podcast");
+	js.global.podcast_opts = load("modopts.js", "Podcast");
 }
 
 var base = new MsgBase(podcast_opts.Sub);

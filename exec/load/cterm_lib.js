@@ -6,25 +6,25 @@ load('sbbsdefs.js');
 var xbin = load({}, 'xbin_defs.js');
 var ansiterm = load({}, 'ansiterm_lib.js');
 
-const cterm_version_supports_fonts = 1155;
-const cterm_version_supports_mode_query = 1160;
-const cterm_version_supports_fontstate_query = 1161;
-const cterm_version_supports_palettes = 1167;
-const cterm_version_supports_sixel = 1189;
-const cterm_version_supports_fontdim_query = 1198;
-const cterm_version_supports_xtsrga = 1208;
-const cterm_version_supports_b64_fonts = 1213;
-const cterm_version_supports_copy_buffers = 1316;
-const cterm_version_supports_jpegxl = 1318;
+var cterm_version_supports_fonts = 1155;
+var cterm_version_supports_mode_query = 1160;
+var cterm_version_supports_fontstate_query = 1161;
+var cterm_version_supports_palettes = 1167;
+var cterm_version_supports_sixel = 1189;
+var cterm_version_supports_fontdim_query = 1198;
+var cterm_version_supports_xtsrga = 1208;
+var cterm_version_supports_b64_fonts = 1213;
+var cterm_version_supports_copy_buffers = 1316;
+var cterm_version_supports_jpegxl = 1318;
 var font_slot_first = 43;
-const font_slot_last = 255;
-const font_styles = { normal:0, high:1, blink:2, highblink:3 };
-const font_state_field_first = 0;
-const font_state_field_result = 1;
-const font_state_field_style = 2;
-const da_ver_major = 0;
-const da_ver_minor = 1;
-const cterm_device_attributes = {
+var font_slot_last = 255;
+var font_styles = { normal:0, high:1, blink:2, highblink:3 };
+var font_state_field_first = 0;
+var font_state_field_result = 1;
+var font_state_field_style = 2;
+var da_ver_major = 0;
+var da_ver_minor = 1;
+var cterm_device_attributes = {
 	valid:'0',
 	loadable_fonts:'1',
 	bright_background:'2',

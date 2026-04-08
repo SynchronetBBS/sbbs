@@ -9,7 +9,7 @@ function filename(days_ago)
 	return system.data_dir + "logon.jsonl";
 }
 
-const exclude_list = [
+var exclude_list = [
 	'limits',
 	'security',
 	'is_guest',

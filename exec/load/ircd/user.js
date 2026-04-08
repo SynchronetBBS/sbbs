@@ -19,25 +19,25 @@
 
 */
 
-const USERMODE_NONE			=(1<<0); /* NONE */
-const USERMODE_OPER			=(1<<1); /* o */
-const USERMODE_INVISIBLE	=(1<<2); /* i */
-const USERMODE_WALLOPS		=(1<<3); /* w */
-const USERMODE_CHATOPS		=(1<<4); /* b */
-const USERMODE_GLOBOPS		=(1<<5); /* g */
-const USERMODE_SERVER		=(1<<6); /* s */
-const USERMODE_CLIENT		=(1<<7); /* c */
-const USERMODE_REJECTED		=(1<<8); /* r */
-const USERMODE_KILL			=(1<<9); /* k */
-const USERMODE_FLOOD		=(1<<10); /* f */
-const USERMODE_STATS_LINKS	=(1<<11); /* y */
-const USERMODE_DEBUG		=(1<<12); /* d */
-const USERMODE_ROUTING		=(1<<13); /* n */
-const USERMODE_HELP			=(1<<14); /* h */
-const USERMODE_NOTHROTTLE	=(1<<15); /* F */
-const USERMODE_ADMIN		=(1<<16); /* A */
+var USERMODE_NONE			=(1<<0); /* NONE */
+var USERMODE_OPER			=(1<<1); /* o */
+var USERMODE_INVISIBLE	=(1<<2); /* i */
+var USERMODE_WALLOPS		=(1<<3); /* w */
+var USERMODE_CHATOPS		=(1<<4); /* b */
+var USERMODE_GLOBOPS		=(1<<5); /* g */
+var USERMODE_SERVER		=(1<<6); /* s */
+var USERMODE_CLIENT		=(1<<7); /* c */
+var USERMODE_REJECTED		=(1<<8); /* r */
+var USERMODE_KILL			=(1<<9); /* k */
+var USERMODE_FLOOD		=(1<<10); /* f */
+var USERMODE_STATS_LINKS	=(1<<11); /* y */
+var USERMODE_DEBUG		=(1<<12); /* d */
+var USERMODE_ROUTING		=(1<<13); /* n */
+var USERMODE_HELP			=(1<<14); /* h */
+var USERMODE_NOTHROTTLE	=(1<<15); /* F */
+var USERMODE_ADMIN		=(1<<16); /* A */
 
-const USERMODE_CHAR = {};
+var USERMODE_CHAR = {};
 USERMODE_CHAR["o"] = USERMODE_OPER;
 USERMODE_CHAR["i"] = USERMODE_INVISIBLE;
 USERMODE_CHAR["w"] = USERMODE_WALLOPS;
@@ -56,44 +56,44 @@ USERMODE_CHAR["F"] = USERMODE_NOTHROTTLE;
 USERMODE_CHAR["A"] = USERMODE_ADMIN;
 
 /* Most umodes aren't propagated across the network. Define the ones that are. */
-const USERMODE_BCAST = {};
+var USERMODE_BCAST = {};
 USERMODE_BCAST["o"] = true;
 USERMODE_BCAST["i"] = true;
 USERMODE_BCAST["h"] = true;
 USERMODE_BCAST["A"] = true;
 
 /* Services modes are broadcast but not displayed to the user. */
-const USERMODE_SERVICES = {};
+var USERMODE_SERVICES = {};
 
 /* Bits used for walking the complex WHO flags. */
-const WHO_AWAY				=(1<<0);	/* a */
-const WHO_CHANNEL			=(1<<1);	/* c */
-const WHO_REALNAME			=(1<<2);	/* g */
-const WHO_HOST				=(1<<3);	/* h */
-const WHO_IP				=(1<<4);	/* i */
-const WHO_CLASS				=(1<<5);	/* l */
-const WHO_UMODE				=(1<<6);	/* m */
-const WHO_NICK				=(1<<7);	/* n */
-const WHO_OPER				=(1<<8);	/* o */
-const WHO_SERVER			=(1<<9);	/* s */
-const WHO_TIME				=(1<<10);	/* t */
-const WHO_USER				=(1<<11);	/* u */
-const WHO_FIRST_CHANNEL		=(1<<12);	/* C */
-const WHO_MEMBER_CHANNEL	=(1<<13);	/* M */
-const WHO_SHOW_IPS_ONLY		=(1<<14);	/* I */
-const WHO_SHOW_PARENT		=(1<<15);	/* X */
-const WHO_SHOW_ID			=(1<<16);	/* Y */
-const WHO_SHOW_CALLBACKID	=(1<<17);	/* Z */
+var WHO_AWAY				=(1<<0);	/* a */
+var WHO_CHANNEL			=(1<<1);	/* c */
+var WHO_REALNAME			=(1<<2);	/* g */
+var WHO_HOST				=(1<<3);	/* h */
+var WHO_IP				=(1<<4);	/* i */
+var WHO_CLASS				=(1<<5);	/* l */
+var WHO_UMODE				=(1<<6);	/* m */
+var WHO_NICK				=(1<<7);	/* n */
+var WHO_OPER				=(1<<8);	/* o */
+var WHO_SERVER			=(1<<9);	/* s */
+var WHO_TIME				=(1<<10);	/* t */
+var WHO_USER				=(1<<11);	/* u */
+var WHO_FIRST_CHANNEL		=(1<<12);	/* C */
+var WHO_MEMBER_CHANNEL	=(1<<13);	/* M */
+var WHO_SHOW_IPS_ONLY		=(1<<14);	/* I */
+var WHO_SHOW_PARENT		=(1<<15);	/* X */
+var WHO_SHOW_ID			=(1<<16);	/* Y */
+var WHO_SHOW_CALLBACKID	=(1<<17);	/* Z */
 
 /* Bits used for walking complex LIST flags. */
-const LIST_CHANMASK				=(1<<0);	/* a */
-const LIST_CREATED				=(1<<1);	/* c */
-const LIST_MODES				=(1<<2);	/* m */
-const LIST_TOPIC				=(1<<3);	/* o */
-const LIST_PEOPLE				=(1<<4);	/* p */
-const LIST_TOPICAGE				=(1<<5);	/* t */
-const LIST_DISPLAY_CHAN_MODES	=(1<<6);	/* M */
-const LIST_DISPLAY_CHAN_TS  	=(1<<7);	/* T */
+var LIST_CHANMASK				=(1<<0);	/* a */
+var LIST_CREATED				=(1<<1);	/* c */
+var LIST_MODES				=(1<<2);	/* m */
+var LIST_TOPIC				=(1<<3);	/* o */
+var LIST_PEOPLE				=(1<<4);	/* p */
+var LIST_TOPICAGE				=(1<<5);	/* t */
+var LIST_DISPLAY_CHAN_MODES	=(1<<6);	/* M */
+var LIST_DISPLAY_CHAN_TS  	=(1<<7);	/* T */
 
 function IRC_User(id) {
 	this.local = true;	/* are we a local socket? */

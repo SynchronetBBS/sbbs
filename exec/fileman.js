@@ -20,7 +20,7 @@ js.on_exit("uifc.bail()");
 var uploader = system.operator;
 var use_diz = false;
 var desc_offset;
-const excludes = filelist.filenames.concat([
+var excludes = filelist.filenames.concat([
 	"FILES.TXT",
 	"FILE_ID.DIZ",
 	"00_INDEX.HTM",
@@ -29,7 +29,7 @@ const excludes = filelist.filenames.concat([
 	"AREADESC"
 ]);
 
-const main_ctx = new uifc.list.CTX;
+var main_ctx = new uifc.list.CTX;
 while(!js.terminated) {
 	const items = [
 		"Browse",

@@ -199,7 +199,7 @@ function edit_uploader(obj)
 		obj.uploader = tmp;
 }
 
-const menu_fmt = "%-20s %s";
+var menu_fmt = "%-20s %s";
 
 function edit_area(obj, name)
 {

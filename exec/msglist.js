@@ -81,7 +81,7 @@ var mimehdr = load('mimehdr.js');
 
 var node_action = NODE_RMSG;
 
-const age = load('age.js');
+var age = load('age.js');
 
 var color_cfg = {
 	selection: BG_BLUE,
@@ -121,15 +121,15 @@ var list_formats = [];
 var list_format_str;
 var list_hdr = false;
 
-const sub_list_formats = [
+var sub_list_formats = [
 	[ "to", "subject" ],
 ];
 
-const local_sub_list_formats = [
+var local_sub_list_formats = [
 	[ "attr", "score",  "age", "date_time"],
 ];
 
-const net_sub_list_formats = [
+var net_sub_list_formats = [
 	[ "from_net_addr", "date_time", "zone"],
 	[ "attr", "score", "subject" ],
 	[ "id" ],
@@ -138,17 +138,17 @@ const net_sub_list_formats = [
 	[ "tags" ],
 ];
 
-const fido_sub_list_formats = [
+var fido_sub_list_formats = [
 	[ "ftn_msgid" ],
 	[ "ftn_reply" ],
 	[ "ftn_tid" ],
 ];
 
-const mail_sent_list_formats = [
+var mail_sent_list_formats = [
 	[ "attributes", "to_list" ]
 ];
 
-const mail_list_formats = [
+var mail_list_formats = [
 	[ "attributes", "subject" ],
 	[ "priority", "date_time", "zone" ],
 	[ "to_list" , "to_ext"],
@@ -158,7 +158,7 @@ const mail_list_formats = [
 	[ "replyto_net_addr" ],
 ];
 
-const extra_list_formats = [
+var extra_list_formats = [
 	[ "size", "text_length", "lines" ],
 ];
 
@@ -1577,6 +1577,8 @@ function load_msgs(msgbase, which, mode, usernumber, since)
 		var total_msgs = idxlist.length;
 		for(var i = 0; i < total_msgs; i++) {
 			var idx = idxlist[i];
+			if ((idx.attr & (MSG_MODERATED | MSG_VALIDATED | MSG_DELETE)) == MSG_MODERATED)
+				break;
 			if((idx.attr&MSG_SPAM)) {
 				if(mode&LM_NOSPAM)
 					continue;
@@ -1735,9 +1737,9 @@ if(!msgbase.open() && !all_subs) {
 	exit();
 }
 
-var options=load({}, "modopts.js", "msglist:" + msgbase_code);
+var options=load("modopts.js", "msglist:" + msgbase_code);
 if(!options)
-	options=load({}, "modopts.js", "msglist");
+	options=load("modopts.js", "msglist");
 if(!options)
 	options = {};
 if(options.large_msg_threshold === undefined)

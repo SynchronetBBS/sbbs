@@ -18,9 +18,9 @@ var debug=false;
 var debugRX=false;
 
 // Global variables
-const UnAuthenticated=0;
-const Authenticated=1;
-const Selected=2;
+var UnAuthenticated=0;
+var Authenticated=1;
+var Selected=2;
 var state=UnAuthenticated;
 var base;
 var index={offsets:[],idx:{}};

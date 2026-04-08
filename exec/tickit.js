@@ -47,7 +47,7 @@ var sbbsecho = new SBBSEchoCfg(tickit.gcfg.echocfg);
 var file_list = {};
 var files_imported = 0;
 
-const REVISION = "2.0";
+var REVISION = "2.0";
 
 var tickitVersion = "TickIT "+REVISION;
 // emit tickitVersion to the log for general purposes - wk42

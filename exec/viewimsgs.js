@@ -3,7 +3,7 @@
 require("sbbsdefs.js", 'P_NOATCODES');
 require("key_defs.js", 'KEY_HOME');
 
-const prev_key = bbs.text.Previous[0];
+var prev_key = bbs.text.Previous[0];
 var num = -1;
 var displayed = 0;
 loop:

@@ -6,9 +6,9 @@
 
 require("sockdefs.js", 'SOCK_DGRAM');
 
-const SentAddressHistoryLength = 10;
-const props_sent = "imsg sent";
-const props_recv = "imsg received";
+var SentAddressHistoryLength = 10;
+var props_sent = "imsg sent";
+var props_recv = "imsg received";
 
 // Read the list of systems into list array
 var filename = system.ctrl_dir + "sbbsimsg.lst";

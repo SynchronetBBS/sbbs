@@ -2,8 +2,8 @@
 
 "use strict";
 
-const quiet = argv.indexOf("-q") >= 0;
-const verbose = argv.indexOf("-v") >= 0;
+var quiet = argv.indexOf("-q") >= 0;
+var verbose = argv.indexOf("-v") >= 0;
 
 function cont(str)
 {
@@ -23,7 +23,7 @@ print("for a reasonable period of time before continuing.");
 if(!cont())
 	exit(0);
 
-const file_list = [
+var file_list = [
 	{ dir: system.data_dir + backslash("user"), file: "user.dat", desc: "User database (migrated to user.tab)" },
 	{ dir: system.data_dir + backslash("user/ptrs"), file: "*.ixb", desc: "User message scan config/pointers (migrated to *.subs)" },
 	{ dir: system.ctrl_dir, file: "*.cnf", desc: "System configuration settings (migrated to *.ini)" },

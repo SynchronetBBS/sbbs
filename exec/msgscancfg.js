@@ -5,7 +5,7 @@ require("gettext.js", "gettext");
 
 "use strict";
 
-const menufile = "maincfg";
+var menufile = "maincfg";
 
 while(bbs.online && !js.terminated) {
 	if(!(user.settings & USER_EXPERT))

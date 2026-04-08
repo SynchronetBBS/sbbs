@@ -1,27 +1,27 @@
 load('sbbsdefs.js');
 load('frame.js');
 load('tree.js');
-const fidoaddr = load({}, 'fidoaddr.js');
+var fidoaddr = load({}, 'fidoaddr.js');
 require("mouse_getkey.js", "mouse_getkey");
-const ansiterm = load({}, 'ansiterm_lib.js');
+var ansiterm = load({}, 'ansiterm_lib.js');
 
 js.on_exit('console.attributes = ' + console.attributes);
 js.on_exit('bbs.sys_status = ' + bbs.sys_status);
 
 bbs.sys_status|=SS_MOFF;
 
-const addrs = {};
+var addrs = {};
 system.fido_addr_list.forEach(function (e) {
     const a = fidoaddr.parse(e);
     addrs[a.zone] = e;
 });
 
-const frame = new Frame(1, 1, console.screen_columns, console.screen_rows, BG_BLUE|WHITE);
-const main_frame = new Frame(1, 2, frame.width, frame.height - 2, BG_BLACK|LIGHTGRAY, frame);
-const tree_frame = new Frame(1, main_frame.y + 1, Math.floor(main_frame.width / 2), main_frame.height - 2, BG_BLACK|LIGHTGRAY, main_frame);
-const info_frame = new Frame(tree_frame.width + 1, main_frame.y + 1, main_frame.width - tree_frame.width - 1, main_frame.height - 2, BG_BLACK|WHITE, main_frame);
+var frame = new Frame(1, 1, console.screen_columns, console.screen_rows, BG_BLUE|WHITE);
+var main_frame = new Frame(1, 2, frame.width, frame.height - 2, BG_BLACK|LIGHTGRAY, frame);
+var tree_frame = new Frame(1, main_frame.y + 1, Math.floor(main_frame.width / 2), main_frame.height - 2, BG_BLACK|LIGHTGRAY, main_frame);
+var info_frame = new Frame(tree_frame.width + 1, main_frame.y + 1, main_frame.width - tree_frame.width - 1, main_frame.height - 2, BG_BLACK|WHITE, main_frame);
 info_frame.word_wrap = true;
-const tree = new Tree(tree_frame);
+var tree = new Tree(tree_frame);
 
 frame.putmsg('FTN Setup');
 frame.gotoxy(1, frame.height);

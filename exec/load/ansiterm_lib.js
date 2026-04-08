@@ -7,7 +7,7 @@
 
 load("cga_defs.js");
 
-const defs = {
+var defs = {
 	// SyncTerm extended modes
 	ext_mode: {
 		origin: 				6,

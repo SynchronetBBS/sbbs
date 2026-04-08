@@ -4,7 +4,7 @@
 
 load("irclib.js");	// Thanks Cyan!
 
-const REVISION = '1.35';
+var REVISION = '1.35';
 
 var server="irc.synchro.net";
 var channel="#channel";

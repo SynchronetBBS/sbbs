@@ -22,6 +22,7 @@
 #include <unordered_map>
 #include <deque>
 #include <atomic>
+#include <mutex>
 
 class rateLimiter {
 
@@ -40,6 +41,7 @@ class rateLimiter {
 	bool allowRequest(const std::string& clientId) {
 		if (maxRequests == 0 || timeWindowSeconds == 0)
 			return true;
+		std::lock_guard<std::mutex> lock(mutex);
 		auto& requestTimes = clientRequestTimes[clientId];
 		auto now = time(NULL);
 		// Remove timestamps that are outside the time window
@@ -73,6 +75,7 @@ class rateLimiter {
 	size_t cleanup() {
 		size_t removed = 0;
 		auto now = time(NULL);
+		std::lock_guard<std::mutex> lock(mutex);
 		for (auto it = clientRequestTimes.begin(); it != clientRequestTimes.end();) {
 			auto& requestTimes = it->second;
 			while (!requestTimes.empty() && now - requestTimes.front() >= timeWindowSeconds) {
@@ -87,14 +90,19 @@ class rateLimiter {
 		}
 		return removed;
 	}
-	size_t client_count() { return clientRequestTimes.size(); }
+	size_t client_count() {
+		std::lock_guard<std::mutex> lock(mutex);
+		return clientRequestTimes.size();
+	}
 	size_t total() {
+		std::lock_guard<std::mutex> lock(mutex);
 		size_t total = 0;
 		for (auto it = clientRequestTimes.begin(); it != clientRequestTimes.end(); ++it)
 			total += it->second.size();
 		return total;
 	}
 	std::string most_active(size_t* count) {
+		std::lock_guard<std::mutex> lock(mutex);
 		size_t max = 0;
 		std::string client;
 		for (auto it = clientRequestTimes.begin(); it != clientRequestTimes.end(); ++it) {
@@ -110,4 +118,5 @@ class rateLimiter {
 	}
 private:
 	std::unordered_map<std::string, std::deque<time_t>> clientRequestTimes;
+	std::mutex mutex;
 };

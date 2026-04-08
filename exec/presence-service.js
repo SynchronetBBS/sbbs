@@ -1,12 +1,12 @@
 load('sbbsdefs.js');
 load('nodedefs.js');
-const imsg = load({}, 'sbbsimsg_lib.js');
+var imsg = load({}, 'sbbsimsg_lib.js');
 
 /* Override these defaults by adding corresponding keys to [presence_service]
  * in modopts.ini. All 'refresh' intervals are in milliseconds. Set 'local' or
  * 'remote' to false if you want to disable local or interBBS presence.
  */
-const defaultSettings = {
+var defaultSettings = {
 	local: true,
 	remote: true, // Must set up instant messaging first: http://wiki.synchro.net/module:sbbsimsg
 	local_refresh: 5000, 
@@ -16,19 +16,19 @@ const defaultSettings = {
 	remote_list_refresh: 3600000,
 };
 
-const settings = load('modopts.js', 'presence_service') || {};
+var settings = load('modopts.js', 'presence_service') || {};
 for (var s in defaultSettings) {
 	if (settings[s] === undefined) settings[s] = defaultSettings[s];
 }
 
-const clients = {};
+var clients = {};
 
-const sessions = {
+var sessions = {
 	local: { users: {} },
 	remote: {},
 };
 
-const intervals = {
+var intervals = {
 	localRefresh: null,
 	remoteRefresh: null,
 };

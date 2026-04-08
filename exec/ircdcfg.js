@@ -1037,7 +1037,7 @@ function Save_and_Quit() {
 }
 
 /* Global */
-const IRCDCFG_Editor = true;
+var IRCDCFG_Editor = true;
 var Time_Config_Read = 0;
 var Config_Filename;
 var Screen_Mode;

@@ -1,7 +1,7 @@
 // $Id: sauce_lib.js,v 1.10 2020/03/26 07:40:03 rswindell Exp $
 // vi: tabstop=4
 
-const defs = {
+var defs = {
 
 	datatype: {
 		none:		0,

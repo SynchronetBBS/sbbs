@@ -1,4 +1,4 @@
-const arg1 = random(256);
+var arg1 = random(256);
 // First, test that let and var go into the current global
 load("load_define.sjs", arg1);
 if (load_var !== arg1)
@@ -24,8 +24,8 @@ if (load("load_return.sjs", arg1) !== arg1)
 //if (scope.get_let() !== arg1)
 //	throw new Error("Scope closures don't work!");
 
-const arg2 = random(256);
-const arg3 = random(256);
+var arg2 = random(256);
+var arg3 = random(256);
 
 // Finally, test background threads...
 var q = load(true, "load_background.sjs", arg1, arg2, arg3);

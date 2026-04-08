@@ -15,8 +15,8 @@ load("nodedefs.js");
 
 "use strict";
 
-const REVISION = "1.18";
-const GOPHER_PORT = client.socket.local_port;
+var REVISION = "1.18";
+var GOPHER_PORT = client.socket.local_port;
 
 var debug = false;
 

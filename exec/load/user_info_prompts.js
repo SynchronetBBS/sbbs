@@ -8,8 +8,8 @@ require("gettext.js", "gettext");
 
 "use strict";
 
-const PETSCII_DELETE = CTRL_T;
-const PETSCII_UPPERLOWER = 14;
+var PETSCII_DELETE = CTRL_T;
+var PETSCII_UPPERLOWER = 14;
 
 var kmode = (system.newuser_questions & UQ_NOEXASC) | K_EDIT | K_AUTODEL | K_TRIM;
 if (!(system.newuser_questions & UQ_NOUPRLWR))

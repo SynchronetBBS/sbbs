@@ -4,9 +4,9 @@
 
 // $Id: sbbsedit.js,v 1.4 2003/07/08 10:33:38 rswindell Exp $
 
-const REVISION = "$Revision: 1.4 $".split(' ')[1];
+var REVISION = "$Revision: 1.4 $".split(' ')[1];
 
-const debug=true;
+var debug=true;
 
 // Message header display format
 var hdr_fmt	= "\1b\1h%-4s\1n\1b: \1h\1c%.60s\1>\r\n";

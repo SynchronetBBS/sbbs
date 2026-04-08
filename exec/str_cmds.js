@@ -859,7 +859,7 @@ function display_node(node_num)
 {
 	var options = bbs.mods.nodelist_options;
 	if(!options)
-		options = load({}, "nodelist_options.js");
+		options = load("nodelist_options.js");
 	print("Node " + format(options.format, node_num
 		, presence.node_status(system.get_node(node_num), user.is_sysop, options, node_num - 1)));
 }

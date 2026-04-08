@@ -4,7 +4,7 @@
 require("mailutil.js", 'mail_get_name');
 require("smbdefs.js", 'RFC822HEADER');
 
-const mimehdr = load("mimehdr.js");
+var mimehdr = load("mimehdr.js");
 
 function get_news_subject(hdr)
 {

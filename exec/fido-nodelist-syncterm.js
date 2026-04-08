@@ -7,7 +7,7 @@ require('ftn_nodelist.js', 'NodeList');
 var nodelist_filename = argv[0];
 var syncterm_listfile = argv[1];
 
-const nodelist = new NodeList(nodelist_filename);
+var nodelist = new NodeList(nodelist_filename);
 
 var out = {};
 for(var i in nodelist.entries) {

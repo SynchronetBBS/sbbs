@@ -52,7 +52,7 @@ while(bbs.online && !(console.aborted)) {
 			var shown = 0;
 			var nodelist_options = bbs.mods.nodelist_options;
 			if(!nodelist_options)
-				nodelist_options = load({}, "nodelist_options.js");
+				nodelist_options = load("nodelist_options.js");
 			var presence = load({}, "presence_lib.js");
 			var users = [];
 			var n;
