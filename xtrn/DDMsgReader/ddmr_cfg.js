@@ -17,7 +17,7 @@ require("sbbsdefs.js", "P_NONE");
 require("uifcdefs.js", "UIFC_INMSG");
 
 
-if (!uifc.init("DigDist. Message Reader 1.97k Configurator"))
+if (!uifc.init("DigDist. Message Reader 1.97L Configurator"))
 {
 	print("Failed to initialize uifc");
 	exit(1);
@@ -92,6 +92,7 @@ function doMainMenu()
 		"reverseListOrder", // Boolean
 		"readerInterfaceStyle", // String (Scrollable/Traditional)
 		//"readerInterfaceStyleForANSIMessages", // String (Scrollable/Traditional)
+		"useRIPReaderInterface", // Boolean
 		"displayBoardInfoInHeader", // Boolean
 		"promptToContinueListingMessages", // Boolean
 		"promptConfirmReadMessage", // Boolean
@@ -128,6 +129,7 @@ function doMainMenu()
 		"Reverse List Order",
 		"Reader Interface Style",
 		//"readerInterfaceStyleForANSIMessages",
+		"Use RIP reader interface (for scrollable mode)",
 		"Display Board Info In Header",
 		"Prompt to Continue Listing Messages",
 		"Prompt to Confirm Reading Message",
@@ -534,6 +536,9 @@ function getOptionHelpText()
 
 	//optionHelpText["readerInterfaceStyleForANSIMessages"] = "";
 
+	optionHelpText["useRIPReaderInterface"] = "Whether or not to use a RIP interface when reading messages, if readerInterfaceStyle ";
+	optionHelpText["useRIPReaderInterface"] += "is Scrollable.";
+
 	optionHelpText["displayBoardInfoInHeader"] = "Display Board Info In Header: Whether or not to display the message group and sub-board lines in the ";
 	optionHelpText["displayBoardInfoInHeader"] += "header at the top of the screen (an additional 2 lines).";
 
@@ -794,6 +799,8 @@ function readDDMsgReaderCfgFile()
 		retObj.cfgOptions.readerInterfaceStyle = "Scrollable";
 	if (!retObj.cfgOptions.hasOwnProperty("readerInterfaceStyleForANSIMessages"))
 		retObj.cfgOptions.readerInterfaceStyleForANSIMessages = "Scrollable";
+	if (!retObj.cfgOptions.hasOwnProperty("useRIPReaderInterface"))
+		retObj.cfgOptions.useRIPReaderInterface = true;
 	if (!retObj.cfgOptions.hasOwnProperty("displayBoardInfoInHeader"))
 		retObj.cfgOptions.displayBoardInfoInHeader = false;
 	if (!retObj.cfgOptions.hasOwnProperty("promptToContinueListingMessages"))

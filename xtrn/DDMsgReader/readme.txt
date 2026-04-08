@@ -1,6 +1,6 @@
                       Digital Distortion Message Reader
-                                 Version 1.97k
-                           Release date: 2026-04-01
+                                 Version 1.97L
+                           Release date: 2026-04-07
 
                                      by
 
@@ -675,18 +675,6 @@ readerInterfaceStyle                  The user interface style to use for the
                                       ANSI, the reader will use the traditional
                                       user interface instead, regardless of
                                       this setting.
-
-readerInterfaceStyleForANSIMessages   The user interface style to use for
-                                      reading messages with ANSI content.  Valid
-                                      values are Scrollable and Traditional.
-                                      The scrollable interface allows scrolling
-                                      the message up and down.  If false, the
-                                      reader will use a traditional (non-
-                                      scrolling) user interface to display
-                                      messages with ANSI content.  If a user is
-                                      not using ANSI, the reader will use the
-                                      traditional user interface instead,
-                                      regardless of this setting.
 
 displayBoardInfoInHeader              true/false: Whether or not to display sub-board
                                       information above the column headers when listing

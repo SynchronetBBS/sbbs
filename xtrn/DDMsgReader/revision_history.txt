@@ -5,6 +5,10 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
+1.97L    2026-04-07   Bug fix: When reading a message with the scrollable
+                      interface, blanking out the rest of the text lines should
+                      now be done correctly to erase the entire remainder of
+                      the lines, which may or may not contain UTF-8.
 1.97k    2026-04-01   Internal/bug fix: Updated getting the cursor position with
                       console.getxy() to prevent errors with that
 1.97j    2026-03-14   Bug fixex: Messages appearing more than once in a newscan
