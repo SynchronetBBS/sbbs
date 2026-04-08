@@ -60,7 +60,7 @@ function loadAI(filename) {
 
 /* check initial status of all games (may have activity after crash or reboot) */
 function updateGames() {
-	for(var g of Object.values(data.games)) {
+	for each(var g in data.games) {
 		updateStatus(g.gameNumber);
 	}
 }

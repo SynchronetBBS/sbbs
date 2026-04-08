@@ -58,7 +58,7 @@ function Data()
 	/* return the last valid game number */
 	this.__defineGetter__("lastGameNumber",function() {
 		var gnum=0;
-		for(var n of Object.values(this.games)) {
+		for each(var n in this.games) {
 			if(n.gameNumber > gnum)
 				gnum = n.gameNumber;
 		}
@@ -259,7 +259,7 @@ function Menu(items,frame,hk_color,text_color)
 	}
 	this.draw=function() {
 		var str="";
-		for(var i of Object.values(this.items))
+		for each(var i in this.items)
 			if(i.enabled==true) str+=i.text + " ";
 		this.frame.clear();
 		this.frame.putmsg(str);

@@ -248,7 +248,7 @@ function lobby() {
 				}
 			}
 		}
-		for(var s of Object.values(sorted)) {
+		for each(var s in sorted ) {
 			s.sort(function (a,b) { return a-b });
 		}
 		return sorted;
