@@ -178,7 +178,7 @@ function Layout(frame) {
 	this.open=function() {
 		this.current=0;
 		frames.main.open();
-		for each(var v in properties.views)
+		for(var v of Object.values(properties.views))
 			v.open();
 		if(typeof this.onOpen == "function") 
 			this.onOpen();
@@ -220,15 +220,15 @@ function Layout(frame) {
 		return view;
 	}
 	this.draw=function() {
-		for each(var view in properties.views)
+		for(var view of Object.values(properties.views))
 			view.draw();
 	}
 	this.cycle=function() {
-		for each(var v in properties.views)
+		for(var v of Object.values(properties.views))
 			v.cycle();
 	}
 	this.getViewByName=function(title) {
-		for each(var v in properties.views) {
+		for(var v of Object.values(properties.views)) {
 			if(v.title.toUpperCase() == title.toUpperCase())
 				return v;
 		}
@@ -450,7 +450,7 @@ function LayoutView(title,frame,parent) {
 	
 	/* public methods */
 	this.open=function() {
-		for each(var t in properties.tabs) {
+		for(var t of Object.values(properties.tabs)) {
 			if(typeof t.open == "function")
 				t.open();
 		}
@@ -461,7 +461,7 @@ function LayoutView(title,frame,parent) {
 			this.onOpen();
 	}
 	this.close=function() {
-		for each(var t in properties.tabs) {
+		for(var t of Object.values(properties.tabs)) {
 			if(typeof t.close == "function")
 				t.close();
 		}
@@ -472,7 +472,7 @@ function LayoutView(title,frame,parent) {
 		frames.main.draw();
 	}
 	this.cycle=function() {
-		for each(var t in properties.tabs)
+		for(var t of Object.values(properties.tabs))
 			if(typeof t.cycle == "function")
 				t.cycle();
 	}
@@ -498,7 +498,7 @@ function LayoutView(title,frame,parent) {
 	}
 	this.getTab=function(title_or_index) {
 		if(isNaN(title_or_index)) {
-			for each(var t in properties.tabs) {
+			for(var t of Object.values(properties.tabs)) {
 				if(t.title.toUpperCase() == title_or_index.toUpperCase())
 					return t;
 			}

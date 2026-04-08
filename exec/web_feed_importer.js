@@ -151,10 +151,10 @@ function importSubFeeds(sub, feeds) {
 	for (var f in feeds) {
 		try {
 			var feed = new Feed(feeds[f]);
-			for each(var channel in feed.channels) {
+			for(var channel of Object.values(feed.channels)) {
 				if(reverseOrder)
 					channel.items.reverse();
-				for each(var item in channel.items) {
+				for(var item of Object.values(channel.items)) {
 					item.author = channel.title + ((item.author == "") ? "" : " (" + item.author + ")");
 					if(item.title == "")
 						item.title = channel.title;

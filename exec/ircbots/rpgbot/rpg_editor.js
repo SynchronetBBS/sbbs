@@ -3,7 +3,7 @@ function list_exits_verbose(srv,player,map) {
 	var target=player.@channel;
 	var room=map.room.(@id == player.@room);
 	var exits=["north","south","east","west","up","down"];
-	for each(var e in exits) {
+	for(var e of Object.values(exits)) {
 		var exit=room.exit.(@name == e);
 		if(exit.@target != undefined) {
 			var exit_str=blue + "[" + e +"]";
@@ -44,7 +44,7 @@ function list_exits_verbose(srv,player,map) {
 
 function list_mobs_verbose(srv,target,list) {
 	var count=0;
-	for each(var m in list.mob) {
+	for(var m of Object.values(list.mob)) {
 		srv.o(target,
 			blue + "[mob]" +  
 			black + " id:" + blue + " " + m.@id +
@@ -58,7 +58,7 @@ function list_mobs_verbose(srv,target,list) {
 
 function list_items_verbose(srv,target,list) {
 	var count=0;
-	for each(var i in list.item) {
+	for(var i of Object.values(list.item)) {
 		srv.o(target,
 			blue + "[item]" +  
 			black + " id:" + blue + " " + i.@id +

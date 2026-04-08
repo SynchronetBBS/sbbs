@@ -7,7 +7,7 @@ function main(srv,target)
 	if((time() - last_update) < update_interval) return;
 	
 	last_update=time();
-	for each(var h in tail_history) {
+	for(var h of Object.values(tail_history)) {
 		if(file_date(h.file.name) > h.last_update) {
 			h.file.open('r',true);
 			var contents=h.file.readAll();

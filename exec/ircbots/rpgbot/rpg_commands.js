@@ -270,7 +270,7 @@ Bot_Commands["HELP"].command = function (target,onick,ouh,srv,lvl,cmd) {
 	}
 	
 	if(Help_Topics[topic.toUpperCase()]) {
-		for each(var l in Help_Topics[topic.toUpperCase()])
+		for(var l of Object.values(Help_Topics[topic.toUpperCase()]))
 			srv.o(target,l,"NOTICE");
 		return;
 	}
@@ -602,7 +602,7 @@ Editor_Commands["LOOK"] = function (srv,target,map,room,cmd,player) {
 				return false;
 			}
 			var list=[];
-			for each(var i in container.item) {
+			for(var i of Object.values(container.item)) {
 				list.push(i.title);
 			}
 			var str=list.length?list.join(", "):"nothing";
@@ -620,7 +620,7 @@ Editor_Commands["LOOK"] = function (srv,target,map,room,cmd,player) {
 		if(mob.description.length() > 0) srv.o(target,mob.description);
 		var list=[];
 		var eq=mob.equipment..item;
-		for each(var i in eq) {
+		for(var i of Object.values(eq)) {
 			list.push("<" + i.parent().@id + "> " + i.title);
 		}
 		var str=list.length?list.join(", "):"nothing";
@@ -1054,7 +1054,7 @@ RPG_Commands["MOVE"] = function (srv,target,map,room,cmd,player) {
 RPG_Commands["EQUIPMENT"] = function (srv,target,map,room,cmd,player) {
 	var list=[];
 	var eq=player.equipment..item;
-	for each(var i in eq) {
+	for(var i of Object.values(eq)) {
 		list.push("<" + i.parent().@id + "> " + i.title);
 	}
 	var str=list.length?list.join(", "):"nothing";
@@ -1063,7 +1063,7 @@ RPG_Commands["EQUIPMENT"] = function (srv,target,map,room,cmd,player) {
 
 RPG_Commands["INVENTORY"] = function (srv,target,map,room,cmd,player) {
 	var list=[];
-	for each(var i in player.inventory.item) {
+	for(var i of Object.values(player.inventory.item)) {
 		list.push(i.title);
 	}
 	var str=list.length?list.join(", "):"nothing";
@@ -1103,7 +1103,7 @@ RPG_Commands["LOOK"] = function (srv,target,map,room,cmd,player) {
 				return false;
 			}
 			var list=[];
-			for each(var i in container.item) {
+			for(var i of Object.values(container.item)) {
 				list.push(i.title);
 			}
 			var str=list.length?list.join(", "):"nothing";
@@ -1121,7 +1121,7 @@ RPG_Commands["LOOK"] = function (srv,target,map,room,cmd,player) {
 		if(mob.description.length() > 0) srv.o(target,mob.description);
 		var list=[];
 		var eq=mob.equipment..item;
-		for each(var i in eq) {
+		for(var i of Object.values(eq)) {
 			list.push("<" + i.parent().@id + "> " + i.title);
 		}
 		var str=list.length?list.join(", "):"nothing";

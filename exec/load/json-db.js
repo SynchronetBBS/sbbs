@@ -799,7 +799,7 @@ function JSONdb (fileName, scope) {
 		} 
 		
 		/* terminate any disconnected clients after processing queue */
-		for each(var c in this.disconnected) {
+		for(var c of Object.values(this.disconnected)) {
 			/* release any locks the client holds */
 			free_prisoners(c,this.masterShadow);
 			
@@ -909,7 +909,7 @@ function JSONdb (fileName, scope) {
 			/* iterate through split object name checking the keys against the database and 
 			checking the lock statuses against the shadow copy */
 			var p=parent.split(/\./);
-			for each(var c in p) {
+			for(var c of Object.values(p)) {
 				/* in the event of a write request, create new data if it does not exist*/
 				/* ensure that the shadow object exists in order to allow for non-read operations */
 				if(shadow[c] === undefined) 
@@ -1006,7 +1006,7 @@ function JSONdb (fileName, scope) {
 			return info;
 		info = investigate(shadow,info);
 		
-		for each(var i in shadow) 
+		for(var i of Object.values(shadow))
 			if(i instanceof Shadow)
 				info = search_party(i,info);
 		return info;
@@ -1046,7 +1046,7 @@ function JSONdb (fileName, scope) {
 	
 	/* send updates of this object to all subscribers */
 	function send_data_updates(client,record) {
-		for each(var c in record.info.subscribers) {
+		for(var c of Object.values(record.info.subscribers)) {
 			/* do not send updates to request originator */
 			if(c.id == client.id)
 				continue;
@@ -1063,7 +1063,7 @@ function JSONdb (fileName, scope) {
 	
 	/* send update of client subscription to all subscribers */
 	function send_subscriber_updates(client,record,oper) {
-		for each(var c in record.info.subscribers) {
+		for(var c of Object.values(record.info.subscribers)) {
 			/* do not send updates to request originator */
 			if(c.id == client.id)
 				continue;
@@ -1083,7 +1083,7 @@ function JSONdb (fileName, scope) {
 	/* retrieve a list of subscribers to this record */
 	function get_subscriber_list(record) {
 		var data = [];
-		for each(var s in record.info.subscribers) {
+		for(var s of Object.values(record.info.subscribers)) {
 			data.push(get_client_info(s));
 		}
 		return data;
@@ -1099,7 +1099,7 @@ function JSONdb (fileName, scope) {
 	
 	/* check a lock value against valid lock types */
 	function valid_lock(lock) {
-		for each(var l in locks) {
+		for(var l of Object.values(locks)) {
 			if(l == lock) 
 				return true;
 		}

@@ -91,7 +91,7 @@ function isoTime(val)
 	if(reverse)
 		list.reverse();
 
-	for each(var i in list)
+	for(var i of Object.values(list))
 		writeln(i);
 
 	if(show_totals) {
