@@ -166,7 +166,7 @@ var CNF = new (function() {
 	/* determine the size of a record (in bytes) */
 	this.getBytes = function(struct) {
 		var bytes = 0;
-		for(var p of Object.values(struct)) {
+		for each(var p in struct) {
 			bytes += p.bytes;
 			if(p.type == "str" && p.length > 0)
 				bytes += p.length;

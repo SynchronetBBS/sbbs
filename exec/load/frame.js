@@ -430,7 +430,7 @@ Frame.prototype.clearData = function(x,y,use_offset) {
 }
 Frame.prototype.bottom = function() {
 	if(this.__properties__.open) {
-		for(var c of Object.values(this.__relations__.child))
+		for each(var c in this.__relations__.child)
 			c.bottom();
 		this.__properties__.display.bottom(this);
 	}
@@ -438,7 +438,7 @@ Frame.prototype.bottom = function() {
 Frame.prototype.top = function() {
 	if(this.__properties__.open) {
 		this.__properties__.display.top(this);
-		for(var c of Object.values(this.__relations__.child))
+		for each(var c in this.__relations__.child)
 			c.top();
 	}
 }
@@ -447,19 +447,19 @@ Frame.prototype.open = function() {
 		this.__properties__.display.open(this);
 		this.__properties__.open = true;
 	}
-	for(var c of Object.values(this.__relations__.child)) {
+	for each(var c in this.__relations__.child) {
 		c.open();
 	}
 }
 Frame.prototype.refresh = function() {
 	if(this.__properties__.open) {
 		this.__properties__.display.updateFrame(this);
-		for(var c of Object.values(this.__relations__.child))
+		for each(var c in this.__relations__.child)
 			c.refresh();
 	}
 }
 Frame.prototype.close = function() {
-	for(var c of Object.values(this.__relations__.child))
+	for each(var c in this.__relations__.child)
 		c.close();
 	if(this.__properties__.open) {
 		this.__properties__.display.close(this);
@@ -497,11 +497,11 @@ Frame.prototype.move = function(x,y) {
 	if(ny !== undefined)
 		this.y=ny;
 	this.__properties__.display.updateFrame(this);
-	for(var c of Object.values(this.__relations__.child))
+	for each(var c in this.__relations__.child)
 		c.move(x,y);
 }
 Frame.prototype.moveTo = function(x,y) {
-	for(var c of Object.values(this.__relations__.child)) {
+	for each(var c in this.__relations__.child) {
 		var cx = (x + (c.x-this.x));
 		var cy = (y + (c.y-this.y));
 		c.moveTo(cx,cy);
@@ -1566,7 +1566,7 @@ Display.prototype.cycle = function() {
 		var lasty = undefined;
 		var lastx = undefined;
 		var lastf = undefined;
-		for(var u of Object.values(updates)) {
+		for each(var u in updates) {
 			if(lasty !== u.y || lastx == undefined || (u.x - lastx) !== 1)
 				console.gotoxy(u.px,u.py);
 			if(lastf !== u.id)
@@ -1741,7 +1741,7 @@ Display.prototype.__drawChar__ = function(ch,attr,xpos,ypos) {
 }
 Display.prototype.__getTopCanvas__ = function(x,y) {
 	var top = undefined;
-	for(var c of Object.values(this.__properties__.canvas)) {
+	for each(var c in this.__properties__.canvas) {
 		if(c.frame.parent == undefined || c.hasData(x,y))
 			top = c;
 	}

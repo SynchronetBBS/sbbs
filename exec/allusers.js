@@ -107,7 +107,7 @@ writeln("\nALLUSERS - Bulk User Editor for Synchronet User Database\n");
         var set = true;
         
         str = str.split("");
-        for(var f of Object.values(str)) {
+        for each(var f in str) {
             if(f == "+")
                 set = true;
             else if(f == "-")
@@ -132,7 +132,7 @@ writeln("\nALLUSERS - Bulk User Editor for Synchronet User Database\n");
         user_loop:
         for(var u = 1; u < system.lastuser; u++) {
             var usr = new User(u);
-            for(var m of Object.values(match_rules)) {
+            for each(var m in match_rules) {
                 if(!usr.compare_ars(m))
                     continue user_loop;
             }
@@ -143,7 +143,7 @@ writeln("\nALLUSERS - Bulk User Editor for Synchronet User Database\n");
 
     /* edit them bitches */
     function editUsers(matches, rule) {
-        for(var m of Object.values(matches)) {
+        for each(var m in matches) {
             if(rule.level) 
                 m.security.level = Number(rule.level);
                 

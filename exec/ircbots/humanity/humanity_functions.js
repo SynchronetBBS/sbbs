@@ -61,7 +61,7 @@ function show_submissions(srv,target,game) {
 
 function show_results(srv,target,game) {
 	var votes = {};
-	for(var v of Object.values(game.currentSet.votes)) {
+	for each(var v in game.currentSet.votes) {
 		if(!votes[v])
 			votes[v] = 0;
 		votes[v]++;

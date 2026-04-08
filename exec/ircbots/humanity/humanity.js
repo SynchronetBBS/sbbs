@@ -56,7 +56,7 @@ function main(srv,target) {
 			break;
 		case status.WAITING:
 			var ready = true;
-			for(var u of Object.values(game.users)) {
+			for each(var u in game.users) {
 				if(!game.currentSet.submissions[u.nick]) {
 					ready = false;
 					break;

@@ -197,7 +197,7 @@ service = new (function() {
 	/* monitor sockets */
 	this.cycle = function() {
 		var active=socket_select(this.sockets,this.timeout);
-		for(var s of Object.values(active)) {
+		for each(var s in active) {
 			this.sockets[s].cycle();
 		}
 		for(var s=1;s<this.sockets.length;s++) {
@@ -392,7 +392,7 @@ admin = new (function() {
 	}
 	this.modules = function(client) {
 		var list = [];
-		for(var m of Object.values(engine.modules)) {
+		for each(var m in engine.modules) {
 			list.push({name:m.name,status:m.online});
 		}
 		respond(client,list);
@@ -457,7 +457,7 @@ engine = new (function() {
 		this.file.open('r',true);
 		var modules=this.file.iniGetAllObjects();
 		this.file.close();
-		for(var m of Object.values(modules)) {
+		for each(var m in modules) {
 			try {
 				this.modules[m.name.toUpperCase()]=new Module(m.name,m.dir,m.read,m.write);
 				log(LOG_DEBUG,"loaded module: " + m.name);
@@ -469,7 +469,7 @@ engine = new (function() {
 
 	/* cycle module databases */
 	this.cycle = function() {
-		for(var m of Object.values(this.modules)) {
+		for each(var m in this.modules) {
 			if(!m.online)
 				continue;
 			m.poll();
@@ -583,7 +583,7 @@ engine = new (function() {
 
 	/* release clients from module authentication and subscription */
 	this.release = function(client) {
-		for(var m of Object.values(this.modules)) {
+		for each(var m in this.modules) {
 			m.db.release(client);
 		}
 	}

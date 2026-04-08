@@ -160,7 +160,7 @@ var Channel = function (c) {
 }
 
 function toLocal(x) {
-    for(var e of Object.values(x)) {
+    for each(var e in x) {
         e.setName(e.localName());
         toLocal(e);
     }

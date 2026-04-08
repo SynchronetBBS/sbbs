@@ -106,23 +106,23 @@ function show_room_title(srv,target,map,room) {
 }
 
 function show_room_items(srv,target,map,room) {
-	for(var i of Object.values(room.item)) {
+	for each(var i in room.item) {
 		srv.o(target,i.appearance);
 	}
 }
 
 function show_room_mobs(srv,target,map,room) {
-	for(var m of Object.values(room.mob)) {
+	for each(var m in room.mob) {
 		if(room.mob[m].@status != 0) srv.o(target,m.appearance);
 	}
 }
 
 function show_room_players(srv,player,map,room) {
-	for(var p of Object.values(players.player.(
+	for each(var p in players.player.(
 		@active == 1 && 
 		@room == room.@id && 
 		@name != player.@name && 
-		@zone == map.@id ))) 	{
+		@zone == map.@id )) 	{
 		srv.o(player.@channel,p.@name + " is here.");
 	}
 }
@@ -283,7 +283,7 @@ function attack_round(srv,attacker,defender) {
 		@room == attacker.@room && 
 		@name != attacker.@name && 
 		@name != defender.@name);
-	for(var p of Object.values(players_in_room)) {
+	for each(var p in players_in_room) {
 		srv.o(p.@channel,attacker.@name + " hits " + defender.@name + " for " + actual_damage);
 	}
 }

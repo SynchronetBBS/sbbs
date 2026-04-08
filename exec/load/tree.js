@@ -537,7 +537,7 @@ Tree.prototype.disable = function() {
 Tree.prototype.trace = function(hash) {
 	hash=hash.split("\t");
 	var text=hash.shift();
-	for(var i of Object.values(this.__properties__.items)) {
+	for each(var i in this.__properties__.items) {
 		if(i.text == text) {
 			if(i instanceof Tree && hash.length > 0)
 				return i.trace(hash.join("\t"));
