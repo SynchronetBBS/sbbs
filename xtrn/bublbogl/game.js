@@ -541,7 +541,7 @@ function GameData() {
 	/* save this round's winner to the database */
 	this.storeRoundWinner=function() {
 		this.players = client.read(game_id,"players",1);
-		for each(var p in this.players) {
+		for(var p of Object.values(this.players)) {
 			if(this.winner.points == undefined) 
 				this.winner=p;
 			else if(p.points>this.winner.points) 

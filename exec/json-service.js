@@ -628,7 +628,8 @@ engine = new (function() {
 				try {
 					this.queue = load(true,this.dir + "service.js",this.dir);
 				} catch(e) {
-					log(LOG_ERROR,"(" + module.name + ") error loading module service");
+					log(LOG_ERROR,"(" + this.name + ") error loading module service");
+					log(LOG_ERROR, e);
 				}
 			}
 			/* load module command file */
