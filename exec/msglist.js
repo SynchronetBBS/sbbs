@@ -1577,6 +1577,8 @@ function load_msgs(msgbase, which, mode, usernumber, since)
 		var total_msgs = idxlist.length;
 		for(var i = 0; i < total_msgs; i++) {
 			var idx = idxlist[i];
+			if ((idx.attr & (MSG_MODERATED | MSG_VALIDATED | MSG_DELETE)) == MSG_MODERATED)
+				break;
 			if((idx.attr&MSG_SPAM)) {
 				if(mode&LM_NOSPAM)
 					continue;
