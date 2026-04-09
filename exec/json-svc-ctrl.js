@@ -227,7 +227,8 @@ function moduleList() {
 		
 		list = [];
 		moduleMenu=[];
-		for each(var m in modules) {
+		for(var _m in modules) {
+			var m = modules[_m];
 			moduleMenu.push(m);
 			m.type = "function";
 			m.func = function() {
@@ -484,7 +485,8 @@ function whoData(module) {
 		userList = db.who(module.name,"");
 		list=[];
 		
-		for each(var u in userList) {
+		for(var _u in userList) {
+			var u = userList[_u];
 			u.type = "string";
 			if(u.nick == "")
 				list.push("SERVICE");

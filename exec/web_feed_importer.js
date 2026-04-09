@@ -151,10 +151,12 @@ function importSubFeeds(sub, feeds) {
 	for (var f in feeds) {
 		try {
 			var feed = new Feed(feeds[f]);
-			for each(var channel in feed.channels) {
+			for(var _channel in feed.channels) {
+				var channel = feed.channels[_channel];
 				if(reverseOrder)
 					channel.items.reverse();
-				for each(var item in channel.items) {
+				for(var _item in channel.items) {
+					var item = channel.items[_item];
 					item.author = channel.title + ((item.author == "") ? "" : " (" + item.author + ")");
 					if(item.title == "")
 						item.title = channel.title;
@@ -182,9 +184,11 @@ function importSubFeeds(sub, feeds) {
 function importFeedToSubs(feed, subs) {
 	try {
 		var _feed = new Feed(feed);
-		for each (var channel in _feed.channels) {
+		for(var _channel in _feed.channels) {
+			var channel = _feed.channels[_channel];
 			if (reverseOrder) channel.items.reverse();
-			for each (var item in channel.items) {
+			for(var _item in channel.items) {
+				var item = channel.items[_item];
 				item.author = channel.title + (item.author == '' ? '' : ( ' (' + item.author + ')'));
 				if (item.title == '') item.title = channel.title;
 				item.title = prepareText(item.title);

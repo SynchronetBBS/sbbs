@@ -160,7 +160,8 @@ var Channel = function (c) {
 }
 
 function toLocal(x) {
-    for each(var e in x) {
+    for(var _e in x) {
+    	var e = x[_e];
         e.setName(e.localName());
         toLocal(e);
     }

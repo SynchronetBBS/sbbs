@@ -7,7 +7,8 @@ Server_Commands["PRIVMSG"] = function (srv,cmd,onick,ouh)	{
 		
 		/* allocate channel users */
 		var chanUsers = [];
-		for each(var u in srv.users) {
+		for(var _u in srv.users) {
+			var u = srv.users[_u];
 			if(u.channels[chanName] == true) {
 				chanUsers.push(u.nick.toUpperCase());
 			}
