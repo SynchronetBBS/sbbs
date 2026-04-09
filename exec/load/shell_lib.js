@@ -576,14 +576,16 @@ function download_user_files()
 }
 
 // From email_sec.js
-function send_email(wm_mode)
+function send_email(name, wm_mode)
 {
-	console.putmsg(bbs.text(bbs.text.Email));
-	var name = console.getstr(40, K_TRIM);
-	if(!name)
-		return false;
+	if(!name) {
+		console.putmsg(bbs.text(bbs.text.Email));
+		name = console.getstr(40, K_TRIM);
+		if(!name)
+			return false;
+	}
 	if(name.indexOf('@') > 0)
-		return bbs.netmail(name);
+		return bbs.netmail(name, wm_mode);
 	var number = bbs.finduser(name);
 	if(console.aborted)
 		return false;
@@ -599,22 +601,24 @@ function send_email(wm_mode)
 
 // From email_sec.js
 var NetmailAddressHistoryLength = 10;
-function send_netmail(wm_mode)
+function send_netmail(addr, wm_mode)
 {
 	var userprops = bbs.mods.userprops || load(bbs.mods.userprops = {}, "userprops.js");
 	var netmail = msg_area.fido_netmail_settings | msg_area.inet_netmail_settings;
 	const ini_section = "netmail sent";
 	console.crlf();
 	wm_mode = wm_mode || WM_NONE;
-	if((netmail&NMAIL_FILE) && !console.noyes(gettext("Attach a file")))
+	if(!(wm_mode & WM_FILE) && (netmail&NMAIL_FILE) && !console.noyes(gettext("Attach a file")))
 		wm_mode |= WM_FILE;
 	if(console.aborted)
 		return false;
-	console.putmsg(bbs.text(bbs.text.EnterNetMailAddress));
-	var addr_list = userprops.get(ini_section, "address", []) || [];
-	var addr = console.getstr(256, K_LINE | K_TRIM, addr_list);
-	if(!addr || console.aborted)
-		return false;
+	if(!addr) {
+		console.putmsg(bbs.text(bbs.text.EnterNetMailAddress));
+		var addr_list = userprops.get(ini_section, "address", []) || [];
+		addr = console.getstr(256, K_LINE | K_TRIM, addr_list);
+		if(!addr || console.aborted)
+			return false;
+	}
 	if(bbs.netmail(addr.split(','), wm_mode)) {
 		var addr_idx = addr_list.indexOf(addr);
 		if(addr_idx >= 0)

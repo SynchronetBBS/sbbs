@@ -41,10 +41,10 @@ while(bbs.online) {
 		case 'A':	// Send file attachment
 			wm_mode = WM_FILE;
 		case 'S':	// Send Mail
-			shell.send_email(wm_mode);
+			shell.send_email(null, wm_mode);
 			break;
 		case 'N':	// Send NetMail
-			shell.send_netmail(wm_mode);
+			shell.send_netmail(null, wm_mode);
 			break;
 		default:
 			exit(0);
