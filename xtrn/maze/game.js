@@ -215,7 +215,8 @@ function lobby() {
 		}
 	}
 	function getGameNumber() {
-		for each(var game in data.games) {
+		for(var _game in data.games) {
+			var game = data.games[_game];
 			if(game.players && game.players[profile.name] != undefined)
 				return game.gameNumber;
 		}
@@ -300,12 +301,14 @@ function lobby() {
 		playerFrame.crlf();
 
 		var idle = {};
-		for each(var p in data.online) {
+		for(var _p in data.online) {
+			var p = data.online[_p];
 			if(!p.nick)
 				continue;
 			idle[p.nick] = p;
 		}
-		for each(var g in data.games) {
+		for(var _g in data.games) {
+			var g = data.games[_g];
 			playerFrame.putmsg("\1c\1h " + g.gameNumber + ": ");
 			if(g.damage)
 				playerFrame.putmsg("\1n\1r[D]");
@@ -322,7 +325,8 @@ function lobby() {
 			else 
 				playerFrame.putmsg("\1n\1r[error]\r\n");
 				
-			for each(var p in g.players) {
+			for(var _p in g.players) {
+				var p = g.players[_p];
 				if(p.ready == true)
 					playerFrame.putmsg("\1g\1h * ");
 				else
@@ -334,8 +338,10 @@ function lobby() {
 		}
 		if(countMembers(idle) > 0) {
 			playerFrame.putmsg("\1c\1h ONLINE:\r\n");
-			for each(var p in idle)
+			for(var _p in idle) {
+				var p = idle[_p];
 				playerFrame.putmsg("\1n\1c  " + p.nick + "\r\n");
+			}
 		}
 	}
 	function showScores()	{
@@ -344,7 +350,8 @@ function lobby() {
 		var scores_per_page = 10;
 		var list = sortScoresByWins();
 		scoreFrame.open();
-		for each(var player in list) {
+		for(var _player in list) {
+			var player = list[_player];
 			if(player.wins == 0)
 				continue;
 			if(count > 0 && count%scores_per_page == 0) {
@@ -406,7 +413,8 @@ function lobby() {
 		data.updated=true;
 	}
 	function getOpenGame() {
-		for each(var g in data.games) {
+		for(var _g in data.games) {
+			var g = data.games[_g];
 			if(g.status == status.RACING)
 				continue;
 			else if(countMembers(g.players) >= settings.max_players)
@@ -690,7 +698,8 @@ function race(gameNumber, profile)	{
 	function loadPlayers() {
 		var x = maze.start.x*3+1;
 		var y = maze.start.y*2+1;
-		for each(var p in maze.players) {
+		for(var _p in maze.players) {
+			var p = maze.players[_p];
 			p.coords = new Coords(x,y);
 			p.color = settings.colors.shift();
 			p.avatar = settings.avatars.shift();
@@ -734,7 +743,8 @@ function race(gameNumber, profile)	{
 	}
 	function showPlayerInfo() {
 		info.clear();
-		for each(var p in maze.players) {
+		for(var _p in maze.players) {
+			var p = maze.players[_p];
 			var ph = p.health/100;
 			var bars = Math.floor(ph * 7);
 			var str = " " + getColor(p.color) + p.avatar + ": ";
@@ -755,7 +765,8 @@ function race(gameNumber, profile)	{
 	}
 	function countPlayers() {
 		var count=0;
-		for each(var p in maze.players) {
+		for(var _p in maze.players) {
+			var p = maze.players[_p];
 			count++;
 		}
 		return count;

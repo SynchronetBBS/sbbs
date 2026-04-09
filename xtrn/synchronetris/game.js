@@ -371,7 +371,8 @@ function playGame(profile,game) {
 			
 			/* if the top line we removed contains pieces,
 			the player is now dead */
-			for each(var i in topLine) {
+			for(var _i in topLine) {
+				var i = topLine[_i];
 				if(i > 0) {
 					killPlayer(localPlayer.name);
 					send("DEAD");
@@ -859,7 +860,8 @@ function playGame(profile,game) {
 		var w = 0;
 		var h = 0;
 		if(msg instanceof Array) {
-			for each(var l in msg) {
+			for(var _l in msg) {
+				var l = msg[_l];
 				var length = console.strlen(l);
 				if(length > w)
 					w = length;
@@ -883,7 +885,8 @@ function playGame(profile,game) {
 		f.open();
 		
 		if(msg instanceof Array) {
-			for each(var l in msg) {
+			for(var _l in msg) {
+				var l = msg[_l];
 				f.center(l + "\r\n");
 			}
 		}
@@ -1009,7 +1012,8 @@ function playGame(profile,game) {
 	}
 	function activePlayers() {
 		var count=0;
-		for each(var p in players) {
+		for(var _p in players) {
+			var p = players[_p];
 			if(p.active) 
 				count++;
 		}

@@ -87,7 +87,8 @@ function processUpdate(update) {
 function handleDisco(subscription) {
 	try {
 		log(LOG_DEBUG, subscription.nick + " unsubscribed");
-		for each(var game in data.games) {
+		for(var _game in data.games) {
+			var game = data.games[_game];
 			if(!game.players) {
 				deleteGame(game.gameNumber);
 				continue;
@@ -183,7 +184,8 @@ function updatePlayers(gameNumber,subscription) {
 		var game = data.games[gameNumber];
 		if(game.status !== status.PLAYING) {
 			game.players[subscription.nick].synced = true;
-			for each(var p in game.players) {
+			for(var _p in game.players) {
+				var p = game.players[_p];
 				if(!p.synced)
 					return;
 			}
@@ -198,7 +200,8 @@ function updatePlayers(gameNumber,subscription) {
 	
 /* reset all players to "not ready" */
 function resetPlayers(game) {
-	for each(var p in game.players) {
+	for(var _p in game.players) {
+		var p = game.players[_p];
 		p.ready = false;
 		client.write(game_id,"games." + game.gameNumber + ".players." + 
 			p.name + ".ready",p.ready,2);
@@ -222,7 +225,8 @@ function startTimer(game) {
 
 /* check a game for player readiness */
 function getReady(game) {
-	for each(var p in game.players) {
+	for(var _p in game.players) {
+		var p = game.players[_p];
 		if(p.ready == false)
 			return false;
 	}
