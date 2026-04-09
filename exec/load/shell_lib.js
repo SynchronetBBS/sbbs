@@ -576,7 +576,7 @@ function download_user_files()
 }
 
 // From email_sec.js
-function send_email()
+function send_email(wm_mode)
 {
 	console.putmsg(bbs.text(bbs.text.Email));
 	var name = console.getstr(40, K_TRIM);
@@ -592,22 +592,22 @@ function send_email()
 	if(!number && (msg_area.settings&MM_REALNAME))
 		number = system.matchuserdata(U_NAME, name);
 	if(number)
-		return bbs.email(number, WM_NONE);
+		return bbs.email(number, wm_mode || WM_NONE);
 	console.putmsg(bbs.text(bbs.text.UnknownUser));
 	return false;
 }
 
 // From email_sec.js
 var NetmailAddressHistoryLength = 10;
-function send_netmail()
+function send_netmail(wm_mode)
 {
 	var userprops = bbs.mods.userprops || load(bbs.mods.userprops = {}, "userprops.js");
 	var netmail = msg_area.fido_netmail_settings | msg_area.inet_netmail_settings;
 	const ini_section = "netmail sent";
 	console.crlf();
-	var wm_mode = WM_NONE;
+	wm_mode = wm_mode || WM_NONE;
 	if((netmail&NMAIL_FILE) && !console.noyes(gettext("Attach a file")))
-		wm_mode = WM_FILE;
+		wm_mode |= WM_FILE;
 	if(console.aborted)
 		return false;
 	console.putmsg(bbs.text(bbs.text.EnterNetMailAddress));
@@ -629,9 +629,9 @@ function send_netmail()
 	return false;
 }
 
-function send_feedback()
+function send_feedback(wm_mode)
 {
-	return bbs.email(/* user # */1, bbs.text(bbs.text.ReFeedback));
+	return bbs.email(/* user # */1, wm_mode || WM_NONE, bbs.text(bbs.text.ReFeedback));
 }
 
 function page_sysop()
