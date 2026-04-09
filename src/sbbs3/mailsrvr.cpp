@@ -42,7 +42,6 @@
 #include "xpendian.h"
 #include "xpprintf.h"
 #include "js_rtpool.h"
-#include "js_request.h"
 #include "multisock.h"
 #include "mxlookup.h"
 #include "ssl.h"
@@ -2227,7 +2226,6 @@ js_ErrorReporter(JSContext *cx, const char *message, JSErrorReport *report)
 	char       file[MAX_PATH + 1];
 	const char* warning;
 	private_t* p;
-	jsrefcount rc;
 	int        log_level;
 
 	if ((p = (private_t*)JS_GetContextPrivate(cx)) == NULL)
@@ -2239,8 +2237,8 @@ js_ErrorReporter(JSContext *cx, const char *message, JSErrorReport *report)
 		return;
 	}
 
-	if (report->filename)
-		SAFEPRINTF(file, " %s", report->filename);
+	if (report->filename.c_str())
+		SAFEPRINTF(file, " %s", report->filename.c_str());
 	else
 		file[0] = 0;
 
@@ -2249,22 +2247,23 @@ js_ErrorReporter(JSContext *cx, const char *message, JSErrorReport *report)
 	else
 		line[0] = 0;
 
-	if (JSREPORT_IS_WARNING(report->flags)) {
-		if (JSREPORT_IS_STRICT(report->flags))
-			warning = "strict warning";
-		else
-			warning = "warning";
+	if (report->isWarning()) {
+		warning = "warning ";
 		log_level = LOG_WARNING;
 	} else {
-		log_level = LOG_ERR;
 		warning = "";
+		log_level = LOG_ERR;
 	}
 
-	rc = JS_SUSPENDREQUEST(cx);
 	lprintf(log_level, "%04d %-5s %s !JavaScript %s%s%s: %s"
 	        , p->sock, p->log_prefix, p->proc_name
 	        , warning, file, line, message);
-	JS_RESUMEREQUEST(cx, rc);
+}
+
+static void
+js_WarningReporter(JSContext* cx, JSErrorReport* report)
+{
+	js_ErrorReporter(cx, report->message().c_str(), report);
 }
 
 static JSBool
@@ -2274,7 +2273,6 @@ js_log(JSContext *cx, uintN argc, jsval *arglist)
 	uintN      i = 0;
 	int32      level = LOG_INFO;
 	private_t* p;
-	jsrefcount rc;
 	char *     lstr = NULL;
 	size_t     lstr_sz = 0;
 
@@ -2293,11 +2291,9 @@ js_log(JSContext *cx, uintN argc, jsval *arglist)
 		HANDLE_PENDING(cx, lstr);
 		if (lstr == NULL)
 			return JS_TRUE;
-		rc = JS_SUSPENDREQUEST(cx);
 		lprintf(level, "%04d %-5s %s %s"
 		        , p->sock, p->log_prefix, p->proc_name, lstr);
 		JS_SET_RVAL(cx, arglist, argv[i]);
-		JS_RESUMEREQUEST(cx, rc);
 	}
 
 	if (lstr)
@@ -2311,7 +2307,6 @@ js_alert(JSContext *cx, uintN argc, jsval *arglist)
 {
 	jsval *    argv = JS_ARGV(cx, arglist);
 	private_t* p;
-	jsrefcount rc;
 	char *     line;
 
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
@@ -2323,17 +2318,15 @@ js_alert(JSContext *cx, uintN argc, jsval *arglist)
 	if (line == NULL)
 		return JS_FALSE;
 
-	rc = JS_SUSPENDREQUEST(cx);
 	lprintf(LOG_ERR, "%04d %-5s %s %s"
 	        , p->sock, p->log_prefix, p->proc_name, line);
 	free(line);
-	JS_RESUMEREQUEST(cx, rc);
 
 	return JS_TRUE;
 }
 
 
-static JSFunctionSpec js_global_functions[] = {
+static jsSyncMethodSpec js_global_functions[] = {
 	{"write",           js_log,             0},
 	{"writeln",         js_log,             0},
 	{"print",           js_log,             0},
@@ -2350,7 +2343,7 @@ js_mailproc(SOCKET sock, client_t* client, user_t* user, struct mailproc* mailpr
             , char* rcptlst_fname, char* proc_err_fname
             , char* sender, char* sender_addr, char* reverse_path, char* hello_name
             , int32* result
-            , JSRuntime**    js_runtime
+            , JSContext**    js_runtime
             , JSContext**    js_cx
             , JSObject**     js_glob
             , const char*    log_prefix
@@ -2364,7 +2357,7 @@ js_mailproc(SOCKET sock, client_t* client, user_t* user, struct mailproc* mailpr
 	JSObject*     js_scope = NULL;
 	JSObject*     argv;
 	jsuint        argc;
-	JSObject*     js_script;
+	JSScript*     js_script;
 	js_callback_t js_callback;
 	jsval         val;
 	jsval         rval = JSVAL_VOID;
@@ -2395,18 +2388,15 @@ js_mailproc(SOCKET sock, client_t* client, user_t* user, struct mailproc* mailpr
 		}
 
 		if (*js_cx == NULL) {
-			if ((*js_cx = JS_NewContext(*js_runtime, JAVASCRIPT_CONTEXT_STACK)) == NULL)
-				return false;
-			JS_SetOptions(*js_cx, startup->js.options);
+			*js_cx = *js_runtime; /* SM128: jsrt_GetNew already created the context */
 		}
-		JS_BEGINREQUEST(*js_cx);
 
-		JS_SetErrorReporter(*js_cx, js_ErrorReporter);
 
 		priv.sock = sock;
 		priv.log_prefix = log_prefix;
 		priv.proc_name = mailproc->name;
 		JS_SetContextPrivate(*js_cx, &priv);
+		JS::SetWarningReporter(*js_cx, js_WarningReporter);
 
 		if (*js_glob == NULL) {
 			/* Global Objects (including system, js, client, Socket, MsgBase, File, User, etc. */
@@ -2422,7 +2412,7 @@ js_mailproc(SOCKET sock, client_t* client, user_t* user, struct mailproc* mailpr
 			                            ))
 				break;
 
-			if (!JS_DefineFunctions(*js_cx, *js_glob, js_global_functions))
+			if (!js_DefineSyncMethods(*js_cx, *js_glob, js_global_functions))
 				break;
 
 			/* Area and "user" Objects */
@@ -2517,7 +2507,6 @@ js_mailproc(SOCKET sock, client_t* client, user_t* user, struct mailproc* mailpr
 
 		js_EvalOnExit(*js_cx, js_scope, &js_callback);
 
-		JS_ReportPendingException(*js_cx);
 
 		JS_ClearScope(*js_cx, js_scope);
 
@@ -2525,18 +2514,13 @@ js_mailproc(SOCKET sock, client_t* client, user_t* user, struct mailproc* mailpr
 
 	} while (0);
 
-	JS_ENDREQUEST(*js_cx);
 
 	return success;
 }
 
-void js_cleanup(JSRuntime* js_runtime, JSContext* js_cx, JSObject** js_glob)
+void js_cleanup(JSContext* js_runtime, JSContext* js_cx, JSObject** js_glob)
 {
 	if (js_cx != NULL) {
-		JS_BEGINREQUEST(js_cx);
-		JS_RemoveObjectRoot(js_cx, js_glob);
-		JS_ENDREQUEST(js_cx);
-		JS_DestroyContext(js_cx);
 	}
 	if (js_runtime != NULL)
 		jsrt_Release(js_runtime);
@@ -3007,7 +2991,7 @@ static bool smtp_client_thread(smtp_t* smtp)
 	union xp_sockaddr server_addr;
 	IN_ADDR           dnsbl_result{};
 	int               mailproc_match;
-	JSRuntime*        js_runtime = NULL;
+	JSContext*        js_runtime = NULL;
 	JSContext*        js_cx = NULL;
 	JSObject*         js_glob = NULL;
 	int32             js_result;

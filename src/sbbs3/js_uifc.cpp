@@ -24,7 +24,6 @@
 #include "sbbs.h"
 #include "uifc.h"
 #include "ciolib.h"
-#include "js_request.h"
 struct list_ctx_private {
 	int cur;
 	int bar;
@@ -53,15 +52,8 @@ enum {
 	, PROP_HEIGHT
 	, PROP_LASTKEY
 };
-static JSBool js_list_ctx_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
+static JSBool js_list_ctx_get_value(JSContext *cx, struct list_ctx_private* p, jsint tiny, jsval *vp)
 {
-	jsval                    idval;
-	jsint                    tiny;
-	struct list_ctx_private* p;
-	if ((p = (struct list_ctx_private*)JS_GetPrivate(cx, obj)) == NULL)
-		return JS_FALSE;
-	JS_IdToValue(cx, id, &idval);
-	tiny = JSVAL_TO_INT(idval);
 	switch (tiny) {
 		case PROP_CUR:
 			*vp = INT_TO_JSVAL(p->cur);
@@ -81,16 +73,9 @@ static JSBool js_list_ctx_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 	}
 	return JS_TRUE;
 }
-static JSBool js_list_ctx_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, jsval *vp)
+static JSBool js_list_ctx_set_value(JSContext *cx, struct list_ctx_private* p, jsint tiny, jsval *vp)
 {
-	jsval                    idval;
-	jsint                    tiny;
 	int32                    i = 0;
-	struct list_ctx_private* p;
-	if ((p = (struct list_ctx_private*)JS_GetPrivate(cx, obj)) == NULL)
-		return JS_FALSE;
-	JS_IdToValue(cx, id, &idval);
-	tiny = JSVAL_TO_INT(idval);
 	if (!JS_ValueToInt32(cx, *vp, &i))
 		return JS_FALSE;
 	switch (tiny) {
@@ -112,15 +97,8 @@ static JSBool js_list_ctx_set(JSContext *cx, JSObject *obj, jsid id, JSBool stri
 	}
 	return JS_TRUE;
 }
-static JSBool js_showbuf_ctx_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
+static JSBool js_showbuf_ctx_get_value(JSContext *cx, struct showbuf_ctx_private* p, jsint tiny, jsval *vp)
 {
-	jsval                       idval;
-	jsint                       tiny;
-	struct showbuf_ctx_private* p;
-	if ((p = (struct showbuf_ctx_private*)JS_GetPrivate(cx, obj)) == NULL)
-		return JS_FALSE;
-	JS_IdToValue(cx, id, &idval);
-	tiny = JSVAL_TO_INT(idval);
 	switch (tiny) {
 		case PROP_CUR:
 			*vp = INT_TO_JSVAL(p->cur);
@@ -143,16 +121,9 @@ static JSBool js_showbuf_ctx_get(JSContext *cx, JSObject *obj, jsid id, jsval *v
 	}
 	return JS_TRUE;
 }
-static JSBool js_showbuf_ctx_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, jsval *vp)
+static JSBool js_showbuf_ctx_set_value(JSContext *cx, struct showbuf_ctx_private* p, jsint tiny, jsval *vp)
 {
-	jsval                       idval;
-	jsint                       tiny;
 	int32                       i = 0;
-	struct showbuf_ctx_private* p;
-	if ((p = (struct showbuf_ctx_private*)JS_GetPrivate(cx, obj)) == NULL)
-		return JS_FALSE;
-	JS_IdToValue(cx, id, &idval);
-	tiny = JSVAL_TO_INT(idval);
 	if (!JS_ValueToInt32(cx, *vp, &i))
 		return JS_FALSE;
 	switch (tiny) {
@@ -177,15 +148,8 @@ static JSBool js_showbuf_ctx_set(JSContext *cx, JSObject *obj, jsid id, JSBool s
 	}
 	return JS_TRUE;
 }
-static JSBool js_getstrxy_ctx_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
+static JSBool js_getstrxy_ctx_get_value(JSContext *cx, struct getstrxy_ctx_private* p, jsint tiny, jsval *vp)
 {
-	jsval                        idval;
-	jsint                        tiny;
-	struct getstrxy_ctx_private* p;
-	if ((p = (struct getstrxy_ctx_private*)JS_GetPrivate(cx, obj)) == NULL)
-		return JS_FALSE;
-	JS_IdToValue(cx, id, &idval);
-	tiny = JSVAL_TO_INT(idval);
 	switch (tiny) {
 		case PROP_LASTKEY:
 			*vp = INT_TO_JSVAL(p->lastkey);
@@ -193,16 +157,9 @@ static JSBool js_getstrxy_ctx_get(JSContext *cx, JSObject *obj, jsid id, jsval *
 	}
 	return JS_TRUE;
 }
-static JSBool js_getstrxy_ctx_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, jsval *vp)
+static JSBool js_getstrxy_ctx_set_value(JSContext *cx, struct getstrxy_ctx_private* p, jsint tiny, jsval *vp)
 {
-	jsval                        idval;
-	jsint                        tiny;
 	int32                        i = 0;
-	struct getstrxy_ctx_private* p;
-	if ((p = (struct getstrxy_ctx_private*)JS_GetPrivate(cx, obj)) == NULL)
-		return JS_FALSE;
-	JS_IdToValue(cx, id, &idval);
-	tiny = JSVAL_TO_INT(idval);
 	if (!JS_ValueToInt32(cx, *vp, &i))
 		return JS_FALSE;
 	switch (tiny) {
@@ -237,67 +194,151 @@ static const char* uifc_getstrxy_ctx_prop_desc[] = {
 #endif
 /* Destructor */
 static void
-js_list_ctx_finalize(JSContext *cx, JSObject *obj)
+js_list_ctx_finalize(JS::GCContext *cx, JSObject *obj)
 {
 	struct list_ctx_private* p;
-	if ((p = (struct list_ctx_private*)JS_GetPrivate(cx, obj)) == NULL)
+	if ((p = (struct list_ctx_private*)JS_GetPrivate(obj)) == NULL)
 		return;
 	free(p);
-	JS_SetPrivate(cx, obj, NULL);
+	JS_SetPrivate(obj, NULL);
 }
 static void
-js_showbuf_ctx_finalize(JSContext *cx, JSObject *obj)
+js_showbuf_ctx_finalize(JS::GCContext *cx, JSObject *obj)
 {
 	struct showbuf_ctx_private* p;
-	if ((p = (struct showbuf_ctx_private*)JS_GetPrivate(cx, obj)) == NULL)
+	if ((p = (struct showbuf_ctx_private*)JS_GetPrivate(obj)) == NULL)
 		return;
 	free(p);
-	JS_SetPrivate(cx, obj, NULL);
+	JS_SetPrivate(obj, NULL);
 }
 static void
-js_getstrxy_ctx_finalize(JSContext *cx, JSObject *obj)
+js_getstrxy_ctx_finalize(JS::GCContext *cx, JSObject *obj)
 {
 	struct getstrxy_ctx_private* p;
-	if ((p = (struct getstrxy_ctx_private*)JS_GetPrivate(cx, obj)) == NULL)
+	if ((p = (struct getstrxy_ctx_private*)JS_GetPrivate(obj)) == NULL)
 		return;
 	free(p);
-	JS_SetPrivate(cx, obj, NULL);
+	JS_SetPrivate(obj, NULL);
 }
+static bool js_list_ctx_prop_getter(JSContext* cx, unsigned argc, JS::Value* vp)
+{
+	JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
+	JS::RootedObject thisObj(cx);
+	if (!args.computeThis(cx, &thisObj))
+		return false;
+	struct list_ctx_private* p = (struct list_ctx_private*)JS_GetPrivate(thisObj);
+	if (p == nullptr) { args.rval().setUndefined(); return true; }
+	JSObject* callee = &args.callee();
+	jsint tiny = js::GetFunctionNativeReserved(callee, 0).toInt32();
+	jsval val = JSVAL_VOID;
+	if (!js_list_ctx_get_value(cx, p, tiny, &val)) return false;
+	args.rval().set(val);
+	return true;
+}
+static bool js_list_ctx_prop_setter(JSContext* cx, unsigned argc, JS::Value* vp)
+{
+	JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
+	JS::RootedObject thisObj(cx);
+	if (!args.computeThis(cx, &thisObj))
+		return false;
+	struct list_ctx_private* p = (struct list_ctx_private*)JS_GetPrivate(thisObj);
+	if (p == nullptr) return true;
+	JSObject* callee = &args.callee();
+	jsint tiny = js::GetFunctionNativeReserved(callee, 0).toInt32();
+	jsval val = args.length() > 0 ? args[0] : JSVAL_VOID;
+	if (!js_list_ctx_set_value(cx, p, tiny, &val)) return false;
+	args.rval().set(val);
+	return true;
+}
+static bool js_showbuf_ctx_prop_getter(JSContext* cx, unsigned argc, JS::Value* vp)
+{
+	JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
+	JS::RootedObject thisObj(cx);
+	if (!args.computeThis(cx, &thisObj))
+		return false;
+	struct showbuf_ctx_private* p = (struct showbuf_ctx_private*)JS_GetPrivate(thisObj);
+	if (p == nullptr) { args.rval().setUndefined(); return true; }
+	JSObject* callee = &args.callee();
+	jsint tiny = js::GetFunctionNativeReserved(callee, 0).toInt32();
+	jsval val = JSVAL_VOID;
+	if (!js_showbuf_ctx_get_value(cx, p, tiny, &val)) return false;
+	args.rval().set(val);
+	return true;
+}
+static bool js_showbuf_ctx_prop_setter(JSContext* cx, unsigned argc, JS::Value* vp)
+{
+	JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
+	JS::RootedObject thisObj(cx);
+	if (!args.computeThis(cx, &thisObj))
+		return false;
+	struct showbuf_ctx_private* p = (struct showbuf_ctx_private*)JS_GetPrivate(thisObj);
+	if (p == nullptr) return true;
+	JSObject* callee = &args.callee();
+	jsint tiny = js::GetFunctionNativeReserved(callee, 0).toInt32();
+	jsval val = args.length() > 0 ? args[0] : JSVAL_VOID;
+	if (!js_showbuf_ctx_set_value(cx, p, tiny, &val)) return false;
+	args.rval().set(val);
+	return true;
+}
+static bool js_getstrxy_ctx_prop_getter(JSContext* cx, unsigned argc, JS::Value* vp)
+{
+	JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
+	JS::RootedObject thisObj(cx);
+	if (!args.computeThis(cx, &thisObj))
+		return false;
+	struct getstrxy_ctx_private* p = (struct getstrxy_ctx_private*)JS_GetPrivate(thisObj);
+	if (p == nullptr) { args.rval().setUndefined(); return true; }
+	JSObject* callee = &args.callee();
+	jsint tiny = js::GetFunctionNativeReserved(callee, 0).toInt32();
+	jsval val = JSVAL_VOID;
+	if (!js_getstrxy_ctx_get_value(cx, p, tiny, &val)) return false;
+	args.rval().set(val);
+	return true;
+}
+static bool js_getstrxy_ctx_prop_setter(JSContext* cx, unsigned argc, JS::Value* vp)
+{
+	JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
+	JS::RootedObject thisObj(cx);
+	if (!args.computeThis(cx, &thisObj))
+		return false;
+	struct getstrxy_ctx_private* p = (struct getstrxy_ctx_private*)JS_GetPrivate(thisObj);
+	if (p == nullptr) return true;
+	JSObject* callee = &args.callee();
+	jsint tiny = js::GetFunctionNativeReserved(callee, 0).toInt32();
+	jsval val = args.length() > 0 ? args[0] : JSVAL_VOID;
+	if (!js_getstrxy_ctx_set_value(cx, p, tiny, &val)) return false;
+	args.rval().set(val);
+	return true;
+}
+static const JSClassOps js_uifc_list_ctx_classops = {
+	nullptr, nullptr, nullptr, nullptr, nullptr, nullptr,
+	js_list_ctx_finalize,
+	nullptr, nullptr, nullptr
+};
 static JSClass            js_uifc_list_ctx_class = {
-	"CTX"                   /* name			*/
-	, JSCLASS_HAS_PRIVATE    /* flags		*/
-	, JS_PropertyStub        /* addProperty	*/
-	, JS_PropertyStub        /* delProperty	*/
-	, js_list_ctx_get        /* getProperty	*/
-	, js_list_ctx_set        /* setProperty	*/
-	, JS_EnumerateStub       /* enumerate	*/
-	, JS_ResolveStub         /* resolve		*/
-	, JS_ConvertStub         /* convert		*/
-	, js_list_ctx_finalize   /* finalize		*/
+	"CTX"
+	, JSCLASS_HAS_PRIVATE
+	, &js_uifc_list_ctx_classops
+};
+static const JSClassOps js_uifc_showbuf_ctx_classops = {
+	nullptr, nullptr, nullptr, nullptr, nullptr, nullptr,
+	js_showbuf_ctx_finalize,
+	nullptr, nullptr, nullptr
 };
 static JSClass            js_uifc_showbuf_ctx_class = {
-	"CTX"                   /* name			*/
-	, JSCLASS_HAS_PRIVATE    /* flags		*/
-	, JS_PropertyStub        /* addProperty	*/
-	, JS_PropertyStub        /* delProperty	*/
-	, js_showbuf_ctx_get     /* getProperty	*/
-	, js_showbuf_ctx_set     /* setProperty	*/
-	, JS_EnumerateStub       /* enumerate	*/
-	, JS_ResolveStub         /* resolve		*/
-	, JS_ConvertStub         /* convert		*/
-	, js_showbuf_ctx_finalize    /* finalize		*/
+	"CTX"
+	, JSCLASS_HAS_PRIVATE
+	, &js_uifc_showbuf_ctx_classops
+};
+static const JSClassOps js_uifc_getstrxy_ctx_classops = {
+	nullptr, nullptr, nullptr, nullptr, nullptr, nullptr,
+	js_getstrxy_ctx_finalize,
+	nullptr, nullptr, nullptr
 };
 static JSClass            js_uifc_getstrxy_ctx_class = {
-	"CTX"                   /* name			*/
-	, JSCLASS_HAS_PRIVATE    /* flags		*/
-	, JS_PropertyStub        /* addProperty	*/
-	, JS_PropertyStub        /* delProperty	*/
-	, js_getstrxy_ctx_get    /* getProperty	*/
-	, js_getstrxy_ctx_set    /* setProperty	*/
-	, JS_EnumerateStub       /* enumerate	*/
-	, JS_ResolveStub         /* resolve		*/
-	, JS_ConvertStub         /* convert		*/
-	, js_getstrxy_ctx_finalize   /* finalize		*/
+	"CTX"
+	, JSCLASS_HAS_PRIVATE
+	, &js_uifc_getstrxy_ctx_classops
 };
 static jsSyncPropertySpec js_uifc_list_class_properties[] = {
 /*       name			,tinyid                 ,flags,             ver */
@@ -335,10 +376,7 @@ static JSBool js_list_ctx_constructor(JSContext *cx, uintN argc, jsval *arglist)
 		JS_ReportError(cx, "calloc failed");
 		return JS_FALSE;
 	}
-	if (!JS_SetPrivate(cx, obj, p)) {
-		JS_ReportError(cx, "JS_SetPrivate failed");
-		return JS_FALSE;
-	}
+	JS_SetPrivate(obj, p);
 	p->bar = INT_MAX;
 	if (argc > 0 && JSVAL_IS_NUMBER(argv[0]))
 		p->cur = JSVAL_TO_INT(argv[0]);
@@ -351,6 +389,7 @@ static JSBool js_list_ctx_constructor(JSContext *cx, uintN argc, jsval *arglist)
 	if (argc > 4 && JSVAL_IS_NUMBER(argv[4]))
 		p->width = JSVAL_TO_INT(argv[4]);
 	js_SyncResolve(cx, obj, NULL, js_uifc_list_class_properties, NULL, NULL, 0);
+	js_DefineSyncAccessors(cx, obj, js_uifc_list_class_properties, js_list_ctx_prop_getter, NULL, js_list_ctx_prop_setter);
 #ifdef BUILD_JSDOCS
 	js_DescribeSyncObject(cx, obj, "Class used to retain UIFC list menu context", 317);
 	js_DescribeSyncConstructor(cx, obj, "To create a new UIFCListContext object: <tt>var ctx = new UIFCListContext();</tt>");
@@ -383,11 +422,9 @@ static JSBool js_showbuf_ctx_constructor(JSContext *cx, uintN argc, jsval *argli
 		p->width = JSVAL_TO_INT(argv[4]);
 	if (argc > 5 && JSVAL_IS_NUMBER(argv[5]))
 		p->height = JSVAL_TO_INT(argv[5]);
-	if (!JS_SetPrivate(cx, obj, p)) {
-		JS_ReportError(cx, "JS_SetPrivate failed");
-		return JS_FALSE;
-	}
+	JS_SetPrivate(obj, p);
 	js_SyncResolve(cx, obj, NULL, js_uifc_showbuf_class_properties, NULL, NULL, 0);
+	js_DefineSyncAccessors(cx, obj, js_uifc_showbuf_class_properties, js_showbuf_ctx_prop_getter, NULL, js_showbuf_ctx_prop_setter);
 #ifdef BUILD_JSDOCS
 	js_DescribeSyncObject(cx, obj, "Class used to retain UIFC showbuf context", 317);
 	js_DescribeSyncConstructor(cx, obj, "To create a new UIFCShowbufContext object: <tt>var ctx = new UIFCShowbufContext();</tt>");
@@ -405,11 +442,9 @@ static JSBool js_getstrxy_ctx_constructor(JSContext *cx, uintN argc, jsval *argl
 		JS_ReportError(cx, "calloc failed");
 		return JS_FALSE;
 	}
-	if (!JS_SetPrivate(cx, obj, p)) {
-		JS_ReportError(cx, "JS_SetPrivate failed");
-		return JS_FALSE;
-	}
+	JS_SetPrivate(obj, p);
 	js_SyncResolve(cx, obj, NULL, js_uifc_getstrxy_class_properties, NULL, NULL, 0);
+	js_DefineSyncAccessors(cx, obj, js_uifc_getstrxy_class_properties, js_getstrxy_ctx_prop_getter, NULL, js_getstrxy_ctx_prop_setter);
 #ifdef BUILD_JSDOCS
 	js_DescribeSyncObject(cx, obj, "Class used to retain UIFC getstrxy context", 317);
 	js_DescribeSyncConstructor(cx, obj, "To create a new UIFCGetStrXYContext object: <tt>var ctx = new UIFCGetStrXYContext();</tt>");
@@ -434,15 +469,10 @@ enum {
 	, PROP_LBCOLOR
 	, PROP_LIST_HEIGHT
 };
-static JSBool js_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
+static JSBool js_uifc_get_value(JSContext *cx, uifcapi_t* uifc, jsint tiny, jsval *vp)
 {
-	jsval      idval;
-	jsint      tiny;
-	uifcapi_t* uifc;
-	if ((uifc = (uifcapi_t*)JS_GetPrivate(cx, obj)) == NULL)
-		return JS_FALSE;
-	JS_IdToValue(cx, id, &idval);
-	tiny = JSVAL_TO_INT(idval);
+	JS::RootedString js_str(cx);
+
 	switch (tiny) {
 		case PROP_INITIALIZED:
 			*vp = BOOLEAN_TO_JSVAL(uifc->initialized);
@@ -466,7 +496,9 @@ static JSBool js_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 			*vp = INT_TO_JSVAL(uifc->esc_delay);
 			break;
 		case PROP_HELPBUF:
-			*vp = STRING_TO_JSVAL(JS_NewStringCopyZ(cx, uifc->helpbuf));
+			if ((js_str = JS_NewStringCopyZ(cx, uifc->helpbuf)) == nullptr)
+				return JS_FALSE;
+			*vp = STRING_TO_JSVAL(js_str.get());
 			break;
 		case PROP_HCOLOR:
 			*vp = INT_TO_JSVAL(uifc->hclr);
@@ -489,16 +521,10 @@ static JSBool js_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 	}
 	return JS_TRUE;
 }
-static JSBool js_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, jsval *vp)
+static JSBool js_uifc_set_value(JSContext *cx, uifcapi_t* uifc, jsint tiny, jsval *vp)
 {
-	jsval      idval;
-	jsint      tiny;
 	int32      i = 0;
-	uifcapi_t* uifc;
-	if ((uifc = (uifcapi_t*)JS_GetPrivate(cx, obj)) == NULL)
-		return JS_FALSE;
-	JS_IdToValue(cx, id, &idval);
-	tiny = JSVAL_TO_INT(idval);
+
 	if (tiny == PROP_CHANGES)
 		return JS_ValueToBoolean(cx, *vp, &uifc->changes);
 	else if (tiny == PROP_HELPBUF) {
@@ -550,6 +576,38 @@ static JSBool js_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, jsval
 	}
 	return JS_TRUE;
 }
+static bool js_uifc_prop_getter(JSContext* cx, unsigned argc, JS::Value* vp)
+{
+	JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
+	JS::RootedObject thisObj(cx);
+	if (!args.computeThis(cx, &thisObj))
+		return false;
+	uifcapi_t* uifc = (uifcapi_t*)JS_GetPrivate(thisObj);
+	if (uifc == nullptr || !uifc->initialized) { args.rval().setUndefined(); return true; }
+	JSObject* callee = &args.callee();
+	jsint tiny = js::GetFunctionNativeReserved(callee, 0).toInt32();
+	jsval val = JSVAL_VOID;
+	if (!js_uifc_get_value(cx, uifc, tiny, &val)) return false;
+	args.rval().set(val);
+	return true;
+}
+static bool js_uifc_prop_setter(JSContext* cx, unsigned argc, JS::Value* vp)
+{
+	JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
+	JS::RootedObject thisObj(cx);
+	if (!args.computeThis(cx, &thisObj))
+		return false;
+	uifcapi_t* uifc = (uifcapi_t*)JS_GetPrivate(thisObj);
+	if (uifc == nullptr)
+		return true;
+	JSObject* callee = &args.callee();
+	jsint tiny = js::GetFunctionNativeReserved(callee, 0).toInt32();
+	jsval val = args.length() > 0 ? args[0] : JSVAL_VOID;
+	if (!js_uifc_set_value(cx, uifc, tiny, &val))
+		return false;
+	args.rval().set(val);
+	return true;
+}
 static jsSyncPropertySpec js_properties[] = {
 /*		 name,				tinyid,						flags,		ver	*/
 	{   "initialized",      PROP_INITIALIZED,   JSPROP_ENUMERATE | JSPROP_READONLY, 314 },
@@ -587,11 +645,15 @@ static const char*        uifc_prop_desc[] = {
 	, NULL
 };
 #endif
+static JSBool js_uifc_fill_properties(JSContext* cx, JSObject* obj, const char* name)
+{
+	return js_DefineSyncAccessors(cx, obj, js_properties, js_uifc_prop_getter, name, js_uifc_prop_setter);
+}
 /* Convenience functions */
 static uifcapi_t* get_uifc(JSContext *cx, JSObject *obj)
 {
 	uifcapi_t* uifc;
-	if ((uifc = (uifcapi_t*)JS_GetPrivate(cx, obj)) == NULL)
+	if ((uifc = (uifcapi_t*)JS_GetPrivate(obj)) == NULL)
 		return NULL;
 	if (!uifc->initialized) {
 		JS_ReportError(cx, "UIFC not initialized");
@@ -610,9 +672,8 @@ js_uifc_init(JSContext *cx, uintN argc, jsval *arglist)
 	char*       title = (char *)title_def;
 	char*       mode;
 	uifcapi_t*  uifc;
-	jsrefcount  rc;
 	JS_SET_RVAL(cx, arglist, JSVAL_FALSE);
-	if ((uifc = (uifcapi_t*)JS_GetPrivate(cx, obj)) == NULL)
+	if ((uifc = (uifcapi_t*)JS_GetPrivate(obj)) == NULL)
 		return JS_FALSE;
 	if (argc) {
 		JSVALUE_TO_MSTRING(cx, argv[0], title, NULL);
@@ -643,23 +704,19 @@ js_uifc_init(JSContext *cx, uintN argc, jsval *arglist)
 				ciolib_mode = CIOLIB_MODE_SDL;
 		}
 	}
-	rc = JS_SUSPENDREQUEST(cx);
 	if (ciolib_mode == -1) {
 		if (uifcinix(uifc)) {
-			JS_RESUMEREQUEST(cx, rc);
 			if (title != title_def)
 				free(title);
 			return JS_TRUE;
 		}
 	} else {
 		if (initciolib(ciolib_mode)) {
-			JS_RESUMEREQUEST(cx, rc);
 			if (title != title_def)
 				free(title);
 			return JS_TRUE;
 		}
 		if (uifcini32(uifc)) {
-			JS_RESUMEREQUEST(cx, rc);
 			if (title != title_def)
 				free(title);
 			return JS_TRUE;
@@ -669,7 +726,6 @@ js_uifc_init(JSContext *cx, uintN argc, jsval *arglist)
 	uifc->scrn(title);
 	if (title != title_def)
 		free(title);
-	JS_RESUMEREQUEST(cx, rc);
 	return JS_TRUE;
 }
 static JSBool
@@ -677,13 +733,10 @@ js_uifc_bail(JSContext *cx, uintN argc, jsval *arglist)
 {
 	JSObject * obj = JS_THIS_OBJECT(cx, arglist);
 	uifcapi_t* uifc;
-	jsrefcount rc;
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 	if ((uifc = get_uifc(cx, obj)) == NULL)
 		return JS_FALSE;
-	rc = JS_SUSPENDREQUEST(cx);
 	uifc->bail();
-	JS_RESUMEREQUEST(cx, rc);
 	return JS_TRUE;
 }
 static JSBool
@@ -691,13 +744,10 @@ js_uifc_showhelp(JSContext *cx, uintN argc, jsval *arglist)
 {
 	JSObject * obj = JS_THIS_OBJECT(cx, arglist);
 	uifcapi_t* uifc;
-	jsrefcount rc;
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 	if ((uifc = get_uifc(cx, obj)) == NULL)
 		return JS_FALSE;
-	rc = JS_SUSPENDREQUEST(cx);
 	uifc->showhelp();
-	JS_RESUMEREQUEST(cx, rc);
 	return JS_TRUE;
 }
 static JSBool
@@ -707,7 +757,6 @@ js_uifc_msg(JSContext *cx, uintN argc, jsval *arglist)
 	jsval *    argv = JS_ARGV(cx, arglist);
 	char*      str = NULL;
 	uifcapi_t* uifc;
-	jsrefcount rc;
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 	if ((uifc = get_uifc(cx, obj)) == NULL)
 		return JS_FALSE;
@@ -715,10 +764,8 @@ js_uifc_msg(JSContext *cx, uintN argc, jsval *arglist)
 	HANDLE_PENDING(cx, str);
 	if (str == NULL)
 		return JS_TRUE;
-	rc = JS_SUSPENDREQUEST(cx);
 	uifc->msg(str);
 	free(str);
-	JS_RESUMEREQUEST(cx, rc);
 	return JS_TRUE;
 }
 static JSBool
@@ -728,7 +775,6 @@ js_uifc_pop(JSContext *cx, uintN argc, jsval *arglist)
 	jsval *    argv = JS_ARGV(cx, arglist);
 	char*      str = NULL;
 	uifcapi_t* uifc;
-	jsrefcount rc;
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 	if ((uifc = get_uifc(cx, obj)) == NULL)
 		return JS_FALSE;
@@ -736,11 +782,9 @@ js_uifc_pop(JSContext *cx, uintN argc, jsval *arglist)
 		JSVALUE_TO_MSTRING(cx, argv[0], str, NULL);
 		HANDLE_PENDING(cx, str);
 	}
-	rc = JS_SUSPENDREQUEST(cx);
 	uifc->pop(str);
 	if (str)
 		free(str);
-	JS_RESUMEREQUEST(cx, rc);
 	return JS_TRUE;
 }
 static JSBool
@@ -758,7 +802,6 @@ js_uifc_input(JSContext *cx, uintN argc, jsval *arglist)
 	int32      kmode = 0;
 	uifcapi_t* uifc;
 	uintN      argn = 0;
-	jsrefcount rc;
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 	if ((uifc = get_uifc(cx, obj)) == NULL)
 		return JS_FALSE;
@@ -822,9 +865,7 @@ js_uifc_input(JSContext *cx, uintN argc, jsval *arglist)
 		strncpy(str, org, maxlen);
 		free(org);
 	}
-	rc = JS_SUSPENDREQUEST(cx);
 	if (uifc->input(mode, left, top, prompt, str, maxlen, kmode) < 0) {
-		JS_RESUMEREQUEST(cx, rc);
 		if (prompt)
 			free(prompt);
 		if (str)
@@ -833,7 +874,6 @@ js_uifc_input(JSContext *cx, uintN argc, jsval *arglist)
 	}
 	if (prompt)
 		free(prompt);
-	JS_RESUMEREQUEST(cx, rc);
 	JS_SET_RVAL(cx, arglist, STRING_TO_JSVAL(JS_NewStringCopyZ(cx, str)));
 	if (str)
 		free(str);
@@ -862,7 +902,6 @@ js_uifc_list(JSContext *cx, uintN argc, jsval *arglist)
 	str_list_t               opts = NULL;
 	char *                   opt = NULL;
 	size_t                   opt_sz = 0;
-	jsrefcount               rc;
 	struct list_ctx_private *p;
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 	if ((uifc = get_uifc(cx, obj)) == NULL)
@@ -903,7 +942,7 @@ js_uifc_list(JSContext *cx, uintN argc, jsval *arglist)
 			FREE_AND_NULL(opt);
 		}
 		else if (JS_GetClass(cx, objarg) == &js_uifc_list_ctx_class) {
-			p = static_cast<list_ctx_private *>(JS_GetPrivate(cx, objarg));
+			p = static_cast<list_ctx_private *>(JS_GetPrivate(objarg));
 			if (p != NULL) {
 				dptr = &(p->cur);
 				bptr = &(p->bar);
@@ -916,9 +955,7 @@ js_uifc_list(JSContext *cx, uintN argc, jsval *arglist)
 	if (title == NULL || opts == NULL) {
 		JS_SET_RVAL(cx, arglist, JSVAL_FALSE);
 	} else {
-		rc = JS_SUSPENDREQUEST(cx);
 		JS_SET_RVAL(cx, arglist, INT_TO_JSVAL(uifc->list(mode | WIN_BLANKOPTS, left, top, width, (int*)dptr, (int*)bptr, title, opts)));
-		JS_RESUMEREQUEST(cx, rc);
 	}
 	strListFree(&opts);
 	if (title != NULL)
@@ -932,7 +969,6 @@ js_uifc_scrn(JSContext *cx, uintN argc, jsval *arglist)
 	jsval *    argv = JS_ARGV(cx, arglist);
 	char*      str = NULL;
 	uifcapi_t* uifc;
-	jsrefcount rc;
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 	if ((uifc = get_uifc(cx, obj)) == NULL)
 		return JS_FALSE;
@@ -940,10 +976,8 @@ js_uifc_scrn(JSContext *cx, uintN argc, jsval *arglist)
 	HANDLE_PENDING(cx, str);
 	if (str == NULL)
 		return JS_TRUE;
-	rc = JS_SUSPENDREQUEST(cx);
 	uifc->scrn(str);
 	free(str);
-	JS_RESUMEREQUEST(cx, rc);
 	return JS_TRUE;
 }
 static JSBool
@@ -953,15 +987,12 @@ js_uifc_timedisplay(JSContext *cx, uintN argc, jsval *arglist)
 	jsval *    argv = JS_ARGV(cx, arglist);
 	JSBool     force = JS_FALSE;
 	uifcapi_t* uifc;
-	jsrefcount rc;
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 	if ((uifc = get_uifc(cx, obj)) == NULL)
 		return JS_FALSE;
 	if (argc > 0)
 		force = JSVAL_TO_BOOLEAN(argv[0]);
-	rc = JS_SUSPENDREQUEST(cx);
 	uifc->timedisplay(force);
-	JS_RESUMEREQUEST(cx, rc);
 	return JS_TRUE;
 }
 static JSBool
@@ -971,7 +1002,6 @@ js_uifc_bottomline(JSContext *cx, uintN argc, jsval *arglist)
 	jsval *    argv = JS_ARGV(cx, arglist);
 	int        mode;
 	uifcapi_t* uifc;
-	jsrefcount rc;
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 	if ((uifc = get_uifc(cx, obj)) == NULL)
 		return JS_FALSE;
@@ -980,9 +1010,7 @@ js_uifc_bottomline(JSContext *cx, uintN argc, jsval *arglist)
 		return JS_FALSE;
 	}
 	mode = JSVAL_TO_INT(argv[0]);
-	rc = JS_SUSPENDREQUEST(cx);
 	uifc->bottomline(mode);
-	JS_RESUMEREQUEST(cx, rc);
 	return JS_TRUE;
 }
 static JSBool
@@ -999,7 +1027,6 @@ js_uifc_getstrxy(JSContext *cx, uintN argc, jsval *arglist)
 	int32                        mode = 0;
 	uifcapi_t*                   uifc;
 	uintN                        argn = 0;
-	jsrefcount                   rc;
 	JSObject*                    objarg;
 	int *                        lastkey = NULL;
 	struct getstrxy_ctx_private *p;
@@ -1036,7 +1063,7 @@ js_uifc_getstrxy(JSContext *cx, uintN argc, jsval *arglist)
 			return JS_FALSE;
 		}
 		if (JS_GetClass(cx, objarg) == &js_uifc_getstrxy_ctx_class) {
-			p = static_cast<getstrxy_ctx_private *>(JS_GetPrivate(cx, objarg));
+			p = static_cast<getstrxy_ctx_private *>(JS_GetPrivate(objarg));
 			if (p != NULL) {
 				lastkey = &(p->lastkey);
 			}
@@ -1056,14 +1083,11 @@ js_uifc_getstrxy(JSContext *cx, uintN argc, jsval *arglist)
 		strncpy(str, org, maxlen);
 		free(org);
 	}
-	rc = JS_SUSPENDREQUEST(cx);
 	if (uifc->getstrxy(left, top, width, str, maxlen, mode, lastkey) < 0) {
-		JS_RESUMEREQUEST(cx, rc);
 		free(str);
 		JS_SET_RVAL(cx, arglist, JSVAL_NULL);
 		return JS_TRUE;
 	}
-	JS_RESUMEREQUEST(cx, rc);
 	JS_SET_RVAL(cx, arglist, STRING_TO_JSVAL(JS_NewStringCopyZ(cx, str)));
 	if (str)
 		free(str);
@@ -1085,7 +1109,6 @@ js_uifc_showbuf(JSContext *cx, uintN argc, jsval *arglist)
 	int *                       bar = NULL;
 	uifcapi_t*                  uifc;
 	uintN                       argn = 0;
-	jsrefcount                  rc;
 	JSObject*                   objarg;
 	struct showbuf_ctx_private *p;
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
@@ -1120,7 +1143,7 @@ js_uifc_showbuf(JSContext *cx, uintN argc, jsval *arglist)
 			return JS_FALSE;
 		}
 		if (JS_GetClass(cx, objarg) == &js_uifc_showbuf_ctx_class) {
-			p = static_cast<showbuf_ctx_private *>(JS_GetPrivate(cx, objarg));
+			p = static_cast<showbuf_ctx_private *>(JS_GetPrivate(objarg));
 			if (p != NULL) {
 				cur = &(p->cur);
 				bar = &(p->bar);
@@ -1131,22 +1154,20 @@ js_uifc_showbuf(JSContext *cx, uintN argc, jsval *arglist)
 			}
 		}
 	}
-	rc = JS_SUSPENDREQUEST(cx);
 	uifc->showbuf(mode, left, top, width, height, title, str, cur, bar);
-	JS_RESUMEREQUEST(cx, rc);
 	free(title);
 	free(str);
 	return JS_TRUE;
 }
 /* Destructor */
 static void
-js_finalize(JSContext *cx, JSObject *obj)
+js_finalize(JS::GCContext *cx, JSObject *obj)
 {
 	uifcapi_t* p;
-	if ((p = (uifcapi_t*)JS_GetPrivate(cx, obj)) == NULL)
+	if ((p = (uifcapi_t*)JS_GetPrivate(obj)) == NULL)
 		return;
 	free(p);
-	JS_SetPrivate(cx, obj, NULL);
+	JS_SetPrivate(obj, NULL);
 }
 static jsSyncMethodSpec js_functions[] = {
 	{"init",            js_uifc_init,       1,  JSTYPE_BOOLEAN, JSDOCSTR("<i>string</i> title [,<i>string</i> interface_mode]")
@@ -1213,21 +1234,35 @@ static jsSyncMethodSpec js_functions[] = {
 	 , 31802},
 	{0}
 };
-static JSBool js_uifc_resolve(JSContext *cx, JSObject *obj, jsid id)
+static bool js_uifc_resolve_impl(JSContext *cx, JSObject *obj, char* name);
+
+bool js_uifc_resolve(JSContext *cx, JS::Handle<JSObject*> obj, JS::Handle<jsid> id, bool* resolvedp)
 {
 	char*     name = NULL;
-	JSBool    ret;
+
+	if (id.get().isString()) {
+		JSString* jstr = id.get().toString();
+		JSSTRING_TO_MSTRING(cx, jstr, name, NULL);
+		HANDLE_PENDING(cx, name);
+		if (name == NULL) return false;
+	}
+
+	bool ret = js_uifc_resolve_impl(cx, obj, name);
+	if (name)
+		free(name);
+	if (resolvedp) *resolvedp = ret;
+	return true;
+}
+
+static bool js_uifc_resolve_impl(JSContext *cx, JSObject *obj, char* name)
+{
+	bool      ret;
 	jsval     objval;
 	JSObject* tobj;
-	if (id != JSID_VOID && id != JSID_EMPTY) {
-		jsval idval;
-		JS_IdToValue(cx, id, &idval);
-		if (JSVAL_IS_STRING(idval)) {
-			JSSTRING_TO_MSTRING(cx, JSVAL_TO_STRING(idval), name, NULL);
-			HANDLE_PENDING(cx, name);
-		}
-	}
+
 	ret = js_SyncResolve(cx, obj, name, js_properties, js_functions, NULL, 0);
+	if (ret)
+		js_uifc_fill_properties(cx, obj, name);
 	if (name == NULL || strcmp(name, "list") == 0) {
 		if (JS_GetProperty(cx, obj, "list", &objval)) {
 			tobj = JSVAL_TO_OBJECT(objval);
@@ -1249,31 +1284,34 @@ static JSBool js_uifc_resolve(JSContext *cx, JSObject *obj, jsid id)
 				JS_InitClass(cx, tobj, NULL, &js_uifc_getstrxy_ctx_class, js_getstrxy_ctx_constructor, 0, NULL, NULL, NULL, NULL);
 		}
 	}
-	if (name)
-		free(name);
 	return ret;
 }
-static JSBool js_uifc_enumerate(JSContext *cx, JSObject *obj)
+static bool js_uifc_enumerate(JSContext *cx, JS::Handle<JSObject*> obj)
 {
-	return js_uifc_resolve(cx, obj, JSID_VOID);
+	return js_uifc_resolve_impl(cx, obj, NULL);
 }
+static const JSClassOps js_uifc_classops = {
+	nullptr,                /* addProperty  */
+	nullptr,                /* delProperty  */
+	js_uifc_enumerate,      /* enumerate    */
+	nullptr,                /* newEnumerate */
+	js_uifc_resolve,        /* resolve      */
+	nullptr,                /* mayResolve   */
+	js_finalize,            /* finalize     */
+	nullptr, nullptr, nullptr /* call, construct, trace */
+};
 static JSClass js_uifc_class = {
-	"UIFC"                  /* name			*/
-	, JSCLASS_HAS_PRIVATE    /* flags		*/
-	, JS_PropertyStub        /* addProperty	*/
-	, JS_PropertyStub        /* delProperty	*/
-	, js_get                 /* getProperty	*/
-	, js_set                 /* setProperty	*/
-	, js_uifc_enumerate      /* enumerate	*/
-	, js_uifc_resolve        /* resolve		*/
-	, JS_ConvertStub         /* convert		*/
-	, js_finalize            /* finalize		*/
+	"UIFC"
+	, JSCLASS_HAS_PRIVATE
+	, &js_uifc_classops
 };
 JSObject* js_CreateUifcObject(JSContext* cx, JSObject* parent)
 {
 	JSObject*  obj;
 	uifcapi_t* api;
-	if ((obj = JS_DefineObject(cx, parent, "uifc", &js_uifc_class, NULL
+	JS::RootedObject rparent(cx, parent);
+
+	if ((obj = JS_DefineObject(cx, rparent, "uifc", &js_uifc_class
 	                           , JSPROP_ENUMERATE | JSPROP_READONLY)) == NULL)
 		return NULL;
 	if ((api = (uifcapi_t*)malloc(sizeof(uifcapi_t))) == NULL)
@@ -1281,8 +1319,7 @@ JSObject* js_CreateUifcObject(JSContext* cx, JSObject* parent)
 	memset(api, 0, sizeof(uifcapi_t));
 	api->size = sizeof(uifcapi_t);
 	api->esc_delay = 25;
-	if (!JS_SetPrivate(cx, obj, api))    /* Store a pointer to uifcapi_t */
-		return NULL;
+	JS_SetPrivate(obj, api);    /* Store a pointer to uifcapi_t */
 #ifdef BUILD_JSDOCS
 	js_DescribeSyncObject(cx, obj, "User InterFaCe object - Text User Interface (TUI) menu system for JSexec", 314);
 	js_CreateArrayOfStrings(cx, obj, "_property_desc_list", uifc_prop_desc, JSPROP_READONLY);

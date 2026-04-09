@@ -22,7 +22,6 @@
 #include "sbbs.h"
 #include "sauce.h"
 #include "filedat.h"
-#include "js_request.h"
 
 typedef struct
 {
@@ -33,11 +32,11 @@ typedef struct
 
 /* Destructor */
 
-static void js_finalize_filebase(JSContext *cx, JSObject *obj)
+static void js_finalize_filebase(JS::GCContext* gcx, JSObject *obj)
 {
 	private_t* p;
 
-	if ((p = (private_t*)JS_GetPrivate(cx, obj)) == NULL)
+	if ((p = (private_t*)JS_GetPrivate(obj)) == NULL)
 		return;
 
 	if (SMB_IS_OPEN(&(p->smb)))
@@ -45,7 +44,7 @@ static void js_finalize_filebase(JSContext *cx, JSObject *obj)
 
 	free(p);
 
-	JS_SetPrivate(cx, obj, NULL);
+	JS_SetPrivate(obj, NULL);
 }
 
 /* Methods */
@@ -57,7 +56,6 @@ js_open(JSContext *cx, uintN argc, jsval *arglist)
 {
 	JSObject*  obj = JS_THIS_OBJECT(cx, arglist);
 	private_t* p;
-	jsrefcount rc;
 	scfg_t*    scfg;
 
 	scfg = static_cast<scfg_t *>(JS_GetRuntimePrivate(JS_GetRuntime(cx)));
@@ -80,16 +78,13 @@ js_open(JSContext *cx, uintN argc, jsval *arglist)
 		}
 	}
 
-	rc = JS_SUSPENDREQUEST(cx);
 	if (!dirnum_is_valid(scfg, p->smb.dirnum))
 		p->smb_result = smb_open(&(p->smb));
 	else
 		p->smb_result = smb_open_dir(scfg, &(p->smb), p->smb.dirnum);
 	if (p->smb_result != SMB_SUCCESS) {
-		JS_RESUMEREQUEST(cx, rc);
 		return JS_TRUE;
 	}
-	JS_RESUMEREQUEST(cx, rc);
 
 	JS_SET_RVAL(cx, arglist, JSVAL_TRUE);
 	return JS_TRUE;
@@ -100,7 +95,6 @@ js_close(JSContext *cx, uintN argc, jsval *arglist)
 {
 	JSObject*  obj = JS_THIS_OBJECT(cx, arglist);
 	private_t* p;
-	jsrefcount rc;
 
 	if ((p = (private_t*)js_GetClassPrivate(cx, obj, &js_filebase_class)) == NULL) {
 		return JS_FALSE;
@@ -108,9 +102,7 @@ js_close(JSContext *cx, uintN argc, jsval *arglist)
 
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
-	rc = JS_SUSPENDREQUEST(cx);
 	smb_close(&(p->smb));
-	JS_RESUMEREQUEST(cx, rc);
 
 	return JS_TRUE;
 }
@@ -120,7 +112,6 @@ js_lock(JSContext *cx, uintN argc, jsval *arglist)
 {
 	JSObject*  obj = JS_THIS_OBJECT(cx, arglist);
 	private_t* p;
-	jsrefcount rc;
 
 	if ((p = (private_t*)js_GetClassPrivate(cx, obj, &js_filebase_class)) == NULL) {
 		return JS_FALSE;
@@ -128,13 +119,10 @@ js_lock(JSContext *cx, uintN argc, jsval *arglist)
 
 	JS_SET_RVAL(cx, arglist, JSVAL_FALSE);
 
-	rc = JS_SUSPENDREQUEST(cx);
 	p->smb_result = smb_lock(&(p->smb));
 	if (p->smb_result != SMB_SUCCESS) {
-		JS_RESUMEREQUEST(cx, rc);
 		return JS_TRUE;
 	}
-	JS_RESUMEREQUEST(cx, rc);
 	JS_SET_RVAL(cx, arglist, JSVAL_TRUE);
 
 	return JS_TRUE;
@@ -145,7 +133,6 @@ js_unlock(JSContext *cx, uintN argc, jsval *arglist)
 {
 	JSObject*  obj = JS_THIS_OBJECT(cx, arglist);
 	private_t* p;
-	jsrefcount rc;
 
 	if ((p = (private_t*)js_GetClassPrivate(cx, obj, &js_filebase_class)) == NULL) {
 		return JS_FALSE;
@@ -153,13 +140,10 @@ js_unlock(JSContext *cx, uintN argc, jsval *arglist)
 
 	JS_SET_RVAL(cx, arglist, JSVAL_FALSE);
 
-	rc = JS_SUSPENDREQUEST(cx);
 	p->smb_result = smb_unlock(&(p->smb));
 	if (p->smb_result != SMB_SUCCESS) {
-		JS_RESUMEREQUEST(cx, rc);
 		return JS_TRUE;
 	}
-	JS_RESUMEREQUEST(cx, rc);
 	JS_SET_RVAL(cx, arglist, JSVAL_TRUE);
 
 	return JS_TRUE;
@@ -197,21 +181,23 @@ js_dump_file(JSContext *cx, uintN argc, jsval *arglist)
 	if ((p->smb_result = smb_loadfile(&p->smb, filename, &file, file_detail_normal)) == SMB_SUCCESS) {
 		str_list_t list = smb_msghdr_str_list(&file);
 		if (list != NULL) {
-			JSObject* array;
-			if ((array = JS_NewArrayObject(cx, 0, NULL)) == NULL) {
+			JS::RootedObject array(cx);
+			array = JS_NewArrayObject(cx, 0, NULL);
+			if (array == nullptr) {
 				free(filename);
 				strListFree(&list);
 				JS_ReportError(cx, "JS_NewArrayObject failure");
 				return JS_FALSE;
 			}
-			JS_SET_RVAL(cx, arglist, OBJECT_TO_JSVAL(array));
+			JS::RootedString js_str(cx);
 			for (int i = 0; list[i] != NULL; i++) {
-				JSString* js_str = JS_NewStringCopyZ(cx, list[i]);
-				if (js_str == NULL)
+				js_str = JS_NewStringCopyZ(cx, list[i]);
+				if (js_str == nullptr)
 					break;
-				JS_DefineElement(cx, array, i, STRING_TO_JSVAL(js_str), NULL, NULL, JSPROP_ENUMERATE);
+				JS_DefineElement(cx, array.get(), i, STRING_TO_JSVAL(js_str.get()), NULL, NULL, JSPROP_ENUMERATE);
 			}
 			strListFree(&list);
+			JS_SET_RVAL(cx, arglist, OBJECT_TO_JSVAL(array.get()));
 		}
 	}
 	smb_freefilemem(&file);
@@ -220,12 +206,12 @@ js_dump_file(JSContext *cx, uintN argc, jsval *arglist)
 }
 
 static bool
-set_file_properties(JSContext *cx, JSObject* obj, file_t* f, enum file_detail detail)
+set_file_properties(JSContext *cx, JS::HandleObject obj, file_t* f, enum file_detail detail)
 {
-	char        path[MAX_PATH + 1];
-	jsval       val;
-	JSString*   js_str;
-	const uintN flags = JSPROP_ENUMERATE;
+	char             path[MAX_PATH + 1];
+	jsval            val;
+	JS::RootedString js_str(cx);
+	const uintN      flags = JSPROP_ENUMERATE;
 
 	scfg_t*     scfg = static_cast<scfg_t *>(JS_GetRuntimePrivate(JS_GetRuntime(cx)));
 	if (scfg == NULL) {
@@ -233,133 +219,133 @@ set_file_properties(JSContext *cx, JSObject* obj, file_t* f, enum file_detail de
 		return JS_FALSE;
 	}
 	if (f->name == NULL
-	    || (js_str = JS_NewStringCopyZ(cx, f->name)) == NULL
-	    || !JS_DefineProperty(cx, obj, "name", STRING_TO_JSVAL(js_str), NULL, NULL, flags))
+	    || (js_str = JS_NewStringCopyZ(cx, f->name)) == nullptr
+	    || !JS_DefineProperty(cx, obj.get(), "name", STRING_TO_JSVAL(js_str.get()), NULL, NULL, flags))
 		return false;
 
-	if ((js_str = JS_NewStringCopyZ(cx, getfilevpath(scfg, f, path, sizeof path))) == NULL
-	    || !JS_DefineProperty(cx, obj, "vpath", STRING_TO_JSVAL(js_str), NULL, NULL, flags | JSPROP_READONLY))
+	if ((js_str = JS_NewStringCopyZ(cx, getfilevpath(scfg, f, path, sizeof path))) == nullptr
+	    || !JS_DefineProperty(cx, obj.get(), "vpath", STRING_TO_JSVAL(js_str.get()), NULL, NULL, flags | JSPROP_READONLY))
 		return false;
 
 	if (((f->from != NULL && *f->from != '\0') || detail > file_detail_auxdata)
-	    && ((js_str = JS_NewStringCopyZ(cx, f->from)) == NULL
-	        || !JS_DefineProperty(cx, obj, "from", STRING_TO_JSVAL(js_str), NULL, NULL, flags)))
+	    && ((js_str = JS_NewStringCopyZ(cx, f->from)) == nullptr
+	        || !JS_DefineProperty(cx, obj.get(), "from", STRING_TO_JSVAL(js_str.get()), NULL, NULL, flags)))
 		return false;
 
 	if (((f->from_ip != NULL && *f->from_ip != '\0') || detail > file_detail_auxdata)
-	    && ((js_str = JS_NewStringCopyZ(cx, f->from_ip)) == NULL
-	        || !JS_DefineProperty(cx, obj, "from_ip_addr", STRING_TO_JSVAL(js_str), NULL, NULL, flags)))
+	    && ((js_str = JS_NewStringCopyZ(cx, f->from_ip)) == nullptr
+	        || !JS_DefineProperty(cx, obj.get(), "from_ip_addr", STRING_TO_JSVAL(js_str.get()), NULL, NULL, flags)))
 		return false;
 
 	if (((f->from_host != NULL && *f->from_host != '\0') || detail > file_detail_auxdata)
-	    && ((js_str = JS_NewStringCopyZ(cx, f->from_host)) == NULL
-	        || !JS_DefineProperty(cx, obj, "from_host_name", STRING_TO_JSVAL(js_str), NULL, NULL, flags)))
+	    && ((js_str = JS_NewStringCopyZ(cx, f->from_host)) == nullptr
+	        || !JS_DefineProperty(cx, obj.get(), "from_host_name", STRING_TO_JSVAL(js_str.get()), NULL, NULL, flags)))
 		return false;
 
 	if (((f->from_prot != NULL && *f->from_prot != '\0') || detail > file_detail_auxdata)
-	    && ((js_str = JS_NewStringCopyZ(cx, f->from_prot)) == NULL
-	        || !JS_DefineProperty(cx, obj, "from_protocol", STRING_TO_JSVAL(js_str), NULL, NULL, flags)))
+	    && ((js_str = JS_NewStringCopyZ(cx, f->from_prot)) == nullptr
+	        || !JS_DefineProperty(cx, obj.get(), "from_protocol", STRING_TO_JSVAL(js_str.get()), NULL, NULL, flags)))
 		return false;
 
 	if (((f->from_port != NULL && *f->from_port != '\0') || detail > file_detail_auxdata)
-	    && ((js_str = JS_NewStringCopyZ(cx, f->from_port)) == NULL
-	        || !JS_DefineProperty(cx, obj, "from_port", STRING_TO_JSVAL(js_str), NULL, NULL, flags)))
+	    && ((js_str = JS_NewStringCopyZ(cx, f->from_port)) == nullptr
+	        || !JS_DefineProperty(cx, obj.get(), "from_port", STRING_TO_JSVAL(js_str.get()), NULL, NULL, flags)))
 		return false;
 
 	if (((f->author != NULL && *f->author != '\0') || detail > file_detail_auxdata)
-	    && ((js_str = JS_NewStringCopyZ(cx, f->author)) == NULL
-	        || !JS_DefineProperty(cx, obj, "author", STRING_TO_JSVAL(js_str), NULL, NULL, flags)))
+	    && ((js_str = JS_NewStringCopyZ(cx, f->author)) == nullptr
+	        || !JS_DefineProperty(cx, obj.get(), "author", STRING_TO_JSVAL(js_str.get()), NULL, NULL, flags)))
 		return false;
 
 	if (((f->author_org != NULL && *f->author_org != '\0') || detail > file_detail_auxdata)
-	    && ((js_str = JS_NewStringCopyZ(cx, f->author_org)) == NULL
-	        || !JS_DefineProperty(cx, obj, "author_org", STRING_TO_JSVAL(js_str), NULL, NULL, flags)))
+	    && ((js_str = JS_NewStringCopyZ(cx, f->author_org)) == nullptr
+	        || !JS_DefineProperty(cx, obj.get(), "author_org", STRING_TO_JSVAL(js_str.get()), NULL, NULL, flags)))
 		return false;
 
 	if (((f->to_list != NULL && *f->to_list != '\0') || detail > file_detail_auxdata)
-	    && ((js_str = JS_NewStringCopyZ(cx, f->to_list)) == NULL
-	        || !JS_DefineProperty(cx, obj, "to_list", STRING_TO_JSVAL(js_str), NULL, NULL, flags)))
+	    && ((js_str = JS_NewStringCopyZ(cx, f->to_list)) == nullptr
+	        || !JS_DefineProperty(cx, obj.get(), "to_list", STRING_TO_JSVAL(js_str.get()), NULL, NULL, flags)))
 		return false;
 
 	val = BOOLEAN_TO_JSVAL(f->idx.attr & FILE_ANONYMOUS);
 	if ((val == JSVAL_TRUE || detail > file_detail_auxdata)
-	    && !JS_DefineProperty(cx, obj, "anon", val, NULL, NULL, flags))
+	    && !JS_DefineProperty(cx, obj.get(), "anon", val, NULL, NULL, flags))
 		return false;
 
 	if (((f->tags != NULL && *f->tags != '\0') || detail > file_detail_auxdata)
-	    && ((js_str = JS_NewStringCopyZ(cx, f->tags)) == NULL
-	        || !JS_DefineProperty(cx, obj, "tags", STRING_TO_JSVAL(js_str), NULL, NULL, flags)))
+	    && ((js_str = JS_NewStringCopyZ(cx, f->tags)) == nullptr
+	        || !JS_DefineProperty(cx, obj.get(), "tags", STRING_TO_JSVAL(js_str.get()), NULL, NULL, flags)))
 		return false;
 
 	if (((f->desc != NULL && *f->desc != '\0') || detail > file_detail_auxdata)
-	    && ((js_str = JS_NewStringCopyZ(cx, f->desc)) == NULL
-	        || !JS_DefineProperty(cx, obj, "desc", STRING_TO_JSVAL(js_str), NULL, NULL, flags)))
+	    && ((js_str = JS_NewStringCopyZ(cx, f->desc)) == nullptr
+	        || !JS_DefineProperty(cx, obj.get(), "desc", STRING_TO_JSVAL(js_str.get()), NULL, NULL, flags)))
 		return false;
 
 	if (((f->extdesc != NULL && *f->extdesc != '\0') || detail > file_detail_auxdata)
-	    && ((js_str = JS_NewStringCopyZ(cx, f->extdesc)) == NULL
-	        || !JS_DefineProperty(cx, obj, "extdesc", STRING_TO_JSVAL(js_str), NULL, NULL, flags)))
+	    && ((js_str = JS_NewStringCopyZ(cx, f->extdesc)) == nullptr
+	        || !JS_DefineProperty(cx, obj.get(), "extdesc", STRING_TO_JSVAL(js_str.get()), NULL, NULL, flags)))
 		return false;
 
 	if (f->cost > 0 || detail > file_detail_auxdata) {
 		val = DOUBLE_TO_JSVAL((double)f->cost);
-		if (!JS_DefineProperty(cx, obj, "cost", val, NULL, NULL, flags))
+		if (!JS_DefineProperty(cx, obj.get(), "cost", val, NULL, NULL, flags))
 			return false;
 	}
 	if (dirnum_is_valid(scfg, f->dir) && (scfg->dir[f->dir]->misc & DIR_FCHK) && detail >= file_detail_normal)
 		val = DOUBLE_TO_JSVAL((double)getfilesize(scfg, f));
 	else
 		val = DOUBLE_TO_JSVAL((double)smb_getfilesize(&f->idx));
-	if (!JS_DefineProperty(cx, obj, "size", val, NULL, NULL, flags))
+	if (!JS_DefineProperty(cx, obj.get(), "size", val, NULL, NULL, flags))
 		return false;
 
 	if (dirnum_is_valid(scfg, f->dir) && (scfg->dir[f->dir]->misc & DIR_FCHK) && detail >= file_detail_normal)
 		val = DOUBLE_TO_JSVAL((double)getfiletime(scfg, f));
 	else
 		val = UINT_TO_JSVAL(f->hdr.when_written.time);
-	if (!JS_DefineProperty(cx, obj, "time", val, NULL, NULL, flags))
+	if (!JS_DefineProperty(cx, obj.get(), "time", val, NULL, NULL, flags))
 		return false;
 	if (f->hdr.when_imported.time > 0 || detail > file_detail_auxdata) {
 		val = UINT_TO_JSVAL(f->hdr.when_imported.time);
-		if (!JS_DefineProperty(cx, obj, "added", val, NULL, NULL, flags))
+		if (!JS_DefineProperty(cx, obj.get(), "added", val, NULL, NULL, flags))
 			return false;
 	}
 	if (f->hdr.last_downloaded > 0 || detail > file_detail_auxdata) {
 		val = UINT_TO_JSVAL(f->hdr.last_downloaded);
-		if (!JS_DefineProperty(cx, obj, "last_downloaded", val, NULL, NULL, flags))
+		if (!JS_DefineProperty(cx, obj.get(), "last_downloaded", val, NULL, NULL, flags))
 			return false;
 	}
 	if (f->hdr.times_downloaded > 0 || detail > file_detail_auxdata) {
 		val = UINT_TO_JSVAL(f->hdr.times_downloaded);
-		if (!JS_DefineProperty(cx, obj, "times_downloaded", val, NULL, NULL, flags))
+		if (!JS_DefineProperty(cx, obj.get(), "times_downloaded", val, NULL, NULL, flags))
 			return false;
 	}
 	if (f->file_idx.hash.flags & SMB_HASH_CRC16) {
 		val = UINT_TO_JSVAL(f->file_idx.hash.data.crc16);
-		if (!JS_DefineProperty(cx, obj, "crc16", val, NULL, NULL, flags))
+		if (!JS_DefineProperty(cx, obj.get(), "crc16", val, NULL, NULL, flags))
 			return false;
 	}
 	if (f->file_idx.hash.flags & SMB_HASH_CRC32) {
 		val = UINT_TO_JSVAL(f->file_idx.hash.data.crc32);
-		if (!JS_DefineProperty(cx, obj, "crc32", val, NULL, NULL, flags))
+		if (!JS_DefineProperty(cx, obj.get(), "crc32", val, NULL, NULL, flags))
 			return false;
 	}
 	if (f->file_idx.hash.flags & SMB_HASH_MD5) {
 		char hex[128];
-		if ((js_str = JS_NewStringCopyZ(cx, MD5_hex(hex, f->file_idx.hash.data.md5))) == NULL
-		    || !JS_DefineProperty(cx, obj, "md5", STRING_TO_JSVAL(js_str), NULL, NULL, flags))
+		if ((js_str = JS_NewStringCopyZ(cx, MD5_hex(hex, f->file_idx.hash.data.md5))) == nullptr
+		    || !JS_DefineProperty(cx, obj.get(), "md5", STRING_TO_JSVAL(js_str.get()), NULL, NULL, flags))
 			return false;
 	}
 	if (f->file_idx.hash.flags & SMB_HASH_SHA1) {
 		char hex[128];
-		if ((js_str = JS_NewStringCopyZ(cx, SHA1_hex(hex, f->file_idx.hash.data.sha1))) == NULL
-		    || !JS_DefineProperty(cx, obj, "sha1", STRING_TO_JSVAL(js_str), NULL, NULL, flags))
+		if ((js_str = JS_NewStringCopyZ(cx, SHA1_hex(hex, f->file_idx.hash.data.sha1))) == nullptr
+		    || !JS_DefineProperty(cx, obj.get(), "sha1", STRING_TO_JSVAL(js_str.get()), NULL, NULL, flags))
 			return false;
 	}
 
 	if (((f->auxdata != NULL && *f->auxdata != '\0') || detail > file_detail_auxdata)
-	    && ((js_str = JS_NewStringCopyZ(cx, f->auxdata)) == NULL
-	        || !JS_DefineProperty(cx, obj, "auxdata", STRING_TO_JSVAL(js_str), NULL, NULL, flags)))
+	    && ((js_str = JS_NewStringCopyZ(cx, f->auxdata)) == nullptr
+	        || !JS_DefineProperty(cx, obj.get(), "auxdata", STRING_TO_JSVAL(js_str.get()), NULL, NULL, flags)))
 		return false;
 
 	return true;
@@ -707,7 +693,6 @@ js_hash_file(JSContext *cx, uintN argc, jsval *arglist)
 	char             path[MAX_PATH + 1];
 	char*            filename = NULL;
 	enum file_detail detail = file_detail_normal;
-	jsrefcount       rc;
 
 	JS_SET_RVAL(cx, arglist, JSVAL_NULL);
 
@@ -733,7 +718,6 @@ js_hash_file(JSContext *cx, uintN argc, jsval *arglist)
 		JS_ReportError(cx, "No filename argument");
 		return JS_FALSE;
 	}
-	rc = JS_SUSPENDREQUEST(cx);
 	if (getfname(filename) != filename)
 		SAFECOPY(path, filename);
 	else {
@@ -750,17 +734,17 @@ js_hash_file(JSContext *cx, uintN argc, jsval *arglist)
 		if ((p->smb_result = smb_hashfile(path, size, &file.file_idx.hash.data)) > 0) {
 			file.file_idx.hash.flags = p->smb_result;
 			file.hdr.when_written.time = (uint32_t)fdate(path);
-			JSObject* fobj;
-			if ((fobj = JS_NewObject(cx, NULL, NULL, obj)) == NULL)
+			JS::RootedObject fobj(cx);
+			fobj = JS_NewObject(cx, NULL, NULL, obj);
+			if (fobj == nullptr)
 				JS_ReportError(cx, "object allocation failure, line %d", __LINE__);
 			else {
 				set_file_properties(cx, fobj, &file, detail);
-				JS_SET_RVAL(cx, arglist, OBJECT_TO_JSVAL(fobj));
+				JS_SET_RVAL(cx, arglist, OBJECT_TO_JSVAL(fobj.get()));
 				result = JS_TRUE;
 			}
 		}
 	}
-	JS_RESUMEREQUEST(cx, rc);
 	free(filename);
 	smb_freefilemem(&file);
 
@@ -775,7 +759,6 @@ js_get_file(JSContext *cx, uintN argc, jsval *arglist)
 	private_t*       p;
 	char*            filename = NULL;
 	enum file_detail detail = file_detail_normal;
-	jsrefcount       rc;
 
 	JS_SET_RVAL(cx, arglist, JSVAL_NULL);
 
@@ -817,20 +800,19 @@ js_get_file(JSContext *cx, uintN argc, jsval *arglist)
 		argn++;
 	}
 	JSBool result = JS_TRUE;
-	rc = JS_SUSPENDREQUEST(cx);
 	if ((p->smb_result = smb_findfile(&p->smb, filename, &file)) == SMB_SUCCESS
 	    && (p->smb_result = smb_getfile(&p->smb, &file, detail)) == SMB_SUCCESS) {
-		JSObject* fobj;
-		if ((fobj = JS_NewObject(cx, NULL, NULL, obj)) == NULL) {
+		JS::RootedObject fobj(cx);
+		fobj = JS_NewObject(cx, NULL, NULL, obj);
+		if (fobj == nullptr) {
 			JS_ReportError(cx, "object allocation failure, line %d", __LINE__);
 			result = JS_FALSE;
 		}
 		else {
 			set_file_properties(cx, fobj, &file, detail);
-			JS_SET_RVAL(cx, arglist, OBJECT_TO_JSVAL(fobj));
+			JS_SET_RVAL(cx, arglist, OBJECT_TO_JSVAL(fobj.get()));
 		}
 	}
-	JS_RESUMEREQUEST(cx, rc);
 	free(filename);
 	smb_freefilemem(&file);
 
@@ -847,7 +829,6 @@ js_get_file_list(JSContext *cx, uintN argc, jsval *arglist)
 	char*            filespec = NULL;
 	enum file_detail detail = file_detail_normal;
 	enum file_sort   sort = FILE_SORT_NAME_A;
-	jsrefcount       rc;
 
 	scfg_t*          scfg = static_cast<scfg_t *>(JS_GetRuntimePrivate(JS_GetRuntime(cx)));
 	if (scfg == NULL) {
@@ -891,11 +872,10 @@ js_get_file_list(JSContext *cx, uintN argc, jsval *arglist)
 		}
 	}
 
-	rc = JS_SUSPENDREQUEST(cx);
-	JSObject* array;
-	if ((array = JS_NewArrayObject(cx, 0, NULL)) == NULL) {
+	JS::RootedObject array(cx);
+	array = JS_NewArrayObject(cx, 0, NULL);
+	if (array == nullptr) {
 		free(filespec);
-		JS_RESUMEREQUEST(cx, rc);
 		JS_ReportError(cx, "JS_NewArrayObject failure");
 		return JS_FALSE;
 	}
@@ -904,20 +884,20 @@ js_get_file_list(JSContext *cx, uintN argc, jsval *arglist)
 	size_t  file_count;
 	file_t* file_list = loadfiles(&p->smb, filespec, t, detail, sort, &file_count);
 	if (file_list != NULL) {
+		JS::RootedObject fobj(cx);
 		for (size_t i = 0; i < file_count; i++) {
-			JSObject* fobj;
-			if ((fobj = JS_NewObject(cx, NULL, NULL, array)) == NULL) {
+			fobj = JS_NewObject(cx, NULL, NULL, array.get());
+			if (fobj == nullptr) {
 				JS_ReportError(cx, "object allocation failure, line %d", __LINE__);
 				result = JS_FALSE;
 				break;
 			}
 			set_file_properties(cx, fobj, &file_list[i], detail);
-			JS_DefineElement(cx, array, i, OBJECT_TO_JSVAL(fobj), NULL, NULL, JSPROP_ENUMERATE);
+			JS_DefineElement(cx, array.get(), i, OBJECT_TO_JSVAL(fobj.get()), NULL, NULL, JSPROP_ENUMERATE);
 		}
 		freefiles(file_list, file_count);
 	}
-	JS_SET_RVAL(cx, arglist, OBJECT_TO_JSVAL(array));
-	JS_RESUMEREQUEST(cx, rc);
+	JS_SET_RVAL(cx, arglist, OBJECT_TO_JSVAL(array.get()));
 	free(filespec);
 
 	return result;
@@ -932,7 +912,6 @@ js_get_file_names(JSContext *cx, uintN argc, jsval *arglist)
 	time_t         t = 0;
 	char*          filespec = NULL;
 	enum file_sort sort = FILE_SORT_NAME_A;
-	jsrefcount     rc;
 
 	scfg_t*        scfg = static_cast<scfg_t *>(JS_GetRuntimePrivate(JS_GetRuntime(cx)));
 	if (scfg == NULL) {
@@ -972,27 +951,26 @@ js_get_file_names(JSContext *cx, uintN argc, jsval *arglist)
 		}
 	}
 
-	rc = JS_SUSPENDREQUEST(cx);
-	JSObject* array;
-	if ((array = JS_NewArrayObject(cx, 0, NULL)) == NULL) {
+	JS::RootedObject array(cx);
+	array = JS_NewArrayObject(cx, 0, NULL);
+	if (array == nullptr) {
 		free(filespec);
-		JS_RESUMEREQUEST(cx, rc);
 		JS_ReportError(cx, "JS_NewArrayObject failure");
 		return JS_FALSE;
 	}
 
 	str_list_t file_list = loadfilenames(&p->smb, filespec, t, sort, NULL);
 	if (file_list != NULL) {
+		JS::RootedString js_str(cx);
 		for (size_t i = 0; file_list[i] != NULL; i++) {
-			JSString* js_str;
-			if ((js_str = JS_NewStringCopyZ(cx, file_list[i])) == NULL)
+			js_str = JS_NewStringCopyZ(cx, file_list[i]);
+			if (js_str == nullptr)
 				return JS_FALSE;
-			JS_DefineElement(cx, array, i, STRING_TO_JSVAL(js_str), NULL, NULL, JSPROP_ENUMERATE);
+			JS_DefineElement(cx, array.get(), i, STRING_TO_JSVAL(js_str.get()), NULL, NULL, JSPROP_ENUMERATE);
 		}
 		strListFree(&file_list);
 	}
-	JS_SET_RVAL(cx, arglist, OBJECT_TO_JSVAL(array));
-	JS_RESUMEREQUEST(cx, rc);
+	JS_SET_RVAL(cx, arglist, OBJECT_TO_JSVAL(array.get()));
 	free(filespec);
 
 	return JS_TRUE;
@@ -1068,7 +1046,6 @@ js_get_file_path(JSContext *cx, uintN argc, jsval *arglist)
 	jsval*     argv = JS_ARGV(cx, arglist);
 	private_t* p;
 	char*      filename = NULL;
-	jsrefcount rc;
 	file_t     file;
 
 	ZERO_VAR(file);
@@ -1099,7 +1076,6 @@ js_get_file_path(JSContext *cx, uintN argc, jsval *arglist)
 		return JS_TRUE;
 
 	JSBool result = JS_FALSE;
-	rc = JS_SUSPENDREQUEST(cx);
 	if ((p->smb_result = smb_loadfile(&p->smb, filename, &file, file_detail_normal)) == SMB_SUCCESS) {
 		char      path[MAX_PATH + 1];
 		JSString* js_str;
@@ -1110,7 +1086,6 @@ js_get_file_path(JSContext *cx, uintN argc, jsval *arglist)
 	}
 	else
 		JS_ReportError(cx, "%d loading file '%s'", p->smb_result, filename);
-	JS_RESUMEREQUEST(cx, rc);
 	free(filename);
 
 	return result;
@@ -1123,7 +1098,6 @@ js_get_file_size(JSContext *cx, uintN argc, jsval *arglist)
 	jsval*     argv = JS_ARGV(cx, arglist);
 	private_t* p;
 	char*      filename = NULL;
-	jsrefcount rc;
 	file_t     file;
 
 	ZERO_VAR(file);
@@ -1153,12 +1127,10 @@ js_get_file_size(JSContext *cx, uintN argc, jsval *arglist)
 	else if (filename == NULL)
 		return JS_TRUE;
 
-	rc = JS_SUSPENDREQUEST(cx);
 	if ((p->smb_result = smb_loadfile(&p->smb, filename, &file, file_detail_normal)) == SMB_SUCCESS) {
 		JS_SET_RVAL(cx, arglist, DOUBLE_TO_JSVAL((jsdouble)getfilesize(scfg, &file)));
 		smb_freefilemem(&file);
 	}
-	JS_RESUMEREQUEST(cx, rc);
 	free(filename);
 
 	return JS_TRUE;
@@ -1171,7 +1143,6 @@ js_get_file_time(JSContext *cx, uintN argc, jsval *arglist)
 	jsval*     argv = JS_ARGV(cx, arglist);
 	private_t* p;
 	char*      filename = NULL;
-	jsrefcount rc;
 	file_t     file;
 
 	ZERO_VAR(file);
@@ -1201,12 +1172,10 @@ js_get_file_time(JSContext *cx, uintN argc, jsval *arglist)
 	else if (filename == NULL)
 		return JS_TRUE;
 
-	rc = JS_SUSPENDREQUEST(cx);
 	if ((p->smb_result = smb_loadfile(&p->smb, filename, &file, file_detail_normal)) == SMB_SUCCESS) {
 		JS_SET_RVAL(cx, arglist, UINT_TO_JSVAL((uint32)getfiletime(scfg, &file)));
 		smb_freefilemem(&file);
 	}
-	JS_RESUMEREQUEST(cx, rc);
 	free(filename);
 
 	return JS_TRUE;
@@ -1244,7 +1213,6 @@ js_add_file(JSContext *cx, uintN argc, jsval *arglist)
 	client_t*  client = NULL;
 	bool       use_diz_always = false;
 	bool       use_diz_never = false;
-	jsrefcount rc;
 
 	ZERO_VAR(file);
 	JS_SET_RVAL(cx, arglist, JSVAL_FALSE);
@@ -1279,14 +1247,13 @@ js_add_file(JSContext *cx, uintN argc, jsval *arglist)
 	}
 	if (argn < argc && JSVAL_IS_OBJECT(argv[argn]) && !JSVAL_IS_NULL(argv[argn])) {
 		JSObject* objarg = JSVAL_TO_OBJECT(argv[argn]);
-		JSClass*  cl;
+		const JSClass*  cl;
 		if (objarg != NULL && (cl = JS_GetClass(cx, objarg)) != NULL && strcmp(cl->name, "Client") == 0) {
 			client = static_cast<client_t *>(JS_GetPrivate(cx, objarg));
 		}
 	}
 
 	file.dir = p->smb.dirnum;
-	rc = JS_SUSPENDREQUEST(cx);
 	if (file.name != NULL) {
 		if ((extdesc == NULL || use_diz_always == true)
 		    && !use_diz_never
@@ -1301,7 +1268,6 @@ js_add_file(JSContext *cx, uintN argc, jsval *arglist)
 		p->smb_result = smb_addfile(&p->smb, &file, SMB_SELFPACK, extdesc, auxdata, fpath);
 		JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(p->smb_result == SMB_SUCCESS));
 	}
-	JS_RESUMEREQUEST(cx, rc);
 	smb_freefilemem(&file);
 	free(extdesc);
 	free(auxdata);
@@ -1320,7 +1286,6 @@ js_update_file(JSContext *cx, uintN argc, jsval *arglist)
 	JSObject*  fileobj = NULL;
 	bool       use_diz_always = false;
 	bool       readd_always = false;
-	jsrefcount rc;
 
 	ZERO_VAR(file);
 	JS_SET_RVAL(cx, arglist, JSVAL_FALSE);
@@ -1361,7 +1326,6 @@ js_update_file(JSContext *cx, uintN argc, jsval *arglist)
 	JSBool result = JS_TRUE;
 	char*  extdesc = NULL;
 	char*  auxdata = NULL;
-	rc = JS_SUSPENDREQUEST(cx);
 	if (filename != NULL && fileobj != NULL
 	    && (p->smb_result = smb_loadfile(&p->smb, filename, &file, file_detail_extdesc)) == SMB_SUCCESS) {
 		p->smb_result = parse_file_properties(cx, fileobj, &file, &extdesc, &auxdata);
@@ -1413,7 +1377,6 @@ js_update_file(JSContext *cx, uintN argc, jsval *arglist)
 		}
 		JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(p->smb_result == SMB_SUCCESS));
 	}
-	JS_RESUMEREQUEST(cx, rc);
 	smb_freefilemem(&file);
 	free(filename);
 	free(extdesc);
@@ -1429,7 +1392,6 @@ js_renew_file(JSContext *cx, uintN argc, jsval *arglist)
 	jsval*     argv = JS_ARGV(cx, arglist);
 	private_t* p;
 	char*      fname = NULL;
-	jsrefcount rc;
 
 	JS_SET_RVAL(cx, arglist, JSVAL_FALSE);
 
@@ -1456,7 +1418,6 @@ js_renew_file(JSContext *cx, uintN argc, jsval *arglist)
 	if (fname == NULL)
 		return JS_TRUE;
 
-	rc = JS_SUSPENDREQUEST(cx);
 	file_t file;
 	if ((p->smb_result = smb_loadfile(&p->smb, fname, &file, file_detail_auxdata)) == SMB_SUCCESS) {
 		char path[MAX_PATH + 1];
@@ -1464,7 +1425,6 @@ js_renew_file(JSContext *cx, uintN argc, jsval *arglist)
 		smb_freefilemem(&file);
 	}
 	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(p->smb_result == SMB_SUCCESS));
-	JS_RESUMEREQUEST(cx, rc);
 	free(fname);
 
 	return JS_TRUE;
@@ -1478,7 +1438,6 @@ js_remove_file(JSContext *cx, uintN argc, jsval *arglist)
 	private_t* p;
 	char*      fname = NULL;
 	bool       delfile = false;
-	jsrefcount rc;
 
 	JS_SET_RVAL(cx, arglist, JSVAL_FALSE);
 
@@ -1510,7 +1469,6 @@ js_remove_file(JSContext *cx, uintN argc, jsval *arglist)
 		return JS_TRUE;
 
 	JSBool result = JS_TRUE;
-	rc = JS_SUSPENDREQUEST(cx);
 	file_t file;
 	if ((p->smb_result = smb_loadfile(&p->smb, fname, &file, file_detail_normal)) == SMB_SUCCESS) {
 		char path[MAX_PATH + 1];
@@ -1523,7 +1481,6 @@ js_remove_file(JSContext *cx, uintN argc, jsval *arglist)
 		smb_freefilemem(&file);
 	}
 	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(p->smb_result == SMB_SUCCESS));
-	JS_RESUMEREQUEST(cx, rc);
 	free(fname);
 
 	return result;
@@ -1549,54 +1506,38 @@ enum {
 	, FB_PROP_STATUS         /* Last SMBLIB returned status value (e.g. retval) */
 };
 
-static JSBool js_filebase_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, jsval *vp)
+static JSBool js_filebase_set_value(JSContext* cx, private_t* p, jsint tiny, jsval* vp)
 {
-	time32_t   t;
-	jsval      idval;
-	jsint      tiny;
-	private_t* p;
+	int32     val = 0;
 
-	if ((p = (private_t*)js_GetClassPrivate(cx, obj, &js_filebase_class)) == NULL) {
-		return JS_FALSE;
+	if (JSVAL_IS_NUMBER(*vp) || JSVAL_IS_BOOLEAN(*vp)) {
+		if (!JS_ValueToInt32(cx, *vp, &val))
+			return JS_FALSE;
 	}
-
-	JS_IdToValue(cx, id, &idval);
-	tiny = JSVAL_TO_INT(idval);
 
 	switch (tiny) {
 		case FB_PROP_RETRY_TIME:
-			if (!JS_ValueToInt32(cx, *vp, (int32*)&(p->smb).retry_time))
-				return JS_FALSE;
+			p->smb.retry_time = val;
 			break;
 		case FB_PROP_RETRY_DELAY:
-			if (!JS_ValueToInt32(cx, *vp, (int32*)&(p->smb).retry_delay))
-				return JS_FALSE;
+			p->smb.retry_delay = val;
 			break;
 		case FB_PROP_UPDATE_TIME:
-			if (!JS_ValueToInt32(cx, *vp, (int32*)&t))
-				return JS_FALSE;
-			update_newfiletime(&(p->smb), t);
+			update_newfiletime(&p->smb, val);
 			break;
+		default:
+			return JS_TRUE;
 	}
 
 	return JS_TRUE;
 }
 
-static JSBool js_filebase_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
+/* SM128: populate a single filebase property value by tinyid */
+static JSBool js_filebase_get_value(JSContext* cx, private_t* p, jsint tiny, jsval* vp)
 {
-	jsval      idval;
-	char*      s = NULL;
-	JSString*  js_str;
-	jsint      tiny;
-	idxrec_t   idx;
-	private_t* p;
-	jsrefcount rc;
-
-	if ((p = (private_t*)JS_GetPrivate(cx, obj)) == NULL)
-		return JS_FALSE;
-
-	JS_IdToValue(cx, id, &idval);
-	tiny = JSVAL_TO_INT(idval);
+	char*             s = NULL;
+	idxrec_t          idx;
+	JS::RootedString  js_str(cx);
 
 	switch (tiny) {
 		case FB_PROP_FILE:
@@ -1615,27 +1556,19 @@ static JSBool js_filebase_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 			*vp = INT_TO_JSVAL(p->smb.retry_delay);
 			break;
 		case FB_PROP_FIRST_FILE:
-			rc = JS_SUSPENDREQUEST(cx);
 			memset(&idx, 0, sizeof(idx));
 			smb_getfirstidx(&(p->smb), &idx);
-			JS_RESUMEREQUEST(cx, rc);
 			*vp = UINT_TO_JSVAL(idx.number);
 			break;
 		case FB_PROP_LAST_FILE:
-			rc = JS_SUSPENDREQUEST(cx);
 			smb_getstatus(&(p->smb));
-			JS_RESUMEREQUEST(cx, rc);
 			*vp = UINT_TO_JSVAL(p->smb.status.last_file);
 			break;
 		case FB_PROP_LAST_FILE_TIME:
-			rc = JS_SUSPENDREQUEST(cx);
 			*vp = UINT_TO_JSVAL((uint32_t)lastfiletime(&p->smb));
-			JS_RESUMEREQUEST(cx, rc);
 			break;
 		case FB_PROP_FILES:
-			rc = JS_SUSPENDREQUEST(cx);
 			smb_getstatus(&(p->smb));
-			JS_RESUMEREQUEST(cx, rc);
 			*vp = UINT_TO_JSVAL(p->smb.status.total_files);
 			break;
 		case FB_PROP_UPDATE_TIME:
@@ -1656,12 +1589,15 @@ static JSBool js_filebase_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 		case FB_PROP_IS_OPEN:
 			*vp = BOOLEAN_TO_JSVAL(SMB_IS_OPEN(&(p->smb)));
 			break;
+		default:
+			return JS_TRUE;
 	}
 
 	if (s != NULL) {
-		if ((js_str = JS_NewStringCopyZ(cx, s)) == NULL)
+		js_str = JS_NewStringCopyZ(cx, s);
+		if (!js_str)
 			return JS_FALSE;
-		*vp = STRING_TO_JSVAL(js_str);
+		*vp = STRING_TO_JSVAL(js_str.get());
 	}
 
 	return JS_TRUE;
@@ -1713,6 +1649,51 @@ static const char*      filebase_prop_desc[] = {
 	, NULL
 };
 #endif
+
+static bool js_filebase_prop_setter(JSContext* cx, unsigned argc, JS::Value* vp)
+{
+	JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
+	JS::RootedObject thisObj(cx);
+	if (!args.computeThis(cx, &thisObj))
+		return false;
+	private_t* p = (private_t*)js_GetClassPrivate(cx, thisObj, &js_filebase_class);
+	if (p == nullptr)
+		return true;
+	JSObject* callee = &args.callee();
+	jsint tiny = js::GetFunctionNativeReserved(callee, 0).toInt32();
+	jsval val = args.length() > 0 ? args[0] : JSVAL_VOID;
+	if (!js_filebase_set_value(cx, p, tiny, &val))
+		return false;
+	args.rval().set(val);
+	return true;
+}
+
+static bool js_filebase_prop_getter(JSContext* cx, unsigned argc, JS::Value* vp)
+{
+	JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
+	JS::RootedObject thisObj(cx);
+	if (!args.computeThis(cx, &thisObj))
+		return false;
+	private_t* p = (private_t*)js_GetClassPrivate(cx, thisObj, &js_filebase_class);
+	if (p == nullptr) {
+		args.rval().setUndefined();
+		return true;
+	}
+	JSObject* callee = &args.callee();
+	jsint tiny = js::GetFunctionNativeReserved(callee, 0).toInt32();
+	jsval val = JSVAL_VOID;
+	if (!js_filebase_get_value(cx, p, tiny, &val))
+		return false;
+	args.rval().set(val);
+	return true;
+}
+
+/* SM128: fill all (or one named) filebase properties after js_SyncResolve */
+static JSBool js_filebase_fill_properties(JSContext* cx, JSObject* obj, private_t* p, const char* name)
+{
+	(void)p;
+	return js_DefineSyncAccessors(cx, obj, js_filebase_properties, js_filebase_prop_getter, name, js_filebase_prop_setter);
+}
 
 static jsSyncMethodSpec js_filebase_functions[] = {
 	{"open",            js_open,            0, JSTYPE_BOOLEAN
@@ -1824,43 +1805,54 @@ static jsSyncMethodSpec js_filebase_functions[] = {
 	{0}
 };
 
-static JSBool js_filebase_resolve(JSContext *cx, JSObject *obj, jsid id)
+static bool js_filebase_resolve(JSContext *cx, JS::Handle<JSObject*> obj, JS::Handle<jsid> id, bool* resolvedp)
 {
-	char*  name = NULL;
-	JSBool ret;
+	char* name = NULL;
 
-	if (id != JSID_VOID && id != JSID_EMPTY) {
-		jsval idval;
-
-		JS_IdToValue(cx, id, &idval);
-		if (JSVAL_IS_STRING(idval)) {
-			JSVALUE_TO_MSTRING(cx, idval, name, NULL);
-			HANDLE_PENDING(cx, name);
-		}
+	if (id.get().isString()) {
+		JSString* str = id.get().toString();
+		JSSTRING_TO_MSTRING(cx, str, name, NULL);
+		HANDLE_PENDING(cx, name);
+		if (name == NULL) return false;
 	}
 
-	ret = js_SyncResolve(cx, obj, name, js_filebase_properties, js_filebase_functions, NULL, 0);
+	bool ret = js_SyncResolve(cx, obj, name, js_filebase_properties, js_filebase_functions, NULL, 0);
+	if (ret) {
+		private_t* p = (private_t*)js_GetClassPrivate(cx, obj, &js_filebase_class);
+		if (p != NULL)
+			ret = js_filebase_fill_properties(cx, obj, p, name);
+	}
 	if (name)
 		free(name);
-	return ret;
+	if (resolvedp) *resolvedp = ret;
+	return true;
 }
 
-static JSBool js_filebase_enumerate(JSContext *cx, JSObject *obj)
+static bool js_filebase_enumerate(JSContext *cx, JS::Handle<JSObject*> obj)
 {
-	return js_filebase_resolve(cx, obj, JSID_VOID);
+	private_t* p = (private_t*)js_GetClassPrivate(cx, obj, &js_filebase_class);
+	if (!js_SyncResolve(cx, obj, NULL, js_filebase_properties, js_filebase_functions, NULL, 0))
+		return false;
+	if (p != NULL)
+		return js_filebase_fill_properties(cx, obj, p, NULL);
+	return true;
 }
+
+static const JSClassOps js_filebase_classops = {
+	nullptr,                /* addProperty  */
+	nullptr,                /* delProperty  */
+	js_filebase_enumerate,  /* enumerate    */
+	nullptr,                /* newEnumerate */
+	js_filebase_resolve,    /* resolve      */
+	nullptr,                /* mayResolve   */
+	js_finalize_filebase,   /* finalize     */
+	nullptr, nullptr, nullptr /* call, construct, trace */
+};
 
 JSClass js_filebase_class = {
-	"FileBase"              /* name			*/
-	, JSCLASS_HAS_PRIVATE    /* flags		*/
-	, JS_PropertyStub        /* addProperty	*/
-	, JS_PropertyStub        /* delProperty	*/
-	, js_filebase_get        /* getProperty	*/
-	, js_filebase_set        /* setProperty	*/
-	, js_filebase_enumerate  /* enumerate	*/
-	, js_filebase_resolve    /* resolve		*/
-	, JS_ConvertStub         /* convert		*/
-	, js_finalize_filebase   /* finalize		*/
+	"FileBase"
+	, JSCLASS_HAS_PRIVATE
+	, &js_filebase_classops
 };
 
 /* FileBase Constructor (open file base) */
@@ -1963,7 +1955,7 @@ static const char* filebase_sort_prop_desc[] = {
 JSObject* js_CreateFileBaseClass(JSContext* cx, JSObject* parent)
 {
 	JSObject* obj;
-	JSObject* constructor;
+	JS::RootedObject constructor(cx);
 	jsval     val;
 
 	obj = JS_InitClass(cx, parent, NULL
@@ -1975,10 +1967,10 @@ JSObject* js_CreateFileBaseClass(JSContext* cx, JSObject* parent)
 	                   , NULL, NULL);
 
 	if (JS_GetProperty(cx, parent, js_filebase_class.name, &val) && !JSVAL_NULL_OR_VOID(val)) {
-		JS_ValueToObject(cx, val, &constructor);
-		JS_DefineFunction(cx, constructor, "format_name", js_format_file_name, 1, 0);
-		JSObject* detail = JS_DefineObject(cx, constructor, "DETAIL", NULL, NULL, JSPROP_PERMANENT | JSPROP_ENUMERATE | JSPROP_READONLY);
-		if (detail != NULL) {
+		JS_ValueToObject(cx, val, constructor.address());
+		JS_DefineFunction(cx, constructor.get(), "format_name", js_format_file_name, 1, 0);
+		JS::RootedObject detail(cx, JS_DefineObject(cx, constructor, "DETAIL", NULL, NULL, JSPROP_PERMANENT | JSPROP_ENUMERATE | JSPROP_READONLY));
+		if (detail) {
 			JS_DefineProperty(cx, detail, "MIN", INT_TO_JSVAL(file_detail_index), NULL, NULL
 			                  , JSPROP_PERMANENT | JSPROP_ENUMERATE | JSPROP_READONLY);
 			JS_DefineProperty(cx, detail, "NORM", INT_TO_JSVAL(file_detail_normal), NULL, NULL
@@ -1994,8 +1986,8 @@ JSObject* js_CreateFileBaseClass(JSContext* cx, JSObject* parent)
 			js_CreateArrayOfStrings(cx, detail, "_property_desc_list", filebase_detail_prop_desc, JSPROP_READONLY);
 #endif
 		}
-		JSObject* sort = JS_DefineObject(cx, constructor, "SORT", NULL, NULL, JSPROP_PERMANENT | JSPROP_ENUMERATE | JSPROP_READONLY);
-		if (sort != NULL) {
+		JS::RootedObject sort(cx, JS_DefineObject(cx, constructor, "SORT", NULL, NULL, JSPROP_PERMANENT | JSPROP_ENUMERATE | JSPROP_READONLY));
+		if (sort) {
 			JS_DefineProperty(cx, sort, "NATURAL", INT_TO_JSVAL(FILE_SORT_NATURAL), NULL, NULL
 			                  , JSPROP_PERMANENT | JSPROP_ENUMERATE | JSPROP_READONLY);
 			JS_DefineProperty(cx, sort, "NAME_AI", INT_TO_JSVAL(FILE_SORT_NAME_A), NULL, NULL

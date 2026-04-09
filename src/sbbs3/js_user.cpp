@@ -21,7 +21,6 @@
 
 #include "sbbs.h"
 #include "filedat.h"
-#include "js_request.h"
 #include "terminal.h"
 
 #ifdef JAVASCRIPT
@@ -159,24 +158,18 @@ enum {
 	, USER_PROP_BATDNLST
 };
 
-static JSBool js_user_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
+/* SM128: restored value getter (adapted from master's js_user_get).
+ * Computes the value for property with tinyid 'tiny' from private data 'p'.
+ * Stores the result in *vp; leaves *vp unchanged for unrecognized tinyids
+ * (sub-object properties like stats/security/limits are handled separately). */
+static JSBool js_user_get_value(JSContext* cx, user_private_t* p, jsint tiny, jsval* vp)
 {
-	jsval      idval;
-	const char* s = nullptr;
-	char       tmp[128];
-	int64_t    val = 0;
-	jsint      tiny;
-	JSString*  js_str;
-	user_private_t* p;
-	jsrefcount rc;
+	const char*       s = nullptr;
+	char              tmp[128];
+	int64_t           val = 0;
+	JS::RootedString  js_str(cx);
 
-	if ((p = (user_private_t*)JS_GetPrivate(cx, obj)) == nullptr)
-		return JS_TRUE;
-
-	rc = JS_SUSPENDREQUEST(cx);
 	p->getuserdat();
-	JS_IdToValue(cx, id, &idval);
-	tiny = JSVAL_TO_INT(idval);
 
 	switch (tiny) {
 		case USER_PROP_NUMBER:
@@ -296,7 +289,6 @@ static JSBool js_user_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 			break;
 		case USER_PROP_ULB:
 			*vp = DOUBLE_TO_JSVAL((jsdouble)p->user->ulb);
-			JS_RESUMEREQUEST(cx, rc);
 			return JS_TRUE; /* intentional early return */
 			break;
 		case USER_PROP_ULS:
@@ -304,7 +296,6 @@ static JSBool js_user_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 			break;
 		case USER_PROP_DLB:
 			*vp = DOUBLE_TO_JSVAL((jsdouble)p->user->dlb);
-			JS_RESUMEREQUEST(cx, rc);
 			return JS_TRUE; /* intentional early return */
 			break;
 		case USER_PROP_DLS:
@@ -321,7 +312,6 @@ static JSBool js_user_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 			break;
 		case USER_PROP_CDT:
 			*vp = DOUBLE_TO_JSVAL((jsdouble)p->user->cdt);
-			JS_RESUMEREQUEST(cx, rc);
 			return JS_TRUE; /* intentional early return */
 		case USER_PROP_MIN:
 			val = p->user->min;
@@ -354,7 +344,7 @@ static JSBool js_user_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 			val = p->user->cols;
 			break;
 		case USER_PROP_GENDER:
-			sprintf(tmp, "%c", p->user->gender);
+			snprintf(tmp, sizeof tmp, "%c", p->user->gender);
 			s = tmp;
 			break;
 		case USER_PROP_MISC:
@@ -375,7 +365,6 @@ static JSBool js_user_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 
 		case USER_PROP_FREECDT:
 			*vp = DOUBLE_TO_JSVAL((jsdouble)p->user->freecdt);
-			JS_RESUMEREQUEST(cx, rc);
 			return JS_TRUE; /* intentional early return */
 		case USER_PROP_XEDIT:
 			if (p->user->xedit > 0 && p->user->xedit <= p->cfg->total_xedits)
@@ -384,7 +373,10 @@ static JSBool js_user_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 				s = ""; /* internal editor */
 			break;
 		case USER_PROP_SHELL:
-			s = p->cfg->shell[p->user->shell]->code;
+			if (p->user->shell < p->cfg->total_shells)
+				s = p->cfg->shell[p->user->shell]->code;
+			else
+				s = "";
 			break;
 		case USER_PROP_QWK:
 			val = p->user->qwk;
@@ -402,7 +394,7 @@ static JSBool js_user_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 			val = p->user->ns_time;
 			break;
 		case USER_PROP_PROT:
-			sprintf(tmp, "%c", p->user->prot);
+			snprintf(tmp, sizeof tmp, "%c", p->user->prot);
 			s = tmp;
 			break;
 		case USER_PROP_LOGONTIME:
@@ -450,22 +442,18 @@ static JSBool js_user_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 
 		case USER_PROP_CACHED:
 			*vp = BOOLEAN_TO_JSVAL(p->cached);
-			JS_RESUMEREQUEST(cx, rc);
 			return JS_TRUE;    /* intentional early return */
 
 		case USER_PROP_IS_SYSOP:
 			*vp = BOOLEAN_TO_JSVAL(user_is_sysop(p->user));
-			JS_RESUMEREQUEST(cx, rc);
 			return JS_TRUE;    /* intentional early return */
 
 		case USER_PROP_IS_GUEST:
 			*vp = BOOLEAN_TO_JSVAL(user_is_guest(p->user));
-			JS_RESUMEREQUEST(cx, rc);
 			return JS_TRUE;    /* intentional early return */
 
 		case USER_PROP_IS_ACTIVE:
 			*vp = BOOLEAN_TO_JSVAL(user_is_active(p->user));
-			JS_RESUMEREQUEST(cx, rc);
 			return JS_TRUE;    /* intentional early return */
 
 		case USER_PROP_BATUPLST:
@@ -474,54 +462,38 @@ static JSBool js_user_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 		case USER_PROP_BATDNLST:
 			s = batch_list_name(p->cfg, p->user->number, XFER_BATCH_DOWNLOAD, tmp, sizeof tmp);
 			break;
-
 		default:
-			/* This must not set vp in order for child objects to work (stats and security) */
-			JS_RESUMEREQUEST(cx, rc);
-			return JS_TRUE;
+			return JS_TRUE;  /* leave *vp unchanged for sub-object tinyids */
 	}
-	JS_RESUMEREQUEST(cx, rc);
+
 	if (s != nullptr) {
 		if ((js_str = JS_NewStringCopyZ(cx, s)) == nullptr)
 			return JS_FALSE;
-		*vp = STRING_TO_JSVAL(js_str);
-	} else
+		*vp = STRING_TO_JSVAL(js_str.get());
+	} else {
 		*vp = DOUBLE_TO_JSVAL((double)val);
-
+	}
 	return JS_TRUE;
 }
 
-static JSBool js_user_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, jsval *vp)
+static JSBool js_user_set_value(JSContext* cx, user_private_t* p, jsint tiny, jsval* vp)
 {
-	jsval      idval;
 	char*      str = nullptr;
 	uint32     val;
 	ulong      usermisc;
-	jsint      tiny;
-	user_private_t* p;
 	int32      usernumber;
-	jsrefcount rc;
-
-	if ((p = (user_private_t*)JS_GetPrivate(cx, obj)) == nullptr)
-		return JS_TRUE;
 
 	JSVALUE_TO_MSTRING(cx, *vp, str, nullptr);
 	HANDLE_PENDING(cx, str);
 	if (str == nullptr)
 		return JS_FALSE;
 
-	JS_IdToValue(cx, id, &idval);
-	tiny = JSVAL_TO_INT(idval);
-
-	rc = JS_SUSPENDREQUEST(cx);
 	switch (tiny) {
 		case USER_PROP_NUMBER:
-			JS_RESUMEREQUEST(cx, rc);
 			if (!JS_ValueToInt32(cx, *vp, &usernumber)) {
 				free(str);
 				return JS_FALSE;
 			}
-			rc = JS_SUSPENDREQUEST(cx);
 			if (usernumber != p->user->number) {
 				p->user->number = (ushort)usernumber;
 				p->cached = false;
@@ -644,20 +616,13 @@ static JSBool js_user_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, 
 			break;
 		case USER_PROP_MISC:
 		{
-			JS_RESUMEREQUEST(cx, rc);
 			if (!JS_ValueToECMAUint32(cx, *vp, &val)) {
 				free(str);
 				return JS_FALSE;
 			}
-			rc = JS_SUSPENDREQUEST(cx);
 			uint32_t org_misc = p->user->misc;
 			putusermisc(p->cfg, p->user->number, p->user->misc = val);
-			if ((org_misc ^ val) & TERM_FLAGS) { // One or more terminal flags changed
-				/*
-				 * Get sbbs_t pointer.
-				 * If the global has a "bbs" property that is a BBS class object, then the context
-				 * private will be an sbbs_t (ie: running in terminal server)
-				 */
+			if ((org_misc ^ val) & TERM_FLAGS) {
 				jsval jsv;
 				JSObject* glob = JS_GetGlobalObject(cx);
 				if (JS_GetProperty(cx, glob, "bbs", &jsv)) {
@@ -672,57 +637,47 @@ static JSBool js_user_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, 
 			break;
 		}
 		case USER_PROP_QWK:
-			JS_RESUMEREQUEST(cx, rc);
 			if (!JS_ValueToECMAUint32(cx, *vp, &val)) {
 				free(str);
 				return JS_FALSE;
 			}
 			putuserqwk(p->cfg, p->user->number, p->user->qwk = val);
-			rc = JS_SUSPENDREQUEST(cx);
 			break;
 		case USER_PROP_CHAT:
-			JS_RESUMEREQUEST(cx, rc);
 			if (!JS_ValueToECMAUint32(cx, *vp, &val)) {
 				free(str);
 				return JS_FALSE;
 			}
 			putuserchat(p->cfg, p->user->number, p->user->chat = val);
-			rc = JS_SUSPENDREQUEST(cx);
 			break;
 		case USER_PROP_MAIL:
-			JS_RESUMEREQUEST(cx, rc);
 			if (!JS_ValueToECMAUint32(cx, *vp, &val)) {
 				free(str);
 				return JS_FALSE;
 			}
 			putusermail(p->cfg, p->user->number, p->user->mail = val);
-			rc = JS_SUSPENDREQUEST(cx);
 			break;
 		case USER_PROP_TMPEXT:
 			SAFECOPY(p->user->tmpext, str);
 			putuserstr(p->cfg, p->user->number, USER_TMPEXT, str);
 			break;
 		case USER_PROP_NS_TIME:
-			JS_RESUMEREQUEST(cx, rc);
 			if (!JS_ValueToECMAUint32(cx, *vp, &val)) {
 				free(str);
 				return JS_FALSE;
 			}
 			putuserdatetime(p->cfg, p->user->number, USER_NS_TIME, p->user->ns_time = val);
-			rc = JS_SUSPENDREQUEST(cx);
 			break;
 		case USER_PROP_PROT:
 			p->user->prot = toupper(str[0]);
 			putuserstr(p->cfg, p->user->number, USER_PROT, strupr(str)); /* single char */
 			break;
 		case USER_PROP_LOGONTIME:
-			JS_RESUMEREQUEST(cx, rc);
 			if (!JS_ValueToECMAUint32(cx, *vp, &val)) {
 				free(str);
 				return JS_FALSE;
 			}
 			putuserdatetime(p->cfg, p->user->number, USER_LOGONTIME, p->user->logontime = val);
-			rc = JS_SUSPENDREQUEST(cx);
 			break;
 
 		/* security properties*/
@@ -731,20 +686,17 @@ static JSBool js_user_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, 
 			putuserstr(p->cfg, p->user->number, USER_PASS, strupr(str));
 			break;
 		case USER_PROP_PWMOD:
-			JS_RESUMEREQUEST(cx, rc);
 			if (!JS_ValueToECMAUint32(cx, *vp, &val)) {
 				free(str);
 				return JS_FALSE;
 			}
 			putuserdatetime(p->cfg, p->user->number, USER_PWMOD, p->user->pwmod = val);
-			rc = JS_SUSPENDREQUEST(cx);
 			break;
 		case USER_PROP_LEVEL:
 			p->user->level = atoi(str);
 			putuserdec32(p->cfg, p->user->number, USER_LEVEL, p->user->level);
 			break;
 		case USER_PROP_FLAGS1:
-			JS_RESUMEREQUEST(cx, rc);
 			if (JSVAL_IS_STRING(*vp)) {
 				val = str_to_bits(p->user->flags1 << 1, str) >> 1;
 			}
@@ -755,10 +707,8 @@ static JSBool js_user_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, 
 				}
 			}
 			putuserflags(p->cfg, p->user->number, USER_FLAGS1, p->user->flags1 = val);
-			rc = JS_SUSPENDREQUEST(cx);
 			break;
 		case USER_PROP_FLAGS2:
-			JS_RESUMEREQUEST(cx, rc);
 			if (JSVAL_IS_STRING(*vp)) {
 				val = str_to_bits(p->user->flags2 << 1, str) >> 1;
 			}
@@ -769,10 +719,8 @@ static JSBool js_user_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, 
 				}
 			}
 			putuserflags(p->cfg, p->user->number, USER_FLAGS2, p->user->flags2 = val);
-			rc = JS_SUSPENDREQUEST(cx);
 			break;
 		case USER_PROP_FLAGS3:
-			JS_RESUMEREQUEST(cx, rc);
 			if (JSVAL_IS_STRING(*vp)) {
 				val = str_to_bits(p->user->flags3 << 1, str) >> 1;
 			}
@@ -783,10 +731,8 @@ static JSBool js_user_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, 
 				}
 			}
 			putuserflags(p->cfg, p->user->number, USER_FLAGS3, p->user->flags3 = val);
-			rc = JS_SUSPENDREQUEST(cx);
 			break;
 		case USER_PROP_FLAGS4:
-			JS_RESUMEREQUEST(cx, rc);
 			if (JSVAL_IS_STRING(*vp)) {
 				val = str_to_bits(p->user->flags4 << 1, str) >> 1;
 			}
@@ -797,10 +743,8 @@ static JSBool js_user_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, 
 				}
 			}
 			putuserflags(p->cfg, p->user->number, USER_FLAGS4, p->user->flags4 = val);
-			rc = JS_SUSPENDREQUEST(cx);
 			break;
 		case USER_PROP_EXEMPT:
-			JS_RESUMEREQUEST(cx, rc);
 			if (JSVAL_IS_STRING(*vp)) {
 				val = str_to_bits(p->user->exempt << 1, str) >> 1;
 			}
@@ -811,10 +755,8 @@ static JSBool js_user_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, 
 				}
 			}
 			putuserflags(p->cfg, p->user->number, USER_EXEMPT, p->user->exempt = val);
-			rc = JS_SUSPENDREQUEST(cx);
 			break;
 		case USER_PROP_REST:
-			JS_RESUMEREQUEST(cx, rc);
 			if (JSVAL_IS_STRING(*vp)) {
 				val = str_to_bits(p->user->rest << 1, str) >> 1;
 			}
@@ -825,7 +767,6 @@ static JSBool js_user_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, 
 				}
 			}
 			putuserflags(p->cfg, p->user->number, USER_REST, p->user->rest = val);
-			rc = JS_SUSPENDREQUEST(cx);
 			break;
 		case USER_PROP_CDT:
 			p->user->cdt = strtoull(str, nullptr, 0);
@@ -844,18 +785,15 @@ static JSBool js_user_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, 
 			putuserdec32(p->cfg, p->user->number, USER_TEXTRA, p->user->textra);
 			break;
 		case USER_PROP_EXPIRE:
-			JS_RESUMEREQUEST(cx, rc);
 			if (!JS_ValueToECMAUint32(cx, *vp, &val)) {
 				free(str);
 				return JS_FALSE;
 			}
 			putuserdatetime(p->cfg, p->user->number, USER_EXPIRE, p->user->expire = val);
-			rc = JS_SUSPENDREQUEST(cx);
 			break;
 
 		case USER_PROP_CACHED:
 			JS_ValueToBoolean(cx, *vp, &p->cached);
-			JS_RESUMEREQUEST(cx, rc);
 			free(str);
 			return JS_TRUE;    /* intentional early return */
 
@@ -864,7 +802,6 @@ static JSBool js_user_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, 
 	if (!user_is_guest(p->user))
 		p->cached = false;
 
-	JS_RESUMEREQUEST(cx, rc);
 	return JS_TRUE;
 }
 
@@ -890,7 +827,7 @@ static jsSyncPropertySpec js_user_properties[] = {
 	{   "location"           , USER_PROP_LOCATION   , USER_PROP_FLAGS_RW , 310 },
 	{   "zipcode"            , USER_PROP_ZIPCODE    , USER_PROP_FLAGS_RW , 310 },
 	{   "phone"              , USER_PROP_PHONE      , USER_PROP_FLAGS_RW , 310 },
-	{   "birthdate"          , USER_PROP_BIRTH      , USER_PROP_FLAGS_RW , 310 },
+	{   "birthdate"          , USER_PROP_BIRTH      , JSPROP_ENUMERATE   , 310 },  /* configurable: overridden by js_user_birthdate_spec accessor */
 	{   "birthyear"          , USER_PROP_BIRTHYEAR  , USER_PROP_FLAGS_RW , 31802 },
 	{   "birthmonth"         , USER_PROP_BIRTHMONTH , USER_PROP_FLAGS_RW , 31802 },
 	{   "birthday"           , USER_PROP_BIRTHDAY   , USER_PROP_FLAGS_RW , 31802 },
@@ -922,6 +859,51 @@ static jsSyncPropertySpec js_user_properties[] = {
 	{   "batch_download_list", USER_PROP_BATDNLST   , USER_PROP_FLAGS_RO , 320 },
 	{0}
 };
+
+extern JSClass js_user_class; /* forward declaration for js_user_prop_getter */
+
+static bool js_user_prop_setter(JSContext* cx, unsigned argc, JS::Value* vp)
+{
+	JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
+	JS::RootedObject thisObj(cx);
+	if (!args.computeThis(cx, &thisObj))
+		return false;
+	user_private_t* p = (user_private_t*)js_GetClassPrivate(cx, thisObj, &js_user_class);
+	if (p == nullptr)
+		return true;
+	JSObject* callee = &args.callee();
+	jsint tiny = js::GetFunctionNativeReserved(callee, 0).toInt32();
+	jsval val = args.length() > 0 ? args[0] : JSVAL_VOID;
+	if (!js_user_set_value(cx, p, tiny, &val))
+		return false;
+	args.rval().set(val);
+	return true;
+}
+
+/* SM128: accessor property getter for js_user_properties.
+ * The tinyid is stored in reserved slot 0 of the callee function object. */
+static bool js_user_prop_getter(JSContext* cx, unsigned argc, JS::Value* vp)
+{
+	JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
+	JS::RootedObject thisObj(cx);
+	if (!args.computeThis(cx, &thisObj))
+		return false;
+	user_private_t* p = (user_private_t*)js_GetClassPrivate(cx, thisObj, &js_user_class);
+	if (p == nullptr) { args.rval().setUndefined(); return true; }
+	JSObject* callee = &args.callee();
+	jsint tiny = js::GetFunctionNativeReserved(callee, 0).toInt32();
+	jsval val = JSVAL_VOID;
+	if (!js_user_get_value(cx, p, tiny, &val)) return false;
+	args.rval().set(val);
+	return true;
+}
+
+/* SM128: define accessor properties so the getter runs on every access */
+static JSBool js_user_fill_properties(JSContext* cx, JSObject* obj, user_private_t* p, const char* name)
+{
+	(void)p;
+	return js_DefineSyncAccessors(cx, obj, js_user_properties, js_user_prop_getter, name, js_user_prop_setter);
+}
 
 #ifdef BUILD_JSDOCS
 static const char*        user_prop_desc[] = {
@@ -1110,9 +1092,9 @@ static const char* user_stats_prop_desc[] = {
 #endif
 
 
-static void js_user_finalize(JSContext *cx, JSObject *obj)
+static void js_user_finalize(JS::GCContext* gcx, JSObject *obj)
 {
-	user_private_t* p = (user_private_t*)JS_GetPrivate(cx, obj);
+	user_private_t* p = (user_private_t*)JS_GetPrivate(obj);
 
 	if (p != nullptr) {
 		if (p->file > 0)
@@ -1120,7 +1102,7 @@ static void js_user_finalize(JSContext *cx, JSObject *obj)
 		delete p;
 	}
 
-	JS_SetPrivate(cx, obj, nullptr);
+	JS_SetPrivate(obj, nullptr);
 }
 
 /* Utility functions */
@@ -1167,7 +1149,6 @@ js_chk_ar(JSContext *cx, uintN argc, jsval *arglist)
 	jsval *    argv = JS_ARGV(cx, arglist);
 	uchar*     ar;
 	user_private_t* p;
-	jsrefcount rc;
 	char *     ars = nullptr;
 	scfg_t*    scfg;
 
@@ -1188,7 +1169,6 @@ js_chk_ar(JSContext *cx, uintN argc, jsval *arglist)
 	if (ars == nullptr)
 		return JS_FALSE;
 
-	rc = JS_SUSPENDREQUEST(cx);
 	ar = arstr(nullptr, ars, scfg, nullptr);
 	free(ars);
 
@@ -1198,7 +1178,6 @@ js_chk_ar(JSContext *cx, uintN argc, jsval *arglist)
 
 	if (ar != nullptr)
 		free(ar);
-	JS_RESUMEREQUEST(cx, rc);
 
 	return JS_TRUE;
 }
@@ -1210,7 +1189,6 @@ js_posted_msg(JSContext *cx, uintN argc, jsval *arglist)
 	jsval *    argv = JS_ARGV(cx, arglist);
 	user_private_t* p;
 	uint32     count = 1;
-	jsrefcount rc;
 	scfg_t*    scfg;
 
 	scfg = static_cast<scfg_t *>(JS_GetRuntimePrivate(JS_GetRuntime(cx)));
@@ -1225,11 +1203,9 @@ js_posted_msg(JSContext *cx, uintN argc, jsval *arglist)
 			return JS_FALSE;
 	}
 
-	rc = JS_SUSPENDREQUEST(cx);
 	p->getuserdat();
 
 	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(user_posted_msg(scfg, p->user, count)));
-	JS_RESUMEREQUEST(cx, rc);
 
 	return JS_TRUE;
 }
@@ -1242,7 +1218,6 @@ js_sent_email(JSContext *cx, uintN argc, jsval *arglist)
 	user_private_t* p;
 	uint32     count = 1;
 	JSBool     feedback = false;
-	jsrefcount rc;
 	scfg_t*    scfg;
 
 	scfg = static_cast<scfg_t *>(JS_GetRuntimePrivate(JS_GetRuntime(cx)));
@@ -1259,11 +1234,9 @@ js_sent_email(JSContext *cx, uintN argc, jsval *arglist)
 	if (argc > 1)
 		JS_ValueToBoolean(cx, argv[1], &feedback);
 
-	rc = JS_SUSPENDREQUEST(cx);
 	p->getuserdat();
 
 	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(user_sent_email(scfg, p->user, count, feedback)));
-	JS_RESUMEREQUEST(cx, rc);
 
 	return JS_TRUE;
 }
@@ -1276,7 +1249,6 @@ js_downloaded_file(JSContext *cx, uintN argc, jsval *arglist)
 	user_private_t* p;
 	uint32     files = 1;
 	uint32     bytes = 0;
-	jsrefcount rc;
 	scfg_t*    scfg;
 	int        dirnum = INVALID_DIR;
 	char*      fname = nullptr;
@@ -1313,7 +1285,6 @@ js_downloaded_file(JSContext *cx, uintN argc, jsval *arglist)
 		argn++;
 	}
 
-	rc = JS_SUSPENDREQUEST(cx);
 	p->getuserdat();
 	if (fname != nullptr && dirnum_is_valid(scfg, dirnum)) {
 		JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(user_downloaded_file(scfg, p->user, p->client, dirnum, fname, bytes)));
@@ -1321,7 +1292,6 @@ js_downloaded_file(JSContext *cx, uintN argc, jsval *arglist)
 	} else {
 		JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(user_downloaded(scfg, p->user, files, bytes)));
 	}
-	JS_RESUMEREQUEST(cx, rc);
 
 	return JS_TRUE;
 }
@@ -1334,7 +1304,6 @@ js_uploaded_file(JSContext *cx, uintN argc, jsval *arglist)
 	user_private_t* p;
 	uint32     files = 1;
 	uint32     bytes = 0;
-	jsrefcount rc;
 	scfg_t*    scfg;
 
 	scfg = static_cast<scfg_t *>(JS_GetRuntimePrivate(JS_GetRuntime(cx)));
@@ -1355,11 +1324,9 @@ js_uploaded_file(JSContext *cx, uintN argc, jsval *arglist)
 			return JS_FALSE;
 	}
 
-	rc = JS_SUSPENDREQUEST(cx);
 	p->getuserdat();
 
 	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(user_uploaded(scfg, p->user, files, bytes)));
-	JS_RESUMEREQUEST(cx, rc);
 
 	return JS_TRUE;
 }
@@ -1371,7 +1338,6 @@ js_adjust_credits(JSContext *cx, uintN argc, jsval *arglist)
 	jsval *    argv = JS_ARGV(cx, arglist);
 	user_private_t* p;
 	int32      count = 0;
-	jsrefcount rc;
 	scfg_t*    scfg;
 
 	if (js_argcIsInsufficient(cx, argc, 1))
@@ -1387,11 +1353,9 @@ js_adjust_credits(JSContext *cx, uintN argc, jsval *arglist)
 	if (!JS_ValueToECMAInt32(cx, argv[0], &count))
 		return JS_FALSE;
 
-	rc = JS_SUSPENDREQUEST(cx);
 	p->getuserdat();
 
 	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(user_adjust_credits(scfg, p->user, count)));
-	JS_RESUMEREQUEST(cx, rc);
 
 	return JS_TRUE;
 }
@@ -1403,7 +1367,6 @@ js_adjust_minutes(JSContext *cx, uintN argc, jsval *arglist)
 	jsval *    argv = JS_ARGV(cx, arglist);
 	user_private_t* p;
 	int32      count = 0;
-	jsrefcount rc;
 	scfg_t*    scfg;
 
 	if (js_argcIsInsufficient(cx, argc, 1))
@@ -1419,11 +1382,9 @@ js_adjust_minutes(JSContext *cx, uintN argc, jsval *arglist)
 	if (!JS_ValueToECMAInt32(cx, argv[0], &count))
 		return JS_FALSE;
 
-	rc = JS_SUSPENDREQUEST(cx);
 	p->getuserdat();
 
 	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(user_adjust_minutes(scfg, p->user, count)));
-	JS_RESUMEREQUEST(cx, rc);
 
 	return JS_TRUE;
 }
@@ -1435,7 +1396,6 @@ js_get_time_left(JSContext *cx, uintN argc, jsval *arglist)
 	jsval *    argv = JS_ARGV(cx, arglist);
 	user_private_t* p;
 	uint32     start_time = 0;
-	jsrefcount rc;
 	scfg_t*    scfg;
 	time_t     tl;
 
@@ -1452,12 +1412,10 @@ js_get_time_left(JSContext *cx, uintN argc, jsval *arglist)
 	if (!JS_ValueToECMAUint32(cx, argv[0], &start_time))
 		return JS_FALSE;
 
-	rc = JS_SUSPENDREQUEST(cx);
 	p->getuserdat();
 
 	tl = gettimeleft(scfg, p->user, start_time);
 	JS_SET_RVAL(cx, arglist, INT_TO_JSVAL(tl > INT32_MAX ? INT32_MAX : (int32) tl));
-	JS_RESUMEREQUEST(cx, rc);
 
 	return JS_TRUE;
 }
@@ -1468,7 +1426,6 @@ js_can_access_sub(JSContext *cx, uintN argc, jsval *arglist)
 	JSObject * obj = JS_THIS_OBJECT(cx, arglist);
 	jsval *    argv = JS_ARGV(cx, arglist);
 	user_private_t* p;
-	jsrefcount rc;
 	char* access = nullptr;
 	scfg_t*    scfg;
 
@@ -1486,7 +1443,6 @@ js_can_access_sub(JSContext *cx, uintN argc, jsval *arglist)
 		JSSTRING_TO_ASTRING(cx, JSVAL_TO_STRING(argv[1]), access, 32, nullptr);
 	}
 
-	rc = JS_SUSPENDREQUEST(cx);
 	p->getuserdat();
 	int subnum = get_subnum(cx, scfg, argv, argc);
 	bool result = false;
@@ -1499,7 +1455,6 @@ js_can_access_sub(JSContext *cx, uintN argc, jsval *arglist)
 	else if (stricmp(access, "OPERATOR") == 0)
 		result = user_is_subop(scfg, subnum, p->user, nullptr);
 	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(result));
-	JS_RESUMEREQUEST(cx, rc);
 
 	return JS_TRUE;
 }
@@ -1510,7 +1465,6 @@ js_can_access_dir(JSContext *cx, uintN argc, jsval *arglist)
 	JSObject * obj = JS_THIS_OBJECT(cx, arglist);
 	jsval *    argv = JS_ARGV(cx, arglist);
 	user_private_t* p;
-	jsrefcount rc;
 	char* access = nullptr;
 	scfg_t*    scfg;
 
@@ -1528,7 +1482,6 @@ js_can_access_dir(JSContext *cx, uintN argc, jsval *arglist)
 		JSSTRING_TO_ASTRING(cx, JSVAL_TO_STRING(argv[1]), access, 32, nullptr);
 	}
 
-	rc = JS_SUSPENDREQUEST(cx);
 	p->getuserdat();
 	int dirnum = get_dirnum(cx, scfg, argv, argc);
 	bool result = false;
@@ -1541,7 +1494,6 @@ js_can_access_dir(JSContext *cx, uintN argc, jsval *arglist)
 	else if (stricmp(access, "OPERATOR") == 0)
 		result = user_is_dirop(scfg, dirnum, p->user, nullptr);
 	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(result));
-	JS_RESUMEREQUEST(cx, rc);
 
 	return JS_TRUE;
 }
@@ -1552,18 +1504,15 @@ js_user_close(JSContext *cx, uintN argc, jsval *arglist)
 {
 	JSObject * obj = JS_THIS_OBJECT(cx, arglist);
 	user_private_t* p;
-	jsrefcount rc;
 
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
 	if ((p = (user_private_t*)js_GetClassPrivate(cx, obj, &js_user_class)) == nullptr)
 		return JS_FALSE;
 
-	rc = JS_SUSPENDREQUEST(cx);
 	if (p->file > 0)
 		closeuserdat(p->file);
 	p->file = -1;
-	JS_RESUMEREQUEST(cx, rc);
 
 	return JS_TRUE;
 }
@@ -1611,214 +1560,348 @@ static jsSyncMethodSpec js_user_functions[] = {
 	{0}
 };
 
-static JSBool js_user_stats_resolve(JSContext *cx, JSObject *obj, jsid id)
+/* SM128: accessor property getter for user sub-objects (stats, security, limits).
+ * These sub-objects share the parent's private data via JS_GetPrivate. */
+static bool js_user_subobj_prop_getter(JSContext* cx, unsigned argc, JS::Value* vp)
 {
-	char*  name = nullptr;
-	JSBool ret;
+	JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
+	JS::RootedObject thisObj(cx);
+	if (!args.computeThis(cx, &thisObj))
+		return false;
+	user_private_t* p = (user_private_t*)JS_GetPrivate(thisObj);
+	if (p == nullptr) { args.rval().setUndefined(); return true; }
+	JSObject* callee = &args.callee();
+	jsint tiny = js::GetFunctionNativeReserved(callee, 0).toInt32();
+	jsval val = JSVAL_VOID;
+	if (!js_user_get_value(cx, p, tiny, &val)) return false;
+	args.rval().set(val);
+	return true;
+}
 
-	if (id != JSID_VOID && id != JSID_EMPTY) {
-		jsval idval;
+static bool js_user_subobj_prop_setter(JSContext* cx, unsigned argc, JS::Value* vp)
+{
+	JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
+	JS::RootedObject thisObj(cx);
+	if (!args.computeThis(cx, &thisObj))
+		return false;
+	user_private_t* p = (user_private_t*)JS_GetPrivate(thisObj);
+	if (p == nullptr)
+		return true;
+	JSObject* callee = &args.callee();
+	jsint tiny = js::GetFunctionNativeReserved(callee, 0).toInt32();
+	jsval val = args.length() > 0 ? args[0] : JSVAL_VOID;
+	if (!js_user_set_value(cx, p, tiny, &val))
+		return false;
+	args.rval().set(val);
+	return true;
+}
 
-		JS_IdToValue(cx, id, &idval);
-		if (JSVAL_IS_STRING(idval)) {
-			JSSTRING_TO_MSTRING(cx, JSVAL_TO_STRING(idval), name, nullptr);
-			HANDLE_PENDING(cx, name);
-		}
+/* SM128: define accessor properties so the getter runs on every access */
+static JSBool js_user_subobj_fill(JSContext* cx, JSObject* obj,
+                                  jsSyncPropertySpec* props, const char* name)
+{
+	return js_DefineSyncAccessors(cx, obj, props, js_user_subobj_prop_getter, name, js_user_subobj_prop_setter);
+}
+
+static bool js_user_stats_resolve(JSContext *cx, JS::Handle<JSObject*> obj, JS::Handle<jsid> id, bool* resolvedp)
+{
+	char* name = nullptr;
+
+	if (id.get().isString()) {
+		JSString* str = id.get().toString();
+		JSSTRING_TO_MSTRING(cx, str, name, nullptr);
+		HANDLE_PENDING(cx, name);
+		if (name == nullptr) return false;
 	}
 
-	ret = js_SyncResolve(cx, obj, name, js_user_stats_properties, nullptr, nullptr, 0);
+	bool ret = js_SyncResolve(cx, obj, name, js_user_stats_properties, nullptr, nullptr, 0);
+	if (ret)
+		ret = js_user_subobj_fill(cx, obj, js_user_stats_properties, name);
 	if (name)
 		free(name);
-	return ret;
+	if (resolvedp) *resolvedp = ret;
+	return true;
 }
 
-static JSBool js_user_stats_enumerate(JSContext *cx, JSObject *obj)
+static bool js_user_stats_enumerate(JSContext *cx, JS::Handle<JSObject*> obj)
 {
-	return js_user_stats_resolve(cx, obj, JSID_VOID);
+	if (!js_SyncResolve(cx, obj, nullptr, js_user_stats_properties, nullptr, nullptr, 0))
+		return false;
+	return js_user_subobj_fill(cx, obj, js_user_stats_properties, nullptr);
 }
 
-static JSBool js_user_security_resolve(JSContext *cx, JSObject *obj, jsid id)
+static bool js_user_security_resolve(JSContext *cx, JS::Handle<JSObject*> obj, JS::Handle<jsid> id, bool* resolvedp)
 {
-	char*  name = nullptr;
-	JSBool ret;
+	char* name = nullptr;
 
-	if (id != JSID_VOID && id != JSID_EMPTY) {
-		jsval idval;
-
-		JS_IdToValue(cx, id, &idval);
-		if (JSVAL_IS_STRING(idval)) {
-			JSSTRING_TO_MSTRING(cx, JSVAL_TO_STRING(idval), name, nullptr);
-			HANDLE_PENDING(cx, name);
-		}
+	if (id.get().isString()) {
+		JSString* str = id.get().toString();
+		JSSTRING_TO_MSTRING(cx, str, name, nullptr);
+		HANDLE_PENDING(cx, name);
+		if (name == nullptr) return false;
 	}
 
-	ret = js_SyncResolve(cx, obj, name, js_user_security_properties, nullptr, nullptr, 0);
+	bool ret = js_SyncResolve(cx, obj, name, js_user_security_properties, nullptr, nullptr, 0);
+	if (ret)
+		ret = js_user_subobj_fill(cx, obj, js_user_security_properties, name);
 	if (name)
 		free(name);
-	return ret;
+	if (resolvedp) *resolvedp = ret;
+	return true;
 }
 
-static JSBool js_user_security_enumerate(JSContext *cx, JSObject *obj)
+static bool js_user_security_enumerate(JSContext *cx, JS::Handle<JSObject*> obj)
 {
-	return js_user_security_resolve(cx, obj, JSID_VOID);
+	if (!js_SyncResolve(cx, obj, nullptr, js_user_security_properties, nullptr, nullptr, 0))
+		return false;
+	return js_user_subobj_fill(cx, obj, js_user_security_properties, nullptr);
 }
 
-static JSBool js_user_limits_resolve(JSContext *cx, JSObject *obj, jsid id)
+static bool js_user_limits_resolve(JSContext *cx, JS::Handle<JSObject*> obj, JS::Handle<jsid> id, bool* resolvedp)
 {
-	char*  name = nullptr;
-	JSBool ret;
+	char* name = nullptr;
 
-	if (id != JSID_VOID && id != JSID_EMPTY) {
-		jsval idval;
-
-		JS_IdToValue(cx, id, &idval);
-		if (JSVAL_IS_STRING(idval)) {
-			JSSTRING_TO_MSTRING(cx, JSVAL_TO_STRING(idval), name, nullptr);
-			HANDLE_PENDING(cx, name);
-		}
+	if (id.get().isString()) {
+		JSString* str = id.get().toString();
+		JSSTRING_TO_MSTRING(cx, str, name, nullptr);
+		HANDLE_PENDING(cx, name);
+		if (name == nullptr) return false;
 	}
 
-	ret = js_SyncResolve(cx, obj, name, js_user_limits_properties, nullptr, nullptr, 0);
+	bool ret = js_SyncResolve(cx, obj, name, js_user_limits_properties, nullptr, nullptr, 0);
+	if (ret)
+		ret = js_user_subobj_fill(cx, obj, js_user_limits_properties, name);
 	if (name)
 		free(name);
-	return ret;
+	if (resolvedp) *resolvedp = ret;
+	return true;
 }
 
-static JSBool js_user_limits_enumerate(JSContext *cx, JSObject *obj)
+static bool js_user_limits_enumerate(JSContext *cx, JS::Handle<JSObject*> obj)
 {
-	return js_user_limits_resolve(cx, obj, JSID_VOID);
+	if (!js_SyncResolve(cx, obj, nullptr, js_user_limits_properties, nullptr, nullptr, 0))
+		return false;
+	return js_user_subobj_fill(cx, obj, js_user_limits_properties, nullptr);
 }
+
+static const JSClassOps js_user_stats_classops = {
+	nullptr,                        /* addProperty  */
+	nullptr,                        /* delProperty  */
+	js_user_stats_enumerate,        /* enumerate    */
+	nullptr,                        /* newEnumerate */
+	js_user_stats_resolve,          /* resolve      */
+	nullptr,                        /* mayResolve   */
+	nullptr,                        /* finalize     */
+	nullptr, nullptr, nullptr       /* call, construct, trace */
+};
 
 static JSClass js_user_stats_class = {
-	"UserStats"             /* name			*/
-	, JSCLASS_HAS_PRIVATE    /* flags		*/
-	, JS_PropertyStub        /* addProperty	*/
-	, JS_PropertyStub        /* delProperty	*/
-	, js_user_get            /* getProperty	*/
-	, js_user_set            /* setProperty	*/
-	, js_user_stats_enumerate        /* enumerate	*/
-	, js_user_stats_resolve  /* resolve		*/
-	, JS_ConvertStub         /* convert		*/
-	, JS_FinalizeStub        /* finalize		*/
+	"UserStats"
+	, JSCLASS_HAS_PRIVATE
+	, &js_user_stats_classops
+};
+
+static const JSClassOps js_user_security_classops = {
+	nullptr,                        /* addProperty  */
+	nullptr,                        /* delProperty  */
+	js_user_security_enumerate,     /* enumerate    */
+	nullptr,                        /* newEnumerate */
+	js_user_security_resolve,       /* resolve      */
+	nullptr,                        /* mayResolve   */
+	nullptr,                        /* finalize     */
+	nullptr, nullptr, nullptr       /* call, construct, trace */
 };
 
 static JSClass js_user_security_class = {
-	"UserSecurity"          /* name			*/
-	, JSCLASS_HAS_PRIVATE    /* flags		*/
-	, JS_PropertyStub        /* addProperty	*/
-	, JS_PropertyStub        /* delProperty	*/
-	, js_user_get            /* getProperty	*/
-	, js_user_set            /* setProperty	*/
-	, js_user_security_enumerate     /* enumerate	*/
-	, js_user_security_resolve       /* resolve		*/
-	, JS_ConvertStub         /* convert		*/
-	, JS_FinalizeStub        /* finalize		*/
+	"UserSecurity"
+	, JSCLASS_HAS_PRIVATE
+	, &js_user_security_classops
+};
+
+static const JSClassOps js_user_limits_classops = {
+	nullptr,                        /* addProperty  */
+	nullptr,                        /* delProperty  */
+	js_user_limits_enumerate,       /* enumerate    */
+	nullptr,                        /* newEnumerate */
+	js_user_limits_resolve,         /* resolve      */
+	nullptr,                        /* mayResolve   */
+	nullptr,                        /* finalize     */
+	nullptr, nullptr, nullptr       /* call, construct, trace */
 };
 
 static JSClass js_user_limits_class = {
-	"UserLimits"            /* name			*/
-	, JSCLASS_HAS_PRIVATE    /* flags		*/
-	, JS_PropertyStub        /* addProperty	*/
-	, JS_PropertyStub        /* delProperty	*/
-	, js_user_get            /* getProperty	*/
-	, js_user_set            /* setProperty	*/
-	, js_user_limits_enumerate       /* enumerate	*/
-	, js_user_limits_resolve         /* resolve		*/
-	, JS_ConvertStub         /* convert		*/
-	, JS_FinalizeStub        /* finalize		*/
+	"UserLimits"
+	, JSCLASS_HAS_PRIVATE
+	, &js_user_limits_classops
 };
 
-static JSBool js_user_resolve(JSContext *cx, JSObject *obj, jsid id)
+static bool js_user_resolve_impl(JSContext *cx, JSObject *obj, char* name);
+
+static bool js_user_resolve(JSContext *cx, JS::Handle<JSObject*> obj, JS::Handle<jsid> id, bool* resolvedp)
 {
-	char*      name = nullptr;
-	JSObject*  newobj;
-	user_private_t* p;
-	JSBool     ret;
+	char* name = nullptr;
 
-	if ((p = (user_private_t*)JS_GetPrivate(cx, obj)) == nullptr)
-		return JS_TRUE;
-
-	if (id != JSID_VOID && id != JSID_EMPTY) {
-		jsval idval;
-
-		JS_IdToValue(cx, id, &idval);
-		if (JSVAL_IS_STRING(idval)) {
-			JSSTRING_TO_MSTRING(cx, JSVAL_TO_STRING(idval), name, nullptr);
-			HANDLE_PENDING(cx, name);
-		}
+	if (id.get().isString()) {
+		JSString* str = id.get().toString();
+		JSSTRING_TO_MSTRING(cx, str, name, nullptr);
+		HANDLE_PENDING(cx, name);
+		if (name == nullptr) return false;
 	}
 
+	bool ret = js_user_resolve_impl(cx, obj, name);
+	if (name)
+		free(name);
+	if (resolvedp) *resolvedp = ret;
+	return true;
+}
+
+/* SM128: birthdate needs a proper native accessor because JS ClassOps no longer has
+ * getProperty/setProperty hooks, so  properties with NULL getter/setter
+ * never invoke js_user_get/js_user_set. Override birthdate with a real accessor. */
+static bool js_user_birthdate_getter(JSContext *cx, unsigned argc, JS::Value *vp)
+{
+	JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
+	if (!args.thisv().isObject()) { args.rval().setUndefined(); return true; }
+	JS::RootedObject obj(cx, &args.thisv().toObject());
+	user_private_t* p = (user_private_t*)JS_GetPrivate(cx, obj);
+	if (!p) { args.rval().setUndefined(); return true; }
+	p->getuserdat();
+	const char* s = p->user->birth;
+	if (!s || !*s) { args.rval().setUndefined(); return true; }
+	JSString* str = JS_NewStringCopyZ(cx, s);
+	if (!str) return false;
+	args.rval().setString(str);
+	return true;
+}
+
+static bool js_user_birthdate_setter(JSContext *cx, unsigned argc, JS::Value *vp)
+{
+	JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
+	if (!args.thisv().isObject()) return true;
+	JS::RootedObject obj(cx, &args.thisv().toObject());
+	user_private_t* p = (user_private_t*)JS_GetPrivate(cx, obj);
+	if (!p) return true;
+	JS::RootedString strval(cx, JS::ToString(cx, args.get(0)));
+	if (!strval) return false;
+	char* str = nullptr;
+	JSSTRING_TO_MSTRING(cx, strval.get(), str, nullptr);
+	if (!str) return true;
+	parse_birthdate(p->cfg, str, p->user->birth, sizeof p->user->birth);
+	putuserstr(p->cfg, p->user->number, USER_BIRTH, p->user->birth);
+	free(str);
+	if (!user_is_guest(p->user))
+		p->cached = false;
+	args.rval().setUndefined();
+	return true;
+}
+
+static const JSPropertySpec js_user_birthdate_spec[] = {
+	JS_PSGS("birthdate", js_user_birthdate_getter, js_user_birthdate_setter, JSPROP_ENUMERATE | JSPROP_PERMANENT),
+	JS_PS_END
+};
+
+static bool js_user_resolve_impl(JSContext *cx, JSObject *obj, char* name)
+{
+	JSObject*  newobj;
+	user_private_t* p;
+
+	if ((p = (user_private_t*)JS_GetPrivate(cx, obj)) == nullptr)
+		return true;
+
 	if (name == nullptr || strcmp(name, "stats") == 0) {
-		if (name)
-			free(name);
 		/* user.stats */
-		if ((newobj = JS_DefineObject(cx, obj, "stats"
-		                              , &js_user_stats_class, nullptr, USER_PROP_FLAGS_RO)) == nullptr)
-			return JS_FALSE;
-		JS_SetPrivate(cx, newobj, p);
+		bool already = false;
+		JS_HasOwnProperty(cx, obj, "stats", &already);
+		if (!already) {
+			if ((newobj = JS_DefineObject(cx, obj, "stats"
+			                              , &js_user_stats_class, nullptr, USER_PROP_FLAGS_RO)) == nullptr)
+				return false;
+			JS_SetPrivate(cx, newobj, p);
+		}
 #ifdef BUILD_JSDOCS
 		js_DescribeSyncObject(cx, newobj, "User statistics (all <small>READ ONLY</small>)", 310);
 		js_CreateArrayOfStrings(cx, newobj, "_property_desc_list", user_stats_prop_desc, JSPROP_READONLY);
 #endif
 		if (name)
-			return JS_TRUE;
-
+			return true;
 	}
 
 	if (name == nullptr || strcmp(name, "security") == 0) {
-		if (name)
-			free(name);
 		/* user.security */
-		if ((newobj = JS_DefineObject(cx, obj, "security"
-		                              , &js_user_security_class, nullptr, USER_PROP_FLAGS_RO)) == nullptr)
-			return JS_FALSE;
-		JS_SetPrivate(cx, newobj, p);
+		bool already = false;
+		JS_HasOwnProperty(cx, obj, "security", &already);
+		if (!already) {
+			if ((newobj = JS_DefineObject(cx, obj, "security"
+			                              , &js_user_security_class, nullptr, USER_PROP_FLAGS_RO)) == nullptr)
+				return false;
+			JS_SetPrivate(cx, newobj, p);
+		}
 #ifdef BUILD_JSDOCS
-		js_DescribeSyncObject(cx, newobj, "User security settings", 310);
-		js_CreateArrayOfStrings(cx, newobj, "_property_desc_list", user_security_prop_desc, JSPROP_READONLY);
+		if (!already) {
+			js_DescribeSyncObject(cx, newobj, "User security settings", 310);
+			js_CreateArrayOfStrings(cx, newobj, "_property_desc_list", user_security_prop_desc, JSPROP_READONLY);
+		}
 #endif
 		if (name)
-			return JS_TRUE;
+			return true;
 	}
 
 	if (name == nullptr || strcmp(name, "limits") == 0) {
-		if (name)
-			free(name);
 		/* user.limits */
-		if ((newobj = JS_DefineObject(cx, obj, "limits"
-		                              , &js_user_limits_class, nullptr, USER_PROP_FLAGS_RO)) == nullptr)
-			return JS_FALSE;
-		JS_SetPrivate(cx, newobj, p);
+		bool already = false;
+		JS_HasOwnProperty(cx, obj, "limits", &already);
+		if (!already) {
+			if ((newobj = JS_DefineObject(cx, obj, "limits"
+			                              , &js_user_limits_class, nullptr, USER_PROP_FLAGS_RO)) == nullptr)
+				return false;
+			JS_SetPrivate(cx, newobj, p);
+		}
 #ifdef BUILD_JSDOCS
-		js_DescribeSyncObject(cx, newobj, "User limitations based on security level (all <small>READ ONLY</small>)", 311);
-		js_CreateArrayOfStrings(cx, newobj, "_property_desc_list", user_limits_prop_desc, JSPROP_READONLY);
+		if (!already) {
+			js_DescribeSyncObject(cx, newobj, "User limitations based on security level (all <small>READ ONLY</small>)", 311);
+			js_CreateArrayOfStrings(cx, newobj, "_property_desc_list", user_limits_prop_desc, JSPROP_READONLY);
+		}
 #endif
 		if (name)
-			return JS_TRUE;
+			return true;
 	}
 
-	ret = js_SyncResolve(cx, obj, name, js_user_properties, js_user_functions, nullptr, 0);
-	if (name)
-		free(name);
-	return ret;
+	if (!js_SyncResolve(cx, obj, name, js_user_properties, js_user_functions, nullptr, 0))
+		return false;
+
+	/* SM128: populate actual values —  getProperty hook is gone */
+	if (!js_user_fill_properties(cx, obj, p, name))
+		return false;
+
+	/* SM128: override birthdate with a native accessor (getter/setter) so normalization works */
+	if (name == nullptr || strcmp(name, "birthdate") == 0) {
+		if (!JS_DefineProperties(cx, obj, js_user_birthdate_spec))
+			return false;
+	}
+
+	return true;
 }
 
-static JSBool js_user_enumerate(JSContext *cx, JSObject *obj)
+static bool js_user_enumerate(JSContext *cx, JS::Handle<JSObject*> obj)
 {
-	return js_user_resolve(cx, obj, JSID_VOID);
+	return js_user_resolve_impl(cx, obj, nullptr);
 }
+
+static const JSClassOps js_user_classops = {
+	nullptr,                /* addProperty  */
+	nullptr,                /* delProperty  */
+	js_user_enumerate,      /* enumerate    */
+	nullptr,                /* newEnumerate */
+	js_user_resolve,        /* resolve      */
+	nullptr,                /* mayResolve   */
+	js_user_finalize,       /* finalize     */
+	nullptr, nullptr, nullptr /* call, construct, trace */
+};
 
 JSClass js_user_class = {
-	"User"                  /* name			*/
-	, JSCLASS_HAS_PRIVATE    /* flags		*/
-	, JS_PropertyStub        /* addProperty	*/
-	, JS_PropertyStub        /* delProperty	*/
-	, js_user_get            /* getProperty	*/
-	, js_user_set            /* setProperty	*/
-	, js_user_enumerate      /* enumerate	*/
-	, js_user_resolve        /* resolve		*/
-	, JS_ConvertStub         /* convert		*/
-	, js_user_finalize       /* finalize		*/
+	"User"
+	, JSCLASS_HAS_PRIVATE
+	, &js_user_classops
 };
 
 /* User Constructor (creates instance of user class) */

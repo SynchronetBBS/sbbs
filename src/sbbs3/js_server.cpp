@@ -30,41 +30,43 @@ enum {
 	, SERVER_PROP_CLIENTS
 };
 
-static JSBool js_server_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
+static JSBool js_server_get_value(JSContext* cx, js_server_props_t* p, jsint tiny, jsval* vp)
 {
-	jsval              idval;
-	jsint              tiny;
-	js_server_props_t* p;
-	char * *           interface;
-	char *             ipv4;
-	char *             colon;
-
-	if ((p = (js_server_props_t*)JS_GetPrivate(cx, obj)) == NULL)
-		return JS_FALSE;
-
-	JS_IdToValue(cx, id, &idval);
-	tiny = JSVAL_TO_INT(idval);
+	JS::RootedString  js_str(cx);
+	char**            iface;
+	char*             ipv4;
+	char*             colon;
 
 	switch (tiny) {
 		case SERVER_PROP_VER:
-			*vp = STRING_TO_JSVAL(JS_NewStringCopyZ(cx, p->version));
+			if ((js_str = JS_NewStringCopyZ(cx, p->version)) == nullptr)
+				return JS_FALSE;
+			*vp = STRING_TO_JSVAL(js_str.get());
 			break;
 		case SERVER_PROP_VER_DETAIL:
-			if (p->version_detail != NULL)
-				*vp = STRING_TO_JSVAL(JS_NewStringCopyZ(cx, p->version_detail));
+			if (p->version_detail != NULL) {
+				if ((js_str = JS_NewStringCopyZ(cx, p->version_detail)) == nullptr)
+					return JS_FALSE;
+				*vp = STRING_TO_JSVAL(js_str.get());
+			}
 			break;
 		case SERVER_PROP_INTERFACE:
-			for (interface = *p->interfaces; *interface; interface++) {
-				if (strchr(*interface, '.')) {
-					ipv4 = strdup(*interface);
+			for (iface = *p->interfaces; *iface; iface++) {
+				if (strchr(*iface, '.')) {
+					ipv4 = strdup(*iface);
 					if ((colon = strchr(ipv4, ':')))
 						*colon = 0;
-					*vp = STRING_TO_JSVAL(JS_NewStringCopyZ(cx, ipv4));
+					js_str = JS_NewStringCopyZ(cx, ipv4);
 					free(ipv4);
+					if (js_str == nullptr)
+						return JS_FALSE;
+					*vp = STRING_TO_JSVAL(js_str.get());
 					return JS_TRUE;
 				}
 			}
-			*vp = STRING_TO_JSVAL(JS_NewStringCopyZ(cx, "255.255.255.255"));
+			if ((js_str = JS_NewStringCopyZ(cx, "255.255.255.255")) == nullptr)
+				return JS_FALSE;
+			*vp = STRING_TO_JSVAL(js_str.get());
 			break;
 		case SERVER_PROP_OPTIONS:
 			if (p->options != NULL)
@@ -74,23 +76,14 @@ static JSBool js_server_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 			if (p->clients != NULL)
 				*vp = UINT_TO_JSVAL(protected_uint32_value(*p->clients));
 			break;
+		default:
+			return JS_TRUE;
 	}
-
 	return JS_TRUE;
 }
 
-static JSBool js_server_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, jsval *vp)
+static JSBool js_server_set_value(JSContext* cx, js_server_props_t* p, jsint tiny, jsval* vp)
 {
-	jsval              idval;
-	jsint              tiny;
-	js_server_props_t* p;
-
-	if ((p = (js_server_props_t*)JS_GetPrivate(cx, obj)) == NULL)
-		return JS_FALSE;
-
-	JS_IdToValue(cx, id, &idval);
-	tiny = JSVAL_TO_INT(idval);
-
 	switch (tiny) {
 		case SERVER_PROP_OPTIONS:
 			if (p->options != NULL) {
@@ -100,9 +93,8 @@ static JSBool js_server_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict
 			break;
 	}
 
-	return TRUE;
+	return JS_TRUE;
 }
-
 
 #define PROP_FLAGS JSPROP_ENUMERATE | JSPROP_READONLY
 
@@ -161,80 +153,136 @@ static void remove_port_part(char *host)
 	}
 }
 
-static JSBool js_server_resolve(JSContext *cx, JSObject *obj, jsid id)
+static bool js_server_prop_setter(JSContext* cx, unsigned argc, JS::Value* vp)
 {
-	char*              name = NULL;
-	JSBool             ret;
+	JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
+	JS::RootedObject thisObj(cx);
+	if (!args.computeThis(cx, &thisObj))
+		return false;
+	js_server_props_t* p = (js_server_props_t*)JS_GetPrivate(thisObj);
+	if (p == nullptr)
+		return true;
+	JSObject* callee = &args.callee();
+	jsint tiny = js::GetFunctionNativeReserved(callee, 0).toInt32();
+	jsval val = args.length() > 0 ? args[0] : JSVAL_VOID;
+	if (!js_server_set_value(cx, p, tiny, &val))
+		return false;
+	args.rval().set(val);
+	return true;
+}
+
+static bool js_server_prop_getter(JSContext* cx, unsigned argc, JS::Value* vp)
+{
+	JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
+	JS::RootedObject thisObj(cx);
+	if (!args.computeThis(cx, &thisObj))
+		return false;
+	js_server_props_t* p = (js_server_props_t*)JS_GetPrivate(thisObj);
+	if (p == nullptr) {
+		args.rval().setUndefined();
+		return true;
+	}
+	JSObject* callee = &args.callee();
+	jsint tiny = js::GetFunctionNativeReserved(callee, 0).toInt32();
+	jsval val = JSVAL_VOID;
+	if (!js_server_get_value(cx, p, tiny, &val))
+		return false;
+	args.rval().set(val);
+	return true;
+}
+
+static JSBool js_server_fill_properties(JSContext* cx, JSObject* obj, js_server_props_t* p, const char* name)
+{
+	(void)p;
+	return js_DefineSyncAccessors(cx, obj, js_server_properties, js_server_prop_getter, name, js_server_prop_setter);
+}
+
+static bool js_server_resolve_impl(JSContext* cx, JSObject* areaobj, char* name);
+
+bool js_server_resolve(JSContext* cx, JS::Handle<JSObject*> obj, JS::Handle<jsid> id, bool* resolvedp)
+{
+	char* name = NULL;
+
+	if (id.get().isString()) {
+		JSString* jstr = id.get().toString();
+		JSSTRING_TO_MSTRING(cx, jstr, name, NULL);
+		HANDLE_PENDING(cx, name);
+		if (name == NULL) return false;
+	}
+
+	bool ret = js_server_resolve_impl(cx, obj, name);
+	if (name)
+		free(name);
+	if (resolvedp) *resolvedp = ret;
+	return true;
+}
+
+static bool js_server_resolve_impl(JSContext* cx, JSObject* rawobj, char* name)
+{
+	JS::RootedObject   obj(cx, rawobj);
+	bool               ret;
 	jsval              val;
 	char *             str;
-	JSObject*          newobj;
+	JS::RootedObject   newobj(cx);
 	uint               i;
 	js_server_props_t* props;
 
-	if (id != JSID_VOID && id != JSID_EMPTY) {
-		jsval idval;
-
-		JS_IdToValue(cx, id, &idval);
-		if (JSVAL_IS_STRING(idval)) {
-			JSSTRING_TO_MSTRING(cx, JSVAL_TO_STRING(idval), name, NULL);
-			HANDLE_PENDING(cx, name);
-		}
-	}
-
 	/* interface_ip_address property */
 	if (name == NULL || strcmp(name, "interface_ip_addr_list") == 0) {
-		if (name)
-			free(name);
-
 		if ((props = (js_server_props_t*)JS_GetPrivate(cx, obj)) == NULL)
-			return JS_FALSE;
+			return false;
 
-		if ((newobj = JS_NewArrayObject(cx, 0, NULL)) == NULL)
-			return JS_FALSE;
-
-		if (!JS_SetParent(cx, newobj, obj))
-			return JS_FALSE;
+		newobj = JS_NewArrayObject(cx, 0, NULL);
+		if (!newobj)
+			return false;
 
 		if (!JS_DefineProperty(cx, obj, "interface_ip_addr_list", OBJECT_TO_JSVAL(newobj)
 		                       , NULL, NULL, JSPROP_ENUMERATE))
-			return JS_FALSE;
+			return false;
 
 		for (i = 0; (*props->interfaces)[i]; i++) {
 			str = strdup((*props->interfaces)[i]);
 			if (str == NULL)
-				return JS_FALSE;
+				return false;
 			remove_port_part(str);
 			val = STRING_TO_JSVAL(JS_NewStringCopyZ(cx, str));
 			free(str);
 			JS_SetElement(cx, newobj, i, &val);
 		}
-		JS_DeepFreezeObject(cx, newobj);
+		JS_DeepFreezeObject(cx, newobj.get());
 		if (name)
-			return JS_TRUE;
+			return true;
 	}
 
 	ret = js_SyncResolve(cx, obj, name, js_server_properties, NULL, NULL, 0);
-	if (name)
-		free(name);
+	if (ret) {
+		js_server_props_t* p = (js_server_props_t*)JS_GetPrivate(cx, obj);
+		if (p != NULL)
+			js_server_fill_properties(cx, obj, p, name);
+	}
 	return ret;
 }
 
-static JSBool js_server_enumerate(JSContext *cx, JSObject *obj)
+static bool js_server_enumerate(JSContext *cx, JS::Handle<JSObject*> obj)
 {
-	return js_server_resolve(cx, obj, JSID_VOID);
+	return js_server_resolve_impl(cx, obj, NULL);
 }
 
+static const JSClassOps js_server_classops = {
+	nullptr,                /* addProperty  */
+	nullptr,                /* delProperty  */
+	js_server_enumerate,    /* enumerate    */
+	nullptr,                /* newEnumerate */
+	js_server_resolve,      /* resolve      */
+	nullptr,                /* mayResolve   */
+	nullptr,                /* finalize     */
+	nullptr, nullptr, nullptr /* call, construct, trace */
+};
+
 static JSClass js_server_class = {
-	"Server"                /* name			*/
-	, JSCLASS_HAS_PRIVATE    /* flags		*/
-	, JS_PropertyStub        /* addProperty	*/
-	, JS_PropertyStub        /* delProperty	*/
-	, js_server_get          /* getProperty	*/
-	, js_server_set          /* setProperty	*/
-	, js_server_enumerate    /* enumerate	*/
-	, js_server_resolve      /* resolve		*/
-	, JS_ConvertStub         /* convert		*/
-	, JS_FinalizeStub        /* finalize		*/
+	"Server"
+	, JSCLASS_HAS_PRIVATE
+	, &js_server_classops
 };
 
 JSObject* js_CreateServerObject(JSContext* cx, JSObject* parent

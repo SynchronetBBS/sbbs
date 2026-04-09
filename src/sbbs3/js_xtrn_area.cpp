@@ -125,8 +125,9 @@ static jsSyncPropertySpec js_event_properties[] = {
 	{ NULL }
 };
 
-BOOL js_CreateXtrnProgProperties(JSContext* cx, JSObject* obj, xtrn_t* xtrn)
+BOOL js_CreateXtrnProgProperties(JSContext* cx, JSObject* rawobj, xtrn_t* xtrn)
 {
+	JS::RootedObject obj(cx, rawobj);
 	JSString* js_str;
 
 	if ((js_str = JS_NewStringCopyZ(cx, xtrn->code)) == NULL)
@@ -202,19 +203,10 @@ BOOL js_CreateXtrnProgProperties(JSContext* cx, JSObject* obj, xtrn_t* xtrn)
 	return TRUE;
 }
 
-static JSBool js_event_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
+static JSBool js_event_get_value(JSContext* cx, event_t* event, jsint tiny, jsval* vp)
 {
-	const char* p = NULL;
-	JSString*   js_str;
-	jsval       idval;
-	jsint       tiny;
-	event_t*    event;
-
-	if ((event = static_cast<event_t *>(JS_GetPrivate(cx, obj))) == NULL)
-		return JS_FALSE;
-
-	JS_IdToValue(cx, id, &idval);
-	tiny = JSVAL_TO_INT(idval);
+	const char*      p = NULL;
+	JS::RootedString js_str(cx);
 
 	switch (tiny) {
 		case EVENT_PROP_CMD:
@@ -253,27 +245,55 @@ static JSBool js_event_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 		case EVENT_PROP_MISC:
 			*vp = UINT_TO_JSVAL(event->misc);
 			break;
+		default:
+			return JS_TRUE;
 	}
 
 	if (p != NULL) { /* string property */
-		if ((js_str = JS_NewStringCopyZ(cx, p)) == NULL)
+		js_str = JS_NewStringCopyZ(cx, p);
+		if (!js_str)
 			return JS_FALSE;
 		*vp = STRING_TO_JSVAL(js_str);
 	}
 	return JS_TRUE;
 }
 
+static JSBool js_event_fill_properties(JSContext* cx, JSObject* obj, event_t* event, const char* name)
+{
+	JS::RootedObject robj(cx, obj);
+	JS::RootedValue  rv(cx);
+
+	for (uint i = 0; js_event_properties[i].name; i++) {
+		if (name != NULL && strcmp(name, js_event_properties[i].name) != 0)
+			continue;
+		rv.set(JSVAL_VOID);
+		if (!js_event_get_value(cx, event, js_event_properties[i].tinyid, rv.address()))
+			return JS_FALSE;
+		if (!rv.isUndefined()) {
+			if (!JS_SetProperty(cx, robj.get(), js_event_properties[i].name, rv))
+				return JS_FALSE;
+		}
+		if (name != NULL)
+			return JS_TRUE;
+	}
+	return JS_TRUE;
+}
+
+static const JSClassOps js_event_classops = {
+	nullptr,                /* addProperty  */
+	nullptr,                /* delProperty  */
+	nullptr,                /* enumerate    */
+	nullptr,                /* newEnumerate */
+	nullptr,                /* resolve      */
+	nullptr,                /* mayResolve   */
+	nullptr,                /* finalize     */
+	nullptr, nullptr, nullptr /* call, construct, trace */
+};
+
 static JSClass js_event_class = {
-	"Event"                 /* name			*/
-	, JSCLASS_HAS_PRIVATE    /* flags		*/
-	, JS_PropertyStub        /* addProperty	*/
-	, JS_PropertyStub        /* delProperty	*/
-	, js_event_get           /* getProperty	*/
-	, JS_StrictPropertyStub  /* setProperty	*/
-	, JS_EnumerateStub       /* enumerate	*/
-	, JS_ResolveStub         /* resolve		*/
-	, JS_ConvertStub         /* convert		*/
-	, JS_FinalizeStub        /* finalize		*/
+	"Event"
+	, JSCLASS_HAS_PRIVATE
+	, &js_event_classops
 };
 
 struct js_xtrn_area_priv {
@@ -282,128 +302,138 @@ struct js_xtrn_area_priv {
 	client_t *client;
 };
 
-JSBool js_xtrn_area_resolve(JSContext* cx, JSObject* areaobj, jsid id)
+static bool js_xtrn_area_resolve_impl(JSContext* cx, JSObject* areaobj, char* name);
+
+bool js_xtrn_area_resolve(JSContext* cx, JS::Handle<JSObject*> obj, JS::Handle<jsid> id, bool* resolvedp)
 {
-	JSObject*                 allsec;
-	JSObject*                 allprog;
-	JSObject*                 secobj;
-	JSObject*                 progobj;
-	JSObject*                 eventobj;
-	JSObject*                 event_array;
-	JSObject*                 xeditobj;
-	JSObject*                 xedit_array;
-	JSObject*                 sec_list;
-	JSObject*                 prog_list;
+	char* name = NULL;
+
+	if (id.get().isString()) {
+		JSString* str = id.get().toString();
+		JSSTRING_TO_MSTRING(cx, str, name, NULL);
+		HANDLE_PENDING(cx, name);
+		if (name == NULL) return false;
+	}
+
+	bool ret = js_xtrn_area_resolve_impl(cx, obj, name);
+	if (name)
+		free(name);
+	if (resolvedp) *resolvedp = ret;
+	return true;
+}
+
+static bool js_xtrn_area_resolve_impl(JSContext* cx, JSObject* areaobj, char* name)
+{
+	JS::RootedObject          allsec(cx);
+	JS::RootedObject          allprog(cx);
+	JS::RootedObject          secobj(cx);
+	JS::RootedObject          progobj(cx);
+	JS::RootedObject          eventobj(cx);
+	JS::RootedObject          event_array(cx);
+	JS::RootedObject          xeditobj(cx);
+	JS::RootedObject          xedit_array(cx);
+	JS::RootedObject          sec_list(cx);
+	JS::RootedObject          prog_list(cx);
 	JSString*                 js_str;
 	jsval                     val;
 	jsuint                    sec_index;
 	jsuint                    prog_index;
 	int                       l, d;
-	char*                     name = NULL;
 	struct js_xtrn_area_priv *p;
 
 	if ((p = (struct js_xtrn_area_priv*)JS_GetPrivate(cx, areaobj)) == NULL)
-		return JS_FALSE;
-
-	if (id != JSID_VOID && id != JSID_EMPTY) {
-		jsval idval;
-
-		JS_IdToValue(cx, id, &idval);
-		if (JSVAL_IS_STRING(idval))
-			JSSTRING_TO_MSTRING(cx, JSVAL_TO_STRING(idval), name, NULL);
-	}
+		return false;
 
 	if (name == NULL || strcmp(name, "sec") == 0 || strcmp(name, "prog") == 0 || strcmp(name, "sec_list") == 0 || strcmp(name, "event") == 0  || strcmp(name, "editor") == 0) {
-		FREE_AND_NULL(name);
 #ifdef BUILD_JSDOCS
 		js_DescribeSyncObject(cx, areaobj, "External Program Areas", 310);
 #endif
 
 		/* xtrn_area.sec[] */
-		if ((allsec = JS_NewObject(cx, NULL, NULL, areaobj)) == NULL)
-			return JS_FALSE;
+		if ((allsec = JS_NewObject(cx, NULL, NULL, areaobj)) == nullptr)
+			return false;
 
 		val = OBJECT_TO_JSVAL(allsec);
 		if (!JS_SetProperty(cx, areaobj, "sec", &val))
-			return JS_FALSE;
+			return false;
 
 		/* xtrn_area.prog[] */
-		if ((allprog = JS_NewObject(cx, NULL, NULL, areaobj)) == NULL)
-			return JS_FALSE;
+		if ((allprog = JS_NewObject(cx, NULL, NULL, areaobj)) == nullptr)
+			return false;
 
 		val = OBJECT_TO_JSVAL(allprog);
 		if (!JS_SetProperty(cx, areaobj, "prog", &val))
-			return JS_FALSE;
+			return false;
 
 		/* xtrn_area.sec_list[] */
-		if ((sec_list = JS_NewArrayObject(cx, 0, NULL)) == NULL)
-			return JS_FALSE;
+		if ((sec_list = JS_NewArrayObject(cx, 0, NULL)) == nullptr)
+			return false;
 
 		val = OBJECT_TO_JSVAL(sec_list);
 		if (!JS_SetProperty(cx, areaobj, "sec_list", &val))
-			return JS_FALSE;
+			return false;
 
 		for (l = 0; l < p->cfg->total_xtrnsecs; l++) {
 
-			if ((secobj = JS_NewObject(cx, NULL, NULL, NULL)) == NULL)
-				return JS_FALSE;
+			if ((secobj = JS_NewObject(cx, NULL, NULL, NULL)) == nullptr)
+				return false;
 
 			val = OBJECT_TO_JSVAL(secobj);
 			sec_index = -1;
 			if (p->user == NULL || chk_ar(p->cfg, p->cfg->xtrnsec[l]->ar, p->user, p->client)) {
 
 				if (!JS_GetArrayLength(cx, sec_list, &sec_index))
-					return JS_FALSE;
+					return false;
 
 				if (!JS_SetElement(cx, sec_list, sec_index, &val))
-					return JS_FALSE;
+					return false;
 			}
 
 			/* Add as property (associative array element) */
 			if (!JS_DefineProperty(cx, allsec, p->cfg->xtrnsec[l]->code, val
 			                       , NULL, NULL, JSPROP_READONLY | JSPROP_ENUMERATE))
-				return JS_FALSE;
+				return false;
 
 			val = INT_TO_JSVAL(sec_index);
 			if (!JS_SetProperty(cx, secobj, "index", &val))
-				return JS_FALSE;
+				return false;
 
 			val = INT_TO_JSVAL(l);
 			if (!JS_SetProperty(cx, secobj, "number", &val))
-				return JS_FALSE;
+				return false;
 
-			if ((js_str = JS_NewStringCopyZ(cx, p->cfg->xtrnsec[l]->code)) == NULL)
-				return JS_FALSE;
+			if ((js_str = JS_NewStringCopyZ(cx, p->cfg->xtrnsec[l]->code)) == nullptr)
+				return false;
 			val = STRING_TO_JSVAL(js_str);
 			if (!JS_SetProperty(cx, secobj, "code", &val))
-				return JS_FALSE;
+				return false;
 
-			if ((js_str = JS_NewStringCopyZ(cx, p->cfg->xtrnsec[l]->name)) == NULL)
-				return JS_FALSE;
+			if ((js_str = JS_NewStringCopyZ(cx, p->cfg->xtrnsec[l]->name)) == nullptr)
+				return false;
 			val = STRING_TO_JSVAL(js_str);
 			if (!JS_SetProperty(cx, secobj, "name", &val))
-				return JS_FALSE;
+				return false;
 
-			if ((js_str = JS_NewStringCopyZ(cx, p->cfg->xtrnsec[l]->arstr)) == NULL)
-				return JS_FALSE;
+			if ((js_str = JS_NewStringCopyZ(cx, p->cfg->xtrnsec[l]->arstr)) == nullptr)
+				return false;
 			val = STRING_TO_JSVAL(js_str);
 			if (!JS_SetProperty(cx, secobj, "ars", &val))
-				return JS_FALSE;
+				return false;
 
 			if (p->user == NULL || chk_ar(p->cfg, p->cfg->xtrnsec[l]->ar, p->user, p->client))
 				val = JSVAL_TRUE;
 			else
 				val = JSVAL_FALSE;
 			if (!JS_SetProperty(cx, secobj, "can_access", &val))
-				return JS_FALSE;
+				return false;
 
 			/* prog_list[] */
-			if ((prog_list = JS_NewArrayObject(cx, 0, NULL)) == NULL)
-				return JS_FALSE;
+			if ((prog_list = JS_NewArrayObject(cx, 0, NULL)) == nullptr)
+				return false;
 
 			val = OBJECT_TO_JSVAL(prog_list);
 			if (!JS_SetProperty(cx, secobj, "prog_list", &val))
-				return JS_FALSE;
+				return false;
 
 #ifdef BUILD_JSDOCS
 			js_DescribeSyncObject(cx, secobj, "Online Program (door) Sections (current user has access to)", 310);
@@ -413,8 +443,8 @@ JSBool js_xtrn_area_resolve(JSContext* cx, JSObject* areaobj, jsid id)
 				if (p->cfg->xtrn[d]->sec != l)
 					continue;
 
-				if ((progobj = JS_NewObject(cx, NULL, NULL, NULL)) == NULL)
-					return JS_FALSE;
+				if ((progobj = JS_NewObject(cx, NULL, NULL, NULL)) == nullptr)
+					return false;
 
 				val = OBJECT_TO_JSVAL(progobj);
 				prog_index = -1;
@@ -422,53 +452,53 @@ JSBool js_xtrn_area_resolve(JSContext* cx, JSObject* areaobj, jsid id)
 				    && !(p->cfg->xtrn[d]->event && p->cfg->xtrn[d]->misc & EVENTONLY)) {
 
 					if (!JS_GetArrayLength(cx, prog_list, &prog_index))
-						return JS_FALSE;
+						return false;
 
 					if (!JS_SetElement(cx, prog_list, prog_index, &val))
-						return JS_FALSE;
+						return false;
 				}
 
 				/* Add as property (associative array element) */
 				if (!JS_DefineProperty(cx, allprog, p->cfg->xtrn[d]->code, val
 				                       , NULL, NULL, JSPROP_READONLY | JSPROP_ENUMERATE))
-					return JS_FALSE;
+					return false;
 
 				val = INT_TO_JSVAL(prog_index);
 				if (!JS_SetProperty(cx, progobj, "index", &val))
-					return JS_FALSE;
+					return false;
 
 				val = INT_TO_JSVAL(d);
 				if (!JS_SetProperty(cx, progobj, "number", &val))
-					return JS_FALSE;
+					return false;
 
 				val = INT_TO_JSVAL(sec_index);
 				if (!JS_SetProperty(cx, progobj, "sec_index", &val))
-					return JS_FALSE;
+					return false;
 
 				val = INT_TO_JSVAL(l);
 				if (!JS_SetProperty(cx, progobj, "sec_number", &val))
-					return JS_FALSE;
+					return false;
 
 				val = STRING_TO_JSVAL(JS_NewStringCopyZ(cx, p->cfg->xtrnsec[l]->code));
 				if (!JS_SetProperty(cx, progobj, "sec_code", &val))
-					return JS_FALSE;
+					return false;
 
 				if (!js_CreateXtrnProgProperties(cx, progobj, p->cfg->xtrn[d]))
-					return JS_FALSE;
+					return false;
 
 				if (p->user == NULL || chk_ar(p->cfg, p->cfg->xtrn[d]->ar, p->user, p->client))
 					val = JSVAL_TRUE;
 				else
 					val = JSVAL_FALSE;
 				if (!JS_SetProperty(cx, progobj, "can_access", &val))
-					return JS_FALSE;
+					return false;
 
 				if (p->user == NULL || chk_ar(p->cfg, p->cfg->xtrn[d]->run_ar, p->user, p->client))
 					val = JSVAL_TRUE;
 				else
 					val = JSVAL_FALSE;
 				if (!JS_SetProperty(cx, progobj, "can_run", &val))
-					return JS_FALSE;
+					return false;
 
 #ifdef BUILD_JSDOCS
 				js_DescribeSyncObject(cx, progobj, "Online External Programs (doors) (current user has access to)", 310);
@@ -491,26 +521,30 @@ JSBool js_xtrn_area_resolve(JSContext* cx, JSObject* areaobj, jsid id)
 #endif
 
 		/* Create event property */
-		if ((event_array = JS_NewObject(cx, NULL, NULL, areaobj)) == NULL)
-			return JS_FALSE;
+		if ((event_array = JS_NewObject(cx, NULL, NULL, areaobj)) == nullptr)
+			return false;
 
 		val = OBJECT_TO_JSVAL(event_array);
 		if (!JS_SetProperty(cx, areaobj, "event", &val))
-			return JS_FALSE;
+			return false;
 
 		for (l = 0; l < p->cfg->total_events; l++) {
 
-			if ((eventobj = JS_NewObject(cx, &js_event_class, NULL, NULL)) == NULL)
-				return JS_FALSE;
+			if ((eventobj = JS_NewObject(cx, &js_event_class, NULL, NULL)) == nullptr)
+				return false;
 
 			JS_SetPrivate(cx, eventobj, p->cfg->event[l]);
 
 			if (!js_DefineSyncProperties(cx, eventobj, js_event_properties))
-				return JS_FALSE;
+				return false;
+
+			/* SM128: populate actual values —  getProperty hook is gone */
+			if (!js_event_fill_properties(cx, eventobj, p->cfg->event[l], NULL))
+				return false;
 
 			if (!JS_DefineProperty(cx, event_array, p->cfg->event[l]->code, OBJECT_TO_JSVAL(eventobj)
 			                       , NULL, NULL, JSPROP_READONLY | JSPROP_ENUMERATE))
-				return JS_FALSE;
+				return false;
 
 #ifdef BUILD_JSDOCS
 			js_CreateArrayOfStrings(cx, eventobj, "_property_desc_list", event_prop_desc, JSPROP_READONLY);
@@ -523,50 +557,50 @@ JSBool js_xtrn_area_resolve(JSContext* cx, JSObject* areaobj, jsid id)
 #endif
 
 		/* Create editor property */
-		if ((xedit_array = JS_NewObject(cx, NULL, NULL, areaobj)) == NULL)
-			return JS_FALSE;
+		if ((xedit_array = JS_NewObject(cx, NULL, NULL, areaobj)) == nullptr)
+			return false;
 
 		val = OBJECT_TO_JSVAL(xedit_array);
 		if (!JS_SetProperty(cx, areaobj, "editor", &val))
-			return JS_FALSE;
+			return false;
 
 		for (l = 0; l < p->cfg->total_xedits; l++) {
 
 			if (p->user != NULL && !chk_ar(p->cfg, p->cfg->xedit[l]->ar, p->user, p->client))
 				continue;
 
-			if ((xeditobj = JS_NewObject(cx, NULL, NULL, NULL)) == NULL)
-				return JS_FALSE;
+			if ((xeditobj = JS_NewObject(cx, NULL, NULL, NULL)) == nullptr)
+				return false;
 
 			if (!JS_DefineProperty(cx, xedit_array, p->cfg->xedit[l]->code, OBJECT_TO_JSVAL(xeditobj)
 			                       , NULL, NULL, JSPROP_READONLY | JSPROP_ENUMERATE))
-				return JS_FALSE;
+				return false;
 
-			if ((js_str = JS_NewStringCopyZ(cx, p->cfg->xedit[l]->name)) == NULL)
-				return JS_FALSE;
+			if ((js_str = JS_NewStringCopyZ(cx, p->cfg->xedit[l]->name)) == nullptr)
+				return false;
 			if (!JS_DefineProperty(cx, xeditobj, "name", STRING_TO_JSVAL(js_str)
 			                       , NULL, NULL, JSPROP_ENUMERATE | JSPROP_READONLY))
-				return JS_FALSE;
+				return false;
 
-			if ((js_str = JS_NewStringCopyZ(cx, p->cfg->xedit[l]->rcmd)) == NULL)
-				return JS_FALSE;
+			if ((js_str = JS_NewStringCopyZ(cx, p->cfg->xedit[l]->rcmd)) == nullptr)
+				return false;
 			if (!JS_DefineProperty(cx, xeditobj, "cmd", STRING_TO_JSVAL(js_str)
 			                       , NULL, NULL, JSPROP_ENUMERATE | JSPROP_READONLY))
-				return JS_FALSE;
+				return false;
 
-			if ((js_str = JS_NewStringCopyZ(cx, p->cfg->xedit[l]->arstr)) == NULL)
-				return JS_FALSE;
+			if ((js_str = JS_NewStringCopyZ(cx, p->cfg->xedit[l]->arstr)) == nullptr)
+				return false;
 			if (!JS_DefineProperty(cx, xeditobj, "ars", STRING_TO_JSVAL(js_str)
 			                       , NULL, NULL, JSPROP_ENUMERATE | JSPROP_READONLY))
-				return JS_FALSE;
+				return false;
 
 			if (!JS_DefineProperty(cx, xeditobj, "settings", INT_TO_JSVAL(p->cfg->xedit[l]->misc)
 			                       , NULL, NULL, JSPROP_ENUMERATE | JSPROP_READONLY))
-				return JS_FALSE;
+				return false;
 
 			if (!JS_DefineProperty(cx, xeditobj, "type", INT_TO_JSVAL(p->cfg->xedit[l]->type)
 			                       , NULL, NULL, JSPROP_ENUMERATE | JSPROP_READONLY))
-				return JS_FALSE;
+				return false;
 
 #ifdef BUILD_JSDOCS
 			js_CreateArrayOfStrings(cx, xeditobj, "_property_desc_list", xedit_prop_desc, JSPROP_READONLY);
@@ -578,41 +612,42 @@ JSBool js_xtrn_area_resolve(JSContext* cx, JSObject* areaobj, jsid id)
 		JS_DefineProperty(cx, xedit_array, "_assoc_array", JSVAL_TRUE, NULL, NULL, JSPROP_READONLY);
 #endif
 	}
-	if (name)
-		free(name);
 
-	return JS_TRUE;
+	return true;
 }
 
-static JSBool js_xtrn_area_enumerate(JSContext *cx, JSObject *obj)
+static bool js_xtrn_area_enumerate(JSContext *cx, JS::Handle<JSObject*> obj)
 {
-	return js_xtrn_area_resolve(cx, obj, JSID_VOID);
+	return js_xtrn_area_resolve_impl(cx, obj, NULL);
 }
 
 static void
-js_xtrn_area_finalize(JSContext *cx, JSObject *obj)
+js_xtrn_area_finalize(JS::GCContext* gcx, JSObject *obj)
 {
 	struct js_xtrn_area_priv *p;
 
-	if ((p = (struct js_xtrn_area_priv*)JS_GetPrivate(cx, obj)) == NULL)
+	if ((p = (struct js_xtrn_area_priv*)JS_GetPrivate(obj)) == NULL)
 		return;
 
 	free(p);
-	JS_SetPrivate(cx, obj, NULL);
+	JS_SetPrivate(obj, NULL);
 }
 
+static const JSClassOps js_xtrn_area_classops = {
+	nullptr,                    /* addProperty  */
+	nullptr,                    /* delProperty  */
+	js_xtrn_area_enumerate,     /* enumerate    */
+	nullptr,                    /* newEnumerate */
+	js_xtrn_area_resolve,       /* resolve      */
+	nullptr,                    /* mayResolve   */
+	js_xtrn_area_finalize,      /* finalize     */
+	nullptr, nullptr, nullptr   /* call, construct, trace */
+};
 
 static JSClass js_xtrn_area_class = {
-	"XtrnArea"              /* name			*/
-	, JSCLASS_HAS_PRIVATE    /* flags		*/
-	, JS_PropertyStub        /* addProperty	*/
-	, JS_PropertyStub        /* delProperty	*/
-	, JS_PropertyStub        /* getProperty	*/
-	, JS_StrictPropertyStub      /* setProperty	*/
-	, js_xtrn_area_enumerate /* enumerate	*/
-	, js_xtrn_area_resolve   /* resolve		*/
-	, JS_ConvertStub         /* convert		*/
-	, js_xtrn_area_finalize  /* finalize		*/
+	"XtrnArea"
+	, JSCLASS_HAS_PRIVATE
+	, &js_xtrn_area_classops
 };
 
 JSObject* js_CreateXtrnAreaObject(JSContext* cx, JSObject* parent, scfg_t* cfg

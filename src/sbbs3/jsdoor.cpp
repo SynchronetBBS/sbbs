@@ -32,7 +32,6 @@
 #include "ciolib.h"
 #include "ini_file.h"
 #include "js_rtpool.h"
-#include "js_request.h"
 #include "jsdebug.h"
 
 extern scfg_t scfg;
@@ -130,11 +129,12 @@ js_DefineConstIntegers(JSContext* cx, JSObject* obj, jsConstIntSpec* ints, int f
 {
 	uint  i;
 	jsval val;
+	JS::RootedObject robj(cx, obj);
 
 	for (i = 0; ints[i].name; i++) {
 		val = INT_TO_JSVAL(ints[i].val);
 
-		if (!JS_DefineProperty(cx, obj, ints[i].name, val, NULL, NULL, flags))
+		if (!JS_DefineProperty(cx, robj.get(), ints[i].name, val, NULL, NULL, flags))
 			return JS_FALSE;
 	}
 
@@ -208,11 +208,11 @@ js_DefineSyncProperties(JSContext *cx, JSObject *obj, jsSyncPropertySpec* props)
 	for (i = 0; props[i].name != NULL; ++i) {
 		if (props[i].tinyid < 256 && props[i].tinyid > -129) {
 			if (!JS_DefinePropertyWithTinyId(cx, obj, /* Never reserve any "slots" for properties */
-			                                 props[i].name, props[i].tinyid, JSVAL_VOID, NULL, NULL, props[i].flags | JSPROP_SHARED))
+			                                 props[i].name, props[i].tinyid, JSVAL_VOID, NULL, NULL, props[i].flags ))
 				return JS_FALSE;
 		}
 		else {
-			if (!JS_DefineProperty(cx, obj, props[i].name, JSVAL_VOID, NULL, NULL, props[i].flags | JSPROP_SHARED))
+			if (!JS_DefineProperty(cx, obj, props[i].name, JSVAL_VOID, NULL, NULL, props[i].flags ))
 				return JS_FALSE;
 		}
 		if (!(props[i].flags & JSPROP_ENUMERATE))   /* No need to document invisible props */
@@ -369,19 +369,24 @@ JSBool
 js_DefineSyncProperties(JSContext *cx, JSObject *obj, jsSyncPropertySpec* props)
 {
 	uint i;
+	JS::RootedObject robj(cx, obj);
 
 	/*
 	 * NOTE: Any changes here should also be added to the same function in jsdoor.c
 	 *       (ie: anything not Synchronet specific).
 	 */
 	for (i = 0; props[i].name; i++) {
+		/* SM128: strip JSPROP_READONLY so fill_properties can set the actual
+		 * value via JS_SetProperty.  JSPROP_RESOLVING prevents resolve-hook
+		 * recursion during this define. */
+		unsigned flags = (props[i].flags & ~(JSPROP_READONLY | JSPROP_PERMANENT)) | JSPROP_RESOLVING;
 		if (props[i].tinyid < 256 && props[i].tinyid > -129) {
-			if (!JS_DefinePropertyWithTinyId(cx, obj,
-			                                 props[i].name, props[i].tinyid, JSVAL_VOID, NULL, NULL, props[i].flags | JSPROP_SHARED))
+			if (!JS_DefinePropertyWithTinyId(cx, robj.get(),
+			                                 props[i].name, props[i].tinyid, JSVAL_VOID, NULL, NULL, flags))
 				return JS_FALSE;
 		}
 		else {
-			if (!JS_DefineProperty(cx, obj, props[i].name, JSVAL_VOID, NULL, NULL, props[i].flags | JSPROP_SHARED))
+			if (!JS_DefineProperty(cx, robj.get(), props[i].name, JSVAL_VOID, NULL, NULL, flags))
 				return JS_FALSE;
 		}
 	}
@@ -410,21 +415,31 @@ js_SyncResolve(JSContext* cx, JSObject* obj, char *name, jsSyncPropertySpec* pro
 {
 	uint  i;
 	jsval val;
+	JSBool found;
 
 	/*
 	 * NOTE: Any changes here should also be added to the same function in jsdoor.c
 	 *       (ie: anything not Synchronet specific).
+	 * JSPROP_RESOLVING must be passed to JS_Define* calls made from a resolve/enumerate
+	 * hook — it tells the engine to skip the resolve hook during the lookup that precedes
+	 * property definition, preventing accidental infinite recursion (SM78+ requirement).
+	 * When enumerating all properties (name==NULL), skip any already defined to avoid
+	 * "can't redefine non-configurable property" errors (e.g. after a native accessor
+	 * override was applied for a specific property on first access).
 	 */
 	if (props) {
 		for (i = 0; props[i].name; i++) {
 			if (name == NULL || strcmp(name, props[i].name) == 0) {
+				if (name == NULL && JS_HasProperty(cx, obj, props[i].name, &found) && found) {
+					continue;
+				}
 				if (props[i].tinyid < 256 && props[i].tinyid > -129) {
 					if (!JS_DefinePropertyWithTinyId(cx, obj,
-					                                 props[i].name, props[i].tinyid, JSVAL_VOID, NULL, NULL, props[i].flags | JSPROP_SHARED))
+					                                 props[i].name, props[i].tinyid, JSVAL_VOID, NULL, NULL, props[i].flags  | JSPROP_RESOLVING))
 						return JS_FALSE;
 				}
 				else {
-					if (!JS_DefineProperty(cx, obj, props[i].name, JSVAL_VOID, NULL, NULL, props[i].flags | JSPROP_SHARED))
+					if (!JS_DefineProperty(cx, obj, props[i].name, JSVAL_VOID, NULL, NULL, props[i].flags  | JSPROP_RESOLVING))
 						return JS_FALSE;
 				}
 				if (name)
@@ -435,7 +450,10 @@ js_SyncResolve(JSContext* cx, JSObject* obj, char *name, jsSyncPropertySpec* pro
 	if (funcs) {
 		for (i = 0; funcs[i].name; i++) {
 			if (name == NULL || strcmp(name, funcs[i].name) == 0) {
-				if (!JS_DefineFunction(cx, obj, funcs[i].name, funcs[i].call, funcs[i].nargs, 0))
+				if (name == NULL && JS_HasProperty(cx, obj, funcs[i].name, &found) && found) {
+					continue;
+				}
+				if (!JS_DefineFunction(cx, obj, funcs[i].name, funcs[i].call, funcs[i].nargs, JSPROP_RESOLVING))
 					return JS_FALSE;
 				if (name)
 					return JS_TRUE;
@@ -445,9 +463,12 @@ js_SyncResolve(JSContext* cx, JSObject* obj, char *name, jsSyncPropertySpec* pro
 	if (consts) {
 		for (i = 0; consts[i].name; i++) {
 			if (name == NULL || strcmp(name, consts[i].name) == 0) {
+				if (name == NULL && JS_HasProperty(cx, obj, consts[i].name, &found) && found) {
+					continue;
+				}
 				val = INT_TO_JSVAL(consts[i].val);
 
-				if (!JS_DefineProperty(cx, obj, consts[i].name, val, NULL, NULL, flags))
+				if (!JS_DefineProperty(cx, obj, consts[i].name, val, NULL, NULL, flags | JSPROP_RESOLVING))
 					return JS_FALSE;
 
 				if (name)
@@ -494,68 +515,71 @@ bool DLLCALL js_CreateCommonObjects(JSContext* js_cx
 	/* Global Object */
 	if (!js_CreateGlobalObject(js_cx, &scfg, methods, js_startup, glob))
 		return FALSE;
+
+	/* SM128: root the global so compacting GC during object creation
+	 * can update the pointer; write back at end for the caller. */
+	JS::RootedObject glob_root(js_cx, *glob);
+
 #ifdef JS_HAS_CTYPES
-	JS_InitCTypesClass(js_cx, *glob);
+	JS_InitCTypesClass(js_cx, glob_root);
 #endif
 
 	do {
 		/* System Object */
-		if (js_CreateSystemObject(js_cx, *glob, &scfg, uptime, host_name, socklib_desc, mqtt) == NULL)
+		if (js_CreateSystemObject(js_cx, glob_root, &scfg, uptime, host_name, socklib_desc, mqtt) == NULL)
 			break;
 
 		/* Internal JS Object */
 		if (cb != NULL
-		    && js_CreateInternalJsObject(js_cx, *glob, cb, js_startup) == NULL)
+		    && js_CreateInternalJsObject(js_cx, glob_root, cb, js_startup) == NULL)
 			break;
 
 		/* Client Object */
 		if (client != NULL
-		    && js_CreateClientObject(js_cx, *glob, "client", client, client_socket, session) == NULL)
+		    && js_CreateClientObject(js_cx, glob_root, "client", client, client_socket, session) == NULL)
 			break;
 
 		/* Server */
 		if (props != NULL
-		    && js_CreateServerObject(js_cx, *glob, props) == NULL)
+		    && js_CreateServerObject(js_cx, glob_root, props) == NULL)
 			break;
 
 		/* Socket Class */
-		if (js_CreateSocketClass(js_cx, *glob) == NULL)
+		if (js_CreateSocketClass(js_cx, glob_root) == NULL)
 			break;
 
 		/* Queue Class */
-		if (js_CreateQueueClass(js_cx, *glob) == NULL)
+		if (js_CreateQueueClass(js_cx, glob_root) == NULL)
 			break;
 
 		/* File Class */
-		if (js_CreateFileClass(js_cx, *glob) == NULL)
+		if (js_CreateFileClass(js_cx, glob_root) == NULL)
 			break;
 
 		/* Archive Class */
-		if (js_CreateArchiveClass(js_cx, *glob, NULL) == NULL)
+		if (js_CreateArchiveClass(js_cx, glob_root, NULL) == NULL)
 			break;
 
 		/* COM Class */
-		if (js_CreateCOMClass(js_cx, *glob) == NULL)
+		if (js_CreateCOMClass(js_cx, glob_root) == NULL)
 			break;
 
 		/* CryptContext Class */
-		if (js_CreateCryptContextClass(js_cx, *glob) == NULL)
+		if (js_CreateCryptContextClass(js_cx, glob_root) == NULL)
 			break;
 
 		/* CryptKeyset Class */
-		if (js_CreateCryptKeysetClass(js_cx, *glob) == NULL)
+		if (js_CreateCryptKeysetClass(js_cx, glob_root) == NULL)
 			break;
 
 		/* CryptCert Class */
-		if (js_CreateCryptCertClass(js_cx, *glob) == NULL)
+		if (js_CreateCryptCertClass(js_cx, glob_root) == NULL)
 			break;
 
 		success = TRUE;
 	} while (0);
 
-	if (!success)
-		JS_RemoveObjectRoot(js_cx, glob);
-
+	*glob = glob_root;
 	return success;
 }
 

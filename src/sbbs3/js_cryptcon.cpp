@@ -2,7 +2,6 @@
 
 #include "sbbs.h"
 #include <cryptlib.h>
-#include "js_request.h"
 #include "js_cryptcon.h"
 #include "ssl.h"
 #include "base64.h"
@@ -307,7 +306,6 @@ static void js_simple_asn1(unsigned char *data, size_t len, JSContext *cx, JSObj
 static void js_create_key_object(JSContext *cx, JSObject *parent)
 {
 	struct js_cryptcon_private_data* p;
-	jsrefcount                       rc;
 	int                              status;
 	int                              val;
 	int                              sz;
@@ -317,7 +315,6 @@ static void js_create_key_object(JSContext *cx, JSObject *parent)
 	if ((p = (struct js_cryptcon_private_data *)JS_GetPrivate(cx, parent)) == NULL)
 		return;
 
-	rc = JS_SUSPENDREQUEST(cx);
 
 	status = cryptGetAttribute(p->ctx, CRYPT_CTXINFO_ALGO, &val);
 	if (status != CRYPT_OK) {
@@ -373,24 +370,23 @@ static void js_create_key_object(JSContext *cx, JSObject *parent)
 	free(certbuf);
 
 resume:
-	JS_RESUMEREQUEST(cx, rc);
 	return;
 }
 
 // Destructor
 
 static void
-js_finalize_cryptcon(JSContext *cx, JSObject *obj)
+js_finalize_cryptcon(JS::GCContext* gcx, JSObject *obj)
 {
 	struct js_cryptcon_private_data* p;
 
-	if ((p = (struct js_cryptcon_private_data *)JS_GetPrivate(cx, obj)) == NULL)
+	if ((p = (struct js_cryptcon_private_data *)JS_GetPrivate(obj)) == NULL)
 		return;
 
 	cryptDestroyContext(p->ctx);
 	free(p);
 
-	JS_SetPrivate(cx, obj, NULL);
+	JS_SetPrivate(obj, NULL);
 }
 
 // Methods
@@ -400,7 +396,6 @@ js_generate_key(JSContext *cx, uintN argc, jsval *arglist)
 {
 	struct js_cryptcon_private_data* p;
 	JSObject *                       obj = JS_THIS_OBJECT(cx, arglist);
-	jsrefcount                       rc;
 	int                              status;
 
 	if ((p = (struct js_cryptcon_private_data *)JS_GetPrivate(cx, obj)) == NULL) {
@@ -408,9 +403,7 @@ js_generate_key(JSContext *cx, uintN argc, jsval *arglist)
 		return JS_FALSE;
 	}
 
-	rc = JS_SUSPENDREQUEST(cx);
 	status = cryptGenerateKey(p->ctx);
-	JS_RESUMEREQUEST(cx, rc);
 	if (status == CRYPT_OK)
 		js_create_key_object(cx, obj);
 	if (cryptStatusError(status)) {
@@ -430,7 +423,6 @@ js_set_key(JSContext *cx, uintN argc, jsval *arglist)
 	size_t                           len;
 	char*                            key = NULL;
 	int                              status;
-	jsrefcount                       rc;
 
 	if (js_argcIsInsufficient(cx, argc, 1))
 		return JS_FALSE;
@@ -449,10 +441,8 @@ js_set_key(JSContext *cx, uintN argc, jsval *arglist)
 		return JS_FALSE;
 	}
 
-	rc = JS_SUSPENDREQUEST(cx);
 	status = cryptSetAttributeString(p->ctx, CRYPT_CTXINFO_KEY, key, len);
 	free(key);
-	JS_RESUMEREQUEST(cx, rc);
 	if (cryptStatusError(status)) {
 		js_cryptcon_error(cx, p->ctx, status);
 		return JS_FALSE;
@@ -472,7 +462,6 @@ js_derive_key(JSContext *cx, uintN argc, jsval *arglist)
 	size_t                           len;
 	char*                            key = NULL;
 	int                              status;
-	jsrefcount                       rc;
 
 	if (js_argcIsInsufficient(cx, argc, 1))
 		return JS_FALSE;
@@ -486,7 +475,7 @@ js_derive_key(JSContext *cx, uintN argc, jsval *arglist)
 
 	if (len < 8 || len > CRYPT_MAX_HASHSIZE) {
 		free(key);
-		JS_ReportError(cx, "Illegal key value length of %d (must be between 8 and %d)", len, CRYPT_MAX_HASHSIZE);
+		JS_ReportError(cx, "Illegal key value length of %zu (must be between 8 and %d)", len, CRYPT_MAX_HASHSIZE);
 		return JS_FALSE;
 	}
 
@@ -497,10 +486,8 @@ js_derive_key(JSContext *cx, uintN argc, jsval *arglist)
 		return JS_FALSE;
 	}
 
-	rc = JS_SUSPENDREQUEST(cx);
 	status = cryptSetAttributeString(p->ctx, CRYPT_CTXINFO_KEYING_VALUE, key, len);
 	free(key);
-	JS_RESUMEREQUEST(cx, rc);
 	if (cryptStatusError(status)) {
 		js_cryptcon_error(cx, p->ctx, status);
 		return JS_FALSE;
@@ -520,7 +507,6 @@ js_do_encrption(JSContext *cx, uintN argc, jsval *arglist, int encrypt)
 	size_t                           len;
 	char *                           cipherText = NULL;
 	int                              status;
-	jsrefcount                       rc;
 	JSString*                        str;
 
 	if (js_argcIsInsufficient(cx, argc, 1))
@@ -539,12 +525,10 @@ js_do_encrption(JSContext *cx, uintN argc, jsval *arglist, int encrypt)
 	if (cipherText == NULL)
 		return JS_FALSE;
 
-	rc = JS_SUSPENDREQUEST(cx);
 	if (encrypt)
 		status = cryptEncrypt(p->ctx, cipherText, len);
 	else
 		status = cryptDecrypt(p->ctx, cipherText, len);
-	JS_RESUMEREQUEST(cx, rc);
 	if (cryptStatusError(status)) {
 		free(cipherText);
 		js_cryptcon_error(cx, p->ctx, status);
@@ -582,7 +566,6 @@ js_create_signature(JSContext *cx, uintN argc, jsval *arglist)
 	int                              len;
 	char *                           signature = NULL;
 	int                              status;
-	jsrefcount                       rc;
 	JSString*                        str;
 
 	if (js_argcIsInsufficient(cx, argc, 1))
@@ -604,21 +587,17 @@ js_create_signature(JSContext *cx, uintN argc, jsval *arglist)
 		return JS_FALSE;
 	}
 
-	rc = JS_SUSPENDREQUEST(cx);
 	status = cryptCreateSignature(NULL, 0, &len, scp->ctx, p->ctx);
 	if (cryptStatusError(status)) {
-		JS_RESUMEREQUEST(cx, rc);
 		js_cryptcon_error(cx, p->ctx, status);
 		return JS_FALSE;
 	}
 	signature = static_cast<char*>(malloc(len));
 	if (signature == NULL) {
 		lprintf(LOG_ERR, "Unable to allocate %u bytes\n", len);
-		JS_RESUMEREQUEST(cx, rc);
 		return JS_FALSE;
 	}
 	status = cryptCreateSignature(signature, len, &len, scp->ctx, p->ctx);
-	JS_RESUMEREQUEST(cx, rc);
 	if (cryptStatusError(status)) {
 		free(signature);
 		js_cryptcon_error(cx, p->ctx, status);
@@ -705,21 +684,10 @@ js_cryptcon_attrstr_set(JSContext *cx, jsval *vp, CRYPT_CONTEXT ctx, CRYPT_ATTRI
 	return JS_TRUE;
 }
 
+/* SM128: set_value for a single cryptcon property tinyid */
 static JSBool
-js_cryptcon_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, jsval *vp)
+js_cryptcon_set_value(JSContext *cx, struct js_cryptcon_private_data *p, jsint tiny, jsval *vp)
 {
-	jsval                            idval;
-	jsint                            tiny;
-	struct js_cryptcon_private_data* p;
-
-	if ((p = (struct js_cryptcon_private_data *)JS_GetPrivate(cx, obj)) == NULL) {
-		JS_ReportError(cx, getprivate_failure, WHERE);
-		return JS_FALSE;
-	}
-
-	JS_IdToValue(cx, id, &idval);
-	tiny = JSVAL_TO_INT(idval);
-
 	switch (tiny) {
 		case CRYPTCON_PROP_ALGO:
 			return js_cryptcon_attr_set(cx, vp, p->ctx, CRYPT_CTXINFO_ALGO);
@@ -747,8 +715,9 @@ js_cryptcon_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, jsval *vp)
 			return js_cryptcon_attrstr_set(cx, vp, p->ctx, CRYPT_CTXINFO_NAME_ALGO);
 		case CRYPTCON_PROP_NAME_MODE:
 			return js_cryptcon_attrstr_set(cx, vp, p->ctx, CRYPT_CTXINFO_NAME_MODE);
+		default:
+			return JS_TRUE;
 	}
-	return JS_TRUE;
 }
 
 static JSBool
@@ -801,20 +770,10 @@ js_cryptcon_attrstr_get(JSContext *cx, jsval *vp, CRYPT_CONTEXT ctx, CRYPT_ATTRI
 	return JS_TRUE;
 }
 
+/* SM128: get_value for a single cryptcon property tinyid */
 static JSBool
-js_cryptcon_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
+js_cryptcon_get_value(JSContext *cx, struct js_cryptcon_private_data *p, jsint tiny, jsval *vp)
 {
-	jsval                            idval;
-	jsint                            tiny;
-	struct js_cryptcon_private_data* p;
-
-	if ((p = (struct js_cryptcon_private_data *)JS_GetPrivate(cx, obj)) == NULL) {
-		return JS_TRUE;
-	}
-
-	JS_IdToValue(cx, id, &idval);
-	tiny = JSVAL_TO_INT(idval);
-
 	switch (tiny) {
 		case CRYPTCON_PROP_ALGO:
 			return js_cryptcon_attr_get(cx, vp, p->ctx, CRYPT_CTXINFO_ALGO);
@@ -843,8 +802,9 @@ js_cryptcon_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 			return js_cryptcon_attrstr_get(cx, vp, p->ctx, CRYPT_CTXINFO_NAME_ALGO);
 		case CRYPTCON_PROP_NAME_MODE:
 			return js_cryptcon_attrstr_get(cx, vp, p->ctx, CRYPT_CTXINFO_NAME_MODE);
+		default:
+			return JS_TRUE;
 	}
-	return JS_TRUE;
 }
 
 static jsSyncPropertySpec js_cryptcon_properties[] = {
@@ -864,6 +824,51 @@ static jsSyncPropertySpec js_cryptcon_properties[] = {
 	{"mode_name", CRYPTCON_PROP_NAME_MODE, JSPROP_ENUMERATE, 316},
 	{0}
 };
+
+static bool js_cryptcon_prop_getter(JSContext* cx, unsigned argc, JS::Value* vp)
+{
+	JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
+	JS::RootedObject thisObj(cx);
+	if (!args.computeThis(cx, &thisObj))
+		return false;
+	struct js_cryptcon_private_data* p = (struct js_cryptcon_private_data*)js_GetClassPrivate(cx, thisObj, &js_cryptcon_class);
+	if (p == nullptr) {
+		args.rval().setUndefined();
+		return true;
+	}
+	JSObject* callee = &args.callee();
+	jsint tiny = js::GetFunctionNativeReserved(callee, 0).toInt32();
+	jsval val = JSVAL_VOID;
+	if (!js_cryptcon_get_value(cx, p, tiny, &val))
+		return false;
+	args.rval().set(val);
+	return true;
+}
+
+static bool js_cryptcon_prop_setter(JSContext* cx, unsigned argc, JS::Value* vp)
+{
+	JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
+	JS::RootedObject thisObj(cx);
+	if (!args.computeThis(cx, &thisObj))
+		return false;
+	struct js_cryptcon_private_data* p = (struct js_cryptcon_private_data*)js_GetClassPrivate(cx, thisObj, &js_cryptcon_class);
+	if (p == nullptr)
+		return true;
+	JSObject* callee = &args.callee();
+	jsint tiny = js::GetFunctionNativeReserved(callee, 0).toInt32();
+	jsval val = args.length() > 0 ? args[0] : JSVAL_VOID;
+	if (!js_cryptcon_set_value(cx, p, tiny, &val))
+		return false;
+	args.rval().set(val);
+	return true;
+}
+
+/* SM128: populate actual property values for all (or one named) js_cryptcon_properties entry */
+static JSBool js_cryptcon_fill_properties(JSContext *cx, JSObject *obj, struct js_cryptcon_private_data *p, const char *name)
+{
+	(void)p;
+	return js_DefineSyncAccessors(cx, obj, js_cryptcon_properties, js_cryptcon_prop_getter, name, js_cryptcon_prop_setter);
+}
 
 static jsSyncMethodSpec   js_cryptcon_functions[] = {
 	{"generate_key",    js_generate_key,    0,  JSTYPE_VOID,    ""
@@ -887,43 +892,54 @@ static jsSyncMethodSpec   js_cryptcon_functions[] = {
 	{0}
 };
 
-static JSBool js_cryptcon_resolve(JSContext *cx, JSObject *obj, jsid id)
+static bool js_cryptcon_resolve(JSContext *cx, JS::Handle<JSObject*> obj, JS::Handle<jsid> id, bool* resolvedp)
 {
-	char*  name = NULL;
-	JSBool ret;
+	char* name = NULL;
 
-	if (id != JSID_VOID && id != JSID_EMPTY) {
-		jsval idval;
-
-		JS_IdToValue(cx, id, &idval);
-		if (JSVAL_IS_STRING(idval)) {
-			JSSTRING_TO_MSTRING(cx, JSVAL_TO_STRING(idval), name, NULL);
-			HANDLE_PENDING(cx, name);
-		}
+	if (id.get().isString()) {
+		JSString* str = id.get().toString();
+		JSSTRING_TO_MSTRING(cx, str, name, NULL);
+		HANDLE_PENDING(cx, name);
+		if (name == NULL) return false;
 	}
 
-	ret = js_SyncResolve(cx, obj, name, js_cryptcon_properties, js_cryptcon_functions, NULL, 0);
+	bool ret = js_SyncResolve(cx, obj, name, js_cryptcon_properties, js_cryptcon_functions, NULL, 0);
+	if (ret) {
+		struct js_cryptcon_private_data* p;
+		if ((p = (struct js_cryptcon_private_data*)js_GetClassPrivate(cx, obj, &js_cryptcon_class)) != NULL)
+			js_cryptcon_fill_properties(cx, obj, p, name);
+	}
 	if (name)
 		free(name);
-	return ret;
+	if (resolvedp) *resolvedp = ret;
+	return true;
 }
 
-static JSBool js_cryptcon_enumerate(JSContext *cx, JSObject *obj)
+static bool js_cryptcon_enumerate(JSContext *cx, JS::Handle<JSObject*> obj)
 {
-	return js_cryptcon_resolve(cx, obj, JSID_VOID);
+	if (!js_SyncResolve(cx, obj, NULL, js_cryptcon_properties, js_cryptcon_functions, NULL, 0))
+		return false;
+	struct js_cryptcon_private_data* p;
+	if ((p = (struct js_cryptcon_private_data*)js_GetClassPrivate(cx, obj, &js_cryptcon_class)) != NULL)
+		js_cryptcon_fill_properties(cx, obj, p, NULL);
+	return true;
 }
+
+static const JSClassOps js_cryptcon_classops = {
+	nullptr,                /* addProperty  */
+	nullptr,                /* delProperty  */
+	js_cryptcon_enumerate,  /* enumerate    */
+	nullptr,                /* newEnumerate */
+	js_cryptcon_resolve,    /* resolve      */
+	nullptr,                /* mayResolve   */
+	js_finalize_cryptcon,   /* finalize     */
+	nullptr, nullptr, nullptr /* call, construct, trace */
+};
 
 JSClass js_cryptcon_class = {
-	"CryptContext"          /* name			*/
-	, JSCLASS_HAS_PRIVATE    /* flags		*/
-	, JS_PropertyStub        /* addProperty	*/
-	, JS_PropertyStub        /* delProperty	*/
-	, js_cryptcon_get        /* getProperty	*/
-	, js_cryptcon_set        /* setProperty	*/
-	, js_cryptcon_enumerate  /* enumerate	*/
-	, js_cryptcon_resolve    /* resolve		*/
-	, JS_ConvertStub         /* convert		*/
-	, js_finalize_cryptcon       /* finalize		*/
+	"CryptContext"
+	, JSCLASS_HAS_PRIVATE
+	, &js_cryptcon_classops
 };
 
 JSObject* js_CreateCryptconObject(JSContext* cx, CRYPT_CONTEXT ctx)
@@ -957,7 +973,6 @@ js_cryptcon_constructor(JSContext *cx, uintN argc, jsval *arglist)
 	JSObject *                       obj;
 	jsval *                          argv = JS_ARGV(cx, arglist);
 	struct js_cryptcon_private_data *p;
-	jsrefcount                       rc;
 	int                              status;
 	int                              algo;
 
@@ -985,9 +1000,7 @@ js_cryptcon_constructor(JSContext *cx, uintN argc, jsval *arglist)
 		return JS_FALSE;
 	}
 
-	rc = JS_SUSPENDREQUEST(cx);
 	status = cryptCreateContext(&p->ctx, CRYPT_UNUSED, static_cast<CRYPT_ALGO_TYPE>(algo));
-	JS_RESUMEREQUEST(cx, rc);
 	if (cryptStatusError(status)) {
 		js_cryptcon_error(cx, p->ctx, status);
 		return JS_FALSE;
@@ -1057,9 +1070,9 @@ static const char* cryptcon_mode_prop_desc[] = {
 JSObject* js_CreateCryptContextClass(JSContext* cx, JSObject* parent)
 {
 	JSObject* ccobj;
-	JSObject* constructor;
-	JSObject* algo;
-	JSObject* mode;
+	JS::RootedObject constructor(cx);
+	JS::RootedObject algo(cx);
+	JS::RootedObject mode(cx);
 	jsval     val;
 
 	ccobj = JS_InitClass(cx, parent, NULL
@@ -1071,9 +1084,9 @@ JSObject* js_CreateCryptContextClass(JSContext* cx, JSObject* parent)
 	                     , NULL, NULL);
 
 	if (JS_GetProperty(cx, parent, js_cryptcon_class.name, &val) && !JSVAL_NULL_OR_VOID(val)) {
-		JS_ValueToObject(cx, val, &constructor);
+		JS_ValueToObject(cx, val, constructor.address());
 		algo = JS_DefineObject(cx, constructor, "ALGO", NULL, NULL, JSPROP_PERMANENT | JSPROP_ENUMERATE | JSPROP_READONLY);
-		if (algo != NULL) {
+		if (algo) {
 			JS_DefineProperty(cx, algo, "None", INT_TO_JSVAL(CRYPT_ALGO_NONE), NULL, NULL
 			                  , JSPROP_PERMANENT | JSPROP_ENUMERATE | JSPROP_READONLY);
 			JS_DefineProperty(cx, algo, "DES", INT_TO_JSVAL(CRYPT_ALGO_DES), NULL, NULL
@@ -1136,10 +1149,10 @@ JSObject* js_CreateCryptContextClass(JSContext* cx, JSObject* parent)
 			js_CreateArrayOfStrings(cx, algo, "_property_desc_list", cryptcon_algo_prop_desc, JSPROP_READONLY);
 			js_DescribeSyncObject(cx, algo, "Associative array of crypto algorithm constants", 318);
 #endif
-			JS_DeepFreezeObject(cx, algo);
+			JS_DeepFreezeObject(cx, algo.get());
 		}
 		mode = JS_DefineObject(cx, constructor, "MODE", NULL, NULL, JSPROP_PERMANENT | JSPROP_ENUMERATE | JSPROP_READONLY);
-		if (mode != NULL && JS_GetProperty(cx, constructor, "MODE", &val) && !JSVAL_NULL_OR_VOID(val)) {
+		if (mode && JS_GetProperty(cx, constructor, "MODE", &val) && !JSVAL_NULL_OR_VOID(val)) {
 			JS_DefineProperty(cx, mode, "None", INT_TO_JSVAL(CRYPT_MODE_NONE), NULL, NULL
 			                  , JSPROP_PERMANENT | JSPROP_ENUMERATE | JSPROP_READONLY);
 			JS_DefineProperty(cx, mode, "ECB", INT_TO_JSVAL(CRYPT_MODE_ECB), NULL, NULL
@@ -1155,7 +1168,7 @@ JSObject* js_CreateCryptContextClass(JSContext* cx, JSObject* parent)
 			js_CreateArrayOfStrings(cx, mode, "_property_desc_list", cryptcon_mode_prop_desc, JSPROP_READONLY);
 			js_DescribeSyncObject(cx, mode, "Associative array of crypto mode constants", 318);
 #endif
-			JS_DeepFreezeObject(cx, mode);
+			JS_DeepFreezeObject(cx, mode.get());
 		}
 	}
 

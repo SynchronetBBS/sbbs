@@ -91,157 +91,178 @@ extern int	thread_suid_broken;			/* NPTL is no longer broken */
 	#define XP_WIN
 #endif
 
-#if defined(JAVASCRIPT)
+#if defined(JAVASCRIPT) && defined(__cplusplus)
 #include "comio.h"			/* needed for COM_HANDLE definition only */
 #if __GNUC__ > 5
 	#pragma GCC diagnostic push
 	#pragma GCC diagnostic ignored "-Wmisleading-indentation"
 	#pragma GCC diagnostic ignored "-Wignored-attributes"
 #endif
-#include <jsversion.h>
 #include <jsapi.h>
-#if __GNUC_ > 5
+#include <js/Date.h>
+#include <js/Array.h>
+#include <js/CharacterEncoding.h>
+#include <js/CompilationAndEvaluation.h>
+#include <js/Context.h>
+#include <js/Conversions.h>
+#include <js/Equality.h>
+#include <js/GlobalObject.h>
+#include <js/Id.h>
+#include <js/Initialization.h>
+#include <js/Interrupt.h>
+#include <js/Object.h>
+#include <js/RealmOptions.h>
+#include <js/RootingAPI.h>
+#include <js/SourceText.h>
+#include <js/Warnings.h>
+#include <jsfriendapi.h>
+#if __GNUC__ > 5
 	#pragma GCC diagnostic pop
 #endif
-#define JS_DestroyScript(cx,script)
+/* SM128 compatibility shims (mozjs185 types/macros/inline functions) */
+#include "js_shims.hpp"
 
+/* SM128: encode JSString to a realloc'd C buffer (Latin-1) */
 #define JSSTRING_TO_RASTRING(cx, str, ret, sizeptr, lenptr) \
 { \
-	size_t			*JSSTSlenptr=(lenptr); \
-	size_t			JSSTSlen; \
-	size_t			JSSTSpos; \
-	const jschar	*JSSTSstrval; \
-	char			*JSSTStmpptr; \
-\
-	if(JSSTSlenptr==NULL) \
-		JSSTSlenptr=&JSSTSlen; \
-	if((str) != NULL) { \
-		if((JSSTSstrval=JS_GetStringCharsAndLength((cx), (str), JSSTSlenptr))) { \
-			if((*(sizeptr) < (*JSSTSlenptr+1 )) || (ret)==NULL) { \
-				*(sizeptr) = *JSSTSlenptr+1; \
-				if((JSSTStmpptr=(char *)realloc((ret), *(sizeptr)))==NULL) { \
-					JS_ReportError(cx, "Error reallocating %lu bytes at %s:%d", (*JSSTSlenptr)+1, getfname(__FILE__), __LINE__); \
-					if((ret) != NULL) free(ret); \
-					(ret)=NULL; \
-				} \
-				else { \
-					(ret)=JSSTStmpptr; \
+	size_t _jsra_len = 0; \
+	size_t *_jsra_lenp = (lenptr); \
+	if (_jsra_lenp == NULL) _jsra_lenp = &_jsra_len; \
+	if ((str) == NULL) { \
+		if ((ret) != NULL) *(ret) = 0; \
+	} else { \
+		JS::UniqueChars _jsra_enc = JS_EncodeStringToLatin1((cx), (str)); \
+		if (_jsra_enc) { \
+			*_jsra_lenp = strlen(_jsra_enc.get()); \
+			if (*(sizeptr) < *_jsra_lenp + 1 || (ret) == NULL) { \
+				*(sizeptr) = *_jsra_lenp + 1; \
+				char *_jsra_tmp = (char *)realloc((ret), *(sizeptr)); \
+				if (_jsra_tmp == NULL) { \
+					JS_ReportErrorASCII((cx), "Error reallocating %zu bytes at %s:%d", *(sizeptr), getfname(__FILE__), __LINE__); \
+					free((ret)); (ret) = NULL; \
+				} else { \
+					(ret) = _jsra_tmp; \
 				} \
 			} \
-			if(ret) { \
-				for(JSSTSpos=0; JSSTSpos<*JSSTSlenptr; JSSTSpos++) \
-					(ret)[JSSTSpos]=(char)JSSTSstrval[JSSTSpos]; \
-				(ret)[*JSSTSlenptr]=0; \
-			} \
+			if ((ret) != NULL) \
+				memcpy((ret), _jsra_enc.get(), *_jsra_lenp + 1); \
 		} \
-	} \
-	else { \
-		if(ret) \
-			*(ret)=0; \
 	} \
 }
 
 #define JSVALUE_TO_RASTRING(cx, val, ret, sizeptr, lenptr) \
 { \
-	JSString	*JSVTSstr=JS_ValueToString((cx), (val)); \
-	JSSTRING_TO_RASTRING((cx), JSVTSstr, (ret), (sizeptr), (lenptr)); \
+	JS::Rooted<JS::Value> _jsva_v((cx), (val)); \
+	JS::Rooted<JSString*> _jsva_s((cx), JS::ToString((cx), _jsva_v)); \
+	JSSTRING_TO_RASTRING((cx), _jsva_s.get(), (ret), (sizeptr), (lenptr)); \
 }
 
+/* SM128: encode JSString to a malloc'd C buffer (Latin-1) */
 #define JSSTRING_TO_MSTRING(cx, str, ret, lenptr) \
 { \
-	size_t			*JSSTSlenptr=(lenptr); \
-	size_t			JSSTSlen; \
-	size_t			JSSTSpos; \
-	const jschar	*JSSTSstrval; \
-\
-	if(JSSTSlenptr==NULL) \
-		JSSTSlenptr=&JSSTSlen; \
-	(ret)=NULL; \
-	if((str) != NULL) { \
-		if((JSSTSstrval=JS_GetStringCharsAndLength((cx), (str), JSSTSlenptr))) { \
-			if(((ret)=(char *)malloc(*JSSTSlenptr+1))) { \
-				for(JSSTSpos=0; JSSTSpos<*JSSTSlenptr; JSSTSpos++) \
-					(ret)[JSSTSpos]=(char)JSSTSstrval[JSSTSpos]; \
-				(ret)[*JSSTSlenptr]=0; \
+	size_t _jsm_len = 0; \
+	size_t *_jsm_lenp = (lenptr); \
+	if (_jsm_lenp == NULL) _jsm_lenp = &_jsm_len; \
+	(ret) = NULL; \
+	if ((str) != NULL) { \
+		JS::AutoCheckCannotGC _jsm_nogc; \
+		if (JS::StringHasLatin1Chars(str)) { \
+			const JS::Latin1Char* _jsm_chars = JS_GetLatin1StringCharsAndLength((cx), _jsm_nogc, (str), _jsm_lenp); \
+			if (_jsm_chars) { \
+				(ret) = (char *)malloc(*_jsm_lenp + 1); \
+				if ((ret)) { \
+					memcpy((ret), _jsm_chars, *_jsm_lenp); \
+					(ret)[*_jsm_lenp] = '\0'; \
+				} else \
+					JS_ReportErrorASCII((cx), "Error allocating %zu bytes at %s:%d", *_jsm_lenp + 1, getfname(__FILE__), __LINE__); \
 			} \
-			else JS_ReportError((cx), "Error allocating %lu bytes at %s:%d", (*JSSTSlenptr)+1, getfname(__FILE__), __LINE__); \
+		} else { \
+			const char16_t* _jsm_chars = JS_GetTwoByteStringCharsAndLength((cx), _jsm_nogc, (str), _jsm_lenp); \
+			if (_jsm_chars) { \
+				(ret) = (char *)malloc(*_jsm_lenp + 1); \
+				if ((ret)) { \
+					for (size_t _jsm_i = 0; _jsm_i < *_jsm_lenp; _jsm_i++) \
+						(ret)[_jsm_i] = (char)_jsm_chars[_jsm_i]; \
+					(ret)[*_jsm_lenp] = '\0'; \
+				} else \
+					JS_ReportErrorASCII((cx), "Error allocating %zu bytes at %s:%d", *_jsm_lenp + 1, getfname(__FILE__), __LINE__); \
+			} \
 		} \
 	} \
 }
 
 #define JSVALUE_TO_MSTRING(cx, val, ret, lenptr) \
 { \
-	JSString	*JSVTSstr=JS_ValueToString((cx), (val)); \
-	JSSTRING_TO_MSTRING((cx), JSVTSstr, (ret), lenptr); \
+	JS::Rooted<JS::Value> _jsvm_v((cx), (val)); \
+	JS::Rooted<JSString*> _jsvm_s((cx), JS::ToString((cx), _jsvm_v)); \
+	JSSTRING_TO_MSTRING((cx), _jsvm_s.get(), (ret), lenptr); \
 }
 
+/* SM128: encode JSString into a fixed-size C buffer (Latin-1) */
 #define JSSTRING_TO_STRBUF(cx, str, ret, bufsize, lenptr) \
 { \
-	size_t			*JSSTSlenptr=(lenptr); \
-	size_t			JSSTSlen; \
-	size_t			JSSTSpos; \
-	const jschar	*JSSTSstrval; \
-\
-	if(JSSTSlenptr==NULL) \
-		JSSTSlenptr=&JSSTSlen; \
-	if((bufsize) < 1 || (str)==NULL) \
-		*JSSTSlenptr = 0; \
-	else { \
-		if((JSSTSstrval=JS_GetStringCharsAndLength((cx), (str), JSSTSlenptr))) { \
-			if(*JSSTSlenptr >= (bufsize)) \
-				*JSSTSlenptr = (bufsize)-1; \
-			for(JSSTSpos=0; JSSTSpos<*JSSTSlenptr; JSSTSpos++) \
-				(ret)[JSSTSpos]=(char)JSSTSstrval[JSSTSpos]; \
+	size_t _jsst_len = 0; \
+	size_t *_jsst_lenp = (lenptr); \
+	if (_jsst_lenp == NULL) _jsst_lenp = &_jsst_len; \
+	if ((size_t)(bufsize) < 1 || (str) == NULL) { \
+		*_jsst_lenp = 0; \
+	} else { \
+		JS::UniqueChars _jsst_enc = JS_EncodeStringToLatin1((cx), (str)); \
+		if (_jsst_enc) { \
+			*_jsst_lenp = strlen(_jsst_enc.get()); \
+			if (*_jsst_lenp >= (size_t)(bufsize)) \
+				*_jsst_lenp = (size_t)(bufsize) - 1; \
+			memcpy((ret), _jsst_enc.get(), *_jsst_lenp); \
+		} else { \
+			*_jsst_lenp = 0; \
 		} \
-		else \
-			*JSSTSlenptr=0; \
 	} \
-	(ret)[*JSSTSlenptr]=0; \
+	(ret)[*_jsst_lenp] = 0; \
 }
 
 #define JSVALUE_TO_STRBUF(cx, val, ret, bufsize, lenptr) \
 { \
-	JSString	*JSVTSstr=JS_ValueToString((cx), (val)); \
-	JSSTRING_TO_STRBUF((cx), JSVTSstr, (ret), (bufsize), lenptr); \
+	JS::Rooted<JS::Value> _jsvs_v((cx), (val)); \
+	JS::Rooted<JSString*> _jsvs_s((cx), JS::ToString((cx), _jsvs_v)); \
+	JSSTRING_TO_STRBUF((cx), _jsvs_s.get(), (ret), (bufsize), lenptr); \
 }
 
-#define HANDLE_PENDING(cx, p ) \
-	if(JS_IsExceptionPending(cx)) { \
-		if(p != NULL) \
+#define HANDLE_PENDING(cx, p) \
+	if (JS_IsExceptionPending(cx)) { \
+		if ((p) != NULL) \
 			free(p); \
-		return JS_FALSE; \
+		return false; \
 	}
 
+/* SM128: encode JSString into an alloca'd C buffer (Latin-1) */
 #define JSSTRING_TO_ASTRING(cx, str, ret, maxsize, lenptr) \
 { \
-	size_t			*JSSTSlenptr=(lenptr); \
-	size_t			JSSTSlen; \
-	size_t			JSSTSpos; \
-	const jschar	*JSSTSstrval; \
-\
-	if(JSSTSlenptr==NULL) \
-		JSSTSlenptr=&JSSTSlen; \
-	(ret)=NULL; \
-	if((str) != NULL) { \
-		if((JSSTSstrval=JS_GetStringCharsAndLength((cx), (str), JSSTSlenptr))) { \
-			if(*JSSTSlenptr >= (maxsize)) { \
-				*JSSTSlenptr = (maxsize)-1; \
+	size_t _jsa_len = 0; \
+	size_t *_jsa_lenp = (lenptr); \
+	if (_jsa_lenp == NULL) _jsa_lenp = &_jsa_len; \
+	(ret) = NULL; \
+	if ((str) != NULL) { \
+		JS::UniqueChars _jsa_enc = JS_EncodeStringToLatin1((cx), (str)); \
+		if (_jsa_enc) { \
+			*_jsa_lenp = strlen(_jsa_enc.get()); \
+			if (*_jsa_lenp >= (size_t)(maxsize)) \
+				*_jsa_lenp = (size_t)(maxsize) - 1; \
+			(ret) = (char *)alloca(*_jsa_lenp + 1); \
+			if ((ret)) { \
+				memcpy((ret), _jsa_enc.get(), *_jsa_lenp); \
+				(ret)[*_jsa_lenp] = 0; \
+			} else { \
+				JS_ReportErrorASCII((cx), "Error allocating %zu bytes on stack at %s:%d", *_jsa_lenp + 1, getfname(__FILE__), __LINE__); \
 			} \
-			if(((ret)=(char *)alloca(*JSSTSlenptr+1))) { \
-				for(JSSTSpos=0; JSSTSpos<*JSSTSlenptr; JSSTSpos++) { \
-					(ret)[JSSTSpos]=(char)JSSTSstrval[JSSTSpos]; \
-				} \
-				(ret)[*JSSTSlenptr]=0; \
-			} \
-			else JS_ReportError((cx), "Error allocating %lu bytes on stack at %s:%d", (*JSSTSlenptr)+1, getfname(__FILE__), __LINE__); \
 		} \
 	} \
 }
 
 #define JSVALUE_TO_ASTRING(cx, val, ret, maxsize, lenptr) \
 { \
-	JSString	*JSVTSstr=JS_ValueToString((cx), (val)); \
-	JSSTRING_TO_ASTRING((cx), JSVTSstr, (ret), (maxsize), (lenptr)); \
+	JS::Rooted<JS::Value> _jsva2_v((cx), (val)); \
+	JS::Rooted<JSString*> _jsva2_s((cx), JS::ToString((cx), _jsva2_v)); \
+	JSSTRING_TO_ASTRING((cx), _jsva2_s.get(), (ret), (maxsize), (lenptr)); \
 }
 
 #endif
@@ -351,6 +372,7 @@ struct js_event_connect {
 	SOCKET sock;
 };
 
+#ifdef __cplusplus
 struct js_event_list {
 	struct js_event_list *prev;
 	struct js_event_list *next;
@@ -399,7 +421,11 @@ typedef struct js_callback {
 	bool			bg;
 	bool			events_supported;
 } js_callback_t;
-#endif
+#else
+/* C stub for js_callback_t in non-C++ contexts */
+typedef struct js_callback { char _opaque[256]; } js_callback_t;
+#endif /* __cplusplus */
+#endif /* JAVASCRIPT */
 
 /* Synchronet Node Instance class definition */
 #if defined(__cplusplus) && defined(JAVASCRIPT)
@@ -572,17 +598,18 @@ public:
 		return str;
 	}
 
-	JSRuntime*		js_runtime = nullptr;
+	JSContext*		js_runtime = nullptr;   /* SM128: was JSRuntime*; now JSContext* */
 	JSContext*		js_cx = nullptr;
 	JSObject*		js_glob = nullptr;
-	JSRuntime*		js_hotkey_runtime = nullptr;
+	JSContext*		js_hotkey_runtime = nullptr;   /* SM128: was JSRuntime* */
 	JSContext*		js_hotkey_cx = nullptr;
 	JSObject*		js_hotkey_glob = nullptr;
 	js_callback_t	js_callback{};
 	int				js_execfile(const char *fname, const char* startup_dir = NULL
 						,JSObject* scope = NULL, JSContext* cx = NULL, JSObject* glob = NULL);
 	int				js_execxtrn(const char *fname, const char* startup_dir);
-	JSContext*		js_init(JSRuntime**, JSObject**, const char* desc);
+	JSContext*		js_init(JSContext**, JSObject**, const char* desc);
+	bool			js_init_xtrn(JSObject** glob);
 	void			js_cleanup(void);
 	bool			js_create_user_objects(JSContext*, JSObject* glob);
 
@@ -1423,7 +1450,7 @@ extern "C" {
 	/* xtrn.cpp */
 	bool				native_executable(scfg_t*, const char* cmdline, int mode);
 
-#ifdef JAVASCRIPT
+#if defined(JAVASCRIPT) && defined(__cplusplus)
 
 	typedef struct {
 		const char*		name;
@@ -1477,8 +1504,22 @@ extern "C" {
 	DLLEXPORT JSBool	js_DefineSyncMethods(JSContext* cx, JSObject* obj, jsSyncMethodSpec*);
 	DLLEXPORT JSBool	js_DefineSyncProperties(JSContext* cx, JSObject* obj, jsSyncPropertySpec*);
 	DLLEXPORT JSBool	js_SyncResolve(JSContext* cx, JSObject* obj, char *name, jsSyncPropertySpec* props, jsSyncMethodSpec* funcs, jsConstIntSpec* consts, int flags);
+
+	/* JS_DefineProperties overload for jsSyncPropertySpec arrays */
+	static inline bool JS_DefineProperties(JSContext* cx, JSObject* obj, const jsSyncPropertySpec* ps) {
+	    return js_DefineSyncProperties(cx, obj, const_cast<jsSyncPropertySpec*>(ps));
+	}
 	DLLEXPORT JSBool	js_DefineConstIntegers(JSContext* cx, JSObject* obj, jsConstIntSpec*, int flags);
 	DLLEXPORT void*		js_GetClassPrivate(JSContext*, JSObject*, JSClass*);
+
+	/* SM128: define accessor properties with native getters that fire on every access.
+	 * Each property gets a getter function object with the tinyid in reserved slot 0.
+	 * The caller-supplied 'getter' JSNative retrieves the tinyid, gets private data,
+	 * and calls the class-specific get_value to return a live value. */
+	DLLEXPORT JSBool	js_DefineSyncAccessors(JSContext* cx, JSObject* obj,
+	                                           jsSyncPropertySpec* props, JSNative getter,
+	                                           const char* name,
+	                                           JSNative setter = nullptr);
 
 	DLLEXPORT bool	js_CreateCommonObjects(JSContext* cx
 													,scfg_t* cfg				/* common */

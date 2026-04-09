@@ -94,18 +94,23 @@ struct js_file_area_priv {
 	client_t *client;
 	const char *web_file_prefix;
 	uint dirnum;
+	/* SM128: JS_SetProperty/JS_DefineProperty on areaobj from within the
+	 * resolver triggers the resolver again (SM128 calls the resolve hook
+	 * during property lookup before any set/define).  Guard against re-entry
+	 * so the outer invocation completes without infinite recursion. */
+	bool resolving;
 };
 
 static void
-js_file_area_finalize(JSContext *cx, JSObject *obj)
+js_file_area_finalize(JS::GCContext* gcx, JSObject *obj)
 {
 	struct js_file_area_priv *p;
 
-	if ((p = (struct js_file_area_priv*)JS_GetPrivate(cx, obj)) == NULL)
+	if ((p = (struct js_file_area_priv*)JS_GetPrivate(obj)) == NULL)
 		return;
 
 	free(p);
-	JS_SetPrivate(cx, obj, NULL);
+	JS_SetPrivate(obj, NULL);
 }
 
 /***************************************/
@@ -121,31 +126,22 @@ enum {
 	, DIR_PROP_IS_OPERATOR
 };
 
-static struct JSPropertySpec js_dir_properties[] = {
+static jsSyncPropertySpec js_dir_properties[] = {
 /*		 name				,tinyid		,flags	*/
 
-	{   "files", DIR_PROP_FILES, JSPROP_ENUMERATE | JSPROP_SHARED | JSPROP_READONLY },
-	{   "update_time", DIR_PROP_UPDATE_TIME, JSPROP_ENUMERATE | JSPROP_SHARED | JSPROP_READONLY },
-	{   "can_access", DIR_PROP_CAN_ACCESS, JSPROP_ENUMERATE | JSPROP_SHARED | JSPROP_READONLY },
-	{   "can_upload", DIR_PROP_CAN_UPLOAD, JSPROP_ENUMERATE | JSPROP_SHARED | JSPROP_READONLY },
-	{   "can_download", DIR_PROP_CAN_DOWNLOAD, JSPROP_ENUMERATE | JSPROP_SHARED | JSPROP_READONLY },
-	{   "is_exempt", DIR_PROP_IS_EXEMPT, JSPROP_ENUMERATE | JSPROP_SHARED | JSPROP_READONLY },
-	{   "is_operator", DIR_PROP_IS_OPERATOR, JSPROP_ENUMERATE | JSPROP_SHARED | JSPROP_READONLY },
+	{   "files", DIR_PROP_FILES, JSPROP_ENUMERATE  | JSPROP_READONLY },
+	{   "update_time", DIR_PROP_UPDATE_TIME, JSPROP_ENUMERATE  | JSPROP_READONLY },
+	{   "can_access", DIR_PROP_CAN_ACCESS, JSPROP_ENUMERATE  | JSPROP_READONLY },
+	{   "can_upload", DIR_PROP_CAN_UPLOAD, JSPROP_ENUMERATE  | JSPROP_READONLY },
+	{   "can_download", DIR_PROP_CAN_DOWNLOAD, JSPROP_ENUMERATE  | JSPROP_READONLY },
+	{   "is_exempt", DIR_PROP_IS_EXEMPT, JSPROP_ENUMERATE  | JSPROP_READONLY },
+	{   "is_operator", DIR_PROP_IS_OPERATOR, JSPROP_ENUMERATE  | JSPROP_READONLY },
 	{0}
 };
 
-static JSBool js_dir_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
+/* SM128: populate js_dir_properties values — called after JS_DefineProperties */
+static JSBool js_dir_get_value(JSContext* cx, struct js_file_area_priv* p, jsint tiny, jsval* vp)
 {
-	jsval                     idval;
-	jsint                     tiny;
-	struct js_file_area_priv *p;
-
-	if ((p = (struct js_file_area_priv*)JS_GetPrivate(cx, obj)) == NULL)
-		return JS_FALSE;
-
-	JS_IdToValue(cx, id, &idval);
-	tiny = JSVAL_TO_INT(idval);
-
 	switch (tiny) {
 		case DIR_PROP_FILES:
 			*vp = UINT_TO_JSVAL(getfiles(p->cfg, p->dirnum));
@@ -157,10 +153,10 @@ static JSBool js_dir_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 			*vp = BOOLEAN_TO_JSVAL(p->user == NULL || user_can_access_dir(p->cfg, p->dirnum, p->user, p->client));
 			break;
 		case DIR_PROP_CAN_UPLOAD:
-			*vp = BOOLEAN_TO_JSVAL(p->user == NULL || user_can_upload(p->cfg, p->dirnum, p->user, p->client, /* reason: */ NULL));
+			*vp = BOOLEAN_TO_JSVAL(p->user == NULL || user_can_upload(p->cfg, p->dirnum, p->user, p->client, NULL));
 			break;
 		case DIR_PROP_CAN_DOWNLOAD:
-			*vp = BOOLEAN_TO_JSVAL(p->user == NULL || user_can_download(p->cfg, p->dirnum, p->user, p->client, /* reason: */ NULL));
+			*vp = BOOLEAN_TO_JSVAL(p->user == NULL || user_can_download(p->cfg, p->dirnum, p->user, p->client, NULL));
 			break;
 		case DIR_PROP_IS_EXEMPT:
 			*vp = BOOLEAN_TO_JSVAL(p->user == NULL || download_is_free(p->cfg, p->dirnum, p->user, p->client));
@@ -168,93 +164,146 @@ static JSBool js_dir_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 		case DIR_PROP_IS_OPERATOR:
 			*vp = BOOLEAN_TO_JSVAL(p->user == NULL || user_is_dirop(p->cfg, p->dirnum, p->user, p->client));
 			break;
+		default:
+			return JS_TRUE;
 	}
 	return JS_TRUE;
 }
 
-static JSClass js_dir_class = {
-	"FileDir"               /* name			*/
-	, JSCLASS_HAS_PRIVATE    /* flags		*/
-	, JS_PropertyStub        /* addProperty	*/
-	, JS_PropertyStub        /* delProperty	*/
-	, js_dir_get             /* getProperty	*/
-	, JS_StrictPropertyStub  /* setProperty	*/
-	, JS_EnumerateStub       /* enumerate	*/
-	, JS_ResolveStub         /* resolve		*/
-	, JS_ConvertStub         /* convert		*/
-	, js_file_area_finalize  /* finalize		*/
+static bool js_dir_prop_getter(JSContext* cx, unsigned argc, JS::Value* vp)
+{
+	JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
+	JS::RootedObject thisObj(cx);
+	if (!args.computeThis(cx, &thisObj))
+		return false;
+	struct js_file_area_priv* p = (struct js_file_area_priv*)JS_GetPrivate(thisObj);
+	if (p == nullptr) {
+		args.rval().setUndefined();
+		return true;
+	}
+	JSObject* callee = &args.callee();
+	jsint tiny = js::GetFunctionNativeReserved(callee, 0).toInt32();
+	jsval val = JSVAL_VOID;
+	if (!js_dir_get_value(cx, p, tiny, &val))
+		return false;
+	args.rval().set(val);
+	return true;
+}
+
+static JSBool js_dir_fill_properties(JSContext* cx, JSObject* obj, struct js_file_area_priv* p)
+{
+	(void)p;
+	return js_DefineSyncAccessors(cx, obj, js_dir_properties, js_dir_prop_getter, NULL);
+}
+
+static const JSClassOps js_dir_classops = {
+	nullptr,                /* addProperty  */
+	nullptr,                /* delProperty  */
+	nullptr,                /* enumerate    */
+	nullptr,                /* newEnumerate */
+	nullptr,                /* resolve      */
+	nullptr,                /* mayResolve   */
+	js_file_area_finalize,  /* finalize     */
+	nullptr, nullptr, nullptr /* call, construct, trace */
 };
 
-JSBool js_file_area_resolve(JSContext* cx, JSObject* areaobj, jsid id)
+static JSClass js_dir_class = {
+	"FileDir"
+	, JSCLASS_HAS_PRIVATE
+	, &js_dir_classops
+};
+
+static bool js_file_area_resolve_impl(JSContext* cx, JSObject* areaobj, char* name);
+
+bool js_file_area_resolve(JSContext* cx, JS::Handle<JSObject*> obj, JS::Handle<jsid> id, bool* resolvedp)
+{
+	char* name = NULL;
+
+	if (id.get().isString()) {
+		JSString* str = id.get().toString();
+		JSSTRING_TO_MSTRING(cx, str, name, NULL);
+		HANDLE_PENDING(cx, name);
+		if (name == NULL) return false;
+	}
+
+	bool ret = js_file_area_resolve_impl(cx, obj, name);
+	if (name)
+		free(name);
+	if (resolvedp) *resolvedp = ret;
+	return true;
+}
+
+static bool js_file_area_resolve_impl(JSContext* cx, JSObject* areaobj, char* name)
 {
 	char                      str[128];
 	char                      vpath[128];
-	JSObject*                 alllibs;
-	JSObject*                 alldirs;
-	JSObject*                 libobj;
-	JSObject*                 dirobj;
-	JSObject*                 lib_list;
-	JSObject*                 dir_list;
-	JSString*                 js_str;
-	jsval                     val;
+	/* SM128: all GC-managed locals must be JS::Rooted<T>.  The nursery GC
+	 * moves objects; raw JSObject/JSString/jsval pointers become stale after
+	 * any allocating call (JS_NewObject, JS_NewStringCopyZ, etc.). */
+	JS::RootedObject          alllibs(cx);
+	JS::RootedObject          alldirs(cx);
+	JS::RootedObject          libobj(cx);
+	JS::RootedObject          dirobj(cx);
+	JS::RootedObject          lib_list(cx);
+	JS::RootedObject          dir_list(cx);
+	JS::RootedString          js_str(cx);
+	JS::RootedValue           val(cx);
 	jsint                     lib_index;
 	jsint                     dir_index;
 	int                       l, d;
-	char*                     name = NULL;
 	struct js_file_area_priv *p;
 
 	if ((p = (struct js_file_area_priv*)JS_GetPrivate(cx, areaobj)) == NULL)
-		return JS_FALSE;
+		return false;
 
-	if (id != JSID_VOID && id != JSID_EMPTY) {
-		jsval idval;
+	/* SM128: guard against re-entrant resolver calls.  Setting a property on
+	 * areaobj from within the resolver causes SM128 to call the resolver again
+	 * for each property being set.  Return false (not resolved) so the outer
+	 * invocation's JS_SetProperty/JS_DefineProperty proceeds to define the
+	 * property directly. */
+	if (p->resolving)
+		return false;
 
-		JS_IdToValue(cx, id, &idval);
-		if (JSVAL_IS_STRING(idval))
-			JSSTRING_TO_MSTRING(cx, JSVAL_TO_STRING(idval), name, NULL);
-	}
+	/* RAII guard: resets p->resolving on any exit path (normal or error) */
+	struct AutoResolving {
+		bool& flag;
+		AutoResolving(bool& f) : flag(f) { flag = true; }
+		~AutoResolving() { flag = false; }
+	} _ar(p->resolving);
 
 	/* file_area.properties */
 	if (name == NULL || strcmp(name, "min_diskspace") == 0) {
-		if (name)
-			free(name);
 		val = DOUBLE_TO_JSVAL((jsdouble)p->cfg->min_dspace);
 		JS_DefineProperty(cx, areaobj, "min_diskspace", val, NULL, NULL, JSPROP_ENUMERATE | JSPROP_READONLY);
 		if (name)
-			return JS_TRUE;
+			return true;
 	}
 
 	if (name == NULL || strcmp(name, "max_filename_length") == 0) {
-		if (name)
-			free(name);
 		val = UINT_TO_JSVAL(p->cfg->filename_maxlen);
 		JS_DefineProperty(cx, areaobj, "max_filename_length", val, NULL, NULL, JSPROP_ENUMERATE | JSPROP_READONLY);
 		if (name)
-			return JS_TRUE;
+			return true;
 	}
 
 	if (name == NULL || strcmp(name, "settings") == 0) {
-		if (name)
-			free(name);
 		val = UINT_TO_JSVAL(p->cfg->file_misc);
 		JS_DefineProperty(cx, areaobj, "settings", val, NULL, NULL, JSPROP_ENUMERATE | JSPROP_READONLY);
 		if (name)
-			return JS_TRUE;
+			return true;
 	}
 
 	if (name == NULL || strcmp(name, "web_vpath_prefix") == 0) {
-		if (name)
-			free(name);
 		if (p->web_file_prefix == NULL)
 			val = JSVAL_VOID;
 		else {
-			if ((js_str = JS_NewStringCopyZ(cx, p->web_file_prefix)) == NULL)
-				return JS_FALSE;
-			val = STRING_TO_JSVAL(js_str);
+			if ((js_str = JS_NewStringCopyZ(cx, p->web_file_prefix)) == nullptr)
+				return false;
+			val = STRING_TO_JSVAL(js_str.get());
 		}
 		JS_DefineProperty(cx, areaobj, "web_vpath_prefix", val, NULL, NULL, JSPROP_ENUMERATE | JSPROP_READONLY);
 		if (name)
-			return JS_TRUE;
+			return true;
 	}
 
 #ifdef BUILD_JSDOCS
@@ -264,359 +313,359 @@ JSBool js_file_area_resolve(JSContext* cx, JSObject* areaobj, jsid id)
 	if (name == NULL || strcmp(name, "lib") == 0 || strcmp(name, "dir") == 0 || strcmp(name, "lib_list") == 0
 	    || strcmp(name, "user_dir") == 0 || strcmp(name, "sysop_dir") == 0 || strcmp(name, "upload_dir") == 0
 	    || strcmp(name, "offline_dir") == 0) {
-		if (name)
-			FREE_AND_NULL(name);
-		if ((alllibs = JS_NewObject(cx, NULL, NULL, areaobj)) == NULL)
-			return JS_FALSE;
+		if ((alllibs = JS_NewObject(cx, NULL, NULL, areaobj)) == nullptr)
+			return false;
 
-		val = OBJECT_TO_JSVAL(alllibs);
-		if (!JS_SetProperty(cx, areaobj, "lib", &val))
-			return JS_FALSE;
+		val = OBJECT_TO_JSVAL(alllibs.get());
+		if (!JS_SetProperty(cx, areaobj, "lib", val.address()))
+			return false;
 
-		if ((alldirs = JS_NewObject(cx, NULL, NULL, areaobj)) == NULL)
-			return JS_FALSE;
+		if ((alldirs = JS_NewObject(cx, NULL, NULL, areaobj)) == nullptr)
+			return false;
 
-		val = OBJECT_TO_JSVAL(alldirs);
-		if (!JS_SetProperty(cx, areaobj, "dir", &val))
-			return JS_FALSE;
+		val = OBJECT_TO_JSVAL(alldirs.get());
+		if (!JS_SetProperty(cx, areaobj, "dir", val.address()))
+			return false;
 
 #ifdef BUILD_JSDOCS
 		js_DescribeSyncObject(cx, areaobj, "File Transfer Areas", 310);
 #endif
 
 		/* file_area.lib_list[] */
-		if ((lib_list = JS_NewArrayObject(cx, 0, NULL)) == NULL)
-			return JS_FALSE;
+		if ((lib_list = JS_NewArrayObject(cx, 0, NULL)) == nullptr)
+			return false;
 
-		val = OBJECT_TO_JSVAL(lib_list);
-		if (!JS_SetProperty(cx, areaobj, "lib_list", &val))
-			return JS_FALSE;
+		val = OBJECT_TO_JSVAL(lib_list.get());
+		if (!JS_SetProperty(cx, areaobj, "lib_list", val.address()))
+			return false;
 
 		for (l = 0; l < p->cfg->total_libs; l++) {
 
-			if ((libobj = JS_NewObject(cx, NULL, NULL, NULL)) == NULL)
-				return JS_FALSE;
+			if ((libobj = JS_NewObject(cx, NULL, NULL, NULL)) == nullptr)
+				return false;
 
-			val = OBJECT_TO_JSVAL(libobj);
+			val = OBJECT_TO_JSVAL(libobj.get());
 			lib_index = -1;
 			if (p->user == NULL || user_can_access_lib(p->cfg, l, p->user, p->client)) {
 
-				if (!JS_GetArrayLength(cx, lib_list, (jsuint*)&lib_index))
-					return JS_FALSE;
+				if (!JS_GetArrayLength(cx, lib_list.get(), (jsuint*)&lib_index))
+					return false;
 
-				if (!JS_SetElement(cx, lib_list, lib_index, &val))
-					return JS_FALSE;
+				if (!JS_SetElement(cx, lib_list.get(), lib_index, val.address()))
+					return false;
 			}
 
 			/* Add as property (associative array element) */
-			if (!JS_DefineProperty(cx, alllibs, p->cfg->lib[l]->sname, val
+			if (!JS_DefineProperty(cx, alllibs.get(), p->cfg->lib[l]->sname, val
 			                       , NULL, NULL, JSPROP_READONLY | JSPROP_ENUMERATE))
-				return JS_FALSE;
+				return false;
 
 			val = INT_TO_JSVAL(lib_index);
-			if (!JS_SetProperty(cx, libobj, "index", &val))
-				return JS_FALSE;
+			if (!JS_SetProperty(cx, libobj.get(), "index", val.address()))
+				return false;
 
 			val = INT_TO_JSVAL(l);
-			if (!JS_SetProperty(cx, libobj, "number", &val))
-				return JS_FALSE;
+			if (!JS_SetProperty(cx, libobj.get(), "number", val.address()))
+				return false;
 
-			if ((js_str = JS_NewStringCopyZ(cx, p->cfg->lib[l]->sname)) == NULL)
-				return JS_FALSE;
-			val = STRING_TO_JSVAL(js_str);
-			if (!JS_SetProperty(cx, libobj, "name", &val))
-				return JS_FALSE;
+			if ((js_str = JS_NewStringCopyZ(cx, p->cfg->lib[l]->sname)) == nullptr)
+				return false;
+			val = STRING_TO_JSVAL(js_str.get());
+			if (!JS_SetProperty(cx, libobj.get(), "name", val.address()))
+				return false;
 
-			if ((js_str = JS_NewStringCopyZ(cx, p->cfg->lib[l]->lname)) == NULL)
-				return JS_FALSE;
-			val = STRING_TO_JSVAL(js_str);
-			if (!JS_SetProperty(cx, libobj, "description", &val))
-				return JS_FALSE;
+			if ((js_str = JS_NewStringCopyZ(cx, p->cfg->lib[l]->lname)) == nullptr)
+				return false;
+			val = STRING_TO_JSVAL(js_str.get());
+			if (!JS_SetProperty(cx, libobj.get(), "description", val.address()))
+				return false;
 
-			if ((js_str = JS_NewStringCopyZ(cx, p->cfg->lib[l]->arstr)) == NULL)
-				return JS_FALSE;
-			val = STRING_TO_JSVAL(js_str);
-			if (!JS_SetProperty(cx, libobj, "ars", &val))
-				return JS_FALSE;
+			if ((js_str = JS_NewStringCopyZ(cx, p->cfg->lib[l]->arstr)) == nullptr)
+				return false;
+			val = STRING_TO_JSVAL(js_str.get());
+			if (!JS_SetProperty(cx, libobj.get(), "ars", val.address()))
+				return false;
 
-			if ((js_str = JS_NewStringCopyZ(cx, p->cfg->lib[l]->vdir)) == NULL)
-				return JS_FALSE;
-			val = STRING_TO_JSVAL(js_str);
-			if (!JS_SetProperty(cx, libobj, "vdir", &val))
-				return JS_FALSE;
+			if ((js_str = JS_NewStringCopyZ(cx, p->cfg->lib[l]->vdir)) == nullptr)
+				return false;
+			val = STRING_TO_JSVAL(js_str.get());
+			if (!JS_SetProperty(cx, libobj.get(), "vdir", val.address()))
+				return false;
 
 			val = BOOLEAN_TO_JSVAL(lib_index >= 0);
-			if (!JS_SetProperty(cx, libobj, "can_access", &val))
-				return JS_FALSE;
+			if (!JS_SetProperty(cx, libobj.get(), "can_access", val.address()))
+				return false;
 
-			if ((js_str = JS_NewStringCopyZ(cx, p->cfg->lib[l]->code_prefix)) == NULL)
-				return JS_FALSE;
-			val = STRING_TO_JSVAL(js_str);
-			if (!JS_SetProperty(cx, libobj, "code_prefix", &val))
-				return JS_FALSE;
+			if ((js_str = JS_NewStringCopyZ(cx, p->cfg->lib[l]->code_prefix)) == nullptr)
+				return false;
+			val = STRING_TO_JSVAL(js_str.get());
+			if (!JS_SetProperty(cx, libobj.get(), "code_prefix", val.address()))
+				return false;
 
 #ifdef BUILD_JSDOCS
-			js_DescribeSyncObject(cx, libobj, "File Transfer Libraries (current user has access to)", 310);
+			js_DescribeSyncObject(cx, libobj.get(), "File Transfer Libraries (current user has access to)", 310);
 #endif
 
 			/* dir_list[] */
-			if ((dir_list = JS_NewArrayObject(cx, 0, NULL)) == NULL)
-				return JS_FALSE;
+			if ((dir_list = JS_NewArrayObject(cx, 0, NULL)) == nullptr)
+				return false;
 
-			val = OBJECT_TO_JSVAL(dir_list);
-			if (!JS_SetProperty(cx, libobj, "dir_list", &val))
-				return JS_FALSE;
+			val = OBJECT_TO_JSVAL(dir_list.get());
+			if (!JS_SetProperty(cx, libobj.get(), "dir_list", val.address()))
+				return false;
 
 			for (d = 0; d < p->cfg->total_dirs; d++) {
 				if (p->cfg->dir[d]->lib != l)
 					continue;
 
-				if ((dirobj = JS_NewObject(cx, &js_dir_class, NULL, NULL)) == NULL)
-					return JS_FALSE;
+				if ((dirobj = JS_NewObject(cx, &js_dir_class, NULL, NULL)) == nullptr)
+					return false;
 				struct js_file_area_priv *np = static_cast<js_file_area_priv *>(malloc(sizeof(struct js_file_area_priv)));
 				if (np == NULL)
 					continue;
 				*np = *p;
 				np->dirnum = d;
-				JS_SetPrivate(cx, dirobj, np);
+				JS_SetPrivate(cx, dirobj.get(), np);
 
-				val = OBJECT_TO_JSVAL(dirobj);
+				val = OBJECT_TO_JSVAL(dirobj.get());
 				dir_index = -1;
 				if (p->user == NULL || user_can_access_dir(p->cfg, d, p->user, p->client)) {
 
-					if (!JS_GetArrayLength(cx, dir_list, (jsuint*)&dir_index))
-						return JS_FALSE;
+					if (!JS_GetArrayLength(cx, dir_list.get(), (jsuint*)&dir_index))
+						return false;
 
-					if (!JS_SetElement(cx, dir_list, dir_index, &val))
-						return JS_FALSE;
+					if (!JS_SetElement(cx, dir_list.get(), dir_index, val.address()))
+						return false;
 				}
 
 				/* Add as property (associative array element) */
-				if (!JS_DefineProperty(cx, alldirs, p->cfg->dir[d]->code, val
+				if (!JS_DefineProperty(cx, alldirs.get(), p->cfg->dir[d]->code, val
 				                       , NULL, NULL, JSPROP_READONLY | JSPROP_ENUMERATE))
-					return JS_FALSE;
+					return false;
 
 				if (d == p->cfg->user_dir
 				    && !JS_DefineProperty(cx, areaobj, "user_dir", val
 				                          , NULL, NULL, JSPROP_READONLY))
-					return JS_FALSE;
+					return false;
 
 				if (d == p->cfg->sysop_dir
 				    && !JS_DefineProperty(cx, areaobj, "sysop_dir", val
 				                          , NULL, NULL, JSPROP_READONLY))
-					return JS_FALSE;
+					return false;
 
 				if (d == p->cfg->upload_dir
 				    && !JS_DefineProperty(cx, areaobj, "upload_dir", val
 				                          , NULL, NULL, JSPROP_READONLY))
-					return JS_FALSE;
+					return false;
 
 				if (d == p->cfg->lib[l]->offline_dir
-				    && !JS_DefineProperty(cx, libobj, "offline_dir", val
+				    && !JS_DefineProperty(cx, libobj.get(), "offline_dir", val
 				                          , NULL, NULL, JSPROP_READONLY))
-					return JS_FALSE;
+					return false;
 
 				val = INT_TO_JSVAL(dir_index);
-				if (!JS_SetProperty(cx, dirobj, "index", &val))
-					return JS_FALSE;
+				if (!JS_SetProperty(cx, dirobj.get(), "index", val.address()))
+					return false;
 
 				val = INT_TO_JSVAL(d);
-				if (!JS_SetProperty(cx, dirobj, "number", &val))
-					return JS_FALSE;
+				if (!JS_SetProperty(cx, dirobj.get(), "number", val.address()))
+					return false;
 
 				val = INT_TO_JSVAL(lib_index);
-				if (!JS_SetProperty(cx, dirobj, "lib_index", &val))
-					return JS_FALSE;
+				if (!JS_SetProperty(cx, dirobj.get(), "lib_index", val.address()))
+					return false;
 
 				val = INT_TO_JSVAL(p->cfg->dir[d]->lib);
-				if (!JS_SetProperty(cx, dirobj, "lib_number", &val))
-					return JS_FALSE;
+				if (!JS_SetProperty(cx, dirobj.get(), "lib_number", val.address()))
+					return false;
 
-				if ((js_str = JS_NewStringCopyZ(cx, p->cfg->lib[p->cfg->dir[d]->lib]->sname)) == NULL)
-					return JS_FALSE;
-				val = STRING_TO_JSVAL(js_str);
-				if (!JS_SetProperty(cx, dirobj, "lib_name", &val))
-					return JS_FALSE;
+				if ((js_str = JS_NewStringCopyZ(cx, p->cfg->lib[p->cfg->dir[d]->lib]->sname)) == nullptr)
+					return false;
+				val = STRING_TO_JSVAL(js_str.get());
+				if (!JS_SetProperty(cx, dirobj.get(), "lib_name", val.address()))
+					return false;
 
-				if ((js_str = JS_NewStringCopyZ(cx, p->cfg->dir[d]->code)) == NULL)
-					return JS_FALSE;
-				val = STRING_TO_JSVAL(js_str);
-				if (!JS_SetProperty(cx, dirobj, "code", &val))
-					return JS_FALSE;
+				if ((js_str = JS_NewStringCopyZ(cx, p->cfg->dir[d]->code)) == nullptr)
+					return false;
+				val = STRING_TO_JSVAL(js_str.get());
+				if (!JS_SetProperty(cx, dirobj.get(), "code", val.address()))
+					return false;
 
-				if ((js_str = JS_NewStringCopyZ(cx, p->cfg->dir[d]->sname)) == NULL)
-					return JS_FALSE;
-				val = STRING_TO_JSVAL(js_str);
-				if (!JS_SetProperty(cx, dirobj, "name", &val))
-					return JS_FALSE;
+				if ((js_str = JS_NewStringCopyZ(cx, p->cfg->dir[d]->sname)) == nullptr)
+					return false;
+				val = STRING_TO_JSVAL(js_str.get());
+				if (!JS_SetProperty(cx, dirobj.get(), "name", val.address()))
+					return false;
 
-				if ((js_str = JS_NewStringCopyZ(cx, p->cfg->dir[d]->lname)) == NULL)
-					return JS_FALSE;
-				val = STRING_TO_JSVAL(js_str);
-				if (!JS_SetProperty(cx, dirobj, "description", &val))
-					return JS_FALSE;
+				if ((js_str = JS_NewStringCopyZ(cx, p->cfg->dir[d]->lname)) == nullptr)
+					return false;
+				val = STRING_TO_JSVAL(js_str.get());
+				if (!JS_SetProperty(cx, dirobj.get(), "description", val.address()))
+					return false;
 
-				if ((js_str = JS_NewStringCopyZ(cx, dir_area_tag(p->cfg, p->cfg->dir[d], str, sizeof(str)))) == NULL)
-					return JS_FALSE;
-				val = STRING_TO_JSVAL(js_str);
-				if (!JS_SetProperty(cx, dirobj, "area_tag", &val))
-					return JS_FALSE;
+				if ((js_str = JS_NewStringCopyZ(cx, dir_area_tag(p->cfg, p->cfg->dir[d], str, sizeof(str)))) == nullptr)
+					return false;
+				val = STRING_TO_JSVAL(js_str.get());
+				if (!JS_SetProperty(cx, dirobj.get(), "area_tag", val.address()))
+					return false;
 
-				if ((js_str = JS_NewStringCopyZ(cx, p->cfg->dir[d]->path)) == NULL)
-					return JS_FALSE;
-				val = STRING_TO_JSVAL(js_str);
-				if (!JS_SetProperty(cx, dirobj, "path", &val))
-					return JS_FALSE;
+				if ((js_str = JS_NewStringCopyZ(cx, p->cfg->dir[d]->path)) == nullptr)
+					return false;
+				val = STRING_TO_JSVAL(js_str.get());
+				if (!JS_SetProperty(cx, dirobj.get(), "path", val.address()))
+					return false;
 
-				if ((js_str = JS_NewStringCopyZ(cx, p->cfg->dir[d]->arstr)) == NULL)
-					return JS_FALSE;
-				if (!JS_DefineProperty(cx, dirobj, "ars", STRING_TO_JSVAL(js_str)
+				if ((js_str = JS_NewStringCopyZ(cx, p->cfg->dir[d]->arstr)) == nullptr)
+					return false;
+				if (!JS_DefineProperty(cx, dirobj.get(), "ars", STRING_TO_JSVAL(js_str.get())
 				                       , NULL, NULL, JSPROP_ENUMERATE | JSPROP_READONLY))
-					return JS_FALSE;
+					return false;
 
-				if ((js_str = JS_NewStringCopyZ(cx, p->cfg->dir[d]->ul_arstr)) == NULL)
-					return JS_FALSE;
-				if (!JS_DefineProperty(cx, dirobj, "upload_ars", STRING_TO_JSVAL(js_str)
+				if ((js_str = JS_NewStringCopyZ(cx, p->cfg->dir[d]->ul_arstr)) == nullptr)
+					return false;
+				if (!JS_DefineProperty(cx, dirobj.get(), "upload_ars", STRING_TO_JSVAL(js_str.get())
 				                       , NULL, NULL, JSPROP_ENUMERATE | JSPROP_READONLY))
-					return JS_FALSE;
+					return false;
 
-				if ((js_str = JS_NewStringCopyZ(cx, p->cfg->dir[d]->dl_arstr)) == NULL)
-					return JS_FALSE;
-				if (!JS_DefineProperty(cx, dirobj, "download_ars", STRING_TO_JSVAL(js_str)
+				if ((js_str = JS_NewStringCopyZ(cx, p->cfg->dir[d]->dl_arstr)) == nullptr)
+					return false;
+				if (!JS_DefineProperty(cx, dirobj.get(), "download_ars", STRING_TO_JSVAL(js_str.get())
 				                       , NULL, NULL, JSPROP_ENUMERATE | JSPROP_READONLY))
-					return JS_FALSE;
+					return false;
 
-				if ((js_str = JS_NewStringCopyZ(cx, p->cfg->dir[d]->ex_arstr)) == NULL)
-					return JS_FALSE;
-				if (!JS_DefineProperty(cx, dirobj, "exempt_ars", STRING_TO_JSVAL(js_str)
+				if ((js_str = JS_NewStringCopyZ(cx, p->cfg->dir[d]->ex_arstr)) == nullptr)
+					return false;
+				if (!JS_DefineProperty(cx, dirobj.get(), "exempt_ars", STRING_TO_JSVAL(js_str.get())
 				                       , NULL, NULL, JSPROP_ENUMERATE | JSPROP_READONLY)) /* exception here: Oct-15-2006 */
-					return JS_FALSE;
+					return false;
 
-				if ((js_str = JS_NewStringCopyZ(cx, p->cfg->dir[d]->op_arstr)) == NULL)
-					return JS_FALSE;
-				if (!JS_DefineProperty(cx, dirobj, "operator_ars", STRING_TO_JSVAL(js_str)
+				if ((js_str = JS_NewStringCopyZ(cx, p->cfg->dir[d]->op_arstr)) == nullptr)
+					return false;
+				if (!JS_DefineProperty(cx, dirobj.get(), "operator_ars", STRING_TO_JSVAL(js_str.get())
 				                       , NULL, NULL, JSPROP_ENUMERATE | JSPROP_READONLY))
-					return JS_FALSE;
+					return false;
 
-				if ((js_str = JS_NewStringCopyZ(cx, p->cfg->dir[d]->exts)) == NULL)
-					return JS_FALSE;
-				val = STRING_TO_JSVAL(js_str);
-				if (!JS_SetProperty(cx, dirobj, "extensions", &val))
-					return JS_FALSE;
+				if ((js_str = JS_NewStringCopyZ(cx, p->cfg->dir[d]->exts)) == nullptr)
+					return false;
+				val = STRING_TO_JSVAL(js_str.get());
+				if (!JS_SetProperty(cx, dirobj.get(), "extensions", val.address()))
+					return false;
 
-				if ((js_str = JS_NewStringCopyZ(cx, p->cfg->dir[d]->upload_sem)) == NULL)
-					return JS_FALSE;
-				val = STRING_TO_JSVAL(js_str);
-				if (!JS_SetProperty(cx, dirobj, "upload_sem", &val))
-					return JS_FALSE;
+				if ((js_str = JS_NewStringCopyZ(cx, p->cfg->dir[d]->upload_sem)) == nullptr)
+					return false;
+				val = STRING_TO_JSVAL(js_str.get());
+				if (!JS_SetProperty(cx, dirobj.get(), "upload_sem", val.address()))
+					return false;
 
-				if ((js_str = JS_NewStringCopyZ(cx, p->cfg->dir[d]->data_dir)) == NULL)
-					return JS_FALSE;
-				val = STRING_TO_JSVAL(js_str);
-				if (!JS_SetProperty(cx, dirobj, "data_dir", &val))
-					return JS_FALSE;
+				if ((js_str = JS_NewStringCopyZ(cx, p->cfg->dir[d]->data_dir)) == nullptr)
+					return false;
+				val = STRING_TO_JSVAL(js_str.get());
+				if (!JS_SetProperty(cx, dirobj.get(), "data_dir", val.address()))
+					return false;
 
 				val = UINT_TO_JSVAL(p->cfg->dir[d]->misc);
-				if (!JS_SetProperty(cx, dirobj, "settings", &val))
-					return JS_FALSE;
+				if (!JS_SetProperty(cx, dirobj.get(), "settings", val.address()))
+					return false;
 
 				val = INT_TO_JSVAL(p->cfg->dir[d]->seqdev);
-				if (!JS_SetProperty(cx, dirobj, "seqdev", &val))
-					return JS_FALSE;
+				if (!JS_SetProperty(cx, dirobj.get(), "seqdev", val.address()))
+					return false;
 
 				val = INT_TO_JSVAL(p->cfg->dir[d]->sort);
-				if (!JS_SetProperty(cx, dirobj, "sort", &val))
-					return JS_FALSE;
+				if (!JS_SetProperty(cx, dirobj.get(), "sort", val.address()))
+					return false;
 
 				val = INT_TO_JSVAL(p->cfg->dir[d]->maxfiles);
-				if (!JS_SetProperty(cx, dirobj, "max_files", &val))
-					return JS_FALSE;
+				if (!JS_SetProperty(cx, dirobj.get(), "max_files", val.address()))
+					return false;
 
 				val = INT_TO_JSVAL(p->cfg->dir[d]->maxage);
-				if (!JS_SetProperty(cx, dirobj, "max_age", &val))
-					return JS_FALSE;
+				if (!JS_SetProperty(cx, dirobj.get(), "max_age", val.address()))
+					return false;
 
 				val = INT_TO_JSVAL(p->cfg->dir[d]->up_pct);
-				if (!JS_SetProperty(cx, dirobj, "upload_credit_pct", &val))
-					return JS_FALSE;
+				if (!JS_SetProperty(cx, dirobj.get(), "upload_credit_pct", val.address()))
+					return false;
 
 				val = INT_TO_JSVAL(p->cfg->dir[d]->dn_pct);
-				if (!JS_SetProperty(cx, dirobj, "download_credit_pct", &val))
-					return JS_FALSE;
+				if (!JS_SetProperty(cx, dirobj.get(), "download_credit_pct", val.address()))
+					return false;
 
-				if ((js_str = JS_NewStringCopyZ(cx, p->cfg->dir[d]->vdir)) == NULL)
-					return JS_FALSE;
-				val = STRING_TO_JSVAL(js_str);
-				if (!JS_SetProperty(cx, dirobj, "vdir", &val))
-					return JS_FALSE;
+				if ((js_str = JS_NewStringCopyZ(cx, p->cfg->dir[d]->vdir)) == nullptr)
+					return false;
+				val = STRING_TO_JSVAL(js_str.get());
+				if (!JS_SetProperty(cx, dirobj.get(), "vdir", val.address()))
+					return false;
 
 				snprintf(vpath, sizeof vpath, "%s/", dir_vpath(p->cfg, p->cfg->dir[d], str, sizeof str));
-				if ((js_str = JS_NewStringCopyZ(cx, vpath)) == NULL)
-					return JS_FALSE;
-				val = STRING_TO_JSVAL(js_str);
-				if (!JS_SetProperty(cx, dirobj, "vpath", &val))
-					return JS_FALSE;
-				if (!JS_DefineProperties(cx, dirobj, js_dir_properties))
-					return JS_FALSE;
+				if ((js_str = JS_NewStringCopyZ(cx, vpath)) == nullptr)
+					return false;
+				val = STRING_TO_JSVAL(js_str.get());
+				if (!JS_SetProperty(cx, dirobj.get(), "vpath", val.address()))
+					return false;
+				if (!js_dir_fill_properties(cx, dirobj.get(), np))
+					return false;
 
-				if ((js_str = JS_NewStringCopyZ(cx, p->cfg->dir[d]->vshortcut)) == NULL)
-					return JS_FALSE;
-				val = STRING_TO_JSVAL(js_str);
-				if (!JS_SetProperty(cx, dirobj, "vshortcut", &val))
-					return JS_FALSE;
+				if ((js_str = JS_NewStringCopyZ(cx, p->cfg->dir[d]->vshortcut)) == nullptr)
+					return false;
+				val = STRING_TO_JSVAL(js_str.get());
+				if (!JS_SetProperty(cx, dirobj.get(), "vshortcut", val.address()))
+					return false;
 
 				val = BOOLEAN_TO_JSVAL(d == p->cfg->lib[l]->offline_dir);
-				if (!JS_SetProperty(cx, dirobj, "is_offline", &val))
-					return JS_FALSE;
+				if (!JS_SetProperty(cx, dirobj.get(), "is_offline", val.address()))
+					return false;
 
 				val = BOOLEAN_TO_JSVAL(d == p->cfg->upload_dir);
-				if (!JS_SetProperty(cx, dirobj, "is_upload", &val))
-					return JS_FALSE;
+				if (!JS_SetProperty(cx, dirobj.get(), "is_upload", val.address()))
+					return false;
 
 				val = BOOLEAN_TO_JSVAL(d == p->cfg->sysop_dir);
-				if (!JS_SetProperty(cx, dirobj, "is_sysop", &val))
-					return JS_FALSE;
+				if (!JS_SetProperty(cx, dirobj.get(), "is_sysop", val.address()))
+					return false;
 
 #ifdef BUILD_JSDOCS
-				js_CreateArrayOfStrings(cx, dirobj, "_property_desc_list", dir_prop_desc, JSPROP_READONLY);
+				js_CreateArrayOfStrings(cx, dirobj.get(), "_property_desc_list", dir_prop_desc, JSPROP_READONLY);
 				js_DescribeSyncObject(cx, dirobj, "File Transfer Directories  (current user has access to)", 310);
 #endif
 			}
 
 #ifdef BUILD_JSDOCS
-			js_CreateArrayOfStrings(cx, libobj, "_property_desc_list", lib_prop_desc, JSPROP_READONLY);
+			js_CreateArrayOfStrings(cx, libobj.get(), "_property_desc_list", lib_prop_desc, JSPROP_READONLY);
 #endif
 		}
 #ifdef BUILD_JSDOCS
-		js_DescribeSyncObject(cx, alllibs, "Associative array of all libraries (use name as index)", 312);
-		JS_DefineProperty(cx, alllibs, "_dont_document", JSVAL_TRUE, NULL, NULL, JSPROP_READONLY);
+		js_DescribeSyncObject(cx, alllibs.get(), "Associative array of all libraries (use name as index)", 312);
+		JS_DefineProperty(cx, alllibs.get(), "_dont_document", JSVAL_TRUE, NULL, NULL, JSPROP_READONLY);
 
-		js_DescribeSyncObject(cx, alldirs, "Associative array of all directories (use internal code as index)", 311);
-		JS_DefineProperty(cx, alldirs, "_dont_document", JSVAL_TRUE, NULL, NULL, JSPROP_READONLY);
+		js_DescribeSyncObject(cx, alldirs.get(), "Associative array of all directories (use internal code as index)", 311);
+		JS_DefineProperty(cx, alldirs.get(), "_dont_document", JSVAL_TRUE, NULL, NULL, JSPROP_READONLY);
 #endif
 	}
-	if (name)
-		free(name);
 
-	return JS_TRUE;
+	return true;
 }
 
-static JSBool js_file_area_enumerate(JSContext *cx, JSObject *obj)
+static bool js_file_area_enumerate(JSContext *cx, JS::Handle<JSObject*> obj)
 {
-	return js_file_area_resolve(cx, obj, JSID_VOID);
+	return js_file_area_resolve_impl(cx, obj, NULL);
 }
+
+static const JSClassOps js_file_area_classops = {
+	nullptr,                    /* addProperty  */
+	nullptr,                    /* delProperty  */
+	js_file_area_enumerate,     /* enumerate    */
+	nullptr,                    /* newEnumerate */
+	js_file_area_resolve,       /* resolve      */
+	nullptr,                    /* mayResolve   */
+	js_file_area_finalize,      /* finalize     */
+	nullptr, nullptr, nullptr   /* call, construct, trace */
+};
 
 static JSClass js_file_area_class = {
-	"FileArea"              /* name			*/
-	, JSCLASS_HAS_PRIVATE    /* flags		*/
-	, JS_PropertyStub        /* addProperty	*/
-	, JS_PropertyStub        /* delProperty	*/
-	, JS_PropertyStub        /* getProperty	*/
-	, JS_StrictPropertyStub      /* setProperty	*/
-	, js_file_area_enumerate /* enumerate	*/
-	, js_file_area_resolve   /* resolve		*/
-	, JS_ConvertStub         /* convert		*/
-	, js_file_area_finalize  /* finalize		*/
+	"FileArea"
+	, JSCLASS_HAS_PRIVATE
+	, &js_file_area_classops
 };
 
 DLLEXPORT JSObject* js_CreateFileAreaObject(JSContext* cx, JSObject* parent, scfg_t* cfg

@@ -2,7 +2,6 @@
 
 #include "sbbs.h"
 #include <cryptlib.h>
-#include "js_request.h"
 #include "js_cryptcon.h"
 #include "js_cryptcert.h"
 #include "ssl.h"
@@ -39,21 +38,18 @@ js_cryptcert_error(JSContext *cx, CRYPT_CERTIFICATE cert, int error)
 // Destructor
 
 static void
-js_finalize_cryptcert(JSContext *cx, JSObject *obj)
+js_finalize_cryptcert(JS::GCContext* gcx, JSObject *obj)
 {
-	jsrefcount                        rc;
 	struct js_cryptcert_private_data* p;
 
-	if ((p = (struct js_cryptcert_private_data *)JS_GetPrivate(cx, obj)) == NULL)
+	if ((p = (struct js_cryptcert_private_data *)JS_GetPrivate(obj)) == NULL)
 		return;
 
-	rc = JS_SUSPENDREQUEST(cx);
 	if (p->cert != CRYPT_UNUSED)
 		cryptDestroyCert(p->cert);
 	free(p);
-	JS_RESUMEREQUEST(cx, rc);
 
-	JS_SetPrivate(cx, obj, NULL);
+	JS_SetPrivate(obj, NULL);
 }
 
 // Methods
@@ -63,7 +59,6 @@ js_add_extension(JSContext *cx, uintN argc, jsval *arglist)
 {
 	struct js_cryptcert_private_data* p;
 	JSObject *                        obj = JS_THIS_OBJECT(cx, arglist);
-	jsrefcount                        rc;
 	int                               status;
 	jsval *                           argv = JS_ARGV(cx, arglist);
 	JSString *                        jsoid;
@@ -104,9 +99,7 @@ js_add_extension(JSContext *cx, uintN argc, jsval *arglist)
 		FREE_AND_NULL(extension);
 		return JS_FALSE;
 	}
-	rc = JS_SUSPENDREQUEST(cx);
 	status = cryptAddCertExtension(p->cert, oid, critical, extension, ext_len);
-	JS_RESUMEREQUEST(cx, rc);
 	if (cryptStatusError(status)) {
 		js_cryptcert_error(cx, p->cert, status);
 		FREE_AND_NULL(oid);
@@ -121,16 +114,13 @@ js_check(JSContext *cx, uintN argc, jsval *arglist)
 {
 	struct js_cryptcert_private_data* p;
 	JSObject *                        obj = JS_THIS_OBJECT(cx, arglist);
-	jsrefcount                        rc;
 	int                               status;
 
 	if ((p = (struct js_cryptcert_private_data *)JS_GetPrivate(cx, obj)) == NULL) {
 		JS_ReportError(cx, getprivate_failure, WHERE);
 		return JS_FALSE;
 	}
-	rc = JS_SUSPENDREQUEST(cx);
 	status = cryptCheckCert(p->cert, CRYPT_UNUSED); // TODO: Check against key/CRL/online
-	JS_RESUMEREQUEST(cx, rc);
 	if (cryptStatusError(status)) {
 		js_cryptcert_error(cx, p->cert, status);
 		return JS_FALSE;
@@ -144,16 +134,13 @@ js_destroy(JSContext *cx, uintN argc, jsval *arglist)
 {
 	struct js_cryptcert_private_data* p;
 	JSObject *                        obj = JS_THIS_OBJECT(cx, arglist);
-	jsrefcount                        rc;
 	int                               status;
 
 	if ((p = (struct js_cryptcert_private_data *)JS_GetPrivate(cx, obj)) == NULL) {
 		JS_ReportError(cx, getprivate_failure, WHERE);
 		return JS_FALSE;
 	}
-	rc = JS_SUSPENDREQUEST(cx);
 	status = cryptDestroyCert(p->cert);
-	JS_RESUMEREQUEST(cx, rc);
 	if (cryptStatusError(status)) {
 		js_cryptcert_error(cx, p->cert, status);
 		return JS_FALSE;
@@ -168,7 +155,6 @@ js_export(JSContext *cx, uintN argc, jsval *arglist)
 {
 	struct js_cryptcert_private_data* p;
 	JSObject *                        obj = JS_THIS_OBJECT(cx, arglist);
-	jsrefcount                        rc;
 	int                               status;
 	int                               format;
 	char *                            buf;
@@ -190,10 +176,8 @@ js_export(JSContext *cx, uintN argc, jsval *arglist)
 		return JS_FALSE;
 	}
 
-	rc = JS_SUSPENDREQUEST(cx);
 	status = cryptExportCert(NULL, 0, &len, static_cast<CRYPT_CERTFORMAT_TYPE>(format), p->cert);
 	if (cryptStatusError(status)) {
-		JS_RESUMEREQUEST(cx, rc);
 		js_cryptcert_error(cx, p->cert, status);
 		return JS_FALSE;
 	}
@@ -205,14 +189,11 @@ js_export(JSContext *cx, uintN argc, jsval *arglist)
 	 */
 	buf = static_cast<char *>(malloc(len + 12));
 	if (buf == NULL) {
-		JS_RESUMEREQUEST(cx, rc);
 		JS_ReportError(cx, "Unable to allocate %d bytes\n", len);
 		return JS_FALSE;
 	}
 	status = cryptExportCert(buf, len + 12, &len, static_cast<CRYPT_CERTFORMAT_TYPE>(format), p->cert);
-	JS_RESUMEREQUEST(cx, rc);
 	if (cryptStatusError(status)) {
-		JS_RESUMEREQUEST(cx, rc);
 		js_cryptcert_error(cx, p->cert, status);
 		return JS_FALSE;
 	}
@@ -232,7 +213,6 @@ js_get_attribute(JSContext *cx, uintN argc, jsval *arglist)
 {
 	struct js_cryptcert_private_data* p;
 	JSObject *                        obj = JS_THIS_OBJECT(cx, arglist);
-	jsrefcount                        rc;
 	int                               status;
 	int                               attr;
 	int                               val;
@@ -252,9 +232,7 @@ js_get_attribute(JSContext *cx, uintN argc, jsval *arglist)
 		return JS_FALSE;
 	}
 
-	rc = JS_SUSPENDREQUEST(cx);
 	status = cryptGetAttribute(p->cert, static_cast<CRYPT_ATTRIBUTE_TYPE>(attr), &val);
-	JS_RESUMEREQUEST(cx, rc);
 	if (cryptStatusError(status)) {
 		js_cryptcert_error(cx, p->cert, status);
 		return JS_FALSE;
@@ -270,7 +248,6 @@ js_get_attribute_string(JSContext *cx, uintN argc, jsval *arglist)
 {
 	struct js_cryptcert_private_data* p;
 	JSObject *                        obj = JS_THIS_OBJECT(cx, arglist);
-	jsrefcount                        rc;
 	int                               status;
 	int                               attr;
 	char *                            val;
@@ -292,25 +269,20 @@ js_get_attribute_string(JSContext *cx, uintN argc, jsval *arglist)
 		return JS_FALSE;
 	}
 
-	rc = JS_SUSPENDREQUEST(cx);
 	status = cryptGetAttributeString(p->cert, static_cast<CRYPT_ATTRIBUTE_TYPE>(attr), NULL, &len);
 	if (cryptStatusError(status)) {
-		JS_RESUMEREQUEST(cx, rc);
 		js_cryptcert_error(cx, p->cert, status);
 		return JS_FALSE;    // Do not return JS_FALSE here, or jsdocs build will break.
 	}
 	if ((val = (char *)malloc(len)) == NULL) {
-		JS_RESUMEREQUEST(cx, rc);
 		JS_ReportError(cx, "malloc(%d) failure", len);
 		return JS_FALSE;
 	}
 	status = cryptGetAttributeString(p->cert, static_cast<CRYPT_ATTRIBUTE_TYPE>(attr), val, &len);
 	if (cryptStatusError(status)) {
-		JS_RESUMEREQUEST(cx, rc);
 		js_cryptcert_error(cx, p->cert, status);
 		return JS_FALSE;
 	}
-	JS_RESUMEREQUEST(cx, rc);
 	if ((js_str = JS_NewStringCopyN(cx, val, len)) == NULL) {
 		free(val);
 		return JS_FALSE;
@@ -326,7 +298,6 @@ js_get_attribute_time(JSContext *cx, uintN argc, jsval *arglist)
 {
 	struct js_cryptcert_private_data* p;
 	JSObject *                        obj = JS_THIS_OBJECT(cx, arglist);
-	jsrefcount                        rc;
 	int                               status;
 	int                               attr;
 	time_t                            val;
@@ -349,22 +320,18 @@ js_get_attribute_time(JSContext *cx, uintN argc, jsval *arglist)
 		return JS_FALSE;
 	}
 
-	rc = JS_SUSPENDREQUEST(cx);
 
 	status = cryptGetAttributeString(p->cert, static_cast<CRYPT_ATTRIBUTE_TYPE>(attr), NULL, &len);
 	if (cryptStatusError(status)) {
-		JS_RESUMEREQUEST(cx, rc);
 		js_cryptcert_error(cx, p->cert, status);
 		return JS_FALSE;
 	}
 	if (len != sizeof(val)) {
-		JS_RESUMEREQUEST(cx, rc);
-		JS_ReportError(cx, "Time size %d not sizeof(time_t) (%d)\n", len, sizeof(val));
+		JS_ReportError(cx, "Time size %d not sizeof(time_t) (%zu)\n", len, sizeof(val));
 		return JS_FALSE;
 	}
 	status = cryptGetAttributeString(p->cert, static_cast<CRYPT_ATTRIBUTE_TYPE>(attr), &val, &len);
 	if (cryptStatusError(status)) {
-		JS_RESUMEREQUEST(cx, rc);
 		js_cryptcert_error(cx, p->cert, status);
 		return JS_FALSE;
 	}
@@ -382,7 +349,6 @@ js_set_attribute(JSContext *cx, uintN argc, jsval *arglist)
 {
 	struct js_cryptcert_private_data* p;
 	JSObject *                        obj = JS_THIS_OBJECT(cx, arglist);
-	jsrefcount                        rc;
 	int                               status;
 	int                               attr;
 	int                               val;
@@ -406,9 +372,7 @@ js_set_attribute(JSContext *cx, uintN argc, jsval *arglist)
 		return JS_FALSE;
 	}
 
-	rc = JS_SUSPENDREQUEST(cx);
 	status = cryptSetAttribute(p->cert, static_cast<CRYPT_ATTRIBUTE_TYPE>(attr), val);
-	JS_RESUMEREQUEST(cx, rc);
 	if (cryptStatusError(status)) {
 		js_cryptcert_error(cx, p->cert, status);
 		return JS_FALSE;
@@ -421,7 +385,6 @@ js_set_attribute_string(JSContext *cx, uintN argc, jsval *arglist)
 {
 	struct js_cryptcert_private_data* p;
 	JSObject *                        obj = JS_THIS_OBJECT(cx, arglist);
-	jsrefcount                        rc;
 	int                               status;
 	int                               attr;
 	char *                            val;
@@ -447,10 +410,8 @@ js_set_attribute_string(JSContext *cx, uintN argc, jsval *arglist)
 	if (val == NULL)
 		return JS_FALSE;
 
-	rc = JS_SUSPENDREQUEST(cx);
 	status = cryptSetAttributeString(p->cert, static_cast<CRYPT_ATTRIBUTE_TYPE>(attr), val, len);
 	free(val);
-	JS_RESUMEREQUEST(cx, rc);
 	if (cryptStatusError(status)) {
 		js_cryptcert_error(cx, p->cert, status);
 		return JS_FALSE;
@@ -463,7 +424,6 @@ js_set_attribute_time(JSContext *cx, uintN argc, jsval *arglist)
 {
 	struct js_cryptcert_private_data* p;
 	JSObject *                        obj = JS_THIS_OBJECT(cx, arglist);
-	jsrefcount                        rc;
 	int                               status;
 	int                               attr;
 	time_t                            val;
@@ -509,9 +469,7 @@ js_set_attribute_time(JSContext *cx, uintN argc, jsval *arglist)
 		return JS_FALSE;
 	}
 
-	rc = JS_SUSPENDREQUEST(cx);
 	status = cryptSetAttributeString(p->cert, static_cast<CRYPT_ATTRIBUTE_TYPE>(attr), &val, sizeof(val));
-	JS_RESUMEREQUEST(cx, rc);
 	if (cryptStatusError(status)) {
 		js_cryptcert_error(cx, p->cert, status);
 		return JS_FALSE;
@@ -526,7 +484,6 @@ js_sign(JSContext *cx, uintN argc, jsval *arglist)
 	struct js_cryptcert_private_data* p;
 	jsval *                           argv = JS_ARGV(cx, arglist);
 	JSObject *                        obj = JS_THIS_OBJECT(cx, arglist);
-	jsrefcount                        rc;
 	int                               status;
 	JSObject *                        key;
 
@@ -551,12 +508,9 @@ js_sign(JSContext *cx, uintN argc, jsval *arglist)
 		return JS_FALSE;
 	}
 
-	rc = JS_SUSPENDREQUEST(cx);
 	cryptSetAttribute(p->cert, CRYPT_OPTION_CERT_SIGNUNRECOGNISEDATTRIBUTES, 1);
 	status = cryptSignCert(p->cert, ctx->ctx);
-	JS_RESUMEREQUEST(cx, rc);
 	if (cryptStatusError(status)) {
-		JS_RESUMEREQUEST(cx, rc);
 		js_cryptcert_error(cx, p->cert, status);
 		return JS_FALSE;
 	}
@@ -629,7 +583,7 @@ js_cryptcert_attrtime_get(JSContext *cx, jsval *vp, CRYPT_CERTIFICATE cert, CRYP
 		return JS_TRUE; // Do not return JS_FALSE here, or jsdocs build will break.
 	}
 	if (len != sizeof(t)) {
-		JS_ReportError(cx, "Time size %d not sizeof(time_t) (%d)\n", len, sizeof(t));
+		JS_ReportError(cx, "Time size %d not sizeof(time_t) (%zu)\n", len, sizeof(t));
 		return JS_FALSE;
 	}
 	status = cryptGetAttributeString(cert, type, &t, &len);
@@ -1548,36 +1502,8 @@ static jsSyncMethodSpec   js_cryptcert_functions[] = {
 };
 
 static JSBool
-js_cryptcert_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
+js_cryptcert_get_value(JSContext* cx, struct js_cryptcert_private_data* p, jsint tiny, jsval* vp)
 {
-	jsval                             idval;
-	jsint                             tiny = -1;
-	struct js_cryptcert_private_data* p;
-
-	if ((p = (struct js_cryptcert_private_data *)JS_GetPrivate(cx, obj)) == NULL) {
-		return JS_TRUE;
-	}
-
-	JS_IdToValue(cx, id, &idval);
-	if (JSVAL_IS_INT(idval))
-		tiny = JSVAL_TO_INT(idval);
-	else {
-		size_t i;
-		char * name = NULL;
-
-		JSVALUE_TO_MSTRING(cx, idval, name, NULL);
-		HANDLE_PENDING(cx, name);
-		for (i = 0; name != NULL && js_cryptcert_properties[i].name; i++) {
-			if (strcmp(name, js_cryptcert_properties[i].name) == 0) {
-				tiny = js_cryptcert_properties[i].tinyid;
-				break;
-			}
-		}
-		free(name);
-		if (!js_cryptcert_properties[i].name)
-			return JS_TRUE;
-	}
-
 	switch (tiny) {
 		case CRYPTCERT_PROP_SELFSIGNED:
 			return js_cryptcert_attr_get(cx, vp, p->cert, CRYPT_CERTINFO_SELFSIGNED);
@@ -2219,8 +2145,9 @@ js_cryptcert_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 			return js_cryptcert_attrstr_get(cx, vp, p->cert, CRYPT_CERTINFO_CMS_SPCOPUSINFO_NAME);
 		case CRYPTCERT_PROP_CMS_SPCOPUSINFO_URL:
 			return js_cryptcert_attrstr_get(cx, vp, p->cert, CRYPT_CERTINFO_CMS_SPCOPUSINFO_URL);
+		default:
+			return JS_TRUE;
 	}
-	return JS_TRUE;
 }
 
 static JSBool
@@ -2252,7 +2179,7 @@ js_cryptcert_attrkey_set(JSContext *cx, jsval *vp, CRYPT_CERTIFICATE cert, CRYPT
 		return JS_FALSE;
 	}
 
-	if ((ctx = (struct js_cryptcon_private_data *)JS_GetPrivate(cx, key)) == NULL) {
+	if ((ctx = (struct js_cryptcon_private_data *)JS_GetPrivate(key)) == NULL) {
 		JS_ReportError(cx, getprivate_failure, WHERE);
 		return JS_FALSE;
 	}
@@ -2326,37 +2253,8 @@ js_cryptcert_attrtime_set(JSContext *cx, jsval *vp, CRYPT_CERTIFICATE cert, CRYP
 }
 
 static JSBool
-js_cryptcert_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, jsval *vp)
+js_cryptcert_set_value(JSContext* cx, struct js_cryptcert_private_data* p, jsint tiny, jsval* vp)
 {
-	jsval                             idval;
-	jsint                             tiny = -1;
-	struct js_cryptcert_private_data* p;
-
-	if ((p = (struct js_cryptcert_private_data *)JS_GetPrivate(cx, obj)) == NULL) {
-		JS_ReportError(cx, getprivate_failure, WHERE);
-		return JS_FALSE;
-	}
-
-	JS_IdToValue(cx, id, &idval);
-	if (JSVAL_IS_INT(idval))
-		tiny = JSVAL_TO_INT(idval);
-	else {
-		size_t i;
-		char * name = NULL;
-
-		JSVALUE_TO_MSTRING(cx, idval, name, NULL);
-		HANDLE_PENDING(cx, name);
-		for (i = 0; name != NULL && js_cryptcert_properties[i].name; i++) {
-			if (strcmp(name, js_cryptcert_properties[i].name) == 0) {
-				tiny = js_cryptcert_properties[i].tinyid;
-				break;
-			}
-		}
-		free(name);
-		if (!js_cryptcert_properties[i].name)
-			return JS_TRUE;
-	}
-
 	switch (tiny) {
 		case CRYPTCERT_PROP_SELFSIGNED:
 			return js_cryptcert_attr_set(cx, vp, p->cert, CRYPT_CERTINFO_SELFSIGNED);
@@ -2998,47 +2896,110 @@ js_cryptcert_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, jsval *vp
 			return js_cryptcert_attrstr_set(cx, vp, p->cert, CRYPT_CERTINFO_CMS_SPCOPUSINFO_NAME);
 		case CRYPTCERT_PROP_CMS_SPCOPUSINFO_URL:
 			return js_cryptcert_attrstr_set(cx, vp, p->cert, CRYPT_CERTINFO_CMS_SPCOPUSINFO_URL);
+		default:
+			return JS_TRUE;
 	}
-	return JS_TRUE;
 }
 
-static JSBool js_cryptcert_resolve(JSContext *cx, JSObject *obj, jsid id)
+static bool js_cryptcert_prop_getter(JSContext* cx, unsigned argc, JS::Value* vp)
 {
-	char*  name = NULL;
-	JSBool ret;
+	JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
+	JS::RootedObject thisObj(cx);
+	if (!args.computeThis(cx, &thisObj))
+		return false;
+	struct js_cryptcert_private_data* p = (struct js_cryptcert_private_data*)js_GetClassPrivate(cx, thisObj, &js_cryptcert_class);
+	if (p == nullptr) {
+		args.rval().setUndefined();
+		return true;
+	}
+	JSObject* callee = &args.callee();
+	jsint tiny = js::GetFunctionNativeReserved(callee, 0).toInt32();
+	jsval val = JSVAL_VOID;
+	if (!js_cryptcert_get_value(cx, p, tiny, &val))
+		return false;
+	args.rval().set(val);
+	return true;
+}
 
-	if (id != JSID_VOID && id != JSID_EMPTY) {
-		jsval idval;
+static bool js_cryptcert_prop_setter(JSContext* cx, unsigned argc, JS::Value* vp)
+{
+	JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
+	JS::RootedObject thisObj(cx);
+	if (!args.computeThis(cx, &thisObj))
+		return false;
+	struct js_cryptcert_private_data* p = (struct js_cryptcert_private_data*)js_GetClassPrivate(cx, thisObj, &js_cryptcert_class);
+	if (p == nullptr)
+		return true;
+	JSObject* callee = &args.callee();
+	jsint tiny = js::GetFunctionNativeReserved(callee, 0).toInt32();
+	jsval val = args.length() > 0 ? args[0] : JSVAL_VOID;
+	if (!js_cryptcert_set_value(cx, p, tiny, &val))
+		return false;
+	args.rval().set(val);
+	return true;
+}
 
-		JS_IdToValue(cx, id, &idval);
-		if (JSVAL_IS_STRING(idval)) {
-			JSSTRING_TO_MSTRING(cx, JSVAL_TO_STRING(idval), name, NULL);
-			HANDLE_PENDING(cx, name);
+static JSBool
+js_cryptcert_fill_properties(JSContext* cx, JSObject* obj, struct js_cryptcert_private_data* p, const char* name)
+{
+	(void)p;
+	return js_DefineSyncAccessors(cx, obj, js_cryptcert_properties, js_cryptcert_prop_getter, name, js_cryptcert_prop_setter);
+}
+
+static bool js_cryptcert_resolve(JSContext *cx, JS::Handle<JSObject*> obj, JS::Handle<jsid> id, bool* resolvedp)
+{
+	char* name = NULL;
+
+	if (id.get().isString()) {
+		JSString* str = id.get().toString();
+		JSSTRING_TO_MSTRING(cx, str, name, NULL);
+		HANDLE_PENDING(cx, name);
+		if (name == NULL) return false;
+	}
+
+	bool ret = js_SyncResolve(cx, obj, name, js_cryptcert_properties, js_cryptcert_functions, NULL, 0);
+	if (ret) {
+		struct js_cryptcert_private_data* p;
+		if ((p = (struct js_cryptcert_private_data *)js_GetClassPrivate(cx, obj, &js_cryptcert_class)) != NULL) {
+			if (!js_cryptcert_fill_properties(cx, obj, p, name)) {
+				if (name) free(name);
+				return false;
+			}
 		}
 	}
-
-	ret = js_SyncResolve(cx, obj, name, js_cryptcert_properties, js_cryptcert_functions, NULL, 0);
 	if (name)
 		free(name);
-	return ret;
+	if (resolvedp) *resolvedp = ret;
+	return true;
 }
 
-static JSBool js_cryptcert_enumerate(JSContext *cx, JSObject *obj)
+static bool js_cryptcert_enumerate(JSContext *cx, JS::Handle<JSObject*> obj)
 {
-	return js_cryptcert_resolve(cx, obj, JSID_VOID);
+	if (!js_SyncResolve(cx, obj, NULL, js_cryptcert_properties, js_cryptcert_functions, NULL, 0))
+		return false;
+	struct js_cryptcert_private_data* p;
+	if ((p = (struct js_cryptcert_private_data *)js_GetClassPrivate(cx, obj, &js_cryptcert_class)) != NULL) {
+		if (!js_cryptcert_fill_properties(cx, obj, p, NULL))
+			return false;
+	}
+	return true;
 }
+
+static const JSClassOps js_cryptcert_classops = {
+	nullptr,                    /* addProperty  */
+	nullptr,                    /* delProperty  */
+	js_cryptcert_enumerate,     /* enumerate    */
+	nullptr,                    /* newEnumerate */
+	js_cryptcert_resolve,       /* resolve      */
+	nullptr,                    /* mayResolve   */
+	js_finalize_cryptcert,      /* finalize     */
+	nullptr, nullptr, nullptr   /* call, construct, trace */
+};
 
 JSClass js_cryptcert_class = {
-	"CryptCert"                 /* name			*/
-	, JSCLASS_HAS_PRIVATE        /* flags		*/
-	, JS_PropertyStub            /* addProperty	*/
-	, JS_PropertyStub            /* delProperty	*/
-	, js_cryptcert_get           /* getProperty	*/
-	, js_cryptcert_set           /* setProperty	*/
-	, js_cryptcert_enumerate     /* enumerate	*/
-	, js_cryptcert_resolve       /* resolve		*/
-	, JS_ConvertStub             /* convert		*/
-	, js_finalize_cryptcert      /* finalize		*/
+	"CryptCert"
+	, JSCLASS_HAS_PRIVATE
+	, &js_cryptcert_classops
 };
 
 JSObject* js_CreateCryptCertObject(JSContext* cx, CRYPT_CERTIFICATE cert)
@@ -3071,7 +3032,6 @@ js_cryptcert_constructor(JSContext *cx, uintN argc, jsval *arglist)
 	JSObject *                        obj;
 	jsval *                           argv = JS_ARGV(cx, arglist);
 	struct js_cryptcert_private_data *p;
-	jsrefcount                        rc;
 	int                               status;
 	int                               type;
 	char *                            buf;
@@ -3108,20 +3068,17 @@ js_cryptcert_constructor(JSContext *cx, uintN argc, jsval *arglist)
 		}
 		JSSTRING_TO_MSTRING(cx, jscert, buf, &len);
 		HANDLE_PENDING(cx, buf);
-		rc = JS_SUSPENDREQUEST(cx);
 		status = cryptImportCert(buf, len, CRYPT_UNUSED, &p->cert);
 		free(buf);
-		JS_RESUMEREQUEST(cx, rc);
 	}
 	else {
 		if (!JS_ValueToInt32(cx, argv[0], &type))
 			return JS_FALSE;
-		rc = JS_SUSPENDREQUEST(cx);
 		status = cryptCreateCert(&p->cert, CRYPT_UNUSED, static_cast<CRYPT_CERTTYPE_TYPE>(type));
-		JS_RESUMEREQUEST(cx, rc);
 	}
 
 	if (cryptStatusError(status)) {
+		JS_SetPrivate(cx, obj, NULL);  /* prevent double-free in finalizer */
 		JS_ReportError(cx, "CryptLib error %d", status);
 		free(p);
 		return JS_FALSE;
@@ -3181,11 +3138,11 @@ static const char* cryptcert_format_prop_desc[] = {
 JSObject* js_CreateCryptCertClass(JSContext* cx, JSObject* parent)
 {
 	JSObject* cksobj;
-	JSObject* constructor;
-	JSObject* type;
-	JSObject* format;
-	JSObject* attr;
-	JSObject* cursor;
+	JS::RootedObject constructor(cx);
+	JS::RootedObject type(cx);
+	JS::RootedObject format(cx);
+	JS::RootedObject attr(cx);
+	JS::RootedObject cursor(cx);
 	jsval     val;
 
 	cksobj = JS_InitClass(cx, parent, NULL
@@ -3197,9 +3154,9 @@ JSObject* js_CreateCryptCertClass(JSContext* cx, JSObject* parent)
 	                      , NULL, NULL);
 
 	if (JS_GetProperty(cx, parent, js_cryptcert_class.name, &val) && !JSVAL_NULL_OR_VOID(val)) {
-		JS_ValueToObject(cx, val, &constructor);
+		JS_ValueToObject(cx, val, constructor.address());
 		cursor = JS_DefineObject(cx, constructor, "CURSOR", NULL, NULL, JSPROP_PERMANENT | JSPROP_ENUMERATE | JSPROP_READONLY);
-		if (cursor != NULL) {
+		if (cursor) {
 			JS_DefineProperty(cx, cursor, "FIRST", INT_TO_JSVAL(CRYPT_CURSOR_FIRST), NULL, NULL
 			                  , JSPROP_PERMANENT | JSPROP_ENUMERATE | JSPROP_READONLY);
 			JS_DefineProperty(cx, cursor, "PREVIOUS", INT_TO_JSVAL(CRYPT_CURSOR_PREVIOUS), NULL, NULL
@@ -3221,10 +3178,10 @@ JSObject* js_CreateCryptCertClass(JSContext* cx, JSObject* parent)
 			js_CreateArrayOfStrings(cx, cursor, "_property_desc_list", cryptcert_cursor_prop_desc, JSPROP_READONLY);
 			js_DescribeSyncObject(cx, cursor, "Associative array of cursor constants", 318);
 #endif
-			JS_DeepFreezeObject(cx, cursor);
+			JS_DeepFreezeObject(cx, cursor.get());
 		}
 		type = JS_DefineObject(cx, constructor, "TYPE", NULL, NULL, JSPROP_PERMANENT | JSPROP_ENUMERATE | JSPROP_READONLY);
-		if (type != NULL) {
+		if (type) {
 			JS_DefineProperty(cx, type, "NONE", INT_TO_JSVAL(CRYPT_CERTTYPE_NONE), NULL, NULL
 			                  , JSPROP_PERMANENT | JSPROP_ENUMERATE | JSPROP_READONLY);
 			JS_DefineProperty(cx, type, "CERTIFICATE", INT_TO_JSVAL(CRYPT_CERTTYPE_CERTIFICATE), NULL, NULL
@@ -3257,10 +3214,10 @@ JSObject* js_CreateCryptCertClass(JSContext* cx, JSObject* parent)
 			js_CreateArrayOfStrings(cx, type, "_property_desc_list", cryptcert_type_prop_desc, JSPROP_READONLY);
 			js_DescribeSyncObject(cx, type, "Associative array of certificate type constants", 318);
 #endif
-			JS_DeepFreezeObject(cx, type);
+			JS_DeepFreezeObject(cx, type.get());
 		}
 		format = JS_DefineObject(cx, constructor, "FORMAT", NULL, NULL, JSPROP_PERMANENT | JSPROP_ENUMERATE | JSPROP_READONLY);
-		if (format != NULL) {
+		if (format) {
 			JS_DefineProperty(cx, format, "NONE", INT_TO_JSVAL(CRYPT_CERTFORMAT_NONE), NULL, NULL
 			                  , JSPROP_PERMANENT | JSPROP_ENUMERATE | JSPROP_READONLY);
 			JS_DefineProperty(cx, format, "CERTIFICATE", INT_TO_JSVAL(CRYPT_CERTFORMAT_CERTIFICATE), NULL, NULL
@@ -3279,10 +3236,10 @@ JSObject* js_CreateCryptCertClass(JSContext* cx, JSObject* parent)
 			js_CreateArrayOfStrings(cx, format, "_property_desc_list", cryptcert_format_prop_desc, JSPROP_READONLY);
 			js_DescribeSyncObject(cx, format, "Associative array of certificate format constants", 318);
 #endif
-			JS_DeepFreezeObject(cx, format);
+			JS_DeepFreezeObject(cx, format.get());
 		}
 		attr = JS_DefineObject(cx, constructor, "ATTR", NULL, NULL, JSPROP_PERMANENT | JSPROP_ENUMERATE | JSPROP_READONLY);
-		if (attr != NULL) {
+		if (attr) {
 			JS_DefineProperty(cx, attr, "SELFSIGNED", INT_TO_JSVAL(CRYPT_CERTINFO_SELFSIGNED), NULL, NULL
 			                  , JSPROP_PERMANENT | JSPROP_ENUMERATE | JSPROP_READONLY);
 			JS_DefineProperty(cx, attr, "IMMUTABLE", INT_TO_JSVAL(CRYPT_CERTINFO_IMMUTABLE), NULL, NULL
@@ -3926,7 +3883,7 @@ JSObject* js_CreateCryptCertClass(JSContext* cx, JSObject* parent)
 #ifdef BUILD_JSDOCS
 			js_DescribeSyncObject(cx, attr, "Associative array of certificate attribute constants", 318);
 #endif
-			JS_DeepFreezeObject(cx, attr);
+			JS_DeepFreezeObject(cx, attr.get());
 		}
 	}
 

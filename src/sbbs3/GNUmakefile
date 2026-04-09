@@ -199,7 +199,7 @@ $(SERVICES): $(SERVICE_OBJS)
 # Synchronet Console Build Rule
 $(SBBSCON): $(CON_OBJS) $(SBBS) $(FTPSRVR) $(WEBSRVR) $(MAILSRVR) $(SERVICES)
 	@echo Linking $@
-	$(QUIET)$(CXX) $(LDFLAGS) $(MT_LDFLAGS) $(LIB_RPATH) -o $@ $(CON_OBJS) $(CON_LIBS) $(SMBLIB_LIBS) $(XPDEV-MT_LIBS)
+	$(QUIET)$(CXX) $(LDFLAGS) $(MT_LDFLAGS) $(LIB_RPATH) -o $@ $(CON_OBJS) -Wl,--no-as-needed $(JS_LIBS) -Wl,--as-needed $(CON_LIBS) $(SMBLIB_LIBS) $(XPDEV-MT_LIBS)
 
 # Baja Utility
 $(BAJA): $(BAJA_OBJS) | $(EXEODIR)

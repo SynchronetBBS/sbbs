@@ -21,7 +21,6 @@
 
 #if defined USE_MOSQUITTO
 #include "sbbs.h"
-#include "js_request.h"
 
 typedef struct
 {
@@ -32,12 +31,12 @@ typedef struct
 
 } private_t;
 
-static void js_finalize_mqtt(JSContext* cx, JSObject* obj)
+static void js_finalize_mqtt(JS::GCContext* gcx, JSObject* obj)
 {
 	private_t*                p;
 	struct mosquitto_message* msg;
 
-	if ((p = (private_t*)JS_GetPrivate(cx, obj)) == NULL)
+	if ((p = (private_t*)JS_GetPrivate(obj)) == NULL)
 		return;
 
 	if (p->handle != NULL) {
@@ -52,7 +51,7 @@ static void js_finalize_mqtt(JSContext* cx, JSObject* obj)
 	msgQueueFree(&p->q);
 	free(p);
 
-	JS_SetPrivate(cx, obj, NULL);
+	JS_SetPrivate(obj, NULL);
 }
 
 extern JSClass js_mqtt_class;
@@ -61,7 +60,6 @@ static JSBool js_disconnect(JSContext* cx, uintN argc, jsval *arglist)
 {
 	JSObject*  obj = JS_THIS_OBJECT(cx, arglist);
 	private_t* p;
-	jsrefcount rc;
 
 	JS_SET_RVAL(cx, arglist, JSVAL_FALSE);
 
@@ -72,10 +70,8 @@ static JSBool js_disconnect(JSContext* cx, uintN argc, jsval *arglist)
 	if (p->handle == NULL)
 		return JS_TRUE;
 
-	rc = JS_SUSPENDREQUEST(cx);
 	p->retval = mosquitto_disconnect(p->handle);
 	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(p->retval == MOSQ_ERR_SUCCESS));
-	JS_RESUMEREQUEST(cx, rc);
 	return JS_TRUE;
 }
 
@@ -92,7 +88,6 @@ static JSBool js_connect(JSContext* cx, uintN argc, jsval *arglist)
 	JSObject*  obj = JS_THIS_OBJECT(cx, arglist);
 	jsval*     argv = JS_ARGV(cx, arglist);
 	private_t* p;
-	jsrefcount rc;
 	char       broker_addr[sizeof p->cfg.broker_addr];
 	uint16_t   broker_port;
 	char       username[sizeof p->cfg.username];
@@ -104,7 +99,6 @@ static JSBool js_connect(JSContext* cx, uintN argc, jsval *arglist)
 		return JS_FALSE;
 	scfg_t* scfg = static_cast<scfg_t *>(JS_GetRuntimePrivate(JS_GetRuntime(cx)));
 
-	rc = JS_SUSPENDREQUEST(cx);
 
 	SAFECOPY(broker_addr, p->cfg.broker_addr);
 	broker_port = p->cfg.broker_port;
@@ -190,7 +184,6 @@ static JSBool js_connect(JSContext* cx, uintN argc, jsval *arglist)
 		                                   /* bind_address */ NULL);
 
 	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(p->retval == MOSQ_ERR_SUCCESS));
-	JS_RESUMEREQUEST(cx, rc);
 
 	return JS_TRUE;
 }
@@ -203,7 +196,6 @@ static JSBool js_publish(JSContext* cx, uintN argc, jsval *arglist)
 	char*      data = NULL;
 	size_t     len = 0;
 	private_t* p;
-	jsrefcount rc;
 	bool       retain = false;
 
 	JS_SET_RVAL(cx, arglist, JSVAL_FALSE);
@@ -235,7 +227,6 @@ static JSBool js_publish(JSContext* cx, uintN argc, jsval *arglist)
 	HANDLE_PENDING(cx, data);
 	++argn;
 
-	rc = JS_SUSPENDREQUEST(cx);
 	p->retval = mosquitto_publish_v5(p->handle,
 	                                 /* mid: */ NULL,
 	                                 /* topic: */ topic,
@@ -248,7 +239,6 @@ static JSBool js_publish(JSContext* cx, uintN argc, jsval *arglist)
 	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(p->retval == MOSQ_ERR_SUCCESS));
 	free(data);
 	free(topic);
-	JS_RESUMEREQUEST(cx, rc);
 
 	return JS_TRUE;
 }
@@ -259,7 +249,6 @@ static JSBool js_subscribe(JSContext* cx, uintN argc, jsval *arglist)
 	jsval*     argv = JS_ARGV(cx, arglist);
 	char*      topic = NULL;
 	private_t* p;
-	jsrefcount rc;
 
 	JS_SET_RVAL(cx, arglist, JSVAL_FALSE);
 
@@ -282,11 +271,9 @@ static JSBool js_subscribe(JSContext* cx, uintN argc, jsval *arglist)
 	HANDLE_PENDING(cx, topic);
 	++argn;
 
-	rc = JS_SUSPENDREQUEST(cx);
 	p->retval = mosquitto_subscribe(p->handle, /* msg-id: */ NULL, topic, qos);
 	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(p->retval == MOSQ_ERR_SUCCESS));
 	free(topic);
-	JS_RESUMEREQUEST(cx, rc);
 
 	return JS_TRUE;
 }
@@ -296,7 +283,6 @@ static JSBool js_read(JSContext* cx, uintN argc, jsval *arglist)
 	JSObject*                 obj = JS_THIS_OBJECT(cx, arglist);
 	jsval*                    argv = JS_ARGV(cx, arglist);
 	private_t*                p;
-	jsrefcount                rc;
 	int                       timeout = 0;
 	bool                      verbose = false;
 	struct mosquitto_message* msg;
@@ -319,7 +305,6 @@ static JSBool js_read(JSContext* cx, uintN argc, jsval *arglist)
 		++argn;
 	}
 
-	rc = JS_SUSPENDREQUEST(cx);
 	msg = static_cast<mosquitto_message *>(msgQueueRead(&p->q, timeout));
 	if (msg != NULL) {
 		if (verbose) {
@@ -350,7 +335,6 @@ static JSBool js_read(JSContext* cx, uintN argc, jsval *arglist)
 		mosquitto_message_free_contents(msg);
 		free(msg);
 	}
-	JS_RESUMEREQUEST(cx, rc);
 
 	return JS_TRUE;
 }
@@ -405,145 +389,121 @@ static const char* prop_desc[] = {
 };
 #endif
 
-static JSBool js_mqtt_set(JSContext* cx, JSObject* obj, jsid id, JSBool strict, jsval *vp)
+static JSBool js_mqtt_set_value(JSContext* cx, private_t* p, jsint tiny, jsval* vp)
 {
-	jsval      idval;
-	jsint      tiny;
-	private_t* p;
-	int32      i;
+	int32     val = 0;
+	char*     str = NULL;
 
-	if ((p = (private_t*)JS_GetPrivate(cx, obj)) == NULL) {
-		// Prototype access
-		return JS_TRUE;
+	if (JSVAL_IS_NUMBER(*vp)) {
+		if (!JS_ValueToInt32(cx, *vp, &val))
+			return JS_FALSE;
 	}
-
-	JS_IdToValue(cx, id, &idval);
-	tiny = JSVAL_TO_INT(idval);
+	if (JSVAL_IS_STRING(*vp)) {
+		JSVALUE_TO_MSTRING(cx, *vp, str, NULL);
+		if (str == NULL)
+			return JS_FALSE;
+	}
 
 	switch (tiny) {
 		case MQTT_PROP_BROKER_ADDR:
-			JSVALUE_TO_STRBUF(cx, *vp, p->cfg.broker_addr, sizeof p->cfg.broker_addr, NULL);
+			if (str != NULL)
+				SAFECOPY(p->cfg.broker_addr, str);
 			break;
 		case MQTT_PROP_BROKER_PORT:
-			if (!JS_ValueToInt32(cx, *vp, &i))
-				return JS_FALSE;
-			p->cfg.broker_port = i;
+			p->cfg.broker_port = (uint16_t)val;
 			break;
 		case MQTT_PROP_USERNAME:
-			JSVALUE_TO_STRBUF(cx, *vp, p->cfg.username, sizeof p->cfg.username, NULL);
+			if (str != NULL)
+				SAFECOPY(p->cfg.username, str);
 			break;
 		case MQTT_PROP_PASSWORD:
-			JSVALUE_TO_STRBUF(cx, *vp, p->cfg.password, sizeof p->cfg.password, NULL);
+			if (str != NULL)
+				SAFECOPY(p->cfg.password, str);
 			break;
 		case MQTT_PROP_KEEPALIVE:
-			if (!JS_ValueToInt32(cx, *vp, &i))
-				return JS_FALSE;
-			p->cfg.keepalive = i;
+			p->cfg.keepalive = val;
 			break;
 		case MQTT_PROP_PROT_VER:
-			if (!JS_ValueToInt32(cx, *vp, &i))
-				return JS_FALSE;
-			p->cfg.protocol_version = i;
+			p->cfg.protocol_version = val;
 			break;
 		case MQTT_PROP_PUB_QOS:
-			if (!JS_ValueToInt32(cx, *vp, &i))
-				return JS_FALSE;
-			p->cfg.publish_qos = i;
+			p->cfg.publish_qos = val;
 			break;
 		case MQTT_PROP_SUB_QOS:
-			if (!JS_ValueToInt32(cx, *vp, &i))
-				return JS_FALSE;
-			p->cfg.subscribe_qos = i;
+			p->cfg.subscribe_qos = val;
 			break;
 		case MQTT_PROP_TLS_MODE:
-			if (!JS_ValueToInt32(cx, *vp, &i))
-				return JS_FALSE;
-			p->cfg.tls.mode = static_cast<enum mqtt_tls_mode>(i);
+			p->cfg.tls.mode = (enum mqtt_tls_mode)val;
 			break;
 		case MQTT_PROP_TLS_CAFILE:
-			JSVALUE_TO_STRBUF(cx, *vp, p->cfg.tls.cafile, sizeof p->cfg.tls.cafile, NULL);
+			if (str != NULL)
+				SAFECOPY(p->cfg.tls.cafile, str);
 			break;
 		case MQTT_PROP_TLS_CERTFILE:
-			JSVALUE_TO_STRBUF(cx, *vp, p->cfg.tls.certfile, sizeof p->cfg.tls.certfile, NULL);
+			if (str != NULL)
+				SAFECOPY(p->cfg.tls.certfile, str);
 			break;
 		case MQTT_PROP_TLS_KEYFILE:
-			JSVALUE_TO_STRBUF(cx, *vp, p->cfg.tls.keyfile, sizeof p->cfg.tls.keyfile, NULL);
+			if (str != NULL)
+				SAFECOPY(p->cfg.tls.keyfile, str);
 			break;
 		case MQTT_PROP_TLS_KEYPASS:
-			JSVALUE_TO_STRBUF(cx, *vp, p->cfg.tls.keypass, sizeof p->cfg.tls.keypass, NULL);
+			if (str != NULL)
+				SAFECOPY(p->cfg.tls.keypass, str);
 			break;
 		case MQTT_PROP_TLS_PSK:
-			JSVALUE_TO_STRBUF(cx, *vp, p->cfg.tls.psk, sizeof p->cfg.tls.psk, NULL);
+			if (str != NULL)
+				SAFECOPY(p->cfg.tls.psk, str);
 			break;
 		case MQTT_PROP_TLS_IDENTITY:
-			JSVALUE_TO_STRBUF(cx, *vp, p->cfg.tls.identity, sizeof p->cfg.tls.identity, NULL);
+			if (str != NULL)
+				SAFECOPY(p->cfg.tls.identity, str);
 			break;
+		default:
+			free(str);
+			return JS_TRUE;
 	}
+
+	free(str);
 	return JS_TRUE;
 }
 
-static JSBool js_mqtt_get(JSContext* cx, JSObject* obj, jsid id, jsval *vp)
+static JSBool js_mqtt_get_value(JSContext* cx, private_t* p, jsint tiny, jsval* vp)
 {
-	jsval      idval;
-	jsint      tiny;
-	private_t* p;
-	JSString*  js_str;
-	jsrefcount rc;
-
-	if ((p = (private_t*)JS_GetPrivate(cx, obj)) == NULL) {
-		// Protoype access
-		return JS_TRUE;
-	}
-
-	JS_IdToValue(cx, id, &idval);
-	tiny = JSVAL_TO_INT(idval);
-
-	rc = JS_SUSPENDREQUEST(cx);
+	JS::RootedString  js_str(cx);
+	char              tmp[128];
 
 	switch (tiny) {
 		case MQTT_PROP_ERROR:
 			*vp = INT_TO_JSVAL(p->retval);
 			break;
 		case MQTT_PROP_ERROR_STR:
-			JS_RESUMEREQUEST(cx, rc);
-			if ((js_str = JS_NewStringCopyZ(cx, mosquitto_strerror(p->retval))) == NULL)
+			if ((js_str = JS_NewStringCopyZ(cx, mosquitto_strerror(p->retval))) == nullptr)
 				return JS_FALSE;
-			*vp = STRING_TO_JSVAL(js_str);
-			rc = JS_SUSPENDREQUEST(cx);
+			*vp = STRING_TO_JSVAL(js_str.get());
 			break;
 		case MQTT_PROP_LIB:
-		{
-			char str[128];
-			JS_RESUMEREQUEST(cx, rc);
-			if ((js_str = JS_NewStringCopyZ(cx, mqtt_libver(str, sizeof str))) == NULL)
+			if ((js_str = JS_NewStringCopyZ(cx, mqtt_libver(tmp, sizeof tmp))) == nullptr)
 				return JS_FALSE;
-			*vp = STRING_TO_JSVAL(js_str);
-			rc = JS_SUSPENDREQUEST(cx);
+			*vp = STRING_TO_JSVAL(js_str.get());
 			break;
-		}
 		case MQTT_PROP_BROKER_ADDR:
-			JS_RESUMEREQUEST(cx, rc);
-			if ((js_str = JS_NewStringCopyZ(cx, p->cfg.broker_addr)) == NULL)
+			if ((js_str = JS_NewStringCopyZ(cx, p->cfg.broker_addr)) == nullptr)
 				return JS_FALSE;
-			*vp = STRING_TO_JSVAL(js_str);
-			rc = JS_SUSPENDREQUEST(cx);
+			*vp = STRING_TO_JSVAL(js_str.get());
 			break;
 		case MQTT_PROP_BROKER_PORT:
 			*vp = INT_TO_JSVAL(p->cfg.broker_port);
 			break;
 		case MQTT_PROP_USERNAME:
-			JS_RESUMEREQUEST(cx, rc);
-			if ((js_str = JS_NewStringCopyZ(cx, p->cfg.username)) == NULL)
+			if ((js_str = JS_NewStringCopyZ(cx, p->cfg.username)) == nullptr)
 				return JS_FALSE;
-			*vp = STRING_TO_JSVAL(js_str);
-			rc = JS_SUSPENDREQUEST(cx);
+			*vp = STRING_TO_JSVAL(js_str.get());
 			break;
 		case MQTT_PROP_PASSWORD:
-			JS_RESUMEREQUEST(cx, rc);
-			if ((js_str = JS_NewStringCopyZ(cx, p->cfg.password)) == NULL)
+			if ((js_str = JS_NewStringCopyZ(cx, p->cfg.password)) == nullptr)
 				return JS_FALSE;
-			*vp = STRING_TO_JSVAL(js_str);
-			rc = JS_SUSPENDREQUEST(cx);
+			*vp = STRING_TO_JSVAL(js_str.get());
 			break;
 		case MQTT_PROP_KEEPALIVE:
 			*vp = INT_TO_JSVAL(p->cfg.keepalive);
@@ -561,46 +521,34 @@ static JSBool js_mqtt_get(JSContext* cx, JSObject* obj, jsid id, jsval *vp)
 			*vp = INT_TO_JSVAL(p->cfg.tls.mode);
 			break;
 		case MQTT_PROP_TLS_CAFILE:
-			JS_RESUMEREQUEST(cx, rc);
-			if ((js_str = JS_NewStringCopyZ(cx, p->cfg.tls.cafile)) == NULL)
+			if ((js_str = JS_NewStringCopyZ(cx, p->cfg.tls.cafile)) == nullptr)
 				return JS_FALSE;
-			*vp = STRING_TO_JSVAL(js_str);
-			rc = JS_SUSPENDREQUEST(cx);
+			*vp = STRING_TO_JSVAL(js_str.get());
 			break;
 		case MQTT_PROP_TLS_CERTFILE:
-			JS_RESUMEREQUEST(cx, rc);
-			if ((js_str = JS_NewStringCopyZ(cx, p->cfg.tls.certfile)) == NULL)
+			if ((js_str = JS_NewStringCopyZ(cx, p->cfg.tls.certfile)) == nullptr)
 				return JS_FALSE;
-			*vp = STRING_TO_JSVAL(js_str);
-			rc = JS_SUSPENDREQUEST(cx);
+			*vp = STRING_TO_JSVAL(js_str.get());
 			break;
 		case MQTT_PROP_TLS_KEYFILE:
-			JS_RESUMEREQUEST(cx, rc);
-			if ((js_str = JS_NewStringCopyZ(cx, p->cfg.tls.keyfile)) == NULL)
+			if ((js_str = JS_NewStringCopyZ(cx, p->cfg.tls.keyfile)) == nullptr)
 				return JS_FALSE;
-			*vp = STRING_TO_JSVAL(js_str);
-			rc = JS_SUSPENDREQUEST(cx);
+			*vp = STRING_TO_JSVAL(js_str.get());
 			break;
 		case MQTT_PROP_TLS_KEYPASS:
-			JS_RESUMEREQUEST(cx, rc);
-			if ((js_str = JS_NewStringCopyZ(cx, p->cfg.tls.keypass)) == NULL)
+			if ((js_str = JS_NewStringCopyZ(cx, p->cfg.tls.keypass)) == nullptr)
 				return JS_FALSE;
-			*vp = STRING_TO_JSVAL(js_str);
-			rc = JS_SUSPENDREQUEST(cx);
+			*vp = STRING_TO_JSVAL(js_str.get());
 			break;
 		case MQTT_PROP_TLS_PSK:
-			JS_RESUMEREQUEST(cx, rc);
-			if ((js_str = JS_NewStringCopyZ(cx, p->cfg.tls.psk)) == NULL)
+			if ((js_str = JS_NewStringCopyZ(cx, p->cfg.tls.psk)) == nullptr)
 				return JS_FALSE;
-			*vp = STRING_TO_JSVAL(js_str);
-			rc = JS_SUSPENDREQUEST(cx);
+			*vp = STRING_TO_JSVAL(js_str.get());
 			break;
 		case MQTT_PROP_TLS_IDENTITY:
-			JS_RESUMEREQUEST(cx, rc);
-			if ((js_str = JS_NewStringCopyZ(cx, p->cfg.tls.identity)) == NULL)
+			if ((js_str = JS_NewStringCopyZ(cx, p->cfg.tls.identity)) == nullptr)
 				return JS_FALSE;
-			*vp = STRING_TO_JSVAL(js_str);
-			rc = JS_SUSPENDREQUEST(cx);
+			*vp = STRING_TO_JSVAL(js_str.get());
 			break;
 		case MQTT_PROP_DATA_WAITING:
 			*vp = BOOLEAN_TO_JSVAL(INT_TO_BOOL(msgQueueReadLevel(&p->q)));
@@ -608,9 +556,9 @@ static JSBool js_mqtt_get(JSContext* cx, JSObject* obj, jsid id, jsval *vp)
 		case MQTT_PROP_READ_LEVEL:
 			*vp = INT_TO_JSVAL(msgQueueReadLevel(&p->q));
 			break;
+		default:
+			return JS_TRUE;
 	}
-
-	JS_RESUMEREQUEST(cx, rc);
 	return JS_TRUE;
 }
 
@@ -668,42 +616,96 @@ static jsSyncMethodSpec js_mqtt_functions[] = {
 	{0}
 };
 
-static JSBool js_mqtt_resolve(JSContext* cx, JSObject* obj, jsid id)
+static bool js_mqtt_prop_setter(JSContext* cx, unsigned argc, JS::Value* vp)
 {
-	char*  name = NULL;
-	JSBool ret;
+	JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
+	JS::RootedObject thisObj(cx);
+	if (!args.computeThis(cx, &thisObj))
+		return false;
+	private_t* p = (private_t*)js_GetClassPrivate(cx, thisObj, &js_mqtt_class);
+	if (p == nullptr)
+		return true;
+	JSObject* callee = &args.callee();
+	jsint tiny = js::GetFunctionNativeReserved(callee, 0).toInt32();
+	jsval val = args.length() > 0 ? args[0] : JSVAL_VOID;
+	if (!js_mqtt_set_value(cx, p, tiny, &val))
+		return false;
+	args.rval().set(val);
+	return true;
+}
 
-	if (id != JSID_VOID && id != JSID_EMPTY) {
-		jsval idval;
+static bool js_mqtt_prop_getter(JSContext* cx, unsigned argc, JS::Value* vp)
+{
+	JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
+	JS::RootedObject thisObj(cx);
+	if (!args.computeThis(cx, &thisObj))
+		return false;
+	private_t* p = (private_t*)js_GetClassPrivate(cx, thisObj, &js_mqtt_class);
+	if (p == nullptr) {
+		args.rval().setUndefined();
+		return true;
+	}
+	JSObject* callee = &args.callee();
+	jsint tiny = js::GetFunctionNativeReserved(callee, 0).toInt32();
+	jsval val = JSVAL_VOID;
+	if (!js_mqtt_get_value(cx, p, tiny, &val))
+		return false;
+	args.rval().set(val);
+	return true;
+}
 
-		JS_IdToValue(cx, id, &idval);
-		if (JSVAL_IS_STRING(idval)) {
-			JSSTRING_TO_MSTRING(cx, JSVAL_TO_STRING(idval), name, NULL);
-			HANDLE_PENDING(cx, name);
-		}
+static JSBool js_mqtt_fill_properties(JSContext* cx, JSObject* obj, private_t* p, const char* name)
+{
+	(void)p;
+	return js_DefineSyncAccessors(cx, obj, js_mqtt_properties, js_mqtt_prop_getter, name, js_mqtt_prop_setter);
+}
+
+static bool js_mqtt_resolve(JSContext* cx, JS::Handle<JSObject*> obj, JS::Handle<jsid> id, bool* resolvedp)
+{
+	char*      name = NULL;
+	private_t* p;
+
+	if (id.get().isString()) {
+		JSString* str = id.get().toString();
+		JSSTRING_TO_MSTRING(cx, str, name, NULL);
+		HANDLE_PENDING(cx, name);
+		if (name == NULL) return false;
 	}
 
-	ret = js_SyncResolve(cx, obj, name, js_mqtt_properties, js_mqtt_functions, NULL, 0);
+	bool ret = js_SyncResolve(cx, obj, name, js_mqtt_properties, js_mqtt_functions, NULL, 0);
+	if (ret && (p = (private_t*)JS_GetPrivate(cx, obj)) != NULL)
+		js_mqtt_fill_properties(cx, obj, p, name);
 	free(name);
-	return ret;
+	if (resolvedp) *resolvedp = ret;
+	return true;
 }
 
-static JSBool js_mqtt_enumerate(JSContext* cx, JSObject* obj)
+static bool js_mqtt_enumerate(JSContext* cx, JS::Handle<JSObject*> obj)
 {
-	return js_mqtt_resolve(cx, obj, JSID_VOID);
+	private_t* p;
+
+	if (!js_SyncResolve(cx, obj, NULL, js_mqtt_properties, js_mqtt_functions, NULL, 0))
+		return false;
+	if ((p = (private_t*)JS_GetPrivate(cx, obj)) != NULL)
+		js_mqtt_fill_properties(cx, obj, p, NULL);
+	return true;
 }
+
+static const JSClassOps js_mqtt_classops = {
+	nullptr,                /* addProperty  */
+	nullptr,                /* delProperty  */
+	js_mqtt_enumerate,      /* enumerate    */
+	nullptr,                /* newEnumerate */
+	js_mqtt_resolve,        /* resolve      */
+	nullptr,                /* mayResolve   */
+	js_finalize_mqtt,       /* finalize     */
+	nullptr, nullptr, nullptr /* call, construct, trace */
+};
 
 JSClass js_mqtt_class = {
-	"MQTT"                  /* name			*/
-	, JSCLASS_HAS_PRIVATE    /* flags		*/
-	, JS_PropertyStub        /* addProperty	*/
-	, JS_PropertyStub        /* delProperty	*/
-	, js_mqtt_get            /* getProperty	*/
-	, js_mqtt_set            /* setProperty	*/
-	, js_mqtt_enumerate      /* enumerate	*/
-	, js_mqtt_resolve        /* resolve		*/
-	, JS_ConvertStub         /* convert		*/
-	, js_finalize_mqtt       /* finalize		*/
+	"MQTT"
+	, JSCLASS_HAS_PRIVATE
+	, &js_mqtt_classops
 };
 
 static void mqtt_message_received(struct mosquitto* mosq, void* cbdata, const struct mosquitto_message* msg)

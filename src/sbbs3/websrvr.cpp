@@ -56,7 +56,6 @@
 #include "git_branch.h"
 #include "git_hash.h"
 #include "hex.h"
-#include "js_request.h"
 #include "js_rtpool.h"
 #include "js_socket.h"
 #include "md5.h"
@@ -285,7 +284,7 @@ struct http_session_t {
 	char redir_req[MAX_REQUEST_LINE + 1];
 
 	/* JavaScript parameters */
-	JSRuntime* js_runtime;
+	JSContext* js_runtime;
 	JSContext* js_cx;
 	JSObject* js_glob;
 	JSObject* js_query;
@@ -1187,9 +1186,7 @@ static void close_request(http_session_t * session)
 		session->finished = true;
 
 	if (session->js_cx != NULL && (session->req.dynamic == IS_SSJS)) {
-		JS_BEGINREQUEST(session->js_cx);
 		JS_GC(session->js_cx);
-		JS_ENDREQUEST(session->js_cx);
 	}
 	if (session->subscan != NULL)
 		putmsgptrs(&scfg, &session->user, session->subscan);
@@ -1754,11 +1751,9 @@ bool http_checkuser(http_session_t * session)
 			return true;
 		lprintf(LOG_DEBUG, "%04d %-5s [%s] JavaScript: Initializing User Objects"
 			, session->socket, session->client.protocol, session->host_ip);
-		JS_BEGINREQUEST(session->js_cx);
 		if (session->user.number > 0) {
 			if (!js_CreateUserObjects(session->js_cx, session->js_glob, &scfg, &session->user, &session->client
 			                          , startup->file_vpath_prefix, session->subscan /* subscan */, &mqtt)) {
-				JS_ENDREQUEST(session->js_cx);
 				errprintf(LOG_ERR, WHERE, "%04d %-5s [%s] !JavaScript ERROR creating user objects"
 					, session->socket, session->client.protocol, session->host_ip);
 				send_error(session, __LINE__, "500 Error initializing JavaScript User Objects");
@@ -1768,14 +1763,12 @@ bool http_checkuser(http_session_t * session)
 		else {
 			if (!js_CreateUserObjects(session->js_cx, session->js_glob, &scfg, /* user: */ NULL, &session->client
 			                          , startup->file_vpath_prefix, session->subscan /* subscan */, &mqtt)) {
-				JS_ENDREQUEST(session->js_cx);
 				errprintf(LOG_ERR, WHERE, "%04d %-5s [%s] !ERROR initializing JavaScript User Objects"
 					, session->socket, session->client.protocol, session->host_ip);
 				send_error(session, __LINE__, "500 Error initializing JavaScript User Objects");
 				return false;
 			}
 		}
-		JS_ENDREQUEST(session->js_cx);
 		session->last_js_user_num = session->user.number;
 	}
 	return true;
@@ -3697,7 +3690,6 @@ static bool exec_js_webctrl(http_session_t* session, const char *name, const cha
 		return false;
 	}
 
-	JS_BEGINREQUEST(session->js_cx);
 	js_add_request_prop(session, "scheme", session->is_tls ? "https" : "http");
 	js_add_request_prop(session, "real_path", session->req.physical_path);
 	js_add_request_prop(session, "virtual_path", session->req.virtual_path);
@@ -3742,14 +3734,9 @@ static bool exec_js_webctrl(http_session_t* session, const char *name, const cha
 		if (!JS_EvaluateScript(session->js_cx, session->js_glob, script, strlen(script), name, 1, &rval)) {
 			lprintf(LOG_WARNING, "%04d %-5s [%s] !JavaScript FAILED to compile rewrite %s:%s"
 			        , session->socket, session->client.protocol, session->host_ip, name, script);
-			JS_ReportPendingException(session->js_cx);
-			JS_RemoveObjectRoot(session->js_cx, &session->js_glob);
-			JS_ENDREQUEST(session->js_cx);
 			return false;
 		}
-		JS_ReportPendingException(session->js_cx);
 		js_EvalOnExit(session->js_cx, session->js_glob, &session->js_callback);
-		JS_ReportPendingException(session->js_cx);
 		if (rewrite && JSVAL_IS_BOOLEAN(rval) && JSVAL_TO_BOOLEAN(rval)) {
 			session->req.send_location = MOVED_STAT;
 			if (JS_GetProperty(session->js_cx, session->js_request, "request_string", &val)) {
@@ -3758,10 +3745,8 @@ static bool exec_js_webctrl(http_session_t* session, const char *name, const cha
 				              , redir_req, session->http_ver < HTTP_1_0?"":" ", http_vers[session->http_ver]);
 			}
 		}
-		JS_RemoveObjectRoot(session->js_cx, &session->js_glob);
 	} while (0);
 
-	JS_ENDREQUEST(session->js_cx);
 
 	return retval;
 }
@@ -5491,9 +5476,9 @@ js_ErrorReporter(JSContext *cx, const char *message, JSErrorReport *report)
 {
 	char            line[64];
 	char            file[MAX_PATH + 1];
-	const char*     warning = "";
+	const char*     warning;
 	http_session_t* session;
-	int             log_level = LOG_ERR;
+	int             log_level;
 
 	if ((session = (http_session_t*)JS_GetContextPrivate(cx)) == NULL)
 		return;
@@ -5505,8 +5490,8 @@ js_ErrorReporter(JSContext *cx, const char *message, JSErrorReport *report)
 		return;
 	}
 
-	if (report->filename)
-		SAFEPRINTF(file, " %s", report->filename);
+	if (report->filename.c_str())
+		SAFEPRINTF(file, " %s", report->filename.c_str());
 	else
 		file[0] = 0;
 
@@ -5515,13 +5500,15 @@ js_ErrorReporter(JSContext *cx, const char *message, JSErrorReport *report)
 	else
 		line[0] = 0;
 
-	if (JSREPORT_IS_WARNING(report->flags)) {
-		if (JSREPORT_IS_STRICT(report->flags))
-			warning = "strict warning";
-		else
-			warning = "warning";
+	if (report->isWarning()) {
+		warning = "warning ";
 		log_level = LOG_WARNING;
-	} else if (report->filename != NULL) {
+	} else {
+		warning = "";
+		log_level = LOG_ERR;
+	}
+
+	if (report->filename.c_str() != nullptr) {
 		static pthread_mutex_t mutex;
 		static bool            mutex_initialized;
 		static char            lastfile[MAX_PATH + 1];
@@ -5531,10 +5518,10 @@ js_ErrorReporter(JSContext *cx, const char *message, JSErrorReport *report)
 			mutex_initialized = true;
 		}
 		pthread_mutex_lock(&mutex);
-		if (lastline == report->lineno && strcmp(lastfile, report->filename) == 0)
+		if (lastline == report->lineno && strcmp(lastfile, report->filename.c_str()) == 0)
 			log_level = LOG_WARNING;
 		lastline = report->lineno;
-		SAFECOPY(lastfile, report->filename);
+		SAFECOPY(lastfile, report->filename.c_str());
 		pthread_mutex_unlock(&mutex);
 	}
 
@@ -5561,7 +5548,6 @@ js_writefunc(JSContext *cx, uintN argc, jsval *arglist, bool writeln)
 	uintN           i;
 	JSString*       str = NULL;
 	http_session_t* session;
-	jsrefcount      rc;
 	char *          cstr = NULL;
 	size_t          cstr_sz = 0;
 	size_t          len;
@@ -5575,12 +5561,9 @@ js_writefunc(JSContext *cx, uintN argc, jsval *arglist, bool writeln)
 
 	if ((!session->req.prev_write) && (!session->req.sent_headers)) {
 		if (session->http_ver >= HTTP_1_1 && session->req.keep_alive) {
-			rc = JS_SUSPENDREQUEST(cx);
 			if (!ssjs_send_headers(session, true)) {
-				JS_RESUMEREQUEST(cx, rc);
 				return JS_FALSE;
 			}
-			JS_RESUMEREQUEST(cx, rc);
 		}
 		else {
 			/* "Fast Mode" requested? */
@@ -5592,12 +5575,9 @@ js_writefunc(JSContext *cx, uintN argc, jsval *arglist, bool writeln)
 			    && JS_GetProperty(cx, reply, "fast", &val)
 			    && JSVAL_IS_BOOLEAN(val) && JSVAL_TO_BOOLEAN(val)) {
 				session->req.keep_alive = false;
-				rc = JS_SUSPENDREQUEST(cx);
 				if (!ssjs_send_headers(session, false)) {
-					JS_RESUMEREQUEST(cx, rc);
 					return JS_FALSE;
 				}
-				JS_RESUMEREQUEST(cx, rc);
 			}
 		}
 	}
@@ -5610,11 +5590,9 @@ js_writefunc(JSContext *cx, uintN argc, jsval *arglist, bool writeln)
 		JSSTRING_TO_RASTRING(cx, str, cstr, &cstr_sz, &len);
 		if (cstr) {
 			HANDLE_PENDING(cx, cstr);
-			rc = JS_SUSPENDREQUEST(cx);
 			js_writebuf(session, cstr, len);
 			if (writeln)
 				js_writebuf(session, newline, 2);
-			JS_RESUMEREQUEST(cx, rc);
 		}
 	}
 
@@ -5717,7 +5695,6 @@ js_log(JSContext *cx, uintN argc, jsval *arglist)
 	uintN           i = 0;
 	int32           level = LOG_INFO;
 	http_session_t* session;
-	jsrefcount      rc;
 
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
@@ -5738,9 +5715,7 @@ js_log(JSContext *cx, uintN argc, jsval *arglist)
 		JSVALUE_TO_STRBUF(cx, argv[i], tp, sizeof(str) / 2, NULL);
 		SAFECAT(str, " ");
 	}
-	rc = JS_SUSPENDREQUEST(cx);
 	lprintf(level, "%04d %-5s [%s] %s", session->socket, session->client.protocol, session->host_ip, str);
-	JS_RESUMEREQUEST(cx, rc);
 
 	JSString* js_str = JS_NewStringCopyZ(cx, str);
 	if (js_str != NULL)
@@ -5758,7 +5733,6 @@ js_login(JSContext *cx, uintN argc, jsval *arglist)
 	JSBool          inc_logons = JS_FALSE;
 	user_t          user;
 	http_session_t* session;
-	jsrefcount      rc;
 
 	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(JS_FALSE));
 
@@ -5770,7 +5744,6 @@ js_login(JSContext *cx, uintN argc, jsval *arglist)
 	if (username == NULL)
 		return JS_FALSE;
 
-	rc = JS_SUSPENDREQUEST(cx);
 
 	memset(&user, 0, sizeof(user));
 
@@ -5779,18 +5752,15 @@ js_login(JSContext *cx, uintN argc, jsval *arglist)
 	if (getuserdat(&scfg, &user) != 0) {
 		lprintf(LOG_NOTICE, "%04d %-5s [%s] !USER NOT FOUND: '%s'"
 		        , session->socket, session->client.protocol, session->host_ip, username);
-		JS_RESUMEREQUEST(cx, rc);
 		return JS_TRUE;
 	}
 
 	if (user.misc & (DELETED | INACTIVE)) {
 		lprintf(LOG_WARNING, "%04d %-5s [%s] !DELETED OR INACTIVE USER #%d: %s"
 		        , session->socket, session->client.protocol, session->host_ip, user.number, username);
-		JS_RESUMEREQUEST(cx, rc);
 		return JS_TRUE;
 	}
 
-	JS_RESUMEREQUEST(cx, rc);
 	/* Password */
 	if (user.pass[0]) {
 		JSVALUE_TO_ASTRING(cx, argv[1], password, LEN_PASS + 2, NULL);
@@ -5798,7 +5768,6 @@ js_login(JSContext *cx, uintN argc, jsval *arglist)
 			return JS_FALSE;
 
 		if (stricmp(user.pass, password)) { /* Wrong password */
-			rc = JS_SUSPENDREQUEST(cx);
 			if (scfg.sys_misc & SM_ECHO_PW)
 				lprintf(LOG_NOTICE, "%04d %-5s [%s] <%s> !FAILED Password attempt: '%s' expected '%s'"
 				        , session->socket, session->client.protocol, session->host_ip, user.alias, password, user.pass);
@@ -5806,7 +5775,6 @@ js_login(JSContext *cx, uintN argc, jsval *arglist)
 				lprintf(LOG_NOTICE, "%04d %-5s [%s] <%s> !FAILED Password attempt"
 				        , session->socket, session->client.protocol, session->host_ip, user.alias);
 			badlogin(session->socket, username, password, &session->client, &session->addr);
-			JS_RESUMEREQUEST(cx, rc);
 			return JS_TRUE;
 		}
 	}
@@ -5821,7 +5789,6 @@ js_login(JSContext *cx, uintN argc, jsval *arglist)
 	if (argc > 2)
 		JS_ValueToBoolean(cx, argv[2], &inc_logons);
 
-	rc = JS_SUSPENDREQUEST(cx);
 
 	if (inc_logons) {
 		user.logons++;
@@ -5830,7 +5797,6 @@ js_login(JSContext *cx, uintN argc, jsval *arglist)
 
 	http_logon(session, &user);
 
-	JS_RESUMEREQUEST(cx, rc);
 
 	/* user-specific objects */
 	if (!js_CreateUserObjects(session->js_cx, session->js_glob, &scfg, &session->user, &session->client
@@ -6050,7 +6016,7 @@ js_write_template(JSContext *cx, uintN argc, jsval *arglist)
 }
 #endif
 
-static JSFunctionSpec js_global_functions[] = {
+static jsSyncMethodSpec js_global_functions[] = {
 	{"write",           js_write,           1},     /* write to HTML file */
 	{"writeln",         js_writeln,         1},     /* write line to HTML file */
 	{"print",           js_writeln,         1},     /* write line to HTML file (alias) */
@@ -6059,6 +6025,12 @@ static JSFunctionSpec js_global_functions[] = {
 	{"set_cookie",      js_set_cookie,      2},     /* Set a cookie */
 	{0}
 };
+
+static void
+js_WarningReporter(JSContext* cx, JSErrorReport* report)
+{
+	js_ErrorReporter(cx, report->message().c_str(), report);
+}
 
 static JSBool
 js_OperationCallback(JSContext *cx)
@@ -6083,20 +6055,14 @@ js_initcx(http_session_t *session)
 {
 	JSContext* js_cx;
 
-	if ((js_cx = JS_NewContext(session->js_runtime, JAVASCRIPT_CONTEXT_STACK)) == NULL) {
-		errprintf(LOG_CRIT, WHERE, "%04d %-5s [%s] JavaScript: Failed to create new context"
-			, session->socket, session->client.protocol, session->host_ip);
-		return NULL;
-	}
-	JS_SetOptions(js_cx, startup->js.options);
-	JS_BEGINREQUEST(js_cx);
+	js_cx = session->js_runtime; /* SM128: jsrt_GetNew already created the context */
 
 	lprintf(LOG_DEBUG, "%04d %-5s [%s] JavaScript: Context created with options: %lx"
 	        , session->socket, session->client.protocol, session->host_ip, (long)startup->js.options);
 
-	JS_SetErrorReporter(js_cx, js_ErrorReporter);
 
-	JS_SetOperationCallback(js_cx, js_OperationCallback);
+	JS_AddInterruptCallback(js_cx, js_OperationCallback);
+	JS::SetWarningReporter(js_cx, js_WarningReporter);
 
 	lprintf(LOG_DEBUG, "%04d %-5s [%s] JavaScript: Creating Global Objects and Classes"
 		, session->socket, session->client.protocol, session->host_ip);
@@ -6115,12 +6081,10 @@ js_initcx(http_session_t *session)
 	                            , &session->js_glob
 	                            , &mqtt
 	                            )
-	    || !JS_DefineFunctions(js_cx, session->js_glob, js_global_functions)) {
+	    || !js_DefineSyncMethods(js_cx, session->js_glob, js_global_functions)) {
 		errprintf(LOG_CRIT, WHERE, "%04d %-5s [%s] JavaScript: Failed to create global objects and classes"
 			, session->socket, session->client.protocol, session->host_ip);
-		JS_RemoveObjectRoot(js_cx, &session->js_glob);
-		JS_ENDREQUEST(js_cx);
-		JS_DestroyContext(js_cx);
+		/* SM128: js_cx == js_runtime; caller's jsrt_Release handles destruction */
 		return NULL;
 	}
 
@@ -6165,10 +6129,8 @@ static bool js_setup_cx(http_session_t* session)
 			JS_DefineProperty(session->js_cx, session->js_glob, "web_error_dir",
 			                  STRING_TO_JSVAL(js_str)
 			                  , NULL, NULL, JSPROP_READONLY | JSPROP_ENUMERATE);
-		JS_ENDREQUEST(session->js_cx);
 	}
 	else {
-		JS_BEGINREQUEST(session->js_cx);
 		JS_MaybeGC(session->js_cx);
 	}
 
@@ -6177,7 +6139,6 @@ static bool js_setup_cx(http_session_t* session)
 	if (js_CreateHttpRequestObject(session->js_cx, session->js_glob, session) == NULL) {
 		errprintf(LOG_ERR, WHERE, "%04d %-5s [%s] !ERROR initializing JavaScript HttpRequest object"
 			, session->socket, session->client.protocol, session->host_ip);
-		JS_ENDREQUEST(session->js_cx);
 		return false;
 	}
 
@@ -6194,7 +6155,6 @@ static bool js_setup(http_session_t* session)
 	lprintf(LOG_DEBUG, "%04d %-5s [%s] JavaScript: Initializing HttpReply object", session->socket, session->client.protocol, session->host_ip);
 	if (js_CreateHttpReplyObject(session->js_cx, session->js_glob, session) == NULL) {
 		errprintf(LOG_ERR, WHERE, "%04d %-5s [%s] !ERROR initializing JavaScript HttpReply object", session->socket, session->client.protocol, session->host_ip);
-		JS_ENDREQUEST(session->js_cx);
 		return false;
 	}
 
@@ -6212,7 +6172,6 @@ static bool ssjs_send_headers(http_session_t* session, int chunked)
 	char *     p = NULL, *p2 = NULL;
 	size_t     p_sz = 0, p2_sz = 0;
 
-	JS_BEGINREQUEST(session->js_cx);
 	if (JS_GetProperty(session->js_cx, session->js_glob, "http_reply", &val)) {
 		reply = JSVAL_TO_OBJECT(val);
 		if (reply != NULL) {
@@ -6285,12 +6244,11 @@ static bool ssjs_send_headers(http_session_t* session, int chunked)
 		JS_ClearScope(session->js_cx, headers);
 		JS_DestroyIdArray(session->js_cx, heads);
 	}
-	JS_ENDREQUEST(session->js_cx);
 	return send_headers(session, session->req.status, chunked);
 }
 
 static bool exec_ssjs(http_session_t* session, char* script)  {
-	JSObject*   js_script;
+	JSScript*   js_script;
 	jsval       rval;
 	char        path[MAX_PATH + 1];
 	bool        retval = true;
@@ -6309,7 +6267,6 @@ static bool exec_ssjs(http_session_t* session, char* script)  {
 	/* FREE()d in close_request() */
 	session->req.cleanup_file[CLEANUP_SSJS_TMP_FILE] = strdup(path);
 
-	JS_BEGINREQUEST(session->js_cx);
 	js_add_request_prop(session, "real_path", session->req.physical_path);
 	js_add_request_prop(session, "virtual_path", session->req.virtual_path);
 	js_add_request_prop(session, "ars", session->req.ars);
@@ -6345,8 +6302,6 @@ static bool exec_ssjs(http_session_t* session, char* script)  {
 		                                , script)) == NULL) {
 			errprintf(LOG_ERR, WHERE, "%04d %-5s [%s] !JavaScript FAILED to compile script (%s)"
 			          , session->socket, session->client.protocol, session->host_ip, script);
-			JS_RemoveObjectRoot(session->js_cx, &session->js_glob);
-			JS_ENDREQUEST(session->js_cx);
 			return false;
 		}
 
@@ -6356,7 +6311,6 @@ static bool exec_ssjs(http_session_t* session, char* script)  {
 		js_PrepareToExecute(session->js_cx, session->js_glob, script, /* startup_dir */ NULL, session->js_glob);
 		JS_ExecuteScript(session->js_cx, session->js_glob, js_script, &rval);
 		js_EvalOnExit(session->js_cx, session->js_glob, &session->js_callback);
-		JS_RemoveObjectRoot(session->js_cx, &session->js_glob);
 		lprintf(LOG_DEBUG, "%04d %-5s [%s] JavaScript: Done executing script: %s (%.2Lf seconds)"
 		        , session->socket, session->client.protocol, session->host_ip, script, xp_timer() - start);
 	} while (0);
@@ -6371,7 +6325,6 @@ static bool exec_ssjs(http_session_t* session, char* script)  {
 	/* Free up temporary resources here */
 
 	session->req.dynamic = IS_SSJS;
-	JS_ENDREQUEST(session->js_cx);
 
 	return retval;
 }
@@ -7107,10 +7060,7 @@ void http_session_thread(void* arg)
 
 	if (session.js_cx != NULL) {
 		lprintf(LOG_DEBUG, "%04d %-5s [%s] JavaScript: Destroying context", socket, session.client.protocol, session.host_ip);
-		JS_BEGINREQUEST(session.js_cx);
-		JS_RemoveObjectRoot(session.js_cx, &session.js_glob);
-		JS_ENDREQUEST(session.js_cx);
-		JS_DestroyContext(session.js_cx);   /* Free Context */
+		/* SM128: js_cx == js_runtime; jsrt_Release below handles destruction */
 		session.js_cx = NULL;
 	}
 

@@ -2,7 +2,6 @@
 
 #include "sbbs.h"
 #include <cryptlib.h>
-#include "js_request.h"
 #include "js_cryptcon.h"
 #include "js_cryptcert.h"
 #include "ssl.h"
@@ -20,22 +19,19 @@ static const char* getprivate_failure = "line %d %s %s JS_GetPrivate failed";
 // Destructor
 
 static void
-js_finalize_cryptkeyset(JSContext *cx, JSObject *obj)
+js_finalize_cryptkeyset(JS::GCContext* gcx, JSObject *obj)
 {
-	jsrefcount           rc;
 	struct private_data* p;
 
-	if ((p = (struct private_data *)JS_GetPrivate(cx, obj)) == NULL)
+	if ((p = (struct private_data *)JS_GetPrivate(obj)) == NULL)
 		return;
 
-	rc = JS_SUSPENDREQUEST(cx);
 	if (p->ks != CRYPT_UNUSED)
 		cryptKeysetClose(p->ks);
 	FREE_AND_NULL(p->name);
 	free(p);
-	JS_RESUMEREQUEST(cx, rc);
 
-	JS_SetPrivate(cx, obj, NULL);
+	JS_SetPrivate(obj, NULL);
 }
 
 // Methods
@@ -48,7 +44,6 @@ js_add_private_key(JSContext *cx, uintN argc, jsval *arglist)
 	jsval *                          argv = JS_ARGV(cx, arglist);
 	char*                            pw = NULL;
 	int                              status;
-	jsrefcount                       rc;
 	JSObject *                       key;
 	JSString *                       jspw;
 	JSObject *                       obj = JS_THIS_OBJECT(cx, arglist);
@@ -82,10 +77,8 @@ js_add_private_key(JSContext *cx, uintN argc, jsval *arglist)
 
 	JSSTRING_TO_MSTRING(cx, jspw, pw, NULL);
 	HANDLE_PENDING(cx, pw);
-	rc = JS_SUSPENDREQUEST(cx);
 	status = cryptAddPrivateKey(p->ks, ctx->ctx, pw);
 	free(pw);
-	JS_RESUMEREQUEST(cx, rc);
 
 	if (cryptStatusError(status)) {
 		JS_ReportError(cx, "Error %d calling cryptAddPrivateKey()\n", status);
@@ -101,7 +94,6 @@ js_add_public_key(JSContext *cx, uintN argc, jsval *arglist)
 	struct js_cryptcert_private_data* pcert;
 	jsval *                           argv = JS_ARGV(cx, arglist);
 	int                               status;
-	jsrefcount                        rc;
 	JSObject *                        cert;
 	JSObject *                        obj = JS_THIS_OBJECT(cx, arglist);
 
@@ -127,9 +119,7 @@ js_add_public_key(JSContext *cx, uintN argc, jsval *arglist)
 		return JS_FALSE;
 	}
 
-	rc = JS_SUSPENDREQUEST(cx);
 	status = cryptAddPublicKey(p->ks, pcert->cert);
-	JS_RESUMEREQUEST(cx, rc);
 
 	if (cryptStatusError(status)) {
 		JS_ReportError(cx, "Error %d calling cryptAddPublicKey()\n", status);
@@ -143,7 +133,6 @@ js_close(JSContext *cx, uintN argc, jsval *arglist)
 {
 	struct private_data* p;
 	JSObject *           obj = JS_THIS_OBJECT(cx, arglist);
-	jsrefcount           rc;
 	int                  status;
 
 	if (argc) {
@@ -158,9 +147,7 @@ js_close(JSContext *cx, uintN argc, jsval *arglist)
 		JS_ReportError(cx, "already closed");
 		return JS_FALSE;
 	}
-	rc = JS_SUSPENDREQUEST(cx);
 	status = cryptKeysetClose(p->ks);
-	JS_RESUMEREQUEST(cx, rc);
 	if (cryptStatusError(status)) {
 		JS_ReportError(cx, "Error %d calling cryptKeysetClose()\n", status);
 		return JS_FALSE;
@@ -176,7 +163,6 @@ js_delete_key(JSContext *cx, uintN argc, jsval *arglist)
 	struct private_data* p;
 	jsval *              argv = JS_ARGV(cx, arglist);
 	int                  status;
-	jsrefcount           rc;
 	char*                label = NULL;
 	JSString *           jslabel;
 	JSObject *           obj = JS_THIS_OBJECT(cx, arglist);
@@ -199,10 +185,8 @@ js_delete_key(JSContext *cx, uintN argc, jsval *arglist)
 
 	JSSTRING_TO_MSTRING(cx, jslabel, label, NULL);
 	HANDLE_PENDING(cx, label);
-	rc = JS_SUSPENDREQUEST(cx);
 	status = cryptDeleteKey(p->ks, CRYPT_KEYID_NAME, label);
 	free(label);
-	JS_RESUMEREQUEST(cx, rc);
 	if (cryptStatusError(status)) {
 		JS_ReportError(cx, "Error %d calling cryptDeleteKey()\n", status);
 		return JS_FALSE;
@@ -216,7 +200,6 @@ js_get_private_key(JSContext *cx, uintN argc, jsval *arglist)
 	struct private_data* p;
 	jsval *              argv = JS_ARGV(cx, arglist);
 	int                  status;
-	jsrefcount           rc;
 	JSObject *           key;
 	char*                pw = NULL;
 	char*                label = NULL;
@@ -253,11 +236,9 @@ js_get_private_key(JSContext *cx, uintN argc, jsval *arglist)
 		FREE_AND_NULL(pw);
 		return JS_FALSE;
 	}
-	rc = JS_SUSPENDREQUEST(cx);
 	status = cryptGetPrivateKey(p->ks, &ctx, CRYPT_KEYID_NAME, label, pw);
 	free(label);
 	free(pw);
-	JS_RESUMEREQUEST(cx, rc);
 	if (cryptStatusError(status)) {
 		JS_ReportError(cx, "Error %d calling cryptGetPrivateKey()\n", status);
 		return JS_FALSE;
@@ -276,7 +257,6 @@ js_get_public_key(JSContext *cx, uintN argc, jsval *arglist)
 	struct private_data* p;
 	jsval *              argv = JS_ARGV(cx, arglist);
 	int                  status;
-	jsrefcount           rc;
 	JSObject *           cert;
 	char*                label = NULL;
 	JSString *           jslabel;
@@ -301,10 +281,8 @@ js_get_public_key(JSContext *cx, uintN argc, jsval *arglist)
 
 	JSSTRING_TO_MSTRING(cx, jslabel, label, NULL);
 	HANDLE_PENDING(cx, label);
-	rc = JS_SUSPENDREQUEST(cx);
 	status = cryptGetPublicKey(p->ks, &ncert, CRYPT_KEYID_NAME, label);
 	free(label);
-	JS_RESUMEREQUEST(cx, rc);
 	if (cryptStatusError(status)) {
 		JS_ReportError(cx, "Error %d calling cryptGetPublicKey()\n", status);
 		return JS_FALSE;
@@ -319,15 +297,11 @@ js_get_public_key(JSContext *cx, uintN argc, jsval *arglist)
 
 // Properties
 
+/* SM128: get_value for a single cryptkeyset property tinyid (no data properties currently) */
 static JSBool
-js_cryptkeyset_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
+js_cryptkeyset_get_value(JSContext *cx, jsint tiny, jsval *vp)
 {
-	return JS_TRUE;
-}
-
-static JSBool
-js_cryptkeyset_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, jsval *vp)
-{
+	(void)cx; (void)tiny; (void)vp;
 	return JS_TRUE;
 }
 
@@ -368,43 +342,75 @@ static jsSyncMethodSpec   js_cryptkeyset_functions[] = {
 	{0}
 };
 
-static JSBool js_cryptkeyset_resolve(JSContext *cx, JSObject *obj, jsid id)
+/* SM128: populate actual property values for all (or one named) js_cryptkeyset_properties entry.
+ * Currently a no-op since js_cryptkeyset_properties is empty, but kept for pattern consistency. */
+static JSBool js_cryptkeyset_fill_properties(JSContext *cx, JSObject *obj, const char *name)
 {
-	char*  name = NULL;
-	JSBool ret;
+	JS::RootedObject  robj(cx, obj);
+	JS::RootedValue   rv(cx);
 
-	if (id != JSID_VOID && id != JSID_EMPTY) {
-		jsval idval;
-
-		JS_IdToValue(cx, id, &idval);
-		if (JSVAL_IS_STRING(idval)) {
-			JSSTRING_TO_MSTRING(cx, JSVAL_TO_STRING(idval), name, NULL);
-			HANDLE_PENDING(cx, name);
+	for (uint i = 0; js_cryptkeyset_properties[i].name; i++) {
+		if (name != nullptr && strcmp(name, js_cryptkeyset_properties[i].name) != 0)
+			continue;
+		rv.set(JSVAL_VOID);
+		if (!js_cryptkeyset_get_value(cx, js_cryptkeyset_properties[i].tinyid, rv.address()))
+			return JS_FALSE;
+		if (!rv.isUndefined()) {
+			if (!JS_SetProperty(cx, robj.get(), js_cryptkeyset_properties[i].name, rv))
+				return JS_FALSE;
 		}
+		if (name != nullptr)
+			return JS_TRUE;
+	}
+	return JS_TRUE;
+}
+
+static bool js_cryptkeyset_resolve(JSContext *cx, JS::Handle<JSObject*> obj, JS::Handle<jsid> id, bool* resolvedp)
+{
+	char* name = NULL;
+
+	if (id.get().isString()) {
+		JSString* str = id.get().toString();
+		JSSTRING_TO_MSTRING(cx, str, name, NULL);
+		HANDLE_PENDING(cx, name);
+		if (name == NULL) return false;
 	}
 
-	ret = js_SyncResolve(cx, obj, name, js_cryptkeyset_properties, js_cryptkeyset_functions, NULL, 0);
+	bool ret = js_SyncResolve(cx, obj, name, js_cryptkeyset_properties, js_cryptkeyset_functions, NULL, 0);
+	if (ret) {
+		if (!js_cryptkeyset_fill_properties(cx, obj, name)) {
+			if (name) free(name);
+			return false;
+		}
+	}
 	if (name)
 		free(name);
-	return ret;
+	if (resolvedp) *resolvedp = ret;
+	return true;
 }
 
-static JSBool js_cryptkeyset_enumerate(JSContext *cx, JSObject *obj)
+static bool js_cryptkeyset_enumerate(JSContext *cx, JS::Handle<JSObject*> obj)
 {
-	return js_cryptkeyset_resolve(cx, obj, JSID_VOID);
+	if (!js_SyncResolve(cx, obj, NULL, js_cryptkeyset_properties, js_cryptkeyset_functions, NULL, 0))
+		return false;
+	return js_cryptkeyset_fill_properties(cx, obj, NULL);
 }
+
+static const JSClassOps js_cryptkeyset_classops = {
+	nullptr,                    /* addProperty  */
+	nullptr,                    /* delProperty  */
+	js_cryptkeyset_enumerate,   /* enumerate    */
+	nullptr,                    /* newEnumerate */
+	js_cryptkeyset_resolve,     /* resolve      */
+	nullptr,                    /* mayResolve   */
+	js_finalize_cryptkeyset,    /* finalize     */
+	nullptr, nullptr, nullptr   /* call, construct, trace */
+};
 
 JSClass js_cryptkeyset_class = {
-	"CryptKeyset"               /* name			*/
-	, JSCLASS_HAS_PRIVATE        /* flags		*/
-	, JS_PropertyStub            /* addProperty	*/
-	, JS_PropertyStub            /* delProperty	*/
-	, js_cryptkeyset_get         /* getProperty	*/
-	, js_cryptkeyset_set         /* setProperty	*/
-	, js_cryptkeyset_enumerate   /* enumerate	*/
-	, js_cryptkeyset_resolve     /* resolve		*/
-	, JS_ConvertStub             /* convert		*/
-	, js_finalize_cryptkeyset    /* finalize		*/
+	"CryptKeyset"
+	, JSCLASS_HAS_PRIVATE
+	, &js_cryptkeyset_classops
 };
 
 // Constructor
@@ -415,7 +421,6 @@ js_cryptkeyset_constructor(JSContext *cx, uintN argc, jsval *arglist)
 	JSObject *           obj;
 	jsval *              argv = JS_ARGV(cx, arglist);
 	struct private_data *p;
-	jsrefcount           rc;
 	int                  status;
 	int                  opts = CRYPT_KEYOPT_NONE;
 	JSString *           fn;
@@ -448,9 +453,7 @@ js_cryptkeyset_constructor(JSContext *cx, uintN argc, jsval *arglist)
 		free(p);
 		return JS_FALSE;
 	}
-	rc = JS_SUSPENDREQUEST(cx);
 	status = cryptKeysetOpen(&p->ks, CRYPT_UNUSED, CRYPT_KEYSET_FILE, p->name, static_cast<CRYPT_KEYOPT_TYPE>(opts));
-	JS_RESUMEREQUEST(cx, rc);
 	if (cryptStatusError(status)) {
 		JS_ReportError(cx, "CryptLib error %d", status);
 		FREE_AND_NULL(p->name);
@@ -489,8 +492,8 @@ static const char* cryptkeyset_keyopt_prop_desc[] = {
 JSObject* js_CreateCryptKeysetClass(JSContext* cx, JSObject* parent)
 {
 	JSObject* cksobj;
-	JSObject* constructor;
-	JSObject* opts;
+	JS::RootedObject constructor(cx);
+	JS::RootedObject opts(cx);
 	jsval     val;
 
 	cksobj = JS_InitClass(cx, parent, NULL
@@ -502,9 +505,9 @@ JSObject* js_CreateCryptKeysetClass(JSContext* cx, JSObject* parent)
 	                      , NULL, NULL);
 
 	if (JS_GetProperty(cx, parent, js_cryptkeyset_class.name, &val) && !JSVAL_NULL_OR_VOID(val)) {
-		JS_ValueToObject(cx, val, &constructor);
+		JS_ValueToObject(cx, val, constructor.address());
 		opts = JS_DefineObject(cx, constructor, "KEYOPT", NULL, NULL, JSPROP_PERMANENT | JSPROP_ENUMERATE | JSPROP_READONLY);
-		if (opts != NULL) {
+		if (opts) {
 			JS_DefineProperty(cx, opts, "NONE", INT_TO_JSVAL(CRYPT_KEYOPT_NONE), NULL, NULL
 			                  , JSPROP_PERMANENT | JSPROP_ENUMERATE | JSPROP_READONLY);
 			JS_DefineProperty(cx, opts, "READONLY", INT_TO_JSVAL(CRYPT_KEYOPT_READONLY), NULL, NULL
@@ -515,7 +518,7 @@ JSObject* js_CreateCryptKeysetClass(JSContext* cx, JSObject* parent)
 			js_CreateArrayOfStrings(cx, opts, "_property_desc_list", cryptkeyset_keyopt_prop_desc, JSPROP_READONLY);
 			js_DescribeSyncObject(cx, opts, "Associative array of keyset option constants", 318);
 #endif
-			JS_DeepFreezeObject(cx, opts);
+			JS_DeepFreezeObject(cx, opts.get());
 		}
 	}
 

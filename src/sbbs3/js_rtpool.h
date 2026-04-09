@@ -26,8 +26,14 @@
 #if defined(__cplusplus)
 extern "C" {
 #endif
-DLLEXPORT JSRuntime * DLLCALL jsrt_GetNew(int maxbytes, unsigned long timeout, const char *filename, long line);
-DLLEXPORT void DLLCALL jsrt_Release(JSRuntime *);
+/* SM128: returns JSContext* (which IS the runtime in SM128).
+ * parent_cx: optional parent context to share GC with (for background threads). */
+DLLEXPORT JSContext * DLLCALL jsrt_GetNew(int maxbytes, unsigned long timeout, const char *filename, long line, JSContext* parent_cx = nullptr);
+DLLEXPORT void DLLCALL jsrt_Release(JSContext *);
+/* SM128: JS_SetRuntimePrivate / JS_GetRuntimePrivate emulation */
+DLLEXPORT void DLLCALL jsrt_SetRuntimePrivate(JSRuntime* rt, void* data);
+DLLEXPORT void * DLLCALL jsrt_GetRuntimePrivate(JSRuntime* rt);
+DLLEXPORT void DLLCALL jsrt_ClearRuntimePrivate(JSRuntime* rt);
 #if defined(__cplusplus)
 }
 #endif

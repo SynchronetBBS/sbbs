@@ -267,18 +267,9 @@ enum {
 	, SUB_PROP_POSTS
 };
 
-static JSBool js_sub_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
+static JSBool js_sub_get_value(JSContext* cx, struct js_msg_area_priv* p, jsint tiny, jsval* vp)
 {
-	jsval                    idval;
-	jsint                    tiny;
-	struct js_msg_area_priv *p;
-
-	if ((p = (struct js_msg_area_priv*)JS_GetPrivate(cx, obj)) == NULL)
-		return JS_TRUE;
-	subscan_t*               scan = p->subscan;
-
-	JS_IdToValue(cx, id, &idval);
-	tiny = JSVAL_TO_INT(idval);
+	subscan_t* scan = p->subscan;
 
 	switch (tiny) {
 		case SUB_PROP_CAN_ACCESS:
@@ -316,27 +307,19 @@ static JSBool js_sub_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 		case SUB_PROP_POSTS:
 			*vp = UINT_TO_JSVAL(getposts(p->cfg, p->subnum));
 			break;
+		default:
+			return JS_TRUE;
 	}
-
 	return JS_TRUE;
 }
 
-static JSBool js_sub_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, jsval *vp)
+static JSBool js_sub_set_value(JSContext* cx, struct js_msg_area_priv* p, jsint tiny, jsval* vp)
 {
-	jsval                    idval;
 	uint32_t                 val = 0;
-	jsint                    tiny;
-	struct js_msg_area_priv *p;
-
-	if ((p = (struct js_msg_area_priv*)JS_GetPrivate(cx, obj)) == NULL)
-		return JS_FALSE;
 
 	subscan_t* scan = p->subscan;
 	if (scan == NULL)
 		return JS_TRUE;
-
-	JS_IdToValue(cx, id, &idval);
-	tiny = JSVAL_TO_INT(idval);
 
 	switch (tiny) {
 		case SUB_PROP_SCAN_PTR:
@@ -357,74 +340,134 @@ static JSBool js_sub_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, j
 	return JS_TRUE;
 }
 
-static struct JSPropertySpec js_sub_properties[] = {
+static jsSyncPropertySpec js_sub_properties[] = {
 /*		 name				,tinyid		,flags	*/
 
-	{   "can_access", SUB_PROP_CAN_ACCESS, JSPROP_ENUMERATE | JSPROP_SHARED | JSPROP_READONLY },
-	{   "can_read", SUB_PROP_CAN_READ, JSPROP_ENUMERATE | JSPROP_SHARED | JSPROP_READONLY },
-	{   "can_post", SUB_PROP_CAN_POST, JSPROP_ENUMERATE | JSPROP_SHARED | JSPROP_READONLY },
-	{   "is_operator", SUB_PROP_IS_OPERATOR, JSPROP_ENUMERATE | JSPROP_SHARED | JSPROP_READONLY },
-	{   "is_moderated", SUB_PROP_IS_MODERATED, JSPROP_ENUMERATE | JSPROP_SHARED | JSPROP_READONLY },
-	{   "scan_ptr", SUB_PROP_SCAN_PTR, JSPROP_ENUMERATE | JSPROP_SHARED },
-	{   "scan_cfg", SUB_PROP_SCAN_CFG, JSPROP_ENUMERATE | JSPROP_SHARED },
-	{   "last_read", SUB_PROP_LAST_READ, JSPROP_ENUMERATE | JSPROP_SHARED },
-	{   "posts", SUB_PROP_POSTS, JSPROP_ENUMERATE | JSPROP_SHARED | JSPROP_READONLY },
+	{   "can_access", SUB_PROP_CAN_ACCESS, JSPROP_ENUMERATE  | JSPROP_READONLY },
+	{   "can_read", SUB_PROP_CAN_READ, JSPROP_ENUMERATE  | JSPROP_READONLY },
+	{   "can_post", SUB_PROP_CAN_POST, JSPROP_ENUMERATE  | JSPROP_READONLY },
+	{   "is_operator", SUB_PROP_IS_OPERATOR, JSPROP_ENUMERATE  | JSPROP_READONLY },
+	{   "is_moderated", SUB_PROP_IS_MODERATED, JSPROP_ENUMERATE  | JSPROP_READONLY },
+	{   "scan_ptr", SUB_PROP_SCAN_PTR, JSPROP_ENUMERATE  },
+	{   "scan_cfg", SUB_PROP_SCAN_CFG, JSPROP_ENUMERATE  },
+	{   "last_read", SUB_PROP_LAST_READ, JSPROP_ENUMERATE  },
+	{   "posts", SUB_PROP_POSTS, JSPROP_ENUMERATE  | JSPROP_READONLY },
 	{0}
 };
 
+static bool js_sub_prop_getter(JSContext* cx, unsigned argc, JS::Value* vp)
+{
+	JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
+	JS::RootedObject thisObj(cx);
+	if (!args.computeThis(cx, &thisObj))
+		return false;
+	struct js_msg_area_priv* p = (struct js_msg_area_priv*)JS_GetPrivate(thisObj);
+	if (p == nullptr) {
+		args.rval().setUndefined();
+		return true;
+	}
+	JSObject* callee = &args.callee();
+	jsint tiny = js::GetFunctionNativeReserved(callee, 0).toInt32();
+	jsval val = JSVAL_VOID;
+	if (!js_sub_get_value(cx, p, tiny, &val))
+		return false;
+	args.rval().set(val);
+	return true;
+}
+
+static bool js_sub_prop_setter(JSContext* cx, unsigned argc, JS::Value* vp)
+{
+	JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
+	JS::RootedObject thisObj(cx);
+	if (!args.computeThis(cx, &thisObj))
+		return false;
+	struct js_msg_area_priv* p = (struct js_msg_area_priv*)JS_GetPrivate(thisObj);
+	if (p == nullptr)
+		return true;
+	JSObject* callee = &args.callee();
+	jsint tiny = js::GetFunctionNativeReserved(callee, 0).toInt32();
+	jsval val = args.length() > 0 ? args[0] : JSVAL_VOID;
+	if (!js_sub_set_value(cx, p, tiny, &val))
+		return false;
+	args.rval().set(val);
+	return true;
+}
+
+static JSBool js_sub_fill_properties(JSContext* cx, JSObject* obj, struct js_msg_area_priv* p, const char* name)
+{
+	(void)p;
+	return js_DefineSyncAccessors(cx, obj, js_sub_properties, js_sub_prop_getter, name, js_sub_prop_setter);
+}
+
 static void
-js_msg_area_finalize(JSContext *cx, JSObject *obj)
+js_msg_area_finalize(JS::GCContext* gcx, JSObject *obj)
 {
 	struct js_msg_area_priv *p;
 
-	if ((p = (struct js_msg_area_priv*)JS_GetPrivate(cx, obj)) == NULL)
+	if ((p = (struct js_msg_area_priv*)JS_GetPrivate(obj)) == NULL)
 		return;
 
 	free(p);
-	JS_SetPrivate(cx, obj, NULL);
+	JS_SetPrivate(obj, NULL);
 }
 
-static JSClass js_sub_class = {
-	"MsgSub"                /* name			*/
-	, JSCLASS_HAS_PRIVATE    /* flags		*/
-	, JS_PropertyStub        /* addProperty	*/
-	, JS_PropertyStub        /* delProperty	*/
-	, js_sub_get             /* getProperty	*/
-	, js_sub_set             /* setProperty	*/
-	, JS_EnumerateStub       /* enumerate	*/
-	, JS_ResolveStub         /* resolve		*/
-	, JS_ConvertStub         /* convert		*/
-	, js_msg_area_finalize   /* finalize		*/
+static const JSClassOps js_sub_classops = {
+	nullptr,                /* addProperty  */
+	nullptr,                /* delProperty  */
+	nullptr,                /* enumerate    */
+	nullptr,                /* newEnumerate */
+	nullptr,                /* resolve      */
+	nullptr,                /* mayResolve   */
+	js_msg_area_finalize,   /* finalize     */
+	nullptr, nullptr, nullptr /* call, construct, trace */
 };
 
-JSBool js_msg_area_resolve(JSContext* cx, JSObject* areaobj, jsid id)
+static JSClass js_sub_class = {
+	"MsgSub"
+	, JSCLASS_HAS_PRIVATE
+	, &js_sub_classops
+};
+
+static bool js_msg_area_resolve_impl(JSContext* cx, JSObject* areaobj, char* name);
+
+bool js_msg_area_resolve(JSContext* cx, JS::Handle<JSObject*> obj, JS::Handle<jsid> id, bool* resolvedp)
 {
-	JSObject*                allgrps;
-	JSObject*                allsubs;
-	JSObject*                grpobj_proto;
-	JSObject*                grpobj;
-	JSObject*                subobj_proto;
-	JSObject*                subobj;
-	JSObject*                grp_list;
-	JSObject*                sub_list;
+	char* name = NULL;
+
+	if (id.get().isString()) {
+		JSString* str = id.get().toString();
+		JSSTRING_TO_MSTRING(cx, str, name, NULL);
+		HANDLE_PENDING(cx, name);
+		if (name == NULL) return false;
+	}
+
+	bool ret = js_msg_area_resolve_impl(cx, obj, name);
+	if (name)
+		free(name);
+	if (resolvedp) *resolvedp = ret;
+	return true;
+}
+
+static bool js_msg_area_resolve_impl(JSContext* cx, JSObject* areaobj, char* name)
+{
+	/* SM128: root all JSObject/JSString locals to prevent GC crashes */
+	JS::RootedObject         allgrps(cx);
+	JS::RootedObject         allsubs(cx);
+	JS::RootedObject         grpobj_proto(cx);
+	JS::RootedObject         grpobj(cx);
+	JS::RootedObject         subobj_proto(cx);
+	JS::RootedObject         subobj(cx);
+	JS::RootedObject         grp_list(cx);
+	JS::RootedObject         sub_list(cx);
 	JSString*                js_str;
 	jsval                    val;
 	jsint                    grp_index;
 	jsint                    sub_index;
 	int                      l, d;
-	char*                    name = NULL;
 	struct js_msg_area_priv *p;
 
 	if ((p = (struct js_msg_area_priv*)JS_GetPrivate(cx, areaobj)) == NULL)
-		return JS_FALSE;
-
-	if (id != JSID_VOID && id != JSID_EMPTY) {
-		jsval idval;
-
-		JS_IdToValue(cx, id, &idval);
-		if (JSVAL_IS_STRING(idval))
-			JSSTRING_TO_MSTRING(cx, JSVAL_TO_STRING(idval), name, NULL);
-	}
+		return false;
 
 #ifdef BUILD_JSDOCS
 	js_DescribeSyncObject(cx, areaobj, "Message Areas", 310);
@@ -432,141 +475,133 @@ JSBool js_msg_area_resolve(JSContext* cx, JSObject* areaobj, jsid id)
 
 	/* msg_area.properties */
 	if (name == NULL || strcmp(name, "settings") == 0) {
-		if (name)
-			free(name);
 		if (!JS_NewNumberValue(cx, p->cfg->msg_misc, &val))
-			return JS_FALSE;
+			return false;
 		if (!JS_SetProperty(cx, areaobj, "settings", &val))
-			return JS_FALSE;
+			return false;
 		if (name)
-			return JS_TRUE;
+			return true;
 	}
 	if (name == NULL || strcmp(name, "fido_netmail_settings") == 0) {
-		if (name)
-			free(name);
 		if (!JS_NewNumberValue(cx, p->cfg->netmail_misc, &val))
-			return JS_FALSE;
+			return false;
 		if (!JS_SetProperty(cx, areaobj, "fido_netmail_settings", &val))
-			return JS_FALSE;
+			return false;
 		if (name)
-			return JS_TRUE;
+			return true;
 	}
 	if (name == NULL || strcmp(name, "inet_netmail_settings") == 0) {
-		if (name)
-			free(name);
 		if (!JS_NewNumberValue(cx, p->cfg->inetmail_misc, &val))
-			return JS_FALSE;
+			return false;
 		if (!JS_SetProperty(cx, areaobj, "inet_netmail_settings", &val))
-			return JS_FALSE;
+			return false;
 		if (name)
-			return JS_TRUE;
+			return true;
 	}
 
 	if (name == NULL || strcmp(name, "grp") == 0 || strcmp(name, "sub") == 0 || strcmp(name, "grp_list") == 0) {
-		if (name)
-			FREE_AND_NULL(name);
 		/* msg_area.grp[] */
-		if ((allgrps = JS_NewObject(cx, NULL, NULL, areaobj)) == NULL)
-			return JS_FALSE;
+		if ((allgrps = JS_NewObject(cx, NULL, NULL, areaobj)) == nullptr)
+			return false;
 
 		val = OBJECT_TO_JSVAL(allgrps);
 		if (!JS_SetProperty(cx, areaobj, "grp", &val))
-			return JS_FALSE;
+			return false;
 
 		/* msg_area.sub[] */
-		if ((allsubs = JS_NewObject(cx, NULL, NULL, areaobj)) == NULL)
-			return JS_FALSE;
+		if ((allsubs = JS_NewObject(cx, NULL, NULL, areaobj)) == nullptr)
+			return false;
 
 		val = OBJECT_TO_JSVAL(allsubs);
 		if (!JS_SetProperty(cx, areaobj, "sub", &val))
-			return JS_FALSE;
+			return false;
 
 		/* msg_area.grp_list[] */
-		if ((grp_list = JS_NewArrayObject(cx, 0, NULL)) == NULL)
-			return JS_FALSE;
+		if ((grp_list = JS_NewArrayObject(cx, 0, NULL)) == nullptr)
+			return false;
 
 		val = OBJECT_TO_JSVAL(grp_list);
 		if (!JS_SetProperty(cx, areaobj, "grp_list", &val))
-			return JS_FALSE;
+			return false;
 
-		if ((grpobj_proto = JS_NewObject(cx, NULL, NULL, areaobj)) == NULL)
-			return JS_FALSE;
-		if ((subobj_proto = JS_NewObject(cx, NULL, NULL, areaobj)) == NULL)
-			return JS_FALSE;
+		if ((grpobj_proto = JS_NewObject(cx, NULL, NULL, areaobj)) == nullptr)
+			return false;
+		if ((subobj_proto = JS_NewObject(cx, NULL, NULL, areaobj)) == nullptr)
+			return false;
 		for (l = 0; l < p->cfg->total_grps; l++) {
 
-			if ((grpobj = JS_NewObject(cx, NULL, grpobj_proto, NULL)) == NULL)
-				return JS_FALSE;
+			if ((grpobj = JS_NewObject(cx, NULL, grpobj_proto, NULL)) == nullptr)
+				return false;
 
 			val = OBJECT_TO_JSVAL(grpobj);
 			grp_index = -1;
 			if (p->user == NULL || user_can_access_grp(p->cfg, l, p->user, p->client)) {
 
 				if (!JS_GetArrayLength(cx, grp_list, (jsuint*)&grp_index))
-					return JS_FALSE;
+					return false;
 
 				if (!JS_SetElement(cx, grp_list, grp_index, &val))
-					return JS_FALSE;
+					return false;
 			}
 
 			/* Add as property (associative array element) */
 			if (!JS_DefineProperty(cx, allgrps, p->cfg->grp[l]->sname, val
 			                       , NULL, NULL, JSPROP_READONLY | JSPROP_ENUMERATE))
-				return JS_FALSE;
+				return false;
 
 			val = INT_TO_JSVAL(grp_index);
 			if (!JS_SetProperty(cx, grpobj, "index", &val))
-				return JS_FALSE;
+				return false;
 
 			val = INT_TO_JSVAL(l);
 			if (!JS_SetProperty(cx, grpobj, "number", &val))
-				return JS_FALSE;
+				return false;
 
 			if ((js_str = JS_NewStringCopyZ(cx, p->cfg->grp[l]->sname)) == NULL)
-				return JS_FALSE;
+				return false;
 			val = STRING_TO_JSVAL(js_str);
 			if (!JS_SetProperty(cx, grpobj, "name", &val))
-				return JS_FALSE;
+				return false;
 
 			if ((js_str = JS_NewStringCopyZ(cx, p->cfg->grp[l]->lname)) == NULL)
-				return JS_FALSE;
+				return false;
 			val = STRING_TO_JSVAL(js_str);
 			if (!JS_SetProperty(cx, grpobj, "description", &val))
-				return JS_FALSE;
+				return false;
 
 			if ((js_str = JS_NewStringCopyZ(cx, p->cfg->grp[l]->arstr)) == NULL)
-				return JS_FALSE;
+				return false;
 			if (!JS_DefineProperty(cx, grpobj, "ars", STRING_TO_JSVAL(js_str)
 			                       , NULL, NULL, JSPROP_ENUMERATE | JSPROP_READONLY))
-				return JS_FALSE;
+				return false;
 
 			val = BOOLEAN_TO_JSVAL(grp_index >= 0);
 			if (!JS_SetProperty(cx, grpobj, "can_access", &val))
-				return JS_FALSE;
+				return false;
 
 			if ((js_str = JS_NewStringCopyZ(cx, p->cfg->grp[l]->code_prefix)) == NULL)
-				return JS_FALSE;
+				return false;
 			val = STRING_TO_JSVAL(js_str);
 			if (!JS_SetProperty(cx, grpobj, "code_prefix", &val))
-				return JS_FALSE;
+				return false;
 
 #ifdef BUILD_JSDOCS
 			js_DescribeSyncObject(cx, grpobj, "Message Groups (current user has access to)", 310);
 #endif
 
 			/* sub_list[] */
-			if ((sub_list = JS_NewArrayObject(cx, 0, NULL)) == NULL)
-				return JS_FALSE;
+			if ((sub_list = JS_NewArrayObject(cx, 0, NULL)) == nullptr)
+				return false;
 
 			val = OBJECT_TO_JSVAL(sub_list);
 			if (!JS_SetProperty(cx, grpobj, "sub_list", &val))
-				return JS_FALSE;
+				return false;
 
 			for (d = 0; d < p->cfg->total_subs; d++) {
 				if (p->cfg->sub[d]->grp != l)
 					continue;
-				if ((subobj = JS_NewObject(cx, &js_sub_class, subobj_proto, NULL)) == NULL)
-					return JS_FALSE;
+				if ((subobj = JS_NewObject(cx, &js_sub_class, subobj_proto, NULL)) == nullptr)
+					return false;
 				struct js_msg_area_priv *np = static_cast<js_msg_area_priv *>(malloc(sizeof(struct js_msg_area_priv)));
 				if (np == NULL)
 					continue;
@@ -581,30 +616,30 @@ JSBool js_msg_area_resolve(JSContext* cx, JSObject* areaobj, jsid id)
 				if (p->user == NULL || user_can_access_sub(p->cfg, d, p->user, p->client)) {
 
 					if (!JS_GetArrayLength(cx, sub_list, (jsuint*)&sub_index))
-						return JS_FALSE;
+						return false;
 
 					if (!JS_SetElement(cx, sub_list, sub_index, &val))
-						return JS_FALSE;
+						return false;
 				}
 
 				/* Add as property (associative array element) */
 				if (!JS_DefineProperty(cx, allsubs, p->cfg->sub[d]->code, val
 				                       , NULL, NULL, JSPROP_READONLY | JSPROP_ENUMERATE))
-					return JS_FALSE;
+					return false;
 
 				val = INT_TO_JSVAL(sub_index);
 				if (!JS_SetProperty(cx, subobj, "index", &val))
-					return JS_FALSE;
+					return false;
 
 				val = INT_TO_JSVAL(grp_index);
 				if (!JS_SetProperty(cx, subobj, "grp_index", &val))
-					return JS_FALSE;
+					return false;
 
 				if (!js_CreateMsgAreaProperties(cx, p->cfg, subobj, d))
-					return JS_FALSE;
+					return false;
 
-				if (!JS_DefineProperties(cx, subobj, js_sub_properties))
-					return JS_FALSE;
+				if (!js_sub_fill_properties(cx, subobj, np, NULL))
+					return false;
 
 #ifdef BUILD_JSDOCS
 				js_DescribeSyncObject(cx, subobj, "Message Sub-boards (current user has access to)</h2>"
@@ -632,28 +667,30 @@ JSBool js_msg_area_resolve(JSContext* cx, JSObject* areaobj, jsid id)
 		JS_DefineProperty(cx, allsubs, "_dont_document", JSVAL_TRUE, NULL, NULL, JSPROP_READONLY);
 #endif
 	}
-	if (name)
-		free(name);
 
-	return JS_TRUE;
+	return true;
 }
 
-static JSBool js_msg_area_enumerate(JSContext *cx, JSObject *obj)
+static bool js_msg_area_enumerate(JSContext *cx, JS::Handle<JSObject*> obj)
 {
-	return js_msg_area_resolve(cx, obj, JSID_VOID);
+	return js_msg_area_resolve_impl(cx, obj, NULL);
 }
+
+static const JSClassOps js_msg_area_classops = {
+	nullptr,                    /* addProperty  */
+	nullptr,                    /* delProperty  */
+	js_msg_area_enumerate,      /* enumerate    */
+	nullptr,                    /* newEnumerate */
+	js_msg_area_resolve,        /* resolve      */
+	nullptr,                    /* mayResolve   */
+	js_msg_area_finalize,       /* finalize     */
+	nullptr, nullptr, nullptr   /* call, construct, trace */
+};
 
 static JSClass js_msg_area_class = {
-	"MsgArea"               /* name			*/
-	, JSCLASS_HAS_PRIVATE    /* flags		*/
-	, JS_PropertyStub        /* addProperty	*/
-	, JS_PropertyStub        /* delProperty	*/
-	, JS_PropertyStub        /* getProperty	*/
-	, JS_StrictPropertyStub      /* setProperty	*/
-	, js_msg_area_enumerate  /* enumerate	*/
-	, js_msg_area_resolve    /* resolve		*/
-	, JS_ConvertStub         /* convert		*/
-	, js_msg_area_finalize   /* finalize		*/
+	"MsgArea"
+	, JSCLASS_HAS_PRIVATE
+	, &js_msg_area_classops
 };
 
 JSObject* js_CreateMsgAreaObject(JSContext* cx, JSObject* parent, scfg_t* cfg

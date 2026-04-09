@@ -50,25 +50,26 @@ static const char* client_prop_desc[] = {
 };
 #endif
 
-static JSBool js_client_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, jsval *vp)
+#define CLIENT_PROP_FLAGS JSPROP_ENUMERATE | JSPROP_READONLY
+
+static jsSyncPropertySpec js_client_properties[] = {
+/*		 name				,tinyid					,flags,					ver	*/
+
+	{   "ip_address", CLIENT_PROP_ADDR, CLIENT_PROP_FLAGS,     310},
+	{   "host_name", CLIENT_PROP_HOST, CLIENT_PROP_FLAGS,     310},
+	{   "port", CLIENT_PROP_PORT, CLIENT_PROP_FLAGS,     310},
+	{   "connect_time", CLIENT_PROP_TIME, CLIENT_PROP_FLAGS,     310},
+	{   "protocol", CLIENT_PROP_PROTOCOL, CLIENT_PROP_FLAGS,     310},
+	{   "user_name", CLIENT_PROP_USER, CLIENT_PROP_FLAGS,     310},
+	{   "user_number", CLIENT_PROP_USERNUM, CLIENT_PROP_FLAGS,     31702},
+	{0}
+};
+
+static JSBool js_client_get_value(JSContext* cx, client_t* client, jsint tiny, jsval* vp)
 {
-	return JS_FALSE;
-}
-
-static JSBool js_client_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
-{
-	jsval       idval;
-	const char* p = NULL;
-	int32       val = 0;
-	jsint       tiny;
-	JSString*   js_str;
-	client_t*   client;
-
-	if ((client = (client_t*)JS_GetPrivate(cx, obj)) == NULL)
-		return JS_FALSE;
-
-	JS_IdToValue(cx, id, &idval);
-	tiny = JSVAL_TO_INT(idval);
+	const char*        p = NULL;
+	int32              val = 0;
+	JS::RootedString   js_str(cx);
 
 	switch (tiny) {
 		case CLIENT_PROP_ADDR:
@@ -96,85 +97,105 @@ static JSBool js_client_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 			return JS_TRUE;
 	}
 	if (p != NULL) {
-		if ((js_str = JS_NewStringCopyZ(cx, p)) == NULL)
+		if ((js_str = JS_NewStringCopyZ(cx, p)) == nullptr)
 			return JS_FALSE;
-		*vp = STRING_TO_JSVAL(js_str);
-	} else
+		*vp = STRING_TO_JSVAL(js_str.get());
+	} else {
 		*vp = INT_TO_JSVAL(val);
-
+	}
 	return JS_TRUE;
 }
 
-#define CLIENT_PROP_FLAGS JSPROP_ENUMERATE | JSPROP_READONLY
-
-static jsSyncPropertySpec js_client_properties[] = {
-/*		 name				,tinyid					,flags,					ver	*/
-
-	{   "ip_address", CLIENT_PROP_ADDR, CLIENT_PROP_FLAGS,     310},
-	{   "host_name", CLIENT_PROP_HOST, CLIENT_PROP_FLAGS,     310},
-	{   "port", CLIENT_PROP_PORT, CLIENT_PROP_FLAGS,     310},
-	{   "connect_time", CLIENT_PROP_TIME, CLIENT_PROP_FLAGS,     310},
-	{   "protocol", CLIENT_PROP_PROTOCOL, CLIENT_PROP_FLAGS,     310},
-	{   "user_name", CLIENT_PROP_USER, CLIENT_PROP_FLAGS,     310},
-	{   "user_number", CLIENT_PROP_USERNUM, CLIENT_PROP_FLAGS,     31702},
-	{0}
-};
-
-static JSBool js_client_resolve(JSContext *cx, JSObject *obj, jsid id)
+static bool js_client_prop_getter(JSContext* cx, unsigned argc, JS::Value* vp)
 {
-	char*  name = NULL;
-	JSBool ret;
+	JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
+	JS::RootedObject thisObj(cx);
+	if (!args.computeThis(cx, &thisObj))
+		return false;
+	client_t* client = (client_t*)JS_GetPrivate(thisObj);
+	if (client == nullptr) {
+		args.rval().setUndefined();
+		return true;
+	}
+	JSObject* callee = &args.callee();
+	jsint tiny = js::GetFunctionNativeReserved(callee, 0).toInt32();
+	jsval val = JSVAL_VOID;
+	if (!js_client_get_value(cx, client, tiny, &val))
+		return false;
+	args.rval().set(val);
+	return true;
+}
 
-	if (id != JSID_VOID && id != JSID_EMPTY) {
-		jsval idval;
+static JSBool js_client_fill_properties(JSContext* cx, JSObject* obj, client_t* client, const char* name)
+{
+	(void)client;
+	return js_DefineSyncAccessors(cx, obj, js_client_properties, js_client_prop_getter, name);
+}
 
-		JS_IdToValue(cx, id, &idval);
-		if (JSVAL_IS_STRING(idval)) {
-			JSSTRING_TO_MSTRING(cx, JSVAL_TO_STRING(idval), name, NULL);
-			if (name == NULL)
-				return JS_FALSE;
-		}
+static bool js_client_resolve(JSContext *cx, JS::Handle<JSObject*> obj, JS::Handle<jsid> id, bool* resolvedp)
+{
+	char*     name = NULL;
+	client_t* client;
+
+	if (id.get().isString()) {
+		JSString* str = id.get().toString();
+		JSSTRING_TO_MSTRING(cx, str, name, NULL);
+		HANDLE_PENDING(cx, name);
+		if (name == NULL) return false;
 	}
 
-	ret = js_SyncResolve(cx, obj, name, js_client_properties, NULL, NULL, 0);
+	bool ret = js_SyncResolve(cx, obj, name, js_client_properties, NULL, NULL, 0);
+	if (ret && (client = (client_t*)JS_GetPrivate(cx, obj)) != NULL)
+		js_client_fill_properties(cx, obj, client, name);
 	if (name)
 		free(name);
-	return ret;
+	if (resolvedp) *resolvedp = ret;
+	return true;
 }
 
-static JSBool js_client_enumerate(JSContext *cx, JSObject *obj)
+static bool js_client_enumerate(JSContext *cx, JS::Handle<JSObject*> obj)
 {
-	return js_client_resolve(cx, obj, JSID_VOID);
+	client_t* client;
+
+	if (!js_SyncResolve(cx, obj, NULL, js_client_properties, NULL, NULL, 0))
+		return false;
+	if ((client = (client_t*)JS_GetPrivate(cx, obj)) != NULL)
+		js_client_fill_properties(cx, obj, client, NULL);
+	return true;
 }
+
+static const JSClassOps js_client_classops = {
+	nullptr,                /* addProperty  */
+	nullptr,                /* delProperty  */
+	js_client_enumerate,    /* enumerate    */
+	nullptr,                /* newEnumerate */
+	js_client_resolve,      /* resolve      */
+	nullptr,                /* mayResolve   */
+	nullptr,                /* finalize     */
+	nullptr, nullptr, nullptr /* call, construct, trace */
+};
 
 static JSClass js_client_class = {
-	"Client"                /* name			*/
-	, JSCLASS_HAS_PRIVATE    /* flags		*/
-	, JS_PropertyStub        /* addProperty	*/
-	, JS_PropertyStub        /* delProperty	*/
-	, js_client_get          /* getProperty	*/
-	, js_client_set          /* setProperty	*/
-	, js_client_enumerate    /* enumerate	*/
-	, js_client_resolve      /* resolve		*/
-	, JS_ConvertStub         /* convert		*/
-	, JS_FinalizeStub        /* finalize		*/
+	"Client"
+	, JSCLASS_HAS_PRIVATE
+	, &js_client_classops
 };
 
 JSObject* js_CreateClientObject(JSContext* cx, JSObject* parent
                                 , const char* name, client_t* client, SOCKET sock, CRYPT_CONTEXT session)
 {
-	JSObject* obj;
+	JS::RootedObject obj(cx);
 
 	obj = JS_DefineObject(cx, parent, name, &js_client_class, NULL
 	                      , JSPROP_ENUMERATE | JSPROP_READONLY);
 
-	if (obj == NULL)
+	if (!obj)
 		return NULL;
 
 	JS_SetPrivate(cx, obj, client); /* Store a pointer to client_t */
 
 #ifdef BUILD_JSDOCS
-	js_DescribeSyncObject(cx, obj, "Represents a TCP/IP client session", 310);
+	js_DescribeSyncObject(cx, obj.get(), "Represents a TCP/IP client session", 310);
 	js_CreateArrayOfStrings(cx, obj, "_property_desc_list", client_prop_desc, JSPROP_READONLY);
 #endif
 

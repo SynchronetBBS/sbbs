@@ -21,7 +21,6 @@
 
 #include "sbbs.h"
 #include "comio.h"
-#include "js_request.h"
 
 #ifdef JAVASCRIPT
 
@@ -57,11 +56,11 @@ static void dbprintf(BOOL error, private_t* p, const char* fmt, ...)
 
 /* COM Destructor */
 
-static void js_finalize_com(JSContext *cx, JSObject *obj)
+static void js_finalize_com(JS::GCContext* gcx, JSObject *obj)
 {
 	private_t* p;
 
-	if ((p = (private_t*)JS_GetPrivate(cx, obj)) == NULL)
+	if ((p = (private_t*)JS_GetPrivate(obj)) == NULL)
 		return;
 
 	if (p->external == FALSE && p->com != COM_HANDLE_INVALID) {
@@ -73,7 +72,7 @@ static void js_finalize_com(JSContext *cx, JSObject *obj)
 		free(p->dev);
 	free(p);
 
-	JS_SetPrivate(cx, obj, NULL);
+	JS_SetPrivate(obj, NULL);
 }
 
 
@@ -86,7 +85,6 @@ js_close(JSContext *cx, uintN argc, jsval *arglist)
 {
 	JSObject * obj = JS_THIS_OBJECT(cx, arglist);
 	private_t* p;
-	jsrefcount rc;
 
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
@@ -97,7 +95,6 @@ js_close(JSContext *cx, uintN argc, jsval *arglist)
 	if (p->com == COM_HANDLE_INVALID)
 		return JS_TRUE;
 
-	rc = JS_SUSPENDREQUEST(cx);
 	comClose(p->com);
 
 	p->last_error = COM_ERROR_VALUE;
@@ -106,7 +103,6 @@ js_close(JSContext *cx, uintN argc, jsval *arglist)
 
 	p->com = COM_HANDLE_INVALID;
 	p->is_open = FALSE;
-	JS_RESUMEREQUEST(cx, rc);
 
 	return JS_TRUE;
 }
@@ -116,7 +112,6 @@ js_open(JSContext *cx, uintN argc, jsval *arglist)
 {
 	JSObject * obj = JS_THIS_OBJECT(cx, arglist);
 	private_t* p;
-	jsrefcount rc;
 
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
@@ -124,7 +119,6 @@ js_open(JSContext *cx, uintN argc, jsval *arglist)
 		return JS_FALSE;
 	}
 
-	rc = JS_SUSPENDREQUEST(cx);
 	dbprintf(FALSE, p, "opening port %s", p->dev);
 
 	p->com = comOpen(p->dev);
@@ -133,7 +127,6 @@ js_open(JSContext *cx, uintN argc, jsval *arglist)
 		p->last_error = COM_ERROR_VALUE;
 		dbprintf(TRUE, p, "connect failed with error %d", p->last_error);
 		JS_SET_RVAL(cx, arglist, JSVAL_FALSE);
-		JS_RESUMEREQUEST(cx, rc);
 		return JS_TRUE;
 	}
 
@@ -142,7 +135,6 @@ js_open(JSContext *cx, uintN argc, jsval *arglist)
 	p->is_open = TRUE;
 	JS_SET_RVAL(cx, arglist, JSVAL_TRUE);
 	dbprintf(FALSE, p, "connected to port %s", p->dev);
-	JS_RESUMEREQUEST(cx, rc);
 
 	return JS_TRUE;
 }
@@ -155,7 +147,6 @@ js_send(JSContext *cx, uintN argc, jsval *arglist)
 	char*      cp = NULL;
 	size_t     len = 0;
 	private_t* p;
-	jsrefcount rc;
 
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
@@ -171,7 +162,6 @@ js_send(JSContext *cx, uintN argc, jsval *arglist)
 	JSVALUE_TO_MSTRING(cx, argv[0], cp, &len);
 	HANDLE_PENDING(cx, cp);
 
-	rc = JS_SUSPENDREQUEST(cx);
 	if (cp && comWriteBuf(p->com, (uint8_t *)cp, len) == (int)len) {
 		dbprintf(FALSE, p, "sent %lu bytes", len);
 		JS_SET_RVAL(cx, arglist, JSVAL_TRUE);
@@ -181,7 +171,6 @@ js_send(JSContext *cx, uintN argc, jsval *arglist)
 	}
 	if (cp)
 		free(cp);
-	JS_RESUMEREQUEST(cx, rc);
 
 	return JS_TRUE;
 }
@@ -195,7 +184,6 @@ js_sendfile(JSContext *cx, uintN argc, jsval *arglist)
 	int        file;
 	char*      fname = NULL;
 	private_t* p;
-	jsrefcount rc;
 	char *     buf;
 
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
@@ -216,9 +204,7 @@ js_sendfile(JSContext *cx, uintN argc, jsval *arglist)
 		return JS_FALSE;
 	}
 
-	rc = JS_SUSPENDREQUEST(cx);
 	if ((file = nopen(fname, O_RDONLY | O_BINARY)) == -1) {
-		JS_RESUMEREQUEST(cx, rc);
 		free(fname);
 		return JS_TRUE;
 	}
@@ -249,7 +235,6 @@ js_sendfile(JSContext *cx, uintN argc, jsval *arglist)
 	}
 	free(buf);
 
-	JS_RESUMEREQUEST(cx, rc);
 	return JS_TRUE;
 }
 
@@ -265,7 +250,6 @@ js_sendbin(JSContext *cx, uintN argc, jsval *arglist)
 	size_t     wr = 0;
 	int32      size = sizeof(DWORD);
 	private_t* p;
-	jsrefcount rc;
 
 	JS_SET_RVAL(cx, arglist, JSVAL_FALSE);
 
@@ -282,7 +266,6 @@ js_sendbin(JSContext *cx, uintN argc, jsval *arglist)
 	if (!JS_ValueToInt32(cx, argv[1], &size))
 		return JS_FALSE;
 
-	rc = JS_SUSPENDREQUEST(cx);
 	switch (size) {
 		case sizeof(BYTE):
 			b = (BYTE)val;
@@ -313,7 +296,6 @@ js_sendbin(JSContext *cx, uintN argc, jsval *arglist)
 		dbprintf(TRUE, p, "send of %u bytes (binary) failed", size);
 	}
 
-	JS_RESUMEREQUEST(cx, rc);
 	return JS_TRUE;
 }
 
@@ -326,7 +308,6 @@ js_recv(JSContext *cx, uintN argc, jsval *arglist)
 	char*      buf;
 	int32      len = 512;
 	JSString*  str;
-	jsrefcount rc;
 	int32      timeout = 30; /* seconds */
 	private_t* p;
 
@@ -351,9 +332,7 @@ js_recv(JSContext *cx, uintN argc, jsval *arglist)
 		return JS_FALSE;
 	}
 
-	rc = JS_SUSPENDREQUEST(cx);
 	len = comReadBuf(p->com, buf, len, NULL, timeout);
-	JS_RESUMEREQUEST(cx, rc);
 	if (len < 0) {
 		p->last_error = COM_ERROR_VALUE;
 		free(buf);
@@ -368,9 +347,7 @@ js_recv(JSContext *cx, uintN argc, jsval *arglist)
 		return JS_FALSE;
 
 	JS_SET_RVAL(cx, arglist, STRING_TO_JSVAL(str));
-	rc = JS_SUSPENDREQUEST(cx);
 	dbprintf(FALSE, p, "received %u bytes", len);
-	JS_RESUMEREQUEST(cx, rc);
 
 	return JS_TRUE;
 }
@@ -386,7 +363,6 @@ js_recvline(JSContext *cx, uintN argc, jsval *arglist)
 	int32      timeout = 30; /* seconds */
 	JSString*  str;
 	private_t* p;
-	jsrefcount rc;
 
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
@@ -411,7 +387,6 @@ js_recvline(JSContext *cx, uintN argc, jsval *arglist)
 		}
 	}
 
-	rc = JS_SUSPENDREQUEST(cx);
 
 	i = comReadLine(p->com, buf, len + 1, timeout);
 
@@ -420,17 +395,14 @@ js_recvline(JSContext *cx, uintN argc, jsval *arglist)
 	else
 		buf[i] = 0;
 
-	JS_RESUMEREQUEST(cx, rc);
 	str = JS_NewStringCopyZ(cx, buf);
 	free(buf);
 	if (str == NULL)
 		return JS_FALSE;
 
 	JS_SET_RVAL(cx, arglist, STRING_TO_JSVAL(str));
-	rc = JS_SUSPENDREQUEST(cx);
 	dbprintf(FALSE, p, "received %u bytes (recvline) lasterror=%d"
 	         , i, COM_ERROR_VALUE);
-	JS_RESUMEREQUEST(cx, rc);
 
 	return JS_TRUE;
 }
@@ -446,7 +418,6 @@ js_recvbin(JSContext *cx, uintN argc, jsval *arglist)
 	int32      size = sizeof(DWORD);
 	int        rd = 0;
 	private_t* p;
-	jsrefcount rc;
 	int32      timeout = 30; /* seconds */
 
 	JS_SET_RVAL(cx, arglist, INT_TO_JSVAL(-1));
@@ -465,7 +436,6 @@ js_recvbin(JSContext *cx, uintN argc, jsval *arglist)
 			return JS_FALSE;
 	}
 
-	rc = JS_SUSPENDREQUEST(cx);
 	switch (size) {
 		case sizeof(BYTE):
 			if ((rd = comReadBuf(p->com, (char*)&b, size, NULL, timeout)) == size)
@@ -490,7 +460,6 @@ js_recvbin(JSContext *cx, uintN argc, jsval *arglist)
 	if (rd != size)
 		p->last_error = COM_ERROR_VALUE;
 
-	JS_RESUMEREQUEST(cx, rc);
 	return JS_TRUE;
 }
 
@@ -529,56 +498,42 @@ static const char* com_prop_desc[] = {
 };
 #endif
 
-static JSBool js_com_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, jsval *vp)
+static JSBool js_com_set_value(JSContext* cx, private_t* p, jsint tiny, jsval* vp)
 {
-	jsval      idval;
-	jsint      tiny;
-	private_t* p;
-	jsrefcount rc;
-	double     d;
-	int32      i;
+	int32     val = 0;
+	JSBool    b;
 
-	if ((p = (private_t*)JS_GetPrivate(cx, obj)) == NULL) {
-		// Prototype access
-		return JS_TRUE;
+	if (JSVAL_IS_NUMBER(*vp) || JSVAL_IS_BOOLEAN(*vp)) {
+		if (!JS_ValueToInt32(cx, *vp, &val))
+			return JS_FALSE;
 	}
-
-	JS_IdToValue(cx, id, &idval);
-	tiny = JSVAL_TO_INT(idval);
-
-	rc = JS_SUSPENDREQUEST(cx);
-	dbprintf(FALSE, p, "setting property %d", tiny);
-	JS_RESUMEREQUEST(cx, rc);
+	if (JSVAL_IS_BOOLEAN(*vp)) {
+		b = JSVAL_TO_BOOLEAN(*vp);
+	} else {
+		b = val ? JS_TRUE : JS_FALSE;
+	}
 
 	switch (tiny) {
 		case COM_PROP_DEBUG:
-			JS_ValueToBoolean(cx, *vp, &(p->debug));
+			p->debug = b;
 			break;
 		case COM_PROP_DESCRIPTOR:
-			if (!JS_ValueToInt32(cx, *vp, &i))
-				return JS_FALSE;
-			p->com = (COM_HANDLE)i;
+			p->com = (COM_HANDLE)val;
 			p->is_open = TRUE;
 			break;
 		case COM_PROP_LAST_ERROR:
-			if (!JS_ValueToInt32(cx, *vp, &i))
-				return JS_FALSE;
-			p->last_error = i;
+			p->last_error = val;
 			break;
 		case COM_PROP_BAUD_RATE:
-			if (JS_ValueToNumber(cx, *vp, &d)) {
-				p->baud_rate = (long)d;
-				rc = JS_SUSPENDREQUEST(cx);
-				if (p->is_open)
-					comSetBaudRate(p->com, p->baud_rate);
-				JS_RESUMEREQUEST(cx, rc);
-			}
+			p->baud_rate = val;
+			if (p->is_open)
+				comSetBaudRate(p->com, p->baud_rate);
 			break;
 		case COM_PROP_NETWORK_ORDER:
-			JS_ValueToBoolean(cx, *vp, &(p->network_byte_order));
+			p->network_byte_order = b;
 			break;
 		case COM_PROP_DTR:
-			JS_ValueToBoolean(cx, *vp, &(p->dtr));
+			p->dtr = b;
 			if (p->is_open) {
 				if (p->dtr)
 					comRaiseDTR(p->com);
@@ -588,98 +543,75 @@ static JSBool js_com_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, j
 			else
 				p->dtr = FALSE;
 			break;
-
+		default:
+			return JS_TRUE;
 	}
 
 	return JS_TRUE;
 }
 
-static JSBool js_com_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
+/* SM128: get_value for a single COM property tinyid */
+static JSBool js_com_get_value(JSContext *cx, private_t *p, jsint tiny, jsval *vp)
 {
-	jsval      idval;
-	jsint      tiny;
-	private_t* p;
-	JSString*  js_str;
-	jsrefcount rc;
-	long       baud_rate;
-	int        ms;
-
-	if ((p = (private_t*)JS_GetPrivate(cx, obj)) == NULL) {
-		// Protoype access
-		return JS_TRUE;
-	}
-
-	JS_IdToValue(cx, id, &idval);
-	tiny = JSVAL_TO_INT(idval);
-
-	rc = JS_SUSPENDREQUEST(cx);
-#if 0 /* just too much */
-	dbprintf(FALSE, p, "getting property %d", tiny);
-#endif
+	long              baud_rate;
+	int               ms;
+	JS::RootedString  js_str(cx);
 
 	switch (tiny) {
 		case COM_PROP_LAST_ERROR:
 			*vp = INT_TO_JSVAL(p->last_error);
-			break;
+			return JS_TRUE;
 		case COM_PROP_IS_OPEN:
-			if (p->is_open)
-				*vp = JSVAL_TRUE;
-			else
-				*vp = JSVAL_FALSE;
-			break;
+			*vp = BOOLEAN_TO_JSVAL(p->is_open ? JS_TRUE : JS_FALSE);
+			return JS_TRUE;
 		case COM_PROP_DEBUG:
 			*vp = BOOLEAN_TO_JSVAL(p->debug);
-			break;
+			return JS_TRUE;
 		case COM_PROP_DESCRIPTOR:
 			*vp = INT_TO_JSVAL((int)p->com);
-			break;
+			return JS_TRUE;
 		case COM_PROP_NETWORK_ORDER:
 			*vp = BOOLEAN_TO_JSVAL(p->network_byte_order);
-			break;
+			return JS_TRUE;
 		case COM_PROP_BAUD_RATE:
 			baud_rate = comGetBaudRate(p->com);
 			*vp = UINT_TO_JSVAL(baud_rate);
-			break;
+			return JS_TRUE;
 		case COM_PROP_DEVICE:
-			JS_RESUMEREQUEST(cx, rc);
-			if ((js_str = JS_NewStringCopyZ(cx, p->dev)) == NULL)
+			if ((js_str = JS_NewStringCopyZ(cx, p->dev)) == nullptr)
 				return JS_FALSE;
-			*vp = STRING_TO_JSVAL(js_str);
-			rc = JS_SUSPENDREQUEST(cx);
-			break;
+			*vp = STRING_TO_JSVAL(js_str.get());
+			return JS_TRUE;
 		case COM_PROP_DTR:
 			*vp = BOOLEAN_TO_JSVAL(p->dtr);
-			break;
+			return JS_TRUE;
 		case COM_PROP_CTS:
 			ms = comGetModemStatus(p->com);
 			*vp = BOOLEAN_TO_JSVAL(ms & COM_CTS);
-			break;
+			return JS_TRUE;
 		case COM_PROP_DSR:
 			ms = comGetModemStatus(p->com);
 			*vp = BOOLEAN_TO_JSVAL(ms & COM_DSR);
-			break;
+			return JS_TRUE;
 		case COM_PROP_RING:
 			ms = comGetModemStatus(p->com);
 			*vp = BOOLEAN_TO_JSVAL(ms & COM_RING);
-			break;
+			return JS_TRUE;
 		case COM_PROP_DCD:
 			ms = comGetModemStatus(p->com);
 			*vp = BOOLEAN_TO_JSVAL(ms & COM_DCD);
-			break;
-
+			return JS_TRUE;
+		default:
+			return JS_TRUE;
 	}
-
-	JS_RESUMEREQUEST(cx, rc);
-	return TRUE;
 }
-
 #define COM_PROP_FLAGS JSPROP_ENUMERATE | JSPROP_READONLY
 
 static jsSyncPropertySpec js_com_properties[] = {
 /*		 name				,tinyid					,flags,				ver	*/
 
 	{   "error", COM_PROP_LAST_ERROR, COM_PROP_FLAGS,    315 },
-	{   "last_error", COM_PROP_LAST_ERROR, JSPROP_READONLY,   315 },            /* alias */
+	{   "last_error", COM_PROP_LAST_ERROR, 0,                 315 },            /* alias */
 	{   "is_open", COM_PROP_IS_OPEN, COM_PROP_FLAGS,    315 },
 	{   "debug", COM_PROP_DEBUG, JSPROP_ENUMERATE,  315 },
 	{   "descriptor", COM_PROP_DESCRIPTOR, JSPROP_ENUMERATE,  315 },
@@ -728,43 +660,107 @@ static jsSyncMethodSpec js_com_functions[] = {
 	{0}
 };
 
-static JSBool js_com_resolve(JSContext *cx, JSObject *obj, jsid id)
+static bool js_com_prop_setter(JSContext* cx, unsigned argc, JS::Value* vp)
 {
-	char*  name = NULL;
-	JSBool ret;
+	JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
+	JS::RootedObject thisObj(cx);
+	if (!args.computeThis(cx, &thisObj))
+		return false;
+	private_t* p = (private_t*)js_GetClassPrivate(cx, thisObj, &js_com_class);
+	if (p == nullptr)
+		return true;
+	JSObject* callee = &args.callee();
+	jsint tiny = js::GetFunctionNativeReserved(callee, 0).toInt32();
+	jsval val = args.length() > 0 ? args[0] : JSVAL_VOID;
+	if (!js_com_set_value(cx, p, tiny, &val))
+		return false;
+	args.rval().set(val);
+	return true;
+}
 
-	if (id != JSID_VOID && id != JSID_EMPTY) {
-		jsval idval;
+static bool js_com_prop_getter(JSContext* cx, unsigned argc, JS::Value* vp)
+{
+	JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
+	JS::RootedObject thisObj(cx);
+	if (!args.computeThis(cx, &thisObj))
+		return false;
+	private_t* p = (private_t*)js_GetClassPrivate(cx, thisObj, &js_com_class);
+	if (p == nullptr) {
+		args.rval().setUndefined();
+		return true;
+	}
+	JSObject* callee = &args.callee();
+	jsint tiny = js::GetFunctionNativeReserved(callee, 0).toInt32();
+	jsval val = JSVAL_VOID;
+	if (!js_com_get_value(cx, p, tiny, &val))
+		return false;
+	args.rval().set(val);
+	return true;
+}
 
-		JS_IdToValue(cx, id, &idval);
-		if (JSVAL_IS_STRING(idval)) {
-			JSSTRING_TO_MSTRING(cx, JSVAL_TO_STRING(idval), name, NULL);
-			HANDLE_PENDING(cx, name);
-		}
+/* SM128: populate actual property values for all (or one named) js_com_properties entry.
+ * Called after js_SyncResolve so the stub data properties exist; sets them to real values. */
+static JSBool js_com_fill_properties(JSContext *cx, JSObject *obj, private_t *p, const char *name)
+{
+	(void)p;
+	return js_DefineSyncAccessors(cx, obj, js_com_properties, js_com_prop_getter, name, js_com_prop_setter);
+}
+
+static bool js_com_resolve(JSContext *cx, JS::Handle<JSObject*> obj, JS::Handle<jsid> id, bool* resolvedp)
+{
+	char*      name = NULL;
+	private_t* p;
+
+	if (id.get().isString()) {
+		JSString* str = id.get().toString();
+		JSSTRING_TO_MSTRING(cx, str, name, NULL);
+		HANDLE_PENDING(cx, name);
+		if (name == NULL) return false;
 	}
 
-	ret = js_SyncResolve(cx, obj, name, js_com_properties, js_com_functions, NULL, 0);
+	bool ret = js_SyncResolve(cx, obj, name, js_com_properties, js_com_functions, NULL, 0);
+	if (ret) {
+		if ((p = (private_t*)js_GetClassPrivate(cx, obj, &js_com_class)) != NULL) {
+			if (!js_com_fill_properties(cx, obj, p, name)) {
+				if (name) free(name);
+				return false;
+			}
+		}
+	}
 	if (name)
 		free(name);
-	return ret;
+	if (resolvedp) *resolvedp = ret;
+	return true;
 }
 
-static JSBool js_com_enumerate(JSContext *cx, JSObject *obj)
+static bool js_com_enumerate(JSContext *cx, JS::Handle<JSObject*> obj)
 {
-	return js_com_resolve(cx, obj, JSID_VOID);
+	private_t* p;
+
+	if (!js_SyncResolve(cx, obj, NULL, js_com_properties, js_com_functions, NULL, 0))
+		return false;
+	if ((p = (private_t*)js_GetClassPrivate(cx, obj, &js_com_class)) != NULL) {
+		if (!js_com_fill_properties(cx, obj, p, NULL))
+			return false;
+	}
+	return true;
 }
+
+static const JSClassOps js_com_classops = {
+	nullptr,                /* addProperty  */
+	nullptr,                /* delProperty  */
+	js_com_enumerate,       /* enumerate    */
+	nullptr,                /* newEnumerate */
+	js_com_resolve,         /* resolve      */
+	nullptr,                /* mayResolve   */
+	js_finalize_com,        /* finalize     */
+	nullptr, nullptr, nullptr /* call, construct, trace */
+};
 
 JSClass js_com_class = {
-	"COM"               /* name			*/
-	, JSCLASS_HAS_PRIVATE    /* flags		*/
-	, JS_PropertyStub        /* addProperty	*/
-	, JS_PropertyStub        /* delProperty	*/
-	, js_com_get             /* getProperty	*/
-	, js_com_set             /* setProperty	*/
-	, js_com_enumerate       /* enumerate	*/
-	, js_com_resolve         /* resolve		*/
-	, JS_ConvertStub         /* convert		*/
-	, js_finalize_com        /* finalize		*/
+	"COM"
+	, JSCLASS_HAS_PRIVATE
+	, &js_com_classops
 };
 
 /* COM Constructor (creates COM descriptor) */

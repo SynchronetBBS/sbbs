@@ -21,10 +21,10 @@
 
 #include "sbbs.h"
 #include "sockwrap.h"
-#include "js_request.h"
 #include "js_socket.h"
 
 /* SpiderMonkey: */
+#include <js/friend/JSMEnvironment.h>
 #if TODO_DEBUG
 #include <jsdbgapi.h>
 #endif
@@ -63,130 +63,102 @@ JSBool js_IsTerminated(JSContext* cx, JSObject* obj)
 	return top_cb->terminated && *top_cb->terminated;
 }
 
-static JSBool js_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
+static JSBool js_internal_get_value(JSContext* cx, js_callback_t* cb, jsint tiny, jsval* vp)
 {
-	jsval          idval;
-	jsint          tiny;
-	js_callback_t* cb;
-	js_callback_t* top_cb;
-
-	if ((cb = (js_callback_t*)JS_GetPrivate(cx, obj)) == NULL)
-		return JS_FALSE;
-
-	JS_IdToValue(cx, id, &idval);
-	tiny = JSVAL_TO_INT(idval);
-
 	switch (tiny) {
 		case PROP_VERSION:
-			*vp = STRING_TO_JSVAL(JS_NewStringCopyZ(cx, (char *)JS_GetImplementationVersion()));
+			*vp = STRING_TO_JSVAL(JS_NewStringCopyZ(cx, JS_GetImplementationVersion()));
 			break;
 		case PROP_TERMINATED:
-			for (top_cb = cb; top_cb->bg && top_cb->parent_cb; top_cb = top_cb->parent_cb) {
-				if (top_cb->terminated && *top_cb->terminated) {
-					*vp = BOOLEAN_TO_JSVAL(TRUE);
-					return JS_TRUE;
+			if (cb != NULL) {
+				js_callback_t* top_cb = cb;
+				while (top_cb->bg && top_cb->parent_cb) {
+					if (top_cb->terminated && *top_cb->terminated) {
+						*vp = BOOLEAN_TO_JSVAL(TRUE);
+						return JS_TRUE;
+					}
+					top_cb = top_cb->parent_cb;
 				}
+				*vp = top_cb->terminated ? BOOLEAN_TO_JSVAL(*top_cb->terminated) : JSVAL_FALSE;
 			}
-			if (top_cb->terminated == NULL)
-				*vp = JSVAL_FALSE;
-			else
-				*vp = BOOLEAN_TO_JSVAL(*top_cb->terminated);
 			break;
 		case PROP_AUTO_TERMINATE:
-			*vp = BOOLEAN_TO_JSVAL(cb->auto_terminate);
+			if (cb != NULL)
+				*vp = BOOLEAN_TO_JSVAL(cb->auto_terminate);
 			break;
 		case PROP_COUNTER:
-			*vp = DOUBLE_TO_JSVAL((double)cb->counter);
+			if (cb != NULL)
+				*vp = DOUBLE_TO_JSVAL((double)cb->counter);
 			break;
 		case PROP_TIME_LIMIT:
-			*vp = DOUBLE_TO_JSVAL(cb->limit);
+			if (cb != NULL)
+				*vp = DOUBLE_TO_JSVAL(cb->limit);
 			break;
 		case PROP_YIELD_INTERVAL:
-			*vp = DOUBLE_TO_JSVAL((double)cb->yield_interval);
+			if (cb != NULL)
+				*vp = DOUBLE_TO_JSVAL((double)cb->yield_interval);
 			break;
 		case PROP_GC_INTERVAL:
-			*vp = DOUBLE_TO_JSVAL((double)cb->gc_interval);
+			if (cb != NULL)
+				*vp = DOUBLE_TO_JSVAL((double)cb->gc_interval);
 			break;
 		case PROP_GC_ATTEMPTS:
-			*vp = DOUBLE_TO_JSVAL((double)cb->gc_attempts);
+			if (cb != NULL)
+				*vp = DOUBLE_TO_JSVAL((double)cb->gc_attempts);
 			break;
-#ifdef jscntxt_h___
-		case PROP_GC_COUNTER:
-			*vp = UINT_TO_JSVAL(cx->runtime->gcNumber);
-			break;
-		case PROP_GC_LASTBYTES:
-			*vp = DOUBLE_TO_JSVAL((double)cx->runtime->gcLastBytes);
-			break;
-		case PROP_BYTES:
-			*vp = DOUBLE_TO_JSVAL((double)cx->runtime->gcBytes);
-			break;
-		case PROP_MAXBYTES:
-			*vp = DOUBLE_TO_JSVAL((double)cx->runtime->gcMaxBytes);
-			break;
-#endif
 		case PROP_GLOBAL:
 			*vp = OBJECT_TO_JSVAL(JS_GetGlobalObject(cx));
 			break;
-		case PROP_OPTIONS:
-			*vp = UINT_TO_JSVAL(JS_GetOptions(cx));
-			break;
 		case PROP_KEEPGOING:
-			if (cb->events_supported)
+			if (cb != NULL && cb->events_supported)
 				*vp = BOOLEAN_TO_JSVAL(cb->keepGoing);
 			else
 				*vp = JSVAL_FALSE;
 			break;
+		default:
+			return JS_TRUE;
 	}
-
 	return JS_TRUE;
 }
 
-static JSBool js_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, jsval *vp)
+static JSBool js_internal_set_value(JSContext* cx, js_callback_t* cb, jsint tiny, jsval* vp)
 {
-	jsval          idval;
-	jsint          tiny;
-	js_callback_t* cb;
+	int32 val = 0;
 
-	if ((cb = (js_callback_t*)JS_GetPrivate(cx, obj)) == NULL)
-		return JS_FALSE;
+	if (cb == NULL)
+		return JS_TRUE;
 
-	JS_IdToValue(cx, id, &idval);
-	tiny = JSVAL_TO_INT(idval);
+	if (JSVAL_IS_NUMBER(*vp) || JSVAL_IS_BOOLEAN(*vp)) {
+		if (!JS_ValueToInt32(cx, *vp, &val))
+			return JS_FALSE;
+	}
 
 	switch (tiny) {
 		case PROP_TERMINATED:
 			if (cb->terminated != NULL)
-				JS_ValueToBoolean(cx, *vp, (int *)cb->terminated);
+				*cb->terminated = val ? true : false;
 			break;
 		case PROP_AUTO_TERMINATE:
-			JS_ValueToBoolean(cx, *vp, &cb->auto_terminate);
+			cb->auto_terminate = val;
 			break;
 		case PROP_COUNTER:
-			if (!JS_ValueToInt32(cx, *vp, (int32*)&cb->counter))
-				return JS_FALSE;
+			cb->counter = val;
 			break;
 		case PROP_TIME_LIMIT:
-			if (!JS_ValueToInt32(cx, *vp, (int32*)&cb->limit))
-				return JS_FALSE;
+			cb->limit = val;
 			break;
 		case PROP_GC_INTERVAL:
-			if (!JS_ValueToInt32(cx, *vp, (int32*)&cb->gc_interval))
-				return JS_FALSE;
+			cb->gc_interval = val;
 			break;
 		case PROP_YIELD_INTERVAL:
-			if (!JS_ValueToInt32(cx, *vp, (int32*)&cb->yield_interval))
-				return JS_FALSE;
+			cb->yield_interval = val;
 			break;
-#ifdef jscntxt_h___
-		case PROP_MAXBYTES:
-			if (!JS_ValueToInt32(cx, *vp, (int32*)&cx->runtime->gcMaxBytes))
-				return JS_FALSE;
-			break;
-#endif
 		case PROP_KEEPGOING:
 			if (cb->events_supported)
-				JS_ValueToBoolean(cx, *vp, &cb->keepGoing);
+				cb->keepGoing = val;
 			break;
+		default:
+			return JS_TRUE;
 	}
 
 	return JS_TRUE;
@@ -269,7 +241,13 @@ js_CommonOperationCallback(JSContext *cx, js_callback_t* cb)
 		for (top_cb = cb; top_cb; top_cb = top_cb->parent_cb) {
 			if (top_cb->terminated != NULL && *top_cb->terminated) {
 				top_cb->auto_terminated = true;
-				JS_ReportWarning(cx, "Terminated");
+				/* Log as warning (matching old JS_ReportWarning behavior) */
+				JS::WarnASCII(cx, "Terminated");
+				/* SM128: must set a pending exception; returning false without one
+				 * is silently ignored in release builds. */
+				JS::RootedValue exc(cx);
+				exc.setNull();
+				JS_SetPendingException(cx, exc);
 				cb->counter = 0;
 				return JS_FALSE;
 			}
@@ -278,22 +256,18 @@ js_CommonOperationCallback(JSContext *cx, js_callback_t* cb)
 
 	/* Infinite loop? */
 	if (cb->limit && cb->counter > cb->limit) {
-		JS_ReportError(cx, "Infinite loop (%lu operation callbacks) detected", cb->counter);
+		JS_ReportError(cx, "Infinite loop (%u operation callbacks) detected", cb->counter);
 		cb->counter = 0;
 		return JS_FALSE;
 	}
 
 	/* Give up timeslices every once in a while */
 	if (cb->yield_interval && (cb->counter % cb->yield_interval) == 0) {
-		jsrefcount rc;
 
-		rc = JS_SUSPENDREQUEST(cx);
 		YIELD();
-		JS_RESUMEREQUEST(cx, rc);
 	}
 
 	/* Permit other contexts to run GC */
-	JS_YieldRequest(cx);
 
 	/* Periodic Garbage Collection */
 	if (cb->gc_interval && (cb->counter % cb->gc_interval) == 0)
@@ -304,7 +278,7 @@ js_CommonOperationCallback(JSContext *cx, js_callback_t* cb)
 
 // This is kind of halfway between js_execfile() in exec.cpp and js_load
 extern JSClass js_global_class; // Hurr derr
-static int
+static JSBool
 js_execfile(JSContext *cx, uintN argc, jsval *arglist)
 {
 	char*           cmd = NULL;
@@ -313,17 +287,17 @@ js_execfile(JSContext *cx, uintN argc, jsval *arglist)
 	char*           startup_dir = NULL;
 	uintN           arg = 0;
 	char            path[MAX_PATH + 1] = "";
-	JSObject*       scope = JS_GetScopeChain(cx);
+	JS::RootedObject scope(cx, JS_GetScopeChain(cx));
 	JSObject*       js_scope = NULL;
-	JSObject*       pscope;
-	JSObject*       js_script = NULL;
-	JSObject*       nargv;
+	JS::RootedObject js_scope_root(cx, nullptr);
+	JS::RootedObject pscope(cx);
+	JSScript*       js_script = NULL;
+	JS::RootedObject nargv(cx);
 	jsval           rval = JSVAL_VOID;
-	jsrefcount      rc;
 	uintN           i;
 	jsval           val;
-	JSObject *      js_obj;
-	JSObject *      pjs_obj;
+	JS::RootedObject js_obj(cx);
+	JS::RootedObject pjs_obj(cx);
 	js_callback_t * js_callback;
 	global_private_t *gptp;
 
@@ -362,7 +336,7 @@ js_execfile(JSContext *cx, uintN argc, jsval *arglist)
 
 	if (argc > arg && JSVAL_IS_OBJECT(argv[arg])) {
 		js_scope = JSVAL_TO_OBJECT(argv[arg++]);
-		if (js_scope == scope) {
+		if (js_scope == scope.get()) {
 			free(cmd);
 			free(startup_dir);
 			JS_ReportError(cx, "Invalid Scope");
@@ -375,11 +349,13 @@ js_execfile(JSContext *cx, uintN argc, jsval *arglist)
 		JS_ReportError(cx, "Invalid Scope");
 		return JS_FALSE;
 	}
+	/* Root js_scope so SM128's moving GC keeps the pointer up-to-date */
+	js_scope_root = js_scope;
 
 	pscope = scope;
-	while ((!JS_GetProperty(cx, pscope, "js", &val) || val == JSVAL_VOID || !JSVAL_IS_OBJECT(val)) && pscope != NULL) {
+	while ((!JS_GetProperty(cx, pscope, "js", &val) || val == JSVAL_VOID || !JSVAL_IS_OBJECT(val)) && pscope) {
 		pscope = JS_GetParent(cx, pscope);
-		if (pscope == NULL) {
+		if (!pscope) {
 			free(cmd);
 			free(startup_dir);
 			JS_ReportError(cx, "Walked to global, no js object!");
@@ -387,7 +363,7 @@ js_execfile(JSContext *cx, uintN argc, jsval *arglist)
 		}
 	}
 	pjs_obj = JSVAL_TO_OBJECT(val);
-	if (pjs_obj == NULL) {
+	if (!pjs_obj) {
 		free(cmd);
 		free(startup_dir);
 		JS_ReportError(cx, "Unable to get parent js object");
@@ -403,10 +379,8 @@ js_execfile(JSContext *cx, uintN argc, jsval *arglist)
 			SAFECOPY(path, startup_dir);
 			backslash(path);
 			strncat(path, cmd, sizeof(path) - strlen(path) - 1);
-			rc = JS_SUSPENDREQUEST(cx);
 			if (!fexist(path))
 				*path = 0;
-			JS_RESUMEREQUEST(cx, rc);
 		}
 		// Then check js.exec_dir
 		/* if js.exec_dir is defined (location of executed script), search there first */
@@ -414,10 +388,8 @@ js_execfile(JSContext *cx, uintN argc, jsval *arglist)
 			if (JS_GetProperty(cx, pjs_obj, "exec_dir", &val) && val != JSVAL_VOID && JSVAL_IS_STRING(val)) {
 				JSVALUE_TO_STRBUF(cx, val, path, sizeof(path), &pathlen);
 				strncat(path, cmd, sizeof(path) - pathlen - 1);
-				rc = JS_SUSPENDREQUEST(cx);
 				if (!fexistcase(path))
 					path[0] = 0;
-				JS_RESUMEREQUEST(cx, rc);
 			}
 			if (*path == '\0') {
 				if (gptp->cfg->mods_dir[0] != '\0') {
@@ -443,7 +415,7 @@ js_execfile(JSContext *cx, uintN argc, jsval *arglist)
 
 	nargv = JS_NewArrayObject(cx, 0, NULL);
 
-	JS_DefineProperty(cx, js_scope, "argv", OBJECT_TO_JSVAL(nargv)
+	JS_DefineProperty(cx, js_scope_root.get(), "argv", OBJECT_TO_JSVAL(nargv.get())
 	                  , NULL, NULL, JSPROP_READONLY | JSPROP_ENUMERATE);
 
 	uintN nargc = 0;
@@ -452,30 +424,30 @@ js_execfile(JSContext *cx, uintN argc, jsval *arglist)
 		nargc++;
 	}
 
-	JS_DefineProperty(cx, js_scope, "argc", INT_TO_JSVAL(nargc)
+	JS_DefineProperty(cx, js_scope_root.get(), "argc", INT_TO_JSVAL(nargc)
 	                  , NULL, NULL, JSPROP_ENUMERATE | JSPROP_READONLY);
 
-	js_obj = js_CreateInternalJsObject(cx, js_scope, js_callback, NULL);
-	js_PrepareToExecute(cx, js_scope, path, startup_dir, js_scope);
+	js_obj = js_CreateInternalJsObject(cx, js_scope_root.get(), js_callback, NULL);
+	js_PrepareToExecute(cx, js_scope_root.get(), path, startup_dir, js_scope_root.get());
 	free(startup_dir);
 	// Copy in the load_path_list...
 	{
-		JSObject* pload_path_list;
-		JSObject* load_path_list;
+		JS::RootedObject pload_path_list(cx);
+		JS::RootedObject load_path_list(cx);
 		uint32_t  plen;
 		uint32_t  pcnt;
 
 		if (JS_GetProperty(cx, pjs_obj, JAVASCRIPT_LOAD_PATH_LIST, &val) && val != JSVAL_VOID && JSVAL_IS_OBJECT(val)) {
 			pload_path_list = JSVAL_TO_OBJECT(val);
-			if (pload_path_list == NULL || !JS_IsArrayObject(cx, pload_path_list)) {
+			if (!pload_path_list || !JS_IsArrayObject(cx, pload_path_list)) {
 				JS_ReportError(cx, "Weird js." JAVASCRIPT_LOAD_PATH_LIST " value");
 				return JS_FALSE;
 			}
-			if ((load_path_list = JS_NewArrayObject(cx, 0, NULL)) == NULL) {
+			if (!(load_path_list = JS_NewArrayObject(cx, 0, NULL))) {
 				JS_ReportError(cx, "Unable to create js." JAVASCRIPT_LOAD_PATH_LIST);
 				return JS_FALSE;
 			}
-			val = OBJECT_TO_JSVAL(load_path_list);
+			val = OBJECT_TO_JSVAL(load_path_list.get());
 			JS_SetProperty(cx, js_obj, JAVASCRIPT_LOAD_PATH_LIST, &val);
 			if (JS_GetArrayLength(cx, pload_path_list, &plen))
 				for (pcnt = 0; pcnt < plen; pcnt++) {
@@ -489,7 +461,23 @@ js_execfile(JSContext *cx, uintN argc, jsval *arglist)
 		}
 	}
 
-	js_script = JS_CompileFile(cx, js_scope, path);
+	/* SM128: when a scope object was provided, use ExecuteInJSMEnvironment
+	 * for correct non-syntactic scoping.  See js_global.cpp js_load(). */
+	bool nonsyntactic = (js_scope != scope.get());
+	JS::RootedObject jsmEnv(cx);
+	if (nonsyntactic) {
+		JS::CompileOptions opts(cx);
+		opts.setFileAndLine(path, 1);
+		opts.setNonSyntacticScope(true);
+		js_script = JS::CompileUtf8Path(cx, opts, path);
+		if (js_script != NULL) {
+			jsmEnv.set(JS::NewJSMEnvironment(cx));
+			if (!jsmEnv)
+				js_script = NULL;
+		}
+	} else {
+		js_script = JS_CompileFile(cx, js_scope_root.get(), path);
+	}
 
 	if (js_script == NULL) {
 		/* If the script fails to compile, it's not a fatal error
@@ -502,22 +490,97 @@ js_execfile(JSContext *cx, uintN argc, jsval *arglist)
 		return JS_TRUE;
 	}
 
+	/* SM128: JS_ExecuteScript ignores scope_obj, so scripts run in the main global.
+	 * Temporarily update the parent js object's exec_dir/exec_path/exec_file/startup_dir
+	 * so that load() calls within the sub-script resolve files correctly.
+	 * Also update argv/argc on the global object so the subscript sees the right args.
+	 * Rooted values are used to prevent GC from collecting the saved strings. */
+	JSObject* global = JS_GetGlobalObject(cx);
+	JS::RootedValue saved_exec_dir(cx, JS::UndefinedValue());
+	JS::RootedValue saved_exec_path(cx, JS::UndefinedValue());
+	JS::RootedValue saved_exec_file(cx, JS::UndefinedValue());
+	JS::RootedValue saved_startup_dir(cx, JS::UndefinedValue());
+	bool saved_exec_dir_ok = JS_GetProperty(cx, pjs_obj, "exec_dir", saved_exec_dir.address()) && saved_exec_dir.get() != JSVAL_VOID;
+	bool saved_exec_path_ok = JS_GetProperty(cx, pjs_obj, "exec_path", saved_exec_path.address()) && saved_exec_path.get() != JSVAL_VOID;
+	bool saved_exec_file_ok = JS_GetProperty(cx, pjs_obj, "exec_file", saved_exec_file.address()) && saved_exec_file.get() != JSVAL_VOID;
+	bool saved_startup_dir_ok = JS_GetProperty(cx, pjs_obj, "startup_dir", saved_startup_dir.address()) && saved_startup_dir.get() != JSVAL_VOID;
+	JS::RootedValue saved_scope(cx, JS::UndefinedValue());
+	bool saved_scope_ok = JS_GetProperty(cx, pjs_obj, "scope", saved_scope.address()) && saved_scope.get() != JSVAL_VOID;
+	JS::RootedValue saved_argv(cx, JS::UndefinedValue());
+	JS::RootedValue saved_argc(cx, JS::UndefinedValue());
+	JS_GetProperty(cx, global, "argv", saved_argv.address());
+	JS_GetProperty(cx, global, "argc", saved_argc.address());
+	{
+		jsval tmp;
+		if (JS_GetProperty(cx, js_obj, "exec_dir", &tmp) && tmp != JSVAL_VOID)
+			JS_DefineProperty(cx, pjs_obj, "exec_dir", tmp, NULL, NULL, JSPROP_ENUMERATE | JSPROP_READONLY);
+		if (JS_GetProperty(cx, js_obj, "exec_path", &tmp) && tmp != JSVAL_VOID)
+			JS_DefineProperty(cx, pjs_obj, "exec_path", tmp, NULL, NULL, JSPROP_ENUMERATE | JSPROP_READONLY);
+		if (JS_GetProperty(cx, js_obj, "exec_file", &tmp) && tmp != JSVAL_VOID)
+			JS_DefineProperty(cx, pjs_obj, "exec_file", tmp, NULL, NULL, JSPROP_ENUMERATE | JSPROP_READONLY);
+		if (JS_GetProperty(cx, js_obj, "startup_dir", &tmp) && tmp != JSVAL_VOID)
+			JS_DefineProperty(cx, pjs_obj, "startup_dir", tmp, NULL, NULL, JSPROP_ENUMERATE | JSPROP_READONLY);
+		if (JS_GetProperty(cx, js_obj, "scope", &tmp) && tmp != JSVAL_VOID)
+			JS_DefineProperty(cx, pjs_obj, "scope", tmp, NULL, NULL, JSPROP_ENUMERATE | JSPROP_READONLY);
+		/* Install subscript's argv/argc on the global so the script sees them */
+		if (JS_GetProperty(cx, js_scope_root.get(), "argv", &tmp) && tmp != JSVAL_VOID)
+			JS_DefineProperty(cx, global, "argv", tmp, NULL, NULL, JSPROP_READONLY | JSPROP_ENUMERATE);
+		if (JS_GetProperty(cx, js_scope_root.get(), "argc", &tmp) && tmp != JSVAL_VOID)
+			JS_DefineProperty(cx, global, "argc", tmp, NULL, NULL, JSPROP_READONLY | JSPROP_ENUMERATE);
+	}
+
 	unsigned orig_bgcount = gptp->bg_count;
-	JS_ExecuteScript(cx, js_scope, js_script, &rval);
+	if (nonsyntactic) {
+		JS::RootedScript rscript(cx, js_script);
+		bool ok = JS::ExecuteInJSMEnvironment(cx, rscript, jsmEnv);
+		if (ok) {
+			/* Copy const/let bindings from lexical env to jsmEnv */
+			if (JS_HasExtensibleLexicalEnvironment(jsmEnv)) {
+				JS::RootedObject lexEnv(cx, JS_ExtensibleLexicalEnvironment(jsmEnv));
+				JS::RootedIdVector lexIds(cx);
+				if (js::GetPropertyKeys(cx, lexEnv, JSITER_OWNONLY | JSITER_HIDDEN, &lexIds)) {
+					for (size_t i = 0; i < lexIds.length(); i++) {
+						JS::RootedValue val(cx);
+						JS::RootedId id(cx, lexIds[i]);
+						if (JS_GetPropertyById(cx, lexEnv, id, &val))
+							JS_SetPropertyById(cx, jsmEnv, id, val);
+					}
+				}
+			}
+			rval = OBJECT_TO_JSVAL(jsmEnv);
+		}
+	} else {
+		JS_ExecuteScript(cx, js_scope_root.get(), js_script, &rval);
+	}
 	if (JS_IsExceptionPending(cx)) {
 		JS_GetPendingException(cx, &rval);
 	}
 	else {
 		jsval exit_code = JSVAL_VOID;
-		if (JS_GetProperty(cx, js_scope, "exit_code", &exit_code) && exit_code != JSVAL_VOID)
+		if (JS_GetProperty(cx, js_scope_root.get(), "exit_code", &exit_code) && exit_code != JSVAL_VOID)
 			rval = exit_code;
 	}
 	JS_SET_RVAL(cx, arglist, rval);
 	JS_ClearPendingException(cx);
 
-	js_EvalOnExit(cx, js_scope, js_callback);
-	JS_ReportPendingException(cx);
-	JS_DestroyScript(cx, js_script);
+	/* Restore the parent js object's exec context properties */
+	if (saved_exec_dir_ok)
+		JS_DefineProperty(cx, pjs_obj, "exec_dir", saved_exec_dir.get(), NULL, NULL, JSPROP_ENUMERATE | JSPROP_READONLY);
+	if (saved_exec_path_ok)
+		JS_DefineProperty(cx, pjs_obj, "exec_path", saved_exec_path.get(), NULL, NULL, JSPROP_ENUMERATE | JSPROP_READONLY);
+	if (saved_exec_file_ok)
+		JS_DefineProperty(cx, pjs_obj, "exec_file", saved_exec_file.get(), NULL, NULL, JSPROP_ENUMERATE | JSPROP_READONLY);
+	if (saved_startup_dir_ok)
+		JS_DefineProperty(cx, pjs_obj, "startup_dir", saved_startup_dir.get(), NULL, NULL, JSPROP_ENUMERATE | JSPROP_READONLY);
+	if (saved_scope_ok)
+		JS_DefineProperty(cx, pjs_obj, "scope", saved_scope.get(), NULL, NULL, JSPROP_ENUMERATE | JSPROP_READONLY);
+	/* Restore global argv/argc */
+	if (saved_argv.get() != JSVAL_VOID)
+		JS_DefineProperty(cx, global, "argv", saved_argv.get(), NULL, NULL, JSPROP_READONLY | JSPROP_ENUMERATE);
+	if (saved_argc.get() != JSVAL_VOID)
+		JS_DefineProperty(cx, global, "argc", saved_argc.get(), NULL, NULL, JSPROP_READONLY | JSPROP_ENUMERATE);
+
+	js_EvalOnExit(cx, js_scope_root.get(), js_callback);
 	while (gptp->bg_count > orig_bgcount) {
 		if (sem_wait(&gptp->bg_sem) == 0)
 			gptp->bg_count--;
@@ -528,12 +591,16 @@ js_execfile(JSContext *cx, uintN argc, jsval *arglist)
 	return JS_TRUE;
 }
 
+static const JSClassOps eval_classops = {
+	nullptr, nullptr, nullptr, nullptr,
+	nullptr, nullptr, nullptr,
+	nullptr, nullptr, nullptr
+};
+
 static JSClass eval_class = {
-	"Global",  /* name */
-	JSCLASS_GLOBAL_FLAGS,  /* flags */
-	JS_PropertyStub, JS_PropertyStub, JS_PropertyStub, JS_StrictPropertyStub,
-	JS_EnumerateStub, JS_ResolveStub, JS_ConvertStub, JS_FinalizeStub,
-	JSCLASS_NO_OPTIONAL_MEMBERS
+	"Global",
+	JSCLASS_GLOBAL_FLAGS,
+	&eval_classops
 };
 
 /* Execute a string in its own context (away from Synchronet objects) */
@@ -544,11 +611,9 @@ js_eval(JSContext *parent_cx, uintN argc, jsval *arglist)
 	char*           buf = NULL;
 	size_t          buflen;
 	JSString*       str;
-	JSObject*       script;
+	JSScript*       script;
 	JSContext*      cx;
 	JSObject*       obj;
-	JSErrorReporter reporter;
-
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
 	if (argc < 1)
@@ -561,19 +626,12 @@ js_eval(JSContext *parent_cx, uintN argc, jsval *arglist)
 	if (buf == NULL)
 		return JS_TRUE;
 
-	if ((cx = JS_NewContext(JS_GetRuntime(parent_cx), JAVASCRIPT_CONTEXT_STACK)) == NULL) {
+	if ((cx = JS_NewContext(JAVASCRIPT_MAX_BYTES)) == NULL) {
 		free(buf);
 		return JS_FALSE;
 	}
 
-	/* Use the error reporter from the parent context */
-	reporter = JS_SetErrorReporter(parent_cx, NULL);
-	JS_SetErrorReporter(parent_cx, reporter);
-	JS_SetErrorReporter(cx, reporter);
-
-	/* Use the operation callback from the parent context */
 	JS_SetContextPrivate(cx, JS_GetContextPrivate(parent_cx));
-	JS_SetOperationCallback(cx, JS_GetOperationCallback(parent_cx));
 
 	if ((obj = JS_NewCompartmentAndGlobalObject(cx, &eval_class, NULL)) == NULL
 	    || !JS_InitStandardClasses(cx, obj)) {
@@ -683,7 +741,6 @@ js_on_exit(JSContext *cx, uintN argc, jsval *arglist)
 			pd->onexit = oes;
 			oes->scope = scope;
 			oes->onexit = strListInit();
-			JS_AddObjectRoot(cx, &oes->scope);
 		}
 		list = oes->onexit;
 	}
@@ -762,7 +819,6 @@ js_setTimeout(JSContext *cx, uintN argc, jsval *arglist)
 		ev->next->prev = ev;
 	ev->type = JS_EVENT_TIMEOUT;
 	ev->cx = obj;
-	JS_AddObjectRoot(cx, &ev->cx);
 	ev->cb = ecb;
 	ev->data.timeout.end = (uint64_t)(now + timeout);
 	ev->id = cb->next_eid++;
@@ -797,7 +853,6 @@ js_clear_event(JSContext *cx, jsval *arglist, js_callback_t *cb, enum js_event_t
 				ev->prev->next = ev->next;
 			else
 				cb->events = ev->next;
-			JS_RemoveObjectRoot(cx, &ev->cx);
 			free(ev);
 		}
 	}
@@ -880,7 +935,6 @@ js_setInterval(JSContext *cx, uintN argc, jsval *arglist)
 		ev->next->prev = ev;
 	ev->type = JS_EVENT_INTERVAL;
 	ev->cx = obj;
-	JS_AddObjectRoot(cx, &ev->cx);
 	ev->cb = ecb;
 	ev->data.interval.last = now;
 	ev->data.interval.period = (uint64_t)period;
@@ -920,12 +974,11 @@ js_setImmediate(JSContext *cx, uintN argc, jsval *arglist)
 
 	rqe = static_cast<js_runq_entry *>(malloc(sizeof(*rqe)));
 	if (rqe == NULL) {
-		JS_ReportError(cx, "error allocating %ul bytes", sizeof(*rqe));
+		JS_ReportError(cx, "error allocating %zu bytes", sizeof(*rqe));
 		return JS_FALSE;
 	}
 	rqe->func = cbf;
 	rqe->cx = obj;
-	JS_AddObjectRoot(cx, &rqe->cx);
 	rqe->next = NULL;
 	if (cb->rq_tail != NULL)
 		cb->rq_tail->next = rqe;
@@ -966,7 +1019,7 @@ js_addEventListener(JSContext *cx, uintN argc, jsval *arglist)
 	listener = static_cast<js_listener_entry *>(malloc(sizeof(*listener)));
 	if (listener == NULL) {
 		free(name);
-		JS_ReportError(cx, "error allocating %ul bytes", sizeof(*listener));
+		JS_ReportError(cx, "error allocating %zu bytes", sizeof(*listener));
 		return JS_FALSE;
 	}
 
@@ -1064,13 +1117,12 @@ js_dispatchEvent(JSContext *cx, uintN argc, jsval *arglist)
 		if (strcmp(name, listener->name) == 0) {
 			rqe = static_cast<js_runq_entry *>(malloc(sizeof(*rqe)));
 			if (rqe == NULL) {
-				JS_ReportError(cx, "error allocating %ul bytes", sizeof(*rqe));
+				JS_ReportError(cx, "error allocating %zu bytes", sizeof(*rqe));
 				free(name);
 				return JS_FALSE;
 			}
 			rqe->func = listener->func;
 			rqe->cx = obj;
-			JS_AddObjectRoot(cx, &rqe->cx);
 			rqe->next = NULL;
 			if (cb->rq_tail != NULL)
 				cb->rq_tail->next = rqe;
@@ -1097,7 +1149,6 @@ js_clear_events(JSContext *cx, js_callback_t *cb)
 
 	for (ev = cb->events, nev = NULL; ev; ev = nev) {
 		nev = ev->next;
-		JS_RemoveObjectRoot(cx, &ev->cx);
 		free(ev);
 	}
 	cb->next_eid = 0;
@@ -1105,7 +1156,6 @@ js_clear_events(JSContext *cx, js_callback_t *cb)
 
 	for (rq = cb->rq_head; rq; rq = nrq) {
 		nrq = rq->next;
-		JS_RemoveObjectRoot(cx, &rq->cx);
 		free(rq);
 	}
 	cb->rq_head = NULL;
@@ -1129,7 +1179,6 @@ js_handle_events(JSContext *cx, js_callback_t *cb, volatile bool *terminated)
 	struct js_event_list * tev;
 	struct js_event_list * cev;
 	jsval                  rval = JSVAL_NULL;
-	jsrefcount             rc;
 	JSBool                 ret = JS_TRUE;
 	BOOL                   input_locked = FALSE;
 	js_socket_private_t*   jssp;
@@ -1176,7 +1225,7 @@ js_handle_events(JSContext *cx, js_callback_t *cb, volatile bool *terminated)
 		if (sc) {
 			fds = static_cast<pollfd *>(calloc(sc, sizeof(*fds)));
 			if (fds == NULL) {
-				JS_ReportError(cx, "error allocating %d elements of %ul bytes", sc, sizeof(*fds));
+				JS_ReportError(cx, "error allocating %lu elements of %zu bytes", (unsigned long)sc, sizeof(*fds));
 				return JS_FALSE;
 			}
 		}
@@ -1185,7 +1234,6 @@ js_handle_events(JSContext *cx, js_callback_t *cb, volatile bool *terminated)
 		FD_ZERO(&wfds);
 #endif
 
-		rc = JS_SUSPENDREQUEST(cx);
 		if (cb->rq_head)
 			timeout = 0;
 		for (ev = *head; ev; ev = ev->next) {
@@ -1303,7 +1351,6 @@ js_handle_events(JSContext *cx, js_callback_t *cb, volatile bool *terminated)
 		switch (select(hsock + 1, &rfds, &wfds, NULL, &tv)) {
 #endif
 			case 0:     // Timeout
-				JS_RESUMEREQUEST(cx, rc);
 				if (tev && tev->cx && tev->cb)
 					ev = tev;
 				else if (cev && cev->cx && cev->cb)
@@ -1317,7 +1364,6 @@ js_handle_events(JSContext *cx, js_callback_t *cb, volatile bool *terminated)
 				}
 				break;
 			case -1:    // Error...
-				JS_RESUMEREQUEST(cx, rc);
 				if (SOCKET_ERRNO != EINTR) {
 					JS_ReportError(cx, "poll() returned with error %d", SOCKET_ERRNO);
 					ret = JS_FALSE;
@@ -1325,7 +1371,6 @@ js_handle_events(JSContext *cx, js_callback_t *cb, volatile bool *terminated)
 				}
 				break;
 			default:    // Zero or more sockets ready
-				JS_RESUMEREQUEST(cx, rc);
 #ifdef PREFER_POLL
 				cfd = 0;
 #endif
@@ -1394,7 +1439,6 @@ js_handle_events(JSContext *cx, js_callback_t *cb, volatile bool *terminated)
 				if (cb->rq_head == NULL)
 					cb->rq_tail = NULL;
 				ret = JS_CallFunction(cx, rqe->cx, rqe->func, 0, NULL, &rval);
-				JS_RemoveObjectRoot(cx, &rqe->cx);
 				free(rqe);
 			}
 		}
@@ -1402,7 +1446,6 @@ js_handle_events(JSContext *cx, js_callback_t *cb, volatile bool *terminated)
 			// Store a copy of object and function pointers
 			evf = ev->cb;
 			evo = ev->cx;
-			JS_AddObjectRoot(cx, &evo);
 
 			// Deal with things before running the callback
 			if (ev->type == JS_EVENT_CONSOLE_INPUT) {
@@ -1438,13 +1481,11 @@ js_handle_events(JSContext *cx, js_callback_t *cb, volatile bool *terminated)
 					ev->prev->next = ev->next;
 				else
 					*head = ev->next;
-				JS_RemoveObjectRoot(cx, &ev->cx);
 				free(ev);
 				ev = NULL;
 			}
 
 			ret = JS_CallFunction(cx, evo, evf, 0, NULL, &rval);
-			JS_RemoveObjectRoot(cx, &evo);
 
 			if (ev) {
 				if (ev->type == JS_EVENT_INTERVAL)
@@ -1523,50 +1564,121 @@ static jsSyncMethodSpec js_functions[] = {
 	{0}
 };
 
-static JSBool js_internal_resolve(JSContext *cx, JSObject *obj, jsid id)
+static bool js_internal_prop_getter(JSContext* cx, unsigned argc, JS::Value* vp)
 {
-	char*  name = NULL;
-	JSBool ret;
+	JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
+	JS::RootedObject thisObj(cx);
+	if (!args.computeThis(cx, &thisObj))
+		return false;
+	js_callback_t* cb = (js_callback_t*)JS_GetPrivate(thisObj);
+	JSObject* callee = &args.callee();
+	jsint tiny = js::GetFunctionNativeReserved(callee, 0).toInt32();
+	jsval val = JSVAL_VOID;
+	if (!js_internal_get_value(cx, cb, tiny, &val))
+		return false;
+	args.rval().set(val);
+	return true;
+}
 
-	if (id != JSID_VOID && id != JSID_EMPTY) {
-		jsval idval;
+static bool js_internal_prop_setter(JSContext* cx, unsigned argc, JS::Value* vp)
+{
+	JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
+	JS::RootedObject thisObj(cx);
+	if (!args.computeThis(cx, &thisObj))
+		return false;
+	js_callback_t* cb = (js_callback_t*)JS_GetPrivate(thisObj);
+	if (cb == nullptr)
+		return true;
+	JSObject* callee = &args.callee();
+	jsint tiny = js::GetFunctionNativeReserved(callee, 0).toInt32();
+	jsval val = args.length() > 0 ? args[0] : JSVAL_VOID;
+	if (!js_internal_set_value(cx, cb, tiny, &val))
+		return false;
+	args.rval().set(val);
+	return true;
+}
 
-		JS_IdToValue(cx, id, &idval);
-		if (JSVAL_IS_STRING(idval)) {
-			JSSTRING_TO_MSTRING(cx, JSVAL_TO_STRING(idval), name, NULL);
-			HANDLE_PENDING(cx, name);
-		}
+static JSBool js_internal_fill_properties(JSContext* cx, JSObject* obj, const char* name)
+{
+	return js_DefineSyncAccessors(cx, obj, js_properties, js_internal_prop_getter, name, js_internal_prop_setter);
+}
+
+static bool js_internal_resolve(JSContext *cx, JS::Handle<JSObject*> obj, JS::Handle<jsid> id, bool* resolvedp)
+{
+	char* name = NULL;
+
+	if (id.get().isString()) {
+		JSString* str = id.get().toString();
+		JSSTRING_TO_MSTRING(cx, str, name, NULL);
+		HANDLE_PENDING(cx, name);
+		if (name == NULL) return false;
 	}
 
-	ret = js_SyncResolve(cx, obj, name, js_properties, js_functions, NULL, 0);
+	bool ret = js_SyncResolve(cx, obj, name, js_properties, js_functions, NULL, 0);
+	if (ret)
+		js_internal_fill_properties(cx, obj, name);
 	if (name)
 		free(name);
-	return ret;
+	if (resolvedp) *resolvedp = ret;
+	return true;
 }
 
-static JSBool js_internal_enumerate(JSContext *cx, JSObject *obj)
+static bool js_internal_enumerate(JSContext *cx, JS::Handle<JSObject*> obj)
 {
-	return js_internal_resolve(cx, obj, JSID_VOID);
+	if (!js_SyncResolve(cx, obj, NULL, js_properties, js_functions, NULL, 0))
+		return false;
+	js_internal_fill_properties(cx, obj, NULL);
+	return true;
 }
+
+static void js_trace_internal(JSTracer* trc, JSObject* obj)
+{
+	js_callback_t* cb = (js_callback_t*)JS_GetPrivate(obj);
+	if (cb == NULL)
+		return;
+
+	for (struct js_event_list* ev = cb->events; ev != NULL; ev = ev->next) {
+		if (ev->cb)
+			JS::TraceRoot(trc, &ev->cb, "js_event cb");
+		if (ev->cx)
+			JS::TraceRoot(trc, &ev->cx, "js_event cx");
+	}
+	for (struct js_runq_entry* rq = cb->rq_head; rq != NULL; rq = rq->next) {
+		if (rq->func)
+			JS::TraceRoot(trc, &rq->func, "js_runq func");
+		if (rq->cx)
+			JS::TraceRoot(trc, &rq->cx, "js_runq cx");
+	}
+	for (struct js_listener_entry* le = cb->listeners; le != NULL; le = le->next) {
+		if (le->func)
+			JS::TraceRoot(trc, &le->func, "js_listener func");
+	}
+}
+
+static const JSClassOps js_internal_classops = {
+	nullptr,                    /* addProperty  */
+	nullptr,                    /* delProperty  */
+	js_internal_enumerate,      /* enumerate    */
+	nullptr,                    /* newEnumerate */
+	js_internal_resolve,        /* resolve      */
+	nullptr,                    /* mayResolve   */
+	nullptr,                    /* finalize     */
+	nullptr,                    /* call         */
+	nullptr,                    /* construct    */
+	js_trace_internal           /* trace        */
+};
 
 static JSClass js_internal_class = {
-	"JsInternal"                /* name			*/
-	, JSCLASS_HAS_PRIVATE    /* flags		*/
-	, JS_PropertyStub        /* addProperty	*/
-	, JS_PropertyStub        /* delProperty	*/
-	, js_get                 /* getProperty	*/
-	, js_set                 /* setProperty	*/
-	, js_internal_enumerate  /* enumerate	*/
-	, js_internal_resolve    /* resolve		*/
-	, JS_ConvertStub         /* convert		*/
-	, JS_FinalizeStub        /* finalize		*/
+	"JsInternal"
+	, JSCLASS_HAS_PRIVATE
+	, &js_internal_classops
 };
 
 void js_EvalOnExit(JSContext *cx, JSObject *obj, js_callback_t* cb)
 {
 	char*                    p;
 	jsval                    rval;
-	JSObject*                script;
+	JSScript*                script;
 	BOOL                     auto_terminate = cb->auto_terminate;
 	JSObject *               glob = JS_GetGlobalObject(cx);
 	global_private_t *       pt;
@@ -1601,7 +1713,6 @@ void js_EvalOnExit(JSContext *cx, JSObject *obj, js_callback_t* cb)
 			if (oes->scope == obj) {
 				(*prev_oes_next) = oes->next;
 				list = oes->onexit;
-				JS_RemoveObjectRoot(cx, &oes->scope);
 				free(oes);
 				break;
 			}
@@ -1629,34 +1740,34 @@ void js_EvalOnExit(JSContext *cx, JSObject *obj, js_callback_t* cb)
 
 JSObject* js_CreateInternalJsObject(JSContext* cx, JSObject* parent, js_callback_t* cb, js_startup_t* startup)
 {
-	JSObject* obj;
+	JS::RootedObject obj(cx);
 
-	if ((obj = JS_DefineObject(cx, parent, "js", &js_internal_class, NULL
-	                           , JSPROP_ENUMERATE | JSPROP_READONLY)) == NULL)
+	if (!(obj = JS_DefineObject(cx, parent, "js", &js_internal_class, NULL
+	                           , JSPROP_ENUMERATE | JSPROP_READONLY)))
 		return NULL;
 
 	if (!JS_SetPrivate(cx, obj, cb)) /* Store a pointer to js_callback_t */
 		return NULL;
 
 	if (startup != NULL) {
-		JSObject*  load_path_list;
+		JS::RootedObject load_path_list(cx);
 		jsval      val;
 		str_list_t load_path;
 
-		if ((load_path_list = JS_NewArrayObject(cx, 0, NULL)) == NULL)
+		if (!(load_path_list = JS_NewArrayObject(cx, 0, NULL)))
 			return NULL;
-		val = OBJECT_TO_JSVAL(load_path_list);
+		val = OBJECT_TO_JSVAL(load_path_list.get());
 		if (!JS_SetProperty(cx, obj, JAVASCRIPT_LOAD_PATH_LIST, &val))
 			return NULL;
 
 		if ((load_path = strListSplitCopy(NULL, startup->load_path, ",")) != NULL) {
-			JSString* js_str;
+			JS::RootedString js_str(cx);
 			unsigned  i;
 
 			for (i = 0; load_path[i] != NULL; i++) {
-				if ((js_str = JS_NewStringCopyZ(cx, load_path[i])) == NULL)
+				if (!(js_str = JS_NewStringCopyZ(cx, load_path[i])))
 					break;
-				val = STRING_TO_JSVAL(js_str);
+				val = STRING_TO_JSVAL(js_str.get());
 				if (!JS_SetElement(cx, load_path_list, i, &val))
 					break;
 			}
@@ -1665,7 +1776,7 @@ JSObject* js_CreateInternalJsObject(JSContext* cx, JSObject* parent, js_callback
 	}
 
 #ifdef BUILD_JSDOCS
-	js_DescribeSyncObject(cx, obj, "JavaScript engine internal control object", 311);
+	js_DescribeSyncObject(cx, obj.get(), "JavaScript engine internal control object", 311);
 	js_CreateArrayOfStrings(cx, obj, "_property_desc_list", prop_desc, JSPROP_READONLY);
 #endif
 
@@ -1684,33 +1795,33 @@ void msvc_invalid_parameter_handler(const wchar_t* expression,
 
 void js_PrepareToExecute(JSContext *cx, JSObject *obj, const char *filename, const char* startup_dir, JSObject *scope)
 {
-	JSString* str;
+	JS::RootedString str(cx);
 	jsval     val;
 
 	if (JS_GetProperty(cx, obj, "js", &val) && JSVAL_IS_OBJECT(val) && !JSVAL_IS_NULL(val)) {
-		JSObject* js = JSVAL_TO_OBJECT(val);
+		JS::RootedObject js(cx, JSVAL_TO_OBJECT(val));
 		char      dir[MAX_PATH + 1];
 
 		if (filename != NULL) {
 			char* p;
 
-			if ((str = JS_NewStringCopyZ(cx, filename)) != NULL)
-				JS_DefineProperty(cx, js, "exec_path", STRING_TO_JSVAL(str)
+			if ((str = JS_NewStringCopyZ(cx, filename)))
+				JS_DefineProperty(cx, js, "exec_path", STRING_TO_JSVAL(str.get())
 				                  , NULL, NULL, JSPROP_ENUMERATE | JSPROP_READONLY);
-			if ((str = JS_NewStringCopyZ(cx, getfname(filename))) != NULL)
-				JS_DefineProperty(cx, js, "exec_file", STRING_TO_JSVAL(str)
+			if ((str = JS_NewStringCopyZ(cx, getfname(filename))))
+				JS_DefineProperty(cx, js, "exec_file", STRING_TO_JSVAL(str.get())
 				                  , NULL, NULL, JSPROP_ENUMERATE | JSPROP_READONLY);
 			SAFECOPY(dir, filename);
 			p = getfname(dir);
 			*p = 0;
-			if ((str = JS_NewStringCopyZ(cx, dir)) != NULL)
-				JS_DefineProperty(cx, js, "exec_dir", STRING_TO_JSVAL(str)
+			if ((str = JS_NewStringCopyZ(cx, dir)))
+				JS_DefineProperty(cx, js, "exec_dir", STRING_TO_JSVAL(str.get())
 				                  , NULL, NULL, JSPROP_ENUMERATE | JSPROP_READONLY);
 		}
 		if (startup_dir == NULL)
 			startup_dir = "";
-		if ((str = JS_NewStringCopyZ(cx, startup_dir)) != NULL)
-			JS_DefineProperty(cx, js, "startup_dir", STRING_TO_JSVAL(str)
+		if ((str = JS_NewStringCopyZ(cx, startup_dir)))
+			JS_DefineProperty(cx, js, "startup_dir", STRING_TO_JSVAL(str.get())
 			                  , NULL, NULL, JSPROP_ENUMERATE | JSPROP_READONLY);
 		JS_DefineProperty(cx, js, "scope", OBJECT_TO_JSVAL(scope)
 		                  , NULL, NULL, JSPROP_ENUMERATE | JSPROP_READONLY);
@@ -1725,8 +1836,8 @@ void js_PrepareToExecute(JSContext *cx, JSObject *obj, const char *filename, con
 JSBool
 js_CreateArrayOfStrings(JSContext* cx, JSObject* parent, const char* name, const char* str[], uintN flags)
 {
-	JSObject* array;
-	JSString* js_str;
+	JS::RootedObject array(cx);
+	JS::RootedString js_str(cx);
 	jsval     val;
 	size_t    i;
 	jsuint    len = 0;
@@ -1734,20 +1845,20 @@ js_CreateArrayOfStrings(JSContext* cx, JSObject* parent, const char* name, const
 	if (JS_GetProperty(cx, parent, name, &val) && val != JSVAL_VOID)
 		array = JSVAL_TO_OBJECT(val);
 	else
-	if ((array = JS_NewArrayObject(cx, 0, NULL)) == NULL)   /* Assertion here, in _heap_alloc_dbg, June-21-2004 */
+	if (!(array = JS_NewArrayObject(cx, 0, NULL)))   /* Assertion here, in _heap_alloc_dbg, June-21-2004 */
 		return JS_FALSE;                                  /* Caused by nntpservice.js? */
 
-	if (!JS_DefineProperty(cx, parent, name, OBJECT_TO_JSVAL(array)
+	if (!JS_DefineProperty(cx, parent, name, OBJECT_TO_JSVAL(array.get())
 	                       , NULL, NULL, flags))
 		return JS_FALSE;
 
-	if (array == NULL || !JS_GetArrayLength(cx, array, &len))
+	if (!array || !JS_GetArrayLength(cx, array, &len))
 		return JS_FALSE;
 
 	for (i = 0; str[i] != NULL; i++) {
-		if ((js_str = JS_NewStringCopyZ(cx, str[i])) == NULL)
+		if (!(js_str = JS_NewStringCopyZ(cx, str[i])))
 			break;
-		val = STRING_TO_JSVAL(js_str);
+		val = STRING_TO_JSVAL(js_str.get());
 		if (!JS_SetElement(cx, array, len + i, &val))
 			break;
 	}

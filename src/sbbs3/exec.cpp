@@ -21,7 +21,6 @@
 
 #include "sbbs.h"
 #include "cmdshell.h"
-#include "js_request.h"
 #include "js_rtpool.h"
 #include "readtext.h"
 
@@ -513,9 +512,13 @@ js_OperationCallback(JSContext *cx)
 		return JS_FALSE;
 	}
 
-	if (sbbs->js_callback.auto_terminate && !sbbs->online
-	    && ++sbbs->js_callback.offline_counter >= 10) {
-		JS_ReportWarning(cx, "Disconnected");
+	if (sbbs->js_callback.auto_terminate && !sbbs->online) {
+		sbbs->lprintf(LOG_WARNING, "JavaScript: Disconnected");
+		/* SM128: must set a pending exception; returning false without one
+		 * is silently ignored in release builds. */
+		JS::RootedValue exc(cx);
+		exc.setNull();
+		JS_SetPendingException(cx, exc);
 		sbbs->js_callback.counter = 0;
 		JS_SetOperationCallback(cx, js_OperationCallback);
 		return JS_FALSE;
@@ -526,6 +529,49 @@ js_OperationCallback(JSContext *cx)
 	return ret;
 }
 
+static void
+js_ReportPendingException(JSContext* cx)
+{
+	if (!JS_IsExceptionPending(cx))
+		return;
+	JS::RootedValue exn(cx);
+	if (JS_GetPendingException(cx, &exn)) {
+		JS_ClearPendingException(cx);
+		sbbs_t* sbbs = (sbbs_t*)JS_GetContextPrivate(cx);
+		if (!sbbs)
+			return;
+		/* Try to extract fileName and lineNumber from Error objects */
+		char file_info[MAX_PATH + 32] = "";
+		if (exn.isObject()) {
+			JS::RootedObject errobj(cx, &exn.toObject());
+			JS::RootedValue fname_val(cx), lineno_val(cx);
+			char* fname = NULL;
+			int32 lineno = 0;
+			if (JS_GetProperty(cx, errobj, "fileName", fname_val.address())
+			    && fname_val.isString()) {
+				JSVALUE_TO_MSTRING(cx, fname_val, fname, NULL);
+			}
+			if (JS_GetProperty(cx, errobj, "lineNumber", lineno_val.address())
+			    && lineno_val.isNumber()) {
+				JS_ValueToInt32(cx, lineno_val, &lineno);
+			}
+			if (fname != NULL && *fname != '\0' && lineno > 0)
+				snprintf(file_info, sizeof file_info, " %s line %d", fname, lineno);
+			else if (fname != NULL && *fname != '\0')
+				snprintf(file_info, sizeof file_info, " %s", fname);
+			else if (lineno > 0)
+				snprintf(file_info, sizeof file_info, " line %d", lineno);
+			free(fname);
+		}
+		JS::Rooted<JSString*> str(cx, JS::ToString(cx, exn));
+		if (str) {
+			JS::UniqueChars msg = JS_EncodeStringToLatin1(cx, str);
+			if (msg)
+				sbbs->lprintf(LOG_ERR, "!JavaScript exception%s: %s", file_info, msg.get());
+		}
+	}
+}
+
 int sbbs_t::js_execfile(const char *cmd, const char* startup_dir, JSObject* scope, JSContext* js_cx, JSObject* js_glob)
 {
 	char*                     p;
@@ -534,16 +580,6 @@ int sbbs_t::js_execfile(const char *cmd, const char* startup_dir, JSObject* scop
 	int                       argc = 0;
 	char                      cmdline[MAX_PATH + 1];
 	char                      path[MAX_PATH + 1];
-	JSObject*                 js_scope = scope;
-	JSObject*                 js_script = NULL;
-	jsval                     old_js_argv = JSVAL_VOID;
-	jsval                     old_js_argc = JSVAL_VOID;
-	jsval                     old_js_exec_path = JSVAL_VOID;
-	jsval                     old_js_exec_file = JSVAL_VOID;
-	jsval                     old_js_exec_dir = JSVAL_VOID;
-	jsval                     old_js_scope = JSVAL_VOID;
-	jsval                     val;
-	jsval                     rval;
 	int32                     result = 0;
 	struct js_event_list *    events;
 	struct js_runq_entry *    rq_head;
@@ -560,6 +596,17 @@ int sbbs_t::js_execfile(const char *cmd, const char* startup_dir, JSObject* scop
 		errormsg(WHERE, ERR_EXEC, cmd, 0, "JavaScript context==NULL");
 		return -1;
 	}
+
+	JS::RootedObject js_scope(js_cx, scope);
+	JS::RootedScript js_script(js_cx);
+	JS::RootedValue  old_js_argv(js_cx, JS::UndefinedValue());
+	JS::RootedValue  old_js_argc(js_cx, JS::UndefinedValue());
+	JS::RootedValue  old_js_exec_path(js_cx, JS::UndefinedValue());
+	JS::RootedValue  old_js_exec_file(js_cx, JS::UndefinedValue());
+	JS::RootedValue  old_js_exec_dir(js_cx, JS::UndefinedValue());
+	JS::RootedValue  old_js_scope_val(js_cx, JS::UndefinedValue());
+	JS::RootedValue  val(js_cx);
+	JS::RootedValue  rval(js_cx);
 
 	SAFECOPY(cmdline, cmd);
 	p = strchr(cmdline, ' ');
@@ -590,26 +637,28 @@ int sbbs_t::js_execfile(const char *cmd, const char* startup_dir, JSObject* scop
 		return -1;
 	}
 
-	JS_BEGINREQUEST(js_cx);
-	if (js_scope == NULL)
-		js_scope = JS_NewObject(js_cx, NULL, NULL, js_glob);
+	/* SM128: JS_ExecuteScript no longer takes a scope argument — scripts always
+	 * run in the current global.  So argv/argc/exit_code must live on js_glob. */
+	if (js_scope == nullptr)
+		js_scope = js_glob;
 
-	if (js_scope != NULL) {
+	if (js_scope != nullptr) {
 
 		if (scope != NULL) {
-			if (JS_GetProperty(js_cx, scope, "argv", &old_js_argv))
-				JS_AddValueRoot(js_cx, &old_js_argv);
-			if (JS_GetProperty(js_cx, scope, "argc", &old_js_argc))
-				JS_AddValueRoot(js_cx, &old_js_argc);
+			JS_GetProperty(js_cx, scope, "argv", old_js_argv.address());
+			JS_GetProperty(js_cx, scope, "argc", old_js_argc.address());
+		} else {
+			JS_GetProperty(js_cx, js_glob, "argv", old_js_argv.address());
+			JS_GetProperty(js_cx, js_glob, "argc", old_js_argc.address());
 		}
 
-		JSObject* argv = JS_NewArrayObject(js_cx, 0, NULL);
+		JS::RootedObject argv(js_cx, JS_NewArrayObject(js_cx, 0, NULL));
 
-		JS_DefineProperty(js_cx, js_scope, "argv", OBJECT_TO_JSVAL(argv)
+		JS_DefineProperty(js_cx, js_scope, "argv", OBJECT_TO_JSVAL(argv.get())
 		                  , NULL, NULL, JSPROP_READONLY | JSPROP_ENUMERATE);
 
 		/* Handle quoted "one arg" syntax here */
-		if (args != NULL && argv != NULL) {
+		if (args != NULL && argv != nullptr) {
 			while (*args) {
 				if (*args == '"') {
 					args++;
@@ -619,11 +668,11 @@ int sbbs_t::js_execfile(const char *cmd, const char* startup_dir, JSObject* scop
 					p = strchr(args, ' ');
 				if (p != NULL)
 					*p = 0;
-				JSString* arg = JS_NewStringCopyZ(js_cx, args);
-				if (arg == NULL)
+				JS::RootedString arg(js_cx, JS_NewStringCopyZ(js_cx, args));
+				if (!arg)
 					break;
-				jsval     val = STRING_TO_JSVAL(arg);
-				if (!JS_SetElement(js_cx, argv, argc, &val))
+				JS::RootedValue elem(js_cx, STRING_TO_JSVAL(arg.get()));
+				if (!JS_SetElement(js_cx, argv, argc, elem.address()))
 					break;
 				argc++;
 				if (p == NULL) /* last arg */
@@ -640,23 +689,20 @@ int sbbs_t::js_execfile(const char *cmd, const char* startup_dir, JSObject* scop
 		js_script = JS_CompileFile(js_cx, js_scope, path);
 	}
 
-	if (js_scope == NULL || js_script == NULL) {
-		JS_ReportPendingException(js_cx);   /* Added Feb-2-2006, rswindell */
-		JS_ENDREQUEST(js_cx);
+	if (js_scope == nullptr || js_script == nullptr) {
+		js_ReportPendingException(js_cx);
 		errormsg(WHERE, "compiling", path, 0);
-		if (scope != NULL) {
-			if (old_js_argv == JSVAL_VOID) {
-				JS_DeleteProperty(js_cx, scope, "argv");
-				JS_DeleteProperty(js_cx, scope, "argc");
-			}
-			else {
-				JS_DefineProperty(js_cx, scope, "argv", old_js_argv
-				                  , NULL, NULL, JSPROP_ENUMERATE | JSPROP_READONLY);
-				JS_DefineProperty(js_cx, scope, "argc", old_js_argc
-				                  , NULL, NULL, JSPROP_ENUMERATE | JSPROP_READONLY);
-			}
-			JS_RemoveValueRoot(js_cx, &old_js_argv);
-			JS_RemoveValueRoot(js_cx, &old_js_argc);
+		/* Restore argv/argc on whichever object we defined them on */
+		JSObject* argv_obj = (scope != NULL) ? scope : js_glob;
+		if (old_js_argv == JSVAL_VOID) {
+			JS_DeleteProperty(js_cx, argv_obj, "argv");
+			JS_DeleteProperty(js_cx, argv_obj, "argc");
+		}
+		else {
+			JS_DefineProperty(js_cx, argv_obj, "argv", old_js_argv
+			                  , NULL, NULL, JSPROP_ENUMERATE | JSPROP_READONLY);
+			JS_DefineProperty(js_cx, argv_obj, "argc", old_js_argc
+			                  , NULL, NULL, JSPROP_ENUMERATE | JSPROP_READONLY);
 		}
 		return -1;
 	}
@@ -664,19 +710,15 @@ int sbbs_t::js_execfile(const char *cmd, const char* startup_dir, JSObject* scop
 	if (scope == NULL) {
 		js_callback.counter = 0;  // Reset loop counter
 	}
-	JS_SetOperationCallback(js_cx, js_OperationCallback);
-	if (JS_GetProperty(js_cx, js_glob, "js", &val) && JSVAL_IS_OBJECT(val)) {
+	JS_AddInterruptCallback(js_cx, js_OperationCallback);
+	if (JS_GetProperty(js_cx, js_glob, "js", val.address()) && JSVAL_IS_OBJECT(val)) {
 		JSObject* js = JSVAL_TO_OBJECT(val);
 
 		if (js != nullptr) {
-			if (JS_GetProperty(js_cx, js, "exec_path", &old_js_exec_path))
-				JS_AddValueRoot(js_cx, &old_js_exec_path);
-			if (JS_GetProperty(js_cx, js, "exec_file", &old_js_exec_file))
-				JS_AddValueRoot(js_cx, &old_js_exec_file);
-			if (JS_GetProperty(js_cx, js, "exec_dir", &old_js_exec_dir))
-				JS_AddValueRoot(js_cx, &old_js_exec_dir);
-			if (JS_GetProperty(js_cx, js, "scope", &old_js_scope))
-				JS_AddValueRoot(js_cx, &old_js_scope);
+			JS_GetProperty(js_cx, js, "exec_path", old_js_exec_path.address());
+			JS_GetProperty(js_cx, js, "exec_file", old_js_exec_file.address());
+			JS_GetProperty(js_cx, js, "exec_dir", old_js_exec_dir.address());
+			JS_GetProperty(js_cx, js, "scope", old_js_scope_val.address());
 		}
 	}
 
@@ -689,23 +731,35 @@ int sbbs_t::js_execfile(const char *cmd, const char* startup_dir, JSObject* scop
 	js_callback.rq_tail = NULL;
 	listeners = js_callback.listeners;
 	js_callback.listeners = NULL;
-	if (!JS_ExecuteScript(js_cx, js_scope, js_script, &rval) && !js_callback.auto_terminated)
+	if (!JS_ExecuteScript(js_cx, js_scope, js_script, rval.address()) && !js_callback.auto_terminated) {
+		js_ReportPendingException(js_cx);
 		result = -1;
+	}
+	if (js_callback.auto_terminate && !online)
+		lprintf(LOG_WARNING, "JavaScript: Disconnected");
 	js_handle_events(js_cx, &js_callback, &terminated);
 //	clearabort();
 
-	JS_GetProperty(js_cx, js_scope, "exit_code", &rval);
+	JS_GetProperty(js_cx, js_scope, "exit_code", rval.address());
 	if (rval != JSVAL_VOID)
 		JS_ValueToInt32(js_cx, rval, &result);
 
 	js_EvalOnExit(js_cx, js_scope, &js_callback);
 
-	JS_ReportPendingException(js_cx);   /* Added Dec-4-2005, rswindell */
 
-	JS_DestroyScript(js_cx, js_script);
-
-	if (scope == NULL)
-		JS_ClearScope(js_cx, js_scope);
+	if (scope == NULL) {
+		/* SM128: argv/argc were defined on js_glob; restore previous values */
+		if (old_js_argv == JSVAL_VOID) {
+			JS_DeleteProperty(js_cx, js_glob, "argv");
+			JS_DeleteProperty(js_cx, js_glob, "argc");
+		}
+		else {
+			JS_DefineProperty(js_cx, js_glob, "argv", old_js_argv
+			                  , NULL, NULL, JSPROP_ENUMERATE | JSPROP_READONLY);
+			JS_DefineProperty(js_cx, js_glob, "argc", old_js_argc
+			                  , NULL, NULL, JSPROP_ENUMERATE | JSPROP_READONLY);
+		}
+	}
 	else {
 		if (old_js_argv == JSVAL_VOID) {
 			JS_DeleteProperty(js_cx, scope, "argv");
@@ -717,10 +771,8 @@ int sbbs_t::js_execfile(const char *cmd, const char* startup_dir, JSObject* scop
 			JS_DefineProperty(js_cx, scope, "argc", old_js_argc
 			                  , NULL, NULL, JSPROP_ENUMERATE | JSPROP_READONLY);
 		}
-		JS_RemoveValueRoot(js_cx, &old_js_argv);
-		JS_RemoveValueRoot(js_cx, &old_js_argc);
 	}
-	if (JS_GetProperty(js_cx, js_glob, "js", &val) && JSVAL_IS_OBJECT(val)) {
+	if (JS_GetProperty(js_cx, js_glob, "js", val.address()) && JSVAL_IS_OBJECT(val)) {
 		JSObject* js = JSVAL_TO_OBJECT(val);
 		if (js != nullptr) {
 			JS_DefineProperty(js_cx, js, "exec_path", old_js_exec_path
@@ -729,13 +781,9 @@ int sbbs_t::js_execfile(const char *cmd, const char* startup_dir, JSObject* scop
 			                  , NULL, NULL, JSPROP_ENUMERATE | JSPROP_READONLY);
 			JS_DefineProperty(js_cx, js, "exec_dir", old_js_exec_dir
 			                  , NULL, NULL, JSPROP_ENUMERATE | JSPROP_READONLY);
-			JS_DefineProperty(js_cx, js, "scope", old_js_scope
+			JS_DefineProperty(js_cx, js, "scope", old_js_scope_val
 			                  , NULL, NULL, JSPROP_ENUMERATE | JSPROP_READONLY);
 		}
-		JS_RemoveValueRoot(js_cx, &old_js_exec_dir);
-		JS_RemoveValueRoot(js_cx, &old_js_exec_file);
-		JS_RemoveValueRoot(js_cx, &old_js_exec_path);
-		JS_RemoveValueRoot(js_cx, &old_js_scope);
 	}
 
 	JS_GC(js_cx);
@@ -745,27 +793,43 @@ int sbbs_t::js_execfile(const char *cmd, const char* startup_dir, JSObject* scop
 	js_callback.rq_tail = rq_tail;
 	js_callback.listeners = listeners;
 
-	JS_ENDREQUEST(js_cx);
 
 	return result;
 }
 
-// Execute a JS Module in its own temporary JS runtime and context
+/* Execute a JS Module in an isolated Realm within the existing JS context.
+ * SM128 enforces one JSContext per thread, so we cannot create a second context
+ * on the node thread.  Instead, create a new global (Realm) within the node's
+ * existing context, populate it with fresh objects, run the script, then
+ * restore the node's original Realm. */
 int sbbs_t::js_execxtrn(const char *cmd, const char* startup_dir)
 {
-	int        result = -1;
-	JSRuntime* js_runtime;
-	JSObject*  js_glob;
-	JSContext* js_cx = js_init(&js_runtime, &js_glob, "XtrnModule");
-	if (js_cx != NULL) {
-		js_create_user_objects(js_cx, js_glob);
-		result = js_execfile(cmd, startup_dir, js_glob, js_cx, js_glob);
-		JS_BEGINREQUEST(js_cx);
-		JS_RemoveObjectRoot(js_cx, &js_glob);
-		JS_ENDREQUEST(js_cx);
-		JS_DestroyContext(js_cx);
+	int result = -1;
+
+	if (this->js_cx == NULL) {
+		errormsg(WHERE, ERR_EXEC, cmd, 0, "JavaScript context==NULL");
+		return -1;
 	}
-	jsrt_Release(js_runtime);
+
+	/* Save the node's callback state — the XtrnModule gets its own */
+	js_callback_t saved_callback = js_callback;
+
+	JSObject* xtrn_glob = NULL;
+
+	/* js_init_xtrn creates a new Realm (global) within the existing context,
+	 * populates it with BBS/console/user objects, and resets js_callback */
+	if (js_init_xtrn(&xtrn_glob)) {
+		js_create_user_objects(this->js_cx, xtrn_glob);
+		result = js_execfile(cmd, startup_dir, xtrn_glob, this->js_cx, xtrn_glob);
+	}
+
+	/* Restore the node's callback state */
+	js_callback = saved_callback;
+
+	/* Re-enter the node's original Realm */
+	if (this->js_glob != NULL)
+		JS::EnterRealm(this->js_cx, this->js_glob);
+
 	return result;
 }
 #endif

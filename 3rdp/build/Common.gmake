@@ -1,50 +1,3 @@
-##############
-# NSPR Stuff #
-##############
-
-ifeq ($(os),win32)
- NSPRDIR ?= $(3RDP_ROOT)/win32.release/nspr/lib
- NSPRINCLUDE ?= $(3RDP_ROOT)/win32.release/nspr/include/nspr
- NSPR_CFLAGS ?= -I$(3RDP_ROOT)/win32.release/nspr/include/nspr
- NSPR_LIBS ?= -L$(3RDP_ROOT)/win32.release/nspr/lib -lplds4 -lplc4 -lnspr4
-else
- ifeq ($(shell nspr-config --version > /dev/null 2>&1 && echo YES),YES)
-  NSPRDIR ?= $(shell nspr-config --libdir)
-  NSPRINCLUDE ?= $(shell nspr-config --includedir)
-  NSPR_CFLAGS ?= $(shell nspr-config --cflags)
-  NSPR_LIBS ?= $(shell nspr-config --libs)
- else
-  ifeq ($(os),sunos)
-   ifeq ($(shell test -f /usr/sfw/lib/mozilla/libnspr4.so && echo "yes"),yes)
-    NSPRDIR ?= /usr/sfw/lib/mozilla
-    ifeq ($(shell test -d /usr/sfw/include/mozilla/nspr && echo "yes"),yes)
-     NSPRINCLUDE ?= /usr/sfw/include/mozilla/nspr
-    endif
-   endif
-  endif
-
-  ifndef NSPRDIR
-   NSPRDIR := $(SRC_ROOT)$(DIRSEP)..$(DIRSEP)lib$(DIRSEP)mozilla$(DIRSEP)nspr$(DIRSEP)$(machine).$(BUILD)
-  endif
-
-  #The following is needed for nspr support on Linux
-  ifeq ($(os),linux)
-   NSPR_LIBS +=	-ldl
-  endif
-
-  NSPR_LIBS	+=	-lnspr4
- endif
-endif
-
-NSPR_LDFLAGS	+=	-L/usr/local/lib -L$(NSPRDIR)
-
-ifdef NSPRINCLUDE
- NSPR_CFLAGS += -I$(NSPRINCLUDE)
-else
- # Use local NSPR first...
- NSPR_CFLAGS += -I/usr/local/include -I$(SRC_ROOT)$(DIRSEP)..$(DIRSEP)include$(DIRSEP)mozilla$(DIRSEP)nspr
-endif
-
 ################
 # Common stuff #
 ################
@@ -52,8 +5,6 @@ endif
 3RDPSRCDIR :=	$(3RDP_ROOT)/src
 3RDPDISTDIR :=	$(3RDP_ROOT)/dist
 3RDPBUILDDIR :=	$(3RDP_ROOT)/build
-JS_SRC :=	$(3RDP_ROOT)/src/mozjs
-JS_IDIR :=	$(3RDPODIR)/mozjs
 CRYPT_SRC :=	$(3RDP_ROOT)/src/cl
 CRYPT_IDIR :=	$(3RDPODIR)/cl
 
@@ -61,45 +12,11 @@ CRYPT_IDIR :=	$(3RDPODIR)/cl
 # JS Stuff #
 ############
 
-JS_CFLAGS += -DJAVASCRIPT $(NSPR_CFLAGS)
-JS_LDFLAGS += $(NSPR_LDFLAGS)
-
-ifdef JSLIB
- JS_NOBUILD:=1
-else
- ifdef JSINCLUDE
-  JS_NOBUILD:=1
- else
-  ifdef JSLIBDIR
-   JS_NOBUILD:=1
-  endif
- endif
-endif
-
-ifdef JS_NOBUILD
- ##############################
- # JS Specified on build line #
- ##############################
- ifeq ($(os),sunos)
-  ifeq ($(shell test -f /usr/sfw/lib/mozilla/libmozjs185.so && echo "yes"),yes)
-   JSLIBDIR ?= /usr/sfw/lib/mozilla
-   JSLIB ?= mozjs185
-  endif
- endif
-
- ifndef JSLIB
-  JSLIB	:=	mozjs185
- endif
- JS_DEPS :=
- JS_LIBS += -l$(JSLIB)
-else
- JSINCLUDE := $(JS_IDIR)$(DIRSEP)include/js
- JSLIBDIR := $(JS_IDIR)$(DIRSEP)lib
- JSLIB := mozjs185
- JS_DEPS := js
- JS_LIBS += $(JSLIBDIR)$(DIRSEP)libmozjs185-1.0.a
-endif
-JS_LIBS += $(NSPR_LIBS)
+# SpiderMonkey 128 via pkg-config
+JS_CFLAGS += -DJAVASCRIPT $(shell pkg-config mozjs-128 --cflags)
+JS_LIBS += $(shell pkg-config mozjs-128 --libs)
+JS_DEPS :=
+JS_LIB :=
  
 # Put it all together...
 

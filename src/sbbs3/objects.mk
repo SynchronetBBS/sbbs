@@ -55,7 +55,6 @@ OBJS	=		$(LOAD_CFG_OBJS) \
 			$(MTOBJODIR)/js_mqtt$(OFILE)\
 			$(MTOBJODIR)/js_filebase$(OFILE)\
 			$(MTOBJODIR)/js_queue$(OFILE)\
-			$(MTOBJODIR)/js_request$(OFILE)\
 			$(MTOBJODIR)/js_rtpool$(OFILE)\
 			$(MTOBJODIR)/js_server$(OFILE)\
 			$(MTOBJODIR)/js_socket$(OFILE)\
@@ -201,7 +200,6 @@ JSDOOR_OBJS = 		$(LOAD_CFG_OBJS) \
 			$(MTOBJODIR)/js_archive$(OFILE) \
 			$(MTOBJODIR)/js_uifc$(OFILE) \
 			$(MTOBJODIR)/js_conio$(OFILE) \
-			$(MTOBJODIR)/js_request$(OFILE) \
 			$(MTOBJODIR)/js_socket$(OFILE) \
 			$(MTOBJODIR)/comio$(OFILE)\
 			$(MTOBJODIR)/js_client$(OFILE) \

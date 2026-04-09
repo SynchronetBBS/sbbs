@@ -20,7 +20,6 @@
  ****************************************************************************/
 
 #include "sbbs.h"
-#include "js_request.h"
 #include "filedat.h"
 
 /* libarchive: */
@@ -40,7 +39,6 @@ js_create(JSContext *cx, uintN argc, jsval *arglist)
 	bool        with_path = false;
 	char        error[256] = "";
 	jsval       val;
-	jsrefcount  rc;
 	const char* filename;
 
 	if ((filename = static_cast<const char*>(js_GetClassPrivate(cx, obj, &js_archive_class))) == NULL)
@@ -86,10 +84,8 @@ js_create(JSContext *cx, uintN argc, jsval *arglist)
 		SAFECOPY(format,  fext + 1);
 	if (*format == '\0')
 		SAFECOPY(format, "zip");
-	rc = JS_SUSPENDREQUEST(cx);
 	long file_count = create_archive(filename, format, with_path, file_list, error, sizeof(error));
 	strListFree(&file_list);
-	JS_RESUMEREQUEST(cx, rc);
 	if (file_count < 0) {
 		JS_ReportError(cx, error);
 		return JS_FALSE;
@@ -111,7 +107,6 @@ js_extract(JSContext *cx, uintN argc, jsval *arglist)
 	bool        recurse = false;
 	int32       max_files = 0;
 	char        error[256] = "";
-	jsrefcount  rc;
 	const char* filename;
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
@@ -159,12 +154,10 @@ js_extract(JSContext *cx, uintN argc, jsval *arglist)
 		argn++;
 	}
 
-	rc = JS_SUSPENDREQUEST(cx);
 	long extracted = extract_files_from_archive(filename, outdir, allowed_filename_chars
 	                                            , with_path, overwrite, (ulong)max_files, file_list, recurse, error, sizeof(error));
 	strListFree(&file_list);
 	free(outdir);
-	JS_RESUMEREQUEST(cx, rc);
 	if (*error != '\0') {
 		if (extracted >= 0)
 			JS_ReportError(cx, "%s (after extracting %ld items successfully)", error, extracted);
@@ -181,15 +174,12 @@ static JSBool
 js_archive_type(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 {
 	char        type[256] = "";
-	jsrefcount  rc;
 	const char* filename;
 
 	if ((filename = static_cast<const char*>(js_GetClassPrivate(cx, obj, &js_archive_class))) == NULL)
 		return JS_FALSE;
 
-	rc = JS_SUSPENDREQUEST(cx);
 	int result = archive_type(filename, type, sizeof(type));
-	JS_RESUMEREQUEST(cx, rc);
 	if (result >= 0) {
 		JSString* js_str = JS_NewStringCopyZ(cx, type);
 		*vp = STRING_TO_JSVAL(js_str);
@@ -218,7 +208,6 @@ js_list(JSContext *cx, uintN argc, jsval *arglist)
 	jsval *               argv = JS_ARGV(cx, arglist);
 	JSObject *            obj = JS_THIS_OBJECT(cx, arglist);
 	jsval                 val;
-	jsrefcount            rc;
 	JSObject*             array;
 	JSString*             js_str;
 	struct archive *      ar;
@@ -266,7 +255,6 @@ js_list(JSContext *cx, uintN argc, jsval *arglist)
 	}
 
 	JSBool retval = JS_TRUE;
-	rc = JS_SUSPENDREQUEST(cx);
 	jsint  len = 0;
 	while (1) {
 		result = archive_read_next_header(ar, &entry);
@@ -344,10 +332,10 @@ js_list(JSContext *cx, uintN argc, jsval *arglist)
 			JS_SetProperty(cx, obj, "hardlink", &val);
 		}
 
-		val = DOUBLE_TO_JSVAL((jsdouble)archive_entry_size(entry));
+		val = DOUBLE_TO_JSVAL((double)archive_entry_size(entry));
 		JS_SetProperty(cx, obj, "size", &val);
 
-		val = DOUBLE_TO_JSVAL((jsdouble)archive_entry_mtime(entry));
+		val = DOUBLE_TO_JSVAL((double)archive_entry_mtime(entry));
 		JS_SetProperty(cx, obj, "time", &val);
 
 		val = INT_TO_JSVAL(archive_entry_mode(entry));
@@ -443,7 +431,6 @@ js_list(JSContext *cx, uintN argc, jsval *arglist)
 			break;
 	}
 	archive_read_free(ar);
-	JS_RESUMEREQUEST(cx, rc);
 	JS_SET_RVAL(cx, arglist, OBJECT_TO_JSVAL(array));
 
 	return retval;
@@ -454,7 +441,6 @@ js_read(JSContext *cx, uintN argc, jsval *arglist)
 {
 	jsval *               argv = JS_ARGV(cx, arglist);
 	JSObject *            obj = JS_THIS_OBJECT(cx, arglist);
-	jsrefcount            rc;
 	struct archive *      ar;
 	struct archive_entry *entry;
 	int                   result;
@@ -494,7 +480,6 @@ js_read(JSContext *cx, uintN argc, jsval *arglist)
 	}
 
 	JSBool retval = JS_TRUE;
-	rc = JS_SUSPENDREQUEST(cx);
 	while (1) {
 		result = archive_read_next_header(ar, &entry);
 		if (result != ARCHIVE_OK) {
@@ -550,7 +535,6 @@ js_read(JSContext *cx, uintN argc, jsval *arglist)
 		break;
 	}
 	archive_read_free(ar);
-	JS_RESUMEREQUEST(cx, rc);
 
 	return retval;
 }
@@ -652,51 +636,54 @@ js_archive_constructor(JSContext *cx, uintN argc, jsval *arglist)
 	return JS_TRUE;
 }
 
-static void js_finalize_archive(JSContext *cx, JSObject *obj)
+static void js_finalize_archive(JS::GCContext* gcx, JSObject *obj)
 {
 	void* p;
 
-	if ((p = JS_GetPrivate(cx, obj)) == NULL)
+	if ((p = JS_GetPrivate(obj)) == NULL)
 		return;
 	free(p);
-	JS_SetPrivate(cx, obj, NULL);
+	JS_SetPrivate(obj, NULL);
 }
 
-static JSBool js_archive_resolve(JSContext *cx, JSObject *obj, jsid id)
+static bool js_archive_resolve(JSContext *cx, JS::Handle<JSObject*> obj, JS::Handle<jsid> id, bool* resolvedp)
 {
 	char*  name = NULL;
-	JSBool ret;
 
-	if (id != JSID_VOID && id != JSID_EMPTY) {
-		jsval idval;
-
-		JS_IdToValue(cx, id, &idval);
-		if (JSVAL_IS_STRING(idval))
-			JSSTRING_TO_MSTRING(cx, JSVAL_TO_STRING(idval), name, NULL);
+	if (id.get().isString()) {
+		JSString* str = id.get().toString();
+		JSSTRING_TO_MSTRING(cx, str, name, NULL);
+		HANDLE_PENDING(cx, name);
+		if (name == NULL) return false;
 	}
 
-	ret = js_SyncResolve(cx, obj, name, NULL, js_archive_functions, NULL, 0);
+	bool ret = js_SyncResolve(cx, obj, name, NULL, js_archive_functions, NULL, 0);
 	if (name)
 		free(name);
-	return ret;
+	if (resolvedp) *resolvedp = ret;
+	return true;
 }
 
-static JSBool js_archive_enumerate(JSContext *cx, JSObject *obj)
+static bool js_archive_enumerate(JSContext *cx, JS::Handle<JSObject*> obj)
 {
-	return js_archive_resolve(cx, obj, JSID_VOID);
+	return js_SyncResolve(cx, obj, NULL, NULL, js_archive_functions, NULL, 0);
 }
+
+static const JSClassOps js_archive_classops = {
+	nullptr,                /* addProperty  */
+	nullptr,                /* delProperty  */
+	js_archive_enumerate,   /* enumerate    */
+	nullptr,                /* newEnumerate */
+	js_archive_resolve,     /* resolve      */
+	nullptr,                /* mayResolve   */
+	js_finalize_archive,    /* finalize     */
+	nullptr, nullptr, nullptr /* call, construct, trace */
+};
 
 JSClass js_archive_class = {
-	"Archive"               /* name			*/
-	, JSCLASS_HAS_PRIVATE    /* flags		*/
-	, JS_PropertyStub        /* addProperty	*/
-	, JS_PropertyStub        /* delProperty	*/
-	, JS_PropertyStub        /* getProperty	*/
-	, JS_StrictPropertyStub  /* setProperty	*/
-	, js_archive_enumerate   /* enumerate	*/
-	, js_archive_resolve     /* resolve		*/
-	, JS_ConvertStub         /* convert		*/
-	, js_finalize_archive    /* finalize		*/
+	"Archive"
+	, JSCLASS_HAS_PRIVATE
+	, &js_archive_classops
 };
 
 JSObject* js_CreateArchiveClass(JSContext* cx, JSObject* parent, const str_list_t supported_formats)

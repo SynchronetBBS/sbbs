@@ -50,9 +50,17 @@ js_sprintf(JSContext *cx, uint argn, uintN argc, jsval *argv)
 			cur++;
 		if (cur >= argc)
 			break;
-		if (JSVAL_IS_DOUBLE(argv[cur]))
-			p = xp_asprintf_next(p, XP_PRINTF_CONVERT | XP_PRINTF_TYPE_DOUBLE, JSVAL_TO_DOUBLE(argv[cur]));
-		else if (JSVAL_IS_INT(argv[cur]))
+		if (JSVAL_IS_DOUBLE(argv[cur])) {
+			double dv = JSVAL_TO_DOUBLE(argv[cur]);
+			int32  iv = (int32)dv;
+			/* If the double is a whole number that fits in int32, pass as int
+			 * so that %*s (width-from-arg) and integer conversions work correctly.
+			 * xp_asprintf_next reads va_arg(,int) for '*' regardless of type flag. */
+			if ((double)iv == dv)
+				p = xp_asprintf_next(p, XP_PRINTF_CONVERT | XP_PRINTF_TYPE_INT, iv);
+			else
+				p = xp_asprintf_next(p, XP_PRINTF_CONVERT | XP_PRINTF_TYPE_DOUBLE, dv);
+		} else if (JSVAL_IS_INT(argv[cur]))
 			p = xp_asprintf_next(p, XP_PRINTF_CONVERT | XP_PRINTF_TYPE_INT, JSVAL_TO_INT(argv[cur]));
 		else if (JSVAL_IS_BOOLEAN(argv[cur]) && xp_printf_get_type(p) != XP_PRINTF_TYPE_CHARP)
 			p = xp_asprintf_next(p, XP_PRINTF_CONVERT | XP_PRINTF_TYPE_INT, JSVAL_TO_BOOLEAN(argv[cur]));

@@ -1,6 +1,7 @@
 #ifndef JSDEBUG_H
 #define JSDEBUG_H
 
+#ifdef __cplusplus
 #include <jsapi.h>
 
 enum debug_action {
@@ -8,17 +9,14 @@ enum debug_action {
 	DEBUG_EXIT
 };
 
-#if defined(__cplusplus)
 extern "C" {
-#endif
 
 void setup_debugger(void);
-BOOL init_debugger(JSRuntime *rt, JSContext *cx, void (*puts)(const char *), char *(*getline)(void));
-enum debug_action debug_prompt(JSContext *cx, JSObject *script);
-void end_debugger(JSRuntime *rt, JSContext *cx);
+BOOL init_debugger(JSContext *cx, void (*puts)(const char *), char *(*getline)(void));
+enum debug_action debug_prompt(JSContext *cx, JSScript *script);
+void end_debugger(JSContext *cx);
 
-#if defined(__cplusplus)
-}
-#endif
+} /* extern "C" */
+#endif /* __cplusplus */
 
 #endif

@@ -26,7 +26,6 @@
 #include "petdefs.h"
 #include "filedat.h"
 #include "js_rtpool.h"
-#include "js_request.h"
 #include "os_info.h"
 #include "ssl.h"
 #include "ver.h"
@@ -646,13 +645,17 @@ js_DefineSyncProperties(JSContext *cx, JSObject *obj, jsSyncPropertySpec* props)
 		return JS_FALSE;
 
 	for (i = 0; props[i].name != NULL; ++i) {
+		/* SM128: strip JSPROP_READONLY so fill_properties can set the actual
+		 * value via JS_SetProperty.  JSPROP_RESOLVING prevents resolve-hook
+		 * recursion during this define. */
+		unsigned pflags = (props[i].flags & ~(JSPROP_READONLY | JSPROP_PERMANENT)) | JSPROP_RESOLVING;
 		if (props[i].tinyid < 256 && props[i].tinyid > -129) {
 			if (!JS_DefinePropertyWithTinyId(cx, obj, /* Never reserve any "slots" for properties */
-			                                 props[i].name, props[i].tinyid, JSVAL_VOID, NULL, NULL, props[i].flags | JSPROP_SHARED))
+			                                 props[i].name, props[i].tinyid, JSVAL_VOID, NULL, NULL, pflags))
 				return JS_FALSE;
 		}
 		else {
-			if (!JS_DefineProperty(cx, obj, props[i].name, JSVAL_VOID, NULL, NULL, props[i].flags | JSPROP_SHARED))
+			if (!JS_DefineProperty(cx, obj, props[i].name, JSVAL_VOID, NULL, NULL, pflags))
 				return JS_FALSE;
 		}
 		if (!(props[i].flags & JSPROP_ENUMERATE))   /* No need to document invisible props */
@@ -809,19 +812,25 @@ JSBool
 js_DefineSyncProperties(JSContext *cx, JSObject *obj, jsSyncPropertySpec* props)
 {
 	uint i;
+	/* SM128: root obj so nursery GC across loop iterations cannot stale the pointer */
+	JS::RootedObject robj(cx, obj);
 
 	/*
 	 * NOTE: Any changes here should also be added to the same function in jsdoor.c
 	 *       (ie: anything not Synchronet specific).
 	 */
 	for (i = 0; props[i].name; i++) {
+		/* SM128: strip JSPROP_READONLY so fill_properties can set the actual
+		 * value via JS_SetProperty.  JSPROP_RESOLVING prevents the resolve
+		 * hook from recursing during this define. */
+		unsigned flags = (props[i].flags & ~(JSPROP_READONLY | JSPROP_PERMANENT)) | JSPROP_RESOLVING;
 		if (props[i].tinyid < 256 && props[i].tinyid > -129) {
-			if (!JS_DefinePropertyWithTinyId(cx, obj,
-			                                 props[i].name, props[i].tinyid, JSVAL_VOID, NULL, NULL, props[i].flags | JSPROP_SHARED))
+			if (!JS_DefinePropertyWithTinyId(cx, robj.get(),
+			                                 props[i].name, props[i].tinyid, JSVAL_VOID, NULL, NULL, flags))
 				return JS_FALSE;
 		}
 		else {
-			if (!JS_DefineProperty(cx, obj, props[i].name, JSVAL_VOID, NULL, NULL, props[i].flags | JSPROP_SHARED))
+			if (!JS_DefineProperty(cx, robj.get(), props[i].name, JSVAL_VOID, NULL, NULL, flags))
 				return JS_FALSE;
 		}
 	}
@@ -834,13 +843,15 @@ JSBool
 js_DefineSyncMethods(JSContext* cx, JSObject* obj, jsSyncMethodSpec *funcs)
 {
 	uint i;
+	/* SM128: root obj so nursery GC across loop iterations cannot stale the pointer */
+	JS::RootedObject robj(cx, obj);
 
 	/*
 	 * NOTE: Any changes here should also be added to the same function in jsdoor.c
 	 *       (ie: anything not Synchronet specific).
 	 */
 	for (i = 0; funcs[i].name; i++)
-		if (!JS_DefineFunction(cx, obj, funcs[i].name, funcs[i].call, funcs[i].nargs, 0))
+		if (!JS_DefineFunction(cx, robj.get(), funcs[i].name, funcs[i].call, funcs[i].nargs, 0))
 			return JS_FALSE;
 	return JS_TRUE;
 }
@@ -850,21 +861,28 @@ js_SyncResolve(JSContext* cx, JSObject* obj, char *name, jsSyncPropertySpec* pro
 {
 	uint  i;
 	jsval val;
+	/* SM128: root obj so nursery GC across loop iterations cannot stale the pointer */
+	JS::RootedObject robj(cx, obj);
 
 	/*
 	 * NOTE: Any changes here should also be added to the same function in jsdoor.c
 	 *       (ie: anything not Synchronet specific).
 	 */
+	/* SM128: JSPROP_RESOLVING tells the engine to skip the resolve hook
+	 * during property definition, preventing infinite recursion.
+	 * Strip JSPROP_READONLY so fill_properties can set the actual
+	 * value via JS_SetProperty after this define. */
 	if (props) {
 		for (i = 0; props[i].name; i++) {
 			if (name == NULL || strcmp(name, props[i].name) == 0) {
+				unsigned pflags = (props[i].flags & ~(JSPROP_READONLY | JSPROP_PERMANENT)) | JSPROP_RESOLVING;
 				if (props[i].tinyid < 256 && props[i].tinyid > -129) {
-					if (!JS_DefinePropertyWithTinyId(cx, obj,
-					                                 props[i].name, props[i].tinyid, JSVAL_VOID, NULL, NULL, props[i].flags | JSPROP_SHARED))
+					if (!JS_DefinePropertyWithTinyId(cx, robj.get(),
+					                                 props[i].name, props[i].tinyid, JSVAL_VOID, NULL, NULL, pflags))
 						return JS_FALSE;
 				}
 				else {
-					if (!JS_DefineProperty(cx, obj, props[i].name, JSVAL_VOID, NULL, NULL, props[i].flags | JSPROP_SHARED))
+					if (!JS_DefineProperty(cx, robj.get(), props[i].name, JSVAL_VOID, NULL, NULL, pflags))
 						return JS_FALSE;
 				}
 				if (name)
@@ -875,7 +893,7 @@ js_SyncResolve(JSContext* cx, JSObject* obj, char *name, jsSyncPropertySpec* pro
 	if (funcs) {
 		for (i = 0; funcs[i].name; i++) {
 			if (name == NULL || strcmp(name, funcs[i].name) == 0) {
-				if (!JS_DefineFunction(cx, obj, funcs[i].name, funcs[i].call, funcs[i].nargs, 0))
+				if (!JS_DefineFunction(cx, robj.get(), funcs[i].name, funcs[i].call, funcs[i].nargs, JSPROP_RESOLVING))
 					return JS_FALSE;
 				if (name)
 					return JS_TRUE;
@@ -887,7 +905,7 @@ js_SyncResolve(JSContext* cx, JSObject* obj, char *name, jsSyncPropertySpec* pro
 			if (name == NULL || strcmp(name, consts[i].name) == 0) {
 				val = INT_TO_JSVAL(consts[i].val);
 
-				if (!JS_DefineProperty(cx, obj, consts[i].name, val, NULL, NULL, flags))
+				if (!JS_DefineProperty(cx, robj.get(), consts[i].name, val, NULL, NULL, flags | JSPROP_RESOLVING))
 					return JS_FALSE;
 
 				if (name)
@@ -907,14 +925,56 @@ js_DefineConstIntegers(JSContext* cx, JSObject* obj, jsConstIntSpec* ints, int f
 {
 	uint  i;
 	jsval val;
+	/* SM128: root obj so nursery GC across loop iterations cannot stale the pointer */
+	JS::RootedObject robj(cx, obj);
 
 	for (i = 0; ints[i].name; i++) {
 		val = INT_TO_JSVAL(ints[i].val);
 
-		if (!JS_DefineProperty(cx, obj, ints[i].name, val, NULL, NULL, flags))
+		if (!JS_DefineProperty(cx, robj.get(), ints[i].name, val, NULL, NULL, flags))
 			return JS_FALSE;
 	}
 
+	return JS_TRUE;
+}
+
+/* SM128: define accessor properties with native getters.
+ * The getter JSNative is called on every property access with the tinyid
+ * stored in reserved slot 0 of the callee function object. */
+JSBool
+js_DefineSyncAccessors(JSContext* cx, JSObject* obj,
+                       jsSyncPropertySpec* props, JSNative getter,
+                       const char* name, JSNative setter)
+{
+	JS::RootedObject robj(cx, obj);
+
+	for (uint i = 0; props[i].name; i++) {
+		if (name != NULL && strcmp(name, props[i].name) != 0)
+			continue;
+		JSFunction* getterFunc = js::NewFunctionWithReserved(cx, getter,
+			0, 0, props[i].name);
+		if (!getterFunc)
+			return JS_FALSE;
+		JSObject* getterObj = JS_GetFunctionObject(getterFunc);
+		js::SetFunctionNativeReserved(getterObj, 0, JS::Int32Value(props[i].tinyid));
+		JS::RootedObject getterRoot(cx, getterObj);
+		JS::RootedObject setterRoot(cx, nullptr);
+		/* Wire up setter for writable properties */
+		if (setter != nullptr && !(props[i].flags & JSPROP_READONLY)) {
+			JSFunction* setterFunc = js::NewFunctionWithReserved(cx, setter,
+				1, 0, props[i].name);
+			if (!setterFunc)
+				return JS_FALSE;
+			JSObject* setterObj = JS_GetFunctionObject(setterFunc);
+			js::SetFunctionNativeReserved(setterObj, 0, JS::Int32Value(props[i].tinyid));
+			setterRoot.set(setterObj);
+		}
+		if (!JS_DefineProperty(cx, robj, props[i].name,
+				getterRoot, setterRoot, JSPROP_ENUMERATE))
+			return JS_FALSE;
+		if (name != NULL)
+			return JS_TRUE;
+	}
 	return JS_TRUE;
 }
 
@@ -926,7 +986,6 @@ js_log(JSContext *cx, uintN argc, jsval *arglist)
 	int32      level = LOG_INFO;
 	JSString*  str = NULL;
 	sbbs_t*    sbbs;
-	jsrefcount rc;
 	char *     line = NULL;
 	size_t     line_sz = 0;
 
@@ -949,9 +1008,7 @@ js_log(JSContext *cx, uintN argc, jsval *arglist)
 		JSSTRING_TO_RASTRING(cx, str, line, &line_sz, NULL);
 		if (line == NULL)
 			return JS_FALSE;
-		rc = JS_SUSPENDREQUEST(cx);
 		sbbs->lputs(level, line);
-		JS_RESUMEREQUEST(cx, rc);
 	}
 	if (line != NULL)
 		free(line);
@@ -970,7 +1027,6 @@ js_read(JSContext *cx, uintN argc, jsval *arglist)
 	uchar*     buf;
 	int32      len = 128;
 	sbbs_t*    sbbs;
-	jsrefcount rc;
 
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
@@ -987,9 +1043,7 @@ js_read(JSContext *cx, uintN argc, jsval *arglist)
 	if ((buf = (uchar*)malloc(len)) == NULL)
 		return JS_TRUE;
 
-	rc = JS_SUSPENDREQUEST(cx);
 	len = RingBufRead(&sbbs->inbuf, buf, len);
-	JS_RESUMEREQUEST(cx, rc);
 
 	if (len > 0)
 		JS_SET_RVAL(cx, arglist, STRING_TO_JSVAL(JS_NewStringCopyN(cx, (char*)buf, len)));
@@ -1005,7 +1059,6 @@ js_readln(JSContext *cx, uintN argc, jsval *arglist)
 	char*      buf;
 	int32      len = 128;
 	sbbs_t*    sbbs;
-	jsrefcount rc;
 
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
@@ -1023,9 +1076,7 @@ js_readln(JSContext *cx, uintN argc, jsval *arglist)
 		if ((buf = (char*)malloc(len)) == NULL)
 			return JS_TRUE;
 
-		rc = JS_SUSPENDREQUEST(cx);
 		len = sbbs->getstr(buf, len, K_NONE);
-		JS_RESUMEREQUEST(cx, rc);
 
 		if (len > 0)
 			JS_SET_RVAL(cx, arglist, STRING_TO_JSVAL(JS_NewStringCopyZ(cx, buf)));
@@ -1042,7 +1093,6 @@ js_write(JSContext *cx, uintN argc, jsval *arglist)
 	uintN      i;
 	JSString*  str = NULL;
 	sbbs_t*    sbbs;
-	jsrefcount rc;
 	char *     cstr = NULL;
 	size_t     cstr_sz = 0;
 
@@ -1059,12 +1109,10 @@ js_write(JSContext *cx, uintN argc, jsval *arglist)
 		JSSTRING_TO_RASTRING(cx, str, cstr, &cstr_sz, NULL);
 		if (cstr == NULL)
 			return JS_FALSE;
-		rc = JS_SUSPENDREQUEST(cx);
 		if (sbbs->online != ON_REMOTE)
 			sbbs->lputs(LOG_INFO, cstr);
 		else
 			sbbs->bputs(cstr);
-		JS_RESUMEREQUEST(cx, rc);
 	}
 	FREE_AND_NULL(cstr);
 
@@ -1080,7 +1128,6 @@ js_write_raw(JSContext *cx, uintN argc, jsval *arglist)
 	size_t     str_sz = 0;
 	size_t     len;
 	sbbs_t*    sbbs;
-	jsrefcount rc;
 
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
@@ -1093,9 +1140,7 @@ js_write_raw(JSContext *cx, uintN argc, jsval *arglist)
 			return JS_FALSE;
 		if (len < 1)
 			continue;
-		rc = JS_SUSPENDREQUEST(cx);
 		sbbs->putcom(str, len);
-		JS_RESUMEREQUEST(cx, rc);
 	}
 	if (str != NULL)
 		free(str);
@@ -1107,7 +1152,6 @@ static JSBool
 js_writeln(JSContext *cx, uintN argc, jsval *arglist)
 {
 	sbbs_t*    sbbs;
-	jsrefcount rc;
 
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
@@ -1115,10 +1159,8 @@ js_writeln(JSContext *cx, uintN argc, jsval *arglist)
 		return JS_FALSE;
 
 	js_write(cx, argc, arglist);
-	rc = JS_SUSPENDREQUEST(cx);
 	if (sbbs->online == ON_REMOTE)
 		sbbs->bputs(crlf);
-	JS_RESUMEREQUEST(cx, rc);
 
 	return JS_TRUE;
 }
@@ -1129,7 +1171,6 @@ js_printf(JSContext *cx, uintN argc, jsval *arglist)
 	jsval *    argv = JS_ARGV(cx, arglist);
 	char*      p;
 	sbbs_t*    sbbs;
-	jsrefcount rc;
 
 	if (argc < 1) {
 		JS_SET_RVAL(cx, arglist, JS_GetEmptyStringValue(cx));
@@ -1144,12 +1185,10 @@ js_printf(JSContext *cx, uintN argc, jsval *arglist)
 		return JS_FALSE;
 	}
 
-	rc = JS_SUSPENDREQUEST(cx);
 	if (sbbs->online != ON_REMOTE)
 		sbbs->lputs(LOG_INFO, p);
 	else
 		sbbs->bputs(p);
-	JS_RESUMEREQUEST(cx, rc);
 
 	JS_SET_RVAL(cx, arglist, STRING_TO_JSVAL(JS_NewStringCopyZ(cx, p)));
 
@@ -1163,7 +1202,6 @@ js_alert(JSContext *cx, uintN argc, jsval *arglist)
 {
 	jsval *    argv = JS_ARGV(cx, arglist);
 	sbbs_t*    sbbs;
-	jsrefcount rc;
 	char *     cstr;
 
 	if (js_argcIsInsufficient(cx, argc, 1))
@@ -1178,7 +1216,6 @@ js_alert(JSContext *cx, uintN argc, jsval *arglist)
 	if (cstr == NULL)
 		return JS_FALSE;
 
-	rc = JS_SUSPENDREQUEST(cx);
 	if (sbbs->online != ON_REMOTE)
 		sbbs->lputs(LOG_WARNING, cstr);
 	else {
@@ -1189,7 +1226,6 @@ js_alert(JSContext *cx, uintN argc, jsval *arglist)
 		sbbs->bputs(crlf);
 	}
 	free(cstr);
-	JS_RESUMEREQUEST(cx, rc);
 
 	return JS_TRUE;
 }
@@ -1199,7 +1235,6 @@ js_confirm(JSContext *cx, uintN argc, jsval *arglist)
 {
 	jsval *    argv = JS_ARGV(cx, arglist);
 	sbbs_t*    sbbs;
-	jsrefcount rc;
 	char *     cstr;
 
 	if (js_argcIsInsufficient(cx, argc, 1))
@@ -1214,10 +1249,8 @@ js_confirm(JSContext *cx, uintN argc, jsval *arglist)
 	if (cstr == NULL)
 		return JS_FALSE;
 
-	rc = JS_SUSPENDREQUEST(cx);
 	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(sbbs->yesno(cstr)));
 	free(cstr);
-	JS_RESUMEREQUEST(cx, rc);
 	return JS_TRUE;
 }
 
@@ -1226,7 +1259,6 @@ js_deny(JSContext *cx, uintN argc, jsval *arglist)
 {
 	jsval *    argv = JS_ARGV(cx, arglist);
 	sbbs_t*    sbbs;
-	jsrefcount rc;
 	char *     cstr;
 
 	if (js_argcIsInsufficient(cx, argc, 1))
@@ -1241,10 +1273,8 @@ js_deny(JSContext *cx, uintN argc, jsval *arglist)
 	if (cstr == NULL)
 		return JS_FALSE;
 
-	rc = JS_SUSPENDREQUEST(cx);
 	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(sbbs->noyes(cstr)));
 	free(cstr);
-	JS_RESUMEREQUEST(cx, rc);
 	return JS_TRUE;
 }
 
@@ -1256,7 +1286,6 @@ js_prompt(JSContext *cx, uintN argc, jsval *arglist)
 	char       instr[128] = "";
 	JSString * str;
 	sbbs_t*    sbbs;
-	jsrefcount rc;
 	char*      prompt = NULL;
 	int32      mode = K_EDIT;
 	size_t     result;
@@ -1285,7 +1314,6 @@ js_prompt(JSContext *cx, uintN argc, jsval *arglist)
 		argn++;
 	}
 
-	rc = JS_SUSPENDREQUEST(cx);
 	if (prompt != NULL) {
 		sbbs->bprintf("\1n\1y\1h%s\1w: ", prompt);
 		free(prompt);
@@ -1294,10 +1322,8 @@ js_prompt(JSContext *cx, uintN argc, jsval *arglist)
 	result = sbbs->getstr(instr, sizeof(instr) - 1, mode);
 	sbbs->attr(LIGHTGRAY);
 	if (!result) {
-		JS_RESUMEREQUEST(cx, rc);
 		return JS_TRUE;
 	}
-	JS_RESUMEREQUEST(cx, rc);
 
 	if ((str = JS_NewStringCopyZ(cx, instr)) == NULL)
 		return JS_FALSE;
@@ -1372,7 +1398,6 @@ js_ErrorReporter(JSContext *cx, const char *message, JSErrorReport *report)
 	char        file[MAX_PATH + 1];
 	sbbs_t*     sbbs;
 	const char* warning;
-	jsrefcount  rc;
 	int         log_level;
 
 	if ((sbbs = (sbbs_t*)JS_GetContextPrivate(cx)) == NULL)
@@ -1383,8 +1408,8 @@ js_ErrorReporter(JSContext *cx, const char *message, JSErrorReport *report)
 		return;
 	}
 
-	if (report->filename)
-		SAFEPRINTF(file, " %s", report->filename);
+	if (report->filename.c_str())
+		SAFEPRINTF(file, " %s", report->filename.c_str());
 	else
 		file[0] = 0;
 
@@ -1393,25 +1418,27 @@ js_ErrorReporter(JSContext *cx, const char *message, JSErrorReport *report)
 	else
 		line[0] = 0;
 
-	if (JSREPORT_IS_WARNING(report->flags)) {
-		if (JSREPORT_IS_STRICT(report->flags))
-			warning = "strict warning ";
-		else
-			warning = "warning ";
+	if (report->isWarning()) {
+		warning = "warning ";
 		log_level = LOG_WARNING;
 	} else {
 		warning = nulstr;
 		log_level = LOG_ERR;
 	}
 
-	rc = JS_SUSPENDREQUEST(cx);
 	sbbs->lprintf(log_level, "!JavaScript %s%s%s: %s", warning, file, line, message);
 	if (sbbs->online == ON_REMOTE)
 		sbbs->bprintf("!JavaScript %s%s%s: %s\r\n", warning, getfname(file), line, message);
-	JS_RESUMEREQUEST(cx, rc);
 }
 
-JSContext* sbbs_t::js_init(JSRuntime** runtime, JSObject** glob, const char* desc)
+/* SM128 warning reporter: adapts old 3-arg signature to WarningReporter */
+static void
+js_WarningReporter(JSContext* cx, JSErrorReport* report)
+{
+	js_ErrorReporter(cx, report->message().c_str(), report);
+}
+
+JSContext* sbbs_t::js_init(JSContext** runtime, JSObject** glob, const char* desc)
 {
 	JSContext* js_cx;
 
@@ -1425,12 +1452,8 @@ JSContext* sbbs_t::js_init(JSRuntime** runtime, JSObject** glob, const char* des
 		return NULL;
 	}
 
-	if ((js_cx = JS_NewContext(*runtime, JAVASCRIPT_CONTEXT_STACK)) == NULL) {
-		lprintf(LOG_NOTICE, "Failed to create new JavaScript context");
-		return NULL;
-	}
-	JS_SetOptions(js_cx, startup->js.options);
-	JS_BEGINREQUEST(js_cx);
+	js_cx = *runtime; /* SM128: jsrt_GetNew already created the context */
+	JS::SetWarningReporter(js_cx, js_WarningReporter);
 
 	memset(&js_callback, 0, sizeof(js_callback));
 	js_callback.limit = startup->js.time_limit;
@@ -1445,7 +1468,6 @@ JSContext* sbbs_t::js_init(JSRuntime** runtime, JSObject** glob, const char* des
 
 	do {
 
-		JS_SetErrorReporter(js_cx, js_ErrorReporter);
 
 		JS_SetContextPrivate(js_cx, this);  /* Store a pointer to sbbs_t instance */
 
@@ -1482,16 +1504,56 @@ JSContext* sbbs_t::js_init(JSRuntime** runtime, JSObject** glob, const char* des
 
 	if (!success) {
 		if (rooted)
-			JS_RemoveObjectRoot(js_cx, glob);
-		JS_ENDREQUEST(js_cx);
-		JS_DestroyContext(js_cx);
+		/* SM128: use jsrt_Release so the context is removed from the
+		 * interrupt-callback list before destruction (not direct JS_DestroyContext). */
+		jsrt_Release(*runtime);
+		*runtime = NULL;
 		js_cx = NULL;
 		return NULL;
 	}
 	else
-		JS_ENDREQUEST(js_cx);
 
 	return js_cx;
+}
+
+/* Create a new isolated Realm (global object) within the node's existing
+ * JSContext for running an external JS module (door game).  SM128 enforces
+ * one JSContext per thread, so we cannot create a second context — instead
+ * we create a new Realm which provides a separate global scope. */
+bool sbbs_t::js_init_xtrn(JSObject** glob)
+{
+	if (js_cx == NULL)
+		return false;
+
+	lprintf(LOG_DEBUG, "JavaScript: Creating XtrnModule realm");
+
+	memset(&js_callback, 0, sizeof(js_callback));
+	js_callback.limit = startup->js.time_limit;
+	js_callback.gc_interval = startup->js.gc_interval;
+	js_callback.yield_interval = startup->js.yield_interval;
+	js_callback.terminated = &terminated;
+	js_callback.auto_terminate = true;
+	js_callback.events_supported = true;
+
+	if (!js_CreateCommonObjects(js_cx, &scfg, &cfg, js_global_functions
+	                            , uptime, server_host_name(), SOCKLIB_DESC
+	                            , &js_callback
+	                            , &startup->js
+	                            , &useron
+	                            , client_socket == INVALID_SOCKET ? NULL : &client, client_socket.load(), -1
+	                            , &js_server_props
+	                            , glob
+	                            , mqtt
+	                            ))
+		return false;
+
+	if (js_CreateBbsObject(js_cx, *glob) == NULL)
+		return false;
+
+	if (js_CreateConsoleObject(js_cx, *glob) == NULL)
+		return false;
+
+	return true;
 }
 
 void sbbs_t::js_cleanup(void)
@@ -1499,10 +1561,9 @@ void sbbs_t::js_cleanup(void)
 	/* Free Context */
 	if (js_cx != NULL) {
 		lprintf(LOG_DEBUG, "JavaScript: Destroying context");
-		JS_BEGINREQUEST(js_cx);
-		JS_RemoveObjectRoot(js_cx, &js_glob);
-		JS_ENDREQUEST(js_cx);
-		JS_DestroyContext(js_cx);
+		/* SM128: js_cx == js_runtime (same JSContext*); do NOT call
+		 * JS_DestroyContext here — jsrt_Release below handles destruction
+		 * after removing the context from the interrupt-callback list. */
 		js_cx = NULL;
 	}
 
@@ -1514,10 +1575,7 @@ void sbbs_t::js_cleanup(void)
 
 	if (js_hotkey_cx != NULL) {
 		lprintf(LOG_DEBUG, "JavaScript: Destroying HotKey context");
-		JS_BEGINREQUEST(js_hotkey_cx);
-		JS_RemoveObjectRoot(js_hotkey_cx, &js_hotkey_glob);
-		JS_ENDREQUEST(js_hotkey_cx);
-		JS_DestroyContext(js_hotkey_cx);
+		/* SM128: same as above */
 		js_hotkey_cx = NULL;
 	}
 
@@ -1533,12 +1591,10 @@ bool sbbs_t::js_create_user_objects(JSContext* cx, JSObject* glob)
 {
 	bool result = false;
 	if (cx != NULL) {
-		JS_BEGINREQUEST(cx);
 		if (!js_CreateUserObjects(cx, glob, &cfg, &useron, &client, startup == NULL ? NULL :startup->web_file_vpath_prefix, subscan, mqtt))
 			errprintf(LOG_ERR, WHERE, "!JavaScript ERROR creating user objects");
 		else
 			result = true;
-		JS_ENDREQUEST(cx);
 	}
 	return result;
 }
@@ -1570,6 +1626,10 @@ bool js_CreateCommonObjects(JSContext* js_cx
 	if (!js_CreateGlobalObject(js_cx, node_cfg, methods, js_startup, glob))
 		return false;
 
+	/* SM128: root the global so compacting GC during object creation
+	 * can update the pointer; write back at end for the caller. */
+	JS::RootedObject glob_root(js_cx, *glob);
+
 	do {
 		/*
 		 * NOTE: Where applicable, anything added here should also be added to
@@ -1578,82 +1638,81 @@ bool js_CreateCommonObjects(JSContext* js_cx
 		 */
 
 		/* System Object */
-		if (js_CreateSystemObject(js_cx, *glob, node_cfg, uptime, host_name, socklib_desc, mqtt) == NULL)
+		if (js_CreateSystemObject(js_cx, glob_root, node_cfg, uptime, host_name, socklib_desc, mqtt) == NULL)
 			break;
 
 		/* Internal JS Object */
 		if (cb != NULL
-		    && js_CreateInternalJsObject(js_cx, *glob, cb, js_startup) == NULL)
+		    && js_CreateInternalJsObject(js_cx, glob_root, cb, js_startup) == NULL)
 			break;
 
 		/* Client Object */
 		if (client != NULL
-		    && js_CreateClientObject(js_cx, *glob, "client", client, client_socket, session) == NULL)
+		    && js_CreateClientObject(js_cx, glob_root, "client", client, client_socket, session) == NULL)
 			break;
 
 		/* Server */
 		if (props != NULL
-		    && js_CreateServerObject(js_cx, *glob, props) == NULL)
+		    && js_CreateServerObject(js_cx, glob_root, props) == NULL)
 			break;
 
 		/* Socket Class */
-		if (js_CreateSocketClass(js_cx, *glob) == NULL)
+		if (js_CreateSocketClass(js_cx, glob_root) == NULL)
 			break;
 
 		/* Queue Class */
-		if (js_CreateQueueClass(js_cx, *glob) == NULL)
+		if (js_CreateQueueClass(js_cx, glob_root) == NULL)
 			break;
 
 		/* MsgBase Class */
-		if (js_CreateMsgBaseClass(js_cx, *glob) == NULL)
+		if (js_CreateMsgBaseClass(js_cx, glob_root) == NULL)
 			break;
 
 		/* FileBase Class */
-		if (js_CreateFileBaseClass(js_cx, *glob) == NULL)
+		if (js_CreateFileBaseClass(js_cx, glob_root) == NULL)
 			break;
 
 		/* File Class */
-		if (js_CreateFileClass(js_cx, *glob) == NULL)
+		if (js_CreateFileClass(js_cx, glob_root) == NULL)
 			break;
 
 		/* Archive Class */
-		if (js_CreateArchiveClass(js_cx, *glob, cfg->supported_archive_formats) == NULL)
+		if (js_CreateArchiveClass(js_cx, glob_root, cfg->supported_archive_formats) == NULL)
 			break;
 
 		/* User class */
-		if (js_CreateUserClass(js_cx, *glob) == NULL)
+		if (js_CreateUserClass(js_cx, glob_root) == NULL)
 			break;
 
 		/* COM Class */
-		if (js_CreateCOMClass(js_cx, *glob) == NULL)
+		if (js_CreateCOMClass(js_cx, glob_root) == NULL)
 			break;
 
 		/* CryptContext Class */
-		if (js_CreateCryptContextClass(js_cx, *glob) == NULL)
+		if (js_CreateCryptContextClass(js_cx, glob_root) == NULL)
 			break;
 
 		/* CryptKeyset Class */
-		if (js_CreateCryptKeysetClass(js_cx, *glob) == NULL)
+		if (js_CreateCryptKeysetClass(js_cx, glob_root) == NULL)
 			break;
 
 		/* CryptCert Class */
-		if (js_CreateCryptCertClass(js_cx, *glob) == NULL)
+		if (js_CreateCryptCertClass(js_cx, glob_root) == NULL)
 			break;
 
 #if defined USE_MOSQUITTO
-		if (js_CreateMQTTClass(js_cx, *glob) == NULL)
+		if (js_CreateMQTTClass(js_cx, glob_root) == NULL)
 			break;
 #endif
 		/* Area Objects */
-		if (!js_CreateUserObjects(js_cx, *glob, cfg, user, client, startup == NULL ? NULL :startup->web_file_vpath_prefix, /* subscan: */ NULL, mqtt))
+		if (!js_CreateUserObjects(js_cx, glob_root, cfg, user, client, startup == NULL ? NULL :startup->web_file_vpath_prefix, /* subscan: */ NULL, mqtt))
 			break;
 
 		success = true;
 	} while (0);
 
-	if (!success)
-		JS_RemoveObjectRoot(js_cx, glob);
-
+	/* Update caller's pointer in case compacting GC moved the global */
+	*glob = glob_root;
 	return success;
 }
 

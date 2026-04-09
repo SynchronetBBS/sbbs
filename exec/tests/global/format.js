@@ -30,3 +30,21 @@ for (var i in test) {
 	if (result != test[i])
 		throw new Error("format(" + i + ") = '" + result + "' instead of '" + test[i] + "'");
 }
+
+// %*s width-from-argument tests (double values must work like ints)
+var star_tests = [
+	{ fmt: "%*s",  args: [5, "hi"],  expected: "   hi",  desc: "int width" },
+	{ fmt: "%*s",  args: [5.0, "hi"],  expected: "   hi",  desc: "double width (whole number)" },
+	{ fmt: "%*s",  args: [80 * 0.25 - 1, ""],  expected: format("%19s", ""),  desc: "computed double width" },
+	{ fmt: "%*d",  args: [4, 42],  expected: "  42",  desc: "int width with %d" },
+	{ fmt: "%*d",  args: [4.0, 42],  expected: "  42",  desc: "double width with %d" },
+	{ fmt: "%-*s", args: [5, "hi"],  expected: "hi   ",  desc: "left-aligned int width" },
+	{ fmt: "%-*s", args: [5.0, "hi"],  expected: "hi   ",  desc: "left-aligned double width" },
+];
+
+for (var i = 0; i < star_tests.length; i++) {
+	var t = star_tests[i];
+	var result = format.apply(null, [t.fmt].concat(t.args));
+	if (result != t.expected)
+		throw new Error("format(" + t.desc + ") = '" + result + "' instead of '" + t.expected + "'");
+}

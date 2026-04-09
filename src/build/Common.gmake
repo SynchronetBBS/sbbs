@@ -562,7 +562,7 @@ $(OBJODIR)/%$(OFILE) : %.c $(BUILD_DEPENDS) | $(OBJODIR)
 # Implicit C++ Compile Rule
 $(OBJODIR)/%$(OFILE) : %.cpp $(BUILD_DEPENDS) | $(OBJODIR)
 	@echo $(COMPILE_MSG) $<
-	$(QUIET)$(CXX) -std=c++11 $(CFLAGS) $(CXXFLAGS) -o $@ -c $<
+	$(QUIET)$(CXX) -std=c++17 $(CFLAGS) $(CXXFLAGS) -o $@ -c $<
 
 # Implicit MT ASM Compile Rule
 $(MTOBJODIR)/%$(OFILE) : %.s $(BUILD_DEPENDS) | $(OBJODIR)
@@ -577,7 +577,7 @@ $(MTOBJODIR)/%$(OFILE) : %.c $(BUILD_DEPENDS) | $(MTOBJODIR)
 # Implicit MT C++ Compile Rule
 $(MTOBJODIR)/%$(OFILE) : %.cpp $(BUILD_DEPENDS) | $(MTOBJODIR)
 	@echo $(COMPILE_MSG) $<
-	$(QUIET)$(CXX) -std=c++11 $(CFLAGS) $(CXXFLAGS) $(MT_CFLAGS) -o $@ -c $<
+	$(QUIET)$(CXX) -std=c++17 $(CFLAGS) $(CXXFLAGS) $(MT_CFLAGS) -o $@ -c $<
 
 # Implicit MT Obj-C Compile Rule
 $(MTOBJODIR)/%$(OFILE) : %.m $(BUILD_DEPENDS) | $(MTOBJODIR)
