@@ -197,7 +197,8 @@ service = new (function() {
 	/* monitor sockets */
 	this.cycle = function() {
 		var active=socket_select(this.sockets,this.timeout);
-		for each(var s in active) {
+		for(var _s in active) {
+			var s = active[_s];
 			this.sockets[s].cycle();
 		}
 		for(var s=1;s<this.sockets.length;s++) {
@@ -392,7 +393,8 @@ admin = new (function() {
 	}
 	this.modules = function(client) {
 		var list = [];
-		for each(var m in engine.modules) {
+		for(var _m in engine.modules) {
+			var m = engine.modules[_m];
 			list.push({name:m.name,status:m.online});
 		}
 		respond(client,list);
@@ -457,7 +459,8 @@ engine = new (function() {
 		this.file.open('r',true);
 		var modules=this.file.iniGetAllObjects();
 		this.file.close();
-		for each(var m in modules) {
+		for(var _m in modules) {
+			var m = modules[_m];
 			try {
 				this.modules[m.name.toUpperCase()]=new Module(m.name,m.dir,m.read,m.write);
 				log(LOG_DEBUG,"loaded module: " + m.name);
@@ -469,7 +472,8 @@ engine = new (function() {
 
 	/* cycle module databases */
 	this.cycle = function() {
-		for each(var m in this.modules) {
+		for(var _m in this.modules) {
+			var m = this.modules[_m];
 			if(!m.online)
 				continue;
 			m.poll();
@@ -583,7 +587,8 @@ engine = new (function() {
 
 	/* release clients from module authentication and subscription */
 	this.release = function(client) {
-		for each(var m in this.modules) {
+		for(var _m in this.modules) {
+			var m = this.modules[_m];
 			m.db.release(client);
 		}
 	}
@@ -628,7 +633,8 @@ engine = new (function() {
 				try {
 					this.queue = load(true,this.dir + "service.js",this.dir);
 				} catch(e) {
-					log(LOG_ERROR,"(" + module.name + ") error loading module service");
+					log(LOG_ERROR,"(" + this.name + ") error loading module service");
+					log(LOG_ERROR, e);
 				}
 			}
 			/* load module command file */

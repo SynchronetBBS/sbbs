@@ -1,4 +1,5 @@
-/*
+
+/*
 	BUBBLE BOGGLE 
 	for Synchronet v3.15+ (javascript)
 	by Matt Johnson (2009)
@@ -72,7 +73,18 @@ function boggle() {
 		}
 		showMessage("\1r\1hChanged date to " + calendar.date.getMonthName() + " " + current + ", " + calendar.date.getFullYear());
 	}
-	function talkShit() 	{		showMessage("\1k\1hType a message here (max 20 chars)");		console.gotoxy(27,21);		console.attributes = GREEN;		var msg = console.getstr(20,K_NOCRLF|K_NOSPIN);		data.players[useralias].msg = msg;		data.storePlayer();		showScores();		showMessage("\1r\1hSaved message\1n\1r: " + msg);	}	function browseCalendar(k)
+	function talkShit() 
+	{
+		showMessage("\1k\1hType a message here (max 20 chars)");
+		console.gotoxy(27,21);
+		console.attributes = GREEN;
+		var msg = console.getstr(20,K_NOCRLF|K_NOSPIN);
+		data.players[useralias].msg = msg;
+		data.storePlayer();
+		showScores();
+		showMessage("\1r\1hSaved message\1n\1r: " + msg);
+	}
+	function browseCalendar(k)
 	{
 		showMessage("\1r\1hUse Arrow keys to change date and [\1n\1rEnter\1h] to select");
 		if(calendar.selectDay(k)) {
@@ -92,8 +104,18 @@ function boggle() {
 		lobby.draw();
 		console.gotoxy(58,2);
 		console.putmsg(centerString("\1c\1h" + date.getMonthName() + "\1n\1c - \1c\1h" + date.getFullYear(),21));
-				console.gotoxy(3,4);		console.putmsg("\1y\1h" + date.getMonthName() + " High Scores");	}
-	function showMessage(txt)	{		console.gotoxy(27,21);		console.putmsg("                                                   ");		console.gotoxy(27,21);		console.putmsg("\1-" + (txt?txt:""),P_SAVEATR);	}	function redraw()
+		
+		console.gotoxy(3,4);
+		console.putmsg("\1y\1h" + date.getMonthName() + " High Scores");
+	}
+	function showMessage(txt)
+	{
+		console.gotoxy(27,21);
+		console.putmsg("                                                   ");
+		console.gotoxy(27,21);
+		console.putmsg("\1-" + (txt?txt:""),P_SAVEATR);
+	}
+	function redraw()
 	{
 		console.clear(ANSI_NORMAL);
 		showLobby();
@@ -388,7 +410,67 @@ function boggle() {
 		init();
 		play();
 	}
-	function showScores()	{		var posx=3;		var posy=6;		var index=0;		var count=0;				var scores=sortScores();		for(var s=0;s<scores.length;s++) {			if(scores[s].name == useralias) {				index = (s-5);				if(index < 0)					index = 0;				break;			}		}				for(var i=0;i<5;i++) {			var score=scores[index + i];			if(!score) {				break;			}			else if(score.points>0) {				if(score.name==useralias) 					console.attributes=LIGHTGREEN;				else 					console.attributes=GREEN;				console.gotoxy(posx,posy+count);				console.putmsg(score.name.substring(0,20),P_SAVEATR);				console.right(23-score.name.length);				console.putmsg(printPadded(score.points,5,undefined,"right"),P_SAVEATR);				console.right(3);				console.putmsg(getAverage(score.name),P_SAVEATR);				console.right(3);				console.putmsg(printPadded(getDayCount(score.name),4,undefined,"right"),P_SAVEATR);				console.right(3);				console.putmsg(printPadded(formatDate(score.laston),8,undefined,"right"),P_SAVEATR);				console.gotoxy(posx+1,posy+count+1);				console.attributes=DARKGRAY;				console.putmsg(score.statement?score.statement:"...",P_SAVEATR);				count+=2;			}		}				if(data.winner && data.winner.name !== undefined && data.winner.points > 0)	{			console.gotoxy(48,19);			console.putmsg("\1c\1h" + data.winner.name);			console.gotoxy(75,19);			console.putmsg("\1c\1h" + data.winner.points);		}				var player = findUser(useralias);		console.attributes=CYAN|HIGH;		console.gotoxy(40,20);		console.putmsg(player.points,P_SAVEATR);		console.gotoxy(56,20);		console.putmsg(getDayCount(useralias),P_SAVEATR);		console.gotoxy(75,20);		console.putmsg(getAverage(useralias),P_SAVEATR);	}	function sortScores()
+	function showScores()
+	{
+		var posx=3;
+		var posy=6;
+		var index=0;
+		var count=0;
+		
+		var scores=sortScores();
+		for(var s=0;s<scores.length;s++) {
+			if(scores[s].name == useralias) {
+				index = (s-5);
+				if(index < 0)
+					index = 0;
+				break;
+			}
+		}
+		
+		for(var i=0;i<5;i++) {
+			var score=scores[index + i];
+			if(!score) {
+				break;
+			}
+			else if(score.points>0) {
+				if(score.name==useralias) 
+					console.attributes=LIGHTGREEN;
+				else 
+					console.attributes=GREEN;
+				console.gotoxy(posx,posy+count);
+				console.putmsg(score.name.substring(0,20),P_SAVEATR);
+				console.right(23-score.name.length);
+				console.putmsg(printPadded(score.points,5,undefined,"right"),P_SAVEATR);
+				console.right(3);
+				console.putmsg(getAverage(score.name),P_SAVEATR);
+				console.right(3);
+				console.putmsg(printPadded(getDayCount(score.name),4,undefined,"right"),P_SAVEATR);
+				console.right(3);
+				console.putmsg(printPadded(formatDate(score.laston),8,undefined,"right"),P_SAVEATR);
+				console.gotoxy(posx+1,posy+count+1);
+				console.attributes=DARKGRAY;
+				console.putmsg(score.statement?score.statement:"...",P_SAVEATR);
+				count+=2;
+			}
+		}
+		
+		if(data.winner && data.winner.name !== undefined && data.winner.points > 0)	{
+			console.gotoxy(48,19);
+			console.putmsg("\1c\1h" + data.winner.name);
+			console.gotoxy(75,19);
+			console.putmsg("\1c\1h" + data.winner.points);
+		}
+		
+		var player = findUser(useralias);
+		console.attributes=CYAN|HIGH;
+		console.gotoxy(40,20);
+		console.putmsg(player.points,P_SAVEATR);
+		console.gotoxy(56,20);
+		console.putmsg(getDayCount(useralias),P_SAVEATR);
+		console.gotoxy(75,20);
+		console.putmsg(getAverage(useralias),P_SAVEATR);
+	}
+	function sortScores()
 	{
 		var sorted=[];
 		var index=0;
@@ -541,7 +623,8 @@ function GameData() {
 	/* save this round's winner to the database */
 	this.storeRoundWinner=function() {
 		this.players = client.read(game_id,"players",1);
-		for each(var p in this.players) {
+		for(var _p in this.players) {
+			var p = this.players[_p];
 			if(this.winner.points == undefined) 
 				this.winner=p;
 			else if(p.points>this.winner.points) 
@@ -638,8 +721,10 @@ function Lobby(x,y) {
 
 function Player(name,points,days,laston,msg) {
 	this.name=name?name:useralias;
-	this.points=points?points:0;	this.days=days?days:[];
-	this.msg=msg?msg:"";	this.laston=laston?laston:time();
+	this.points=points?points:0;
+	this.days=days?days:[];
+	this.msg=msg?msg:"";
+	this.laston=laston?laston:time();
 }
 
 function InfoBox(x,y) {
