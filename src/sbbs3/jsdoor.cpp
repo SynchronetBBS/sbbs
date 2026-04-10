@@ -411,6 +411,42 @@ js_DefineSyncMethods(JSContext* cx, JSObject* obj, jsSyncMethodSpec *funcs)
 }
 
 JSBool
+js_DefineSyncAccessors(JSContext* cx, JSObject* obj,
+                       jsSyncPropertySpec* props, JSNative getter,
+                       const char* name, JSNative setter)
+{
+	JS::RootedObject robj(cx, obj);
+
+	for (uint i = 0; props[i].name; i++) {
+		if (name != NULL && strcmp(name, props[i].name) != 0)
+			continue;
+		JSFunction* getterFunc = js::NewFunctionWithReserved(cx, getter,
+			0, 0, props[i].name);
+		if (!getterFunc)
+			return JS_FALSE;
+		JSObject* getterObj = JS_GetFunctionObject(getterFunc);
+		js::SetFunctionNativeReserved(getterObj, 0, JS::Int32Value(props[i].tinyid));
+		JS::RootedObject getterRoot(cx, getterObj);
+		JS::RootedObject setterRoot(cx, nullptr);
+		if (setter != nullptr && !(props[i].flags & JSPROP_READONLY)) {
+			JSFunction* setterFunc = js::NewFunctionWithReserved(cx, setter,
+				1, 0, props[i].name);
+			if (!setterFunc)
+				return JS_FALSE;
+			JSObject* setterObj = JS_GetFunctionObject(setterFunc);
+			js::SetFunctionNativeReserved(setterObj, 0, JS::Int32Value(props[i].tinyid));
+			setterRoot.set(setterObj);
+		}
+		if (!JS_DefineProperty(cx, robj, props[i].name,
+				getterRoot, setterRoot, JSPROP_ENUMERATE))
+			return JS_FALSE;
+		if (name != NULL)
+			return JS_TRUE;
+	}
+	return JS_TRUE;
+}
+
+JSBool
 js_SyncResolve(JSContext* cx, JSObject* obj, char *name, jsSyncPropertySpec* props, jsSyncMethodSpec* funcs, jsConstIntSpec* consts, int flags)
 {
 	uint  i;
