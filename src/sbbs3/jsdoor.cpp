@@ -560,7 +560,7 @@ bool DLLCALL js_CreateCommonObjects(JSContext* js_cx
 	JS::RootedObject glob_root(js_cx, *glob);
 
 #ifdef JS_HAS_CTYPES
-	JS_InitCTypesClass(js_cx, glob_root);
+	JS::InitCTypesClass(js_cx, glob_root);
 #endif
 
 	do {
