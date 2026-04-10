@@ -410,6 +410,9 @@ ifeq ($(os),darwin)
   CFLAGS += -I$(shell brew --prefix)/include
   LDFLAGS += -L$(shell brew --prefix)/lib
  endif
+ ifneq (,$(wildcard /opt/local/lib/pkgconfig))
+  export PKG_CONFIG_PATH := /opt/local/lib/pkgconfig$(if $(PKG_CONFIG_PATH),:$(PKG_CONFIG_PATH))
+ endif
 endif
 ifeq ($(os),linux)    # Linux
  CFLAGS += -DNEEDS_STRLCPY
