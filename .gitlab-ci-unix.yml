@@ -131,7 +131,6 @@ spec:
     - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/xpdev.tgz"
     - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/smblib.tgz"
     - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/sbbs-build${EXTRA_FILENAME}.tgz"
-    - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/spidermonkey.tgz"
     - cd src/sbbs3/gtkmonitor
     - touch depend
     - touch xpdev
@@ -152,7 +151,6 @@ spec:
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [xpdev]"
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [smblib]"
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [sbbs-build]"
-    - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [spidermonkey]"
   rules:
     - if: '"$[[ inputs.has_gtk ]]" == "no"'
       when: never
@@ -166,7 +164,6 @@ spec:
   script:
     - touch ${CI_PIPELINE_ID}.ci
     - echo -e "\e[0Ksection_start:`date +%s`:extract_depends[collapsed=true]\r\e[0KPreparing for build"
-    - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/spidermonkey.tgz"
     - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/cryptlib.tgz"
     - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/xpdev.tgz"
     - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/smblib.tgz"
@@ -187,7 +184,6 @@ spec:
     paths:
       - "src/sbbs3/gtkuseredit/*.exe.release/*"
   needs:
-    - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [spidermonkey]"
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [cryptlib]"
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [xpdev]"
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [smblib]"
@@ -241,7 +237,6 @@ spec:
   script:
     - touch ${CI_PIPELINE_ID}.ci
     - echo -e "\e[0Ksection_start:`date +%s`:extract_depends[collapsed=true]\r\e[0KPreparing for build"
-    - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/spidermonkey.tgz"
     - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/cryptlib.tgz"
     - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/xpdev.tgz"
     - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/encode.tgz"
@@ -291,7 +286,6 @@ spec:
     paths:
       - "src/sbbs3/*.exe.release/jsdoor"
   needs:
-    - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [spidermonkey]"
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [cryptlib]"
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [xpdev]"
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [encode]"
@@ -314,7 +308,6 @@ spec:
   script:
     - touch ${CI_PIPELINE_ID}.ci
     - echo -e "\e[0Ksection_start:`date +%s`:extract_depends[collapsed=true]\r\e[0KPreparing for build"
-    - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/spidermonkey.tgz"
     - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/cryptlib.tgz"
     - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/xpdev.tgz"
     - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/encode.tgz"
@@ -361,7 +354,6 @@ spec:
   variables:
     GIT_STRATEGY: fetch
   needs:
-    - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [spidermonkey]"
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [cryptlib]"
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [xpdev]"
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [encode]"
@@ -832,24 +824,6 @@ spec:
     - tar -czf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/smblib.tgz" src/smblib/*.lib.release* src/smblib/*.obj.release*/*.o*
   variables:
     GIT_STRATEGY: fetch
-
-"$[[ inputs.os ]]-$[[ inputs.platform ]] [spidermonkey]":
-  extends:
-    - .$[[ inputs.os ]]-build
-  script:
-    - touch ${CI_PIPELINE_ID}.ci
-    - cd 3rdp/build
-    - touch depend
-    - $[[ inputs.gnu_make ]] $[[ inputs.build_flags ]] $BUILD_ARGS libmozjs
-    - mkdir -p "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}"
-    - cd ../..
-    - tar -czf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/spidermonkey.tgz" 3rdp/*.*.*.release/mozjs
-  variables:
-    GIT_STRATEGY: fetch
-  rules:
-    - if: '"$[[ inputs.has_javascript ]]" == "no"'
-      when: never
-    - !reference [.rules, rules]
 
 "$[[ inputs.os ]]-$[[ inputs.platform ]] [uifc]":
   extends:
