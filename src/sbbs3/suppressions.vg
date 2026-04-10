@@ -115,3 +115,19 @@
    ...
    obj:*/libnspr4.so*
 }
+{
+   SM128_DestroyContext_RealmUaF
+   Memcheck:Addr8
+   fun:*GCRuntime*collect*
+   ...
+   fun:*destroyRuntime*
+   fun:*DestroyContext*
+}
+{
+   SM128_QueueFinalize_DetachUaF
+   Memcheck:Addr4
+   fun:*msgQueueDetach*
+   fun:*js_finalize_queue*
+   ...
+   fun:*GCRuntime*
+}
