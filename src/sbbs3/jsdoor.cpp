@@ -29,6 +29,9 @@
 #endif
 
 #include "sbbs.h"
+#ifdef JS_HAS_CTYPES
+#include <js/experimental/CTypes.h>
+#endif
 #include "ciolib.h"
 #include "ini_file.h"
 #include "js_rtpool.h"
