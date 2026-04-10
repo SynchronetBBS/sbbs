@@ -472,13 +472,14 @@ js_SyncResolve(JSContext* cx, JSObject* obj, char *name, jsSyncPropertySpec* pro
 				if (name == NULL && JS_HasProperty(cx, obj, props[i].name, &found) && found) {
 					continue;
 				}
+				unsigned pflags = (props[i].flags & ~(JSPROP_READONLY | JSPROP_PERMANENT)) | JSPROP_RESOLVING;
 				if (props[i].tinyid < 256 && props[i].tinyid > -129) {
 					if (!JS_DefinePropertyWithTinyId(cx, obj,
-					                                 props[i].name, props[i].tinyid, JSVAL_VOID, NULL, NULL, props[i].flags  | JSPROP_RESOLVING))
+					                                 props[i].name, props[i].tinyid, JSVAL_VOID, NULL, NULL, pflags))
 						return JS_FALSE;
 				}
 				else {
-					if (!JS_DefineProperty(cx, obj, props[i].name, JSVAL_VOID, NULL, NULL, props[i].flags  | JSPROP_RESOLVING))
+					if (!JS_DefineProperty(cx, obj, props[i].name, JSVAL_VOID, NULL, NULL, pflags))
 						return JS_FALSE;
 				}
 				if (name)
