@@ -243,11 +243,10 @@ js_CommonOperationCallback(JSContext *cx, js_callback_t* cb)
 				top_cb->auto_terminated = true;
 				/* Log as warning (matching old JS_ReportWarning behavior) */
 				JS::WarnASCII(cx, "Terminated");
-				/* SM128: must set a pending exception; returning false without one
-				 * is silently ignored in release builds. */
-				JS::RootedValue exc(cx);
-				exc.setNull();
-				JS_SetPendingException(cx, exc);
+				/* SM128: returning false causes HandleInterrupt to report
+				 * JSMSG_TERMINATED and return false, stopping execution.
+				 * Do NOT set a pending exception here — it interferes with
+				 * HandleInterrupt's own error reporting. */
 				cb->counter = 0;
 				return JS_FALSE;
 			}

@@ -512,19 +512,19 @@ js_OperationCallback(JSContext *cx)
 		return JS_FALSE;
 	}
 
-	if (sbbs->js_callback.auto_terminate && !sbbs->online) {
+	/* Check terminated flag first (server shutdown, etc.) so it is always
+	 * evaluated — even for event threads where online == 0. */
+	ret = js_CommonOperationCallback(cx, &sbbs->js_callback);
+
+	if (ret && sbbs->js_callback.auto_terminate && !sbbs->online
+	    && ++sbbs->js_callback.offline_counter >= 10) {
 		sbbs->lprintf(LOG_WARNING, "JavaScript: Disconnected");
-		/* SM128: must set a pending exception; returning false without one
-		 * is silently ignored in release builds. */
-		JS::RootedValue exc(cx);
-		exc.setNull();
-		JS_SetPendingException(cx, exc);
+		/* SM128: returning false causes HandleInterrupt to report
+		 * JSMSG_TERMINATED and return false, stopping execution. */
 		sbbs->js_callback.counter = 0;
-		JS_SetOperationCallback(cx, js_OperationCallback);
-		return JS_FALSE;
+		ret = JS_FALSE;
 	}
 
-	ret = js_CommonOperationCallback(cx, &sbbs->js_callback);
 	JS_SetOperationCallback(cx, js_OperationCallback);
 	return ret;
 }

@@ -985,11 +985,8 @@ js_OperationCallback(JSContext *cx)
 	if (client->callback.auto_terminate && terminated) {
 		/* Log as warning (matching old JS_ReportWarning behavior) */
 		JS::WarnASCII(cx, "Terminated");
-		/* SM128: must set a pending exception; returning false without one
-		 * is silently ignored in release builds. */
-		JS::RootedValue exc(cx);
-		exc.setNull();
-		JS_SetPendingException(cx, exc);
+		/* SM128: returning false causes HandleInterrupt to report
+		 * JSMSG_TERMINATED and return false, stopping execution. */
 		client->callback.counter = 0;
 		JS_SetOperationCallback(cx, js_OperationCallback);
 		return JS_FALSE;
