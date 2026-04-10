@@ -179,27 +179,31 @@ endif
 # FTP Server Link Rule
 $(FTPSRVR): $(MTOBJODIR)/ftpsrvr.o
 	@echo Linking $@
-	$(QUIET)$(MKSHPPLIB) $(LDFLAGS) $(MTOBJODIR)/ftpsrvr.o $(SHLIBOPTS) $(LIB_RPATH) -o $@ -lsbbs
+	$(QUIET)$(MKSHPPLIB) $(LDFLAGS) $(MTOBJODIR)/ftpsrvr.o $(SHLIBOPTS) $(LIB_RPATH) -o $@ -lsbbs $(JS_LIBS)
 
 # Mail Server Link Rule
 $(MAILSRVR): $(MAIL_OBJS)
 	@echo Linking $@
-	$(QUIET)$(MKSHPPLIB) $(LDFLAGS) $(MAIL_OBJS) $(SHLIBOPTS) $(LIB_RPATH) -o $@ -lsbbs
+	$(QUIET)$(MKSHPPLIB) $(LDFLAGS) $(MAIL_OBJS) $(SHLIBOPTS) $(LIB_RPATH) -o $@ -lsbbs $(JS_LIBS)
 
 # Web Server Link Rule
 $(WEBSRVR): $(WEB_OBJS)
 	@echo Linking $@
-	$(QUIET)$(MKSHPPLIB) $(LDFLAGS) $(WEB_OBJS) $(SHLIBOPTS) $(LIB_RPATH) -o $@ $(ENCODE_LIBS) -lsbbs $(XPDEV-MT_LIBS)
+	$(QUIET)$(MKSHPPLIB) $(LDFLAGS) $(WEB_OBJS) $(SHLIBOPTS) $(LIB_RPATH) -o $@ $(ENCODE_LIBS) -lsbbs $(JS_LIBS) $(XPDEV-MT_LIBS)
 
 # Services Link Rule
 $(SERVICES): $(SERVICE_OBJS)
 	@echo Linking $@
-	$(QUIET)$(MKSHPPLIB) $(LDFLAGS) $(SERVICE_OBJS) $(SHLIBOPTS) $(LIB_RPATH) -o $@ -lsbbs
+	$(QUIET)$(MKSHPPLIB) $(LDFLAGS) $(SERVICE_OBJS) $(SHLIBOPTS) $(LIB_RPATH) -o $@ -lsbbs $(JS_LIBS)
 
 # Synchronet Console Build Rule
 $(SBBSCON): $(CON_OBJS) $(SBBS) $(FTPSRVR) $(WEBSRVR) $(MAILSRVR) $(SERVICES)
 	@echo Linking $@
+ifneq ($(os),darwin)
 	$(QUIET)$(CXX) $(LDFLAGS) $(MT_LDFLAGS) $(LIB_RPATH) -o $@ $(CON_OBJS) -Wl,--no-as-needed $(JS_LIBS) -Wl,--as-needed $(CON_LIBS) $(SMBLIB_LIBS) $(XPDEV-MT_LIBS)
+else
+	$(QUIET)$(CXX) $(LDFLAGS) $(MT_LDFLAGS) $(LIB_RPATH) -o $@ $(CON_OBJS) $(JS_LIBS) $(CON_LIBS) $(SMBLIB_LIBS) $(XPDEV-MT_LIBS)
+endif
 
 # Baja Utility
 $(BAJA): $(BAJA_OBJS) | $(EXEODIR)
