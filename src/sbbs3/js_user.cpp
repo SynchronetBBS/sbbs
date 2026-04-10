@@ -827,7 +827,7 @@ static jsSyncPropertySpec js_user_properties[] = {
 	{   "location"           , USER_PROP_LOCATION   , USER_PROP_FLAGS_RW , 310 },
 	{   "zipcode"            , USER_PROP_ZIPCODE    , USER_PROP_FLAGS_RW , 310 },
 	{   "phone"              , USER_PROP_PHONE      , USER_PROP_FLAGS_RW , 310 },
-	{   "birthdate"          , USER_PROP_BIRTH      , JSPROP_ENUMERATE   , 310 },  /* configurable: overridden by js_user_birthdate_spec accessor */
+	{   "birthdate"          , USER_PROP_BIRTH      , JSPROP_ENUMERATE   , 310 },
 	{   "birthyear"          , USER_PROP_BIRTHYEAR  , USER_PROP_FLAGS_RW , 31802 },
 	{   "birthmonth"         , USER_PROP_BIRTHMONTH , USER_PROP_FLAGS_RW , 31802 },
 	{   "birthday"           , USER_PROP_BIRTHDAY   , USER_PROP_FLAGS_RW , 31802 },
@@ -1755,51 +1755,6 @@ static bool js_user_resolve(JSContext *cx, JS::Handle<JSObject*> obj, JS::Handle
 	return true;
 }
 
-/* SM128: birthdate needs a proper native accessor because JS ClassOps no longer has
- * getProperty/setProperty hooks, so  properties with NULL getter/setter
- * never invoke js_user_get/js_user_set. Override birthdate with a real accessor. */
-static bool js_user_birthdate_getter(JSContext *cx, unsigned argc, JS::Value *vp)
-{
-	JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
-	if (!args.thisv().isObject()) { args.rval().setUndefined(); return true; }
-	JS::RootedObject obj(cx, &args.thisv().toObject());
-	user_private_t* p = (user_private_t*)JS_GetPrivate(cx, obj);
-	if (!p) { args.rval().setUndefined(); return true; }
-	p->getuserdat();
-	const char* s = p->user->birth;
-	if (!s || !*s) { args.rval().setUndefined(); return true; }
-	JSString* str = JS_NewStringCopyZ(cx, s);
-	if (!str) return false;
-	args.rval().setString(str);
-	return true;
-}
-
-static bool js_user_birthdate_setter(JSContext *cx, unsigned argc, JS::Value *vp)
-{
-	JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
-	if (!args.thisv().isObject()) return true;
-	JS::RootedObject obj(cx, &args.thisv().toObject());
-	user_private_t* p = (user_private_t*)JS_GetPrivate(cx, obj);
-	if (!p) return true;
-	JS::RootedString strval(cx, JS::ToString(cx, args.get(0)));
-	if (!strval) return false;
-	char* str = nullptr;
-	JSSTRING_TO_MSTRING(cx, strval.get(), str, nullptr);
-	if (!str) return true;
-	parse_birthdate(p->cfg, str, p->user->birth, sizeof p->user->birth);
-	putuserstr(p->cfg, p->user->number, USER_BIRTH, p->user->birth);
-	free(str);
-	if (!user_is_guest(p->user))
-		p->cached = false;
-	args.rval().setUndefined();
-	return true;
-}
-
-static const JSPropertySpec js_user_birthdate_spec[] = {
-	JS_PSGS("birthdate", js_user_birthdate_getter, js_user_birthdate_setter, JSPROP_ENUMERATE | JSPROP_PERMANENT),
-	JS_PS_END
-};
-
 static bool js_user_resolve_impl(JSContext *cx, JSObject *obj, char* name)
 {
 	JSObject*  newobj;
@@ -1872,12 +1827,6 @@ static bool js_user_resolve_impl(JSContext *cx, JSObject *obj, char* name)
 	/* SM128: populate actual values —  getProperty hook is gone */
 	if (!js_user_fill_properties(cx, obj, p, name))
 		return false;
-
-	/* SM128: override birthdate with a native accessor (getter/setter) so normalization works */
-	if (name == nullptr || strcmp(name, "birthdate") == 0) {
-		if (!JS_DefineProperties(cx, obj, js_user_birthdate_spec))
-			return false;
-	}
 
 	return true;
 }
