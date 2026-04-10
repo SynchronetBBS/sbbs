@@ -6,8 +6,9 @@
 // md = md_handler.js
 
 var filename;
+var is_web = (this.http_request != undefined);
 
-if(this.http_request != undefined)	/* Requested through web-server */
+if(is_web)
 	filename = http_request.real_path;
 else
 	filename = argv[0];
@@ -19,6 +20,13 @@ if(!file.open("r", true)) {
 }
 var lines = file.readAll(256 * 1024);
 file.close();
+
+// Serve raw markdown if ?raw is in the query string
+if(is_web && http_request.query.raw != undefined) {
+	http_reply.header["Content-Type"] = "text/plain; charset=utf-8";
+	write(lines.join("\n"));
+	exit();
+}
 
 var text = lines.join("\n");
 
@@ -252,5 +260,7 @@ writeln("</style>");
 writeln("</head>");
 writeln("<body>");
 write(html);
+if(is_web)
+	writeln('<div style="text-align: right; font-size: 0.85em; margin-top: 2em;"><a href="?raw">View raw markdown</a></div>');
 writeln("</body>");
 writeln("</html>");
