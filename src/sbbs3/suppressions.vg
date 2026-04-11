@@ -116,12 +116,64 @@
    obj:*/libnspr4.so*
 }
 {
+   FreeBSDPthreadAttrInit
+   Memcheck:Leak
+   match-leak-kinds: definite
+   fun:malloc
+   fun:pthread_attr_init
+}
+{
+   SM128_NurseryAllocateBuffer
+   Memcheck:Leak
+   match-leak-kinds: possible
+   fun:malloc
+   fun:*Nursery*allocateBuffer*
+}
+{
+   SM128_NurseryReallocateBuffer
+   Memcheck:Leak
+   match-leak-kinds: possible
+   fun:realloc
+   fun:*Nursery*reallocateBuffer*
+}
+{
+   SM128_SharedDataContainer
+   Memcheck:Leak
+   match-leak-kinds: possible
+   fun:malloc
+   fun:*SharedDataContainer*prepareStorageFor*
+}
+{
+   SM128_ShapeForAddHasher
+   Memcheck:Leak
+   match-leak-kinds: possible
+   fun:malloc
+   fun:*HashTable*changeTableSize*
+   ...
+   fun:*addProperty*
+}
+{
+   SM128_SavedFrameUniqueId
+   Memcheck:Leak
+   match-leak-kinds: definite
+   fun:malloc
+   fun:*Nursery*allocateBuffer*
+   ...
+   fun:*SavedFrame*
+}
+{
+   SM128_SharedImmutableVector
+   Memcheck:Leak
+   match-leak-kinds: possible
+   fun:malloc
+   fun:*Vector*RefPtr*SharedImmutableScriptData*
+}
+{
    SM128_DestroyContext_RealmUaF
    Memcheck:Addr8
-   fun:*GCRuntime*collect*
+   obj:*/libmozjs-128.so*
    ...
    fun:*destroyRuntime*
-   fun:*DestroyContext*
 }
 {
    SM128_QueueFinalize_DetachUaF
@@ -129,5 +181,5 @@
    fun:*msgQueueDetach*
    fun:*js_finalize_queue*
    ...
-   fun:*GCRuntime*
+   obj:*/libmozjs-128.so*
 }
