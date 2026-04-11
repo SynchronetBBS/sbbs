@@ -1,0 +1,11 @@
+{
+  "name": "zzt-synchronet-port",
+  "version": "0.1.0",
+  "private": true,
+  "description": "TypeScript to SpiderMonkey port scaffold for Reconstruction of ZZT",
+  "main": "zzt.js",
+  "scripts": {
+    "build": "nodejs build.js",
+    "typecheck": "nodejs build.js --noEmit"
+  }
+}

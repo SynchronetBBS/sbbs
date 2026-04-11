@@ -1,0 +1,273 @@
+<?xjs
+/* terminal.xjs — Standalone multimedia terminal page
+ * Deployed by install-web-bridge.sh from xtrn/zzt/web/
+ *
+ * This page is fully self-contained; it does NOT rely on
+ * webv4's index.xjs SPA shell, navbar, or sidebar.
+ * Access it directly at:  http://<host>:<port>/terminal.xjs
+ */
+
+var settings = load('modopts.js', 'web') || { web_directory: web_root_dir + '/..' };
+load(settings.web_directory + '/lib/init.js');
+load(settings.web_lib + 'ftelnet.js');
+load('ftelnethelper.js');
+
+var wsp  = settings.wsp  || GetWebSocketServicePort();
+var wssp = settings.wssp || GetWebSocketServicePort(true);
+
+var conf = {
+    ftelnet:        true,
+    ftelnetUrl:     get_url(),
+    ftelnetSplash:  get_splash(),
+    hostname:       http_request.vhost,
+    wsp:            wsp,
+    wssp:           wssp,
+    telnetPort:     GetTelnetPort(),
+    rloginPort:     GetRLoginPort(),
+    isLoggedIn:     false,
+    userAlias:      '',
+    userPassword:   ''
+};
+
+if (user.number > 0 && user.alias !== settings.guest) {
+    conf.isLoggedIn   = true;
+    conf.userAlias    = user.alias;
+    conf.userPassword = user.security.password;
+}
+
+var bbsName = system.name;
+?>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Terminal &mdash; <?xjs write(bbsName); ?></title>
+<style>
+/* ── reset & base ───────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; }
+html, body {
+    margin: 0; padding: 0; height: 100%;
+    background: #000; color: #ccc;
+    font-family: 'Courier New', Courier, monospace;
+    overflow: hidden;
+}
+
+/* ── standby screen ─────────────────────────────────────── */
+.standby {
+    position: fixed; inset: 0;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    z-index: 5;
+}
+body.terminal-open .standby { display: none; }
+
+.standby-name {
+    font-size: 22px; color: #0a0; letter-spacing: 3px;
+    text-shadow: 0 0 12px rgba(0,170,0,0.5);
+    margin-bottom: 48px;
+    text-align: center; padding: 0 20px;
+}
+
+/* ── power button ───────────────────────────────────────── */
+.power-btn {
+    width: 96px; height: 96px; border-radius: 50%;
+    border: 2px solid #333; background: #0a0a0a;
+    cursor: pointer; outline: none;
+    display: flex; align-items: center; justify-content: center;
+    transition: border-color 0.3s, box-shadow 0.3s;
+}
+.power-btn:hover,
+.power-btn:focus-visible {
+    border-color: #0a0;
+    box-shadow: 0 0 36px rgba(0,170,0,0.35);
+}
+.power-btn #crt-label {
+    color: #0a0; font-size: 12px; letter-spacing: 2px;
+    font-family: inherit; user-select: none;
+}
+.power-btn.crt-visible  { border-color: #080; }
+.power-btn.modem-active  { border-color: #0f0; }
+.power-btn.modem-active #crt-label {
+    color: #0f0; text-shadow: 0 0 8px rgba(0,255,0,0.6);
+}
+
+.back-link {
+    margin-top: 48px; color: #444; font-size: 13px;
+    text-decoration: none; transition: color 0.2s;
+}
+.back-link:hover { color: #888; }
+
+/* ── terminal panel ─────────────────────────────────────── */
+#terminal-panel {
+    position: fixed; inset: 0;
+    background: #000; z-index: 10;
+}
+#terminal-panel.is-hidden { display: none; }
+#terminal-iframe-container { width: 100%; height: 100%; }
+
+/* ── disconnect button (top-right, over terminal) ───────── */
+.term-back {
+    position: fixed; top: 6px; right: 10px; z-index: 15;
+    background: rgba(0,0,0,0.55); border: 1px solid transparent;
+    border-radius: 3px; color: #444; font-size: 13px;
+    font-family: inherit; cursor: pointer;
+    padding: 4px 10px; line-height: 1.4;
+    text-decoration: none; transition: color 0.2s, border-color 0.2s;
+}
+.term-back:hover { color: #ccc; border-color: #555; }
+
+/* ── CRT power-on overlay ──────────────────────────────── */
+.crt-overlay {
+    position: fixed; inset: 0;
+    background: #000; z-index: 10000;
+    pointer-events: none;
+}
+.crt-scanline {
+    position: absolute; inset: 0; opacity: 0;
+    background: repeating-linear-gradient(
+        0deg,
+        transparent 0px, transparent 2px,
+        rgba(0,255,0,0.04) 2px, rgba(0,255,0,0.04) 4px
+    );
+}
+.crt-bloom {
+    position: absolute; inset: 0; opacity: 0;
+    background: radial-gradient(
+        ellipse at center,
+        rgba(200,255,200,0.2) 0%, transparent 70%
+    );
+}
+.crt-band {
+    position: absolute; left: 0; right: 0;
+    background: rgba(255,255,255,0.015); opacity: 0;
+}
+.crt-roll-band {
+    position: absolute; left: 0; right: 0; height: 8%;
+    background: linear-gradient(transparent, rgba(255,255,255,0.04), transparent);
+    opacity: 0;
+}
+.crt-brightness { position: absolute; inset: 0; }
+
+.crt-phase-scanline .crt-scanline { opacity: 1; }
+.crt-phase-bloom .crt-bloom    { opacity: 1; }
+.crt-phase-bloom .crt-scanline { opacity: 0.5; }
+.crt-phase-unstable .crt-roll-band { opacity: 1; animation: crt-roll 0.15s linear infinite; }
+.crt-phase-unstable .crt-band     { opacity: 1; }
+.crt-phase-lock .crt-roll-band    { opacity: 0; }
+.crt-phase-lock .crt-brightness   { background: rgba(255,255,255,0.03); }
+.crt-phase-settle { opacity: 0; transition: opacity 0.09s ease-out; }
+@keyframes crt-roll { from { top: -8%; } to { top: 108%; } }
+
+/* ── CRT power-off overlay ─────────────────────────────── */
+.crt-off-overlay {
+    position: absolute; inset: 0;
+    z-index: 10001; pointer-events: none;
+}
+.crt-off-overlay.crt-off-flash { background: rgba(255,255,255,0.25); }
+.crt-off-line {
+    position: absolute; left: 0; right: 0;
+    top: 50%; height: 0;
+    background: rgba(255,255,255,0.9);
+    transform: translateY(-50%);
+}
+.crt-off-line-show .crt-off-line { height: 2px; }
+.crt-off-line-fade .crt-off-line { height: 1px; opacity: 0; transition: opacity 0.2s ease-out; }
+
+/* ── toast notifications ───────────────────────────────── */
+#chat-toasts {
+    position: fixed; top: 12px; right: 12px;
+    z-index: 20000; pointer-events: none;
+}
+.chat-toast {
+    background: rgba(20,20,20,0.95); border: 1px solid #333;
+    border-radius: 6px; padding: 10px 36px 10px 14px;
+    margin-bottom: 8px; color: #ddd; font-size: 13px;
+    max-width: 320px; pointer-events: auto;
+    position: relative; opacity: 1; transform: translateY(0);
+    transition: opacity 0.35s, transform 0.35s;
+}
+.chat-toast-enter { opacity: 0; transform: translateY(-12px); }
+.chat-toast-exit  { opacity: 0; transform: translateY(-12px); pointer-events: none; }
+.chat-toast-sender { font-weight: bold; margin-bottom: 3px; color: #0c0; font-size: 12px; }
+.chat-toast-text { line-height: 1.4; }
+.chat-toast-close {
+    position: absolute; top: 6px; right: 10px;
+    background: none; border: none; color: #666;
+    cursor: pointer; font-size: 18px; line-height: 1;
+}
+.chat-toast-close:hover { color: #aaa; }
+</style>
+</head>
+
+<body>
+
+<!-- standby screen — visible until terminal opens -->
+<div class="standby">
+    <div class="standby-name"><?xjs write(bbsName); ?></div>
+    <button id="btn-terminal" class="power-btn" type="button"
+            title="Connect to terminal">
+        <span id="crt-label">ENTER</span>
+    </button>
+    <a href="./" class="back-link">&larr; back to <?xjs write(bbsName); ?></a>
+</div>
+
+<!-- terminal panel — shown after connect -->
+<div id="terminal-panel" class="is-hidden" aria-hidden="true">
+    <div id="terminal-iframe-container"></div>
+    <a href="./" class="term-back" title="Back to main site">&larr; exit</a>
+</div>
+
+<!-- toast container for FLWEB notifications -->
+<div id="chat-toasts"></div>
+
+<?xjs if (!settings.ftelnet) { ?>
+<div style="position:fixed;inset:0;display:flex;align-items:center;justify-content:center;z-index:9999;background:#000;">
+    <p style="color:#c33;text-align:center;max-width:400px;line-height:1.6;">
+        fTelnet is not enabled.<br>
+        Set <code style="color:#fff;">ftelnet=true</code> in the
+        <code style="color:#fff;">[web]</code> section of
+        <code style="color:#fff;">ctrl/modopts.ini</code>.
+    </p>
+</div>
+<?xjs } ?>
+
+<script>
+/* Server-injected configuration — used by terminal.js and flweb.js */
+window.sbbsConfig = <?xjs write(JSON.stringify(conf)); ?>;
+
+/* Minimal v4_get polyfill — terminal.js uses this for launchXtrn */
+function v4_get(url) {
+    return fetch(url).then(function (r) { return r.json(); }).catch(function (err) {
+        console.error('[terminal.xjs] v4_get error:', url, err);
+    });
+}
+</script>
+
+<script src="./js/flweb.js"></script>
+<script src="./js/terminal.js"></script>
+
+<script>
+/* Auto-show and auto-connect for logged-in users.
+   Anonymous visitors click the power button to connect. */
+(function () {
+    'use strict';
+    var cfg = window.sbbsConfig;
+    if (!cfg || !cfg.ftelnet || !window.sbbsTerminal) return;
+
+    if (cfg.isLoggedIn && cfg.userAlias && cfg.userPassword) {
+        setTimeout(function () {
+            window.sbbsTerminal.show();
+            document.dispatchEvent(new CustomEvent('spa:login', {
+                detail: {
+                    username: cfg.userAlias,
+                    password: cfg.userPassword
+                }
+            }));
+        }, 300);
+    }
+})();
+</script>
+
+</body>
+</html>
