@@ -374,35 +374,20 @@ function testSocket(socket)
 }
 function toXML(obj)
 {
-	var xml = new XMLList('<xml/>');
+	var result = '';
 	for (var i in obj) {
-		switch (typeof obj[i]) 
+		switch (typeof obj[i])
 		{
-			case "object": 
-				var child=toXML(obj[i]);
-				xml.appendChild(<{i}>{child.children()}</{i}>);
+			case "object":
+				var child = toXML(obj[i]);
+				result += '<' + i + '>' + child + '</' + i + '>';
 				break;
-			case "array": //TODO: figure this shit out
-				/*
-				for(var x=0;x<obj[i].length;x++) {
-					switch(typeof obj[i][x]) {
-						case "object": 
-						case "array":
-							var child=toXML(obj[i][x]);
-							xml.appendChild(<{i}>{child.children()}</{i}>);
-							break;
-						default:
-							xml.appendChild(<{i}>{obj[i][x]}</{i}>);break;
-							break;
-					}
-				}
-				*/
+			default:
+				result += '<' + i + '>' + obj[i] + '</' + i + '>';
 				break;
-			default: 
-				xml.appendChild(<{i}>{obj[i]}</{i}>);break;
 		}
 	}
-	return xml;
+	return result;
 }
 function setPosition(x,y) 
 {
