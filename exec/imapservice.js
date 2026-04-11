@@ -525,7 +525,7 @@ function send_fetch_response(msgnum, fmat, uid)
 				resp += objtype+" ("+fmat[i].join(" ")+")] "+encode_binary(tmp+"\r\n")+" ";
 			}
 			if(objtype.search(/^BODY\[[0-9.]*HEADER\.FIELDS\.NOT$/i)==0) {
-				tmp=eval(part.headers.toSource());
+				tmp=JSON.parse(JSON.stringify(part.headers));
 				delete tmp['::'];
 				delete tmp[':mime:'];
 				for(j in fmat[i]) {
@@ -1358,7 +1358,7 @@ function send_updates()
 	var old_status;
 
 	if(state==Selected) {
-		old_status=eval(curr_status.toSource());
+		old_status=JSON.parse(JSON.stringify(curr_status));
 		update_status();
 		if(old_status.exists != curr_status.exists)
 			untagged(curr_status.exists+" EXISTS");
@@ -1489,9 +1489,9 @@ function open_cfg(usr, tag)
 function lock_cfg(sub)
 {
 	if (locked_code !== undefined)
-		throw new Error('Locking ' + sub.toSource() + ' while ' + locked_code.toSource() + ' is locked');
+		throw new Error('Locking ' + JSON.stringify(sub) + ' while ' + JSON.stringify(locked_code) + ' is locked');
 	if (cfgfile != undefined)
-		throw new Error('Locking ' + sub.toSource() + ' while ' + cfgfile.name + ' is open.');
+		throw new Error('Locking ' + JSON.stringify(sub) + ' while ' + cfgfile.name + ' is open.');
 	var path = format(system.data_dir+"user/%04d", user.number);
 	if (!file_isdir(path)) {
 		if (!mkdir(path)) {
@@ -1539,7 +1539,7 @@ function old_lock_cfg()
 function unlock_cfg(sub)
 {
 	if (sub != locked_code)
-		throw new Error('Unlocking ' + sub.toSource() + ' but ' + locked_code.toSource() + ' is locked');
+		throw new Error('Unlocking ' + JSON.stringify(sub) + ' but ' + JSON.stringify(locked_code) + ' is locked');
 	cfgfile.flush();
 	cfgfile.unlock(0, 1);
 	cfgfile.close();
@@ -1646,7 +1646,7 @@ function save_cfg(sub)
 		var newfile;
 
 		if (osub != locked_code)
-			throw new Error('Unlocking ' + osub.toSource() + ' but ' + locked_code.toSource() + ' is locked');
+			throw new Error('Unlocking ' + JSON.stringify(osub) + ' but ' + JSON.stringify(locked_code) + ' is locked');
 
 		if (saved_config[locked_code]==undefined) {
 			if (locked_code == 'mail')
@@ -2162,7 +2162,7 @@ function search_get_headers(msg)
 	if (msg.headers == undefined) {
 		if (msg.errors === undefined)
 			msg.errors = [];
-		msg.errors.push('Unable to read headers for index '+msg.idx.number+' got '+msg.headers.toSource());
+		msg.errors.push('Unable to read headers for index '+msg.idx.number+' got '+JSON.stringify(msg.headers));
 		return false;
 	}
 	return true;
@@ -2189,7 +2189,7 @@ function search_get_body(msg)
 	if (msg.body == undefined) {
 		if (msg.errors === undefined)
 			msg.errors = [];
-		msg.errors.push('Unable to read body for index '+msg.idx.number+' got '+msg.headers.toSource());
+		msg.errors.push('Unable to read body for index '+msg.idx.number+' got '+JSON.stringify(msg.headers));
 		return false;
 	}
 	return true;
@@ -2584,7 +2584,7 @@ function parse_arg(str, type)
 
 	switch(type) {
 		case 'string':
-			return str.toUpperCase().toSource();
+			return JSON.stringify(str.toUpperCase());
 		case 'date':
 			m = str.match(dre);
 			d = new Date(parseInt(m[3], 10), months.indexOf(m[2].toLowerCase()), parseInt(m[1], 10), 12);
@@ -2602,9 +2602,9 @@ function parse_arg(str, type)
 			d = parseInt(str, 10);
 			return d.toString();
 		case 'sequence-set-uid':
-			return parse_seq_set(str, true).toSource();
+			return JSON.stringify(parse_seq_set(str, true));
 		case 'sequence-set':
-			return parse_seq_set(str, false).toSource();
+			return JSON.stringify(parse_seq_set(str, false));
 	}
 }
 
@@ -2661,7 +2661,7 @@ function new_search_expr(args)
 			}
 			else if (arg.search(/^(?:(?:[0-9]+|\*)(?::(?:[0-9]+|\*))?,)*(?:(?:[0-9]+|\*)(?::(?:[0-9]+|\*))?)$/) == 0) {
 				offsets=parse_seq_set(arg, false);
-				ret.push('search_operators.MSGOFF.handler(msg, [' + offsets.toSource() + '])');
+				ret.push('search_operators.MSGOFF.handler(msg, [' + JSON.stringify(offsets) + '])');
 			}
 			else
 				throw new Error("Unhandled parameter: '"+uc+"'");
@@ -2727,7 +2727,7 @@ function do_search(args, uid)
 					break;
 				case 'BODY': //
 					type="body";
-					search=(eval("function(body) { return(body.indexOf("+args.shift().toUpperCase().toSource()+")!=-1) }"));
+					search=(eval("(function(body) { return(body.indexOf("+JSON.stringify(args.shift().toUpperCase())+")!=-1) })"));
 					break;
 				case 'DELETED': //
 					type="idx";
@@ -2743,11 +2743,11 @@ function do_search(args, uid)
 					break;
 				case 'FROM': //
 					type="hdr";
-					search=(eval("function(hdr) { return(hdr.get_from().toUpperCase().indexOf("+args.shift().toUpperCase().toSource()+")!=-1) }"));
+					search=(eval("(function(hdr) { return(hdr.get_from().toUpperCase().indexOf("+JSON.stringify(args.shift().toUpperCase())+")!=-1) })"));
 					break;
 				case 'KEYWORD': //
 					type="hdr";
-					search=(eval("function(hdr) { var flags="+parse_flags([args.shift()]).toSource()+"; if((hdr.attr & flags.attr)==flags.attr && (hdr.netattr & flags.netattr)==flags.netattr) return true; return false;}"));
+					search=(eval("(function(hdr) { var flags="+JSON.stringify(parse_flags([args.shift()]))+"; if((hdr.attr & flags.attr)==flags.attr && (hdr.netattr & flags.netattr)==flags.netattr) return true; return false;})"));
 					break;
 				case 'NEW': //
 					type="idx";
@@ -2767,15 +2767,15 @@ function do_search(args, uid)
 					break;
 				case 'SUBJECT': //
 					type="hdr";
-					search=(eval("function(hdr) { return(hdr.subject.toUpperCase().indexOf("+args.shift().toUpperCase().toSource()+")!=-1) }"));
+					search=(eval("(function(hdr) { return(hdr.subject.toUpperCase().indexOf("+JSON.stringify(args.shift().toUpperCase())+")!=-1) })"));
 					break;
 				case 'TO': //
 					type="hdr";
-					search=(eval("function(hdr) { return(hdr.to.toUpperCase().indexOf("+args.shift().toUpperCase().toSource()+")!=-1) }"));
+					search=(eval("(function(hdr) { return(hdr.to.toUpperCase().indexOf("+JSON.stringify(args.shift().toUpperCase())+")!=-1) })"));
 					break;
 				case 'UID': //
 					type="idx";
-					search=(eval("function(idx) { var good_uids="+parse_seq_set(args.shift(), true).toSource()+"; var i; for(i in good_uids) { if(good_uids[i]==idx.number) return true; } return false; }"));
+					search=(eval("(function(idx) { var good_uids="+JSON.stringify(parse_seq_set(args.shift(), true))+"; var i; for(i in good_uids) { if(good_uids[i]==idx.number) return true; } return false; })"));
 					break;
 				case 'UNANSWERED': //
 					type="idx";
@@ -2795,35 +2795,35 @@ function do_search(args, uid)
 					break;
 				case 'UNKEYWORD': //
 					type="hdr";
-					search=(eval("function(hdr) { var flags="+parse_flags([args.shift()]).toSource()+"; if((hdr.attr & flags.attr)==flags.attr && (hdr.netattr & flags.netattr)==flags.netattr) return false; return true;}"));
+					search=(eval("(function(hdr) { var flags="+JSON.stringify(parse_flags([args.shift()]))+"; if((hdr.attr & flags.attr)==flags.attr && (hdr.netattr & flags.netattr)==flags.netattr) return false; return true;})"));
 					break;
 				case 'BEFORE': //
 					type="hdr";
-					search=(eval("function(hdr) { var before="+parse_date(args.shift()).toSource()+"; if(hdr.when_imported_time < before) return true; return false; }"));
+					search=(eval("(function(hdr) { var before="+JSON.stringify(parse_date(args.shift()))+"; if(hdr.when_imported_time < before) return true; return false; })"));
 					break;
 				case 'ON': //
 					type="hdr";
-					search=(eval("function(hdr) { var on="+datestr(parse_date(args.shift())).toSource()+"; if(datestr(hdr.when_imported_time) == on) return true; return false; }"));
+					search=(eval("(function(hdr) { var on="+JSON.stringify(datestr(parse_date(args.shift())))+"; if(datestr(hdr.when_imported_time) == on) return true; return false; })"));
 					break;
 				case 'SINCE': //
 					type="hdr";
-					search=(eval("function(hdr) { var since="+parse_date(args[0]).toSource()+"; var since_str="+datestr(parse_date(args.shift())).toSource()+"; if(hdr.when_imported_time > since && datestr(hdr.when_imported_time) != since_str) return true; return false; }"));
+					search=(eval("(function(hdr) { var since="+JSON.stringify(parse_date(args[0]))+"; var since_str="+JSON.stringify(datestr(parse_date(args.shift())))+"; if(hdr.when_imported_time > since && datestr(hdr.when_imported_time) != since_str) return true; return false; })"));
 					break;
 				case 'SENTBEFORE': //
 					type="hdr";
-					search=(eval("function(hdr) { var before="+parse_date(args.shift()).toSource()+"; if(parse_rfc822_date(hdr.date) < before) return true; return false; }"));
+					search=(eval("(function(hdr) { var before="+JSON.stringify(parse_date(args.shift()))+"; if(parse_rfc822_date(hdr.date) < before) return true; return false; })"));
 					break;
 				case 'SENTON': //
 					type="hdr";
-					search=(eval("function(hdr) { var on="+datestr(parse_date(args.shift())).toSource()+"; if(datestr(parse_rfc822_date(hdr.date)) == on) return true; return false; }"));
+					search=(eval("(function(hdr) { var on="+JSON.stringify(datestr(parse_date(args.shift())))+"; if(datestr(parse_rfc822_date(hdr.date)) == on) return true; return false; })"));
 					break;
 				case 'SENTSINCE': //
 					type="hdr";
-					search=(eval("function(hdr) { var since="+parse_date(args[0]).toSource()+"; var since_str="+datestr(parse_date(args.shift())).toSource()+"; if(parse_rfc822_date(hdr.date) > since && datestr(parse_rfc822_date(hdr.date)) != since_str) return true; return false; }"));
+					search=(eval("(function(hdr) { var since="+JSON.stringify(parse_date(args[0]))+"; var since_str="+JSON.stringify(datestr(parse_date(args.shift())))+"; if(parse_rfc822_date(hdr.date) > since && datestr(parse_rfc822_date(hdr.date)) != since_str) return true; return false; })"));
 					break;
 				case 'HEADER': //
 					type="hdr";
-					search=(eval("function(hdr) { var hname="+args.shift().toLowerCase().toSource()+"; var match=new RegExp('^('+abnf.field_name+')'+abnf.WSP+'*:.*'+"+args.shift().toSource()+", 'i'); var hdrs=hdr.parse_headers(); var i; for(i in hdrs[hname]) if(hdrs[hname][i].search(match)==0) return true; return false;}"));
+					search=(eval("(function(hdr) { var hname="+JSON.stringify(args.shift().toLowerCase())+"; var match=new RegExp('^('+abnf.field_name+')'+abnf.WSP+'*:.*'+"+JSON.stringify(args.shift())+", 'i'); var hdrs=hdr.parse_headers(); var i; for(i in hdrs[hname]) if(hdrs[hname][i].search(match)==0) return true; return false;})"));
 					break;
 				case 'LARGER': //
 					type="all";
@@ -2835,55 +2835,49 @@ function do_search(args, uid)
 					break;
 				case 'CC': //
 					type="hdr";
-					search=(eval("function(hdr) { var match=new RegExp('^('+abnf.field_name+')'+abnf.WSP+'*:.*'+"+args.shift().toSource()+",'i'); var hdrs=hdr.parse_headers(); var i; if(hdrs.cc == undefined) return false; for(i in hdrs.cc) if(hdrs.cc[i].search(match)==0) return true; return false;}"));
+					search=(eval("(function(hdr) { var match=new RegExp('^('+abnf.field_name+')'+abnf.WSP+'*:.*'+"+JSON.stringify(args.shift())+",'i'); var hdrs=hdr.parse_headers(); var i; if(hdrs.cc == undefined) return false; for(i in hdrs.cc) if(hdrs.cc[i].search(match)==0) return true; return false;})"));
 					break;
 				case 'BCC': //
 					type="hdr";
-					search=(eval("function(hdr) { var match=new RegExp('^('+abnf.field_name+')'+abnf.WSP+'*:.*'+"+args.shift().toSource()+",'i'); var hdrs=hdr.parse_headers(); var i; if(hdrs.bcc == undefined) return false; for(i in hdrs.bcc) if(hdrs.bcc[i].search(match)==0) return true; return false;}"));
+					search=(eval("(function(hdr) { var match=new RegExp('^('+abnf.field_name+')'+abnf.WSP+'*:.*'+"+JSON.stringify(args.shift())+",'i'); var hdrs=hdr.parse_headers(); var i; if(hdrs.bcc == undefined) return false; for(i in hdrs.bcc) if(hdrs.bcc[i].search(match)==0) return true; return false;})"));
 					break;
 				case 'TEXT': //
 					type="all";
-					search=(eval("function(idx,hdr,body) { var str="+args.shift().toSource()+"; if(hdr.get_rfc822_header().indexOf(str)!=-1) return true; if(body.indexOf(str)!=-1) return true; return false}"));
+					search=(eval("(function(idx,hdr,body) { var str="+JSON.stringify(args.shift())+"; if(hdr.get_rfc822_header().indexOf(str)!=-1) return true; if(body.indexOf(str)!=-1) return true; return false})"));
 					break;
 				case 'NOT': //
 					next1=get_func(args);
 					type=next1[0];
-					search=(eval("function(x) { return !"+next1[1].toSource()+"(x)}"));
+					search=(function(fn) { return function(x) { return !fn(x); }; })(next1[1]);
 					break;
 				case 'OR': //
 					next1=get_func(args);
 					next2=get_func(args);
-					if(next1[0]==next1[1]) {
+					if(next1[0]==next2[0]) {
 						type=next1[0];
-						search=(eval("function(x) { return ("+next1[1].toSource()+"(x)||"+next2[1].toSource()+"(x))}"));
+						search=(function(fn1, fn2) { return function(x) { return fn1(x) || fn2(x); }; })(next1[1], next2[1]);
 					}
 					else {
 						// Needs to be all (sigh)
 						type='all';
-						tmp="function(idx,hdr,body) { return ("+next1[1].toSource();
-						switch(next1[0]) {
-							case 'idx':
-							case 'hdr':
-							case 'body':
-								tmp += '('+next1[0]+')';
-								break;
-							case 'all':
-								tmp += '(idx,hdr,body)';
-								break;
-						}
-						tmp += '||'+next2[1].toSource();
-						switch(next2[0]) {
-							case 'idx':
-							case 'hdr':
-							case 'body':
-								tmp += '('+next2[0]+')';
-								break;
-							case 'all':
-								tmp += '(idx,hdr,body)';
-								break;
-						}
-						tmp += ')}';
-						search=eval(tmp);
+						search=(function(fn1, t1, fn2, t2) {
+							return function(idx, hdr, body) {
+								var a, b;
+								switch(t1) {
+									case 'idx': a = fn1(idx); break;
+									case 'hdr': a = fn1(hdr); break;
+									case 'body': a = fn1(body); break;
+									case 'all': a = fn1(idx, hdr, body); break;
+								}
+								switch(t2) {
+									case 'idx': b = fn2(idx); break;
+									case 'hdr': b = fn2(hdr); break;
+									case 'body': b = fn2(body); break;
+									case 'all': b = fn2(idx, hdr, body); break;
+								}
+								return a || b;
+							};
+						})(next1[1], next1[0], next2[1], next2[0]);
 					}
 					break;
 				default:
