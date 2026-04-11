@@ -4,9 +4,9 @@
 
 // usage: ?dyndns [password] [ip_address] [[-option] | [-option value] [...]]
 
-const REVISION = "2.0";
-const rx_log_level = LOG_INFO;
-const tx_log_level = LOG_DEBUG;
+var REVISION = "2.0";
+var rx_log_level = LOG_INFO;
+var tx_log_level = LOG_DEBUG;
 
 printf("Synchronet Dynamic DNS Client %s\r\n", REVISION);
 
@@ -21,7 +21,7 @@ function writeln(str)
 		log(tx_log_level, "TX: " + str);
 }
 
-var options=load({}, "modopts.js", "dyndns");
+var options=load("modopts.js", "dyndns");
 if(!options)
 	options = {};
 

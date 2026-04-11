@@ -430,16 +430,20 @@ Frame.prototype.clearData = function(x,y,use_offset) {
 }
 Frame.prototype.bottom = function() {
 	if(this.__properties__.open) {
-		for each(var c in this.__relations__.child)
+		for(var _c in this.__relations__.child) {
+			var c = this.__relations__.child[_c];
 			c.bottom();
+		}
 		this.__properties__.display.bottom(this);
 	}
 }
 Frame.prototype.top = function() {
 	if(this.__properties__.open) {
 		this.__properties__.display.top(this);
-		for each(var c in this.__relations__.child)
+		for(var _c in this.__relations__.child) {
+			var c = this.__relations__.child[_c];
 			c.top();
+		}
 	}
 }
 Frame.prototype.open = function() {
@@ -447,20 +451,25 @@ Frame.prototype.open = function() {
 		this.__properties__.display.open(this);
 		this.__properties__.open = true;
 	}
-	for each(var c in this.__relations__.child) {
+	for(var _c in this.__relations__.child) {
+		var c = this.__relations__.child[_c];
 		c.open();
 	}
 }
 Frame.prototype.refresh = function() {
 	if(this.__properties__.open) {
 		this.__properties__.display.updateFrame(this);
-		for each(var c in this.__relations__.child)
+		for(var _c in this.__relations__.child) {
+			var c = this.__relations__.child[_c];
 			c.refresh();
+		}
 	}
 }
 Frame.prototype.close = function() {
-	for each(var c in this.__relations__.child)
+	for(var _c in this.__relations__.child) {
+		var c = this.__relations__.child[_c];
 		c.close();
+	}
 	if(this.__properties__.open) {
 		this.__properties__.display.close(this);
 		this.__properties__.open = false;
@@ -497,11 +506,14 @@ Frame.prototype.move = function(x,y) {
 	if(ny !== undefined)
 		this.y=ny;
 	this.__properties__.display.updateFrame(this);
-	for each(var c in this.__relations__.child)
+	for(var _c in this.__relations__.child) {
+		var c = this.__relations__.child[_c];
 		c.move(x,y);
+	}
 }
 Frame.prototype.moveTo = function(x,y) {
-	for each(var c in this.__relations__.child) {
+	for(var _c in this.__relations__.child) {
+		var c = this.__relations__.child[_c];
 		var cx = (x + (c.x-this.x));
 		var cy = (y + (c.y-this.y));
 		c.moveTo(cx,cy);
@@ -1566,7 +1578,8 @@ Display.prototype.cycle = function() {
 		var lasty = undefined;
 		var lastx = undefined;
 		var lastf = undefined;
-		for each(var u in updates) {
+		for(var _u in updates) {
+			var u = updates[_u];
 			if(lasty !== u.y || lastx == undefined || (u.x - lastx) !== 1)
 				console.gotoxy(u.px,u.py);
 			if(lastf !== u.id)
@@ -1741,7 +1754,8 @@ Display.prototype.__drawChar__ = function(ch,attr,xpos,ypos) {
 }
 Display.prototype.__getTopCanvas__ = function(x,y) {
 	var top = undefined;
-	for each(var c in this.__properties__.canvas) {
+	for(var _c in this.__properties__.canvas) {
+		var c = this.__properties__.canvas[_c];
 		if(c.frame.parent == undefined || c.hasData(x,y))
 			top = c;
 	}

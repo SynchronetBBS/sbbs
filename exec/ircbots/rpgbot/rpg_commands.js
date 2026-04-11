@@ -270,8 +270,10 @@ Bot_Commands["HELP"].command = function (target,onick,ouh,srv,lvl,cmd) {
 	}
 	
 	if(Help_Topics[topic.toUpperCase()]) {
-		for each(var l in Help_Topics[topic.toUpperCase()])
+		for(var _l in Help_Topics[topic.toUpperCase()]) {
+			var l = Help_Topics[topic.toUpperCase()][_l];
 			srv.o(target,l,"NOTICE");
+		}
 		return;
 	}
 	
@@ -602,7 +604,8 @@ Editor_Commands["LOOK"] = function (srv,target,map,room,cmd,player) {
 				return false;
 			}
 			var list=[];
-			for each(var i in container.item) {
+			for(var _i in container.item) {
+				var i = container.item[_i];
 				list.push(i.title);
 			}
 			var str=list.length?list.join(", "):"nothing";
@@ -620,7 +623,8 @@ Editor_Commands["LOOK"] = function (srv,target,map,room,cmd,player) {
 		if(mob.description.length() > 0) srv.o(target,mob.description);
 		var list=[];
 		var eq=mob.equipment..item;
-		for each(var i in eq) {
+		for(var _i in eq) {
+			var i = eq[_i];
 			list.push("<" + i.parent().@id + "> " + i.title);
 		}
 		var str=list.length?list.join(", "):"nothing";
@@ -1054,7 +1058,8 @@ RPG_Commands["MOVE"] = function (srv,target,map,room,cmd,player) {
 RPG_Commands["EQUIPMENT"] = function (srv,target,map,room,cmd,player) {
 	var list=[];
 	var eq=player.equipment..item;
-	for each(var i in eq) {
+	for(var _i in eq) {
+		var i = eq[_i];
 		list.push("<" + i.parent().@id + "> " + i.title);
 	}
 	var str=list.length?list.join(", "):"nothing";
@@ -1063,7 +1068,8 @@ RPG_Commands["EQUIPMENT"] = function (srv,target,map,room,cmd,player) {
 
 RPG_Commands["INVENTORY"] = function (srv,target,map,room,cmd,player) {
 	var list=[];
-	for each(var i in player.inventory.item) {
+	for(var _i in player.inventory.item) {
+		var i = player.inventory.item[_i];
 		list.push(i.title);
 	}
 	var str=list.length?list.join(", "):"nothing";
@@ -1103,7 +1109,8 @@ RPG_Commands["LOOK"] = function (srv,target,map,room,cmd,player) {
 				return false;
 			}
 			var list=[];
-			for each(var i in container.item) {
+			for(var _i in container.item) {
+				var i = container.item[_i];
 				list.push(i.title);
 			}
 			var str=list.length?list.join(", "):"nothing";
@@ -1121,7 +1128,8 @@ RPG_Commands["LOOK"] = function (srv,target,map,room,cmd,player) {
 		if(mob.description.length() > 0) srv.o(target,mob.description);
 		var list=[];
 		var eq=mob.equipment..item;
-		for each(var i in eq) {
+		for(var _i in eq) {
+			var i = eq[_i];
 			list.push("<" + i.parent().@id + "> " + i.title);
 		}
 		var str=list.length?list.join(", "):"nothing";

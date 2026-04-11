@@ -21,8 +21,8 @@
    Copyright 2003-2022 Randy Sommerfeld <cyan@synchro.net>
 */
 
-const IRCLIB_REVISION = "1.24";
-const IRCLIB_VERSION = "irclib.js-" + IRCLIB_REVISION;
+var IRCLIB_REVISION = "1.24";
+var IRCLIB_VERSION = "irclib.js-" + IRCLIB_REVISION;
 
 /*
 	This is the "grand parser" that you should be using to handle all

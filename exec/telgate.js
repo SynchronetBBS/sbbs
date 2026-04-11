@@ -27,7 +27,7 @@ var mode = 0;
 var addr;
 var send = [];
 var options;
-if((options = load({}, "modopts.js","telgate")) == null)
+if((options = load("modopts.js","telgate")) == null)
 	options = {};
 var quiet = options.quiet === undefined ? false : options.quiet;
 var pause = options.pause === undefined ? true : options.pause;

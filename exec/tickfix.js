@@ -2,7 +2,7 @@
 // Requires SBBSecho v3.11 or later
 // Install using "jsexec tickfix -install"
 
-const REVISION = "1.8";
+var REVISION = "1.8";
 require('smbdefs.js', 'NET_FIDO');
 var fidoaddr = load({}, 'fidoaddr.js');
 
@@ -15,7 +15,7 @@ f.close();
 for(var i in AreaMgr)
 	AreaMgr[i] = AreaMgr[i].toLowerCase();
 
-const help_text = 
+var help_text = 
 	"TickFix " + REVISION + " Help\r\n" +
 	"\r\n" +
 	"In the body of the message, one or more:\r\n" +

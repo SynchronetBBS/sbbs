@@ -1,11 +1,11 @@
 // Inactive user email warning sender
 
-const module = "inactive_user_email";
+var module = "inactive_user_email";
 
 if (system.autodel < 1)
 	exit();
 
-var options = load({}, "modopts.js", module);
+var options = load("modopts.js", module);
 if (!options)
 	options = {};
 

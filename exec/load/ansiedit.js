@@ -108,7 +108,7 @@ load("tree.js");
 load("funclib.js");
 load("event-timer.js");
 
-const characterSets = [
+var characterSets = [
 	[ 49, 50, 51, 52, 53, 54, 55, 56, 57, 48 ],
 	[ 218, 191, 192, 217, 196, 179, 195, 180, 193, 194 ],
 	[ 201, 187, 200, 188, 205, 186, 204, 185, 202, 203 ],
@@ -126,7 +126,7 @@ const characterSets = [
 ];
 
 // Map sbbsdefs.js console attributes to values usable in ANSI sequences
-const attrMap = {};
+var attrMap = {};
 attrMap[HIGH] = 1;
 attrMap[BLINK] = 5;
 attrMap[BLACK] = 30;

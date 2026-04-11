@@ -58,7 +58,8 @@ function Data()
 	/* return the last valid game number */
 	this.__defineGetter__("lastGameNumber",function() {
 		var gnum=0;
-		for each(var n in this.games) {
+		for(var _n in this.games) {
+			var n = this.games[_n];
 			if(n.gameNumber > gnum)
 				gnum = n.gameNumber;
 		}
@@ -259,9 +260,11 @@ function Menu(items,frame,hk_color,text_color)
 	}
 	this.draw=function() {
 		var str="";
-		for each(var i in this.items)
+		for(var _i in this.items) {
+			var i = this.items[_i];
 			if(i.enabled==true) str+=i.text + " ";
 		this.frame.clear();
+		}
 		this.frame.putmsg(str);
 	}
 	

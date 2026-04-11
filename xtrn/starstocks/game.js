@@ -380,7 +380,8 @@ function	shortNumber(number)
 function 	sortScores(scores)
 { 
 	var list=[];
-	for each(var s in scores) {
+	for(var _s in scores) {
+		var s = scores[_s];
 		list.push(s);
 	}
 	// The Bubble Sort method.

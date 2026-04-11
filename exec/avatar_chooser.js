@@ -5,20 +5,20 @@ load('scrollbar.js');
 load('event-timer.js');
 load('ansiedit.js');
 
-const sauce_lib = load({}, 'sauce_lib.js');
+var sauce_lib = load({}, 'sauce_lib.js');
 if (bbs.mods.avatar_lib) {
 	avatar_lib = bbs.mods.avatar_lib;
 } else {
 	avatar_lib = load({}, 'avatar_lib.js');
 }
 require("mouse_getkey.js", "mouse_getkey");
-const ansiterm = load({}, 'ansiterm_lib.js');
+var ansiterm = load({}, 'ansiterm_lib.js');
 
-const BORDER = [ BLUE, LIGHTBLUE, CYAN, LIGHTCYAN, WHITE ];
-const TITLE = 'Avatar Settings';
-const TITLE_COLOR = WHITE;
-const QUIT_TEXT = 'Press Q to quit';
-const EXCLUDE_FILES = /\.\d+\.bin$/;
+var BORDER = [ BLUE, LIGHTBLUE, CYAN, LIGHTCYAN, WHITE ];
+var TITLE = 'Avatar Settings';
+var TITLE_COLOR = WHITE;
+var QUIT_TEXT = 'Press Q to quit';
+var EXCLUDE_FILES = /\.\d+\.bin$/;
 
 Frame.prototype.drawBorder = function (color, title) {
 	this.pushxy();

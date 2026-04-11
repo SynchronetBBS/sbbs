@@ -1,6 +1,6 @@
 #!/usr/bin/env -S jsexec -C -n
 
-const attrs = [
+var attrs = [
 	"Private",
 	"Crash",
 	"Recd",

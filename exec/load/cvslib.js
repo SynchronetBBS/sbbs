@@ -351,7 +351,8 @@ CVS = new (function () {
 					break;
 				case 'Valid-requests':
 					var m=cmd[1].split(' ');
-					for each(var r in m) {
+					for(var _r in m) {
+						var r = m[_r];
 						this.validRequests[r] = true;
 					}
 					break;

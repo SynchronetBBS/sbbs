@@ -18,7 +18,7 @@
 
 load("sbbsdefs.js");
 
-const REVISION = "$Revision: 1.12 $".split(' ')[1];
+var REVISION = "$Revision: 1.12 $".split(' ')[1];
 
 printf("Synchronet Binary Decoder %s session started\r\n", REVISION);
 

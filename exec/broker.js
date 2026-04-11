@@ -1424,7 +1424,7 @@ MQTT.Connection.prototype.serviceTxQueue = function() {
 	catch (e) {
 		if (pkt !== null)
 			this.tx_queued.unshift(pkt);
-		log(LOG_WARNING, e.toSource());
+		log(LOG_WARNING, JSON.stringify(e));
 		this.error(e);
 		return;
 	}
@@ -1459,7 +1459,7 @@ MQTT.Connection.prototype.handlePacket = function() {
 		js.setImmediate(MQTT.Connection.nextPacket, this);
 	}
 	catch (e) {
-		log(LOG_WARNING, e.toSource());
+		log(LOG_WARNING, JSON.stringify(e));
 		this.error(e);
 		return;
 	}
@@ -1581,7 +1581,7 @@ MQTT.Connection.prototype.parseBytes = function() {
 			this.rx_callback(this);
 		}
 		catch (e) {
-			log(LOG_WARNING, e.toSource());
+			log(LOG_WARNING, JSON.stringify(e));
 			this.error(e);
 			return;
 		}
@@ -2635,7 +2635,7 @@ MQTT.Packet.PUBCOMP = function() {
 MQTT.Packet.PUBCOMP.prototype = Object.create(MQTT.Packet.prototype);
 MQTT.Packet.PUBCOMP.prototype.constructor = MQTT.Packet;
 
-MQTT.Packet.PUBCOMP.prototype.serializeVariableHeader = function() MQTT.Packet.PUBACK.prototype.serializeVariableHeader;
+MQTT.Packet.PUBCOMP.prototype.serializeVariableHeader = function() { return MQTT.Packet.PUBACK.prototype.serializeVariableHeader; };
 
 MQTT.Packet.PUBCOMP.prototype.serializePayload = MQTT.Packet.PUBACK.prototype.serializePayload;
 

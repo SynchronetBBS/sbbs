@@ -34,9 +34,9 @@
  *
  * Examples:
  *
- * var options = load({}, "modopts.js", "your_module_name");
+ * var options = load("modopts.js", "your_module_name");
  *
- * var opt = load({}, "modopts.js", "your_module_name", "opt_name", default_opt_value);
+ * var opt = load("modopts.js", "your_module_name", "opt_name", default_opt_value);
  */
 
 "use strict";

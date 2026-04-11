@@ -100,8 +100,8 @@
 
 "use strict";
 
-const REVISION = "3.21a";
-const ini_fname = "install-xtrn.ini";
+var REVISION = "3.21a";
+var ini_fname = "install-xtrn.ini";
 
 load("sbbsdefs.js");
 var relpath = load({}, "relpath.js");

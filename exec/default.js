@@ -17,7 +17,7 @@ system.settings &= ~SYS_RA_EMU; // Use (R)e-read and (A)uto-reply keys
 
 shell.help_key = '?';
 // If user has unlimited time, display time-used rather than time-remaining
-const time_code = user.security.exemptions & UFLAG_T ? "@TUSED@" : "@TLEFT@";
+var time_code = user.security.exemptions & UFLAG_T ? "@TUSED@" : "@TLEFT@";
 
 shell.main_menu = {
 	file: "main",

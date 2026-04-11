@@ -12,7 +12,7 @@
 // from = <fromaddr> 
 // to = <toaddr> [toaddr] [...]
 
-const REVISION = "1.5";
+var REVISION = "1.5";
 
 log(LOG_INFO,format("Synchronet Mailing List Gateway %s session started\r\n", REVISION));
 

@@ -12,7 +12,7 @@ var list_fname = system.data_dir + 'sbbslist.json';
 var sort_property = 'name';
 
 // These max lengths are derived from the bbs_t structure definition in xtrn/sbl/sbldefs.h:
-const max_len = {
+var max_len = {
 	name:				30,		/* Synchronet allows 40, I think this restricted by 25-char QWK msg subjs in sbldefs.h */
 	phone_number:		25,		/* only the first 12 chars are backwards compatible with SBL v3 */
 	location:			30,
@@ -53,7 +53,7 @@ const max_len = {
 
 // Some of these max values are hard-technical limits (e.g. port), some are legacy
 // SBL limits (e.g. 16-bit min/max_rate) and some are just limited for cosmetic reasons
-const max_val = {
+var max_val = {
 	port:				65535,
 	nodes:				255,
 	users:				9999,
@@ -67,7 +67,7 @@ const max_val = {
 };
 
 // Services supported by BBS clients (e.g. SyncTERM)
-const common_bbs_services = [
+var common_bbs_services = [
     "telnet",
     "rlogin",
 	"ssh",
@@ -824,7 +824,7 @@ function share_list(list, qwk)
 	return new_list;
 }
 
-const base64_max_line_len = 72;
+var base64_max_line_len = 72;
 
 function compress_preview(bin)
 {

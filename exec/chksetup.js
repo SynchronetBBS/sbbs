@@ -2,7 +2,7 @@
 // @format.tab-size 4
 
 "use strict";
-const REVISION = '1.20';
+var REVISION = '1.20';
 require("http.js", 'HTTPRequest');
 require("sbbsdefs.js", 'USER_DELETED');
 

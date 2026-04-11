@@ -359,7 +359,7 @@ RecordFileRecord.prototype.put = function(keeplocked)
 				}
 			}
 			else {
-				rf.writeField(obj[def[i].prop], def[i].type, eval(def[i].def.toSource()).valueOf());
+				rf.writeField(obj[def[i].prop], def[i].type, def[i].def);
 			}
 		}
 	}
@@ -400,7 +400,10 @@ RecordFileRecord.prototype.reInit = function()
 				}
 			}
 			else {
-				obj[def[i].prop]=eval(def[i].def.toSource()).valueOf();
+				if (typeof def[i].def === 'object')
+					obj[def[i].prop] = JSON.parse(JSON.stringify(def[i].def));
+				else
+					obj[def[i].prop] = def[i].def;
 			}
 		}
 	}

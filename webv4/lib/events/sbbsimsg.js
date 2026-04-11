@@ -1,8 +1,8 @@
-const sbbsimsg = load({}, "sbbsimsg_lib.js");
+var sbbsimsg = load({}, "sbbsimsg_lib.js");
 
 var last_run = 0;
-const frequency = 60;
-const timeout = 2500;
+var frequency = 60;
+var timeout = 2500;
 
 function list() {
     const state = {};

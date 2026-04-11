@@ -26,7 +26,7 @@
 //					Netscape Communicator 4.77
 //					Xnews 5.04.25
 
-const REVISION = "1.3";
+var REVISION = "1.3";
 
 var tearline = format("--- Synchronet %s%s-%s NNTP Service %s\r\n"
 					  ,system.version,system.revision,system.platform,REVISION);

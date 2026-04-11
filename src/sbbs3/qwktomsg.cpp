@@ -51,7 +51,7 @@ static bool qwk_parse_header_list(sbbs_t* sbbs, uint confnum, smbmsg_t* msg, str
 		xpDateTime_t dt = isoDateTimeStr_parse(p);
 
 		msg->hdr.when_written = smb_when(xpDateTime_to_localtime(dt), dt.zone);
-		sscanf(p, "%*s %s", zone);
+		sscanf(p, "%*s %4s", zone);
 		if (zone[0])
 			msg->hdr.when_written.zone = (ushort)strtoul(zone, NULL, 16);
 	}

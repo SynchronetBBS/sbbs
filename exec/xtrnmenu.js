@@ -19,13 +19,13 @@ require("sbbsdefs.js", "K_NONE");
 
 require("xtrnmenulib.js", "MENU_LOADED");
 
-const ansiterm = load({}, 'ansiterm_lib.js');
+var ansiterm = load({}, 'ansiterm_lib.js');
 
 var options, xsec = -1;
 
 //// Main
 var ExternalMenus = new ExternalMenus();
-const menuconfig = ExternalMenus.menuconfig;
+var menuconfig = ExternalMenus.menuconfig;
 
 var i,j;
 

@@ -16,8 +16,8 @@ system.settings |= SYS_RA_EMU;  // Swap Msg ReRead/Reply commands
 
 shell.help_key = '?';
 // If user has unlimited time, display time-used rather than time-remaining
-const time_code = user.security.exemptions & UFLAG_T ? "@TUSED@" : "@TLEFT@";
-const time_prefix = user.security.exemptions & UFLAG_T ? gettext("Used") : gettext("Left");
+var time_code = user.security.exemptions & UFLAG_T ? "@TUSED@" : "@TLEFT@";
+var time_prefix = user.security.exemptions & UFLAG_T ? gettext("Used") : gettext("Left");
 
 shell.main_menu = {
 	cls: true,

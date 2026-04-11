@@ -30,8 +30,8 @@ var client_name = '';
 var server_name = '';
 var term_type;
 var options;
-if((options = load({}, "modopts.js","rlogin")) == null) {
-	if((options = load({}, "modopts.js","telgate")) == null)
+if((options = load("modopts.js","rlogin")) == null) {
+	if((options = load("modopts.js","telgate")) == null)
 		options = {};
 }
 var quiet = options.quiet === undefined ? false : options.quiet;

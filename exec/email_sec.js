@@ -4,8 +4,8 @@ require("sbbsdefs.js", "WM_NONE");
 require("userdefs.js", "USER_EXPERT");
 var shell = load({}, "shell_lib.js");
 var userprops = bbs.mods.userprops || load(bbs.mods.userprops = {}, "userprops.js");
-var options = load({}, "modopts.js", "email_sec", {});
-const ini_section = "netmail sent";
+var options = load("modopts.js", "email_sec", {});
+var ini_section = "netmail sent";
 
 while(bbs.online) {
 	if(!(user.settings & USER_EXPERT))
@@ -41,10 +41,10 @@ while(bbs.online) {
 		case 'A':	// Send file attachment
 			wm_mode = WM_FILE;
 		case 'S':	// Send Mail
-			shell.send_email();
+			shell.send_email(null, wm_mode);
 			break;
 		case 'N':	// Send NetMail
-			shell.send_netmail();
+			shell.send_netmail(null, wm_mode);
 			break;
 		default:
 			exit(0);

@@ -226,7 +226,8 @@ var lobby=(function() {
 
 	/* find the next available game number */
 	function getOpenGame() {
-		for each(var g in data.games) {
+		for(var _g in data.games) {
+			var g = data.games[_g];
 			if(g.status == status.PLAYING || g.status == status.SYNCING)
 				continue;
 			else if(countMembers(g.players) >= settings.max_players)
@@ -280,8 +281,10 @@ var lobby=(function() {
 			
 			tile.frame.gotoxy(1,8);
 			var list = [];
-			for each(var p in game.players)
+			for(var _p in game.players) {
+				var p = game.players[_p];
 				list.push(p);
+			}
 			for(var l=0;l<3;l++) {
 				var p = list[l];
 				if(p) {
@@ -306,7 +309,8 @@ var lobby=(function() {
 		var scores_per_page = 10;
 		var list = sortScores(data.profiles,"score");
 		scoreFrame.open();
-		for each(var player in list) {
+		for(var _player in list) {
+			var player = list[_player];
 			if(player.score == 0)
 				continue;
 			if(count > 0 && count%scores_per_page == 0) {

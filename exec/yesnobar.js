@@ -4,10 +4,10 @@ require("sbbsdefs.js", "P_NOABORT");
 
 "use strict";
 
-const yes_str = bbs.text(bbs.text.Yes);
-const yes_key = yes_str[0];
-const no_str = bbs.text(bbs.text.No);
-const no_key = no_str[0];
+var yes_str = bbs.text(bbs.text.Yes);
+var yes_key = yes_str[0];
+var no_str = bbs.text(bbs.text.No);
+var no_key = no_str[0];
 
 while(console.question.substring(0, 2) == "\r\n") {
 	console.crlf();

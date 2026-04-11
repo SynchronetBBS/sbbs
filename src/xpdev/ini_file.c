@@ -3042,9 +3042,11 @@ bool iniHasInclude(const str_list_t list)
 
 	/* Look for !include directives */
 	size_t inc_len = strlen(INI_INCLUDE_DIRECTIVE) + 1;
-	for (i = 0; list[i] != NULL; i++) {
-		if (strnicmp(list[i], ";" INI_INCLUDE_DIRECTIVE, inc_len) == 0)
-			return true;
+	if (list != NULL) {
+		for (i = 0; list[i] != NULL; i++) {
+			if (strnicmp(list[i], ";" INI_INCLUDE_DIRECTIVE, inc_len) == 0)
+				return true;
+		}
 	}
 	return false;
 }

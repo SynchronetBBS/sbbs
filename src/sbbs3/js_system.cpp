@@ -1652,7 +1652,7 @@ js_get_telegram(JSContext *cx, uintN argc, jsval *arglist)
 	JSObject *           obj = JS_THIS_OBJECT(cx, arglist);
 	jsval *              argv = JS_ARGV(cx, arglist);
 	char*                buf;
-	int32                usernumber = 1;
+	int32                usernumber = 0;
 	JSString*            js_str;
 
 	if (js_argcIsInsufficient(cx, argc, 1))
@@ -1665,8 +1665,6 @@ js_get_telegram(JSContext *cx, uintN argc, jsval *arglist)
 		return JS_FALSE;
 
 	JS_ValueToInt32(cx, argv[0], &usernumber);
-	if (usernumber < 1)
-		usernumber = 1;
 
 	buf = getsmsg(sys->cfg, usernumber);
 	if (buf == NULL) {

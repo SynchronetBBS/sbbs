@@ -7,8 +7,8 @@
 */
 
 /* Constants */
-const QUIT = -1;
-const CR = -2;
+var QUIT = -1;
+var CR = -2;
 
 console.clear();
 

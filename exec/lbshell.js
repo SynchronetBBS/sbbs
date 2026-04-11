@@ -15,9 +15,9 @@
 //################################# Begins Here #################################
 
 /* Adjustable settings */
-const LBShell_Attr=0x07;		/* light-grey on black */
-const MessageWindow_Attr=7;
-const MessageTimeout=50;		/* 100ths of a second */
+var LBShell_Attr=0x07;		/* light-grey on black */
+var MessageWindow_Attr=7;
+var MessageTimeout=50;		/* 100ths of a second */
 
 
 require("sbbsdefs.js", "SYS_CLOSED");

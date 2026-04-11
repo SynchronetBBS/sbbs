@@ -1,0 +1,1554 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+    :root {
+        --mi-bottom-reserved: 0px;
+    }
+    html, body {
+        margin: 0;
+        padding: 0;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        background: #000;
+    }
+    body.terminal-locked {
+        display: block;
+        padding: 16px;
+        background: #000;
+    }
+    .fTelnetContainer {
+        width: 100%;
+        height: calc(100% - var(--mi-bottom-reserved));
+        overflow: hidden;
+        position: relative;
+    }
+    body.terminal-locked .fTelnetContainer {
+        width: auto;
+        height: auto;
+        max-width: none;
+        max-height: none;
+        border: 1px solid rgba(120, 120, 120, 0.45);
+        background: #000;
+    }
+    .fTelnetClientContainer {
+        width: 100% !important;
+        height: 100% !important;
+        overflow: hidden !important;
+    }
+    body.terminal-locked .fTelnetClientContainer {
+        width: auto !important;
+        height: auto !important;
+    }
+    canvas {
+        display: block;
+        image-rendering: -moz-crisp-edges;
+        image-rendering: pixelated;
+    }
+    .fTelnetStatusBar { display: none !important; }
+    .fTelnetConnectButton { display: none !important; }
+    .fTelnetKeyboardWrapper { display: none !important; }
+    .fTelnetFocusWarning,
+    .fTelnetFocusWarningBar { display: none !important; }
+    .fTelnetScrollback { display: none !important; }
+    .fTelnetMenuButton,
+    .fTelnetMenuButtons { display: none !important; }
+    .fTelnetInitMessage { display: none !important; }
+</style>
+</head>
+<body>
+<div id="fTelnetContainer" class="fTelnetContainer"></div>
+<script>
+(function () {
+    'use strict';
+
+    var client = null;
+    var isConnected = false;
+    var currentColumns = 0;
+    var currentRows = 0;
+    var currentSize = null;
+    var clickSequence = 0;
+    var tapFallbackTimer = null;
+    var terminalUiBuffer = '';
+    var parentAudioUnlockBound = false;
+    var BRIDGE_OPTIONS_DEFAULTS = {
+        lockScreenSize: false,
+        columns: 80,
+        rows: 25,
+        minColumns: 80,
+        maxColumns: 160,
+        minRows: 24,
+        maxRows: 60,
+        enableTouchHandlers: true,
+        enableWheelArrows: true,
+        enableRenderSpeedPatch: true,
+        enableParentAudioUnlockBridge: true,
+        enableCanvasScale: true
+    };
+    var BRIDGE_OPTIONS = normalizeBridgeOptions(BRIDGE_OPTIONS_DEFAULTS);
+
+    /* fTelnet CP437 bitmap font sizes (exact PNGs, sorted largest-first).
+       Same order as fTelnet's GetBestFit — this IS the contract. */
+    var CP437_FONTS = [
+        { w: 12, h: 23 },
+        { w: 10, h: 19 },
+        { w:  9, h: 16 },
+        { w:  8, h: 16 },
+        { w:  8, h: 14 },
+        { w:  8, h: 13 },
+        { w:  8, h: 12 },
+        { w:  7, h: 12 },
+        { w:  6, h:  8 }
+    ];
+    var MIN_COLS = BRIDGE_OPTIONS.minColumns;
+    var MIN_ROWS = BRIDGE_OPTIONS.minRows;
+    var MAX_COLS = BRIDGE_OPTIONS.maxColumns;
+    var MAX_ROWS = BRIDGE_OPTIONS.maxRows;
+
+    function toInt(value, fallback, min, max) {
+        var parsed = parseInt(value, 10);
+        if (!isFinite(parsed) || isNaN(parsed)) parsed = fallback;
+        if (isFinite(min) && parsed < min) parsed = min;
+        if (isFinite(max) && parsed > max) parsed = max;
+        return parsed;
+    }
+
+    function toBool(value, fallback) {
+        if (value === true || value === false) return value;
+        if (typeof value === 'number') return value !== 0;
+        if (typeof value === 'string') {
+            var lowered = value.toLowerCase();
+            if (lowered === '1' || lowered === 'true' || lowered === 'yes' || lowered === 'on')
+                return true;
+            if (lowered === '0' || lowered === 'false' || lowered === 'no' || lowered === 'off')
+                return false;
+        }
+        return fallback;
+    }
+
+    function normalizeBridgeOptions(raw) {
+        var src = raw || {};
+        var out = {};
+        out.lockScreenSize = toBool(src.lockScreenSize, BRIDGE_OPTIONS_DEFAULTS.lockScreenSize);
+        out.columns = toInt(src.columns, BRIDGE_OPTIONS_DEFAULTS.columns, 40, 240);
+        out.rows = toInt(src.rows, BRIDGE_OPTIONS_DEFAULTS.rows, 15, 120);
+        out.minColumns = toInt(src.minColumns, BRIDGE_OPTIONS_DEFAULTS.minColumns, 40, 240);
+        out.maxColumns = toInt(src.maxColumns, BRIDGE_OPTIONS_DEFAULTS.maxColumns, 40, 240);
+        out.minRows = toInt(src.minRows, BRIDGE_OPTIONS_DEFAULTS.minRows, 15, 120);
+        out.maxRows = toInt(src.maxRows, BRIDGE_OPTIONS_DEFAULTS.maxRows, 15, 120);
+        out.enableTouchHandlers = toBool(src.enableTouchHandlers, BRIDGE_OPTIONS_DEFAULTS.enableTouchHandlers);
+        out.enableWheelArrows = toBool(src.enableWheelArrows, BRIDGE_OPTIONS_DEFAULTS.enableWheelArrows);
+        out.enableRenderSpeedPatch = toBool(src.enableRenderSpeedPatch, BRIDGE_OPTIONS_DEFAULTS.enableRenderSpeedPatch);
+        out.enableParentAudioUnlockBridge = toBool(
+            src.enableParentAudioUnlockBridge,
+            BRIDGE_OPTIONS_DEFAULTS.enableParentAudioUnlockBridge
+        );
+        out.enableCanvasScale = toBool(src.enableCanvasScale, BRIDGE_OPTIONS_DEFAULTS.enableCanvasScale);
+
+        if (out.minColumns > out.maxColumns) out.minColumns = out.maxColumns;
+        if (out.minRows > out.maxRows) out.minRows = out.maxRows;
+        if (out.columns < out.minColumns) out.columns = out.minColumns;
+        if (out.columns > out.maxColumns) out.columns = out.maxColumns;
+        if (out.rows < out.minRows) out.rows = out.minRows;
+        if (out.rows > out.maxRows) out.rows = out.maxRows;
+        return out;
+    }
+
+    function applyBridgeOptions(raw) {
+        BRIDGE_OPTIONS = normalizeBridgeOptions(raw || BRIDGE_OPTIONS_DEFAULTS);
+        MIN_COLS = BRIDGE_OPTIONS.minColumns;
+        MIN_ROWS = BRIDGE_OPTIONS.minRows;
+        MAX_COLS = BRIDGE_OPTIONS.maxColumns;
+        MAX_ROWS = BRIDGE_OPTIONS.maxRows;
+        updateLockedLayout(currentSize);
+    }
+
+    function updateLockedLayout(size) {
+        var container = document.getElementById('fTelnetContainer');
+        var clientContainer = document.querySelector('.fTelnetClientContainer');
+        var canvas = document.querySelector('#fTelnetContainer canvas');
+        var width;
+        var height;
+        var offsetTop = 0;
+
+        document.body.classList.toggle('terminal-locked', BRIDGE_OPTIONS.lockScreenSize);
+
+        if (!container) return;
+        if (!BRIDGE_OPTIONS.lockScreenSize) {
+            container.style.width = '';
+            container.style.height = '';
+            if (clientContainer) {
+                clientContainer.style.width = '';
+                clientContainer.style.height = '';
+            }
+            return;
+        }
+
+        width = size ? size.columns * size.fontW : BRIDGE_OPTIONS.columns * 8;
+        height = size ? size.rows * size.fontH : BRIDGE_OPTIONS.rows * 16;
+
+        container.style.width = width + 'px';
+        container.style.height = height + 'px';
+        if (clientContainer) {
+            clientContainer.style.width = width + 'px';
+            clientContainer.style.height = height + 'px';
+        }
+        if (canvas) {
+            if (canvas.height > height) {
+                offsetTop = height - canvas.height;
+            }
+            canvas.style.width = '';
+            canvas.style.height = '';
+            canvas.style.marginLeft = '0';
+            canvas.style.marginTop = offsetTop + 'px';
+        }
+    }
+
+    function applyClientScreenSize(size) {
+        if (!client || !size) return;
+        currentSize = size;
+        currentColumns = size.columns;
+        currentRows = size.rows;
+
+        if (client.Options) {
+            client.Options.ScreenColumns = currentColumns;
+            client.Options.ScreenRows = currentRows;
+        }
+        if (client._Options) {
+            client._Options.ScreenColumns = currentColumns;
+            client._Options.ScreenRows = currentRows;
+        }
+        if (client._Crt && typeof client._Crt.SetScreenSize === 'function') {
+            client._Crt.SetScreenSize(currentColumns, currentRows);
+        }
+        updateLockedLayout(size);
+    }
+
+    function syncLockedScreenSize() {
+        if (!BRIDGE_OPTIONS.lockScreenSize) return;
+        applyClientScreenSize(getScreenSize());
+    }
+
+    function getScreenSize() {
+        if (BRIDGE_OPTIONS.lockScreenSize) {
+            return {
+                columns: BRIDGE_OPTIONS.columns,
+                rows: BRIDGE_OPTIONS.rows,
+                scale: 1,
+                fontW: 8,
+                fontH: 16
+            };
+        }
+
+        var container = document.getElementById('fTelnetContainer');
+        var rect = container ? container.getBoundingClientRect() : null;
+        var W = rect && rect.width ? rect.width : window.innerWidth;
+        var H = rect && rect.height ? rect.height : window.innerHeight;
+        var font = CP437_FONTS[CP437_FONTS.length - 1];
+        for (var i = 0; i < CP437_FONTS.length; i++) {
+            var f = CP437_FONTS[i];
+            if (Math.floor(W / f.w) >= MIN_COLS && Math.floor(H / f.h) >= MIN_ROWS) {
+                font = f;
+                break;
+            }
+        }
+        // 1) Maximum rows, no safety subtraction
+        var rows = Math.max(Math.min(Math.floor(H / font.h), MAX_ROWS), MIN_ROWS);
+        // 2) Scale to fill leftover vertical pixels (cap so MIN_COLS still fits)
+        var vScale = H / (rows * font.h);
+        var maxScale = W / (MIN_COLS * font.w);
+        var scale = Math.min(vScale, maxScale);
+        // 3) Columns based on scaled font width
+        var cols = Math.max(Math.min(Math.floor(W / (font.w * scale)), MAX_COLS), MIN_COLS);
+        return { columns: cols, rows: rows, scale: scale, fontW: font.w, fontH: font.h };
+    }
+
+    function sendToParent(msg) {
+        if (window.parent && window.parent !== window) {
+            window.parent.postMessage(msg, location.origin);
+        }
+    }
+
+    function requestParentAudioUnlock() {
+        try {
+            if (window.parent &&
+                window.parent !== window &&
+                window.parent.FLWeb &&
+                typeof window.parent.FLWeb.unlockAudio === 'function') {
+                window.parent.FLWeb.unlockAudio();
+            }
+        } catch (_) {}
+    }
+
+    function installParentAudioUnlockBridge() {
+        if (parentAudioUnlockBound) return;
+        ['keydown', 'pointerdown', 'mousedown', 'touchstart'].forEach(function (type) {
+            window.addEventListener(type, requestParentAudioUnlock, true);
+        });
+        parentAudioUnlockBound = true;
+    }
+
+    function parseTerminalUiPayload(payload) {
+        var prefix = 'FLWEB/1 ';
+        var text;
+        var packet;
+
+        if (payload === 'FLWEB:ALERT') {
+            return {
+                action: 'alert',
+                message: 'sent from terminal'
+            };
+        }
+
+        text = String(payload || '');
+        if (text.indexOf(prefix) !== 0) {
+            return null;
+        }
+
+        try {
+            packet = JSON.parse(text.slice(prefix.length));
+        } catch (err) {
+            console.warn('[flweb] invalid payload json:', err && err.message ? err.message : err);
+            return null;
+        }
+
+        if (!packet || typeof packet !== 'object' || typeof packet.action !== 'string') {
+            return null;
+        }
+
+        return packet;
+    }
+
+    /**
+     * sendInputToServer(str) — inject raw bytes into the terminal
+     * input stream (as if the user typed them). Finds fTelnet's
+     * underlying WebSocket and calls .send().
+     */
+    function sendInputToServer(str) {
+        /* Use the socket tracked by our WebSocket wrapper.
+           Falls back to walking fTelnet internals if needed. */
+        var socket = window._flwebServerSocket || null;
+        if (!socket || socket.readyState !== 1) {
+            /* Walk fTelnet internals as fallback */
+            var paths = ['_Connection', '_TelnetConnection', '_RLoginConnection'];
+            for (var p = 0; !socket && p < paths.length; p++) {
+                try {
+                    var conn = client && client[paths[p]];
+                    if (conn && conn._Socket && conn._Socket.readyState === 1) {
+                        socket = conn._Socket;
+                    }
+                } catch (_) {}
+            }
+        }
+        if (!socket || socket.readyState !== 1) {
+            console.warn('[flweb] sendInputToServer: no open socket found');
+            return false;
+        }
+        var bytes = new Uint8Array(str.length);
+        for (var i = 0; i < str.length; i++) {
+            bytes[i] = str.charCodeAt(i) & 0xff;
+        }
+        socket.send(bytes.buffer);
+        console.log('[flweb] sendInputToServer: sent', str.length, 'bytes');
+        return true;
+    }
+
+    function handleBridgeProbeLocal(packet) {
+        var nonce = packet && packet.nonce;
+        if (!nonce) return false;
+
+        var caps = ['radio', 'audio', 'url', 'toast', 'speech'];
+
+        /* Build response — same APC format so the BBS can parse it.
+           Using 'R' suffix: FLWEB/1R to distinguish from outbound. */
+        var response = JSON.stringify({
+            action: 'bridge.ack',
+            nonce: String(nonce),
+            caps: caps
+        });
+        var apc = '\x1b_FLWEB/1R ' + response + '\x1b\\';
+
+        /* Also forward to parent so web UI can know bridge is active */
+        sendToParent({
+            type: 'terminal-ui',
+            action: packet.action,
+            message: null,
+            payload: packet
+        });
+
+        return sendInputToServer(apc);
+    }
+
+    function dispatchTerminalUiPayload(payload) {
+        var packet = parseTerminalUiPayload(payload);
+        if (!packet) return false;
+
+        /* bridge.probe is handled locally in the iframe —
+           we send the response directly through the WebSocket
+           back to the BBS as terminal input. */
+        if (packet.action === 'bridge.probe') {
+            return handleBridgeProbeLocal(packet);
+        }
+
+        sendToParent({
+            type: 'terminal-ui',
+            action: packet.action,
+            message: packet.message || null,
+            payload: packet
+        });
+        return true;
+    }
+
+    function filterTerminalUiOutput(str) {
+        var input = terminalUiBuffer + String(str || '');
+        var output = '';
+        var start = -1;
+        var end = -1;
+        var cursor = 0;
+        var payload = '';
+
+        terminalUiBuffer = '';
+
+        while ((start = input.indexOf('\x1b_', cursor)) !== -1) {
+            output += input.slice(cursor, start);
+            end = input.indexOf('\x1b\\', start + 2);
+            if (end === -1) {
+                terminalUiBuffer = input.slice(start);
+                return output;
+            }
+
+            payload = input.slice(start + 2, end);
+            if (!dispatchTerminalUiPayload(payload)) {
+                output += input.slice(start, end + 2);
+            }
+            cursor = end + 2;
+        }
+
+        output += input.slice(cursor);
+        return output;
+    }
+
+    function installTerminalUiBridge() {
+        var ansi;
+        var origWrite;
+
+        if (!client || !client._Ansi || typeof client._Ansi.Write !== 'function') {
+            return false;
+        }
+
+        ansi = client._Ansi;
+        if (ansi._flwebBridgeInstalled) {
+            return true;
+        }
+
+        origWrite = ansi.Write;
+        ansi.Write = function (str) {
+            var filtered = filterTerminalUiOutput(str);
+            if (!filtered.length) {
+                return;
+            }
+            return origWrite.call(ansi, filtered);
+        };
+        ansi._flwebBridgeInstalled = true;
+        return true;
+    }
+
+    function bytesToString(bytes) {
+        var out = '';
+        var i;
+
+        for (i = 0; i < bytes.length; i += 1) {
+            out += String.fromCharCode(bytes[i]);
+        }
+        return out;
+    }
+
+    function stringToArrayBuffer(str) {
+        var bytes = new Uint8Array(str.length);
+        var i;
+
+        for (i = 0; i < str.length; i += 1) {
+            bytes[i] = str.charCodeAt(i) & 0xff;
+        }
+        return bytes.buffer;
+    }
+
+    function filterTerminalUiMessageData(data) {
+        var text;
+        var filtered;
+
+        if (typeof data === 'string') {
+            filtered = filterTerminalUiOutput(data);
+            return {
+                supported: true,
+                suppressed: !filtered.length,
+                data: filtered
+            };
+        }
+
+        if (typeof ArrayBuffer !== 'undefined' && data instanceof ArrayBuffer) {
+            text = bytesToString(new Uint8Array(data));
+            filtered = filterTerminalUiOutput(text);
+            return {
+                supported: true,
+                suppressed: !filtered.length,
+                data: stringToArrayBuffer(filtered)
+            };
+        }
+
+        if (typeof ArrayBuffer !== 'undefined' &&
+            typeof ArrayBuffer.isView === 'function' &&
+            ArrayBuffer.isView(data)) {
+            text = bytesToString(new Uint8Array(data.buffer, data.byteOffset, data.byteLength));
+            filtered = filterTerminalUiOutput(text);
+            return {
+                supported: true,
+                suppressed: !filtered.length,
+                data: stringToArrayBuffer(filtered)
+            };
+        }
+
+        return {
+            supported: false,
+            suppressed: false,
+            data: data
+        };
+    }
+
+    function deliverFilteredMessage(socket, evt, listeners, onmessageHandler) {
+        var result = filterTerminalUiMessageData(evt.data);
+        var filteredEvent;
+        var i;
+        var listener;
+
+        if (!result.supported) {
+            filteredEvent = evt;
+        } else if (result.suppressed) {
+            return;
+        } else if (result.data === evt.data) {
+            filteredEvent = evt;
+        } else {
+            filteredEvent = new MessageEvent('message', {
+                data: result.data,
+                origin: evt.origin,
+                lastEventId: evt.lastEventId,
+                source: evt.source,
+                ports: evt.ports
+            });
+        }
+
+        if (typeof onmessageHandler === 'function') {
+            onmessageHandler.call(socket, filteredEvent);
+        }
+
+        for (i = 0; i < listeners.length; i += 1) {
+            listener = listeners[i];
+            if (!listener) continue;
+            if (typeof listener === 'function') {
+                listener.call(socket, filteredEvent);
+            } else if (listener && typeof listener.handleEvent === 'function') {
+                listener.handleEvent(filteredEvent);
+            }
+        }
+    }
+
+    function installTerminalUiSocketBridge() {
+        var NativeWebSocket = window.WebSocket;
+
+        if (!NativeWebSocket || NativeWebSocket._flwebBridgeInstalled) {
+            return false;
+        }
+
+        function WrappedWebSocket(url, protocols) {
+            var socket = arguments.length > 1
+                ? new NativeWebSocket(url, protocols)
+                : new NativeWebSocket(url);
+            var nativeAdd = socket.addEventListener.bind(socket);
+            var nativeRemove = socket.removeEventListener.bind(socket);
+            var messageListeners = [];
+            var onmessageHandler = null;
+
+            nativeAdd('message', function (evt) {
+                deliverFilteredMessage(socket, evt, messageListeners, onmessageHandler);
+            });
+
+            socket.addEventListener = function (type, listener, options) {
+                if (type === 'message') {
+                    if (messageListeners.indexOf(listener) === -1) {
+                        messageListeners.push(listener);
+                    }
+                    return;
+                }
+                return nativeAdd(type, listener, options);
+            };
+
+            socket.removeEventListener = function (type, listener, options) {
+                var idx;
+
+                if (type === 'message') {
+                    idx = messageListeners.indexOf(listener);
+                    if (idx !== -1) {
+                        messageListeners.splice(idx, 1);
+                    }
+                    return;
+                }
+                return nativeRemove(type, listener, options);
+            };
+
+            try {
+                Object.defineProperty(socket, 'onmessage', {
+                    configurable: true,
+                    enumerable: true,
+                    get: function () { return onmessageHandler; },
+                    set: function (fn) {
+                        onmessageHandler = typeof fn === 'function' ? fn : null;
+                    }
+                });
+            } catch (_) {}
+
+            /* Track this socket so sendInputToServer can find it reliably
+               instead of guessing fTelnet internal property names */
+            window._flwebServerSocket = socket;
+
+            return socket;
+        }
+
+        WrappedWebSocket.prototype = NativeWebSocket.prototype;
+        WrappedWebSocket.CONNECTING = NativeWebSocket.CONNECTING;
+        WrappedWebSocket.OPEN = NativeWebSocket.OPEN;
+        WrappedWebSocket.CLOSING = NativeWebSocket.CLOSING;
+        WrappedWebSocket.CLOSED = NativeWebSocket.CLOSED;
+        WrappedWebSocket._flwebBridgeInstalled = true;
+        WrappedWebSocket._flwebNative = NativeWebSocket;
+
+        window.WebSocket = WrappedWebSocket;
+        return true;
+    }
+
+    function sendArrowKey(direction) {
+        var keyMap = {
+            up: { key: 'ArrowUp', keyCode: 38 },
+            down: { key: 'ArrowDown', keyCode: 40 },
+            left: { key: 'ArrowLeft', keyCode: 37 },
+            right: { key: 'ArrowRight', keyCode: 39 }
+        };
+        var def = keyMap[direction] || keyMap.down;
+        window.dispatchEvent(new KeyboardEvent('keydown', {
+            key: def.key, code: def.key, keyCode: def.keyCode, which: def.keyCode, bubbles: true
+        }));
+        window.dispatchEvent(new KeyboardEvent('keyup', {
+            key: def.key, code: def.key, keyCode: def.keyCode, which: def.keyCode, bubbles: true
+        }));
+    }
+
+    function repositionMobileControls() {
+        window.dispatchEvent(new Event('mi:reposition'));
+    }
+
+    function getTapTarget(clientX, clientY) {
+        var container = document.getElementById('fTelnetContainer');
+        var canvas = document.querySelector('#fTelnetContainer canvas');
+        var target = document.elementFromPoint(clientX, clientY);
+        if (target && container && container.contains(target)) return target;
+        return canvas || container || target;
+    }
+
+    function definePointerMetrics(evt, metrics) {
+        var offsetX = metrics.offsetX;
+        var offsetY = metrics.offsetY;
+        try {
+            Object.defineProperty(evt, 'offsetX', {
+                configurable: true,
+                get: function () { return offsetX; }
+            });
+            Object.defineProperty(evt, 'offsetY', {
+                configurable: true,
+                get: function () { return offsetY; }
+            });
+            Object.defineProperty(evt, 'layerX', {
+                configurable: true,
+                get: function () { return offsetX; }
+            });
+            Object.defineProperty(evt, 'layerY', {
+                configurable: true,
+                get: function () { return offsetY; }
+            });
+            Object.defineProperty(evt, 'pageX', {
+                configurable: true,
+                get: function () { return metrics.pageX; }
+            });
+            Object.defineProperty(evt, 'pageY', {
+                configurable: true,
+                get: function () { return metrics.pageY; }
+            });
+            Object.defineProperty(evt, 'screenX', {
+                configurable: true,
+                get: function () { return metrics.screenX; }
+            });
+            Object.defineProperty(evt, 'screenY', {
+                configurable: true,
+                get: function () { return metrics.screenY; }
+            });
+            Object.defineProperty(evt, 'which', {
+                configurable: true,
+                get: function () { return 1; }
+            });
+        } catch (_) {}
+        return evt;
+    }
+
+    function getPointerMetrics(clientX, clientY) {
+        var canvas = document.querySelector('#fTelnetContainer canvas');
+        var rect = canvas && canvas.getBoundingClientRect
+            ? canvas.getBoundingClientRect()
+            : { left: 0, top: 0 };
+        return {
+            offsetX: clientX - rect.left,
+            offsetY: clientY - rect.top,
+            pageX: clientX + (window.pageXOffset || 0),
+            pageY: clientY + (window.pageYOffset || 0),
+            screenX: clientX,
+            screenY: clientY
+        };
+    }
+
+    function buildDirectMouseEvent(clientX, clientY, buttons) {
+        var metrics = getPointerMetrics(clientX, clientY);
+        var target = document.querySelector('#fTelnetContainer canvas') ||
+            document.getElementById('fTelnetContainer');
+
+        return {
+            target: target,
+            srcElement: target,
+            currentTarget: target,
+            relatedTarget: null,
+            button: 0,
+            buttons: buttons,
+            which: 1,
+            detail: buttons ? 1 : 0,
+            clientX: clientX,
+            clientY: clientY,
+            pageX: metrics.pageX,
+            pageY: metrics.pageY,
+            screenX: metrics.screenX,
+            screenY: metrics.screenY,
+            offsetX: metrics.offsetX,
+            offsetY: metrics.offsetY,
+            layerX: metrics.offsetX,
+            layerY: metrics.offsetY,
+            preventDefault: function () {},
+            stopPropagation: function () {},
+            stopImmediatePropagation: function () {}
+        };
+    }
+
+    function dispatchDirectFtelnetTap(clientX, clientY) {
+        var crt = client && client._Crt;
+        var handled = false;
+
+        if (!isConnected || !crt) return false;
+
+        try {
+            if (typeof crt.OnMouseMove === 'function') {
+                crt.OnMouseMove(buildDirectMouseEvent(clientX, clientY, 0));
+            }
+            if (typeof crt.OnMouseDown === 'function') {
+                crt.OnMouseDown(buildDirectMouseEvent(clientX, clientY, 1));
+                handled = true;
+            }
+            if (typeof crt.OnMouseUp === 'function') {
+                crt.OnMouseUp(buildDirectMouseEvent(clientX, clientY, 0));
+                handled = true;
+            }
+        } catch (err) {
+            console.error('[iframe] direct fTelnet tap failed:', err);
+            return false;
+        }
+
+        return handled;
+    }
+
+    function dispatchSyntheticTap(target, clientX, clientY) {
+        var metrics;
+        var moveInit;
+        var downInit;
+        var upInit;
+        if (!target) return;
+
+        metrics = getPointerMetrics(clientX, clientY);
+        moveInit = {
+            bubbles: true,
+            cancelable: true,
+            clientX: clientX,
+            clientY: clientY,
+            screenX: metrics.screenX,
+            screenY: metrics.screenY,
+            view: window,
+            detail: 0
+        };
+        downInit = {
+            bubbles: true,
+            cancelable: true,
+            clientX: clientX,
+            clientY: clientY,
+            screenX: metrics.screenX,
+            screenY: metrics.screenY,
+            button: 0,
+            buttons: 1,
+            view: window,
+            pointerId: 1,
+            pointerType: 'mouse',
+            isPrimary: true,
+            detail: 1
+        };
+        upInit = {
+            bubbles: true,
+            cancelable: true,
+            clientX: clientX,
+            clientY: clientY,
+            screenX: metrics.screenX,
+            screenY: metrics.screenY,
+            button: 0,
+            buttons: 0,
+            view: window,
+            pointerId: 1,
+            pointerType: 'mouse',
+            isPrimary: true,
+            detail: 1
+        };
+
+        if (window.PointerEvent) {
+            target.dispatchEvent(
+                definePointerMetrics(new PointerEvent('pointermove', moveInit), metrics)
+            );
+            target.dispatchEvent(
+                definePointerMetrics(new PointerEvent('pointerdown', downInit), metrics)
+            );
+            target.dispatchEvent(
+                definePointerMetrics(new PointerEvent('pointerup', upInit), metrics)
+            );
+        }
+        target.dispatchEvent(
+            definePointerMetrics(new MouseEvent('mouseover', moveInit), metrics)
+        );
+        target.dispatchEvent(
+            definePointerMetrics(new MouseEvent('mousemove', moveInit), metrics)
+        );
+        target.dispatchEvent(
+            definePointerMetrics(new MouseEvent('mousedown', downInit), metrics)
+        );
+        target.dispatchEvent(
+            definePointerMetrics(new MouseEvent('mouseup', upInit), metrics)
+        );
+        target.dispatchEvent(
+            definePointerMetrics(new MouseEvent('click', upInit), metrics)
+        );
+    }
+
+    function attachInputHandlers(container) {
+        var wheelHandler = function (e) {
+            if (e.deltaY > 0) sendArrowKey('down');
+            else if (e.deltaY < 0) sendArrowKey('up');
+        };
+        if (BRIDGE_OPTIONS.enableWheelArrows) {
+            container.addEventListener('wheel', wheelHandler, { passive: true });
+        }
+
+        container.style.touchAction = 'manipulation';
+        if (!BRIDGE_OPTIONS.enableTouchHandlers) {
+            return;
+        }
+
+        var startX = 0, startY = 0, startTime = 0;
+        var trackingTouch = false, tapEligible = false;
+        var TAP_MOVE = 14, MAX_TAP = 350;
+
+        var touchStart = function (e) {
+            if (e.touches.length !== 1) {
+                trackingTouch = false;
+                tapEligible = false;
+                return;
+            }
+            var t = e.touches[0];
+            focusTerminal();
+            startX = t.clientX; startY = t.clientY;
+            startTime = Date.now();
+            trackingTouch = true;
+            tapEligible = true;
+        };
+        var touchMove = function (e) {
+            if (!trackingTouch || e.touches.length !== 1) return;
+            var t = e.touches[0];
+            if (Math.abs(t.clientX - startX) > TAP_MOVE ||
+                Math.abs(t.clientY - startY) > TAP_MOVE) {
+                tapEligible = false;
+                e.preventDefault();
+            }
+        };
+        var touchEnd = function (e) {
+            var target;
+            var expectedClickSequence;
+
+            if (!trackingTouch || e.changedTouches.length !== 1) return;
+            var t = e.changedTouches[0];
+            var dx = t.clientX - startX, dy = t.clientY - startY;
+            var absDx = Math.abs(dx), absDy = Math.abs(dy);
+            var duration = Date.now() - startTime;
+            trackingTouch = false;
+            focusTerminal();
+            if (tapEligible && absDx < TAP_MOVE && absDy < TAP_MOVE && duration < MAX_TAP) {
+                if (!isConnected) {
+                    sendToParent({ type: 'click' });
+                    return;
+                }
+                if (dispatchDirectFtelnetTap(t.clientX, t.clientY)) {
+                    return;
+                }
+                target = getTapTarget(t.clientX, t.clientY);
+                clearTimeout(tapFallbackTimer);
+                expectedClickSequence = clickSequence;
+                tapFallbackTimer = setTimeout(function () {
+                    if (clickSequence !== expectedClickSequence) return;
+                    dispatchSyntheticTap(target, t.clientX, t.clientY);
+                }, 380);
+                return;
+            }
+        };
+        var touchCancel = function () {
+            trackingTouch = false;
+            tapEligible = false;
+        };
+        container.addEventListener('touchstart', touchStart, { passive: false });
+        container.addEventListener('touchmove', touchMove, { passive: false });
+        container.addEventListener('touchend', touchEnd, { passive: false });
+        container.addEventListener('touchcancel', touchCancel, { passive: false });
+    }
+
+    function scrollToBottom() {
+        var cc = document.querySelector('.fTelnetClientContainer');
+        if (cc) cc.scrollTop = cc.scrollHeight;
+    }
+
+    function focusTerminal() {
+        var canvas = document.querySelector('#fTelnetContainer canvas');
+        try { window.focus(); } catch (_) {}
+        if (!canvas) return;
+        if (!canvas.hasAttribute('tabindex')) canvas.tabIndex = 0;
+        try { canvas.focus({ preventScroll: true }); }
+        catch (e) { try { canvas.focus(); } catch (_) {} }
+    }
+
+    function blurTerminal() {
+        var active = document.activeElement;
+        if (!active || typeof active.blur !== 'function') return;
+        try { active.blur(); } catch (_) { }
+    }
+
+    function applyCanvasScale(size) {
+        if (!size) return;
+        var canvas = document.querySelector('#fTelnetContainer canvas');
+        if (!canvas) {
+            repositionMobileControls();
+            return;
+        }
+        if (!BRIDGE_OPTIONS.enableCanvasScale || BRIDGE_OPTIONS.lockScreenSize) {
+            canvas.style.transform = '';
+            canvas.style.transformOrigin = '';
+            canvas.style.width = '';
+            canvas.style.height = '';
+            canvas.style.marginLeft = '0';
+            updateLockedLayout(size);
+            repositionMobileControls();
+            return;
+        }
+        /* Always clear any CSS transform — we scale via CSS width/height
+           so that offsetX/offsetY and getBoundingClientRect() stay in the
+           same coordinate space.  CSS transform:scale() breaks fTelnet's
+           MousePositionToScreenPosition() because offsetX is in the
+           untransformed space while getBoundingClientRect() returns the
+           transformed dimensions. */
+        canvas.style.transform = '';
+        canvas.style.transformOrigin = '';
+        if (!size.scale || Math.abs(size.scale - 1) < 0.001) {
+            canvas.style.width = '';
+            canvas.style.height = '';
+            canvas.style.marginLeft = '0';
+            return;
+        }
+        canvas.style.width = Math.round(canvas.width * size.scale) + 'px';
+        canvas.style.height = Math.round(canvas.height * size.scale) + 'px';
+        var scaledW = size.columns * size.fontW * size.scale;
+        var leftover = window.innerWidth - scaledW;
+        canvas.style.marginLeft = (leftover > 1 ? Math.floor(leftover / 2) : 0) + 'px';
+        repositionMobileControls();
+    }
+
+    function forceFontRecalc() {
+        [100, 500, 1200].forEach(function (ms) {
+            setTimeout(function () {
+                if (!client || !client._Crt) return;
+                syncLockedScreenSize();
+                var cc = document.querySelector('.fTelnetClientContainer');
+                if (cc) {
+                    cc.style.width = '';
+                    cc.style.height = '';
+                    cc.style.overflow = 'hidden';
+                    void cc.offsetHeight;
+                }
+                if (typeof client._Crt.SetFont === 'function') {
+                    client._Crt.SetFont(client._Crt.Font
+                        ? client._Crt.Font.Name : 'CP437');
+                }
+                syncLockedScreenSize();
+                updateLockedLayout(currentSize);
+                scrollToBottom();
+                applyCanvasScale(currentSize);
+            }, ms);
+        });
+    }
+
+
+
+    installTerminalUiSocketBridge();
+
+    function initTerminal(cfg) {
+        if (typeof fTelnetOptions === 'undefined' ||
+            typeof fTelnetClient === 'undefined') {
+            setTimeout(function () { initTerminal(cfg); }, 200);
+            return;
+        }
+
+        applyBridgeOptions(cfg && cfg.bridgeOptions ? cfg.bridgeOptions : BRIDGE_OPTIONS_DEFAULTS);
+        if (BRIDGE_OPTIONS.enableParentAudioUnlockBridge) {
+            installParentAudioUnlockBridge();
+        }
+
+        var isSecure = cfg.isSecure;
+        var servicePort = cfg.isLoggedIn ? cfg.rloginPort : cfg.telnetPort;
+        var size = getScreenSize();
+        currentSize = size;
+        currentColumns = size.columns;
+        currentRows = size.rows;
+
+        var opts = new fTelnetOptions();
+        opts.BareLFtoCRLF = false;
+        opts.BitsPerSecond = 921600;
+        opts.Emulation = 'ansi-bbs';
+        opts.Enter = '\r';
+        opts.Font = 'CP437';
+        opts.ForceWss = false;
+        opts.Hostname = cfg.hostname;
+        opts.LocalEcho = false;
+        opts.ScreenColumns = currentColumns;
+        opts.ScreenRows = currentRows;
+        opts.SplashScreen = cfg.ftelnetSplash;
+
+        if (isSecure) {
+            opts.Port = 443;
+            opts.ForceWss = true;
+            opts.WebSocketUrlPath = '/ws?Port=' + servicePort;
+        } else {
+            opts.Port = cfg.wsp;
+            opts.WebSocketUrlPath = '?Port=' + servicePort;
+        }
+
+        if (cfg.isLoggedIn) {
+            opts.ConnectionType = 'rlogin';
+            opts.RLoginClientUsername = cfg.userPassword;
+            opts.RLoginServerUsername = cfg.userAlias;
+            opts.RLoginTerminalType = 'ansi-bbs-cp437';
+        } else {
+            opts.ConnectionType = 'telnet';
+        }
+
+        try {
+            client = new fTelnetClient('fTelnetContainer', opts);
+        } catch (err) {
+            console.error('[iframe] fTelnetClient crash:', err,
+                'cols=' + currentColumns, 'rows=' + currentRows,
+                'W=' + window.innerWidth, 'H=' + window.innerHeight);
+            sendToParent({ type: 'error', message: 'fTelnet init: ' + err.message });
+            return;
+        }
+        syncLockedScreenSize();
+        window._ftClient = client;
+        installTerminalUiBridge();
+        updateLockedLayout(currentSize);
+
+        if (BRIDGE_OPTIONS.enableRenderSpeedPatch) {
+        /* ── Render-speed fix v3 ────────────────────────────────────
+         *  fTelnet has a BPS rate limiter in OnConnectionData that reads
+         *  only a few hundred bytes per call and re-schedules via
+         *  setTimeout(fn, 0).  Browsers clamp chained setTimeout to
+         *  >=4 ms (much more for iframes/unfocused tabs), causing ANSI
+         *  screens to render visibly slowly or freeze mid-frame.
+         *
+         *  Fix A: Replace OnConnectionData with a full-buffer drain.
+         *         Uses queueMicrotask for continuation (not subject
+         *         to setTimeout clamping).  Post-drain NeedsRedraw
+         *         sweep catches font-load straggler cells.
+         *
+         *  Fix B: Active rAF render loop (not just keepalive) that
+         *         flushes NeedsRedraw cells AND checks for un-drained
+         *         data every frame — safety net for missed ondata.
+         *         Pauses when document.hidden to save resources.
+         *
+         *  Fix C: NeedsRedraw blink-flush on cursor blink timer.
+         *
+         *  Fix D: visibilitychange handler — when iframe becomes
+         *         visible after being hidden/backgrounded, restarts
+         *         the render loop, flushes NeedsRedraw, and drains
+         *         any data that arrived while throttled.
+         *
+         *  Fix E: 50ms safety-net poll — catches edge cases where
+         *         WebSocket ondata doesn't fire (rapid reconnect,
+         *         browser throttling, iframe deprioritization).
+         *
+         *  Fix F: Fast-forward on panel unhide.  When the terminal
+         *         panel is hidden by the SPA, all drain/flush work
+         *         is suppressed so data accumulates in the
+         *         WebSocket receive buffer untouched.  On unhide
+         *         the backlog is replayed with canvas contexts
+         *         swapped to off-screen dummies, so the ANSI parser
+         *         updates the cell buffer but no expensive canvas
+         *         draws occur.  Then the real contexts are restored
+         *         and the final screen state is painted in one pass.
+         */
+        (function patchRenderSpeed(cl) {
+            if (!cl) return;
+            console.log('[fTelnet-speed] Render-speed patch v3 active');
+
+            /* ---- Fix A: drain-all-data monkey-patch ---- */
+            var totalDrained = 0;
+            var drainCalls = 0;
+
+            /* Shared NeedsRedraw sweeper — called from multiple places */
+            function flushNeedsRedraw() {
+                if (!cl._Crt || !cl._Crt._Buffer || !cl._Crt._ScreenSize) return 0;
+                if (cl._Crt._Font && cl._Crt._Font._Loading > 0) return 0;
+                var buf = cl._Crt._Buffer;
+                var sz  = cl._Crt._ScreenSize;
+                var flushed = 0;
+                for (var Y = 1; Y <= sz.y; Y++) {
+                    for (var X = 1; X <= sz.x; X++) {
+                        if (buf[Y] && buf[Y][X] && buf[Y][X].NeedsRedraw) {
+                            cl._Crt.FastWrite(
+                                buf[Y][X].Ch, X, Y,
+                                buf[Y][X], false);
+                            buf[Y][X].NeedsRedraw = false;
+                            flushed++;
+                        }
+                    }
+                }
+                return flushed;
+            }
+
+            function drainBuffer() {
+                if (typeof cl._Timer === 'undefined') return 0;
+                if (typeof cl._Connection === 'undefined') return 0;
+                if (!cl._Connection.connected) return 0;
+
+                var avail = cl._Connection.bytesAvailable;
+                var batchSize = 0;
+                while (avail > 0) {
+                    var data = cl._Connection.readString(avail);
+                    if (!data || data.length === 0) break;
+                    batchSize += data.length;
+                    try { cl.ondata.trigger(data); } catch (_) {}
+                    if (cl._Options.Emulation === 'RIP') {
+                        cl._RIP.Parse(data);
+                    } else {
+                        cl._Ansi.Write(data);
+                    }
+                    avail = cl._Connection.bytesAvailable;
+                }
+                if (batchSize > 0) {
+                    totalDrained += batchSize;
+                    drainCalls++;
+                    if (batchSize > 500 && drainCalls <= 50) {
+                        console.log('[fTelnet-speed] drained ' + batchSize +
+                            'B (total ' + totalDrained + 'B in ' +
+                            drainCalls + ' calls)');
+                    }
+                    cl._LastTimer = new Date().getTime();
+                    /* After draining, sweep any NeedsRedraw cells that
+                       could not be drawn during a font-load window but
+                       whose font has since finished loading. */
+                    flushNeedsRedraw();
+                }
+                return batchSize;
+            }
+
+            /* ---- Fix F: panel-hidden state & fast-forward ---- */
+            var panelHidden = false;
+
+            function fastForwardDrain() {
+                if (!cl._Crt || !cl._Connection) return;
+                var avail = cl._Connection.bytesAvailable;
+                if (avail === 0) { flushNeedsRedraw(); return; }
+
+                console.log('[fTelnet-speed] fast-forward: ' +
+                    avail + 'B backlog');
+                var t0 = performance.now();
+
+                /* Swap canvas contexts to off-screen dummies so
+                   FastWrite / Scroll / ClrScr draw calls are real
+                   canvas-API calls that just hit a throwaway surface.
+                   The _Buffer array is updated normally.  */
+                var realCtx      = cl._Crt._CanvasContext;
+                var realTempC    = cl._Crt._TempCanvas;
+                var realTempCtx  = cl._Crt._TempCanvasContext;
+
+                var w = (cl._Crt._Canvas ? cl._Crt._Canvas.width  : 800);
+                var h = (cl._Crt._Canvas ? cl._Crt._Canvas.height : 600);
+
+                var dumC  = document.createElement('canvas');
+                dumC.width = w; dumC.height = h;
+                var dumCtx = dumC.getContext('2d');
+
+                var dumTC  = document.createElement('canvas');
+                dumTC.width = w; dumTC.height = h;
+                var dumTCtx = dumTC.getContext('2d');
+
+                cl._Crt._CanvasContext = dumCtx;
+                if (realTempC)   cl._Crt._TempCanvas        = dumTC;
+                if (realTempCtx) cl._Crt._TempCanvasContext  = dumTCtx;
+
+                /* Drain everything — ANSI parser runs, buffer
+                   updates, but all canvas ops hit the dummies. */
+                drainBuffer();
+
+                /* Restore real contexts */
+                cl._Crt._CanvasContext = realCtx;
+                if (realTempC)   cl._Crt._TempCanvas        = realTempC;
+                if (realTempCtx) cl._Crt._TempCanvasContext  = realTempCtx;
+
+                /* Mark every cell dirty and paint the final state */
+                var buf = cl._Crt._Buffer;
+                var sz  = cl._Crt._ScreenSize;
+                if (buf && sz) {
+                    for (var Y = 1; Y <= sz.y; Y++) {
+                        for (var X = 1; X <= sz.x; X++) {
+                            if (buf[Y] && buf[Y][X])
+                                buf[Y][X].NeedsRedraw = true;
+                        }
+                    }
+                }
+                flushNeedsRedraw();
+
+                var ms = (performance.now() - t0).toFixed(1);
+                console.log('[fTelnet-speed] fast-forward done: ' +
+                    avail + 'B in ' + ms + 'ms');
+            }
+
+            /* Expose for the message handler outside this IIFE */
+            cl._panelSetHidden = function (hidden) {
+                panelHidden = hidden;
+            };
+            cl._panelFastForward = function () {
+                panelHidden = false;
+                fastForwardDrain();
+            };
+
+            /* Use queueMicrotask for continuation (faster than
+               MessageChannel and not subject to setTimeout clamping). */
+            var continuationPending = false;
+            function scheduleContinuation() {
+                if (continuationPending) return;
+                continuationPending = true;
+                if (typeof queueMicrotask === 'function') {
+                    queueMicrotask(doContinuation);
+                } else {
+                    Promise.resolve().then(doContinuation);
+                }
+            }
+            function doContinuation() {
+                continuationPending = false;
+                if (panelHidden) return;   /* Fix F */
+                if (cl._Connection && cl._Connection.bytesAvailable > 0) {
+                    drainBuffer();
+                }
+            }
+
+            cl.OnConnectionData = function () {
+                if (panelHidden) return;   /* Fix F: accumulate */
+                drainBuffer();
+                if (cl._Connection && cl._Connection.bytesAvailable > 0) {
+                    scheduleContinuation();
+                }
+            };
+
+            /* ---- Fix B: Active rAF render loop ---- */
+            /* Instead of an empty keepalive, the rAF loop now:
+               1. Flushes any NeedsRedraw cells (catches font-load stragglers)
+               2. Checks for un-drained data (safety net if ondata missed)
+               3. Keeps the compositor ticking for canvas updates        */
+            var rafRunning = false;
+            var rafPaused  = false;
+            function renderTick() {
+                if (rafPaused) { rafRunning = false; return; }
+                rafRunning = true;
+                if (!panelHidden) {   /* Fix F: skip work while hidden */
+                    /* (1) Sweep stranded NeedsRedraw cells */
+                    flushNeedsRedraw();
+                    /* (2) Safety-net drain: if data is sitting in the buffer
+                           but ondata somehow didn't fire, process it now */
+                    if (cl._Connection && cl._Connection.connected &&
+                        cl._Connection.bytesAvailable > 0) {
+                        drainBuffer();
+                    }
+                }
+                requestAnimationFrame(renderTick);
+            }
+            function ensureRAF() {
+                if (!rafRunning && !rafPaused) {
+                    requestAnimationFrame(renderTick);
+                }
+            }
+            function startRAF() {
+                var c = document.querySelector('#fTelnetContainer canvas');
+                if (c) {
+                    ensureRAF();
+                    console.log('[fTelnet-speed] active render loop started');
+                    return true;
+                }
+                return false;
+            }
+            if (!startRAF()) {
+                var waitForCanvas = setInterval(function () {
+                    if (startRAF()) clearInterval(waitForCanvas);
+                }, 100);
+                setTimeout(function () { clearInterval(waitForCanvas); }, 10000);
+            }
+
+            /* ---- Fix C: NeedsRedraw flush on blink timer ---- */
+            if (cl._Crt && cl._Crt._Cursor) {
+                var origOnBlinkShow = cl._Crt.OnBlinkShow.bind(cl._Crt);
+                cl._Crt.OnBlinkShow = function () {
+                    origOnBlinkShow();
+                    flushNeedsRedraw();
+                };
+                console.log('[fTelnet-speed] NeedsRedraw blink-flush installed');
+            }
+
+            /* ---- Fix D: Visibility-change handler ---- */
+            /* When the tab/iframe becomes visible after being hidden,
+               the browser may have throttled rAF and compositing.
+               Force a full sweep and restart the render loop. */
+            document.addEventListener('visibilitychange', function () {
+                if (document.hidden) {
+                    rafPaused = true;
+                    /* rAF will self-stop on next tick */
+                } else {
+                    rafPaused = false;
+                    /* Restart render loop and force-flush everything */
+                    ensureRAF();
+                    flushNeedsRedraw();
+                    /* Also drain any data that arrived while hidden */
+                    if (cl._Connection && cl._Connection.connected &&
+                        cl._Connection.bytesAvailable > 0) {
+                        drainBuffer();
+                    }
+                }
+            });
+
+            /* ---- Fix E: Safety-net data poll ---- */
+            /* Every 50ms, check if data is stranded in the buffer.
+               This catches edge cases where the WebSocket ondata event
+               didn't fire (e.g. rapid reconnect, browser throttling). */
+            setInterval(function () {
+                if (panelHidden) return;   /* Fix F */
+                if (cl._Connection && cl._Connection.connected &&
+                    cl._Connection.bytesAvailable > 0) {
+                    drainBuffer();
+                }
+                /* Also sweep NeedsRedraw in case font just finished loading */
+                flushNeedsRedraw();
+            }, 50);
+
+        })(client);
+        }
+
+        if (client.OnConnectionConnect) {
+            var origConnect = client.OnConnectionConnect;
+            client.OnConnectionConnect = function () {
+                isConnected = true;
+                sendToParent({ type: 'status', connected: true });
+                if (origConnect) origConnect.apply(this, arguments);
+                scrollToBottom();
+                setTimeout(scrollToBottom, 200);
+                setTimeout(scrollToBottom, 1000);
+            };
+        }
+        if (client.OnConnectionClose) {
+            var origClose = client.OnConnectionClose;
+            client.OnConnectionClose = function () {
+                isConnected = false;
+                sendToParent({ type: 'status', connected: false });
+                if (origClose) origClose.apply(this, arguments);
+            };
+        }
+
+        client.Connect();
+        var container = document.getElementById('fTelnetContainer');
+        if (container) attachInputHandlers(container);
+        forceFontRecalc();
+        [150, 600, 1300].forEach(function (ms) {
+            setTimeout(function () { applyCanvasScale(currentSize); }, ms);
+        });
+        setTimeout(repositionMobileControls, 50);
+        sendToParent({ type: 'ready' });
+    }
+
+    document.addEventListener('click', function () {
+        clickSequence += 1;
+        sendToParent({ type: 'click' });
+    });
+
+    window.addEventListener('message', function (e) {
+        if (e.origin !== location.origin) return;
+        var msg = e.data;
+        if (!msg || !msg.cmd) return;
+
+        switch (msg.cmd) {
+            case 'init':
+                var script = document.createElement('script');
+                script.id = 'fTelnetScript';
+                script.src = msg.config.ftelnetUrl;
+                script.onload = function () { initTerminal(msg.config); };
+                script.onerror = function () {
+                    sendToParent({ type: 'error',
+                        message: 'Failed to load fTelnet script' });
+                };
+                document.head.appendChild(script);
+                break;
+
+            case 'connect':
+                if (client) {
+                    if (client.Options &&
+                        client.Options.ConnectionType === 'rlogin') {
+                        client.Options.RLoginTerminalType = 'ansi-bbs-cp437';
+                    }
+                    if (client._Options &&
+                        client._Options.ConnectionType === 'rlogin') {
+                        client._Options.RLoginTerminalType = 'ansi-bbs-cp437';
+                    }
+                    try { client.Connect(); } catch (ex) {}
+                }
+                break;
+
+            case 'disconnect':
+                if (client) {
+                    try { client.Disconnect(msg.force !== false); } catch (ex) {}
+                }
+                break;
+
+            case 'rlogin':
+                if (!client || !client.Options) break;
+                if (isConnected) {
+                    try { client.Disconnect(); } catch (ex) {}
+                }
+                client.Options.ConnectionType = 'rlogin';
+                client.Options.RLoginClientUsername = msg.password;
+                client.Options.RLoginServerUsername = msg.username;
+                if (msg.isSecure) {
+                    client.Options.WebSocketUrlPath =
+                        '/ws?Port=' + msg.rloginPort;
+                } else {
+                    client.Options.WebSocketUrlPath =
+                        '?Port=' + msg.rloginPort;
+                }
+                client.Connect();
+                break;
+
+            case 'xtrn':
+                if (!client) break;
+                if (isConnected) {
+                    try { client.Disconnect(false); } catch (ex) {}
+                }
+                client._Options.RLoginTerminalType = 'xtrn=' + msg.code;
+                client.Connect();
+                break;
+
+            case 'logout':
+                if (client && isConnected) {
+                    try { client.Disconnect(); } catch (ex) {}
+                }
+                if (client && client.Options) {
+                    client.Options.ConnectionType = 'telnet';
+                    if (msg.isSecure) {
+                        client.Options.WebSocketUrlPath =
+                            '/ws?Port=' + msg.telnetPort;
+                    } else {
+                        client.Options.WebSocketUrlPath =
+                            '?Port=' + msg.telnetPort;
+                    }
+                }
+                isConnected = false;
+                sendToParent({ type: 'status', connected: false });
+                break;
+
+            case 'resize':
+                if (!client || !client._Crt) break;
+                syncLockedScreenSize();
+                var cc = document.querySelector('.fTelnetClientContainer');
+                if (cc) {
+                    cc.style.width = '';
+                    cc.style.height = '';
+                    cc.style.overflow = 'hidden';
+                }
+                if (typeof client._Crt.SetFont === 'function') {
+                    client._Crt.SetFont(client._Crt.Font
+                        ? client._Crt.Font.Name : 'CP437');
+                }
+                syncLockedScreenSize();
+                scrollToBottom();
+                if (!BRIDGE_OPTIONS.lockScreenSize) {
+                    var newSize = getScreenSize();
+                    if (isConnected &&
+                        (newSize.columns !== currentColumns ||
+                         newSize.rows !== currentRows)) {
+                        applyClientScreenSize(newSize);
+                        if (typeof client._Crt.SetFont === 'function') {
+                            client._Crt.SetFont(client._Crt.Font
+                                ? client._Crt.Font.Name : 'CP437');
+                        }
+                    } else {
+                        currentSize = newSize;
+                    }
+                }
+                scrollToBottom();
+                setTimeout(function () { applyCanvasScale(currentSize); }, 200);
+                setTimeout(function () { updateLockedLayout(currentSize); }, 220);
+                setTimeout(repositionMobileControls, 250);
+                break;
+
+            case 'refit':
+                forceFontRecalc();
+                break;
+
+            case 'focus':
+                if (client && client._panelFastForward) {
+                    client._panelFastForward();
+                }
+                focusTerminal();
+                break;
+
+            case 'blur':
+                if (client && client._panelSetHidden) {
+                    client._panelSetHidden(true);
+                }
+                blurTerminal();
+                break;
+        }
+    });
+
+    sendToParent({ type: 'loaded' });
+})();
+</script>
+<script src="js/mobile-input.js"></script>
+</body>
+</html>

@@ -7,14 +7,14 @@
 // Usage: ?qnet-ftp <hub-id> [address] [password] [port]
 // Example: ?qnet-ftp VERT vert.synchro.net YOURPASS 21
 
-const REVISION = "1.5";
+var REVISION = "1.5";
 
 require('ftp.js', 'FTP');
 
 var hubid = argv[0];
-var options = load({}, "modopts.js", "qnet-ftp:"+hubid);
+var options = load("modopts.js", "qnet-ftp:"+hubid);
 if(!options)
-	options = load({}, "modopts.js", "qnet-ftp");
+	options = load("modopts.js", "qnet-ftp");
 if(!options)
 	options = {};
 

@@ -27,7 +27,7 @@
 
 require("sbbsdefs.js", 'K_UPPER');
 require("sockdefs.js", 'SOCK_DGRAM');
-var options=load({}, "modopts.js", "sbbsimsg");
+var options=load("modopts.js", "sbbsimsg");
 if(!options)
 	options = {};
 if(!options.from_user_prop)

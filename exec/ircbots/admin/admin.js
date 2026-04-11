@@ -7,7 +7,8 @@ function main(srv,target)
 	if((time() - last_update) < update_interval) return;
 	
 	last_update=time();
-	for each(var h in tail_history) {
+	for(var _h in tail_history) {
+		var h = tail_history[_h];
 		if(file_date(h.file.name) > h.last_update) {
 			h.file.open('r',true);
 			var contents=h.file.readAll();

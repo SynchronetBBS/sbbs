@@ -89,7 +89,8 @@ function processUpdate(update) {
 /* handle a player disconnection */
 function handleDisco(update) {
 	try {
-		for each(var game in data.games) {
+		for(var _game in data.games) {
+			var game = data.games[_game];
 			if(!game.players) {
 				deleteGame(game.gameNumber);
 				continue;
@@ -169,7 +170,8 @@ function validateGamePlayers(update,gameNumber,playerName) {
 /* check the status of all games (after an update) */
 function updateGames() {
 	try {
-		for each(var game in data.games) {
+		for(var _game in data.games) {
+			var game = data.games[_game];
 			if(game.status == status.STARTING && !getReady(game)) {
 				stopTimer(game);
 			}
@@ -209,7 +211,8 @@ function startTimer(game) {
 /* check a game for player readiness */
 function getReady(game) {
 	try {
-		for each(var p in game.players) {
+		for(var _p in game.players) {
+			var p = game.players[_p];
 			if(p.ready == false) {
 				return false;
 			}

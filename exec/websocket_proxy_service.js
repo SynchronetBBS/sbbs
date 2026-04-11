@@ -27,15 +27,15 @@ load("ftelnethelper.js");
 load("sha1.js");
 
 // Global constants
-const TELNET_DATA                   = 0;
-const TELNET_IAC                    = 1;
-const TELNET_SUBNEGOTIATE           = 2;
-const TELNET_SUBNEGOTIATE_IAC       = 3;
-const TELNET_WWDD                   = 4;
-const WEBSOCKET_NEED_PACKET_START   = 0;
-const WEBSOCKET_NEED_PAYLOAD_LENGTH = 1;
-const WEBSOCKET_NEED_MASKING_KEY    = 2;
-const WEBSOCKET_DATA                = 3;
+var TELNET_DATA                   = 0;
+var TELNET_IAC                    = 1;
+var TELNET_SUBNEGOTIATE           = 2;
+var TELNET_SUBNEGOTIATE_IAC       = 3;
+var TELNET_WWDD                   = 4;
+var WEBSOCKET_NEED_PACKET_START   = 0;
+var WEBSOCKET_NEED_PAYLOAD_LENGTH = 1;
+var WEBSOCKET_NEED_MASKING_KEY    = 2;
+var WEBSOCKET_DATA                = 3;
 
 // Global variables
 var FFrameMask = [];

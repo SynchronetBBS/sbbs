@@ -5520,7 +5520,7 @@ NO_SSH:
 				continue;
 			}
 			else  {
-				if (xpms_add(ts_set, PF_UNIX, SOCK_STREAM, 0, str, 0, "Spy Socket", NULL, sock_cb, NULL, &uspy_cb[i - 1]))
+				if (xpms_add(ts_set, PF_UNIX, SOCK_STREAM, 0, str, 0, "Spy Socket", &terminate_server, sock_cb, NULL, &uspy_cb[i - 1]))
 					lprintf(LOG_INFO, "Node %d local spy using socket %s", i, str);
 				else
 					lprintf(LOG_ERR, "Node %d !ERROR %d (%s) creating local spy socket %s"

@@ -39,7 +39,7 @@ writeln();
 if(js.global.bbs) {
 	var options = bbs.mods.nodelist_options;
 	if(!options)
-		options = load({}, "nodelist_options.js");
+		options = load("nodelist_options.js");
 	js.on_exit("console.status = " + console.status);
 } else{ // e.g. invoked via JSexec
 	var REVISION = "1.13";

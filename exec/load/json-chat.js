@@ -96,7 +96,8 @@ function JSONChat(usernum,jsonclient,host,port) {
 		var history = this.client.slice("chat","channels." + target + ".history",index,undefined,1);
 		var msgcount = 0;
 		var lastMsg = 0;
-		for each(var m in history) {
+		for(var _m in history) {
+			var m = history[_m];
 			if(m == undefined)
 				continue;
 			this.channels[target.toUpperCase()].messages.push(m);
@@ -138,8 +139,10 @@ function JSONChat(usernum,jsonclient,host,port) {
 	
 	this.disconnect = function() {
 		this.client.unsubscribe("chat","channels." + this.nick.name + ".messages");
-		for each(var c in this.channels) 
+		for(var _c in this.channels) {
+			var c = this.channels[_c];
 			this.client.unsubscribe("chat","channels." + c.name + ".messages");
+		}
 		this.channels = {};
 	}
 	
@@ -309,9 +312,11 @@ function JSONChat(usernum,jsonclient,host,port) {
 	
 	/* adapter for updating chat layout view */
 	function syncChatView(view,chat) {
-		for each(var c in chat.channels) {
+		for(var _c in chat.channels) {
+			var c = chat.channels[_c];
 			var found = false;
-			for each(var t in view.tabs) {
+			for(var _t in view.tabs) {
+				var t = view.tabs[_t];
 				if(t.title == c.name) {
 					found = true;
 					break;
@@ -330,9 +335,11 @@ function JSONChat(usernum,jsonclient,host,port) {
 	
 	/* adapter for updating user list layout view */
 	function syncUserView(view,chat) {
-		for each(var c in chat.channels) {
+		for(var _c in chat.channels) {
+			var c = chat.channels[_c];
 			var found = false;
-			for each(var t in view.tabs) {
+			for(var _t in view.tabs) {
+				var t = view.tabs[_t];
 				if(t.title == c.name) {
 					found = true;
 					break;
@@ -355,8 +362,10 @@ function JSONChat(usernum,jsonclient,host,port) {
 		var tab = view.getTab(chan.name);
 		if(tab && chan.users) {
 			tab.frame.clear();
-			for each(var u in chan.users)
+			for(var _u in chan.users) {
+				var u = chan.users[_u];
 				tab.frame.putmsg(u.nick + "\r\n");
+			}
 		}
 	}
 	

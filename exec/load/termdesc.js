@@ -82,4 +82,8 @@ function type(verbose, usr)
 	return result.trimRight();
 }
 
+this.charset = charset;
+this.rows = rows;
+this.columns = columns;
+this.type = type;
 this;

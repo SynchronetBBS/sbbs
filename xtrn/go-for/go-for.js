@@ -2,7 +2,7 @@ load('sbbsdefs.js');
 load('scrollbox.js');
 load('typeahead.js');
 require("mouse_getkey.js", "mouse_getkey");
-const ansiterm = load({}, 'ansiterm_lib.js');
+var ansiterm = load({}, 'ansiterm_lib.js');
 
 /* To do
  * - Config file

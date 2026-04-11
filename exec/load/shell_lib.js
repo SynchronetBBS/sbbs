@@ -281,7 +281,7 @@ function enter_file_section()
 	if(user.new_file_time == 0)
 		return;
 	console.cond_blankline();
-	if(console.yesno("Search all libraries for new files"))
+	if(console.yesno(gettext("Search all libraries for new files")))
 		bbs.scan_dirs(FL_ULTIME, /* all */true);
 }
 
@@ -504,7 +504,7 @@ function logoff(fast)
 				if(bbs.batch_clear(/* upload_queue */false))
 					console.putmsg(bbs.text(bbs.text.DownloadQueueCleared));
 				else
-					alert("Failed to clear batch download queue!");
+					alert(gettext("Failed to clear batch download queue!"));
 		}
 	}
 	if(fast) {
@@ -535,7 +535,7 @@ function upload_file()
 		bbs.upload_file(i, fname);
 	else if(!console.aborted
 		&& (file_area.upload_dir !== undefined || bbs.batch_upload_total)
-		&& confirm("\r\nStart batch upload"))
+		&& confirm("\r\n" + gettext("Start batch upload")))
 		bbs.batch_upload();
 }
 
@@ -576,14 +576,16 @@ function download_user_files()
 }
 
 // From email_sec.js
-function send_email()
+function send_email(name, wm_mode)
 {
-	console.putmsg(bbs.text(bbs.text.Email));
-	var name = console.getstr(40, K_TRIM);
-	if(!name)
-		return false;
+	if(!name) {
+		console.putmsg(bbs.text(bbs.text.Email));
+		name = console.getstr(40, K_TRIM);
+		if(!name)
+			return false;
+	}
 	if(name.indexOf('@') > 0)
-		return bbs.netmail(name);
+		return bbs.netmail(name, wm_mode);
 	var number = bbs.finduser(name);
 	if(console.aborted)
 		return false;
@@ -592,29 +594,31 @@ function send_email()
 	if(!number && (msg_area.settings&MM_REALNAME))
 		number = system.matchuserdata(U_NAME, name);
 	if(number)
-		return bbs.email(number, WM_NONE);
+		return bbs.email(number, wm_mode || WM_NONE);
 	console.putmsg(bbs.text(bbs.text.UnknownUser));
 	return false;
 }
 
 // From email_sec.js
-const NetmailAddressHistoryLength = 10;
-function send_netmail()
+var NetmailAddressHistoryLength = 10;
+function send_netmail(addr, wm_mode)
 {
 	var userprops = bbs.mods.userprops || load(bbs.mods.userprops = {}, "userprops.js");
 	var netmail = msg_area.fido_netmail_settings | msg_area.inet_netmail_settings;
 	const ini_section = "netmail sent";
 	console.crlf();
-	var wm_mode = WM_NONE;
-	if((netmail&NMAIL_FILE) && !console.noyes("Attach a file"))
-		wm_mode = WM_FILE;
+	wm_mode = wm_mode || WM_NONE;
+	if(!(wm_mode & WM_FILE) && (netmail&NMAIL_FILE) && !console.noyes(gettext("Attach a file")))
+		wm_mode |= WM_FILE;
 	if(console.aborted)
 		return false;
-	console.putmsg(bbs.text(bbs.text.EnterNetMailAddress));
-	var addr_list = userprops.get(ini_section, "address", []) || [];
-	var addr = console.getstr(256, K_LINE | K_TRIM, addr_list);
-	if(!addr || console.aborted)
-		return false;
+	if(!addr) {
+		console.putmsg(bbs.text(bbs.text.EnterNetMailAddress));
+		var addr_list = userprops.get(ini_section, "address", []) || [];
+		addr = console.getstr(256, K_LINE | K_TRIM, addr_list);
+		if(!addr || console.aborted)
+			return false;
+	}
 	if(bbs.netmail(addr.split(','), wm_mode)) {
 		var addr_idx = addr_list.indexOf(addr);
 		if(addr_idx >= 0)
@@ -629,9 +633,9 @@ function send_netmail()
 	return false;
 }
 
-function send_feedback()
+function send_feedback(wm_mode)
 {
-	return bbs.email(/* user # */1, bbs.text(bbs.text.ReFeedback));
+	return bbs.email(/* user # */1, wm_mode || WM_NONE, bbs.text(bbs.text.ReFeedback));
 }
 
 function page_sysop()

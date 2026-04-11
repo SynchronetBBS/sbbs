@@ -2,7 +2,7 @@
 
 // Synchronet Service for the Quote of The Day protocol (RFC 865)
 
-const REVISION = "1.2";
+var REVISION = "1.2";
 
 var output_buf = "";
 

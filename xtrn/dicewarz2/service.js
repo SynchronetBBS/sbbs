@@ -60,7 +60,8 @@ function loadAI(filename) {
 
 /* check initial status of all games (may have activity after crash or reboot) */
 function updateGames() {
-	for each(var g in data.games) {
+	for(var _g in data.games) {
+		var g = data.games[_g];
 		updateStatus(g.gameNumber);
 	}
 }

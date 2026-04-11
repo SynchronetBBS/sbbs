@@ -1071,7 +1071,7 @@ var CallSign={
 								incountry=true;
 							}
 							else {
-								log("Unable to parse country line "+line+'--'+x.toSource());
+								log("Unable to parse country line "+line+'--'+JSON.stringify(x));
 							}
 						}
 						else {

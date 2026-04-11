@@ -1,7 +1,7 @@
 if (js.podcast_load_headers == undefined)
 	js.global.load("podcast_routines.js");
 
-var opts = load({}, "modopts.js", "Podcast");
+var opts = load("modopts.js", "Podcast");
 var base;
 var i;
 var out;
