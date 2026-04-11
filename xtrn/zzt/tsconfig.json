@@ -1,0 +1,26 @@
+{
+  "compilerOptions": {
+    "target": "ES5",
+    "module": "none",
+    "lib": ["ES5"],
+    "strict": true,
+    "noImplicitAny": true,
+    "skipLibCheck": true,
+    "removeComments": false,
+    "newLine": "lf",
+    "outFile": "./zzt.js"
+  },
+  "files": [
+    "./src/synchronet.d.ts",
+    "./src/runtime.ts",
+    "./src/gamevars.ts",
+    "./src/oop.ts",
+    "./src/elements.ts",
+    "./src/sounds.ts",
+    "./src/input.ts",
+    "./src/video.ts",
+    "./src/txtwind.ts",
+    "./src/game.ts",
+    "./src/zzt.ts"
+  ]
+}
