@@ -107,6 +107,7 @@ include:
       has_gtk: "yes"
       build_flags: 'CC="ccache cc" CXX="ccache c++" RELEASE=1'
       slow_system: 'yes'
+      has_javascript: 'no'
 
 "linux-x64 jsexec-smoketest":
   tags: [Linux]
