@@ -710,7 +710,10 @@ int sbbs_t::js_execfile(const char *cmd, const char* startup_dir, JSObject* scop
 	if (scope == NULL) {
 		js_callback.counter = 0;  // Reset loop counter
 	}
-	JS_AddInterruptCallback(js_cx, js_OperationCallback);
+	if (!js_callback.interrupt_cb_registered) {
+		JS_AddInterruptCallback(js_cx, js_OperationCallback);
+		js_callback.interrupt_cb_registered = true;
+	}
 	if (JS_GetProperty(js_cx, js_glob, "js", val.address()) && JSVAL_IS_OBJECT(val)) {
 		JSObject* js = JSVAL_TO_OBJECT(val);
 

@@ -420,6 +420,7 @@ typedef struct js_callback {
 	JSBool			keepGoing;
 	bool			bg;
 	bool			events_supported;
+	bool			interrupt_cb_registered;
 } js_callback_t;
 #else
 /* C stub for js_callback_t in non-C++ contexts */
