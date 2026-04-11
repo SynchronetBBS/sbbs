@@ -156,7 +156,7 @@ ACMEv2.prototype.accept_challenge = function(challenge)
 	var ret = this.post_url(challenge.url, opts);
 	if (this.ua.response_code != 200) {
 		log(LOG_DEBUG, ret);
-		throw new Error("accept_challenge returned "+this.ua.response_code.toSource()+", not 200");
+		throw new Error("accept_challenge returned "+JSON.stringify(this.ua.response_code)+", not 200");
 	}
 	return JSON.parse(ret);
 };
@@ -201,7 +201,7 @@ ACMEv2.prototype.finalize_order = function(order, csr)
 	var ret = this.post_url(order.finalize, opts);
 	if (this.ua.response_code != 200) {
 		log(LOG_DEBUG, ret);
-		throw new Error("finalize_order returned "+this.ua.response_code.toSource()+", not 200");
+		throw new Error("finalize_order returned "+JSON.stringify(this.ua.response_code)+", not 200");
 	}
 
 	ret = JSON.parse(ret);
@@ -219,7 +219,7 @@ ACMEv2.prototype.poll_order = function(order)
 	this.log_headers();
 	if (this.ua.response_code != 200) {
 		log(LOG_DEBUG, ret);
-		throw new Error("order poll returned "+this.ua.response_code.toSource()+", not 200");
+		throw new Error("order poll returned "+JSON.stringify(this.ua.response_code)+", not 200");
 	}
 	this.update_nonce();
 
@@ -309,7 +309,7 @@ ACMEv2.prototype.change_key = function(new_key)
 	ret = this.post('keyChange', inner);
 	if (this.ua.response_code != 200) {
 		log(LOG_DEBUG, ret);
-		throw new Error("keyChange returned "+this.ua.response_code.toSource()+", not 200");
+		throw new Error("keyChange returned "+JSON.stringify(this.ua.response_code)+", not 200");
 	}
 	this.key = new_key;
 	return JSON.parse(ret);

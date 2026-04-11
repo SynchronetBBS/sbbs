@@ -36,30 +36,30 @@
     OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-const TIME_TO_DESERT = 7;
-const NATIONNMLEN = 14;
-const major_ver  = 1;
-const minor_ver  = 0;
-const MAXCITIES  = 150;
-const MAXMAPSZ   = 160;
-const MAXARMIES  = 2000;
-const ARMYNAMLEN = 14;
-const TRANS_SELF = 0;
-const TRANS_HERO = 1;
-const TRANS_ONE  = 2;
-const TRANS_ALL  = 3;
-const MAILFL     = "mail.%03d";
-const TMPMAILFL	 = "%04d.tmpmsg";
-const NEWSFL     = "news";
-const HEADERMARK = " \b";
-const MAILLOG    = "mail.log";
-const GAMEBAK    = "game.%03d";
-const MASTERFL   = "master.cmd";
-const MASTERBAK  = "master.%03d";
-const GAMESAVE   = "game.save.json";
-const PLAYERFL   = "%04d.cmd";
-const TURNFL	 = "%04d.turn";
-const marks = [
+var TIME_TO_DESERT = 7;
+var NATIONNMLEN = 14;
+var major_ver  = 1;
+var minor_ver  = 0;
+var MAXCITIES  = 150;
+var MAXMAPSZ   = 160;
+var MAXARMIES  = 2000;
+var ARMYNAMLEN = 14;
+var TRANS_SELF = 0;
+var TRANS_HERO = 1;
+var TRANS_ONE  = 2;
+var TRANS_ALL  = 3;
+var MAILFL     = "mail.%03d";
+var TMPMAILFL	 = "%04d.tmpmsg";
+var NEWSFL     = "news";
+var HEADERMARK = " \b";
+var MAILLOG    = "mail.log";
+var GAMEBAK    = "game.%03d";
+var MASTERFL   = "master.cmd";
+var MASTERBAK  = "master.%03d";
+var GAMESAVE   = "game.save.json";
+var PLAYERFL   = "%04d.cmd";
+var TURNFL	 = "%04d.turn";
+var marks = [
 	"*ABCDEFGHIJKLMNOPQRSTUVWXYZ",
 	"@abcdefghijklmnopqrstuvwxyz"
 ];

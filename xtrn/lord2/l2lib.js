@@ -1215,16 +1215,16 @@ var vars = {
 };
 var i;
 for (i = 0; i < 40; i++) {
-	vars[format('`v%02d', i+1)] = {type:'fn', get:eval('function() { return world.v['+i+'] }'), set:eval('function(val) { world.v['+i+'] = clamp_integer(val, "s32"); }')};
+	vars[format('`v%02d', i+1)] = {type:'fn', get:eval('(function() { return world.v['+i+'] })'), set:eval('(function(val) { world.v['+i+'] = clamp_integer(val, "s32"); })')};
 }
 for (i = 0; i < 10; i++) {
-	vars[format('`s%02d', i+1)] = {type:'fn', get:eval('function() { return world.s['+i+'] }'), set:eval('function(val) { world.s['+i+'] = val.substr(0, 80); }')};
+	vars[format('`s%02d', i+1)] = {type:'fn', get:eval('(function() { return world.s['+i+'] })'), set:eval('(function(val) { world.s['+i+'] = val.substr(0, 80); })')};
 }
 for (i = 0; i < 99; i++) {
-	vars[format('`p%02d', i+1)] = {type:'fn', get:eval('function() { return player.p['+i+'] }'), set:eval('function(val) { player.p['+i+'] = clamp_integer(val, "s32"); }')};
-	vars[format('`t%02d', i+1)] = {type:'fn', get:eval('function() { return player.t['+i+'] }'), set:eval('function(val) { player.t['+i+'] = clamp_integer(val, "8"); }')};
-	vars[format('`i%02d', i+1)] = {type:'fn', get:eval('function() { return player.i['+i+'] }'), set:eval('function(val) { player.i['+i+'] = clamp_integer(val, "s16"); }')};
-	vars[format('`+%02d', i+1)] = {type:'fn', get:eval('function() { return items['+i+'].name }'), set:eval('function(val) { throw new Error("Attempt to set item '+i+' name"); }')};
+	vars[format('`p%02d', i+1)] = {type:'fn', get:eval('(function() { return player.p['+i+'] })'), set:eval('(function(val) { player.p['+i+'] = clamp_integer(val, "s32"); })')};
+	vars[format('`t%02d', i+1)] = {type:'fn', get:eval('(function() { return player.t['+i+'] })'), set:eval('(function(val) { player.t['+i+'] = clamp_integer(val, "8"); })')};
+	vars[format('`i%02d', i+1)] = {type:'fn', get:eval('(function() { return player.i['+i+'] })'), set:eval('(function(val) { player.i['+i+'] = clamp_integer(val, "s16"); })')};
+	vars[format('`+%02d', i+1)] = {type:'fn', get:eval('(function() { return items['+i+'].name })'), set:eval('(function(val) { throw new Error("Attempt to set item '+i+' name"); })')};
 }
 
 function setvar(name, val) {

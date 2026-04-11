@@ -2373,7 +2373,6 @@ function main()
 	}
 	if(cmds.indexOf("unlock") >= 0) {
 		return lib.unlock() == true ? 0: -1;
-		return 0;
 	}
 
     if(!file_exists(lib.list_fname)) {
