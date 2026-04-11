@@ -915,6 +915,10 @@ USAGE:
 		SAFECOPY(cfg.cfgfile, str);
 	}
 
+	if (!fexist(cfg.cfgfile) || isdir(cfg.cfgfile)) {
+		fprintf(stderr, "Specified path is not a file: '%s'\n", cfg.cfgfile);
+		exit(EXIT_FAILURE);
+	}
 	if (!sbbsecho_read_ini(&cfg)) {
 		fprintf(stderr, "ERROR %d (%s) reading %s\n", errno, strerror(errno), cfg.cfgfile);
 		exit(1);
