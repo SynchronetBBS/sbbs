@@ -357,7 +357,7 @@ function debug_trace(data,level)
 		value+=prefix.substr(2)+"}";
 		return value;
 	} else if(typeof data=="function") {
-		return data.toSource();
+		return data.toString();
 	}
 	return data;
 }

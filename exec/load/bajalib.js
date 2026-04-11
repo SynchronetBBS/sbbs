@@ -177,7 +177,7 @@ baja["COMPARE"] = function(var1,var2) {
 	var line = "";
 	if(!functions["compare"]) {
 		functions["compare"] = true;
-		line += "system.baja.compare = " + compare.toSource() + "\r\n";
+		line += "system.baja.compare = " + compare.toString() + "\r\n";
 	}
 	return line + "system.baja.compare(" + var1 + "," + var2 + ");";
 }
@@ -1253,7 +1253,7 @@ baja["INFO_XFER_POLICY"] = function() { return 'bbs.xfer_policy();'; }
 baja["GURU_LOG"] = function() { 
 	var line = "";
 	if(!functions["gurulog"]) {
-		line += "system.baja.gurulog = " + gurulog.toSource() + ";\r\n";
+		line += "system.baja.gurulog = " + gurulog.toString() + ";\r\n";
 		functions["gurulog"] = true;
 	}
 	return line + "gurulog(\"guru.log\");";
@@ -1262,7 +1262,7 @@ baja["GURU_LOG"] = function() {
 baja["ERROR_LOG"] = function() { 
 	var line = "";
 	if(!functions["errlog"]) {
-		line += "system.baja.errlog = " + errlog.toSource() + ";\r\n";
+		line += "system.baja.errlog = " + errlog.toString() + ";\r\n";
 		functions["errlog"] = true;
 	}
 	return line + "system.baja.errlog(\"error.log\");";
@@ -1271,7 +1271,7 @@ baja["ERROR_LOG"] = function() {
 baja["SYSTEM_LOG"] = function() { 
 	var line = "";
 	if(!functions["syslog"]) {
-		line += "system.baja.syslog = " + syslog.toSource() + ";\r\n";
+		line += "system.baja.syslog = " + syslog.toString() + ";\r\n";
 		functions["syslog"] = true;
 	}
 	return line + "system.baja.syslog(strftime(\"logs/%m%d%y.log\",time()));";
@@ -1280,7 +1280,7 @@ baja["SYSTEM_LOG"] = function() {
 baja["SYSTEM_YLOG"] = function() { 
 	var line = "";
 	if(!functions["syslog"]) {
-		line += "system.baja.syslog = " + syslog.toSource() + ";\r\n";
+		line += "system.baja.syslog = " + syslog.toString() + ";\r\n";
 		functions["syslog"] = true;
 	}
 	return line + "system.baja.syslog(strftime(\"logs/%m%d%y.log\",time()-24*60*60));";

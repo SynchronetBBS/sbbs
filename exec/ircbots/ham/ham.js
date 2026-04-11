@@ -422,7 +422,7 @@ for (var ham_ircbot_zone in TimeZoneConversion.zones) {
 	}
 	if (ham_ircbot_zone != 'Z')
 		Bot_Commands[ham_ircbot_zone].no_help = true;
-	Bot_Commands[ham_ircbot_zone].command = eval("function (target, onick, ouh, srv, lbl, cmd) {\n"+
+	Bot_Commands[ham_ircbot_zone].command = eval("(function (target, onick, ouh, srv, lbl, cmd) {\n"+
 	"var i;\n"+
 	"var d;\n"+
 	"// Remove empty cmd args\n"+
@@ -442,7 +442,7 @@ for (var ham_ircbot_zone in TimeZoneConversion.zones) {
 	"\n"+
 	"return true;\n"+
 	"\n"+
-	"}\n");
+	"}\n)");
 }
 
 function update_contests()

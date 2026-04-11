@@ -5,8 +5,8 @@ var last_subs;
 var last_groups;
 var last_threads;
 var last_run = 0;
-const is_real_user = is_user();
-const frequency = (settings.refresh_interval || 60000) / 1000;
+var is_real_user = is_user();
+var frequency = (settings.refresh_interval || 60000) / 1000;
 
 // Where 'a' is the previous data and 'b' is new
 function shallow_diff(a, b) {

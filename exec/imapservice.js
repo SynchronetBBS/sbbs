@@ -2686,7 +2686,7 @@ function new_search(args, uid)
 
 	seval = new_search_expr(argscpy);
 	try {
-		s = eval('function(msg) { return('+seval+'); }');
+		s = eval('(function(msg) { return('+seval+'); })');
 		for (i in index.offsets) {
 			msg = {idx:index.idx[index.offsets[i]]};
 			if (s(msg)) {
@@ -2751,15 +2751,15 @@ function do_search(args, uid)
 					break;
 				case 'NEW': //
 					type="idx";
-					search=(eval("function(idx) { if((idx.number > orig_ptrs[base.subnum]) && (idx.attr & MSG_READ)==0) return true; return false; }"));
+					search=(eval("(function(idx) { if((idx.number > orig_ptrs[base.subnum]) && (idx.attr & MSG_READ)==0) return true; return false; })"));
 					break;
 				case 'OLD': //
 					type="idx";
-					search=(eval("function(idx) { if(idx.number <= orig_ptrs[base.subnum]) return true; return false; }"));
+					search=(eval("(function(idx) { if(idx.number <= orig_ptrs[base.subnum]) return true; return false; })"));
 					break;
 				case 'RECENT': //
 					type="idx";
-					search=(eval("function(idx) { if(idx.number > orig_ptrs[base.subnum]) return true; return false; }"));
+					search=(eval("(function(idx) { if(idx.number > orig_ptrs[base.subnum]) return true; return false; })"));
 					break;
 				case 'SEEN': //
 					type="idx";
@@ -2827,11 +2827,11 @@ function do_search(args, uid)
 					break;
 				case 'LARGER': //
 					type="all";
-					search=(eval("function(idx,hdr,body) { var min="+parseInt(args.shift(),10)+"; if(body.length + hdr.get_rfc822_header().length > min) return true; return false;}"));
+					search=(eval("(function(idx,hdr,body) { var min="+parseInt(args.shift(),10)+"; if(body.length + hdr.get_rfc822_header().length > min) return true; return false;})"));
 					break;
 				case 'SMALLER': //
 					type="all";
-					search=(eval("function(idx,hdr,body) { var max="+parseInt(args.shift(),10)+"; if(body.length + hdr.get_rfc822_header().length < max) return true; return false;}"));
+					search=(eval("(function(idx,hdr,body) { var max="+parseInt(args.shift(),10)+"; if(body.length + hdr.get_rfc822_header().length < max) return true; return false;})"));
 					break;
 				case 'CC': //
 					type="hdr";

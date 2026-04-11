@@ -44,9 +44,9 @@ function xjs_compile(filename) {
 						}
 						if(str != '') {
 							if(ln)
-								script += "writeln("+str.toSource()+");";
+								script += "writeln("+JSON.stringify(str)+");";
 							else
-								script += "write("+str.toSource()+");";
+								script += "write("+JSON.stringify(str)+");";
 						}
 						str='';
 					}
@@ -54,7 +54,7 @@ function xjs_compile(filename) {
 						str=str.replace(/^(.*?)<\?(xjs)?\s+/,
 							function (str, p1, p2, offset, s) {
 								if(p1 != '')
-									script += "write("+p1.toSource()+");";
+									script += "write("+JSON.stringify(p1)+");";
 								in_xjs=true;
 								return '';
 							}

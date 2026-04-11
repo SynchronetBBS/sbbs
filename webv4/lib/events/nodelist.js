@@ -3,7 +3,7 @@ require("presence_lib.js", 'node_status');
 var last_run = 0;
 var frequency = 15;
 
-const node_state = system.node_list.map(function (e, i) {
+var node_state = system.node_list.map(function (e, i) {
     return {
         status: -1,
         action: -1,
@@ -15,7 +15,7 @@ const node_state = system.node_list.map(function (e, i) {
     };
 });
 
-const web_state = {};
+var web_state = {};
 
 function scan_nodes() {
     var change = false;
