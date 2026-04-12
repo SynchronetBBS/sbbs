@@ -41,6 +41,88 @@ static JSTrapStatus single_step_handler(JSContext *cx, JSScript *script, jsbytec
 static enum debug_action script_debug_prompt(struct debugger *cx, JSScript *script);
 static JSTrapStatus finish_handler(JSContext *cx, JSScript *script, jsbytecode *pc, jsval *rval, void *closure);
 
+static void print_source_line(struct debugger *dbg, const char *path, uintN linenum)
+{
+	FILE *fp;
+	char buf[1024];
+	uintN cur;
+	char *p;
+
+	if (path == NULL || linenum == 0)
+		return;
+	fp = fopen(path, "r");
+	if (fp == NULL)
+		return;
+	for (cur = 1; cur < linenum; cur++) {
+		if (fgets(buf, sizeof(buf), fp) == NULL) {
+			fclose(fp);
+			return;
+		}
+	}
+	if (fgets(buf, sizeof(buf), fp) != NULL) {
+		/* Trim leading whitespace */
+		for (p = buf; *p == ' ' || *p == '\t'; p++)
+			;
+		/* Trim trailing newline/whitespace */
+		if (*p != '\0') {
+			char *end = p + strlen(p) - 1;
+			while (end >= p && (*end == '\n' || *end == '\r' || *end == ' ' || *end == '\t'))
+				*end-- = '\0';
+		}
+		if (*p != '\0') {
+			dbg->puts("      ");
+			dbg->puts(p);
+			dbg->puts("\n");
+		}
+	}
+	fclose(fp);
+}
+
+/*
+ * Print a range of source lines with line numbers and a current-line marker.
+ * Returns the line number after the last line printed (for "list" continuation),
+ * or 0 on failure.
+ */
+static uintN print_source_lines(struct debugger *dbg, const char *path,
+    uintN from, uintN to, uintN current)
+{
+	FILE *fp;
+	char buf[1024];
+	char *p;
+	char *msg;
+	uintN cur;
+	uintN last_printed = 0;
+
+	if (path == NULL || from == 0)
+		return 0;
+	fp = fopen(path, "r");
+	if (fp == NULL)
+		return 0;
+	/* Skip lines before 'from' */
+	for (cur = 1; cur < from; cur++) {
+		if (fgets(buf, sizeof(buf), fp) == NULL) {
+			fclose(fp);
+			return 0;
+		}
+	}
+	for (cur = from; cur <= to; cur++) {
+		if (fgets(buf, sizeof(buf), fp) == NULL)
+			break;
+		/* Trim trailing newline/whitespace */
+		p = buf + strlen(buf) - 1;
+		while (p >= buf && (*p == '\n' || *p == '\r'))
+			*p-- = '\0';
+		msg = xp_asprintf("%c%4u  %s\n", cur == current ? '>' : ' ', cur, buf);
+		if (msg) {
+			dbg->puts(msg);
+			xp_asprintf_free(msg);
+		}
+		last_printed = cur;
+	}
+	fclose(fp);
+	return last_printed;
+}
+
 static struct debugger *get_debugger(JSContext *cx)
 {
 	list_node_t *    node;
@@ -198,8 +280,10 @@ static enum debug_action script_debug_prompt(struct debugger *dbg, JSScript *scr
 	jsrefcount rc;
 	char            *msg;
 	static char lastline[1024];
+	static uintN list_next;
 
 	fp = JS_GetScriptedCaller(dbg->cx, NULL);
+	list_next = 0;
 	while (1) {
 		FREE_AND_NULL(line);
 		if (JS_IsExceptionPending(dbg->cx))
@@ -378,14 +462,14 @@ static enum debug_action script_debug_prompt(struct debugger *dbg, JSScript *scr
 		    || strncmp(line, "backtrace", 9) == 0) {
 			JSScript        *fs;
 			JSStackFrame    *fpi = NULL;
+			const char      *fpath_bt;
+			uintN           linenum;
 			int fnum = 0;
 
 			while (JS_FrameIterator(dbg->cx, &fpi)) {
 				fs = JS_GetFrameScript(dbg->cx, fpi);
-				fname = JS_GetScriptFilename(dbg->cx, fs);
-				if (fname == NULL)
-					fname = "No name";
-				fname = getfname(fname);
+				fpath_bt = JS_GetScriptFilename(dbg->cx, fs);
+				fname = fpath_bt ? getfname(fpath_bt) : "No name";
 				pc = JS_GetFramePC(dbg->cx, fpi);
 				msg = xp_asprintf("%c#%-2u %p ", fpi == fp?'*':' ', fnum, pc);
 				if (msg) {
@@ -408,14 +492,17 @@ static enum debug_action script_debug_prompt(struct debugger *dbg, JSScript *scr
 				}
 				dbg->puts("at ");
 				dbg->puts(fname);
+				linenum = 0;
 				if (pc) {
-					msg = xp_asprintf(":%u", JS_PCToLineNumber(dbg->cx, fs, pc));
+					linenum = JS_PCToLineNumber(dbg->cx, fs, pc);
+					msg = xp_asprintf(":%u", linenum);
 					if (msg) {
 						dbg->puts(msg);
 						xp_asprintf_free(msg);
 					}
 				}
 				dbg->puts("\n");
+				print_source_line(dbg, fpath_bt, linenum);
 				fnum++;
 			}
 			continue;
@@ -452,6 +539,45 @@ static enum debug_action script_debug_prompt(struct debugger *dbg, JSScript *scr
 				dbg->puts("A strange and mysterious error occurred!\n");
 			continue;
 		}
+		if (strncmp(line, "list", 4) == 0
+		    || (line[0] == 'l' && (line[1] == '\n' || line[1] == '\0' || line[1] == ' '))) {
+			uintN center;
+			uintN curline = 0;
+			uintN last;
+			const char *arg;
+
+			/* Get the current PC's line number */
+			if (fp) {
+				pc = JS_GetFramePC(dbg->cx, fp);
+				if (pc)
+					curline = JS_PCToLineNumber(dbg->cx, script, pc);
+			}
+
+			/* Parse optional line number argument */
+			arg = line + (line[1] == 'i' ? 4 : 1); /* skip "list" or "l" */
+			while (*arg == ' ')
+				arg++;
+			if (*arg && isdigit(*arg))
+				center = strtoul(arg, NULL, 10);
+			else if (list_next)
+				center = list_next;
+			else
+				center = curline;
+
+			if (center == 0) {
+				dbg->puts("No source location\n");
+			}
+			else {
+				uintN from = center > 5 ? center - 5 : 1;
+				uintN to = from + 10;
+				last = print_source_lines(dbg, fpath, from, to, curline);
+				if (last == 0)
+					dbg->puts("Source not available\n");
+				else
+					list_next = last + 1;
+			}
+			continue;
+		}
 		dbg->puts("Unrecognized command:\n"
 		          "break [file:]#### - Sets a breakpoint at line #### in file\n"
 		          "                    If no file is specified, uses the current one\n"
@@ -464,6 +590,8 @@ static enum debug_action script_debug_prompt(struct debugger *dbg, JSScript *scr
 		          "eval <statement>  - eval() <statement> in the current frame\n"
 		          "e <statement>     - eval() <statement> in the current frame\n"
 		          "clear             - Clears pending exceptions (doesn't seem to help)\n"
+		          "l [line]          - List source around line (default: current)\n"
+		          "list [line]       - Alias for l\n"
 		          "bt                - Prints a backtrace\n"
 		          "backtrace         - Alias for bt\n"
 		          "up                - Move to the previous stack frame\n"
