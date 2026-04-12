@@ -52,7 +52,7 @@ function output(str)
 		write(str);
 }
 
-printf("*** Synchronet MQTT Spy on Node " + node_num);
+printf("*** Synchronet MQTT Spy ");
 
 if(argc < 1) {
 	alert("Node number not specified");
@@ -87,7 +87,7 @@ if(!mqtt.subscribe(terminal_topic)) {
 	alert(format("Subscribe to '%s' error: %s", terminal_topic, mqtt.error_str));
 	exit(1);
 }
-print(": Ctrl-C to Abort ***\r\n");
+printf("on node " + node_num + ": Ctrl-C to Abort ***\r\n");
 
 try {
 	while(!js.terminated) {
