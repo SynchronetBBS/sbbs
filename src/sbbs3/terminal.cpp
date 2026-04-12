@@ -138,6 +138,8 @@ struct mouse_hotspot* Terminal::add_hotspot(const char* cmd, bool hungry, unsign
 }
 
 void Terminal::inc_row(unsigned count) {
+	if (rows == 0)
+		return;
 	row += count;
 	if (row >= rows) {
 		scroll_hotspots((row - rows) + 1);
@@ -196,6 +198,8 @@ void Terminal::inc_row(unsigned count) {
 //       that (optionally) centres the door output in the current
 //       terminal.
 void Terminal::inc_column(unsigned count) {
+	if (cols == 0)
+		return;
 	column += count;
 	if (column >= cols)
 		lastcrcol = cols;

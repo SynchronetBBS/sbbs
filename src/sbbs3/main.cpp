@@ -4111,6 +4111,8 @@ int sbbs_t::incom(unsigned int timeout)
 
 	if (!online)
 		return NOINP;
+	if (term_output_disabled)
+		return NOINP;
 
 	// If we think we may have some input, send all our output
 	if (RingBufFull(&outbuf) != 0) {
@@ -4147,6 +4149,8 @@ int sbbs_t::_outcom(uchar ch)
 int sbbs_t::outcom(uchar ch)
 {
 	int i = 0;
+	if (term_output_disabled)
+		return 0; // "Success"
 	while (_outcom(ch) != 0) {
 		if (!online)
 			break;
