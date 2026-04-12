@@ -137,6 +137,80 @@ js_dbg_getline(JSContext* cx, unsigned argc, JS::Value* vp)
 	return true;
 }
 
+/* dbg_read_lines(path, from, to) — read source lines [from..to] (1-based).
+ * Returns a JS array of strings, or null if the file can't be opened.
+ * Used by the JS bootstrap for backtrace source display and the list command. */
+static JSBool
+js_dbg_read_lines(JSContext* cx, unsigned argc, JS::Value* vp)
+{
+	JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
+	if (args.length() < 3) {
+		args.rval().setNull();
+		return true;
+	}
+	JS::RootedString pathStr(cx, JS::ToString(cx, args[0]));
+	if (!pathStr) {
+		args.rval().setNull();
+		return true;
+	}
+	JS::UniqueChars path = JS_EncodeStringToLatin1(cx, pathStr);
+	if (!path) {
+		args.rval().setNull();
+		return true;
+	}
+	int32_t from = 0, to = 0;
+	JS::RootedValue fromVal(cx, args[1]);
+	JS::RootedValue toVal(cx, args[2]);
+	if (!JS::ToInt32(cx, fromVal, &from) || !JS::ToInt32(cx, toVal, &to)) {
+		args.rval().setNull();
+		return true;
+	}
+	if (from < 1 || to < from) {
+		args.rval().setNull();
+		return true;
+	}
+
+	FILE* fp = fopen(path.get(), "r");
+	if (fp == NULL) {
+		args.rval().setNull();
+		return true;
+	}
+
+	/* Skip lines before 'from' */
+	char buf[1024];
+	for (int32_t cur = 1; cur < from; cur++) {
+		if (fgets(buf, sizeof(buf), fp) == NULL) {
+			fclose(fp);
+			args.rval().setNull();
+			return true;
+		}
+	}
+
+	JS::RootedObject arr(cx, JS::NewArrayObject(cx, 0));
+	if (!arr) {
+		fclose(fp);
+		args.rval().setNull();
+		return true;
+	}
+
+	for (int32_t cur = from; cur <= to; cur++) {
+		if (fgets(buf, sizeof(buf), fp) == NULL)
+			break;
+		/* Trim trailing newline/CR */
+		size_t len = strlen(buf);
+		while (len > 0 && (buf[len - 1] == '\n' || buf[len - 1] == '\r'))
+			buf[--len] = '\0';
+		JSString* js_str = JS_NewStringCopyZ(cx, buf);
+		if (!js_str)
+			break;
+		JS::RootedValue elem(cx, JS::StringValue(js_str));
+		JS_SetElement(cx, arr, (uint32_t)(cur - from), elem.address());
+	}
+	fclose(fp);
+	args.rval().setObject(*arr);
+	return true;
+}
+
 /* ---- Debugger realm class ---- */
 
 static JSClassOps dbg_global_classops = {
@@ -164,11 +238,44 @@ var stepping = false;
 var lastCmd = "";
 var _pendingBreakpoints = [];
 var inEval = false;
+var listNext = 0;
 
 function getBasename(path) {
     if (!path) return "<unknown>";
     var i = Math.max(path.lastIndexOf('/'), path.lastIndexOf('\\'));
     return i >= 0 ? path.substr(i + 1) : path;
+}
+
+function getFrameLineNum(frame) {
+    try {
+        var loc = frame.script.getOffsetLocation(frame.offset);
+        if (loc) return loc.lineNumber;
+    } catch (e) {}
+    return 0;
+}
+
+function printSourceLine(path, linenum) {
+    if (!path || linenum < 1) return;
+    var lines = dbg_read_lines(path, linenum, linenum);
+    if (!lines || lines.length < 1) return;
+    var text = lines[0].replace(/^[\t ]+/, "");
+    if (text) dbg_puts("      " + text + "\n");
+}
+
+function printSourceLines(path, from, to, currentLine) {
+    if (!path || from < 1) return 0;
+    var lines = dbg_read_lines(path, from, to);
+    if (!lines || lines.length < 1) return 0;
+    var lastPrinted = 0;
+    for (var i = 0; i < lines.length; i++) {
+        var num = from + i;
+        var marker = (num === currentLine) ? ">" : " ";
+        var numStr = String(num);
+        while (numStr.length < 4) numStr = " " + numStr;
+        dbg_puts(marker + numStr + "  " + lines[i] + "\n");
+        lastPrinted = num;
+    }
+    return lastPrinted;
 }
 
 function formatFrame(frame) {
@@ -194,6 +301,7 @@ function showHelp() {
         "  step/s             Single step to next line\n" +
         "  finish/f           Run until current frame returns\n" +
         "  eval/e <expr>      Evaluate in current frame\n" +
+        "  l [line]/list      List source around line (default: current)\n" +
         "  bt/backtrace       Print stack trace\n" +
         "  up                 Move to caller frame\n" +
         "  down               Move to callee frame\n" +
@@ -204,6 +312,7 @@ function showHelp() {
 function promptLoop(frame) {
     var currentFrame = frame;
     var bottomFrame = frame;
+    listNext = 0;
     while (true) {
         dbg_puts(formatFrame(currentFrame) + "> ");
         var line = dbg_getline();
@@ -270,6 +379,8 @@ function promptLoop(frame) {
             while (f) {
                 var marker = (f === currentFrame) ? "*" : " ";
                 dbg_puts(marker + "#" + n + " " + formatFrame(f) + "\n");
+                if (f.script && f.script.url)
+                    printSourceLine(f.script.url, getFrameLineNum(f));
                 f = f.older;
                 n++;
             }
@@ -292,6 +403,29 @@ function promptLoop(frame) {
         case "clear":
             dbg_puts("Cleared\n");
             break;
+        case "list": case "l": {
+            var curLine = getFrameLineNum(currentFrame);
+            var center;
+            if (arg && !isNaN(parseInt(arg)))
+                center = parseInt(arg);
+            else if (listNext)
+                center = listNext;
+            else
+                center = curLine;
+            if (!center) {
+                dbg_puts("No source location\n");
+            } else {
+                var from = center > 5 ? center - 5 : 1;
+                var to = from + 10;
+                var url = currentFrame.script ? currentFrame.script.url : null;
+                var last = printSourceLines(url, from, to, curLine);
+                if (last === 0)
+                    dbg_puts("Source not available\n");
+                else
+                    listNext = last + 1;
+            }
+            break;
+        }
         default:
             showHelp();
         }
@@ -460,7 +594,8 @@ BOOL init_debugger(JSContext* cx, void (*puts_cb)(const char*), char* (*getline_
 	{
 		JS::HandleObject hobj = dbg_glob;
 		if (!JS_DefineFunction(cx, hobj, "dbg_puts", js_dbg_puts, 1, 0) ||
-		    !JS_DefineFunction(cx, hobj, "dbg_getline", js_dbg_getline, 0, 0)) {
+		    !JS_DefineFunction(cx, hobj, "dbg_getline", js_dbg_getline, 0, 0) ||
+		    !JS_DefineFunction(cx, hobj, "dbg_read_lines", js_dbg_read_lines, 3, 0)) {
 			JS::LeaveRealm(cx, old_realm);
 			delete ds;
 			return FALSE;
