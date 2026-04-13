@@ -20,6 +20,7 @@
  ****************************************************************************/
 
 #include "sbbs.h"
+#include <js/Exception.h>
 #include "cmdshell.h"
 #include "js_rtpool.h"
 #include "readtext.h"
@@ -540,20 +541,36 @@ js_ReportPendingException(JSContext* cx)
 		sbbs_t* sbbs = (sbbs_t*)JS_GetContextPrivate(cx);
 		if (!sbbs)
 			return;
-		/* Try to extract fileName and lineNumber from Error objects */
+		/* Try to extract fileName and lineNumber from the JSErrorReport
+		 * (the Error object's lineNumber property can be wrong for
+		 * compile-time SyntaxErrors in SM128). */
 		char file_info[MAX_PATH + 32] = "";
 		if (exn.isObject()) {
 			JS::RootedObject errobj(cx, &exn.toObject());
-			JS::RootedValue fname_val(cx), lineno_val(cx);
 			char* fname = NULL;
 			int32 lineno = 0;
-			if (JS_GetProperty(cx, errobj, "fileName", fname_val.address())
-			    && fname_val.isString()) {
-				JSVALUE_TO_MSTRING(cx, fname_val, fname, NULL);
+			JSErrorReport* report = JS_ErrorFromException(cx, errobj);
+			if (report) {
+				if (report->filename.c_str())
+					fname = strdup(report->filename.c_str());
+				lineno = report->lineno;
 			}
-			if (JS_GetProperty(cx, errobj, "lineNumber", lineno_val.address())
-			    && lineno_val.isNumber()) {
-				JS_ValueToInt32(cx, lineno_val, &lineno);
+			if (fname == NULL || *fname == '\0') {
+				/* Fallback to Error object properties if no report */
+				free(fname);
+				fname = NULL;
+				JS::RootedValue fname_val(cx);
+				if (JS_GetProperty(cx, errobj, "fileName", fname_val.address())
+				    && fname_val.isString()) {
+					JSVALUE_TO_MSTRING(cx, fname_val, fname, NULL);
+				}
+				if (lineno == 0) {
+					JS::RootedValue lineno_val(cx);
+					if (JS_GetProperty(cx, errobj, "lineNumber", lineno_val.address())
+					    && lineno_val.isNumber()) {
+						JS_ValueToInt32(cx, lineno_val, &lineno);
+					}
+				}
 			}
 			if (fname != NULL && *fname != '\0' && lineno > 0)
 				snprintf(file_info, sizeof file_info, " %s line %d", fname, lineno);
