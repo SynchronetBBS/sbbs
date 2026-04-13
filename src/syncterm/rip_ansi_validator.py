@@ -589,6 +589,7 @@ class RIPValidator:
 				continue
 
 			name, fixed_width, has_text, has_var_points, last_param_width = cmd_table[cmd_char]
+			fixed_start = pos
 
 			if has_var_points:
 				# Parse npoints:2 then npoints * (x:2 y:2)
@@ -687,6 +688,7 @@ class RIPValidator:
 				# Validate fixed-width MegaNum arguments.
 				# NUL sentinels mark continuation join points and are
 				# skipped when counting digits.
+				fixed_start = pos
 				avail = len(line) - pos
 				# Count MegaNum digits (skipping NULs) and track total
 				# bytes consumed
@@ -761,7 +763,31 @@ class RIPValidator:
 
 			# Track clipboard state for |1C / |1P dependency
 			if level == 1 and cmd_char == ord('C'):
-				self.clipboard_initialized = True
+				# Check BGI imagesize limit: ((w+7)/8)*4*h + 6 <= 65535
+				stripped = bytes(b for b in line[fixed_start:pos]
+				                 if b != NUL_SENTINEL)
+				if len(stripped) >= 8:
+					x0, x0ok = parse_meganum(stripped[0:2], 2)
+					y0, y0ok = parse_meganum(stripped[2:4], 2)
+					x1, x1ok = parse_meganum(stripped[4:6], 2)
+					y1, y1ok = parse_meganum(stripped[6:8], 2)
+					if x0ok and y0ok and x1ok and y1ok:
+						w = abs(x1 - x0) + 1
+						h = abs(y1 - y0) + 1
+						imgsz = ((w + 7) // 8) * 4 * h + 6
+						if imgsz > 65535:
+							self.issues.append(Issue(
+								offset=base_offset + cmd_start,
+								severity=Severity.ERROR,
+								category="RIP",
+								message=f"{name}: image too large ({w}x{h}, "
+								        f"{imgsz} bytes > 65535 BGI limit)",
+								raw=line[cmd_start:min(cmd_start + 20, len(line))],
+							))
+						else:
+							self.clipboard_initialized = True
+				else:
+					self.clipboard_initialized = True
 			elif level == 1 and cmd_char == ord('P'):
 				if not self.clipboard_initialized:
 					self.issues.append(Issue(
