@@ -30,6 +30,7 @@
 
 #include "amigafont.h"
 #include "conn.h"
+#include "rip_icons.h"
 #include "ripper.h"
 #include "sexyz.h"
 #include "syncterm.h"
@@ -9811,6 +9812,59 @@ do_fill(bool overwrite)
 }
 
 /*
+ * Stamp a ciolib_pixels icon onto the screen with a BGI putimage mode.
+ * Modes: 0=COPY, 1=XOR, 2=OR, 3=AND, 4=NOT.
+ * For modes 1-4, reads existing screen pixels and combines per-pixel
+ * using palette index operations.  Coordinates are absolute (viewport
+ * already applied).
+ */
+static void
+stamp_icon_mode(struct ciolib_pixels *pix, int ax, int ay, int mode)
+{
+	int ex = ax + pix->width - 1;
+	int ey = ay + pix->height - 1;
+
+	if (mode == 0) {
+		setpixels(ax, ay, ex, ey, 0, 0, 0, 0, pix, NULL);
+		return;
+	}
+
+	struct ciolib_pixels *scr = getpixels(ax, ay, ex, ey, false);
+	if (scr == NULL)
+		return;
+
+	size_t npixels = pix->width * pix->height;
+	for (size_t i = 0; i < npixels; i++) {
+		int ii = pixel2color(pix->pixels[i]);
+		int si, ri;
+
+		si = pixel2color(scr->pixels[i]);
+		switch (mode) {
+		case 1: ri = si ^ ii;  break;
+		case 2: ri = si | ii;  break;
+		case 3: ri = si & ii;  break;
+		case 4: ri = ii ^ 0xF; break;
+		default: ri = ii;      break;
+		}
+		scr->pixels[i] = map_rip_color(ri & 0xF);
+
+		if (scr->pixelsb) {
+			si = pixel2color(scr->pixelsb[i]);
+			switch (mode) {
+			case 1: ri = si ^ ii;  break;
+			case 2: ri = si | ii;  break;
+			case 3: ri = si & ii;  break;
+			case 4: ri = ii ^ 0xF; break;
+			default: ri = ii;      break;
+			}
+			scr->pixelsb[i] = map_rip_color(ri & 0xF);
+		}
+	}
+	setpixels(ax, ay, ex, ey, 0, 0, 0, 0, scr, NULL);
+	freepixels(scr);
+}
+
+/*
  * Load an icon file and stamp it on screen.
  * Returns true if successful; on success, *out_w and *out_h
  * are set to the icon dimensions in pixels.
@@ -9832,10 +9886,8 @@ load_stamp_icon(const char *filename, int x, int y, int mode,
 	if (!get_cache_fn_subdir(rip.bbs, cache_path,
 	    sizeof(cache_path), "RIP"))
 		return false;
-	if (mode != 0) {
-		printf("TODO: Support paste mode %d\n", mode);
+	if (mode < 0 || mode > 4)
 		return false;
-	}
 	strlcat(cache_path, filename, sizeof(cache_path));
 	if (strchr(filename, '.') == NULL)
 		strlcat(cache_path, ".ICN", sizeof(cache_path));
@@ -9940,16 +9992,10 @@ load_stamp_icon(const char *filename, int x, int y, int mode,
 			if (out_h)
 				*out_h = pix->height;
 
-			struct text_info ti;
-			gettextinfo(&ti);
-			setpixels(x + rip.viewport.sx,
+			stamp_icon_mode(pix,
+			    x + rip.viewport.sx,
 			    y + rip.viewport.sy,
-			    x + rip.viewport.sx + pix->width - 1,
-			    y + rip.viewport.sy + pix->height - 1,
-			    0,
-			    0, 0, 0,
-			    pix,
-			    NULL);
+			    mode);
 			if (to_clipboard) {
 				freepixels(rip.clipboard);
 				rip.clipboard = pix;
@@ -9964,6 +10010,60 @@ load_stamp_icon(const char *filename, int x, int y, int mode,
 		return false;
 	}
 	else {
+		// Try builtin icons before showing error box.
+		const char *bn = strrchr(cache_path, '/');
+		if (bn == NULL)
+			bn = strrchr(cache_path, '\\');
+		bn = bn ? bn + 1 : cache_path;
+		for (size_t bi = 0; bi < builtin_icon_count; bi++) {
+			if (stricmp(bn, builtin_icons[bi].filename) != 0)
+				continue;
+			const struct builtin_icon *icon = &builtin_icons[bi];
+			struct ciolib_pixels *pix = malloc(sizeof(*pix));
+			if (pix == NULL)
+				break;
+			pix->width = icon->width;
+			pix->height = icon->height;
+			pix->pixels = malloc(pix->width * pix->height * sizeof(*pix->pixels));
+			pix->pixelsb = NULL;
+			if (pix->pixels == NULL) {
+				free(pix);
+				break;
+			}
+			if ((x + rip.viewport.sx + pix->width - 1 > rip.viewport.ex)
+			    || (y + rip.viewport.sy + pix->height - 1 > rip.viewport.ey)) {
+				free(pix->pixels);
+				free(pix);
+				return false;
+			}
+			const uint8_t *dp = icon->data;
+			uint32_t *op = pix->pixels;
+			size_t npixels = pix->width * pix->height;
+			for (size_t pi = 0; pi < npixels; pi++) {
+				int co;
+				if (pi & 1)
+					co = dp[pi / 2] & 0x0F;
+				else
+					co = (dp[pi / 2] >> 4) & 0x0F;
+				*(op++) = map_rip_color(co);
+			}
+			if (out_w)
+				*out_w = pix->width;
+			if (out_h)
+				*out_h = pix->height;
+			stamp_icon_mode(pix,
+			    x + rip.viewport.sx,
+			    y + rip.viewport.sy,
+			    mode);
+			if (to_clipboard) {
+				freepixels(rip.clipboard);
+				rip.clipboard = pix;
+			}
+			else {
+				freepixels(pix);
+			}
+			return true;
+		}
 		// Icon file not found — draw
 		// error box per spec.
 		// RIPterm draws a dashed
@@ -12307,7 +12407,6 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 	bool     handled = false;
 	uint32_t fg;
 	int      i, j;
-	int      x, y;
 #ifndef SYNCVIEW
 	char     cache_path[MAX_PATH + 1];
 	FILE    *icn;
@@ -15490,116 +15589,16 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 								break;
 							}
 							if (rip.clipboard) {
-								struct text_info ti;
-								gettextinfo(&ti);
-
-								int              bline = parsed[1] + rip.viewport.sy
-								    + rip.clipboard->height - 1;
-								assert_rwlock_rdlock(&vstatlock);
-								if (bline >= vstat.scrnheight)
-									bline = vstat.scrnheight - 1;
-								assert_rwlock_unlock(&vstatlock);
 								if (parsed[0] + rip.viewport.sx + rip.clipboard->width - 1
 								    > rip.viewport.ex)
 									break;
-								switch (parsed[2]) {
-									case 0: // Normal (easy!)
-										setpixels(parsed[0] + rip.viewport.sx,
-										    parsed[1] + rip.viewport.sy,
-										    parsed[0] + rip.viewport.sx + rip.clipboard->width - 1,
-										    bline,
-										    0,
-										    0, 0, 0,
-										    rip.clipboard,
-										    NULL);
-										break;
-									case 1: // XOR
-									case 2: // OR
-									case 3: // AND
-									case 4: // NOT
-									{
-										struct ciolib_pixels *pix = getpixels(
-											parsed[0] + rip.viewport.sx,
-											parsed[1] + rip.viewport.sy,
-											parsed[0] + rip.viewport.sx + rip.clipboard->width - 1,
-											bline,
-											false);
-
-										if (pix == NULL)
-											break;
-										for (y = 0; y < rip.clipboard->height;
-										    y++) {
-											if (rip.viewport.sy + parsed[1] + y
-											    > bline)
-												break;
-											for (x = 0;
-											    x < rip.clipboard->width;
-											    x++) {
-												arg3 = pixel2color(rip.clipboard->pixels[
-														y
-														* rip.
-														clipboard
-														->width
-														+ x]);
-
-												switch (parsed[2]) {
-													case 1:
-														arg2 =
-														    pixel2color(pix->pixels[
-																y
-																*
-																pix
-																->
-																width
-																+
-																x]);
-														arg3 ^=
-														    arg2;
-														break;
-													case 2:
-														arg2 =
-														    pixel2color(pix->pixels[
-																y
-																*
-																pix
-																->
-																width
-																+
-																x]);
-														arg3 |=
-														    arg2;
-														break;
-													case 3:
-														arg2 =
-														    pixel2color(pix->pixels[
-																y
-																*
-																pix
-																->
-																width
-																+
-																x]);
-														arg3 &=
-														    arg2;
-														break;
-													case 4:
-														arg3 =
-														    (~
-														    arg3);
-														arg3 &=
-														    0x0F;
-														break;
-												}
-												rip_setpixel(
-													rip.viewport.sx + parsed[0] + x,
-													rip.viewport.sy + parsed[1] + y,
-													arg3);
-											}
-										}
-										freepixels(pix);
-										break;
-									}
-								}
+								if (parsed[1] + rip.viewport.sy + rip.clipboard->height - 1
+								    > rip.viewport.ey)
+									break;
+								stamp_icon_mode(rip.clipboard,
+								    parsed[0] + rip.viewport.sx,
+								    parsed[1] + rip.viewport.sy,
+								    parsed[2]);
 							}
 							break;
 						case 'R': // RIP_READ_SCENE !|1R <res> <filename>

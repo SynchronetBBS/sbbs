@@ -54,6 +54,7 @@ set(SOURCE
 	fonts.c
 	menu.c
 	modem.c
+	rip_icons.c
 	ripper.c
 	rlogin.c
 	syncterm.c
