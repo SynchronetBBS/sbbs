@@ -11,12 +11,16 @@ Usage:
 
 If start_file is given, scanning begins at that filename (inclusive).
 """
-import subprocess, os, sys
+import socket, os, sys
 
 RIP_DIR = '/synchronet/tmp/ripterm/rips'
-HCTL = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'hctl')
+HARNESS_HOST = 'portable'
+HARNESS_PORT = 1516
 
-files = sorted([f for f in os.listdir(RIP_DIR) if f.endswith('.rip')], key=str.lower)
+files = sorted(
+    [f for f in os.listdir(RIP_DIR) if f.lower().endswith('.rip')],
+    key=str.lower
+)
 
 start_idx = 0
 if len(sys.argv) > 1:
@@ -29,35 +33,72 @@ if len(sys.argv) > 1:
         print(f"ERROR: {target} not found in {RIP_DIR}", file=sys.stderr)
         sys.exit(2)
 
+# Connect to harness control port directly (avoids shell escaping issues
+# with ! and other special characters in filenames).
+try:
+    s = socket.create_connection((HARNESS_HOST, HARNESS_PORT), timeout=120)
+except ConnectionRefusedError:
+    print(f"ERROR: cannot connect to harness at {HARNESS_HOST}:{HARNESS_PORT}",
+          file=sys.stderr)
+    sys.exit(2)
+
+buf = b''
+# Read and discard banner
+while b'\n' not in buf:
+    buf += s.recv(4096)
+buf = buf.split(b'\n', 1)[1]
+
+
+def send_cmd(cmd):
+    """Send a command and return all output lines up to and including OK/ERROR."""
+    global buf
+    s.sendall((cmd + '\n').encode())
+    output_lines = []
+    while True:
+        buf += s.recv(4096)
+        while b'\n' in buf:
+            line, buf = buf.split(b'\n', 1)
+            text = line.decode('utf-8', errors='replace').rstrip('\r')
+            output_lines.append(text)
+            if text == 'OK' or text.startswith('ERROR:'):
+                return output_lines
+
+
 for i in range(start_idx, len(files)):
     f = files[i]
-    if '!' in f:
-        continue
     path = os.path.join(RIP_DIR, f)
-    try:
-        result = subprocess.run(
-            ['python3', HCTL, 'reset', ',', f'sendfile {path}', ',', 'capture'],
-            capture_output=True, text=True, timeout=180
-        )
-    except subprocess.TimeoutExpired:
-        print(f'TIMEOUT at file {i+1}/{len(files)}: {f}')
-        sys.exit(2)
 
-    if result.returncode != 0:
+    send_cmd('reset')
+    sf = send_cmd(f'sendfile {f}')
+
+    # Check for sendfile errors
+    if any(l.startswith('ERROR:') for l in sf):
         print(f'ERROR at file {i+1}/{len(files)}: {f}')
-        print(result.stderr[:200] if result.stderr else result.stdout[:200])
+        for l in sf:
+            print(f'  {l}')
         sys.exit(2)
 
-    for line in result.stdout.split('\n'):
+    cap_lines = send_cmd('capture')
+
+    clean = False
+    comp_line = ''
+    for line in cap_lines:
         if 'comparison:' in line:
-            if '0 differ' not in line:
-                print(f'DIFFS at file {i+1}/{len(files)}: {f}')
-                print(line)
-                sys.exit(1)
+            comp_line = line
+            if '0 differ' in line or '100.00%' in line:
+                clean = True
             break
+
+    if not clean:
+        print(f'DIFFS at file {i+1}/{len(files)}: {f}')
+        if comp_line:
+            print(comp_line)
+        sys.exit(1)
 
     if (i - start_idx + 1) % 100 == 0:
         print(f'  ...scanned {i+1}/{len(files)} ({f}) - all clean', flush=True)
 
-print(f'All {len(files) - start_idx} files clean!')
+s.close()
+total = len(files) - start_idx
+print(f'All {total} files clean!')
 sys.exit(0)
