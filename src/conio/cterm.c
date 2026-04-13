@@ -676,6 +676,32 @@ cterm_gotoxy(struct cterminal *cterm, int x, int y)
 		prestel_get_state(cterm);
 }
 
+/*
+ * cterm_crpos() returns the ABSTERM column where a CR would place the
+ * cursor for the current row.  The logic mirrors the CR path in
+ * adjust_currpos() above: inside the scroll region CR lands on
+ * left_margin; outside it clamps to left_margin only when the cursor
+ * was already right of it, otherwise it stays at ABSTERM column 1.
+ *
+ * Called from ripper.c's cb_accept_introducer() as the cursor-position
+ * fallback for the RIP `!` BOL predicate.
+ */
+CIOLIBEXPORT int
+cterm_crpos(struct cterminal *cterm)
+{
+	int tx, ty, ax, ay;
+
+	TERM_XY(&tx, &ty);
+	ABS_XY(&ax, &ay);
+
+	if (tx >= TERM_MINX && tx <= TERM_MAXX &&
+	    ty >= TERM_MINY && ty <= TERM_MAXY)
+		return cterm->left_margin;
+	if (ax >= cterm->left_margin)
+		return cterm->left_margin;
+	return ABS_MINX;
+}
+
 static void
 insert_tabstop(struct cterminal *cterm, int pos)
 {
