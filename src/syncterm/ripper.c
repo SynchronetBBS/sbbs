@@ -8560,6 +8560,37 @@ no_viewport(void)
 }
 
 /*
+ * BGI imagesize check.  Returns true if the image fits in the
+ * 16-bit buffer limit (65535 bytes).  EGA format:
+ * ((width+7)/8) * 4_planes * height + 6_header.
+ */
+static bool
+bgi_imagesize_ok(unsigned w, unsigned h)
+{
+	unsigned long imgsz = ((unsigned long)((w + 7) / 8)) * 4 * h + 6;
+	return imgsz <= 65535;
+}
+
+/*
+ * Replicate the side effects of RIPterm's "Image too large"
+ * error popup on the graphics state.  The popup draws a
+ * dialog that changes the draw color, fill color, and fill
+ * style.  Empirically verified by setting known state before
+ * triggering the popup and checking each variable after.
+ */
+static void
+rip_image_too_large(void)
+{
+	rip.color = 7;
+	rip.fill_color = 8;
+	rip.fill_style = 1;
+	rip.line_width = 1;
+	rip.line_style = 0;
+	rip.line_pattern = 0xFFFF;
+	rip.xor = false;
+}
+
+/*
  * BGI-exact meganum parser.  Parses up to fieldwidth base-36 digits
  * from buf.  Valid chars: 0-9, A-Z, a-z, '-'.  Early termination
  * on '|' or '\0' is accepted after 1+ valid chars.  Any other char
@@ -9834,6 +9865,12 @@ load_stamp_icon(const char *filename, int x, int y, int mode,
 			pix->height = 1;
 		if (pix->height > 65536)
 			pix->height = 65536;
+		if (!bgi_imagesize_ok(pix->width, pix->height)) {
+			rip_image_too_large();
+			free(pix);
+			fclose(icn);
+			return false;
+		}
 		if ((x + rip.viewport.sx + pix->width - 1
 		    > rip.viewport.ex)
 		    || (y + rip.viewport.sy + pix->height - 1
@@ -9952,7 +9989,6 @@ load_stamp_icon(const char *filename, int x, int y, int mode,
 		int save_vert = rip.font.vertical;
 		int save_color = rip.color;
 		uint16_t save_pattern = rip.line_pattern;
-		int save_width = rip.line_width;
 
 		// Use small font (font 2,
 		// size 4) and ltred color
@@ -10024,7 +10060,6 @@ load_stamp_icon(const char *filename, int x, int y, int mode,
 		rip.font.size = save_size;
 		rip.font.vertical = save_vert;
 		rip.line_pattern = save_pattern;
-		rip.line_width = save_width;
 		return false;
 	}
 #else
@@ -10438,7 +10473,7 @@ draw_button(struct rip_button_style *but, bool inverted)
 			if (but->flags.recessed)
 				si += 2;
 			if (but->button == BUTTON_TYPE_CLIPBOARD) {
-				if (has_desc)
+				if (!has_desc)
 					si--;
 			}
 			else if (but->button == BUTTON_TYPE_PLAIN
@@ -14884,6 +14919,12 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 								int tmp = parsed[3];
 								parsed[3] = parsed[1];
 								parsed[1] = tmp;
+							}
+							if (!bgi_imagesize_ok(
+							    abs(parsed[2] - parsed[0]) + 1,
+							    abs(parsed[3] - parsed[1]) + 1)) {
+								rip_image_too_large();
+								break;
 							}
 							freepixels(rip.clipboard);
 							gettextinfo(&ti);
