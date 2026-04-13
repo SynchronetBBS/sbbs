@@ -1,5 +1,6 @@
 New
 ---
+RIPterm v1.54.00 pixel-level compatibility
 Add ECMA-48 screen content readback (SSA/ESA/STS)
 Add DEC rectangular area operations (DECERA, DECFRA, DECCRA, DECIC, DECDC)
 Add DECCARA, DECRARA, DECSACE (change/reverse attributes in rectangular areas)
