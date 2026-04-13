@@ -1,26 +1,30 @@
-/* Verify the JS interrupt callback re-arms after firing.
+/* Verify the JS interrupt/operation callback re-arms after firing.
  *
  * Regression test for a bug in the SM128 JS_SetOperationCallback shim
  * where JS_ResetInterruptCallback was passed the wrong enable flag,
  * causing the callback to self-disable after its first invocation.
- * With the bug, js.time_limit never trips and tight loops hang forever.
+ * When that happens, js.counter stops advancing, js.auto_terminate
+ * becomes unresponsive, and servers hang on shutdown because running
+ * scripts never notice the terminated flag.
+ *
+ * The interrupt callback is driven by a background trigger thread that
+ * fires roughly every 100ms. Spinning for ~1 second should produce
+ * several callback invocations; with the bug, only one ever fires.
  */
 
 "use strict";
 
-js.auto_terminate = true;
-js.time_limit = 1;
+var saved_auto = js.auto_terminate;
+js.auto_terminate = false;
 
+var initial = js.counter;
 var start = time();
-var deadline = start + 5;
-try {
-	while (time() < deadline) {
-		for (var i = 0; i < 100000; i++) {}
-	}
-} catch (e) {
-	/* Expected: "Terminated" via HandleInterrupt */
-}
-var elapsed = time() - start;
-if (elapsed >= 5)
-	throw new Error("time_limit failed to terminate loop — "
-		+ "interrupt callback not re-arming (elapsed=" + elapsed + "s)");
+while (time() - start < 1) {}
+var delta = js.counter - initial;
+
+js.auto_terminate = saved_auto;
+
+if (delta < 2)
+	throw new Error("interrupt callback did not re-arm: "
+		+ "js.counter advanced by only " + delta
+		+ " across " + (time() - start) + "s of spinning");
