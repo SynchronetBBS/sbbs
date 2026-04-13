@@ -82,7 +82,7 @@ typedef unsigned int uintN;
         if ((fn) == nullptr) \
             JS_DisableInterruptCallback(cx); \
         else \
-            JS_ResetInterruptCallback((cx), false); \
+            JS_ResetInterruptCallback((cx), true); \
     } while (0)
 
 /* Value-to-type conversions: const JS::Value& accepts both raw argv[] slots
