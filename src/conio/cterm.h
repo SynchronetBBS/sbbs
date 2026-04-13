@@ -287,6 +287,7 @@ CIOLIBEXPORT void cterm_closelog(struct cterminal *cterm);
 CIOLIBEXPORT void cterm_end(struct cterminal *cterm, int free_fonts);
 CIOLIBEXPORT void cterm_clearscreen(struct cterminal *cterm, char attr);
 CIOLIBEXPORT void cterm_start(struct cterminal *cterm);
+CIOLIBEXPORT int cterm_crpos(struct cterminal *cterm);
 void cterm_gotoxy(struct cterminal *cterm, int x, int y);
 void setwindow(struct cterminal *cterm);
 void cterm_clreol(struct cterminal *cterm);
