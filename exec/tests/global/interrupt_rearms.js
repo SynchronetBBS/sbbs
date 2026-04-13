@@ -14,6 +14,14 @@
 
 "use strict";
 
+/* The shim bug this test guards against only exists in SM128+. Under
+ * SM185 the operation callback is driven by the engine's own bytecode
+ * counter (no background trigger thread), so a 1-second spin can
+ * legitimately produce only a single callback invocation — which would
+ * look identical to the SM128 buggy state. Skip on older engines. */
+if (js.version.indexOf("C128") < 0 && js.version.indexOf("C 128") < 0)
+	exit(0);
+
 var saved_auto = js.auto_terminate;
 js.auto_terminate = false;
 
