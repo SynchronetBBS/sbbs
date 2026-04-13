@@ -206,6 +206,84 @@ RIP_COMMANDS_L9 = {
 
 
 # ---------------------------------------------------------------------------
+# Parameter range specifications
+# ---------------------------------------------------------------------------
+# Each entry maps (level, cmd_char) to a list of (field_name, width, min, max)
+# tuples.  Only fields with meaningful range constraints are listed.
+# Coordinates: x 0..639, y 0..349.  Colors: 0..15.  Modes per spec.
+
+_X = (0, 639)
+_Y = (0, 349)
+_C = (0, 15)
+_C64 = (0, 63)
+
+PARAM_RANGES = {
+	(0, ord('w')): [("x0", 2, 0, 90), ("y0", 2, 0, 42), ("x1", 2, 0, 90), ("y1", 2, 0, 42), ("wrap", 1, 0, 1), ("size", 1, 0, 4)],
+	(0, ord('v')): [("x0", 2, *_X), ("y0", 2, *_Y), ("x1", 2, *_X), ("y1", 2, *_Y)],
+	(0, ord('g')): [("x", 2, 0, 90), ("y", 2, 0, 42)],
+	(0, ord('c')): [("color", 2, *_C)],
+	(0, ord('Q')): [("c%d" % i, 2, *_C64) for i in range(16)],
+	(0, ord('a')): [("color", 2, *_C), ("value", 2, *_C64)],
+	(0, ord('W')): [("mode", 2, 0, 1)],
+	(0, ord('m')): [("x", 2, *_X), ("y", 2, *_Y)],
+	(0, ord('@')): [("x", 2, *_X), ("y", 2, *_Y)],
+	(0, ord('Y')): [("font", 2, 0, 10), ("dir", 2, 0, 1), ("size", 2, 1, 10)],
+	(0, ord('X')): [("x", 2, *_X), ("y", 2, *_Y)],
+	(0, ord('L')): [("x0", 2, *_X), ("y0", 2, *_Y), ("x1", 2, *_X), ("y1", 2, *_Y)],
+	(0, ord('R')): [("x0", 2, *_X), ("y0", 2, *_Y), ("x1", 2, *_X), ("y1", 2, *_Y)],
+	(0, ord('B')): [("x0", 2, *_X), ("y0", 2, *_Y), ("x1", 2, *_X), ("y1", 2, *_Y)],
+	(0, ord('C')): [("x", 2, *_X), ("y", 2, *_Y), ("radius", 2, 0, 1295)],
+	(0, ord('O')): [("x", 2, *_X), ("y", 2, *_Y), ("sa", 2, 0, 360), ("ea", 2, 0, 360), ("xr", 2, 0, 1295), ("yr", 2, 0, 1295)],
+	(0, ord('o')): [("x", 2, *_X), ("y", 2, *_Y), ("xr", 2, 0, 1295), ("yr", 2, 0, 1295)],
+	(0, ord('A')): [("x", 2, *_X), ("y", 2, *_Y), ("sa", 2, 0, 360), ("ea", 2, 0, 360), ("r", 2, 0, 1295)],
+	(0, ord('V')): [("x", 2, *_X), ("y", 2, *_Y), ("sa", 2, 0, 360), ("ea", 2, 0, 360), ("rx", 2, 0, 1295), ("ry", 2, 0, 1295)],
+	(0, ord('I')): [("x", 2, *_X), ("y", 2, *_Y), ("sa", 2, 0, 360), ("ea", 2, 0, 360), ("r", 2, 0, 1295)],
+	(0, ord('i')): [("x", 2, *_X), ("y", 2, *_Y), ("sa", 2, 0, 360), ("ea", 2, 0, 360), ("rx", 2, 0, 1295), ("ry", 2, 0, 1295)],
+	(0, ord('Z')): [("x1", 2, *_X), ("y1", 2, *_Y), ("x2", 2, *_X), ("y2", 2, *_Y), ("x3", 2, *_X), ("y3", 2, *_Y), ("x4", 2, *_X), ("y4", 2, *_Y), ("cnt", 2, 1, 1295)],
+	(0, ord('F')): [("x", 2, *_X), ("y", 2, *_Y), ("border", 2, *_C)],
+	(0, ord('=')): [("style", 2, 0, 4), None, ("thick", 2, 0, 3)],
+	(0, ord('S')): [("pattern", 2, 0, 11), ("color", 2, *_C)],
+	(0, ord('s')): [None, None, None, None, None, None, None, None, ("color", 2, *_C)],
+	(1, ord('C')): [("x0", 2, *_X), ("y0", 2, *_Y), ("x1", 2, *_X), ("y1", 2, *_Y)],
+	(1, ord('P')): [("x", 2, *_X), ("y", 2, *_Y), ("mode", 2, 0, 4)],
+	(1, ord('I')): [("x", 2, *_X), ("y", 2, *_Y), ("mode", 2, 0, 4), ("clip", 1, 0, 1)],
+	(1, ord('G')): [("x0", 2, *_X), ("y0", 2, *_Y), ("x1", 2, *_X), ("y1", 2, *_Y)],
+	(1, ord('U')): [("x0", 2, *_X), ("y0", 2, *_Y), ("x1", 2, *_X), ("y1", 2, *_Y)],
+}
+
+
+def validate_param_ranges(data, ranges, issues, base_offset, name):
+	"""Parse fixed-width MegaNum fields and check value ranges.
+
+	Args:
+		data: bytes containing MegaNum digits (NUL sentinels already stripped)
+		ranges: list from PARAM_RANGES — each entry is (field_name, width, min, max)
+		        or None to skip a field (consume width=2 without checking)
+		issues: list to append Issue objects to
+		base_offset: file offset of the start of data
+		name: command name for error messages
+	"""
+	pos = 0
+	for spec in ranges:
+		if spec is None:
+			# Skip a 2-digit field
+			pos += 2
+			continue
+		field_name, width, lo, hi = spec
+		if pos + width > len(data):
+			break
+		val, ok = parse_meganum(data[pos:pos + width], width)
+		if ok and (val < lo or val > hi):
+			issues.append(Issue(
+				offset=base_offset + pos,
+				severity=Severity.ERROR,
+				category="RIP",
+				message=f"{name}: {field_name}={val} out of range ({lo}..{hi})",
+			))
+		pos += width
+
+
+# ---------------------------------------------------------------------------
 # ANSI/CTerm CSI final bytes from cterm.adoc
 # ---------------------------------------------------------------------------
 # Standard CSI sequences: final byte in '@'..'~' (0x40..0x7E)
@@ -399,6 +477,7 @@ class RIPValidator:
 		self.issues: list[Issue] = []
 		self.pos = 0
 		self.relaxed = relaxed
+		self.clipboard_initialized = False
 
 	def validate(self) -> list[Issue]:
 		"""Scan data for RIP sequences and validate them."""
@@ -630,6 +709,28 @@ class RIPValidator:
 					check_meganum_splits(
 						line[vdata_start:vdata_end], 2,
 						self.issues, base_offset + vdata_start, name)
+					# Validate vertex coordinate ranges
+					stripped = bytes(b for b in line[vdata_start:vdata_end] if b != NUL_SENTINEL)
+					for vi in range(npoints):
+						voff = vi * 4
+						if voff + 4 > len(stripped):
+							break
+						vx, xok = parse_meganum(stripped[voff:voff+2], 2)
+						vy, yok = parse_meganum(stripped[voff+2:voff+4], 2)
+						if xok and (vx < 0 or vx > 639):
+							self.issues.append(Issue(
+								offset=base_offset + vdata_start + voff,
+								severity=Severity.ERROR,
+								category="RIP",
+								message=f"{name}: vertex {vi} x={vx} out of range (0..639)",
+							))
+						if yok and (vy < 0 or vy > 349):
+							self.issues.append(Issue(
+								offset=base_offset + vdata_start + voff + 2,
+								severity=Severity.ERROR,
+								category="RIP",
+								message=f"{name}: vertex {vi} y={vy} out of range (0..349)",
+							))
 				pos = vdata_end
 
 			elif fixed_width > 0:
@@ -682,6 +783,14 @@ class RIPValidator:
 					check_meganum_splits(
 						line[pos:end], 2,
 						self.issues, base_offset + pos, name)
+					# Validate parameter value ranges
+					range_key = (level, cmd_char)
+					if range_key in PARAM_RANGES:
+						# Strip NUL sentinels for range checking
+						stripped = bytes(b for b in line[pos:end] if b != NUL_SENTINEL)
+						validate_param_ranges(
+							stripped, PARAM_RANGES[range_key],
+							self.issues, base_offset + pos, name)
 					pos = end
 
 			# If has text tail, consume rest until | or end (with backslash escaping)
@@ -703,6 +812,19 @@ class RIPValidator:
 					else:
 						pos += 1
 				# Don't warn about trailing data — spec says unrecognized text is ignored
+
+			# Track clipboard state for |1C / |1P dependency
+			if level == 1 and cmd_char == ord('C'):
+				self.clipboard_initialized = True
+			elif level == 1 and cmd_char == ord('P'):
+				if not self.clipboard_initialized:
+					self.issues.append(Issue(
+						offset=base_offset + cmd_start,
+						severity=Severity.WARNING if self.relaxed else Severity.ERROR,
+						category="RIP",
+						message=f"{name}: |1P used before any |1C (clipboard not initialized)",
+						raw=line[cmd_start:min(cmd_start + 20, len(line))],
+					))
 
 			# Skip | delimiter
 			if pos < len(line) and line[pos:pos+1] == b'|':
@@ -1436,7 +1558,7 @@ def main():
 		description="Validate RIP 1.54 and ANSI sequences in a file.",
 		epilog="Based strictly on RIPSCRIP.DOC v1.54 and CTerm cterm.adoc.",
 	)
-	parser.add_argument("filename", help="File to validate")
+	parser.add_argument("filename", nargs="+", help="File(s) to validate")
 	parser.add_argument("--ansi-only", action="store_true",
 	                    help="Only check ANSI sequences")
 	parser.add_argument("--rip-only", action="store_true",
@@ -1454,34 +1576,41 @@ def main():
 	check_ansi = not args.rip_only
 	check_rip = not args.ansi_only
 
-	try:
-		result = validate_file(args.filename, check_ansi=check_ansi,
-		                       check_rip=check_rip, relaxed=args.relaxed)
-	except FileNotFoundError:
-		print(f"Error: file not found: {args.filename}", file=sys.stderr)
-		sys.exit(2)
-	except Exception as e:
-		print(f"Error reading file: {e}", file=sys.stderr)
-		sys.exit(2)
+	total_errors = 0
+	total_warnings = 0
 
-	issues = result.issues
-	if args.errors_only or args.quiet:
-		issues = result.errors
+	for filename in args.filename:
+		try:
+			result = validate_file(filename, check_ansi=check_ansi,
+			                       check_rip=check_rip, relaxed=args.relaxed)
+		except FileNotFoundError:
+			print(f"Error: file not found: {filename}", file=sys.stderr)
+			total_errors += 1
+			continue
+		except Exception as e:
+			print(f"Error reading {filename}: {e}", file=sys.stderr)
+			total_errors += 1
+			continue
 
-	if not issues:
-		if not args.quiet:
-			print(f"{args.filename}: OK (no issues found)")
-		sys.exit(0)
+		issues = result.issues
+		if args.errors_only or args.quiet:
+			issues = result.errors
 
-	for issue in issues:
-		print(f"{args.filename}:{issue}")
+		if not issues:
+			if not args.quiet and len(args.filename) == 1:
+				print(f"{filename}: OK (no issues found)")
+			continue
 
-	nerr = len(result.errors)
-	nwarn = len(result.warnings)
-	if not args.quiet:
-		print(f"\n{nerr} error(s), {nwarn} warning(s)")
+		for issue in issues:
+			print(f"{filename}:{issue}")
 
-	sys.exit(1 if nerr > 0 else 0)
+		total_errors += len(result.errors)
+		total_warnings += len(result.warnings)
+
+	if not args.quiet and len(args.filename) > 1:
+		print(f"\n{total_errors} error(s), {total_warnings} warning(s) across {len(args.filename)} file(s)")
+
+	sys.exit(1 if total_errors > 0 else 0)
 
 
 if __name__ == "__main__":
