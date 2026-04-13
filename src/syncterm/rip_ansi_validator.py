@@ -87,51 +87,6 @@ def parse_meganum(data, width):
 	return val, True
 
 
-def check_meganum_splits(data, param_widths, issues, base_offset, name):
-	"""Check a run of MegaNum bytes (with NUL sentinels) for mid-parameter
-	continuation splits.
-
-	Args:
-		data: bytes containing MegaNum digits and NUL sentinels
-		param_widths: list of parameter widths (e.g. [2,2,2,2] for four
-		              2-digit params), or a single int for repeating width
-		issues: list to append Issue objects to
-		base_offset: file offset of the start of data
-		name: command name for error messages
-
-	Returns number of MegaNum digits consumed (excluding NULs).
-	"""
-	if isinstance(param_widths, int):
-		pw = param_widths  # repeating width
-	else:
-		pw = None
-
-	digit_count = 0  # digits consumed within current parameter
-	param_idx = 0    # which parameter we're in
-	cur_width = pw if pw else (param_widths[0] if param_widths else 2)
-
-	for i in range(len(data)):
-		b = data[i]
-		if b == NUL_SENTINEL:
-			if digit_count > 0 and digit_count < cur_width:
-				issues.append(Issue(
-					offset=base_offset + i,
-					severity=Severity.WARNING,
-					category="RIP",
-					message=f"{name}: continuation splits MegaNum at digit "
-					        f"{digit_count}/{cur_width} of parameter {param_idx}",
-				))
-			continue
-		if not is_meganum(b):
-			break
-		digit_count += 1
-		if digit_count >= cur_width:
-			digit_count = 0
-			param_idx += 1
-			if pw is None and param_idx < len(param_widths):
-				cur_width = param_widths[param_idx]
-
-
 # ---------------------------------------------------------------------------
 # RIP 1.54 command definitions
 # ---------------------------------------------------------------------------
@@ -504,8 +459,7 @@ class RIPValidator:
 				stripped = stripped[:-1]
 
 			# Count trailing backslashes to decide continuation.
-			# Insert a NUL sentinel at each join point so the MegaNum
-			# validator can detect mid-parameter splits.
+			# Insert a NUL sentinel at each join point.
 			while self._is_continuation(stripped) and i + 1 < len(raw_lines):
 				# Remove the trailing backslash and CR, append next line
 				if stripped.endswith(b'\r'):
@@ -705,10 +659,6 @@ class RIPValidator:
 						message=f"{name}: expected {needed} MegaNum vertex digits, got {vdigits}",
 					))
 				else:
-					# Check for mid-parameter splits (all vertex params are width 2)
-					check_meganum_splits(
-						line[vdata_start:vdata_end], 2,
-						self.issues, base_offset + vdata_start, name)
 					# Validate vertex coordinate ranges
 					stripped = bytes(b for b in line[vdata_start:vdata_end] if b != NUL_SENTINEL)
 					for vi in range(npoints):
@@ -779,10 +729,6 @@ class RIPValidator:
 							end += 1
 						else:
 							break
-					# Check for mid-parameter splits
-					check_meganum_splits(
-						line[pos:end], 2,
-						self.issues, base_offset + pos, name)
 					# Validate parameter value ranges
 					range_key = (level, cmd_char)
 					if range_key in PARAM_RANGES:
@@ -844,6 +790,23 @@ class ANSIValidator:
 		self.data = data
 		self.issues: list[Issue] = []
 
+	def _in_rip_command(self, pos):
+		"""Check if pos is inside a RIP command sequence."""
+		# Scan backward looking for an introducer (! at BOL, or SOH/STX
+		# anywhere) followed by |.  Stop at CR/LF.
+		j = pos - 1
+		while j >= 0 and self.data[j] not in (0x0A, 0x0D):
+			# SOH| or STX| can appear mid-line
+			if self.data[j] in (0x01, 0x02) and j + 1 < len(self.data) and self.data[j + 1] == 0x7C:
+				return True
+			j -= 1
+		# Check if line starts with !|
+		line_start = j + 1
+		if line_start + 1 < len(self.data):
+			if self.data[line_start] == 0x21 and self.data[line_start + 1] == 0x7C:
+				return True
+		return False
+
 	def validate(self) -> list[Issue]:
 		"""Scan data for ANSI escape sequences and validate them."""
 		data = self.data
@@ -852,6 +815,9 @@ class ANSIValidator:
 			b = data[i]
 
 			if b == 0x1B:
+				if self._in_rip_command(i):
+					i += 1
+					continue
 				i = self._validate_escape(i)
 			elif b < 0x20 and b not in VALID_C0:
 				# C0 control not in the valid set — check if it's a
