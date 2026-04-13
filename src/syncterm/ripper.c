@@ -9107,12 +9107,10 @@ write_char(char ch)
 			}
 		}
 		if (rip.font.vertical) {
-			rip.y = ys;
 			rip.x = xs + yh;
 		}
 		else {
 			rip.y = ys;
-			rip.x = xs + char_width(ch);
 		}
 		rip.line_width = orig_width;
 		rip.line_pattern = orig_pattern;
@@ -10569,7 +10567,7 @@ add_button(int x1, int y1, int x2, int y2, int hotkey, int flags, const char *te
 	memcpy(but, &rip.bstyle, offsetof(struct rip_button_style, box));
 	but->box.x1 = x1 + rip.viewport.sx;
 	but->box.y1 = y1 + rip.viewport.sy;
-	if ((x2 == 0) && (y2 == 0) && rip.bstyle.width && rip.bstyle.height) {
+	if (rip.bstyle.button == BUTTON_TYPE_PLAIN && rip.bstyle.width && rip.bstyle.height) {
 		but->box.x2 = but->box.x1 + rip.bstyle.width;
 		but->box.y2 = but->box.y1 + rip.bstyle.height;
 	}
@@ -12902,7 +12900,7 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 								break;
 							fg = map_rip_color(rip.color);
 							{
-								int npoints = (nparsed - 1) / 2;
+								int npoints = parsed[0];
 								/*
 								 * The RIP handler appends a
 								 * closing copy of the first
@@ -13563,7 +13561,7 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 							if ((nparsed - 1) & 1)
 								break;
 							{
-								int npoints = (nparsed - 1) / 2;
+								int npoints = parsed[0];
 								for (i = 1; i < npoints; i++) {
 									draw_line(parsed[1 + (i - 1) * 2],
 									    parsed[2 + (i - 1) * 2],
@@ -13638,7 +13636,7 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 							if ((nparsed - 1) & 1)
 								break;
 							{
-								int npoints = (nparsed - 1) / 2;
+								int npoints = parsed[0];
 								/*
 								 * The RIP handler appends a
 								 * closing copy of the first
@@ -17667,6 +17665,11 @@ parse_rip_new(BYTE *origbuf, size_t blen, size_t maxlen)
 				// BOL check sees the real byte stream.
 				if (rip.text_disabled)
 					suppress = true;
+				// RIPterm's text window handler
+				// consumes SO and SI without
+				// rendering or advancing the cursor.
+				if (c == 0x0e || c == 0x0f)
+					suppress = true;
 				if (!suppress) {
 					// VT (0x0b) is translated to ANSI
 					// Cursor Down (`\x1b[B`) because
@@ -17737,6 +17740,11 @@ parse_rip_new(BYTE *origbuf, size_t blen, size_t maxlen)
 			// the BOL window so the next introducer's BOL
 			// check sees the real byte stream.
 			if (rip.text_disabled)
+				suppress = true;
+			// RIPterm's text window handler consumes
+			// SO and SI without rendering or advancing
+			// the cursor.
+			if (c == 0x0e || c == 0x0f)
 				suppress = true;
 			if (!suppress) {
 				// VT (0x0b) is translated to ANSI Cursor
