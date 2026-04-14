@@ -271,6 +271,7 @@ static struct {
 
 	struct {
 		int sx, sy, ex, ey, xpos, ypos;
+		int line_height;
 	} text_region;
 
 	struct bbslist         *bbs;
@@ -15179,12 +15180,18 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
                                                          */
 							break;
 						case 'E': // RIP_END_TEXT !|1E
-                                                          // TODO: Pointless end text area thing.
 
                                                         /* This command indicates the end of a formatted text block.
                                                          *  Only one
                                                          * of these "end" commands is necessary for each block.
                                                          */
+							handled = true;
+							rip.text_region.sx = -1;
+							rip.text_region.sy = -1;
+							rip.text_region.ex = -1;
+							rip.text_region.ey = -1;
+							rip.text_region.xpos = 0;
+							rip.text_region.ypos = 0;
 							break;
 						case 'F': // RIP_FILE_QUERY !|1F <mode> <res> <filename>
                                                         /* This command queries the existence of a particular file,
@@ -15700,6 +15707,7 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 							rip.text_region.ey = parsed[3];
 							rip.text_region.xpos = 0;
 							rip.text_region.ypos = 0;
+							rip.text_region.line_height = font_height();
 							break;
 						case 't': // RIP_REGION_TEXT !|1t <justify> <text-string>
                                                           /* A number of these commands may come sandwiched between the
@@ -15760,36 +15768,86 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
                                                            * formatted text block.
                                                            */
 
-                                                        // TODO: The things that are justified...
 							handled = true;
 							if (nparsed < 1 || text == NULL)
 								break;
-							if (parsed[0])
-								printf("TODO: Justify %d\n", parsed[0]);
 							{
-								int oldsx = rip.viewport.sx;
-								int oldsy = rip.viewport.sy;
-								int oldex = rip.viewport.ex;
-								int oldey = rip.viewport.ey;
 								int oldx = rip.x;
 								int oldy = rip.y;
+								int olddir = rip.font.vertical;
 
-								rip.viewport.sx = rip.text_region.sx;
-								rip.viewport.sy = rip.text_region.sy;
-								rip.viewport.ex = rip.text_region.ex;
-								rip.viewport.ey = rip.text_region.ey;
-								rip.x = rip.text_region.xpos;
-								rip.y = rip.text_region.ypos;
+								rip.x = rip.text_region.sx
+								    + rip.text_region.xpos
+								    - rip.viewport.sx;
+								rip.y = rip.text_region.sy
+								    + rip.text_region.ypos
+								    - rip.viewport.sy;
 
-								write_text(text);
-								rip.text_region.ypos += font_height();
+								int nwords = 0;
+								if (parsed[0]) {
+									bool in_word = false;
+									for (const char *sp = text; *sp; sp++) {
+										if (*sp == ' ')
+											in_word = false;
+										else if (!in_word) {
+											in_word = true;
+											nwords++;
+										}
+									}
+								}
 
-								rip.viewport.sx = oldsx;
-								rip.viewport.sy = oldsy;
-								rip.viewport.ex = oldex;
-								rip.viewport.ey = oldey;
+								if (parsed[0] == 0 || nwords < 2) {
+									write_text(text);
+								}
+								else {
+									int region_w = rip.text_region.ex
+									    - rip.text_region.sx + 1;
+								int text_w = str_textwidth(text,
+								    strlen(text));
+								int total_slack = region_w - text_w + 1;
+									char *tcopy = strdup(text);
+
+								{
+									double step = (nwords > 2)
+									    ? (double)total_slack / (double)(nwords - 1)
+									    : (double)total_slack;
+									int accumulated = 0;
+									char *cur = tcopy;
+									char *boundary = strchr(cur, ' ');
+									for (int wi = 0; wi < nwords - 1; wi++) {
+										if (boundary)
+											*boundary = '\0';
+										int ix = rip.x;
+										write_text(cur);
+										rip.x = ix + str_textwidth(cur, strlen(cur));
+										int base_gap = (int)step;
+										accumulated += base_gap;
+										int ideal = (int)(step * (wi + 1));
+										if (ideal > accumulated) {
+											int extra = ideal - accumulated;
+											accumulated += extra;
+											base_gap += extra;
+										}
+										rip.x += base_gap;
+										if (boundary)
+											*boundary = ' ';
+										cur = boundary;
+										if (cur) {
+											char *next = cur + 1;
+											while (*next && *next == ' ')
+												next++;
+											boundary = strchr(next, ' ');
+										}
+									}
+									write_text(cur);
+								}
+									free(tcopy);
+								}
+								rip.text_region.ypos += rip.text_region.line_height + 3;
+
 								rip.x = oldx;
 								rip.y = oldy;
+								rip.font.vertical = olddir;
 							}
 							break;
 						case 'U': // RIP_BUTTON !|1U <x0> <y0> <x1> <y1> <hotkey> <flags> <res>
