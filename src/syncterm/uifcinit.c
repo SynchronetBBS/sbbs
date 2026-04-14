@@ -173,10 +173,11 @@ uifcmsg(char *msg, char *helpbuf)
 	}
 }
 
-void
+int
 uifcinput(char *title, int len, char *msg, int mode, char *helpbuf)
 {
 	int                   i;
+	int                   ret = -1;
 	struct ciolib_screen *savscrn;
 
 	i = uifc_initialized;
@@ -189,7 +190,7 @@ uifcinput(char *title, int len, char *msg, int mode, char *helpbuf)
 	init_uifc(false, false);
 	if (uifc_initialized) {
 		uifc.helpbuf = helpbuf;
-		uifc.input(WIN_MID | WIN_SAV, 0, 0, title, msg, len, mode);
+		ret = uifc.input(WIN_MID | WIN_SAV, 0, 0, title, msg, len, mode);
 		check_exit(false);
 	}
 	else {
@@ -200,6 +201,7 @@ uifcinput(char *title, int len, char *msg, int mode, char *helpbuf)
 		restorescreen(savscrn);
 		freescreen(savscrn);
 	}
+	return ret;
 }
 
 int
