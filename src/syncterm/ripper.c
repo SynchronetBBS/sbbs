@@ -15807,40 +15807,40 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 								int total_slack = region_w - text_w + 1;
 									char *tcopy = strdup(text);
 
-								{
-									double step = (nwords > 2)
-									    ? (double)total_slack / (double)(nwords - 1)
-									    : (double)total_slack;
-									int accumulated = 0;
-									char *cur = tcopy;
-									char *boundary = strchr(cur, ' ');
-									for (int wi = 0; wi < nwords - 1; wi++) {
-										if (boundary)
-											*boundary = '\0';
-										int ix = rip.x;
+									{
+										double step = (nwords > 2)
+										    ? (double)total_slack / (double)(nwords - 1)
+										    : (double)total_slack;
+										int accumulated = 0;
+										char *cur = tcopy;
+										char *boundary = strchr(cur, ' ');
+										for (int wi = 0; wi < nwords - 1; wi++) {
+											if (boundary)
+												*boundary = '\0';
+											int ix = rip.x;
+											write_text(cur);
+											rip.x = ix + str_textwidth(cur, strlen(cur));
+											int base_gap = (int)step;
+											accumulated += base_gap;
+											int ideal = (int)(step * (wi + 1));
+											if (ideal > accumulated) {
+												int extra = ideal - accumulated;
+												accumulated += extra;
+												base_gap += extra;
+											}
+											rip.x += base_gap;
+											if (boundary)
+												*boundary = ' ';
+											cur = boundary;
+											if (cur) {
+												char *next = cur + 1;
+												while (*next && *next == ' ')
+													next++;
+												boundary = strchr(next, ' ');
+											}
+										}
 										write_text(cur);
-										rip.x = ix + str_textwidth(cur, strlen(cur));
-										int base_gap = (int)step;
-										accumulated += base_gap;
-										int ideal = (int)(step * (wi + 1));
-										if (ideal > accumulated) {
-											int extra = ideal - accumulated;
-											accumulated += extra;
-											base_gap += extra;
-										}
-										rip.x += base_gap;
-										if (boundary)
-											*boundary = ' ';
-										cur = boundary;
-										if (cur) {
-											char *next = cur + 1;
-											while (*next && *next == ' ')
-												next++;
-											boundary = strchr(next, ' ');
-										}
 									}
-									write_text(cur);
-								}
 									free(tcopy);
 								}
 								rip.text_region.ypos += rip.text_region.line_height + 3;
