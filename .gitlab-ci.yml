@@ -166,7 +166,7 @@ include:
   extends: .rules
   script:
     - cd src/sbbs3/msvc.win32.dll.release
-    - $env:PATH = $env:CI_PROJECT_DIR + "\3rdp\win32.release\cryptlib\bin;" + $env:PATH
+    - $env:PATH = $env:CI_PROJECT_DIR + "\3rdp\win32.release\mozjs\bin;" + $env:CI_PROJECT_DIR + "\3rdp\win32.release\cryptlib\bin;" + $env:PATH
     - ..\msvc.win32.exe.release\jsexec -c../../../ctrl -C exit(0)"
   needs: ["windows-x86 [sbbs]"]
 
@@ -176,7 +176,7 @@ include:
   extends: .rules
   script:
     - cd src/sbbs3/msvc.win32.dll.release
-    - $env:PATH = $env:CI_PROJECT_DIR + "\3rdp\win32.release\cryptlib\bin;" + $env:PATH
+    - $env:PATH = $env:CI_PROJECT_DIR + "\3rdp\win32.release\mozjs\bin;" + $env:CI_PROJECT_DIR + "\3rdp\win32.release\cryptlib\bin;" + $env:PATH
     - ..\msvc.win32.exe.release\jsexec -c../../../ctrl -C ../../../exec/tests/test.js
   needs: ["windows-x86 [sbbs]"]
 
