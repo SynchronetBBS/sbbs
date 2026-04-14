@@ -840,6 +840,14 @@ int sbbs_t::js_execxtrn(const char *cmd, const char* startup_dir)
 	/* Save the node's callback state — the XtrnModule gets its own */
 	js_callback_t saved_callback = js_callback;
 
+	/* SM128: save the current realm so we can properly leave the xtrn realm
+	 * after execution. js_init_xtrn calls JS_NewCompartmentAndGlobalObject
+	 * which calls JS::EnterRealm internally (discarding the return value).
+	 * EnterRealm *roots* the new realm+global until the matching LeaveRealm.
+	 * We must call JS::LeaveRealm(cx, saved_realm) — NOT another EnterRealm —
+	 * to properly unroot the xtrn global so the pre-destroy GC can collect it. */
+	JS::Realm* saved_realm = JS::GetCurrentRealmOrNull(this->js_cx);
+
 	JSObject* xtrn_glob = NULL;
 
 	/* js_init_xtrn creates a new Realm (global) within the existing context,
@@ -852,9 +860,11 @@ int sbbs_t::js_execxtrn(const char *cmd, const char* startup_dir)
 	/* Restore the node's callback state */
 	js_callback = saved_callback;
 
-	/* Re-enter the node's original Realm */
-	if (this->js_glob != NULL)
-		JS::EnterRealm(this->js_cx, this->js_glob);
+	/* SM128: leave the xtrn realm (un-rooting the xtrn global) and restore the
+	 * node's original realm.  Only needed if the realm actually changed (i.e.
+	 * JS_NewCompartmentAndGlobalObject in js_init_xtrn called EnterRealm). */
+	if (JS::GetCurrentRealmOrNull(this->js_cx) != saved_realm)
+		JS::LeaveRealm(this->js_cx, saved_realm);
 
 	return result;
 }

@@ -166,7 +166,18 @@ void jsrt_Release(JSContext *cx)
 		}
 	}
 
-	/* SM128: must leave any active realm before destroying the context
+	/* SM128: leave the initial realm before destroying the context.
+	 * JS_NewCompartmentAndGlobalObject calls JS::EnterRealm (discarding the
+	 * return value which was nullptr — no prior realm) to enter the newly
+	 * created global's realm.  LeaveRealm with nullptr correctly un-roots the
+	 * global (JS::Realm.h: "Entering a realm roots the realm and its global
+	 * object until the matching LeaveRealm call").
+	 *
+	 * Any extra EnterRealm calls made during the context's lifetime (e.g. by
+	 * js_execxtrn for door-game realms) must be balanced by matching LeaveRealm
+	 * calls before jsrt_Release is called, so that only the original EnterRealm
+	 * (which returned nullptr) remains unbalanced here.  After this LeaveRealm,
+	 * all realm globals are un-rooted and the pre-destroy GC can collect them.
 	 * (debug assertion: "Shouldn't destroy context with active realm") */
 	if (JS::GetCurrentRealmOrNull(cx) != nullptr)
 		JS::LeaveRealm(cx, nullptr);
@@ -199,16 +210,19 @@ void jsrt_Release(JSContext *cx)
 	}
 	pthread_mutex_unlock(&jsrt_private_mutex);
 
-	/* SM128: force a regular GC before JS_DestroyContext so the realm's global
-	 * is collected (globalObj_ → null) before destroyRuntime's final GC runs
-	 * checkNoRuntimeRoots.  After LeaveRealm above, the global is unreachable
-	 * from C++ (no Rooted<T>, no PersistentRooted<T>, no current-realm trace),
-	 * so this GC finalizes it.  The destroy-time checkNoRuntimeRoots assertion
-	 * then finds a null globalObj_ and passes.
+	/* SM128: force a full shrinking GC before JS_DestroyContext so all realm
+	 * globals are collected (globalObj_ → null) before destroyRuntime's final
+	 * GC runs checkNoRuntimeRoots.  After LeaveRealm above, all globals are
+	 * unreachable from C++ (no Rooted<T>, no PersistentRooted<T>, no
+	 * current-realm trace), so the GC can finalize them.
 	 *
-	 * A regular JS_GC uses GCReason != DESTROY_RUNTIME and does NOT invoke
-	 * checkNoRuntimeRoots itself, so this call is safe even in debug builds. */
-	JS_GC(cx);
+	 * GCOptions::Shrink is used (vs. Normal / JS_GC) because it guarantees
+	 * "all unreferenced objects are removed from the system" — the explicit
+	 * assurance we need before destroyRuntime's checkNoRuntimeRoots runs.
+	 * Neither PrepareForFullGC nor NonIncrementalGC invokes checkNoRuntimeRoots
+	 * (GCReason != DESTROY_RUNTIME), so this is safe even in debug builds. */
+	JS::PrepareForFullGC(cx);
+	JS::NonIncrementalGC(cx, JS::GCOptions::Shrink, JS::GCReason::API);
 
 	JS_DestroyContext(cx);
 
