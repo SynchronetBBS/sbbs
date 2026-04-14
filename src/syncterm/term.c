@@ -1014,6 +1014,16 @@ extern char *log_levels[];
  #pragma argsused
 #endif
 
+
+static void
+logmsg(int level, const char *str)
+{
+	if ((log_fp != NULL) && (level <= log_level)) {
+		time_t t = time(NULL);
+		fprintf(log_fp, "%.15s %s\n", ctime(&t) + 4, str);
+	}
+}
+
 static int
 lputs(void *cbdata, int level, const char *str)
 {
@@ -1021,15 +1031,7 @@ lputs(void *cbdata, int level, const char *str)
 	int  chars;
 	int  oldhold = hold_update;
 
-#if defined(_WIN32) && defined(_DEBUG) && false
-	sprintf(msg, "SyncTerm: %s\n", str);
-	OutputDebugString(msg);
-#endif
-
-	if ((log_fp != NULL) && (level <= log_level)) {
-		time_t t = time(NULL);
-		fprintf(log_fp, "%.15s %s\n", ctime(&t) + 4, str);
-	}
+	logmsg(level, str);
 
 	if (level > LOG_INFO)
 		return 0;
@@ -5837,9 +5839,9 @@ doterm(struct bbslist *bbs)
 #ifdef WITH_JPEG_XL
 	if (cio_api.options & CONIO_OPT_SET_PIXEL) {
 		if (load_jxl_funcs())
-			lprintf(LOG_DEBUG, "JPEG-XL library loaded successfully");
+			logmsg(LOG_DEBUG, "JPEG-XL library loaded successfully");
 		else
-			lprintf(LOG_WARNING, "JPEG-XL library load failure");
+			logmsg(LOG_WARNING, "JPEG-XL library load failure");
 	}
 #endif
 
