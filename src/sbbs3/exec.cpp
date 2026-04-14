@@ -544,11 +544,12 @@ js_ReportPendingException(JSContext* cx)
 		/* Try to extract fileName and lineNumber from the JSErrorReport
 		 * (the Error object's lineNumber property can be wrong for
 		 * compile-time SyntaxErrors in SM128). */
-		char file_info[MAX_PATH + 32] = "";
+		char* fname = NULL;
+		int32 lineno = 0;
+		char file[MAX_PATH + 2] = "";
+		char line[32] = "";
 		if (exn.isObject()) {
 			JS::RootedObject errobj(cx, &exn.toObject());
-			char* fname = NULL;
-			int32 lineno = 0;
 			JSErrorReport* report = JS_ErrorFromException(cx, errobj);
 			if (report) {
 				if (report->filename.c_str())
@@ -572,20 +573,25 @@ js_ReportPendingException(JSContext* cx)
 					}
 				}
 			}
-			if (fname != NULL && *fname != '\0' && lineno > 0)
-				snprintf(file_info, sizeof file_info, " %s line %d", fname, lineno);
-			else if (fname != NULL && *fname != '\0')
-				snprintf(file_info, sizeof file_info, " %s", fname);
-			else if (lineno > 0)
-				snprintf(file_info, sizeof file_info, " line %d", lineno);
-			free(fname);
 		}
+		if (fname != NULL && *fname != '\0')
+			SAFEPRINTF(file, " %s", fname);
+		if (lineno > 0)
+			SAFEPRINTF(line, " line %d", lineno);
 		JS::Rooted<JSString*> str(cx, JS::ToString(cx, exn));
 		if (str) {
 			JS::UniqueChars msg = JS_EncodeStringToLatin1(cx, str);
-			if (msg)
-				sbbs->lprintf(LOG_ERR, "!JavaScript exception%s: %s", file_info, msg.get());
+			if (msg) {
+				sbbs->lprintf(LOG_ERR, "!JavaScript%s%s: %s", file, line, msg.get());
+				if (sbbs->online == ON_REMOTE) {
+					char basename[MAX_PATH + 2] = "";
+					if (fname != NULL && *fname != '\0')
+						SAFEPRINTF(basename, " %s", getfname(fname));
+					sbbs->bprintf("!JavaScript%s%s: %s\r\n", basename, line, msg.get());
+				}
+			}
 		}
+		free(fname);
 	}
 }
 
