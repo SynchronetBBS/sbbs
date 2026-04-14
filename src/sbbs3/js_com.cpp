@@ -730,6 +730,8 @@ static bool js_com_resolve(JSContext *cx, JS::Handle<JSObject*> obj, JS::Handle<
 	if (name)
 		free(name);
 	if (resolvedp) *resolvedp = ret;
+	if (JS_IsExceptionPending(cx))
+		JS_ClearPendingException(cx);
 	return true;
 }
 
@@ -759,7 +761,7 @@ static const JSClassOps js_com_classops = {
 
 JSClass js_com_class = {
 	"COM"
-	, JSCLASS_HAS_PRIVATE
+	, JSCLASS_HAS_PRIVATE | JSCLASS_FOREGROUND_FINALIZE
 	, &js_com_classops
 };
 

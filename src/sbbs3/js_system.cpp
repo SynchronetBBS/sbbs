@@ -818,6 +818,8 @@ static bool js_sysstats_resolve(JSContext *cx, JS::Handle<JSObject*> obj, JS::Ha
 	if (name)
 		free(name);
 	if (resolvedp) *resolvedp = ret;
+	if (JS_IsExceptionPending(cx))
+		JS_ClearPendingException(cx);
 	return true;
 }
 
@@ -2705,6 +2707,8 @@ static bool js_node_resolve(JSContext *cx, JS::Handle<JSObject*> obj, JS::Handle
 	if (name)
 		free(name);
 	if (resolvedp) *resolvedp = ret;
+	if (JS_IsExceptionPending(cx))
+		JS_ClearPendingException(cx);
 	return true;
 }
 
@@ -2850,6 +2854,8 @@ static bool js_system_resolve(JSContext *cx, JS::Handle<JSObject*> obj, JS::Hand
 	bool ret = js_system_resolve_impl(cx, obj, name);
 	/* name is freed by impl */
 	if (resolvedp) *resolvedp = ret;
+	if (JS_IsExceptionPending(cx))
+		JS_ClearPendingException(cx);
 	return true;
 }
 
@@ -3071,7 +3077,7 @@ static const JSClassOps js_system_classops = {
 
 JSClass js_system_class = {
 	"System"
-	, JSCLASS_HAS_PRIVATE
+	, JSCLASS_HAS_PRIVATE | JSCLASS_FOREGROUND_FINALIZE
 	, &js_system_classops
 };
 

@@ -2798,6 +2798,8 @@ static bool js_socket_resolve(JSContext *cx, JS::Handle<JSObject*> obj, JS::Hand
 	}
 	free(name);
 	if (resolvedp) *resolvedp = ret;
+	if (JS_IsExceptionPending(cx))
+		JS_ClearPendingException(cx);
 	return true;
 }
 
@@ -2835,19 +2837,19 @@ static const JSClassOps js_socket_classops = {
 
 JSClass js_socket_class = {
 	"Socket"
-	, JSCLASS_HAS_PRIVATE
+	, JSCLASS_HAS_PRIVATE | JSCLASS_FOREGROUND_FINALIZE
 	, &js_socket_classops
 };
 
 JSClass js_connected_socket_class = {
 	"ConnectedSocket"
-	, JSCLASS_HAS_PRIVATE
+	, JSCLASS_HAS_PRIVATE | JSCLASS_FOREGROUND_FINALIZE
 	, &js_socket_classops
 };
 
 JSClass js_listening_socket_class = {
 	"ListeningSocket"
-	, JSCLASS_HAS_PRIVATE
+	, JSCLASS_HAS_PRIVATE | JSCLASS_FOREGROUND_FINALIZE
 	, &js_socket_classops
 };
 

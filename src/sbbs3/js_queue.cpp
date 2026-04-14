@@ -407,6 +407,8 @@ static bool js_queue_resolve(JSContext *cx, JS::Handle<JSObject*> obj, JS::Handl
 	if (name)
 		free(name);
 	if (resolvedp) *resolvedp = ret;
+	if (JS_IsExceptionPending(cx))
+		JS_ClearPendingException(cx);
 	return true;
 }
 
@@ -434,7 +436,7 @@ static const JSClassOps js_queue_classops = {
 
 JSClass js_queue_class = {
 	"Queue"
-	, JSCLASS_HAS_PRIVATE
+	, JSCLASS_HAS_PRIVATE | JSCLASS_FOREGROUND_FINALIZE
 	, &js_queue_classops
 };
 

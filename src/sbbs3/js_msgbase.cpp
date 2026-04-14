@@ -1344,6 +1344,8 @@ static bool js_get_msg_header_resolve(JSContext *cx, JS::Handle<JSObject*> obj, 
 
 	bool ret = js_get_msg_header_resolve_impl(cx, obj, name);
 	if (resolvedp) *resolvedp = ret;
+	if (JS_IsExceptionPending(cx))
+		JS_ClearPendingException(cx);
 	return true;
 }
 
@@ -1700,7 +1702,7 @@ static const JSClassOps js_msghdr_classops = {
 
 static JSClass js_msghdr_class = {
 	"MsgHeader"
-	, JSCLASS_HAS_PRIVATE
+	, JSCLASS_HAS_PRIVATE | JSCLASS_FOREGROUND_FINALIZE
 	, &js_msghdr_classops
 };
 
@@ -3264,6 +3266,8 @@ static bool js_msgbase_resolve(JSContext *cx, JS::Handle<JSObject*> obj, JS::Han
 	if (name)
 		free(name);
 	if (resolvedp) *resolvedp = ret;
+	if (JS_IsExceptionPending(cx))
+		JS_ClearPendingException(cx);
 	return true;
 }
 
@@ -3290,7 +3294,7 @@ static const JSClassOps js_msgbase_classops = {
 
 JSClass js_msgbase_class = {
 	"MsgBase"
-	, JSCLASS_HAS_PRIVATE
+	, JSCLASS_HAS_PRIVATE | JSCLASS_FOREGROUND_FINALIZE
 	, &js_msgbase_classops
 };
 
@@ -3299,9 +3303,12 @@ JSClass js_msgbase_class = {
 static JSBool
 js_msgbase_constructor(JSContext *cx, uintN argc, jsval *arglist)
 {
-	JSObject * obj;
 	jsval *    argv = JS_ARGV(cx, arglist);
-	JSObject*  cfgobj;
+	/* SM128: root both obj and cfgobj — any allocation (JSVALUE_TO_STRBUF,
+	 * JS_NewObject, js_CreateMsgAreaProperties) may trigger a moving GC that
+	 * invalidates raw JSObject* stack locals. */
+	JS::RootedObject obj(cx);
+	JS::RootedObject cfgobj(cx);
 	char       base[MAX_PATH + 1] = "";
 	bool       is_path = false;
 	private_t* p;
@@ -3393,6 +3400,7 @@ js_msgbase_constructor(JSContext *cx, uintN argc, jsval *arglist)
 		         , scfg->sub[p->smb.subnum]->data_dir, scfg->sub[p->smb.subnum]->code);
 	} else { /* unknown code */
 		JS_ReportError(cx, "Unrecognized message area (sub-board) internal code: '%s'", base);
+		return JS_FALSE;	/* SM128: must not return true with a pending exception */
 	}
 
 	return JS_TRUE;

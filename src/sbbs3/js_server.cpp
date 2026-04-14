@@ -214,6 +214,8 @@ bool js_server_resolve(JSContext* cx, JS::Handle<JSObject*> obj, JS::Handle<jsid
 	if (name)
 		free(name);
 	if (resolvedp) *resolvedp = ret;
+	if (JS_IsExceptionPending(cx))
+		JS_ClearPendingException(cx);
 	return true;
 }
 

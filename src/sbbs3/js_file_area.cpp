@@ -209,7 +209,7 @@ static const JSClassOps js_dir_classops = {
 
 static JSClass js_dir_class = {
 	"FileDir"
-	, JSCLASS_HAS_PRIVATE
+	, JSCLASS_HAS_PRIVATE | JSCLASS_FOREGROUND_FINALIZE
 	, &js_dir_classops
 };
 
@@ -230,6 +230,8 @@ bool js_file_area_resolve(JSContext* cx, JS::Handle<JSObject*> obj, JS::Handle<j
 	if (name)
 		free(name);
 	if (resolvedp) *resolvedp = ret;
+	if (JS_IsExceptionPending(cx))
+		JS_ClearPendingException(cx);
 	return true;
 }
 
@@ -664,7 +666,7 @@ static const JSClassOps js_file_area_classops = {
 
 static JSClass js_file_area_class = {
 	"FileArea"
-	, JSCLASS_HAS_PRIVATE
+	, JSCLASS_HAS_PRIVATE | JSCLASS_FOREGROUND_FINALIZE
 	, &js_file_area_classops
 };
 

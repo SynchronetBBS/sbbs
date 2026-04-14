@@ -677,6 +677,8 @@ static bool js_mqtt_resolve(JSContext* cx, JS::Handle<JSObject*> obj, JS::Handle
 		js_mqtt_fill_properties(cx, obj, p, name);
 	free(name);
 	if (resolvedp) *resolvedp = ret;
+	if (JS_IsExceptionPending(cx))
+		JS_ClearPendingException(cx);
 	return true;
 }
 
@@ -704,7 +706,7 @@ static const JSClassOps js_mqtt_classops = {
 
 JSClass js_mqtt_class = {
 	"MQTT"
-	, JSCLASS_HAS_PRIVATE
+	, JSCLASS_HAS_PRIVATE | JSCLASS_FOREGROUND_FINALIZE
 	, &js_mqtt_classops
 };
 

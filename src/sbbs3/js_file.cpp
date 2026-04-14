@@ -2922,6 +2922,8 @@ static bool js_file_resolve(JSContext *cx, JS::Handle<JSObject*> obj, JS::Handle
 	if (name)
 		free(name);
 	if (resolvedp) *resolvedp = ret;
+	if (JS_IsExceptionPending(cx))
+		JS_ClearPendingException(cx);
 	return true;
 }
 
@@ -2948,7 +2950,7 @@ static const JSClassOps js_file_classops = {
 
 JSClass js_file_class = {
 	"File"
-	, JSCLASS_HAS_PRIVATE
+	, JSCLASS_HAS_PRIVATE | JSCLASS_FOREGROUND_FINALIZE
 	, &js_file_classops
 };
 

@@ -317,7 +317,7 @@ static const JSClassOps js_uifc_list_ctx_classops = {
 };
 static JSClass            js_uifc_list_ctx_class = {
 	"CTX"
-	, JSCLASS_HAS_PRIVATE
+	, JSCLASS_HAS_PRIVATE | JSCLASS_FOREGROUND_FINALIZE
 	, &js_uifc_list_ctx_classops
 };
 static const JSClassOps js_uifc_showbuf_ctx_classops = {
@@ -327,7 +327,7 @@ static const JSClassOps js_uifc_showbuf_ctx_classops = {
 };
 static JSClass            js_uifc_showbuf_ctx_class = {
 	"CTX"
-	, JSCLASS_HAS_PRIVATE
+	, JSCLASS_HAS_PRIVATE | JSCLASS_FOREGROUND_FINALIZE
 	, &js_uifc_showbuf_ctx_classops
 };
 static const JSClassOps js_uifc_getstrxy_ctx_classops = {
@@ -337,7 +337,7 @@ static const JSClassOps js_uifc_getstrxy_ctx_classops = {
 };
 static JSClass            js_uifc_getstrxy_ctx_class = {
 	"CTX"
-	, JSCLASS_HAS_PRIVATE
+	, JSCLASS_HAS_PRIVATE | JSCLASS_FOREGROUND_FINALIZE
 	, &js_uifc_getstrxy_ctx_classops
 };
 static jsSyncPropertySpec js_uifc_list_class_properties[] = {
@@ -1251,6 +1251,8 @@ bool js_uifc_resolve(JSContext *cx, JS::Handle<JSObject*> obj, JS::Handle<jsid> 
 	if (name)
 		free(name);
 	if (resolvedp) *resolvedp = ret;
+	if (JS_IsExceptionPending(cx))
+		JS_ClearPendingException(cx);
 	return true;
 }
 
@@ -1302,7 +1304,7 @@ static const JSClassOps js_uifc_classops = {
 };
 static JSClass js_uifc_class = {
 	"UIFC"
-	, JSCLASS_HAS_PRIVATE
+	, JSCLASS_HAS_PRIVATE | JSCLASS_FOREGROUND_FINALIZE
 	, &js_uifc_classops
 };
 JSObject* js_CreateUifcObject(JSContext* cx, JSObject* parent)

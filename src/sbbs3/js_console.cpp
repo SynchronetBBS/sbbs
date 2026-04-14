@@ -2839,6 +2839,8 @@ static bool js_console_resolve(JSContext *cx, JS::Handle<JSObject*> obj, JS::Han
 	if (name)
 		free(name);
 	if (resolvedp) *resolvedp = ret;
+	if (JS_IsExceptionPending(cx))
+		JS_ClearPendingException(cx);
 	return true;
 }
 

@@ -424,7 +424,7 @@ static const JSClassOps js_sub_classops = {
 
 static JSClass js_sub_class = {
 	"MsgSub"
-	, JSCLASS_HAS_PRIVATE
+	, JSCLASS_HAS_PRIVATE | JSCLASS_FOREGROUND_FINALIZE
 	, &js_sub_classops
 };
 
@@ -445,6 +445,9 @@ bool js_msg_area_resolve(JSContext* cx, JS::Handle<JSObject*> obj, JS::Handle<js
 	if (name)
 		free(name);
 	if (resolvedp) *resolvedp = ret;
+	/* SM128: resolve hook must not return true with a pending exception. */
+	if (JS_IsExceptionPending(cx))
+		JS_ClearPendingException(cx);
 	return true;
 }
 
@@ -689,7 +692,7 @@ static const JSClassOps js_msg_area_classops = {
 
 static JSClass js_msg_area_class = {
 	"MsgArea"
-	, JSCLASS_HAS_PRIVATE
+	, JSCLASS_HAS_PRIVATE | JSCLASS_FOREGROUND_FINALIZE
 	, &js_msg_area_classops
 };
 

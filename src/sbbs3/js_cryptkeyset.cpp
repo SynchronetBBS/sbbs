@@ -386,6 +386,8 @@ static bool js_cryptkeyset_resolve(JSContext *cx, JS::Handle<JSObject*> obj, JS:
 	if (name)
 		free(name);
 	if (resolvedp) *resolvedp = ret;
+	if (JS_IsExceptionPending(cx))
+		JS_ClearPendingException(cx);
 	return true;
 }
 
@@ -409,7 +411,7 @@ static const JSClassOps js_cryptkeyset_classops = {
 
 JSClass js_cryptkeyset_class = {
 	"CryptKeyset"
-	, JSCLASS_HAS_PRIVATE
+	, JSCLASS_HAS_PRIVATE | JSCLASS_FOREGROUND_FINALIZE
 	, &js_cryptkeyset_classops
 };
 

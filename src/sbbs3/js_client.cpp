@@ -150,6 +150,8 @@ static bool js_client_resolve(JSContext *cx, JS::Handle<JSObject*> obj, JS::Hand
 	if (name)
 		free(name);
 	if (resolvedp) *resolvedp = ret;
+	if (JS_IsExceptionPending(cx))
+		JS_ClearPendingException(cx);
 	return true;
 }
 
