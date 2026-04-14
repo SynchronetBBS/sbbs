@@ -488,6 +488,36 @@ static inline bool JS_SetReservedSlot(JSContext* /*cx*/, JSObject* obj, uint32_t
     ::JS_SetReservedSlot(obj, slot, v); return true;
 }
 
+/* SM128 cross-DLL heap fix for RootedIdVector / Rooted<IdVector>:
+ * js::GetPropertyKeys and JS::JS_Enumerate grow the vector's backing store via
+ * mozjs.dll's jemalloc arena.  In debug builds (/MTd), the inline
+ * TempAllocPolicy::free_ calls the calling module's debug CRT free(), which
+ * rejects jemalloc pointers (_CrtIsValidHeapPointer).
+ *
+ * Call jsrt_FreeIdVector() on any locally-scoped RootedIdVector after you are
+ * done iterating it and before its destructor runs.  It extracts the raw buffer
+ * (resetting the vector to inline/empty state so ~Vector is a no-op) and frees
+ * it via mozjs's exported JS_free, which routes through mozjs's own CRT where
+ * jemalloc intercepts the call correctly.
+ *
+ * Implementation note: GCVector<T,N,AP> is a standard-layout class whose sole
+ * data member is mozilla::Vector<T,N,AP> at offset 0, so reinterpret_cast from
+ * GCVector* to Vector* is well-defined per [class.mem].  This avoids modifying
+ * the vendored mozjs include headers. */
+#include "js/GCVector.h"          /* JS::GCVector */
+#include "js/MemoryFunctions.h"   /* JS_free */
+template<typename T, size_t N, typename AP>
+static inline void jsrt_FreeGCVector(JSContext* cx, JS::GCVector<T, N, AP>& gcvec) {
+    mozilla::Vector<T, N, AP>* vec = reinterpret_cast<mozilla::Vector<T, N, AP>*>(&gcvec);
+    T* raw = vec->extractRawBuffer();
+    if (raw != nullptr)
+        JS_free(cx, raw);
+}
+template<typename RootedVecT>
+static inline void jsrt_FreeIdVector(JSContext* cx, RootedVecT& v) {
+    jsrt_FreeGCVector(cx, v.get());
+}
+
 /* JSIdArray / JS_Enumerate / JS_DestroyIdArray: replaced by JS::IdVector in SM128 */
 struct JSIdArray {
     int    length;
@@ -505,6 +535,8 @@ static inline JSIdArray* JS_Enumerate(JSContext* cx, JSObject* obj) {
     arr->vector = (jsid*)((char*)arr + sizeof(JSIdArray));
     for (int i = 0; i < len; i++)
         arr->vector[i] = ids.get()[i];
+    /* SM128 cross-DLL heap fix: see jsrt_FreeGCVector comment above. */
+    jsrt_FreeGCVector(cx, ids.get());
     return arr;
 }
 static inline void JS_DestroyIdArray(JSContext* cx, JSIdArray* arr) {
@@ -557,9 +589,24 @@ static inline JSFunction* JS_ValueToFunction(JSContext* cx, jsval v) {
 
 /* JS_DestroyScript: already defined as no-op macro above (line 120) */
 
-/* JS_ClearScope: removed; no direct equivalent */
+/* JS_DeletePropertyById: SM128 requires Handle<jsid> + ObjectOpResult */
+static inline bool JS_DeletePropertyById(JSContext* cx, JSObject* obj, jsid id) {
+    JS::RootedObject robj(cx, obj);
+    JS::RootedId rid(cx, id);
+    JS::ObjectOpResult result;
+    return JS_DeletePropertyById(cx, robj, rid, result);
+}
+
+/* JS_ClearScope: removed in SM128; emulate by enumerating and deleting all
+ * own enumerable properties.  Uses the JS_Enumerate shim so the cross-DLL
+ * heap issue is already handled there. */
 static inline void JS_ClearScope(JSContext* cx, JSObject* obj) {
-    (void)cx; (void)obj;
+    if (obj == nullptr) return;
+    JSIdArray* ids = JS_Enumerate(cx, obj);
+    if (ids == nullptr) return;
+    for (int i = 0; i < ids->length; i++)
+        JS_DeletePropertyById(cx, obj, ids->vector[i]);
+    JS_DestroyIdArray(cx, ids);
 }
 
 /* JS_CompileFile: SM128 uses JS::CompileUtf8Path.
