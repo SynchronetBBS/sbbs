@@ -140,6 +140,7 @@ struct rip_button_style {
 	char                    *label;
 	char                    *command;
 	int                      bflags;
+	bool                     selected;
 	uint8_t                  hotkey;
 	struct rip_button_style *next;
 };
@@ -9824,32 +9825,32 @@ stamp_icon_mode(struct ciolib_pixels *pix, int ax, int ay, int mode)
 	int ex = ax + pix->width - 1;
 	int ey = ay + pix->height - 1;
 
+	// Clip to screen bounds (bottom/right).
+	int clip_ex = (ex >= rip.x_dim) ? rip.x_dim - 1 : ex;
+	int clip_ey = (ey >= rip.y_dim) ? rip.y_dim - 1 : ey;
+	if (clip_ex < ax || clip_ey < ay)
+		return;
+	int clip_w = clip_ex - ax + 1;
+	int clip_h = clip_ey - ay + 1;
+
 	if (mode == 0) {
-		setpixels(ax, ay, ex, ey, 0, 0, 0, 0, pix, NULL);
+		setpixels(ax, ay, clip_ex, clip_ey,
+		    0, 0, 0, 0, pix, NULL);
 		return;
 	}
 
-	struct ciolib_pixels *scr = getpixels(ax, ay, ex, ey, false);
+	struct ciolib_pixels *scr = getpixels(ax, ay, clip_ex, clip_ey, false);
 	if (scr == NULL)
 		return;
 
-	size_t npixels = pix->width * pix->height;
-	for (size_t i = 0; i < npixels; i++) {
-		int ii = pixel2color(pix->pixels[i]);
-		int si, ri;
+	for (int row = 0; row < clip_h; row++) {
+		for (int col = 0; col < clip_w; col++) {
+			size_t si_idx = row * clip_w + col;
+			size_t pi_idx = row * pix->width + col;
+			int ii = pixel2color(pix->pixels[pi_idx]);
+			int si, ri;
 
-		si = pixel2color(scr->pixels[i]);
-		switch (mode) {
-		case 1: ri = si ^ ii;  break;
-		case 2: ri = si | ii;  break;
-		case 3: ri = si & ii;  break;
-		case 4: ri = ii ^ 0xF; break;
-		default: ri = ii;      break;
-		}
-		scr->pixels[i] = map_rip_color(ri & 0xF);
-
-		if (scr->pixelsb) {
-			si = pixel2color(scr->pixelsb[i]);
+			si = pixel2color(scr->pixels[si_idx]);
 			switch (mode) {
 			case 1: ri = si ^ ii;  break;
 			case 2: ri = si | ii;  break;
@@ -9857,10 +9858,22 @@ stamp_icon_mode(struct ciolib_pixels *pix, int ax, int ay, int mode)
 			case 4: ri = ii ^ 0xF; break;
 			default: ri = ii;      break;
 			}
-			scr->pixelsb[i] = map_rip_color(ri & 0xF);
+			scr->pixels[si_idx] = map_rip_color(ri & 0xF);
+
+			if (scr->pixelsb) {
+				si = pixel2color(scr->pixelsb[si_idx]);
+				switch (mode) {
+				case 1: ri = si ^ ii;  break;
+				case 2: ri = si | ii;  break;
+				case 3: ri = si & ii;  break;
+				case 4: ri = ii ^ 0xF; break;
+				default: ri = ii;      break;
+				}
+				scr->pixelsb[si_idx] = map_rip_color(ri & 0xF);
+			}
 		}
 	}
-	setpixels(ax, ay, ex, ey, 0, 0, 0, 0, scr, NULL);
+	setpixels(ax, ay, clip_ex, clip_ey, 0, 0, 0, 0, scr, NULL);
 	freepixels(scr);
 }
 
@@ -10199,16 +10212,12 @@ draw_button(struct rip_button_style *but, bool inverted)
 	int      width, height;
 	int      ox, oy;
 	int      i, x, y;
-	uint32_t bg, ch, cs, su, ul, cc;
+	uint32_t ch, cs, su, ul, cc;
 	int      xinset, yinset;
 	char    *p;
 	int      oc;
 
-        // TODO: Handle "selected" buttons.
-        // TODO: Handle Checkboxes
-        // Plain button effects: surface → chisel → sunken → bevel → recess
 	if (inverted) {
-		bg = ega_colours[0x0f ^ 0];
 		ch = ega_colours[0x0f ^ but->chighlight];
 		cs = ega_colours[0x0f ^ but->cshadow];
 		su = ega_colours[0x0f ^ but->csurface];
@@ -10216,7 +10225,6 @@ draw_button(struct rip_button_style *but, bool inverted)
 		cc = ega_colours[0x0f ^ but->ccorner];
 	}
 	else {
-		bg = map_rip_color(0);
 		ch = map_rip_color(but->chighlight);
 		cs = map_rip_color(but->cshadow);
 		su = map_rip_color(but->csurface);
@@ -10239,7 +10247,7 @@ draw_button(struct rip_button_style *but, bool inverted)
 	}
 	width = bx2 - bx1;
 	height = by2 - by1;
-	if (but->flags.recessed && !inverted) {
+	if (but->flags.recessed) {
 		width += 4;
 		height += 4;
 		ox -= 2;
@@ -10257,11 +10265,33 @@ draw_button(struct rip_button_style *but, bool inverted)
 	}
 	if (but->button == BUTTON_TYPE_ICON) {
 		int icon_w = 0, icon_h = 0;
-		if (but->icon)
-			load_stamp_icon(but->icon,
-			    but->box.x1 - rip.viewport.sx,
-			    but->box.y1 - rip.viewport.sy, 0, false,
-			    &icon_w, &icon_h);
+		if (but->icon) {
+			bool loaded = false;
+			if (inverted && but->flags.hot) {
+				char hic_name[256];
+				const char *dot = strrchr(but->icon, '.');
+				if (dot) {
+					snprintf(hic_name, sizeof(hic_name),
+					    "%.*s.HIC",
+					    (int)(dot - but->icon),
+					    but->icon);
+				}
+				else {
+					snprintf(hic_name, sizeof(hic_name),
+					    "%s.HIC", but->icon);
+				}
+				loaded = load_stamp_icon(hic_name,
+				    but->box.x1 - rip.viewport.sx,
+				    but->box.y1 - rip.viewport.sy,
+				    0, false, &icon_w, &icon_h);
+			}
+			if (!loaded)
+				load_stamp_icon(but->icon,
+				    but->box.x1 - rip.viewport.sx,
+				    but->box.y1 - rip.viewport.sy,
+				    inverted ? 4 : 0, false,
+				    &icon_w, &icon_h);
+		}
 		// box = icon origin at (x0, y0); bevel draws outside
 		bx1 = but->box.x1;
 		by1 = but->box.y1;
@@ -10276,13 +10306,9 @@ draw_button(struct rip_button_style *but, bool inverted)
 	}
 	else if (but->button == BUTTON_TYPE_CLIPBOARD) {
 		if (rip.clipboard) {
-			struct text_info ti;
-			gettextinfo(&ti);
-			setpixels(but->box.x1, but->box.y1,
-			    but->box.x1 + rip.clipboard->width - 1,
-			    but->box.y1 + rip.clipboard->height - 1,
-			    0, 0, 0, 0,
-			    rip.clipboard, NULL);
+			stamp_icon_mode(rip.clipboard,
+			    but->box.x1, but->box.y1,
+			    inverted ? 4 : 0);
 			bx1 = but->box.x1;
 			by1 = but->box.y1;
 			bx2 = but->box.x1 + rip.clipboard->width;
@@ -10421,8 +10447,14 @@ draw_button(struct rip_button_style *but, bool inverted)
 			set_pixel(but->box.x2 - 1 + i, but->box.y2 - 1 + i, cc);
 		}
 	}
-	if (but->flags.recessed && !inverted) {
-		// Recess uses original box, not zero-expanded coords
+	if (but->flags.recessed) {
+		// Recess uses original box, not zero-expanded coords.
+		// Recessed border always uses normal colors, even when
+		// the button interior is inverted for selected state.
+		uint32_t r_cs = map_rip_color(but->cshadow);
+		uint32_t r_ch = map_rip_color(but->chighlight);
+		uint32_t r_cc = map_rip_color(but->ccorner);
+		uint32_t r_bg = map_rip_color(0);
 		int rx = but->box.x1, ry = but->box.y1;
 		int rw = but->box.x2 - but->box.x1;
 		int rh = but->box.y2 - but->box.y1;
@@ -10433,18 +10465,18 @@ draw_button(struct rip_button_style *but, bool inverted)
 			ry -= bevel_size;
 		}
 		rw += 4; rh += 4; rx -= 2; ry -= 2;
-		set_line(rx, ry, rx + rw - 1, ry, cs, 0xffff, 1);
-		set_line(rx, ry, rx, ry + rh - 1, cs, 0xffff, 1);
-		set_line(rx + rw - 1, ry, rx + rw - 1, ry + rh - 1, ch, 0xffff, 1);
-		set_line(rx, ry + rh - 1, rx + rw - 1, ry + rh - 1, ch, 0xffff, 1);
-		set_pixel(rx, ry, cc);
-		set_pixel(rx + rw - 1, ry, cc);
-		set_pixel(rx, ry + rh - 1, cc);
-		set_pixel(rx + rw - 1, ry + rh - 1, cc);
-		set_line(rx + 1, ry + 1, rx + rw - 2, ry + 1, bg, 0xffff, 1);
-		set_line(rx + 1, ry + 1, rx + 1, ry + rh - 2, bg, 0xffff, 1);
-		set_line(rx + rw - 2, ry + 1, rx + rw - 2, ry + rh - 2, bg, 0xffff, 1);
-		set_line(rx + 1, ry + rh - 2, rx + rw - 2, ry + rh - 2, bg, 0xffff, 1);
+		set_line(rx, ry, rx + rw - 1, ry, r_cs, 0xffff, 1);
+		set_line(rx, ry, rx, ry + rh - 1, r_cs, 0xffff, 1);
+		set_line(rx + rw - 1, ry, rx + rw - 1, ry + rh - 1, r_ch, 0xffff, 1);
+		set_line(rx, ry + rh - 1, rx + rw - 1, ry + rh - 1, r_ch, 0xffff, 1);
+		set_pixel(rx, ry, r_cc);
+		set_pixel(rx + rw - 1, ry, r_cc);
+		set_pixel(rx, ry + rh - 1, r_cc);
+		set_pixel(rx + rw - 1, ry + rh - 1, r_cc);
+		set_line(rx + 1, ry + 1, rx + rw - 2, ry + 1, r_bg, 0xffff, 1);
+		set_line(rx + 1, ry + 1, rx + 1, ry + rh - 2, r_bg, 0xffff, 1);
+		set_line(rx + rw - 2, ry + 1, rx + rw - 2, ry + rh - 2, r_bg, 0xffff, 1);
+		set_line(rx + 1, ry + rh - 2, rx + rw - 2, ry + rh - 2, r_bg, 0xffff, 1);
 	}
 
 	if (but->flags.autostamp) {
@@ -10495,7 +10527,7 @@ draw_button(struct rip_button_style *but, bool inverted)
 
 		if (1) {
 			int bev = but->flags.bevel ? bevel_size : 0;
-			int rec = (but->flags.recessed && !inverted) ? 2 : 0;
+			int rec = (but->flags.recessed) ? 2 : 0;
 
 			/*
 			 * Bevel (0x058B) extends [bp-0x6] (w),
@@ -10589,10 +10621,7 @@ draw_button(struct rip_button_style *but, bool inverted)
 				if (but->flags.dropshadow) {
 					rip.x = x + 1;
 					rip.y = y + 1;
-					if (inverted)
-						rip.color = 0x0f ^ but->cdshadow;
-					else
-						rip.color = but->cdshadow;
+					rip.color = inverted ? (0x0f ^ but->cdshadow) : but->cdshadow;
 					for (p = but->label; *p; p++)
 						write_char(*p);
 				}
@@ -10609,10 +10638,7 @@ draw_button(struct rip_button_style *but, bool inverted)
 				 * Otherwise the full label is drawn as
 				 * one piece.
 				 */
-				if (inverted)
-					rip.color = 0x0f ^ but->cfore;
-				else
-					rip.color = but->cfore;
+				rip.color = inverted ? (0x0f ^ but->cfore) : but->cfore;
 
 				int hk_pos = -1;
 				if (but->flags.highlighthk
@@ -10640,18 +10666,12 @@ draw_button(struct rip_button_style *but, bool inverted)
 
 					// Draw hotkey in culine
 					rip.x = x + prefix_w;
-					if (inverted)
-						rip.color = 0x0f ^ but->culine;
-					else
-						rip.color = but->culine;
+					rip.color = inverted ? (0x0f ^ but->culine) : but->culine;
 					write_char(but->label[hk_pos]);
 
 					// Draw suffix in dfore
 					rip.x = x + prefix_w + hk_w;
-					if (inverted)
-						rip.color = 0x0f ^ but->cfore;
-					else
-						rip.color = but->cfore;
+					rip.color = inverted ? (0x0f ^ but->cfore) : but->cfore;
 					for (p = &but->label[hk_pos + 1];
 					    *p; p++)
 						write_char(*p);
@@ -10671,10 +10691,7 @@ draw_button(struct rip_button_style *but, bool inverted)
 					    &i, &y);
 					int uly = (si - font_top) + y + 3
 					    + but->flags.dropshadow;
-					if (inverted)
-						rip.color = 0x0f ^ but->culine;
-					else
-						rip.color = but->culine;
+					rip.color = inverted ? (0x0f ^ but->culine) : but->culine;
 					set_line(x + prefix_w,
 					    uly,
 					    x + prefix_w + hk_w - 2,
@@ -10751,6 +10768,7 @@ add_button(int x1, int y1, int x2, int y2, int hotkey, int flags, const char *te
 		}
 	}
 	but->bflags = flags;
+	but->selected = (flags & 1) != 0;
 	but->hotkey = hotkey;
 	if (but->flags.mouse) {
 		mf = malloc(sizeof(*mf));
@@ -10760,7 +10778,7 @@ add_button(int x1, int y1, int x2, int y2, int hotkey, int flags, const char *te
 		rip.mfields = mf;
 	}
 
-	draw_button(but, false);
+	draw_button(but, but->selected);
 	if (!but->flags.mouse) {
 		free(but->command);
 		free(but->icon);
@@ -15592,9 +15610,6 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 								if (parsed[0] + rip.viewport.sx + rip.clipboard->width - 1
 								    > rip.viewport.ex)
 									break;
-								if (parsed[1] + rip.viewport.sy + rip.clipboard->height - 1
-								    > rip.viewport.ey)
-									break;
 								stamp_icon_mode(rip.clipboard,
 								    parsed[0] + rip.viewport.sx,
 								    parsed[1] + rip.viewport.sy,
@@ -17113,10 +17128,6 @@ explode(struct rip_button_style *but)
 static void
 handle_mouse_button(struct rip_button_style *but)
 {
-	if (but->flags.radiogroup)
-		puts("TODO: Handle radio group");
-	if (but->flags.cbgroup)
-		puts("TODO: Handle checkbox group");
 	if (but->flags.explode)
 		explode(but);
 	handle_command_str(but->command);
@@ -18046,21 +18057,39 @@ rip_getch(void)
 				}
 				if (rip_pressed) {
 					if (rip_pressed->type == MOUSE_FIELD_BUTTON) {
-						if (rip_pressed->data.button->flags.invertable) {
-        	                                        // draw_button(rip_pressed->data.button, true);
-							invert_rect(rip_pressed->data.button->box.x1 - rip_pressed->data.button->bevel_size
-							    ,
-							    rip_pressed->data.button->box.y1 - rip_pressed->data.button->bevel_size
-							    ,
-							    rip_pressed->data.button->box.x2 - rip_pressed->data.button->bevel_size
-							    ,
-							    rip_pressed->data.button->box.y2
-							    - rip_pressed->data.button->bevel_size);
+						struct rip_button_style *but = rip_pressed->data.button;
+						if (but->flags.radiogroup) {
+							struct mouse_field *mf;
+							for (mf = rip.mfields; mf; mf = mf->next) {
+								if (mf->type != MOUSE_FIELD_BUTTON)
+									continue;
+								struct rip_button_style *other = mf->data.button;
+								if (other == but)
+									continue;
+								if (!other->flags.radiogroup)
+									continue;
+								if (other->group != but->group)
+									continue;
+								if (!other->selected)
+									continue;
+								other->selected = false;
+								draw_button(other, false);
+							}
+							if (!but->selected) {
+								but->selected = true;
+								draw_button(but, true);
+							}
+						}
+						else if (but->flags.cbgroup) {
+							but->selected = !but->selected;
+							draw_button(but, but->selected);
+						}
+						else if (but->flags.invertable) {
+							draw_button(but, !but->selected);
 						}
 					}
 					else if (rip_pressed->type == MOUSE_FIELD_HOT) {
 						if (rip_pressed->data.hot->invertable) {
-        	                                        // draw_button(rip_pressed->data.button, true);
 							invert_rect(rip_pressed->data.hot->box.x1,
 							    rip_pressed->data.hot->box.y1,
 							    rip_pressed->data.hot->box.x2,
@@ -18072,16 +18101,11 @@ rip_getch(void)
 			else if (mevent.event == CIOLIB_BUTTON_1_RELEASE) {
 				if (rip_pressed) {
 					if (rip_pressed->type == MOUSE_FIELD_BUTTON) {
-						if (rip_pressed->data.button->flags.invertable) {
-        	                                        // draw_button(rip_pressed->data.button, false);
-							invert_rect(rip_pressed->data.button->box.x1 - rip_pressed->data.button->bevel_size
-							    ,
-							    rip_pressed->data.button->box.y1 - rip_pressed->data.button->bevel_size
-							    ,
-							    rip_pressed->data.button->box.x2 - rip_pressed->data.button->bevel_size
-							    ,
-							    rip_pressed->data.button->box.y2
-							    - rip_pressed->data.button->bevel_size);
+						if (rip_pressed->data.button->flags.invertable
+						    && !rip_pressed->data.button->flags.radiogroup
+						    && !rip_pressed->data.button->flags.cbgroup) {
+							draw_button(rip_pressed->data.button,
+							    rip_pressed->data.button->selected);
 						}
 						pressed = rip_pressed;
 						rip_pressed = NULL;
