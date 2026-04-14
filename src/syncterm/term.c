@@ -5839,7 +5839,7 @@ doterm(struct bbslist *bbs)
 		if (load_jxl_funcs())
 			lprintf(LOG_DEBUG, "JPEG-XL library loaded successfully");
 		else
-			lprintf(LOG_WARNING, "JEG-XL library load failure");
+			lprintf(LOG_WARNING, "JPEG-XL library load failure");
 	}
 #endif
 
