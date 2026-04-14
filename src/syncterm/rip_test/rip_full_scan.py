@@ -11,9 +11,20 @@ Usage:
 
 If start_file is given, scanning begins at that filename (inclusive).
 """
-import socket, os, sys
+import socket, os, sys, signal
 
 RIP_DIR = '/synchronet/tmp/ripterm/rips'
+
+last_clean = None
+
+def siginfo_handler(signum, frame):
+    if last_clean:
+        print(f'  [SIGINFO] last clean: {last_clean}', flush=True)
+    else:
+        print(f'  [SIGINFO] no files scanned yet', flush=True)
+
+if hasattr(signal, 'SIGINFO'):
+    signal.signal(signal.SIGINFO, siginfo_handler)
 HARNESS_HOST = 'portable'
 HARNESS_PORT = 1516
 
@@ -88,6 +99,9 @@ for i in range(start_idx, len(files)):
             if '0 differ' in line or '100.00%' in line:
                 clean = True
             break
+
+    if clean:
+        last_clean = f
 
     if not clean:
         print(f'DIFFS at file {i+1}/{len(files)}: {f}')
