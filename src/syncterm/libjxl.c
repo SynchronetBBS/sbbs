@@ -113,23 +113,33 @@ bool load_jxl_funcs(void)
 		return true;
 
 	if ((Jxl.ResizableParallelRunner = xp_dlsym(jxlt_dll, JxlResizableParallelRunner)) == NULL) {
-		xp_dlclose(jxl_dll);
+		xp_dlclose(jxlt_dll);
 		return true;
 	}
 	if ((Jxl.ResizableParallelRunnerCreate = xp_dlsym(jxlt_dll, JxlResizableParallelRunnerCreate)) == NULL) {
-		xp_dlclose(jxl_dll);
+		Jxl.ResizableParallelRunner = NULL;
+		xp_dlclose(jxlt_dll);
 		return true;
 	}
 	if ((Jxl.ResizableParallelRunnerDestroy = xp_dlsym(jxlt_dll, JxlResizableParallelRunnerDestroy)) == NULL) {
-		xp_dlclose(jxl_dll);
+		Jxl.ResizableParallelRunner = NULL;
+		Jxl.ResizableParallelRunnerCreate = NULL;
+		xp_dlclose(jxlt_dll);
 		return true;
 	}
 	if ((Jxl.ResizableParallelRunnerSetThreads = xp_dlsym(jxlt_dll, JxlResizableParallelRunnerSetThreads)) == NULL) {
-		xp_dlclose(jxl_dll);
+		Jxl.ResizableParallelRunner = NULL;
+		Jxl.ResizableParallelRunnerCreate = NULL;
+		Jxl.ResizableParallelRunnerDestroy = NULL;
+		xp_dlclose(jxlt_dll);
 		return true;
 	}
 	if ((Jxl.ResizableParallelRunnerSuggestThreads = xp_dlsym(jxlt_dll, JxlResizableParallelRunnerSuggestThreads)) == NULL) {
-		xp_dlclose(jxl_dll);
+		Jxl.ResizableParallelRunner = NULL;
+		Jxl.ResizableParallelRunnerCreate = NULL;
+		Jxl.ResizableParallelRunnerDestroy = NULL;
+		Jxl.ResizableParallelRunnerSuggestThreads = NULL;
+		xp_dlclose(jxlt_dll);
 		return true;
 	}
 	Jxl.status = JXL_STATUS_OK;
