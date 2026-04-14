@@ -131,9 +131,9 @@ extern int	thread_suid_broken;			/* NPTL is no longer broken */
 	if ((str) == NULL) { \
 		if ((ret) != NULL) *(ret) = 0; \
 	} else { \
-		JS::UniqueChars _jsra_enc = JS_EncodeStringToLatin1((cx), (str)); \
+		char* _jsra_enc = JS_EncodeStringToLatin1((cx), (str)).release(); \
 		if (_jsra_enc) { \
-			*_jsra_lenp = strlen(_jsra_enc.get()); \
+			*_jsra_lenp = strlen(_jsra_enc); \
 			if (*(sizeptr) < *_jsra_lenp + 1 || (ret) == NULL) { \
 				*(sizeptr) = *_jsra_lenp + 1; \
 				char *_jsra_tmp = (char *)realloc((ret), *(sizeptr)); \
@@ -145,7 +145,8 @@ extern int	thread_suid_broken;			/* NPTL is no longer broken */
 				} \
 			} \
 			if ((ret) != NULL) \
-				memcpy((ret), _jsra_enc.get(), *_jsra_lenp + 1); \
+				memcpy((ret), _jsra_enc, *_jsra_lenp + 1); \
+			JS_free((cx), _jsra_enc); \
 		} \
 	} \
 }
@@ -207,12 +208,13 @@ extern int	thread_suid_broken;			/* NPTL is no longer broken */
 	if ((size_t)(bufsize) < 1 || (str) == NULL) { \
 		*_jsst_lenp = 0; \
 	} else { \
-		JS::UniqueChars _jsst_enc = JS_EncodeStringToLatin1((cx), (str)); \
+		char* _jsst_enc = JS_EncodeStringToLatin1((cx), (str)).release(); \
 		if (_jsst_enc) { \
-			*_jsst_lenp = strlen(_jsst_enc.get()); \
+			*_jsst_lenp = strlen(_jsst_enc); \
 			if (*_jsst_lenp >= (size_t)(bufsize)) \
 				*_jsst_lenp = (size_t)(bufsize) - 1; \
-			memcpy((ret), _jsst_enc.get(), *_jsst_lenp); \
+			memcpy((ret), _jsst_enc, *_jsst_lenp); \
+			JS_free((cx), _jsst_enc); \
 		} else { \
 			*_jsst_lenp = 0; \
 		} \
@@ -242,18 +244,19 @@ extern int	thread_suid_broken;			/* NPTL is no longer broken */
 	if (_jsa_lenp == NULL) _jsa_lenp = &_jsa_len; \
 	(ret) = NULL; \
 	if ((str) != NULL) { \
-		JS::UniqueChars _jsa_enc = JS_EncodeStringToLatin1((cx), (str)); \
+		char* _jsa_enc = JS_EncodeStringToLatin1((cx), (str)).release(); \
 		if (_jsa_enc) { \
-			*_jsa_lenp = strlen(_jsa_enc.get()); \
+			*_jsa_lenp = strlen(_jsa_enc); \
 			if (*_jsa_lenp >= (size_t)(maxsize)) \
 				*_jsa_lenp = (size_t)(maxsize) - 1; \
 			(ret) = (char *)alloca(*_jsa_lenp + 1); \
 			if ((ret)) { \
-				memcpy((ret), _jsa_enc.get(), *_jsa_lenp); \
+				memcpy((ret), _jsa_enc, *_jsa_lenp); \
 				(ret)[*_jsa_lenp] = 0; \
 			} else { \
 				JS_ReportErrorASCII((cx), "Error allocating %zu bytes on stack at %s:%d", *_jsa_lenp + 1, getfname(__FILE__), __LINE__); \
 			} \
+			JS_free((cx), _jsa_enc); \
 		} \
 	} \
 }

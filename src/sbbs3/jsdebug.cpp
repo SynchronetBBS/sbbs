@@ -109,8 +109,11 @@ js_dbg_puts(JSContext* cx, unsigned argc, JS::Value* vp)
 	if (!str)
 		return false;
 	JS::UniqueChars chars = JS_EncodeStringToLatin1(cx, str);
-	if (chars)
+	if (chars) {
 		ds->puts_cb(chars.get());
+		/* SM128 cross-DLL heap fix: release before UniquePtr dtor runs */
+		JS_free(cx, chars.release());
+	}
 	args.rval().setUndefined();
 	return true;
 }

@@ -809,8 +809,11 @@ js_ReportPendingException(JSContext *cx)
 		JS::Rooted<JSString*> str(cx, JS::ToString(cx, exn));
 		if (str) {
 			JS::UniqueChars msg = JS_EncodeStringToLatin1(cx, str);
-			if (msg)
+			if (msg) {
 				lprintf(LOG_ERR, "!JavaScript exception: %s", msg.get());
+				/* SM128 cross-DLL heap fix: release before UniquePtr dtor runs */
+				JS_free(cx, msg.release());
+			}
 		}
 	}
 }
@@ -1605,6 +1608,8 @@ extern "C" int main(int argc, char **argv
 
 		fprintf(statfp, "\n");
 		fprintf(statfp, "JavaScript: Destroying context\n");
+		if (debugger)
+			end_debugger(js_cx);    /* unregister PersistentRooted objects before context destroy */
 		jsrt_Release(js_cx);
 
 	} while ((recycled || loop) && !terminated);
