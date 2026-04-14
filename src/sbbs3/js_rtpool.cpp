@@ -164,8 +164,12 @@ void jsrt_Release(JSContext *cx)
 	if (node)
 		listRemoveNode(&cx_list, node, FALSE);
 	jsrt_ClearRuntimePrivate(JS_GetRuntime(cx));
-	JS_DestroyContext(cx);
 	pthread_mutex_unlock(&jsrt_mutex);
+	/* JS_DestroyContext runs finalizers (e.g. js_global_finalize, which waits
+	 * on background threads).  A background thread draining itself calls
+	 * jsrt_Release and needs jsrt_mutex — so destruction must happen outside
+	 * the lock to avoid deadlock. */
+	JS_DestroyContext(cx);
 	/* Do NOT call JS_ShutDown() here — the engine must remain initialized for
 	 * future contexts (e.g. new node connections).  JS_ShutDown() is a
 	 * process-lifetime call; it is deferred to jsrt_atexit_shutdown(). */
