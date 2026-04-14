@@ -5835,8 +5835,12 @@ doterm(struct bbslist *bbs)
 	ooii_buf_len = 0;
 #endif
 #ifdef WITH_JPEG_XL
-	if (cio_api.options & CONIO_OPT_SET_PIXEL)
-		load_jxl_funcs();
+	if (cio_api.options & CONIO_OPT_SET_PIXEL) {
+		if (load_jxl_funcs())
+			lprintf(LOG_DEBUG, "JPEG-XL library loaded successfully");
+		else
+			lprintf(LOG_WARNING, "JEG-XL library load failure");
+	}
 #endif
 
         /* Main input loop */
