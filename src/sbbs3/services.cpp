@@ -592,10 +592,10 @@ js_logout(JSContext *cx, uintN argc, jsval *arglist)
 \
 			JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(JS_FALSE)); \
 \
-			if (!JS_GetProperty(cx, obj, "client", &val) || val == JSVAL_VOID) \
+			if (!JS_GetProperty(cx, obj, "client", &val) || JSVAL_NULL_OR_VOID(val) || !JSVAL_IS_OBJECT(val)) \
 			return JS_FALSE; \
 			tmpobj = JSVAL_TO_OBJECT(val); \
-			if (!JS_GetProperty(cx, tmpobj, "socket", &val) || val == JSVAL_VOID) \
+			if (!JS_GetProperty(cx, tmpobj, "socket", &val) || JSVAL_NULL_OR_VOID(val) || !JSVAL_IS_OBJECT(val)) \
 			return JS_FALSE; \
 			socket_obj = JSVAL_TO_OBJECT(val); \
 			retval = JS_CallFunctionName(cx, socket_obj, #funcname, argc, argv, &rval); \

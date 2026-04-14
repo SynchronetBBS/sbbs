@@ -697,13 +697,13 @@ js_DefineSyncMethods(JSContext* cx, JSObject* obj, jsSyncMethodSpec *funcs)
 	char *    str = NULL;
 
 	/* Return existing method_list array if it's already been created */
-	if (JS_GetProperty(cx, obj, method_array_name, &val) && val != JSVAL_VOID) {
+	if (JS_GetProperty(cx, obj, method_array_name, &val) && !JSVAL_NULL_OR_VOID(val) && JSVAL_IS_OBJECT(val)) {
 		method_array = JSVAL_TO_OBJECT(val);
 		// If the first item is already in the list, don't do anything.
 		if (method_array == NULL || !JS_GetArrayLength(cx, method_array, &len))
 			return JS_FALSE;
 		for (i = 0; i < (int)len; i++) {
-			if (JS_GetElement(cx, method_array, i, &val) != JS_TRUE || val == JSVAL_VOID)
+			if (JS_GetElement(cx, method_array, i, &val) != JS_TRUE || JSVAL_NULL_OR_VOID(val) || !JSVAL_IS_OBJECT(val))
 				continue;
 			JS_GetProperty(cx, JSVAL_TO_OBJECT(val), "name", &val);
 			JSVALUE_TO_RASTRING(cx, val, str, &str_len, NULL);

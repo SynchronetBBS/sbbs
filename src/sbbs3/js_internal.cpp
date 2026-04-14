@@ -241,12 +241,10 @@ js_CommonOperationCallback(JSContext *cx, js_callback_t* cb)
 		for (top_cb = cb; top_cb; top_cb = top_cb->parent_cb) {
 			if (top_cb->terminated != NULL && *top_cb->terminated) {
 				top_cb->auto_terminated = true;
-				/* Log as warning (matching old JS_ReportWarning behavior) */
-				JS::WarnASCII(cx, "Terminated");
 				/* SM128: returning false causes HandleInterrupt to report
-				 * JSMSG_TERMINATED and return false, stopping execution.
-				 * Do NOT set a pending exception here — it interferes with
-				 * HandleInterrupt's own error reporting. */
+				 * JSMSG_TERMINATED ("Script terminated by timeout at:...")
+				 * via the error/warning reporter — no need to call WarnASCII
+				 * here (that would produce a redundant duplicate message). */
 				cb->counter = 0;
 				return JS_FALSE;
 			}
@@ -301,7 +299,7 @@ js_execfile(JSContext *cx, uintN argc, jsval *arglist)
 	global_private_t *gptp;
 
 	if ((gptp = (global_private_t*)js_GetClassPrivate(cx, JS_GetGlobalObject(cx), &js_global_class)) == NULL)
-		return -1;
+		return JS_FALSE;
 
 	if (argc < 1) {
 		JS_ReportError(cx, "No filename passed");
@@ -468,6 +466,7 @@ js_execfile(JSContext *cx, uintN argc, jsval *arglist)
 		JS::CompileOptions opts(cx);
 		opts.setFileAndLine(path, 1);
 		opts.setNonSyntacticScope(true);
+		opts.setNoScriptRval(true);	/* required by ExecuteInJSMEnvironment */
 		js_script = JS::CompileUtf8Path(cx, opts, path);
 		if (js_script != NULL) {
 			jsmEnv.set(JS::NewJSMEnvironment(cx));
@@ -545,6 +544,7 @@ js_execfile(JSContext *cx, uintN argc, jsval *arglist)
 							JS_SetPropertyById(cx, jsmEnv, id, val);
 					}
 				}
+				jsrt_FreeIdVector(cx, lexIds);
 			}
 			rval = OBJECT_TO_JSVAL(jsmEnv);
 		}
@@ -1723,6 +1723,10 @@ void js_EvalOnExit(JSContext *cx, JSObject *obj, js_callback_t* cb)
 	cb->auto_terminate = FALSE;
 
 	while ((p = strListPop(&list)) != NULL) {
+		/* SM128: JS::Compile asserts !cx->isExceptionPending(). Clear any
+		 * exception left by the calling script or a prior on-exit script. */
+		if (JS_IsExceptionPending(cx))
+			JS_ClearPendingException(cx);
 		if ((script = JS_CompileScript(cx, obj, p, strlen(p), NULL, 0)) != NULL) {
 			JS_ExecuteScript(cx, obj, script, &rval);
 		}

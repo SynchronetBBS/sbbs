@@ -162,6 +162,16 @@ typedef struct {
 	char bg_path[MAX_PATH+1];   /* SM128: script path for bg thread compilation */
 	jsval* bg_argv;             /* SM128: argv jsvals from parent context */
 	uintN bg_argc;              /* SM128: argc */
+	/* SM128: parent_cx info pre-gathered on main thread; background_thread must not
+	 * access parent_cx directly (CurrentThreadCanAccessRuntime debug assertion) */
+	void* parent_private;       /* JS_GetContextPrivate(parent_cx) */
+	bool has_log;               /* parent has "log" function */
+	uintN log_arity;            /* arity of parent log function */
+	bool has_bbs;               /* parent has "bbs" object */
+	bool has_console;           /* parent has "console" object */
+	bool has_stdin;             /* parent has "stdin" file */
+	bool has_stdout;            /* parent has "stdout" file */
+	bool has_stderr;            /* parent has "stderr" file */
 } background_data_t;
 
 /* Forward declarations for functions used in background_thread */
@@ -173,7 +183,6 @@ static void background_thread(void* arg)
 	background_data_t* bg = (background_data_t*)arg;
 	jsval              result = JSVAL_VOID;
 	jsval              exit_code;
-	JSBool             success;
 
 	SetThreadName("sbbs/jsBackgrnd");
 	msgQueueAttach(bg->msg_queue);
@@ -231,46 +240,42 @@ static void background_thread(void* arg)
 	JS_SetContextPrivate(bg->cx, bg);
 	JS_AddInterruptCallback(bg->cx, js_OperationCallback);
 
-	/* Copy parent log function and objects if available */
+	/* Copy parent log function and objects if available.
+	 * SM128: parent_cx info was pre-gathered on the main thread; do NOT access
+	 * parent_cx here (CurrentThreadCanAccessRuntime debug assertion). */
 	{
-		jsval val;
-		JSObject* parent_obj = JS_GetGlobalObject(bg->parent_cx);
-		if (parent_obj && (JS_GetProperty(bg->parent_cx, parent_obj, "log", &val))) {
-			JSFunction* func = JS_ValueToFunction(bg->parent_cx, val);
-			if (func) {
-				/* TODO: SM128 removed JS_CloneFunctionObject; define log directly */
-				JS_DefineFunction(bg->cx, bg->obj, "log", js_log,
-				                  JS_GetFunctionArity(func), 0);
-			}
-		}
-		JS_SetContextPrivate(bg->cx, JS_GetContextPrivate(bg->parent_cx));
-		if (parent_obj) {
-			if (JS_HasProperty(bg->parent_cx, parent_obj, "bbs", &success) && success)
-				js_CreateBbsObject(bg->cx, bg->obj);
-			if (JS_HasProperty(bg->parent_cx, parent_obj, "console", &success) && success)
-				js_CreateConsoleObject(bg->cx, bg->obj);
-			if (JS_HasProperty(bg->parent_cx, parent_obj, "stdin", &success) && success)
-				js_CreateFileObject(bg->cx, bg->obj, "stdin", STDIN_FILENO, "r");
-			if (JS_HasProperty(bg->parent_cx, parent_obj, "stdout", &success) && success)
-				js_CreateFileObject(bg->cx, bg->obj, "stdout", STDOUT_FILENO, "w");
-			if (JS_HasProperty(bg->parent_cx, parent_obj, "stderr", &success) && success)
-				js_CreateFileObject(bg->cx, bg->obj, "stderr", STDERR_FILENO, "w");
-		}
+		if (bg->has_log)
+			JS_DefineFunction(bg->cx, bg->obj, "log", js_log, bg->log_arity, 0);
+		/* Temporarily use parent's context private so Create* functions work */
+		JS_SetContextPrivate(bg->cx, bg->parent_private);
+		if (bg->has_bbs)
+			js_CreateBbsObject(bg->cx, bg->obj);
+		if (bg->has_console)
+			js_CreateConsoleObject(bg->cx, bg->obj);
+		if (bg->has_stdin)
+			js_CreateFileObject(bg->cx, bg->obj, "stdin", STDIN_FILENO, "r");
+		if (bg->has_stdout)
+			js_CreateFileObject(bg->cx, bg->obj, "stdout", STDOUT_FILENO, "w");
+		if (bg->has_stderr)
+			js_CreateFileObject(bg->cx, bg->obj, "stderr", STDERR_FILENO, "w");
 		JS_SetContextPrivate(bg->cx, bg);
 	}
 
 	/* Set up argv/argc for the script */
 	{
-		JSObject* argv_obj = JS_NewArrayObject(bg->cx, 0, NULL);
+		JS::RootedObject robj(bg->cx, bg->obj);
+		JS::RootedObject argv_obj(bg->cx, JS::NewArrayObject(bg->cx, 0));
 		if (argv_obj && bg->bg_argc > 0) {
-			for (uintN i = 0; i < bg->bg_argc; i++)
-				JS_SetElement(bg->cx, argv_obj, i, &bg->bg_argv[i]);
+			for (uintN i = 0; i < bg->bg_argc; i++) {
+				JS::RootedValue rv(bg->cx, bg->bg_argv[i]);
+				JS_SetElement(bg->cx, argv_obj, i, rv);
+			}
 		}
-		JS_DefineProperty(bg->cx, bg->obj, "argv",
-		                  OBJECT_TO_JSVAL(argv_obj), NULL, NULL,
+		JS::RootedValue argv_val(bg->cx, argv_obj ? JS::ObjectValue(*argv_obj) : JS::NullValue());
+		JS_DefineProperty(bg->cx, robj, "argv", argv_val,
 		                  JSPROP_ENUMERATE | JSPROP_READONLY);
-		JS_DefineProperty(bg->cx, bg->obj, "argc",
-		                  INT_TO_JSVAL(bg->bg_argc), NULL, NULL,
+		JS::RootedValue argc_val(bg->cx, JS::Int32Value(bg->bg_argc));
+		JS_DefineProperty(bg->cx, robj, "argc", argc_val,
 		                  JSPROP_ENUMERATE | JSPROP_READONLY);
 	}
 	free(bg->bg_argv);
@@ -334,8 +339,8 @@ js_log(JSContext *cx, uintN argc, jsval *arglist)
 	if ((bg = (background_data_t*)JS_GetContextPrivate(cx)) == NULL)
 		return JS_FALSE;
 
-	/* Use parent's context private data */
-	JS_SetContextPrivate(cx, JS_GetContextPrivate(bg->parent_cx));
+	/* Use parent's context private data (cached; must not call JS API on parent_cx) */
+	JS_SetContextPrivate(cx, bg->parent_private);
 
 	/* Call parent's log() function */
 	retval = JS_CallFunctionName(cx, bg->logobj, "log", argc, argv, &rval);
@@ -576,6 +581,32 @@ js_load(JSContext *cx, uintN argc, jsval *arglist)
 
 
 	if (background) {
+		/* SM128: probe parent_cx on the main thread; background_thread must not
+		 * access parent_cx directly (CurrentThreadCanAccessRuntime assertion) */
+		{
+			JSBool has_prop;
+			jsval log_val;
+			JSObject* parent_obj = JS_GetGlobalObject(cx);
+			bg->parent_private = JS_GetContextPrivate(cx);
+			bg->has_log = false;
+			bg->log_arity = 0;
+			bg->has_bbs = bg->has_console = false;
+			bg->has_stdin = bg->has_stdout = bg->has_stderr = false;
+			if (parent_obj) {
+				if (JS_GetProperty(cx, parent_obj, "log", &log_val)) {
+					JSFunction* func = JS_ValueToFunction(cx, log_val);
+					if (func) {
+						bg->has_log = true;
+						bg->log_arity = JS_GetFunctionArity(func);
+					}
+				}
+				bg->has_bbs     = JS_HasProperty(cx, parent_obj, "bbs",     &has_prop) && has_prop;
+				bg->has_console = JS_HasProperty(cx, parent_obj, "console", &has_prop) && has_prop;
+				bg->has_stdin   = JS_HasProperty(cx, parent_obj, "stdin",   &has_prop) && has_prop;
+				bg->has_stdout  = JS_HasProperty(cx, parent_obj, "stdout",  &has_prop) && has_prop;
+				bg->has_stderr  = JS_HasProperty(cx, parent_obj, "stderr",  &has_prop) && has_prop;
+			}
+		}
 		/* SM128: path resolution done; start background thread which creates its own context */
 		SAFECOPY(bg->bg_path, path);
 		bg->sem = &p->bg_sem;
@@ -596,7 +627,10 @@ js_load(JSContext *cx, uintN argc, jsval *arglist)
 			return JS_FALSE;
 		}
 		p->bg_count++;
-		JS_SET_RVAL(cx, arglist, OBJECT_TO_JSVAL(js_CreateQueueObject(cx, obj, NULL, bg->msg_queue)));
+		{
+			JSObject* q_obj = js_CreateQueueObject(cx, obj, NULL, bg->msg_queue);
+			JS_SET_RVAL(cx, arglist, OBJECT_TO_JSVAL(q_obj));
+		}
 		return JS_TRUE;
 	}
 
@@ -620,6 +654,7 @@ js_load(JSContext *cx, uintN argc, jsval *arglist)
 		JS::CompileOptions opts(exec_cx);
 		opts.setFileAndLine(path, 1);
 		opts.setNonSyntacticScope(true);
+		opts.setNoScriptRval(true);	/* SM128: required by ExecuteInJSMEnvironment */
 		script = JS::CompileUtf8Path(exec_cx, opts, path);
 		if (script != nullptr) {
 			jsmEnv.set(JS::NewJSMEnvironment(exec_cx));
@@ -679,6 +714,7 @@ js_load(JSContext *cx, uintN argc, jsval *arglist)
 								JS_SetPropertyById(exec_cx, jsmEnv, id, val);
 						}
 					}
+					jsrt_FreeIdVector(exec_cx, lexIds);
 				}
 				/* Copy all bindings from jsmEnv back to exec_obj so that
 				 * callers who cache the scope object (e.g.
@@ -695,6 +731,7 @@ js_load(JSContext *cx, uintN argc, jsval *arglist)
 								JS_SetPropertyById(exec_cx, exec_obj, id, val);
 						}
 					}
+					jsrt_FreeIdVector(exec_cx, ids);
 				}
 				rval.setObject(*jsmEnv);
 			}
@@ -738,6 +775,8 @@ static JSBool js_HasSymbolInScope(JSContext* cx, JSObject* obj, const char* prop
 	jsval eval_result = JSVAL_FALSE;
 	if (JS_EvaluateScript(cx, obj, eval_buf, strlen(eval_buf), "<require>", 0, &eval_result))
 		*found = (JSVAL_IS_BOOLEAN(eval_result) && JSVAL_TO_BOOLEAN(eval_result)) ? JS_TRUE : JS_FALSE;
+	else if (JS_IsExceptionPending(cx))
+		JS_ClearPendingException(cx);	/* SM128: don't leak eval exceptions to caller */
 	return JS_TRUE;
 }
 
@@ -1051,7 +1090,9 @@ js_ascii(JSContext *cx, uintN argc, jsval *arglist)
 
 	if (JSVAL_IS_STRING(argv[0])) {  /* string to ascii-int */
 		char16_t c = 0;
-		JS_GetStringCharAt(cx, JSVAL_TO_STRING(argv[0]), 0, &c);
+		JSString* s = JSVAL_TO_STRING(argv[0]);
+		if (JS_GetStringLength(s) > 0)
+			JS_GetStringCharAt(cx, s, 0, &c);
 		JS_SET_RVAL(cx, arglist, INT_TO_JSVAL((uchar)c));
 		return JS_TRUE;
 	}
@@ -1085,7 +1126,8 @@ js_ctrl(JSContext *cx, uintN argc, jsval *arglist)
 
 	if (JSVAL_IS_STRING(argv[0])) {
 		char16_t wc = 0;
-		if (!JS_GetStringCharAt(cx, JSVAL_TO_STRING(argv[0]), 0, &wc)) {
+		JSString* s = JSVAL_TO_STRING(argv[0]);
+		if (JS_GetStringLength(s) == 0 || !JS_GetStringCharAt(cx, s, 0, &wc)) {
 			JS_ReportError(cx, "Invalid NULL string");
 			return JS_FALSE;
 		}
@@ -5158,8 +5200,10 @@ static void js_global_finalize(JS::GCContext* gcx, JSObject *obj)
 	global_private_t* p;
 
 	p = (global_private_t*)JS_GetPrivate(obj);
-
 	if (p != NULL) {
+		/* SM128: bg_count wait is done in jsrt_Release before JS_DestroyContext,
+		 * so bg_count should already be 0 here.  The loop is kept as a safety
+		 * net but should never iterate in normal operation. */
 		while (p->bg_count) {
 			if (sem_wait(&p->bg_sem) == 0)
 				p->bg_count--;
@@ -5167,7 +5211,6 @@ static void js_global_finalize(JS::GCContext* gcx, JSObject *obj)
 		sem_destroy(&p->bg_sem);
 		free(p);
 	}
-
 	p = NULL;
 	JS_SetPrivate(obj, p);
 }
@@ -5204,6 +5247,12 @@ static bool js_global_resolve(JSContext *cx, JS::Handle<JSObject*> obj, JS::Hand
 	if (name)
 		free(name);
 	if (resolvedp) *resolvedp = ret;
+	/* SM128: resolve hook must not return true with a pending exception.
+	 * Clear any exception set by failed js_SyncResolve/js_global_fill_properties
+	 * calls — property-definition failures during resolve are non-fatal (matching
+	 * SM185 behavior where such failures were silently ignored). */
+	if (JS_IsExceptionPending(cx))
+		JS_ClearPendingException(cx);
 	return true;
 }
 
@@ -5242,7 +5291,7 @@ static const JSClassOps js_global_classops = {
 
 JSClass js_global_class = {
 	"Global"
-	, JSCLASS_HAS_PRIVATE | JSCLASS_GLOBAL_FLAGS
+	, JSCLASS_HAS_PRIVATE | JSCLASS_GLOBAL_FLAGS | JSCLASS_FOREGROUND_FINALIZE
 	, &js_global_classops
 };
 
