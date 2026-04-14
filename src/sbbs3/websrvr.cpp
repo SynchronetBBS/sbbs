@@ -2435,16 +2435,28 @@ static void js_add_queryval(http_session_t * session, const char *key, const cha
 	jsuint    len;
 	int       alen;
 
+	/* SM128: earlier js_add_request_prop calls may leave a pending exception
+	 * that would cause JS_SetProperty / JS_SetElement to fail silently.
+	 * Clear before every insertion. */
+	JS_ClearPendingException(session->js_cx);
+
 	/* Return existing object if it's already been created */
-	if (JS_GetProperty(session->js_cx, session->js_query, key, &val) && !JSVAL_NULL_OR_VOID(val))  {
+	if (JS_GetProperty(session->js_cx, session->js_query, key, &val) && !JSVAL_NULL_OR_VOID(val) && JSVAL_IS_OBJECT(val))  {
 		keyarray = JSVAL_TO_OBJECT(val);
 		alen = -1;
 	}
 	else {
 		keyarray = JS_NewArrayObject(session->js_cx, 0, NULL);
-		if (!JS_DefineProperty(session->js_cx, session->js_query, key, OBJECT_TO_JSVAL(keyarray)
-		                       , NULL, NULL, JSPROP_ENUMERATE))
-			return;
+		/* SM128: JS_DefineProperty with attrs creates non-enumerable properties in SM128's
+		 * legacy (value+attrs) path — JS_GetProperty can find them but JS_Enumerate (for...in)
+		 * cannot, so http_request.query["page"] etc. are inaccessible from SSJS scripts.
+		 * Use JS_SetProperty (obj[key]=val assignment) which always creates
+		 * {enumerable:true, writable:true, configurable:true} own properties. */
+		{
+			jsval kval = OBJECT_TO_JSVAL(keyarray);
+			if (!JS_SetProperty(session->js_cx, session->js_query, key, kval))
+				return;
+		}
 		alen = 0;
 	}
 
@@ -2456,14 +2468,11 @@ static void js_add_queryval(http_session_t * session, const char *key, const cha
 
 	JSString* js_str = JS_NewStringCopyZ(session->js_cx, value);
 	if (js_str == NULL)
-		errprintf(LOG_ERR, WHERE, "%04d %-5s [%s] failed to create JSString for query value '%s', key=%s"
-		          , session->socket, session->client.protocol, session->host_ip, value, key);
-	else {
-		lprintf(LOG_DEBUG, "%04d %-5s [%s] Adding query value %s=%s at pos %d"
-		        , session->socket, session->client.protocol, session->host_ip, key, value, alen);
-		val = STRING_TO_JSVAL(js_str);
-		JS_SetElement(session->js_cx, keyarray, alen, &val);
-	}
+		return;
+	lprintf(LOG_DEBUG, "%04d %-5s [%s] Adding query value %s=%s at pos %d"
+	        , session->socket, session->client.protocol, session->host_ip, key, value, alen);
+	val = STRING_TO_JSVAL(js_str);
+	JS_SetElement(session->js_cx, keyarray, alen, &val);
 }
 
 static void js_add_cookieval(http_session_t * session, const char *key, const char *value)
@@ -2473,16 +2482,22 @@ static void js_add_cookieval(http_session_t * session, const char *key, const ch
 	jsuint    len;
 	int       alen;
 
+	/* SM128: same exception-safety rationale as js_add_queryval */
+	JS_ClearPendingException(session->js_cx);
+
 	/* Return existing object if it's already been created */
-	if (JS_GetProperty(session->js_cx, session->js_cookie, key, &val) && !JSVAL_NULL_OR_VOID(val))  {
+	if (JS_GetProperty(session->js_cx, session->js_cookie, key, &val) && !JSVAL_NULL_OR_VOID(val) && JSVAL_IS_OBJECT(val))  {
 		keyarray = JSVAL_TO_OBJECT(val);
 		alen = -1;
 	}
 	else {
 		keyarray = JS_NewArrayObject(session->js_cx, 0, NULL);
-		if (!JS_DefineProperty(session->js_cx, session->js_cookie, key, OBJECT_TO_JSVAL(keyarray)
-		                       , NULL, NULL, JSPROP_ENUMERATE))
-			return;
+		/* SM128: same as js_add_queryval — use JS_SetProperty for enumerable own property */
+		{
+			jsval kval = OBJECT_TO_JSVAL(keyarray);
+			if (!JS_SetProperty(session->js_cx, session->js_cookie, key, kval))
+				return;
+		}
 		alen = 0;
 	}
 
@@ -2599,11 +2614,22 @@ static void js_parse_query(http_session_t * session, char *p)  {
 	char * lp;
 	char * key;
 	char * value;
+	char * buf;
 
 	if (p == NULL)
 		return;
 
-	lp = p;
+	/* SM128: work on a copy so the original string is preserved for subsequent
+	 * calls.  js_parse_query is called once from exec_js_webctrl (JSPreExec /
+	 * Rewrite) and again from exec_ssjs.  If a Rewrite rule triggers an internal
+	 * redirect, check_request loops and exec_js_webctrl calls js_parse_query a
+	 * second time — on the same buffer.  The in-place NUL-termination ('=' → NUL,
+	 * '&' → NUL) used to truncate the string so only the first key survived with
+	 * an empty value, causing 'TypeError: page/filename is undefined' in scripts. */
+	buf = strdup(p);
+	if (buf == NULL)
+		return;
+	lp = buf;
 
 	while ((key_len = strcspn(lp, "=")) != 0)  {
 		key = lp;
@@ -2623,6 +2649,7 @@ static void js_parse_query(http_session_t * session, char *p)  {
 		unescape(key);
 		js_add_queryval(session, key, value);
 	}
+	free(buf);
 }
 
 static char *get_token_value(char **p)
@@ -3689,6 +3716,14 @@ static bool exec_js_webctrl(http_session_t* session, const char *name, const cha
 		errprintf(LOG_ERR, WHERE, "%04d %-5s [%s] !ERROR setting up JavaScript context for %s", session->socket, session->client.protocol, session->host_ip, name);
 		return false;
 	}
+	/* SM128: clear any exception left by js_CreateHttpRequestObject (JS_ClearScope /
+	 * JS_Enumerate) before setting up request properties and parsing the query string.
+	 * If a pending exception reaches js_add_queryval, SM128's JS_SetElement silently
+	 * fails.  Worse, js_parse_query mutates the query string in-place (replacing '='
+	 * and '&' with NUL bytes) even when the JS calls fail, so a subsequent call from
+	 * exec_ssjs on the same (now-mangled) buffer only sees the first key with an empty
+	 * value — causing 'TypeError: page/filename is undefined' in SSJS scripts. */
+	JS_ClearPendingException(session->js_cx);
 
 	js_add_request_prop(session, "scheme", session->is_tls ? "https" : "http");
 	js_add_request_prop(session, "real_path", session->req.physical_path);
@@ -5392,7 +5427,7 @@ JSObject* js_CreateHttpReplyObject(JSContext* cx
 	JSString* js_str;
 
 	/* Return existing object if it's already been created */
-	if (JS_GetProperty(cx, parent, "http_reply", &val) && !JSVAL_NULL_OR_VOID(val))  {
+	if (JS_GetProperty(cx, parent, "http_reply", &val) && !JSVAL_NULL_OR_VOID(val) && JSVAL_IS_OBJECT(val))  {
 		reply = JSVAL_TO_OBJECT(val);
 		JS_ClearScope(cx, reply);
 	}
@@ -5406,7 +5441,7 @@ JSObject* js_CreateHttpReplyObject(JSContext* cx
 	                  , NULL, NULL, JSPROP_ENUMERATE);
 
 	/* Return existing object if it's already been created */
-	if (JS_GetProperty(cx, reply, "header", &val) && !JSVAL_NULL_OR_VOID(val))  {
+	if (JS_GetProperty(cx, reply, "header", &val) && !JSVAL_NULL_OR_VOID(val) && JSVAL_IS_OBJECT(val))  {
 		headers = JSVAL_TO_OBJECT(val);
 		JS_ClearScope(cx, headers);
 	}
@@ -5428,8 +5463,20 @@ JSObject* js_CreateHttpRequestObject(JSContext* cx
 /*	JSObject*	cookie; */
 	jsval val;
 
+	/* SM128: clear any pending exception before accessing JS objects.  This
+	 * function is called from both is_dynamic_req (via js_setup_cx) and from
+	 * exec_js_webctrl (via js_setup_cx) — sometimes with a pending exception
+	 * left by a prior JS_ClearScope call.  If an exception is pending, the
+	 * JS_GetProperty calls below silently return false, we fall into the else
+	 * branches, and JS_DefineObject also fails (pending exception) → both
+	 * session->js_request and session->js_query become NULL.  Clearing here
+	 * is safe: the caller (js_setup_cx) either just created a fresh context
+	 * (no exception possible) or has already done JS_MaybeGC; callers that
+	 * care about a specific exception clear it themselves afterward. */
+	JS_ClearPendingException(cx);
+
 	/* Return existing object if it's already been created */
-	if (JS_GetProperty(cx, parent, "http_request", &val) && !JSVAL_NULL_OR_VOID(val))  {
+	if (JS_GetProperty(cx, parent, "http_request", &val) && !JSVAL_NULL_OR_VOID(val) && JSVAL_IS_OBJECT(val))  {
 		session->js_request = JSVAL_TO_OBJECT(val);
 	}
 	else
@@ -5439,33 +5486,48 @@ JSObject* js_CreateHttpRequestObject(JSContext* cx
 	js_add_request_prop(session, "path_info", session->req.extra_path_info);
 	js_add_request_prop(session, "method", methods[session->req.method]);
 	js_add_request_prop(session, "virtual_path", session->req.virtual_path);
+	/* SM128: js_add_request_prop redefines JSPROP_READONLY properties on reuse — SM128
+	 * may leave a pending exception even though the operation logically succeeded.
+	 * Clear before the sub-object lookups so JS_GetProperty("query") etc. can succeed. */
+	JS_ClearPendingException(cx);
 
 	/* Return existing object if it's already been created */
-	if (JS_GetProperty(cx, session->js_request, "query", &val) && !JSVAL_NULL_OR_VOID(val))  {
+	if (JS_GetProperty(cx, session->js_request, "query", &val) && !JSVAL_NULL_OR_VOID(val) && JSVAL_IS_OBJECT(val))  {
 		session->js_query = JSVAL_TO_OBJECT(val);
 		JS_ClearScope(cx, session->js_query);
+		JS_ClearPendingException(cx);	/* SM128: JS_ClearScope may leave a pending exception */
 	}
-	else
+	else {
+		JS_ClearPendingException(cx);	/* SM128: clear before DefineObject */
 		session->js_query = JS_DefineObject(cx, session->js_request, "query", NULL
 		                                    , NULL, JSPROP_ENUMERATE | JSPROP_READONLY);
+	}
 
+	JS_ClearPendingException(cx);	/* SM128: clear before next sub-object lookup */
 	/* Return existing object if it's already been created */
-	if (JS_GetProperty(cx, session->js_request, "header", &val) && !JSVAL_NULL_OR_VOID(val))  {
+	if (JS_GetProperty(cx, session->js_request, "header", &val) && !JSVAL_NULL_OR_VOID(val) && JSVAL_IS_OBJECT(val))  {
 		session->js_header = JSVAL_TO_OBJECT(val);
 		JS_ClearScope(cx, session->js_header);
+		JS_ClearPendingException(cx);	/* SM128: JS_ClearScope may leave a pending exception */
 	}
-	else
+	else {
+		JS_ClearPendingException(cx);	/* SM128: clear before DefineObject */
 		session->js_header = JS_DefineObject(cx, session->js_request, "header", NULL
 		                                     , NULL, JSPROP_ENUMERATE | JSPROP_READONLY);
+	}
 
+	JS_ClearPendingException(cx);	/* SM128: clear before next sub-object lookup */
 	/* Return existing object if it's already been created */
-	if (JS_GetProperty(cx, session->js_request, "cookie", &val) && !JSVAL_NULL_OR_VOID(val))  {
+	if (JS_GetProperty(cx, session->js_request, "cookie", &val) && !JSVAL_NULL_OR_VOID(val) && JSVAL_IS_OBJECT(val))  {
 		session->js_cookie = JSVAL_TO_OBJECT(val);
 		JS_ClearScope(cx, session->js_cookie);
+		JS_ClearPendingException(cx);	/* SM128: JS_ClearScope may leave a pending exception */
 	}
-	else
+	else {
+		JS_ClearPendingException(cx);	/* SM128: clear before DefineObject */
 		session->js_cookie = JS_DefineObject(cx, session->js_request, "cookie", NULL
 		                                     , NULL, JSPROP_ENUMERATE | JSPROP_READONLY);
+	}
 
 
 	return session->js_request;
@@ -5476,6 +5538,7 @@ js_ErrorReporter(JSContext *cx, const char *message, JSErrorReport *report)
 {
 	char            line[64];
 	char            file[MAX_PATH + 1];
+	char            msg[2048];
 	const char*     warning;
 	http_session_t* session;
 	int             log_level;
@@ -5483,10 +5546,16 @@ js_ErrorReporter(JSContext *cx, const char *message, JSErrorReport *report)
 	if ((session = (http_session_t*)JS_GetContextPrivate(cx)) == NULL)
 		return;
 
+	/* Sanitize embedded newlines (e.g. JSMSG_TERMINATED stack traces) so
+	 * they don't appear as ^J control characters in the log output. */
+	SAFECOPY(msg, message);
+	for (char* p = msg; *p; p++)
+		if (*p == '\n') *p = ' ';
+
 	if (report == NULL) {
-		lprintf(LOG_ERR, "%04d %-5s [%s] !JavaScript: %s", session->socket, session->client.protocol, session->host_ip, message);
+		lprintf(LOG_ERR, "%04d %-5s [%s] !JavaScript: %s", session->socket, session->client.protocol, session->host_ip, msg);
 		if (content_file_open(session))
-			fprintf(session->req.fp, "!JavaScript: %s", message);
+			fprintf(session->req.fp, "!JavaScript: %s", msg);
 		return;
 	}
 
@@ -5526,9 +5595,9 @@ js_ErrorReporter(JSContext *cx, const char *message, JSErrorReport *report)
 	}
 
 	lprintf(log_level, "%04d %-5s [%s] !JavaScript %s%s%s: %s, Request: %s"
-	        , session->socket, session->client.protocol, session->host_ip, warning, file, line, message, session->req.request_line);
+	        , session->socket, session->client.protocol, session->host_ip, warning, file, line, msg, session->req.request_line);
 	if (content_file_open(session))
-		fprintf(session->req.fp, "!JavaScript %s%s%s: %s", warning, file, line, message);
+		fprintf(session->req.fp, "!JavaScript %s%s%s: %s", warning, file, line, msg);
 }
 
 static void js_writebuf(http_session_t *session, const char *buf, size_t buflen)
@@ -5569,7 +5638,7 @@ js_writefunc(JSContext *cx, uintN argc, jsval *arglist, bool writeln)
 			/* "Fast Mode" requested? */
 			jsval     val;
 			JSObject* reply = NULL;
-			if (JS_GetProperty(cx, session->js_glob, "http_reply", &val))
+			if (JS_GetProperty(cx, session->js_glob, "http_reply", &val) && JSVAL_IS_OBJECT(val))
 				reply = JSVAL_TO_OBJECT(val);
 			if (reply != NULL
 			    && JS_GetProperty(cx, reply, "fast", &val)
@@ -5995,7 +6064,7 @@ js_write_template(JSContext *cx, uintN argc, jsval *arglist)
 			/* "Fast Mode" requested? */
 			jsval     val;
 			JSObject* reply = NULL;
-			if (JS_GetProperty(cx, session->js_glob, "http_reply", &val))
+			if (JS_GetProperty(cx, session->js_glob, "http_reply", &val) && JSVAL_IS_OBJECT(val))
 				reply = JSVAL_TO_OBJECT(val);
 			if (relpy != NULL && JS_GetProperty(cx, reply, "fast", &val)
 			    && JSVAL_IS_BOOLEAN(val) && JSVAL_TO_BOOLEAN(val)) {
@@ -6172,12 +6241,12 @@ static bool ssjs_send_headers(http_session_t* session, int chunked)
 	char *     p = NULL, *p2 = NULL;
 	size_t     p_sz = 0, p2_sz = 0;
 
-	if (JS_GetProperty(session->js_cx, session->js_glob, "http_reply", &val)) {
+	if (JS_GetProperty(session->js_cx, session->js_glob, "http_reply", &val) && JSVAL_IS_OBJECT(val)) {
 		reply = JSVAL_TO_OBJECT(val);
 		if (reply != NULL) {
 			if (JS_GetProperty(session->js_cx, reply, "status", &val))
 				JSVALUE_TO_STRBUF(session->js_cx, val, session->req.status, sizeof(session->req.status), NULL);
-			if (JS_GetProperty(session->js_cx, reply, "header", &val)) {
+			if (JS_GetProperty(session->js_cx, reply, "header", &val) && JSVAL_IS_OBJECT(val)) {
 				headers = JSVAL_TO_OBJECT(val);
 				if (headers != NULL)
 					heads = JS_Enumerate(session->js_cx, headers);
@@ -6251,12 +6320,16 @@ static bool exec_ssjs(http_session_t* session, char* script)  {
 	JSScript*   js_script;
 	jsval       rval;
 	char        path[MAX_PATH + 1];
+	char        script_path[MAX_PATH + 1];
 	bool        retval = true;
 	long double start;
 
 	/* External JavaScript handler? */
 	if (script == session->req.physical_path && session->req.xjs_handler[0])
 		script = session->req.xjs_handler;
+	/* Save script path now — SAFECOPY(session->req.physical_path, ...) below
+	 * will overwrite the buffer that 'script' may point into. */
+	SAFECOPY(script_path, script);
 
 	snprintf(path, sizeof path, "%sSBBS_SSJS.%u.%u.html", scfg.temp_dir, getpid(), session->socket);
 	if (session->req.cleanup_file[CLEANUP_SSJS_TMP_FILE]) {
@@ -6318,8 +6391,29 @@ static bool exec_ssjs(http_session_t* session, char* script)  {
 	SAFECOPY(session->req.physical_path, path);
 	FCLOSE_OPEN_FILE(session->req.fp);
 
+	/* Report (and clear) any uncaught JS exception from the script before
+	 * calling ssjs_send_headers — it checks JS_IsExceptionPending and returns
+	 * false if one is pending, masking the real error with a silent 500. */
+	if (JS_IsExceptionPending(session->js_cx)) {
+		JS::RootedValue exn(session->js_cx);
+		if (JS_GetPendingException(session->js_cx, &exn)) {
+			JS_ClearPendingException(session->js_cx);
+			JS::Rooted<JSString*> exn_str(session->js_cx, JS::ToString(session->js_cx, exn));
+			if (exn_str) {
+				JS::UniqueChars msg = JS_EncodeStringToLatin1(session->js_cx, exn_str);
+				if (msg) {
+					errprintf(LOG_ERR, WHERE, "%04d %-5s [%s] !JavaScript exception in %s: %s"
+					          , session->socket, session->client.protocol, session->host_ip
+					          , script_path, msg.get());
+					JS_free(session->js_cx, msg.release());
+				}
+			}
+		}
+		retval = false;
+	}
+
 	/* Read http_reply object */
-	if (!session->req.sent_headers)
+	if (retval && !session->req.sent_headers)
 		retval = ssjs_send_headers(session, false);
 
 	/* Free up temporary resources here */
