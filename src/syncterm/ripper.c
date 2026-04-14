@@ -8770,7 +8770,7 @@ parse_rip_args(const char *args, const char *desc, int *parsed,
 			/*
 			 * BGI rejects the entire command if any
 			 * non-meganum characters remain after the
-			 * varlen fields (110E:0213 first-char check).
+			 * varlen fields
 			 */
 			if (args[offset] != '\0')
 				return -1;
@@ -11824,9 +11824,8 @@ full_ellipse(int xc, int yc, int sa, int ea, int a, int b, bool fill, uint32_t c
 	bool thick_sweep = (rip.line_width == 3) && rip.borders && !fill;
 
 	// Zero-span arc (sa == ea modulo 360) on the Bresenham path
-	// draws nothing (BGI span==0 check at 20DE:0923).  But on the
-	// sweep path (thick lines), 0x0A81 does "if sa >= ea: ea += 360",
-	// converting sa==ea into a full circle.
+	// draws nothing.  But on the sweep path (thick lines), does
+	// "if sa >= ea: ea += 360", converting sa==ea into a full circle.
 	if (sa % 360 == ea % 360 && !(sa == 0 && ea == 360) && !thick_sweep)
 		return;
 	int  orig_a = a, orig_b = b;
