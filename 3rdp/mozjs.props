@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ImportGroup Label="PropertySheets" />
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup>
+    <_PropertySheetDisplayName>Mozilla JavaScript (MOZJS) Library</_PropertySheetDisplayName>
+    <_MozJSDir Condition="'$(Configuration)'=='Debug'">$(MSBuildThisFileDirectory)win32.debug\mozjs\</_MozJSDir>
+    <_MozJSDir Condition="'$(Configuration)'!='Debug'">$(MSBuildThisFileDirectory)win32.release\mozjs\</_MozJSDir>
+    <!-- DEBUG + MOZ_DIAGNOSTIC_ASSERT_ENABLED must match the debug DLL build:
+         DEBUG puts AutoCheckCannotGC : AutoAssertNoGC (not AutoRequireNoGC),
+         and MOZ_DIAGNOSTIC_ASSERT_ENABLED adds cx_ to AutoAssertNoGC (4 bytes).
+         Without both, AutoCheckCannotGC is 1 byte but debug DLL ctor writes 4 bytes
+         → stack corruption. Release DLL exports the same symbols as trivial no-ops. -->
+    <_MozJSExtraDefs Condition="'$(Configuration)'=='Debug'">DEBUG;MOZ_DIAGNOSTIC_ASSERT_ENABLED;</_MozJSExtraDefs>
+    <_MozJSExtraDefs Condition="'$(Configuration)'!='Debug'"></_MozJSExtraDefs>
+  </PropertyGroup>
+  <ItemDefinitionGroup>
+    <ClCompile>
+      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>JAVASCRIPT;NOMINMAX;$(_MozJSExtraDefs)%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <LanguageStandard>stdcpp17</LanguageStandard>
+      <AdditionalOptions>/Zc:preprocessor /external:I"$(_MozJSDir)include" /external:W0 %(AdditionalOptions)</AdditionalOptions>
+    </ClCompile>
+    <Link>
+      <AdditionalDependencies>$(_MozJSDir)bin\mozjs-128.lib;$(_MozJSDir)bin\mozjs_stubs.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <ForceSymbolReferences>_moz_arena_malloc</ForceSymbolReferences>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemGroup />
+</Project>
