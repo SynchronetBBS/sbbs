@@ -1,43 +1,42 @@
 #include "sbbs.h"
 #include "js_rtpool.h"
+#include "semwrap.h"
 #include <js/Initialization.h>
 #include <js/GCAPI.h>
+#include <js/Realm.h>
 #include <unordered_map>
-#include <time.h>
 
 static pthread_mutex_t jsrt_mutex;
 static link_list_t     cx_list;
 
 /* SM128: emulate JS_SetRuntimePrivate / JS_GetRuntimePrivate */
-static pthread_mutex_t jsrt_private_mutex = PTHREAD_MUTEX_INITIALIZER;
+static pthread_mutex_t jsrt_private_mutex;
 static std::unordered_map<JSRuntime*, void*> jsrt_private_map;
 
 /* SM128: track heap-allocated AutoDisableGenerationalGC guards per context */
 static std::unordered_map<JSContext*, JS::AutoDisableGenerationalGC*> jsrt_nogen_map;
 
 void jsrt_SetRuntimePrivate(JSRuntime* rt, void* data) {
-    pthread_mutex_lock(&jsrt_private_mutex);
-    jsrt_private_map[rt] = data;
-    pthread_mutex_unlock(&jsrt_private_mutex);
+	pthread_mutex_lock(&jsrt_private_mutex);
+	jsrt_private_map[rt] = data;
+	pthread_mutex_unlock(&jsrt_private_mutex);
 }
 void* jsrt_GetRuntimePrivate(JSRuntime* rt) {
-    pthread_mutex_lock(&jsrt_private_mutex);
-    auto it = jsrt_private_map.find(rt);
-    void* result = (it != jsrt_private_map.end()) ? it->second : nullptr;
-    pthread_mutex_unlock(&jsrt_private_mutex);
-    return result;
+	pthread_mutex_lock(&jsrt_private_mutex);
+	auto it = jsrt_private_map.find(rt);
+	void* result = (it != jsrt_private_map.end()) ? it->second : nullptr;
+	pthread_mutex_unlock(&jsrt_private_mutex);
+	return result;
 }
 void jsrt_ClearRuntimePrivate(JSRuntime* rt) {
-    pthread_mutex_lock(&jsrt_private_mutex);
-    jsrt_private_map.erase(rt);
-    pthread_mutex_unlock(&jsrt_private_mutex);
+	pthread_mutex_lock(&jsrt_private_mutex);
+	jsrt_private_map.erase(rt);
+	pthread_mutex_unlock(&jsrt_private_mutex);
 }
 
 /* trigger_thread shutdown state */
 static volatile bool   trigger_stop = false;
-static pthread_mutex_t trigger_done_mutex = PTHREAD_MUTEX_INITIALIZER;
-static pthread_cond_t  trigger_done_cond  = PTHREAD_COND_INITIALIZER;
-static bool            trigger_done_flag  = false;
+static sem_t           trigger_done_sem;
 
 #define TRIGGER_THREAD_STACK_SIZE       (256 * 1024)
 static void trigger_thread(void *args)
@@ -51,10 +50,7 @@ static void trigger_thread(void *args)
 		pthread_mutex_unlock(&jsrt_mutex);
 		SLEEP(100);
 	}
-	pthread_mutex_lock(&trigger_done_mutex);
-	trigger_done_flag = true;
-	pthread_cond_signal(&trigger_done_cond);
-	pthread_mutex_unlock(&trigger_done_mutex);
+	sem_post(&trigger_done_sem);
 }
 
 /* Called via atexit() — stops trigger_thread then shuts down SpiderMonkey.
@@ -63,25 +59,24 @@ static void trigger_thread(void *args)
 static void jsrt_atexit_shutdown(void)
 {
 	trigger_stop = true;
-
-	/* Wait up to 1 second for trigger_thread to acknowledge and exit */
-	pthread_mutex_lock(&trigger_done_mutex);
-	if (!trigger_done_flag) {
-		struct timespec ts;
-		clock_gettime(CLOCK_REALTIME, &ts);
-		ts.tv_sec += 1;
-		pthread_cond_timedwait(&trigger_done_cond, &trigger_done_mutex, &ts);
-	}
-	pthread_mutex_unlock(&trigger_done_mutex);
-
+	sem_trywait_block(&trigger_done_sem, 1000);	/* wait up to 1 second */
 	JS_ShutDown();
 }
 
 static void
 jsrt_init(void)
 {
-	JS_Init();
+	/* SM128: pass isDebugBuild=true when using the debug mozjs-128.dll.
+	 * JS_Init() uses #ifdef DEBUG to select, but defining DEBUG globally
+	 * causes debug-only DLL imports; call directly using _DEBUG instead. */
+#ifdef _DEBUG
+	JS::detail::InitWithFailureDiagnostic(true);
+#else
+	JS::detail::InitWithFailureDiagnostic(false);
+#endif
 	pthread_mutex_init(&jsrt_mutex, NULL);
+	pthread_mutex_init(&jsrt_private_mutex, NULL);
+	sem_init(&trigger_done_sem, 0, 0);
 	pthread_mutex_lock(&jsrt_mutex);
 	listInit(&cx_list, 0);
 	pthread_mutex_unlock(&jsrt_mutex);
@@ -150,14 +145,31 @@ void jsrt_Release(JSContext *cx)
 {
 	list_node_t *node;
 
-	/* Re-enable generational GC (if disabled) before destroying context */
-	pthread_mutex_lock(&jsrt_private_mutex);
-	auto it = jsrt_nogen_map.find(cx);
-	if (it != jsrt_nogen_map.end()) {
-		delete it->second;
-		jsrt_nogen_map.erase(it);
+	/* SM128: wait for any background threads before destroying the context.
+	 * js_global_finalize (called during GC inside JS_DestroyContext) cannot
+	 * reliably wait: in SM128's release build the GC may not collect the global
+	 * during JS_DestroyContext, leaving bg threads running when JS_ShutDown()
+	 * is called at exit.  Do the wait here, on the context's owning thread,
+	 * before the context is torn down.
+	 *
+	 * JS_GetGlobalObject uses the current realm, so call it before LeaveRealm. */
+	{
+		JSObject* glob = JS_GetGlobalObject(cx);
+		if (glob != NULL) {
+			global_private_t* p = (global_private_t*)JS_GetPrivate(glob);
+			if (p != NULL) {
+				while (p->bg_count) {
+					if (sem_wait(&p->bg_sem) == 0)
+						p->bg_count--;
+				}
+			}
+		}
 	}
-	pthread_mutex_unlock(&jsrt_private_mutex);
+
+	/* SM128: must leave any active realm before destroying the context
+	 * (debug assertion: "Shouldn't destroy context with active realm") */
+	if (JS::GetCurrentRealmOrNull(cx) != nullptr)
+		JS::LeaveRealm(cx, nullptr);
 
 	pthread_mutex_lock(&jsrt_mutex);
 	node = listFindNode(&cx_list, cx, 0);
@@ -165,11 +177,41 @@ void jsrt_Release(JSContext *cx)
 		listRemoveNode(&cx_list, node, FALSE);
 	jsrt_ClearRuntimePrivate(JS_GetRuntime(cx));
 	pthread_mutex_unlock(&jsrt_mutex);
-	/* JS_DestroyContext runs finalizers (e.g. js_global_finalize, which waits
-	 * on background threads).  A background thread draining itself calls
-	 * jsrt_Release and needs jsrt_mutex — so destruction must happen outside
-	 * the lock to avoid deadlock. */
+
+	/* SM128: destroy context OUTSIDE jsrt_mutex. JS_DestroyContext triggers a
+	 * final GC which calls js_global_finalize. The finalizer's bg_count wait
+	 * has already been done above, so js_global_finalize just frees p.
+	 *
+	 * Delete the AutoDisableGenerationalGC guard (if any) BEFORE destroying the
+	 * context so its destructor can properly re-enable the nursery.  The nursery
+	 * was disabled for the entire lifetime of this context, so no allocations
+	 * ever went to the nursery and the nursery store buffer is empty.
+	 * Re-enabling the nursery here is therefore safe — there are no nursery
+	 * objects with untracked raw C++ pointers to worry about at teardown.
+	 * Keeping the guard alive through JS_DestroyContext causes SM128 debug builds
+	 * to crash in AssertNoRootsTracer::onChild (checkNoRuntimeRoots) because the
+	 * disabled nursery causes destroyRuntime to take a different GC code path. */
+	pthread_mutex_lock(&jsrt_private_mutex);
+	auto it = jsrt_nogen_map.find(cx);
+	if (it != jsrt_nogen_map.end()) {
+		delete it->second;   /* dtor re-enables nursery; safe because nursery was never used */
+		jsrt_nogen_map.erase(it);
+	}
+	pthread_mutex_unlock(&jsrt_private_mutex);
+
+	/* SM128: force a regular GC before JS_DestroyContext so the realm's global
+	 * is collected (globalObj_ → null) before destroyRuntime's final GC runs
+	 * checkNoRuntimeRoots.  After LeaveRealm above, the global is unreachable
+	 * from C++ (no Rooted<T>, no PersistentRooted<T>, no current-realm trace),
+	 * so this GC finalizes it.  The destroy-time checkNoRuntimeRoots assertion
+	 * then finds a null globalObj_ and passes.
+	 *
+	 * A regular JS_GC uses GCReason != DESTROY_RUNTIME and does NOT invoke
+	 * checkNoRuntimeRoots itself, so this call is safe even in debug builds. */
+	JS_GC(cx);
+
 	JS_DestroyContext(cx);
+
 	/* Do NOT call JS_ShutDown() here — the engine must remain initialized for
 	 * future contexts (e.g. new node connections).  JS_ShutDown() is a
 	 * process-lifetime call; it is deferred to jsrt_atexit_shutdown(). */
