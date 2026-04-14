@@ -35,6 +35,7 @@
 #include "sexyz.h"
 #include "syncterm.h"
 #include "term.h"
+#include "uifcinit.h"
 #include "window.h"
 
 // TODO: Output parsing... (yech)
@@ -80,8 +81,19 @@ static size_t              ripbuf_size = 0;
 static size_t              ripbuf_pos = 0;
 static size_t              ripbufpos = 0;
 static bool                rip_suspended = false;
+static int                 rip_scene_depth = 0;
+#define RIP_SCENE_DEPTH_MAX 8
 
-static struct mouse_field *rip_pressed = NULL;
+static struct mouse_field      *rip_pressed = NULL;
+static struct rip_button_style *current_button = NULL;
+
+struct rip_user_var {
+	char                 name[13];
+	char                *value;
+	int                  field_width;
+	bool                 persistent;
+	struct rip_user_var *next;
+};
 
 struct rip_button_style {
 	enum {
@@ -142,6 +154,7 @@ struct rip_button_style {
 	int                      bflags;
 	bool                     selected;
 	uint8_t                  hotkey;
+	char                    *template_cmd;
 	struct rip_button_style *next;
 };
 
@@ -219,6 +232,11 @@ struct saved_clipboard {
 	struct ciolib_pixels *pix;
 };
 
+struct saved_screen {
+	struct ciolib_pixels *pix;
+	int vp_sx, vp_sy, vp_ex, vp_ey;
+};
+
 static struct {
 	bool                    enabled;
 	int                     version;
@@ -264,6 +282,9 @@ static struct {
 	int                    *xunmap;
 	int                    *yunmap;
 	bool                    text_disabled;
+	bool                    hotkeys_enabled;
+	bool                    tab_enabled;
+	struct mouse_field     *tab_highlight;
 	enum ansi_state         ansi_state;
 	int                     clipx;
 	int                     clipy;
@@ -280,6 +301,8 @@ static struct {
 	int   default_font_height;
 	struct saved_text_window stw;
 	struct saved_clipboard scb;
+	struct saved_screen screen_saves[11]; // 0-9 = numbered, 10 = default
+	struct rip_user_var *user_vars;
 } rip = {
 	true,
 	3,
@@ -310,6 +333,9 @@ static struct {
 	NULL, NULL,
 	NULL, NULL,
 	false,
+	true, // hotkeys_enabled
+	true, // tab_enabled
+	NULL, // tab_highlight
 	ANSI_STATE_NONE,
 	0, 0,
 	NULL,
@@ -320,6 +346,8 @@ static struct {
 	8,
 	{0, 0, 0, 0, 79, 43, 1, 1, 7, _NORMALCURSOR},
 	{0, 0, NULL},
+	{{0}},
+	NULL,
 };
 
 static const uint16_t      rip_line_patterns[4] = {
@@ -7537,6 +7565,11 @@ static const unsigned char * const rip_fonts[] = {
 };
 static int parse_mega(const char *buf, int fieldwidth, int *consumed);
 static void do_rip_command(int level, int sublevel, int cmd, const char *args);
+static char *rip_input_dialog(const char *prompt, const char *initial,
+    int field_width, bool reject_blank);
+static void save_persistent_var(const char *name);
+static void load_persistent_vars(void);
+static void rip_play_scene(const char *filename);
 static void write_text(const char *str);
 static char *rv_version(const char * const var, const void * const data);
 static char *rv_date(const char * const var, const void * const data);
@@ -7554,6 +7587,7 @@ static char *rv_termset(const char * const var, const void * const data);
 static char *rv_hotkey(const char * const var, const void * const data);
 static char *rv_exploit(const char * const var, const void * const data);
 static char *rv_paste(const char * const var, const void * const data);
+static void handle_command_str(const char *incmd);
 static void kill_mouse_fields(void);
 static void kill_saved_mouse_fields(void);
 static void copy_mouse_fields(struct mouse_field *from, struct mouse_field **to);
@@ -7597,9 +7631,9 @@ static const struct builtin_rip_variable builtins[] = {
 	{"COFF", rv_termset, NULL},
 	{"COMPAT", rv_termset, NULL},
 	{"CON", rv_termset, NULL},
-	{"CURSOR", rv_termstat, NULL},
-	{"CURX", rv_termstat, NULL},
-	{"CURY", rv_termstat, NULL},
+	{"CURSOR", rv_termset, NULL},
+	{"CURX", rv_termset, NULL},
+	{"CURY", rv_termset, NULL},
 	{"DATE", rv_date, NULL},                // Date in short format MM/DD/YY
 	{"DATETIME", rv_date, NULL},            // Date and Time
 	{"DAY", rv_date, NULL},                 // Day of Month Number
@@ -7718,18 +7752,203 @@ bicmp(const void *str, const void *vd)
 	return ret;
 }
 
+static bool
+validate_var_name(const char *name)
+{
+	size_t len;
+
+	if (name == NULL || name[0] == '\0')
+		return false;
+	if (name[0] == '_' || isdigit((unsigned char)name[0]))
+		return false;
+	len = strlen(name);
+	if (len > 12)
+		return false;
+	for (size_t i = 0; i < len; i++) {
+		if (!isalnum((unsigned char)name[i]) && name[i] != '_')
+			return false;
+	}
+	return true;
+}
+
+static struct rip_user_var *
+find_user_var(const char *name)
+{
+	struct rip_user_var *uv;
+
+	for (uv = rip.user_vars; uv != NULL; uv = uv->next) {
+		if (strcasecmp(uv->name, name) == 0)
+			return uv;
+	}
+	return NULL;
+}
+
+static struct rip_user_var *
+set_user_var(const char *name, const char *value, int field_width, bool persistent)
+{
+	struct rip_user_var *uv;
+
+	uv = find_user_var(name);
+	if (uv != NULL) {
+		free(uv->value);
+		uv->value = strdup(value);
+		uv->field_width = field_width;
+		uv->persistent = persistent;
+		return uv;
+	}
+	uv = malloc(sizeof(*uv));
+	if (uv == NULL)
+		return NULL;
+	strlcpy(uv->name, name, sizeof(uv->name));
+	uv->value = strdup(value);
+	uv->field_width = field_width;
+	uv->persistent = persistent;
+	uv->next = rip.user_vars;
+	rip.user_vars = uv;
+	return uv;
+}
+
+static void
+free_user_vars(void)
+{
+	struct rip_user_var *uv, *next;
+
+	for (uv = rip.user_vars; uv != NULL; uv = next) {
+		next = uv->next;
+		free(uv->value);
+		free(uv);
+	}
+	rip.user_vars = NULL;
+}
+
+static bool
+parse_define_text(const char *text, char *name_out, int *field_width_out,
+                  char **question_out, char **default_out)
+{
+	const char *colon;
+	const char *comma;
+	size_t namelen;
+
+	*question_out = NULL;
+	*default_out = NULL;
+	*field_width_out = 60;
+
+	if (text == NULL || text[0] == '\0')
+		return false;
+
+	colon = strchr(text, ':');
+	if (colon == NULL)
+		return false;
+
+	comma = memchr(text, ',', colon - text);
+	if (comma != NULL) {
+		namelen = comma - text;
+		*field_width_out = atoi(comma + 1);
+		if (*field_width_out < 1)
+			*field_width_out = 1;
+		if (*field_width_out > INI_MAX_VALUE_LEN - 1)
+			*field_width_out = INI_MAX_VALUE_LEN - 1;
+	}
+	else {
+		namelen = colon - text;
+	}
+
+	if (namelen == 0 || namelen > 12)
+		return false;
+	memcpy(name_out, text, namelen);
+	name_out[namelen] = '\0';
+
+	if (!validate_var_name(name_out))
+		return false;
+
+	const char *after_colon = colon + 1;
+	if (*after_colon == '?') {
+		const char *q_end = strchr(after_colon + 1, '?');
+		if (q_end != NULL) {
+			*question_out = strndup(after_colon + 1, q_end - after_colon - 1);
+			after_colon = q_end + 1;
+		}
+	}
+
+	if (*after_colon != '\0')
+		*default_out = strdup(after_colon);
+
+	return true;
+}
+
+static void
+save_persistent_var(const char *name)
+{
+	char cache_path[MAX_PATH + 1];
+	FILE *fp;
+	str_list_t ini;
+	struct rip_user_var *uv;
+
+	if (rip.bbs == NULL)
+		return;
+	uv = find_user_var(name);
+	if (uv == NULL)
+		return;
+	if (!get_cache_fn_subdir(rip.bbs, cache_path,
+	    sizeof(cache_path), "RIP"))
+		return;
+	strlcat(cache_path, "variables.ini", sizeof(cache_path));
+	fp = iniOpenFile(cache_path, true);
+	if (fp == NULL)
+		return;
+	ini = iniReadFile(fp);
+	iniSetString(&ini, NULL, name, uv->value, NULL);
+	rewind(fp);
+	iniWriteFile(fp, ini);
+	iniCloseFile(fp);
+	iniFreeStringList(ini);
+}
+
+static void
+load_persistent_vars(void)
+{
+	char cache_path[MAX_PATH + 1];
+	FILE *fp;
+	str_list_t keys;
+	char value[INI_MAX_VALUE_LEN];
+	int i;
+
+	if (rip.bbs == NULL)
+		return;
+	if (!get_cache_fn_subdir(rip.bbs, cache_path,
+	    sizeof(cache_path), "RIP"))
+		return;
+	strlcat(cache_path, "variables.ini", sizeof(cache_path));
+	fp = iniOpenFile(cache_path, false);
+	if (fp == NULL)
+		return;
+	keys = iniReadKeyList(fp, NULL);
+	if (keys != NULL) {
+		for (i = 0; keys[i] != NULL; i++) {
+			if (iniReadString(fp, NULL, keys[i],
+			    "", value) != NULL) {
+				set_user_var(keys[i], value, 60, true);
+			}
+		}
+		iniFreeStringList(keys);
+	}
+	iniCloseFile(fp);
+}
+
 static char *
 get_text_variable(const char * const var)
 {
 	struct builtin_rip_variable *vardef;
 
 	if (var[0] == '>') {
-		puts("TODO: Local RIP playback");
-		return NULL;
+		rip_play_scene(&var[1]);
+		return calloc(1, 1);
 	}
 	vardef = bsearch(var, builtins, sizeof(builtins) / sizeof(builtins[0]), sizeof(builtins[0]), bicmp);
 	if (vardef == NULL) {
-		printf("TODO: User variables (%s)\n", var);
+		struct rip_user_var *uv = find_user_var(var);
+		if (uv != NULL && uv->value != NULL)
+			return strdup(uv->value);
 		return calloc(1, 1);
 	}
 	return vardef->func(var, vardef->data);
@@ -8150,6 +8369,9 @@ rv_reset(const char * const var, const void * const data)
 	rip.curstype = _NORMALCURSOR;
 	rip.borders = true;
 	rip.text_disabled = false;
+	rip.hotkeys_enabled = true;
+	rip.tab_enabled = true;
+	rip.tab_highlight = NULL;
 	rip.ansi_state = ANSI_STATE_NONE;
 	_setcursortype(rip.curstype);
 	reinit_screen(rip.default_font, rip.default_font_width, rip.default_font_height);
@@ -8173,75 +8395,131 @@ rv_reset(const char * const var, const void * const data)
 	return NULL;
 }
 
+static int
+save_slot_index(char ch)
+{
+	if (ch >= '0' && ch <= '9')
+		return ch - '0';
+	return 10;
+}
+
+static void
+save_screen_slot(int slot)
+{
+	struct saved_screen *ss = &rip.screen_saves[slot];
+
+	freepixels(ss->pix);
+	ss->pix = getpixels(0, 0, rip.x_max - 1, rip.y_max - 1, false);
+	ss->vp_sx = rip.viewport.sx;
+	ss->vp_sy = rip.viewport.sy;
+	ss->vp_ex = rip.viewport.ex;
+	ss->vp_ey = rip.viewport.ey;
+}
+
+static void
+restore_screen_slot(int slot, bool clear_after)
+{
+	struct saved_screen *ss = &rip.screen_saves[slot];
+
+	if (ss->pix == NULL)
+		return;
+	setpixels(0, 0, ss->pix->width - 1, ss->pix->height - 1,
+	    0, 0, 0, 0, ss->pix, NULL);
+	rip.viewport.sx = ss->vp_sx;
+	rip.viewport.sy = ss->vp_sy;
+	rip.viewport.ex = ss->vp_ex;
+	rip.viewport.ey = ss->vp_ey;
+	if (clear_after) {
+		freepixels(ss->pix);
+		ss->pix = NULL;
+	}
+}
+
 static char *
 rv_save(const char * const var, const void * const data)
 {
-	if (strcmp(var, "SMF") == 0) {
-                // Save mouse fields...
-		kill_saved_mouse_fields();
-		copy_mouse_fields(rip.mfields, &rip.saved_mfields);
-		return NULL;
+	switch (var[1]) {
+		case 'M':
+			kill_saved_mouse_fields();
+			copy_mouse_fields(rip.mfields, &rip.saved_mfields);
+			return NULL;
+		case 'T':
+			rip.stw.x = rip.x;
+			rip.stw.y = rip.y;
+			rip.stw.sx = cterm->left_margin - 1;
+			rip.stw.sy = cterm->top_margin - 1;
+			rip.stw.ex = cterm->right_margin - 1;
+			rip.stw.ey = cterm->bottom_margin - 1;
+			rip.stw.wrap = (cterm->extattr & CTERM_EXTATTR_AUTOWRAP) ? 1 : 0;
+			assert_rwlock_rdlock(&vstatlock);
+			rip.stw.size = vstat.charwidth;
+			assert_rwlock_unlock(&vstatlock);
+			rip.stw.curstype = rip.curstype;
+			rip.stw.attr = cterm->attr;
+			return NULL;
+		case 'C':
+			rip.scb.x = rip.clipx;
+			rip.scb.y = rip.clipy;
+			freepixels(rip.scb.pix);
+			rip.scb.pix = duppixels(rip.clipboard);
+			return NULL;
+		case 'A':
+			switch (var[4]) {
+				case 'A':
+					rv_save("STW", NULL);
+					rv_save("SCB", NULL);
+					rv_save("SMF", NULL);
+					save_screen_slot(10);
+					return NULL;
+				default:
+					save_screen_slot(save_slot_index(var[4]));
+					return NULL;
+			}
 	}
-	if (strcmp(var, "STW") == 0) {
-		rip.stw.x = rip.x;
-		rip.stw.y = rip.y;
-		rip.stw.sx = cterm->left_margin - 1;
-		rip.stw.sy = cterm->top_margin - 1;
-		rip.stw.ex = cterm->right_margin - 1;
-		rip.stw.ey = cterm->bottom_margin - 1;
-		rip.stw.wrap = (cterm->extattr & CTERM_EXTATTR_AUTOWRAP) ? 1 : 0;
-		assert_rwlock_rdlock(&vstatlock);
-		const int charwidth = vstat.charwidth;
-		assert_rwlock_unlock(&vstatlock);
-		rip.stw.size = charwidth;
-		rip.stw.curstype = rip.curstype;
-		rip.stw.attr = cterm->attr;
-		return NULL;
-	}
-	if (strcmp(var, "SCB") == 0) {
-		rip.scb.x = rip.clipx;
-		rip.scb.y = rip.clipy;
-		freepixels(rip.scb.pix);
-		rip.scb.pix = duppixels(rip.clipboard);
-		return NULL;
-	}
-	printf("TODO: Save RIP Variables (%s)\n", var);
 	return NULL;
 }
 
 static char *
 rv_restore(const char * const var, const void * const data)
 {
-	if (strcmp(var, "RMF") == 0) {
-                // Restore mouse fields...
-		kill_mouse_fields();
-		copy_mouse_fields(rip.saved_mfields, &rip.mfields);
-		return NULL;
+	switch (var[1]) {
+		case 'M':
+			kill_mouse_fields();
+			copy_mouse_fields(rip.saved_mfields, &rip.mfields);
+			return NULL;
+		case 'T':
+			if (rip.stw.sx == 0 && rip.stw.sy == 0 && rip.stw.ex == 0 && rip.stw.ey == 0)
+				rip.text_disabled = true;
+			else
+				rip.text_disabled = false;
+			rip_text_window(rip.stw.sx, rip.stw.sy, rip.stw.ex, rip.stw.ey, rip.stw.wrap, rip.stw.size);
+			rip.x = rip.stw.x;
+			rip.y = rip.stw.y;
+			rip.curstype = rip.stw.curstype;
+			_setcursortype(rip.curstype);
+			cterm->attr = rip.stw.attr;
+			attr2palette(cterm->attr, &cterm->fg_color, &cterm->bg_color);
+			return NULL;
+		case 'C':
+			rip.clipx = rip.scb.x;
+			rip.clipy = rip.scb.y;
+			freepixels(rip.clipboard);
+			rip.clipboard = duppixels(rip.scb.pix);
+			return NULL;
+		case 'E':
+			switch (var[7]) {
+				case 'A':
+					rv_restore("RTW", NULL);
+					rv_restore("RCB", NULL);
+					rv_restore("RMF", NULL);
+					restore_screen_slot(10, false);
+					return NULL;
+				default:
+					restore_screen_slot(save_slot_index(var[7]),
+					    var[7] >= '1' && var[7] <= '9');
+					return NULL;
+			}
 	}
-	if (strcmp(var, "RTW") == 0) {
-		if (rip.stw.sx == 0 && rip.stw.sy == 0 && rip.stw.ex == 0 && rip.stw.ey == 0) {
-			rip.text_disabled = true;
-		}
-		else {
-			rip.text_disabled = false;
-		}
-		rip_text_window(rip.stw.sx, rip.stw.sy, rip.stw.ex, rip.stw.ey, rip.stw.wrap, rip.stw.size);
-		rip.x = rip.stw.x;
-		rip.y = rip.stw.y;
-		rip.curstype = rip.stw.curstype;
-		_setcursortype(rip.curstype);
-		cterm->attr = rip.stw.attr;
-		attr2palette(cterm->attr, &cterm->fg_color, &cterm->bg_color);
-		return NULL;
-	}
-	if (strcmp(var, "RCB") == 0) {
-		rip.clipx = rip.scb.x;
-		rip.clipy = rip.scb.y;
-		freepixels(rip.clipboard);
-		rip.clipboard = duppixels(rip.scb.pix);
-		return NULL;
-	}
-	printf("TODO: Restore RIP Variables (%s)\n", var);
 	return NULL;
 }
 
@@ -8400,13 +8678,74 @@ rv_mouse_kill(const char * const var, const void * const data)
 static char *
 rv_disable(const char * const var, const void * const data)
 {
-	printf("TODO: RIP Variables (%s)\n", var);
+	rip.text_disabled = true;
+	rip.ansi_state = ANSI_STATE_NONE;
 	return NULL;
 }
 
 static char *
 rv_termstat(const char * const var, const void * const data)
 {
+	char str[16];
+	bool has_tw;
+
+	switch (var[0]) {
+		case 'S':
+			return strdup(term.nostatus ? "NO" : "YES");
+		case 'T':
+			has_tw = !rip.text_disabled;
+			switch (var[2]) {
+				case 'F':
+					if (!has_tw)
+						return strdup("0");
+					assert_rwlock_rdlock(&vstatlock);
+					int cw = vstat.charwidth;
+					int ch = vstat.charheight;
+					assert_rwlock_unlock(&vstatlock);
+					if (cw == 8 && ch == 8)
+						snprintf(str, sizeof(str), "1");
+					else if (cw == 7 && ch == 8)
+						snprintf(str, sizeof(str), "2");
+					else if (cw == 8 && ch == 14)
+						snprintf(str, sizeof(str), "3");
+					else if (cw == 16 && ch == 14)
+						snprintf(str, sizeof(str), "4");
+					else if (cw == 7 && ch == 14)
+						snprintf(str, sizeof(str), "5");
+					else
+						snprintf(str, sizeof(str), "0");
+					return strdup(str);
+				case 'H':
+					if (!has_tw)
+						return strdup("0");
+					snprintf(str, sizeof(str), "%d",
+					    cterm->bottom_margin - cterm->top_margin + 1);
+					return strdup(str);
+				case 'I':
+					return strdup(has_tw ? "YES" : "NO");
+				case 'W':
+					if (!has_tw)
+						return strdup("0");
+					snprintf(str, sizeof(str), "%d",
+					    cterm->right_margin - cterm->left_margin + 1);
+					return strdup(str);
+				case 'X':
+					if (!has_tw)
+						return strdup("0");
+					snprintf(str, sizeof(str), "%d",
+					    var[3] == '0' ? cterm->left_margin - 1
+					                  : cterm->right_margin - 1);
+					return strdup(str);
+				case 'Y':
+					if (!has_tw)
+						return strdup("0");
+					snprintf(str, sizeof(str), "%d",
+					    var[3] == '0' ? cterm->top_margin - 1
+					                  : cterm->bottom_margin - 1);
+					return strdup(str);
+			}
+			break;
+	}
 	printf("TODO: RIP Variables (%s)\n", var);
 	return NULL;
 }
@@ -8525,9 +8864,128 @@ rv_termset(const char * const var, const void * const data)
 	return NULL;
 }
 
+static void
+tab_highlight_draw(struct mouse_field *mf)
+{
+	int x1, y1, x2, y2;
+	bool old_xor;
+	uint16_t old_pat;
+	int old_width;
+	int old_color;
+
+	if (mf == NULL)
+		return;
+	if (mf->type == MOUSE_FIELD_BUTTON) {
+		x1 = mf->data.button->box.x1;
+		y1 = mf->data.button->box.y1;
+		x2 = mf->data.button->box.x2;
+		y2 = mf->data.button->box.y2;
+	}
+	else if (mf->type == MOUSE_FIELD_HOT) {
+		x1 = mf->data.hot->box.x1;
+		y1 = mf->data.hot->box.y1;
+		x2 = mf->data.hot->box.x2;
+		y2 = mf->data.hot->box.y2;
+	}
+	else {
+		return;
+	}
+
+	old_xor = rip.xor;
+	old_pat = rip.line_pattern;
+	old_width = rip.line_width;
+	old_color = rip.color;
+
+	rip.xor = true;
+	rip.line_pattern = 0xF8F8; // dashed
+	rip.line_width = 3;
+	rip.color = 5; // magenta
+
+	x1 -= 1;
+	y1 -= 1;
+	draw_line(x1, y1, x2, y1);
+	draw_line(x2, y1, x2, y2);
+	draw_line(x2, y2, x1, y2);
+	draw_line(x1, y2, x1, y1);
+
+	rip.xor = old_xor;
+	rip.line_pattern = old_pat;
+	rip.line_width = old_width;
+	rip.color = old_color;
+}
+
+static void
+tab_highlight_clear(void)
+{
+	if (rip.tab_highlight) {
+		tab_highlight_draw(rip.tab_highlight);
+		rip.tab_highlight = NULL;
+	}
+}
+
+static struct mouse_field *
+tab_next_field(struct mouse_field *current, bool forward)
+{
+	struct mouse_field *mf;
+	struct mouse_field *first = NULL;
+	struct mouse_field *last = NULL;
+	struct mouse_field *next = NULL;
+	bool found = false;
+
+	for (mf = rip.mfields; mf; mf = mf->next) {
+		if (mf->type != MOUSE_FIELD_BUTTON && mf->type != MOUSE_FIELD_HOT)
+			continue;
+		if (first == NULL)
+			first = mf;
+		last = mf;
+		if (found && next == NULL)
+			next = mf;
+		if (mf == current)
+			found = true;
+	}
+
+	if (!found) {
+		// current not in list (or NULL) — return first/last
+		return forward ? first : last;
+	}
+
+	if (forward)
+		return next ? next : first; // wrap
+	else {
+		// find predecessor
+		struct mouse_field *prev = NULL;
+		for (mf = rip.mfields; mf; mf = mf->next) {
+			if (mf->type != MOUSE_FIELD_BUTTON && mf->type != MOUSE_FIELD_HOT)
+				continue;
+			if (mf == current)
+				return prev ? prev : last; // wrap
+			prev = mf;
+		}
+		return last;
+	}
+}
+
 static char *
 rv_hotkey(const char * const var, const void * const data)
 {
+	switch (var[0]) {
+		case 'H':
+			rip.hotkeys_enabled = (var[4] == 'N');
+			return NULL;
+		case 'T':
+			if (var[3] == 'O') {
+				// TABON/TABOFF
+				if (var[4] == 'N') {
+					rip.tab_enabled = true;
+				}
+				else {
+					tab_highlight_clear();
+					rip.tab_enabled = false;
+				}
+				return NULL;
+			}
+			break;
+	}
 	printf("TODO: RIP Variables (%s)\n", var);
 	return NULL;
 }
@@ -10771,6 +11229,7 @@ add_button(int x1, int y1, int x2, int y2, int hotkey, int flags, const char *te
 	but->bflags = flags;
 	but->selected = (flags & 1) != 0;
 	but->hotkey = hotkey;
+	but->template_cmd = NULL;
 	if (but->flags.mouse) {
 		mf = malloc(sizeof(*mf));
 		mf->data.button = but;
@@ -10780,10 +11239,16 @@ add_button(int x1, int y1, int x2, int y2, int hotkey, int flags, const char *te
 	}
 
 	draw_button(but, but->selected);
+	if (but->selected && but->command) {
+		current_button = but;
+		handle_command_str(but->command);
+		current_button = NULL;
+	}
 	if (!but->flags.mouse) {
 		free(but->command);
 		free(but->icon);
 		free(but->label);
+		free(but->template_cmd);
 		free(but);
 	}
 }
@@ -10815,6 +11280,35 @@ append_str(uint8_t **resp, size_t *size, size_t *pos, const char *str)
 	}
 	memcpy(&(*resp)[*pos], str, slen + 1);
 	(*pos) += slen;
+}
+
+static char *
+rip_input_dialog(const char *prompt, const char *initial,
+    int field_width, bool reject_blank)
+{
+	char *buf;
+
+	if (field_width < 1)
+		field_width = 1;
+
+	buf = calloc(1, field_width + 1);
+	if (buf == NULL)
+		return NULL;
+	if (initial != NULL)
+		strlcpy(buf, initial, field_width + 1);
+
+	do {
+		if (uifcinput((char *)prompt, field_width, buf, K_EDIT, NULL) < 0) {
+			if (!reject_blank) {
+				free(buf);
+				return NULL;
+			}
+			memset(buf, 0, field_width + 1);
+			if (initial != NULL)
+				strlcpy(buf, initial, field_width + 1);
+		}
+	} while (reject_blank && buf[0] == '\0');
+	return buf;
 }
 
 static char *
@@ -11097,6 +11591,256 @@ do_popup(const char * const str)
 	return p;
 }
 
+/*
+ * Template index: '0'-'9' → 0-9, 'A'-'Z' → 10-35, else -1.
+ */
+static int
+template_index(char c)
+{
+	if (c >= '0' && c <= '9')
+		return c - '0';
+	if (c >= 'A' && c <= 'Z')
+		return c - 'A' + 10;
+	return -1;
+}
+
+static void
+store_template(int slot, const char *str)
+{
+	free(rip.templates[slot]);
+	rip.templates[slot] = strdup(str);
+}
+
+static void
+free_templates(void)
+{
+	for (int i = 0; i < 36; i++) {
+		free(rip.templates[i]);
+		rip.templates[i] = NULL;
+	}
+}
+
+/*
+ * Scan str for '[' bracket syntax. Returns pointer to the '[' if found,
+ * NULL otherwise.  Recognizes:
+ *   []     — empty brackets
+ *   [N:]   — template definition (N is 0-9 or A-Z)
+ *   [N...] — template reference (one or more template chars then ']')
+ */
+static const char *
+find_template_ref(const char *str)
+{
+	const char *p;
+
+	for (p = str; *p; p++) {
+		if (*p != '[')
+			continue;
+		if (p[1] == ']')
+			return p;
+		if (template_index(p[1]) >= 0) {
+			if (p[2] == ':' && p[3] == ']')
+				return p;
+			const char *q = p + 1;
+			while (template_index(*q) >= 0)
+				q++;
+			if (*q == ']')
+				return p;
+		}
+	}
+	return NULL;
+}
+
+/*
+ * Parse bracket content starting at str (which points to the '[').
+ * Fills slots[] with template indices for references.
+ * Sets *remainder to point past the closing ']'.
+ *
+ * Returns:
+ *   negative  — definition [N:], value is -(index+1)
+ *   zero      — empty brackets []
+ *   positive  — reference [N...], value is count of slots filled
+ */
+static int
+parse_template_cmd(const char *str, int *slots, const char **remainder)
+{
+	const char *p = str + 1;
+
+	if (*p == ']') {
+		*remainder = p + 1;
+		return 0;
+	}
+
+	int idx = template_index(*p);
+	if (idx >= 0 && p[1] == ':' && p[2] == ']') {
+		*remainder = p + 3;
+		return -(idx + 1);
+	}
+
+	int count = 0;
+	while (template_index(*p) >= 0) {
+		slots[count++] = template_index(*p);
+		p++;
+	}
+	if (*p == ']')
+		*remainder = p + 1;
+	else
+		*remainder = p;
+	return count;
+}
+
+/*
+ * Group-aware template definition for radio/checkbox buttons.
+ * Concatenates template_cmd values from all selected buttons in the
+ * same group, stores result into the group's template slot.
+ */
+static void
+process_template_definition(struct rip_button_style *but, const char *value)
+{
+	struct mouse_field *mf;
+	char *concat;
+	size_t len, pos;
+
+	free(but->template_cmd);
+	but->template_cmd = NULL;
+	if (but->selected)
+		but->template_cmd = strdup(value);
+
+	/*
+	 * Concatenate template_cmd from all selected buttons in the same
+	 * group.  The mfields list is LIFO (newest first), but RIPterm
+	 * concatenates in creation order, so we prepend each match to
+	 * produce the correct order.
+	 */
+	len = 0;
+	for (mf = rip.mfields; mf; mf = mf->next) {
+		if (mf->type != MOUSE_FIELD_BUTTON)
+			continue;
+		struct rip_button_style *other = mf->data.button;
+		if (other->group != but->group)
+			continue;
+		if (!other->flags.radiogroup && !other->flags.cbgroup)
+			continue;
+		if (!other->selected)
+			continue;
+		if (other->template_cmd == NULL)
+			continue;
+		len += strlen(other->template_cmd);
+	}
+
+	concat = calloc(1, len + 1);
+	if (concat == NULL)
+		return;
+
+	pos = len;
+	for (mf = rip.mfields; mf; mf = mf->next) {
+		if (mf->type != MOUSE_FIELD_BUTTON)
+			continue;
+		struct rip_button_style *other = mf->data.button;
+		if (other->group != but->group)
+			continue;
+		if (!other->flags.radiogroup && !other->flags.cbgroup)
+			continue;
+		if (!other->selected)
+			continue;
+		if (other->template_cmd == NULL)
+			continue;
+		size_t slen = strlen(other->template_cmd);
+		pos -= slen;
+		memcpy(concat + pos, other->template_cmd, slen);
+	}
+
+	store_template(but->group, concat);
+	free(concat);
+}
+
+/*
+ * Chain remainder text through a sequence of template slots.
+ * $?$ in each template is replaced with the current value.
+ * Returns malloc'd result (caller frees), or NULL if a slot is undefined.
+ * Output truncated to 4095 bytes.
+ */
+static char *
+apply_template(const char *remainder, const int *slots, int count)
+{
+	char *input;
+	char *output;
+	const char *tmpl;
+	size_t opos;
+	size_t ilen;
+
+	input = strdup(remainder);
+	output = malloc(4096);
+	if (input == NULL || output == NULL) {
+		free(input);
+		free(output);
+		return NULL;
+	}
+
+	for (int i = 0; i < count; i++) {
+		tmpl = rip.templates[slots[i]];
+		if (tmpl == NULL) {
+			/*
+			 * Undefined template: if it has group buttons,
+			 * return empty (the group dependency isn't met).
+			 * If no group buttons, skip this slot and pass
+			 * the current value through to the next slot.
+			 */
+			bool has_group = false;
+			struct mouse_field *mf;
+			for (mf = rip.mfields; mf; mf = mf->next) {
+				if (mf->type != MOUSE_FIELD_BUTTON)
+					continue;
+				if (mf->data.button->group != slots[i])
+					continue;
+				if (mf->data.button->flags.mouse) {
+					has_group = true;
+					break;
+				}
+			}
+			if (has_group) {
+				free(input);
+				free(output);
+				return NULL;
+			}
+			continue;
+		}
+
+		opos = 0;
+		const char *t = tmpl;
+		while (*t && opos < 4095) {
+			if (t[0] == '$' && t[1] == '?' && t[2] == '$') {
+				ilen = strlen(input);
+				if (ilen > 4095 - opos)
+					ilen = 4095 - opos;
+				memcpy(output + opos, input, ilen);
+				opos += ilen;
+				t += 3;
+			}
+			else if (t[0] == '$' && t[1] == '?' && template_index(t[2]) >= 0 && t[3] == '$') {
+				int si = template_index(t[2]);
+				const char *val = rip.templates[si];
+				if (val) {
+					size_t vlen = strlen(val);
+					if (vlen > 4095 - opos)
+						vlen = 4095 - opos;
+					memcpy(output + opos, val, vlen);
+					opos += vlen;
+				}
+				t += 4;
+			}
+			else {
+				output[opos++] = *t++;
+			}
+		}
+		output[opos] = '\0';
+		free(input);
+		input = strdup(output);
+	}
+
+	free(input);
+	return output;
+}
+
 static void
 handle_command_str(const char *incmd)
 {
@@ -11114,27 +11858,40 @@ handle_command_str(const char *incmd)
 	indup = strdup(incmd);
 
 	for (p = indup; *p; p++) {
-                // TODO: No way to send a ^ or a $ or a [
+                // RIPterm has no escape for $ or [ in host commands.
 		if ((*p == '^') || (*p == '`')) { // CTRL char
-			p++;
-			if (*p == '^') {
+			if (p[0] == '^' && p[1] == '^') {
+				p++;
 				append_str(&ripbuf, &ripbuf_size, &ripbuf_pos, "^");
 			}
+			if (p[0] == '`' && p[1] == '`') {
+				p++;
+				append_str(&ripbuf, &ripbuf_size, &ripbuf_pos, "`");
+			}
 			else if ((toupper(*p) <= '_') && (toupper(*p) >= '@')) {
+				p++;
 				str[0] = toupper(*p) - '@';
 				str[1] = 0;
 				append_str(&ripbuf, &ripbuf_size, &ripbuf_pos, str);
 			}
 		}
 		else if (*p == '$') {
-			p2 = strchr(p + 1, '$');
-			if (p2 != NULL) {
-				p3 = strndup(p + 1, p2 - p - 1);
-				p4 = get_text_variable(p3);
-				free((void *)p3);
-				append_str(&ripbuf, &ripbuf_size, &ripbuf_pos, p4);
-				free((void *)p4);
-				p = p2;
+			if (p[1] == '?' && template_index(p[2]) >= 0 && p[3] == '$') {
+				int si = template_index(p[2]);
+				if (rip.templates[si])
+					append_str(&ripbuf, &ripbuf_size, &ripbuf_pos, rip.templates[si]);
+				p += 3;
+			}
+			else {
+				p2 = strchr(p + 1, '$');
+				if (p2 != NULL) {
+					p3 = strndup(p + 1, p2 - p - 1);
+					p4 = get_text_variable(p3);
+					free((void *)p3);
+					append_str(&ripbuf, &ripbuf_size, &ripbuf_pos, p4);
+					free((void *)p4);
+					p = p2;
+				}
 			}
 		}
 		else if ((*p == '(') && (*(p + 1) == '(')) { // Popups...
@@ -11150,12 +11907,43 @@ handle_command_str(const char *incmd)
 				p = p2 + 1;
 			}
 		}
-#if 0
-                // TODO: Templates!
-		else if (*p == '[') { // Templates
-			printf("TODO: Templates!\n");
+		else if (*p == '[') {
+			const char *ref = find_template_ref(p);
+			if (ref == p) {
+				int slots[36];
+				const char *remainder;
+				int result = parse_template_cmd(p, slots, &remainder);
+
+				if (result < 0) {
+					int slot = -(result + 1);
+					if (current_button && (current_button->flags.radiogroup || current_button->flags.cbgroup))
+						process_template_definition(current_button, remainder);
+					else
+						store_template(slot, remainder);
+					p = indup + strlen(indup) - 1;
+				}
+				else if (result == 0) {
+					/*
+					 * Empty brackets [] — continue processing
+					 * remainder through normal expansion.
+					 */
+					p = remainder - 1;
+				}
+				else {
+					char *expanded = apply_template(remainder, slots, result);
+					if (expanded) {
+						handle_command_str(expanded);
+						free(expanded);
+					}
+					p = indup + strlen(indup) - 1;
+				}
+			}
+			else {
+				str[0] = *p;
+				str[1] = 0;
+				append_str(&ripbuf, &ripbuf_size, &ripbuf_pos, str);
+			}
 		}
-#endif
 		else {
 			str[0] = *p;
 			str[1] = 0;
@@ -11186,6 +11974,7 @@ kill_saved_mouse_fields(void)
 				free(field->data.button->icon);
 				free(field->data.button->label);
 				free(field->data.button->command);
+				free(field->data.button->template_cmd);
 				free(field->data.button);
 				free(field);
 				break;
@@ -11222,6 +12011,8 @@ copy_mouse_fields(struct mouse_field *from, struct mouse_field **to)
 					new_field->data.button->label = strdup(new_field->data.button->label);
 				if (new_field->data.button->command)
 					new_field->data.button->command = strdup(new_field->data.button->command);
+				if (new_field->data.button->template_cmd)
+					new_field->data.button->template_cmd = strdup(new_field->data.button->template_cmd);
 				break;
 			case MOUSE_FIELD_HOT:
 				new_field->data.hot = malloc(sizeof(*new_field->data.hot));
@@ -11239,6 +12030,7 @@ kill_mouse_fields(void)
 {
 	struct mouse_field *field;
 
+	rip.tab_highlight = NULL;
 	while (rip.mfields) {
 		field = rip.mfields;
 		rip.mfields = field->next;
@@ -11267,6 +12059,7 @@ kill_mouse_fields(void)
 				free(field->data.button->icon);
 				free(field->data.button->label);
 				free(field->data.button->command);
+				free(field->data.button->template_cmd);
 				free(field->data.button);
 				free(field);
 				break;
@@ -15177,7 +15970,69 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
                                                          *        Communications, Inc..  It should be set to 00 for
                                                          *        compatibility with future releases.
                                                          */
+						{
+							handled = true;
+							if (text == NULL)
+								break;
+
+							char var_name[13];
+							int fw;
+							char *question = NULL;
+							char *default_val = NULL;
+
+							if (!parse_define_text(text, var_name, &fw,
+							    &question, &default_val))
+								break;
+
+							int flags = parsed[0];
+							bool save_to_db = (flags & 0x01) != 0;
+							bool reject_blank = (flags & 0x02) != 0;
+							bool non_interactive = (flags & 0x04) != 0;
+
+							struct rip_user_var *existing = find_user_var(var_name);
+
+							if (non_interactive) {
+								if (existing != NULL) {
+									if (default_val != NULL && default_val[0] != '\0')
+										set_user_var(var_name, default_val, fw, save_to_db);
+								}
+								else {
+									non_interactive = false;
+								}
+							}
+
+							if (!non_interactive) {
+								const char *initial = "";
+								if (existing != NULL && existing->value != NULL)
+									initial = existing->value;
+								else if (default_val != NULL)
+									initial = default_val;
+
+								char default_prompt[80];
+								const char *prompt_text;
+								if (question != NULL) {
+									prompt_text = question;
+								}
+								else {
+									snprintf(default_prompt, sizeof(default_prompt),
+									    "Please enter: \"%s\"", var_name);
+									prompt_text = default_prompt;
+								}
+								char *user_input = rip_input_dialog(prompt_text, initial,
+								    fw, reject_blank);
+								if (user_input != NULL) {
+									set_user_var(var_name, user_input, fw, save_to_db);
+									free(user_input);
+								}
+							}
+
+							if (save_to_db)
+								save_persistent_var(var_name);
+
+							free(question);
+							free(default_val);
 							break;
+						}
 						case 'E': // RIP_END_TEXT !|1E
 
                                                         /* This command indicates the end of a formatted text block.
@@ -15665,6 +16520,9 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
                                                          * compatibility
                                                          *        with future releases.
                                                          */
+							handled = true;
+							if (text != NULL)
+								rip_play_scene(text);
 							break;
 						case 'T': // RIP_BEGIN_TEXT !|1T <x1> <y1> <x2> <y2> <res>
                                                         /* This command defines a rectangular portion of the graphics
@@ -17187,7 +18045,9 @@ handle_mouse_button(struct rip_button_style *but)
 {
 	if (but->flags.explode)
 		explode(but);
+	current_button = but;
 	handle_command_str(but->command);
+	current_button = NULL;
 
         /*
          * The docs says this happens before the command str, but the
@@ -17312,6 +18172,7 @@ cb_reset_state(void)
 	if (cb.defer)
 		free(cb.defer);
 	memset(&cb, 0, sizeof(cb));
+	rip_scene_depth = 0;
 }
 
 static void
@@ -17454,6 +18315,79 @@ cb_dispatch(void)
 
 	cb.ebc = true;
 	cb_clear();
+}
+
+static int cb_feed(uint8_t c, uint8_t *origbuf, size_t *out);
+
+// Play a local .RIP scene file from the per-BBS cache directory.
+// Saves the parser state, feeds the file through cb_feed, then
+// restores the parent state.  Recursion is capped at 8 levels.
+static void
+rip_play_scene(const char *filename)
+{
+	if (rip_scene_depth >= RIP_SCENE_DEPTH_MAX)
+		return;
+	if (filename == NULL || filename[0] == '\0')
+		return;
+
+	if (strstr(filename, ".."))
+		return;
+	if (strchr(filename, '/') || strchr(filename, '\\'))
+		return;
+
+	char cache_path[MAX_PATH + 1];
+	if (!get_cache_fn_subdir(rip.bbs, cache_path, sizeof(cache_path), "RIP"))
+		return;
+	strlcat(cache_path, filename, sizeof(cache_path));
+	fexistcase(cache_path);
+
+	FILE *f = fopen(cache_path, "rb");
+	if (f == NULL)
+		return;
+
+	// Save parent parser state.  Struct copy transfers heap pointer
+	// ownership to saved_cb; zeroed cb starts a clean parser.
+	struct rip_cb saved_cb = cb;
+	memset(&cb, 0, sizeof(cb));
+
+	rip_scene_depth++;
+
+	uint8_t fbuf[4096];
+	uint8_t text_discard[RIP_ESC_MAX + 4];
+	size_t nread;
+
+	while ((nread = fread(fbuf, 1, sizeof(fbuf), f)) > 0) {
+		for (size_t i = 0; i < nread; i++) {
+			size_t text_out = 0;
+			cb_feed(fbuf[i], text_discard, &text_out);
+		}
+	}
+
+	// Flush any partial command at EOF.
+	if (cb.len > 0)
+		cb_dispatch();
+
+	// Drain deferred bytes from the scene file.
+	while (cb.defer_len > 0) {
+		uint8_t *defer = cb.defer;
+		size_t defer_len = cb.defer_len;
+		cb.defer = NULL;
+		cb.defer_len = 0;
+		cb.defer_cap = 0;
+		for (size_t i = 0; i < defer_len; i++) {
+			size_t text_out = 0;
+			cb_feed(defer[i], text_discard, &text_out);
+		}
+		free(defer);
+	}
+
+	fclose(f);
+	rip_scene_depth--;
+
+	// Free scene's allocations and restore parent state.
+	free(cb.bytes);
+	free(cb.defer);
+	cb = saved_cb;
 }
 
 // ESC sub-machine.  Handles the four RIP-spec ANSI sequences
@@ -17957,10 +18891,16 @@ init_rip_ver(int ripver)
 			freepixels(rip.scb.pix);
 			rip.scb.pix = NULL;
 		}
+		for (int i = 0; i < 11; i++) {
+			freepixels(rip.screen_saves[i].pix);
+			rip.screen_saves[i].pix = NULL;
+		}
 		FREE_AND_NULL(rip.xmap);
 		FREE_AND_NULL(rip.ymap);
 		FREE_AND_NULL(rip.xunmap);
 		FREE_AND_NULL(rip.yunmap);
+		free_user_vars();
+		free_templates();
 		memset(&rip, 0, sizeof(rip));
 		rip.enabled = (ripver != RIP_VERSION_NONE) && (cio_api.options & CONIO_OPT_SET_PIXEL);
 		rip.version = ripver;
@@ -18030,6 +18970,7 @@ init_rip(struct bbslist *bbs)
 #ifdef HAS_VSTAT
 	init_rip_ver(bbs->rip);
 	rip.bbs = bbs;
+	load_persistent_vars();
 #endif
 }
 
@@ -18220,7 +19161,30 @@ rip_getch(void)
 				}
 			}
 		}
-		else {
+		else if (rip.tab_enabled && (ch == '\t' || ch == CIO_KEY_BACKTAB)) {
+			struct mouse_field *next = tab_next_field(
+			    rip.tab_highlight, ch != '\t');
+			if (next) {
+				tab_highlight_clear();
+				rip.tab_highlight = next;
+				tab_highlight_draw(next);
+			}
+			ch = -1;
+		}
+		else if (rip.tab_highlight && ch == '\r') {
+			struct mouse_field *mf = rip.tab_highlight;
+			tab_highlight_clear();
+			if (mf->type == MOUSE_FIELD_BUTTON)
+				handle_mouse_button(mf->data.button);
+			else if (mf->type == MOUSE_FIELD_HOT)
+				handle_command_str(mf->data.hot->command);
+			ch = -1;
+		}
+		else if (rip.tab_highlight) {
+			tab_highlight_clear();
+			// fall through — ch is passed to host
+		}
+		else if (rip.hotkeys_enabled) {
 			for (rip_pressed = rip.mfields; rip_pressed; rip_pressed = rip_pressed->next) {
 				if (rip_pressed->type == MOUSE_FIELD_BUTTON) {
 					if (toupper(rip_pressed->data.button->hotkey) == toupper(ch))
