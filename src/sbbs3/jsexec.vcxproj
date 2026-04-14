@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
@@ -38,7 +38,7 @@
     <Import Project="..\uifc\uifc.props" />
     <Import Project="..\conio\conio.props" />
     <Import Project="..\build\undeprecate.props" />
-    <Import Project="..\..\3rdp\win32.release\mozjs\mozjs.props" />
+    <Import Project="..\..\3rdp\mozjs.props" />
     <Import Project="..\comio\comio.props" />
     <Import Project="..\xpdev\xpdev_mt.props" />
     <Import Project="..\hash\hash.props" />
@@ -55,7 +55,7 @@
     <Import Project="..\uifc\uifc.props" />
     <Import Project="..\conio\conio.props" />
     <Import Project="..\build\undeprecate.props" />
-    <Import Project="..\..\3rdp\win32.release\mozjs\mozjs.props" />
+    <Import Project="..\..\3rdp\mozjs.props" />
     <Import Project="..\comio\comio.props" />
     <Import Project="..\xpdev\xpdev_mt.props" />
     <Import Project="..\hash\hash.props" />
@@ -167,7 +167,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="getctrl.c" />
-    <ClCompile Include="jsdebug.c" />
+    <ClCompile Include="jsdebug.cpp" />
     <ClCompile Include="js_conio.cpp">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(PreprocessorDefinitions)</PreprocessorDefinitions>

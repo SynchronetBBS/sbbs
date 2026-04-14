@@ -36,7 +36,6 @@
     <Import Project="..\xpdev\xpdev.props" />
     <Import Project="..\smblib\smblib.props" />
     <Import Project="..\build\undeprecate.props" />
-    <Import Project="..\..\3rdp\win32.release\mozjs\mozjs.props" />
     <Import Project="..\comio\comio.props" />
     <Import Project="..\xpdev\xpdev_mt.props" />
     <Import Project="..\..\3rdp\win32.release\cryptlib\cryptlib.props" />
@@ -52,7 +51,6 @@
     <Import Project="..\xpdev\xpdev.props" />
     <Import Project="..\smblib\smblib.props" />
     <Import Project="..\build\undeprecate.props" />
-    <Import Project="..\..\3rdp\win32.release\mozjs\mozjs.props" />
     <Import Project="..\comio\comio.props" />
     <Import Project="..\xpdev\xpdev_mt.props" />
     <Import Project="..\..\3rdp\win32.release\cryptlib\cryptlib.props" />

@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
@@ -35,7 +35,7 @@
     <Import Project="$(VCTargetsPath)Microsoft.CPP.UpgradeFromVC60.props" />
     <Import Project="..\xpdev\xpdev.props" />
     <Import Project="..\smblib\smblib.props" />
-    <Import Project="..\..\3rdp\win32.release\mozjs\mozjs.props" />
+    <Import Project="..\..\3rdp\mozjs.props" />
     <Import Project="..\comio\comio.props" />
     <Import Project="..\build\undeprecate.props" />
     <Import Project="..\xpdev\xpdev_mt.props" />
@@ -51,7 +51,7 @@
     <Import Project="$(VCTargetsPath)Microsoft.CPP.UpgradeFromVC60.props" />
     <Import Project="..\xpdev\xpdev.props" />
     <Import Project="..\smblib\smblib.props" />
-    <Import Project="..\..\3rdp\win32.release\mozjs\mozjs.props" />
+    <Import Project="..\..\3rdp\mozjs.props" />
     <Import Project="..\comio\comio.props" />
     <Import Project="..\build\undeprecate.props" />
     <Import Project="..\xpdev\xpdev_mt.props" />
