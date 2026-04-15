@@ -2879,11 +2879,11 @@ int bitmap_drv_init_mode(int mode, int *width, int *height, int maxwidth, int ma
 	// Clear the bitmap draw cache
 	FREE_AND_NULL(bitmap_drawn);
 
-	if (init_screens(width, height))
-		return -1;
 	for (i=0; i<sizeof(current_font)/sizeof(current_font[0]); i++)
 		current_font[i]=default_font;
 	bitmap_loadfont_locked(NULL);
+	if (init_screens(width, height))
+		return -1;
 
 	cio_textinfo.attribute=vstat.currattr;
 	cio_textinfo.normattr=vstat.currattr;
