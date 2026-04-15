@@ -236,6 +236,8 @@ static int bitmap_loadfont_locked(const char *filename)
     return(1);
 
 error_return:
+	for (i=0; i<sizeof(current_font)/sizeof(current_font[0]); i++)
+		current_font[i] = 0;
 	for (i=1; i<sizeof(font)/sizeof(font[0]); i++)
 		FREE_AND_NULL(font[i]);
 	if (font[0] == NULL)
