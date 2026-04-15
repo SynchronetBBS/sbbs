@@ -35,7 +35,9 @@
 #include "sexyz.h"
 #include "syncterm.h"
 #include "term.h"
+#ifndef SYNCVIEW
 #include "uifcinit.h"
+#endif
 #include "window.h"
 
 // TODO: Output parsing... (yech)
@@ -7565,9 +7567,11 @@ static const unsigned char * const rip_fonts[] = {
 };
 static int parse_mega(const char *buf, int fieldwidth, int *consumed);
 static void do_rip_command(int level, int sublevel, int cmd, const char *args);
+#ifndef SYNCVIEW
 static char *rip_input_dialog(const char *prompt, const char *initial,
     int field_width, bool reject_blank);
 static void save_persistent_var(const char *name);
+#endif
 static void load_persistent_vars(void);
 static void rip_play_scene(const char *filename);
 static void write_text(const char *str);
@@ -7876,6 +7880,7 @@ parse_define_text(const char *text, char *name_out, int *field_width_out,
 	return true;
 }
 
+#ifndef SYNCVIEW
 static void
 save_persistent_var(const char *name)
 {
@@ -7903,10 +7908,14 @@ save_persistent_var(const char *name)
 	iniCloseFile(fp);
 	iniFreeStringList(ini);
 }
+#endif
 
 static void
 load_persistent_vars(void)
 {
+#ifdef SYNCVIEW
+	return;
+#else
 	char cache_path[MAX_PATH + 1];
 	FILE *fp;
 	str_list_t keys;
@@ -7933,6 +7942,7 @@ load_persistent_vars(void)
 		iniFreeStringList(keys);
 	}
 	iniCloseFile(fp);
+#endif
 }
 
 static char *
@@ -11282,6 +11292,7 @@ append_str(uint8_t **resp, size_t *size, size_t *pos, const char *str)
 	(*pos) += slen;
 }
 
+#ifndef SYNCVIEW
 static char *
 rip_input_dialog(const char *prompt, const char *initial,
     int field_width, bool reject_blank)
@@ -11310,6 +11321,7 @@ rip_input_dialog(const char *prompt, const char *initial,
 	} while (reject_blank && buf[0] == '\0');
 	return buf;
 }
+#endif
 
 static char *
 do_popup(const char * const str)
@@ -15984,6 +15996,9 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 							    &question, &default_val))
 								break;
 
+#ifdef SYNCVIEW
+							set_user_var(var_name, default_val, fw, false);
+#else
 							int flags = parsed[0];
 							bool save_to_db = (flags & 0x01) != 0;
 							bool reject_blank = (flags & 0x02) != 0;
@@ -16028,6 +16043,7 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 
 							if (save_to_db)
 								save_persistent_var(var_name);
+#endif
 
 							free(question);
 							free(default_val);
@@ -18325,6 +18341,9 @@ static int cb_feed(uint8_t c, uint8_t *origbuf, size_t *out);
 static void
 rip_play_scene(const char *filename)
 {
+#ifdef SYNCVIEW
+	return;
+#else
 	if (rip_scene_depth >= RIP_SCENE_DEPTH_MAX)
 		return;
 	if (filename == NULL || filename[0] == '\0')
@@ -18388,6 +18407,7 @@ rip_play_scene(const char *filename)
 	free(cb.bytes);
 	free(cb.defer);
 	cb = saved_cb;
+#endif
 }
 
 // ESC sub-machine.  Handles the four RIP-spec ANSI sequences
