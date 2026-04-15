@@ -148,21 +148,12 @@ static int bitmap_loadfont_locked(const char *filename)
 
 	fontsize=fw*fh*256*sizeof(unsigned char);
 
-	unsigned char *old_font0 = font[0];
-	font[0] = NULL;
 	for (i=0; i<sizeof(font)/sizeof(font[0]); i++) {
 		if(font[i])
 			FREE_AND_NULL(font[i]);
-		if((font[i]=(unsigned char *)malloc(fontsize))==NULL) {
-			// Restore font[0] fallback so the blinker never sees NULL
-			if (font[0] == NULL)
-				font[0] = old_font0;
-			else
-				free(old_font0);
+		if((font[i]=(unsigned char *)malloc(fontsize))==NULL)
 			goto error_return;
-		}
 	}
-	free(old_font0);
 
 	if(filename != NULL) {
 		if(flength(filename)!=fontsize)
@@ -247,6 +238,29 @@ static int bitmap_loadfont_locked(const char *filename)
 error_return:
 	for (i=1; i<sizeof(font)/sizeof(font[0]); i++)
 		FREE_AND_NULL(font[i]);
+	if (font[0] == NULL)
+		font[0] = (unsigned char *)malloc(fontsize);
+	if (font[0] != NULL) {
+		const char *fallback = NULL;
+		switch(vstat.charheight) {
+			case 8:
+				fallback = conio_fontdata[0].eight_by_eight;
+				break;
+			case 14:
+				fallback = conio_fontdata[0].eight_by_fourteen;
+				break;
+			case 16:
+				fallback = conio_fontdata[0].eight_by_sixteen;
+				break;
+			case 20:
+				fallback = conio_fontdata[0].twelve_by_twenty;
+				break;
+		}
+		if (fallback)
+			memcpy(font[0], fallback, fontsize);
+		else
+			FREE_AND_NULL(font[0]);
+	}
 	if(fontfile)
 		fclose(fontfile);
 	return(0);
