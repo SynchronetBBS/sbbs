@@ -127,10 +127,7 @@ rwlock_wrlock(rwlock_t *lock)
 	while (lock->readers) {
 		LeaveCriticalSection(&lock->lk);
 		LeaveCriticalSection(&lock->wlk);
-		if (WaitForSingleObject(lock->zeror, INFINITE) != WAIT_OBJECT_0) {
-			EnterCriticalSection(&lock->lk);
-			continue;
-		}
+		WaitForSingleObject(lock->zeror, INFINITE);
 		EnterCriticalSection(&lock->wlk);
 		EnterCriticalSection(&lock->lk);
 	}
