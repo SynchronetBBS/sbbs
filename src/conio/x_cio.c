@@ -723,7 +723,7 @@ int x_initciolib(int mode)
 		return(-1);
 	}
 
-	_beginthread(x11_event_thread,1<<16,(void *)(intptr_t)mode);
+	_beginthread(x11_event_thread, 1 << 20, (void *)(intptr_t)mode);
 	sem_wait(&init_complete);
 	if(!x11_initialized) {
 		xp_dlclose(dl);
