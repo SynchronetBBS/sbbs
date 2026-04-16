@@ -14838,7 +14838,8 @@ function DigDistMsgReader_GetMsgInfoForEnhancedReader(pMsgHdr, pWordWrap, pDeter
 	// to do so are enabled. If the print mode attribute code definitions (as of
 	// April 6, 2025) exist, then use the sub-board toggles for the attribute codes;
 	// otherwise, use the global system setting toggles for the attribute codes.
-	if (BBSAttrPrintModeBitsAreDefined() && msg_area.sub[this.subBoardCode].hasOwnProperty("print_mode"))
+	//if (this.subBoardCode.toLowerCase() != "mail" && BBSAttrPrintModeBitsAreDefined() && msg_area.sub[this.subBoardCode].hasOwnProperty("print_mode"))
+	if (msg_area.sub.hasOwnProperty(this.subBoardCode) && BBSAttrPrintModeBitsAreDefined() && msg_area.sub[this.subBoardCode].hasOwnProperty("print_mode"))
 		msgTextAltered = convertAttrsToSyncPerSubBoardCfg(msgTextAltered, false, this.subBoardCode);
 	else
 		msgTextAltered = convertAttrsToSyncPerSysCfg(msgTextAltered, false);
