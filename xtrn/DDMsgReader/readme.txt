@@ -1,5 +1,5 @@
                       Digital Distortion Message Reader
-                                 Version 1.97L
+                                 Version 1.97m
                            Release date: 2026-04-07
 
                                      by
@@ -167,9 +167,15 @@ confirmation before deleting the messages.
 If a message has been marked for deletion, it will appear in the message list
 with a blinking red asterisk (*) after the message number.
 
-When displaying a message to the user, this script will honor the attribute
-code toggles set up under Synchronet's configuration program (SCFG),
-under Message Options > Extra Attribute Codes.
+If a message has any of the supported color/attribute codes from different BBS
+software (WWIV, Wildcat, PCBoard, Renegade, or Celerity), this script will honor
+the attribute code toggle options for those BBS attribute codes. The attribute
+code toggles that will be used are in one of two places:
+- As of April 6, 2025 (for Synchronet 3.21), the attribute code toggles are
+  per sub-board, in SCFG > Message Areas > AREA > Message Sub-boards... >
+  SUB-BOARD > Toggle Options > Extra Attribute Codes.
+- For Synchronet systems before APril 6, 2025, this script will use the
+  attribute toggles in SCFG > Message Options > Extra Attribute Codes.
 
 As the sysop, when reading a message, the hotkey Ctrl-O will show the operator
 menu. Most of the operator menu items are already available, but the operator
