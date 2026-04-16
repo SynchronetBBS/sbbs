@@ -1109,6 +1109,8 @@ function YStyleMCIAttrsToSyncAttrs(pText)
 //               options in Extra Attribute Codes in SCFG
 function convertAttrsToSyncPerSysCfg(pText, pConvertANSI)
 {
+	if (typeof(pText) !== "string")
+		return "";
 	var convertedText = pText;
 	var convertANSI = (typeof(pConvertANSI) === "boolean" ? pConvertANSI : true);
 	if (convertANSI)
@@ -1118,18 +1120,80 @@ function convertAttrsToSyncPerSysCfg(pText, pConvertANSI)
 		// codes according to the current system configuration.
 		convertedText = ANSIAttrsToSyncAttrs(convertedText);
 	}
-	if ((system.settings & SYS_RENEGADE) == SYS_RENEGADE)
+	if (Boolean(system.settings & SYS_RENEGADE))
 		convertedText = renegadeAttrsToSyncAttrs(convertedText);
-	if ((system.settings & SYS_WWIV) == SYS_WWIV)
+	if (Boolean(system.settings & SYS_WWIV))
 		convertedText = WWIVAttrsToSyncAttrs(convertedText);
-	if ((system.settings & SYS_CELERITY) == SYS_CELERITY)
+	if (Boolean(system.settings & SYS_CELERITY))
 		convertedText = celerityAttrsToSyncAttrs(convertedText);
-	if ((system.settings & SYS_PCBOARD) == SYS_PCBOARD)
+	if (Boolean(system.settings & SYS_PCBOARD))
 		convertedText = PCBoardAttrsToSyncAttrs(convertedText);
-	if ((system.settings & SYS_WILDCAT) == SYS_WILDCAT)
+	if (Boolean(system.settings & SYS_WILDCAT))
 		convertedText = wildcatAttrsToSyncAttrs(convertedText);
 	return convertedText;
 }
+
+// Converts non-Synchronet attribute codes in text to Synchronet attribute
+// codes according to the toggle options in a sub-board's configuration
+// (SCFG > Message Areas > AREA > Message Sub-boards... > SUB-BOARD > Toggle Options > Extra
+// Attribute Codes).
+//
+// Parameters:
+//  pText: The text to be converted
+//  pConvertANSI: Optional boolean - Whether or not to convert ANSI.  Defaults to true.
+//
+// Return value: The text with various other system attribute codes converted
+//               to Synchronet attribute codes, or not, depending on the toggle
+//               options in Extra Attribute Codes in SCFG
+function convertAttrsToSyncPerSubBoardCfg(pText, pConvertANSI, pSubCode)
+{
+	// Sanity checking
+	if (typeof(pText) !== "string")
+		return "";
+	if (typeof(pSubCode) !== "string" || !msg_area.sub.hasOwnProperty(pSubCode))
+		return pText;
+
+	// If the print mode definitions we need aren't defined (in sbbsdefs.js as
+	// of April 6, 2025), then simply return the original text.
+	if (!BBSAttrPrintModeBitsAreDefined() || !msg_area.sub[pSubCode].hasOwnProperty("print_mode"))
+		return pText;
+	// Also if the sub-board doesn't have the "print_mode" property, return pText unchanged
+	if (!msg_area.sub[pSubCode].hasOwnProperty("print_mode"))
+		return pText;
+
+	var convertedText = pText;
+	var convertANSI = (typeof(pConvertANSI) === "boolean" ? pConvertANSI : true);
+	if (convertANSI)
+	{
+		// Convert any ANSI codes to Synchronet attribute codes.
+		// Then convert other BBS attribute codes to Synchronet attribute
+		// codes according to the current system configuration.
+		convertedText = ANSIAttrsToSyncAttrs(convertedText);
+	}
+	if (Boolean(msg_area.sub[pSubCode].print_mode & P_RENEGADE))
+		convertedText = renegadeAttrsToSyncAttrs(convertedText);
+	if (Boolean(msg_area.sub[pSubCode].print_mode & P_WWIV))
+		convertedText = WWIVAttrsToSyncAttrs(convertedText);
+	if (Boolean(msg_area.sub[pSubCode].print_mode & P_CELERITY))
+		convertedText = celerityAttrsToSyncAttrs(convertedText);
+	if (Boolean(msg_area.sub[pSubCode].print_mode & P_PCBOARD))
+		convertedText = PCBoardAttrsToSyncAttrs(convertedText);
+	if (Boolean(msg_area.sub[pSubCode].print_mode & P_WILDCAT))
+		convertedText = wildcatAttrsToSyncAttrs(convertedText);
+	return convertedText;
+}
+
+// Returns whether the new print mode flags for the various BBS color codes
+// as of April 6, 2025 are defined - These are modes defined in sbbsdefs.js.
+// https://gitlab.synchro.net/main/sbbs/-/commit/da9485cf0e62b
+// Each sub-board now has its own separate set of toggles for extra attribute
+// code support (set in the pmode property of sub-boards) via new pmode flags:
+// P_WWIV, P_WILDCAT, P_PCBOARD, P_RENEGADE, and P_CELERITY
+function BBSAttrPrintModeBitsAreDefined()
+{
+	return (typeof(P_WWIV) === "number" && typeof(P_WILDCAT) === "number" && typeof(P_PCBOARD) === "number" && typeof(P_RENEGADE) === "number" && typeof(P_CELERITY) === "number");
+}
+
 
 // Converts Synchronet attribute codes to ANSI ;-delimited modes (such as \033[Value;...;Valuem)
 //

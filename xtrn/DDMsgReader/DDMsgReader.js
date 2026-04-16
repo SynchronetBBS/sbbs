@@ -53,6 +53,11 @@
  *                              blank spaces is correct.  Added P_AUTO_UTF8 when calling
  *                              console.strlen() elsewhere for similar preventative bug
  *                              fixes.
+ * 2026-04-14 Eric Oulashin     Version 1.97m
+ *                              For converting the various supported BBS attribute codes when
+ *                              reading a message, use the sub-board toggle options for those
+ *                              (as of April 6, 2025) if they exist rather than the system
+ *                              toggle options for the BBS attribute codes.
  */
 
 "use strict";
@@ -171,8 +176,8 @@ require("rip_scrollbar.js", "RIPScrollbar");
 
 
 // Reader version information
-var READER_VERSION = "1.97L Beta";
-var READER_DATE = "2026-04-02";
+var READER_VERSION = "1.97m";
+var READER_DATE = "2026-04-14";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
@@ -14830,8 +14835,13 @@ function DigDistMsgReader_GetMsgInfoForEnhancedReader(pMsgHdr, pWordWrap, pDeter
 		msgTextAltered = replaceAtCodesInStr(msgTextAltered); // Or this.ParseMsgAtCodes(msgTextAltered, pMsgHdr) to replace only some @ codes
 	msgTextAltered = msgTextAltered.replace(/\t/g, this.tabReplacementText);
 	// Convert other BBS color codes to Synchronet attribute codes if the settings
-	// to do so are enabled.
-	msgTextAltered = convertAttrsToSyncPerSysCfg(msgTextAltered, false);
+	// to do so are enabled. If the print mode attribute code definitions (as of
+	// April 6, 2025) exist, then use the sub-board toggles for the attribute codes;
+	// otherwise, use the global system setting toggles for the attribute codes.
+	if (BBSAttrPrintModeBitsAreDefined() && msg_area.sub[this.subBoardCode].hasOwnProperty("print_mode"))
+		msgTextAltered = convertAttrsToSyncPerSubBoardCfg(msgTextAltered, false, this.subBoardCode);
+	else
+		msgTextAltered = convertAttrsToSyncPerSysCfg(msgTextAltered, false);
 	// If configured to convert Y-style MCI attribute codes to Synchronet attribute codes, then do so
 	if (this.convertYStyleMCIAttrsToSync)
 		msgTextAltered = YStyleMCIAttrsToSyncAttrs(msgTextAltered);

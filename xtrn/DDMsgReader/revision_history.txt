@@ -5,6 +5,10 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
+1.97m    2026-04-14   Supports the per-subboard attribute toggle options as of
+                      April 6, 2025 (for Synchronet 3.21) in SCFG > Message
+                      Areas > AREA > Message Sub-boards... > SUB-BOARD > Toggle
+                      Options > Extra Attribute Codes.
 1.97L    2026-04-07   Bug fix: When reading a message with the scrollable
                       interface, blanking out the rest of the text lines should
                       now be done correctly to erase the entire remainder of
