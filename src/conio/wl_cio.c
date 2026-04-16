@@ -323,7 +323,7 @@ int wl_initciolib(int mode)
 	sem_init(&wl_pastebuf_used, 0, 0);
 	assert_pthread_mutex_init(&wl_copybuf_mutex, NULL);
 
-	_beginthread(wl_event_thread, 1 << 20, (void *)(intptr_t)mode);
+	_beginthread(wl_event_thread, 1 << 18, (void *)(intptr_t)mode);
 	sem_wait(&wl_init_complete);
 	if (!wl_initialized) {
 		sem_destroy(&wl_init_complete);
