@@ -965,7 +965,8 @@ apply_active_profile(struct bbslist **list, int *listcount, int *cur, int *bar)
 	                 sortorder, sizeof(sortorder) / sizeof(sortorder[0]));
 
 	write_sort_profiles();
-	sort_list(list, listcount, cur, bar, current);
+	if (list)
+		sort_list(list, listcount, cur, bar, current);
 }
 
 /*
