@@ -10378,6 +10378,10 @@ load_stamp_icon(const char *filename, int x, int y, int mode,
 	if (icn != NULL) {
 		struct ciolib_pixels *pix =
 		    malloc(sizeof(struct ciolib_pixels));
+		if (!pix) {
+			fclose(icn);
+			return false;
+		}
 		uint16_t              tmp;
 		if (fread(&tmp, sizeof(tmp), 1, icn) != 1) {
 			free(pix);
