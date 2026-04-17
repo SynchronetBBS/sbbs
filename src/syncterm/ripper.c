@@ -12331,8 +12331,8 @@ struct point {
 // polygon and to draw the arc border outline.
 static struct {
 	struct point *pts;
-	int count;
-	int capacity;
+	size_t count;
+	size_t capacity;
 } arc_collect;
 
 static void
@@ -12351,9 +12351,13 @@ arc_collect_add(int px, int py)
 	if (arc_collect.pts == NULL)
 		return;
 	if (arc_collect.count >= arc_collect.capacity) {
-		arc_collect.capacity *= 2;
-		arc_collect.pts = realloc(arc_collect.pts,
-		    arc_collect.capacity * sizeof(*arc_collect.pts));
+		size_t new_capacity = arc_collect.capacity * 2;
+		void *newpts = realloc(arc_collect.pts,
+		    new_capacity * sizeof(*arc_collect.pts));
+		if (!newpts)
+			return;
+		arc_collect.pts = newpts;
+		arc_collect.capacity = new_capacity;
 	}
 	arc_collect.pts[arc_collect.count].x = px;
 	arc_collect.pts[arc_collect.count].y = py;
@@ -12388,11 +12392,11 @@ arc_collect_add(int px, int py)
  * or 0 if the polygon is degenerate.  buf must have room for at
  * least (nraw * 2 + 4) entries.
  */
-static int
+static size_t
 bgi_collect_vertices(const struct point *raw, int nraw,
     struct point *buf, bool close_poly)
 {
-	int nb = 0;
+	size_t nb = 0;
 	int vcnt = 0;
 	int first = 0;
 
@@ -12437,9 +12441,9 @@ bgi_collect_vertices(const struct point *raw, int nraw,
  * polygon buffer, skipping edges that cross a separator.
  */
 static void
-bgi_draw_poly_outline(const struct point *buf, int nb)
+bgi_draw_poly_outline(const struct point *buf, size_t nb)
 {
-	for (int i = 0; i + 1 < nb; i++) {
+	for (size_t i = 0; i + 1 < nb; i++) {
 		if (POLY_IS_SEP(buf[i]) || POLY_IS_SEP(buf[i + 1]))
 			continue;
 		draw_line(buf[i].x, buf[i].y, buf[i + 1].x, buf[i + 1].y);
@@ -12459,7 +12463,7 @@ pie_poly_fill(int cx, int cy)
 	if (arc_collect.count == 0)
 		return;
 
-	int n = arc_collect.count;
+	size_t n = arc_collect.count;
 	arc_collect_add(cx, cy);
 	arc_collect_add(arc_collect.pts[0].x, arc_collect.pts[0].y);
 	scanline_poly_fill(arc_collect.pts, n + 2);
@@ -13719,7 +13723,7 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 									pie_poly_fill(parsed[0], parsed[1]);
 
 									if (rip.borders) {
-										for (int ai = 1;
+										for (size_t ai = 1;
 										    ai < arc_collect.count;
 										    ai++) {
 											draw_line(
@@ -13729,7 +13733,7 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 											    arc_collect.pts[ai].y);
 										}
 									}
-									arc_collect.pts = NULL;
+									arc_collect.count = 0;
 								}
 								sub_sa = sub_ea;
 							}
@@ -13861,7 +13865,7 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 								raw[npoints] = raw[0];
 								struct point *buf = malloc((npoints * 2 + 6) * sizeof(*buf));
 								if (buf != NULL) {
-									int nb = bgi_collect_vertices(raw, npoints + 1, buf, false);
+									size_t nb = bgi_collect_vertices(raw, npoints + 1, buf, false);
 									bgi_draw_poly_outline(buf, nb);
 									free(buf);
 								}
@@ -14438,7 +14442,7 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 									pie_poly_fill(parsed[0], parsed[1]);
 
 									if (rip.borders) {
-										for (int ai = 1;
+										for (size_t ai = 1;
 										    ai < arc_collect.count;
 										    ai++) {
 											draw_line(
@@ -14448,7 +14452,7 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 											    arc_collect.pts[ai].y);
 										}
 									}
-									arc_collect.pts = NULL;
+									arc_collect.count = 0;
 								}
 								sub_sa = sub_ea;
 							}
@@ -14603,7 +14607,7 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 
 								struct point *buf = malloc((npoints * 2 + 6) * sizeof(*buf));
 								if (buf != NULL) {
-									int nb = bgi_collect_vertices(raw, npoints + 1, buf, true);
+									size_t nb = bgi_collect_vertices(raw, npoints + 1, buf, true);
 									scanline_poly_fill(buf, nb);
 									/*
 									 * Outline drawn after fill,
