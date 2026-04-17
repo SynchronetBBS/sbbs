@@ -12450,7 +12450,7 @@ bgi_draw_poly_outline(const struct point *buf, size_t nb)
 	}
 }
 
-static void scanline_poly_fill(const struct point *pts, int npts);
+static void scanline_poly_fill(const struct point *pts, size_t npts);
 
 // Fill the pie polygon in place on arc_collect by appending the
 // center and a copy of the first arc point (explicit closing vertex),
@@ -12492,7 +12492,7 @@ pie_poly_fill(int cx, int cy)
 //      b. Fill spans inclusive between consecutive pairs of
 //         sorted x-intersections (even-odd rule).
 static void
-scanline_poly_fill(const struct point *pts, int npts)
+scanline_poly_fill(const struct point *pts, size_t npts)
 {
 	if (rip.fill_style == 0)
 		return;
@@ -12502,7 +12502,7 @@ scanline_poly_fill(const struct point *pts, int npts)
 	// Find min/max y across non-sentinel vertices.
 	int min_y = INT_MAX;
 	int max_y = INT_MIN;
-	for (int i = 0; i < npts; i++) {
+	for (size_t i = 0; i < npts; i++) {
 		if (POLY_IS_SEP(pts[i]))
 			continue;
 		if (pts[i].y < min_y)
@@ -12520,7 +12520,7 @@ scanline_poly_fill(const struct point *pts, int npts)
 	for (int y = min_y; y <= max_y; y++) {
 		int nisects = 0;
 
-		for (int i = 0; i < npts - 1; i++) {
+		for (size_t i = 0; i < npts - 1; i++) {
 			if (POLY_IS_SEP(pts[i]) || POLY_IS_SEP(pts[i + 1]))
 				continue;
 
