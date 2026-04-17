@@ -241,6 +241,8 @@ gen_inm_header(struct http_session *sess)
 		return NULL;
 	char *ret;
 	int len = asprintf(&ret, "If-None-Match: \"%s\"\r\n", sess->cache.etag);
+	if (len == -1)
+		ret = NULL;
 	if (len < 1) {
 		free(ret);
 		return NULL;
@@ -263,6 +265,8 @@ gen_ims_header(struct http_session *sess)
 	char *ret;
 	int len = asprintf(&ret, "If-Modified-Since: %s, %02d %s %04d %02d:%02d:%02d GMT\r\n",
 	    days[tm.tm_wday], tm.tm_mday, months[tm.tm_mon], tm.tm_year + 1900, tm.tm_hour, tm.tm_min, tm.tm_sec);
+	if (len == -1)
+		ret = NULL;
 	if (len < 1) {
 		free(ret);
 		return NULL;
@@ -284,6 +288,8 @@ send_request(struct http_session *sess)
 	    "User-Agent: %s\r\n"
 	    "Connection: close\r\n"
 	    "\r\n", sess->path, sess->hostname, inm ? inm : "", ims ? ims : "", syncterm_version);
+	if (len == -1)
+		reqstr = NULL;
 	free(inm);
 	free(ims);
 	if (len == -1) {
@@ -800,6 +806,8 @@ open_cacheinfo(struct http_session *sess)
 	char *path = NULL;
 
 	int len = asprintf(&path, "%s/%s.cacheinfo", sess->req->cache_root, sess->req->name);
+	if (len == -1)
+		path = NULL;
 	if (len < 0) {
 		set_msg(sess->req, "asprintf() failure");
 		goto error_return;
@@ -1110,6 +1118,8 @@ do_request(struct http_session *sess)
 		goto success_return;
 
 	int len = asprintf(&npath, "%s/%s.new", sess->req->cache_root, sess->req->name);
+	if (len == -1)
+		npath = NULL;
 	if (len < 1) {
 		set_msg(sess->req, "asprintf(&npath, ...) error");
 		goto error_return;
@@ -1121,6 +1131,8 @@ do_request(struct http_session *sess)
 	}
 	if (!sess->not_modified) {
 		len = asprintf(&path, "%s/%s.lst", sess->req->cache_root, sess->req->name);
+		if (len == -1)
+			path = NULL;
 		if (len < 1) {
 			set_msg(sess->req, "asprintf(&path, ...) error");
 			goto error_return;
@@ -1200,6 +1212,8 @@ is_fresh(struct http_session *sess)
 		// Delete stale file
 		char *path;
 		int len = asprintf(&path, "%s/%s.lst", sess->req->cache_root, sess->req->name);
+		if (len == -1)
+			path = NULL;
 		if (len > 0) {
 			if (remove(path))
 				fprintf(stderr, "Failed to remove %s from cache\n", path);
