@@ -1025,7 +1025,7 @@ init_sort_profiles(FILE *inifile)
 
 	/* Load active profile by name */
 	{
-		char active_buf[SORT_PROFILE_NAME_MAX + 1];
+		char active_buf[INI_MAX_VALUE_LEN + 1];
 		if (iniReadString(inifile, "SyncTERM", "ActiveSortProfile", "", active_buf)) {
 			int idx = find_profile_by_name(active_buf);
 			if (idx >= 0)
