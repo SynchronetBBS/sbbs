@@ -18756,7 +18756,20 @@ parse_rip_new(BYTE *origbuf, size_t blen, size_t maxlen)
 	}
 
 	// Phase 2: process origbuf bytes.
-	for (size_t i = 0; i < blen; i++) {
+	//
+	// If an ESC sequence was left partially accumulated at the end of a
+	// previous call (cb.esc_len > 0), the first flush-back in this call
+	// would memcpy cb.esc into origbuf[0..] and clobber unread input
+	// bytes at origbuf[0..cb.esc_len-1].  Shift the input forward by
+	// cb.esc_len so the pending flush lands in reserved headroom.  The
+	// caller guarantees at least RIP_ESC_MAX bytes of tail headroom.
+	size_t phase2_start = 0;
+	if (cb.esc_len > 0 && blen > 0) {
+		memmove(&origbuf[cb.esc_len], origbuf, blen);
+		phase2_start = cb.esc_len;
+		blen += cb.esc_len;
+	}
+	for (size_t i = phase2_start; i < blen; i++) {
 		uint8_t c = origbuf[i];
 		if (!can_dispatch && cb_would_dispatch(c)) {
 			// Defer the rest (including c itself).  The saved
