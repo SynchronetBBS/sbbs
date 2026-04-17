@@ -157,6 +157,9 @@ struct rip_button_style {
 	bool                     selected;
 	uint8_t                  hotkey;
 	char                    *template_cmd;
+	int                      font_num;
+	int                      font_size;
+	bool                     font_vertical;
 	struct rip_button_style *next;
 };
 
@@ -10951,6 +10954,12 @@ draw_button(struct rip_button_style *but, bool inverted)
 		rip.bstyle.flags.sunken = false;
 	}
 	if (but->label) {
+		int saved_font_num = rip.font.num;
+		int saved_font_size = rip.font.size;
+		bool saved_font_vertical = rip.font.vertical;
+		rip.font.num = but->font_num;
+		rip.font.size = but->font_size;
+		rip.font.vertical = but->font_vertical;
 		// Shared text metrics matching RIPterm's
 		// textwidth() and textheight() functions.
 		width = 0;
@@ -11161,6 +11170,9 @@ draw_button(struct rip_button_style *but, bool inverted)
 				rip.x = ox;
 				rip.y = oy;
 		}
+		rip.font.num = saved_font_num;
+		rip.font.size = saved_font_size;
+		rip.font.vertical = saved_font_vertical;
 	}
 }
 
@@ -11228,6 +11240,9 @@ add_button(int x1, int y1, int x2, int y2, int hotkey, int flags, const char *te
 	but->selected = (flags & 1) != 0;
 	but->hotkey = hotkey;
 	but->template_cmd = NULL;
+	but->font_num = rip.font.num;
+	but->font_size = rip.font.size;
+	but->font_vertical = rip.font.vertical;
 	if (but->flags.mouse) {
 		mf = malloc(sizeof(*mf));
 		mf->data.button = but;
