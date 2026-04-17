@@ -16426,7 +16426,7 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 									mf->data.hot->box.y2 = parsed[4] + rip.viewport.sy;
 									mf->data.hot->invertable = parsed[5];
 									mf->data.hot->resetafter = parsed[6];
-									mf->data.hot->command = strdup(text);
+									mf->data.hot->command = text ? strdup(text) : NULL;
 									mf->next = rip.mfields;
 									rip.mfields = mf;
 								}
