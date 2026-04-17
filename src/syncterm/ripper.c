@@ -10701,8 +10701,6 @@ draw_button(struct rip_button_style *but, bool inverted)
 		cc = map_rip_color(but->ccorner);
 	}
 
-	ox = but->box.x1;
-	oy = but->box.y1;
 	// RIPterm expands zero-dimension buttons to 2 pixels.
 	int bx1 = but->box.x1, by1 = but->box.y1;
 	int bx2 = but->box.x2, by2 = but->box.y2;
@@ -10714,24 +10712,10 @@ draw_button(struct rip_button_style *but, bool inverted)
 		by1--;
 		by2++;
 	}
-	width = bx2 - bx1;
-	height = by2 - by1;
-	if (but->flags.recessed) {
-		width += 4;
-		height += 4;
-		ox -= 2;
-		oy -= 2;
-	}
 	// RIPterm: bevel_size=0 with flag draws 2 layers at offsets 0..1
 	// (outer extent = 1, but inner layer at box edge too)
 	int bevel_size = (but->flags.bevel && but->bevel_size == 0) ? 1 : but->bevel_size;
 	int bevel_start = (but->flags.bevel && but->bevel_size == 0) ? 0 : 1;
-	if (but->flags.bevel) {
-		width += (2 * bevel_size);
-		height += (2 * bevel_size);
-		ox -= bevel_size;
-		oy -= bevel_size;
-	}
 	if (but->button == BUTTON_TYPE_ICON) {
 		int icon_w = 0, icon_h = 0;
 		if (but->icon) {
