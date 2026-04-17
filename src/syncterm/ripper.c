@@ -12156,6 +12156,8 @@ reinit_screen(uint8_t *font, int fx, int fy)
 	clrscr();
 	get_term_win_size(&term.width, &term.height, NULL, NULL, &term.nostatus);
 	term.width = cols;
+	void (*old_rcb)(const char *, size_t, void *) = cterm->response_cb;
+	void *old_rcbdat = cterm->response_cbdata;
 	cterm = cterm_init(rows + (term.nostatus ? 0 : -1),
 	        cols,
 	        oldcterm.x,
@@ -12166,6 +12168,8 @@ reinit_screen(uint8_t *font, int fx, int fy)
 	        oldcterm.emulation);
 	if (lcf & CTERM_LCF_FORCED)
 		cterm->last_column_flag = CTERM_LCF_FORCED | CTERM_LCF_ENABLED;
+	cterm->response_cb = old_rcb;
+	cterm->response_cbdata = old_rcbdat;
 	cterm->apc_handler = oldcterm.apc_handler;
 	cterm->apc_handler_data = oldcterm.apc_handler_data;
 	cterm->mouse_state_change = oldcterm.mouse_state_change;
