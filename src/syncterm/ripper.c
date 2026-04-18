@@ -8451,6 +8451,8 @@ restore_screen_slot(int slot, bool clear_after)
 static char *
 rv_save(const char * const var, const void * const data)
 {
+	int i;
+
 	switch (var[1]) {
 		case 'M':
 			kill_saved_mouse_fields();
@@ -8465,8 +8467,9 @@ rv_save(const char * const var, const void * const data)
 			rip.stw.ey = cterm->bottom_margin - 1;
 			rip.stw.wrap = (cterm->extattr & CTERM_EXTATTR_AUTOWRAP) ? 1 : 0;
 			assert_rwlock_rdlock(&vstatlock);
-			rip.stw.size = vstat.charwidth;
+			i = vstat.charwidth;
 			assert_rwlock_unlock(&vstatlock);
+			rip.stw.size = i;
 			rip.stw.curstype = rip.curstype;
 			rip.stw.attr = cterm->attr;
 			return NULL;
