@@ -2325,12 +2325,14 @@ var tests = [
 	}},
 	/* --- OSC 8 Hyperlink --- */
 	{'name':'OSC8', 'func':function() {
+		if (!interactive)
+			return null;
 		console.clear();
 		console.gotoxy(1, 1);
 		console.write("\x1b]8;id=test;https://example.com\x1b\\");
 		console.write("LINK");
 		console.write("\x1b]8;;\x1b\\");
-		return ask_user("Do you see the text 'LINK' (possibly underlined or colored as a hyperlink)?");
+		return console.yesno("Do you see the text 'LINK' (possibly underlined or colored as a hyperlink)?");
 	}},
 ];
 
