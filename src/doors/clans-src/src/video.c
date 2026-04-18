@@ -176,19 +176,34 @@ void ScrollUp(void)
 	COORD top_left = { 0, (SHORT)ScrollTop };
 	CHAR_INFO char_info;
 
-	GetConsoleScreenBufferInfo(std_handle, &screen_buffer);
-	scroll_rect.Top = (SHORT)(ScrollTop + 1);
-	scroll_rect.Left = 0;
-	scroll_rect.Bottom = (SHORT)bottom;
-	scroll_rect.Right = (SHORT)(screen_buffer.dwSize.X - 1);
+	if (!GetConsoleScreenBufferInfo(std_handle, &screen_buffer))
+		return;
 
 	char_info.Attributes = screen_buffer.wAttributes;
 	char_info.Char.UnicodeChar = (TCHAR)' ';
 
+	/* A single-row scroll region has no source rows to move; just blank
+	   the row. ScrollConsoleScreenBuffer with Top>Bottom is malformed. */
+	if (ScrollTop >= bottom) {
+		COORD pos = { 0, (SHORT)(screen_buffer.srWindow.Top + ScrollTop) };
+		DWORD written;
+		FillConsoleOutputCharacter(std_handle, (TCHAR)' ',
+		    (DWORD)screen_buffer.dwSize.X, pos, &written);
+		FillConsoleOutputAttribute(std_handle, screen_buffer.wAttributes,
+		    (DWORD)screen_buffer.dwSize.X, pos, &written);
+		return;
+	}
+
+	top_left.Y = (SHORT)(screen_buffer.srWindow.Top + ScrollTop);
+	scroll_rect.Top = (SHORT)(screen_buffer.srWindow.Top + ScrollTop + 1);
+	scroll_rect.Left = 0;
+	scroll_rect.Bottom = (SHORT)(screen_buffer.srWindow.Top + bottom);
+	scroll_rect.Right = (SHORT)(screen_buffer.dwSize.X - 1);
+
 	if (!ScrollConsoleScreenBuffer(std_handle,
 	    &scroll_rect, NULL, top_left, &char_info)) {
 		display_win32_error();
-		exit(0);
+		exit(1);
 	}
 #elif defined(__unix__)
 	fputs("\x1b[S", stdout);
@@ -234,13 +249,16 @@ void ClearScrollRegion(void)
 	CONSOLE_SCREEN_BUFFER_INFO screen_buffer;
 	DWORD display_len, written;
 
+	if (!GetConsoleScreenBufferInfo(stdout_handle, &screen_buffer))
+		return;
+
+	/* srWindow anchors us to the visible window; ScrollTop/ScrollBottom
+	   are window-relative. dwSize is the whole buffer, which may exceed
+	   the window -- clear only the rows we own. */
 	top_corner.X = 0;
-	top_corner.Y = (SHORT)ScrollTop;
+	top_corner.Y = (SHORT)(screen_buffer.srWindow.Top + ScrollTop);
 
-	GetConsoleScreenBufferInfo(stdout_handle, &screen_buffer);
-
-	display_len = (DWORD)((screen_buffer.dwSize.Y - (ScreenLines - 1 - ScrollBottom)) *
-				  (screen_buffer.dwSize.X));
+	display_len = (DWORD)((ScrollBottom - ScrollTop + 1) * screen_buffer.dwSize.X);
 
 	FillConsoleOutputCharacter(
 		stdout_handle,
@@ -1129,23 +1147,37 @@ void Video_Init(void)
 		CONSOLE_SCREEN_BUFFER_INFO screen_buffer;
 
 		std_handle = GetStdHandle(STD_OUTPUT_HANDLE);
-		if (std_handle == INVALID_HANDLE_VALUE) {
+		if (std_handle == INVALID_HANDLE_VALUE || std_handle == NULL) {
 			if (!AllocConsole()) {
 				display_win32_error();
-				exit(0);
+				exit(1);
 			}
 			std_handle = GetStdHandle(STD_OUTPUT_HANDLE);
+			if (std_handle == INVALID_HANDLE_VALUE || std_handle == NULL) {
+				display_win32_error();
+				exit(1);
+			}
 		}
+
+		/* Clans' text is CP437 (box-drawing, accents).  The console's
+		   output code page defaults to the OEM CP, which is 437 on US
+		   English installs but varies by locale (850, 852, 932, ...) and
+		   is 65001 on systems with "Beta: Use UTF-8 worldwide" enabled.
+		   Pin it so output renders identically everywhere. */
+		SetConsoleOutputCP(437);
 
 		if (!GetConsoleCursorInfo(
 					std_handle,
 					&cursor_info)) {
 			display_win32_error();
-			exit(0);
+			exit(1);
 		}
 		default_cursor_size = cursor_info.dwSize;
 
-		GetConsoleScreenBufferInfo(std_handle, &screen_buffer);
+		if (!GetConsoleScreenBufferInfo(std_handle, &screen_buffer)) {
+			display_win32_error();
+			exit(1);
+		}
 		ScreenWidth = screen_buffer.srWindow.Right - screen_buffer.srWindow.Left + 1;
 		ScreenLines = screen_buffer.srWindow.Bottom - screen_buffer.srWindow.Top + 1;
 #elif defined(__unix__)
@@ -1279,7 +1311,7 @@ void * save_screen(void)
 	if (!char_info_buffer) {
 		MessageBox(NULL, TEXT("Memory Allocation Failure"),
 				   TEXT("ERROR"), MB_OK | MB_ICONERROR);
-		exit(0);
+		exit(1);
 	}
 
 	rect_rw.Top = 0;

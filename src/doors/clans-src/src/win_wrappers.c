@@ -33,29 +33,35 @@ FILE *plat_fsopen(const char *pathname, const char *mode, int shflag)
 		winflag |= _SH_DENYWR;
 	if (shflag & PLAT_SH_DENYRW)
 		winflag |= _SH_DENYRW;
-	return _fsopen(pathname, mode, winflag);
+
+	/* _fsopen with an exclusive share mode fails immediately with
+	   EACCES on contention; the Unix side uses fcntl(F_SETLKW) which
+	   blocks.  Approximate blocking behaviour with a bounded retry
+	   so transient conflicts (peer writing a packet, log rotation,
+	   etc.) don't surface as spurious open failures. */
+	FILE *fp = _fsopen(pathname, mode, winflag);
+	if (fp != NULL || winflag == 0)
+		return fp;
+	for (int i = 0; i < 20 && errno == EACCES; i++) {
+		Sleep(50);
+		fp = _fsopen(pathname, mode, winflag);
+		if (fp != NULL)
+			return fp;
+	}
+	return NULL;
 }
 
 bool DirExists(const char *pszDirName)
 {
-	struct stat file_stats;
-
-	if (pszDirName == NULL)
+	if (pszDirName == NULL || pszDirName[0] == '\0')
 		return false;
 
-	char *copy = _strdup(pszDirName);
-	size_t len = strlen(copy);
-
-	/* Remove trailing slash */
-	if (len > 0 && (copy[len - 1] == '/' || copy[len - 1] == '\\'))
-		copy[len - 1] = '\0';
-
-	bool result = false;
-	if (stat(copy, &file_stats) == 0)
-		result = S_ISDIR(file_stats.st_mode);
-
-	free(copy);
-	return result;
+	/* GetFileAttributesA handles drive roots ("C:\") and trailing
+	   separators without the quirks stat() has around drive letters. */
+	DWORD attr = GetFileAttributesA(pszDirName);
+	if (attr == INVALID_FILE_ATTRIBUTES)
+		return false;
+	return (attr & FILE_ATTRIBUTE_DIRECTORY) != 0;
 }
 
 bool plat_getmode(const char *filename, unsigned *mode)
@@ -109,10 +115,11 @@ bool plat_DeleteFile(const char *fname)
 
 void display_win32_error(void)
 {
-	LPVOID message;
+	LPTSTR message = NULL;
 	TCHAR buffer[1000];
+	DWORD rc;
 
-	FormatMessage(
+	rc = FormatMessage(
 		FORMAT_MESSAGE_IGNORE_INSERTS|
 		FORMAT_MESSAGE_FROM_SYSTEM|
 		FORMAT_MESSAGE_ALLOCATE_BUFFER,
@@ -123,15 +130,25 @@ void display_win32_error(void)
 		0,
 		NULL);
 
-	_stprintf(buffer, _T("Win32 System Error:\n%s\n"), (char*)message);
+	if (rc == 0 || message == NULL) {
+		_sntprintf(buffer, sizeof(buffer) / sizeof(buffer[0]),
+		    _T("Win32 System Error %lu (FormatMessage failed)"),
+		    (unsigned long)GetLastError());
+	}
+	else {
+		_sntprintf(buffer, sizeof(buffer) / sizeof(buffer[0]),
+		    _T("Win32 System Error:\n%s\n"), message);
+	}
+	buffer[(sizeof(buffer) / sizeof(buffer[0])) - 1] = 0;
 	MessageBox(NULL, buffer, _T("System Error"), MB_OK | MB_ICONERROR);
 
-	LocalFree(message);
+	if (message != NULL)
+		LocalFree(message);
 }
 
 struct Sortable {
 	char *p;
-	time_t wt;
+	uint64_t wt;	/* FILETIME packed as 100ns ticks since 1601 */
 };
 
 static int
@@ -210,11 +227,11 @@ char **FilesOrderedByDate(const char *path, const char *match, bool *error)
 	}
 	*out = 0;
 
-	struct _finddata_t fd;
-	intptr_t sh = _findfirst(Backslashed, &fd);
+	WIN32_FIND_DATAA fd;
+	HANDLE sh = FindFirstFileA(Backslashed, &fd);
 	char *last_bs = strrchr(Backslashed, '\\');
 	size_t path_bytes = last_bs ? ((size_t)(last_bs - Backslashed) + 1) : 0;
-	char *tmpstr = malloc(_MAX_PATH + path_bytes);
+	char *tmpstr = malloc(MAX_PATH + path_bytes);
 	if (tmpstr == NULL) {
 		free(Backslashed);
 		*error = true;
@@ -223,45 +240,52 @@ char **FilesOrderedByDate(const char *path, const char *match, bool *error)
 	if (path_bytes)
 		memcpy(tmpstr, Backslashed, path_bytes);
 	free(Backslashed);
-	if (sh == -1) {
-		if (errno != ENOENT)
+	if (sh == INVALID_HANDLE_VALUE) {
+		DWORD err = GetLastError();
+		/* ERROR_FILE_NOT_FOUND and ERROR_PATH_NOT_FOUND are the
+		   benign "empty listing" cases. Anything else is a real
+		   I/O error the caller should know about. */
+		if (err != ERROR_FILE_NOT_FOUND && err != ERROR_PATH_NOT_FOUND
+		    && err != ERROR_NO_MORE_FILES)
 			*error = true;
 		free(tmpstr);
 		return NULL;
 	}
-	int rval;
 	do {
-		if (fd.attrib & _A_SUBDIR)
+		if (fd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
 			continue;
 		struct Sortable *nsa = realloc(sa, sizeof(struct Sortable) * (found + 1));
 		if (nsa == NULL) {
 			FreePartialSortableArray(sa, found);
-			_findclose(sh);
+			FindClose(sh);
 			*error = true;
 			free(tmpstr);
 			return NULL;
 		}
 		sa = nsa;
-		strlcpy(&tmpstr[path_bytes], fd.name, _MAX_PATH);
+		strlcpy(&tmpstr[path_bytes], fd.cFileName, MAX_PATH);
 		sa[found].p = strdup(tmpstr);
 		if (sa[found].p == NULL) {
 			FreePartialSortableArray(sa, found);
-			_findclose(sh);
+			FindClose(sh);
 			*error = true;
 			free(tmpstr);
 			return NULL;
 		}
-		sa[found].wt = fd.time_write;
+		sa[found].wt = ((uint64_t)fd.ftLastWriteTime.dwHighDateTime << 32)
+		             | (uint64_t)fd.ftLastWriteTime.dwLowDateTime;
 		found++;
-	} while (!(rval = _findnext(sh, &fd)));
-	if (errno != ENOENT) {
-		_findclose(sh);
+	} while (FindNextFileA(sh, &fd));
+	/* FindNextFile returns FALSE both on end-of-iteration and on real
+	   errors; GetLastError() disambiguates. */
+	if (GetLastError() != ERROR_NO_MORE_FILES) {
+		FindClose(sh);
 		FreePartialSortableArray(sa, found);
 		*error = true;
 		free(tmpstr);
 		return NULL;
 	}
-	_findclose(sh);
+	FindClose(sh);
 	if (found == 0) {
 		free(tmpstr);
 		return NULL;
@@ -305,8 +329,11 @@ bool plat_getftime(FILE *fd, uint16_t *datep, uint16_t *timep)
 	*datep |= ((file_dt.tm_mon + 1) & 0x0f) << 5;
 	*datep |= (uint16_t)(((file_dt.tm_year - 80) & 0x7f) << 9);
 
+	/* DOS time: 5-bit sec/2 (valid 0-29), 6-bit min, 5-bit hour.
+	   Truncate seconds (floor) -- rounding up can produce 30 for
+	   tm_sec=59 which reads back as an invalid 60s. */
 	*timep = 0;
-	*timep = (((file_dt.tm_sec + 2) / 2) & 0x1f);
+	*timep = ((uint16_t)(file_dt.tm_sec / 2) & 0x1f);
 	*timep |= ((file_dt.tm_min) & 0x3f) << 5;
 	*timep |= (uint16_t)(((file_dt.tm_hour) & 0x1f) << 11);
 
