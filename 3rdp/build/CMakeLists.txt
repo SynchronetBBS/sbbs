@@ -94,4 +94,8 @@ FetchContent_Declare(CryptLib
 		COMMAND ${CMAKE_COMMAND} -E copy_if_different ${PATCHES} .
 		COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_CURRENT_SOURCE_DIR}/hashpatch.pl .
 		COMMAND ${CMAKE_COMMAND} -E rename makefile makefile.old)
+# No network is used for this dependency (DOWNLOAD_COMMAND is empty), so the
+# port-level FETCHCONTENT_FULLY_DISCONNECTED guard would block a purely local
+# zip extraction. Shadow it here so population always runs.
+set(FETCHCONTENT_FULLY_DISCONNECTED FALSE)
 FetchContent_MakeAvailable(CryptLib)
