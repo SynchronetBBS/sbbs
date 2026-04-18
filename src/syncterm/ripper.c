@@ -10475,31 +10475,26 @@ load_stamp_icon(const char *filename, int x, int y, int mode,
 				*(op++) = map_rip_color(co);
 			}
 		}
-		if (pix) {
-			fclose(icn);
-			free(planes);
-
-			if (out_w)
-				*out_w = pix->width;
-			if (out_h)
-				*out_h = pix->height;
-
-			stamp_icon_mode(pix,
-			    x + rip.viewport.sx,
-			    y + rip.viewport.sy,
-			    mode);
-			if (to_clipboard) {
-				freepixels(rip.clipboard);
-				rip.clipboard = pix;
-			}
-			else {
-				freepixels(pix);
-			}
-			return true;
-		}
-		free(planes);
 		fclose(icn);
-		return false;
+		free(planes);
+
+		if (out_w)
+			*out_w = pix->width;
+		if (out_h)
+			*out_h = pix->height;
+
+		stamp_icon_mode(pix,
+		    x + rip.viewport.sx,
+		    y + rip.viewport.sy,
+		    mode);
+		if (to_clipboard) {
+			freepixels(rip.clipboard);
+			rip.clipboard = pix;
+		}
+		else {
+			freepixels(pix);
+		}
+		return true;
 	}
 	else {
 		// Try builtin icons before showing error box.
@@ -10764,8 +10759,6 @@ draw_button(struct rip_button_style *but, bool inverted)
 		but->box.y1 = by1;
 		but->box.x2 = bx2;
 		but->box.y2 = by2;
-		width = bx2 - bx1;
-		height = by2 - by1;
 	}
 	else if (but->button == BUTTON_TYPE_CLIPBOARD) {
 		if (rip.clipboard) {
@@ -10778,8 +10771,6 @@ draw_button(struct rip_button_style *but, bool inverted)
 			by2 = but->box.y1 + rip.clipboard->height;
 			but->box.x2 = bx2;
 			but->box.y2 = by2;
-			width = bx2 - bx1;
-			height = by2 - by1;
 		}
 	}
 	else {
