@@ -209,7 +209,9 @@ endif()
 
 install(TARGETS syncterm DESTINATION bin)
 if(UNIX)
-	install(FILES ${CMAKE_CURRENT_BINARY_DIR}/syncterm.man TYPE MAN)
+	install(FILES ${CMAKE_CURRENT_BINARY_DIR}/syncterm.man
+		DESTINATION share/man/man1
+		RENAME syncterm.1)
 	install(FILES syncterm.desktop DESTINATION share/applications)
 	install(FILES syncterm.desktop DESTINATION share/applications)
 	install(FILES syncterm16.png DESTINATION share/icons/hicolor/16x16/apps RENAME syncterm.png)
