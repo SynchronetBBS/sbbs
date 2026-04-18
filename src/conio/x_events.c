@@ -1744,6 +1744,7 @@ x11_event(XEvent *ev)
 			else if(ev->xclient.format == 32 && ev->xclient.data.l[0] == A(_NET_WM_PING) && A(_NET_WM_PING) != None) {
 				ev->xclient.window = root;
 				x11.XSendEvent(dpy, ev->xclient.window, False, SubstructureNotifyMask | SubstructureRedirectMask, ev);
+				x11.XFlush(dpy);
 			}
 			break;
 		case PropertyNotify:
