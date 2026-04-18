@@ -1086,9 +1086,11 @@ int sbbs_t::attr(int atr)
 {
 	char str[128];
 
-	term->attrstr(atr, str, sizeof(str));
-	term_out(str);
-	curatr = atr;
+	if (atr != curatr) {
+		term->attrstr(atr, str, sizeof(str));
+		term_out(str);
+		curatr = atr;
+	}
 	return 0;
 }
 
