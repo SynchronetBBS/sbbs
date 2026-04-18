@@ -1581,7 +1581,7 @@ void sub_cfg(int grpnum)
 									"  space as it imports messages by using deleted message header and data\n"
 									"  blocks for new messages automatically. If you use this storage method,\n"
 									"  you will not need to run `smbutil p` on this message base unless you\n"
-									"  accumilate a large number of deleted message blocks and wish to free\n"
+									"  accumulate a large number of deleted message blocks and wish to free\n"
 									"  that disk space. You can switch from self-packing to fast allocation\n"
 									"  storage method and back again as you wish.\n"
 									"`Fast Allocation` is faster than self-packing because it does not search\n"
@@ -1657,7 +1657,8 @@ void sub_cfg(int grpnum)
 									"\n"
 									"This is a filename that will be created as a semaphore (signal) to an\n"
 									"external program or event whenever a message is posted in this\n"
-									"sub-board.\n"
+									"sub-board.  This path/filename may utilize command-line specifiers.\n"
+									SCFG_CMDLINE_SPEC_HELP
 								;
 								uifc.input(WIN_MID | WIN_SAV, 0, 17, "Semaphore File"
 								           , cfg.sub[i]->post_sem, sizeof(cfg.sub[i]->post_sem) - 1, K_EDIT);
@@ -1669,6 +1670,9 @@ void sub_cfg(int grpnum)
 									"You should normally have no reason to modify this value. If you get\n"
 									"crossed-up or duplicate ptridx values, then you may want to adjust\n"
 									"this value, but do so with great care and trepidation.\n"
+									"\n"
+									"In Synchronet v3.20 and later, this value is only used for `qnet/*.ptr`\n"
+									"pointer files for QWK networking and is ignored for all other purposes.\n"
 								;
 								sprintf(str, "%u", cfg.sub[i]->ptridx);
 								if (uifc.input(WIN_MID | WIN_SAV, 0, 17
