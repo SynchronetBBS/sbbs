@@ -1,0 +1,15 @@
+--- ./io/tcp_rw.c.orig	2026-04-18 16:00:00.000000000 -0400
++++ ./io/tcp_rw.c	2026-04-18 16:00:00.000000000 -0400
+@@ -412,9 +412,9 @@
+ 			 ( type == IOWAIT_ACCEPT ) );
+ #else
+ 	ENSURES( \
+-			 ( type == IOWAIT_READ && (fds.revents & POLLIN) ) || \
+-			 ( type == IOWAIT_WRITE && (fds.revents & POLLOUT) ) || \
+-			 ( type == IOWAIT_CONNECT && (fds.revents & (POLLIN | POLLOUT) ) ) || \
++			 ( type == IOWAIT_READ && (fds.revents & (POLLIN | POLLHUP)) ) || \
++			 ( type == IOWAIT_WRITE && (fds.revents & (POLLOUT | POLLHUP)) ) || \
++			 ( type == IOWAIT_CONNECT && (fds.revents & (POLLIN | POLLOUT | POLLHUP) ) ) || \
+ 			 ( type == IOWAIT_ACCEPT ) );
+ #endif
+ 	return( CRYPT_OK );
