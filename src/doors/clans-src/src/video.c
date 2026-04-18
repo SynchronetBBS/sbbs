@@ -1129,7 +1129,7 @@ void Video_Init(void)
 		CONSOLE_SCREEN_BUFFER_INFO screen_buffer;
 
 		std_handle = GetStdHandle(STD_OUTPUT_HANDLE);
-		if (std_handle == NULL) {
+		if (std_handle == INVALID_HANDLE_VALUE) {
 			if (!AllocConsole()) {
 				display_win32_error();
 				exit(0);

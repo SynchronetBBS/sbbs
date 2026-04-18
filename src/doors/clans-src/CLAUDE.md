@@ -224,7 +224,6 @@ logic) but are never activated at runtime.  **Do not document these as working
 features** — always verify gameplay claims against the source.  See `docs/todo.txt`
 for full details.
 
-- **Charisma attribute** (`ATTR_CHARISMA`): tracked in `struct pc`, settable by classes/items/spells, displayed in stats, and trainable — but never read by any gameplay code.  It has no effect on combat, empire, NPC, or trading outcomes.  (todo.txt [1.1], [1.3])
 - **Village types** (`V_WOODLAND`, `V_COASTAL`, `V_WASTELAND`): defined in `defines.h`; items can be tagged with a `VillageType` and `items.c` filters on it — but `Village.Data.VillageType` is never set, so it stays 0 (`V_ALL`) and type-restricted items never appear.  (todo.txt [1.7])
 - **Protection period**: `DaysOfProtection` only guards against **empire attacks** (`empire.c`); `Fight_Clan()` in `fight.c` has no protection check, so clan-to-clan combat is always allowed.
 
