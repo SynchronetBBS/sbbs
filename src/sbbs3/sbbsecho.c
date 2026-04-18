@@ -4578,7 +4578,7 @@ bool pkt_to_msg(FILE* fidomsg, fmsghdr_t* hdr, const char* info, const char* inb
 	char  path[MAX_PATH + 1];
 	char* fmsgbuf;
 	int   i, file;
-	ulong l;
+	size_t l;
 	bool  result = true;
 
 	if ((fmsgbuf = getfmsg(fidomsg, &l)) == NULL) {
@@ -4660,7 +4660,7 @@ int import_netmail(const char* path, const fmsghdr_t* inhdr, FILE** fp, const ch
 	char       tmp[MAX_PATH + 1];
 	char *     fmsgbuf = NULL, *p, *tp;
 	int        i, match, usernumber = 0;
-	ulong      length;
+	size_t     length;
 	fidoaddr_t addr;
 	fmsghdr_t  hdr = *inhdr;
 	bool       is_pkt = (path[0] == 0);
