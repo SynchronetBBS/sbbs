@@ -111,6 +111,7 @@ set(PATCHES
 	cl-winapi-needed.patch
 	cl-enable-chacha20.patch
 	cl-no-session-cache.patch
+	cl-iowait-pollhup.patch
 )
 
 set(SOURCE
