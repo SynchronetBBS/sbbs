@@ -133,7 +133,8 @@ noreturn void System_Error(char *szErrorMsg)
 #if defined(_WIN32)
 	LogStr(szErrorMsg);
 	char buffer[1000];
-	_snprintf(buffer, 1000, "System Error: %s\n", szErrorMsg);
+	_snprintf(buffer, sizeof(buffer), "System Error: %s\n", szErrorMsg);
+	buffer[sizeof(buffer) - 1] = 0;
 	RemovePipes(buffer, buffer);
 	MessageBox(NULL, buffer, TEXT("System Error"), MB_OK |
 			   MB_ICONERROR);

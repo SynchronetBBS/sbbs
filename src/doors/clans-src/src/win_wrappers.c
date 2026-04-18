@@ -81,6 +81,8 @@ void plat_GetExePath(const char *argv0, char *buf, size_t bufsz)
 {
 	(void)argv0;
 	GetModuleFileName(NULL, buf, (DWORD)bufsz);
+	// Some versions of GetModuleFileName() don't NUL terminate.
+	buf[bufsz - 1] = 0;
 	/* Strip to directory */
 	size_t len = strlen(buf);
 	while (len > 0 && buf[len] != '\\' && buf[len] != '/')
@@ -308,7 +310,7 @@ bool plat_getftime(FILE *fd, uint16_t *datep, uint16_t *timep)
 	*timep |= ((file_dt.tm_min) & 0x3f) << 5;
 	*timep |= (uint16_t)(((file_dt.tm_hour) & 0x1f) << 11);
 
-	return 0;
+	return true;
 }
 
 bool plat_setftime(FILE *fd, unsigned short date, unsigned short time)
