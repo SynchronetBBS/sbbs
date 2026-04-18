@@ -1267,6 +1267,8 @@ same_cell(struct vmem_cell *bitmap_cell, struct vmem_cell *c2)
 		return false;
 	if (bitmap_cell->legacy_attr != c2->legacy_attr)
 		return false;
+	if ((bitmap_cell->hyperlink_id == 0) != (c2->hyperlink_id == 0))
+		return false;
 	return true;
 }
 
