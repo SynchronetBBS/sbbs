@@ -99,7 +99,7 @@ long import_msg_areas(enum import_list_type type, FILE* stream, int grpnum
 	size_t     grpname_len = strlen(cfg.grp[grpnum]->sname);
 	char       duplicate_code[LEN_CODE + 1] = "";
 	uint       duplicate_codes = 0;     // consecutive duplicate codes
-	long       new_sub_misc;
+	long       new_sub_misc = 0;
 	str_list_t ini = NULL;
 	str_list_t list = NULL;
 	uint       i = 0;
@@ -130,6 +130,8 @@ long import_msg_areas(enum import_list_type type, FILE* stream, int grpnum
 			break;
 		case IMPORT_LIST_TYPE_ECHOSTATS:
 			new_sub_misc = SUB_FIDO;
+			/* intentional fall-through */
+		case IMPORT_LIST_TYPE_SUBS_INI:
 			ini = iniReadFile(stream);
 			if (ini == NULL)
 				return 0;
@@ -168,6 +170,12 @@ long import_msg_areas(enum import_list_type type, FILE* stream, int grpnum
 			else
 				SAFECOPY(tmpsub.area_tag, areatag);
 			SAFECOPY(tmpsub.lname, iniGetString(ini, areatag, "Title", "", value));
+		} else if (type == IMPORT_LIST_TYPE_SUBS_INI) {
+			if (list[i] == NULL)
+				break;
+			SAFECOPY(tmp_code, list[i]);
+			read_sub_ini_section(&cfg, ini, list[i], &tmpsub, tmp_code);
+			i++;
 		} else {
 			if (feof(stream))
 				break;
@@ -754,6 +762,7 @@ void msgs_cfg()
 					ported = 0;
 					strcpy(opt[k++], "areas.bbs      SBBSecho Area File");
 					strcpy(opt[k++], "areas.ini      SBBSecho Area File");
+					strcpy(opt[k++], "*subs.ini      Synchronet Shared Config");
 					strcpy(opt[k++], "backbone.na    FidoNet EchoList");
 					strcpy(opt[k++], "newsgroup.lst  USENET Newsgroup List");
 					opt[k][0] = 0;
@@ -772,6 +781,10 @@ void msgs_cfg()
 						"  Area File as used by the Synchronet Fido EchoMail program, `SBBSecho`\n"
 						"  (optionally, as of SBBSecho v3.23).\n"
 						"\n"
+						"`*subs.ini`\n"
+						"  File format supported by Synchronet v3.22 and later for sharing\n"
+						"  sub-board configuration data between Synchronet BBSes.\n"
+						"\n"
 						"`backbone.na` (also `fidonet.na` and `badareas.lst`)\n"
 						"  FidoNet standard EchoList containing standardized echo `Area Tags`\n"
 						"  and (optional) descriptions.\n"
@@ -788,9 +801,16 @@ void msgs_cfg()
 						sprintf(str, "%sareas.bbs", cfg.data_dir);
 					else if (k == 1)
 						sprintf(str, "%sareas.ini", cfg.data_dir);
-					else if (k == 2)
-						sprintf(str, "backbone.na");
+					else if (k == 2) {
+						if (cfg.grp[grpnum]->code_prefix[0] == '\0') {
+							snprintf(str, sizeof str, "%s_subs.ini", cfg.grp[grpnum]->sname);
+							replace_chars(str, ' ', '_');
+						} else
+							snprintf(str, sizeof str, "%ssubs.ini", cfg.grp[grpnum]->code_prefix);
+					}
 					else if (k == 3)
+						sprintf(str, "backbone.na");
+					else if (k == 4)
 						sprintf(str, "newsgroup.lst");
 					if (k == 0 || k == 1) {
 						uifc.helpbuf =
@@ -867,14 +887,20 @@ void msgs_cfg()
 							fprintf(stream, "\n");
 							continue;
 						}
-						if (k == 2) {      /* BACKBONE.NA */
+						if (k == 2) {      /* subs.ini */
+							str_list_t section = sub_ini_section(&cfg, cfg.sub[j], cfg.sub[j]->code_suffix);
+							strListWriteFile(stream, section, "\n");
+							free(section);
+							continue;
+						}
+						if (k == 3) {      /* BACKBONE.NA */
 							fprintf(stream, "%-*s %s\n"
 							        , FIDO_AREATAG_LEN
 							        , sub_area_tag(&cfg, cfg.sub[j], str, sizeof(str))
 							        , cfg.sub[j]->lname);
 							continue;
 						}
-						if (k == 3) {      /* newsgroup.lst */
+						if (k == 4) {      /* newsgroup.lst */
 							fprintf(stream, "%s %s\n"
 							        , sub_newsgroup_name(&cfg, cfg.sub[j], str, sizeof(str))
 							        , cfg.sub[j]->lname);
@@ -892,6 +918,7 @@ void msgs_cfg()
 					strcpy(opt[k++], "control.dat     QWK Conference List");
 					strcpy(opt[k++], "areas.bbs       Generic Area File");
 					strcpy(opt[k++], "areas.bbs       SBBSecho Area File");
+					strcpy(opt[k++], "*subs.ini       Synchronet Shared Config");
 					strcpy(opt[k++], "backbone.na     FidoNet EchoList");
 					strcpy(opt[k++], "badareas.lst    SBBSecho Bad Area List");
 					strcpy(opt[k++], "echostats.ini   SBBSecho EchoMail Statistics");
@@ -905,15 +932,15 @@ void msgs_cfg()
 						"\n"
 						"The supported message area list file formats to be imported are:\n"
 						"\n"
-						"`subs.txt`\n"
-						"  Complete details of a group of sub-boards as exported from `SCFG`.\n"
-						"\n"
 						"`control.dat`\n"
 						"  Standard file contained within QWK packets (typically ZIP archives).\n"
 						"\n"
 						"`areas.bbs`\n"
 						"  FidoNet EchoMail Area File, in either `Generic` or `SBBSecho` flavors,\n"
 						"  as used by most FidoNet EchoMail Programs or SBBSecho.\n"
+						"\n"
+						"`*subs.ini`\n"
+						"  Complete details of a group of sub-boards as exported from `SCFG`.\n"
 						"\n"
 						"`backbone.na` (also `fidonet.na` and `badareas.lst`)\n"
 						"  FidoNet standard EchoList containing standardized echo `Area Tags`\n"
@@ -940,6 +967,13 @@ void msgs_cfg()
 							break;
 						case IMPORT_LIST_TYPE_SBBSECHO_AREAS_BBS:
 							snprintf(filename, sizeof filename, "%sareas.bbs", cfg.data_dir);
+							break;
+						case IMPORT_LIST_TYPE_SUBS_INI:
+							if (cfg.grp[grpnum]->code_prefix[0] == '\0') {
+								snprintf(filename, sizeof filename, "%s_subs.ini", cfg.grp[grpnum]->sname);
+								replace_chars(filename, ' ', '_');
+							} else
+								snprintf(filename, sizeof filename, "%ssubs.ini", cfg.grp[grpnum]->code_prefix);
 							break;
 						case IMPORT_LIST_TYPE_BACKBONE_NA:
 							snprintf(filename, sizeof filename, "backbone.na");

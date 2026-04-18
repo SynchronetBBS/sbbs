@@ -413,6 +413,53 @@ bool read_main_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	return result;
 }
 
+void read_sub_ini_section(scfg_t* cfg, str_list_t ini, const char* section, sub_t* sub, const char* code)
+{
+	char value[INI_MAX_VALUE_LEN];
+
+	SAFECOPY(sub->code_suffix, code);
+	SAFECOPY(sub->lname, iniGetString(ini, section, "description", code, value));
+	SAFECOPY(sub->sname, iniGetString(ini, section, "name", code, value));
+	SAFECOPY(sub->qwkname, iniGetString(ini, section, "qwk_name", code, value));
+	SAFECOPY(sub->data_dir, iniGetString(ini, section, "data_dir", "", value));
+
+	SAFECOPY(sub->arstr, iniGetString(ini, section, "ars", "", value));
+	SAFECOPY(sub->read_arstr, iniGetString(ini, section, "read_ars", "", value));
+	SAFECOPY(sub->post_arstr, iniGetString(ini, section, "post_ars", "", value));
+	SAFECOPY(sub->op_arstr, iniGetString(ini, section, "operator_ars", "", value));
+	SAFECOPY(sub->mod_arstr, iniGetString(ini, section, "moderated_ars", "", value));
+
+	arstr(NULL, sub->arstr, cfg, sub->ar);
+	arstr(NULL, sub->read_arstr, cfg, sub->read_ar);
+	arstr(NULL, sub->post_arstr, cfg, sub->post_ar);
+	arstr(NULL, sub->op_arstr, cfg, sub->op_ar);
+	arstr(NULL, sub->mod_arstr, cfg, sub->mod_ar);
+
+	sub->misc = iniGetUInteger(ini, section, "settings", 0);
+	if ((sub->misc & (SUB_FIDO | SUB_INET)) && !(sub->misc & SUB_QNET))
+		sub->misc |= SUB_NOVOTING;
+
+	SAFECOPY(sub->tagline, iniGetString(ini, section, "qwknet_tagline", "", value));
+	SAFECOPY(sub->origline, iniGetString(ini, section, "fidonet_origin", "", value));
+	SAFECOPY(sub->post_sem, iniGetString(ini, section, "post_sem", "", value));
+	SAFECOPY(sub->newsgroup, iniGetString(ini, section, "newsgroup", "", value));
+	SAFECOPY(sub->area_tag, iniGetString(ini, section, "area_tag", "", value));
+
+	sub->faddr = smb_atofaddr(NULL, iniGetString(ini, section, "fidonet_addr", "", value));
+	sub->maxmsgs = iniGetInteger(ini, section, "max_msgs", 0);
+	sub->maxcrcs = iniGetInteger(ini, section, "max_crcs", 0);
+	sub->maxage = iniGetInteger(ini, section, "max_age", 0);
+	sub->ptridx = iniGetInteger(ini, section, "ptridx", 0);
+
+	sub->qwkconf = iniGetUInt16(ini, section, "qwk_conf", 0);
+	sub->pmode = iniGetUInteger(ini, section, "print_mode", 0);
+	sub->n_pmode = iniGetUInteger(ini, section, "print_mode_neg", 0);
+	if (!(sub->pmode & P_NOXATTRS)) {
+		sub->pmode |= (cfg->sys_misc & SM_XATTR_SUPPORT) << P_XATTR_SHIFT;
+		sub->pmode |= P_NOXATTRS; // mark as "upgraded" to new scheme
+	}
+}
+
 /****************************************************************************/
 /* Reads in msgs.ini and initializes the associated variables				*/
 /****************************************************************************/
@@ -513,42 +560,10 @@ bool read_msgs_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 			return allocerr(error, maxerrlen, fname, "sub", sizeof(sub_t));
 		section = iniGetParsedSection(sections, name, /* cut: */ true);
 		memset(cfg->sub[i], 0, sizeof(sub_t));
-		SAFECOPY(cfg->sub[i]->code_suffix, code);
 
 		cfg->sub[i]->subnum = i;
 		cfg->sub[i]->grp = grpnum;
-		SAFECOPY(cfg->sub[i]->lname, iniGetString(section, NULL, "description", code, value));
-		SAFECOPY(cfg->sub[i]->sname, iniGetString(section, NULL, "name", code, value));
-		SAFECOPY(cfg->sub[i]->qwkname, iniGetString(section, NULL, "qwk_name", code, value));
-		SAFECOPY(cfg->sub[i]->data_dir, iniGetString(section, NULL, "data_dir", "", value));
-
-		SAFECOPY(cfg->sub[i]->arstr, iniGetString(section, NULL, "ars", "", value));
-		SAFECOPY(cfg->sub[i]->read_arstr, iniGetString(section, NULL, "read_ars", "", value));
-		SAFECOPY(cfg->sub[i]->post_arstr, iniGetString(section, NULL, "post_ars", "", value));
-		SAFECOPY(cfg->sub[i]->op_arstr, iniGetString(section, NULL, "operator_ars", "", value));
-		SAFECOPY(cfg->sub[i]->mod_arstr, iniGetString(section, NULL, "moderated_ars", "", value));
-
-		arstr(NULL, cfg->sub[i]->arstr, cfg, cfg->sub[i]->ar);
-		arstr(NULL, cfg->sub[i]->read_arstr, cfg, cfg->sub[i]->read_ar);
-		arstr(NULL, cfg->sub[i]->post_arstr, cfg, cfg->sub[i]->post_ar);
-		arstr(NULL, cfg->sub[i]->op_arstr, cfg, cfg->sub[i]->op_ar);
-		arstr(NULL, cfg->sub[i]->mod_arstr, cfg, cfg->sub[i]->mod_ar);
-
-		cfg->sub[i]->misc = iniGetUInteger(section, NULL, "settings", 0);
-		if ((cfg->sub[i]->misc & (SUB_FIDO | SUB_INET)) && !(cfg->sub[i]->misc & SUB_QNET))
-			cfg->sub[i]->misc |= SUB_NOVOTING;
-
-		SAFECOPY(cfg->sub[i]->tagline, iniGetString(section, NULL, "qwknet_tagline", "", value));
-		SAFECOPY(cfg->sub[i]->origline, iniGetString(section, NULL, "fidonet_origin", "", value));
-		SAFECOPY(cfg->sub[i]->post_sem, iniGetString(section, NULL, "post_sem", "", value));
-		SAFECOPY(cfg->sub[i]->newsgroup, iniGetString(section, NULL, "newsgroup", "", value));
-		SAFECOPY(cfg->sub[i]->area_tag, iniGetString(section, NULL, "area_tag", "", value));
-
-		cfg->sub[i]->faddr = smb_atofaddr(NULL, iniGetString(section, NULL, "fidonet_addr", "", value));
-		cfg->sub[i]->maxmsgs = iniGetInteger(section, NULL, "max_msgs", 0);
-		cfg->sub[i]->maxcrcs = iniGetInteger(section, NULL, "max_crcs", 0);
-		cfg->sub[i]->maxage = iniGetInteger(section, NULL, "max_age", 0);
-		cfg->sub[i]->ptridx = iniGetInteger(section, NULL, "ptridx", 0);
+		read_sub_ini_section(cfg, section, NULL, cfg->sub[i], code);
 #ifdef SBBS
 		for (uint j = 0; j < i; j++)
 			if (cfg->sub[i]->ptridx == cfg->sub[j]->ptridx) {
@@ -558,15 +573,6 @@ bool read_msgs_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 				return false;
 			}
 #endif
-
-
-		cfg->sub[i]->qwkconf = iniGetUInt16(section, NULL, "qwk_conf", 0);
-		cfg->sub[i]->pmode = iniGetUInteger(section, NULL, "print_mode", 0);
-		cfg->sub[i]->n_pmode = iniGetUInteger(section, NULL, "print_mode_neg", 0);
-		if (!(cfg->sub[i]->pmode & P_NOXATTRS)) {
-			cfg->sub[i]->pmode |= (cfg->sys_misc & SM_XATTR_SUPPORT) << P_XATTR_SHIFT;
-			cfg->sub[i]->pmode |= P_NOXATTRS; // mark as "upgraded" to new scheme
-		}
 		++cfg->total_subs;
 	}
 	iniFreeStringList(sub_list);
