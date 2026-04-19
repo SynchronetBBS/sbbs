@@ -3303,6 +3303,7 @@ function vbar(choices, args)
 				ret.cur = choices.length - 1;
 				break;
 			case 'CONNECTION_CLOSED':
+				return -1;
 			case '\r':
 				movetoend();
 				return ret;
