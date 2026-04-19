@@ -499,6 +499,11 @@ var dk = {
 				mswait(1);
 				return true;
 			}
+			else if (js.global.bbs !== undefined && !bbs.online) {
+				js.auto_terminate = true;
+				dk.connection.active = false;
+				return true;
+			}
 			return false;
 		},
 
