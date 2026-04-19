@@ -35,6 +35,7 @@
 #include <stdarg.h>
 #include <stdlib.h>
 #include <string.h>
+#include <xpprintf.h>	/* asprintf() on Win32 */
 
 #include <genwrap.h>
 #include <link_list.h>
