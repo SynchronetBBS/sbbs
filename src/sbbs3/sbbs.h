@@ -986,7 +986,7 @@ public:
 	double	last_progress = 0;
 	int		petscii_to_ansibbs(unsigned char);
 	size_t	print_utf8_as_cp437(const char*, size_t);
-	int		attr(int);				/* Change text color/attributes */
+	int		attr(uint);				/* Change text color/attributes */
 	void	ctrl_a(char);			/* Performs Ctrl-Ax attribute changes */
 	char*	auto_utf8(const char*, int& mode);
 	void	getdimensions();

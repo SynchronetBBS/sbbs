@@ -1082,7 +1082,7 @@ void sbbs_t::ctrl_a(char x)
 /****************************************************************************/
 /* Sends terminal control codes to change remote terminal colors/attributes */
 /****************************************************************************/
-int sbbs_t::attr(int atr)
+int sbbs_t::attr(uint atr)
 {
 	char str[128];
 
