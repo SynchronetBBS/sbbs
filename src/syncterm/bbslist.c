@@ -1755,9 +1755,22 @@ edit_name(char *itemname, struct bbslist **list, str_list_t inifile, bool edit_t
 			}
 			else {
 				if (itemname) {
-					// TODO: Rename cache
-					if (!edit_to_add)
+					if (!edit_to_add) {
+						if (strcmp(itemname, tmp) != 0) {
+							char old_cache[MAX_PATH + 1], new_cache[MAX_PATH + 1];
+							get_syncterm_filename(old_cache, sizeof(old_cache), SYNCTERM_PATH_CACHE, false);
+							backslash(old_cache);
+							strcpy(new_cache, old_cache);
+							if (strlen(old_cache) + strlen(itemname) < sizeof(old_cache)
+							    && strlen(new_cache) + strlen(tmp) < sizeof(new_cache)) {
+								strcat(old_cache, itemname);
+								strcat(new_cache, tmp);
+								if (isdir(old_cache))
+									rename(old_cache, new_cache);
+							}
+						}
 						iniRenameSection(&inifile, itemname, tmp);
+					}
 					strcpy(itemname, tmp);
 				}
 				return true;
@@ -3124,6 +3137,7 @@ del_bbs(char *listpath, struct bbslist *bbs)
 {
 	FILE *listfile;
 	str_list_t inifile;
+	char cache_path[MAX_PATH + 1];
 
 	if (safe_mode)
 		return;
@@ -3133,6 +3147,15 @@ del_bbs(char *listpath, struct bbslist *bbs)
 		iniWriteEncryptedFile(listfile, inifile, list_algo, list_keysize, settings.keyDerivationIterations, list_password, NULL);
 		fclose(listfile);
 		strListFree(&inifile);
+	}
+	get_syncterm_filename(cache_path, sizeof(cache_path), SYNCTERM_PATH_CACHE, false);
+	backslash(cache_path);
+	if (strlen(cache_path) + strlen(bbs->name) < sizeof(cache_path)) {
+		strcat(cache_path, bbs->name);
+		if (isdir(cache_path)) {
+			delfiles(cache_path, NULL, 0);
+			rmdir(cache_path);
+		}
 	}
 }
 
@@ -4426,6 +4449,48 @@ encryption_menu(const char *listpath)
 }
 #endif
 
+static void
+sweep_orphan_caches(struct bbslist **list, int listcount)
+{
+	char          cache_root[MAX_PATH + 1];
+	char          entry_path[MAX_PATH + 1];
+	DIR          *dir;
+	struct dirent *ent;
+	int           i;
+	bool          found;
+
+	if (!get_syncterm_filename(cache_root, sizeof(cache_root), SYNCTERM_PATH_CACHE, false))
+		return;
+	backslash(cache_root);
+	dir = opendir(cache_root);
+	if (dir == NULL)
+		return;
+	while ((ent = readdir(dir)) != NULL) {
+		if (strcmp(ent->d_name, ".") == 0 || strcmp(ent->d_name, "..") == 0)
+			continue;
+		if (is_reserved_bbs_name(ent->d_name))
+			continue;
+		if (strlen(cache_root) + strlen(ent->d_name) >= sizeof(entry_path))
+			continue;
+		strcpy(entry_path, cache_root);
+		strcat(entry_path, ent->d_name);
+		if (!isdir(entry_path))
+			continue;
+		found = false;
+		for (i = 0; i < listcount; i++) {
+			if (list[i] != NULL && stricmp(list[i]->name, ent->d_name) == 0) {
+				found = true;
+				break;
+			}
+		}
+		if (!found) {
+			delfiles(entry_path, NULL, 0);
+			rmdir(entry_path);
+		}
+	}
+	closedir(dir);
+}
+
 /*
  * Displays the BBS list and allows edits to user BBS list
  * Mode is one of BBSLIST_SELECT or BBSLIST_EDIT
@@ -4501,6 +4566,7 @@ show_bbslist(char *current, int connected)
 		return NULL;
 	load_bbslist(list, BBSLIST_SIZE, &defaults, settings.list_path, sizeof(settings.list_path), shared_list,
 	             sizeof(shared_list), &listcount, &opt, &bar, current ? strdup(current) : NULL);
+	sweep_orphan_caches(list, listcount);
 
 	uifc.helpbuf = "Help Button Hack";
 	settings_list(&sopt, &sbar, connected ? connected_settings_menu : settings_menu, WIN_INACT);
