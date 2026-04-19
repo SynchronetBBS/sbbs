@@ -25,21 +25,50 @@
 #include "load_cfg.h"
 #include "ini_file.h"
 
-static void read_dir_defaults_cfg(scfg_t* cfg, str_list_t ini, dir_t* dir)
+static void read_dir_defaults_cfg(scfg_t* cfg, str_list_t ini, const char* section, dir_t* dir)
 {
 	char value[INI_MAX_VALUE_LEN];
 
-	SAFECOPY(dir->data_dir, iniGetString(ini, NULL, "data_dir", "", value));
-	SAFECOPY(dir->upload_sem, iniGetString(ini, NULL, "upload_sem", "", value));
-	SAFECOPY(dir->exts, iniGetString(ini, NULL, "extensions", "", value));
+	SAFECOPY(dir->data_dir, iniGetString(ini, section, "data_dir", "", value));
+	SAFECOPY(dir->upload_sem, iniGetString(ini, section, "upload_sem", "", value));
+	SAFECOPY(dir->exts, iniGetString(ini, section, "extensions", "", value));
 
-	dir->maxfiles = iniGetUInteger(ini, NULL, "max_files", 0);
-	dir->misc = iniGetInt32(ini, NULL, "settings",  DEFAULT_DIR_OPTIONS);
-	dir->seqdev = iniGetUInteger(ini, NULL, "seq_dev", 0);
-	dir->sort = iniGetUInteger(ini, NULL, "sort", 0);
-	dir->maxage = iniGetUInt16(ini, NULL, "max_age", 0);
-	dir->up_pct = iniGetUInt16(ini, NULL, "upload_credit_pct", cfg->cdt_up_pct);
-	dir->dn_pct = iniGetUInt16(ini, NULL, "download_credit_pct", cfg->cdt_dn_pct);
+	dir->maxfiles = iniGetUInteger(ini, section, "max_files", 0);
+	dir->misc = iniGetInt32(ini, section, "settings",  DEFAULT_DIR_OPTIONS);
+	dir->seqdev = iniGetUInteger(ini, section, "seq_dev", 0);
+	dir->sort = iniGetUInteger(ini, section, "sort", 0);
+	dir->maxage = iniGetUInt16(ini, section, "max_age", 0);
+	dir->up_pct = iniGetUInt16(ini, section, "upload_credit_pct", cfg->cdt_up_pct);
+	dir->dn_pct = iniGetUInt16(ini, section, "download_credit_pct", cfg->cdt_dn_pct);
+}
+
+void read_dir_ini_section(scfg_t* cfg, str_list_t ini, const char* section, dir_t* dir, const char* code)
+{
+	char value[INI_MAX_VALUE_LEN];
+
+	SAFECOPY(dir->code_suffix, code);
+	SAFECOPY(dir->lname, iniGetString(ini, section, "description", code, value));
+	SAFECOPY(dir->sname, iniGetString(ini, section, "name", code, value));
+
+	SAFECOPY(dir->vdir_name, iniGetString(ini, section, "vdir", "", value));
+	SAFECOPY(dir->vshortcut, iniGetString(ini, section, "vshortcut", "", value));
+
+	SAFECOPY(dir->arstr, iniGetString(ini, section, "ars", "", value));
+	SAFECOPY(dir->ul_arstr, iniGetString(ini, section, "upload_ars", "", value));
+	SAFECOPY(dir->dl_arstr, iniGetString(ini, section, "download_ars", "", value));
+	SAFECOPY(dir->op_arstr, iniGetString(ini, section, "operator_ars", "", value));
+	SAFECOPY(dir->ex_arstr, iniGetString(ini, section, "exempt_ars", "", value));
+
+	arstr(NULL, dir->arstr, cfg, dir->ar);
+	arstr(NULL, dir->ul_arstr, cfg, dir->ul_ar);
+	arstr(NULL, dir->dl_arstr, cfg, dir->dl_ar);
+	arstr(NULL, dir->op_arstr, cfg, dir->op_ar);
+	arstr(NULL, dir->ex_arstr, cfg, dir->ex_ar);
+
+	SAFECOPY(dir->path, iniGetString(ini, section, "path", "", value));
+	SAFECOPY(dir->area_tag, iniGetString(ini, section, "area_tag", "", value));
+
+	read_dir_defaults_cfg(cfg, ini, section, dir);
 }
 
 /****************************************************************************/
@@ -265,7 +294,7 @@ bool read_file_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 		char dir_defaults[128];
 		SAFEPRINTF(dir_defaults, "dir_defaults:%s", cfg->lib[i]->sname);
 		section = iniGetParsedSection(sections, dir_defaults, /* cut: */ true);
-		read_dir_defaults_cfg(cfg, section, &cfg->lib[i]->dir_defaults);
+		read_dir_defaults_cfg(cfg, section, NULL, &cfg->lib[i]->dir_defaults);
 	}
 	iniFreeStringList(lib_list);
 
@@ -298,14 +327,11 @@ bool read_file_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 			return allocerr(error, maxerrlen, fname, "dir", sizeof(dir_t));
 		str_list_t section = iniGetParsedSection(sections, name, /* cut: */ true);
 		memset(cfg->dir[i], 0, sizeof(dir_t));
-		SAFECOPY(cfg->dir[i]->code_suffix, code);
 
 		cfg->dir[i]->dirnum = i;
 		cfg->dir[i]->lib = libnum;
-
-		SAFECOPY(cfg->dir[i]->lname, iniGetString(section, NULL, "description", code, value));
-		SAFECOPY(cfg->dir[i]->sname, iniGetString(section, NULL, "name", code, value));
-
+		read_dir_ini_section(cfg, section, NULL, cfg->dir[i], code);
+		init_vdir(cfg, cfg->dir[i]);
 		if (!stricmp(cfg->dir[i]->sname, "SYSOP"))            /* Sysop upload directory */
 			cfg->sysop_dir = i;
 		else if (!stricmp(cfg->dir[i]->sname, "USER"))        /* User to User xfer dir */
@@ -313,28 +339,8 @@ bool read_file_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 		else if (!stricmp(cfg->dir[i]->sname, "UPLOADS"))  /* Upload directory */
 			cfg->upload_dir = i;
 		else if (!stricmp(cfg->dir[i]->sname, "OFFLINE")) /* Offline files dir */
-			cfg->lib[cfg->dir[i]->lib]->offline_dir = i;
+			cfg->lib[libnum]->offline_dir = i;
 
-		SAFECOPY(cfg->dir[i]->vdir_name, iniGetString(section, NULL, "vdir", "", value));
-		init_vdir(cfg, cfg->dir[i]);
-		SAFECOPY(cfg->dir[i]->vshortcut, iniGetString(section, NULL, "vshortcut", "", value));
-
-		SAFECOPY(cfg->dir[i]->arstr, iniGetString(section, NULL, "ars", "", value));
-		SAFECOPY(cfg->dir[i]->ul_arstr, iniGetString(section, NULL, "upload_ars", "", value));
-		SAFECOPY(cfg->dir[i]->dl_arstr, iniGetString(section, NULL, "download_ars", "", value));
-		SAFECOPY(cfg->dir[i]->op_arstr, iniGetString(section, NULL, "operator_ars", "", value));
-		SAFECOPY(cfg->dir[i]->ex_arstr, iniGetString(section, NULL, "exempt_ars", "", value));
-
-		arstr(NULL, cfg->dir[i]->arstr, cfg, cfg->dir[i]->ar);
-		arstr(NULL, cfg->dir[i]->ul_arstr, cfg, cfg->dir[i]->ul_ar);
-		arstr(NULL, cfg->dir[i]->dl_arstr, cfg, cfg->dir[i]->dl_ar);
-		arstr(NULL, cfg->dir[i]->op_arstr, cfg, cfg->dir[i]->op_ar);
-		arstr(NULL, cfg->dir[i]->ex_arstr, cfg, cfg->dir[i]->ex_ar);
-
-		SAFECOPY(cfg->dir[i]->path, iniGetString(section, NULL, "path", "", value));
-		SAFECOPY(cfg->dir[i]->area_tag, iniGetString(section, NULL, "area_tag", "", value));
-
-		read_dir_defaults_cfg(cfg, section, cfg->dir[i]);
 		++cfg->total_dirs;
 	}
 	iniFreeStringList(dir_list);
