@@ -33,6 +33,7 @@ bool    allocerr(char* error, size_t maxerrlen, const char* fname, const char *i
 char*   readline(long *offset, char *str, int maxlen, FILE *stream);
 
 void read_sub_ini_section(scfg_t* cfg, str_list_t ini, const char* section, sub_t* sub, const char* code);
+void read_dir_ini_section(scfg_t* cfg, str_list_t ini, const char* section, dir_t* dir, const char* code);
 
 DLLEXPORT bool  read_node_cfg(scfg_t* cfg, char* error, size_t);
 DLLEXPORT bool  read_main_cfg(scfg_t* cfg, char* error, size_t);

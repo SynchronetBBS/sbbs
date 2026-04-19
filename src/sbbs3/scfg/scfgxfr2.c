@@ -403,6 +403,7 @@ void xfer_cfg()
 	enum dirlist_type {
 		DIRLIST_CDROM,
 		DIRLIST_FIDO,
+		DIRLIST_INI,
 		DIRLIST_RAW
 	};
 
@@ -783,11 +784,15 @@ void xfer_cfg()
 			"A file of this format is sometimes named `DIRS.WIN` or `00_INDEX.TXT`.\n"
 	#define FILEGATE_ZXX_HELP_TEXT  "`FILEGATE.ZXX` is a plain text file in the old RAID/FILEBONE.NA format\n" \
 			"which describes a list of file areas connected across a File\n" \
-			"Distribution Network (e.g. Fidonet).\n"
+			"Distribution Network (e.g. FidoNet).\n"
+	#define DIRS_INI_HELP_TEXT  "`*dirs.ini` is suitable for sharing Synchronet file area configurations\n" \
+			"between Synchronet BBSes.  The `*` in the filename is typically replaced\n" \
+			"with the library's code prefix (if defined) or short name.\n"
 					k = 0;
 					ported = 0;
-					strcpy(opt[k++], "CD-ROM    DIRS.TXT");
-					strcpy(opt[k++], "FidoNet   FILEGATE.ZXX");
+					strcpy(opt[k++], "CD-ROM      DIRS.TXT");
+					strcpy(opt[k++], "FidoNet     FILEGATE.ZXX");
+					strcpy(opt[k++], "Synchronet  *dirs.ini");
 					opt[k][0] = 0;
 					uifc.helpbuf =
 						"`Export Area File Format:`\n"
@@ -798,6 +803,8 @@ void xfer_cfg()
 						DIRS_CDR_HELP_TEXT
 						"\n"
 						FILEGATE_ZXX_HELP_TEXT
+						"\n"
+						DIRS_INI_HELP_TEXT
 					;
 					static int export_cur;
 					k = uifc.list(WIN_MID | WIN_SAV, 0, 0, 0, &export_cur, 0
@@ -811,6 +818,13 @@ void xfer_cfg()
 					}
 					else if (k == DIRLIST_FIDO)
 						snprintf(str, sizeof str, "FILEGATE.ZXX");
+					else if (k == DIRLIST_INI) {
+						if (cfg.lib[libnum]->code_prefix[0] == '\0') {
+							snprintf(str, sizeof str, "%s_dirs.ini", cfg.lib[libnum]->sname);
+							replace_chars(str, ' ', '_');
+						} else
+							snprintf(str, sizeof str, "%sdirs.ini", cfg.lib[libnum]->code_prefix);
+					}
 					uifc.helpbuf =
 						"`List File:`\n"
 						"\n"
@@ -855,6 +869,11 @@ void xfer_cfg()
 							fprintf(stream, "Area %-*s  0     !      %s\n"
 							        , FIDO_AREATAG_LEN
 							        , dir_area_tag(&cfg, cfg.dir[j], str, sizeof(str)), cfg.dir[j]->lname);
+						else if (k == DIRLIST_INI) {
+							str_list_t section = dir_ini_section(&cfg, cfg.dir[j], cfg.dir[j]->code_suffix);
+							strListWriteFile(stream, section, "\n");
+							free(section);
+						}
 					}
 					fclose(stream);
 					uifc.pop(NULL);
@@ -882,10 +901,13 @@ void xfer_cfg()
 						DIRS_CDR_HELP_TEXT
 						"\n"
 						FILEGATE_ZXX_HELP_TEXT
+						"\n"
+						DIRS_INI_HELP_TEXT
 					;
-					strcpy(opt[k++], "CD-ROM    DIRS.TXT, DIRS.WIN, 00_INDEX.TXT");
-					strcpy(opt[k++], "FidoNet   FILEGATE.ZXX");
-					strcpy(opt[k++], "Raw       DIRS.RAW");
+					strcpy(opt[k++], "CD-ROM      DIRS.TXT, DIRS.WIN, 00_INDEX.TXT");
+					strcpy(opt[k++], "FidoNet     FILEGATE.ZXX");
+					strcpy(opt[k++], "Synchronet  *dirs.ini");
+					strcpy(opt[k++], "Raw         DIRS.RAW");
 					strcpy(opt[k++], "Directory Listing...");
 					opt[k][0] = 0;
 					static int import_cur;
@@ -933,7 +955,15 @@ void xfer_cfg()
 					else if (k == DIRLIST_FIDO) {
 						sprintf(str, "FILEGATE.ZXX");
 						chk_dir_exist = false;
-					} else {
+					}
+					else if (k == DIRLIST_INI) {
+						if (cfg.lib[libnum]->code_prefix[0] == '\0') {
+							snprintf(str, sizeof str, "%s_dirs.ini", cfg.lib[libnum]->sname);
+							replace_chars(str, ' ', '_');
+						} else
+							snprintf(str, sizeof str, "%sdirs.ini", cfg.lib[libnum]->code_prefix);
+					}
+					else {
 						snprintf(str, sizeof str, "%sdirs.raw", parent);
 					}
 					if (k > DIRLIST_RAW) {
@@ -976,72 +1006,101 @@ void xfer_cfg()
 					bool prompt_on_dupe = true;
 					int dir_count = dirs_in_lib(libnum);
 
-					while (!feof(stream) && dir_count + added < MAX_OPTS) {
-						if (!fgets(str, sizeof(str), stream))
+					str_list_t ini = NULL;
+					str_list_t list = NULL;
+					if (k == DIRLIST_INI) {
+						ini = iniReadFile(stream);
+						if (ini == NULL) {
+							fclose(stream);
+							uifc.msgf("Error %d reading %s", errno, str);
 							break;
-						truncsp(str);
-						p = str;
-						SKIP_WHITESPACE(p);
-						if (*p == '\0')
-							continue;
-
-						tmpdir = cfg.lib[libnum]->dir_defaults;
-
-						if (k >= DIRLIST_RAW) { /* raw */
-							int len = strlen(p);
-							if (len > LEN_DIR)
-								continue;
-							SAFECOPY(tmp_code, p);
-							SAFECOPY(tmpdir.path, p);
-							/* skip first sub-dir(s) */
-							char* tp = find_last_fit(p, LEN_SLNAME);
-							if (*tp == '\0')
-								SAFECOPY(tmpdir.lname, p);
-							else
-								SAFECOPY(tmpdir.lname, tp);
-							tp = find_last_fit(p, LEN_SSNAME);
-							if (*tp == '\0')
-								SAFECOPY(tmpdir.sname, p);
-							else
-								SAFECOPY(tmpdir.sname, tp);
 						}
-						else if (k == DIRLIST_FIDO) {
-							if (strnicmp(p, "AREA ", 5))
-								continue;
-							p += 5;
-							while (*p && *p <= ' ') p++;
-							SAFECOPY(tmp_code, p);
-							truncstr(tmp_code, " \t");
-							while (*p > ' ') p++;       /* Skip areaname */
-							while (*p && *p <= ' ') p++; /* Skip space */
-							while (*p > ' ') p++;       /* Skip level */
-							while (*p && *p <= ' ') p++; /* Skip space */
-							while (*p > ' ') p++;       /* Skip flags */
-							while (*p && *p <= ' ') p++; /* Skip space */
-							SAFECOPY(tmpdir.sname, tmp_code);
-							SAFECOPY(tmpdir.area_tag, tmp_code);
-							SAFECOPY(tmpdir.lname, p);
+						list = iniGetSectionList(ini, /* prefix: */ NULL);
+						if (list == NULL) {
+							fclose(stream);
+							strListFree(&ini);
+							uifc.msgf("Error reading .ini sections from %s", str);
+							break;
 						}
-						else if (k == DIRLIST_CDROM) { // CD-ROM DIRS.TXT (DIRS.WIN) format
-							while (*p == '/' || *p == '\\') p++;
-							char* tp = p + 1;
-							FIND_WHITESPACE(tp);
-							if (*tp != '\0') {
-								*tp = '\0';
-								tp++;
-								FIND_ALPHANUMERIC(tp);
+					}
+					i = 0;
+					while (dir_count + added < MAX_OPTS) {
+						if (k == DIRLIST_INI) {
+							if (list[i] == NULL)
+								break;
+							SAFECOPY(tmp_code, list[i]);
+							read_dir_ini_section(&cfg, ini, list[i], &tmpdir, tmp_code);
+							i++;
+						}
+						else {
+							if (feof(stream))
+								break;
+							if (!fgets(str, sizeof(str), stream))
+								break;
+							truncsp(str);
+							p = str;
+							SKIP_WHITESPACE(p);
+							if (*p == '\0')
+								continue;
+
+							tmpdir = cfg.lib[libnum]->dir_defaults;
+
+							if (k >= DIRLIST_RAW) { /* raw */
+								int len = strlen(p);
+								if (len > LEN_DIR)
+									continue;
+								SAFECOPY(tmp_code, p);
+								SAFECOPY(tmpdir.path, p);
+								/* skip first sub-dir(s) */
+								char* tp = find_last_fit(p, LEN_SLNAME);
+								if (*tp == '\0')
+									SAFECOPY(tmpdir.lname, p);
+								else
+									SAFECOPY(tmpdir.lname, tp);
+								tp = find_last_fit(p, LEN_SSNAME);
+								if (*tp == '\0')
+									SAFECOPY(tmpdir.sname, p);
+								else
+									SAFECOPY(tmpdir.sname, tp);
 							}
-							replace_chars(p, '\\', '/');
-							if (*lastchar(p) == '/')
-								*lastchar(p) = '\0';
-							SAFECOPY(tmp_code, getfname(p));
-							SAFECOPY(tmpdir.path, p);
-							SAFECOPY(tmpdir.lname, *tp == '\0' ? p : tp);
-							tp = find_last_fit(p, LEN_SSNAME);
-							if (*tp == '\0')
-								SAFECOPY(tmpdir.sname, p);
-							else
-								SAFECOPY(tmpdir.sname, tp);
+							else if (k == DIRLIST_FIDO) {
+								if (strnicmp(p, "AREA ", 5))
+									continue;
+								p += 5;
+								while (*p && *p <= ' ') p++;
+								SAFECOPY(tmp_code, p);
+								truncstr(tmp_code, " \t");
+								while (*p > ' ') p++;       /* Skip areaname */
+								while (*p && *p <= ' ') p++; /* Skip space */
+								while (*p > ' ') p++;       /* Skip level */
+								while (*p && *p <= ' ') p++; /* Skip space */
+								while (*p > ' ') p++;       /* Skip flags */
+								while (*p && *p <= ' ') p++; /* Skip space */
+								SAFECOPY(tmpdir.sname, tmp_code);
+								SAFECOPY(tmpdir.area_tag, tmp_code);
+								SAFECOPY(tmpdir.lname, p);
+							}
+							else if (k == DIRLIST_CDROM) { // CD-ROM DIRS.TXT (DIRS.WIN) format
+								while (*p == '/' || *p == '\\') p++;
+								char* tp = p + 1;
+								FIND_WHITESPACE(tp);
+								if (*tp != '\0') {
+									*tp = '\0';
+									tp++;
+									FIND_ALPHANUMERIC(tp);
+								}
+								replace_chars(p, '\\', '/');
+								if (*lastchar(p) == '/')
+									*lastchar(p) = '\0';
+								SAFECOPY(tmp_code, getfname(p));
+								SAFECOPY(tmpdir.path, p);
+								SAFECOPY(tmpdir.lname, *tp == '\0' ? p : tp);
+								tp = find_last_fit(p, LEN_SSNAME);
+								if (*tp == '\0')
+									SAFECOPY(tmpdir.sname, p);
+								else
+									SAFECOPY(tmpdir.sname, tp);
+							}
 						}
 
 						if (tmpdir.lname[0] == 0)
@@ -1146,6 +1205,8 @@ void xfer_cfg()
 						uifc.changes = TRUE;
 					}
 					fclose(stream);
+					strListFree(&ini);
+					strListFree(&list);
 					if (ported && cfg.lib[libnum]->sort)
 						sort_dirs(libnum);
 					uifc.pop(NULL);

@@ -683,6 +683,25 @@ static void write_dir_defaults_cfg(str_list_t* ini, const char* section, dir_t* 
 	iniSetUInteger(ini, section, "download_credit_pct", dir->dn_pct, &ini_style);
 }
 
+str_list_t dir_ini_section(scfg_t* cfg, dir_t* dir, const char* name)
+{
+	str_list_t section = strListInit();
+	iniSetString(&section, name, "description", dir->lname, &ini_style);
+	iniSetString(&section, name, "name", dir->sname, &ini_style);
+	iniSetString(&section, name, "ars", dir->arstr, &ini_style);
+	iniSetString(&section, name, "upload_ars", dir->ul_arstr, &ini_style);
+	iniSetString(&section, name, "download_ars", dir->dl_arstr, &ini_style);
+	iniSetString(&section, name, "operator_ars", dir->op_arstr, &ini_style);
+	iniSetString(&section, name, "exempt_ars", dir->ex_arstr, &ini_style);
+	iniSetString(&section, name, "area_tag", dir->area_tag, &ini_style);
+	backslash(dir->path);
+	iniSetString(&section, name, "path", dir->path, &ini_style);
+	iniSetString(&section, name, "vdir", dir->vdir_name, &ini_style);
+	iniSetString(&section, name, "vshortcut", dir->vshortcut, &ini_style);
+	write_dir_defaults_cfg(&section, name, dir);
+	return section;
+}
+
 /****************************************************************************/
 /****************************************************************************/
 bool write_file_cfg(scfg_t* cfg)
@@ -838,28 +857,17 @@ bool write_file_cfg(scfg_t* cfg)
 			if (cfg->dir[i]->lib != j)
 				continue;
 			cfg->dir[i]->dirnum = dirnum++;
-			SAFEPRINTF2(name, "dir:%s:%s"
-			            , cfg->lib[j]->sname, cfg->dir[i]->code_suffix);
-			str_list_t section = strListInit();
-			iniSetString(&section, name, "description", cfg->dir[i]->lname, &ini_style);
-			iniSetString(&section, name, "name", cfg->dir[i]->sname, &ini_style);
-
 			if (cfg->dir[i]->data_dir[0]) {
 				backslash(cfg->dir[i]->data_dir);
 				md(cfg->dir[i]->data_dir);
 			}
-
-			iniSetString(&section, name, "ars", cfg->dir[i]->arstr, &ini_style);
-			iniSetString(&section, name, "upload_ars", cfg->dir[i]->ul_arstr, &ini_style);
-			iniSetString(&section, name, "download_ars", cfg->dir[i]->dl_arstr, &ini_style);
-			iniSetString(&section, name, "operator_ars", cfg->dir[i]->op_arstr, &ini_style);
-			iniSetString(&section, name, "exempt_ars", cfg->dir[i]->ex_arstr, &ini_style);
-			iniSetString(&section, name, "area_tag", cfg->dir[i]->area_tag, &ini_style);
-			backslash(cfg->dir[i]->path);
-			iniSetString(&section, name, "path", cfg->dir[i]->path, &ini_style);
-			iniSetString(&section, name, "vdir", cfg->dir[i]->vdir_name, &ini_style);
-			iniSetString(&section, name, "vshortcut", cfg->dir[i]->vshortcut, &ini_style);
-
+			SAFEPRINTF2(name, "dir:%s:%s"
+			            , cfg->lib[j]->sname, cfg->dir[i]->code_suffix);
+			str_list_t section = dir_ini_section(cfg, cfg->dir[i], name);
+			if (section == NULL) {
+				result = false;
+				continue;
+			}
 			if (cfg->dir[i]->misc & DIR_FCHK) {
 				SAFECOPY(path, cfg->dir[i]->path);
 				if (!path[0]) {     /* no file storage path specified */
@@ -880,8 +888,6 @@ bool write_file_cfg(scfg_t* cfg)
 				}
 				(void)mkpath(path);
 			}
-
-			write_dir_defaults_cfg(&section, name, cfg->dir[i]);
 			strListMerge(&ini, section);
 			free(section);
 
