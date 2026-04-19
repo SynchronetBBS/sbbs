@@ -148,6 +148,13 @@
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
+    <ClCompile Include="cterm_ecma48.c" />
+    <ClCompile Include="cterm_dec.c" />
+    <ClCompile Include="cterm_cterm.c" />
+    <ClCompile Include="cterm_vt52.c" />
+    <ClCompile Include="cterm_atascii.c" />
+    <ClCompile Include="cterm_petscii.c" />
+    <ClCompile Include="cterm_prestel.c" />
     <ClCompile Include="mouse.c">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(PreprocessorDefinitions)</PreprocessorDefinitions>
