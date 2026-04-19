@@ -21,10 +21,28 @@
 #define _CTERM_H_
 
 #include <stdio.h>	/* FILE* */
+#include <stdint.h>
 #include <link_list.h>
 #include <semwrap.h>
 #include <stdbool.h>
 #include "ciolib.h"
+
+/* Maximum CSI parameter count that the unified dispatch parser will
+ * record.  Beyond this, the sequence is flagged broken and discarded. */
+#define MAX_SEQ_PARAMS 64
+
+/* Phases of the ECMA-35/48 sequence parser state machine.  Full
+ * definition lives in cterm_internal.h; declared fully here because
+ * struct cterminal embeds it as a field (needs sizeof). */
+enum seq_phase {
+	SEQ_PHASE_IDLE,		/* Not in a sequence */
+	SEQ_PHASE_C1,		/* After ESC: expecting Fe/Fs/Fp/intermediate */
+	SEQ_PHASE_PARAMS,	/* CSI: accumulating parameter bytes 0x30-0x3F */
+	SEQ_PHASE_INTERM,	/* CSI: accumulating intermediate bytes 0x20-0x2F */
+	SEQ_PHASE_COMPLETE	/* Final byte received -- ready for dispatch */
+};
+
+struct seq_dispatch;	/* defined in cterm_internal.h */
 
 typedef enum {
 	 CTERM_MUSIC_NORMAL
@@ -274,6 +292,70 @@ struct cterminal {
 	/* ECMA-48 transmission modes */
 	int					fetm;		// Format Effector Transfer Mode: 0=INSERT (default), 1=EXCLUDE
 	int					ttm;		// Transfer Termination Mode: 0=CURSOR (default), 1=ALL
+
+	/* -------- Unified dispatch pipeline (see cterm_internal.h) --------
+	 * These fields are populated by the seq_feed() parser or by the
+	 * bridge from parse_sequence() during the do_ansi() migration.
+	 * When migration is complete, they fully replace escbuf / sequence
+	 * / string / music / font_size / doorway_char state tracking. */
+	uint32_t			seq_key;		/* packed (introducer|priv|interm|final) */
+	enum seq_phase		seq_phase;
+	char				seq_params[256];	/* raw parameter bytes (incl. private, ';', ':') */
+	int					seq_param_len;		/* bytes written to seq_params */
+	uint64_t			seq_param_int[MAX_SEQ_PARAMS];
+	int					seq_param_count;	/* parsed ints in seq_param_int */
+	/* Per-parameter raw strings.  Populated by cterm_build_param_strs
+	 * at SEQ_COMPLETE; pointers alias into seq_params with ';' bytes
+	 * overwritten by NUL so each pointer dereferences as an independent
+	 * null-terminated string.  Used by SGR's extended-colour parsing
+	 * (CSI 38/48 with colon sub-params and DECRQSS readback). */
+	const char			*seq_param_strs[MAX_SEQ_PARAMS];
+	uint64_t			seq_cur_value;		/* accumulator for current param */
+	bool				seq_cur_has_digits;
+	bool				seq_cur_has_sub;	/* ':' seen in current param */
+	bool				seq_overflow;		/* buffer limit hit -> discard */
+
+	/* Cascade consumption tracking: handlers in a cascade chain mark the
+	 * parameters they claim here.  Downstream handlers in the chain skip
+	 * marked slots; the default-injection path (e.g. SGR 0 on empty input)
+	 * fires only when seq_param_count == 0 AND seq_consumed_any is false,
+	 * so an upstream consumer cannot accidentally trigger the default by
+	 * emptying the list. */
+	bool				seq_consumed[MAX_SEQ_PARAMS];
+	bool				seq_consumed_any;
+
+	/* Print-batch buffer for cterm_write: printable bytes are coalesced
+	 * here, then flushed via cterm_uctputs when the buffer nears full or
+	 * a non-print event (sequence start, doorway cell, music, etc.) needs
+	 * the current cursor position to be accurate.  Lives on the struct so
+	 * accumulator/dispatcher functions share the canonical
+	 *   bool fn(struct cterminal *, unsigned char, int *speed)
+	 * signature instead of passing buf/pos in every call. */
+	unsigned char		print_buf[2048];
+	unsigned char		*print_pos;
+
+	/* Trailing raw-byte accumulator (BEEB VDU 23/28, VT52 ESC Y/b/c) */
+	void				(*seq_trailing_handler)(struct cterminal *, int *);
+	uint8_t				seq_trailing_remain;
+
+	/* Per-emulation dispatch installed at init / mode change.
+	 * The byte loop consults cterm->accumulator first; if NULL, the
+	 * byte falls through to cterm->dispatch.  Mode-entry sites
+	 * (ESC arrival, DCS/OSC start, font load, etc.) install the
+	 * matching accumulator; mode-exit sites (sequence complete, ST,
+	 * terminator byte) clear it.  saved_accumulator gives a single
+	 * save/restore slot so an ESC mid-string can temporarily install
+	 * the sequence accumulator and fall back to the string accumulator
+	 * afterwards. */
+	void				(*dispatch)(struct cterminal *, unsigned char, int *);
+	bool				(*accumulator)(struct cterminal *, unsigned char, int *);
+	bool				(*saved_accumulator)(struct cterminal *, unsigned char, int *);
+	const struct seq_dispatch *dispatch_table;
+	size_t				dispatch_table_len;
+
+	/* PETSCII / ATASCII byte-table dispatch */
+	const uint8_t		*ctrl_bitmap;		/* 256-bit table, 32 bytes */
+	void				(*const *byte_handlers)(struct cterminal *);
 };
 
 #ifdef __cplusplus

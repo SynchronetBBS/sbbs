@@ -54,6 +54,13 @@ set(SOURCE
 	ciolib.c
 	ciolib.rc
 	cterm.c
+	cterm_ecma48.c
+	cterm_dec.c
+	cterm_cterm.c
+	cterm_vt52.c
+	cterm_atascii.c
+	cterm_petscii.c
+	cterm_prestel.c
 	mouse.c
 	syncicon64.c
 	utf8_codepages.c
