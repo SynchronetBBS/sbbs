@@ -577,6 +577,8 @@ var dk = {
 					}
 					ret=ret.replace(/\x00.*$/,'');
 				}
+				if (ret === this.key.CONNECTION_CLOSED)
+					this.Private_connection_close();
 			}
 			return ret;
 		},
