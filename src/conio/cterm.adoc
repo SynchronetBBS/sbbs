@@ -2191,6 +2191,41 @@ following table:
 
 The DCS font string should be used instead as of CTerm 1.213
 
+=== `CSI Ps $ }` Select Active Status Display (`DECSASD`)
+Defaults: `Ps` = 0 +
+Selects which display subsequent output is directed to.  `Ps` = 0
+sends output to the main display (default); `Ps` = 1 sends it to
+the one-row status line.  `Ps` = 1 is silently ignored unless the
+status display type is currently host-writable (DECSSDT `Ps` = 2).
+
+When the status line is the active display, writes land in a
+single-row sub-terminal with its own cursor, SGR attributes, and
+saved-cursor slot.  Line-feed, wrap-to-next-line, and scroll do
+not leave the status row.  Selecting `Ps` = 0 restores the main
+display's cursor and resumes normal output there.
+
+Switching back to `Ps` = 0 is also forced implicitly whenever
+DECSSDT changes to a different type while the status display was
+active.
+
+SOURCE: <<VT320>>
+
+=== `CSI Ps $ ~` Select Status Display Type (`DECSSDT`)
+Defaults: `Ps` = 1 +
+Selects the status display type.  `Ps` = 0 hides the status row and
+extends the main display by one line.  `Ps` = 1 shows SyncTERM's
+native indicator (clock, connection state, help hints) — this is
+the default and matches the pre-existing user preference (overridable
+from the BBS list or the `-n` CLI flag).  `Ps` = 2 gives the row to
+the host: SyncTERM's indicator is cleared and the row becomes
+writable via DECSASD.
+
+The main display is resized in place across toggles; cursor
+position and existing screen content are preserved.  Values of
+`Ps` outside 0..2 are silently ignored.
+
+SOURCE: <<VT320>>
+
 === `CSI Pn ' }` Insert Column (`DECIC`)
 Defaults: `Pn` = 1 +
 Inserts `Pn` blank columns into the scrolling region, starting at
@@ -2368,6 +2403,12 @@ current speed parameters as `;Ps2*r` where `Ps2` is the speed index
 |`*x`
 |Request attribute change extent (`DECSACE`).  The response contains
 the current DECSACE value (0 or 1).
+|`$~`
+|Request status display type (`DECSSDT`).  The response contains the
+current type (0 = none, 1 = indicator, 2 = host-writable).
+|`$}`
+|Request active status display (`DECSASD`).  The response contains
+the current selection (0 = main, 1 = status).
 |===
 
 SOURCE: <<VT420>>

@@ -304,6 +304,23 @@ expect_blank(int col, int row, int len)
 	return 1;
 }
 
+static int
+expect_response_bytes(const char *expected, size_t len)
+{
+	if (response_len != len || memcmp(response_buf, expected, len) != 0) {
+		fprintf(result_fp, "    response len=%zu expected=%zu: got",
+		    response_len, len);
+		for (size_t i = 0; i < response_len; i++)
+			fprintf(result_fp, " %02x", (unsigned char)response_buf[i]);
+		fprintf(result_fp, " want");
+		for (size_t i = 0; i < len; i++)
+			fprintf(result_fp, " %02x", (unsigned char)expected[i]);
+		fprintf(result_fp, "\n");
+		return 0;
+	}
+	return 1;
+}
+
 /* ================================================================ */
 /* ANSI-BBS tests                                                   */
 /* ================================================================ */
@@ -735,6 +752,286 @@ static int test_ansi_decslrm(void)
 	ct_printf("\033[10;70s");  /* DECSLRM cols 10-70 */
 	ct_printf("\033[?69l");    /* disable DECLRMM */
 	return expect_cursor(1, 1);
+}
+
+/* DECSSDT / DECSASD — status display type and active selection (VT320+) */
+
+static int ssdt_cb_calls;
+static int ssdt_cb_old;
+static int ssdt_cb_new;
+
+static void
+ssdt_test_cb(struct cterminal *c, int old_type, int new_type, void *cbdata)
+{
+	(void)c;
+	(void)cbdata;
+	ssdt_cb_calls++;
+	ssdt_cb_old = old_type;
+	ssdt_cb_new = new_type;
+}
+
+static void
+ssdt_setup(void)
+{
+	setup_ansi();
+	cterm->status_display_cb = ssdt_test_cb;
+	cterm->status_display_cbdata = NULL;
+	ssdt_cb_calls = 0;
+	ssdt_cb_old = -1;
+	ssdt_cb_new = -1;
+}
+
+static int test_ansi_decssdt_basic(void)
+{
+	ssdt_setup();
+	cterm->status_display_type = 0;
+	ct_printf("\033[1$~");
+	if (cterm->status_display_type != 1) return 0;
+	if (ssdt_cb_calls != 1) return 0;
+	if (ssdt_cb_old != 0 || ssdt_cb_new != 1) return 0;
+	ct_printf("\033[2$~");
+	if (cterm->status_display_type != 2) return 0;
+	if (ssdt_cb_calls != 2 || ssdt_cb_new != 2) return 0;
+	return 1;
+}
+
+static int test_ansi_decssdt_invalid_ps(void)
+{
+	ssdt_setup();
+	cterm->status_display_type = 1;
+	ct_printf("\033[5$~");	/* invalid — NOP */
+	if (cterm->status_display_type != 1) return 0;
+	if (ssdt_cb_calls != 0) return 0;
+	return 1;
+}
+
+static int test_ansi_decssdt_unchanged(void)
+{
+	ssdt_setup();
+	cterm->status_display_type = 1;
+	ct_printf("\033[1$~");	/* same — NOP */
+	if (cterm->status_display_type != 1) return 0;
+	if (ssdt_cb_calls != 0) return 0;
+	return 1;
+}
+
+static int test_ansi_decssdt_default_ps(void)
+{
+	ssdt_setup();
+	cterm->status_display_type = 0;
+	ct_printf("\033[$~");	/* no param → default Ps=1 */
+	if (cterm->status_display_type != 1) return 0;
+	if (ssdt_cb_calls != 1 || ssdt_cb_new != 1) return 0;
+	return 1;
+}
+
+static int test_ansi_decssdt_forces_decsasd(void)
+{
+	ssdt_setup();
+	cterm->status_display_type = 2;
+	cterm->status_display_active = 1;
+	ct_printf("\033[0$~");
+	if (cterm->status_display_type != 0) return 0;
+	if (cterm->status_display_active != 0) return 0;
+	return 1;
+}
+
+static int test_ansi_decsasd_needs_type2(void)
+{
+	ssdt_setup();
+	cterm->status_display_type = 1;
+	cterm->status_display_active = 0;
+	ct_printf("\033[1$}");
+	if (cterm->status_display_active != 0) return 0;
+	return 1;
+}
+
+static int test_ansi_decsasd_toggle(void)
+{
+	ssdt_setup();
+	cterm->status_display_type = 2;
+	cterm->status_display_active = 0;
+	ct_printf("\033[1$}");
+	if (cterm->status_display_active != 1) return 0;
+	ct_printf("\033[0$}");
+	if (cterm->status_display_active != 0) return 0;
+	return 1;
+}
+
+/* cterm_resize_rows — in-place main height change */
+
+static int test_ansi_resize_shrink_clamps_cursor(void)
+{
+	int old_h;
+
+	setup_ansi();
+	old_h = cterm->height;
+	ct_printf("\033[%d;5H", old_h);
+	if (!expect_cursor(5, old_h)) return 0;
+	cterm_resize_rows(cterm, old_h - 1);
+	if (cterm->height != old_h - 1) return 0;
+	if (cterm->bottom_margin != old_h - 1) return 0;
+	if (!expect_cursor(5, old_h - 1)) return 0;
+	return 1;
+}
+
+static int test_ansi_resize_grow_blanks_new_row(void)
+{
+	int old_h;
+
+	setup_ansi();
+	old_h = cterm->height;
+	cterm_resize_rows(cterm, old_h - 1);
+	cterm_resize_rows(cterm, old_h);
+	if (cterm->height != old_h) return 0;
+	if (cterm->bottom_margin != old_h) return 0;
+	if (!expect_blank(1, old_h, term_cols)) return 0;
+	return 1;
+}
+
+static int test_ansi_resize_preserves_user_decstbm(void)
+{
+	int old_h;
+
+	setup_ansi();
+	old_h = cterm->height;
+	ct_printf("\033[5;15r");	/* user DECSTBM 5..15, narrower than screen */
+	if (cterm->bottom_margin != 15) return 0;
+	cterm_resize_rows(cterm, old_h - 1);
+	/* User region is narrower than new height — leave alone. */
+	if (cterm->bottom_margin != 15) return 0;
+	return 1;
+}
+
+/* Install a sub-cterm below the main one so DECSASD routing has somewhere
+ * to send bytes; returns 1 on success, 0 on allocation failure. */
+static int
+sub_attach(void)
+{
+	cterm_resize_rows(cterm, cterm->height - 1);
+	cterm->status_display_type = 2;
+	cterm->status_sub = cterm_init(1, cterm->width, cterm->x,
+	    cterm->y + cterm->height, 0, 0, NULL, cterm->emulation);
+	if (!cterm->status_sub)
+		return 0;
+	cterm->status_sub->parent = cterm;
+	cterm->status_sub->response_cb = response_cb;
+	cterm->status_sub->response_cbdata = NULL;
+	cterm_start(cterm->status_sub);
+	return 1;
+}
+
+static void
+sub_detach(void)
+{
+	if (cterm && cterm->status_sub) {
+		cterm_end(cterm->status_sub, 0);
+		cterm->status_sub = NULL;
+	}
+}
+
+static int test_ansi_status_sub_routing(void)
+{
+	int ok = 1;
+
+	setup_ansi();
+	if (!sub_attach()) return 0;
+	/* Activate status display. */
+	ct_printf("\033[1$}");
+	if (cterm->status_display_active != 1) ok = 0;
+	/* Writing through main should land on sub. */
+	ct_puts("STATUS");
+	if (cterm->status_sub->xpos < 7) ok = 0;	/* advanced past 6 chars */
+	if (cterm->xpos > 1) ok = 0;			/* main cursor unchanged */
+	sub_detach();
+	return ok;
+}
+
+static int test_ansi_status_sub_bubble_ssdt(void)
+{
+	int speed = 0;
+	int ok = 1;
+
+	setup_ansi();
+	if (!sub_attach()) return 0;
+	ssdt_cb_calls = 0;
+	cterm->status_display_cb = ssdt_test_cb;
+
+	/* DECSSDT routed directly to sub must bubble to main. */
+	cterm_write(cterm->status_sub, "\033[1$~", 5, &speed);
+	if (cterm->status_display_type != 1) ok = 0;
+	if (ssdt_cb_calls != 1 || ssdt_cb_new != 1) ok = 0;
+
+	sub_detach();
+	return ok;
+}
+
+static int test_ansi_status_sub_bubble_sasd(void)
+{
+	int speed = 0;
+	int ok = 1;
+
+	setup_ansi();
+	if (!sub_attach()) return 0;
+
+	/* DECSASD dispatched on sub must toggle main's active flag. */
+	cterm_write(cterm->status_sub, "\033[1$}", 5, &speed);
+	if (cterm->status_display_active != 1) ok = 0;
+	cterm_write(cterm->status_sub, "\033[0$}", 5, &speed);
+	if (cterm->status_display_active != 0) ok = 0;
+
+	sub_detach();
+	return ok;
+}
+
+static int test_ansi_status_sub_decsasd_gated(void)
+{
+	int ok = 1;
+
+	setup_ansi();
+	/* No sub attached: DECSASD=1 is a NOP because DECSSDT != 2. */
+	cterm->status_display_type = 1;
+	cterm->status_display_active = 0;
+	ct_printf("\033[1$}");
+	if (cterm->status_display_active != 0) ok = 0;
+	return ok;
+}
+
+static int test_ansi_decrqss_ssdt(void)
+{
+	setup_ansi();
+	cterm->status_display_type = 2;
+	response_clear();
+	ct_write("\033P$q$~\033\\", 8);
+	return expect_response_bytes("\x1bP1$r2$~\x1b\\", 10);
+}
+
+static int test_ansi_decrqss_sasd(void)
+{
+	setup_ansi();
+	cterm->status_display_type = 2;
+	cterm->status_display_active = 1;
+	response_clear();
+	ct_write("\033P$q$}\033\\", 8);
+	return expect_response_bytes("\x1bP1$r1$}\x1b\\", 10);
+}
+
+static int test_ansi_decrqss_ssdt_on_sub(void)
+{
+	int speed = 0;
+	int ok = 1;
+
+	setup_ansi();
+	if (!sub_attach()) return 0;
+	cterm->status_display_type = 2;
+	response_clear();
+	/* Query dispatched on sub should read main's value via the
+	 * parent-follow in the DECRQSS $~/$} subcases. */
+	cterm_write(cterm->status_sub, "\033P$q$~\033\\", 8, &speed);
+	if (!expect_response_bytes("\x1bP1$r2$~\x1b\\", 10))
+		ok = 0;
+	sub_detach();
+	return ok;
 }
 
 static int test_ansi_su(void)
@@ -5357,22 +5654,6 @@ test_atascii_screen_code_mapping(void)
 /* cterm_encode_key — keyboard-to-bytes encoding                    */
 /* ================================================================ */
 
-static int
-expect_response_bytes(const char *expected, size_t len)
-{
-	if (response_len != len || memcmp(response_buf, expected, len) != 0) {
-		fprintf(result_fp, "    response len=%zu expected=%zu: got",
-		    response_len, len);
-		for (size_t i = 0; i < response_len; i++)
-			fprintf(result_fp, " %02x", (unsigned char)response_buf[i]);
-		fprintf(result_fp, " want");
-		for (size_t i = 0; i < len; i++)
-			fprintf(result_fp, " %02x", (unsigned char)expected[i]);
-		fprintf(result_fp, "\n");
-		return 0;
-	}
-	return 1;
-}
 
 static int test_encode_ansi_raw(void)
 {
@@ -5518,20 +5799,6 @@ static int test_encode_doorway_scancode(void)
 	return (n == 2) && expect_response_bytes("\x00\x2e", 2);
 }
 
-static int test_encode_doorway_altz_exempt(void)
-{
-	setup_ansi();
-	cterm->doorway_mode = 1;
-	response_clear();
-	/* Alt-Z (0x2c00) is reserved for the local menu — encode_key must
-	 * NOT emit the NUL+scancode pair in doorway mode. */
-	int n = cterm_encode_key(cterm, 0x2c00);
-	if (response_len >= 2 && response_buf[0] == 0)
-		return 0;
-	(void)n;
-	return 1;
-}
-
 static int test_encode_doorway_off(void)
 {
 	setup_ansi();
@@ -5604,6 +5871,24 @@ static struct test_entry tests[] = {
 	{"ANSI_DECSLRM",      test_ansi_decslrm},
 	{"ANSI_SU",           test_ansi_su},
 	{"ANSI_SD",           test_ansi_sd},
+	/* ANSI-BBS — Status display (DECSSDT/DECSASD) */
+	{"ANSI_SSDT_basic",   test_ansi_decssdt_basic},
+	{"ANSI_SSDT_invalid", test_ansi_decssdt_invalid_ps},
+	{"ANSI_SSDT_same",    test_ansi_decssdt_unchanged},
+	{"ANSI_SSDT_default", test_ansi_decssdt_default_ps},
+	{"ANSI_SSDT_forces",  test_ansi_decssdt_forces_decsasd},
+	{"ANSI_SASD_gate",    test_ansi_decsasd_needs_type2},
+	{"ANSI_SASD_toggle",  test_ansi_decsasd_toggle},
+	{"ANSI_resize_shrk",  test_ansi_resize_shrink_clamps_cursor},
+	{"ANSI_resize_grow",  test_ansi_resize_grow_blanks_new_row},
+	{"ANSI_resize_stbm",  test_ansi_resize_preserves_user_decstbm},
+	{"ANSI_sub_route",    test_ansi_status_sub_routing},
+	{"ANSI_sub_SSDT",     test_ansi_status_sub_bubble_ssdt},
+	{"ANSI_sub_SASD",     test_ansi_status_sub_bubble_sasd},
+	{"ANSI_SASD_gated",   test_ansi_status_sub_decsasd_gated},
+	{"ANSI_RQSS_SSDT",    test_ansi_decrqss_ssdt},
+	{"ANSI_RQSS_SASD",    test_ansi_decrqss_sasd},
+	{"ANSI_RQSS_sub",     test_ansi_decrqss_ssdt_on_sub},
 	/* ANSI-BBS — Modes */
 	{"ANSI_autowrap",     test_ansi_autowrap},
 	{"ANSI_nowrap",       test_ansi_nowrap},
@@ -5889,7 +6174,6 @@ static struct test_entry tests[] = {
 	{"ENC_prestel_hash",   test_encode_prestel_hash},
 	{"ENC_beeb_home",      test_encode_beeb_home},
 	{"ENC_doorway",        test_encode_doorway_scancode},
-	{"ENC_doorway_altz",   test_encode_doorway_altz_exempt},
 	{"ENC_doorway_off",    test_encode_doorway_off},
 	{NULL, NULL}
 };

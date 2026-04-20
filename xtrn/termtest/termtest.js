@@ -2104,6 +2104,32 @@ var tests = [
 		console.write("\x1b[s\x1b[?69l");
 		return ret;
 	}},
+	/* --- DECSSDT / DECSASD --- VT320 status display --- */
+	{'name':'DECSSDT_hide', 'func':function() {
+		if (!interactive)
+			return null;
+		console.clear();
+		console.write("\x1b[0$~");		// hide status row
+		console.gotoxy(1, 1);
+		console.write("Main display has the last row now.");
+		var ret = console.yesno("Status row hidden, main grew by 1");
+		console.write("\x1b[1$~");		// restore indicator
+		return ret;
+	}},
+	{'name':'DECSSDT_host', 'func':function() {
+		if (!interactive)
+			return null;
+		console.clear();
+		console.write("\x1b[2$~");		// host-writable mode
+		console.write("\x1b[1$}");		// switch output to status
+		console.write("\x1b[44;37;1m Custom status line from the host \x1b[0m");
+		console.write("\x1b[0$}");		// back to main
+		console.gotoxy(1, 1);
+		console.write("Main display text; custom status below.");
+		var ret = console.yesno("Bottom row shows \"Custom status line\"");
+		console.write("\x1b[1$~");		// back to indicator
+		return ret;
+	}},
 	/* --- DECCARA / DECRARA / DECSACE --- */
 	{'name':'DECCARA', 'func':function() {
 		if (!has_cksum) return null;

@@ -621,6 +621,67 @@ setwindow(struct cterminal *cterm)
 	window(col, row, max_col, max_row);
 }
 
+/* Adjust cterm->height in place without a full reinit.  Used by the
+ * DECSSDT callback when toggling between a statusless display and one
+ * with a reserved bottom row.  Preserves existing content; on growth
+ * blanks the newly-exposed row(s) with the current attribute; on
+ * shrink clamps the cursor to the new last row.  bottom_margin follows
+ * the old implied bottom — a user-configured DECSTBM region narrower
+ * than the screen is left alone. */
+void
+cterm_resize_rows(struct cterminal *cterm, int new_rows)
+{
+	int old_rows = cterm->height;
+	int tx, ty;
+
+	if (new_rows < 1 || new_rows == old_rows)
+		return;
+
+	/* Capture cursor in terminal coords before changing geometry; ciolib
+	 * window() resets the window-relative cursor, so we always restore. */
+	TERM_XY(&tx, &ty);
+	if (ty > new_rows)
+		ty = new_rows;
+	if (tx > cterm->width)
+		tx = cterm->width;
+
+	if (cterm->bottom_margin == old_rows || cterm->bottom_margin > new_rows)
+		cterm->bottom_margin = new_rows;
+	if (cterm->top_margin > new_rows)
+		cterm->top_margin = 1;
+
+	cterm->height = new_rows;
+	setwindow(cterm);
+	cterm_gotoxy(cterm, tx, ty);
+
+	if (new_rows > old_rows) {
+		struct vmem_cell *buf = calloc(cterm->width, sizeof(*buf));
+		int i, r, sx, sy, ex;
+
+		if (buf) {
+			buf[0].ch = ' ';
+			buf[0].legacy_attr = cterm->attr;
+			buf[0].fg = cterm->fg_color;
+			buf[0].bg = cterm->bg_color;
+			buf[0].font = ciolib_attrfont(cterm->attr);
+			buf[0].hyperlink_id = 0;
+			for (i = 1; i < cterm->width; i++)
+				buf[i] = buf[0];
+			for (r = old_rows + 1; r <= new_rows; r++) {
+				sx = 1;
+				sy = r;
+				ex = cterm->width;
+				cterm_coord_conv_xy(cterm, CTERM_COORD_TERM,
+				    CTERM_COORD_SCREEN, &sx, &sy);
+				cterm_coord_conv_xy(cterm, CTERM_COORD_TERM,
+				    CTERM_COORD_SCREEN, &ex, NULL);
+				vmem_puttext(sx, sy, ex, sy, buf);
+			}
+			free(buf);
+		}
+	}
+}
+
 static void
 set_attr(struct cterminal *cterm, unsigned char colour, bool bg)
 {
@@ -1500,7 +1561,9 @@ const struct seq_dispatch cterm_ansi_dispatch[] = {
 	  (SEQ_CSI | SEQ_PRIV('=') | SEQ_FINAL('{')), 0 },			/* CSI = { */
 	{ cterm_handle_syncterm_music,
 	  (SEQ_CSI | SEQ_FINAL('|')), 0 },					/* CSI | */
+	{ cterm_handle_decsasd, SEQ_DECSASD, 0 },				/* CSI $ } */
 	{ cterm_handle_decic, SEQ_DECIC, 0 },					/* CSI ' } */
+	{ cterm_handle_decssdt, SEQ_DECSSDT, 0 },				/* CSI $ ~ */
 	{ cterm_handle_decdc, SEQ_DECDC, 0 },					/* CSI ' ~ */
 
 	/* C1 bare controls with introducer > CSI */
@@ -1660,7 +1723,7 @@ cterm_reset(struct cterminal *cterm)
 struct cterminal* cterm_init(int height, int width, int xpos, int ypos, int backlines, int backcols, struct vmem_cell *scrollback, int emulation)
 {
 	static bool key_tables_verified = false;
-	char	*revision="$Revision: 1.326 $";
+	char	*revision="$Revision: 1.327 $";
 	char *in;
 	char	*out;
 	struct cterminal *cterm;
@@ -2038,6 +2101,13 @@ CIOLIBEXPORT size_t cterm_write(struct cterminal * cterm, const void *vbuf, int 
 	int orig_fonts[4];
 	/* lastch is now cterm->lastch (persists across cterm_write calls) */
  	int palette_offset = 0;
+
+	/* DECSASD routing: when active display is the status line, forward
+	 * writes to the sub-cterm.  The sub's parser handles its own sequences;
+	 * status-display and terminal-global handlers bubble back via its
+	 * parent pointer. */
+	if (cterm->status_sub && cterm->status_display_active == 1)
+		return cterm_write(cterm->status_sub, vbuf, buflen, speed);
 
 	if(!cterm->started)
 		cterm_start(cterm);

@@ -282,6 +282,23 @@ struct cterminal {
 	void (*response_cb)(const char *buf, size_t len, void *cbdata);
 	void *response_cbdata;
 
+	/* Status display (DECSSDT/DECSASD) state.  On the main cterm,
+	 * status_display_type tracks the selected type (0=none, 1=indicator,
+	 * 2=host-writable) and status_display_active tracks which display
+	 * receives writes (0=main, 1=status).  status_sub points at a 1-row
+	 * sub-cterm when type==2 and is NULL otherwise; parent is NULL on
+	 * the main cterm and points at the owner on the sub.  Handlers for
+	 * status-display and terminal-global sequences bubble to the parent
+	 * so state lives on one instance. */
+	int                 status_display_type;
+	int                 status_display_active;
+	struct cterminal   *status_sub;
+	struct cterminal   *parent;
+	void              (*status_display_cb)(struct cterminal *cterm,
+	                                       int old_type, int new_type,
+	                                       void *cbdata);
+	void               *status_display_cbdata;
+
 	/* ECMA-48 selected area (SSA/ESA) for screen readback */
 	int					ssa_row;	// SSA position (1-based, screen coords), 0 = not set
 	int					ssa_col;
@@ -375,6 +392,7 @@ void cterm_gotoxy(struct cterminal *cterm, int x, int y);
 void setwindow(struct cterminal *cterm);
 void cterm_clreol(struct cterminal *cterm);
 void cterm_scrollup(struct cterminal *cterm);
+CIOLIBEXPORT void cterm_resize_rows(struct cterminal *cterm, int new_rows);
 
 #ifdef __cplusplus
 }

@@ -12185,6 +12185,9 @@ reinit_screen(uint8_t *font, int fx, int fy)
 	cterm->mouse_state_change_cbdata = oldcterm.mouse_state_change_cbdata;
 	cterm->mouse_state_query = oldcterm.mouse_state_query;
 	cterm->mouse_state_query_cbdata = oldcterm.mouse_state_query_cbdata;
+	cterm->status_display_cb = oldcterm.status_display_cb;
+	cterm->status_display_cbdata = oldcterm.status_display_cbdata;
+	cterm->status_display_type = term.nostatus ? 0 : 1;
 	cterm->music_enable = oldcterm.music_enable;
 	cterm->backpos = oldcterm.backpos;
 	cterm->backwidth = oldcterm.backwidth;
