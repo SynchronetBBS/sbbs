@@ -264,6 +264,10 @@ struct cterminal {
 	int skypix;
 	uint8_t prestel_last_mosaic;
 
+	/* ATASCII inverse-video input mode, toggled by the backtick key.
+	 * Read by the status bar via cterm_atascii_inverse(). */
+	bool atascii_inverse;
+
 	/* Per-entry palette override (survives cterm_reset) */
 	bool				has_palette_override;
 	uint32_t			palette_override[16];	// 0x00RRGGBB
@@ -365,6 +369,8 @@ CIOLIBEXPORT void cterm_end(struct cterminal *cterm, int free_fonts);
 CIOLIBEXPORT void cterm_clearscreen(struct cterminal *cterm, char attr);
 CIOLIBEXPORT void cterm_start(struct cterminal *cterm);
 CIOLIBEXPORT int cterm_crpos(struct cterminal *cterm);
+CIOLIBEXPORT int cterm_encode_key(struct cterminal *cterm, int key);
+CIOLIBEXPORT bool cterm_atascii_inverse(const struct cterminal *cterm);
 void cterm_gotoxy(struct cterminal *cterm, int x, int y);
 void setwindow(struct cterminal *cterm);
 void cterm_clreol(struct cterminal *cterm);

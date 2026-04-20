@@ -5354,6 +5354,197 @@ test_atascii_screen_code_mapping(void)
 }
 
 /* ================================================================ */
+/* cterm_encode_key — keyboard-to-bytes encoding                    */
+/* ================================================================ */
+
+static int
+expect_response_bytes(const char *expected, size_t len)
+{
+	if (response_len != len || memcmp(response_buf, expected, len) != 0) {
+		fprintf(result_fp, "    response len=%zu expected=%zu: got",
+		    response_len, len);
+		for (size_t i = 0; i < response_len; i++)
+			fprintf(result_fp, " %02x", (unsigned char)response_buf[i]);
+		fprintf(result_fp, " want");
+		for (size_t i = 0; i < len; i++)
+			fprintf(result_fp, " %02x", (unsigned char)expected[i]);
+		fprintf(result_fp, "\n");
+		return 0;
+	}
+	return 1;
+}
+
+static int test_encode_ansi_raw(void)
+{
+	setup_ansi();
+	response_clear();
+	int n = cterm_encode_key(cterm, 'A');
+	return (n == 1) && expect_response_bytes("A", 1);
+}
+
+static int test_encode_ansi_f1(void)
+{
+	setup_ansi();
+	response_clear();
+	int n = cterm_encode_key(cterm, CIO_KEY_F(1));
+	return (n == 5) && expect_response_bytes("\033[11~", 5);
+}
+
+static int test_encode_ansi_up(void)
+{
+	setup_ansi();
+	response_clear();
+	int n = cterm_encode_key(cterm, CIO_KEY_UP);
+	return (n == 3) && expect_response_bytes("\033[A", 3);
+}
+
+static int test_encode_ansi_bs_decbkm_on(void)
+{
+	setup_ansi();
+	cterm->extattr |= CTERM_EXTATTR_DECBKM;
+	response_clear();
+	int n = cterm_encode_key(cterm, '\b');
+	return (n == 1) && expect_response_bytes("\b", 1);
+}
+
+static int test_encode_ansi_bs_decbkm_off(void)
+{
+	setup_ansi();
+	cterm->extattr &= ~CTERM_EXTATTR_DECBKM;
+	response_clear();
+	int n = cterm_encode_key(cterm, '\b');
+	return (n == 1) && expect_response_bytes("\x7f", 1);
+}
+
+static int test_encode_ansi_dc_decbkm_on(void)
+{
+	setup_ansi();
+	cterm->extattr |= CTERM_EXTATTR_DECBKM;
+	response_clear();
+	int n = cterm_encode_key(cterm, CIO_KEY_DC);
+	return (n == 1) && expect_response_bytes("\x7f", 1);
+}
+
+static int test_encode_ansi_dc_decbkm_off(void)
+{
+	setup_ansi();
+	cterm->extattr &= ~CTERM_EXTATTR_DECBKM;
+	response_clear();
+	int n = cterm_encode_key(cterm, CIO_KEY_DC);
+	return (n == 4) && expect_response_bytes("\x1b[3~", 4);
+}
+
+static int test_encode_vt52_up(void)
+{
+	setup_cterm(ATARIST_80X25, CTERM_EMULATION_ATARIST_VT52);
+	response_clear();
+	int n = cterm_encode_key(cterm, CIO_KEY_UP);
+	return (n == 2) && expect_response_bytes("\033A", 2);
+}
+
+static int test_encode_vt52_bs_decbkm_on(void)
+{
+	setup_cterm(ATARIST_80X25, CTERM_EMULATION_ATARIST_VT52);
+	cterm->extattr |= CTERM_EXTATTR_DECBKM;
+	response_clear();
+	int n = cterm_encode_key(cterm, '\b');
+	return (n == 1) && expect_response_bytes("\b", 1);
+}
+
+static int test_encode_vt52_bs_decbkm_off(void)
+{
+	setup_cterm(ATARIST_80X25, CTERM_EMULATION_ATARIST_VT52);
+	cterm->extattr &= ~CTERM_EXTATTR_DECBKM;
+	response_clear();
+	int n = cterm_encode_key(cterm, '\b');
+	return (n == 1) && expect_response_bytes("\x7f", 1);
+}
+
+static int test_encode_atascii_toggle(void)
+{
+	setup_cterm(ATARI_40X24, CTERM_EMULATION_ATASCII);
+	if (cterm_atascii_inverse(cterm))
+		return 0;
+	response_clear();
+	int n = cterm_encode_key(cterm, 96);
+	if (n != 0 || response_len != 0)
+		return 0;
+	if (!cterm_atascii_inverse(cterm))
+		return 0;
+	n = cterm_encode_key(cterm, 96);
+	if (n != 0 || response_len != 0)
+		return 0;
+	return cterm_atascii_inverse(cterm) ? 0 : 1;
+}
+
+static int test_encode_atascii_up(void)
+{
+	setup_cterm(ATARI_40X24, CTERM_EMULATION_ATASCII);
+	response_clear();
+	int n = cterm_encode_key(cterm, CIO_KEY_UP);
+	return (n == 1) && expect_response_bytes("\x1c", 1);
+}
+
+static int test_encode_petscii_f1(void)
+{
+	setup_cterm(C64_40X25, CTERM_EMULATION_PETASCII);
+	response_clear();
+	int n = cterm_encode_key(cterm, CIO_KEY_F(1));
+	return (n == 1) && expect_response_bytes("\x85", 1);
+}
+
+static int test_encode_prestel_hash(void)
+{
+	setup_cterm(PRESTEL_40X25, CTERM_EMULATION_PRESTEL);
+	response_clear();
+	int n = cterm_encode_key(cterm, '#');
+	return (n == 1) && expect_response_bytes("_", 1);
+}
+
+static int test_encode_beeb_home(void)
+{
+	setup_cterm(PRESTEL_40X25, CTERM_EMULATION_BEEB);
+	response_clear();
+	int n = cterm_encode_key(cterm, CIO_KEY_HOME);
+	return (n == 1) && expect_response_bytes("\x1f", 1);
+}
+
+static int test_encode_doorway_scancode(void)
+{
+	setup_ansi();
+	cterm->doorway_mode = 1;
+	response_clear();
+	int n = cterm_encode_key(cterm, 0x2e00); /* Alt-C */
+	return (n == 2) && expect_response_bytes("\x00\x2e", 2);
+}
+
+static int test_encode_doorway_altz_exempt(void)
+{
+	setup_ansi();
+	cterm->doorway_mode = 1;
+	response_clear();
+	/* Alt-Z (0x2c00) is reserved for the local menu — encode_key must
+	 * NOT emit the NUL+scancode pair in doorway mode. */
+	int n = cterm_encode_key(cterm, 0x2c00);
+	if (response_len >= 2 && response_buf[0] == 0)
+		return 0;
+	(void)n;
+	return 1;
+}
+
+static int test_encode_doorway_off(void)
+{
+	setup_ansi();
+	cterm->doorway_mode = 0;
+	response_clear();
+	int n = cterm_encode_key(cterm, 0x2e00); /* Alt-C with doorway off */
+	if (response_len >= 2 && response_buf[0] == 0)
+		return 0;
+	(void)n;
+	return 1;
+}
+
+/* ================================================================ */
 /* Test table and main                                              */
 /* ================================================================ */
 
@@ -5681,6 +5872,25 @@ static struct test_entry tests[] = {
 	{"ATA_tab",            test_atascii_tab},
 	{"ATA_tab_set_clear",  test_atascii_tab_set_clear},
 	{"ATA_screen_codes",   test_atascii_screen_code_mapping},
+	/* cterm_encode_key — keyboard input encoding */
+	{"ENC_ansi_raw",       test_encode_ansi_raw},
+	{"ENC_ansi_f1",        test_encode_ansi_f1},
+	{"ENC_ansi_up",        test_encode_ansi_up},
+	{"ENC_ansi_bs_decbkm_on",  test_encode_ansi_bs_decbkm_on},
+	{"ENC_ansi_bs_decbkm_off", test_encode_ansi_bs_decbkm_off},
+	{"ENC_ansi_dc_decbkm_on",  test_encode_ansi_dc_decbkm_on},
+	{"ENC_ansi_dc_decbkm_off", test_encode_ansi_dc_decbkm_off},
+	{"ENC_vt52_up",            test_encode_vt52_up},
+	{"ENC_vt52_bs_decbkm_on",  test_encode_vt52_bs_decbkm_on},
+	{"ENC_vt52_bs_decbkm_off", test_encode_vt52_bs_decbkm_off},
+	{"ENC_atascii_toggle", test_encode_atascii_toggle},
+	{"ENC_atascii_up",     test_encode_atascii_up},
+	{"ENC_petscii_f1",     test_encode_petscii_f1},
+	{"ENC_prestel_hash",   test_encode_prestel_hash},
+	{"ENC_beeb_home",      test_encode_beeb_home},
+	{"ENC_doorway",        test_encode_doorway_scancode},
+	{"ENC_doorway_altz",   test_encode_doorway_altz_exempt},
+	{"ENC_doorway_off",    test_encode_doorway_off},
 	{NULL, NULL}
 };
 
