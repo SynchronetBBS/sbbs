@@ -31,6 +31,7 @@
  *           matches the CTerm window.
  */
 
+#include <assert.h>
 #include <ctype.h>
 #include <stdarg.h>
 #include <stdlib.h>
@@ -111,6 +112,401 @@ cterm_respond_printf(struct cterminal *cterm, const char *fmt, ...)
 	va_end(ap);
 	if (n > 0)
 		cterm_respond(cterm, tmp, n);
+}
+
+/* Key-to-sequence mapping for emulation-specific input translation.
+ * Tables are sorted by key value for bsearch(). */
+struct key_mapping {
+	int         key;
+	const char *seq;
+	int         len;
+};
+
+#define KEY_MAP_SIZE(table) (int)(sizeof(table) / sizeof((table)[0]))
+#define LOOKUP_KEY(table, key, len) \
+	lookup_key((table), KEY_MAP_SIZE(table), (key), (len))
+
+static const struct key_mapping atascii_keys[] = {
+	{253,                      "\x07",        1},	/* Undo Unicode: Atascii beep -> ^G */
+	{CIO_KEY_UP,               "\x1c",        1},
+	{CIO_KEY_LEFT,             "\x1e",        1},
+	{CIO_KEY_RIGHT,            "\x1f",        1},
+	{CIO_KEY_DOWN,             "\x1d",        1},
+	{CIO_KEY_IC,               "\xff",        1},
+	{CIO_KEY_DC,               "\x7e",        1},	/* "Delete" key */
+};
+
+static const struct key_mapping petscii_keys[] = {
+	{8,                        "\x14",        1},
+	{'\n',                     "\x0d",        1},
+	{'\r',                     "\x0d",        1},
+	{CIO_KEY_F(1),             "\x85",        1},
+	{CIO_KEY_F(2),             "\x89",        1},
+	{CIO_KEY_F(3),             "\x86",        1},
+	{CIO_KEY_F(4),             "\x8a",        1},
+	{CIO_KEY_F(5),             "\x87",        1},
+	{CIO_KEY_F(6),             "\x8b",        1},
+	{CIO_KEY_F(7),             "\x88",        1},
+	{CIO_KEY_F(8),             "\x8c",        1},
+	{CIO_KEY_HOME,             "\x13",        1},
+	{CIO_KEY_UP,               "\x91",        1},
+	{CIO_KEY_LEFT,             "\x9d",        1},
+	{CIO_KEY_RIGHT,            "\x1d",        1},
+	{CIO_KEY_END,              "\x93",        1},	/* Clear / Shift-Home */
+	{CIO_KEY_DOWN,             "\x11",        1},
+	{CIO_KEY_IC,               "\x94",        1},
+	{CIO_KEY_DC,               "\x14",        1},
+};
+
+static const struct key_mapping prestel_keys[] = {
+	{8,                        "\x7f",        1},
+	{9,                        "\x09",        1},
+	{10,                       "\x0d",        1},	/* LF sends CR */
+	{13,                       "_",           1},	/* CR sends _ */
+	{'#',                      "_",           1},
+	{'_',                      "`",           1},
+	{'`',                      "#",           1},
+	{CIO_KEY_SHIFT_END,        "\x9b",        1},	/* Copy */
+	{CIO_KEY_SHIFT_DOWN,       "\x9e",        1},
+	{CIO_KEY_SHIFT_LEFT,       "\x9c",        1},
+	{CIO_KEY_SHIFT_RIGHT,      "\x9d",        1},
+	{CIO_KEY_SHIFT_UP,         "\x9f",        1},
+	{CIO_KEY_F(7),             "\x1b",        1},
+	{CIO_KEY_HOME,             "\x1f",        1},
+	{CIO_KEY_UP,               "\x8f",        1},
+	{CIO_KEY_LEFT,             "\x8c",        1},
+	{CIO_KEY_RIGHT,            "\x8d",        1},
+	{CIO_KEY_DOWN,             "\x8e",        1},
+	{CIO_KEY_DC,               "\x7f",        1},
+	{CIO_KEY_SHIFT_F(1),       "\x91",        1},
+	{CIO_KEY_SHIFT_F(2),       "\x92",        1},
+	{CIO_KEY_SHIFT_F(3),       "\x93",        1},
+	{CIO_KEY_SHIFT_F(4),       "\x94",        1},
+	{CIO_KEY_SHIFT_F(5),       "\x95",        1},
+	{CIO_KEY_SHIFT_F(6),       "\x96",        1},
+	{CIO_KEY_SHIFT_F(7),       "\x97",        1},
+	{CIO_KEY_SHIFT_F(8),       "\x98",        1},
+	{CIO_KEY_SHIFT_F(9),       "\x99",        1},
+	{CIO_KEY_SHIFT_F(10),      "\x90",        1},	/* F0 */
+	{CIO_KEY_CTRL_F(1),        "\xa1",        1},
+	{CIO_KEY_CTRL_F(2),        "\xa2",        1},
+	{CIO_KEY_CTRL_F(3),        "\xa3",        1},
+	{CIO_KEY_CTRL_F(4),        "\xa4",        1},
+	{CIO_KEY_CTRL_F(5),        "\xa5",        1},
+	{CIO_KEY_CTRL_F(6),        "\xa6",        1},
+	{CIO_KEY_CTRL_F(7),        "\xa7",        1},
+	{CIO_KEY_CTRL_F(8),        "\xa8",        1},
+	{CIO_KEY_CTRL_F(9),        "\xa9",        1},
+	{CIO_KEY_CTRL_F(10),       "\xa0",        1},	/* F0 */
+	{CIO_KEY_CTRL_LEFT,        "\xac",        1},
+	{CIO_KEY_CTRL_RIGHT,       "\xad",        1},
+	{CIO_KEY_CTRL_END,         "\xab",        1},	/* Copy */
+	{CIO_KEY_CTRL_UP,          "\xaf",        1},
+	{CIO_KEY_CTRL_DOWN,        "\xae",        1},
+};
+
+static const struct key_mapping beeb_keys[] = {
+	{8,                        "\x7f",        1},
+	{CIO_KEY_SHIFT_END,        "\x9b",        1},	/* Copy */
+	{CIO_KEY_SHIFT_DOWN,       "\x9e",        1},
+	{CIO_KEY_SHIFT_LEFT,       "\x9c",        1},
+	{CIO_KEY_SHIFT_RIGHT,      "\x9d",        1},
+	{CIO_KEY_SHIFT_UP,         "\x9f",        1},
+	{CIO_KEY_F(7),             "\x1b",        1},
+	{CIO_KEY_HOME,             "\x1f",        1},
+	{CIO_KEY_UP,               "\x8f",        1},
+	{CIO_KEY_LEFT,             "\x8c",        1},
+	{CIO_KEY_RIGHT,            "\x8d",        1},
+	{CIO_KEY_DOWN,             "\x8e",        1},
+	{CIO_KEY_DC,               "\x7f",        1},
+	{CIO_KEY_SHIFT_F(1),       "\x91",        1},
+	{CIO_KEY_SHIFT_F(2),       "\x92",        1},
+	{CIO_KEY_SHIFT_F(3),       "\x93",        1},
+	{CIO_KEY_SHIFT_F(4),       "\x94",        1},
+	{CIO_KEY_SHIFT_F(5),       "\x95",        1},
+	{CIO_KEY_SHIFT_F(6),       "\x96",        1},
+	{CIO_KEY_SHIFT_F(7),       "\x97",        1},
+	{CIO_KEY_SHIFT_F(8),       "\x98",        1},
+	{CIO_KEY_SHIFT_F(9),       "\x99",        1},
+	{CIO_KEY_SHIFT_F(10),      "\x90",        1},	/* F0 */
+	{CIO_KEY_CTRL_F(1),        "\xa1",        1},
+	{CIO_KEY_CTRL_F(2),        "\xa2",        1},
+	{CIO_KEY_CTRL_F(3),        "\xa3",        1},
+	{CIO_KEY_CTRL_F(4),        "\xa4",        1},
+	{CIO_KEY_CTRL_F(5),        "\xa5",        1},
+	{CIO_KEY_CTRL_F(6),        "\xa6",        1},
+	{CIO_KEY_CTRL_F(7),        "\xa7",        1},
+	{CIO_KEY_CTRL_F(8),        "\xa8",        1},
+	{CIO_KEY_CTRL_F(9),        "\xa9",        1},
+	{CIO_KEY_CTRL_F(10),       "\xa0",        1},	/* F0 */
+	{CIO_KEY_CTRL_LEFT,        "\xac",        1},
+	{CIO_KEY_CTRL_RIGHT,       "\xad",        1},
+	{CIO_KEY_CTRL_END,         "\xab",        1},	/* Copy */
+	{CIO_KEY_CTRL_UP,          "\xaf",        1},
+	{CIO_KEY_CTRL_DOWN,        "\xae",        1},
+};
+
+static const struct key_mapping vt52_keys[] = {
+	{CIO_KEY_F(1),             "\033P",       2},
+	{CIO_KEY_F(2),             "\033Q",       2},
+	{CIO_KEY_F(3),             "\033R",       2},
+	{CIO_KEY_UP,               "\033A",       2},
+	{CIO_KEY_LEFT,             "\033D",       2},
+	{CIO_KEY_RIGHT,            "\033C",       2},
+	{CIO_KEY_DOWN,             "\033B",       2},
+};
+
+static const struct key_mapping ansi_keys[] = {
+	{CIO_KEY_BACKTAB,          "\033[Z",      3},
+	{CIO_KEY_F(1),             "\033[11~",    5},
+	{CIO_KEY_F(2),             "\033[12~",    5},
+	{CIO_KEY_F(3),             "\033[13~",    5},
+	{CIO_KEY_F(4),             "\033[14~",    5},
+	{CIO_KEY_F(5),             "\033[15~",    5},
+	{CIO_KEY_F(6),             "\033[17~",    5},
+	{CIO_KEY_F(7),             "\033[18~",    5},
+	{CIO_KEY_F(8),             "\033[19~",    5},
+	{CIO_KEY_F(9),             "\033[20~",    5},
+	{CIO_KEY_F(10),            "\033[21~",    5},
+	{CIO_KEY_HOME,             "\033[H",      3},
+	{CIO_KEY_UP,               "\033[A",      3},
+	{CIO_KEY_PPAGE,            "\033[V",      3},
+	{CIO_KEY_LEFT,             "\033[D",      3},
+	{CIO_KEY_RIGHT,            "\033[C",      3},
+	{CIO_KEY_END,              "\033[K",      3},
+#ifdef CIO_KEY_SELECT
+	{CIO_KEY_SELECT,           "\033[K",      3},
+#endif
+	{CIO_KEY_DOWN,             "\033[B",      3},
+	{CIO_KEY_NPAGE,            "\033[U",      3},
+	{CIO_KEY_IC,               "\033[@",      3},
+	{CIO_KEY_SHIFT_F(1),       "\033[11;2~",  7},
+	{CIO_KEY_SHIFT_F(2),       "\033[12;2~",  7},
+	{CIO_KEY_SHIFT_F(3),       "\033[13;2~",  7},
+	{CIO_KEY_SHIFT_F(4),       "\033[14;2~",  7},
+	{CIO_KEY_SHIFT_F(5),       "\033[15;2~",  7},
+	{CIO_KEY_SHIFT_F(6),       "\033[17;2~",  7},
+	{CIO_KEY_SHIFT_F(7),       "\033[18;2~",  7},
+	{CIO_KEY_SHIFT_F(8),       "\033[19;2~",  7},
+	{CIO_KEY_SHIFT_F(9),       "\033[20;2~",  7},
+	{CIO_KEY_SHIFT_F(10),      "\033[21;2~",  7},
+	{CIO_KEY_CTRL_F(1),        "\033[11;5~",  7},
+	{CIO_KEY_CTRL_F(2),        "\033[12;5~",  7},
+	{CIO_KEY_CTRL_F(3),        "\033[13;5~",  7},
+	{CIO_KEY_CTRL_F(4),        "\033[14;5~",  7},
+	{CIO_KEY_CTRL_F(5),        "\033[15;5~",  7},
+	{CIO_KEY_CTRL_F(6),        "\033[17;5~",  7},
+	{CIO_KEY_CTRL_F(7),        "\033[18;5~",  7},
+	{CIO_KEY_CTRL_F(8),        "\033[19;5~",  7},
+	{CIO_KEY_CTRL_F(9),        "\033[20;5~",  7},
+	{CIO_KEY_CTRL_F(10),       "\033[21;5~",  7},
+	{CIO_KEY_ALT_F(1),         "\033[11;3~",  7},
+	{CIO_KEY_ALT_F(2),         "\033[12;3~",  7},
+	{CIO_KEY_ALT_F(3),         "\033[13;3~",  7},
+	{CIO_KEY_ALT_F(4),         "\033[14;3~",  7},
+	{CIO_KEY_ALT_F(5),         "\033[15;3~",  7},
+	{CIO_KEY_ALT_F(6),         "\033[17;3~",  7},
+	{CIO_KEY_ALT_F(7),         "\033[18;3~",  7},
+	{CIO_KEY_ALT_F(8),         "\033[19;3~",  7},
+	{CIO_KEY_ALT_F(9),         "\033[20;3~",  7},
+	{CIO_KEY_ALT_F(10),        "\033[21;3~",  7},
+	{CIO_KEY_F(11),            "\033[23~",    5},
+	{CIO_KEY_F(12),            "\033[24~",    5},
+	{CIO_KEY_SHIFT_F(11),      "\033[23;2~",  7},
+	{CIO_KEY_SHIFT_F(12),      "\033[24;2~",  7},
+	{CIO_KEY_CTRL_F(11),       "\033[23;5~",  7},
+	{CIO_KEY_CTRL_F(12),       "\033[24;5~",  7},
+	{CIO_KEY_ALT_F(11),        "\033[23;3~",  7},
+	{CIO_KEY_ALT_F(12),        "\033[24;3~",  7},
+};
+
+static int
+key_mapping_cmp(const void *a, const void *b)
+{
+	return ((const struct key_mapping *)a)->key
+	     - ((const struct key_mapping *)b)->key;
+}
+
+static const char *
+lookup_key(const struct key_mapping *map, int count, int key, int *len)
+{
+	struct key_mapping needle = {key, NULL, 0};
+	const struct key_mapping *found;
+
+	found = bsearch(&needle, map, count, sizeof(*map), key_mapping_cmp);
+	if (found) {
+		*len = found->len;
+		return found->seq;
+	}
+	return NULL;
+}
+
+static void
+verify_key_tables(void)
+{
+#define CHECK_SORTED(table) do {					\
+	for (int i_ = 1; i_ < KEY_MAP_SIZE(table); i_++)		\
+		assert((table)[i_ - 1].key < (table)[i_].key);		\
+} while (0)
+
+	CHECK_SORTED(atascii_keys);
+	CHECK_SORTED(petscii_keys);
+	CHECK_SORTED(prestel_keys);
+	CHECK_SORTED(beeb_keys);
+	CHECK_SORTED(vt52_keys);
+	CHECK_SORTED(ansi_keys);
+#undef CHECK_SORTED
+}
+
+static void
+toggle_prestel_reveal(void)
+{
+	cio_api.options ^= CONIO_OPT_PRESTEL_REVEAL;
+	struct ciolib_screen *savscrn = savescreen();
+	ciolib_vmem_puttext(1, 1, savscrn->text_info.screenwidth,
+	    savscrn->text_info.screenheight, savscrn->vmem);
+	freescreen(savscrn);
+}
+
+int
+cterm_encode_key(struct cterminal *cterm, int key)
+{
+	unsigned char ch[2];
+	int           slen;
+	const char   *seq;
+
+	/* Doorway mode: NUL + scancode, except Alt-Z (local menu).  Any
+	 * high-bit scancode (key > 0xff with low byte 0) goes through. */
+	if (cterm->doorway_mode && (key > 0xff) && ((key & 0xff) == 0)
+	    && (key != 0x2c00 /* ALT-Z */)) {
+		ch[0] = 0;
+		ch[1] = key >> 8;
+		cterm_respond(cterm, (const char *)ch, 2);
+		return 2;
+	}
+
+	if (cterm->emulation == CTERM_EMULATION_ATASCII) {
+		if (key == 96) {
+			cterm->atascii_inverse = !cterm->atascii_inverse;
+			return 0;
+		}
+		seq = LOOKUP_KEY(atascii_keys, key, &slen);
+		if (seq) {
+			cterm_respond(cterm, seq, slen);
+			return slen;
+		}
+		if (key < 256) {
+			ch[0] = key;
+			cterm_respond(cterm, (const char *)ch, 1);
+			return 1;
+		}
+		return 0;
+	}
+	if (cterm->emulation == CTERM_EMULATION_PETASCII) {
+		seq = LOOKUP_KEY(petscii_keys, key, &slen);
+		if (seq) {
+			cterm_respond(cterm, seq, slen);
+			return slen;
+		}
+		if (key < 256) {
+			ch[0] = key;
+			cterm_respond(cterm, (const char *)ch, 1);
+			return 1;
+		}
+		return 0;
+	}
+	if (cterm->emulation == CTERM_EMULATION_PRESTEL) {
+		if (key == CIO_KEY_F(3) || key == CIO_KEY_NPAGE) {
+			toggle_prestel_reveal();
+			return 0;
+		}
+		seq = LOOKUP_KEY(prestel_keys, key, &slen);
+		if (seq) {
+			cterm_respond(cterm, seq, slen);
+			return slen;
+		}
+		if (key > 31 && key < 128) {
+			ch[0] = key;
+			cterm_respond(cterm, (const char *)ch, 1);
+			return 1;
+		}
+		return 0;
+	}
+	if (cterm->emulation == CTERM_EMULATION_BEEB) {
+		if (key == CIO_KEY_F(3) || key == CIO_KEY_NPAGE) {
+			toggle_prestel_reveal();
+			return 0;
+		}
+		seq = LOOKUP_KEY(beeb_keys, key, &slen);
+		if (seq) {
+			cterm_respond(cterm, seq, slen);
+			return slen;
+		}
+		if (key < 128) {
+			ch[0] = key;
+			cterm_respond(cterm, (const char *)ch, 1);
+			return 1;
+		}
+		return 0;
+	}
+	if (cterm->emulation == CTERM_EMULATION_ATARIST_VT52) {
+		if (key == CIO_KEY_DC) {
+			if (cterm->extattr & CTERM_EXTATTR_DECBKM) {
+				cterm_respond(cterm, "\x7f", 1);
+				return 1;
+			}
+			cterm_respond(cterm, "\x1b[3~", 4);
+			return 4;
+		}
+		if (key == '\b') {
+			ch[0] = (cterm->extattr & CTERM_EXTATTR_DECBKM) ? '\b' : '\x7f';
+			cterm_respond(cterm, (const char *)ch, 1);
+			return 1;
+		}
+		seq = LOOKUP_KEY(vt52_keys, key, &slen);
+		if (seq) {
+			cterm_respond(cterm, seq, slen);
+			return slen;
+		}
+		if (key >= 0 && key < 256) {
+			ch[0] = key;
+			cterm_respond(cterm, (const char *)ch, 1);
+			return 1;
+		}
+		return 0;
+	}
+
+	/* ANSI-BBS (default) */
+	if (key == CIO_KEY_DC) {
+		if (cterm->extattr & CTERM_EXTATTR_DECBKM) {
+			cterm_respond(cterm, "\x7f", 1);
+			return 1;
+		}
+		cterm_respond(cterm, "\x1b[3~", 4);
+		return 4;
+	}
+	if (key == '\b') {
+		ch[0] = (cterm->extattr & CTERM_EXTATTR_DECBKM) ? '\b' : '\x7f';
+		cterm_respond(cterm, (const char *)ch, 1);
+		return 1;
+	}
+	seq = LOOKUP_KEY(ansi_keys, key, &slen);
+	if (seq) {
+		cterm_respond(cterm, seq, slen);
+		return slen;
+	}
+	if (key >= 0 && key < 256) {
+		ch[0] = key;
+		cterm_respond(cterm, (const char *)ch, 1);
+		return 1;
+	}
+	return 0;
+}
+
+bool
+cterm_atascii_inverse(const struct cterminal *cterm)
+{
+	return cterm->atascii_inverse;
 }
 
 void
@@ -1267,6 +1663,7 @@ cterm_reset(struct cterminal *cterm)
 		for(i=0; i<cterm->tab_count; i++)
 			cterm->escbuf[cterm->tabs[i]]=1;
 	}
+	cterm->atascii_inverse = false;
 
 	/* Set up a shadow palette */
 	if (cio_api.options & CONIO_OPT_EXTENDED_PALETTE) {
@@ -1302,11 +1699,17 @@ cterm_reset(struct cterminal *cterm)
 
 struct cterminal* cterm_init(int height, int width, int xpos, int ypos, int backlines, int backcols, struct vmem_cell *scrollback, int emulation)
 {
+	static bool key_tables_verified = false;
 	char	*revision="$Revision: 1.326 $";
 	char *in;
 	char	*out;
 	struct cterminal *cterm;
 	int flags;
+
+	if (!key_tables_verified) {
+		verify_key_tables();
+		key_tables_verified = true;
+	}
 
 	if((cterm=calloc(1, sizeof(struct cterminal)))==NULL)
 		return cterm;
