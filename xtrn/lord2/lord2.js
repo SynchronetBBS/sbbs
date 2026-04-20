@@ -31,11 +31,20 @@ var pending_timeout;
 
 function handle_timeout(reason)
 {
+/*
+ * In order to do this, more investigation needs to be done
+ * on how the DOS version behaves, expecially around aborted
+ * input loops, if endgame runs on lost carrier, and what,
+ * if anything is adjusted.
+ * Until that works is done, just run endgame and exit.
+ */
+/*
 	if (player.battle || player.busy) {
 		pending_timeout = reason;
 		dk.console.active = false;
 		return;
 	}
+*/
 	switch (reason) {
 		case 'BBS_NO_TIME':
 			sclrscr();
