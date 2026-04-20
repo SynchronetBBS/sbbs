@@ -5339,6 +5339,32 @@ feed_ooii(int inch, int *ooii_mode)
 }
 #endif /* !WITHOUT_OOII */
 
+static bool
+check_hangup(int key, bool *ret, int oldmc, struct mouse_state *ms)
+{
+	struct ciolib_screen *savscrn;
+	savscrn = cp437_savescrn();
+	if (quitting
+	    || confirm("Disconnect... Are you sure?",
+	    "Selecting Yes closes the connection\n")) {
+		freescreen(savscrn);
+		setup_mouse_events(ms);
+		finish_scrollback();
+		cterm_end(cterm, 0);
+		cterm = NULL;
+		conn_close();
+		hidemouse();
+		hold_update = oldmc;
+		*ret = (key == 0x2d00 /* Alt-X? */ || key == CIO_KEY_QUIT);
+		return true;
+	}
+	restorescreen(savscrn);
+	freescreen(savscrn);
+	setup_mouse_events(ms);
+	showmouse();
+	return false;
+}
+
 bool
 doterm(struct bbslist *bbs)
 {
@@ -5596,6 +5622,7 @@ doterm(struct bbslist *bbs)
 
                 /* Get local input */
 		while (quitting || rip_kbhit()) {
+			bool hret;
 			sleep = false;
 			updated = true;
 			gotoxy(wherex(), wherey());
@@ -5699,42 +5726,22 @@ doterm(struct bbslist *bbs)
 					    && (cio_api.mode != CIOLIB_MODE_CURSES_IBM)
 					    && (cio_api.mode != CIOLIB_MODE_ANSI))
 						break;
-					/*
-					 * In curses/ansi modes, CTRL-Q acts as
-					 * hangup (skipping the exit check that
-					 * Alt-X gets).  goto replaces a Duff's
-					 * device that was used here previously.
-					 */
-					goto hangup;
+					if (check_hangup(key, &hret, oldmc, &ms))
+						return hret;
+					key = 0;
+					break;
 				case 0x2d00: /* Alt-X - Exit */
 				case CIO_KEY_QUIT:
 					uifc.exit_flags |= UIFC_XF_QUIT;
 					if (!check_exit(true))
 						break;
-					/* FALLTHROUGH */
+					if (check_hangup(key, &hret, oldmc, &ms))
+						return hret;
+					key = 0;
+					break;
 				case 0x2300: /* Alt-H - Hangup */
-				hangup:
-				{
-					struct ciolib_screen *savscrn;
-					savscrn = cp437_savescrn();
-					if (quitting
-					    || confirm("Disconnect... Are you sure?",
-					    "Selecting Yes closes the connection\n")) {
-						freescreen(savscrn);
-						setup_mouse_events(&ms);
-						finish_scrollback();
-						cterm_end(cterm, 0);
-						cterm = NULL;
-						conn_close();
-						hidemouse();
-						hold_update = oldmc;
-						return key == 0x2d00 /* Alt-X? */ || key == CIO_KEY_QUIT;
-					}
-					restorescreen(savscrn);
-					freescreen(savscrn);
-					setup_mouse_events(&ms);
-					showmouse();
-				}
+					if (check_hangup(key, &hret, oldmc, &ms))
+						return hret;
 					key = 0;
 					break;
 				case 19: /* CTRL-S */
