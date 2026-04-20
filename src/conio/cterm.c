@@ -371,131 +371,91 @@ toggle_prestel_reveal(void)
 int
 cterm_encode_key(struct cterminal *cterm, int key)
 {
-	unsigned char ch[2];
-	int           slen;
-	const char   *seq;
+	unsigned char             ch[2];
+	int                       slen;
+	const char               *seq;
+	const struct key_mapping *table;
+	int                       table_count;
+	int                       raw_lo = 0;
+	int                       raw_hi = 256;
 
-	/* Doorway mode: NUL + scancode, except Alt-Z (local menu).  Any
-	 * high-bit scancode (key > 0xff with low byte 0) goes through. */
-	if (cterm->doorway_mode && (key > 0xff) && ((key & 0xff) == 0)
-	    && (key != 0x2c00 /* ALT-Z */)) {
+	/* Doorway mode: NUL + scancode.  Any high-bit scancode
+	 * (key > 0xff with low byte 0) goes through. */
+	if (cterm->doorway_mode && (key > 0xff) && ((key & 0xff) == 0)) {
 		ch[0] = 0;
 		ch[1] = key >> 8;
 		cterm_respond(cterm, (const char *)ch, 2);
 		return 2;
 	}
 
-	if (cterm->emulation == CTERM_EMULATION_ATASCII) {
-		if (key == 96) {
-			cterm->atascii_inverse = !cterm->atascii_inverse;
-			return 0;
-		}
-		seq = LOOKUP_KEY(atascii_keys, key, &slen);
-		if (seq) {
-			cterm_respond(cterm, seq, slen);
-			return slen;
-		}
-		if (key < 256) {
-			ch[0] = key;
-			cterm_respond(cterm, (const char *)ch, 1);
-			return 1;
-		}
-		return 0;
-	}
-	if (cterm->emulation == CTERM_EMULATION_PETASCII) {
-		seq = LOOKUP_KEY(petscii_keys, key, &slen);
-		if (seq) {
-			cterm_respond(cterm, seq, slen);
-			return slen;
-		}
-		if (key < 256) {
-			ch[0] = key;
-			cterm_respond(cterm, (const char *)ch, 1);
-			return 1;
-		}
-		return 0;
-	}
-	if (cterm->emulation == CTERM_EMULATION_PRESTEL) {
-		if (key == CIO_KEY_F(3) || key == CIO_KEY_NPAGE) {
-			toggle_prestel_reveal();
-			return 0;
-		}
-		seq = LOOKUP_KEY(prestel_keys, key, &slen);
-		if (seq) {
-			cterm_respond(cterm, seq, slen);
-			return slen;
-		}
-		if (key > 31 && key < 128) {
-			ch[0] = key;
-			cterm_respond(cterm, (const char *)ch, 1);
-			return 1;
-		}
-		return 0;
-	}
-	if (cterm->emulation == CTERM_EMULATION_BEEB) {
-		if (key == CIO_KEY_F(3) || key == CIO_KEY_NPAGE) {
-			toggle_prestel_reveal();
-			return 0;
-		}
-		seq = LOOKUP_KEY(beeb_keys, key, &slen);
-		if (seq) {
-			cterm_respond(cterm, seq, slen);
-			return slen;
-		}
-		if (key < 128) {
-			ch[0] = key;
-			cterm_respond(cterm, (const char *)ch, 1);
-			return 1;
-		}
-		return 0;
-	}
-	if (cterm->emulation == CTERM_EMULATION_ATARIST_VT52) {
-		if (key == CIO_KEY_DC) {
-			if (cterm->extattr & CTERM_EXTATTR_DECBKM) {
-				cterm_respond(cterm, "\x7f", 1);
+	switch (cterm->emulation) {
+		case CTERM_EMULATION_ATASCII:
+			if (key == 96) {
+				cterm->atascii_inverse = !cterm->atascii_inverse;
+				return 0;
+			}
+			table = atascii_keys;
+			table_count = KEY_MAP_SIZE(atascii_keys);
+			break;
+		case CTERM_EMULATION_PETASCII:
+			table = petscii_keys;
+			table_count = KEY_MAP_SIZE(petscii_keys);
+			break;
+		case CTERM_EMULATION_PRESTEL:
+		case CTERM_EMULATION_BEEB:
+			/* PRESTEL and BEEB: F3 or PgDn toggles reveal. */
+			if (key == CIO_KEY_F(3) || key == CIO_KEY_NPAGE) {
+				toggle_prestel_reveal();
+				return 0;
+			}
+			switch (cterm->emulation) {
+				case CTERM_EMULATION_PRESTEL:
+					table = prestel_keys;
+					table_count = KEY_MAP_SIZE(prestel_keys);
+					raw_lo = 32;
+					raw_hi = 128;
+					break;
+				default:
+					table = beeb_keys;
+					table_count = KEY_MAP_SIZE(beeb_keys);
+					raw_hi = 128;
+					break;
+			}
+			break;
+		default:
+			/* VT52 and ANSI-BBS: DEL and BS respect DECBKM. */
+			if (key == CIO_KEY_DC) {
+				if (cterm->extattr & CTERM_EXTATTR_DECBKM) {
+					cterm_respond(cterm, "\x7f", 1);
+					return 1;
+				}
+				cterm_respond(cterm, "\x1b[3~", 4);
+				return 4;
+			}
+			if (key == '\b') {
+				ch[0] = (cterm->extattr & CTERM_EXTATTR_DECBKM) ? '\b' : '\x7f';
+				cterm_respond(cterm, (const char *)ch, 1);
 				return 1;
 			}
-			cterm_respond(cterm, "\x1b[3~", 4);
-			return 4;
-		}
-		if (key == '\b') {
-			ch[0] = (cterm->extattr & CTERM_EXTATTR_DECBKM) ? '\b' : '\x7f';
-			cterm_respond(cterm, (const char *)ch, 1);
-			return 1;
-		}
-		seq = LOOKUP_KEY(vt52_keys, key, &slen);
-		if (seq) {
-			cterm_respond(cterm, seq, slen);
-			return slen;
-		}
-		if (key >= 0 && key < 256) {
-			ch[0] = key;
-			cterm_respond(cterm, (const char *)ch, 1);
-			return 1;
-		}
-		return 0;
+			switch (cterm->emulation) {
+				case CTERM_EMULATION_ATARIST_VT52:
+					table = vt52_keys;
+					table_count = KEY_MAP_SIZE(vt52_keys);
+					break;
+				default: /* ANSI-BBS */
+					table = ansi_keys;
+					table_count = KEY_MAP_SIZE(ansi_keys);
+					break;
+			}
+			break;
 	}
 
-	/* ANSI-BBS (default) */
-	if (key == CIO_KEY_DC) {
-		if (cterm->extattr & CTERM_EXTATTR_DECBKM) {
-			cterm_respond(cterm, "\x7f", 1);
-			return 1;
-		}
-		cterm_respond(cterm, "\x1b[3~", 4);
-		return 4;
-	}
-	if (key == '\b') {
-		ch[0] = (cterm->extattr & CTERM_EXTATTR_DECBKM) ? '\b' : '\x7f';
-		cterm_respond(cterm, (const char *)ch, 1);
-		return 1;
-	}
-	seq = LOOKUP_KEY(ansi_keys, key, &slen);
+	seq = lookup_key(table, table_count, key, &slen);
 	if (seq) {
 		cterm_respond(cterm, seq, slen);
 		return slen;
 	}
-	if (key >= 0 && key < 256) {
+	if (key >= raw_lo && key < raw_hi) {
 		ch[0] = key;
 		cterm_respond(cterm, (const char *)ch, 1);
 		return 1;
