@@ -91,26 +91,13 @@ const int cterm_tabs[]={1,9,17,25,33,41,49,57,65,73,81,89,97,105,113,121,129,137
 
 /*
  * Send a response to the host.
- * If response_cb is set, calls it directly (unbounded size).
- * Otherwise appends to _retbuf (bounded by _retsize).
+ * If response_cb is set, calls it directly; otherwise the response is dropped.
  */
 void
 cterm_respond(struct cterminal *cterm, const char *data, size_t len)
 {
-	if (cterm->response_cb) {
+	if (cterm->response_cb)
 		cterm->response_cb(data, len, cterm->response_cbdata);
-		return;
-	}
-	if (cterm->response_buf && cterm->response_buf_size > 0) {
-		size_t used = strlen(cterm->response_buf);
-		size_t avail = cterm->response_buf_size - used - 1;
-		if (len > avail)
-			len = avail;
-		if (len > 0) {
-			memcpy(cterm->response_buf + used, data, len);
-			cterm->response_buf[used + len] = '\0';
-		}
-	}
 }
 
 /* Printf-style wrapper for cterm_respond */
@@ -1669,7 +1656,7 @@ cterm_accumulate_trailing(struct cterminal *cterm, unsigned char byte, int *spee
 	return true;
 }
 
-CIOLIBEXPORT size_t cterm_write(struct cterminal * cterm, const void *vbuf, int buflen, char *retbuf, size_t retsize, int *speed)
+CIOLIBEXPORT size_t cterm_write(struct cterminal * cterm, const void *vbuf, int buflen, int *speed)
 {
 	const unsigned char *buf = (unsigned char *)vbuf;
 	unsigned char ch[2];
@@ -1691,15 +1678,6 @@ CIOLIBEXPORT size_t cterm_write(struct cterminal * cterm, const void *vbuf, int 
 
 	if(!cterm->started)
 		cterm_start(cterm);
-
-	/* Store retbuf on struct so cterm_respond can use it.
-	 * Save/restore for re-entrant calls (macro invocation). */
-	char *saved_response_buf = cterm->response_buf;
-	size_t saved_response_buf_size = cterm->response_buf_size;
-	cterm->response_buf = retbuf;
-	cterm->response_buf_size = retsize;
-	if (retbuf)
-		retbuf[0] = '\0';
 
 	/* Now rejigger the current modes palette... */
 	if (cio_api.options & CONIO_OPT_EXTENDED_PALETTE)
@@ -1725,8 +1703,6 @@ CIOLIBEXPORT size_t cterm_write(struct cterminal * cterm, const void *vbuf, int 
 	puttext_can_move=1;
 	olddmc=hold_update;
 	hold_update=1;
-	if (retbuf)
-		retbuf[0]=0;
 	gettextinfo(&ti);
 	setwindow(cterm);
 	x = cterm->xpos;
@@ -1797,12 +1773,7 @@ CIOLIBEXPORT size_t cterm_write(struct cterminal * cterm, const void *vbuf, int 
 	setfont(orig_fonts[2], FALSE, 3);
 	setfont(orig_fonts[3], FALSE, 4);
 
-	cterm->response_buf = saved_response_buf;
-	cterm->response_buf_size = saved_response_buf_size;
-
-	if (retbuf && retbuf[0])
-		return strlen(retbuf);
-	return 0;
+	return buflen > 0 ? (size_t)buflen : 0;
 }
 
 int cterm_openlog(struct cterminal *cterm, char *logfile, int logtype)

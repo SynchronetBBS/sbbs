@@ -900,7 +900,7 @@ int main(int argc, char **argv)
 				lfexpand(buf, &len);
 			if (rip)
 				len = parse_rip((uint8_t *)buf, len, sizeof(buf));
-			cterm_write(cterm, buf, len, NULL, 0, &speed);
+			cterm_write(cterm, buf, len, &speed);
 			if (pos >= stop)
 				break;
 		}

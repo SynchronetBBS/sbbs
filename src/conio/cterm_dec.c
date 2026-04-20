@@ -580,7 +580,7 @@ cterm_handle_decmacro(struct cterminal *cterm, int *speed)	/* CSI Pn * z */
 	cterm->sequence = 0;
 	cterm->accumulator = NULL;
 	cterm->in_macro |= (UINT64_C(1) << n);
-	cterm_write(cterm, cterm->macros[n], cterm->macro_lens[n], NULL, 0, speed);
+	cterm_write(cterm, cterm->macros[n], cterm->macro_lens[n], speed);
 	cterm->in_macro &= ~(UINT64_C(1) << n);
 }
 

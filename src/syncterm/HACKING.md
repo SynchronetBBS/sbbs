@@ -517,11 +517,12 @@ curr     → absterm or term depending on origin mode state
 
 ```c
 size_t cterm_write(struct cterminal *cterm, const void *buf, int buflen,
-                   char *retbuf, size_t retsize, int *speed);
+                   int *speed);
 ```
 
-Processes `buflen` bytes, generates response data in `retbuf`. The main
-byte loop has priority-ordered dispatch:
+Processes `buflen` bytes. Any terminal responses (DSR, DECRQM, STS, etc.)
+are delivered via `cterm->response_cb` if installed, otherwise discarded.
+The main byte loop has priority-ordered dispatch:
 
 1. **String capture**: Accumulating DCS/APC/OSC/PM/SOS string data
 2. **Font download**: Receiving raw font bitmap data
@@ -1161,8 +1162,7 @@ Three test suites cover the terminal emulation layer:
 SDL offscreen, creates cterm instances directly via `cterm_init()`,
 writes test data via `cterm_write()`, and verifies screen state via
 `vmem_gettext()` and rendered pixels via `getpixels()`.  No PTY or
-SyncTERM process needed.  Response capture via `response_cb` callback
-with retbuf leak detection.
+SyncTERM process needed.  Response capture via `response_cb` callback.
 
 - **ANSI-BBS** (84 tests): C0 controls, cursor movement + clamping,
   erase operations (ED/EL/ICH/DCH/IL/DL/ECH + variants), SGR (reset,
