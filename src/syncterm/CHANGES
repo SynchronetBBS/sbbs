@@ -1,5 +1,9 @@
 Version 1.9b
 ------------
+BBS cache directories are now deleted/renamed with the entry
+ANSI parser overhaul
+Keystroke handling overhaul
+Add DECRQSS support to show/hide/customize the status line
 
 Version 1.8
 -----------

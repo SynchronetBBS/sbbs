@@ -4822,6 +4822,75 @@ term_response_cb(const char *buf, size_t len, void *cbdata)
 		conn_send(buf, len, 0);
 }
 
+/* Blank the status row with default attributes.  Called on any DECSSDT
+ * transition that changes row ownership so leftover SyncTERM indicator
+ * pixels or host-written text don't bleed into the new mode.  Ps=1's
+ * update_status() repaint runs afterwards and overwrites with the
+ * indicator colors. */
+static void
+clear_status_row(void)
+{
+	struct vmem_cell *buf;
+	int row = term.y + term.height;
+	int i;
+
+	buf = calloc(term.width, sizeof(*buf));
+	if (!buf)
+		return;
+	for (i = 0; i < term.width; i++) {
+		buf[i].ch = ' ';
+		buf[i].legacy_attr = 0x07;
+		buf[i].fg = 0x80aaaaaa;
+		buf[i].bg = 0x80000000;
+		buf[i].font = 0;
+	}
+	vmem_puttext(term.x, row, term.x + term.width - 1, row, buf);
+	free(buf);
+}
+
+/* DECSSDT callback — fired by cterm when the host changes the status
+ * display type.  The total usable row count (main + reserved status row)
+ * is invariant across a toggle; this routine shifts one row between main
+ * and status to match new_type, updates term.nostatus so update_status()
+ * behaves correctly afterwards, and creates or destroys the sub-cterm
+ * that owns the status row in host-writable mode. */
+static void
+on_status_display_change(struct cterminal *c, int old_type, int new_type,
+    void *cbdata)
+{
+	int total = c->height + (old_type >= 1 ? 1 : 0);
+	int new_main = (new_type >= 1) ? total - 1 : total;
+	(void)cbdata;
+
+	if (new_main != c->height) {
+		cterm_resize_rows(c, new_main);
+		term.height = new_main;
+	}
+
+	term.nostatus = (new_type != 1);
+
+	if (old_type == 2 && c->status_sub != NULL) {
+		cterm_end(c->status_sub, 0);
+		c->status_sub = NULL;
+	}
+	if (new_type == 2 && c->status_sub == NULL) {
+		c->status_sub = cterm_init(1, c->width, c->x, c->y + c->height,
+		    0, 0, NULL, c->emulation);
+		if (c->status_sub != NULL) {
+			c->status_sub->parent = c;
+			c->status_sub->response_cb = c->response_cb;
+			c->status_sub->response_cbdata = c->response_cbdata;
+			cterm_start(c->status_sub);
+		}
+	}
+
+	if (old_type != new_type && new_type >= 1)
+		clear_status_row();
+
+	if (new_type == 1)
+		force_status_update = true;
+}
+
 /* Win32 doesn't have ffs()... just use this everywhere. */
 static int
 my_ffs(int mask)
@@ -4844,6 +4913,15 @@ fill_mevent(char *buf, size_t bufsz, struct mouse_event *me, struct mouse_state 
 	int  bit;
 	int  ret;
 	bool release;
+
+	/* Gate mouse reporting over SyncTERM's native indicator row.  In
+	 * DECSSDT Ps=1 the row is SyncTERM-owned (clock, hover, help), so
+	 * clicks there are local affordances and shouldn't leak to the host.
+	 * Ps=0 has no status row, and Ps=2 gives the row to the host — in
+	 * both cases the event passes through. */
+	if (cterm->status_display_type == 1
+	    && me->starty == term.y + term.height - 1)
+		return 0;
 
         // TODO: Get modifier keys too...
 	if (me->event == CIOLIB_MOUSE_MOVE) {
@@ -5492,6 +5570,9 @@ doterm(struct bbslist *bbs)
 	cterm->mouse_state_change_cbdata = &ms;
 	cterm->mouse_state_query = mouse_state_query;
 	cterm->mouse_state_query_cbdata = &ms;
+	cterm->status_display_type = bbs->nostatus ? 0 : 1;
+	cterm->status_display_cb = on_status_display_change;
+	cterm->status_display_cbdata = bbs;
 	cterm->music_enable = bbs->music;
 	zrqbuf[0] = 0;
 	zrqlen = 0;

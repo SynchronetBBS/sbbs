@@ -1315,6 +1315,67 @@ cterm_handle_decstbm(struct cterminal *cterm, int *speed)	/* CSI Pt ; Pb r */
 	}
 }
 
+/* DECSSDT — Select Status Display Type (VT320+): CSI Ps $ ~
+ *   Ps=0  no status line
+ *   Ps=1  indicator (default; SyncTERM's native clock/state row)
+ *   Ps=2  host-writable status line
+ * When dispatched on a sub-cterm, bubbles to the parent so the main
+ * terminal owns the state.  Out-of-range Ps is silently ignored (match
+ * xterm).  A change fires status_display_cb for the host application
+ * to resize the main display and create/destroy the sub-cterm. */
+void
+cterm_handle_decssdt(struct cterminal *cterm, int *speed)
+{
+	int old, ps;
+
+	if (cterm->parent) {
+		cterm->parent->seq_param_count = cterm->seq_param_count;
+		cterm->parent->seq_param_int[0] = cterm->seq_param_int[0];
+		cterm_handle_decssdt(cterm->parent, speed);
+		return;
+	}
+	(void)speed;
+	cterm_seq_default(cterm, 0, 1);
+	ps = (int)cterm->seq_param_int[0];
+	if (ps < 0 || ps > 2)
+		return;
+	if (ps == cterm->status_display_type)
+		return;
+	old = cterm->status_display_type;
+	if (cterm->status_display_active == 1)
+		cterm->status_display_active = 0;
+	cterm->status_display_type = ps;
+	if (cterm->status_display_cb)
+		cterm->status_display_cb(cterm, old, ps, cterm->status_display_cbdata);
+}
+
+/* DECSASD — Select Active Status Display (VT320+): CSI Ps $ }
+ *   Ps=0  main display receives writes (default)
+ *   Ps=1  status display receives writes (valid only when DECSSDT=2)
+ * Phase 1 tracks the flag but routing to a sub-cterm happens in Phase 2;
+ * Ps=1 is silently ignored until DECSSDT=2 is available.  Bubbles to
+ * parent on sub-cterm dispatch. */
+void
+cterm_handle_decsasd(struct cterminal *cterm, int *speed)
+{
+	int ps;
+
+	if (cterm->parent) {
+		cterm->parent->seq_param_count = cterm->seq_param_count;
+		cterm->parent->seq_param_int[0] = cterm->seq_param_int[0];
+		cterm_handle_decsasd(cterm->parent, speed);
+		return;
+	}
+	(void)speed;
+	cterm_seq_default(cterm, 0, 0);
+	ps = (int)cterm->seq_param_int[0];
+	if (ps < 0 || ps > 1)
+		return;
+	if (ps == 1 && cterm->status_display_type != 2)
+		return;
+	cterm->status_display_active = ps;
+}
+
 /* ========================================================================
  * DCS string parsers — Sixel + DECDMAC
  *
@@ -2177,6 +2238,19 @@ cterm_dec_dcs_finish(struct cterminal *cterm)
 			case '$':
 				if (cterm->strbuf[3] == '|' && cterm->strbuf[4] == 0) {
 					sprintf(tmp, "\x1bP1$r%d$|\x1b\\", cterm->width);
+					cterm_respond(cterm, tmp, strlen(tmp));
+				}
+				else if (cterm->strbuf[3] == '~' && cterm->strbuf[4] == 0) {
+					/* DECSSDT query — read from topmost parent so sub
+					 * reports the terminal's state, not its own zero. */
+					struct cterminal *owner = cterm->parent ? cterm->parent : cterm;
+					sprintf(tmp, "\x1bP1$r%d$~\x1b\\", owner->status_display_type);
+					cterm_respond(cterm, tmp, strlen(tmp));
+				}
+				else if (cterm->strbuf[3] == '}' && cterm->strbuf[4] == 0) {
+					/* DECSASD query */
+					struct cterminal *owner = cterm->parent ? cterm->parent : cterm;
+					sprintf(tmp, "\x1bP1$r%d$}\x1b\\", owner->status_display_active);
 					cterm_respond(cterm, tmp, strlen(tmp));
 				}
 				else {

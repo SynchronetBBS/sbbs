@@ -44,6 +44,8 @@ void cterm_handle_decsm(struct cterminal *cterm, int *speed);
 void cterm_handle_decrm(struct cterminal *cterm, int *speed);
 void cterm_handle_decsm_cterm(struct cterminal *cterm, int *speed);
 void cterm_handle_decrm_cterm(struct cterminal *cterm, int *speed);
+void cterm_handle_decssdt(struct cterminal *cterm, int *speed);
+void cterm_handle_decsasd(struct cterminal *cterm, int *speed);
 
 /* DCS hooks invoked from the generic string-framing machinery in
  * cterm.c.  cterm_dec_dcs_begin() arms the sixel / DECDMAC detectors

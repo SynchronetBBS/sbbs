@@ -230,6 +230,8 @@
 #define SEQ_DECMACRO	(SEQ_CSI | SEQ_INTERM('*') | SEQ_FINAL('z'))
 #define SEQ_DECIC	(SEQ_CSI | SEQ_INTERM('\'') | SEQ_FINAL('}'))
 #define SEQ_DECDC	(SEQ_CSI | SEQ_INTERM('\'') | SEQ_FINAL('~'))
+#define SEQ_DECSASD	(SEQ_CSI | SEQ_INTERM('$') | SEQ_FINAL('}'))
+#define SEQ_DECSSDT	(SEQ_CSI | SEQ_INTERM('$') | SEQ_FINAL('~'))
 
 /* ------------------------------------------------------------------------
  * Parser / dispatch types
