@@ -5635,91 +5635,21 @@ doterm(struct bbslist *bbs)
 					continue;
 			}
 
-                        /*
-                         * These keys are SyncTERM control keys
-                         * key is set to zero if consumed
-                         */
+			/*
+			 * Pre-CTerm processing... these are ALWAYS
+			 * supported and are never passed to CTerm
+			 */
 			switch (key) {
 				case CIO_KEY_MOUSE:
 					handle_mouse_event(&ms);
-					key = 0;
-					break;
-				case CIO_KEY_SHIFT_IC: /* Shift-Insert - Paste */
-					do_paste();
-					key = 0;
-					break;
-				case 0x3000: /* ALT-B - Scrollback */
-					setup_mouse_events(NULL);
-					viewscroll();
-					setup_mouse_events(&ms);
-					showmouse();
-					key = 0;
-					break;
-				case 0x2e00: /* ALT-C - Capture */
-					capture_control(bbs);
-					setup_mouse_events(&ms);
-					showmouse();
-					key = 0;
-					break;
-				case 0x2000: /* ALT-D - Download */
-					begin_download(bbs);
-					setup_mouse_events(&ms);
-					showmouse();
-					key = 0;
-					break;
-				case 0x1200: /* ALT-E */
-				{
-					char                  title[LIST_NAME_MAX + 13];
-					struct ciolib_screen *savscrn;
-					savscrn = cp437_savescrn();
-					show_bbslist(bbs->name, true);
-					sprintf(title, "SyncTERM - %s\n", bbs->name);
-					settitle(title);
-					uifcbail();
-					setup_mouse_events(&ms);
-					restorescreen(savscrn);
-					freescreen(savscrn);
-					if ((cterm->scrollback != scrollback_buf)
-					    || (cterm->backlines != settings.backlines)) {
-						cterm->scrollback = scrollback_buf;
-						cterm->backlines = settings.backlines;
-						if (cterm->backpos > cterm->backlines)
-							cterm->backpos = cterm->backlines;
+					continue;
+				case CIO_KEY_QUIT:
+					uifc.exit_flags |= UIFC_XF_QUIT;
+					if (check_exit(true)) {
+						if (check_hangup(key, &hret, oldmc, &ms))
+							return hret;
 					}
-					showmouse();
-					_setcursortype(_NORMALCURSOR);
-					key = 0;
-				}
-				break;
-				case 0x2100: /* ALT-F */
-					font_control(bbs, cterm);
-					setup_mouse_events(&ms);
-					showmouse();
-					key = 0;
-					break;
-				case 0x2600: /* ALT-L */
-					send_login(bbs);
-					key = 0;
-					break;
-				case 0x3200: /* ALT-M */
-					music_control(bbs);
-					setup_mouse_events(&ms);
-					showmouse();
-					key = 0;
-					break;
-				case 0x1800: /* ALT-O */
-					ms.flags ^= MS_FLAGS_DISABLED;
-					setup_mouse_events(&ms);
-					showmouse();
-					key = 0;
-					sleep = false;
-					break;
-				case 0x1600: /* ALT-U - Upload */
-					begin_upload(bbs, false, inch);
-					setup_mouse_events(&ms);
-					showmouse();
-					key = 0;
-					break;
+					continue;
 				case 17: /* CTRL-Q */
 					if ((cio_api.mode != CIOLIB_MODE_CURSES)
 					    && (cio_api.mode != CIOLIB_MODE_CURSES_ASCII)
@@ -5728,28 +5658,12 @@ doterm(struct bbslist *bbs)
 						break;
 					if (check_hangup(key, &hret, oldmc, &ms))
 						return hret;
-					key = 0;
-					break;
-				case 0x2d00: /* Alt-X - Exit */
-				case CIO_KEY_QUIT:
-					uifc.exit_flags |= UIFC_XF_QUIT;
-					if (!check_exit(true))
-						break;
-					if (check_hangup(key, &hret, oldmc, &ms))
-						return hret;
-					key = 0;
-					break;
-				case 0x2300: /* Alt-H - Hangup */
-					if (check_hangup(key, &hret, oldmc, &ms))
-						return hret;
-					key = 0;
-					break;
+					continue;
 				case 19: /* CTRL-S */
 					if ((cio_api.mode != CIOLIB_MODE_CURSES)
 					    && (cio_api.mode != CIOLIB_MODE_CURSES_IBM)
 					    && (cio_api.mode != CIOLIB_MODE_ANSI))
 						break;
-
                                 /* FALLTHROUGH for curses/ansi modes */
 				case 0x2c00: /* ALT-Z */
 					if (bbs->hidepopups)
@@ -5826,7 +5740,95 @@ doterm(struct bbslist *bbs)
 					setup_mouse_events(&ms);
 					showmouse();
 					gotoxy(i, j);
-					key = 0;
+					continue;
+			}
+
+			/*
+			 * If CTerm sends something for this, we're done.
+			 */
+			if (cterm_encode_key(cterm, key) > 0)
+				continue;
+
+                        /*
+                         * These keys are SyncTERM control keys
+                         */
+			switch (key) {
+				case CIO_KEY_SHIFT_IC: /* Shift-Insert - Paste */
+					do_paste();
+					break;
+				case 0x3000: /* ALT-B - Scrollback */
+					setup_mouse_events(NULL);
+					viewscroll();
+					setup_mouse_events(&ms);
+					showmouse();
+					break;
+				case 0x2e00: /* ALT-C - Capture */
+					capture_control(bbs);
+					setup_mouse_events(&ms);
+					showmouse();
+					break;
+				case 0x2000: /* ALT-D - Download */
+					begin_download(bbs);
+					setup_mouse_events(&ms);
+					showmouse();
+					break;
+				case 0x1200: /* ALT-E */
+				{
+					char                  title[LIST_NAME_MAX + 13];
+					struct ciolib_screen *savscrn;
+					savscrn = cp437_savescrn();
+					show_bbslist(bbs->name, true);
+					sprintf(title, "SyncTERM - %s\n", bbs->name);
+					settitle(title);
+					uifcbail();
+					setup_mouse_events(&ms);
+					restorescreen(savscrn);
+					freescreen(savscrn);
+					if ((cterm->scrollback != scrollback_buf)
+					    || (cterm->backlines != settings.backlines)) {
+						cterm->scrollback = scrollback_buf;
+						cterm->backlines = settings.backlines;
+						if (cterm->backpos > cterm->backlines)
+							cterm->backpos = cterm->backlines;
+					}
+					showmouse();
+					_setcursortype(_NORMALCURSOR);
+				}
+				break;
+				case 0x2100: /* ALT-F */
+					font_control(bbs, cterm);
+					setup_mouse_events(&ms);
+					showmouse();
+					break;
+				case 0x2600: /* ALT-L */
+					send_login(bbs);
+					break;
+				case 0x3200: /* ALT-M */
+					music_control(bbs);
+					setup_mouse_events(&ms);
+					showmouse();
+					break;
+				case 0x1800: /* ALT-O */
+					ms.flags ^= MS_FLAGS_DISABLED;
+					setup_mouse_events(&ms);
+					showmouse();
+					sleep = false;
+					break;
+				case 0x1600: /* ALT-U - Upload */
+					begin_upload(bbs, false, inch);
+					setup_mouse_events(&ms);
+					showmouse();
+					break;
+				case 0x2d00: /* Alt-X - Exit */
+					uifc.exit_flags |= UIFC_XF_QUIT;
+					if (check_exit(true)) {
+						if (check_hangup(key, &hret, oldmc, &ms))
+							return hret;
+					}
+					break;
+				case 0x2300: /* Alt-H - Hangup */
+					if (check_hangup(key, &hret, oldmc, &ms))
+						return hret;
 					break;
 				case 0x9800: /* ALT-Up */
 					if ((bbs->conn_type != CONN_TYPE_SERIAL)
@@ -5835,7 +5837,6 @@ doterm(struct bbslist *bbs)
 							speed = rates[get_rate_num(speed) + 1];
 						else
 							speed = rates[0];
-						key = 0;
 					}
 					break;
 				case 0xa000: /* ALT-Down */
@@ -5846,12 +5847,9 @@ doterm(struct bbslist *bbs)
 							speed = 0;
 						else
 							speed = rates[i - 1];
-						key = 0;
 					}
 					break;
 			}
-			if (key)
-				cterm_encode_key(cterm, key);
 		}
 		if (sleep)
 			SLEEP(1);
