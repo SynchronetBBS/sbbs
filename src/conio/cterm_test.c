@@ -40,11 +40,6 @@ static int term_cols, term_rows;
 static char response_buf[4096];
 static size_t response_len;
 
-/* Retbuf leak detection: if response_cb is set, nothing should
- * write to retbuf. We pass a separate retbuf to detect leaks. */
-static char retbuf_leak[4096];
-static int retbuf_leaked;
-
 static void
 response_cb(const char *buf, size_t len, void *cbdata)
 {
@@ -111,7 +106,6 @@ setup_cterm(int mode, int emulation)
 	cterm->response_cbdata = NULL;
 	cterm->quiet = 1;	/* suppress BEL audio during tests */
 	response_clear();
-	retbuf_leaked = 0;
 	cterm_start(cterm);
 }
 
@@ -133,15 +127,7 @@ static void
 ct_write(const void *buf, int len)
 {
 	int speed = 0;
-	retbuf_leak[0] = '\0';
-	cterm_write(cterm, buf, len, retbuf_leak, sizeof(retbuf_leak), &speed);
-	if (retbuf_leak[0] != '\0') {
-		if (!retbuf_leaked) {
-			fprintf(result_fp, "    RETBUF LEAK: '%.*s'\n",
-			    (int)strlen(retbuf_leak), retbuf_leak);
-		}
-		retbuf_leaked = 1;
-	}
+	cterm_write(cterm, buf, len, &speed);
 }
 
 /*
@@ -1679,31 +1665,6 @@ static int test_ansi_save_restore_mode(void)
 	ct_printf("\033[?7u");   /* restore */
 	if (!(cterm->extattr & CTERM_EXTATTR_AUTOWRAP)) {
 		fprintf(result_fp, "    autowrap not restored\n");
-		return 0;
-	}
-	return 1;
-}
-
-/* Retbuf leak detection — when response_cb is set, nothing should
- * go through retbuf. This catches responses that bypass the callback.
- * Runs all major query types and checks the retbuf_leaked flag. */
-static int test_ansi_retbuf_leak(void)
-{
-	setup_ansi();
-	ct_printf("\033[6n");          /* DSR cursor position */
-	ct_printf("\033[5n");          /* DSR status */
-	ct_printf("\033[c");           /* DA */
-	ct_write("\033P$qm\033\\", 7); /* DECRQSS SGR */
-	ct_write("\033P$qr\033\\", 7); /* DECRQSS DECSTBM */
-	ct_write("\033P$qs\033\\", 7); /* DECRQSS DECSLRM */
-	ct_write("\033P$q*x\033\\", 8); /* DECRQSS DECSACE */
-	ct_write("\033P$q*r\033\\", 8); /* DECRQSS DECSCS */
-	ct_printf("\033[?7$p");        /* DECRQM autowrap */
-	ct_printf("\033[?6$p");        /* DECRQM origin */
-	ct_printf("\033[1;1;1;1;1;1*y"); /* DECRQCRA */
-	ct_printf("\033[=4n");          /* CTSMRR */
-	if (retbuf_leaked) {
-		fprintf(result_fp, "    response leaked to retbuf when callback is set\n");
 		return 0;
 	}
 	return 1;
@@ -5535,7 +5496,6 @@ static struct test_entry tests[] = {
 	/* ANSI-BBS — Modes */
 	{"ANSI_BCDM",        test_ansi_bcdm},
 	{"ANSI_save_mode",   test_ansi_save_restore_mode},
-	{"ANSI_retbuf_leak", test_ansi_retbuf_leak},
 	/* ANSI-BBS — SGR more */
 	{"ANSI_SGR_noblink",  test_ansi_sgr_noblink},
 	{"ANSI_SGR_normint",  test_ansi_sgr_normal_int},

@@ -2312,7 +2312,7 @@ begin_download(struct bbslist *bbs)
 	freescreen(savscrn);
 	gotoxy(txtinfo.curx, txtinfo.cury);
 	if (buf) {
-		cterm_write(cterm, buf, buflen, NULL, 0, NULL);
+		cterm_write(cterm, buf, buflen, NULL);
 		free(buf);
 	}
 }
@@ -2347,7 +2347,7 @@ raw_upload(FILE *fp)
                  * allow speed changes. */
 		while ((inch = recv_byte(NULL, 0)) >= 0) {
 			ch[0] = inch;
-			cterm_write(cterm, ch, 1, NULL, 0, NULL);
+			cterm_write(cterm, ch, 1, NULL);
 		}
 		if (r == 0)
 			break;
@@ -2389,7 +2389,7 @@ ascii_upload(FILE *fp)
                  * allow speed changes. */
 		while ((inch = recv_byte(NULL, 0)) >= 0) {
 			ch[0] = inch;
-			cterm_write(cterm, ch, 1, NULL, 0, NULL);
+			cterm_write(cterm, ch, 1, NULL);
 		}
 	}
 }
@@ -3510,7 +3510,7 @@ capture_control(struct bbslist *bbs)
 
 #define WRITE_OUTBUF() \
 	if (outbuf_size > 0) { \
-		cterm_write(cterm, outbuf, outbuf_size, NULL, 0, &speed); \
+		cterm_write(cterm, outbuf, outbuf_size, &speed); \
 		outbuf_size = 0; \
 		updated = true; \
 	}
@@ -4784,7 +4784,7 @@ done:
 }
 
 static void
-apc_handler(char *strbuf, size_t slen, char *retbuf, size_t retsize, void *apcd)
+apc_handler(char *strbuf, size_t slen, void *apcd)
 {
 	char            fn[MAX_PATH + 1];
 	char            fn_root[MAX_PATH + 1];
@@ -4800,9 +4800,6 @@ apc_handler(char *strbuf, size_t slen, char *retbuf, size_t retsize, void *apcd)
 	BYTE            digest[MD5_DIGEST_SIZE];
 	unsigned long   slot;
 
-	/* Responses go through conn_send directly, not retbuf */
-	(void)retbuf;
-	(void)retsize;
 	if (get_cache_fn_base(bbs, fn_root, sizeof(fn_root)) == 0)
 		return;
 	strcpy(fn, fn_root);

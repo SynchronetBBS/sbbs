@@ -234,7 +234,7 @@ struct cterminal {
 	int					sx_orig_cursor;	// Original value of cterm->cursor
 
 	/* APC Handler */
-	void				(*apc_handler)(char *strbuf, size_t strlen, char *retbuf, size_t retsize, void *cbdata);
+	void				(*apc_handler)(char *strbuf, size_t strlen, void *cbdata);
 	void				*apc_handler_data;
 
 	/* Mouse state change callback */
@@ -274,14 +274,9 @@ struct cterminal {
 	uint8_t prestel_mem;
 
 	/* Response callback — sends terminal responses (DSR, DECRQM, STS, etc.)
-	 * directly to the host.  If NULL, responses use the retbuf passed to
-	 * cterm_write (legacy behavior). */
+	 * directly to the host.  If NULL, responses are discarded. */
 	void (*response_cb)(const char *buf, size_t len, void *cbdata);
 	void *response_cbdata;
-
-	/* Internal: retbuf/retsize from current cterm_write call, for legacy mode */
-	char				*response_buf;
-	size_t				response_buf_size;
 
 	/* ECMA-48 selected area (SSA/ESA) for screen readback */
 	int					ssa_row;	// SSA position (1-based, screen coords), 0 = not set
@@ -363,7 +358,7 @@ extern "C" {
 #endif
 
 CIOLIBEXPORT struct cterminal* cterm_init(int height, int width, int xpos, int ypos, int backlines, int backcols, struct vmem_cell *scrollback, int emulation);
-CIOLIBEXPORT size_t cterm_write(struct cterminal *cterm, const void *buf, int buflen, char *retbuf, size_t retsize, int *speed);
+CIOLIBEXPORT size_t cterm_write(struct cterminal *cterm, const void *buf, int buflen, int *speed);
 CIOLIBEXPORT int cterm_openlog(struct cterminal *cterm, char *logfile, int logtype);
 CIOLIBEXPORT void cterm_closelog(struct cterminal *cterm);
 CIOLIBEXPORT void cterm_end(struct cterminal *cterm, int free_fonts);

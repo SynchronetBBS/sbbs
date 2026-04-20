@@ -159,7 +159,7 @@ int spyon(char *sockname, int nodenum, scfg_t* cfg)  {
 					i = strlen(buf);
 				}
 				idle_count = 0;
-				cterm_write(cterm, buf, i, NULL, 0, NULL);
+				cterm_write(cterm, buf, i, NULL);
 			}
 			else if(i<0) {
 				close(spy_sock);

@@ -219,7 +219,7 @@ int xpd_rwrite(const char *data, int data_len)
 	ciolib_ansi_writebyte_cb=dummy_writebyte_cb;
 
 	/* Send data to cterm */
-	cterm_write(cterm, (char *)data, data_len, NULL, 0, NULL);
+	cterm_write(cterm, (char *)data, data_len, NULL);
 
 	/* Send data to remote */
 	xpd_ansi_writestr_cb((char *)data,data_len);

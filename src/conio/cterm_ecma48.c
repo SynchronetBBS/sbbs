@@ -726,15 +726,6 @@ void
 cterm_handle_sts(struct cterminal *cterm, int *speed)	/* ESC S */
 {
 	(void)speed;
-	/* Flush any pending retbuf content before transmitting. */
-	if (cterm->response_cb && cterm->response_buf) {
-		size_t pending = strlen(cterm->response_buf);
-		if (pending > 0) {
-			cterm->response_cb(cterm->response_buf, pending,
-			    cterm->response_cbdata);
-			cterm->response_buf[0] = '\0';
-		}
-	}
 	cterm_transmit_selected(cterm);
 }
 
@@ -839,7 +830,6 @@ cterm_handle_st(struct cterminal *cterm, int *speed)	/* ESC \ (String Terminator
 		case CTERM_STRING_APC:
 			if (cterm->apc_handler)
 				cterm->apc_handler(cterm->strbuf, cterm->strbuflen,
-				    cterm->response_buf, cterm->response_buf_size,
 				    cterm->apc_handler_data);
 			break;
 		case CTERM_STRING_DCS:
@@ -959,8 +949,8 @@ cterm_accumulate_sos(struct cterminal *cterm, unsigned char byte, int *speed)
 		cterm->accumulator = NULL;
 		FREE_AND_NULL(cterm->strbuf);
 		cterm->strbuflen = cterm->strbufsize = 0;
-		cterm_write(cterm, "\x1b", 1, NULL, 0, speed);
-		cterm_write(cterm, &ch_byte, 1, NULL, 0, speed);
+		cterm_write(cterm, "\x1b", 1, speed);
+		cterm_write(cterm, &ch_byte, 1, speed);
 		return true;
 	}
 	if (cterm->strbuf == NULL) {
