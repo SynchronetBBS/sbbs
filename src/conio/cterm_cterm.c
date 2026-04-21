@@ -891,81 +891,12 @@ static const uint note_frequency[]={	/* Hz*1000 */
 	,7902200
 };
 
-struct note_params {
-	int notenum;
-	int	notelen;
-	int	dotted;
-	int	tempo;
-	int	noteshape;
-	int	foreground;
-};
-
-/* ---- ANSI music playback thread + driver ---- */
-static void tone_or_beep(double freq, int duration, int device_open)
-{
-	if (device_open)
-		xptone(freq, duration, WAVE_SHAPE_SINE_SAW_HARM);
-	else
-		xpbeep(freq, duration);
-}
-
-void cterm_playnote_thread(void *args)
-{
-	/* Tempo is quarter notes per minute */
-	int duration;
-	int pauselen;
-	struct note_params *note;
-	int	device_open=FALSE;
-	struct cterminal *cterm=(struct cterminal *)args;
-
-	SetThreadName("PlayNote");
-	while(1) {
-		if(device_open) {
-			if(!listSemTryWaitBlock(&cterm->notes,5000)) {
-				xptone_close();
-				listSemWait(&cterm->notes);
-			}
-		}
-		else
-			listSemWait(&cterm->notes);
-		note=listShiftNode(&cterm->notes);
-		if(note==NULL)
-			break;
-		device_open=xptone_open();
-		if(note->dotted)
-			duration=360000/note->tempo;
-		else
-			duration=240000/note->tempo;
-		duration/=note->notelen;
-		switch(note->noteshape) {
-			case CTERM_MUSIC_STACATTO:
-				pauselen=duration/4;
-				break;
-			case CTERM_MUSIC_LEGATO:
-				pauselen=0;
-				break;
-			case CTERM_MUSIC_NORMAL:
-			default:
-				pauselen=duration/8;
-				break;
-		}
-		duration-=pauselen;
-		if(note->notenum < 72 && note->notenum >= 0)
-			tone_or_beep(((double)note_frequency[note->notenum])/1000,duration,device_open);
-		else
-			tone_or_beep(0,duration,device_open);
-		if(pauselen)
-			tone_or_beep(0,pauselen,device_open);
-		if(note->foreground)
-			sem_post(&cterm->note_completed_sem);
-		free(note);
-	}
-	if (device_open)
-		xptone_close();
-	cterm->playnote_thread_running=FALSE;
-	sem_post(&cterm->playnote_thread_terminated);
-}
-
+/* ---- ANSI music: streaming via xp_audio mixer ----
+ * Each MML note is rendered via xptone_makewave into a small buffer and
+ * appended to a per-terminal audio stream. The mixer drains the stream at
+ * device rate. Foreground notes block the parser until their data has been
+ * played; background notes let the parser race ahead, limited only by the
+ * stream's ring buffer capacity. */
 static void play_music(struct cterminal *cterm)
 {
 	int		i;
@@ -977,8 +908,7 @@ static void play_music(struct cterminal *cterm)
 	char	numbuf[10];
 	int		dotted;
 	int		notenum;
-	struct	note_params *np;
-	int		fore_count;
+	int		had_foreground = 0;
 
 	if(cterm->quiet) {
 		cterm->music=0;
@@ -986,8 +916,20 @@ static void play_music(struct cterminal *cterm)
 		cterm->musicbuf[0]=0;
 		return;
 	}
+
+	/* Open the audio device and a music stream on first use. Both are kept
+	 * open for the life of the terminal — they are torn down in cterm_end. */
+	if (cterm->music_stream < 0) {
+		if (!xptone_open())
+			goto done;
+		cterm->music_stream = xp_audio_open(1.0f, 1.0f);
+		if (cterm->music_stream < 0) {
+			xptone_close();
+			goto done;
+		}
+	}
+
 	p=cterm->musicbuf;
-	fore_count=0;
 	if(cterm->music==1) {
 		switch(toupper(*p)) {
 			case 'F':
@@ -1142,21 +1084,52 @@ static void play_music(struct cterminal *cterm)
 					}
 				}
 				notenum+=offset;
-				np=(struct note_params *)malloc(sizeof(struct note_params));
-				if(np!=NULL) {
-					np->notenum=notenum;
-					np->notelen=notelen;
-					if(np->notelen<1)
-						np->notelen=1;
-					if(np->notelen>64)
-						np->notelen=64;
-					np->dotted=dotted;
-					np->tempo=cterm->tempo;
-					np->noteshape=cterm->noteshape;
-					np->foreground=cterm->musicfore;
-					listPushNode(&cterm->notes, np);
-					if(cterm->musicfore)
-						fore_count++;
+				{
+					int      duration_ms;
+					int      pause_ms;
+					double   freq = 0.0;
+					int      note_frames;
+					int      pause_frames;
+					int      total_frames;
+					int16_t *buf;
+
+					if (notelen < 1)  notelen = 1;
+					if (notelen > 64) notelen = 64;
+					duration_ms = dotted ? (360000 / cterm->tempo) : (240000 / cterm->tempo);
+					duration_ms /= notelen;
+					switch (cterm->noteshape) {
+						case CTERM_MUSIC_STACATTO:
+							pause_ms = duration_ms / 4;
+							break;
+						case CTERM_MUSIC_LEGATO:
+							pause_ms = 0;
+							break;
+						default:
+							pause_ms = duration_ms / 8;
+							break;
+					}
+					duration_ms -= pause_ms;
+					if (notenum >= 0 && notenum < 72)
+						freq = (double)note_frequency[notenum] / 1000.0;
+					note_frames  = XPBEEP_SAMPLE_RATE * duration_ms / 1000;
+					pause_frames = XPBEEP_SAMPLE_RATE * pause_ms / 1000;
+					total_frames = note_frames + pause_frames;
+					if (total_frames > 0) {
+						buf = (int16_t *)malloc((size_t)total_frames * XPBEEP_FRAMESIZE);
+						if (buf) {
+							if (note_frames > 0)
+								xptone_makewave(freq, buf, note_frames, WAVE_SHAPE_SINE_SAW_HARM);
+							if (pause_frames > 0)
+								memset(buf + (size_t)note_frames * XPBEEP_CHANNELS, 0,
+								       (size_t)pause_frames * XPBEEP_FRAMESIZE);
+							xp_audio_append(cterm->music_stream, buf, total_frames);
+							free(buf);
+							if (cterm->musicfore) {
+								xp_audio_wait(cterm->music_stream);
+								had_foreground = 1;
+							}
+						}
+					}
 				}
 				break;
 			case '<':							/* Down one octave */
@@ -1171,16 +1144,16 @@ static void play_music(struct cterminal *cterm)
 				break;
 		}
 	}
+done:
+	/* If any foreground notes were emitted, block until the device has
+	 * actually played the tail out before handing control back to the
+	 * caller (the BBS session / parser). For background-only MML, fall
+	 * through so output keeps streaming without added delay. */
+	if (had_foreground && cterm->music_stream >= 0)
+		xp_audio_drain(cterm->music_stream);
 	cterm->music=0;
 	cterm->accumulator = NULL;
 	cterm->musicbuf[0]=0;
-	if (fore_count) {
-		while(fore_count) {
-			sem_wait(&cterm->note_completed_sem);
-			fore_count--;
-		}
-		xptone_complete();
-	}
 }
 
 /* ---- Extended-colour SGR parameter helpers (truecolor / 256-colour) ---- */

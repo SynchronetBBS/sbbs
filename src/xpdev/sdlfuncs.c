@@ -22,7 +22,12 @@ static dll_handle  sdl_dll;
 
 int xpbeep_load_sdl_funcs(struct sdlfuncs *sdlf)
 {
-	const char *libnames[] = {"SDL", "SDL-1.2", "SDL-1.1", NULL};
+	/* Match the video-side loader (conio/sdlfuncs.c). The legacy SDL-1.2
+	 * / SDL-1.1 fallbacks are kept for systems where SDL2 isn't available
+	 * but the ancient libs still are; nothing new ships SDL1. The API
+	 * subset we use (SDL_OpenAudio / SDL_AudioSpec / AUDIO_S16SYS / the
+	 * lock/pause calls) is source-compatible between SDL1 and SDL2. */
+	const char *libnames[] = {"SDL2", "SDL", "SDL-1.2", "SDL-1.1", NULL};
 
 	if (sdl_funcs_failed)
 		return -1;

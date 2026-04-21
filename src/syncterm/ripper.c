@@ -8178,30 +8178,44 @@ rv_time(const char * const var, const void * const data)
 	return NULL;
 }
 
-// Generates a smooth sweep tone from start to end frequence in samples
-// samples at rate samples per second.
+// Generates a smooth sweep tone from start to end frequency over `nframes`
+// frames at XPBEEP_SAMPLE_RATE (44100 Hz), signed-16-bit stereo (L == R).
+// Amplitude 8192 ≈ -12 dB of full scale, matching the old U8 32/128 level.
+//
+// Because frequency varies linearly with i, the per-sample phase increment
+// `pc` is also linear in i — pc = pc_0 + i * d_pc. Precomputing pc_0 and
+// d_pc once avoids the per-sample divide + branch the naive form would
+// need. Computing pc from i directly (rather than an accumulator
+// `pc += d_pc`) keeps the per-segment error bounded at ε_mach rather than
+// drifting, so the final `phase` returned to the caller is accurate and
+// segment boundaries are phase-continuous.
 static double
-sweep(double phase, unsigned start, unsigned end, size_t samples, unsigned rate, uint8_t *buf)
+sweep(double phase, unsigned start, unsigned end, size_t nframes, int16_t *buf)
 {
-	if (samples == 0)
+	static const double TWO_PI = 2.0 * M_PI;
+	const double        k      = TWO_PI / (double)XPBEEP_SAMPLE_RATE;
+	double              pc_0;
+	double              d_pc;
+
+	if (nframes == 0)
 		return phase;
-	const bool add = (start < end);
-	const unsigned lower = add ? start : end;
-	const unsigned upper = add ? end : start;
-	const int64_t delta = upper - lower;
-	for (size_t i = 0; i < samples; i++) {
-		// Calculate frequency at this sample
-		double f;
-		if (add)
-			f = ((double)i / samples * delta) - lower;
-		else
-			f = upper - ((double)i / samples * delta);
-		// Calculate phase change per sample for this frequency
-		double pc = 2 * M_PI * (f / rate);
-		phase += pc;
-		buf[i] = 32 * sin(phase) + 128;
-		if (phase > M_PI * 2)
-			phase -= (M_PI * 2);
+	if (start < end) {
+		// Up-sweep: pc_i = k * ((i/nframes)*delta - start)
+		pc_0 = -k * (double)start;
+		d_pc =  k * (double)(end - start) / (double)nframes;
+	}
+	else {
+		// Down-sweep: pc_i = k * (start - (i/nframes)*delta)
+		pc_0 =  k * (double)start;
+		d_pc = -k * (double)(start - end) / (double)nframes;
+	}
+	for (size_t i = 0; i < nframes; i++) {
+		phase += pc_0 + (double)i * d_pc;
+		if (phase > TWO_PI)
+			phase -= TWO_PI;
+		int16_t v = (int16_t)(sin(phase) * 8192.0);
+		buf[i * 2 + 0] = v;
+		buf[i * 2 + 1] = v;
 	}
 	return phase;
 }
@@ -8210,7 +8224,9 @@ static char *
 rv_sound(const char * const var, const void * const data)
 {
 	int i;
-	uint8_t wave[8196];
+	// 15872 frames covers the longest case (4 × 3968 in Music); round up
+	// to 16384 for headroom. Stereo S16 → XPBEEP_CHANNELS slots per frame.
+	int16_t wave[16384 * XPBEEP_CHANNELS];
 	double phase = 0.0;
 
 	switch (var[0]) {
@@ -8234,21 +8250,22 @@ rv_sound(const char * const var, const void * const data)
 			}
 			break;
 		case 'M':
-			// 7938 samples
+			// 15872 frames = 360 ms at 44100 Hz (same duration as the
+			// original 7938 samples at 22050 Hz).
 			for (i = 0; i < 4; i += 1) {
-				phase = sweep(phase, 1300, 700, 1543, 22050, &wave[i * 1984 + 0]);
-				phase = sweep(phase, 700, 850, 221, 22050, &wave[i * 1984 + 1543]);
-				phase = sweep(phase, 850, 1300, 220, 22050, &wave[i * 1984 + 1764]);
+				phase = sweep(phase, 1300, 700, 3086, &wave[(i * 3968 +    0) * XPBEEP_CHANNELS]);
+				phase = sweep(phase,  700, 850,  442, &wave[(i * 3968 + 3086) * XPBEEP_CHANNELS]);
+				phase = sweep(phase,  850,1300,  440, &wave[(i * 3968 + 3528) * XPBEEP_CHANNELS]);
 			}
-			xp_play_sample(wave, 7938, false);
+			xp_play_sample16s(wave, 15872, false);
 			return NULL;
 		case 'P':
-			sweep(phase, 2500, 50, 5380, 22050, wave);
-			xp_play_sample(wave, 5380, false);
+			sweep(phase, 2500, 50, 10760, wave);
+			xp_play_sample16s(wave, 10760, false);
 			return NULL;
 		case 'R':
-			sweep(phase, 50, 2500, 5380, 22050, wave);
-			xp_play_sample(wave, 5380, false);
+			sweep(phase, 50, 2500, 10760, wave);
+			xp_play_sample16s(wave, 10760, false);
 			return NULL;
 	}
 	printf("TODO: RIP Variables (%s)\n", var);

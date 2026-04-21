@@ -25,6 +25,7 @@
 #include <link_list.h>
 #include <semwrap.h>
 #include <stdbool.h>
+#include <xpbeep.h>	/* xp_audio_handle_t */
 #include "ciolib.h"
 
 /* Maximum CSI parameter count that the unified dispatch parser will
@@ -177,10 +178,7 @@ struct cterminal {
 	int					notelen;
 	cterm_noteshape_t	noteshape;
 	int					musicfore;
-	int					playnote_thread_running;
-	link_list_t			notes;
-	sem_t				playnote_thread_terminated;
-	sem_t				note_completed_sem;
+	xp_audio_handle_t	music_stream;	/* ANSI music audio stream (-1 = none) */
 	int					backpos; // Position where new lines will be added
 	int					backstart; // First line of scrollback
 	int					xpos;

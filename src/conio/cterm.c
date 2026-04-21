@@ -1748,6 +1748,7 @@ struct cterminal* cterm_init(int height, int width, int xpos, int ypos, int back
 	cterm->logfile=NULL;
 	cterm->emulation=emulation;
 	cterm->last_column_flag = 0;
+	cterm->music_stream = -1;  /* lazily opened when MML first arrives */
 	/* Install the per-emulation dispatcher and its dispatch table.
 	 * The dispatcher handles single bytes outside sequence state; the
 	 * dispatch table is searched (via bsearch) when a sequence or C1
@@ -1812,14 +1813,6 @@ struct cterminal* cterm_init(int height, int width, int xpos, int ypos, int back
 		*out=0;
 	}
 	strcat(cterm->DA,"c");
-	/* Fire up note playing thread */
-	if(!cterm->playnote_thread_running) {
-		cterm->playnote_thread_running=TRUE;
-		listInit(&cterm->notes, LINK_LIST_SEMAPHORE|LINK_LIST_MUTEX);
-		sem_init(&cterm->note_completed_sem,0,0);
-		sem_init(&cterm->playnote_thread_terminated,0,0);
-		_beginthread(cterm_playnote_thread, 0, cterm);
-	}
 	if (cterm->emulation == CTERM_EMULATION_PRESTEL) {
 		cterm->cursor = _NOCURSOR;
 		ciolib_setcursortype(cterm->cursor);
@@ -2248,14 +2241,11 @@ void cterm_end(struct cterminal *cterm, int free_fonts)
 				FREE_AND_NULL(conio_fontdata[i].desc);
 			}
 		}
-		if(cterm->playnote_thread_running) {
-			if(sem_trywait(&cterm->playnote_thread_terminated)==-1) {
-				listSemPost(&cterm->notes);
-				sem_wait(&cterm->playnote_thread_terminated);
-			}
-			sem_destroy(&cterm->playnote_thread_terminated);
-			sem_destroy(&cterm->note_completed_sem);
-			listFree(&cterm->notes);
+		if (cterm->music_stream >= 0) {
+			xp_audio_stop(cterm->music_stream);
+			xp_audio_close(cterm->music_stream);
+			cterm->music_stream = -1;
+			xptone_close();
 		}
 
 		FREE_AND_NULL(cterm->strbuf);
