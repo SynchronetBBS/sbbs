@@ -135,7 +135,9 @@ endif()
 add_library(xpdev OBJECT ${SOURCE})
 if(WIN32)
 	target_compile_definitions(xpdev PUBLIC _WIN32 _WIN32_WINNT=0x0501 WINVER=0x0501 MSVCRT_VERSION=0x0501 _WIN32_IE=0x0500)
-	target_link_libraries(xpdev iphlpapi ws2_32 winmm netapi32)
+	# ole32 / uuid needed by the WASAPI code in xpbeep.c (MT only; xpbeep.c
+	# bumps its own _WIN32_WINNT to 0x0600 before <windows.h> in that case).
+	target_link_libraries(xpdev iphlpapi ws2_32 winmm netapi32 ole32 uuid)
 elseif(CMAKE_SYSTEM_NAME STREQUAL "Haiku")
 	target_compile_definitions(xpdev PUBLIC __unix__ USE_SNPRINTF)
 	target_link_libraries(xpdev m network)

@@ -51,7 +51,40 @@ function handle_timeout(reason)
 			lln('`r0`2`c  `%The BBS has reported that you do not have any more time left.');
 			break;
 		case 'IDLE':
-			run_ref('notime', 'help.ref');
+			if (player.battle || player.busy) {
+				dk.console.gotoxy(0, 21);
+				lln("`r0`2  Ack!  Apparently you didn't find this very exciting, because");
+				lln("  you have obviously fallen asleep.  Please come back sometime when");
+				lln("  you feel like actually doing something.");
+			}
+			else {
+				dk.console.gotoxy(0, 22);
+				// @#NOTIME is a display label, not a ref routine
+				var f = new File(getfname("help.ref"));
+				var label = 'NOTIME';
+				var l;
+				var found = false;
+
+				if (!f.open('rb'))
+					break;
+				// First, find the label...
+				while ((l = f.readln()) !== null) {
+					if (l.toLowerCase().indexOf('@#'+label) === 0) {
+						found = true;
+						break;
+					}
+				}
+				if (!found) {
+					f.close();
+					break;
+				}
+				while ((l = f.readln()) !== null) {
+					if (l.indexOf('@#') === 0)
+						break;
+					lln(l);
+				}
+				f.close();
+			}
 			break;
 		case 'DISCONNECT':
 			break;
@@ -1089,6 +1122,7 @@ function insane_run_ref(sec, fname, refret)
 						break;
 					lln(l);
 				}
+				f.close();
 			}
 		},
 		'displayfile':function(args) {
@@ -3312,7 +3346,6 @@ function vbar(choices, args)
 				ret.cur = choices.length - 1;
 				break;
 			case 'CONNECTION_CLOSED':
-				return -1;
 			case '\r':
 				movetoend();
 				return ret;
