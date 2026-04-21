@@ -1456,13 +1456,14 @@ int sdl_initciolib(int mode)
 void
 sdl_beep(void)
 {
-        static unsigned char wave[2206];
+	static int16_t wave[2205 * 2];
+	static bool    generated = false;
 
-	if (wave[2205] == 0) {
+	if (!generated) {
 		xptone_makewave(440, wave, 2205, WAVE_SHAPE_SINE_SAW_HARM);
-		wave[2205] = 1;
+		generated = true;
 	}
-        xp_play_sample(wave, 2205, TRUE);
+	xp_play_sample16s(wave, 2205, TRUE);
 }
 
 /* Called from main thread only (Passes Event) */

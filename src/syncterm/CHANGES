@@ -4,6 +4,8 @@ BBS cache directories are now deleted/renamed with the entry
 ANSI parser overhaul
 Keystroke handling overhaul
 Add DECRQSS support to show/hide/customize the status line
+Removed support for PortAudio v1.8
+Switched to 16-bit 44.1kHz stereo audio
 
 Version 1.8
 -----------

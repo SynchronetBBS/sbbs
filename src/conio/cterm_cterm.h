@@ -44,9 +44,6 @@ void cterm_handle_syncterm_ext_da(struct cterminal *cterm, int *speed);
 void cterm_cterm_osc_finish(struct cterminal *cterm);
 void cterm_cterm_handle_font_dcs(struct cterminal *cterm);
 
-/* ANSI music playback thread — spawned from cterm_start() in cterm.c. */
-void cterm_playnote_thread(void *args);
-
 /* CTerm / SyncTERM accumulators called from cterm_pick_accumulator
  * in cterm.c.  doorway passes one raw byte after a NUL, music
  * captures a string until the SO terminator, font collects a fixed
