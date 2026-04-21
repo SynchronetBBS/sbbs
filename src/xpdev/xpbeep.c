@@ -280,12 +280,35 @@ static SDL_sem *             sdlToneDone;
  * identically on MinGW-w64 and MSVC. */
 static const GUID xp_wasapi_ks_subtype_pcm = { STATIC_KSDATAFORMAT_SUBTYPE_PCM };
 
-/* Link-time dependencies for the MMDevice/AudioClient COM symbols are
- * declared alongside the other xpdev-MT Win32 libs:
- *   - MSVC:   xpdev_mt.props <AdditionalDependencies>
- *   - MinGW:  xpdev/Common.gmake XPDEV-MT_LIBS
- * (ole32.lib for CoInitializeEx/CoCreateInstance/CoUninitialize;
- *  uuid.lib for the CLSID_/IID_ GUID storage.) */
+/* COM function-import libs (ole32 for CoInitializeEx / CoCreateInstance /
+ * CoUninitialize) are declared alongside the other xpdev-MT Win32 libs
+ * in xpdev_mt.props (MSVC) and xpdev/Common.gmake (MinGW).
+ *
+ * GUID storage varies by toolchain:
+ *   - MinGW-w64's <mmdeviceapi.h> and <audioclient.h> already call
+ *     DEFINE_GUID(...) for these four GUIDs in the header itself, so
+ *     INITGUID (set above before <initguid.h>) causes storage to be
+ *     emitted in THIS translation unit automatically — no local
+ *     DEFINE_GUID needed.
+ *   - MSVC's Windows SDK headers only declare `EXTERN_C const IID X;`
+ *     (storage expected from uuid.lib). In C mode, modern MSVC's
+ *     uuid.lib doesn't actually ship these WASAPI GUIDs — the MS
+ *     samples compile as C++ where __uuidof handles it at compile
+ *     time, so the C-mode gap goes untested. Define them ourselves
+ *     under the INITGUID-active DEFINE_GUID, which emits
+ *     DECLSPEC_SELECTANY COMDAT storage.
+ * See the handmade.network WASAPI-in-C thread for the definitive
+ * discussion of this MSVC-specific gap. */
+#ifdef _MSC_VER
+DEFINE_GUID(CLSID_MMDeviceEnumerator,
+    0xBCDE0395, 0xE52F, 0x467C, 0x8E, 0x3D, 0xC4, 0x57, 0x92, 0x91, 0x69, 0x2E);
+DEFINE_GUID(IID_IMMDeviceEnumerator,
+    0xA95664D2, 0x9614, 0x4F35, 0xA7, 0x46, 0xDE, 0x8D, 0xB6, 0x36, 0x17, 0xE6);
+DEFINE_GUID(IID_IAudioClient,
+    0x1CB9AD4C, 0xDBFA, 0x4C32, 0xB1, 0x78, 0xC2, 0xF5, 0x68, 0xA7, 0x03, 0xB2);
+DEFINE_GUID(IID_IAudioRenderClient,
+    0xF294ACFC, 0x3146, 0x4483, 0xA7, 0xBF, 0xAD, 0xDC, 0xA7, 0xC2, 0x60, 0xE2);
+#endif
 
 #include "threadwrap.h"
 #include "semwrap.h"
