@@ -80,6 +80,13 @@
 #define S_FRAMESIZE XPBEEP_FRAMESIZE
 
 #ifdef XPDEV_THREAD_SAFE
+/* MSVC defines __STDC_NO_ATOMICS__=1 even when /experimental:c11atomics is
+ * enabled and <stdatomic.h> works. threadwrap.h skips the include when the
+ * macro is set, so force it off here (matching the same workaround in
+ * syncterm/conn.h). */
+#ifdef _MSC_VER
+#undef __STDC_NO_ATOMICS__
+#endif
 #include "threadwrap.h"
 #include "eventwrap.h"
 
@@ -990,12 +997,16 @@ xptone_open_locked(void)
 				sound_device_open_failed = true;
 				return false;
 			}
-			/* Pre-allocate and prepare all buffers up front. The device
-			 * thread just refills lpData contents and re-submits — no
+			memset(&wh, 0, sizeof(wh));
+#ifdef XPDEV_THREAD_SAFE
+			/* Pre-allocate and prepare all buffers up front for the mixer
+			 * device thread. It just refills lpData and re-submits — no
 			 * per-chunk malloc/prepare/unprepare cycle, which was adding
 			 * per-iteration latency and (combined with coarse SLEEP(1)
-			 * timing) causing queue underruns audible as a ~7-8 Hz warble. */
-			memset(&wh, 0, sizeof(wh));
+			 * timing) causing queue underruns audible as a ~7-8 Hz warble.
+			 *
+			 * Non-thread-safe builds don't use the mixer; do_xp_play_sample
+			 * allocates per-write as before, so no pre-alloc is needed here. */
 			{
 				int i;
 				size_t chunk_bytes = XP_AUDIO_DEVICE_CHUNK * S_FRAMESIZE;
@@ -1030,6 +1041,7 @@ xptone_open_locked(void)
 					return false;
 				}
 			}
+#endif
 			curr_wh = 0;
 #ifdef XPDEV_THREAD_SAFE
 			waveOut_frames_written = 0;
