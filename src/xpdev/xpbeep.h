@@ -1,9 +1,9 @@
 #ifndef _XPBEEP_H_
 #define _XPBEEP_H_
 
-#include <stdint.h>
-
-#include "gen_defs.h"
+#include "gen_defs.h"  /* int16_t etc. via the synchronet-wide shim — never
+                        * <stdint.h> directly: Borland's stdint.h clashes
+                        * with gen_defs.h's own typedefs. */
 #include "wrapdll.h"
 
 /* Native playback format: signed 16-bit stereo, 44100 Hz.
