@@ -939,6 +939,14 @@ ini_bitdesc_t audio_output_bits[] = {
 		.name = "SDL",
 		.bit = XPBEEP_DEVICE_SDL
 	},
+	/* The Win32 backend switched from waveOut to WASAPI in the 1.8-post
+	 * audio overhaul. Newly-written configs emit "WASAPI" (first match
+	 * wins in iniSetBitField); "WaveOut" is kept as a read-side alias so
+	 * existing user configs continue to select the Win32 backend. */
+	{
+		.name = "WASAPI",
+		.bit = XPBEEP_DEVICE_WIN32
+	},
 	{
 		.name = "WaveOut",
 		.bit = XPBEEP_DEVICE_WIN32
@@ -978,7 +986,7 @@ ini_bitdesc_t audio_output_types[] = {
 #endif
 #ifdef _WIN32
 	{
-		.name = "WaveOut",
+		.name = "WASAPI",
 		.bit = XPBEEP_DEVICE_WIN32
 	},
 #endif

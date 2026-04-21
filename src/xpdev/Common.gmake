@@ -37,7 +37,12 @@ else
 endif
 ifdef win		# MinGW32
  XPDEV_LIBS	+=	-lws2_32 -lwinmm -lnetapi32 -liphlpapi
- XPDEV-MT_LIBS	+=	-lws2_32 -lwinmm -lnetapi32 -liphlpapi
+ # WASAPI audio backend (MT only, in xpbeep.c) needs ole32 for CoInitializeEx
+ # / CoCreateInstance / CoUninitialize, and uuid for the KS* GUIDs (the
+ # INITGUID path inlines most COM GUIDs into xpbeep.c itself but leaves
+ # KSDATAFORMAT_SUBTYPE_PCM imported from libuuid). avrt.dll is runtime-
+ # loaded so no -lavrt needed.
+ XPDEV-MT_LIBS	+=	-lws2_32 -lwinmm -lnetapi32 -liphlpapi -lole32 -luuid
 endif
 ifndef win
  ifeq ($(shell if [ -c /dev/urandom ] ; then echo YES ; fi),YES)

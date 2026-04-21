@@ -7,6 +7,15 @@
 
 #if defined(_WIN32)
 	#define WIN32_LEAN_AND_MEAN
+	/* MT builds use WASAPI (Vista+) for audio output; non-MT stays on
+	 * waveOut for Borland / legacy consumers. Set the target version
+	 * BEFORE <windows.h> so IAudioClient et al. are exposed later. */
+	#ifdef XPDEV_THREAD_SAFE
+		#undef _WIN32_WINNT
+		#define _WIN32_WINNT 0x0600
+		#undef WINVER
+		#define WINVER 0x0600
+	#endif
 	#include <windows.h>
 	#include <mmsystem.h>
 #elif defined(__unix__)
@@ -92,10 +101,11 @@
 
 static pthread_mutex_t      handle_mutex;
 
-/* Device thread: for push-based backends (Win32 waveOut, ALSA, OSS) a
- * dedicated thread loops xp_mixer_pull → device_write. Pull-native backends
- * (SDL, CoreAudio, PortAudio, PulseAudio async) don't use this thread —
- * their own callbacks call xp_mixer_pull directly. */
+/* Device thread: for push-based backends (ALSA, OSS) a dedicated thread
+ * loops xp_mixer_pull → device_write. Pull-native backends (SDL,
+ * CoreAudio, PortAudio, PulseAudio async, Win32 WASAPI) don't use this
+ * thread — their own callbacks (or the WASAPI render thread owned by
+ * the xp_wasapi_* block below) call xp_mixer_pull directly. */
 static bool                 device_thread_running = false;
 /* One-shot shutdown flag: producer writes true once, device thread reads
  * each iteration. Prefer _Atomic where the compiler supports it. Borland C
@@ -239,22 +249,72 @@ static SDL_sem *             sdlToneDone;
 #endif
 
 #ifdef _WIN32
+#ifdef XPDEV_THREAD_SAFE
+/* MT builds use WASAPI (pull-native shared-mode, event-driven) instead
+ * of waveOut. The wrapper owns its own render thread that pulls from
+ * xp_mixer_pull and writes into the WASAPI buffer. Non-MT builds keep
+ * the waveOut state below for the synchronous do_xp_play_sample code
+ * path (used by legacy non-threaded consumers like the Borland SBBS
+ * Win32 build). */
+#define COBJMACROS                 /* IFoo_Method(this, args) macro form */
+#define INITGUID                   /* emit storage for referenced GUIDs */
+/* <initguid.h> must come AFTER #define INITGUID to redefine DEFINE_GUID
+ * into the storage-emitting form. <windows.h> at the top of this file
+ * already pulled in <objbase.h> without INITGUID set, so initguid.h
+ * wasn't included then — do it explicitly now so the CLSID_ / IID_
+ * GUIDs we reference get locally-defined storage. */
+#include <initguid.h>
+#include <mmreg.h>                 /* DEFINE_WAVEFORMATEX_GUID template */
+#include <mmdeviceapi.h>
+#include <audioclient.h>
+#include <avrt.h>                  /* MMCSS (runtime-loaded) */
+
+/* KSDATAFORMAT_SUBTYPE_PCM is declared in the SDK via DEFINE_GUIDSTRUCT /
+ * DEFINE_GUIDNAMED. In C mode that expands to a bare symbol reference
+ * (not a struct-with-uuid attribute like C++). MinGW-w64's libuuid.a
+ * doesn't ship the storage for this particular KS GUID, so we emit our
+ * own using the standard SDK STATIC_ brace-init template — this works
+ * identically on MinGW-w64 and MSVC. */
+static const GUID xp_wasapi_ks_subtype_pcm = { STATIC_KSDATAFORMAT_SUBTYPE_PCM };
+
+#include "threadwrap.h"
+#include "semwrap.h"
+
+static IMMDeviceEnumerator *wasapi_enumerator;
+static IMMDevice           *wasapi_device;
+static IAudioClient        *wasapi_client;
+static IAudioRenderClient  *wasapi_render;
+static HANDLE               wasapi_event;
+static sem_t                wasapi_thread_stopped;
+static UINT32               wasapi_buffer_frames;
+static bool                 wasapi_com_owned;
+static bool                 wasapi_thread_started;
+/* Borland doesn't compile MT xpdev (WASAPI is MT-only), but keep the
+ * _Atomic / volatile split consistent with the device_thread flag. */
+#ifdef __BORLANDC__
+static volatile bool        wasapi_stop_requested;
+#else
+static _Atomic bool         wasapi_stop_requested;
+#endif
+
+/* MMCSS function pointers — runtime-loaded via LoadLibrary so we don't
+ * need libavrt at link time (MinGW may not ship it). Failure is non-
+ * fatal: the render thread just runs at normal priority. */
+typedef HANDLE (WINAPI *pfn_AvSetMmThreadCharacteristicsW)(LPCWSTR, LPDWORD);
+typedef BOOL   (WINAPI *pfn_AvRevertMmThreadCharacteristics)(HANDLE);
+static HMODULE                              avrt_dll;
+static pfn_AvSetMmThreadCharacteristicsW    pAvSetMmThreadCharacteristicsW;
+static pfn_AvRevertMmThreadCharacteristics  pAvRevertMmThreadCharacteristics;
+
+static void xp_wasapi_teardown(void);
+#else
 static HWAVEOUT              waveOut;
-/* waveOut playback is a push model — we submit WAVEHDRs and the driver plays
- * them in order. A deeper ring of pre-prepared buffers absorbs scheduling
- * jitter (15+ms timer resolution on many Windows builds) so the queue stays
- * ahead of the hardware consumer. 4 × 11.6 ms ≈ 46 ms of headroom. */
+/* waveOut playback is a push model — we submit WAVEHDRs and the driver
+ * plays them in order. Only used in non-MT builds. */
 #define WIN32_NBUFS 4
 static WAVEHDR               wh[WIN32_NBUFS];
 static int                   curr_wh;
-static HANDLE                waveOut_done;  /* auto-reset event the driver
-                                             * signals on each buffer
-                                             * completion (CALLBACK_EVENT). */
-#ifdef XPDEV_THREAD_SAFE
-/* Running count of frames successfully submitted to the driver via
- * waveOutWrite. Paired with waveOutGetPosition(TIME_SAMPLES) to derive
- * queued-but-not-yet-played latency in xp_device_latency_ms. */
-static uint64_t              waveOut_frames_written;
+static HANDLE                waveOut_done;
 #endif
 #endif
 
@@ -632,6 +692,245 @@ void sdl_fillbuf(void *userdata, Uint8 *stream, int len)
 }
 #endif
 
+#if defined(_WIN32) && defined(XPDEV_THREAD_SAFE)
+/* ============================================================
+ * WASAPI backend (shared-mode event-driven, pull-native).
+ * Owns its own render thread that pulls from xp_mixer_pull and
+ * writes into the WASAPI buffer. Replaces waveOut for MT builds.
+ * ============================================================ */
+
+static void
+wasapi_thread_fn(void *arg)
+{
+	HANDLE  mmcss_handle = NULL;
+	DWORD   mmcss_task   = 0;
+	HRESULT hr;
+	UINT32  padding;
+	UINT32  avail;
+	BYTE   *data;
+
+	(void)arg;
+
+	if (pAvSetMmThreadCharacteristicsW)
+		mmcss_handle = pAvSetMmThreadCharacteristicsW(L"Audio", &mmcss_task);
+
+	while (!wasapi_stop_requested) {
+		DWORD rc = WaitForSingleObject(wasapi_event, 200);
+		if (rc != WAIT_OBJECT_0)
+			continue;  /* timeout → re-check stop flag */
+		if (wasapi_stop_requested)
+			break;
+
+		hr = IAudioClient_GetCurrentPadding(wasapi_client, &padding);
+		if (FAILED(hr))
+			break;
+		if (padding >= wasapi_buffer_frames)
+			continue;
+		avail = wasapi_buffer_frames - padding;
+		if (avail == 0)
+			continue;
+
+		data = NULL;
+		hr = IAudioRenderClient_GetBuffer(wasapi_render, avail, &data);
+		if (FAILED(hr)) {
+			/* AUDCLNT_E_DEVICE_INVALIDATED (unplugged headphones,
+			 * driver swap, session ended) → backend dies. Auto-
+			 * recovery (reopen on endpoint change) is a future
+			 * enhancement; for now the user gets no audio until
+			 * xptone_close + reopen. */
+			break;
+		}
+		xp_mixer_pull((int16_t *)data, (size_t)avail);
+		IAudioRenderClient_ReleaseBuffer(wasapi_render, avail, 0);
+	}
+
+	if (mmcss_handle && pAvRevertMmThreadCharacteristics)
+		pAvRevertMmThreadCharacteristics(mmcss_handle);
+	sem_post(&wasapi_thread_stopped);
+}
+
+/* Idempotent: safe on partial-open state. Stop render thread first (no
+ * more callbacks), then release COM objects in reverse acquisition order. */
+static void
+xp_wasapi_teardown(void)
+{
+	if (wasapi_thread_started) {
+		wasapi_stop_requested = true;
+		if (wasapi_event)
+			SetEvent(wasapi_event);
+		sem_wait(&wasapi_thread_stopped);
+		sem_destroy(&wasapi_thread_stopped);
+		wasapi_thread_started = false;
+	}
+	if (wasapi_client)
+		IAudioClient_Stop(wasapi_client);
+	if (wasapi_render) {
+		IAudioRenderClient_Release(wasapi_render);
+		wasapi_render = NULL;
+	}
+	if (wasapi_client) {
+		IAudioClient_Release(wasapi_client);
+		wasapi_client = NULL;
+	}
+	if (wasapi_device) {
+		IMMDevice_Release(wasapi_device);
+		wasapi_device = NULL;
+	}
+	if (wasapi_enumerator) {
+		IMMDeviceEnumerator_Release(wasapi_enumerator);
+		wasapi_enumerator = NULL;
+	}
+	if (wasapi_event) {
+		CloseHandle(wasapi_event);
+		wasapi_event = NULL;
+	}
+	if (avrt_dll) {
+		FreeLibrary(avrt_dll);
+		avrt_dll = NULL;
+		pAvSetMmThreadCharacteristicsW   = NULL;
+		pAvRevertMmThreadCharacteristics = NULL;
+	}
+	if (wasapi_com_owned) {
+		CoUninitialize();
+		wasapi_com_owned = false;
+	}
+	wasapi_buffer_frames  = 0;
+	wasapi_stop_requested = false;
+}
+
+static bool
+xp_wasapi_open(void)
+{
+	HRESULT              hr;
+	WAVEFORMATEXTENSIBLE fmt;
+	BYTE                *prime;
+	uintptr_t            th;
+
+	hr = CoInitializeEx(NULL, COINIT_MULTITHREADED);
+	if (hr == S_OK || hr == S_FALSE)
+		wasapi_com_owned = true;
+	else if (hr == RPC_E_CHANGED_MODE)
+		wasapi_com_owned = false;   /* already in STA; coexist */
+	else
+		return false;
+
+	/* Optional MMCSS. Missing avrt.dll is fine — no priority boost. */
+	avrt_dll = LoadLibraryW(L"avrt.dll");
+	if (avrt_dll) {
+		pAvSetMmThreadCharacteristicsW = (pfn_AvSetMmThreadCharacteristicsW)
+		    GetProcAddress(avrt_dll, "AvSetMmThreadCharacteristicsW");
+		pAvRevertMmThreadCharacteristics = (pfn_AvRevertMmThreadCharacteristics)
+		    GetProcAddress(avrt_dll, "AvRevertMmThreadCharacteristics");
+	}
+
+	hr = CoCreateInstance(&CLSID_MMDeviceEnumerator, NULL, CLSCTX_ALL,
+	                      &IID_IMMDeviceEnumerator, (void **)&wasapi_enumerator);
+	if (FAILED(hr))
+		goto fail;
+
+	hr = IMMDeviceEnumerator_GetDefaultAudioEndpoint(wasapi_enumerator,
+	        eRender, eConsole, &wasapi_device);
+	if (FAILED(hr))
+		goto fail;
+
+	hr = IMMDevice_Activate(wasapi_device, &IID_IAudioClient, CLSCTX_ALL,
+	                        NULL, (void **)&wasapi_client);
+	if (FAILED(hr))
+		goto fail;
+
+	/* Shared-mode S16 stereo 44100. AUTOCONVERTPCM lets the engine
+	 * resample/remap to the device's native format; we keep producing
+	 * 44100 regardless of what the hardware runs at. */
+	ZeroMemory(&fmt, sizeof fmt);
+	fmt.Format.wFormatTag           = WAVE_FORMAT_EXTENSIBLE;
+	fmt.Format.nChannels            = S_CHANNELS;
+	fmt.Format.nSamplesPerSec       = S_RATE;
+	fmt.Format.wBitsPerSample       = S_BYTEDEPTH * 8;
+	fmt.Format.nBlockAlign          = S_FRAMESIZE;
+	fmt.Format.nAvgBytesPerSec      = S_RATE * S_FRAMESIZE;
+	fmt.Format.cbSize               = sizeof(fmt) - sizeof(WAVEFORMATEX);
+	fmt.Samples.wValidBitsPerSample = 16;
+	fmt.dwChannelMask               = SPEAKER_FRONT_LEFT | SPEAKER_FRONT_RIGHT;
+	fmt.SubFormat                   = xp_wasapi_ks_subtype_pcm;
+
+	hr = IAudioClient_Initialize(wasapi_client, AUDCLNT_SHAREMODE_SHARED,
+	        AUDCLNT_STREAMFLAGS_EVENTCALLBACK
+	      | AUDCLNT_STREAMFLAGS_AUTOCONVERTPCM
+	      | AUDCLNT_STREAMFLAGS_SRC_DEFAULT_QUALITY,
+	        100000 /* 10 ms buffer target, 100ns units */,
+	        0, (WAVEFORMATEX *)&fmt, NULL);
+	if (FAILED(hr))
+		goto fail;
+
+	wasapi_event = CreateEventW(NULL, FALSE, FALSE, NULL);
+	if (!wasapi_event)
+		goto fail;
+
+	hr = IAudioClient_SetEventHandle(wasapi_client, wasapi_event);
+	if (FAILED(hr))
+		goto fail;
+
+	hr = IAudioClient_GetService(wasapi_client, &IID_IAudioRenderClient,
+	                             (void **)&wasapi_render);
+	if (FAILED(hr))
+		goto fail;
+
+	hr = IAudioClient_GetBufferSize(wasapi_client, &wasapi_buffer_frames);
+	if (FAILED(hr) || wasapi_buffer_frames == 0)
+		goto fail;
+
+	/* Prime with silence before Start — otherwise the engine has nothing
+	 * to play, never drains, never signals the event, and the render
+	 * thread blocks forever on the wait. Same issue as CoreAudio. */
+	prime = NULL;
+	hr = IAudioRenderClient_GetBuffer(wasapi_render, wasapi_buffer_frames, &prime);
+	if (FAILED(hr))
+		goto fail;
+	ZeroMemory(prime, (size_t)wasapi_buffer_frames * S_FRAMESIZE);
+	IAudioRenderClient_ReleaseBuffer(wasapi_render, wasapi_buffer_frames,
+	                                 AUDCLNT_BUFFERFLAGS_SILENT);
+
+	hr = IAudioClient_Start(wasapi_client);
+	if (FAILED(hr))
+		goto fail;
+
+	wasapi_stop_requested = false;
+	sem_init(&wasapi_thread_stopped, 0, 0);
+	th = _beginthread(wasapi_thread_fn, 0, NULL);
+	if (th == (uintptr_t)-1) {
+		sem_destroy(&wasapi_thread_stopped);
+		IAudioClient_Stop(wasapi_client);
+		goto fail;
+	}
+	wasapi_thread_started = true;
+	return true;
+
+fail:
+	xp_wasapi_teardown();
+	return false;
+}
+
+static void
+xp_wasapi_close(void)
+{
+	xp_wasapi_teardown();
+}
+
+static uint32_t
+xp_wasapi_latency_ms(void)
+{
+	UINT32  padding = 0;
+	HRESULT hr;
+
+	if (!wasapi_client)
+		return 0;
+	hr = IAudioClient_GetCurrentPadding(wasapi_client, &padding);
+	if (FAILED(hr))
+		return 0;
+	return (uint32_t)((uint64_t)padding * 1000 / S_RATE);
+}
+#endif /* _WIN32 && XPDEV_THREAD_SAFE */
+
 #ifdef XPDEV_THREAD_SAFE
 pthread_once_t sample_initialized_pto = PTHREAD_ONCE_INIT;
 #endif
@@ -986,12 +1285,27 @@ xptone_open_locked(void)
 #ifdef _WIN32
 	if (xpbeep_sound_devices_enabled & XPBEEP_DEVICE_WIN32) {
 		if (!sound_device_open_failed) {
+#ifdef XPDEV_THREAD_SAFE
+			/* MT builds go through WASAPI (shared-mode, event-driven,
+			 * pull-native). The wrapper owns its own render thread and
+			 * calls xp_mixer_pull directly — no device_thread_fn branch
+			 * needed for Win32 in MT. */
+			if (xp_wasapi_open()) {
+				handle_type = SOUND_DEVICE_WIN32;
+				handle_rc++;
+				return true;
+			}
+			sound_device_open_failed = true;
+			return false;
+#else
+			/* Non-MT builds keep the legacy waveOut push backend used by
+			 * do_xp_play_sample. */
 			memset(&w, 0, sizeof(w));
-			w.wFormatTag = WAVE_FORMAT_PCM;
-			w.nChannels = S_CHANNELS;
-			w.nSamplesPerSec = S_RATE;
-			w.wBitsPerSample = S_BYTEDEPTH * 8;
-			w.nBlockAlign = (w.wBitsPerSample * w.nChannels) / 8;
+			w.wFormatTag      = WAVE_FORMAT_PCM;
+			w.nChannels       = S_CHANNELS;
+			w.nSamplesPerSec  = S_RATE;
+			w.wBitsPerSample  = S_BYTEDEPTH * 8;
+			w.nBlockAlign     = (w.wBitsPerSample * w.nChannels) / 8;
 			w.nAvgBytesPerSec = w.nSamplesPerSec * w.nBlockAlign;
 
 			waveOut_done = CreateEvent(NULL, FALSE, FALSE, NULL);
@@ -1007,57 +1321,11 @@ xptone_open_locked(void)
 				return false;
 			}
 			memset(&wh, 0, sizeof(wh));
-#ifdef XPDEV_THREAD_SAFE
-			/* Pre-allocate and prepare all buffers up front for the mixer
-			 * device thread. It just refills lpData and re-submits — no
-			 * per-chunk malloc/prepare/unprepare cycle, which was adding
-			 * per-iteration latency and (combined with coarse SLEEP(1)
-			 * timing) causing queue underruns audible as a ~7-8 Hz warble.
-			 *
-			 * Non-thread-safe builds don't use the mixer; do_xp_play_sample
-			 * allocates per-write as before, so no pre-alloc is needed here. */
-			{
-				int i;
-				size_t chunk_bytes = XP_AUDIO_DEVICE_CHUNK * S_FRAMESIZE;
-				bool ok = true;
-				for (i = 0; i < WIN32_NBUFS; i++) {
-					wh[i].lpData = malloc(chunk_bytes);
-					if (wh[i].lpData == NULL) {
-						ok = false;
-						break;
-					}
-					wh[i].dwBufferLength = chunk_bytes;
-					if (waveOutPrepareHeader(waveOut, &wh[i], sizeof(wh[i])) != MMSYSERR_NOERROR) {
-						ok = false;
-						break;
-					}
-				}
-				if (!ok) {
-					int j;
-					for (j = 0; j < i; j++) {
-						waveOutUnprepareHeader(waveOut, &wh[j], sizeof(wh[j]));
-						free(wh[j].lpData);
-						wh[j].lpData = NULL;
-					}
-					if (i < WIN32_NBUFS && wh[i].lpData) {
-						free(wh[i].lpData);
-						wh[i].lpData = NULL;
-					}
-					waveOutClose(waveOut);
-					CloseHandle(waveOut_done);
-					waveOut_done = NULL;
-					sound_device_open_failed = true;
-					return false;
-				}
-			}
-#endif
 			curr_wh = 0;
-#ifdef XPDEV_THREAD_SAFE
-			waveOut_frames_written = 0;
-#endif
 			handle_type = SOUND_DEVICE_WIN32;
 			handle_rc++;
 			return true;
+#endif
 		}
 	}
 #endif
@@ -1356,8 +1624,10 @@ bool xptone_close_locked(void)
 
 #ifdef _WIN32
 	if (handle_type == SOUND_DEVICE_WIN32) {
+#ifdef XPDEV_THREAD_SAFE
+		xp_wasapi_close();
+#else
 		int i;
-		/* Device thread has stopped; drain, unprepare and free the ring. */
 		for (i = 0; i < WIN32_NBUFS; i++) {
 			if (wh[i].lpData == NULL)
 				continue;
@@ -1371,6 +1641,7 @@ bool xptone_close_locked(void)
 			CloseHandle(waveOut_done);
 			waveOut_done = NULL;
 		}
+#endif
 	}
 #endif
 
@@ -1618,10 +1889,12 @@ do_xp_play_sample(unsigned char *sampo, size_t sz, int *freed)
  * any backend wants: fill N frames of S16 stereo at 44100 Hz.
  *
  * Backends feed the mixer in one of two shapes:
- *   - Pull-native backends (SDL, CoreAudio, PortAudio, PulseAudio async):
- *     the backend's own callback calls xp_mixer_pull directly.
- *   - Push-native backends (Win32 waveOut, OSS, ALSA): a dedicated device
- *     thread (started at open time) loops xp_mixer_pull → device_write.
+ *   - Pull-native backends (SDL, CoreAudio, PortAudio, PulseAudio async,
+ *     Win32 WASAPI): the backend's own callback (or, for WASAPI, the
+ *     dedicated render thread in the xp_wasapi_* block above) calls
+ *     xp_mixer_pull directly.
+ *   - Push-native backends (OSS, ALSA): a dedicated device thread
+ *     (started at open time) loops xp_mixer_pull → device_write.
  *
  * The mixer code never branches on backend — the split is entirely
  * confined to xptone_open_locked / xptone_close_locked.
@@ -2212,22 +2485,9 @@ xp_device_latency_ms(void)
 		}
 #endif
 #ifdef _WIN32
-		case SOUND_DEVICE_WIN32: {
-			/* waveOutGetPosition returns the driver's running play position
-			 * in the stream timeline. Queued-but-unplayed frames = what we
-			 * have submitted minus what has played. */
-			MMTIME mmt;
-			mmt.wType = TIME_SAMPLES;
-			if (waveOutGetPosition(waveOut, &mmt, sizeof(mmt)) == MMSYSERR_NOERROR
-			    && mmt.wType == TIME_SAMPLES) {
-				uint64_t played  = mmt.u.sample;
-				uint64_t written = waveOut_frames_written;
-				if (written > played)
-					return (uint32_t)((written - played) * 1000 / S_RATE);
-				return 0;
-			}
-			return 50;
-		}
+		case SOUND_DEVICE_WIN32:
+			/* WASAPI: padding = queued-but-not-yet-played frames. */
+			return xp_wasapi_latency_ms();
 #endif
 #ifdef WITH_COREAUDIO
 		case SOUND_DEVICE_COREAUDIO: {
@@ -2349,9 +2609,6 @@ static bool
 backend_is_push(int h)
 {
 	switch (h) {
-#ifdef _WIN32
-		case SOUND_DEVICE_WIN32:      return true;
-#endif
 #ifdef USE_ALSA_SOUND
 		case SOUND_DEVICE_ALSA:       return true;
 #endif
@@ -2400,37 +2657,6 @@ device_thread_fn(void *arg)
 		}
 
 		switch (h) {
-#ifdef _WIN32
-			case SOUND_DEVICE_WIN32: {
-				/* All WIN32_NBUFS WAVEHDRs were malloc+prepared at open
-				 * time. We cycle through them round-robin: refill lpData,
-				 * submit via waveOutWrite, advance. After wrapping the
-				 * ring, the "next" buffer is likely still in the driver's
-				 * queue (WHDR_INQUEUE set) — wait on waveOut_done for
-				 * it to complete before overwriting.
-				 *
-				 * Trailing silence padding (buf[real_frames..] is zero
-				 * from the mixer's initial memset) plays as negligible
-				 * inter-note silence but keeps the driver happy with
-				 * fixed-size chunks that match the prepared buffer
-				 * length. */
-				size_t bytes = XP_AUDIO_DEVICE_CHUNK * S_FRAMESIZE;
-				while (wh[curr_wh].dwFlags & WHDR_INQUEUE) {
-					if (device_thread_should_exit)
-						break;
-					WaitForSingleObject(waveOut_done, 100);
-				}
-				if (device_thread_should_exit)
-					break;
-				memcpy(wh[curr_wh].lpData, buf, bytes);
-				wh[curr_wh].dwBufferLength = bytes;
-				if (waveOutWrite(waveOut, &wh[curr_wh], sizeof(wh[curr_wh])) == MMSYSERR_NOERROR) {
-					waveOut_frames_written += XP_AUDIO_DEVICE_CHUNK;
-					curr_wh = (curr_wh + 1) % WIN32_NBUFS;
-				}
-				break;
-			}
-#endif
 #ifdef USE_ALSA_SOUND
 			case SOUND_DEVICE_ALSA: {
 				snd_pcm_sframes_t rc = alsa_api->snd_pcm_writei(playback_handle, buf, real_frames);

@@ -5422,7 +5422,7 @@ show_bbslist(char *current, int connected)
 						         "    %s OSS\n"
 						         "    %s SDL\n"
 						         "    %s ALSA\n"
-						         "    %s WaveOut\n"
+						         "    %s WASAPI\n"
 						         "    %s PortAudio\n"
 						         "    %s PulseAudio\n"
 						         "    %s Core Audio\n",
