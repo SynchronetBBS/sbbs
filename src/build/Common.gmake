@@ -505,7 +505,12 @@ ifndef WITHOUT_SDL
    STATIC_SDL := 1
   endif
  else
-  USE_SDL	:=	1
+  ifeq ($(os),haiku)
+   USE_SDL	:=	1
+   USE_SDL_AUDIO := 1
+  else
+   USE_SDL	:=	1
+  endif
  endif
 endif
 
