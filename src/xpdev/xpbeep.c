@@ -97,7 +97,16 @@ static pthread_mutex_t      handle_mutex;
  * (SDL, CoreAudio, PortAudio, PulseAudio async) don't use this thread —
  * their own callbacks call xp_mixer_pull directly. */
 static bool                 device_thread_running = false;
+/* One-shot shutdown flag: producer writes true once, device thread reads
+ * each iteration. Prefer _Atomic where the compiler supports it. Borland C
+ * (bcc32, used for the SBBS Win32 build) is stuck at C99 and doesn't
+ * recognize the _Atomic keyword — volatile is semantically sufficient for
+ * a single-writer / single-reader false→true transition. */
+#ifdef __BORLANDC__
+static volatile bool        device_thread_should_exit = false;
+#else
 static _Atomic bool         device_thread_should_exit = false;
+#endif
 static sem_t                device_thread_stopped;
 
 #endif
