@@ -172,6 +172,9 @@ if(NOT WIN32)
 	target_compile_definitions(xpdev PUBLIC USE_XP_SEMAPHORES PREFER_POLL)
 endif()
 target_compile_definitions(xpdev PUBLIC LINK_LIST_THREADSAFE)
+# SyncTERM (the only cmake consumer of xpdev) is multithreaded; xp_audio_*
+# streaming-mixer API in xpbeep.c is #ifdef'd on XPDEV_THREAD_SAFE.
+target_compile_definitions(xpdev PUBLIC XPDEV_THREAD_SAFE)
 
 if(HAS_INTTYPES_H)
 	target_compile_definitions(xpdev PUBLIC HAS_INTTYPES_H)
