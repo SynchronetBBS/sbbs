@@ -1484,7 +1484,12 @@ void cterm_parse_sixel_string(struct cterminal *cterm, bool finish)
 				fprintf(stderr, "Error allocating memory for sixel data\n");
 				return;
 			}
-			if (cterm->sx_x == cterm->sx_left && cterm->sx_height && cterm->sx_width && cterm->sx_first_pass && cterm->sx_x + cterm->sx_ih <= cterm->sx_pixels->width) {
+			/* sx_pixels->width is uint32_t; the sum of our int coords
+			 * can't be negative in well-formed sixel data, but casting
+			 * to uint32_t makes any out-of-band negative wrap to a huge
+			 * value that fails the <= check (safer than using the
+			 * negative as a pixel index). */
+			if (cterm->sx_x == cterm->sx_left && cterm->sx_height && cterm->sx_width && cterm->sx_first_pass && (uint32_t)(cterm->sx_x + cterm->sx_ih) <= cterm->sx_pixels->width) {
 				/* Fill in the background of the line */
 				for (i = 0; i < (cterm->sx_height > 6 ? 6 : cterm->sx_height); i++) {
 					for (j = 0; j < cterm->sx_iv; j++) {
