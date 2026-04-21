@@ -11,7 +11,9 @@
       <AdditionalIncludeDirectories>$(MSBuildThisFileDirectory);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>netapi32.lib;ws2_32.lib;IPHlpApi.Lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <!-- ole32 / uuid are needed by the WASAPI audio backend in xpbeep.c
+           (Vista+ only, so MT-build only; non-MT stays on waveOut). -->
+      <AdditionalDependencies>netapi32.lib;ws2_32.lib;IPHlpApi.Lib;ole32.lib;uuid.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup />
