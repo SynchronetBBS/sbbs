@@ -3931,12 +3931,19 @@ iniCryptGetAlgoName(enum iniCryptAlgo a)
 enum iniCryptAlgo
 iniCryptGetAlgoFromName(const char *n)
 {
+	(void)n;
 	return INI_CRYPT_ALGO_NONE;
 }
 
 str_list_t
 iniReadEncryptedFile(FILE* fp, bool(*get_key)(void *cb_data, char *keybuf, size_t *sz), int KDFiterations, enum iniCryptAlgo *algoPtr, int *ks, char *saltBuf, size_t *saltsz, void *cbdata)
 {
+	(void)get_key;
+	(void)KDFiterations;
+	(void)ks;
+	(void)saltBuf;
+	(void)saltsz;
+	(void)cbdata;
 	if (algoPtr)
 		*algoPtr = INI_CRYPT_ALGO_NONE;
 	return iniReadFile(fp);
@@ -3944,6 +3951,11 @@ iniReadEncryptedFile(FILE* fp, bool(*get_key)(void *cb_data, char *keybuf, size_
 
 bool iniWriteEncryptedFile(FILE* fp, const str_list_t list, enum iniCryptAlgo algo, int keySize, int KDFiterations, const char *key, char *salt)
 {
+	(void)algo;
+	(void)keySize;
+	(void)KDFiterations;
+	(void)key;
+	(void)salt;
 	return iniWriteFile(fp, list);
 }
 #endif // WITH_CRYPTLIB && !WITHOUT_CRYPTLIB
