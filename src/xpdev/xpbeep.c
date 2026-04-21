@@ -442,6 +442,7 @@ static void     stop_device_thread_locked(void);
 static bool     backend_is_push(int h);
 static bool     post_open_setup_locked(void);
 static uint32_t xp_device_latency_ms(void);
+static void     xp_audio_mixer_sync(xp_audio_handle_t h);
 size_t          xp_mixer_pull(int16_t *out, size_t frames);
 
 /* Mixer state (defined in full later in the file). Hoisted here so
@@ -537,8 +538,10 @@ void xptone_makewave(double freq, int16_t *wave, int samples, DWORD shape)
 					u8 += (sin ((inc * 3) * (double)i)) * 16;
 					break;
 			}
-			/* 12dB reduction in U8 space, matching the historical coefficient. */
-			u8 = ((((double)u8) - 128) * 0.251) + 128;
+			/* Full-scale U8→S16: the -12 dB headroom reduction that was
+			 * historically baked in here is now applied as stream-level
+			 * attenuation at mix time (cterm music_stream / fx_stream open
+			 * at -12 dB; xptone opens its ephemeral stream at -12 dB). */
 			mono[i] = (int16_t)(((int)u8 - 128) << 8);
 		}
 		else {
@@ -555,7 +558,6 @@ void xptone_makewave(double freq, int16_t *wave, int samples, DWORD shape)
 					v = (pos < WAVE_PI) ? 32767.0 : -32768.0;
 					break;
 			}
-			v *= 0.251;
 			mono[i] = (int16_t)v;
 		}
 	}
@@ -1509,8 +1511,11 @@ xptone_complete_locked(void)
 			s = mixer_streams[i];
 			assert_pthread_mutex_unlock(&mixer_lock);
 			if (s)
-				xp_audio_wait(i);
+				xp_audio_mixer_sync(i);
 		}
+		/* One device-latency sleep covers all streams — by the loop above
+		 * every one has been drained through the mixer, and the device's
+		 * kernel buffer is shared. */
 		extra_ms = xp_device_latency_ms();
 		if (extra_ms > 0)
 			SLEEP(extra_ms);
@@ -1943,23 +1948,57 @@ do_xp_play_sample(unsigned char *sampo, size_t sz, int *freed)
 
 #ifdef XPDEV_THREAD_SAFE
 
+/* One queued buffer inside a stream.  `frames` is owned by the mixer
+ * (caller malloc()s, channel free()s when fully consumed).  `consumed`
+ * is the mixer's read cursor; it wraps at nframes for looping bufs.
+ *
+ * Fade metadata: the mixer applies envelopes at pull time rather than
+ * baking them into the sample data on append.  Intrinsic fade-in
+ * applies only to iteration 0 of a loop; intrinsic fade-out applies
+ * only when the buf reaches its natural end (never during looping).
+ * Overlay fade-out is set by a subsequent crossfade append: a
+ * unity→zero envelope layered on top, with overlay_elapsed counting
+ * frames since overlay began; when elapsed reaches total the buf is
+ * dropped regardless of its own cursor state (breaks the loop).
+ */
+struct xp_audio_buf {
+	int16_t             *frames;         /* owned — free()d on drop */
+	size_t               nframes;
+	size_t               consumed;
+
+	/* Per-entry volume: multiplies the stream's base volume during
+	 * playback of this buf only.  Default 1.0 (unity) means "inherit
+	 * the stream volume unchanged". */
+	float                volume_l;
+	float                volume_r;
+
+	size_t               fade_in;
+	size_t               fade_out;
+
+	bool                 loop;
+	size_t               loop_iter;
+
+	size_t               overlay_total;
+	size_t               overlay_elapsed;
+
+	struct xp_audio_buf *next;
+};
+
 struct xp_audio_stream {
-	int16_t         *ring;          /* ring_frames * 2 int16_t */
-	size_t           ring_frames;
-	size_t           write_pos;     /* monotonic frame counter */
-	size_t           read_pos;      /* monotonic frame counter */
-	float            volume_l;
-	float            volume_r;
-	bool             loop;
-	bool             finished;      /* producer: no more data coming */
-	bool             done;          /* mixer: fully drained */
-	bool             auto_close;    /* reap on next xp_audio_open */
-	sem_t            drain_sem;     /* posted when done transitions true */
-	xpevent_t        progress;      /* auto-reset event; mixer pulses after
-	                                 * advancing read_pos, unblocking the
-	                                 * producer (xp_audio_append) or the
-	                                 * foreground waiter (xp_audio_wait) */
-	pthread_mutex_t  mutex;
+	struct xp_audio_buf *head;          /* mixer consumes from here */
+	struct xp_audio_buf *tail;          /* producer appends here->next */
+	float                volume_l;
+	float                volume_r;
+	bool                 finished;      /* producer: no more appends */
+	bool                 done;          /* mixer: empty queue, finished set */
+	bool                 auto_close;    /* reap on next xp_audio_open */
+	sem_t                drain_sem;     /* posted on done transition */
+	xpevent_t            progress;      /* auto-reset; mixer pulses after
+	                                     * consuming / dropping a buf, so
+	                                     * a producer blocked on node
+	                                     * malloc or a drainer on queue
+	                                     * empty can re-check. */
+	pthread_mutex_t      mutex;
 };
 
 /* Waiters use this timeout as a safety net so they always re-check the
@@ -2023,103 +2062,251 @@ stream_from_handle(xp_audio_handle_t h)
 	return s;
 }
 
+/* Free a buf's owned frame buffer and the node itself. */
+static void
+free_buf(struct xp_audio_buf *b)
+{
+	free(b->frames);
+	free(b);
+}
+
+/* Unlink and free all queued bufs on a stream.  Must be called with
+ * s->mutex held. */
+static void
+drop_all_bufs_locked(struct xp_audio_stream *s)
+{
+	struct xp_audio_buf *b = s->head;
+	while (b) {
+		struct xp_audio_buf *next = b->next;
+		free_buf(b);
+		b = next;
+	}
+	s->head = s->tail = NULL;
+}
+
+/* Mix one buf into int32_t `accum` for up to `frames` output frames.
+ * Envelopes (intrinsic fade-in/out + overlay) are evaluated sample-
+ * by-sample.  `vl`/`vr` are the stream-base dB values; per-buf dB sums
+ * with them and the composite converts to a linear gain once per call.
+ *
+ * Accumulation is lossless: per-sample sums can exceed ±32767 because
+ * xp_mixer_pull applies a single soft-clip + narrow pass after every
+ * buf has contributed.  Writes `*written` with the number of frames
+ * actually added to `accum`.  Returns true if the buf should be
+ * dropped after this pull (natural end or overlay expiry). */
+static bool
+mix_one_buf(struct xp_audio_buf *b, int32_t *accum, size_t frames, float vl, float vr,
+            size_t *written)
+{
+	size_t j;
+	bool   drop = false;
+	/* dB summation → one powf per channel per buf per pull, then a
+	 * hot-loop multiply. */
+	float  gain_l = powf(10.0f, (vl + b->volume_l) / 20.0f);
+	float  gain_r = powf(10.0f, (vr + b->volume_r) / 20.0f);
+
+	for (j = 0; j < frames; j++) {
+		int16_t s_l;
+		int16_t s_r;
+		int32_t gain_q15 = 32767;
+		int32_t l_val;
+		int32_t r_val;
+
+		/* Overlay expiry breaks the loop and terminates the buf. */
+		if (b->overlay_total > 0 && b->overlay_elapsed >= b->overlay_total) {
+			drop = true;
+			break;
+		}
+		if (b->consumed >= b->nframes) {
+			if (b->loop) {
+				b->consumed = 0;
+				b->loop_iter++;
+			}
+			else {
+				drop = true;
+				break;
+			}
+		}
+
+		s_l = b->frames[b->consumed * 2 + 0];
+		s_r = b->frames[b->consumed * 2 + 1];
+
+		/* Intrinsic fade-in — iteration 0 only. */
+		if (b->loop_iter == 0 && b->fade_in > 0 && b->consumed < b->fade_in) {
+			int16_t g = fade_gain_q15(b->consumed, b->fade_in);
+			gain_q15 = (gain_q15 * g) >> 15;
+		}
+		/* Intrinsic fade-out — non-looping bufs only, over the tail. */
+		if (!b->loop && b->fade_out > 0 && b->consumed + b->fade_out >= b->nframes) {
+			int16_t g = fade_gain_q15(b->nframes - 1 - b->consumed, b->fade_out);
+			gain_q15 = (gain_q15 * g) >> 15;
+		}
+		/* Overlay fade-out — imposed by a later crossfade append. */
+		if (b->overlay_total > 0) {
+			int16_t g = fade_gain_q15(
+			    b->overlay_total - 1 - b->overlay_elapsed,
+			    b->overlay_total);
+			gain_q15 = (gain_q15 * g) >> 15;
+		}
+
+		l_val = ((int32_t)s_l * gain_q15) >> 15;
+		r_val = ((int32_t)s_r * gain_q15) >> 15;
+		l_val = (int32_t)((float)l_val * gain_l);
+		r_val = (int32_t)((float)r_val * gain_r);
+
+		accum[j * 2 + 0] += l_val;
+		accum[j * 2 + 1] += r_val;
+
+		b->consumed++;
+		if (b->overlay_total > 0)
+			b->overlay_elapsed++;
+	}
+	*written = j;
+	/* Check for overlay / natural end at the exact end-of-frame boundary
+	 * so the buf is dropped the moment it's fully consumed. */
+	if (!drop && b->overlay_total > 0 && b->overlay_elapsed >= b->overlay_total)
+		drop = true;
+	if (!drop && b->consumed >= b->nframes && !b->loop)
+		drop = true;
+	return drop;
+}
+
+/* Soft-clip + narrow one int32_t accumulator sample to int16.  Uses
+ * tanh as the saturator: below roughly -6 dB it's nearly linear
+ * (transparent for normal mixes), above full-scale it compresses
+ * smoothly into ±1.0 — the tube-style warm character instead of the
+ * harsh harmonics that hard clipping produces when multi-stream sums
+ * exceed range. */
+static int16_t
+soft_clip_narrow(int32_t sum)
+{
+	float   x = (float)sum / 32767.0f;
+	float   y = tanhf(x);
+	int32_t out = (int32_t)(y * 32767.0f);
+	/* Defensive clamp: tanh is bounded in theory, but float→int rounding
+	 * near the asymptote can land on the edge. */
+	if (out > 32767)       out = 32767;
+	else if (out < -32768) out = -32768;
+	return (int16_t)out;
+}
+
 /* Called by backends (callbacks directly, or push-backend device threads).
  * Fills `out` with `frames` frames of mixed S16 stereo at 44100 Hz. Silence
  * when no streams are active. Holds `mixer_lock` for the duration to serialize
  * with xp_audio_open/close/reap — this is the simplest correct way to make
- * stream freeing safe during concurrent pulls. Contention is minimal because
- * the only lock holders are open/close/reap (infrequent, short) and the pull
- * itself (short; ~1 ms per call).
+ * stream freeing safe during concurrent pulls.
  *
  * Returns the number of frames at the start of `out` that were populated from
- * at least one stream (the rest are silence padding from the initial memset).
- * Push-backend device threads use this to write only the "real data" prefix,
- * so trailing silence padding at the end of a note doesn't get queued into
- * the device between one note and the next. Callback backends fill the full
- * buffer regardless — the return value is not useful there. */
+ * at least one stream — push-backend device threads use this to skip queuing
+ * trailing silence between notes. */
 size_t
 xp_mixer_pull(int16_t *out, size_t frames)
 {
+	/* Persistent int32_t accumulator sized to the largest pull seen so
+	 * far.  Grows monotonically under mixer_lock (which serialises
+	 * pulls) and freed on process exit only.  All bufs in all streams
+	 * sum into accum losslessly; a single soft-clip + narrow pass at
+	 * the end writes saturated int16 to `out`. */
+	static int32_t *accum     = NULL;
+	static size_t   accum_cap = 0;
+
 	int    i;
 	size_t j;
 	size_t max_n = 0;
 
-	memset(out, 0, frames * S_FRAMESIZE);
-
 	assert_pthread_mutex_lock(&mixer_lock);
+
+	if (accum_cap < frames) {
+		int32_t *p = (int32_t *)realloc(accum, frames * S_CHANNELS * sizeof(int32_t));
+		if (!p) {
+			assert_pthread_mutex_unlock(&mixer_lock);
+			memset(out, 0, frames * S_FRAMESIZE);
+			return 0;
+		}
+		accum     = p;
+		accum_cap = frames;
+	}
+	memset(accum, 0, frames * S_CHANNELS * sizeof(int32_t));
+
 	for (i = 0; i < XP_AUDIO_MAX_STREAMS; i++) {
 		struct xp_audio_stream *s = mixer_streams[i];
-		size_t  wp;
-		size_t  rp;
-		size_t  avail;
-		size_t  n;
-		float   vl;
-		float   vr;
-		bool    loop;
-		bool    finished;
+		struct xp_audio_buf    *head;
+		struct xp_audio_buf    *next;
+		float                   vl;
+		float                   vr;
+		bool                    dropped_any = false;
+		bool                    play_next;
+		size_t                  written;
+		bool                    drop;
 
 		if (!s)
 			continue;
 		assert_pthread_mutex_lock(&s->mutex);
-		if (s->done) {
+		if (s->done || !s->head) {
 			assert_pthread_mutex_unlock(&s->mutex);
 			continue;
 		}
-		wp       = s->write_pos;
-		rp       = s->read_pos;
-		vl       = s->volume_l;
-		vr       = s->volume_r;
-		loop     = s->loop;
-		finished = s->finished;
-		avail    = wp - rp;
+		vl = s->volume_l;
+		vr = s->volume_r;
 
-		if (loop) {
-			if (wp == 0) {
-				assert_pthread_mutex_unlock(&s->mutex);
-				continue;
-			}
-			n = frames;
-		}
-		else {
-			n = (frames < avail) ? frames : avail;
-		}
+		/* FIFO: only head is active.  Exception: when head has a
+		 * crossfade overlay into its successor, BOTH head (decaying)
+		 * and head->next (rising) mix concurrently during the overlap.
+		 * Subsequent bufs stay queued and wait their turn.  This bounds
+		 * concurrent playback to two bufs per stream even when the
+		 * caller stacks crossfade appends. */
+		head      = s->head;
+		next      = head->next;
+		play_next = (head->overlay_total > 0) && next;
 
-		if (n > max_n)
-			max_n = n;
-
-		for (j = 0; j < n; j++) {
-			size_t  absolute = rp + j;
-			size_t  idx;
-			int32_t l;
-			int32_t r;
-			int32_t cur_l;
-			int32_t cur_r;
-
-			if (loop)
-				absolute %= wp;
-			idx = absolute % s->ring_frames;
-			l = (int32_t)(s->ring[idx * 2 + 0] * vl);
-			r = (int32_t)(s->ring[idx * 2 + 1] * vr);
-			cur_l = (int32_t)out[j * 2 + 0] + l;
-			cur_r = (int32_t)out[j * 2 + 1] + r;
-			if (cur_l > 32767)       cur_l = 32767;
-			else if (cur_l < -32768) cur_l = -32768;
-			if (cur_r > 32767)       cur_r = 32767;
-			else if (cur_r < -32768) cur_r = -32768;
-			out[j * 2 + 0] = (int16_t)cur_l;
-			out[j * 2 + 1] = (int16_t)cur_r;
+		written = 0;
+		drop = mix_one_buf(head, accum, frames, vl, vr, &written);
+		if (written > max_n)
+			max_n = written;
+		if (drop) {
+			s->head = next;
+			if (s->tail == head)
+				s->tail = NULL;
+			free_buf(head);
+			head = NULL;
+			dropped_any = true;
 		}
 
-		if (!loop) {
-			s->read_pos = rp + n;
-			if (finished && s->read_pos >= s->write_pos) {
-				s->done = true;
-				sem_post(&s->drain_sem);
+		if (play_next) {
+			struct xp_audio_buf *after_next = next->next;
+
+			written = 0;
+			drop = mix_one_buf(next, accum, frames, vl, vr, &written);
+			if (written > max_n)
+				max_n = written;
+			if (drop) {
+				if (head)
+					head->next = after_next;
+				else
+					s->head = after_next;
+				if (s->tail == next)
+					s->tail = head;
+				free_buf(next);
+				dropped_any = true;
 			}
 		}
-		SetEvent(s->progress);
+
+		if (s->finished && !s->head && !s->done) {
+			s->done = true;
+			sem_post(&s->drain_sem);
+		}
+		if (dropped_any || s->head == NULL)
+			SetEvent(s->progress);
 		assert_pthread_mutex_unlock(&s->mutex);
 	}
+
+	/* Single soft-clip + narrow pass.  When max_n < frames, the tail
+	 * beyond max_n has zero accumulator so soft_clip_narrow(0) → 0; a
+	 * memset would be faster for that segment but tanh(0) is trivial
+	 * so the uniform pass keeps the code simple. */
+	for (j = 0; j < frames * S_CHANNELS; j++)
+		out[j] = soft_clip_narrow(accum[j]);
+
 	assert_pthread_mutex_unlock(&mixer_lock);
 	return max_n;
 }
@@ -2129,10 +2316,10 @@ xp_mixer_pull(int16_t *out, size_t frames)
 static void
 free_stream_locked(struct xp_audio_stream *s)
 {
+	drop_all_bufs_locked(s);
 	sem_destroy(&s->drain_sem);
 	CloseEvent(s->progress);
 	pthread_mutex_destroy(&s->mutex);
-	free(s->ring);
 	free(s);
 }
 
@@ -2148,29 +2335,20 @@ xp_audio_open(float volume_l, float volume_r)
 	s = calloc(1, sizeof(*s));
 	if (!s)
 		return -1;
-	s->ring_frames = XP_AUDIO_DEFAULT_RING_FRAMES;
-	s->ring = calloc(s->ring_frames * S_CHANNELS, sizeof(int16_t));
-	if (!s->ring) {
-		free(s);
-		return -1;
-	}
 	s->volume_l = volume_l;
 	s->volume_r = volume_r;
 	sem_init(&s->drain_sem, 0, 0);
-	/* Auto-reset, initially non-signaled. The mixer SetEvents after each
-	 * read_pos advance; one pending waiter wakes and re-checks predicate. */
+	/* Auto-reset, initially non-signaled. */
 	s->progress = CreateEvent(NULL, FALSE, FALSE, NULL);
 	if (s->progress == NULL) {
 		sem_destroy(&s->drain_sem);
-		free(s->ring);
 		free(s);
 		return -1;
 	}
 	assert_pthread_mutex_init(&s->mutex, NULL);
 
 	assert_pthread_mutex_lock(&mixer_lock);
-	/* Reap any done+auto_close streams first to free slots. Safe under
-	 * mixer_lock — no mixer pull is in progress. */
+	/* Reap any done+auto_close streams first to free slots. */
 	for (i = 0; i < XP_AUDIO_MAX_STREAMS; i++) {
 		struct xp_audio_stream *r = mixer_streams[i];
 		if (r && r->auto_close && r->done) {
@@ -2203,9 +2381,7 @@ xp_audio_close(xp_audio_handle_t h)
 	s = mixer_streams[h];
 	mixer_streams[h] = NULL;
 	if (s) {
-		/* Wake any producer blocked on progress, then free under
-		 * mixer_lock — we know no mixer pull is in progress because it
-		 * holds mixer_lock for its duration. */
+		/* Wake any producer blocked on progress, then free. */
 		assert_pthread_mutex_lock(&s->mutex);
 		s->done = true;
 		SetEvent(s->progress);
@@ -2216,206 +2392,113 @@ xp_audio_close(xp_audio_handle_t h)
 }
 
 bool
-xp_audio_append(xp_audio_handle_t h, const int16_t *frames, size_t nframes)
+xp_audio_append(xp_audio_handle_t h, int16_t *frames, size_t nframes,
+                const xp_audio_opts_t *opts)
 {
 	struct xp_audio_stream *s = stream_from_handle(h);
-	size_t written = 0;
+	struct xp_audio_buf    *node = NULL;
 
-	if (!s || !frames)
-		return false;
-
-	assert_pthread_mutex_lock(&s->mutex);
-	if (s->finished || s->done) {
-		assert_pthread_mutex_unlock(&s->mutex);
+	if (!s || !frames || nframes == 0) {
+		free(frames);
 		return false;
 	}
 
-	while (written < nframes) {
-		size_t in_ring = s->write_pos - s->read_pos;
-		size_t free_sp;
-		size_t n;
-		size_t j;
-
-		while (in_ring >= s->ring_frames) {
-			if (s->done) {
-				assert_pthread_mutex_unlock(&s->mutex);
-				return false;
-			}
+	/* Node allocation may race the mixer for memory; on failure wait
+	 * for the mixer to drop at least one buf (freeing space) and retry.
+	 * The stream's progress event fires on every buf drop. */
+	for (;;) {
+		node = calloc(1, sizeof(*node));
+		if (node)
+			break;
+		assert_pthread_mutex_lock(&s->mutex);
+		if (s->done) {
 			assert_pthread_mutex_unlock(&s->mutex);
-			WaitForEvent(s->progress, XP_AUDIO_POLL_MS);
-			assert_pthread_mutex_lock(&s->mutex);
-			in_ring = s->write_pos - s->read_pos;
+			free(frames);
+			return false;
 		}
-		free_sp = s->ring_frames - in_ring;
-		n = nframes - written;
-		if (n > free_sp)
-			n = free_sp;
-		for (j = 0; j < n; j++) {
-			size_t idx = (s->write_pos + j) % s->ring_frames;
-			s->ring[idx * 2 + 0] = frames[(written + j) * 2 + 0];
-			s->ring[idx * 2 + 1] = frames[(written + j) * 2 + 1];
-		}
-		s->write_pos += n;
-		written += n;
+		assert_pthread_mutex_unlock(&s->mutex);
+		WaitForEvent(s->progress, XP_AUDIO_POLL_MS);
 	}
-	assert_pthread_mutex_unlock(&s->mutex);
-	return true;
-}
-
-bool
-xp_audio_append_faded(xp_audio_handle_t h, const int16_t *frames, size_t nframes,
-                      const xp_audio_fade_t *fade)
-{
-	struct xp_audio_stream *s;
-	int16_t                *shaped;
-	size_t                  fi;
-	size_t                  fo;
-	size_t                  i;
-	size_t                  written;
-	bool                    do_crossfade;
-
-	if (!fade || (fade->fade_in_frames == 0 && fade->fade_out_frames == 0 && !fade->crossfade))
-		return xp_audio_append(h, frames, nframes);
-
-	s = stream_from_handle(h);
-	if (!s || !frames)
-		return false;
-
-	fi = fade->fade_in_frames;
-	fo = fade->fade_out_frames;
-	/* Clamp so fi+fo ≤ nframes */
-	if (fi + fo > nframes) {
-		if (fi + fo == 0) {
-			fi = fo = 0;
+	node->frames   = frames;
+	node->nframes  = nframes;
+	/* 0 dB = unity (no per-entry adjustment); opts override below. */
+	node->volume_l = 0.0f;
+	node->volume_r = 0.0f;
+	if (opts) {
+		node->fade_in  = (opts->fade_in_frames  < nframes) ? opts->fade_in_frames  : nframes;
+		node->fade_out = (opts->fade_out_frames < nframes) ? opts->fade_out_frames : nframes;
+		if (node->fade_in + node->fade_out > nframes) {
+			size_t sum = node->fade_in + node->fade_out;
+			size_t new_fi = (size_t)((uint64_t)nframes * node->fade_in / sum);
+			node->fade_out = nframes - new_fi;
+			node->fade_in  = new_fi;
 		}
-		else {
-			size_t new_fi = (size_t)((uint64_t)nframes * fi / (fi + fo));
-			fo = nframes - new_fi;
-			fi = new_fi;
-		}
-	}
-
-	shaped = malloc(nframes * S_FRAMESIZE);
-	if (!shaped)
-		return false;
-	for (i = 0; i < nframes; i++) {
-		int16_t gain = 32767;
-		int32_t l;
-		int32_t r;
-
-		if (i < fi) {
-			gain = fade_gain_q15(i, fi);
-		}
-		if (fo > 0 && i + fo >= nframes) {
-			int16_t og = fade_gain_q15(nframes - 1 - i, fo);
-			if (og < gain)
-				gain = og;
-		}
-		l = ((int32_t)frames[i * 2 + 0] * gain) >> 15;
-		r = ((int32_t)frames[i * 2 + 1] * gain) >> 15;
-		shaped[i * 2 + 0] = (int16_t)l;
-		shaped[i * 2 + 1] = (int16_t)r;
+		node->loop = opts->loop;
+		/* Per-entry volume rides on top of the stream base — it only
+		 * attenuates / pans this one buf, never the stream.  Callers
+		 * who want unity must pass 1.0f (or use XP_AUDIO_OPTS_INIT). */
+		node->volume_l = opts->volume_l;
+		node->volume_r = opts->volume_r;
 	}
 
 	assert_pthread_mutex_lock(&s->mutex);
 	if (s->finished || s->done) {
 		assert_pthread_mutex_unlock(&s->mutex);
-		free(shaped);
+		free_buf(node);
 		return false;
 	}
 
-	/* Crossfade path: rewind write_pos by fi and sum-write the first fi
-	 * frames over the existing (faded-out) tail. Only possible if the
-	 * mixer hasn't already consumed that region. */
-	do_crossfade = (fade->crossfade && fi > 0 && s->write_pos >= fi
-	                && s->write_pos - fi >= s->read_pos);
-	if (do_crossfade) {
-		s->write_pos -= fi;
-		for (i = 0; i < fi; i++) {
-			size_t  idx = (s->write_pos + i) % s->ring_frames;
-			int32_t l = (int32_t)s->ring[idx * 2 + 0] + shaped[i * 2 + 0];
-			int32_t r = (int32_t)s->ring[idx * 2 + 1] + shaped[i * 2 + 1];
-			if (l > 32767)       l = 32767;
-			else if (l < -32768) l = -32768;
-			if (r > 32767)       r = 32767;
-			else if (r < -32768) r = -32768;
-			s->ring[idx * 2 + 0] = (int16_t)l;
-			s->ring[idx * 2 + 1] = (int16_t)r;
-		}
-		s->write_pos += fi;
+	/* Crossfade: start an overlay fade-out on the current tail buf
+	 * immediately — it will decay over the next fade_in frames while
+	 * the new buf ramps up.  No-op if queue is empty or no fade_in. */
+	if (opts && opts->crossfade && opts->fade_in_frames > 0 && s->tail) {
+		s->tail->overlay_total   = opts->fade_in_frames;
+		s->tail->overlay_elapsed = 0;
 	}
 
-	/* Remaining (post-crossfade) frames: overwrite write. Reuse append
-	 * semantics for buffer-full handling. */
-	written = do_crossfade ? fi : 0;
-	while (written < nframes) {
-		size_t in_ring = s->write_pos - s->read_pos;
-		size_t free_sp;
-		size_t n;
-		size_t j;
+	/* Link to tail. */
+	if (s->tail)
+		s->tail->next = node;
+	else
+		s->head = node;
+	s->tail = node;
 
-		while (in_ring >= s->ring_frames) {
-			if (s->done) {
-				assert_pthread_mutex_unlock(&s->mutex);
-				free(shaped);
-				return false;
-			}
-			assert_pthread_mutex_unlock(&s->mutex);
-			WaitForEvent(s->progress, XP_AUDIO_POLL_MS);
-			assert_pthread_mutex_lock(&s->mutex);
-			in_ring = s->write_pos - s->read_pos;
-		}
-		free_sp = s->ring_frames - in_ring;
-		n = nframes - written;
-		if (n > free_sp)
-			n = free_sp;
-		for (j = 0; j < n; j++) {
-			size_t idx = (s->write_pos + j) % s->ring_frames;
-			s->ring[idx * 2 + 0] = shaped[(written + j) * 2 + 0];
-			s->ring[idx * 2 + 1] = shaped[(written + j) * 2 + 1];
-		}
-		s->write_pos += n;
-		written += n;
-	}
+	SetEvent(s->progress);
 	assert_pthread_mutex_unlock(&s->mutex);
-	free(shaped);
 	return true;
 }
 
 xp_audio_handle_t
-xp_audio_play(const int16_t *frames, size_t nframes, float volume_l, float volume_r, bool loop)
+xp_audio_play(const int16_t *frames, size_t nframes, const xp_audio_opts_t *opts)
 {
-	xp_audio_handle_t h = xp_audio_open(volume_l, volume_r);
-	struct xp_audio_stream *s;
+	xp_audio_handle_t  h;
+	int16_t           *copy;
 
+	if (!frames || nframes == 0)
+		return -1;
+
+	/* Stream base volume stays at unity; any opts->volume_{l,r} rides
+	 * as the per-buf entry volume inside xp_audio_append. */
+	h = xp_audio_open(0.0f, 0.0f);
 	if (h < 0)
 		return -1;
-	s = stream_from_handle(h);
-	/* Resize ring to fit exactly if larger than default. Loop mode requires
-	 * the ring to hold the full sample (read wraps to write_pos). */
-	if (nframes > s->ring_frames) {
-		int16_t *newring;
-		assert_pthread_mutex_lock(&s->mutex);
-		newring = realloc(s->ring, nframes * S_CHANNELS * sizeof(int16_t));
-		if (!newring) {
-			assert_pthread_mutex_unlock(&s->mutex);
-			xp_audio_close(h);
-			return -1;
-		}
-		s->ring        = newring;
-		s->ring_frames = nframes;
-		assert_pthread_mutex_unlock(&s->mutex);
-	}
-	if (loop) {
-		assert_pthread_mutex_lock(&s->mutex);
-		s->loop = true;
-		assert_pthread_mutex_unlock(&s->mutex);
-	}
-	if (!xp_audio_append(h, frames, nframes)) {
+
+	copy = (int16_t *)malloc(nframes * S_FRAMESIZE);
+	if (!copy) {
 		xp_audio_close(h);
 		return -1;
 	}
-	if (!loop)
+	memcpy(copy, frames, nframes * S_FRAMESIZE);
+
+	if (!xp_audio_append(h, copy, nframes, opts)) {
+		/* append() took ownership of copy and already freed it on failure. */
+		xp_audio_close(h);
+		return -1;
+	}
+
+	/* If the caller didn't request looping, mark finished so the stream
+	 * transitions to done once the buf drains. */
+	if (!opts || !opts->loop)
 		xp_audio_finish(h);
 	return h;
 }
@@ -2437,15 +2520,35 @@ void
 xp_audio_finish(xp_audio_handle_t h)
 {
 	struct xp_audio_stream *s = stream_from_handle(h);
+	struct xp_audio_buf    *b;
 
 	if (!s)
 		return;
 	assert_pthread_mutex_lock(&s->mutex);
 	s->finished = true;
-	if (!s->loop && s->read_pos >= s->write_pos && !s->done) {
+	/* End any in-flight loops: once the stream is finished no new buf
+	 * will arrive to terminate the loop via crossfade, so the looping
+	 * tail needs to play out its fade_out (if any) and stop. */
+	for (b = s->head; b; b = b->next) {
+		if (b->loop) {
+			b->loop = false;
+			if (b->fade_out > 0) {
+				size_t remaining = b->nframes - b->consumed;
+				if (remaining < b->fade_out) {
+					/* Not enough tail content for the
+					 * fade — overlay the decay on top
+					 * of the remaining frames. */
+					b->overlay_total   = remaining;
+					b->overlay_elapsed = 0;
+				}
+			}
+		}
+	}
+	if (!s->head && !s->done) {
 		s->done = true;
 		sem_post(&s->drain_sem);
 	}
+	SetEvent(s->progress);
 	assert_pthread_mutex_unlock(&s->mutex);
 }
 
@@ -2457,9 +2560,8 @@ xp_audio_stop(xp_audio_handle_t h)
 	if (!s)
 		return;
 	assert_pthread_mutex_lock(&s->mutex);
-	s->read_pos  = s->write_pos;
-	s->loop      = false;
-	s->finished  = true;
+	drop_all_bufs_locked(s);
+	s->finished = true;
 	if (!s->done) {
 		s->done = true;
 		sem_post(&s->drain_sem);
@@ -2562,25 +2664,29 @@ xp_device_latency_ms(void)
 	}
 }
 
-void
-xp_audio_wait(xp_audio_handle_t h)
+/* Internal: block until the mixer has consumed every buf currently
+ * queued on the stream (or the stream is done/stopped).  Does NOT
+ * sleep for device latency — callers add that when they want the full
+ * "heard by the speaker" barrier.  Used by xp_audio_drain and by the
+ * per-stream walk in xptone_complete_locked.
+ *
+ * A looping tail would cause infinite wait; drain semantics assume
+ * the caller has already ended the loop (via xp_audio_finish or a
+ * final crossfade-free append).  On a live looping stream this returns
+ * immediately after the non-looping prefix has drained. */
+static void
+xp_audio_mixer_sync(xp_audio_handle_t h)
 {
 	struct xp_audio_stream *s = stream_from_handle(h);
-	size_t target;
 
 	if (!s)
 		return;
-	/* Mixer-level sync: wait for all frames appended up to this call to be
-	 * consumed by the mixer, or for the stream to be stopped / finished.
-	 * The device kernel buffer may still contain a tail of those frames
-	 * that has yet to physically play — callers who need to wait for that
-	 * to reach the speaker should additionally call xp_audio_drain (which
-	 * sleeps for the current device buffer latency). Between back-to-back
-	 * appends in the same logical sequence (e.g. MF notes in MML), mixer
-	 * sync is sufficient and device drain would insert audible gaps. */
 	assert_pthread_mutex_lock(&s->mutex);
-	target = s->write_pos;
-	while (s->read_pos < target && !s->done) {
+	while (s->head && !s->done) {
+		/* If the head is a looping buf, there's nothing finite to
+		 * wait for — return so the caller doesn't deadlock. */
+		if (s->head->loop && s->head->overlay_total == 0)
+			break;
 		assert_pthread_mutex_unlock(&s->mutex);
 		WaitForEvent(s->progress, XP_AUDIO_POLL_MS);
 		assert_pthread_mutex_lock(&s->mutex);
@@ -2588,16 +2694,17 @@ xp_audio_wait(xp_audio_handle_t h)
 	assert_pthread_mutex_unlock(&s->mutex);
 }
 
-/* Wait for the stream's data to reach the speaker: mixer sync first, then
- * sleep for the device kernel buffer's current latency. Intended for the
- * final "I'm done, don't continue until it's been heard" signal — not
- * between successive appends (that would insert gaps). */
+/* Block until every frame appended up to this call has been consumed by
+ * the mixer AND the device's kernel buffer has had time to play them.
+ * Intended for the final "I'm done, don't continue until it's been heard"
+ * barrier — e.g. at the end of an ANSI-music block, so subsequent terminal
+ * output doesn't race past the audio. */
 void
 xp_audio_drain(xp_audio_handle_t h)
 {
 	uint32_t extra_ms;
 
-	xp_audio_wait(h);
+	xp_audio_mixer_sync(h);
 	extra_ms = xp_device_latency_ms();
 	if (extra_ms > 0)
 		SLEEP(extra_ms);
@@ -2610,8 +2717,8 @@ xp_audio_drain(xp_audio_handle_t h)
  * frame buffer. 2:1 linear-interpolation upsample, L==R. Returns the new
  * buffer (caller takes ownership) and writes the frame count to `*nframes_out`.
  */
-static int16_t *
-convert_u8mono22k_to_s16stereo44k(const unsigned char *in, size_t in_bytes, size_t *nframes_out)
+int16_t *
+xp_u8mono22k_to_s16stereo44k(const unsigned char *in, size_t in_bytes, size_t *nframes_out)
 {
 	size_t   out_frames = in_bytes * 2;
 	int16_t *out = malloc(out_frames * S_FRAMESIZE);
@@ -2796,7 +2903,7 @@ bool xp_play_sample16s(const int16_t *frames, size_t nframes, bool background)
 	(void)post_open_setup_locked();
 	assert_pthread_mutex_unlock(&handle_mutex);
 
-	h = xp_audio_play(frames, nframes, 1.0f, 1.0f, false);
+	h = xp_audio_play(frames, nframes, NULL);
 	if (h < 0) {
 		if (must_close)
 			xptone_close();
@@ -2804,7 +2911,7 @@ bool xp_play_sample16s(const int16_t *frames, size_t nframes, bool background)
 	}
 
 	if (!background) {
-		xp_audio_wait(h);
+		xp_audio_drain(h);
 		xp_audio_close(h);
 		if (must_close)
 			xptone_close();
@@ -2829,7 +2936,7 @@ bool xp_play_sample(unsigned char *sample, size_t size, bool background)
 	size_t   nframes;
 	bool     ret;
 
-	converted = convert_u8mono22k_to_s16stereo44k(sample, size, &nframes);
+	converted = xp_u8mono22k_to_s16stereo44k(sample, size, &nframes);
 	if (!converted)
 		return false;
 	ret = xp_play_sample16s(converted, nframes, background);
@@ -2861,7 +2968,7 @@ bool xp_play_sample(unsigned char *sample, size_t sample_size, bool background)
 	size_t   nframes;
 	bool     ret;
 
-	converted = convert_u8mono22k_to_s16stereo44k(sample, sample_size, &nframes);
+	converted = xp_u8mono22k_to_s16stereo44k(sample, sample_size, &nframes);
 	if (!converted)
 		return false;
 
@@ -2877,14 +2984,14 @@ bool xp_play_sample(unsigned char *sample, size_t sample_size, bool background)
 
 bool xptone(double freq, DWORD duration, DWORD shape)
 {
-	int16_t *wave;
-	int      samples;
-	bool     ret;
+	int16_t           *scratch   = NULL;
+	int16_t           *chunk;
+	int                samples;
+	int                sample_len = 0;
+	bool               ret        = false;
+	bool               must_close = false;
+	xp_audio_handle_t  h          = -1;
 
-	/* Max 7.5 seconds of S16 stereo. `samples` is in frames. */
-	wave = (int16_t *)malloc((size_t)(S_RATE * 15 / 2) * S_FRAMESIZE + S_FRAMESIZE);
-	if (!wave)
-		return false;
 	if (freq < 17 && freq != 0)
 		freq = 17;
 	samples = S_RATE * duration / 1000;
@@ -2894,26 +3001,69 @@ bool xptone(double freq, DWORD duration, DWORD shape)
 				samples = S_RATE / freq * 2;
 		}
 	}
-	if (freq == 0 || samples > S_RATE / freq * 2) {
-		int sample_len;
 
-		xptone_makewave(freq, wave, S_RATE * 15 / 2, shape);
-		/* Trailing-silence scan — silence = 0 in S16. Check the L channel of each
-		 * frame (R == L by construction). */
-		for (sample_len = S_RATE * 15 / 2 - 1; sample_len && wave[sample_len * S_CHANNELS] == 0; sample_len--)
+	pthread_once(&sample_initialized_pto, init_sample);
+
+	/* Ensure the audio backend is open for the life of this call. */
+	assert_pthread_mutex_lock(&handle_mutex);
+	if (handle_type == SOUND_DEVICE_CLOSED) {
+		must_close = true;
+		if (!xptone_open_locked()) {
+			assert_pthread_mutex_unlock(&handle_mutex);
+			goto cleanup;
+		}
+	}
+	(void)post_open_setup_locked();
+	assert_pthread_mutex_unlock(&handle_mutex);
+
+	/* One stream for the whole tone.  Long tones (> 7.5 s) generate the
+	 * first 7.5 s into a scratch buffer, trim trailing silence, then
+	 * enqueue copies of that chunk back-to-back on the same stream so
+	 * segments play seamlessly.  Stream opens at -12 dB — the synth
+	 * renders at full amplitude and this is the canonical headroom
+	 * reduction for tones (see xptone_makewave comment). */
+	h = xp_audio_open(-12.0f, -12.0f);
+	if (h < 0)
+		goto cleanup;
+
+	if (freq == 0 || samples > S_RATE / freq * 2) {
+		scratch = (int16_t *)malloc((size_t)(S_RATE * 15 / 2) * S_FRAMESIZE);
+		if (!scratch)
+			goto cleanup;
+		xptone_makewave(freq, scratch, S_RATE * 15 / 2, shape);
+		/* Trailing-silence scan — silence = 0 in S16.  Check the L
+		 * channel of each frame (R == L by construction). */
+		for (sample_len = S_RATE * 15 / 2 - 1; sample_len && scratch[sample_len * S_CHANNELS] == 0; sample_len--)
 			;
 		sample_len++;
 		while (samples > S_RATE * 15 / 2) {
-			if (!xp_play_sample16s(wave, sample_len, true)) {
-				free(wave);
-				return false;
-			}
+			chunk = (int16_t *)malloc((size_t)sample_len * S_FRAMESIZE);
+			if (!chunk)
+				goto cleanup;
+			memcpy(chunk, scratch, (size_t)sample_len * S_FRAMESIZE);
+			if (!xp_audio_append(h, chunk, sample_len, NULL))
+				goto cleanup;  /* append freed chunk on failure */
 			samples -= sample_len;
 		}
 	}
-	xptone_makewave(freq, wave, samples, shape);
-	ret = xp_play_sample16s(wave, samples, false);
-	free(wave);
+	/* Final remainder. */
+	chunk = (int16_t *)malloc((size_t)samples * S_FRAMESIZE + S_FRAMESIZE);
+	if (!chunk)
+		goto cleanup;
+	xptone_makewave(freq, chunk, samples, shape);
+	if (!xp_audio_append(h, chunk, samples, NULL))
+		goto cleanup;
+
+	xp_audio_finish(h);
+	xp_audio_drain(h);
+	ret = true;
+
+cleanup:
+	if (h >= 0)
+		xp_audio_close(h);
+	if (must_close)
+		xptone_close();
+	free(scratch);
 	return ret;
 }
 

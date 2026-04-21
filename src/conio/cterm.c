@@ -1749,6 +1749,7 @@ struct cterminal* cterm_init(int height, int width, int xpos, int ypos, int back
 	cterm->emulation=emulation;
 	cterm->last_column_flag = 0;
 	cterm->music_stream = -1;  /* lazily opened when MML first arrives */
+	cterm->fx_stream = -1;     /* lazily opened on first cterm_play_fx* call */
 	/* Install the per-emulation dispatcher and its dispatch table.
 	 * The dispatcher handles single bytes outside sequence state; the
 	 * dispatch table is searched (via bsearch) when a sequence or C1
@@ -2245,6 +2246,12 @@ void cterm_end(struct cterminal *cterm, int free_fonts)
 			xp_audio_stop(cterm->music_stream);
 			xp_audio_close(cterm->music_stream);
 			cterm->music_stream = -1;
+			xptone_close();
+		}
+		if (cterm->fx_stream >= 0) {
+			xp_audio_stop(cterm->fx_stream);
+			xp_audio_close(cterm->fx_stream);
+			cterm->fx_stream = -1;
 			xptone_close();
 		}
 

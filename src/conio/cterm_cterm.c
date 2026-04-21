@@ -928,7 +928,9 @@ static void play_music(struct cterminal *cterm)
 	if (cterm->music_stream < 0) {
 		if (!xptone_open())
 			goto done;
-		cterm->music_stream = xp_audio_open(1.0f, 1.0f);
+		/* -12 dB base gives tones generated at full scale the same
+		 * headroom reduction that xptone_makewave used to bake in. */
+		cterm->music_stream = xp_audio_open(-12.0f, -12.0f);
 		if (cterm->music_stream < 0) {
 			xptone_close();
 			goto done;
@@ -1128,12 +1130,10 @@ static void play_music(struct cterminal *cterm)
 							if (pause_frames > 0)
 								memset(buf + (size_t)note_frames * XPBEEP_CHANNELS, 0,
 								       (size_t)pause_frames * XPBEEP_FRAMESIZE);
-							xp_audio_append(cterm->music_stream, buf, total_frames);
-							free(buf);
-							if (cterm->musicfore) {
-								xp_audio_wait(cterm->music_stream);
+							/* append takes ownership of buf. */
+							xp_audio_append(cterm->music_stream, buf, total_frames, NULL);
+							if (cterm->musicfore)
 								had_foreground = 1;
-							}
 						}
 					}
 				}
@@ -1160,6 +1160,80 @@ done:
 	cterm->music=0;
 	cterm->accumulator = NULL;
 	cterm->musicbuf[0]=0;
+}
+
+/* Lazily open the audio device and the fx_stream. Returns false if either
+ * step fails — caller must treat the fx as a no-op in that case. */
+static bool
+cterm_fx_ensure_open(struct cterminal *cterm)
+{
+	if (cterm->fx_stream >= 0)
+		return true;
+	if (!xptone_open())
+		return false;
+	/* -12 dB base matches music_stream: synth output is attenuated
+	 * here rather than baked into xptone_makewave, and ooii/rip
+	 * samples ride at the same level so no one call-site is
+	 * dramatically louder than another. */
+	cterm->fx_stream = xp_audio_open(-12.0f, -12.0f);
+	if (cterm->fx_stream < 0) {
+		xptone_close();
+		return false;
+	}
+	return true;
+}
+
+bool
+cterm_play_fx(struct cterminal *cterm, const int16_t *frames, size_t nframes)
+{
+	int16_t *copy;
+
+	if (!cterm || !frames || nframes == 0)
+		return false;
+	if (!cterm_fx_ensure_open(cterm))
+		return false;
+	copy = (int16_t *)malloc(nframes * XPBEEP_FRAMESIZE);
+	if (!copy)
+		return false;
+	memcpy(copy, frames, nframes * XPBEEP_FRAMESIZE);
+	/* append takes ownership of copy. */
+	return xp_audio_append(cterm->fx_stream, copy, nframes, NULL);
+}
+
+bool
+cterm_play_fx_tone(struct cterminal *cterm, double freq, uint32_t duration_ms, uint32_t shape)
+{
+	size_t   nframes;
+	int16_t *buf;
+
+	if (!cterm || duration_ms == 0)
+		return false;
+	if (!cterm_fx_ensure_open(cterm))
+		return false;
+	nframes = (size_t)XPBEEP_SAMPLE_RATE * duration_ms / 1000;
+	if (nframes == 0)
+		return true;
+	buf = (int16_t *)malloc(nframes * XPBEEP_FRAMESIZE);
+	if (!buf)
+		return false;
+	xptone_makewave(freq, buf, (int)nframes, shape);
+	return xp_audio_append(cterm->fx_stream, buf, nframes, NULL);
+}
+
+bool
+cterm_play_fx_u8(struct cterminal *cterm, const unsigned char *samp, size_t size)
+{
+	int16_t *converted;
+	size_t   nframes;
+
+	if (!cterm || !samp || size == 0)
+		return false;
+	if (!cterm_fx_ensure_open(cterm))
+		return false;
+	converted = xp_u8mono22k_to_s16stereo44k(samp, size, &nframes);
+	if (!converted)
+		return false;
+	return xp_audio_append(cterm->fx_stream, converted, nframes, NULL);
 }
 
 /* ---- Extended-colour SGR parameter helpers (truecolor / 256-colour) ---- */

@@ -1460,7 +1460,15 @@ sdl_beep(void)
 	static bool    generated = false;
 
 	if (!generated) {
+		int i;
+
 		xptone_makewave(440, wave, 2205, WAVE_SHAPE_SINE_SAW_HARM);
+		/* -12 dB headroom (0.251× linear) — xptone_makewave no longer
+		 * bakes it in and xp_play_sample16s has no opts channel.
+		 * Baking it into the static wave on first use is the cheapest
+		 * fix; the buffer is generated once per process. */
+		for (i = 0; i < 2205 * 2; i++)
+			wave[i] = (int16_t)((float)wave[i] * 0.251f);
 		generated = true;
 	}
 	xp_play_sample16s(wave, 2205, TRUE);
