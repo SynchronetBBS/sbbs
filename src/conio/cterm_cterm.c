@@ -668,7 +668,7 @@ cterm_cterm_osc_finish(struct cterminal *cterm)
 		while ((p = strtok_r(p2, ";", &seqlast)) != NULL) {
 			p2 = NULL;
 			if (index == ULONG_MAX) {
-				index = strtoull(p, NULL, 10);
+				index = strtoul(p, NULL, 10);
 				if (index == ULONG_MAX || index > 13200)
 					break;
 			}
@@ -689,22 +689,28 @@ cterm_cterm_osc_finish(struct cterminal *cterm)
 					while (ccount < 3
 					    && (p3 = strtok_r(p4, "/", &collast)) != NULL) {
 						p4 = NULL;
+						/* Parse into unsigned long (strtoul's return type) so
+						 * overflow can be detected, then narrow to uint16_t
+						 * after the range check. The 1/2/3-digit cases
+						 * expand the parsed nibbles into a 16-bit value;
+						 * each expansion stays within UINT16_MAX by
+						 * construction (1 nibble → 4 nibbles, etc.). */
 						unsigned long v;
 						v = strtoul(p3, NULL, 16);
 						if (v > UINT16_MAX)
 							break;
 						switch (strlen(p3)) {
 							case 1:
-								rgb[ccount] = v | (v << 4) | (v << 8) | (v << 12);
+								rgb[ccount] = (uint16_t)(v | (v << 4) | (v << 8) | (v << 12));
 								break;
 							case 2:
-								rgb[ccount] = v | (v << 8);
+								rgb[ccount] = (uint16_t)(v | (v << 8));
 								break;
 							case 3:
-								rgb[ccount] = (v & 0x0f) | (v << 4);
+								rgb[ccount] = (uint16_t)((v & 0x0f) | (v << 4));
 								break;
 							case 4:
-								rgb[ccount] = v;
+								rgb[ccount] = (uint16_t)v;
 								break;
 							default:
 								broken = true;
@@ -737,7 +743,7 @@ cterm_cterm_osc_finish(struct cterminal *cterm)
 			p2 = &cterm->strbuf[4];
 			while ((p = strtok_r(p2, ";", &seqlast)) != NULL) {
 				p2 = NULL;
-				pi = strtoull(p, NULL, 10);
+				pi = strtoul(p, NULL, 10);
 				if (pi < sizeof(dac_default) / sizeof(struct dac_colors))
 					cterm_setpalette(cterm, pi + palette_offset,
 					    dac_default[pi].red << 8 | dac_default[pi].red,
@@ -1205,23 +1211,34 @@ void cterm_parse_extended_colour(struct cterminal *cterm, int *i, bool fg)
 	if (*i >= cterm->seq_param_count)
 		return;
 
+	/* SGR 38/48 extended-colour R/G/B components are spec'd to 0-255 but
+	 * flow through the uint64_t seq_param_int/sub.param_int storage (which
+	 * uses UINT64_MAX as a "slot empty" sentinel). sgr_rgb_scale() clamps
+	 * and shifts into the 16-bit palette range that map_rgb expects. */
+#	define SGR_RGB_SCALE(v) \
+		((uint16_t)(((v) > 255u ? 255u : (unsigned)(v)) << 8))
+
 	if (cterm->seq_param_strs[*i][2] == ':') {
 		/* CSI 38 : 5 : X m   (indexed)
 		 * CSI 38 : 2 : Z? : R : G : B m   (RGB with optional colour-space id) */
 		if (cterm_parse_sub_parameters(&sub, cterm, *i)) {
 			if (sub.param_count == 3 && sub.param_int[1] == 5) {
-				*co = sub.param_int[2];
+				*co = (uint32_t)sub.param_int[2];
 				cterm_save_extended_colour_seq(cterm, fg, *i, 1);
 			}
 			else if (sub.param_count >= 5 && sub.param_int[1] == 2) {
 				if (sub.param_count == 5) {
-					nc = map_rgb(sub.param_int[2]<<8, sub.param_int[3]<<8, sub.param_int[4]<<8);
+					nc = map_rgb(SGR_RGB_SCALE(sub.param_int[2]),
+					    SGR_RGB_SCALE(sub.param_int[3]),
+					    SGR_RGB_SCALE(sub.param_int[4]));
 					if (nc != UINT32_MAX)
 						*co = nc;
 					cterm_save_extended_colour_seq(cterm, fg, *i, 1);
 				}
 				else if (sub.param_count > 5) {
-					nc = map_rgb(sub.param_int[3]<<8, sub.param_int[4]<<8, sub.param_int[5]<<8);
+					nc = map_rgb(SGR_RGB_SCALE(sub.param_int[3]),
+					    SGR_RGB_SCALE(sub.param_int[4]),
+					    SGR_RGB_SCALE(sub.param_int[5]));
 					if (nc != UINT32_MAX)
 						*co = nc;
 					cterm_save_extended_colour_seq(cterm, fg, *i, 1);
@@ -1235,7 +1252,7 @@ void cterm_parse_extended_colour(struct cterminal *cterm, int *i, bool fg)
 		/* CSI 38 ; 5 : X m */
 		if (cterm_parse_sub_parameters(&sub, cterm, (*i)+1)) {
 			if (sub.param_count == 2)
-				*co = sub.param_int[1];
+				*co = (uint32_t)sub.param_int[1];
 			cterm_save_extended_colour_seq(cterm, fg, *i, 2);
 			(*i)++;
 		}
@@ -1243,7 +1260,7 @@ void cterm_parse_extended_colour(struct cterminal *cterm, int *i, bool fg)
 	else if ((*i)+2 < cterm->seq_param_count
 	    && cterm->seq_param_int[(*i)+1] == 5) {
 		/* CSI 38 ; 5 ; X m */
-		*co = cterm->seq_param_int[(*i)+2] + palette_offset;
+		*co = (uint32_t)cterm->seq_param_int[(*i)+2] + palette_offset;
 		cterm_save_extended_colour_seq(cterm, fg, *i, 3);
 		*i += 2;
 	}
@@ -1254,9 +1271,13 @@ void cterm_parse_extended_colour(struct cterminal *cterm, int *i, bool fg)
 		if (cterm_parse_sub_parameters(&sub, cterm, (*i)+1)) {
 			nc = UINT32_MAX;
 			if (sub.param_count > 4)
-				nc = map_rgb(sub.param_int[2]<<8, sub.param_int[3]<<8, sub.param_int[4]<<8);
+				nc = map_rgb(SGR_RGB_SCALE(sub.param_int[2]),
+				    SGR_RGB_SCALE(sub.param_int[3]),
+				    SGR_RGB_SCALE(sub.param_int[4]));
 			else if (sub.param_count == 4)
-				nc = map_rgb(sub.param_int[1]<<8, sub.param_int[2]<<8, sub.param_int[3]<<8);
+				nc = map_rgb(SGR_RGB_SCALE(sub.param_int[1]),
+				    SGR_RGB_SCALE(sub.param_int[2]),
+				    SGR_RGB_SCALE(sub.param_int[3]));
 			if (nc != UINT32_MAX)
 				*co = nc;
 			cterm_save_extended_colour_seq(cterm, fg, *i, 2);
@@ -1266,14 +1287,15 @@ void cterm_parse_extended_colour(struct cterminal *cterm, int *i, bool fg)
 	else if ((*i)+4 < cterm->seq_param_count
 	    && cterm->seq_param_int[(*i)+1] == 2) {
 		/* CSI 38 ; 2 ; R ; G ; B m */
-		nc = map_rgb(cterm->seq_param_int[(*i)+2]<<8,
-		    cterm->seq_param_int[(*i)+3]<<8,
-		    cterm->seq_param_int[(*i)+4]<<8);
+		nc = map_rgb(SGR_RGB_SCALE(cterm->seq_param_int[(*i)+2]),
+		    SGR_RGB_SCALE(cterm->seq_param_int[(*i)+3]),
+		    SGR_RGB_SCALE(cterm->seq_param_int[(*i)+4]));
 		if (nc != UINT32_MAX)
 			*co = nc;
 		cterm_save_extended_colour_seq(cterm, fg, *i, 5);
 		*i += 4;
 	}
+#	undef SGR_RGB_SCALE
 	cterm_free_sub_parameters(&sub);
 }
 

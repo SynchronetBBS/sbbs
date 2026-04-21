@@ -214,11 +214,11 @@ struct cterminal {
 	int					sx_iv;			// Vertical size
 	int					sx_ih;			// Horizontal size
 	int					sx_trans;		// "Transparent" background
-	unsigned long		sx_repeat;		// Repeat count
-	unsigned			sx_left;		// Left margin (0-based pixel offset)
-	unsigned			sx_x, sx_y;		// Current position
+	int					sx_repeat;		// Repeat count
+	int					sx_left;		// Left margin (0-based pixel offset)
+	int					sx_x, sx_y;		// Current position
 	uint32_t			sx_fg, sx_bg;	// Current colour set
-	int					sx_pixels_sent;	/* If any pixels have been sent... 
+	int					sx_pixels_sent;	/* If any pixels have been sent...
 										   Raster Attributes are ignore if this is true. */
 	int					sx_first_pass;	// First pass through a line
 	int					sx_hold_update;	// hold_update value to restore on completion
@@ -226,8 +226,8 @@ struct cterminal {
 	int					sx_start_y;		// Starting Y position
 	int					sx_row_max_x;	// Max right size of this sixel line
 	struct ciolib_pixels *sx_pixels;
-	unsigned long		sx_width;		// Width from raster attributes
-	unsigned long		sx_height;		// REMAINING heigh from raster attributes
+	int					sx_width;		// Width from raster attributes
+	int					sx_height;		// REMAINING height from raster attributes
 	struct ciolib_mask	*sx_mask;
 	int					sx_orig_cursor;	// Original value of cterm->cursor
 
