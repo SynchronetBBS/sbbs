@@ -966,7 +966,10 @@ pthread_once_t sample_initialized_pto = PTHREAD_ONCE_INIT;
 static bool
 xptone_open_locked(void)
 {
-#ifdef _WIN32
+#if defined(_WIN32) && (!defined(XPDEV_THREAD_SAFE) || defined(__BORLANDC__))
+	/* waveOut format descriptor: only the non-WASAPI Win32 paths (non-MT
+	 * and Borland MT) fill this in. MSVC/MinGW MT go through
+	 * xp_wasapi_open() which builds its own WAVEFORMATEXTENSIBLE. */
 	WAVEFORMATEX w;
 #endif
 
