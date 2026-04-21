@@ -7,10 +7,12 @@
 
 #if defined(_WIN32)
 	#define WIN32_LEAN_AND_MEAN
-	/* MT builds use WASAPI (Vista+) for audio output; non-MT stays on
-	 * waveOut for Borland / legacy consumers. Set the target version
-	 * BEFORE <windows.h> so IAudioClient et al. are exposed later. */
-	#ifdef XPDEV_THREAD_SAFE
+	/* MT builds with a modern compiler (MSVC, MinGW-w64) use WASAPI
+	 * (Vista+) for audio output. Non-MT builds and Borland (whose 2002
+	 * Platform SDK predates Vista) stay on waveOut. Set the target
+	 * version BEFORE <windows.h> so IAudioClient et al. are exposed
+	 * later in this file. */
+	#if defined(XPDEV_THREAD_SAFE) && !defined(__BORLANDC__)
 		#undef _WIN32_WINNT
 		#define _WIN32_WINNT 0x0600
 		#undef WINVER
@@ -249,13 +251,14 @@ static SDL_sem *             sdlToneDone;
 #endif
 
 #ifdef _WIN32
-#ifdef XPDEV_THREAD_SAFE
-/* MT builds use WASAPI (pull-native shared-mode, event-driven) instead
- * of waveOut. The wrapper owns its own render thread that pulls from
- * xp_mixer_pull and writes into the WASAPI buffer. Non-MT builds keep
- * the waveOut state below for the synchronous do_xp_play_sample code
- * path (used by legacy non-threaded consumers like the Borland SBBS
- * Win32 build). */
+#if defined(XPDEV_THREAD_SAFE) && !defined(__BORLANDC__)
+/* MT builds with Vista+ SDK headers use WASAPI (pull-native shared-mode,
+ * event-driven) instead of waveOut. The wrapper owns its own render
+ * thread that pulls from xp_mixer_pull and writes into the WASAPI
+ * buffer. Borland's 2002 Platform SDK predates Vista (no mmdeviceapi.h),
+ * so Borland MT falls through to the 'neither' case at the bottom — it
+ * has no Win32 audio backend. Non-MT builds keep the waveOut state for
+ * the synchronous do_xp_play_sample code path. */
 #define COBJMACROS                 /* IFoo_Method(this, args) macro form */
 #define INITGUID                   /* emit storage for referenced GUIDs */
 /* <initguid.h> must come AFTER #define INITGUID to redefine DEFINE_GUID
@@ -277,6 +280,13 @@ static SDL_sem *             sdlToneDone;
  * identically on MinGW-w64 and MSVC. */
 static const GUID xp_wasapi_ks_subtype_pcm = { STATIC_KSDATAFORMAT_SUBTYPE_PCM };
 
+/* Link-time dependencies for the MMDevice/AudioClient COM symbols are
+ * declared alongside the other xpdev-MT Win32 libs:
+ *   - MSVC:   xpdev_mt.props <AdditionalDependencies>
+ *   - MinGW:  xpdev/Common.gmake XPDEV-MT_LIBS
+ * (ole32.lib for CoInitializeEx/CoCreateInstance/CoUninitialize;
+ *  uuid.lib for the CLSID_/IID_ GUID storage.) */
+
 #include "threadwrap.h"
 #include "semwrap.h"
 
@@ -289,13 +299,9 @@ static sem_t                wasapi_thread_stopped;
 static UINT32               wasapi_buffer_frames;
 static bool                 wasapi_com_owned;
 static bool                 wasapi_thread_started;
-/* Borland doesn't compile MT xpdev (WASAPI is MT-only), but keep the
- * _Atomic / volatile split consistent with the device_thread flag. */
-#ifdef __BORLANDC__
-static volatile bool        wasapi_stop_requested;
-#else
+/* This whole block is gated out for Borland (no Vista SDK headers), so
+ * the _Atomic keyword is fine unconditionally here. */
 static _Atomic bool         wasapi_stop_requested;
-#endif
 
 /* MMCSS function pointers — runtime-loaded via LoadLibrary so we don't
  * need libavrt at link time (MinGW may not ship it). Failure is non-
@@ -692,7 +698,7 @@ void sdl_fillbuf(void *userdata, Uint8 *stream, int len)
 }
 #endif
 
-#if defined(_WIN32) && defined(XPDEV_THREAD_SAFE)
+#if defined(_WIN32) && defined(XPDEV_THREAD_SAFE) && !defined(__BORLANDC__)
 /* ============================================================
  * WASAPI backend (shared-mode event-driven, pull-native).
  * Owns its own render thread that pulls from xp_mixer_pull and
@@ -929,7 +935,7 @@ xp_wasapi_latency_ms(void)
 		return 0;
 	return (uint32_t)((uint64_t)padding * 1000 / S_RATE);
 }
-#endif /* _WIN32 && XPDEV_THREAD_SAFE */
+#endif /* _WIN32 && XPDEV_THREAD_SAFE && !__BORLANDC__ */
 
 #ifdef XPDEV_THREAD_SAFE
 pthread_once_t sample_initialized_pto = PTHREAD_ONCE_INIT;
@@ -1285,11 +1291,11 @@ xptone_open_locked(void)
 #ifdef _WIN32
 	if (xpbeep_sound_devices_enabled & XPBEEP_DEVICE_WIN32) {
 		if (!sound_device_open_failed) {
-#ifdef XPDEV_THREAD_SAFE
-			/* MT builds go through WASAPI (shared-mode, event-driven,
-			 * pull-native). The wrapper owns its own render thread and
-			 * calls xp_mixer_pull directly — no device_thread_fn branch
-			 * needed for Win32 in MT. */
+#if defined(XPDEV_THREAD_SAFE) && !defined(__BORLANDC__)
+			/* MT builds with Vista SDK headers go through WASAPI
+			 * (shared-mode, event-driven, pull-native). The wrapper
+			 * owns its own render thread and calls xp_mixer_pull
+			 * directly — no device_thread_fn branch needed. */
 			if (xp_wasapi_open()) {
 				handle_type = SOUND_DEVICE_WIN32;
 				handle_rc++;
@@ -1297,7 +1303,7 @@ xptone_open_locked(void)
 			}
 			sound_device_open_failed = true;
 			return false;
-#else
+#elif !defined(XPDEV_THREAD_SAFE)
 			/* Non-MT builds keep the legacy waveOut push backend used by
 			 * do_xp_play_sample. */
 			memset(&w, 0, sizeof(w));
@@ -1325,6 +1331,13 @@ xptone_open_locked(void)
 			handle_type = SOUND_DEVICE_WIN32;
 			handle_rc++;
 			return true;
+#else
+			/* Borland MT on Win32: no audio backend available (no Vista
+			 * SDK headers for WASAPI; waveOut lives in the non-MT else
+			 * branch). Fail gracefully; selection falls through to any
+			 * other enabled backend. */
+			sound_device_open_failed = true;
+			return false;
 #endif
 		}
 	}
@@ -1624,9 +1637,9 @@ bool xptone_close_locked(void)
 
 #ifdef _WIN32
 	if (handle_type == SOUND_DEVICE_WIN32) {
-#ifdef XPDEV_THREAD_SAFE
+#if defined(XPDEV_THREAD_SAFE) && !defined(__BORLANDC__)
 		xp_wasapi_close();
-#else
+#elif !defined(XPDEV_THREAD_SAFE)
 		int i;
 		for (i = 0; i < WIN32_NBUFS; i++) {
 			if (wh[i].lpData == NULL)
@@ -1642,6 +1655,8 @@ bool xptone_close_locked(void)
 			waveOut_done = NULL;
 		}
 #endif
+		/* Borland MT: xptone_open never succeeded for Win32, so
+		 * handle_type == SOUND_DEVICE_WIN32 is unreachable here. */
 	}
 #endif
 
@@ -2484,7 +2499,7 @@ xp_device_latency_ms(void)
 			return 50;
 		}
 #endif
-#ifdef _WIN32
+#if defined(_WIN32) && !defined(__BORLANDC__)
 		case SOUND_DEVICE_WIN32:
 			/* WASAPI: padding = queued-but-not-yet-played frames. */
 			return xp_wasapi_latency_ms();
