@@ -546,8 +546,9 @@ function getkeyw()
 			}
 		}
 	} while(!dk.console.waitkey(1000));
-	lastkey = time();
 	ret = dk.console.getkey();
+	if (ret !== undefined && ret !== null && ret.length >= 1)
+		lastkey = time();
 	if (ret === dk.console.key.CONNECTION_CLOSED) {
 		if (time_callback !== undefined) {
 			time_callback('DISCONNECTED');
