@@ -150,7 +150,11 @@ set_msgf(struct webget_request *req, const char *newmsgf, ...)
 static ssize_t
 recv_nbytes(struct http_session *sess, uint8_t *buf, const size_t chunk_size, bool *eof)
 {
-	ssize_t received = 0;
+	/* `received` is always non-negative and bounded by chunk_size, so
+	 * it's naturally size_t. The function's ssize_t return type exists
+	 * only for the separate `return -1` at the error_return label
+	 * below — errors never flow through `received` itself. */
+	size_t received = 0;
 
 	// coverity[tainted_data_argument:SUPPRESS]
 	while (received < chunk_size) {
@@ -197,7 +201,7 @@ recv_nbytes(struct http_session *sess, uint8_t *buf, const size_t chunk_size, bo
 		assert_pthread_mutex_unlock(&sess->req->mtx);
 	}
 
-	return received;
+	return (ssize_t)received;
 error_return:
 	if (eof)
 		*eof = false;
@@ -595,8 +599,12 @@ parse_cache_control(struct http_session *sess, const char *val)
 		// The sep check is for Coverity...
 		if (sz == 7 && strnicmp(val, "max-age=", 8) == 0 && sep) {
 			long long ll;
+			/* HTTP max-age is delta-seconds (integer). Stored as double
+			 * because the cache-freshness math below uses difftime().
+			 * Explicit cast documents the narrowing; realistic values
+			 * fit double's 53-bit mantissa. */
 			if (paranoid_strtoll(&sep[0], NULL, 10, &ll))
-				sess->cache.max_age = ll;
+				sess->cache.max_age = (double)ll;
 		}
 		if (sz == 8 && sep == NULL && strnicmp(val, "no-cache", 8) == 0) {
 			sess->cache.no_cache = true;
@@ -687,8 +695,9 @@ parse_headers(struct http_session *sess)
 		else if(strnicmp(line, "age:", 4) == 0) {
 			if (sess->cache.age == 0) {
 				long long ll;
+				/* See max_age: stored as double for difftime math. */
 				if (paranoid_strtoll(&line[4], NULL, 10, &ll))
-					sess->cache.age = ll;
+					sess->cache.age = (double)ll;
 			}
 		}
 		else if(strnicmp(line, "cache-control:", 14) == 0) {
@@ -704,7 +713,9 @@ parse_headers(struct http_session *sess)
 				}
 				sess->got_size = true;
 				assert_pthread_mutex_lock(&sess->req->mtx);
-				sess->req->remote_size = ll;
+				/* Clamped above to <= MAX_LIST_SIZE (16 MB) which fits
+				 * size_t on every supported platform. */
+				sess->req->remote_size = (size_t)ll;
 				assert_pthread_mutex_unlock(&sess->req->mtx);
 			}
 		}
@@ -1199,7 +1210,11 @@ is_fresh(struct http_session *sess)
 	else
 		freshness_lifetime = 60 * 60 * 24; // One day
 
-	double apparent_age = dmax(0, sess->cache.response_time - date_value);
+	/* difftime() is the portable time_t-to-seconds-as-double conversion;
+	 * direct subtraction would promote to double implicitly but MSVC flags
+	 * the time_t→double narrowing. Use difftime() consistently with the
+	 * other time-math below. */
+	double apparent_age = dmax(0, difftime(sess->cache.response_time, date_value));
 	double response_delay = difftime(sess->cache.response_time, sess->cache.request_time);
 	double corrected_age_value = sess->cache.age + response_delay;
 	double corrected_initial_age = dmax(apparent_age, corrected_age_value);

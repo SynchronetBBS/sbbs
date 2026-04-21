@@ -612,16 +612,26 @@ cterm_handle_deccksr(struct cterminal *cterm, int *speed)	/* CSI Pid;1;Pt;Pl;Pb;
 		int vmode;
 		gettextinfo(&ti);
 		vmode = find_vmode(ti.currmode);
+		/* Narrow the four seq_param_int[] slots into uint32_t locals after
+		 * range-checking against screen dimensions; getpixels() and
+		 * vmem_gettext() take narrower types. The uint64_t parser storage
+		 * uses UINT64_MAX as a "parameter not present" sentinel, which is
+		 * why the fields aren't uint32_t already. */
+		uint32_t p_left   = (uint32_t)cterm->seq_param_int[3];
+		uint32_t p_top    = (uint32_t)cterm->seq_param_int[2];
+		uint32_t p_right  = (uint32_t)cterm->seq_param_int[5];
+		uint32_t p_bottom = (uint32_t)cterm->seq_param_int[4];
+
 		if (vmode != -1
 		    && (cterm->seq_param_int[3] < (uint64_t)(vparams[vmode].charwidth * cterm->width))
 		    && (cterm->seq_param_int[2] < (uint64_t)(vparams[vmode].charheight * cterm->height))
 		    && (cterm->seq_param_int[5] < (uint64_t)(vparams[vmode].charwidth * cterm->width))
 		    && (cterm->seq_param_int[4] < (uint64_t)(vparams[vmode].charheight * cterm->height))
 		    && (pix = getpixels(
-		        (cterm->seq_param_int[3] - 1 + cterm->x - 1) * vparams[vmode].charwidth,
-		        (cterm->seq_param_int[2] - 1 + cterm->y - 1) * vparams[vmode].charheight,
-		        (cterm->seq_param_int[5] + cterm->x - 1) * vparams[vmode].charwidth - 1,
-		        (cterm->seq_param_int[4] + cterm->y - 1) * vparams[vmode].charheight - 1,
+		        (p_left - 1 + cterm->x - 1) * vparams[vmode].charwidth,
+		        (p_top - 1 + cterm->y - 1) * vparams[vmode].charheight,
+		        (p_right + cterm->x - 1) * vparams[vmode].charwidth - 1,
+		        (p_bottom + cterm->y - 1) * vparams[vmode].charheight - 1,
 		        true)) != NULL) {
 			crc = crc16((void *)pix->pixels,
 			    sizeof(pix->pixels[0]) * pix->width * pix->height);
@@ -631,12 +641,13 @@ cterm_handle_deccksr(struct cterminal *cterm, int *speed)	/* CSI Pid;1;Pt;Pl;Pb;
 			freepixels(pix);
 		}
 		else {
-			size_t cnt = (cterm->seq_param_int[4] - cterm->seq_param_int[2] + 1)
-			    * (cterm->seq_param_int[5] - cterm->seq_param_int[3] + 1);
+			/* p_* locals narrowed from the seq_param_int[] slots above. */
+			size_t cnt = (size_t)(p_bottom - p_top + 1)
+			    * (size_t)(p_right - p_left + 1);
 			struct vmem_cell *vm = calloc(sizeof(struct vmem_cell), cnt);
 			if (vm != NULL) {
-				if (vmem_gettext(cterm->seq_param_int[3], cterm->seq_param_int[2],
-				    cterm->seq_param_int[5], cterm->seq_param_int[4], vm)) {
+				if (vmem_gettext((int)p_left, (int)p_top,
+				    (int)p_right, (int)p_bottom, vm)) {
 					for (size_t cell = 0; cell < cnt; cell++) {
 						struct vmem_cell vmc = vm[cell];
 						memset(&vm[cell], 0, sizeof(vm[cell]));
@@ -1531,20 +1542,24 @@ void cterm_parse_sixel_string(struct cterminal *cterm, bool finish)
 			switch(*p) {
 				case '"':	// Raster Attributes
 					if (!cterm->sx_pixels_sent) {
+						/* Parse through strtoul (which rejects `-`), then
+						 * narrow to int. The clamp block below caps each
+						 * value to screen dimensions, so the narrowing is
+						 * semantically safe. */
 						p++;
-						cterm->sx_iv = strtoul(p, &p, 10);
+						cterm->sx_iv = (int)strtoul(p, &p, 10);
 						cterm->sx_height = cterm->sx_width = 0;
 						if (*p == ';') {
 							p++;
-							cterm->sx_ih = strtoul(p, &p, 10);
+							cterm->sx_ih = (int)strtoul(p, &p, 10);
 						}
 						if (*p == ';') {
 							p++;
-							cterm->sx_width = strtoul(p, &p, 10);
+							cterm->sx_width = (int)strtoul(p, &p, 10);
 						}
 						if (*p == ';') {
 							p++;
-							cterm->sx_height = strtoul(p, &p, 10);
+							cterm->sx_height = (int)strtoul(p, &p, 10);
 						}
 						gettextinfo(&ti);
 						vmode = find_vmode(ti.currmode);
@@ -1568,8 +1583,9 @@ void cterm_parse_sixel_string(struct cterminal *cterm, bool finish)
 					p++;
 					if (!*p)
 						continue;
-					cterm->sx_repeat = strtoul(p, &p, 10);
-					if (cterm->sx_repeat > 0x7fff)
+					/* Parse wide, clamp, narrow. sx_repeat is int. */
+					cterm->sx_repeat = (int)strtoul(p, &p, 10);
+					if (cterm->sx_repeat > 0x7fff || cterm->sx_repeat < 0)
 						cterm->sx_repeat = 0x7fff;
 					break;
 				case '#':	// Colour Introducer
@@ -1596,8 +1612,19 @@ void cterm_parse_sixel_string(struct cterminal *cterm, bool finish)
 							p++;
 							b = strtoul(p, &p, 10);
 						}
-						if (t == 2)	// Only support RGB
-							cterm_setpalette(cterm, cterm->sx_fg, UINT16_MAX * r / 100, UINT16_MAX * g / 100, UINT16_MAX * b / 100);
+						if (t == 2) {	// Only support RGB
+							/* Sixel RGB components are percentages 0-100;
+							 * clamp defensively then scale into the 16-bit
+							 * palette range. The clamp also makes the
+							 * final (uint16_t) cast guaranteed safe. */
+							if (r > 100) r = 100;
+							if (g > 100) g = 100;
+							if (b > 100) b = 100;
+							cterm_setpalette(cterm, cterm->sx_fg,
+							    (uint16_t)(UINT16_MAX * r / 100),
+							    (uint16_t)(UINT16_MAX * g / 100),
+							    (uint16_t)(UINT16_MAX * b / 100));
+						}
 					}
 					break;
 				case '$':	// Graphics Carriage Return
@@ -1907,7 +1934,7 @@ all_done:
 					FREE_AND_NULL(cterm->macros[cterm->macro_num]);
 					return;
 				}
-				for (i = 0; i < ul; i++) {
+				for (unsigned long j = 0; j < ul; j++) {
 					get_hexstr(p, end, out);
 					out += plen;
 				}
@@ -1985,7 +2012,7 @@ void cterm_parse_sixel_intro(struct cterminal *cterm)
 		ratio = strtoul(cterm->strbuf, &p, 10);
 		if (*p == ';') {
 			p++;
-			cterm->sx_trans = strtoul(p, &p, 10);
+			cterm->sx_trans = (int)strtoul(p, &p, 10);
 		}
 		if (*p == ';') {
 			p++;

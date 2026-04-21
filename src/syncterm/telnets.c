@@ -103,7 +103,7 @@ telnets_input_thread(void *args)
 void
 telnets_output_thread(void *args)
 {
-	int    wr;
+	size_t wr;
 	int    ret;
 	size_t sent;
 	int    status;
@@ -118,7 +118,9 @@ telnets_output_thread(void *args)
 			sent = 0;
 			while ((!conn_api.terminate) && sent < wr) {
 				assert_pthread_mutex_lock(&telnets_mutex);
-				status = PushData(telnets_session, conn_api.wr_buf + sent, wr - sent, &ret);
+				/* wr is bounded by BUFFER_SIZE (16384) so the narrowing
+				 * to PushData's `int length` parameter is safe. */
+				status = PushData(telnets_session, conn_api.wr_buf + sent, (int)(wr - sent), &ret);
 				assert_pthread_mutex_unlock(&telnets_mutex);
 				if (cryptStatusError(status)) {
 					if (!conn_api.terminate) {

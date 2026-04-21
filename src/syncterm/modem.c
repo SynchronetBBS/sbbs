@@ -67,7 +67,7 @@ modem_output_thread(void *args)
 {
 	size_t wr;
 	size_t sent;
-	int  i;
+	size_t i;
 	int  ret;
 	bool monitor_dsr = true;
 

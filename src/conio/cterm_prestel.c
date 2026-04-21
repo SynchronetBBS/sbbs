@@ -632,8 +632,10 @@ static void
 cterm_beeb_vdu28(struct cterminal *cterm, int *speed)
 {
 	(void)speed;
-	gotoxy((cterm->seq_param_int[1] - ' ') + 1,
-	    (cterm->seq_param_int[0] - ' ') + 1);
+	/* VDU 28 operands arrive as 8-bit characters (0-255); the '0' offset
+	 * keeps the result well inside int range. */
+	gotoxy((int)(cterm->seq_param_int[1] - ' ') + 1,
+	    (int)(cterm->seq_param_int[0] - ' ') + 1);
 }
 
 /* ------------------------------------------------------------------------
