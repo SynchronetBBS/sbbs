@@ -521,6 +521,28 @@ var Game_Def = [
 	}
 ];
 
+function waitkey(max)
+{
+	var timeout = lastkey + idle_timeout;
+	var tl;
+	var now;
+
+	if (time_callback !== undefined) {
+		now = time();
+		// TODO: dk.console.getstr() doesn't support this stuff... (yet)
+		tl = (dk.user.seconds_remaining + dk.user.seconds_remaining_from - 30) - now;
+		if (tl < 1) {
+			time_callback('BBS_NO_TIME');
+			return 'BBS_NO_TIME';
+		}
+		if (now >= timeout) {
+			time_callback('IDLE');
+			return 'IDLE';
+		}
+	}
+	return dk.console.waitkey(max);
+}
+
 var lastkey = time();
 var time_callback;
 var idle_timeout = 60 * 5;	// Seconds
@@ -531,21 +553,8 @@ function getkeyw()
 	var now;
 	var ret;
 
-	do {
-		if (time_callback !== undefined) {
-			now = time();
-			// TODO: dk.console.getstr() doesn't support this stuff... (yet)
-			tl = (dk.user.seconds_remaining + dk.user.seconds_remaining_from - 30) - now;
-			if (tl < 1) {
-				time_callback('BBS_NO_TIME');
-				return 'BBS_NO_TIME';
-			}
-			if (now >= timeout) {
-				time_callback('IDLE');
-				return 'IDLE';
-			}
-		}
-	} while(!dk.console.waitkey(1000));
+	while(!waitkey(1000))
+		;
 	ret = dk.console.getkey();
 	if (ret !== undefined && ret !== null && ret.length >= 1)
 		lastkey = time();

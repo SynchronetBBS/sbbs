@@ -341,7 +341,7 @@ function insane_run_ref(sec, fname, refret)
 		'getkey':function(args) {
 			if (args.length < 1)
 				throw new Error('@do getkey with no argument');
-			if (!dk.console.waitkey(0))
+			if (!waitkey(0))
 				setvar(args[0], '_');
 			else {
 				lastkey = time();
@@ -2279,7 +2279,7 @@ function chat(op)
 				continue;
 			}
 		}
-		if (dk.console.waitkey(game.delay)) {
+		if (waitkey(game.delay)) {
 			lastkey = time();
 			sw('  ');
 			l = clean_str(dk.console.getstr({len:72, attr:new Attribute(31), input_box:true, crlf:false, timeout:idle_timeout * 1000}));
@@ -2370,7 +2370,7 @@ function hailed(pl)
 			online_battle(op, false);
 			break;
 		}
-		if (dk.console.waitkey(game.delay)) {
+		if (waitkey(game.delay)) {
 			switch(getkey().toUpperCase()) {
 				case 'CONNECTION_CLOSED':
 				case 'A':
@@ -4094,7 +4094,7 @@ function hail()
 		f.close();
 
 		while (file_exists(getfname(maildir+'tx'+(player.Record + 1)+'.tmp'))) {
-			if (dk.console.waitkey(game.delay)) {
+			if (waitkey(game.delay)) {
 				getkey();
 				player.battle = 0;
 				update_update();
@@ -4182,7 +4182,7 @@ function do_map()
 
 	ch = ''
 	while (ch != 'Q') {
-		while (!dk.console.waitkey(game.delay)) {
+		while (!waitkey(game.delay)) {
 			update();
 		};
 		ch = getkey().toUpperCase();
