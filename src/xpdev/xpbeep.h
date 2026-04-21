@@ -63,6 +63,11 @@ DLLEXPORT void xpbeep(double freq, DWORD duration);
 /* Legacy U8 mono 22050 Hz entrypoint. Converts internally to S16 stereo 44100.
  * `sample_size` is bytes of U8 mono data. */
 DLLEXPORT bool xp_play_sample(unsigned char *sample, size_t sample_size, bool background);
+/* Convert U8 mono 22050 Hz data into a newly-allocated S16 stereo 44100 Hz
+ * frame buffer. 2:1 linear-interpolation upsample, L==R. Caller owns the
+ * returned buffer and must free() it. Returns NULL on allocation failure. */
+DLLEXPORT int16_t *xp_u8mono22k_to_s16stereo44k(const unsigned char *in, size_t in_bytes,
+                                                size_t *nframes_out);
 /* Native S16 stereo 44100 Hz entrypoint. `nframes` is frame count; the buffer
  * is nframes * XPBEEP_FRAMESIZE bytes. */
 DLLEXPORT bool xp_play_sample16s(const int16_t *frames, size_t nframes, bool background);
@@ -73,52 +78,89 @@ DLLEXPORT bool xptone(double freq, DWORD duration, DWORD shape);
  * Streaming mixer API (S16 stereo 44100 Hz).
  *
  * Multiple streams play concurrently; the mixer sums them into the device
- * output. A stream is an appendable ring buffer — the producer appends PCM
- * frames over time, the mixer drains them at the device rate. Finished
- * streams drain out and signal completion. Volume is per-channel so hard
- * L/R panning is free.
+ * output. A stream is a FIFO of producer-supplied PCM buffers — append
+ * hands ownership of a malloc()d frame buffer to the mixer, which frees
+ * the buffer once its frames have been fully consumed. Append is
+ * non-blocking in the steady state; it only waits when the per-node
+ * metadata allocation itself cannot be satisfied.
  *
  * Handles are small non-negative integers; -1 indicates failure.
  * ================================================================ */
 
 typedef int xp_audio_handle_t;
 
-/* Optional fade specification for xp_audio_append_faded.
- * fade_in_frames / fade_out_frames == 0 → no fade on that edge.
- * Envelope is dB-linear (perceptually linear): amplitude = 10^(dB/20)
- * with dB ramping between -60 dB (silent) and 0 dB (unity).
+/* Per-append options.  Pass NULL to xp_audio_append / xp_audio_play for
+ * "plain playback, no envelope, no loop, no per-entry gain change".
  *
- * crossfade: when true AND fade_in_frames > 0, the fade-in overlaps the
- * tail of the previously-appended data. The mixer's read_pos is not
- * allowed to have passed the overlap region — if it has, the crossfade
- * degrades to a plain fade-in from silence.
+ * All volume fields (both per-entry here and the stream base on
+ * xp_audio_open / xp_audio_set_volume) are expressed in decibels:
+ * 0 dB is unity, positive boosts, negative attenuates.  Per-entry
+ * volume SUMS with the stream base for this buf's playback only —
+ * it does NOT modify the stream base.  So `volume_l = 0.0f` means
+ * "play this buf at exactly the stream level"; `volume_l = -6.0f`
+ * means "6 dB below the stream level for this buf only".
+ *
+ * Because 0 dB is the no-op default, a zero-initialized struct
+ * is safe — no XP_AUDIO_OPTS_INIT needed unless you prefer the
+ * self-documenting form.
+ *
+ * Envelopes are evaluated by the mixer at pull time (dB-linear,
+ * -60 dB → 0 dB across the ramp).
+ *
+ *   fade_in_frames   — rise from silence over the first N frames.  On a
+ *                      looping buffer, applies only to iteration 0.
+ *   fade_out_frames  — fall to silence over the last N frames.  On a
+ *                      looping buffer, applies only when the loop ends
+ *                      (via crossfade, xp_audio_stop, or xp_audio_finish
+ *                      with nothing queued behind it).
+ *   crossfade        — when true, the previous tail's playback is
+ *                      overlaid with a fade-out of length fade_in_frames
+ *                      starting immediately at append time; both
+ *                      buffers mix concurrently during the overlap.
+ *                      No-op when the stream has no prior content.
+ *   loop             — mixer cursor wraps at nframes.  Subsequent append
+ *                      ends the loop (plain or crossfade).
  */
 typedef struct {
+    float  volume_l;
+    float  volume_r;
     size_t fade_in_frames;
     size_t fade_out_frames;
     bool   crossfade;
-} xp_audio_fade_t;
+    bool   loop;
+} xp_audio_opts_t;
 
+/* Self-documenting preset: 0 dB (unity) per-entry volume, no envelope,
+ * no loop, no crossfade.  Equivalent to `= {0}` since 0 dB is the
+ * no-op default. */
+#define XP_AUDIO_OPTS_INIT { 0.0f, 0.0f, 0, 0, false, false }
+
+/* Open a new stream with the given base dB levels (0 dB = unity,
+ * negative values attenuate).  Returns -1 if the stream table is full. */
 DLLEXPORT xp_audio_handle_t xp_audio_open(float volume_l, float volume_r);
 DLLEXPORT void              xp_audio_close(xp_audio_handle_t h);
 
-/* Append raw frames with no fade shaping. May block if the ring buffer is
- * full (waits until the mixer has consumed enough space). Returns false
- * on error (bad handle, stream already finished). */
-DLLEXPORT bool xp_audio_append(xp_audio_handle_t h, const int16_t *frames, size_t nframes);
+/* Append `frames` (nframes S16 stereo frames) to the stream's FIFO.
+ * Ownership of `frames` transfers to the channel: the caller must have
+ * obtained it via malloc(), and the channel free()s it once the buffer
+ * has been fully consumed.  Returns false if the stream is finished/
+ * closed or the handle is invalid; `frames` is freed in that case so
+ * the caller never owns it after a failed call.
+ *
+ * `opts` may be NULL for plain playback.  See xp_audio_opts_t for the
+ * envelope / loop / crossfade semantics. */
+DLLEXPORT bool xp_audio_append(xp_audio_handle_t h, int16_t *frames, size_t nframes,
+                               const xp_audio_opts_t *opts);
 
-/* Append with optional fade-in, fade-out, or crossfade envelope applied
- * in-place before writing to the ring. Pass NULL for no shaping. */
-DLLEXPORT bool xp_audio_append_faded(xp_audio_handle_t h, const int16_t *frames,
-                                     size_t nframes, const xp_audio_fade_t *fade);
-
-/* One-shot convenience: opens a stream, appends the full buffer, marks it
- * finished. Returns the handle so the caller can xp_audio_wait / close,
- * or set volume mid-playback. Caller is responsible for xp_audio_close. */
+/* One-shot convenience: opens a stream, copies `frames` into a fresh
+ * buffer, enqueues it with `opts`, signals finished.  Caller is
+ * responsible for xp_audio_close (or xp_audio_drain + close).  Because
+ * the input is duplicated, `frames` may be stack-allocated, read-only
+ * data, or freed immediately after the call. */
 DLLEXPORT xp_audio_handle_t xp_audio_play(const int16_t *frames, size_t nframes,
-                                          float volume_l, float volume_r, bool loop);
+                                          const xp_audio_opts_t *opts);
 
-/* Update per-channel volume on a live stream. */
+/* Update per-channel base dB on a live stream (0 dB = unity). */
 DLLEXPORT void xp_audio_set_volume(xp_audio_handle_t h, float volume_l, float volume_r);
 
 /* Signal that no more data will be appended. The stream will drain naturally. */
@@ -127,17 +169,11 @@ DLLEXPORT void xp_audio_finish(xp_audio_handle_t h);
 /* Stop playback immediately: discard buffered frames, mark done. */
 DLLEXPORT void xp_audio_stop(xp_audio_handle_t h);
 
-/* Mixer-level wait: block until the mixer has consumed every frame appended
- * up to this call. Returns while the device's kernel buffer may still hold
- * a tail of those frames — appropriate between successive appends in the
- * same sequence (e.g. MF notes in an MML phrase) where inserting a device
- * drain would create audible gaps. */
-DLLEXPORT void xp_audio_wait(xp_audio_handle_t h);
-
-/* Full drain: wait as xp_audio_wait, then additionally sleep for the current
- * device-buffer latency so the data reaches the speaker before returning.
- * Use at the end of a logical audio phrase (e.g. end of an MML block) to
- * keep downstream output (text, prompts) from racing ahead of the audio. */
+/* End-of-phrase barrier: block until the mixer has consumed every frame
+ * appended up to this call AND the device's kernel buffer has had time to
+ * play them (one device-latency sleep). Use when subsequent output needs
+ * to stay time-ordered after the audio — e.g. at the end of an MML block
+ * so following terminal text doesn't race past the last note. */
 DLLEXPORT void xp_audio_drain(xp_audio_handle_t h);
 #ifdef __unix__
 DLLEXPORT void unix_beep(int freq, int dur);

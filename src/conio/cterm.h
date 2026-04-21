@@ -179,6 +179,7 @@ struct cterminal {
 	cterm_noteshape_t	noteshape;
 	int					musicfore;
 	xp_audio_handle_t	music_stream;	/* ANSI music audio stream (-1 = none) */
+	xp_audio_handle_t	fx_stream;		/* Foreground SFX (RIP/OOII) stream (-1 = none) */
 	int					backpos; // Position where new lines will be added
 	int					backstart; // First line of scrollback
 	int					xpos;
@@ -386,6 +387,27 @@ CIOLIBEXPORT void cterm_start(struct cterminal *cterm);
 CIOLIBEXPORT int cterm_crpos(struct cterminal *cterm);
 CIOLIBEXPORT int cterm_encode_key(struct cterminal *cterm, int key);
 CIOLIBEXPORT bool cterm_atascii_inverse(const struct cterminal *cterm);
+/* ================================================================
+ * Foreground SFX playback.
+ *
+ * Plays audio through a per-cterm lazy-persistent stream (cterm->fx_stream)
+ * that is distinct from the MF/MB ANSI-music stream. Because the handle is
+ * persistent, callers can adjust level/pan via xp_audio_set_volume() and
+ * concurrent SFX bursts share one mixer slot without auto-stopping music.
+ *
+ * cterm_play_fx      — native S16 stereo 44100 Hz PCM frames.
+ * cterm_play_fx_tone — synthesize and append a pure tone.
+ * cterm_play_fx_u8   — legacy U8 mono 22050 Hz buffer (upsampled internally).
+ *
+ * All three return false if the audio device can't be opened or the stream
+ * can't be acquired. Writes are non-blocking append; the stream drains in
+ * the background.
+ * ================================================================ */
+CIOLIBEXPORT bool cterm_play_fx(struct cterminal *cterm, const int16_t *frames, size_t nframes);
+CIOLIBEXPORT bool cterm_play_fx_tone(struct cterminal *cterm, double freq,
+                                     uint32_t duration_ms, uint32_t shape);
+CIOLIBEXPORT bool cterm_play_fx_u8(struct cterminal *cterm, const unsigned char *samp,
+                                   size_t size);
 void cterm_gotoxy(struct cterminal *cterm, int x, int y);
 void setwindow(struct cterminal *cterm);
 void cterm_clreol(struct cterminal *cterm);

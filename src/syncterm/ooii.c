@@ -1967,141 +1967,141 @@ incomingSoundVoc(unsigned char *codeStr)
 	codeStr++;
 	switch (*codeStr) {
 		case '1':
-			xp_play_sample((void*)ooii_snd_welcome, sizeof(ooii_snd_welcome), true);
+			cterm_play_fx_u8(cterm, ooii_snd_welcome, sizeof(ooii_snd_welcome));
 			break;
 		case '3':
-			xp_play_sample((void*)ooii_snd_countdn, sizeof(ooii_snd_countdn), false);
+			cterm_play_fx_u8(cterm, ooii_snd_countdn, sizeof(ooii_snd_countdn));
 
                 /* Fallthrough */
 		case '2':
-			xp_play_sample((void*)ooii_snd_explode, sizeof(ooii_snd_explode), true);
+			cterm_play_fx_u8(cterm, ooii_snd_explode, sizeof(ooii_snd_explode));
 			break;
 		case '4':
-			xp_play_sample((void*)ooii_snd_clone, sizeof(ooii_snd_clone), true);
+			cterm_play_fx_u8(cterm, ooii_snd_clone, sizeof(ooii_snd_clone));
 			break;
 		case '5':
 			if (xp_random(2))
-				xp_play_sample((void*)ooii_snd_danger1, sizeof(ooii_snd_danger1), true);
+				cterm_play_fx_u8(cterm, ooii_snd_danger1, sizeof(ooii_snd_danger1));
 			else
-				xp_play_sample((void*)ooii_snd_danger2, sizeof(ooii_snd_danger2), true);
+				cterm_play_fx_u8(cterm, ooii_snd_danger2, sizeof(ooii_snd_danger2));
 			break;
 		case '6':
-			xp_play_sample((void*)ooii_snd_steam, sizeof(ooii_snd_steam), true);
+			cterm_play_fx_u8(cterm, ooii_snd_steam, sizeof(ooii_snd_steam));
 			break;
 		case '7':
-			xp_play_sample((void*)ooii_snd_scream1, sizeof(ooii_snd_scream1), true);
+			cterm_play_fx_u8(cterm, ooii_snd_scream1, sizeof(ooii_snd_scream1));
 			break;
 		case '8':
-			xp_play_sample((void*)ooii_snd_watch, sizeof(ooii_snd_watch), true);
+			cterm_play_fx_u8(cterm, ooii_snd_watch, sizeof(ooii_snd_watch));
 			break;
 		case '9':
-			xp_play_sample((void*)ooii_snd_levelup, sizeof(ooii_snd_levelup), true);
+			cterm_play_fx_u8(cterm, ooii_snd_levelup, sizeof(ooii_snd_levelup));
 			break;
 		case 'A':
-			xp_play_sample((void*)ooii_snd_inflame, sizeof(ooii_snd_inflame), true);
+			cterm_play_fx_u8(cterm, ooii_snd_inflame, sizeof(ooii_snd_inflame));
 			break;
 		case 'B':
 			switch (xp_random(3)) {
 				case 0:
-					xp_play_sample((void*)ooii_snd_hit1, sizeof(ooii_snd_hit1), true);
+					cterm_play_fx_u8(cterm, ooii_snd_hit1, sizeof(ooii_snd_hit1));
 					break;
 				case 1:
-					xp_play_sample((void*)ooii_snd_hit2, sizeof(ooii_snd_hit2), true);
+					cterm_play_fx_u8(cterm, ooii_snd_hit2, sizeof(ooii_snd_hit2));
 					break;
 				case 2:
-					xp_play_sample((void*)ooii_snd_hit3, sizeof(ooii_snd_hit3), true);
+					cterm_play_fx_u8(cterm, ooii_snd_hit3, sizeof(ooii_snd_hit3));
 					break;
 			}
 			break;
 		case 'C':
-			xp_play_sample((void*)ooii_snd_timeisup, sizeof(ooii_snd_timeisup), true);
+			cterm_play_fx_u8(cterm, ooii_snd_timeisup, sizeof(ooii_snd_timeisup));
 			break;
 		case 'D':
-			xp_play_sample((void*)ooii_snd_healing, sizeof(ooii_snd_healing), true);
+			cterm_play_fx_u8(cterm, ooii_snd_healing, sizeof(ooii_snd_healing));
 			break;
 		case 'E':
-			xp_play_sample((void*)ooii_snd_lrange2, sizeof(ooii_snd_lrange2), true);
+			cterm_play_fx_u8(cterm, ooii_snd_lrange2, sizeof(ooii_snd_lrange2));
 			break;
 		case 'F':
-			xp_play_sample((void*)ooii_snd_cackle, sizeof(ooii_snd_cackle), true);
+			cterm_play_fx_u8(cterm, ooii_snd_cackle, sizeof(ooii_snd_cackle));
 			break;
 		case 'G':
-			xp_play_sample((void*)ooii_snd_teleport, sizeof(ooii_snd_teleport), true);
+			cterm_play_fx_u8(cterm, ooii_snd_teleport, sizeof(ooii_snd_teleport));
 			break;
 		case 'H':
-			xp_play_sample((void*)ooii_snd_genetics, sizeof(ooii_snd_genetics), true);
+			cterm_play_fx_u8(cterm, ooii_snd_genetics, sizeof(ooii_snd_genetics));
 			break;
 		case 'I':
-			xp_play_sample((void*)ooii_snd_remote, sizeof(ooii_snd_remote), true);
+			cterm_play_fx_u8(cterm, ooii_snd_remote, sizeof(ooii_snd_remote));
 			break;
 		case 'J':
-			xp_play_sample((void*)ooii_snd_afbdoor, sizeof(ooii_snd_afbdoor), true);
+			cterm_play_fx_u8(cterm, ooii_snd_afbdoor, sizeof(ooii_snd_afbdoor));
 			break;
 		case 'K':
-			xp_play_sample((void*)ooii_snd_alarm, sizeof(ooii_snd_alarm), true);
+			cterm_play_fx_u8(cterm, ooii_snd_alarm, sizeof(ooii_snd_alarm));
 			break;
 		case 'L':
-			xp_play_sample((void*)ooii_snd_reverse, sizeof(ooii_snd_reverse), true);
+			cterm_play_fx_u8(cterm, ooii_snd_reverse, sizeof(ooii_snd_reverse));
 			break;
 		case 'M':
-			xp_play_sample((void*)ooii_snd_aerial, sizeof(ooii_snd_aerial), true);
+			cterm_play_fx_u8(cterm, ooii_snd_aerial, sizeof(ooii_snd_aerial));
 			break;
 		case 'N':
-			xp_play_sample((void*)ooii_snd_phaser, sizeof(ooii_snd_phaser), true);
+			cterm_play_fx_u8(cterm, ooii_snd_phaser, sizeof(ooii_snd_phaser));
 			break;
 		case 'O':
 			switch (xp_random(3)) {
 				case 0:
-					xp_play_sample((void*)ooii_snd_miss1, sizeof(ooii_snd_miss1), true);
+					cterm_play_fx_u8(cterm, ooii_snd_miss1, sizeof(ooii_snd_miss1));
 					break;
 				case 1:
-					xp_play_sample((void*)ooii_snd_miss2, sizeof(ooii_snd_miss2), true);
+					cterm_play_fx_u8(cterm, ooii_snd_miss2, sizeof(ooii_snd_miss2));
 					break;
 				case 2:
-					xp_play_sample((void*)ooii_snd_miss3, sizeof(ooii_snd_miss3), true);
+					cterm_play_fx_u8(cterm, ooii_snd_miss3, sizeof(ooii_snd_miss3));
 					break;
 			}
 			break;
 		case 'P':
 			if (xp_random(2))
-				xp_play_sample((void*)ooii_snd_music1, sizeof(ooii_snd_music1), true);
+				cterm_play_fx_u8(cterm, ooii_snd_music1, sizeof(ooii_snd_music1));
 			else
-				xp_play_sample((void*)ooii_snd_music2, sizeof(ooii_snd_music2), true);
+				cterm_play_fx_u8(cterm, ooii_snd_music2, sizeof(ooii_snd_music2));
 			break;
 		case 'Q':
-			xp_play_sample((void*)ooii_snd_device, sizeof(ooii_snd_device), true);
+			cterm_play_fx_u8(cterm, ooii_snd_device, sizeof(ooii_snd_device));
 			break;
 		case 'R':
-			xp_play_sample((void*)ooii_snd_death, sizeof(ooii_snd_death), true);
+			cterm_play_fx_u8(cterm, ooii_snd_death, sizeof(ooii_snd_death));
 			break;
 		case 'S':
-			xp_play_sample((void*)ooii_snd_good, sizeof(ooii_snd_good), true);
+			cterm_play_fx_u8(cterm, ooii_snd_good, sizeof(ooii_snd_good));
 			break;
 		case 'T':
-			xp_play_sample((void*)ooii_snd_yahoo, sizeof(ooii_snd_yahoo), true);
+			cterm_play_fx_u8(cterm, ooii_snd_yahoo, sizeof(ooii_snd_yahoo));
 			break;
 		case 'U':
-			xp_play_sample((void*)ooii_snd_scream2, sizeof(ooii_snd_scream2), true);
+			cterm_play_fx_u8(cterm, ooii_snd_scream2, sizeof(ooii_snd_scream2));
 			break;
 		case 'V':
-			xp_play_sample((void*)ooii_snd_wap, sizeof(ooii_snd_wap), true);
+			cterm_play_fx_u8(cterm, ooii_snd_wap, sizeof(ooii_snd_wap));
 			break;
 		case 'W':
-			xp_play_sample((void*)ooii_snd_zip, sizeof(ooii_snd_zip), true);
+			cterm_play_fx_u8(cterm, ooii_snd_zip, sizeof(ooii_snd_zip));
 			break;
 		case 'X':
-			xp_play_sample((void*)ooii_snd_lrange3, sizeof(ooii_snd_lrange3), true);
+			cterm_play_fx_u8(cterm, ooii_snd_lrange3, sizeof(ooii_snd_lrange3));
 			break;
 		case 'Y':
-			xp_play_sample((void*)ooii_snd_snip, sizeof(ooii_snd_snip), true);
+			cterm_play_fx_u8(cterm, ooii_snd_snip, sizeof(ooii_snd_snip));
 			break;
 		case 'Z':
-			xp_play_sample((void*)ooii_snd_pow, sizeof(ooii_snd_pow), true);
+			cterm_play_fx_u8(cterm, ooii_snd_pow, sizeof(ooii_snd_pow));
 			break;
 		default:
                         /*
                          * LRANGE1 is unused
-                         * xp_play_sample((void*)ooii_snd_lrange1, sizeof(ooii_snd_lrange1), true);
+                         * cterm_play_fx_u8(cterm, ooii_snd_lrange1, sizeof(ooii_snd_lrange1));
                          */
 			break;
 	}

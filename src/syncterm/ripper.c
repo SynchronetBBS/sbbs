@@ -8,6 +8,7 @@
 #endif
 #include <bitmap_con.h>
 #include <ciolib.h>
+#include <cterm.h>
 #include <datewrap.h>
 #include <dirwrap.h>
 #include <gen_defs.h>
@@ -8224,27 +8225,30 @@ static char *
 rv_sound(const char * const var, const void * const data)
 {
 	int i;
-	// 15872 frames covers the longest case (4 × 3968 in Music); round up
-	// to 16384 for headroom. Stereo S16 → XPBEEP_CHANNELS slots per frame.
+	// Sized for the largest sweep composite rv_sound builds in-place:
+	//   - M sweep = 15872 frames (P/R smaller; A/BE/BL synthesize internally)
 	int16_t wave[16384 * XPBEEP_CHANNELS];
 	double phase = 0.0;
 
 	switch (var[0]) {
 		case 'A':
-			for (i = 0 ; i < 3 ; i += 1) {
-				xptone(320, 200, WAVE_SHAPE_SINE);
-				xptone(160, 425, WAVE_SHAPE_SINE);
+			// Play 3 × (320 Hz 200 ms, 160 Hz 425 ms) back-to-back via the
+			// cterm fx stream. Prior waveOut-era code called xptone() six
+			// times and produced audible open/close gaps; routing through
+			// the persistent fx_stream makes the sequence seamless.
+			for (i = 0; i < 3; i += 1) {
+				cterm_play_fx_tone(cterm, 320, 200, WAVE_SHAPE_SINE);
+				cterm_play_fx_tone(cterm, 160, 425, WAVE_SHAPE_SINE);
 			}
 			return NULL;
-			break;
 		case 'B':
 			switch (var[1]) {
 				case 'E':
-					xptone(1000, 75, WAVE_SHAPE_SINE);
+					cterm_play_fx_tone(cterm, 1000, 75, WAVE_SHAPE_SINE);
 					SLEEP(75); // Literally in the spec.
 					return NULL;
 				case 'L':
-					xptone(50, 25, WAVE_SHAPE_SINE | WAVE_SHAPE_NO_CLEAN);
+					cterm_play_fx_tone(cterm, 50, 25, WAVE_SHAPE_SINE | WAVE_SHAPE_NO_CLEAN);
 					SLEEP(10); // Literally in the spec.
 					return NULL;
 			}
@@ -8257,15 +8261,15 @@ rv_sound(const char * const var, const void * const data)
 				phase = sweep(phase,  700, 850,  442, &wave[(i * 3968 + 3086) * XPBEEP_CHANNELS]);
 				phase = sweep(phase,  850,1300,  440, &wave[(i * 3968 + 3528) * XPBEEP_CHANNELS]);
 			}
-			xp_play_sample16s(wave, 15872, false);
+			cterm_play_fx(cterm, wave, 15872);
 			return NULL;
 		case 'P':
 			sweep(phase, 2500, 50, 10760, wave);
-			xp_play_sample16s(wave, 10760, false);
+			cterm_play_fx(cterm, wave, 10760);
 			return NULL;
 		case 'R':
 			sweep(phase, 50, 2500, 10760, wave);
-			xp_play_sample16s(wave, 10760, false);
+			cterm_play_fx(cterm, wave, 10760);
 			return NULL;
 	}
 	printf("TODO: RIP Variables (%s)\n", var);
@@ -18160,6 +18164,13 @@ static struct rip_cb {
 	uint8_t            esc[RIP_ESC_MAX];
 	size_t             esc_len;
 
+	// ANSI/BANSI music in flight: set when we just forwarded a
+	// CSI M or CSI N with no params (the introducers that arm
+	// cterm_accumulate_music).  Cleared when the following 0x0E
+	// terminator is let through — that single SO is otherwise
+	// suppressed as a RIPterm text-window control.
+	bool               music_pending;
+
 	// Deferred input bytes: RIP commands that arrived in an
 	// origbuf where non-RIP text preceded them.  parse_rip()'s
 	// contract says each call must do AT MOST ONE OF:
@@ -18537,6 +18548,24 @@ cb_esc_feed(uint8_t c, uint8_t *origbuf, size_t *out)
 	memcpy(&origbuf[*out], cb.esc, cb.esc_len);
 	*out += cb.esc_len;
 	origbuf[(*out)++] = c;
+	// Arm music_pending iff this sequence will actually fire
+	// cterm_accumulate_music in cterm.  Mirrors the gating in
+	// cterm_handle_syncterm_music / _ansi_music / _bansi_music:
+	//   CSI |  — unconditional (SyncTERM music)
+	//   CSI M  — music only when music_enable == ENABLED,
+	//            otherwise ECMA-48 DL (delete line)
+	//   CSI N  — music only when music_enable >= BANSI
+	// Without the enable gate a stray 0x0E would slip past the
+	// suppressor even though cterm treats the introducer as a
+	// non-music sequence.
+	if (cb.esc_len == 2 && cb.esc[0] == 0x1b && cb.esc[1] == '[' && cterm) {
+		if (c == '|')
+			cb.music_pending = true;
+		else if (c == 'M' && cterm->music_enable == CTERM_MUSIC_ENABLED)
+			cb.music_pending = true;
+		else if (c == 'N' && cterm->music_enable >= CTERM_MUSIC_BANSI)
+			cb.music_pending = true;
+	}
 	cb.esc_len = 0;
 	cb.st = cb.len ? RS_CMD : RS_IDLE;
 	return 1;
@@ -18752,10 +18781,16 @@ parse_rip_new(BYTE *origbuf, size_t blen, size_t maxlen)
 				// BOL check sees the real byte stream.
 				if (rip.text_disabled)
 					suppress = true;
-				// RIPterm's text window handler
-				// consumes SO and SI without
-				// rendering or advancing the cursor.
-				if (c == 0x0e || c == 0x0f)
+				// RIPterm's text window handler consumes
+				// SO and SI without rendering or advancing
+				// the cursor.  Exception: the single 0x0E
+				// that terminates an in-flight ANSI/BANSI
+				// music sequence (armed by CSI M / CSI N
+				// in cb_esc_feed) must reach cterm to fire
+				// cterm_accumulate_music's play_music().
+				if (c == 0x0e && cb.music_pending)
+					cb.music_pending = false;
+				else if (c == 0x0e || c == 0x0f)
 					suppress = true;
 				if (!suppress) {
 					// VT (0x0b) is translated to ANSI
@@ -18843,8 +18878,14 @@ parse_rip_new(BYTE *origbuf, size_t blen, size_t maxlen)
 				suppress = true;
 			// RIPterm's text window handler consumes
 			// SO and SI without rendering or advancing
-			// the cursor.
-			if (c == 0x0e || c == 0x0f)
+			// the cursor.  Exception: the single 0x0E
+			// that terminates an in-flight ANSI/BANSI
+			// music sequence (armed by CSI M / CSI N in
+			// cb_esc_feed) must reach cterm to fire
+			// cterm_accumulate_music's play_music().
+			if (c == 0x0e && cb.music_pending)
+				cb.music_pending = false;
+			else if (c == 0x0e || c == 0x0f)
 				suppress = true;
 			if (!suppress) {
 				// VT (0x0b) is translated to ANSI Cursor
