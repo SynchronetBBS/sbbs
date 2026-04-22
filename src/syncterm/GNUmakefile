@@ -44,16 +44,6 @@ DEUCESSH_DIR    := $(SRC_ROOT)/ssh
 DEUCESSH_BUILD  := $(DEUCESSH_DIR)/build
 DEUCESSH_LIB    := $(DEUCESSH_BUILD)/libdeucessh.a
 
-# XXX Temporary: force DeuceSSH to OpenSSL because xp_crypt / xp_tls
-# only have OpenSSL shims at the moment.  The correct architecture is
-# the inverse: DeuceSSH picks (auto-detect or user choice), the build
-# reads that choice from a generated header (dssh-config.h or similar),
-# and xp_crypt / xp_tls follow.  That's blocked on (a) a DeuceSSH
-# upstream change to emit the header, and (b) xp_crypt_botan3.cpp /
-# xp_tls_botan3.cpp (tasks #15, #16).  Once both land, this
-# DEUCESSH_BACKEND default goes away.
-DEUCESSH_BACKEND ?= OpenSSL
-
 .PHONY: deucessh
 deucessh $(DEUCESSH_LIB):
 	@echo "Building DeuceSSH ($(DEUCESSH_BACKEND) backend)"
@@ -62,7 +52,22 @@ deucessh $(DEUCESSH_LIB):
 	cmake --build $(DEUCESSH_BUILD) --target deucessh_static
 
 DEPS += $(DEUCESSH_LIB)
-EXTRA_LIBS += $(DEUCESSH_LIB) $(SFTP-MT_LIBS) -lssl -lcrypto
+EXTRA_LIBS += $(DEUCESSH_LIB) $(SFTP-MT_LIBS)
+
+# Crypto backend libraries. XP_CRYPTO_BACKEND (xpdev/GNUmakefile) picks
+# the shim implementation; DEUCESSH_BACKEND picks DeuceSSH's backend.
+# Both variables must be equal — once DeuceSSH emits dssh-config.h
+# (task #17) and xp_crypt's Botan shim lands (task #15), we can derive
+# both from a single source of truth.
+XP_CRYPTO_BACKEND ?= OpenSSL
+DEUCESSH_BACKEND  ?= $(XP_CRYPTO_BACKEND)
+export XP_CRYPTO_BACKEND
+ifeq ($(XP_CRYPTO_BACKEND),OpenSSL)
+ EXTRA_LIBS += -lssl -lcrypto
+endif
+ifeq ($(XP_CRYPTO_BACKEND),Botan)
+ EXTRA_LIBS += $(shell pkg-config --libs botan-3)
+endif
 ifeq ($(os),freebsd)
  EXTRA_LIBS += -lstdthreads
 endif

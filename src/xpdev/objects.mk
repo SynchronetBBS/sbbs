@@ -25,8 +25,8 @@ OBJS	= \
 	$(OBJODIR)$(DIRSEP)stbuf$(OFILE) \
 	$(OBJODIR)$(DIRSEP)strwrap$(OFILE) \
 	$(OBJODIR)$(DIRSEP)unicode$(OFILE) \
-	$(OBJODIR)$(DIRSEP)xp_crypt_openssl$(OFILE) \
-	$(OBJODIR)$(DIRSEP)xp_tls_openssl$(OFILE) \
+	$(OBJODIR)$(DIRSEP)xp_crypt_$(XP_CRYPTO_BACKEND_SUFFIX)$(OFILE) \
+	$(OBJODIR)$(DIRSEP)xp_tls_$(XP_CRYPTO_BACKEND_SUFFIX)$(OFILE) \
 	$(OBJODIR)$(DIRSEP)xp_dl$(OFILE) \
 	$(OBJODIR)$(DIRSEP)xpbeep$(OFILE) \
 	$(OBJODIR)$(DIRSEP)xpdatetime$(OFILE) \
@@ -57,8 +57,8 @@ MTOBJS	= \
 	$(MTOBJODIR)$(DIRSEP)strwrap$(OFILE) \
 	$(MTOBJODIR)$(DIRSEP)threadwrap$(OFILE) \
 	$(MTOBJODIR)$(DIRSEP)unicode$(OFILE) \
-	$(MTOBJODIR)$(DIRSEP)xp_crypt_openssl$(OFILE) \
-	$(MTOBJODIR)$(DIRSEP)xp_tls_openssl$(OFILE) \
+	$(MTOBJODIR)$(DIRSEP)xp_crypt_$(XP_CRYPTO_BACKEND_SUFFIX)$(OFILE) \
+	$(MTOBJODIR)$(DIRSEP)xp_tls_$(XP_CRYPTO_BACKEND_SUFFIX)$(OFILE) \
 	$(MTOBJODIR)$(DIRSEP)xp_dl$(OFILE) \
 	$(MTOBJODIR)$(DIRSEP)xpbeep$(OFILE) \
 	$(MTOBJODIR)$(DIRSEP)xpdatetime$(OFILE) \

@@ -23,6 +23,27 @@ else
  DEPS += $(CRYPT_LIB)
 endif
 
+# xp_crypt and xp_tls backend selection. XP_CRYPTO_BACKEND is OpenSSL
+# or Botan, matching the DeuceSSH (src/ssh/) crypto-backend choice so
+# both halves of SyncTERM's SSH/TLS stack share one libcrypto or one
+# libbotan-3. Defaults to OpenSSL.
+XP_CRYPTO_BACKEND ?= OpenSSL
+ifeq ($(XP_CRYPTO_BACKEND),OpenSSL)
+ XP_CRYPTO_BACKEND_SUFFIX := openssl
+endif
+ifeq ($(XP_CRYPTO_BACKEND),Botan)
+ XP_CRYPTO_BACKEND_SUFFIX := botan3
+ # Botan 3 public headers require C++20 (std::span). Override the
+ # tree-default -std=c++11 for just the Botan shim objects.
+ BOTAN_CXXFLAGS := $(shell pkg-config --cflags botan-3)
+ $(OBJODIR)/xp_tls_botan3$(OFILE): xp_tls_botan3.cpp | $(OBJODIR)
+	@echo $(COMPILE_MSG) $<
+	$(QUIET)$(CXX) -std=c++20 $(CFLAGS) $(CXXFLAGS) $(BOTAN_CXXFLAGS) -o $@ -c $<
+ $(MTOBJODIR)/xp_tls_botan3$(OFILE): xp_tls_botan3.cpp | $(MTOBJODIR)
+	@echo $(COMPILE_MSG) $<
+	$(QUIET)$(CXX) -std=c++20 $(CFLAGS) $(CXXFLAGS) $(MT_CFLAGS) $(BOTAN_CXXFLAGS) -o $@ -c $<
+endif
+
 # Executable Build Rule
 $(WRAPTEST): $(MTOBJODIR)/wraptest.o $(DEPS) | $(EXEODIR)
 	@echo Linking $@
