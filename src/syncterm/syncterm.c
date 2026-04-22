@@ -79,8 +79,8 @@ enum {
 #include "bbslist.h"
 #include "conn.h"
 #ifndef WITHOUT_CRYPTLIB
-#include "cryptlib.h"
 #include "ssh.h"
+#include "legacy_ciphers/legacy_ciphers.h"
 #endif
 #include "fonts.h"
 #include "syncterm.h"
@@ -2010,8 +2010,9 @@ main(int argc, char **argv)
 	}
 
 #if !defined(WITHOUT_CRYPTLIB)
-        /* Cryptlib initialization MUST be done before ciolib init */
+        /* Crypto initialization MUST be done before ciolib init */
         init_crypt();
+        legacy_ciphers_init();
 #endif
 
         /* UIFC initialization */

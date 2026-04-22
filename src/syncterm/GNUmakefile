@@ -91,6 +91,28 @@ ifeq ($(os),freebsd)
  EXTRA_LIBS += -lstdthreads
 endif
 
+# Bundled decrypt-only reference implementations of legacy ciphers
+# (IDEA, RC2) that neither OpenSSL (modern, w/o legacy provider) nor
+# Botan3 carry.  Registered with xp_crypt at startup so encrypted
+# bbslist.ini files written by older builds still decrypt.  Not
+# compiled into Synchronet server; it has no need for these.
+OBJS += $(MTOBJODIR)$(DIRSEP)legacy_idea$(OFILE)
+OBJS += $(MTOBJODIR)$(DIRSEP)legacy_rc2$(OFILE)
+OBJS += $(MTOBJODIR)$(DIRSEP)legacy_ciphers_register$(OFILE)
+CFLAGS += -Ilegacy_ciphers
+
+$(MTOBJODIR)$(DIRSEP)legacy_idea$(OFILE): legacy_ciphers/idea.c
+	@echo Compiling $<
+	$(QUIET)$(CC) $(CFLAGS) $(MT_CFLAGS) -c $< -o $@
+
+$(MTOBJODIR)$(DIRSEP)legacy_rc2$(OFILE): legacy_ciphers/rc2.c
+	@echo Compiling $<
+	$(QUIET)$(CC) $(CFLAGS) $(MT_CFLAGS) -c $< -o $@
+
+$(MTOBJODIR)$(DIRSEP)legacy_ciphers_register$(OFILE): legacy_ciphers/register.c
+	@echo Compiling $<
+	$(QUIET)$(CC) $(CFLAGS) $(MT_CFLAGS) -c $< -o $@
+
 ifndef WITHOUT_JPEG_XL
  ifdef win
   CFLAGS += -I${3RDP_ROOT}/win32.release/libjxl/include -DJXL_THREADS_STATIC_DEFINE -DJXL_STATIC_DEFINE -DDLLIFY
