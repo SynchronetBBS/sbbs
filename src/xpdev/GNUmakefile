@@ -42,6 +42,12 @@ ifeq ($(XP_CRYPTO_BACKEND),Botan)
  $(MTOBJODIR)/xp_tls_botan3$(OFILE): xp_tls_botan3.cpp | $(MTOBJODIR)
 	@echo $(COMPILE_MSG) $<
 	$(QUIET)$(CXX) -std=c++20 $(CFLAGS) $(CXXFLAGS) $(MT_CFLAGS) $(BOTAN_CXXFLAGS) -o $@ -c $<
+ $(OBJODIR)/xp_crypt_botan3$(OFILE): xp_crypt_botan3.cpp | $(OBJODIR)
+	@echo $(COMPILE_MSG) $<
+	$(QUIET)$(CXX) -std=c++20 $(CFLAGS) $(CXXFLAGS) $(BOTAN_CXXFLAGS) -o $@ -c $<
+ $(MTOBJODIR)/xp_crypt_botan3$(OFILE): xp_crypt_botan3.cpp | $(MTOBJODIR)
+	@echo $(COMPILE_MSG) $<
+	$(QUIET)$(CXX) -std=c++20 $(CFLAGS) $(CXXFLAGS) $(MT_CFLAGS) $(BOTAN_CXXFLAGS) -o $@ -c $<
 endif
 
 # Executable Build Rule
