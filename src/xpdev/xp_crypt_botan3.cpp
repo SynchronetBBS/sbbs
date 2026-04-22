@@ -259,6 +259,43 @@ xp_crypt_ivsize(xp_crypt_t ctx)
 	return ctx->spec.iv_size;
 }
 
+/*
+ * Apply the currently-stored ctx->iv to whichever underlying cipher is
+ * active.  ChaCha20 uses the OpenSSL/Cryptlib wire layout — 16 bytes of
+ * [initial-counter:4][nonce:12] (IETF ChaCha).  Botan's ChaCha accepts
+ * only 8/12/24-byte nonces, so we peel off the counter and seek the
+ * stream.  Other stream ciphers (RC4) and block ciphers pass through.
+ */
+static int
+apply_iv(xp_crypt_ctx *ctx)
+{
+	try {
+		if (ctx->block != nullptr) {
+			ctx->block->start(ctx->iv, ctx->iv_len);
+			return 0;
+		}
+		if (ctx->stream != nullptr) {
+			if (ctx->algo == XP_CRYPT_ALGO_CHACHA20 && ctx->iv_len == 16) {
+				uint32_t counter = (uint32_t)ctx->iv[0]
+				                 | ((uint32_t)ctx->iv[1] << 8)
+				                 | ((uint32_t)ctx->iv[2] << 16)
+				                 | ((uint32_t)ctx->iv[3] << 24);
+				ctx->stream->set_iv(&ctx->iv[4], 12);
+				if (counter != 0)
+					ctx->stream->seek((uint64_t)counter * 64);
+				return 0;
+			}
+			if (ctx->iv_len > 0)
+				ctx->stream->set_iv(ctx->iv, ctx->iv_len);
+			return 0;
+		}
+	}
+	catch (const std::exception &) {
+		return -1;
+	}
+	return 0;
+}
+
 extern "C" int
 xp_crypt_set_iv(xp_crypt_t ctx, const void *iv, size_t n)
 {
@@ -269,18 +306,7 @@ xp_crypt_set_iv(xp_crypt_t ctx, const void *iv, size_t n)
 	if (n > 0)
 		std::memcpy(ctx->iv, iv, n);
 	ctx->iv_len = n;
-	try {
-		if (ctx->block != nullptr) {
-			ctx->block->start(ctx->iv, ctx->iv_len);
-		}
-		else if (ctx->stream != nullptr && ctx->iv_len > 0) {
-			ctx->stream->set_iv(ctx->iv, ctx->iv_len);
-		}
-	}
-	catch (const std::exception &) {
-		return -1;
-	}
-	return 0;
+	return apply_iv(ctx);
 }
 
 extern "C" int
@@ -301,16 +327,7 @@ xp_crypt_gen_iv(xp_crypt_t ctx, void *out, size_t out_size)
 	}
 	ctx->iv_len = static_cast<size_t>(n);
 	std::memcpy(out, ctx->iv, static_cast<size_t>(n));
-	try {
-		if (ctx->block != nullptr)
-			ctx->block->start(ctx->iv, ctx->iv_len);
-		else if (ctx->stream != nullptr)
-			ctx->stream->set_iv(ctx->iv, ctx->iv_len);
-	}
-	catch (const std::exception &) {
-		return -1;
-	}
-	return 0;
+	return apply_iv(ctx);
 }
 
 extern "C" int

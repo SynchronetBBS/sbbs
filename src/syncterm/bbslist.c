@@ -5401,7 +5401,10 @@ show_bbslist(char *current, int connected)
 					case 6: // Build Options
 						asprintf(&p,
 						         "`SyncTERM Build Options`\n\n"
-						         "%s Cryptlib (ie: SSH and TLS)\n"
+						         "Crypto\n"
+						         "    %s DeuceSSH (SSH)\n"
+						         "    %s OpenSSL (TLS, symmetric ciphers)\n"
+						         "    %s Botan 3 (TLS, symmetric ciphers)\n\n"
 						         "%s Operation Overkill ][ Terminal\n"
 						         "%s JPEG XL support\n\n"
 						         "Video\n"
@@ -5422,10 +5425,17 @@ show_bbslist(char *current, int connected)
 						         "    %s PulseAudio\n"
 						         "    %s Core Audio\n"
 						         "    %s libsndfile\n",
-#if (defined(WITHOUT_CRYPTLIB) || !defined(WITH_CRYPTLIB))
-						         "[ ]",
-#else
+						         /* DeuceSSH is always linked after the Cryptlib migration. */
 						         "[`\xFB`]",
+#if defined(XP_CRYPTO_BACKEND_OPENSSL)
+						         "[`\xFB`]",
+						         "[ ]",
+#elif defined(XP_CRYPTO_BACKEND_BOTAN)
+						         "[ ]",
+						         "[`\xFB`]",
+#else
+						         "[ ]",
+						         "[ ]",
 #endif
 #ifdef WITHOUT_OOII
 						         "[ ]",

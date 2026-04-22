@@ -83,9 +83,11 @@ EXTRA_LIBS += $(DEUCESSH_LIB) $(SFTP-MT_LIBS)
 
 ifeq ($(XP_CRYPTO_BACKEND),OpenSSL)
  EXTRA_LIBS += -lssl -lcrypto
+ CFLAGS     += -DXP_CRYPTO_BACKEND_OPENSSL
 endif
 ifeq ($(XP_CRYPTO_BACKEND),Botan)
  EXTRA_LIBS += $(shell pkg-config --libs botan-3)
+ CFLAGS     += -DXP_CRYPTO_BACKEND_BOTAN
 endif
 ifeq ($(os),freebsd)
  EXTRA_LIBS += -lstdthreads
