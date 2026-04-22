@@ -39,10 +39,11 @@ else
  CRYPT_LIBS += $(CRYPT_LIB)
 endif
 
-# xpdev's xp_crypt shim (used by ini_file.c's encrypted-INI path) links
-# against OpenSSL libcrypto. Synchronet's eventual port will share the
-# same shim; for now this dep is SyncTERM-only. Botan3 backend follows.
-EXTRA_LIBS += -lcrypto
+# xpdev's xp_crypt and xp_tls shims (used by ini_file.c encrypted-INI,
+# telnets.c, and webget.c) link against OpenSSL libcrypto + libssl.
+# Synchronet's eventual port will share the same shim; for now this
+# dep is SyncTERM-only. Botan3 backend follows.
+EXTRA_LIBS += -lssl -lcrypto
 
 ifndef WITHOUT_JPEG_XL
  ifdef win
