@@ -1988,15 +1988,28 @@ struct xp_audio_stream {
 	struct xp_audio_buf *tail;          /* producer appends here->next */
 	float                volume_l;      /* live — mixer reads this */
 	float                volume_r;
-	/* Optional dB-linear volume ramp.  When ramp_remaining > 0 the
-	 * mixer advances volume_l/r by ramp_rate_{l,r} frames per pull
-	 * until ramp_remaining hits 0, at which point it snaps to the
-	 * stored target to cancel out float drift. */
-	float                ramp_target_l;
+	/* Optional equal-power volume ramp.  When ramp_total > 0 the mixer
+	 * advances volume_l/r each pull by interpolating start→target in
+	 * linear-amplitude space via a sin/cos curve (rising side uses sin,
+	 * falling uses cos, same as the patch-fade curve), then converts
+	 * back to dB for the live volume_l/r the mixer reads.
+	 *
+	 * Equal-power — not dB-linear — because a dB-linear 0→-60 dB ramp
+	 * sits at -30 dB (~3%% amplitude) at the midpoint, so a 0↔-60 pan
+	 * would fade to near-silence in the middle.  Equal-power holds
+	 * each side at 0.707 (-3 dB) at the midpoint, combined power
+	 * constant through the sweep.
+	 *
+	 * ramp_target_{l,r} (dB) are stored for the exact snap at the end
+	 * of the ramp to cancel float drift. */
+	float                ramp_start_amp_l;  /* linear amplitude */
+	float                ramp_start_amp_r;
+	float                ramp_target_amp_l;
+	float                ramp_target_amp_r;
+	float                ramp_target_l;     /* dB, snap target */
 	float                ramp_target_r;
-	float                ramp_rate_l;   /* dB per frame, signed */
-	float                ramp_rate_r;
-	size_t               ramp_remaining;
+	size_t               ramp_elapsed;
+	size_t               ramp_total;
 	bool                 finished;      /* producer: no more appends */
 	bool                 done;          /* mixer: empty queue, finished set */
 	bool                 auto_close;    /* reap on next xp_audio_open */
@@ -2203,6 +2216,57 @@ soft_clip_narrow(int32_t sum)
 	return (int16_t)out;
 }
 
+/* Advance `s`'s volume ramp by `frames` frames and update s->volume_l/r
+ * to the interpolated position.  Interpolation is in linear-amplitude
+ * space via the fade table (sin curve for channels going up, cos for
+ * channels going down) so opposing ramps satisfy sin²+cos² = 1 and a
+ * pan stays at constant combined power.  Snaps to the exact dB target
+ * on the last step.  Must be called with s->mutex held. */
+static void
+advance_volume_ramp_locked(struct xp_audio_stream *s, size_t frames)
+{
+	size_t remaining;
+	size_t step;
+	size_t pos;
+	float  rising_curve;
+	float  falling_curve;
+	float  amp_l;
+	float  amp_r;
+
+	if (s->ramp_total == 0)
+		return;
+	remaining = s->ramp_total - s->ramp_elapsed;
+	step      = frames < remaining ? frames : remaining;
+	s->ramp_elapsed += step;
+	if (s->ramp_elapsed >= s->ramp_total) {
+		s->volume_l   = s->ramp_target_l;
+		s->volume_r   = s->ramp_target_r;
+		s->ramp_total = 0;
+		return;
+	}
+	pos           = s->ramp_elapsed;
+	rising_curve  = (float)fade_gain_q15(pos, s->ramp_total) / 32767.0f;
+	falling_curve = (float)fade_gain_q15(s->ramp_total - 1 - pos, s->ramp_total)
+	                 / 32767.0f;
+	/* Per channel: if target > start (rising) use sin(t·π/2); if
+	 * target < start (falling) use cos(t·π/2).  Paired opposite
+	 * directions give equal-power sum. */
+	if (s->ramp_target_amp_l >= s->ramp_start_amp_l)
+		amp_l = s->ramp_start_amp_l
+		        + (s->ramp_target_amp_l - s->ramp_start_amp_l) * rising_curve;
+	else
+		amp_l = s->ramp_target_amp_l
+		        + (s->ramp_start_amp_l - s->ramp_target_amp_l) * falling_curve;
+	if (s->ramp_target_amp_r >= s->ramp_start_amp_r)
+		amp_r = s->ramp_start_amp_r
+		        + (s->ramp_target_amp_r - s->ramp_start_amp_r) * rising_curve;
+	else
+		amp_r = s->ramp_target_amp_r
+		        + (s->ramp_start_amp_r - s->ramp_target_amp_r) * falling_curve;
+	s->volume_l = (amp_l > 1e-6f) ? 20.0f * log10f(amp_l) : -60.0f;
+	s->volume_r = (amp_r > 1e-6f) ? 20.0f * log10f(amp_r) : -60.0f;
+}
+
 /* Called by backends (callbacks directly, or push-backend device threads).
  * Fills `out` with `frames` frames of mixed S16 stereo at 44100 Hz. Silence
  * when no streams are active. Holds `mixer_lock` for the duration to serialize
@@ -2255,32 +2319,14 @@ xp_mixer_pull(int16_t *out, size_t frames)
 		if (!s)
 			continue;
 		assert_pthread_mutex_lock(&s->mutex);
+		/* Advance the volume ramp regardless of head state, so a
+		 * listener that ramps on an empty channel and later queues a
+		 * buf starts at the post-ramp value rather than the pre-ramp
+		 * one. */
+		advance_volume_ramp_locked(s, frames);
 		if (s->done || !s->head) {
-			/* Keep the ramp running even while idle so a listener that
-			 * ramps volume on an empty channel and later queues a buf
-			 * starts at the post-ramp value rather than the pre-ramp one. */
-			if (s->ramp_remaining > 0) {
-				size_t step = frames < s->ramp_remaining ? frames : s->ramp_remaining;
-				s->volume_l += s->ramp_rate_l * (float)step;
-				s->volume_r += s->ramp_rate_r * (float)step;
-				s->ramp_remaining -= step;
-				if (s->ramp_remaining == 0) {
-					s->volume_l = s->ramp_target_l;
-					s->volume_r = s->ramp_target_r;
-				}
-			}
 			assert_pthread_mutex_unlock(&s->mutex);
 			continue;
-		}
-		if (s->ramp_remaining > 0) {
-			size_t step = frames < s->ramp_remaining ? frames : s->ramp_remaining;
-			s->volume_l += s->ramp_rate_l * (float)step;
-			s->volume_r += s->ramp_rate_r * (float)step;
-			s->ramp_remaining -= step;
-			if (s->ramp_remaining == 0) {
-				s->volume_l = s->ramp_target_l;
-				s->volume_r = s->ramp_target_r;
-			}
 		}
 		vl = s->volume_l;
 		vr = s->volume_r;
@@ -2547,9 +2593,9 @@ xp_audio_set_volume(xp_audio_handle_t h, float volume_l, float volume_r)
 	if (!s)
 		return;
 	assert_pthread_mutex_lock(&s->mutex);
-	s->volume_l       = volume_l;
-	s->volume_r       = volume_r;
-	s->ramp_remaining = 0;
+	s->volume_l   = volume_l;
+	s->volume_r   = volume_r;
+	s->ramp_total = 0;
 	assert_pthread_mutex_unlock(&s->mutex);
 }
 
@@ -2562,16 +2608,19 @@ xp_audio_ramp_volume(xp_audio_handle_t h, float target_l, float target_r, size_t
 		return;
 	assert_pthread_mutex_lock(&s->mutex);
 	if (nframes == 0) {
-		s->volume_l       = target_l;
-		s->volume_r       = target_r;
-		s->ramp_remaining = 0;
+		s->volume_l   = target_l;
+		s->volume_r   = target_r;
+		s->ramp_total = 0;
 	}
 	else {
-		s->ramp_target_l  = target_l;
-		s->ramp_target_r  = target_r;
-		s->ramp_rate_l    = (target_l - s->volume_l) / (float)nframes;
-		s->ramp_rate_r    = (target_r - s->volume_r) / (float)nframes;
-		s->ramp_remaining = nframes;
+		s->ramp_start_amp_l  = powf(10.0f, s->volume_l / 20.0f);
+		s->ramp_start_amp_r  = powf(10.0f, s->volume_r / 20.0f);
+		s->ramp_target_amp_l = powf(10.0f, target_l    / 20.0f);
+		s->ramp_target_amp_r = powf(10.0f, target_r    / 20.0f);
+		s->ramp_target_l     = target_l;
+		s->ramp_target_r     = target_r;
+		s->ramp_elapsed      = 0;
+		s->ramp_total        = nframes;
 	}
 	assert_pthread_mutex_unlock(&s->mutex);
 }
