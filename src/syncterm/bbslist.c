@@ -1311,22 +1311,30 @@ read_item(ini_fp_list_t *listfile, struct bbslist *entry, ini_lv_string_t *bbsna
 	entry->force_lcf = iniGetBool(section, NULL, "ForceLCF", false);
 	entry->yellow_is_yellow = iniGetBool(section, NULL, "YellowIsYellow", false);
 	iniGetSString(section, NULL, "TerminalType", "", entry->term_name, sizeof(entry->term_name));
+	entry->ssh_fingerprint_len = 0;
 	if (iniKeyExists(section, NULL, "SSHFingerprint")) {
-		char fp[41];
-		int i;
+		char fp[65];	/* 64 hex chars for SHA-256 + NUL */
 		iniGetSString(section, NULL, "SSHFingerprint", "", fp, sizeof(fp));
-		for (i = 0; i < 20; i++) {
-			if (!(isxdigit(fp[i * 2]) && isxdigit(fp[i * 2 + 1])))
-				break;
-			entry->ssh_fingerprint[i] = (HEX_CHAR_TO_INT(fp[i * 2]) * 16) + HEX_CHAR_TO_INT(fp[i * 2 + 1]);
+		size_t flen = strlen(fp);
+		/* Accept either SHA-1 (40 hex chars, legacy) or SHA-256
+		   (64 hex chars).  On connect, ssh.c upgrades SHA-1 to
+		   SHA-256 and rewrites this entry. */
+		size_t want = 0;
+		if (flen == 40)
+			want = 20;
+		else if (flen == 64)
+			want = 32;
+		if (want > 0) {
+			size_t i;
+			for (i = 0; i < want; i++) {
+				if (!(isxdigit(fp[i * 2]) && isxdigit(fp[i * 2 + 1])))
+					break;
+				entry->ssh_fingerprint[i] = (HEX_CHAR_TO_INT(fp[i * 2]) * 16) + HEX_CHAR_TO_INT(fp[i * 2 + 1]);
+			}
+			if (i == want)
+				entry->ssh_fingerprint_len = (uint8_t)want;
 		}
-		if (i == 20)
-			entry->has_fingerprint = true;
-		else
-			entry->has_fingerprint = false;
 	}
-	else
-		entry->has_fingerprint = false;
 	entry->sftp_public_key = iniGetBool(section, NULL, "SFTPPublicKey", false);
 	iniGetSString(sys ? NULL : section, NULL, "DownloadPath", home, entry->dldir, sizeof(entry->dldir));
 	iniGetSString(sys ? NULL : section, NULL, "UploadPath", home, entry->uldir, sizeof(entry->uldir));
@@ -3107,12 +3115,11 @@ add_bbs(char *listpath, struct bbslist *bbs, bool new_entry)
 	}
 	iniSetBool(&inifile, bbs->name, "TelnetBrokenTextmode", bbs->telnet_no_binary, &ini_style);
 	iniSetBool(&inifile, bbs->name, "TelnetDeferNegotiate", bbs->defer_telnet_negotiation, &ini_style);
-	if (bbs->has_fingerprint) {
-		char fp[41];
-		fp[0] = 0;
-		for (int i = 0; i < 20; i++)
+	if (bbs->ssh_fingerprint_len > 0) {
+		char fp[65];	/* up to 64 hex chars (SHA-256) + NUL */
+		for (int i = 0; i < bbs->ssh_fingerprint_len; i++)
 			sprintf(&fp[i * 2], "%02x", bbs->ssh_fingerprint[i]);
-		fp[sizeof(fp) -1] = 0;
+		fp[bbs->ssh_fingerprint_len * 2] = 0;
 		iniSetString(&inifile, bbs->name, "SSHFingerprint", fp, &ini_style);
 	}
 	iniSetBool(&inifile, bbs->name, "SFTPPublicKey", bbs->sftp_public_key, &ini_style);

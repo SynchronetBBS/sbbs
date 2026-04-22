@@ -151,8 +151,12 @@ struct bbslist {
 	char               comment[1024];
 	bool               force_lcf;
 	bool               yellow_is_yellow;
-	bool               has_fingerprint;
-	uint8_t            ssh_fingerprint[20];
+	/* SSH host-key fingerprint.  ssh_fingerprint_len is 0 (no stored
+	   approval), 20 (legacy SHA-1 from the Cryptlib era), or 32
+	   (SHA-256).  A successful connect against a SHA-1 entry rewrites
+	   the stored value as SHA-256; new entries are always SHA-256. */
+	uint8_t            ssh_fingerprint_len;
+	uint8_t            ssh_fingerprint[32];
 	bool               sftp_public_key;
 	bool               telnet_no_binary;
 	bool               defer_telnet_negotiation;

@@ -24,26 +24,21 @@ ifeq ($(os),sunos)    # Solaris
  CFLAGS	+=	-DNEED_CFMAKERAW
 endif
 
-ifdef WITHOUT_CRYPTLIB
- CFLAGS += -DWITHOUT_CRYPTLIB
- CRYPT_LDFLAGS :=
- CRYPT_DEPS :=
- CRYPT_LIBS :=
-else
- OBJS += $(MTOBJODIR)$(DIRSEP)ssh$(OFILE)
- OBJS += $(MTOBJODIR)$(DIRSEP)telnets$(OFILE)
- CFLAGS	+=	$(CRYPT_CFLAGS) $(SFTP-MT_CFLAGS)
- CRYPT_LDFLAGS += $(SFTP-MT_LDFLAGS)
- EXTRA_LIBS	+=	$(CRYPT_LIBS) $(SFTP-MT_LIBS)
- STATIC_CRYPTLIB	:= true
- CRYPT_LIBS += $(CRYPT_LIB)
+# SSH / TelnetS / HTTPS / encrypted-INI crypto stack.
+#
+# ssh.c uses DeuceSSH (src/ssh/) built with cmake as libdeucessh.a.
+# telnets.c and webget.c use xpdev's xp_tls shim.  ini_file.c uses
+# xpdev's xp_crypt shim.  All three shims link against OpenSSL (libssl
+# + libcrypto).  The SFTP-MT library is still used for the pubkey
+# upload bridge in ssh.c; it has no Cryptlib dependency itself.
+OBJS += $(MTOBJODIR)$(DIRSEP)ssh$(OFILE)
+OBJS += $(MTOBJODIR)$(DIRSEP)telnets$(OFILE)
+CFLAGS += -I$(SRC_ROOT)/ssh $(SFTP-MT_CFLAGS)
+CRYPT_LDFLAGS += $(SFTP-MT_LDFLAGS)
+EXTRA_LIBS += $(SRC_ROOT)/ssh/build/libdeucessh.a $(SFTP-MT_LIBS) -lssl -lcrypto
+ifeq ($(os),freebsd)
+ EXTRA_LIBS += -lstdthreads
 endif
-
-# xpdev's xp_crypt and xp_tls shims (used by ini_file.c encrypted-INI,
-# telnets.c, and webget.c) link against OpenSSL libcrypto + libssl.
-# Synchronet's eventual port will share the same shim; for now this
-# dep is SyncTERM-only. Botan3 backend follows.
-EXTRA_LIBS += -lssl -lcrypto
 
 ifndef WITHOUT_JPEG_XL
  ifdef win
