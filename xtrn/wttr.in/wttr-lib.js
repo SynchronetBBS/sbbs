@@ -1,6 +1,5 @@
 require('http.js', 'HTTPRequest');
 const locator = load({}, js.exec_dir + 'locator.js');
-const xterm = load({}, js.exec_dir + 'xterm-colors.js');
 
 function parseArgs(settings, argv) {
 	if (argv.length < 2) return settings;
@@ -26,7 +25,7 @@ function loadSettings(argv) {
 	var settings = load({}, 'modopts.js', 'wttr.in') || {};
 	if (settings.base_url === undefined) settings.base_url = 'https://wttr.in/';
 	if (settings.units === undefined) settings.units = '';
-	if (settings.view === undefined) settings.view = '1AFn';
+	if (settings.view === undefined) settings.view = '1AFnd';
 	if (settings.cache_ttl === undefined) settings.cache_ttl = 3600;
 	if (settings.fallback_location === undefined) settings.fallback_location = '';
 	settings = parseArgs(settings, argv);
@@ -88,9 +87,8 @@ function getWeather(argv) {
 	}
 	const weather = fetchWeather(url, addr);
 	const text = uReplace(weather);
-	const ansi = xterm.convertColors(text);
-	if (settings.cache_ttl > 0) writeCache(url, addr, ansi);
-	return ansi;
+	if (settings.cache_ttl > 0) writeCache(url, addr, text);
+	return text;
 }
 
 const exports = {
