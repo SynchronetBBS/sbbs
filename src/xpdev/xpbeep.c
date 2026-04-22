@@ -1986,8 +1986,17 @@ struct xp_audio_buf {
 struct xp_audio_stream {
 	struct xp_audio_buf *head;          /* mixer consumes from here */
 	struct xp_audio_buf *tail;          /* producer appends here->next */
-	float                volume_l;
+	float                volume_l;      /* live — mixer reads this */
 	float                volume_r;
+	/* Optional dB-linear volume ramp.  When ramp_remaining > 0 the
+	 * mixer advances volume_l/r by ramp_rate_{l,r} frames per pull
+	 * until ramp_remaining hits 0, at which point it snaps to the
+	 * stored target to cancel out float drift. */
+	float                ramp_target_l;
+	float                ramp_target_r;
+	float                ramp_rate_l;   /* dB per frame, signed */
+	float                ramp_rate_r;
+	size_t               ramp_remaining;
 	bool                 finished;      /* producer: no more appends */
 	bool                 done;          /* mixer: empty queue, finished set */
 	bool                 auto_close;    /* reap on next xp_audio_open */
@@ -2247,8 +2256,31 @@ xp_mixer_pull(int16_t *out, size_t frames)
 			continue;
 		assert_pthread_mutex_lock(&s->mutex);
 		if (s->done || !s->head) {
+			/* Keep the ramp running even while idle so a listener that
+			 * ramps volume on an empty channel and later queues a buf
+			 * starts at the post-ramp value rather than the pre-ramp one. */
+			if (s->ramp_remaining > 0) {
+				size_t step = frames < s->ramp_remaining ? frames : s->ramp_remaining;
+				s->volume_l += s->ramp_rate_l * (float)step;
+				s->volume_r += s->ramp_rate_r * (float)step;
+				s->ramp_remaining -= step;
+				if (s->ramp_remaining == 0) {
+					s->volume_l = s->ramp_target_l;
+					s->volume_r = s->ramp_target_r;
+				}
+			}
 			assert_pthread_mutex_unlock(&s->mutex);
 			continue;
+		}
+		if (s->ramp_remaining > 0) {
+			size_t step = frames < s->ramp_remaining ? frames : s->ramp_remaining;
+			s->volume_l += s->ramp_rate_l * (float)step;
+			s->volume_r += s->ramp_rate_r * (float)step;
+			s->ramp_remaining -= step;
+			if (s->ramp_remaining == 0) {
+				s->volume_l = s->ramp_target_l;
+				s->volume_r = s->ramp_target_r;
+			}
 		}
 		vl = s->volume_l;
 		vr = s->volume_r;
@@ -2515,8 +2547,47 @@ xp_audio_set_volume(xp_audio_handle_t h, float volume_l, float volume_r)
 	if (!s)
 		return;
 	assert_pthread_mutex_lock(&s->mutex);
-	s->volume_l = volume_l;
-	s->volume_r = volume_r;
+	s->volume_l       = volume_l;
+	s->volume_r       = volume_r;
+	s->ramp_remaining = 0;
+	assert_pthread_mutex_unlock(&s->mutex);
+}
+
+void
+xp_audio_ramp_volume(xp_audio_handle_t h, float target_l, float target_r, size_t nframes)
+{
+	struct xp_audio_stream *s = stream_from_handle(h);
+
+	if (!s)
+		return;
+	assert_pthread_mutex_lock(&s->mutex);
+	if (nframes == 0) {
+		s->volume_l       = target_l;
+		s->volume_r       = target_r;
+		s->ramp_remaining = 0;
+	}
+	else {
+		s->ramp_target_l  = target_l;
+		s->ramp_target_r  = target_r;
+		s->ramp_rate_l    = (target_l - s->volume_l) / (float)nframes;
+		s->ramp_rate_r    = (target_r - s->volume_r) / (float)nframes;
+		s->ramp_remaining = nframes;
+	}
+	assert_pthread_mutex_unlock(&s->mutex);
+}
+
+void
+xp_audio_get_volume(xp_audio_handle_t h, float *volume_l, float *volume_r)
+{
+	struct xp_audio_stream *s = stream_from_handle(h);
+
+	if (!s)
+		return;
+	assert_pthread_mutex_lock(&s->mutex);
+	if (volume_l)
+		*volume_l = s->volume_l;
+	if (volume_r)
+		*volume_r = s->volume_r;
 	assert_pthread_mutex_unlock(&s->mutex);
 }
 

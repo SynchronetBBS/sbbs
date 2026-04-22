@@ -163,6 +163,17 @@ DLLEXPORT xp_audio_handle_t xp_audio_play(const int16_t *frames, size_t nframes,
 /* Update per-channel base dB on a live stream (0 dB = unity). */
 DLLEXPORT void xp_audio_set_volume(xp_audio_handle_t h, float volume_l, float volume_r);
 
+/* Like xp_audio_set_volume but dB-linearly ramps from the current value
+ * to the target over `nframes` mixer frames.  nframes=0 snaps instantly
+ * (same as xp_audio_set_volume).  Any in-flight ramp is replaced. */
+DLLEXPORT void xp_audio_ramp_volume(xp_audio_handle_t h, float target_l,
+                                    float target_r, size_t nframes);
+
+/* Read the stream's current live volume (post-ramp if a ramp is
+ * running).  NULL out-pointers are ignored. */
+DLLEXPORT void xp_audio_get_volume(xp_audio_handle_t h, float *volume_l,
+                                   float *volume_r);
+
 /* Returns true when the stream has no bufs queued (head == NULL) or is
  * already done/closed.  False on a live stream with pending frames.
  * Intended for non-blocking channel-state polling (e.g., APC audio
