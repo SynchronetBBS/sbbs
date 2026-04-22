@@ -412,20 +412,20 @@ do_flush(struct cterminal *cterm, char *str)
 
 		silence = (int16_t *)calloc(fadeout, XPBEEP_FRAMESIZE);
 		if (silence == NULL) {
-			xp_audio_stop(h);
+			xp_audio_clear(h);
 			return;
 		}
 		opts.fade_in_frames = fadeout;
 		opts.crossfade      = true;
 		if (!xp_audio_append(h, silence, fadeout, &opts)) {
 			/* append already freed silence on failure */
-			xp_audio_stop(h);
+			xp_audio_clear(h);
 			return;
 		}
 		/* The silent tail auto-drains; don't block the APC handler. */
 	}
 	else {
-		xp_audio_stop(h);
+		xp_audio_clear(h);
 	}
 }
 

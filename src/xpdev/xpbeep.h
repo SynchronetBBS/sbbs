@@ -175,6 +175,10 @@ DLLEXPORT void xp_audio_finish(xp_audio_handle_t h);
 /* Stop playback immediately: discard buffered frames, mark done. */
 DLLEXPORT void xp_audio_stop(xp_audio_handle_t h);
 
+/* Discard any queued frames without marking the stream done. The stream stays
+ * open and future xp_audio_append calls are accepted. */
+DLLEXPORT void xp_audio_clear(xp_audio_handle_t h);
+
 /* End-of-phrase barrier: block until the mixer has consumed every frame
  * appended up to this call AND the device's kernel buffer has had time to
  * play them (one device-latency sleep). Use when subsequent output needs

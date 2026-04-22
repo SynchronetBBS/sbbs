@@ -2584,6 +2584,19 @@ xp_audio_stop(xp_audio_handle_t h)
 	assert_pthread_mutex_unlock(&s->mutex);
 }
 
+void
+xp_audio_clear(xp_audio_handle_t h)
+{
+	struct xp_audio_stream *s = stream_from_handle(h);
+
+	if (!s)
+		return;
+	assert_pthread_mutex_lock(&s->mutex);
+	drop_all_bufs_locked(s);
+	SetEvent(s->progress);
+	assert_pthread_mutex_unlock(&s->mutex);
+}
+
 /* Returns the current device-buffer latency in milliseconds. When the mixer
  * has drained our data (read_pos caught write_pos), the device kernel buffer
  * may still hold that data, so callers must wait this long for the hardware
