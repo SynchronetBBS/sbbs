@@ -2516,6 +2516,20 @@ xp_audio_set_volume(xp_audio_handle_t h, float volume_l, float volume_r)
 	assert_pthread_mutex_unlock(&s->mutex);
 }
 
+bool
+xp_audio_is_idle(xp_audio_handle_t h)
+{
+	struct xp_audio_stream *s = stream_from_handle(h);
+	bool                    idle;
+
+	if (!s)
+		return true;
+	assert_pthread_mutex_lock(&s->mutex);
+	idle = (s->head == NULL) || s->done;
+	assert_pthread_mutex_unlock(&s->mutex);
+	return idle;
+}
+
 void
 xp_audio_finish(xp_audio_handle_t h)
 {

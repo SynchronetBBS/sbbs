@@ -5425,7 +5425,8 @@ show_bbslist(char *current, int connected)
 						         "    %s WASAPI\n"
 						         "    %s PortAudio\n"
 						         "    %s PulseAudio\n"
-						         "    %s Core Audio\n",
+						         "    %s Core Audio\n"
+						         "    %s libsndfile\n",
 #if (defined(WITHOUT_CRYPTLIB) || !defined(WITH_CRYPTLIB))
 						         "[ ]",
 #else
@@ -5512,6 +5513,11 @@ show_bbslist(char *current, int connected)
 						         "[ ]",
 #endif
 #ifdef WITH_COREAUDIO
+						         "[`\xFB`]",
+#else
+						         "[ ]",
+#endif
+#if defined(WITH_SNDFILE) || defined(STATIC_SNDFILE)
 						         "[`\xFB`]"
 #else
 						         "[ ]"

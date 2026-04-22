@@ -2786,6 +2786,174 @@ SyncTERM will respond with a CTerm APC State Report of the form
 
 pR is 0 if JXL support is not available, and 1 if it is.
 
+=== `APC SyncTERM:Q; Ps ST` Feature presence query (`CTQF`)
+Generic feature-availability probe.  `Ps` is the feature name; currently
+defined:
+
+|===
+|Feature |Meaning
+
+|`libsndfile`
+|Runtime-loaded libsndfile for audio file decoding (`APC SyncTERM:A;Load`).
+Under the dynamic (`WITH_SNDFILE`) build mode, the first query also triggers
+a lazy `xp_dlopen` attempt — no harm if the library is absent, just
+reports unavailable.  The `STATIC_SNDFILE` build mode always reports
+available; `WITHOUT_SNDFILE` always reports unavailable.
+|===
+
+The response is an audio DSR (see `CSI = 7 n` under "Audio APCs"), with
+the feature ID (100 for libsndfile) and availability (0 / 1) as the
+pair.  Example responses:
+
+- libsndfile available: `CSI = 7 ; 100 ; 1 n`
+- libsndfile unavailable: `CSI = 7 ; 100 ; 0 n`
+
+== Audio APCs
+
+SyncTERM exposes a BBS-facing audio playback API on top of its internal
+mixer.  The model has two pieces:
+
+*Patch slots* — 256 per-session buffers of S16 stereo 44100 Hz PCM,
+addressed by slot number 0..255.  Slots are filled by `Load` (decoding
+a file via libsndfile), `Synth` (in-terminal tone generator), or `Copy`
+(duplicating an existing slot).
+
+*Channels* — 16 mixer streams, addressed 0..15.  Channels 0 and 1 alias
+cterm's internal music stream (ANSI/BananANSI/SyncTERM music) and
+foreground-SFX stream (RIP / OOII) respectively; the BBS can use
+`Flush`, `Volume`, `Wait`, and `Update` on them but cannot `Queue`
+audio onto them.  Channels 2..15 are APC-dedicated and lazy-opened at
+-12 dB base level on first use.
+
+A `Queue` moves a slot's buffer into a channel's FIFO, after which the
+slot is empty.  The mixer plays channels concurrently with sample-accurate
+volume, fade-in/out envelopes, loop, and crossfade.
+
+=== Parameter letters
+
+Keys are single characters (`C`, `S`, `V`, etc.) in a `;`-delimited
+`Key=Value` list.  Two keys (`X` and `L`) are presence flags — their
+mere inclusion in the token list sets the flag; they take no value.
+
+|===
+|Letter |Meaning |Used by
+
+|`S`   |Slot number (0..255) — patch source or dest  |Load, Synth, Queue, Copy
+|`D`   |Destination slot (Copy only)                 |Copy
+|`W`   |Waveform / shape                             |Synth
+|`F`   |Frequency in Hz                              |Synth
+|`T`   |Time / duration (ms default, see below)      |Synth
+|`C`   |Channel number (0..15)                       |Queue, Flush, Volume, Wait, Update
+|`I`   |Fade-in duration                             |Queue
+|`O`   |Fade-out duration                            |Queue, Flush
+|`X`   |Crossfade (presence flag, no value)          |Queue
+|`L`   |Loop (presence flag, no value)               |Queue
+|`V`   |Volume, both channels                        |Queue, Volume
+|`VL`  |Volume, left channel                         |Queue, Volume
+|`VR`  |Volume, right channel                        |Queue, Volume
+|===
+
+*Duration grammar* for `T`, `I`, `O`:
+
+- No suffix → milliseconds (`T=500` = 500 ms).
+- `ms` suffix → explicit milliseconds.
+- `f` suffix → frames, sample-exact (`T=22050f` = half a second @ 44.1 kHz).
+- `p` suffix → full periods of `F`, zero-crossing aligned.  Valid only
+  in Synth's `T`; rejected for Queue/Flush fade durations (which apply
+  to pre-rendered buffers with no single frequency).
+
+Any parse error (unknown suffix, empty, non-numeric) yields a duration
+of 0 — Synth with `T=0` just produces an empty slot; Queue with `I=0`
+skips that envelope.
+
+*Volume grammar* for `V`, `VL`, `VR`:
+
+- No suffix → linear percentage 0..100 (100 = 0 dB unity, 50 ≈ -6 dB,
+  0 = silence clamped to -60 dB).
+- `dB` suffix (case-insensitive) → explicit dB value, parsed as a
+  float with any sign (`V=-6.5dB`).
+
+Volume parameters on `Queue` apply to that buf only (summed with the
+stream's base dB during playback).  `Volume` verb updates the channel's
+base level for subsequent playback.
+
+Errors are silent.  The BBS can confirm an action succeeded by querying
+`CSI = 7 ; <ch> n` afterward and inspecting the state.
+
+=== `APC SyncTERM:A;Load;S=N;<filename> ST` Load patch from Store (`CTAL`)
+Decodes `<filename>` (a file previously uploaded via `SyncTERM:C;S`)
+into slot `N` using libsndfile.  Silently ignored if libsndfile is not
+available — query `SyncTERM:Q;libsndfile` first to confirm.
+
+=== `APC SyncTERM:A;Synth;S=N;W=<shape>;F=<hz>;T=<dur> ST` Synthesize patch (`CTAS`)
+Generates a waveform into slot `N`.  Shapes: `SIN`, `SAW`, `SQ`,
+`SINE_HARM`, `SINE_SAW`, `SINE_SAW_CHORD`, `SINE_SAW_HARM`, `SILENCE`.
+`F=0` or `W=SILENCE` produces silence regardless of other parameters.
+
+=== `APC SyncTERM:A;Copy;S=N;D=M ST` Copy patch (`CTAC`)
+Deep-copies slot `N` into slot `M`.  Source slot is NOT emptied.
+
+=== `APC SyncTERM:A;Queue;C=#;S=N;... ST` Queue patch on channel (`CTAQ`)
+Moves slot `N`'s buffer onto channel `C`'s FIFO.  Slot becomes empty.
+Rejected when `C=0` or `C=1` (those channels are cterm-owned).
+Optional parameters: `I=` (fade-in), `O=` (fade-out), `X` (crossfade),
+`L` (loop), `V=` / `VL=` / `VR=` (per-buf volume).
+
+Crossfade (`X`): if the channel has a head buf already playing, its
+decay overlaps with the new buf's fade-in over `fade_in_frames` frames
+— both play concurrently during the overlap.  No-op if the channel
+is empty (the new buf just fades in from silence).
+
+Loop (`L`): the buf's mixer cursor wraps at end.  A subsequent Queue
+(plain or crossfade) ends the loop.
+
+=== `APC SyncTERM:A;Flush;C=#[;O=<dur>] ST` Flush channel (`CTAFL`)
+Drains channel `C`'s queue.  If `O=` is provided, applies an overlay
+fade-out of that length on the current head buf first; otherwise stops
+immediately.
+
+=== `APC SyncTERM:A;Volume;C=#;... ST` Set channel volume (`CTAV`)
+Updates the channel's base dB.  `V=` sets both channels; `VL=` / `VR=`
+override a specific side.
+
+=== `APC SyncTERM:A;Wait;C=# ST` Wait for channel to idle (`CTAW`)
+Blocks the terminal (stalling further BBS byte processing) until
+channel `C`'s queue is empty.  No-op if the head is a looping buf.
+
+=== `APC SyncTERM:A;Update;C=# ST` Arm idle notification (`CTAU`)
+Arms a one-shot `CSI = 7 ; <ch> ; 0 n` emission the next time channel
+`C` transitions from running to stopped.  BBS can poll channel state
+(`SyncTERM:A;Queue` followed by a state query) without busy-waiting.
+
+=== `CSI = 7 n` DSR — audio channel + feature state
+Unified response sequence for audio channel state queries AND feature
+presence queries.  The grammar is:
+
+`CSI = 7 [ ; <id> ; <state> ]... n`
+
+— zero or more `(id, state)` pairs packed into one sequence.
+`id` is a channel number (0..15) or a feature ID (100+).
+
+States: `0` = stopped, `1` = running.  For feature IDs: `0` =
+unavailable, `1` = available.  Feature IDs defined:
+
+- `100` — libsndfile
+
+Query forms:
+
+- `CSI = 7 n` — all running channels.  Emits one pair per running
+  channel; non-running channels omitted.  A fully idle terminal
+  replies with just `CSI = 7 n` (no pairs).
+- `CSI = 7 ; <ch> n` — one specific channel.  Always emits exactly
+  one pair.
+
+Async notification:
+
+- `CSI = 7 ; <ch> ; <state> n` — emitted when a channel armed via
+  `Update` transitions running→stopped.  Each notification is a full
+  DSR in its own right, emitted asynchronously from the idle-
+  transition poll.
+
 == "ANSI" Music
 This is the place where the BBS world completely fell on it's face in ANSI
 usage.  A programmer with either TeleMate or QModem (the first two programs to
