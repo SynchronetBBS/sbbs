@@ -4359,7 +4359,7 @@ edit_web_lists(void)
 	return changed;
 }
 
-#if (defined(WITH_CRYPTLIB) && !defined(WITHOUT_CRYPTLIB))
+#ifndef WITHOUT_CRYPTO
 static void
 changeAlgo(const char *listpath, enum iniCryptAlgo algo, int keySize, const char *newpass)
 {
@@ -4514,7 +4514,7 @@ show_bbslist(char *current, int connected)
 		"Program Settings",
 		"File Locations",
 		"Build Options",
-#if (defined(WITH_CRYPTLIB) && !defined(WITHOUT_CRYPTLIB))
+#ifndef WITHOUT_CRYPTO
 		"List Encryption",
 #endif
 		NULL
@@ -5541,7 +5541,7 @@ show_bbslist(char *current, int connected)
 							free(p);
 						}
 						break;
-#if (defined(WITH_CRYPTLIB) && !defined(WITHOUT_CRYPTLIB))
+#ifndef WITHOUT_CRYPTO
 					case 7:	// Encryption!
 						encryption_menu(settings.list_path);
 						break;
