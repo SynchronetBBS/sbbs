@@ -4390,16 +4390,19 @@ changeAlgo(const char *listpath, enum iniCryptAlgo algo, int keySize, const char
 static void
 encryption_menu(const char *listpath)
 {
+	/*
+	 * Legacy cipher options (3DES, CAST-128, IDEA, RC2, RC4) were
+	 * removed in the DeuceSSH+xp_crypt migration.  Existing bbslist.ini
+	 * files written with those ciphers still decrypt on read (the
+	 * bundled decrypt-only impls in syncterm/legacy_ciphers/ cover IDEA
+	 * and RC2; OpenSSL's legacy provider and Botan 3 cover the rest);
+	 * any save operation re-encrypts under AES-256 or ChaCha20.
+	 */
 	char *encryption[] = {
 		"Change Password",
-		"Encrypt Using ChaCha20",              // 2008
-		"Encrypt Using AES-128",               // 1998
-		"Encrypt Using AES-256",               // 1998
-		"Encrypt Using CAST-128",              // 1996
-		"Encrypt Using IDEA",                  // 1991
-		"Encrypt Using RC2",                   // 1987
-		"Encrypt Using RC4 (Insecure)",        // 1987
-		"Encrypt Using 3DES (Insecure)",       // 1981
+		"Encrypt Using ChaCha20",
+		"Encrypt Using AES-128",
+		"Encrypt Using AES-256",
 		"Decrypt",
 		NULL
 	};
@@ -4435,21 +4438,6 @@ encryption_menu(const char *listpath)
 			changeAlgo(listpath, INI_CRYPT_ALGO_AES, 256, NULL);
 			break;
 		case 4:
-			changeAlgo(listpath, INI_CRYPT_ALGO_CAST, 0, NULL);
-			break;
-		case 5:
-			changeAlgo(listpath, INI_CRYPT_ALGO_IDEA, 0, NULL);
-			break;
-		case 6:
-			changeAlgo(listpath, INI_CRYPT_ALGO_RC2, 0, NULL);
-			break;
-		case 7:
-			changeAlgo(listpath, INI_CRYPT_ALGO_RC4, 0, NULL);
-			break;
-		case 8:
-			changeAlgo(listpath, INI_CRYPT_ALGO_3DES, 0, NULL);
-			break;
-		case 9:
 			changeAlgo(listpath, INI_CRYPT_ALGO_NONE, 0, NULL);
 			break;
 	}
