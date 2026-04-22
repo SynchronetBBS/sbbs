@@ -163,6 +163,12 @@ DLLEXPORT xp_audio_handle_t xp_audio_play(const int16_t *frames, size_t nframes,
 /* Update per-channel base dB on a live stream (0 dB = unity). */
 DLLEXPORT void xp_audio_set_volume(xp_audio_handle_t h, float volume_l, float volume_r);
 
+/* Returns true when the stream has no bufs queued (head == NULL) or is
+ * already done/closed.  False on a live stream with pending frames.
+ * Intended for non-blocking channel-state polling (e.g., APC audio
+ * idle-transition notifications). */
+DLLEXPORT bool xp_audio_is_idle(xp_audio_handle_t h);
+
 /* Signal that no more data will be appended. The stream will drain naturally. */
 DLLEXPORT void xp_audio_finish(xp_audio_handle_t h);
 

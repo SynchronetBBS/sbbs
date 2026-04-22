@@ -180,6 +180,13 @@ struct cterminal {
 	int					musicfore;
 	xp_audio_handle_t	music_stream;	/* ANSI music audio stream (-1 = none) */
 	xp_audio_handle_t	fx_stream;		/* Foreground SFX (RIP/OOII) stream (-1 = none) */
+	/* Callback for the CSI = 7 n ext-state query (audio channel / feature
+	 * query DSR).  cterm parses the sequence and hands the sub-parameters
+	 * to the callback; the callback is responsible for formatting and
+	 * emitting the response via cterm_respond*.  NULL = no-op.  Registered
+	 * by syncterm (audio_apc.c) during session init. */
+	void (*ext_state_7_cb)(struct cterminal *cterm, int nparams,
+	                       const uint64_t *params);
 	int					backpos; // Position where new lines will be added
 	int					backstart; // First line of scrollback
 	int					xpos;
@@ -387,6 +394,10 @@ CIOLIBEXPORT void cterm_start(struct cterminal *cterm);
 CIOLIBEXPORT int cterm_crpos(struct cterminal *cterm);
 CIOLIBEXPORT int cterm_encode_key(struct cterminal *cterm, int key);
 CIOLIBEXPORT bool cterm_atascii_inverse(const struct cterminal *cterm);
+/* Emit a response back to the connected host via cterm's registered
+ * response callback (set by the terminal app).  Silently drops if no
+ * callback has been registered. */
+CIOLIBEXPORT void cterm_respond(struct cterminal *cterm, const char *data, size_t len);
 /* ================================================================
  * Foreground SFX playback.
  *

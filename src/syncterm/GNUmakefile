@@ -79,6 +79,54 @@ ifndef WITHOUT_JPEG_XL
  endif
 endif
 
+OBJS += $(MTOBJODIR)$(DIRSEP)sndfile$(OFILE)
+OBJS += $(MTOBJODIR)$(DIRSEP)audio_apc$(OFILE)
+
+# libsndfile: three build modes — WITHOUT_SNDFILE (stubs only),
+# STATIC_SNDFILE (direct linkage — used for macOS / Win32 release
+# shape), or the default dynamic WITH_SNDFILE (runtime xp_dlopen, no
+# link-time dep).  sndfile.c references <sndfile.h> in the last two
+# modes, so include-path detection has to resolve before the
+# stub-only case can be overridden.
+ifdef WITHOUT_SNDFILE
+ CFLAGS += -DWITHOUT_SNDFILE
+else
+ ifdef STATIC_SNDFILE
+  # Static link — headers + .a/.lib supplied by the environment.  Use
+  # pkg-config if available for correct flags, else assume the lib is
+  # on the default search path and the header under /usr/local.
+  ifeq ($(shell pkg-config sndfile --exists && echo YES), YES)
+   CFLAGS     += $(shell pkg-config sndfile --cflags) -DSTATIC_SNDFILE
+   EXTRA_LIBS += $(shell pkg-config sndfile --libs)
+  else
+   ifneq ($(wildcard /usr/local/include/sndfile.h),)
+    CFLAGS += -I/usr/local/include -DSTATIC_SNDFILE
+   else
+    CFLAGS += -DSTATIC_SNDFILE
+   endif
+   LDFLAGS    += -L/usr/local/lib
+   EXTRA_LIBS += -lsndfile
+  endif
+ else
+  # Dynamic runtime path.  Probe for sndfile.h; if absent, fall back
+  # to stubs so a build without the header still links.
+  ifeq ($(shell pkg-config sndfile --exists && echo YES), YES)
+   CFLAGS += $(shell pkg-config sndfile --cflags)
+   CFLAGS += -DWITH_SNDFILE
+  else
+   ifneq ($(wildcard /usr/local/include/sndfile.h),)
+    CFLAGS += -I/usr/local/include -DWITH_SNDFILE
+   else
+    ifneq ($(wildcard /usr/include/sndfile.h),)
+     CFLAGS += -DWITH_SNDFILE
+    else
+     CFLAGS += -DWITHOUT_SNDFILE
+    endif
+   endif
+  endif
+ endif
+endif
+
 $(MTOBJODIR)$(DIRSEP)conn$(OFILE): $(CRYPT_LIBS)
 $(MTOBJODIR)$(DIRSEP)ssh$(OFILE): $(CRYPT_LIBS)
 $(MTOBJODIR)$(DIRSEP)syncterm$(OFILE): $(CRYPT_LIBS) $(CIOLIB-MT)

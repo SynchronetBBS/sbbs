@@ -1750,6 +1750,7 @@ struct cterminal* cterm_init(int height, int width, int xpos, int ypos, int back
 	cterm->last_column_flag = 0;
 	cterm->music_stream = -1;  /* lazily opened when MML first arrives */
 	cterm->fx_stream = -1;     /* lazily opened on first cterm_play_fx* call */
+	cterm->ext_state_7_cb = NULL;  /* registered by syncterm after cterm_init */
 	/* Install the per-emulation dispatcher and its dispatch table.
 	 * The dispatcher handles single bytes outside sequence state; the
 	 * dispatch table is searched (via bsearch) when a sequence or C1

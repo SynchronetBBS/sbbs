@@ -205,9 +205,12 @@ cterm_handle_ext_state_query(struct cterminal *cterm, int *speed)	/* CSI = n */
 	int vmode;
 	(void)speed;
 	tmp[0] = 0;
-	if (cterm->seq_param_count > 1)
-		return;
 	cterm_seq_default(cterm, 0, 1);
+	/* Cases 1..6 are single-parameter queries; case 7 (audio DSR) accepts
+	 * sub-parameters (query-all / query-one channel).  Reject extra
+	 * parameters only for the single-parameter cases. */
+	if (cterm->seq_param_int[0] != 7 && cterm->seq_param_count > 1)
+		return;
 	switch (cterm->seq_param_int[0]) {
 		case 1:
 			sprintf(tmp, "\x1b[=1;%u;%u;%u;%u;%u;%un",
@@ -283,6 +286,16 @@ cterm_handle_ext_state_query(struct cterminal *cterm, int *speed)	/* CSI = n */
 			break;
 		case 6:
 			sprintf(tmp, "\x1b[=6;%dn", cio_api.vmem_gettext ? 1 : 0);
+			break;
+		case 7:
+			/* Audio channel / feature query DSR.  cterm doesn't own
+			 * audio state — forward the sub-params to syncterm's
+			 * registered callback, which emits the response itself. */
+			if (cterm->ext_state_7_cb != NULL) {
+				cterm->ext_state_7_cb(cterm,
+				    cterm->seq_param_count,
+				    cterm->seq_param_int);
+			}
 			break;
 	}
 	if (*tmp)

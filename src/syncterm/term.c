@@ -23,6 +23,7 @@
 #include "telnet_io.h"
 #include "term.h"
 #include "threadwrap.h"
+#include "audio_apc.h"
 #include "uifcinit.h"
 #include "window.h"
 #include "xmodem.h"
@@ -3310,7 +3311,7 @@ get_cache_fn_subdir(struct bbslist *bbs, char *fn, size_t fnsz, const char *subd
 	return 1;
 }
 
-static int
+int
 clean_path(char *fn, size_t fnsz)
 {
 	char *fp;
@@ -4763,6 +4764,12 @@ apc_handler(char *strbuf, size_t slen, void *apcd)
 		conn_send("\x1b[=1;0-n", 8, 0);
 #endif
 	}
+	else if (strncmp(strbuf, "SyncTERM:A;", 11) == 0) {
+		audio_apc_handler(strbuf + 11, slen - 11, fn, apcd);
+	}
+	else if (strncmp(strbuf, "SyncTERM:Q;", 11) == 0) {
+		feature_query_handler(strbuf + 11, slen - 11, apcd);
+	}
 	else if(strcmp(strbuf, "SyncTERM:VER") == 0) {
 		char verbuf[256];
 		int vlen = snprintf(verbuf, sizeof(verbuf),
@@ -5428,6 +5435,7 @@ check_hangup(int key, bool *ret, int oldmc, struct mouse_state *ms)
 		freescreen(savscrn);
 		setup_mouse_events(ms);
 		finish_scrollback();
+		audio_apc_cleanup();
 		cterm_end(cterm, 0);
 		cterm = NULL;
 		conn_close();
@@ -5566,6 +5574,7 @@ doterm(struct bbslist *bbs)
 	cterm->apc_handler_data = bbs;
 	cterm->response_cb = term_response_cb;
 	cterm->response_cbdata = NULL;
+	cterm->ext_state_7_cb = audio_ext_state_7;
 	cterm->mouse_state_change = mouse_state_change;
 	cterm->mouse_state_change_cbdata = &ms;
 	cterm->mouse_state_query = mouse_state_query;
@@ -5602,6 +5611,10 @@ doterm(struct bbslist *bbs)
 	for (; !quitting;) {
 		hold_update = true;
 		sleep = true;
+		/* Audio APC: emit async CSI = 7 ; <ch> ; 0 n notifications
+		 * for any channel armed via SyncTERM:A;Update that has just
+		 * transitioned from running to stopped. */
+		audio_apc_poll(cterm);
 		if (!term.nostatus && !hover_hyperlink_id) {
 			update_status(bbs,
 			    (bbs->conn_type == CONN_TYPE_SERIAL || bbs->conn_type == CONN_TYPE_SERIAL_NORTS) ? bbs->bpsrate : speed,
@@ -5626,7 +5639,8 @@ doterm(struct bbslist *bbs)
 								    "`Disconnected`\n\nRemote host dropped connection");
 							check_exit(false);
 							finish_scrollback();
-							cterm_end(cterm, 0);
+							audio_apc_cleanup();
+		cterm_end(cterm, 0);
 							cterm = NULL;
 							// TODO: Do this before the popup to avoid being rude...
 							conn_close();
@@ -5754,7 +5768,8 @@ doterm(struct bbslist *bbs)
 					switch (syncmenu(bbs, &speed)) {
 						case -1:
 							finish_scrollback();
-							cterm_end(cterm, 0);
+							audio_apc_cleanup();
+		cterm_end(cterm, 0);
 							cterm = NULL;
 							conn_close();
 							hidemouse();
@@ -5797,7 +5812,8 @@ doterm(struct bbslist *bbs)
 #endif
 						case SM_EXIT:
 							finish_scrollback();
-							cterm_end(cterm, 0);
+							audio_apc_cleanup();
+		cterm_end(cterm, 0);
 							cterm = NULL;
 							conn_close();
 							hidemouse();
