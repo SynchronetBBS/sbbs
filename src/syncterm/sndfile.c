@@ -151,12 +151,18 @@ resample_to_s16_stereo_44100(const int16_t *src, size_t src_nframes, int src_cha
 	}
 
 	for (j = 0; j < dst_nframes; j++) {
-		/* Fractional source index.  Use 32.32 fixed-point via uint64
-		 * to avoid float precision drift over very long files. */
-		uint64_t pos_q32  = ((uint64_t)j * (uint64_t)src_rate * 0x100000000ULL)
-		                     / (uint64_t)XPBEEP_TARGET_RATE;
-		uint64_t idx_int  = pos_q32 >> 32;
-		uint32_t idx_frac = (uint32_t)(pos_q32 & 0xFFFFFFFFu);
+		/* Fractional source index in 32.32 fixed-point.  Compute the
+		 * integer frame index and the remainder separately so we
+		 * never form `j * src_rate * 2^32` — that overflows uint64
+		 * at about 2 seconds of 44.1 kHz source and produces wrapped
+		 * indices that look like "the file looped back to the start
+		 * mid-decode".  whole_pos and rem*2^32 each stay within
+		 * uint64 range for any practical file length. */
+		uint64_t whole_pos = (uint64_t)j * (uint64_t)src_rate;
+		uint64_t idx_int   = whole_pos / (uint64_t)XPBEEP_TARGET_RATE;
+		uint64_t rem       = whole_pos - idx_int * (uint64_t)XPBEEP_TARGET_RATE;
+		uint32_t idx_frac  = (uint32_t)((rem * 0x100000000ULL) /
+		                                 (uint64_t)XPBEEP_TARGET_RATE);
 		int      lidx_a;
 		int      lidx_b;
 		int      ridx_a;
