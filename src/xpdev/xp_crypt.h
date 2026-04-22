@@ -63,8 +63,32 @@ enum xp_crypt_algo {
 typedef struct xp_crypt_ctx *xp_crypt_t;
 
 /*
+ * Key derivation functions.  The on-disk header names which KDF was
+ * used; adding a new one here means the file format also gains support
+ * for it.  PBKDF2-HMAC-SHA256 is kept for reading files produced by
+ * the Cryptlib era (and for v1 files we write during transition).
+ */
+enum xp_crypt_kdf {
+	XP_CRYPT_KDF_PBKDF2_HMAC_SHA256 = 1,
+	XP_CRYPT_KDF_SCRYPT             = 2,
+	/* XP_CRYPT_KDF_ARGON2ID future — gated on OpenSSL 3.2+ / Botan support */
+};
+
+/*
+ * Union-ish parameter bundle for a KDF.  Only the fields relevant to
+ * the selected KDF are inspected.  For scrypt, N = 1 << cost_log2.
+ */
+struct xp_crypt_kdf_params {
+	enum xp_crypt_kdf kdf;
+	int iterations;		/* PBKDF2 */
+	int cost_log2;		/* scrypt N = 2^cost_log2 */
+	int block_size;		/* scrypt r */
+	int parallelism;	/* scrypt p */
+};
+
+/*
  * Decrypt-only callback for legacy ciphers unavailable in the chosen
- * backend. The PBKDF2-derived key and IV (if any) arrive pre-cooked.
+ * backend. The derived key and IV (if any) arrive pre-cooked.
  * Returns 0 on success, non-zero on error. Must decrypt in place.
  */
 typedef int (*xp_crypt_legacy_decrypt_fn_t)(
@@ -88,10 +112,10 @@ DLLEXPORT void xp_crypt_register_legacy_decrypt(int algo,
  * key_bits   — cipher key size in bits (e.g. 256 for AES-256, 128 for AES-128,
  *              168 for 3DES, 256 for ChaCha20). Zero asks for the algorithm's
  *              default.
- * salt,slen  — salt bytes for PBKDF2 (raw, passed through as-is — no hashing
- *              or encoding)
- * iters      — PBKDF2-HMAC-SHA256 iteration count (must be >=1)
- * pass,plen  — password bytes (raw, used as PBKDF2 input key material)
+ * salt,slen  — salt bytes for the KDF (raw, passed through as-is)
+ * kdf        — KDF identifier and parameters (non-NULL, all inspected fields
+ *              validated)
+ * pass,plen  — password bytes (raw, used as KDF input key material)
  * encrypt    — true for encryption, false for decryption. Legacy-only ciphers
  *              (unsupported by backend) can only be opened with encrypt=false.
  *
@@ -99,7 +123,7 @@ DLLEXPORT void xp_crypt_register_legacy_decrypt(int algo,
  */
 DLLEXPORT xp_crypt_t xp_crypt_open(int algo, int key_bits,
     const void *salt, size_t slen,
-    int iters,
+    const struct xp_crypt_kdf_params *kdf,
     const void *pass, size_t plen,
     bool encrypt);
 

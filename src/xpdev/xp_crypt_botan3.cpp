@@ -123,14 +123,62 @@ struct xp_crypt_ctx {
 
 /* ---------------------------------------------------------------- open */
 
+/*
+ * Derive `out_len` bytes of key material using the requested KDF.
+ * Returns 0 on success, non-zero on error.
+ */
+static int
+derive_key(const struct xp_crypt_kdf_params *kdf,
+           const void *pass, size_t plen,
+           const void *salt, size_t slen,
+           uint8_t *out, size_t out_len)
+{
+	try {
+		switch (kdf->kdf) {
+			case XP_CRYPT_KDF_PBKDF2_HMAC_SHA256: {
+				if (kdf->iterations < 1)
+					return -1;
+				auto family = Botan::PasswordHashFamily::create_or_throw(
+				    "PBKDF2(HMAC(SHA-256))");
+				auto hash = family->from_iterations(
+				    static_cast<size_t>(kdf->iterations));
+				hash->derive_key(out, out_len,
+				    static_cast<const char *>(pass), plen,
+				    static_cast<const uint8_t *>(salt), slen);
+				return 0;
+			}
+			case XP_CRYPT_KDF_SCRYPT: {
+				if (kdf->cost_log2 < 1 || kdf->cost_log2 > 31 ||
+				    kdf->block_size < 1 || kdf->parallelism < 1)
+					return -1;
+				auto family = Botan::PasswordHashFamily::create_or_throw("Scrypt");
+				/* Botan's Scrypt::from_params takes (N, r, p). */
+				auto hash = family->from_params(
+				    static_cast<size_t>(1ULL << kdf->cost_log2),
+				    static_cast<size_t>(kdf->block_size),
+				    static_cast<size_t>(kdf->parallelism));
+				hash->derive_key(out, out_len,
+				    static_cast<const char *>(pass), plen,
+				    static_cast<const uint8_t *>(salt), slen);
+				return 0;
+			}
+			default:
+				return -1;
+		}
+	}
+	catch (const std::exception &) {
+		return -1;
+	}
+}
+
 extern "C" xp_crypt_t
 xp_crypt_open(int algo, int key_bits,
               const void *salt, size_t slen,
-              int iters,
+              const struct xp_crypt_kdf_params *kdf,
               const void *pass, size_t plen,
               bool encrypt)
 {
-	if (salt == nullptr || slen == 0 || iters < 1 || pass == nullptr)
+	if (salt == nullptr || slen == 0 || kdf == nullptr || pass == nullptr)
 		return nullptr;
 	if (algo <= 0 || algo >= XP_CRYPT_ALGO_MAX)
 		return nullptr;
@@ -146,15 +194,8 @@ xp_crypt_open(int algo, int key_bits,
 	ctx->key_bits = kbytes * 8;
 	ctx->encrypt  = encrypt;
 
-	/* PBKDF2-HMAC-SHA256 — byte-exact match with OpenSSL backend. */
-	try {
-		auto family = Botan::PasswordHashFamily::create_or_throw("PBKDF2(HMAC(SHA-256))");
-		auto hash   = family->from_iterations(static_cast<size_t>(iters));
-		hash->derive_key(ctx->key, static_cast<size_t>(kbytes),
-		    static_cast<const char *>(pass), plen,
-		    static_cast<const uint8_t *>(salt), slen);
-	}
-	catch (const std::exception &) {
+	if (derive_key(kdf, pass, plen, salt, slen, ctx->key,
+	               static_cast<size_t>(kbytes)) != 0) {
 		delete ctx;
 		return nullptr;
 	}

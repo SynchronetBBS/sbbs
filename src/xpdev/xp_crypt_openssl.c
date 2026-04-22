@@ -32,7 +32,10 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <openssl/core_names.h>
 #include <openssl/evp.h>
+#include <openssl/kdf.h>
+#include <openssl/params.h>
 #include <openssl/rand.h>
 #include <openssl/provider.h>
 
@@ -163,17 +166,80 @@ struct xp_crypt_ctx {
 
 /* ---------------------------------------------------------------- open */
 
+/*
+ * Run the requested KDF to fill `out[0..out_len-1]` with key material.
+ * Returns 0 on success, non-zero on error.
+ */
+static int
+derive_key(const struct xp_crypt_kdf_params *kdf,
+           const void *pass, size_t plen,
+           const void *salt, size_t slen,
+           unsigned char *out, size_t out_len)
+{
+	switch (kdf->kdf) {
+		case XP_CRYPT_KDF_PBKDF2_HMAC_SHA256: {
+			if (kdf->iterations < 1)
+				return -1;
+			if (PKCS5_PBKDF2_HMAC((const char *)pass, (int)plen,
+			                      (const unsigned char *)salt, (int)slen,
+			                      kdf->iterations, EVP_sha256(),
+			                      (int)out_len, out) != 1)
+				return -1;
+			return 0;
+		}
+		case XP_CRYPT_KDF_SCRYPT: {
+			if (kdf->cost_log2 < 1 || kdf->cost_log2 > 31 ||
+			    kdf->block_size < 1 || kdf->parallelism < 1)
+				return -1;
+			EVP_KDF     *k  = EVP_KDF_fetch(NULL, "SCRYPT", NULL);
+			EVP_KDF_CTX *kc = NULL;
+			int rc = -1;
+			if (k == NULL)
+				goto scrypt_done;
+			kc = EVP_KDF_CTX_new(k);
+			if (kc == NULL)
+				goto scrypt_done;
+			uint64_t N = (uint64_t)1 << kdf->cost_log2;
+			uint64_t r = (uint64_t)kdf->block_size;
+			uint64_t p = (uint64_t)kdf->parallelism;
+			/* Provide a generous memory limit; scrypt uses ~128*N*r bytes. */
+			uint64_t max_mem = 1024ULL * 1024 * 1024;	/* 1 GiB cap */
+			OSSL_PARAM params[] = {
+				OSSL_PARAM_construct_octet_string(
+				    OSSL_KDF_PARAM_PASSWORD, (void *)pass, plen),
+				OSSL_PARAM_construct_octet_string(
+				    OSSL_KDF_PARAM_SALT, (void *)salt, slen),
+				OSSL_PARAM_construct_uint64(OSSL_KDF_PARAM_SCRYPT_N,  &N),
+				OSSL_PARAM_construct_uint64(OSSL_KDF_PARAM_SCRYPT_R,  &r),
+				OSSL_PARAM_construct_uint64(OSSL_KDF_PARAM_SCRYPT_P,  &p),
+				OSSL_PARAM_construct_uint64(OSSL_KDF_PARAM_SCRYPT_MAXMEM,
+				                             &max_mem),
+				OSSL_PARAM_construct_end()
+			};
+			if (EVP_KDF_derive(kc, out, out_len, params) != 1)
+				goto scrypt_done;
+			rc = 0;
+scrypt_done:
+			EVP_KDF_CTX_free(kc);
+			EVP_KDF_free(k);
+			return rc;
+		}
+		default:
+			return -1;
+	}
+}
+
 xp_crypt_t
 xp_crypt_open(int algo, int key_bits,
               const void *salt, size_t slen,
-              int iters,
+              const struct xp_crypt_kdf_params *kdf,
               const void *pass, size_t plen,
               bool encrypt)
 {
 	struct xp_crypt_ctx *ctx;
 	int kbytes;
 
-	if (salt == NULL || slen == 0 || iters < 1 || pass == NULL)
+	if (salt == NULL || slen == 0 || kdf == NULL || pass == NULL)
 		return NULL;
 	if (algo <= 0 || algo >= XP_CRYPT_ALGO_MAX)
 		return NULL;
@@ -192,10 +258,7 @@ xp_crypt_open(int algo, int key_bits,
 	ctx->key_bits = kbytes * 8;
 	ctx->encrypt = encrypt;
 
-	if (PKCS5_PBKDF2_HMAC((const char *)pass, (int)plen,
-	                      (const unsigned char *)salt, (int)slen,
-	                      iters, EVP_sha256(),
-	                      kbytes, ctx->key) != 1)
+	if (derive_key(kdf, pass, plen, salt, slen, ctx->key, (size_t)kbytes) != 0)
 		goto fail;
 	ctx->key_len = kbytes;
 
