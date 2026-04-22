@@ -437,8 +437,9 @@ do_volume(struct cterminal *cterm, char *str)
 	char             *end;
 	float             vl    = 0.0f;
 	float             vr    = 0.0f;
-	bool              have_l = false;
-	bool              have_r = false;
+	size_t            nframes = 0;
+	bool              have_l  = false;
+	bool              have_r  = false;
 	xp_audio_handle_t h;
 
 	for (p = str; p && *p == ';'; p = strchr(p + 1, ';')) {
@@ -460,6 +461,9 @@ do_volume(struct cterminal *cterm, char *str)
 			have_l = true;
 			have_r = true;
 		}
+		else if (p[1] == 'T' && p[2] == '=') {
+			nframes = apc_parse_duration(p + 3, 0.0, false);
+		}
 	}
 	if (ch >= AUDIO_APC_CHANNELS)
 		return;
@@ -468,14 +472,19 @@ do_volume(struct cterminal *cterm, char *str)
 		return;
 	if (!have_l && !have_r)
 		return;
-	/* If only one side was specified, leave the other at its current
-	 * value.  xp_audio_set_volume takes both, so read the stream's
-	 * current state implicitly via: we don't have a read API, so for
-	 * simplicity assume unspecified = -12 dB base.  TODO: expose a
-	 * get-volume accessor if more precision is needed. */
-	if (!have_l) vl = AUDIO_APC_BASE_DB;
-	if (!have_r) vr = AUDIO_APC_BASE_DB;
-	xp_audio_set_volume(h, vl, vr);
+	/* Fill in unspecified side from the stream's current value so a
+	 * VL-only or VR-only command doesn't clobber the other channel. */
+	if (!have_l || !have_r) {
+		float cur_l = AUDIO_APC_BASE_DB;
+		float cur_r = AUDIO_APC_BASE_DB;
+		xp_audio_get_volume(h, &cur_l, &cur_r);
+		if (!have_l) vl = cur_l;
+		if (!have_r) vr = cur_r;
+	}
+	if (nframes > 0)
+		xp_audio_ramp_volume(h, vl, vr, nframes);
+	else
+		xp_audio_set_volume(h, vl, vr);
 }
 
 static void

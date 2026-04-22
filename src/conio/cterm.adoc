@@ -2914,7 +2914,14 @@ immediately.
 
 === `APC SyncTERM:A;Volume;C=#;... ST` Set channel volume (`CTAV`)
 Updates the channel's base dB.  `V=` sets both channels; `VL=` / `VR=`
-override a specific side.
+override a specific side.  If only one side is given, the other is left
+at its current value.
+
+An optional `T=<duration>` parameter turns the change into a dB-linear
+ramp that interpolates from the current volume to the target over
+`<duration>` (same grammar as `Synth`'s `T` — milliseconds by default,
+`f` suffix for frames, `ms` for explicit ms; `p` periods are rejected).
+`T=0` or absent → instant change.
 
 === `APC SyncTERM:A;Wait;C=# ST` Wait for channel to idle (`CTAW`)
 Blocks the terminal (stalling further BBS byte processing) until
