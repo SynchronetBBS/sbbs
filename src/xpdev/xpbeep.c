@@ -449,7 +449,6 @@ size_t          xp_mixer_pull(int16_t *out, size_t frames);
  * xptone_complete_locked can drain streams on completion. */
 #define XP_AUDIO_MAX_STREAMS        32
 #define XP_AUDIO_DEFAULT_RING_FRAMES (S_RATE)
-#define XP_AUDIO_FADE_FLOOR_DB      -60.0
 #define XP_AUDIO_FADE_TABLE_SIZE    1024
 #define XP_AUDIO_DEVICE_CHUNK       512
 
@@ -2015,12 +2014,17 @@ mixer_init(void)
 {
 	int i;
 	assert_pthread_mutex_init(&mixer_lock, NULL);
-	/* Precompute dB-linear fade gain: position 0 → -60 dB,
-	 * position TABLE_SIZE-1 → 0 dB. */
+	/* Precompute an equal-power fade curve: gain = sin(t * π/2).
+	 * Paired with its cos(t*π/2) complement (supplied by callers that
+	 * pass (total-1-pos) for the fade-out side), the two curves satisfy
+	 * sin²+cos² = 1 — so a crossfade where A fades out while B fades in
+	 * holds constant combined power through the overlap.
+	 * A dB-linear curve here would put both A and B at −30 dB at the
+	 * midpoint (combined ≈ −24 dB), which is audibly silent and makes
+	 * the crossfade sound like a sequential fade-out-then-fade-in. */
 	for (i = 0; i < XP_AUDIO_FADE_TABLE_SIZE; i++) {
 		double t    = (double)i / (double)(XP_AUDIO_FADE_TABLE_SIZE - 1);
-		double db   = XP_AUDIO_FADE_FLOOR_DB * (1.0 - t);
-		double gain = pow(10.0, db / 20.0);
+		double gain = sin(t * M_PI * 0.5);
 		int    q15  = (int)(gain * 32767.0 + 0.5);
 		if (q15 > 32767) q15 = 32767;
 		if (q15 < 0)     q15 = 0;
