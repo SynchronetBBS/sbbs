@@ -17,19 +17,29 @@ ifdef WITH_SDL_AUDIO
 endif
 
 
-ifdef WITHOUT_CRYPTLIB
+# xp_crypt and xp_tls backend selection. XP_CRYPTO_BACKEND is OpenSSL,
+# Botan, or none. "none" selects stub implementations (xp_crypt_none.c,
+# xp_tls_none.c) that fail all open calls — used when WITHOUT_CRYPTO is
+# set by the consumer.  SyncTERM picks the same backend as DeuceSSH when
+# both are in the build; Synchronet server currently falls through to
+# the default OpenSSL.
+#
+ifdef WITHOUT_CRYPTO
+ XP_CRYPTO_BACKEND := none
+ # WITHOUT_CRYPTLIB is the legacy knob name that Synchronet server
+ # code still checks to suppress crypto-dependent paths.  Turning off
+ # crypto entirely should imply turning off Cryptlib too, so alias it
+ # forward.
+ WITHOUT_CRYPTLIB := 1
  CFLAGS += -DWITHOUT_CRYPTLIB
-else
- DEPS += $(CRYPT_LIB)
 endif
-
-# xp_crypt and xp_tls backend selection. XP_CRYPTO_BACKEND is OpenSSL
-# or Botan, matching the DeuceSSH (src/ssh/) crypto-backend choice so
-# both halves of SyncTERM's SSH/TLS stack share one libcrypto or one
-# libbotan-3. Defaults to OpenSSL.
 XP_CRYPTO_BACKEND ?= OpenSSL
 ifeq ($(XP_CRYPTO_BACKEND),OpenSSL)
  XP_CRYPTO_BACKEND_SUFFIX := openssl
+endif
+ifeq ($(XP_CRYPTO_BACKEND),none)
+ XP_CRYPTO_BACKEND_SUFFIX := none
+ CFLAGS += -DWITHOUT_CRYPTO
 endif
 ifeq ($(XP_CRYPTO_BACKEND),Botan)
  XP_CRYPTO_BACKEND_SUFFIX := botan3

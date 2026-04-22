@@ -10,7 +10,9 @@
 #include "stdio.h"
 #include "syncterm.h"
 #include "webget.h"
+#ifndef WITHOUT_CRYPTO
 #include "xp_tls.h"
+#endif
 #include "xpprintf.h"
 
 #define MAX_LIST_SIZE (16 * 1024 * 1024)
@@ -37,7 +39,9 @@ struct http_session {
 	struct bbslist hacky_list_entry;
 	struct http_cache_info cache;
 	SOCKET sock;
+#ifndef WITHOUT_CRYPTO
 	xp_tls_t tls;
+#endif
 	bool is_tls;
 	bool is_chunked;
 	bool not_modified;
@@ -154,6 +158,7 @@ recv_nbytes(struct http_session *sess, uint8_t *buf, const size_t chunk_size, bo
 	// coverity[tainted_data_argument:SUPPRESS]
 	while (received < chunk_size) {
 		ssize_t rc;
+#ifndef WITHOUT_CRYPTO
 		if (sess->is_tls) {
 			size_t copied = 0;
 			int status = xp_tls_pop(sess->tls, &buf[received], chunk_size - received, &copied);
@@ -170,7 +175,9 @@ recv_nbytes(struct http_session *sess, uint8_t *buf, const size_t chunk_size, bo
 			   → let rc==0 mean EOF per the non-TLS path semantics. */
 			rc = (ssize_t)copied;
 		}
-		else {
+		else
+#endif
+		{
 			if (!socket_readable(sess->sock, 5000)) {
 				set_msg(sess->req, "Socket Unreadable");
 				goto error_return;
@@ -215,10 +222,12 @@ close_socket(struct http_session *sess)
 static void
 free_session(struct http_session *sess)
 {
+#ifndef WITHOUT_CRYPTO
 	if (sess->is_tls && sess->tls != NULL) {
 		xp_tls_close(sess->tls, /*close_socket=*/false);
 		sess->tls = NULL;
 	}
+#endif
 	close_socket(sess);
 	if (sess->cache_info) {
 		fclose(sess->cache_info);
@@ -295,6 +304,7 @@ send_request(struct http_session *sess)
 	}
 	sess->cache.request_time = time(NULL);
 	ssize_t sent;
+#ifndef WITHOUT_CRYPTO
 	if (sess->is_tls) {
 		size_t copied;
 		int ret = xp_tls_push(sess->tls, reqstr, len, &copied);
@@ -305,7 +315,9 @@ send_request(struct http_session *sess)
 		if (xp_tls_flush(sess->tls) < 0)
 			sent = -1;
 	}
-	else {
+	else
+#endif
+	{
 		sent = send(sess->sock, reqstr, len, 0);
 		shutdown(sess->sock, SHUT_WR);
 	}
@@ -749,9 +761,15 @@ parse_uri(struct http_session *sess)
 		goto error_return;
 	}
 	if (sess->req->uri[4] == 's') {
+#ifdef WITHOUT_CRYPTO
+		set_msg_locked(sess->req, "https:// requires crypto support (built without)");
+		assert_pthread_mutex_unlock(&sess->req->mtx);
+		goto error_return;
+#else
 		p = &sess->req->uri[5];
 		sess->is_tls = true;
 		sess->hacky_list_entry.port = 443;
+#endif
 	}
 	else {
 		p = &sess->req->uri[4];
@@ -1037,6 +1055,7 @@ error_return:
 	return false;
 }
 
+#ifndef WITHOUT_CRYPTO
 static bool
 tls_setup(struct http_session *sess)
 {
@@ -1055,6 +1074,7 @@ tls_setup(struct http_session *sess)
 	}
 	return true;
 }
+#endif
 
 static bool
 do_request(struct http_session *sess)
@@ -1073,11 +1093,13 @@ do_request(struct http_session *sess)
 		set_msg(sess->req, "Connection Failed");
 		goto error_return;
 	}
+#ifndef WITHOUT_CRYPTO
 	if (sess->is_tls) {
 		set_state(sess->req, "TLS Setup");
 		if (!tls_setup(sess))
 			goto error_return;
 	}
+#endif
 	set_state(sess->req, "Requesting");
 	if (!send_request(sess))
 		goto error_return;
@@ -1204,7 +1226,9 @@ iniReadHttp(struct webget_request *req)
 	struct http_session sess = {
 		.sock = INVALID_SOCKET,
 		.req = req,
+#ifndef WITHOUT_CRYPTO
 		.tls = NULL,
+#endif
 		.hacky_list_entry = {
 			.hidepopups = true,
 			.address_family = PF_UNSPEC,

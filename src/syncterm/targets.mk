@@ -4,6 +4,12 @@ else
 SYNCTERM	=	$(EXEODIR)$(DIRSEP)syncterm$(EXEFILE)
 endif
 
-all: xpdev-mt ciolib-mt uifc-mt sftp-mt deucessh $(MTOBJODIR) $(EXEODIR) $(SYNCTERM)
+# SFTP-MT and DeuceSSH are pulled in only when SSH support is compiled.
+ifndef WITHOUT_DEUCESSH
+ SYNCTERM_EXTRA_PREREQS := sftp-mt deucessh
+ SYNCTERM_EXTRA_LIBS    := $(SFTPLIB-MT) $(DEUCESSH_LIB)
+endif
 
-$(SYNCTERM):	$(XPDEV-MT_LIB) $(SFTPLIB-MT) $(CIOLIB-MT) $(UIFCLIB-MT) $(ENCODE_LIB) $(HASH_LIB) $(DEUCESSH_LIB)
+all: xpdev-mt ciolib-mt uifc-mt $(SYNCTERM_EXTRA_PREREQS) $(MTOBJODIR) $(EXEODIR) $(SYNCTERM)
+
+$(SYNCTERM):	$(XPDEV-MT_LIB) $(CIOLIB-MT) $(UIFCLIB-MT) $(ENCODE_LIB) $(HASH_LIB) $(SYNCTERM_EXTRA_LIBS)

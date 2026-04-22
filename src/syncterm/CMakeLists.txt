@@ -14,7 +14,8 @@ if(APPLE AND NOT WITHOUT_QUARTZ)
 	message(STATUS "macOS: Quartz backend enabled, SDL disabled")
 endif()
 
-set(WITHOUT_CRYPTLIB OFF CACHE BOOL "Disable cryptlib (ssh and telnet over TLS")
+set(WITHOUT_DEUCESSH OFF CACHE BOOL "Disable SSH support (DeuceSSH)")
+set(WITHOUT_CRYPTO   OFF CACHE BOOL "Disable TLS + encrypted bbslist.ini (xp_tls, xp_crypt)")
 set(WITHOUT_OOII OFF CACHE BOOL "Disable Operation Overkill ][ Terminal")
 set(WITHOUT_JPEG_XL OFF CACHE BOOL "Disable JPEG XL")
 set(WITHOUT_RETRO ON CACHE BOOL "Disable libretro")
@@ -88,8 +89,6 @@ set(SOURCE
 	../sbbs3/zmodem.c
 )
 
-add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../../3rdp/build ${CMAKE_CURRENT_SOURCE_DIR}/cryptlib EXCLUDE_FROM_ALL)
-
 if(NOT WITHOUT_OOII)
 	list(APPEND SOURCE ooii.c ooii_bmenus.c ooii_cmenus.c ooii_logons.c ooii_sounds.c)
 endif()
@@ -108,8 +107,15 @@ elseif(CMAKE_SYSTEM_NAME STREQUAL "Haiku")
 	execute_process(COMMAND uname -m OUTPUT_VARIABLE ARCHITECTURE_TYPE OUTPUT_STRIP_TRAILING_WHITESPACE)
 endif()
 
-if(NOT WITHOUT_CRYPTLIB)
-	list(APPEND SOURCE ssh.c telnets.c)
+if(NOT WITHOUT_DEUCESSH)
+	list(APPEND SOURCE ssh.c)
+endif()
+if(NOT WITHOUT_CRYPTO)
+	list(APPEND SOURCE
+		telnets.c
+		legacy_ciphers/idea.c
+		legacy_ciphers/rc2.c
+		legacy_ciphers/register.c)
 endif()
 
 if(WIN32)
@@ -150,10 +156,17 @@ target_compile_definitions(syncterm PRIVATE TELNET_NO_DLL)
 if(WITHOUT_OOII)
 	target_compile_definitions(syncterm PRIVATE WITHOUT_OOII=1)
 endif()
-if(WITHOUT_CRYPTLIB)
-	target_compile_definitions(syncterm PRIVATE WITHOUT_CRYPTLIB)
+if(WITHOUT_DEUCESSH)
+	target_compile_definitions(syncterm PRIVATE WITHOUT_DEUCESSH)
 else()
-	target_link_libraries(syncterm cl)
+	# DeuceSSH sub-build — src/ssh/ ships a CMake build system.
+	add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../ssh deucessh EXCLUDE_FROM_ALL)
+	target_include_directories(syncterm PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../ssh)
+	target_link_libraries(syncterm deucessh_static sftp)
+endif()
+
+if(WITHOUT_CRYPTO)
+	target_compile_definitions(syncterm PRIVATE WITHOUT_CRYPTO)
 endif()
 
 target_include_directories(syncterm PRIVATE ../sbbs3)

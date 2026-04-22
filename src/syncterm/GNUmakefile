@@ -24,96 +24,144 @@ ifeq ($(os),sunos)    # Solaris
  CFLAGS	+=	-DNEED_CFMAKERAW
 endif
 
-# SSH / TelnetS / HTTPS / encrypted-INI crypto stack.
+# SSH (DeuceSSH) and crypto (TLS + encrypted-INI via xpdev's
+# xp_tls / xp_crypt, backed by OpenSSL or Botan 3) are independently
+# optional; the default is both enabled.
 #
-# ssh.c uses DeuceSSH (src/ssh/) built with cmake as libdeucessh.a.
-# telnets.c and webget.c use xpdev's xp_tls shim.  ini_file.c uses
-# xpdev's xp_crypt shim.  All three shims link against OpenSSL (libssl
-# + libcrypto).  The SFTP-MT library is still used for the pubkey
-# upload bridge in ssh.c; it has no Cryptlib dependency itself.
-OBJS += $(MTOBJODIR)$(DIRSEP)ssh$(OFILE)
-OBJS += $(MTOBJODIR)$(DIRSEP)telnets$(OFILE)
-CFLAGS += -I$(SRC_ROOT)/ssh $(SFTP-MT_CFLAGS)
-CRYPT_LDFLAGS += $(SFTP-MT_LDFLAGS)
+#   WITHOUT_DEUCESSH — drops ssh.c, CONN_TYPE_SSH / _SSHNA, the SFTP
+#                      pubkey-upload bridge, and the DeuceSSH sub-build.
+#
+#   WITHOUT_CRYPTO   — drops telnets.c, CONN_TYPE_TELNETS, the encrypted
+#                      bbslist.ini menu + dispatch, and the bundled
+#                      decrypt-only reference ciphers in legacy_ciphers/.
+#                      webget.c still compiles; its HTTPS paths no-op.
 
-# DeuceSSH sub-build.  The library only ships a CMake build system, so
-# we shell out to cmake for it the same way the 3rdp builds do.  The
-# configure step is idempotent; the build step is a no-op when the
-# .a is already up-to-date.
-DEUCESSH_DIR    := $(SRC_ROOT)/ssh
-DEUCESSH_BUILD  := $(DEUCESSH_DIR)/build
-DEUCESSH_LIB    := $(DEUCESSH_BUILD)/libdeucessh.a
-DEUCESSH_PC     := $(DEUCESSH_BUILD)/deucessh.pc
+# Two independent decisions: which xp_crypt shim xpdev compiles
+# (XP_CRYPTO_BACKEND) and which crypto runtime we link against at
+# program-link time.  They usually match, but DeuceSSH needs its
+# backend at link time even when WITHOUT_CRYPTO pins xpdev to the
+# "none" shim.  NEED_OPENSSL / NEED_BOTAN are set by each side that
+# needs those libs; ifdef at the bottom pulls them in exactly once.
 
-# DeuceSSH is the source of truth for crypto-backend choice.  If the
-# caller explicitly set DEUCESSH_BACKEND on the make command line we
-# honour that; otherwise we let DeuceSSH's own auto-detect pick
-# (preferring Botan over OpenSSL when both are present).  The
-# configure step below runs at parse time so deucessh.pc exists
-# before we need to read it further down.
-ifdef DEUCESSH_BACKEND
- DEUCESSH_CMAKE_BACKEND_ARG := -DDEUCESSH_CRYPTO_BACKEND=$(DEUCESSH_BACKEND)
-else
- DEUCESSH_CMAKE_BACKEND_ARG :=
-endif
-$(shell cmake -S $(DEUCESSH_DIR) -B $(DEUCESSH_BUILD) \
-              -DCMAKE_BUILD_TYPE=Release $(DEUCESSH_CMAKE_BACKEND_ARG) \
-              >/dev/null 2>&1)
+ifndef WITHOUT_DEUCESSH
+ # ssh.c + SFTP-MT bridge.
+ OBJS       += $(MTOBJODIR)$(DIRSEP)ssh$(OFILE)
+ CFLAGS     += -I$(SRC_ROOT)/ssh $(SFTP-MT_CFLAGS)
+ LDFLAGS    += $(SFTP-MT_LDFLAGS)
+ EXTRA_LIBS += $(SFTP-MT_LIBS)
 
-# Derive XP_CRYPTO_BACKEND from DeuceSSH's deucessh.pc so SyncTERM's
-# xp_crypt / xp_tls shims link against the same crypto backend.
-# Requires.private names libcrypto (OpenSSL) or botan-3 (Botan).
-DEUCESSH_REQUIRES := $(shell awk '/^Requires.private:/{print $$2}' $(DEUCESSH_PC) 2>/dev/null)
-ifeq ($(DEUCESSH_REQUIRES),libcrypto)
- XP_CRYPTO_BACKEND := OpenSSL
-else ifeq ($(DEUCESSH_REQUIRES),botan-3)
- XP_CRYPTO_BACKEND := Botan
-else
- $(error Cannot determine DeuceSSH crypto backend from $(DEUCESSH_PC))
-endif
-export XP_CRYPTO_BACKEND
+ # DeuceSSH ships only a CMake build system; shell out to cmake the
+ # same way the 3rdp builds do.  Configure is idempotent; the build
+ # step is a no-op when libdeucessh.a is already current.
+ DEUCESSH_DIR    := $(SRC_ROOT)/ssh
+ DEUCESSH_BUILD  := $(DEUCESSH_DIR)/build
+ DEUCESSH_LIB    := $(DEUCESSH_BUILD)/libdeucessh.a
+ DEUCESSH_PC     := $(DEUCESSH_BUILD)/deucessh.pc
 
-.PHONY: deucessh
-deucessh $(DEUCESSH_LIB):
-	@echo "Building DeuceSSH ($(XP_CRYPTO_BACKEND) backend)"
+ # DEUCESSH_BACKEND forces DeuceSSH's backend choice; otherwise leave
+ # it to DeuceSSH's own auto-detect (which prefers Botan when both
+ # are present).  The configure step runs at parse time so deucessh.pc
+ # exists before we read it below.
+ ifdef DEUCESSH_BACKEND
+  DEUCESSH_CMAKE_BACKEND_ARG := -DDEUCESSH_CRYPTO_BACKEND=$(DEUCESSH_BACKEND)
+ else
+  DEUCESSH_CMAKE_BACKEND_ARG :=
+ endif
+ $(shell cmake -S $(DEUCESSH_DIR) -B $(DEUCESSH_BUILD) \
+               -DCMAKE_BUILD_TYPE=Release $(DEUCESSH_CMAKE_BACKEND_ARG) \
+               >/dev/null 2>&1)
+
+ # DeuceSSH's deucessh.pc names its chosen backend; we need those libs
+ # at program-link time and use the same backend for xp_crypt/xp_tls
+ # when WITHOUT_CRYPTO isn't set.
+ DEUCESSH_REQUIRES := $(shell awk '/^Requires.private:/{print $$2}' $(DEUCESSH_PC) 2>/dev/null)
+ ifeq ($(DEUCESSH_REQUIRES),libcrypto)
+  DEUCESSH_BACKEND := OpenSSL
+  NEED_OPENSSL     := 1
+ else ifeq ($(DEUCESSH_REQUIRES),botan-3)
+  DEUCESSH_BACKEND := Botan
+  NEED_BOTAN       := 1
+ else
+  $(error Cannot determine DeuceSSH crypto backend from $(DEUCESSH_PC))
+ endif
+
+ .PHONY: deucessh
+ deucessh $(DEUCESSH_LIB):
+	@echo "Building DeuceSSH ($(DEUCESSH_BACKEND) backend)"
 	cmake --build $(DEUCESSH_BUILD) --target deucessh_static
 
-DEPS += $(DEUCESSH_LIB)
-EXTRA_LIBS += $(DEUCESSH_LIB) $(SFTP-MT_LIBS)
+ DEPS       += $(DEUCESSH_LIB)
+ EXTRA_LIBS += $(DEUCESSH_LIB)
+else
+ CFLAGS += -DWITHOUT_DEUCESSH
+endif
 
+# xp_tls + xp_crypt backend selection.  Three values:
+#
+#   OpenSSL — xpdev compiles xp_*_openssl.c  (default)
+#   Botan   — xpdev compiles xp_*_botan3.cpp
+#   none    — xpdev compiles xp_*_none.c (all entry points fail).  Set
+#             automatically when WITHOUT_CRYPTO is defined so xpdev's
+#             library stays free of OpenSSL/Botan references.
+#
+# When both DeuceSSH and xp_crypt are in the build they share a backend
+# (DeuceSSH's choice wins).
+ifdef WITHOUT_CRYPTO
+ XP_CRYPTO_BACKEND := none
+ CFLAGS += -DWITHOUT_CRYPTO
+endif
+ifeq ($(origin XP_CRYPTO_BACKEND),undefined)
+ XP_CRYPTO_BACKEND := $(or $(DEUCESSH_BACKEND),OpenSSL)
+endif
 ifeq ($(XP_CRYPTO_BACKEND),OpenSSL)
- EXTRA_LIBS += -lssl -lcrypto
- CFLAGS     += -DXP_CRYPTO_BACKEND_OPENSSL
-endif
-ifeq ($(XP_CRYPTO_BACKEND),Botan)
- EXTRA_LIBS += $(shell pkg-config --libs botan-3)
+ NEED_OPENSSL := 1
+ CFLAGS       += -DXP_CRYPTO_BACKEND_OPENSSL
+else ifeq ($(XP_CRYPTO_BACKEND),Botan)
+ NEED_BOTAN := 1
  CFLAGS     += -DXP_CRYPTO_BACKEND_BOTAN
+else ifeq ($(XP_CRYPTO_BACKEND),none)
+ # Stub backend — nothing to link for this side.
+else
+ $(error Unknown XP_CRYPTO_BACKEND: $(XP_CRYPTO_BACKEND))
 endif
+export XP_CRYPTO_BACKEND
+export WITHOUT_CRYPTO
+
+ifdef NEED_OPENSSL
+ EXTRA_LIBS += -lssl -lcrypto
+endif
+ifdef NEED_BOTAN
+ EXTRA_LIBS += $(shell pkg-config --libs botan-3)
+endif
+
+ifndef WITHOUT_CRYPTO
+ OBJS += $(MTOBJODIR)$(DIRSEP)telnets$(OFILE)
+
+ # Bundled decrypt-only reference implementations of legacy ciphers
+ # (IDEA, RC2) that neither OpenSSL (modern, w/o legacy provider) nor
+ # Botan3 carry.  Registered with xp_crypt at startup so encrypted
+ # bbslist.ini files written by older builds still decrypt.
+ OBJS   += $(MTOBJODIR)$(DIRSEP)legacy_idea$(OFILE)
+ OBJS   += $(MTOBJODIR)$(DIRSEP)legacy_rc2$(OFILE)
+ OBJS   += $(MTOBJODIR)$(DIRSEP)legacy_ciphers_register$(OFILE)
+ CFLAGS += -Ilegacy_ciphers
+
+ $(MTOBJODIR)$(DIRSEP)legacy_idea$(OFILE): legacy_ciphers/idea.c
+	@echo Compiling $<
+	$(QUIET)$(CC) $(CFLAGS) $(MT_CFLAGS) -c $< -o $@
+
+ $(MTOBJODIR)$(DIRSEP)legacy_rc2$(OFILE): legacy_ciphers/rc2.c
+	@echo Compiling $<
+	$(QUIET)$(CC) $(CFLAGS) $(MT_CFLAGS) -c $< -o $@
+
+ $(MTOBJODIR)$(DIRSEP)legacy_ciphers_register$(OFILE): legacy_ciphers/register.c
+	@echo Compiling $<
+	$(QUIET)$(CC) $(CFLAGS) $(MT_CFLAGS) -c $< -o $@
+endif
+
 ifeq ($(os),freebsd)
  EXTRA_LIBS += -lstdthreads
 endif
-
-# Bundled decrypt-only reference implementations of legacy ciphers
-# (IDEA, RC2) that neither OpenSSL (modern, w/o legacy provider) nor
-# Botan3 carry.  Registered with xp_crypt at startup so encrypted
-# bbslist.ini files written by older builds still decrypt.  Not
-# compiled into Synchronet server; it has no need for these.
-OBJS += $(MTOBJODIR)$(DIRSEP)legacy_idea$(OFILE)
-OBJS += $(MTOBJODIR)$(DIRSEP)legacy_rc2$(OFILE)
-OBJS += $(MTOBJODIR)$(DIRSEP)legacy_ciphers_register$(OFILE)
-CFLAGS += -Ilegacy_ciphers
-
-$(MTOBJODIR)$(DIRSEP)legacy_idea$(OFILE): legacy_ciphers/idea.c
-	@echo Compiling $<
-	$(QUIET)$(CC) $(CFLAGS) $(MT_CFLAGS) -c $< -o $@
-
-$(MTOBJODIR)$(DIRSEP)legacy_rc2$(OFILE): legacy_ciphers/rc2.c
-	@echo Compiling $<
-	$(QUIET)$(CC) $(CFLAGS) $(MT_CFLAGS) -c $< -o $@
-
-$(MTOBJODIR)$(DIRSEP)legacy_ciphers_register$(OFILE): legacy_ciphers/register.c
-	@echo Compiling $<
-	$(QUIET)$(CC) $(CFLAGS) $(MT_CFLAGS) -c $< -o $@
 
 ifndef WITHOUT_JPEG_XL
  ifdef win
@@ -203,21 +251,12 @@ else
  endif
 endif
 
-$(MTOBJODIR)$(DIRSEP)conn$(OFILE): $(CRYPT_LIBS)
-$(MTOBJODIR)$(DIRSEP)ssh$(OFILE): $(CRYPT_LIBS)
-$(MTOBJODIR)$(DIRSEP)syncterm$(OFILE): $(CRYPT_LIBS) $(CIOLIB-MT)
-$(MTOBJODIR)$(DIRSEP)telnets$(OFILE): $(CRYPT_LIBS)
-$(MTOBJODIR)$(DIRSEP)webget$(OFILE): $(CRYPT_LIBS)
+$(MTOBJODIR)$(DIRSEP)syncterm$(OFILE): $(CIOLIB-MT)
 $(CIOLIB_INTERPOLATE_OBJS): $(CIOLIB-MT_BUILD)
 
 ifeq ($(os),darwin)
  OBJS += $(MTOBJODIR)$(DIRSEP)DarwinWrappers$(OFILE)
  EXTRA_LIBS += -framework Foundation
- STATIC_CRYPTLIB ?= 1
-endif
-
-ifdef STATIC_CRYPTLIB
- CFLAGS += -DSTATIC_CRYPTLIB
 endif
 
 DESTDIR	?=
@@ -235,7 +274,7 @@ MANPREFIX ?= $(PREFIX)/share
 CFLAGS	+=	-DSYSTEM_LIST_DIR=\"${SYSTEM_LIST_DIR}\"
 
 CFLAGS	+=	$(UIFC-MT_CFLAGS) $(CIOLIB-MT_CFLAGS) $(XPDEV-MT_CFLAGS) $(ENCODE_CFLAGS) $(HASH_CFLAGS) -I../sbbs3 -I../comio
-LDFLAGS	+=	$(UIFC-MT_LDFLAGS) $(CIOLIB-MT_LDFLAGS) $(XPDEV-MT_LDFLAGS) $(ENCODE_LDFLAGS) $(HASH_LDFLAGS) $(CRYPT_LDFLAGS)
+LDFLAGS	+=	$(UIFC-MT_LDFLAGS) $(CIOLIB-MT_LDFLAGS) $(XPDEV-MT_LDFLAGS) $(ENCODE_LDFLAGS) $(HASH_LDFLAGS)
 
 vpath %.c ../sbbs3 ../uifc ../comio
 
@@ -286,7 +325,7 @@ endif
 $(MTOBJODIR)$(DIRSEP)ciolib_res$(OFILE): ${CIOLIB-MT}
 	cd ${MTOBJODIR} && $(AR) -x ../${CIOLIB-MT} ciolib_res$(OFILE)
 
-$(SYNCTERM): $(CRYPT_DEPS) $(EXEODIR) $(OBJS) $(BUILD_DEPENDS)
+$(SYNCTERM): $(DEPS) $(EXEODIR) $(OBJS) $(BUILD_DEPENDS)
 	@echo Linking $@
 	${QUIET}$(CXX) $(LDFLAGS) $(MT_LDFLAGS) $(OBJS) -o $@ $(UIFC-MT_LIBS) $(EXTRA_LIBS) $(CIOLIB-MT_LIBS) $(XPDEV-MT_LIBS) $(ENCODE_LIBS) $(HASH_LIBS)
 ifdef win
