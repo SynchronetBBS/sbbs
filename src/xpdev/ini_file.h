@@ -27,11 +27,6 @@
 #endif
 #include "genwrap.h"
 #include "str_list.h"	/* strList_t */
-#ifdef WITH_CRYPTLIB
-#ifndef WITHOUT_CRYPTLIB
-	#include "cryptlib.h"
-#endif
-#endif
 
 #define INI_MAX_VALUE_LEN	1024		/* Maximum value length, includes '\0' */
 #define ROOT_SECTION		NULL
@@ -61,19 +56,27 @@ typedef struct fp_list_s ini_fp_list_t;
 extern "C" {
 #endif
 
+/*
+ * Symmetric ciphers supported for encrypted INI files.
+ *
+ * Values are stable and match enum xp_crypt_algo in xp_crypt.h — the
+ * numeric value is used only at runtime; the on-disk format encodes the
+ * algorithm as its ASCII name (iniCryptGetAlgoName), so these integers
+ * are not part of the file format.
+ *
+ * Read-only legacy ciphers (IDEA, RC2 when the backend lacks them) are
+ * served by xp_crypt's legacy-decrypt registry; consumers register
+ * handlers at init time. See syncterm/legacy_ciphers/ for an example.
+ */
 enum iniCryptAlgo {
-#if (defined(WITHOUT_CRYPTLIB) || !defined(WITH_CRYPTLIB))
-	INI_CRYPT_ALGO_NONE,
-#else	
-	INI_CRYPT_ALGO_NONE = CRYPT_ALGO_NONE,
-	INI_CRYPT_ALGO_3DES = CRYPT_ALGO_3DES,
-	INI_CRYPT_ALGO_IDEA = CRYPT_ALGO_IDEA,
-	INI_CRYPT_ALGO_CAST = CRYPT_ALGO_CAST,
-	INI_CRYPT_ALGO_RC2 = CRYPT_ALGO_RC2,
-	INI_CRYPT_ALGO_RC4 = CRYPT_ALGO_RC4,
-	INI_CRYPT_ALGO_AES = CRYPT_ALGO_AES,
-	INI_CRYPT_ALGO_CHACHA20 = CRYPT_ALGO_CHACHA20,
-#endif
+	INI_CRYPT_ALGO_NONE     = 0,
+	INI_CRYPT_ALGO_3DES     = 1,
+	INI_CRYPT_ALGO_IDEA     = 2,
+	INI_CRYPT_ALGO_CAST     = 3,
+	INI_CRYPT_ALGO_RC2      = 4,
+	INI_CRYPT_ALGO_RC4      = 5,
+	INI_CRYPT_ALGO_AES      = 6,
+	INI_CRYPT_ALGO_CHACHA20 = 7
 };
 
 /* Read all section names and return as an allocated string list */

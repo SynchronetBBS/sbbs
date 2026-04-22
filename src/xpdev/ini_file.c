@@ -28,6 +28,7 @@
 #include "dirwrap.h"    /* fexist */
 #include "filewrap.h"   /* chsize */
 #include "netwrap.h"
+#include "xp_crypt.h"   /* xp_crypt_t, xp_crypt_open/process/... */
 
 #if defined(_WIN32)
         #define QSORT_CALLBACK_TYPE __cdecl
@@ -3484,27 +3485,18 @@ iniFastParsedSectionListFree(ini_lv_string_t **list)
 
 const char *encryptedHeaderPrefix = "; Encrypted INI File, Algorithm: ";
 
-#if (defined(WITH_CRYPTLIB) && !defined(WITHOUT_CRYPTLIB))
 const char *
 iniCryptGetAlgoName(enum iniCryptAlgo a)
 {
 	switch(a) {
-		case INI_CRYPT_ALGO_3DES:
-			return "3DES";
-		case INI_CRYPT_ALGO_AES:
-			return "AES";
-		case INI_CRYPT_ALGO_CAST:
-			return "CAST";
-		case INI_CRYPT_ALGO_CHACHA20:
-			return "ChaCha20";
-		case INI_CRYPT_ALGO_IDEA:
-			return "IDEA";
-		case INI_CRYPT_ALGO_NONE:
-			return "NONE";
-		case INI_CRYPT_ALGO_RC2:
-			return "RC2";
-		case INI_CRYPT_ALGO_RC4:
-			return "RC4";
+		case INI_CRYPT_ALGO_3DES:     return "3DES";
+		case INI_CRYPT_ALGO_AES:      return "AES";
+		case INI_CRYPT_ALGO_CAST:     return "CAST";
+		case INI_CRYPT_ALGO_CHACHA20: return "ChaCha20";
+		case INI_CRYPT_ALGO_IDEA:     return "IDEA";
+		case INI_CRYPT_ALGO_NONE:     return "NONE";
+		case INI_CRYPT_ALGO_RC2:      return "RC2";
+		case INI_CRYPT_ALGO_RC4:      return "RC4";
 	}
 	return NULL;
 }
@@ -3512,33 +3504,30 @@ iniCryptGetAlgoName(enum iniCryptAlgo a)
 enum iniCryptAlgo
 iniCryptGetAlgoFromName(const char *n)
 {
-	if (!strcmp(n, "3DES"))
-		return INI_CRYPT_ALGO_3DES;
-	if (!strcmp(n, "AES"))
-		return INI_CRYPT_ALGO_AES;
-	if (!strcmp(n, "CAST"))
-		return INI_CRYPT_ALGO_CAST;
-	if (!strcmp(n, "ChaCha20"))
-		return INI_CRYPT_ALGO_CHACHA20;
-	if (!strcmp(n, "IDEA"))
-		return INI_CRYPT_ALGO_IDEA;
-	if (!strcmp(n, "RC2"))
-		return INI_CRYPT_ALGO_RC2;
-	if (!strcmp(n, "RC4"))
-		return INI_CRYPT_ALGO_RC4;
+	if (!strcmp(n, "3DES"))     return INI_CRYPT_ALGO_3DES;
+	if (!strcmp(n, "AES"))      return INI_CRYPT_ALGO_AES;
+	if (!strcmp(n, "CAST"))     return INI_CRYPT_ALGO_CAST;
+	if (!strcmp(n, "ChaCha20")) return INI_CRYPT_ALGO_CHACHA20;
+	if (!strcmp(n, "IDEA"))     return INI_CRYPT_ALGO_IDEA;
+	if (!strcmp(n, "RC2"))      return INI_CRYPT_ALGO_RC2;
+	if (!strcmp(n, "RC4"))      return INI_CRYPT_ALGO_RC4;
 	return INI_CRYPT_ALGO_NONE;
 }
 
+/* Matches the maximum salt length historically allowed by Cryptlib
+   (CRYPT_MAX_HASHSIZE = 64); preserved for on-disk compatibility. */
+#define INI_MAX_SALT_SIZE 64
+
 /*
  * Reads an optionally encrypted INI file into a string list.
- * 
+ *
  * algo, ks, salt, and saltsz may all be NULL.
  * If they are not NULL, they will be fill with the envelope data
- * 
+ *
  * If salt is not NULL, The initial value of saltsz must be the number
  * of bytes that can be written to salt. salt will be NUL terminated if
  * there's room, but will not be terminated if there's not.
- * 
+ *
  * If the file is encrypted, get_key() will be called to request the key
  * material.
  */
@@ -3547,7 +3536,7 @@ iniReadEncryptedFile(FILE* fp, bool(*get_key)(void *cb_data, char *keybuf, size_
 {
 	char keyData[1024];
 	size_t keyDataSize;
-	char salt[CRYPT_MAX_HASHSIZE];
+	char salt[INI_MAX_SALT_SIZE];
 	size_t saltLength = 0;
 	char str[INI_MAX_LINE_LEN + 1];
 	size_t strpos = 0;
@@ -3560,16 +3549,15 @@ iniReadEncryptedFile(FILE* fp, bool(*get_key)(void *cb_data, char *keybuf, size_
 	char *end;
 	enum iniCryptAlgo algo = INI_CRYPT_ALGO_NONE;
 	str_list_t ret = NULL;
-	CRYPT_CONTEXT ctx = -1;
-	int status;
-	int i;
+	xp_crypt_t ctx = NULL;
+	int blocksize;
+	int ivsize;
 	bool streamCipher = false;
 
 	if (fp == NULL || get_key == NULL)
 		goto done;
 
-	if (fp != NULL)
-		rewind(fp);
+	rewind(fp);
 
 	if (fgets(str, sizeof(str), fp) == NULL) {
 		ret = strListInit();
@@ -3582,7 +3570,7 @@ iniReadEncryptedFile(FILE* fp, bool(*get_key)(void *cb_data, char *keybuf, size_
 	}
 	truncnl(str);
 
-	// Parse algo, sends with a space or a dash
+	// Parse algo, ends with a space or a dash
 	start = str;
 	start += strlen(encryptedHeaderPrefix);
 	space = strchr(start, ' ');
@@ -3601,7 +3589,7 @@ iniReadEncryptedFile(FILE* fp, bool(*get_key)(void *cb_data, char *keybuf, size_
 		goto done;
 	// Now check for key size
 	if (dash) {
-		// Read key size
+		// Read key size (bits)
 		start = end;
 		start++;
 		*space = 0;
@@ -3622,66 +3610,48 @@ iniReadEncryptedFile(FILE* fp, bool(*get_key)(void *cb_data, char *keybuf, size_
 	}
 	memcpy(salt, start, saltLength);
 
-	// Create the context...
-	status = cryptCreateContext(&ctx, CRYPT_UNUSED, (CRYPT_ALGO_TYPE)algo);
-	if (cryptStatusError(status))
-		goto done;
-	status = cryptSetAttribute(ctx, CRYPT_CTXINFO_KEYSIZE, keySize / 8);
-	if (cryptStatusError(status))
-		goto done;
-	status = cryptSetAttribute(ctx, CRYPT_CTXINFO_KEYING_ALGO, CRYPT_ALGO_HMAC_SHA2);
-	if (cryptStatusError(status))
-		goto done;
 	if (KDFiterations < 1)
 		KDFiterations = 50000;
-	status = cryptSetAttribute(ctx, CRYPT_CTXINFO_KEYING_ITERATIONS, KDFiterations);
-	if (cryptStatusError(status))
-		goto done;
-	status = cryptSetAttributeString(ctx, CRYPT_CTXINFO_KEYING_SALT, salt, saltLength);
-	if (cryptStatusError(status))
-		return false;
+
 	keyDataSize = sizeof(keyData);
 	if (!get_key(cbdata, keyData, &keyDataSize))
-		return false;
-	status = cryptSetAttributeString(ctx, CRYPT_CTXINFO_KEYING_VALUE, keyData, keyDataSize);
-	if (cryptStatusError(status))
-		return false;
-	status = cryptGetAttribute(ctx, CRYPT_CTXINFO_BLOCKSIZE, &i);
-	if (status == CRYPT_ERROR_NOTAVAIL) {
+		goto done;
+
+	ctx = xp_crypt_open((int)algo, (int)keySize, salt, saltLength,
+	                    KDFiterations, keyData, keyDataSize, /*encrypt=*/false);
+	if (ctx == NULL)
+		goto done;
+
+	blocksize = xp_crypt_blocksize(ctx);
+	if (blocksize <= 1) {
 		bufferSize = INI_MAX_LINE_LEN - 1;
 		streamCipher = true;
+	} else {
+		bufferSize = (size_t)blocksize;
 	}
-	else {
-		if (i == 0 || i == 1) {
-			bufferSize = INI_MAX_LINE_LEN - 1;
-			streamCipher = true;
-		}
-		else {
-			if (cryptStatusError(status))
-				goto done;
-			bufferSize = i;
-		}
-	}
-	status = cryptGetAttribute(ctx, CRYPT_CTXINFO_IVSIZE, &i);
-	if (!cryptStatusError(status)) {
-		char iv[CRYPT_MAX_IVSIZE];
+
+	ivsize = xp_crypt_ivsize(ctx);
+	if (ivsize > 0) {
+		unsigned char iv[XP_CRYPT_MAX_IVSIZE];
 		uint16_t ivs;
+		int iv_file_size;
 		if (fread(&ivs, 1, sizeof(ivs), fp) != sizeof(ivs))
 			goto done;
-		i = ntohs(ivs);
-		if (fread(iv, 1, i, fp) != i)
+		iv_file_size = ntohs(ivs);
+		if (iv_file_size <= 0 || iv_file_size > (int)sizeof(iv))
 			goto done;
-		status = cryptSetAttributeString(ctx, CRYPT_CTXINFO_IV, iv, i);
-		if (cryptStatusError(status))
+		if (fread(iv, 1, iv_file_size, fp) != (size_t)iv_file_size)
+			goto done;
+		if (xp_crypt_set_iv(ctx, iv, iv_file_size) != 0)
 			goto done;
 	}
+
 	buffer = malloc(bufferSize);
 	if (buffer == NULL)
 		goto done;
 	size_t lines = 0;
 	while(!feof(fp)) {
 		size_t rret = fread(buffer, 1, bufferSize, fp);
-		// Getting overly paranoid here...
 		if (rret > INT_MAX) {
 			strListFree(&ret);
 			ret = NULL;
@@ -3689,8 +3659,7 @@ iniReadEncryptedFile(FILE* fp, bool(*get_key)(void *cb_data, char *keybuf, size_
 		}
 		if ((streamCipher && rret > 0) || rret == bufferSize) {
 			size_t bufpos = 0;
-			status = cryptDecrypt(ctx, buffer, rret);
-			if (cryptStatusError(status))
+			if (xp_crypt_process(ctx, buffer, rret) != 0)
 				goto done;
 			while (bufpos < rret) {
 				if (buffer[bufpos] == '\n' || strpos == sizeof(str) - 2) {
@@ -3700,7 +3669,7 @@ iniReadEncryptedFile(FILE* fp, bool(*get_key)(void *cb_data, char *keybuf, size_
 					str[strpos] = 0;
 					char *p = str;
 					SKIP_WHITESPACE(p);
-					// TODO: Handline includes
+					// TODO: Handle includes
 					if (*p == INI_COMMENT_CHAR) {
 						strListFree(&ret);
 						ret = NULL;
@@ -3739,8 +3708,7 @@ iniReadEncryptedFile(FILE* fp, bool(*get_key)(void *cb_data, char *keybuf, size_
 
 done:
 	free(buffer);
-	if (ctx != -1)
-		cryptDestroyContext(ctx);
+	xp_crypt_close(ctx);
 	if (algoPtr)
 		*algoPtr = algo;
 	if (ks)
@@ -3760,30 +3728,19 @@ done:
 	return ret;
 }
 
+/*
+ * Append a single character to the encrypt buffer; when a full block
+ * is accumulated, encrypt it in place and write to fp. Called only in
+ * block-cipher mode — stream ciphers encrypt the partial buffer once
+ * in the caller.
+ */
 static bool
-addEncrpytedChar(CRYPT_CONTEXT ctx, bool *gotIV, const char ch, char *buffer, size_t blockSize, size_t *bufferPos, FILE *fp)
+addEncrpytedChar(xp_crypt_t ctx, const char ch, char *buffer, size_t blockSize, size_t *bufferPos, FILE *fp)
 {
-	char iv[CRYPT_MAX_IVSIZE];
-	int ivSize;
-
 	buffer[(*bufferPos)++] = ch;
 	if (*bufferPos == blockSize) {
-		int status = cryptEncrypt(ctx, buffer, blockSize);
-		if (cryptStatusError(status))
+		if (xp_crypt_process(ctx, buffer, blockSize) != 0)
 			return false;
-		if (!(*gotIV)) {
-			int status = cryptGetAttributeString(ctx, CRYPT_CTXINFO_IV, iv, &ivSize);
-			if (cryptStatusOK(status)) {
-				uint16_t ivs = htons(ivSize);
-				if (fwrite(&ivs, 1, sizeof(ivs), fp) != sizeof(ivs))
-					return false;
-				if (fwrite(iv, 1, ivSize, fp) != ivSize)
-					return false;
-			}
-			else if (status != CRYPT_ERROR_NOTAVAIL)
-				return false;
-			*gotIV = true;
-		}
 		if (fwrite(buffer, 1, blockSize, fp) != blockSize)
 			return false;
 		*bufferPos = 0;
@@ -3793,27 +3750,27 @@ addEncrpytedChar(CRYPT_CONTEXT ctx, bool *gotIV, const char ch, char *buffer, si
 
 /*
  * Writes the INI file in list to fp encrypted with key.
- * 
+ *
  * If salt is specified, it must be between 8 and 64 NUL-terminated
  * non-whitespace characters that can appear in a single line of a
  * text file. (note 0xff is considered whitespace).
- * 
+ *
  * If salt is not specified (preferred), a random salt is generated.
- * 
+ *
  * If KDFiterations is less than 1, it is set to the default (50,000)
  */
 bool iniWriteEncryptedFile(FILE* fp, const str_list_t list, enum iniCryptAlgo algo, int keySize, int KDFiterations, const char *key, char *salt)
 {
-	char randomSalt[CRYPT_MAX_HASHSIZE + 1];
-	int status;
-	int ctx;
+	char randomSalt[INI_MAX_SALT_SIZE + 1];
+	xp_crypt_t ctx = NULL;
 	char *buffer = NULL;
-	size_t bufferSize;
+	size_t bufferSize = 0;
 	size_t bufferPos = 0;
 	bool streamCipher = false;
+	bool ok = false;
 	size_t line = 0;
-	int i;
-	bool gotIV = false;
+	int blocksize;
+	int ivsize;
 
 	if (KDFiterations < 1)
 		KDFiterations = 50000;
@@ -3833,132 +3790,94 @@ bool iniWriteEncryptedFile(FILE* fp, const str_list_t list, enum iniCryptAlgo al
 	size_t slen = strlen(salt);
 	if (slen < 8)
 		return false;
-	if (slen > CRYPT_MAX_HASHSIZE)
+	if (slen > INI_MAX_SALT_SIZE)
 		return false;
 
-	status = cryptCreateContext(&ctx, CRYPT_UNUSED, (CRYPT_ALGO_TYPE)algo);
-	if (cryptStatusError(status))
+	ctx = xp_crypt_open((int)algo, keySize, salt, slen,
+	                    KDFiterations, key, strlen(key), /*encrypt=*/true);
+	if (ctx == NULL)
 		return false;
-	if (keySize) {
-		status = cryptSetAttribute(ctx, CRYPT_CTXINFO_KEYSIZE, keySize / 8);
-		if (cryptStatusError(status))
-			return false;
+	/* Resolve default key size when caller passed zero. */
+	if (keySize <= 0) {
+		/* Default in xp_crypt: AES-256 / ChaCha20 / 3DES-192 / 128 for others. */
+		switch (algo) {
+			case INI_CRYPT_ALGO_AES:
+			case INI_CRYPT_ALGO_CHACHA20: keySize = 256; break;
+			case INI_CRYPT_ALGO_3DES:     keySize = 192; break;
+			default:                      keySize = 128; break;
+		}
 	}
-	else {
-		status = cryptGetAttribute(ctx, CRYPT_CTXINFO_KEYSIZE, &i);
-		if (cryptStatusError(status))
-			return false;
-		keySize = i * 8;
-	}
-	status = cryptSetAttribute(ctx, CRYPT_CTXINFO_KEYING_ALGO, CRYPT_ALGO_HMAC_SHA2);
-	if (cryptStatusError(status))
-		goto done;
-	status = cryptSetAttribute(ctx, CRYPT_CTXINFO_KEYING_ITERATIONS, KDFiterations);
-	if (cryptStatusError(status))
-		goto done;
-	status = cryptSetAttributeString(ctx, CRYPT_CTXINFO_KEYING_SALT, salt, strlen(salt));
-	if (cryptStatusError(status))
-		return false;
-	status = cryptSetAttributeString(ctx, CRYPT_CTXINFO_KEYING_VALUE, key, strlen(key));
-	if (cryptStatusError(status))
-		return false;
-	status = cryptGetAttribute(ctx, CRYPT_CTXINFO_BLOCKSIZE, &i);
-	if (status == CRYPT_ERROR_NOTAVAIL) {
+
+	blocksize = xp_crypt_blocksize(ctx);
+	if (blocksize <= 1) {
 		bufferSize = INI_MAX_LINE_LEN - 1;
 		streamCipher = true;
-	}
-	else {
-		if (cryptStatusError(status))
-			goto done;
-		if (i == 1 || i == 0) {
-			bufferSize = INI_MAX_LINE_LEN - 1;
-			streamCipher = true;
-		}
-		else {
-			bufferSize = i;
-		}
+	} else {
+		bufferSize = (size_t)blocksize;
 	}
 	buffer = malloc(bufferSize);
 	if (buffer == NULL)
-		return false;
+		goto done;
 
 	rewind(fp);
 	fprintf(fp, "%s%s-%d %s\n", encryptedHeaderPrefix, iniCryptGetAlgoName(algo), keySize, salt);
+
+	/* Emit the IV header if the cipher carries one, before any
+	   ciphertext. Matches the on-disk layout produced by the old
+	   Cryptlib-backed writer: uint16_t be_ivsize + iv bytes. */
+	ivsize = xp_crypt_ivsize(ctx);
+	if (ivsize > 0) {
+		unsigned char iv[XP_CRYPT_MAX_IVSIZE];
+		uint16_t ivs;
+		if ((size_t)ivsize > sizeof(iv))
+			goto done;
+		if (xp_crypt_gen_iv(ctx, iv, ivsize) != 0)
+			goto done;
+		ivs = htons((uint16_t)ivsize);
+		if (fwrite(&ivs, 1, sizeof(ivs), fp) != sizeof(ivs))
+			goto done;
+		if (fwrite(iv, 1, ivsize, fp) != (size_t)ivsize)
+			goto done;
+	}
+
 	if (list) {
 		for (; list[line]; line++) {
 			size_t strPos;
 			for (strPos = 0; list[line][strPos]; strPos++) {
-				if (!addEncrpytedChar(ctx, &gotIV, list[line][strPos], buffer, bufferSize, &bufferPos, fp))
+				if (!addEncrpytedChar(ctx, list[line][strPos], buffer, bufferSize, &bufferPos, fp))
 					goto done;
 			}
-			if (!addEncrpytedChar(ctx, &gotIV, '\n', buffer, bufferSize, &bufferPos, fp))
+			if (!addEncrpytedChar(ctx, '\n', buffer, bufferSize, &bufferPos, fp))
 				goto done;
 		}
 	}
 	if (bufferPos) {
 		if (streamCipher) {
-			int status = cryptEncrypt(ctx, buffer, bufferPos);
-			if (cryptStatusError(status))
+			if (xp_crypt_process(ctx, buffer, bufferPos) != 0)
 				goto done;
 			if (fwrite(buffer, 1, bufferPos, fp) != bufferPos)
 				goto done;
+			bufferPos = 0;
 		}
 		else {
+			/* Zero-pad the final block. */
 			while (bufferPos) {
-				if (!addEncrpytedChar(ctx, &gotIV, 0, buffer, bufferSize, &bufferPos, fp)) {
+				if (!addEncrpytedChar(ctx, 0, buffer, bufferSize, &bufferPos, fp)) {
 					line--;
 					goto done;
 				}
 			}
 		}
 	}
+	ok = true;
 
 done:
 	free(buffer);
+	xp_crypt_close(ctx);
+	if (!ok)
+		return false;
 	return line == strListCount(list);
 }
-#else // WITH_CRYPTLIB && !WITHOUT_CRYPTLIB
-const char *
-iniCryptGetAlgoName(enum iniCryptAlgo a)
-{
-	switch(a) {
-		case INI_CRYPT_ALGO_NONE:
-			return "NONE";
-	}
-	return NULL;
-}
-
-enum iniCryptAlgo
-iniCryptGetAlgoFromName(const char *n)
-{
-	(void)n;
-	return INI_CRYPT_ALGO_NONE;
-}
-
-str_list_t
-iniReadEncryptedFile(FILE* fp, bool(*get_key)(void *cb_data, char *keybuf, size_t *sz), int KDFiterations, enum iniCryptAlgo *algoPtr, int *ks, char *saltBuf, size_t *saltsz, void *cbdata)
-{
-	(void)get_key;
-	(void)KDFiterations;
-	(void)ks;
-	(void)saltBuf;
-	(void)saltsz;
-	(void)cbdata;
-	if (algoPtr)
-		*algoPtr = INI_CRYPT_ALGO_NONE;
-	return iniReadFile(fp);
-}
-
-bool iniWriteEncryptedFile(FILE* fp, const str_list_t list, enum iniCryptAlgo algo, int keySize, int KDFiterations, const char *key, char *salt)
-{
-	(void)algo;
-	(void)keySize;
-	(void)KDFiterations;
-	(void)key;
-	(void)salt;
-	return iniWriteFile(fp, list);
-}
-#endif // WITH_CRYPTLIB && !WITHOUT_CRYPTLIB
 
 #ifdef INI_FILE_TEST
 void main(int argc, char** argv)

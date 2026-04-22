@@ -39,6 +39,11 @@ else
  CRYPT_LIBS += $(CRYPT_LIB)
 endif
 
+# xpdev's xp_crypt shim (used by ini_file.c's encrypted-INI path) links
+# against OpenSSL libcrypto. Synchronet's eventual port will share the
+# same shim; for now this dep is SyncTERM-only. Botan3 backend follows.
+EXTRA_LIBS += -lcrypto
+
 ifndef WITHOUT_JPEG_XL
  ifdef win
   CFLAGS += -I${3RDP_ROOT}/win32.release/libjxl/include -DJXL_THREADS_STATIC_DEFINE -DJXL_STATIC_DEFINE -DDLLIFY
