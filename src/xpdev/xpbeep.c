@@ -2982,6 +2982,7 @@ bool xp_play_sample(unsigned char *sample, size_t sample_size, bool background)
 /* Play a tone through the wave/DSP output device (sound card) - Deuce			*/
 /********************************************************************************/
 
+#ifdef XPDEV_THREAD_SAFE
 bool xptone(double freq, DWORD duration, DWORD shape)
 {
 	int16_t           *scratch   = NULL;
@@ -3066,6 +3067,56 @@ cleanup:
 	free(scratch);
 	return ret;
 }
+#else /* !XPDEV_THREAD_SAFE */
+bool xptone(double freq, DWORD duration, DWORD shape)
+{
+	int16_t *wave;
+	int      samples;
+	int      i;
+	bool     ret;
+
+	/* Max 7.5 seconds of S16 stereo.  `samples` is in frames. */
+	wave = (int16_t *)malloc((size_t)(S_RATE * 15 / 2) * S_FRAMESIZE + S_FRAMESIZE);
+	if (!wave)
+		return false;
+	if (freq < 17 && freq != 0)
+		freq = 17;
+	samples = S_RATE * duration / 1000;
+	if ((shape & WAVE_SHAPE_NO_CLEAN) == 0) {
+		if (freq) {
+			if (samples <= S_RATE / freq * 2)
+				samples = S_RATE / freq * 2;
+		}
+	}
+	if (freq == 0 || samples > S_RATE / freq * 2) {
+		int sample_len;
+
+		xptone_makewave(freq, wave, S_RATE * 15 / 2, shape);
+		for (sample_len = S_RATE * 15 / 2 - 1; sample_len && wave[sample_len * S_CHANNELS] == 0; sample_len--)
+			;
+		sample_len++;
+		/* Apply -12 dB headroom (matches the xptone_makewave
+		 * pre-rewrite behaviour; in MT builds this attenuation is
+		 * done at stream-open, here we bake it in since the non-MT
+		 * playback path has no mixer / stream volume). */
+		for (i = 0; i < sample_len * S_CHANNELS; i++)
+			wave[i] = (int16_t)((float)wave[i] * 0.251f);
+		while (samples > S_RATE * 15 / 2) {
+			if (!xp_play_sample16s(wave, sample_len, true)) {
+				free(wave);
+				return false;
+			}
+			samples -= sample_len;
+		}
+	}
+	xptone_makewave(freq, wave, samples, shape);
+	for (i = 0; i < samples * S_CHANNELS; i++)
+		wave[i] = (int16_t)((float)wave[i] * 0.251f);
+	ret = xp_play_sample16s(wave, samples, false);
+	free(wave);
+	return ret;
+}
+#endif
 
 #ifdef __unix__
 /****************************************************************************/
