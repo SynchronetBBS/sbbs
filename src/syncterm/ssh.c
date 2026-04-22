@@ -7,7 +7,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <openssl/sha.h>
+#include <md5.h>	/* Synchronet's hash library (src/hash/) */
 
 #include <deucessh.h>
 #include <deucessh-algorithms.h>
@@ -53,6 +53,16 @@ static uint8_t hostkey_sha256[32];
 /* -------------------------------------------------------- transport I/O */
 
 /*
+ * Diagnostics for handshake failures.  When a tx/rx callback bails
+ * because of a syscall error or orderly peer close, it stashes the
+ * reason here so error_popup_rc() can surface it to the user.
+ * Cleared at the start of each ssh_connect().
+ */
+static const char *io_fail_op = NULL;
+static int         io_fail_errno = 0;
+static bool        io_fail_peer_closed = false;
+
+/*
  * DeuceSSH calls these to push/pull the TLS-less SSH stream. Each must
  * transfer exactly bufsz bytes, or return a negative error code. The
  * library checks dssh_session_is_terminated() when a callback is slow
@@ -71,10 +81,15 @@ transport_tx_cb(uint8_t *buf, size_t bufsz, dssh_session sess, void *cbdata)
 		if (n < 0) {
 			if (errno == EINTR)
 				continue;
+			io_fail_op = "send";
+			io_fail_errno = errno;
 			return DSSH_ERROR_TERMINATED;
 		}
-		if (n == 0)
+		if (n == 0) {
+			io_fail_op = "send";
+			io_fail_peer_closed = true;
 			return DSSH_ERROR_TERMINATED;
+		}
 		sent += (size_t)n;
 	}
 	return 0;
@@ -92,10 +107,15 @@ transport_rx_cb(uint8_t *buf, size_t bufsz, dssh_session sess, void *cbdata)
 		if (n < 0) {
 			if (errno == EINTR)
 				continue;
+			io_fail_op = "recv";
+			io_fail_errno = errno;
 			return DSSH_ERROR_TERMINATED;
 		}
-		if (n == 0)	/* peer closed */
+		if (n == 0) {	/* peer closed */
+			io_fail_op = "recv";
+			io_fail_peer_closed = true;
 			return DSSH_ERROR_TERMINATED;
+		}
 		got += (size_t)n;
 	}
 	return 0;
@@ -153,11 +173,25 @@ hostkey_verify_cb(const char *algo_name, unsigned int key_bits,
 	}
 
 	if (bbs->ssh_fingerprint_len == 20) {
-		uint8_t sha1[20];
-		SHA1(blob, blob_len, sha1);
-		if (memcmp(bbs->ssh_fingerprint, sha1, 20) == 0) {
-			hostkey_result = HOSTKEY_UPGRADE_SHA1_TO_SHA256;
-			return DSSH_HOSTKEY_ACCEPT;
+		/* Cryptlib's CRYPT_SESSINFO_SERVER_FINGERPRINT_SHA1 is
+		   misnamed: the hash is MD5 of only the raw key components
+		   (skipping the wire-format uint32-length + algorithm-string
+		   prefix), and the result is stored in a zero-initialized
+		   20-byte buffer — so the on-disk fingerprint is
+		   MD5(components) || 4 zero bytes. Reproduce that here so
+		   existing bbslist entries carry over. */
+		if (blob_len > 4) {
+			uint32_t algo_len = ((uint32_t)blob[0] << 24) |
+			    ((uint32_t)blob[1] << 16) | ((uint32_t)blob[2] << 8) |
+			    (uint32_t)blob[3];
+			if ((size_t)algo_len + 4 < blob_len) {
+				uint8_t expected[20] = {0};
+				MD5_calc(expected, blob + 4 + algo_len, blob_len - 4 - algo_len);
+				if (memcmp(bbs->ssh_fingerprint, expected, 20) == 0) {
+					hostkey_result = HOSTKEY_UPGRADE_SHA1_TO_SHA256;
+					return DSSH_HOSTKEY_ACCEPT;
+				}
+			}
 		}
 	}
 
@@ -370,7 +404,6 @@ ssh_input_thread(void *args)
 	(void)args;
 	uint8_t *stderr_sink = NULL;
 	size_t stderr_sink_sz = 4096;
-
 	SetThreadName("SSH Input");
 	conn_api.input_thread_running = 1;
 	stderr_sink = malloc(stderr_sink_sz);
@@ -398,9 +431,9 @@ ssh_input_thread(void *args)
 			}
 		}
 		if ((events & DSSH_POLL_READEXT) && stderr_sink != NULL) {
-			/* Drain stderr; terminals typically don't surface it
-			   separately.  A follow-up could merge into the same
-			   ring buffer if we ever want to display it. */
+			/* Drain stderr but keep stdout live.  Terminals don't
+			   surface stderr separately; an EOF on stderr alone
+			   is not a connection-ending event. */
 			int64_t n = dssh_chan_read(ssh_chan, 1, stderr_sink, stderr_sink_sz);
 			if (n < 0)
 				break;
@@ -446,16 +479,21 @@ ssh_output_thread(void *args)
 static bool key_not_present(sftp_filehandle_t f, const char *priv);
 
 /*
- * Sibling thread to add_public_key: pumps inbound bytes from the SFTP
- * subsystem channel into libsftp's parser.
+ * Coordination between add_public_key() and sftp_recv_thread.  The
+ * recv thread must stop touching sftp_chan BEFORE add_public_key calls
+ * dssh_chan_close on it, because the close frees the channel handle
+ * and any concurrent poll/read is use-after-free.
  */
+static bool sftp_recv_running;
+static bool sftp_recv_shutdown;
+
 static void
 sftp_recv_thread(void *args)
 {
 	(void)args;
 	uint8_t buf[4096];
 	SetThreadName("SSH SFTP Recv");
-	while (!conn_api.terminate && sftp_chan != NULL) {
+	while (!conn_api.terminate && !sftp_recv_shutdown && sftp_chan != NULL) {
 		int events = dssh_chan_poll(sftp_chan, DSSH_POLL_READ, 100);
 		if (events < 0)
 			break;
@@ -467,6 +505,7 @@ sftp_recv_thread(void *args)
 				break;
 		}
 	}
+	sftp_recv_running = false;
 }
 
 static bool
@@ -530,6 +569,8 @@ add_public_key(void *vpriv)
 		return;
 	}
 
+	sftp_recv_running = true;
+	sftp_recv_shutdown = false;
 	_beginthread(sftp_recv_thread, 0, NULL);
 
 	if (sftpc_init(sftp_state)) {
@@ -549,6 +590,12 @@ add_public_key(void *vpriv)
 		sftpc_finish(sftp_state);
 	}
 
+	/* Stop the recv thread before freeing the channel.  The thread
+	   polls sftp_chan up to 100 ms per iteration, so give it a
+	   generous margin before forcing shutdown. */
+	sftp_recv_shutdown = true;
+	for (int i = 0; i < 50 && sftp_recv_running; i++)
+		SLEEP(10);
 	dssh_chan_close(sftp_chan, -1);
 	sftp_chan = NULL;
 	sftpc_end(sftp_state);
@@ -670,6 +717,58 @@ error_popup(struct bbslist *bbs, const char *blurb)
 		uifc.pop(NULL);
 }
 
+/*
+ * Like error_popup() but the blurb includes the DeuceSSH error code
+ * and, when negotiation has progressed that far, the negotiated
+ * transport parameters. Aimed at users who hit a handshake failure
+ * and need to report which algorithm failed.
+ */
+static void
+error_popup_rc(struct bbslist *bbs, const char *what, int rc)
+{
+	char body[1024];
+	const char *remote = ssh_session ? dssh_transport_get_remote_version(ssh_session) : NULL;
+	const char *kex    = ssh_session ? dssh_transport_get_kex_name(ssh_session) : NULL;
+	const char *hk     = ssh_session ? dssh_transport_get_hostkey_name(ssh_session) : NULL;
+	const char *enc    = ssh_session ? dssh_transport_get_enc_name(ssh_session) : NULL;
+	const char *mac    = ssh_session ? dssh_transport_get_mac_name(ssh_session) : NULL;
+	char io_line[128] = "";
+	if (io_fail_op != NULL) {
+		if (io_fail_peer_closed)
+			snprintf(io_line, sizeof(io_line),
+			    "I/O:      %s returned 0 (peer closed)\r\n", io_fail_op);
+		else if (io_fail_errno != 0)
+			snprintf(io_line, sizeof(io_line),
+			    "I/O:      %s errno=%d (%s)\r\n",
+			    io_fail_op, io_fail_errno, strerror(io_fail_errno));
+	}
+	snprintf(body, sizeof(body),
+	    "%s failed (DeuceSSH rc=%d)\r\n"
+	    "\r\n"
+	    "Remote:   %s\r\n"
+	    "KEX:      %s\r\n"
+	    "Host key: %s\r\n"
+	    "Cipher:   %s\r\n"
+	    "MAC:      %s\r\n"
+	    "%s",
+	    what, rc,
+	    remote && remote[0] ? remote : "(no version received)",
+	    kex    ? kex    : "(not negotiated)",
+	    hk     ? hk     : "(not negotiated)",
+	    enc    ? enc    : "(not negotiated)",
+	    mac    ? mac    : "(not negotiated)",
+	    io_line);
+	if (ssh_sock != INVALID_SOCKET) {
+		closesocket(ssh_sock);
+		ssh_sock = INVALID_SOCKET;
+	}
+	if (!bbs->hidepopups)
+		uifcmsg((char *)what, body);
+	conn_api.terminate = true;
+	if (!bbs->hidepopups)
+		uifc.pop(NULL);
+}
+
 int
 ssh_connect(struct bbslist *bbs)
 {
@@ -685,6 +784,9 @@ ssh_connect(struct bbslist *bbs)
 	if (!bbs->hidepopups)
 		init_uifc(true, true);
 	assert_pthread_mutex_init(&ssh_mutex, NULL);
+	io_fail_op = NULL;
+	io_fail_errno = 0;
+	io_fail_peer_closed = false;
 	assert(ssh_session == NULL);
 	assert(ssh_chan == NULL);
 	assert(sftp_chan == NULL);
@@ -716,8 +818,13 @@ ssh_connect(struct bbslist *bbs)
 		error_popup(bbs, "creating session");
 		return -1;
 	}
+	/* All four cbdata slots must carry the socket: the default rx_line
+	   implementation forwards its own cbdata (rx_line_cbdata) to the rx
+	   callback, so leaving rx_line_cbdata = NULL would cause the version
+	   exchange to recv() on fd 0. */
 	dssh_session_set_cbdata(ssh_session,
-	    (void *)(intptr_t)ssh_sock, (void *)(intptr_t)ssh_sock, NULL, NULL);
+	    (void *)(intptr_t)ssh_sock, (void *)(intptr_t)ssh_sock,
+	    (void *)(intptr_t)ssh_sock, (void *)(intptr_t)ssh_sock);
 	dssh_session_set_hostkey_verify_cb(ssh_session, hostkey_verify_cb, bbs);
 	dssh_session_set_terminate_cb(ssh_session, transport_terminate_cb, NULL);
 
@@ -726,9 +833,10 @@ ssh_connect(struct bbslist *bbs)
 		uifc.pop("SSH Handshake");
 	}
 	hostkey_result = HOSTKEY_NEW;	/* overwritten by callback */
-	if (dssh_transport_handshake(ssh_session) != 0) {
+	int handshake_rc = dssh_transport_handshake(ssh_session);
+	if (handshake_rc != 0) {
 		free(pubkey);
-		error_popup(bbs, "SSH handshake");
+		error_popup_rc(bbs, "SSH handshake", handshake_rc);
 		ssh_close();
 		return -1;
 	}
@@ -755,9 +863,15 @@ ssh_connect(struct bbslist *bbs)
 		uifc.pop("Authenticating");
 	}
 
-	/* Auth order: pubkey (if a key is loaded) → password → keyboard-
-	   interactive.  CONN_TYPE_SSHNA (SSH-no-auth) uses a "none"
-	   probe but DeuceSSH's dssh_auth_get_methods covers that. */
+	/* Auth order: password (if set) → keyboard-interactive → publickey.
+	   Password-first matches what traditional SyncTERM/Cryptlib does —
+	   Synchronet's Cryptlib-based server can't parse ssh-ed25519, and a
+	   failed publickey probe on that code path has been observed to
+	   confuse subsequent password attempts.  Publickey is only useful
+	   here when bbs->sftp_public_key is set and the user has already
+	   uploaded their pubkey; we try it as a last resort.
+	   CONN_TYPE_SSHNA uses a "none" probe via dssh_auth_get_methods. */
+	auth_rc = -1;
 	if (bbs->conn_type == CONN_TYPE_SSHNA) {
 		char methods[128];
 		auth_rc = dssh_auth_get_methods(ssh_session, username, methods, sizeof(methods));
@@ -767,36 +881,32 @@ ssh_connect(struct bbslist *bbs)
 			ssh_close();
 			return -1;
 		}
-		/* auth_rc == DSSH_AUTH_NONE_ACCEPTED means we're in. */
+		/* DSSH_AUTH_NONE_ACCEPTED means we're in. */
+		auth_rc = 0;
 	}
-	else {
+	if (auth_rc != 0 && password[0])
+		auth_rc = dssh_auth_password(ssh_session, username, password, NULL, NULL);
+	for (int tries = 0; auth_rc != 0 && tries < 3; tries++) {
+		if (bbs->hidepopups)
+			init_uifc(false, false);
+		password[0] = 0;
+		uifcinput("Password", MAX_PASSWD_LEN, password, K_PASSWORD,
+		    tries == 0 ? "Enter password." : "Incorrect password.  Try again.");
+		if (bbs->hidepopups)
+			uifcbail();
+		if (!password[0])
+			break;
+		auth_rc = dssh_auth_password(ssh_session, username, password, NULL, NULL);
+	}
+	if (auth_rc != 0)
+		auth_rc = dssh_auth_keyboard_interactive(ssh_session, username, kbi_prompt_cb, NULL);
+	if (auth_rc != 0)
 		auth_rc = dssh_auth_publickey(ssh_session, username, "ssh-ed25519");
-		if (auth_rc != 0 && password[0])
-			auth_rc = dssh_auth_password(ssh_session, username, password, NULL, NULL);
-		if (auth_rc != 0) {
-			for (int tries = 0; tries < 3 && auth_rc != 0; tries++) {
-				if (bbs->hidepopups)
-					init_uifc(false, false);
-				password[0] = 0;
-				uifcinput("Password", MAX_PASSWD_LEN, password, K_PASSWORD,
-				    tries == 0 ? "Enter password." : "Incorrect password.  Try again.");
-				if (bbs->hidepopups)
-					uifcbail();
-				if (!password[0])
-					break;
-				auth_rc = dssh_auth_password(ssh_session, username, password, NULL, NULL);
-			}
-		}
-		if (auth_rc != 0) {
-			/* Fall back to keyboard-interactive. */
-			auth_rc = dssh_auth_keyboard_interactive(ssh_session, username, kbi_prompt_cb, NULL);
-		}
-		if (auth_rc != 0) {
-			free(pubkey);
-			error_popup(bbs, "authentication failed");
-			ssh_close();
-			return -1;
-		}
+	if (auth_rc != 0) {
+		free(pubkey);
+		error_popup(bbs, "authentication failed");
+		ssh_close();
+		return -1;
 	}
 
 	if (!bbs->hidepopups) {

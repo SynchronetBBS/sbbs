@@ -35,7 +35,34 @@ OBJS += $(MTOBJODIR)$(DIRSEP)ssh$(OFILE)
 OBJS += $(MTOBJODIR)$(DIRSEP)telnets$(OFILE)
 CFLAGS += -I$(SRC_ROOT)/ssh $(SFTP-MT_CFLAGS)
 CRYPT_LDFLAGS += $(SFTP-MT_LDFLAGS)
-EXTRA_LIBS += $(SRC_ROOT)/ssh/build/libdeucessh.a $(SFTP-MT_LIBS) -lssl -lcrypto
+
+# DeuceSSH sub-build.  The library only ships a CMake build system, so
+# we shell out to cmake for it the same way the 3rdp builds do.  The
+# configure step is idempotent; the build step is a no-op when the
+# .a is already up-to-date.
+DEUCESSH_DIR    := $(SRC_ROOT)/ssh
+DEUCESSH_BUILD  := $(DEUCESSH_DIR)/build
+DEUCESSH_LIB    := $(DEUCESSH_BUILD)/libdeucessh.a
+
+# XXX Temporary: force DeuceSSH to OpenSSL because xp_crypt / xp_tls
+# only have OpenSSL shims at the moment.  The correct architecture is
+# the inverse: DeuceSSH picks (auto-detect or user choice), the build
+# reads that choice from a generated header (dssh-config.h or similar),
+# and xp_crypt / xp_tls follow.  That's blocked on (a) a DeuceSSH
+# upstream change to emit the header, and (b) xp_crypt_botan3.cpp /
+# xp_tls_botan3.cpp (tasks #15, #16).  Once both land, this
+# DEUCESSH_BACKEND default goes away.
+DEUCESSH_BACKEND ?= OpenSSL
+
+.PHONY: deucessh
+deucessh $(DEUCESSH_LIB):
+	@echo "Building DeuceSSH ($(DEUCESSH_BACKEND) backend)"
+	cmake -S $(DEUCESSH_DIR) -B $(DEUCESSH_BUILD) -DCMAKE_BUILD_TYPE=Release \
+	      -DDEUCESSH_CRYPTO_BACKEND=$(DEUCESSH_BACKEND)
+	cmake --build $(DEUCESSH_BUILD) --target deucessh_static
+
+DEPS += $(DEUCESSH_LIB)
+EXTRA_LIBS += $(DEUCESSH_LIB) $(SFTP-MT_LIBS) -lssl -lcrypto
 ifeq ($(os),freebsd)
  EXTRA_LIBS += -lstdthreads
 endif
