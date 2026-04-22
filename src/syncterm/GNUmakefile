@@ -43,25 +43,44 @@ CRYPT_LDFLAGS += $(SFTP-MT_LDFLAGS)
 DEUCESSH_DIR    := $(SRC_ROOT)/ssh
 DEUCESSH_BUILD  := $(DEUCESSH_DIR)/build
 DEUCESSH_LIB    := $(DEUCESSH_BUILD)/libdeucessh.a
+DEUCESSH_PC     := $(DEUCESSH_BUILD)/deucessh.pc
+
+# DeuceSSH is the source of truth for crypto-backend choice.  If the
+# caller explicitly set DEUCESSH_BACKEND on the make command line we
+# honour that; otherwise we let DeuceSSH's own auto-detect pick
+# (preferring Botan over OpenSSL when both are present).  The
+# configure step below runs at parse time so deucessh.pc exists
+# before we need to read it further down.
+ifdef DEUCESSH_BACKEND
+ DEUCESSH_CMAKE_BACKEND_ARG := -DDEUCESSH_CRYPTO_BACKEND=$(DEUCESSH_BACKEND)
+else
+ DEUCESSH_CMAKE_BACKEND_ARG :=
+endif
+$(shell cmake -S $(DEUCESSH_DIR) -B $(DEUCESSH_BUILD) \
+              -DCMAKE_BUILD_TYPE=Release $(DEUCESSH_CMAKE_BACKEND_ARG) \
+              >/dev/null 2>&1)
+
+# Derive XP_CRYPTO_BACKEND from DeuceSSH's deucessh.pc so SyncTERM's
+# xp_crypt / xp_tls shims link against the same crypto backend.
+# Requires.private names libcrypto (OpenSSL) or botan-3 (Botan).
+DEUCESSH_REQUIRES := $(shell awk '/^Requires.private:/{print $$2}' $(DEUCESSH_PC) 2>/dev/null)
+ifeq ($(DEUCESSH_REQUIRES),libcrypto)
+ XP_CRYPTO_BACKEND := OpenSSL
+else ifeq ($(DEUCESSH_REQUIRES),botan-3)
+ XP_CRYPTO_BACKEND := Botan
+else
+ $(error Cannot determine DeuceSSH crypto backend from $(DEUCESSH_PC))
+endif
+export XP_CRYPTO_BACKEND
 
 .PHONY: deucessh
 deucessh $(DEUCESSH_LIB):
-	@echo "Building DeuceSSH ($(DEUCESSH_BACKEND) backend)"
-	cmake -S $(DEUCESSH_DIR) -B $(DEUCESSH_BUILD) -DCMAKE_BUILD_TYPE=Release \
-	      -DDEUCESSH_CRYPTO_BACKEND=$(DEUCESSH_BACKEND)
+	@echo "Building DeuceSSH ($(XP_CRYPTO_BACKEND) backend)"
 	cmake --build $(DEUCESSH_BUILD) --target deucessh_static
 
 DEPS += $(DEUCESSH_LIB)
 EXTRA_LIBS += $(DEUCESSH_LIB) $(SFTP-MT_LIBS)
 
-# Crypto backend libraries. XP_CRYPTO_BACKEND (xpdev/GNUmakefile) picks
-# the shim implementation; DEUCESSH_BACKEND picks DeuceSSH's backend.
-# Both variables must be equal — once DeuceSSH emits dssh-config.h
-# (task #17) and xp_crypt's Botan shim lands (task #15), we can derive
-# both from a single source of truth.
-XP_CRYPTO_BACKEND ?= OpenSSL
-DEUCESSH_BACKEND  ?= $(XP_CRYPTO_BACKEND)
-export XP_CRYPTO_BACKEND
 ifeq ($(XP_CRYPTO_BACKEND),OpenSSL)
  EXTRA_LIBS += -lssl -lcrypto
 endif
