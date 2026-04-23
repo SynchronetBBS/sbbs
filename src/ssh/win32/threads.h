@@ -9,8 +9,6 @@
  *
  * Deliberately minimal: no tss_* (thread-specific storage), no
  * call_once, no mtx_timed / mtx_recursive support.  Add as needed.
- *
- * SPDX-License-Identifier: GPL-2.0-or-later
  */
 
 #ifndef DSSH_WIN32_THREADS_H

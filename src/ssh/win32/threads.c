@@ -1,8 +1,6 @@
 /*
  * C11 <threads.h> shim — MinGW-w64 implementation.  See the header
  * for scope and rationale.
- *
- * SPDX-License-Identifier: GPL-2.0-or-later
  */
 
 #include <errno.h>
