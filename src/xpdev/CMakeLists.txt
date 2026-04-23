@@ -63,9 +63,12 @@ set(SOURCE
     multisock.c
     named_str_list.c
     netwrap.c
+    os_info.c
+    rwlockwrap.c
     semfile.c
     semwrap.c
     sockwrap.c
+    stbuf.c
     str_list.c
     strwrap.c
     threadwrap.c
