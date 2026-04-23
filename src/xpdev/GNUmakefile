@@ -60,10 +60,15 @@ ifeq ($(XP_CRYPTO_BACKEND),Botan)
 	$(QUIET)$(CXX) -std=c++20 $(CFLAGS) $(CXXFLAGS) $(MT_CFLAGS) $(BOTAN_CXXFLAGS) -o $@ -c $<
 endif
 
-# ini_crypt.c wraps the encrypted-INI read/write path around xp_crypt.
-# Kept out of objects.mk (which is shared with Common.bmake / Borland)
-# so a no-crypto build doesn't force an ancient compiler to parse code
-# that expects a modern TLS stack.
+# ini_crypt, xp_crypt_<backend>, xp_tls_<backend>: kept out of
+# objects.mk (which is shared with Common.bmake / Borland) because
+# XP_CRYPTO_BACKEND_SUFFIX is a gmake-only variable and the backends
+# expect a modern TLS stack (Botan C++ or OpenSSL) that an ancient
+# Borland build can't parse.
+OBJS   += $(OBJODIR)$(DIRSEP)xp_crypt_$(XP_CRYPTO_BACKEND_SUFFIX)$(OFILE)
+OBJS   += $(OBJODIR)$(DIRSEP)xp_tls_$(XP_CRYPTO_BACKEND_SUFFIX)$(OFILE)
+MTOBJS += $(MTOBJODIR)$(DIRSEP)xp_crypt_$(XP_CRYPTO_BACKEND_SUFFIX)$(OFILE)
+MTOBJS += $(MTOBJODIR)$(DIRSEP)xp_tls_$(XP_CRYPTO_BACKEND_SUFFIX)$(OFILE)
 ifneq ($(XP_CRYPTO_BACKEND),none)
  OBJS   += $(OBJODIR)$(DIRSEP)ini_crypt$(OFILE)
  MTOBJS += $(MTOBJODIR)$(DIRSEP)ini_crypt$(OFILE)
