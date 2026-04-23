@@ -77,26 +77,39 @@ if(DEUCESSH_CRYPTO_BACKEND STREQUAL "Botan")
 	enable_language(CXX)
 endif()
 
-# C11 threads: FreeBSD needs -lstdthreads, Linux/macOS have it in libc,
-# MinGW-w64 doesn't ship it at all so we drop in a local wrapper over
-# Windows primitives (win32/threads.{h,c}).
+# C11 threads: glibc (2.28+), recent macOS SDKs, and FreeBSD 12+ have
+# them.  FreeBSD used to ship them in a separate libstdthreads.  Older
+# macOS and NetBSD have pthread but no <threads.h>; MinGW-w64 has
+# neither.  Probe libc first, then libstdthreads, then fall back to a
+# platform shim.
 include(CheckCSourceCompiles)
 set(CMAKE_REQUIRED_FLAGS "-std=c17")
 check_c_source_compiles("
 	#include <threads.h>
 	int main(void) { mtx_t m; mtx_init(&m, mtx_plain); return 0; }
 " HAVE_THREADS_IN_LIBC)
-set(DSSH_WIN32_THREADS_SOURCES "")
+set(DSSH_THREADS_SHIM_SOURCES "")
+set(DSSH_THREADS_SHIM_INCLUDE "")
 if(NOT HAVE_THREADS_IN_LIBC)
 	find_library(STDTHREADS_LIB stdthreads)
 	if(STDTHREADS_LIB)
 		set(THREADS_LINK_LIB ${STDTHREADS_LIB})
 	elseif(MINGW OR (WIN32 AND CMAKE_C_COMPILER_ID STREQUAL "GNU"))
 		# Prepend win32/ to the include path so <threads.h> resolves
-		# to our shim rather than the missing system header.  Compile
-		# the matching .c file into the library.
-		set(DSSH_WIN32_THREADS_SOURCES win32/threads.c)
+		# to our shim rather than the missing system header.
+		set(DSSH_THREADS_SHIM_SOURCES win32/threads.c)
+		set(DSSH_THREADS_SHIM_INCLUDE
+		    ${CMAKE_CURRENT_SOURCE_DIR}/win32)
 		set(THREADS_LINK_LIB "")
+	elseif(UNIX)
+		# POSIX pthread shim — macOS (pre-14 SDK), older NetBSD, any
+		# libc without C11 threads.  Requires pthread but CMake's
+		# Threads::Threads already pulls it in for us below.
+		set(DSSH_THREADS_SHIM_SOURCES posix/threads.c)
+		set(DSSH_THREADS_SHIM_INCLUDE
+		    ${CMAKE_CURRENT_SOURCE_DIR}/posix)
+		find_package(Threads REQUIRED)
+		set(THREADS_LINK_LIB Threads::Threads)
 	else()
 		message(FATAL_ERROR
 			"C11 <threads.h> not found in libc or libstdthreads, "
@@ -105,6 +118,9 @@ if(NOT HAVE_THREADS_IN_LIBC)
 else()
 	set(THREADS_LINK_LIB "")
 endif()
+# Backwards-compat alias: older code paths referenced the Win32-only
+# name.  Keep both pointing at whichever shim is active.
+set(DSSH_WIN32_THREADS_SOURCES ${DSSH_THREADS_SHIM_SOURCES})
 
 # Algorithm modules -- backend-specific
 if(DEUCESSH_CRYPTO_BACKEND STREQUAL "OpenSSL")
@@ -297,9 +313,9 @@ if(DEUCESSH_BUILD_STATIC)
 		PUBLIC
 			$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
 			$<INSTALL_INTERFACE:include/deucessh>)
-	if(DSSH_WIN32_THREADS_SOURCES)
+	if(DSSH_THREADS_SHIM_INCLUDE)
 		target_include_directories(deucessh_static BEFORE
-			PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/win32)
+			PRIVATE ${DSSH_THREADS_SHIM_INCLUDE})
 	endif()
 	target_include_directories(deucessh_static SYSTEM
 		PRIVATE ${DSSH_CRYPTO_INCLUDE})
@@ -331,9 +347,9 @@ if(DEUCESSH_BUILD_SHARED)
 		PUBLIC
 			$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
 			$<INSTALL_INTERFACE:include/deucessh>)
-	if(DSSH_WIN32_THREADS_SOURCES)
+	if(DSSH_THREADS_SHIM_INCLUDE)
 		target_include_directories(deucessh_shared BEFORE
-			PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/win32)
+			PRIVATE ${DSSH_THREADS_SHIM_INCLUDE})
 	endif()
 	target_include_directories(deucessh_shared SYSTEM
 		PRIVATE ${DSSH_CRYPTO_INCLUDE})
