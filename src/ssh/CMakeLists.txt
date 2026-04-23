@@ -82,8 +82,13 @@ endif()
 # macOS and NetBSD have pthread but no <threads.h>; MinGW-w64 has
 # neither.  Probe libc first, then libstdthreads, then fall back to a
 # platform shim.
+#
+# Probe at -std=c17 so it matches the -std= flag the real targets
+# build with (C_STANDARD 17).  Probing at -std=c11 would silently
+# pass on SDKs that guard declarations on __STDC_VERSION__ >= 201710L
+# and still fail the real compile.
 include(CheckCSourceCompiles)
-set(CMAKE_REQUIRED_FLAGS "-std=c11")
+set(CMAKE_REQUIRED_FLAGS "-std=c17")
 check_c_source_compiles("
 	#include <threads.h>
 	int main(void) { mtx_t m; mtx_init(&m, mtx_plain); return 0; }
@@ -212,8 +217,8 @@ if(CMAKE_C_COMPILER_ID MATCHES "GNU|Clang|AppleClang")
 	# unused" (Apple Clang emits -Wunused-command-line-argument for
 	# -fstack-clash-protection etc.) would still break the real build.
 	# Push -Werror into CMAKE_REQUIRED_FLAGS so the probe matches the
-	# actual compile discipline.
-	set(CMAKE_REQUIRED_FLAGS "-std=c11 -Werror")
+	# actual compile discipline.  -std=c17 matches the real targets.
+	set(CMAKE_REQUIRED_FLAGS "-std=c17 -Werror")
 
 	check_c_compiler_flag(-Wconversion HAVE_WCONVERSION)
 	if(HAVE_WCONVERSION)
