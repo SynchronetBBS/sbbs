@@ -52,12 +52,6 @@ endif
 # PKG_CONFIG_PATH prepend + botan target.
 
 ifndef WITHOUT_DEUCESSH
- # ssh.c + SFTP-MT bridge.
- OBJS       += $(MTOBJODIR)$(DIRSEP)ssh$(OFILE)
- CFLAGS     += -I$(SRC_ROOT)/ssh $(SFTP-MT_CFLAGS)
- LDFLAGS    += $(SFTP-MT_LDFLAGS)
- EXTRA_LIBS += $(SFTP-MT_LIBS)
-
  # DeuceSSH ships only a CMake build system.  Build into a per-target
  # directory under $(3RDPODIR) so native and cross-compile builds don't
  # share a CMakeCache.txt (cmake refuses to change toolchain after the
@@ -143,22 +137,32 @@ ifndef WITHOUT_DEUCESSH
        $(DEUCESSH_CMAKE_TOOLCHAIN_ARGS) >$(DEUCESSH_BUILD).log 2>&1; echo $$?)
    ifeq ($(wildcard $(DEUCESSH_PC)),)
     WITHOUT_DEUCESSH := 1
-    $(info DeuceSSH configure failed (see $(DEUCESSH_BUILD).log) — disabling SSH support)
+    $(info DeuceSSH configure failed — disabling SSH support.  cmake output:)
+    $(info ----- $(DEUCESSH_BUILD).log -----)
+    $(info $(shell cat $(DEUCESSH_BUILD).log 2>/dev/null))
+    $(info -----)
    endif
   endif
  endif
 endif
 
 ifndef WITHOUT_DEUCESSH
+ # ssh.c + SFTP-MT bridge — pulled in only if the probe above decided
+ # DeuceSSH is buildable.  Doing this after the probe keeps WITHOUT_DEUCESSH
+ # honest: the probe may set it, and then nothing references dssh_* or
+ # ssh.o at all.
+ OBJS       += $(MTOBJODIR)$(DIRSEP)ssh$(OFILE)
+ CFLAGS     += -I$(SRC_ROOT)/ssh $(SFTP-MT_CFLAGS)
+ LDFLAGS    += $(SFTP-MT_LDFLAGS)
+ EXTRA_LIBS += $(SFTP-MT_LIBS) $(DEUCESSH_LIB)
+ DEPS       += $(DEUCESSH_LIB)
+
  # Build step — configure ran at parse time already, so this is just
  # cmake --build against the already-populated build tree.
  .PHONY: deucessh
  deucessh $(DEUCESSH_LIB):
 	@echo "Building DeuceSSH ($(DEUCESSH_BACKEND) backend)"
 	cmake --build $(DEUCESSH_BUILD) --target deucessh_static
-
- DEPS       += $(DEUCESSH_LIB)
- EXTRA_LIBS += $(DEUCESSH_LIB)
 else
  CFLAGS += -DWITHOUT_DEUCESSH
  # targets.mk captured "deucessh" as a prereq of `all:` before our
