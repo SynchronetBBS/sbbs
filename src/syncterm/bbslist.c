@@ -1464,45 +1464,61 @@ iniReadBBSList(FILE *fp, bool userList)
 				if (inifp != NULL)
 					inicontents = iniReadFile(inifp);
 			}
+			/* Any failure below leaves memory and disk disagreeing
+			 * (the in-memory algo/keysize/KDF spec have already been
+			 * resolved to the new values in local variables; a later
+			 * save via iniWriteEncryptedFile would propagate whichever
+			 * side is stale).  Exit hard so the user can resolve the
+			 * underlying filesystem / permission issue and retry
+			 * cleanly on the next run. */
 			bool ready = (listfp != NULL) && (!kdf_legacy || (inifp != NULL && inicontents != NULL));
 			if (!ready) {
 				if (listfp == NULL)
-					uifc.msg("Migration skipped: failed to open BBS list for rewrite.");
+					uifc.msg("Migration aborted: failed to open BBS list for rewrite.");
 				else if (inifp == NULL)
-					uifc.msg("Migration skipped: syncterm.ini could not be opened for rewrite.");
+					uifc.msg("Migration aborted: syncterm.ini could not be opened for rewrite.");
 				else
-					uifc.msg("Migration skipped: syncterm.ini could not be read.");
+					uifc.msg("Migration aborted: syncterm.ini could not be read.");
+				if (listfp)
+					fclose(listfp);
+				if (inifp)
+					fclose(inifp);
+				if (inicontents)
+					strListFree(&inicontents);
+				exit(EXIT_FAILURE);
 			}
-			else if (!iniWriteEncryptedFile(listfp, inifile, new_algo,
-			                                new_ks, new_kdf_spec,
-			                                list_password)) {
-				uifc.msg("Migration skipped: failed to re-encrypt BBS list.");
-			}
-			else {
-				/* bbslist is now AES-256 / scrypt on disk.  Commit
-				 * the in-memory state and sync syncterm.ini. */
-				list_algo = new_algo;
-				list_keysize = new_ks;
-				if (kdf_legacy) {
-					SAFECOPY(settings.keyDerivationIterations,
-					    iniCryptDefaultKDFSpec());
-					iniSetString(&inicontents, "SyncTERM",
-					    "KeyDerivationIterations",
-					    settings.keyDerivationIterations,
-					    &ini_style);
-					rewind(inifp);
-					if (chsize(fileno(inifp), 0) != 0 ||
-					    !iniWriteFile(inifp, inicontents)) {
-						uifc.msg("KDF migrated but syncterm.ini write failed; setting left stale.");
-					}
-				}
-			}
-			if (listfp)
+			if (!iniWriteEncryptedFile(listfp, inifile, new_algo,
+			                           new_ks, new_kdf_spec,
+			                           list_password)) {
+				uifc.msg("Migration aborted: failed to re-encrypt BBS list.");
 				fclose(listfp);
-			if (inifp)
 				fclose(inifp);
-			if (inicontents)
 				strListFree(&inicontents);
+				exit(EXIT_FAILURE);
+			}
+			fclose(listfp);
+			/* bbslist is now AES-256 / scrypt on disk.  Commit the
+			 * in-memory state and (if needed) sync syncterm.ini. */
+			list_algo = new_algo;
+			list_keysize = new_ks;
+			if (kdf_legacy) {
+				SAFECOPY(settings.keyDerivationIterations,
+				    iniCryptDefaultKDFSpec());
+				iniSetString(&inicontents, "SyncTERM",
+				    "KeyDerivationIterations",
+				    settings.keyDerivationIterations,
+				    &ini_style);
+				rewind(inifp);
+				if (chsize(fileno(inifp), 0) != 0 ||
+				    !iniWriteFile(inifp, inicontents)) {
+					uifc.msg("Migration aborted: syncterm.ini write failed after BBS list was re-encrypted.");
+					fclose(inifp);
+					strListFree(&inicontents);
+					exit(EXIT_FAILURE);
+				}
+				fclose(inifp);
+				strListFree(&inicontents);
+			}
 		}
 	}
 
