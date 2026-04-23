@@ -10,6 +10,13 @@
 /* standard headers */
 #include <math.h>
 #include <stdlib.h>
+
+/* MSVC's <math.h> also hides M_PI behind _USE_MATH_DEFINES, but we
+ * can't set that here without leaking a reserved-namespace macro
+ * into the rest of the build.  Fall back to a local definition. */
+#ifndef M_PI
+#define M_PI 3.14159265358979323846
+#endif
 #include "xp_dl.h"
 
 #if defined(_WIN32)
