@@ -220,6 +220,18 @@ endif()
 
 target_compile_features(xpdev PUBLIC c_std_11)
 
+# MSVC requires /experimental:c11atomics to enable <stdatomic.h> + _Atomic
+# (otherwise __STDC_NO_ATOMICS__ stays defined and xpbeep.c's atomic
+# declarations fail to parse).  The hand-written xpdev.vcxproj ships this
+# same flag; cmake needs it added explicitly.  PUBLIC because threadwrap.h
+# exposes _Atomic(intN_t) typedefs in its public interface, so consumers
+# (conio, syncterm, ...) that include the header need the flag too.
+# C-only (MSVC rejects it on /TP C++ translation units).
+if(MSVC)
+	target_compile_options(xpdev PUBLIC
+	    $<$<COMPILE_LANGUAGE:C>:/experimental:c11atomics>)
+endif()
+
 target_link_libraries(xpdev ${CMAKE_DL_LIBS})
 target_link_libraries(xpdev ${CMAKE_THREAD_LIBS_INIT})
 
