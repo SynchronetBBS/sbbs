@@ -43,34 +43,18 @@ endif
 # "none" shim.  NEED_OPENSSL / NEED_BOTAN are set by each side that
 # needs those libs; ifdef at the bottom pulls them in exactly once.
 
-# Probe the system for a usable crypto library.  When neither matches
-# the project's minimums (Botan 3.6 or OpenSSL 3.0), fall back to a
-# vendored static Botan build from 3rdp/dist/Botan.tar.xz.  The user
-# can override either way with USE_VENDORED_BOTAN=1/0.
-#
-# Cross-compiling to Windows always uses vendored — the host's
-# pkg-config wouldn't know about target libs even if they were
-# installed somewhere.
-ifndef USE_VENDORED_BOTAN
- ifdef win
-  USE_VENDORED_BOTAN := 1
- else ifeq ($(shell pkg-config --atleast-version=3.6 botan-3 2>/dev/null && echo Y),Y)
-  USE_VENDORED_BOTAN := 0
- else ifeq ($(shell pkg-config --atleast-version=3.0 libcrypto 2>/dev/null && echo Y),Y)
-  USE_VENDORED_BOTAN := 0
- else
-  USE_VENDORED_BOTAN := 1
- endif
-endif
+# XP_CRYPTO_BACKEND, DEUCESSH_BACKEND, USE_VENDORED_BOTAN are resolved
+# once in build/Common.gmake.  Keeping the decision there ensures every
+# consumer of the same source tree (xpdev, syncterm, and Synchronet
+# server jobs in the same pipeline) arrives at identical values — a
+# cached libxpdev_mt.a stays compatible with its downstream linkers.
 ifeq ($(USE_VENDORED_BOTAN),1)
- # Vendored: we know the backend is Botan without running anything at
- # parse time.  Prepend the vendored pkg-config dir so later pkg-config
+ # Vendored: prepend the vendored pkg-config dir so later pkg-config
  # invocations (xpdev submake, DeuceSSH cmake) find the vendored copy.
  # The actual build of libbotan-3.a + botan-3.pc happens at build time
  # via the 'vendored-botan' target, sequenced before everything else
  # through targets.mk.
  export PKG_CONFIG_PATH := $(shell cd $(dir $(BOTAN_PKGCONFIG_DIR)) 2>/dev/null && pwd)/$(notdir $(BOTAN_PKGCONFIG_DIR)):$(PKG_CONFIG_PATH)
- DEUCESSH_BACKEND := Botan
 endif
 
 ifndef WITHOUT_DEUCESSH
@@ -91,14 +75,12 @@ ifndef WITHOUT_DEUCESSH
  DEUCESSH_LIB    := $(DEUCESSH_BUILD)/libdeucessh.a
  DEUCESSH_PC     := $(DEUCESSH_BUILD)/deucessh.pc
 
- # Force DeuceSSH's backend with -DDEUCESSH_CRYPTO_BACKEND when we
- # already know which one we want (vendored Botan, or the user set it
- # explicitly); otherwise let DeuceSSH's cmake auto-detect.
- ifdef DEUCESSH_BACKEND
-  DEUCESSH_CMAKE_BACKEND_ARG := -DDEUCESSH_CRYPTO_BACKEND=$(DEUCESSH_BACKEND)
- else
-  DEUCESSH_CMAKE_BACKEND_ARG :=
- endif
+ # DEUCESSH_BACKEND (and XP_CRYPTO_BACKEND) are decided in Common.gmake
+ # so every consumer of the same source tree agrees.  Pin it into
+ # DeuceSSH's cmake configure so it doesn't auto-detect something
+ # different (e.g. preferring system OpenSSL when vendored Botan
+ # hasn't been built yet at parse time).
+ DEUCESSH_CMAKE_BACKEND_ARG := -DDEUCESSH_CRYPTO_BACKEND=$(DEUCESSH_BACKEND)
 
  # For Win32/Win64 cross-compile, point cmake at the MinGW toolchain
  # and tell it we're cross-compiling to Windows.  cmake caches toolchain
@@ -116,47 +98,22 @@ ifndef WITHOUT_DEUCESSH
   DEUCESSH_CMAKE_TOOLCHAIN_ARGS :=
  endif
 
- # When a backend isn't already pinned we have to run cmake configure
- # at parse time so deucessh.pc exists — that file names the backend,
- # and the link-time logic below consumes it.  With vendored Botan the
- # backend is already pinned to Botan; we can skip the parse-time
- # probe and defer cmake configure to the build-time recipe.
- ifeq ($(USE_VENDORED_BOTAN),1)
-  # Build-time configure is sequenced after vendored-botan so
-  # pkg-config finds the vendored copy.
-  DEUCESSH_CONFIGURE_AT_BUILD := 1
- else
-  $(shell mkdir -p $(DEUCESSH_BUILD))
-  $(shell cmake -S $(DEUCESSH_DIR) -B $(DEUCESSH_BUILD) \
-                -DCMAKE_BUILD_TYPE=Release $(DEUCESSH_CMAKE_BACKEND_ARG) \
-                $(DEUCESSH_CMAKE_TOOLCHAIN_ARGS) \
-                >/dev/null 2>&1)
-  DEUCESSH_REQUIRES := $(shell awk '/^Requires.private:/{print $$2}' $(DEUCESSH_PC) 2>/dev/null)
-  ifeq ($(DEUCESSH_REQUIRES),libcrypto)
-   DEUCESSH_BACKEND := OpenSSL
-   NEED_OPENSSL     := 1
-  else ifeq ($(DEUCESSH_REQUIRES),botan-3)
-   DEUCESSH_BACKEND := Botan
-   NEED_BOTAN       := 1
-  else
-   $(error Cannot determine DeuceSSH crypto backend from $(DEUCESSH_PC))
-  endif
- endif
-
  ifeq ($(DEUCESSH_BACKEND),Botan)
   NEED_BOTAN := 1
  else ifeq ($(DEUCESSH_BACKEND),OpenSSL)
   NEED_OPENSSL := 1
  endif
 
+ # Configure at build time — when vendored Botan is in play, its
+ # pkg-config file doesn't exist until the 'vendored-botan' target
+ # runs, and DeuceSSH's configure probes for it.  Always-deferring
+ # keeps the rule graph simple and avoids a parse-time cmake run.
  .PHONY: deucessh
  deucessh $(DEUCESSH_LIB):
 	@echo "Building DeuceSSH ($(DEUCESSH_BACKEND) backend)"
-ifdef DEUCESSH_CONFIGURE_AT_BUILD
 	cmake -S $(DEUCESSH_DIR) -B $(DEUCESSH_BUILD) \
 	    -DCMAKE_BUILD_TYPE=Release $(DEUCESSH_CMAKE_BACKEND_ARG) \
 	    $(DEUCESSH_CMAKE_TOOLCHAIN_ARGS)
-endif
 	cmake --build $(DEUCESSH_BUILD) --target deucessh_static
 
  DEPS       += $(DEUCESSH_LIB)
@@ -177,22 +134,11 @@ else
 vendored-botan: ; @:
 endif
 
-# xp_tls + xp_crypt backend selection.  Three values:
-#
-#   OpenSSL — xpdev compiles xp_*_openssl.c  (default)
-#   Botan   — xpdev compiles xp_*_botan3.cpp
-#   none    — xpdev compiles xp_*_none.c (all entry points fail).  Set
-#             automatically when WITHOUT_CRYPTO is defined so xpdev's
-#             library stays free of OpenSSL/Botan references.
-#
-# When both DeuceSSH and xp_crypt are in the build they share a backend
-# (DeuceSSH's choice wins).
+# XP_CRYPTO_BACKEND is decided in Common.gmake (shared with xpdev so
+# the cached libxpdev_mt.a agrees with this build's link line).
+# Just set the NEED_* flags + link-time macros from the chosen value.
 ifdef WITHOUT_CRYPTO
- XP_CRYPTO_BACKEND := none
  CFLAGS += -DWITHOUT_CRYPTO
-endif
-ifeq ($(origin XP_CRYPTO_BACKEND),undefined)
- XP_CRYPTO_BACKEND := $(or $(DEUCESSH_BACKEND),OpenSSL)
 endif
 ifeq ($(XP_CRYPTO_BACKEND),OpenSSL)
  NEED_OPENSSL := 1
@@ -205,8 +151,6 @@ else ifeq ($(XP_CRYPTO_BACKEND),none)
 else
  $(error Unknown XP_CRYPTO_BACKEND: $(XP_CRYPTO_BACKEND))
 endif
-export XP_CRYPTO_BACKEND
-export WITHOUT_CRYPTO
 
 ifdef NEED_OPENSSL
  # xpdev's libxpdev_mt.a and libdeucessh.a both reference OpenSSL
