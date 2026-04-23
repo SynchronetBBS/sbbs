@@ -21,6 +21,7 @@
 
 #include "str_list.h"  /* str_list_t */
 #include "wrapdll.h"
+#include "xp_crypt.h"  /* enum xp_crypt_kdf */
 
 #if defined(__cplusplus)
 extern "C" {
@@ -49,8 +50,35 @@ enum iniCryptAlgo {
 	INI_CRYPT_ALGO_CHACHA20 = 7
 };
 
-DLLEXPORT str_list_t iniReadEncryptedFile(FILE* fp, bool(*get_key)(void *cb_data, char *keybuf, size_t *sz), int KDFiterations, enum iniCryptAlgo *algoPtr, int *ks, char *saltBuf, size_t *saltsz, void *cbdata);
-DLLEXPORT bool iniWriteEncryptedFile(FILE* fp, const str_list_t list, enum iniCryptAlgo algo, int keySize, int KDFiterations, const char *key);
+/*
+ * The default KDF spec used by new encrypted writes — currently
+ * "scrypt-N15".  Exposed so callers can uniformly label the
+ * syncterm.ini KeyDerivationIterations setting after migrating off a
+ * legacy Cryptlib-era value.
+ */
+DLLEXPORT const char *iniCryptDefaultKDFSpec(void);
+
+/*
+ * kdf_spec supplies KDF parameters the on-disk header can't carry:
+ *   - v1 (Cryptlib-era) encrypted files embed the salt but not the
+ *     PBKDF2 iteration count, so the reader needs it from the caller.
+ *   - v2 files carry a full KDF block — kdf_spec is only consulted by
+ *     the writer, which emits scrypt.
+ *
+ * Accepted spec forms:
+ *   "<digits>"                     — legacy Cryptlib-era PBKDF2
+ *                                    iteration count.  Reader uses it
+ *                                    for v1 files; writer ignores.
+ *   "scrypt-N<log2>"               — scrypt tuning for v2 writes.
+ *                                    Reader ignores.
+ *   NULL / empty / anything else   — compiled-in defaults on both paths.
+ *
+ * kdfPtr (optional) reports the KDF the file actually used — callers
+ * that care about v1 vs v2 provenance can compare against
+ * XP_CRYPT_KDF_SCRYPT.
+ */
+DLLEXPORT str_list_t iniReadEncryptedFile(FILE* fp, bool(*get_key)(char *keybuf, size_t *sz), const char *kdf_spec, enum iniCryptAlgo *algoPtr, int *ks, enum xp_crypt_kdf *kdfPtr);
+DLLEXPORT bool iniWriteEncryptedFile(FILE* fp, const str_list_t list, enum iniCryptAlgo algo, int keySize, const char *kdf_spec, const char *key);
 DLLEXPORT const char *iniCryptGetAlgoName(enum iniCryptAlgo a);
 DLLEXPORT enum iniCryptAlgo iniCryptGetAlgoFromName(const char *n);
 

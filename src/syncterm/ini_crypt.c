@@ -67,6 +67,16 @@ const char *encryptedHeaderPrefixV2 = "; Encrypted INI File v2, Algorithm: ";
 #define INI_SCRYPT_R         8
 #define INI_SCRYPT_P         1
 
+#define XSTR(s) STR(s)
+#define STR(s)  #s
+#define INI_DEFAULT_KDF_SPEC "scrypt-N" XSTR(INI_SCRYPT_COST_LOG2)
+
+const char *
+iniCryptDefaultKDFSpec(void)
+{
+	return INI_DEFAULT_KDF_SPEC;
+}
+
 /* v2 binary salt length in bytes (32 hex chars). */
 #define INI_V2_SALT_BYTES    16
 
@@ -216,9 +226,12 @@ format_kdf_spec(const struct xp_crypt_kdf_params *kdf, char *buf, size_t buflen)
 /*
  * Parse a v1 or v2 encrypted-INI header line into (algo, keySize, salt bytes,
  * kdf_params).  str is mutated.  Returns true on success.
+ *
+ * v1_pbkdf2_iters supplies the PBKDF2 iteration count used for v1 files,
+ * which don't embed it in the header.  <= 0 falls back to 50000.
  */
 static bool
-parse_encrypted_header(char *str, int fallback_pbkdf2_iters,
+parse_encrypted_header(char *str, int v1_pbkdf2_iters,
                        enum iniCryptAlgo *algo_out, size_t *keySize_out,
                        uint8_t *salt, size_t salt_cap, size_t *salt_len_out,
                        struct xp_crypt_kdf_params *kdf_out)
@@ -322,16 +335,44 @@ parse_encrypted_header(char *str, int fallback_pbkdf2_iters,
 	memcpy(salt, salt_start, slen);
 	*salt_len_out = slen;
 
-	if (fallback_pbkdf2_iters < 1)
-		fallback_pbkdf2_iters = 50000;
+	/* v1 (Cryptlib-era) files don't embed the PBKDF2 iteration count
+	 * — the reader gets it from syncterm.ini via v1_pbkdf2_iters.
+	 * Fall back to the historical Cryptlib default of 50000 if the
+	 * caller didn't supply a positive value. */
 	memset(kdf_out, 0, sizeof(*kdf_out));
 	kdf_out->kdf = XP_CRYPT_KDF_PBKDF2_HMAC_SHA256;
-	kdf_out->iterations = fallback_pbkdf2_iters;
+	kdf_out->iterations = v1_pbkdf2_iters > 0 ? v1_pbkdf2_iters : 50000;
 	return true;
 }
 
+/*
+ * Pull a PBKDF2 iteration count out of a kdf_spec string for v1 reads.
+ * Accepts only bare digits-only legacy syncterm.ini values — anything
+ * else (including scrypt specs) falls back to the historical 50000
+ * default inside parse_encrypted_header.
+ */
+static int
+kdf_spec_to_pbkdf2_iters(const char *spec)
+{
+	if (spec == NULL)
+		return 0;
+	while (*spec == ' ' || *spec == '\t')
+		spec++;
+	if (*spec < '0' || *spec > '9')
+		return 0;
+	char *endp = NULL;
+	long v = strtol(spec, &endp, 10);
+	if (endp == spec || v <= 0 || v > INT_MAX)
+		return 0;
+	while (*endp == ' ' || *endp == '\t')
+		endp++;
+	if (*endp != '\0')
+		return 0;
+	return (int)v;
+}
+
 str_list_t
-iniReadEncryptedFile(FILE* fp, bool(*get_key)(void *cb_data, char *keybuf, size_t *sz), int KDFiterations, enum iniCryptAlgo *algoPtr, int *ks, char *saltBuf, size_t *saltsz, void *cbdata)
+iniReadEncryptedFile(FILE* fp, bool(*get_key)(char *keybuf, size_t *sz), const char *kdf_spec, enum iniCryptAlgo *algoPtr, int *ks, enum xp_crypt_kdf *kdfPtr)
 {
 	char keyData[1024];
 	size_t keyDataSize;
@@ -366,12 +407,13 @@ iniReadEncryptedFile(FILE* fp, bool(*get_key)(void *cb_data, char *keybuf, size_
 		goto done;
 	}
 
-	if (!parse_encrypted_header(str, KDFiterations, &algo, &keySize,
+	if (!parse_encrypted_header(str, kdf_spec_to_pbkdf2_iters(kdf_spec),
+	                             &algo, &keySize,
 	                             salt, sizeof(salt), &saltLength, &kdf_params))
 		goto done;
 
 	keyDataSize = sizeof(keyData);
-	if (!get_key(cbdata, keyData, &keyDataSize))
+	if (!get_key(keyData, &keyDataSize))
 		goto done;
 
 	ctx = xp_crypt_open((int)algo, (int)keySize, salt, saltLength,
@@ -480,17 +522,8 @@ done:
 		*algoPtr = algo;
 	if (ks)
 		*ks = keySize;
-	if (saltLength && saltBuf && saltsz && *saltsz) {
-		size_t cp = *saltsz;
-		if (cp > saltLength)
-			cp = saltLength;
-		if (cp)
-			memcpy(saltBuf, salt, cp);
-		if (cp < *saltsz)
-			saltBuf[cp] = 0;
-	}
-	if (saltsz)
-		*saltsz = saltLength;
+	if (kdfPtr)
+		*kdfPtr = kdf_params.kdf;
 
 	return ret;
 }
@@ -518,16 +551,16 @@ addEncrpytedChar(xp_crypt_t ctx, const char ch, char *buffer, size_t blockSize, 
 /*
  * Writes the INI file in list to fp encrypted with key.
  *
- * The writer always emits v2 + scrypt; r and p use interactive-login
- * defaults (r=8, p=1).  KDFiterations is interpreted as scrypt's cost
- * parameter N: caller-provided value is rounded up to the nearest
- * power of two and clamped to [2^8, 2^24].  Value <= 0 falls back to
- * the INI_SCRYPT_COST_LOG2 default.  (Readers still honour
- * KDFiterations as a literal PBKDF2 count when decrypting v1
- * Cryptlib-era files — the on-disk header tells the reader which KDF
- * to use.)
+ * The writer always emits v2 + scrypt.  kdf_spec is the same string
+ * form the v2 header carries, e.g. "scrypt-N15" or "scrypt-N15-r8-p1";
+ * omitted tuple fields fall back to interactive-login defaults
+ * (N=2^15, r=8, p=1).  NULL, empty, or unparseable kdf_spec → full
+ * compiled-in defaults.  A Cryptlib-era digits-only value is
+ * therefore ignored here — its unit (PBKDF2 iterations) has no
+ * meaningful translation into scrypt parameters, so we pick the
+ * scrypt default rather than coerce.
  */
-bool iniWriteEncryptedFile(FILE* fp, const str_list_t list, enum iniCryptAlgo algo, int keySize, int KDFiterations, const char *key)
+bool iniWriteEncryptedFile(FILE* fp, const str_list_t list, enum iniCryptAlgo algo, int keySize, const char *kdf_spec, const char *key)
 {
 	uint8_t salt_bin[INI_V2_SALT_BYTES];
 	char    salt_hex[2 * INI_V2_SALT_BYTES + 1];
@@ -547,20 +580,23 @@ bool iniWriteEncryptedFile(FILE* fp, const str_list_t list, enum iniCryptAlgo al
 	int blocksize;
 	int ivsize;
 
-	/* Map the caller-visible KDFiterations (a generic "work factor")
-	 * onto scrypt's cost parameter N.  Round up to the nearest power
-	 * of 2, clamped to [2^8, 2^24].  <=0 keeps the compiled-in
-	 * default of 2^INI_SCRYPT_COST_LOG2.  This preserves "bigger
-	 * number = more work" so the SyncTERM config item still behaves
-	 * intuitively after the Cryptlib→scrypt KDF migration. */
-	if (KDFiterations > 0) {
-		unsigned int N = (unsigned int)KDFiterations;
-		unsigned int cost_log2 = 0;
-		while ((1U << cost_log2) < N && cost_log2 < 24)
-			cost_log2++;
-		if (cost_log2 < 8)
-			cost_log2 = 8;
-		kdf.cost_log2 = cost_log2;
+	/* Parse kdf_spec if provided.  parse_kdf_spec rejects strings
+	 * that don't carry a known "scrypt-" / "PBKDF2-SHA256-" prefix,
+	 * so digits-only legacy values fall through to the defaults —
+	 * exactly what we want, since a PBKDF2 iteration count can't
+	 * sensibly be reinterpreted as scrypt cost_log2. */
+	if (kdf_spec != NULL && *kdf_spec != '\0') {
+		struct xp_crypt_kdf_params parsed;
+		if (parse_kdf_spec(kdf_spec, &parsed))
+			kdf = parsed;
+	}
+	/* Clamp scrypt cost_log2 to a sane range.  Below 8 is pointlessly
+	 * weak; above 24 pushes memory into GB territory. */
+	if (kdf.kdf == XP_CRYPT_KDF_SCRYPT) {
+		if (kdf.cost_log2 < 8)
+			kdf.cost_log2 = 8;
+		else if (kdf.cost_log2 > 24)
+			kdf.cost_log2 = 24;
 	}
 
 	if (fp == NULL)
@@ -599,13 +635,13 @@ bool iniWriteEncryptedFile(FILE* fp, const str_list_t list, enum iniCryptAlgo al
 	if (buffer == NULL)
 		goto done;
 
-	char kdf_spec[64];
-	if (!format_kdf_spec(&kdf, kdf_spec, sizeof(kdf_spec)))
+	char hdr_kdf[64];
+	if (!format_kdf_spec(&kdf, hdr_kdf, sizeof(hdr_kdf)))
 		goto done;
 	rewind(fp);
 	fprintf(fp, "%s%s-%d, KDF: %s, Salt: %s\n",
 	        encryptedHeaderPrefixV2, iniCryptGetAlgoName(algo), keySize,
-	        kdf_spec, salt_hex);
+	        hdr_kdf, salt_hex);
 
 	/* Emit the IV header if the cipher carries one, before any
 	   ciphertext. Matches the on-disk layout produced by the old

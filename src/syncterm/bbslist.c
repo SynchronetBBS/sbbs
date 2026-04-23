@@ -2,6 +2,7 @@
 
 #include <assert.h>
 #include <dirwrap.h>
+#include <filewrap.h>  /* chsize */
 #include <ini_file.h>
 #include <netwrap.h>
 #include <stdbool.h>
@@ -1391,7 +1392,7 @@ is_reserved_bbs_name(const char *name)
 }
 
 static bool
-prompt_password(void *cb_data, char *keybuf, size_t *sz)
+prompt_password(char *keybuf, size_t *sz)
 {
 	size_t newSz = sizeof(list_password);
 
@@ -1418,14 +1419,91 @@ iniReadBBSList(FILE *fp, bool userList)
 {
 	enum iniCryptAlgo algo = INI_CRYPT_ALGO_NONE;
 	int ks;
-	str_list_t inifile = iniReadEncryptedFile(fp, prompt_password, settings.keyDerivationIterations, &algo, &ks, NULL, NULL, NULL);
+	enum xp_crypt_kdf kdf = 0;
+	str_list_t inifile = iniReadEncryptedFile(fp, prompt_password, settings.keyDerivationIterations, &algo, &ks, &kdf);
 	if (inifile == NULL || (algo != INI_CRYPT_ALGO_NONE && !iniGetBool(inifile, NULL, "DecryptionCheck", false))) {
 		uifc.msg("Failed to decrypt BBS list, exiting");
 		exit(EXIT_FAILURE);
 	}
 	if (userList) {
+		/* Legacy-format migration.  We just successfully decrypted,
+		 * so the password is known good.  Migrate any of:
+		 *
+		 *   - PBKDF2 KDF → scrypt (updates syncterm.ini's
+		 *     KeyDerivationIterations setting too)
+		 *   - 3DES/IDEA/CAST/RC2/RC4 cipher → AES-256
+		 *
+		 * Both files we need to touch (bbslist and syncterm.ini) are
+		 * opened before either is written.  If either can't be
+		 * opened for writing we bail without mutating anything — the
+		 * original v1 file stays readable on the next run, which
+		 * means the digit-form PBKDF2 iteration hint in syncterm.ini
+		 * also needs to survive intact. */
+		bool kdf_legacy    = (algo != INI_CRYPT_ALGO_NONE && kdf != XP_CRYPT_KDF_SCRYPT);
+		bool cipher_legacy = (algo != INI_CRYPT_ALGO_NONE
+		                      && algo != INI_CRYPT_ALGO_AES
+		                      && algo != INI_CRYPT_ALGO_CHACHA20);
 		list_algo = algo;
 		list_keysize = ks;
+
+		if (kdf_legacy || cipher_legacy) {
+			enum iniCryptAlgo new_algo = cipher_legacy ? INI_CRYPT_ALGO_AES : algo;
+			int new_ks = cipher_legacy ? 256 : ks;
+			const char *new_kdf_spec = kdf_legacy
+			    ? iniCryptDefaultKDFSpec()
+			    : settings.keyDerivationIterations;
+
+			FILE *listfp = fopen(settings.list_path, "r+b");
+			FILE *inifp = NULL;
+			str_list_t inicontents = NULL;
+			char inipath[MAX_PATH + 1];
+			if (kdf_legacy) {
+				get_syncterm_filename(inipath, sizeof(inipath),
+				    SYNCTERM_PATH_INI, false);
+				inifp = fopen(inipath, "r+");
+				if (inifp != NULL)
+					inicontents = iniReadFile(inifp);
+			}
+			bool ready = (listfp != NULL) && (!kdf_legacy || (inifp != NULL && inicontents != NULL));
+			if (!ready) {
+				if (listfp == NULL)
+					uifc.msg("Migration skipped: failed to open BBS list for rewrite.");
+				else if (inifp == NULL)
+					uifc.msg("Migration skipped: syncterm.ini could not be opened for rewrite.");
+				else
+					uifc.msg("Migration skipped: syncterm.ini could not be read.");
+			}
+			else if (!iniWriteEncryptedFile(listfp, inifile, new_algo,
+			                                new_ks, new_kdf_spec,
+			                                list_password)) {
+				uifc.msg("Migration skipped: failed to re-encrypt BBS list.");
+			}
+			else {
+				/* bbslist is now AES-256 / scrypt on disk.  Commit
+				 * the in-memory state and sync syncterm.ini. */
+				list_algo = new_algo;
+				list_keysize = new_ks;
+				if (kdf_legacy) {
+					SAFECOPY(settings.keyDerivationIterations,
+					    iniCryptDefaultKDFSpec());
+					iniSetString(&inicontents, "SyncTERM",
+					    "KeyDerivationIterations",
+					    settings.keyDerivationIterations,
+					    &ini_style);
+					rewind(inifp);
+					if (chsize(fileno(inifp), 0) != 0 ||
+					    !iniWriteFile(inifp, inicontents)) {
+						uifc.msg("KDF migrated but syncterm.ini write failed; setting left stale.");
+					}
+				}
+			}
+			if (listfp)
+				fclose(listfp);
+			if (inifp)
+				fclose(inifp);
+			if (inicontents)
+				strListFree(&inicontents);
+		}
 	}
 
 	return inifile;
@@ -3505,7 +3583,17 @@ change_settings(int connected)
 		SAFEPRINTF(opts[12], "TERM For Shell          %s", settings.TERM);
 		sprintf(opts[13], "Scaling                 %s", scaling_names[settings_to_scale()]);
 		sprintf(opts[14], "Invert Mouse Wheel      %s", settings.invert_wheel ? "Yes" : "No");
-		sprintf(opts[15], "Key Derivation Iters.   %d", settings.keyDerivationIterations);
+		{
+			int cost_log2 = 15;
+			const char *s = settings.keyDerivationIterations;
+			if (strncmp(s, "scrypt-N", 8) == 0) {
+				char *endp = NULL;
+				long v = strtol(s + 8, &endp, 10);
+				if (endp != s + 8 && v >= 8 && v <= 24)
+					cost_log2 = (int)v;
+			}
+			sprintf(opts[15], "Key Derivation Shift    %d", cost_log2);
+		}
 		sprintf(opts[16], "UIFC Colours");
 		if (connected)
 			opt[opt_size - 1] = NULL;
@@ -3820,40 +3908,50 @@ change_settings(int connected)
 				break;
 			case 15:
 				{
-					uifc.helpbuf = "`Key Derivation Function Work Factor`\n\n"
-						       "Work factor for the Key Derivation Function when creating an\n"
-						       "encryption key from a password.  Higher values make offline dictionary\n"
-						       "attacks more expensive, ideally making them more difficult than simple\n"
-						       "random key brute forcing.\n\n"
-						       "SyncTERM writes new encrypted lists using scrypt, where this number is\n"
-						       "the `N` cost parameter.  The supplied value is rounded up to the next\n"
-						       "power of two; the compiled-in default is 32,768 (N=2^15).  (When\n"
-						       "decrypting old PBKDF2-format lists written by the Cryptlib-era build,\n"
-						       "this value is used directly as an iteration count.)\n\n"
-						       "Minimum is 256, maximum is 16,777,216 (2^24).  Pick the highest value\n"
-						       "you can put up with — on very old hardware a lower value may be\n"
-						       "necessary to keep read/modify/write latency reasonable.\n";
-					char value[11];
-					snprintf(value, sizeof(value), "%d", settings.keyDerivationIterations);
-					if (uifc.input(WIN_SAV | WIN_MID, 0, 0, "Iterations", value, sizeof(value) - 1, K_NUMBER | K_EDIT) > 0) {
+					uifc.helpbuf = "`Key Derivation Work Factor`\n\n"
+						       "Work factor for the Key Derivation Function when turning the\n"
+						       "list password into an encryption key.  Higher values make\n"
+						       "offline dictionary attacks more expensive, ideally more so than\n"
+						       "brute-forcing the raw key.\n\n"
+						       "This is the base-2 log of scrypt's N parameter — i.e. the value\n"
+						       "entered here is the shift count; N = 2^value.  Default 15 gives\n"
+						       "N=32,768 (~16 MiB memory).  Minimum 8, maximum 24; each step\n"
+						       "doubles memory and CPU cost, so pick the highest value that still\n"
+						       "feels instant when unlocking the list.\n";
+					/* Pull the cost_log2 out of the stored spec for display.
+					 * A legacy digit-only value (pre-migration syncterm.ini)
+					 * falls back to the compiled-in default until the next
+					 * successful decrypt migrates it. */
+					int cost_log2 = 15;
+					{
+						const char *s = settings.keyDerivationIterations;
+						if (strncmp(s, "scrypt-N", 8) == 0) {
+							char *endp = NULL;
+							long v = strtol(s + 8, &endp, 10);
+							if (endp != s + 8 && v >= 8 && v <= 24)
+								cost_log2 = (int)v;
+						}
+					}
+					char value[4];
+					snprintf(value, sizeof(value), "%d", cost_log2);
+					if (uifc.input(WIN_SAV | WIN_MID, 0, 0, "Shift", value, sizeof(value) - 1, K_NUMBER | K_EDIT) > 0) {
 						long nval = strtol(value, NULL, 10);
-						if (nval > 0) {
-							FILE *listfile;
+						if (nval < 8)
+							nval = 8;
+						else if (nval > 24)
+							nval = 24;
+						snprintf(settings.keyDerivationIterations,
+						    sizeof(settings.keyDerivationIterations),
+						    "scrypt-N%ld", nval);
+						iniSetString(&inicontents, "SyncTERM", "KeyDerivationIterations", settings.keyDerivationIterations, &ini_style);
 
-							if ((listfile = fopen(settings.list_path, "r+b")) != NULL) {
-								str_list_t inifile = iniReadBBSList(listfile, true);
-								settings.keyDerivationIterations = nval;
-								iniSetInteger(&inicontents, "SyncTERM", "KeyDerivationIterations", settings.keyDerivationIterations, &ini_style);
-								if (list_algo != INI_CRYPT_ALGO_NONE)
-									iniWriteEncryptedFile(listfile, inifile, list_algo, list_keysize, settings.keyDerivationIterations, list_password);
-								fclose(listfile);
-								iniFreeStringList(inifile);
-							}
-							else {
-								uifc.msg("Failed to open list file");
-								settings.keyDerivationIterations = nval;
-								iniSetInteger(&inicontents, "SyncTERM", "KeyDerivationIterations", settings.keyDerivationIterations, &ini_style);
-							}
+						FILE *listfile;
+						if (list_algo != INI_CRYPT_ALGO_NONE &&
+						    (listfile = fopen(settings.list_path, "r+b")) != NULL) {
+							str_list_t inifile = iniReadBBSList(listfile, true);
+							iniWriteEncryptedFile(listfile, inifile, list_algo, list_keysize, settings.keyDerivationIterations, list_password);
+							fclose(listfile);
+							iniFreeStringList(inifile);
 						}
 					}
 				}
@@ -4371,7 +4469,7 @@ changeAlgo(const char *listpath, enum iniCryptAlgo algo, int keySize, const char
 	if (safe_mode)
 		return;
 	if (newpass == NULL && algo != INI_CRYPT_ALGO_NONE && !list_password[0]) {
-		if (!prompt_password(NULL, NULL, NULL))
+		if (!prompt_password(NULL, NULL))
 			return;
 	}
 	if ((listfile = fopen(listpath, "r+b")) != NULL) {

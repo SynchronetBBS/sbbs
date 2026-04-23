@@ -1724,8 +1724,22 @@ load_settings(struct syncterm_settings *set)
 		set->webgets = iniReadNamedStringList(inifile, "WebLists");
 	}
 
-	/* KDF Parameters */
-	set->keyDerivationIterations = iniReadInteger(inifile, "SyncTERM", "KeyDerivationIterations", 50000);
+	/* KDF spec.
+	 *
+	 * A string so the on-disk value is self-describing: future KDF
+	 * changes (argon2id, …) can be tagged distinctly on disk without
+	 * another migration pass.  Currently either
+	 *   "scrypt-N<cost_log2>"  — new writes (v2 bbslist files), or
+	 *   "<digits>"             — legacy Cryptlib-era PBKDF2 iteration
+	 *                            count, still honoured by the reader
+	 *                            for v1 files.
+	 * The default for new installs matches INI_SCRYPT_COST_LOG2 in
+	 * ini_crypt.c.  Legacy digits-only values are left untouched on
+	 * load; the UI offers to re-key to scrypt form when the user
+	 * writes a new encrypted file. */
+	iniReadSString(inifile, "SyncTERM", "KeyDerivationIterations",
+	    "scrypt-N15", set->keyDerivationIterations,
+	    sizeof(set->keyDerivationIterations));
 
 	/* UIFC Colours */
 	set->uifc_bclr = iniReadEnum(inifile, "UIFC", "BackgroundColour", (char **)bg_colour_enum, 8);
