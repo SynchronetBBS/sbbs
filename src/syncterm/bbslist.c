@@ -5426,8 +5426,11 @@ show_bbslist(char *current, int connected)
 						         "    %s PulseAudio\n"
 						         "    %s Core Audio\n"
 						         "    %s libsndfile\n",
-						         /* DeuceSSH is always linked after the Cryptlib migration. */
+#ifdef WITHOUT_DEUCESSH
+						         "[ ]",
+#else
 						         "[`\xFB`]",
+#endif
 #if defined(XP_CRYPTO_BACKEND_OPENSSL)
 						         "[`\xFB`]",
 						         "[ ]",
