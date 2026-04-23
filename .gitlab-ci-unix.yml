@@ -523,6 +523,16 @@ spec:
     - .$[[ inputs.os ]]-build
   script:
     - touch ${CI_PIPELINE_ID}.ci
+    # Reuse the vendored-Botan archive that the [botan] job already
+    # built for the gmake-side [syncterm] job.  The .pc file in the
+    # archive is relocatable, so pkg-config resolves it wherever it
+    # lands.  Without this the cmake ExternalProject rebuilds Botan
+    # from scratch in the build dir — duplicating 30+ s of CPU on
+    # platforms where the system probe fails (macOS).
+    - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/botan.tgz"
+    # One match if vendored, zero if [botan] was a no-op (system Botan
+    # detected) — no-op extraction is fine either way.
+    - for d in 3rdp/*.release/botan/lib/pkgconfig; do [ -d "$d" ] && export PKG_CONFIG_PATH="$(pwd)/$d${PKG_CONFIG_PATH:+:$PKG_CONFIG_PATH}"; done
     - cd src/syncterm
     - mkdir build
     - cd build
@@ -541,6 +551,7 @@ spec:
       when: never
     - !reference [.rules, rules]
   needs:
+    - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [botan]"
 
 "$[[ inputs.os ]]-$[[ inputs.platform ]] [syncview]":
   extends:
