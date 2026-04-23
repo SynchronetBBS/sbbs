@@ -167,13 +167,21 @@ if(XP_CRYPTO_BACKEND STREQUAL "OpenSSL")
 	find_package(OpenSSL REQUIRED)
 	target_link_libraries(xpdev OpenSSL::Crypto)
 elseif(XP_CRYPTO_BACKEND STREQUAL "Botan")
-	find_package(PkgConfig REQUIRED)
-	pkg_check_modules(XP_BOTAN3 REQUIRED IMPORTED_TARGET botan-3)
 	# Botan 3 public headers require C++20 (std::span).
 	set_source_files_properties(
 	    xp_crypt_botan3.cpp xp_tls_botan3.cpp
 	    PROPERTIES COMPILE_OPTIONS "-std=c++20")
-	target_link_libraries(xpdev PkgConfig::XP_BOTAN3)
+	# Vendored-Botan build: parent declared an IMPORTED target pointing
+	# at the ExternalProject output.  Skip pkg-config (the .pc file
+	# doesn't exist at configure time).  System-Botan build: run the
+	# normal pkg-config probe.
+	if(BOTAN3_VENDORED_TARGET)
+		target_link_libraries(xpdev ${BOTAN3_VENDORED_TARGET})
+	else()
+		find_package(PkgConfig REQUIRED)
+		pkg_check_modules(XP_BOTAN3 REQUIRED IMPORTED_TARGET botan-3)
+		target_link_libraries(xpdev PkgConfig::XP_BOTAN3)
+	endif()
 elseif(XP_CRYPTO_BACKEND STREQUAL "none")
 	target_compile_definitions(xpdev PUBLIC WITHOUT_CRYPTO)
 endif()

@@ -86,21 +86,41 @@ if(USE_VENDORED_BOTAN)
 			    --ar-command=${CMAKE_AR})
 		endif()
 	endif()
+	# Probe parallel build width; Botan's generated Makefile doesn't use
+	# GNU make's jobserver, and inheriting parent MAKEFLAGS with "-j"
+	# but no count produces "illegal argument to -j".  Clear MAKEFLAGS
+	# and pass an explicit -jN to the sub-make.
+	include(ProcessorCount)
+	ProcessorCount(_n_cpus)
+	if(_n_cpus EQUAL 0)
+		set(_n_cpus 2)
+	endif()
 	ExternalProject_Add(vendored-botan
 	    URL "${CMAKE_CURRENT_SOURCE_DIR}/../../3rdp/dist/Botan.tar.xz"
 	    PREFIX "${CMAKE_BINARY_DIR}/vendored-botan-src"
 	    CONFIGURE_COMMAND python3 <SOURCE_DIR>/configure.py ${_botan_configure_args}
-	    BUILD_COMMAND make
-	    INSTALL_COMMAND make install
+	    BUILD_COMMAND ${CMAKE_COMMAND} -E env --unset=MAKEFLAGS
+	        make -j${_n_cpus}
+	    INSTALL_COMMAND ${CMAKE_COMMAND} -E env --unset=MAKEFLAGS
+	        make install
 	    BUILD_BYPRODUCTS ${VENDORED_BOTAN_LIB}
 	    BUILD_IN_SOURCE TRUE)
-	# Prepend to PKG_CONFIG_PATH so downstream pkg_check_modules find it.
-	if(DEFINED ENV{PKG_CONFIG_PATH})
-		set(ENV{PKG_CONFIG_PATH}
-		    "${VENDORED_BOTAN_PKGCONFIG}:$ENV{PKG_CONFIG_PATH}")
-	else()
-		set(ENV{PKG_CONFIG_PATH} "${VENDORED_BOTAN_PKGCONFIG}")
-	endif()
+	# ExternalProject runs at build time, so the .pc file doesn't exist
+	# yet when sub-projects run pkg_check_modules at configure time.
+	# Set up a manually-defined IMPORTED target + BYPASS hint so xpdev
+	# and DeuceSSH use the baked-in paths instead of consulting pkg-
+	# config.  The target's OUTPUT file is listed in BUILD_BYPRODUCTS so
+	# it works with both make and Ninja.
+	file(MAKE_DIRECTORY "${VENDORED_BOTAN_PREFIX}/include/botan-3")
+	add_library(vendored-botan-3 STATIC IMPORTED GLOBAL)
+	set_target_properties(vendored-botan-3 PROPERTIES
+	    IMPORTED_LOCATION "${VENDORED_BOTAN_LIB}"
+	    INTERFACE_INCLUDE_DIRECTORIES
+	        "${VENDORED_BOTAN_PREFIX}/include/botan-3")
+	add_dependencies(vendored-botan-3 vendored-botan)
+	# Cache hints picked up by xpdev and DeuceSSH CMakeLists to avoid
+	# running pkg-config entirely.
+	set(BOTAN3_VENDORED_TARGET "vendored-botan-3" CACHE INTERNAL "")
 	# Force DeuceSSH + xpdev to pick Botan (vendored is Botan, not OpenSSL).
 	set(DEUCESSH_CRYPTO_BACKEND "Botan" CACHE STRING "" FORCE)
 	set(XP_CRYPTO_BACKEND       "Botan" CACHE STRING "" FORCE)
