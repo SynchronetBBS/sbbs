@@ -94,9 +94,12 @@ if(NOT HAVE_THREADS_IN_LIBC)
 	find_library(STDTHREADS_LIB stdthreads)
 	if(STDTHREADS_LIB)
 		set(THREADS_LINK_LIB ${STDTHREADS_LIB})
-	elseif(MINGW OR (WIN32 AND CMAKE_C_COMPILER_ID STREQUAL "GNU"))
+	elseif(WIN32)
 		# Prepend win32/ to the include path so <threads.h> resolves
-		# to our shim rather than the missing system header.
+		# to our shim rather than the missing system header.  Applies
+		# to MinGW-w64 and MSVC alike — both lack libc <threads.h> but
+		# provide the CRITICAL_SECTION / CONDITION_VARIABLE /
+		# _beginthreadex primitives the shim wraps.
 		set(DSSH_THREADS_SHIM_SOURCES win32/threads.c)
 		set(DSSH_THREADS_SHIM_INCLUDE
 		    ${CMAKE_CURRENT_SOURCE_DIR}/win32)
