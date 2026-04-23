@@ -213,7 +213,7 @@ include:
   artifacts:
     name: syncterm-msvc
     paths:
-      - "src/syncterm/Release/*.exe"
+      - "src/syncterm/msvc.build/Release/*.exe"
 
 "freebsd-amd64 [sbbs-noskeeters]":
   extends:

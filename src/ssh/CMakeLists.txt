@@ -34,8 +34,13 @@ if(DEUCESSH_CRYPTO_BACKEND STREQUAL "")
 		endif()
 	endif()
 elseif(DEUCESSH_CRYPTO_BACKEND STREQUAL "Botan")
-	find_package(PkgConfig REQUIRED)
-	pkg_check_modules(BOTAN3 REQUIRED IMPORTED_TARGET botan-3)
+	# Parent project may pre-create an IMPORTED target (e.g. when Botan
+	# is built via ExternalProject and its pkg-config file doesn't exist
+	# at configure time).  BOTAN3_VENDORED_TARGET is the cache hint.
+	if(NOT BOTAN3_VENDORED_TARGET)
+		find_package(PkgConfig REQUIRED)
+		pkg_check_modules(BOTAN3 REQUIRED IMPORTED_TARGET botan-3)
+	endif()
 elseif(DEUCESSH_CRYPTO_BACKEND STREQUAL "OpenSSL")
 	find_package(OpenSSL REQUIRED)
 else()
@@ -45,9 +50,16 @@ else()
 endif()
 
 if(DEUCESSH_CRYPTO_BACKEND STREQUAL "Botan")
-	set(DSSH_CRYPTO_LIB_PRIVATE PkgConfig::BOTAN3)
-	set(DSSH_CRYPTO_LIB_INTERFACE ${BOTAN3_LDFLAGS})
-	set(DSSH_CRYPTO_INCLUDE ${BOTAN3_INCLUDE_DIRS})
+	if(BOTAN3_VENDORED_TARGET)
+		set(DSSH_CRYPTO_LIB_PRIVATE ${BOTAN3_VENDORED_TARGET})
+		set(DSSH_CRYPTO_LIB_INTERFACE "")
+		get_target_property(DSSH_CRYPTO_INCLUDE
+		    ${BOTAN3_VENDORED_TARGET} INTERFACE_INCLUDE_DIRECTORIES)
+	else()
+		set(DSSH_CRYPTO_LIB_PRIVATE PkgConfig::BOTAN3)
+		set(DSSH_CRYPTO_LIB_INTERFACE ${BOTAN3_LDFLAGS})
+		set(DSSH_CRYPTO_INCLUDE ${BOTAN3_INCLUDE_DIRS})
+	endif()
 	set(DSSH_CRYPTO_IMPL crypto/botan.cpp)
 	set(DSSH_CONFIG_FIND_DEPENDENCY "find_dependency(PkgConfig)\npkg_check_modules(BOTAN3 REQUIRED IMPORTED_TARGET botan-3)")
 	set(DSSH_PC_REQUIRES_PRIVATE "botan-3")
@@ -65,22 +77,82 @@ if(DEUCESSH_CRYPTO_BACKEND STREQUAL "Botan")
 	enable_language(CXX)
 endif()
 
-# C11 threads: FreeBSD needs -lstdthreads, Linux/macOS have it in libc
 include(CheckCSourceCompiles)
+
+# Probes below must match the -std= flag the real targets build with
+# (C_STANDARD 17).  Probing at -std=c11 would silently pass on SDKs
+# that guard declarations on __STDC_VERSION__ >= 201710L and still
+# fail the real compile.
 set(CMAKE_REQUIRED_FLAGS "-std=c17")
+
+# C11 runtime library sanity check.  CMake's C_STANDARD 17 +
+# C_STANDARD_REQUIRED ON verifies that the compiler is on its known-
+# C17-capable list (AppleClang 6+ is, regardless of SDK vintage); it
+# does NOT compile anything to check that the libc / SDK actually
+# ships the C11 functions <time.h> promises.  Without this probe an
+# older macOS SDK (pre-10.15 lacks timespec_get / TIME_UTC) gets all
+# the way to "implicit declaration of function 'timespec_get'" at
+# real-target compile time while configure thinks everything's fine.
+# Fail configure up front so consumers' own build-time probes can
+# observe the failure and react.
+check_c_source_compiles("
+	#include <time.h>
+	int main(void) {
+		struct timespec ts;
+		return timespec_get(&ts, TIME_UTC) == TIME_UTC ? 0 : 1;
+	}
+" HAVE_TIMESPEC_GET)
+if(NOT HAVE_TIMESPEC_GET)
+	message(FATAL_ERROR
+	    "DeuceSSH requires C11's timespec_get / TIME_UTC in <time.h>.  "
+	    "This SDK/libc predates them — upgrade the platform toolchain.")
+endif()
+
+# C11 threads: glibc (2.28+), recent macOS SDKs, and FreeBSD 12+ have
+# them.  FreeBSD used to ship them in a separate libstdthreads.  Older
+# macOS and NetBSD have pthread but no <threads.h>; MinGW-w64 has
+# neither.  Probe libc first, then libstdthreads, then fall back to a
+# platform shim.
 check_c_source_compiles("
 	#include <threads.h>
 	int main(void) { mtx_t m; mtx_init(&m, mtx_plain); return 0; }
 " HAVE_THREADS_IN_LIBC)
+set(DSSH_THREADS_SHIM_SOURCES "")
+set(DSSH_THREADS_SHIM_INCLUDE "")
 if(NOT HAVE_THREADS_IN_LIBC)
 	find_library(STDTHREADS_LIB stdthreads)
-	if(NOT STDTHREADS_LIB)
-		message(FATAL_ERROR "C11 <threads.h> not found in libc or libstdthreads")
+	if(STDTHREADS_LIB)
+		set(THREADS_LINK_LIB ${STDTHREADS_LIB})
+	elseif(WIN32)
+		# Prepend win32/ to the include path so <threads.h> resolves
+		# to our shim rather than the missing system header.  Applies
+		# to MinGW-w64 and MSVC alike — both lack libc <threads.h> but
+		# provide the CRITICAL_SECTION / CONDITION_VARIABLE /
+		# _beginthreadex primitives the shim wraps.
+		set(DSSH_THREADS_SHIM_SOURCES win32/threads.c)
+		set(DSSH_THREADS_SHIM_INCLUDE
+		    ${CMAKE_CURRENT_SOURCE_DIR}/win32)
+		set(THREADS_LINK_LIB "")
+	elseif(UNIX)
+		# POSIX pthread shim — macOS (pre-14 SDK), older NetBSD, any
+		# libc without C11 threads.  Requires pthread but CMake's
+		# Threads::Threads already pulls it in for us below.
+		set(DSSH_THREADS_SHIM_SOURCES posix/threads.c)
+		set(DSSH_THREADS_SHIM_INCLUDE
+		    ${CMAKE_CURRENT_SOURCE_DIR}/posix)
+		find_package(Threads REQUIRED)
+		set(THREADS_LINK_LIB Threads::Threads)
+	else()
+		message(FATAL_ERROR
+			"C11 <threads.h> not found in libc or libstdthreads, "
+			"and no platform-specific shim applies")
 	endif()
-	set(THREADS_LINK_LIB ${STDTHREADS_LIB})
 else()
 	set(THREADS_LINK_LIB "")
 endif()
+# Backwards-compat alias: older code paths referenced the Win32-only
+# name.  Keep both pointing at whichever shim is active.
+set(DSSH_WIN32_THREADS_SOURCES ${DSSH_THREADS_SHIM_SOURCES})
 
 # Algorithm modules -- backend-specific
 if(DEUCESSH_CRYPTO_BACKEND STREQUAL "OpenSSL")
@@ -132,6 +204,7 @@ set(DEUCESSH_SOURCES
 	kex/sntrup761_optblocker.c
 	kex/mlkem768.c
 	${DSSH_ALG_SOURCES}
+	${DSSH_WIN32_THREADS_SOURCES}
 	enc/none.c
 	mac/none.c
 	comp/none.c
@@ -152,15 +225,24 @@ set(DEUCESSH_COMPILE_OPTIONS "")
 set(DEUCESSH_LINK_OPTIONS "")
 
 if(CMAKE_C_COMPILER_ID MATCHES "GNU|Clang|AppleClang")
-	# Baseline warnings (GCC 2.95+, Clang 4+)
+	# Baseline warnings (GCC 2.95+, Clang 4+).  -Werror=implicit,
+	# -Werror=incompatible-pointer-types, -Werror=int-conversion are
+	# C-only diagnostics; g++ rejects them with "not valid for C++".
 	list(APPEND DEUCESSH_COMPILE_OPTIONS
 		-Wall -Wpedantic -pedantic -Werror
 		-Wformat -Wformat=2
 		-Wimplicit-fallthrough
 		-Werror=format-security
-		-Werror=implicit
-		-Werror=incompatible-pointer-types
-		-Werror=int-conversion)
+		$<$<COMPILE_LANGUAGE:C>:-Werror=implicit>
+		$<$<COMPILE_LANGUAGE:C>:-Werror=incompatible-pointer-types>
+		$<$<COMPILE_LANGUAGE:C>:-Werror=int-conversion>)
+
+	# Strict probes: we compile with -Werror, so "flag accepted but
+	# unused" (Apple Clang emits -Wunused-command-line-argument for
+	# -fstack-clash-protection etc.) would still break the real build.
+	# Push -Werror into CMAKE_REQUIRED_FLAGS so the probe matches the
+	# actual compile discipline.  -std=c17 matches the real targets.
+	set(CMAKE_REQUIRED_FLAGS "-std=c17 -Werror")
 
 	check_c_compiler_flag(-Wconversion HAVE_WCONVERSION)
 	if(HAVE_WCONVERSION)
@@ -206,11 +288,20 @@ if(CMAKE_C_COMPILER_ID MATCHES "GNU|Clang|AppleClang")
 			-ftrivial-auto-var-init=zero)
 	endif()
 
-	# UB mitigations
-	list(APPEND DEUCESSH_COMPILE_OPTIONS
-		-fno-delete-null-pointer-checks
-		-fno-strict-overflow
-		-fno-strict-aliasing)
+	# UB mitigations — probe each (older AppleClang rejects
+	# -fno-delete-null-pointer-checks with -Werror,-Wignored-optimization-argument).
+	check_c_compiler_flag(-fno-delete-null-pointer-checks HAVE_NO_DELETE_NULL)
+	if(HAVE_NO_DELETE_NULL)
+		list(APPEND DEUCESSH_COMPILE_OPTIONS -fno-delete-null-pointer-checks)
+	endif()
+	check_c_compiler_flag(-fno-strict-overflow HAVE_NO_STRICT_OVERFLOW)
+	if(HAVE_NO_STRICT_OVERFLOW)
+		list(APPEND DEUCESSH_COMPILE_OPTIONS -fno-strict-overflow)
+	endif()
+	check_c_compiler_flag(-fno-strict-aliasing HAVE_NO_STRICT_ALIASING)
+	if(HAVE_NO_STRICT_ALIASING)
+		list(APPEND DEUCESSH_COMPILE_OPTIONS -fno-strict-aliasing)
+	endif()
 
 	# FORTIFY_SOURCE (requires -O1+, incompatible with sanitizers)
 	if(NOT CMAKE_BUILD_TYPE STREQUAL "Debug")
@@ -270,6 +361,10 @@ if(DEUCESSH_BUILD_STATIC)
 		PUBLIC
 			$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
 			$<INSTALL_INTERFACE:include/deucessh>)
+	if(DSSH_THREADS_SHIM_INCLUDE)
+		target_include_directories(deucessh_static BEFORE
+			PRIVATE ${DSSH_THREADS_SHIM_INCLUDE})
+	endif()
 	target_include_directories(deucessh_static SYSTEM
 		PRIVATE ${DSSH_CRYPTO_INCLUDE})
 	target_link_libraries(deucessh_static
@@ -300,6 +395,10 @@ if(DEUCESSH_BUILD_SHARED)
 		PUBLIC
 			$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
 			$<INSTALL_INTERFACE:include/deucessh>)
+	if(DSSH_THREADS_SHIM_INCLUDE)
+		target_include_directories(deucessh_shared BEFORE
+			PRIVATE ${DSSH_THREADS_SHIM_INCLUDE})
+	endif()
 	target_include_directories(deucessh_shared SYSTEM
 		PRIVATE ${DSSH_CRYPTO_INCLUDE})
 	target_link_libraries(deucessh_shared

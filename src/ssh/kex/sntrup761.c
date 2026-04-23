@@ -686,7 +686,7 @@ Short_random(small *out)
 	if (randombytes(L, sizeof(L)) < 0)
 		return -1;
 	Short_fromlist(out, L);
-	explicit_bzero(L, sizeof(L));
+	dssh_secure_zero(L, sizeof(L));
 	return 0;
 }
 
@@ -699,7 +699,7 @@ Small_random(small *out)
 		return -1;
 	for (i = 0; i < p; ++i)
 		out[i] = (small)((((L[i] & 0x3fffffff) * 3) >> 30) - 1);
-	explicit_bzero(L, sizeof(L));
+	dssh_secure_zero(L, sizeof(L));
 	return 0;
 }
 

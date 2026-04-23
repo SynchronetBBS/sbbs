@@ -23,7 +23,7 @@ ASCII_FILES := $(wildcard ../art/*.asc)
 ASCART := ..$(DIRSEP)gac_asc.art
 RIP_FILES := $(wildcard ../art/*.rip)
 RIPART := ..$(DIRSEP)gac_rip.art
-PACKART_PATH := ..$(DIRSEP)..$(DIRSEP)gamesdk$(DIRSEP)$(shell env - PATH="$(PATH)" $(MAKE) -C ../../gamesdk RELEASE=1 packart-path | awk '/^PACKART PATH:/ {print $$3}')
+PACKART_PATH := ..$(DIRSEP)..$(DIRSEP)gamesdk$(DIRSEP)$(shell env - PATH="$(PATH)" PKG_CONFIG_PATH="$(PKG_CONFIG_PATH)" $(MAKE) -C ../../gamesdk RELEASE=1 packart-path | awk '/^PACKART PATH:/ {print $$3}')
 DEBUG := $(shell echo $(PACKART_PATH))
 
 all: $(ANSART) $(ASCART) $(RIPART)
@@ -41,7 +41,7 @@ $(GAC_FC_DST): $(GAC_FC)
 
 .PHONY: $(PACKART_PATH)
 $(PACKART_PATH):
-	env - PATH="$(PATH)" $(MAKE) -C ../../gamesdk RELEASE=1
+	env - PATH="$(PATH)" PKG_CONFIG_PATH="$(PKG_CONFIG_PATH)" $(MAKE) -C ../../gamesdk RELEASE=1
 
 $(ANSART): $(ANSI_FILES) $(PACKART_PATH)
 	@echo Packing $@

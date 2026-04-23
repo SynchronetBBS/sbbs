@@ -56,6 +56,10 @@ JS_SRC :=	$(3RDP_ROOT)/src/mozjs
 JS_IDIR :=	$(3RDPODIR)/mozjs
 CRYPT_SRC :=	$(3RDP_ROOT)/src/cl
 CRYPT_IDIR :=	$(3RDPODIR)/cl
+BOTAN_SRC :=	$(3RDP_ROOT)/src/botan
+BOTAN_IDIR :=	$(3RDPODIR)/botan
+BOTAN_BUILD :=	$(BOTAN_IDIR)/lib/libbotan-3.a
+BOTAN_PKGCONFIG_DIR := $(BOTAN_IDIR)/lib/pkgconfig
 
 ############
 # JS Stuff #

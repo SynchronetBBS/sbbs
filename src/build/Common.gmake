@@ -330,6 +330,58 @@ EXEODIR :=	$(CCPRE).$(machine).exe.$(BUILDPATH)
 SRCODIR :=	$(CCPRE).$(machine).src.$(BUILDPATH)
 LDFLAGS	+=	-L$(LIBODIR)
 
+# Shared crypto-backend probe for xpdev, SyncTERM, and any other
+# consumer in the same build pipeline.
+#
+# xpdev's library must be byte-identical across every consumer of the
+# same source tree + build options — otherwise a cached libxpdev_mt.a
+# from one job silently mismatches the link line of the next.
+# Common.gmake is the only file every subproject already includes, so
+# making the decision here guarantees that `make -C xpdev`,
+# `make -C syncterm`, and any sbbs3 consumer arrive at the same
+# XP_CRYPTO_BACKEND / DEUCESSH_BACKEND / USE_VENDORED_BOTAN for a given
+# host + command-line override set.
+#
+# Decision order (first match wins; user can pre-set DEUCESSH_BACKEND
+# or USE_VENDORED_BOTAN on the command line to skip the probe).
+#   1. USE_VENDORED_BOTAN set, or Windows cross-build → Botan, vendored.
+#   2. System Botan 3.6+ available → Botan, system.
+#   3. System OpenSSL 3.0+ available → OpenSSL, system.
+#   4. Otherwise → Botan, vendored (from 3rdp/dist/Botan.tar.xz).
+#
+# USE_VENDORED_BOTAN is a pure boolean: defined = use vendored.  Never
+# assign it to "0" — leave it unset to mean "don't use vendored".
+#
+# DeuceSSH and xp_crypt share the backend by default.  WITHOUT_CRYPTO
+# only affects xp_crypt (which is DeuceSSH-independent); DeuceSSH itself
+# still needs its chosen crypto runtime even when xp_crypt is stubbed.
+ifndef DEUCESSH_BACKEND
+ ifdef win
+  DEUCESSH_BACKEND   := Botan
+  USE_VENDORED_BOTAN := 1
+ else ifdef USE_VENDORED_BOTAN
+  DEUCESSH_BACKEND   := Botan
+ else ifeq ($(shell pkg-config --atleast-version=3.6 botan-3 2>/dev/null && echo Y),Y)
+  DEUCESSH_BACKEND   := Botan
+ else ifeq ($(shell pkg-config --atleast-version=3.0 libcrypto 2>/dev/null && echo Y),Y)
+  DEUCESSH_BACKEND   := OpenSSL
+ else
+  DEUCESSH_BACKEND   := Botan
+  USE_VENDORED_BOTAN := 1
+ endif
+endif
+
+# xp_crypt follows DeuceSSH's backend unless WITHOUT_CRYPTO stubs it.
+ifdef WITHOUT_CRYPTO
+ XP_CRYPTO_BACKEND ?= none
+endif
+XP_CRYPTO_BACKEND ?= $(DEUCESSH_BACKEND)
+
+export XP_CRYPTO_BACKEND
+export DEUCESSH_BACKEND
+export USE_VENDORED_BOTAN
+export WITHOUT_CRYPTO
+
 ifeq ($(os),openbsd)
  DELETE :=	rm -f
 else
@@ -553,6 +605,12 @@ CFLAGS += -fno-delete-null-pointer-checks
 -include targets.mk
 -include $(SRC_ROOT)/build/rules.mk
 -include objects.mk		# defines $(OBJS)
+
+# Shared vendored-Botan plumbing (`botan:` delegation target +
+# PKG_CONFIG_PATH prepend).  Included AFTER targets.mk so the
+# subproject's `all:` target stays the default goal — otherwise
+# declaring `botan:` here would hijack it.
+include $(SRC_ROOT)$(DIRSEP)build$(DIRSEP)botan.gmake
 
 # Implicit ASM Compile Rule
 $(OBJODIR)/%$(OFILE) : %.s $(BUILD_DEPENDS) | $(OBJODIR)

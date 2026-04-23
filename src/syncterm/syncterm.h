@@ -90,7 +90,7 @@ struct syncterm_settings {
 	uint                  audio_output_modes;
 	bool                  invert_wheel;
 	bool                  webgetUserList;
-	int                   keyDerivationIterations;
+	char                  keyDerivationIterations[32];	/* KDF spec string, e.g. "scrypt-N15" */
 	enum CursorTypeEnum   defaultCursor;
 	unsigned              uifc_hclr;
 	unsigned              uifc_lclr;
