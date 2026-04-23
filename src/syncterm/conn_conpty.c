@@ -1,4 +1,5 @@
 #define WIN32_LEAN_AND_MEAN
+#include <limits.h>
 #include <stdbool.h>
 #include <windows.h>
 #include <wincon.h>
@@ -271,6 +272,25 @@ int conpty_connect(struct bbslist *bbs)
 	_beginthread(conpty_input_thread, 0, NULL);
 
 	return 0;
+}
+
+/* Resize the child console via ResizePseudoConsole.  Pixel args are
+ * ignored — conpty is cell-based.  No-op on any failure. */
+void
+conpty_send_window_change(int text_cols, int text_rows,
+    int pixel_cols, int pixel_rows)
+{
+	(void)pixel_cols;
+	(void)pixel_rows;
+	if (text_cols <= 0 || text_rows <= 0)
+		return;
+	if (text_cols > SHRT_MAX || text_rows > SHRT_MAX)
+		return;
+
+	COORD size;
+	size.X = (SHORT)text_cols;
+	size.Y = (SHORT)text_rows;
+	(void)ResizePseudoConsole(cpty, size);
 }
 
 int

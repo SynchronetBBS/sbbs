@@ -4861,6 +4861,21 @@ clear_status_row(void)
  * and status to match new_type, updates term.nostatus so update_status()
  * behaves correctly afterwards, and creates or destroys the sub-cterm
  * that owns the status row in host-writable mode. */
+/* cterm fires this when the terminal's visible dimensions change
+ * post-init (e.g. DECSSDT status-row toggle).  Hand off to the conn
+ * layer so protocols that carry window-size info (NAWS, SSH
+ * window-change, RLogin 0xFF 0xFF 's' 's', pty TIOCSWINSZ, conpty
+ * ResizePseudoConsole) can notify the remote end. */
+static void
+on_terminal_size_change(struct cterminal *c,
+    int text_cols, int text_rows, int pixel_cols, int pixel_rows,
+    void *cbdata)
+{
+	(void)c;
+	(void)cbdata;
+	conn_send_window_change(text_cols, text_rows, pixel_cols, pixel_rows);
+}
+
 static void
 on_status_display_change(struct cterminal *c, int old_type, int new_type,
     void *cbdata)
@@ -5582,6 +5597,8 @@ doterm(struct bbslist *bbs)
 	cterm->status_display_type = bbs->nostatus ? 0 : 1;
 	cterm->status_display_cb = on_status_display_change;
 	cterm->status_display_cbdata = bbs;
+	cterm->size_change_cb = on_terminal_size_change;
+	cterm->size_change_cbdata = bbs;
 	cterm->music_enable = bbs->music;
 	zrqbuf[0] = 0;
 	zrqlen = 0;

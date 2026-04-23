@@ -3,6 +3,9 @@
 #include <ciolib.h>
 #include <gen_defs.h>
 #include <vidmodes.h>
+#ifdef HAS_VSTAT
+ #include <bitmap_con.h>	/* vstat / vstatlock */
+#endif
 
 #include "syncterm.h"
 #include "term.h"
@@ -40,6 +43,35 @@ get_term_win_size(int *width, int *height, int *pixelw, int *pixelh, int *nostat
 	if (!*nostatus)
 		(*height)--;
 
+	if (pixelw == NULL && pixelh == NULL)
+		return;
+
+#ifdef HAS_VSTAT
+	/* Runtime vstat is the source of truth for both per-cell size
+	 * and framebuffer extent.  When the terminal fills every
+	 * row/column of the framebuffer (status hidden, matching mode),
+	 * report vstat.scrn* so leftover scanlines that don't divide
+	 * evenly into a character cell are still accounted for (e.g.
+	 * EGA 80x43: 350 lines, 8-pixel cells, 6 unused rows below row
+	 * 43).  Otherwise, cells-times-size. */
+	assert_rwlock_rdlock(&vstatlock);
+	if (vstat.charwidth > 0 && vstat.charheight > 0) {
+		if (pixelw)
+			*pixelw = (*width == vstat.cols)
+			    ? vstat.scrnwidth
+			    : *width * vstat.charwidth;
+		if (pixelh)
+			*pixelh = (*height == vstat.rows)
+			    ? vstat.scrnheight
+			    : *height * vstat.charheight;
+		assert_rwlock_unlock(&vstatlock);
+		return;
+	}
+	assert_rwlock_unlock(&vstatlock);
+#endif
+
+	/* Fallback: no vstat (or charwidth/height uninitialized) — derive
+	 * cell size from vparams, or assume 8x16 when the mode is unknown. */
 	if (vmode == -1) {
 		if (pixelw)
 			*pixelw = *width * 8;

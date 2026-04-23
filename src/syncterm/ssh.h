@@ -11,6 +11,8 @@ void init_crypt(void);
 void exit_crypt(void);
 int  ssh_connect(struct bbslist *bbs);
 int  ssh_close(void);
+void ssh_send_window_change(int text_cols, int text_rows,
+                            int pixel_cols, int pixel_rows);
 void ssh_input_thread(void *args);
 void ssh_output_thread(void *args);
 

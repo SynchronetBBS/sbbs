@@ -922,11 +922,14 @@ ssh_connect(struct bbslist *bbs)
 	}
 
 	term = get_emulation_str(bbs);
-	get_term_win_size(&cols, &rows, NULL, NULL, &bbs->nostatus);
+	int pixelc = 0, pixelr = 0;
+	get_term_win_size(&cols, &rows, &pixelc, &pixelr, &bbs->nostatus);
 	dssh_chan_params_init(&params, DSSH_CHAN_SHELL);
 	dssh_chan_params_set_pty(&params, true);
 	dssh_chan_params_set_term(&params, term);
-	dssh_chan_params_set_size(&params, (uint32_t)cols, (uint32_t)rows, 0, 0);
+	dssh_chan_params_set_size(&params, (uint32_t)cols, (uint32_t)rows,
+	    (uint32_t)(pixelc > 0 ? pixelc : 0),
+	    (uint32_t)(pixelr > 0 ? pixelr : 0));
 	ssh_chan = dssh_chan_open(ssh_session, &params);
 	dssh_chan_params_free(&params);
 	if (ssh_chan == NULL) {
@@ -978,6 +981,24 @@ ssh_connect(struct bbslist *bbs)
 		free(pubkey);
 	}
 	return 0;
+}
+
+/* Forward a window-size change to the open SSH channel as an SSH2
+ * "window-change" request (RFC 4254 §6.7).  Pixel args of -1 map to 0
+ * ("not specified").  No-op before the channel is open or after close. */
+void
+ssh_send_window_change(int text_cols, int text_rows,
+    int pixel_cols, int pixel_rows)
+{
+	if (ssh_chan == NULL)
+		return;
+	if (text_cols <= 0 || text_rows <= 0)
+		return;
+
+	uint32_t wpx = (pixel_cols < 0) ? 0 : (uint32_t)pixel_cols;
+	uint32_t hpx = (pixel_rows < 0) ? 0 : (uint32_t)pixel_rows;
+	(void)dssh_chan_send_window_change(ssh_chan,
+	    (uint32_t)text_cols, (uint32_t)text_rows, wpx, hpx);
 }
 
 int
