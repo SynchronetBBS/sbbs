@@ -50,9 +50,10 @@ endif
 
 JS_CONFIGURE_ENV += 'CXXFLAGS=$(CXXFLAGS)'
 
-.PHONY: cryptlib libmozjs
+.PHONY: cryptlib libmozjs botan
 cryptlib: $(CRYPTLIB_BUILD)
 libmozjs: $(JSLIB_BUILD)
+botan: $(BOTAN_BUILD)
 
 ###############
 # Directories #
@@ -242,3 +243,53 @@ endif
 endif
 	$(QUIET)cp $(CRYPT_SRC)/libcl.a $(CRYPT_IDIR)
 	$(QUIET)cp $(CRYPT_SRC)/cryptlib.h $(CRYPT_IDIR)
+
+##########
+# Botan  #
+##########
+#
+# Built only when the consumer (usually SyncTERM) asks for it, because
+# the system already has Botan 3.9+ / OpenSSL 3.0+ in the common case.
+# No patches — the tarball compiles cleanly on every platform we ship
+# to.  Installs a static libbotan-3.a plus botan-3.pc under
+# $(BOTAN_IDIR); consumers prepend $(BOTAN_PKGCONFIG_DIR) to
+# PKG_CONFIG_PATH and every pkg-config lookup picks up the vendored
+# copy transparently.
+#
+# Botan's configure.py auto-detects the target for native builds.
+# For mingw cross-compile we explicitly pin --os=mingw and pass the
+# cross toolchain; otherwise auto-detect would try to match the host.
+
+ifeq ($(os),win64)
+ BOTAN_CONFIGURE_EXTRA := --os=mingw --cpu=x86_64 \
+                          --cc-bin=$(CXX) --ar-command=$(AR)
+else ifeq ($(os),win32)
+ BOTAN_CONFIGURE_EXTRA := --os=mingw --cpu=x86 \
+                          --cc-bin=$(CXX) --ar-command=$(AR)
+else
+ BOTAN_CONFIGURE_EXTRA :=
+endif
+
+# Botan's generated Makefile doesn't use a jobserver, so -j has to be
+# passed explicitly.  Detect a sane default; user can override with
+# BOTAN_JOBS=N on the command line.
+BOTAN_JOBS ?= $(shell nproc 2>/dev/null || sysctl -n hw.ncpu 2>/dev/null || echo 2)
+
+$(BOTAN_SRC): | $(3RDPSRCDIR)
+	$(QUIET)$(IFNOTEXIST) mkdir $(BOTAN_SRC)
+
+$(BOTAN_IDIR): | $(3RDPODIR)
+	$(QUIET)$(IFNOTEXIST) mkdir $(BOTAN_IDIR)
+
+$(BOTAN_BUILD): $(3RDP_ROOT)/dist/Botan.tar.xz GNUmakefile | $(BOTAN_SRC) $(BOTAN_IDIR)
+	@echo Creating $@ ...
+	$(QUIET)-rm -rf $(BOTAN_SRC)/*
+	$(QUIET)tar -xJC $(BOTAN_SRC) --strip-components=1 -f $(3RDPDISTDIR)/Botan.tar.xz
+	$(QUIET)cd $(BOTAN_SRC) && python3 configure.py \
+	    --prefix=$(shell cd $(dir $(BOTAN_IDIR)) && pwd)/$(notdir $(BOTAN_IDIR)) \
+	    --disable-shared-library \
+	    --without-documentation \
+	    --build-targets=static \
+	    --build-tool=make $(BOTAN_CONFIGURE_EXTRA)
+	$(QUIET)$(MAKE) -j$(BOTAN_JOBS) -C $(BOTAN_SRC)
+	$(QUIET)$(MAKE) -C $(BOTAN_SRC) install

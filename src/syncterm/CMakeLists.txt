@@ -19,6 +19,87 @@ set(WITHOUT_CRYPTO   OFF CACHE BOOL "Disable TLS + encrypted bbslist.ini (xp_tls
 set(WITHOUT_OOII OFF CACHE BOOL "Disable Operation Overkill ][ Terminal")
 set(WITHOUT_JPEG_XL OFF CACHE BOOL "Disable JPEG XL")
 set(WITHOUT_RETRO ON CACHE BOOL "Disable libretro")
+set(USE_VENDORED_BOTAN "" CACHE STRING
+    "Force vendored Botan build (1=force, 0=never, empty=auto-detect)")
+
+# Decide whether we need the vendored Botan (from 3rdp/dist/Botan.tar.xz).
+# Auto-detect unless the user pinned USE_VENDORED_BOTAN to 0 or 1:
+#   - MinGW / Windows cross-compile always uses vendored.
+#   - Otherwise: require system Botan 3.9+ or OpenSSL 3.0+; fall back
+#     to vendored when neither is available.
+if(USE_VENDORED_BOTAN STREQUAL "")
+	find_package(PkgConfig QUIET)
+	set(_botan_ok FALSE)
+	set(_openssl_ok FALSE)
+	if(WIN32 AND NOT CMAKE_HOST_WIN32)
+		set(USE_VENDORED_BOTAN 1)
+	else()
+		if(PkgConfig_FOUND)
+			pkg_check_modules(SYS_BOTAN3 QUIET "botan-3>=3.9")
+			if(SYS_BOTAN3_FOUND)
+				set(_botan_ok TRUE)
+			endif()
+			pkg_check_modules(SYS_OPENSSL QUIET "libcrypto>=3.0")
+			if(SYS_OPENSSL_FOUND)
+				set(_openssl_ok TRUE)
+			endif()
+		endif()
+		if(_botan_ok OR _openssl_ok)
+			set(USE_VENDORED_BOTAN 0)
+		else()
+			set(USE_VENDORED_BOTAN 1)
+		endif()
+	endif()
+endif()
+
+if(USE_VENDORED_BOTAN)
+	# Build Botan from 3rdp/dist/Botan.tar.xz as an ExternalProject.
+	# DeuceSSH's pkg_check_modules(BOTAN3 REQUIRED botan-3) picks it up
+	# once PKG_CONFIG_PATH includes the vendored install's pkgconfig/.
+	include(ExternalProject)
+	set(VENDORED_BOTAN_PREFIX
+	    "${CMAKE_BINARY_DIR}/vendored-botan" CACHE INTERNAL "")
+	set(VENDORED_BOTAN_LIB
+	    "${VENDORED_BOTAN_PREFIX}/lib/libbotan-3.a" CACHE INTERNAL "")
+	set(VENDORED_BOTAN_PKGCONFIG
+	    "${VENDORED_BOTAN_PREFIX}/lib/pkgconfig" CACHE INTERNAL "")
+	set(_botan_configure_args
+	    --prefix=${VENDORED_BOTAN_PREFIX}
+	    --disable-shared-library
+	    --without-documentation
+	    --build-targets=static
+	    --build-tool=make)
+	if(CMAKE_CROSSCOMPILING AND WIN32)
+		if(CMAKE_SIZEOF_VOID_P EQUAL 8)
+			list(APPEND _botan_configure_args
+			    --os=mingw --cpu=x86_64
+			    --cc-bin=${CMAKE_CXX_COMPILER}
+			    --ar-command=${CMAKE_AR})
+		else()
+			list(APPEND _botan_configure_args
+			    --os=mingw --cpu=x86
+			    --cc-bin=${CMAKE_CXX_COMPILER}
+			    --ar-command=${CMAKE_AR})
+		endif()
+	endif()
+	ExternalProject_Add(vendored-botan
+	    URL "${CMAKE_CURRENT_SOURCE_DIR}/../../3rdp/dist/Botan.tar.xz"
+	    PREFIX "${CMAKE_BINARY_DIR}/vendored-botan-src"
+	    CONFIGURE_COMMAND python3 <SOURCE_DIR>/configure.py ${_botan_configure_args}
+	    BUILD_COMMAND make
+	    INSTALL_COMMAND make install
+	    BUILD_BYPRODUCTS ${VENDORED_BOTAN_LIB}
+	    BUILD_IN_SOURCE TRUE)
+	# Prepend to PKG_CONFIG_PATH so downstream pkg_check_modules find it.
+	if(DEFINED ENV{PKG_CONFIG_PATH})
+		set(ENV{PKG_CONFIG_PATH}
+		    "${VENDORED_BOTAN_PKGCONFIG}:$ENV{PKG_CONFIG_PATH}")
+	else()
+		set(ENV{PKG_CONFIG_PATH} "${VENDORED_BOTAN_PKGCONFIG}")
+	endif()
+	# Force DeuceSSH to pick Botan (vendored is Botan, not OpenSSL).
+	set(DEUCESSH_CRYPTO_BACKEND "Botan" CACHE STRING "" FORCE)
+endif()
 
 # CPack stuff...
 set(CPACK_PACKAGE_NAME SyncTERM)
@@ -163,6 +244,9 @@ else()
 	add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../ssh deucessh EXCLUDE_FROM_ALL)
 	target_include_directories(syncterm PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../ssh)
 	target_link_libraries(syncterm deucessh_static sftp)
+	if(USE_VENDORED_BOTAN)
+		add_dependencies(deucessh_static vendored-botan)
+	endif()
 endif()
 
 if(WITHOUT_CRYPTO)

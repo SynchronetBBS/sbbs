@@ -1,5 +1,12 @@
 /* TODO: USE PORTAUDIO! */
 
+/* MinGW's <math.h> hides M_PI et al. unless _USE_MATH_DEFINES is set
+ * before it's first included.  The macro lives in the implementation-
+ * reserved namespace, so only opt in on the platform that needs it. */
+#if defined(__MINGW32__) || defined(__MINGW64__)
+#define _USE_MATH_DEFINES
+#endif
+
 /* standard headers */
 #include <math.h>
 #include <stdlib.h>

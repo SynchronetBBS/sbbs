@@ -42,14 +42,10 @@
 #include <string>
 #include <vector>
 
-#ifdef _WIN32
-  #include <winsock2.h>
-#else
-  #include <sys/socket.h>
-  #include <sys/time.h>
-  #include <sys/types.h>
-  #include <unistd.h>
-#endif
+/* xp_tls.h pulls in sockwrap.h, which lands the OS socket + timeval
+ * headers in the right order (winsock2 + ws2tcpip + wspiapi on Win32,
+ * sys/socket + sys/time + friends on Unix).  Don't reach past it. */
+#include "xp_tls.h"
 
 #include <botan/auto_rng.h>
 #include <botan/credentials_manager.h>
@@ -59,8 +55,6 @@
 #include <botan/tls_policy.h>
 #include <botan/tls_server_info.h>
 #include <botan/tls_session_manager_noop.h>
-
-#include "xp_tls.h"
 
 /* ---------------------------------------------------------------- errors */
 

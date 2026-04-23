@@ -37,17 +37,13 @@
 #include <stdlib.h>
 #include <string.h>
 
-#ifdef _WIN32
-  #include <winsock2.h>
-#else
-  #include <sys/socket.h>
-  #include <sys/time.h>
-#endif
+/* xp_tls.h pulls in sockwrap.h, which lands the OS socket + timeval
+ * headers in the right order (winsock2 + ws2tcpip + wspiapi on Win32,
+ * sys/socket + sys/time + friends on Unix).  Don't reach past it. */
+#include "xp_tls.h"
 
 #include <openssl/err.h>
 #include <openssl/ssl.h>
-
-#include "xp_tls.h"
 
 /* ------------------------------------------------------------ last-err */
 

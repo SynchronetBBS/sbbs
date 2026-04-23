@@ -280,7 +280,4 @@ endif()
 
 if(WITHOUT_CRYPTLIB)
 	target_compile_definitions(xpdev PUBLIC WITHOUT_CRYPTLIB)
-else()
-	target_compile_definitions(xpdev PUBLIC WITH_CRYPTLIB)
-	target_link_libraries(xpdev cl)
 endif()

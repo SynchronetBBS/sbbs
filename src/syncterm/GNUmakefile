@@ -43,6 +43,36 @@ endif
 # "none" shim.  NEED_OPENSSL / NEED_BOTAN are set by each side that
 # needs those libs; ifdef at the bottom pulls them in exactly once.
 
+# Probe the system for a usable crypto library.  When neither matches
+# the project's minimums (Botan 3.9 or OpenSSL 3.0), fall back to a
+# vendored static Botan build from 3rdp/dist/Botan.tar.xz.  The user
+# can override either way with USE_VENDORED_BOTAN=1/0.
+#
+# Cross-compiling to Windows always uses vendored — the host's
+# pkg-config wouldn't know about target libs even if they were
+# installed somewhere.
+ifndef USE_VENDORED_BOTAN
+ ifdef win
+  USE_VENDORED_BOTAN := 1
+ else ifeq ($(shell pkg-config --atleast-version=3.9 botan-3 2>/dev/null && echo Y),Y)
+  USE_VENDORED_BOTAN := 0
+ else ifeq ($(shell pkg-config --atleast-version=3.0 libcrypto 2>/dev/null && echo Y),Y)
+  USE_VENDORED_BOTAN := 0
+ else
+  USE_VENDORED_BOTAN := 1
+ endif
+endif
+ifeq ($(USE_VENDORED_BOTAN),1)
+ # Vendored: we know the backend is Botan without running anything at
+ # parse time.  Prepend the vendored pkg-config dir so later pkg-config
+ # invocations (xpdev submake, DeuceSSH cmake) find the vendored copy.
+ # The actual build of libbotan-3.a + botan-3.pc happens at build time
+ # via the 'vendored-botan' target, sequenced before everything else
+ # through targets.mk.
+ export PKG_CONFIG_PATH := $(shell cd $(dir $(BOTAN_PKGCONFIG_DIR)) 2>/dev/null && pwd)/$(notdir $(BOTAN_PKGCONFIG_DIR)):$(PKG_CONFIG_PATH)
+ DEUCESSH_BACKEND := Botan
+endif
+
 ifndef WITHOUT_DEUCESSH
  # ssh.c + SFTP-MT bridge.
  OBJS       += $(MTOBJODIR)$(DIRSEP)ssh$(OFILE)
@@ -50,50 +80,101 @@ ifndef WITHOUT_DEUCESSH
  LDFLAGS    += $(SFTP-MT_LDFLAGS)
  EXTRA_LIBS += $(SFTP-MT_LIBS)
 
- # DeuceSSH ships only a CMake build system; shell out to cmake the
- # same way the 3rdp builds do.  Configure is idempotent; the build
- # step is a no-op when libdeucessh.a is already current.
+ # DeuceSSH ships only a CMake build system.  Build into a per-target
+ # directory under $(3RDPODIR) so native and cross-compile builds don't
+ # share a CMakeCache.txt (cmake refuses to change toolchain after the
+ # first configure).  Matches the cryptlib / mozjs / botan install
+ # layout.  The build step is a no-op when libdeucessh.a is already
+ # current.
  DEUCESSH_DIR    := $(SRC_ROOT)/ssh
- DEUCESSH_BUILD  := $(DEUCESSH_DIR)/build
+ DEUCESSH_BUILD  := $(3RDPODIR)/deucessh-build
  DEUCESSH_LIB    := $(DEUCESSH_BUILD)/libdeucessh.a
  DEUCESSH_PC     := $(DEUCESSH_BUILD)/deucessh.pc
 
- # DEUCESSH_BACKEND forces DeuceSSH's backend choice; otherwise leave
- # it to DeuceSSH's own auto-detect (which prefers Botan when both
- # are present).  The configure step runs at parse time so deucessh.pc
- # exists before we read it below.
+ # Force DeuceSSH's backend with -DDEUCESSH_CRYPTO_BACKEND when we
+ # already know which one we want (vendored Botan, or the user set it
+ # explicitly); otherwise let DeuceSSH's cmake auto-detect.
  ifdef DEUCESSH_BACKEND
   DEUCESSH_CMAKE_BACKEND_ARG := -DDEUCESSH_CRYPTO_BACKEND=$(DEUCESSH_BACKEND)
  else
   DEUCESSH_CMAKE_BACKEND_ARG :=
  endif
- $(shell cmake -S $(DEUCESSH_DIR) -B $(DEUCESSH_BUILD) \
-               -DCMAKE_BUILD_TYPE=Release $(DEUCESSH_CMAKE_BACKEND_ARG) \
-               >/dev/null 2>&1)
 
- # DeuceSSH's deucessh.pc names its chosen backend; we need those libs
- # at program-link time and use the same backend for xp_crypt/xp_tls
- # when WITHOUT_CRYPTO isn't set.
- DEUCESSH_REQUIRES := $(shell awk '/^Requires.private:/{print $$2}' $(DEUCESSH_PC) 2>/dev/null)
- ifeq ($(DEUCESSH_REQUIRES),libcrypto)
-  DEUCESSH_BACKEND := OpenSSL
-  NEED_OPENSSL     := 1
- else ifeq ($(DEUCESSH_REQUIRES),botan-3)
-  DEUCESSH_BACKEND := Botan
-  NEED_BOTAN       := 1
+ # For Win32/Win64 cross-compile, point cmake at the MinGW toolchain
+ # and tell it we're cross-compiling to Windows.  cmake caches toolchain
+ # decisions, so $(DEUCESSH_BUILD) must be wiped whenever the compiler
+ # changes — the deucessh rule below handles that.
+ ifdef win
+  DEUCESSH_CMAKE_TOOLCHAIN_ARGS := \
+      -DCMAKE_SYSTEM_NAME=Windows \
+      -DCMAKE_C_COMPILER=$(CC) \
+      -DCMAKE_CXX_COMPILER=$(CXX) \
+      -DCMAKE_AR=$(shell command -v $(AR)) \
+      -DCMAKE_RANLIB=$(shell command -v $(RANLIB)) \
+      -DCMAKE_RC_COMPILER=$(shell command -v $(WINDRES))
  else
-  $(error Cannot determine DeuceSSH crypto backend from $(DEUCESSH_PC))
+  DEUCESSH_CMAKE_TOOLCHAIN_ARGS :=
+ endif
+
+ # When a backend isn't already pinned we have to run cmake configure
+ # at parse time so deucessh.pc exists — that file names the backend,
+ # and the link-time logic below consumes it.  With vendored Botan the
+ # backend is already pinned to Botan; we can skip the parse-time
+ # probe and defer cmake configure to the build-time recipe.
+ ifeq ($(USE_VENDORED_BOTAN),1)
+  # Build-time configure is sequenced after vendored-botan so
+  # pkg-config finds the vendored copy.
+  DEUCESSH_CONFIGURE_AT_BUILD := 1
+ else
+  $(shell mkdir -p $(DEUCESSH_BUILD))
+  $(shell cmake -S $(DEUCESSH_DIR) -B $(DEUCESSH_BUILD) \
+                -DCMAKE_BUILD_TYPE=Release $(DEUCESSH_CMAKE_BACKEND_ARG) \
+                $(DEUCESSH_CMAKE_TOOLCHAIN_ARGS) \
+                >/dev/null 2>&1)
+  DEUCESSH_REQUIRES := $(shell awk '/^Requires.private:/{print $$2}' $(DEUCESSH_PC) 2>/dev/null)
+  ifeq ($(DEUCESSH_REQUIRES),libcrypto)
+   DEUCESSH_BACKEND := OpenSSL
+   NEED_OPENSSL     := 1
+  else ifeq ($(DEUCESSH_REQUIRES),botan-3)
+   DEUCESSH_BACKEND := Botan
+   NEED_BOTAN       := 1
+  else
+   $(error Cannot determine DeuceSSH crypto backend from $(DEUCESSH_PC))
+  endif
+ endif
+
+ ifeq ($(DEUCESSH_BACKEND),Botan)
+  NEED_BOTAN := 1
+ else ifeq ($(DEUCESSH_BACKEND),OpenSSL)
+  NEED_OPENSSL := 1
  endif
 
  .PHONY: deucessh
  deucessh $(DEUCESSH_LIB):
 	@echo "Building DeuceSSH ($(DEUCESSH_BACKEND) backend)"
+ifdef DEUCESSH_CONFIGURE_AT_BUILD
+	cmake -S $(DEUCESSH_DIR) -B $(DEUCESSH_BUILD) \
+	    -DCMAKE_BUILD_TYPE=Release $(DEUCESSH_CMAKE_BACKEND_ARG) \
+	    $(DEUCESSH_CMAKE_TOOLCHAIN_ARGS)
+endif
 	cmake --build $(DEUCESSH_BUILD) --target deucessh_static
 
  DEPS       += $(DEUCESSH_LIB)
  EXTRA_LIBS += $(DEUCESSH_LIB)
 else
  CFLAGS += -DWITHOUT_DEUCESSH
+endif
+
+# Vendored Botan is a real build-time target; sequenced before
+# xpdev-mt and deucessh via targets.mk.
+.PHONY: vendored-botan
+ifeq ($(USE_VENDORED_BOTAN),1)
+vendored-botan: $(BOTAN_BUILD)
+$(BOTAN_BUILD):
+	@echo "Building vendored Botan 3 (first-time only; ~5 min)"
+	$(MAKE) -C $(3RDP_BUILD) botan
+else
+vendored-botan: ; @:
 endif
 
 # xp_tls + xp_crypt backend selection.  Three values:
@@ -128,10 +209,19 @@ export XP_CRYPTO_BACKEND
 export WITHOUT_CRYPTO
 
 ifdef NEED_OPENSSL
- EXTRA_LIBS += -lssl -lcrypto
+ # xpdev's libxpdev_mt.a and libdeucessh.a both reference OpenSSL
+ # symbols; append to TRAILING_LIBS so they land after the static
+ # libraries on the link line (static archives resolve in order).
+ TRAILING_LIBS += -lssl -lcrypto
 endif
 ifdef NEED_BOTAN
- EXTRA_LIBS += $(shell pkg-config --libs botan-3)
+ # Strip -pthread from botan-3's pkg-config output — xpdev already
+ # handles thread-library linkage per-platform (Common.gmake adds
+ # -pthread / -lwinpthread where appropriate), and on MinGW a bare
+ # -pthread here trips "cannot find -lpthread".
+ # Append to TRAILING_LIBS — xpdev and deucessh both reference Botan
+ # symbols, so Botan must appear after both static archives.
+ TRAILING_LIBS += $(filter-out -pthread,$(shell pkg-config --libs botan-3))
 endif
 
 ifndef WITHOUT_CRYPTO
@@ -327,7 +417,7 @@ $(MTOBJODIR)$(DIRSEP)ciolib_res$(OFILE): ${CIOLIB-MT}
 
 $(SYNCTERM): $(DEPS) $(EXEODIR) $(OBJS) $(BUILD_DEPENDS)
 	@echo Linking $@
-	${QUIET}$(CXX) $(LDFLAGS) $(MT_LDFLAGS) $(OBJS) -o $@ $(UIFC-MT_LIBS) $(EXTRA_LIBS) $(CIOLIB-MT_LIBS) $(XPDEV-MT_LIBS) $(ENCODE_LIBS) $(HASH_LIBS)
+	${QUIET}$(CXX) $(LDFLAGS) $(MT_LDFLAGS) $(OBJS) -o $@ $(UIFC-MT_LIBS) $(EXTRA_LIBS) $(CIOLIB-MT_LIBS) $(XPDEV-MT_LIBS) $(ENCODE_LIBS) $(HASH_LIBS) $(TRAILING_LIBS)
 ifdef win
 	${QUIET}$(CXX) $(LDFLAGS) $(MT_LDFLAGS) win32_stub.c $(MTOBJODIR)$(DIRSEP)syncterm_res$(OFILE) $(CIOLIB_SRC)/$(MTOBJODIR)/ciolib_res.o -s -o $(EXEODIR)/syncterm.exe -L$(EXEODIR) -lsyncterm -mwindows
 	${QUIET}$(CXX) $(LDFLAGS) $(MT_LDFLAGS) win32_stub.c $(MTOBJODIR)$(DIRSEP)syncterm_res$(OFILE) $(CIOLIB_SRC)/$(MTOBJODIR)/ciolib_res.o -s -o $(EXEODIR)/syncterm.com -L$(EXEODIR) -lsyncterm -mconsole

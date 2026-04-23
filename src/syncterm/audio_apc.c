@@ -33,6 +33,7 @@
 #include <xpbeep.h>      /* xp_audio_*, XPBEEP_SAMPLE_RATE, WAVE_SHAPE_* */
 #include <genwrap.h>     /* strnicmp, MAX_PATH */
 #include <dirwrap.h>     /* clean_path */
+#include <xpprintf.h>    /* asprintf fallback for MinGW / MSVC */
 
 /* ----- external from term.c ----- */
 extern int clean_path(char *path, size_t buflen);
