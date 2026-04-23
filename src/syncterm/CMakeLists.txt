@@ -83,9 +83,23 @@ if(USE_VENDORED_BOTAN)
 	    --without-documentation
 	    --build-targets=static
 	    --minimized-build
-	    --enable-modules=${_botan_modules}
-	    --build-tool=make)
-	if(CMAKE_CROSSCOMPILING AND WIN32)
+	    --enable-modules=${_botan_modules})
+	if(MSVC)
+		# MSVC: Botan's configure.py picks --cc=msvc + nmake Makefile.
+		# Output is botan.lib (no libbotan-3.a naming convention).
+		list(APPEND _botan_configure_args
+		    --cc=msvc --build-tool=nmake)
+		if(CMAKE_SIZEOF_VOID_P EQUAL 8)
+			list(APPEND _botan_configure_args --cpu=x86_64)
+		else()
+			list(APPEND _botan_configure_args --cpu=x86)
+		endif()
+		set(VENDORED_BOTAN_LIB
+		    "${VENDORED_BOTAN_PREFIX}/lib/botan.lib" CACHE INTERNAL "")
+		set(_botan_build_cmd    nmake)
+		set(_botan_install_cmd  nmake install)
+	elseif(CMAKE_CROSSCOMPILING AND WIN32)
+		list(APPEND _botan_configure_args --build-tool=make)
 		if(CMAKE_SIZEOF_VOID_P EQUAL 8)
 			list(APPEND _botan_configure_args
 			    --os=mingw --cpu=x86_64
@@ -97,24 +111,37 @@ if(USE_VENDORED_BOTAN)
 			    --cc-bin=${CMAKE_CXX_COMPILER}
 			    --ar-command=${CMAKE_AR})
 		endif()
-	endif()
-	# Probe parallel build width; Botan's generated Makefile doesn't use
-	# GNU make's jobserver, and inheriting parent MAKEFLAGS with "-j"
-	# but no count produces "illegal argument to -j".  Clear MAKEFLAGS
-	# and pass an explicit -jN to the sub-make.
-	include(ProcessorCount)
-	ProcessorCount(_n_cpus)
-	if(_n_cpus EQUAL 0)
-		set(_n_cpus 2)
+		# Probe parallel build width; Botan's generated Makefile doesn't
+		# use GNU make's jobserver, and inheriting parent MAKEFLAGS with
+		# "-j" but no count produces "illegal argument to -j".  Clear
+		# MAKEFLAGS and pass an explicit -jN to the sub-make.
+		include(ProcessorCount)
+		ProcessorCount(_n_cpus)
+		if(_n_cpus EQUAL 0)
+			set(_n_cpus 2)
+		endif()
+		set(_botan_build_cmd
+		    ${CMAKE_COMMAND} -E env --unset=MAKEFLAGS make -j${_n_cpus})
+		set(_botan_install_cmd
+		    ${CMAKE_COMMAND} -E env --unset=MAKEFLAGS make install)
+	else()
+		list(APPEND _botan_configure_args --build-tool=make)
+		include(ProcessorCount)
+		ProcessorCount(_n_cpus)
+		if(_n_cpus EQUAL 0)
+			set(_n_cpus 2)
+		endif()
+		set(_botan_build_cmd
+		    ${CMAKE_COMMAND} -E env --unset=MAKEFLAGS make -j${_n_cpus})
+		set(_botan_install_cmd
+		    ${CMAKE_COMMAND} -E env --unset=MAKEFLAGS make install)
 	endif()
 	ExternalProject_Add(vendored-botan
 	    URL "${CMAKE_CURRENT_SOURCE_DIR}/../../3rdp/dist/Botan.tar.xz"
 	    PREFIX "${CMAKE_BINARY_DIR}/vendored-botan-src"
 	    CONFIGURE_COMMAND python3 <SOURCE_DIR>/configure.py ${_botan_configure_args}
-	    BUILD_COMMAND ${CMAKE_COMMAND} -E env --unset=MAKEFLAGS
-	        make -j${_n_cpus}
-	    INSTALL_COMMAND ${CMAKE_COMMAND} -E env --unset=MAKEFLAGS
-	        make install
+	    BUILD_COMMAND ${_botan_build_cmd}
+	    INSTALL_COMMAND ${_botan_install_cmd}
 	    BUILD_BYPRODUCTS ${VENDORED_BOTAN_LIB}
 	    BUILD_IN_SOURCE TRUE)
 	# ExternalProject runs at build time, so the .pc file doesn't exist
