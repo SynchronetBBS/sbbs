@@ -77,18 +77,43 @@ if(DEUCESSH_CRYPTO_BACKEND STREQUAL "Botan")
 	enable_language(CXX)
 endif()
 
+include(CheckCSourceCompiles)
+
+# Probes below must match the -std= flag the real targets build with
+# (C_STANDARD 17).  Probing at -std=c11 would silently pass on SDKs
+# that guard declarations on __STDC_VERSION__ >= 201710L and still
+# fail the real compile.
+set(CMAKE_REQUIRED_FLAGS "-std=c17")
+
+# C11 runtime library sanity check.  CMake's C_STANDARD 17 +
+# C_STANDARD_REQUIRED ON verifies that the compiler is on its known-
+# C17-capable list (AppleClang 6+ is, regardless of SDK vintage); it
+# does NOT compile anything to check that the libc / SDK actually
+# ships the C11 functions <time.h> promises.  Without this probe an
+# older macOS SDK (pre-10.15 lacks timespec_get / TIME_UTC) gets all
+# the way to "implicit declaration of function 'timespec_get'" at
+# real-target compile time while configure thinks everything's fine.
+# Force the failure here instead so the syncterm gmake probe catches
+# it and sets WITHOUT_DEUCESSH.
+check_c_source_compiles("
+	#include <time.h>
+	int main(void) {
+		struct timespec ts;
+		return timespec_get(&ts, TIME_UTC) == TIME_UTC ? 0 : 1;
+	}
+" HAVE_TIMESPEC_GET)
+if(NOT HAVE_TIMESPEC_GET)
+	message(FATAL_ERROR
+	    "DeuceSSH requires C11's timespec_get / TIME_UTC in <time.h>.  "
+	    "This SDK/libc predates them — upgrade the platform toolchain "
+	    "or build SyncTERM with WITHOUT_DEUCESSH=1.")
+endif()
+
 # C11 threads: glibc (2.28+), recent macOS SDKs, and FreeBSD 12+ have
 # them.  FreeBSD used to ship them in a separate libstdthreads.  Older
 # macOS and NetBSD have pthread but no <threads.h>; MinGW-w64 has
 # neither.  Probe libc first, then libstdthreads, then fall back to a
 # platform shim.
-#
-# Probe at -std=c17 so it matches the -std= flag the real targets
-# build with (C_STANDARD 17).  Probing at -std=c11 would silently
-# pass on SDKs that guard declarations on __STDC_VERSION__ >= 201710L
-# and still fail the real compile.
-include(CheckCSourceCompiles)
-set(CMAKE_REQUIRED_FLAGS "-std=c17")
 check_c_source_compiles("
 	#include <threads.h>
 	int main(void) { mtx_t m; mtx_init(&m, mtx_plain); return 0; }
