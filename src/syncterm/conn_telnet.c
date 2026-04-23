@@ -1,5 +1,6 @@
 /* Copyright (C), 2007 by Stephen Hurd */
 
+#include <stdatomic.h>
 #include <stdbool.h>
 #include <stdlib.h>
 
@@ -137,6 +138,11 @@ telnet_connect(struct bbslist *bbs)
 		init_uifc(true, true);
 
 	telnet_log_level = bbs->telnet_loglevel;
+
+	/* Explicit atomic init — conn_connect() memsets conn_api but
+	 * memset isn't a valid init for _Atomic fields, and stale state
+	 * from a prior session would misreport telnet BINARY. */
+	atomic_store(&conn_api.binary_mode, false);
 
 	rlogin_sock = conn_socket_connect(bbs, true);
 	if (rlogin_sock == INVALID_SOCKET)

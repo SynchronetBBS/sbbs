@@ -1,7 +1,9 @@
 /* Copyright (C), 2007 by Stephen Hurd */
 
+#include <stdatomic.h>
 #include <stdint.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "bbslist.h"
 #include "conn.h"
@@ -17,10 +19,75 @@ SOCKET rlogin_sock = INVALID_SOCKET;
  * updates at any time. */
 static bool rlogin_winsize_enabled = false;
 
+/* True only for CONN_TYPE_RLOGIN / CONN_TYPE_RLOGIN_REVERSED.  The
+ * input+output threads are shared with telnet / raw / mbbs_ghost via
+ * rlogin_input_thread / rlogin_output_thread; those conn types must
+ * not run any RFC 1282 OOB dispatch or DC1/DC3 flow control. */
+static _Atomic bool rlogin_active = false;
+
+/* Set when rlogin_tx_parse_cb sees a DC3 (XOFF) in outbound user
+ * input while in cooked mode.  The input thread halts recv while
+ * true.  Cleared by DC1 (XON), by a server 0x10 transition to raw,
+ * by rlogin_binary_mode_on, and at connect/close. */
+static _Atomic bool rlogin_input_paused = false;
+
 /* Forward decl so rlogin_handle_control() can call the public API
  * entry point in the same file. */
 void rlogin_send_window_change(int text_cols, int text_rows,
     int pixel_cols, int pixel_rows);
+
+/* conn_api.binary_mode_on hook.  The conn_binary_mode_on() wrapper
+ * sets conn_api.binary_mode = true after calling this, so all we
+ * need to do here is release any pause the DC1/DC3 path may have
+ * imposed.  No binary_mode_off hook is needed — the wrapper clears
+ * the flag on its own and tx_parse_cb will resume DC1/DC3 scanning. */
+void
+rlogin_binary_mode_on(void)
+{
+	atomic_store(&rlogin_input_paused, false);
+}
+
+/* Outbound byte filter for rlogin in cooked mode.  conn_send() calls
+ * this per chunk; returns a malloc'd buffer of bytes to enqueue to
+ * conn_outbuf.  In cooked mode, DC1 (XON) and DC3 (XOFF) are
+ * consumed locally as TTY flow control against server→client data
+ * (toggling rlogin_input_paused) and never reach the wire.  In raw
+ * mode — i.e. conn_api.binary_mode — the buffer is passed through
+ * verbatim so binary transfers stay intact. */
+void *
+rlogin_tx_parse_cb(const void *inbuf, size_t inlen, size_t *olen)
+{
+	void *ret = malloc(inlen > 0 ? inlen : 1);
+
+	if (ret == NULL) {
+		*olen = 0;
+		return ret;
+	}
+
+	if (conn_api.binary_mode) {
+		memcpy(ret, inbuf, inlen);
+		*olen = inlen;
+		return ret;
+	}
+
+	const unsigned char *src = (const unsigned char *)inbuf;
+	unsigned char       *dst = (unsigned char *)ret;
+	size_t               out = 0;
+	for (size_t i = 0; i < inlen; i++) {
+		unsigned char c = src[i];
+		if (c == 0x13) {	/* DC3 / XOFF */
+			atomic_store(&rlogin_input_paused, true);
+			continue;
+		}
+		if (c == 0x11) {	/* DC1 / XON  */
+			atomic_store(&rlogin_input_paused, false);
+			continue;
+		}
+		dst[out++] = c;
+	}
+	*olen = out;
+	return ret;
+}
 
 /* Returns 1 when the next byte to read from sock is the OOB mark
  * byte, 0 otherwise (or on error).  Uses SIOCATMARK for portability
@@ -55,9 +122,16 @@ rlogin_handle_control(uint8_t c)
 				 * typeahead is stale.  Drop the outbound ring. */
 			conn_buf_reset(&conn_outbuf);
 			break;
-		case 0x10:	/* switch to raw mode (not implemented) */
+		case 0x10:	/* server-initiated: enter raw mode.
+				 * Latched on conn_api.binary_mode so
+				 * rlogin_tx_parse_cb passes DC1/DC3 through.
+				 * Raw does no local flow control, so drop
+				 * any pause imposed by a prior DC3. */
+			conn_api.binary_mode = true;
+			atomic_store(&rlogin_input_paused, false);
 			break;
-		case 0x20:	/* switch to cooked mode (not implemented) */
+		case 0x20:	/* server-initiated: return to cooked mode. */
+			conn_api.binary_mode = false;
 			break;
 		case 0x80: {	/* server requests window-size reports */
 			bool was_enabled = rlogin_winsize_enabled;
@@ -122,14 +196,25 @@ rlogin_input_thread(void *args)
 	SetThreadName("RLogin Input");
 	conn_api.input_thread_running = 1;
 	while (rlogin_sock != INVALID_SOCKET && !conn_api.terminate) {
+		/* Cooked-mode TTY flow control: DC3 sets the pause flag,
+		 * DC1 clears it.  Only stalls recv for actual rlogin
+		 * sessions, and only while binary_mode (raw) is off. */
+		if (atomic_load(&rlogin_active)
+		    && !conn_api.binary_mode
+		    && atomic_load(&rlogin_input_paused)) {
+			SLEEP(10);
+			continue;
+		}
 		bool data_avail;
 		if (socket_check(rlogin_sock, &data_avail, NULL, bufsz ? 0 : 100)) {
 			if (data_avail && bufsz < BUFFER_SIZE) {
 				/* RFC 1282 OOB control bytes: if the socket's
 				 * urgent-data mark is at the next byte, consume
 				 * that single byte out-of-band and dispatch it
-				 * rather than passing it to the terminal. */
-				if (rlogin_at_oob_mark(rlogin_sock)) {
+				 * rather than passing it to the terminal.  Only
+				 * relevant for true rlogin sessions. */
+				if (atomic_load(&rlogin_active)
+				    && rlogin_at_oob_mark(rlogin_sock)) {
 					uint8_t ctl;
 					rd = recv(rlogin_sock, (char *)&ctl, 1, 0);
 					if (rd <= 0)
@@ -219,19 +304,17 @@ rlogin_connect(struct bbslist *bbs)
 		ruser = bbs->password;
 	}
 
+	/* Explicitly reset state from any prior session — conn_connect
+	 * memsets conn_api but that's not a valid init for an _Atomic
+	 * field, and stale flag values here would be catastrophic. */
 	rlogin_winsize_enabled = false;
+	atomic_store(&rlogin_active,        false);
+	atomic_store(&rlogin_input_paused,  false);
+	atomic_store(&conn_api.binary_mode, false);
+
 	rlogin_sock = conn_socket_connect(bbs, true);
 	if (rlogin_sock == INVALID_SOCKET)
 		return -1;
-
-	/* Enable SO_OOBINLINE so RFC 1282 urgent-mode control bytes
-	 * arrive inline and can be detected via SIOCATMARK.  Failure is
-	 * not fatal — we just won't see window-size requests. */
-	{
-		int on = 1;
-		setsockopt(rlogin_sock, SOL_SOCKET, SO_OOBINLINE,
-		    (const char *)&on, sizeof(on));
-	}
 
 	if (!create_conn_buf(&conn_inbuf, BUFFER_SIZE))
 		return -1;
@@ -254,6 +337,18 @@ rlogin_connect(struct bbslist *bbs)
 	conn_api.wr_buf_size = BUFFER_SIZE;
 
 	if ((bbs->conn_type == CONN_TYPE_RLOGIN) || (bbs->conn_type == CONN_TYPE_RLOGIN_REVERSED)) {
+		/* rlogin-only: enable SO_OOBINLINE so RFC 1282 urgent-mode
+		 * control bytes arrive inline and can be detected via
+		 * SIOCATMARK.  Failure is not fatal — we just won't see
+		 * control-byte requests. */
+		{
+			int on = 1;
+			setsockopt(rlogin_sock, SOL_SOCKET, SO_OOBINLINE,
+			    (const char *)&on, sizeof(on));
+		}
+		/* Send the rlogin handshake BEFORE installing tx_parse_cb so
+		 * that a password or username byte of 0x11/0x13 is passed
+		 * through verbatim rather than being stripped as XON/XOFF. */
 		conn_send("", 1, 1000);
 		conn_send(passwd, strlen(passwd) + 1, 1000);
 		conn_send(ruser, strlen(ruser) + 1, 1000);
@@ -271,6 +366,14 @@ rlogin_connect(struct bbslist *bbs)
 
 			conn_send(sbuf, strlen(sbuf) + 1, 1000);
 		}
+
+		/* Now wire rlogin-only hooks: DC1/DC3 scanning on outbound,
+		 * and a binary-mode-on side-effect that clears any pending
+		 * pause.  These must NOT be wired for RAW / MBBS_GHOST,
+		 * which share rlogin_connect but are transparent pipes. */
+		conn_api.tx_parse_cb    = rlogin_tx_parse_cb;
+		conn_api.binary_mode_on = rlogin_binary_mode_on;
+		atomic_store(&rlogin_active, true);
 	}
 
         /* Negotiate with GHost and bail if there's apparently no GHost listening. */
@@ -353,5 +456,9 @@ rlogin_close(void)
 	destroy_conn_buf(&conn_outbuf);
 	FREE_AND_NULL(conn_api.rd_buf);
 	FREE_AND_NULL(conn_api.wr_buf);
+	/* Clear rlogin-local state so a subsequent session starts clean. */
+	atomic_store(&rlogin_active,       false);
+	atomic_store(&rlogin_input_paused, false);
+	rlogin_winsize_enabled = false;
 	return 0;
 }

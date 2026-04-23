@@ -70,7 +70,7 @@ struct conn_api {
 	void              (*send_window_change)(int text_cols, int text_rows,
 	                                        int pixel_cols, int pixel_rows);
 
-	bool              binary_mode;
+	_Atomic bool      binary_mode;
 
 	void            * (*rx_parse_cb)(const void *inbuf, size_t inlen, size_t *olen);
 	void            * (*tx_parse_cb)(const void *inbuf, size_t inlen, size_t *olen);
