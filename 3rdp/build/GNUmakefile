@@ -261,11 +261,14 @@ endif
 # cross toolchain; otherwise auto-detect would try to match the host.
 
 ifeq ($(os),win64)
+ # Quote --cc-bin: CXX can contain "ccache <path>" which would otherwise
+ # split into two shell tokens and make configure.py treat the path as
+ # an unknown positional ("Unhandled option(s): /path/to/g++").
  BOTAN_CONFIGURE_EXTRA := --os=mingw --cpu=x86_64 \
-                          --cc-bin=$(CXX) --ar-command=$(AR)
+                          '--cc-bin=$(CXX)' '--ar-command=$(AR)'
 else ifeq ($(os),win32)
  BOTAN_CONFIGURE_EXTRA := --os=mingw --cpu=x86 \
-                          --cc-bin=$(CXX) --ar-command=$(AR)
+                          '--cc-bin=$(CXX)' '--ar-command=$(AR)'
 else
  BOTAN_CONFIGURE_EXTRA :=
 endif
@@ -309,7 +312,7 @@ $(BOTAN_IDIR): | $(3RDPODIR)
 $(BOTAN_BUILD): $(3RDP_ROOT)/dist/Botan.tar.xz GNUmakefile | $(BOTAN_SRC) $(BOTAN_IDIR)
 	@echo Creating $@ ...
 	$(QUIET)-rm -rf $(BOTAN_SRC)/*
-	$(QUIET)tar -xJC $(BOTAN_SRC) --strip-components=1 -f $(3RDPDISTDIR)/Botan.tar.xz
+	$(QUIET)xz -dc $(3RDPDISTDIR)/Botan.tar.xz | tar -xC $(BOTAN_SRC) --strip-components=1 -f -
 	$(QUIET)cd $(BOTAN_SRC) && python3 configure.py \
 	    --prefix=$(shell cd $(dir $(BOTAN_IDIR)) && pwd)/$(notdir $(BOTAN_IDIR)) \
 	    --disable-shared-library \
