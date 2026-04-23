@@ -164,8 +164,10 @@ add_library(xpdev OBJECT ${SOURCE})
 
 # Crypto backend — wire compile flags + link libs.
 if(XP_CRYPTO_BACKEND STREQUAL "OpenSSL")
+	# xp_tls_openssl.c needs libssl (SSL_CTX_new, TLS_client_method, ...);
+	# xp_crypt_openssl.c only needs libcrypto.  Link both.
 	find_package(OpenSSL REQUIRED)
-	target_link_libraries(xpdev OpenSSL::Crypto)
+	target_link_libraries(xpdev OpenSSL::Crypto OpenSSL::SSL)
 elseif(XP_CRYPTO_BACKEND STREQUAL "Botan")
 	# Botan 3 public headers require C++20 (std::span).
 	set_source_files_properties(
