@@ -96,7 +96,8 @@ pubkey_impl(const uint8_t **out, size_t *outlen, struct cbdata *cbd)
 		if (ed_priv == NULL)
 			return DSSH_ERROR_INIT;
 
-		auto raw_pub = ed_priv->get_public_key();
+		/* raw_public_key_bits() replaces get_public_key() from Botan 3.9. */
+		auto raw_pub = ed_priv->raw_public_key_bits();
 
 		if (raw_pub.size() != ED25519_RAW_PUB_LEN)
 			return DSSH_ERROR_INIT;

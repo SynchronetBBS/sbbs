@@ -32,8 +32,10 @@
 #include "raw.h"
 #include "rlogin.h"
 #include "uifcinit.h"
-#ifndef WITHOUT_CRYPTLIB
+#ifndef WITHOUT_DEUCESSH
  #include "ssh.h"
+#endif
+#ifndef WITHOUT_CRYPTO
  #include "telnets.h"
 #endif
 #ifndef __HAIKU__
@@ -389,13 +391,15 @@ conn_connect(struct bbslist *bbs)
 			conn_api.connect = raw_connect;
 			conn_api.close = raw_close;
 			break;
-#ifndef WITHOUT_CRYPTLIB
+#ifndef WITHOUT_CRYPTO
 		case CONN_TYPE_TELNETS:
 			conn_api.connect = telnets_connect;
 			conn_api.close = telnets_close;
 			conn_api.binary_mode_on = telnet_binary_mode_on;
 			conn_api.binary_mode_off = telnet_binary_mode_off;
 			break;
+#endif
+#ifndef WITHOUT_DEUCESSH
 		case CONN_TYPE_SSHNA:
 		case CONN_TYPE_SSH:
 			conn_api.connect = ssh_connect;

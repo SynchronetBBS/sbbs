@@ -28,12 +28,13 @@ endif
 ifeq ($(os),linux)	# Linux
  XPDEV-MT_LIBS	+=	-pthread
 endif
+# Legacy knob kept as a compile-time define so downstream code that
+# still checks WITHOUT_CRYPTLIB (Synchronet server) keeps its behaviour
+# when the caller asks for a no-crypto build.  xpdev itself has no
+# crypto dependency — the TLS + encrypted-INI wrappers moved to
+# syncterm where their only consumer lives.
 ifdef WITHOUT_CRYPTLIB
  CFLAGS += -DWITHOUT_CRYPTLIB
-else
- XPDEV-MT_CFLAGS += $(CRYPT_CFLAGS) -DWITH_CRYPTLIB
- XPDEV-MT_LIBS += $(CRYPT_LIBS)
- XPDEV_DEPS += $(CRYPT_LIB)
 endif
 ifdef win		# MinGW32
  XPDEV_LIBS	+=	-lws2_32 -lwinmm -lnetapi32 -liphlpapi

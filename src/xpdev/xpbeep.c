@@ -3,6 +3,15 @@
 /* standard headers */
 #include <math.h>
 #include <stdlib.h>
+
+/* M_PI is a POSIX/BSD extension, not standard C.  MinGW and MSVC
+ * gate it behind _USE_MATH_DEFINES; glibc and *BSD expose it
+ * unconditionally.  xpbeep only uses M_PI (nothing else from
+ * the M_* family), so just define our own if the implementation
+ * didn't — simpler than platform-specific opt-ins. */
+#ifndef M_PI
+#define M_PI 3.14159265358979323846
+#endif
 #include "xp_dl.h"
 
 #if defined(_WIN32)

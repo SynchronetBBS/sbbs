@@ -2,10 +2,6 @@
 #include <stdarg.h>
 #include <stdbool.h>
 
-#ifndef WITHOUT_CRYPTLIB
-#include <cryptlib.h>
-#endif
-
 #include "bbslist.h"
 #include "conn.h"
 #include "datewrap.h"
@@ -14,6 +10,9 @@
 #include "stdio.h"
 #include "syncterm.h"
 #include "webget.h"
+#ifndef WITHOUT_CRYPTO
+#include "xp_tls.h"
+#endif
 #include "xpprintf.h"
 
 #define MAX_LIST_SIZE (16 * 1024 * 1024)
@@ -40,8 +39,8 @@ struct http_session {
 	struct bbslist hacky_list_entry;
 	struct http_cache_info cache;
 	SOCKET sock;
-#ifndef WITHOUT_CRYPTLIB
-	CRYPT_SESSION tls;
+#ifndef WITHOUT_CRYPTO
+	xp_tls_t tls;
 #endif
 	bool is_tls;
 	bool is_chunked;
@@ -159,23 +158,26 @@ recv_nbytes(struct http_session *sess, uint8_t *buf, const size_t chunk_size, bo
 	// coverity[tainted_data_argument:SUPPRESS]
 	while (received < chunk_size) {
 		ssize_t rc;
+#ifndef WITHOUT_CRYPTO
 		if (sess->is_tls) {
-#ifdef WITHOUT_CRYPTLIB
-			goto error_return;
-#else
-			int copied = 0;
-			int status = cryptPopData(sess->tls, &buf[received], chunk_size - received, &copied);
-			if (status == CRYPT_ERROR_COMPLETE) {
-				// We're done here...
-			}
-			else if (cryptStatusError(status)) {
-				set_msgf(sess->req, "Error %d Popping Data", status);
+			size_t copied = 0;
+			int status = xp_tls_pop(sess->tls, &buf[received], chunk_size - received, &copied);
+			if (status == XP_TLS_ERR) {
+				set_msgf(sess->req, "TLS read error: %s", xp_tls_errstr(sess->tls));
 				goto error_return;
 			}
-			rc = copied;
-#endif
+			if (status == XP_TLS_TIMEOUT && copied == 0) {
+				/* No data this pass; loop without hitting the rc==0
+				   EOF branch below. */
+				continue;
+			}
+			/* XP_TLS_OK, XP_TLS_TIMEOUT with partial, or XP_TLS_ERR_CLOSED
+			   → let rc==0 mean EOF per the non-TLS path semantics. */
+			rc = (ssize_t)copied;
 		}
-		else {
+		else
+#endif
+		{
 			if (!socket_readable(sess->sock, 5000)) {
 				set_msg(sess->req, "Socket Unreadable");
 				goto error_return;
@@ -220,11 +222,10 @@ close_socket(struct http_session *sess)
 static void
 free_session(struct http_session *sess)
 {
-#ifndef WITHOUT_CRYPTLIB
-	if (sess->is_tls && sess->tls != -1) {
-		cryptSetAttribute(sess->tls, CRYPT_SESSINFO_ACTIVE, 0);
-		cryptDestroySession(sess->tls);
-		sess->tls = -1;
+#ifndef WITHOUT_CRYPTO
+	if (sess->is_tls && sess->tls != NULL) {
+		xp_tls_close(sess->tls, /*close_socket=*/false);
+		sess->tls = NULL;
 	}
 #endif
 	close_socket(sess);
@@ -303,24 +304,20 @@ send_request(struct http_session *sess)
 	}
 	sess->cache.request_time = time(NULL);
 	ssize_t sent;
+#ifndef WITHOUT_CRYPTO
 	if (sess->is_tls) {
-#ifdef WITHOUT_CRYPTLIB
-		return false;
-#else
-		int copied;
-		int ret = cryptPushData(sess->tls, reqstr, len, &copied);
-		if (cryptStatusError(ret)) {
+		size_t copied;
+		int ret = xp_tls_push(sess->tls, reqstr, len, &copied);
+		if (ret < 0)
 			sent = -1;
-		}
 		else
-			sent = copied;
-		ret = cryptFlushData(sess->tls);
-		if (cryptStatusError(ret)) {
+			sent = (ssize_t)copied;
+		if (xp_tls_flush(sess->tls) < 0)
 			sent = -1;
-		}
-#endif
 	}
-	else {
+	else
+#endif
+	{
 		sent = send(sess->sock, reqstr, len, 0);
 		shutdown(sess->sock, SHUT_WR);
 	}
@@ -764,7 +761,11 @@ parse_uri(struct http_session *sess)
 		goto error_return;
 	}
 	if (sess->req->uri[4] == 's') {
-#ifndef WITHOUT_CRYPTLIB
+#ifdef WITHOUT_CRYPTO
+		set_msg_locked(sess->req, "https:// requires crypto support (built without)");
+		assert_pthread_mutex_unlock(&sess->req->mtx);
+		goto error_return;
+#else
 		p = &sess->req->uri[5];
 		sess->is_tls = true;
 		sess->hacky_list_entry.port = 443;
@@ -774,11 +775,7 @@ parse_uri(struct http_session *sess)
 		p = &sess->req->uri[4];
 	}
 	if (memcmp(p, "://", 3)) {
-#ifdef WITHOUT_CRYPTLIB
-		set_msg_locked(sess->req, "URI is not http://");
-#else
 		set_msg_locked(sess->req, "URI is not http[s]://");
-#endif
 		assert_pthread_mutex_unlock(&sess->req->mtx);
 		goto error_return;
 	}
@@ -1058,44 +1055,26 @@ error_return:
 	return false;
 }
 
+#ifndef WITHOUT_CRYPTO
 static bool
 tls_setup(struct http_session *sess)
 {
-#ifndef WITHOUT_CRYPTLIB
-	int status;
-	status = cryptCreateSession(&sess->tls, CRYPT_UNUSED, CRYPT_SESSION_SSL);
-	if (cryptStatusError(status)) {
-		set_msgf(sess->req, "Unable To Create Session (%d)", status);
-		goto error_return;
-	}
 	int off = 1;
 	if (setsockopt(sess->sock, IPPROTO_TCP, TCP_NODELAY, (char *)&off, sizeof(off)) == -1) {
 		set_msgf(sess->req, "setsockopt() failed (%d)", SOCKET_ERRNO);
-		goto error_return;
+		return false;
 	}
-	status = cryptSetAttribute(sess->tls, CRYPT_SESSINFO_NETWORKSOCKET, sess->sock);
-	if (cryptStatusError(status)) {
-		set_msgf(sess->req, "Unable To Set Socket (%d)", status);
-		goto error_return;
-	}
-	cryptSetAttribute(sess->tls, CRYPT_OPTION_NET_READTIMEOUT, 5);
-	cryptSetAttributeString(sess->tls, CRYPT_SESSINFO_SERVER_NAME, sess->hostname, strlen(sess->hostname));
-	status = cryptSetAttribute(sess->tls, CRYPT_SESSINFO_ACTIVE, 1);
-	if (cryptStatusError(status)) {
-		set_msgf(sess->req, "Unable To Activate Session (%d)", status);
-		goto error_return;
-	}
-	status = cryptSetAttribute(sess->tls, CRYPT_PROPERTY_OWNER, CRYPT_UNUSED);
-	if (cryptStatusError(status)) {
-		set_msgf(sess->req, "Unable Clear Ownership (%d)", status);
-		goto error_return;
+	/* 5-second read timeout matches the Cryptlib-era behaviour; the
+	   consumer's recv loop treats timeout as "try again" (per
+	   XP_TLS_TIMEOUT). */
+	sess->tls = xp_tls_client_open(sess->sock, sess->hostname, 5);
+	if (sess->tls == NULL) {
+		set_msgf(sess->req, "Unable to open TLS session: %s", xp_tls_last_err());
+		return false;
 	}
 	return true;
-
-error_return:
-#endif
-	return false;
 }
+#endif
 
 static bool
 do_request(struct http_session *sess)
@@ -1114,11 +1093,13 @@ do_request(struct http_session *sess)
 		set_msg(sess->req, "Connection Failed");
 		goto error_return;
 	}
+#ifndef WITHOUT_CRYPTO
 	if (sess->is_tls) {
 		set_state(sess->req, "TLS Setup");
 		if (!tls_setup(sess))
 			goto error_return;
 	}
+#endif
 	set_state(sess->req, "Requesting");
 	if (!send_request(sess))
 		goto error_return;
@@ -1245,8 +1226,8 @@ iniReadHttp(struct webget_request *req)
 	struct http_session sess = {
 		.sock = INVALID_SOCKET,
 		.req = req,
-#ifndef WITHOUT_CRYPTLIB
-		.tls = -1,
+#ifndef WITHOUT_CRYPTO
+		.tls = NULL,
 #endif
 		.hacky_list_entry = {
 			.hidepopups = true,

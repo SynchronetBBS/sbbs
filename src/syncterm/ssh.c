@@ -1,13 +1,22 @@
 /* Copyright (C), 2007 by Stephen Hurd */
+/* SSH client for SyncTERM, layered on DeuceSSH (src/ssh/). */
 
 #include <assert.h>
+#include <errno.h>
+#include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
-#include "base64.h"
+#include <md5.h>	/* Synchronet's hash library (src/hash/) */
+
+#include <deucessh.h>
+#include <deucessh-algorithms.h>
+#include <deucessh-auth.h>
+#include <deucessh-conn.h>
+
 #include "bbslist.h"
 #include "ciolib.h"
 #include "conn.h"
-#include "cryptlib.h"
 #include "eventwrap.h"
 #include "gen_defs.h"
 #include "genwrap.h"
@@ -21,445 +30,585 @@
 #include "xpendian.h"
 #include "xpprintf.h"
 
-#ifdef _MSC_VER
-#pragma warning(disable : 4244 4267 4018)
-#endif
+/* ---------------------------------------------------------------- state */
 
 SOCKET          ssh_sock = INVALID_SOCKET;
-CRYPT_SESSION   ssh_session = -1;
-int             ssh_channel = -1;
-pthread_mutex_t ssh_mutex;
-pthread_mutex_t ssh_tx_mutex;
-int             sftp_channel = -1;
-sftpc_state_t   sftp_state;
-bool            pubkey_thread_running;
+
+static dssh_session    ssh_session;
+static dssh_channel    ssh_chan;
+static dssh_channel    sftp_chan;
+static sftpc_state_t   sftp_state;
+static pthread_mutex_t ssh_mutex;
+static bool            pubkey_thread_running;
+/* Set by the host-key verify callback so ssh_connect can report the
+   result to the user after handshake completes. */
+static enum {
+	HOSTKEY_OK,
+	HOSTKEY_NEW,
+	HOSTKEY_UPGRADE_SHA1_TO_SHA256,	/* matched legacy SHA-1; rewrite as SHA-256 */
+	HOSTKEY_MISMATCH
+} hostkey_result;
+static uint8_t hostkey_sha256[32];
+
+/* -------------------------------------------------------- transport I/O */
+
+/*
+ * Diagnostics for handshake failures.  When a tx/rx callback bails
+ * because of a syscall error or orderly peer close, it stashes the
+ * reason here so error_popup_rc() can surface it to the user.
+ * Cleared at the start of each ssh_connect().
+ */
+static const char *io_fail_op = NULL;
+static int         io_fail_errno = 0;
+static bool        io_fail_peer_closed = false;
+
+/*
+ * DeuceSSH calls these to push/pull the TLS-less SSH stream. Each must
+ * transfer exactly bufsz bytes, or return a negative error code. The
+ * library checks dssh_session_is_terminated() when a callback is slow
+ * to return, so we do the same on each loop iteration to unblock
+ * promptly on ssh_close().
+ */
+static int
+transport_tx_cb(uint8_t *buf, size_t bufsz, dssh_session sess, void *cbdata)
+{
+	SOCKET s = (SOCKET)(intptr_t)cbdata;
+	size_t sent = 0;
+	while (sent < bufsz) {
+		if (dssh_session_is_terminated(sess))
+			return DSSH_ERROR_TERMINATED;
+		ssize_t n = send(s, (const char *)(buf + sent), bufsz - sent, 0);
+		if (n < 0) {
+			if (errno == EINTR)
+				continue;
+			io_fail_op = "send";
+			io_fail_errno = errno;
+			return DSSH_ERROR_TERMINATED;
+		}
+		if (n == 0) {
+			io_fail_op = "send";
+			io_fail_peer_closed = true;
+			return DSSH_ERROR_TERMINATED;
+		}
+		sent += (size_t)n;
+	}
+	return 0;
+}
+
+static int
+transport_rx_cb(uint8_t *buf, size_t bufsz, dssh_session sess, void *cbdata)
+{
+	SOCKET s = (SOCKET)(intptr_t)cbdata;
+	size_t got = 0;
+	while (got < bufsz) {
+		if (dssh_session_is_terminated(sess))
+			return DSSH_ERROR_TERMINATED;
+		ssize_t n = recv(s, (char *)(buf + got), bufsz - got, 0);
+		if (n < 0) {
+			if (errno == EINTR)
+				continue;
+			io_fail_op = "recv";
+			io_fail_errno = errno;
+			return DSSH_ERROR_TERMINATED;
+		}
+		if (n == 0) {	/* peer closed */
+			io_fail_op = "recv";
+			io_fail_peer_closed = true;
+			return DSSH_ERROR_TERMINATED;
+		}
+		got += (size_t)n;
+	}
+	return 0;
+}
+
+/*
+ * Fires once when the session transitions to terminated. Shuts the
+ * socket so any blocked send/recv in the I/O callbacks returns.
+ */
+static void
+transport_terminate_cb(dssh_session sess, void *cbdata)
+{
+	(void)sess;
+	(void)cbdata;
+	if (ssh_sock != INVALID_SOCKET)
+		shutdown(ssh_sock, SHUT_RDWR);
+}
+
+/* ---------------------------------------------------------- host key */
+
+static void
+hex_encode(char *dst, const uint8_t *src, size_t n)
+{
+	static const char h[] = "0123456789abcdef";
+	for (size_t i = 0; i < n; i++) {
+		dst[i * 2]     = h[src[i] >> 4];
+		dst[i * 2 + 1] = h[src[i] & 0xf];
+	}
+	dst[n * 2] = 0;
+}
+
+static dssh_hostkey_decision
+hostkey_verify_cb(const char *algo_name, unsigned int key_bits,
+                  const uint8_t *sha256, const uint8_t *blob, size_t blob_len,
+                  void *cbdata)
+{
+	struct bbslist *bbs = cbdata;
+	(void)algo_name;
+	(void)key_bits;
+
+	memcpy(hostkey_sha256, sha256, 32);
+
+	if (bbs->ssh_fingerprint_len == 0) {
+		hostkey_result = HOSTKEY_NEW;
+		return DSSH_HOSTKEY_ACCEPT;
+	}
+
+	if (bbs->ssh_fingerprint_len == 32) {
+		if (memcmp(bbs->ssh_fingerprint, sha256, 32) == 0) {
+			hostkey_result = HOSTKEY_OK;
+			return DSSH_HOSTKEY_ACCEPT;
+		}
+		hostkey_result = HOSTKEY_MISMATCH;
+		return DSSH_HOSTKEY_ACCEPT;	/* defer to UI dialog after handshake */
+	}
+
+	if (bbs->ssh_fingerprint_len == 20) {
+		/* Cryptlib's CRYPT_SESSINFO_SERVER_FINGERPRINT_SHA1 is
+		   misnamed: the hash is MD5 of only the raw key components
+		   (skipping the wire-format uint32-length + algorithm-string
+		   prefix), and the result is stored in a zero-initialized
+		   20-byte buffer — so the on-disk fingerprint is
+		   MD5(components) || 4 zero bytes. Reproduce that here so
+		   existing bbslist entries carry over. */
+		if (blob_len > 4) {
+			uint32_t algo_len = ((uint32_t)blob[0] << 24) |
+			    ((uint32_t)blob[1] << 16) | ((uint32_t)blob[2] << 8) |
+			    (uint32_t)blob[3];
+			if ((size_t)algo_len + 4 < blob_len) {
+				uint8_t expected[20] = {0};
+				MD5_calc(expected, blob + 4 + algo_len, blob_len - 4 - algo_len);
+				if (memcmp(bbs->ssh_fingerprint, expected, 20) == 0) {
+					hostkey_result = HOSTKEY_UPGRADE_SHA1_TO_SHA256;
+					return DSSH_HOSTKEY_ACCEPT;
+				}
+			}
+		}
+	}
+
+	hostkey_result = HOSTKEY_MISMATCH;
+	return DSSH_HOSTKEY_ACCEPT;	/* UI dialog decides */
+}
+
+/*
+ * Called after handshake to react to the verify callback's result:
+ * show a mismatch dialog if needed, update/store the SHA-256 fingerprint.
+ * Returns false if the user chose to abort.
+ */
+static bool
+handle_hostkey_result(struct bbslist *bbs)
+{
+	static const char *const opts[4] = {"Disconnect", "Update", "Ignore", ""};
+
+	switch (hostkey_result) {
+		case HOSTKEY_OK:
+			return true;
+
+		case HOSTKEY_UPGRADE_SHA1_TO_SHA256:
+		case HOSTKEY_NEW: {
+			/* Silent upgrade: stash the new SHA-256 and write the
+			   bbslist entry back.  Both paths write a fresh SHA-256
+			   fingerprint; the OK path wouldn't reach here. */
+			FILE *lf;
+			str_list_t inifile;
+			char fpstr[65];
+			hex_encode(fpstr, hostkey_sha256, 32);
+			memcpy(bbs->ssh_fingerprint, hostkey_sha256, 32);
+			bbs->ssh_fingerprint_len = 32;
+			if (!safe_mode && (lf = fopen(settings.list_path, "r+b")) != NULL) {
+				inifile = iniReadBBSList(lf, true);
+				iniSetString(&inifile, bbs->name, "SSHFingerprint", fpstr, &ini_style);
+				iniWriteFile(lf, inifile);
+				fclose(lf);
+				strListFree(&inifile);
+			}
+			return true;
+		}
+
+		case HOSTKEY_MISMATCH: {
+			char newfp[65], oldfp[65];
+			int slen = 0, choice;
+			hex_encode(newfp, hostkey_sha256, 32);
+			for (size_t i = 0; i < bbs->ssh_fingerprint_len; i++)
+				sprintf(&oldfp[i * 2], "%02x", bbs->ssh_fingerprint[i]);
+			oldfp[bbs->ssh_fingerprint_len * 2] = 0;
+			asprintf(&uifc.helpbuf,
+			    "`Fingerprint Changed`\n\n"
+			    "The server fingerprint has changed from the last known good connection.\n"
+			    "This may indicate someone is evesdropping on your connection.\n"
+			    "It is also possible that a host key has just been changed.\n"
+			    "\n"
+			    "Last known fingerprint: %s\n"
+			    "Fingerprint sent now:   %s\n",
+			    oldfp, newfp);
+			choice = uifc.list(WIN_MID | WIN_SAV, 0, 0, 0, &slen, NULL,
+			    "Fingerprint Changed", (char **)opts);
+			free(uifc.helpbuf);
+			if (choice == 1) {	/* Update */
+				FILE *lf;
+				str_list_t inifile;
+				memcpy(bbs->ssh_fingerprint, hostkey_sha256, 32);
+				bbs->ssh_fingerprint_len = 32;
+				if (!safe_mode && (lf = fopen(settings.list_path, "r+b")) != NULL) {
+					inifile = iniReadBBSList(lf, true);
+					iniSetString(&inifile, bbs->name, "SSHFingerprint", newfp, &ini_style);
+					iniWriteFile(lf, inifile);
+					fclose(lf);
+					strListFree(&inifile);
+				}
+				return true;
+			}
+			if (choice == 2)	/* Ignore */
+				return true;
+			return false;		/* Disconnect */
+		}
+	}
+	return false;
+}
+
+/* ----------------------------------------------- kbd-interactive prompts */
+
+static int
+kbi_prompt_cb(const uint8_t *name, size_t name_len,
+              const uint8_t *instruction, size_t instruction_len,
+              uint32_t num_prompts, const uint8_t **prompts,
+              const size_t *prompt_lens, const bool *echo,
+              uint8_t **responses, size_t *response_lens, void *cbdata)
+{
+	(void)name;
+	(void)name_len;
+	(void)cbdata;
+
+	/* Show the server's instruction (if any) as a popup. */
+	if (instruction_len > 0) {
+		char *msg = malloc(instruction_len + 1);
+		if (msg != NULL) {
+			memcpy(msg, instruction, instruction_len);
+			msg[instruction_len] = 0;
+			uifcmsg("SSH Keyboard-Interactive", msg);
+			free(msg);
+		}
+	}
+
+	for (uint32_t i = 0; i < num_prompts; i++) {
+		char promptstr[256];
+		char answer[MAX_PASSWD_LEN + 1] = {0};
+		size_t pl = prompt_lens[i] < sizeof(promptstr) - 1 ?
+		    prompt_lens[i] : sizeof(promptstr) - 1;
+		memcpy(promptstr, prompts[i], pl);
+		promptstr[pl] = 0;
+		int mode = echo[i] ? 0 : K_PASSWORD;
+		init_uifc(false, false);
+		uifcinput(promptstr, MAX_PASSWD_LEN, answer, mode, "Enter response.");
+		size_t alen = strlen(answer);
+		responses[i] = malloc(alen);
+		if (responses[i] == NULL)
+			return -1;
+		memcpy(responses[i], answer, alen);
+		response_lens[i] = alen;
+	}
+	return 0;
+}
+
+/* ----------------------------------------------------- algorithm setup */
+
+static bool crypt_initialized = false;
 
 void
 exit_crypt(void)
 {
-	cryptEnd();
+	/* DeuceSSH has no global shutdown — individual sessions own all
+	   state, and they're cleaned up by ssh_close(). */
 }
 
 void
 init_crypt(void)
 {
-	int status;
+	if (crypt_initialized)
+		return;
+	crypt_initialized = true;
 
-	status = cryptInit();
-	if (cryptStatusOK(status)) {
-		atexit(exit_crypt);
-		status = cryptAddRandom(NULL, CRYPT_RANDOM_SLOWPOLL);
-	}
-	if (cryptStatusError(status))
-		cryptlib_error_message(status, "initializing cryptlib");
+	/* Registration order is preference order (first = highest priority).
+	   The set here mirrors what the test variants exercise in DeuceSSH;
+	   it's a conservative "modern defaults" line-up. */
+	dssh_register_curve25519_sha256();
+	dssh_register_mlkem768x25519_sha256();
+	dssh_register_sntrup761x25519_sha512();
+	dssh_register_dh_gex_sha256();
+
+	dssh_register_aes256_ctr();
+	dssh_register_hmac_sha2_256();
+	dssh_register_hmac_sha2_512();
+	dssh_register_none_comp();
+
+	dssh_register_ssh_ed25519();
+	dssh_register_rsa_sha2_256();
+
+	dssh_transport_set_callbacks(transport_tx_cb, transport_rx_cb, NULL, NULL);
+
+	atexit(exit_crypt);
 }
 
-static int
-FlushData(CRYPT_SESSION sess)
-{
-	int ret = cryptFlushData(sess);
-	if (ret == CRYPT_ERROR_COMPLETE || ret == CRYPT_ERROR_READ) {
-		conn_api.terminate = true;
-		shutdown(ssh_sock, SHUT_RDWR);
-	}
-	return ret;
-}
-
-static int
-PopData(CRYPT_HANDLE e, void *buf, int len, int *copied)
-{
-	cryptSetAttribute(ssh_session, CRYPT_OPTION_NET_READTIMEOUT, 0);
-	int ret = cryptPopData(e, buf, len, copied);
-	cryptSetAttribute(ssh_session, CRYPT_OPTION_NET_READTIMEOUT, 30);
-	if (ret == CRYPT_ERROR_COMPLETE || ret == CRYPT_ERROR_READ) {
-		conn_api.terminate = true;
-		shutdown(ssh_sock, SHUT_RDWR);
-	}
-	return ret;
-}
-
-static int
-PushData(CRYPT_HANDLE e, void *buf, int len, int *copied)
-{
-	int ret = cryptPushData(e, buf, len, copied);
-	if (ret == CRYPT_ERROR_COMPLETE || ret == CRYPT_ERROR_WRITE) {
-		conn_api.terminate = true;
-		shutdown(ssh_sock, SHUT_RDWR);
-	}
-	return ret;
-}
-
+/* Back-compat stub: telnets.c no longer uses this, but ssh.h still
+   declares it.  Remove in the final Cryptlib cleanup. */
 void
 cryptlib_error_message(int status, const char *msg)
 {
-	char  str[64];
-	char  str2[64];
-	char *errmsg = NULL;
-	int   err_len;
-	bool  err_written = false;
-
-	sprintf(str, "Error %d %s\r\n\r\n", status, msg);
-	assert_pthread_mutex_lock(&ssh_mutex);
-	if (cryptStatusOK(cryptGetAttributeString(ssh_session, CRYPT_ATTRIBUTE_ERRORMESSAGE, NULL, &err_len))) {
-		errmsg = malloc(err_len + strlen(str) + 5);
-		if (errmsg) {
-			strcpy(errmsg, str);
-			if (cryptStatusOK(cryptGetAttributeString(ssh_session, CRYPT_ATTRIBUTE_ERRORMESSAGE, errmsg + strlen(str), &err_len))) {
-				assert_pthread_mutex_unlock(&ssh_mutex);
-				errmsg[strlen(str) + err_len] = 0;
-				strcat(errmsg, "\r\n\r\n");
-				sprintf(str2, "Error %d %s", status, msg);
-				uifcmsg(str2, errmsg);
-				err_written = true;
-				free(errmsg);
-			}
-		}
-	}
-	if (!err_written) {
-		assert_pthread_mutex_unlock(&ssh_mutex);
-		sprintf(str2, "Error %d %s", status, msg);
-		uifcmsg(str2, "Additionally, a failure occured getting the error message");
-		free(errmsg);
-	}
+	char title[128];
+	char body[256];
+	snprintf(title, sizeof(title), "SSH error %s", msg);
+	snprintf(body, sizeof(body), "Error %d %s\r\n\r\n", status, msg);
+	uifcmsg(title, body);
 }
 
-static void
-close_sftp_channel(int chan)
-{
-	assert_pthread_mutex_lock(&ssh_mutex);
-	if (chan != -1) {
-		FlushData(ssh_session);
-		if (cryptStatusOK(cryptSetAttribute(ssh_session, CRYPT_SESSINFO_SSH_CHANNEL, chan))) {
-			cryptSetAttribute(ssh_session, CRYPT_SESSINFO_SSH_CHANNEL_ACTIVE, 0);
-		}
-	}
-	if (chan == sftp_channel)
-		sftp_channel = -1;
-	else {
-		FlushData(ssh_session);
-		if (cryptStatusOK(cryptSetAttribute(ssh_session, CRYPT_SESSINFO_SSH_CHANNEL, sftp_channel))) {
-			cryptSetAttribute(ssh_session, CRYPT_SESSINFO_SSH_CHANNEL_ACTIVE, 0);
-		}
-		sftp_channel = -1;
-	}
-	assert_pthread_mutex_unlock(&ssh_mutex);
-	sftpc_finish(sftp_state);
-}
+/* ---------------------------------------------------------- key load */
 
-static void
-close_ssh_channel(void)
-{
-	assert_pthread_mutex_lock(&ssh_mutex);
-	if (ssh_channel != -1) {
-		FlushData(ssh_session);
-		if (cryptStatusOK(cryptSetAttribute(ssh_session, CRYPT_SESSINFO_SSH_CHANNEL, ssh_channel))) {
-			cryptSetAttribute(ssh_session, CRYPT_SESSINFO_SSH_CHANNEL_ACTIVE, 0);
-		}
-		ssh_channel = -1;
-	}
-	assert_pthread_mutex_unlock(&ssh_mutex);
-}
-
+/*
+ * Load the Ed25519 private key from the SyncTERM key file, or generate
+ * and persist a new one on first run / load failure.  Returns true if a
+ * key is available on the registered algorithm entry.
+ */
 static bool
-check_channel_open(int *chan)
+ensure_client_key(void)
 {
-	int open = 0;
-	int status = cryptSetAttribute(ssh_session, CRYPT_SESSINFO_SSH_CHANNEL, *chan);
-	if (cryptStatusError(status)) {
-		open = 0;
+	char path[MAX_PATH + 1];
+	get_syncterm_filename(path, sizeof(path), SYNCTERM_PATH_KEYS, false);
+	if (dssh_ed25519_load_key_file(path, NULL, NULL) == 0)
+		return true;
+	if (dssh_ed25519_generate_key() != 0)
+		return false;
+	/* Save unencrypted — matches the Cryptlib-era posture where the
+	   key file was encrypted with a hardcoded password (i.e. no real
+	   protection at rest).  An OS-keychain option can follow later. */
+	if (dssh_ed25519_save_key_file(path, NULL, NULL) != 0) {
+		/* Can't persist, but the in-memory key still works for this
+		   session. */
 	}
-	else {
-		status = cryptGetAttribute(ssh_session, CRYPT_SESSINFO_SSH_CHANNEL_OPEN, &open);
-		if (cryptStatusError(status)) {
-			open = 0;
-		}
-		if (!open) {
-			cryptSetAttribute(ssh_session, CRYPT_SESSINFO_SSH_CHANNEL_ACTIVE, 0);
-		}
-	}
-	return open;
+	return true;
 }
+
+/* ------------------------------------------------------- I/O threads */
 
 void
 ssh_input_thread(void *args)
 {
-	int    popstatus, gchstatus, status;
-	int    rd;
-	size_t buffered;
-	size_t buffer;
-	int    chan;
-	bool   both_gone = false;
-	bool   sftp_do_finish;
-	bool   data_avail;
-
+	(void)args;
+	uint8_t *stderr_sink = NULL;
+	size_t stderr_sink_sz = 4096;
 	SetThreadName("SSH Input");
 	conn_api.input_thread_running = 1;
+	stderr_sink = malloc(stderr_sink_sz);
+
 	while (!conn_api.terminate) {
-		sftp_do_finish = false;
-		assert_pthread_mutex_lock(&ssh_mutex);
-		if (FlushData(ssh_session) == CRYPT_ERROR_COMPLETE) {
-			assert_pthread_mutex_unlock(&ssh_mutex);
+		int events = dssh_chan_poll(ssh_chan, DSSH_POLL_READ | DSSH_POLL_READEXT, 100);
+		if (events < 0)
 			break;
-		}
-		if (ssh_channel != -1) {
-			if (!check_channel_open(&ssh_channel))
-				ssh_channel = -1;
-		}
-		if (sftp_channel != -1) {
-			if (!check_channel_open(&sftp_channel)) {
-				sftp_do_finish = true;
-				sftp_channel = -1;
-			}
-		}
-		if (ssh_channel == -1 && sftp_channel == -1) {
-			both_gone = true;
-		}
-		assert_pthread_mutex_unlock(&ssh_mutex);
-		if (both_gone) {
-			break;
-		}
-		if (sftp_do_finish) {
-			sftpc_finish(sftp_state);
-			sftp_do_finish = false;
-		}
-		if (!socket_check(ssh_sock, &data_avail, NULL, 100)) {
-			break;
-		}
-		if (!data_avail)
+		if (events == 0)
 			continue;
-
-		assert_pthread_mutex_lock(&ssh_mutex);
-		if (FlushData(ssh_session) == CRYPT_ERROR_COMPLETE) {
-			assert_pthread_mutex_unlock(&ssh_mutex);
-			break;
-		}
-
-		// Check channels are active (again)...
-		if (ssh_channel != -1) {
-			if (!check_channel_open(&ssh_channel))
-				ssh_channel = -1;
-		}
-		if (sftp_channel != -1) {
-			if (!check_channel_open(&sftp_channel)) {
-				assert_pthread_mutex_unlock(&ssh_mutex);
-				sftpc_finish(sftp_state);
-				assert_pthread_mutex_lock(&ssh_mutex);
-				sftp_channel = -1;
+		if (events & DSSH_POLL_READ) {
+			int64_t n = dssh_chan_read(ssh_chan, 0, conn_api.rd_buf, conn_api.rd_buf_size);
+			if (n < 0)
+				break;
+			if (n == 0) {
+				conn_api.terminate = true;
+				break;
+			}
+			size_t buffered = 0;
+			while ((size_t)buffered < (size_t)n && !conn_api.terminate) {
+				assert_pthread_mutex_lock(&(conn_inbuf.mutex));
+				size_t free_bytes = conn_buf_wait_free(&conn_inbuf, (size_t)n - buffered, 100);
+				buffered += conn_buf_put(&conn_inbuf, conn_api.rd_buf + buffered, free_bytes);
+				assert_pthread_mutex_unlock(&(conn_inbuf.mutex));
 			}
 		}
-		if (ssh_channel == -1 && sftp_channel == -1) {
-			assert_pthread_mutex_unlock(&ssh_mutex);
-			break;
+		if ((events & DSSH_POLL_READEXT) && stderr_sink != NULL) {
+			/* Drain stderr but keep stdout live.  Terminals don't
+			   surface stderr separately; an EOF on stderr alone
+			   is not a connection-ending event. */
+			int64_t n = dssh_chan_read(ssh_chan, 1, stderr_sink, stderr_sink_sz);
+			if (n < 0)
+				break;
 		}
-
-		cryptSetAttribute(ssh_session, CRYPT_OPTION_NET_READTIMEOUT, 0);
-		popstatus = PopData(ssh_session, conn_api.rd_buf, conn_api.rd_buf_size, &rd);
-		cryptSetAttribute(ssh_session, CRYPT_OPTION_NET_READTIMEOUT, 30);
-		if (cryptStatusOK(popstatus)) {
-			gchstatus = cryptGetAttribute(ssh_session, CRYPT_SESSINFO_SSH_CHANNEL, &chan);
-		}
-		else {
-			gchstatus = CRYPT_OK;
-			chan = -1;
-		}
-
-                // Handle case where there was socket activity without readable data (ie: rekey)
-		if (popstatus == CRYPT_ERROR_TIMEOUT) {
-			FlushData(ssh_session);
-			assert_pthread_mutex_unlock(&ssh_mutex);
-			continue;
-		}
-
-		// A final read on a channel just occured... figure out which is missing...
-		if (gchstatus == CRYPT_ERROR_NOTFOUND) {
-			if (ssh_channel != -1) {
-				FlushData(ssh_session);
-				status = cryptSetAttribute(ssh_session, CRYPT_SESSINFO_SSH_CHANNEL, ssh_channel);
-				if (status == CRYPT_ERROR_NOTFOUND) {
-					chan = ssh_channel;
-				}
-			}
-			if (chan == -1) {
-				if (sftp_channel != -1) {
-					FlushData(ssh_session);
-					status = cryptSetAttribute(ssh_session, CRYPT_SESSINFO_SSH_CHANNEL, sftp_channel);
-					if (status == CRYPT_ERROR_NOTFOUND) {
-						chan = sftp_channel;
-					}
-				}
-			}
-		}
-
-		if (cryptStatusOK(popstatus) && chan != -1) {
-			if (chan == sftp_channel) {
-				if (gchstatus == CRYPT_ERROR_NOTFOUND) {
-					sftp_channel = -1;
-				}
-				/*
-				 * TODO: Can't hold sftp mutex here!
-				 *       It will be held by whatever's waiting for this.
-				 *       and will deadlock.
-				 */
-				if (rd > 0 && !sftpc_recv(sftp_state, conn_api.rd_buf, rd)) {
-					int sc = sftp_channel;
-					assert_pthread_mutex_unlock(&ssh_mutex);
-					close_sftp_channel(sc);
-					assert_pthread_mutex_lock(&ssh_mutex);
-					FlushData(ssh_session);
-					assert_pthread_mutex_unlock(&ssh_mutex);
-					continue;
-				}
-			}
-			else if (chan == ssh_channel) {
-				if (gchstatus == CRYPT_ERROR_NOTFOUND) {
-					ssh_channel = -1;
-				}
-				assert_pthread_mutex_unlock(&ssh_mutex);
-				if (rd > 0) {
-					buffered = 0;
-					while (buffered < rd && !conn_api.terminate) {
-						assert_pthread_mutex_lock(&(conn_inbuf.mutex));
-						buffer = conn_buf_wait_free(&conn_inbuf, rd - buffered, 100);
-						buffered += conn_buf_put(&conn_inbuf, conn_api.rd_buf + buffered, buffer);
-						assert_pthread_mutex_unlock(&(conn_inbuf.mutex));
-					}
-				}
-				assert_pthread_mutex_lock(&ssh_mutex);
-			}
-		}
-		FlushData(ssh_session);
-		assert_pthread_mutex_unlock(&ssh_mutex);
 	}
 	conn_api.terminate = true;
-	shutdown(ssh_sock, SHUT_RDWR);
+	free(stderr_sink);
 	conn_api.input_thread_running = 2;
 }
 
 void
 ssh_output_thread(void *args)
 {
-	int    wr;
-	int    ret;
-	size_t sent;
-	int    status;
-
+	(void)args;
 	SetThreadName("SSH Output");
 	conn_api.output_thread_running = 1;
-	// coverity[thread1_checks_field:SUPPRESS]
 	while (!conn_api.terminate) {
 		assert_pthread_mutex_lock(&(conn_outbuf.mutex));
-		wr = conn_buf_wait_bytes(&conn_outbuf, 1, 100);
+		size_t wr = conn_buf_wait_bytes(&conn_outbuf, 1, 100);
 		if (wr) {
 			wr = conn_buf_get(&conn_outbuf, conn_api.wr_buf, conn_api.wr_buf_size);
 			assert_pthread_mutex_unlock(&(conn_outbuf.mutex));
-			sent = 0;
-			assert_pthread_mutex_lock(&ssh_tx_mutex);
+			size_t sent = 0;
 			while (sent < wr && !conn_api.terminate) {
-				ret = 0;
-				assert_pthread_mutex_lock(&ssh_mutex);
-				if (ssh_channel == -1) {
-					assert_pthread_mutex_unlock(&ssh_mutex);
+				int64_t n = dssh_chan_write(ssh_chan, 0, conn_api.wr_buf + sent, wr - sent);
+				if (n < 0) {
 					conn_api.terminate = true;
 					break;
 				}
-				FlushData(ssh_session);
-				status = cryptSetAttribute(ssh_session, CRYPT_SESSINFO_SSH_CHANNEL, ssh_channel);
-				if (cryptStatusOK(status)) {
-					status = PushData(ssh_session, conn_api.wr_buf + sent, wr - sent, &ret);
-					if (cryptStatusOK(status))
-						FlushData(ssh_session);
-				}
-				if (cryptStatusError(status)) {
-					assert_pthread_mutex_unlock(&ssh_mutex);
-					if (!conn_api.terminate) {
-						conn_api.terminate = true;
-						if ((status != CRYPT_ERROR_COMPLETE) && (status != CRYPT_ERROR_NOTFOUND)) /* connection closed */
-							cryptlib_error_message(status, "sending data");
-					}
-					break;
-				}
-				assert_pthread_mutex_unlock(&ssh_mutex);
-				sent += ret;
+				sent += (size_t)n;
 			}
-			assert_pthread_mutex_unlock(&ssh_tx_mutex);
 		}
 		else {
 			assert_pthread_mutex_unlock(&(conn_outbuf.mutex));
 		}
 	}
 	conn_api.terminate = true;
-	shutdown(ssh_sock, SHUT_RDWR);
 	conn_api.output_thread_running = 2;
+}
+
+/* --------------------------------------------------- SFTP pubkey upload */
+
+static bool key_not_present(sftp_filehandle_t f, const char *priv);
+
+/*
+ * Coordination between add_public_key() and sftp_recv_thread.  The
+ * recv thread must stop touching sftp_chan BEFORE add_public_key calls
+ * dssh_chan_close on it, because the close frees the channel handle
+ * and any concurrent poll/read is use-after-free.
+ */
+static bool sftp_recv_running;
+static bool sftp_recv_shutdown;
+
+static void
+sftp_recv_thread(void *args)
+{
+	(void)args;
+	uint8_t buf[4096];
+	SetThreadName("SSH SFTP Recv");
+	while (!conn_api.terminate && !sftp_recv_shutdown && sftp_chan != NULL) {
+		int events = dssh_chan_poll(sftp_chan, DSSH_POLL_READ, 100);
+		if (events < 0)
+			break;
+		if (events & DSSH_POLL_READ) {
+			int64_t n = dssh_chan_read(sftp_chan, 0, buf, sizeof(buf));
+			if (n <= 0)
+				break;
+			if (!sftpc_recv(sftp_state, buf, (uint32_t)n))
+				break;
+		}
+	}
+	sftp_recv_running = false;
 }
 
 static bool
 sftp_send(uint8_t *buf, size_t sz, void *cb_data)
 {
+	(void)cb_data;
 	size_t sent = 0;
-	int active = 1;
-
-	if (sz == 0)
-		return true;
-	assert_pthread_mutex_lock(&ssh_tx_mutex);
-	while (sent < sz && !conn_api.terminate) {
-		int status;
-		int ret = 0;
-		assert_pthread_mutex_lock(&ssh_mutex);
-		FlushData(ssh_session);
-		status = cryptSetAttribute(ssh_session, CRYPT_SESSINFO_SSH_CHANNEL, sftp_channel);
-		if (cryptStatusOK(status)) {
-			active = 0;
-			status = cryptGetAttribute(ssh_session, CRYPT_SESSINFO_SSH_CHANNEL_OPEN, &active);
-			if (cryptStatusOK(status) && active)
-				status = PushData(ssh_session, buf + sent, sz - sent, &ret);
-		}
-		assert_pthread_mutex_unlock(&ssh_mutex);
-		if (cryptStatusError(status)) {
-			if (status != CRYPT_ERROR_COMPLETE && status != CRYPT_ERROR_NOTFOUND) { /* connection closed */
-				if (!conn_api.terminate)
-					cryptlib_error_message(status, "sending sftp data");
-			}
-			break;
-		}
-		sent += ret;
+	while (sent < sz && !conn_api.terminate && sftp_chan != NULL) {
+		int64_t n = dssh_chan_write(sftp_chan, 0, buf + sent, sz - sent);
+		if (n < 0)
+			return false;
+		sent += (size_t)n;
 	}
-	assert_pthread_mutex_unlock(&ssh_tx_mutex);
 	return sent == sz;
 }
 
-static char *
-get_public_key(CRYPT_CONTEXT ctx)
+static void
+add_public_key(void *vpriv)
 {
-	int sz;
-	int status;
-	char *raw;
-	char *ret;
-	size_t rsz;
+	char *priv = vpriv;
+	struct dssh_chan_params params;
 
-	assert_pthread_mutex_lock(&ssh_mutex);
-	status = cryptGetAttributeString(ctx, CRYPT_CTXINFO_SSH_PUBLIC_KEY, NULL, &sz);
-	assert_pthread_mutex_unlock(&ssh_mutex);
-	if (cryptStatusOK(status)) {
-		raw = malloc(sz);
-		if (raw != NULL) {
-			assert_pthread_mutex_lock(&ssh_mutex);
-			status = cryptGetAttributeString(ctx, CRYPT_CTXINFO_SSH_PUBLIC_KEY, raw, &sz);
-			assert_pthread_mutex_unlock(&ssh_mutex);
-			if (cryptStatusOK(status)) {
-				rsz = (sz - 4) * 4 / 3 + 3;
-				ret = malloc(rsz);
-				if (ret != NULL) {
-					b64_encode(ret, rsz, raw + 4, sz - 4);
-					free(raw);
-					return ret;
+	/* Wait for the shell channel to exist (ssh_connect opens it
+	   after spawning this thread). */
+	for (unsigned i = 0; i < 500 && !conn_api.terminate; i++) {
+		assert_pthread_mutex_lock(&ssh_mutex);
+		bool ready = (ssh_chan != NULL);
+		assert_pthread_mutex_unlock(&ssh_mutex);
+		if (ready)
+			break;
+		SLEEP(10);
+	}
+	if (conn_api.terminate || ssh_chan == NULL) {
+		free(priv);
+		pubkey_thread_running = false;
+		return;
+	}
+
+	/* Give an old sbbs a chance to close the channel if it doesn't
+	   support subsystems (legacy behaviour carried from the Cryptlib
+	   version). */
+	for (unsigned i = 0; i < 100 && !conn_api.terminate; i++)
+		SLEEP(10);
+
+	dssh_chan_params_init(&params, DSSH_CHAN_SUBSYSTEM);
+	dssh_chan_params_set_subsystem(&params, "sftp");
+	sftp_chan = dssh_chan_open(ssh_session, &params);
+	dssh_chan_params_free(&params);
+	if (sftp_chan == NULL) {
+		free(priv);
+		pubkey_thread_running = false;
+		return;
+	}
+
+	sftp_state = sftpc_begin(sftp_send, NULL);
+	if (sftp_state == NULL) {
+		dssh_chan_close(sftp_chan, -1);
+		sftp_chan = NULL;
+		free(priv);
+		pubkey_thread_running = false;
+		return;
+	}
+
+	sftp_recv_running = true;
+	sftp_recv_shutdown = false;
+	_beginthread(sftp_recv_thread, 0, NULL);
+
+	if (sftpc_init(sftp_state)) {
+		sftp_filehandle_t f = NULL;
+		if (sftpc_open(sftp_state, ".ssh/authorized_keys",
+		               SSH_FXF_READ | SSH_FXF_WRITE | SSH_FXF_APPEND | SSH_FXF_CREAT,
+		               NULL, &f)) {
+			if (key_not_present(f, priv)) {
+				sftp_str_t ln = sftp_asprintf("ssh-ed25519 %s Added by SyncTERM\n", priv);
+				if (ln != NULL) {
+					sftpc_write(sftp_state, f, 0, ln);
+					free_sftp_str(ln);
 				}
 			}
-			free(raw);
+			sftpc_close(sftp_state, &f);
 		}
+		sftpc_finish(sftp_state);
 	}
-	return NULL;
+
+	/* Stop the recv thread before freeing the channel.  The thread
+	   polls sftp_chan up to 100 ms per iteration, so give it a
+	   generous margin before forcing shutdown. */
+	sftp_recv_shutdown = true;
+	for (int i = 0; i < 50 && sftp_recv_running; i++)
+		SLEEP(10);
+	dssh_chan_close(sftp_chan, -1);
+	sftp_chan = NULL;
+	sftpc_end(sftp_state);
+	sftp_state = NULL;
+	free(priv);
+	pubkey_thread_running = false;
 }
 
+/*
+ * Helper kept from the Cryptlib version — reads the remote's
+ * authorized_keys line by line and checks whether the public-key
+ * material we're about to append is already present.
+ */
 static bool
 key_not_present(sftp_filehandle_t f, const char *priv)
 {
@@ -525,285 +674,182 @@ key_not_present(sftp_filehandle_t f, const char *priv)
 	return false;
 }
 
-static void
-add_public_key(void *vpriv)
+/* ----------------------------------------------------------- connect */
+
+static char *
+get_pubkey_str(void)
 {
-	int status;
-	int active;
-	int new_sftp_channel = -1;
-	char *priv = vpriv;
-
-	// Wait for at most five seconds for channel to be fully active
-	active = 0;
-	for (unsigned sleep_count = 0; sleep_count < 500 && conn_api.terminate == 0; sleep_count++) {
-		assert_pthread_mutex_lock(&ssh_mutex);
-		if (ssh_channel != -1) {
-			status = cryptSetAttribute(ssh_session, CRYPT_SESSINFO_SSH_CHANNEL, ssh_channel);
-			if (cryptStatusOK(status))
-				status = cryptGetAttribute(ssh_session, CRYPT_SESSINFO_SSH_CHANNEL_ACTIVE, &active);
-			if (cryptStatusOK(status) && active) {
-				assert_pthread_mutex_unlock(&ssh_mutex);
-				break;
-			}
-		}
-		assert_pthread_mutex_unlock(&ssh_mutex);
-		if (conn_api.terminate)
-			break;
-		SLEEP(10);
-	};
-	if (!active) {
-		pubkey_thread_running = false;
-		free(priv);
-		return;
+	/* Query size first, then allocate. */
+	int64_t sz = dssh_ed25519_get_pub_str(NULL, 0);
+	if (sz <= 0)
+		return NULL;
+	char *buf = malloc((size_t)sz + 1);
+	if (buf == NULL)
+		return NULL;
+	if (dssh_ed25519_get_pub_str(buf, (size_t)sz + 1) <= 0) {
+		free(buf);
+		return NULL;
 	}
-	assert_pthread_mutex_lock(&ssh_tx_mutex);
-	assert_pthread_mutex_lock(&ssh_mutex);
-	FlushData(ssh_session);
-	status = cryptSetAttribute(ssh_session, CRYPT_SESSINFO_SSH_CHANNEL, CRYPT_UNUSED);
-	if (cryptStatusError(status)) {
-		assert_pthread_mutex_unlock(&ssh_mutex);
-		cryptlib_error_message(status, "setting new channel");
-	} else {
-		status = cryptSetAttributeString(ssh_session, CRYPT_SESSINFO_SSH_CHANNEL_TYPE, "subsystem", 9);
-		if (cryptStatusError(status)) {
-			assert_pthread_mutex_unlock(&ssh_mutex);
-			cryptlib_error_message(status, "setting channel type");
-		} else {
-			status = cryptSetAttributeString(ssh_session, CRYPT_SESSINFO_SSH_CHANNEL_ARG1, "sftp", 4);
-			if (cryptStatusError(status)) {
-				assert_pthread_mutex_unlock(&ssh_mutex);
-				cryptlib_error_message(status, "setting subsystem");
-			} else {
-				status = cryptGetAttribute(ssh_session, CRYPT_SESSINFO_SSH_CHANNEL, &new_sftp_channel);
-				if (cryptStatusError(status)) {
-					sftp_channel = new_sftp_channel = -1;
-					assert_pthread_mutex_unlock(&ssh_mutex);
-					cryptlib_error_message(status, "getting new channel");
-				}
-				else if (new_sftp_channel == -1) { // Shouldn't be possible...
-					sftp_channel = new_sftp_channel = -1;
-					assert_pthread_mutex_unlock(&ssh_mutex);
-				}
-			}
-		}
+	/* OpenSSH public key line is "<algo> <base64> <comment>" -- we
+	   only need the base64 blob for authorized_keys matching.  Strip
+	   the algo prefix if present. */
+	char *space = strchr(buf, ' ');
+	if (space != NULL) {
+		memmove(buf, space + 1, strlen(space + 1) + 1);
+		space = strchr(buf, ' ');
+		if (space != NULL)
+			*space = 0;
 	}
-	if (new_sftp_channel != -1) {
-		status = cryptGetAttribute(ssh_session, CRYPT_SESSINFO_SSH_CHANNEL_OPEN, &active);
-		if (cryptStatusError(status) || !active) {
-			cryptSetAttribute(ssh_session, CRYPT_SESSINFO_SSH_CHANNEL_ACTIVE, 0);
-			assert_pthread_mutex_unlock(&ssh_mutex);
-			assert_pthread_mutex_unlock(&ssh_tx_mutex);
-			free(priv);
-			pubkey_thread_running = false;
-			return;
-		}
-		status = cryptSetAttribute(ssh_session, CRYPT_SESSINFO_SSH_CHANNEL_ACTIVE, 1);
-		if (cryptStatusError(status) && status != CRYPT_ENVELOPE_RESOURCE) {
-			assert_pthread_mutex_unlock(&ssh_mutex);
-			assert_pthread_mutex_unlock(&ssh_tx_mutex);
-			close_sftp_channel(new_sftp_channel);
-			free(priv);
-			pubkey_thread_running = false;
-			return;
-		}
-		int sc = new_sftp_channel;
-		assert_pthread_mutex_unlock(&ssh_mutex);
-		assert_pthread_mutex_unlock(&ssh_tx_mutex);
-		active = 0;
-		for (unsigned sleep_count = 0; sleep_count < 500 && conn_api.terminate == 0; sleep_count++) {
-			assert_pthread_mutex_lock(&ssh_mutex);
-			status = cryptSetAttribute(ssh_session, CRYPT_SESSINFO_SSH_CHANNEL, new_sftp_channel);
-			if (cryptStatusOK(status))
-				status = cryptGetAttribute(ssh_session, CRYPT_SESSINFO_SSH_CHANNEL_ACTIVE, &active);
-			assert_pthread_mutex_unlock(&ssh_mutex);
-			if (cryptStatusOK(status) && active)
-				break;
-			SLEEP(10);
-		}
-		if (!active) {
-			close_sftp_channel(sc);
-			free(priv);
-			pubkey_thread_running = false;
-			return;
-		}
-		/*
-		 * Old version of Synchronet will accept the channel, then
-		 * immediately close it.  If we then send data on the channel,
-		 * it will get mixed in with the first channels data because
-		 * it doesn't have the channel patches.
-		 * 
-		 * To avoid that, we'll sleep for a second to allow
-		 * the remote to close the channel if it wants to.
-		 */
-		for (unsigned sleep_count = 0; sleep_count < 100 && !conn_api.terminate; sleep_count++) {
-			SLEEP(10);
-		}
-		assert_pthread_mutex_lock(&ssh_tx_mutex);
-		assert_pthread_mutex_lock(&ssh_mutex);
-		if (conn_api.terminate || !check_channel_open(&new_sftp_channel)) {
-			assert_pthread_mutex_unlock(&ssh_mutex);
-			assert_pthread_mutex_unlock(&ssh_tx_mutex);
-			free(priv);
-			pubkey_thread_running = false;
-			return;
-		}
-		sftp_channel = new_sftp_channel;
-		assert_pthread_mutex_unlock(&ssh_mutex);
-		assert_pthread_mutex_unlock(&ssh_tx_mutex);
-		sftp_state = sftpc_begin(sftp_send, NULL);
-		if (sftp_state == NULL) {
-			close_sftp_channel(new_sftp_channel);
-			free(priv);
-			pubkey_thread_running = false;
-			return;
-		}
-		if (sftpc_init(sftp_state)) {
-			sftp_filehandle_t f = NULL;
-			// TODO: Add permissions?
-
-			if (sftpc_open(sftp_state, ".ssh/authorized_keys", SSH_FXF_READ | SSH_FXF_WRITE | SSH_FXF_APPEND | SSH_FXF_CREAT, NULL, &f)) {
-				/* Read through the file looking for our key */
-				if (key_not_present(f, priv)) {
-					// TODO: Types other than RSA...
-					sftp_str_t ln =  sftp_asprintf("ssh-rsa %s Added by SyncTERM\n", priv);
-					if (ln != NULL) {
-						sftpc_write(sftp_state, f, 0, ln);
-						free_sftp_str(ln);
-					}
-				}
-				sftpc_close(sftp_state, &f);
-			}
-			sftpc_finish(sftp_state);
-		}
-		close_sftp_channel(new_sftp_channel);
-	}
-	else {
-		assert_pthread_mutex_unlock(&ssh_tx_mutex);
-	}
-	free(priv);
-	pubkey_thread_running = false;
+	return buf;
 }
 
 static void
-error_popup(struct bbslist *bbs, const char *blurb, int status)
+error_popup(struct bbslist *bbs, const char *blurb)
 {
 	if (ssh_sock != INVALID_SOCKET) {
 		closesocket(ssh_sock);
 		ssh_sock = INVALID_SOCKET;
 	}
 	if (!bbs->hidepopups)
-		cryptlib_error_message(status, blurb);
+		uifcmsg("SSH error", (char *)blurb);
 	conn_api.terminate = true;
 	if (!bbs->hidepopups)
 		uifc.pop(NULL);
 }
 
-#define KEY_PASSWORD "TODO:ThisIsDumb"
-#define KEY_LABEL "ssh_key"
+/*
+ * Like error_popup() but the blurb includes the DeuceSSH error code
+ * and, when negotiation has progressed that far, the negotiated
+ * transport parameters. Aimed at users who hit a handshake failure
+ * and need to report which algorithm failed.
+ */
+static void
+error_popup_rc(struct bbslist *bbs, const char *what, int rc)
+{
+	char body[1024];
+	const char *remote = ssh_session ? dssh_transport_get_remote_version(ssh_session) : NULL;
+	const char *kex    = ssh_session ? dssh_transport_get_kex_name(ssh_session) : NULL;
+	const char *hk     = ssh_session ? dssh_transport_get_hostkey_name(ssh_session) : NULL;
+	const char *enc    = ssh_session ? dssh_transport_get_enc_name(ssh_session) : NULL;
+	const char *mac    = ssh_session ? dssh_transport_get_mac_name(ssh_session) : NULL;
+	char io_line[128] = "";
+	if (io_fail_op != NULL) {
+		if (io_fail_peer_closed)
+			snprintf(io_line, sizeof(io_line),
+			    "I/O:      %s returned 0 (peer closed)\r\n", io_fail_op);
+		else if (io_fail_errno != 0)
+			snprintf(io_line, sizeof(io_line),
+			    "I/O:      %s errno=%d (%s)\r\n",
+			    io_fail_op, io_fail_errno, strerror(io_fail_errno));
+	}
+	snprintf(body, sizeof(body),
+	    "%s failed (DeuceSSH rc=%d)\r\n"
+	    "\r\n"
+	    "Remote:   %s\r\n"
+	    "KEX:      %s\r\n"
+	    "Host key: %s\r\n"
+	    "Cipher:   %s\r\n"
+	    "MAC:      %s\r\n"
+	    "%s",
+	    what, rc,
+	    remote && remote[0] ? remote : "(no version received)",
+	    kex    ? kex    : "(not negotiated)",
+	    hk     ? hk     : "(not negotiated)",
+	    enc    ? enc    : "(not negotiated)",
+	    mac    ? mac    : "(not negotiated)",
+	    io_line);
+	if (ssh_sock != INVALID_SOCKET) {
+		closesocket(ssh_sock);
+		ssh_sock = INVALID_SOCKET;
+	}
+	if (!bbs->hidepopups)
+		uifcmsg((char *)what, body);
+	conn_api.terminate = true;
+	if (!bbs->hidepopups)
+		uifc.pop(NULL);
+}
+
 int
 ssh_connect(struct bbslist *bbs)
 {
-	int           off = 1;
-	int           status;
-	char          password[MAX_PASSWD_LEN + 1];
-	char          username[MAX_USER_LEN + 1];
-	int           rows, cols;
-	const char   *term;
-	int           slen;
-	uint8_t       server_fp[sizeof(bbs->ssh_fingerprint)];
-	char          path[MAX_PATH+1];
-	CRYPT_KEYSET  ssh_keyset;
-	CRYPT_CONTEXT ssh_context;
-	char         *pubkey = NULL;
+	int      off = 1;
+	char     password[MAX_PASSWD_LEN + 1];
+	char     username[MAX_USER_LEN + 1];
+	int      rows, cols;
+	const char *term;
+	char    *pubkey = NULL;
+	struct dssh_chan_params params;
+	int      auth_rc;
 
 	if (!bbs->hidepopups)
 		init_uifc(true, true);
 	assert_pthread_mutex_init(&ssh_mutex, NULL);
-	assert_pthread_mutex_lock(&ssh_mutex);
-	assert(ssh_session == -1);
-	assert(ssh_channel == -1);
-	assert(sftp_channel == -1);
+	io_fail_op = NULL;
+	io_fail_errno = 0;
+	io_fail_peer_closed = false;
+	assert(ssh_session == NULL);
+	assert(ssh_chan == NULL);
+	assert(sftp_chan == NULL);
 	assert(sftp_state == NULL);
-	assert(pubkey_thread_running == false);
+	assert(!pubkey_thread_running);
 	assert(ssh_sock == INVALID_SOCKET);
-	assert_pthread_mutex_unlock(&ssh_mutex);
-	assert_pthread_mutex_init(&ssh_tx_mutex, NULL);
 
-	get_syncterm_filename(path, sizeof(path), SYNCTERM_PATH_KEYS, false);
-	if(cryptStatusOK(cryptKeysetOpen(&ssh_keyset, CRYPT_UNUSED, CRYPT_KEYSET_FILE, path, CRYPT_KEYOPT_READONLY))) {
-		status = cryptGetPrivateKey(ssh_keyset, &ssh_context, CRYPT_KEYID_NAME, KEY_LABEL, KEY_PASSWORD);
-		if(cryptStatusError(status)) {
-			error_popup(bbs, "creating context", status);
-		}
-		if (cryptStatusError(cryptKeysetClose(ssh_keyset))) {
-			error_popup(bbs, "closing keyset", status);
-		}
+	init_crypt();
+	if (!ensure_client_key()) {
+		error_popup(bbs, "loading or generating SSH key");
+		return -1;
 	}
-	else {
-		do {
-			/* Couldn't do that... create a new context and use the key from there... */
-			status = cryptCreateContext(&ssh_context, CRYPT_UNUSED, CRYPT_ALGO_RSA);
-			if (cryptStatusError(status)) {
-				error_popup(bbs, "creating context", status);
-				break;
-			}
-			status = cryptSetAttributeString(ssh_context, CRYPT_CTXINFO_LABEL, KEY_LABEL, strlen(KEY_LABEL));
-			if (cryptStatusError(status)) {
-				error_popup(bbs, "setting label", status);
-				break;
-			}
-			status = cryptGenerateKey(ssh_context);
-			if (cryptStatusError(status)) {
-				error_popup(bbs, "generating key", status);
-				break;
-			}
-
-			/* Ok, now try saving this one... use the syspass to encrypt it. */
-			status = cryptKeysetOpen(&ssh_keyset, CRYPT_UNUSED, CRYPT_KEYSET_FILE, path, CRYPT_KEYOPT_CREATE);
-			if (cryptStatusError(status)) {
-				error_popup(bbs, "creating keyset", status);
-				break;
-			}
-			status = cryptAddPrivateKey(ssh_keyset, ssh_context, KEY_PASSWORD);
-			if (cryptStatusError(status)) {
-				cryptKeysetClose(ssh_keyset);
-				error_popup(bbs, "adding private key", status);
-				break;
-			}
-			status = cryptKeysetClose(ssh_keyset);
-			if (cryptStatusError(status)) {
-				error_popup(bbs, "closing keyset", status);
-				break;
-			}
-		} while(0);
-	}
-	if (cryptStatusError(status)) {
-		cryptDestroyContext(ssh_context);
-		ssh_context = -1;
-	}
+	if (bbs->sftp_public_key)
+		pubkey = get_pubkey_str();	/* may be NULL; feature best-effort */
 
 	ssh_sock = conn_socket_connect(bbs, true);
-	if (ssh_sock == INVALID_SOCKET)
-		return -1;
-
-	if (!bbs->hidepopups)
-		uifc.pop("Creating Session");
-	status = cryptCreateSession(&ssh_session, CRYPT_UNUSED, CRYPT_SESSION_SSH);
-	if (cryptStatusError(status)) {
-		error_popup(bbs, "creating session", status);
+	if (ssh_sock == INVALID_SOCKET) {
+		free(pubkey);
 		return -1;
 	}
-
-	/* we need to disable Nagle on the socket. */
 	if (setsockopt(ssh_sock, IPPROTO_TCP, TCP_NODELAY, (char *)&off, sizeof(off)))
 		fprintf(stderr, "%s:%d: Error %d calling setsockopt()\n", __FILE__, __LINE__, errno);
 
+	if (!bbs->hidepopups)
+		uifc.pop("Creating Session");
+	ssh_session = dssh_session_init(true, 0);
+	if (ssh_session == NULL) {
+		free(pubkey);
+		error_popup(bbs, "creating session");
+		return -1;
+	}
+	/* All four cbdata slots must carry the socket: the default rx_line
+	   implementation forwards its own cbdata (rx_line_cbdata) to the rx
+	   callback, so leaving rx_line_cbdata = NULL would cause the version
+	   exchange to recv() on fd 0. */
+	dssh_session_set_cbdata(ssh_session,
+	    (void *)(intptr_t)ssh_sock, (void *)(intptr_t)ssh_sock,
+	    (void *)(intptr_t)ssh_sock, (void *)(intptr_t)ssh_sock);
+	dssh_session_set_hostkey_verify_cb(ssh_session, hostkey_verify_cb, bbs);
+	dssh_session_set_terminate_cb(ssh_session, transport_terminate_cb, NULL);
+
+	if (!bbs->hidepopups) {
+		uifc.pop(NULL);
+		uifc.pop("SSH Handshake");
+	}
+	hostkey_result = HOSTKEY_NEW;	/* overwritten by callback */
+	int handshake_rc = dssh_transport_handshake(ssh_session);
+	if (handshake_rc != 0) {
+		free(pubkey);
+		error_popup_rc(bbs, "SSH handshake", handshake_rc);
+		ssh_close();
+		return -1;
+	}
+	if (!handle_hostkey_result(bbs)) {
+		free(pubkey);
+		if (!bbs->hidepopups)
+			uifc.pop(NULL);
+		ssh_close();
+		return -1;
+	}
+
 	SAFECOPY(password, bbs->password);
 	SAFECOPY(username, bbs->user);
-
-	if (!bbs->hidepopups)
-		uifc.pop(NULL);
-
 	if (!username[0]) {
 		if (bbs->hidepopups)
 			init_uifc(false, false);
@@ -812,215 +858,82 @@ ssh_connect(struct bbslist *bbs)
 			uifcbail();
 	}
 
-	if (!bbs->hidepopups)
-		uifc.pop("Setting Username");
-
-	/* Add username/password */
-	status = cryptSetAttributeString(ssh_session, CRYPT_SESSINFO_USERNAME, username, strlen(username));
-	if (cryptStatusError(status)) {
-		error_popup(bbs, "setting username", status);
-		ssh_close();
-		return -1;
+	if (!bbs->hidepopups) {
+		uifc.pop(NULL);
+		uifc.pop("Authenticating");
 	}
 
-	if (!bbs->hidepopups)
-		uifc.pop(NULL);
+	/* Auth order: password (if set) → keyboard-interactive → publickey.
+	   Password-first matches what traditional SyncTERM/Cryptlib does —
+	   Synchronet's Cryptlib-based server can't parse ssh-ed25519, and a
+	   failed publickey probe on that code path has been observed to
+	   confuse subsequent password attempts.  Publickey is only useful
+	   here when bbs->sftp_public_key is set and the user has already
+	   uploaded their pubkey; we try it as a last resort.
+	   CONN_TYPE_SSHNA uses a "none" probe via dssh_auth_get_methods. */
+	auth_rc = -1;
 	if (bbs->conn_type == CONN_TYPE_SSHNA) {
-		status = cryptSetAttribute(ssh_session, CRYPT_SESSINFO_SSH_OPTIONS, CRYPT_SSHOPTION_NONE_AUTH);
-		if (cryptStatusError(status)) {
-			error_popup(bbs, "disabling password auth", status);
+		char methods[128];
+		auth_rc = dssh_auth_get_methods(ssh_session, username, methods, sizeof(methods));
+		if (auth_rc < 0) {
+			free(pubkey);
+			error_popup(bbs, "none-auth probe failed");
 			ssh_close();
 			return -1;
 		}
+		/* DSSH_AUTH_NONE_ACCEPTED means we're in. */
+		auth_rc = 0;
 	}
-	else {
-		if (!password[0] && ssh_context == -1) {
-			if (bbs->hidepopups)
-				init_uifc(false, false);
-			uifcinput("Password", MAX_PASSWD_LEN, password, K_PASSWORD, "Incorrect password.  Try again.");
-			if (bbs->hidepopups)
-				uifcbail();
-		}
-
-		if (password[0]) {
-			if (!bbs->hidepopups)
-				uifc.pop("Setting Password");
-			status = cryptSetAttributeString(ssh_session, CRYPT_SESSINFO_PASSWORD, password, strlen(password));
-			if (cryptStatusError(status)) {
-				error_popup(bbs, "setting password", status);
-				ssh_close();
-				return -1;
-			}
-		}
-
-		if (ssh_context != -1) {
-			if (!bbs->hidepopups)
-				uifc.pop("Setting Private Key");
-			pubkey = get_public_key(ssh_context);
-			status = cryptSetAttribute(ssh_session, CRYPT_SESSINFO_PRIVATEKEY, ssh_context);
-			cryptDestroyContext(ssh_context);
-			ssh_context = -1;
-			if (cryptStatusError(status)) {
-				free(pubkey);
-				error_popup(bbs, "setting private key", status);
-				ssh_close();
-				return -1;
-			}
-		}
+	if (auth_rc != 0 && password[0])
+		auth_rc = dssh_auth_password(ssh_session, username, password, NULL, NULL);
+	for (int tries = 0; auth_rc != 0 && tries < 3; tries++) {
+		if (bbs->hidepopups)
+			init_uifc(false, false);
+		password[0] = 0;
+		uifcinput("Password", MAX_PASSWD_LEN, password, K_PASSWORD,
+		    tries == 0 ? "Enter password." : "Incorrect password.  Try again.");
+		if (bbs->hidepopups)
+			uifcbail();
+		if (!password[0])
+			break;
+		auth_rc = dssh_auth_password(ssh_session, username, password, NULL, NULL);
 	}
-
-	if (!bbs->hidepopups) {
-		uifc.pop(NULL);
-		uifc.pop("Setting Username");
-	}
-
-	/* Pass socket to cryptlib */
-	status = cryptSetAttribute(ssh_session, CRYPT_SESSINFO_NETWORKSOCKET, ssh_sock);
-	if (cryptStatusError(status)) {
+	if (auth_rc != 0)
+		auth_rc = dssh_auth_keyboard_interactive(ssh_session, username, kbi_prompt_cb, NULL);
+	if (auth_rc != 0)
+		auth_rc = dssh_auth_publickey(ssh_session, username, "ssh-ed25519");
+	if (auth_rc != 0) {
 		free(pubkey);
-		error_popup(bbs, "passing socket", status);
+		error_popup(bbs, "authentication failed");
 		ssh_close();
 		return -1;
 	}
 
-	// We need to set the channel so we can set channel attributes.
-	status = cryptSetAttribute(ssh_session, CRYPT_SESSINFO_SSH_CHANNEL, CRYPT_UNUSED);
-
 	if (!bbs->hidepopups) {
 		uifc.pop(NULL);
-		uifc.pop("Setting Terminal Type");
+		uifc.pop("Opening Channel");
 	}
+
+	if (dssh_session_start(ssh_session) != 0) {
+		free(pubkey);
+		error_popup(bbs, "starting session");
+		ssh_close();
+		return -1;
+	}
+
 	term = get_emulation_str(bbs);
-	status = cryptSetAttributeString(ssh_session, CRYPT_SESSINFO_SSH_CHANNEL_TERMINAL, term, strlen(term));
-
 	get_term_win_size(&cols, &rows, NULL, NULL, &bbs->nostatus);
-
-	if (!bbs->hidepopups) {
-		uifc.pop(NULL);
-		uifc.pop("Setting Terminal Width");
-	}
-	status = cryptSetAttribute(ssh_session, CRYPT_SESSINFO_SSH_CHANNEL_WIDTH, cols);
-
-	if (!bbs->hidepopups) {
-		uifc.pop(NULL);
-		uifc.pop("Setting Terminal Height");
-	}
-	status = cryptSetAttribute(ssh_session, CRYPT_SESSINFO_SSH_CHANNEL_HEIGHT, rows);
-
-	cryptSetAttribute(ssh_session, CRYPT_OPTION_NET_READTIMEOUT, 30);
-	cryptSetAttribute(ssh_session, CRYPT_OPTION_NET_WRITETIMEOUT, 30);
-
-	/* Activate the session */
-	if (!bbs->hidepopups) {
-		uifc.pop(NULL);
-		uifc.pop("Activating Session");
-	}
-
-	do {
-		status = cryptSetAttribute(ssh_session, CRYPT_SESSINFO_ACTIVE, 1);
-		if (status == CRYPT_ENVELOPE_RESOURCE) {
-			// This will fail the first time through since there is no password.
-			cryptDeleteAttribute(ssh_session, CRYPT_SESSINFO_PASSWORD);
-			if (bbs->hidepopups)
-				init_uifc(false, false);
-			password[0] = 0;
-			uifcinput("Password", MAX_PASSWD_LEN, password, K_PASSWORD, "Incorrect password.  Try again.");
-			if (bbs->hidepopups)
-				uifcbail();
-			status = cryptSetAttributeString(ssh_session, CRYPT_SESSINFO_PASSWORD, password, strlen(password));
-			if (cryptStatusOK(status))
-				status = cryptSetAttribute(ssh_session, CRYPT_SESSINFO_AUTHRESPONSE, 1);
-		}
-	} while (status == CRYPT_ENVELOPE_RESOURCE);
-	if (cryptStatusError(status)) {
+	dssh_chan_params_init(&params, DSSH_CHAN_SHELL);
+	dssh_chan_params_set_pty(&params, true);
+	dssh_chan_params_set_term(&params, term);
+	dssh_chan_params_set_size(&params, (uint32_t)cols, (uint32_t)rows, 0, 0);
+	ssh_chan = dssh_chan_open(ssh_session, &params);
+	dssh_chan_params_free(&params);
+	if (ssh_chan == NULL) {
 		free(pubkey);
-		error_popup(bbs, "activating session", status);
+		error_popup(bbs, "opening shell channel");
 		ssh_close();
 		return -1;
-	}
-	FlushData(ssh_session);
-
-	if (!bbs->hidepopups) {
-		uifc.pop(NULL);
-		uifc.pop("Clearing Ownership");
-	}
-	status = cryptSetAttribute(ssh_session, CRYPT_PROPERTY_OWNER, CRYPT_UNUSED);
-	if (cryptStatusError(status)) {
-		free(pubkey);
-		error_popup(bbs, "clearing session ownership", status);
-		ssh_close();
-		return -1;
-	}
-	if (!bbs->hidepopups) {
-                /* Clear ownership */
-		uifc.pop(NULL);
-		uifc.pop("Getting SSH Channel");
-	}
-	// Using ssh_channel outside of ssh_mutex (which doesn't exist yet)
-	/* coverity[missing_lock:SUPPRESS] */
-	status = cryptGetAttribute(ssh_session, CRYPT_SESSINFO_SSH_CHANNEL, &ssh_channel);
-	if (cryptStatusError(status) || ssh_channel == -1) {
-		free(pubkey);
-		error_popup(bbs, "getting ssh channel", status);
-		ssh_close();
-		return -1;
-	}
-
-	memset(server_fp, 0, sizeof(server_fp));
-	status = cryptGetAttributeString(ssh_session, CRYPT_SESSINFO_SERVER_FINGERPRINT_SHA1, server_fp, &slen);
-	if (cryptStatusOK(status)) {
-		if (memcmp(bbs->ssh_fingerprint, server_fp, sizeof(server_fp))) {
-			static const char * const opts[4] = {"Disconnect", "Update", "Ignore", ""};
-			FILE *listfile;
-			str_list_t inifile;
-			char fpstr[41];
-			int i;
-
-			slen = 0;
-			for (i = 0; i < sizeof(server_fp); i++) {
-				sprintf(&fpstr[i * 2], "%02x", server_fp[i]);
-			}
-			fpstr[sizeof(fpstr)-1] = 0;
-			if (bbs->has_fingerprint) {
-				char ofpstr[41];
-
-				for (i = 0; i < sizeof(server_fp); i++) {
-					sprintf(&ofpstr[i * 2], "%02x", bbs->ssh_fingerprint[i]);
-				}
-				ofpstr[sizeof(ofpstr)-1] = 0;
-				asprintf(&uifc.helpbuf, "`Fingerprint Changed`\n\n"
-				    "The server fingerprint has changed from the last known good connection.\n"
-				    "This may indicate someone is evesdropping on your connection.\n"
-				    "It is also possible that a host key has just been changed.\n"
-				    "\n"
-				    "Last known fingerprint: %s\n"
-				    "Fingerprint sent now:   %s\n", ofpstr, fpstr);
-				i = uifc.list(WIN_MID | WIN_SAV, 0, 0, 0, &slen, NULL, "Fingerprint Changed", (char **)opts);
-				free(uifc.helpbuf);
-			}
-			else
-				i = 1;
-			switch(i) {
-				case 1:
-					if (!safe_mode && (listfile = fopen(settings.list_path, "r+b")) != NULL) {
-						inifile = iniReadBBSList(listfile, true);
-						iniSetString(&inifile, bbs->name, "SSHFingerprint", fpstr, &ini_style);
-						iniWriteFile(listfile, inifile);
-						fclose(listfile);
-						strListFree(&inifile);
-					}
-					break;
-				case 2:
-					break;
-				default:
-					free(pubkey);
-					if (!bbs->hidepopups)
-						uifc.pop(NULL);
-					ssh_close();
-					return -1;
-			}
-		}
-		bbs->has_fingerprint = true;
 	}
 
 	if (!bbs->hidepopups)
@@ -1057,14 +970,13 @@ ssh_connect(struct bbslist *bbs)
 
 	_beginthread(ssh_output_thread, 0, NULL);
 	_beginthread(ssh_input_thread, 0, NULL);
-	if (bbs->sftp_public_key) {
+	if (bbs->sftp_public_key && pubkey != NULL) {
 		pubkey_thread_running = true;
 		_beginthread(add_public_key, 0, pubkey);
 	}
 	else {
 		free(pubkey);
 	}
-
 	return 0;
 }
 
@@ -1074,27 +986,33 @@ ssh_close(void)
 	char garbage[1024];
 
 	conn_api.terminate = true;
-	cryptSetAttribute(ssh_session, CRYPT_OPTION_NET_READTIMEOUT, 0);
-	cryptSetAttribute(ssh_session, CRYPT_OPTION_NET_WRITETIMEOUT, 0);
-	if (sftp_state)
-		sftpc_finish(sftp_state);
-	while (conn_api.input_thread_running == 1 || conn_api.output_thread_running == 1 || pubkey_thread_running) {
+	if (ssh_session != NULL)
+		dssh_session_terminate(ssh_session);
+
+	while (conn_api.input_thread_running == 1 ||
+	       conn_api.output_thread_running == 1 ||
+	       pubkey_thread_running) {
 		conn_recv_upto(garbage, sizeof(garbage), 0);
 		SLEEP(1);
 	}
-	assert_pthread_mutex_lock(&ssh_mutex);
-	int sc = sftp_channel;
-	sftp_channel = -1;
-	assert_pthread_mutex_unlock(&ssh_mutex);
-	if (sc != -1)
-		close_sftp_channel(sc);
-	if (sftp_state) {
+
+	if (sftp_state != NULL) {
 		sftpc_end(sftp_state);
 		sftp_state = NULL;
 	}
-	close_ssh_channel();
-	cryptDestroySession(ssh_session);
-	ssh_session = -1;
+	if (sftp_chan != NULL) {
+		dssh_chan_close(sftp_chan, -1);
+		sftp_chan = NULL;
+	}
+	if (ssh_chan != NULL) {
+		dssh_chan_close(ssh_chan, -1);
+		ssh_chan = NULL;
+	}
+	if (ssh_session != NULL) {
+		dssh_transport_disconnect(ssh_session, 11, "bye");	/* SSH_DISCONNECT_BY_APPLICATION */
+		dssh_session_cleanup(ssh_session);
+		ssh_session = NULL;
+	}
 	if (ssh_sock != INVALID_SOCKET) {
 		closesocket(ssh_sock);
 		ssh_sock = INVALID_SOCKET;
@@ -1104,6 +1022,5 @@ ssh_close(void)
 	FREE_AND_NULL(conn_api.rd_buf);
 	FREE_AND_NULL(conn_api.wr_buf);
 	pthread_mutex_destroy(&ssh_mutex);
-	pthread_mutex_destroy(&ssh_tx_mutex);
 	return 0;
 }

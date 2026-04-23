@@ -24,7 +24,9 @@
 #define RSA_SHA2_512_NAME_LEN 12
 #define RSA_KEY_TYPE_NAME     "ssh-rsa"
 #define RSA_KEY_TYPE_NAME_LEN 7
-#define RSA_SIGN_PADDING      "EMSA_PKCS1(SHA-512)"
+/* See rsa-sha2-256-botan.cpp for why we use the PKCS1v15 spelling
+   instead of the deprecated EMSA_PKCS1 name. */
+#define RSA_SIGN_PADDING      "PKCS1v15(SHA-512)"
 
 struct cbdata {
 	std::unique_ptr<Botan::Private_Key> privkey;

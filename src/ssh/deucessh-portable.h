@@ -66,4 +66,21 @@
  #define DSSH_TESTABLE static
 #endif
 
+/*
+ * dssh_secure_zero(p, n) — wipe that the compiler is not allowed to
+ * elide.  Used for key material, shared secrets, and other buffers
+ * whose contents outlive their stack frame only as leaked bits.
+ *
+ * explicit_bzero() / memset_s() / SecureZeroMemory() are
+ * platform-specific extensions, not C17.  The volatile-pointer loop
+ * has the same semantics on every conforming compiler.
+ */
+static inline void
+dssh_secure_zero(void *p, size_t n)
+{
+	volatile unsigned char *vp = (volatile unsigned char *)p;
+	while (n--)
+		*vp++ = 0;
+}
+
 #endif   // ifndef DSSH_PORTABLE_H

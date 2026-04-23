@@ -58,6 +58,8 @@ static const KNOWNFOLDERID FOLDERID_ProgramData = {
 #include <stdbool.h>
 #include <stdlib.h>
 #include <vidmodes.h>
+
+#include "ini_crypt.h"
 #ifdef HAS_VSTAT
  #include "bitmap_con.h"
 #endif
@@ -78,9 +80,11 @@ enum {
 
 #include "bbslist.h"
 #include "conn.h"
-#ifndef WITHOUT_CRYPTLIB
-#include "cryptlib.h"
+#ifndef WITHOUT_DEUCESSH
 #include "ssh.h"
+#endif
+#ifndef WITHOUT_CRYPTO
+#include "legacy_ciphers/legacy_ciphers.h"
 #endif
 #include "fonts.h"
 #include "syncterm.h"
@@ -1720,8 +1724,22 @@ load_settings(struct syncterm_settings *set)
 		set->webgets = iniReadNamedStringList(inifile, "WebLists");
 	}
 
-	/* KDF Parameters */
-	set->keyDerivationIterations = iniReadInteger(inifile, "SyncTERM", "KeyDerivationIterations", 50000);
+	/* KDF spec.
+	 *
+	 * A string so the on-disk value is self-describing: future KDF
+	 * changes (argon2id, …) can be tagged distinctly on disk without
+	 * another migration pass.  Currently either
+	 *   "scrypt-N<cost_log2>"  — new writes (v2 bbslist files), or
+	 *   "<digits>"             — legacy Cryptlib-era PBKDF2 iteration
+	 *                            count, still honoured by the reader
+	 *                            for v1 files.
+	 * The default for new installs matches INI_SCRYPT_COST_LOG2 in
+	 * ini_crypt.c.  Legacy digits-only values are left untouched on
+	 * load; the UI offers to re-key to scrypt form when the user
+	 * writes a new encrypted file. */
+	iniReadSString(inifile, "SyncTERM", "KeyDerivationIterations",
+	    "scrypt-N15", set->keyDerivationIterations,
+	    sizeof(set->keyDerivationIterations));
 
 	/* UIFC Colours */
 	set->uifc_bclr = iniReadEnum(inifile, "UIFC", "BackgroundColour", (char **)bg_colour_enum, 8);
@@ -2009,9 +2027,16 @@ main(int argc, char **argv)
 		return 0;
 	}
 
-#if !defined(WITHOUT_CRYPTLIB)
-        /* Cryptlib initialization MUST be done before ciolib init */
+#ifndef WITHOUT_DEUCESSH
+        /* DeuceSSH algorithm registration + RNG seed; must run before
+           anything that calls into it (i.e. any SSH connection). */
         init_crypt();
+#endif
+#ifndef WITHOUT_CRYPTO
+        /* Register decrypt-only reference impls for ciphers the active
+           crypto backend doesn't carry (IDEA, RC2). Needed before
+           iniReadEncryptedFile can be called. */
+        legacy_ciphers_init();
 #endif
 
         /* UIFC initialization */
@@ -2462,7 +2487,7 @@ main(int argc, char **argv)
 					    bbs->connected,
 					    &ini_style);
 					iniSetInteger(&inifile, bbs->name, "TotalCalls", bbs->calls, &ini_style);
-					iniWriteEncryptedFile(listfile, inifile, list_algo, list_keysize, settings.keyDerivationIterations, list_password, NULL);
+					iniWriteEncryptedFile(listfile, inifile, list_algo, list_keysize, settings.keyDerivationIterations, list_password);
 					fclose(listfile);
 					strListFree(&inifile);
 				}

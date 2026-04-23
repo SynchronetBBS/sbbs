@@ -32,7 +32,13 @@
 #define RSA_KEY_TYPE_NAME     "ssh-rsa"
 #define RSA_KEY_TYPE_NAME_LEN 7
 
-#define RSA_SIGN_PADDING "EMSA_PKCS1(SHA-256)"
+/* Botan renamed the PKCS#1 v1.5 padding from "EMSA_PKCS1(...)" to
+   "PKCS1v15(...)" between Botan 3.6 and 3.9.  The old spelling became a
+   lookup-miss that throws mid-construction of PK_Verifier, and at least
+   in Botan 3.9 the throw cascades through a half-initialised object so
+   the caller sees SIGSEGV/SIGBUS rather than a clean exception.  Use
+   the modern spelling. */
+#define RSA_SIGN_PADDING "PKCS1v15(SHA-256)"
 
 struct cbdata {
 	std::unique_ptr<Botan::Private_Key> privkey;

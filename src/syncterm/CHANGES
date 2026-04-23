@@ -7,6 +7,7 @@ Add DECRQSS support to show/hide/customize the status line
 Removed support for PortAudio v1.8
 Switched to 16-bit 44.1kHz stereo audio
 Add new APC commands to do audio and audio mixing
+Switch to DeuceSSH + OpenSSL | Botan
 
 Version 1.8
 -----------

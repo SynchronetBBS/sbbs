@@ -7,6 +7,7 @@
 
 #include <stdatomic.h>
 #include <threads.h>
+#include <time.h>        /* timespec_get / TIME_UTC — dssh_deadline_from_ms */
 
 #include "deucessh-conn.h"
 #include "ssh-trans.h"
