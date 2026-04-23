@@ -126,7 +126,11 @@ ifndef WITHOUT_DEUCESSH
  # (botan → deucessh → syncterm) run unprobed.
  _dssh_crypto_ready := $(shell (pkg-config --atleast-version=3.0 botan-3 2>/dev/null || pkg-config --atleast-version=3.0 libcrypto 2>/dev/null) && echo YES)
  ifeq ($(_dssh_crypto_ready),YES)
-  ifeq ($(wildcard $(DEUCESSH_PC)),)
+  # Use `test -f` via $(shell) rather than $(wildcard) — wildcard's
+  # expansion is cached across a single make parse phase, so the first
+  # call (before cmake runs) can poison the second call's result.
+  _dssh_pc_exists := $(shell test -f $(DEUCESSH_PC) && echo YES)
+  ifneq ($(_dssh_pc_exists),YES)
    $(info Configuring DeuceSSH...)
    # mkdir the build-log's parent dir first — on a fresh build,
    # $(3RDPODIR) doesn't exist yet and the >log redirect would fail
@@ -135,7 +139,8 @@ ifndef WITHOUT_DEUCESSH
        cmake -S $(DEUCESSH_DIR) -B $(DEUCESSH_BUILD) \
        -DCMAKE_BUILD_TYPE=Release $(DEUCESSH_CMAKE_BACKEND_ARG) \
        $(DEUCESSH_CMAKE_TOOLCHAIN_ARGS) >$(DEUCESSH_BUILD).log 2>&1; echo $$?)
-   ifeq ($(wildcard $(DEUCESSH_PC)),)
+   _dssh_pc_exists := $(shell test -f $(DEUCESSH_PC) && echo YES)
+   ifneq ($(_dssh_pc_exists),YES)
     WITHOUT_DEUCESSH := 1
     $(info DeuceSSH configure failed — disabling SSH support.  cmake output:)
     $(info ----- $(DEUCESSH_BUILD).log -----)
