@@ -171,6 +171,29 @@ INCLUDE (../build/SynchronetMacros.cmake)
 INCLUDE (CheckIncludeFiles)
 
 find_package(PkgConfig)
+# libsndfile: mirrors GNUmakefile.  Default is the dynamic dlopen path
+# (WITH_SNDFILE); if the header isn't visible at configure time, drop
+# the whole feature to stubs (WITHOUT_SNDFILE) so sndfile.c still
+# compiles.  STATIC_SNDFILE isn't exposed via cmake — nothing in CI
+# asks for it today.
+if(NOT WITHOUT_SNDFILE)
+	set(_have_sndfile FALSE)
+	if(PKG_CONFIG_FOUND)
+		pkg_check_modules(SNDFILE sndfile)
+		if(SNDFILE_FOUND)
+			set(_have_sndfile TRUE)
+		endif()
+	endif()
+	if(NOT _have_sndfile)
+		find_path(_sndfile_h sndfile.h)
+		if(_sndfile_h)
+			set(_have_sndfile TRUE)
+		endif()
+	endif()
+	if(NOT _have_sndfile)
+		set(WITHOUT_SNDFILE ON)
+	endif()
+endif()
 if(NOT WITHOUT_JPEG_XL)
 	pkg_check_modules(JPEG_XL libjxl)
 	pkg_check_modules(JPEG_XL_THREADS libjxl_threads)
@@ -309,6 +332,20 @@ endif()
 
 if(WITHOUT_CRYPTO)
 	target_compile_definitions(syncterm PRIVATE WITHOUT_CRYPTO)
+endif()
+
+# libsndfile: dynamic dlopen path when the header is visible,
+# stubs-only otherwise.  Matches sndfile.c's #if switch.
+if(WITHOUT_SNDFILE)
+	target_compile_definitions(syncterm PRIVATE WITHOUT_SNDFILE)
+else()
+	target_compile_definitions(syncterm PRIVATE WITH_SNDFILE)
+	if(SNDFILE_INCLUDE_DIRS)
+		target_include_directories(syncterm PRIVATE ${SNDFILE_INCLUDE_DIRS})
+	endif()
+	if(SNDFILE_CFLAGS_OTHER)
+		target_compile_options(syncterm PRIVATE ${SNDFILE_CFLAGS_OTHER})
+	endif()
 endif()
 
 target_include_directories(syncterm PRIVATE ../sbbs3)
