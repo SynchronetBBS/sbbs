@@ -10,6 +10,6 @@ ifndef WITHOUT_DEUCESSH
  SYNCTERM_EXTRA_LIBS    := $(SFTPLIB-MT) $(DEUCESSH_LIB)
 endif
 
-all: vendored-botan xpdev-mt ciolib-mt uifc-mt $(SYNCTERM_EXTRA_PREREQS) $(MTOBJODIR) $(EXEODIR) $(SYNCTERM)
+all: botan xpdev-mt ciolib-mt uifc-mt $(SYNCTERM_EXTRA_PREREQS) $(MTOBJODIR) $(EXEODIR) $(SYNCTERM)
 
 $(SYNCTERM):	$(XPDEV-MT_LIB) $(CIOLIB-MT) $(UIFCLIB-MT) $(ENCODE_LIB) $(HASH_LIB) $(SYNCTERM_EXTRA_LIBS)

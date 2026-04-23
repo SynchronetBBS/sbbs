@@ -1,6 +1,11 @@
 # $Id: GNUmakefile,v 1.63 2020/05/02 08:24:08 deuce Exp $
 
 SRC_ROOT = ../../src
+# Tell Common.gmake (via build/botan.gmake) not to install a
+# subproject-side `botan:` delegation target — we define the real
+# build rule ourselves below.  Without this, Common.gmake's stub
+# rule collides with ours and gmake warns "overriding recipe".
+IN_3RDP_BUILD := 1
 # Cross platform/compiler definitions
 include $(SRC_ROOT)/build/Common.gmake	# defines clean and output directory rules
 
@@ -53,7 +58,16 @@ JS_CONFIGURE_ENV += 'CXXFLAGS=$(CXXFLAGS)'
 .PHONY: cryptlib libmozjs botan
 cryptlib: $(CRYPTLIB_BUILD)
 libmozjs: $(JSLIB_BUILD)
+# Botan is only built when the caller asks for vendored (Common.gmake's
+# probe sets USE_VENDORED_BOTAN when neither system Botan 3.6+ nor
+# OpenSSL 3.0+ is available, plus any explicit USE_VENDORED_BOTAN=1
+# override).  Otherwise `make botan` is a no-op so CI jobs can
+# unconditionally invoke it and produce an empty archive.
+ifdef USE_VENDORED_BOTAN
 botan: $(BOTAN_BUILD)
+else
+botan: ; @:
+endif
 
 ###############
 # Directories #

@@ -49,7 +49,7 @@ endif
 # server jobs in the same pipeline) arrives at identical values — a
 # cached libxpdev_mt.a stays compatible with its downstream linkers.
 # build/botan.gmake (included from Common.gmake) also handles the
-# PKG_CONFIG_PATH prepend + vendored-botan target.
+# PKG_CONFIG_PATH prepend + botan target.
 
 ifndef WITHOUT_DEUCESSH
  # ssh.c + SFTP-MT bridge.
@@ -99,7 +99,7 @@ ifndef WITHOUT_DEUCESSH
  endif
 
  # Configure at build time — when vendored Botan is in play, its
- # pkg-config file doesn't exist until the 'vendored-botan' target
+ # pkg-config file doesn't exist until the 'botan' target
  # runs, and DeuceSSH's configure probes for it.  Always-deferring
  # keeps the rule graph simple and avoids a parse-time cmake run.
  .PHONY: deucessh
@@ -116,8 +116,8 @@ else
  CFLAGS += -DWITHOUT_DEUCESSH
 endif
 
-# vendored-botan target lives in build/botan.gmake; targets.mk wires
-# it in as a prerequisite ahead of xpdev-mt and deucessh.
+# `botan` delegation target lives in build/botan.gmake; targets.mk
+# wires it in as a prerequisite ahead of xpdev-mt and deucessh.
 
 # XP_CRYPTO_BACKEND is decided in Common.gmake (shared with xpdev so
 # the cached libxpdev_mt.a agrees with this build's link line).

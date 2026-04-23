@@ -55,19 +55,19 @@ ifeq ($(XP_CRYPTO_BACKEND),Botan)
  # Botan 3 public headers require C++20 (std::span). Override the
  # tree-default -std=c++11 for just the Botan shim objects.
  # BOTAN_CXXFLAGS is resolved lazily ($(eval ...)) so it's evaluated
- # at rule-invocation time — after the vendored-botan prerequisite
+ # at rule-invocation time — after the botan prerequisite
  # has generated the .pc file the probe consults.
  BOTAN_CXXFLAGS = $(shell pkg-config --cflags botan-3)
- $(OBJODIR)/xp_tls_botan3$(OFILE): xp_tls_botan3.cpp vendored-botan | $(OBJODIR)
+ $(OBJODIR)/xp_tls_botan3$(OFILE): xp_tls_botan3.cpp botan | $(OBJODIR)
 	@echo $(COMPILE_MSG) $<
 	$(QUIET)$(CXX) -std=c++20 $(CFLAGS) $(CXXFLAGS) $(BOTAN_CXXFLAGS) -o $@ -c $<
- $(MTOBJODIR)/xp_tls_botan3$(OFILE): xp_tls_botan3.cpp vendored-botan | $(MTOBJODIR)
+ $(MTOBJODIR)/xp_tls_botan3$(OFILE): xp_tls_botan3.cpp botan | $(MTOBJODIR)
 	@echo $(COMPILE_MSG) $<
 	$(QUIET)$(CXX) -std=c++20 $(CFLAGS) $(CXXFLAGS) $(MT_CFLAGS) $(BOTAN_CXXFLAGS) -o $@ -c $<
- $(OBJODIR)/xp_crypt_botan3$(OFILE): xp_crypt_botan3.cpp vendored-botan | $(OBJODIR)
+ $(OBJODIR)/xp_crypt_botan3$(OFILE): xp_crypt_botan3.cpp botan | $(OBJODIR)
 	@echo $(COMPILE_MSG) $<
 	$(QUIET)$(CXX) -std=c++20 $(CFLAGS) $(CXXFLAGS) $(BOTAN_CXXFLAGS) -o $@ -c $<
- $(MTOBJODIR)/xp_crypt_botan3$(OFILE): xp_crypt_botan3.cpp vendored-botan | $(MTOBJODIR)
+ $(MTOBJODIR)/xp_crypt_botan3$(OFILE): xp_crypt_botan3.cpp botan | $(MTOBJODIR)
 	@echo $(COMPILE_MSG) $<
 	$(QUIET)$(CXX) -std=c++20 $(CFLAGS) $(CXXFLAGS) $(MT_CFLAGS) $(BOTAN_CXXFLAGS) -o $@ -c $<
 endif

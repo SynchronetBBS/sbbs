@@ -606,11 +606,10 @@ CFLAGS += -fno-delete-null-pointer-checks
 -include $(SRC_ROOT)/build/rules.mk
 -include objects.mk		# defines $(OBJS)
 
-# Shared vendored-Botan plumbing (vendored-botan target +
+# Shared vendored-Botan plumbing (`botan:` delegation target +
 # PKG_CONFIG_PATH prepend).  Included AFTER targets.mk so the
 # subproject's `all:` target stays the default goal — otherwise
-# declaring `vendored-botan:` here would hijack it.  No-op when
-# USE_VENDORED_BOTAN is unset.
+# declaring `botan:` here would hijack it.
 include $(SRC_ROOT)$(DIRSEP)build$(DIRSEP)botan.gmake
 
 # Implicit ASM Compile Rule
