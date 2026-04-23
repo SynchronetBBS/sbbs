@@ -48,14 +48,8 @@ endif
 # consumer of the same source tree (xpdev, syncterm, and Synchronet
 # server jobs in the same pipeline) arrives at identical values — a
 # cached libxpdev_mt.a stays compatible with its downstream linkers.
-ifeq ($(USE_VENDORED_BOTAN),1)
- # Vendored: prepend the vendored pkg-config dir so later pkg-config
- # invocations (xpdev submake, DeuceSSH cmake) find the vendored copy.
- # The actual build of libbotan-3.a + botan-3.pc happens at build time
- # via the 'vendored-botan' target, sequenced before everything else
- # through targets.mk.
- export PKG_CONFIG_PATH := $(shell cd $(dir $(BOTAN_PKGCONFIG_DIR)) 2>/dev/null && pwd)/$(notdir $(BOTAN_PKGCONFIG_DIR)):$(PKG_CONFIG_PATH)
-endif
+# build/botan.gmake (included from Common.gmake) also handles the
+# PKG_CONFIG_PATH prepend + vendored-botan target.
 
 ifndef WITHOUT_DEUCESSH
  # ssh.c + SFTP-MT bridge.
@@ -122,17 +116,8 @@ else
  CFLAGS += -DWITHOUT_DEUCESSH
 endif
 
-# Vendored Botan is a real build-time target; sequenced before
-# xpdev-mt and deucessh via targets.mk.
-.PHONY: vendored-botan
-ifeq ($(USE_VENDORED_BOTAN),1)
-vendored-botan: $(BOTAN_BUILD)
-$(BOTAN_BUILD):
-	@echo "Building vendored Botan 3 (first-time only; ~5 min)"
-	$(MAKE) -C $(3RDP_BUILD) botan
-else
-vendored-botan: ; @:
-endif
+# vendored-botan target lives in build/botan.gmake; targets.mk wires
+# it in as a prerequisite ahead of xpdev-mt and deucessh.
 
 # XP_CRYPTO_BACKEND is decided in Common.gmake (shared with xpdev so
 # the cached libxpdev_mt.a agrees with this build's link line).

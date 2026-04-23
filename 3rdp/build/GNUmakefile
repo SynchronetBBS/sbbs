@@ -287,10 +287,13 @@ endif
 # pcurves_secp{256,384,521} — NIST curves for TLS ECDSA
 # x509                      — TLS cert chain parsing
 # system_rng,auto_rng       — RNG stack
-BOTAN_MODULES := tls12,tls13,aes,cbc,ctr,chacha,chacha20poly1305,\
+# Line continuations in a := assignment fold to a single space
+# between segments — the space confuses Botan's configure.py
+# ("Unhandled option(s): ..."), so strip it back out after the join.
+BOTAN_MODULES := $(subst $() ,,tls12,tls13,aes,cbc,ctr,chacha,chacha20poly1305,\
 rc4,des,cast128,hmac,pbkdf2,scrypt,sha1,sha2_32,sha2_64,rsa,ed25519,\
 x25519,dh,ecdsa,ecdh,ml_kem,pcurves_secp256r1,pcurves_secp384r1,\
-pcurves_secp521r1,x509,system_rng,auto_rng
+pcurves_secp521r1,x509,system_rng,auto_rng)
 
 # Botan's generated Makefile doesn't use a jobserver, so -j has to be
 # passed explicitly.  Detect a sane default; user can override with

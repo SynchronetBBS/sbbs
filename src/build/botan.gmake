@@ -1,0 +1,34 @@
+# Shared vendored-Botan plumbing.
+#
+# Included by any subproject that compiles against Botan 3 (DeuceSSH
+# via cmake, xpdev's xp_tls_botan3 / xp_crypt_botan3 objects, and
+# SyncTERM's final link).  When USE_VENDORED_BOTAN=1, prepends the
+# vendored pkg-config dir to PKG_CONFIG_PATH and exposes a phony
+# `vendored-botan` target that delegates to 3rdp/build.
+#
+# Consumers can depend on `vendored-botan` to sequence Botan's build
+# before any compile that includes a Botan header.  The target is
+# always defined (a no-op when USE_VENDORED_BOTAN is unset) so
+# downstream rules don't need to branch on the backend.
+#
+# BOTAN_BUILD / BOTAN_PKGCONFIG_DIR come from 3rdp/build/Common.gmake,
+# which src/build/Common.gmake auto-includes.  Requires Common.gmake
+# to have been included first.
+
+ifdef USE_VENDORED_BOTAN
+ # Prepend to PKG_CONFIG_PATH so later pkg-config invocations find
+ # the vendored copy at build time.  The actual build rule for
+ # $(BOTAN_BUILD) is owned by 3rdp/build/GNUmakefile; we just delegate
+ # to it via a phony target.
+ export PKG_CONFIG_PATH := $(shell cd $(dir $(BOTAN_PKGCONFIG_DIR)) 2>/dev/null && pwd)/$(notdir $(BOTAN_PKGCONFIG_DIR)):$(PKG_CONFIG_PATH)
+
+.PHONY: vendored-botan
+vendored-botan:
+	$(MAKE) -C $(3RDP_BUILD) botan
+
+else
+
+.PHONY: vendored-botan
+vendored-botan: ; @:
+
+endif

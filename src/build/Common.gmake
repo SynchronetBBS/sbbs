@@ -342,12 +342,15 @@ LDFLAGS	+=	-L$(LIBODIR)
 # XP_CRYPTO_BACKEND / DEUCESSH_BACKEND / USE_VENDORED_BOTAN for a given
 # host + command-line override set.
 #
-# Decision order (first match wins, `?=` respects user overrides):
-#   1. USE_VENDORED_BOTAN=1 on the command line or Windows cross-build
-#      → Botan, vendored.
+# Decision order (first match wins; user can pre-set DEUCESSH_BACKEND
+# or USE_VENDORED_BOTAN on the command line to skip the probe).
+#   1. USE_VENDORED_BOTAN set, or Windows cross-build → Botan, vendored.
 #   2. System Botan 3.6+ available → Botan, system.
 #   3. System OpenSSL 3.0+ available → OpenSSL, system.
 #   4. Otherwise → Botan, vendored (from 3rdp/dist/Botan.tar.xz).
+#
+# USE_VENDORED_BOTAN is a pure boolean: defined = use vendored.  Never
+# assign it to "0" — leave it unset to mean "don't use vendored".
 #
 # DeuceSSH and xp_crypt share the backend by default.  WITHOUT_CRYPTO
 # only affects xp_crypt (which is DeuceSSH-independent); DeuceSSH itself
@@ -355,26 +358,18 @@ LDFLAGS	+=	-L$(LIBODIR)
 ifndef DEUCESSH_BACKEND
  ifdef win
   DEUCESSH_BACKEND   := Botan
-  USE_VENDORED_BOTAN ?= 1
+  USE_VENDORED_BOTAN := 1
  else ifdef USE_VENDORED_BOTAN
-  ifeq ($(USE_VENDORED_BOTAN),1)
-   DEUCESSH_BACKEND := Botan
-  endif
- endif
-endif
-ifndef DEUCESSH_BACKEND
- ifeq ($(shell pkg-config --atleast-version=3.6 botan-3 2>/dev/null && echo Y),Y)
   DEUCESSH_BACKEND   := Botan
-  USE_VENDORED_BOTAN ?= 0
+ else ifeq ($(shell pkg-config --atleast-version=3.6 botan-3 2>/dev/null && echo Y),Y)
+  DEUCESSH_BACKEND   := Botan
  else ifeq ($(shell pkg-config --atleast-version=3.0 libcrypto 2>/dev/null && echo Y),Y)
   DEUCESSH_BACKEND   := OpenSSL
-  USE_VENDORED_BOTAN ?= 0
  else
   DEUCESSH_BACKEND   := Botan
-  USE_VENDORED_BOTAN ?= 1
+  USE_VENDORED_BOTAN := 1
  endif
 endif
-USE_VENDORED_BOTAN ?= 0
 
 # xp_crypt follows DeuceSSH's backend unless WITHOUT_CRYPTO stubs it.
 ifdef WITHOUT_CRYPTO
@@ -610,6 +605,13 @@ CFLAGS += -fno-delete-null-pointer-checks
 -include targets.mk
 -include $(SRC_ROOT)/build/rules.mk
 -include objects.mk		# defines $(OBJS)
+
+# Shared vendored-Botan plumbing (vendored-botan target +
+# PKG_CONFIG_PATH prepend).  Included AFTER targets.mk so the
+# subproject's `all:` target stays the default goal — otherwise
+# declaring `vendored-botan:` here would hijack it.  No-op when
+# USE_VENDORED_BOTAN is unset.
+include $(SRC_ROOT)$(DIRSEP)build$(DIRSEP)botan.gmake
 
 # Implicit ASM Compile Rule
 $(OBJODIR)/%$(OFILE) : %.s $(BUILD_DEPENDS) | $(OBJODIR)
