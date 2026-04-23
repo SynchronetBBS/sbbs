@@ -57,11 +57,14 @@ sndfile_available(void)
 
 #include <xp_dl.h>   /* xp_dlopen / xp_dlsym */
 
+/* Field names avoid bare `open` / `close` — some platforms' system
+ * headers (Alpine musl under _FORTIFY_SOURCE) turn those into macros,
+ * which would then rewrite `sf_api.close` into nonsense. */
 static struct sndfile_api {
 	dll_handle   dl;
-	SNDFILE *  (*open)(const char *path, int mode, SF_INFO *info);
+	SNDFILE *  (*open_fn)(const char *path, int mode, SF_INFO *info);
 	sf_count_t (*readf_short)(SNDFILE *sf, short *ptr, sf_count_t frames);
-	int        (*close)(SNDFILE *sf);
+	int        (*close_fn)(SNDFILE *sf);
 } sf_api;
 
 static bool sndfile_load_attempted = false;
@@ -82,11 +85,11 @@ sndfile_ensure_loaded(void)
 	if (sf_api.dl == NULL)
 		return false;
 
-	sf_api.open        = xp_dlsym(sf_api.dl, sf_open);
+	sf_api.open_fn     = xp_dlsym(sf_api.dl, sf_open);
 	sf_api.readf_short = xp_dlsym(sf_api.dl, sf_readf_short);
-	sf_api.close       = xp_dlsym(sf_api.dl, sf_close);
+	sf_api.close_fn    = xp_dlsym(sf_api.dl, sf_close);
 
-	if (sf_api.open == NULL || sf_api.readf_short == NULL || sf_api.close == NULL) {
+	if (sf_api.open_fn == NULL || sf_api.readf_short == NULL || sf_api.close_fn == NULL) {
 		xp_dlclose(sf_api.dl);
 		sf_api.dl = NULL;
 		return false;
@@ -95,9 +98,9 @@ sndfile_ensure_loaded(void)
 	return true;
 }
 
-#define SF_CALL_open(path, mode, info)          sf_api.open(path, mode, info)
+#define SF_CALL_open(path, mode, info)          sf_api.open_fn(path, mode, info)
 #define SF_CALL_readf_short(sf, ptr, frames)    sf_api.readf_short(sf, ptr, frames)
-#define SF_CALL_close(sf)                       sf_api.close(sf)
+#define SF_CALL_close(sf)                       sf_api.close_fn(sf)
 
 bool
 sndfile_available(void)
