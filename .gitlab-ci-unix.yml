@@ -88,7 +88,6 @@ spec:
     - touch ${CI_PIPELINE_ID}.ci
     - echo -e "\e[0Ksection_start:`date +%s`:extract_depends[collapsed=true]\r\e[0KPreparing for build"
     - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/cryptlib.tgz"
-    - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/botan.tgz"
     - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/encode.tgz"
     - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/hash.tgz"
     - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/smblib.tgz"
@@ -111,7 +110,6 @@ spec:
       - "src/sbbs3/gtkchat/*.exe.release/*"
   needs:
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [cryptlib]"
-    - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [botan]"
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [encode]"
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [hash]"
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [smblib]"
@@ -130,7 +128,6 @@ spec:
     - touch ${CI_PIPELINE_ID}.ci
     - echo -e "\e[0Ksection_start:`date +%s`:extract_depends[collapsed=true]\r\e[0KPreparing for build"
     - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/cryptlib.tgz"
-    - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/botan.tgz"
     - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/xpdev.tgz"
     - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/smblib.tgz"
     - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/sbbs-build${EXTRA_FILENAME}.tgz"
@@ -152,7 +149,6 @@ spec:
       - "src/sbbs3/gtkmonitor/*.exe.release/*"
   needs:
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [cryptlib]"
-    - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [botan]"
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [xpdev]"
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [smblib]"
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [sbbs-build]"
@@ -172,7 +168,6 @@ spec:
     - echo -e "\e[0Ksection_start:`date +%s`:extract_depends[collapsed=true]\r\e[0KPreparing for build"
     - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/spidermonkey.tgz"
     - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/cryptlib.tgz"
-    - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/botan.tgz"
     - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/xpdev.tgz"
     - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/smblib.tgz"
     - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/sbbs-build${EXTRA_FILENAME}.tgz"
@@ -194,7 +189,6 @@ spec:
   needs:
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [spidermonkey]"
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [cryptlib]"
-    - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [botan]"
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [xpdev]"
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [smblib]"
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [sbbs-build]"
@@ -212,7 +206,6 @@ spec:
     - touch ${CI_PIPELINE_ID}.ci
     - echo -e "\e[0Ksection_start:`date +%s`:extract_depends[collapsed=true]\r\e[0KPreparing for build"
     - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/cryptlib.tgz"
-    - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/botan.tgz"
     - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/xpdev.tgz"
     - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/smblib.tgz"
     - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/sbbs-build${EXTRA_FILENAME}.tgz"
@@ -232,7 +225,6 @@ spec:
       - "src/sbbs3/gtkuserlist/*.exe.release/*"
   needs:
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [cryptlib]"
-    - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [botan]"
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [xpdev]"
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [smblib]"
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [sbbs-build]"
@@ -251,7 +243,6 @@ spec:
     - echo -e "\e[0Ksection_start:`date +%s`:extract_depends[collapsed=true]\r\e[0KPreparing for build"
     - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/spidermonkey.tgz"
     - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/cryptlib.tgz"
-    - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/botan.tgz"
     - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/xpdev.tgz"
     - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/encode.tgz"
     - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/hash.tgz"
@@ -302,7 +293,6 @@ spec:
   needs:
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [spidermonkey]"
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [cryptlib]"
-    - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [botan]"
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [xpdev]"
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [encode]"
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [hash]"
@@ -326,7 +316,6 @@ spec:
     - echo -e "\e[0Ksection_start:`date +%s`:extract_depends[collapsed=true]\r\e[0KPreparing for build"
     - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/spidermonkey.tgz"
     - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/cryptlib.tgz"
-    - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/botan.tgz"
     - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/xpdev.tgz"
     - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/encode.tgz"
     - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/hash.tgz"
@@ -374,7 +363,6 @@ spec:
   needs:
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [spidermonkey]"
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [cryptlib]"
-    - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [botan]"
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [xpdev]"
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [encode]"
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [hash]"
@@ -398,7 +386,6 @@ spec:
     - echo -e "\e[0Ksection_start:`date +%s`:extract_depends[collapsed=true]\r\e[0KPreparing for build"
     - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/ciolib.tgz"
     - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/cryptlib.tgz"
-    - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/botan.tgz"
     - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/encode.tgz"
     - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/hash.tgz"
     - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/smblib.tgz"
@@ -426,7 +413,6 @@ spec:
   needs:
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [ciolib]"
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [cryptlib]"
-    - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [botan]"
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [encode]"
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [hash]"
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [smblib]"
@@ -441,7 +427,6 @@ spec:
     - touch ${CI_PIPELINE_ID}.ci
     - echo -e "\e[0Ksection_start:`date +%s`:extract_depends[collapsed=true]\r\e[0KPreparing for build"
     - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/cryptlib.tgz"
-    - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/botan.tgz"
     - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/xpdev.tgz"
     - cd src/sexpots
     - touch cl
@@ -458,7 +443,6 @@ spec:
       - "src/sexpots/*.exe.release/*"
   needs:
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [cryptlib]"
-    - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [botan]"
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [xpdev]"
 
 "$[[ inputs.os ]]-$[[ inputs.platform ]] [syncdraw]":
@@ -469,7 +453,6 @@ spec:
     - echo -e "\e[0Ksection_start:`date +%s`:extract_depends[collapsed=true]\r\e[0KPreparing for build"
     - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/ciolib.tgz"
     - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/cryptlib.tgz"
-    - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/botan.tgz"
     - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/xpdev.tgz"
     - cd src/syncdraw
     - touch cl
@@ -488,7 +471,6 @@ spec:
   needs:
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [ciolib]"
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [cryptlib]"
-    - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [botan]"
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [xpdev]"
   rules:
     - if: '"$[[ inputs.slow_system ]]" == "yes"'
@@ -501,16 +483,16 @@ spec:
   script:
     - touch ${CI_PIPELINE_ID}.ci
     - echo -e "\e[0Ksection_start:`date +%s`:extract_depends[collapsed=true]\r\e[0KPreparing for build"
-    - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/ciolib.tgz"
     - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/botan.tgz"
+    - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/ciolib.tgz"
     - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/encode.tgz"
     - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/hash.tgz"
     - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/sftp.tgz"
     - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/uifc.tgz"
     - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/xpdev.tgz"
     - cd src/syncterm
-    - touch depend
     - touch botan
+    - touch depend
     - touch xpdev
     - touch xpdev-mt
     - touch encode
@@ -528,8 +510,8 @@ spec:
     paths:
       - "src/syncterm/*.exe.release/*"
   needs:
-    - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [ciolib]"
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [botan]"
+    - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [ciolib]"
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [encode]"
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [hash]"
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [sftp]"
@@ -568,7 +550,6 @@ spec:
     - echo -e "\e[0Ksection_start:`date +%s`:extract_depends[collapsed=true]\r\e[0KPreparing for build"
     - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/ciolib.tgz"
     - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/cryptlib.tgz"
-    - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/botan.tgz"
     - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/encode.tgz"
     - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/hash.tgz"
     - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/xpdev.tgz"
@@ -591,7 +572,6 @@ spec:
   needs:
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [ciolib]"
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [cryptlib]"
-    - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [botan]"
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [encode]"
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [hash]"
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [xpdev]"
@@ -610,7 +590,6 @@ spec:
     - echo -e "\e[0Ksection_start:`date +%s`:extract_depends[collapsed=true]\r\e[0KPreparing for build"
     - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/ciolib.tgz"
     - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/cryptlib.tgz"
-    - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/botan.tgz"
     - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/encode.tgz"
     - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/hash.tgz"
     - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/smblib.tgz"
@@ -638,7 +617,6 @@ spec:
   needs:
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [ciolib]"
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [cryptlib]"
-    - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [botan]"
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [encode]"
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [hash]"
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [smblib]"
@@ -658,7 +636,6 @@ spec:
     - echo -e "\e[0Ksection_start:`date +%s`:extract_depends[collapsed=true]\r\e[0KPreparing for build"
     - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/ciolib.tgz"
     - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/cryptlib.tgz"
-    - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/botan.tgz"
     - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/encode.tgz"
     - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/hash.tgz"
     - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/smblib.tgz"
@@ -685,7 +662,6 @@ spec:
   needs:
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [ciolib]"
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [cryptlib]"
-    - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [botan]"
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [encode]"
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [hash]"
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [smblib]"
@@ -700,7 +676,6 @@ spec:
     - echo -e "\e[0Ksection_start:`date +%s`:extract_depends[collapsed=true]\r\e[0KPreparing for build"
     - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/ciolib.tgz"
     - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/cryptlib.tgz"
-    - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/botan.tgz"
     - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/encode.tgz"
     - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/gitinfo.tgz"
     - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/hash.tgz"
@@ -728,7 +703,6 @@ spec:
   needs:
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [ciolib]"
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [cryptlib]"
-    - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [botan]"
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [encode]"
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [gitinfo]"
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [hash]"
@@ -910,7 +884,6 @@ spec:
     - touch ${CI_PIPELINE_ID}.ci
     - echo -e "\e[0Ksection_start:`date +%s`:extract_depends[collapsed=true]\r\e[0KPreparing for build"
     - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/cryptlib.tgz"
-    - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/botan.tgz"
     - cd src/uifc
     - touch cl
     - touch depend
@@ -923,7 +896,6 @@ spec:
     GIT_STRATEGY: fetch
   needs:
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [cryptlib]"
-    - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [botan]"
 
 "$[[ inputs.os ]]-$[[ inputs.platform ]] [xpdev]":
   extends:
@@ -931,9 +903,7 @@ spec:
   script:
     - touch ${CI_PIPELINE_ID}.ci
     - echo -e "\e[0Ksection_start:`date +%s`:extract_depends[collapsed=true]\r\e[0KPreparing for build"
-    - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/botan.tgz"
     - cd src/xpdev
-    - touch botan
     - touch depend
     - echo -e "\e[0Ksection_end:`date +%s`:extract_depends\r\e[0K"
     - $[[ inputs.gnu_make ]] $[[ inputs.build_flags ]] $BUILD_ARGS
@@ -943,7 +913,6 @@ spec:
   variables:
     GIT_STRATEGY: fetch
   needs:
-    - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [botan]"
 
 #########
 # Doors #
@@ -1045,7 +1014,6 @@ spec:
     - touch ${CI_PIPELINE_ID}.ci
     - echo -e "\e[0Ksection_start:`date +%s`:extract_depends[collapsed=true]\r\e[0KPreparing for build"
     - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/cryptlib.tgz"
-    - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/botan.tgz"
     - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/gamesdk.tgz"
     - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/odoors.tgz"
     - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/xpdev.tgz"
@@ -1070,7 +1038,6 @@ spec:
       - "src/doors/gac/gac_fc/gac_bj.*"
   needs:
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [cryptlib]"
-    - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [botan]"
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [gamesdk]"
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [odoors]"
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [xpdev]"
@@ -1086,7 +1053,6 @@ spec:
     - touch ${CI_PIPELINE_ID}.ci
     - echo -e "\e[0Ksection_start:`date +%s`:extract_depends[collapsed=true]\r\e[0KPreparing for build"
     - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/cryptlib.tgz"
-    - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/botan.tgz"
     - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/gamesdk.tgz"
     - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/odoors.tgz"
     - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/xpdev.tgz"
@@ -1111,7 +1077,6 @@ spec:
       - "src/doors/gac/gac_fc/gac_fc.*"
   needs:
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [cryptlib]"
-    - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [botan]"
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [gamesdk]"
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [odoors]"
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [xpdev]"
@@ -1127,7 +1092,6 @@ spec:
     - touch ${CI_PIPELINE_ID}.ci
     - echo -e "\e[0Ksection_start:`date +%s`:extract_depends[collapsed=true]\r\e[0KPreparing for build"
     - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/cryptlib.tgz"
-    - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/botan.tgz"
     - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/gamesdk.tgz"
     - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/odoors.tgz"
     - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/xpdev.tgz"
@@ -1152,7 +1116,6 @@ spec:
       - "src/doors/gac/gac_wh/gac_wh.*"
   needs:
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [cryptlib]"
-    - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [botan]"
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [gamesdk]"
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [odoors]"
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [xpdev]"
@@ -1168,7 +1131,6 @@ spec:
     - touch ${CI_PIPELINE_ID}.ci
     - echo -e "\e[0Ksection_start:`date +%s`:extract_depends[collapsed=true]\r\e[0KPreparing for build"
     - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/cryptlib.tgz"
-    - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/botan.tgz"
     - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/odoors.tgz"
     - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/xpdev.tgz"
     - cd src/doors/gac/gamesdk
@@ -1188,7 +1150,6 @@ spec:
       - "src/doors/gac/gamesdk/*.*.exe.*"
   needs:
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [cryptlib]"
-    - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [botan]"
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [odoors]"
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [xpdev]"
   rules:
@@ -1204,7 +1165,6 @@ spec:
     - echo -e "\e[0Ksection_start:`date +%s`:extract_depends[collapsed=true]\r\e[0KPreparing for build"
     - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/ciolib.tgz"
     - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/cryptlib.tgz"
-    - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/botan.tgz"
     - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/odoors.tgz"
     - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/xpdev.tgz"
     - cd src/doors/ny2008/src
@@ -1224,7 +1184,6 @@ spec:
       - "src/doors/ny2008/src/*.*.exe.*/*"
   needs:
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [cryptlib]"
-    - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [botan]"
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [ciolib]"
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [odoors]"
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [xpdev]"
