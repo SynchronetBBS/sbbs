@@ -22,7 +22,7 @@
  */
 
 #include "audio_apc.h"
-#include "sndfile.h"
+#include "xp_sndfile.h"
 
 #include <ctype.h>
 #include <math.h>

@@ -1,5 +1,5 @@
 /*
- * sndfile.c — syncterm-local libsndfile wrapper (see sndfile.h).
+ * xp_sndfile.c — syncterm-local libsndfile wrapper (see xp_sndfile.h).
  *
  * All three build modes (WITHOUT / WITH / STATIC SNDFILE) produce a
  * pair of callable symbols (sndfile_available + sndfile_decode) and
@@ -8,7 +8,7 @@
  * WITH_SNDFILE dlopen indirection.
  */
 
-#include "sndfile.h"
+#include "xp_sndfile.h"
 
 #include <stdlib.h>   /* malloc, free */
 #include <string.h>   /* memset */

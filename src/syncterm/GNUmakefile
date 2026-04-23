@@ -275,7 +275,7 @@ ifndef WITHOUT_JPEG_XL
  endif
 endif
 
-OBJS += $(MTOBJODIR)$(DIRSEP)sndfile$(OFILE)
+OBJS += $(MTOBJODIR)$(DIRSEP)xp_sndfile$(OFILE)
 OBJS += $(MTOBJODIR)$(DIRSEP)audio_apc$(OFILE)
 
 # libsndfile: three build modes — WITHOUT_SNDFILE (stubs only),

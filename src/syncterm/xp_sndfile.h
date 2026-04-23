@@ -1,5 +1,5 @@
 /*
- * sndfile.h — syncterm-local libsndfile wrapper.
+ * xp_sndfile.h — syncterm-local libsndfile wrapper.
  *
  * Three build modes, mutually exclusive:
  *

@@ -286,7 +286,7 @@ set(SOURCE
 	rip_icons.c
 	ripper.c
 	rlogin.c
-	sndfile.c
+	xp_sndfile.c
 	syncterm.c
 	telnet_io.c
 	term.c
