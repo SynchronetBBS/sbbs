@@ -205,6 +205,13 @@ if(CMAKE_C_COMPILER_ID MATCHES "GNU|Clang|AppleClang")
 		$<$<COMPILE_LANGUAGE:C>:-Werror=incompatible-pointer-types>
 		$<$<COMPILE_LANGUAGE:C>:-Werror=int-conversion>)
 
+	# Strict probes: we compile with -Werror, so "flag accepted but
+	# unused" (Apple Clang emits -Wunused-command-line-argument for
+	# -fstack-clash-protection etc.) would still break the real build.
+	# Push -Werror into CMAKE_REQUIRED_FLAGS so the probe matches the
+	# actual compile discipline.
+	set(CMAKE_REQUIRED_FLAGS "-std=c17 -Werror")
+
 	check_c_compiler_flag(-Wconversion HAVE_WCONVERSION)
 	if(HAVE_WCONVERSION)
 		list(APPEND DEUCESSH_COMPILE_OPTIONS -Wconversion)

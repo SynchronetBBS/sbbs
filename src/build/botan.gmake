@@ -20,7 +20,11 @@ ifdef USE_VENDORED_BOTAN
  # the vendored copy at build time.  The actual build rule for
  # $(BOTAN_BUILD) is owned by 3rdp/build/GNUmakefile; we just delegate
  # to it via a phony target.
- export PKG_CONFIG_PATH := $(shell cd $(dir $(BOTAN_PKGCONFIG_DIR)) 2>/dev/null && pwd)/$(notdir $(BOTAN_PKGCONFIG_DIR)):$(PKG_CONFIG_PATH)
+ #
+ # $(abspath) rather than $(shell cd ... && pwd) — the latter needs
+ # the directory to already exist at makefile parse time, which it
+ # doesn't: vendored-botan creates it.
+ export PKG_CONFIG_PATH := $(abspath $(BOTAN_PKGCONFIG_DIR))$(if $(PKG_CONFIG_PATH),:$(PKG_CONFIG_PATH))
 
 .PHONY: vendored-botan
 vendored-botan:
