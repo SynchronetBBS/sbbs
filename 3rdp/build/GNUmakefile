@@ -325,8 +325,9 @@ $(BOTAN_IDIR): | $(3RDPODIR)
 
 $(BOTAN_BUILD): $(3RDP_ROOT)/dist/Botan.tar.xz GNUmakefile | $(BOTAN_SRC) $(BOTAN_IDIR)
 	@echo Creating $@ ...
-	$(QUIET)-rm -rf $(BOTAN_SRC)/*
-	$(QUIET)xz -dc $(3RDPDISTDIR)/Botan.tar.xz | tar -xC $(BOTAN_SRC) --strip-components=1 -f -
+	$(QUIET)-rm -rf $(BOTAN_SRC)
+	$(QUIET)xz -dc $(3RDPDISTDIR)/Botan.tar.xz | tar -xf - -C $(dir $(BOTAN_SRC))
+	$(QUIET)mv $(dir $(BOTAN_SRC))Botan-* $(BOTAN_SRC)
 	$(QUIET)cd $(BOTAN_SRC) && python3 configure.py \
 	    --prefix=$(shell cd $(dir $(BOTAN_IDIR)) && pwd)/$(notdir $(BOTAN_IDIR)) \
 	    --disable-shared-library \

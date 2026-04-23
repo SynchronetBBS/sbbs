@@ -785,11 +785,13 @@ spec:
     - $[[ inputs.gnu_make ]] $[[ inputs.build_flags ]] $BUILD_ARGS botan
     - mkdir -p "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}"
     - cd ../..
-    - if ls -d 3rdp/*.release/botan >/dev/null 2>&1; then
-        tar -czf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/botan.tgz" 3rdp/*.release/botan;
-      else
-        tar -czf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/botan.tgz" -T /dev/null;
-      fi
+    # When the botan build is a no-op (system Botan/OpenSSL detected),
+    # no 3rdp/*.release/botan directory exists.  Create a placeholder
+    # so tar always has something to archive — BSD and busybox tar
+    # don't accept `tar -T /dev/null` for zero-entry archives.
+    - mkdir -p 3rdp/empty.release/botan
+    - tar -czf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/botan.tgz" 3rdp/*.release/botan
+    - rm -rf 3rdp/empty.release
   variables:
     GIT_STRATEGY: fetch
 

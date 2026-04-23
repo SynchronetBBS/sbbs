@@ -83,7 +83,7 @@ endif()
 # neither.  Probe libc first, then libstdthreads, then fall back to a
 # platform shim.
 include(CheckCSourceCompiles)
-set(CMAKE_REQUIRED_FLAGS "-std=c17")
+set(CMAKE_REQUIRED_FLAGS "-std=c11")
 check_c_source_compiles("
 	#include <threads.h>
 	int main(void) { mtx_t m; mtx_init(&m, mtx_plain); return 0; }
@@ -213,7 +213,7 @@ if(CMAKE_C_COMPILER_ID MATCHES "GNU|Clang|AppleClang")
 	# -fstack-clash-protection etc.) would still break the real build.
 	# Push -Werror into CMAKE_REQUIRED_FLAGS so the probe matches the
 	# actual compile discipline.
-	set(CMAKE_REQUIRED_FLAGS "-std=c17 -Werror")
+	set(CMAKE_REQUIRED_FLAGS "-std=c11 -Werror")
 
 	check_c_compiler_flag(-Wconversion HAVE_WCONVERSION)
 	if(HAVE_WCONVERSION)
@@ -312,7 +312,7 @@ set(DEUCESSH_INSTALL_TARGETS "")
 if(DEUCESSH_BUILD_STATIC)
 	add_library(deucessh_static STATIC ${DEUCESSH_SOURCES})
 	add_library(deucessh::static ALIAS deucessh_static)
-	set_property(TARGET deucessh_static PROPERTY C_STANDARD 17)
+	set_property(TARGET deucessh_static PROPERTY C_STANDARD 11)
 	set_property(TARGET deucessh_static PROPERTY C_STANDARD_REQUIRED ON)
 	if(DEUCESSH_CRYPTO_BACKEND STREQUAL "Botan")
 		set_property(TARGET deucessh_static PROPERTY CXX_STANDARD 20)
@@ -343,7 +343,7 @@ endif()
 if(DEUCESSH_BUILD_SHARED)
 	add_library(deucessh_shared SHARED ${DEUCESSH_SOURCES})
 	add_library(deucessh::shared ALIAS deucessh_shared)
-	set_property(TARGET deucessh_shared PROPERTY C_STANDARD 17)
+	set_property(TARGET deucessh_shared PROPERTY C_STANDARD 11)
 	set_property(TARGET deucessh_shared PROPERTY C_STANDARD_REQUIRED ON)
 	if(DEUCESSH_CRYPTO_BACKEND STREQUAL "Botan")
 		set_property(TARGET deucessh_shared PROPERTY CXX_STANDARD 20)
