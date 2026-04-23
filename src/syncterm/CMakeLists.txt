@@ -57,6 +57,24 @@ if(USE_VENDORED_BOTAN STREQUAL "")
 endif()
 
 if(USE_VENDORED_BOTAN)
+	# Botan's configure.py needs a Python 3 interpreter.  On Windows CI
+	# only `python.exe` is on PATH (no `python3.exe`); find_package
+	# handles both layouts.  If Python 3 isn't present at all, we
+	# can't build vendored Botan — drop all the way to WITHOUT_CRYPTO
+	# so the build still completes (no TLS / encrypted-bbslist) rather
+	# than failing with an opaque cmake error later.
+	find_package(Python3 COMPONENTS Interpreter QUIET)
+	if(NOT Python3_Interpreter_FOUND)
+		message(WARNING
+		    "Python 3 not found; can't build vendored Botan.  "
+		    "Disabling crypto (WITHOUT_CRYPTO + WITHOUT_DEUCESSH).")
+		set(WITHOUT_CRYPTO ON CACHE BOOL "" FORCE)
+		set(WITHOUT_DEUCESSH ON CACHE BOOL "" FORCE)
+		set(USE_VENDORED_BOTAN 0)
+	endif()
+endif()
+
+if(USE_VENDORED_BOTAN)
 	# Build Botan from 3rdp/dist/Botan.tar.xz as an ExternalProject.
 	# DeuceSSH's pkg_check_modules(BOTAN3 REQUIRED botan-3) picks it up
 	# once PKG_CONFIG_PATH includes the vendored install's pkgconfig/.
@@ -139,7 +157,7 @@ if(USE_VENDORED_BOTAN)
 	ExternalProject_Add(vendored-botan
 	    URL "${CMAKE_CURRENT_SOURCE_DIR}/../../3rdp/dist/Botan.tar.xz"
 	    PREFIX "${CMAKE_BINARY_DIR}/vendored-botan-src"
-	    CONFIGURE_COMMAND python3 <SOURCE_DIR>/configure.py ${_botan_configure_args}
+	    CONFIGURE_COMMAND ${Python3_EXECUTABLE} <SOURCE_DIR>/configure.py ${_botan_configure_args}
 	    BUILD_COMMAND ${_botan_build_cmd}
 	    INSTALL_COMMAND ${_botan_install_cmd}
 	    BUILD_BYPRODUCTS ${VENDORED_BOTAN_LIB}

@@ -37,6 +37,24 @@ endif
 ifdef WITHOUT_CRYPTLIB
  CFLAGS += -DWITHOUT_CRYPTLIB
 endif
+
+# Consumers of libxpdev_mt.a transitively link against whatever crypto
+# backend xpdev was built with — xp_tls_<backend>.o +
+# xp_crypt_<backend>.o are inside the archive, and their
+# OpenSSL/Botan symbol references need resolving at the final link.
+# Append the backend's ldflags to XPDEV*_LIBS so every consumer
+# picks them up alongside the existing -lm / -lws2_32 / -pthread set.
+ifeq ($(XP_CRYPTO_BACKEND),OpenSSL)
+ XPDEV_LIBS    += -lssl -lcrypto
+ XPDEV-MT_LIBS += -lssl -lcrypto
+else ifeq ($(XP_CRYPTO_BACKEND),Botan)
+ # Strip -pthread from pkg-config output — xpdev already handles
+ # thread-library linkage per-platform above, and on MinGW a bare
+ # -pthread trips "cannot find -lpthread".
+ XPDEV_BOTAN_LIBS := $(filter-out -pthread,$(shell pkg-config --libs botan-3 2>/dev/null))
+ XPDEV_LIBS    += $(XPDEV_BOTAN_LIBS)
+ XPDEV-MT_LIBS += $(XPDEV_BOTAN_LIBS)
+endif
 ifdef win		# MinGW32
  XPDEV_LIBS	+=	-lws2_32 -lwinmm -lnetapi32 -liphlpapi
  # WASAPI audio backend (MT only, in xpbeep.c) needs ole32 for CoInitializeEx
