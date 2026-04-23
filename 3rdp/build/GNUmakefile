@@ -270,6 +270,28 @@ else
  BOTAN_CONFIGURE_EXTRA :=
 endif
 
+# Only build the Botan modules SyncTERM (+ DeuceSSH) actually touches.
+# Botan pulls transitive deps automatically under --minimized-build;
+# this list names the top-level algorithms / protocols we CALL.  Keep
+# synchronised with the matching block in src/syncterm/CMakeLists.txt.
+#
+# tls12,tls13               — xp_tls (TelnetS, HTTPS)
+# aes,cbc,ctr               — xp_crypt encrypted-INI + DeuceSSH AES-256/CTR
+# chacha,chacha20poly1305   — xp_crypt ChaCha20 + TLS 1.3 AEAD
+# rc4,des,cast128           — legacy decrypt-only paths in xp_crypt
+# hmac,pbkdf2,scrypt        — xp_crypt KDF + SSH MAC
+# sha1,sha2_32,sha2_64      — legacy fingerprints + current SHA-256/-512
+# rsa,ed25519,x25519,dh     — SSH host/user keys + TLS sig/kex
+# ecdsa,ecdh                — TLS 1.2/1.3 cert + kex
+# ml_kem                    — SSH mlkem768x25519-sha256 post-quantum kex
+# pcurves_secp{256,384,521} — NIST curves for TLS ECDSA
+# x509                      — TLS cert chain parsing
+# system_rng,auto_rng       — RNG stack
+BOTAN_MODULES := tls12,tls13,aes,cbc,ctr,chacha,chacha20poly1305,\
+rc4,des,cast128,hmac,pbkdf2,scrypt,sha1,sha2_32,sha2_64,rsa,ed25519,\
+x25519,dh,ecdsa,ecdh,ml_kem,pcurves_secp256r1,pcurves_secp384r1,\
+pcurves_secp521r1,x509,system_rng,auto_rng
+
 # Botan's generated Makefile doesn't use a jobserver, so -j has to be
 # passed explicitly.  Detect a sane default; user can override with
 # BOTAN_JOBS=N on the command line.
@@ -290,6 +312,8 @@ $(BOTAN_BUILD): $(3RDP_ROOT)/dist/Botan.tar.xz GNUmakefile | $(BOTAN_SRC) $(BOTA
 	    --disable-shared-library \
 	    --without-documentation \
 	    --build-targets=static \
+	    --minimized-build \
+	    --enable-modules=$(BOTAN_MODULES) \
 	    --build-tool=make $(BOTAN_CONFIGURE_EXTRA)
 	$(QUIET)$(MAKE) -j$(BOTAN_JOBS) -C $(BOTAN_SRC)
 	$(QUIET)$(MAKE) -C $(BOTAN_SRC) install
