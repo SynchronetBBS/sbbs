@@ -2517,7 +2517,7 @@ edit_list(struct bbslist **list, struct bbslist *item, char *listpath, int isdef
 			int nav = (i == -2 - '[') ? EDIT_NAV_PREV : EDIT_NAV_NEXT;
 			if (!safe_mode) {
 				if ((listfile = fopen(listpath, "wb")) != NULL) {
-					iniWriteEncryptedFile(listfile, inifile, list_algo, list_keysize, settings.keyDerivationIterations, list_password, NULL);
+					iniWriteEncryptedFile(listfile, inifile, list_algo, list_keysize, settings.keyDerivationIterations, list_password);
 					fclose(listfile);
 				}
 			}
@@ -2568,7 +2568,7 @@ edit_list(struct bbslist **list, struct bbslist *item, char *listpath, int isdef
 				}
 				if (!safe_mode) {
 					if ((listfile = fopen(listpath, "wb")) != NULL) {
-						iniWriteEncryptedFile(listfile, inifile, list_algo, list_keysize, settings.keyDerivationIterations, list_password, NULL);
+						iniWriteEncryptedFile(listfile, inifile, list_algo, list_keysize, settings.keyDerivationIterations, list_password);
 						fclose(listfile);
 					}
 				}
@@ -3134,7 +3134,7 @@ add_bbs(char *listpath, struct bbslist *bbs, bool new_entry)
 		iniSetInt32(&inifile, bbs->name, "SortOrder", bbs->sort_order, &ini_style);
 
 	if ((listfile = fopen(listpath, "wb")) != NULL) {
-		iniWriteEncryptedFile(listfile, inifile, list_algo, list_keysize, settings.keyDerivationIterations, list_password, NULL);
+		iniWriteEncryptedFile(listfile, inifile, list_algo, list_keysize, settings.keyDerivationIterations, list_password);
 		fclose(listfile);
 	}
 	strListFree(&inifile);
@@ -3152,7 +3152,7 @@ del_bbs(char *listpath, struct bbslist *bbs)
 	if ((listfile = fopen(listpath, "r+b")) != NULL) {
 		inifile = iniReadBBSList(listfile, bbs->type == USER_BBSLIST);
 		iniRemoveSection(&inifile, bbs->name);
-		iniWriteEncryptedFile(listfile, inifile, list_algo, list_keysize, settings.keyDerivationIterations, list_password, NULL);
+		iniWriteEncryptedFile(listfile, inifile, list_algo, list_keysize, settings.keyDerivationIterations, list_password);
 		fclose(listfile);
 		strListFree(&inifile);
 	}
@@ -3820,17 +3820,19 @@ change_settings(int connected)
 				break;
 			case 15:
 				{
-					uifc.helpbuf = "`Key Derivation Function Iterations`\n\n"
-						       "Number of iterations to run the Key Derivation Function when creating an\n"
-						       "encryption key from a password. Using more iterations makes offline\n"
-						       "attacks harder by making dictionary attacks more difficult, ideally\n"
-						       "making it more difficult than simple random key brute forcing.\n\n"
-						       "The default value is 50,000 which takes about 0.15 seconds on my current\n"
-						       "computer. This means that a normal read/modify/write of an entry ends up\n"
-						       "taking 0.3 seconds longer due to KDF. Lowering this value makes offline\n"
-						       "attacks easier, but can noticably speed up encrypted file access.\n\n"
-						       "Minimum value is 1, maximum value is 2147483647. You should choose the\n"
-						       "highest value you can put up with. NIST reccomends a minimum of 10,000.\n";
+					uifc.helpbuf = "`Key Derivation Function Work Factor`\n\n"
+						       "Work factor for the Key Derivation Function when creating an\n"
+						       "encryption key from a password.  Higher values make offline dictionary\n"
+						       "attacks more expensive, ideally making them more difficult than simple\n"
+						       "random key brute forcing.\n\n"
+						       "SyncTERM writes new encrypted lists using scrypt, where this number is\n"
+						       "the `N` cost parameter.  The supplied value is rounded up to the next\n"
+						       "power of two; the compiled-in default is 32,768 (N=2^15).  (When\n"
+						       "decrypting old PBKDF2-format lists written by the Cryptlib-era build,\n"
+						       "this value is used directly as an iteration count.)\n\n"
+						       "Minimum is 256, maximum is 16,777,216 (2^24).  Pick the highest value\n"
+						       "you can put up with — on very old hardware a lower value may be\n"
+						       "necessary to keep read/modify/write latency reasonable.\n";
 					char value[11];
 					snprintf(value, sizeof(value), "%d", settings.keyDerivationIterations);
 					if (uifc.input(WIN_SAV | WIN_MID, 0, 0, "Iterations", value, sizeof(value) - 1, K_NUMBER | K_EDIT) > 0) {
@@ -3843,7 +3845,7 @@ change_settings(int connected)
 								settings.keyDerivationIterations = nval;
 								iniSetInteger(&inicontents, "SyncTERM", "KeyDerivationIterations", settings.keyDerivationIterations, &ini_style);
 								if (list_algo != INI_CRYPT_ALGO_NONE)
-									iniWriteEncryptedFile(listfile, inifile, list_algo, list_keysize, settings.keyDerivationIterations, list_password, NULL);
+									iniWriteEncryptedFile(listfile, inifile, list_algo, list_keysize, settings.keyDerivationIterations, list_password);
 								fclose(listfile);
 								iniFreeStringList(inifile);
 							}
@@ -4202,7 +4204,7 @@ done:
 	free(old);
 	if (inifile != NULL) {
 		if ((listfile = fopen(listpath, "wb")) != NULL) {
-			iniWriteEncryptedFile(listfile, inifile, list_algo, list_keysize, settings.keyDerivationIterations, list_password, NULL);
+			iniWriteEncryptedFile(listfile, inifile, list_algo, list_keysize, settings.keyDerivationIterations, list_password);
 			fclose(listfile);
 		}
 		strListFree(&inifile);
@@ -4380,7 +4382,7 @@ changeAlgo(const char *listpath, enum iniCryptAlgo algo, int keySize, const char
 			iniSetBool(&inifile, NULL, "DecryptionCheck", true, &ini_style);
 		if (newpass)
 			strlcpy(list_password, newpass, sizeof(list_password));
-		iniWriteEncryptedFile(listfile, inifile, algo, keySize, settings.keyDerivationIterations, list_password, NULL);
+		iniWriteEncryptedFile(listfile, inifile, algo, keySize, settings.keyDerivationIterations, list_password);
 		fclose(listfile);
 		list_algo = algo;
 		list_keysize = keySize;

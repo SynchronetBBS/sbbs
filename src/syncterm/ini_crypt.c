@@ -63,7 +63,7 @@ const char *encryptedHeaderPrefix   = "; Encrypted INI File, Algorithm: ";
 const char *encryptedHeaderPrefixV2 = "; Encrypted INI File v2, Algorithm: ";
 
 /* v2 scrypt defaults — RFC 7914 interactive. ~16 MiB memory. */
-#define INI_SCRYPT_COST_LOG2 14
+#define INI_SCRYPT_COST_LOG2 15
 #define INI_SCRYPT_R         8
 #define INI_SCRYPT_P         1
 
@@ -518,14 +518,16 @@ addEncrpytedChar(xp_crypt_t ctx, const char ch, char *buffer, size_t blockSize, 
 /*
  * Writes the INI file in list to fp encrypted with key.
  *
- * If salt is specified, it is ignored (legacy parameter; writer always
- * generates a fresh binary salt).
- *
- * KDFiterations is ignored: the writer always emits v2 + scrypt with
- * interactive-login defaults (N=2^14, r=8, p=1).  Readers still honour
- * KDFiterations when decrypting v1 Cryptlib-era files.
+ * The writer always emits v2 + scrypt; r and p use interactive-login
+ * defaults (r=8, p=1).  KDFiterations is interpreted as scrypt's cost
+ * parameter N: caller-provided value is rounded up to the nearest
+ * power of two and clamped to [2^8, 2^24].  Value <= 0 falls back to
+ * the INI_SCRYPT_COST_LOG2 default.  (Readers still honour
+ * KDFiterations as a literal PBKDF2 count when decrypting v1
+ * Cryptlib-era files — the on-disk header tells the reader which KDF
+ * to use.)
  */
-bool iniWriteEncryptedFile(FILE* fp, const str_list_t list, enum iniCryptAlgo algo, int keySize, int KDFiterations, const char *key, char *salt)
+bool iniWriteEncryptedFile(FILE* fp, const str_list_t list, enum iniCryptAlgo algo, int keySize, int KDFiterations, const char *key)
 {
 	uint8_t salt_bin[INI_V2_SALT_BYTES];
 	char    salt_hex[2 * INI_V2_SALT_BYTES + 1];
@@ -544,8 +546,22 @@ bool iniWriteEncryptedFile(FILE* fp, const str_list_t list, enum iniCryptAlgo al
 	size_t line = 0;
 	int blocksize;
 	int ivsize;
-	(void)KDFiterations;
-	(void)salt;
+
+	/* Map the caller-visible KDFiterations (a generic "work factor")
+	 * onto scrypt's cost parameter N.  Round up to the nearest power
+	 * of 2, clamped to [2^8, 2^24].  <=0 keeps the compiled-in
+	 * default of 2^INI_SCRYPT_COST_LOG2.  This preserves "bigger
+	 * number = more work" so the SyncTERM config item still behaves
+	 * intuitively after the Cryptlib→scrypt KDF migration. */
+	if (KDFiterations > 0) {
+		unsigned int N = (unsigned int)KDFiterations;
+		unsigned int cost_log2 = 0;
+		while ((1U << cost_log2) < N && cost_log2 < 24)
+			cost_log2++;
+		if (cost_log2 < 8)
+			cost_log2 = 8;
+		kdf.cost_log2 = cost_log2;
+	}
 
 	if (fp == NULL)
 		return false;

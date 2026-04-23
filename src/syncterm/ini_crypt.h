@@ -50,7 +50,7 @@ enum iniCryptAlgo {
 };
 
 DLLEXPORT str_list_t iniReadEncryptedFile(FILE* fp, bool(*get_key)(void *cb_data, char *keybuf, size_t *sz), int KDFiterations, enum iniCryptAlgo *algoPtr, int *ks, char *saltBuf, size_t *saltsz, void *cbdata);
-DLLEXPORT bool iniWriteEncryptedFile(FILE* fp, const str_list_t list, enum iniCryptAlgo algo, int keySize, int KDFiterations, const char *key, char *salt);
+DLLEXPORT bool iniWriteEncryptedFile(FILE* fp, const str_list_t list, enum iniCryptAlgo algo, int keySize, int KDFiterations, const char *key);
 DLLEXPORT const char *iniCryptGetAlgoName(enum iniCryptAlgo a);
 DLLEXPORT enum iniCryptAlgo iniCryptGetAlgoFromName(const char *n);
 
