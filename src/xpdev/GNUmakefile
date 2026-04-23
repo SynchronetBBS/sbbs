@@ -60,6 +60,15 @@ ifeq ($(XP_CRYPTO_BACKEND),Botan)
 	$(QUIET)$(CXX) -std=c++20 $(CFLAGS) $(CXXFLAGS) $(MT_CFLAGS) $(BOTAN_CXXFLAGS) -o $@ -c $<
 endif
 
+# ini_crypt.c wraps the encrypted-INI read/write path around xp_crypt.
+# Kept out of objects.mk (which is shared with Common.bmake / Borland)
+# so a no-crypto build doesn't force an ancient compiler to parse code
+# that expects a modern TLS stack.
+ifneq ($(XP_CRYPTO_BACKEND),none)
+ OBJS   += $(OBJODIR)$(DIRSEP)ini_crypt$(OFILE)
+ MTOBJS += $(MTOBJODIR)$(DIRSEP)ini_crypt$(OFILE)
+endif
+
 # Executable Build Rule
 $(WRAPTEST): $(MTOBJODIR)/wraptest.o $(DEPS) | $(EXEODIR)
 	@echo Linking $@

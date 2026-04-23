@@ -14,7 +14,6 @@ OBJS	= \
 	$(OBJODIR)$(DIRSEP)filewrap$(OFILE) \
 	$(OBJODIR)$(DIRSEP)genwrap$(OFILE) \
 	$(OBJODIR)$(DIRSEP)ini_file$(OFILE) \
-	$(OBJODIR)$(DIRSEP)ini_crypt$(OFILE) \
 	$(OBJODIR)$(DIRSEP)link_list$(OFILE) \
 	$(OBJODIR)$(DIRSEP)multisock$(OFILE) \
 	$(OBJODIR)$(DIRSEP)named_str_list$(OFILE) \
@@ -43,7 +42,6 @@ MTOBJS	= \
 	$(MTOBJODIR)$(DIRSEP)filewrap$(OFILE) \
 	$(MTOBJODIR)$(DIRSEP)genwrap$(OFILE) \
 	$(MTOBJODIR)$(DIRSEP)ini_file$(OFILE) \
-	$(MTOBJODIR)$(DIRSEP)ini_crypt$(OFILE) \
 	$(MTOBJODIR)$(DIRSEP)link_list$(OFILE) \
 	$(MTOBJODIR)$(DIRSEP)msg_queue$(OFILE) \
 	$(MTOBJODIR)$(DIRSEP)multisock$(OFILE) \
