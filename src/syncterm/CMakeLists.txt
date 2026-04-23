@@ -384,6 +384,58 @@ target_compile_definitions(syncterm PRIVATE TELNET_NO_DLL)
 if(WITHOUT_OOII)
 	target_compile_definitions(syncterm PRIVATE WITHOUT_OOII=1)
 endif()
+if(NOT WITHOUT_DEUCESSH)
+	# Probe DeuceSSH's cmake configure at outer configure-time.  If it
+	# fails for any reason — C17 not supported, missing crypto headers,
+	# whatever — flip WITHOUT_DEUCESSH so the rest of syncterm still
+	# builds instead of fataling here.  Matches the gmake probe in
+	# GNUmakefile so cmake users aren't left to diagnose this manually.
+	#
+	# Only probe once the crypto backend DeuceSSH needs is actually on
+	# disk — DeuceSSH's configure runs pkg_check_modules on it, and a
+	# not-yet-built vendored Botan would look identical to a real
+	# failure.  In CI the [botan] job / botan.tgz extraction ensures
+	# the .pc file is present by the time we get here; fresh local
+	# checkouts with no system crypto skip the probe and let
+	# add_subdirectory proceed normally (using the BOTAN3_VENDORED_TARGET
+	# imported-target machinery that was set up earlier in this file).
+	set(_dssh_crypto_ready FALSE)
+	set(_dssh_extra_pkgconfig "")
+	if(USE_VENDORED_BOTAN)
+		if(EXISTS "${VENDORED_BOTAN_PREFIX}/lib/pkgconfig/botan-3.pc")
+			set(_dssh_crypto_ready TRUE)
+			set(_dssh_extra_pkgconfig
+			    "${VENDORED_BOTAN_PREFIX}/lib/pkgconfig")
+		endif()
+	else()
+		set(_dssh_crypto_ready TRUE)
+	endif()
+
+	if(_dssh_crypto_ready)
+		set(_dssh_probe_dir "${CMAKE_BINARY_DIR}/deucessh-probe")
+		if(_dssh_extra_pkgconfig)
+			set(ENV{PKG_CONFIG_PATH}
+			    "${_dssh_extra_pkgconfig}:$ENV{PKG_CONFIG_PATH}")
+		endif()
+		execute_process(
+		    COMMAND ${CMAKE_COMMAND}
+		        -S ${CMAKE_CURRENT_SOURCE_DIR}/../ssh
+		        -B ${_dssh_probe_dir}
+		        -DCMAKE_BUILD_TYPE=Release
+		        -DDEUCESSH_CRYPTO_BACKEND=${DEUCESSH_CRYPTO_BACKEND}
+		    RESULT_VARIABLE _dssh_cfg_rc
+		    OUTPUT_FILE ${CMAKE_BINARY_DIR}/deucessh-probe.log
+		    ERROR_FILE ${CMAKE_BINARY_DIR}/deucessh-probe.log)
+		if(_dssh_cfg_rc OR NOT EXISTS "${_dssh_probe_dir}/deucessh.pc")
+			message(STATUS
+			    "DeuceSSH configure failed (see "
+			    "${CMAKE_BINARY_DIR}/deucessh-probe.log) — "
+			    "disabling SSH support")
+			set(WITHOUT_DEUCESSH ON CACHE BOOL "" FORCE)
+		endif()
+	endif()
+endif()
+
 if(WITHOUT_DEUCESSH)
 	target_compile_definitions(syncterm PRIVATE WITHOUT_DEUCESSH)
 else()

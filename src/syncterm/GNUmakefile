@@ -134,7 +134,11 @@ ifndef WITHOUT_DEUCESSH
  ifeq ($(_dssh_crypto_ready),YES)
   ifeq ($(wildcard $(DEUCESSH_PC)),)
    $(info Configuring DeuceSSH...)
-   _dssh_cfg := $(shell cmake -S $(DEUCESSH_DIR) -B $(DEUCESSH_BUILD) \
+   # mkdir the build-log's parent dir first — on a fresh build,
+   # $(3RDPODIR) doesn't exist yet and the >log redirect would fail
+   # before cmake could even run, causing a false-negative probe.
+   _dssh_cfg := $(shell mkdir -p $(dir $(DEUCESSH_BUILD)) && \
+       cmake -S $(DEUCESSH_DIR) -B $(DEUCESSH_BUILD) \
        -DCMAKE_BUILD_TYPE=Release $(DEUCESSH_CMAKE_BACKEND_ARG) \
        $(DEUCESSH_CMAKE_TOOLCHAIN_ARGS) >$(DEUCESSH_BUILD).log 2>&1; echo $$?)
    ifeq ($(wildcard $(DEUCESSH_PC)),)
@@ -157,6 +161,12 @@ ifndef WITHOUT_DEUCESSH
  EXTRA_LIBS += $(DEUCESSH_LIB)
 else
  CFLAGS += -DWITHOUT_DEUCESSH
+ # targets.mk captured "deucessh" as a prereq of `all:` before our
+ # probe ran (include ordering).  Provide a no-op rule so make doesn't
+ # fail with "No rule to make target 'deucessh'" when we've disabled it.
+ .PHONY: deucessh
+ deucessh:
+	@true
 endif
 
 # `botan` delegation target lives in build/botan.gmake; targets.mk
