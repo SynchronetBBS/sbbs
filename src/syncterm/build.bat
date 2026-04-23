@@ -14,10 +14,12 @@ rem Artifacts land in msvc.build\%CONFIG%\syncterm.exe.
 set CONFIG=%1
 if "%CONFIG%"=="" set CONFIG=Release
 
-rem Bring the MSVC toolset environment in scope for downstream tools
-rem that rely on it (Botan's configure.py + Nmake, ExternalProject).
-if exist "%VS170COMNTOOLS%\VsMSBuildCmd.bat" (
-    call "%VS170COMNTOOLS%\VsMSBuildCmd.bat"
+rem Bring the full VS developer environment in scope.  VsDevCmd.bat
+rem (not VsMSBuildCmd.bat) is what adds CMake, nmake, and python to
+rem PATH alongside cl/link — CI runners fail with "'cmake' is not
+rem recognized" otherwise.
+if exist "%VS170COMNTOOLS%\VsDevCmd.bat" (
+    call "%VS170COMNTOOLS%\VsDevCmd.bat" -arch=x86
 )
 
 if not exist msvc.build mkdir msvc.build
