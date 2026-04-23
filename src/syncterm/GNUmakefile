@@ -44,7 +44,7 @@ endif
 # needs those libs; ifdef at the bottom pulls them in exactly once.
 
 # Probe the system for a usable crypto library.  When neither matches
-# the project's minimums (Botan 3.9 or OpenSSL 3.0), fall back to a
+# the project's minimums (Botan 3.6 or OpenSSL 3.0), fall back to a
 # vendored static Botan build from 3rdp/dist/Botan.tar.xz.  The user
 # can override either way with USE_VENDORED_BOTAN=1/0.
 #
@@ -54,7 +54,7 @@ endif
 ifndef USE_VENDORED_BOTAN
  ifdef win
   USE_VENDORED_BOTAN := 1
- else ifeq ($(shell pkg-config --atleast-version=3.9 botan-3 2>/dev/null && echo Y),Y)
+ else ifeq ($(shell pkg-config --atleast-version=3.6 botan-3 2>/dev/null && echo Y),Y)
   USE_VENDORED_BOTAN := 0
  else ifeq ($(shell pkg-config --atleast-version=3.0 libcrypto 2>/dev/null && echo Y),Y)
   USE_VENDORED_BOTAN := 0
