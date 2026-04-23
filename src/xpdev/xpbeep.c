@@ -1,19 +1,14 @@
 /* TODO: USE PORTAUDIO! */
 
-/* MinGW's <math.h> hides M_PI et al. unless _USE_MATH_DEFINES is set
- * before it's first included.  The macro lives in the implementation-
- * reserved namespace, so only opt in on the platform that needs it. */
-#if defined(__MINGW32__) || defined(__MINGW64__)
-#define _USE_MATH_DEFINES
-#endif
-
 /* standard headers */
 #include <math.h>
 #include <stdlib.h>
 
-/* MSVC's <math.h> also hides M_PI behind _USE_MATH_DEFINES, but we
- * can't set that here without leaking a reserved-namespace macro
- * into the rest of the build.  Fall back to a local definition. */
+/* M_PI is a POSIX/BSD extension, not standard C.  MinGW and MSVC
+ * gate it behind _USE_MATH_DEFINES; glibc and *BSD expose it
+ * unconditionally.  xpbeep only uses M_PI (nothing else from
+ * the M_* family), so just define our own if the implementation
+ * didn't — simpler than platform-specific opt-ins. */
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
 #endif
