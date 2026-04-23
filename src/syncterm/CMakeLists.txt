@@ -1,9 +1,13 @@
 cmake_minimum_required(VERSION 3.5)
 set(CMAKE_BUILD_TYPE "Debug" CACHE STRING "Choose the build type")
+# CXX is conditionally needed for the Botan backend (xp_tls_botan3.cpp,
+# xp_crypt_botan3.cpp, src/ssh/crypto/botan.cpp and a handful of Botan
+# key-algo/KEX wrappers).  Declaring it up-front primes CMAKE_CXX_*
+# variables so LINKER_LANGUAGE CXX works at generate time.
 if(APPLE)
-	project (SyncTERM C OBJC)
+	project (SyncTERM C CXX OBJC)
 else()
-	project (SyncTERM C)
+	project (SyncTERM C CXX)
 endif()
 
 # On macOS, the native Quartz backend replaces SDL (video and audio).
@@ -97,8 +101,20 @@ if(USE_VENDORED_BOTAN)
 	else()
 		set(ENV{PKG_CONFIG_PATH} "${VENDORED_BOTAN_PKGCONFIG}")
 	endif()
-	# Force DeuceSSH to pick Botan (vendored is Botan, not OpenSSL).
+	# Force DeuceSSH + xpdev to pick Botan (vendored is Botan, not OpenSSL).
 	set(DEUCESSH_CRYPTO_BACKEND "Botan" CACHE STRING "" FORCE)
+	set(XP_CRYPTO_BACKEND       "Botan" CACHE STRING "" FORCE)
+else()
+	# Not using the vendored build — force xpdev + DeuceSSH onto whichever
+	# system library we already probed.  Botan first (matches the vendored
+	# case so switching doesn't change behaviour), OpenSSL otherwise.
+	if(_botan_ok)
+		set(DEUCESSH_CRYPTO_BACKEND "Botan"   CACHE STRING "" FORCE)
+		set(XP_CRYPTO_BACKEND       "Botan"   CACHE STRING "" FORCE)
+	elseif(_openssl_ok)
+		set(DEUCESSH_CRYPTO_BACKEND "OpenSSL" CACHE STRING "" FORCE)
+		set(XP_CRYPTO_BACKEND       "OpenSSL" CACHE STRING "" FORCE)
+	endif()
 endif()
 
 # CPack stuff...
@@ -149,6 +165,7 @@ if(NOT WITHOUT_JPEG_XL)
 endif()
 
 set(SOURCE
+	audio_apc.c
 	bbslist.c
 	conn.c
 	conn_pty.c
@@ -159,6 +176,7 @@ set(SOURCE
 	rip_icons.c
 	ripper.c
 	rlogin.c
+	sndfile.c
 	syncterm.c
 	telnet_io.c
 	term.c
@@ -247,6 +265,14 @@ else()
 	if(USE_VENDORED_BOTAN)
 		add_dependencies(deucessh_static vendored-botan)
 	endif()
+endif()
+
+# Botan backend pulls C++ translation units into libdeucessh.a and into
+# xpdev (xp_tls_botan3.cpp, xp_crypt_botan3.cpp); the final link needs
+# the C++ driver to resolve libc++/libsupc++ (operator new, __cxa_throw,
+# vtables, typeinfo, ...).
+if(XP_CRYPTO_BACKEND STREQUAL "Botan" OR DEUCESSH_CRYPTO_BACKEND STREQUAL "Botan")
+	set_target_properties(syncterm PROPERTIES LINKER_LANGUAGE CXX)
 endif()
 
 if(WITHOUT_CRYPTO)
