@@ -65,19 +65,31 @@ if(DEUCESSH_CRYPTO_BACKEND STREQUAL "Botan")
 	enable_language(CXX)
 endif()
 
-# C11 threads: FreeBSD needs -lstdthreads, Linux/macOS have it in libc
+# C11 threads: FreeBSD needs -lstdthreads, Linux/macOS have it in libc,
+# MinGW-w64 doesn't ship it at all so we drop in a local wrapper over
+# Windows primitives (win32/threads.{h,c}).
 include(CheckCSourceCompiles)
 set(CMAKE_REQUIRED_FLAGS "-std=c17")
 check_c_source_compiles("
 	#include <threads.h>
 	int main(void) { mtx_t m; mtx_init(&m, mtx_plain); return 0; }
 " HAVE_THREADS_IN_LIBC)
+set(DSSH_WIN32_THREADS_SOURCES "")
 if(NOT HAVE_THREADS_IN_LIBC)
 	find_library(STDTHREADS_LIB stdthreads)
-	if(NOT STDTHREADS_LIB)
-		message(FATAL_ERROR "C11 <threads.h> not found in libc or libstdthreads")
+	if(STDTHREADS_LIB)
+		set(THREADS_LINK_LIB ${STDTHREADS_LIB})
+	elseif(MINGW OR (WIN32 AND CMAKE_C_COMPILER_ID STREQUAL "GNU"))
+		# Prepend win32/ to the include path so <threads.h> resolves
+		# to our shim rather than the missing system header.  Compile
+		# the matching .c file into the library.
+		set(DSSH_WIN32_THREADS_SOURCES win32/threads.c)
+		set(THREADS_LINK_LIB "")
+	else()
+		message(FATAL_ERROR
+			"C11 <threads.h> not found in libc or libstdthreads, "
+			"and no platform-specific shim applies")
 	endif()
-	set(THREADS_LINK_LIB ${STDTHREADS_LIB})
 else()
 	set(THREADS_LINK_LIB "")
 endif()
@@ -132,6 +144,7 @@ set(DEUCESSH_SOURCES
 	kex/sntrup761_optblocker.c
 	kex/mlkem768.c
 	${DSSH_ALG_SOURCES}
+	${DSSH_WIN32_THREADS_SOURCES}
 	enc/none.c
 	mac/none.c
 	comp/none.c
@@ -152,15 +165,17 @@ set(DEUCESSH_COMPILE_OPTIONS "")
 set(DEUCESSH_LINK_OPTIONS "")
 
 if(CMAKE_C_COMPILER_ID MATCHES "GNU|Clang|AppleClang")
-	# Baseline warnings (GCC 2.95+, Clang 4+)
+	# Baseline warnings (GCC 2.95+, Clang 4+).  -Werror=implicit,
+	# -Werror=incompatible-pointer-types, -Werror=int-conversion are
+	# C-only diagnostics; g++ rejects them with "not valid for C++".
 	list(APPEND DEUCESSH_COMPILE_OPTIONS
 		-Wall -Wpedantic -pedantic -Werror
 		-Wformat -Wformat=2
 		-Wimplicit-fallthrough
 		-Werror=format-security
-		-Werror=implicit
-		-Werror=incompatible-pointer-types
-		-Werror=int-conversion)
+		$<$<COMPILE_LANGUAGE:C>:-Werror=implicit>
+		$<$<COMPILE_LANGUAGE:C>:-Werror=incompatible-pointer-types>
+		$<$<COMPILE_LANGUAGE:C>:-Werror=int-conversion>)
 
 	check_c_compiler_flag(-Wconversion HAVE_WCONVERSION)
 	if(HAVE_WCONVERSION)
@@ -270,6 +285,10 @@ if(DEUCESSH_BUILD_STATIC)
 		PUBLIC
 			$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
 			$<INSTALL_INTERFACE:include/deucessh>)
+	if(DSSH_WIN32_THREADS_SOURCES)
+		target_include_directories(deucessh_static BEFORE
+			PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/win32)
+	endif()
 	target_include_directories(deucessh_static SYSTEM
 		PRIVATE ${DSSH_CRYPTO_INCLUDE})
 	target_link_libraries(deucessh_static
@@ -300,6 +319,10 @@ if(DEUCESSH_BUILD_SHARED)
 		PUBLIC
 			$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
 			$<INSTALL_INTERFACE:include/deucessh>)
+	if(DSSH_WIN32_THREADS_SOURCES)
+		target_include_directories(deucessh_shared BEFORE
+			PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/win32)
+	endif()
 	target_include_directories(deucessh_shared SYSTEM
 		PRIVATE ${DSSH_CRYPTO_INCLUDE})
 	target_link_libraries(deucessh_shared
