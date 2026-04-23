@@ -112,6 +112,20 @@ destroy_conn_buf(struct conn_buffer *buf)
 	}
 }
 
+/* Discard all pending bytes in the buffer.  Takes the buffer's
+ * mutex internally.  Posts out_sem so any writer blocked on
+ * conn_buf_wait_free wakes up. */
+void
+conn_buf_reset(struct conn_buffer *buf)
+{
+	assert_pthread_mutex_lock(&(buf->mutex));
+	buf->buftop = 0;
+	buf->bufbot = 0;
+	buf->isempty = 1;
+	sem_post(&(buf->out_sem));
+	assert_pthread_mutex_unlock(&(buf->mutex));
+}
+
 /*
  * The mutex should always be locked by the caller
  * for the rest of the buffer functions

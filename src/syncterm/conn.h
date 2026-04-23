@@ -126,6 +126,7 @@ extern struct conn_api    conn_api;
 
 struct conn_buffer *create_conn_buf(struct conn_buffer *buf, size_t size);
 void destroy_conn_buf(struct conn_buffer *buf);
+void conn_buf_reset(struct conn_buffer *buf);
 size_t conn_buf_bytes(struct conn_buffer *buf);
 size_t conn_buf_peek(struct conn_buffer *buf, void *voutbuf, size_t outlen);
 size_t conn_buf_get(struct conn_buffer *buf, void *outbuf, size_t outlen);

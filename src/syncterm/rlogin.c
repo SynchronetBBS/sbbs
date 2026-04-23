@@ -48,7 +48,12 @@ static void
 rlogin_handle_control(uint8_t c)
 {
 	switch (c) {
-		case 0x02:	/* TIOCFLUSH — flush client output (not implemented) */
+		case 0x02:	/* TIOCFLUSH — server tells client to discard
+				 * any output it has queued but not yet sent.
+				 * RFC 1282: typically follows an interrupt at
+				 * the server side, so the client's in-flight
+				 * typeahead is stale.  Drop the outbound ring. */
+			conn_buf_reset(&conn_outbuf);
 			break;
 		case 0x10:	/* switch to raw mode (not implemented) */
 			break;
