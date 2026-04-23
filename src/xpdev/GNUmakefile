@@ -36,6 +36,15 @@ endif
 XP_CRYPTO_BACKEND ?= OpenSSL
 ifeq ($(XP_CRYPTO_BACKEND),OpenSSL)
  XP_CRYPTO_BACKEND_SUFFIX := openssl
+ # Pick up the system OpenSSL's include path explicitly.  On systems
+ # where OpenSSL 3.0+ lives in a versioned prefix (e.g. libcrypto3-dev
+ # in /usr/include/openssl3/), the default compiler search path still
+ # resolves <openssl/*.h> to an older OpenSSL whose core_names.h
+ # doesn't exist.  pkg-config points at the right one.
+ OPENSSL_CFLAGS := $(shell pkg-config --cflags libcrypto libssl 2>/dev/null)
+ CFLAGS         += $(OPENSSL_CFLAGS)
+ XPDEV_CFLAGS   += $(OPENSSL_CFLAGS)
+ XPDEV-MT_CFLAGS += $(OPENSSL_CFLAGS)
 endif
 ifeq ($(XP_CRYPTO_BACKEND),none)
  XP_CRYPTO_BACKEND_SUFFIX := none
