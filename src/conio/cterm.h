@@ -305,6 +305,17 @@ struct cterminal {
 	                                       void *cbdata);
 	void               *status_display_cbdata;
 
+	/* Fires when the terminal's visible dimensions change post-init
+	 * (e.g. DECSSDT toggling the status row).  text_cols/text_rows
+	 * are the new cell count; pixel_cols/pixel_rows are the pixel
+	 * dimensions read from vstat, or -1 when pixel support is
+	 * unavailable for the current mode. */
+	void              (*size_change_cb)(struct cterminal *cterm,
+	                                    int text_cols, int text_rows,
+	                                    int pixel_cols, int pixel_rows,
+	                                    void *cbdata);
+	void               *size_change_cbdata;
+
 	/* ECMA-48 selected area (SSA/ESA) for screen readback */
 	int					ssa_row;	// SSA position (1-based, screen coords), 0 = not set
 	int					ssa_col;

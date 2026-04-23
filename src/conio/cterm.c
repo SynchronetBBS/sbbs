@@ -61,6 +61,9 @@
 #include "cterm_petscii.h"
 #include "cterm_prestel.h"
 #include "vidmodes.h"
+#ifdef HAS_VSTAT
+#include "bitmap_con.h"	/* vstat / vstatlock for size_change_cb */
+#endif
 #include "base64.h"
 #include <crc16.h>
 
@@ -679,6 +682,34 @@ cterm_resize_rows(struct cterminal *cterm, int new_rows)
 			}
 			free(buf);
 		}
+	}
+
+	if (cterm->size_change_cb) {
+		int pixel_cols = -1;
+		int pixel_rows = -1;
+#ifdef HAS_VSTAT
+		/* Normalize pixel dimensions: when the terminal fills every
+		 * row/column of the framebuffer, report the framebuffer
+		 * extent (vstat.scrnwidth/scrnheight) so the trailing rows
+		 * that don't divide evenly into a character cell are still
+		 * accounted for (e.g. EGA 80x43 has 350 scanlines but 8-pixel
+		 * cells, leaving 6 leftover rows below row 43).  When the
+		 * terminal is smaller than the framebuffer (e.g. status row
+		 * visible), fall back to cell-size multiplication using the
+		 * runtime vstat.charwidth/charheight. */
+		assert_rwlock_rdlock(&vstatlock);
+		if (vstat.charwidth > 0 && vstat.charheight > 0) {
+			pixel_cols = (cterm->width == vstat.cols)
+			    ? vstat.scrnwidth
+			    : cterm->width * vstat.charwidth;
+			pixel_rows = (cterm->height == vstat.rows)
+			    ? vstat.scrnheight
+			    : cterm->height * vstat.charheight;
+		}
+		assert_rwlock_unlock(&vstatlock);
+#endif
+		cterm->size_change_cb(cterm, cterm->width, cterm->height,
+		    pixel_cols, pixel_rows, cterm->size_change_cbdata);
 	}
 }
 

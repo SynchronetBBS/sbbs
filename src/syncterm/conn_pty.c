@@ -574,6 +574,26 @@ pty_connect(struct bbslist *bbs)
 	return 0;
 }
 
+/* Push a new window size to the pty master; the kernel delivers
+ * SIGWINCH to the child session automatically.  Pixel args of -1
+ * map to 0 (unknown). */
+void
+pty_send_window_change(int text_cols, int text_rows,
+    int pixel_cols, int pixel_rows)
+{
+	if (master == -1)
+		return;
+	if (text_cols <= 0 || text_rows <= 0)
+		return;
+
+	struct winsize ws;
+	ws.ws_col    = (unsigned short)text_cols;
+	ws.ws_row    = (unsigned short)text_rows;
+	ws.ws_xpixel = (pixel_cols < 0) ? 0 : (unsigned short)pixel_cols;
+	ws.ws_ypixel = (pixel_rows < 0) ? 0 : (unsigned short)pixel_rows;
+	(void)ioctl(master, TIOCSWINSZ, &ws);
+}
+
 int
 pty_close(void)
 {

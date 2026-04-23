@@ -63,6 +63,13 @@ struct conn_api {
 	void              (*binary_mode_on)(void);
 	void              (*binary_mode_off)(void);
 
+	/* Inform the remote end that the terminal's visible dimensions
+	 * have changed (e.g. DECSSDT status-row toggle).  Pixel args are
+	 * -1 when pixel dimensions are unknown for the current mode.
+	 * NULL for connection types that don't carry window-size info. */
+	void              (*send_window_change)(int text_cols, int text_rows,
+	                                        int pixel_cols, int pixel_rows);
+
 	bool              binary_mode;
 
 	void            * (*rx_parse_cb)(const void *inbuf, size_t inlen, size_t *olen);
@@ -104,6 +111,8 @@ bool conn_connected(void);
 size_t conn_data_waiting(void);
 void conn_binary_mode_on(void);
 void conn_binary_mode_off(void);
+void conn_send_window_change(int text_cols, int text_rows,
+                             int pixel_cols, int pixel_rows);
 
 /*
  * For connection providers
