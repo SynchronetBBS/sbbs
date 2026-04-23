@@ -71,6 +71,10 @@ if(USE_VENDORED_BOTAN)
 		set(WITHOUT_CRYPTO ON CACHE BOOL "" FORCE)
 		set(WITHOUT_DEUCESSH ON CACHE BOOL "" FORCE)
 		set(USE_VENDORED_BOTAN 0)
+		# Pin xpdev to the stub backends; otherwise xpdev's default
+		# of "OpenSSL" tries find_package(OpenSSL REQUIRED) and fails
+		# on hosts that also don't have OpenSSL (Windows MSVC CI).
+		set(XP_CRYPTO_BACKEND "none" CACHE STRING "" FORCE)
 	endif()
 endif()
 
