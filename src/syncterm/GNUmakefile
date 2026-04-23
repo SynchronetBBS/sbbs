@@ -124,23 +124,23 @@ ifndef WITHOUT_DEUCESSH
  # failure.  CI extracts botan.tgz before this file parses; fresh
  # local checkouts with no system crypto let the normal build-order
  # (botan → deucessh → syncterm) run unprobed.
- _dssh_crypto_ready := $(shell (pkg-config --atleast-version=3.0 botan-3 2>/dev/null || pkg-config --atleast-version=3.0 libcrypto 2>/dev/null) && echo YES)
- ifeq ($(_dssh_crypto_ready),YES)
+ DSSH_CRYPTO_READY := $(shell (pkg-config --atleast-version=3.0 botan-3 2>/dev/null || pkg-config --atleast-version=3.0 libcrypto 2>/dev/null) && echo YES)
+ ifeq ($(DSSH_CRYPTO_READY),YES)
   # Use `test -f` via $(shell) rather than $(wildcard) — wildcard's
   # expansion is cached across a single make parse phase, so the first
   # call (before cmake runs) can poison the second call's result.
-  _dssh_pc_exists := $(shell test -f $(DEUCESSH_PC) && echo YES)
-  ifneq ($(_dssh_pc_exists),YES)
+  DSSH_PC_EXISTS := $(shell test -f $(DEUCESSH_PC) && echo YES)
+  ifneq ($(DSSH_PC_EXISTS),YES)
    $(info Configuring DeuceSSH...)
    # mkdir the build-log's parent dir first — on a fresh build,
    # $(3RDPODIR) doesn't exist yet and the >log redirect would fail
    # before cmake could even run, causing a false-negative probe.
-   _dssh_cfg := $(shell mkdir -p $(dir $(DEUCESSH_BUILD)) && \
+   DSSH_CFG_RC := $(shell mkdir -p $(dir $(DEUCESSH_BUILD)) && \
        cmake -S $(DEUCESSH_DIR) -B $(DEUCESSH_BUILD) \
        -DCMAKE_BUILD_TYPE=Release $(DEUCESSH_CMAKE_BACKEND_ARG) \
        $(DEUCESSH_CMAKE_TOOLCHAIN_ARGS) >$(DEUCESSH_BUILD).log 2>&1; echo $$?)
-   _dssh_pc_exists := $(shell test -f $(DEUCESSH_PC) && echo YES)
-   ifneq ($(_dssh_pc_exists),YES)
+   DSSH_PC_EXISTS := $(shell test -f $(DEUCESSH_PC) && echo YES)
+   ifneq ($(DSSH_PC_EXISTS),YES)
     WITHOUT_DEUCESSH := 1
     $(info DeuceSSH configure failed — disabling SSH support.  cmake output:)
     $(info ----- $(DEUCESSH_BUILD).log -----)
