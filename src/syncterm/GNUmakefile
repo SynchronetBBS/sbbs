@@ -177,37 +177,42 @@ ifdef NEED_BOTAN
  TRAILING_LIBS += $(filter-out -pthread,$(shell pkg-config --libs botan-3))
 endif
 
+# ini_crypt.c + xp_crypt/xp_tls backend shim are always built, even
+# with WITHOUT_CRYPTO — bbslist.c and syncterm.c reference the
+# encrypted-INI API unconditionally (iniWriteEncryptedFile is the
+# general write path; with INI_CRYPT_ALGO_NONE it falls through to
+# plain iniWriteFile).  The "none" backend provides no-op xp_crypt
+# and xp_tls so nothing drags in OpenSSL / Botan.
+OBJS += $(MTOBJODIR)$(DIRSEP)ini_crypt$(OFILE)
+ifeq ($(XP_CRYPTO_BACKEND),Botan)
+ # Botan 3 public headers require C++20 (std::span).  Override the
+ # tree-default -std=c++11 for just the Botan shim objects.
+ BOTAN_CXXFLAGS = $(shell pkg-config --cflags botan-3)
+ OBJS += $(MTOBJODIR)$(DIRSEP)xp_crypt_botan3$(OFILE)
+ OBJS += $(MTOBJODIR)$(DIRSEP)xp_tls_botan3$(OFILE)
+ $(MTOBJODIR)$(DIRSEP)xp_crypt_botan3$(OFILE): xp_crypt_botan3.cpp botan | $(MTOBJODIR)
+	@echo $(COMPILE_MSG) $<
+	$(QUIET)$(CXX) -std=c++20 $(CFLAGS) $(CXXFLAGS) $(MT_CFLAGS) $(BOTAN_CXXFLAGS) -o $@ -c $<
+ $(MTOBJODIR)$(DIRSEP)xp_tls_botan3$(OFILE): xp_tls_botan3.cpp botan | $(MTOBJODIR)
+	@echo $(COMPILE_MSG) $<
+	$(QUIET)$(CXX) -std=c++20 $(CFLAGS) $(CXXFLAGS) $(MT_CFLAGS) $(BOTAN_CXXFLAGS) -o $@ -c $<
+else ifeq ($(XP_CRYPTO_BACKEND),OpenSSL)
+ OBJS += $(MTOBJODIR)$(DIRSEP)xp_crypt_openssl$(OFILE)
+ OBJS += $(MTOBJODIR)$(DIRSEP)xp_tls_openssl$(OFILE)
+else
+ OBJS += $(MTOBJODIR)$(DIRSEP)xp_crypt_none$(OFILE)
+ OBJS += $(MTOBJODIR)$(DIRSEP)xp_tls_none$(OFILE)
+endif
+
 ifndef WITHOUT_CRYPTO
  OBJS += $(MTOBJODIR)$(DIRSEP)telnets$(OFILE)
-
- # xp_tls / xp_crypt wrappers + encrypted-INI plumbing.  These used to
- # live in xpdev, but SyncTERM is their only consumer — keeping them
- # here means libxpdev / libsbbs stay crypto-free.
- OBJS += $(MTOBJODIR)$(DIRSEP)ini_crypt$(OFILE)
- ifeq ($(XP_CRYPTO_BACKEND),Botan)
-  # Botan 3 public headers require C++20 (std::span).  Override the
-  # tree-default -std=c++11 for just the Botan shim objects.
-  BOTAN_CXXFLAGS = $(shell pkg-config --cflags botan-3)
-  OBJS += $(MTOBJODIR)$(DIRSEP)xp_crypt_botan3$(OFILE)
-  OBJS += $(MTOBJODIR)$(DIRSEP)xp_tls_botan3$(OFILE)
-  $(MTOBJODIR)$(DIRSEP)xp_crypt_botan3$(OFILE): xp_crypt_botan3.cpp botan | $(MTOBJODIR)
-	@echo $(COMPILE_MSG) $<
-	$(QUIET)$(CXX) -std=c++20 $(CFLAGS) $(CXXFLAGS) $(MT_CFLAGS) $(BOTAN_CXXFLAGS) -o $@ -c $<
-  $(MTOBJODIR)$(DIRSEP)xp_tls_botan3$(OFILE): xp_tls_botan3.cpp botan | $(MTOBJODIR)
-	@echo $(COMPILE_MSG) $<
-	$(QUIET)$(CXX) -std=c++20 $(CFLAGS) $(CXXFLAGS) $(MT_CFLAGS) $(BOTAN_CXXFLAGS) -o $@ -c $<
- else ifeq ($(XP_CRYPTO_BACKEND),OpenSSL)
-  OBJS += $(MTOBJODIR)$(DIRSEP)xp_crypt_openssl$(OFILE)
-  OBJS += $(MTOBJODIR)$(DIRSEP)xp_tls_openssl$(OFILE)
- else
-  OBJS += $(MTOBJODIR)$(DIRSEP)xp_crypt_none$(OFILE)
-  OBJS += $(MTOBJODIR)$(DIRSEP)xp_tls_none$(OFILE)
- endif
 
  # Bundled decrypt-only reference implementations of legacy ciphers
  # (IDEA, RC2) that neither OpenSSL (modern, w/o legacy provider) nor
  # Botan3 carry.  Registered with xp_crypt at startup so encrypted
- # bbslist.ini files written by older builds still decrypt.
+ # bbslist.ini files written by older builds still decrypt.  Only
+ # meaningful when a real xp_crypt backend is linked — the "none"
+ # backend can't decrypt anything anyway.
  OBJS   += $(MTOBJODIR)$(DIRSEP)legacy_idea$(OFILE)
  OBJS   += $(MTOBJODIR)$(DIRSEP)legacy_rc2$(OFILE)
  OBJS   += $(MTOBJODIR)$(DIRSEP)legacy_ciphers_register$(OFILE)

@@ -319,25 +319,31 @@ endif()
 if(NOT WITHOUT_DEUCESSH)
 	list(APPEND SOURCE ssh.c)
 endif()
+# ini_crypt.c + xp_crypt/xp_tls backend shim are always built, even
+# with WITHOUT_CRYPTO — bbslist.c and syncterm.c reference the
+# encrypted-INI API unconditionally (iniWriteEncryptedFile is the
+# general write path; with INI_CRYPT_ALGO_NONE it falls through to
+# plain iniWriteFile).  The "none" backend provides no-op xp_crypt
+# and xp_tls so nothing drags in OpenSSL / Botan.
+if(XP_CRYPTO_BACKEND STREQUAL "Botan")
+	list(APPEND SOURCE ini_crypt.c xp_crypt_botan3.cpp xp_tls_botan3.cpp)
+	set_source_files_properties(
+	    xp_crypt_botan3.cpp xp_tls_botan3.cpp
+	    PROPERTIES COMPILE_OPTIONS "-std=c++20")
+elseif(XP_CRYPTO_BACKEND STREQUAL "OpenSSL")
+	list(APPEND SOURCE ini_crypt.c xp_crypt_openssl.c xp_tls_openssl.c)
+else()
+	list(APPEND SOURCE ini_crypt.c xp_crypt_none.c xp_tls_none.c)
+endif()
+
 if(NOT WITHOUT_CRYPTO)
+	# telnets.c + legacy decrypt-only ciphers only make sense when a
+	# real backend is linked — the "none" path can't decrypt anything.
 	list(APPEND SOURCE
-		ini_crypt.c
 		telnets.c
 		legacy_ciphers/idea.c
 		legacy_ciphers/rc2.c
 		legacy_ciphers/register.c)
-	# xp_tls + xp_crypt backend shim.  Picks the .c/.cpp file that
-	# matches XP_CRYPTO_BACKEND (Botan/OpenSSL/none).
-	if(XP_CRYPTO_BACKEND STREQUAL "Botan")
-		list(APPEND SOURCE xp_crypt_botan3.cpp xp_tls_botan3.cpp)
-		set_source_files_properties(
-		    xp_crypt_botan3.cpp xp_tls_botan3.cpp
-		    PROPERTIES COMPILE_OPTIONS "-std=c++20")
-	elseif(XP_CRYPTO_BACKEND STREQUAL "OpenSSL")
-		list(APPEND SOURCE xp_crypt_openssl.c xp_tls_openssl.c)
-	else()
-		list(APPEND SOURCE xp_crypt_none.c xp_tls_none.c)
-	endif()
 endif()
 
 if(WIN32)
