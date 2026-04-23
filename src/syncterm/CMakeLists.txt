@@ -68,13 +68,19 @@ if(USE_VENDORED_BOTAN)
 		message(WARNING
 		    "Python 3 not found; can't build vendored Botan.  "
 		    "Disabling crypto (WITHOUT_CRYPTO + WITHOUT_DEUCESSH).")
-		set(WITHOUT_CRYPTO ON CACHE BOOL "" FORCE)
-		set(WITHOUT_DEUCESSH ON CACHE BOOL "" FORCE)
+		set(WITHOUT_CRYPTO ON CACHE BOOL
+		    "Disable TLS + encrypted bbslist.ini (xp_tls, xp_crypt)" FORCE)
+		set(WITHOUT_DEUCESSH ON CACHE BOOL
+		    "Disable SSH support (DeuceSSH)" FORCE)
 		set(USE_VENDORED_BOTAN 0)
 		# Pin xpdev to the stub backends; otherwise xpdev's default
 		# of "OpenSSL" tries find_package(OpenSSL REQUIRED) and fails
 		# on hosts that also don't have OpenSSL (Windows MSVC CI).
-		set(XP_CRYPTO_BACKEND "none" CACHE STRING "" FORCE)
+		set(XP_CRYPTO_BACKEND "none" CACHE STRING
+		    "xpdev crypto backend: OpenSSL, Botan, or none" FORCE)
+		message(STATUS
+		    "Crypto fallback: XP_CRYPTO_BACKEND=none, "
+		    "WITHOUT_CRYPTO=ON, WITHOUT_DEUCESSH=ON")
 	endif()
 endif()
 

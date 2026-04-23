@@ -45,8 +45,19 @@ endif
 # Append the backend's ldflags to XPDEV*_LIBS so every consumer
 # picks them up alongside the existing -lm / -lws2_32 / -pthread set.
 ifeq ($(XP_CRYPTO_BACKEND),OpenSSL)
- XPDEV_LIBS    += -lssl -lcrypto
- XPDEV-MT_LIBS += -lssl -lcrypto
+ # Use pkg-config so non-default OpenSSL locations (Homebrew on macOS,
+ # /usr/local on FreeBSD) are picked up correctly — a bare -lssl/-lcrypto
+ # fails `ld: library 'ssl' not found` when libssl lives outside the
+ # default library search path.  Strip -pthread because xpdev handles
+ # thread-library linkage per-platform (see above) and a bare -pthread
+ # trips "cannot find -lpthread" on MinGW.
+ XPDEV_OPENSSL_LIBS := $(filter-out -pthread,$(shell pkg-config --libs libssl libcrypto 2>/dev/null))
+ # Fallback when pkg-config isn't available / configured.
+ ifeq ($(strip $(XPDEV_OPENSSL_LIBS)),)
+  XPDEV_OPENSSL_LIBS := -lssl -lcrypto
+ endif
+ XPDEV_LIBS    += $(XPDEV_OPENSSL_LIBS)
+ XPDEV-MT_LIBS += $(XPDEV_OPENSSL_LIBS)
 else ifeq ($(XP_CRYPTO_BACKEND),Botan)
  # Strip -pthread from pkg-config output — xpdev already handles
  # thread-library linkage per-platform above, and on MinGW a bare

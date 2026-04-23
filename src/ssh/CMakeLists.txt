@@ -259,11 +259,20 @@ if(CMAKE_C_COMPILER_ID MATCHES "GNU|Clang|AppleClang")
 			-ftrivial-auto-var-init=zero)
 	endif()
 
-	# UB mitigations
-	list(APPEND DEUCESSH_COMPILE_OPTIONS
-		-fno-delete-null-pointer-checks
-		-fno-strict-overflow
-		-fno-strict-aliasing)
+	# UB mitigations — probe each (older AppleClang rejects
+	# -fno-delete-null-pointer-checks with -Werror,-Wignored-optimization-argument).
+	check_c_compiler_flag(-fno-delete-null-pointer-checks HAVE_NO_DELETE_NULL)
+	if(HAVE_NO_DELETE_NULL)
+		list(APPEND DEUCESSH_COMPILE_OPTIONS -fno-delete-null-pointer-checks)
+	endif()
+	check_c_compiler_flag(-fno-strict-overflow HAVE_NO_STRICT_OVERFLOW)
+	if(HAVE_NO_STRICT_OVERFLOW)
+		list(APPEND DEUCESSH_COMPILE_OPTIONS -fno-strict-overflow)
+	endif()
+	check_c_compiler_flag(-fno-strict-aliasing HAVE_NO_STRICT_ALIASING)
+	if(HAVE_NO_STRICT_ALIASING)
+		list(APPEND DEUCESSH_COMPILE_OPTIONS -fno-strict-aliasing)
+	endif()
 
 	# FORTIFY_SOURCE (requires -O1+, incompatible with sanitizers)
 	if(NOT CMAKE_BUILD_TYPE STREQUAL "Debug")

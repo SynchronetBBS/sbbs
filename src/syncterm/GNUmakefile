@@ -81,10 +81,29 @@ ifndef WITHOUT_DEUCESSH
  # decisions, so $(DEUCESSH_BUILD) must be wiped whenever the compiler
  # changes — the deucessh rule below handles that.
  ifdef win
+  # Split ccache out of $(CC)/$(CXX) into CMAKE_*_COMPILER_LAUNCHER —
+  # cmake wants a single-binary CMAKE_*_COMPILER and treats a two-
+  # word value ("ccache /path/to/gcc") as a compiler path + stray arg
+  # ("Ignoring extra path from command line" warning, then the test
+  # compile runs ccache with no compiler and fails).
+  DEUCESSH_CC_WORDS  := $(CC)
+  DEUCESSH_CXX_WORDS := $(CXX)
+  ifeq ($(firstword $(DEUCESSH_CC_WORDS)),ccache)
+   DEUCESSH_CMAKE_LAUNCHER_ARGS := \
+       -DCMAKE_C_COMPILER_LAUNCHER=ccache \
+       -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
+   DEUCESSH_CC_BIN  := $(wordlist 2,$(words $(DEUCESSH_CC_WORDS)),$(DEUCESSH_CC_WORDS))
+   DEUCESSH_CXX_BIN := $(wordlist 2,$(words $(DEUCESSH_CXX_WORDS)),$(DEUCESSH_CXX_WORDS))
+  else
+   DEUCESSH_CMAKE_LAUNCHER_ARGS :=
+   DEUCESSH_CC_BIN  := $(CC)
+   DEUCESSH_CXX_BIN := $(CXX)
+  endif
   DEUCESSH_CMAKE_TOOLCHAIN_ARGS := \
       -DCMAKE_SYSTEM_NAME=Windows \
-      -DCMAKE_C_COMPILER=$(CC) \
-      -DCMAKE_CXX_COMPILER=$(CXX) \
+      -DCMAKE_C_COMPILER=$(DEUCESSH_CC_BIN) \
+      -DCMAKE_CXX_COMPILER=$(DEUCESSH_CXX_BIN) \
+      $(DEUCESSH_CMAKE_LAUNCHER_ARGS) \
       -DCMAKE_AR=$(shell command -v $(AR)) \
       -DCMAKE_RANLIB=$(shell command -v $(RANLIB)) \
       -DCMAKE_RC_COMPILER=$(shell command -v $(WINDRES))

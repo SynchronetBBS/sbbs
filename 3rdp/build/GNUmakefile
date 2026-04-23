@@ -338,3 +338,14 @@ $(BOTAN_BUILD): $(3RDP_ROOT)/dist/Botan.tar.xz GNUmakefile | $(BOTAN_SRC) $(BOTA
 	    --build-tool=make $(BOTAN_CONFIGURE_EXTRA)
 	$(QUIET)$(MAKE) -j$(BOTAN_JOBS) -C $(BOTAN_SRC)
 	$(QUIET)$(MAKE) -C $(BOTAN_SRC) install
+	$(QUIET)# Make botan-3.pc relocatable: Botan's install bakes in the
+	$(QUIET)# absolute --prefix, which breaks CI pipelines where the
+	$(QUIET)# archive is built in one runner concurrent-id's builds dir
+	$(QUIET)# and extracted in another.  Rewrite prefix/libdir to use
+	$(QUIET)# ${pcfiledir} so the .pc resolves relative to its own path.
+	$(QUIET)# Portable (BSD+GNU) in-place edit via temp file.
+	$(QUIET)sed -e 's|^prefix=.*|prefix=$${pcfiledir}/../..|' \
+	            -e 's|^libdir=.*|libdir=$${prefix}/lib|' \
+	            $(BOTAN_PKGCONFIG_DIR)/botan-3.pc \
+	            > $(BOTAN_PKGCONFIG_DIR)/botan-3.pc.new
+	$(QUIET)mv $(BOTAN_PKGCONFIG_DIR)/botan-3.pc.new $(BOTAN_PKGCONFIG_DIR)/botan-3.pc
