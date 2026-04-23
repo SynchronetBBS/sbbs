@@ -1,20 +1,6 @@
 cmake_minimum_required(VERSION 3.11)
 
-# XP_CRYPTO_BACKEND selects the TLS + symmetric-crypto implementation
-# pulled in by xp_tls_* and xp_crypt_* (plus ini_crypt.c).  "Botan"
-# implies C++ sources; "none" picks the stub impls that fail all opens.
-# Must be set in the cache by the parent project before add_subdirectory()
-# so both this file and the consumer agree on the backend.
-set(XP_CRYPTO_BACKEND "OpenSSL" CACHE STRING
-    "xpdev crypto backend: OpenSSL, Botan, or none")
-set_property(CACHE XP_CRYPTO_BACKEND PROPERTY STRINGS
-    "OpenSSL" "Botan" "none")
-
-if(XP_CRYPTO_BACKEND STREQUAL "Botan")
-	project (XPDev C CXX)
-else()
-	project (XPDev C)
-endif()
+project (XPDev C)
 
 set(WITHOUT_OSS OFF CACHE BOOL "Disable OSS Audio")
 set(WITHOUT_SDL_AUDIO OFF CACHE BOOL "Disable SDL Audio")
@@ -56,7 +42,6 @@ set(SOURCE
     dirwrap.c
     filewrap.c
     genwrap.c
-    ini_crypt.c
     ini_file.c
     link_list.c
     msg_queue.c
@@ -79,19 +64,6 @@ set(SOURCE
     xpmap.c
     xpprintf.c
 )
-
-# Crypto-backend sources — keep file-suffix in sync with GNUmakefile.
-if(XP_CRYPTO_BACKEND STREQUAL "OpenSSL")
-	list(APPEND SOURCE xp_crypt_openssl.c xp_tls_openssl.c)
-elseif(XP_CRYPTO_BACKEND STREQUAL "Botan")
-	list(APPEND SOURCE xp_crypt_botan3.cpp xp_tls_botan3.cpp)
-elseif(XP_CRYPTO_BACKEND STREQUAL "none")
-	list(APPEND SOURCE xp_crypt_none.c xp_tls_none.c)
-else()
-	message(FATAL_ERROR
-	    "XP_CRYPTO_BACKEND=${XP_CRYPTO_BACKEND} invalid — "
-	    "expected OpenSSL, Botan, or none")
-endif()
 
 set(HEADER
 	conwrap.h
@@ -164,32 +136,6 @@ if(NOT WITHOUT_OSS)
 endif()
 
 add_library(xpdev OBJECT ${SOURCE})
-
-# Crypto backend — wire compile flags + link libs.
-if(XP_CRYPTO_BACKEND STREQUAL "OpenSSL")
-	# xp_tls_openssl.c needs libssl (SSL_CTX_new, TLS_client_method, ...);
-	# xp_crypt_openssl.c only needs libcrypto.  Link both.
-	find_package(OpenSSL REQUIRED)
-	target_link_libraries(xpdev OpenSSL::Crypto OpenSSL::SSL)
-elseif(XP_CRYPTO_BACKEND STREQUAL "Botan")
-	# Botan 3 public headers require C++20 (std::span).
-	set_source_files_properties(
-	    xp_crypt_botan3.cpp xp_tls_botan3.cpp
-	    PROPERTIES COMPILE_OPTIONS "-std=c++20")
-	# Vendored-Botan build: parent declared an IMPORTED target pointing
-	# at the ExternalProject output.  Skip pkg-config (the .pc file
-	# doesn't exist at configure time).  System-Botan build: run the
-	# normal pkg-config probe.
-	if(BOTAN3_VENDORED_TARGET)
-		target_link_libraries(xpdev ${BOTAN3_VENDORED_TARGET})
-	else()
-		find_package(PkgConfig REQUIRED)
-		pkg_check_modules(XP_BOTAN3 REQUIRED IMPORTED_TARGET botan-3)
-		target_link_libraries(xpdev PkgConfig::XP_BOTAN3)
-	endif()
-elseif(XP_CRYPTO_BACKEND STREQUAL "none")
-	target_compile_definitions(xpdev PUBLIC WITHOUT_CRYPTO)
-endif()
 
 if(WIN32)
 	target_compile_definitions(xpdev PUBLIC _WIN32 _WIN32_WINNT=0x0501 WINVER=0x0501 MSVCRT_VERSION=0x0501 _WIN32_IE=0x0500)

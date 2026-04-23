@@ -58,6 +58,8 @@ static const KNOWNFOLDERID FOLDERID_ProgramData = {
 #include <stdbool.h>
 #include <stdlib.h>
 #include <vidmodes.h>
+
+#include "ini_crypt.h"
 #ifdef HAS_VSTAT
  #include "bitmap_con.h"
 #endif

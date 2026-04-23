@@ -56,29 +56,6 @@ typedef struct fp_list_s ini_fp_list_t;
 extern "C" {
 #endif
 
-/*
- * Symmetric ciphers supported for encrypted INI files.
- *
- * Values are stable and match enum xp_crypt_algo in xp_crypt.h — the
- * numeric value is used only at runtime; the on-disk format encodes the
- * algorithm as its ASCII name (iniCryptGetAlgoName), so these integers
- * are not part of the file format.
- *
- * Read-only legacy ciphers (IDEA, RC2 when the backend lacks them) are
- * served by xp_crypt's legacy-decrypt registry; consumers register
- * handlers at init time. See syncterm/legacy_ciphers/ for an example.
- */
-enum iniCryptAlgo {
-	INI_CRYPT_ALGO_NONE     = 0,
-	INI_CRYPT_ALGO_3DES     = 1,
-	INI_CRYPT_ALGO_IDEA     = 2,
-	INI_CRYPT_ALGO_CAST     = 3,
-	INI_CRYPT_ALGO_RC2      = 4,
-	INI_CRYPT_ALGO_RC4      = 5,
-	INI_CRYPT_ALGO_AES      = 6,
-	INI_CRYPT_ALGO_CHACHA20 = 7
-};
-
 /* Read all section names and return as an allocated string list */
 /* Optionally (if prefix!=NULL), returns a subset of section names */
 DLLEXPORT str_list_t 	iniReadSectionList(FILE*, const char* prefix);
@@ -359,11 +336,10 @@ DLLEXPORT void iniFastParsedSectionListFree(ini_lv_string_t **list);
 DLLEXPORT void iniFreeFastParse(ini_fp_list_t *s);
 DLLEXPORT ini_lv_string_t *iniGetFastParsedSectionOrderedList(ini_fp_list_t *fp);
 
-/* Encryption Functions (can't do includes yet) */
-DLLEXPORT str_list_t iniReadEncryptedFile(FILE* fp, bool(*get_key)(void *cb_data, char *keybuf, size_t *sz), int KDFiterations, enum iniCryptAlgo *algoPtr, int *ks, char *saltBuf, size_t *saltsz, void *cbdata);
-DLLEXPORT bool iniWriteEncryptedFile(FILE* fp, const str_list_t list, enum iniCryptAlgo algo, int keySize, int KDFiterations, const char *key, char *salt);
-DLLEXPORT const char *iniCryptGetAlgoName(enum iniCryptAlgo a);
-DLLEXPORT enum iniCryptAlgo iniCryptGetAlgoFromName(const char *n);
+/* Encrypted INI file API moved to syncterm/ini_crypt.h — SyncTERM is
+ * the only consumer, and keeping the crypto-dependent code out of
+ * xpdev means libxpdev / libsbbs stay free of OpenSSL / Botan 3.
+ */
 
 /*
  * Too handy to leave internal

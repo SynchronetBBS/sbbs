@@ -321,10 +321,23 @@ if(NOT WITHOUT_DEUCESSH)
 endif()
 if(NOT WITHOUT_CRYPTO)
 	list(APPEND SOURCE
+		ini_crypt.c
 		telnets.c
 		legacy_ciphers/idea.c
 		legacy_ciphers/rc2.c
 		legacy_ciphers/register.c)
+	# xp_tls + xp_crypt backend shim.  Picks the .c/.cpp file that
+	# matches XP_CRYPTO_BACKEND (Botan/OpenSSL/none).
+	if(XP_CRYPTO_BACKEND STREQUAL "Botan")
+		list(APPEND SOURCE xp_crypt_botan3.cpp xp_tls_botan3.cpp)
+		set_source_files_properties(
+		    xp_crypt_botan3.cpp xp_tls_botan3.cpp
+		    PROPERTIES COMPILE_OPTIONS "-std=c++20")
+	elseif(XP_CRYPTO_BACKEND STREQUAL "OpenSSL")
+		list(APPEND SOURCE xp_crypt_openssl.c xp_tls_openssl.c)
+	else()
+		list(APPEND SOURCE xp_crypt_none.c xp_tls_none.c)
+	endif()
 endif()
 
 if(WIN32)
@@ -377,8 +390,26 @@ else()
 	endif()
 endif()
 
+# Link the xp_tls / xp_crypt backend library.  These used to live in
+# xpdev, but SyncTERM is their only consumer — keeping them here means
+# libxpdev / libsbbs stay crypto-free.
+if(NOT WITHOUT_CRYPTO)
+	if(XP_CRYPTO_BACKEND STREQUAL "Botan")
+		if(BOTAN3_VENDORED_TARGET)
+			target_link_libraries(syncterm ${BOTAN3_VENDORED_TARGET})
+		else()
+			find_package(PkgConfig REQUIRED)
+			pkg_check_modules(XP_BOTAN3 REQUIRED IMPORTED_TARGET botan-3)
+			target_link_libraries(syncterm PkgConfig::XP_BOTAN3)
+		endif()
+	elseif(XP_CRYPTO_BACKEND STREQUAL "OpenSSL")
+		find_package(OpenSSL REQUIRED)
+		target_link_libraries(syncterm OpenSSL::Crypto OpenSSL::SSL)
+	endif()
+endif()
+
 # Botan backend pulls C++ translation units into libdeucessh.a and into
-# xpdev (xp_tls_botan3.cpp, xp_crypt_botan3.cpp); the final link needs
+# syncterm (xp_tls_botan3.cpp, xp_crypt_botan3.cpp); the final link needs
 # the C++ driver to resolve libc++/libsupc++ (operator new, __cxa_throw,
 # vtables, typeinfo, ...).
 if(XP_CRYPTO_BACKEND STREQUAL "Botan" OR DEUCESSH_CRYPTO_BACKEND STREQUAL "Botan")
@@ -404,6 +435,10 @@ else()
 endif()
 
 target_include_directories(syncterm PRIVATE ../sbbs3)
+# Own-source-dir include: legacy_ciphers/*.c reaches xp_crypt.h via
+# #include "xp_crypt.h" — when the .c sits one level below the syncterm/
+# directory, that relative include only resolves with an explicit -I.
+target_include_directories(syncterm PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 
 if(CMAKE_SYSTEM_NAME STREQUAL "NetBSD")
 	target_link_libraries(syncterm util)

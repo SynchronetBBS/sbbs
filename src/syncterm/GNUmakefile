@@ -157,9 +157,14 @@ else
 endif
 
 ifdef NEED_OPENSSL
- # xpdev's libxpdev_mt.a and libdeucessh.a both reference OpenSSL
- # symbols; append to TRAILING_LIBS so they land after the static
- # libraries on the link line (static archives resolve in order).
+ # syncterm's xp_tls_openssl.c / xp_crypt_openssl.c and libdeucessh.a
+ # both reference OpenSSL symbols; append to TRAILING_LIBS so they land
+ # after the static libraries on the link line (static archives resolve
+ # in order).  Also pick up include paths via pkg-config so non-default
+ # OpenSSL installs (libcrypto3-dev in /usr/include/openssl3/, Homebrew
+ # on macOS, /usr/local on FreeBSD) are found.
+ OPENSSL_CFLAGS := $(shell pkg-config --cflags libcrypto libssl 2>/dev/null)
+ CFLAGS        += $(OPENSSL_CFLAGS)
  TRAILING_LIBS += -lssl -lcrypto
 endif
 ifdef NEED_BOTAN
@@ -174,6 +179,30 @@ endif
 
 ifndef WITHOUT_CRYPTO
  OBJS += $(MTOBJODIR)$(DIRSEP)telnets$(OFILE)
+
+ # xp_tls / xp_crypt wrappers + encrypted-INI plumbing.  These used to
+ # live in xpdev, but SyncTERM is their only consumer — keeping them
+ # here means libxpdev / libsbbs stay crypto-free.
+ OBJS += $(MTOBJODIR)$(DIRSEP)ini_crypt$(OFILE)
+ ifeq ($(XP_CRYPTO_BACKEND),Botan)
+  # Botan 3 public headers require C++20 (std::span).  Override the
+  # tree-default -std=c++11 for just the Botan shim objects.
+  BOTAN_CXXFLAGS = $(shell pkg-config --cflags botan-3)
+  OBJS += $(MTOBJODIR)$(DIRSEP)xp_crypt_botan3$(OFILE)
+  OBJS += $(MTOBJODIR)$(DIRSEP)xp_tls_botan3$(OFILE)
+  $(MTOBJODIR)$(DIRSEP)xp_crypt_botan3$(OFILE): xp_crypt_botan3.cpp botan | $(MTOBJODIR)
+	@echo $(COMPILE_MSG) $<
+	$(QUIET)$(CXX) -std=c++20 $(CFLAGS) $(CXXFLAGS) $(MT_CFLAGS) $(BOTAN_CXXFLAGS) -o $@ -c $<
+  $(MTOBJODIR)$(DIRSEP)xp_tls_botan3$(OFILE): xp_tls_botan3.cpp botan | $(MTOBJODIR)
+	@echo $(COMPILE_MSG) $<
+	$(QUIET)$(CXX) -std=c++20 $(CFLAGS) $(CXXFLAGS) $(MT_CFLAGS) $(BOTAN_CXXFLAGS) -o $@ -c $<
+ else ifeq ($(XP_CRYPTO_BACKEND),OpenSSL)
+  OBJS += $(MTOBJODIR)$(DIRSEP)xp_crypt_openssl$(OFILE)
+  OBJS += $(MTOBJODIR)$(DIRSEP)xp_tls_openssl$(OFILE)
+ else
+  OBJS += $(MTOBJODIR)$(DIRSEP)xp_crypt_none$(OFILE)
+  OBJS += $(MTOBJODIR)$(DIRSEP)xp_tls_none$(OFILE)
+ endif
 
  # Bundled decrypt-only reference implementations of legacy ciphers
  # (IDEA, RC2) that neither OpenSSL (modern, w/o legacy provider) nor
@@ -311,7 +340,7 @@ endif
 MANPREFIX ?= $(PREFIX)/share
 CFLAGS	+=	-DSYSTEM_LIST_DIR=\"${SYSTEM_LIST_DIR}\"
 
-CFLAGS	+=	$(UIFC-MT_CFLAGS) $(CIOLIB-MT_CFLAGS) $(XPDEV-MT_CFLAGS) $(ENCODE_CFLAGS) $(HASH_CFLAGS) -I../sbbs3 -I../comio
+CFLAGS	+=	$(UIFC-MT_CFLAGS) $(CIOLIB-MT_CFLAGS) $(XPDEV-MT_CFLAGS) $(ENCODE_CFLAGS) $(HASH_CFLAGS) -I. -I../sbbs3 -I../comio
 LDFLAGS	+=	$(UIFC-MT_LDFLAGS) $(CIOLIB-MT_LDFLAGS) $(XPDEV-MT_LDFLAGS) $(ENCODE_LDFLAGS) $(HASH_LDFLAGS)
 
 vpath %.c ../sbbs3 ../uifc ../comio

@@ -31,40 +31,10 @@ endif
 # Legacy knob kept as a compile-time define so downstream code that
 # still checks WITHOUT_CRYPTLIB (Synchronet server) keeps its behaviour
 # when the caller asks for a no-crypto build.  xpdev itself has no
-# Cryptlib dependency anymore — ini_file.c's encrypted path moved to
-# ini_crypt.c + xp_crypt, and the crypto backend is selected via
-# XP_CRYPTO_BACKEND (see below).
+# crypto dependency — the TLS + encrypted-INI wrappers moved to
+# syncterm where their only consumer lives.
 ifdef WITHOUT_CRYPTLIB
  CFLAGS += -DWITHOUT_CRYPTLIB
-endif
-
-# Consumers of libxpdev_mt.a transitively link against whatever crypto
-# backend xpdev was built with — xp_tls_<backend>.o +
-# xp_crypt_<backend>.o are inside the archive, and their
-# OpenSSL/Botan symbol references need resolving at the final link.
-# Append the backend's ldflags to XPDEV*_LIBS so every consumer
-# picks them up alongside the existing -lm / -lws2_32 / -pthread set.
-ifeq ($(XP_CRYPTO_BACKEND),OpenSSL)
- # Use pkg-config so non-default OpenSSL locations (Homebrew on macOS,
- # /usr/local on FreeBSD) are picked up correctly — a bare -lssl/-lcrypto
- # fails `ld: library 'ssl' not found` when libssl lives outside the
- # default library search path.  Strip -pthread because xpdev handles
- # thread-library linkage per-platform (see above) and a bare -pthread
- # trips "cannot find -lpthread" on MinGW.
- XPDEV_OPENSSL_LIBS := $(filter-out -pthread,$(shell pkg-config --libs libssl libcrypto 2>/dev/null))
- # Fallback when pkg-config isn't available / configured.
- ifeq ($(strip $(XPDEV_OPENSSL_LIBS)),)
-  XPDEV_OPENSSL_LIBS := -lssl -lcrypto
- endif
- XPDEV_LIBS    += $(XPDEV_OPENSSL_LIBS)
- XPDEV-MT_LIBS += $(XPDEV_OPENSSL_LIBS)
-else ifeq ($(XP_CRYPTO_BACKEND),Botan)
- # Strip -pthread from pkg-config output — xpdev already handles
- # thread-library linkage per-platform above, and on MinGW a bare
- # -pthread trips "cannot find -lpthread".
- XPDEV_BOTAN_LIBS := $(filter-out -pthread,$(shell pkg-config --libs botan-3 2>/dev/null))
- XPDEV_LIBS    += $(XPDEV_BOTAN_LIBS)
- XPDEV-MT_LIBS += $(XPDEV_BOTAN_LIBS)
 endif
 ifdef win		# MinGW32
  XPDEV_LIBS	+=	-lws2_32 -lwinmm -lnetapi32 -liphlpapi

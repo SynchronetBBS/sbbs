@@ -11,6 +11,7 @@
 #include <xpprintf.h>
 
 #include "bbslist.h"
+#include "ini_crypt.h"
 #include "ciolib.h"
 #include "comio.h"
 #include "conn.h"

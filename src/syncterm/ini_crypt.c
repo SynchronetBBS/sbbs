@@ -49,6 +49,7 @@
 
 #include "gen_defs.h"   /* SKIP_WHITESPACE */
 #include "genwrap.h"    /* xp_random */
+#include "ini_crypt.h"
 #include "ini_file.h"
 #include "netwrap.h"    /* htons, ntohs */
 #include "strwrap.h"    /* truncnl, truncsp */
