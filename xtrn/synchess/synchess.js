@@ -1891,7 +1891,7 @@ if (lockPath) {
             console.print("\x1b[1;31mSynChess is already running on node " + _storedNode + ".\r\n");
             console.print("\x1b[0mOnly one session of SynChess may run at a time.\r\n");
             mswait(3000);
-            js.exit();
+            exit();
         }
         (new File(lockPath)).remove();
     }
