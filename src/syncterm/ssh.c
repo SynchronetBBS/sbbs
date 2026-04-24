@@ -49,6 +49,23 @@ static enum {
 	HOSTKEY_MISMATCH
 } hostkey_result;
 static uint8_t hostkey_sha256[32];
+static char         hostkey_algo[64];
+static unsigned int hostkey_bits;
+
+/* RSA < 2048 bits is below the NIST 2024 floor and within range of
+   factoring attacks.  Ed25519 is always 256 bits and considered strong.
+   Any algorithm whose name mentions "rsa" (ssh-rsa, rsa-sha2-256,
+   rsa-sha2-512) with a reported key size under 2048 is weak; an
+   unknown size (key_bits == 0) is treated as not-known-weak. */
+static bool
+hostkey_is_weak(void)
+{
+	if (hostkey_bits == 0)
+		return false;
+	if (strstr(hostkey_algo, "rsa") != NULL && hostkey_bits < 2048)
+		return true;
+	return false;
+}
 
 /* -------------------------------------------------------- transport I/O */
 
@@ -153,10 +170,11 @@ hostkey_verify_cb(const char *algo_name, unsigned int key_bits,
                   void *cbdata)
 {
 	struct bbslist *bbs = cbdata;
-	(void)algo_name;
-	(void)key_bits;
 
 	memcpy(hostkey_sha256, sha256, 32);
+	strncpy(hostkey_algo, algo_name ? algo_name : "", sizeof(hostkey_algo) - 1);
+	hostkey_algo[sizeof(hostkey_algo) - 1] = 0;
+	hostkey_bits = key_bits;
 
 	if (bbs->ssh_fingerprint_len == 0) {
 		hostkey_result = HOSTKEY_NEW;
@@ -217,10 +235,41 @@ handle_hostkey_result(struct bbslist *bbs)
 		case HOSTKEY_NEW: {
 			/* Silent upgrade: stash the new SHA-256 and write the
 			   bbslist entry back.  Both paths write a fresh SHA-256
-			   fingerprint; the OK path wouldn't reach here. */
+			   fingerprint; the OK path wouldn't reach here.  NEW +
+			   weak is the one exception — we prompt before trusting
+			   a small RSA key on first contact. */
 			FILE *lf;
 			str_list_t inifile;
 			char fpstr[65];
+			if (hostkey_result == HOSTKEY_NEW && hostkey_is_weak()) {
+				/* Refuse rather than silently TOFU a weak key when
+				   no human is around to confirm. */
+				if (bbs->hidepopups)
+					return false;
+				static const char *const wopts[3] = {"Disconnect", "Accept", ""};
+				char fpshow[65], title[96];
+				int slen = 0, choice;
+				hex_encode(fpshow, hostkey_sha256, 32);
+				snprintf(title, sizeof(title),
+				    "Weak host key (%u-bit %s)", hostkey_bits, hostkey_algo);
+				asprintf(&uifc.helpbuf,
+				    "`Weak Server Host Key`\n\n"
+				    "The server presented a %u-bit %s host key.  Keys below 2048 bits\n"
+				    "are considered weak today and within reach of a well-resourced\n"
+				    "attacker (Logjam-class attacks, factoring advances).\n"
+				    "\n"
+				    "This is the first time SyncTERM has seen this host, so there is no\n"
+				    "prior fingerprint to compare against — a genuine weak key and an\n"
+				    "active downgrade cannot be distinguished here.\n"
+				    "\n"
+				    "Fingerprint: %s\n",
+				    hostkey_bits, hostkey_algo, fpshow);
+				choice = uifc.list(WIN_MID | WIN_SAV, 0, 0, 0, &slen, NULL,
+				    title, (char **)wopts);
+				free(uifc.helpbuf);
+				if (choice != 1)
+					return false;
+			}
 			hex_encode(fpstr, hostkey_sha256, 32);
 			memcpy(bbs->ssh_fingerprint, hostkey_sha256, 32);
 			bbs->ssh_fingerprint_len = 32;
@@ -236,22 +285,38 @@ handle_hostkey_result(struct bbslist *bbs)
 
 		case HOSTKEY_MISMATCH: {
 			char newfp[65], oldfp[65];
+			char weak_note[160] = "";
+			char title[96];
 			int slen = 0, choice;
 			hex_encode(newfp, hostkey_sha256, 32);
 			for (size_t i = 0; i < bbs->ssh_fingerprint_len; i++)
 				sprintf(&oldfp[i * 2], "%02x", bbs->ssh_fingerprint[i]);
 			oldfp[bbs->ssh_fingerprint_len * 2] = 0;
+			if (hostkey_is_weak()) {
+				snprintf(weak_note, sizeof(weak_note),
+				    "WARNING: the new key is a %u-bit %s, below the 2048-bit\n"
+				    "safety floor.  A downgrade to a weak key is exactly what an\n"
+				    "active attacker would do.\n\n",
+				    hostkey_bits, hostkey_algo);
+				snprintf(title, sizeof(title),
+				    "Fingerprint Changed — WEAK %u-bit %s key",
+				    hostkey_bits, hostkey_algo);
+			}
+			else {
+				snprintf(title, sizeof(title), "Fingerprint Changed");
+			}
 			asprintf(&uifc.helpbuf,
 			    "`Fingerprint Changed`\n\n"
+			    "%s"
 			    "The server fingerprint has changed from the last known good connection.\n"
 			    "This may indicate someone is evesdropping on your connection.\n"
 			    "It is also possible that a host key has just been changed.\n"
 			    "\n"
 			    "Last known fingerprint: %s\n"
 			    "Fingerprint sent now:   %s\n",
-			    oldfp, newfp);
+			    weak_note, oldfp, newfp);
 			choice = uifc.list(WIN_MID | WIN_SAV, 0, 0, 0, &slen, NULL,
-			    "Fingerprint Changed", (char **)opts);
+			    title, (char **)opts);
 			free(uifc.helpbuf);
 			if (choice == 1) {	/* Update */
 				FILE *lf;
@@ -340,9 +405,9 @@ init_crypt(void)
 	/* Registration order is preference order (first = highest priority).
 	   The set here mirrors what the test variants exercise in DeuceSSH;
 	   it's a conservative "modern defaults" line-up. */
-	dssh_register_curve25519_sha256();
 	dssh_register_mlkem768x25519_sha256();
 	dssh_register_sntrup761x25519_sha512();
+	dssh_register_curve25519_sha256();
 	dssh_register_dh_gex_sha256();
 
 	dssh_register_aes256_ctr();
