@@ -1,10 +1,8 @@
-#include <stdarg.h>
-#include <stddef.h>
-#include <stdlib.h>
-#include <string.h>
-#include <xpprintf.h>
-
-#include "sftp.h"
+/*
+ * Part of the single-TU build.  All system and third-party includes
+ * live in sftp.c; this file is #include'd from sftp.c and cannot be
+ * compiled on its own.
+ */
 
 sftp_str_t
 sftp_alloc_str(uint32_t len)

@@ -1,15 +1,24 @@
-#include <assert.h>
-#include <stddef.h>
-#include <stdlib.h>
-#include <string.h>
-#include <threadwrap.h>
-#include <xpendian.h>
+/*
+ * Part of the single-TU build.  All system and third-party includes
+ * live in sftp.c; this file is #include'd from sftp.c and cannot be
+ * compiled on its own.
+ */
 
-#include "sftp.h"
+struct sftp_tx_pkt {
+	uint32_t sz;
+	uint32_t used;
+	uint8_t type;
+	uint8_t data[];
+};
 
-#ifdef _MSC_VER
-#pragma warning(disable : 4244 4267 4018)
-#endif
+struct sftp_rx_pkt {
+	uint32_t cur;
+	uint32_t sz;
+	uint32_t used;
+	uint32_t len;
+	uint8_t type;
+	uint8_t data[];
+};
 
 static const struct type_names {
 	const uint8_t type;
@@ -96,57 +105,48 @@ sftp_get_errcode_name(uint32_t errcode)
 	return ec->name;
 }
 
-bool
-sftp_have_pkt_sz(sftp_rx_pkt_t pkt)
+static bool
+have_pkt_sz(sftp_rx_pkt_t pkt)
 {
 	if (!pkt)
 		return false;
 	return pkt->used >= sizeof(uint32_t);
 }
 
-bool
-sftp_have_pkt_type(sftp_rx_pkt_t pkt)
+static bool
+have_pkt_type(sftp_rx_pkt_t pkt)
 {
 	if (!pkt)
 		return false;
 	return pkt->used >= sizeof(uint32_t) + sizeof(uint8_t);
 }
 
-uint32_t
-sftp_pkt_sz(sftp_rx_pkt_t pkt)
+static uint32_t
+pkt_sz(sftp_rx_pkt_t pkt)
 {
 	if (!pkt)
 		return 0;
-	assert(sftp_have_pkt_sz(pkt));
+	assert(have_pkt_sz(pkt));
 	return BE_INT32(pkt->len);
 }
 
-uint8_t
-sftp_pkt_type(sftp_rx_pkt_t pkt)
+static bool
+have_full_pkt(sftp_rx_pkt_t pkt)
 {
 	if (!pkt)
 		return false;
-	assert(sftp_have_pkt_type(pkt));
-	return pkt->type;
-}
-
-bool
-sftp_have_full_pkt(sftp_rx_pkt_t pkt)
-{
-	if (!pkt)
+	if (!have_pkt_sz(pkt))
 		return false;
-	if (!sftp_have_pkt_sz(pkt))
+	if (!have_pkt_type(pkt))
 		return false;
-	if (!sftp_have_pkt_type(pkt))
-		return false;
-	uint32_t sz = sftp_pkt_sz(pkt);
+	uint32_t sz = pkt_sz(pkt);
 	if (pkt->used >= sizeof(uint32_t) + sz)
 		return true;
 	return false;
 }
 
-bool
-sftp_rx_pkt_reclaim(sftp_rx_pkt_t *pktp)
+static bool
+rx_pkt_reclaim(sftp_rx_pkt_t *pktp)
 {
 	assert(pktp);
 	if (pktp == NULL)
@@ -172,16 +172,16 @@ sftp_rx_pkt_reclaim(sftp_rx_pkt_t *pktp)
 	return true;
 }
 
-void
-sftp_remove_packet(sftp_rx_pkt_t pkt)
+static void
+remove_packet(sftp_rx_pkt_t pkt)
 {
 	if (!pkt)
 		return;
-	if (!sftp_have_pkt_sz(pkt)) {
+	if (!have_pkt_sz(pkt)) {
 		pkt->used = 0;
 	}
 	else {
-		uint32_t sz = sftp_pkt_sz(pkt);
+		uint32_t sz = pkt_sz(pkt);
 		assert(sz <= pkt->used);
 		uint32_t newsz = pkt->used - sz - sizeof(uint32_t);
 		uint8_t *src = (uint8_t *)&pkt->len;
@@ -195,6 +195,30 @@ sftp_remove_packet(sftp_rx_pkt_t pkt)
 	return;
 }
 
+/*
+ * Extract the first complete packet from the streaming buffer `stream`
+ * into a freshly-allocated sftp_rx_pkt_t, and advance `stream` past it.
+ * Returns NULL if no complete packet is available or on allocation failure.
+ * Caller owns the returned packet and must free it with free_rx_pkt().
+ */
+static sftp_rx_pkt_t
+extract_packet(sftp_rx_pkt_t stream)
+{
+	if (!stream || !have_full_pkt(stream))
+		return NULL;
+	uint32_t sz = pkt_sz(stream);
+	size_t alloc_sz = offsetof(struct sftp_rx_pkt, len) + sizeof(uint32_t) + sz;
+	sftp_rx_pkt_t out = (sftp_rx_pkt_t)malloc(alloc_sz);
+	if (out == NULL)
+		return NULL;
+	out->cur = 0;
+	out->sz = alloc_sz;
+	out->used = sizeof(uint32_t) + sz;
+	memcpy(&out->len, &stream->len, out->used);
+	remove_packet(stream);
+	return out;
+}
+
 #define GET_FUNC_BODY                                                            \
 	assert(pkt);                                                              \
 	if (pkt->cur + offsetof(struct sftp_rx_pkt, data) + sizeof(ret) > pkt->sz) \
@@ -202,24 +226,16 @@ sftp_remove_packet(sftp_rx_pkt_t pkt)
 	memcpy(&ret, &pkt->data[pkt->cur], sizeof(ret));                             \
 	pkt->cur += sizeof(ret)
 
-uint8_t
-sftp_getbyte(sftp_rx_pkt_t pkt)
-{
-	uint8_t ret;
-	GET_FUNC_BODY;
-	return ret;
-}
-
-uint32_t
-sftp_get32(sftp_rx_pkt_t pkt)
+static uint32_t
+get32(sftp_rx_pkt_t pkt)
 {
 	uint32_t ret;
 	GET_FUNC_BODY;
 	return BE_INT32(ret);
 }
 
-uint64_t
-sftp_get64(sftp_rx_pkt_t pkt)
+static uint64_t
+get64(sftp_rx_pkt_t pkt)
 {
 	uint64_t ret;
 	GET_FUNC_BODY;
@@ -230,11 +246,11 @@ sftp_get64(sftp_rx_pkt_t pkt)
  * Note that on failure, this returns NULL and does not advance the
  * cursor
  */
-sftp_str_t
-sftp_getstring(sftp_rx_pkt_t pkt)
+static sftp_str_t
+getstring(sftp_rx_pkt_t pkt)
 {
 	assert(pkt);
-	uint32_t sz = sftp_get32(pkt);
+	uint32_t sz = get32(pkt);
 	// Expressed this way so Coverity untaints it...
 	if (sz > pkt->sz - sizeof(sz) - offsetof(struct sftp_rx_pkt, data) - pkt->cur)
 		return NULL;
@@ -251,8 +267,8 @@ sftp_getstring(sftp_rx_pkt_t pkt)
 /*
  * Failure is unrecoverable
  */
-bool
-sftp_rx_pkt_append(sftp_rx_pkt_t *pktp, uint8_t *inbuf, uint32_t len)
+static bool
+rx_pkt_append(sftp_rx_pkt_t *pktp, uint8_t *inbuf, uint32_t len)
 {
 	assert(pktp);
 	if (!pktp)
@@ -294,8 +310,8 @@ sftp_rx_pkt_append(sftp_rx_pkt_t *pktp, uint8_t *inbuf, uint32_t len)
 	return true;
 }
 
-void
-sftp_free_rx_pkt(sftp_rx_pkt_t pkt)
+static void
+free_rx_pkt(sftp_rx_pkt_t pkt)
 {
 	free(pkt);
 }
@@ -337,8 +353,8 @@ grow_tx(sftp_tx_pkt_t *pktp, uint32_t need)
 	return true;
 }
 
-bool
-sftp_tx_pkt_reset(sftp_tx_pkt_t *pktp)
+static bool
+tx_pkt_reset(sftp_tx_pkt_t *pktp)
 {
 	assert(pktp);
 	if (pktp == NULL)
@@ -350,8 +366,8 @@ sftp_tx_pkt_reset(sftp_tx_pkt_t *pktp)
 	return true;
 }
 
-bool
-sftp_tx_pkt_reclaim(sftp_tx_pkt_t *pktp)
+static bool
+tx_pkt_reclaim(sftp_tx_pkt_t *pktp)
 {
 	assert(pktp);
 	if (pktp == NULL)
@@ -387,28 +403,28 @@ sftp_tx_pkt_reclaim(sftp_tx_pkt_t *pktp)
 	pkt->used += sizeof(var);                                                                      \
 	return true
 
-bool
-sftp_appendbyte(sftp_tx_pkt_t *pktp, uint8_t u8)
+static bool
+appendbyte(sftp_tx_pkt_t *pktp, uint8_t u8)
 {
 	APPEND_FUNC_BODY(u8);
 }
 
-bool
-sftp_append32(sftp_tx_pkt_t *pktp, uint32_t u32)
+static bool
+append32(sftp_tx_pkt_t *pktp, uint32_t u32)
 {
 	uint32_t u = BE_INT32(u32);
 	APPEND_FUNC_BODY(u);
 }
 
-bool
-sftp_append64(sftp_tx_pkt_t *pktp, uint64_t u64)
+static bool
+append64(sftp_tx_pkt_t *pktp, uint64_t u64)
 {
 	uint64_t u = BE_INT64(u64);
 	APPEND_FUNC_BODY(u);
 }
 
-bool
-sftp_appendstring(sftp_tx_pkt_t *pktp, sftp_str_t s)
+static bool
+appendstring(sftp_tx_pkt_t *pktp, sftp_str_t s)
 {
 	uint32_t oldused;
 
@@ -419,7 +435,7 @@ sftp_appendstring(sftp_tx_pkt_t *pktp, sftp_str_t s)
 		oldused = 0;
 	else
 		oldused = (*pktp)->used;
-	if (!sftp_append32(pktp, s->len))
+	if (!append32(pktp, s->len))
 		return false;
 	if (!grow_tx(pktp, s->len)) {
 		if (*pktp != NULL)
@@ -432,8 +448,8 @@ sftp_appendstring(sftp_tx_pkt_t *pktp, sftp_str_t s)
 	return true;
 }
 
-bool
-sftp_appendcstring(sftp_tx_pkt_t *pktp, const char *str)
+static bool
+appendcstring(sftp_tx_pkt_t *pktp, const char *str)
 {
 	uint32_t oldused;
 	uint32_t len;
@@ -451,7 +467,7 @@ sftp_appendcstring(sftp_tx_pkt_t *pktp, const char *str)
 	if (sz > UINT32_MAX)
 		return false;
 	len = sz;
-	if (!sftp_append32(pktp, len))
+	if (!append32(pktp, len))
 		return false;
 	if (!grow_tx(pktp, len)) {
 		if (*pktp != NULL)
@@ -464,8 +480,8 @@ sftp_appendcstring(sftp_tx_pkt_t *pktp, const char *str)
 	return true;
 }
 
-bool
-sftp_prep_tx_packet(sftp_tx_pkt_t pkt, uint8_t **buf, size_t *sz)
+static bool
+prep_tx_packet(sftp_tx_pkt_t pkt, uint8_t **buf, size_t *sz)
 {
 	assert(pkt);
 	assert(buf);
@@ -478,8 +494,8 @@ sftp_prep_tx_packet(sftp_tx_pkt_t pkt, uint8_t **buf, size_t *sz)
 	return true;
 }
 
-void
-sftp_free_tx_pkt(sftp_tx_pkt_t pkt)
+static void
+free_tx_pkt(sftp_tx_pkt_t pkt)
 {
 	free(pkt);
 }
