@@ -233,10 +233,14 @@ ifeq ($(XP_CRYPTO_BACKEND),Botan)
  BOTAN_CXXFLAGS = $(shell pkg-config --cflags botan-3)
  OBJS += $(MTOBJODIR)$(DIRSEP)xp_crypt_botan3$(OFILE)
  OBJS += $(MTOBJODIR)$(DIRSEP)xp_tls_botan3$(OFILE)
- $(MTOBJODIR)$(DIRSEP)xp_crypt_botan3$(OFILE): xp_crypt_botan3.cpp botan | $(MTOBJODIR)
+ # `botan` is an order-only prereq: the Botan build has to have run
+ # before we compile, but the botan target has no sentinel file so its
+ # timestamp is always "just now" — comparing against .cpp timestamps
+ # would force a rebuild on every gmake invocation.
+ $(MTOBJODIR)$(DIRSEP)xp_crypt_botan3$(OFILE): xp_crypt_botan3.cpp | botan $(MTOBJODIR)
 	@echo $(COMPILE_MSG) $<
 	$(QUIET)$(CXX) -std=c++20 $(CFLAGS) $(CXXFLAGS) $(MT_CFLAGS) $(BOTAN_CXXFLAGS) -o $@ -c $<
- $(MTOBJODIR)$(DIRSEP)xp_tls_botan3$(OFILE): xp_tls_botan3.cpp botan | $(MTOBJODIR)
+ $(MTOBJODIR)$(DIRSEP)xp_tls_botan3$(OFILE): xp_tls_botan3.cpp | botan $(MTOBJODIR)
 	@echo $(COMPILE_MSG) $<
 	$(QUIET)$(CXX) -std=c++20 $(CFLAGS) $(CXXFLAGS) $(MT_CFLAGS) $(BOTAN_CXXFLAGS) -o $@ -c $<
 else ifeq ($(XP_CRYPTO_BACKEND),OpenSSL)
