@@ -123,7 +123,9 @@ int main(int argc, char** argv)  {
 	strcpy(mopt[0], "Long Title");
 	strcpy(mopt[1], "String Input");
 	strcpy(mopt[2], "File picker");
-	mopt[3][0] = 0;
+	strcpy(mopt[3], "Multi-file picker");
+	strcpy(mopt[4], "Directory picker");
+	mopt[5][0] = 0;
 
 	uifc.helpbuf =   "`Test Suite:`\n"
 	               "\nToDo: Add Help";
@@ -162,6 +164,33 @@ int main(int argc, char** argv)  {
 					sprintf(str, "File selected: %-.200s", fper.selected[0]);
 					uifc.msg(str);
 				}
+				filepick_free(&fper);
+			}
+		}
+		if (j == 3) {
+			/* Multi-file picker */
+			if (filepick_multi(&uifc, "Multi-pick", &fper, NULL, NULL, 0) > 0) {
+				int k;
+				size_t off = 0;
+
+				off += snprintf(longtitle + off, sizeof(longtitle) - off,
+				    "%d file(s) selected:\n", fper.files);
+				for (k = 0; k < fper.files && off < sizeof(longtitle) - 1; k++) {
+					off += snprintf(longtitle + off, sizeof(longtitle) - off,
+					    "  %-.200s\n", fper.selected[k]);
+				}
+				uifc.showbuf(WIN_MID, 0, 0, uifc.scrn_width - 4,
+				    uifc.scrn_len - 4, "Selection", longtitle, NULL, NULL);
+				filepick_free(&fper);
+			}
+		}
+		if (j == 4) {
+			/* Directory picker */
+			if (filepick(&uifc, "Choose a directory", &fper, NULL, NULL,
+			        UIFC_FP_DIRSEL | UIFC_FP_ALLOWENTRY) > 0) {
+				snprintf(str, sizeof(str), "Directory selected: %-.200s",
+				    fper.selected[0]);
+				uifc.msg(str);
 				filepick_free(&fper);
 			}
 		}
