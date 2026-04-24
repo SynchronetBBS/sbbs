@@ -1263,11 +1263,15 @@ begin_upload(struct bbslist *bbs, bool autozm, int lastch)
 	char                  path[MAX_PATH + 1];
 	int                   result;
 	int                   i;
+	int                   proto;
+	bool                  batch;
 	FILE                 *fp;
 	struct file_pick      fpick;
-	char                 *opts[7] = {
+	char                 *opts[9] = {
 		"ZMODEM",
+		"ZMODEM Batch",
 		"YMODEM",
+		"YMODEM Batch",
 		"XMODEM-1K",
 		"XMODEM-128",
 		"ASCII",
@@ -1297,7 +1301,30 @@ begin_upload(struct bbslist *bbs, bool autozm, int lastch)
 		gotoxy(txtinfo.curx, txtinfo.cury);
 		return;
 	}
-	result = filepick(&uifc, "Upload", &fpick, bbs->uldir, NULL, UIFC_FP_ALLOWENTRY);
+
+	if (autozm) {
+		proto = 0;
+	}
+	else {
+		i = 0;
+		uifc.helpbuf = "Select Protocol";
+		proto = uifc.list(WIN_MID | WIN_SAV, 0, 0, 0, &i, NULL, "Protocol", opts);
+		if (proto < 0) {
+			check_exit(false);
+			uifcbail();
+			restorescreen(savscrn);
+			freescreen(savscrn);
+			freescreen(savscrn2);
+			gotoxy(txtinfo.curx, txtinfo.cury);
+			return;
+		}
+	}
+	batch = (proto == 1 || proto == 3);
+
+	if (batch)
+		result = filepick_multi(&uifc, "Upload", &fpick, bbs->uldir, NULL, 0);
+	else
+		result = filepick(&uifc, "Upload", &fpick, bbs->uldir, NULL, UIFC_FP_ALLOWENTRY);
 
 	if ((result == -1) || (fpick.files < 1)) {
 		check_exit(false);
@@ -1309,50 +1336,57 @@ begin_upload(struct bbslist *bbs, bool autozm, int lastch)
 		gotoxy(txtinfo.curx, txtinfo.cury);
 		return;
 	}
-	SAFECOPY(path, fpick.selected[0]);
-	filepick_free(&fpick);
+
 	restorescreen(savscrn2);
 	freescreen(savscrn2);
 
-	if ((fp = fopen(path, "rb")) == NULL) {
-		SAFEPRINTF2(str, "Error %d opening %s for read", errno, path);
-		uifcmsg("Error opening file", str);
-		uifcbail();
-		restorescreen(savscrn);
-		freescreen(savscrn);
-		gotoxy(txtinfo.curx, txtinfo.cury);
-		return;
-	}
-	setvbuf(fp, NULL, _IOFBF, 0x10000);
-
-	if (autozm) {
-		zmodem_upload(bbs, fp, path);
-	}
-	else {
-		i = 0;
-		uifc.helpbuf = "Select Protocol";
-		switch (uifc.list(WIN_MID | WIN_SAV, 0, 0, 0, &i, NULL, "Protocol", opts)) {
-			case 0:
-				zmodem_upload(bbs, fp, path);
-				break;
+	if (batch) {
+		switch (proto) {
 			case 1:
-				xmodem_upload(bbs, fp, path, YMODEM | SEND, lastch);
-				break;
-			case 2:
-				xmodem_upload(bbs, fp, path, XMODEM | SEND, lastch);
+				zmodem_batch_upload(bbs, fpick.selected, fpick.files);
 				break;
 			case 3:
-				xmodem_upload(bbs, fp, path, XMODEM | SEND | XMODEM_128B, lastch);
-				break;
-			case 4:
-				ascii_upload(fp);
-				break;
-			case 5:
-				raw_upload(fp);
+				xmodem_batch_upload(bbs, fpick.selected, fpick.files, YMODEM | SEND, lastch);
 				break;
 		}
 	}
-	fclose(fp);
+	else {
+		SAFECOPY(path, fpick.selected[0]);
+		if ((fp = fopen(path, "rb")) == NULL) {
+			SAFEPRINTF2(str, "Error %d opening %s for read", errno, path);
+			uifcmsg("Error opening file", str);
+			filepick_free(&fpick);
+			uifcbail();
+			restorescreen(savscrn);
+			freescreen(savscrn);
+			gotoxy(txtinfo.curx, txtinfo.cury);
+			return;
+		}
+		setvbuf(fp, NULL, _IOFBF, 0x10000);
+
+		switch (proto) {
+			case 0:
+				zmodem_upload(bbs, fp, path);
+				break;
+			case 2:
+				xmodem_upload(bbs, fp, path, YMODEM | SEND, lastch);
+				break;
+			case 4:
+				xmodem_upload(bbs, fp, path, XMODEM | SEND, lastch);
+				break;
+			case 5:
+				xmodem_upload(bbs, fp, path, XMODEM | SEND | XMODEM_128B, lastch);
+				break;
+			case 6:
+				ascii_upload(fp);
+				break;
+			case 7:
+				raw_upload(fp);
+				break;
+		}
+		fclose(fp);
+	}
+	filepick_free(&fpick);
 	suspend_rip(false);
 	uifcbail();
 	restorescreen(savscrn);
@@ -2251,7 +2285,7 @@ zmodem_upload(struct bbslist *bbs, FILE *fp, char *path)
 	    flush_send);
 	zm.log_level = &log_level;
 
-	zm.current_file_num = zm.total_files = 1; /* ToDo: support multi-file/batch uploads */
+	zm.current_file_num = zm.total_files = 1;
 
 	fsize = filelength(fileno(fp));
 
@@ -2261,6 +2295,85 @@ zmodem_upload(struct bbslist *bbs, FILE *fp, char *path)
 	if ((success = zmodem_send_file(&zm, path, fp,
 
             /* ZRQINIT? */ true, /* start_time */ NULL, /* sent_bytes */ NULL)) == true)
+		zmodem_get_zfin(&zm);
+
+	transfer_complete(success, was_binary);
+}
+
+void
+zmodem_batch_upload(struct bbslist *bbs, char **paths, int npaths)
+{
+	bool                 success = false;
+	zmodem_t             zm;
+	int64_t              fsize;
+	int64_t              total_bytes = 0;
+	int                  sent_files = 0;
+	int                  i;
+	FILE                *fp;
+	struct zmodem_cbdata cbdata;
+	bool                 was_binary = conn_api.binary_mode;
+
+	draw_transfer_window("ZMODEM Upload");
+
+	zmodem_mode = ZMODEM_MODE_SEND;
+
+	cbdata.zm = &zm;
+	cbdata.bbs = bbs;
+	if (!was_binary)
+		conn_binary_mode_on();
+	transfer_buf_len = 0;
+	zmodem_init(&zm,
+
+	            /* cbdata */ &cbdata,
+	    lputs, zmodem_progress,
+	    send_byte, recv_byte,
+	    is_connected,
+	    zmodem_check_abort,
+	    data_waiting,
+	    flush_send);
+	zm.log_level = &log_level;
+
+	/* Pre-scan to compute totals (for ZFILE info fields and progress display) */
+	for (i = 0; i < npaths; i++) {
+		if (!fexist(paths[i]) || isdir(paths[i]))
+			continue;
+		zm.total_files++;
+		zm.total_bytes += flength(paths[i]);
+	}
+	zm.files_remaining = zm.total_files;
+	zm.bytes_remaining = zm.total_bytes;
+
+	for (i = 0; i < npaths; i++) {
+		if (!fexist(paths[i]) || isdir(paths[i]))
+			continue;
+
+		if ((fp = fopen(paths[i], "rb")) == NULL) {
+			lprintf(LOG_ERR, "Error %d opening %s for read", errno, paths[i]);
+			continue;
+		}
+		setvbuf(fp, NULL, _IOFBF, 0x10000);
+		fsize = filelength(fileno(fp));
+
+		zm.current_file_num = sent_files + 1;
+
+		lprintf(LOG_INFO, "Sending %s (%" PRId64 " KB) via ZMODEM",
+		    paths[i], fsize / 1024);
+
+		success = zmodem_send_file(&zm, paths[i], fp,
+		    /* ZRQINIT? */ sent_files == 0, /* start_time */ NULL, /* sent_bytes */ NULL);
+
+		fclose(fp);
+
+		if (success) {
+			sent_files++;
+			total_bytes += fsize;
+		}
+
+		if (zm.local_abort || zm.cancelled || !success)
+			break;
+	}
+
+	if (!zm.cancelled && is_connected(NULL) && (success || total_bytes))
 		zmodem_get_zfin(&zm);
 
 	transfer_complete(success, was_binary);
@@ -2460,6 +2573,7 @@ xmodem_progress(void *cbdata, unsigned block_num, int64_t offset, int64_t fsize,
 
 		hold_update = true;
 		int os = _wscroll;
+		_wscroll = 0;
 		gettextinfo(&orig_info);
 		window(progress_ti.winleft, progress_ti.wintop, progress_ti.winright, progress_ti.winbottom);
 		gotoxy(1, 1);
@@ -2474,6 +2588,12 @@ xmodem_progress(void *cbdata, unsigned block_num, int64_t offset, int64_t fsize,
 			l = 0;
 		else
 			l -= t;                    /* now, it's est time left */
+		if ((*(xm->mode)) & YMODEM) {
+			cprintf("File (%u of %lu): %-.*s",
+			    xm->current_file_num, xm->total_files, tww - 20, xm->current_file_name);
+			clreol();
+			cputs("\r\n");
+		}
 		if ((*(xm->mode)) & SEND) {
 			total_blocks = num_blocks(block_num, offset, fsize, xm->block_size);
 			cprintf("Block (%lu%s): %u/%" PRId64 "  Byte: %" PRId64,
@@ -2630,7 +2750,7 @@ xmodem_upload(struct bbslist *bbs, FILE *fp, char *path, long mode, int lastch)
 	if (mode & XMODEM_128B)
 		xm.block_size = 128;
 
-	xm.total_files = 1; /* ToDo: support multi-file/batch uploads */
+	xm.current_file_num = xm.total_files = 1;
 
 	fsize = filelength(fileno(fp));
 
@@ -2668,6 +2788,120 @@ xmodem_upload(struct bbslist *bbs, FILE *fp, char *path, long mode, int lastch)
 				if (xmodem_get_ack(&xm, /* tries: */ 6, /* block_num: */ 0) != ACK)
 					lprintf(LOG_WARNING, "Failed to receive ACK after terminating block");
 			}
+		}
+	}
+
+	transfer_complete(success, was_binary);
+}
+
+void
+xmodem_batch_upload(struct bbslist *bbs, char **paths, int npaths, long mode, int lastch)
+{
+	bool     success = false;
+	xmodem_t xm;
+	int64_t  fsize;
+	int      i;
+	FILE    *fp;
+	bool     was_binary = conn_api.binary_mode;
+
+	if (!was_binary)
+		conn_binary_mode_on();
+
+	xmodem_init(&xm,
+
+	            /* cbdata */ &xm,
+	    &mode,
+	    lputs,
+	    xmodem_progress,
+	    send_byte,
+	    recv_byte,
+	    is_connected,
+	    xmodem_check_abort,
+	    flush_send);
+	xm.log_level = &log_level;
+	if (!data_waiting(&xm, 0)) {
+		switch (lastch) {
+			case 'G':
+				xm.recv_byte = recv_g;
+				break;
+			case 'C':
+				xm.recv_byte = recv_c;
+				break;
+			case NAK:
+				xm.recv_byte = recv_nak;
+				break;
+		}
+	}
+
+	if (mode & XMODEM_128B)
+		xm.block_size = 128;
+
+	if (mode & XMODEM) {
+		if (mode & GMODE)
+			draw_transfer_window("XMODEM-g Upload");
+		else
+			draw_transfer_window("XMODEM Upload");
+	}
+	else if (mode & YMODEM) {
+		if (mode & GMODE)
+			draw_transfer_window("YMODEM-g Upload");
+		else
+			draw_transfer_window("YMODEM Upload");
+	}
+	else {
+		if (!was_binary)
+			conn_binary_mode_off();
+		return;
+	}
+
+	/* Pre-scan to compute totals (for YMODEM block-0 "remaining" fields) */
+	for (i = 0; i < npaths; i++) {
+		if (!fexist(paths[i]) || isdir(paths[i]))
+			continue;
+		xm.total_files++;
+		xm.total_bytes += flength(paths[i]);
+	}
+
+	for (i = 0; i < npaths; i++) {
+		if (!fexist(paths[i]) || isdir(paths[i]))
+			continue;
+
+		if ((fp = fopen(paths[i], "rb")) == NULL) {
+			lprintf(LOG_ERR, "Error %d opening %s for read", errno, paths[i]);
+			continue;
+		}
+		setvbuf(fp, NULL, _IOFBF, 0x10000);
+		fsize = filelength(fileno(fp));
+
+		xm.current_file_num = xm.sent_files + 1;
+
+		lprintf(LOG_INFO, "Sending %s (%" PRId64 " KB) via %sMODEM%s",
+		    paths[i], fsize / 1024,
+		    (mode & XMODEM) ? "X" : "Y",
+		    (mode & GMODE) ? "-g" : "");
+
+		success = xmodem_send_file(&xm, paths[i], fp,
+		    /* start_time */ NULL, /* sent_bytes */ NULL);
+
+		fclose(fp);
+
+		if (success) {
+			xm.sent_files++;
+			xm.sent_bytes += fsize;
+		}
+
+		if (xm.cancelled || !success)
+			break;
+	}
+
+	if (success && (mode & YMODEM)) {
+		if (xmodem_get_mode(&xm)) {
+			lprintf(LOG_INFO, "Sending YMODEM termination block");
+
+			memset(block, 0, 128); /* send short block for terminator */
+			xmodem_put_block(&xm, block, 128 /* block_size */, 0 /* block_num */);
+			if (xmodem_get_ack(&xm, /* tries: */ 6, /* block_num: */ 0) != ACK)
+				lprintf(LOG_WARNING, "Failed to receive ACK after terminating block");
 		}
 	}
 
@@ -2896,6 +3130,11 @@ xmodem_download(struct bbslist *bbs, long mode, char *path)
 					total_files = 1;
 				if (total_bytes < file_bytes)
 					total_bytes = file_bytes;
+
+				SAFECOPY(xm.current_file_name, getfname(fname));
+				if (xm.total_files == 0)
+					xm.total_files = total_files;
+				xm.current_file_num = (xm.total_files > total_files) ? (xm.total_files - total_files + 1) : 1;
 
 				lprintf(LOG_DEBUG, "Incoming filename: %.64s ", getfname(fname));
 

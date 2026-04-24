@@ -491,6 +491,8 @@ BOOL xmodem_send_file(xmodem_t* xm, const char* fname, FILE* fp, time_t* start, 
 	if (xm->total_bytes == 0)
 		xm->total_bytes = st.st_size;
 
+	SAFECOPY(xm->current_file_name, getfname(fname));
+
 	do {
 		/* try */
 		if (*(xm->mode) & YMODEM) {
