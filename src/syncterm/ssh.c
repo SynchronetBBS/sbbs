@@ -340,6 +340,31 @@ handle_hostkey_result(struct bbslist *bbs)
 	return false;
 }
 
+/* ----------------------------------------------------------- banner */
+
+/* SSH_MSG_USERAUTH_BANNER (RFC 4252 §5.4).  Fires on the auth-call
+ * thread, which is ssh_connect()'s thread, so it's safe to drive
+ * uifc directly here.  Displayed modally — banners are meant to be
+ * read before the user proceeds. */
+static void
+auth_banner_cb(const uint8_t *message, size_t message_len,
+               const uint8_t *language, size_t language_len, void *cbdata)
+{
+	struct bbslist *bbs = cbdata;
+	(void)language;
+	(void)language_len;
+	if (message_len == 0 || bbs->hidepopups)
+		return;
+	char *buf = malloc(message_len + 1);
+	if (buf == NULL)
+		return;
+	memcpy(buf, message, message_len);
+	buf[message_len] = 0;
+	uifc.showbuf(WIN_SAV | WIN_MID, 0, 0, 76, uifc.scrn_len - 2,
+	    "SSH Banner", buf, NULL, NULL);
+	free(buf);
+}
+
 /* ----------------------------------------------- kbd-interactive prompts */
 
 static int
@@ -892,6 +917,7 @@ ssh_connect(struct bbslist *bbs)
 	    (void *)(intptr_t)ssh_sock, (void *)(intptr_t)ssh_sock);
 	dssh_session_set_hostkey_verify_cb(ssh_session, hostkey_verify_cb, bbs);
 	dssh_session_set_terminate_cb(ssh_session, transport_terminate_cb, NULL);
+	dssh_session_set_banner_cb(ssh_session, auth_banner_cb, bbs);
 
 	if (!bbs->hidepopups) {
 		uifc.pop(NULL);
