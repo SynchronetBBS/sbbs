@@ -134,31 +134,37 @@
 #define SFTP_VERSION UINT32_C(3)
 #define SFTP_MAX_PACKET_SIZE (256*1024)
 
-typedef struct sftp_tx_pkt {
-	uint32_t sz;
-	uint32_t used;
-	uint8_t type;
-	uint8_t data[];
-} *sftp_tx_pkt_t;
+/*
+ * SFTP extensions negotiated during INIT/VERSION handshake.
+ *
+ * Both sides advertise the names they support; the intersection is
+ * exposed to callers as the `extensions` flag word (sftpc_get_extensions
+ * / sftps_get_extensions).  Presence of the name in both directions
+ * enables the extension for the session.
+ */
+#define SFTP_EXT_NAME_LNAME "lname@syncterm.net"
+#define SFTP_EXT_NAME_DESCS "descs@syncterm.net"
 
-typedef struct sftp_rx_pkt {
-	uint32_t cur;
-	uint32_t sz;
-	uint32_t used;
-	uint32_t len;
-	uint8_t type;
-	uint8_t data[];
-} *sftp_rx_pkt_t;
+#define SFTP_EXT_LNAME      UINT32_C(0x00000001)
+#define SFTP_EXT_DESCS      UINT32_C(0x00000002)
 
+/* All extensions advertised by this library; used as the client's
+ * advertisement set and the server's supported-by-us set. */
+#define SFTP_EXT_ALL        (SFTP_EXT_LNAME | SFTP_EXT_DESCS)
+
+/* Packet buffer types are opaque to consumers.  The only consumer use
+ * is the `sftp_extended` server callback which gets a raw rx packet —
+ * but it parses via library helpers, never by dereferencing fields. */
+typedef struct sftp_tx_pkt *sftp_tx_pkt_t;
+typedef struct sftp_rx_pkt *sftp_rx_pkt_t;
+
+/* sftp_string is the one struct whose fields ARE public: consumers
+ * (both syncterm/ssh.c and sbbs3/sftp.cpp) read ->c_str and ->len to
+ * get at the wire bytes the library handed them. */
 typedef struct sftp_string {
 	uint32_t len;
 	uint8_t c_str[];
 } *sftp_str_t;
-
-struct sftp_extended_file_attribute {
-	struct sftp_string *type;
-	struct sftp_string *data;
-};
 
 struct sftp_file_attributes;
 typedef struct sftp_file_attributes *sftp_file_attr_t;
@@ -173,10 +179,18 @@ typedef sftp_str_t sftp_dirhandle_t;
 
 typedef struct sftp_client_state *sftpc_state_t;
 
+/*
+ * Server state.  Consumer writes the callback fields after sftps_begin()
+ * returns and reads version/extensions after the handshake.  All other
+ * state (rx/tx packet buffers, mutex, req id, running-op counter,
+ * terminating flag) lives in the opaque `priv` struct defined inside
+ * the library TU — consumers cannot tamper with it, so the library can
+ * treat it as always-well-formed.
+ */
+struct sftp_server_state_private;
+
 typedef struct sftp_server_state {
 	bool (*send_cb)(uint8_t *buf, size_t len, void *cb_data);
-	sftp_rx_pkt_t rxp;
-	sftp_tx_pkt_t txp;
 	void *cb_data;
 	void (*lprint)(void *cb_data, uint32_t errcode, const char *msg);
 	void (*cleanup_callback)(void *cb_data);
@@ -199,37 +213,16 @@ typedef struct sftp_server_state {
 	bool (*symlink)(sftp_str_t linkpath, sftp_str_t targetpath, void *cb_data);
 	bool (*realpath)(sftp_str_t path, void *cb_data);
 	bool (*extended)(sftp_str_t request, sftp_rx_pkt_t pkt, void *cb_data);
-	pthread_mutex_t mtx;
-	uint32_t running;
-	uint32_t id;
 	uint32_t version;
-	bool terminating;
+	uint32_t extensions;
+	struct sftp_server_state_private *priv;
 } *sftps_state_t;
 
-/* sftp_pkt.c */
+/* sftp_pkt.c — public diagnostic helpers.  The raw packet codec
+ * (get32 / append32 / getstring / rx_pkt_append / …) is internal to the
+ * single-TU library and intentionally not declared here. */
 const char * const sftp_get_type_name(uint8_t type);
 const char * const sftp_get_errcode_name(uint32_t errcode);
-bool sftp_have_pkt_sz(sftp_rx_pkt_t pkt);
-bool sftp_have_pkt_type(sftp_rx_pkt_t pkt);
-uint32_t sftp_pkt_sz(sftp_rx_pkt_t pkt);
-uint8_t sftp_pkt_type(sftp_rx_pkt_t pkt);
-bool sftp_have_full_pkt(sftp_rx_pkt_t pkt);
-void sftp_remove_packet(sftp_rx_pkt_t pkt);
-uint32_t sftp_get32(sftp_rx_pkt_t pkt);
-uint64_t sftp_get64(sftp_rx_pkt_t pkt);
-sftp_str_t sftp_getstring(sftp_rx_pkt_t pkt);
-bool sftp_rx_pkt_append(sftp_rx_pkt_t *pkt, uint8_t *inbuf, uint32_t len);
-bool sftp_tx_pkt_reset(sftp_tx_pkt_t *pktp);
-bool sftp_appendbyte(sftp_tx_pkt_t *pktp, uint8_t u8);
-bool sftp_append32(sftp_tx_pkt_t *pktp, uint32_t u32);
-bool sftp_append64(sftp_tx_pkt_t *pktp, uint64_t u);
-bool sftp_appendstring(sftp_tx_pkt_t *pktp, sftp_str_t s);
-bool sftp_appendcstring(sftp_tx_pkt_t *pktp, const char *str);
-void sftp_free_tx_pkt(sftp_tx_pkt_t pkt);
-void sftp_free_rx_pkt(sftp_rx_pkt_t pkt);
-bool sftp_prep_tx_packet(sftp_tx_pkt_t pkt, uint8_t **buf, size_t *sz);
-bool sftp_tx_pkt_reclaim(sftp_tx_pkt_t *pktp);
-bool sftp_rx_pkt_reclaim(sftp_rx_pkt_t *pktp);
 
 /* sftp_str.c */
 sftp_str_t sftp_alloc_str(uint32_t len);
@@ -239,17 +232,36 @@ sftp_str_t sftp_memdup(const uint8_t *buf, uint32_t sz);
 void free_sftp_str(sftp_str_t str);
 
 /* sftp_client.c */
+struct sftpc_dir_entry {
+	sftp_str_t filename;
+	sftp_str_t longname;
+	sftp_file_attr_t attrs;
+};
+
 void sftpc_finish(sftpc_state_t state);
 sftpc_state_t sftpc_begin(bool (*send_cb)(uint8_t *buf, size_t len, void *cb_data), void *cb_data);
 bool sftpc_init(sftpc_state_t state);
 bool sftpc_recv(sftpc_state_t state, uint8_t *buf, uint32_t sz);
 bool sftpc_realpath(sftpc_state_t state, char *path, sftp_str_t *ret);
 bool sftpc_open(sftpc_state_t state, char *path, uint32_t flags, sftp_file_attr_t attr, sftp_dirhandle_t *handle);
+bool sftpc_opendir(sftpc_state_t state, const char *path, sftp_dirhandle_t *handle);
 bool sftpc_close(sftpc_state_t state, sftp_filehandle_t *handle);
 bool sftpc_read(sftpc_state_t state, sftp_filehandle_t handle, uint64_t offset, uint32_t len, sftp_str_t *ret);
 bool sftpc_write(sftpc_state_t state, sftp_filehandle_t handle, uint64_t offset, sftp_str_t data);
+bool sftpc_readdir(sftpc_state_t state, sftp_dirhandle_t handle, struct sftpc_dir_entry **entries_out, uint32_t *count_out, bool *eof_out);
+void sftpc_free_dir_entries(struct sftpc_dir_entry *entries, uint32_t count);
+bool sftpc_stat(sftpc_state_t state, const char *path, sftp_file_attr_t *attr_out);
+bool sftpc_lstat(sftpc_state_t state, const char *path, sftp_file_attr_t *attr_out);
+bool sftpc_fstat(sftpc_state_t state, sftp_filehandle_t handle, sftp_file_attr_t *attr_out);
+bool sftpc_setstat(sftpc_state_t state, const char *path, sftp_file_attr_t attr);
+bool sftpc_fsetstat(sftpc_state_t state, sftp_filehandle_t handle, sftp_file_attr_t attr);
+bool sftpc_remove(sftpc_state_t state, const char *path);
+bool sftpc_rmdir(sftpc_state_t state, const char *path);
+bool sftpc_mkdir(sftpc_state_t state, const char *path, sftp_file_attr_t attr);
+bool sftpc_rename(sftpc_state_t state, const char *from, const char *to);
 bool sftpc_reclaim(sftpc_state_t state);
 uint32_t sftpc_get_err(sftpc_state_t state);
+uint32_t sftpc_get_extensions(sftpc_state_t state);
 void sftpc_end(sftpc_state_t state);
 
 /* sftp_attr.c */
@@ -270,8 +282,6 @@ sftp_str_t sftp_fattr_get_ext_type(sftp_file_attr_t fattr, uint32_t index);
 sftp_str_t sftp_fattr_get_ext_data(sftp_file_attr_t fattr, uint32_t index);
 sftp_str_t sftp_fattr_get_ext_by_type(sftp_file_attr_t fattr, const char *type);
 uint32_t sftp_fattr_get_ext_count(sftp_file_attr_t fattr);
-bool sftp_appendfattr(sftp_tx_pkt_t *pktp, sftp_file_attr_t fattr);
-sftp_file_attr_t sftp_getfattr(sftp_rx_pkt_t pkt);
 
 /* sftp_server.c */
 bool sftps_recv(sftps_state_t state, uint8_t *buf, uint32_t sz);
@@ -284,5 +294,6 @@ bool sftps_send_data(sftps_state_t state, sftp_str_t data);
 bool sftps_send_name(sftps_state_t state, uint32_t count, str_list_t fnames, str_list_t lnames, sftp_file_attr_t *attrs);
 bool sftps_send_attrs(sftps_state_t state, sftp_file_attr_t attr);
 bool sftps_reclaim(sftps_state_t state);
+uint32_t sftps_get_extensions(sftps_state_t state);
 
 #endif

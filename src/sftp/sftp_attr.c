@@ -1,14 +1,13 @@
-#include <assert.h>
-#include <stdbool.h>
-#include <stddef.h>
-#include <stdlib.h>
-#include <string.h>
-#include <time.h>
-#include "sftp.h"
+/*
+ * Part of the single-TU build.  All system and third-party includes
+ * live in sftp.c; this file is #include'd from sftp.c and cannot be
+ * compiled on its own.
+ */
 
-#ifdef _MSC_VER
-#pragma warning(disable : 4244 4267 4018)
-#endif
+struct sftp_extended_file_attribute {
+	struct sftp_string *type;
+	struct sftp_string *data;
+};
 
 struct sftp_file_attributes {
 	uint32_t flags;
@@ -251,42 +250,42 @@ get_size(sftp_file_attr_t fattr)
 	return ret;
 }
 
-bool
-sftp_appendfattr(sftp_tx_pkt_t *pktp, sftp_file_attr_t fattr)
+static bool
+appendfattr(sftp_tx_pkt_t *pktp, sftp_file_attr_t fattr)
 {
 	uint32_t sz = get_size(fattr);
 	uint32_t oldused = (*pktp)->used;
 	if (sz == 0)
 		return false;
-	if (!sftp_append32(pktp, fattr->flags))
+	if (!append32(pktp, fattr->flags))
 		return false;
 	if (fattr->flags & SSH_FILEXFER_ATTR_SIZE) {
-		if (!sftp_append64(pktp, fattr->size))
+		if (!append64(pktp, fattr->size))
 			goto fail;
 	}
 	if (fattr->flags & SSH_FILEXFER_ATTR_UIDGID) {
-		if (!sftp_append32(pktp, fattr->uid))
+		if (!append32(pktp, fattr->uid))
 			goto fail;
-		if (!sftp_append32(pktp, fattr->gid))
+		if (!append32(pktp, fattr->gid))
 			goto fail;
 	}
 	if (fattr->flags & SSH_FILEXFER_ATTR_PERMISSIONS) {
-		if (!sftp_append32(pktp, fattr->perm))
+		if (!append32(pktp, fattr->perm))
 			goto fail;
 	}
 	if (fattr->flags & SSH_FILEXFER_ATTR_ACMODTIME) {
-		if (!sftp_append32(pktp, fattr->atime))
+		if (!append32(pktp, fattr->atime))
 			goto fail;
-		if (!sftp_append32(pktp, fattr->mtime))
+		if (!append32(pktp, fattr->mtime))
 			goto fail;
 	}
 	if (fattr->flags & SSH_FILEXFER_ATTR_EXTENDED) {
-		if (!sftp_append32(pktp, fattr->ext_count))
+		if (!append32(pktp, fattr->ext_count))
 			goto fail;
 		for (uint32_t i = 0; i < fattr->ext_count; i++) {
-			if (!sftp_appendstring(pktp, fattr->ext[i].type))
+			if (!appendstring(pktp, fattr->ext[i].type))
 				goto fail;
-			if (!sftp_appendstring(pktp, fattr->ext[i].data))
+			if (!appendstring(pktp, fattr->ext[i].data))
 				goto fail;
 		}
 	}
@@ -297,29 +296,29 @@ fail:
 	return false;
 }
 
-sftp_file_attr_t
-sftp_getfattr(sftp_rx_pkt_t pkt)
+static sftp_file_attr_t
+getfattr(sftp_rx_pkt_t pkt)
 {
 	sftp_file_attr_t ret = sftp_fattr_alloc();
 	if (ret == NULL)
 		return ret;
-	ret->flags = sftp_get32(pkt);
+	ret->flags = get32(pkt);
 	if (ret->flags & SSH_FILEXFER_ATTR_SIZE) {
-		ret->size = sftp_get64(pkt);
+		ret->size = get64(pkt);
 	}
 	if (ret->flags & SSH_FILEXFER_ATTR_UIDGID) {
-		ret->uid = sftp_get32(pkt);
-		ret->gid = sftp_get32(pkt);
+		ret->uid = get32(pkt);
+		ret->gid = get32(pkt);
 	}
 	if (ret->flags & SSH_FILEXFER_ATTR_PERMISSIONS) {
-		ret->perm = sftp_get32(pkt);
+		ret->perm = get32(pkt);
 	}
 	if (ret->flags & SSH_FILEXFER_ATTR_ACMODTIME) {
-		ret->atime = sftp_get32(pkt);
-		ret->mtime = sftp_get32(pkt);
+		ret->atime = get32(pkt);
+		ret->mtime = get32(pkt);
 	}
 	if (ret->flags & SSH_FILEXFER_ATTR_EXTENDED) {
-		uint32_t extcnt = sftp_get32(pkt);
+		uint32_t extcnt = get32(pkt);
 		uint32_t ext;
 		/*
 		 * This is to silence Coverity...
@@ -327,16 +326,16 @@ sftp_getfattr(sftp_rx_pkt_t pkt)
 		 * so I "should" range-check it before using
 		 * it to control loop iterations.
 		 * This loop is actually controlled by the
-		 * size of the buffer since sftp_getstring()
+		 * size of the buffer since getstring()
 		 * will fail long before we reach extcnt if
 		 * it has a maliciously high value.
 		 */
 		extcnt &= 0x3FFFFFFF;
 		for (ext = 0; ext < extcnt; ext++) {
-			sftp_str_t type = sftp_getstring(pkt);
+			sftp_str_t type = getstring(pkt);
 			if (type == NULL)
 				break;
-			sftp_str_t data = sftp_getstring(pkt);
+			sftp_str_t data = getstring(pkt);
 			if (data == NULL) {
 				free_sftp_str(type);
 				break;
