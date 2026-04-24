@@ -2618,7 +2618,8 @@ void bottomline(uifc_winmode_t mode)
 	}
 	if (mode & WIN_EDIT) {
 		i += uprintf(i, api->scrn_len + 1, api->bclr | (api->cclr << 4), "F2 ");
-		i += uprintf(i, api->scrn_len + 1, BLACK | (api->cclr << 4), "Edit Item  ");
+		i += uprintf(i, api->scrn_len + 1, BLACK | (api->cclr << 4), "%s",
+		    api->edit_item != NULL ? api->edit_item : "Edit Item  ");
 	}
 	if (mode & WIN_TAG) {
 		i += uprintf(i, api->scrn_len + 1, api->bclr | (api->cclr << 4), "Space ");
