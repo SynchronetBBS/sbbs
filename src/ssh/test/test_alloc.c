@@ -2294,6 +2294,28 @@ test_dhgex_client_group_no_g(void)
 	return TEST_PASS;
 }
 
+/* Server returns |p| below client_min (GEX_MIN=2048) -> client must reject */
+static int
+test_dhgex_client_group_too_small(void)
+{
+	if (!test_using_dhgex())
+		return TEST_SKIP;
+	/* 768-bit p = 96 data bytes; top bit set so no sign-byte padding
+	 * is needed (counted length matches the real bit-length). */
+	uint8_t group[1 + 4 + 96 + 4 + 1];
+	size_t  gp = 0;
+	group[gp++] = 31; /* GEX_GROUP */
+	dssh_serialize_uint32(96, group, sizeof(group), &gp);
+	group[gp] = 0x80;
+	memset(&group[gp + 1], 0xff, 95);
+	gp += 96;
+	dssh_serialize_uint32(1, group, sizeof(group), &gp);
+	group[gp++] = 0x02; /* g = 2 */
+	int res = dhgex_client_parse_test(bad_server_group_thread, group, gp);
+	ASSERT_TRUE(res < 0);
+	return TEST_PASS;
+}
+
 /* Line 264: wrong msg_type in GEX_REPLY */
 static int
 test_dhgex_client_bad_reply_type(void)
@@ -3431,6 +3453,7 @@ static struct dssh_test_entry tests[] = {
 	{ "dhgex/client_recv_group_fail", test_dhgex_client_recv_group_fail },
 	{ "dhgex/client_group_empty",     test_dhgex_client_group_empty },
 	{ "dhgex/client_group_no_g",      test_dhgex_client_group_no_g },
+	{ "dhgex/client_group_too_small", test_dhgex_client_group_too_small },
 	{ "dhgex/client_bad_reply_type",  test_dhgex_client_bad_reply_type },
 	{ "dhgex/client_short_ks",        test_dhgex_client_reply_short_ks },
 	{ "dhgex/client_trunc_ks",        test_dhgex_client_reply_truncated_ks },
