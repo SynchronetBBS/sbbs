@@ -31,6 +31,7 @@ struct sftp_client_state {
 	uint32_t running;
 	uint32_t id;
 	uint32_t extensions;
+	uint8_t last_reply_type;  /* Debugging: type byte of most recent reply */
 	bool terminating;
 	bool err_key_ok;
 };
@@ -306,6 +307,14 @@ sftpc_get_extensions(sftpc_state_t state)
 	return state->extensions;
 }
 
+uint8_t
+sftpc_debug_last_reply_type(sftpc_state_t state)
+{
+	if (state == NULL)
+		return 0;
+	return state->last_reply_type;
+}
+
 bool
 sftpc_reclaim(sftpc_state_t state)
 {
@@ -374,8 +383,10 @@ do_open(sftpc_state_t state, uint8_t type, const char *path, uint32_t flags,
 {
 	struct sftpc_pending p = {0};
 	p.evt = CreateEvent(NULL, TRUE, FALSE, NULL);
-	if (p.evt == NULL)
+	if (p.evt == NULL) {
+		set_thread_err(state, SSH_FX_FAILURE);
 		return false;
+	}
 	p.req_id = next_req_id(state);
 	pend_add(state, &p);
 
@@ -393,13 +404,29 @@ do_open(sftpc_state_t state, uint8_t type, const char *path, uint32_t flags,
 			sftp_fattr_free(a);
 	}
 	bool rv = false;
-	if (built && send_and_wait(state, &p) && p.reply != NULL) {
+	if (!built) {
+		set_thread_err(state, SSH_FX_FAILURE);
+	}
+	else if (!send_and_wait(state, &p)) {
+		set_thread_err(state, SSH_FX_CONNECTION_LOST);
+	}
+	else if (p.reply == NULL) {
+		set_thread_err(state, SSH_FX_CONNECTION_LOST);
+	}
+	else {
+		state->last_reply_type = p.reply->type;
 		if (p.reply->type == SSH_FXP_HANDLE) {
 			*handle_out = getstring(p.reply);
-			rv = (*handle_out != NULL);
+			if (*handle_out == NULL)
+				set_thread_err(state, SSH_FX_BAD_MESSAGE);
+			else
+				rv = true;
 		}
 		else if (p.reply->type == SSH_FXP_STATUS) {
 			status_ok(state, p.reply);
+		}
+		else {
+			set_thread_err(state, SSH_FX_BAD_MESSAGE);
 		}
 	}
 	pend_remove(state, &p);

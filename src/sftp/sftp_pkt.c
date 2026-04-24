@@ -243,22 +243,24 @@ get64(sftp_rx_pkt_t pkt)
 }
 
 /*
- * Note that on failure, this returns NULL and does not advance the
- * cursor
+ * Reads a uint32 length, then that many bytes.  On failure returns
+ * NULL and rolls the cursor back past the size word so the caller
+ * sees the buffer as untouched.
  */
 static sftp_str_t
 getstring(sftp_rx_pkt_t pkt)
 {
 	assert(pkt);
+	uint32_t saved_cur = pkt->cur;
 	uint32_t sz = get32(pkt);
-	// Expressed this way so Coverity untaints it...
-	if (sz > pkt->sz - sizeof(sz) - offsetof(struct sftp_rx_pkt, data) - pkt->cur)
+	/* Does `sz` bytes fit in the remaining allocation past cur? */
+	if ((size_t)pkt->cur + offsetof(struct sftp_rx_pkt, data) + sz > pkt->sz) {
+		pkt->cur = saved_cur;
 		return NULL;
-	if (pkt->cur + offsetof(struct sftp_rx_pkt, data) + sizeof(sz) > pkt->sz)
-		return NULL;
+	}
 	sftp_str_t ret = sftp_memdup(&pkt->data[pkt->cur], sz);
 	if (ret == NULL)
-		pkt->cur -= sizeof(sz);
+		pkt->cur = saved_cur;
 	else
 		pkt->cur += sz;
 	return ret;

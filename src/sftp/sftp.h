@@ -262,6 +262,7 @@ bool sftpc_rename(sftpc_state_t state, const char *from, const char *to);
 bool sftpc_reclaim(sftpc_state_t state);
 uint32_t sftpc_get_err(sftpc_state_t state);
 uint32_t sftpc_get_extensions(sftpc_state_t state);
+uint8_t sftpc_debug_last_reply_type(sftpc_state_t state);
 void sftpc_end(sftpc_state_t state);
 
 /* sftp_attr.c */
