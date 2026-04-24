@@ -1168,7 +1168,13 @@ events, it can be difficult to select text to copy.  kbd:[Alt+O] allows
 taking the mouse away from the remote.
 
 kbd:[Alt+U]::
-Upload a file to the remote.
+Upload a file (or files) to the remote.  Prompts first for a
+protocol, then for the file(s) to send.  `ZMODEM` and `YMODEM`
+each offer a `Batch` variant that brings up the
+<<_the_file_browser,multi-file picker>> so you can queue files
+from several directories and transfer them in a single session.
+The other choices (`XMODEM-1K`, `XMODEM-128`, `ASCII`, `Raw`)
+transfer a single file.
 
 kbd:[Alt+X]::
 Disconnect and exit SyncTERM.  Does not return to the main
