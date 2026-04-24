@@ -36,8 +36,14 @@ SOCKET          ssh_sock = INVALID_SOCKET;
 
 static dssh_session    ssh_session;
 static dssh_channel    ssh_chan;
-static dssh_channel    sftp_chan;
-static sftpc_state_t   sftp_state;
+/* Session-scoped SFTP state.  sftp_chan is opened once, right after the
+ * shell channel, and stays alive for the life of the SSH session; other
+ * parts of the app (browser, transfer queue) share sftp_state via the
+ * sftp_session.h accessors. */
+dssh_channel    sftp_chan;
+sftpc_state_t   sftp_state;
+_Atomic bool    sftp_available;
+_Atomic bool    sftp_shell_alive;
 static pthread_mutex_t ssh_mutex;
 static bool            pubkey_thread_running;
 /* Set by the host-key verify callback so ssh_connect can report the
@@ -564,18 +570,18 @@ ssh_output_thread(void *args)
 	conn_api.output_thread_running = 2;
 }
 
-/* --------------------------------------------------- SFTP pubkey upload */
+/* ------------------------------------------------------------- SFTP session */
 
 static bool key_not_present(sftp_filehandle_t f, const char *priv);
 
 /*
- * Coordination between add_public_key() and sftp_recv_thread.  The
- * recv thread must stop touching sftp_chan BEFORE add_public_key calls
+ * Coordination between the SFTP recv thread and channel teardown.  The
+ * recv thread must stop touching sftp_chan BEFORE ssh_close calls
  * dssh_chan_close on it, because the close frees the channel handle
  * and any concurrent poll/read is use-after-free.
  */
-static bool sftp_recv_running;
-static bool sftp_recv_shutdown;
+static _Atomic bool sftp_recv_running;
+static _Atomic bool sftp_recv_shutdown;
 
 static void
 sftp_recv_thread(void *args)
@@ -612,50 +618,31 @@ sftp_send(uint8_t *buf, size_t sz, void *cb_data)
 	return sent == sz;
 }
 
+/*
+ * Opens the persistent SFTP subsystem channel alongside the shell.
+ * Called from ssh_connect after ssh_chan is open.  If the server doesn't
+ * support SFTP, leaves sftp_available = false and returns silently.
+ */
 static void
-add_public_key(void *vpriv)
+sftp_session_start(void)
 {
-	char *priv = vpriv;
 	struct dssh_chan_params params;
 
-	/* Wait for the shell channel to exist (ssh_connect opens it
-	   after spawning this thread). */
-	for (unsigned i = 0; i < 500 && !conn_api.terminate; i++) {
-		assert_pthread_mutex_lock(&ssh_mutex);
-		bool ready = (ssh_chan != NULL);
-		assert_pthread_mutex_unlock(&ssh_mutex);
-		if (ready)
-			break;
-		SLEEP(10);
-	}
-	if (conn_api.terminate || ssh_chan == NULL) {
-		free(priv);
-		pubkey_thread_running = false;
+	sftp_available = false;
+	if (ssh_session == NULL)
 		return;
-	}
-
-	/* Give an old sbbs a chance to close the channel if it doesn't
-	   support subsystems (legacy behaviour carried from the Cryptlib
-	   version). */
-	for (unsigned i = 0; i < 100 && !conn_api.terminate; i++)
-		SLEEP(10);
 
 	dssh_chan_params_init(&params, DSSH_CHAN_SUBSYSTEM);
 	dssh_chan_params_set_subsystem(&params, "sftp");
 	sftp_chan = dssh_chan_open(ssh_session, &params);
 	dssh_chan_params_free(&params);
-	if (sftp_chan == NULL) {
-		free(priv);
-		pubkey_thread_running = false;
+	if (sftp_chan == NULL)
 		return;
-	}
 
 	sftp_state = sftpc_begin(sftp_send, NULL);
 	if (sftp_state == NULL) {
 		dssh_chan_close(sftp_chan, -1);
 		sftp_chan = NULL;
-		free(priv);
-		pubkey_thread_running = false;
 		return;
 	}
 
@@ -663,33 +650,45 @@ add_public_key(void *vpriv)
 	sftp_recv_shutdown = false;
 	_beginthread(sftp_recv_thread, 0, NULL);
 
-	if (sftpc_init(sftp_state)) {
-		sftp_filehandle_t f = NULL;
-		if (sftpc_open(sftp_state, ".ssh/authorized_keys",
-		               SSH_FXF_READ | SSH_FXF_WRITE | SSH_FXF_APPEND | SSH_FXF_CREAT,
-		               NULL, &f)) {
-			if (key_not_present(f, priv)) {
-				sftp_str_t ln = sftp_asprintf("ssh-ed25519 %s Added by SyncTERM\n", priv);
-				if (ln != NULL) {
-					sftpc_write(sftp_state, f, 0, ln);
-					free_sftp_str(ln);
-				}
-			}
-			sftpc_close(sftp_state, &f);
-		}
-		sftpc_finish(sftp_state);
+	if (!sftpc_init(sftp_state)) {
+		sftp_recv_shutdown = true;
+		for (int i = 0; i < 50 && sftp_recv_running; i++)
+			SLEEP(10);
+		sftpc_end(sftp_state);
+		sftp_state = NULL;
+		dssh_chan_close(sftp_chan, -1);
+		sftp_chan = NULL;
+		return;
 	}
 
-	/* Stop the recv thread before freeing the channel.  The thread
-	   polls sftp_chan up to 100 ms per iteration, so give it a
-	   generous margin before forcing shutdown. */
-	sftp_recv_shutdown = true;
-	for (int i = 0; i < 50 && sftp_recv_running; i++)
-		SLEEP(10);
-	dssh_chan_close(sftp_chan, -1);
-	sftp_chan = NULL;
-	sftpc_end(sftp_state);
-	sftp_state = NULL;
+	sftp_available = true;
+}
+
+static void
+add_public_key(void *vpriv)
+{
+	char *priv = vpriv;
+
+	if (!sftp_available || sftp_state == NULL) {
+		free(priv);
+		pubkey_thread_running = false;
+		return;
+	}
+
+	sftp_filehandle_t f = NULL;
+	if (sftpc_open(sftp_state, ".ssh/authorized_keys",
+	               SSH_FXF_READ | SSH_FXF_WRITE | SSH_FXF_APPEND | SSH_FXF_CREAT,
+	               NULL, &f)) {
+		if (key_not_present(f, priv)) {
+			sftp_str_t ln = sftp_asprintf("ssh-ed25519 %s Added by SyncTERM\n", priv);
+			if (ln != NULL) {
+				sftpc_write(sftp_state, f, 0, ln);
+				free_sftp_str(ln);
+			}
+		}
+		sftpc_close(sftp_state, &f);
+	}
+
 	free(priv);
 	pubkey_thread_running = false;
 }
@@ -1030,6 +1029,11 @@ ssh_connect(struct bbslist *bbs)
 		ssh_close();
 		return -1;
 	}
+	sftp_shell_alive = true;
+
+	/* Open the persistent SFTP subsystem channel.  Servers without SFTP
+	 * support will leave sftp_available = false; the shell still works. */
+	sftp_session_start();
 
 	if (!bbs->hidepopups)
 		uifc.pop(NULL);
@@ -1099,6 +1103,8 @@ ssh_close(void)
 	char garbage[1024];
 
 	conn_api.terminate = true;
+	sftp_available = false;
+	sftp_shell_alive = false;
 	if (ssh_session != NULL)
 		dssh_session_terminate(ssh_session);
 
@@ -1109,13 +1115,20 @@ ssh_close(void)
 		SLEEP(1);
 	}
 
-	if (sftp_state != NULL) {
-		sftpc_end(sftp_state);
-		sftp_state = NULL;
-	}
+	/* Tear down SFTP before closing the channel: finish drains waiters,
+	 * then stop the recv thread, then close the channel, then end. */
+	if (sftp_state != NULL)
+		sftpc_finish(sftp_state);
+	sftp_recv_shutdown = true;
+	for (int i = 0; i < 50 && sftp_recv_running; i++)
+		SLEEP(10);
 	if (sftp_chan != NULL) {
 		dssh_chan_close(sftp_chan, -1);
 		sftp_chan = NULL;
+	}
+	if (sftp_state != NULL) {
+		sftpc_end(sftp_state);
+		sftp_state = NULL;
 	}
 	if (ssh_chan != NULL) {
 		dssh_chan_close(ssh_chan, -1);
