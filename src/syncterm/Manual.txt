@@ -443,6 +443,11 @@ Keyboard Controls::
 	In the multi-file picker's file list, toggles the highlighted
 	file's selection.
 
+	kbd:[Ctrl+A]:::
+	Multi-file picker only — tags every file currently shown in
+	the file pane.  Does not descend into subdirectories.  Safe to
+	press repeatedly; files already tagged stay tagged.
+
 	kbd:[Ctrl+Return]:::
 	Activate `OK` / `Select` from anywhere in the dialog, regardless
 	of which field currently has focus.

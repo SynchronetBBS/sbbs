@@ -191,6 +191,24 @@ static void fp_refresh_markers(struct fp_state *s)
 	}
 }
 
+/* Tag every file in the currently-visible file pane.  Directories
+ * (which live in s->dirs) are never selectable, so we only iterate
+ * s->files.  sel_add() is idempotent, so this is safe to invoke when
+ * some or all entries are already tagged. */
+static void fp_select_all(struct fp_state *s)
+{
+	char full[MAX_PATH * 8 + 1];
+	size_t i;
+
+	if (s->mode != FP_MODE_MULTI || s->files == NULL)
+		return;
+	for (i = 0; i < s->file_count; i++) {
+		snprintf(full, sizeof(full), "%s%s", s->path, s->files[i].name);
+		sel_add(s, full);
+	}
+	fp_refresh_markers(s);
+}
+
 /* ------------------------------------------------------------------ */
 /* Sort comparators                                                   */
 /* ------------------------------------------------------------------ */
@@ -1267,6 +1285,10 @@ static int fp_handle_dir_field(struct fp_state *s, struct file_pick *fp)
 		fp_open_review(s);
 		return FIELD_DIR;
 	}
+	if (s->mode == FP_MODE_MULTI && i == UIFC_EXTKEY(CTRL_A)) {
+		fp_select_all(s);
+		return FIELD_DIR;
+	}
 	if (i == UIFC_EXTKEY('\n'))
 		return fp_activate_ok(s, fp, FIELD_DIR);
 	if (i >= 0) {
@@ -1305,6 +1327,10 @@ static int fp_handle_file_field(struct fp_state *s, struct file_pick *fp)
 		return fp_mouse_to_field(s);
 	if (s->mode == FP_MODE_MULTI && (i & MSK_ON) == MSK_EDIT) {
 		fp_open_review(s);
+		return FIELD_FILE;
+	}
+	if (s->mode == FP_MODE_MULTI && i == UIFC_EXTKEY(CTRL_A)) {
+		fp_select_all(s);
 		return FIELD_FILE;
 	}
 	if (i == UIFC_EXTKEY('\n'))
