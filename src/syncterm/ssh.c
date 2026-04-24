@@ -21,6 +21,7 @@
 #include "gen_defs.h"
 #include "genwrap.h"
 #include "sftp.h"
+#include "sftp_queue.h"
 #include "ssh.h"
 #include "sockwrap.h"
 #include "syncterm.h"
@@ -662,6 +663,7 @@ sftp_session_start(void)
 	}
 
 	sftp_available = true;
+	sftp_queue_start();
 }
 
 static void
@@ -1116,9 +1118,13 @@ ssh_close(void)
 	}
 
 	/* Tear down SFTP before closing the channel: finish drains waiters,
-	 * then stop the recv thread, then close the channel, then end. */
+	 * stop the worker threads, then the recv thread, then close the
+	 * channel, then end.  sftpc_finish comes first so any worker blocked
+	 * inside sftpc_read/write wakes up and sees the terminated state
+	 * before sftp_queue_stop tries to join it. */
 	if (sftp_state != NULL)
 		sftpc_finish(sftp_state);
+	sftp_queue_stop();
 	sftp_recv_shutdown = true;
 	for (int i = 0; i < 50 && sftp_recv_running; i++)
 		SLEEP(10);

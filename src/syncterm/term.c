@@ -19,6 +19,7 @@
 #include "saucedefs.h"
 #include "sexyz.h"
 #include "sftp_browser.h"
+#include "sftp_queue.h"
 #include "strwrap.h"
 #include "syncterm.h"
 #include "telnet_io.h"
@@ -489,6 +490,12 @@ update_status(struct bbslist *bbs, int speed, int ooii_mode, bool ata_inv)
 		newbits |= 0x40;
 		force_status_update = false;
 	}
+	uint32_t sftp_up_active = 0, sftp_dn_active = 0;
+	sftp_queue_activity(&sftp_up_active, &sftp_dn_active);
+	if (sftp_up_active > 0)
+		newbits |= 0x80;
+	if (sftp_dn_active > 0)
+		newbits |= 0x100;
 	if (rip_did_reinit)
 		rip_did_reinit = false;
 	else {
@@ -558,6 +565,32 @@ update_status(struct bbslist *bbs, int speed, int ooii_mode, bool ata_inv)
 		else {
 			status_bar[30].fg = 0x80ffff54;
 			status_bar[30].legacy_attr = 0x1e;
+		}
+	}
+	/* SFTP transfer activity: ↑ at col 28, ↓ at col 29.  Lit bright
+	 * yellow like an active 'M'; blanked to the usual status-bar
+	 * background when idle so the column doesn't linger after a
+	 * transfer finishes. */
+	if (status_bar_sz > 29) {
+		if (sftp_up_active > 0) {
+			status_bar[28].ch = 0x18;  /* CP437 ↑ */
+			status_bar[28].fg = 0x80ffff54;
+			status_bar[28].legacy_attr = 0x1e;
+		}
+		else {
+			status_bar[28].ch = ' ';
+			status_bar[28].fg = 0x80ffff54;
+			status_bar[28].legacy_attr = 0x1e;
+		}
+		if (sftp_dn_active > 0) {
+			status_bar[29].ch = 0x19;  /* CP437 ↓ */
+			status_bar[29].fg = 0x80ffff54;
+			status_bar[29].legacy_attr = 0x1e;
+		}
+		else {
+			status_bar[29].ch = ' ';
+			status_bar[29].fg = 0x80ffff54;
+			status_bar[29].legacy_attr = 0x1e;
 		}
 	}
 	vmem_puttext(term.x - 1, term.y + term.height - 1, term.x + term.width - 2, term.y + term.height - 1
