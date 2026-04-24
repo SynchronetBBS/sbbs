@@ -4,17 +4,14 @@ project (SFTP C)
 
 cmake_minimum_required(VERSION 3.11)
 
+# Single-TU build: sftp.c #includes the other .c files (sftp_attr.c,
+# sftp_client.c, sftp_common.c, sftp_pkt.c, sftp_server.c, sftp_str.c).
+# Only sftp.c is compiled as a standalone translation unit.
 set(SOURCE
-	sftp_attr.c
-	sftp_client.c
-	sftp_pkt.c
-	sftp_server.c
-	sftp_str.c
+	sftp.c
 )
 
 set(HEADER
-	sftp_internal.h
-	sftp_static.h
 	sftp.h
 )
 
