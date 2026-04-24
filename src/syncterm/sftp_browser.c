@@ -27,6 +27,7 @@
 #include "ciolib.h"
 #include "sftp.h"
 #include "sftp_browser.h"
+#include "sftp_queue.h"
 #include "sftp_session.h"
 #include "uifcinit.h"
 
@@ -121,36 +122,22 @@ format_mtime(uint32_t mtime, char *buf, size_t bufsz)
 }
 
 /*
- * Compare this remote file against the same basename in the session's
- * download directory.  Returns the 4-character status tag: "[==]" if
- * size+mtime match, "[<>]" if both exist but differ, spaces otherwise
- * (no local counterpart, or we couldn't decide).
+ * 4-character status tag shown to the left of each filename.
+ *
+ *   Queue-aware (overrides local compare when the file has a job):
+ *     [\x18\x18]  upload active      [Q\x18]  upload queued
+ *     [\x19\x19]  download active    [Q\x19]  download queued
+ *     [er]        last attempt failed
+ *     [cx]        last attempt cancelled
+ *
+ *   Local compare (no job in queue):
+ *     [==]        local dldir copy matches size + mtime
+ *     [<>]        local dldir copy exists but differs
+ *     (blank)     no local counterpart
  */
-static void
-compare_local(const char *dldir, const char *name,
-              sftp_file_attr_t attr, bool is_dir, char *out)
-{
-	strcpy(out, "    ");
-	if (is_dir || dldir == NULL || dldir[0] == '\0')
-		return;
-	char *lpath = path_join(dldir, name);
-	if (lpath == NULL)
-		return;
-	struct stat lst;
-	int rc = stat(lpath, &lst);
-	free(lpath);
-	if (rc != 0)
-		return;
-	uint64_t rsize = 0;
-	uint32_t rmtime = 0;
-	if (!sftp_fattr_get_size(attr, &rsize))
-		return;
-	(void)sftp_fattr_get_mtime(attr, &rmtime);
-	if ((uint64_t)lst.st_size == rsize && (uint32_t)lst.st_mtime == rmtime)
-		strcpy(out, "[==]");
-	else
-		strcpy(out, "[<>]");
-}
+struct entry;   /* forward */
+static void rebuild_status_chip(const struct entry *e,
+                                const char *dldir, char *out4);
 
 /* ---- Entry list builder ----------------------------------------------- */
 
@@ -164,12 +151,66 @@ compare_local(const char *dldir, const char *name,
  */
 
 struct entry {
-	char *name;      /* filename or ".." */
-	char *line;      /* formatted display line */
-	char *lname;     /* long name from lname@syncterm.net ext attr, or NULL */
-	bool  is_dir;
-	bool  is_parent; /* the ".." entry */
+	char    *name;     /* filename or ".." */
+	char    *line;     /* formatted display line */
+	char    *lname;    /* long name from lname@syncterm.net ext attr, or NULL */
+	char    *rpath;    /* full remote path for queue lookups */
+	uint64_t size;     /* remote file size (for local-compare) */
+	uint32_t mtime;    /* remote mtime (for local-compare) */
+	bool     is_dir;
+	bool     is_parent; /* the ".." entry */
 };
+
+/* Byte offset in entry->line where the 4-char status chip starts.  Kept
+ * in sync with load_dir's snprintf format: szbuf(10) + ' ' + datebuf(10)
+ * + ' ' = 22. */
+#define STATUS_COL_OFF 22
+
+static void
+rebuild_status_chip(const struct entry *e, const char *dldir, char *out4)
+{
+	memcpy(out4, "    ", 4);
+	if (e->is_dir || e->is_parent || dldir == NULL || dldir[0] == '\0')
+		return;
+	int sdn = (e->rpath != NULL) ? sftp_queue_status(SFTP_JOB_DN, e->rpath) : -1;
+	int sup = (e->rpath != NULL) ? sftp_queue_status(SFTP_JOB_UP, e->rpath) : -1;
+	if (sdn == SFTP_JOB_ACTIVE) {
+		memcpy(out4, "[\x19\x19]", 4);
+		return;
+	}
+	if (sup == SFTP_JOB_ACTIVE) {
+		memcpy(out4, "[\x18\x18]", 4);
+		return;
+	}
+	if (sdn == SFTP_JOB_QUEUED) {
+		memcpy(out4, "[Q\x19]", 4);
+		return;
+	}
+	if (sup == SFTP_JOB_QUEUED) {
+		memcpy(out4, "[Q\x18]", 4);
+		return;
+	}
+	if (sdn == SFTP_JOB_FAILED || sup == SFTP_JOB_FAILED) {
+		memcpy(out4, "[er]", 4);
+		return;
+	}
+	if (sdn == SFTP_JOB_CANCELLED || sup == SFTP_JOB_CANCELLED) {
+		memcpy(out4, "[cx]", 4);
+		return;
+	}
+	char *lpath = path_join(dldir, e->name);
+	if (lpath == NULL)
+		return;
+	struct stat lst;
+	int rc = stat(lpath, &lst);
+	free(lpath);
+	if (rc != 0)
+		return;
+	if ((uint64_t)lst.st_size == e->size && (uint32_t)lst.st_mtime == e->mtime)
+		memcpy(out4, "[==]", 4);
+	else
+		memcpy(out4, "[<>]", 4);
+}
 
 static int
 cmp_entry(const void *a, const void *b)
@@ -192,6 +233,7 @@ free_entries(struct entry *entries, uint32_t count)
 		free(entries[i].name);
 		free(entries[i].line);
 		free(entries[i].lname);
+		free(entries[i].rpath);
 	}
 	free(entries);
 }
@@ -323,11 +365,19 @@ load_dir(const char *path, const char *dldir, uint32_t *out_count)
 			char statbuf[STATUS_COL_W + 1];
 			format_size(sz, is_dir, szbuf, sizeof(szbuf));
 			format_mtime(mtime, datebuf, sizeof(datebuf));
-			compare_local(dldir, nm, chunk[i].attrs, is_dir, statbuf);
+			struct entry tmp = {0};
+			tmp.name = (char *)nm;      /* borrowed for rebuild_status_chip */
+			tmp.rpath = path_join(path, nm);
+			tmp.size = sz;
+			tmp.mtime = mtime;
+			tmp.is_dir = is_dir;
+			rebuild_status_chip(&tmp, dldir, statbuf);
+			statbuf[STATUS_COL_W] = '\0';
 			size_t linesz = strlen(szbuf) + 1 + strlen(datebuf) + 1 +
-			                strlen(statbuf) + 1 + display_len + 1;
+			                STATUS_COL_W + 1 + display_len + 1;
 			char *line = (char *)malloc(linesz);
 			if (line == NULL) {
+				free(tmp.rpath);
 				free(lname);
 				sftpc_free_dir_entries(chunk, chunk_n);
 				free_entries(entries, nentries);
@@ -340,10 +390,14 @@ load_dir(const char *path, const char *dldir, uint32_t *out_count)
 			entries[nentries].name = strdup(nm);
 			entries[nentries].line = line;
 			entries[nentries].lname = lname;
+			entries[nentries].rpath = tmp.rpath;
+			entries[nentries].size = sz;
+			entries[nentries].mtime = mtime;
 			entries[nentries].is_dir = is_dir;
 			entries[nentries].is_parent = false;
 			if (entries[nentries].name == NULL) {
 				free(line);
+				free(tmp.rpath);
 				free(lname);
 				sftpc_free_dir_entries(chunk, chunk_n);
 				free_entries(entries, nentries);
@@ -470,28 +524,41 @@ sftp_browser_run(struct bbslist *bbs)
 		uifc.helpbuf =
 		    "`SFTP Browser`\n\n"
 		    "Browse the remote filesystem.  Each row shows the file's\n"
-		    "size, last-modified date, a local-compare status, and the\n"
+		    "size, last-modified date, a queue/compare status, and the\n"
 		    "name.\n\n"
 		    "~ Status column ~\n"
-		    "  `[==]`  Local file of the same name matches size and mtime.\n"
-		    "  `[<>]`  Local file exists but differs.\n"
-		    "  blank   No local file.\n\n"
-		    "~ Navigation ~\n"
-		    "  `Enter` on a directory descends into it.\n"
-		    "  `Enter` on `..` returns to the parent directory.\n"
-		    "  `Esc` leaves the browser and returns to the terminal.\n\n"
-		    "This browser is read-only in this build.\n";
+		    "  `[==]`  Local copy in download dir matches size + mtime.\n"
+		    "  `[<>]`  Local copy exists but differs.\n"
+		    "  `[Q\x19]`  Download is queued.\n"
+		    "  `[Q\x18]`  Upload is queued.\n"
+		    "  `[\x19\x19]`  Download is in progress.\n"
+		    "  `[\x18\x18]`  Upload is in progress.\n"
+		    "  `[er]`  Last transfer failed.\n"
+		    "  `[cx]`  Last transfer cancelled.\n"
+		    "  blank   No local file, no pending transfer.\n\n"
+		    "~ Keys ~\n"
+		    "  `Enter`   On a directory, descend into it.\n"
+		    "  `D`       Download the highlighted file to the session's\n"
+		    "          download directory.\n"
+		    "  `U`       Upload a file of the same name from the session's\n"
+		    "          upload directory, replacing the remote copy.\n"
+		    "  `Del`     Cancel a queued/active transfer for the file.\n"
+		    "  `Esc`     Leave the browser and return to the terminal.\n";
 
 		/* Inner loop: stay on this directory listing, polling with
 		 * WIN_DYN so we can redraw the file-lname preview line as
-		 * the cursor moves.  WIN_DYN returns -2 - gotkey on each
-		 * tick (gotkey = 0 when no key was pressed); we sleep a bit
-		 * between polls so we don't pin the CPU.  Normal selection
-		 * returns *cur as a non-negative value; Esc returns -1. */
+		 * the cursor moves and refresh the status column when queue
+		 * state changes.  WIN_DYN returns -2 - gotkey on each tick
+		 * (gotkey = 0 for a pure tick, otherwise the key code).  We
+		 * sleep a bit between polls so we don't pin the CPU.  Normal
+		 * selection returns *cur as a non-negative value; Esc returns
+		 * -1. */
 		int rc = 0;
 		int last_cur = -1;
 		bool first = true;
+		bool force_redraw = false;
 		int selected_idx = -1;
+		uint64_t last_gen = sftp_queue_gen();
 		while (true) {
 			if (cur != last_cur) {
 				const char *prev = NULL;
@@ -503,16 +570,78 @@ sftp_browser_run(struct bbslist *bbs)
 				draw_preview_line(prev);
 				last_cur = cur;
 			}
-			uifc_winmode_t mode = WIN_MID | WIN_SAV | WIN_ACT | WIN_DYN | WIN_FIXEDHEIGHT;
-			if (!first)
+			/* Refresh status chips in-place when the queue state
+			 * changes.  Line layout is fixed so we can overwrite
+			 * the 4-char chip at STATUS_COL_OFF without reallocating.
+			 * Force a redraw on the next uifc.list call so the
+			 * updated text actually paints. */
+			uint64_t cur_gen = sftp_queue_gen();
+			if (cur_gen != last_gen) {
+				last_gen = cur_gen;
+				for (uint32_t i = 0; i < nentries; i++) {
+					if (entries[i].is_parent || entries[i].line == NULL)
+						continue;
+					rebuild_status_chip(&entries[i], bbs->dldir,
+					    &entries[i].line[STATUS_COL_OFF]);
+				}
+				force_redraw = true;
+			}
+			uifc_winmode_t mode = WIN_MID | WIN_SAV | WIN_ACT | WIN_DYN
+			    | WIN_FIXEDHEIGHT | WIN_EXTKEYS;
+			if (!first && !force_redraw)
 				mode |= WIN_NODRAW;
+			force_redraw = false;
 			first = false;
 			rc = uifc.list(mode, 0, 0, 0, &cur, &bar, title, opts);
 			if (rc == -1) {               /* Esc */
 				done = true;
 				break;
 			}
-			if (rc < -1) {                /* WIN_DYN tick or unhandled key */
+			if (rc < -1) {                /* WIN_DYN tick or extended key */
+				int key = -2 - rc;
+				struct entry *e = NULL;
+				if (cur >= 0 && cur < (int)nentries)
+					e = &entries[cur];
+				if (e != NULL && !e->is_dir && !e->is_parent
+				    && e->rpath != NULL) {
+					if (key == 'u' || key == 'U') {
+						char *lp = (bbs->uldir[0])
+						    ? path_join(bbs->uldir, e->name) : NULL;
+						if (lp == NULL) {
+							uifcmsg("No upload directory configured", NULL);
+						}
+						else {
+							struct stat lst;
+							if (stat(lp, &lst) != 0) {
+								char m[MAX_PATH + 64];
+								snprintf(m, sizeof(m),
+								    "No local file: %s", lp);
+								uifcmsg(m, NULL);
+							}
+							else {
+								sftp_queue_enqueue(SFTP_JOB_UP, lp,
+								    e->rpath, (uint64_t)lst.st_size);
+							}
+							free(lp);
+						}
+					}
+					else if (key == 'd' || key == 'D') {
+						char *lp = (bbs->dldir[0])
+						    ? path_join(bbs->dldir, e->name) : NULL;
+						if (lp == NULL) {
+							uifcmsg("No download directory configured", NULL);
+						}
+						else {
+							sftp_queue_enqueue(SFTP_JOB_DN, lp,
+							    e->rpath, e->size);
+							free(lp);
+						}
+					}
+					else if (key == CIO_KEY_DC) {
+						sftp_queue_cancel(SFTP_JOB_UP, e->rpath);
+						sftp_queue_cancel(SFTP_JOB_DN, e->rpath);
+					}
+				}
 				SLEEP(50);            /* throttle poll rate */
 				continue;
 			}
