@@ -21,6 +21,8 @@
 #include <time.h>
 
 #include <genwrap.h>
+#include <md5.h>
+#include <sha1.h>
 #include <uifc.h>
 
 #include "bbslist.h"
@@ -157,6 +159,8 @@ struct entry {
 	char    *rpath;    /* full remote path for queue lookups */
 	uint64_t size;     /* remote file size (for local-compare) */
 	uint32_t mtime;    /* remote mtime (for local-compare) */
+	uint8_t  hash[SHA1_DIGEST_SIZE];  /* sha1s/md5s extension hash, if any */
+	uint8_t  hash_len; /* 20=sha1, 16=md5, 0=none */
 	bool     is_dir;
 	bool     is_parent; /* the ".." entry */
 };
@@ -165,6 +169,42 @@ struct entry {
  * in sync with load_dir's snprintf format: szbuf(10) + ' ' + datebuf(10)
  * + ' ' = 22. */
 #define STATUS_COL_OFF 22
+
+/*
+ * Stream-hash the local file and write `hash_len` bytes into `out`.
+ * Returns true on success.  Called only when the remote file exposed a
+ * sha1s / md5s extension AND the file's size already matches, so the
+ * caller has a reasonable prior that the hashes will match too.
+ */
+static bool
+hash_local_file(const char *path, uint8_t *out, uint8_t hash_len)
+{
+	FILE *f = fopen(path, "rb");
+	if (f == NULL)
+		return false;
+	uint8_t buf[16384];
+	bool ok = false;
+	if (hash_len == SHA1_DIGEST_SIZE) {
+		SHA1_CTX ctx;
+		SHA1Init(&ctx);
+		size_t n;
+		while ((n = fread(buf, 1, sizeof(buf), f)) > 0)
+			SHA1Update(&ctx, buf, n);
+		ok = !ferror(f);
+		SHA1Final(&ctx, out);
+	}
+	else if (hash_len == MD5_DIGEST_SIZE) {
+		MD5 ctx;
+		MD5_open(&ctx);
+		size_t n;
+		while ((n = fread(buf, 1, sizeof(buf), f)) > 0)
+			MD5_digest(&ctx, buf, n);
+		ok = !ferror(f);
+		MD5_close(&ctx, out);
+	}
+	fclose(f);
+	return ok;
+}
 
 static void
 rebuild_status_chip(const struct entry *e, const char *dldir, char *out4)
@@ -203,10 +243,34 @@ rebuild_status_chip(const struct entry *e, const char *dldir, char *out4)
 		return;
 	struct stat lst;
 	int rc = stat(lpath, &lst);
-	free(lpath);
-	if (rc != 0)
+	if (rc != 0) {
+		free(lpath);
 		return;
-	if ((uint64_t)lst.st_size == e->size && (uint32_t)lst.st_mtime == e->mtime)
+	}
+	/* Size is the cheap first filter: if bytes differ, nothing else
+	 * can make them equal. */
+	if ((uint64_t)lst.st_size != e->size) {
+		free(lpath);
+		memcpy(out4, "[<>]", 4);
+		return;
+	}
+	/* Size matches.  If the server gave us a cryptographic hash,
+	 * that's authoritative — compute the local hash and compare.
+	 * Otherwise fall back to mtime. */
+	if (e->hash_len != 0) {
+		uint8_t local_hash[SHA1_DIGEST_SIZE];
+		bool ok = hash_local_file(lpath, local_hash, e->hash_len);
+		free(lpath);
+		if (!ok)
+			return;
+		if (memcmp(local_hash, e->hash, e->hash_len) == 0)
+			memcpy(out4, "[==]", 4);
+		else
+			memcpy(out4, "[<>]", 4);
+		return;
+	}
+	free(lpath);
+	if ((uint32_t)lst.st_mtime == e->mtime)
 		memcpy(out4, "[==]", 4);
 	else
 		memcpy(out4, "[<>]", 4);
@@ -351,6 +415,30 @@ load_dir(const char *path, const char *dldir, uint32_t *out_count)
 					}
 				}
 			}
+			/* Prefer SHA-1 over MD5 when both are on the file —
+			 * stronger hash, no real cost difference. */
+			uint8_t hash_bytes[SHA1_DIGEST_SIZE];
+			uint8_t hash_len = 0;
+			if (!is_dir) {
+				uint32_t exts = sftpc_get_extensions(sftp_state);
+				sftp_str_t h = NULL;
+				if (exts & SFTP_EXT_SHA1S) {
+					h = sftp_fattr_get_ext_by_type(chunk[i].attrs,
+					    SFTP_EXT_NAME_SHA1S);
+					if (h != NULL && h->len == SHA1_DIGEST_SIZE) {
+						memcpy(hash_bytes, h->c_str, SHA1_DIGEST_SIZE);
+						hash_len = SHA1_DIGEST_SIZE;
+					}
+				}
+				if (hash_len == 0 && (exts & SFTP_EXT_MD5S)) {
+					h = sftp_fattr_get_ext_by_type(chunk[i].attrs,
+					    SFTP_EXT_NAME_MD5S);
+					if (h != NULL && h->len == MD5_DIGEST_SIZE) {
+						memcpy(hash_bytes, h->c_str, MD5_DIGEST_SIZE);
+						hash_len = MD5_DIGEST_SIZE;
+					}
+				}
+			}
 			/* Directories with an lname render the lname in the name
 			 * column; files keep their filename and the lname goes to
 			 * the preview line below. */
@@ -371,6 +459,10 @@ load_dir(const char *path, const char *dldir, uint32_t *out_count)
 			tmp.size = sz;
 			tmp.mtime = mtime;
 			tmp.is_dir = is_dir;
+			if (hash_len != 0) {
+				memcpy(tmp.hash, hash_bytes, hash_len);
+				tmp.hash_len = hash_len;
+			}
 			rebuild_status_chip(&tmp, dldir, statbuf);
 			statbuf[STATUS_COL_W] = '\0';
 			size_t linesz = strlen(szbuf) + 1 + strlen(datebuf) + 1 +
@@ -395,6 +487,13 @@ load_dir(const char *path, const char *dldir, uint32_t *out_count)
 			entries[nentries].mtime = mtime;
 			entries[nentries].is_dir = is_dir;
 			entries[nentries].is_parent = false;
+			if (hash_len != 0) {
+				memcpy(entries[nentries].hash, hash_bytes, hash_len);
+				entries[nentries].hash_len = hash_len;
+			}
+			else {
+				entries[nentries].hash_len = 0;
+			}
 			if (entries[nentries].name == NULL) {
 				free(line);
 				free(tmp.rpath);
@@ -527,7 +626,10 @@ sftp_browser_run(struct bbslist *bbs)
 		    "size, last-modified date, a queue/compare status, and the\n"
 		    "name.\n\n"
 		    "~ Status column ~\n"
-		    "  `[==]`  Local copy in download dir matches size + mtime.\n"
+		    "  `[==]`  Local copy in download dir matches the remote.\n"
+		    "        When the server publishes a SHA-1 or MD5 hash, the\n"
+		    "        match is verified against the local bytes; otherwise\n"
+		    "        size + mtime are used.\n"
 		    "  `[<>]`  Local copy exists but differs.\n"
 		    "  `[Q\x19]`  Download is queued.\n"
 		    "  `[Q\x18]`  Upload is queued.\n"
@@ -542,6 +644,8 @@ sftp_browser_run(struct bbslist *bbs)
 		    "  `Ins`    Upload a file of the same name from the session's\n"
 		    "         upload directory, replacing the remote copy.\n"
 		    "  `Del`    Cancel a queued/active transfer for the file.\n"
+		    "  `F2`     Show the file's extended description (when the\n"
+		    "         server advertises `descs@syncterm.net`).\n"
 		    "  `Esc`    Leave the browser and return to the terminal.\n";
 
 		/* Inner loop: stay on this directory listing, polling with
@@ -627,6 +731,36 @@ sftp_browser_run(struct bbslist *bbs)
 					else if (key == CIO_KEY_DC) {
 						sftp_queue_cancel(SFTP_JOB_UP, e->rpath);
 						sftp_queue_cancel(SFTP_JOB_DN, e->rpath);
+					}
+					else if (key == CIO_KEY_F(2)) {
+						if (!(sftpc_get_extensions(sftp_state) & SFTP_EXT_DESCS)) {
+							uifcmsg("No description available",
+							    "`No description`\n\n"
+							    "The server did not advertise the\n"
+							    "`descs@syncterm.net` extension.");
+						}
+						else {
+							sftp_str_t desc = NULL;
+							if (sftpc_descs(sftp_state, e->rpath, &desc)
+							    && desc != NULL && desc->len > 0) {
+								char *body = (char *)malloc(desc->len + 1);
+								if (body != NULL) {
+									memcpy(body, desc->c_str, desc->len);
+									body[desc->len] = '\0';
+									uifc.showbuf(WIN_SAV | WIN_MID, 0, 0,
+									    76, uifc.scrn_len - 2,
+									    e->name, body, NULL, NULL);
+									free(body);
+								}
+							}
+							else {
+								char m[MAX_PATH + 32];
+								snprintf(m, sizeof(m), "No description: %s", e->name);
+								uifcmsg(m, NULL);
+							}
+							free_sftp_str(desc);
+						}
+						force_redraw = true;
 					}
 				}
 				SLEEP(50);            /* throttle poll rate */
