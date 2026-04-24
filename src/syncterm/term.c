@@ -18,6 +18,7 @@
 #include "menu.h"
 #include "saucedefs.h"
 #include "sexyz.h"
+#include "sftp_browser.h"
 #include "strwrap.h"
 #include "syncterm.h"
 #include "telnet_io.h"
@@ -6249,6 +6250,11 @@ doterm(struct bbslist *bbs)
 					setup_mouse_events(&ms);
 					showmouse();
 					sleep = false;
+					break;
+				case 0x1f00: /* ALT-S - SFTP browser */
+					sftp_browser_run(bbs);
+					setup_mouse_events(&ms);
+					showmouse();
 					break;
 				case 0x1600: /* ALT-U - Upload */
 					begin_upload(bbs, false, inch);
