@@ -157,6 +157,7 @@ ifndef WITHOUT_DEUCESSH
  # honest: the probe may set it, and then nothing references dssh_* or
  # ssh.o at all.
  OBJS       += $(MTOBJODIR)$(DIRSEP)ssh$(OFILE)
+ OBJS       += $(MTOBJODIR)$(DIRSEP)sftp_browser$(OFILE)
  CFLAGS     += -I$(SRC_ROOT)/ssh $(SFTP-MT_CFLAGS)
  LDFLAGS    += $(SFTP-MT_LDFLAGS)
  EXTRA_LIBS += $(SFTP-MT_LIBS) $(DEUCESSH_LIB)
