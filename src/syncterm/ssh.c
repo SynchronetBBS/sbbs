@@ -505,7 +505,7 @@ ssh_input_thread(void *args)
 	conn_api.input_thread_running = 1;
 	stderr_sink = malloc(stderr_sink_sz);
 
-	while (!conn_api.terminate) {
+	while (!conn_api.terminate && sftp_shell_alive) {
 		int events = dssh_chan_poll(ssh_chan, DSSH_POLL_READ | DSSH_POLL_READEXT, 100);
 		if (events < 0)
 			break;
@@ -515,10 +515,8 @@ ssh_input_thread(void *args)
 			int64_t n = dssh_chan_read(ssh_chan, 0, conn_api.rd_buf, conn_api.rd_buf_size);
 			if (n < 0)
 				break;
-			if (n == 0) {
-				conn_api.terminate = true;
-				break;
-			}
+			if (n == 0)
+				break;   /* shell EOF — handled after loop */
 			size_t buffered = 0;
 			while ((size_t)buffered < (size_t)n && !conn_api.terminate) {
 				assert_pthread_mutex_lock(&(conn_inbuf.mutex));
@@ -536,7 +534,14 @@ ssh_input_thread(void *args)
 				break;
 		}
 	}
-	conn_api.terminate = true;
+	/* Shell is gone.  Keep conn_api.terminate clear if SFTP still
+	 * has outstanding work — the queue-degraded overlay in term.c
+	 * will fire, and sftp_send / sftp_recv_thread (which both gate
+	 * on conn_api.terminate) need to keep running.  If the queue is
+	 * idle, fall through to normal disconnect. */
+	sftp_shell_alive = false;
+	if (!sftp_queue_has_work())
+		conn_api.terminate = true;
 	free(stderr_sink);
 	conn_api.input_thread_running = 2;
 }
@@ -547,17 +552,17 @@ ssh_output_thread(void *args)
 	(void)args;
 	SetThreadName("SSH Output");
 	conn_api.output_thread_running = 1;
-	while (!conn_api.terminate) {
+	while (!conn_api.terminate && sftp_shell_alive) {
 		assert_pthread_mutex_lock(&(conn_outbuf.mutex));
 		size_t wr = conn_buf_wait_bytes(&conn_outbuf, 1, 100);
 		if (wr) {
 			wr = conn_buf_get(&conn_outbuf, conn_api.wr_buf, conn_api.wr_buf_size);
 			assert_pthread_mutex_unlock(&(conn_outbuf.mutex));
 			size_t sent = 0;
-			while (sent < wr && !conn_api.terminate) {
+			while (sent < wr && !conn_api.terminate && sftp_shell_alive) {
 				int64_t n = dssh_chan_write(ssh_chan, 0, conn_api.wr_buf + sent, wr - sent);
 				if (n < 0) {
-					conn_api.terminate = true;
+					sftp_shell_alive = false;
 					break;
 				}
 				sent += (size_t)n;
@@ -567,7 +572,10 @@ ssh_output_thread(void *args)
 			assert_pthread_mutex_unlock(&(conn_outbuf.mutex));
 		}
 	}
-	conn_api.terminate = true;
+	/* Same split as ssh_input_thread: leave conn_api.terminate clear
+	 * if SFTP has queue work pending. */
+	if (!sftp_queue_has_work())
+		conn_api.terminate = true;
 	conn_api.output_thread_running = 2;
 }
 
@@ -625,7 +633,7 @@ sftp_send(uint8_t *buf, size_t sz, void *cb_data)
  * support SFTP, leaves sftp_available = false and returns silently.
  */
 static void
-sftp_session_start(void)
+sftp_session_start(struct bbslist *bbs)
 {
 	struct dssh_chan_params params;
 
@@ -664,6 +672,7 @@ sftp_session_start(void)
 
 	sftp_available = true;
 	sftp_queue_start();
+	sftp_queue_attach_bbs(bbs);
 }
 
 static void
@@ -1035,7 +1044,7 @@ ssh_connect(struct bbslist *bbs)
 
 	/* Open the persistent SFTP subsystem channel.  Servers without SFTP
 	 * support will leave sftp_available = false; the shell still works. */
-	sftp_session_start();
+	sftp_session_start(bbs);
 
 	if (!bbs->hidepopups)
 		uifc.pop(NULL);

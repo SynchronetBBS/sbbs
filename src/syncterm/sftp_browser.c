@@ -537,13 +537,12 @@ sftp_browser_run(struct bbslist *bbs)
 		    "  `[cx]`  Last transfer cancelled.\n"
 		    "  blank   No local file, no pending transfer.\n\n"
 		    "~ Keys ~\n"
-		    "  `Enter`   On a directory, descend into it.\n"
-		    "  `D`       Download the highlighted file to the session's\n"
-		    "          download directory.\n"
-		    "  `U`       Upload a file of the same name from the session's\n"
-		    "          upload directory, replacing the remote copy.\n"
-		    "  `Del`     Cancel a queued/active transfer for the file.\n"
-		    "  `Esc`     Leave the browser and return to the terminal.\n";
+		    "  `Enter`  Directory: descend into it.  `..`: go up.\n"
+		    "         File: download to the session's download directory.\n"
+		    "  `Ins`    Upload a file of the same name from the session's\n"
+		    "         upload directory, replacing the remote copy.\n"
+		    "  `Del`    Cancel a queued/active transfer for the file.\n"
+		    "  `Esc`    Leave the browser and return to the terminal.\n";
 
 		/* Inner loop: stay on this directory listing, polling with
 		 * WIN_DYN so we can redraw the file-lname preview line as
@@ -604,7 +603,7 @@ sftp_browser_run(struct bbslist *bbs)
 					e = &entries[cur];
 				if (e != NULL && !e->is_dir && !e->is_parent
 				    && e->rpath != NULL) {
-					if (key == 'u' || key == 'U') {
+					if (key == CIO_KEY_IC) {
 						char *lp = (bbs->uldir[0])
 						    ? path_join(bbs->uldir, e->name) : NULL;
 						if (lp == NULL) {
@@ -625,18 +624,6 @@ sftp_browser_run(struct bbslist *bbs)
 							free(lp);
 						}
 					}
-					else if (key == 'd' || key == 'D') {
-						char *lp = (bbs->dldir[0])
-						    ? path_join(bbs->dldir, e->name) : NULL;
-						if (lp == NULL) {
-							uifcmsg("No download directory configured", NULL);
-						}
-						else {
-							sftp_queue_enqueue(SFTP_JOB_DN, lp,
-							    e->rpath, e->size);
-							free(lp);
-						}
-					}
 					else if (key == CIO_KEY_DC) {
 						sftp_queue_cancel(SFTP_JOB_UP, e->rpath);
 						sftp_queue_cancel(SFTP_JOB_DN, e->rpath);
@@ -645,8 +632,27 @@ sftp_browser_run(struct bbslist *bbs)
 				SLEEP(50);            /* throttle poll rate */
 				continue;
 			}
-			/* rc >= 0 — selection */
-			selected_idx = (int)(rc & MSK_OFF);
+			/* rc >= 0 — Enter.  Files: enqueue download and keep
+			 * the list open.  Directories (including "..") break out
+			 * so the outer loop descends/ascends and reloads. */
+			int idx = (int)(rc & MSK_OFF);
+			if (idx >= 0 && idx < (int)nentries) {
+				struct entry *e = &entries[idx];
+				if (!e->is_dir && !e->is_parent && e->rpath != NULL) {
+					char *lp = (bbs->dldir[0])
+					    ? path_join(bbs->dldir, e->name) : NULL;
+					if (lp == NULL) {
+						uifcmsg("No download directory configured", NULL);
+					}
+					else {
+						sftp_queue_enqueue(SFTP_JOB_DN, lp,
+						    e->rpath, e->size);
+						free(lp);
+					}
+					continue;
+				}
+			}
+			selected_idx = idx;
 			break;
 		}
 		free(opts);

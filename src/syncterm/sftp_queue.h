@@ -24,11 +24,21 @@ enum sftp_job_status {
 	SFTP_JOB_CANCELLED,
 };
 
+struct bbslist;
+
 /*
  * Launches the uploader + downloader threads.  Idempotent.  Must be
  * called only after sftp_available is true.
  */
 void sftp_queue_start(void);
+
+/*
+ * Binds the queue to a specific BBS for persistence: records the per-BBS
+ * cache path, loads any previously-saved jobs, and saves on every state
+ * transition thereafter.  Must be called AFTER sftp_queue_start().  Safe
+ * to call with NULL to operate the queue purely in-memory.
+ */
+void sftp_queue_attach_bbs(struct bbslist *bbs);
 
 /*
  * Signals the workers to finish the current chunk and exit; drops all
@@ -56,6 +66,13 @@ bool sftp_queue_enqueue(enum sftp_job_dir dir,
  * indicator; lock-free.
  */
 void sftp_queue_activity(uint32_t *up, uint32_t *dn);
+
+/*
+ * True if any job is QUEUED or ACTIVE.  Used by the shell-dead
+ * degraded mode to decide whether to keep the session alive after
+ * the interactive shell closes.
+ */
+bool sftp_queue_has_work(void);
 
 /*
  * Bumped on every enqueue and every job state transition.  Consumers

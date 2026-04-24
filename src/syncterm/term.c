@@ -19,7 +19,9 @@
 #include "saucedefs.h"
 #include "sexyz.h"
 #include "sftp_browser.h"
+#include "sftp_degraded.h"
 #include "sftp_queue.h"
+#include "sftp_queue_screen.h"
 #include "strwrap.h"
 #include "syncterm.h"
 #include "telnet_io.h"
@@ -6007,6 +6009,14 @@ doterm(struct bbslist *bbs)
 						if (!is_connected(NULL)) {
 							WRITE_OUTBUF();
 							hold_update = oldmc;
+							/* Shell closed but SFTP transfers may
+							 * still be in progress — run the
+							 * degraded-mode overlay until they
+							 * drain or the user abandons them.
+							 * Returns immediately if there's no
+							 * work to wait on. */
+							if (!bbs->hidepopups)
+								sftp_degraded_run(bbs);
 							if (!bbs->hidepopups)
 								uifcmsg("Disconnected",
 								    "`Disconnected`\n\nRemote host dropped connection");
@@ -6286,6 +6296,11 @@ doterm(struct bbslist *bbs)
 					break;
 				case 0x1f00: /* ALT-S - SFTP browser */
 					sftp_browser_run(bbs);
+					setup_mouse_events(&ms);
+					showmouse();
+					break;
+				case 0x1000: /* ALT-Q - SFTP queue */
+					sftp_queue_screen_run(bbs);
 					setup_mouse_events(&ms);
 					showmouse();
 					break;
