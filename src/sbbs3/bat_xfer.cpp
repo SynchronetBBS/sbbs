@@ -424,6 +424,7 @@ bool sbbs_t::process_batch_upload_queue()
 	DIR*    dir = opendir(cfg.temp_dir);
 	DIRENT* dirent;
 	while (dir != NULL && (dirent = readdir(dir)) != NULL) {
+		term->lncntr = 0; /* defeat pause */
 		SAFEPRINTF2(src, "%s%s", cfg.temp_dir, dirent->d_name);
 		if (isdir(src))
 			continue;
