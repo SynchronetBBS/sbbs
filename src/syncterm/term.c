@@ -57,6 +57,10 @@ static char ansi_replybuf[2048];
  #define MIN(a, b) ((a) < (b) ? (a) : (b))
 #endif
 
+#ifndef MAX
+ #define MAX(a, b) ((a) > (b) ? (a) : (b))
+#endif
+
 struct terminal   term;
 struct cterminal *cterm;
 
@@ -193,6 +197,18 @@ setup_mouse_events(struct mouse_state *ms)
 	mousepointer(CIOLIB_MOUSEPTR_BAR);
 }
 
+static void
+highlight_cell(struct vmem_cell *cell)
+{
+	if ((cell->legacy_attr & 0x70) != 0x10)
+		cell->legacy_attr = (cell->legacy_attr & 0x8F) | 0x10;
+	else
+		cell->legacy_attr = (cell->legacy_attr & 0x8F) | 0x60;
+	if (((cell->legacy_attr & 0x70) >> 4) == (cell->legacy_attr & 0x0F))
+		cell->legacy_attr |= 0x08;
+	attr2palette(cell->legacy_attr, &cell->fg, &cell->bg);
+}
+
 #if defined(__BORLANDC__)
  #pragma argsused
 #endif
@@ -207,11 +223,14 @@ mousedrag(struct vmem_cell *scrollback)
 	struct vmem_cell     *sbuffer;
 	size_t                sbufsize;
 	int                   pos, startpos, endpos, lines;
+	int                   x, y, x1, y1, x2, y2, rows, cols;
 	int                   outpos;
 	char                 *copybuf = NULL;
 	char                 *newcopybuf;
 	int                   lastchar;
 	struct ciolib_screen *savscrn;
+	bool                  rect_mode = false;
+	bool                  mode_locked = false;
 
 	sbufsize = (size_t)term.width * sizeof(*screen) * term.height;
 	screen = malloc(sbufsize);
@@ -237,6 +256,10 @@ mousedrag(struct vmem_cell *scrollback)
 		switch (key) {
 			case CIO_KEY_MOUSE:
 				getmouse(&mevent);
+				if (!mode_locked) {
+					rect_mode = !!(mevent.kbmodifiers & CIOLIB_KMOD_ALT);
+					mode_locked = true;
+				}
 				startpos = ((mevent.starty - 1) * term.width) + (mevent.startx - 1);
 				endpos = ((mevent.endy - 1) * term.width) + (mevent.endx - 1);
 				if (startpos >= term.width * term.height)
@@ -248,24 +271,32 @@ mousedrag(struct vmem_cell *scrollback)
 					endpos = startpos;
 					startpos = pos;
 				}
+				x1 = MIN(mevent.startx, mevent.endx) - 1;
+				x2 = MAX(mevent.startx, mevent.endx) - 1;
+				y1 = MIN(mevent.starty, mevent.endy) - 1;
+				y2 = MAX(mevent.starty, mevent.endy) - 1;
+				if (x1 < 0)
+					x1 = 0;
+				if (y1 < 0)
+					y1 = 0;
+				if (x2 >= term.width)
+					x2 = term.width - 1;
+				if (y2 >= term.height)
+					y2 = term.height - 1;
 				switch (mevent.event) {
 					case CIOLIB_MOUSE_MOVE:
 						break;
 					case CIOLIB_BUTTON_1_DRAG_MOVE:
 						memcpy(sbuffer, screen, sbufsize);
-						for (pos = startpos; pos <= endpos; pos++) {
-							if ((sbuffer[pos].legacy_attr & 0x70) != 0x10)
-								sbuffer[pos].legacy_attr =
-								    (sbuffer[pos].legacy_attr & 0x8F) | 0x10;
-							else
-								sbuffer[pos].legacy_attr =
-								    (sbuffer[pos].legacy_attr & 0x8F) | 0x60;
-							if (((sbuffer[pos].legacy_attr & 0x70) >> 4)
-							    == (sbuffer[pos].legacy_attr & 0x0F))
-								sbuffer[pos].legacy_attr |= 0x08;
-							attr2palette(sbuffer[pos].legacy_attr,
-							    &sbuffer[pos].fg,
-							    &sbuffer[pos].bg);
+						if (rect_mode) {
+							for (y = y1; y <= y2; y++) {
+								for (x = x1; x <= x2; x++)
+									highlight_cell(&sbuffer[y * term.width + x]);
+							}
+						}
+						else {
+							for (pos = startpos; pos <= endpos; pos++)
+								highlight_cell(&sbuffer[pos]);
 						}
 						vmem_puttext(term.x - 1,
 						    term.y - 1,
@@ -274,40 +305,80 @@ mousedrag(struct vmem_cell *scrollback)
 						    sbuffer);
 						break;
 					default:
-						lines = abs(mevent.endy - mevent.starty) + 1;
-						newcopybuf = realloc(copybuf, (endpos - startpos + 4 + lines * 2) * 4);
-						if (newcopybuf)
-							copybuf = newcopybuf;
-						else
-							goto cleanup;
-						outpos = 0;
-						lastchar = 0;
-						for (pos = startpos; pos <= endpos; pos++) {
-							size_t   outlen;
-							uint8_t *utf8str;
-							int cp = conio_fontdata[screen[pos].font].cp;
-
-							if (cp == CIOLIB_PRESTEL && (screen[pos].bg & 0x20000000))
-								cp = CIOLIB_PRESTEL_SEP;
-							utf8str =
-							    cp_to_utf8(cp, (char *)&screen[pos].ch, 1, &outlen);
-							if (utf8str == NULL)
-								continue;
-							memcpy(copybuf + outpos, utf8str, outlen);
-							outpos += outlen;
-							if ((screen[pos].ch != ' ') && screen[pos].ch)
+						if (rect_mode) {
+							rows = y2 - y1 + 1;
+							cols = x2 - x1 + 1;
+							newcopybuf = realloc(copybuf, cols * rows * 4 + rows * 2 + 4);
+							if (newcopybuf)
+								copybuf = newcopybuf;
+							else
+								goto cleanup;
+							outpos = 0;
+							for (y = y1; y <= y2; y++) {
 								lastchar = outpos;
-							if ((pos + 1) % term.width == 0) {
+								for (x = x1; x <= x2; x++) {
+									size_t   outlen;
+									uint8_t *utf8str;
+									int      cp;
+
+									pos = y * term.width + x;
+									cp = conio_fontdata[screen[pos].font].cp;
+									if (cp == CIOLIB_PRESTEL && (screen[pos].bg & 0x20000000))
+										cp = CIOLIB_PRESTEL_SEP;
+									utf8str =
+									    cp_to_utf8(cp, (char *)&screen[pos].ch, 1, &outlen);
+									if (utf8str == NULL)
+										continue;
+									memcpy(copybuf + outpos, utf8str, outlen);
+									outpos += outlen;
+									if ((screen[pos].ch != ' ') && screen[pos].ch)
+										lastchar = outpos;
+								}
 								outpos = lastchar;
 #ifdef _WIN32
 								copybuf[outpos++] = '\r';
 #endif
 								copybuf[outpos++] = '\n';
-								lastchar = outpos;
 							}
+							copybuf[outpos] = 0;
+							copytext(copybuf, strlen(copybuf));
 						}
-						copybuf[outpos] = 0;
-						copytext(copybuf, strlen(copybuf));
+						else {
+							lines = abs(mevent.endy - mevent.starty) + 1;
+							newcopybuf = realloc(copybuf, (endpos - startpos + 4 + lines * 2) * 4);
+							if (newcopybuf)
+								copybuf = newcopybuf;
+							else
+								goto cleanup;
+							outpos = 0;
+							lastchar = 0;
+							for (pos = startpos; pos <= endpos; pos++) {
+								size_t   outlen;
+								uint8_t *utf8str;
+								int cp = conio_fontdata[screen[pos].font].cp;
+
+								if (cp == CIOLIB_PRESTEL && (screen[pos].bg & 0x20000000))
+									cp = CIOLIB_PRESTEL_SEP;
+								utf8str =
+								    cp_to_utf8(cp, (char *)&screen[pos].ch, 1, &outlen);
+								if (utf8str == NULL)
+									continue;
+								memcpy(copybuf + outpos, utf8str, outlen);
+								outpos += outlen;
+								if ((screen[pos].ch != ' ') && screen[pos].ch)
+									lastchar = outpos;
+								if ((pos + 1) % term.width == 0) {
+									outpos = lastchar;
+#ifdef _WIN32
+									copybuf[outpos++] = '\r';
+#endif
+									copybuf[outpos++] = '\n';
+									lastchar = outpos;
+								}
+							}
+							copybuf[outpos] = 0;
+							copytext(copybuf, strlen(copybuf));
+						}
 						vmem_puttext(term.x - 1,
 						    term.y - 1,
 						    term.x + term.width - 2,

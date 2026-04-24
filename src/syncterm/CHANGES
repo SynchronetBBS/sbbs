@@ -9,6 +9,7 @@ Switched to 16-bit 44.1kHz stereo audio
 Add new APC commands to do audio and audio mixing
 Switch to DeuceSSH + OpenSSL | Botan
 Fully support OOB data in RLogin modes
+Hold Alt during drag-select to copy a rectangular region
 
 Version 1.8
 -----------
