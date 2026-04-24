@@ -49,6 +49,8 @@ typedef struct {
 	int64_t total_bytes;
 	unsigned sent_files;
 	int64_t sent_bytes;
+	unsigned current_file_num;
+	char current_file_name[MAX_PATH + 1];
 	int *log_level;
 	int (*lputs)(void*, int level, const char* str);
 	void (*progress)(void*, unsigned block_num, int64_t offset, int64_t fsize, time_t t);
