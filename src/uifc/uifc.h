@@ -151,6 +151,7 @@
 #define WIN_NODRAW  (1LL << 22) /* Force not to redraw on dynamic window */
 #define WIN_EXTKEYS (1LL << 23) /* Return on any keypress... if it's not handled internally
 	                         * Return value is -2 - keyvalue */
+#define UIFC_EXTKEY(k) (-2 - (k))   /* Decode the api->list() return value when WIN_EXTKEYS is set */
 #define WIN_NOBRDR  (1LL << 24)   /* Do not draw a border around the window */
 #define WIN_FIXEDHEIGHT (1LL << 25)   /* Use list_height from uifc struct */
 #define WIN_UNGETMOUSE  (1LL << 26) /* If the mouse is clicked outside the window, */
@@ -421,6 +422,10 @@ typedef struct {
 /* Allow application override												*/
 /****************************************************************************/
 	char** yesNoOpts;
+	/* Override for the F2 hint text rendered in bottomline() when
+	 * WIN_EDIT is set.  Include trailing spaces for separation.
+	 * NULL = use the default "Edit Item  ". */
+	char*  edit_item;
 
 /****************************************************************************/
 /* Exit/uninitialize function.												*/
