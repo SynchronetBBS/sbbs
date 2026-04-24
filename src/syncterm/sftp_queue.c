@@ -21,6 +21,7 @@
  */
 
 #include <errno.h>
+#include <inttypes.h>
 #include <stdatomic.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -32,11 +33,14 @@
 
 #include <eventwrap.h>
 #include <genwrap.h>
+#include <ini_file.h>
 #include <threadwrap.h>
 
+#include "bbslist.h"
 #include "sftp.h"
 #include "sftp_queue.h"
 #include "sftp_session.h"
+#include "term.h"
 
 #define CHUNK_SZ 4096
 
@@ -64,6 +68,146 @@ static _Atomic int      dn_alive = 0;
 static _Atomic uint32_t active_up = 0;
 static _Atomic uint32_t active_dn = 0;
 static _Atomic uint64_t gen_ctr = 0;
+static char             save_path[MAX_PATH + 1] = "";
+
+static ini_style_t q_ini_style = {
+	/* key_len */           10,
+	/* key_prefix */        "\t",
+	/* section_separator */ "\n",
+	/* value_separator */   NULL,
+	/* bit_separator */     NULL,
+};
+
+/* ---- Persistence ---------------------------------------------------- */
+
+static void bump_gen(void);
+
+static const char *
+status_name(int s)
+{
+	switch (s) {
+		case SFTP_JOB_QUEUED:    return "queued";
+		case SFTP_JOB_ACTIVE:    return "active";
+		case SFTP_JOB_DONE:      return "done";
+		case SFTP_JOB_FAILED:    return "failed";
+		case SFTP_JOB_CANCELLED: return "cancelled";
+	}
+	return "queued";
+}
+
+static int
+status_from_name(const char *n)
+{
+	if (strcmp(n, "active") == 0)    return SFTP_JOB_QUEUED;  /* restart */
+	if (strcmp(n, "done") == 0)      return SFTP_JOB_DONE;
+	if (strcmp(n, "failed") == 0)    return SFTP_JOB_FAILED;
+	if (strcmp(n, "cancelled") == 0) return SFTP_JOB_CANCELLED;
+	return SFTP_JOB_QUEUED;
+}
+
+/* Must be called with qmtx held. */
+static void
+save_queue_locked(void)
+{
+	if (save_path[0] == '\0')
+		return;
+	str_list_t ini = strListInit();
+	if (ini == NULL)
+		return;
+	uint32_t i = 0;
+	for (struct sftp_job *j = jobs_head; j != NULL; j = j->next, i++) {
+		char sec[16];
+		char buf[32];
+		snprintf(sec, sizeof(sec), "%" PRIu32, i);
+		iniSetString(&ini, sec, "dir",
+		    j->dir == SFTP_JOB_UP ? "up" : "down", &q_ini_style);
+		iniSetString(&ini, sec, "local", j->local_path, &q_ini_style);
+		iniSetString(&ini, sec, "remote", j->remote_path, &q_ini_style);
+		iniSetString(&ini, sec, "status", status_name(j->status), &q_ini_style);
+		snprintf(buf, sizeof(buf), "%" PRIu64, j->total);
+		iniSetString(&ini, sec, "total", buf, &q_ini_style);
+		snprintf(buf, sizeof(buf), "%" PRIu64, j->done);
+		iniSetString(&ini, sec, "done", buf, &q_ini_style);
+		if (j->err[0])
+			iniSetString(&ini, sec, "err", j->err, &q_ini_style);
+	}
+	char tmp[MAX_PATH + 8];
+	snprintf(tmp, sizeof(tmp), "%s.tmp", save_path);
+	FILE *f = fopen(tmp, "w");
+	if (f != NULL) {
+		iniWriteFile(f, ini);
+		fclose(f);
+		rename(tmp, save_path);
+	}
+	strListFree(&ini);
+}
+
+/* Must be called with qmtx held, before any jobs exist. */
+static void
+load_queue_locked(void)
+{
+	if (save_path[0] == '\0')
+		return;
+	FILE *f = fopen(save_path, "r");
+	if (f == NULL)
+		return;
+	str_list_t ini = iniReadFile(f);
+	fclose(f);
+	if (ini == NULL)
+		return;
+	str_list_t secs = iniGetSectionList(ini, "");
+	if (secs != NULL) {
+		for (size_t i = 0; secs[i] != NULL; i++) {
+			const char *sec = secs[i];
+			char *dirstr = iniGetString(ini, sec, "dir", NULL, NULL);
+			char *local = iniGetString(ini, sec, "local", NULL, NULL);
+			char *remote = iniGetString(ini, sec, "remote", NULL, NULL);
+			char *statusstr = iniGetString(ini, sec, "status", NULL, NULL);
+			char *errstr = iniGetString(ini, sec, "err", NULL, NULL);
+			if (dirstr == NULL || local == NULL || remote == NULL ||
+			    local[0] == '\0' || remote[0] == '\0') {
+				continue;
+			}
+			struct sftp_job *j = calloc(1, sizeof(*j));
+			if (j == NULL)
+				break;
+			j->dir = (strcmp(dirstr, "up") == 0)
+			    ? SFTP_JOB_UP : SFTP_JOB_DN;
+			j->local_path = strdup(local);
+			j->remote_path = strdup(remote);
+			j->total = iniGetUInt64(ini, sec, "total", 0);
+			j->done = iniGetUInt64(ini, sec, "done", 0);
+			j->status = (statusstr != NULL)
+			    ? status_from_name(statusstr)
+			    : SFTP_JOB_QUEUED;
+			if (j->status == SFTP_JOB_QUEUED)
+				j->done = 0;  /* restart in-progress jobs from 0 */
+			if (errstr != NULL) {
+				strncpy(j->err, errstr, sizeof(j->err) - 1);
+				j->err[sizeof(j->err) - 1] = '\0';
+			}
+			if (j->local_path == NULL || j->remote_path == NULL) {
+				free(j->local_path);
+				free(j->remote_path);
+				free(j);
+				continue;
+			}
+			if (jobs_tail == NULL)
+				jobs_head = j;
+			else
+				jobs_tail->next = j;
+			jobs_tail = j;
+		}
+		strListFree(&secs);
+	}
+	strListFree(&ini);
+
+	if (jobs_head != NULL) {
+		SetEvent(wake_up);
+		SetEvent(wake_dn);
+		bump_gen();
+	}
+}
 
 /* ---- Utility --------------------------------------------------------- */
 
@@ -124,13 +268,32 @@ run_upload(struct sftp_job *job)
 	uint8_t buf[CHUNK_SZ];
 	uint64_t off = 0;
 	int ret = SFTP_JOB_DONE;
-	while (!job->cancel && !stop_request && sftp_available) {
+	bool finished = false;
+	while (true) {
+		if (job->cancel) {
+			ret = SFTP_JOB_CANCELLED;
+			break;
+		}
+		if (stop_request) {
+			/* Session shutting down; revert to QUEUED so it
+			 * gets retried next time this BBS is connected. */
+			ret = SFTP_JOB_QUEUED;
+			break;
+		}
+		if (!sftp_available) {
+			snprintf(job->err, sizeof(job->err), "connection lost");
+			ret = SFTP_JOB_FAILED;
+			break;
+		}
 		size_t n = fread(buf, 1, sizeof(buf), f);
 		if (n == 0) {
 			if (ferror(f)) {
 				snprintf(job->err, sizeof(job->err),
 				    "read local: %s", strerror(errno));
 				ret = SFTP_JOB_FAILED;
+			}
+			else {
+				finished = true;
 			}
 			break;
 		}
@@ -152,8 +315,7 @@ run_upload(struct sftp_job *job)
 		off += n;
 		job->done = off;
 	}
-	if (job->cancel)
-		ret = SFTP_JOB_CANCELLED;
+	(void)finished;
 	sftpc_close(sftp_state, &h);
 	fclose(f);
 
@@ -201,7 +363,20 @@ run_download(struct sftp_job *job)
 	}
 	uint64_t off = 0;
 	int ret = SFTP_JOB_DONE;
-	while (!job->cancel && !stop_request && sftp_available) {
+	while (true) {
+		if (job->cancel) {
+			ret = SFTP_JOB_CANCELLED;
+			break;
+		}
+		if (stop_request) {
+			ret = SFTP_JOB_QUEUED;
+			break;
+		}
+		if (!sftp_available) {
+			snprintf(job->err, sizeof(job->err), "connection lost");
+			ret = SFTP_JOB_FAILED;
+			break;
+		}
 		sftp_str_t data = NULL;
 		if (!sftpc_read(sftp_state, h, off, CHUNK_SZ, &data)) {
 			uint32_t e = sftpc_get_err(sftp_state);
@@ -230,12 +405,16 @@ run_download(struct sftp_job *job)
 		job->done = off;
 		free_sftp_str(data);
 	}
-	if (job->cancel)
-		ret = SFTP_JOB_CANCELLED;
 	sftpc_close(sftp_state, &h);
 	fclose(f);
 	if (ret != SFTP_JOB_DONE) {
+		/* Incomplete download: remove partial local file unless we
+		 * expect to resume (QUEUED).  For QUEUED we'd like to keep
+		 * the bytes we have, but we don't support mid-file resume
+		 * yet, so remove and start fresh next session. */
 		unlink(job->local_path);
+		if (ret == SFTP_JOB_QUEUED)
+			job->done = 0;
 		return ret;
 	}
 
@@ -283,6 +462,7 @@ worker_loop(int dir, xpevent_t ev)
 			job->status = SFTP_JOB_CANCELLED;
 		else
 			job->status = new_status;
+		save_queue_locked();
 		pthread_mutex_unlock(&qmtx);
 		atomic_fetch_sub(counter, 1);
 		bump_gen();
@@ -347,6 +527,10 @@ sftp_queue_stop(void)
 	wake_dn = NULL;
 
 	pthread_mutex_lock(&qmtx);
+	/* Final flush — the worker's last state transition already saved,
+	 * but a second save costs nothing and captures any manual edits
+	 * (cancels) that came in after it. */
+	save_queue_locked();
 	while (jobs_head != NULL) {
 		struct sftp_job *j = jobs_head;
 		jobs_head = j->next;
@@ -355,9 +539,31 @@ sftp_queue_stop(void)
 		free(j);
 	}
 	jobs_tail = NULL;
+	save_path[0] = '\0';
 	pthread_mutex_unlock(&qmtx);
 	pthread_mutex_destroy(&qmtx);
 	started = false;
+}
+
+void
+sftp_queue_attach_bbs(struct bbslist *bbs)
+{
+	if (!started)
+		return;
+	pthread_mutex_lock(&qmtx);
+	save_path[0] = '\0';
+	if (bbs != NULL) {
+		char base[MAX_PATH + 1];
+		if (get_cache_fn_base(bbs, base, sizeof(base))) {
+			const char *fn = "sftp_queue.ini";
+			if (strlen(base) + strlen(fn) < sizeof(save_path)) {
+				snprintf(save_path, sizeof(save_path),
+				    "%s%s", base, fn);
+			}
+		}
+		load_queue_locked();
+	}
+	pthread_mutex_unlock(&qmtx);
 }
 
 bool
@@ -389,6 +595,7 @@ sftp_queue_enqueue(enum sftp_job_dir dir,
 	else
 		jobs_tail->next = j;
 	jobs_tail = j;
+	save_queue_locked();
 	pthread_mutex_unlock(&qmtx);
 	bump_gen();
 	SetEvent(dir == SFTP_JOB_UP ? wake_up : wake_dn);
@@ -402,6 +609,26 @@ sftp_queue_activity(uint32_t *up, uint32_t *dn)
 		*up = atomic_load_explicit(&active_up, memory_order_relaxed);
 	if (dn != NULL)
 		*dn = atomic_load_explicit(&active_dn, memory_order_relaxed);
+}
+
+bool
+sftp_queue_has_work(void)
+{
+	if (!started)
+		return false;
+	if (atomic_load_explicit(&active_up, memory_order_relaxed) > 0 ||
+	    atomic_load_explicit(&active_dn, memory_order_relaxed) > 0)
+		return true;
+	bool hit = false;
+	pthread_mutex_lock(&qmtx);
+	for (struct sftp_job *j = jobs_head; j != NULL; j = j->next) {
+		if (j->status == SFTP_JOB_QUEUED) {
+			hit = true;
+			break;
+		}
+	}
+	pthread_mutex_unlock(&qmtx);
+	return hit;
 }
 
 uint64_t
@@ -435,6 +662,12 @@ sftp_queue_cancel(enum sftp_job_dir dir, const char *remote_path)
 	if (j != NULL &&
 	    (j->status == SFTP_JOB_QUEUED || j->status == SFTP_JOB_ACTIVE)) {
 		j->cancel = true;
+		/* Queued jobs won't be picked up again, so mark them
+		 * cancelled now; in-flight jobs transition at their
+		 * next check. */
+		if (j->status == SFTP_JOB_QUEUED)
+			j->status = SFTP_JOB_CANCELLED;
+		save_queue_locked();
 		hit = true;
 	}
 	pthread_mutex_unlock(&qmtx);

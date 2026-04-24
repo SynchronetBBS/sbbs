@@ -158,7 +158,9 @@ ifndef WITHOUT_DEUCESSH
  # ssh.o at all.
  OBJS       += $(MTOBJODIR)$(DIRSEP)ssh$(OFILE)
  OBJS       += $(MTOBJODIR)$(DIRSEP)sftp_browser$(OFILE)
+ OBJS       += $(MTOBJODIR)$(DIRSEP)sftp_degraded$(OFILE)
  OBJS       += $(MTOBJODIR)$(DIRSEP)sftp_queue$(OFILE)
+ OBJS       += $(MTOBJODIR)$(DIRSEP)sftp_queue_screen$(OFILE)
  CFLAGS     += -I$(SRC_ROOT)/ssh $(SFTP-MT_CFLAGS)
  LDFLAGS    += $(SFTP-MT_LDFLAGS)
  EXTRA_LIBS += $(SFTP-MT_LIBS) $(DEUCESSH_LIB)
