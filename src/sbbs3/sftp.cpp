@@ -179,9 +179,13 @@ union {
 } info;
 
 path_map() = delete;
-path_map(sbbs_t *sbbsptr, const char* path, map_path_mode_t mode) : mode(mode),  sbbs(sbbsptr)
+/* Delegates to the uint8_t* overload — delegation must go through the
+ * member initialiser list; the previous body-statement form created a
+ * discarded temporary, leaving sftp_path null / result_ = MAP_FAILED so
+ * every path_map(const char*, ...) call surfaced as "Mapping failure". */
+path_map(sbbs_t *sbbsptr, const char* path, map_path_mode_t mode)
+    : path_map(sbbsptr, reinterpret_cast<const uint8_t*>(path), mode)
 {
-	path_map(sbbs, reinterpret_cast<const uint8_t*>(path), mode);
 }
 
 path_map(sbbs_t *sbbsptr, const uint8_t* path, map_path_mode_t mode) : mode(mode), sbbs(sbbsptr)
@@ -1012,9 +1016,21 @@ get_filebase_attrs(sbbs_t *sbbs, int32_t dir, smbfile_t *file)
 	//       Answer, from_ext... be sure to check if it's anonymous etc.
 	//       Real answer: We don't store the user number of uploader,
 	//                    look up the usernumber from uploader's username.
-	if (file->desc && (sbbs->sftp_state->extensions & SFTP_EXT_LNAME)) {
-		sftp_str_t ext = sftp_strdup(SFTP_EXT_NAME_LNAME);
-		sftp_str_t dat = sftp_strdup(file->desc);
+	if (sbbs->sftp_state->extensions & SFTP_EXT_LNAME) {
+		if (file->desc && file->desc[0]) {
+			sftp_str_t ext = sftp_strdup(SFTP_EXT_NAME_LNAME);
+			sftp_str_t dat = sftp_strdup(file->desc);
+			sftp_fattr_add_ext(&attr, ext, dat);
+		}
+	}
+	if ((sbbs->sftp_state->extensions & SFTP_EXT_SHA1S) && (file->file_idx.hash.flags & SMB_HASH_SHA1)) {
+		sftp_str_t ext = sftp_strdup(SFTP_EXT_NAME_SHA1S);
+		sftp_str_t dat = sftp_memdup(file->file_idx.hash.data.sha1, SHA1_DIGEST_SIZE);
+		sftp_fattr_add_ext(&attr, ext, dat);
+	}
+	else if ((sbbs->sftp_state->extensions & SFTP_EXT_MD5S) && (file->file_idx.hash.flags & SMB_HASH_MD5)) {
+		sftp_str_t ext = sftp_strdup(SFTP_EXT_NAME_MD5S);
+		sftp_str_t dat = sftp_memdup(file->file_idx.hash.data.sha1, MD5_DIGEST_SIZE);
 		sftp_fattr_add_ext(&attr, ext, dat);
 	}
 
@@ -2075,6 +2091,120 @@ sftp_readlink(sftp_str_t path, void *cb_data)
 	return ret;
 }
 
+/*
+ * Shared SSH_FXP_EXTENDED handler.  Multiplexes on the request name.
+ * Currently supports:
+ *
+ *   descs@syncterm.net  (path) -> extended description string
+ *
+ * Returns false if the request name is unrecognized, so the library
+ * falls through to an OP_UNSUPPORTED reply.  Returns true when a reply
+ * (success or error) has been sent.
+ */
+static bool
+sftp_ext_descs(sbbs_t *sbbs, const char *cpath)
+{
+	std::unique_ptr<path_map> pmap(new path_map(sbbs, cpath, MAP_STAT));
+	if (!pmap->success())
+		return pmap->cleanup();
+	if (pmap->result() != MAP_TO_FILE || !is_in_filebase(pmap->sftp_path))
+		return sftps_send_error(sbbs->sftp_state, SSH_FX_NO_SUCH_FILE,
+		    "Not a filebase file");
+
+	enum sftp_dir_tree tree = in_tree(pmap->sftp_path);
+	const char *libp = nullptr;
+	switch (tree) {
+		case SFTP_DTREE_FULL:
+			libp = pmap->sftp_path + files_path_len + 1;
+			break;
+		case SFTP_DTREE_SHORT:
+			libp = pmap->sftp_path + fls_path_len + 1;
+			break;
+		case SFTP_DTREE_VIRTUAL:
+			libp = pmap->sftp_path + vfiles_path_len + 1;
+			break;
+		default:
+			return sftps_send_error(sbbs->sftp_state, SSH_FX_FAILURE,
+			    "Bad filebase tree");
+	}
+	int lib = find_lib(sbbs, libp, tree);
+	if (lib == -1)
+		return sftps_send_error(sbbs->sftp_state, SSH_FX_NO_SUCH_FILE,
+		    "Unknown lib");
+	const char *c = strchr(libp, '/');
+	if (c == nullptr || c[1] == 0)
+		return sftps_send_error(sbbs->sftp_state, SSH_FX_FAILURE,
+		    "Lib path missing dir");
+	int dir = find_dir(sbbs, libp, lib, tree);
+	if (dir == -1)
+		return sftps_send_error(sbbs->sftp_state, SSH_FX_NO_SUCH_FILE,
+		    "Unknown dir");
+	c = strchr(c + 1, '/');
+	if (c == nullptr || c[1] == 0)
+		return sftps_send_error(sbbs->sftp_state, SSH_FX_FAILURE,
+		    "Dir path missing file");
+
+	smb_t     smb{};
+	smbfile_t file{};
+	if (smb_open_dir(&sbbs->cfg, &smb, dir) != SMB_SUCCESS)
+		return sftps_send_error(sbbs->sftp_state, SSH_FX_FAILURE,
+		    "Can't open dir smb");
+	bool sent = false;
+	if (smb_findfile(&smb, &c[1], &file) != SMB_SUCCESS) {
+		sent = sftps_send_error(sbbs->sftp_state, SSH_FX_NO_SUCH_FILE,
+		    "No such file in dir");
+	}
+	else if (smb_getfile(&smb, &file, file_detail_extdesc) != SMB_SUCCESS) {
+		sent = sftps_send_error(sbbs->sftp_state, SSH_FX_FAILURE,
+		    "Can't read extdesc");
+	}
+	else {
+		const char *ed = file.extdesc ? file.extdesc : "";
+		sftp_str_t reply = sftp_strdup(ed);
+		if (reply == nullptr) {
+			sent = sftps_send_error(sbbs->sftp_state, SSH_FX_FAILURE,
+			    "Out of memory");
+		}
+		else {
+			sent = sftps_send_extended_reply(sbbs->sftp_state, reply);
+			free_sftp_str(reply);
+		}
+		smb_freefilemem(&file);
+	}
+	smb_close(&smb);
+	return sent;
+}
+
+static bool
+sftp_extended(sftp_str_t request, sftp_rx_pkt_t pkt, void *cb_data)
+{
+	sbbs_t *sbbs = (sbbs_t *)cb_data;
+
+	size_t nlen = strlen(SFTP_EXT_NAME_DESCS);
+	if (request->len == nlen &&
+	    memcmp(request->c_str, SFTP_EXT_NAME_DESCS, nlen) == 0) {
+		sftp_str_t path = sftp_rx_get_string(pkt);
+		if (path == nullptr)
+			return sftps_send_error(sbbs->sftp_state,
+			    SSH_FX_BAD_MESSAGE, "Missing path");
+		char *cpath = (char *)malloc(path->len + 1);
+		if (cpath == nullptr) {
+			free_sftp_str(path);
+			return sftps_send_error(sbbs->sftp_state,
+			    SSH_FX_FAILURE, "Out of memory");
+		}
+		memcpy(cpath, path->c_str, path->len);
+		cpath[path->len] = '\0';
+		free_sftp_str(path);
+		sbbs->lprintf(LOG_DEBUG, "SFTP descs(%s)", cpath);
+		bool ret = sftp_ext_descs(sbbs, cpath);
+		free(cpath);
+		return ret;
+	}
+	/* Unknown extension — let the library send OP_UNSUPPORTED. */
+	return false;
+}
+
 #if NOTYET
 static bool
 sftp_fstat(sftp_filehandle_t handle, void *cb_data)
@@ -2092,13 +2222,6 @@ sftp_remove(sftp_str_t filename, void *cb_data)
 
 static bool
 sftp_rename(sftp_str_t oldpath, sftp_str_t newpath, void *cb_data)
-{
-	sbbs_t *sbbs = (sbbs_t *)cb_data;
-	return true;
-}
-
-static bool
-sftp_extended(sftp_str_t request, sftp_rx_pkt_t pkt, void *cb_data)
 {
 	sbbs_t *sbbs = (sbbs_t *)cb_data;
 	return true;
@@ -2161,6 +2284,7 @@ sbbs_t::init_sftp(int cid)
 		sftp_state->stat = sftp_stat;
 		sftp_state->lstat = sftp_lstat;
 		sftp_state->readlink = sftp_readlink;
+		sftp_state->extended = sftp_extended;
 		sftp_channel = cid;
 		lprintf(LOG_INFO, "SFTP initialized on channel %d", cid);
 		return true;

@@ -843,3 +843,61 @@ done:
 	CloseEvent(p.evt);
 	return client_exit(state, rv);
 }
+
+/*
+ * Query the extended description for a file via the descs@syncterm.net
+ * extension.  The caller is expected to have checked
+ * sftpc_get_extensions(state) & SFTP_EXT_DESCS before calling; if the
+ * extension wasn't negotiated the server will reply with OP_UNSUPPORTED.
+ */
+bool
+sftpc_descs(sftpc_state_t state, const char *path, sftp_str_t *desc)
+{
+	if (path == NULL || desc == NULL || *desc != NULL)
+		return false;
+	if (!client_enter(state))
+		return false;
+
+	struct sftpc_pending p = {0};
+	p.evt = CreateEvent(NULL, TRUE, FALSE, NULL);
+	if (p.evt == NULL) {
+		set_thread_err(state, SSH_FX_FAILURE);
+		return client_exit(state, false);
+	}
+	p.req_id = next_req_id(state);
+	pend_add(state, &p);
+
+	bool built = appendheader(&state->txp, SSH_FXP_EXTENDED, state->id) &&
+	             appendcstring(&state->txp, SFTP_EXT_NAME_DESCS) &&
+	             appendcstring(&state->txp, path);
+	bool rv = false;
+	if (!built) {
+		set_thread_err(state, SSH_FX_FAILURE);
+	}
+	else if (!send_and_wait(state, &p)) {
+		set_thread_err(state, SSH_FX_CONNECTION_LOST);
+	}
+	else if (p.reply == NULL) {
+		set_thread_err(state, SSH_FX_CONNECTION_LOST);
+	}
+	else {
+		state->last_reply_type = p.reply->type;
+		if (p.reply->type == SSH_FXP_EXTENDED_REPLY) {
+			*desc = getstring(p.reply);
+			if (*desc == NULL)
+				set_thread_err(state, SSH_FX_BAD_MESSAGE);
+			else
+				rv = true;
+		}
+		else if (p.reply->type == SSH_FXP_STATUS) {
+			status_ok(state, p.reply);
+		}
+		else {
+			set_thread_err(state, SSH_FX_BAD_MESSAGE);
+		}
+	}
+	pend_remove(state, &p);
+	free_rx_pkt(p.reply);
+	CloseEvent(p.evt);
+	return client_exit(state, rv);
+}

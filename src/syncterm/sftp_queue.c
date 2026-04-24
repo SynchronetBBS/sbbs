@@ -168,6 +168,14 @@ load_queue_locked(void)
 			    local[0] == '\0' || remote[0] == '\0') {
 				continue;
 			}
+			int status = (statusstr != NULL)
+			    ? status_from_name(statusstr)
+			    : SFTP_JOB_QUEUED;
+			/* Terminal-state jobs from the previous session are
+			 * dropped at connect time — the queue screen only
+			 * shows what happened during the current session. */
+			if (status != SFTP_JOB_QUEUED)
+				continue;
 			struct sftp_job *j = calloc(1, sizeof(*j));
 			if (j == NULL)
 				break;
@@ -176,16 +184,9 @@ load_queue_locked(void)
 			j->local_path = strdup(local);
 			j->remote_path = strdup(remote);
 			j->total = iniGetUInt64(ini, sec, "total", 0);
-			j->done = iniGetUInt64(ini, sec, "done", 0);
-			j->status = (statusstr != NULL)
-			    ? status_from_name(statusstr)
-			    : SFTP_JOB_QUEUED;
-			if (j->status == SFTP_JOB_QUEUED)
-				j->done = 0;  /* restart in-progress jobs from 0 */
-			if (errstr != NULL) {
-				strncpy(j->err, errstr, sizeof(j->err) - 1);
-				j->err[sizeof(j->err) - 1] = '\0';
-			}
+			j->done = 0;         /* restart in-progress jobs from 0 */
+			j->status = SFTP_JOB_QUEUED;
+			(void)errstr;        /* QUEUED jobs start without an error */
 			if (j->local_path == NULL || j->remote_path == NULL) {
 				free(j->local_path);
 				free(j->remote_path);

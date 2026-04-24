@@ -144,13 +144,18 @@
  */
 #define SFTP_EXT_NAME_LNAME "lname@syncterm.net"
 #define SFTP_EXT_NAME_DESCS "descs@syncterm.net"
+#define SFTP_EXT_NAME_SHA1S "sha1s@syncterm.net"
+#define SFTP_EXT_NAME_MD5S  "md5s@syncterm.net"
 
 #define SFTP_EXT_LNAME      UINT32_C(0x00000001)
 #define SFTP_EXT_DESCS      UINT32_C(0x00000002)
+#define SFTP_EXT_SHA1S      UINT32_C(0x00000004)
+#define SFTP_EXT_MD5S       UINT32_C(0x00000008)
 
 /* All extensions advertised by this library; used as the client's
  * advertisement set and the server's supported-by-us set. */
-#define SFTP_EXT_ALL        (SFTP_EXT_LNAME | SFTP_EXT_DESCS)
+#define SFTP_EXT_ALL        (SFTP_EXT_LNAME | SFTP_EXT_DESCS | \
+                             SFTP_EXT_SHA1S | SFTP_EXT_MD5S)
 
 /* Packet buffer types are opaque to consumers.  The only consumer use
  * is the `sftp_extended` server callback which gets a raw rx packet —
@@ -260,6 +265,7 @@ bool sftpc_rmdir(sftpc_state_t state, const char *path);
 bool sftpc_mkdir(sftpc_state_t state, const char *path, sftp_file_attr_t attr);
 bool sftpc_rename(sftpc_state_t state, const char *from, const char *to);
 bool sftpc_reclaim(sftpc_state_t state);
+bool sftpc_descs(sftpc_state_t state, const char *path, sftp_str_t *desc);
 uint32_t sftpc_get_err(sftpc_state_t state);
 uint32_t sftpc_get_extensions(sftpc_state_t state);
 uint8_t sftpc_debug_last_reply_type(sftpc_state_t state);
@@ -294,7 +300,16 @@ bool sftps_send_handle(sftps_state_t state, sftp_str_t handle);
 bool sftps_send_data(sftps_state_t state, sftp_str_t data);
 bool sftps_send_name(sftps_state_t state, uint32_t count, str_list_t fnames, str_list_t lnames, sftp_file_attr_t *attrs);
 bool sftps_send_attrs(sftps_state_t state, sftp_file_attr_t attr);
+bool sftps_send_extended_reply(sftps_state_t state, sftp_str_t data);
 bool sftps_reclaim(sftps_state_t state);
 uint32_t sftps_get_extensions(sftps_state_t state);
+
+/*
+ * Helper for extended-request callbacks: pulls the next length-prefixed
+ * string from the rx packet the callback received.  Returns NULL if the
+ * packet doesn't have one.  The caller owns the returned sftp_str_t and
+ * must free it with free_sftp_str().
+ */
+sftp_str_t sftp_rx_get_string(sftp_rx_pkt_t pkt);
 
 #endif

@@ -606,6 +606,7 @@ sftps_recv(sftps_state_t state, uint8_t *buf, uint32_t sz)
 					handled = state->extended(request, state->priv->rxp, state->cb_data);
 					free_sftp_str(request);
 				}
+				break;
 			default:
 				break;
 		}
@@ -638,6 +639,22 @@ sftps_send_data(sftps_state_t state, sftp_str_t data)
 	if (!appendstring(&state->priv->txp, data))
 		return false;
 	return sftps_send_packet(state);
+}
+
+bool
+sftps_send_extended_reply(sftps_state_t state, sftp_str_t data)
+{
+	if (!appendheader(&state->priv->txp, SSH_FXP_EXTENDED_REPLY, state->priv->id))
+		return false;
+	if (!appendstring(&state->priv->txp, data))
+		return false;
+	return sftps_send_packet(state);
+}
+
+sftp_str_t
+sftp_rx_get_string(sftp_rx_pkt_t pkt)
+{
+	return getstring(pkt);
 }
 
 bool
