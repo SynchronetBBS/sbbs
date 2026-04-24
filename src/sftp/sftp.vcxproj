@@ -211,11 +211,14 @@
     </Bscmake>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="sftp_client.c" />
-    <ClCompile Include="sftp_server.c" />
-    <ClCompile Include="sftp_attr.c" />
-    <ClCompile Include="sftp_pkt.c" />
-    <ClCompile Include="sftp_str.c" />
+    <ClCompile Include="sftp.c" />
+    <None Include="sftp_attr.c" />
+    <None Include="sftp_client.c" />
+    <None Include="sftp_common.c" />
+    <None Include="sftp_pkt.c" />
+    <None Include="sftp_server.c" />
+    <None Include="sftp_str.c" />
+    <ClInclude Include="sftp.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
