@@ -5004,6 +5004,7 @@ fill_mevent(char *buf, size_t bufsz, struct mouse_event *me, struct mouse_state 
 	int  x = me->startx - cterm->x + 1;
 	int  y = me->starty - cterm->y + 1;
 	int  bit;
+	int  mods = 0;
 	int  ret;
 	bool release;
 
@@ -5016,7 +5017,16 @@ fill_mevent(char *buf, size_t bufsz, struct mouse_event *me, struct mouse_state 
 	    && me->starty == term.y + term.height - 1)
 		return 0;
 
-        // TODO: Get modifier keys too...
+	/* xterm mouse-protocol modifier bits.  X10 compatibility mode
+	 * (DECSET 9) is press-only, button-bits-only, so leave mods = 0. */
+	if (ms->mode != MM_X10) {
+		if (me->kbmodifiers & CIOLIB_KMOD_SHIFT)
+			mods |= 0x04;
+		if (me->kbmodifiers & CIOLIB_KMOD_ALT)
+			mods |= 0x08;
+		if (me->kbmodifiers & CIOLIB_KMOD_CTRL)
+			mods |= 0x10;
+	}
 	if (me->event == CIOLIB_MOUSE_MOVE) {
 		if ((me->kbsm & me->bstate) == 0) {
 			if (ms->mode == MM_BUTTON_EVENT_TRACKING)
@@ -5048,6 +5058,7 @@ fill_mevent(char *buf, size_t bufsz, struct mouse_event *me, struct mouse_state 
 			return 0;
 		if (release)
 			button = 3;
+		button |= mods;
 		x--;
 		y--;
 		if (x < 0)
@@ -5067,6 +5078,7 @@ fill_mevent(char *buf, size_t bufsz, struct mouse_event *me, struct mouse_state 
 		return 6;
 	}
 	else {
+		button |= mods;
 		ret = snprintf(buf, bufsz, "\x1b[<%d;%d;%d%c", button, x, y, release ? 'm' : 'M');
 		if (ret > bufsz)
 			return 0;
