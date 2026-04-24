@@ -199,7 +199,7 @@ static int cmp_entry_ci(const void *a, const void *b)
 {
 	const struct fp_entry *ea = a;
 	const struct fp_entry *eb = b;
-	int rc = strcasecmp(ea->name, eb->name);
+	int rc = stricmp(ea->name, eb->name);
 
 	if (rc != 0)
 		return rc;
@@ -246,21 +246,23 @@ static int glob_merge(glob_t *dst, glob_t *src)
 	return 0;
 }
 
+static int fp_glob_call(bool case_sensitive, const char *pattern, int flags, glob_t *out)
+{
+	if (case_sensitive)
+		return glob(pattern, flags, NULL, out);
+	return globi(pattern, flags, NULL, out);
+}
+
 static int fp_do_glob(const struct fp_state *s, const char *mask, int dir_glob, glob_t *out)
 {
 	char pattern[MAX_PATH * 4 + 2];
 	int  rc;
 	int  flags = dir_glob ? GLOB_MARK : 0;
-	int  (*globfn)(const char*, int, int(*)(const char*, int), glob_t*);
-
-	if (s->opts & UIFC_FP_MSKCASE)
-		globfn = glob;
-	else
-		globfn = globi;
+	bool case_sensitive = (s->opts & UIFC_FP_MSKCASE) != 0;
 
 	memset(out, 0, sizeof(*out));
 	snprintf(pattern, sizeof(pattern), "%s%s", s->path, mask);
-	rc = globfn(pattern, flags, NULL, out);
+	rc = fp_glob_call(case_sensitive, pattern, flags, out);
 	if (rc != 0 && rc != GLOB_NOMATCH) {
 		out->gl_pathc = 0;
 		return -1;
@@ -271,7 +273,7 @@ static int fp_do_glob(const struct fp_state *s, const char *mask, int dir_glob, 
 
 		memset(&hidden, 0, sizeof(hidden));
 		snprintf(pattern, sizeof(pattern), "%s.%s", s->path, mask);
-		if (globfn(pattern, flags, NULL, &hidden) == 0)
+		if (fp_glob_call(case_sensitive, pattern, flags, &hidden) == 0)
 			glob_merge(out, &hidden);
 		globfree(&hidden);
 	}
