@@ -596,13 +596,7 @@ in_tree(const char *path)
  * Replaces a slash with a dash.
  *
  * The SFTP protocol requires the use of Solidus as a path separator,
- * and dir and lib names can contain it.  Rather than a visually
- * different and one-way mapping as used in the FTP server, take
- * advantage of the fact that dir and lib names aren't unicode to have
- * a visially similar reversible mapping.
- *
- * Even in the future, should these support unicode, it will at least
- * still be visually more similar, even if it's not reversible.
+ * and dir and lib names can contain it.
  */
 static char *
 expand_slash(const char *orig)
@@ -966,6 +960,11 @@ get_lib_attrs(sbbs_t *sbbs, int lib)
 		return nullptr;
 	sftp_fattr_set_permissions(attr, S_IFDIR | S_IRUSR | S_IWUSR | S_IXUSR | S_IRGRP | S_IXGRP);
 	sftp_fattr_set_uid_gid(attr, 1, static_cast<uint32_t>(lib) | lib_flag);
+	if (sbbs->sftp_state->extensions & SFTP_EXT_LNAME) {
+		sftp_str_t ext = sftp_strdup(SFTP_EXT_NAME_LNAME);
+		sftp_str_t dat = sftp_strdup(sbbs->cfg.lib[lib]->lname);
+		sftp_fattr_add_ext(&attr, ext, dat);
+	}
 	return attr;
 }
 
@@ -981,6 +980,11 @@ get_dir_attrs(sbbs_t *sbbs, int32_t dir)
 		perms |= S_IWGRP;
 	sftp_fattr_set_permissions(attr, perms);
 	sftp_fattr_set_uid_gid(attr, 1, static_cast<uint32_t>(dir));
+	if (sbbs->sftp_state->extensions & SFTP_EXT_LNAME) {
+		sftp_str_t ext = sftp_strdup(SFTP_EXT_NAME_LNAME);
+		sftp_str_t dat = sftp_strdup(sbbs->cfg.dir[dir]->lname);
+		sftp_fattr_add_ext(&attr, ext, dat);
+	}
 	return attr;
 }
 
@@ -1008,6 +1012,11 @@ get_filebase_attrs(sbbs_t *sbbs, int32_t dir, smbfile_t *file)
 	//       Answer, from_ext... be sure to check if it's anonymous etc.
 	//       Real answer: We don't store the user number of uploader,
 	//                    look up the usernumber from uploader's username.
+	if (file->desc && (sbbs->sftp_state->extensions & SFTP_EXT_LNAME)) {
+		sftp_str_t ext = sftp_strdup(SFTP_EXT_NAME_LNAME);
+		sftp_str_t dat = sftp_strdup(file->desc);
+		sftp_fattr_add_ext(&attr, ext, dat);
+	}
 
 	return attr;
 }
