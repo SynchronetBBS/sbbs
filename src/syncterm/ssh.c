@@ -927,6 +927,7 @@ ssh_connect(struct bbslist *bbs)
 	dssh_chan_params_init(&params, DSSH_CHAN_SHELL);
 	dssh_chan_params_set_pty(&params, true);
 	dssh_chan_params_set_term(&params, term);
+	dssh_chan_params_add_env(&params, "TERM", term);
 	dssh_chan_params_set_size(&params, (uint32_t)cols, (uint32_t)rows,
 	    (uint32_t)(pixelc > 0 ? pixelc : 0),
 	    (uint32_t)(pixelr > 0 ? pixelr : 0));
