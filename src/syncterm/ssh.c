@@ -400,6 +400,24 @@ ssh_debug_cb(bool always_display, const uint8_t *message, size_t message_len,
 
 /* ----------------------------------------------- kbd-interactive prompts */
 
+struct kbi_ctx {
+	struct bbslist *bbs;
+	bool            used_saved_pw;	/* fire-once latch */
+};
+
+/* PuTTY-style literal match: only the exact prompt "Password: " (with
+ * trailing colon and space — the default text from pam_unix) qualifies
+ * the saved password for auto-fill.  Anything else — 2FA passcodes,
+ * GPG-style passphrases, password-change flows, custom PAM prompts —
+ * falls through to the user prompt. */
+static bool
+prompt_is_password(const char *p, size_t len)
+{
+	static const char expected[]   = "Password: ";
+	const size_t      expected_len = sizeof(expected) - 1;
+	return len == expected_len && memcmp(p, expected, expected_len) == 0;
+}
+
 static int
 kbi_prompt_cb(const uint8_t *name, size_t name_len,
               const uint8_t *instruction, size_t instruction_len,
@@ -407,9 +425,9 @@ kbi_prompt_cb(const uint8_t *name, size_t name_len,
               const size_t *prompt_lens, const bool *echo,
               uint8_t **responses, size_t *response_lens, void *cbdata)
 {
+	struct kbi_ctx *ctx = cbdata;
 	(void)name;
 	(void)name_len;
-	(void)cbdata;
 
 	/* Show the server's instruction (if any) as a popup. */
 	if (instruction_len > 0) {
@@ -423,15 +441,35 @@ kbi_prompt_cb(const uint8_t *name, size_t name_len,
 	}
 
 	for (uint32_t i = 0; i < num_prompts; i++) {
-		char promptstr[256];
-		char answer[MAX_PASSWD_LEN + 1] = {0};
+		char   promptstr[256];
+		char   answer[MAX_PASSWD_LEN + 1] = {0};
 		size_t pl = prompt_lens[i] < sizeof(promptstr) - 1 ?
 		    prompt_lens[i] : sizeof(promptstr) - 1;
 		memcpy(promptstr, prompts[i], pl);
 		promptstr[pl] = 0;
-		int mode = echo[i] ? 0 : K_PASSWORD;
-		init_uifc(false, false);
-		uifcinput(promptstr, MAX_PASSWD_LEN, answer, mode, "Enter response.");
+
+		bool autofill = false;
+		if (ctx != NULL && !ctx->used_saved_pw && !echo[i]
+		    && num_prompts == 1
+		    && ctx->bbs != NULL && ctx->bbs->password[0]
+		    && prompt_is_password(promptstr, pl)) {
+			SAFECOPY(answer, ctx->bbs->password);
+			ctx->used_saved_pw = true;
+			autofill = true;
+		}
+
+		if (!autofill) {
+			/* uifc.input always appends ':' after the title, so
+			   strip a trailing ':' from the server's prompt to
+			   avoid rendering "Password::". */
+			size_t sl = strlen(promptstr);
+			if (sl > 0 && promptstr[sl - 1] == ':')
+				promptstr[--sl] = 0;
+			int mode = echo[i] ? 0 : K_PASSWORD;
+			init_uifc(false, false);
+			uifcinput(promptstr, MAX_PASSWD_LEN, answer, mode, "Enter response.");
+		}
+
 		size_t alen = strlen(answer);
 		responses[i] = malloc(alen);
 		if (responses[i] == NULL) {
@@ -1162,30 +1200,32 @@ ssh_connect(struct bbslist *bbs)
 		uifc.pop("Authenticating");
 	}
 
-	/* Auth order: password (if set) → keyboard-interactive → publickey.
-	   Password-first matches what traditional SyncTERM/Cryptlib does —
-	   Synchronet's Cryptlib-based server can't parse ssh-ed25519, and a
-	   failed publickey probe on that code path has been observed to
-	   confuse subsequent password attempts.  Publickey is only useful
-	   here when bbs->sftp_public_key is set and the user has already
-	   uploaded their pubkey; we try it as a last resort.
-	   CONN_TYPE_SSHNA uses a "none" probe via dssh_auth_get_methods. */
+	/* Probe what the server accepts (RFC 4252 §5.2 "none" auth), then
+	 * try methods in strongest-to-weakest order: publickey, password,
+	 * keyboard-interactive.  We skip any method the server doesn't
+	 * advertise so users aren't prompted for credentials the server
+	 * would reject regardless. */
+	struct kbi_ctx kctx = { .bbs = bbs, .used_saved_pw = false };
 	auth_rc = -1;
-	if (bbs->conn_type == CONN_TYPE_SSHNA) {
-		char methods[128];
-		auth_rc = dssh_auth_get_methods(ssh_session, username, methods, sizeof(methods));
-		if (auth_rc < 0) {
-			free(pubkey);
-			error_popup(bbs, "none-auth probe failed");
-			ssh_close();
-			return -1;
-		}
-		/* DSSH_AUTH_NONE_ACCEPTED means we're in. */
-		auth_rc = 0;
+	char methods[128] = "";
+	int  probe_rc     = dssh_auth_get_methods(ssh_session, username, methods, sizeof(methods));
+	if (probe_rc < 0) {
+		free(pubkey);
+		error_popup(bbs, "auth method probe failed");
+		ssh_close();
+		return -1;
 	}
-	if (auth_rc != 0 && password[0])
+	if (probe_rc == DSSH_AUTH_NONE_ACCEPTED)
+		auth_rc = 0;
+	bool offers_pw  = strstr(methods, "password") != NULL;
+	bool offers_pk  = strstr(methods, "publickey") != NULL;
+	bool offers_kbi = strstr(methods, "keyboard-interactive") != NULL;
+
+	if (auth_rc != 0 && offers_pk)
+		auth_rc = dssh_auth_publickey(ssh_session, username, "ssh-ed25519");
+	if (auth_rc != 0 && offers_pw && password[0])
 		auth_rc = dssh_auth_password(ssh_session, username, password, NULL, NULL);
-	for (int tries = 0; auth_rc != 0 && tries < 3; tries++) {
+	for (int tries = 0; auth_rc != 0 && offers_pw && tries < 3; tries++) {
 		if (bbs->hidepopups)
 			init_uifc(false, false);
 		password[0] = 0;
@@ -1197,10 +1237,8 @@ ssh_connect(struct bbslist *bbs)
 			break;
 		auth_rc = dssh_auth_password(ssh_session, username, password, NULL, NULL);
 	}
-	if (auth_rc != 0)
-		auth_rc = dssh_auth_keyboard_interactive(ssh_session, username, kbi_prompt_cb, NULL);
-	if (auth_rc != 0)
-		auth_rc = dssh_auth_publickey(ssh_session, username, "ssh-ed25519");
+	if (auth_rc != 0 && offers_kbi)
+		auth_rc = dssh_auth_keyboard_interactive(ssh_session, username, kbi_prompt_cb, &kctx);
 	/* Wipe the local password copy now that auth has finished — even
 	   if it lingers in conn_api, in stack slots, or in optimizer-
 	   reordered storage, dssh_cleanse() prevents the compiler from
