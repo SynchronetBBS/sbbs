@@ -20,6 +20,7 @@
 #include <sys/stat.h>
 #include <time.h>
 
+#include <datewrap.h>
 #include <genwrap.h>
 #include <md5.h>
 #include <sha1.h>
