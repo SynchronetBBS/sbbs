@@ -584,20 +584,27 @@ sftp_browser_run(struct bbslist *bbs)
 	struct ciolib_screen *savscrn = cp437_savescrn();
 	init_uifc(true, true);
 
-	/* Resolve a starting path.  Most SFTP servers interpret "." as the
-	 * user's home; fall back to "/" if realpath fails. */
+	/* Resolve a starting path.  Prefer the server-advertised pubdir
+	 * (pubdir@syncterm.net extension) when offered — that's the
+	 * server's chosen "front door" for browsing.  Fall back to
+	 * realpath(".") (most servers' user home), then "/". */
 	char *cwd = NULL;
-	sftp_str_t rp = NULL;
-	SFTPC_OUTCOME_DECL(rp_out, 0);
-	if (sftpc_realpath(sftp_state, ".", &rp, rp_out) && rp_out->result == SSH_FX_OK
-	    && rp != NULL && rp->len > 0) {
-		cwd = (char *)malloc(rp->len + 1);
-		if (cwd != NULL) {
-			memcpy(cwd, rp->c_str, rp->len);
-			cwd[rp->len] = '\0';
+	const char *pd = sftpc_get_pubdir(sftp_state);
+	if (pd != NULL && pd[0] != '\0')
+		cwd = strdup(pd);
+	if (cwd == NULL) {
+		sftp_str_t rp = NULL;
+		SFTPC_OUTCOME_DECL(rp_out, 0);
+		if (sftpc_realpath(sftp_state, ".", &rp, rp_out) && rp_out->result == SSH_FX_OK
+		    && rp != NULL && rp->len > 0) {
+			cwd = (char *)malloc(rp->len + 1);
+			if (cwd != NULL) {
+				memcpy(cwd, rp->c_str, rp->len);
+				cwd[rp->len] = '\0';
+			}
 		}
+		free_sftp_str(rp);
 	}
-	free_sftp_str(rp);
 	if (cwd == NULL)
 		cwd = strdup("/");
 

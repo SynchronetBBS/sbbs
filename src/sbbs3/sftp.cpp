@@ -2279,6 +2279,7 @@ sbbs_t::init_sftp(int cid)
 		sftp_state->lstat = sftp_lstat;
 		sftp_state->readlink = sftp_readlink;
 		sftp_state->extended = sftp_extended;
+		sftp_state->pubdir = SLASH_FILES;
 		sftp_channel = cid;
 		lprintf(LOG_INFO, "SFTP initialized on channel %d", cid);
 		return true;

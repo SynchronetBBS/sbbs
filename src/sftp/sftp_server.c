@@ -112,12 +112,31 @@ init(sftps_state_t state, struct sftps_outcome *out)
 		free_sftp_str(ext_name);
 		free_sftp_str(ext_data);
 	}
+	/* The pubdir extension piggybacks a server-supplied path string into
+	 * the VERSION reply.  Only advertise the bit if the consumer actually
+	 * gave us something to send — otherwise the client would enable a
+	 * feature the server can't fulfil. */
+	if (state->pubdir == NULL)
+		state->extensions &= ~SFTP_EXT_PUBDIR;
+	/* Mask pubdir out of append_extensions: the standard table-driven
+	 * emit would write "pubdir"/"1", but the wire shape we want on the
+	 * server side is "pubdir"/<path>.  We append that pair manually
+	 * below instead. */
 	if (!appendheader(&state->priv->txp, SSH_FXP_VERSION, state->priv->id) ||
 	    !append32(&state->priv->txp, state->version) ||
-	    !append_extensions(&state->priv->txp, state->extensions)) {
+	    !append_extensions(&state->priv->txp,
+	        state->extensions & ~SFTP_EXT_PUBDIR)) {
 		sftps_outcome_record(out, SFTP_ERR_PACKET_BUILD_FAILED,
 		    "build VERSION reply failed");
 		return false;
+	}
+	if (state->extensions & SFTP_EXT_PUBDIR) {
+		if (!appendcstring(&state->priv->txp, SFTP_EXT_NAME_PUBDIR) ||
+		    !appendcstring(&state->priv->txp, state->pubdir)) {
+			sftps_outcome_record(out, SFTP_ERR_PACKET_BUILD_FAILED,
+			    "build VERSION pubdir failed");
+			return false;
+		}
 	}
 	return sftps_send_packet(state, out);
 }

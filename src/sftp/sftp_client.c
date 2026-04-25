@@ -48,6 +48,11 @@ struct sftp_client_state {
 	 * (init runs to completion before queue/browser threads start in
 	 * SyncTERM today). */
 	uint32_t extensions;
+	/* Path captured from the pubdir@syncterm.net extension's data field
+	 * during VERSION; same lifecycle/threading rules as `extensions`.
+	 * NUL-terminated heap copy owned by the library; freed in
+	 * sftpc_finish.  NULL when the extension wasn't negotiated. */
+	char *pubdir;
 	bool terminating;
 };
 
@@ -240,6 +245,8 @@ sftpc_finish(sftpc_state_t state)
 	state->rxp = NULL;
 	free_tx_pkt(state->txp);
 	state->txp = NULL;
+	free(state->pubdir);
+	state->pubdir = NULL;
 	pthread_mutex_unlock(&state->mtx);
 }
 
@@ -315,6 +322,24 @@ sftpc_init(sftpc_state_t state)
 				break;
 			}
 			state->extensions |= extension_match(ext_name, ext_data) & SFTP_EXT_ALL;
+			/* pubdir@syncterm.net is asymmetric: client advertised
+			 * "1" (matched by the table on the server's INIT-receive
+			 * side) but the server's VERSION reply puts the actual
+			 * path in the data field, so extension_match() doesn't
+			 * fire here.  Recognise by name and capture the data as
+			 * a NUL-terminated C string, setting the bit explicitly. */
+			if (state->pubdir == NULL &&
+			    ext_name->len == strlen(SFTP_EXT_NAME_PUBDIR) &&
+			    memcmp(ext_name->c_str, SFTP_EXT_NAME_PUBDIR,
+			        ext_name->len) == 0) {
+				char *p = malloc((size_t)ext_data->len + 1);
+				if (p != NULL) {
+					memcpy(p, ext_data->c_str, ext_data->len);
+					p[ext_data->len] = '\0';
+					state->pubdir = p;
+					state->extensions |= SFTP_EXT_PUBDIR;
+				}
+			}
 			free_sftp_str(ext_name);
 			free_sftp_str(ext_data);
 		}
@@ -332,6 +357,14 @@ sftpc_get_extensions(sftpc_state_t state)
 	if (state == NULL)
 		return 0;
 	return state->extensions;
+}
+
+const char *
+sftpc_get_pubdir(sftpc_state_t state)
+{
+	if (state == NULL)
+		return NULL;
+	return state->pubdir;
 }
 
 /*
