@@ -256,19 +256,10 @@ bool sftpc_write(sftpc_state_t state, sftp_filehandle_t handle, uint64_t offset,
 bool sftpc_readdir(sftpc_state_t state, sftp_dirhandle_t handle, struct sftpc_dir_entry **entries_out, uint32_t *count_out, bool *eof_out);
 void sftpc_free_dir_entries(struct sftpc_dir_entry *entries, uint32_t count);
 bool sftpc_stat(sftpc_state_t state, const char *path, sftp_file_attr_t *attr_out);
-bool sftpc_lstat(sftpc_state_t state, const char *path, sftp_file_attr_t *attr_out);
-bool sftpc_fstat(sftpc_state_t state, sftp_filehandle_t handle, sftp_file_attr_t *attr_out);
 bool sftpc_setstat(sftpc_state_t state, const char *path, sftp_file_attr_t attr);
-bool sftpc_fsetstat(sftpc_state_t state, sftp_filehandle_t handle, sftp_file_attr_t attr);
-bool sftpc_remove(sftpc_state_t state, const char *path);
-bool sftpc_rmdir(sftpc_state_t state, const char *path);
-bool sftpc_mkdir(sftpc_state_t state, const char *path, sftp_file_attr_t attr);
-bool sftpc_rename(sftpc_state_t state, const char *from, const char *to);
-bool sftpc_reclaim(sftpc_state_t state);
 bool sftpc_descs(sftpc_state_t state, const char *path, sftp_str_t *desc);
 uint32_t sftpc_get_err(sftpc_state_t state);
 uint32_t sftpc_get_extensions(sftpc_state_t state);
-uint8_t sftpc_debug_last_reply_type(sftpc_state_t state);
 void sftpc_end(sftpc_state_t state);
 
 /* sftp_attr.c */
@@ -301,7 +292,6 @@ bool sftps_send_data(sftps_state_t state, sftp_str_t data);
 bool sftps_send_name(sftps_state_t state, uint32_t count, str_list_t fnames, str_list_t lnames, sftp_file_attr_t *attrs);
 bool sftps_send_attrs(sftps_state_t state, sftp_file_attr_t attr);
 bool sftps_send_extended_reply(sftps_state_t state, sftp_str_t data);
-bool sftps_reclaim(sftps_state_t state);
 uint32_t sftps_get_extensions(sftps_state_t state);
 
 /*

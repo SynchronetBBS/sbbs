@@ -309,12 +309,9 @@ static char load_dir_err[256];
 static void
 set_load_err(const char *op, uint32_t code)
 {
-	const char *name = sftp_get_errcode_name(code);
-	uint8_t rt = sftpc_debug_last_reply_type(sftp_state);
-	const char *rt_name = rt ? sftp_get_type_name(rt) : "(none)";
 	snprintf(load_dir_err, sizeof(load_dir_err),
-	    "%s failed: %s (%" PRIu32 ")\nlast reply type: %s (%u)",
-	    op, name, code, rt_name, (unsigned)rt);
+	    "%s failed: %s (%" PRIu32 ")",
+	    op, sftp_get_errcode_name(code), code);
 }
 
 static struct entry *

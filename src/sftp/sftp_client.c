@@ -31,7 +31,6 @@ struct sftp_client_state {
 	uint32_t id;
 	uint32_t extensions;
 	uint32_t last_error;
-	uint8_t last_reply_type;  /* Debugging: type byte of most recent reply */
 	bool terminating;
 };
 
@@ -298,25 +297,6 @@ sftpc_get_extensions(sftpc_state_t state)
 	return state->extensions;
 }
 
-uint8_t
-sftpc_debug_last_reply_type(sftpc_state_t state)
-{
-	if (state == NULL)
-		return 0;
-	return state->last_reply_type;
-}
-
-bool
-sftpc_reclaim(sftpc_state_t state)
-{
-	if (!client_enter(state))
-		return false;
-	bool ret = true;
-	ret = tx_pkt_reclaim(&state->txp) && ret;
-	ret = rx_pkt_reclaim(&state->rxp) && ret;
-	return client_exit(state, ret);
-}
-
 /*
  * Shared op scaffolding — each caller builds its packet into state->txp
  * via the sftp_static.h helpers, then calls send_and_wait.
@@ -405,7 +385,6 @@ do_open(sftpc_state_t state, uint8_t type, const char *path, uint32_t flags,
 		set_thread_err(state, SSH_FX_CONNECTION_LOST);
 	}
 	else {
-		state->last_reply_type = p.reply->type;
 		if (p.reply->type == SSH_FXP_HANDLE) {
 			*handle_out = getstring(p.reply);
 			if (*handle_out == NULL)
@@ -541,108 +520,6 @@ sftpc_write(sftpc_state_t state, sftp_filehandle_t handle, uint64_t offset,
 	return client_exit(state, rv);
 }
 
-/* Single-path op expecting a STATUS reply (REMOVE, RMDIR, ...). */
-static bool
-do_one_path(sftpc_state_t state, uint8_t type, const char *path)
-{
-	struct sftpc_pending p = {0};
-	p.evt = CreateEvent(NULL, TRUE, FALSE, NULL);
-	if (p.evt == NULL)
-		return false;
-	p.req_id = next_req_id(state);
-	pend_add(state, &p);
-
-	bool ok = appendheader(&state->txp, type, state->id) &&
-	          appendcstring(&state->txp, path) &&
-	          send_and_wait(state, &p);
-	bool rv = ok && p.reply != NULL && status_ok(state, p.reply);
-	pend_remove(state, &p);
-	free_rx_pkt(p.reply);
-	CloseEvent(p.evt);
-	return rv;
-}
-
-bool
-sftpc_remove(sftpc_state_t state, const char *path)
-{
-	if (path == NULL)
-		return false;
-	if (!client_enter(state))
-		return false;
-	return client_exit(state, do_one_path(state, SSH_FXP_REMOVE, path));
-}
-
-bool
-sftpc_rmdir(sftpc_state_t state, const char *path)
-{
-	if (path == NULL)
-		return false;
-	if (!client_enter(state))
-		return false;
-	return client_exit(state, do_one_path(state, SSH_FXP_RMDIR, path));
-}
-
-bool
-sftpc_mkdir(sftpc_state_t state, const char *path, sftp_file_attr_t attr)
-{
-	if (path == NULL)
-		return false;
-	if (!client_enter(state))
-		return false;
-
-	struct sftpc_pending p = {0};
-	p.evt = CreateEvent(NULL, TRUE, FALSE, NULL);
-	if (p.evt == NULL)
-		return client_exit(state, false);
-	p.req_id = next_req_id(state);
-	pend_add(state, &p);
-
-	sftp_file_attr_t a = attr;
-	bool need_free = false;
-	if (a == NULL) {
-		a = sftp_fattr_alloc();
-		need_free = (a != NULL);
-	}
-	bool ok = a != NULL &&
-	          appendheader(&state->txp, SSH_FXP_MKDIR, state->id) &&
-	          appendcstring(&state->txp, path) &&
-	          appendfattr(&state->txp, a) &&
-	          send_and_wait(state, &p);
-	if (need_free)
-		sftp_fattr_free(a);
-	bool rv = ok && p.reply != NULL && status_ok(state, p.reply);
-	pend_remove(state, &p);
-	free_rx_pkt(p.reply);
-	CloseEvent(p.evt);
-	return client_exit(state, rv);
-}
-
-bool
-sftpc_rename(sftpc_state_t state, const char *from, const char *to)
-{
-	if (from == NULL || to == NULL)
-		return false;
-	if (!client_enter(state))
-		return false;
-
-	struct sftpc_pending p = {0};
-	p.evt = CreateEvent(NULL, TRUE, FALSE, NULL);
-	if (p.evt == NULL)
-		return client_exit(state, false);
-	p.req_id = next_req_id(state);
-	pend_add(state, &p);
-
-	bool ok = appendheader(&state->txp, SSH_FXP_RENAME, state->id) &&
-	          appendcstring(&state->txp, from) &&
-	          appendcstring(&state->txp, to) &&
-	          send_and_wait(state, &p);
-	bool rv = ok && p.reply != NULL && status_ok(state, p.reply);
-	pend_remove(state, &p);
-	free_rx_pkt(p.reply);
-	CloseEvent(p.evt);
-	return client_exit(state, rv);
-}
-
 static bool
 do_stat(sftpc_state_t state, uint8_t type, const char *path,
         sftp_filehandle_t handle, sftp_file_attr_t *attr_out)
@@ -689,26 +566,6 @@ sftpc_stat(sftpc_state_t state, const char *path, sftp_file_attr_t *attr_out)
 	return client_exit(state, do_stat(state, SSH_FXP_STAT, path, NULL, attr_out));
 }
 
-bool
-sftpc_lstat(sftpc_state_t state, const char *path, sftp_file_attr_t *attr_out)
-{
-	if (path == NULL || attr_out == NULL || *attr_out != NULL)
-		return false;
-	if (!client_enter(state))
-		return false;
-	return client_exit(state, do_stat(state, SSH_FXP_LSTAT, path, NULL, attr_out));
-}
-
-bool
-sftpc_fstat(sftpc_state_t state, sftp_filehandle_t handle, sftp_file_attr_t *attr_out)
-{
-	if (handle == NULL || attr_out == NULL || *attr_out != NULL)
-		return false;
-	if (!client_enter(state))
-		return false;
-	return client_exit(state, do_stat(state, SSH_FXP_FSTAT, NULL, handle, attr_out));
-}
-
 static bool
 do_setstat(sftpc_state_t state, uint8_t type, const char *path,
            sftp_filehandle_t handle, sftp_file_attr_t attr)
@@ -743,16 +600,6 @@ sftpc_setstat(sftpc_state_t state, const char *path, sftp_file_attr_t attr)
 	if (!client_enter(state))
 		return false;
 	return client_exit(state, do_setstat(state, SSH_FXP_SETSTAT, path, NULL, attr));
-}
-
-bool
-sftpc_fsetstat(sftpc_state_t state, sftp_filehandle_t handle, sftp_file_attr_t attr)
-{
-	if (handle == NULL || attr == NULL)
-		return false;
-	if (!client_enter(state))
-		return false;
-	return client_exit(state, do_setstat(state, SSH_FXP_FSETSTAT, NULL, handle, attr));
 }
 
 void
@@ -872,7 +719,6 @@ sftpc_descs(sftpc_state_t state, const char *path, sftp_str_t *desc)
 		set_thread_err(state, SSH_FX_CONNECTION_LOST);
 	}
 	else {
-		state->last_reply_type = p.reply->type;
 		if (p.reply->type == SSH_FXP_EXTENDED_REPLY) {
 			*desc = getstring(p.reply);
 			if (*desc == NULL)

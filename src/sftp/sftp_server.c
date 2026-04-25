@@ -19,6 +19,8 @@ struct sftp_server_state_private {
 	bool terminating;
 };
 
+static bool sftps_reclaim(sftps_state_t state);
+
 /*
  * Enter/exit around the state mutex.  The server holds the lock for
  * the full duration of an op, including any consumer callback, so the
@@ -697,7 +699,7 @@ sftps_send_attrs(sftps_state_t state, sftp_file_attr_t attr)
 	return sftps_send_packet(state);
 }
 
-bool
+static bool
 sftps_reclaim(sftps_state_t state)
 {
 	bool ret = true;
