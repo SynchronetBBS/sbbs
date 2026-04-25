@@ -142,20 +142,23 @@
  * / sftps_get_extensions).  Presence of the name in both directions
  * enables the extension for the session.
  */
-#define SFTP_EXT_NAME_LNAME "lname@syncterm.net"
-#define SFTP_EXT_NAME_DESCS "descs@syncterm.net"
-#define SFTP_EXT_NAME_SHA1S "sha1s@syncterm.net"
-#define SFTP_EXT_NAME_MD5S  "md5s@syncterm.net"
+#define SFTP_EXT_NAME_LNAME  "lname@syncterm.net"
+#define SFTP_EXT_NAME_DESCS  "descs@syncterm.net"
+#define SFTP_EXT_NAME_SHA1S  "sha1s@syncterm.net"
+#define SFTP_EXT_NAME_MD5S   "md5s@syncterm.net"
+#define SFTP_EXT_NAME_PUBDIR "pubdir@syncterm.net"
 
 #define SFTP_EXT_LNAME      UINT32_C(0x00000001)
 #define SFTP_EXT_DESCS      UINT32_C(0x00000002)
 #define SFTP_EXT_SHA1S      UINT32_C(0x00000004)
 #define SFTP_EXT_MD5S       UINT32_C(0x00000008)
+#define SFTP_EXT_PUBDIR     UINT32_C(0x00000010)
 
 /* All extensions advertised by this library; used as the client's
  * advertisement set and the server's supported-by-us set. */
 #define SFTP_EXT_ALL        (SFTP_EXT_LNAME | SFTP_EXT_DESCS | \
-                             SFTP_EXT_SHA1S | SFTP_EXT_MD5S)
+                             SFTP_EXT_SHA1S | SFTP_EXT_MD5S  | \
+                             SFTP_EXT_PUBDIR)
 
 /* Packet buffer types are opaque to consumers.  The only consumer use
  * is the `sftp_extended` server callback which gets a raw rx packet —
@@ -232,6 +235,14 @@ typedef struct sftp_server_state {
 	bool (*extended)(sftp_str_t request, sftp_rx_pkt_t pkt, void *cb_data);
 	uint32_t version;
 	uint32_t extensions;
+	/* Public-directory path advertised via the pubdir@syncterm.net
+	 * extension when both sides negotiate it.  Caller-owned, borrowed
+	 * by the library — set it to a string with at least session lifetime
+	 * (e.g. a string literal) before the first sftps_recv().  Leave NULL
+	 * to disable: SFTP_EXT_PUBDIR is masked out of the negotiated set
+	 * before the VERSION reply goes out, so the client never sees the
+	 * bit either. */
+	const char *pubdir;
 	struct sftp_server_state_private *priv;
 } *sftps_state_t;
 
@@ -373,6 +384,10 @@ bool sftpc_stat(sftpc_state_t state, const char *path, sftp_file_attr_t *attr_ou
 bool sftpc_setstat(sftpc_state_t state, const char *path, sftp_file_attr_t attr, struct sftpc_outcome *out);
 bool sftpc_descs(sftpc_state_t state, const char *path, sftp_str_t *desc, struct sftpc_outcome *out);
 uint32_t sftpc_get_extensions(sftpc_state_t state);
+/* Public-directory path the server advertised via the pubdir@syncterm.net
+ * extension during VERSION, or NULL if the extension wasn't negotiated.
+ * The library owns the string; valid for the lifetime of `state`. */
+const char *sftpc_get_pubdir(sftpc_state_t state);
 void sftpc_end(sftpc_state_t state);
 
 /* sftp_attr.c */

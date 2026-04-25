@@ -20,10 +20,11 @@ struct extension_entry {
 };
 
 static const struct extension_entry known_extensions[] = {
-	{ SFTP_EXT_NAME_LNAME, "1", SFTP_EXT_LNAME },
-	{ SFTP_EXT_NAME_DESCS, "1", SFTP_EXT_DESCS },
-	{ SFTP_EXT_NAME_SHA1S, "1", SFTP_EXT_SHA1S },
-	{ SFTP_EXT_NAME_MD5S,  "1", SFTP_EXT_MD5S  },
+	{ SFTP_EXT_NAME_LNAME,  "1", SFTP_EXT_LNAME  },
+	{ SFTP_EXT_NAME_DESCS,  "1", SFTP_EXT_DESCS  },
+	{ SFTP_EXT_NAME_SHA1S,  "1", SFTP_EXT_SHA1S  },
+	{ SFTP_EXT_NAME_MD5S,   "1", SFTP_EXT_MD5S   },
+	{ SFTP_EXT_NAME_PUBDIR, "1", SFTP_EXT_PUBDIR },
 };
 
 /*
