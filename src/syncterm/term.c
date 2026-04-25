@@ -18,10 +18,12 @@
 #include "menu.h"
 #include "saucedefs.h"
 #include "sexyz.h"
+#ifndef WITHOUT_DEUCESSH
 #include "sftp_browser.h"
 #include "sftp_degraded.h"
 #include "sftp_queue.h"
 #include "sftp_queue_screen.h"
+#endif
 #include "strwrap.h"
 #include "syncterm.h"
 #include "telnet_io.h"
@@ -492,12 +494,14 @@ update_status(struct bbslist *bbs, int speed, int ooii_mode, bool ata_inv)
 		newbits |= 0x40;
 		force_status_update = false;
 	}
+#ifndef WITHOUT_DEUCESSH
 	uint32_t sftp_up_active = 0, sftp_dn_active = 0;
 	sftp_queue_activity(&sftp_up_active, &sftp_dn_active);
 	if (sftp_up_active > 0)
 		newbits |= 0x80;
 	if (sftp_dn_active > 0)
 		newbits |= 0x100;
+#endif
 	if (rip_did_reinit)
 		rip_did_reinit = false;
 	else {
@@ -6015,8 +6019,10 @@ doterm(struct bbslist *bbs)
 							 * drain or the user abandons them.
 							 * Returns immediately if there's no
 							 * work to wait on. */
+#ifndef WITHOUT_DEUCESSH
 							if (!bbs->hidepopups)
 								sftp_degraded_run(bbs);
+#endif
 							if (!bbs->hidepopups)
 								uifcmsg("Disconnected",
 								    "`Disconnected`\n\nRemote host dropped connection");
@@ -6294,6 +6300,7 @@ doterm(struct bbslist *bbs)
 					showmouse();
 					sleep = false;
 					break;
+#ifndef WITHOUT_DEUCESSH
 				case 0x1f00: /* ALT-S - SFTP browser */
 					sftp_browser_run(bbs);
 					setup_mouse_events(&ms);
@@ -6304,6 +6311,7 @@ doterm(struct bbslist *bbs)
 					setup_mouse_events(&ms);
 					showmouse();
 					break;
+#endif
 				case 0x1600: /* ALT-U - Upload */
 					begin_upload(bbs, false, inch);
 					setup_mouse_events(&ms);
