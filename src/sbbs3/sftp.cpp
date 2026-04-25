@@ -965,9 +965,10 @@ get_lib_attrs(sbbs_t *sbbs, int lib)
 	sftp_fattr_set_permissions(attr, S_IFDIR | S_IRUSR | S_IWUSR | S_IXUSR | S_IRGRP | S_IXGRP);
 	sftp_fattr_set_uid_gid(attr, 1, static_cast<uint32_t>(lib) | lib_flag);
 	if (sbbs->sftp_state->extensions & SFTP_EXT_LNAME) {
-		sftp_str_t ext = sftp_strdup(SFTP_EXT_NAME_LNAME);
-		sftp_str_t dat = sftp_strdup(sbbs->cfg.lib[lib]->lname);
-		sftp_fattr_add_ext(&attr, ext, dat);
+		struct sftp_string ext, dat;
+		sftp_strstatic(&ext, SFTP_EXT_NAME_LNAME);
+		sftp_strstatic(&dat, sbbs->cfg.lib[lib]->lname);
+		sftp_fattr_add_ext(&attr, &ext, &dat);
 	}
 	return attr;
 }
@@ -985,9 +986,10 @@ get_dir_attrs(sbbs_t *sbbs, int32_t dir)
 	sftp_fattr_set_permissions(attr, perms);
 	sftp_fattr_set_uid_gid(attr, 1, static_cast<uint32_t>(dir));
 	if (sbbs->sftp_state->extensions & SFTP_EXT_LNAME) {
-		sftp_str_t ext = sftp_strdup(SFTP_EXT_NAME_LNAME);
-		sftp_str_t dat = sftp_strdup(sbbs->cfg.dir[dir]->lname);
-		sftp_fattr_add_ext(&attr, ext, dat);
+		struct sftp_string ext, dat;
+		sftp_strstatic(&ext, SFTP_EXT_NAME_LNAME);
+		sftp_strstatic(&dat, sbbs->cfg.dir[dir]->lname);
+		sftp_fattr_add_ext(&attr, &ext, &dat);
 	}
 	return attr;
 }
@@ -1018,20 +1020,23 @@ get_filebase_attrs(sbbs_t *sbbs, int32_t dir, smbfile_t *file)
 	//                    look up the usernumber from uploader's username.
 	if (sbbs->sftp_state->extensions & SFTP_EXT_LNAME) {
 		if (file->desc && file->desc[0]) {
-			sftp_str_t ext = sftp_strdup(SFTP_EXT_NAME_LNAME);
-			sftp_str_t dat = sftp_strdup(file->desc);
-			sftp_fattr_add_ext(&attr, ext, dat);
+			struct sftp_string ext, dat;
+			sftp_strstatic(&ext, SFTP_EXT_NAME_LNAME);
+			sftp_strstatic(&dat, file->desc);
+			sftp_fattr_add_ext(&attr, &ext, &dat);
 		}
 	}
 	if ((sbbs->sftp_state->extensions & SFTP_EXT_SHA1S) && (file->file_idx.hash.flags & SMB_HASH_SHA1)) {
-		sftp_str_t ext = sftp_strdup(SFTP_EXT_NAME_SHA1S);
-		sftp_str_t dat = sftp_memdup(file->file_idx.hash.data.sha1, SHA1_DIGEST_SIZE);
-		sftp_fattr_add_ext(&attr, ext, dat);
+		struct sftp_string ext, dat;
+		sftp_strstatic(&ext, SFTP_EXT_NAME_SHA1S);
+		sftp_memstatic(&dat, file->file_idx.hash.data.sha1, SHA1_DIGEST_SIZE);
+		sftp_fattr_add_ext(&attr, &ext, &dat);
 	}
 	else if ((sbbs->sftp_state->extensions & SFTP_EXT_MD5S) && (file->file_idx.hash.flags & SMB_HASH_MD5)) {
-		sftp_str_t ext = sftp_strdup(SFTP_EXT_NAME_MD5S);
-		sftp_str_t dat = sftp_memdup(file->file_idx.hash.data.sha1, MD5_DIGEST_SIZE);
-		sftp_fattr_add_ext(&attr, ext, dat);
+		struct sftp_string ext, dat;
+		sftp_strstatic(&ext, SFTP_EXT_NAME_MD5S);
+		sftp_memstatic(&dat, file->file_idx.hash.data.sha1, MD5_DIGEST_SIZE);
+		sftp_fattr_add_ext(&attr, &ext, &dat);
 	}
 
 	return attr;
@@ -1390,7 +1395,6 @@ sftp_open(sftp_str_t filename, uint32_t flags, sftp_file_attr_t attributes, void
 	unsigned         fdidx;
 	mode_t           omode = 0;
 	int              oflags = O_BINARY;
-	sftp_str_t       handle;
 	bool             ret;
 	map_path_mode_t  mmode;
 
@@ -1491,15 +1495,12 @@ sftp_open(sftp_str_t filename, uint32_t flags, sftp_file_attr_t attributes, void
 		free(sbbs->sftp_filedes[fdidx]);
 		return sftps_send_error(sbbs->sftp_state, SSH_FX_FAILURE, "Operation failed", nullptr);
 	}
-	handle = sftp_asprintf("%u", fdidx + 1);
-	if (handle == nullptr) {
-		close(sbbs->sftp_filedes[fdidx]->fd);
-		free(sbbs->sftp_filedes[fdidx]->local_path);
-		free(sbbs->sftp_filedes[fdidx]);
-		return sftps_send_error(sbbs->sftp_state, SSH_FX_FAILURE, "Out of resources", nullptr);
-	}
-	ret = sftps_send_handle(sbbs->sftp_state, handle, nullptr);
-	free_sftp_str(handle);
+	char hbuf[16];
+	int  hlen = snprintf(hbuf, sizeof(hbuf), "%u", fdidx + 1);
+	struct sftp_string hstr;
+	sftp_memstatic(&hstr, reinterpret_cast<const uint8_t *>(hbuf),
+	    static_cast<uint32_t>(hlen));
+	ret = sftps_send_handle(sbbs->sftp_state, &hstr, nullptr);
 	return ret;
 }
 
@@ -1642,7 +1643,6 @@ sftp_opendir(sftp_str_t path, void *cb_data)
 	sbbs_t *         sbbs = (sbbs_t *)cb_data;
 	constexpr size_t nddes = sizeof(sbbs->sftp_dirdes) / sizeof(sbbs->sftp_dirdes[0]);
 	unsigned         ddidx;
-	sftp_str_t       h;
 
 	sbbs->lprintf(LOG_DEBUG, "SFTP opendir(%.*s)", path->len, path->c_str);
 	// See if there's an available file descriptor
@@ -1669,12 +1669,12 @@ sftp_opendir(sftp_str_t path, void *cb_data)
 		sbbs->sftp_dirdes[ddidx]->info.filebase.dir = pmap.info.filebase.dir;
 		sbbs->sftp_dirdes[ddidx]->info.filebase.idx = dot;
 	}
-	h = sftp_asprintf("D:%u", ddidx + 1);
-	if (h == nullptr) {
-		return sftps_send_error(sbbs->sftp_state, SSH_FX_FAILURE, "Handle allocation failure", nullptr);
-	}
-	bool ret = sftps_send_handle(sbbs->sftp_state, h, nullptr);
-	free_sftp_str(h);
+	char hbuf[24];
+	int  hlen = snprintf(hbuf, sizeof(hbuf), "D:%u", ddidx + 1);
+	struct sftp_string hstr;
+	sftp_memstatic(&hstr, reinterpret_cast<const uint8_t *>(hbuf),
+	    static_cast<uint32_t>(hlen));
+	bool ret = sftps_send_handle(sbbs->sftp_state, &hstr, nullptr);
 	return ret;
 }
 
@@ -2159,16 +2159,10 @@ sftp_ext_descs(sbbs_t *sbbs, const char *cpath)
 		    "Can't read extdesc", nullptr);
 	}
 	else {
-		const char *ed = file.extdesc ? file.extdesc : "";
-		sftp_str_t reply = sftp_strdup(ed);
-		if (reply == nullptr) {
-			sent = sftps_send_error(sbbs->sftp_state, SSH_FX_FAILURE,
-			    "Out of memory", nullptr);
-		}
-		else {
-			sent = sftps_send_extended_reply(sbbs->sftp_state, reply, nullptr);
-			free_sftp_str(reply);
-		}
+		const char        *ed = file.extdesc ? file.extdesc : "";
+		struct sftp_string reply;
+		sftp_strstatic(&reply, ed);
+		sent = sftps_send_extended_reply(sbbs->sftp_state, &reply, nullptr);
 		smb_freefilemem(&file);
 	}
 	smb_close(&smb);
