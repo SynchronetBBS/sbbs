@@ -327,7 +327,7 @@ struct sftps_outcome {
 	union {                                                               \
 		struct sftpc_outcome o;                                           \
 		char _##name##_pad[sizeof(struct sftpc_outcome) + (textsz)];      \
-	} _##name##_u = {0};                                                  \
+	} _##name##_u = {{0}};                                                \
 	struct sftpc_outcome *name = &_##name##_u.o;                          \
 	name->sz = (textsz)
 
@@ -335,7 +335,7 @@ struct sftps_outcome {
 	union {                                                               \
 		struct sftps_outcome o;                                           \
 		char _##name##_pad[sizeof(struct sftps_outcome) + (textsz)];      \
-	} _##name##_u = {0};                                                  \
+	} _##name##_u = {{0}};                                                \
 	struct sftps_outcome *name = &_##name##_u.o;                          \
 	name->sz = (textsz)
 
