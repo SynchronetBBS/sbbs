@@ -494,8 +494,8 @@ update_status(struct bbslist *bbs, int speed, int ooii_mode, bool ata_inv)
 		newbits |= 0x40;
 		force_status_update = false;
 	}
-#ifndef WITHOUT_DEUCESSH
 	uint32_t sftp_up_active = 0, sftp_dn_active = 0;
+#ifndef WITHOUT_DEUCESSH
 	sftp_queue_activity(&sftp_up_active, &sftp_dn_active);
 	if (sftp_up_active > 0)
 		newbits |= 0x80;
