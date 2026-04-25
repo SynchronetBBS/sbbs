@@ -181,7 +181,7 @@ struct popup_entry {
 	struct popup_entry *next;
 };
 
-static pthread_mutex_t     popup_q_mutex = PTHREAD_MUTEX_INITIALIZER;
+static pthread_mutex_t     popup_q_mutex;
 static struct popup_entry *popup_q_head;
 static struct popup_entry *popup_q_tail;
 
@@ -2090,6 +2090,8 @@ main(int argc, char **argv)
 		fprintf(stdout, "%s\n", syncterm_version);
 		return 0;
 	}
+
+	pthread_mutex_init(&popup_q_mutex, NULL);
 
 #ifndef WITHOUT_DEUCESSH
         /* DeuceSSH algorithm registration + RNG seed; must run before
