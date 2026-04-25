@@ -165,10 +165,22 @@ typedef struct sftp_rx_pkt *sftp_rx_pkt_t;
 
 /* sftp_string is the one struct whose fields ARE public: consumers
  * (both syncterm/ssh.c and sbbs3/sftp.cpp) read ->c_str and ->len to
- * get at the wire bytes the library handed them. */
+ * get at the wire bytes the library handed them.
+ *
+ * Three lifetime modes — selected by the helper used to construct the
+ * string and conveyed by the release callback:
+ *   - heap: library single-malloc of header + bytes; ->release frees
+ *     the whole thing in free_sftp_str().
+ *   - static: caller provides struct + bytes, both with program/scope
+ *     lifetime; ->release is NULL and free_sftp_str() is a no-op.
+ *   - borrowed: caller provides the struct, owns the bytes externally
+ *     and supplies a ->release callback (refcount, mmap teardown, etc.)
+ *     that fires when the library is done with the bytes. */
 typedef struct sftp_string {
-	uint32_t len;
-	uint8_t c_str[];
+	uint32_t  len;
+	uint8_t  *c_str;
+	void    (*release)(struct sftp_string *str);
+	void     *release_cbdata;
 } *sftp_str_t;
 
 struct sftp_file_attributes;
@@ -234,6 +246,20 @@ sftp_str_t sftp_alloc_str(uint32_t len);
 sftp_str_t sftp_strdup(const char *str);
 sftp_str_t sftp_asprintf(const char *format, ...);
 sftp_str_t sftp_memdup(const uint8_t *buf, uint32_t sz);
+/* Wrap caller-owned static memory in a caller-provided struct.  No
+ * allocation; free_sftp_str() is a no-op for these. */
+void sftp_strstatic(struct sftp_string *out, const char *str);
+void sftp_memstatic(struct sftp_string *out, const uint8_t *buf, uint32_t len);
+/* Wrap caller-owned borrowed memory in a caller-provided struct.  The
+ * release callback (may be NULL) fires from free_sftp_str() so the
+ * owner can refcount or otherwise tear down the bytes; the struct
+ * itself is the caller's responsibility either way.  A NULL release
+ * is equivalent to using the static helper above — both forms exist
+ * so the call site reads naturally. */
+void sftp_strborrow(struct sftp_string *out, const char *str,
+    void (*release)(struct sftp_string *), void *cbdata);
+void sftp_memborrow(struct sftp_string *out, const uint8_t *buf, uint32_t len,
+    void (*release)(struct sftp_string *), void *cbdata);
 void free_sftp_str(sftp_str_t str);
 
 /* sftp_outcome.c — diagnostic outcome carriers.
