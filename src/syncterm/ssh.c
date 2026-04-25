@@ -782,6 +782,118 @@ key_not_present(sftp_filehandle_t f, const char *priv)
 	return false;
 }
 
+/* --------------------------------------------------------- pty modes */
+
+/*
+ * Encoded terminal modes for the pty-req (RFC 4254 §8 + RFC 8160).
+ * Opcodes are wire-format constants and don't match the kernel V_,
+ * I_, O_, or L_ termios macros, which differ across OSes — so we use
+ * literals.  255 means "no character assigned" for the special-char
+ * entries.
+ *
+ * SyncTERM has no local pty: keystrokes go on the wire raw, with no
+ * local echo, line buffering, signal generation, NL/CR translation,
+ * or 8th-bit stripping.  These values describe what the server pty's
+ * slave-side termios should look like for a raw 8-bit serial-style
+ * terminal — 8-bit clean, no software flow control, server-side
+ * LF->CRLF on output, friendly cooked-mode echo for the times the
+ * user lands at a shell prompt before a BBS takes over.
+ */
+struct ssh_pty_mode {
+	uint8_t  op;
+	uint32_t val;
+};
+
+static const struct ssh_pty_mode default_pty_modes[] = {
+	/* Special characters — 255 means "none". */
+	{   1,     3 },	/* VINTR    ^C → SIGINT                  */
+	{   2,    28 },	/* VQUIT    ^\ → SIGQUIT                 */
+	{   3,     8 },	/* VERASE   ^H (DECBKM-set default)      */
+	{   4,    21 },	/* VKILL    ^U                           */
+	{   5,     4 },	/* VEOF     ^D                           */
+	{   6,   255 },	/* VEOL     none                         */
+	{   7,   255 },	/* VEOL2    none                         */
+	{   8,    17 },	/* VSTART   ^Q (moot; IXON=0)            */
+	{   9,    19 },	/* VSTOP    ^S (moot)                    */
+	{  10,    26 },	/* VSUSP    ^Z                           */
+	{  11,    25 },	/* VDSUSP   ^Y (BSD; ignored elsewhere)  */
+	{  12,    18 },	/* VREPRINT ^R                           */
+	{  13,    23 },	/* VWERASE  ^W                           */
+	{  14,    22 },	/* VLNEXT   ^V                           */
+	{  15,    15 },	/* VFLUSH   ^O                           */
+	{  16,   255 },	/* VSWTCH   none                         */
+	{  17,    20 },	/* VSTATUS  ^T (BSD; ignored elsewhere)  */
+	{  18,    15 },	/* VDISCARD ^O                           */
+	/* Input flags */
+	{  30,     1 },	/* IGNPAR   no parity over SSH           */
+	{  31,     0 },	/* PARMRK                                */
+	{  32,     0 },	/* INPCK                                 */
+	{  33,     0 },	/* ISTRIP   8-bit clean                  */
+	{  34,     0 },	/* INLCR                                 */
+	{  35,     0 },	/* IGNCR                                 */
+	{  36,     1 },	/* ICRNL    Enter→LF for cooked progs    */
+	{  37,     0 },	/* IUCLC                                 */
+	{  38,     0 },	/* IXON     would corrupt zmodem         */
+	{  39,     0 },	/* IXANY                                 */
+	{  40,     0 },	/* IXOFF                                 */
+	{  41,     1 },	/* IMAXBEL                               */
+	{  42,     0 },	/* IUTF8    set when emulation is UTF-8  */
+	/* Local flags */
+	{  50,     1 },	/* ISIG     ^C reaches the shell         */
+	{  51,     1 },	/* ICANON                                */
+	{  52,     0 },	/* XCASE                                 */
+	{  53,     1 },	/* ECHO                                  */
+	{  54,     1 },	/* ECHOE                                 */
+	{  55,     1 },	/* ECHOK                                 */
+	{  56,     0 },	/* ECHONL                                */
+	{  57,     0 },	/* NOFLSH                                */
+	{  58,     0 },	/* TOSTOP                                */
+	{  59,     1 },	/* IEXTEN                                */
+	{  60,     1 },	/* ECHOCTL                               */
+	{  61,     1 },	/* ECHOKE                                */
+	{  62,     0 },	/* PENDIN                                */
+	/* Output flags */
+	{  70,     1 },	/* OPOST                                 */
+	{  71,     0 },	/* OLCUC                                 */
+	{  72,     1 },	/* ONLCR    server-side LF→CRLF          */
+	{  73,     0 },	/* OCRNL                                 */
+	{  74,     0 },	/* ONOCR                                 */
+	{  75,     0 },	/* ONLRET                                */
+	/* Control flags */
+	{  90,     0 },	/* CS7                                   */
+	{  91,     1 },	/* CS8      8-bit                        */
+	{  92,     0 },	/* PARENB                                */
+	{  93,     0 },	/* PARODD                                */
+	/* Line speed (bps) — advisory; some apps key behavior off it. */
+	{ 128, 38400 },	/* TTY_OP_ISPEED                         */
+	{ 129, 38400 },	/* TTY_OP_OSPEED                         */
+};
+
+/*
+ * Apply default modes, then override per-emulation entries that have a
+ * different convention.  Pty-req fires once at channel open; there's no
+ * SSH "modes-change" request, so anything the host toggles later (e.g.
+ * DECBKM flipping VERASE between BS and DEL) we can't chase.
+ */
+static void
+set_default_pty_modes(struct dssh_chan_params *p, struct bbslist *bbs)
+{
+	for (size_t i = 0; i < sizeof(default_pty_modes) / sizeof(default_pty_modes[0]); i++)
+		dssh_chan_params_set_mode(p, default_pty_modes[i].op, default_pty_modes[i].val);
+
+	switch (get_emulation(bbs)) {
+		case CTERM_EMULATION_ATASCII:
+			dssh_chan_params_set_mode(p, 3, 0x7E);	/* VERASE = ATASCII Backspace */
+			dssh_chan_params_set_mode(p, 6, 0x9B);	/* VEOL    = ATASCII EOL      */
+			break;
+		case CTERM_EMULATION_PETASCII:
+			dssh_chan_params_set_mode(p, 3, 0x14);	/* VERASE = PETSCII DEL       */
+			break;
+		default:
+			break;
+	}
+}
+
 /* ----------------------------------------------------------- connect */
 
 static char *
@@ -1040,6 +1152,7 @@ ssh_connect(struct bbslist *bbs)
 	dssh_chan_params_set_size(&params, (uint32_t)cols, (uint32_t)rows,
 	    (uint32_t)(pixelc > 0 ? pixelc : 0),
 	    (uint32_t)(pixelr > 0 ? pixelr : 0));
+	set_default_pty_modes(&params, bbs);
 	ssh_chan = dssh_chan_open(ssh_session, &params);
 	dssh_chan_params_free(&params);
 	if (ssh_chan == NULL) {

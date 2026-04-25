@@ -123,14 +123,17 @@ rlogin_handle_control(uint8_t c)
 			conn_buf_reset(&conn_outbuf);
 			break;
 		case 0x10:	/* server-initiated: enter raw mode.
-				 * Latched on conn_api.binary_mode so
-				 * rlogin_tx_parse_cb passes DC1/DC3 through.
-				 * Raw does no local flow control, so drop
-				 * any pause imposed by a prior DC3. */
+				 * Usually a no-op for us (we default to raw
+				 * at connect for SSH parity), but a server
+				 * that previously asked for cooked via 0x20
+				 * can flip us back.  Drop any pause imposed
+				 * by a prior DC3 since raw does no local
+				 * flow control. */
 			conn_api.binary_mode = true;
 			atomic_store(&rlogin_input_paused, false);
 			break;
-		case 0x20:	/* server-initiated: return to cooked mode. */
+		case 0x20:	/* server-initiated: switch to cooked mode and
+				 * have the client interpret DC1/DC3 locally. */
 			conn_api.binary_mode = false;
 			break;
 		case 0x80: {	/* server requests window-size reports */
@@ -306,11 +309,16 @@ rlogin_connect(struct bbslist *bbs)
 
 	/* Explicitly reset state from any prior session — conn_connect
 	 * memsets conn_api but that's not a valid init for an _Atomic
-	 * field, and stale flag values here would be catastrophic. */
+	 * field, and stale flag values here would be catastrophic.
+	 *
+	 * binary_mode defaults to true (raw): SyncTERM is a glass terminal
+	 * with no local flow control, matching what we advertise to SSH
+	 * peers (IXON=0).  A server that wants local DC1/DC3 flow control
+	 * can still request it with an OOB 0x20 byte. */
 	rlogin_winsize_enabled = false;
 	atomic_store(&rlogin_active,        false);
 	atomic_store(&rlogin_input_paused,  false);
-	atomic_store(&conn_api.binary_mode, false);
+	atomic_store(&conn_api.binary_mode, true);
 
 	rlogin_sock = conn_socket_connect(bbs, true);
 	if (rlogin_sock == INVALID_SOCKET)
