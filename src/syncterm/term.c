@@ -5988,6 +5988,10 @@ doterm(struct bbslist *bbs)
 	setup_mouse_events(&ms);
 	force_status_update = true;
 	for (; !quitting;) {
+		/* Drain any popups posted from background threads (e.g.
+		 * SSH_MSG_DEBUG with always_display set) before we go
+		 * blocking on recv/kbhit. */
+		popup_queue_drain();
 		hold_update = true;
 		sleep = true;
 		/* Audio APC: emit async CSI = 7 ; <ch> ; 0 n notifications

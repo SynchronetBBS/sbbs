@@ -173,6 +173,70 @@ int                      fake_mode = -1;
 char                    *config_override;
 char                    *list_override;
 
+/* ---------------------------------------------------------- popup queue */
+
+struct popup_entry {
+	char               *title;
+	char               *body;
+	struct popup_entry *next;
+};
+
+static pthread_mutex_t     popup_q_mutex = PTHREAD_MUTEX_INITIALIZER;
+static struct popup_entry *popup_q_head;
+static struct popup_entry *popup_q_tail;
+
+void
+popup_queue_post(const char *title, const char *body)
+{
+	if (title == NULL || body == NULL)
+		return;
+	struct popup_entry *e = malloc(sizeof(*e));
+	if (e == NULL)
+		return;
+	e->title = strdup(title);
+	e->body  = strdup(body);
+	e->next  = NULL;
+	if (e->title == NULL || e->body == NULL) {
+		free(e->title);
+		free(e->body);
+		free(e);
+		return;
+	}
+	assert_pthread_mutex_lock(&popup_q_mutex);
+	if (popup_q_tail != NULL)
+		popup_q_tail->next = e;
+	else
+		popup_q_head = e;
+	popup_q_tail = e;
+	assert_pthread_mutex_unlock(&popup_q_mutex);
+}
+
+bool
+popup_queue_drain(void)
+{
+	bool any = false;
+
+	for (;;) {
+		struct popup_entry *e;
+		assert_pthread_mutex_lock(&popup_q_mutex);
+		e = popup_q_head;
+		if (e != NULL) {
+			popup_q_head = e->next;
+			if (popup_q_head == NULL)
+				popup_q_tail = NULL;
+		}
+		assert_pthread_mutex_unlock(&popup_q_mutex);
+		if (e == NULL)
+			break;
+		uifcmsg(e->title, e->body);
+		free(e->title);
+		free(e->body);
+		free(e);
+		any = true;
+	}
+	return any;
+}
+
 #ifdef _WINSOCKAPI_
 
 static WSADATA WSAData;
