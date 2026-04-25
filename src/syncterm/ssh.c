@@ -408,10 +408,13 @@ kbi_prompt_cb(const uint8_t *name, size_t name_len,
 		uifcinput(promptstr, MAX_PASSWD_LEN, answer, mode, "Enter response.");
 		size_t alen = strlen(answer);
 		responses[i] = malloc(alen);
-		if (responses[i] == NULL)
+		if (responses[i] == NULL) {
+			dssh_cleanse(answer, sizeof(answer));
 			return -1;
+		}
 		memcpy(responses[i], answer, alen);
 		response_lens[i] = alen;
+		dssh_cleanse(answer, sizeof(answer));
 	}
 	return 0;
 }
@@ -419,6 +422,42 @@ kbi_prompt_cb(const uint8_t *name, size_t name_len,
 /* ----------------------------------------------------- algorithm setup */
 
 static bool crypt_initialized = false;
+
+/* Static lifetime so dssh_transport_set_version() can keep the pointer
+   for the life of the global config (it does not copy). */
+static char ssh_software_version[64];
+
+/*
+ * Build an RFC 4253 §4.2 software_version string from syncterm_version.
+ * That string is "SyncTERM <version>" plus optional debug-build suffix;
+ * the SSH wire format requires printable US-ASCII excluding space, and
+ * we deliberately strip the suffix so the unencrypted version banner
+ * doesn't leak whether this is a debug build.  The first space becomes
+ * an underscore (joining product name and version); a second space
+ * marks the start of suffix and ends the copy.
+ */
+static void
+build_ssh_software_version(void)
+{
+	const char *src = syncterm_version;
+	size_t      out = 0;
+	bool        joined = false;
+
+	while (*src && out < sizeof(ssh_software_version) - 1) {
+		unsigned char c = (unsigned char)*src++;
+		if (c == ' ') {
+			if (joined)
+				break;
+			joined = true;
+			c = '_';
+		}
+		else if (c < 0x21 || c > 0x7E) {
+			continue;
+		}
+		ssh_software_version[out++] = (char)c;
+	}
+	ssh_software_version[out] = 0;
+}
 
 void
 exit_crypt(void)
@@ -433,6 +472,12 @@ init_crypt(void)
 	if (crypt_initialized)
 		return;
 	crypt_initialized = true;
+
+	/* Identify ourselves in the SSH version banner so server admins
+	   can pick us out of their logs.  Must precede session_init(). */
+	build_ssh_software_version();
+	if (ssh_software_version[0])
+		dssh_transport_set_version(ssh_software_version, NULL);
 
 	/* Registration order is preference order (first = highest priority).
 	   The set here mirrors what the test variants exercise in DeuceSSH;
@@ -449,6 +494,7 @@ init_crypt(void)
 
 	dssh_register_ssh_ed25519();
 	dssh_register_rsa_sha2_256();
+	dssh_register_rsa_sha2_512();
 
 	dssh_transport_set_callbacks(transport_tx_cb, transport_rx_cb, NULL, NULL);
 
@@ -1038,6 +1084,11 @@ ssh_connect(struct bbslist *bbs)
 		error_popup(bbs, "creating session");
 		return -1;
 	}
+	/* Bound peer-response waits at 60s.  Slightly tighter than the
+	   library's 75s default so a server that opens the TCP connection
+	   but stalls during channel/setup negotiation surfaces an error
+	   before users assume SyncTERM hung. */
+	dssh_session_set_timeout(ssh_session, 60000);
 	/* All four cbdata slots must carry the socket: the default rx_line
 	   implementation forwards its own cbdata (rx_line_cbdata) to the rx
 	   callback, so leaving rx_line_cbdata = NULL would cause the version
@@ -1123,6 +1174,11 @@ ssh_connect(struct bbslist *bbs)
 		auth_rc = dssh_auth_keyboard_interactive(ssh_session, username, kbi_prompt_cb, NULL);
 	if (auth_rc != 0)
 		auth_rc = dssh_auth_publickey(ssh_session, username, "ssh-ed25519");
+	/* Wipe the local password copy now that auth has finished — even
+	   if it lingers in conn_api, in stack slots, or in optimizer-
+	   reordered storage, dssh_cleanse() prevents the compiler from
+	   eliminating the clear. */
+	dssh_cleanse(password, sizeof(password));
 	if (auth_rc != 0) {
 		free(pubkey);
 		error_popup(bbs, "authentication failed");
