@@ -488,8 +488,7 @@ send_scancode(uint32_t evdev_key, bool pressed)
 
 	/*
 	 * Handle extended navigation keys that have evdev codes
-	 * outside the ScanCodes[] table range.  Remap before the
-	 * pressed check so release events match the stored repeat_key.
+	 * outside the ScanCodes[] table range.
 	 */
 	switch (evdev_key) {
 	case EVDEV_KEY_HOME:
@@ -528,7 +527,7 @@ send_scancode(uint32_t evdev_key, bool pressed)
 	}
 
 	if (!pressed) {
-		if ((int)tevdev_key == repeat_key)
+		if ((int)evdev_key == repeat_key)
 			repeat_key = -1;
 		return;
 	}
@@ -579,7 +578,7 @@ send_scancode(uint32_t evdev_key, bool pressed)
 
 	if (keyval != 0xffff) {
 		send_key(keyval);
-		repeat_key = tevdev_key;
+		repeat_key = evdev_key;
 		repeat_since = xp_timer64();
 		repeat_in_delay = true;
 	}
