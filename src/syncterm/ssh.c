@@ -33,6 +33,8 @@
 
 /* ---------------------------------------------------------------- state */
 
+extern FILE *log_fp;
+
 SOCKET          ssh_sock = INVALID_SOCKET;
 
 static dssh_session    ssh_session;
@@ -370,6 +372,30 @@ auth_banner_cb(const uint8_t *message, size_t message_len,
 	uifc.showbuf(WIN_SAV | WIN_MID, 0, 0, 76, uifc.scrn_len - 2,
 	    "SSH Banner", buf, NULL, NULL);
 	free(buf);
+}
+
+/* ------------------------------------------------------------- debug */
+
+/* SSH_MSG_DEBUG (RFC 4253 §11.3).  Logged unconditionally; popup queued
+ * for the doterm() main loop when the sender flagged always_display and
+ * the bbslist entry isn't suppressing popups.  Fires on whichever thread
+ * is currently processing inbound packets — could be ssh_connect's
+ * thread during handshake or ssh_input_thread mid-session, so we route
+ * UI work through the popup queue. */
+static void
+ssh_debug_cb(bool always_display, const uint8_t *message, size_t message_len,
+             void *cbdata)
+{
+	struct bbslist *bbs = cbdata;
+	char            buf[512];
+	size_t          len = message_len < sizeof(buf) - 1 ? message_len : sizeof(buf) - 1;
+
+	memcpy(buf, message, len);
+	buf[len] = 0;
+	if (log_fp != NULL)
+		fprintf(log_fp, "SSH %s %s\n", always_display ? "display" : "debug", buf);
+	if (always_display && bbs != NULL && !bbs->hidepopups)
+		popup_queue_post("SSH Debug", buf);
 }
 
 /* ----------------------------------------------- kbd-interactive prompts */
@@ -1099,6 +1125,7 @@ ssh_connect(struct bbslist *bbs)
 	dssh_session_set_hostkey_verify_cb(ssh_session, hostkey_verify_cb, bbs);
 	dssh_session_set_terminate_cb(ssh_session, transport_terminate_cb, NULL);
 	dssh_session_set_banner_cb(ssh_session, auth_banner_cb, bbs);
+	dssh_session_set_debug_cb(ssh_session, ssh_debug_cb, bbs);
 
 	if (!bbs->hidepopups) {
 		uifc.pop(NULL);
