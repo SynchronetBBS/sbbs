@@ -24,16 +24,15 @@ struct sftp_client_state {
 	sftp_rx_pkt_t rxp;
 	sftp_tx_pkt_t txp;
 	void *cb_data;
-	pthread_key_t err_key;
 	struct sftpc_pending *pending;
 	pthread_mutex_t mtx;
 	uint32_t version;
 	uint32_t running;
 	uint32_t id;
 	uint32_t extensions;
+	uint32_t last_error;
 	uint8_t last_reply_type;  /* Debugging: type byte of most recent reply */
 	bool terminating;
-	bool err_key_ok;
 };
 
 /*
@@ -68,21 +67,17 @@ client_exit(sftpc_state_t state, bool retval)
 	return retval;
 }
 
-/* Per-thread last-error stored as uintptr_t in a pthread key so callers
- * on different threads don't clobber each other's status. */
+/* Last-error from the most recent op.  Mutated under state->mtx. */
 static void
 set_thread_err(sftpc_state_t state, uint32_t code)
 {
-	if (state->err_key_ok)
-		pthread_setspecific(state->err_key, (void *)(uintptr_t)code);
+	state->last_error = code;
 }
 
 static uint32_t
 get_thread_err(sftpc_state_t state)
 {
-	if (!state->err_key_ok)
-		return SSH_FX_FAILURE;
-	return (uint32_t)(uintptr_t)pthread_getspecific(state->err_key);
+	return state->last_error;
 }
 
 /* Pending-list helpers; state->mtx must be held. */
@@ -173,8 +168,6 @@ sftpc_begin(bool (*send_cb)(uint8_t *buf, size_t len, void *cb_data), void *cb_d
 	ret->send_cb = send_cb;
 	ret->cb_data = cb_data;
 	pthread_mutex_init(&ret->mtx, NULL);
-	if (pthread_key_create(&ret->err_key, NULL) == 0)
-		ret->err_key_ok = true;
 	return ret;
 }
 
@@ -213,8 +206,6 @@ sftpc_end(sftpc_state_t state)
 		return;
 	if (!state->terminating)
 		sftpc_finish(state);
-	if (state->err_key_ok)
-		pthread_key_delete(state->err_key);
 	pthread_mutex_destroy(&state->mtx);
 	free(state);
 }
