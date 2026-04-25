@@ -307,7 +307,14 @@ free_entries(struct entry *entries, uint32_t count)
 static char load_dir_err[256];
 
 static void
-set_load_err(const char *op, uint32_t code)
+set_load_err(const char *op, struct sftpc_outcome *out)
+{
+	snprintf(load_dir_err, sizeof(load_dir_err),
+	    "%s failed: %s", op, out->estr);
+}
+
+static void
+set_load_err_result(const char *op, uint32_t code)
 {
 	snprintf(load_dir_err, sizeof(load_dir_err),
 	    "%s failed: %s (%" PRIu32 ")",
@@ -320,9 +327,14 @@ load_dir(const char *path, const char *dldir, uint32_t *out_count)
 	*out_count = 0;
 	load_dir_err[0] = '\0';
 
+	SFTPC_OUTCOME_DECL(out, 256);
 	sftp_dirhandle_t handle = NULL;
-	if (!sftpc_opendir(sftp_state, path, &handle)) {
-		set_load_err("opendir", sftpc_get_err(sftp_state));
+	if (!sftpc_opendir(sftp_state, path, &handle, out)) {
+		set_load_err("opendir", out);
+		return NULL;
+	}
+	if (out->result != SSH_FX_OK) {
+		set_load_err_result("opendir", out->result);
 		return NULL;
 	}
 
@@ -334,7 +346,7 @@ load_dir(const char *path, const char *dldir, uint32_t *out_count)
 	if (strcmp(path, "/") != 0) {
 		entries = (struct entry *)calloc(1, sizeof(*entries));
 		if (entries == NULL) {
-			sftpc_close(sftp_state, &handle);
+			sftpc_close(sftp_state, &handle, out);
 			return NULL;
 		}
 		entries[0].name = strdup("..");
@@ -343,7 +355,7 @@ load_dir(const char *path, const char *dldir, uint32_t *out_count)
 		entries[0].line = strdup("<DIR>             ..");
 		if (entries[0].name == NULL || entries[0].line == NULL) {
 			free_entries(entries, 1);
-			sftpc_close(sftp_state, &handle);
+			sftpc_close(sftp_state, &handle, out);
 			return NULL;
 		}
 		nentries = 1;
@@ -354,10 +366,16 @@ load_dir(const char *path, const char *dldir, uint32_t *out_count)
 	while (!eof) {
 		struct sftpc_dir_entry *chunk = NULL;
 		uint32_t chunk_n = 0;
-		if (!sftpc_readdir(sftp_state, handle, &chunk, &chunk_n, &eof)) {
-			set_load_err("readdir", sftpc_get_err(sftp_state));
+		if (!sftpc_readdir(sftp_state, handle, &chunk, &chunk_n, &eof, out)) {
+			set_load_err("readdir", out);
 			free_entries(entries, nentries);
-			sftpc_close(sftp_state, &handle);
+			sftpc_close(sftp_state, &handle, out);
+			return NULL;
+		}
+		if (!eof && out->result != SSH_FX_OK && chunk_n == 0) {
+			set_load_err_result("readdir", out->result);
+			free_entries(entries, nentries);
+			sftpc_close(sftp_state, &handle, out);
 			return NULL;
 		}
 		if (chunk_n == 0) {
@@ -372,7 +390,7 @@ load_dir(const char *path, const char *dldir, uint32_t *out_count)
 			if (ne == NULL) {
 				sftpc_free_dir_entries(chunk, chunk_n);
 				free_entries(entries, nentries);
-				sftpc_close(sftp_state, &handle);
+				sftpc_close(sftp_state, &handle, out);
 				return NULL;
 			}
 			entries = ne;
@@ -471,7 +489,7 @@ load_dir(const char *path, const char *dldir, uint32_t *out_count)
 				free(lname);
 				sftpc_free_dir_entries(chunk, chunk_n);
 				free_entries(entries, nentries);
-				sftpc_close(sftp_state, &handle);
+				sftpc_close(sftp_state, &handle, out);
 				return NULL;
 			}
 			snprintf(line, linesz, "%s %s %s %.*s",
@@ -498,7 +516,7 @@ load_dir(const char *path, const char *dldir, uint32_t *out_count)
 				free(lname);
 				sftpc_free_dir_entries(chunk, chunk_n);
 				free_entries(entries, nentries);
-				sftpc_close(sftp_state, &handle);
+				sftpc_close(sftp_state, &handle, out);
 				return NULL;
 			}
 			nentries++;
@@ -506,7 +524,7 @@ load_dir(const char *path, const char *dldir, uint32_t *out_count)
 		sftpc_free_dir_entries(chunk, chunk_n);
 	}
 
-	sftpc_close(sftp_state, &handle);
+	sftpc_close(sftp_state, &handle, out);
 	qsort(entries, nentries, sizeof(*entries), cmp_entry);
 	*out_count = nentries;
 	return entries;
@@ -570,7 +588,9 @@ sftp_browser_run(struct bbslist *bbs)
 	 * user's home; fall back to "/" if realpath fails. */
 	char *cwd = NULL;
 	sftp_str_t rp = NULL;
-	if (sftpc_realpath(sftp_state, ".", &rp) && rp != NULL && rp->len > 0) {
+	SFTPC_OUTCOME_DECL(rp_out, 0);
+	if (sftpc_realpath(sftp_state, ".", &rp, rp_out) && rp_out->result == SSH_FX_OK
+	    && rp != NULL && rp->len > 0) {
 		cwd = (char *)malloc(rp->len + 1);
 		if (cwd != NULL) {
 			memcpy(cwd, rp->c_str, rp->len);
@@ -739,7 +759,9 @@ sftp_browser_run(struct bbslist *bbs)
 						}
 						else {
 							sftp_str_t desc = NULL;
-							if (sftpc_descs(sftp_state, e->rpath, &desc)
+							SFTPC_OUTCOME_DECL(desc_out, 0);
+							if (sftpc_descs(sftp_state, e->rpath, &desc, desc_out)
+							    && desc_out->result == SSH_FX_OK
 							    && desc != NULL && desc->len > 0) {
 								char *body = (char *)malloc(desc->len + 1);
 								if (body != NULL) {

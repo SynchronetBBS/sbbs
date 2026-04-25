@@ -13,6 +13,7 @@
  *   sftp_pkt.c        low-level packet codec (sftp_get32 / append32 / …)
  *   sftp_common.c     state-independent helpers shared by client + server
  *                     (extension table, appendheader)
+ *   sftp_outcome.c    public outcome carriers (sftp{c,s}_outcome_*)
  *   sftp_client.c     the blocking SFTP client (sftpc_*)
  *   sftp_server.c     the server dispatcher (sftps_*)
  *
@@ -44,5 +45,6 @@
 #include "sftp_pkt.c"
 #include "sftp_attr.c"
 #include "sftp_common.c"
+#include "sftp_outcome.c"
 #include "sftp_client.c"
 #include "sftp_server.c"

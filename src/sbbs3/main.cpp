@@ -2036,8 +2036,11 @@ static int crypt_pop_channel_data(sbbs_t *sbbs, char *inbuf, int want, int *got)
 					continue;
 				if (cid == sbbs->sftp_channel) {
 					pthread_mutex_unlock(&sbbs->ssh_mutex);
-					if (!sftps_recv(sbbs->sftp_state, reinterpret_cast<uint8_t *>(inbuf), tgot))
+					SFTPS_OUTCOME_DECL(out, 256);
+					if (!sftps_recv(sbbs->sftp_state, reinterpret_cast<uint8_t *>(inbuf), tgot, out)) {
+						lprintf(LOG_NOTICE, "sftp recv: %s", out->estr);
 						sbbs->sftp_end();
+					}
 					pthread_mutex_lock(&sbbs->ssh_mutex);
 				}
 				else if (cid == sbbs->session_channel) {
@@ -2056,8 +2059,11 @@ static int crypt_pop_channel_data(sbbs_t *sbbs, char *inbuf, int want, int *got)
 						if (sbbs->init_sftp(cid)) {
 							if (tgot > 0) {
 								pthread_mutex_unlock(&sbbs->ssh_mutex);
-								if (!sftps_recv(sbbs->sftp_state, reinterpret_cast<uint8_t *>(inbuf), tgot))
+								SFTPS_OUTCOME_DECL(out2, 256);
+								if (!sftps_recv(sbbs->sftp_state, reinterpret_cast<uint8_t *>(inbuf), tgot, out2)) {
+									lprintf(LOG_NOTICE, "sftp recv: %s", out2->estr);
 									sbbs->sftp_end();
+								}
 								pthread_mutex_lock(&sbbs->ssh_mutex);
 							}
 							sbbs->sftp_channel = cid;

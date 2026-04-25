@@ -3,6 +3,19 @@
  * live in sftp.c; this file is #include'd from sftp.c and cannot be
  * compiled on its own.
  *
+ * Public op contract:
+ *   true  — the RPC happened.  The caller acts on out->result (an
+ *           SSH_FX_* code from the server's reply, or SSH_FX_OK if the
+ *           reply was a typed payload like SSH_FXP_HANDLE).  out->err
+ *           and out->estr are diagnostic only; mustn't drive control
+ *           flow.
+ *   false — the RPC didn't happen.  out->result is undefined.  out->err
+ *           is a machine-readable lib failure code (see
+ *           sftp_err_code_t).  out->estr is human-readable text ready
+ *           to display.
+ *
+ * Pass NULL for `out` to ignore everything.
+ *
  * One pending entry per in-flight request.  Each call to a blocking
  * sftpc_* op allocates one on its stack, registers it while holding
  * state->mtx, issues the packet, and waits on its own event.  The recv
@@ -29,8 +42,12 @@ struct sftp_client_state {
 	uint32_t version;
 	uint32_t running;
 	uint32_t id;
+	/* `extensions` is set only inside sftpc_init under mtx and read
+	 * thereafter without mtx by sftpc_get_extensions.  Callers must
+	 * complete sftpc_init before any other op or call to get_extensions
+	 * (init runs to completion before queue/browser threads start in
+	 * SyncTERM today). */
 	uint32_t extensions;
-	uint32_t last_error;
 	bool terminating;
 };
 
@@ -42,15 +59,21 @@ struct sftp_client_state {
  * WaitForEvent so the recv thread can deliver replies.
  */
 static bool
-client_enter(sftpc_state_t state)
+client_enter(sftpc_state_t state, struct sftpc_outcome *out)
 {
-	assert(state);
-	if (state == NULL)
+	if (state == NULL) {
+		sftpc_outcome_record(out, SFTP_ERR_NULL_STATE, "state == NULL");
 		return false;
-	if (pthread_mutex_lock(&state->mtx))
+	}
+	if (pthread_mutex_lock(&state->mtx)) {
+		sftpc_outcome_record(out, SFTP_ERR_OOM,
+		    "pthread_mutex_lock failed");
 		return false;
+	}
 	if (state->terminating) {
 		pthread_mutex_unlock(&state->mtx);
+		sftpc_outcome_record(out, SFTP_ERR_ABORTED,
+		    "session terminating");
 		return false;
 	}
 	state->running++;
@@ -64,19 +87,6 @@ client_exit(sftpc_state_t state, bool retval)
 	state->running--;
 	pthread_mutex_unlock(&state->mtx);
 	return retval;
-}
-
-/* Last-error from the most recent op.  Mutated under state->mtx. */
-static void
-set_thread_err(sftpc_state_t state, uint32_t code)
-{
-	state->last_error = code;
-}
-
-static uint32_t
-get_thread_err(sftpc_state_t state)
-{
-	return state->last_error;
 }
 
 /* Pending-list helpers; state->mtx must be held. */
@@ -116,22 +126,39 @@ pend_find(sftpc_state_t state, uint32_t req_id)
  * the request packet built in it; `p` is already in the pending list.
  *
  * Sends the packet, releases state->mtx around the wait, reacquires it.
- * Returns true if a reply was delivered into p->reply; false on send
- * failure or abort.
+ * Returns true if a reply was delivered into p->reply; false on any
+ * failure (records out->err + estr describing what failed).
  */
 static bool
-send_and_wait(sftpc_state_t state, struct sftpc_pending *p)
+send_and_wait(sftpc_state_t state, struct sftpc_pending *p,
+              struct sftpc_outcome *out)
 {
 	uint8_t *buf;
 	size_t sz;
-	if (!prep_tx_packet(state->txp, &buf, &sz))
+	if (!prep_tx_packet(state->txp, &buf, &sz)) {
+		sftpc_outcome_record(out, SFTP_ERR_PACKET_BUILD_FAILED,
+		    "prep_tx_packet failed");
 		return false;
-	if (!state->send_cb(buf, sz, state->cb_data))
+	}
+	if (!state->send_cb(buf, sz, state->cb_data)) {
+		sftpc_outcome_record(out, SFTP_ERR_SEND_FAILED,
+		    "send_cb failed");
 		return false;
+	}
 	pthread_mutex_unlock(&state->mtx);
 	WaitForEvent(p->evt, INFINITE);
 	pthread_mutex_lock(&state->mtx);
-	return p->delivered && !p->aborted;
+	if (p->aborted) {
+		sftpc_outcome_record(out, SFTP_ERR_ABORTED,
+		    "aborted while waiting for reply");
+		return false;
+	}
+	if (!p->delivered || p->reply == NULL) {
+		sftpc_outcome_record(out, SFTP_ERR_CHANNEL_CLOSED,
+		    "no reply delivered");
+		return false;
+	}
+	return true;
 }
 
 /* Allocates the next request id.  Skips 0, which is reserved for the
@@ -144,14 +171,32 @@ next_req_id(sftpc_state_t state)
 	return state->id;
 }
 
+/*
+ * Parse a SSH_FXP_STATUS reply: extract the result code (into
+ * out->result) and the optional UTF-8 message + lang tag (into
+ * out->estr as a `Reply: "..."` line if non-empty).  Returns true if
+ * the reply was a STATUS packet; false if it was anything else (caller
+ * decides what to do).
+ */
 static bool
-status_ok(sftpc_state_t state, sftp_rx_pkt_t reply)
+parse_status(sftp_rx_pkt_t reply, struct sftpc_outcome *out)
 {
 	if (reply->type != SSH_FXP_STATUS)
 		return false;
 	uint32_t code = get32(reply);
-	set_thread_err(state, code);
-	return code == SSH_FX_OK;
+	if (out != NULL)
+		out->result = code;
+	sftp_str_t msg = getstring(reply);
+	sftp_str_t lang = getstring(reply);
+	if (msg != NULL && msg->len > 0) {
+		sftpc_outcome_reply(out,
+		    (const char *)msg->c_str, msg->len,
+		    lang ? (const char *)lang->c_str : "",
+		    lang ? lang->len : 0);
+	}
+	free_sftp_str(msg);
+	free_sftp_str(lang);
+	return true;
 }
 
 /* ========================================================================
@@ -212,7 +257,7 @@ sftpc_end(sftpc_state_t state)
 bool
 sftpc_recv(sftpc_state_t state, uint8_t *buf, uint32_t sz)
 {
-	if (!client_enter(state))
+	if (!client_enter(state, NULL))
 		return false;
 	if (!rx_pkt_append(&state->rxp, buf, sz))
 		return client_exit(state, false);
@@ -238,7 +283,7 @@ sftpc_recv(sftpc_state_t state, uint8_t *buf, uint32_t sz)
 bool
 sftpc_init(sftpc_state_t state)
 {
-	if (!client_enter(state))
+	if (!client_enter(state, NULL))
 		return false;
 
 	struct sftpc_pending p = {0};
@@ -254,7 +299,7 @@ sftpc_init(sftpc_state_t state)
 	          appendbyte(&state->txp, SSH_FXP_INIT) &&
 	          append32(&state->txp, SFTP_VERSION) &&
 	          append_extensions(&state->txp, SFTP_EXT_ALL) &&
-	          send_and_wait(state, &p);
+	          send_and_wait(state, &p, NULL);
 
 	bool rv = false;
 	if (ok && p.reply != NULL && p.reply->type == SSH_FXP_VERSION) {
@@ -282,14 +327,6 @@ sftpc_init(sftpc_state_t state)
 }
 
 uint32_t
-sftpc_get_err(sftpc_state_t state)
-{
-	if (state == NULL)
-		return SSH_FX_FAILURE;
-	return get_thread_err(state);
-}
-
-uint32_t
 sftpc_get_extensions(sftpc_state_t state)
 {
 	if (state == NULL)
@@ -298,47 +335,69 @@ sftpc_get_extensions(sftpc_state_t state)
 }
 
 /*
- * Shared op scaffolding — each caller builds its packet into state->txp
- * via the sftp_static.h helpers, then calls send_and_wait.
- *
- * Every op:
- *   1. client_enter (locks mtx, running++)
- *   2. allocate req_id and register pending
- *   3. appendheader + fields
- *   4. send_and_wait (unlocks+relocks mtx around the WaitForEvent)
- *   5. parse reply, unregister pending, return under client_exit
- *
- * Keeping the sequence inline in each op is more lines than a callback
- * indirection, but it's straight-through code and matches the existing
- * appendXxx helper style.
+ * Shared op scaffolding — each op:
+ *   1. arg-check + record SFTP_ERR_NULL_* into outcome on bad args
+ *   2. client_enter (locks mtx, running++, records err if state bad)
+ *   3. allocate req_id and register pending
+ *   4. appendheader + fields
+ *   5. send_and_wait (unlocks+relocks mtx around the WaitForEvent;
+ *      records err on transport / abort)
+ *   6. inspect reply, populate out->result / data, unregister pending
+ *   7. return under client_exit
  */
 
 bool
-sftpc_realpath(sftpc_state_t state, char *path, sftp_str_t *ret)
+sftpc_realpath(sftpc_state_t state, const char *path, sftp_str_t *ret,
+               struct sftpc_outcome *out)
 {
-	if (path == NULL || ret == NULL || *ret != NULL)
+	if (path == NULL) {
+		sftpc_outcome_record(out, SFTP_ERR_NULL_PATH, "path == NULL");
 		return false;
-	if (!client_enter(state))
+	}
+	if (ret == NULL) {
+		sftpc_outcome_record(out, SFTP_ERR_NULL_OUT, "ret == NULL");
+		return false;
+	}
+	if (*ret != NULL) {
+		sftpc_outcome_record(out, SFTP_ERR_HANDLE_NOT_NULL,
+		    "*ret must be NULL on entry");
+		return false;
+	}
+	if (!client_enter(state, out))
 		return false;
 
 	struct sftpc_pending p = {0};
 	p.evt = CreateEvent(NULL, TRUE, FALSE, NULL);
-	if (p.evt == NULL)
+	if (p.evt == NULL) {
+		sftpc_outcome_record(out, SFTP_ERR_OOM, "CreateEvent failed");
 		return client_exit(state, false);
+	}
 	p.req_id = next_req_id(state);
 	pend_add(state, &p);
 
-	bool ok = appendheader(&state->txp, SSH_FXP_REALPATH, state->id) &&
-	          appendcstring(&state->txp, path) &&
-	          send_and_wait(state, &p);
 	bool rv = false;
-	if (ok && p.reply != NULL) {
+	if (!appendheader(&state->txp, SSH_FXP_REALPATH, state->id) ||
+	    !appendcstring(&state->txp, path)) {
+		sftpc_outcome_record(out, SFTP_ERR_PACKET_BUILD_FAILED,
+		    "appendheader/appendcstring failed");
+	}
+	else if (send_and_wait(state, &p, out)) {
 		if (p.reply->type == SSH_FXP_NAME && get32(p.reply) == 1) {
 			*ret = getstring(p.reply);
-			rv = (*ret != NULL);
+			if (*ret == NULL)
+				sftpc_outcome_record(out, SFTP_ERR_REPLY_BAD_STRING,
+				    "getstring failed on NAME reply");
+			else
+				rv = true;
 		}
 		else if (p.reply->type == SSH_FXP_STATUS) {
-			status_ok(state, p.reply);
+			parse_status(p.reply, out);
+			rv = true;
+		}
+		else {
+			sftpc_outcome_record(out, SFTP_ERR_REPLY_WRONG_TYPE,
+			    "expected SSH_FXP_NAME or SSH_FXP_STATUS, got %s",
+			    sftp_get_type_name(p.reply->type));
 		}
 	}
 	pend_remove(state, &p);
@@ -347,15 +406,15 @@ sftpc_realpath(sftpc_state_t state, char *path, sftp_str_t *ret)
 	return client_exit(state, rv);
 }
 
-/* Opens a file or directory (path + optional flags/attrs for SSH_FXP_OPEN). */
+/* Opens a file or directory (path + optional flags for SSH_FXP_OPEN). */
 static bool
 do_open(sftpc_state_t state, uint8_t type, const char *path, uint32_t flags,
-        sftp_file_attr_t attr, sftp_str_t *handle_out)
+        sftp_str_t *handle_out, struct sftpc_outcome *out)
 {
 	struct sftpc_pending p = {0};
 	p.evt = CreateEvent(NULL, TRUE, FALSE, NULL);
 	if (p.evt == NULL) {
-		set_thread_err(state, SSH_FX_FAILURE);
+		sftpc_outcome_record(out, SFTP_ERR_OOM, "CreateEvent failed");
 		return false;
 	}
 	p.req_id = next_req_id(state);
@@ -364,39 +423,38 @@ do_open(sftpc_state_t state, uint8_t type, const char *path, uint32_t flags,
 	bool built = appendheader(&state->txp, type, state->id) &&
 	             appendcstring(&state->txp, path);
 	if (built && type == SSH_FXP_OPEN) {
-		sftp_file_attr_t a = attr;
-		bool need_free = false;
+		sftp_file_attr_t a = sftp_fattr_alloc();
 		if (a == NULL) {
-			a = sftp_fattr_alloc();
-			need_free = (a != NULL);
+			built = false;
 		}
-		built = a != NULL && append32(&state->txp, flags) && appendfattr(&state->txp, a);
-		if (need_free)
+		else {
+			built = append32(&state->txp, flags) && appendfattr(&state->txp, a);
 			sftp_fattr_free(a);
+		}
 	}
+
 	bool rv = false;
 	if (!built) {
-		set_thread_err(state, SSH_FX_FAILURE);
+		sftpc_outcome_record(out, SFTP_ERR_PACKET_BUILD_FAILED,
+		    "packet build failed");
 	}
-	else if (!send_and_wait(state, &p)) {
-		set_thread_err(state, SSH_FX_CONNECTION_LOST);
-	}
-	else if (p.reply == NULL) {
-		set_thread_err(state, SSH_FX_CONNECTION_LOST);
-	}
-	else {
+	else if (send_and_wait(state, &p, out)) {
 		if (p.reply->type == SSH_FXP_HANDLE) {
 			*handle_out = getstring(p.reply);
 			if (*handle_out == NULL)
-				set_thread_err(state, SSH_FX_BAD_MESSAGE);
+				sftpc_outcome_record(out, SFTP_ERR_REPLY_BAD_STRING,
+				    "getstring failed on HANDLE reply");
 			else
 				rv = true;
 		}
 		else if (p.reply->type == SSH_FXP_STATUS) {
-			status_ok(state, p.reply);
+			parse_status(p.reply, out);
+			rv = true;
 		}
 		else {
-			set_thread_err(state, SSH_FX_BAD_MESSAGE);
+			sftpc_outcome_record(out, SFTP_ERR_REPLY_WRONG_TYPE,
+			    "expected SSH_FXP_HANDLE or SSH_FXP_STATUS, got %s",
+			    sftp_get_type_name(p.reply->type));
 		}
 	}
 	pend_remove(state, &p);
@@ -406,47 +464,94 @@ do_open(sftpc_state_t state, uint8_t type, const char *path, uint32_t flags,
 }
 
 bool
-sftpc_open(sftpc_state_t state, char *path, uint32_t flags, sftp_file_attr_t attr,
-           sftp_dirhandle_t *handle)
+sftpc_open(sftpc_state_t state, const char *path, uint32_t flags,
+           sftp_str_t *handle, struct sftpc_outcome *out)
 {
-	if (path == NULL || handle == NULL || *handle != NULL)
+	if (path == NULL) {
+		sftpc_outcome_record(out, SFTP_ERR_NULL_PATH, "path == NULL");
 		return false;
-	if (!client_enter(state))
+	}
+	if (handle == NULL) {
+		sftpc_outcome_record(out, SFTP_ERR_NULL_HANDLE_OUT,
+		    "handle == NULL");
 		return false;
-	return client_exit(state, do_open(state, SSH_FXP_OPEN, path, flags, attr,
-	                                    (sftp_str_t *)handle));
+	}
+	if (*handle != NULL) {
+		sftpc_outcome_record(out, SFTP_ERR_HANDLE_NOT_NULL,
+		    "*handle must be NULL on entry");
+		return false;
+	}
+	if (!client_enter(state, out))
+		return false;
+	return client_exit(state, do_open(state, SSH_FXP_OPEN, path, flags,
+	                                  handle, out));
 }
 
 bool
-sftpc_opendir(sftpc_state_t state, const char *path, sftp_dirhandle_t *handle)
+sftpc_opendir(sftpc_state_t state, const char *path, sftp_str_t *handle,
+              struct sftpc_outcome *out)
 {
-	if (path == NULL || handle == NULL || *handle != NULL)
+	if (path == NULL) {
+		sftpc_outcome_record(out, SFTP_ERR_NULL_PATH, "path == NULL");
 		return false;
-	if (!client_enter(state))
+	}
+	if (handle == NULL) {
+		sftpc_outcome_record(out, SFTP_ERR_NULL_HANDLE_OUT,
+		    "handle == NULL");
 		return false;
-	return client_exit(state, do_open(state, SSH_FXP_OPENDIR, path, 0, NULL,
-	                                    (sftp_str_t *)handle));
+	}
+	if (*handle != NULL) {
+		sftpc_outcome_record(out, SFTP_ERR_HANDLE_NOT_NULL,
+		    "*handle must be NULL on entry");
+		return false;
+	}
+	if (!client_enter(state, out))
+		return false;
+	return client_exit(state, do_open(state, SSH_FXP_OPENDIR, path, 0,
+	                                  handle, out));
 }
 
 bool
-sftpc_close(sftpc_state_t state, sftp_filehandle_t *handle)
+sftpc_close(sftpc_state_t state, sftp_str_t *handle, struct sftpc_outcome *out)
 {
-	if (handle == NULL || *handle == NULL)
+	if (handle == NULL) {
+		sftpc_outcome_record(out, SFTP_ERR_NULL_HANDLE_OUT,
+		    "handle == NULL");
 		return false;
-	if (!client_enter(state))
+	}
+	if (*handle == NULL) {
+		sftpc_outcome_record(out, SFTP_ERR_NULL_HANDLE,
+		    "*handle == NULL");
+		return false;
+	}
+	if (!client_enter(state, out))
 		return false;
 
 	struct sftpc_pending p = {0};
 	p.evt = CreateEvent(NULL, TRUE, FALSE, NULL);
-	if (p.evt == NULL)
+	if (p.evt == NULL) {
+		sftpc_outcome_record(out, SFTP_ERR_OOM, "CreateEvent failed");
 		return client_exit(state, false);
+	}
 	p.req_id = next_req_id(state);
 	pend_add(state, &p);
 
-	bool ok = appendheader(&state->txp, SSH_FXP_CLOSE, state->id) &&
-	          appendstring(&state->txp, (sftp_str_t)*handle) &&
-	          send_and_wait(state, &p);
-	bool rv = ok && p.reply != NULL && status_ok(state, p.reply);
+	bool rv = false;
+	if (!appendheader(&state->txp, SSH_FXP_CLOSE, state->id) ||
+	    !appendstring(&state->txp, *handle)) {
+		sftpc_outcome_record(out, SFTP_ERR_PACKET_BUILD_FAILED,
+		    "appendheader/appendstring failed");
+	}
+	else if (send_and_wait(state, &p, out)) {
+		if (parse_status(p.reply, out)) {
+			rv = true;
+		}
+		else {
+			sftpc_outcome_record(out, SFTP_ERR_REPLY_WRONG_TYPE,
+			    "expected SSH_FXP_STATUS, got %s",
+			    sftp_get_type_name(p.reply->type));
+		}
+	}
 	pend_remove(state, &p);
 	free_rx_pkt(p.reply);
 	CloseEvent(p.evt);
@@ -456,34 +561,60 @@ sftpc_close(sftpc_state_t state, sftp_filehandle_t *handle)
 }
 
 bool
-sftpc_read(sftpc_state_t state, sftp_filehandle_t handle, uint64_t offset,
-           uint32_t len, sftp_str_t *ret)
+sftpc_read(sftpc_state_t state, sftp_str_t handle, uint64_t offset,
+           uint32_t len, sftp_str_t *ret, struct sftpc_outcome *out)
 {
-	if (handle == NULL || ret == NULL || *ret != NULL)
+	if (handle == NULL) {
+		sftpc_outcome_record(out, SFTP_ERR_NULL_HANDLE,
+		    "handle == NULL");
 		return false;
-	if (!client_enter(state))
+	}
+	if (ret == NULL) {
+		sftpc_outcome_record(out, SFTP_ERR_NULL_OUT, "ret == NULL");
+		return false;
+	}
+	if (*ret != NULL) {
+		sftpc_outcome_record(out, SFTP_ERR_HANDLE_NOT_NULL,
+		    "*ret must be NULL on entry");
+		return false;
+	}
+	if (!client_enter(state, out))
 		return false;
 
 	struct sftpc_pending p = {0};
 	p.evt = CreateEvent(NULL, TRUE, FALSE, NULL);
-	if (p.evt == NULL)
+	if (p.evt == NULL) {
+		sftpc_outcome_record(out, SFTP_ERR_OOM, "CreateEvent failed");
 		return client_exit(state, false);
+	}
 	p.req_id = next_req_id(state);
 	pend_add(state, &p);
 
-	bool ok = appendheader(&state->txp, SSH_FXP_READ, state->id) &&
-	          appendstring(&state->txp, (sftp_str_t)handle) &&
-	          append64(&state->txp, offset) &&
-	          append32(&state->txp, len) &&
-	          send_and_wait(state, &p);
 	bool rv = false;
-	if (ok && p.reply != NULL) {
+	if (!appendheader(&state->txp, SSH_FXP_READ, state->id) ||
+	    !appendstring(&state->txp, handle) ||
+	    !append64(&state->txp, offset) ||
+	    !append32(&state->txp, len)) {
+		sftpc_outcome_record(out, SFTP_ERR_PACKET_BUILD_FAILED,
+		    "appendheader/append failed");
+	}
+	else if (send_and_wait(state, &p, out)) {
 		if (p.reply->type == SSH_FXP_DATA) {
 			*ret = getstring(p.reply);
-			rv = (*ret != NULL);
+			if (*ret == NULL)
+				sftpc_outcome_record(out, SFTP_ERR_REPLY_BAD_STRING,
+				    "getstring failed on DATA reply");
+			else
+				rv = true;
 		}
 		else if (p.reply->type == SSH_FXP_STATUS) {
-			status_ok(state, p.reply);
+			parse_status(p.reply, out);
+			rv = true;
+		}
+		else {
+			sftpc_outcome_record(out, SFTP_ERR_REPLY_WRONG_TYPE,
+			    "expected SSH_FXP_DATA or SSH_FXP_STATUS, got %s",
+			    sftp_get_type_name(p.reply->type));
 		}
 	}
 	pend_remove(state, &p);
@@ -493,113 +624,159 @@ sftpc_read(sftpc_state_t state, sftp_filehandle_t handle, uint64_t offset,
 }
 
 bool
-sftpc_write(sftpc_state_t state, sftp_filehandle_t handle, uint64_t offset,
-            sftp_str_t data)
+sftpc_write(sftpc_state_t state, sftp_str_t handle, uint64_t offset,
+            sftp_str_t data, struct sftpc_outcome *out)
 {
-	if (handle == NULL || data == NULL)
+	if (handle == NULL) {
+		sftpc_outcome_record(out, SFTP_ERR_NULL_HANDLE,
+		    "handle == NULL");
 		return false;
-	if (!client_enter(state))
+	}
+	if (data == NULL) {
+		sftpc_outcome_record(out, SFTP_ERR_NULL_DATA, "data == NULL");
+		return false;
+	}
+	if (!client_enter(state, out))
 		return false;
 
 	struct sftpc_pending p = {0};
 	p.evt = CreateEvent(NULL, TRUE, FALSE, NULL);
-	if (p.evt == NULL)
+	if (p.evt == NULL) {
+		sftpc_outcome_record(out, SFTP_ERR_OOM, "CreateEvent failed");
 		return client_exit(state, false);
+	}
 	p.req_id = next_req_id(state);
 	pend_add(state, &p);
-
-	bool ok = appendheader(&state->txp, SSH_FXP_WRITE, state->id) &&
-	          appendstring(&state->txp, (sftp_str_t)handle) &&
-	          append64(&state->txp, offset) &&
-	          appendstring(&state->txp, data) &&
-	          send_and_wait(state, &p);
-	bool rv = ok && p.reply != NULL && status_ok(state, p.reply);
-	pend_remove(state, &p);
-	free_rx_pkt(p.reply);
-	CloseEvent(p.evt);
-	return client_exit(state, rv);
-}
-
-static bool
-do_stat(sftpc_state_t state, uint8_t type, const char *path,
-        sftp_filehandle_t handle, sftp_file_attr_t *attr_out)
-{
-	struct sftpc_pending p = {0};
-	p.evt = CreateEvent(NULL, TRUE, FALSE, NULL);
-	if (p.evt == NULL)
-		return false;
-	p.req_id = next_req_id(state);
-	pend_add(state, &p);
-
-	bool ok;
-	if (type == SSH_FXP_FSTAT)
-		ok = appendheader(&state->txp, type, state->id) &&
-		     appendstring(&state->txp, (sftp_str_t)handle);
-	else
-		ok = appendheader(&state->txp, type, state->id) &&
-		     appendcstring(&state->txp, path);
-	ok = ok && send_and_wait(state, &p);
 
 	bool rv = false;
-	if (ok && p.reply != NULL) {
-		if (p.reply->type == SSH_FXP_ATTRS) {
-			*attr_out = getfattr(p.reply);
-			rv = (*attr_out != NULL);
+	if (!appendheader(&state->txp, SSH_FXP_WRITE, state->id) ||
+	    !appendstring(&state->txp, handle) ||
+	    !append64(&state->txp, offset) ||
+	    !appendstring(&state->txp, data)) {
+		sftpc_outcome_record(out, SFTP_ERR_PACKET_BUILD_FAILED,
+		    "appendheader/append failed");
+	}
+	else if (send_and_wait(state, &p, out)) {
+		if (parse_status(p.reply, out)) {
+			rv = true;
 		}
-		else if (p.reply->type == SSH_FXP_STATUS) {
-			status_ok(state, p.reply);
+		else {
+			sftpc_outcome_record(out, SFTP_ERR_REPLY_WRONG_TYPE,
+			    "expected SSH_FXP_STATUS, got %s",
+			    sftp_get_type_name(p.reply->type));
 		}
 	}
 	pend_remove(state, &p);
 	free_rx_pkt(p.reply);
 	CloseEvent(p.evt);
-	return rv;
+	return client_exit(state, rv);
 }
 
 bool
-sftpc_stat(sftpc_state_t state, const char *path, sftp_file_attr_t *attr_out)
+sftpc_stat(sftpc_state_t state, const char *path, sftp_file_attr_t *attr_out,
+           struct sftpc_outcome *out)
 {
-	if (path == NULL || attr_out == NULL || *attr_out != NULL)
+	if (path == NULL) {
+		sftpc_outcome_record(out, SFTP_ERR_NULL_PATH, "path == NULL");
 		return false;
-	if (!client_enter(state))
+	}
+	if (attr_out == NULL) {
+		sftpc_outcome_record(out, SFTP_ERR_NULL_OUT, "attr_out == NULL");
 		return false;
-	return client_exit(state, do_stat(state, SSH_FXP_STAT, path, NULL, attr_out));
-}
+	}
+	if (*attr_out != NULL) {
+		sftpc_outcome_record(out, SFTP_ERR_HANDLE_NOT_NULL,
+		    "*attr_out must be NULL on entry");
+		return false;
+	}
+	if (!client_enter(state, out))
+		return false;
 
-static bool
-do_setstat(sftpc_state_t state, uint8_t type, const char *path,
-           sftp_filehandle_t handle, sftp_file_attr_t attr)
-{
 	struct sftpc_pending p = {0};
 	p.evt = CreateEvent(NULL, TRUE, FALSE, NULL);
-	if (p.evt == NULL)
-		return false;
+	if (p.evt == NULL) {
+		sftpc_outcome_record(out, SFTP_ERR_OOM, "CreateEvent failed");
+		return client_exit(state, false);
+	}
 	p.req_id = next_req_id(state);
 	pend_add(state, &p);
 
-	bool ok;
-	if (type == SSH_FXP_FSETSTAT)
-		ok = appendheader(&state->txp, type, state->id) &&
-		     appendstring(&state->txp, (sftp_str_t)handle);
-	else
-		ok = appendheader(&state->txp, type, state->id) &&
-		     appendcstring(&state->txp, path);
-	ok = ok && appendfattr(&state->txp, attr) && send_and_wait(state, &p);
-	bool rv = ok && p.reply != NULL && status_ok(state, p.reply);
+	bool rv = false;
+	if (!appendheader(&state->txp, SSH_FXP_STAT, state->id) ||
+	    !appendcstring(&state->txp, path)) {
+		sftpc_outcome_record(out, SFTP_ERR_PACKET_BUILD_FAILED,
+		    "appendheader/appendcstring failed");
+	}
+	else if (send_and_wait(state, &p, out)) {
+		if (p.reply->type == SSH_FXP_ATTRS) {
+			*attr_out = getfattr(p.reply);
+			if (*attr_out == NULL)
+				sftpc_outcome_record(out, SFTP_ERR_REPLY_BAD_STRING,
+				    "getfattr failed on ATTRS reply");
+			else
+				rv = true;
+		}
+		else if (p.reply->type == SSH_FXP_STATUS) {
+			parse_status(p.reply, out);
+			rv = true;
+		}
+		else {
+			sftpc_outcome_record(out, SFTP_ERR_REPLY_WRONG_TYPE,
+			    "expected SSH_FXP_ATTRS or SSH_FXP_STATUS, got %s",
+			    sftp_get_type_name(p.reply->type));
+		}
+	}
 	pend_remove(state, &p);
 	free_rx_pkt(p.reply);
 	CloseEvent(p.evt);
-	return rv;
+	return client_exit(state, rv);
 }
 
 bool
-sftpc_setstat(sftpc_state_t state, const char *path, sftp_file_attr_t attr)
+sftpc_setstat(sftpc_state_t state, const char *path, sftp_file_attr_t attr,
+              struct sftpc_outcome *out)
 {
-	if (path == NULL || attr == NULL)
+	if (path == NULL) {
+		sftpc_outcome_record(out, SFTP_ERR_NULL_PATH, "path == NULL");
 		return false;
-	if (!client_enter(state))
+	}
+	if (attr == NULL) {
+		sftpc_outcome_record(out, SFTP_ERR_NULL_DATA, "attr == NULL");
 		return false;
-	return client_exit(state, do_setstat(state, SSH_FXP_SETSTAT, path, NULL, attr));
+	}
+	if (!client_enter(state, out))
+		return false;
+
+	struct sftpc_pending p = {0};
+	p.evt = CreateEvent(NULL, TRUE, FALSE, NULL);
+	if (p.evt == NULL) {
+		sftpc_outcome_record(out, SFTP_ERR_OOM, "CreateEvent failed");
+		return client_exit(state, false);
+	}
+	p.req_id = next_req_id(state);
+	pend_add(state, &p);
+
+	bool rv = false;
+	if (!appendheader(&state->txp, SSH_FXP_SETSTAT, state->id) ||
+	    !appendcstring(&state->txp, path) ||
+	    !appendfattr(&state->txp, attr)) {
+		sftpc_outcome_record(out, SFTP_ERR_PACKET_BUILD_FAILED,
+		    "appendheader/append failed");
+	}
+	else if (send_and_wait(state, &p, out)) {
+		if (parse_status(p.reply, out)) {
+			rv = true;
+		}
+		else {
+			sftpc_outcome_record(out, SFTP_ERR_REPLY_WRONG_TYPE,
+			    "expected SSH_FXP_STATUS, got %s",
+			    sftp_get_type_name(p.reply->type));
+		}
+	}
+	pend_remove(state, &p);
+	free_rx_pkt(p.reply);
+	CloseEvent(p.evt);
+	return client_exit(state, rv);
 }
 
 void
@@ -616,36 +793,52 @@ sftpc_free_dir_entries(struct sftpc_dir_entry *entries, uint32_t count)
 }
 
 bool
-sftpc_readdir(sftpc_state_t state, sftp_dirhandle_t handle,
-              struct sftpc_dir_entry **entries_out, uint32_t *count_out, bool *eof_out)
+sftpc_readdir(sftpc_state_t state, sftp_str_t handle,
+              struct sftpc_dir_entry **entries_out, uint32_t *count_out,
+              bool *eof_out, struct sftpc_outcome *out)
 {
-	if (handle == NULL || entries_out == NULL || count_out == NULL || eof_out == NULL)
+	if (handle == NULL) {
+		sftpc_outcome_record(out, SFTP_ERR_NULL_HANDLE,
+		    "handle == NULL");
 		return false;
+	}
+	if (entries_out == NULL || count_out == NULL || eof_out == NULL) {
+		sftpc_outcome_record(out, SFTP_ERR_NULL_OUT,
+		    "entries_out/count_out/eof_out NULL");
+		return false;
+	}
 	*entries_out = NULL;
 	*count_out = 0;
 	*eof_out = false;
-	if (!client_enter(state))
+	if (!client_enter(state, out))
 		return false;
 
 	struct sftpc_pending p = {0};
 	p.evt = CreateEvent(NULL, TRUE, FALSE, NULL);
-	if (p.evt == NULL)
+	if (p.evt == NULL) {
+		sftpc_outcome_record(out, SFTP_ERR_OOM, "CreateEvent failed");
 		return client_exit(state, false);
+	}
 	p.req_id = next_req_id(state);
 	pend_add(state, &p);
 
-	bool ok = appendheader(&state->txp, SSH_FXP_READDIR, state->id) &&
-	          appendstring(&state->txp, (sftp_str_t)handle) &&
-	          send_and_wait(state, &p);
 	bool rv = false;
-	if (ok && p.reply != NULL) {
+	if (!appendheader(&state->txp, SSH_FXP_READDIR, state->id) ||
+	    !appendstring(&state->txp, handle)) {
+		sftpc_outcome_record(out, SFTP_ERR_PACKET_BUILD_FAILED,
+		    "appendheader/appendstring failed");
+	}
+	else if (send_and_wait(state, &p, out)) {
 		if (p.reply->type == SSH_FXP_NAME) {
 			uint32_t n = get32(p.reply);
 			struct sftpc_dir_entry *entries = NULL;
 			if (n > 0) {
 				entries = (struct sftpc_dir_entry *)calloc(n, sizeof(*entries));
-				if (entries == NULL)
+				if (entries == NULL) {
+					sftpc_outcome_record(out, SFTP_ERR_OOM,
+					    "calloc(%" PRIu32 " entries) failed", n);
 					goto done;
+				}
 			}
 			rv = true;
 			for (uint32_t i = 0; i < n; i++) {
@@ -655,6 +848,8 @@ sftpc_readdir(sftpc_state_t state, sftp_dirhandle_t handle,
 				if (entries[i].filename == NULL ||
 				    entries[i].longname == NULL ||
 				    entries[i].attrs == NULL) {
+					sftpc_outcome_record(out, SFTP_ERR_REPLY_BAD_STRING,
+					    "getstring/getfattr failed at entry %" PRIu32, i);
 					sftpc_free_dir_entries(entries, i + 1);
 					entries = NULL;
 					rv = false;
@@ -667,12 +862,15 @@ sftpc_readdir(sftpc_state_t state, sftp_dirhandle_t handle,
 			}
 		}
 		else if (p.reply->type == SSH_FXP_STATUS) {
-			uint32_t code = get32(p.reply);
-			set_thread_err(state, code);
-			if (code == SSH_FX_EOF) {
+			parse_status(p.reply, out);
+			if (out != NULL && out->result == SSH_FX_EOF)
 				*eof_out = true;
-				rv = true;
-			}
+			rv = true;
+		}
+		else {
+			sftpc_outcome_record(out, SFTP_ERR_REPLY_WRONG_TYPE,
+			    "expected SSH_FXP_NAME or SSH_FXP_STATUS, got %s",
+			    sftp_get_type_name(p.reply->type));
 		}
 	}
 done:
@@ -689,48 +887,58 @@ done:
  * extension wasn't negotiated the server will reply with OP_UNSUPPORTED.
  */
 bool
-sftpc_descs(sftpc_state_t state, const char *path, sftp_str_t *desc)
+sftpc_descs(sftpc_state_t state, const char *path, sftp_str_t *desc,
+            struct sftpc_outcome *out)
 {
-	if (path == NULL || desc == NULL || *desc != NULL)
+	if (path == NULL) {
+		sftpc_outcome_record(out, SFTP_ERR_NULL_PATH, "path == NULL");
 		return false;
-	if (!client_enter(state))
+	}
+	if (desc == NULL) {
+		sftpc_outcome_record(out, SFTP_ERR_NULL_OUT, "desc == NULL");
+		return false;
+	}
+	if (*desc != NULL) {
+		sftpc_outcome_record(out, SFTP_ERR_HANDLE_NOT_NULL,
+		    "*desc must be NULL on entry");
+		return false;
+	}
+	if (!client_enter(state, out))
 		return false;
 
 	struct sftpc_pending p = {0};
 	p.evt = CreateEvent(NULL, TRUE, FALSE, NULL);
 	if (p.evt == NULL) {
-		set_thread_err(state, SSH_FX_FAILURE);
+		sftpc_outcome_record(out, SFTP_ERR_OOM, "CreateEvent failed");
 		return client_exit(state, false);
 	}
 	p.req_id = next_req_id(state);
 	pend_add(state, &p);
 
-	bool built = appendheader(&state->txp, SSH_FXP_EXTENDED, state->id) &&
-	             appendcstring(&state->txp, SFTP_EXT_NAME_DESCS) &&
-	             appendcstring(&state->txp, path);
 	bool rv = false;
-	if (!built) {
-		set_thread_err(state, SSH_FX_FAILURE);
+	if (!appendheader(&state->txp, SSH_FXP_EXTENDED, state->id) ||
+	    !appendcstring(&state->txp, SFTP_EXT_NAME_DESCS) ||
+	    !appendcstring(&state->txp, path)) {
+		sftpc_outcome_record(out, SFTP_ERR_PACKET_BUILD_FAILED,
+		    "appendheader/appendcstring failed");
 	}
-	else if (!send_and_wait(state, &p)) {
-		set_thread_err(state, SSH_FX_CONNECTION_LOST);
-	}
-	else if (p.reply == NULL) {
-		set_thread_err(state, SSH_FX_CONNECTION_LOST);
-	}
-	else {
+	else if (send_and_wait(state, &p, out)) {
 		if (p.reply->type == SSH_FXP_EXTENDED_REPLY) {
 			*desc = getstring(p.reply);
 			if (*desc == NULL)
-				set_thread_err(state, SSH_FX_BAD_MESSAGE);
+				sftpc_outcome_record(out, SFTP_ERR_REPLY_BAD_STRING,
+				    "getstring failed on EXTENDED_REPLY");
 			else
 				rv = true;
 		}
 		else if (p.reply->type == SSH_FXP_STATUS) {
-			status_ok(state, p.reply);
+			parse_status(p.reply, out);
+			rv = true;
 		}
 		else {
-			set_thread_err(state, SSH_FX_BAD_MESSAGE);
+			sftpc_outcome_record(out, SFTP_ERR_REPLY_WRONG_TYPE,
+			    "expected SSH_FXP_EXTENDED_REPLY or SSH_FXP_STATUS, got %s",
+			    sftp_get_type_name(p.reply->type));
 		}
 	}
 	pend_remove(state, &p);
