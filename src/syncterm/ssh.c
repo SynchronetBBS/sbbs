@@ -687,17 +687,18 @@ add_public_key(void *vpriv)
 	}
 
 	sftp_filehandle_t f = NULL;
+	SFTPC_OUTCOME_DECL(out, 0);
 	if (sftpc_open(sftp_state, ".ssh/authorized_keys",
 	               SSH_FXF_READ | SSH_FXF_WRITE | SSH_FXF_APPEND | SSH_FXF_CREAT,
-	               NULL, &f)) {
+	               &f, out) && out->result == SSH_FX_OK) {
 		if (key_not_present(f, priv)) {
 			sftp_str_t ln = sftp_asprintf("ssh-ed25519 %s Added by SyncTERM\n", priv);
 			if (ln != NULL) {
-				sftpc_write(sftp_state, f, 0, ln);
+				sftpc_write(sftp_state, f, 0, ln, out);
 				free_sftp_str(ln);
 			}
 		}
-		sftpc_close(sftp_state, &f);
+		sftpc_close(sftp_state, &f, out);
 	}
 
 	free(priv);
@@ -738,10 +739,17 @@ key_not_present(sftp_filehandle_t f, const char *priv)
 				buf = newbuf;
 				bufsz += 4096;
 			}
-			if (!sftpc_read(sftp_state, f, off, (bufsz - bufpos > 1024) ? 1024 : bufsz - bufpos, &r)) {
+			SFTPC_OUTCOME_DECL(out, 0);
+			if (!sftpc_read(sftp_state, f, off, (bufsz - bufpos > 1024) ? 1024 : bufsz - bufpos, &r, out)) {
 				free(buf);
-				if (sftpc_get_err(sftp_state) == SSH_FX_EOF)
-					return true;
+				return false;
+			}
+			if (out->result == SSH_FX_EOF) {
+				free(buf);
+				return true;
+			}
+			if (out->result != SSH_FX_OK) {
+				free(buf);
 				return false;
 			}
 			memcpy(&buf[bufpos], r->c_str, r->len);

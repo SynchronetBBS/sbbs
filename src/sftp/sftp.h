@@ -236,6 +236,94 @@ sftp_str_t sftp_asprintf(const char *format, ...);
 sftp_str_t sftp_memdup(const uint8_t *buf, uint32_t sz);
 void free_sftp_str(sftp_str_t str);
 
+/* sftp_outcome.c — diagnostic outcome carriers.
+ *
+ * Every public sftp client/server op takes an outcome pointer and reports
+ * back through it.  The op's bool return is the actionable signal:
+ *   true  — the op completed.  Client side: act on `result` (an SSH_FX_*
+ *           code from the server's reply).  Server side: the reply is on
+ *           the wire.  `err` and `estr` carry diagnostic info that the
+ *           caller may write to a log but mustn't switch on.
+ *   false — the op didn't complete.  `result` (client only) is undefined.
+ *           `err` is a machine-readable lib failure code that the caller
+ *           may switch on (e.g. for retry decisions).  `estr` is
+ *           human-readable text ready to display.
+ *
+ * The outcome is allocated by the caller — typically on the stack via
+ * SFTPC_OUTCOME_DECL / SFTPS_OUTCOME_DECL — sized to whatever text
+ * budget the caller wants.  Pass NULL to ignore everything; pass an
+ * outcome with sz == 0 to get the codes but no text. */
+typedef enum {
+	SFTP_ERR_OK = 0,
+	SFTP_ERR_NULL_STATE,
+	SFTP_ERR_NULL_PATH,
+	SFTP_ERR_NULL_HANDLE_OUT,
+	SFTP_ERR_NULL_HANDLE,
+	SFTP_ERR_HANDLE_NOT_NULL,
+	SFTP_ERR_NULL_DATA,
+	SFTP_ERR_NULL_OUT,
+	SFTP_ERR_OOM,
+	SFTP_ERR_PACKET_BUILD_FAILED,
+	SFTP_ERR_SEND_FAILED,
+	SFTP_ERR_CHANNEL_CLOSED,
+	SFTP_ERR_ABORTED,
+	SFTP_ERR_REPLY_NULL,
+	SFTP_ERR_REPLY_WRONG_TYPE,
+	SFTP_ERR_REPLY_BAD_STRING,
+	SFTP_ERR_PARSE_FAILED,
+} sftp_err_code_t;
+
+struct sftpc_outcome {
+	size_t   sz;     /* size of estr[]; 0 = caller doesn't want text */
+	uint32_t err;    /* sftp_err_code_t; valid when op returned false */
+	uint32_t result; /* SSH_FX_* from server; valid when op returned true */
+	char     estr[]; /* file:line-prefixed diagnostic, accumulated */
+};
+
+struct sftps_outcome {
+	size_t   sz;     /* size of estr[]; 0 = caller doesn't want text */
+	uint32_t err;    /* sftp_err_code_t; valid when op returned false */
+	char     estr[]; /* file:line-prefixed diagnostic, accumulated */
+};
+
+#define SFTPC_OUTCOME_DECL(name, textsz)                                  \
+	union {                                                               \
+		struct sftpc_outcome o;                                           \
+		char _##name##_pad[sizeof(struct sftpc_outcome) + (textsz)];      \
+	} _##name##_u = {0};                                                  \
+	struct sftpc_outcome *name = &_##name##_u.o;                          \
+	name->sz = (textsz)
+
+#define SFTPS_OUTCOME_DECL(name, textsz)                                  \
+	union {                                                               \
+		struct sftps_outcome o;                                           \
+		char _##name##_pad[sizeof(struct sftps_outcome) + (textsz)];      \
+	} _##name##_u = {0};                                                  \
+	struct sftps_outcome *name = &_##name##_u.o;                          \
+	name->sz = (textsz)
+
+#define sftpc_outcome_record(out, err_code, ...)                          \
+	sftpc_outcome_record_(out, err_code, __FILE__, __LINE__, __VA_ARGS__)
+#define sftps_outcome_record(out, err_code, ...)                          \
+	sftps_outcome_record_(out, err_code, __FILE__, __LINE__, __VA_ARGS__)
+
+void sftpc_outcome_record_(struct sftpc_outcome *out, sftp_err_code_t err,
+                           const char *file, int line, const char *fmt, ...);
+void sftps_outcome_record_(struct sftps_outcome *out, sftp_err_code_t err,
+                           const char *file, int line, const char *fmt, ...);
+
+/* Format a server-supplied SSH_FXP_STATUS message into estr as
+ *   Reply: "<msg>"          (lang_len == 0)
+ *   Reply: "<msg>" (<lang>) (lang_len > 0)
+ * Doesn't update out->err — the caller decides the kind separately. */
+void sftpc_outcome_reply(struct sftpc_outcome *out,
+                         const char *msg, uint32_t msg_len,
+                         const char *lang, uint32_t lang_len);
+
+/* True for failures that may succeed on retry (transport, abort).
+ * Used by the SFTP queue to choose between QUEUED and FAILED. */
+bool sftp_err_is_transient(sftp_err_code_t err);
+
 /* sftp_client.c */
 struct sftpc_dir_entry {
 	sftp_str_t filename;
@@ -247,18 +335,17 @@ void sftpc_finish(sftpc_state_t state);
 sftpc_state_t sftpc_begin(bool (*send_cb)(uint8_t *buf, size_t len, void *cb_data), void *cb_data);
 bool sftpc_init(sftpc_state_t state);
 bool sftpc_recv(sftpc_state_t state, uint8_t *buf, uint32_t sz);
-bool sftpc_realpath(sftpc_state_t state, char *path, sftp_str_t *ret);
-bool sftpc_open(sftpc_state_t state, char *path, uint32_t flags, sftp_file_attr_t attr, sftp_dirhandle_t *handle);
-bool sftpc_opendir(sftpc_state_t state, const char *path, sftp_dirhandle_t *handle);
-bool sftpc_close(sftpc_state_t state, sftp_filehandle_t *handle);
-bool sftpc_read(sftpc_state_t state, sftp_filehandle_t handle, uint64_t offset, uint32_t len, sftp_str_t *ret);
-bool sftpc_write(sftpc_state_t state, sftp_filehandle_t handle, uint64_t offset, sftp_str_t data);
-bool sftpc_readdir(sftpc_state_t state, sftp_dirhandle_t handle, struct sftpc_dir_entry **entries_out, uint32_t *count_out, bool *eof_out);
+bool sftpc_realpath(sftpc_state_t state, const char *path, sftp_str_t *ret, struct sftpc_outcome *out);
+bool sftpc_open(sftpc_state_t state, const char *path, uint32_t flags, sftp_str_t *handle, struct sftpc_outcome *out);
+bool sftpc_opendir(sftpc_state_t state, const char *path, sftp_str_t *handle, struct sftpc_outcome *out);
+bool sftpc_close(sftpc_state_t state, sftp_str_t *handle, struct sftpc_outcome *out);
+bool sftpc_read(sftpc_state_t state, sftp_str_t handle, uint64_t offset, uint32_t len, sftp_str_t *ret, struct sftpc_outcome *out);
+bool sftpc_write(sftpc_state_t state, sftp_str_t handle, uint64_t offset, sftp_str_t data, struct sftpc_outcome *out);
+bool sftpc_readdir(sftpc_state_t state, sftp_str_t handle, struct sftpc_dir_entry **entries_out, uint32_t *count_out, bool *eof_out, struct sftpc_outcome *out);
 void sftpc_free_dir_entries(struct sftpc_dir_entry *entries, uint32_t count);
-bool sftpc_stat(sftpc_state_t state, const char *path, sftp_file_attr_t *attr_out);
-bool sftpc_setstat(sftpc_state_t state, const char *path, sftp_file_attr_t attr);
-bool sftpc_descs(sftpc_state_t state, const char *path, sftp_str_t *desc);
-uint32_t sftpc_get_err(sftpc_state_t state);
+bool sftpc_stat(sftpc_state_t state, const char *path, sftp_file_attr_t *attr_out, struct sftpc_outcome *out);
+bool sftpc_setstat(sftpc_state_t state, const char *path, sftp_file_attr_t attr, struct sftpc_outcome *out);
+bool sftpc_descs(sftpc_state_t state, const char *path, sftp_str_t *desc, struct sftpc_outcome *out);
 uint32_t sftpc_get_extensions(sftpc_state_t state);
 void sftpc_end(sftpc_state_t state);
 
@@ -282,16 +369,16 @@ sftp_str_t sftp_fattr_get_ext_by_type(sftp_file_attr_t fattr, const char *type);
 uint32_t sftp_fattr_get_ext_count(sftp_file_attr_t fattr);
 
 /* sftp_server.c */
-bool sftps_recv(sftps_state_t state, uint8_t *buf, uint32_t sz);
+bool sftps_recv(sftps_state_t state, uint8_t *buf, uint32_t sz, struct sftps_outcome *out);
 sftps_state_t sftps_begin(bool (*send_cb)(uint8_t *buf, size_t len, void *cb_data), void *cb_data);
-bool sftps_send_packet(sftps_state_t state);
-bool sftps_send_error(sftps_state_t state, uint32_t code, const char *msg);
+bool sftps_send_packet(sftps_state_t state, struct sftps_outcome *out);
+bool sftps_send_error(sftps_state_t state, uint32_t code, const char *msg, struct sftps_outcome *out);
 bool sftps_end(sftps_state_t state);
-bool sftps_send_handle(sftps_state_t state, sftp_str_t handle);
-bool sftps_send_data(sftps_state_t state, sftp_str_t data);
-bool sftps_send_name(sftps_state_t state, uint32_t count, str_list_t fnames, str_list_t lnames, sftp_file_attr_t *attrs);
-bool sftps_send_attrs(sftps_state_t state, sftp_file_attr_t attr);
-bool sftps_send_extended_reply(sftps_state_t state, sftp_str_t data);
+bool sftps_send_handle(sftps_state_t state, sftp_str_t handle, struct sftps_outcome *out);
+bool sftps_send_data(sftps_state_t state, sftp_str_t data, struct sftps_outcome *out);
+bool sftps_send_name(sftps_state_t state, uint32_t count, str_list_t fnames, str_list_t lnames, sftp_file_attr_t *attrs, struct sftps_outcome *out);
+bool sftps_send_attrs(sftps_state_t state, sftp_file_attr_t attr, struct sftps_outcome *out);
+bool sftps_send_extended_reply(sftps_state_t state, sftp_str_t data, struct sftps_outcome *out);
 uint32_t sftps_get_extensions(sftps_state_t state);
 
 /*

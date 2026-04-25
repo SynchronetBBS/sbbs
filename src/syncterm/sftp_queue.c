@@ -257,12 +257,18 @@ run_upload(struct sftp_job *job)
 		return SFTP_JOB_FAILED;
 	}
 	sftp_filehandle_t h = NULL;
+	SFTPC_OUTCOME_DECL(out, 256);
 	if (!sftpc_open(sftp_state, job->remote_path,
 	                SSH_FXF_WRITE | SSH_FXF_CREAT | SSH_FXF_TRUNC,
-	                NULL, &h)) {
-		uint32_t e = sftpc_get_err(sftp_state);
+	                &h, out)) {
+		snprintf(job->err, sizeof(job->err), "open remote: %s", out->estr);
+		fclose(f);
+		return sftp_err_is_transient(out->err) ? SFTP_JOB_QUEUED : SFTP_JOB_FAILED;
+	}
+	if (out->result != SSH_FX_OK) {
 		snprintf(job->err, sizeof(job->err),
-		    "open remote: %s (%u)", sftp_get_errcode_name(e), e);
+		    "open remote: %s (%u)",
+		    sftp_get_errcode_name(out->result), out->result);
 		fclose(f);
 		return SFTP_JOB_FAILED;
 	}
@@ -304,10 +310,16 @@ run_upload(struct sftp_job *job)
 			ret = SFTP_JOB_FAILED;
 			break;
 		}
-		if (!sftpc_write(sftp_state, h, off, s)) {
-			uint32_t e = sftpc_get_err(sftp_state);
+		if (!sftpc_write(sftp_state, h, off, s, out)) {
+			snprintf(job->err, sizeof(job->err), "write: %s", out->estr);
+			free_sftp_str(s);
+			ret = sftp_err_is_transient(out->err) ? SFTP_JOB_QUEUED : SFTP_JOB_FAILED;
+			break;
+		}
+		if (out->result != SSH_FX_OK) {
 			snprintf(job->err, sizeof(job->err),
-			    "write: %s (%u)", sftp_get_errcode_name(e), e);
+			    "write: %s (%u)",
+			    sftp_get_errcode_name(out->result), out->result);
 			free_sftp_str(s);
 			ret = SFTP_JOB_FAILED;
 			break;
@@ -317,7 +329,7 @@ run_upload(struct sftp_job *job)
 		job->done = off;
 	}
 	(void)finished;
-	sftpc_close(sftp_state, &h);
+	sftpc_close(sftp_state, &h, out);
 	fclose(f);
 
 	/* Preserve mtime so a subsequent browse shows [==]. */
@@ -329,7 +341,7 @@ run_upload(struct sftp_job *job)
 				sftp_fattr_set_times(a,
 				    (uint32_t)st.st_atime,
 				    (uint32_t)st.st_mtime);
-				sftpc_setstat(sftp_state, job->remote_path, a);
+				sftpc_setstat(sftp_state, job->remote_path, a, out);
 				sftp_fattr_free(a);
 			}
 		}
@@ -353,11 +365,18 @@ run_download(struct sftp_job *job)
 		return SFTP_JOB_FAILED;
 	}
 	sftp_filehandle_t h = NULL;
+	SFTPC_OUTCOME_DECL(out, 256);
 	if (!sftpc_open(sftp_state, job->remote_path,
-	                SSH_FXF_READ, NULL, &h)) {
-		uint32_t e = sftpc_get_err(sftp_state);
+	                SSH_FXF_READ, &h, out)) {
+		snprintf(job->err, sizeof(job->err), "open remote: %s", out->estr);
+		fclose(f);
+		unlink(job->local_path);
+		return sftp_err_is_transient(out->err) ? SFTP_JOB_QUEUED : SFTP_JOB_FAILED;
+	}
+	if (out->result != SSH_FX_OK) {
 		snprintf(job->err, sizeof(job->err),
-		    "open remote: %s (%u)", sftp_get_errcode_name(e), e);
+		    "open remote: %s (%u)",
+		    sftp_get_errcode_name(out->result), out->result);
 		fclose(f);
 		unlink(job->local_path);
 		return SFTP_JOB_FAILED;
@@ -379,14 +398,20 @@ run_download(struct sftp_job *job)
 			break;
 		}
 		sftp_str_t data = NULL;
-		if (!sftpc_read(sftp_state, h, off, CHUNK_SZ, &data)) {
-			uint32_t e = sftpc_get_err(sftp_state);
-			if (e == SSH_FX_EOF) {
-				free_sftp_str(data);
-				break;
-			}
+		if (!sftpc_read(sftp_state, h, off, CHUNK_SZ, &data, out)) {
+			snprintf(job->err, sizeof(job->err), "read: %s", out->estr);
+			free_sftp_str(data);
+			ret = sftp_err_is_transient(out->err) ? SFTP_JOB_QUEUED : SFTP_JOB_FAILED;
+			break;
+		}
+		if (out->result == SSH_FX_EOF) {
+			free_sftp_str(data);
+			break;
+		}
+		if (out->result != SSH_FX_OK) {
 			snprintf(job->err, sizeof(job->err),
-			    "read: %s (%u)", sftp_get_errcode_name(e), e);
+			    "read: %s (%u)",
+			    sftp_get_errcode_name(out->result), out->result);
 			free_sftp_str(data);
 			ret = SFTP_JOB_FAILED;
 			break;
@@ -406,7 +431,7 @@ run_download(struct sftp_job *job)
 		job->done = off;
 		free_sftp_str(data);
 	}
-	sftpc_close(sftp_state, &h);
+	sftpc_close(sftp_state, &h, out);
 	fclose(f);
 	if (ret != SFTP_JOB_DONE) {
 		/* Incomplete download: remove partial local file unless we
@@ -421,7 +446,7 @@ run_download(struct sftp_job *job)
 
 	/* Preserve mtime so a subsequent browse shows [==]. */
 	sftp_file_attr_t a = NULL;
-	if (sftp_available && sftpc_stat(sftp_state, job->remote_path, &a) && a != NULL) {
+	if (sftp_available && sftpc_stat(sftp_state, job->remote_path, &a, out) && a != NULL) {
 		uint32_t mt = 0, at = 0;
 		sftp_fattr_get_mtime(a, &mt);
 		sftp_fattr_get_atime(a, &at);
