@@ -3,9 +3,6 @@
  */
 #include <sys/stat.h>
 
-#if defined(_MSC_VER)
- #define _USE_MATH_DEFINES // for C
-#endif
 #include <bitmap_con.h>
 #include <ciolib.h>
 #include <cterm.h>
@@ -40,6 +37,10 @@
 #include "uifcinit.h"
 #endif
 #include "window.h"
+
+#ifndef M_PI
+#define M_PI 3.14159265358979323846
+#endif
 
 // TODO: Output parsing... (yech)
 // TODO: Actually make the graphics viewport work properly
