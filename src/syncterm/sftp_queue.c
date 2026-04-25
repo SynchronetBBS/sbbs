@@ -304,15 +304,10 @@ run_upload(struct sftp_job *job)
 			}
 			break;
 		}
-		sftp_str_t s = sftp_memdup(buf, (uint32_t)n);
-		if (s == NULL) {
-			snprintf(job->err, sizeof(job->err), "oom");
-			ret = SFTP_JOB_FAILED;
-			break;
-		}
-		if (!sftpc_write(sftp_state, h, off, s, out)) {
+		struct sftp_string s;
+		sftp_memstatic(&s, buf, (uint32_t)n);
+		if (!sftpc_write(sftp_state, h, off, &s, out)) {
 			snprintf(job->err, sizeof(job->err), "write: %s", out->estr);
-			free_sftp_str(s);
 			ret = sftp_err_is_transient(out->err) ? SFTP_JOB_QUEUED : SFTP_JOB_FAILED;
 			break;
 		}
@@ -320,11 +315,9 @@ run_upload(struct sftp_job *job)
 			snprintf(job->err, sizeof(job->err),
 			    "write: %s (%u)",
 			    sftp_get_errcode_name(out->result), out->result);
-			free_sftp_str(s);
 			ret = SFTP_JOB_FAILED;
 			break;
 		}
-		free_sftp_str(s);
 		off += n;
 		job->done = off;
 	}
