@@ -13,13 +13,13 @@
 //                          by Enter
 
 // This script is loaded into the "syncterm" module alongside the
-// foreign-class declarations, so Hook/Conn/Cterm/BBS/ConnType/Emulation
+// foreign-class declarations, so Hook/Conn/CTerm/BBS/ConnType/Emulation
 // are already in scope — no imports needed.
 
 class Connected {
   // Enter byte differs in ATASCII (CR is 0x9B there, not 0x0D).
   static enter_ {
-    return Cterm.emulation == Emulation.atascii ? "\x9b" : "\r"
+    return CTerm.emulation == Emulation.atascii ? "\x9b" : "\r"
   }
 
   static sendLogin() {

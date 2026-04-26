@@ -2,16 +2,16 @@
 //
 // SyncTERM Wren console (REPL).  Triggered by Ctrl+` (CIO_KEY_WREN_CONSOLE
 // = 0x29E0).  Saves the screen, presents the always-on print/error
-// scrollback, accepts immediate-mode Wren input via Repl.eval, and
+// scrollback, accepts immediate-mode Wren input via REPL.eval, and
 // restores on exit.  While the console is open the doterm() main loop is
 // blocked inside this script — connection bytes accumulate in the inbuf
 // but aren't drained until exit.  Acceptable for a development tool.
 //
 // This script lives in module "syncterm" alongside the foreign-class
-// declarations and other embedded scripts, so every binding (Conio,
-// Cell, Repl, Hook, …) is directly visible without an import.  Lines
+// declarations and other embedded scripts, so every binding (ConIO,
+// Cell, REPL, Hook, …) is directly visible without an import.  Lines
 // submitted at the prompt are evaluated in a chosen module — default
-// "syncterm" — via Repl.eval, so `var x = ...` and `class Foo {...}`
+// "syncterm" — via REPL.eval, so `var x = ...` and `class Foo {...}`
 // declarations persist across submissions inside that module.
 //
 // `/in <module>` switches the eval target, letting the user inspect
@@ -19,24 +19,24 @@
 
 class WrenConsole {
   static run() {
-    var saved = Conio.savescreen
+    var saved = ConIO.savescreen
     var currentModule = "syncterm"
 
     // One-time paint of whatever's currently in the log buffer.
     // Subsequent loop iterations only emit entries that arrived
     // *after* `lastTotal`; conio's built-in scroll-on-bottom-row
     // behavior moves history up naturally as new entries arrive.
-    Conio.clrscr()
-    Conio.gotoxy(1, 1)
+    ConIO.clrscr()
+    ConIO.gotoxy(1, 1)
     var lastTotal = paintNew_(0, true)
 
     var input = ""
-    var promptRow = Conio.wherey
+    var promptRow = ConIO.wherey
     drawPrompt_(promptRow, currentModule, input)
 
     var done = false
     while (!done) {
-      var key = Conio.getch
+      var key = ConIO.getch
 
       // Handle the keystroke.
       var redrawPrompt = false
@@ -53,13 +53,13 @@ class WrenConsole {
         }
       } else if (key == 0x000C) {                  // Ctrl+L
         Console.clear()
-        Conio.clrscr()
-        Conio.gotoxy(1, 1)
+        ConIO.clrscr()
+        ConIO.gotoxy(1, 1)
         lastTotal = Console.total
-        promptRow = Conio.wherey
+        promptRow = ConIO.wherey
         redrawPrompt = true
       } else if (key == 0x7DE0) {                  // CIO_KEY_MOUSE
-        var ev = Conio.getMouse
+        var ev = ConIO.getMouse
         // 7  = CIOLIB_BUTTON_1_DRAG_START — hand off to the existing
         //      select-and-copy loop; it consumes the rest of the drag
         //      itself, then restores the screen on exit.
@@ -68,10 +68,10 @@ class WrenConsole {
         //      dropped (paired with LF or alone); other control bytes
         //      are silently skipped.
         if (ev != null && ev[0] == 7) {
-          Conio.mousedrag()
+          ConIO.mousedrag()
           redrawPrompt = true
         } else if (ev != null && ev[0] == 12) {
-          var pasted = Conio.getClipText
+          var pasted = ConIO.getClipText
           if (pasted != null) {
             for (b in pasted.bytes) {
               if (b == 0x0A) {
@@ -97,28 +97,28 @@ class WrenConsole {
       // The prompt row gets overwritten as we emit; conio scrolls
       // past the bottom for free.
       if (Console.total > lastTotal) {
-        Conio.gotoxy(1, promptRow)
-        Conio.clreol()
+        ConIO.gotoxy(1, promptRow)
+        ConIO.clreol()
         lastTotal = paintNew_(lastTotal, false)
-        promptRow = Conio.wherey
+        promptRow = ConIO.wherey
         redrawPrompt = true
       }
 
       if (redrawPrompt) drawPrompt_(promptRow, currentModule, input)
     }
 
-    Conio.restorescreen(saved)
+    ConIO.restorescreen(saved)
   }
 
   // Dispatches a finished line: a leading "/" makes it a console
-  // command; anything else is Wren source for Repl.eval.  Returns the
+  // command; anything else is Wren source for REPL.eval.  Returns the
   // (possibly updated) current module.
   //
   // We wrap the eval in Fiber.new{}.try() so a runtime abort in the
   // user's snippet doesn't tear the console out from under the Hook
   // dispatcher.  Wren's runtime only emits stack frames for *uncaught*
   // aborts, but the failed fiber still has its frames intact — we
-  // hand it to Repl.printTrace_ which walks them and pushes them
+  // hand it to REPL.printTrace_ which walks them and pushes them
   // through the host's error callback into the log buffer.
   //
   // .try() can't be used to detect the abort because it returns the
@@ -129,14 +129,14 @@ class WrenConsole {
     if (line.startsWith("/")) return runCommand_(line, current)
     System.print("(%(current))> " + line)
     var v = null
-    var f = Fiber.new { v = Repl.eval(current, line) }
+    var f = Fiber.new { v = REPL.eval(current, line) }
     f.try()
-    // Repl.eval returns null for a statement, [value] for an
+    // REPL.eval returns null for a statement, [value] for an
     // expression — so v != null means "we got a value, even if v[0]
     // happens to be null itself".
     if (f.error != null) {
       System.print("error: " + f.error)
-      Repl.printTrace_(f)
+      REPL.printTrace_(f)
     } else if (v != null) {
       System.print(formatValue_(v[0]))
     }
@@ -197,7 +197,7 @@ class WrenConsole {
         System.print("usage: /in <module>")
         return current
       }
-      if (!Repl.hasModule(name)) {
+      if (!REPL.hasModule(name)) {
         System.print("warning: module '%(name)' not loaded; an empty one will be created")
       }
       System.print("now in module: " + name)
@@ -225,9 +225,9 @@ class WrenConsole {
   }
 
   static drawPrompt_(row, mod, input) {
-    Conio.gotoxy(1, row)
-    Conio.clreol()
-    Conio.cputs("(%(mod)) wren> " + input)
+    ConIO.gotoxy(1, row)
+    ConIO.clreol()
+    ConIO.cputs("(%(mod)) wren> " + input)
   }
 
   // conio's cputs treats LF as line-feed-only (cursor down, same column).
@@ -238,13 +238,13 @@ class WrenConsole {
     var i = 0
     while (i < s.count) {
       if (s[i] == "\n") {
-        if (i > start) Conio.cputs(s[start...i])
-        Conio.cputs("\r\n")
+        if (i > start) ConIO.cputs(s[start...i])
+        ConIO.cputs("\r\n")
         start = i + 1
       }
       i = i + 1
     }
-    if (start < s.count) Conio.cputs(s[start...s.count])
+    if (start < s.count) ConIO.cputs(s[start...s.count])
   }
 
   // Emit one log entry, returning whether the cursor is now at column 1.

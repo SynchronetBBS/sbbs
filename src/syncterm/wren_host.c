@@ -2,7 +2,7 @@
  *
  * Per-connection Wren scripting host for SyncTERM.  The VM, hook
  * registry, and dispatchers all live here; the foreign-method bodies
- * (Conio/Conn/Cterm/BBS/Cache/Hook) live in wren_bind.c.
+ * (ConIO/Conn/CTerm/BBS/Cache/Hook) live in wren_bind.c.
  *
  * Lifecycle: doterm() calls wren_host_init(bbs) before its main loop
  * and wren_host_shutdown() at every exit path.  Scripts in
@@ -37,7 +37,7 @@
  * -------------------------------------------------------------------- */
 
 static const char SYNCTERM_MODULE_SRC[] =
-    "foreign class Conio {\n"
+    "foreign class ConIO {\n"
     "  foreign static putch(c)\n"
     "  foreign static cputs(s)\n"
     "  foreign static gotoxy(x, y)\n"
@@ -58,12 +58,12 @@ static const char SYNCTERM_MODULE_SRC[] =
     "  foreign static getMouse\n"
     "  foreign static getClipText\n"
     "}\n"
-    /* Repl.compile_ returns the bare ObjClosure for the compiled body;
-     * Wren-level Repl.eval invokes it via .call().  Going through Wren
+    /* REPL.compile_ returns the bare ObjClosure for the compiled body;
+     * Wren-level REPL.eval invokes it via .call().  Going through Wren
      * for the call (rather than wrenInterpret-from-C) keeps apiStack
      * valid across the eval — wrenInterpret is not foreign-method-safe,
      * but Wren-level dispatch is. */
-    /* Repl is the primitive: compile and call.  Return shape uses
+    /* REPL is the primitive: compile and call.  Return shape uses
      * an Optional-style wrapper so the caller can distinguish "this
      * was a statement" from "this was an expression whose value is
      * null":
@@ -74,7 +74,7 @@ static const char SYNCTERM_MODULE_SRC[] =
      * Fiber.new{}.try() at the call site if you want to catch them.
      * Display formatting belongs at the call site too (see
      * console.wren's handleLine_). */
-    "class Repl {\n"
+    "class REPL {\n"
     "  static eval(src) { eval(\"syncterm\", src) }\n"
     "  static eval(module, src) {\n"
     /* Compile errors get diverted into a private capture buffer for
@@ -187,7 +187,7 @@ static const char SYNCTERM_MODULE_SRC[] =
     "  foreign static inbufGet(n)\n"
     "  foreign static outbufPut(s)\n"
     "}\n"
-    "foreign class Cterm {\n"
+    "foreign class CTerm {\n"
     "  foreign static emulation\n"
     "  foreign static x\n"
     "  foreign static y\n"
@@ -291,10 +291,10 @@ struct wren_log {
 /* The user-visible scrollback. */
 static struct wren_log main_log;
 
-/* Side log used during a Repl.eval to capture compile errors that may
+/* Side log used during a REPL.eval to capture compile errors that may
  * or may not survive to the user-visible log.  When a captured set
  * contains "Expected expression." (the parser's signal that input
- * isn't an expression), Repl.eval drops the side log and retries as a
+ * isn't an expression), REPL.eval drops the side log and retries as a
  * statement.  Otherwise the captured entries are merged into the main
  * log via wren_log_capture_commit. */
 static struct wren_log capture_log;
@@ -370,7 +370,7 @@ log_append(enum wren_log_source source, const char *text)
 
 /* --------------------------------------------------------------------
  * Capture API: redirect log_append to a side log between start and
- * commit/clear.  Repl.eval uses this to preview compile errors from an
+ * commit/clear.  REPL.eval uses this to preview compile errors from an
  * expression-mode attempt before deciding whether to surface them.
  * -------------------------------------------------------------------- */
 
@@ -710,7 +710,7 @@ wren_host_init(struct bbslist *bbs)
 	}
 
 	/* Capture handles for the foreign classes the C side allocates
-	 * instances of (Cell from inside Conio.getText, Cells as the
+	 * instances of (Cell from inside ConIO.getText, Cells as the
 	 * getText return value).  wrenSetSlotNewForeign needs a class
 	 * handle in a slot, so we keep these alive for the VM's lifetime. */
 	wrenEnsureSlots(state.vm, 1);
@@ -752,7 +752,7 @@ wren_host_init(struct bbslist *bbs)
 			continue;
 		/* Embedded scripts share the "syncterm" module with the
 		 * foreign-class declarations.  Inside them, every binding
-		 * (Conio, Cell, Repl, etc.) and every sibling embed's
+		 * (ConIO, Cell, REPL, etc.) and every sibling embed's
 		 * top-level definitions are directly visible — no imports
 		 * needed.  Override scripts are loaded into the same module
 		 * by load_one_script. */

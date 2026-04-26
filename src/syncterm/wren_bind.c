@@ -8,8 +8,8 @@
 #include "wren_host_internal.h"
 #include "wren_host.h"
 #include "wren.h"
-/* Repl.compile_ uses wrenCompileSource to produce an ObjClosure that
- * the Wren-side Repl.eval invokes via .call().  That path is internal
+/* REPL.compile_ uses wrenCompileSource to produce an ObjClosure that
+ * the Wren-side REPL.eval invokes via .call().  That path is internal
  * to Wren — wrenCompileSource isn't exposed in wren.h — so pull in
  * the VM headers directly.  Mirrors what wren_opt_meta.c does. */
 #include "wren/vm/wren_vm.h"
@@ -31,17 +31,17 @@
 /* term.c globals — emulation state and current bbs context. */
 extern struct cterminal *cterm;
 
-/* ----- Conio ------------------------------------------------------- */
+/* ----- ConIO ------------------------------------------------------- */
 
 static void
-fn_Conio_putch(WrenVM *vm)
+fn_ConIO_putch(WrenVM *vm)
 {
 	int c = (int)wrenGetSlotDouble(vm, 1);
 	putch(c);
 }
 
 static void
-fn_Conio_cputs(WrenVM *vm)
+fn_ConIO_cputs(WrenVM *vm)
 {
 	int len = 0;
 	const char *s = wrenGetSlotBytes(vm, 1, &len);
@@ -50,7 +50,7 @@ fn_Conio_cputs(WrenVM *vm)
 }
 
 static void
-fn_Conio_gotoxy(WrenVM *vm)
+fn_ConIO_gotoxy(WrenVM *vm)
 {
 	int x = (int)wrenGetSlotDouble(vm, 1);
 	int y = (int)wrenGetSlotDouble(vm, 2);
@@ -58,26 +58,26 @@ fn_Conio_gotoxy(WrenVM *vm)
 }
 
 static void
-fn_Conio_wherex(WrenVM *vm)
+fn_ConIO_wherex(WrenVM *vm)
 {
 	wrenSetSlotDouble(vm, 0, (double)wherex());
 }
 
 static void
-fn_Conio_wherey(WrenVM *vm)
+fn_ConIO_wherey(WrenVM *vm)
 {
 	wrenSetSlotDouble(vm, 0, (double)wherey());
 }
 
 static void
-fn_Conio_textattr(WrenVM *vm)
+fn_ConIO_textattr(WrenVM *vm)
 {
 	int a = (int)wrenGetSlotDouble(vm, 1);
 	textattr(a);
 }
 
 static void
-fn_Conio_screenSize(WrenVM *vm)
+fn_ConIO_screenSize(WrenVM *vm)
 {
 	struct text_info ti;
 	gettextinfo(&ti);
@@ -90,14 +90,14 @@ fn_Conio_screenSize(WrenVM *vm)
 }
 
 static void
-fn_Conio_ungetch(WrenVM *vm)
+fn_ConIO_ungetch(WrenVM *vm)
 {
 	int k = (int)wrenGetSlotDouble(vm, 1);
 	ungetch(k);
 }
 
 static void
-fn_Conio_getch(WrenVM *vm)
+fn_ConIO_getch(WrenVM *vm)
 {
 	/* ciolib_getch returns one raw byte at a time; assemble the 16-bit
 	 * extended-key value here so scripts get the same encoding rip_getch
@@ -114,20 +114,20 @@ fn_Conio_getch(WrenVM *vm)
 }
 
 static void
-fn_Conio_kbhit(WrenVM *vm)
+fn_ConIO_kbhit(WrenVM *vm)
 {
 	wrenSetSlotBool(vm, 0, kbhit() != 0);
 }
 
 static void
-fn_Conio_clrscr(WrenVM *vm)
+fn_ConIO_clrscr(WrenVM *vm)
 {
 	(void)vm;
 	clrscr();
 }
 
 static void
-fn_Conio_clreol(WrenVM *vm)
+fn_ConIO_clreol(WrenVM *vm)
 {
 	(void)vm;
 	clreol();
@@ -138,14 +138,14 @@ fn_Conio_clreol(WrenVM *vm)
  * aligned and fit in the 53-bit double mantissa on every supported
  * host.  restorescreen frees the screen on success. */
 static void
-fn_Conio_savescreen(WrenVM *vm)
+fn_ConIO_savescreen(WrenVM *vm)
 {
 	struct ciolib_screen *scrn = savescreen();
 	wrenSetSlotDouble(vm, 0, (double)(uintptr_t)scrn);
 }
 
 static void
-fn_Conio_restorescreen(WrenVM *vm)
+fn_ConIO_restorescreen(WrenVM *vm)
 {
 	uintptr_t v = (uintptr_t)wrenGetSlotDouble(vm, 1);
 	struct ciolib_screen *scrn = (struct ciolib_screen *)v;
@@ -261,60 +261,60 @@ fn_Conn_outbufPut(WrenVM *vm)
 	wrenSetSlotDouble(vm, 0, (double)put);
 }
 
-/* ----- Cterm ------------------------------------------------------- */
+/* ----- CTerm ------------------------------------------------------- */
 
 static void
-fn_Cterm_emulation(WrenVM *vm)
+fn_CTerm_emulation(WrenVM *vm)
 {
 	wrenSetSlotDouble(vm, 0, cterm != NULL ? (double)cterm->emulation : 0.0);
 }
 
 static void
-fn_Cterm_x(WrenVM *vm)
+fn_CTerm_x(WrenVM *vm)
 {
 	wrenSetSlotDouble(vm, 0, cterm != NULL ? (double)cterm->xpos : 0.0);
 }
 
 static void
-fn_Cterm_y(WrenVM *vm)
+fn_CTerm_y(WrenVM *vm)
 {
 	wrenSetSlotDouble(vm, 0, cterm != NULL ? (double)cterm->ypos : 0.0);
 }
 
 static void
-fn_Cterm_attr(WrenVM *vm)
+fn_CTerm_attr(WrenVM *vm)
 {
 	wrenSetSlotDouble(vm, 0, cterm != NULL ? (double)cterm->attr : 0.0);
 }
 
 static void
-fn_Cterm_doorwayMode(WrenVM *vm)
+fn_CTerm_doorwayMode(WrenVM *vm)
 {
 	wrenSetSlotDouble(vm, 0,
 	    cterm != NULL ? (double)cterm->doorway_mode : 0.0);
 }
 
 static void
-fn_Cterm_music(WrenVM *vm)
+fn_CTerm_music(WrenVM *vm)
 {
 	wrenSetSlotDouble(vm, 0,
 	    cterm != NULL ? (double)cterm->music_enable : 0.0);
 }
 
 static void
-fn_Cterm_width(WrenVM *vm)
+fn_CTerm_width(WrenVM *vm)
 {
 	wrenSetSlotDouble(vm, 0, cterm != NULL ? (double)cterm->width : 0.0);
 }
 
 static void
-fn_Cterm_height(WrenVM *vm)
+fn_CTerm_height(WrenVM *vm)
 {
 	wrenSetSlotDouble(vm, 0, cterm != NULL ? (double)cterm->height : 0.0);
 }
 
 static void
-fn_Cterm_write(WrenVM *vm)
+fn_CTerm_write(WrenVM *vm)
 {
 	int len = 0;
 	const char *s = wrenGetSlotBytes(vm, 1, &len);
@@ -657,7 +657,7 @@ wren_cell_finalize(void *data)
 
 /* --- Cells allocate / finalize ---
  *
- * Allocator leaves the struct empty; Conio.getText fills count and
+ * Allocator leaves the struct empty; ConIO.getText fills count and
  * buf after construction.  Finalize releases the malloc'd buffer. */
 static void
 wren_cells_allocate(WrenVM *vm)
@@ -676,10 +676,10 @@ wren_cells_finalize(void *data)
 	cs->count = 0;
 }
 
-/* ----- Conio.getText / Conio.putText ----- */
+/* ----- ConIO.getText / ConIO.putText ----- */
 
 static void
-fn_Conio_getText(WrenVM *vm)
+fn_ConIO_getText(WrenVM *vm)
 {
 	int sx = (int)wrenGetSlotDouble(vm, 1);
 	int sy = (int)wrenGetSlotDouble(vm, 2);
@@ -719,20 +719,20 @@ fn_Conio_getText(WrenVM *vm)
 }
 
 static void
-fn_Conio_mousedrag(WrenVM *vm)
+fn_ConIO_mousedrag(WrenVM *vm)
 {
 	(void)vm;
 	mousedrag(NULL);
 }
 
-/* Repl.compile_(module, src, isExpression, printErrors) — compile
+/* REPL.compile_(module, src, isExpression, printErrors) — compile
  * `src` at the top level of the named module and return the resulting
  * closure as a Wren value.  Calling .call() on the closure runs the
  * body in module scope, so top-level `var x = ...` becomes a module
  * variable that persists across submissions.
  *
  * isExpression=true compiles `src` as a single expression; .call()
- * returns the expression's value.  Wren-side Repl.eval uses this to
+ * returns the expression's value.  Wren-side REPL.eval uses this to
  * implement the "P" of REPL — try expression form, print the result,
  * fall back to statement form when the input isn't a single
  * expression (e.g. `var x = 5`).
@@ -741,39 +741,39 @@ fn_Conio_mousedrag(WrenVM *vm)
  * because the public API has no wrapper.  wrenCompileSource is
  * foreign-method-safe (no fiber switching), and the Wren-side .call()
  * dispatch is foreign-method-safe too. */
-/* Repl.captureStart_/Contains_/Clear_/Commit_ — gate around the
- * compile-error log capture in wren_host.c.  Repl.eval brackets each
+/* REPL.captureStart_/Contains_/Clear_/Commit_ — gate around the
+ * compile-error log capture in wren_host.c.  REPL.eval brackets each
  * compile attempt with start/commit (or clear) so it can peek at the
  * errors and decide whether to surface them to the real log. */
 static void
-fn_Repl_captureStart_(WrenVM *vm)
+fn_REPL_captureStart_(WrenVM *vm)
 {
 	(void)vm;
 	wren_log_capture_start();
 }
 
 static void
-fn_Repl_captureContains_(WrenVM *vm)
+fn_REPL_captureContains_(WrenVM *vm)
 {
 	const char *needle = wrenGetSlotString(vm, 1);
 	wrenSetSlotBool(vm, 0, wren_log_capture_contains(needle));
 }
 
 static void
-fn_Repl_captureClear_(WrenVM *vm)
+fn_REPL_captureClear_(WrenVM *vm)
 {
 	(void)vm;
 	wren_log_capture_clear();
 }
 
 static void
-fn_Repl_captureCommit_(WrenVM *vm)
+fn_REPL_captureCommit_(WrenVM *vm)
 {
 	(void)vm;
 	wren_log_capture_commit();
 }
 
-/* Repl.printTrace_(fiber) — replicates wrenDebugPrintStackTrace for a
+/* REPL.printTrace_(fiber) — replicates wrenDebugPrintStackTrace for a
  * caught fiber.  Wren only emits stack frames via the error callback
  * for *uncaught* aborts; once you Fiber.try() a failed fiber, the
  * frames are still on it but the runtime never walks them.  This
@@ -783,7 +783,7 @@ fn_Repl_captureCommit_(WrenVM *vm)
  * alive.  The runtime error MESSAGE is the .try() return value — the
  * caller prints that separately. */
 static void
-fn_Repl_printTrace_(WrenVM *vm)
+fn_REPL_printTrace_(WrenVM *vm)
 {
 	if (vm->config.errorFn == NULL)
 		return;
@@ -809,7 +809,7 @@ fn_Repl_printTrace_(WrenVM *vm)
 }
 
 static void
-fn_Repl_compile_(WrenVM *vm)
+fn_REPL_compile_(WrenVM *vm)
 {
 	const char *m = wrenGetSlotString(vm, 1);
 	const char *s = wrenGetSlotString(vm, 2);
@@ -827,7 +827,7 @@ fn_Repl_compile_(WrenVM *vm)
 }
 
 static void
-fn_Repl_hasModule(WrenVM *vm)
+fn_REPL_hasModule(WrenVM *vm)
 {
 	int         len = 0;
 	const char *m   = wrenGetSlotBytes(vm, 1, &len);
@@ -851,7 +851,7 @@ fn_Repl_hasModule(WrenVM *vm)
  * clipboard is empty or unavailable.  ciolib_getcliptext returns a
  * malloc'd UTF-8 buffer which the caller must free. */
 static void
-fn_Conio_getClipText(WrenVM *vm)
+fn_ConIO_getClipText(WrenVM *vm)
 {
 	char *s = getcliptext();
 	if (s == NULL) {
@@ -866,7 +866,7 @@ fn_Conio_getClipText(WrenVM *vm)
  * [event, bstate, kbmodifiers, startx, starty, endx, endy].
  * Returns null when no event is queued. */
 static void
-fn_Conio_getMouse(WrenVM *vm)
+fn_ConIO_getMouse(WrenVM *vm)
 {
 	struct mouse_event ev;
 	memset(&ev, 0, sizeof(ev));
@@ -888,7 +888,7 @@ fn_Conio_getMouse(WrenVM *vm)
 }
 
 static void
-fn_Conio_putText(WrenVM *vm)
+fn_ConIO_putText(WrenVM *vm)
 {
 	int sx = (int)wrenGetSlotDouble(vm, 1);
 	int sy = (int)wrenGetSlotDouble(vm, 2);
@@ -1326,35 +1326,35 @@ struct binding {
 };
 
 static const struct binding BINDINGS[] = {
-	/* Conio (all static) */
-	{ "Conio", true,  "putch(_)",            fn_Conio_putch       },
-	{ "Conio", true,  "cputs(_)",            fn_Conio_cputs       },
-	{ "Conio", true,  "gotoxy(_,_)",         fn_Conio_gotoxy      },
-	{ "Conio", true,  "wherex",              fn_Conio_wherex      },
-	{ "Conio", true,  "wherey",              fn_Conio_wherey      },
-	{ "Conio", true,  "textattr(_)",         fn_Conio_textattr    },
-	{ "Conio", true,  "screenSize",          fn_Conio_screenSize  },
-	{ "Conio", true,  "ungetch(_)",          fn_Conio_ungetch     },
-	{ "Conio", true,  "getch",               fn_Conio_getch       },
-	{ "Conio", true,  "kbhit",               fn_Conio_kbhit       },
-	{ "Conio", true,  "clrscr()",            fn_Conio_clrscr      },
-	{ "Conio", true,  "clreol()",            fn_Conio_clreol      },
-	{ "Conio", true,  "savescreen",          fn_Conio_savescreen  },
-	{ "Conio", true,  "restorescreen(_)",    fn_Conio_restorescreen },
-	{ "Conio", true,  "getText(_,_,_,_)",    fn_Conio_getText     },
-	{ "Conio", true,  "putText(_,_,_,_,_)",  fn_Conio_putText     },
-	{ "Conio", true,  "mousedrag()",         fn_Conio_mousedrag   },
-	{ "Conio", true,  "getMouse",            fn_Conio_getMouse    },
-	{ "Conio", true,  "getClipText",         fn_Conio_getClipText },
+	/* ConIO (all static) */
+	{ "ConIO", true,  "putch(_)",            fn_ConIO_putch       },
+	{ "ConIO", true,  "cputs(_)",            fn_ConIO_cputs       },
+	{ "ConIO", true,  "gotoxy(_,_)",         fn_ConIO_gotoxy      },
+	{ "ConIO", true,  "wherex",              fn_ConIO_wherex      },
+	{ "ConIO", true,  "wherey",              fn_ConIO_wherey      },
+	{ "ConIO", true,  "textattr(_)",         fn_ConIO_textattr    },
+	{ "ConIO", true,  "screenSize",          fn_ConIO_screenSize  },
+	{ "ConIO", true,  "ungetch(_)",          fn_ConIO_ungetch     },
+	{ "ConIO", true,  "getch",               fn_ConIO_getch       },
+	{ "ConIO", true,  "kbhit",               fn_ConIO_kbhit       },
+	{ "ConIO", true,  "clrscr()",            fn_ConIO_clrscr      },
+	{ "ConIO", true,  "clreol()",            fn_ConIO_clreol      },
+	{ "ConIO", true,  "savescreen",          fn_ConIO_savescreen  },
+	{ "ConIO", true,  "restorescreen(_)",    fn_ConIO_restorescreen },
+	{ "ConIO", true,  "getText(_,_,_,_)",    fn_ConIO_getText     },
+	{ "ConIO", true,  "putText(_,_,_,_,_)",  fn_ConIO_putText     },
+	{ "ConIO", true,  "mousedrag()",         fn_ConIO_mousedrag   },
+	{ "ConIO", true,  "getMouse",            fn_ConIO_getMouse    },
+	{ "ConIO", true,  "getClipText",         fn_ConIO_getClipText },
 
-	/* Repl */
-	{ "Repl",  true,  "compile_(_,_,_,_)",   fn_Repl_compile_         },
-	{ "Repl",  true,  "printTrace_(_)",      fn_Repl_printTrace_      },
-	{ "Repl",  true,  "hasModule(_)",        fn_Repl_hasModule        },
-	{ "Repl",  true,  "captureStart_()",     fn_Repl_captureStart_    },
-	{ "Repl",  true,  "captureContains_(_)", fn_Repl_captureContains_ },
-	{ "Repl",  true,  "captureClear_()",     fn_Repl_captureClear_    },
-	{ "Repl",  true,  "captureCommit_()",    fn_Repl_captureCommit_   },
+	/* REPL */
+	{ "REPL",  true,  "compile_(_,_,_,_)",   fn_REPL_compile_         },
+	{ "REPL",  true,  "printTrace_(_)",      fn_REPL_printTrace_      },
+	{ "REPL",  true,  "hasModule(_)",        fn_REPL_hasModule        },
+	{ "REPL",  true,  "captureStart_()",     fn_REPL_captureStart_    },
+	{ "REPL",  true,  "captureContains_(_)", fn_REPL_captureContains_ },
+	{ "REPL",  true,  "captureClear_()",     fn_REPL_captureClear_    },
+	{ "REPL",  true,  "captureCommit_()",    fn_REPL_captureCommit_   },
 
 	/* Cell (all instance) */
 	{ "Cell",  false, "ch",              fn_Cell_ch              },
@@ -1417,16 +1417,16 @@ static const struct binding BINDINGS[] = {
 	{ "Conn",  true, "inbufGet(_)",    fn_Conn_inbufGet     },
 	{ "Conn",  true, "outbufPut(_)",   fn_Conn_outbufPut    },
 
-	/* Cterm */
-	{ "Cterm", true, "emulation",      fn_Cterm_emulation   },
-	{ "Cterm", true, "x",              fn_Cterm_x           },
-	{ "Cterm", true, "y",              fn_Cterm_y           },
-	{ "Cterm", true, "attr",           fn_Cterm_attr        },
-	{ "Cterm", true, "doorwayMode",    fn_Cterm_doorwayMode },
-	{ "Cterm", true, "music",          fn_Cterm_music       },
-	{ "Cterm", true, "width",          fn_Cterm_width       },
-	{ "Cterm", true, "height",         fn_Cterm_height      },
-	{ "Cterm", true, "write(_)",       fn_Cterm_write       },
+	/* CTerm */
+	{ "CTerm", true, "emulation",      fn_CTerm_emulation   },
+	{ "CTerm", true, "x",              fn_CTerm_x           },
+	{ "CTerm", true, "y",              fn_CTerm_y           },
+	{ "CTerm", true, "attr",           fn_CTerm_attr        },
+	{ "CTerm", true, "doorwayMode",    fn_CTerm_doorwayMode },
+	{ "CTerm", true, "music",          fn_CTerm_music       },
+	{ "CTerm", true, "width",          fn_CTerm_width       },
+	{ "CTerm", true, "height",         fn_CTerm_height      },
+	{ "CTerm", true, "write(_)",       fn_CTerm_write       },
 
 	/* BBS */
 	{ "BBS",   true, "name",           fn_BBS_name          },
