@@ -28,16 +28,16 @@ char* comVersion(char* str, size_t len)
 
 	sscanf("$Revision: 1.13 $", "%*s %s", revision);
 
-	safe_snprintf(str,len,"Synchronet Communications I/O Library for "PLATFORM_DESC" v%s", revision);
+	safe_snprintf(str, len, "Synchronet Communications I/O Library for "PLATFORM_DESC" v%s", revision);
 	return str;
 }
 
 COM_HANDLE comOpen(const char* device)
 {
-	char *dp = (char*)device;
-	COM_HANDLE handle;
+	char *       dp = (char*)device;
+	COM_HANDLE   handle;
 	COMMTIMEOUTS timeouts;
-	DCB	dcb;
+	DCB          dcb;
 
 	// https://support.microsoft.com/en-us/topic/howto-specify-serial-ports-larger-than-com9-db9078a5-b7b6-bf00-240f-f749ebfd913e
 	if (device[0] != '\\') {
@@ -47,32 +47,32 @@ COM_HANDLE comOpen(const char* device)
 		sprintf(dp, "\\\\.\\%s", device);
 	}
 
-	if((handle=CreateFileA(dp
-		,GENERIC_READ|GENERIC_WRITE 	/* Access */
-		,0								/* Share mode */
-		,NULL							/* Security attributes */
-		,OPEN_EXISTING					/* Create access */
-		,FILE_ATTRIBUTE_NORMAL			/* File attributes */
-		,NULL							/* Template */
-		))==INVALID_HANDLE_VALUE)
+	if ((handle = CreateFileA(dp
+	                          , GENERIC_READ | GENERIC_WRITE /* Access */
+	                          , 0       /* Share mode */
+	                          , NULL    /* Security attributes */
+	                          , OPEN_EXISTING /* Create access */
+	                          , FILE_ATTRIBUTE_NORMAL /* File attributes */
+	                          , NULL    /* Template */
+	                          )) == INVALID_HANDLE_VALUE)
 		return COM_HANDLE_INVALID;
 
 
-	if(GetCommTimeouts(handle, &timeouts)) {
-		timeouts.ReadIntervalTimeout=MAXDWORD;
-		timeouts.ReadTotalTimeoutMultiplier=0;
-		timeouts.ReadTotalTimeoutConstant=0;		// No-wait read timeout
-		timeouts.WriteTotalTimeoutMultiplier=0;
-		timeouts.WriteTotalTimeoutConstant=5000;	// 5 seconds
-		SetCommTimeouts(handle,&timeouts);
+	if (GetCommTimeouts(handle, &timeouts)) {
+		timeouts.ReadIntervalTimeout = MAXDWORD;
+		timeouts.ReadTotalTimeoutMultiplier = 0;
+		timeouts.ReadTotalTimeoutConstant = 0;        // No-wait read timeout
+		timeouts.WriteTotalTimeoutMultiplier = 0;
+		timeouts.WriteTotalTimeoutConstant = 5000;    // 5 seconds
+		SetCommTimeouts(handle, &timeouts);
 	}
 
 	/* Force N-8-1 mode: */
-	if(GetCommState(handle, &dcb)==TRUE) {
-		dcb.ByteSize	= 8;
-		dcb.Parity		= NOPARITY;
-		dcb.StopBits	= ONESTOPBIT;
-		dcb.fParity		= FALSE;
+	if (GetCommState(handle, &dcb) == TRUE) {
+		dcb.ByteSize    = 8;
+		dcb.Parity      = NOPARITY;
+		dcb.StopBits    = ONESTOPBIT;
+		dcb.fParity     = FALSE;
 		SetCommState(handle, &dcb);
 	}
 
@@ -88,7 +88,7 @@ long comGetBaudRate(COM_HANDLE handle)
 {
 	DCB dcb;
 
-	if(GetCommState(handle, &dcb)!=TRUE)
+	if (GetCommState(handle, &dcb) != TRUE)
 		return COM_ERROR;
 
 	return dcb.BaudRate;
@@ -98,10 +98,10 @@ bool comSetBaudRate(COM_HANDLE handle, unsigned long rate)
 {
 	DCB dcb;
 
-	if(GetCommState(handle, &dcb)!=TRUE)
+	if (GetCommState(handle, &dcb) != TRUE)
 		return false;
 
-	dcb.BaudRate=rate;
+	dcb.BaudRate = rate;
 
 	return SetCommState(handle, &dcb);
 }
@@ -130,14 +130,14 @@ size_t comGetBaudRates(COM_HANDLE handle, ulong* rates, size_t max_rates)
 		{ BAUD_128K,   128000 },
 	};
 	COMMPROP props;
-	size_t count = 0;
+	size_t   count = 0;
 
-	if(!GetCommProperties(handle, &props))
+	if (!GetCommProperties(handle, &props))
 		return 0;
 
-	for(size_t i = 0; i < sizeof(baud_map)/sizeof(baud_map[0]); i++) {
-		if(props.dwSettableBaud & baud_map[i].flag) {
-			if(rates != NULL && count < max_rates)
+	for (size_t i = 0; i < sizeof(baud_map) / sizeof(baud_map[0]); i++) {
+		if (props.dwSettableBaud & baud_map[i].flag) {
+			if (rates != NULL && count < max_rates)
 				rates[count] = baud_map[i].rate;
 			count++;
 		}
@@ -150,14 +150,14 @@ int comGetFlowControl(COM_HANDLE handle)
 	DCB dcb;
 	int result = 0;
 
-	if(GetCommState(handle, &dcb) != TRUE)
+	if (GetCommState(handle, &dcb) != TRUE)
 		return COM_ERROR;
 
-	if(dcb.fOutxCtsFlow)
+	if (dcb.fOutxCtsFlow)
 		result |= COM_FLOW_CONTROL_RTS_CTS;
-	if(dcb.fOutxDsrFlow)
+	if (dcb.fOutxDsrFlow)
 		result |= COM_FLOW_CONTROL_DTR_DSR;
-	if(dcb.fInX && dcb.fOutX)
+	if (dcb.fInX && dcb.fOutX)
 		result |= COM_FLOW_CONTROL_XON_OFF;
 	return result;
 }
@@ -166,7 +166,7 @@ bool comSetFlowControl(COM_HANDLE handle, int type)
 {
 	DCB dcb;
 
-	if(GetCommState(handle, &dcb) != TRUE)
+	if (GetCommState(handle, &dcb) != TRUE)
 		return false;
 
 	dcb.fOutxCtsFlow = 0;
@@ -175,15 +175,15 @@ bool comSetFlowControl(COM_HANDLE handle, int type)
 	dcb.fDsrSensitivity = 0;
 	dcb.fInX = 0;
 	dcb.fOutX = 0;
-	if(type&COM_FLOW_CONTROL_RTS_CTS) {
+	if (type & COM_FLOW_CONTROL_RTS_CTS) {
 		dcb.fOutxCtsFlow = 1;
 		dcb.fRtsControl = RTS_CONTROL_HANDSHAKE;
 	}
-	if(type&COM_FLOW_CONTROL_DTR_DSR) {
+	if (type & COM_FLOW_CONTROL_DTR_DSR) {
 		dcb.fOutxDsrFlow = 1;
 		dcb.fDsrSensitivity = 1;
 	}
-	if(type&COM_FLOW_CONTROL_XON_OFF) {
+	if (type & COM_FLOW_CONTROL_XON_OFF) {
 		dcb.fInX = 1;
 		dcb.fOutX = 1;
 	}
@@ -194,7 +194,7 @@ bool comSetParity(COM_HANDLE handle, bool enable, bool odd)
 {
 	DCB dcb;
 
-	if(GetCommState(handle, &dcb) != TRUE)
+	if (GetCommState(handle, &dcb) != TRUE)
 		return false;
 
 	dcb.fParity = enable;
@@ -206,7 +206,7 @@ bool comSetBits(COM_HANDLE handle, size_t byteSize, size_t stopBits)
 {
 	DCB dcb;
 
-	if(GetCommState(handle, &dcb) != TRUE)
+	if (GetCommState(handle, &dcb) != TRUE)
 		return false;
 
 	dcb.ByteSize = (BYTE)byteSize;
@@ -217,9 +217,9 @@ bool comSetBits(COM_HANDLE handle, size_t byteSize, size_t stopBits)
 
 int comGetModemStatus(COM_HANDLE handle)
 {
-	DWORD status=0;
-	
-	if(GetCommModemStatus(handle, &status))
+	DWORD status = 0;
+
+	if (GetCommModemStatus(handle, &status))
 		return status;
 	else
 		return COM_ERROR;
@@ -247,16 +247,16 @@ bool comLowerRTS(COM_HANDLE handle)
 
 bool comWriteByte(COM_HANDLE handle, BYTE ch)
 {
-	DWORD wr=0;
+	DWORD wr = 0;
 
-	return WriteFile(handle, &ch, sizeof(ch), &wr, NULL) && wr==sizeof(BYTE);
+	return WriteFile(handle, &ch, sizeof(ch), &wr, NULL) && wr == sizeof(BYTE);
 }
 
 int comWriteBuf(COM_HANDLE handle, const BYTE* buf, size_t buflen)
 {
-	DWORD wr=0;
+	DWORD wr = 0;
 
-	if(!WriteFile(handle, buf, buflen, &wr, NULL))
+	if (!WriteFile(handle, buf, buflen, &wr, NULL))
 		return COM_ERROR;
 
 	return wr;
@@ -271,7 +271,7 @@ bool comReadByte(COM_HANDLE handle, BYTE* ch)
 {
 	DWORD rd;
 
-	return ReadFile(handle, ch, sizeof(BYTE), &rd, NULL) && rd==sizeof(BYTE);
+	return ReadFile(handle, ch, sizeof(BYTE), &rd, NULL) && rd == sizeof(BYTE);
 }
 
 bool comPurgeInput(COM_HANDLE handle)
