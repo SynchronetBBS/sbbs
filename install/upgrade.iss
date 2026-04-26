@@ -97,5 +97,5 @@ Filename: "{app}\ctrl\sbbs.ini"; Section: "Web";      Key: "RootDirectory"; Stri
 
 [Run]
 ; First time jsexec is run might not load config (when upgrading from v3.19 and earlier)
-Filename: "{app}\exec\jsexec"; Parameters: "-U -! update.js"
-Filename: "{app}\exec\jsexec"; Parameters: "-p update.js"
+Filename: "{app}\exec\jsexec"; Parameters: "-c{app}\ctrl -U -! update.js"
+Filename: "{app}\exec\jsexec"; Parameters: "-c{app}\ctrl -p update.js"
