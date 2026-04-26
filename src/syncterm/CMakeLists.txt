@@ -313,6 +313,49 @@ target_include_directories(wrenvm
     PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/wren/vm
             ${CMAKE_CURRENT_SOURCE_DIR}/wren/optional)
 
+# Embedded-script codegen.  Mirrors src/conio/genmap.c's pattern: a
+# small C tool reads scripts/*.wren and writes embedded_scripts.c
+# which compiles into syncterm alongside wren_host.c.  In native
+# builds the tool builds with the project CC; in cross-builds we
+# shell out at configure time to a host CC ($BUILD_CC, default `cc`)
+# so the tool itself can run on the build host.
+file(GLOB WREN_SCRIPTS CONFIGURE_DEPENDS
+    "${CMAKE_CURRENT_SOURCE_DIR}/scripts/*.wren")
+
+if(NOT CMAKE_CROSSCOMPILING)
+    add_executable(wren_embed_gen wren_embed_gen.c)
+    set(WREN_EMBED_GEN_BIN $<TARGET_FILE:wren_embed_gen>)
+    set(WREN_EMBED_GEN_DEP wren_embed_gen)
+else()
+    set(_host_cc "$ENV{BUILD_CC}")
+    if(NOT _host_cc)
+        set(_host_cc "cc")
+    endif()
+    set(WREN_EMBED_GEN_BIN
+        "${CMAKE_CURRENT_BINARY_DIR}/wren_embed_gen")
+    execute_process(
+        COMMAND ${_host_cc} -O2
+                "${CMAKE_CURRENT_SOURCE_DIR}/wren_embed_gen.c"
+                -o "${WREN_EMBED_GEN_BIN}"
+        RESULT_VARIABLE _rc)
+    if(NOT _rc EQUAL 0)
+        message(FATAL_ERROR
+            "Failed to build wren_embed_gen with host CC ${_host_cc}")
+    endif()
+    set(WREN_EMBED_GEN_DEP "")
+endif()
+
+add_custom_command(
+    OUTPUT  "${CMAKE_CURRENT_BINARY_DIR}/embedded_scripts.c"
+    COMMAND ${WREN_EMBED_GEN_BIN} ${WREN_SCRIPTS}
+            > "${CMAKE_CURRENT_BINARY_DIR}/embedded_scripts.c"
+    DEPENDS ${WREN_EMBED_GEN_DEP} ${WREN_SCRIPTS}
+            "${CMAKE_CURRENT_SOURCE_DIR}/wren_embed_gen.c"
+    VERBATIM)
+
+list(APPEND SOURCE
+    "${CMAKE_CURRENT_BINARY_DIR}/embedded_scripts.c")
+
 if(NOT WITHOUT_OOII)
 	list(APPEND SOURCE ooii.c ooii_bmenus.c ooii_cmenus.c ooii_logons.c ooii_sounds.c)
 endif()

@@ -46,6 +46,26 @@ static const char SYNCTERM_MODULE_SRC[] =
     "  foreign static textattr(a)\n"
     "  foreign static screenSize\n"
     "  foreign static ungetch(k)\n"
+    "  foreign static getch\n"
+    "  foreign static kbhit\n"
+    "  foreign static clrscr()\n"
+    "  foreign static clreol()\n"
+    "  foreign static savescreen\n"
+    "  foreign static restorescreen(handle)\n"
+    "}\n"
+    "foreign class Console {\n"
+    "  foreign static count\n"
+    "  foreign static total\n"
+    "  foreign static [seq]\n"
+    "  foreign static clear()\n"
+    "  foreign static iterate(it)\n"
+    "  foreign static iteratorValue(it)\n"
+    "}\n"
+    "class LogSource {\n"
+    "  static print { 0 }\n"
+    "  static compileError { 1 }\n"
+    "  static runtimeError { 2 }\n"
+    "  static stackFrame { 3 }\n"
     "}\n"
     "foreign class Conn {\n"
     "  foreign static send(s)\n"
@@ -103,28 +123,153 @@ static struct wren_host_state g_state;
 static bool      g_active;
 static pthread_t g_owner_thread;
 
-static wren_capture_fn  g_capture_fn   = NULL;
-static void            *g_capture_data = NULL;
+/* --------------------------------------------------------------------
+ * Log buffer (always-on print/error scrollback)
+ *
+ * Fixed-size ring; head = next write index, count = valid entries.
+ * Oldest-relative reads come out as `(head - count + i) mod cap` so
+ * scripts always see entry 0 as the oldest valid message regardless
+ * of where the ring head currently sits.
+ *
+ * Each slot keeps either the C-malloc'd text bytes (until first read)
+ * OR the cached Wren tuple handle (after first read), never both.
+ * This keeps memory at one copy per slot worst-case.
+ * -------------------------------------------------------------------- */
+
+#define WREN_LOG_CAPACITY  1024
+#define WREN_LOG_MAX_TEXT  (8 * 1024)
+
+struct wren_log_entry {
+	uint64_t             seq;           /* assigned at write time */
+	long double          ts;
+	enum wren_log_source source;
+	char                *text;          /* freed at first read or eviction */
+	size_t               len;
+	WrenHandle          *cached_value;  /* NULL until first read */
+};
+
+static struct wren_log_entry g_log[WREN_LOG_CAPACITY];
+static int      g_log_head;
+static int      g_log_count;
+static uint64_t g_log_total;            /* monotonic; survives wren_log_clear */
+
+static void
+log_release_slot(struct wren_log_entry *e)
+{
+	if (e->cached_value != NULL && g_state.vm != NULL) {
+		wrenReleaseHandle(g_state.vm, e->cached_value);
+		e->cached_value = NULL;
+	}
+	if (e->text != NULL) {
+		free(e->text);
+		e->text = NULL;
+	}
+	e->len = 0;
+}
+
+static void
+log_append(enum wren_log_source source, const char *text)
+{
+	if (text == NULL)
+		text = "";
+	size_t len = strlen(text);
+	bool truncated = false;
+	if (len > WREN_LOG_MAX_TEXT) {
+		len = WREN_LOG_MAX_TEXT;
+		truncated = true;
+	}
+	static const char trunc_suffix[] = "…[truncated]";
+	size_t alloc = len + (truncated ? sizeof(trunc_suffix) - 1 : 0);
+
+	char *buf = malloc(alloc + 1);
+	if (buf == NULL)
+		return;
+	memcpy(buf, text, len);
+	if (truncated)
+		memcpy(buf + len, trunc_suffix, sizeof(trunc_suffix) - 1);
+	buf[alloc] = '\0';
+
+	struct wren_log_entry *e = &g_log[g_log_head];
+	log_release_slot(e);
+	e->seq    = g_log_total++;
+	e->ts     = xp_timer();
+	e->source = source;
+	e->text   = buf;
+	e->len    = alloc;
+
+	g_log_head = (g_log_head + 1) % WREN_LOG_CAPACITY;
+	if (g_log_count < WREN_LOG_CAPACITY)
+		g_log_count++;
+}
+
+int
+wren_log_count(void)
+{
+	return g_log_count;
+}
+
+uint64_t
+wren_log_total(void)
+{
+	return g_log_total;
+}
 
 void
-wren_host_set_capture(wren_capture_fn fn, void *cbdata)
+wren_log_clear(void)
 {
-	g_capture_fn   = fn;
-	g_capture_data = cbdata;
+	for (int i = 0; i < WREN_LOG_CAPACITY; i++)
+		log_release_slot(&g_log[i]);
+	g_log_head  = 0;
+	g_log_count = 0;
+	/* g_log_total intentionally NOT reset — Wren scripts may have a
+	 * high-water mark `lastTotal` they're tracking; resetting would
+	 * make their existing mark falsely reappear as "new writes."
+	 * Buffer is empty after this; next write gets seq = g_log_total
+	 * (no skip). */
 }
 
-WrenInterpretResult
-wren_host_interpret(const char *module, const char *source)
+void
+wren_log_emit(WrenVM *vm, uint64_t seq, int slot)
 {
-	if (!g_active || module == NULL || source == NULL)
-		return WREN_RESULT_COMPILE_ERROR;
-	return wrenInterpret(g_state.vm, module, source);
-}
+	/* Valid range: oldest seq = g_log_total - g_log_count;
+	 * newest seq = g_log_total - 1. */
+	if (g_log_count == 0 ||
+	    seq < g_log_total - (uint64_t)g_log_count ||
+	    seq >= g_log_total) {
+		wrenSetSlotNull(vm, slot);
+		return;
+	}
+	/* Newest entry sits at (head - 1) mod cap.  Walking backward by
+	 * (g_log_total - 1 - seq) gives the slot for `seq`. */
+	int back = (int)(g_log_total - 1 - seq);
+	int idx  = ((g_log_head - 1 - back) % WREN_LOG_CAPACITY +
+	            WREN_LOG_CAPACITY) % WREN_LOG_CAPACITY;
+	struct wren_log_entry *e = &g_log[idx];
 
-WrenVM *
-wren_host_vm(void)
-{
-	return g_active ? g_state.vm : NULL;
+	if (e->cached_value != NULL) {
+		wrenSetSlotHandle(vm, slot, e->cached_value);
+		return;
+	}
+
+	/* First read: build [ts, source, text] in slot, capture handle,
+	 * free the C buffer (text now lives once, in the Wren String the
+	 * tuple references). */
+	wrenEnsureSlots(vm, slot + 4);
+	wrenSetSlotNewList(vm, slot);
+	wrenSetSlotDouble(vm, slot + 1, (double)e->ts);
+	wrenInsertInList(vm, slot, -1, slot + 1);
+	wrenSetSlotDouble(vm, slot + 1, (double)(int)e->source);
+	wrenInsertInList(vm, slot, -1, slot + 1);
+	wrenSetSlotBytes(vm, slot + 1,
+	    e->text != NULL ? e->text : "", e->len);
+	wrenInsertInList(vm, slot, -1, slot + 1);
+
+	e->cached_value = wrenGetSlotHandle(vm, slot);
+	free(e->text);
+	e->text = NULL;
+	/* Re-emit through the cached handle so the slot caller sees the
+	 * same value as subsequent reads will. */
+	wrenSetSlotHandle(vm, slot, e->cached_value);
 }
 
 struct wren_host_state *
@@ -152,12 +297,7 @@ static void
 host_write_fn(WrenVM *vm, const char *text)
 {
 	(void)vm;
-	if (text == NULL)
-		return;
-	if (g_capture_fn != NULL)
-		g_capture_fn(text, false, g_capture_data);
-	else
-		fputs(text, stderr);
+	log_append(WREN_LOG_PRINT, text);
 }
 
 static void
@@ -166,27 +306,32 @@ host_error_fn(WrenVM *vm, WrenErrorType type, const char *module, int line,
 {
 	(void)vm;
 	char buf[1024];
+	const char *tag = "?";
 	switch (type) {
 		case WREN_ERROR_COMPILE:
-			snprintf(buf, sizeof(buf), "%s:%d compile error: %s\n",
+			snprintf(buf, sizeof(buf), "%s:%d: %s",
 			    module ? module : "?", line, message ? message : "");
+			log_append(WREN_LOG_COMPILE_ERROR, buf);
+			tag = "compile";
 			break;
 		case WREN_ERROR_RUNTIME:
-			snprintf(buf, sizeof(buf), "runtime error: %s\n",
+			log_append(WREN_LOG_RUNTIME_ERROR,
 			    message ? message : "");
+			snprintf(buf, sizeof(buf), "%s",
+			    message ? message : "");
+			tag = "runtime";
 			break;
 		case WREN_ERROR_STACK_TRACE:
-			snprintf(buf, sizeof(buf), "  at %s:%d in %s\n",
+			snprintf(buf, sizeof(buf), "%s:%d in %s",
 			    module ? module : "?", line, message ? message : "");
-			break;
-		default:
-			buf[0] = '\0';
+			log_append(WREN_LOG_STACK_FRAME, buf);
+			tag = "trace";
 			break;
 	}
-	if (g_capture_fn != NULL)
-		g_capture_fn(buf, true, g_capture_data);
-	else
-		fprintf(stderr, "[wren] %s", buf);
+	/* TODO: drop this stderr fallback once the console is solid.
+	 * Useful during bring-up when load failures happen before the
+	 * user can open the REPL to see them. */
+	fprintf(stderr, "[wren %s] %s\n", tag, buf);
 }
 
 static WrenForeignMethodFn
@@ -238,6 +383,24 @@ wren_host_register_timer(WrenVM *vm, int ms, int fn_slot)
  * Lifecycle
  * -------------------------------------------------------------------- */
 
+/* Compute a module name from a script path: basename, sans ".wren". */
+static void
+modname_from_path(const char *path, char *out, size_t outsz)
+{
+	const char *base = strrchr(path, '/');
+#ifdef _WIN32
+	const char *base2 = strrchr(path, '\\');
+	if (base2 != NULL && (base == NULL || base2 > base))
+		base = base2;
+#endif
+	base = (base == NULL) ? path : base + 1;
+	strncpy(out, base, outsz - 1);
+	out[outsz - 1] = '\0';
+	char *dot = strrchr(out, '.');
+	if (dot != NULL)
+		*dot = '\0';
+}
+
 static void
 load_one_script(const char *path)
 {
@@ -263,21 +426,8 @@ load_one_script(const char *path)
 	fclose(f);
 	src[got] = '\0';
 
-	/* Module name = basename without ".wren" extension, so each
-	 * script's import namespace is distinct. */
-	const char *base = strrchr(path, '/');
-#ifdef _WIN32
-	const char *base2 = strrchr(path, '\\');
-	if (base2 != NULL && (base == NULL || base2 > base))
-		base = base2;
-#endif
-	base = (base == NULL) ? path : base + 1;
 	char modname[256];
-	strncpy(modname, base, sizeof(modname) - 1);
-	modname[sizeof(modname) - 1] = '\0';
-	char *dot = strrchr(modname, '.');
-	if (dot != NULL)
-		*dot = '\0';
+	modname_from_path(path, modname, sizeof(modname));
 
 	WrenInterpretResult r = wrenInterpret(g_state.vm, modname, src);
 	free(src);
@@ -320,19 +470,48 @@ wren_host_init(struct bbslist *bbs)
 		return;
 	}
 
-	if (get_syncterm_filename(dir, sizeof(dir), SYNCTERM_PATH_SCRIPTS, false)
-	    == NULL)
-		return;
-
-	char pat[MAX_PATH + 16];
-	snprintf(pat, sizeof(pat), "%s*.wren", dir);
+	/* Two-phase load order:
+	 *   1. Glob the user-script dir to learn which module names the
+	 *      user has provided.
+	 *   2. Walk EMBEDDED_SCRIPTS[], interpreting each whose name is
+	 *      NOT in the user set.  User overrides any embedded with
+	 *      the same module name.
+	 *   3. Interpret the user scripts. */
 	glob_t gl;
 	memset(&gl, 0, sizeof(gl));
-	if (glob(pat, 0, NULL, &gl) == 0) {
+	bool have_user_dir = false;
+	if (get_syncterm_filename(dir, sizeof(dir), SYNCTERM_PATH_SCRIPTS, false)
+	    != NULL) {
+		char pat[MAX_PATH + 16];
+		snprintf(pat, sizeof(pat), "%s*.wren", dir);
+		if (glob(pat, 0, NULL, &gl) == 0)
+			have_user_dir = true;
+	}
+
+	for (const struct embedded_script *es = EMBEDDED_SCRIPTS;
+	    es->name != NULL; es++) {
+		bool overridden = false;
+		if (have_user_dir) {
+			for (size_t i = 0; i < gl.gl_pathc && !overridden; i++) {
+				char umod[256];
+				modname_from_path(gl.gl_pathv[i], umod, sizeof(umod));
+				if (strcmp(umod, es->name) == 0)
+					overridden = true;
+			}
+		}
+		if (overridden)
+			continue;
+		if (wrenInterpret(g_state.vm, es->name, es->source) !=
+		    WREN_RESULT_SUCCESS)
+			fprintf(stderr, "[wren] embedded %s: load failed\n",
+			    es->name);
+	}
+
+	if (have_user_dir) {
 		for (size_t i = 0; i < gl.gl_pathc; i++)
 			load_one_script(gl.gl_pathv[i]);
+		globfree(&gl);
 	}
-	globfree(&gl);
 }
 
 void
@@ -356,6 +535,10 @@ wren_host_shutdown(void)
 		wrenReleaseHandle(g_state.vm, g_state.call0_handle);
 	if (g_state.call1_handle != NULL)
 		wrenReleaseHandle(g_state.vm, g_state.call1_handle);
+
+	/* Release log-buffer cached handles before freeing the VM (they
+	 * reference Wren-heap values). */
+	wren_log_clear();
 
 	wrenFreeVM(g_state.vm);
 	g_state.vm = NULL;

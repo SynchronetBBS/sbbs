@@ -89,6 +89,65 @@ fn_Conio_ungetch(WrenVM *vm)
 	ungetch(k);
 }
 
+static void
+fn_Conio_getch(WrenVM *vm)
+{
+	/* ciolib_getch returns one raw byte at a time; assemble the 16-bit
+	 * extended-key value here so scripts get the same encoding rip_getch
+	 * exposes (e.g. Esc=0x011B, Ctrl+`=0x29E0).  CIO_KEY_LITERAL_E0
+	 * decodes back to the literal 0xe0 byte. */
+	int ch = getch();
+	if (ch == 0 || ch == 0xe0) {
+		int ch2 = getch();
+		ch |= ch2 << 8;
+		if (ch == CIO_KEY_LITERAL_E0)
+			ch = 0xe0;
+	}
+	wrenSetSlotDouble(vm, 0, (double)ch);
+}
+
+static void
+fn_Conio_kbhit(WrenVM *vm)
+{
+	wrenSetSlotBool(vm, 0, kbhit() != 0);
+}
+
+static void
+fn_Conio_clrscr(WrenVM *vm)
+{
+	(void)vm;
+	clrscr();
+}
+
+static void
+fn_Conio_clreol(WrenVM *vm)
+{
+	(void)vm;
+	clreol();
+}
+
+/* ciolib_savescreen returns a malloc'd struct ciolib_screen *.
+ * Round-trip the pointer through a Wren Num — pointers are typically
+ * aligned and fit in the 53-bit double mantissa on every supported
+ * host.  restorescreen frees the screen on success. */
+static void
+fn_Conio_savescreen(WrenVM *vm)
+{
+	struct ciolib_screen *scrn = savescreen();
+	wrenSetSlotDouble(vm, 0, (double)(uintptr_t)scrn);
+}
+
+static void
+fn_Conio_restorescreen(WrenVM *vm)
+{
+	uintptr_t v = (uintptr_t)wrenGetSlotDouble(vm, 1);
+	struct ciolib_screen *scrn = (struct ciolib_screen *)v;
+	if (scrn == NULL)
+		return;
+	restorescreen(scrn);
+	freescreen(scrn);
+}
+
 /* ----- Conn -------------------------------------------------------- */
 
 static void
@@ -371,6 +430,71 @@ fn_Cache_writeFile(WrenVM *vm)
 	wrenSetSlotBool(vm, 0, put == (size_t)len);
 }
 
+/* ----- Console (log buffer accessor) ------------------------------ */
+
+static void
+fn_Console_count(WrenVM *vm)
+{
+	wrenSetSlotDouble(vm, 0, (double)wren_log_count());
+}
+
+static void
+fn_Console_total(WrenVM *vm)
+{
+	wrenSetSlotDouble(vm, 0, (double)wren_log_total());
+}
+
+/* `Console[seq]` — entry by sequence number.  Returns null when seq
+ * is outside the currently-buffered range (already evicted, or not
+ * yet written). */
+static void
+fn_Console_subscript(WrenVM *vm)
+{
+	double d = wrenGetSlotDouble(vm, 1);
+	if (d < 0) {
+		wrenSetSlotNull(vm, 0);
+		return;
+	}
+	wren_log_emit(vm, (uint64_t)d, 0);
+}
+
+static void
+fn_Console_clear(WrenVM *vm)
+{
+	(void)vm;
+	wren_log_clear();
+}
+
+/* Wren iteration protocol over seq numbers: start at the oldest seq
+ * still in the buffer, end at total-1 (inclusive).  Skipped if the
+ * buffer is empty.  iteratorValue returns the entry at that seq. */
+static void
+fn_Console_iterate(WrenVM *vm)
+{
+	int      count = wren_log_count();
+	uint64_t total = wren_log_total();
+	if (count == 0) {
+		wrenSetSlotBool(vm, 0, false);
+		return;
+	}
+	if (wrenGetSlotType(vm, 1) == WREN_TYPE_NULL) {
+		wrenSetSlotDouble(vm, 0, (double)(total - (uint64_t)count));
+		return;
+	}
+	uint64_t next = (uint64_t)wrenGetSlotDouble(vm, 1) + 1;
+	if (next >= total)
+		wrenSetSlotBool(vm, 0, false);
+	else
+		wrenSetSlotDouble(vm, 0, (double)next);
+}
+
+static void
+fn_Console_iteratorValue(WrenVM *vm)
+{
+	uint64_t seq = (uint64_t)wrenGetSlotDouble(vm, 1);
+	wren_log_emit(vm, seq, 0);
+}
+
 /* ----- Hook -------------------------------------------------------- */
 
 static void
@@ -415,6 +539,20 @@ static const struct binding BINDINGS[] = {
 	{ "Conio", "textattr(_)",    fn_Conio_textattr    },
 	{ "Conio", "screenSize",     fn_Conio_screenSize  },
 	{ "Conio", "ungetch(_)",     fn_Conio_ungetch     },
+	{ "Conio", "getch",          fn_Conio_getch       },
+	{ "Conio", "kbhit",          fn_Conio_kbhit       },
+	{ "Conio", "clrscr()",       fn_Conio_clrscr      },
+	{ "Conio", "clreol()",       fn_Conio_clreol      },
+	{ "Conio", "savescreen",     fn_Conio_savescreen  },
+	{ "Conio", "restorescreen(_)", fn_Conio_restorescreen },
+
+	/* Console */
+	{ "Console", "count",        fn_Console_count         },
+	{ "Console", "total",        fn_Console_total         },
+	{ "Console", "[_]",          fn_Console_subscript     },
+	{ "Console", "clear()",      fn_Console_clear         },
+	{ "Console", "iterate(_)",   fn_Console_iterate       },
+	{ "Console", "iteratorValue(_)", fn_Console_iteratorValue },
 
 	/* Conn */
 	{ "Conn",  "send(_)",        fn_Conn_send         },

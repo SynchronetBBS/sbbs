@@ -357,6 +357,30 @@ $(MTOBJODIR)$(DIRSEP)wren/optional/%$(OFILE): wren/optional/%.c | $(MTOBJODIR)$(
 	@echo $(COMPILE_MSG) $<
 	$(QUIET)$(CC) -std=c17 $(CFLAGS) $(CCFLAGS) $(MT_CFLAGS) -UPREFIX -Iwren/vm -Iwren/optional -o $@ -c $<
 
+# Embedded-script codegen.  wren_embed_gen is built with $(BUILD_CC) so
+# cross-builds (e.g. MinGW) compile the codegen with the *host* compiler
+# and run it natively, then the generated embedded_scripts.c compiles
+# with the target $(CC) like any other source file.  Mirrors the conio
+# genmap pattern (src/conio/genmap.c).
+WREN_SCRIPTS    := $(wildcard scripts/*.wren)
+WREN_EMBED_GEN  := $(MTOBJODIR)$(DIRSEP)wren_embed_gen$(EXEFILE)
+WREN_EMBED_SRC  := $(MTOBJODIR)$(DIRSEP)embedded_scripts.c
+WREN_EMBED_OBJ  := $(MTOBJODIR)$(DIRSEP)embedded_scripts$(OFILE)
+
+OBJS += $(WREN_EMBED_OBJ)
+
+$(WREN_EMBED_GEN): wren_embed_gen.c | $(MTOBJODIR)
+	@echo Building $@
+	$(QUIET)$(BUILD_CC) -O2 -o $@ $<
+
+$(WREN_EMBED_SRC): $(WREN_EMBED_GEN) $(WREN_SCRIPTS)
+	@echo Generating $@
+	$(QUIET)$(WREN_EMBED_GEN) $(WREN_SCRIPTS) > $@
+
+$(WREN_EMBED_OBJ): $(WREN_EMBED_SRC) wren_host_internal.h
+	@echo $(COMPILE_MSG) $<
+	$(QUIET)$(CC) -std=c17 $(CFLAGS) $(CCFLAGS) $(MT_CFLAGS) -I. -o $@ -c $<
+
 # libsndfile: three build modes — WITHOUT_SNDFILE (stubs only),
 # STATIC_SNDFILE (direct linkage — used for macOS / Win32 release
 # shape), or the default dynamic WITH_SNDFILE (runtime xp_dlopen, no

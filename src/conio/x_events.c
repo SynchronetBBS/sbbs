@@ -2349,7 +2349,11 @@ x11_event(XEvent *ev)
 								key = cpchar_from_unicode_cpoint(getcodepage(), key, key);
 							if (key == 0xe0)
 								key = CIO_KEY_LITERAL_E0;
-							IGNORE_RESULT(write(key_pipe[1], &key, (scan & 0xff) ? 1 : 2));
+							/* Two bytes for any key with a non-zero high
+							 * byte — including synthetic CIO_KEY_* values
+							 * whose low byte is 0xE0 (the extended-key
+							 * marker rip_getch reassembles). */
+							IGNORE_RESULT(write(key_pipe[1], &key, (key > 0xff) ? 2 : 1));
 						}
 						break;
 				}
