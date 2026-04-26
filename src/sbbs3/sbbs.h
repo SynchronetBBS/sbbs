@@ -1311,12 +1311,12 @@ public:
 
 	/* qwktomsg.cpp */
 	bool	qwk_new_msg(uint confnum, smbmsg_t* msg, char* hdrblk, int offset, str_list_t headers, bool parse_sender_hfields);
-	bool	qwk_import_msg(FILE *qwk_fp, char *hdrblk, uint blocks, char fromhub, smb_t*
+	bool	qwk_import_msg(FILE *qwk_fp, char *hdrblk, uint blocks, uint fromhub, smb_t*
 				,uint touser, smbmsg_t* msg, bool* dupe);
 
 	/* fido.cpp */
 	bool	netmail(const char *into, const char *subj = NULL, int mode = WM_NONE, smb_t* resmb = NULL, smbmsg_t* remsg = NULL, str_list_t cc = NULL);
-	void	qwktonetmail(FILE *rep, char *block, char *into, uchar fromhub = 0);
+	void	qwktonetmail(FILE *rep, char *block, char *into, uint fromhub = 0);
 	bool	lookup_netuser(char *into);
 
 	bool	inetmail(const char *into, const char *subj = NULL, int mode = WM_NONE, smb_t* resmb = NULL, smbmsg_t* remsg = NULL, str_list_t cc = NULL);

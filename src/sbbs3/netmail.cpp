@@ -362,7 +362,7 @@ bool sbbs_t::netmail(const char *into, const char *title, int mode, smb_t* resmb
 /****************************************************************************/
 /* Send NetMail from QWK REP Packet 										*/
 /****************************************************************************/
-void sbbs_t::qwktonetmail(FILE *rep, char *block, char *into, uchar fromhub)
+void sbbs_t::qwktonetmail(FILE *rep, char *block, char *into, uint fromhub)
 {
 	char *     qwkbuf, to[129], name[129], sender[129], senderaddr[129]
 	, str[256], *p, *cp, *addr, fulladdr[129], ch;

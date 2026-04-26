@@ -225,7 +225,7 @@ bool sbbs_t::qwk_new_msg(uint confnum, smbmsg_t* msg, char* hdrblk, int offset, 
 /* Does *not* free the msgmem												*/
 /****************************************************************************/
 bool sbbs_t::qwk_import_msg(FILE *qwk_fp, char *hdrblk, uint blocks
-                            , char fromhub, smb_t* smb
+                            , uint fromhub, smb_t* smb
                             , uint touser, smbmsg_t* msg, bool* dupe)
 {
 	char*      body;
