@@ -15,6 +15,7 @@
 #include "bbslist.h"
 #include "conn.h"
 #include "term.h"
+#include "utf8_codepages.h"
 
 #include <stdint.h>
 #include <stdio.h>
@@ -517,6 +518,623 @@ fn_Hook_every(WrenVM *vm)
 	wren_host_register_timer(vm, ms, 2);
 }
 
+/* ----- Cell / Cells / vmem text bindings --------------------------
+ *
+ * `Cell` wraps a single struct vmem_cell.  Two flavours: standalone
+ * (Cell.new()) owns its own bytes; view (created by Cells.[i]) reads
+ * and writes through to its parent Cells's buffer, with a Wren-level
+ * pin on the parent so the buffer outlives the view.
+ *
+ * `Cells` owns a malloc'd buffer of vmem_cells returned by getText.
+ * It is iterable and indexable but has no add/insert/clear bindings,
+ * so scripts can mutate individual cells but not change the count.
+ * -------------------------------------------------------------------- */
+
+struct wren_cells {
+	int               count;
+	struct vmem_cell *buf;          /* malloc'd; freed at finalize */
+};
+
+struct wren_cell {
+	struct vmem_cell   c;            /* used when standalone */
+	struct wren_cells *parent;       /* NULL = standalone */
+	int                index;        /* index into parent->buf in view mode */
+	WrenHandle        *parent_handle;/* pin on parent for view mode */
+};
+
+static struct vmem_cell *
+cell_data(struct wren_cell *wc)
+{
+	return (wc->parent != NULL) ? &wc->parent->buf[wc->index] : &wc->c;
+}
+
+static struct vmem_cell *
+slot_cell_data(WrenVM *vm, int slot)
+{
+	return cell_data(wrenGetSlotForeign(vm, slot));
+}
+
+/* Decode the first UTF-8 codepoint from `s`; return bytes consumed,
+ * or 0 on truncated/invalid input. */
+static int
+decode_utf8_first(const char *s, int len, uint32_t *cp_out)
+{
+	if (s == NULL || len <= 0)
+		return 0;
+	unsigned char b0 = (unsigned char)s[0];
+	if (b0 < 0x80) {
+		*cp_out = b0;
+		return 1;
+	}
+	int      n;
+	uint32_t cp;
+	if ((b0 & 0xE0) == 0xC0) {
+		n  = 2;
+		cp = b0 & 0x1Fu;
+	} else if ((b0 & 0xF0) == 0xE0) {
+		n  = 3;
+		cp = b0 & 0x0Fu;
+	} else if ((b0 & 0xF8) == 0xF0) {
+		n  = 4;
+		cp = b0 & 0x07u;
+	} else {
+		return 0;
+	}
+	if (len < n)
+		return 0;
+	for (int i = 1; i < n; i++) {
+		unsigned char bi = (unsigned char)s[i];
+		if ((bi & 0xC0) != 0x80)
+			return 0;
+		cp = (cp << 6) | (bi & 0x3Fu);
+	}
+	*cp_out = cp;
+	return n;
+}
+
+/* Encode codepoint `cp` as UTF-8 into `out`; return bytes written. */
+static int
+encode_utf8(uint32_t cp, char out[4])
+{
+	if (cp < 0x80) {
+		out[0] = (char)cp;
+		return 1;
+	}
+	if (cp < 0x800) {
+		out[0] = (char)(0xC0u | (cp >> 6));
+		out[1] = (char)(0x80u | (cp & 0x3Fu));
+		return 2;
+	}
+	if (cp < 0x10000) {
+		out[0] = (char)(0xE0u | (cp >> 12));
+		out[1] = (char)(0x80u | ((cp >> 6) & 0x3Fu));
+		out[2] = (char)(0x80u | (cp & 0x3Fu));
+		return 3;
+	}
+	out[0] = (char)(0xF0u | (cp >> 18));
+	out[1] = (char)(0x80u | ((cp >> 12) & 0x3Fu));
+	out[2] = (char)(0x80u | ((cp >> 6) & 0x3Fu));
+	out[3] = (char)(0x80u | (cp & 0x3Fu));
+	return 4;
+}
+
+/* --- Cell allocate / finalize ---
+ *
+ * Cell.new() in Wren land — fill a standalone cell with the current
+ * mode's default attribute, fg, bg, a space character, font 0, and
+ * no hyperlink.  `parent` stays NULL so accessors operate on `c`. */
+static void
+wren_cell_allocate(WrenVM *vm)
+{
+	struct wren_cell *wc = wrenSetSlotNewForeign(vm, 0, 0, sizeof(*wc));
+	memset(wc, 0, sizeof(*wc));
+	struct text_info ti;
+	gettextinfo(&ti);
+	wc->c.legacy_attr  = ti.normattr;
+	ciolib_attr2palette(ti.normattr, &wc->c.fg, &wc->c.bg);
+	wc->c.ch           = 0x20;
+	wc->c.font         = 0;
+	wc->c.hyperlink_id = 0;
+}
+
+static void
+wren_cell_finalize(void *data)
+{
+	struct wren_cell *wc = data;
+	if (wc->parent_handle != NULL) {
+		struct wren_host_state *st = wren_host_state();
+		if (st != NULL && st->vm != NULL)
+			wrenReleaseHandle(st->vm, wc->parent_handle);
+		wc->parent_handle = NULL;
+	}
+}
+
+/* --- Cells allocate / finalize ---
+ *
+ * Allocator leaves the struct empty; Conio.getText fills count and
+ * buf after construction.  Finalize releases the malloc'd buffer. */
+static void
+wren_cells_allocate(WrenVM *vm)
+{
+	struct wren_cells *cs = wrenSetSlotNewForeign(vm, 0, 0, sizeof(*cs));
+	cs->count = 0;
+	cs->buf   = NULL;
+}
+
+static void
+wren_cells_finalize(void *data)
+{
+	struct wren_cells *cs = data;
+	free(cs->buf);
+	cs->buf   = NULL;
+	cs->count = 0;
+}
+
+/* ----- Conio.getText / Conio.putText ----- */
+
+static void
+fn_Conio_getText(WrenVM *vm)
+{
+	int sx = (int)wrenGetSlotDouble(vm, 1);
+	int sy = (int)wrenGetSlotDouble(vm, 2);
+	int ex = (int)wrenGetSlotDouble(vm, 3);
+	int ey = (int)wrenGetSlotDouble(vm, 4);
+
+	if (sx < 1 || sy < 1 || ex < sx || ey < sy) {
+		wrenSetSlotNull(vm, 0);
+		return;
+	}
+
+	size_t            n   = (size_t)(ex - sx + 1) * (size_t)(ey - sy + 1);
+	struct vmem_cell *buf = calloc(n, sizeof *buf);
+	if (buf == NULL) {
+		wrenSetSlotNull(vm, 0);
+		return;
+	}
+	if (!ciolib_vmem_gettext(sx, sy, ex, ey, buf)) {
+		free(buf);
+		wrenSetSlotNull(vm, 0);
+		return;
+	}
+
+	struct wren_host_state *st = wren_host_state();
+	if (st == NULL || st->cells_class == NULL) {
+		free(buf);
+		wrenSetSlotNull(vm, 0);
+		return;
+	}
+
+	wrenEnsureSlots(vm, 2);
+	wrenSetSlotHandle(vm, 1, st->cells_class);
+	struct wren_cells *cs =
+	    wrenSetSlotNewForeign(vm, 0, 1, sizeof(*cs));
+	cs->count = (int)n;
+	cs->buf   = buf;
+}
+
+static void
+fn_Conio_putText(WrenVM *vm)
+{
+	int sx = (int)wrenGetSlotDouble(vm, 1);
+	int sy = (int)wrenGetSlotDouble(vm, 2);
+	int ex = (int)wrenGetSlotDouble(vm, 3);
+	int ey = (int)wrenGetSlotDouble(vm, 4);
+
+	if (sx < 1 || sy < 1 || ex < sx || ey < sy) {
+		wrenSetSlotBool(vm, 0, false);
+		return;
+	}
+	if (wrenGetSlotType(vm, 5) != WREN_TYPE_LIST) {
+		wrenEnsureSlots(vm, 1);
+		wrenSetSlotString(vm, 0, "putText: 5th argument must be a List of Cell");
+		wrenAbortFiber(vm, 0);
+		return;
+	}
+	int n_expected = (ex - sx + 1) * (ey - sy + 1);
+	int n_got      = wrenGetListCount(vm, 5);
+	if (n_got != n_expected) {
+		wrenEnsureSlots(vm, 1);
+		wrenSetSlotString(vm, 0,
+		    "putText: list length does not match region size");
+		wrenAbortFiber(vm, 0);
+		return;
+	}
+
+	struct vmem_cell *buf = calloc((size_t)n_expected, sizeof *buf);
+	if (buf == NULL) {
+		wrenSetSlotBool(vm, 0, false);
+		return;
+	}
+
+	wrenEnsureSlots(vm, 7);
+	for (int i = 0; i < n_expected; i++) {
+		wrenGetListElement(vm, 5, i, 6);
+		if (wrenGetSlotType(vm, 6) != WREN_TYPE_FOREIGN) {
+			free(buf);
+			wrenSetSlotString(vm, 0,
+			    "putText: list element is not a Cell");
+			wrenAbortFiber(vm, 0);
+			return;
+		}
+		struct wren_cell *wc = wrenGetSlotForeign(vm, 6);
+		buf[i] = *cell_data(wc);
+	}
+
+	int rv = ciolib_vmem_puttext(sx, sy, ex, ey, buf);
+	free(buf);
+	wrenSetSlotBool(vm, 0, rv != 0);
+}
+
+/* ----- Cell field accessors ----- */
+
+static void
+fn_Cell_ch(WrenVM *vm)
+{
+	struct vmem_cell *d  = slot_cell_data(vm, 0);
+	uint32_t          cp = cpoint_from_cpchar(CIOLIB_CP437, d->ch);
+	char              buf[4];
+	int               len = encode_utf8(cp, buf);
+	wrenSetSlotBytes(vm, 0, buf, (size_t)len);
+}
+
+static void
+fn_Cell_ch_set(WrenVM *vm)
+{
+	struct vmem_cell *d   = slot_cell_data(vm, 0);
+	int               len = 0;
+	const char       *s   = wrenGetSlotBytes(vm, 1, &len);
+	uint32_t          cp  = 0;
+	if (decode_utf8_first(s, len, &cp) == 0) {
+		d->ch = 0;
+		return;
+	}
+	d->ch = cpchar_from_unicode_cpoint(CIOLIB_CP437, cp, '?');
+}
+
+static void
+fn_Cell_chByte(WrenVM *vm)
+{
+	struct vmem_cell *d = slot_cell_data(vm, 0);
+	wrenSetSlotDouble(vm, 0, (double)d->ch);
+}
+
+static void
+fn_Cell_chByte_set(WrenVM *vm)
+{
+	struct vmem_cell *d = slot_cell_data(vm, 0);
+	d->ch = (uint8_t)(int)wrenGetSlotDouble(vm, 1);
+}
+
+static void
+fn_Cell_font(WrenVM *vm)
+{
+	struct vmem_cell *d = slot_cell_data(vm, 0);
+	wrenSetSlotDouble(vm, 0, (double)d->font);
+}
+
+static void
+fn_Cell_font_set(WrenVM *vm)
+{
+	struct vmem_cell *d = slot_cell_data(vm, 0);
+	d->font = (uint8_t)(int)wrenGetSlotDouble(vm, 1);
+}
+
+static void
+fn_Cell_legacyAttr(WrenVM *vm)
+{
+	struct vmem_cell *d = slot_cell_data(vm, 0);
+	wrenSetSlotDouble(vm, 0, (double)d->legacy_attr);
+}
+
+static void
+fn_Cell_legacyAttr_set(WrenVM *vm)
+{
+	struct vmem_cell *d = slot_cell_data(vm, 0);
+	d->legacy_attr = (uint8_t)(int)wrenGetSlotDouble(vm, 1);
+}
+
+static void
+fn_Cell_bright(WrenVM *vm)
+{
+	struct vmem_cell *d = slot_cell_data(vm, 0);
+	wrenSetSlotBool(vm, 0, (d->legacy_attr & 0x08) != 0);
+}
+
+static void
+fn_Cell_bright_set(WrenVM *vm)
+{
+	struct vmem_cell *d = slot_cell_data(vm, 0);
+	if (wrenGetSlotBool(vm, 1))
+		d->legacy_attr |= 0x08u;
+	else
+		d->legacy_attr &= (uint8_t)~0x08u;
+}
+
+static void
+fn_Cell_blink(WrenVM *vm)
+{
+	struct vmem_cell *d = slot_cell_data(vm, 0);
+	wrenSetSlotBool(vm, 0, (d->legacy_attr & 0x80) != 0);
+}
+
+static void
+fn_Cell_blink_set(WrenVM *vm)
+{
+	struct vmem_cell *d = slot_cell_data(vm, 0);
+	if (wrenGetSlotBool(vm, 1))
+		d->legacy_attr |= 0x80u;
+	else
+		d->legacy_attr &= (uint8_t)~0x80u;
+}
+
+/* fg/bg follow the same pattern: bit 31 selects RGB vs palette; bits
+ * 24..30 are out-of-scope flags preserved verbatim across writes; the
+ * low 24 bits hold the value being read or written. */
+
+static void
+fn_Cell_fgPalette(WrenVM *vm)
+{
+	struct vmem_cell *d = slot_cell_data(vm, 0);
+	if (d->fg & CIOLIB_COLOR_RGB)
+		wrenSetSlotNull(vm, 0);
+	else
+		wrenSetSlotDouble(vm, 0, (double)(d->fg & 0x00FFFFFFu));
+}
+
+static void
+fn_Cell_fgPalette_set(WrenVM *vm)
+{
+	struct vmem_cell *d = slot_cell_data(vm, 0);
+	uint32_t          n = (uint32_t)(int64_t)wrenGetSlotDouble(vm, 1);
+	d->fg = (d->fg & 0x7F000000u) | (n & 0x00FFFFFFu);
+}
+
+static void
+fn_Cell_fgRgb(WrenVM *vm)
+{
+	struct vmem_cell *d = slot_cell_data(vm, 0);
+	if (!(d->fg & CIOLIB_COLOR_RGB))
+		wrenSetSlotNull(vm, 0);
+	else
+		wrenSetSlotDouble(vm, 0, (double)(d->fg & 0x00FFFFFFu));
+}
+
+static void
+fn_Cell_fgRgb_set(WrenVM *vm)
+{
+	struct vmem_cell *d = slot_cell_data(vm, 0);
+	uint32_t          n = (uint32_t)(int64_t)wrenGetSlotDouble(vm, 1);
+	d->fg = (d->fg & 0x7F000000u) | 0x80000000u | (n & 0x00FFFFFFu);
+}
+
+static void
+fn_Cell_bgPalette(WrenVM *vm)
+{
+	struct vmem_cell *d = slot_cell_data(vm, 0);
+	if (d->bg & CIOLIB_COLOR_RGB)
+		wrenSetSlotNull(vm, 0);
+	else
+		wrenSetSlotDouble(vm, 0, (double)(d->bg & 0x00FFFFFFu));
+}
+
+static void
+fn_Cell_bgPalette_set(WrenVM *vm)
+{
+	struct vmem_cell *d = slot_cell_data(vm, 0);
+	uint32_t          n = (uint32_t)(int64_t)wrenGetSlotDouble(vm, 1);
+	d->bg = (d->bg & 0x7F000000u) | (n & 0x00FFFFFFu);
+}
+
+static void
+fn_Cell_bgRgb(WrenVM *vm)
+{
+	struct vmem_cell *d = slot_cell_data(vm, 0);
+	if (!(d->bg & CIOLIB_COLOR_RGB))
+		wrenSetSlotNull(vm, 0);
+	else
+		wrenSetSlotDouble(vm, 0, (double)(d->bg & 0x00FFFFFFu));
+}
+
+static void
+fn_Cell_bgRgb_set(WrenVM *vm)
+{
+	struct vmem_cell *d = slot_cell_data(vm, 0);
+	uint32_t          n = (uint32_t)(int64_t)wrenGetSlotDouble(vm, 1);
+	d->bg = (d->bg & 0x7F000000u) | 0x80000000u | (n & 0x00FFFFFFu);
+}
+
+static void
+fn_Cell_hyperlinkId(WrenVM *vm)
+{
+	struct vmem_cell *d = slot_cell_data(vm, 0);
+	wrenSetSlotDouble(vm, 0, (double)d->hyperlink_id);
+}
+
+static void
+fn_Cell_hyperlinkId_set(WrenVM *vm)
+{
+	struct vmem_cell *d = slot_cell_data(vm, 0);
+	d->hyperlink_id = (uint16_t)(int)wrenGetSlotDouble(vm, 1);
+}
+
+/* ----- Cells accessors ----- */
+
+static void
+fn_Cells_count(WrenVM *vm)
+{
+	struct wren_cells *cs = wrenGetSlotForeign(vm, 0);
+	wrenSetSlotDouble(vm, 0, (double)cs->count);
+}
+
+/* Materialize a Cell view into slot 0.  Pins the parent Cells (slot 0
+ * receiver) via a Wren handle so the buffer outlives the view. */
+static void
+cells_make_view(WrenVM *vm, int idx)
+{
+	struct wren_cells *cs = wrenGetSlotForeign(vm, 0);
+	if (idx < 0 || idx >= cs->count) {
+		wrenSetSlotNull(vm, 0);
+		return;
+	}
+	struct wren_host_state *st = wren_host_state();
+	if (st == NULL || st->cell_class == NULL) {
+		wrenSetSlotNull(vm, 0);
+		return;
+	}
+	WrenHandle *parent_handle = wrenGetSlotHandle(vm, 0);
+
+	wrenEnsureSlots(vm, 3);
+	wrenSetSlotHandle(vm, 2, st->cell_class);
+	struct wren_cell *wc = wrenSetSlotNewForeign(vm, 0, 2, sizeof(*wc));
+	memset(wc, 0, sizeof(*wc));
+	wc->parent        = cs;
+	wc->index         = idx;
+	wc->parent_handle = parent_handle;
+}
+
+static void
+fn_Cells_subscript(WrenVM *vm)
+{
+	int i = (int)wrenGetSlotDouble(vm, 1);
+	cells_make_view(vm, i);
+}
+
+/* Wren iteration: null -> 0; n -> n+1; past end -> false. */
+static void
+fn_Cells_iterate(WrenVM *vm)
+{
+	struct wren_cells *cs = wrenGetSlotForeign(vm, 0);
+	if (cs->count == 0) {
+		wrenSetSlotBool(vm, 0, false);
+		return;
+	}
+	if (wrenGetSlotType(vm, 1) == WREN_TYPE_NULL) {
+		wrenSetSlotDouble(vm, 0, 0.0);
+		return;
+	}
+	int next = (int)wrenGetSlotDouble(vm, 1) + 1;
+	if (next >= cs->count)
+		wrenSetSlotBool(vm, 0, false);
+	else
+		wrenSetSlotDouble(vm, 0, (double)next);
+}
+
+static void
+fn_Cells_iteratorValue(WrenVM *vm)
+{
+	int i = (int)wrenGetSlotDouble(vm, 1);
+	cells_make_view(vm, i);
+}
+
+/* ----- Font ----- */
+
+static void
+fn_Font_name(WrenVM *vm)
+{
+	int i = (int)wrenGetSlotDouble(vm, 1);
+	if (i < 0 || i > 256 || conio_fontdata[i].desc == NULL) {
+		wrenSetSlotNull(vm, 0);
+		return;
+	}
+	wrenSetSlotString(vm, 0, conio_fontdata[i].desc);
+}
+
+static void
+fn_Font_count(WrenVM *vm)
+{
+	wrenSetSlotDouble(vm, 0, 257.0);
+}
+
+static void
+fn_Font_available(WrenVM *vm)
+{
+	int i = (int)wrenGetSlotDouble(vm, 1);
+	wrenSetSlotBool(vm, 0, ciolib_checkfont(i) != 0);
+}
+
+/* ----- Hyperlinks (Map-like read interface) ----- */
+
+static void
+fn_Hyperlinks_subscript(WrenVM *vm)
+{
+	int id = (int)wrenGetSlotDouble(vm, 1);
+	if (id <= 0 || id > 65535) {
+		wrenSetSlotNull(vm, 0);
+		return;
+	}
+	char *url = ciolib_get_hyperlink_url((uint16_t)id);
+	if (url == NULL) {
+		wrenSetSlotNull(vm, 0);
+		return;
+	}
+	wrenSetSlotString(vm, 0, url);
+	free(url);
+}
+
+static void
+fn_Hyperlinks_containsKey(WrenVM *vm)
+{
+	int id = (int)wrenGetSlotDouble(vm, 1);
+	if (id <= 0 || id > 65535) {
+		wrenSetSlotBool(vm, 0, false);
+		return;
+	}
+	char *url = ciolib_get_hyperlink_url((uint16_t)id);
+	wrenSetSlotBool(vm, 0, url != NULL);
+	free(url);
+}
+
+static void
+fn_Hyperlinks_add(WrenVM *vm)
+{
+	int         len   = 0;
+	const char *uri_b = wrenGetSlotBytes(vm, 1, &len);
+	if (uri_b == NULL || len <= 0) {
+		wrenSetSlotDouble(vm, 0, 0.0);
+		return;
+	}
+	char *uri_z = malloc((size_t)len + 1);
+	if (uri_z == NULL) {
+		wrenSetSlotDouble(vm, 0, 0.0);
+		return;
+	}
+	memcpy(uri_z, uri_b, (size_t)len);
+	uri_z[len] = '\0';
+
+	char *id_param_z = NULL;
+	if (wrenGetSlotType(vm, 2) == WREN_TYPE_STRING) {
+		int         plen = 0;
+		const char *pb   = wrenGetSlotBytes(vm, 2, &plen);
+		id_param_z = malloc((size_t)plen + 1);
+		if (id_param_z != NULL) {
+			memcpy(id_param_z, pb, (size_t)plen);
+			id_param_z[plen] = '\0';
+		}
+	}
+
+	uint16_t id = ciolib_add_hyperlink(uri_z, id_param_z);
+	free(uri_z);
+	free(id_param_z);
+	wrenSetSlotDouble(vm, 0, (double)id);
+}
+
+static void
+fn_Hyperlinks_params(WrenVM *vm)
+{
+	int id = (int)wrenGetSlotDouble(vm, 1);
+	if (id <= 0 || id > 65535) {
+		wrenSetSlotNull(vm, 0);
+		return;
+	}
+	char *params = ciolib_get_hyperlink_params((uint16_t)id);
+	if (params == NULL) {
+		wrenSetSlotNull(vm, 0);
+		return;
+	}
+	wrenSetSlotString(vm, 0, params);
+	free(params);
+}
+
 /* ----- Lookup table -----------------------------------------------
  *
  * Wren signatures: foreign static methods are reported with the
@@ -527,83 +1145,127 @@ fn_Hook_every(WrenVM *vm)
 
 struct binding {
 	const char        *className;
+	bool               isStatic;
 	const char        *signature;
 	WrenForeignMethodFn fn;
 };
 
 static const struct binding BINDINGS[] = {
-	/* Conio */
-	{ "Conio", "putch(_)",       fn_Conio_putch       },
-	{ "Conio", "cputs(_)",       fn_Conio_cputs       },
-	{ "Conio", "gotoxy(_,_)",    fn_Conio_gotoxy      },
-	{ "Conio", "wherex",         fn_Conio_wherex      },
-	{ "Conio", "wherey",         fn_Conio_wherey      },
-	{ "Conio", "textattr(_)",    fn_Conio_textattr    },
-	{ "Conio", "screenSize",     fn_Conio_screenSize  },
-	{ "Conio", "ungetch(_)",     fn_Conio_ungetch     },
-	{ "Conio", "getch",          fn_Conio_getch       },
-	{ "Conio", "kbhit",          fn_Conio_kbhit       },
-	{ "Conio", "clrscr()",       fn_Conio_clrscr      },
-	{ "Conio", "clreol()",       fn_Conio_clreol      },
-	{ "Conio", "savescreen",     fn_Conio_savescreen  },
-	{ "Conio", "restorescreen(_)", fn_Conio_restorescreen },
+	/* Conio (all static) */
+	{ "Conio", true,  "putch(_)",            fn_Conio_putch       },
+	{ "Conio", true,  "cputs(_)",            fn_Conio_cputs       },
+	{ "Conio", true,  "gotoxy(_,_)",         fn_Conio_gotoxy      },
+	{ "Conio", true,  "wherex",              fn_Conio_wherex      },
+	{ "Conio", true,  "wherey",              fn_Conio_wherey      },
+	{ "Conio", true,  "textattr(_)",         fn_Conio_textattr    },
+	{ "Conio", true,  "screenSize",          fn_Conio_screenSize  },
+	{ "Conio", true,  "ungetch(_)",          fn_Conio_ungetch     },
+	{ "Conio", true,  "getch",               fn_Conio_getch       },
+	{ "Conio", true,  "kbhit",               fn_Conio_kbhit       },
+	{ "Conio", true,  "clrscr()",            fn_Conio_clrscr      },
+	{ "Conio", true,  "clreol()",            fn_Conio_clreol      },
+	{ "Conio", true,  "savescreen",          fn_Conio_savescreen  },
+	{ "Conio", true,  "restorescreen(_)",    fn_Conio_restorescreen },
+	{ "Conio", true,  "getText(_,_,_,_)",    fn_Conio_getText     },
+	{ "Conio", true,  "putText(_,_,_,_,_)",  fn_Conio_putText     },
+
+	/* Cell (all instance) */
+	{ "Cell",  false, "ch",              fn_Cell_ch              },
+	{ "Cell",  false, "ch=(_)",          fn_Cell_ch_set          },
+	{ "Cell",  false, "chByte",          fn_Cell_chByte          },
+	{ "Cell",  false, "chByte=(_)",      fn_Cell_chByte_set      },
+	{ "Cell",  false, "font",            fn_Cell_font            },
+	{ "Cell",  false, "font=(_)",        fn_Cell_font_set        },
+	{ "Cell",  false, "legacyAttr",      fn_Cell_legacyAttr      },
+	{ "Cell",  false, "legacyAttr=(_)",  fn_Cell_legacyAttr_set  },
+	{ "Cell",  false, "bright",          fn_Cell_bright          },
+	{ "Cell",  false, "bright=(_)",      fn_Cell_bright_set      },
+	{ "Cell",  false, "blink",           fn_Cell_blink           },
+	{ "Cell",  false, "blink=(_)",       fn_Cell_blink_set       },
+	{ "Cell",  false, "fgPalette",       fn_Cell_fgPalette       },
+	{ "Cell",  false, "fgPalette=(_)",   fn_Cell_fgPalette_set   },
+	{ "Cell",  false, "fgRgb",           fn_Cell_fgRgb           },
+	{ "Cell",  false, "fgRgb=(_)",       fn_Cell_fgRgb_set       },
+	{ "Cell",  false, "bgPalette",       fn_Cell_bgPalette       },
+	{ "Cell",  false, "bgPalette=(_)",   fn_Cell_bgPalette_set   },
+	{ "Cell",  false, "bgRgb",           fn_Cell_bgRgb           },
+	{ "Cell",  false, "bgRgb=(_)",       fn_Cell_bgRgb_set       },
+	{ "Cell",  false, "hyperlinkId",     fn_Cell_hyperlinkId     },
+	{ "Cell",  false, "hyperlinkId=(_)", fn_Cell_hyperlinkId_set },
+
+	/* Cells (all instance) */
+	{ "Cells", false, "count",            fn_Cells_count         },
+	{ "Cells", false, "[_]",              fn_Cells_subscript     },
+	{ "Cells", false, "iterate(_)",       fn_Cells_iterate       },
+	{ "Cells", false, "iteratorValue(_)", fn_Cells_iteratorValue },
+
+	/* Font (all static) */
+	{ "Font",  true,  "name(_)",      fn_Font_name      },
+	{ "Font",  true,  "count",        fn_Font_count     },
+	{ "Font",  true,  "available(_)", fn_Font_available },
+
+	/* Hyperlinks (all static) */
+	{ "Hyperlinks", true, "[_]",            fn_Hyperlinks_subscript   },
+	{ "Hyperlinks", true, "containsKey(_)", fn_Hyperlinks_containsKey },
+	{ "Hyperlinks", true, "add(_,_)",       fn_Hyperlinks_add         },
+	{ "Hyperlinks", true, "params(_)",      fn_Hyperlinks_params      },
 
 	/* Console */
-	{ "Console", "count",        fn_Console_count         },
-	{ "Console", "total",        fn_Console_total         },
-	{ "Console", "[_]",          fn_Console_subscript     },
-	{ "Console", "clear()",      fn_Console_clear         },
-	{ "Console", "iterate(_)",   fn_Console_iterate       },
-	{ "Console", "iteratorValue(_)", fn_Console_iteratorValue },
+	{ "Console", true, "count",            fn_Console_count         },
+	{ "Console", true, "total",            fn_Console_total         },
+	{ "Console", true, "[_]",              fn_Console_subscript     },
+	{ "Console", true, "clear()",          fn_Console_clear         },
+	{ "Console", true, "iterate(_)",       fn_Console_iterate       },
+	{ "Console", true, "iteratorValue(_)", fn_Console_iteratorValue },
 
 	/* Conn */
-	{ "Conn",  "send(_)",        fn_Conn_send         },
-	{ "Conn",  "sendRaw(_)",     fn_Conn_sendRaw      },
-	{ "Conn",  "close()",        fn_Conn_close        },
-	{ "Conn",  "connected",      fn_Conn_connected    },
-	{ "Conn",  "type",           fn_Conn_type         },
-	{ "Conn",  "inbufBytes",     fn_Conn_inbufBytes   },
-	{ "Conn",  "outbufBytes",    fn_Conn_outbufBytes  },
-	{ "Conn",  "inbufPeek(_)",   fn_Conn_inbufPeek    },
-	{ "Conn",  "inbufGet(_)",    fn_Conn_inbufGet     },
-	{ "Conn",  "outbufPut(_)",   fn_Conn_outbufPut    },
+	{ "Conn",  true, "send(_)",        fn_Conn_send         },
+	{ "Conn",  true, "sendRaw(_)",     fn_Conn_sendRaw      },
+	{ "Conn",  true, "close()",        fn_Conn_close        },
+	{ "Conn",  true, "connected",      fn_Conn_connected    },
+	{ "Conn",  true, "type",           fn_Conn_type         },
+	{ "Conn",  true, "inbufBytes",     fn_Conn_inbufBytes   },
+	{ "Conn",  true, "outbufBytes",    fn_Conn_outbufBytes  },
+	{ "Conn",  true, "inbufPeek(_)",   fn_Conn_inbufPeek    },
+	{ "Conn",  true, "inbufGet(_)",    fn_Conn_inbufGet     },
+	{ "Conn",  true, "outbufPut(_)",   fn_Conn_outbufPut    },
 
 	/* Cterm */
-	{ "Cterm", "emulation",      fn_Cterm_emulation   },
-	{ "Cterm", "x",              fn_Cterm_x           },
-	{ "Cterm", "y",              fn_Cterm_y           },
-	{ "Cterm", "attr",           fn_Cterm_attr        },
-	{ "Cterm", "doorwayMode",    fn_Cterm_doorwayMode },
-	{ "Cterm", "music",          fn_Cterm_music       },
-	{ "Cterm", "width",          fn_Cterm_width       },
-	{ "Cterm", "height",         fn_Cterm_height      },
-	{ "Cterm", "write(_)",       fn_Cterm_write       },
+	{ "Cterm", true, "emulation",      fn_Cterm_emulation   },
+	{ "Cterm", true, "x",              fn_Cterm_x           },
+	{ "Cterm", true, "y",              fn_Cterm_y           },
+	{ "Cterm", true, "attr",           fn_Cterm_attr        },
+	{ "Cterm", true, "doorwayMode",    fn_Cterm_doorwayMode },
+	{ "Cterm", true, "music",          fn_Cterm_music       },
+	{ "Cterm", true, "width",          fn_Cterm_width       },
+	{ "Cterm", true, "height",         fn_Cterm_height      },
+	{ "Cterm", true, "write(_)",       fn_Cterm_write       },
 
 	/* BBS */
-	{ "BBS",   "name",           fn_BBS_name          },
-	{ "BBS",   "addr",           fn_BBS_addr          },
-	{ "BBS",   "port",           fn_BBS_port          },
-	{ "BBS",   "connType",       fn_BBS_connType      },
-	{ "BBS",   "user",           fn_BBS_user          },
-	{ "BBS",   "password",       fn_BBS_password      },
-	{ "BBS",   "syspass",        fn_BBS_syspass       },
-	{ "BBS",   "music",          fn_BBS_music         },
-	{ "BBS",   "rip",            fn_BBS_rip           },
-	{ "BBS",   "comment",        fn_BBS_comment       },
+	{ "BBS",   true, "name",           fn_BBS_name          },
+	{ "BBS",   true, "addr",           fn_BBS_addr          },
+	{ "BBS",   true, "port",           fn_BBS_port          },
+	{ "BBS",   true, "connType",       fn_BBS_connType      },
+	{ "BBS",   true, "user",           fn_BBS_user          },
+	{ "BBS",   true, "password",       fn_BBS_password      },
+	{ "BBS",   true, "syspass",        fn_BBS_syspass       },
+	{ "BBS",   true, "music",          fn_BBS_music         },
+	{ "BBS",   true, "rip",            fn_BBS_rip           },
+	{ "BBS",   true, "comment",        fn_BBS_comment       },
 
 	/* Cache */
-	{ "Cache", "basePath",       fn_Cache_basePath    },
-	{ "Cache", "subdirPath(_)",  fn_Cache_subdirPath  },
-	{ "Cache", "readFile(_)",    fn_Cache_readFile    },
-	{ "Cache", "writeFile(_,_)", fn_Cache_writeFile   },
+	{ "Cache", true, "basePath",       fn_Cache_basePath    },
+	{ "Cache", true, "subdirPath(_)",  fn_Cache_subdirPath  },
+	{ "Cache", true, "readFile(_)",    fn_Cache_readFile    },
+	{ "Cache", true, "writeFile(_,_)", fn_Cache_writeFile   },
 
 	/* Hook */
-	{ "Hook",  "onKey(_)",       fn_Hook_onKey        },
-	{ "Hook",  "onInput(_)",     fn_Hook_onInput      },
-	{ "Hook",  "onOutput(_)",    fn_Hook_onOutput     },
-	{ "Hook",  "onMouse(_)",     fn_Hook_onMouse      },
-	{ "Hook",  "onStatus(_)",    fn_Hook_onStatus     },
-	{ "Hook",  "every(_,_)",     fn_Hook_every        },
+	{ "Hook",  true, "onKey(_)",       fn_Hook_onKey        },
+	{ "Hook",  true, "onInput(_)",     fn_Hook_onInput      },
+	{ "Hook",  true, "onOutput(_)",    fn_Hook_onOutput     },
+	{ "Hook",  true, "onMouse(_)",     fn_Hook_onMouse      },
+	{ "Hook",  true, "onStatus(_)",    fn_Hook_onStatus     },
+	{ "Hook",  true, "every(_,_)",     fn_Hook_every        },
 };
 
 WrenForeignMethodFn
@@ -612,12 +1274,32 @@ wren_bind_lookup(const char *module, const char *className, bool isStatic,
 {
 	if (module == NULL || strcmp(module, "syncterm") != 0)
 		return NULL;
-	if (!isStatic)
-		return NULL;
 	for (size_t i = 0; i < sizeof(BINDINGS) / sizeof(BINDINGS[0]); i++) {
-		if (strcmp(BINDINGS[i].className, className) == 0 &&
+		if (BINDINGS[i].isStatic == isStatic &&
+		    strcmp(BINDINGS[i].className, className) == 0 &&
 		    strcmp(BINDINGS[i].signature, signature) == 0)
 			return BINDINGS[i].fn;
 	}
 	return NULL;
+}
+
+WrenForeignClassMethods
+wren_bind_lookup_class(const char *module, const char *className)
+{
+	WrenForeignClassMethods none = { NULL, NULL };
+	if (module == NULL || strcmp(module, "syncterm") != 0)
+		return none;
+	if (strcmp(className, "Cell") == 0) {
+		WrenForeignClassMethods m = {
+			wren_cell_allocate, wren_cell_finalize
+		};
+		return m;
+	}
+	if (strcmp(className, "Cells") == 0) {
+		WrenForeignClassMethods m = {
+			wren_cells_allocate, wren_cells_finalize
+		};
+		return m;
+	}
+	return none;
 }

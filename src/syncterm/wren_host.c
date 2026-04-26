@@ -52,6 +52,65 @@ static const char SYNCTERM_MODULE_SRC[] =
     "  foreign static clreol()\n"
     "  foreign static savescreen\n"
     "  foreign static restorescreen(handle)\n"
+    "  foreign static getText(sx, sy, ex, ey)\n"
+    "  foreign static putText(sx, sy, ex, ey, list)\n"
+    "}\n"
+    "foreign class Cell {\n"
+    "  construct new() {}\n"
+    "  foreign ch\n"
+    "  foreign ch=(s)\n"
+    "  foreign chByte\n"
+    "  foreign chByte=(n)\n"
+    "  foreign font\n"
+    "  foreign font=(n)\n"
+    "  foreign legacyAttr\n"
+    "  foreign legacyAttr=(n)\n"
+    "  foreign bright\n"
+    "  foreign bright=(b)\n"
+    "  foreign blink\n"
+    "  foreign blink=(b)\n"
+    "  foreign fgPalette\n"
+    "  foreign fgPalette=(n)\n"
+    "  foreign fgRgb\n"
+    "  foreign fgRgb=(n)\n"
+    "  foreign bgPalette\n"
+    "  foreign bgPalette=(n)\n"
+    "  foreign bgRgb\n"
+    "  foreign bgRgb=(n)\n"
+    "  foreign hyperlinkId\n"
+    "  foreign hyperlinkId=(n)\n"
+    "}\n"
+    "foreign class Cells {\n"
+    "  foreign count\n"
+    "  foreign [i]\n"
+    "  foreign iterate(it)\n"
+    "  foreign iteratorValue(it)\n"
+    "}\n"
+    "class Font {\n"
+    "  static cp437English      { 0 }\n"
+    "  static commodore64Upper  { 32 }\n"
+    "  static commodore64Lower  { 33 }\n"
+    "  static commodore128Upper { 34 }\n"
+    "  static commodore128Lower { 35 }\n"
+    "  static atari             { 36 }\n"
+    "  static potNoodle         { 37 }\n"
+    "  static mosOul            { 38 }\n"
+    "  static microKnightPlus   { 39 }\n"
+    "  static topazPlus         { 40 }\n"
+    "  static microKnight       { 41 }\n"
+    "  static topaz             { 42 }\n"
+    "  static prestel           { 43 }\n"
+    "  static atariSt           { 44 }\n"
+    "  static ripterm           { 45 }\n"
+    "  foreign static name(i)\n"
+    "  foreign static count\n"
+    "  foreign static available(i)\n"
+    "}\n"
+    "class Hyperlinks {\n"
+    "  foreign static [id]\n"
+    "  foreign static containsKey(id)\n"
+    "  foreign static add(uri, idParam)\n"
+    "  foreign static params(id)\n"
     "}\n"
     "foreign class Console {\n"
     "  foreign static count\n"
@@ -367,6 +426,13 @@ host_bind_foreign_method(WrenVM *vm, const char *module, const char *className,
 	return wren_bind_lookup(module, className, isStatic, signature);
 }
 
+static WrenForeignClassMethods
+host_bind_foreign_class(WrenVM *vm, const char *module, const char *className)
+{
+	(void)vm;
+	return wren_bind_lookup_class(module, className);
+}
+
 /* --------------------------------------------------------------------
  * Hook + timer registration
  * -------------------------------------------------------------------- */
@@ -476,6 +542,7 @@ wren_host_init(struct bbslist *bbs)
 	cfg.writeFn             = host_write_fn;
 	cfg.errorFn             = host_error_fn;
 	cfg.bindForeignMethodFn = host_bind_foreign_method;
+	cfg.bindForeignClassFn  = host_bind_foreign_class;
 	g_state.vm = wrenNewVM(&cfg);
 	if (g_state.vm == NULL)
 		return;
@@ -494,6 +561,16 @@ wren_host_init(struct bbslist *bbs)
 		wren_host_shutdown();
 		return;
 	}
+
+	/* Capture handles for the foreign classes the C side allocates
+	 * instances of (Cell from inside Conio.getText, Cells as the
+	 * getText return value).  wrenSetSlotNewForeign needs a class
+	 * handle in a slot, so we keep these alive for the VM's lifetime. */
+	wrenEnsureSlots(g_state.vm, 1);
+	wrenGetVariable(g_state.vm, "syncterm", "Cell", 0);
+	g_state.cell_class = wrenGetSlotHandle(g_state.vm, 0);
+	wrenGetVariable(g_state.vm, "syncterm", "Cells", 0);
+	g_state.cells_class = wrenGetSlotHandle(g_state.vm, 0);
 
 	/* Two-phase load order:
 	 *   1. Glob the user-script dir to learn which module names the
@@ -560,6 +637,10 @@ wren_host_shutdown(void)
 		wrenReleaseHandle(g_state.vm, g_state.call0_handle);
 	if (g_state.call1_handle != NULL)
 		wrenReleaseHandle(g_state.vm, g_state.call1_handle);
+	if (g_state.cell_class != NULL)
+		wrenReleaseHandle(g_state.vm, g_state.cell_class);
+	if (g_state.cells_class != NULL)
+		wrenReleaseHandle(g_state.vm, g_state.cells_class);
 
 	/* Release log-buffer cached handles before freeing the VM (they
 	 * reference Wren-heap values). */
