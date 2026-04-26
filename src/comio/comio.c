@@ -20,24 +20,24 @@
  ****************************************************************************/
 
 #include "comio.h"
-#include "genwrap.h"	/* msclock */
+#include "genwrap.h"    /* msclock */
 
 size_t comReadBuf(COM_HANDLE handle, char* buf, size_t buflen, const char* terminators, int timeout)
 {
-	BYTE		ch;
-	size_t		len=0;
-	msclock_t	start=msclock();
+	BYTE      ch;
+	size_t    len = 0;
+	msclock_t start = msclock();
 
-	while(len < buflen) {
-		if(!comReadByte(handle, &ch)) {
-			if(timeout != COM_INFINITE_TIMEOUT && msclock()-start >= timeout)
+	while (len < buflen) {
+		if (!comReadByte(handle, &ch)) {
+			if (timeout != COM_INFINITE_TIMEOUT && msclock() - start >= timeout)
 				break;
 			YIELD();
 			continue;
 		}
-		if(len && terminators!=NULL && strchr(terminators, ch)!=NULL)
+		if (len && terminators != NULL && strchr(terminators, ch) != NULL)
 			break;
-		buf[len++]=ch;
+		buf[len++] = ch;
 	}
 
 	return len;
@@ -45,11 +45,11 @@ size_t comReadBuf(COM_HANDLE handle, char* buf, size_t buflen, const char* termi
 
 size_t comReadLine(COM_HANDLE handle, char* buf, size_t buflen, int timeout)
 {
-	size_t	len;
+	size_t len;
 
-	len=comReadBuf(handle, buf, buflen-1, "\n", timeout);
+	len = comReadBuf(handle, buf, buflen - 1, "\n", timeout);
 
-	buf[len]=0;
+	buf[len] = 0;
 
 	return len;
 }
