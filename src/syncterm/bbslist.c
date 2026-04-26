@@ -2,6 +2,7 @@
 
 #include <assert.h>
 #include <dirwrap.h>
+#include <filewrap.h>  /* chsize */
 #include <ini_file.h>
 #include <netwrap.h>
 #include <stdbool.h>
@@ -11,6 +12,7 @@
 #include <xpprintf.h>
 
 #include "bbslist.h"
+#include "ini_crypt.h"
 #include "ciolib.h"
 #include "comio.h"
 #include "conn.h"
@@ -1311,22 +1313,30 @@ read_item(ini_fp_list_t *listfile, struct bbslist *entry, ini_lv_string_t *bbsna
 	entry->force_lcf = iniGetBool(section, NULL, "ForceLCF", false);
 	entry->yellow_is_yellow = iniGetBool(section, NULL, "YellowIsYellow", false);
 	iniGetSString(section, NULL, "TerminalType", "", entry->term_name, sizeof(entry->term_name));
+	entry->ssh_fingerprint_len = 0;
 	if (iniKeyExists(section, NULL, "SSHFingerprint")) {
-		char fp[41];
-		int i;
+		char fp[65];	/* 64 hex chars for SHA-256 + NUL */
 		iniGetSString(section, NULL, "SSHFingerprint", "", fp, sizeof(fp));
-		for (i = 0; i < 20; i++) {
-			if (!(isxdigit(fp[i * 2]) && isxdigit(fp[i * 2 + 1])))
-				break;
-			entry->ssh_fingerprint[i] = (HEX_CHAR_TO_INT(fp[i * 2]) * 16) + HEX_CHAR_TO_INT(fp[i * 2 + 1]);
+		size_t flen = strlen(fp);
+		/* Accept either SHA-1 (40 hex chars, legacy) or SHA-256
+		   (64 hex chars).  On connect, ssh.c upgrades SHA-1 to
+		   SHA-256 and rewrites this entry. */
+		size_t want = 0;
+		if (flen == 40)
+			want = 20;
+		else if (flen == 64)
+			want = 32;
+		if (want > 0) {
+			size_t i;
+			for (i = 0; i < want; i++) {
+				if (!(isxdigit(fp[i * 2]) && isxdigit(fp[i * 2 + 1])))
+					break;
+				entry->ssh_fingerprint[i] = (HEX_CHAR_TO_INT(fp[i * 2]) * 16) + HEX_CHAR_TO_INT(fp[i * 2 + 1]);
+			}
+			if (i == want)
+				entry->ssh_fingerprint_len = (uint8_t)want;
 		}
-		if (i == 20)
-			entry->has_fingerprint = true;
-		else
-			entry->has_fingerprint = false;
 	}
-	else
-		entry->has_fingerprint = false;
 	entry->sftp_public_key = iniGetBool(section, NULL, "SFTPPublicKey", false);
 	iniGetSString(sys ? NULL : section, NULL, "DownloadPath", home, entry->dldir, sizeof(entry->dldir));
 	iniGetSString(sys ? NULL : section, NULL, "UploadPath", home, entry->uldir, sizeof(entry->uldir));
@@ -1382,7 +1392,7 @@ is_reserved_bbs_name(const char *name)
 }
 
 static bool
-prompt_password(void *cb_data, char *keybuf, size_t *sz)
+prompt_password(char *keybuf, size_t *sz)
 {
 	size_t newSz = sizeof(list_password);
 
@@ -1409,14 +1419,107 @@ iniReadBBSList(FILE *fp, bool userList)
 {
 	enum iniCryptAlgo algo = INI_CRYPT_ALGO_NONE;
 	int ks;
-	str_list_t inifile = iniReadEncryptedFile(fp, prompt_password, settings.keyDerivationIterations, &algo, &ks, NULL, NULL, NULL);
+	enum xp_crypt_kdf kdf = 0;
+	str_list_t inifile = iniReadEncryptedFile(fp, prompt_password, settings.keyDerivationIterations, &algo, &ks, &kdf);
 	if (inifile == NULL || (algo != INI_CRYPT_ALGO_NONE && !iniGetBool(inifile, NULL, "DecryptionCheck", false))) {
 		uifc.msg("Failed to decrypt BBS list, exiting");
 		exit(EXIT_FAILURE);
 	}
 	if (userList) {
+		/* Legacy-format migration.  We just successfully decrypted,
+		 * so the password is known good.  Migrate any of:
+		 *
+		 *   - PBKDF2 KDF → scrypt (updates syncterm.ini's
+		 *     KeyDerivationIterations setting too)
+		 *   - 3DES/IDEA/CAST/RC2/RC4 cipher → AES-256
+		 *
+		 * Both files we need to touch (bbslist and syncterm.ini) are
+		 * opened before either is written.  If either can't be
+		 * opened for writing we bail without mutating anything — the
+		 * original v1 file stays readable on the next run, which
+		 * means the digit-form PBKDF2 iteration hint in syncterm.ini
+		 * also needs to survive intact. */
+		bool kdf_legacy    = (algo != INI_CRYPT_ALGO_NONE && kdf != XP_CRYPT_KDF_SCRYPT);
+		bool cipher_legacy = (algo != INI_CRYPT_ALGO_NONE
+		                      && algo != INI_CRYPT_ALGO_AES
+		                      && algo != INI_CRYPT_ALGO_CHACHA20);
 		list_algo = algo;
 		list_keysize = ks;
+
+		if (kdf_legacy || cipher_legacy) {
+			enum iniCryptAlgo new_algo = cipher_legacy ? INI_CRYPT_ALGO_AES : algo;
+			int new_ks = cipher_legacy ? 256 : ks;
+			const char *new_kdf_spec = kdf_legacy
+			    ? iniCryptDefaultKDFSpec()
+			    : settings.keyDerivationIterations;
+
+			FILE *listfp = fopen(settings.list_path, "r+b");
+			FILE *inifp = NULL;
+			str_list_t inicontents = NULL;
+			char inipath[MAX_PATH + 1];
+			if (kdf_legacy) {
+				get_syncterm_filename(inipath, sizeof(inipath),
+				    SYNCTERM_PATH_INI, false);
+				inifp = fopen(inipath, "r+");
+				if (inifp != NULL)
+					inicontents = iniReadFile(inifp);
+			}
+			/* Any failure below leaves memory and disk disagreeing
+			 * (the in-memory algo/keysize/KDF spec have already been
+			 * resolved to the new values in local variables; a later
+			 * save via iniWriteEncryptedFile would propagate whichever
+			 * side is stale).  Exit hard so the user can resolve the
+			 * underlying filesystem / permission issue and retry
+			 * cleanly on the next run. */
+			bool ready = (listfp != NULL) && (!kdf_legacy || (inifp != NULL && inicontents != NULL));
+			if (!ready) {
+				if (listfp == NULL)
+					uifc.msg("Migration aborted: failed to open BBS list for rewrite.");
+				else if (inifp == NULL)
+					uifc.msg("Migration aborted: syncterm.ini could not be opened for rewrite.");
+				else
+					uifc.msg("Migration aborted: syncterm.ini could not be read.");
+				if (listfp)
+					fclose(listfp);
+				if (inifp)
+					fclose(inifp);
+				if (inicontents)
+					strListFree(&inicontents);
+				exit(EXIT_FAILURE);
+			}
+			if (!iniWriteEncryptedFile(listfp, inifile, new_algo,
+			                           new_ks, new_kdf_spec,
+			                           list_password)) {
+				uifc.msg("Migration aborted: failed to re-encrypt BBS list.");
+				fclose(listfp);
+				fclose(inifp);
+				strListFree(&inicontents);
+				exit(EXIT_FAILURE);
+			}
+			fclose(listfp);
+			/* bbslist is now AES-256 / scrypt on disk.  Commit the
+			 * in-memory state and (if needed) sync syncterm.ini. */
+			list_algo = new_algo;
+			list_keysize = new_ks;
+			if (kdf_legacy) {
+				SAFECOPY(settings.keyDerivationIterations,
+				    iniCryptDefaultKDFSpec());
+				iniSetString(&inicontents, "SyncTERM",
+				    "KeyDerivationIterations",
+				    settings.keyDerivationIterations,
+				    &ini_style);
+				rewind(inifp);
+				if (chsize(fileno(inifp), 0) != 0 ||
+				    !iniWriteFile(inifp, inicontents)) {
+					uifc.msg("Migration aborted: syncterm.ini write failed after BBS list was re-encrypted.");
+					fclose(inifp);
+					strListFree(&inicontents);
+					exit(EXIT_FAILURE);
+				}
+				fclose(inifp);
+				strListFree(&inicontents);
+			}
+		}
 	}
 
 	return inifile;
@@ -2508,7 +2611,7 @@ edit_list(struct bbslist **list, struct bbslist *item, char *listpath, int isdef
 			int nav = (i == -2 - '[') ? EDIT_NAV_PREV : EDIT_NAV_NEXT;
 			if (!safe_mode) {
 				if ((listfile = fopen(listpath, "wb")) != NULL) {
-					iniWriteEncryptedFile(listfile, inifile, list_algo, list_keysize, settings.keyDerivationIterations, list_password, NULL);
+					iniWriteEncryptedFile(listfile, inifile, list_algo, list_keysize, settings.keyDerivationIterations, list_password);
 					fclose(listfile);
 				}
 			}
@@ -2559,7 +2662,7 @@ edit_list(struct bbslist **list, struct bbslist *item, char *listpath, int isdef
 				}
 				if (!safe_mode) {
 					if ((listfile = fopen(listpath, "wb")) != NULL) {
-						iniWriteEncryptedFile(listfile, inifile, list_algo, list_keysize, settings.keyDerivationIterations, list_password, NULL);
+						iniWriteEncryptedFile(listfile, inifile, list_algo, list_keysize, settings.keyDerivationIterations, list_password);
 						fclose(listfile);
 					}
 				}
@@ -3107,12 +3210,11 @@ add_bbs(char *listpath, struct bbslist *bbs, bool new_entry)
 	}
 	iniSetBool(&inifile, bbs->name, "TelnetBrokenTextmode", bbs->telnet_no_binary, &ini_style);
 	iniSetBool(&inifile, bbs->name, "TelnetDeferNegotiate", bbs->defer_telnet_negotiation, &ini_style);
-	if (bbs->has_fingerprint) {
-		char fp[41];
-		fp[0] = 0;
-		for (int i = 0; i < 20; i++)
+	if (bbs->ssh_fingerprint_len > 0) {
+		char fp[65];	/* up to 64 hex chars (SHA-256) + NUL */
+		for (int i = 0; i < bbs->ssh_fingerprint_len; i++)
 			sprintf(&fp[i * 2], "%02x", bbs->ssh_fingerprint[i]);
-		fp[sizeof(fp) -1] = 0;
+		fp[bbs->ssh_fingerprint_len * 2] = 0;
 		iniSetString(&inifile, bbs->name, "SSHFingerprint", fp, &ini_style);
 	}
 	iniSetBool(&inifile, bbs->name, "SFTPPublicKey", bbs->sftp_public_key, &ini_style);
@@ -3126,7 +3228,7 @@ add_bbs(char *listpath, struct bbslist *bbs, bool new_entry)
 		iniSetInt32(&inifile, bbs->name, "SortOrder", bbs->sort_order, &ini_style);
 
 	if ((listfile = fopen(listpath, "wb")) != NULL) {
-		iniWriteEncryptedFile(listfile, inifile, list_algo, list_keysize, settings.keyDerivationIterations, list_password, NULL);
+		iniWriteEncryptedFile(listfile, inifile, list_algo, list_keysize, settings.keyDerivationIterations, list_password);
 		fclose(listfile);
 	}
 	strListFree(&inifile);
@@ -3144,7 +3246,7 @@ del_bbs(char *listpath, struct bbslist *bbs)
 	if ((listfile = fopen(listpath, "r+b")) != NULL) {
 		inifile = iniReadBBSList(listfile, bbs->type == USER_BBSLIST);
 		iniRemoveSection(&inifile, bbs->name);
-		iniWriteEncryptedFile(listfile, inifile, list_algo, list_keysize, settings.keyDerivationIterations, list_password, NULL);
+		iniWriteEncryptedFile(listfile, inifile, list_algo, list_keysize, settings.keyDerivationIterations, list_password);
 		fclose(listfile);
 		strListFree(&inifile);
 	}
@@ -3497,7 +3599,17 @@ change_settings(int connected)
 		SAFEPRINTF(opts[12], "TERM For Shell          %s", settings.TERM);
 		sprintf(opts[13], "Scaling                 %s", scaling_names[settings_to_scale()]);
 		sprintf(opts[14], "Invert Mouse Wheel      %s", settings.invert_wheel ? "Yes" : "No");
-		sprintf(opts[15], "Key Derivation Iters.   %d", settings.keyDerivationIterations);
+		{
+			int cost_log2 = 15;
+			const char *s = settings.keyDerivationIterations;
+			if (strncmp(s, "scrypt-N", 8) == 0) {
+				char *endp = NULL;
+				long v = strtol(s + 8, &endp, 10);
+				if (endp != s + 8 && v >= 8 && v <= 24)
+					cost_log2 = (int)v;
+			}
+			sprintf(opts[15], "Key Derivation Shift    %d", cost_log2);
+		}
 		sprintf(opts[16], "UIFC Colours");
 		if (connected)
 			opt[opt_size - 1] = NULL;
@@ -3812,38 +3924,50 @@ change_settings(int connected)
 				break;
 			case 15:
 				{
-					uifc.helpbuf = "`Key Derivation Function Iterations`\n\n"
-						       "Number of iterations to run the Key Derivation Function when creating an\n"
-						       "encryption key from a password. Using more iterations makes offline\n"
-						       "attacks harder by making dictionary attacks more difficult, ideally\n"
-						       "making it more difficult than simple random key brute forcing.\n\n"
-						       "The default value is 50,000 which takes about 0.15 seconds on my current\n"
-						       "computer. This means that a normal read/modify/write of an entry ends up\n"
-						       "taking 0.3 seconds longer due to KDF. Lowering this value makes offline\n"
-						       "attacks easier, but can noticably speed up encrypted file access.\n\n"
-						       "Minimum value is 1, maximum value is 2147483647. You should choose the\n"
-						       "highest value you can put up with. NIST reccomends a minimum of 10,000.\n";
-					char value[11];
-					snprintf(value, sizeof(value), "%d", settings.keyDerivationIterations);
-					if (uifc.input(WIN_SAV | WIN_MID, 0, 0, "Iterations", value, sizeof(value) - 1, K_NUMBER | K_EDIT) > 0) {
+					uifc.helpbuf = "`Key Derivation Work Factor`\n\n"
+						       "Work factor for the Key Derivation Function when turning the\n"
+						       "list password into an encryption key.  Higher values make\n"
+						       "offline dictionary attacks more expensive, ideally more so than\n"
+						       "brute-forcing the raw key.\n\n"
+						       "This is the base-2 log of scrypt's N parameter — i.e. the value\n"
+						       "entered here is the shift count; N = 2^value.  Default 15 gives\n"
+						       "N=32,768 (~16 MiB memory).  Minimum 8, maximum 24; each step\n"
+						       "doubles memory and CPU cost, so pick the highest value that still\n"
+						       "feels instant when unlocking the list.\n";
+					/* Pull the cost_log2 out of the stored spec for display.
+					 * A legacy digit-only value (pre-migration syncterm.ini)
+					 * falls back to the compiled-in default until the next
+					 * successful decrypt migrates it. */
+					int cost_log2 = 15;
+					{
+						const char *s = settings.keyDerivationIterations;
+						if (strncmp(s, "scrypt-N", 8) == 0) {
+							char *endp = NULL;
+							long v = strtol(s + 8, &endp, 10);
+							if (endp != s + 8 && v >= 8 && v <= 24)
+								cost_log2 = (int)v;
+						}
+					}
+					char value[4];
+					snprintf(value, sizeof(value), "%d", cost_log2);
+					if (uifc.input(WIN_SAV | WIN_MID, 0, 0, "Shift", value, sizeof(value) - 1, K_NUMBER | K_EDIT) > 0) {
 						long nval = strtol(value, NULL, 10);
-						if (nval > 0) {
-							FILE *listfile;
+						if (nval < 8)
+							nval = 8;
+						else if (nval > 24)
+							nval = 24;
+						snprintf(settings.keyDerivationIterations,
+						    sizeof(settings.keyDerivationIterations),
+						    "scrypt-N%ld", nval);
+						iniSetString(&inicontents, "SyncTERM", "KeyDerivationIterations", settings.keyDerivationIterations, &ini_style);
 
-							if ((listfile = fopen(settings.list_path, "r+b")) != NULL) {
-								str_list_t inifile = iniReadBBSList(listfile, true);
-								settings.keyDerivationIterations = nval;
-								iniSetInteger(&inicontents, "SyncTERM", "KeyDerivationIterations", settings.keyDerivationIterations, &ini_style);
-								if (list_algo != INI_CRYPT_ALGO_NONE)
-									iniWriteEncryptedFile(listfile, inifile, list_algo, list_keysize, settings.keyDerivationIterations, list_password, NULL);
-								fclose(listfile);
-								iniFreeStringList(inifile);
-							}
-							else {
-								uifc.msg("Failed to open list file");
-								settings.keyDerivationIterations = nval;
-								iniSetInteger(&inicontents, "SyncTERM", "KeyDerivationIterations", settings.keyDerivationIterations, &ini_style);
-							}
+						FILE *listfile;
+						if (list_algo != INI_CRYPT_ALGO_NONE &&
+						    (listfile = fopen(settings.list_path, "r+b")) != NULL) {
+							str_list_t inifile = iniReadBBSList(listfile, true);
+							iniWriteEncryptedFile(listfile, inifile, list_algo, list_keysize, settings.keyDerivationIterations, list_password);
+							fclose(listfile);
+							iniFreeStringList(inifile);
 						}
 					}
 				}
@@ -4194,7 +4318,7 @@ done:
 	free(old);
 	if (inifile != NULL) {
 		if ((listfile = fopen(listpath, "wb")) != NULL) {
-			iniWriteEncryptedFile(listfile, inifile, list_algo, list_keysize, settings.keyDerivationIterations, list_password, NULL);
+			iniWriteEncryptedFile(listfile, inifile, list_algo, list_keysize, settings.keyDerivationIterations, list_password);
 			fclose(listfile);
 		}
 		strListFree(&inifile);
@@ -4352,7 +4476,7 @@ edit_web_lists(void)
 	return changed;
 }
 
-#if (defined(WITH_CRYPTLIB) && !defined(WITHOUT_CRYPTLIB))
+#ifndef WITHOUT_CRYPTO
 static void
 changeAlgo(const char *listpath, enum iniCryptAlgo algo, int keySize, const char *newpass)
 {
@@ -4361,7 +4485,7 @@ changeAlgo(const char *listpath, enum iniCryptAlgo algo, int keySize, const char
 	if (safe_mode)
 		return;
 	if (newpass == NULL && algo != INI_CRYPT_ALGO_NONE && !list_password[0]) {
-		if (!prompt_password(NULL, NULL, NULL))
+		if (!prompt_password(NULL, NULL))
 			return;
 	}
 	if ((listfile = fopen(listpath, "r+b")) != NULL) {
@@ -4372,7 +4496,7 @@ changeAlgo(const char *listpath, enum iniCryptAlgo algo, int keySize, const char
 			iniSetBool(&inifile, NULL, "DecryptionCheck", true, &ini_style);
 		if (newpass)
 			strlcpy(list_password, newpass, sizeof(list_password));
-		iniWriteEncryptedFile(listfile, inifile, algo, keySize, settings.keyDerivationIterations, list_password, NULL);
+		iniWriteEncryptedFile(listfile, inifile, algo, keySize, settings.keyDerivationIterations, list_password);
 		fclose(listfile);
 		list_algo = algo;
 		list_keysize = keySize;
@@ -4383,16 +4507,19 @@ changeAlgo(const char *listpath, enum iniCryptAlgo algo, int keySize, const char
 static void
 encryption_menu(const char *listpath)
 {
+	/*
+	 * Legacy cipher options (3DES, CAST-128, IDEA, RC2, RC4) were
+	 * removed in the DeuceSSH+xp_crypt migration.  Existing bbslist.ini
+	 * files written with those ciphers still decrypt on read (the
+	 * bundled decrypt-only impls in syncterm/legacy_ciphers/ cover IDEA
+	 * and RC2; OpenSSL's legacy provider and Botan 3 cover the rest);
+	 * any save operation re-encrypts under AES-256 or ChaCha20.
+	 */
 	char *encryption[] = {
 		"Change Password",
-		"Encrypt Using ChaCha20",              // 2008
-		"Encrypt Using AES-128",               // 1998
-		"Encrypt Using AES-256",               // 1998
-		"Encrypt Using CAST-128",              // 1996
-		"Encrypt Using IDEA",                  // 1991
-		"Encrypt Using RC2",                   // 1987
-		"Encrypt Using RC4 (Insecure)",        // 1987
-		"Encrypt Using 3DES (Insecure)",       // 1981
+		"Encrypt Using ChaCha20",
+		"Encrypt Using AES-128",
+		"Encrypt Using AES-256",
 		"Decrypt",
 		NULL
 	};
@@ -4428,21 +4555,6 @@ encryption_menu(const char *listpath)
 			changeAlgo(listpath, INI_CRYPT_ALGO_AES, 256, NULL);
 			break;
 		case 4:
-			changeAlgo(listpath, INI_CRYPT_ALGO_CAST, 0, NULL);
-			break;
-		case 5:
-			changeAlgo(listpath, INI_CRYPT_ALGO_IDEA, 0, NULL);
-			break;
-		case 6:
-			changeAlgo(listpath, INI_CRYPT_ALGO_RC2, 0, NULL);
-			break;
-		case 7:
-			changeAlgo(listpath, INI_CRYPT_ALGO_RC4, 0, NULL);
-			break;
-		case 8:
-			changeAlgo(listpath, INI_CRYPT_ALGO_3DES, 0, NULL);
-			break;
-		case 9:
 			changeAlgo(listpath, INI_CRYPT_ALGO_NONE, 0, NULL);
 			break;
 	}
@@ -4519,7 +4631,7 @@ show_bbslist(char *current, int connected)
 		"Program Settings",
 		"File Locations",
 		"Build Options",
-#if (defined(WITH_CRYPTLIB) && !defined(WITHOUT_CRYPTLIB))
+#ifndef WITHOUT_CRYPTO
 		"List Encryption",
 #endif
 		NULL
@@ -5406,7 +5518,10 @@ show_bbslist(char *current, int connected)
 					case 6: // Build Options
 						asprintf(&p,
 						         "`SyncTERM Build Options`\n\n"
-						         "%s Cryptlib (ie: SSH and TLS)\n"
+						         "Crypto\n"
+						         "    %s DeuceSSH (SSH)\n"
+						         "    %s OpenSSL (TLS, symmetric ciphers)\n"
+						         "    %s Botan 3 (TLS, symmetric ciphers)\n\n"
 						         "%s Operation Overkill ][ Terminal\n"
 						         "%s JPEG XL support\n\n"
 						         "Video\n"
@@ -5427,10 +5542,20 @@ show_bbslist(char *current, int connected)
 						         "    %s PulseAudio\n"
 						         "    %s Core Audio\n"
 						         "    %s libsndfile\n",
-#if (defined(WITHOUT_CRYPTLIB) || !defined(WITH_CRYPTLIB))
+#ifdef WITHOUT_DEUCESSH
 						         "[ ]",
 #else
 						         "[`\xFB`]",
+#endif
+#if defined(XP_CRYPTO_BACKEND_OPENSSL)
+						         "[`\xFB`]",
+						         "[ ]",
+#elif defined(XP_CRYPTO_BACKEND_BOTAN)
+						         "[ ]",
+						         "[`\xFB`]",
+#else
+						         "[ ]",
+						         "[ ]",
 #endif
 #ifdef WITHOUT_OOII
 						         "[ ]",
@@ -5536,7 +5661,7 @@ show_bbslist(char *current, int connected)
 							free(p);
 						}
 						break;
-#if (defined(WITH_CRYPTLIB) && !defined(WITHOUT_CRYPTLIB))
+#ifndef WITHOUT_CRYPTO
 					case 7:	// Encryption!
 						encryption_menu(settings.list_path);
 						break;

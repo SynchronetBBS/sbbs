@@ -63,7 +63,14 @@ struct conn_api {
 	void              (*binary_mode_on)(void);
 	void              (*binary_mode_off)(void);
 
-	bool              binary_mode;
+	/* Inform the remote end that the terminal's visible dimensions
+	 * have changed (e.g. DECSSDT status-row toggle).  Pixel args are
+	 * -1 when pixel dimensions are unknown for the current mode.
+	 * NULL for connection types that don't carry window-size info. */
+	void              (*send_window_change)(int text_cols, int text_rows,
+	                                        int pixel_cols, int pixel_rows);
+
+	_Atomic bool      binary_mode;
 
 	void            * (*rx_parse_cb)(const void *inbuf, size_t inlen, size_t *olen);
 	void            * (*tx_parse_cb)(const void *inbuf, size_t inlen, size_t *olen);
@@ -104,6 +111,8 @@ bool conn_connected(void);
 size_t conn_data_waiting(void);
 void conn_binary_mode_on(void);
 void conn_binary_mode_off(void);
+void conn_send_window_change(int text_cols, int text_rows,
+                             int pixel_cols, int pixel_rows);
 
 /*
  * For connection providers
@@ -117,6 +126,7 @@ extern struct conn_api    conn_api;
 
 struct conn_buffer *create_conn_buf(struct conn_buffer *buf, size_t size);
 void destroy_conn_buf(struct conn_buffer *buf);
+void conn_buf_reset(struct conn_buffer *buf);
 size_t conn_buf_bytes(struct conn_buffer *buf);
 size_t conn_buf_peek(struct conn_buffer *buf, void *voutbuf, size_t outlen);
 size_t conn_buf_get(struct conn_buffer *buf, void *outbuf, size_t outlen);

@@ -58,6 +58,8 @@ static const KNOWNFOLDERID FOLDERID_ProgramData = {
 #include <stdbool.h>
 #include <stdlib.h>
 #include <vidmodes.h>
+
+#include "ini_crypt.h"
 #ifdef HAS_VSTAT
  #include "bitmap_con.h"
 #endif
@@ -78,9 +80,11 @@ enum {
 
 #include "bbslist.h"
 #include "conn.h"
-#ifndef WITHOUT_CRYPTLIB
-#include "cryptlib.h"
+#ifndef WITHOUT_DEUCESSH
 #include "ssh.h"
+#endif
+#ifndef WITHOUT_CRYPTO
+#include "legacy_ciphers/legacy_ciphers.h"
 #endif
 #include "fonts.h"
 #include "syncterm.h"
@@ -168,6 +172,70 @@ bool                     quitting = false;
 int                      fake_mode = -1;
 char                    *config_override;
 char                    *list_override;
+
+/* ---------------------------------------------------------- popup queue */
+
+struct popup_entry {
+	char               *title;
+	char               *body;
+	struct popup_entry *next;
+};
+
+static pthread_mutex_t     popup_q_mutex;
+static struct popup_entry *popup_q_head;
+static struct popup_entry *popup_q_tail;
+
+void
+popup_queue_post(const char *title, const char *body)
+{
+	if (title == NULL || body == NULL)
+		return;
+	struct popup_entry *e = malloc(sizeof(*e));
+	if (e == NULL)
+		return;
+	e->title = strdup(title);
+	e->body  = strdup(body);
+	e->next  = NULL;
+	if (e->title == NULL || e->body == NULL) {
+		free(e->title);
+		free(e->body);
+		free(e);
+		return;
+	}
+	assert_pthread_mutex_lock(&popup_q_mutex);
+	if (popup_q_tail != NULL)
+		popup_q_tail->next = e;
+	else
+		popup_q_head = e;
+	popup_q_tail = e;
+	assert_pthread_mutex_unlock(&popup_q_mutex);
+}
+
+bool
+popup_queue_drain(void)
+{
+	bool any = false;
+
+	for (;;) {
+		struct popup_entry *e;
+		assert_pthread_mutex_lock(&popup_q_mutex);
+		e = popup_q_head;
+		if (e != NULL) {
+			popup_q_head = e->next;
+			if (popup_q_head == NULL)
+				popup_q_tail = NULL;
+		}
+		assert_pthread_mutex_unlock(&popup_q_mutex);
+		if (e == NULL)
+			break;
+		uifcmsg(e->title, e->body);
+		free(e->title);
+		free(e->body);
+		free(e);
+		any = true;
+	}
+	return any;
+}
 
 #ifdef _WINSOCKAPI_
 
@@ -1720,8 +1788,22 @@ load_settings(struct syncterm_settings *set)
 		set->webgets = iniReadNamedStringList(inifile, "WebLists");
 	}
 
-	/* KDF Parameters */
-	set->keyDerivationIterations = iniReadInteger(inifile, "SyncTERM", "KeyDerivationIterations", 50000);
+	/* KDF spec.
+	 *
+	 * A string so the on-disk value is self-describing: future KDF
+	 * changes (argon2id, …) can be tagged distinctly on disk without
+	 * another migration pass.  Currently either
+	 *   "scrypt-N<cost_log2>"  — new writes (v2 bbslist files), or
+	 *   "<digits>"             — legacy Cryptlib-era PBKDF2 iteration
+	 *                            count, still honoured by the reader
+	 *                            for v1 files.
+	 * The default for new installs matches INI_SCRYPT_COST_LOG2 in
+	 * ini_crypt.c.  Legacy digits-only values are left untouched on
+	 * load; the UI offers to re-key to scrypt form when the user
+	 * writes a new encrypted file. */
+	iniReadSString(inifile, "SyncTERM", "KeyDerivationIterations",
+	    "scrypt-N15", set->keyDerivationIterations,
+	    sizeof(set->keyDerivationIterations));
 
 	/* UIFC Colours */
 	set->uifc_bclr = iniReadEnum(inifile, "UIFC", "BackgroundColour", (char **)bg_colour_enum, 8);
@@ -2009,9 +2091,18 @@ main(int argc, char **argv)
 		return 0;
 	}
 
-#if !defined(WITHOUT_CRYPTLIB)
-        /* Cryptlib initialization MUST be done before ciolib init */
+	pthread_mutex_init(&popup_q_mutex, NULL);
+
+#ifndef WITHOUT_DEUCESSH
+        /* DeuceSSH algorithm registration + RNG seed; must run before
+           anything that calls into it (i.e. any SSH connection). */
         init_crypt();
+#endif
+#ifndef WITHOUT_CRYPTO
+        /* Register decrypt-only reference impls for ciphers the active
+           crypto backend doesn't carry (IDEA, RC2). Needed before
+           iniReadEncryptedFile can be called. */
+        legacy_ciphers_init();
 #endif
 
         /* UIFC initialization */
@@ -2462,7 +2553,7 @@ main(int argc, char **argv)
 					    bbs->connected,
 					    &ini_style);
 					iniSetInteger(&inifile, bbs->name, "TotalCalls", bbs->calls, &ini_style);
-					iniWriteEncryptedFile(listfile, inifile, list_algo, list_keysize, settings.keyDerivationIterations, list_password, NULL);
+					iniWriteEncryptedFile(listfile, inifile, list_algo, list_keysize, settings.keyDerivationIterations, list_password);
 					fclose(listfile);
 					strListFree(&inifile);
 				}

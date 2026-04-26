@@ -1,0 +1,39 @@
+# Shared vendored-Botan plumbing.
+#
+# Included from Common.gmake AFTER targets.mk so the subproject's
+# `all:` target stays the default goal.
+#
+# Two pieces:
+#
+#   1. When USE_VENDORED_BOTAN is set, prepend the vendored
+#      install's pkgconfig dir to PKG_CONFIG_PATH so `pkg-config
+#      botan-3` (xpdev + syncterm link-time probes) resolves to the
+#      freshly-built copy.
+#
+#   2. A subproject-side `botan:` delegation target that recurses
+#      into 3rdp/build to actually build Botan.  Mirrors the
+#      existing `cl:`/`cryptlib:` pattern (Common.gmake ~line 709):
+#      a plain non-phony target so CI can `touch botan` after
+#      extracting a prebuilt archive to suppress the recursion.
+#
+#      Guarded on IN_3RDP_BUILD so 3rdp/build/GNUmakefile's own
+#      `botan: $(BOTAN_BUILD)` rule stays authoritative inside
+#      3rdp/build.  Consumers (subprojects) get the delegator.
+
+ifdef USE_VENDORED_BOTAN
+ # Prepend to PKG_CONFIG_PATH so later pkg-config invocations find
+ # the vendored copy at build time.  $(abspath) rather than
+ # $(shell cd ... && pwd) — the latter needs the directory to
+ # exist at makefile parse time, which it doesn't.
+ export PKG_CONFIG_PATH := $(abspath $(BOTAN_PKGCONFIG_DIR))$(if $(PKG_CONFIG_PATH),:$(PKG_CONFIG_PATH))
+endif
+
+ifndef IN_3RDP_BUILD
+# Subproject-side delegator.  $(BOTAN_BUILD) is the library file
+# 3rdp/build produces; `botan` is a plain target whose recipe
+# recurses.  Touching `botan` after extracting a prebuilt archive
+# satisfies the target and skips the recursion.
+$(BOTAN_BUILD): botan
+botan:
+	$(MAKE) -C $(3RDP_BUILD) botan
+endif

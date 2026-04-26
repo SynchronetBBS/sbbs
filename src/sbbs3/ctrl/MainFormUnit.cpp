@@ -3470,11 +3470,16 @@ void __fastcall TMainForm::LogTimerTick(TObject *Sender)
 			logged_msgs(ServicesForm->Log);
     }
 
-	bbs_set_controls(bbs_state);
-	ftp_set_controls(ftp_state);
-	web_set_controls(web_state);
-	mail_set_controls(mail_state);
-	services_set_controls(services_state);
+	if (bbs_svc == NULL)
+		bbs_set_controls(bbs_state);
+	if (ftp_svc == NULL)
+		ftp_set_controls(ftp_state);
+	if (web_svc == NULL)
+		web_set_controls(web_state);
+	if (mail_svc == NULL)
+		mail_set_controls(mail_state);
+	if (services_svc == NULL)
+		services_set_controls(services_state);
 
 	struct client_change* cc;
 	while((cc = (struct client_change*)listShiftNode(&client_change_list)) != NULL) {

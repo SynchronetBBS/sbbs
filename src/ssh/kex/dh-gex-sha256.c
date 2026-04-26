@@ -107,6 +107,26 @@ compute_exchange_hash(const char *v_c, size_t v_c_len, const char *v_s, size_t v
 	return ok ? 0 : DSSH_ERROR_INIT;
 }
 
+/* Bit-length of an SSH mpint value body.  Skips leading zero bytes so
+ * the at-most-one 0x00 byte the wire format prepends to keep a positive
+ * integer out of the sign bit doesn't inflate the count. */
+static size_t
+mpint_bits(const uint8_t *data, size_t data_len)
+{
+	size_t i = 0;
+	while (i < data_len && data[i] == 0)
+		i++;
+	if (i == data_len)
+		return 0;
+	size_t  bits = (data_len - i - 1) * 8;
+	uint8_t top  = data[i];
+	while (top) {
+		bits++;
+		top >>= 1;
+	}
+	return bits;
+}
+
 static int
 dhgex_client(struct dssh_kex_context *kctx, const struct dhgex_ops *ops)
 {
@@ -157,6 +177,21 @@ dhgex_client(struct dssh_kex_context *kctx, const struct dhgex_ops *ops)
 		return DSSH_ERROR_PARSE;
 	if (payload_len < 2)
 		return DSSH_ERROR_PARSE;
+
+	/* Reject a weak group before spending entropy on keygen.  RFC 4419
+	 * §3 says the server SHOULD honor client_min, but nothing in the
+	 * wire protocol forces it — the client must enforce, otherwise a
+	 * hostile or misconfigured server can downgrade to a group small
+	 * enough for Logjam-style precomputation. */
+	if (payload_len < 1 + 4)
+		return DSSH_ERROR_PARSE;
+	uint32_t p_len_prefix;
+	if (dssh_parse_uint32(&payload[1], payload_len - 1, &p_len_prefix) < 4)
+		return DSSH_ERROR_PARSE;
+	if ((size_t)p_len_prefix > payload_len - 1 - 4)
+		return DSSH_ERROR_PARSE;
+	if (mpint_bits(&payload[1 + 4], p_len_prefix) < client_min)
+		return DSSH_ERROR_INVALID;
 
 	/* 3. Parse group, generate keypair → e_mpint */
 	size_t group_consumed;

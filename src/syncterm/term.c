@@ -18,6 +18,12 @@
 #include "menu.h"
 #include "saucedefs.h"
 #include "sexyz.h"
+#ifndef WITHOUT_DEUCESSH
+#include "sftp_browser.h"
+#include "sftp_degraded.h"
+#include "sftp_queue.h"
+#include "sftp_queue_screen.h"
+#endif
 #include "strwrap.h"
 #include "syncterm.h"
 #include "telnet_io.h"
@@ -55,6 +61,10 @@ static char ansi_replybuf[2048];
 
 #ifndef MIN
  #define MIN(a, b) ((a) < (b) ? (a) : (b))
+#endif
+
+#ifndef MAX
+ #define MAX(a, b) ((a) > (b) ? (a) : (b))
 #endif
 
 struct terminal   term;
@@ -193,6 +203,18 @@ setup_mouse_events(struct mouse_state *ms)
 	mousepointer(CIOLIB_MOUSEPTR_BAR);
 }
 
+static void
+highlight_cell(struct vmem_cell *cell)
+{
+	if ((cell->legacy_attr & 0x70) != 0x10)
+		cell->legacy_attr = (cell->legacy_attr & 0x8F) | 0x10;
+	else
+		cell->legacy_attr = (cell->legacy_attr & 0x8F) | 0x60;
+	if (((cell->legacy_attr & 0x70) >> 4) == (cell->legacy_attr & 0x0F))
+		cell->legacy_attr |= 0x08;
+	attr2palette(cell->legacy_attr, &cell->fg, &cell->bg);
+}
+
 #if defined(__BORLANDC__)
  #pragma argsused
 #endif
@@ -207,11 +229,14 @@ mousedrag(struct vmem_cell *scrollback)
 	struct vmem_cell     *sbuffer;
 	size_t                sbufsize;
 	int                   pos, startpos, endpos, lines;
+	int                   x, y, x1, y1, x2, y2, rows, cols;
 	int                   outpos;
 	char                 *copybuf = NULL;
 	char                 *newcopybuf;
 	int                   lastchar;
 	struct ciolib_screen *savscrn;
+	bool                  rect_mode = false;
+	bool                  mode_locked = false;
 
 	sbufsize = (size_t)term.width * sizeof(*screen) * term.height;
 	screen = malloc(sbufsize);
@@ -237,6 +262,10 @@ mousedrag(struct vmem_cell *scrollback)
 		switch (key) {
 			case CIO_KEY_MOUSE:
 				getmouse(&mevent);
+				if (!mode_locked) {
+					rect_mode = !!(mevent.kbmodifiers & CIOLIB_KMOD_ALT);
+					mode_locked = true;
+				}
 				startpos = ((mevent.starty - 1) * term.width) + (mevent.startx - 1);
 				endpos = ((mevent.endy - 1) * term.width) + (mevent.endx - 1);
 				if (startpos >= term.width * term.height)
@@ -248,24 +277,32 @@ mousedrag(struct vmem_cell *scrollback)
 					endpos = startpos;
 					startpos = pos;
 				}
+				x1 = MIN(mevent.startx, mevent.endx) - 1;
+				x2 = MAX(mevent.startx, mevent.endx) - 1;
+				y1 = MIN(mevent.starty, mevent.endy) - 1;
+				y2 = MAX(mevent.starty, mevent.endy) - 1;
+				if (x1 < 0)
+					x1 = 0;
+				if (y1 < 0)
+					y1 = 0;
+				if (x2 >= term.width)
+					x2 = term.width - 1;
+				if (y2 >= term.height)
+					y2 = term.height - 1;
 				switch (mevent.event) {
 					case CIOLIB_MOUSE_MOVE:
 						break;
 					case CIOLIB_BUTTON_1_DRAG_MOVE:
 						memcpy(sbuffer, screen, sbufsize);
-						for (pos = startpos; pos <= endpos; pos++) {
-							if ((sbuffer[pos].legacy_attr & 0x70) != 0x10)
-								sbuffer[pos].legacy_attr =
-								    (sbuffer[pos].legacy_attr & 0x8F) | 0x10;
-							else
-								sbuffer[pos].legacy_attr =
-								    (sbuffer[pos].legacy_attr & 0x8F) | 0x60;
-							if (((sbuffer[pos].legacy_attr & 0x70) >> 4)
-							    == (sbuffer[pos].legacy_attr & 0x0F))
-								sbuffer[pos].legacy_attr |= 0x08;
-							attr2palette(sbuffer[pos].legacy_attr,
-							    &sbuffer[pos].fg,
-							    &sbuffer[pos].bg);
+						if (rect_mode) {
+							for (y = y1; y <= y2; y++) {
+								for (x = x1; x <= x2; x++)
+									highlight_cell(&sbuffer[y * term.width + x]);
+							}
+						}
+						else {
+							for (pos = startpos; pos <= endpos; pos++)
+								highlight_cell(&sbuffer[pos]);
 						}
 						vmem_puttext(term.x - 1,
 						    term.y - 1,
@@ -274,40 +311,80 @@ mousedrag(struct vmem_cell *scrollback)
 						    sbuffer);
 						break;
 					default:
-						lines = abs(mevent.endy - mevent.starty) + 1;
-						newcopybuf = realloc(copybuf, (endpos - startpos + 4 + lines * 2) * 4);
-						if (newcopybuf)
-							copybuf = newcopybuf;
-						else
-							goto cleanup;
-						outpos = 0;
-						lastchar = 0;
-						for (pos = startpos; pos <= endpos; pos++) {
-							size_t   outlen;
-							uint8_t *utf8str;
-							int cp = conio_fontdata[screen[pos].font].cp;
-
-							if (cp == CIOLIB_PRESTEL && (screen[pos].bg & 0x20000000))
-								cp = CIOLIB_PRESTEL_SEP;
-							utf8str =
-							    cp_to_utf8(cp, (char *)&screen[pos].ch, 1, &outlen);
-							if (utf8str == NULL)
-								continue;
-							memcpy(copybuf + outpos, utf8str, outlen);
-							outpos += outlen;
-							if ((screen[pos].ch != ' ') && screen[pos].ch)
+						if (rect_mode) {
+							rows = y2 - y1 + 1;
+							cols = x2 - x1 + 1;
+							newcopybuf = realloc(copybuf, cols * rows * 4 + rows * 2 + 4);
+							if (newcopybuf)
+								copybuf = newcopybuf;
+							else
+								goto cleanup;
+							outpos = 0;
+							for (y = y1; y <= y2; y++) {
 								lastchar = outpos;
-							if ((pos + 1) % term.width == 0) {
+								for (x = x1; x <= x2; x++) {
+									size_t   outlen;
+									uint8_t *utf8str;
+									int      cp;
+
+									pos = y * term.width + x;
+									cp = conio_fontdata[screen[pos].font].cp;
+									if (cp == CIOLIB_PRESTEL && (screen[pos].bg & 0x20000000))
+										cp = CIOLIB_PRESTEL_SEP;
+									utf8str =
+									    cp_to_utf8(cp, (char *)&screen[pos].ch, 1, &outlen);
+									if (utf8str == NULL)
+										continue;
+									memcpy(copybuf + outpos, utf8str, outlen);
+									outpos += outlen;
+									if ((screen[pos].ch != ' ') && screen[pos].ch)
+										lastchar = outpos;
+								}
 								outpos = lastchar;
 #ifdef _WIN32
 								copybuf[outpos++] = '\r';
 #endif
 								copybuf[outpos++] = '\n';
-								lastchar = outpos;
 							}
+							copybuf[outpos] = 0;
+							copytext(copybuf, strlen(copybuf));
 						}
-						copybuf[outpos] = 0;
-						copytext(copybuf, strlen(copybuf));
+						else {
+							lines = abs(mevent.endy - mevent.starty) + 1;
+							newcopybuf = realloc(copybuf, (endpos - startpos + 4 + lines * 2) * 4);
+							if (newcopybuf)
+								copybuf = newcopybuf;
+							else
+								goto cleanup;
+							outpos = 0;
+							lastchar = 0;
+							for (pos = startpos; pos <= endpos; pos++) {
+								size_t   outlen;
+								uint8_t *utf8str;
+								int cp = conio_fontdata[screen[pos].font].cp;
+
+								if (cp == CIOLIB_PRESTEL && (screen[pos].bg & 0x20000000))
+									cp = CIOLIB_PRESTEL_SEP;
+								utf8str =
+								    cp_to_utf8(cp, (char *)&screen[pos].ch, 1, &outlen);
+								if (utf8str == NULL)
+									continue;
+								memcpy(copybuf + outpos, utf8str, outlen);
+								outpos += outlen;
+								if ((screen[pos].ch != ' ') && screen[pos].ch)
+									lastchar = outpos;
+								if ((pos + 1) % term.width == 0) {
+									outpos = lastchar;
+#ifdef _WIN32
+									copybuf[outpos++] = '\r';
+#endif
+									copybuf[outpos++] = '\n';
+									lastchar = outpos;
+								}
+							}
+							copybuf[outpos] = 0;
+							copytext(copybuf, strlen(copybuf));
+						}
 						vmem_puttext(term.x - 1,
 						    term.y - 1,
 						    term.x + term.width - 2,
@@ -417,6 +494,14 @@ update_status(struct bbslist *bbs, int speed, int ooii_mode, bool ata_inv)
 		newbits |= 0x40;
 		force_status_update = false;
 	}
+	uint32_t sftp_up_active = 0, sftp_dn_active = 0;
+#ifndef WITHOUT_DEUCESSH
+	sftp_queue_activity(&sftp_up_active, &sftp_dn_active);
+	if (sftp_up_active > 0)
+		newbits |= 0x80;
+	if (sftp_dn_active > 0)
+		newbits |= 0x100;
+#endif
 	if (rip_did_reinit)
 		rip_did_reinit = false;
 	else {
@@ -486,6 +571,32 @@ update_status(struct bbslist *bbs, int speed, int ooii_mode, bool ata_inv)
 		else {
 			status_bar[30].fg = 0x80ffff54;
 			status_bar[30].legacy_attr = 0x1e;
+		}
+	}
+	/* SFTP transfer activity: ↑ at col 28, ↓ at col 29.  Lit bright
+	 * yellow like an active 'M'; blanked to the usual status-bar
+	 * background when idle so the column doesn't linger after a
+	 * transfer finishes. */
+	if (status_bar_sz > 29) {
+		if (sftp_up_active > 0) {
+			status_bar[28].ch = 0x18;  /* CP437 ↑ */
+			status_bar[28].fg = 0x80ffff54;
+			status_bar[28].legacy_attr = 0x1e;
+		}
+		else {
+			status_bar[28].ch = ' ';
+			status_bar[28].fg = 0x80ffff54;
+			status_bar[28].legacy_attr = 0x1e;
+		}
+		if (sftp_dn_active > 0) {
+			status_bar[29].ch = 0x19;  /* CP437 ↓ */
+			status_bar[29].fg = 0x80ffff54;
+			status_bar[29].legacy_attr = 0x1e;
+		}
+		else {
+			status_bar[29].ch = ' ';
+			status_bar[29].fg = 0x80ffff54;
+			status_bar[29].legacy_attr = 0x1e;
 		}
 	}
 	vmem_puttext(term.x - 1, term.y + term.height - 1, term.x + term.width - 2, term.y + term.height - 1
@@ -1192,11 +1303,15 @@ begin_upload(struct bbslist *bbs, bool autozm, int lastch)
 	char                  path[MAX_PATH + 1];
 	int                   result;
 	int                   i;
+	int                   proto;
+	bool                  batch;
 	FILE                 *fp;
 	struct file_pick      fpick;
-	char                 *opts[7] = {
+	char                 *opts[9] = {
 		"ZMODEM",
+		"ZMODEM Batch",
 		"YMODEM",
+		"YMODEM Batch",
 		"XMODEM-1K",
 		"XMODEM-128",
 		"ASCII",
@@ -1226,7 +1341,30 @@ begin_upload(struct bbslist *bbs, bool autozm, int lastch)
 		gotoxy(txtinfo.curx, txtinfo.cury);
 		return;
 	}
-	result = filepick(&uifc, "Upload", &fpick, bbs->uldir, NULL, UIFC_FP_ALLOWENTRY);
+
+	if (autozm) {
+		proto = 0;
+	}
+	else {
+		i = 0;
+		uifc.helpbuf = "Select Protocol";
+		proto = uifc.list(WIN_MID | WIN_SAV, 0, 0, 0, &i, NULL, "Protocol", opts);
+		if (proto < 0) {
+			check_exit(false);
+			uifcbail();
+			restorescreen(savscrn);
+			freescreen(savscrn);
+			freescreen(savscrn2);
+			gotoxy(txtinfo.curx, txtinfo.cury);
+			return;
+		}
+	}
+	batch = (proto == 1 || proto == 3);
+
+	if (batch)
+		result = filepick_multi(&uifc, "Upload", &fpick, bbs->uldir, NULL, 0);
+	else
+		result = filepick(&uifc, "Upload", &fpick, bbs->uldir, NULL, UIFC_FP_ALLOWENTRY);
 
 	if ((result == -1) || (fpick.files < 1)) {
 		check_exit(false);
@@ -1238,50 +1376,57 @@ begin_upload(struct bbslist *bbs, bool autozm, int lastch)
 		gotoxy(txtinfo.curx, txtinfo.cury);
 		return;
 	}
-	SAFECOPY(path, fpick.selected[0]);
-	filepick_free(&fpick);
+
 	restorescreen(savscrn2);
 	freescreen(savscrn2);
 
-	if ((fp = fopen(path, "rb")) == NULL) {
-		SAFEPRINTF2(str, "Error %d opening %s for read", errno, path);
-		uifcmsg("Error opening file", str);
-		uifcbail();
-		restorescreen(savscrn);
-		freescreen(savscrn);
-		gotoxy(txtinfo.curx, txtinfo.cury);
-		return;
-	}
-	setvbuf(fp, NULL, _IOFBF, 0x10000);
-
-	if (autozm) {
-		zmodem_upload(bbs, fp, path);
-	}
-	else {
-		i = 0;
-		uifc.helpbuf = "Select Protocol";
-		switch (uifc.list(WIN_MID | WIN_SAV, 0, 0, 0, &i, NULL, "Protocol", opts)) {
-			case 0:
-				zmodem_upload(bbs, fp, path);
-				break;
+	if (batch) {
+		switch (proto) {
 			case 1:
-				xmodem_upload(bbs, fp, path, YMODEM | SEND, lastch);
-				break;
-			case 2:
-				xmodem_upload(bbs, fp, path, XMODEM | SEND, lastch);
+				zmodem_batch_upload(bbs, fpick.selected, fpick.files);
 				break;
 			case 3:
-				xmodem_upload(bbs, fp, path, XMODEM | SEND | XMODEM_128B, lastch);
-				break;
-			case 4:
-				ascii_upload(fp);
-				break;
-			case 5:
-				raw_upload(fp);
+				xmodem_batch_upload(bbs, fpick.selected, fpick.files, YMODEM | SEND, lastch);
 				break;
 		}
 	}
-	fclose(fp);
+	else {
+		SAFECOPY(path, fpick.selected[0]);
+		if ((fp = fopen(path, "rb")) == NULL) {
+			SAFEPRINTF2(str, "Error %d opening %s for read", errno, path);
+			uifcmsg("Error opening file", str);
+			filepick_free(&fpick);
+			uifcbail();
+			restorescreen(savscrn);
+			freescreen(savscrn);
+			gotoxy(txtinfo.curx, txtinfo.cury);
+			return;
+		}
+		setvbuf(fp, NULL, _IOFBF, 0x10000);
+
+		switch (proto) {
+			case 0:
+				zmodem_upload(bbs, fp, path);
+				break;
+			case 2:
+				xmodem_upload(bbs, fp, path, YMODEM | SEND, lastch);
+				break;
+			case 4:
+				xmodem_upload(bbs, fp, path, XMODEM | SEND, lastch);
+				break;
+			case 5:
+				xmodem_upload(bbs, fp, path, XMODEM | SEND | XMODEM_128B, lastch);
+				break;
+			case 6:
+				ascii_upload(fp);
+				break;
+			case 7:
+				raw_upload(fp);
+				break;
+		}
+		fclose(fp);
+	}
+	filepick_free(&fpick);
 	suspend_rip(false);
 	uifcbail();
 	restorescreen(savscrn);
@@ -2180,7 +2325,7 @@ zmodem_upload(struct bbslist *bbs, FILE *fp, char *path)
 	    flush_send);
 	zm.log_level = &log_level;
 
-	zm.current_file_num = zm.total_files = 1; /* ToDo: support multi-file/batch uploads */
+	zm.current_file_num = zm.total_files = 1;
 
 	fsize = filelength(fileno(fp));
 
@@ -2190,6 +2335,85 @@ zmodem_upload(struct bbslist *bbs, FILE *fp, char *path)
 	if ((success = zmodem_send_file(&zm, path, fp,
 
             /* ZRQINIT? */ true, /* start_time */ NULL, /* sent_bytes */ NULL)) == true)
+		zmodem_get_zfin(&zm);
+
+	transfer_complete(success, was_binary);
+}
+
+void
+zmodem_batch_upload(struct bbslist *bbs, char **paths, int npaths)
+{
+	bool                 success = false;
+	zmodem_t             zm;
+	int64_t              fsize;
+	int64_t              total_bytes = 0;
+	int                  sent_files = 0;
+	int                  i;
+	FILE                *fp;
+	struct zmodem_cbdata cbdata;
+	bool                 was_binary = conn_api.binary_mode;
+
+	draw_transfer_window("ZMODEM Upload");
+
+	zmodem_mode = ZMODEM_MODE_SEND;
+
+	cbdata.zm = &zm;
+	cbdata.bbs = bbs;
+	if (!was_binary)
+		conn_binary_mode_on();
+	transfer_buf_len = 0;
+	zmodem_init(&zm,
+
+	            /* cbdata */ &cbdata,
+	    lputs, zmodem_progress,
+	    send_byte, recv_byte,
+	    is_connected,
+	    zmodem_check_abort,
+	    data_waiting,
+	    flush_send);
+	zm.log_level = &log_level;
+
+	/* Pre-scan to compute totals (for ZFILE info fields and progress display) */
+	for (i = 0; i < npaths; i++) {
+		if (!fexist(paths[i]) || isdir(paths[i]))
+			continue;
+		zm.total_files++;
+		zm.total_bytes += flength(paths[i]);
+	}
+	zm.files_remaining = zm.total_files;
+	zm.bytes_remaining = zm.total_bytes;
+
+	for (i = 0; i < npaths; i++) {
+		if (!fexist(paths[i]) || isdir(paths[i]))
+			continue;
+
+		if ((fp = fopen(paths[i], "rb")) == NULL) {
+			lprintf(LOG_ERR, "Error %d opening %s for read", errno, paths[i]);
+			continue;
+		}
+		setvbuf(fp, NULL, _IOFBF, 0x10000);
+		fsize = filelength(fileno(fp));
+
+		zm.current_file_num = sent_files + 1;
+
+		lprintf(LOG_INFO, "Sending %s (%" PRId64 " KB) via ZMODEM",
+		    paths[i], fsize / 1024);
+
+		success = zmodem_send_file(&zm, paths[i], fp,
+		    /* ZRQINIT? */ sent_files == 0, /* start_time */ NULL, /* sent_bytes */ NULL);
+
+		fclose(fp);
+
+		if (success) {
+			sent_files++;
+			total_bytes += fsize;
+		}
+
+		if (zm.local_abort || zm.cancelled || !success)
+			break;
+	}
+
+	if (!zm.cancelled && is_connected(NULL) && (success || total_bytes))
 		zmodem_get_zfin(&zm);
 
 	transfer_complete(success, was_binary);
@@ -2389,6 +2613,7 @@ xmodem_progress(void *cbdata, unsigned block_num, int64_t offset, int64_t fsize,
 
 		hold_update = true;
 		int os = _wscroll;
+		_wscroll = 0;
 		gettextinfo(&orig_info);
 		window(progress_ti.winleft, progress_ti.wintop, progress_ti.winright, progress_ti.winbottom);
 		gotoxy(1, 1);
@@ -2403,6 +2628,12 @@ xmodem_progress(void *cbdata, unsigned block_num, int64_t offset, int64_t fsize,
 			l = 0;
 		else
 			l -= t;                    /* now, it's est time left */
+		if ((*(xm->mode)) & YMODEM) {
+			cprintf("File (%u of %lu): %-.*s",
+			    xm->current_file_num, xm->total_files, tww - 20, xm->current_file_name);
+			clreol();
+			cputs("\r\n");
+		}
 		if ((*(xm->mode)) & SEND) {
 			total_blocks = num_blocks(block_num, offset, fsize, xm->block_size);
 			cprintf("Block (%lu%s): %u/%" PRId64 "  Byte: %" PRId64,
@@ -2559,7 +2790,7 @@ xmodem_upload(struct bbslist *bbs, FILE *fp, char *path, long mode, int lastch)
 	if (mode & XMODEM_128B)
 		xm.block_size = 128;
 
-	xm.total_files = 1; /* ToDo: support multi-file/batch uploads */
+	xm.current_file_num = xm.total_files = 1;
 
 	fsize = filelength(fileno(fp));
 
@@ -2597,6 +2828,120 @@ xmodem_upload(struct bbslist *bbs, FILE *fp, char *path, long mode, int lastch)
 				if (xmodem_get_ack(&xm, /* tries: */ 6, /* block_num: */ 0) != ACK)
 					lprintf(LOG_WARNING, "Failed to receive ACK after terminating block");
 			}
+		}
+	}
+
+	transfer_complete(success, was_binary);
+}
+
+void
+xmodem_batch_upload(struct bbslist *bbs, char **paths, int npaths, long mode, int lastch)
+{
+	bool     success = false;
+	xmodem_t xm;
+	int64_t  fsize;
+	int      i;
+	FILE    *fp;
+	bool     was_binary = conn_api.binary_mode;
+
+	if (!was_binary)
+		conn_binary_mode_on();
+
+	xmodem_init(&xm,
+
+	            /* cbdata */ &xm,
+	    &mode,
+	    lputs,
+	    xmodem_progress,
+	    send_byte,
+	    recv_byte,
+	    is_connected,
+	    xmodem_check_abort,
+	    flush_send);
+	xm.log_level = &log_level;
+	if (!data_waiting(&xm, 0)) {
+		switch (lastch) {
+			case 'G':
+				xm.recv_byte = recv_g;
+				break;
+			case 'C':
+				xm.recv_byte = recv_c;
+				break;
+			case NAK:
+				xm.recv_byte = recv_nak;
+				break;
+		}
+	}
+
+	if (mode & XMODEM_128B)
+		xm.block_size = 128;
+
+	if (mode & XMODEM) {
+		if (mode & GMODE)
+			draw_transfer_window("XMODEM-g Upload");
+		else
+			draw_transfer_window("XMODEM Upload");
+	}
+	else if (mode & YMODEM) {
+		if (mode & GMODE)
+			draw_transfer_window("YMODEM-g Upload");
+		else
+			draw_transfer_window("YMODEM Upload");
+	}
+	else {
+		if (!was_binary)
+			conn_binary_mode_off();
+		return;
+	}
+
+	/* Pre-scan to compute totals (for YMODEM block-0 "remaining" fields) */
+	for (i = 0; i < npaths; i++) {
+		if (!fexist(paths[i]) || isdir(paths[i]))
+			continue;
+		xm.total_files++;
+		xm.total_bytes += flength(paths[i]);
+	}
+
+	for (i = 0; i < npaths; i++) {
+		if (!fexist(paths[i]) || isdir(paths[i]))
+			continue;
+
+		if ((fp = fopen(paths[i], "rb")) == NULL) {
+			lprintf(LOG_ERR, "Error %d opening %s for read", errno, paths[i]);
+			continue;
+		}
+		setvbuf(fp, NULL, _IOFBF, 0x10000);
+		fsize = filelength(fileno(fp));
+
+		xm.current_file_num = xm.sent_files + 1;
+
+		lprintf(LOG_INFO, "Sending %s (%" PRId64 " KB) via %sMODEM%s",
+		    paths[i], fsize / 1024,
+		    (mode & XMODEM) ? "X" : "Y",
+		    (mode & GMODE) ? "-g" : "");
+
+		success = xmodem_send_file(&xm, paths[i], fp,
+		    /* start_time */ NULL, /* sent_bytes */ NULL);
+
+		fclose(fp);
+
+		if (success) {
+			xm.sent_files++;
+			xm.sent_bytes += fsize;
+		}
+
+		if (xm.cancelled || !success)
+			break;
+	}
+
+	if (success && (mode & YMODEM)) {
+		if (xmodem_get_mode(&xm)) {
+			lprintf(LOG_INFO, "Sending YMODEM termination block");
+
+			memset(block, 0, 128); /* send short block for terminator */
+			xmodem_put_block(&xm, block, 128 /* block_size */, 0 /* block_num */);
+			if (xmodem_get_ack(&xm, /* tries: */ 6, /* block_num: */ 0) != ACK)
+				lprintf(LOG_WARNING, "Failed to receive ACK after terminating block");
 		}
 	}
 
@@ -2825,6 +3170,11 @@ xmodem_download(struct bbslist *bbs, long mode, char *path)
 					total_files = 1;
 				if (total_bytes < file_bytes)
 					total_bytes = file_bytes;
+
+				SAFECOPY(xm.current_file_name, getfname(fname));
+				if (xm.total_files == 0)
+					xm.total_files = total_files;
+				xm.current_file_num = (xm.total_files > total_files) ? (xm.total_files - total_files + 1) : 1;
 
 				lprintf(LOG_DEBUG, "Incoming filename: %.64s ", getfname(fname));
 
@@ -4861,6 +5211,21 @@ clear_status_row(void)
  * and status to match new_type, updates term.nostatus so update_status()
  * behaves correctly afterwards, and creates or destroys the sub-cterm
  * that owns the status row in host-writable mode. */
+/* cterm fires this when the terminal's visible dimensions change
+ * post-init (e.g. DECSSDT status-row toggle).  Hand off to the conn
+ * layer so protocols that carry window-size info (NAWS, SSH
+ * window-change, RLogin 0xFF 0xFF 's' 's', pty TIOCSWINSZ, conpty
+ * ResizePseudoConsole) can notify the remote end. */
+static void
+on_terminal_size_change(struct cterminal *c,
+    int text_cols, int text_rows, int pixel_cols, int pixel_rows,
+    void *cbdata)
+{
+	(void)c;
+	(void)cbdata;
+	conn_send_window_change(text_cols, text_rows, pixel_cols, pixel_rows);
+}
+
 static void
 on_status_display_change(struct cterminal *c, int old_type, int new_type,
     void *cbdata)
@@ -4918,6 +5283,7 @@ fill_mevent(char *buf, size_t bufsz, struct mouse_event *me, struct mouse_state 
 	int  x = me->startx - cterm->x + 1;
 	int  y = me->starty - cterm->y + 1;
 	int  bit;
+	int  mods = 0;
 	int  ret;
 	bool release;
 
@@ -4930,7 +5296,16 @@ fill_mevent(char *buf, size_t bufsz, struct mouse_event *me, struct mouse_state 
 	    && me->starty == term.y + term.height - 1)
 		return 0;
 
-        // TODO: Get modifier keys too...
+	/* xterm mouse-protocol modifier bits.  X10 compatibility mode
+	 * (DECSET 9) is press-only, button-bits-only, so leave mods = 0. */
+	if (ms->mode != MM_X10) {
+		if (me->kbmodifiers & CIOLIB_KMOD_SHIFT)
+			mods |= 0x04;
+		if (me->kbmodifiers & CIOLIB_KMOD_ALT)
+			mods |= 0x08;
+		if (me->kbmodifiers & CIOLIB_KMOD_CTRL)
+			mods |= 0x10;
+	}
 	if (me->event == CIOLIB_MOUSE_MOVE) {
 		if ((me->kbsm & me->bstate) == 0) {
 			if (ms->mode == MM_BUTTON_EVENT_TRACKING)
@@ -4962,6 +5337,7 @@ fill_mevent(char *buf, size_t bufsz, struct mouse_event *me, struct mouse_state 
 			return 0;
 		if (release)
 			button = 3;
+		button |= mods;
 		x--;
 		y--;
 		if (x < 0)
@@ -4981,6 +5357,7 @@ fill_mevent(char *buf, size_t bufsz, struct mouse_event *me, struct mouse_state 
 		return 6;
 	}
 	else {
+		button |= mods;
 		ret = snprintf(buf, bufsz, "\x1b[<%d;%d;%d%c", button, x, y, release ? 'm' : 'M');
 		if (ret > bufsz)
 			return 0;
@@ -5582,6 +5959,8 @@ doterm(struct bbslist *bbs)
 	cterm->status_display_type = bbs->nostatus ? 0 : 1;
 	cterm->status_display_cb = on_status_display_change;
 	cterm->status_display_cbdata = bbs;
+	cterm->size_change_cb = on_terminal_size_change;
+	cterm->size_change_cbdata = bbs;
 	cterm->music_enable = bbs->music;
 	zrqbuf[0] = 0;
 	zrqlen = 0;
@@ -5609,6 +5988,10 @@ doterm(struct bbslist *bbs)
 	setup_mouse_events(&ms);
 	force_status_update = true;
 	for (; !quitting;) {
+		/* Drain any popups posted from background threads (e.g.
+		 * SSH_MSG_DEBUG with always_display set) before we go
+		 * blocking on recv/kbhit. */
+		popup_queue_drain();
 		hold_update = true;
 		sleep = true;
 		/* Audio APC: emit async CSI = 7 ; <ch> ; 0 n notifications
@@ -5634,6 +6017,16 @@ doterm(struct bbslist *bbs)
 						if (!is_connected(NULL)) {
 							WRITE_OUTBUF();
 							hold_update = oldmc;
+							/* Shell closed but SFTP transfers may
+							 * still be in progress — run the
+							 * degraded-mode overlay until they
+							 * drain or the user abandons them.
+							 * Returns immediately if there's no
+							 * work to wait on. */
+#ifndef WITHOUT_DEUCESSH
+							if (!bbs->hidepopups)
+								sftp_degraded_run(bbs);
+#endif
 							if (!bbs->hidepopups)
 								uifcmsg("Disconnected",
 								    "`Disconnected`\n\nRemote host dropped connection");
@@ -5911,6 +6304,18 @@ doterm(struct bbslist *bbs)
 					showmouse();
 					sleep = false;
 					break;
+#ifndef WITHOUT_DEUCESSH
+				case 0x1f00: /* ALT-S - SFTP browser */
+					sftp_browser_run(bbs);
+					setup_mouse_events(&ms);
+					showmouse();
+					break;
+				case 0x1000: /* ALT-Q - SFTP queue */
+					sftp_queue_screen_run(bbs);
+					setup_mouse_events(&ms);
+					showmouse();
+					break;
+#endif
 				case 0x1600: /* ALT-U - Upload */
 					begin_upload(bbs, false, inch);
 					setup_mouse_events(&ms);

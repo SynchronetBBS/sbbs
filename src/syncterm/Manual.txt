@@ -388,6 +388,92 @@ Keyboard Controls::
 	Repeat last find
 
 
+=== The File Browser
+
+SyncTERM uses a shared file browser whenever a file or directory must
+be picked — for example when uploading a file (kbd:[Alt+U]), loading a
+font (kbd:[Alt+F]), or naming a capture file (kbd:[Alt+C]).
+
+The browser shows three rows of content inside its window:
+
+Directory and File panes::
+Two side-by-side lists.  The left pane contains subdirectories plus a
+`..` entry (except at the filesystem root), and the right pane contains
+files that match the current mask.  Directories are always listed
+regardless of the mask.
+
+Info pane::
+A two-line area below the lists.  The first line shows the full name of
+the item currently highlighted in whichever list has focus; the second
+line shows its size (or the word `directory`) and last-modified
+timestamp.  In the multi-file picker it also shows `[selected]` when
+the highlighted file is already tagged.
+
+Mask and Path fields::
+The mask filters the file list (for example `*.bin`).  The path field
+(shown only when the caller permits typing a path, e.g. Upload) lets
+you type a directory or filename directly; long paths are truncated
+from the left with a `...` prefix so the deepest directory stays
+visible.
+
+The footer holds an `OK` (or `Select`) button and a `Cancel` button.
+In the multi-file picker there is also a `Review` button.
+
+Keyboard Controls::
+
+	kbd:[Tab] / kbd:[Shift+Tab]:::
+	Move focus forward or backward between the panes, Mask, Path
+	(if shown), and the footer buttons.
+
+	kbd:[←] / kbd:[→]:::
+	Between the directory and file panes these move focus left or
+	right.  In the path and mask fields they move the edit cursor.
+	Between the footer buttons they move focus between buttons.
+
+	kbd:[↑] / kbd:[↓]:::
+	In the lists they move the highlight.  In the path and mask
+	fields they move focus to the previous or next field.
+
+	kbd:[Return]:::
+	In a list: open the directory, or commit the highlighted file
+	(or toggle its selection in multi-pick).  On a footer button:
+	activate that button.
+
+	kbd:[Space]:::
+	In the multi-file picker's file list, toggles the highlighted
+	file's selection.
+
+	kbd:[Ctrl+A]:::
+	Multi-file picker only — tags every file currently shown in
+	the file pane.  Does not descend into subdirectories.  Safe to
+	press repeatedly; files already tagged stay tagged.
+
+	kbd:[Ctrl+Return]:::
+	Activate `OK` / `Select` from anywhere in the dialog, regardless
+	of which field currently has focus.
+
+	kbd:[F2]:::
+	Multi-file picker only — opens the Review pop-up listing every
+	tagged file.  Inside the pop-up, kbd:[Delete] or kbd:[Return]
+	or a left click removes the highlighted or clicked item, and
+	kbd:[Escape] closes the pop-up.
+
+	kbd:[Escape]:::
+	Cancel the browser.
+
+Mouse Controls::
+Clicking a list item in the currently-focused pane commits it
+immediately (or toggles it in multi-pick).  Clicking a list item in an
+unfocused pane just moves focus and the highlight there — click again
+to commit.  Clicking in the mask or path field places the edit cursor
+at that position.  Clicking a footer button both focuses it and
+activates it.
+
+The multi-file picker's status line shows `F2 Review` while the dialog
+is open.  It returns the full path of every tagged file at once, so
+you can queue uploads from several directories in a single pass.
+
+
 == The Dialing Directory
 
 This is the default startup screen if no BBS is specified on the
@@ -1009,6 +1095,24 @@ in the scrollback viewer.
 On platforms where opening a browser is not possible, the URL is
 copied to the clipboard instead.
 
+=== Selecting and Copying Text
+
+Left-drag across the terminal to select a region.  The copy is made
+when the button is released.  By default the selection is stream-
+shaped: it flows from the starting cell to the ending cell across
+line wraps, trailing spaces are trimmed on each row, and rows are
+separated by `\r\n` on Windows or `\n` on other platforms.
+
+Hold kbd:[Alt] when you press the left mouse button to select a
+rectangular region instead.  The kbd:[Alt] state is sampled once, at
+the start of the drag, and held for the duration of the drag;
+pressing or releasing kbd:[Alt] mid-drag does not change the
+selection shape.  Each row of the rectangle is copied as its own
+line, with trailing spaces trimmed.
+
+If the remote system has mouse capture enabled, use kbd:[Alt+O] to
+take the mouse back from the remote so that you can select text.
+
 For Curses and ANSI modes, only two controls are avilable, and they
 are not available in other modes.  This is because these two modes
 don't have access to keys that could not potentially be sent to the
@@ -1069,7 +1173,13 @@ events, it can be difficult to select text to copy.  kbd:[Alt+O] allows
 taking the mouse away from the remote.
 
 kbd:[Alt+U]::
-Upload a file to the remote.
+Upload a file (or files) to the remote.  Prompts first for a
+protocol, then for the file(s) to send.  `ZMODEM` and `YMODEM`
+each offer a `Batch` variant that brings up the
+<<_the_file_browser,multi-file picker>> so you can queue files
+from several directories and transfer them in a single session.
+The other choices (`XMODEM-1K`, `XMODEM-128`, `ASCII`, `Raw`)
+transfer a single file.
 
 kbd:[Alt+X]::
 Disconnect and exit SyncTERM.  Does not return to the main

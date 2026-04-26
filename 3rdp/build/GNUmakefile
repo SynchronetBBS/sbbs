@@ -1,6 +1,11 @@
 # $Id: GNUmakefile,v 1.63 2020/05/02 08:24:08 deuce Exp $
 
 SRC_ROOT = ../../src
+# Tell Common.gmake (via build/botan.gmake) not to install a
+# subproject-side `botan:` delegation target — we define the real
+# build rule ourselves below.  Without this, Common.gmake's stub
+# rule collides with ours and gmake warns "overriding recipe".
+IN_3RDP_BUILD := 1
 # Cross platform/compiler definitions
 include $(SRC_ROOT)/build/Common.gmake	# defines clean and output directory rules
 
@@ -50,9 +55,19 @@ endif
 
 JS_CONFIGURE_ENV += 'CXXFLAGS=$(CXXFLAGS)'
 
-.PHONY: cryptlib libmozjs
+.PHONY: cryptlib libmozjs botan
 cryptlib: $(CRYPTLIB_BUILD)
 libmozjs: $(JSLIB_BUILD)
+# Botan is only built when the caller asks for vendored (Common.gmake's
+# probe sets USE_VENDORED_BOTAN when neither system Botan 3.6+ nor
+# OpenSSL 3.0+ is available, plus any explicit USE_VENDORED_BOTAN=1
+# override).  Otherwise `make botan` is a no-op so CI jobs can
+# unconditionally invoke it and produce an empty archive.
+ifdef USE_VENDORED_BOTAN
+botan: $(BOTAN_BUILD)
+else
+botan: ; @:
+endif
 
 ###############
 # Directories #
@@ -242,3 +257,95 @@ endif
 endif
 	$(QUIET)cp $(CRYPT_SRC)/libcl.a $(CRYPT_IDIR)
 	$(QUIET)cp $(CRYPT_SRC)/cryptlib.h $(CRYPT_IDIR)
+
+##########
+# Botan  #
+##########
+#
+# Built only when the consumer (usually SyncTERM) asks for it, because
+# the system already has Botan 3.9+ / OpenSSL 3.0+ in the common case.
+# No patches — the tarball compiles cleanly on every platform we ship
+# to.  Installs a static libbotan-3.a plus botan-3.pc under
+# $(BOTAN_IDIR); consumers prepend $(BOTAN_PKGCONFIG_DIR) to
+# PKG_CONFIG_PATH and every pkg-config lookup picks up the vendored
+# copy transparently.
+#
+# Botan's configure.py auto-detects the target for native builds.
+# For mingw cross-compile we explicitly pin --os=mingw and pass the
+# cross toolchain; otherwise auto-detect would try to match the host.
+
+ifeq ($(os),win64)
+ # Quote --cc-bin: CXX can contain "ccache <path>" which would otherwise
+ # split into two shell tokens and make configure.py treat the path as
+ # an unknown positional ("Unhandled option(s): /path/to/g++").
+ BOTAN_CONFIGURE_EXTRA := --os=mingw --cpu=x86_64 \
+                          '--cc-bin=$(CXX)' '--ar-command=$(AR)'
+else ifeq ($(os),win32)
+ BOTAN_CONFIGURE_EXTRA := --os=mingw --cpu=x86 \
+                          '--cc-bin=$(CXX)' '--ar-command=$(AR)'
+else
+ BOTAN_CONFIGURE_EXTRA :=
+endif
+
+# Only build the Botan modules SyncTERM (+ DeuceSSH) actually touches.
+# Botan pulls transitive deps automatically under --minimized-build;
+# this list names the top-level algorithms / protocols we CALL.  Keep
+# synchronised with the matching block in src/syncterm/CMakeLists.txt.
+#
+# tls12,tls13               — xp_tls (TelnetS, HTTPS)
+# aes,cbc,ctr               — xp_crypt encrypted-INI + DeuceSSH AES-256/CTR
+# chacha,chacha20poly1305   — xp_crypt ChaCha20 + TLS 1.3 AEAD
+# rc4,des,cast128           — legacy decrypt-only paths in xp_crypt
+# hmac,pbkdf2,scrypt        — xp_crypt KDF + SSH MAC
+# sha1,sha2_32,sha2_64      — legacy fingerprints + current SHA-256/-512
+# rsa,ed25519,x25519,dh     — SSH host/user keys + TLS sig/kex
+# ecdsa,ecdh                — TLS 1.2/1.3 cert + kex
+# ml_kem                    — SSH mlkem768x25519-sha256 post-quantum kex
+# pcurves_secp{256,384,521} — NIST curves for TLS ECDSA
+# x509                      — TLS cert chain parsing
+# system_rng,auto_rng       — RNG stack
+# Line continuations in a := assignment fold to a single space
+# between segments — the space confuses Botan's configure.py
+# ("Unhandled option(s): ..."), so strip it back out after the join.
+BOTAN_MODULES := $(subst $() ,,tls12,tls13,aes,cbc,ctr,chacha,chacha20poly1305,\
+rc4,des,cast128,hmac,pbkdf2,scrypt,sha1,sha2_32,sha2_64,rsa,ed25519,\
+x25519,dh,ecdsa,ecdh,ml_kem,pcurves_secp256r1,pcurves_secp384r1,\
+pcurves_secp521r1,x509,system_rng,auto_rng)
+
+# Botan's generated Makefile doesn't use a jobserver, so -j has to be
+# passed explicitly.  Detect a sane default; user can override with
+# BOTAN_JOBS=N on the command line.
+BOTAN_JOBS ?= $(shell nproc 2>/dev/null || sysctl -n hw.ncpu 2>/dev/null || echo 2)
+
+$(BOTAN_SRC): | $(3RDPSRCDIR)
+	$(QUIET)$(IFNOTEXIST) mkdir $(BOTAN_SRC)
+
+$(BOTAN_IDIR): | $(3RDPODIR)
+	$(QUIET)$(IFNOTEXIST) mkdir $(BOTAN_IDIR)
+
+$(BOTAN_BUILD): $(3RDP_ROOT)/dist/Botan.tar.xz GNUmakefile | $(BOTAN_SRC) $(BOTAN_IDIR)
+	@echo Creating $@ ...
+	$(QUIET)-rm -rf $(BOTAN_SRC)
+	$(QUIET)xz -dc $(3RDPDISTDIR)/Botan.tar.xz | tar -xf - -C $(dir $(BOTAN_SRC))
+	$(QUIET)mv $(dir $(BOTAN_SRC))Botan-* $(BOTAN_SRC)
+	$(QUIET)cd $(BOTAN_SRC) && python3 configure.py \
+	    --prefix=$(shell cd $(dir $(BOTAN_IDIR)) && pwd)/$(notdir $(BOTAN_IDIR)) \
+	    --disable-shared-library \
+	    --without-documentation \
+	    --build-targets=static \
+	    --minimized-build \
+	    --enable-modules=$(BOTAN_MODULES) \
+	    --build-tool=make $(BOTAN_CONFIGURE_EXTRA)
+	$(QUIET)$(MAKE) -j$(BOTAN_JOBS) -C $(BOTAN_SRC)
+	$(QUIET)$(MAKE) -C $(BOTAN_SRC) install
+	$(QUIET)# Make botan-3.pc relocatable: Botan's install bakes in the
+	$(QUIET)# absolute --prefix, which breaks CI pipelines where the
+	$(QUIET)# archive is built in one runner concurrent-id's builds dir
+	$(QUIET)# and extracted in another.  Rewrite prefix/libdir to use
+	$(QUIET)# ${pcfiledir} so the .pc resolves relative to its own path.
+	$(QUIET)# Portable (BSD+GNU) in-place edit via temp file.
+	$(QUIET)sed -e 's|^prefix=.*|prefix=$${pcfiledir}/../..|' \
+	            -e 's|^libdir=.*|libdir=$${prefix}/lib|' \
+	            $(BOTAN_PKGCONFIG_DIR)/botan-3.pc \
+	            > $(BOTAN_PKGCONFIG_DIR)/botan-3.pc.new
+	$(QUIET)mv $(BOTAN_PKGCONFIG_DIR)/botan-3.pc.new $(BOTAN_PKGCONFIG_DIR)/botan-3.pc

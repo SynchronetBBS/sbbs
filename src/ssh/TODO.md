@@ -1,7 +1,32 @@
 # DeuceSSH — TODO / Known Issues
-<!-- Next item: 179 -->
+<!-- Next item: 180 -->
 
 ## Open
+
+179. **Botan wrapper `catch (...)` doesn't catch `PK_Verifier`/`PK_Signer`
+     lookup failures.**  The Botan-backed RSA verifier/signer (and any
+     other site that instantiates `Botan::PK_Verifier`/`PK_Signer`
+     with a padding-name string) is wrapped in `try { ... } catch
+     (...)` that should turn any thrown exception into
+     `DSSH_ERROR_INIT`.  Empirically, on Botan ≥ 3.9 passing an
+     unknown padding name (e.g. the old `"EMSA_PKCS1(SHA-256)"`
+     spelling, which is no longer in Botan's registry) causes a
+     partially-constructed `PK_Verifier` object to be used, leading
+     to an unmapped-memory read (observed SIGSEGV with valgrind
+     "Invalid read of size 8 ... at Botan::PK_Verifier::PK_Verifier")
+     rather than the clean `catch (...)` path.  Item #179 of this
+     branch's fix was to switch the padding name, which avoids the
+     trigger — but the wrapper should still turn any future
+     lookup/construction failure into a clean error return.
+     Reproduce by temporarily editing `RSA_SIGN_PADDING` back to
+     `"EMSA_PKCS1(SHA-256)"` on a Botan ≥ 3.9 host, connect to any
+     RSA-serving SSH server, observe crash.  Investigate whether
+     Botan's exception is actually thrown from inside the ctor or
+     only surfaces once we dereference the object, then add the
+     appropriate guard (likely a factory helper that constructs
+     PK_Verifier under a dedicated try, returning `std::optional` or
+     throwing a DeuceSSH-internal type the wrapper definitely
+     catches).
 
 84. **DH-GEX group size vs cipher strength mismatch.**
     The client's GEX_REQUEST parameters (`GEX_MIN 2048`, `GEX_N 4096`,

@@ -483,14 +483,15 @@ spec:
   script:
     - touch ${CI_PIPELINE_ID}.ci
     - echo -e "\e[0Ksection_start:`date +%s`:extract_depends[collapsed=true]\r\e[0KPreparing for build"
+    - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/botan.tgz"
     - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/ciolib.tgz"
-    - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/cryptlib.tgz"
     - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/encode.tgz"
     - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/hash.tgz"
     - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/sftp.tgz"
     - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/uifc.tgz"
     - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/xpdev.tgz"
     - cd src/syncterm
+    - touch botan
     - touch depend
     - touch xpdev
     - touch xpdev-mt
@@ -500,7 +501,6 @@ spec:
     - touch uifc
     - touch uifc-mt
     - touch sftp-mt
-    - touch cl
     - echo -e "\e[0Ksection_end:`date +%s`:extract_depends\r\e[0K"
     - $[[ inputs.gnu_make ]] $[[ inputs.build_flags ]] $BUILD_ARGS
   variables:
@@ -510,8 +510,8 @@ spec:
     paths:
       - "src/syncterm/*.exe.release/*"
   needs:
+    - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [botan]"
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [ciolib]"
-    - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [cryptlib]"
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [encode]"
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [hash]"
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [sftp]"
@@ -523,6 +523,16 @@ spec:
     - .$[[ inputs.os ]]-build
   script:
     - touch ${CI_PIPELINE_ID}.ci
+    # Reuse the vendored-Botan archive that the [botan] job already
+    # built for the gmake-side [syncterm] job.  The .pc file in the
+    # archive is relocatable, so pkg-config resolves it wherever it
+    # lands.  Without this the cmake ExternalProject rebuilds Botan
+    # from scratch in the build dir — duplicating 30+ s of CPU on
+    # platforms where the system probe fails (macOS).
+    - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/botan.tgz"
+    # One match if vendored, zero if [botan] was a no-op (system Botan
+    # detected) — no-op extraction is fine either way.
+    - for d in 3rdp/*.release/botan/lib/pkgconfig; do [ -d "$d" ] && export PKG_CONFIG_PATH="$(pwd)/$d${PKG_CONFIG_PATH:+:$PKG_CONFIG_PATH}"; done
     - cd src/syncterm
     - mkdir build
     - cd build
@@ -541,6 +551,7 @@ spec:
       when: never
     - !reference [.rules, rules]
   needs:
+    - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [botan]"
 
 "$[[ inputs.os ]]-$[[ inputs.platform ]] [syncview]":
   extends:
@@ -743,6 +754,32 @@ spec:
   variables:
     GIT_STRATEGY: fetch
 
+# Vendored Botan.  The `botan` target in 3rdp/build is a no-op unless
+# Common.gmake's probe decided USE_VENDORED_BOTAN — so this job is
+# cheap on hosts that have system Botan 3.6+ or OpenSSL 3.0+ and a
+# real build only happens where neither is present.  Consumers always
+# extract botan.tgz; an empty archive here is fine (the extract is
+# then a no-op and pkg-config resolves the system library instead).
+"$[[ inputs.os ]]-$[[ inputs.platform ]] [botan]":
+  extends:
+    - .$[[ inputs.os ]]-build
+  script:
+    - touch ${CI_PIPELINE_ID}.ci
+    - cd 3rdp/build
+    - touch depend
+    - $[[ inputs.gnu_make ]] $[[ inputs.build_flags ]] $BUILD_ARGS botan
+    - mkdir -p "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}"
+    - cd ../..
+    # When the botan build is a no-op (system Botan/OpenSSL detected),
+    # no 3rdp/*.release/botan directory exists.  Create a placeholder
+    # so tar always has something to archive — BSD and busybox tar
+    # don't accept `tar -T /dev/null` for zero-entry archives.
+    - mkdir -p 3rdp/empty.release/botan
+    - tar -czf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/botan.tgz" 3rdp/*.release/botan
+    - rm -rf 3rdp/empty.release
+  variables:
+    GIT_STRATEGY: fetch
+
 "$[[ inputs.os ]]-$[[ inputs.platform ]] [encode]":
   extends:
     - .$[[ inputs.os ]]-build
@@ -877,9 +914,7 @@ spec:
   script:
     - touch ${CI_PIPELINE_ID}.ci
     - echo -e "\e[0Ksection_start:`date +%s`:extract_depends[collapsed=true]\r\e[0KPreparing for build"
-    - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/cryptlib.tgz"
     - cd src/xpdev
-    - touch cl
     - touch depend
     - echo -e "\e[0Ksection_end:`date +%s`:extract_depends\r\e[0K"
     - $[[ inputs.gnu_make ]] $[[ inputs.build_flags ]] $BUILD_ARGS
@@ -889,7 +924,6 @@ spec:
   variables:
     GIT_STRATEGY: fetch
   needs:
-    - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [cryptlib]"
 
 #########
 # Doors #

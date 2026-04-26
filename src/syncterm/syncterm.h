@@ -90,7 +90,7 @@ struct syncterm_settings {
 	uint                  audio_output_modes;
 	bool                  invert_wheel;
 	bool                  webgetUserList;
-	int                   keyDerivationIterations;
+	char                  keyDerivationIterations[32];	/* KDF spec string, e.g. "scrypt-N15" */
 	enum CursorTypeEnum   defaultCursor;
 	unsigned              uifc_hclr;
 	unsigned              uifc_lclr;
@@ -135,5 +135,10 @@ int screen_to_ciolib(int ciolib);
 bool check_exit(bool force);
 void set_default_cursor(void);
 
+/* Cross-thread popup queue.  Background threads post (title, body)
+ * pairs here instead of calling uifc directly; the doterm() main loop
+ * drains the queue and displays them on the UI thread. */
+void popup_queue_post(const char *title, const char *body);
+bool popup_queue_drain(void);
 
 #endif // ifndef _SYNCTERM_H_

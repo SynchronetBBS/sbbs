@@ -12,6 +12,8 @@
 
 int conpty_connect(struct bbslist *bbs);
 int conpty_close(void);
+void conpty_send_window_change(int text_cols, int text_rows,
+                               int pixel_cols, int pixel_rows);
 
 #endif
 #endif

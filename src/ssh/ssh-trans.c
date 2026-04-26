@@ -281,8 +281,10 @@ DSSH_TESTABLE bool
 rekey_needed(struct dssh_session_s *sess)
 {
 	/* tx counters are atomic -- read without tx_mtx.
-	 * rx counters are protected by rx_mtx (held by caller). */
-	uint32_t tx_pkts = atomic_load(&sess->trans.tx_since_rekey);
+	 * rx counters are protected by rx_mtx (held by caller).
+	 * Match the atomic's fast-type; atomic_uint_fast32_t is 64-bit on
+	 * glibc x86_64, and -Werror=conversion balks at the narrowing. */
+	uint_fast32_t tx_pkts = atomic_load(&sess->trans.tx_since_rekey);
 	if ((tx_pkts >= DSSH_REKEY_SOFT_LIMIT) || (sess->trans.rx_since_rekey >= DSSH_REKEY_SOFT_LIMIT))
 		return true;
 

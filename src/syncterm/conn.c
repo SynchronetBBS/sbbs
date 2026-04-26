@@ -32,8 +32,10 @@
 #include "raw.h"
 #include "rlogin.h"
 #include "uifcinit.h"
-#ifndef WITHOUT_CRYPTLIB
+#ifndef WITHOUT_DEUCESSH
  #include "ssh.h"
+#endif
+#ifndef WITHOUT_CRYPTO
  #include "telnets.h"
 #endif
 #ifndef __HAIKU__
@@ -46,6 +48,7 @@
  #include "conn_conpty.h"
 #endif
 #include "conn_telnet.h"
+#include "telnet_io.h"	/* telnet_send_window_change */
 
 #ifdef _MSC_VER
 #pragma warning(disable : 4244 4267 4018)
@@ -107,6 +110,20 @@ destroy_conn_buf(struct conn_buffer *buf)
 		while (sem_destroy(&(buf->out_sem)))
 			;
 	}
+}
+
+/* Discard all pending bytes in the buffer.  Takes the buffer's
+ * mutex internally.  Posts out_sem so any writer blocked on
+ * conn_buf_wait_free wakes up. */
+void
+conn_buf_reset(struct conn_buffer *buf)
+{
+	assert_pthread_mutex_lock(&(buf->mutex));
+	buf->buftop = 0;
+	buf->bufbot = 0;
+	buf->isempty = 1;
+	sem_post(&(buf->out_sem));
+	assert_pthread_mutex_unlock(&(buf->mutex));
 }
 
 /*
@@ -377,29 +394,35 @@ conn_connect(struct bbslist *bbs)
 		case CONN_TYPE_RLOGIN_REVERSED:
 			conn_api.connect = rlogin_connect;
 			conn_api.close = rlogin_close;
+			conn_api.send_window_change = rlogin_send_window_change;
 			break;
 		case CONN_TYPE_TELNET:
 			conn_api.connect = telnet_connect;
 			conn_api.close = telnet_close;
 			conn_api.binary_mode_on = telnet_binary_mode_on;
 			conn_api.binary_mode_off = telnet_binary_mode_off;
+			conn_api.send_window_change = telnet_send_window_change;
 			break;
 		case CONN_TYPE_RAW:
 		case CONN_TYPE_MBBS_GHOST:
 			conn_api.connect = raw_connect;
 			conn_api.close = raw_close;
 			break;
-#ifndef WITHOUT_CRYPTLIB
+#ifndef WITHOUT_CRYPTO
 		case CONN_TYPE_TELNETS:
 			conn_api.connect = telnets_connect;
 			conn_api.close = telnets_close;
 			conn_api.binary_mode_on = telnet_binary_mode_on;
 			conn_api.binary_mode_off = telnet_binary_mode_off;
+			conn_api.send_window_change = telnet_send_window_change;
 			break;
+#endif
+#ifndef WITHOUT_DEUCESSH
 		case CONN_TYPE_SSHNA:
 		case CONN_TYPE_SSH:
 			conn_api.connect = ssh_connect;
 			conn_api.close = ssh_close;
+			conn_api.send_window_change = ssh_send_window_change;
 			break;
 #endif
 #ifndef __HAIKU__
@@ -417,12 +440,14 @@ conn_connect(struct bbslist *bbs)
 		case CONN_TYPE_SHELL:
 			conn_api.connect = pty_connect;
 			conn_api.close = pty_close;
+			conn_api.send_window_change = pty_send_window_change;
 			break;
 #endif
 #ifdef HAS_CONPTY
 		case CONN_TYPE_SHELL:
 			conn_api.connect = conpty_connect;
 			conn_api.close = conpty_close;
+			conn_api.send_window_change = conpty_send_window_change;
 			break;
 #endif
 		default:
@@ -678,4 +703,13 @@ conn_binary_mode_off(void)
 	if (conn_api.binary_mode_off)
 		conn_api.binary_mode_off();
 	conn_api.binary_mode = false;
+}
+
+void
+conn_send_window_change(int text_cols, int text_rows,
+    int pixel_cols, int pixel_rows)
+{
+	if (conn_api.send_window_change)
+		conn_api.send_window_change(text_cols, text_rows,
+		    pixel_cols, pixel_rows);
 }
