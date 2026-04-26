@@ -106,6 +106,45 @@ bool comSetBaudRate(COM_HANDLE handle, unsigned long rate)
 	return SetCommState(handle, &dcb);
 }
 
+size_t comGetBaudRates(COM_HANDLE handle, ulong* rates, size_t max_rates)
+{
+	static const struct { DWORD flag; ulong rate; } baud_map[] = {
+		{ BAUD_075,    75 },
+		{ BAUD_110,    110 },
+		{ BAUD_134_5,  134 },
+		{ BAUD_150,    150 },
+		{ BAUD_300,    300 },
+		{ BAUD_600,    600 },
+		{ BAUD_1200,   1200 },
+		{ BAUD_1800,   1800 },
+		{ BAUD_2400,   2400 },
+		{ BAUD_4800,   4800 },
+		{ BAUD_7200,   7200 },
+		{ BAUD_9600,   9600 },
+		{ BAUD_14400,  14400 },
+		{ BAUD_19200,  19200 },
+		{ BAUD_38400,  38400 },
+		{ BAUD_56K,    56000 },
+		{ BAUD_57600,  57600 },
+		{ BAUD_115200, 115200 },
+		{ BAUD_128K,   128000 },
+	};
+	COMMPROP props;
+	size_t count = 0;
+
+	if(!GetCommProperties(handle, &props))
+		return 0;
+
+	for(size_t i = 0; i < sizeof(baud_map)/sizeof(baud_map[0]); i++) {
+		if(props.dwSettableBaud & baud_map[i].flag) {
+			if(rates != NULL && count < max_rates)
+				rates[count] = baud_map[i].rate;
+			count++;
+		}
+	}
+	return count;
+}
+
 int comGetFlowControl(COM_HANDLE handle)
 {
 	DCB dcb;

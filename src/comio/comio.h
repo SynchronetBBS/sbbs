@@ -102,6 +102,7 @@ COMIOEXPORT COM_HANDLE	comOpen(const char* device);
 COMIOEXPORT bool		comClose(COM_HANDLE);
 COMIOEXPORT long		comGetBaudRate(COM_HANDLE);
 COMIOEXPORT bool		comSetBaudRate(COM_HANDLE, ulong rate);
+COMIOEXPORT size_t		comGetBaudRates(COM_HANDLE, ulong* rates, size_t max_rates);
 COMIOEXPORT int			comGetFlowControl(COM_HANDLE);
 COMIOEXPORT bool		comSetFlowControl(COM_HANDLE, int);
 COMIOEXPORT int			comGetModemStatus(COM_HANDLE);
