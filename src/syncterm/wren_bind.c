@@ -22,11 +22,15 @@
 #include "conn.h"
 #include "term.h"
 #include "utf8_codepages.h"
+#include "comio.h"
 
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <errno.h>
+#include <dirent.h>
+#include <sys/stat.h>
 
 /* term.c globals — emulation state and current bbs context. */
 extern struct cterminal *cterm;
@@ -443,10 +447,8 @@ fn_Conn_send(WrenVM *vm)
 {
 	int len = 0;
 	const char *s = wrenGetSlotBytes(vm, 1, &len);
-	/* Use raw variant so onOutput hooks don't recurse when a script
-	 * sends from inside its own hook. */
 	if (len > 0)
-		conn_send_raw(s, (size_t)len, 0);
+		conn_send(s, (size_t)len, 0);
 }
 
 static void
@@ -480,27 +482,27 @@ fn_Conn_type(WrenVM *vm)
 }
 
 static void
-fn_Conn_inbufBytes(WrenVM *vm)
+fn_Conn_pending(WrenVM *vm)
 {
 	wrenSetSlotDouble(vm, 0, (double)conn_buf_bytes(&conn_inbuf));
 }
 
 static void
-fn_Conn_outbufBytes(WrenVM *vm)
+fn_Conn_queued(WrenVM *vm)
 {
 	wrenSetSlotDouble(vm, 0, (double)conn_buf_bytes(&conn_outbuf));
 }
 
 static void
-fn_Conn_inbufPeek(WrenVM *vm)
+fn_Conn_peek(WrenVM *vm)
 {
 	int n = (int)wrenGetSlotDouble(vm, 1);
 	if (n <= 0) {
 		wrenSetSlotBytes(vm, 0, "", 0);
 		return;
 	}
-	if (n > 65536)
-		n = 65536;
+	if ((size_t)n > conn_inbuf.bufsize)
+		n = (int)conn_inbuf.bufsize;
 	char *tmp = malloc((size_t)n);
 	if (tmp == NULL) {
 		wrenSetSlotNull(vm, 0);
@@ -512,15 +514,15 @@ fn_Conn_inbufPeek(WrenVM *vm)
 }
 
 static void
-fn_Conn_inbufGet(WrenVM *vm)
+fn_Conn_recv(WrenVM *vm)
 {
 	int n = (int)wrenGetSlotDouble(vm, 1);
 	if (n <= 0) {
 		wrenSetSlotBytes(vm, 0, "", 0);
 		return;
 	}
-	if (n > 65536)
-		n = 65536;
+	if ((size_t)n > conn_inbuf.bufsize)
+		n = (int)conn_inbuf.bufsize;
 	char *tmp = malloc((size_t)n);
 	if (tmp == NULL) {
 		wrenSetSlotNull(vm, 0);
@@ -529,17 +531,6 @@ fn_Conn_inbufGet(WrenVM *vm)
 	size_t got = conn_buf_get(&conn_inbuf, tmp, (size_t)n);
 	wrenSetSlotBytes(vm, 0, tmp, got);
 	free(tmp);
-}
-
-static void
-fn_Conn_outbufPut(WrenVM *vm)
-{
-	int len = 0;
-	const char *s = wrenGetSlotBytes(vm, 1, &len);
-	size_t put = 0;
-	if (len > 0)
-		put = conn_buf_put(&conn_outbuf, s, (size_t)len);
-	wrenSetSlotDouble(vm, 0, (double)put);
 }
 
 /* ----- CTerm ------------------------------------------------------- */
@@ -604,6 +595,180 @@ fn_CTerm_write(WrenVM *vm)
 		cterm_write(cterm, s, len, &speed);
 }
 
+#define CTERM_FIELD_NUM(field)                                          \
+	do {                                                            \
+		double v = (cterm != NULL) ? (double)cterm->field : 0.0;\
+		wrenSetSlotDouble(vm, 0, v);                            \
+	} while (0)
+
+#define CTERM_FIELD_BOOL(field)                                         \
+	do {                                                            \
+		bool v = (cterm != NULL) ? (bool)cterm->field : false;  \
+		wrenSetSlotBool(vm, 0, v);                              \
+	} while (0)
+
+static void fn_CTerm_originX(WrenVM *vm)        { CTERM_FIELD_NUM(x); }
+static void fn_CTerm_originY(WrenVM *vm)        { CTERM_FIELD_NUM(y); }
+static void fn_CTerm_topMargin(WrenVM *vm)      { CTERM_FIELD_NUM(top_margin); }
+static void fn_CTerm_bottomMargin(WrenVM *vm)   { CTERM_FIELD_NUM(bottom_margin); }
+static void fn_CTerm_leftMargin(WrenVM *vm)     { CTERM_FIELD_NUM(left_margin); }
+static void fn_CTerm_rightMargin(WrenVM *vm)    { CTERM_FIELD_NUM(right_margin); }
+static void fn_CTerm_fontSlot(WrenVM *vm)       { CTERM_FIELD_NUM(font_slot); }
+static void fn_CTerm_scrollbackLines(WrenVM *vm){ CTERM_FIELD_NUM(backlines); }
+static void fn_CTerm_scrollbackWidth(WrenVM *vm){ CTERM_FIELD_NUM(backwidth); }
+static void fn_CTerm_scrollbackPos(WrenVM *vm)  { CTERM_FIELD_NUM(backpos); }
+static void fn_CTerm_scrollbackStart(WrenVM *vm){ CTERM_FIELD_NUM(backstart); }
+static void fn_CTerm_started(WrenVM *vm)        { CTERM_FIELD_BOOL(started); }
+static void fn_CTerm_skypix(WrenVM *vm)         { CTERM_FIELD_BOOL(skypix); }
+static void fn_CTerm_hasPaletteOverride(WrenVM *vm){ CTERM_FIELD_BOOL(has_palette_override); }
+static void fn_CTerm_statusDisplay(WrenVM *vm)  { CTERM_FIELD_NUM(status_display_type); }
+
+static void
+fn_CTerm_fgColor(WrenVM *vm)
+{
+	uint32_t v = (cterm != NULL) ? (cterm->fg_color & 0xFFFFFFu) : 0;
+	wrenSetSlotDouble(vm, 0, (double)v);
+}
+
+static void
+fn_CTerm_bgColor(WrenVM *vm)
+{
+	uint32_t v = (cterm != NULL) ? (cterm->bg_color & 0xFFFFFFu) : 0;
+	wrenSetSlotDouble(vm, 0, (double)v);
+}
+
+static void
+fn_CTerm_paletteOverride(WrenVM *vm)
+{
+	wrenEnsureSlots(vm, 2);
+	wrenSetSlotNewList(vm, 0);
+	if (cterm == NULL || !cterm->has_palette_override)
+		return;
+	const unsigned cap = sizeof(cterm->palette_override) /
+	    sizeof(cterm->palette_override[0]);
+	for (unsigned i = 0; i < cap; i++) {
+		uint32_t rgb = cterm->palette_override[i] & 0xFFFFFFu;
+		wrenSetSlotDouble(vm, 1, (double)rgb);
+		wrenInsertInList(vm, 0, -1, 1);
+	}
+}
+
+static void
+fn_CTerm_altFonts(WrenVM *vm)
+{
+	wrenEnsureSlots(vm, 2);
+	wrenSetSlotNewList(vm, 0);
+	if (cterm == NULL)
+		return;
+	const unsigned cap = sizeof(cterm->altfont) /
+	    sizeof(cterm->altfont[0]);
+	for (unsigned i = 0; i < cap; i++) {
+		wrenSetSlotDouble(vm, 1, (double)cterm->altfont[i]);
+		wrenInsertInList(vm, 0, -1, 1);
+	}
+}
+
+static void
+fn_CTerm_logMode(WrenVM *vm)
+{
+	int v = (cterm != NULL) ? (cterm->log & CTERM_LOG_MASK) : 0;
+	wrenSetSlotDouble(vm, 0, (double)v);
+}
+
+static void
+fn_CTerm_logPaused(WrenVM *vm)
+{
+	bool v = (cterm != NULL) && ((cterm->log & CTERM_LOG_PAUSED) != 0);
+	wrenSetSlotBool(vm, 0, v);
+}
+
+/* ----- ExtAttr / LastColumnFlag (CTerm bitfield snapshots) --------- */
+
+struct wren_extattr {
+	uint32_t value;
+};
+
+struct wren_last_column_flag {
+	uint32_t value;
+};
+
+static void
+wren_extattr_allocate(WrenVM *vm)
+{
+	struct wren_extattr *e = wrenSetSlotNewForeign(vm, 0, 0, sizeof(*e));
+	e->value = 0;
+}
+
+static void
+wren_extattr_finalize(void *data)
+{
+	(void)data;
+}
+
+static void
+wren_last_column_flag_allocate(WrenVM *vm)
+{
+	struct wren_last_column_flag *l = wrenSetSlotNewForeign(vm, 0, 0,
+	    sizeof(*l));
+	l->value = 0;
+}
+
+static void
+wren_last_column_flag_finalize(void *data)
+{
+	(void)data;
+}
+
+#define EXTATTR_BOOL(name, flag)                                        \
+	static void fn_ExtAttr_##name(WrenVM *vm)                       \
+	{                                                               \
+		struct wren_extattr *e = wrenGetSlotForeign(vm, 0);     \
+		wrenSetSlotBool(vm, 0, (e->value & (flag)) != 0);       \
+	}
+
+EXTATTR_BOOL(autoWrap,            CTERM_EXTATTR_AUTOWRAP)
+EXTATTR_BOOL(originMode,          CTERM_EXTATTR_ORIGINMODE)
+EXTATTR_BOOL(sxScroll,            CTERM_EXTATTR_SXSCROLL)
+EXTATTR_BOOL(decLrmm,             CTERM_EXTATTR_DECLRMM)
+EXTATTR_BOOL(bracketPaste,        CTERM_EXTATTR_BRACKETPASTE)
+EXTATTR_BOOL(decBkm,              CTERM_EXTATTR_DECBKM)
+EXTATTR_BOOL(prestelMosaic,       CTERM_EXTATTR_PRESTEL_MOSAIC)
+EXTATTR_BOOL(prestelDoubleHeight, CTERM_EXTATTR_PRESTEL_DOUBLE_HEIGHT)
+EXTATTR_BOOL(prestelConceal,      CTERM_EXTATTR_PRESTEL_CONCEAL)
+EXTATTR_BOOL(prestelSeparated,    CTERM_EXTATTR_PRESTEL_SEPARATED)
+EXTATTR_BOOL(prestelHold,         CTERM_EXTATTR_PRESTEL_HOLD)
+EXTATTR_BOOL(alternateKeypad,     CTERM_EXTATTR_ALTERNATE_KEYPAD)
+
+#define LCF_BOOL(name, flag)                                            \
+	static void fn_LCF_##name(WrenVM *vm)                           \
+	{                                                               \
+		struct wren_last_column_flag *l = wrenGetSlotForeign(vm, 0); \
+		wrenSetSlotBool(vm, 0, (l->value & (flag)) != 0);       \
+	}
+
+LCF_BOOL(set,     CTERM_LCF_SET)
+LCF_BOOL(enabled, CTERM_LCF_ENABLED)
+LCF_BOOL(forced,  CTERM_LCF_FORCED)
+
+static void
+fn_CTerm_extAttr(WrenVM *vm)
+{
+	wrenEnsureSlots(vm, 2);
+	wrenGetVariable(vm, "syncterm", "ExtAttr", 1);
+	struct wren_extattr *e = wrenSetSlotNewForeign(vm, 0, 1, sizeof(*e));
+	e->value = (cterm != NULL) ? cterm->extattr : 0;
+}
+
+static void
+fn_CTerm_lastColumnFlag(WrenVM *vm)
+{
+	wrenEnsureSlots(vm, 2);
+	wrenGetVariable(vm, "syncterm", "LastColumnFlag", 1);
+	struct wren_last_column_flag *l = wrenSetSlotNewForeign(vm, 0, 1,
+	    sizeof(*l));
+	l->value = (cterm != NULL) ? cterm->last_column_flag : 0;
+}
+
 /* ----- BBS --------------------------------------------------------- */
 
 #define BBS_FIELD_STR(setter)                                           \
@@ -623,101 +788,719 @@ fn_CTerm_write(WrenVM *vm)
 		wrenSetSlotDouble(vm, 0, v);                            \
 	} while (0)
 
-static void fn_BBS_name(WrenVM *vm)     { BBS_FIELD_STR(name); }
-static void fn_BBS_addr(WrenVM *vm)     { BBS_FIELD_STR(addr); }
-static void fn_BBS_port(WrenVM *vm)     { BBS_FIELD_NUM(port); }
-static void fn_BBS_connType(WrenVM *vm) { BBS_FIELD_NUM(conn_type); }
-static void fn_BBS_user(WrenVM *vm)     { BBS_FIELD_STR(user); }
-static void fn_BBS_password(WrenVM *vm) { BBS_FIELD_STR(password); }
-static void fn_BBS_syspass(WrenVM *vm)  { BBS_FIELD_STR(syspass); }
-static void fn_BBS_music(WrenVM *vm)    { BBS_FIELD_NUM(music); }
-static void fn_BBS_rip(WrenVM *vm)      { BBS_FIELD_NUM(rip); }
-static void fn_BBS_comment(WrenVM *vm)  { BBS_FIELD_STR(comment); }
+#define BBS_FIELD_BOOL(field)                                           \
+	do {                                                            \
+		struct wren_host_state *st = wren_host_state();         \
+		bool v = (st != NULL && st->bbs != NULL)                \
+		    ? (bool)st->bbs->field : false;                     \
+		wrenSetSlotBool(vm, 0, v);                              \
+	} while (0)
 
-/* ----- Cache ------------------------------------------------------- */
+static void fn_BBS_name(WrenVM *vm)         { BBS_FIELD_STR(name); }
+static void fn_BBS_addr(WrenVM *vm)         { BBS_FIELD_STR(addr); }
+static void fn_BBS_port(WrenVM *vm)         { BBS_FIELD_NUM(port); }
+static void fn_BBS_connType(WrenVM *vm)     { BBS_FIELD_NUM(conn_type); }
+static void fn_BBS_user(WrenVM *vm)         { BBS_FIELD_STR(user); }
+static void fn_BBS_password(WrenVM *vm)     { BBS_FIELD_STR(password); }
+static void fn_BBS_syspass(WrenVM *vm)      { BBS_FIELD_STR(syspass); }
+static void fn_BBS_music(WrenVM *vm)        { BBS_FIELD_NUM(music); }
+static void fn_BBS_rip(WrenVM *vm)          { BBS_FIELD_NUM(rip); }
+static void fn_BBS_comment(WrenVM *vm)      { BBS_FIELD_STR(comment); }
+
+static void fn_BBS_type(WrenVM *vm)         { BBS_FIELD_NUM(type); }
+static void fn_BBS_id(WrenVM *vm)           { BBS_FIELD_NUM(id); }
+static void fn_BBS_addressFamily(WrenVM *vm){ BBS_FIELD_NUM(address_family); }
+static void fn_BBS_termName(WrenVM *vm)     { BBS_FIELD_STR(term_name); }
+static void fn_BBS_screenMode(WrenVM *vm)   { BBS_FIELD_NUM(screen_mode); }
+static void fn_BBS_bpsRate(WrenVM *vm)      { BBS_FIELD_NUM(bpsrate); }
+static void fn_BBS_font(WrenVM *vm)         { BBS_FIELD_STR(font); }
+
+static void fn_BBS_noStatus(WrenVM *vm)     { BBS_FIELD_BOOL(nostatus); }
+static void fn_BBS_hidePopups(WrenVM *vm)   { BBS_FIELD_BOOL(hidepopups); }
+static void fn_BBS_yellowIsYellow(WrenVM *vm){ BBS_FIELD_BOOL(yellow_is_yellow); }
+static void fn_BBS_forceLcf(WrenVM *vm)     { BBS_FIELD_BOOL(force_lcf); }
+
+static void fn_BBS_added(WrenVM *vm)        { BBS_FIELD_NUM(added); }
+static void fn_BBS_connected(WrenVM *vm)    { BBS_FIELD_NUM(connected); }
+static void fn_BBS_fastConnected(WrenVM *vm){ BBS_FIELD_NUM(fast_connected); }
+static void fn_BBS_calls(WrenVM *vm)        { BBS_FIELD_NUM(calls); }
+
+static void fn_BBS_dlDir(WrenVM *vm)        { BBS_FIELD_STR(dldir); }
+static void fn_BBS_ulDir(WrenVM *vm)        { BBS_FIELD_STR(uldir); }
+static void fn_BBS_logFile(WrenVM *vm)      { BBS_FIELD_STR(logfile); }
+static void fn_BBS_appendLogFile(WrenVM *vm){ BBS_FIELD_BOOL(append_logfile); }
+static void fn_BBS_xferLogLevel(WrenVM *vm) { BBS_FIELD_NUM(xfer_loglevel); }
+static void fn_BBS_telnetLogLevel(WrenVM *vm){ BBS_FIELD_NUM(telnet_loglevel); }
+
+static void fn_BBS_stopBits(WrenVM *vm)     { BBS_FIELD_NUM(stop_bits); }
+static void fn_BBS_dataBits(WrenVM *vm)     { BBS_FIELD_NUM(data_bits); }
+static void fn_BBS_parity(WrenVM *vm)       { BBS_FIELD_NUM(parity); }
+struct wren_flowcontrol {
+	uint32_t value;
+};
 
 static void
-fn_Cache_basePath(WrenVM *vm)
+wren_flowcontrol_allocate(WrenVM *vm)
 {
-	struct wren_host_state *st = wren_host_state();
-	char fn[MAX_PATH + 1] = "";
-	if (st != NULL && st->bbs != NULL)
-		get_cache_fn_base(st->bbs, fn, sizeof(fn));
-	wrenSetSlotString(vm, 0, fn);
+	struct wren_flowcontrol *f = wrenSetSlotNewForeign(vm, 0, 0, sizeof(*f));
+	f->value = 0;
 }
 
 static void
-fn_Cache_subdirPath(WrenVM *vm)
+wren_flowcontrol_finalize(void *data)
 {
-	struct wren_host_state *st = wren_host_state();
-	const char *sub = wrenGetSlotString(vm, 1);
-	char fn[MAX_PATH + 1] = "";
-	if (st != NULL && st->bbs != NULL && sub != NULL)
-		get_cache_fn_subdir(st->bbs, fn, sizeof(fn), sub);
-	wrenSetSlotString(vm, 0, fn);
+	(void)data;
 }
 
 static void
-fn_Cache_readFile(WrenVM *vm)
+fn_FlowControl_rtsCts(WrenVM *vm)
 {
-	const char *name = wrenGetSlotString(vm, 1);
+	struct wren_flowcontrol *f = wrenGetSlotForeign(vm, 0);
+	wrenSetSlotBool(vm, 0, (f->value & COM_FLOW_CONTROL_RTS_CTS) != 0);
+}
+
+static void
+fn_FlowControl_xonOff(WrenVM *vm)
+{
+	struct wren_flowcontrol *f = wrenGetSlotForeign(vm, 0);
+	wrenSetSlotBool(vm, 0, (f->value & COM_FLOW_CONTROL_XON_OFF) != 0);
+}
+
+static void
+fn_BBS_flowControl(WrenVM *vm)
+{
+	wrenEnsureSlots(vm, 2);
+	wrenGetVariable(vm, "syncterm", "FlowControl", 1);
+	struct wren_flowcontrol *f = wrenSetSlotNewForeign(vm, 0, 1,
+	    sizeof(*f));
 	struct wren_host_state *st = wren_host_state();
-	if (name == NULL || st == NULL || st->bbs == NULL) {
-		wrenSetSlotNull(vm, 0);
-		return;
+	f->value = (st != NULL && st->bbs != NULL)
+	    ? (uint32_t)st->bbs->flow_control : 0;
+}
+
+static void fn_BBS_telnetNoBinary(WrenVM *vm){ BBS_FIELD_BOOL(telnet_no_binary); }
+static void fn_BBS_deferTelnetNegotiation(WrenVM *vm){ BBS_FIELD_BOOL(defer_telnet_negotiation); }
+
+static void fn_BBS_ghostProgram(WrenVM *vm) { BBS_FIELD_STR(ghost_program); }
+static void fn_BBS_sftpPublicKey(WrenVM *vm){ BBS_FIELD_BOOL(sftp_public_key); }
+static void fn_BBS_sshFingerprintLen(WrenVM *vm){ BBS_FIELD_NUM(ssh_fingerprint_len); }
+static void fn_BBS_sortOrder(WrenVM *vm)    { BBS_FIELD_NUM(sort_order); }
+
+static void
+fn_BBS_sshFingerprint(WrenVM *vm)
+{
+	struct wren_host_state *st = wren_host_state();
+	if (st != NULL && st->bbs != NULL && st->bbs->ssh_fingerprint_len > 0) {
+		wrenSetSlotBytes(vm, 0,
+		    (const char *)st->bbs->ssh_fingerprint,
+		    st->bbs->ssh_fingerprint_len);
 	}
-	char base[MAX_PATH + 1];
-	get_cache_fn_base(st->bbs, base, sizeof(base));
+	else {
+		wrenSetSlotBytes(vm, 0, "", 0);
+	}
+}
+
+static void
+fn_BBS_palette(WrenVM *vm)
+{
+	struct wren_host_state *st = wren_host_state();
+	wrenEnsureSlots(vm, 2);
+	wrenSetSlotNewList(vm, 0);
+	if (st == NULL || st->bbs == NULL)
+		return;
+	unsigned n = st->bbs->palette_size;
+	const unsigned cap = sizeof(st->bbs->palette) / sizeof(st->bbs->palette[0]);
+	if (n > cap)
+		n = cap;
+	for (unsigned i = 0; i < n; i++) {
+		uint32_t rgb = st->bbs->palette[i] & 0xFFFFFFu;
+		wrenSetSlotDouble(vm, 1, (double)rgb);
+		wrenInsertInList(vm, 0, -1, 1);
+	}
+}
+
+static void fn_BBS_paletteSize(WrenVM *vm)  { BBS_FIELD_NUM(palette_size); }
+
+/* ----- Directory / File -------------------------------------------- */
+
+struct wren_directory {
+	/* When is_cache is true, the path is resolved lazily on each
+	 * method call from the active BBS context (see wd_resolve).
+	 * Otherwise `path` is the literal directory path with trailing
+	 * slash. */
+	bool is_cache;
 	char path[MAX_PATH + 1];
-	snprintf(path, sizeof(path), "%s%s", base, name);
-	FILE *f = fopen(path, "rb");
+};
+
+struct wren_file {
+	char  path[MAX_PATH + 1]; /* absolute path */
+	FILE *fp;
+	bool  deleted;
+};
+
+static void
+wren_throw(WrenVM *vm, const char *msg)
+{
+	wrenEnsureSlots(vm, 1);
+	wrenSetSlotString(vm, 0, msg);
+	wrenAbortFiber(vm, 0);
+}
+
+/* Filename policy: 1..64 chars, only [A-Za-z0-9._-], no leading '.'
+ * or '-', no trailing '.', no ".." substring, basename (chars before
+ * first '.') not a Windows reserved device. */
+static bool
+fname_is_clean(const char *name)
+{
+	if (name == NULL)
+		return false;
+	size_t n = strlen(name);
+	if (n < 1 || n > 64)
+		return false;
+	for (size_t i = 0; i < n; i++) {
+		char c = name[i];
+		bool ok = (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z')
+		    || (c >= '0' && c <= '9') || c == '.' || c == '_'
+		    || c == '-';
+		if (!ok)
+			return false;
+	}
+	if (name[0] == '.' || name[0] == '-')
+		return false;
+	if (name[n - 1] == '.')
+		return false;
+	if (strstr(name, "..") != NULL)
+		return false;
+	static const char *reserved[] = {
+		"CON", "PRN", "AUX", "NUL",
+		"COM1", "COM2", "COM3", "COM4", "COM5",
+		"COM6", "COM7", "COM8", "COM9",
+		"LPT1", "LPT2", "LPT3", "LPT4", "LPT5",
+		"LPT6", "LPT7", "LPT8", "LPT9",
+		NULL
+	};
+	const char *dot = strchr(name, '.');
+	size_t base_len = dot ? (size_t)(dot - name) : n;
+	for (int i = 0; reserved[i] != NULL; i++) {
+		size_t rlen = strlen(reserved[i]);
+		if (base_len != rlen)
+			continue;
+		bool match = true;
+		for (size_t j = 0; j < rlen; j++) {
+			char nc = name[j];
+			char rc = reserved[i][j];
+			if (nc >= 'a' && nc <= 'z')
+				nc = (char)(nc - 32);
+			if (nc != rc) {
+				match = false;
+				break;
+			}
+		}
+		if (match)
+			return false;
+	}
+	return true;
+}
+
+static void
+wren_directory_allocate(WrenVM *vm)
+{
+	struct wren_directory *wd = wrenSetSlotNewForeign(vm, 0, 0, sizeof(*wd));
+	wd->is_cache = false;
+	wd->path[0]  = '\0';
+}
+
+static const char *
+wd_resolve(WrenVM *vm, struct wren_directory *wd, char *scratch,
+    size_t scratchsz)
+{
+	if (!wd->is_cache)
+		return wd->path;
+	struct wren_host_state *st = wren_host_state();
+	if (st == NULL || st->bbs == NULL) {
+		wren_throw(vm, "Cache: no BBS context");
+		return NULL;
+	}
+	if (!get_cache_fn_base(st->bbs, scratch, scratchsz)) {
+		wren_throw(vm, "Cache: failed to resolve path");
+		return NULL;
+	}
+	return scratch;
+}
+
+static void
+wren_directory_finalize(void *data)
+{
+	(void)data;
+}
+
+static void
+wren_file_allocate(WrenVM *vm)
+{
+	struct wren_file *wf = wrenSetSlotNewForeign(vm, 0, 0, sizeof(*wf));
+	wf->path[0] = '\0';
+	wf->fp      = NULL;
+	wf->deleted = false;
+}
+
+static void
+wren_file_finalize(void *data)
+{
+	struct wren_file *wf = data;
+	if (wf->fp != NULL) {
+		fclose(wf->fp);
+		wf->fp = NULL;
+	}
+}
+
+/* Build a File foreign instance into `slot` (uses slot+1 as scratch
+ * for the class lookup).  Caller must pre-validate `name`. */
+static struct wren_file *
+push_new_file(WrenVM *vm, int slot, const char *dir, const char *name)
+{
+	wrenEnsureSlots(vm, slot + 2);
+	wrenGetVariable(vm, "syncterm", "File", slot + 1);
+	struct wren_file *wf = wrenSetSlotNewForeign(vm, slot, slot + 1,
+	    sizeof(*wf));
+	wf->fp      = NULL;
+	wf->deleted = false;
+	snprintf(wf->path, sizeof(wf->path), "%s%s", dir, name);
+	return wf;
+}
+
+static void
+dir_contains_impl(WrenVM *vm, const char *dir, const char *name)
+{
+	if (!fname_is_clean(name)) {
+		wren_throw(vm, "Directory: invalid file name");
+		return;
+	}
+	char p[MAX_PATH + 1];
+	int len = snprintf(p, sizeof(p), "%s%s", dir, name);
+	if (len < 0 || (size_t)len >= sizeof(p)) {
+		wren_throw(vm, "Directory: path too long");
+		return;
+	}
+	struct stat sb;
+	bool yes = (stat(p, &sb) == 0) && S_ISREG(sb.st_mode);
+	wrenSetSlotBool(vm, 0, yes);
+}
+
+static void
+dir_list_impl(WrenVM *vm, const char *dir)
+{
+	wrenEnsureSlots(vm, 4);
+	wrenSetSlotNewMap(vm, 0);
+	DIR *dh = opendir(dir);
+	if (dh == NULL)
+		return;
+	struct dirent *de;
+	char p[MAX_PATH + 1];
+	while ((de = readdir(dh)) != NULL) {
+		if (!fname_is_clean(de->d_name))
+			continue;
+		int len = snprintf(p, sizeof(p), "%s%s", dir, de->d_name);
+		if (len < 0 || (size_t)len >= sizeof(p))
+			continue;
+		struct stat sb;
+		if (stat(p, &sb) != 0)
+			continue;
+		if (!S_ISREG(sb.st_mode))
+			continue;
+		wrenSetSlotString(vm, 1, de->d_name);
+		wrenGetVariable(vm, "syncterm", "File", 2);
+		struct wren_file *wf = wrenSetSlotNewForeign(vm, 3, 2,
+		    sizeof(*wf));
+		wf->fp      = NULL;
+		wf->deleted = false;
+		memcpy(wf->path, p, (size_t)len + 1);
+		wrenSetMapValue(vm, 0, 1, 3);
+	}
+	closedir(dh);
+}
+
+static void
+dir_create_impl(WrenVM *vm, const char *dir, const char *name)
+{
+	if (!fname_is_clean(name)) {
+		wren_throw(vm, "Directory: invalid file name");
+		return;
+	}
+	char p[MAX_PATH + 1];
+	int len = snprintf(p, sizeof(p), "%s%s", dir, name);
+	if (len < 0 || (size_t)len >= sizeof(p)) {
+		wren_throw(vm, "Directory: path too long");
+		return;
+	}
+	struct stat sb;
+	if (stat(p, &sb) == 0) {
+		wren_throw(vm, "Directory: file already exists");
+		return;
+	}
+	FILE *f = fopen(p, "wb");
 	if (f == NULL) {
-		wrenSetSlotNull(vm, 0);
+		wren_throw(vm, "Directory: failed to create file");
 		return;
 	}
-	fseek(f, 0, SEEK_END);
-	long sz = ftell(f);
-	fseek(f, 0, SEEK_SET);
-	if (sz < 0 || sz > 16 * 1024 * 1024) {
-		fclose(f);
-		wrenSetSlotNull(vm, 0);
-		return;
-	}
-	char *buf = malloc((size_t)sz);
-	if (buf == NULL) {
-		fclose(f);
-		wrenSetSlotNull(vm, 0);
-		return;
-	}
-	size_t got = fread(buf, 1, (size_t)sz, f);
 	fclose(f);
+	push_new_file(vm, 0, dir, name);
+}
+
+/* ----- Directory foreign methods ----------------------------------- */
+
+static void
+fn_Directory_contains(WrenVM *vm)
+{
+	struct wren_directory *wd = wrenGetSlotForeign(vm, 0);
+	char scratch[MAX_PATH + 1];
+	const char *dir = wd_resolve(vm, wd, scratch, sizeof(scratch));
+	if (dir == NULL)
+		return;
+	const char *name = wrenGetSlotString(vm, 1);
+	dir_contains_impl(vm, dir, name);
+}
+
+static void
+fn_Directory_list(WrenVM *vm)
+{
+	struct wren_directory *wd = wrenGetSlotForeign(vm, 0);
+	char scratch[MAX_PATH + 1];
+	const char *dir = wd_resolve(vm, wd, scratch, sizeof(scratch));
+	if (dir == NULL)
+		return;
+	dir_list_impl(vm, dir);
+}
+
+static void
+fn_Directory_create(WrenVM *vm)
+{
+	struct wren_directory *wd = wrenGetSlotForeign(vm, 0);
+	char scratch[MAX_PATH + 1];
+	const char *dir = wd_resolve(vm, wd, scratch, sizeof(scratch));
+	if (dir == NULL)
+		return;
+	const char *name = wrenGetSlotString(vm, 1);
+	dir_create_impl(vm, dir, name);
+}
+
+/* Define a module-level `Cache` variable in the "syncterm" module
+ * holding a Directory whose path is resolved lazily from the current
+ * BBS context on every method call.  Called from wren_host.c after
+ * the builtin module source has been interpreted; no Wren-side
+ * factory exists, so user scripts cannot construct a Directory
+ * pointing at the cache via any other path. */
+void
+wren_bind_define_cache(WrenVM *vm)
+{
+	if (vm == NULL)
+		return;
+	/* Build a Directory foreign instance in slot 0, leaving the
+	 * Directory class on slot 1 as scratch. */
+	wrenEnsureSlots(vm, 2);
+	wrenGetVariable(vm, "syncterm", "Directory", 1);
+	struct wren_directory *wd = wrenSetSlotNewForeign(vm, 0, 1,
+	    sizeof(*wd));
+	wd->is_cache = true;
+	wd->path[0]  = '\0';
+
+	/* Find the syncterm module via the VM's module map and define
+	 * `Cache` as a new module variable bound to the slot-0 value. */
+	Value modName = wrenNewStringLength(vm, "syncterm",
+	    strlen("syncterm"));
+	wrenPushRoot(vm, AS_OBJ(modName));
+	Value modVal = wrenMapGet(vm->modules, modName);
+	wrenPopRoot(vm);
+	if (IS_UNDEFINED(modVal))
+		return;
+	ObjModule *mod = AS_MODULE(modVal);
+	wrenDefineVariable(vm, mod, "Cache", strlen("Cache"),
+	    vm->apiStack[0], NULL);
+}
+
+/* ----- File foreign methods ---------------------------------------- */
+
+static struct wren_file *
+file_check(WrenVM *vm)
+{
+	struct wren_file *wf = wrenGetSlotForeign(vm, 0);
+	if (wf->deleted) {
+		wren_throw(vm, "File: handle has been deleted");
+		return NULL;
+	}
+	return wf;
+}
+
+static struct wren_file *
+file_check_open(WrenVM *vm)
+{
+	struct wren_file *wf = file_check(vm);
+	if (wf == NULL)
+		return NULL;
+	if (wf->fp == NULL) {
+		wren_throw(vm, "File: not open");
+		return NULL;
+	}
+	return wf;
+}
+
+static long
+file_size_now(struct wren_file *wf)
+{
+	long pos = ftell(wf->fp);
+	fseek(wf->fp, 0, SEEK_END);
+	long sz = ftell(wf->fp);
+	fseek(wf->fp, pos, SEEK_SET);
+	return sz;
+}
+
+static void
+fn_File_open(WrenVM *vm)
+{
+	struct wren_file *wf = file_check(vm);
+	if (wf == NULL)
+		return;
+	if (wf->fp != NULL) {
+		wren_throw(vm, "File: already open");
+		return;
+	}
+	wf->fp = fopen(wf->path, "r+b");
+	if (wf->fp == NULL) {
+		wren_throw(vm, "File: open failed");
+		return;
+	}
+	fseek(wf->fp, 0, SEEK_SET);
+}
+
+static void
+fn_File_close(WrenVM *vm)
+{
+	struct wren_file *wf = file_check(vm);
+	if (wf == NULL)
+		return;
+	if (wf->fp == NULL) {
+		wren_throw(vm, "File: not open");
+		return;
+	}
+	fclose(wf->fp);
+	wf->fp = NULL;
+}
+
+/* Read `count` bytes from `off`.  If `advance`, file offset becomes
+ * off+got afterward; otherwise it's left at off+got too via fseek
+ * (offset variant intentionally repositions for simplicity — pread
+ * semantics could be added later if needed). */
+static void
+do_read_at(WrenVM *vm, struct wren_file *wf, long off, long count,
+    bool advance)
+{
+	(void)advance;
+	if (off < 0 || count < 0) {
+		wren_throw(vm, "File: negative offset or count");
+		return;
+	}
+	long sz = file_size_now(wf);
+	if (off > sz) {
+		wren_throw(vm, "File: offset past end");
+		return;
+	}
+	if (off + count > sz)
+		count = sz - off;
+	fseek(wf->fp, off, SEEK_SET);
+	if (count == 0) {
+		wrenSetSlotBytes(vm, 0, "", 0);
+		return;
+	}
+	char *buf = malloc((size_t)count);
+	if (buf == NULL) {
+		wren_throw(vm, "File: out of memory");
+		return;
+	}
+	size_t got = fread(buf, 1, (size_t)count, wf->fp);
 	wrenSetSlotBytes(vm, 0, buf, got);
 	free(buf);
 }
 
 static void
-fn_Cache_writeFile(WrenVM *vm)
+fn_File_readBytes_1(WrenVM *vm)
 {
-	const char *name = wrenGetSlotString(vm, 1);
+	struct wren_file *wf = file_check_open(vm);
+	if (wf == NULL)
+		return;
+	long count = (long)wrenGetSlotDouble(vm, 1);
+	long off   = ftell(wf->fp);
+	do_read_at(vm, wf, off, count, true);
+}
+
+static void
+fn_File_readBytes_2(WrenVM *vm)
+{
+	struct wren_file *wf = file_check_open(vm);
+	if (wf == NULL)
+		return;
+	long count = (long)wrenGetSlotDouble(vm, 1);
+	long off   = (long)wrenGetSlotDouble(vm, 2);
+	do_read_at(vm, wf, off, count, false);
+}
+
+static void
+fn_File_read(WrenVM *vm)
+{
+	struct wren_file *wf = file_check_open(vm);
+	if (wf == NULL)
+		return;
+	long off = ftell(wf->fp);
+	long sz  = file_size_now(wf);
+	if (off > sz) {
+		wren_throw(vm, "File: offset past end");
+		return;
+	}
+	do_read_at(vm, wf, off, sz - off, true);
+}
+
+static void
+do_write_at(WrenVM *vm, struct wren_file *wf, long off,
+    const char *bytes, int len)
+{
+	if (off < 0 || len < 0) {
+		wren_throw(vm, "File: negative offset or length");
+		return;
+	}
+	long sz = file_size_now(wf);
+	if (off > sz) {
+		wren_throw(vm, "File: offset past end");
+		return;
+	}
+	fseek(wf->fp, off, SEEK_SET);
+	if (len > 0) {
+		size_t put = fwrite(bytes, 1, (size_t)len, wf->fp);
+		if ((int)put != len) {
+			wren_throw(vm, "File: write failed");
+			return;
+		}
+	}
+	fflush(wf->fp);
+	fseek(wf->fp, off + len, SEEK_SET);
+}
+
+static void
+fn_File_writeBytes_1(WrenVM *vm)
+{
+	struct wren_file *wf = file_check_open(vm);
+	if (wf == NULL)
+		return;
 	int len = 0;
-	const char *contents = wrenGetSlotBytes(vm, 2, &len);
-	struct wren_host_state *st = wren_host_state();
-	if (name == NULL || contents == NULL || st == NULL || st->bbs == NULL) {
-		wrenSetSlotBool(vm, 0, false);
+	const char *bytes = wrenGetSlotBytes(vm, 1, &len);
+	long off = ftell(wf->fp);
+	do_write_at(vm, wf, off, bytes, len);
+}
+
+static void
+fn_File_writeBytes_2(WrenVM *vm)
+{
+	struct wren_file *wf = file_check_open(vm);
+	if (wf == NULL)
+		return;
+	int len = 0;
+	const char *bytes = wrenGetSlotBytes(vm, 1, &len);
+	long off = (long)wrenGetSlotDouble(vm, 2);
+	do_write_at(vm, wf, off, bytes, len);
+}
+
+/* write(s) — truncate then rewrite from offset 0; offset ends at len. */
+static void
+fn_File_write(WrenVM *vm)
+{
+	struct wren_file *wf = file_check_open(vm);
+	if (wf == NULL)
+		return;
+	int len = 0;
+	const char *bytes = wrenGetSlotBytes(vm, 1, &len);
+	fclose(wf->fp);
+	wf->fp = fopen(wf->path, "w+b");
+	if (wf->fp == NULL) {
+		wren_throw(vm, "File: write failed (reopen)");
 		return;
 	}
-	char base[MAX_PATH + 1];
-	get_cache_fn_base(st->bbs, base, sizeof(base));
-	char path[MAX_PATH + 1];
-	snprintf(path, sizeof(path), "%s%s", base, name);
-	FILE *f = fopen(path, "wb");
-	if (f == NULL) {
-		wrenSetSlotBool(vm, 0, false);
+	if (len > 0) {
+		size_t put = fwrite(bytes, 1, (size_t)len, wf->fp);
+		if ((int)put != len) {
+			wren_throw(vm, "File: write failed");
+			return;
+		}
+	}
+	fflush(wf->fp);
+}
+
+static void
+fn_File_delete(WrenVM *vm)
+{
+	struct wren_file *wf = file_check(vm);
+	if (wf == NULL)
+		return;
+	if (wf->fp != NULL) {
+		fclose(wf->fp);
+		wf->fp = NULL;
+	}
+	if (remove(wf->path) != 0 && errno != ENOENT) {
+		wren_throw(vm, "File: delete failed");
 		return;
 	}
-	size_t put = fwrite(contents, 1, (size_t)len, f);
-	fclose(f);
-	wrenSetSlotBool(vm, 0, put == (size_t)len);
+	wf->deleted = true;
+}
+
+static void
+fn_File_offset_get(WrenVM *vm)
+{
+	struct wren_file *wf = file_check_open(vm);
+	if (wf == NULL)
+		return;
+	wrenSetSlotDouble(vm, 0, (double)ftell(wf->fp));
+}
+
+static void
+fn_File_offset_set(WrenVM *vm)
+{
+	struct wren_file *wf = file_check_open(vm);
+	if (wf == NULL)
+		return;
+	long off = (long)wrenGetSlotDouble(vm, 1);
+	if (off < 0) {
+		wren_throw(vm, "File: negative offset");
+		return;
+	}
+	long sz = file_size_now(wf);
+	if (off > sz) {
+		wren_throw(vm, "File: offset past end");
+		return;
+	}
+	fseek(wf->fp, off, SEEK_SET);
+}
+
+static void
+fn_File_size(WrenVM *vm)
+{
+	struct wren_file *wf = file_check(vm);
+	if (wf == NULL)
+		return;
+	if (wf->fp != NULL) {
+		wrenSetSlotDouble(vm, 0, (double)file_size_now(wf));
+		return;
+	}
+	struct stat sb;
+	if (stat(wf->path, &sb) != 0) {
+		wren_throw(vm, "File: stat failed");
+		return;
+	}
+	wrenSetSlotDouble(vm, 0, (double)sb.st_size);
+}
+
+static void
+fn_File_isOpen(WrenVM *vm)
+{
+	struct wren_file *wf = file_check(vm);
+	if (wf == NULL)
+		return;
+	wrenSetSlotBool(vm, 0, wf->fp != NULL);
 }
 
 /* ----- Console (log buffer accessor) ------------------------------ */
@@ -2222,40 +3005,125 @@ static const struct binding BINDINGS[] = {
 	{ "Conn",  true, "close()",        fn_Conn_close        },
 	{ "Conn",  true, "connected",      fn_Conn_connected    },
 	{ "Conn",  true, "type",           fn_Conn_type         },
-	{ "Conn",  true, "inbufBytes",     fn_Conn_inbufBytes   },
-	{ "Conn",  true, "outbufBytes",    fn_Conn_outbufBytes  },
-	{ "Conn",  true, "inbufPeek(_)",   fn_Conn_inbufPeek    },
-	{ "Conn",  true, "inbufGet(_)",    fn_Conn_inbufGet     },
-	{ "Conn",  true, "outbufPut(_)",   fn_Conn_outbufPut    },
+	{ "Conn",  true, "pending",        fn_Conn_pending      },
+	{ "Conn",  true, "queued",         fn_Conn_queued       },
+	{ "Conn",  true, "peek(_)",        fn_Conn_peek         },
+	{ "Conn",  true, "recv(_)",        fn_Conn_recv         },
 
 	/* CTerm */
-	{ "CTerm", true, "emulation",      fn_CTerm_emulation   },
-	{ "CTerm", true, "x",              fn_CTerm_x           },
-	{ "CTerm", true, "y",              fn_CTerm_y           },
-	{ "CTerm", true, "attr",           fn_CTerm_attr        },
-	{ "CTerm", true, "doorwayMode",    fn_CTerm_doorwayMode },
-	{ "CTerm", true, "music",          fn_CTerm_music       },
-	{ "CTerm", true, "width",          fn_CTerm_width       },
-	{ "CTerm", true, "height",         fn_CTerm_height      },
-	{ "CTerm", true, "write(_)",       fn_CTerm_write       },
+	{ "CTerm", true, "emulation",          fn_CTerm_emulation       },
+	{ "CTerm", true, "x",                  fn_CTerm_x               },
+	{ "CTerm", true, "y",                  fn_CTerm_y               },
+	{ "CTerm", true, "originX",            fn_CTerm_originX         },
+	{ "CTerm", true, "originY",            fn_CTerm_originY         },
+	{ "CTerm", true, "attr",               fn_CTerm_attr            },
+	{ "CTerm", true, "doorwayMode",        fn_CTerm_doorwayMode     },
+	{ "CTerm", true, "music",              fn_CTerm_music           },
+	{ "CTerm", true, "width",              fn_CTerm_width           },
+	{ "CTerm", true, "height",             fn_CTerm_height          },
+	{ "CTerm", true, "topMargin",          fn_CTerm_topMargin       },
+	{ "CTerm", true, "bottomMargin",       fn_CTerm_bottomMargin    },
+	{ "CTerm", true, "leftMargin",         fn_CTerm_leftMargin      },
+	{ "CTerm", true, "rightMargin",        fn_CTerm_rightMargin     },
+	{ "CTerm", true, "fgColor",            fn_CTerm_fgColor         },
+	{ "CTerm", true, "bgColor",            fn_CTerm_bgColor         },
+	{ "CTerm", true, "hasPaletteOverride", fn_CTerm_hasPaletteOverride },
+	{ "CTerm", true, "paletteOverride",    fn_CTerm_paletteOverride },
+	{ "CTerm", true, "fontSlot",           fn_CTerm_fontSlot        },
+	{ "CTerm", true, "altFonts",           fn_CTerm_altFonts        },
+	{ "CTerm", true, "scrollbackLines",    fn_CTerm_scrollbackLines },
+	{ "CTerm", true, "scrollbackWidth",    fn_CTerm_scrollbackWidth },
+	{ "CTerm", true, "scrollbackPos",      fn_CTerm_scrollbackPos   },
+	{ "CTerm", true, "scrollbackStart",    fn_CTerm_scrollbackStart },
+	{ "CTerm", true, "started",            fn_CTerm_started         },
+	{ "CTerm", true, "skypix",             fn_CTerm_skypix          },
+	{ "CTerm", true, "logMode",            fn_CTerm_logMode         },
+	{ "CTerm", true, "logPaused",          fn_CTerm_logPaused       },
+	{ "CTerm", true, "statusDisplay",      fn_CTerm_statusDisplay   },
+	{ "CTerm", true, "extAttr",            fn_CTerm_extAttr         },
+	{ "CTerm", true, "lastColumnFlag",     fn_CTerm_lastColumnFlag  },
+	{ "CTerm", true, "write(_)",           fn_CTerm_write           },
+	{ "ExtAttr", false, "autoWrap",            fn_ExtAttr_autoWrap            },
+	{ "ExtAttr", false, "originMode",          fn_ExtAttr_originMode          },
+	{ "ExtAttr", false, "sxScroll",            fn_ExtAttr_sxScroll            },
+	{ "ExtAttr", false, "decLrmm",             fn_ExtAttr_decLrmm             },
+	{ "ExtAttr", false, "bracketPaste",        fn_ExtAttr_bracketPaste        },
+	{ "ExtAttr", false, "decBkm",              fn_ExtAttr_decBkm              },
+	{ "ExtAttr", false, "prestelMosaic",       fn_ExtAttr_prestelMosaic       },
+	{ "ExtAttr", false, "prestelDoubleHeight", fn_ExtAttr_prestelDoubleHeight },
+	{ "ExtAttr", false, "prestelConceal",      fn_ExtAttr_prestelConceal      },
+	{ "ExtAttr", false, "prestelSeparated",    fn_ExtAttr_prestelSeparated    },
+	{ "ExtAttr", false, "prestelHold",         fn_ExtAttr_prestelHold         },
+	{ "ExtAttr", false, "alternateKeypad",     fn_ExtAttr_alternateKeypad     },
+	{ "LastColumnFlag", false, "set",     fn_LCF_set     },
+	{ "LastColumnFlag", false, "enabled", fn_LCF_enabled },
+	{ "LastColumnFlag", false, "forced",  fn_LCF_forced  },
 
 	/* BBS */
-	{ "BBS",   true, "name",           fn_BBS_name          },
-	{ "BBS",   true, "addr",           fn_BBS_addr          },
-	{ "BBS",   true, "port",           fn_BBS_port          },
-	{ "BBS",   true, "connType",       fn_BBS_connType      },
-	{ "BBS",   true, "user",           fn_BBS_user          },
-	{ "BBS",   true, "password",       fn_BBS_password      },
-	{ "BBS",   true, "syspass",        fn_BBS_syspass       },
-	{ "BBS",   true, "music",          fn_BBS_music         },
-	{ "BBS",   true, "rip",            fn_BBS_rip           },
-	{ "BBS",   true, "comment",        fn_BBS_comment       },
+	{ "BBS",   true, "name",                    fn_BBS_name                  },
+	{ "BBS",   true, "addr",                    fn_BBS_addr                  },
+	{ "BBS",   true, "port",                    fn_BBS_port                  },
+	{ "BBS",   true, "connType",                fn_BBS_connType              },
+	{ "BBS",   true, "user",                    fn_BBS_user                  },
+	{ "BBS",   true, "password",                fn_BBS_password              },
+	{ "BBS",   true, "syspass",                 fn_BBS_syspass               },
+	{ "BBS",   true, "music",                   fn_BBS_music                 },
+	{ "BBS",   true, "rip",                     fn_BBS_rip                   },
+	{ "BBS",   true, "comment",                 fn_BBS_comment               },
+	{ "BBS",   true, "type",                    fn_BBS_type                  },
+	{ "BBS",   true, "id",                      fn_BBS_id                    },
+	{ "BBS",   true, "addressFamily",           fn_BBS_addressFamily         },
+	{ "BBS",   true, "termName",                fn_BBS_termName              },
+	{ "BBS",   true, "screenMode",              fn_BBS_screenMode            },
+	{ "BBS",   true, "bpsRate",                 fn_BBS_bpsRate               },
+	{ "BBS",   true, "font",                    fn_BBS_font                  },
+	{ "BBS",   true, "noStatus",                fn_BBS_noStatus              },
+	{ "BBS",   true, "hidePopups",              fn_BBS_hidePopups            },
+	{ "BBS",   true, "yellowIsYellow",          fn_BBS_yellowIsYellow        },
+	{ "BBS",   true, "forceLcf",                fn_BBS_forceLcf              },
+	{ "BBS",   true, "added",                   fn_BBS_added                 },
+	{ "BBS",   true, "connected",               fn_BBS_connected             },
+	{ "BBS",   true, "fastConnected",           fn_BBS_fastConnected         },
+	{ "BBS",   true, "calls",                   fn_BBS_calls                 },
+	{ "BBS",   true, "dlDir",                   fn_BBS_dlDir                 },
+	{ "BBS",   true, "ulDir",                   fn_BBS_ulDir                 },
+	{ "BBS",   true, "logFile",                 fn_BBS_logFile               },
+	{ "BBS",   true, "appendLogFile",           fn_BBS_appendLogFile         },
+	{ "BBS",   true, "xferLogLevel",            fn_BBS_xferLogLevel          },
+	{ "BBS",   true, "telnetLogLevel",          fn_BBS_telnetLogLevel        },
+	{ "BBS",   true, "stopBits",                fn_BBS_stopBits              },
+	{ "BBS",   true, "dataBits",                fn_BBS_dataBits              },
+	{ "BBS",   true, "parity",                  fn_BBS_parity                },
+	{ "BBS",   true, "flowControl",             fn_BBS_flowControl           },
+	{ "FlowControl", false, "rtsCts",            fn_FlowControl_rtsCts       },
+	{ "FlowControl", false, "xonOff",            fn_FlowControl_xonOff       },
+	{ "BBS",   true, "telnetNoBinary",          fn_BBS_telnetNoBinary        },
+	{ "BBS",   true, "deferTelnetNegotiation",  fn_BBS_deferTelnetNegotiation},
+	{ "BBS",   true, "ghostProgram",            fn_BBS_ghostProgram          },
+	{ "BBS",   true, "sftpPublicKey",           fn_BBS_sftpPublicKey         },
+	{ "BBS",   true, "sshFingerprint",          fn_BBS_sshFingerprint        },
+	{ "BBS",   true, "sshFingerprintLen",       fn_BBS_sshFingerprintLen     },
+	{ "BBS",   true, "palette",                 fn_BBS_palette               },
+	{ "BBS",   true, "paletteSize",             fn_BBS_paletteSize           },
+	{ "BBS",   true, "sortOrder",               fn_BBS_sortOrder             },
 
 	/* Cache */
-	{ "Cache", true, "basePath",       fn_Cache_basePath    },
-	{ "Cache", true, "subdirPath(_)",  fn_Cache_subdirPath  },
-	{ "Cache", true, "readFile(_)",    fn_Cache_readFile    },
-	{ "Cache", true, "writeFile(_,_)", fn_Cache_writeFile   },
+	{ "Directory", false, "contains(_)",     fn_Directory_contains  },
+	{ "Directory", false, "list()",          fn_Directory_list      },
+	{ "Directory", false, "create(_)",       fn_Directory_create    },
+	{ "File",      false, "open()",          fn_File_open           },
+	{ "File",      false, "close()",         fn_File_close          },
+	{ "File",      false, "readBytes(_)",    fn_File_readBytes_1    },
+	{ "File",      false, "readBytes(_,_)",  fn_File_readBytes_2    },
+	{ "File",      false, "read()",          fn_File_read           },
+	{ "File",      false, "writeBytes(_)",   fn_File_writeBytes_1   },
+	{ "File",      false, "writeBytes(_,_)", fn_File_writeBytes_2   },
+	{ "File",      false, "write(_)",        fn_File_write          },
+	{ "File",      false, "delete()",        fn_File_delete         },
+	{ "File",      false, "offset",          fn_File_offset_get     },
+	{ "File",      false, "offset=(_)",      fn_File_offset_set     },
+	{ "File",      false, "size",            fn_File_size           },
+	{ "File",      false, "isOpen",          fn_File_isOpen         },
 
 	/* Hook */
 	{ "Hook",  true, "onKey(_)",       fn_Hook_onKey        },
@@ -2320,6 +3188,37 @@ wren_bind_lookup_class(const char *module, const char *className)
 	if (strcmp(className, "MouseEvent") == 0) {
 		WrenForeignClassMethods m = {
 			wren_mouse_event_allocate, wren_mouse_event_finalize
+		};
+		return m;
+	}
+	if (strcmp(className, "Directory") == 0) {
+		WrenForeignClassMethods m = {
+			wren_directory_allocate, wren_directory_finalize
+		};
+		return m;
+	}
+	if (strcmp(className, "File") == 0) {
+		WrenForeignClassMethods m = {
+			wren_file_allocate, wren_file_finalize
+		};
+		return m;
+	}
+	if (strcmp(className, "FlowControl") == 0) {
+		WrenForeignClassMethods m = {
+			wren_flowcontrol_allocate, wren_flowcontrol_finalize
+		};
+		return m;
+	}
+	if (strcmp(className, "ExtAttr") == 0) {
+		WrenForeignClassMethods m = {
+			wren_extattr_allocate, wren_extattr_finalize
+		};
+		return m;
+	}
+	if (strcmp(className, "LastColumnFlag") == 0) {
+		WrenForeignClassMethods m = {
+			wren_last_column_flag_allocate,
+			wren_last_column_flag_finalize
 		};
 		return m;
 	}
