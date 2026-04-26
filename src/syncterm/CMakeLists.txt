@@ -116,7 +116,7 @@ if(USE_VENDORED_BOTAN)
 		# MSVC: Botan's configure.py picks --cc=msvc + nmake Makefile.
 		# Output is botan.lib (no libbotan-3.a naming convention).
 		list(APPEND _botan_configure_args
-		    --cc=msvc --build-tool=nmake)
+		    --cc=msvc --build-tool=make)
 		if(CMAKE_SIZEOF_VOID_P EQUAL 8)
 			list(APPEND _botan_configure_args --cpu=x86_64)
 		else()
