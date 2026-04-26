@@ -27,6 +27,9 @@ get_OSX_filename(char *fn, int fnlen, int type, int shared)
 		case SYNCTERM_PATH_KEYS:
 			path = NSLibraryDirectory;
 			break;
+		case SYNCTERM_PATH_SCRIPTS:
+			path = NSApplicationSupportDirectory;
+			break;
 	}
 
 	NSError *error = nil;
@@ -63,6 +66,11 @@ get_OSX_filename(char *fn, int fnlen, int type, int shared)
 			strlcat(fn, "/Preferences/SyncTERM", fnlen);
 			mkpath(fn);
 			strlcat(fn, "/SyncTERM.ssh", fnlen);
+			break;
+		case SYNCTERM_PATH_SCRIPTS:
+			strlcat(fn, "/SyncTERM/scripts", fnlen);
+			mkpath(fn);
+			strlcat(fn, "/", fnlen);
 			break;
 	}
 

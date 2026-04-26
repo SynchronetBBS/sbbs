@@ -329,6 +329,34 @@ endif
 OBJS += $(MTOBJODIR)$(DIRSEP)xp_sndfile$(OFILE)
 OBJS += $(MTOBJODIR)$(DIRSEP)audio_apc$(OFILE)
 
+# Wren scripting VM (vendored under wren/).  The implicit MT C rule in
+# Common.gmake matches stem-only %.c -> $(MTOBJODIR)/%.o so subdirs are
+# preserved; the order-only prereqs below mkdir the per-subdir output
+# trees.  Wren's optional modules default to enabled in wren_common.h,
+# so no -D flags are needed.  -Iwren/include propagates to wren_host.c
+# / wren_bind.c via global CFLAGS; the per-pattern rules add the
+# private vm/ and optional/ include paths only for VM sources.
+WREN_VM_SRCS  := $(wildcard wren/vm/*.c)
+WREN_OPT_SRCS := $(wildcard wren/optional/*.c)
+WREN_OBJS     := $(WREN_VM_SRCS:%.c=$(MTOBJODIR)$(DIRSEP)%$(OFILE))
+WREN_OBJS     += $(WREN_OPT_SRCS:%.c=$(MTOBJODIR)$(DIRSEP)%$(OFILE))
+
+OBJS   += $(WREN_OBJS)
+OBJS   += $(MTOBJODIR)$(DIRSEP)wren_host$(OFILE)
+OBJS   += $(MTOBJODIR)$(DIRSEP)wren_bind$(OFILE)
+CFLAGS += -Iwren/include
+
+$(MTOBJODIR)$(DIRSEP)wren/vm $(MTOBJODIR)$(DIRSEP)wren/optional: | $(MTOBJODIR)
+	$(QUIET)mkdir -p $@
+
+$(MTOBJODIR)$(DIRSEP)wren/vm/%$(OFILE): wren/vm/%.c | $(MTOBJODIR)$(DIRSEP)wren/vm
+	@echo $(COMPILE_MSG) $<
+	$(QUIET)$(CC) -std=c17 $(CFLAGS) $(CCFLAGS) $(MT_CFLAGS) -UPREFIX -Iwren/vm -Iwren/optional -o $@ -c $<
+
+$(MTOBJODIR)$(DIRSEP)wren/optional/%$(OFILE): wren/optional/%.c | $(MTOBJODIR)$(DIRSEP)wren/optional
+	@echo $(COMPILE_MSG) $<
+	$(QUIET)$(CC) -std=c17 $(CFLAGS) $(CCFLAGS) $(MT_CFLAGS) -UPREFIX -Iwren/vm -Iwren/optional -o $@ -c $<
+
 # libsndfile: three build modes — WITHOUT_SNDFILE (stubs only),
 # STATIC_SNDFILE (direct linkage — used for macOS / Win32 release
 # shape), or the default dynamic WITH_SNDFILE (runtime xp_dlopen, no

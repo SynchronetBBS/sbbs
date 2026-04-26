@@ -293,10 +293,25 @@ set(SOURCE
 	uifcinit.c
 	webget.c
 	window.c
+	wren_host.c
+	wren_bind.c
 	../sbbs3/telnet.c
 	../sbbs3/xmodem.c
 	../sbbs3/zmodem.c
 )
+
+# Wren scripting VM (vendored under wren/).  Compiled as a static
+# library so its private vm/ + optional/ include paths don't leak into
+# syncterm's translation units.  Public API is wren/include/wren.h,
+# which wren_host.c / wren_bind.c consume.
+file(GLOB WREN_SOURCES CONFIGURE_DEPENDS
+    "${CMAKE_CURRENT_SOURCE_DIR}/wren/vm/*.c"
+    "${CMAKE_CURRENT_SOURCE_DIR}/wren/optional/*.c")
+add_library(wrenvm STATIC ${WREN_SOURCES})
+target_include_directories(wrenvm
+    PUBLIC  ${CMAKE_CURRENT_SOURCE_DIR}/wren/include
+    PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/wren/vm
+            ${CMAKE_CURRENT_SOURCE_DIR}/wren/optional)
 
 if(NOT WITHOUT_OOII)
 	list(APPEND SOURCE ooii.c ooii_bmenus.c ooii_cmenus.c ooii_logons.c ooii_sounds.c)
@@ -380,6 +395,7 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
 	set_source_files_properties(SyncTERM.icns PROPERTIES MACOSX_PACKAGE_LOCATION "Resources")
 endif()
 require_libs(syncterm ciolib comio encode hash sftp uifc xpdev)
+target_link_libraries(syncterm wrenvm)
 target_compile_definitions(syncterm PRIVATE TELNET_NO_DLL)
 if(WITHOUT_OOII)
 	target_compile_definitions(syncterm PRIVATE WITHOUT_OOII=1)

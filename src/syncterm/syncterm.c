@@ -91,6 +91,7 @@ enum {
 #include "term.h"
 #include "uifcinit.h"
 #include "window.h"
+#include "wren_host.h"
 #include "xpbeep.h"
 
 #if defined(__unix__) && defined(SOUNDCARD_H_IN) && (SOUNDCARD_H_IN > 0) && !defined(_WIN32)
@@ -1302,6 +1303,7 @@ get_win_filename(char *fn, int fnlen, int type, int shared)
 				case SYNCTERM_PATH_INI:
 				case SYNCTERM_PATH_LIST:
 				case SYNCTERM_PATH_KEYS:
+				case SYNCTERM_PATH_SCRIPTS:
 					if (shared) {
 						if (GKFP(&FOLDERID_ProgramData, KF_FLAG_CREATE, NULL, &path) == S_OK)
 							we_got_this = true;
@@ -1331,6 +1333,10 @@ get_win_filename(char *fn, int fnlen, int type, int shared)
                                 // Convert unicode to string using snprintf()
 				if ((type == SYNCTERM_DEFAULT_TRANSFER_PATH) || (type == SYNCTERM_PATH_CACHE)) {
 					if (snprintf(fn, fnlen, "%S", path) >= fnlen)
+						we_got_this = false;
+				}
+				else if (type == SYNCTERM_PATH_SCRIPTS) {
+					if (snprintf(fn, fnlen, "%S\\SyncTERM\\scripts", path) >= fnlen)
 						we_got_this = false;
 				}
 				else {
@@ -1407,6 +1413,17 @@ get_win_filename(char *fn, int fnlen, int type, int shared)
 			backslash(fn);
 			strncat(fn, "syncterm.ssh", fnlen - strlen(fn) - 1);
 			break;
+		case SYNCTERM_PATH_SCRIPTS:
+			backslash(fn);
+			strncat(fn, "scripts", fnlen - strlen(fn) - 1);
+			backslash(fn);
+			if (!isdir(fn)) {
+				if (MKDIR(fn)) {
+					fn[0] = 0;
+					break;
+				}
+			}
+			break;
 	}
 
 	return fn;
@@ -1425,6 +1442,7 @@ get_haiku_filename(char *fn, int fnlen, int type, int shared)
 		case SYNCTERM_PATH_INI:
 		case SYNCTERM_PATH_LIST:
 		case SYNCTERM_PATH_KEYS:
+		case SYNCTERM_PATH_SCRIPTS:
 			if (shared)
 				s = find_directory(B_SYSTEM_SETTINGS_DIRECTORY, v, true, fn, fnlen);
 			else
@@ -1470,6 +1488,16 @@ get_haiku_filename(char *fn, int fnlen, int type, int shared)
 			break;
 		case SYNCTERM_PATH_KEYS:
 			sz = strlcat(fn, "/SyncTERM.ssh", fnlen);
+			break;
+		case SYNCTERM_PATH_SCRIPTS:
+			sz = strlcat(fn, "/scripts", fnlen);
+			if (sz >= fnlen)
+				return NULL;
+			if (!isdir(fn) && !shared) {
+				if (mkpath(fn))
+					return NULL;
+			}
+			sz = strlcat(fn, "/", fnlen);
 			break;
 	}
 	if (sz >= fnlen)
@@ -1577,6 +1605,10 @@ get_unix_filename(char *fn, int fnlen, int type, int shared)
 				if (get_xdg_path(XDG_DATA_HOME, fn, fnlen) == NULL)
 					return NULL;
 				break;
+			case SYNCTERM_PATH_SCRIPTS:
+				if (get_xdg_path(XDG_DATA_HOME, fn, fnlen) == NULL)
+					return NULL;
+				break;
 		}
 		backslash(fn);
 	}
@@ -1606,6 +1638,14 @@ get_unix_filename(char *fn, int fnlen, int type, int shared)
 			break;
 		case SYNCTERM_PATH_KEYS:
 			strncat(fn, "syncterm.ssh", fnlen - strlen(fn) - 1);
+			break;
+		case SYNCTERM_PATH_SCRIPTS:
+			strncat(fn, "scripts", fnlen - strlen(fn) - 1);
+			backslash(fn);
+			if (!isdir(fn) && !shared) {
+				if (mkpath(fn))
+					return NULL;
+			}
 			break;
 	}
 
@@ -2585,8 +2625,10 @@ main(int argc, char **argv)
 				dac_default[3].green = dac_default[2].green;
 				dac_default[3].blue = dac_default[0].blue;
 			}
+			wren_host_init(bbs);
 			if (doterm(bbs))
 				quitting = true;
+			wren_host_shutdown();
 			dac_default[3].red = saved_red;
 			dac_default[3].green = saved_green;
 			dac_default[3].blue = saved_blue;

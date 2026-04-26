@@ -823,5 +823,6 @@ CIOLIBEXPORT void mousestate_res(int *x_res, int *y_res, uint8_t *buttons);
 #define CIO_KEY_QUIT	  0x7eE0	// "F-15"
 #define CIO_KEY_ABORTED   0x01E0	// ESC key by scancode
 #define CIO_KEY_LITERAL_E0	0xE0E0 // Literal 0xe0 character
+#define CIO_KEY_WREN_CONSOLE 0x29E0	// Ctrl-` opens the Wren scripting console (high byte = `'s scancode 0x29)
 
 #endif	/* Do not add anything after this line */

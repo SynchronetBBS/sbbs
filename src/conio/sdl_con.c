@@ -197,7 +197,7 @@ const struct sdl_keyvals sdl_keyval[] =
 	{SDLK_QUOTE, '\'', '"', 0, 0x2800},
 	{SDLK_COMMA, ',', '<', 0, 0x3300},
 	{SDLK_PERIOD, '.', '>', 0, 0x3400},
-	{SDLK_BACKQUOTE, '`', '~', 0, 0x2900},
+	{SDLK_BACKQUOTE, '`', '~', 0x29E0, 0x2900},  /* Ctrl+` = CIO_KEY_WREN_CONSOLE */
 	{0, 0, 0, 0, 0}	/** END **/
 };
 

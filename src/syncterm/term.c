@@ -48,6 +48,7 @@
 #include "base64.h"
 #include "md5.h"
 #include "ripper.h"
+#include "wren_host.h"
 
 #ifdef WITH_JPEG_XL
 #include "libjxl.h"
@@ -553,6 +554,11 @@ update_status(struct bbslist *bbs, int speed, int ooii_mode, bool ata_inv)
 	else {
 		snprintf(fullbuf, sizeof(fullbuf), " %-*.*s %c %-6.6s ", avail, avail, nbuf, 0xb3
 		    , conn_types[bbs->conn_type]);
+	}
+	if (wren_host_active()) {
+		char overlay[81];
+		if (wren_host_compose_status(fullbuf, overlay, sizeof(overlay)))
+			strlcpy(fullbuf, overlay, sizeof(fullbuf));
 	}
 	if (ms->mode == MM_OFF) {
 		status_bar[30].ch = ' ';
@@ -5570,6 +5576,8 @@ handle_mouse_event(struct mouse_state *ms)
 	struct mouse_event mevent;
 
 	getmouse(&mevent);
+	if (wren_host_dispatch_mouse(&mevent))
+		return;
 	switch (mevent.event) {
 		case CIOLIB_BUTTON_1_PRESS:
 			if ((mevent.kbmodifiers & CIOLIB_KMOD_CTRL)
@@ -6089,6 +6097,8 @@ doterm(struct bbslist *bbs)
 								break;
 						}
 #endif /* ifndef WITHOUT_OOII */
+						if (wren_host_dispatch_input((unsigned char)inch))
+							continue;
 						if (outbuf_size >= sizeof(outbuf))
 							WRITE_OUTBUF();
 						outbuf[outbuf_size++] = inch;
@@ -6122,6 +6132,9 @@ doterm(struct bbslist *bbs)
 				if (key == -1)
 					continue;
 			}
+
+			if (wren_host_dispatch_key(key))
+				continue;
 
 			/*
 			 * Pre-CTerm processing... these are ALWAYS
@@ -6353,6 +6366,7 @@ doterm(struct bbslist *bbs)
 					break;
 			}
 		}
+		wren_host_dispatch_timer();
 		if (sleep)
 			SLEEP(1);
 		else
