@@ -326,6 +326,7 @@ if(CMAKE_C_COMPILER_ID MATCHES "GNU|Clang|AppleClang")
 	endif()
 elseif(MSVC)
 	list(APPEND DEUCESSH_COMPILE_OPTIONS /W4)
+	list(APPEND DEUCESSH_COMPILE_OPTIONS /experimental:c11atomics)
 endif()
 
 # Linker hardening flags (ELF only)
