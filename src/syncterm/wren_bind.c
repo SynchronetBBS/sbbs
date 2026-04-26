@@ -340,6 +340,8 @@ static void fn_BBS_addr(WrenVM *vm)     { BBS_FIELD_STR(addr); }
 static void fn_BBS_port(WrenVM *vm)     { BBS_FIELD_NUM(port); }
 static void fn_BBS_connType(WrenVM *vm) { BBS_FIELD_NUM(conn_type); }
 static void fn_BBS_user(WrenVM *vm)     { BBS_FIELD_STR(user); }
+static void fn_BBS_password(WrenVM *vm) { BBS_FIELD_STR(password); }
+static void fn_BBS_syspass(WrenVM *vm)  { BBS_FIELD_STR(syspass); }
 static void fn_BBS_music(WrenVM *vm)    { BBS_FIELD_NUM(music); }
 static void fn_BBS_rip(WrenVM *vm)      { BBS_FIELD_NUM(rip); }
 static void fn_BBS_comment(WrenVM *vm)  { BBS_FIELD_STR(comment); }
@@ -583,6 +585,8 @@ static const struct binding BINDINGS[] = {
 	{ "BBS",   "port",           fn_BBS_port          },
 	{ "BBS",   "connType",       fn_BBS_connType      },
 	{ "BBS",   "user",           fn_BBS_user          },
+	{ "BBS",   "password",       fn_BBS_password      },
+	{ "BBS",   "syspass",        fn_BBS_syspass       },
 	{ "BBS",   "music",          fn_BBS_music         },
 	{ "BBS",   "rip",            fn_BBS_rip           },
 	{ "BBS",   "comment",        fn_BBS_comment       },

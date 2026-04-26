@@ -6303,9 +6303,13 @@ doterm(struct bbslist *bbs)
 					setup_mouse_events(&ms);
 					showmouse();
 					break;
-				case 0x2600: /* ALT-L */
-					send_login(bbs);
-					break;
+				/* ALT-L is handled by connected.wren, an embedded
+				 * Wren script that registers Hook.onKey for 0x2600
+				 * and calls Conn.send with the bbslist credentials.
+				 * If the user has dropped a custom connected.wren in
+				 * ~/.local/share/syncterm/scripts/ that doesn't hook
+				 * Alt-L, the keystroke falls through here (and out
+				 * of the switch) — the user opted out. */
 				case 0x3200: /* ALT-M */
 					music_control(bbs);
 					setup_mouse_events(&ms);
