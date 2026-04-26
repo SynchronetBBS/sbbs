@@ -25,122 +25,122 @@
 #include <stdlib.h>
 #include <ctype.h>
 
-#include "xpbeep.h"	/* BEEP */
+#include "xpbeep.h" /* BEEP */
 #include "genwrap.h"
-#include "dirwrap.h"	/* getfname */
-#include "conwrap.h"	/* kbhit */
+#include "dirwrap.h"    /* getfname */
+#include "conwrap.h"    /* kbhit */
 
-#define NOT_ABORTABLE	(1<<0)
-#define SHOW_DOT		(1<<1)
-#define SHOW_FREQ		(1<<2)
-#define NO_VISUAL		(1<<3)
+#define NOT_ABORTABLE   (1 << 0)
+#define SHOW_DOT        (1 << 1)
+#define SHOW_FREQ       (1 << 2)
+#define NO_VISUAL       (1 << 3)
 
-int mode=0; 	/* Optional modes */
-int t=1;		/* Timing */
-int s=0;		/* Stacato */
-int octave=4;	/* Default octave */
+int             mode = 0; /* Optional modes */
+int             t = 1; /* Timing */
+int             s = 0; /* Stacato */
+int             octave = 4; /* Default octave */
 
-double pitch=523.50/32.0;	 /* low 'C' */
+double          pitch = 523.50 / 32.0; /* low 'C' */
 
-BOOL use_xptone=FALSE;
+BOOL            use_xptone = FALSE;
 
 enum WAVE_SHAPE wave_shape;
 
 void play(char *freq, char *dur)
 {
-	char*	notes="c d ef g a b";
-	char*	sharp="BC D EF G A ";
-	int		i,n,o,d;
-	int		len;
-	double	f;
+	char*  notes = "c d ef g a b";
+	char*  sharp = "BC D EF G A ";
+	int    i, n, o, d;
+	int    len;
+	double f;
 
-	if(dur==NULL)
-		dur="0";
+	if (dur == NULL)
+		dur = "0";
 
-	if(freq==NULL)
-		freq="0";
+	if (freq == NULL)
+		freq = "0";
 
-	d=atoi(dur);
-	if(isdigit(*freq))
-		f=atoi(freq);
-  	else
-		switch(toupper(*freq)) {
+	d = atoi(dur);
+	if (isdigit(*freq))
+		f = atoi(freq);
+	else
+		switch (toupper(*freq)) {
 			case 'O':               /* default octave */
-				if(isdigit(*dur))
-					octave=d;
+				if (isdigit(*dur))
+					octave = d;
 				else
-					octave+=d;
+					octave += d;
 				return;
 			case 'P':               /* pitch variation */
-				if(isdigit(*dur))
-					pitch=atof(dur)/32.0;
+				if (isdigit(*dur))
+					pitch = atof(dur) / 32.0;
 				else
-					pitch+=atof(dur);
+					pitch += atof(dur);
 				return;
 			case 'Q':               /* quit */
 				exit(0);
 			case 'R':               /* rest */
-				f=0;
+				f = 0;
 				break;
 			case 'S':               /* stacato */
-				if(isdigit(*dur))
-					s=d;
+				if (isdigit(*dur))
+					s = d;
 				else
-					s+=d;
+					s += d;
 				return;
 			case 'T':               /* time adjust */
-				t=d;
+				t = d;
 				return;
 			case 'V':
-				if(mode&NO_VISUAL)
+				if (mode & NO_VISUAL)
 					return;
-				n=strlen(dur);
-				while(n && dur[n]<=' ')
+				n = strlen(dur);
+				while (n && dur[n] <= ' ')
 					n--;
-				dur[n+1]=0;
-				if(dur[n]=='\\') {
-					dur[n]=0;
-					printf("%s",dur); 
+				dur[n + 1] = 0;
+				if (dur[n] == '\\') {
+					dur[n] = 0;
+					printf("%s", dur);
 				} else
-					printf("%s\r\n",dur);
+					printf("%s\r\n", dur);
 				return;
 			case 'X':               /* exit */
 				exit(1);
 			default:
-				for(n=0;notes[n];n++)
-					if(*freq==notes[n] || *freq==sharp[n])
+				for (n = 0; notes[n]; n++)
+					if (*freq == notes[n] || *freq == sharp[n])
 						break;
-				if(isdigit(freq[1]))
-					o=(freq[1]&0xf);
+				if (isdigit(freq[1]))
+					o = (freq[1] & 0xf);
 				else
-					o=octave;
-				f=pitch*pow(2,o+(double)n/12);
-				break; 
-	}
+					o = octave;
+				f = pitch * pow(2, o + (double)n / 12);
+				break;
+		}
 
-	if(f && mode&SHOW_FREQ) {
-		for(i=0;freq[i]>' ';i++)
+	if (f && mode & SHOW_FREQ) {
+		for (i = 0; freq[i] > ' '; i++)
 			;
-		freq[i]=0;
-		printf("%-4.4s",freq); 
+		freq[i] = 0;
+		printf("%-4.4s", freq);
 	}
-	if(mode&SHOW_DOT)
+	if (mode & SHOW_DOT)
 		printf(".");
-	if(t>10)
-		len=(d*t)-(d*s);
+	if (t > 10)
+		len = (d * t) - (d * s);
 	else
-		len=(d*t);
-	if(f) {
-		if(use_xptone)
-			xptone(f,len,wave_shape);
+		len = (d * t);
+	if (f) {
+		if (use_xptone)
+			xptone(f, len, wave_shape);
 		else
-			BEEP(f,len);
+			BEEP(f, len);
 	}
 	else
 		SLEEP(len);
-	if(s) {
-		if(t>10)
-			SLEEP(d*s);
+	if (s) {
+		if (t > 10)
+			SLEEP(d * s);
 		else
 			SLEEP(s);
 	}
@@ -149,22 +149,22 @@ void play(char *freq, char *dur)
 void usage(void)
 {
 	printf("usage: tone [-opts] [(note[oct]|freq) dur | (cmd val) [...]] "
-		"[+filename]\n\n");
+	       "[+filename]\n\n");
 	printf("where: note  = a,b,c,d,e,f, or g (naturals) or A,B,C,D,E,F, or "
-		"G (sharps)\n");
-	printf("       oct   = octave 1 through 9 (default=%d)\n",octave);
+	       "G (sharps)\n");
+	printf("       oct   = octave 1 through 9 (default=%d)\n", octave);
 	printf("       freq  = frequency (in Hz) or 0 for silence\n");
 	printf("       dur   = duration (in timer counts)\n");
 	printf("       cmd   = o set default octave (+/- to adjust) "
-		"(default=%d)\n",octave);
+	       "(default=%d)\n", octave);
 	printf("               p set middle c pitch (+/- to adjust) "
-		"(default=%.2f)\n",pitch*32.0);
+	       "(default=%.2f)\n", pitch * 32.0);
 	printf("               q quit program immediately\n");
 	printf("               r rest (silence) for val timer counts\n");
 	printf("               s set stacato duration (in ms) (+/- to adjust) "
-		"(default=%d)\n",s);
+	       "(default=%d)\n", s);
 	printf("               t set timer count value (in ms) "
-		"(default=%d)\n",t);
+	       "(default=%d)\n", t);
 	printf("               v visual text diplay of val (no val=cr/lf)\n");
 	printf("               x quit program immediately (leave tone on)\n");
 	printf("       opts  = d display dot for each note\n");
@@ -178,78 +178,78 @@ void usage(void)
 
 int main(int argc, char **argv)
 {
-	char*	p;
-	char	str[128];
-	char	revision[16];
-	int		i;
-	FILE*	stream;
+	char* p;
+	char  str[128];
+	char  revision[16];
+	int   i;
+	FILE* stream;
 
 	sscanf("$Revision: 1.11 $", "%*s %s", revision);
 
 	printf("\nTone Generation Utility  %s  Copyright %s Rob Swindell\n\n"
-		,revision, __DATE__+7);
+	       , revision, __DATE__ + 7);
 
-	if(argc<2)
+	if (argc < 2)
 		usage();
 
-	setvbuf(stdout,NULL,_IONBF,0);
-	for(i=1;i<argc;i++) {
-		if(argv[i][0]=='-') {
-			switch(toupper(argv[i][1])) {
+	setvbuf(stdout, NULL, _IONBF, 0);
+	for (i = 1; i < argc; i++) {
+		if (argv[i][0] == '-') {
+			switch (toupper(argv[i][1])) {
 				case 'D':
-					mode^=SHOW_DOT;
+					mode ^= SHOW_DOT;
 					break;
 				case 'F':
-					mode^=SHOW_FREQ;
+					mode ^= SHOW_FREQ;
 					break;
 				case 'N':
-					mode^=NOT_ABORTABLE;
+					mode ^= NOT_ABORTABLE;
 					break;
 				case 'V':
-					mode^=NO_VISUAL;
+					mode ^= NO_VISUAL;
 					break;
 				case 'X':
-					use_xptone=TRUE;
-					wave_shape=atoi(argv[i]+2);
+					use_xptone = TRUE;
+					wave_shape = atoi(argv[i] + 2);
 					break;
 				default:
 					usage();
 					break;
 			}
-			continue; 
+			continue;
 		}
-		if(use_xptone)
+		if (use_xptone)
 			xptone_open();
-		if(argv[i][0]=='+') {
-			if((stream=fopen(argv[i]+1,"rb"))==NULL) {
+		if (argv[i][0] == '+') {
+			if ((stream = fopen(argv[i] + 1, "rb")) == NULL) {
 				/* Check directory of executable if file/path not found */
-				strcpy(str,argv[0]);
-				*getfname(str)=0;
-				strcat(str,argv[i]+1);
-				if((stream=fopen(str,"rb"))==NULL) {
-					printf("\7Error opening %s\n",argv[i]+1);
-					continue; 
-				} 
-			}
-			while(mode&NOT_ABORTABLE || !kbhit()) {
-				if(!fgets(str,sizeof(str),stream))
-					break;
-				if(!isalnum(*str))
+				strcpy(str, argv[0]);
+				*getfname(str) = 0;
+				strcat(str, argv[i] + 1);
+				if ((stream = fopen(str, "rb")) == NULL) {
+					printf("\7Error opening %s\n", argv[i] + 1);
 					continue;
-				p=str;
+				}
+			}
+			while (mode & NOT_ABORTABLE || !kbhit()) {
+				if (!fgets(str, sizeof(str), stream))
+					break;
+				if (!isalnum(*str))
+					continue;
+				p = str;
 				FIND_WHITESPACE(p);
 				SKIP_WHITESPACE(p);
-				play(str,p); 
+				play(str, p);
 			}
 			fclose(stream);
-			continue; 
+			continue;
 		}
-		play(argv[i],argv[i+1]);
-		if(use_xptone)
+		play(argv[i], argv[i + 1]);
+		if (use_xptone)
 			xptone_close();
 		i++;
 	}
 
-	return(0);
+	return 0;
 }
 
