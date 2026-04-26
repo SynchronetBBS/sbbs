@@ -290,6 +290,68 @@ bool comSetBaudRate(COM_HANDLE handle, unsigned long rate)
     return true;
 }
 
+size_t comGetBaudRates(COM_HANDLE handle, ulong* rates, size_t max_rates)
+{
+	static const ulong supported[] = {
+		50, 75, 110, 134, 150, 200, 300, 600, 1200, 1800,
+		2400, 4800, 9600, 19200, 38400,
+#ifdef B57600
+		57600,
+#endif
+#ifdef B115200
+		115200,
+#endif
+#ifdef B230400
+		230400,
+#endif
+#ifdef B460800
+		460800,
+#endif
+#ifdef B500000
+		500000,
+#endif
+#ifdef B576000
+		576000,
+#endif
+#ifdef B921600
+		921600,
+#endif
+#ifdef B1000000
+		1000000,
+#endif
+#ifdef B1152000
+		1152000,
+#endif
+#ifdef B1500000
+		1500000,
+#endif
+#ifdef B2000000
+		2000000,
+#endif
+#ifdef B2500000
+		2500000,
+#endif
+#ifdef B3000000
+		3000000,
+#endif
+#ifdef B3500000
+		3500000,
+#endif
+#ifdef B4000000
+		4000000,
+#endif
+	};
+	size_t count = sizeof(supported) / sizeof(supported[0]);
+	(void)handle;
+
+	if(rates != NULL) {
+		size_t n = count < max_rates ? count : max_rates;
+		for(size_t i = 0; i < n; i++)
+			rates[i] = supported[i];
+	}
+	return count;
+}
+
 int comGetFlowControl(COM_HANDLE handle)
 {
     int ret = 0;
