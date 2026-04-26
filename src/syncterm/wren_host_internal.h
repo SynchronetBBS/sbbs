@@ -97,6 +97,18 @@ enum wren_log_source {
 	WREN_LOG_STACK_FRAME
 };
 
+/* Compile-error capture (used by Repl.eval to peek at errors from an
+ * expression-mode compile attempt without committing them to the
+ * user-visible log).  Between capture_start and capture_commit/clear,
+ * any errors that would normally go to the log are diverted into a
+ * private buffer instead.  Single-buffer, single-thread (Wren is); no
+ * nesting.  Capture is also a no-op when wren_host_state() is NULL. */
+void     wren_log_capture_start(void);
+bool     wren_log_capture_active(void);
+bool     wren_log_capture_contains(const char *needle);
+void     wren_log_capture_clear(void);    /* drop captured entries */
+void     wren_log_capture_commit(void);   /* flush captured entries to the log */
+
 int      wren_log_count(void);
 /* Total writes since wren_host_init.  Monotonic across the session,
  * not reset by wren_log_clear.  Wren scripts use it as a high-water

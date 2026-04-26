@@ -12,7 +12,9 @@
 //   - everything else:     send user, password, then syspass — each followed
 //                          by Enter
 
-import "syncterm" for Hook, Conn, Cterm, BBS, ConnType, Emulation
+// This script is loaded into the "syncterm" module alongside the
+// foreign-class declarations, so Hook/Conn/Cterm/BBS/ConnType/Emulation
+// are already in scope — no imports needed.
 
 class Connected {
   // Enter byte differs in ATASCII (CR is 0x9B there, not 0x0D).

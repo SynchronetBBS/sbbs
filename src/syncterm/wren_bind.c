@@ -8,6 +8,12 @@
 #include "wren_host_internal.h"
 #include "wren_host.h"
 #include "wren.h"
+/* Repl.compile_ uses wrenCompileSource to produce an ObjClosure that
+ * the Wren-side Repl.eval invokes via .call().  That path is internal
+ * to Wren — wrenCompileSource isn't exposed in wren.h — so pull in
+ * the VM headers directly.  Mirrors what wren_opt_meta.c does. */
+#include "wren/vm/wren_vm.h"
+#include "wren/vm/wren_value.h"
 
 #include "ciolib.h"
 #include "cterm.h"
@@ -713,6 +719,175 @@ fn_Conio_getText(WrenVM *vm)
 }
 
 static void
+fn_Conio_mousedrag(WrenVM *vm)
+{
+	(void)vm;
+	mousedrag(NULL);
+}
+
+/* Repl.compile_(module, src, isExpression, printErrors) — compile
+ * `src` at the top level of the named module and return the resulting
+ * closure as a Wren value.  Calling .call() on the closure runs the
+ * body in module scope, so top-level `var x = ...` becomes a module
+ * variable that persists across submissions.
+ *
+ * isExpression=true compiles `src` as a single expression; .call()
+ * returns the expression's value.  Wren-side Repl.eval uses this to
+ * implement the "P" of REPL — try expression form, print the result,
+ * fall back to statement form when the input isn't a single
+ * expression (e.g. `var x = 5`).
+ *
+ * Mirrors metaCompile's pattern of dropping into a bare ObjClosure
+ * because the public API has no wrapper.  wrenCompileSource is
+ * foreign-method-safe (no fiber switching), and the Wren-side .call()
+ * dispatch is foreign-method-safe too. */
+/* Repl.captureStart_/Contains_/Clear_/Commit_ — gate around the
+ * compile-error log capture in wren_host.c.  Repl.eval brackets each
+ * compile attempt with start/commit (or clear) so it can peek at the
+ * errors and decide whether to surface them to the real log. */
+static void
+fn_Repl_captureStart_(WrenVM *vm)
+{
+	(void)vm;
+	wren_log_capture_start();
+}
+
+static void
+fn_Repl_captureContains_(WrenVM *vm)
+{
+	const char *needle = wrenGetSlotString(vm, 1);
+	wrenSetSlotBool(vm, 0, wren_log_capture_contains(needle));
+}
+
+static void
+fn_Repl_captureClear_(WrenVM *vm)
+{
+	(void)vm;
+	wren_log_capture_clear();
+}
+
+static void
+fn_Repl_captureCommit_(WrenVM *vm)
+{
+	(void)vm;
+	wren_log_capture_commit();
+}
+
+/* Repl.printTrace_(fiber) — replicates wrenDebugPrintStackTrace for a
+ * caught fiber.  Wren only emits stack frames via the error callback
+ * for *uncaught* aborts; once you Fiber.try() a failed fiber, the
+ * frames are still on it but the runtime never walks them.  This
+ * helper does the walk and pushes each frame into the host error
+ * callback (and from there into the log buffer) so the console can
+ * surface a real trace even when it caught the abort to keep itself
+ * alive.  The runtime error MESSAGE is the .try() return value — the
+ * caller prints that separately. */
+static void
+fn_Repl_printTrace_(WrenVM *vm)
+{
+	if (vm->config.errorFn == NULL)
+		return;
+	Value v = vm->apiStack[1];
+	if (!IS_FIBER(v))
+		return;
+	ObjFiber *fiber = AS_FIBER(v);
+
+	for (int i = fiber->numFrames - 1; i >= 0; i--) {
+		CallFrame *frame = &fiber->frames[i];
+		ObjFn     *fn    = frame->closure->fn;
+		/* Skip C-API stubs and the unnamed core module to match
+		 * wrenDebugPrintStackTrace's filtering. */
+		if (fn->module == NULL || fn->module->name == NULL)
+			continue;
+		/* IP has advanced past the instruction that just executed,
+		 * so step back one to find the source line for the call. */
+		int line = fn->debug->sourceLines.data[
+		    frame->ip - fn->code.data - 1];
+		vm->config.errorFn(vm, WREN_ERROR_STACK_TRACE,
+		    fn->module->name->value, line, fn->debug->name);
+	}
+}
+
+static void
+fn_Repl_compile_(WrenVM *vm)
+{
+	const char *m = wrenGetSlotString(vm, 1);
+	const char *s = wrenGetSlotString(vm, 2);
+	bool isExpr      = wrenGetSlotBool(vm, 3);
+	bool printErrors = wrenGetSlotBool(vm, 4);
+	if (m == NULL || s == NULL) {
+		wrenSetSlotNull(vm, 0);
+		return;
+	}
+	ObjClosure *closure = wrenCompileSource(vm, m, s, isExpr, printErrors);
+	if (closure == NULL)
+		vm->apiStack[0] = NULL_VAL;
+	else
+		vm->apiStack[0] = OBJ_VAL(closure);
+}
+
+static void
+fn_Repl_hasModule(WrenVM *vm)
+{
+	int         len = 0;
+	const char *m   = wrenGetSlotBytes(vm, 1, &len);
+	if (m == NULL || len <= 0) {
+		wrenSetSlotBool(vm, 0, false);
+		return;
+	}
+	char *zm = malloc((size_t)len + 1);
+	if (zm == NULL) {
+		wrenSetSlotBool(vm, 0, false);
+		return;
+	}
+	memcpy(zm, m, (size_t)len);
+	zm[len] = '\0';
+	bool has = wrenHasModule(vm, zm);
+	free(zm);
+	wrenSetSlotBool(vm, 0, has);
+}
+
+/* Returns the system clipboard's text as a String, or null when the
+ * clipboard is empty or unavailable.  ciolib_getcliptext returns a
+ * malloc'd UTF-8 buffer which the caller must free. */
+static void
+fn_Conio_getClipText(WrenVM *vm)
+{
+	char *s = getcliptext();
+	if (s == NULL) {
+		wrenSetSlotNull(vm, 0);
+		return;
+	}
+	wrenSetSlotString(vm, 0, s);
+	free(s);
+}
+
+/* Drains one pending mouse event into a 7-element list:
+ * [event, bstate, kbmodifiers, startx, starty, endx, endy].
+ * Returns null when no event is queued. */
+static void
+fn_Conio_getMouse(WrenVM *vm)
+{
+	struct mouse_event ev;
+	memset(&ev, 0, sizeof(ev));
+	if (getmouse(&ev) != 0) {
+		wrenSetSlotNull(vm, 0);
+		return;
+	}
+	wrenEnsureSlots(vm, 2);
+	wrenSetSlotNewList(vm, 0);
+	const double fields[] = {
+		(double)ev.event, (double)ev.bstate, (double)ev.kbmodifiers,
+		(double)ev.startx, (double)ev.starty,
+		(double)ev.endx,   (double)ev.endy
+	};
+	for (size_t f = 0; f < sizeof(fields) / sizeof(fields[0]); f++) {
+		wrenSetSlotDouble(vm, 1, fields[f]);
+		wrenInsertInList(vm, 0, -1, 1);
+	}
+}
+
+static void
 fn_Conio_putText(WrenVM *vm)
 {
 	int sx = (int)wrenGetSlotDouble(vm, 1);
@@ -1168,6 +1343,18 @@ static const struct binding BINDINGS[] = {
 	{ "Conio", true,  "restorescreen(_)",    fn_Conio_restorescreen },
 	{ "Conio", true,  "getText(_,_,_,_)",    fn_Conio_getText     },
 	{ "Conio", true,  "putText(_,_,_,_,_)",  fn_Conio_putText     },
+	{ "Conio", true,  "mousedrag()",         fn_Conio_mousedrag   },
+	{ "Conio", true,  "getMouse",            fn_Conio_getMouse    },
+	{ "Conio", true,  "getClipText",         fn_Conio_getClipText },
+
+	/* Repl */
+	{ "Repl",  true,  "compile_(_,_,_,_)",   fn_Repl_compile_         },
+	{ "Repl",  true,  "printTrace_(_)",      fn_Repl_printTrace_      },
+	{ "Repl",  true,  "hasModule(_)",        fn_Repl_hasModule        },
+	{ "Repl",  true,  "captureStart_()",     fn_Repl_captureStart_    },
+	{ "Repl",  true,  "captureContains_(_)", fn_Repl_captureContains_ },
+	{ "Repl",  true,  "captureClear_()",     fn_Repl_captureClear_    },
+	{ "Repl",  true,  "captureCommit_()",    fn_Repl_captureCommit_   },
 
 	/* Cell (all instance) */
 	{ "Cell",  false, "ch",              fn_Cell_ch              },
