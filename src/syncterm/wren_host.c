@@ -2,7 +2,7 @@
  *
  * Per-connection Wren scripting host for SyncTERM.  The VM, hook
  * registry, and dispatchers all live here; the foreign-method bodies
- * (ConIO/Conn/CTerm/BBS/Cache/Hook) live in wren_bind.c.
+ * (Screen/Input/Clipboard/Conn/CTerm/BBS/Cache/Hook) live in wren_bind.c.
  *
  * Lifecycle: doterm() calls wren_host_init(bbs) before its main loop
  * and wren_host_shutdown() at every exit path.  Scripts in
@@ -37,26 +37,358 @@
  * -------------------------------------------------------------------- */
 
 static const char SYNCTERM_MODULE_SRC[] =
-    "foreign class ConIO {\n"
-    "  foreign static putch(c)\n"
-    "  foreign static cputs(s)\n"
-    "  foreign static gotoxy(x, y)\n"
-    "  foreign static wherex\n"
-    "  foreign static wherey\n"
-    "  foreign static textattr(a)\n"
-    "  foreign static screenSize\n"
-    "  foreign static ungetch(k)\n"
-    "  foreign static getch\n"
-    "  foreign static kbhit\n"
-    "  foreign static clrscr()\n"
-    "  foreign static clreol()\n"
-    "  foreign static savescreen\n"
-    "  foreign static restorescreen(handle)\n"
-    "  foreign static getText(sx, sy, ex, ey)\n"
-    "  foreign static putText(sx, sy, ex, ey, list)\n"
+    /* Capability flags for the current display backend.  Read-only;
+     * reflect cio_api.options.  Underscore prefix marks the class as
+     * an implementation detail of Screen — convention in Wren is to
+     * not import names starting with `_` from another module. */
+    "class ScreenSupports {\n"
+    "  foreign static loadableFonts\n"
+    "  foreign static altBlinkFont\n"
+    "  foreign static altBoldFont\n"
+    "  foreign static brightBackground\n"
+    "  foreign static paletteChange\n"
+    "  foreign static pixels\n"
+    "  foreign static customCursor\n"
+    "  foreign static fontSelection\n"
+    "  foreign static windowTitle\n"
+    "  foreign static windowName\n"
+    "  foreign static windowIcon\n"
+    "  foreign static extendedPalette\n"
+    "  foreign static blockyScaling\n"
+    "  foreign static externalScaling\n"
+    "  foreign static closeLock\n"
+    "}\n"
+    /* Screen.font[i] — read/write the font index in slot i (0..4).
+     * Same `_X` namespacing trick as Screen.supports. */
+    "class ScreenFonts {\n"
+    "  foreign static [i]\n"
+    "  foreign static [i]=(n)\n"
+    "}\n"
+    /* Screen.window.* — operations scoped to the active text window.
+     * Cursor position, putChar/print, clear, deleteLine/insertLine,
+     * and the text attribute all act inside the window's rectangle.
+     * .bounds is the [sx, sy, ex, ey] of the window (1-based, inclusive). */
+    "class ScreenWindow {\n"
+    "  foreign static bounds\n"                            /* -> [sx, sy, ex, ey] */
+    "  foreign static bounds=(box)\n"
+    "  foreign static position\n"                          /* -> [x, y] window-relative */
+    "  foreign static position=(coord)\n"
+    "  foreign static putChar(c)\n"
+    "  foreign static print(s)\n"
+    "  foreign static clear()\n"
+    "  foreign static clearToLineEnd()\n"
+    "  foreign static deleteLine()\n"
+    "  foreign static insertLine()\n"
+    "  foreign static scroll()\n"                          /* scroll window up one line */
+    "}\n"
+    /* Screen.palette[i] / Screen.palette.mode — colors are 24-bit
+     * 0xRRGGBB.  Per-entry [_]/[_]= covers the full palette range
+     * (extended palettes go beyond 16); .mode is the 16-color
+     * legacy-attribute palette as a List, get or set in bulk.
+     *
+     * NOTE: term.c, cterm.c, and ripper.c all do their own palette
+     * tricks; concurrent edits from a script and from the terminal
+     * code may not compose cleanly until that's cleaned up. */
+    "class Palette {\n"
+    "  foreign static [i]\n"
+    "  foreign static [i]=(c)\n"
+    "  foreign static mode\n"
+    "  foreign static mode=(list)\n"
+    "}\n"
+    "foreign class Screen {\n"
+    /* Whole-screen / absolute operations.  Cursor, attribute,
+     * clearing, line insert/delete, and direct character output
+     * all live under Screen.window — they're window-scoped. */
+    "  foreign static size\n"                              /* -> [w, h] whole screen */
+    "  foreign static save()\n"                            /* returns handle */
+    "  foreign static restore(handle)\n"
+    "  foreign static readRect(sx, sy, ex, ey)\n"          /* absolute coords */
+    "  foreign static writeRect(sx, sy, ex, ey, cells)\n"
+    "  foreign static moveRect(sx, sy, ex, ey, dx, dy)\n"
+    /* Singleton state shared by all window output. */
+    "  foreign static attr=(a)\n"
+    /* Hyperlink that gets attached to cells written via window
+     * output (putChar, print).  0 = no hyperlink.  Use Hyperlinks.add
+     * to allocate an ID; assign that ID here so subsequent writes
+     * carry it. */
+    "  foreign static hyperlinkId\n"
+    "  foreign static hyperlinkId=(id)\n"
+    /* Screen.supports.pixels / Screen.font[i] / Screen.cursor.blink /
+     * Screen.videoFlags.bgBright / Screen.color.fromRgb(...) /
+     * Screen.window.position — these static getters return the
+     * helper class object so the script can access its static
+     * members (live API) or call .new() to snapshot.  The classes
+     * themselves carry a `_` prefix so user scripts don't import
+     * them by accident. */
+    "  static window     { ScreenWindow   }\n"
+    "  static supports   { ScreenSupports }\n"
+    "  static font       { ScreenFonts    }\n"
+    "  static palette    { Palette        }\n"
+    "  static cursor     { CustomCursor   }\n"
+    "  static videoFlags { VideoFlags     }\n"
+    "  static color      { Color          }\n"
+    "}\n"
+    /* CustomCursor — the cursor's startline/endline/range/blink/visible
+     * geometry.  Static methods read/write the live cursor immediately;
+     * an instance (`CustomCursor.new()` or `.current`) snapshots the
+     * current values, lets you stage edits, and `.apply()` commits them
+     * atomically.  Same shape for VideoFlags below. */
+    "foreign class CustomCursor {\n"
+    "  construct new() {}\n"
+    "  static current { new() }\n"
+    /* Pre-defined cursor snapshots that match the legacy
+     * setcursortype() codes (0 = none, 1 = solid block, 2 = normal
+     * mode-default).  Each returns a fresh CustomCursor instance
+     * the script can apply, or modify before applying. */
+    "  static normal  { presetLegacy_(2) }\n"
+    "  static solid   { presetLegacy_(1) }\n"
+    "  static none    { presetLegacy_(0) }\n"
+    "  foreign static presetLegacy_(legacyType)\n"
+    "  foreign static startLine\n"
+    "  foreign static startLine=(n)\n"
+    "  foreign static endLine\n"
+    "  foreign static endLine=(n)\n"
+    "  foreign static range\n"
+    "  foreign static range=(n)\n"
+    "  foreign static blink\n"
+    "  foreign static blink=(b)\n"
+    "  foreign static visible\n"
+    "  foreign static visible=(b)\n"
+    "  foreign startLine\n"
+    "  foreign startLine=(n)\n"
+    "  foreign endLine\n"
+    "  foreign endLine=(n)\n"
+    "  foreign range\n"
+    "  foreign range=(n)\n"
+    "  foreign blink\n"
+    "  foreign blink=(b)\n"
+    "  foreign visible\n"
+    "  foreign visible=(b)\n"
+    "  foreign apply()\n"
+    "}\n"
+    "foreign class VideoFlags {\n"
+    "  construct new() {}\n"
+    "  static current { new() }\n"
+    "  foreign static altChars\n"
+    "  foreign static altChars=(b)\n"
+    "  foreign static noBright\n"
+    "  foreign static noBright=(b)\n"
+    "  foreign static bgBright\n"
+    "  foreign static bgBright=(b)\n"
+    "  foreign static blinkAltChars\n"
+    "  foreign static blinkAltChars=(b)\n"
+    "  foreign static noBlink\n"
+    "  foreign static noBlink=(b)\n"
+    /* expand is read-only: the bitmap buffer is sized at video-mode
+     * init for 8 vs 9-pixel-wide cells; flipping it under a live
+     * screen would mismatch the layout.  lineGraphicsExpand only
+     * affects how chars 0xC0..0xDF render on the next draw, so it's
+     * safe to toggle. */
+    "  foreign static expand\n"
+    "  foreign static lineGraphicsExpand\n"
+    "  foreign static lineGraphicsExpand=(b)\n"
+    "  foreign altChars\n"
+    "  foreign altChars=(b)\n"
+    "  foreign noBright\n"
+    "  foreign noBright=(b)\n"
+    "  foreign bgBright\n"
+    "  foreign bgBright=(b)\n"
+    "  foreign blinkAltChars\n"
+    "  foreign blinkAltChars=(b)\n"
+    "  foreign noBlink\n"
+    "  foreign noBlink=(b)\n"
+    "  foreign expand\n"                                 /* read-only */
+    "  foreign lineGraphicsExpand\n"
+    "  foreign lineGraphicsExpand=(b)\n"
+    "  foreign apply()\n"
+    "}\n"
+    /* Color utilities: build/inspect 24-bit RGB values and convert
+     * between attr bytes and palette colors.  Returned values are
+     * raw 0xRRGGBB without the high RGB-mode bit — Cell.fgRgb=
+     * adds the bit when writing into a cell. */
+    "class Color {\n"
+    "  foreign static fromRgb(r, g, b)\n"           /* -> uint32 0xRRGGBB */
+    "  foreign static fromAttr(attr)\n"             /* -> [fg, bg] uint32 */
+    "  foreign static toLegacyAttr(fg, bg)\n"       /* -> uint8 */
+    "}\n"
+    /* Input — unified event reader.  next() blocks for the next event
+     * (KeyEvent or MouseEvent); next(ms) waits up to ms ms or returns
+     * null on timeout; poll returns null when nothing is pending.
+     * unget(ev) accepts either type — a KeyEvent goes through
+     * ciolib_ungetch (which handles 16-bit and LITERAL_E0 reversal);
+     * a MouseEvent goes through ciolib_ungetmouse, and the next
+     * next/poll will see the mouse-marker key naturally. */
+    "foreign class Input {\n"
+    "  foreign static next\n"
+    "  foreign static next(ms)\n"
+    "  foreign static poll\n"
     "  foreign static mousedrag()\n"
-    "  foreign static getMouse\n"
-    "  foreign static getClipText\n"
+    /* Setter only — there's no ciolib query for mouse visibility,
+     * just show/hide.  Tracking it from Wren land would drift if
+     * other code shows or hides the cursor. */
+    "  foreign static mouseVisible=(b)\n"
+    /* unget(ev): dispatch on event type.  Wren doesn't expose the
+     * foreign class of a value to the C side, so we discriminate here
+     * and call one of two typed primitives.  Silently does nothing
+     * for anything that isn't one of our two event types. */
+    "  static unget(ev) {\n"
+    "    if (ev is KeyEvent) {\n"
+    "      Input.ungetKey_(ev)\n"
+    "    } else if (ev is MouseEvent) {\n"
+    "      Input.ungetMouse_(ev)\n"
+    "    }\n"
+    "  }\n"
+    "  foreign static ungetKey_(ev)\n"
+    "  foreign static ungetMouse_(ev)\n"
+    "}\n"
+    /* KeyEvent — `code` is the raw 16-bit ciolib value.  For non-
+     * extended keys (high byte == 0) `codepoint` is the Unicode value
+     * of the byte under the current Font.codepage and `text` is its
+     * UTF-8 form; for extended keys both are null/"".  Esc-by-scancode
+     * (CIO_KEY_ABORTED, 0x01E0) is normalized to plain Esc (0x001B)
+     * inside the constructor so scripts only ever see one value. */
+    "foreign class KeyEvent {\n"
+    "  construct new(code) {}\n"
+    "  foreign code\n"
+    "  foreign codepoint\n"
+    "  foreign text\n"
+    "}\n"
+    /* MouseEvent — fields mirror struct mouse_event in ciolib.h. */
+    "foreign class MouseEvent {\n"
+    "  construct new(event, modifiers, startX, startY, endX, endY) {}\n"
+    "  foreign event\n"
+    "  foreign modifiers\n"
+    "  foreign startX\n"
+    "  foreign startY\n"
+    "  foreign endX\n"
+    "  foreign endY\n"
+    "}\n"
+    /* Key — named constants for the CIO_KEY_* set in ciolib.h.  These
+     * are the codes you'll see in KeyEvent.code for non-printable keys
+     * and key combinations.  Codes are backend-tagged but consistent
+     * across platforms after ciolib normalization. */
+    "class Key {\n"
+    "  static escape      { 0x001B }\n"
+    "  static enter       { 0x000D }\n"
+    "  static backspace   { 0x0008 }\n"
+    "  static tab         { 0x0009 }\n"
+    "  static delChar     { 0x007F }\n"
+    "  static home        { 0x4700 }\n"
+    "  static up          { 0x4800 }\n"
+    "  static pageUp      { 0x4900 }\n"
+    "  static left        { 0x4B00 }\n"
+    "  static right       { 0x4D00 }\n"
+    "  static end         { 0x4F00 }\n"
+    "  static down        { 0x5000 }\n"
+    "  static pageDown    { 0x5100 }\n"
+    "  static insert      { 0x5200 }\n"
+    "  static delete      { 0x5300 }\n"
+    "  static backTab     { 0x0F00 }\n"   /* Shift-Tab */
+    "  static shiftIns    { 0x0500 }\n"
+    "  static shiftDel    { 0x0700 }\n"
+    "  static ctrlIns     { 0x0400 }\n"
+    "  static ctrlDel     { 0x0600 }\n"
+    "  static altIns      { 0xA200 }\n"
+    "  static altDel      { 0xA300 }\n"
+    "  static shiftUp     { 0x3800 }\n"
+    "  static ctrlUp      { 0x8D00 }\n"
+    "  static shiftLeft   { 0x3400 }\n"
+    "  static ctrlLeft    { 0x7300 }\n"
+    "  static shiftRight  { 0x3600 }\n"
+    "  static ctrlRight   { 0x7400 }\n"
+    "  static shiftDown   { 0x3200 }\n"
+    "  static ctrlDown    { 0x9100 }\n"
+    "  static shiftEnd    { 0x3100 }\n"
+    "  static ctrlEnd     { 0x7500 }\n"
+    "  static f1          { 0x3B00 }\n"
+    "  static f2          { 0x3C00 }\n"
+    "  static f3          { 0x3D00 }\n"
+    "  static f4          { 0x3E00 }\n"
+    "  static f5          { 0x3F00 }\n"
+    "  static f6          { 0x4000 }\n"
+    "  static f7          { 0x4100 }\n"
+    "  static f8          { 0x4200 }\n"
+    "  static f9          { 0x4300 }\n"
+    "  static f10         { 0x4400 }\n"
+    "  static f11         { 0x8500 }\n"
+    "  static f12         { 0x8600 }\n"
+    "  static shiftF1     { 0x5400 }\n"
+    "  static shiftF2     { 0x5500 }\n"
+    "  static shiftF3     { 0x5600 }\n"
+    "  static shiftF4     { 0x5700 }\n"
+    "  static shiftF5     { 0x5800 }\n"
+    "  static shiftF6     { 0x5900 }\n"
+    "  static shiftF7     { 0x5A00 }\n"
+    "  static shiftF8     { 0x5B00 }\n"
+    "  static shiftF9     { 0x5C00 }\n"
+    "  static shiftF10    { 0x5D00 }\n"
+    "  static shiftF11    { 0x8700 }\n"
+    "  static shiftF12    { 0x8800 }\n"
+    "  static ctrlF1      { 0x5E00 }\n"
+    "  static ctrlF2      { 0x5F00 }\n"
+    "  static ctrlF3      { 0x6000 }\n"
+    "  static ctrlF4      { 0x6100 }\n"
+    "  static ctrlF5      { 0x6200 }\n"
+    "  static ctrlF6      { 0x6300 }\n"
+    "  static ctrlF7      { 0x6400 }\n"
+    "  static ctrlF8      { 0x6500 }\n"
+    "  static ctrlF9      { 0x6600 }\n"
+    "  static ctrlF10     { 0x6700 }\n"
+    "  static ctrlF11     { 0x8900 }\n"
+    "  static ctrlF12     { 0x8A00 }\n"
+    "  static altF1       { 0x6800 }\n"
+    "  static altF2       { 0x6900 }\n"
+    "  static altF3       { 0x6A00 }\n"
+    "  static altF4       { 0x6B00 }\n"
+    "  static altF5       { 0x6C00 }\n"
+    "  static altF6       { 0x6D00 }\n"
+    "  static altF7       { 0x6E00 }\n"
+    "  static altF8       { 0x6F00 }\n"
+    "  static altF9       { 0x7000 }\n"
+    "  static altF10      { 0x7100 }\n"
+    "  static altF11      { 0x8B00 }\n"
+    "  static altF12      { 0x8C00 }\n"
+    "  static mouse       { 0x7DE0 }\n"
+    "  static quit        { 0x7EE0 }\n"
+    "  static wrenConsole { 0x29E0 }\n"
+    "}\n"
+    "foreign class Clipboard {\n"
+    "  foreign static text\n"               /* read system clipboard */
+    "  foreign static text=(s)\n"           /* write system clipboard */
+    "}\n"
+    /* Codepage values match `enum ciolib_codepage` from utf8_codepages.h.
+     * Each Font slot's codepage is exposed via Font.codepageOf(i); the
+     * bare Font.codepage is shorthand for slot 0 (the default font). */
+    "class Codepage {\n"
+    "  static cp437        { 0 }\n"
+    "  static cp1251       { 1 }\n"
+    "  static cp1251_b     { 2 }\n"
+    "  static koi8r        { 3 }\n"
+    "  static iso8859_2    { 4 }\n"
+    "  static iso8859_4    { 5 }\n"
+    "  static cp866m       { 6 }\n"
+    "  static iso8859_9    { 7 }\n"
+    "  static iso8859_8    { 8 }\n"
+    "  static koi8u        { 9 }\n"
+    "  static iso8859_15   { 10 }\n"
+    "  static iso8859_5    { 11 }\n"
+    "  static cp850        { 12 }\n"
+    "  static cp850_b      { 13 }\n"
+    "  static cp865        { 14 }\n"
+    "  static cp865_b      { 15 }\n"
+    "  static iso8859_7    { 16 }\n"
+    "  static iso8859_1    { 17 }\n"
+    "  static cp866m2      { 18 }\n"
+    "  static cp866u       { 19 }\n"
+    "  static cp1131       { 20 }\n"
+    "  static armscii8     { 21 }\n"
+    "  static haik8        { 22 }\n"
+    "  static atascii      { 23 }\n"
+    "  static petsciiUpper { 24 }\n"
+    "  static petsciiLower { 25 }\n"
+    "  static prestel      { 26 }\n"
+    "  static prestelSep   { 27 }\n"
+    "  static atariSt      { 28 }\n"
     "}\n"
     /* REPL.compile_ returns the bare ObjClosure for the compiled body;
      * Wren-level REPL.eval invokes it via .call().  Going through Wren
@@ -154,6 +486,9 @@ static const char SYNCTERM_MODULE_SRC[] =
     "  foreign static name(i)\n"
     "  foreign static count\n"
     "  foreign static available(i)\n"
+    /* Codepage of the font in slot i (0..4); shorthand for slot 0. */
+    "  foreign static codepage\n"
+    "  foreign static codepageOf(i)\n"
     "}\n"
     "class Hyperlinks {\n"
     "  foreign static [id]\n"
@@ -705,12 +1040,24 @@ wren_host_init(struct bbslist *bbs)
 	if (wrenInterpret(state.vm, "syncterm", SYNCTERM_MODULE_SRC) !=
 	    WREN_RESULT_SUCCESS) {
 		fprintf(stderr, "[wren] failed to load builtin syncterm module\n");
+		/* Dump captured compile/runtime errors to stderr so the user
+		 * has something to act on — the in-memory log isn't reachable
+		 * once we shut down. */
+		int n     = main_log.count;
+		int start = (main_log.head - n + WREN_LOG_CAPACITY)
+		    % WREN_LOG_CAPACITY;
+		for (int i = 0; i < n; i++) {
+			struct wren_log_entry *e =
+			    &main_log.entries[(start + i) % WREN_LOG_CAPACITY];
+			if (e->text != NULL)
+				fprintf(stderr, "[wren] %s\n", e->text);
+		}
 		wren_host_shutdown();
 		return;
 	}
 
 	/* Capture handles for the foreign classes the C side allocates
-	 * instances of (Cell from inside ConIO.getText, Cells as the
+	 * instances of (Cell from inside Screen.getText, Cells as the
 	 * getText return value).  wrenSetSlotNewForeign needs a class
 	 * handle in a slot, so we keep these alive for the VM's lifetime. */
 	wrenEnsureSlots(state.vm, 1);
@@ -718,6 +1065,10 @@ wren_host_init(struct bbslist *bbs)
 	state.cell_class = wrenGetSlotHandle(state.vm, 0);
 	wrenGetVariable(state.vm, "syncterm", "Cells", 0);
 	state.cells_class = wrenGetSlotHandle(state.vm, 0);
+	wrenGetVariable(state.vm, "syncterm", "KeyEvent", 0);
+	state.key_event_class = wrenGetSlotHandle(state.vm, 0);
+	wrenGetVariable(state.vm, "syncterm", "MouseEvent", 0);
+	state.mouse_event_class = wrenGetSlotHandle(state.vm, 0);
 
 	/* Two-phase load order:
 	 *   1. Glob the user-script dir to learn which module names the
@@ -752,7 +1103,7 @@ wren_host_init(struct bbslist *bbs)
 			continue;
 		/* Embedded scripts share the "syncterm" module with the
 		 * foreign-class declarations.  Inside them, every binding
-		 * (ConIO, Cell, REPL, etc.) and every sibling embed's
+		 * (Screen, Input, Cell, REPL, etc.) and every sibling embed's
 		 * top-level definitions are directly visible — no imports
 		 * needed.  Override scripts are loaded into the same module
 		 * by load_one_script. */
@@ -794,6 +1145,10 @@ wren_host_shutdown(void)
 		wrenReleaseHandle(state.vm, state.cell_class);
 	if (state.cells_class != NULL)
 		wrenReleaseHandle(state.vm, state.cells_class);
+	if (state.key_event_class != NULL)
+		wrenReleaseHandle(state.vm, state.key_event_class);
+	if (state.mouse_event_class != NULL)
+		wrenReleaseHandle(state.vm, state.mouse_event_class);
 
 	/* Release log-buffer cached handles before freeing the VM (they
 	 * reference Wren-heap values). */

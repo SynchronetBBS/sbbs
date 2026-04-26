@@ -31,17 +31,79 @@
 /* term.c globals — emulation state and current bbs context. */
 extern struct cterminal *cterm;
 
-/* ----- ConIO ------------------------------------------------------- */
+/* ----- Screen / Input -------------------------------------------- */
+
+/* Screen.supports.* — backend capability flags.  Each getter is one
+ * bit-test against cio_api.options.  Macro to keep the boilerplate
+ * out of the way. */
+#define SCREEN_SUPPORTS(name, flag)                                  \
+	static void fnScreenSupports_##name(WrenVM *vm)             \
+	{                                                            \
+		wrenSetSlotBool(vm, 0, (cio_api.options & (flag)) != 0); \
+	}
+
+SCREEN_SUPPORTS(loadableFonts,    CONIO_OPT_LOADABLE_FONTS)
+SCREEN_SUPPORTS(altBlinkFont,     CONIO_OPT_BLINK_ALT_FONT)
+SCREEN_SUPPORTS(altBoldFont,      CONIO_OPT_BOLD_ALT_FONT)
+SCREEN_SUPPORTS(brightBackground, CONIO_OPT_BRIGHT_BACKGROUND)
+SCREEN_SUPPORTS(paletteChange,    CONIO_OPT_PALETTE_SETTING)
+SCREEN_SUPPORTS(pixels,           CONIO_OPT_SET_PIXEL)
+SCREEN_SUPPORTS(customCursor,     CONIO_OPT_CUSTOM_CURSOR)
+SCREEN_SUPPORTS(fontSelection,    CONIO_OPT_FONT_SELECT)
+SCREEN_SUPPORTS(windowTitle,      CONIO_OPT_SET_TITLE)
+SCREEN_SUPPORTS(windowName,       CONIO_OPT_SET_NAME)
+SCREEN_SUPPORTS(windowIcon,       CONIO_OPT_SET_ICON)
+SCREEN_SUPPORTS(extendedPalette,  CONIO_OPT_EXTENDED_PALETTE)
+SCREEN_SUPPORTS(blockyScaling,    CONIO_OPT_BLOCKY_SCALING)
+SCREEN_SUPPORTS(externalScaling,  CONIO_OPT_EXTERNAL_SCALING)
+SCREEN_SUPPORTS(closeLock,        CONIO_OPT_DISABLE_CLOSE)
+
+#undef SCREEN_SUPPORTS
+
+/* Window bounds [sx, sy, ex, ey] — 1-based, inclusive.  Setter
+ * delegates to ciolib_window which also resets the cursor to (1,1)
+ * within the new window. */
+static void
+fnScreenWindow_bounds(WrenVM *vm)
+{
+	struct text_info ti;
+	gettextinfo(&ti);
+	wrenEnsureSlots(vm, 2);
+	wrenSetSlotNewList(vm, 0);
+	const double v[4] = {
+		(double)ti.winleft, (double)ti.wintop,
+		(double)ti.winright, (double)ti.winbottom
+	};
+	for (int i = 0; i < 4; i++) {
+		wrenSetSlotDouble(vm, 1, v[i]);
+		wrenInsertInList(vm, 0, -1, 1);
+	}
+}
 
 static void
-fn_ConIO_putch(WrenVM *vm)
+fnScreenWindow_bounds_set(WrenVM *vm)
+{
+	if (wrenGetSlotType(vm, 1) != WREN_TYPE_LIST ||
+	    wrenGetListCount(vm, 1) < 4)
+		return;
+	wrenEnsureSlots(vm, 3);
+	int box[4];
+	for (int i = 0; i < 4; i++) {
+		wrenGetListElement(vm, 1, i, 2);
+		box[i] = (int)wrenGetSlotDouble(vm, 2);
+	}
+	window(box[0], box[1], box[2], box[3]);
+}
+
+static void
+fnScreenWindow_putChar(WrenVM *vm)
 {
 	int c = (int)wrenGetSlotDouble(vm, 1);
 	putch(c);
 }
 
 static void
-fn_ConIO_cputs(WrenVM *vm)
+fnScreenWindow_print(WrenVM *vm)
 {
 	int len = 0;
 	const char *s = wrenGetSlotBytes(vm, 1, &len);
@@ -49,35 +111,42 @@ fn_ConIO_cputs(WrenVM *vm)
 		putch((unsigned char)s[i]);
 }
 
+/* Cursor position as a single [x, y] list — getter and setter
+ * symmetric, no separate moveTo / cursorX / cursorY calls. */
 static void
-fn_ConIO_gotoxy(WrenVM *vm)
+fnScreenWindow_position(WrenVM *vm)
 {
-	int x = (int)wrenGetSlotDouble(vm, 1);
+	wrenEnsureSlots(vm, 2);
+	wrenSetSlotNewList(vm, 0);
+	wrenSetSlotDouble(vm, 1, (double)wherex());
+	wrenInsertInList(vm, 0, -1, 1);
+	wrenSetSlotDouble(vm, 1, (double)wherey());
+	wrenInsertInList(vm, 0, -1, 1);
+}
+
+static void
+fnScreenWindow_position_set(WrenVM *vm)
+{
+	if (wrenGetSlotType(vm, 1) != WREN_TYPE_LIST ||
+	    wrenGetListCount(vm, 1) < 2)
+		return;
+	wrenEnsureSlots(vm, 3);
+	wrenGetListElement(vm, 1, 0, 2);
+	int x = (int)wrenGetSlotDouble(vm, 2);
+	wrenGetListElement(vm, 1, 1, 2);
 	int y = (int)wrenGetSlotDouble(vm, 2);
 	gotoxy(x, y);
 }
 
 static void
-fn_ConIO_wherex(WrenVM *vm)
-{
-	wrenSetSlotDouble(vm, 0, (double)wherex());
-}
-
-static void
-fn_ConIO_wherey(WrenVM *vm)
-{
-	wrenSetSlotDouble(vm, 0, (double)wherey());
-}
-
-static void
-fn_ConIO_textattr(WrenVM *vm)
+fn_Screen_attr_set(WrenVM *vm)
 {
 	int a = (int)wrenGetSlotDouble(vm, 1);
 	textattr(a);
 }
 
 static void
-fn_ConIO_screenSize(WrenVM *vm)
+fn_Screen_size(WrenVM *vm)
 {
 	struct text_info ti;
 	gettextinfo(&ti);
@@ -89,20 +158,28 @@ fn_ConIO_screenSize(WrenVM *vm)
 	wrenInsertInList(vm, 0, -1, 1);
 }
 
-static void
-fn_ConIO_ungetch(WrenVM *vm)
-{
-	int k = (int)wrenGetSlotDouble(vm, 1);
-	ungetch(k);
-}
+/* Forward decl — defined later beside the Cell helpers. */
+static int encode_utf8(uint32_t cp, char out[4]);
 
-static void
-fn_ConIO_getch(WrenVM *vm)
+/* Foreign class state for KeyEvent and MouseEvent — both are simple
+ * value types (no parent, no resources) so finalize is a no-op. */
+struct wren_key_event {
+	uint16_t code;
+	int32_t  codepoint;   /* -1 = none (extended key) */
+	uint8_t  text[5];     /* UTF-8 of codepoint, NUL-terminated; "" if extended */
+	uint8_t  text_len;    /* not counting NUL */
+};
+
+struct wren_mouse_event {
+	struct mouse_event ev;
+};
+
+/* Read one fully-assembled 16-bit ciolib key (handles 0x00 / 0xe0 high-
+ * byte sequences, collapses LITERAL_E0 to plain 0xe0).  Returns the
+ * 16-bit value as int.  Mirrors what fn_Input_getch did before. */
+static int
+read_assembled_keycode(void)
 {
-	/* ciolib_getch returns one raw byte at a time; assemble the 16-bit
-	 * extended-key value here so scripts get the same encoding rip_getch
-	 * exposes (e.g. Esc=0x011B, Ctrl+`=0x29E0).  CIO_KEY_LITERAL_E0
-	 * decodes back to the literal 0xe0 byte. */
 	int ch = getch();
 	if (ch == 0 || ch == 0xe0) {
 		int ch2 = getch();
@@ -110,24 +187,228 @@ fn_ConIO_getch(WrenVM *vm)
 		if (ch == CIO_KEY_LITERAL_E0)
 			ch = 0xe0;
 	}
-	wrenSetSlotDouble(vm, 0, (double)ch);
+	return ch;
 }
 
+/* Populate a wren_key_event from a raw 16-bit code: normalize the
+ * scancode-flavored Esc to plain Esc, then derive codepoint+text from
+ * the low byte if the high byte is zero (i.e. a non-extended key).
+ * Codepoint comes from the current Font[0] codepage so the byte→Unicode
+ * translation matches what the screen would render for that byte. */
 static void
-fn_ConIO_kbhit(WrenVM *vm)
+key_event_init(struct wren_key_event *ke, uint16_t code)
 {
-	wrenSetSlotBool(vm, 0, kbhit() != 0);
+	if (code == CIO_KEY_ABORTED)
+		code = 0x001B;
+	ke->code      = code;
+	ke->codepoint = -1;
+	ke->text[0]   = '\0';
+	ke->text_len  = 0;
+	if ((code & 0xFF00u) == 0) {
+		uint8_t  byte = (uint8_t)(code & 0xFFu);
+		int      f    = getfont(0);
+		uint32_t cp;
+		if (f >= 0 && f <= 256)
+			cp = cpoint_from_cpchar(
+			    (enum ciolib_codepage)conio_fontdata[f].cp, byte);
+		else
+			cp = byte;
+		ke->codepoint = (int32_t)cp;
+		char     buf[4];
+		int      n = encode_utf8(cp, buf);
+		for (int i = 0; i < n; i++)
+			ke->text[i] = (uint8_t)buf[i];
+		ke->text[n]  = '\0';
+		ke->text_len = (uint8_t)n;
+	}
 }
 
 static void
-fn_ConIO_clrscr(WrenVM *vm)
+wren_key_event_allocate(WrenVM *vm)
+{
+	struct wren_key_event *ke =
+	    wrenSetSlotNewForeign(vm, 0, 0, sizeof(*ke));
+	uint16_t code = (uint16_t)wrenGetSlotDouble(vm, 1);
+	key_event_init(ke, code);
+}
+
+static void
+wren_key_event_finalize(void *data)
+{
+	(void)data;
+}
+
+static void
+wren_mouse_event_allocate(WrenVM *vm)
+{
+	struct wren_mouse_event *me =
+	    wrenSetSlotNewForeign(vm, 0, 0, sizeof(*me));
+	memset(me, 0, sizeof(*me));
+	me->ev.event       = (int)wrenGetSlotDouble(vm, 1);
+	me->ev.kbmodifiers = (int)wrenGetSlotDouble(vm, 2);
+	me->ev.startx      = (int)wrenGetSlotDouble(vm, 3);
+	me->ev.starty      = (int)wrenGetSlotDouble(vm, 4);
+	me->ev.endx        = (int)wrenGetSlotDouble(vm, 5);
+	me->ev.endy        = (int)wrenGetSlotDouble(vm, 6);
+}
+
+static void
+wren_mouse_event_finalize(void *data)
+{
+	(void)data;
+}
+
+/* KeyEvent field accessors. */
+static void
+fn_KeyEvent_code(WrenVM *vm)
+{
+	struct wren_key_event *ke = wrenGetSlotForeign(vm, 0);
+	wrenSetSlotDouble(vm, 0, (double)ke->code);
+}
+
+static void
+fn_KeyEvent_codepoint(WrenVM *vm)
+{
+	struct wren_key_event *ke = wrenGetSlotForeign(vm, 0);
+	if (ke->codepoint < 0) {
+		wrenSetSlotNull(vm, 0);
+		return;
+	}
+	wrenSetSlotDouble(vm, 0, (double)ke->codepoint);
+}
+
+static void
+fn_KeyEvent_text(WrenVM *vm)
+{
+	struct wren_key_event *ke = wrenGetSlotForeign(vm, 0);
+	wrenSetSlotBytes(vm, 0, (const char *)ke->text, ke->text_len);
+}
+
+/* MouseEvent field accessors. */
+#define MOUSE_FIELD(NAME, FIELD)                                        \
+	static void fn_MouseEvent_##NAME(WrenVM *vm)                    \
+	{                                                               \
+		struct wren_mouse_event *me = wrenGetSlotForeign(vm, 0);\
+		wrenSetSlotDouble(vm, 0, (double)me->ev.FIELD);         \
+	}
+
+MOUSE_FIELD(event,     event)
+MOUSE_FIELD(modifiers, kbmodifiers)
+MOUSE_FIELD(startX,    startx)
+MOUSE_FIELD(startY,    starty)
+MOUSE_FIELD(endX,      endx)
+MOUSE_FIELD(endY,      endy)
+
+#undef MOUSE_FIELD
+
+/* Build a Wren-side KeyEvent in slot 0 from a raw 16-bit code.  Uses
+ * the captured KeyEvent class handle; callers must have at least 2
+ * slots ensured (slot 0 = result, slot 1 = scratch for the class). */
+static void
+push_key_event(WrenVM *vm, uint16_t code)
+{
+	struct wren_host_state *st = wren_host_state();
+	wrenSetSlotHandle(vm, 1, st->key_event_class);
+	struct wren_key_event *ke =
+	    wrenSetSlotNewForeign(vm, 0, 1, sizeof(*ke));
+	key_event_init(ke, code);
+}
+
+/* Build a Wren-side MouseEvent in slot 0 from a struct mouse_event. */
+static void
+push_mouse_event(WrenVM *vm, const struct mouse_event *mev)
+{
+	struct wren_host_state *st = wren_host_state();
+	wrenSetSlotHandle(vm, 1, st->mouse_event_class);
+	struct wren_mouse_event *me =
+	    wrenSetSlotNewForeign(vm, 0, 1, sizeof(*me));
+	me->ev = *mev;
+}
+
+/* Drain one event from ciolib into slot 0.  When getch returns
+ * CIO_KEY_MOUSE the actual mouse details come from a paired getmouse
+ * call, so we wrap it as MouseEvent rather than KeyEvent.  Anything
+ * else becomes a KeyEvent. */
+static void
+push_next_event(WrenVM *vm)
+{
+	int code = read_assembled_keycode();
+	wrenEnsureSlots(vm, 2);
+	if (code == CIO_KEY_MOUSE) {
+		struct mouse_event mev;
+		memset(&mev, 0, sizeof(mev));
+		if (getmouse(&mev) != 0) {
+			/* No mouse pending despite the marker — surface as a
+			 * raw KeyEvent so the script at least sees the byte. */
+			push_key_event(vm, (uint16_t)code);
+			return;
+		}
+		push_mouse_event(vm, &mev);
+		return;
+	}
+	push_key_event(vm, (uint16_t)code);
+}
+
+/* Input.next — block until something is ready, return the event. */
+static void
+fn_Input_next(WrenVM *vm)
+{
+	push_next_event(vm);
+}
+
+/* Input.next(ms) — wait up to ms milliseconds; null on timeout. */
+static void
+fn_Input_next_ms(WrenVM *vm)
+{
+	int ms = (int)wrenGetSlotDouble(vm, 1);
+	if (kbwait(ms) == 0) {
+		wrenSetSlotNull(vm, 0);
+		return;
+	}
+	push_next_event(vm);
+}
+
+/* Input.poll — non-blocking; null when nothing is ready. */
+static void
+fn_Input_poll(WrenVM *vm)
+{
+	if (!kbhit()) {
+		wrenSetSlotNull(vm, 0);
+		return;
+	}
+	push_next_event(vm);
+}
+
+/* Input.ungetKey_(ev) / Input.ungetMouse_(ev) — typed unget primitives.
+ * The public Input.unget(ev) is a Wren-side wrapper that picks one of
+ * these via `ev is KeyEvent` / `ev is MouseEvent`, since Wren doesn't
+ * expose a "class of this foreign value" API to C and we need to know
+ * which queue to push back to.  ungetch handles the LITERAL_E0
+ * reversal internally; ungetmouse appends to the mouse output queue
+ * and the next getch will surface CIO_KEY_MOUSE on its own. */
+static void
+fn_Input_ungetKey_(WrenVM *vm)
+{
+	struct wren_key_event *ke = wrenGetSlotForeign(vm, 1);
+	ungetch(ke->code);
+}
+
+static void
+fn_Input_ungetMouse_(WrenVM *vm)
+{
+	struct wren_mouse_event *me = wrenGetSlotForeign(vm, 1);
+	ungetmouse(&me->ev);
+}
+
+static void
+fnScreenWindow_clear(WrenVM *vm)
 {
 	(void)vm;
 	clrscr();
 }
 
 static void
-fn_ConIO_clreol(WrenVM *vm)
+fnScreenWindow_clearToLineEnd(WrenVM *vm)
 {
 	(void)vm;
 	clreol();
@@ -136,16 +417,16 @@ fn_ConIO_clreol(WrenVM *vm)
 /* ciolib_savescreen returns a malloc'd struct ciolib_screen *.
  * Round-trip the pointer through a Wren Num — pointers are typically
  * aligned and fit in the 53-bit double mantissa on every supported
- * host.  restorescreen frees the screen on success. */
+ * host.  restore() frees the screen on success. */
 static void
-fn_ConIO_savescreen(WrenVM *vm)
+fn_Screen_save(WrenVM *vm)
 {
 	struct ciolib_screen *scrn = savescreen();
 	wrenSetSlotDouble(vm, 0, (double)(uintptr_t)scrn);
 }
 
 static void
-fn_ConIO_restorescreen(WrenVM *vm)
+fn_Screen_restore(WrenVM *vm)
 {
 	uintptr_t v = (uintptr_t)wrenGetSlotDouble(vm, 1);
 	struct ciolib_screen *scrn = (struct ciolib_screen *)v;
@@ -657,7 +938,7 @@ wren_cell_finalize(void *data)
 
 /* --- Cells allocate / finalize ---
  *
- * Allocator leaves the struct empty; ConIO.getText fills count and
+ * Allocator leaves the struct empty; Screen.getText fills count and
  * buf after construction.  Finalize releases the malloc'd buffer. */
 static void
 wren_cells_allocate(WrenVM *vm)
@@ -676,10 +957,440 @@ wren_cells_finalize(void *data)
 	cs->count = 0;
 }
 
-/* ----- ConIO.getText / ConIO.putText ----- */
+static void
+fn_Screen_moveRect(WrenVM *vm)
+{
+	int sx = (int)wrenGetSlotDouble(vm, 1);
+	int sy = (int)wrenGetSlotDouble(vm, 2);
+	int ex = (int)wrenGetSlotDouble(vm, 3);
+	int ey = (int)wrenGetSlotDouble(vm, 4);
+	int dx = (int)wrenGetSlotDouble(vm, 5);
+	int dy = (int)wrenGetSlotDouble(vm, 6);
+	movetext(sx, sy, ex, ey, dx, dy);
+}
 
 static void
-fn_ConIO_getText(WrenVM *vm)
+fnScreenWindow_deleteLine(WrenVM *vm)
+{
+	(void)vm;
+	delline();
+}
+
+static void
+fnScreenWindow_insertLine(WrenVM *vm)
+{
+	(void)vm;
+	insline();
+}
+
+static void
+fnScreenWindow_scroll(WrenVM *vm)
+{
+	(void)vm;
+	wscroll();
+}
+
+/* ----- Screen.hyperlinkId — singleton current-hyperlink ID for new
+ * cells produced by window output (putChar, print). */
+static void
+fn_Screen_hyperlinkId(WrenVM *vm)
+{
+	wrenSetSlotDouble(vm, 0, (double)ciolib_get_current_hyperlink());
+}
+
+static void
+fn_Screen_hyperlinkId_set(WrenVM *vm)
+{
+	int id = (int)wrenGetSlotDouble(vm, 1);
+	ciolib_set_current_hyperlink((uint16_t)id);
+}
+
+/* ----- Input.mouseVisible — setter only.  ciolib has no get
+ * counterpart, and tracking it from script-side would drift if other
+ * code shows or hides the cursor. */
+static void
+fn_Input_mouseVisible_set(WrenVM *vm)
+{
+	if (wrenGetSlotBool(vm, 1))
+		ciolib_showmouse();
+	else
+		ciolib_hidemouse();
+}
+
+/* ----- Font.codepage / Font.codepageOf(i) — codepage of a font slot. */
+static void
+fn_Font_codepage(WrenVM *vm)
+{
+	int f = getfont(0);
+	if (f < 0 || f > 256) {
+		wrenSetSlotNull(vm, 0);
+		return;
+	}
+	wrenSetSlotDouble(vm, 0, (double)conio_fontdata[f].cp);
+}
+
+static void
+fn_Font_codepageOf(WrenVM *vm)
+{
+	int i = (int)wrenGetSlotDouble(vm, 1);
+	if (i < 0 || i > 4) {
+		wrenSetSlotNull(vm, 0);
+		return;
+	}
+	int f = getfont(i);
+	if (f < 0 || f > 256) {
+		wrenSetSlotNull(vm, 0);
+		return;
+	}
+	wrenSetSlotDouble(vm, 0, (double)conio_fontdata[f].cp);
+}
+
+/* Screen.font[i] — slot in 0..4 (5 active font slots in conio). */
+static void
+fnScreenFonts_subscript(WrenVM *vm)
+{
+	int i = (int)wrenGetSlotDouble(vm, 1);
+	if (i < 0 || i > 4) {
+		wrenSetSlotNull(vm, 0);
+		return;
+	}
+	wrenSetSlotDouble(vm, 0, (double)getfont(i));
+}
+
+static void
+fnScreenFonts_subscript_set(WrenVM *vm)
+{
+	int i = (int)wrenGetSlotDouble(vm, 1);
+	int n = (int)wrenGetSlotDouble(vm, 2);
+	if (i < 0 || i > 4)
+		return;
+	/* force=0: refuse the change if the font isn't available in the
+	 * current video mode rather than silently switching modes. */
+	setfont(n, 0, i);
+}
+
+/* ----- Screen.palette ----------------------------------------------
+ *
+ * Per-entry [i]/[i]= read/write a single palette color as 0xRRGGBB.
+ * `.mode` and `.mode=` get/set the 16-color mode palette as a Wren
+ * List of 16 colors.  Setpalette wants 16-bit r/g/b, getpalette
+ * returns 8-bit — we keep the script side at 8-bit-per-channel
+ * (0xRRGGBB) and scale on the way in (×257 = ×0x101). */
+
+static void
+fnPalette_subscript(WrenVM *vm)
+{
+	int i = (int)wrenGetSlotDouble(vm, 1);
+	uint8_t r, g, b;
+	if (i < 0 || ciolib_getpalette((uint32_t)i, &r, &g, &b) != 1) {
+		wrenSetSlotNull(vm, 0);
+		return;
+	}
+	uint32_t v = ((uint32_t)r << 16) | ((uint32_t)g << 8) | (uint32_t)b;
+	wrenSetSlotDouble(vm, 0, (double)v);
+}
+
+static void
+fnPalette_subscript_set(WrenVM *vm)
+{
+	int      i = (int)wrenGetSlotDouble(vm, 1);
+	uint32_t c = (uint32_t)(int64_t)wrenGetSlotDouble(vm, 2);
+	if (i < 0)
+		return;
+	uint16_t r = (uint16_t)(((c >> 16) & 0xFFu) * 0x101u);
+	uint16_t g = (uint16_t)(((c >>  8) & 0xFFu) * 0x101u);
+	uint16_t b = (uint16_t)(( c        & 0xFFu) * 0x101u);
+	ciolib_setpalette((uint32_t)i, r, g, b);
+}
+
+static void
+fnPalette_mode(WrenVM *vm)
+{
+	uint32_t pal[16];
+	if (ciolib_get_modepalette(pal) != 1) {
+		wrenSetSlotNull(vm, 0);
+		return;
+	}
+	wrenEnsureSlots(vm, 2);
+	wrenSetSlotNewList(vm, 0);
+	for (int i = 0; i < 16; i++) {
+		wrenSetSlotDouble(vm, 1, (double)(pal[i] & 0x00FFFFFFu));
+		wrenInsertInList(vm, 0, -1, 1);
+	}
+}
+
+static void
+fnPalette_mode_set(WrenVM *vm)
+{
+	if (wrenGetSlotType(vm, 1) != WREN_TYPE_LIST ||
+	    wrenGetListCount(vm, 1) < 16)
+		return;
+	wrenEnsureSlots(vm, 3);
+	uint32_t pal[16];
+	for (int i = 0; i < 16; i++) {
+		wrenGetListElement(vm, 1, i, 2);
+		uint32_t c = (uint32_t)(int64_t)wrenGetSlotDouble(vm, 2);
+		/* Mode-palette entries carry the high RGB-mode bit so the
+		 * renderer treats them as direct colors rather than palette
+		 * indices.  Mask the user value down and OR the bit on. */
+		pal[i] = (c & 0x00FFFFFFu) | 0x80000000u;
+	}
+	ciolib_set_modepalette(pal);
+}
+
+/* ----- CustomCursor ------------------------------------------------
+ *
+ * Two access paths share the same field names:
+ *   - foreign static X / X=(_) reads/writes the live cursor
+ *     immediately via ciolib_get/setcustomcursor.
+ *   - instance X / X=(_) reads/writes a snapshot taken at construct
+ *     time; .apply() pushes the snapshot back to ciolib atomically.
+ * Boilerplate is generated via macros so the 5×4=20 accessors fit
+ * in a few dozen lines. */
+
+struct wren_custom_cursor {
+	int startline;
+	int endline;
+	int range;
+	int blink;
+	int visible;
+};
+
+static void
+wren_custom_cursor_allocate(WrenVM *vm)
+{
+	struct wren_custom_cursor *c = wrenSetSlotNewForeign(vm, 0, 0, sizeof(*c));
+	getcustomcursor(&c->startline, &c->endline, &c->range,
+	    &c->blink, &c->visible);
+}
+
+static void
+wren_custom_cursor_finalize(void *data)
+{
+	(void)data;
+}
+
+#define CC_INT_FIELD(NAME, FIELD)                                                \
+	static void fnCustomCursor_##NAME##_static(WrenVM *vm)                  \
+	{                                                                        \
+		int startline, endline, range, blink, visible;                   \
+		getcustomcursor(&startline, &endline, &range, &blink, &visible); \
+		wrenSetSlotDouble(vm, 0, (double)(FIELD));                       \
+	}                                                                        \
+	static void fnCustomCursor_##NAME##_set_static(WrenVM *vm)              \
+	{                                                                        \
+		int startline, endline, range, blink, visible;                   \
+		getcustomcursor(&startline, &endline, &range, &blink, &visible); \
+		FIELD = (int)wrenGetSlotDouble(vm, 1);                           \
+		setcustomcursor(startline, endline, range, blink, visible);      \
+	}                                                                        \
+	static void fnCustomCursor_##NAME(WrenVM *vm)                           \
+	{                                                                        \
+		struct wren_custom_cursor *c = wrenGetSlotForeign(vm, 0);        \
+		wrenSetSlotDouble(vm, 0, (double)c->FIELD);                      \
+	}                                                                        \
+	static void fnCustomCursor_##NAME##_set(WrenVM *vm)                     \
+	{                                                                        \
+		struct wren_custom_cursor *c = wrenGetSlotForeign(vm, 0);        \
+		c->FIELD = (int)wrenGetSlotDouble(vm, 1);                        \
+	}
+
+#define CC_BOOL_FIELD(NAME, FIELD)                                               \
+	static void fnCustomCursor_##NAME##_static(WrenVM *vm)                  \
+	{                                                                        \
+		int startline, endline, range, blink, visible;                   \
+		getcustomcursor(&startline, &endline, &range, &blink, &visible); \
+		wrenSetSlotBool(vm, 0, (FIELD) != 0);                            \
+	}                                                                        \
+	static void fnCustomCursor_##NAME##_set_static(WrenVM *vm)              \
+	{                                                                        \
+		int startline, endline, range, blink, visible;                   \
+		getcustomcursor(&startline, &endline, &range, &blink, &visible); \
+		FIELD = wrenGetSlotBool(vm, 1) ? 1 : 0;                          \
+		setcustomcursor(startline, endline, range, blink, visible);      \
+	}                                                                        \
+	static void fnCustomCursor_##NAME(WrenVM *vm)                           \
+	{                                                                        \
+		struct wren_custom_cursor *c = wrenGetSlotForeign(vm, 0);        \
+		wrenSetSlotBool(vm, 0, c->FIELD != 0);                           \
+	}                                                                        \
+	static void fnCustomCursor_##NAME##_set(WrenVM *vm)                     \
+	{                                                                        \
+		struct wren_custom_cursor *c = wrenGetSlotForeign(vm, 0);        \
+		c->FIELD = wrenGetSlotBool(vm, 1) ? 1 : 0;                       \
+	}
+
+CC_INT_FIELD (startLine, startline)
+CC_INT_FIELD (endLine,   endline)
+CC_INT_FIELD (range,     range)
+CC_BOOL_FIELD(blink,     blink)
+CC_BOOL_FIELD(visible,   visible)
+
+#undef CC_INT_FIELD
+#undef CC_BOOL_FIELD
+
+static void
+fnCustomCursor_apply(WrenVM *vm)
+{
+	struct wren_custom_cursor *c = wrenGetSlotForeign(vm, 0);
+	setcustomcursor(c->startline, c->endline, c->range, c->blink, c->visible);
+}
+
+/* presetLegacy_(legacyType): build a snapshot from the legacy
+ * setcursortype() semantics.  Backends interpret the type code by
+ * mutating the same start/end/blink/visible state custom-cursor uses,
+ * so we capture the current values, apply the preset, read it back,
+ * then revert.  The reverted state isn't drawn between syscalls (no
+ * frame renders inside a foreign method), so no flicker. */
+static void
+fnCustomCursorpresetLegacy_(WrenVM *vm)
+{
+	int legacy = (int)wrenGetSlotDouble(vm, 1);
+
+	int saved_sl, saved_el, saved_r, saved_b, saved_v;
+	getcustomcursor(&saved_sl, &saved_el, &saved_r, &saved_b, &saved_v);
+
+	_setcursortype(legacy);
+
+	int sl, el, r, b, v;
+	getcustomcursor(&sl, &el, &r, &b, &v);
+
+	setcustomcursor(saved_sl, saved_el, saved_r, saved_b, saved_v);
+
+	/* Slot 0 holds the CustomCursor class (static-method receiver);
+	 * use it as the class for the new instance and overwrite slot 0
+	 * with the result.  wrenSetSlotNewForeign reads the class before
+	 * writing, so same-slot is safe. */
+	struct wren_custom_cursor *c =
+	    wrenSetSlotNewForeign(vm, 0, 0, sizeof(*c));
+	c->startline = sl;
+	c->endline   = el;
+	c->range     = r;
+	c->blink     = b;
+	c->visible   = v;
+}
+
+/* ----- VideoFlags -------------------------------------------------- */
+
+struct wren_video_flags {
+	int flags;
+};
+
+static void
+wren_video_flags_allocate(WrenVM *vm)
+{
+	struct wren_video_flags *vf = wrenSetSlotNewForeign(vm, 0, 0, sizeof(*vf));
+	vf->flags = getvideoflags();
+}
+
+static void
+wren_video_flags_finalize(void *data)
+{
+	(void)data;
+}
+
+#define VF_FLAG(NAME, BIT)                                                       \
+	static void fnVideoFlags_##NAME##_static(WrenVM *vm)                    \
+	{                                                                        \
+		wrenSetSlotBool(vm, 0, (getvideoflags() & (BIT)) != 0);          \
+	}                                                                        \
+	static void fnVideoFlags_##NAME##_set_static(WrenVM *vm)                \
+	{                                                                        \
+		int flags = getvideoflags();                                     \
+		if (wrenGetSlotBool(vm, 1)) flags |= (BIT);                      \
+		else                        flags &= ~(BIT);                     \
+		setvideoflags(flags);                                            \
+	}                                                                        \
+	static void fnVideoFlags_##NAME(WrenVM *vm)                             \
+	{                                                                        \
+		struct wren_video_flags *vf = wrenGetSlotForeign(vm, 0);         \
+		wrenSetSlotBool(vm, 0, (vf->flags & (BIT)) != 0);                \
+	}                                                                        \
+	static void fnVideoFlags_##NAME##_set(WrenVM *vm)                       \
+	{                                                                        \
+		struct wren_video_flags *vf = wrenGetSlotForeign(vm, 0);         \
+		if (wrenGetSlotBool(vm, 1)) vf->flags |= (BIT);                  \
+		else                        vf->flags &= ~(BIT);                 \
+	}
+
+VF_FLAG(altChars,           CIOLIB_VIDEO_ALTCHARS)
+VF_FLAG(noBright,           CIOLIB_VIDEO_NOBRIGHT)
+VF_FLAG(bgBright,           CIOLIB_VIDEO_BGBRIGHT)
+VF_FLAG(blinkAltChars,      CIOLIB_VIDEO_BLINKALTCHARS)
+VF_FLAG(noBlink,            CIOLIB_VIDEO_NOBLINK)
+VF_FLAG(lineGraphicsExpand, CIOLIB_VIDEO_LINE_GRAPHICS_EXPAND)
+
+#undef VF_FLAG
+
+/* expand is read-only: the bitmap buffer's per-cell pixel width is
+ * fixed at video-mode init.  Getter only — no setter. */
+static void
+fnVideoFlags_expand_static(WrenVM *vm)
+{
+	wrenSetSlotBool(vm, 0, (getvideoflags() & CIOLIB_VIDEO_EXPAND) != 0);
+}
+
+static void
+fnVideoFlags_expand(WrenVM *vm)
+{
+	struct wren_video_flags *vf = wrenGetSlotForeign(vm, 0);
+	wrenSetSlotBool(vm, 0, (vf->flags & CIOLIB_VIDEO_EXPAND) != 0);
+}
+
+static void
+fnVideoFlags_apply(WrenVM *vm)
+{
+	struct wren_video_flags *vf = wrenGetSlotForeign(vm, 0);
+	setvideoflags(vf->flags);
+}
+
+/* ----- Color ------------------------------------------------------- */
+
+static void
+fnColor_fromRgb(WrenVM *vm)
+{
+	int r = (int)wrenGetSlotDouble(vm, 1);
+	int g = (int)wrenGetSlotDouble(vm, 2);
+	int b = (int)wrenGetSlotDouble(vm, 3);
+	/* ciolib_map_rgb returns the value with the high RGB bit set; we
+	 * mask it off — Cell.fgRgb=/bgRgb= add the bit when writing.
+	 * Returning the raw 24-bit value keeps the script side simpler. */
+	uint32_t v = ciolib_map_rgb((uint16_t)r, (uint16_t)g, (uint16_t)b)
+	    & 0x00FFFFFFu;
+	wrenSetSlotDouble(vm, 0, (double)v);
+}
+
+static void
+fnColor_fromAttr(WrenVM *vm)
+{
+	int      attr = (int)wrenGetSlotDouble(vm, 1);
+	uint32_t fg   = 0;
+	uint32_t bg   = 0;
+	ciolib_attr2palette((uint8_t)attr, &fg, &bg);
+	wrenEnsureSlots(vm, 2);
+	wrenSetSlotNewList(vm, 0);
+	wrenSetSlotDouble(vm, 1, (double)(fg & 0x00FFFFFFu));
+	wrenInsertInList(vm, 0, -1, 1);
+	wrenSetSlotDouble(vm, 1, (double)(bg & 0x00FFFFFFu));
+	wrenInsertInList(vm, 0, -1, 1);
+}
+
+static void
+fnColor_toLegacyAttr(WrenVM *vm)
+{
+	uint32_t fg = (uint32_t)(int64_t)wrenGetSlotDouble(vm, 1);
+	uint32_t bg = (uint32_t)(int64_t)wrenGetSlotDouble(vm, 2);
+	/* ciolib_rgb_to_legacyattr looks at bit 31 to decide RGB vs
+	 * palette; our callers pass raw 24-bit RGB so set the bit. */
+	wrenSetSlotDouble(vm, 0,
+	    (double)ciolib_rgb_to_legacyattr(
+	        fg | 0x80000000u, bg | 0x80000000u));
+}
+
+/* ----- Screen.getText / Screen.putText ----- */
+
+static void
+fn_Screen_readRect(WrenVM *vm)
 {
 	int sx = (int)wrenGetSlotDouble(vm, 1);
 	int sy = (int)wrenGetSlotDouble(vm, 2);
@@ -719,7 +1430,7 @@ fn_ConIO_getText(WrenVM *vm)
 }
 
 static void
-fn_ConIO_mousedrag(WrenVM *vm)
+fn_Input_mousedrag(WrenVM *vm)
 {
 	(void)vm;
 	mousedrag(NULL);
@@ -847,11 +1558,10 @@ fn_REPL_hasModule(WrenVM *vm)
 	wrenSetSlotBool(vm, 0, has);
 }
 
-/* Returns the system clipboard's text as a String, or null when the
- * clipboard is empty or unavailable.  ciolib_getcliptext returns a
- * malloc'd UTF-8 buffer which the caller must free. */
+/* Read system clipboard.  ciolib_getcliptext returns a malloc'd
+ * UTF-8 buffer; we hand it to Wren and free our copy. */
 static void
-fn_ConIO_getClipText(WrenVM *vm)
+fn_Clipboard_text(WrenVM *vm)
 {
 	char *s = getcliptext();
 	if (s == NULL) {
@@ -862,33 +1572,18 @@ fn_ConIO_getClipText(WrenVM *vm)
 	free(s);
 }
 
-/* Drains one pending mouse event into a 7-element list:
- * [event, bstate, kbmodifiers, startx, starty, endx, endy].
- * Returns null when no event is queued. */
+/* Write the system clipboard. */
 static void
-fn_ConIO_getMouse(WrenVM *vm)
+fn_Clipboard_text_set(WrenVM *vm)
 {
-	struct mouse_event ev;
-	memset(&ev, 0, sizeof(ev));
-	if (getmouse(&ev) != 0) {
-		wrenSetSlotNull(vm, 0);
-		return;
-	}
-	wrenEnsureSlots(vm, 2);
-	wrenSetSlotNewList(vm, 0);
-	const double fields[] = {
-		(double)ev.event, (double)ev.bstate, (double)ev.kbmodifiers,
-		(double)ev.startx, (double)ev.starty,
-		(double)ev.endx,   (double)ev.endy
-	};
-	for (size_t f = 0; f < sizeof(fields) / sizeof(fields[0]); f++) {
-		wrenSetSlotDouble(vm, 1, fields[f]);
-		wrenInsertInList(vm, 0, -1, 1);
-	}
+	int         len = 0;
+	const char *s   = wrenGetSlotBytes(vm, 1, &len);
+	if (s != NULL && len > 0)
+		ciolib_copytext(s, (size_t)len);
 }
 
 static void
-fn_ConIO_putText(WrenVM *vm)
+fn_Screen_writeRect(WrenVM *vm)
 {
 	int sx = (int)wrenGetSlotDouble(vm, 1);
 	int sy = (int)wrenGetSlotDouble(vm, 2);
@@ -1326,26 +2021,140 @@ struct binding {
 };
 
 static const struct binding BINDINGS[] = {
-	/* ConIO (all static) */
-	{ "ConIO", true,  "putch(_)",            fn_ConIO_putch       },
-	{ "ConIO", true,  "cputs(_)",            fn_ConIO_cputs       },
-	{ "ConIO", true,  "gotoxy(_,_)",         fn_ConIO_gotoxy      },
-	{ "ConIO", true,  "wherex",              fn_ConIO_wherex      },
-	{ "ConIO", true,  "wherey",              fn_ConIO_wherey      },
-	{ "ConIO", true,  "textattr(_)",         fn_ConIO_textattr    },
-	{ "ConIO", true,  "screenSize",          fn_ConIO_screenSize  },
-	{ "ConIO", true,  "ungetch(_)",          fn_ConIO_ungetch     },
-	{ "ConIO", true,  "getch",               fn_ConIO_getch       },
-	{ "ConIO", true,  "kbhit",               fn_ConIO_kbhit       },
-	{ "ConIO", true,  "clrscr()",            fn_ConIO_clrscr      },
-	{ "ConIO", true,  "clreol()",            fn_ConIO_clreol      },
-	{ "ConIO", true,  "savescreen",          fn_ConIO_savescreen  },
-	{ "ConIO", true,  "restorescreen(_)",    fn_ConIO_restorescreen },
-	{ "ConIO", true,  "getText(_,_,_,_)",    fn_ConIO_getText     },
-	{ "ConIO", true,  "putText(_,_,_,_,_)",  fn_ConIO_putText     },
-	{ "ConIO", true,  "mousedrag()",         fn_ConIO_mousedrag   },
-	{ "ConIO", true,  "getMouse",            fn_ConIO_getMouse    },
-	{ "ConIO", true,  "getClipText",         fn_ConIO_getClipText },
+	/* Screen — absolute / global operations */
+	{ "Screen", true,  "size",                  fn_Screen_size            },
+	{ "Screen", true,  "save()",                fn_Screen_save            },
+	{ "Screen", true,  "restore(_)",            fn_Screen_restore         },
+	{ "Screen", true,  "readRect(_,_,_,_)",     fn_Screen_readRect        },
+	{ "Screen", true,  "writeRect(_,_,_,_,_)",  fn_Screen_writeRect       },
+	{ "Screen", true,  "moveRect(_,_,_,_,_,_)", fn_Screen_moveRect        },
+	{ "Screen", true,  "attr=(_)",              fn_Screen_attr_set        },
+	{ "Screen", true,  "hyperlinkId",           fn_Screen_hyperlinkId     },
+	{ "Screen", true,  "hyperlinkId=(_)",       fn_Screen_hyperlinkId_set },
+
+	/* ScreenWindow — operations scoped to the active text window */
+	{ "ScreenWindow", true, "bounds",             fnScreenWindow_bounds          },
+	{ "ScreenWindow", true, "bounds=(_)",         fnScreenWindow_bounds_set      },
+	{ "ScreenWindow", true, "position",           fnScreenWindow_position        },
+	{ "ScreenWindow", true, "position=(_)",       fnScreenWindow_position_set    },
+	{ "ScreenWindow", true, "putChar(_)",         fnScreenWindow_putChar         },
+	{ "ScreenWindow", true, "print(_)",           fnScreenWindow_print           },
+	{ "ScreenWindow", true, "clear()",            fnScreenWindow_clear           },
+	{ "ScreenWindow", true, "clearToLineEnd()",   fnScreenWindow_clearToLineEnd  },
+	{ "ScreenWindow", true, "deleteLine()",       fnScreenWindow_deleteLine      },
+	{ "ScreenWindow", true, "insertLine()",       fnScreenWindow_insertLine      },
+	{ "ScreenWindow", true, "scroll()",           fnScreenWindow_scroll          },
+
+	/* ScreenFonts — Screen.font[i] / Screen.font[i] = n */
+	{ "ScreenFonts", true, "[_]",     fnScreenFonts_subscript     },
+	{ "ScreenFonts", true, "[_]=(_)", fnScreenFonts_subscript_set },
+
+	/* Palette — Screen.palette[i] / .mode */
+	{ "Palette", true, "[_]",       fnPalette_subscript     },
+	{ "Palette", true, "[_]=(_)",   fnPalette_subscript_set },
+	{ "Palette", true, "mode",      fnPalette_mode          },
+	{ "Palette", true, "mode=(_)",  fnPalette_mode_set      },
+
+	/* CustomCursor — static (live) and instance (snapshot) accessors */
+	{ "CustomCursor", true,  "startLine",       fnCustomCursor_startLine_static     },
+	{ "CustomCursor", true,  "startLine=(_)",   fnCustomCursor_startLine_set_static },
+	{ "CustomCursor", true,  "endLine",         fnCustomCursor_endLine_static       },
+	{ "CustomCursor", true,  "endLine=(_)",     fnCustomCursor_endLine_set_static   },
+	{ "CustomCursor", true,  "range",           fnCustomCursor_range_static         },
+	{ "CustomCursor", true,  "range=(_)",       fnCustomCursor_range_set_static     },
+	{ "CustomCursor", true,  "blink",           fnCustomCursor_blink_static         },
+	{ "CustomCursor", true,  "blink=(_)",       fnCustomCursor_blink_set_static     },
+	{ "CustomCursor", true,  "visible",         fnCustomCursor_visible_static       },
+	{ "CustomCursor", true,  "visible=(_)",     fnCustomCursor_visible_set_static   },
+	{ "CustomCursor", false, "startLine",       fnCustomCursor_startLine            },
+	{ "CustomCursor", false, "startLine=(_)",   fnCustomCursor_startLine_set        },
+	{ "CustomCursor", false, "endLine",         fnCustomCursor_endLine              },
+	{ "CustomCursor", false, "endLine=(_)",     fnCustomCursor_endLine_set          },
+	{ "CustomCursor", false, "range",           fnCustomCursor_range                },
+	{ "CustomCursor", false, "range=(_)",       fnCustomCursor_range_set            },
+	{ "CustomCursor", false, "blink",           fnCustomCursor_blink                },
+	{ "CustomCursor", false, "blink=(_)",       fnCustomCursor_blink_set            },
+	{ "CustomCursor", false, "visible",         fnCustomCursor_visible              },
+	{ "CustomCursor", false, "visible=(_)",     fnCustomCursor_visible_set          },
+	{ "CustomCursor", false, "apply()",         fnCustomCursor_apply                },
+	{ "CustomCursor", true,  "presetLegacy_(_)",     fnCustomCursorpresetLegacy_              },
+
+	/* VideoFlags — static (live) and instance (snapshot) */
+	{ "VideoFlags", true,  "altChars",                fnVideoFlags_altChars_static                },
+	{ "VideoFlags", true,  "altChars=(_)",            fnVideoFlags_altChars_set_static            },
+	{ "VideoFlags", true,  "noBright",                fnVideoFlags_noBright_static                },
+	{ "VideoFlags", true,  "noBright=(_)",            fnVideoFlags_noBright_set_static            },
+	{ "VideoFlags", true,  "bgBright",                fnVideoFlags_bgBright_static                },
+	{ "VideoFlags", true,  "bgBright=(_)",            fnVideoFlags_bgBright_set_static            },
+	{ "VideoFlags", true,  "blinkAltChars",           fnVideoFlags_blinkAltChars_static           },
+	{ "VideoFlags", true,  "blinkAltChars=(_)",       fnVideoFlags_blinkAltChars_set_static       },
+	{ "VideoFlags", true,  "noBlink",                 fnVideoFlags_noBlink_static                 },
+	{ "VideoFlags", true,  "noBlink=(_)",             fnVideoFlags_noBlink_set_static             },
+	{ "VideoFlags", true,  "expand",                  fnVideoFlags_expand_static                  },
+	{ "VideoFlags", true,  "lineGraphicsExpand",      fnVideoFlags_lineGraphicsExpand_static      },
+	{ "VideoFlags", true,  "lineGraphicsExpand=(_)",  fnVideoFlags_lineGraphicsExpand_set_static  },
+	{ "VideoFlags", false, "altChars",                fnVideoFlags_altChars                       },
+	{ "VideoFlags", false, "altChars=(_)",            fnVideoFlags_altChars_set                   },
+	{ "VideoFlags", false, "noBright",                fnVideoFlags_noBright                       },
+	{ "VideoFlags", false, "noBright=(_)",            fnVideoFlags_noBright_set                   },
+	{ "VideoFlags", false, "bgBright",                fnVideoFlags_bgBright                       },
+	{ "VideoFlags", false, "bgBright=(_)",            fnVideoFlags_bgBright_set                   },
+	{ "VideoFlags", false, "blinkAltChars",           fnVideoFlags_blinkAltChars                  },
+	{ "VideoFlags", false, "blinkAltChars=(_)",       fnVideoFlags_blinkAltChars_set              },
+	{ "VideoFlags", false, "noBlink",                 fnVideoFlags_noBlink                        },
+	{ "VideoFlags", false, "noBlink=(_)",             fnVideoFlags_noBlink_set                    },
+	{ "VideoFlags", false, "expand",                  fnVideoFlags_expand                         },
+	{ "VideoFlags", false, "lineGraphicsExpand",      fnVideoFlags_lineGraphicsExpand             },
+	{ "VideoFlags", false, "lineGraphicsExpand=(_)",  fnVideoFlags_lineGraphicsExpand_set         },
+	{ "VideoFlags", false, "apply()",                 fnVideoFlags_apply                          },
+
+	/* Color — static utilities */
+	{ "Color", true, "fromRgb(_,_,_)",     fnColor_fromRgb       },
+	{ "Color", true, "fromAttr(_)",        fnColor_fromAttr      },
+	{ "Color", true, "toLegacyAttr(_,_)",  fnColor_toLegacyAttr  },
+
+	/* ScreenSupports — Screen.supports.<flag> capability getters */
+	{ "ScreenSupports", true, "loadableFonts",    fnScreenSupports_loadableFonts    },
+	{ "ScreenSupports", true, "altBlinkFont",     fnScreenSupports_altBlinkFont     },
+	{ "ScreenSupports", true, "altBoldFont",      fnScreenSupports_altBoldFont      },
+	{ "ScreenSupports", true, "brightBackground", fnScreenSupports_brightBackground },
+	{ "ScreenSupports", true, "paletteChange",    fnScreenSupports_paletteChange    },
+	{ "ScreenSupports", true, "pixels",           fnScreenSupports_pixels           },
+	{ "ScreenSupports", true, "customCursor",     fnScreenSupports_customCursor     },
+	{ "ScreenSupports", true, "fontSelection",    fnScreenSupports_fontSelection    },
+	{ "ScreenSupports", true, "windowTitle",      fnScreenSupports_windowTitle      },
+	{ "ScreenSupports", true, "windowName",       fnScreenSupports_windowName       },
+	{ "ScreenSupports", true, "windowIcon",       fnScreenSupports_windowIcon       },
+	{ "ScreenSupports", true, "extendedPalette",  fnScreenSupports_extendedPalette  },
+	{ "ScreenSupports", true, "blockyScaling",    fnScreenSupports_blockyScaling    },
+	{ "ScreenSupports", true, "externalScaling",  fnScreenSupports_externalScaling  },
+	{ "ScreenSupports", true, "closeLock",        fnScreenSupports_closeLock        },
+
+	/* Input (all static) */
+	{ "Input",  true,  "next",                fn_Input_next               },
+	{ "Input",  true,  "next(_)",             fn_Input_next_ms            },
+	{ "Input",  true,  "poll",                fn_Input_poll               },
+	{ "Input",  true,  "ungetKey_(_)",        fn_Input_ungetKey_          },
+	{ "Input",  true,  "ungetMouse_(_)",      fn_Input_ungetMouse_        },
+	{ "Input",  true,  "mousedrag()",         fn_Input_mousedrag          },
+	{ "Input",  true,  "mouseVisible=(_)",    fn_Input_mouseVisible_set   },
+
+	/* KeyEvent (instance) */
+	{ "KeyEvent",   false, "code",       fn_KeyEvent_code      },
+	{ "KeyEvent",   false, "codepoint",  fn_KeyEvent_codepoint },
+	{ "KeyEvent",   false, "text",       fn_KeyEvent_text      },
+
+	/* MouseEvent (instance) */
+	{ "MouseEvent", false, "event",      fn_MouseEvent_event      },
+	{ "MouseEvent", false, "modifiers",  fn_MouseEvent_modifiers  },
+	{ "MouseEvent", false, "startX",     fn_MouseEvent_startX     },
+	{ "MouseEvent", false, "startY",     fn_MouseEvent_startY     },
+	{ "MouseEvent", false, "endX",       fn_MouseEvent_endX       },
+	{ "MouseEvent", false, "endY",       fn_MouseEvent_endY       },
+
+	/* Clipboard (all static) */
+	{ "Clipboard", true, "text",               fn_Clipboard_text     },
+	{ "Clipboard", true, "text=(_)",           fn_Clipboard_text_set },
 
 	/* REPL */
 	{ "REPL",  true,  "compile_(_,_,_,_)",   fn_REPL_compile_         },
@@ -1387,9 +2196,11 @@ static const struct binding BINDINGS[] = {
 	{ "Cells", false, "iteratorValue(_)", fn_Cells_iteratorValue },
 
 	/* Font (all static) */
-	{ "Font",  true,  "name(_)",      fn_Font_name      },
-	{ "Font",  true,  "count",        fn_Font_count     },
-	{ "Font",  true,  "available(_)", fn_Font_available },
+	{ "Font",  true,  "name(_)",       fn_Font_name       },
+	{ "Font",  true,  "count",         fn_Font_count      },
+	{ "Font",  true,  "available(_)",  fn_Font_available  },
+	{ "Font",  true,  "codepage",      fn_Font_codepage   },
+	{ "Font",  true,  "codepageOf(_)", fn_Font_codepageOf },
 
 	/* Hyperlinks (all static) */
 	{ "Hyperlinks", true, "[_]",            fn_Hyperlinks_subscript   },
@@ -1485,6 +2296,30 @@ wren_bind_lookup_class(const char *module, const char *className)
 	if (strcmp(className, "Cells") == 0) {
 		WrenForeignClassMethods m = {
 			wren_cells_allocate, wren_cells_finalize
+		};
+		return m;
+	}
+	if (strcmp(className, "CustomCursor") == 0) {
+		WrenForeignClassMethods m = {
+			wren_custom_cursor_allocate, wren_custom_cursor_finalize
+		};
+		return m;
+	}
+	if (strcmp(className, "VideoFlags") == 0) {
+		WrenForeignClassMethods m = {
+			wren_video_flags_allocate, wren_video_flags_finalize
+		};
+		return m;
+	}
+	if (strcmp(className, "KeyEvent") == 0) {
+		WrenForeignClassMethods m = {
+			wren_key_event_allocate, wren_key_event_finalize
+		};
+		return m;
+	}
+	if (strcmp(className, "MouseEvent") == 0) {
+		WrenForeignClassMethods m = {
+			wren_mouse_event_allocate, wren_mouse_event_finalize
 		};
 		return m;
 	}

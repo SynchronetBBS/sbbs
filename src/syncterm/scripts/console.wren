@@ -8,7 +8,7 @@
 // but aren't drained until exit.  Acceptable for a development tool.
 //
 // This script lives in module "syncterm" alongside the foreign-class
-// declarations and other embedded scripts, so every binding (ConIO,
+// declarations and other embedded scripts, so every binding (Screen,
 // Cell, REPL, Hook, …) is directly visible without an import.  Lines
 // submitted at the prompt are evaluated in a chosen module — default
 // "syncterm" — via REPL.eval, so `var x = ...` and `class Foo {...}`
@@ -18,48 +18,86 @@
 // or mutate any other module that's been loaded.
 
 class WrenConsole {
+  // __history (static field) keeps submitted lines across run()
+  // invocations so reopening the console doesn't lose context.
+  // Up/Down arrows walk it; if there's anything typed at the time the
+  // user hits Up, that becomes a *prefix anchor* — only entries that
+  // start with it are visited.  Editing the line (printable, backspace,
+  // Ctrl+W) cancels the search and the typed text becomes the new
+  // free-form input.
+
+  // Largest i < beforeIdx where __history[i].startsWith(prefix), or -1.
+  static historyFindBackward_(prefix, beforeIdx) {
+    var i = beforeIdx - 1
+    while (i >= 0) {
+      if (__history[i].startsWith(prefix)) return i
+      i = i - 1
+    }
+    return -1
+  }
+
+  // Smallest i > afterIdx where __history[i].startsWith(prefix), or -1.
+  static historyFindForward_(prefix, afterIdx) {
+    var i = afterIdx + 1
+    while (i < __history.count) {
+      if (__history[i].startsWith(prefix)) return i
+      i = i + 1
+    }
+    return -1
+  }
+
+  // Backward kill-word (Ctrl+W).  Strip trailing whitespace, then strip
+  // the run of non-whitespace before it.  Matches readline's
+  // unix-word-rubout: any non-space counts as part of the word.
+  static killWord_(s) {
+    var i = s.count
+    while (i > 0 && s[i - 1] == " ") i = i - 1
+    while (i > 0 && s[i - 1] != " ") i = i - 1
+    return s[0...i]
+  }
+
+  // Append `line` to history if non-empty and not a dup of the last
+  // entry, then dispatch it like Enter would.  Returns the (possibly
+  // changed) current module.
+  static submitLine_(line, current) {
+    if (line.count > 0 &&
+        (__history.count == 0 || __history[__history.count - 1] != line)) {
+      __history.add(line)
+    }
+    return handleLine_(line, current)
+  }
+
   static run() {
-    var saved = ConIO.savescreen
+    if (__history == null) __history = []
+    var saved = Screen.save()
     var currentModule = "syncterm"
 
     // One-time paint of whatever's currently in the log buffer.
     // Subsequent loop iterations only emit entries that arrived
     // *after* `lastTotal`; conio's built-in scroll-on-bottom-row
     // behavior moves history up naturally as new entries arrive.
-    ConIO.clrscr()
-    ConIO.gotoxy(1, 1)
+    Screen.window.clear()
+    Screen.window.position = [1, 1]
     var lastTotal = paintNew_(0, true)
 
     var input = ""
-    var promptRow = ConIO.wherey
+    var promptRow = Screen.window.position[1]
     drawPrompt_(promptRow, currentModule, input)
 
+    __quit = false
+    // History search state: histIdx == -1 means "not searching"; the
+    // buffer is whatever the user has typed.  Otherwise histIdx is the
+    // current index into __history and histAnchor is the prefix the
+    // user had typed at the moment they first pressed Up.
+    var histIdx    = -1
+    var histAnchor = ""
     var done = false
-    while (!done) {
-      var key = ConIO.getch
+    while (!done && !__quit) {
+      var ev = Input.next
 
-      // Handle the keystroke.
+      // Handle the event.
       var redrawPrompt = false
-      if (key == 0x29E0 || key == 0x011B) {        // Ctrl+` or Esc
-        done = true
-      } else if (key == 0x000D || key == 0x000A) { // Enter
-        currentModule = handleLine_(input, currentModule)
-        input = ""
-        redrawPrompt = true
-      } else if (key == 0x0008 || key == 0x007F) { // Backspace
-        if (input.count > 0) {
-          input = input[0...(input.count - 1)]
-          redrawPrompt = true
-        }
-      } else if (key == 0x000C) {                  // Ctrl+L
-        Console.clear()
-        ConIO.clrscr()
-        ConIO.gotoxy(1, 1)
-        lastTotal = Console.total
-        promptRow = ConIO.wherey
-        redrawPrompt = true
-      } else if (key == 0x7DE0) {                  // CIO_KEY_MOUSE
-        var ev = ConIO.getMouse
+      if (ev is MouseEvent) {
         // 7  = CIOLIB_BUTTON_1_DRAG_START — hand off to the existing
         //      select-and-copy loop; it consumes the rest of the drag
         //      itself, then restores the screen on exit.
@@ -67,28 +105,87 @@ class WrenConsole {
         //      input line.  LF submits the line in progress; CR is
         //      dropped (paired with LF or alone); other control bytes
         //      are silently skipped.
-        if (ev != null && ev[0] == 7) {
-          ConIO.mousedrag()
+        if (ev.event == 7) {
+          Input.mousedrag()
           redrawPrompt = true
-        } else if (ev != null && ev[0] == 12) {
-          var pasted = ConIO.getClipText
+        } else if (ev.event == 12) {
+          var pasted = Clipboard.text
           if (pasted != null) {
             for (b in pasted.bytes) {
               if (b == 0x0A) {
-                currentModule = handleLine_(input, currentModule)
+                currentModule = submitLine_(input, currentModule)
                 input = ""
+                histIdx = -1
               } else if (b == 0x0D) {
                 // CR ignored
               } else if (b >= 0x20 && b < 0x7F) {
                 input = input + String.fromCodePoint(b)
+                histIdx = -1
               }
             }
             redrawPrompt = true
           }
         }
-      } else if (key >= 0x20 && key < 0x7F) {
-        input = input + String.fromCodePoint(key)
-        redrawPrompt = true
+      } else {
+        var key = ev.code
+        if (key == Key.wrenConsole || key == Key.escape) {
+          done = true
+        } else if (key == Key.enter || key == 0x000A) { // CR or LF
+          currentModule = submitLine_(input, currentModule)
+          input = ""
+          histIdx = -1
+          redrawPrompt = true
+        } else if (key == Key.backspace || key == 0x007F) { // BS or DEL
+          if (input.count > 0) {
+            input = input[0...(input.count - 1)]
+            histIdx = -1
+            redrawPrompt = true
+          }
+        } else if (key == 0x0017) {                  // Ctrl+W
+          input = killWord_(input)
+          histIdx = -1
+          redrawPrompt = true
+        } else if (key == Key.up) {
+          // First Up in a search anchors the prefix to whatever the
+          // user had typed; subsequent Ups walk further back through
+          // entries that share that prefix.
+          var startIdx = histIdx
+          if (histIdx == -1) {
+            histAnchor = input
+            startIdx = __history.count
+          }
+          var found = historyFindBackward_(histAnchor, startIdx)
+          if (found >= 0) {
+            histIdx = found
+            input = __history[found]
+            redrawPrompt = true
+          }
+        } else if (key == Key.down) {
+          if (histIdx != -1) {
+            var found = historyFindForward_(histAnchor, histIdx)
+            if (found >= 0) {
+              histIdx = found
+              input = __history[found]
+            } else {
+              // Walked off the newest match — restore the anchor
+              // (whatever the user had typed before Up).
+              histIdx = -1
+              input = histAnchor
+            }
+            redrawPrompt = true
+          }
+        } else if (key == 0x000C) {                  // Ctrl+L
+          Console.clear()
+          Screen.window.clear()
+          Screen.window.position = [1, 1]
+          lastTotal = Console.total
+          promptRow = Screen.window.position[1]
+          redrawPrompt = true
+        } else if (ev.codepoint != null && ev.codepoint >= 0x20) {
+          input = input + ev.text
+          histIdx = -1
+          redrawPrompt = true
+        }
       }
       if (done) break
 
@@ -97,17 +194,17 @@ class WrenConsole {
       // The prompt row gets overwritten as we emit; conio scrolls
       // past the bottom for free.
       if (Console.total > lastTotal) {
-        ConIO.gotoxy(1, promptRow)
-        ConIO.clreol()
+        Screen.window.position = [1, promptRow]
+        Screen.window.clearToLineEnd()
         lastTotal = paintNew_(lastTotal, false)
-        promptRow = ConIO.wherey
+        promptRow = Screen.window.position[1]
         redrawPrompt = true
       }
 
       if (redrawPrompt) drawPrompt_(promptRow, currentModule, input)
     }
 
-    ConIO.restorescreen(saved)
+    Screen.restore(saved)
   }
 
   // Dispatches a finished line: a leading "/" makes it a console
@@ -181,10 +278,22 @@ class WrenConsole {
 
   // /in <module>  — switch the current eval target.
   // /in           — show the current target.
+  // /quit, /q     — leave the console (same as Ctrl+` or Esc).
   // /?            — list commands.
+  //
+  // Sets the static field __quit when the user asks to leave; the main
+  // loop checks it alongside the local `done` flag.  Static fields in
+  // Wren are double-underscore-prefixed and class-scoped, which is
+  // exactly the right shape for "the run loop's exit signal."
   static runCommand_(line, current) {
     if (line == "/?" || line == "/help") {
-      System.print("commands: /in [module], /?")
+      System.print("commands: /in [module], /quit, /?")
+      System.print("keys:     Up/Down (history; type a prefix first to filter),")
+      System.print("          Ctrl+W (kill word), Ctrl+L (clear), Esc/Ctrl+` (quit)")
+      return current
+    }
+    if (line == "/quit" || line == "/q") {
+      __quit = true
       return current
     }
     if (line == "/in") {
@@ -225,9 +334,9 @@ class WrenConsole {
   }
 
   static drawPrompt_(row, mod, input) {
-    ConIO.gotoxy(1, row)
-    ConIO.clreol()
-    ConIO.cputs("(%(mod)) wren> " + input)
+    Screen.window.position = [1, row]
+    Screen.window.clearToLineEnd()
+    Screen.window.print("(%(mod)) wren> " + input)
   }
 
   // conio's cputs treats LF as line-feed-only (cursor down, same column).
@@ -238,13 +347,13 @@ class WrenConsole {
     var i = 0
     while (i < s.count) {
       if (s[i] == "\n") {
-        if (i > start) ConIO.cputs(s[start...i])
-        ConIO.cputs("\r\n")
+        if (i > start) Screen.window.print(s[start...i])
+        Screen.window.print("\r\n")
         start = i + 1
       }
       i = i + 1
     }
-    if (start < s.count) ConIO.cputs(s[start...s.count])
+    if (start < s.count) Screen.window.print(s[start...s.count])
   }
 
   // Emit one log entry, returning whether the cursor is now at column 1.

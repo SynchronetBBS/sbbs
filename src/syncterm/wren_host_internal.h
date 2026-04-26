@@ -42,6 +42,8 @@ struct wren_host_state {
 	 * after the syncterm module compiles; released at shutdown. */
 	WrenHandle  *cell_class;
 	WrenHandle  *cells_class;
+	WrenHandle  *key_event_class;
+	WrenHandle  *mouse_event_class;
 
 	WrenHandle  *hooks[WREN_HOOK_COUNT][WREN_HOST_MAX_HOOKS_PER_EVENT];
 	int          hook_count[WREN_HOOK_COUNT];
