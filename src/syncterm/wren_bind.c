@@ -29,8 +29,17 @@
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
-#include <dirent.h>
 #include <sys/stat.h>
+
+/* dirwrap.h provides a portable opendir/readdir/closedir + struct dirent —
+ * pulls in <dirent.h> on POSIX, supplies its own implementation for MSVC. */
+#include <dirwrap.h>
+
+/* MSVC's <sys/stat.h> ships only the _S_IF* constants; older Windows SDKs
+ * don't define the POSIX S_ISREG macro at all. */
+#ifndef S_ISREG
+#define S_ISREG(m) (((m) & S_IFMT) == S_IFREG)
+#endif
 
 /* term.c globals — emulation state and current bbs context. */
 extern struct cterminal *cterm;

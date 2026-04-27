@@ -7,6 +7,13 @@
 #ifndef SYNCTERM_SFTP_SESSION_H
 #define SYNCTERM_SFTP_SESSION_H
 
+#ifdef _MSC_VER
+/* MSVC keeps __STDC_NO_ATOMICS__ defined even with /experimental:c11atomics
+ * because its atomic support is incomplete (no generic _Atomic with locks),
+ * and the stdatomic.h header otherwise refuses to expand.  Same trick used
+ * in conn.h. */
+#undef __STDC_NO_ATOMICS__
+#endif
 #include <stdatomic.h>
 #include <stdbool.h>
 

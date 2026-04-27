@@ -28,10 +28,13 @@
 #include <string.h>
 #include <sys/stat.h>
 #include <sys/types.h>
-#include <unistd.h>
-#include <utime.h>
 
+/* xpdev wrappers cover the POSIX file APIs portably:
+ *  filewrap.h pulls in <unistd.h> on POSIX (read/write/close/unlink)
+ *      and <io.h> on Windows (with the deprecated unlink alias);
+ *  genwrap.h covers <utime.h> vs <sys/utime.h>. */
 #include <eventwrap.h>
+#include <filewrap.h>
 #include <genwrap.h>
 #include <ini_file.h>
 #include <threadwrap.h>

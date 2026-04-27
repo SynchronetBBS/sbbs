@@ -329,33 +329,34 @@ endif
 OBJS += $(MTOBJODIR)$(DIRSEP)xp_sndfile$(OFILE)
 OBJS += $(MTOBJODIR)$(DIRSEP)audio_apc$(OFILE)
 
-# Wren scripting VM (vendored under wren/).  The implicit MT C rule in
-# Common.gmake matches stem-only %.c -> $(MTOBJODIR)/%.o so subdirs are
-# preserved; the order-only prereqs below mkdir the per-subdir output
-# trees.  Wren's optional modules default to enabled in wren_common.h,
-# so no -D flags are needed.  -Iwren/include propagates to wren_host.c
-# / wren_bind.c via global CFLAGS; the per-pattern rules add the
-# private vm/ and optional/ include paths only for VM sources.
+# Wren scripting VM (vendored under wren/).  The basenames in wren/vm/
+# and wren/optional/ all begin with `wren_` and are unique across the
+# two dirs, so vpath + flat MTOBJODIR output works without renaming.
+# The implicit MT C rule in Common.gmake handles the actual compile;
+# target-specific CFLAGS below add Wren's private include paths and
+# undef the SyncTERM PREFIX define that collides with Wren's PREFIX
+# function-like macro.  Wren's optional modules default to enabled in
+# wren_common.h, so no -D flags are needed.
+vpath %.c wren/vm wren/optional
+
 WREN_VM_SRCS  := $(wildcard wren/vm/*.c)
 WREN_OPT_SRCS := $(wildcard wren/optional/*.c)
-WREN_OBJS     := $(WREN_VM_SRCS:%.c=$(MTOBJODIR)$(DIRSEP)%$(OFILE))
-WREN_OBJS     += $(WREN_OPT_SRCS:%.c=$(MTOBJODIR)$(DIRSEP)%$(OFILE))
+WREN_OBJS     := $(addprefix $(MTOBJODIR)$(DIRSEP),\
+                   $(notdir $(WREN_VM_SRCS:.c=$(OFILE))) \
+                   $(notdir $(WREN_OPT_SRCS:.c=$(OFILE))))
 
 OBJS   += $(WREN_OBJS)
 OBJS   += $(MTOBJODIR)$(DIRSEP)wren_host$(OFILE)
 OBJS   += $(MTOBJODIR)$(DIRSEP)wren_bind$(OFILE)
 CFLAGS += -Iwren/include
 
-$(MTOBJODIR)$(DIRSEP)wren/vm $(MTOBJODIR)$(DIRSEP)wren/optional: | $(MTOBJODIR)
-	$(QUIET)mkdir -p $@
-
-$(MTOBJODIR)$(DIRSEP)wren/vm/%$(OFILE): wren/vm/%.c | $(MTOBJODIR)$(DIRSEP)wren/vm
-	@echo $(COMPILE_MSG) $<
-	$(QUIET)$(CC) -std=c17 $(CFLAGS) $(CCFLAGS) $(MT_CFLAGS) -UPREFIX -Iwren/vm -Iwren/optional -o $@ -c $<
-
-$(MTOBJODIR)$(DIRSEP)wren/optional/%$(OFILE): wren/optional/%.c | $(MTOBJODIR)$(DIRSEP)wren/optional
-	@echo $(COMPILE_MSG) $<
-	$(QUIET)$(CC) -std=c17 $(CFLAGS) $(CCFLAGS) $(MT_CFLAGS) -UPREFIX -Iwren/vm -Iwren/optional -o $@ -c $<
+# Wren-private include paths and PREFIX undef apply to every TU that
+# pulls in wren/vm/* headers (the VM itself, plus wren_host.c and
+# wren_bind.c which reach for wren_vm.h / wren_value.h directly).
+WREN_ALL_OBJS := $(WREN_OBJS) \
+                 $(MTOBJODIR)$(DIRSEP)wren_host$(OFILE) \
+                 $(MTOBJODIR)$(DIRSEP)wren_bind$(OFILE)
+$(WREN_ALL_OBJS): CFLAGS += -Iwren/vm -Iwren/optional -UPREFIX
 
 # Embedded-script codegen.  wren_embed_gen is built with $(BUILD_CC) so
 # cross-builds (e.g. MinGW) compile the codegen with the *host* compiler
