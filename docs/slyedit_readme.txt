@@ -1,6 +1,6 @@
                          SlyEdit message editor
-                              Version 2.01
-                        Release date: 2026-03-18
+                              Version 2.02
+                        Release date: 2026-04-27
 
                                   by
 
@@ -1010,6 +1010,9 @@ message to lower-case and comparing them with the words in the dictionary.
 ===================
 Version  Date         Description
 -------  ----         -----------
+2.02     2026-04-27   Bug fix: When uploading a message (with /UPLOAD or /UL),
+                      use the uploaded message file as-is (don't interpret
+                      attribute codes, etc.)
 2.01     2026-03-18   For guest users, always use default settings (with no
                       saved UI style/mode, in particular) and don't save user
                       settings

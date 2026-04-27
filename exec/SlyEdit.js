@@ -102,8 +102,8 @@ if (console.screen_columns < 80)
 }
 
 // Version information
-var EDITOR_VERSION = "2.01";
-var EDITOR_VER_DATE = "2026-03-18";
+var EDITOR_VERSION = "2.02";
+var EDITOR_VER_DATE = "2026-04-27";
 
 
 // Program variables
@@ -2751,9 +2751,8 @@ function handleSlashCommands(pCurpos, pCurrentWordLength)
 			return retObj;
 		}
 	}
-
 	// /UL or /UPLOAD
-	if ((lineLen == 3 && lineUpper == "/UL") || (lineLen == 7 && lineUpper == "/UPLOAD"))
+	else if ((lineLen == 3 && lineUpper == "/UL") || (lineLen == 7 && lineUpper == "/UPLOAD"))
 	{
 		if (letUserUploadMessageFile())
 		{
@@ -6723,7 +6722,7 @@ function letUserUploadMessageFile(pCurpos)
 	gUploadedMessageFile = false;
 
 	var originalCurpos;
-	if ((typeof(pCurpos) == "object") && pCurpos.hasOwnProperty("x") && pCurpos.hasOwnProperty("y"))
+	if (typeof(pCurpos) === "object" && pCurpos.hasOwnProperty("x") && pCurpos.hasOwnProperty("y"))
 		originalCurpos = pCurpos;
 	else
 		originalCurpos = console.getxy();
@@ -6740,7 +6739,7 @@ function letUserUploadMessageFile(pCurpos)
 			console.print("Upload succeeded.\r\n");
 			// Read the file and populate gEditLines
 			var msgFile = new File(msgFilename);
-			if (msgFile.open("r"))
+			if (msgFile.open("rb"))
 			{
 				uploadedMessage = true;
 				gUploadedMessageFile = true;
@@ -6751,21 +6750,19 @@ function letUserUploadMessageFile(pCurpos)
 					delete gEditLines[i];
 				gEditLines = [];
 
-				var fileLine;
+				// Read the file lines and populate gEditLines
 				while (!msgFile.eof)
 				{
 					// Read the next line from the file
-					fileLine = msgFile.readln(2048);
+					var fileLine = msgFile.readln(2048);
 
 					// fileLine should be a string, but I've seen some cases
 					// where for some reason it isn't.  If it's not a string,
 					// then continue onto the next line.
-					if (typeof(fileLine) != "string")
+					if (typeof(fileLine) !== "string")
 						continue;
 					// Add the line to gEditLines
-					// TODO: It seems this isn't populating gEditLines and
-					// it's sending an empty message.
-					gEditLines.push(new TextLine(fileLine, true, false));
+					gEditLines.push(new TextLine(fileLine, true, false, true));
 				}
 
 				msgFile.close();
