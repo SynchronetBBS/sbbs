@@ -5876,6 +5876,7 @@ doterm(struct bbslist *bbs)
 	struct text_info  txtinfo;
 
 	int                ooii_mode = 0;
+	bool               ret = false;
 	recv_byte_buffer_len = recv_byte_buffer_pos = 0;
 	struct mouse_state ms = {0};
 	int                speedwatch = 0;
@@ -6013,6 +6014,7 @@ doterm(struct bbslist *bbs)
 	}
 	setup_mouse_events(&ms);
 	force_status_update = true;
+	wren_host_init(bbs);
 	for (; !quitting;) {
 		/* Drain any popups posted from background threads (e.g.
 		 * SSH_MSG_DEBUG with always_display set) before we go
@@ -6072,7 +6074,8 @@ doterm(struct bbslist *bbs)
 							// TODO: Do this before the popup to avoid being rude...
 							conn_close();
 							hidemouse();
-							return false;
+							ret = false;
+							goto end;
 						}
 						break;
 					default:
@@ -6173,8 +6176,10 @@ doterm(struct bbslist *bbs)
 				case CIO_KEY_QUIT:
 					uifc.exit_flags |= UIFC_XF_QUIT;
 					if (check_exit(true)) {
-						if (check_hangup(key, &hret, oldmc, &ms))
-							return hret;
+						if (check_hangup(key, &hret, oldmc, &ms)) {
+							ret = hret;
+							goto end;
+						}
 					}
 					continue;
 				case 17: /* CTRL-Q */
@@ -6183,8 +6188,10 @@ doterm(struct bbslist *bbs)
 					    && (cio_api.mode != CIOLIB_MODE_CURSES_IBM)
 					    && (cio_api.mode != CIOLIB_MODE_ANSI))
 						break;
-					if (check_hangup(key, &hret, oldmc, &ms))
-						return hret;
+					if (check_hangup(key, &hret, oldmc, &ms)) {
+						ret = hret;
+						goto end;
+					}
 					continue;
 				case 19: /* CTRL-S */
 					if ((cio_api.mode != CIOLIB_MODE_CURSES)
@@ -6206,7 +6213,8 @@ doterm(struct bbslist *bbs)
 							conn_close();
 							hidemouse();
 							hold_update = oldmc;
-							return false;
+							ret = false;
+							goto end;
 						case SM_UPLOAD:
 							begin_upload(bbs, false, inch);
 							break;
@@ -6250,7 +6258,8 @@ doterm(struct bbslist *bbs)
 							conn_close();
 							hidemouse();
 							hold_update = oldmc;
-							return true;
+							ret = true;
+							goto end;
 						case SM_DIRECTORY:
 						{
 							struct ciolib_screen *savscrn;
@@ -6367,13 +6376,17 @@ doterm(struct bbslist *bbs)
 				case 0x2d00: /* Alt-X - Exit */
 					uifc.exit_flags |= UIFC_XF_QUIT;
 					if (check_exit(true)) {
-						if (check_hangup(key, &hret, oldmc, &ms))
-							return hret;
+						if (check_hangup(key, &hret, oldmc, &ms)) {
+							ret = hret;
+							goto end;
+						}
 					}
 					break;
 				case 0x2300: /* Alt-H - Hangup */
-					if (check_hangup(key, &hret, oldmc, &ms))
-						return hret;
+					if (check_hangup(key, &hret, oldmc, &ms)) {
+						ret = hret;
+						goto end;
+					}
 					break;
 				case 0x9800: /* ALT-Up */
 					if ((bbs->conn_type != CONN_TYPE_SERIAL)
@@ -6408,5 +6421,8 @@ doterm(struct bbslist *bbs)
  *       hold_update=oldmc;
  */
 	finish_scrollback();
-	return false;
+	ret = false;
+end:
+	wren_host_shutdown();
+	return ret;
 }

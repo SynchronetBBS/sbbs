@@ -2625,10 +2625,8 @@ main(int argc, char **argv)
 				dac_default[3].green = dac_default[2].green;
 				dac_default[3].blue = dac_default[0].blue;
 			}
-			wren_host_init(bbs);
 			if (doterm(bbs))
 				quitting = true;
-			wren_host_shutdown();
 			dac_default[3].red = saved_red;
 			dac_default[3].green = saved_green;
 			dac_default[3].blue = saved_blue;
