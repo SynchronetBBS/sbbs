@@ -22,37 +22,58 @@ enum wren_hook_event {
 	WREN_HOOK_OUTPUT,
 	WREN_HOOK_MOUSE,
 	WREN_HOOK_STATUS,
-	WREN_HOOK_COUNT
+	WREN_HOOK_COUNT,            /* count of dispatch-array events */
+	WREN_HOOK_TIMER             /* lives in state.timers, not state.hooks */
 };
 
-struct wren_timer_entry {
-	WrenHandle  *callable;
-	uint32_t     interval_ms;
-	long double  next_fire_s;   /* xp_timer() epoch in seconds */
+/* Per-entry metrics — populated by every successful hook firing.
+ * `min`/`max` are seeded on the first call, so a never-fired entry
+ * reads back as all zeros. */
+struct hook_metrics {
+	uint64_t    call_count;
+	long double total_runtime_s;
+	long double min_runtime_s;
+	long double max_runtime_s;
 };
 
-/* Per-hook entry: a Wren callable plus an optional integer match
- * filter, plus an optional streaming-regex match filter (mutually
- * exclusive with the integer filter).  The dispatcher branches on
- * shape:
- *   - filtered && !regex: skip unless event discriminator == filter
- *   - regex != NULL: feed each input byte to pikevm_step, fire on
- *     MATCH, drop a byte on IMPOSSIBLE, wait on PENDING (input only)
- *   - neither: fire unconditionally
- * `filter` is unused for non-discriminator events (output, status). */
+/* Per-entry record.  Hooks (KEY/INPUT/OUTPUT/MOUSE/STATUS) and timers
+ * share one struct type; `ev` discriminates.  Allocated on the heap
+ * at registration; freed when both `unregistered` (drained from the
+ * dispatch array by wren_host_compact) and `gced` (HookHandle's
+ * finalizer ran) are true.  Pointers from HookHandle are stable for
+ * the entry's lifetime — the dispatch arrays hold pointers, not
+ * structs, so compaction shifts pointers without moving the data
+ * the handles reference. */
 struct PikeVM;	/* opaque; full type in re1/regexp.h */
 
 struct wren_hook_entry {
-	WrenHandle    *fn;
-	int            filter;
-	bool           filtered;
-	struct Prog   *regex_prog;	/* compiled program; freed at shutdown */
-	struct PikeVM *regex_vm;	/* streaming match state */
-	char          *regex_buf;	/* persistent so Sub captures stay valid */
-	size_t         regex_buf_len;
-	size_t         regex_buf_cap;
-	size_t         regex_pos;	/* next offset the VM expects to consume */
-	int            regex_nsubp;
+	enum wren_hook_event ev;
+	WrenHandle          *fn;          /* NULL = tombstone (remove'd) */
+	int                  filter;
+	bool                 filtered;
+	struct hook_metrics  metrics;
+
+	/* Timer-only fields (ev == WREN_HOOK_TIMER). */
+	uint32_t             interval_ms;
+	long double          next_fire_s;
+
+	/* Streaming-regex fields (ev == WREN_HOOK_INPUT, regex hooks). */
+	struct Prog         *regex_prog;
+	struct PikeVM       *regex_vm;
+	char                *regex_buf;
+	size_t               regex_buf_len;
+	size_t               regex_buf_cap;
+	size_t               regex_pos;
+	int                  regex_nsubp;
+
+	/* Lifetime bookkeeping.  Free when both flags are true. */
+	bool                 unregistered;  /* compact dropped from arrays */
+	bool                 gced;          /* HookHandle finalizer ran */
+
+	/* Single linked list used as the cleanup queue.  Pushed by
+	 * remove(); drained at the top of every doterm() outer-loop
+	 * iteration via wren_host_compact(). */
+	struct wren_hook_entry *next_cleanup;
 };
 
 struct wren_host_state {
@@ -63,18 +84,24 @@ struct wren_host_state {
 	WrenHandle  *call1_handle;
 
 	/* Cached class handles for foreign classes that the C side
-	 * allocates instances of (via wrenSetSlotNewForeign).  Captured
-	 * after the syncterm module compiles; released at shutdown. */
+	 * allocates instances of (via wrenSetSlotNewForeign).  Filled
+	 * lazily on first allocation; released at shutdown. */
 	WrenHandle  *cell_class;
 	WrenHandle  *cells_class;
 	WrenHandle  *key_event_class;
 	WrenHandle  *mouse_event_class;
+	WrenHandle  *hook_handle_class;
 
-	struct wren_hook_entry hooks[WREN_HOOK_COUNT][WREN_HOST_MAX_HOOKS_PER_EVENT];
-	int                    hook_count[WREN_HOOK_COUNT];
+	struct wren_hook_entry *hooks[WREN_HOOK_COUNT][WREN_HOST_MAX_HOOKS_PER_EVENT];
+	int                     hook_count[WREN_HOOK_COUNT];
 
-	struct wren_timer_entry timers[WREN_HOST_MAX_TIMERS];
+	struct wren_hook_entry *timers[WREN_HOST_MAX_TIMERS];
 	int                     timer_count;
+
+	/* Head of the cleanup queue.  remove() pushes here; the
+	 * compactor (run at the top of each doterm() outer-loop
+	 * iteration) drains it.  Empty == NULL — no counter needed. */
+	struct wren_hook_entry *cleanup_head;
 
 	/* When non-NULL, a Wren fiber is parked on Input.nextEvent waiting
 	 * for the next key/mouse event.  Set by Input._park, cleared and
@@ -98,29 +125,55 @@ struct wren_host_state {
 /* Singleton state pointer (NULL when shut down). */
 extern struct wren_host_state *wren_host_state(void);
 
-/* Hook registration helpers used by wren_bind.c.  Takes a slot-1
- * function value, captures a handle for it, appends to the registry
- * for the event.  Returns false if the per-event limit is reached. */
-bool wren_host_register_hook(WrenVM *vm, enum wren_hook_event ev, int fn_slot);
+/* Hook registration helpers used by wren_bind.c.  Each calloc's a
+ * fresh entry, captures the fn handle, appends a pointer into the
+ * per-event array, and returns the entry.  The entry pointer is
+ * stable for the entry's lifetime — compaction shifts the dispatch
+ * array's pointer slots without moving the structs themselves, so
+ * HookHandle keeps a single pointer the entire time.  Returns NULL
+ * if the per-event limit is hit. */
+struct wren_hook_entry *
+wren_host_register_hook(WrenVM *vm, enum wren_hook_event ev, int fn_slot);
 
 /* Filtered registration: only fires the hook when the event's
  * discriminator equals `filter`.  Filtered and unfiltered hooks share
  * one per-event array, preserving registration order across both. */
-bool wren_host_register_hook_filtered(WrenVM *vm, enum wren_hook_event ev,
-                                      int fn_slot, int filter);
+struct wren_hook_entry *
+wren_host_register_hook_filtered(WrenVM *vm, enum wren_hook_event ev,
+                                 int fn_slot, int filter);
 
 /* Streaming-regex registration on the input event.  Takes ownership of
- * `prog` (frees at shutdown), `vm_state` (PikeVM*; pikevm_free at
- * shutdown), and `buf` (free at shutdown).  Lives in the same
+ * `prog`, `vm_state` (PikeVM*), and `buf`.  Lives in the same
  * WREN_HOOK_INPUT array as filtered/unfiltered hooks; registration
- * order is preserved across all three forms. */
-bool wren_host_register_hook_match(WrenVM *vm, int fn_slot,
-                                   struct Prog *prog, struct PikeVM *vm_state,
-                                   char *buf, size_t buf_cap, int nsubp);
+ * order is preserved across all three forms.  Resources are freed
+ * during compaction once the hook is unregistered. */
+struct wren_hook_entry *
+wren_host_register_hook_match(WrenVM *vm, int fn_slot, struct Prog *prog,
+                              struct PikeVM *vm_state, char *buf,
+                              size_t buf_cap, int nsubp);
 
 /* Timer registration: ms is the recurrence interval, fn_slot holds the
- * callable. */
-bool wren_host_register_timer(WrenVM *vm, int ms, int fn_slot);
+ * callable.  Returns a pointer to the new entry, or NULL on failure. */
+struct wren_hook_entry *
+wren_host_register_timer(WrenVM *vm, int ms, int fn_slot);
+
+/* Mark the entry for cleanup: release its callable handle (so the
+ * dispatcher skips it immediately) and link it into the cleanup
+ * queue.  Returns true if the entry was live, false if already
+ * tombstoned.  The actual removal from the dispatch array, freeing
+ * of regex resources, etc. happens in wren_host_compact(). */
+bool wren_host_remove_entry(struct wren_hook_entry *h);
+
+/* Drain the cleanup queue: for each tombstoned entry, free its
+ * regex resources, find its slot in the dispatch array (state.hooks
+ * for hook events, state.timers for timer events), shift later
+ * pointers down to fill the gap, and mark the entry `unregistered`.
+ * If the entry's HookHandle has already been GC'd (`gced` set), the
+ * struct is freed here too; otherwise it stays alive so post-remove
+ * metric reads keep working until the script drops the handle.
+ * Must be called from the owner thread, OUTSIDE any dispatch
+ * (typically at the top of doterm()'s outer loop). */
+void wren_host_compact(void);
 
 /* Foreign-method dispatch table, defined in wren_bind.c.  Returns NULL
  * if no method matches, in which case Wren reports a runtime error. */

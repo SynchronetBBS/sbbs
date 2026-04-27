@@ -1,4 +1,3 @@
-/* SPDX-License-Identifier: GPL-2.0-or-later */
 #ifndef WREN_HOST_H
 #define WREN_HOST_H
 
@@ -55,5 +54,13 @@ void wren_host_mark_log_seen(void);
 /* Fires any Hook.every() callbacks whose deadline has elapsed. Called
  * from doterm() just before the main-loop sleep. */
 void wren_host_dispatch_timer(void);
+
+/* Reclaim hook entries that scripts have unregistered.  Walks the
+ * cleanup queue, shifts each entry's pointer out of the dispatch
+ * array, frees regex resources, and frees the entry struct itself if
+ * its HookHandle has already been GC'd.  Must run from the owner
+ * thread, OUTSIDE any dispatcher — the doterm() outer loop calls it
+ * once per iteration. */
+void wren_host_compact(void);
 
 #endif /* WREN_HOST_H */

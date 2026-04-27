@@ -106,6 +106,11 @@ The currently embedded scripts are:
 |===
 | Module | Purpose
 
+| `syncterm`
+| Foundational module: foreign-class declarations and Wren-side
+  helpers (`REPL`, `Key`, `Color`, `Codepage`, etc.).  Every other
+  script imports from this one.
+
 | `console`
 | Wren REPL.  Triggered by Ctrl+&#96;.
 
@@ -115,19 +120,21 @@ The currently embedded scripts are:
   per connection type.
 |===
 
-Embedded scripts share the `syncterm` module with the foreign-class
-declarations rather than living in their own modules.  This lets them
-use `Screen`, `Input`, `Hook`, etc. directly without imports, and
-lets the REPL inspect any class or top-level binding they define.
+Each embedded script — including `syncterm` — runs as its own module
+named after the file (e.g. `console.wren` becomes module `console`),
+and pulls bindings it needs via `import "syncterm" for ...`.  The
+`syncterm` module itself contains only declarations; it has no
+top-level side effects and is loaded on demand the first time
+something imports it.
 
 === Overriding Embedded Scripts
 
-A user script whose basename matches an embedded script's module name
+A user script whose basename matches an embedded module name
 overrides the embedded one.  If you create
 `~/.local/share/syncterm/scripts/console.wren`, your version replaces
 the built-in REPL; the embedded version is not loaded.  The override
-is loaded into the `syncterm` module so it sees the same scope the
-embedded version would have.
+runs as the same module name (`console`), so other scripts that
+`import "console"` see your version.
 
 The check is exact match on the bare module name.  `console.wren`
 overrides; `Console.wren` (different case) does not, and on
@@ -148,11 +155,15 @@ nothing.
 === Load Order
 
 . The user script directory is globbed.
-. Each embedded script whose module name is _not_ in the user set is
-  loaded into the `syncterm` module in declaration order.
-. Each user script is then loaded.  An override of an embedded
-  module loads into `syncterm`; a fresh module loads into its own
-  filename-derived module.
+. Each embedded script whose module name is _not_ in the user set
+  runs as its own module.
+. Each user script runs as its own filename-derived module.
+
+`import` statements (whether from a script's top-level or inside
+its body) resolve through one lookup chain: scripts/<name>.wren,
+then scripts/load/<name>.wren, then the embedded table.  The
+foundational `syncterm` module lazily loads the first time anything
+imports it; subsequent imports hit Wren's module cache.
 
 A script's top-level code runs once per connection, at load time.
 Top-level code typically registers hooks; persistent state should be
@@ -176,15 +187,13 @@ foreground thread only.
 
 == Importing the API
 
-The host bindings live in module `syncterm`.  User scripts import the
-classes they need:
+The host bindings live in module `syncterm`.  Every script — embedded
+or user, entry or library — imports the classes it needs:
 
 [source,wren]
 ----
 import "syncterm" for Screen, Input, Conn, Hook, Key
 ----
-
-Embedded scripts do not import `syncterm`; they live in it.
 
 `Cache` is injected into the `syncterm` module from C as a
 module-level `Directory` object — there is no Wren-callable
@@ -203,6 +212,10 @@ order; the first hook returning `true` consumes the event and stops
 dispatch.  Returning `false`, returning a non-Bool, or throwing
 passes through to the next hook and ultimately to SyncTERM's default
 handling.
+
+Every registration returns a `HookHandle` (or `null` if the per-event
+limit is hit) — see <<hookhandle>>.  Save it if the script needs to
+remove the hook later or read its metrics; toss it if not.
 
 [options="header",cols="2,3,3"]
 |===
@@ -256,9 +269,14 @@ unfiltered forms, so dispatch order = registration order regardless
 of which form was used.
 
 `Hook.onOutput` runs from `conn_send`, the path that handles telnet
-IAC escaping and other framing.  The script's own outbound writes via
-`Conn.send` go through the same path and so do fire `onOutput`.  Use
-`Conn.sendRaw` to bypass.
+IAC escaping and other framing.  Output that originates from the
+host (terminal responses, modem keepalives, etc.) fires the hook
+normally.  Output that a script generates via `Conn.send` /
+`Conn.sendRaw` does **not** fire `onOutput` — the host suppresses
+the dispatch for the duration of the foreign call, because invoking
+`wrenCall` from inside a Wren foreign method corrupts the running
+fiber.  A script that wants to observe its own output needs to log
+or buffer at the call site.
 
 `Hook.every` fires from the main-loop deadline check just before the
 sleep call.  If the loop stalls long enough that more than one
@@ -383,6 +401,67 @@ which Wren resolves to a single 0x0A byte).
   attached.  The exception trace points at the offending
   `Hook.onMatch` call.
 
+=== HookHandle [[hookhandle]]
+
+Every successful `Hook.on*` and `Hook.every` registration returns a
+`HookHandle`.  The class has no Wren-callable constructor, so a
+script can't fabricate one to remove arbitrary hooks — only its
+own.
+
+[source,wren]
+----
+import "syncterm" for Hook
+
+var h = Hook.onKey { |k|
+  if (k == 0x4200) {        // F8
+    System.print("F8 pressed")
+    return true
+  }
+  return false
+}
+
+// ...later...
+h.remove()                  // tombstone: no further dispatch
+----
+
+[options="header",cols="2,3"]
+|===
+| Member        | Meaning
+
+| `remove()`
+| Tombstone the hook.  Future dispatches skip it.  Safe to call from
+  inside the hook's own callback (the host removes by NULL-ing the
+  callable; in-flight dispatch finishes on the still-allocated
+  resources).  Returns `true` on first call, `false` thereafter.
+
+| `callCount`
+| Number of times the host has invoked this hook.  Counts every
+  `wrenCall`, regardless of whether the callback returned truthy or
+  errored.
+
+| `totalRuntime`
+| Cumulative wall-clock seconds spent inside `wrenCall` for this
+  hook, measured with `xp_timer()` before and after each
+  invocation.
+
+| `minRuntime`, `maxRuntime`
+| Smallest / largest single invocation time in seconds.  Both read
+  back as `0` for a never-fired hook; `min` is seeded on the first
+  call.
+|===
+
+`HookHandle.remove()` is safe from inside the hook's own callback.
+The entry's `fn` handle is released immediately (dispatchers skip
+past the now-NULL slot on their next iteration), and the entry is
+linked onto a cleanup queue.  The host drains that queue once per
+main-loop iteration — outside any dispatcher — at which point the
+entry is removed from its dispatch array, regex resources (compiled
+program, match buffer, PikeVM state) are freed, and the entry
+struct itself is freed once the script has also dropped the
+`HookHandle` (Wren's GC fires the foreign-class finalizer).
+Metric getters on a removed handle keep working until the script
+drops the handle.
+
 == Modal Input
 
 The conventional `Input.next` / `Input.next(ms)` / `Input.poll`
@@ -476,22 +555,49 @@ the active module:
 |===
 | Key | Action
 
-| Up / Down
+| Left / Right
+| Move the cursor within the current input line.
+
+| Home / End
+| Jump to start / end of the current input line.
+
+| Backspace
+| Delete the character before the cursor.
+
+| Delete
+| Delete the character at the cursor.
+
+| Up / Down (live mode)
 | Walk command history.  If the line currently has typed text, that
   text becomes a prefix anchor — only history entries starting with
   it are visited.
 
+| PgUp / PgDn
+| Page through the scrollback log buffer.  PgUp from live mode
+  pins the current top of view; PgDn returns to live once you've
+  scrolled past the tail.
+
+| Up / Down (scrollback mode)
+| Single-row scroll.  Down past the tail rejoins live mode.
+
+| Enter (blank or whitespace-only)
+| Advance to a fresh prompt row without evaluating.
+
 | Ctrl+W
-| Backward kill-word.
+| Backward kill-word, ending at the cursor (the tail past the
+  cursor is preserved).
+
+| Ctrl+L
+| Clear the screen and the in-memory log.  Returns to live mode.
 
 | Middle-click
-| Paste from system clipboard.  Multi-line text is split on LF and
-  each line submitted as if Enter were pressed.
+| Paste from system clipboard at the cursor.  Multi-line text is
+  split on LF and each line submitted as if Enter were pressed.
 
 | Alt+drag
 | Hand off to the existing select-and-copy gesture.
 
-| Ctrl+&#96; / `/quit`
+| Ctrl+&#96; / Esc / `/quit`
 | Close the REPL.
 |===
 
@@ -1322,10 +1428,14 @@ delete races with an outstanding handle.
 === Hook
 
 The dispatcher registry.  See <<hook-events,Hook Events>> for the
-contract on each method.
+contract on each method, and <<hookhandle,HookHandle>> for the
+return type.
 
 `Hook.onKey(fn)`, `Hook.onInput(fn)`, `Hook.onOutput(fn)`,
-`Hook.onMouse(fn)`, `Hook.onStatus(fn)`, `Hook.every(ms, fn)`.
+`Hook.onMouse(fn)`, `Hook.onStatus(fn)`, `Hook.every(ms, fn)`,
+plus the filtered variants `Hook.onKey(key, fn)`, `Hook.onInput(byte,
+fn)`, `Hook.onMouse(event, fn)`, and `Hook.onMatch(pattern, fn)`.
+Each call returns a `HookHandle`.
 
 == Worked Example: Auto-respond to a Prompt
 

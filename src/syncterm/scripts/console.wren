@@ -213,15 +213,23 @@ class WrenConsole {
           // Enter scrollback if in live mode by anchoring scrollTop
           // at the row that's currently at the top of the live view,
           // then move up by one viewport (minus 1 for overlap).
+          // No-op if the entire log fits in the live viewport, or
+          // if we're already pinned at the top — repainting in
+          // either case is wasted work and triggers a conio
+          // scroll-up that would drop the top row.
           var rendered  = renderAllRows_()
           var totalRows = rendered.count
-          if (scrollTop == -1) {
-            scrollTop = (totalRows - viewportRows).max(0)
+          if (totalRows > viewportRows) {
+            var firstEntry = (scrollTop == -1)
+            if (firstEntry) scrollTop = totalRows - viewportRows
+            var newTop = (scrollTop - (viewportRows - 1)).max(0)
+            if (firstEntry || newTop != scrollTop) {
+              scrollTop = newTop
+              paintViewport_(rendered, scrollTop, viewportRows)
+              promptRow = winRows
+              redrawPrompt = true
+            }
           }
-          scrollTop = (scrollTop - (viewportRows - 1)).max(0)
-          paintViewport_(rendered, scrollTop, viewportRows)
-          promptRow = winRows
-          redrawPrompt = true
         } else if (key == Key.pageDown) {
           if (scrollTop != -1) {
             var rendered  = renderAllRows_()
@@ -538,14 +546,17 @@ class WrenConsole {
   // Paint the scrollback viewport: clear, then dump rendered rows
   // [startRow .. startRow + viewportRows).  startRow is a display-row
   // index into renderAllRows_'s output, so navigation moves in
-  // exact-row units.
+  // exact-row units.  No trailing newline after the final row —
+  // emitting one would push the cursor past the bottom of the
+  // screen and trigger a conio scroll, dropping the top row of the
+  // viewport we just painted.
   static paintViewport_(rows, startRow, viewportRows) {
     Screen.window.clear()
     Screen.window.position = [1, 1]
     var endRow = (startRow + viewportRows).min(rows.count)
     for (i in startRow...endRow) {
+      if (i > startRow) put_("\n")
       put_(rows[i])
-      put_("\n")
     }
   }
 

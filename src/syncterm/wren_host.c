@@ -37,6 +37,8 @@ static struct wren_host_state state;
 static bool      active;
 static pthread_t owner_thread;
 
+static bool on_owner_thread(void);
+
 /* --------------------------------------------------------------------
  * Log buffer (always-on print/error scrollback)
  *
@@ -500,79 +502,196 @@ host_load_module(WrenVM *vm, const char *name)
  * Hook + timer registration
  * -------------------------------------------------------------------- */
 
-static bool
+/* Time the wrenCall, fold the elapsed wall-clock into a metrics
+ * block.  Caller has set up slot 0 (and any args) already.  Returns
+ * the wrenCall result so the caller can branch on success/failure. */
+static WrenInterpretResult
+metrics_invoke(struct hook_metrics *m, WrenHandle *call_handle)
+{
+	long double t0 = xp_timer();
+	WrenInterpretResult r = wrenCall(state.vm, call_handle);
+	long double dt = xp_timer() - t0;
+	if (dt < 0)
+		dt = 0;
+	m->call_count++;
+	m->total_runtime_s += dt;
+	if (m->call_count == 1)
+		m->min_runtime_s = dt;
+	else if (dt < m->min_runtime_s)
+		m->min_runtime_s = dt;
+	if (dt > m->max_runtime_s)
+		m->max_runtime_s = dt;
+	return r;
+}
+
+static struct wren_hook_entry *
 register_hook_internal(WrenVM *vm, enum wren_hook_event ev, int fn_slot,
     bool filtered, int filter)
 {
 	if (!active || ev < 0 || ev >= WREN_HOOK_COUNT)
-		return false;
+		return NULL;
 	int n = state.hook_count[ev];
 	if (n >= WREN_HOST_MAX_HOOKS_PER_EVENT) {
 		fprintf(stderr, "[wren] hook limit reached for event %d\n", (int)ev);
-		return false;
+		return NULL;
 	}
-	state.hooks[ev][n].fn       = wrenGetSlotHandle(vm, fn_slot);
-	state.hooks[ev][n].filter   = filter;
-	state.hooks[ev][n].filtered = filtered;
+	struct wren_hook_entry *h = calloc(1, sizeof(*h));
+	if (h == NULL)
+		return NULL;
+	h->ev       = ev;
+	h->fn       = wrenGetSlotHandle(vm, fn_slot);
+	h->filter   = filter;
+	h->filtered = filtered;
+	state.hooks[ev][n] = h;
 	state.hook_count[ev] = n + 1;
-	return true;
+	return h;
 }
 
-bool
+struct wren_hook_entry *
 wren_host_register_hook(WrenVM *vm, enum wren_hook_event ev, int fn_slot)
 {
 	return register_hook_internal(vm, ev, fn_slot, false, 0);
 }
 
-bool
+struct wren_hook_entry *
 wren_host_register_hook_filtered(WrenVM *vm, enum wren_hook_event ev,
     int fn_slot, int filter)
 {
 	return register_hook_internal(vm, ev, fn_slot, true, filter);
 }
 
-bool
+struct wren_hook_entry *
 wren_host_register_hook_match(WrenVM *vm, int fn_slot,
     struct Prog *prog, struct PikeVM *vm_state,
     char *buf, size_t buf_cap, int nsubp)
 {
 	if (!active)
-		return false;
+		return NULL;
 	int n = state.hook_count[WREN_HOOK_INPUT];
 	if (n >= WREN_HOST_MAX_HOOKS_PER_EVENT) {
 		fprintf(stderr, "[wren] hook limit reached for input\n");
-		return false;
+		return NULL;
 	}
-	state.hooks[WREN_HOOK_INPUT][n].fn            = wrenGetSlotHandle(vm, fn_slot);
-	state.hooks[WREN_HOOK_INPUT][n].filter        = 0;
-	state.hooks[WREN_HOOK_INPUT][n].filtered      = false;
-	state.hooks[WREN_HOOK_INPUT][n].regex_prog    = prog;
-	state.hooks[WREN_HOOK_INPUT][n].regex_vm      = vm_state;
-	state.hooks[WREN_HOOK_INPUT][n].regex_buf     = buf;
-	state.hooks[WREN_HOOK_INPUT][n].regex_buf_len = 0;
-	state.hooks[WREN_HOOK_INPUT][n].regex_buf_cap = buf_cap;
-	state.hooks[WREN_HOOK_INPUT][n].regex_nsubp   = nsubp;
+	struct wren_hook_entry *h = calloc(1, sizeof(*h));
+	if (h == NULL)
+		return NULL;
+	h->ev            = WREN_HOOK_INPUT;
+	h->fn            = wrenGetSlotHandle(vm, fn_slot);
+	h->regex_prog    = prog;
+	h->regex_vm      = vm_state;
+	h->regex_buf     = buf;
+	h->regex_buf_cap = buf_cap;
+	h->regex_nsubp   = nsubp;
 	pikevm_start(vm_state, buf);
+	state.hooks[WREN_HOOK_INPUT][n] = h;
 	state.hook_count[WREN_HOOK_INPUT] = n + 1;
-	return true;
+	return h;
 }
 
-bool
+struct wren_hook_entry *
 wren_host_register_timer(WrenVM *vm, int ms, int fn_slot)
 {
 	if (!active)
-		return false;
+		return NULL;
 	if (ms < 1)
 		ms = 1;
 	if (state.timer_count >= WREN_HOST_MAX_TIMERS) {
 		fprintf(stderr, "[wren] timer limit reached\n");
-		return false;
+		return NULL;
 	}
-	struct wren_timer_entry *t = &state.timers[state.timer_count++];
-	t->callable    = wrenGetSlotHandle(vm, fn_slot);
+	struct wren_hook_entry *t = calloc(1, sizeof(*t));
+	if (t == NULL)
+		return NULL;
+	t->ev          = WREN_HOOK_TIMER;
+	t->fn          = wrenGetSlotHandle(vm, fn_slot);
 	t->interval_ms = (uint32_t)ms;
 	t->next_fire_s = xp_timer() + (long double)ms / 1000.0L;
+	state.timers[state.timer_count++] = t;
+	return t;
+}
+
+/* Free regex resources owned by an entry, if any.  Used at compact
+ * time and shutdown. */
+static void
+hook_entry_free_regex(struct wren_hook_entry *h)
+{
+	if (h->regex_prog != NULL) {
+		free(h->regex_prog);
+		h->regex_prog = NULL;
+	}
+	if (h->regex_vm != NULL) {
+		pikevm_free(h->regex_vm);
+		h->regex_vm = NULL;
+	}
+	if (h->regex_buf != NULL) {
+		free(h->regex_buf);
+		h->regex_buf = NULL;
+	}
+}
+
+bool
+wren_host_remove_entry(struct wren_hook_entry *h)
+{
+	if (!active || h == NULL || h->fn == NULL)
+		return false;
+	wrenReleaseHandle(state.vm, h->fn);
+	h->fn = NULL;
+	/* Push onto the cleanup queue; compact pops at the top of the
+	 * next main-loop iteration.  The dispatcher already skips entries
+	 * with fn == NULL, so it's safe to leave the pointer in the
+	 * dispatch array until then. */
+	h->next_cleanup    = state.cleanup_head;
+	state.cleanup_head = h;
 	return true;
+}
+
+/* Remove `h`'s pointer from a dispatch array of length *count, then
+ * decrement the count.  Returns true on found-and-removed. */
+static bool
+dispatch_array_drop(struct wren_hook_entry **arr, int *count,
+    struct wren_hook_entry *h)
+{
+	int n = *count;
+	for (int i = 0; i < n; i++) {
+		if (arr[i] != h)
+			continue;
+		for (int j = i; j < n - 1; j++)
+			arr[j] = arr[j + 1];
+		arr[n - 1] = NULL;
+		*count = n - 1;
+		return true;
+	}
+	return false;
+}
+
+void
+wren_host_compact(void)
+{
+	if (!active || !on_owner_thread())
+		return;
+	while (state.cleanup_head != NULL) {
+		struct wren_hook_entry *h = state.cleanup_head;
+		state.cleanup_head = h->next_cleanup;
+		h->next_cleanup    = NULL;
+
+		hook_entry_free_regex(h);
+
+		if (h->ev == WREN_HOOK_TIMER) {
+			dispatch_array_drop(state.timers,
+			    &state.timer_count, h);
+		} else if (h->ev >= 0 && h->ev < WREN_HOOK_COUNT) {
+			dispatch_array_drop(state.hooks[h->ev],
+			    &state.hook_count[h->ev], h);
+		}
+		h->unregistered = true;
+
+		/* If the script's already dropped its HookHandle, the
+		 * struct has no remaining owner — free it.  Otherwise leave
+		 * it alive so the script can still read .callCount etc.;
+		 * the finalizer will free it once Wren GCs the handle. */
+		if (h->gced)
+			free(h);
+	}
 }
 
 /* --------------------------------------------------------------------
@@ -711,24 +830,55 @@ wren_host_shutdown(void)
 	if (!active)
 		return;
 
+	/* Drain the live dispatch arrays.  Each entry struct may still be
+	 * referenced by a HookHandle on the Wren side; the VM teardown
+	 * below will fire the foreign-class finalizer for those handles
+	 * and free anything we leave behind here.  But the fn handle and
+	 * any regex resources are owned by us — release them now while the
+	 * VM is still around. */
 	for (int e = 0; e < WREN_HOOK_COUNT; e++) {
 		for (int i = 0; i < state.hook_count[e]; i++) {
-			struct wren_hook_entry *h = &state.hooks[e][i];
-			if (h->fn != NULL)
+			struct wren_hook_entry *h = state.hooks[e][i];
+			if (h == NULL)
+				continue;
+			if (h->fn != NULL) {
 				wrenReleaseHandle(state.vm, h->fn);
-			if (h->regex_vm != NULL)
-				pikevm_free(h->regex_vm);
-			if (h->regex_prog != NULL)
-				free(h->regex_prog);
-			if (h->regex_buf != NULL)
-				free(h->regex_buf);
+				h->fn = NULL;
+			}
+			hook_entry_free_regex(h);
+			h->unregistered = true;
+			if (h->gced)
+				free(h);
+			state.hooks[e][i] = NULL;
 		}
 		state.hook_count[e] = 0;
 	}
-	for (int i = 0; i < state.timer_count; i++)
-		if (state.timers[i].callable != NULL)
-			wrenReleaseHandle(state.vm, state.timers[i].callable);
+	for (int i = 0; i < state.timer_count; i++) {
+		struct wren_hook_entry *t = state.timers[i];
+		if (t == NULL)
+			continue;
+		if (t->fn != NULL) {
+			wrenReleaseHandle(state.vm, t->fn);
+			t->fn = NULL;
+		}
+		t->unregistered = true;
+		if (t->gced)
+			free(t);
+		state.timers[i] = NULL;
+	}
 	state.timer_count = 0;
+
+	/* Drain the cleanup queue too — these are entries that were
+	 * removed mid-session but whose compaction never happened (e.g.
+	 * shutdown fires from a code path that bypassed the main loop). */
+	while (state.cleanup_head != NULL) {
+		struct wren_hook_entry *h = state.cleanup_head;
+		state.cleanup_head = h->next_cleanup;
+		hook_entry_free_regex(h);
+		h->unregistered = true;
+		if (h->gced)
+			free(h);
+	}
 
 	if (state.call0_handle != NULL)
 		wrenReleaseHandle(state.vm, state.call0_handle);
@@ -742,6 +892,8 @@ wren_host_shutdown(void)
 		wrenReleaseHandle(state.vm, state.key_event_class);
 	if (state.mouse_event_class != NULL)
 		wrenReleaseHandle(state.vm, state.mouse_event_class);
+	if (state.hook_handle_class != NULL)
+		wrenReleaseHandle(state.vm, state.hook_handle_class);
 	if (state.parked_fiber != NULL) {
 		wrenReleaseHandle(state.vm, state.parked_fiber);
 		state.parked_fiber = NULL;
@@ -792,13 +944,15 @@ wren_host_dispatch_key(int key)
 		return true;
 	int n = state.hook_count[WREN_HOOK_KEY];
 	for (int i = 0; i < n; i++) {
-		struct wren_hook_entry *h = &state.hooks[WREN_HOOK_KEY][i];
+		struct wren_hook_entry *h = state.hooks[WREN_HOOK_KEY][i];
+		if (h == NULL || h->fn == NULL)
+			continue;
 		if (h->filtered && h->filter != key)
 			continue;
 		wrenEnsureSlots(state.vm, 2);
 		wrenSetSlotHandle(state.vm, 0, h->fn);
 		wrenSetSlotDouble(state.vm, 1, (double)key);
-		if (wrenCall(state.vm, state.call1_handle) !=
+		if (metrics_invoke(&h->metrics, state.call1_handle) !=
 		    WREN_RESULT_SUCCESS)
 			continue;
 		if (read_consume_result())
@@ -847,7 +1001,7 @@ dispatch_match_drain(struct wren_hook_entry *h)
 			build_match_list(subp, h->regex_nsubp);
 			wrenSetSlotHandle(state.vm, 0, h->fn);
 			bool consumed = false;
-			if (wrenCall(state.vm, state.call1_handle) ==
+			if (metrics_invoke(&h->metrics, state.call1_handle) ==
 			        WREN_RESULT_SUCCESS &&
 			    read_consume_result())
 				consumed = true;
@@ -892,7 +1046,9 @@ wren_host_dispatch_input(unsigned char byte)
 		return false;
 	int n = state.hook_count[WREN_HOOK_INPUT];
 	for (int i = 0; i < n; i++) {
-		struct wren_hook_entry *h = &state.hooks[WREN_HOOK_INPUT][i];
+		struct wren_hook_entry *h = state.hooks[WREN_HOOK_INPUT][i];
+		if (h == NULL || h->fn == NULL)
+			continue;
 
 		if (h->regex_prog != NULL) {
 			/* On overflow, drop the oldest half and restart so the
@@ -919,7 +1075,7 @@ wren_host_dispatch_input(unsigned char byte)
 		wrenEnsureSlots(state.vm, 2);
 		wrenSetSlotHandle(state.vm, 0, h->fn);
 		wrenSetSlotDouble(state.vm, 1, (double)byte);
-		if (wrenCall(state.vm, state.call1_handle) !=
+		if (metrics_invoke(&h->metrics, state.call1_handle) !=
 		    WREN_RESULT_SUCCESS)
 			continue;
 		if (read_consume_result())
@@ -939,10 +1095,13 @@ wren_host_dispatch_output(const void *buf, size_t len)
 	int  n        = state.hook_count[WREN_HOOK_OUTPUT];
 	bool consumed = false;
 	for (int i = 0; i < n; i++) {
+		struct wren_hook_entry *h = state.hooks[WREN_HOOK_OUTPUT][i];
+		if (h == NULL || h->fn == NULL)
+			continue;
 		wrenEnsureSlots(state.vm, 2);
-		wrenSetSlotHandle(state.vm, 0, state.hooks[WREN_HOOK_OUTPUT][i].fn);
+		wrenSetSlotHandle(state.vm, 0, h->fn);
 		wrenSetSlotBytes(state.vm, 1, (const char *)buf, len);
-		if (wrenCall(state.vm, state.call1_handle) !=
+		if (metrics_invoke(&h->metrics, state.call1_handle) !=
 		    WREN_RESULT_SUCCESS)
 			continue;
 		if (read_consume_result()) {
@@ -967,7 +1126,9 @@ wren_host_dispatch_mouse(struct mouse_event *ev)
 	/* Build a 7-element list: [event, bstate, kbmodifiers, startx,
 	 * starty, endx, endy].  Scripts index by position. */
 	for (int i = 0; i < n; i++) {
-		struct wren_hook_entry *h = &state.hooks[WREN_HOOK_MOUSE][i];
+		struct wren_hook_entry *h = state.hooks[WREN_HOOK_MOUSE][i];
+		if (h == NULL || h->fn == NULL)
+			continue;
 		if (h->filtered && h->filter != ev->event)
 			continue;
 		wrenEnsureSlots(state.vm, 3);
@@ -983,7 +1144,7 @@ wren_host_dispatch_mouse(struct mouse_event *ev)
 			wrenSetSlotDouble(state.vm, 2, fields[f]);
 			wrenInsertInList(state.vm, 1, -1, 2);
 		}
-		if (wrenCall(state.vm, state.call1_handle) !=
+		if (metrics_invoke(&h->metrics, state.call1_handle) !=
 		    WREN_RESULT_SUCCESS)
 			continue;
 		if (read_consume_result())
@@ -999,10 +1160,13 @@ wren_host_compose_status(const char *def, char *out, size_t outsz)
 		return false;
 	int n = state.hook_count[WREN_HOOK_STATUS];
 	for (int i = 0; i < n; i++) {
+		struct wren_hook_entry *h = state.hooks[WREN_HOOK_STATUS][i];
+		if (h == NULL || h->fn == NULL)
+			continue;
 		wrenEnsureSlots(state.vm, 2);
-		wrenSetSlotHandle(state.vm, 0, state.hooks[WREN_HOOK_STATUS][i].fn);
+		wrenSetSlotHandle(state.vm, 0, h->fn);
 		wrenSetSlotString(state.vm, 1, def != NULL ? def : "");
-		if (wrenCall(state.vm, state.call1_handle) !=
+		if (metrics_invoke(&h->metrics, state.call1_handle) !=
 		    WREN_RESULT_SUCCESS)
 			continue;
 		if (wrenGetSlotType(state.vm, 0) != WREN_TYPE_STRING)
@@ -1023,12 +1187,12 @@ wren_host_dispatch_timer(void)
 		return;
 	long double now = xp_timer();
 	for (int i = 0; i < state.timer_count; i++) {
-		struct wren_timer_entry *t = &state.timers[i];
-		if (t->callable == NULL || now < t->next_fire_s)
+		struct wren_hook_entry *t = state.timers[i];
+		if (t == NULL || t->fn == NULL || now < t->next_fire_s)
 			continue;
 		wrenEnsureSlots(state.vm, 1);
-		wrenSetSlotHandle(state.vm, 0, t->callable);
-		(void)wrenCall(state.vm, state.call0_handle);
+		wrenSetSlotHandle(state.vm, 0, t->fn);
+		(void)metrics_invoke(&t->metrics, state.call0_handle);
 		/* Advance by interval; if the loop stalled long enough that
 		 * we're more than one interval behind, jump forward to "now"
 		 * rather than firing repeatedly trying to catch up. */

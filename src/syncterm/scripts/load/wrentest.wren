@@ -27,24 +27,28 @@ import "syncterm" for Hook, Conn, Console, Screen, CTerm, BBS, Key,
     REPL, Input, KeyEvent
 
 class WrenTest {
-  // -- counter setters used by the module-load hooks ---------------
-  static initCounters_() {
-    __everyTicks       = 0
-    __outputBytes      = 0
-    __keyFilteredFires = 0
-  }
-  static tickEvery_()   { __everyTicks       = __everyTicks       + 1 }
-  static tickOutput_(n) { __outputBytes      = __outputBytes      + n }
-  static tickKey_()     { __keyFilteredFires = __keyFilteredFires + 1 }
-
   static run() {
-    __step         = 0
-    __pass         = 0
-    __fail         = 0
-    __pending      = null
-    __everyAtRun   = __everyTicks
-    __outputAtRun  = __outputBytes
-    __keyHookAtRun = __keyFilteredFires
+    __step    = 0
+    __pass    = 0
+    __fail    = 0
+    __pending = null
+    // Register the test's hooks fresh each run; cleanup_() removes
+    // them at end-of-suite so they don't keep firing once the
+    // tests are done.  The match dispatcher and watchdog are
+    // active for the whole sentinel chain; __everyHook and
+    // __keyHook exist purely to let report_() check
+    // HookHandle.callCount > 0 for "fires from main loop" and
+    // "Input.unget'd key was processed".
+    __hooks = []
+    __hooks.add(Hook.onMatch("__T(.+)_X_(.+)_X__") { |m|
+      handle_(m[1], m[2])
+      return true
+    })
+    __hooks.add(Hook.every(3000) { timeout_() })
+    __everyHook = Hook.every(50) { 0 }
+    __keyHook   = Hook.onKey(0xFE00) { |k| true }
+    __hooks.add(__everyHook)
+    __hooks.add(__keyHook)
     System.print("=== Wren self-test starting ===")
 
     // ------ constant enums ------------------------------------------
@@ -420,11 +424,17 @@ class WrenTest {
     } else if (__step == 5) {
       // Deliberate ≥1 s wall-clock pause so the main loop's
       // dispatch_timer sees Hook.every(50)'s next_fire_s pass
-      // many times before report_() runs.  Without this, fast
-      // local PTYs complete T01-T04 in <50 ms and the timer
+      // many times before report_() runs.  The sentinel string
+      // is composed by printf at run time (the `\%s` is a
+      // *literal* percent — escape sequence — preserved into
+      // the bash command), so the *command echo* contains
+      // `%s` plus `T05` separately and never matches the
+      // regex; only the post-sleep printf output does.
+      // Without this trick the regex matches the echo
+      // immediately, sleep never gates the test, and the timer
       // assertion races.
       __pending = "T05"
-      Conn.send("sleep 1 && printf '__T05_X_done_X__\\n'\r")
+      Conn.send("sleep 1 && printf '__\%s_X_done_X__\\n' T05\r")
     } else {
       report_()
     }
@@ -461,46 +471,38 @@ class WrenTest {
   // ===== final report =============================================
 
   static report_() {
-    // Time-based hook checks: by the time we get here, several
-    // sentinel roundtrips have elapsed (~hundreds of ms of wall
-    // time), so Hook.every should have fired and the test-key inject
-    // from run() should have been processed by the main-loop key
-    // path.  Hook.onOutput is intentionally NOT checked: the host
-    // suppresses output dispatch for sends that originate inside a
-    // Wren foreign method (otherwise wrenCall re-enters its own fiber
-    // and corrupts the stack), so Conn.send from the test won't fire
-    // the hook.  C-side conn_send (e.g. terminal responses) still
-    // does, but is not deterministic in this harness.
-    check_(__everyTicks > __everyAtRun,
+    // Time-based hook checks: by the time we get here, T05 has
+    // forced a ≥1 s wall-clock pause via `sleep 1`, so Hook.every's
+    // 50 ms timer must have fired several times and the
+    // Input.unget'd 0xFE00 key has had plenty of main-loop
+    // iterations to be picked up.  HookHandle.callCount > 0 is the
+    // direct test — much cleaner than the old static-counter
+    // baselines.  Hook.onOutput isn't checked here: the host
+    // suppresses output dispatch for Wren-originated Conn.send
+    // (otherwise wrenCall re-enters its own fiber and corrupts the
+    // stack), so it wouldn't fire from any of this suite's sends.
+    check_(__everyHook.callCount > 0,
            "Hook.every fires from main-loop timer")
-    check_(__keyFilteredFires > __keyHookAtRun,
+    check_(__keyHook.callCount > 0,
            "Hook.onKey(0xFE00) caught Input.unget'd sentinel key")
 
     var total = __pass + __fail
     System.print("=== %(total) tests, %(__pass) pass, %(__fail) fail ===")
+    cleanup_()
+  }
+
+  // Tear down every hook this run() registered.  Safe to call from
+  // inside the very dispatch that triggered it — the host
+  // tombstones (just NULLs fn) so the in-flight dispatcher walks
+  // off the entry on the next iteration.
+  static cleanup_() {
+    for (h in __hooks) h.remove()
+    __hooks     = []
+    __everyHook = null
+    __keyHook   = null
   }
 }
 
-// One-time module-load setup.  Counters live as static fields on
-// WrenTest so the test methods can reference them directly via the
-// __ name; the hooks below funnel through tick* setters.
-WrenTest.initCounters_()
-
-Hook.onMatch("__T(.+)_X_(.+)_X__") { |m|
-  WrenTest.handle_(m[1], m[2])
-  return true
-}
-
-Hook.every(3000) { WrenTest.timeout_() }
-
-Hook.every(50) { WrenTest.tickEvery_() }
-
-Hook.onOutput { |s|
-  WrenTest.tickOutput_(s is String ? s.bytes.count : 0)
-  return false
-}
-
-Hook.onKey(0xFE00) { |k|
-  WrenTest.tickKey_()
-  return true
-}
+// All hooks are registered inside WrenTest.run() and torn down by
+// cleanup_() at the end of the suite, so the regex VM, timers, and
+// filtered key listener don't keep ticking once the tests are done.

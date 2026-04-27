@@ -655,6 +655,19 @@ foreign class Hook {
   foreign static every(ms, fn)
 }
 
+// Returned by every Hook.on*/Hook.every registration.  No Wren-side
+// constructor — the only path to a HookHandle is via a successful
+// registration, so scripts can't fabricate one to remove arbitrary
+// hooks.  `remove()` tombstones the underlying entry (a second call
+// is a no-op; metric getters read back zeros once removed).
+foreign class HookHandle {
+  foreign remove()
+  foreign callCount       // total invocations
+  foreign totalRuntime    // seconds (sum of every wrenCall in this hook)
+  foreign minRuntime      // seconds (smallest single invocation)
+  foreign maxRuntime      // seconds (largest single invocation)
+}
+
 // Module-private bridge for state the host owns but Wren shouldn't
 // be able to construct directly.  `cacheDirectory` returns a fresh
 // Directory whose path resolves lazily from the active BBS context;

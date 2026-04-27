@@ -193,6 +193,7 @@ enum syncterm_wren_foreign {
 	SWF_CELLS,
 	SWF_CUSTOM_CURSOR,
 	SWF_VIDEO_FLAGS,
+	SWF_HOOK_HANDLE,
 };
 
 /* Every foreign struct's first field has this exact name and type, so
@@ -1725,16 +1726,41 @@ fn_Console_iteratorValue(WrenVM *vm)
 
 /* ----- Hook -------------------------------------------------------- */
 
+/* Forward-declare; full definitions live with the rest of the
+ * HookHandle bindings below.  Each foreign Hook.on* / Hook.every
+ * method returns a HookHandle in slot 0 (or null on failure). */
+static void push_hook_handle(WrenVM *vm, struct wren_hook_entry *h);
+
 static void
-fn_Hook_onKey(WrenVM *vm)    { wren_host_register_hook(vm, WREN_HOOK_KEY,    1); }
+fn_Hook_onKey(WrenVM *vm)
+{
+	push_hook_handle(vm,
+	    wren_host_register_hook(vm, WREN_HOOK_KEY, 1));
+}
 static void
-fn_Hook_onInput(WrenVM *vm)  { wren_host_register_hook(vm, WREN_HOOK_INPUT,  1); }
+fn_Hook_onInput(WrenVM *vm)
+{
+	push_hook_handle(vm,
+	    wren_host_register_hook(vm, WREN_HOOK_INPUT, 1));
+}
 static void
-fn_Hook_onOutput(WrenVM *vm) { wren_host_register_hook(vm, WREN_HOOK_OUTPUT, 1); }
+fn_Hook_onOutput(WrenVM *vm)
+{
+	push_hook_handle(vm,
+	    wren_host_register_hook(vm, WREN_HOOK_OUTPUT, 1));
+}
 static void
-fn_Hook_onMouse(WrenVM *vm)  { wren_host_register_hook(vm, WREN_HOOK_MOUSE,  1); }
+fn_Hook_onMouse(WrenVM *vm)
+{
+	push_hook_handle(vm,
+	    wren_host_register_hook(vm, WREN_HOOK_MOUSE, 1));
+}
 static void
-fn_Hook_onStatus(WrenVM *vm) { wren_host_register_hook(vm, WREN_HOOK_STATUS, 1); }
+fn_Hook_onStatus(WrenVM *vm)
+{
+	push_hook_handle(vm,
+	    wren_host_register_hook(vm, WREN_HOOK_STATUS, 1));
+}
 
 /* Filtered variants: signature is (filter, fn) so slot 1 is the
  * match value (key code / byte / mouse-event type) and slot 2 is the
@@ -1744,19 +1770,22 @@ static void
 fn_Hook_onKey_filtered(WrenVM *vm)
 {
 	int filter = (int)wrenGetSlotDouble(vm, 1);
-	wren_host_register_hook_filtered(vm, WREN_HOOK_KEY, 2, filter);
+	push_hook_handle(vm,
+	    wren_host_register_hook_filtered(vm, WREN_HOOK_KEY, 2, filter));
 }
 static void
 fn_Hook_onInput_filtered(WrenVM *vm)
 {
 	int filter = (int)wrenGetSlotDouble(vm, 1) & 0xff;
-	wren_host_register_hook_filtered(vm, WREN_HOOK_INPUT, 2, filter);
+	push_hook_handle(vm,
+	    wren_host_register_hook_filtered(vm, WREN_HOOK_INPUT, 2, filter));
 }
 static void
 fn_Hook_onMouse_filtered(WrenVM *vm)
 {
 	int filter = (int)wrenGetSlotDouble(vm, 1);
-	wren_host_register_hook_filtered(vm, WREN_HOOK_MOUSE, 2, filter);
+	push_hook_handle(vm,
+	    wren_host_register_hook_filtered(vm, WREN_HOOK_MOUSE, 2, filter));
 }
 
 /* RE1 calls fatal() — and thus exit(2) — on syntax errors and
@@ -1876,8 +1905,9 @@ fn_Hook_onMatch(WrenVM *vm)
 	}
 	buf[0] = '\0';
 
-	if (!wren_host_register_hook_match(vm, 2, p, pvm, buf,
-	    WREN_REGEX_BUF_CAP, MAXSUB)) {
+	struct wren_hook_entry *h = wren_host_register_hook_match(vm, 2,
+	    p, pvm, buf, WREN_REGEX_BUF_CAP, MAXSUB);
+	if (h == NULL) {
 		pikevm_free(pvm);
 		free(p);
 		free(buf);
@@ -1885,13 +1915,124 @@ fn_Hook_onMatch(WrenVM *vm)
 		wrenAbortFiber(vm, 0);
 		return;
 	}
+	push_hook_handle(vm, h);
 }
 
 static void
 fn_Hook_every(WrenVM *vm)
 {
 	int ms = (int)wrenGetSlotDouble(vm, 1);
-	wren_host_register_timer(vm, ms, 2);
+	struct wren_hook_entry *t = wren_host_register_timer(vm, ms, 2);
+	push_hook_handle(vm, t);
+}
+
+/* ----- HookHandle -------------------------------------------------- */
+
+struct wren_hook_handle {
+	enum syncterm_wren_foreign type;
+	struct wren_hook_entry    *entry;
+};
+
+/* No Wren-side `construct new()` — HookHandle is only ever produced
+ * by a successful Hook registration and handed back from C.  The
+ * allocator below should never run; if Wren bytecode somehow does
+ * invoke it, hand back a zeroed handle whose remove() is a no-op
+ * rather than something pointing at a real entry. */
+static void
+wren_hook_handle_allocate(WrenVM *vm)
+{
+	struct wren_hook_handle *hh = wrenSetSlotNewForeign(vm, 0, 0,
+	    sizeof(*hh));
+	memset(hh, 0, sizeof(*hh));
+	hh->type = SWF_HOOK_HANDLE;
+}
+
+/* Wren has just GC'd the HookHandle.  Set the entry's `gced` bit so
+ * compact (or shutdown) knows nobody references the struct anymore;
+ * if the entry is also already `unregistered` (compact shifted it out
+ * of the dispatch array), free it now. */
+static void
+wren_hook_handle_finalize(void *data)
+{
+	struct wren_hook_handle *hh = data;
+	if (hh == NULL)
+		return;
+	struct wren_hook_entry *e = hh->entry;
+	hh->entry = NULL;
+	if (e == NULL)
+		return;
+	e->gced = true;
+	if (e->unregistered)
+		free(e);
+}
+
+/* Allocate a HookHandle in slot 0 wrapping the freshly-registered
+ * entry (or null if registration failed).  The pointer stored in the
+ * handle stays valid until the entry's compaction completes AND the
+ * handle is GC'd — heap-allocated entries plus the two-bit lifetime
+ * flags keep the struct alive across either-order teardown. */
+static void
+push_hook_handle(WrenVM *vm, struct wren_hook_entry *h)
+{
+	if (h == NULL) {
+		wrenSetSlotNull(vm, 0);
+		return;
+	}
+	struct wren_host_state *st = wren_host_state();
+	wrenEnsureSlots(vm, 2);
+	load_class_into_slot(vm, &st->hook_handle_class, "HookHandle", 1);
+	struct wren_hook_handle *hh = wrenSetSlotNewForeign(vm, 0, 1,
+	    sizeof(*hh));
+	hh->type  = SWF_HOOK_HANDLE;
+	hh->entry = h;
+}
+
+static void
+fn_HookHandle_remove(WrenVM *vm)
+{
+	struct wren_hook_handle *hh = wrenGetSlotForeign(vm, 0);
+	bool removed = wren_host_remove_entry(hh->entry);
+	wrenSetSlotBool(vm, 0, removed);
+}
+
+static const struct hook_metrics *
+hook_handle_metrics(struct wren_hook_handle *hh)
+{
+	if (hh == NULL || hh->entry == NULL)
+		return NULL;
+	return &hh->entry->metrics;
+}
+
+static void
+fn_HookHandle_callCount(WrenVM *vm)
+{
+	const struct hook_metrics *m =
+	    hook_handle_metrics(wrenGetSlotForeign(vm, 0));
+	wrenSetSlotDouble(vm, 0, m != NULL ? (double)m->call_count : 0.0);
+}
+
+static void
+fn_HookHandle_totalRuntime(WrenVM *vm)
+{
+	const struct hook_metrics *m =
+	    hook_handle_metrics(wrenGetSlotForeign(vm, 0));
+	wrenSetSlotDouble(vm, 0, m != NULL ? (double)m->total_runtime_s : 0.0);
+}
+
+static void
+fn_HookHandle_minRuntime(WrenVM *vm)
+{
+	const struct hook_metrics *m =
+	    hook_handle_metrics(wrenGetSlotForeign(vm, 0));
+	wrenSetSlotDouble(vm, 0, m != NULL ? (double)m->min_runtime_s : 0.0);
+}
+
+static void
+fn_HookHandle_maxRuntime(WrenVM *vm)
+{
+	const struct hook_metrics *m =
+	    hook_handle_metrics(wrenGetSlotForeign(vm, 0));
+	wrenSetSlotDouble(vm, 0, m != NULL ? (double)m->max_runtime_s : 0.0);
 }
 
 /* ----- Cell / Cells / vmem text bindings --------------------------
@@ -3346,6 +3487,13 @@ static const struct binding BINDINGS[] = {
 
 	{ "Host", true, "cacheDirectory",       fn_Host_cacheDirectory    },
 
+	/* HookHandle (instance methods/getters) */
+	{ "HookHandle", false, "remove()",       fn_HookHandle_remove       },
+	{ "HookHandle", false, "callCount",      fn_HookHandle_callCount    },
+	{ "HookHandle", false, "totalRuntime",   fn_HookHandle_totalRuntime },
+	{ "HookHandle", false, "minRuntime",     fn_HookHandle_minRuntime   },
+	{ "HookHandle", false, "maxRuntime",     fn_HookHandle_maxRuntime   },
+
 	/* Console */
 	{ "Console", true, "count",            fn_Console_count         },
 	{ "Console", true, "total",            fn_Console_total         },
@@ -3548,6 +3696,12 @@ wren_bind_lookup_class(const char *module, const char *className)
 	if (strcmp(className, "MouseEvent") == 0) {
 		WrenForeignClassMethods m = {
 			wren_mouse_event_allocate, wren_mouse_event_finalize
+		};
+		return m;
+	}
+	if (strcmp(className, "HookHandle") == 0) {
+		WrenForeignClassMethods m = {
+			wren_hook_handle_allocate, wren_hook_handle_finalize
 		};
 		return m;
 	}

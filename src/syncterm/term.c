@@ -6026,6 +6026,12 @@ doterm(struct bbslist *bbs)
 	force_status_update = true;
 	wren_host_init(bbs);
 	for (; !quitting;) {
+		/* Reclaim any hook entries unregistered since the last
+		 * iteration: shifts pointer arrays, frees regex resources,
+		 * and frees structs whose HookHandle has already been GC'd.
+		 * Runs before any dispatcher to keep the dispatch arrays
+		 * tidy and to avoid touching freed entries. */
+		wren_host_compact();
 		/* Drain any popups posted from background threads (e.g.
 		 * SSH_MSG_DEBUG with always_display set) before we go
 		 * blocking on recv/kbhit. */
