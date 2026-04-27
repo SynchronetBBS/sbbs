@@ -40,10 +40,7 @@ class Connected {
   }
 }
 
-Hook.onKey { |k|
-  if (k == 0x2600) {  // Alt+L
-    Connected.sendLogin()
-    return true
-  }
-  return false
+Hook.onKey(0x2600) { |k|  // Alt+L
+  Connected.sendLogin()
+  return true
 }
