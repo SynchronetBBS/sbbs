@@ -311,6 +311,23 @@ bitmap_vmem_puttext_locked(int sx, int sy, int ex, int ey, struct vmem_cell *fil
 					// *EVERY* character on the screen
 					fullredraw = true;
 				}
+				else if ((fi->bg & CIOLIB_BG_DOUBLE_HEIGHT) && bitmap_drawn != NULL && y + 1 < vstat.rows) {
+					// The DH bit isn't toggling, but if this cell is
+					// the top of a double-height pair its content
+					// drives the bottom-half render of the row below.
+					// The row below's own vmem isn't being touched by
+					// this write, so the per-cell diff in
+					// update_from_vmem would skip it. Mark the cell
+					// directly below dirty so the next update redraws
+					// it. (May over-invalidate when this cell turns
+					// out to be a bottom rather than a top, but it
+					// can't propagate further than one row.)
+					if (vc->ch != fi->ch || vc->bg != fi->bg || vc->fg != fi->fg
+					    || vc->legacy_attr != fi->legacy_attr || vc->font != fi->font) {
+						int below = vmem_cell_offset(vstat.vmem, x, y + 1);
+						bitmap_drawn[below].bg |= CIOLIB_BG_DIRTY;
+					}
+				}
 			}
 			*vc = *(fi++);
 			if (vstat.mode == PRESTEL_40X25 && (vc->bg & CIOLIB_BG_PRESTEL)) {
