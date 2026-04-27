@@ -1,6 +1,4 @@
-/* SPDX-License-Identifier: GPL-2.0-or-later
- *
- * Per-connection Wren scripting host for SyncTERM.  The VM, hook
+/* Per-connection Wren scripting host for SyncTERM.  The VM, hook
  * registry, and dispatchers all live here; the foreign-method bodies
  * (Screen/Input/Clipboard/Conn/CTerm/BBS/Cache/Hook) live in wren_bind.c.
  *
@@ -998,7 +996,11 @@ wren_host_dispatch_output(const void *buf, size_t len)
 {
 	if (!active || !on_owner_thread() || buf == NULL)
 		return false;
-	int n = state.hook_count[WREN_HOOK_OUTPUT];
+	if (state.output_dispatching > 0)
+		return false;
+	state.output_dispatching++;
+	int  n        = state.hook_count[WREN_HOOK_OUTPUT];
+	bool consumed = false;
 	for (int i = 0; i < n; i++) {
 		wrenEnsureSlots(state.vm, 2);
 		wrenSetSlotHandle(state.vm, 0, state.hooks[WREN_HOOK_OUTPUT][i].fn);
@@ -1006,10 +1008,13 @@ wren_host_dispatch_output(const void *buf, size_t len)
 		if (wrenCall(state.vm, state.call1_handle) !=
 		    WREN_RESULT_SUCCESS)
 			continue;
-		if (read_consume_result())
-			return true;
+		if (read_consume_result()) {
+			consumed = true;
+			break;
+		}
 	}
-	return false;
+	state.output_dispatching--;
+	return consumed;
 }
 
 bool

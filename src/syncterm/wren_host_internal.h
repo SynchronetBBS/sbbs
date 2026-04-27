@@ -1,4 +1,3 @@
-/* SPDX-License-Identifier: GPL-2.0-or-later */
 #ifndef WREN_HOST_INTERNAL_H
 #define WREN_HOST_INTERNAL_H
 
@@ -81,6 +80,17 @@ struct wren_host_state {
 	 * for the next key/mouse event.  Set by Input._park, cleared and
 	 * resumed by wren_host_dispatch_key/mouse before any hooks fire. */
 	WrenHandle  *parked_fiber;
+
+	/* Non-zero when wren_host_dispatch_output is on the call stack.
+	 * conn_send fires dispatch_output, but conn_send is itself reachable
+	 * from fn_Conn_send (a Wren foreign method) — calling wrenCall with
+	 * a non-empty fiber corrupts its frame stack and has produced
+	 * unbounded recursion in practice.  When this flag is set, nested
+	 * dispatch_output returns false (no consume) so the bytes go through
+	 * without firing onOutput hooks.  Wren-originated sends are already
+	 * known to the script, so missing the hook callback is a feature,
+	 * not a loss. */
+	int          output_dispatching;
 
 	struct bbslist *bbs;
 };

@@ -1,6 +1,4 @@
-/* SPDX-License-Identifier: GPL-2.0-or-later
- *
- * Foreign-method bindings for the Wren scripting host.  These wrap
+/* Foreign-method bindings for the Wren scripting host.  These wrap
  * SyncTERM's conio / connection / cterm / bbslist / cache APIs and
  * expose hook-registration entry points; lifecycle and dispatch live
  * in wren_host.c. */
@@ -176,9 +174,49 @@ fn_Screen_size(WrenVM *vm)
 /* Forward decl — defined later beside the Cell helpers. */
 static int encode_utf8(uint32_t cp, char out[4]);
 
+/* Discriminator for foreign objects in this binding.  Every wren_*
+ * struct stamped at the front with one of these tags so foreign-method
+ * bodies can identify *which* foreign they have — wrenGetSlotType
+ * only tells us "WREN_TYPE_FOREIGN", not the class.  SWF_NONE = 0 so
+ * an allocator that forgets to set the tag fails any specific check
+ * loudly instead of pretending to be a different type. */
+enum syncterm_wren_foreign {
+	SWF_NONE = 0,
+	SWF_KEY_EVENT,
+	SWF_MOUSE_EVENT,
+	SWF_EXTATTR,
+	SWF_LAST_COLUMN_FLAG,
+	SWF_FLOWCONTROL,
+	SWF_DIRECTORY,
+	SWF_FILE,
+	SWF_CELL,
+	SWF_CELLS,
+	SWF_CUSTOM_CURSOR,
+	SWF_VIDEO_FLAGS,
+};
+
+/* Every foreign struct's first field has this exact name and type, so
+ * a (struct wren_foreign_header *) cast yields the tag regardless of
+ * which struct we hold. */
+struct wren_foreign_header {
+	enum syncterm_wren_foreign type;
+};
+
+/* Returns the tag for the foreign object in `slot`, or SWF_NONE if
+ * the slot doesn't hold a foreign value. */
+static enum syncterm_wren_foreign
+slot_foreign_type(WrenVM *vm, int slot)
+{
+	if (wrenGetSlotType(vm, slot) != WREN_TYPE_FOREIGN)
+		return SWF_NONE;
+	struct wren_foreign_header *h = wrenGetSlotForeign(vm, slot);
+	return h->type;
+}
+
 /* Foreign class state for KeyEvent and MouseEvent — both are simple
  * value types (no parent, no resources) so finalize is a no-op. */
 struct wren_key_event {
+	enum syncterm_wren_foreign type;
 	uint16_t code;
 	int32_t  codepoint;   /* -1 = none (extended key) */
 	uint8_t  text[5];     /* UTF-8 of codepoint, NUL-terminated; "" if extended */
@@ -186,6 +224,7 @@ struct wren_key_event {
 };
 
 struct wren_mouse_event {
+	enum syncterm_wren_foreign type;
 	struct mouse_event ev;
 };
 
@@ -215,6 +254,7 @@ key_event_init(struct wren_key_event *ke, uint16_t code)
 {
 	if (code == CIO_KEY_ABORTED)
 		code = 0x001B;
+	ke->type      = SWF_KEY_EVENT;
 	ke->code      = code;
 	ke->codepoint = -1;
 	ke->text[0]   = '\0';
@@ -259,6 +299,7 @@ wren_mouse_event_allocate(WrenVM *vm)
 	struct wren_mouse_event *me =
 	    wrenSetSlotNewForeign(vm, 0, 0, sizeof(*me));
 	memset(me, 0, sizeof(*me));
+	me->type           = SWF_MOUSE_EVENT;
 	me->ev.event       = (int)wrenGetSlotDouble(vm, 1);
 	me->ev.kbmodifiers = (int)wrenGetSlotDouble(vm, 2);
 	me->ev.startx      = (int)wrenGetSlotDouble(vm, 3);
@@ -337,7 +378,8 @@ push_mouse_event(WrenVM *vm, const struct mouse_event *mev)
 	wrenSetSlotHandle(vm, 1, st->mouse_event_class);
 	struct wren_mouse_event *me =
 	    wrenSetSlotNewForeign(vm, 0, 1, sizeof(*me));
-	me->ev = *mev;
+	me->type = SWF_MOUSE_EVENT;
+	me->ev   = *mev;
 }
 
 /* Drain one event from ciolib into slot 0.  When getch returns
@@ -416,7 +458,8 @@ wren_bind_resume_parked_mouse(struct mouse_event *ev)
 	wrenSetSlotHandle(st->vm, 2, st->mouse_event_class);
 	struct wren_mouse_event *me =
 	    wrenSetSlotNewForeign(st->vm, 1, 2, sizeof(*me));
-	me->ev = *ev;
+	me->type = SWF_MOUSE_EVENT;
+	me->ev   = *ev;
 	wrenSetSlotHandle(st->vm, 0, fiber);
 
 	wrenCall(st->vm, st->call1_handle);
@@ -513,13 +556,25 @@ fn_Screen_restore(WrenVM *vm)
 
 /* ----- Conn -------------------------------------------------------- */
 
+/* Wren-originated sends must not let conn_send fire onOutput hooks:
+ * dispatching wrenCall while a foreign method is on the stack
+ * corrupts the outer fiber's stackTop (wrenCall resets it to the new
+ * closure's frame base — wren_vm.c:1464).  Bracketing conn_send with
+ * the dispatch guard makes wren_host_dispatch_output bail out for
+ * exactly these calls; C-side conn_send paths still see hooks. */
 static void
 fn_Conn_send(WrenVM *vm)
 {
 	int len = 0;
 	const char *s = wrenGetSlotBytes(vm, 1, &len);
-	if (len > 0)
-		conn_send(s, (size_t)len, 0);
+	if (len <= 0)
+		return;
+	struct wren_host_state *st = wren_host_state();
+	if (st != NULL)
+		st->output_dispatching++;
+	conn_send(s, (size_t)len, 0);
+	if (st != NULL)
+		st->output_dispatching--;
 }
 
 static void
@@ -527,8 +582,14 @@ fn_Conn_sendRaw(WrenVM *vm)
 {
 	int len = 0;
 	const char *s = wrenGetSlotBytes(vm, 1, &len);
-	if (len > 0)
-		conn_send_raw(s, (size_t)len, 0);
+	if (len <= 0)
+		return;
+	struct wren_host_state *st = wren_host_state();
+	if (st != NULL)
+		st->output_dispatching++;
+	conn_send_raw(s, (size_t)len, 0);
+	if (st != NULL)
+		st->output_dispatching--;
 }
 
 static void
@@ -633,8 +694,8 @@ fn_CTerm_attr(WrenVM *vm)
 static void
 fn_CTerm_doorwayMode(WrenVM *vm)
 {
-	wrenSetSlotDouble(vm, 0,
-	    cterm != NULL ? (double)cterm->doorway_mode : 0.0);
+	wrenSetSlotBool(vm, 0,
+	    cterm != NULL && cterm->doorway_mode != 0);
 }
 
 static void
@@ -756,10 +817,12 @@ fn_CTerm_logPaused(WrenVM *vm)
 /* ----- ExtAttr / LastColumnFlag (CTerm bitfield snapshots) --------- */
 
 struct wren_extattr {
+	enum syncterm_wren_foreign type;
 	uint32_t value;
 };
 
 struct wren_last_column_flag {
+	enum syncterm_wren_foreign type;
 	uint32_t value;
 };
 
@@ -767,6 +830,7 @@ static void
 wren_extattr_allocate(WrenVM *vm)
 {
 	struct wren_extattr *e = wrenSetSlotNewForeign(vm, 0, 0, sizeof(*e));
+	e->type  = SWF_EXTATTR;
 	e->value = 0;
 }
 
@@ -781,6 +845,7 @@ wren_last_column_flag_allocate(WrenVM *vm)
 {
 	struct wren_last_column_flag *l = wrenSetSlotNewForeign(vm, 0, 0,
 	    sizeof(*l));
+	l->type  = SWF_LAST_COLUMN_FLAG;
 	l->value = 0;
 }
 
@@ -827,6 +892,7 @@ fn_CTerm_extAttr(WrenVM *vm)
 	wrenEnsureSlots(vm, 2);
 	wrenGetVariable(vm, "syncterm", "ExtAttr", 1);
 	struct wren_extattr *e = wrenSetSlotNewForeign(vm, 0, 1, sizeof(*e));
+	e->type  = SWF_EXTATTR;
 	e->value = (cterm != NULL) ? cterm->extattr : 0;
 }
 
@@ -837,6 +903,7 @@ fn_CTerm_lastColumnFlag(WrenVM *vm)
 	wrenGetVariable(vm, "syncterm", "LastColumnFlag", 1);
 	struct wren_last_column_flag *l = wrenSetSlotNewForeign(vm, 0, 1,
 	    sizeof(*l));
+	l->type  = SWF_LAST_COLUMN_FLAG;
 	l->value = (cterm != NULL) ? cterm->last_column_flag : 0;
 }
 
@@ -907,6 +974,7 @@ static void fn_BBS_stopBits(WrenVM *vm)     { BBS_FIELD_NUM(stop_bits); }
 static void fn_BBS_dataBits(WrenVM *vm)     { BBS_FIELD_NUM(data_bits); }
 static void fn_BBS_parity(WrenVM *vm)       { BBS_FIELD_NUM(parity); }
 struct wren_flowcontrol {
+	enum syncterm_wren_foreign type;
 	uint32_t value;
 };
 
@@ -914,6 +982,7 @@ static void
 wren_flowcontrol_allocate(WrenVM *vm)
 {
 	struct wren_flowcontrol *f = wrenSetSlotNewForeign(vm, 0, 0, sizeof(*f));
+	f->type  = SWF_FLOWCONTROL;
 	f->value = 0;
 }
 
@@ -945,6 +1014,7 @@ fn_BBS_flowControl(WrenVM *vm)
 	struct wren_flowcontrol *f = wrenSetSlotNewForeign(vm, 0, 1,
 	    sizeof(*f));
 	struct wren_host_state *st = wren_host_state();
+	f->type  = SWF_FLOWCONTROL;
 	f->value = (st != NULL && st->bbs != NULL)
 	    ? (uint32_t)st->bbs->flow_control : 0;
 }
@@ -995,6 +1065,7 @@ static void fn_BBS_paletteSize(WrenVM *vm)  { BBS_FIELD_NUM(palette_size); }
 /* ----- Directory / File -------------------------------------------- */
 
 struct wren_directory {
+	enum syncterm_wren_foreign type;
 	/* When is_cache is true, the path is resolved lazily on each
 	 * method call from the active BBS context (see wd_resolve).
 	 * Otherwise `path` is the literal directory path with trailing
@@ -1004,6 +1075,7 @@ struct wren_directory {
 };
 
 struct wren_file {
+	enum syncterm_wren_foreign type;
 	char  path[MAX_PATH + 1]; /* absolute path */
 	FILE *fp;
 	bool  deleted;
@@ -1077,6 +1149,7 @@ static void
 wren_directory_allocate(WrenVM *vm)
 {
 	struct wren_directory *wd = wrenSetSlotNewForeign(vm, 0, 0, sizeof(*wd));
+	wd->type     = SWF_DIRECTORY;
 	wd->is_cache = false;
 	wd->path[0]  = '\0';
 }
@@ -1109,6 +1182,7 @@ static void
 wren_file_allocate(WrenVM *vm)
 {
 	struct wren_file *wf = wrenSetSlotNewForeign(vm, 0, 0, sizeof(*wf));
+	wf->type    = SWF_FILE;
 	wf->path[0] = '\0';
 	wf->fp      = NULL;
 	wf->deleted = false;
@@ -1133,6 +1207,7 @@ push_new_file(WrenVM *vm, int slot, const char *dir, const char *name)
 	wrenGetVariable(vm, "syncterm", "File", slot + 1);
 	struct wren_file *wf = wrenSetSlotNewForeign(vm, slot, slot + 1,
 	    sizeof(*wf));
+	wf->type    = SWF_FILE;
 	wf->fp      = NULL;
 	wf->deleted = false;
 	snprintf(wf->path, sizeof(wf->path), "%s%s", dir, name);
@@ -1182,6 +1257,7 @@ dir_list_impl(WrenVM *vm, const char *dir)
 		wrenGetVariable(vm, "syncterm", "File", 2);
 		struct wren_file *wf = wrenSetSlotNewForeign(vm, 3, 2,
 		    sizeof(*wf));
+		wf->type    = SWF_FILE;
 		wf->fp      = NULL;
 		wf->deleted = false;
 		memcpy(wf->path, p, (size_t)len + 1);
@@ -1271,6 +1347,7 @@ wren_bind_define_cache(WrenVM *vm)
 	wrenGetVariable(vm, "syncterm", "Directory", 1);
 	struct wren_directory *wd = wrenSetSlotNewForeign(vm, 0, 1,
 	    sizeof(*wd));
+	wd->type     = SWF_DIRECTORY;
 	wd->is_cache = true;
 	wd->path[0]  = '\0';
 
@@ -1830,21 +1907,33 @@ fn_Hook_every(WrenVM *vm)
  * -------------------------------------------------------------------- */
 
 struct wren_cells {
+	enum syncterm_wren_foreign type;
 	int               count;
 	struct vmem_cell *buf;          /* malloc'd; freed at finalize */
 };
 
 struct wren_cell {
-	struct vmem_cell   c;            /* used when standalone */
-	struct wren_cells *parent;       /* NULL = standalone */
-	int                index;        /* index into parent->buf in view mode */
-	WrenHandle        *parent_handle;/* pin on parent for view mode */
+	enum syncterm_wren_foreign type;
+	struct vmem_cell   c;             /* used when standalone */
+	int                index;         /* index into parent_buf in view mode */
+	struct vmem_cell  *parent_buf;    /* parent Cells' malloc'd buf (stable
+	                                     while parent_handle is held — the
+	                                     handle pins the Cells, the buf is
+	                                     malloc'd, never reallocated, freed
+	                                     only at the Cells' finalize) */
+	WrenHandle        *parent_handle; /* pin on parent Cells; NULL = standalone */
 };
 
+/* Standalone cells return their own embedded `c`; view-mode cells use
+ * their captured malloc'd buffer.  Both pointers are stable across
+ * arbitrary VM calls — `parent_buf` is a malloc'd region the parent
+ * Cells doesn't reallocate, kept alive via `parent_handle`. */
 static struct vmem_cell *
 cell_data(struct wren_cell *wc)
 {
-	return (wc->parent != NULL) ? &wc->parent->buf[wc->index] : &wc->c;
+	return (wc->parent_handle != NULL)
+	    ? &wc->parent_buf[wc->index]
+	    : &wc->c;
 }
 
 static struct vmem_cell *
@@ -1927,6 +2016,7 @@ wren_cell_allocate(WrenVM *vm)
 {
 	struct wren_cell *wc = wrenSetSlotNewForeign(vm, 0, 0, sizeof(*wc));
 	memset(wc, 0, sizeof(*wc));
+	wc->type = SWF_CELL;
 	struct text_info ti;
 	gettextinfo(&ti);
 	wc->c.legacy_attr  = ti.normattr;
@@ -1956,6 +2046,7 @@ static void
 wren_cells_allocate(WrenVM *vm)
 {
 	struct wren_cells *cs = wrenSetSlotNewForeign(vm, 0, 0, sizeof(*cs));
+	cs->type  = SWF_CELLS;
 	cs->count = 0;
 	cs->buf   = NULL;
 }
@@ -2161,6 +2252,7 @@ fnPalette_mode_set(WrenVM *vm)
  * in a few dozen lines. */
 
 struct wren_custom_cursor {
+	enum syncterm_wren_foreign type;
 	int startline;
 	int endline;
 	int range;
@@ -2172,6 +2264,7 @@ static void
 wren_custom_cursor_allocate(WrenVM *vm)
 {
 	struct wren_custom_cursor *c = wrenSetSlotNewForeign(vm, 0, 0, sizeof(*c));
+	c->type = SWF_CUSTOM_CURSOR;
 	getcustomcursor(&c->startline, &c->endline, &c->range,
 	    &c->blink, &c->visible);
 }
@@ -2275,6 +2368,7 @@ fnCustomCursorpresetLegacy_(WrenVM *vm)
 	 * writing, so same-slot is safe. */
 	struct wren_custom_cursor *c =
 	    wrenSetSlotNewForeign(vm, 0, 0, sizeof(*c));
+	c->type      = SWF_CUSTOM_CURSOR;
 	c->startline = sl;
 	c->endline   = el;
 	c->range     = r;
@@ -2285,6 +2379,7 @@ fnCustomCursorpresetLegacy_(WrenVM *vm)
 /* ----- VideoFlags -------------------------------------------------- */
 
 struct wren_video_flags {
+	enum syncterm_wren_foreign type;
 	int flags;
 };
 
@@ -2292,6 +2387,7 @@ static void
 wren_video_flags_allocate(WrenVM *vm)
 {
 	struct wren_video_flags *vf = wrenSetSlotNewForeign(vm, 0, 0, sizeof(*vf));
+	vf->type  = SWF_VIDEO_FLAGS;
 	vf->flags = getvideoflags();
 }
 
@@ -2437,6 +2533,7 @@ fn_Screen_readRect(WrenVM *vm)
 	wrenSetSlotHandle(vm, 1, st->cells_class);
 	struct wren_cells *cs =
 	    wrenSetSlotNewForeign(vm, 0, 1, sizeof(*cs));
+	cs->type  = SWF_CELLS;
 	cs->count = (int)n;
 	cs->buf   = buf;
 }
@@ -2606,14 +2703,35 @@ fn_Screen_writeRect(WrenVM *vm)
 		wrenSetSlotBool(vm, 0, false);
 		return;
 	}
-	if (wrenGetSlotType(vm, 5) != WREN_TYPE_LIST) {
+	int      n_expected = (ex - sx + 1) * (ey - sy + 1);
+	WrenType arg_type   = wrenGetSlotType(vm, 5);
+
+	/* Cells: contiguous vmem_cell buffer — hand it straight to puttext
+	 * with no allocation or copy. */
+	if (arg_type == WREN_TYPE_FOREIGN
+	    && slot_foreign_type(vm, 5) == SWF_CELLS) {
+		struct wren_cells *cs = wrenGetSlotForeign(vm, 5);
+		if (cs->count != n_expected) {
+			wrenEnsureSlots(vm, 1);
+			wrenSetSlotString(vm, 0,
+			    "putText: Cells length does not match region size");
+			wrenAbortFiber(vm, 0);
+			return;
+		}
+		int rv = ciolib_vmem_puttext(sx, sy, ex, ey, cs->buf);
+		wrenSetSlotBool(vm, 0, rv != 0);
+		return;
+	}
+
+	/* List of Cell: gather into a temporary contiguous buffer. */
+	if (arg_type != WREN_TYPE_LIST) {
 		wrenEnsureSlots(vm, 1);
-		wrenSetSlotString(vm, 0, "putText: 5th argument must be a List of Cell");
+		wrenSetSlotString(vm, 0,
+		    "putText: 5th argument must be a Cells or List of Cell");
 		wrenAbortFiber(vm, 0);
 		return;
 	}
-	int n_expected = (ex - sx + 1) * (ey - sy + 1);
-	int n_got      = wrenGetListCount(vm, 5);
+	int n_got = wrenGetListCount(vm, 5);
 	if (n_got != n_expected) {
 		wrenEnsureSlots(vm, 1);
 		wrenSetSlotString(vm, 0,
@@ -2631,7 +2749,7 @@ fn_Screen_writeRect(WrenVM *vm)
 	wrenEnsureSlots(vm, 7);
 	for (int i = 0; i < n_expected; i++) {
 		wrenGetListElement(vm, 5, i, 6);
-		if (wrenGetSlotType(vm, 6) != WREN_TYPE_FOREIGN) {
+		if (slot_foreign_type(vm, 6) != SWF_CELL) {
 			free(buf);
 			wrenSetSlotString(vm, 0,
 			    "putText: list element is not a Cell");
@@ -2863,14 +2981,19 @@ cells_make_view(WrenVM *vm, int idx)
 		wrenSetSlotNull(vm, 0);
 		return;
 	}
-	WrenHandle *parent_handle = wrenGetSlotHandle(vm, 0);
+	/* Capture cs->buf before the slot-0 overwrite — it's a malloc'd
+	 * pointer that stays valid as long as the parent Cells lives,
+	 * which we ensure by pinning it via parent_handle. */
+	struct vmem_cell *parent_buf    = cs->buf;
+	WrenHandle       *parent_handle = wrenGetSlotHandle(vm, 0);
 
 	wrenEnsureSlots(vm, 3);
 	wrenSetSlotHandle(vm, 2, st->cell_class);
 	struct wren_cell *wc = wrenSetSlotNewForeign(vm, 0, 2, sizeof(*wc));
 	memset(wc, 0, sizeof(*wc));
-	wc->parent        = cs;
+	wc->type          = SWF_CELL;
 	wc->index         = idx;
+	wc->parent_buf    = parent_buf;
 	wc->parent_handle = parent_handle;
 }
 
