@@ -3011,7 +3011,13 @@ edit_list(struct bbslist **list, struct bbslist *item, char *listpath, int isdef
 			case BBSLIST_FIELD_LOGFILE:
 				configure_log(item, itemname, inifile, &changed);
 				break;
-			case BBSLIST_FIELD_BPSRATE:
+			case BBSLIST_FIELD_BPSRATE: {
+				char **list_names = rate_names;
+				int   *list_rates = rates;
+				char  *dyn_names[64];
+				int    dyn_rates[64];
+				char   dyn_strings[64][16];
+
 				uifc.helpbuf = "`Comm Rate (in bits-per-second)`\n\n"
 				               "`For TCP connections:`\n"
 				               "Select the rate which received characters will be displayed.\n\n"
@@ -3019,17 +3025,42 @@ edit_list(struct bbslist **list, struct bbslist *item, char *listpath, int isdef
 				               "`For Modem/Direct COM port connections:`\n"
 				               "Select the `DTE Rate` to use."
 				               ;
-				i = get_rate_num(item->bpsrate);
-				switch (uifc.list(WIN_SAV, 0, 0, 0, &i, NULL, "Comm Rate (BPS)", rate_names)) {
+				if (item->conn_type == CONN_TYPE_SERIAL
+				    || item->conn_type == CONN_TYPE_SERIAL_NORTS) {
+					COM_HANDLE h = comOpen(item->addr);
+					if (h != COM_HANDLE_INVALID) {
+						ulong  tmp[63];
+						size_t n = comGetBaudRates(h, tmp, 63);
+						comClose(h);
+						if (n > 0 && n <= 63) {
+							for (size_t k = 0; k < n; k++) {
+								snprintf(dyn_strings[k], sizeof(dyn_strings[k]),
+								    "%lu", tmp[k]);
+								dyn_names[k] = dyn_strings[k];
+								dyn_rates[k] = (int)tmp[k];
+							}
+							strcpy(dyn_strings[n], "Current");
+							dyn_names[n] = dyn_strings[n];
+							dyn_rates[n] = 0;
+							dyn_names[n + 1] = NULL;
+							list_names = dyn_names;
+							list_rates = dyn_rates;
+						}
+					}
+				}
+				for (i = 0; list_rates[i] && (!item->bpsrate || item->bpsrate > list_rates[i]); i++)
+					;
+				switch (uifc.list(WIN_SAV, 0, 0, 0, &i, NULL, "Comm Rate (BPS)", list_names)) {
 					case -1:
 						check_exit(false);
 						break;
 					default:
-						item->bpsrate = rates[i];
+						item->bpsrate = list_rates[i];
 						iniSetInteger(&inifile, itemname, "BPSRate", item->bpsrate, &ini_style);
 						changed = 1;
 				}
 				break;
+			}
 			case BBSLIST_FIELD_MUSIC:
 				uifc.helpbuf = music_helpbuf;
 				i = item->music;
