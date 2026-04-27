@@ -385,9 +385,6 @@ endif()
 # and xp_tls so nothing drags in OpenSSL / Botan.
 if(XP_CRYPTO_BACKEND STREQUAL "Botan")
 	list(APPEND SOURCE ini_crypt.c xp_crypt_botan3.cpp xp_tls_botan3.cpp)
-	set_source_files_properties(
-	    xp_crypt_botan3.cpp xp_tls_botan3.cpp
-	    PROPERTIES COMPILE_OPTIONS "-std=c++20")
 elseif(XP_CRYPTO_BACKEND STREQUAL "OpenSSL")
 	list(APPEND SOURCE ini_crypt.c xp_crypt_openssl.c xp_tls_openssl.c)
 else()
@@ -435,6 +432,11 @@ set_target_properties(syncterm PROPERTIES
 )
 set_property(TARGET syncterm PROPERTY C_STANDARD 17)
 set_property(TARGET syncterm PROPERTY C_STANDARD_REQUIRED ON)
+# Botan 3 requires C++20 (xp_crypt_botan3.cpp, xp_tls_botan3.cpp).
+# Setting CXX_STANDARD on the target is harmless when no .cpp sources
+# are present (OpenSSL / none backends).
+set_property(TARGET syncterm PROPERTY CXX_STANDARD 20)
+set_property(TARGET syncterm PROPERTY CXX_STANDARD_REQUIRED ON)
 if(MSVC)
 	target_compile_options(syncterm PRIVATE /experimental:c11atomics)
 endif()
