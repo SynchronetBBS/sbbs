@@ -611,7 +611,7 @@ void sbbs_t::qwk_sec()
 				i = (uint)(l / (uint)cur_cps);
 			else
 				i = 0;
-			bprintf(text[FiTransferTime], sectostr(i, tmp));
+			bprintf(text[FiTransferTime], sectostr(i, tmp), cur_cps);
 			term->newline();
 			if (!(useron.exempt & FLAG('T')) && (uint)i > timeleft) {
 				bputs(text[NotEnoughTimeToDl]);
