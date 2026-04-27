@@ -5,6 +5,7 @@
 #ifndef DSSH_MAC_H
 #define DSSH_MAC_H
 
+#include <assert.h>
 #include <stddef.h>
 #include <stdint.h>
 

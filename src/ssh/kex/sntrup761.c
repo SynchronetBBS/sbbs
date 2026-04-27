@@ -406,7 +406,7 @@ Encode(unsigned char *out, const uint16_t *R, const uint16_t *M, long long len)
 		}
 	}
 	if (len > 1) {
-		uint16_t  R2[(len + 1) / 2], M2[(len + 1) / 2];
+		uint16_t  R2[(p + 1) / 2], M2[(p + 1) / 2];
 		long long i;
 		for (i = 0; i < len - 1; i += 2) {
 			uint32_t m0 = M[i];
@@ -440,8 +440,8 @@ Decode(uint16_t *out, const unsigned char *S, const uint16_t *M, long long len)
 			*out = (uint16_t)uint32_mod_uint14(S[0] + (((uint32_t)S[1]) << 8), M[0]);
 	}
 	if (len > 1) {
-		uint16_t  R2[(len + 1) / 2], M2[(len + 1) / 2], bottomr[len / 2];
-		uint32_t  bottomt[len / 2];
+		uint16_t  R2[(p + 1) / 2], M2[(p + 1) / 2], bottomr[p / 2];
+		uint32_t  bottomt[p / 2];
 		long long i;
 		for (i = 0; i < len - 1; i += 2) {
 			uint32_t m = M[i] * (uint32_t)M[i + 1];
@@ -667,7 +667,7 @@ Short_fromlist(small *out, const uint32_t *in)
 static int
 Hash_prefix(unsigned char *out, int b, const unsigned char *in, int inlen)
 {
-	unsigned char x[inlen + 1], h[64];
+	unsigned char x[crypto_kem_sntrup761_PUBLICKEYBYTES + 1], h[64];
 	int           i;
 	x[0] = (unsigned char)b;
 	for (i = 0; i < inlen; ++i)

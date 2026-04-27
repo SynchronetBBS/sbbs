@@ -9,6 +9,7 @@
 #ifndef DSSH_KEX_H
 #define DSSH_KEX_H
 
+#include <assert.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>

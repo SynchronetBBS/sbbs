@@ -5,6 +5,7 @@
 #ifndef DSSH_KEY_ALGO_H
 #define DSSH_KEY_ALGO_H
 
+#include <assert.h>
 #include <stddef.h>
 #include <stdint.h>
 

@@ -5,6 +5,7 @@
 #ifndef DSSH_COMP_H
 #define DSSH_COMP_H
 
+#include <assert.h>
 #include <stddef.h>
 #include <stdint.h>
 

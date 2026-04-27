@@ -11,6 +11,7 @@
 #ifndef DSSH_LANG_H
 #define DSSH_LANG_H
 
+#include <assert.h>
 #include <stddef.h>
 
 #include "deucessh-portable.h"
