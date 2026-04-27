@@ -180,6 +180,12 @@ endif
 # Compiler-specific options
 CFLAGS	+=	-MMD -MP
 CC		?=	gcc
+
+# Host C compiler — used by build-time tools (e.g. syncterm's
+# wren_embed_gen) that need to RUN on the build host even when CC
+# cross-compiles for a different target.  Cross-builds should set
+# this explicitly: `gmake CC=x86_64-w64-mingw32-gcc BUILD_CC=cc`.
+BUILD_CC ?= cc
 CCPRE	?= ${shell if [ `echo __clang__ | $(CC) -E - | tail -n 1` != __clang__ ] ; then echo clang ; elif [ `echo __INTEL_COMPILER | $(CC) -E - | tail -n 1` != __INTEL_COMPILER ] ; then echo icc ; else echo gcc ; fi}
 ifeq ($(CCPRE),clang)
  ifeq ($(CC),cc)

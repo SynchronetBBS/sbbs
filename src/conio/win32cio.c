@@ -125,7 +125,7 @@ CIOLIBEXPORT const struct keyvals keyval[WIN32_KEYVALS] =
 	{0xdc, '\\', '|', 0x1c, 0x2b00},            // VK_OEM_5
 	{0xdd, ']', '}', 0x1d, 0x1b00},             // VK_OEM_6
 	{0xde, '\'', '"', 0, 0x2800},               // VK_OEM_7
-	{0xc0, '`', '~', 0, 0x2900},                // VK_OEM_3
+	{0xc0, '`', '~', 0x29E0, 0x2900},           // VK_OEM_3 — Ctrl+` = CIO_KEY_WREN_CONSOLE
 };
 
 static uint8_t *win32cio_buffer = NULL;

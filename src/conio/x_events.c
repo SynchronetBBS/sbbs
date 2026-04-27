@@ -253,7 +253,7 @@ static struct {
     {	0x266c, 0x264c, 0x260c, 0x2600 }, /* key 38 - 'L' */
     {	0x273b, 0x273a, 0xffff, 0xffff }, /* key 39 - ';' */
     {	0x2827, 0x2822, 0xffff, 0xffff }, /* key 40 - ''' */
-    {	0x2960, 0x297e, 0xffff, 0xffff }, /* key 41 - '`' */
+    {	0x2960, 0x297e, 0x29E0, 0xffff }, /* key 41 - '`' (Ctrl+` = CIO_KEY_WREN_CONSOLE) */
     {	0xffff, 0xffff, 0xffff, 0xffff }, /* key 42 - left shift */
     {	0x2b5c, 0x2b7c, 0x2b1c, 0xffff }, /* key 43 - '' */
     {	0x2c7a, 0x2c5a, 0x2c1a, 0x2c00 }, /* key 44 - 'Z' */
@@ -2349,7 +2349,11 @@ x11_event(XEvent *ev)
 								key = cpchar_from_unicode_cpoint(getcodepage(), key, key);
 							if (key == 0xe0)
 								key = CIO_KEY_LITERAL_E0;
-							IGNORE_RESULT(write(key_pipe[1], &key, (scan & 0xff) ? 1 : 2));
+							/* Two bytes for any key with a non-zero high
+							 * byte — including synthetic CIO_KEY_* values
+							 * whose low byte is 0xE0 (the extended-key
+							 * marker rip_getch reassembles). */
+							IGNORE_RESULT(write(key_pipe[1], &key, (key > 0xff) ? 2 : 1));
 						}
 						break;
 				}

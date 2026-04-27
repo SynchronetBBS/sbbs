@@ -50,7 +50,7 @@ static const struct keyvals keyval[] =
 	{RETROK_LEFTBRACKET, '[', '{', 0x1b, 0x1a00},
 	{RETROK_BACKSLASH, '\\', '|', 0x1c, 0x2b00},
 	{RETROK_RIGHTBRACKET, ']', '}', 0x1d, 0x1b00},
-	{RETROK_BACKQUOTE, '`', '~', 0, 0x2900},
+	{RETROK_BACKQUOTE, '`', '~', 0x29E0, 0x2900},  /* Ctrl+` = CIO_KEY_WREN_CONSOLE */
 
 	{RETROK_a, 'a', 'A', 0x01, 0x1e00},
 	{RETROK_b, 'b', 'B', 0x02, 0x3000},

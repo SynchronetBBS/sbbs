@@ -32,6 +32,7 @@
 #include "raw.h"
 #include "rlogin.h"
 #include "uifcinit.h"
+#include "wren_host.h"
 #ifndef WITHOUT_DEUCESSH
  #include "ssh.h"
 #endif
@@ -359,6 +360,9 @@ conn_send(const void *vbuffer, size_t buflen, unsigned int timeout)
 	size_t      found;
 	size_t      obuflen;
 	void       *expanded;
+
+	if (wren_host_dispatch_output(buffer, buflen))
+		return buflen;
 
 	if (conn_api.tx_parse_cb != NULL) {
 		expanded = conn_api.tx_parse_cb(buffer, buflen, &obuflen);

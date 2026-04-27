@@ -329,6 +329,58 @@ endif
 OBJS += $(MTOBJODIR)$(DIRSEP)xp_sndfile$(OFILE)
 OBJS += $(MTOBJODIR)$(DIRSEP)audio_apc$(OFILE)
 
+# Wren scripting VM (vendored under wren/).  The implicit MT C rule in
+# Common.gmake matches stem-only %.c -> $(MTOBJODIR)/%.o so subdirs are
+# preserved; the order-only prereqs below mkdir the per-subdir output
+# trees.  Wren's optional modules default to enabled in wren_common.h,
+# so no -D flags are needed.  -Iwren/include propagates to wren_host.c
+# / wren_bind.c via global CFLAGS; the per-pattern rules add the
+# private vm/ and optional/ include paths only for VM sources.
+WREN_VM_SRCS  := $(wildcard wren/vm/*.c)
+WREN_OPT_SRCS := $(wildcard wren/optional/*.c)
+WREN_OBJS     := $(WREN_VM_SRCS:%.c=$(MTOBJODIR)$(DIRSEP)%$(OFILE))
+WREN_OBJS     += $(WREN_OPT_SRCS:%.c=$(MTOBJODIR)$(DIRSEP)%$(OFILE))
+
+OBJS   += $(WREN_OBJS)
+OBJS   += $(MTOBJODIR)$(DIRSEP)wren_host$(OFILE)
+OBJS   += $(MTOBJODIR)$(DIRSEP)wren_bind$(OFILE)
+CFLAGS += -Iwren/include
+
+$(MTOBJODIR)$(DIRSEP)wren/vm $(MTOBJODIR)$(DIRSEP)wren/optional: | $(MTOBJODIR)
+	$(QUIET)mkdir -p $@
+
+$(MTOBJODIR)$(DIRSEP)wren/vm/%$(OFILE): wren/vm/%.c | $(MTOBJODIR)$(DIRSEP)wren/vm
+	@echo $(COMPILE_MSG) $<
+	$(QUIET)$(CC) -std=c17 $(CFLAGS) $(CCFLAGS) $(MT_CFLAGS) -UPREFIX -Iwren/vm -Iwren/optional -o $@ -c $<
+
+$(MTOBJODIR)$(DIRSEP)wren/optional/%$(OFILE): wren/optional/%.c | $(MTOBJODIR)$(DIRSEP)wren/optional
+	@echo $(COMPILE_MSG) $<
+	$(QUIET)$(CC) -std=c17 $(CFLAGS) $(CCFLAGS) $(MT_CFLAGS) -UPREFIX -Iwren/vm -Iwren/optional -o $@ -c $<
+
+# Embedded-script codegen.  wren_embed_gen is built with $(BUILD_CC) so
+# cross-builds (e.g. MinGW) compile the codegen with the *host* compiler
+# and run it natively, then the generated embedded_scripts.c compiles
+# with the target $(CC) like any other source file.  Mirrors the conio
+# genmap pattern (src/conio/genmap.c).
+WREN_SCRIPTS    := $(wildcard scripts/*.wren)
+WREN_EMBED_GEN  := $(MTOBJODIR)$(DIRSEP)wren_embed_gen$(EXEFILE)
+WREN_EMBED_SRC  := $(MTOBJODIR)$(DIRSEP)embedded_scripts.c
+WREN_EMBED_OBJ  := $(MTOBJODIR)$(DIRSEP)embedded_scripts$(OFILE)
+
+OBJS += $(WREN_EMBED_OBJ)
+
+$(WREN_EMBED_GEN): wren_embed_gen.c | $(MTOBJODIR)
+	@echo Building $@
+	$(QUIET)$(BUILD_CC) -O2 -o $@ $<
+
+$(WREN_EMBED_SRC): $(WREN_EMBED_GEN) $(WREN_SCRIPTS)
+	@echo Generating $@
+	$(QUIET)$(WREN_EMBED_GEN) $(WREN_SCRIPTS) > $@
+
+$(WREN_EMBED_OBJ): $(WREN_EMBED_SRC) wren_host_internal.h
+	@echo $(COMPILE_MSG) $<
+	$(QUIET)$(CC) -std=c17 $(CFLAGS) $(CCFLAGS) $(MT_CFLAGS) -I. -o $@ -c $<
+
 # libsndfile: three build modes — WITHOUT_SNDFILE (stubs only),
 # STATIC_SNDFILE (direct linkage — used for macOS / Win32 release
 # shape), or the default dynamic WITH_SNDFILE (runtime xp_dlopen, no

@@ -375,7 +375,7 @@ static struct {
 	{	0x266c, 0x264c, 0x260c, 0x2600 }, /* key 38 - 'L' */
 	{	0x273b, 0x273a, 0xffff, 0xffff }, /* key 39 - ';' */
 	{	0x2827, 0x2822, 0xffff, 0xffff }, /* key 40 - ''' */
-	{	0x2960, 0x297e, 0xffff, 0xffff }, /* key 41 - '`' */
+	{	0x2960, 0x297e, 0x29E0, 0xffff }, /* key 41 - '`' (Ctrl+` = CIO_KEY_WREN_CONSOLE) */
 	{	0xffff, 0xffff, 0xffff, 0xffff }, /* key 42 - left shift */
 	{	0x2b5c, 0x2b7c, 0x2b1c, 0xffff }, /* key 43 - '\' */
 	{	0x2c7a, 0x2c5a, 0x2c1a, 0x2c00 }, /* key 44 - 'Z' */
@@ -469,14 +469,18 @@ send_key(WORD keyval)
 
 	if (keyval == 0xffff)
 		return;
-	if (keyval & 0xff) {
+	/* Two bytes for any key with a non-zero high byte — including
+	 * synthetic CIO_KEY_* values whose low byte is 0xE0 (the extended-
+	 * key marker rip_getch reassembles).  Plain ASCII (high byte == 0)
+	 * goes as a single byte. */
+	if (keyval > 0xff) {
 		buf[0] = keyval & 0xff;
-		write(wl_key_pipe[1], buf, 1);
-	}
-	else {
-		buf[0] = 0;
 		buf[1] = (keyval >> 8) & 0xff;
 		write(wl_key_pipe[1], buf, 2);
+	}
+	else {
+		buf[0] = keyval & 0xff;
+		write(wl_key_pipe[1], buf, 1);
 	}
 }
 
