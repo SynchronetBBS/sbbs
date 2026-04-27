@@ -32,6 +32,17 @@ struct wren_timer_entry {
 	long double  next_fire_s;   /* xp_timer() epoch in seconds */
 };
 
+/* Per-hook entry: a Wren callable plus an optional integer match
+ * filter.  When `filtered` is true the dispatcher skips entries whose
+ * `filter` doesn't match the event's discriminator (key code for KEY,
+ * byte for INPUT, event-type for MOUSE).  `filter` is unused for the
+ * other event types. */
+struct wren_hook_entry {
+	WrenHandle *fn;
+	int         filter;
+	bool        filtered;
+};
+
 struct wren_host_state {
 	WrenVM      *vm;
 	/* Cached method handles: call() with 0 and 1 arg.  Wren's Fn class
@@ -47,8 +58,8 @@ struct wren_host_state {
 	WrenHandle  *key_event_class;
 	WrenHandle  *mouse_event_class;
 
-	WrenHandle  *hooks[WREN_HOOK_COUNT][WREN_HOST_MAX_HOOKS_PER_EVENT];
-	int          hook_count[WREN_HOOK_COUNT];
+	struct wren_hook_entry hooks[WREN_HOOK_COUNT][WREN_HOST_MAX_HOOKS_PER_EVENT];
+	int                    hook_count[WREN_HOOK_COUNT];
 
 	struct wren_timer_entry timers[WREN_HOST_MAX_TIMERS];
 	int                     timer_count;
@@ -68,6 +79,12 @@ extern struct wren_host_state *wren_host_state(void);
  * function value, captures a handle for it, appends to the registry
  * for the event.  Returns false if the per-event limit is reached. */
 bool wren_host_register_hook(WrenVM *vm, enum wren_hook_event ev, int fn_slot);
+
+/* Filtered registration: only fires the hook when the event's
+ * discriminator equals `filter`.  Filtered and unfiltered hooks share
+ * one per-event array, preserving registration order across both. */
+bool wren_host_register_hook_filtered(WrenVM *vm, enum wren_hook_event ev,
+                                      int fn_slot, int filter);
 
 /* Timer registration: ms is the recurrence interval, fn_slot holds the
  * callable. */

@@ -766,9 +766,12 @@ static const char SYNCTERM_MODULE_SRC[] =
     "}\n"
     "foreign class Hook {\n"
     "  foreign static onKey(fn)\n"
+    "  foreign static onKey(key, fn)\n"
     "  foreign static onInput(fn)\n"
+    "  foreign static onInput(byte, fn)\n"
     "  foreign static onOutput(fn)\n"
     "  foreign static onMouse(fn)\n"
+    "  foreign static onMouse(event, fn)\n"
     "  foreign static onStatus(fn)\n"
     "  foreign static every(ms, fn)\n"
     "}\n";
@@ -1190,8 +1193,9 @@ host_load_module(WrenVM *vm, const char *name)
  * Hook + timer registration
  * -------------------------------------------------------------------- */
 
-bool
-wren_host_register_hook(WrenVM *vm, enum wren_hook_event ev, int fn_slot)
+static bool
+register_hook_internal(WrenVM *vm, enum wren_hook_event ev, int fn_slot,
+    bool filtered, int filter)
 {
 	if (!active || ev < 0 || ev >= WREN_HOOK_COUNT)
 		return false;
@@ -1200,9 +1204,24 @@ wren_host_register_hook(WrenVM *vm, enum wren_hook_event ev, int fn_slot)
 		fprintf(stderr, "[wren] hook limit reached for event %d\n", (int)ev);
 		return false;
 	}
-	state.hooks[ev][n] = wrenGetSlotHandle(vm, fn_slot);
+	state.hooks[ev][n].fn       = wrenGetSlotHandle(vm, fn_slot);
+	state.hooks[ev][n].filter   = filter;
+	state.hooks[ev][n].filtered = filtered;
 	state.hook_count[ev] = n + 1;
 	return true;
+}
+
+bool
+wren_host_register_hook(WrenVM *vm, enum wren_hook_event ev, int fn_slot)
+{
+	return register_hook_internal(vm, ev, fn_slot, false, 0);
+}
+
+bool
+wren_host_register_hook_filtered(WrenVM *vm, enum wren_hook_event ev,
+    int fn_slot, int filter)
+{
+	return register_hook_internal(vm, ev, fn_slot, true, filter);
 }
 
 bool
@@ -1426,8 +1445,8 @@ wren_host_shutdown(void)
 
 	for (int e = 0; e < WREN_HOOK_COUNT; e++) {
 		for (int i = 0; i < state.hook_count[e]; i++)
-			if (state.hooks[e][i] != NULL)
-				wrenReleaseHandle(state.vm, state.hooks[e][i]);
+			if (state.hooks[e][i].fn != NULL)
+				wrenReleaseHandle(state.vm, state.hooks[e][i].fn);
 		state.hook_count[e] = 0;
 	}
 	for (int i = 0; i < state.timer_count; i++)
@@ -1497,8 +1516,11 @@ wren_host_dispatch_key(int key)
 		return true;
 	int n = state.hook_count[WREN_HOOK_KEY];
 	for (int i = 0; i < n; i++) {
+		struct wren_hook_entry *h = &state.hooks[WREN_HOOK_KEY][i];
+		if (h->filtered && h->filter != key)
+			continue;
 		wrenEnsureSlots(state.vm, 2);
-		wrenSetSlotHandle(state.vm, 0, state.hooks[WREN_HOOK_KEY][i]);
+		wrenSetSlotHandle(state.vm, 0, h->fn);
 		wrenSetSlotDouble(state.vm, 1, (double)key);
 		if (wrenCall(state.vm, state.call1_handle) !=
 		    WREN_RESULT_SUCCESS)
@@ -1516,8 +1538,11 @@ wren_host_dispatch_input(unsigned char byte)
 		return false;
 	int n = state.hook_count[WREN_HOOK_INPUT];
 	for (int i = 0; i < n; i++) {
+		struct wren_hook_entry *h = &state.hooks[WREN_HOOK_INPUT][i];
+		if (h->filtered && h->filter != (int)byte)
+			continue;
 		wrenEnsureSlots(state.vm, 2);
-		wrenSetSlotHandle(state.vm, 0, state.hooks[WREN_HOOK_INPUT][i]);
+		wrenSetSlotHandle(state.vm, 0, h->fn);
 		wrenSetSlotDouble(state.vm, 1, (double)byte);
 		if (wrenCall(state.vm, state.call1_handle) !=
 		    WREN_RESULT_SUCCESS)
@@ -1536,7 +1561,7 @@ wren_host_dispatch_output(const void *buf, size_t len)
 	int n = state.hook_count[WREN_HOOK_OUTPUT];
 	for (int i = 0; i < n; i++) {
 		wrenEnsureSlots(state.vm, 2);
-		wrenSetSlotHandle(state.vm, 0, state.hooks[WREN_HOOK_OUTPUT][i]);
+		wrenSetSlotHandle(state.vm, 0, state.hooks[WREN_HOOK_OUTPUT][i].fn);
 		wrenSetSlotBytes(state.vm, 1, (const char *)buf, len);
 		if (wrenCall(state.vm, state.call1_handle) !=
 		    WREN_RESULT_SUCCESS)
@@ -1560,8 +1585,11 @@ wren_host_dispatch_mouse(struct mouse_event *ev)
 	/* Build a 7-element list: [event, bstate, kbmodifiers, startx,
 	 * starty, endx, endy].  Scripts index by position. */
 	for (int i = 0; i < n; i++) {
+		struct wren_hook_entry *h = &state.hooks[WREN_HOOK_MOUSE][i];
+		if (h->filtered && h->filter != ev->event)
+			continue;
 		wrenEnsureSlots(state.vm, 3);
-		wrenSetSlotHandle(state.vm, 0, state.hooks[WREN_HOOK_MOUSE][i]);
+		wrenSetSlotHandle(state.vm, 0, h->fn);
 		wrenSetSlotNewList(state.vm, 1);
 		const double fields[] = {
 			(double)ev->event, (double)ev->bstate,
@@ -1590,7 +1618,7 @@ wren_host_compose_status(const char *def, char *out, size_t outsz)
 	int n = state.hook_count[WREN_HOOK_STATUS];
 	for (int i = 0; i < n; i++) {
 		wrenEnsureSlots(state.vm, 2);
-		wrenSetSlotHandle(state.vm, 0, state.hooks[WREN_HOOK_STATUS][i]);
+		wrenSetSlotHandle(state.vm, 0, state.hooks[WREN_HOOK_STATUS][i].fn);
 		wrenSetSlotString(state.vm, 1, def != NULL ? def : "");
 		if (wrenCall(state.vm, state.call1_handle) !=
 		    WREN_RESULT_SUCCESS)

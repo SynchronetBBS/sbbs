@@ -1657,6 +1657,29 @@ fn_Hook_onMouse(WrenVM *vm)  { wren_host_register_hook(vm, WREN_HOOK_MOUSE,  1);
 static void
 fn_Hook_onStatus(WrenVM *vm) { wren_host_register_hook(vm, WREN_HOOK_STATUS, 1); }
 
+/* Filtered variants: signature is (filter, fn) so slot 1 is the
+ * match value (key code / byte / mouse-event type) and slot 2 is the
+ * callable.  Same per-event array as the unfiltered forms; dispatch
+ * order = registration order. */
+static void
+fn_Hook_onKey_filtered(WrenVM *vm)
+{
+	int filter = (int)wrenGetSlotDouble(vm, 1);
+	wren_host_register_hook_filtered(vm, WREN_HOOK_KEY, 2, filter);
+}
+static void
+fn_Hook_onInput_filtered(WrenVM *vm)
+{
+	int filter = (int)wrenGetSlotDouble(vm, 1) & 0xff;
+	wren_host_register_hook_filtered(vm, WREN_HOOK_INPUT, 2, filter);
+}
+static void
+fn_Hook_onMouse_filtered(WrenVM *vm)
+{
+	int filter = (int)wrenGetSlotDouble(vm, 1);
+	wren_host_register_hook_filtered(vm, WREN_HOOK_MOUSE, 2, filter);
+}
+
 static void
 fn_Hook_every(WrenVM *vm)
 {
@@ -3204,11 +3227,14 @@ static const struct binding BINDINGS[] = {
 	{ "File",      false, "isOpen",          fn_File_isOpen         },
 
 	/* Hook */
-	{ "Hook",  true, "onKey(_)",       fn_Hook_onKey        },
-	{ "Hook",  true, "onInput(_)",     fn_Hook_onInput      },
-	{ "Hook",  true, "onOutput(_)",    fn_Hook_onOutput     },
-	{ "Hook",  true, "onMouse(_)",     fn_Hook_onMouse      },
-	{ "Hook",  true, "onStatus(_)",    fn_Hook_onStatus     },
+	{ "Hook",  true, "onKey(_)",       fn_Hook_onKey            },
+	{ "Hook",  true, "onKey(_,_)",     fn_Hook_onKey_filtered   },
+	{ "Hook",  true, "onInput(_)",     fn_Hook_onInput          },
+	{ "Hook",  true, "onInput(_,_)",   fn_Hook_onInput_filtered },
+	{ "Hook",  true, "onOutput(_)",    fn_Hook_onOutput         },
+	{ "Hook",  true, "onMouse(_)",     fn_Hook_onMouse          },
+	{ "Hook",  true, "onMouse(_,_)",   fn_Hook_onMouse_filtered },
+	{ "Hook",  true, "onStatus(_)",    fn_Hook_onStatus         },
 	{ "Hook",  true, "every(_,_)",     fn_Hook_every        },
 };
 
