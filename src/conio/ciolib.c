@@ -364,7 +364,9 @@ static int try_gdi_init(int mode)
 		cio_api.setvideoflags=bitmap_setvideoflags;
 
 		cio_api.kbhit=gdi_kbhit;
+#if WINVER >= _WIN32_WINNT_WIN8
 		cio_api.kbwait=gdi_kbwait;
+#endif
 		cio_api.getch=gdi_getch;
 		cio_api.textmode=gdi_textmode;
 		cio_api.seticon=gdi_seticon;

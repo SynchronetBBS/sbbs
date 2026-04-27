@@ -1077,6 +1077,7 @@ gdi_kbhit(void)
 	return (avail > 0);
 }
 
+#if WINVER >= _WIN32_WINNT_WIN8
 static int
 kbwaitGot(uint8_t ch, DWORD got)
 {
@@ -1109,6 +1110,7 @@ gdi_kbwait(int ms)
 	Sleep(1);
 	return 0;
 }
+#endif
 
 int
 gdi_getch(void)
