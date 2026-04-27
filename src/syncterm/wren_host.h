@@ -44,8 +44,12 @@ bool wren_host_compose_status(const char *def, char *out, size_t outsz);
 
 /* True when log entries have arrived since the last
  * wren_host_mark_log_seen() (i.e., since the user last left the Wren
- * console).  Drives the bug indicator on the status bar. */
+ * console).  Drives the bug indicator on the status bar.
+ * `_error` is the subset that includes only compile errors, runtime
+ * errors, and stack-frame entries; the status bar tints the indicator
+ * red when set, yellow otherwise. */
 bool wren_host_log_unread(void);
+bool wren_host_log_unread_error(void);
 void wren_host_mark_log_seen(void);
 
 /* Fires any Hook.every() callbacks whose deadline has elapsed. Called

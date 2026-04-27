@@ -68,7 +68,10 @@ struct wren_log {
 	struct wren_log_entry entries[WREN_LOG_CAPACITY];
 	int                   head;
 	int                   count;
-	uint64_t              total;        /* monotonic; survives clear */
+	uint64_t              total;         /* monotonic; survives clear */
+	uint64_t              error_total;   /* same, counting only error
+	                                       * entries (compile error,
+	                                       * runtime error, stack frame) */
 };
 
 /* The user-visible scrollback. */
@@ -141,6 +144,8 @@ log_append(enum wren_log_source source, const char *text)
 	struct wren_log_entry *e   = &log->entries[log->head];
 	log_release_slot(e);
 	e->seq    = log->total++;
+	if (source != WREN_LOG_PRINT)
+		log->error_total++;
 	e->ts     = xp_timer();
 	e->source = source;
 	e->text   = buf;
@@ -224,10 +229,12 @@ wren_log_total(void)
 	return main_log.total;
 }
 
-/* High-water mark of the log total at the time the user last left the
- * Wren console.  wren_host_log_unread() is true while main_log.total
- * has advanced past this. */
+/* High-water marks of main_log.total / .error_total at the time the
+ * user last left the Wren console.  wren_host_log_unread() is true
+ * while either has advanced; wren_host_log_unread_error() distinguishes
+ * the error case so the status indicator can tint accordingly. */
 static uint64_t s_log_seen_total;
+static uint64_t s_log_seen_error_total;
 
 bool
 wren_host_log_unread(void)
@@ -235,10 +242,17 @@ wren_host_log_unread(void)
 	return main_log.total > s_log_seen_total;
 }
 
+bool
+wren_host_log_unread_error(void)
+{
+	return main_log.error_total > s_log_seen_error_total;
+}
+
 void
 wren_host_mark_log_seen(void)
 {
-	s_log_seen_total = main_log.total;
+	s_log_seen_total       = main_log.total;
+	s_log_seen_error_total = main_log.error_total;
 }
 
 void
