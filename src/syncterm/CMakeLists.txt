@@ -335,6 +335,11 @@ target_compile_options(re1 PRIVATE -w)
 # so the tool itself can run on the build host.
 file(GLOB WREN_SCRIPTS CONFIGURE_DEPENDS
     "${CMAKE_CURRENT_SOURCE_DIR}/scripts/*.wren")
+# scripts/runtests.wren is a developer self-test trigger; in the
+# source tree but not embedded.  Devs run against the source
+# scripts/ dir to pick it up.
+list(FILTER WREN_SCRIPTS EXCLUDE REGEX
+    "/runtests\\.wren$")
 
 if(NOT CMAKE_CROSSCOMPILING)
     add_executable(wren_embed_gen wren_embed_gen.c)
