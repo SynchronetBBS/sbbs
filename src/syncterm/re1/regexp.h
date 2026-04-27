@@ -37,6 +37,12 @@ enum	/* Regexp.type */
 };
 
 Regexp *parse(char*);
+/* Like parse() but without the auto-prepended `.*?` match-anywhere
+ * prefix.  Use when the caller anchors at the start of input by
+ * other means (e.g., SyncTERM's streaming Pike VM trims its buffer
+ * on IMPOSSIBLE, achieving match-anywhere without needing the
+ * prefix). */
+Regexp *parse_unanchored(char*);
 Regexp *reg(int type, Regexp *left, Regexp *right);
 void printre(Regexp*);
 void fatal(char*, ...);

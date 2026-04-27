@@ -10,6 +10,7 @@
 // dispatcher/watchdog registration).  Subsequent hotkey presses
 // just call WrenTest.run() to reset state.
 
+import "syncterm" for Hook
 import "wrentest" for WrenTest
 
 Hook.onKey(0x1400) { |k|     // Alt+T

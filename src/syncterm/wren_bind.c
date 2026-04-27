@@ -1773,7 +1773,7 @@ fn_Hook_onMatch(WrenVM *vm)
 		wrenAbortFiber(vm, 0);
 		return;
 	}
-	r = parse(patcopy);
+	r = parse_unanchored(patcopy);
 	const char *aerr = regex_anchor_check(r);
 	if (aerr != NULL) {
 		re1_fatal_handler = NULL;

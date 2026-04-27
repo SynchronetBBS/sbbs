@@ -161,11 +161,14 @@ yyerror(char *s)
 }
 
 
+/* Parse the pattern and wrap it as the implicit group-0 capture, but
+ * without prepending `.*?` — the caller is anchored at start.  Used
+ * by SyncTERM's streaming Pike VM, which provides match-anywhere
+ * behavior via its own buffer trimming on IMPOSSIBLE rather than the
+ * auto-prepended dotstar. */
 Regexp*
-parse(char *s)
+parse_unanchored(char *s)
 {
-	Regexp *r, *dotstar;
-
 	input = s;
 	parsed_regexp = nil;
 	nparen = 0;
@@ -173,8 +176,16 @@ parse(char *s)
 		yyerror("did not parse");
 	if(parsed_regexp == nil)
 		yyerror("parser nil");
-		
-	r = reg(Paren, parsed_regexp, nil);	// $0 parens
+
+	return reg(Paren, parsed_regexp, nil);	// $0 parens
+}
+
+Regexp*
+parse(char *s)
+{
+	Regexp *r, *dotstar;
+
+	r = parse_unanchored(s);
 	dotstar = reg(Star, reg(Dot, nil, nil), nil);
 	dotstar->n = 1;	// non-greedy
 	return reg(Cat, dotstar, r);
