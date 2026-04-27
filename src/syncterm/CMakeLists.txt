@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.5)
+cmake_minimum_required(VERSION 3.22)
 set(CMAKE_BUILD_TYPE "Debug" CACHE STRING "Choose the build type")
 # CXX is conditionally needed for the Botan backend (xp_tls_botan3.cpp,
 # xp_crypt_botan3.cpp, src/ssh/crypto/botan.cpp and a handful of Botan
@@ -375,6 +375,11 @@ endif()
 set_target_properties(syncterm PROPERTIES
 	MACOSX_BUNDLE_INFO_PLIST ${CMAKE_CURRENT_SOURCE_DIR}/Info.plist
 )
+set_property(TARGET syncterm PROPERTY C_STANDARD 17)
+set_property(TARGET syncterm PROPERTY C_STANDARD_REQUIRED ON)
+if(MSVC)
+	target_compile_options(syncterm PRIVATE /experimental:c11atomics)
+endif()
 if(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
 	target_sources(syncterm PRIVATE SyncTERM.icns)
 	set_source_files_properties(SyncTERM.icns PROPERTIES MACOSX_PACKAGE_LOCATION "Resources")
