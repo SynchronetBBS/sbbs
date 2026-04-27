@@ -55,8 +55,11 @@ int sbbs_t::msgtoqwk(smbmsg_t* msg, FILE *qwk_fp, int mode, smb_t* smb
 	get_msgid(&cfg, subnum, msg, msgid, sizeof(msgid));
 	offset = (int)ftell(qwk_fp);
 
-	if (msg->to != NULL)
+	if (msg->to != NULL) {
 		SAFECOPY(to, msghdr_field(msg, msg->to, NULL, mode & QM_UTF8));
+		if (subnum == INVALID_SUB && (mode & QM_TO_QNET) && (p = strchr(to, '@')) != nullptr)
+			*p = '\0';
+	}
 	if (msg->from != NULL)
 		SAFECOPY(from, msghdr_field(msg, msg->from, NULL, mode & QM_UTF8));
 	if (msg->subj != NULL)
@@ -320,11 +323,6 @@ int sbbs_t::msgtoqwk(smbmsg_t* msg, FILE *qwk_fp, int mode, smb_t* smb
 				}
 				else
 					snprintf(to, sizeof to, "%.128s@%.128s", msg->to, (char*)msg->to_net.addr);
-			}
-			else if (mode & QM_TO_QNET) {
-				p = strchr(to, '@');
-				if (p != nullptr)
-					*p = '\0';
 			}
 		}
 		if ((mode & QM_EXT) && strlen(to) > QWK_HFIELD_LEN) {
