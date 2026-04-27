@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: GPL-2.0-or-later
-//
 // Wren-side handlers for keys that fire during an active connection.
 // Currently:  Alt+L (0x2600) sends the BBS-list-stored login credentials
 // (user, password, sysop password).  Replaces the C-side `case 0x2600`
@@ -11,10 +9,11 @@
 //   - sshNoAuth (SSHNA):   skip user (negotiated); send password + syspass
 //   - everything else:     send user, password, then syspass — each followed
 //                          by Enter
+//
+// Loaded into its own "connected" module; pulls bindings from the
+// foundational "syncterm" module via import.
 
-// This script is loaded into the "syncterm" module alongside the
-// foreign-class declarations, so Hook/Conn/CTerm/BBS/ConnType/Emulation
-// are already in scope — no imports needed.
+import "syncterm" for Hook, Conn, BBS, CTerm, ConnType, Emulation
 
 class Connected {
   // Enter byte differs in ATASCII (CR is 0x9B there, not 0x0D).

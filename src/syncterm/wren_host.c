@@ -409,6 +409,41 @@ valid_module_name(const char *name)
 	return true;
 }
 
+/* Slurp a Wren source file into a malloc'd, NUL-terminated buffer.
+ * Caps oversized files at 4 MB so a runaway script can't exhaust
+ * memory.  Returns NULL on any failure. */
+static char *
+read_script_file(const char *path)
+{
+	FILE *f = fopen(path, "rb");
+	if (f == NULL)
+		return NULL;
+	fseek(f, 0, SEEK_END);
+	long sz = ftell(f);
+	fseek(f, 0, SEEK_SET);
+	if (sz < 0 || sz > 4 * 1024 * 1024) {
+		fclose(f);
+		return NULL;
+	}
+	char *src = malloc((size_t)sz + 1);
+	if (src == NULL) {
+		fclose(f);
+		return NULL;
+	}
+	size_t got = fread(src, 1, (size_t)sz, f);
+	fclose(f);
+	src[got] = '\0';
+	return src;
+}
+
+/* Resolve a module name to its source.  Search order:
+ *   1. scripts/<name>.wren           (user override of an entry script)
+ *   2. scripts/load/<name>.wren      (user library module)
+ *   3. EMBEDDED_SCRIPTS              (built-in fallback)
+ *
+ * Disk hits are malloc'd and freed by host_load_module_complete; the
+ * embedded path returns a static pointer with onComplete == NULL so
+ * Wren skips the free. */
 static WrenLoadModuleResult
 host_load_module(WrenVM *vm, const char *name)
 {
@@ -424,35 +459,40 @@ host_load_module(WrenVM *vm, const char *name)
 
 	char dir[MAX_PATH + 1];
 	if (get_syncterm_filename(dir, sizeof(dir), SYNCTERM_PATH_SCRIPTS,
-	    false) == NULL)
-		return res;
+	    false) != NULL) {
+		char path[MAX_PATH + 1];
+		int  n;
 
-	char path[MAX_PATH + 1];
-	int n = snprintf(path, sizeof(path), "%sload/%s.wren", dir, name);
-	if (n < 0 || (size_t)n >= sizeof(path))
-		return res;
+		n = snprintf(path, sizeof(path), "%s%s.wren", dir, name);
+		if (n > 0 && (size_t)n < sizeof(path)) {
+			char *src = read_script_file(path);
+			if (src != NULL) {
+				res.source     = src;
+				res.onComplete = host_load_module_complete;
+				return res;
+			}
+		}
 
-	FILE *f = fopen(path, "rb");
-	if (f == NULL)
-		return res;
-	fseek(f, 0, SEEK_END);
-	long sz = ftell(f);
-	fseek(f, 0, SEEK_SET);
-	if (sz < 0 || sz > 4 * 1024 * 1024) {
-		fclose(f);
-		return res;
+		n = snprintf(path, sizeof(path), "%sload/%s.wren", dir, name);
+		if (n > 0 && (size_t)n < sizeof(path)) {
+			char *src = read_script_file(path);
+			if (src != NULL) {
+				res.source     = src;
+				res.onComplete = host_load_module_complete;
+				return res;
+			}
+		}
 	}
-	char *src = malloc((size_t)sz + 1);
-	if (src == NULL) {
-		fclose(f);
-		return res;
-	}
-	size_t got = fread(src, 1, (size_t)sz, f);
-	fclose(f);
-	src[got] = '\0';
 
-	res.source     = src;
-	res.onComplete = host_load_module_complete;
+	for (const struct embedded_script *es = EMBEDDED_SCRIPTS;
+	    es->name != NULL; es++) {
+		if (strcmp(es->name, name) == 0) {
+			/* Static source; leave onComplete NULL. */
+			res.source = es->source;
+			return res;
+		}
+	}
+
 	return res;
 }
 
@@ -557,56 +597,24 @@ modname_from_path(const char *path, char *out, size_t outsz)
 		*dot = '\0';
 }
 
-/* Returns true if `name` matches any embedded script's name.  When a
- * user script's basename matches an embedded one, the user version is
- * an override and gets loaded into the shared "syncterm" module so it
- * sees the same scope (foreign-class declarations + sibling embeds)
- * that the embedded version would have. */
-static bool
-is_embedded_script_name(const char *name)
-{
-	for (const struct embedded_script *es = EMBEDDED_SCRIPTS;
-	    es->name != NULL; es++) {
-		if (strcmp(es->name, name) == 0)
-			return true;
-	}
-	return false;
-}
-
+/* Run a user script as its own filename-derived module.  No special
+ * routing for names that match an embedded script — overrides just
+ * mean the embedded version of the same module is skipped during the
+ * embedded iteration in wren_host_init.  Imports of other modules
+ * (including "syncterm") resolve through host_load_module. */
 static void
 load_one_script(const char *path)
 {
-	FILE *f = fopen(path, "rb");
-	if (f == NULL) {
-		fprintf(stderr, "[wren] cannot open %s\n", path);
-		return;
-	}
-	fseek(f, 0, SEEK_END);
-	long sz = ftell(f);
-	fseek(f, 0, SEEK_SET);
-	if (sz < 0 || sz > 4 * 1024 * 1024) {
-		fprintf(stderr, "[wren] %s: bad size %ld\n", path, sz);
-		fclose(f);
-		return;
-	}
-	char *src = malloc((size_t)sz + 1);
+	char *src = read_script_file(path);
 	if (src == NULL) {
-		fclose(f);
+		fprintf(stderr, "[wren] cannot read %s\n", path);
 		return;
 	}
-	size_t got = fread(src, 1, (size_t)sz, f);
-	fclose(f);
-	src[got] = '\0';
 
 	char modname[256];
 	modname_from_path(path, modname, sizeof(modname));
 
-	/* Override of an embedded script -> load into "syncterm".  Pure
-	 * user script -> load into its own module (filename-derived). */
-	const char *target =
-	    is_embedded_script_name(modname) ? "syncterm" : modname;
-
-	WrenInterpretResult r = wrenInterpret(state.vm, target, src);
+	WrenInterpretResult r = wrenInterpret(state.vm, modname, src);
 	free(src);
 	if (r != WREN_RESULT_SUCCESS)
 		fprintf(stderr, "[wren] %s: load failed\n", path);
@@ -640,77 +648,30 @@ wren_host_init(struct bbslist *bbs)
 	owner_thread = pthread_self();
 	active = true;
 
-	/* Glob the user script dir up-front so we can detect user
-	 * overrides of any embedded script (including syncterm itself). */
-	glob_t gl;
-	memset(&gl, 0, sizeof(gl));
-	bool have_user_dir = false;
-	if (get_syncterm_filename(dir, sizeof(dir), SYNCTERM_PATH_SCRIPTS, false)
-	    != NULL) {
-		char pat[MAX_PATH + 16];
-		snprintf(pat, sizeof(pat), "%s*.wren", dir);
-		if (glob(pat, 0, NULL, &gl) == 0)
-			have_user_dir = true;
-	}
-
-	/* The syncterm module (foreign-class declarations + Wren-side
-	 * glue) MUST load before any other script, since every other
-	 * embedded and user script references its classes.  Prefer a
-	 * user override at scripts/syncterm.wren if present, otherwise
-	 * use the embedded copy. */
-	const char *syncterm_src        = NULL;
-	const char *syncterm_user_path  = NULL;
-	if (have_user_dir) {
-		for (size_t i = 0; i < gl.gl_pathc; i++) {
-			char umod[256];
-			modname_from_path(gl.gl_pathv[i], umod, sizeof(umod));
-			if (strcmp(umod, "syncterm") == 0) {
-				syncterm_user_path = gl.gl_pathv[i];
-				break;
-			}
+	/* Force the foundational `syncterm` module to load via the
+	 * unified host_load_module path (which honors a scripts/syncterm.wren
+	 * override over the embedded copy).  Naming specific symbols on
+	 * the import gives an immediate error if a user override is
+	 * missing one of the foreign classes the C side will look up. */
+	if (wrenInterpret(state.vm, "_bootstrap",
+	        "import \"syncterm\" for Cell, Cells, KeyEvent, MouseEvent\n")
+	    != WREN_RESULT_SUCCESS) {
+		fprintf(stderr,
+		    "[wren] failed to load syncterm module\n");
+		/* Dump captured compile/runtime errors to stderr so the
+		 * user has something to act on — the in-memory log isn't
+		 * reachable once we shut down. */
+		int n     = main_log.count;
+		int start = (main_log.head - n + WREN_LOG_CAPACITY)
+		    % WREN_LOG_CAPACITY;
+		for (int i = 0; i < n; i++) {
+			struct wren_log_entry *e = &main_log.entries
+			    [(start + i) % WREN_LOG_CAPACITY];
+			if (e->text != NULL)
+				fprintf(stderr, "[wren] %s\n", e->text);
 		}
-	}
-	if (syncterm_user_path != NULL) {
-		load_one_script(syncterm_user_path);
-	}
-	else {
-		for (const struct embedded_script *es = EMBEDDED_SCRIPTS;
-		    es->name != NULL; es++) {
-			if (strcmp(es->name, "syncterm") == 0) {
-				syncterm_src = es->source;
-				break;
-			}
-		}
-		if (syncterm_src == NULL) {
-			fprintf(stderr,
-			    "[wren] no syncterm module found (neither embedded "
-			    "nor in user script dir)\n");
-			wren_host_shutdown();
-			if (have_user_dir)
-				globfree(&gl);
-			return;
-		}
-		if (wrenInterpret(state.vm, "syncterm", syncterm_src) !=
-		    WREN_RESULT_SUCCESS) {
-			fprintf(stderr,
-			    "[wren] failed to load builtin syncterm module\n");
-			/* Dump captured compile/runtime errors to stderr so the
-			 * user has something to act on — the in-memory log isn't
-			 * reachable once we shut down. */
-			int n     = main_log.count;
-			int start = (main_log.head - n + WREN_LOG_CAPACITY)
-			    % WREN_LOG_CAPACITY;
-			for (int i = 0; i < n; i++) {
-				struct wren_log_entry *e = &main_log.entries
-				    [(start + i) % WREN_LOG_CAPACITY];
-				if (e->text != NULL)
-					fprintf(stderr, "[wren] %s\n", e->text);
-			}
-			wren_host_shutdown();
-			if (have_user_dir)
-				globfree(&gl);
-			return;
-		}
+		wren_host_shutdown();
+		return;
 	}
 
 	/* Capture handles for the foreign classes the C side allocates
@@ -732,9 +693,25 @@ wren_host_init(struct bbslist *bbs)
 	 * Directory. */
 	wren_bind_define_cache(state.vm);
 
-	/* Walk the remaining embedded scripts (skip syncterm — already
-	 * loaded above).  An entry is also skipped if the user provided
-	 * an override of the same name. */
+	/* Glob the user script dir to detect overrides of embedded
+	 * scripts.  Each user script otherwise loads as its own module
+	 * named after its filename. */
+	glob_t gl;
+	memset(&gl, 0, sizeof(gl));
+	bool have_user_dir = false;
+	if (get_syncterm_filename(dir, sizeof(dir), SYNCTERM_PATH_SCRIPTS, false)
+	    != NULL) {
+		char pat[MAX_PATH + 16];
+		snprintf(pat, sizeof(pat), "%s*.wren", dir);
+		if (glob(pat, 0, NULL, &gl) == 0)
+			have_user_dir = true;
+	}
+
+	/* Run each embedded entry script as its own filename-named module.
+	 * Skip `syncterm` (loaded via the bootstrap import above) and any
+	 * embed that the user has overridden with a same-named file in
+	 * their script dir — the user-script loop runs that version
+	 * instead. */
 	for (const struct embedded_script *es = EMBEDDED_SCRIPTS;
 	    es->name != NULL; es++) {
 		if (strcmp(es->name, "syncterm") == 0)
@@ -750,17 +727,20 @@ wren_host_init(struct bbslist *bbs)
 		}
 		if (overridden)
 			continue;
-		if (wrenInterpret(state.vm, "syncterm", es->source) !=
+		if (wrenInterpret(state.vm, es->name, es->source) !=
 		    WREN_RESULT_SUCCESS)
 			fprintf(stderr, "[wren] embedded %s: load failed\n",
 			    es->name);
 	}
 
-	/* Walk the user scripts (skip syncterm.wren — already loaded
-	 * above as the foundational module). */
+	/* Run user scripts as their own filename-named modules.  Skip
+	 * scripts/syncterm.wren — it's only meaningful as an import
+	 * target and the bootstrap above already pulled it in. */
 	if (have_user_dir) {
 		for (size_t i = 0; i < gl.gl_pathc; i++) {
-			if (gl.gl_pathv[i] == syncterm_user_path)
+			char umod[256];
+			modname_from_path(gl.gl_pathv[i], umod, sizeof(umod));
+			if (strcmp(umod, "syncterm") == 0)
 				continue;
 			load_one_script(gl.gl_pathv[i]);
 		}

@@ -5,15 +5,17 @@
 // blocked inside this script — connection bytes accumulate in the inbuf
 // but aren't drained until exit.  Acceptable for a development tool.
 //
-// This script lives in module "syncterm" alongside the foreign-class
-// declarations and other embedded scripts, so every binding (Screen,
-// Cell, REPL, Hook, …) is directly visible without an import.  Lines
-// submitted at the prompt are evaluated in a chosen module — default
-// "syncterm" — via REPL.eval, so `var x = ...` and `class Foo {...}`
-// declarations persist across submissions inside that module.
+// Loaded into its own "console" module; pulls bindings from the
+// foundational "syncterm" module via import.  Lines submitted at the
+// prompt are evaluated in a chosen module — default "syncterm" — via
+// REPL.eval, so `var x = ...` and `class Foo {...}` declarations
+// persist across submissions inside that module.
 //
 // `/in <module>` switches the eval target, letting the user inspect
 // or mutate any other module that's been loaded.
+
+import "syncterm" for Hook, Screen, Console, Input, Clipboard, Key,
+    REPL, LogSource, MouseEvent
 
 class WrenConsole {
   // __history (static field) keeps submitted lines across run()
