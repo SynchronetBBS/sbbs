@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: GPL-2.0-or-later
-//
 // Hotkey to run the Wren-embedding self-test suite.  Press Alt+T
 // (0x1400) against a bash-in-PTY remote and read the results in the
 // Wren console (Ctrl+`).  See Wren.adoc § "Streaming regex hooks"

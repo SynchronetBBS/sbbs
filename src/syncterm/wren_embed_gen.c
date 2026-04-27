@@ -1,6 +1,4 @@
-/* SPDX-License-Identifier: GPL-2.0-or-later
- *
- * wren_embed_gen — read .wren script files from argv, write a freestanding
+/* wren_embed_gen — read .wren script files from argv, write a freestanding
  * C source file to stdout that defines:
  *
  *     const struct embedded_script EMBEDDED_SCRIPTS[] = {

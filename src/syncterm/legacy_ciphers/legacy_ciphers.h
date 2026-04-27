@@ -1,6 +1,3 @@
-/* Copyright (C), 2026 by Stephen Hurd */
-/* SPDX-License-Identifier: GPL-2.0-or-later */
-
 #ifndef SYNCTERM_LEGACY_CIPHERS_H
 #define SYNCTERM_LEGACY_CIPHERS_H
 

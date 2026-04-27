@@ -1,6 +1,3 @@
-/* Copyright (C), 2026 by Stephen Hurd */
-/* SPDX-License-Identifier: GPL-2.0-or-later */
-
 /*
  * RC2 (RFC 2268) — decrypt-only reference implementation.
  *
