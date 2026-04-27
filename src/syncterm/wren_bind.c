@@ -1607,6 +1607,13 @@ fn_Console_clear(WrenVM *vm)
 	wren_log_clear();
 }
 
+static void
+fn_Console_markSeen(WrenVM *vm)
+{
+	(void)vm;
+	wren_host_mark_log_seen();
+}
+
 /* Wren iteration protocol over seq numbers: start at the oldest seq
  * still in the buffer, end at total-1 (inclusive).  Skipped if the
  * buffer is empty.  iteratorValue returns the entry at that seq. */
@@ -3066,6 +3073,7 @@ static const struct binding BINDINGS[] = {
 	{ "Console", true, "total",            fn_Console_total         },
 	{ "Console", true, "[_]",              fn_Console_subscript     },
 	{ "Console", true, "clear()",          fn_Console_clear         },
+	{ "Console", true, "markSeen()",       fn_Console_markSeen      },
 	{ "Console", true, "iterate(_)",       fn_Console_iterate       },
 	{ "Console", true, "iteratorValue(_)", fn_Console_iteratorValue },
 

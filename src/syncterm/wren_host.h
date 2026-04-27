@@ -42,6 +42,12 @@ bool wren_host_dispatch_mouse(struct mouse_event *ev);
  * returns false to use the default. */
 bool wren_host_compose_status(const char *def, char *out, size_t outsz);
 
+/* True when log entries have arrived since the last
+ * wren_host_mark_log_seen() (i.e., since the user last left the Wren
+ * console).  Drives the bug indicator on the status bar. */
+bool wren_host_log_unread(void);
+void wren_host_mark_log_seen(void);
+
 /* Fires any Hook.every() callbacks whose deadline has elapsed. Called
  * from doterm() just before the main-loop sleep. */
 void wren_host_dispatch_timer(void);

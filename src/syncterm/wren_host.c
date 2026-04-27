@@ -512,6 +512,7 @@ static const char SYNCTERM_MODULE_SRC[] =
     "  foreign static total\n"
     "  foreign static [seq]\n"
     "  foreign static clear()\n"
+    "  foreign static markSeen()\n"
     "  foreign static iterate(it)\n"
     "  foreign static iteratorValue(it)\n"
     "}\n"
@@ -963,6 +964,23 @@ uint64_t
 wren_log_total(void)
 {
 	return main_log.total;
+}
+
+/* High-water mark of the log total at the time the user last left the
+ * Wren console.  wren_host_log_unread() is true while main_log.total
+ * has advanced past this. */
+static uint64_t s_log_seen_total;
+
+bool
+wren_host_log_unread(void)
+{
+	return main_log.total > s_log_seen_total;
+}
+
+void
+wren_host_mark_log_seen(void)
+{
+	s_log_seen_total = main_log.total;
 }
 
 void

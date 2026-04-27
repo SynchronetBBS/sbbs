@@ -205,6 +205,7 @@ class WrenConsole {
     }
 
     Screen.restore(saved)
+    Console.markSeen()
   }
 
   // Dispatches a finished line: a leading "/" makes it a console

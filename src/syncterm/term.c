@@ -503,6 +503,9 @@ update_status(struct bbslist *bbs, int speed, int ooii_mode, bool ata_inv)
 	if (sftp_dn_active > 0)
 		newbits |= 0x100;
 #endif
+	bool log_unread = wren_host_log_unread();
+	if (log_unread)
+		newbits |= 0x200;
 	if (rip_did_reinit)
 		rip_did_reinit = false;
 	else {
@@ -603,6 +606,21 @@ update_status(struct bbslist *bbs, int speed, int ooii_mode, bool ata_inv)
 			status_bar[29].ch = ' ';
 			status_bar[29].fg = 0x80ffff54;
 			status_bar[29].legacy_attr = 0x1e;
+		}
+	}
+	/* Wren log "bug" indicator at col 27, immediately left of the
+	 * SFTP queue arrows.  Bright red CP437 ¶ when entries have
+	 * arrived since the user last left the Wren console. */
+	if (status_bar_sz > 28) {
+		if (log_unread) {
+			status_bar[27].ch = 0x14;
+			status_bar[27].fg = 0x80ff5454;
+			status_bar[27].legacy_attr = 0x1c;
+		}
+		else {
+			status_bar[27].ch = ' ';
+			status_bar[27].fg = 0x80ffff54;
+			status_bar[27].legacy_attr = 0x1e;
 		}
 	}
 	vmem_puttext(term.x - 1, term.y + term.height - 1, term.x + term.width - 2, term.y + term.height - 1
