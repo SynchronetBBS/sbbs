@@ -213,6 +213,24 @@ slot_foreign_type(WrenVM *vm, int slot)
 	return h->type;
 }
 
+/* Drop a foreign class from the syncterm module into `slot`, suitable
+ * to hand to wrenSetSlotNewForeign as the class of a new instance.
+ * The class handle is captured into `*cache` on first use and reused
+ * thereafter — saves the symbol-table lookup on every allocation
+ * without forcing the caller to populate the cache up front. Caller
+ * must wrenEnsureSlots beforehand. */
+static void
+load_class_into_slot(WrenVM *vm, WrenHandle **cache, const char *name,
+    int slot)
+{
+	if (*cache != NULL) {
+		wrenSetSlotHandle(vm, slot, *cache);
+		return;
+	}
+	wrenGetVariable(vm, "syncterm", name, slot);
+	*cache = wrenGetSlotHandle(vm, slot);
+}
+
 /* Foreign class state for KeyEvent and MouseEvent — both are simple
  * value types (no parent, no resources) so finalize is a no-op. */
 struct wren_key_event {
@@ -364,7 +382,7 @@ static void
 push_key_event(WrenVM *vm, uint16_t code)
 {
 	struct wren_host_state *st = wren_host_state();
-	wrenSetSlotHandle(vm, 1, st->key_event_class);
+	load_class_into_slot(vm, &st->key_event_class, "KeyEvent", 1);
 	struct wren_key_event *ke =
 	    wrenSetSlotNewForeign(vm, 0, 1, sizeof(*ke));
 	key_event_init(ke, code);
@@ -375,7 +393,7 @@ static void
 push_mouse_event(WrenVM *vm, const struct mouse_event *mev)
 {
 	struct wren_host_state *st = wren_host_state();
-	wrenSetSlotHandle(vm, 1, st->mouse_event_class);
+	load_class_into_slot(vm, &st->mouse_event_class, "MouseEvent", 1);
 	struct wren_mouse_event *me =
 	    wrenSetSlotNewForeign(vm, 0, 1, sizeof(*me));
 	me->type = SWF_MOUSE_EVENT;
@@ -434,7 +452,7 @@ wren_bind_resume_parked_key(int code)
 	st->parked_fiber  = NULL;
 
 	wrenEnsureSlots(st->vm, 3);
-	wrenSetSlotHandle(st->vm, 2, st->key_event_class);
+	load_class_into_slot(st->vm, &st->key_event_class, "KeyEvent", 2);
 	struct wren_key_event *ke =
 	    wrenSetSlotNewForeign(st->vm, 1, 2, sizeof(*ke));
 	key_event_init(ke, (uint16_t)code);
@@ -455,7 +473,7 @@ wren_bind_resume_parked_mouse(struct mouse_event *ev)
 	st->parked_fiber  = NULL;
 
 	wrenEnsureSlots(st->vm, 3);
-	wrenSetSlotHandle(st->vm, 2, st->mouse_event_class);
+	load_class_into_slot(st->vm, &st->mouse_event_class, "MouseEvent", 2);
 	struct wren_mouse_event *me =
 	    wrenSetSlotNewForeign(st->vm, 1, 2, sizeof(*me));
 	me->type = SWF_MOUSE_EVENT;
@@ -1330,19 +1348,14 @@ fn_Directory_create(WrenVM *vm)
 	dir_create_impl(vm, dir, name);
 }
 
-/* Define a module-level `Cache` variable in the "syncterm" module
- * holding a Directory whose path is resolved lazily from the current
- * BBS context on every method call.  Called from wren_host.c after
- * the builtin module source has been interpreted; no Wren-side
- * factory exists, so user scripts cannot construct a Directory
- * pointing at the cache via any other path. */
-void
-wren_bind_define_cache(WrenVM *vm)
+/* Host.cacheDirectory — returns a fresh Directory foreign whose path
+ * is resolved lazily from the current BBS context on every method
+ * call.  No Wren-side constructor exists for an `is_cache` Directory,
+ * so this is the only way to obtain one; syncterm.wren binds its
+ * result to the module-level `Cache` variable at module-load time. */
+static void
+fn_Host_cacheDirectory(WrenVM *vm)
 {
-	if (vm == NULL)
-		return;
-	/* Build a Directory foreign instance in slot 0, leaving the
-	 * Directory class on slot 1 as scratch. */
 	wrenEnsureSlots(vm, 2);
 	wrenGetVariable(vm, "syncterm", "Directory", 1);
 	struct wren_directory *wd = wrenSetSlotNewForeign(vm, 0, 1,
@@ -1350,19 +1363,6 @@ wren_bind_define_cache(WrenVM *vm)
 	wd->type     = SWF_DIRECTORY;
 	wd->is_cache = true;
 	wd->path[0]  = '\0';
-
-	/* Find the syncterm module via the VM's module map and define
-	 * `Cache` as a new module variable bound to the slot-0 value. */
-	Value modName = wrenNewStringLength(vm, "syncterm",
-	    strlen("syncterm"));
-	wrenPushRoot(vm, AS_OBJ(modName));
-	Value modVal = wrenMapGet(vm->modules, modName);
-	wrenPopRoot(vm);
-	if (IS_UNDEFINED(modVal))
-		return;
-	ObjModule *mod = AS_MODULE(modVal);
-	wrenDefineVariable(vm, mod, "Cache", strlen("Cache"),
-	    vm->apiStack[0], NULL);
 }
 
 /* ----- File foreign methods ---------------------------------------- */
@@ -2523,14 +2523,14 @@ fn_Screen_readRect(WrenVM *vm)
 	}
 
 	struct wren_host_state *st = wren_host_state();
-	if (st == NULL || st->cells_class == NULL) {
+	if (st == NULL) {
 		free(buf);
 		wrenSetSlotNull(vm, 0);
 		return;
 	}
 
 	wrenEnsureSlots(vm, 2);
-	wrenSetSlotHandle(vm, 1, st->cells_class);
+	load_class_into_slot(vm, &st->cells_class, "Cells", 1);
 	struct wren_cells *cs =
 	    wrenSetSlotNewForeign(vm, 0, 1, sizeof(*cs));
 	cs->type  = SWF_CELLS;
@@ -2977,7 +2977,7 @@ cells_make_view(WrenVM *vm, int idx)
 		return;
 	}
 	struct wren_host_state *st = wren_host_state();
-	if (st == NULL || st->cell_class == NULL) {
+	if (st == NULL) {
 		wrenSetSlotNull(vm, 0);
 		return;
 	}
@@ -2988,7 +2988,7 @@ cells_make_view(WrenVM *vm, int idx)
 	WrenHandle       *parent_handle = wrenGetSlotHandle(vm, 0);
 
 	wrenEnsureSlots(vm, 3);
-	wrenSetSlotHandle(vm, 2, st->cell_class);
+	load_class_into_slot(vm, &st->cell_class, "Cell", 2);
 	struct wren_cell *wc = wrenSetSlotNewForeign(vm, 0, 2, sizeof(*wc));
 	memset(wc, 0, sizeof(*wc));
 	wc->type          = SWF_CELL;
@@ -3343,6 +3343,8 @@ static const struct binding BINDINGS[] = {
 	{ "Hyperlinks", true, "containsKey(_)", fn_Hyperlinks_containsKey },
 	{ "Hyperlinks", true, "add(_,_)",       fn_Hyperlinks_add         },
 	{ "Hyperlinks", true, "params(_)",      fn_Hyperlinks_params      },
+
+	{ "Host", true, "cacheDirectory",       fn_Host_cacheDirectory    },
 
 	/* Console */
 	{ "Console", true, "count",            fn_Console_count         },

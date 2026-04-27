@@ -648,51 +648,6 @@ wren_host_init(struct bbslist *bbs)
 	owner_thread = pthread_self();
 	active = true;
 
-	/* Force the foundational `syncterm` module to load via the
-	 * unified host_load_module path (which honors a scripts/syncterm.wren
-	 * override over the embedded copy).  Naming specific symbols on
-	 * the import gives an immediate error if a user override is
-	 * missing one of the foreign classes the C side will look up. */
-	if (wrenInterpret(state.vm, "_bootstrap",
-	        "import \"syncterm\" for Cell, Cells, KeyEvent, MouseEvent\n")
-	    != WREN_RESULT_SUCCESS) {
-		fprintf(stderr,
-		    "[wren] failed to load syncterm module\n");
-		/* Dump captured compile/runtime errors to stderr so the
-		 * user has something to act on — the in-memory log isn't
-		 * reachable once we shut down. */
-		int n     = main_log.count;
-		int start = (main_log.head - n + WREN_LOG_CAPACITY)
-		    % WREN_LOG_CAPACITY;
-		for (int i = 0; i < n; i++) {
-			struct wren_log_entry *e = &main_log.entries
-			    [(start + i) % WREN_LOG_CAPACITY];
-			if (e->text != NULL)
-				fprintf(stderr, "[wren] %s\n", e->text);
-		}
-		wren_host_shutdown();
-		return;
-	}
-
-	/* Capture handles for the foreign classes the C side allocates
-	 * instances of (Cell from inside Screen.getText, Cells as the
-	 * getText return value).  wrenSetSlotNewForeign needs a class
-	 * handle in a slot, so we keep these alive for the VM's lifetime. */
-	wrenEnsureSlots(state.vm, 1);
-	wrenGetVariable(state.vm, "syncterm", "Cell", 0);
-	state.cell_class = wrenGetSlotHandle(state.vm, 0);
-	wrenGetVariable(state.vm, "syncterm", "Cells", 0);
-	state.cells_class = wrenGetSlotHandle(state.vm, 0);
-	wrenGetVariable(state.vm, "syncterm", "KeyEvent", 0);
-	state.key_event_class = wrenGetSlotHandle(state.vm, 0);
-	wrenGetVariable(state.vm, "syncterm", "MouseEvent", 0);
-	state.mouse_event_class = wrenGetSlotHandle(state.vm, 0);
-
-	/* Inject the module-level `Cache` Directory.  Done from C so no
-	 * Wren-visible factory exists for constructing a cache-pointing
-	 * Directory. */
-	wren_bind_define_cache(state.vm);
-
 	/* Glob the user script dir to detect overrides of embedded
 	 * scripts.  Each user script otherwise loads as its own module
 	 * named after its filename. */
@@ -708,14 +663,15 @@ wren_host_init(struct bbslist *bbs)
 	}
 
 	/* Run each embedded entry script as its own filename-named module.
-	 * Skip `syncterm` (loaded via the bootstrap import above) and any
-	 * embed that the user has overridden with a same-named file in
-	 * their script dir — the user-script loop runs that version
-	 * instead. */
+	 * Skip any embed the user has overridden with a same-named file in
+	 * their script dir (the user-script loop runs that version
+	 * instead), and any module already loaded — that catches modules
+	 * an earlier entry script's `import` statement has already pulled
+	 * in (notably `syncterm`, which has no top-level side effects so
+	 * lazy loading is fine), and avoids re-compile errors against the
+	 * existing module. */
 	for (const struct embedded_script *es = EMBEDDED_SCRIPTS;
 	    es->name != NULL; es++) {
-		if (strcmp(es->name, "syncterm") == 0)
-			continue;
 		bool overridden = false;
 		if (have_user_dir) {
 			for (size_t i = 0; i < gl.gl_pathc && !overridden; i++) {
@@ -727,20 +683,21 @@ wren_host_init(struct bbslist *bbs)
 		}
 		if (overridden)
 			continue;
+		if (wrenHasModule(state.vm, es->name))
+			continue;
 		if (wrenInterpret(state.vm, es->name, es->source) !=
 		    WREN_RESULT_SUCCESS)
 			fprintf(stderr, "[wren] embedded %s: load failed\n",
 			    es->name);
 	}
 
-	/* Run user scripts as their own filename-named modules.  Skip
-	 * scripts/syncterm.wren — it's only meaningful as an import
-	 * target and the bootstrap above already pulled it in. */
+	/* Run user scripts as their own filename-named modules.  Skip any
+	 * already loaded for the same reason as above. */
 	if (have_user_dir) {
 		for (size_t i = 0; i < gl.gl_pathc; i++) {
 			char umod[256];
 			modname_from_path(gl.gl_pathv[i], umod, sizeof(umod));
-			if (strcmp(umod, "syncterm") == 0)
+			if (wrenHasModule(state.vm, umod))
 				continue;
 			load_one_script(gl.gl_pathv[i]);
 		}

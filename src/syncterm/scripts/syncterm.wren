@@ -280,18 +280,53 @@ class Codepage {
 class REPL {
   static eval(src) { eval("syncterm", src) }
   static eval(module, src) {
+    // Pre-classify by the leading non-whitespace token so we don't
+    // fight with expression-mode wrapping when the source is clearly
+    // a statement (var/class/import/etc.).  An expression-form
+    // compile failure on something that LOOKS like an expression
+    // therefore preserves the original compile error in the log
+    // instead of being shadowed by a statement-form retry.
     captureStart_()
-    var fn = compile_(module, src, true, true)
-    var wasExpr = fn != null
-    if (!wasExpr && captureContains_("Expected expression")) {
-      captureClear_()
-      fn = compile_(module, src, false, true)
-    }
+    var asStatement = isStatementForm_(src)
+    var fn          = compile_(module, src, !asStatement, true)
+    var wasExpr     = !asStatement && fn != null
     captureCommit_()
     if (fn == null) return null
     var v = fn.call()
     return wasExpr ? [v] : null
   }
+
+  // True if the first non-whitespace token in `src` is a Wren
+  // statement keyword (one that can't begin an expression).  Used by
+  // eval to route the source to compile_ in the right mode without
+  // a fallback dance — preserving expression-mode compile errors
+  // for actual expression-form sources.
+  static isStatementForm_(src) {
+    var i = 0
+    while (i < src.count) {
+      var c = src[i]
+      if (c != " " && c != "\t" && c != "\n" && c != "\r") break
+      i = i + 1
+    }
+    var start = i
+    while (i < src.count) {
+      var c = src[i]
+      var ok = c == "_" ||
+               (c.bytes[0] >= 0x41 && c.bytes[0] <= 0x5A) ||
+               (c.bytes[0] >= 0x61 && c.bytes[0] <= 0x7A) ||
+               (c.bytes[0] >= 0x30 && c.bytes[0] <= 0x39)
+      if (!ok) break
+      i = i + 1
+    }
+    if (i == start) return false
+    var first = src[start...i]
+    return [
+      "var", "class", "foreign", "import",
+      "return", "break", "continue",
+      "if", "while", "for"
+    ].contains(first)
+  }
+
   foreign static compile_(module, src, isExpression, printErrors)
   foreign static printTrace_(fiber)
   foreign static hasModule(name)
@@ -619,3 +654,16 @@ foreign class Hook {
   foreign static onStatus(fn)
   foreign static every(ms, fn)
 }
+
+// Module-private bridge for state the host owns but Wren shouldn't
+// be able to construct directly.  `cacheDirectory` returns a fresh
+// Directory whose path resolves lazily from the active BBS context;
+// no Wren-visible constructor for an `is_cache` Directory exists, so
+// this is the only path to one.
+class Host {
+  foreign static cacheDirectory
+}
+
+// Cache singleton.  Bound at module-load time so any script that
+// `import "syncterm" for Cache`s sees a fully-formed Directory.
+var Cache = Host.cacheDirectory

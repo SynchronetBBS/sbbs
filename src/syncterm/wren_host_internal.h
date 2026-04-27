@@ -134,11 +134,6 @@ WrenForeignMethodFn wren_bind_lookup(const char *module,
 WrenForeignClassMethods wren_bind_lookup_class(const char *module,
                                                 const char *className);
 
-/* Inject the module-level `Cache` variable into the syncterm module.
- * Must be called once after the builtin module source has been
- * interpreted.  Defined in wren_bind.c. */
-void wren_bind_define_cache(WrenVM *vm);
-
 /* If a Wren fiber is parked on Input.nextEvent, resume it with the
  * given event.  Returns true (consumed) if a fiber was waiting;
  * false (not consumed) if no fiber was parked, in which case the
