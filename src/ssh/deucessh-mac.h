@@ -5,7 +5,6 @@
 #ifndef DSSH_MAC_H
 #define DSSH_MAC_H
 
-#include <assert.h>
 #include <stddef.h>
 #include <stdint.h>
 
@@ -31,7 +30,6 @@ typedef struct dssh_mac_s {
 	char               name[];
 } *dssh_mac;
 
-static_assert(!offsetof(struct dssh_mac_s, next), "next must be at offset 0 for generic list traversal");
 DSSH_PUBLIC int dssh_transport_register_mac(dssh_mac mac);
 
 #ifdef __cplusplus

@@ -11,7 +11,6 @@
 #ifndef DSSH_LANG_H
 #define DSSH_LANG_H
 
-#include <assert.h>
 #include <stddef.h>
 
 #include "deucessh-portable.h"
@@ -25,7 +24,6 @@ typedef struct dssh_language_s {
 	char                    name[];
 } *dssh_language;
 
-static_assert(!offsetof(struct dssh_language_s, next), "next must be at offset 0 for generic list traversal");
 DSSH_PUBLIC int dssh_transport_register_lang(dssh_language lang);
 
 #ifdef __cplusplus

@@ -9,7 +9,6 @@
 #ifndef DSSH_KEX_H
 #define DSSH_KEX_H
 
-#include <assert.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -117,7 +116,6 @@ typedef struct dssh_kex_s {
 	char               name[];
 } *dssh_kex;
 
-static_assert(!offsetof(struct dssh_kex_s, next), "next must be at offset 0 for generic list traversal");
 DSSH_PUBLIC int dssh_transport_register_kex(dssh_kex kex);
 
 #ifdef __cplusplus

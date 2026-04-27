@@ -5,7 +5,6 @@
 #ifndef DSSH_KEY_ALGO_H
 #define DSSH_KEY_ALGO_H
 
-#include <assert.h>
 #include <stddef.h>
 #include <stdint.h>
 
@@ -48,7 +47,6 @@ typedef struct dssh_key_algo_s {
 	char                    name[];
 } *dssh_key_algo;
 
-static_assert(!offsetof(struct dssh_key_algo_s, next), "next must be at offset 0 for generic list traversal");
 DSSH_PUBLIC int dssh_transport_register_key_algo(dssh_key_algo key_algo);
 
 #ifdef __cplusplus

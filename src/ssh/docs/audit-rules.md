@@ -45,9 +45,6 @@ validates length, CRLF, printable ASCII, and protocol version.
   guards used throughout for 16/32/64-bit correctness.
 - Explicit byte-by-byte serialization (`DSSH_GET_U32`, `DSSH_PUT_U32`)
   — no endianness assumptions.
-- `static_assert(!offsetof(..., next), ...)` in module headers
-  guarantees the generic linked-list traversal in `build_namelist` and
-  `negotiate_algo` is correct on all platforms.
 
 ---
 

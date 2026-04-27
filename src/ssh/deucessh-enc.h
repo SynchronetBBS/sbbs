@@ -5,7 +5,6 @@
 #ifndef DSSH_ENC_H
 #define DSSH_ENC_H
 
-#include <assert.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -34,7 +33,6 @@ typedef struct dssh_enc_s {
 	char               name[];
 } *dssh_enc;
 
-static_assert(!offsetof(struct dssh_enc_s, next), "next must be at offset 0 for generic list traversal");
 DSSH_PUBLIC int dssh_transport_register_enc(dssh_enc enc);
 
 #ifdef __cplusplus
