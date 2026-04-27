@@ -235,10 +235,10 @@ static const char SYNCTERM_MODULE_SRC[] =
      * bypasses every onKey/onMouse hook AND the default doterm()
      * processing, exactly as if a hook had returned true. */
     "  static nextEvent {\n"
-    "    _park(Fiber.current)\n"
+    "    park_(Fiber.current)\n"
     "    return Fiber.yield()\n"
     "  }\n"
-    "  foreign static _park(fiber)\n"
+    "  foreign static park_(fiber)\n"
     /* unget(ev): dispatch on event type.  Wren doesn't expose the
      * foreign class of a value to the C side, so we discriminate here
      * and call one of two typed primitives.  Silently does nothing
