@@ -613,7 +613,7 @@ update_status(struct bbslist *bbs, int speed, int ooii_mode, bool ata_inv)
 	 * arrived since the user last left the Wren console. */
 	if (status_bar_sz > 28) {
 		if (log_unread) {
-			status_bar[27].ch = 0x14;
+			status_bar[27].ch = 0x13;
 			status_bar[27].fg = 0x80ff5454;
 			status_bar[27].legacy_attr = 0x1c;
 		}
