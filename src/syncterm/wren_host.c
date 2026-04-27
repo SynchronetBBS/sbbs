@@ -1107,6 +1107,85 @@ host_bind_foreign_class(WrenVM *vm, const char *module, const char *className)
 	return wren_bind_lookup_class(module, className);
 }
 
+/* Module loader: resolves `import "name"` against
+ * <SYNCTERM_PATH_SCRIPTS>/load/<name>.wren.  Module names are
+ * restricted to [A-Za-z0-9_]; an invalid name is reported as a
+ * runtime error by synthesizing a one-line module body that calls
+ * Fiber.abort, so the import fails with a clear message instead of
+ * silently looking like "module not found." */
+static void
+host_load_module_complete(WrenVM *vm, const char *name,
+    WrenLoadModuleResult result)
+{
+	(void)vm;
+	(void)name;
+	if (result.source != NULL)
+		free((void *)result.source);
+}
+
+static bool
+valid_module_name(const char *name)
+{
+	if (name == NULL || *name == '\0')
+		return false;
+	for (const char *p = name; *p != '\0'; p++) {
+		unsigned char c = (unsigned char)*p;
+		if (!((c >= 'A' && c <= 'Z') ||
+		      (c >= 'a' && c <= 'z') ||
+		      (c >= '0' && c <= '9') ||
+		      c == '_'))
+			return false;
+	}
+	return true;
+}
+
+static WrenLoadModuleResult
+host_load_module(WrenVM *vm, const char *name)
+{
+	(void)vm;
+	WrenLoadModuleResult res = { NULL, NULL, NULL };
+
+	if (!valid_module_name(name)) {
+		res.source =
+		    "Fiber.abort(\"invalid Wren module name: only "
+		    "[A-Za-z0-9_] allowed\")\n";
+		return res;
+	}
+
+	char dir[MAX_PATH + 1];
+	if (get_syncterm_filename(dir, sizeof(dir), SYNCTERM_PATH_SCRIPTS,
+	    false) == NULL)
+		return res;
+
+	char path[MAX_PATH + 1];
+	int n = snprintf(path, sizeof(path), "%sload/%s.wren", dir, name);
+	if (n < 0 || (size_t)n >= sizeof(path))
+		return res;
+
+	FILE *f = fopen(path, "rb");
+	if (f == NULL)
+		return res;
+	fseek(f, 0, SEEK_END);
+	long sz = ftell(f);
+	fseek(f, 0, SEEK_SET);
+	if (sz < 0 || sz > 4 * 1024 * 1024) {
+		fclose(f);
+		return res;
+	}
+	char *src = malloc((size_t)sz + 1);
+	if (src == NULL) {
+		fclose(f);
+		return res;
+	}
+	size_t got = fread(src, 1, (size_t)sz, f);
+	fclose(f);
+	src[got] = '\0';
+
+	res.source     = src;
+	res.onComplete = host_load_module_complete;
+	return res;
+}
+
 /* --------------------------------------------------------------------
  * Hook + timer registration
  * -------------------------------------------------------------------- */
@@ -1238,6 +1317,7 @@ wren_host_init(struct bbslist *bbs)
 	cfg.errorFn             = host_error_fn;
 	cfg.bindForeignMethodFn = host_bind_foreign_method;
 	cfg.bindForeignClassFn  = host_bind_foreign_class;
+	cfg.loadModuleFn        = host_load_module;
 	state.vm = wrenNewVM(&cfg);
 	if (state.vm == NULL)
 		return;
