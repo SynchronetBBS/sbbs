@@ -4685,6 +4685,7 @@ show_bbslist(char *current, int connected)
 	char default_download[MAX_PATH + 1];
 	char cache_path[MAX_PATH + 1];
 	char keys_path[MAX_PATH + 1];
+	char scripts_path[MAX_PATH + 1];
 	char list_title[32];
 	int redraw = 0;
 	bool nowait = true;
@@ -5513,6 +5514,10 @@ show_bbslist(char *current, int connected)
 						                      sizeof(keys_path),
 						                      SYNCTERM_PATH_KEYS,
 						                      false);
+						get_syncterm_filename(scripts_path,
+						                      sizeof(scripts_path),
+						                      SYNCTERM_PATH_SCRIPTS,
+						                      false);
 						asprintf(&p,
 						         "`SyncTERM File Locations`\n\n"
 						         "~ Global Dialing Directory (Read-Only) ~\n"
@@ -5526,13 +5531,16 @@ show_bbslist(char *current, int connected)
 						         "~ Cache Directory ~\n"
 						         "  %s\n"
 						         "~ SSH Keys File ~\n"
+						         "  %s\n"
+						         "~ Wren Scripts Directory ~\n"
 						         "  %s\n",
 						         shared_list,
 						         personal_list,
 						         setting_file,
 						         default_download,
 						         cache_path,
-						         keys_path);
+						         keys_path,
+						         scripts_path);
 						if (p != NULL) {
 							uifc.showbuf(WIN_MID | WIN_SAV | WIN_HLP,
 							             0,
