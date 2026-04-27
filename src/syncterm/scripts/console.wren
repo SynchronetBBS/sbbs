@@ -363,6 +363,12 @@ class WrenConsole {
   static handleLine_(line, current) {
     if (line.startsWith("/")) return runCommand_(line, current)
     System.print("(%(current))> " + line)
+    // Blank or whitespace-only input: echo for visual feedback (so
+    // Enter still advances to a fresh prompt row) but skip the eval
+    // — Wren's compiler errors on empty source with "Expected
+    // expression" and we don't want that in the log every time the
+    // user presses Enter on a clean line.
+    if (line.trim().count == 0) return current
     var v = null
     var f = Fiber.new { v = REPL.eval(current, line) }
     f.try()
