@@ -358,6 +358,21 @@ WREN_ALL_OBJS := $(WREN_OBJS) \
                  $(MTOBJODIR)$(DIRSEP)wren_bind$(OFILE)
 $(WREN_ALL_OBJS): CFLAGS += -Iwren/vm -Iwren/optional -UPREFIX
 
+# RE1 (Russ Cox's NFA regex engine) — used by Hook.onMatch in wren_bind.c.
+# Only the four files we actually use (compile/pike/sub + the yacc-
+# generated parser).  The pedagogical sources don't pass our usual
+# warning set, so suppress on these TUs only.
+vpath %.c re1
+RE1_OBJS := $(MTOBJODIR)$(DIRSEP)compile$(OFILE) \
+            $(MTOBJODIR)$(DIRSEP)pike$(OFILE) \
+            $(MTOBJODIR)$(DIRSEP)sub$(OFILE) \
+            $(MTOBJODIR)$(DIRSEP)y.tab$(OFILE)
+OBJS    += $(RE1_OBJS)
+$(RE1_OBJS): CFLAGS += -Ire1 -w
+# wren_bind reaches for re1/regexp.h too.
+$(MTOBJODIR)$(DIRSEP)wren_bind$(OFILE): CFLAGS += -Ire1
+$(MTOBJODIR)$(DIRSEP)wren_host$(OFILE): CFLAGS += -Ire1
+
 # Embedded-script codegen.  wren_embed_gen is built with $(BUILD_CC) so
 # cross-builds (e.g. MinGW) compile the codegen with the *host* compiler
 # and run it natively, then the generated embedded_scripts.c compiles

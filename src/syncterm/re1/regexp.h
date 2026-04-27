@@ -42,6 +42,12 @@ void printre(Regexp*);
 void fatal(char*, ...);
 void *mal(int);
 
+/* Optional host-side trap for fatal().  If set, called with the
+ * formatted message; the host is expected to longjmp/abort and NOT
+ * return.  Default NULL — fatal() then prints to stderr and exit(2)s
+ * as before. */
+extern void (*re1_fatal_handler)(const char *msg);
+
 struct Prog
 {
 	Inst *start;
@@ -97,3 +103,12 @@ int pikevm(Prog*, char*, char**, int);
 int recursiveloopprog(Prog*, char*, char**, int);
 int recursiveprog(Prog*, char*, char**, int);
 int thompsonvm(Prog*, char*, char**, int);
+
+/* Streaming Pike VM — feed bytes one at a time.  See pike.c. */
+typedef struct PikeVM PikeVM;
+
+PikeVM *pikevm_new(Prog *prog, int nsubp);
+void    pikevm_free(PikeVM *vm);
+void    pikevm_start(PikeVM *vm, char *sp);
+int     pikevm_step(PikeVM *vm, char *sp);   /* 1=match, 0=impossible, -1=pending */
+void    pikevm_match(PikeVM *vm, char **subp);

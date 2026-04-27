@@ -212,9 +212,23 @@ handling.
 | `k`: 16-bit ciolib key code (see `Key`)
 | Bool — true to consume the keystroke
 
+| `Hook.onKey(key, fn)`
+| Filtered: `fn(k)` only fires when `k == key`.  C-side filter — no
+  Wren entry on misses.
+| Bool — true to consume
+
 | `Hook.onInput { \|b\| ... }`
 | `b`: one byte received from the remote
 | Bool — true to drop the byte before it reaches the terminal
+
+| `Hook.onInput(byte, fn)`
+| Filtered: `fn(b)` only fires when `b == byte`.  C-side filter.
+| Bool — true to drop
+
+| `Hook.onMatch(pattern, fn)`
+| `fn(m)` fires when `pattern` matches the input stream.  See
+  "Streaming regex hooks" below.
+| Bool — true to drop the matched bytes
 
 | `Hook.onOutput { \|s\| ... }`
 | `s`: bytes about to be sent to the remote
@@ -222,6 +236,10 @@ handling.
 
 | `Hook.onMouse { \|ev\| ... }`
 | `ev`: 7-element list `[event, bstate, modifiers, sx, sy, ex, ey]`
+| Bool — true to consume
+
+| `Hook.onMouse(event, fn)`
+| Filtered: `fn(ev)` only fires when `ev[0] == event`.  C-side filter.
 | Bool — true to consume
 
 | `Hook.onStatus { \|def\| ... }`
@@ -232,6 +250,10 @@ handling.
 | `ms`: milliseconds; `fn`: callable
 | (none — return value ignored)
 |===
+
+Filtered variants share the same per-event registration array as the
+unfiltered forms, so dispatch order = registration order regardless
+of which form was used.
 
 `Hook.onOutput` runs from `conn_send`, the path that handles telnet
 IAC escaping and other framing.  The script's own outbound writes via
@@ -246,6 +268,120 @@ than firing repeatedly to catch up.
 `Hook.onStatus` is called from the status-bar composer.  Returning a
 new string replaces SyncTERM's default status text for the next
 redraw.  Returning anything that isn't a string passes through.
+
+=== Streaming regex hooks
+
+`Hook.onMatch(pattern, fn)` registers a regex against the inbound
+byte stream.  Each input byte is fed to a streaming Pike VM (Russ
+Cox's NFA simulation, vendored under `re1/`); when a match completes,
+`fn` is called with a Wren List:
+
+[source,wren]
+----
+Hook.onMatch("login:") { |m|
+  Conn.send("user\r")
+  return false
+}
+
+Hook.onMatch("user (joe|jane|bob)") { |m|
+  // m[0] = "user joe", m[1] = "joe"
+  System.print("hi %(m[1])")
+  return false
+}
+----
+
+`m[0]` is the matched substring; `m[1..]` are the user-pattern's
+capture groups in registration order.  Returning `true` suppresses
+further hook dispatch for that match.
+
+==== Grammar
+
+RE1 implements a deliberately minimal regex dialect.  These are
+**all** of the supported metacharacters:
+
+[options="header",cols="1,3"]
+|===
+| Construct | Meaning
+
+| literal byte | matches itself.  Backslash has no special meaning —
+  `\` matches a literal backslash.  To match an operator
+  metacharacter literally, surround it via a non-capturing group
+  with itself escaped is **not** possible; instead choose patterns
+  that don't conflict.
+| `.` | any byte (including NUL — the streaming VM does not treat
+  NUL as end-of-input)
+| `(...)` | capturing group
+| `(?:...)` | non-capturing group
+| `\|` | alternation
+| `*` `+` `?` | greedy: zero-or-more, one-or-more, optional
+| `*?` `+?` `??` | lazy (non-greedy) variants
+|===
+
+Notably **not** supported (will be parsed as literal characters or
+syntax errors):
+
+- backslash escapes — `\n`, `\t`, `\d`, `\w`, `\s`, `\xNN`, ...
+- character classes — `[abc]`, `[a-z]`, `[^...]`
+- anchors — `^`, `$`, `\b`, `\B`
+- backreferences — `\1`, `\2`, ...
+- counted repetition — `{n}`, `{n,m}`
+- POSIX classes — `[[:alpha:]]`, ...
+- inline flags — `(?i)`, ...
+
+Patterns are **anchored at the current buffer start**.  "Match
+anywhere in the stream" is achieved by the dispatcher: when the VM
+returns IMPOSSIBLE (no thread can ever complete from the current
+buffer head), the oldest byte is dropped and the survivors are
+re-fed.  In practice this means a pattern like `"hello"` matches the
+substring `"hello"` wherever it appears in the stream.
+
+This trick requires that the pattern can produce IMPOSSIBLE — i.e.,
+the first byte either advances the NFA or kills every thread.
+Patterns whose leading construct can match without consuming a byte
+keep threads alive on every input forever, the buffer fills, and
+matches start being silently dropped.  `Hook.onMatch` therefore
+**rejects patterns whose leading construct is `*`, `+`, or `?`** at
+registration time with `Fiber.abort`:
+
+[options="header",cols="1,1"]
+|===
+| Allowed (1-byte anchor) | Rejected (variable-width leading)
+
+| `hello` | `.*hello`
+| `.bbs` | `.+bbs`
+| `(a\|b)c` | `a*b`
+| `(?:foo\|bar)baz` | `(a\|b)*c`
+|===
+
+If you want a quantifier inside the pattern, anchor it with a fixed
+prefix: `bbs (.+) ` rather than `(.+) bbs`.
+
+==== Match semantics
+
+Pike VM has a leftmost-first-completing tie-breaking rule: as soon
+as any thread reaches a `Match` opcode, the match commits and
+remaining threads in the current step are discarded.  In a streaming
+context this means open-ended quantifiers fire as soon as the
+shortest acceptable prefix is seen — `a*` matches the empty string
+at the first byte, `a+` matches the first `'a'` and stops.
+
+For greedy-feeling behavior, **terminate variable-length sub-patterns
+with a literal that follows them**: `user (.+) ` (capture text up
+to a space) instead of bare `user (.+)`.  Newlines must be encoded
+as literal `\n` bytes in the Wren string ("`\n`" in the source code,
+which Wren resolves to a single 0x0A byte).
+
+==== Limits
+
+- Buffer is capped at 4 KB per hook.  When a partial match grows
+  past the cap, the oldest half is dropped and the VM restarts —
+  patterns that demand more than 4 KB of context will silently miss.
+- Up to 9 capture groups (RE1's `MAXSUB = 20` minus the whole-match
+  pair).
+- Pattern compile errors (bad syntax, internal asserts) surface as
+  `Fiber.abort` at the registration site, with the RE1 error text
+  attached.  The exception trace points at the offending
+  `Hook.onMatch` call.
 
 == Modal Input
 

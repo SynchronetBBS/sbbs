@@ -1470,11 +1470,27 @@ yylex(void)
 	return CHAR;
 }
 
+/* Optional host-side trap for fatal errors.  When non-NULL, called
+ * with the formatted message instead of writing to stderr+exit(2);
+ * the host is expected to longjmp or otherwise not return.  Used by
+ * SyncTERM to convert RE1 syntax errors into Wren Fiber.abort. */
+void (*re1_fatal_handler)(const char *msg) = 0;
+
 void
 fatal(char *fmt, ...)
 {
 	va_list arg;
-	
+	char buf[512];
+
+	va_start(arg, fmt);
+	if(re1_fatal_handler) {
+		vsnprintf(buf, sizeof buf, fmt, arg);
+		va_end(arg);
+		re1_fatal_handler(buf);
+		/* handler is expected not to return; if it does, fall through */
+	} else
+		va_end(arg);
+
 	va_start(arg, fmt);
 	fprintf(stderr, "fatal error: ");
 	vfprintf(stderr, fmt, arg);

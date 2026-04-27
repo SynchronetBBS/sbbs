@@ -8,6 +8,8 @@
 #include "wren_host_internal.h"
 #include "wren_host.h"
 #include "wren.h"
+#include "regexp.h"
+#include <setjmp.h>
 /* REPL.compile_ uses wrenCompileSource to produce an ObjClosure that
  * the Wren-side REPL.eval invokes via .call().  That path is internal
  * to Wren — wrenCompileSource isn't exposed in wren.h — so pull in
@@ -1680,6 +1682,134 @@ fn_Hook_onMouse_filtered(WrenVM *vm)
 	wren_host_register_hook_filtered(vm, WREN_HOOK_MOUSE, 2, filter);
 }
 
+/* RE1 calls fatal() — and thus exit(2) — on syntax errors and
+ * internal asserts.  Catch via the host-trap hook in regexp.h:
+ * stash the message, longjmp back to fn_Hook_onMatch, convert into
+ * Fiber.abort so the script's stack trace points at the bad
+ * registration site. */
+#define WREN_REGEX_BUF_CAP 4096
+
+static jmp_buf re1_jmp;
+static char    re1_errmsg[256];
+
+static void
+on_re1_fatal(const char *msg)
+{
+	strncpy(re1_errmsg, msg, sizeof re1_errmsg - 1);
+	re1_errmsg[sizeof re1_errmsg - 1] = '\0';
+	longjmp(re1_jmp, 1);
+}
+
+/* The dispatcher's IMPOSSIBLE-shift trick depends on every byte
+ * either advancing the NFA or being trimmed.  A pattern whose
+ * leading construct can match without consuming a byte (any of *, +,
+ * ?) keeps threads alive forever on `.`-style fillers, the buffer
+ * grows past its cap, and matches start being silently dropped.
+ * Reject such patterns at registration time.  A leading literal byte
+ * or `.` is fine; an alt is fine if every branch is fine; quantified
+ * leading constructs are not. */
+static const char *
+regex_anchor_check(Regexp *r)
+{
+	const char *err;
+
+	if (r == NULL)
+		return "empty pattern";
+	switch (r->type) {
+	case Lit:
+	case Dot:
+		return NULL;
+	case Cat:
+		return regex_anchor_check(r->left);
+	case Paren:
+		return regex_anchor_check(r->left);
+	case Alt:
+		err = regex_anchor_check(r->left);
+		if (err != NULL)
+			return err;
+		return regex_anchor_check(r->right);
+	case Star:
+	case Plus:
+	case Quest:
+		return "pattern must start with a fixed-character anchor; "
+		       "leading * + ? quantifiers prevent buffer trimming";
+	}
+	return "unknown regex node type";
+}
+
+static void
+fn_Hook_onMatch(WrenVM *vm)
+{
+	const char *pat = wrenGetSlotString(vm, 1);
+	if (pat == NULL) {
+		wrenSetSlotString(vm, 0, "Hook.onMatch: pattern must be a String");
+		wrenAbortFiber(vm, 0);
+		return;
+	}
+
+	/* RE1's parser is destructive on its argument? No — parse() reads
+	 * the string but doesn't write to it.  Still, copy into a mutable
+	 * buffer so we don't depend on Wren's internal string lifetime. */
+	size_t plen = strlen(pat);
+	char *patcopy = malloc(plen + 1);
+	if (patcopy == NULL) {
+		wrenSetSlotString(vm, 0, "Hook.onMatch: out of memory");
+		wrenAbortFiber(vm, 0);
+		return;
+	}
+	memcpy(patcopy, pat, plen + 1);
+
+	Regexp *r = NULL;
+	Prog   *p = NULL;
+	re1_errmsg[0] = '\0';
+	re1_fatal_handler = on_re1_fatal;
+	if (setjmp(re1_jmp) != 0) {
+		/* RE1 fatal() landed here. */
+		re1_fatal_handler = NULL;
+		free(patcopy);
+		char buf[320];
+		snprintf(buf, sizeof buf, "Hook.onMatch: %s", re1_errmsg);
+		wrenSetSlotString(vm, 0, buf);
+		wrenAbortFiber(vm, 0);
+		return;
+	}
+	r = parse(patcopy);
+	const char *aerr = regex_anchor_check(r);
+	if (aerr != NULL) {
+		re1_fatal_handler = NULL;
+		free(patcopy);
+		char buf[320];
+		snprintf(buf, sizeof buf, "Hook.onMatch: %s", aerr);
+		wrenSetSlotString(vm, 0, buf);
+		wrenAbortFiber(vm, 0);
+		return;
+	}
+	p = compile(r);
+	re1_fatal_handler = NULL;
+	free(patcopy);
+
+	struct PikeVM *pvm = pikevm_new(p, MAXSUB);
+	char *buf = malloc(WREN_REGEX_BUF_CAP);
+	if (buf == NULL) {
+		pikevm_free(pvm);
+		free(p);
+		wrenSetSlotString(vm, 0, "Hook.onMatch: out of memory");
+		wrenAbortFiber(vm, 0);
+		return;
+	}
+	buf[0] = '\0';
+
+	if (!wren_host_register_hook_match(vm, 2, p, pvm, buf,
+	    WREN_REGEX_BUF_CAP, MAXSUB)) {
+		pikevm_free(pvm);
+		free(p);
+		free(buf);
+		wrenSetSlotString(vm, 0, "Hook.onMatch: hook limit reached");
+		wrenAbortFiber(vm, 0);
+		return;
+	}
+}
+
 static void
 fn_Hook_every(WrenVM *vm)
 {
@@ -3231,6 +3361,7 @@ static const struct binding BINDINGS[] = {
 	{ "Hook",  true, "onKey(_,_)",     fn_Hook_onKey_filtered   },
 	{ "Hook",  true, "onInput(_)",     fn_Hook_onInput          },
 	{ "Hook",  true, "onInput(_,_)",   fn_Hook_onInput_filtered },
+	{ "Hook",  true, "onMatch(_,_)",   fn_Hook_onMatch          },
 	{ "Hook",  true, "onOutput(_)",    fn_Hook_onOutput         },
 	{ "Hook",  true, "onMouse(_)",     fn_Hook_onMouse          },
 	{ "Hook",  true, "onMouse(_,_)",   fn_Hook_onMouse_filtered },

@@ -25,6 +25,7 @@
 #include "dirwrap.h"
 #include "genwrap.h"      /* xp_timer */
 #include "threadwrap.h"   /* pthread_self */
+#include "regexp.h"       /* RE1: Prog, PikeVM, pikevm_* */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -769,6 +770,7 @@ static const char SYNCTERM_MODULE_SRC[] =
     "  foreign static onKey(key, fn)\n"
     "  foreign static onInput(fn)\n"
     "  foreign static onInput(byte, fn)\n"
+    "  foreign static onMatch(pattern, fn)\n"
     "  foreign static onOutput(fn)\n"
     "  foreign static onMouse(fn)\n"
     "  foreign static onMouse(event, fn)\n"
@@ -1225,6 +1227,32 @@ wren_host_register_hook_filtered(WrenVM *vm, enum wren_hook_event ev,
 }
 
 bool
+wren_host_register_hook_match(WrenVM *vm, int fn_slot,
+    struct Prog *prog, struct PikeVM *vm_state,
+    char *buf, size_t buf_cap, int nsubp)
+{
+	if (!active)
+		return false;
+	int n = state.hook_count[WREN_HOOK_INPUT];
+	if (n >= WREN_HOST_MAX_HOOKS_PER_EVENT) {
+		fprintf(stderr, "[wren] hook limit reached for input\n");
+		return false;
+	}
+	state.hooks[WREN_HOOK_INPUT][n].fn            = wrenGetSlotHandle(vm, fn_slot);
+	state.hooks[WREN_HOOK_INPUT][n].filter        = 0;
+	state.hooks[WREN_HOOK_INPUT][n].filtered      = false;
+	state.hooks[WREN_HOOK_INPUT][n].regex_prog    = prog;
+	state.hooks[WREN_HOOK_INPUT][n].regex_vm      = vm_state;
+	state.hooks[WREN_HOOK_INPUT][n].regex_buf     = buf;
+	state.hooks[WREN_HOOK_INPUT][n].regex_buf_len = 0;
+	state.hooks[WREN_HOOK_INPUT][n].regex_buf_cap = buf_cap;
+	state.hooks[WREN_HOOK_INPUT][n].regex_nsubp   = nsubp;
+	pikevm_start(vm_state, buf);
+	state.hook_count[WREN_HOOK_INPUT] = n + 1;
+	return true;
+}
+
+bool
 wren_host_register_timer(WrenVM *vm, int ms, int fn_slot)
 {
 	if (!active)
@@ -1444,9 +1472,17 @@ wren_host_shutdown(void)
 		return;
 
 	for (int e = 0; e < WREN_HOOK_COUNT; e++) {
-		for (int i = 0; i < state.hook_count[e]; i++)
-			if (state.hooks[e][i].fn != NULL)
-				wrenReleaseHandle(state.vm, state.hooks[e][i].fn);
+		for (int i = 0; i < state.hook_count[e]; i++) {
+			struct wren_hook_entry *h = &state.hooks[e][i];
+			if (h->fn != NULL)
+				wrenReleaseHandle(state.vm, h->fn);
+			if (h->regex_vm != NULL)
+				pikevm_free(h->regex_vm);
+			if (h->regex_prog != NULL)
+				free(h->regex_prog);
+			if (h->regex_buf != NULL)
+				free(h->regex_buf);
+		}
 		state.hook_count[e] = 0;
 	}
 	for (int i = 0; i < state.timer_count; i++)
@@ -1531,6 +1567,84 @@ wren_host_dispatch_key(int key)
 	return false;
 }
 
+/* Build a Wren List for a regex match — slot 1 receives
+ * [match, group1, group2, ...] from the subp[] capture array.  Pairs
+ * are walked until the first NULL/NULL pair.  Caller must have ≥3
+ * Wren slots ensured before calling. */
+static void
+build_match_list(char **subp, int nsubp)
+{
+	wrenSetSlotNewList(state.vm, 1);
+	for (int k = 0; k + 1 < nsubp; k += 2) {
+		if (subp[k] == NULL || subp[k+1] == NULL)
+			break;
+		wrenSetSlotBytes(state.vm, 2, subp[k],
+		    (size_t)(subp[k+1] - subp[k]));
+		wrenInsertInList(state.vm, 1, -1, 2);
+	}
+}
+
+/* Drive a single regex hook entry through any unfed bytes in its
+ * buffer.  Handles MATCH (fire fn, trim, restart) and IMPOSSIBLE
+ * (drop oldest byte, restart) inline; bounds itself by buf_len.
+ * Returns true if any callback returned truthy (caller short-circuits
+ * the rest of the per-event hook loop). */
+static bool
+dispatch_match_drain(struct wren_hook_entry *h)
+{
+	char *subp[MAXSUB];
+
+	while (h->regex_pos < h->regex_buf_len) {
+		int r = pikevm_step(h->regex_vm,
+		    h->regex_buf + h->regex_pos);
+		if (r == -1) {
+			h->regex_pos++;
+			continue;
+		}
+		if (r == 1) {
+			pikevm_match(h->regex_vm, subp);
+			wrenEnsureSlots(state.vm, 3);
+			build_match_list(subp, h->regex_nsubp);
+			wrenSetSlotHandle(state.vm, 0, h->fn);
+			bool consumed = false;
+			if (wrenCall(state.vm, state.call1_handle) ==
+			        WREN_RESULT_SUCCESS &&
+			    read_consume_result())
+				consumed = true;
+
+			size_t end = (subp[1] != NULL)
+			    ? (size_t)(subp[1] - h->regex_buf)
+			    : h->regex_buf_len;
+			if (end > h->regex_buf_len)
+				end = h->regex_buf_len;
+			memmove(h->regex_buf, h->regex_buf + end,
+			    h->regex_buf_len - end);
+			h->regex_buf_len -= end;
+			h->regex_buf[h->regex_buf_len] = '\0';
+			h->regex_pos = 0;
+			pikevm_start(h->regex_vm, h->regex_buf);
+			if (consumed)
+				return true;
+			continue;
+		}
+		/* IMPOSSIBLE — drop one byte and re-feed survivors. */
+		if (h->regex_buf_len <= 1) {
+			h->regex_buf_len = 0;
+			h->regex_buf[0] = '\0';
+			h->regex_pos = 0;
+			pikevm_start(h->regex_vm, h->regex_buf);
+			break;
+		}
+		memmove(h->regex_buf, h->regex_buf + 1,
+		    h->regex_buf_len - 1);
+		h->regex_buf_len--;
+		h->regex_buf[h->regex_buf_len] = '\0';
+		h->regex_pos = 0;
+		pikevm_start(h->regex_vm, h->regex_buf);
+	}
+	return false;
+}
+
 bool
 wren_host_dispatch_input(unsigned char byte)
 {
@@ -1539,6 +1653,27 @@ wren_host_dispatch_input(unsigned char byte)
 	int n = state.hook_count[WREN_HOOK_INPUT];
 	for (int i = 0; i < n; i++) {
 		struct wren_hook_entry *h = &state.hooks[WREN_HOOK_INPUT][i];
+
+		if (h->regex_prog != NULL) {
+			/* On overflow, drop the oldest half and restart so the
+			 * survivors get re-fed by dispatch_match_drain. */
+			if (h->regex_buf_len + 1 >= h->regex_buf_cap) {
+				size_t drop = h->regex_buf_cap / 2 + 1;
+				if (drop > h->regex_buf_len)
+					drop = h->regex_buf_len;
+				memmove(h->regex_buf, h->regex_buf + drop,
+				    h->regex_buf_len - drop);
+				h->regex_buf_len -= drop;
+				h->regex_pos = 0;
+				pikevm_start(h->regex_vm, h->regex_buf);
+			}
+			h->regex_buf[h->regex_buf_len++] = (char)byte;
+			h->regex_buf[h->regex_buf_len] = '\0';
+			if (dispatch_match_drain(h))
+				return true;
+			continue;
+		}
+
 		if (h->filtered && h->filter != (int)byte)
 			continue;
 		wrenEnsureSlots(state.vm, 2);

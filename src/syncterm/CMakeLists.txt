@@ -314,6 +314,19 @@ target_include_directories(wrenvm
     PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/wren/vm
             ${CMAKE_CURRENT_SOURCE_DIR}/wren/optional)
 
+# RE1 (Russ Cox's NFA regex engine, BSD-3-Clause).  Static library
+# because the pedagogical sources don't pass our usual warning set;
+# isolating them here means -w applies only to RE1's TUs.  Public API
+# is re1/regexp.h, consumed by wren_bind.c for Hook.onMatch.
+add_library(re1 STATIC
+    re1/compile.c
+    re1/pike.c
+    re1/sub.c
+    re1/y.tab.c)
+target_include_directories(re1
+    PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/re1)
+target_compile_options(re1 PRIVATE -w)
+
 # Embedded-script codegen.  Mirrors src/conio/genmap.c's pattern: a
 # small C tool reads scripts/*.wren and writes embedded_scripts.c
 # which compiles into syncterm alongside wren_host.c.  In native
@@ -446,7 +459,7 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
 	set_source_files_properties(SyncTERM.icns PROPERTIES MACOSX_PACKAGE_LOCATION "Resources")
 endif()
 require_libs(syncterm ciolib comio encode hash sftp uifc xpdev)
-target_link_libraries(syncterm wrenvm)
+target_link_libraries(syncterm wrenvm re1)
 target_compile_definitions(syncterm PRIVATE TELNET_NO_DLL)
 if(WITHOUT_OOII)
 	target_compile_definitions(syncterm PRIVATE WITHOUT_OOII=1)

@@ -33,14 +33,27 @@ struct wren_timer_entry {
 };
 
 /* Per-hook entry: a Wren callable plus an optional integer match
- * filter.  When `filtered` is true the dispatcher skips entries whose
- * `filter` doesn't match the event's discriminator (key code for KEY,
- * byte for INPUT, event-type for MOUSE).  `filter` is unused for the
- * other event types. */
+ * filter, plus an optional streaming-regex match filter (mutually
+ * exclusive with the integer filter).  The dispatcher branches on
+ * shape:
+ *   - filtered && !regex: skip unless event discriminator == filter
+ *   - regex != NULL: feed each input byte to pikevm_step, fire on
+ *     MATCH, drop a byte on IMPOSSIBLE, wait on PENDING (input only)
+ *   - neither: fire unconditionally
+ * `filter` is unused for non-discriminator events (output, status). */
+struct PikeVM;	/* opaque; full type in re1/regexp.h */
+
 struct wren_hook_entry {
-	WrenHandle *fn;
-	int         filter;
-	bool        filtered;
+	WrenHandle    *fn;
+	int            filter;
+	bool           filtered;
+	struct Prog   *regex_prog;	/* compiled program; freed at shutdown */
+	struct PikeVM *regex_vm;	/* streaming match state */
+	char          *regex_buf;	/* persistent so Sub captures stay valid */
+	size_t         regex_buf_len;
+	size_t         regex_buf_cap;
+	size_t         regex_pos;	/* next offset the VM expects to consume */
+	int            regex_nsubp;
 };
 
 struct wren_host_state {
@@ -85,6 +98,15 @@ bool wren_host_register_hook(WrenVM *vm, enum wren_hook_event ev, int fn_slot);
  * one per-event array, preserving registration order across both. */
 bool wren_host_register_hook_filtered(WrenVM *vm, enum wren_hook_event ev,
                                       int fn_slot, int filter);
+
+/* Streaming-regex registration on the input event.  Takes ownership of
+ * `prog` (frees at shutdown), `vm_state` (PikeVM*; pikevm_free at
+ * shutdown), and `buf` (free at shutdown).  Lives in the same
+ * WREN_HOOK_INPUT array as filtered/unfiltered hooks; registration
+ * order is preserved across all three forms. */
+bool wren_host_register_hook_match(WrenVM *vm, int fn_slot,
+                                   struct Prog *prog, struct PikeVM *vm_state,
+                                   char *buf, size_t buf_cap, int nsubp);
 
 /* Timer registration: ms is the recurrence interval, fn_slot holds the
  * callable. */
