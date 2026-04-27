@@ -11,6 +11,7 @@ Switch to DeuceSSH + OpenSSL | Botan
 Fully support OOB data in RLogin modes
 Hold Alt during drag-select to copy a rectangular region
 Prototype SFTP client (Alt+S, Alt+B)
+Add Wren scripting engine, REPL console with Ctrl+`
 
 Version 1.8
 -----------
