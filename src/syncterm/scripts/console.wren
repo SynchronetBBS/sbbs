@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: GPL-2.0-or-later
-//
 // SyncTERM Wren console (REPL).  Triggered by Ctrl+` (CIO_KEY_WREN_CONSOLE
 // = 0x29E0).  Saves the screen, presents the always-on print/error
 // scrollback, accepts immediate-mode Wren input via REPL.eval, and
@@ -72,6 +70,24 @@ class WrenConsole {
     var saved = Screen.save()
     var currentModule = "syncterm"
 
+    // The cterm's scroll window may be smaller than the full screen
+    // (e.g. a BBS set DEC margins).  Force full-screen for the
+    // console's lifetime; restore on exit.
+    var origBounds  = Screen.window.bounds
+    var screenSize  = Screen.size
+    Screen.window.bounds = [1, 1, screenSize[0], screenSize[1]]
+
+    // Scrollback state: scrollTop == -1 means "live mode" (auto-tail
+    // — new entries paint at the bottom as they arrive).  Any other
+    // value is a display-row index into renderAllRows_'s output: the
+    // row pinned to the top of the viewport.  PageUp/PageDown move
+    // by a viewport's worth of rows, Up/Down move by one row, all in
+    // exact display-row units.  Any typed printable character or
+    // Enter rejoins live mode.
+    var scrollTop    = -1
+    var winRows      = screenSize[1]
+    var viewportRows = winRows - 1
+
     // One-time paint of whatever's currently in the log buffer.
     // Subsequent loop iterations only emit entries that arrived
     // *after* `lastTotal`; conio's built-in scroll-on-bottom-row
@@ -80,9 +96,10 @@ class WrenConsole {
     Screen.window.position = [1, 1]
     var lastTotal = paintNew_(0, true)
 
-    var input = ""
+    var input  = ""
+    var cursor = 0   // byte index into `input`; 0..input.count
     var promptRow = Screen.window.position[1]
-    drawPrompt_(promptRow, currentModule, input)
+    drawPrompt_(promptRow, currentModule, input, cursor)
 
     __quit = false
     // History search state: histIdx == -1 means "not searching"; the
@@ -114,12 +131,15 @@ class WrenConsole {
             for (b in pasted.bytes) {
               if (b == 0x0A) {
                 currentModule = submitLine_(input, currentModule)
-                input = ""
+                input  = ""
+                cursor = 0
                 histIdx = -1
               } else if (b == 0x0D) {
                 // CR ignored
               } else if (b >= 0x20 && b < 0x7F) {
-                input = input + String.fromCodePoint(b)
+                input = input[0...cursor] + String.fromCodePoint(b) +
+                        input[cursor...input.count]
+                cursor  = cursor + 1
                 histIdx = -1
               }
             }
@@ -131,19 +151,117 @@ class WrenConsole {
         if (key == Key.wrenConsole || key == Key.escape) {
           done = true
         } else if (key == Key.enter || key == 0x000A) { // CR or LF
+          // Submitting in scrollback mode rejoins live first so the
+          // eval's output paints on the live tail rather than into
+          // the frozen viewport.
+          if (scrollTop != -1) {
+            scrollTop = -1
+            Screen.window.clear()
+            Screen.window.position = [1, 1]
+            lastTotal = paintNew_(0, true)
+            promptRow = Screen.window.position[1]
+          }
           currentModule = submitLine_(input, currentModule)
-          input = ""
+          input  = ""
+          cursor = 0
           histIdx = -1
           redrawPrompt = true
         } else if (key == Key.backspace || key == 0x007F) { // BS or DEL
-          if (input.count > 0) {
-            input = input[0...(input.count - 1)]
+          if (cursor > 0) {
+            input  = input[0...(cursor - 1)] + input[cursor...input.count]
+            cursor = cursor - 1
             histIdx = -1
             redrawPrompt = true
           }
+        } else if (key == Key.delete) {              // forward-delete
+          if (cursor < input.count) {
+            input = input[0...cursor] + input[(cursor + 1)...input.count]
+            histIdx = -1
+            redrawPrompt = true
+          }
+        } else if (key == Key.left) {
+          if (cursor > 0) {
+            cursor = cursor - 1
+            redrawPrompt = true
+          }
+        } else if (key == Key.right) {
+          if (cursor < input.count) {
+            cursor = cursor + 1
+            redrawPrompt = true
+          }
+        } else if (key == Key.home) {
+          if (cursor != 0) {
+            cursor = 0
+            redrawPrompt = true
+          }
+        } else if (key == Key.end) {
+          if (cursor != input.count) {
+            cursor = input.count
+            redrawPrompt = true
+          }
         } else if (key == 0x0017) {                  // Ctrl+W
-          input = killWord_(input)
+          // Kill the word ending at the cursor; tail (cursor..end)
+          // stays put, cursor lands where the killed run started.
+          var head = killWord_(input[0...cursor])
+          input  = head + input[cursor...input.count]
+          cursor = head.count
           histIdx = -1
+          redrawPrompt = true
+        } else if (key == Key.pageUp) {
+          // Enter scrollback if in live mode by anchoring scrollTop
+          // at the row that's currently at the top of the live view,
+          // then move up by one viewport (minus 1 for overlap).
+          var rendered  = renderAllRows_()
+          var totalRows = rendered.count
+          if (scrollTop == -1) {
+            scrollTop = (totalRows - viewportRows).max(0)
+          }
+          scrollTop = (scrollTop - (viewportRows - 1)).max(0)
+          paintViewport_(rendered, scrollTop, viewportRows)
+          promptRow = winRows
+          redrawPrompt = true
+        } else if (key == Key.pageDown) {
+          if (scrollTop != -1) {
+            var rendered  = renderAllRows_()
+            var totalRows = rendered.count
+            scrollTop = scrollTop + (viewportRows - 1)
+            if (scrollTop + viewportRows >= totalRows) {
+              // Caught up — back to live.
+              scrollTop = -1
+              Screen.window.clear()
+              Screen.window.position = [1, 1]
+              lastTotal = paintNew_(0, true)
+              promptRow = Screen.window.position[1]
+            } else {
+              paintViewport_(rendered, scrollTop, viewportRows)
+              promptRow = winRows
+            }
+            redrawPrompt = true
+          }
+        } else if (key == Key.up && scrollTop != -1) {
+          if (scrollTop > 0) {
+            scrollTop = scrollTop - 1
+            var rendered = renderAllRows_()
+            scrollViewportUp1_(rendered, scrollTop, viewportRows)
+          }
+          promptRow = winRows
+          redrawPrompt = true
+        } else if (key == Key.down && scrollTop != -1) {
+          var rendered  = renderAllRows_()
+          var totalRows = rendered.count
+          if (scrollTop + viewportRows >= totalRows - 1) {
+            // Bottom row of viewport is already (or would become)
+            // the live tail — drop back to live mode.
+            scrollTop = -1
+            Screen.window.clear()
+            Screen.window.position = [1, 1]
+            lastTotal = paintNew_(0, true)
+            promptRow = Screen.window.position[1]
+          } else {
+            scrollTop = scrollTop + 1
+            scrollViewportDown1_(rendered, scrollTop, viewportRows)
+            promptRow = winRows
+          }
           redrawPrompt = true
         } else if (key == Key.up) {
           // First Up in a search anchors the prefix to whatever the
@@ -157,7 +275,8 @@ class WrenConsole {
           var found = historyFindBackward_(histAnchor, startIdx)
           if (found >= 0) {
             histIdx = found
-            input = __history[found]
+            input   = __history[found]
+            cursor  = input.count
             redrawPrompt = true
           }
         } else if (key == Key.down) {
@@ -165,24 +284,37 @@ class WrenConsole {
             var found = historyFindForward_(histAnchor, histIdx)
             if (found >= 0) {
               histIdx = found
-              input = __history[found]
+              input   = __history[found]
             } else {
               // Walked off the newest match — restore the anchor
               // (whatever the user had typed before Up).
               histIdx = -1
-              input = histAnchor
+              input   = histAnchor
             }
+            cursor = input.count
             redrawPrompt = true
           }
         } else if (key == 0x000C) {                  // Ctrl+L
           Console.clear()
           Screen.window.clear()
           Screen.window.position = [1, 1]
+          scrollTop = -1
           lastTotal = Console.total
           promptRow = Screen.window.position[1]
           redrawPrompt = true
         } else if (ev.codepoint != null && ev.codepoint >= 0x20) {
-          input = input + ev.text
+          // Typing a printable char rejoins live mode if we're
+          // currently in scrollback.
+          if (scrollTop != -1) {
+            scrollTop = -1
+            Screen.window.clear()
+            Screen.window.position = [1, 1]
+            lastTotal = paintNew_(0, true)
+            promptRow = Screen.window.position[1]
+          }
+          input  = input[0...cursor] + ev.text +
+                   input[cursor...input.count]
+          cursor = cursor + ev.text.count
           histIdx = -1
           redrawPrompt = true
         }
@@ -192,8 +324,10 @@ class WrenConsole {
       // Drain any new log entries that landed during the keystroke
       // (e.g. System.print echo + eval output from the Enter path).
       // The prompt row gets overwritten as we emit; conio scrolls
-      // past the bottom for free.
-      if (Console.total > lastTotal) {
+      // past the bottom for free.  In scrollback mode the viewport
+      // is frozen — leave new entries pending until the user
+      // PageDown's back to live.
+      if (scrollTop == -1 && Console.total > lastTotal) {
         Screen.window.position = [1, promptRow]
         Screen.window.clearToLineEnd()
         lastTotal = paintNew_(lastTotal, false)
@@ -201,9 +335,10 @@ class WrenConsole {
         redrawPrompt = true
       }
 
-      if (redrawPrompt) drawPrompt_(promptRow, currentModule, input)
+      if (redrawPrompt) drawPrompt_(promptRow, currentModule, input, cursor)
     }
 
+    Screen.window.bounds = origBounds
     Screen.restore(saved)
     Console.markSeen()
   }
@@ -289,8 +424,11 @@ class WrenConsole {
   static runCommand_(line, current) {
     if (line == "/?" || line == "/help") {
       System.print("commands: /in [module], /quit, /?")
-      System.print("keys:     Up/Down (history; type a prefix first to filter),")
-      System.print("          Ctrl+W (kill word), Ctrl+L (clear), Esc/Ctrl+` (quit)")
+      System.print("editing:  Left/Right, Home/End, Backspace, Delete,")
+      System.print("          Ctrl+W (kill word back), Ctrl+L (clear screen)")
+      System.print("history:  Up/Down — type a prefix first to filter")
+      System.print("scroll:   PgUp/PgDn, plus Up/Down inside scrollback")
+      System.print("exit:     Esc, Ctrl+`, /quit")
       return current
     }
     if (line == "/quit" || line == "/q") {
@@ -334,10 +472,117 @@ class WrenConsole {
     return totalNow
   }
 
-  static drawPrompt_(row, mod, input) {
+  // Render every still-buffered log entry into a flat list of
+  // display-row Strings (no trailing newline on each row).  The
+  // rendering rules mirror emitEntry_:
+  //   - Print entries chain on the same row until a "\n" appears
+  //     (so System.print's "value" + "\n" pair shows on one row).
+  //   - Non-print entries force a row break before themselves if
+  //     we're mid-row, and emit "[label ts] text" terminated with
+  //     an implicit \n.
+  // Used as the source for scrollback paint; also for the row count
+  // needed by the PageUp/PageDown math.
+  static renderAllRows_() {
+    var rows     = []
+    var current  = ""
+    var totalNow = Console.total
+    var oldest   = totalNow - Console.count
+    var atStart  = true
+    for (s in oldest...totalNow) {
+      var e = Console[s]
+      if (e == null) continue
+      var src  = e[1]
+      var ts   = e[0]
+      var text = e[2]
+      var combined
+      if (src == LogSource.print) {
+        combined = text
+      } else {
+        if (!atStart) {
+          rows.add(current)
+          current = ""
+          atStart = true
+        }
+        var label = "?"
+        if (src == LogSource.compileError) label = "compile"
+        if (src == LogSource.runtimeError) label = "runtime"
+        if (src == LogSource.stackFrame)   label = "trace"
+        combined = "[%(label) %(ts)] " + text
+      }
+      var pieces = combined.split("\n")
+      for (i in 0...pieces.count - 1) {
+        current = current + pieces[i]
+        rows.add(current)
+        current = ""
+      }
+      current = current + pieces[pieces.count - 1]
+      atStart = current.count == 0
+      if (src != LogSource.print && !atStart) {
+        rows.add(current)
+        current = ""
+        atStart = true
+      }
+    }
+    if (current.count > 0) rows.add(current)
+    return rows
+  }
+
+  // Paint the scrollback viewport: clear, then dump rendered rows
+  // [startRow .. startRow + viewportRows).  startRow is a display-row
+  // index into renderAllRows_'s output, so navigation moves in
+  // exact-row units.
+  static paintViewport_(rows, startRow, viewportRows) {
+    Screen.window.clear()
+    Screen.window.position = [1, 1]
+    var endRow = (startRow + viewportRows).min(rows.count)
+    for (i in startRow...endRow) {
+      put_(rows[i])
+      put_("\n")
+    }
+  }
+
+  // Single-row scroll helpers: use Screen.moveRect to shift the
+  // existing viewport content by one row and only repaint the
+  // newly-exposed row.  Avoids the full clear/repaint that
+  // paintViewport_ would do for an arrow-key step.
+
+  // Up: viewport shows one row older at the top.  Caller has already
+  // decremented scrollTop, so rendered[scrollTop] is the new top row.
+  static scrollViewportUp1_(rendered, scrollTop, viewportRows) {
+    var w = Screen.size[0]
+    Screen.moveRect(1, 1, w, viewportRows - 1, 1, 2)
+    Screen.window.position = [1, 1]
+    Screen.window.clearToLineEnd()
+    if (scrollTop >= 0 && scrollTop < rendered.count) {
+      put_(rendered[scrollTop])
+    }
+  }
+
+  // Down: viewport shows one row newer at the bottom.  Caller has
+  // already incremented scrollTop, so the new bottom is at index
+  // scrollTop + viewportRows - 1.
+  static scrollViewportDown1_(rendered, scrollTop, viewportRows) {
+    var w = Screen.size[0]
+    Screen.moveRect(1, 2, w, viewportRows, 1, 1)
+    Screen.window.position = [1, viewportRows]
+    Screen.window.clearToLineEnd()
+    var idx = scrollTop + viewportRows - 1
+    if (idx >= 0 && idx < rendered.count) {
+      put_(rendered[idx])
+    }
+  }
+
+  static drawPrompt_(row, mod, input, cursor) {
     Screen.window.position = [1, row]
     Screen.window.clearToLineEnd()
-    Screen.window.print("(%(mod)) wren> " + input)
+    var prefix = "(%(mod)) wren> "
+    Screen.window.print(prefix + input)
+    // Re-position the conio cursor inside the just-painted input so
+    // the user sees where Left/Right/Home/End are sitting.  Column
+    // is 1-based, so prefix.count + cursor + 1.  Past-end cursor
+    // (== input.count) lands one past the last char, matching where
+    // an append would write.
+    Screen.window.position = [prefix.count + cursor + 1, row]
   }
 
   // conio's cputs treats LF as line-feed-only (cursor down, same column).
