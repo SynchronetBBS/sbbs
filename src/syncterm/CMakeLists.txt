@@ -114,7 +114,8 @@ if(USE_VENDORED_BOTAN)
 	    --enable-modules=${_botan_modules})
 	if(MSVC)
 		# MSVC: Botan's configure.py picks --cc=msvc + nmake Makefile.
-		# Output is botan.lib (no libbotan-3.a naming convention).
+		# Output is botan-3.lib (Botan 3.x uses the major-version
+		# suffix on Windows just like libbotan-3.a on POSIX).
 		list(APPEND _botan_configure_args
 		    --cc=msvc --build-tool=make)
 		if(CMAKE_SIZEOF_VOID_P EQUAL 8)
@@ -123,7 +124,7 @@ if(USE_VENDORED_BOTAN)
 			list(APPEND _botan_configure_args --cpu=x86)
 		endif()
 		set(VENDORED_BOTAN_LIB
-		    "${VENDORED_BOTAN_PREFIX}/lib/botan.lib" CACHE INTERNAL "")
+		    "${VENDORED_BOTAN_PREFIX}/lib/botan-3.lib" CACHE INTERNAL "")
 		set(_botan_build_cmd    nmake)
 		set(_botan_install_cmd  nmake install)
 	elseif(CMAKE_CROSSCOMPILING AND WIN32)
