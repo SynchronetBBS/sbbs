@@ -298,27 +298,34 @@ int sbbs_t::msgtoqwk(smbmsg_t* msg, FILE *qwk_fp, int mode, smb_t* smb
 			SAFECOPY(from, msg->from);
 		}
 
-		if (msg->to_net.addr && subnum == INVALID_SUB) {
-			if (msg->to_net.type == NET_FIDO)
-				snprintf(to, sizeof to, "%.128s@%s", msg->to, smb_faddrtoa((faddr_t *)msg->to_net.addr, tmp));
-			else if (msg->to_net.type == NET_INTERNET)
-				snprintf(to, sizeof to, "%.128s", (char*)msg->to_net.addr);
-			else if (msg->to_net.type == NET_QWK) {
-				if (mode & QM_TO_QNET) {
-					p = strchr((char *)msg->to_net.addr, '/');
-					if (p) {     /* Another hop */
-						p++;
-						SAFECOPY(to, "NETMAIL");
-						size += fprintf(qwk_fp, "%.128s@%.128s%c", msg->to, p, qwk_newline);
+		if (subnum == INVALID_SUB) {
+			if (msg->to_net.addr) {
+				if (msg->to_net.type == NET_FIDO)
+					snprintf(to, sizeof to, "%.128s@%s", msg->to, smb_faddrtoa((faddr_t *)msg->to_net.addr, tmp));
+				else if (msg->to_net.type == NET_INTERNET)
+					snprintf(to, sizeof to, "%.128s", (char*)msg->to_net.addr);
+				else if (msg->to_net.type == NET_QWK) {
+					if (mode & QM_TO_QNET) {
+						p = strchr((char *)msg->to_net.addr, '/');
+						if (p) {     /* Another hop */
+							p++;
+							SAFECOPY(to, "NETMAIL");
+							size += fprintf(qwk_fp, "%.128s@%.128s%c", msg->to, p, qwk_newline);
+						}
+						else
+							snprintf(to, sizeof to, "%.128s", msg->to);
 					}
 					else
-						snprintf(to, sizeof to, "%.128s", msg->to);
+						snprintf(to, sizeof to, "%.128s@%.128s", msg->to, (char*)msg->to_net.addr);
 				}
 				else
 					snprintf(to, sizeof to, "%.128s@%.128s", msg->to, (char*)msg->to_net.addr);
 			}
-			else
-				snprintf(to, sizeof to, "%.128s@%.128s", msg->to, (char*)msg->to_net.addr);
+			else if (mode & QM_TO_QNET) {
+				p = strchr(to, '@');
+				if (p != nullptr)
+					*p = '\0';
+			}
 		}
 		if ((mode & QM_EXT) && strlen(to) > QWK_HFIELD_LEN) {
 			size += fprintf(qwk_fp, "To: %.128s%c", to, qwk_newline);
