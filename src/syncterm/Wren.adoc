@@ -1,0 +1,1235 @@
+= SyncTERM Wren Scripting Manual
+:toc:
+
+SyncTERM embeds the http://wren.io/[Wren] virtual machine as a
+per-connection scripting host.  Every time SyncTERM connects to a BBS
+it spins up a fresh Wren VM, loads the user's scripts, and tears the
+VM down at disconnect.  Scripts hook into keyboard, mouse, inbound
+bytes, outbound bytes, status text, and a periodic timer; they get a
+read/write window into terminal and connection state through a small
+set of foreign classes.
+
+This document is the reference for that scripting layer: how scripts
+are discovered, how the embedded scripts can be overridden, and the
+complete add-on object model.
+
+== Why Wren
+
+Wren is a small, class-based, dynamically typed scripting language.
+Three properties make it a good fit for SyncTERM:
+
+* It compiles to bytecode in-process; no separate toolchain or
+  external interpreter is required.
+* The VM is a few thousand lines of plain C with no external
+  dependencies, vendored under `src/syncterm/wren/`.
+* The host program controls every binding the script can reach.  No
+  filesystem, networking, or process primitives leak in by default.
+
+The full upstream language reference lives at https://wren.io/.  This
+manual covers only the SyncTERM additions.
+
+== Quick Start
+
+The minimal "hello world" hook prints a message to the SyncTERM Wren
+console (Ctrl+&#96;) the first time you press F1 while connected:
+
+[source,wren]
+----
+import "syncterm" for Hook, Key
+
+Hook.onKey { |k|
+  if (k == Key.f1) {
+    System.print("hello from wren!")
+    return true        // consume the keystroke
+  }
+  return false         // pass through to SyncTERM
+}
+----
+
+Save this as `hello.wren` in the SyncTERM scripts directory (see
+<<script-loading>>), connect to any BBS, and press F1.  Open the
+console with Ctrl+&#96; to see the output.
+
+== Script Loading [[script-loading]]
+
+=== Script Directory
+
+User scripts live in a per-platform directory.  SyncTERM creates the
+directory on first launch if it doesn't already exist.
+
+[options="header",cols="1,3"]
+|===
+| Platform | Scripts directory
+
+| Linux / *BSD
+| `$XDG_DATA_HOME/syncterm/scripts/` +
+  (default `~/.local/share/syncterm/scripts/`)
+
+| macOS
+| `~/Library/Application Support/SyncTERM/scripts/`
+
+| Windows
+| `%APPDATA%\SyncTERM\scripts\`
+
+| Haiku
+| `~/config/settings/SyncTERM/scripts/`
+|===
+
+Every file with a `.wren` extension in this directory is loaded at
+connection time.  Files in subdirectories are not scanned.
+
+=== Module Names
+
+Each script becomes its own Wren module, named after the file
+basename without the `.wren` extension.  `myscript.wren` becomes
+module `myscript`.  Module names are how scripts cross-reference each
+other:
+
+[source,wren]
+----
+import "myscript" for SomeClass
+----
+
+Module names are also how the embedded-script override mechanism
+works (see below).
+
+=== Embedded Scripts
+
+SyncTERM ships with a small set of scripts compiled into the binary.
+They are not stored as files; the build system runs `wren_embed_gen`
+at compile time to fold each `scripts/*.wren` source into a C string
+table linked alongside `wren_host.c`.
+
+The currently embedded scripts are:
+
+[options="header",cols="1,3"]
+|===
+| Module | Purpose
+
+| `console`
+| Wren REPL.  Triggered by Ctrl+&#96;.
+
+| `connected`
+| Alt+L send-login handler.  Sends username, password, and sysop
+  password from the directory entry, with the right send-order rules
+  per connection type.
+|===
+
+Embedded scripts share the `syncterm` module with the foreign-class
+declarations rather than living in their own modules.  This lets them
+use `Screen`, `Input`, `Hook`, etc. directly without imports, and
+lets the REPL inspect any class or top-level binding they define.
+
+=== Overriding Embedded Scripts
+
+A user script whose basename matches an embedded script's module name
+overrides the embedded one.  If you create
+`~/.local/share/syncterm/scripts/console.wren`, your version replaces
+the built-in REPL; the embedded version is not loaded.  The override
+is loaded into the `syncterm` module so it sees the same scope the
+embedded version would have.
+
+The check is exact match on the bare module name.  `console.wren`
+overrides; `Console.wren` (different case) does not, and on
+case-sensitive filesystems will load as a separate module named
+`Console`.
+
+To opt out of an embedded script entirely, drop a stub override:
+
+[source,wren]
+----
+// ~/.local/share/syncterm/scripts/connected.wren
+// Disable the default Alt+L handler.
+----
+
+The override is loaded but registers no hook, so Alt+L silently does
+nothing.
+
+=== Load Order
+
+. The user script directory is globbed.
+. Each embedded script whose module name is _not_ in the user set is
+  loaded into the `syncterm` module in declaration order.
+. Each user script is then loaded.  An override of an embedded
+  module loads into `syncterm`; a fresh module loads into its own
+  filename-derived module.
+
+A script's top-level code runs once per connection, at load time.
+Top-level code typically registers hooks; persistent state should be
+stored on classes (static fields).
+
+=== Per-Connection Lifecycle
+
+The VM is created in `wren_host_init(bbs)` just before SyncTERM's main
+loop and freed in `wren_host_shutdown()` at every exit path.
+
+Every reconnect rebuilds the VM from scratch — module-level static
+fields, registered hooks, and timer entries do not survive a
+disconnect.  A script that needs cross-session state must persist it
+manually, either through `Cache` (see <<cache>>) or by writing
+configuration into the BBS list.
+
+The owner thread is captured at init; dispatchers called from any
+other thread (background SFTP and SSH writes invoke `conn_send` from
+worker threads) short-circuit to pass-through.  Scripts run on the
+foreground thread only.
+
+== Importing the API
+
+The host bindings live in module `syncterm`.  User scripts import the
+classes they need:
+
+[source,wren]
+----
+import "syncterm" for Screen, Input, Conn, Hook, Key
+----
+
+Embedded scripts do not import `syncterm`; they live in it.
+
+`Cache` is injected into the `syncterm` module from C as a
+module-level `Directory` object — there is no Wren-callable
+constructor.  Import it like any other binding:
+
+[source,wren]
+----
+import "syncterm" for Cache
+----
+
+== Hook Events
+
+Hooks are registered as Wren callables (block, function, or method
+reference).  Each call site walks its hook list in registration
+order; the first hook returning `true` consumes the event and stops
+dispatch.  Returning `false`, returning a non-Bool, or throwing
+passes through to the next hook and ultimately to SyncTERM's default
+handling.
+
+[options="header",cols="2,3,3"]
+|===
+| Method | Argument | Return contract
+
+| `Hook.onKey { \|k\| ... }`
+| `k`: 16-bit ciolib key code (see `Key`)
+| Bool — true to consume the keystroke
+
+| `Hook.onInput { \|b\| ... }`
+| `b`: one byte received from the remote
+| Bool — true to drop the byte before it reaches the terminal
+
+| `Hook.onOutput { \|s\| ... }`
+| `s`: bytes about to be sent to the remote
+| Bool — true to drop them
+
+| `Hook.onMouse { \|ev\| ... }`
+| `ev`: 7-element list `[event, bstate, modifiers, sx, sy, ex, ey]`
+| Bool — true to consume
+
+| `Hook.onStatus { \|def\| ... }`
+| `def`: SyncTERM's default status string
+| String to replace the status, or non-string to fall through
+
+| `Hook.every(ms, fn)`
+| `ms`: milliseconds; `fn`: callable
+| (none — return value ignored)
+|===
+
+`Hook.onOutput` runs from `conn_send`, the path that handles telnet
+IAC escaping and other framing.  The script's own outbound writes via
+`Conn.send` go through the same path and so do fire `onOutput`.  Use
+`Conn.sendRaw` to bypass.
+
+`Hook.every` fires from the main-loop deadline check just before the
+sleep call.  If the loop stalls long enough that more than one
+interval has elapsed, the deadline jumps forward to "now" rather
+than firing repeatedly to catch up.
+
+`Hook.onStatus` is called from the status-bar composer.  Returning a
+new string replaces SyncTERM's default status text for the next
+redraw.  Returning anything that isn't a string passes through.
+
+== Modal Input
+
+The conventional `Input.next` / `Input.next(ms)` / `Input.poll`
+primitives all return promptly; while a script is calling them in a
+loop the doterm() main loop is blocked, and inbound server bytes
+queue up in the socket buffer until the script returns.
+
+For modal dialogs that should not block the main loop while the
+script idles between events, use `Input.nextEvent`:
+
+[source,wren]
+----
+import "syncterm" for Input, Key, Screen
+
+Fiber.new {
+  while (true) {
+    var ev = Input.nextEvent
+    if (ev is KeyEvent && ev.code == Key.escape) break
+    Screen.window.print("got: %(ev)\n")
+  }
+  Screen.restore(saved)
+}.call()
+----
+
+`Input.nextEvent` parks the calling fiber and yields back through
+the C side.  The doterm() main loop continues to spin normally;
+remote-byte intake is gated off so server output cannot paint over
+the dialog, but server bytes remain queued and drain naturally on
+the next iteration after the fiber resumes.
+
+When the next key or mouse event arrives, the fiber is resumed with
+the event as its yielded value.  The event bypasses every
+`Hook.onKey` / `Hook.onMouse` callback and SyncTERM's default
+handling, exactly as if a hook had returned `true`.
+
+`nextEvent` must be called from inside a fiber created with
+`Fiber.new {}`.  The root fiber cannot be resumed from C after it
+yields; calling `nextEvent` from the top level of a script (or from
+a hook callback's top frame) hangs the script.
+
+== Built-in REPL
+
+Ctrl+&#96; opens an immediate-mode REPL implemented in
+`scripts/console.wren`.  Compiled-in by default; user override via
+`~/.local/share/syncterm/scripts/console.wren`.
+
+While the console is open the doterm() main loop is suspended.
+Connection bytes accumulate in the socket buffer but aren't drained
+until you exit the console.  This is acceptable for a development
+tool; not appropriate for "watch a slow BBS scroll" use cases.
+
+The REPL evaluates input through `REPL.eval(module, src)`.  Submitted
+text is first compiled in expression form; if the parser reports
+"Expected expression." it is recompiled as a statement.  Successful
+expressions print their result quoted with C-style escapes (so
+`"7"` the string and `7` the number are visibly distinct);
+statements print nothing.
+
+Variables and class declarations persist across submissions inside
+the active module:
+
+----
+> var x = 1 + 2
+> x * 10
+30
+> class Foo { static greet { "hi" } }
+> Foo.greet
+"hi"
+----
+
+=== REPL Commands
+
+[options="header",cols="2,3"]
+|===
+| Command | Action
+
+| `/help`
+| Print key bindings.
+
+| `/in <module>`
+| Switch the eval target to `<module>`.  Default is `syncterm`.
+  Use this to inspect or mutate any other loaded module.
+
+| `/quit`
+| Close the REPL and return to the BBS session.
+|===
+
+=== REPL Key Bindings
+
+[options="header",cols="2,3"]
+|===
+| Key | Action
+
+| Up / Down
+| Walk command history.  If the line currently has typed text, that
+  text becomes a prefix anchor — only history entries starting with
+  it are visited.
+
+| Ctrl+W
+| Backward kill-word.
+
+| Middle-click
+| Paste from system clipboard.  Multi-line text is split on LF and
+  each line submitted as if Enter were pressed.
+
+| Alt+drag
+| Hand off to the existing select-and-copy gesture.
+
+| Ctrl+&#96; / `/quit`
+| Close the REPL.
+|===
+
+== Object Model
+
+The remainder of this document is a reference for every foreign
+class exposed in the `syncterm` module.
+
+=== Screen [[screen]]
+
+Read/write access to the terminal display surface.  `Screen` itself
+exposes whole-screen and absolute-coordinate operations; per-window
+operations live under `Screen.window`.
+
+[options="header",cols="2,3"]
+|===
+| Member | Description
+
+| `Screen.size`
+| `[width, height]` of the entire screen.
+
+| `Screen.save()`
+| Save the entire screen contents.  Returns an opaque handle.
+
+| `Screen.restore(handle)`
+| Restore a previously saved screen.
+
+| `Screen.readRect(sx, sy, ex, ey)`
+| Read a rectangle of cells (1-based, inclusive).  Returns a
+  <<cells,`Cells`>> or `null`.
+
+| `Screen.writeRect(sx, sy, ex, ey, cells)`
+| Write a list of <<cell,`Cell`>> objects into a rectangle.
+
+| `Screen.moveRect(sx, sy, ex, ey, dx, dy)`
+| Copy a rectangle to a new position.
+
+| `Screen.attr=(a)`
+| Set the active text attribute byte.
+
+| `Screen.hyperlinkId`, `Screen.hyperlinkId=(id)`
+| Hyperlink ID attached to subsequent window writes.  `0` clears.
+  Allocate IDs through <<hyperlinks,`Hyperlinks.add`>>.
+|===
+
+`Screen.supports`, `Screen.font`, `Screen.palette`, `Screen.cursor`,
+`Screen.videoFlags`, `Screen.color`, and `Screen.window` are getters
+that return the helper class so the script can call its static
+members.
+
+==== Screen.supports
+
+Read-only Boolean capability flags reflecting the current display
+backend (`cio_api.options`).
+
+`loadableFonts`, `altBlinkFont`, `altBoldFont`, `brightBackground`,
+`paletteChange`, `pixels`, `customCursor`, `fontSelection`,
+`windowTitle`, `windowName`, `windowIcon`, `extendedPalette`,
+`blockyScaling`, `externalScaling`, `closeLock`.
+
+==== Screen.window [[screen-window]]
+
+Operations scoped to the active text window.  Cursor position,
+character output, line edits, and clearing all act inside the
+window's rectangle.  Coordinates are window-relative (1, 1 is the
+top-left of the window, not the screen).
+
+[options="header",cols="2,3"]
+|===
+| Member | Description
+
+| `Screen.window.bounds`, `bounds=(box)`
+| `[sx, sy, ex, ey]` of the active window (screen-absolute, 1-based,
+  inclusive).
+
+| `Screen.window.position`, `position=(coord)`
+| `[x, y]` cursor position, window-relative.
+
+| `Screen.window.putChar(c)`
+| Write one character at the cursor.
+
+| `Screen.window.print(s)`
+| Write a string at the cursor.
+
+| `Screen.window.clear()`
+| Clear the window with the current attribute.
+
+| `Screen.window.clearToLineEnd()`
+| Clear from cursor to end of line.
+
+| `Screen.window.deleteLine()`, `insertLine()`, `scroll()`
+| Line editing inside the window.
+|===
+
+==== Screen.font
+
+Per-slot font management.  Five slots (0..4) match SyncTERM's font
+slot model.
+
+`Screen.font[i]` reads the font index in slot `i`.  `Screen.font[i] = n`
+loads font `n` into slot `i`.  Use the `Font` class
+(see <<font>>) for the named built-in indices.
+
+==== Screen.palette
+
+24-bit-RGB palette as 0xRRGGBB integers.
+
+`Screen.palette[i]` and `Screen.palette[i]=(c)` cover the full
+palette range.
+
+`Screen.palette.mode` and `Screen.palette.mode=(list)` get/set the
+16-color legacy-attribute palette as a List of integers.
+
+NOTE: `term.c`, `cterm.c`, and `ripper.c` all do their own palette
+manipulations.  Concurrent edits from a script and from the terminal
+code may not compose cleanly.
+
+==== Screen.cursor — `CustomCursor` [[customcursor]]
+
+Cursor geometry: scanline range, blink rate, visibility.
+
+The class supports two usage modes:
+
+* *Static* (live state): every static property reads or writes the
+  cursor immediately.  `Screen.cursor.blink = false` hides the blink
+  on the next refresh.
+* *Instance* (staged edit): `CustomCursor.new()` (or
+  `CustomCursor.current`) snapshots the current values.  Modify the
+  instance's properties locally, then `apply()` to commit
+  atomically.
+
+Properties (both static and instance): `startLine`, `endLine`,
+`range`, `blink`, `visible`.
+
+Pre-defined snapshots:
+
+[options="header",cols="2,3"]
+|===
+| Snapshot | Equivalent legacy code
+
+| `CustomCursor.normal`
+| Mode-default cursor shape (legacy code 2).
+
+| `CustomCursor.solid`
+| Solid block cursor (legacy code 1).
+
+| `CustomCursor.none`
+| Hidden cursor (legacy code 0).
+|===
+
+==== Screen.videoFlags — `VideoFlags`
+
+Boolean video-output flags, with the same static-vs-instance pattern
+as `CustomCursor`.
+
+Properties: `altChars`, `noBright`, `bgBright`, `blinkAltChars`,
+`noBlink`, `lineGraphicsExpand`.
+
+`expand` is read-only — flipping it under a live screen would
+mismatch the cell-bitmap layout sized at video-mode init for 8-vs-9
+pixel-wide cells.
+
+==== Screen.color — `Color`
+
+Build and inspect 24-bit RGB values.  Returned values are raw
+0xRRGGBB without the high RGB-mode bit; the bit is added when
+writing into a `Cell` field via `fgRgb=` / `bgRgb=`.
+
+[options="header",cols="2,3"]
+|===
+| Method | Description
+
+| `Color.fromRgb(r, g, b)`
+| Pack three 8-bit components into a uint32.
+
+| `Color.fromAttr(attr)`
+| Decode an attribute byte into `[fg, bg]` 24-bit RGB.
+
+| `Color.toLegacyAttr(fg, bg)`
+| Encode two palette indices into one attribute byte.
+|===
+
+=== Input
+
+Unified event reader.  Replaces the legacy `getch` / `getMouse`
+two-phase split.
+
+[options="header",cols="2,3"]
+|===
+| Member | Description
+
+| `Input.next`
+| Block until the next event; return `KeyEvent` or `MouseEvent`.
+
+| `Input.next(ms)`
+| Wait up to `ms` milliseconds; return the event or `null` on
+  timeout.
+
+| `Input.poll`
+| Return immediately with the next pending event, or `null` if
+  nothing is pending.
+
+| `Input.unget(ev)`
+| Push an event back to the front of the input queue.  Routes by
+  event type — `KeyEvent` -> `ungetch`, `MouseEvent` -> `ungetmouse`.
+
+| `Input.mousedrag()`
+| Hand off to SyncTERM's drag-select gesture.
+
+| `Input.mouseVisible=(b)`
+| Show or hide the mouse cursor.  Setter only — there is no ciolib
+  query for visibility, and tracking it from Wren would drift if
+  other code shows or hides the cursor.
+
+| `Input.nextEvent`
+| Park the calling fiber until the next event arrives.  See
+  <<modal-input,Modal Input>>.
+|===
+
+=== KeyEvent
+
+Wraps a 16-bit ciolib key code.
+
+[options="header",cols="2,3"]
+|===
+| Member | Description
+
+| `KeyEvent.new(code)`
+| Construct from a raw 16-bit code.
+
+| `code`
+| Raw 16-bit ciolib code.
+
+| `codepoint`
+| Unicode value of the byte under the current `Font.codepage` for
+  non-extended keys; `null` for extended keys (high byte non-zero).
+
+| `text`
+| UTF-8 form of `codepoint`, or `""` for extended keys.
+|===
+
+The `CIO_KEY_ABORTED` scancode (0x01E0, "Esc by scancode") is
+normalized to plain Esc (0x001B) inside the constructor, so scripts
+only ever see one Esc value.
+
+=== MouseEvent
+
+Mirrors `struct mouse_event` from `ciolib.h`.
+
+[options="header",cols="2,3"]
+|===
+| Member | Description
+
+| `MouseEvent.new(event, modifiers, sx, sy, ex, ey)`
+| Construct from raw fields.
+
+| `event`
+| Mouse event type code.
+
+| `modifiers`
+| Keyboard modifier mask.
+
+| `startX`, `startY`
+| Click-down coordinates (1-based).
+
+| `endX`, `endY`
+| Release coordinates (1-based).
+|===
+
+=== Key
+
+Named constants for the `CIO_KEY_*` set in `ciolib.h`.  These are
+the values you'll see in `KeyEvent.code` for non-printable keys and
+key combinations.
+
+Letters and Esc / Enter / Backspace / Tab / Delete are direct ASCII
+values.  Cursor and editing keys, function keys, Shift/Ctrl/Alt
+combinations, and the marker keys (`mouse`, `quit`, `wrenConsole`)
+all have named constants — see the `Key` class declaration in
+`wren_host.c` for the full list, or use the REPL's
+`Key.<TAB>`-equivalent inspection through `System.print(Key)`.
+
+=== Clipboard
+
+[options="header",cols="2,3"]
+|===
+| Member | Description
+
+| `Clipboard.text`
+| Read the system clipboard as a string.
+
+| `Clipboard.text=(s)`
+| Write a string to the system clipboard.
+|===
+
+=== Codepage
+
+Enum-style class.  Values match `enum ciolib_codepage` in
+`utf8_codepages.h`:
+
+`cp437`, `cp1251`, `cp1251_b`, `koi8r`, `iso8859_2`, `iso8859_4`,
+`cp866m`, `iso8859_9`, `iso8859_8`, `koi8u`, `iso8859_15`,
+`iso8859_5`, `cp850`, `cp850_b`, `cp865`, `cp865_b`, `iso8859_7`,
+`iso8859_1`, `cp866m2`, `cp866u`, `cp1131`, `armscii8`, `haik8`,
+`atascii`, `petsciiUpper`, `petsciiLower`, `prestel`, `prestelSep`,
+`atariSt`.
+
+=== Cell [[cell]]
+
+Wraps a `struct vmem_cell`: one screen cell's character, attribute,
+and color state.  Use cases: read a rectangle through
+`Screen.readRect`, build a list manually, then write it back through
+`Screen.writeRect`.
+
+[options="header",cols="2,3"]
+|===
+| Member | Description
+
+| `Cell.new()`
+| Construct an empty cell.
+
+| `ch`, `ch=(s)`
+| Character as a Unicode string (one codepoint, round-tripped
+  through CP437).
+
+| `chByte`, `chByte=(n)`
+| Character as a raw 8-bit byte.
+
+| `font`, `font=(n)`
+| Font slot.
+
+| `legacyAttr`, `legacyAttr=(n)`
+| Legacy attribute byte (foreground in low nibble, background in
+  high nibble, plus bright/blink bits).
+
+| `bright`, `bright=(b)`
+| Bright bit.
+
+| `blink`, `blink=(b)`
+| Blink bit.
+
+| `fgPalette`, `bgPalette`
+| Foreground / background palette indices.
+
+| `fgRgb`, `bgRgb`
+| Foreground / background as 24-bit RGB.  Setters preserve bits
+  24..30 of the existing field, so toggling between palette and RGB
+  modes does not lose unrelated state.
+
+| `hyperlinkId`, `hyperlinkId=(n)`
+| Hyperlink ID attached to this cell.
+|===
+
+=== Cells [[cells]]
+
+Immutable foreign list returned by `Screen.readRect`.  Indexable,
+iterable, has `.count`.
+
+=== Font [[font]]
+
+Named built-in font indices, plus runtime queries.
+
+[cols="2,3"]
+|===
+| Constant | Index
+
+| `Font.cp437English`
+| 0
+
+| `Font.commodore64Upper` / `commodore64Lower`
+| 32 / 33
+
+| `Font.commodore128Upper` / `commodore128Lower`
+| 34 / 35
+
+| `Font.atari`
+| 36
+
+| `Font.potNoodle`, `mosOul`, `microKnightPlus`, `topazPlus`,
+  `microKnight`, `topaz`
+| 37..42
+
+| `Font.prestel`
+| 43
+
+| `Font.atariSt`
+| 44
+
+| `Font.ripterm`
+| 45
+|===
+
+[options="header",cols="2,3"]
+|===
+| Method | Description
+
+| `Font.name(i)`
+| Human-readable font name for index `i`.
+
+| `Font.count`
+| Total number of font slots known to ciolib.
+
+| `Font.available(i)`
+| `true` if font `i` has actually been loaded.
+
+| `Font.codepage`
+| Codepage of font slot 0.
+
+| `Font.codepageOf(i)`
+| Codepage of font slot `i`.
+|===
+
+=== Hyperlinks [[hyperlinks]]
+
+Map-like read interface over the active hyperlink table.
+
+[options="header",cols="2,3"]
+|===
+| Member | Description
+
+| `Hyperlinks[id]`
+| URI string for `id`, or `null`.
+
+| `Hyperlinks.containsKey(id)`
+| `true` if `id` is present.
+
+| `Hyperlinks.add(uri, idParam)`
+| Allocate a new hyperlink ID for `uri` with optional `id` parameter
+  string.  Returns the new numeric ID.
+
+| `Hyperlinks.params(id)`
+| Parameter string for `id`, or `null`.
+|===
+
+To attach hyperlinks to text, allocate an ID and assign it to
+`Screen.hyperlinkId` before writing through `Screen.window.print`.
+
+=== Console [[console]]
+
+Read-only access to the always-on print/error log buffer.  The
+buffer has 1024 entries of up to 8 KB each; older entries are
+evicted in FIFO order.  Sequence numbers are monotonic across the
+program's lifetime, including across eviction, so an incremental
+"show only entries newer than X" reader works correctly even after
+the ring has wrapped.
+
+[options="header",cols="2,3"]
+|===
+| Member | Description
+
+| `Console.count`
+| Number of valid entries currently in the ring.
+
+| `Console.total`
+| Monotonic count of entries ever written.  Survives `clear()`.
+
+| `Console[seq]`
+| Entry with monotonic sequence `seq`, as a tuple
+  `[seq, ts, source, text]`.  `source` is one of the
+  <<logsource,`LogSource`>> values.  Out-of-range returns `null`.
+
+| `Console.clear()`
+| Drop all entries.  `total` keeps incrementing.
+
+| `Console.iterate`, `iteratorValue`
+| Wren iteration protocol — works in `for (e in Console) { ... }`.
+|===
+
+=== LogSource [[logsource]]
+
+Enum values for the `source` field on `Console` entries.
+
+* `LogSource.print` (0) — script `System.print`.
+* `LogSource.compileError` (1) — Wren compile diagnostic.
+* `LogSource.runtimeError` (2) — Wren runtime error message.
+* `LogSource.stackFrame` (3) — one frame of a runtime-error stack
+  trace.
+
+=== REPL [[repl]]
+
+Primitive for the immediate-mode REPL.  Most scripts will not use
+this directly; the embedded `console` script wraps it.
+
+[options="header",cols="2,3"]
+|===
+| Method | Description
+
+| `REPL.eval(src)`
+| Compile and run `src` in module `syncterm`.  Returns `null` for
+  statements; `[value]` (a one-element list) for expressions.
+
+| `REPL.eval(module, src)`
+| As above, in `module`.
+
+| `REPL.hasModule(name)`
+| `true` if `name` has been loaded.
+|===
+
+The `[value]` wrapper for expressions distinguishes "this was a
+statement" from "this was an expression whose value is `null`".
+
+Runtime errors propagate normally.  Wrap the call in
+`Fiber.new {}.try()` to catch them.
+
+=== Conn
+
+Connection-level send and receive.
+
+[options="header",cols="2,3"]
+|===
+| Member | Description
+
+| `Conn.send(s)`
+| Send bytes through the full path: telnet IAC escaping, `Hook.onOutput`
+  dispatch, then on-wire.
+
+| `Conn.sendRaw(s)`
+| Send bytes raw, bypassing IAC escaping and `onOutput` hooks.
+
+| `Conn.close()`
+| Close the connection.
+
+| `Conn.connected`
+| Bool — is the link up?
+
+| `Conn.type`
+| `ConnType` value.
+
+| `Conn.pending`
+| Bytes available to read right now (in the inbuf ring).
+
+| `Conn.queued`
+| Bytes queued to write that haven't gone out yet.
+
+| `Conn.peek(n)`
+| Look at up to `n` bytes from the inbuf without consuming.
+  Clamped to the actual ring size.
+
+| `Conn.recv(n)`
+| Read up to `n` bytes from the inbuf and consume them.
+|===
+
+=== CTerm [[cterm]]
+
+Read-only window into `cterm` state — what `term.c` and `ripper.c`
+read.  Useful from `Hook.onInput` and `Hook.onStatus` for
+emulation-aware logic.
+
+[options="header",cols="2,3"]
+|===
+| Group | Members
+
+| Cursor (1-based, on the terminal)
+| `x`, `y`
+
+| Origin (1-based, on the host screen)
+| `originX`, `originY`
+
+| Geometry
+| `width`, `height`, `topMargin`, `bottomMargin`, `leftMargin`,
+  `rightMargin`
+
+| Color state
+| `attr`, `fgColor`, `bgColor`, `hasPaletteOverride`,
+  `paletteOverride`
+
+| Fonts
+| `fontSlot`, `altFonts`
+
+| Scrollback
+| `scrollbackLines`, `scrollbackWidth`, `scrollbackPos`,
+  `scrollbackStart`
+
+| Mode flags
+| `emulation` (`Emulation`), `doorwayMode`, `music`, `started`,
+  `skypix`, `logMode` (`LogMode`), `logPaused`, `statusDisplay`
+  (`StatusDisplay`)
+
+| Bitfield snapshots
+| `extAttr` (`ExtAttr`), `lastColumnFlag` (`LastColumnFlag`)
+|===
+
+[options="header",cols="2,3"]
+|===
+| Action | Description
+
+| `CTerm.write(s)`
+| Send `s` to `cterm_write` — bypass the wire, render directly.
+|===
+
+==== ExtAttr
+
+Snapshot of cterm's extended-attribute bitfield.  All members are
+read-only Booleans.
+
+`autoWrap`, `originMode`, `sxScroll`, `decLrmm`, `bracketPaste`,
+`decBkm`, `prestelMosaic`, `prestelDoubleHeight`, `prestelConceal`,
+`prestelSeparated`, `prestelHold`, `alternateKeypad`.
+
+==== LastColumnFlag
+
+Snapshot of cterm's last-column-flag state.
+
+`set`, `enabled`, `forced` — all Booleans.
+
+==== LogMode and StatusDisplay
+
+Enum classes referenced by `CTerm.logMode` and `CTerm.statusDisplay`.
+
+* `LogMode.none` (0), `LogMode.ascii` (1), `LogMode.raw` (2).
+* `StatusDisplay.none` (0), `StatusDisplay.indicator` (1),
+  `StatusDisplay.host` (2).
+
+=== BBS [[bbs]]
+
+Read-only window into the active `struct bbslist` entry.  Useful
+from `onConnect`-style top-level code that wants to behave
+differently per BBS.
+
+Most fields are direct getters that return the underlying value.
+Fields that index into enums are surfaced both as the integer (for
+direct comparison with the enum class) and through the typed enum
+classes documented below.
+
+[options="header",cols="2,3"]
+|===
+| Group | Fields
+
+| Identity
+| `name`, `addr`, `port`, `connType` (`ConnType`), `comment`,
+  `type` (`BBSListType`), `id`
+
+| Network
+| `addressFamily` (`AddressFamily`)
+
+| Auth
+| `user`, `password`, `syspass`, `sftpPublicKey`,
+  `sshFingerprint`, `sshFingerprintLen`
+
+| Display
+| `termName`, `screenMode` (`ScreenMode`), `bpsRate`, `font`,
+  `noStatus`, `hidePopups`, `yellowIsYellow`, `forceLcf`,
+  `palette`, `paletteSize`
+
+| Modem / serial
+| `stopBits`, `dataBits`, `parity` (`Parity`),
+  `flowControl` (`FlowControl`)
+
+| Telnet
+| `telnetNoBinary`, `deferTelnetNegotiation`, `ghostProgram`
+
+| RIP / music
+| `rip` (`RipVersion`), `music` (`MusicMode`)
+
+| File transfer
+| `dlDir`, `ulDir`, `xferLogLevel` (`LogLevel`),
+  `telnetLogLevel` (`LogLevel`)
+
+| Logs
+| `logFile`, `appendLogFile`
+
+| Statistics
+| `added`, `connected`, `fastConnected`, `calls`, `sortOrder`
+|===
+
+==== ConnType [[conntype]]
+
+`unknown` (0), `rlogin` (1), `rloginReversed` (2), `telnet` (3),
+`raw` (4), `ssh` (5), `sshNoAuth` (6), `modem` (7), `serial` (8),
+`serialNoRts` (9), `shell` (10), `mbbsGhost` (11), `telnets` (12).
+
+==== Emulation
+
+`ansiBbs` (0), `petascii` (1), `atascii` (2), `prestel` (3),
+`beeb` (4), `atariVt52` (5).
+
+==== BBSListType
+
+`user` (0), `system` (1).
+
+==== ScreenMode
+
+Standard screen modes carry their dimensions in the name.  Selected
+values:
+
+`current` (0), `c80x25` (1), `lcd80x25` (2), `c80x28` (3),
+`c80x30` (4), `c80x43` (5), `c80x50` (6), `c80x60` (7),
+`c132x37` (8), `c132x52` (9), `c132x25` (10), `c132x28` (11),
+`c132x30` (12), `c132x34` (13), `c132x43` (14), `c132x50` (15),
+`c132x60` (16), `c64` (17), `c128_40` (18), `c128_80` (19),
+`atari` (20), `atariXep80` (21), `custom` (22), `ega80x25` (23),
+`vga80x25` (24), `prestel` (25), `beeb` (26), `atariSt40x25` (27),
+`atariSt80x25` (28), `atariSt80x25Mono` (29).
+
+==== AddressFamily
+
+`unspec` (0), `inet` (1), `inet6` (2).
+
+==== MusicMode
+
+`syncterm` (0), `bansi` (1), `enabled` (2).
+
+==== RipVersion
+
+`none` (0), `v1` (1), `v3` (2).
+
+==== Parity
+
+`none` (0), `even` (1), `odd` (2).
+
+==== FlowControl
+
+Read-only foreign class — instance returned from `BBS.flowControl`.
+
+* `rtsCts` — Bool.
+* `xonOff` — Bool.
+
+==== LogLevel
+
+Standard syslog severity values.
+
+`emergency` (0), `alert` (1), `critical` (2), `error` (3),
+`warning` (4), `notice` (5), `info` (6), `debug` (7).
+
+=== Cache [[cache]]
+
+Module-level `Directory` injected from C, pointing at SyncTERM's
+per-user cache directory (`SYNCTERM_PATH_CACHE`).  Use this for
+script-private state that should survive restarts.
+
+[source,wren]
+----
+import "syncterm" for Cache
+
+if (Cache.contains("greetings.txt")) {
+  var f = Cache.create("greetings.txt")
+  f.open()
+  System.print(f.read())
+  f.close()
+}
+----
+
+There is no Wren-callable factory for `Directory` — `Cache` is the
+only one a script can reach without going through C.
+
+=== Directory
+
+Opaque handle pointing at a directory on disk.
+
+[options="header",cols="2,3"]
+|===
+| Method | Description
+
+| `Directory.contains(name)`
+| `true` if a file named `name` exists in the directory.
+
+| `Directory.list()`
+| Return a list of file names in the directory.
+
+| `Directory.create(name)`
+| Construct a `File` object for `name` (does not actually create the
+  file on disk — call `File.open()` then `File.write()`).
+|===
+
+==== Filename Policy
+
+Filenames passed to any `Directory` or `File` method must satisfy:
+
+* Length 1..64 characters.
+* Characters from `[A-Za-z0-9._-]` only.
+* Must not begin with `.` or `-`.
+* Must not end with `.`.
+* Must not contain `..`.
+* Must not match a Windows reserved device name (`CON`, `PRN`,
+  `AUX`, `NUL`, `COM1`..`COM9`, `LPT1`..`LPT9`), case-insensitively
+  and with or without an extension.
+
+Method calls violating the policy fail (return null / no-op);
+methods on the resulting `File` are no-ops if construction failed.
+
+=== File
+
+[options="header",cols="2,3"]
+|===
+| Method | Description
+
+| `File.open()`
+| Open the file (creating if necessary).  Subsequent reads / writes
+  start at offset 0.
+
+| `File.close()`
+| Close the file handle.
+
+| `File.readBytes(count)`
+| Read up to `count` bytes from the current offset; advance.
+  Returns the bytes as a String.
+
+| `File.readBytes(count, offset)`
+| Read at an absolute offset; do not advance the current offset.
+
+| `File.read()`
+| Read the entire file from offset 0.
+
+| `File.writeBytes(s)`, `writeBytes(s, offset)`
+| Write `s` at the current or given offset.
+
+| `File.write(s)`
+| Replace file contents with `s`.
+
+| `File.delete()`
+| Delete the file from disk.  Subsequent operations on this `File`
+  are no-ops.
+
+| `File.offset`, `offset=(o)`
+| Current read/write position.
+
+| `File.size`
+| Length of the file in bytes.
+
+| `File.isOpen`
+| `true` while the handle is valid.
+|===
+
+A `File` whose backing file has been deleted becomes a "landmine":
+every method silently no-ops.  This avoids partial writes after a
+delete races with an outstanding handle.
+
+=== Hook
+
+The dispatcher registry.  See <<hook-events,Hook Events>> for the
+contract on each method.
+
+`Hook.onKey(fn)`, `Hook.onInput(fn)`, `Hook.onOutput(fn)`,
+`Hook.onMouse(fn)`, `Hook.onStatus(fn)`, `Hook.every(ms, fn)`.
+
+== Worked Example: Auto-respond to a Prompt
+
+A small script that watches inbound text for a known prompt and
+sends a canned response.  Demonstrates `onInput`, line buffering,
+and a substring check.
+
+[source,wren]
+----
+import "syncterm" for Hook, Conn
+
+class AutoReply {
+  static buf { __buf }
+  static buf=(s) { __buf = s }
+
+  static check(prompt, reply) {
+    if (buf.contains(prompt)) {
+      Conn.send(reply + "\r")
+      buf = ""
+    }
+  }
+}
+
+AutoReply.buf = ""
+
+Hook.onInput { |b|
+  if (b == 0x0a) {
+    AutoReply.check("Press any key to continue", "")
+    AutoReply.check("Logon: ", "myhandle")
+    AutoReply.buf = ""
+  } else if (b >= 0x20 && b < 0x7f) {
+    AutoReply.buf = AutoReply.buf + String.fromCodePoint(b)
+    if (AutoReply.buf.count > 256) {
+      AutoReply.buf = AutoReply.buf[-128..-1]
+    }
+  }
+  return false
+}
+----
+
+The hook returns `false` so the bytes still reach the terminal.
+Returning `true` would make the prompt invisible to the user — fine
+for fully scripted sessions, surprising for a human at the keyboard.
