@@ -1,0 +1,329 @@
+Grammar
+
+    0 $accept: line $end
+
+    1 line: alt EOL
+
+    2 alt: concat
+    3    | alt '|' concat
+
+    4 concat: repeat
+    5       | concat repeat
+
+    6 repeat: single
+    7       | single '*'
+    8       | single '*' '?'
+    9       | single '+'
+   10       | single '+' '?'
+   11       | single '?'
+   12       | single '?' '?'
+
+   13 count: ε
+
+   14 single: '(' count alt ')'
+   15       | '(' '?' ':' alt ')'
+   16       | CHAR
+   17       | '.'
+
+
+Terminals, with rules where they appear
+
+    $end (0) 0
+    '(' (40) 14 15
+    ')' (41) 14 15
+    '*' (42) 7 8
+    '+' (43) 9 10
+    '.' (46) 17
+    ':' (58) 15
+    '?' (63) 8 10 11 12 15
+    '|' (124) 3
+    error (256)
+    CHAR <c> (258) 16
+    EOL <c> (259) 1
+
+
+Nonterminals, with rules where they appear
+
+    $accept (13)
+        on left: 0
+    line <re> (14)
+        on left: 1
+        on right: 0
+    alt <re> (15)
+        on left: 2 3
+        on right: 1 3 14 15
+    concat <re> (16)
+        on left: 4 5
+        on right: 2 3 5
+    repeat <re> (17)
+        on left: 6 7 8 9 10 11 12
+        on right: 4 5
+    count <nparen> (18)
+        on left: 13
+        on right: 14
+    single <re> (19)
+        on left: 14 15 16 17
+        on right: 6 7 8 9 10 11 12
+
+
+State 0
+
+    0 $accept: • line $end
+
+    CHAR  shift, and go to state 1
+    '('   shift, and go to state 2
+    '.'   shift, and go to state 3
+
+    line    go to state 4
+    alt     go to state 5
+    concat  go to state 6
+    repeat  go to state 7
+    single  go to state 8
+
+
+State 1
+
+   16 single: CHAR •
+
+    $default  reduce using rule 16 (single)
+
+
+State 2
+
+   14 single: '(' • count alt ')'
+   15       | '(' • '?' ':' alt ')'
+
+    '?'  shift, and go to state 9
+
+    $default  reduce using rule 13 (count)
+
+    count  go to state 10
+
+
+State 3
+
+   17 single: '.' •
+
+    $default  reduce using rule 17 (single)
+
+
+State 4
+
+    0 $accept: line • $end
+
+    $end  shift, and go to state 11
+
+
+State 5
+
+    1 line: alt • EOL
+    3 alt: alt • '|' concat
+
+    EOL  shift, and go to state 12
+    '|'  shift, and go to state 13
+
+
+State 6
+
+    2 alt: concat •
+    5 concat: concat • repeat
+
+    CHAR  shift, and go to state 1
+    '('   shift, and go to state 2
+    '.'   shift, and go to state 3
+
+    $default  reduce using rule 2 (alt)
+
+    repeat  go to state 14
+    single  go to state 8
+
+
+State 7
+
+    4 concat: repeat •
+
+    $default  reduce using rule 4 (concat)
+
+
+State 8
+
+    6 repeat: single •
+    7       | single • '*'
+    8       | single • '*' '?'
+    9       | single • '+'
+   10       | single • '+' '?'
+   11       | single • '?'
+   12       | single • '?' '?'
+
+    '*'  shift, and go to state 15
+    '?'  shift, and go to state 16
+    '+'  shift, and go to state 17
+
+    $default  reduce using rule 6 (repeat)
+
+
+State 9
+
+   15 single: '(' '?' • ':' alt ')'
+
+    ':'  shift, and go to state 18
+
+
+State 10
+
+   14 single: '(' count • alt ')'
+
+    CHAR  shift, and go to state 1
+    '('   shift, and go to state 2
+    '.'   shift, and go to state 3
+
+    alt     go to state 19
+    concat  go to state 6
+    repeat  go to state 7
+    single  go to state 8
+
+
+State 11
+
+    0 $accept: line $end •
+
+    $default  accept
+
+
+State 12
+
+    1 line: alt EOL •
+
+    $default  reduce using rule 1 (line)
+
+
+State 13
+
+    3 alt: alt '|' • concat
+
+    CHAR  shift, and go to state 1
+    '('   shift, and go to state 2
+    '.'   shift, and go to state 3
+
+    concat  go to state 20
+    repeat  go to state 7
+    single  go to state 8
+
+
+State 14
+
+    5 concat: concat repeat •
+
+    $default  reduce using rule 5 (concat)
+
+
+State 15
+
+    7 repeat: single '*' •
+    8       | single '*' • '?'
+
+    '?'  shift, and go to state 21
+
+    $default  reduce using rule 7 (repeat)
+
+
+State 16
+
+   11 repeat: single '?' •
+   12       | single '?' • '?'
+
+    '?'  shift, and go to state 22
+
+    $default  reduce using rule 11 (repeat)
+
+
+State 17
+
+    9 repeat: single '+' •
+   10       | single '+' • '?'
+
+    '?'  shift, and go to state 23
+
+    $default  reduce using rule 9 (repeat)
+
+
+State 18
+
+   15 single: '(' '?' ':' • alt ')'
+
+    CHAR  shift, and go to state 1
+    '('   shift, and go to state 2
+    '.'   shift, and go to state 3
+
+    alt     go to state 24
+    concat  go to state 6
+    repeat  go to state 7
+    single  go to state 8
+
+
+State 19
+
+    3 alt: alt • '|' concat
+   14 single: '(' count alt • ')'
+
+    '|'  shift, and go to state 13
+    ')'  shift, and go to state 25
+
+
+State 20
+
+    3 alt: alt '|' concat •
+    5 concat: concat • repeat
+
+    CHAR  shift, and go to state 1
+    '('   shift, and go to state 2
+    '.'   shift, and go to state 3
+
+    $default  reduce using rule 3 (alt)
+
+    repeat  go to state 14
+    single  go to state 8
+
+
+State 21
+
+    8 repeat: single '*' '?' •
+
+    $default  reduce using rule 8 (repeat)
+
+
+State 22
+
+   12 repeat: single '?' '?' •
+
+    $default  reduce using rule 12 (repeat)
+
+
+State 23
+
+   10 repeat: single '+' '?' •
+
+    $default  reduce using rule 10 (repeat)
+
+
+State 24
+
+    3 alt: alt • '|' concat
+   15 single: '(' '?' ':' alt • ')'
+
+    '|'  shift, and go to state 13
+    ')'  shift, and go to state 26
+
+
+State 25
+
+   14 single: '(' count alt ')' •
+
+    $default  reduce using rule 14 (single)
+
+
+State 26
+
+   15 single: '(' '?' ':' alt ')' •
+
+    $default  reduce using rule 15 (single)
