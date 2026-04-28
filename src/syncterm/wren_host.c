@@ -954,7 +954,7 @@ wren_host_dispatch_key(int key)
 {
 	if (!active || !on_owner_thread())
 		return false;
-	/* A fiber parked on Input.nextEvent claims the event before any
+	/* A fiber parked on Input.nextEvent() claims the event before any
 	 * hook sees it.  Only non-mouse keys go straight to the fiber;
 	 * the CIO_KEY_MOUSE marker falls through so dispatch_mouse can
 	 * deliver the actual MouseEvent next. */

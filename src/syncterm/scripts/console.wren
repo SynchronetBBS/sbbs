@@ -147,7 +147,7 @@ class WrenConsole {
     var histAnchor = ""
     var done = false
     while (!done && !__quit) {
-      var ev = Input.next
+      var ev = Input.next()
 
       // Handle the event.
       var redrawPrompt = false

@@ -8,6 +8,8 @@
 #include "wren.h"
 
 struct mouse_event;
+struct wren_file;
+struct wren_directory;
 
 /* Maximum simultaneous registrations per hook event and per timer slot.
  * These are intentionally small — there's no use case for hundreds of
@@ -112,7 +114,7 @@ struct wren_host_state {
 	 * iteration) drains it.  Empty == NULL — no counter needed. */
 	struct wren_hook_entry *cleanup_head;
 
-	/* When non-NULL, a Wren fiber is parked on Input.nextEvent waiting
+	/* When non-NULL, a Wren fiber is parked on Input.nextEvent() waiting
 	 * for the next key/mouse event.  Set by Input._park, cleared and
 	 * resumed by wren_host_dispatch_key/mouse before any hooks fire. */
 	WrenHandle  *parked_fiber;
@@ -127,6 +129,17 @@ struct wren_host_state {
 	 * known to the script, so missing the hook callback is a feature,
 	 * not a loss. */
 	int          output_dispatching;
+
+	/* Doubly-linked lists of every live wren_file / wren_directory
+	 * foreign.  Each foreign self-registers in its allocator (or in the
+	 * C-side push helpers used by Directory.list / Directory.create /
+	 * Directory.createDir / Host.cacheDirectory) and unregisters in its
+	 * finalizer.  A successful Directory.delete walks both lists and
+	 * marks any handle whose path is at-or-below the deleted entry as
+	 * `dead`; subsequent operations on a dead handle abort the calling
+	 * fiber with a "handle is dead" error rather than touching state. */
+	struct wren_file       *fs_file_head;
+	struct wren_directory  *fs_dir_head;
 
 	struct bbslist *bbs;
 };
@@ -196,7 +209,7 @@ WrenForeignMethodFn wren_bind_lookup(const char *module,
 WrenForeignClassMethods wren_bind_lookup_class(const char *module,
                                                 const char *className);
 
-/* If a Wren fiber is parked on Input.nextEvent, resume it with the
+/* If a Wren fiber is parked on Input.nextEvent(), resume it with the
  * given event.  Returns true (consumed) if a fiber was waiting;
  * false (not consumed) if no fiber was parked, in which case the
  * caller should fall through to its hook dispatch path.  Defined

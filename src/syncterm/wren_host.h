@@ -20,7 +20,7 @@ void wren_host_shutdown(void);
  * is hooked. */
 bool wren_host_active(void);
 
-/* Returns true while a Wren fiber is parked on Input.nextEvent.  The
+/* Returns true while a Wren fiber is parked on Input.nextEvent().  The
  * remote-input pump in doterm() consults this and refuses to drain
  * bytes off the wire while it's true, so a modal dialog isn't
  * repainted over by incoming server output.  Bytes stay queued in the

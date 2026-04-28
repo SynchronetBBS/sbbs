@@ -204,7 +204,7 @@ constructor.  Import it like any other binding:
 import "syncterm" for Cache
 ----
 
-== Hook Events
+== Hook Events [[hook-events]]
 
 Hooks are registered as Wren callables (block, function, or method
 reference).  Each call site walks its hook list in registration
@@ -225,7 +225,7 @@ passthrough, a String for `onStatus`) before it can decide what to
 do next; a hook that yields up to the dispatcher would strand it
 with no value to act on.
 
-If a hook callback calls `Input.nextEvent` (or any future parking
+If a hook callback calls `Input.nextEvent()` (or any future parking
 primitive) directly from its top frame, the wrapper detects the
 yield and logs:
 
@@ -255,10 +255,10 @@ Hook.onKey { |k|
 ----
 
 `.call()` runs the child fiber synchronously until it parks (e.g.
-on `Input.nextEvent`).  The child's yield returns to the hook body
+on `Input.nextEvent()`).  The child's yield returns to the hook body
 — the immediate `.call()` caller — not up to the dispatcher.  The
 hook still returns its Bool; the parked child resumes later via the
-same fiber-resumption path that drives `Input.nextEvent`.
+same fiber-resumption path that drives `Input.nextEvent()`.
 
 [options="header",cols="2,3,3"]
 |===
@@ -505,15 +505,15 @@ struct itself is freed once the script has also dropped the
 Metric getters on a removed handle keep working until the script
 drops the handle.
 
-== Modal Input
+== Modal Input [[modal-input]]
 
-The conventional `Input.next` / `Input.next(ms)` / `Input.poll`
+The conventional `Input.next()` / `Input.next(ms)` / `Input.poll()`
 primitives all return promptly; while a script is calling them in a
 loop the doterm() main loop is blocked, and inbound server bytes
 queue up in the socket buffer until the script returns.
 
 For modal dialogs that should not block the main loop while the
-script idles between events, use `Input.nextEvent`:
+script idles between events, use `Input.nextEvent()`:
 
 [source,wren]
 ----
@@ -521,7 +521,7 @@ import "syncterm" for Input, Key, Screen
 
 Fiber.new {
   while (true) {
-    var ev = Input.nextEvent
+    var ev = Input.nextEvent()
     if (ev is KeyEvent && ev.code == Key.escape) break
     Screen.window.print("got: %(ev)\n")
   }
@@ -529,7 +529,7 @@ Fiber.new {
 }.call()
 ----
 
-`Input.nextEvent` parks the calling fiber and yields back through
+`Input.nextEvent()` parks the calling fiber and yields back through
 the C side.  The doterm() main loop continues to spin normally;
 remote-byte intake is gated off so server output cannot paint over
 the dialog, but server bytes remain queued and drain naturally on
@@ -540,12 +540,12 @@ the event as its yielded value.  The event bypasses every
 `Hook.onKey` / `Hook.onMouse` callback and SyncTERM's default
 handling, exactly as if a hook had returned `true`.
 
-`nextEvent` must be called from inside a fiber created with
+`nextEvent()` must be called from inside a fiber created with
 `Fiber.new {}`.  The root fiber cannot be resumed from C after it
-yields; calling `nextEvent` from the top level of a script just
+yields; calling `nextEvent()` from the top level of a script just
 yields to nothing.
 
-Calling `nextEvent` from a hook callback's top frame is detected
+Calling `nextEvent()` from a hook callback's top frame is detected
 and reported by the `Hook.dispatch_` wrapper (see "Hooks must run
 synchronously" above).  A hook that wants to drive a modal must
 spawn its child fiber explicitly:
@@ -556,7 +556,7 @@ Hook.onKey { |k|
   if (k == Key.f2) {
     Fiber.new {
       while (true) {
-        var ev = Input.nextEvent
+        var ev = Input.nextEvent()
         if (ev is KeyEvent && ev.code == Key.escape) break
         // ...
       }
@@ -726,13 +726,38 @@ members.
 
 ==== Screen.supports
 
-Read-only Boolean capability flags reflecting the current display
-backend (`cio_api.options`).
+Read-only Boolean capability flags reflecting what the current
+display backend (SDL, X11, Win32, etc.) can do.  Scripts that adapt
+their output to the backend should branch on these.
 
-`loadableFonts`, `altBlinkFont`, `altBoldFont`, `brightBackground`,
-`paletteChange`, `pixels`, `customCursor`, `fontSelection`,
-`windowTitle`, `windowName`, `windowIcon`, `extendedPalette`,
-`blockyScaling`, `externalScaling`, `closeLock`.
+[options="header",cols="2,3"]
+|===
+| Flag                 | True when the backend can…
+| `loadableFonts`      | Replace the bitmap font in any slot at
+                         runtime.  False on hardware text-mode
+                         backends like curses.
+| `altBlinkFont`       | Render the alternate-blink font slot.
+| `altBoldFont`        | Render the alternate-bold font slot.
+| `brightBackground`   | Render the high-intensity (bright) bit on
+                         background colors instead of using it as a
+                         blink toggle.
+| `paletteChange`      | Mutate the active palette at runtime.
+| `pixels`             | Address individual pixels (pixel-aware
+                         backends only — needed for RIP, SIXEL,
+                         SkyPix).
+| `customCursor`       | Render a non-default cursor shape.
+| `fontSelection`      | Switch fonts via the SyncTERM
+                         font-selection UI.
+| `windowTitle`        | Set the OS window title.
+| `windowName`         | Set the OS window's class / icon name (X11).
+| `windowIcon`         | Set the OS window's icon image.
+| `extendedPalette`    | Address palette indices beyond 16.
+| `blockyScaling`      | Use nearest-neighbour scaling for the
+                         pixel-doubled display.
+| `externalScaling`    | Defer scaling to the OS / window manager.
+| `closeLock`          | Inhibit the OS window close button while a
+                         BBS session is active.
+|===
 
 ==== Screen.window [[screen-window]]
 
@@ -829,12 +854,36 @@ Pre-defined snapshots:
 Boolean video-output flags, with the same static-vs-instance pattern
 as `CustomCursor`.
 
-Properties: `altChars`, `noBright`, `bgBright`, `blinkAltChars`,
-`noBlink`, `lineGraphicsExpand`.
-
-`expand` is read-only — flipping it under a live screen would
-mismatch the cell-bitmap layout sized at video-mode init for 8-vs-9
-pixel-wide cells.
+[options="header",cols="2,3"]
+|===
+| Property             | Meaning
+| `altChars`           | Use the alternate (right-half) character set
+                         for graphics characters — the EGA/VGA "9th
+                         column" expansion.
+| `noBright`           | Suppress the bright-foreground bit; bold text
+                         renders as plain.
+| `bgBright`           | Treat the high-intensity bit on the
+                         background nibble as bright background instead
+                         of blink.  The terminal's tradition was blink;
+                         most modern terminals bind it to bright bg.
+| `blinkAltChars`      | Repurpose the blink attribute bit (bit 7 of
+                         the legacy attribute byte) to select the
+                         alternate character set instead of triggering
+                         blink.  When set, "blinking" cells render
+                         from the alt-font slot statically; when clear,
+                         bit 7 means actual blink.
+| `noBlink`            | Disable blink rendering entirely.
+| `expand`             | Read-only.  True when the backend is using
+                         9-pixel-wide cells with the right-edge
+                         duplication for the box-drawing range.
+                         Flipping it under a live screen would
+                         mismatch cell-bitmap layout sized at video-
+                         mode init for 8-vs-9 pixel cells, so it's
+                         intentionally read-only.
+| `lineGraphicsExpand` | Apply the right-edge duplication to box-
+                         drawing characters in the 0xC0..0xDF range
+                         (the "VGA 9th-column" trick).
+|===
 
 ==== Screen.color — `Color`
 
@@ -865,14 +914,14 @@ two-phase split.
 |===
 | Member | Description
 
-| `Input.next`
+| `Input.next()`
 | Block until the next event; return `KeyEvent` or `MouseEvent`.
 
 | `Input.next(ms)`
 | Wait up to `ms` milliseconds; return the event or `null` on
   timeout.
 
-| `Input.poll`
+| `Input.poll()`
 | Return immediately with the next pending event, or `null` if
   nothing is pending.
 
@@ -888,7 +937,7 @@ two-phase split.
   query for visibility, and tracking it from Wren would drift if
   other code shows or hides the cursor.
 
-| `Input.nextEvent`
+| `Input.nextEvent()`
 | Park the calling fiber until the next event arrives.  See
   <<modal-input,Modal Input>>.
 |===
@@ -945,16 +994,130 @@ Mirrors `struct mouse_event` from `ciolib.h`.
 
 === Key
 
-Named constants for the `CIO_KEY_*` set in `ciolib.h`.  These are
-the values you'll see in `KeyEvent.code` for non-printable keys and
-key combinations.
+16-bit key codes returned by `KeyEvent.code`.
 
-Letters and Esc / Enter / Backspace / Tab / Delete are direct ASCII
-values.  Cursor and editing keys, function keys, Shift/Ctrl/Alt
-combinations, and the marker keys (`mouse`, `quit`, `wrenConsole`)
-all have named constants — see the `Key` class declaration in
-`wren_host.c` for the full list, or use the REPL's
-`Key.<TAB>`-equivalent inspection through `System.print(Key)`.
+Printable ASCII characters (digits, letters, punctuation) come
+through directly as their ASCII byte value with the high byte zero —
+e.g. uppercase A is 0x0041 (65) — and don't need a named constant.
+The constants below cover non-printable keys, modified keys, function
+keys, and synthetic markers.
+
+The high byte is the PC scancode (or a synthetic marker > 0x7D when
+no scancode applies); the low byte is 0 for extended keys.  ASCII
+keys use the low byte for the character and 0 for the high byte.
+
+==== ASCII keys
+
+[options="header",cols="2,1,4"]
+|===
+| Constant     | Code   | Description
+| `escape`     | 0x001B | Esc.  `KeyEvent.new` also normalises the
+                          synthetic `CIO_KEY_ABORTED` (0x01E0,
+                          "Esc-by-scancode") to this value, so scripts
+                          only ever see one Esc.
+| `enter`      | 0x000D | Enter / Return (CR).
+| `backspace`  | 0x0008 | Backspace (BS).
+| `tab`        | 0x0009 | Tab (HT).
+| `delChar`    | 0x007F | ASCII DEL — distinct from `delete` (the Del
+                          *key*).  Some terminals send DEL on
+                          Backspace; cterm's `decBkm` flag controls
+                          which a script sees.
+|===
+
+==== Cursor and editing keys
+
+[options="header",cols="2,1,4"]
+|===
+| Constant   | Code   | Description
+| `home`     | 0x4700 | Home.
+| `end`      | 0x4F00 | End.
+| `up`       | 0x4800 | Up arrow.
+| `down`     | 0x5000 | Down arrow.
+| `left`     | 0x4B00 | Left arrow.
+| `right`    | 0x4D00 | Right arrow.
+| `pageUp`   | 0x4900 | Page Up.
+| `pageDown` | 0x5100 | Page Down.
+| `insert`   | 0x5200 | Insert (Ins).
+| `delete`   | 0x5300 | Delete (Del) — the keyboard key, distinct
+                        from `delChar` (the ASCII byte 0x7F).
+| `backTab`  | 0x0F00 | Shift+Tab (Back-Tab).
+|===
+
+==== Modified Insert / Delete
+
+[options="header",cols="2,1,3"]
+|===
+| Constant    | Code   | Description
+| `shiftIns`  | 0x0500 | Shift+Insert.
+| `shiftDel`  | 0x0700 | Shift+Delete.
+| `ctrlIns`   | 0x0400 | Ctrl+Insert.
+| `ctrlDel`   | 0x0600 | Ctrl+Delete.
+| `altIns`    | 0xA200 | Alt+Insert.
+| `altDel`    | 0xA300 | Alt+Delete.
+|===
+
+==== Modified arrow keys and End
+
+[options="header",cols="2,1,3"]
+|===
+| Constant     | Code   | Description
+| `shiftUp`    | 0x3800 | Shift+Up.
+| `ctrlUp`     | 0x8D00 | Ctrl+Up.
+| `shiftDown`  | 0x3200 | Shift+Down.
+| `ctrlDown`   | 0x9100 | Ctrl+Down.
+| `shiftLeft`  | 0x3400 | Shift+Left.
+| `ctrlLeft`   | 0x7300 | Ctrl+Left.
+| `shiftRight` | 0x3600 | Shift+Right.
+| `ctrlRight`  | 0x7400 | Ctrl+Right.
+| `shiftEnd`   | 0x3100 | Shift+End.
+| `ctrlEnd`    | 0x7500 | Ctrl+End.
+|===
+
+==== Function keys
+
+`f1` through `f12` and the modified variants `shiftF1`..`shiftF12`,
+`ctrlF1`..`ctrlF12`, `altF1`..`altF12`.  Code values are
+contiguous within each group, but the absolute values are scancode-
+derived and aren't worth memorising.  Compare against the named
+constant.
+
+[options="header",cols="2,1,1,1,1"]
+|===
+| Key | Plain | Shift | Ctrl | Alt
+| F1  | 0x3B00 | 0x5400 | 0x5E00 | 0x6800
+| F2  | 0x3C00 | 0x5500 | 0x5F00 | 0x6900
+| F3  | 0x3D00 | 0x5600 | 0x6000 | 0x6A00
+| F4  | 0x3E00 | 0x5700 | 0x6100 | 0x6B00
+| F5  | 0x3F00 | 0x5800 | 0x6200 | 0x6C00
+| F6  | 0x4000 | 0x5900 | 0x6300 | 0x6D00
+| F7  | 0x4100 | 0x5A00 | 0x6400 | 0x6E00
+| F8  | 0x4200 | 0x5B00 | 0x6500 | 0x6F00
+| F9  | 0x4300 | 0x5C00 | 0x6600 | 0x7000
+| F10 | 0x4400 | 0x5D00 | 0x6700 | 0x7100
+| F11 | 0x8500 | 0x8700 | 0x8900 | 0x8B00
+| F12 | 0x8600 | 0x8800 | 0x8A00 | 0x8C00
+|===
+
+==== Synthetic markers
+
+These are SyncTERM-specific codes injected into the key queue rather
+than scancodes from a real key.
+
+[options="header",cols="2,1,4"]
+|===
+| Constant      | Code   | Description
+| `mouse`       | 0x7DE0 | A mouse event is next in the queue.  When
+                           `KeyEvent.code == Key.mouse`, call
+                           `Input.next()` again to read the
+                           `MouseEvent` itself.  The Schneider/Amstrad
+                           PC1512 "F-14" key encoded as right-mouse —
+                           SyncTERM reuses that codepoint.
+| `quit`        | 0x7EE0 | The user requested quit (window close
+                           button, OS close signal).  Modeled on the
+                           PC1512 "F-15" codepoint.
+| `wrenConsole` | 0x29E0 | Ctrl+&#96; — opens the Wren console.  High
+                           byte is the &#96;-key scancode (0x29).
+|===
 
 === Clipboard
 
@@ -969,17 +1132,67 @@ all have named constants — see the `Key` class declaration in
 | Write a string to the system clipboard.
 |===
 
-=== Codepage
+=== Codepage [[codepage]]
 
-Enum-style class.  Values match `enum ciolib_codepage` in
-`utf8_codepages.h`:
+Enum-style class identifying a character-set encoding.  Returned by
+`Font.codepage` and `Font.codepageOf(i)` to tell scripts which
+encoding the bytes in a screen cell are in.
 
-`cp437`, `cp1251`, `cp1251_b`, `koi8r`, `iso8859_2`, `iso8859_4`,
-`cp866m`, `iso8859_9`, `iso8859_8`, `koi8u`, `iso8859_15`,
-`iso8859_5`, `cp850`, `cp850_b`, `cp865`, `cp865_b`, `iso8859_7`,
-`iso8859_1`, `cp866m2`, `cp866u`, `cp1131`, `armscii8`, `haik8`,
-`atascii`, `petsciiUpper`, `petsciiLower`, `prestel`, `prestelSep`,
-`atariSt`.
+A `_b` suffix on a codepage name means "broken vertical" — the
+font variant draws box-drawing pipe characters with one-pixel gaps
+between rows, matching the historical rendering of certain hardware
+terminals.  The base codepage and its `_b` variant cover the same
+character set; only the glyph shapes differ.
+
+[options="header",cols="2,1,4"]
+|===
+| Constant | Index | Description
+
+| `cp437`        | 0  | IBM PC CP437 — original DOS character set,
+                       English plus box-drawing.  The default for
+                       traditional ANSI BBSes.
+| `cp1251`       | 1  | Windows-1251 — Cyrillic (Russian, Bulgarian,
+                       Ukrainian, etc.) in a "swiss" font variant.
+| `cp1251_b`     | 2  | Windows-1251 with the broken-vertical
+                       glyph variant.
+| `koi8r`        | 3  | KOI8-R — Russian Cyrillic.  Common on 1990s
+                       Russian Linux/Unix systems.
+| `iso8859_2`    | 4  | ISO-8859-2 (Latin-2) — Central European
+                       (Polish, Czech, Hungarian, …).
+| `iso8859_4`    | 5  | ISO-8859-4 (Latin-4) — Northern European /
+                       older Baltic.  9-bit-mapped wide-glyph variant.
+| `cp866m`       | 6  | CP866 — Russian DOS, "(c)" modified variant.
+| `iso8859_9`    | 7  | ISO-8859-9 (Latin-5) — Turkish.
+| `iso8859_8`    | 8  | ISO-8859-8 — Hebrew.
+| `koi8u`        | 9  | KOI8-U — Ukrainian Cyrillic.
+| `iso8859_15`   | 10 | ISO-8859-15 (Latin-9) — Western European
+                       with the Euro sign.
+| `iso8859_5`    | 11 | ISO-8859-5 — Latin/Cyrillic.
+| `cp850`        | 12 | CP850 — Multilingual Latin-1 (DOS Western
+                       European).
+| `cp850_b`      | 13 | CP850 with the broken-vertical glyph variant.
+| `cp865`        | 14 | CP865 — Nordic DOS (Danish, Norwegian).
+| `cp865_b`      | 15 | CP865 with the broken-vertical glyph variant.
+| `iso8859_7`    | 16 | ISO-8859-7 — Greek.
+| `iso8859_1`    | 17 | ISO-8859-1 (Latin-1) — Western European,
+                       classic Unix default.
+| `cp866m2`      | 18 | CP866 — Russian DOS, second modified variant.
+| `cp866u`       | 19 | CP866-U — Ukrainian variant.
+| `cp1131`       | 20 | CP1131 — Belarusian DOS.
+| `armscii8`     | 21 | ARMSCII-8 — Armenian.
+| `haik8`        | 22 | HAIK-8 — older Armenian set; used with the
+                       ARMSCII-8 screen map.
+| `atascii`      | 23 | ATASCII — Atari 8-bit native character set.
+| `petsciiUpper` | 24 | PETSCII (uppercase/graphics mode) — Commodore
+                       64/128 default.
+| `petsciiLower` | 25 | PETSCII (lowercase/shifted mode) — Commodore
+                       64/128 after a Shift+Commodore key.
+| `prestel`      | 26 | UK Prestel / Viewdata teletext — block mosaic
+                       graphics, double-height, conceal.
+| `prestelSep`   | 27 | Prestel separated mosaics — block mosaics
+                       with gaps between cells.
+| `atariSt`      | 28 | Atari ST GEM character set.
+|===
 
 === Cell [[cell]]
 
@@ -1034,56 +1247,95 @@ iterable, has `.count`.
 
 === Font [[font]]
 
-Named built-in font indices, plus runtime queries.
+A "font" in SyncTERM is one of 257 indexed slots, each a complete
+glyph table for a particular character set or display style.  Slots
+0–45 ship with built-in fonts, covering the codepages enumerated by
+<<codepage,`Codepage`>> plus several Amiga and 8-bit display styles.
+Slots 46+ are reserved for user-loaded fonts (uploaded via cterm
+escape sequences or RIP), but `Font.count` reports however many slots
+are actually populated at runtime.
 
-[cols="2,3"]
+The `Font` class itself only exposes named constants for the most
+useful slots; every slot is reachable numerically through
+`Screen.font[i]` regardless.  The full built-in table follows.
+
+[options="header",cols="2,1,4"]
 |===
-| Constant | Index
+| Named constant            | Index | Slot description
 
-| `Font.cp437English`
-| 0
-
-| `Font.commodore64Upper` / `commodore64Lower`
-| 32 / 33
-
-| `Font.commodore128Upper` / `commodore128Lower`
-| 34 / 35
-
-| `Font.atari`
-| 36
-
-| `Font.potNoodle`, `mosOul`, `microKnightPlus`, `topazPlus`,
-  `microKnight`, `topaz`
-| 37..42
-
-| `Font.prestel`
-| 43
-
-| `Font.atariSt`
-| 44
-
-| `Font.ripterm`
-| 45
+| `Font.cp437English`       | 0  | Codepage 437 English (default).
+|                           | 1  | Codepage 1251 Cyrillic, "swiss" variant.
+|                           | 2  | Russian KOI8-R.
+|                           | 3  | ISO-8859-2 Central European.
+|                           | 4  | ISO-8859-4 Baltic wide (VGA 9-bit mapped).
+|                           | 5  | Codepage 866 (c) Russian.
+|                           | 6  | ISO-8859-9 Turkish.
+|                           | 7  | HAIK-8 (used with the ARMSCII-8 screen map).
+|                           | 8  | ISO-8859-8 Hebrew.
+|                           | 9  | Ukrainian KOI8-U.
+|                           | 10 | ISO-8859-15 West European, "thin" variant.
+|                           | 11 | ISO-8859-4 Baltic (VGA 9-bit mapped).
+|                           | 12 | Russian KOI8-R, alternate (b) variant.
+|                           | 13 | ISO-8859-4 Baltic wide.
+|                           | 14 | ISO-8859-5 Cyrillic.
+|                           | 15 | ARMSCII-8 (Armenian).
+|                           | 16 | ISO-8859-15 West European.
+|                           | 17 | Codepage 850 Multilingual Latin I, "thin".
+|                           | 18 | Codepage 850 Multilingual Latin I.
+|                           | 19 | Codepage 865 Norwegian, "thin".
+|                           | 20 | Codepage 1251 Cyrillic.
+|                           | 21 | ISO-8859-7 Greek.
+|                           | 22 | Russian KOI8-R, alternate (c) variant.
+|                           | 23 | ISO-8859-4 Baltic.
+|                           | 24 | ISO-8859-1 West European.
+|                           | 25 | Codepage 866 Russian.
+|                           | 26 | Codepage 437 English, "thin" variant.
+|                           | 27 | Codepage 866 (b) Russian.
+|                           | 28 | Codepage 865 Norwegian.
+|                           | 29 | Ukrainian CP866-U.
+|                           | 30 | ISO-8859-1 West European, "thin".
+|                           | 31 | Codepage 1131 Belarusian, "swiss".
+| `Font.commodore64Upper`   | 32 | Commodore 64 (uppercase / graphics).
+| `Font.commodore64Lower`   | 33 | Commodore 64 (lowercase / shifted).
+| `Font.commodore128Upper`  | 34 | Commodore 128 (uppercase / graphics).
+| `Font.commodore128Lower`  | 35 | Commodore 128 (lowercase / shifted).
+| `Font.atari`              | 36 | Atari 8-bit.
+| `Font.potNoodle`          | 37 | P0T NOoDLE — Amiga BBS classic.
+| `Font.mosOul`             | 38 | mO'sOul — Amiga BBS classic.
+| `Font.microKnightPlus`    | 39 | MicroKnight Plus — Amiga.
+| `Font.topazPlus`          | 40 | Topaz Plus — Amiga.
+| `Font.microKnight`        | 41 | MicroKnight — Amiga.
+| `Font.topaz`              | 42 | Topaz — Amiga (the original Workbench font).
+| `Font.prestel`            | 43 | Prestel — UK Viewdata mosaic.
+| `Font.atariSt`            | 44 | Atari ST GEM.
+| `Font.ripterm`            | 45 | RIPterm — RIP graphics terminal font.
 |===
+
+The "thin" variants are the same character set rendered with thinner
+strokes, matching late-1980s VGA BIOS fonts.  A "swiss" variant uses
+the Helvetica-style sans rendering common on certain Amiga and DOS
+displays.  An "(a)" / "(b)" / "(c)" annotation marks distinct
+historical font releases that use the same codepage encoding.
 
 [options="header",cols="2,3"]
 |===
-| Method | Description
+| Method            | Description
 
-| `Font.name(i)`
-| Human-readable font name for index `i`.
-
-| `Font.count`
-| Total number of font slots known to ciolib.
-
-| `Font.available(i)`
-| `true` if font `i` has actually been loaded.
-
-| `Font.codepage`
-| Codepage of font slot 0.
-
-| `Font.codepageOf(i)`
-| Codepage of font slot `i`.
+| `Font.name(i)`    | Human-readable font name for slot `i`, e.g.
+                     "Codepage 437 English".  Returns the empty
+                     string for empty slots.
+| `Font.count`      | Total number of populated font slots.  Iteration
+                     bound — `0...Font.count` walks every available
+                     font.
+| `Font.available(i)` | `true` if slot `i` has actually been loaded
+                       (the user can configure SyncTERM to omit some
+                       built-ins).
+| `Font.codepage`   | The <<codepage,`Codepage`>> value for slot 0
+                     (whatever codepage the script's strings should
+                     be transcoded into for display).
+| `Font.codepageOf(i)` | The codepage value for slot `i`.  Several
+                        slots can share a codepage (the Amiga slots
+                        37–42 are all `iso8859_1`, for example).
 |===
 
 === Hyperlinks [[hyperlinks]]
@@ -1272,25 +1524,92 @@ emulation-aware logic.
 ==== ExtAttr
 
 Snapshot of cterm's extended-attribute bitfield.  All members are
-read-only Booleans.
+read-only Booleans reflecting the corresponding terminal mode.
 
-`autoWrap`, `originMode`, `sxScroll`, `decLrmm`, `bracketPaste`,
-`decBkm`, `prestelMosaic`, `prestelDoubleHeight`, `prestelConceal`,
-`prestelSeparated`, `prestelHold`, `alternateKeypad`.
+[options="header",cols="2,3"]
+|===
+| Member                | Description
+| `autoWrap`            | DECAWM — characters past the right margin
+                          wrap to the next line.
+| `originMode`          | DECOM — cursor coordinates are relative to
+                          the active scroll region rather than the
+                          screen.
+| `sxScroll`            | SIXEL scroll: when a SIXEL image extends
+                          past the bottom of the screen, scroll the
+                          screen up to make room.  When clear, the
+                          image is clipped at the bottom row.
+| `decLrmm`             | DECLRMM — left/right margin mode enables
+                          horizontal scroll regions.
+| `bracketPaste`        | DEC mode 2004 — pasted text is bracketed by
+                          ESC[200~ / ESC[201~ markers.
+| `decBkm`              | DECBKM — Backarrow key sends BS (0x08)
+                          instead of DEL (0x7F).
+| `prestelMosaic`       | Prestel mosaic graphics character set is
+                          active.
+| `prestelDoubleHeight` | Current row is rendered double-height.
+| `prestelConceal`      | Concealed (hidden) text mode.
+| `prestelSeparated`    | Separated mosaics — gaps between mosaic
+                          blocks.
+| `prestelHold`         | Hold-graphics mode — control codes render as
+                          the most recently emitted mosaic glyph
+                          rather than blanking.
+| `alternateKeypad`     | DECKPAM — numeric keypad sends application
+                          keypad codes instead of digits.
+|===
 
 ==== LastColumnFlag
 
-Snapshot of cterm's last-column-flag state.
+Snapshot of cterm's last-column-flag state.  Used by emulations that
+distinguish "cursor at the right margin" from "cursor wrapped to next
+line" (the so-called phantom-column).
 
-`set`, `enabled`, `forced` — all Booleans.
+[options="header",cols="2,3"]
+|===
+| Member    | Description
+| `set`     | Bool — the flag is currently set: the cursor sits at
+              the right margin awaiting the next character to wrap
+              it.  Cleared by any cursor-positioning sequence.
+| `enabled` | Bool — last-column-flag tracking is enabled at all.
+              Some emulations disable it.
+| `forced`  | Bool — tracking is forced on regardless of the
+              underlying mode (set by SyncTERM's emulation-bridge
+              code or the BBS list's `forceLcf` flag).
+|===
 
-==== LogMode and StatusDisplay
+==== LogMode
 
-Enum classes referenced by `CTerm.logMode` and `CTerm.statusDisplay`.
+Referenced by `CTerm.logMode`.
 
-* `LogMode.none` (0), `LogMode.ascii` (1), `LogMode.raw` (2).
-* `StatusDisplay.none` (0), `StatusDisplay.indicator` (1),
-  `StatusDisplay.host` (2).
+[options="header",cols="2,1,4"]
+|===
+| Constant | Code | Description
+| `none`   | 0    | No log file is being written.
+| `ascii`  | 1    | Log decoded ASCII — escape sequences are
+                    interpreted, control codes are filtered down to
+                    readable text.  Good for human review.
+| `raw`    | 2    | Log the raw byte stream as received from the
+                    remote, including all escape sequences.  Good for
+                    later replay.
+|===
+
+==== StatusDisplay
+
+Referenced by `CTerm.statusDisplay`.  VT320 DECSSDT (Select Status
+Display Type) values: which status line, if any, the bottom row is
+acting as.
+
+[options="header",cols="2,1,4"]
+|===
+| Constant    | Code | Description
+| `none`      | 0    | No status line — the bottom row is part of
+                       the main display area.
+| `indicator` | 1    | Indicator status line — terminal-managed
+                       diagnostic line (e.g. "INSERT", connection
+                       state).  The host can't write to it.
+| `host`      | 2    | Host-writable status line — the bottom row is
+                       a separate addressable region the BBS can
+                       direct writes to via DECSASD.
+|===
 
 === BBS [[bbs]]
 
@@ -1346,62 +1665,177 @@ classes documented below.
 
 ==== ConnType [[conntype]]
 
-`unknown` (0), `rlogin` (1), `rloginReversed` (2), `telnet` (3),
-`raw` (4), `ssh` (5), `sshNoAuth` (6), `modem` (7), `serial` (8),
-`serialNoRts` (9), `shell` (10), `mbbsGhost` (11), `telnets` (12).
+[options="header",cols="2,1,4"]
+|===
+| Constant          | Code | Description
+| `unknown`         | 0    | Unset / not yet decided.
+| `rlogin`          | 1    | RLogin (TCP/513) — classic BBS
+                              auth-on-connect protocol.
+| `rloginReversed`  | 2    | RLogin with the handshake byte order
+                              reversed (some servers).
+| `telnet`          | 3    | Telnet (TCP/23) — IAC negotiation in NVT
+                              mode.
+| `raw`             | 4    | Raw TCP — no protocol layer; bytes pass
+                              straight through.
+| `ssh`             | 5    | SSH-2 — encrypted with password / key
+                              authentication.
+| `sshNoAuth`       | 6    | SSH-2 with the "none" authentication
+                              method (anonymous).
+| `modem`           | 7    | Phone modem dial-out via AT commands.
+| `serial`          | 8    | Direct serial port.
+| `serialNoRts`     | 9    | Serial without RTS/CTS hardware flow
+                              control.
+| `shell`           | 10   | Local subprocess (shell command).
+| `mbbsGhost`       | 11   | MajorBBS / Worldgroup "GHost" client
+                              interface.
+| `telnets`         | 12   | Telnet over TLS (TCP/992).
+|===
 
 ==== Emulation
 
-`ansiBbs` (0), `petascii` (1), `atascii` (2), `prestel` (3),
-`beeb` (4), `atariVt52` (5).
+[options="header",cols="2,1,4"]
+|===
+| Constant     | Code | Description
+| `ansiBbs`    | 0    | ANSI-BBS — ANSI X3.64 / VT-style escape
+                        sequences with PC-style color attributes.
+                        The default.
+| `petascii`   | 1    | Commodore 64 / 128 PETSCII control codes.
+| `atascii`    | 2    | Atari 8-bit ATASCII control codes.
+| `prestel`    | 3    | UK Prestel / Viewdata teletext — block
+                        mosaic graphics, double-height, conceal.
+| `beeb`       | 4    | BBC Micro Mode 7 teletext.
+| `atariVt52`  | 5    | Atari ST GEM VT-52 emulation.
+|===
 
 ==== BBSListType
 
-`user` (0), `system` (1).
+[options="header",cols="2,1,4"]
+|===
+| Constant | Code | Description
+| `user`   | 0    | User-edited entry from the user's BBS list.
+| `system` | 1    | System-shipped entry from the SyncTERM-bundled
+                    list.  Read-only at the UI level.
+|===
 
 ==== ScreenMode
 
-Standard screen modes carry their dimensions in the name.  Selected
-values:
+Standard modes encode their dimensions in the name (e.g. `c80x25` =
+80 columns × 25 rows).  Codes are stable enum values.
 
-`current` (0), `c80x25` (1), `lcd80x25` (2), `c80x28` (3),
-`c80x30` (4), `c80x43` (5), `c80x50` (6), `c80x60` (7),
-`c132x37` (8), `c132x52` (9), `c132x25` (10), `c132x28` (11),
-`c132x30` (12), `c132x34` (13), `c132x43` (14), `c132x50` (15),
-`c132x60` (16), `c64` (17), `c128_40` (18), `c128_80` (19),
-`atari` (20), `atariXep80` (21), `custom` (22), `ega80x25` (23),
-`vga80x25` (24), `prestel` (25), `beeb` (26), `atariSt40x25` (27),
-`atariSt80x25` (28), `atariSt80x25Mono` (29).
+[options="header",cols="2,1,4"]
+|===
+| Constant            | Code | Description
+| `current`           | 0    | "Don't change" — keep the current mode.
+| `c80x25`            | 1    | 80×25 (CGA / VGA standard).
+| `lcd80x25`          | 2    | 80×25 with LCD-style cell aspect
+                                (SyncTERM-specific).
+| `c80x28`            | 3    | 80×28 (extended VGA).
+| `c80x30`            | 4    | 80×30 (extended VGA).
+| `c80x43`            | 5    | 80×43 (EGA-extended).
+| `c80x50`            | 6    | 80×50 (VGA 8-pixel-tall cell).
+| `c80x60`            | 7    | 80×60 (extended VGA).
+| `c132x37`           | 8    | 132×37 (Super VGA).
+| `c132x52`           | 9    | 132×52 (Super VGA).
+| `c132x25`           | 10   | 132×25.
+| `c132x28`           | 11   | 132×28.
+| `c132x30`           | 12   | 132×30.
+| `c132x34`           | 13   | 132×34.
+| `c132x43`           | 14   | 132×43.
+| `c132x50`           | 15   | 132×50.
+| `c132x60`           | 16   | 132×60.
+| `c64`               | 17   | Commodore 64 (40×25 PETSCII).
+| `c128_40`           | 18   | Commodore 128 (40-column mode).
+| `c128_80`           | 19   | Commodore 128 (80-column mode).
+| `atari`             | 20   | Atari 8-bit native (40×24 ATASCII).
+| `atariXep80`        | 21   | Atari 8-bit with XEP80 80-column
+                                expansion box.
+| `custom`            | 22   | Custom dimensions configured per-BBS.
+| `ega80x25`          | 23   | EGA 80×25 with hardware-accurate pixel
+                                aspect (8×14 cell).
+| `vga80x25`          | 24   | VGA 80×25 with hardware-accurate pixel
+                                aspect (8×16 cell).
+| `prestel`           | 25   | Prestel teletext (40×24).
+| `beeb`              | 26   | BBC Micro Mode 7 (40×25 teletext).
+| `atariSt40x25`      | 27   | Atari ST 40×25 (low-res color).
+| `atariSt80x25`      | 28   | Atari ST 80×25 (medium-res color).
+| `atariSt80x25Mono`  | 29   | Atari ST 80×25 monochrome (high-res).
+|===
 
 ==== AddressFamily
 
-`unspec` (0), `inet` (1), `inet6` (2).
+[options="header",cols="2,1,4"]
+|===
+| Constant  | Code | Description
+| `unspec`  | 0    | Don't care — let the resolver pick whichever
+                     family the host has.
+| `inet`    | 1    | IPv4 only.
+| `inet6`   | 2    | IPv6 only.
+|===
 
 ==== MusicMode
 
-`syncterm` (0), `bansi` (1), `enabled` (2).
+Controls how SyncTERM interprets ANSI music sequences (CSI ...
+character).
+
+[options="header",cols="2,1,4"]
+|===
+| Constant   | Code | Description
+| `syncterm` | 0    | SyncTERM's strict mode — only the CSI MNML
+                      sequence triggers music; less-anchored sequences
+                      are passed through as text.  The default.
+| `bansi`    | 1    | BANSI-style — older BBS music parsing rules.
+| `enabled`  | 2    | Most permissive — all forms accepted.
+|===
 
 ==== RipVersion
 
-`none` (0), `v1` (1), `v3` (2).
+[options="header",cols="2,1,4"]
+|===
+| Constant | Code | Description
+| `none`   | 0    | RIP support disabled for this connection.
+| `v1`     | 1    | RIPscrip v1.54 — the historic dial-up version.
+| `v3`     | 2    | SyncTERM's "idealized" RIP v3 — bug-fixed and
+                    extended; **not** bug-compatible with v1.54.
+|===
 
 ==== Parity
 
-`none` (0), `even` (1), `odd` (2).
+[options="header",cols="2,1,4"]
+|===
+| Constant | Code | Description
+| `none`   | 0    | No parity bit (8N1 framing).
+| `even`   | 1    | Even parity bit.
+| `odd`    | 2    | Odd parity bit.
+|===
 
 ==== FlowControl
 
 Read-only foreign class — instance returned from `BBS.flowControl`.
 
-* `rtsCts` — Bool.
-* `xonOff` — Bool.
+[options="header",cols="2,3"]
+|===
+| Member    | Description
+| `rtsCts`  | Bool — RTS/CTS hardware flow control enabled.
+| `xonOff`  | Bool — XON/XOFF software flow control enabled.
+|===
 
 ==== LogLevel
 
-Standard syslog severity values.
+Standard syslog severity values (RFC 5424).  `emergency` is the most
+severe; `debug` is the least.
 
-`emergency` (0), `alert` (1), `critical` (2), `error` (3),
-`warning` (4), `notice` (5), `info` (6), `debug` (7).
+[options="header",cols="2,1,4"]
+|===
+| Constant    | Code | Description
+| `emergency` | 0    | System is unusable.
+| `alert`     | 1    | Action must be taken immediately.
+| `critical`  | 2    | Critical condition.
+| `error`     | 3    | Error condition.
+| `warning`   | 4    | Warning condition.
+| `notice`    | 5    | Normal but significant.
+| `info`      | 6    | Informational.
+| `debug`     | 7    | Debug-level diagnostic.
+|===
 
 === Cache [[cache]]
 
@@ -1409,20 +1843,42 @@ Module-level `Directory` injected from C, pointing at SyncTERM's
 per-user cache directory (`SYNCTERM_PATH_CACHE`).  Use this for
 script-private state that should survive restarts.
 
+`Cache.list` returns a Map keyed by entry name; values are `File`
+objects for regular files and `Directory` objects for subdirectories.
+That's the read-side handle factory — a script reads existing cache
+content by indexing into `Cache.list`, and creates new content with
+`Cache.create(name)`:
+
 [source,wren]
 ----
 import "syncterm" for Cache
 
+// Read an existing cache file.  Indexing the list returns the
+// File object directly, no separate "open by name" step.
 if (Cache.contains("greetings.txt")) {
-  var f = Cache.create("greetings.txt")
+  var f = Cache.list["greetings.txt"]
   f.open()
   System.print(f.read())
   f.close()
+} else {
+  // First run: create + write.  create() returns null if the file
+  // already exists or the OS rejects the create.
+  var f = Cache.create("greetings.txt")
+  if (f != null) {
+    f.open()
+    f.write("Hello, world!")
+    f.close()
+  }
 }
+
+// Subdirectories appear in the same map.  Walk into them by chaining
+// `.list` lookups:
+//   Cache.list["RIP"]                         → Directory for /RIP
+//   Cache.list["RIP"].list["icons.dat"]       → File inside /RIP
 ----
 
-There is no Wren-callable factory for `Directory` — `Cache` is the
-only one a script can reach without going through C.
+There is no Wren-callable factory for `Directory` — `Cache` and
+`Cache.list[someSubdir]` are the only paths to one.
 
 === Directory
 
@@ -1435,15 +1891,98 @@ Opaque handle pointing at a directory on disk.
 | `Directory.contains(name)`
 | `true` if a file named `name` exists in the directory.
 
-| `Directory.list()`
-| Return a list of file names in the directory.
+| `Directory.list`
+| A Map keyed by entry name; values are `File` objects for regular
+  files and `Directory` objects for subdirectories.  Symlinks, device
+  nodes, FIFOs, etc. are silently skipped.  Names are filtered by the
+  <<filename-policy,filename policy>>, so hidden / dotfiles /
+  Windows-reserved names don't appear.  Each read enumerates the
+  directory afresh; cache the value if you'll touch it more than once.
+  Use this to obtain handles to existing files, or to walk a tree.
 
 | `Directory.create(name)`
-| Construct a `File` object for `name` (does not actually create the
-  file on disk — call `File.open()` then `File.write()`).
+| Atomically create a new zero-byte file named `name` in the
+  directory and return a `File` object for it.  Uses C11 exclusive-
+  create mode (`fopen(path, "wbx")`) so a concurrent creator doesn't
+  silently truncate an existing file.  Returns `null` if the file
+  already exists, the name violates the filename policy, the path
+  is too long, or the OS rejects the create for any other reason.
+  The file is closed on return — call `File.open()` before reading
+  or writing.
+
+| `Directory.createDir(name)`
+| Atomically create a new subdirectory named `name` and return a
+  `Directory` object for it.  Uses `mkdir` directly, which fails
+  atomically if the path already exists — same race-free semantics
+  as `create()` for files.  Returns `null` on the same error
+  conditions: existing entry, invalid name, path too long, or OS
+  rejection (no permission, parent missing, …).  Use `list[name]`
+  to obtain a handle to a subdirectory that already exists.
+
+| `Directory.delete(name)`
+| Remove the entry named `name` from the directory.  Handles regular
+  files and empty subdirectories; refuses anything else (symlinks,
+  device nodes, FIFOs, non-empty directories).  Returns `true` on
+  successful removal, `false` on any failure (no such entry, wrong
+  type, non-empty directory, no permission, invalid name, …).  On
+  success, every live `File` / `Directory` handle whose path is
+  at-or-below the removed entry is marked dead and pulled from the
+  live-handle registry; a subsequent operation on any such handle
+  aborts the calling fiber with a "handle is dead" error.
 |===
 
-==== Filename Policy
+==== Handle staleness [[directory-handle-staleness]]
+
+`File` and `Directory` foreign objects are filesystem snapshots —
+the C side caches the absolute path at the moment the handle was
+issued (via `Directory.list`, `Directory.create`, `Directory.createDir`,
+or `Cache`).  A subsequent `Directory.delete` invalidates handles
+to the removed entry by walking a live-handle registry and setting
+a `dead` flag on each match.
+
+Two layers of protection keep operations from acting on a stale path:
+
+1. **Active invalidation.** `Directory.delete` walks every live
+   handle and marks dead anything whose path is the removed entry
+   or a descendant of it.  Subsequent ops on a dead handle throw.
+2. **Per-call existence check.** Every File / Directory method
+   re-checks `fexist(path)` / `isdir(path)` before doing anything.
+   If the path is missing — because something outside the script
+   (another script, another process, the user) deleted it — the
+   handle is marked dead, removed from the registry, and the
+   operation aborts the calling fiber.  This catches deletions
+   that bypassed `Directory.delete`.
+
+The active layer is fast (one boolean check); the existence layer
+costs a `stat()` per operation but covers the externally-modified
+case.  Together they ensure no File / Directory operation ever
+silently acts on the wrong path.
+
+==== Open files are exempt
+
+A File handle whose underlying file is currently open (between
+`File.open()` and `File.close()`) is *not* marked dead by the
+invalidation walk and bypasses the per-call `fexist()` check.
+This matches platform reality:
+
+- On Unix, an open file descriptor remains valid after the path is
+  unlinked; reads and writes continue to work, and the inode is
+  freed only when the last reference closes.
+- On Windows, deleting a file that's currently open fails at the
+  OS layer, so the situation never arises.
+
+While the file is open, operations against the fd hit OS-level
+errors if the underlying file is genuinely gone (very rare on Unix,
+impossible on Windows).  `File.close()` re-runs the existence check
+after `fclose`; if the path is gone at that point, the handle is
+marked dead and unregistered, and the next operation throws.
+
+Scripts should drop stale handles when they're done with them; the
+handles aren't hazardous (operations throw rather than corrupt
+state) but holding them prevents the underlying foreign data from
+being GC'd.
+
+==== Filename Policy [[filename-policy]]
 
 Filenames passed to any `Directory` or `File` method must satisfy:
 
@@ -1488,10 +2027,6 @@ methods on the resulting `File` are no-ops if construction failed.
 | `File.write(s)`
 | Replace file contents with `s`.
 
-| `File.delete()`
-| Delete the file from disk.  Subsequent operations on this `File`
-  are no-ops.
-
 | `File.offset`, `offset=(o)`
 | Current read/write position.
 
@@ -1502,9 +2037,14 @@ methods on the resulting `File` are no-ops if construction failed.
 | `true` while the handle is valid.
 |===
 
-A `File` whose backing file has been deleted becomes a "landmine":
-every method silently no-ops.  This avoids partial writes after a
-delete races with an outstanding handle.
+A `File` whose backing file has been deleted is dead — every method
+aborts the calling fiber with "handle is dead" or "backing file no
+longer exists".  Detection happens both actively (when the file is
+removed via `Directory.delete` from any handle to its parent) and
+on every operation (a per-call `fexist()` check catches deletions
+that bypassed `Directory.delete`).  See the
+<<directory-handle-staleness,Handle staleness>> note in the Directory
+section for the full mechanism.
 
 === Hook
 
@@ -1520,43 +2060,63 @@ Each call returns a `HookHandle`.
 
 == Worked Example: Auto-respond to a Prompt
 
-A small script that watches inbound text for a known prompt and
-sends a canned response.  Demonstrates `onInput`, line buffering,
-and a substring check.
+A small script that watches inbound text for known prompts and sends
+canned responses.  `Hook.onMatch` is the right tool for this — it
+runs a streaming regex against the inbound byte stream and fires the
+callback on each match, no manual buffering required:
 
 [source,wren]
 ----
 import "syncterm" for Hook, Conn
 
-class AutoReply {
-  static buf { __buf }
-  static buf=(s) { __buf = s }
-
-  static check(prompt, reply) {
-    if (buf.contains(prompt)) {
-      Conn.send(reply + "\r")
-      buf = ""
-    }
-  }
+Hook.onMatch("Press any key to continue") { |m|
+  Conn.send("\r")
+  return false
 }
 
-AutoReply.buf = ""
-
-Hook.onInput { |b|
-  if (b == 0x0a) {
-    AutoReply.check("Press any key to continue", "")
-    AutoReply.check("Logon: ", "myhandle")
-    AutoReply.buf = ""
-  } else if (b >= 0x20 && b < 0x7f) {
-    AutoReply.buf = AutoReply.buf + String.fromCodePoint(b)
-    if (AutoReply.buf.count > 256) {
-      AutoReply.buf = AutoReply.buf[-128..-1]
-    }
-  }
+Hook.onMatch("Logon: ") { |m|
+  Conn.send("myhandle\r")
   return false
 }
 ----
 
-The hook returns `false` so the bytes still reach the terminal.
-Returning `true` would make the prompt invisible to the user — fine
-for fully scripted sessions, surprising for a human at the keyboard.
+The callbacks return `false` so the matched bytes still reach the
+terminal.  Returning `true` would suppress them — fine for a fully
+scripted session, surprising for a human at the keyboard.
+
+`onMatch` substring-matches anywhere in the stream, not anchored to
+line boundaries, so prompts that wait for input mid-line (like
+`Logon: `) work the same as prompts followed by a newline.  See
+<<hook-events,Hook Events>> for the regex grammar accepted, including
+which constructs aren't supported (no character classes, no anchors,
+no backslash escapes).
+
+== Worked Example: Per-byte Inspection
+
+`Hook.onInput` is the lower-level primitive — fires once per inbound
+byte before the byte reaches the terminal.  Use it when you need to
+react to individual bytes rather than text patterns.  Below: count
+BEL (0x07) bytes received over the session.
+
+[source,wren]
+----
+import "syncterm" for Hook
+
+class Stats {
+  static bells { __bells }
+  static bells=(n) { __bells = n }
+}
+Stats.bells = 0
+
+Hook.onInput { |b|
+  if (b == 0x07) Stats.bells = Stats.bells + 1
+  return false
+}
+----
+
+Inspect the count from the Wren console (Ctrl+&#96;) — `Stats.bells`
+returns the running total.  Returning `false` lets the byte through
+to cterm; returning `true` would consume it (so the BEL never reaches
+the terminal and never beeps).  Filtered variants —
+`Hook.onInput(0x07, fn)` — push the byte equality check to the C
+side, avoiding a Wren entry on every non-target byte.

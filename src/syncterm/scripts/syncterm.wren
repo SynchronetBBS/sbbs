@@ -122,12 +122,12 @@ class Color {
   foreign static toLegacyAttr(fg, bg)
 }
 foreign class Input {
-  foreign static next
+  foreign static next()
   foreign static next(ms)
-  foreign static poll
+  foreign static poll()
   foreign static mousedrag()
   foreign static mouseVisible=(b)
-  static nextEvent {
+  static nextEvent() {
     park_(Fiber.current)
     return Fiber.yield()
   }
@@ -625,8 +625,10 @@ class LogLevel {
 }
 foreign class Directory {
   foreign contains(name)
-  foreign list()
+  foreign list
   foreign create(name)
+  foreign createDir(name)
+  foreign delete(name)
 }
 foreign class File {
   foreign open()
@@ -637,7 +639,6 @@ foreign class File {
   foreign writeBytes(s)
   foreign writeBytes(s, offset)
   foreign write(s)
-  foreign delete()
   foreign offset
   foreign offset=(o)
   foreign size
@@ -656,7 +657,7 @@ class Hook {
   foreign static every(ms, fn)
 
   // Wraps every hook fire so a handler that yields directly (e.g.
-  // calls a parking SFTP op or Input.nextEvent at the top of its
+  // calls a parking SFTP op or Input.nextEvent() at the top of its
   // body) raises a clear error instead of corrupting the dispatch
   // chain — yielded fibers can't return the bool/string the
   // dispatcher needs to proceed.  For deferred work that *should*

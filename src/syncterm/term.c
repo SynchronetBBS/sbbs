@@ -6052,7 +6052,7 @@ doterm(struct bbslist *bbs)
 			if (speed)
 				thischar = xp_timer();
 
-			/* A Wren fiber parked on Input.nextEvent claims the
+			/* A Wren fiber parked on Input.nextEvent() claims the
 			 * screen — leave incoming bytes queued on the wire so
 			 * cterm_write() doesn't paint over the modal dialog.
 			 * Disconnect detection resumes naturally on the next
