@@ -46,6 +46,35 @@ class WrenConsole {
     return -1
   }
 
+  // Register a /<name> command other modules can plug into the
+  // console.  `help` is the line shown by /? after the command name.
+  // `fn` is invoked with the raw argument string — everything after
+  // the name and its first separating space, "" if none — and runs
+  // inside a Fiber so an abort in the handler doesn't tear down the
+  // console.  Re-registering an existing name overwrites.  Names
+  // can't contain spaces (the dispatcher splits on the first one).
+  static register(name, help, fn) {
+    if (name.contains(" ")) {
+      Fiber.abort("WrenConsole.register: name '%(name)' contains a space")
+    }
+    if (__commands == null) __commands = {}
+    __commands[name] = [help, fn]
+  }
+
+  // Drop a previously-registered command; no-op if not registered.
+  static unregister(name) {
+    if (__commands != null) __commands.remove(name)
+  }
+
+  // Currently-registered command names, sorted byte-wise.  Mostly a
+  // hook for tests and tooling; the run-loop uses __commands directly.
+  static commands {
+    if (__commands == null) return []
+    var names = __commands.keys.toList
+    names.sort {|a, b| stringLT_(a, b) }
+    return names
+  }
+
   // Byte-wise less-than for two Strings.  Wren's String doesn't
   // implement `<` (Unicode collation is out of scope for the core),
   // so List.sort() needs a comparator for any sort that touches
@@ -472,6 +501,13 @@ class WrenConsole {
   static runCommand_(line, current) {
     if (line == "/?" || line == "/help") {
       System.print("commands: /in [module], /mods, /quit, /?")
+      if (__commands != null && __commands.count > 0) {
+        var names = __commands.keys.toList
+        names.sort {|a, b| stringLT_(a, b) }
+        for (n in names) {
+          System.print("          /%(n) — %(__commands[n][0])")
+        }
+      }
       System.print("editing:  Left/Right, Home/End, Backspace, Delete,")
       System.print("          Ctrl+W (kill word back), Ctrl+L (clear screen)")
       System.print("history:  Up/Down — type a prefix first to filter")
@@ -508,6 +544,26 @@ class WrenConsole {
       }
       System.print("now in module: " + name)
       return name
+    }
+    // Module-registered commands: /<name> [args].  Match the leading
+    // word against __commands; anything left of the first space is
+    // the command name, everything after is passed to the handler as
+    // a single string.  Run inside a Fiber so an abort in the handler
+    // surfaces as a logged error instead of tearing out the console.
+    if (__commands != null) {
+      var sp   = line.indexOf(" ")
+      var name = (sp == -1) ? line[1...line.count] : line[1...sp]
+      var args = (sp == -1) ? "" : line[(sp + 1)...line.count]
+      if (__commands.containsKey(name)) {
+        var fn = __commands[name][1]
+        var f  = Fiber.new { fn.call(args) }
+        f.try()
+        if (f.error != null) {
+          System.print("error: " + f.error)
+          REPL.printTrace_(f)
+        }
+        return current
+      }
     }
     System.print("unknown command: " + line)
     return current

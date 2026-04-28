@@ -673,6 +673,35 @@ the active module:
 | Close the REPL and return to the BBS session.
 |===
 
+Modules can plug in their own `/<command>` entries via
+`WrenConsole.register(name, help, fn)`:
+
+[source,wren]
+----
+import "console" for WrenConsole
+
+WrenConsole.register("greet", "say hello [<name>]") { |args|
+  if (args == "") {
+    System.print("hello!")
+  } else {
+    System.print("hello, %(args)!")
+  }
+}
+----
+
+The handler is called with the raw argument string — everything
+after the command name and its first separating space, or `""` if
+none.  Re-registering an existing name overwrites the previous
+binding.  Names can't contain spaces (the dispatcher splits on the
+first one).  The dispatch wraps the handler in `Fiber.new {}.try()`
+so a runtime abort surfaces as a logged error instead of tearing
+the console out from under itself.  `/?` lists every registered
+command with its help text alongside the built-ins.
+
+`WrenConsole.unregister(name)` drops a registration (idempotent —
+no-op if not registered); `WrenConsole.commands` returns the sorted
+list of currently-registered names for tooling.
+
 === REPL Key Bindings
 
 [options="header",cols="2,3"]

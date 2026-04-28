@@ -28,6 +28,7 @@ import "syncterm" for Hook, Conn, Console, Screen, CTerm, BBS, Key,
     Parity, BBSListType, ScreenMode, AddressFamily, MusicMode,
     RipVersion, LogMode, StatusDisplay, Color, Cell, Hyperlinks,
     REPL, Input, KeyEvent
+import "console" for WrenConsole
 
 class WrenTest {
   static run() {
@@ -139,6 +140,12 @@ class WrenTest {
     testHookDispatchRejectsNoArgYield_()
     testHookDispatchAllowsChildFiberYield_()
     testHookDispatchCatchesAbort_()
+
+    // ------ WrenConsole.register -----------------------------------
+    testConsoleRegisterRoundtrip_()
+    testConsoleRegisterOverwrite_()
+    testConsoleRegisterRejectsSpace_()
+    testConsoleUnregister_()
 
     // ------ inject a sentinel key for async onKey filter test ------
     // Filter key must have low byte 0x00 (or 0xe0) — ciolib's
@@ -495,6 +502,51 @@ class WrenTest {
   static testHookDispatchCatchesAbort_() {
     var r = Hook.dispatch_(Fn.new { |x| Fiber.abort("test boom") }, 0)
     check_(r == null, "Hook.dispatch_ catches Fiber.abort")
+  }
+
+  // ===== WrenConsole.register =====================================
+  // The dispatcher itself is in WrenConsole.runCommand_, which only
+  // runs when a user is in the console.  These tests poke at the
+  // registry directly via the public API; manual /? in the live
+  // console is the way to verify dispatch and help-rendering.
+
+  static testConsoleRegisterRoundtrip_() {
+    WrenConsole.register("__wt_a", "test command a", Fn.new { |args| 0 })
+    check_(WrenConsole.commands.contains("__wt_a"),
+           "WrenConsole.register stores the command")
+    WrenConsole.unregister("__wt_a")
+  }
+
+  static testConsoleRegisterOverwrite_() {
+    WrenConsole.register("__wt_b", "first",  Fn.new { |args| 0 })
+    WrenConsole.register("__wt_b", "second", Fn.new { |args| 1 })
+    var n = 0
+    for (c in WrenConsole.commands) {
+      if (c == "__wt_b") n = n + 1
+    }
+    check_(n == 1, "WrenConsole.register overwrites same-name entry")
+    WrenConsole.unregister("__wt_b")
+  }
+
+  static testConsoleRegisterRejectsSpace_() {
+    var f = Fiber.new {
+      WrenConsole.register("bad name", "x", Fn.new { |args| 0 })
+    }
+    var err = f.try()
+    check_(err != null, "WrenConsole.register rejects names with spaces")
+  }
+
+  static testConsoleUnregister_() {
+    WrenConsole.register("__wt_c", "to drop", Fn.new { |args| 0 })
+    check_(WrenConsole.commands.contains("__wt_c"),
+           "WrenConsole.register pre-condition for unregister test")
+    WrenConsole.unregister("__wt_c")
+    check_(!WrenConsole.commands.contains("__wt_c"),
+           "WrenConsole.unregister removes the command")
+    // Idempotent — double-unregister is a no-op, not an error.
+    WrenConsole.unregister("__wt_c")
+    check_(!WrenConsole.commands.contains("__wt_c"),
+           "WrenConsole.unregister is idempotent")
   }
 
   // ===== sentinel-driven async tests ==============================
