@@ -27,6 +27,7 @@
 #include "sftp_session.h"
 
 #include <stdint.h>
+#include <inttypes.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -381,6 +382,37 @@ MOUSE_FIELD(endX,      endx)
 MOUSE_FIELD(endY,      endy)
 
 #undef MOUSE_FIELD
+
+static void
+fn_KeyEvent_toString(WrenVM *vm)
+{
+	struct wren_key_event *ke = wrenGetSlotForeign(vm, 0);
+	char buf[64];
+	if (ke->text_len > 0 && ke->text[0] >= 0x20 && ke->text[0] < 0x7F)
+		snprintf(buf, sizeof(buf), "KeyEvent('%s' 0x%04X)",
+		    (const char *)ke->text, (unsigned)ke->code);
+	else
+		snprintf(buf, sizeof(buf), "KeyEvent(0x%04X)",
+		    (unsigned)ke->code);
+	wrenSetSlotString(vm, 0, buf);
+}
+
+static void
+fn_MouseEvent_toString(WrenVM *vm)
+{
+	struct wren_mouse_event *me = wrenGetSlotForeign(vm, 0);
+	char buf[96];
+	if (me->ev.startx == me->ev.endx && me->ev.starty == me->ev.endy)
+		snprintf(buf, sizeof(buf),
+		    "MouseEvent(event=%d at %d,%d)",
+		    me->ev.event, me->ev.startx, me->ev.starty);
+	else
+		snprintf(buf, sizeof(buf),
+		    "MouseEvent(event=%d at %d,%d-%d,%d)",
+		    me->ev.event, me->ev.startx, me->ev.starty,
+		    me->ev.endx, me->ev.endy);
+	wrenSetSlotString(vm, 0, buf);
+}
 
 /* Build a Wren-side KeyEvent in slot 0 from a raw 16-bit code.  Uses
  * the captured KeyEvent class handle; callers must have at least 2
@@ -2125,6 +2157,34 @@ fn_File_isOpen(WrenVM *vm)
 	wrenSetSlotBool(vm, 0, wf->fp != NULL);
 }
 
+/* toString skips the usual file_check / dir_check guards so a dead
+ * handle prints "(dead)" instead of aborting the fiber. */
+static void
+fn_File_toString(WrenVM *vm)
+{
+	struct wren_file *wf = wrenGetSlotForeign(vm, 0);
+	const char *suffix = wf->dead ? " (dead)" :
+	                     (wf->fp != NULL ? " (open)" : "");
+	char buf[MAX_PATH + 16];
+	snprintf(buf, sizeof(buf), "%s%s", wf->path, suffix);
+	wrenSetSlotString(vm, 0, buf);
+}
+
+static void
+fn_Directory_toString(WrenVM *vm)
+{
+	struct wren_directory *wd = wrenGetSlotForeign(vm, 0);
+	const char *base = wd->is_cache ? "Cache/" : wd->path;
+	if (wd->dead) {
+		char buf[MAX_PATH + 16];
+		snprintf(buf, sizeof(buf), "%s (dead)", base);
+		wrenSetSlotString(vm, 0, buf);
+	}
+	else {
+		wrenSetSlotString(vm, 0, base);
+	}
+}
+
 /* ----- Console (log buffer accessor) ------------------------------ */
 
 static void
@@ -2500,6 +2560,17 @@ fn_HookHandle_maxRuntime(WrenVM *vm)
 	const struct hook_metrics *m =
 	    hook_handle_metrics(wrenGetSlotForeign(vm, 0));
 	wrenSetSlotDouble(vm, 0, m != NULL ? (double)m->max_runtime_s : 0.0);
+}
+
+static void
+fn_HookHandle_toString(WrenVM *vm)
+{
+	const struct hook_metrics *m =
+	    hook_handle_metrics(wrenGetSlotForeign(vm, 0));
+	uint64_t calls = m != NULL ? m->call_count : 0;
+	char buf[48];
+	snprintf(buf, sizeof(buf), "HookHandle(calls=%" PRIu64 ")", calls);
+	wrenSetSlotString(vm, 0, buf);
 }
 
 /* ----- Cell / Cells / vmem text bindings --------------------------
@@ -3582,6 +3653,16 @@ fn_Cell_hyperlinkId(WrenVM *vm)
 }
 
 static void
+fn_Cell_toString(WrenVM *vm)
+{
+	struct vmem_cell *d = slot_cell_data(vm, 0);
+	char buf[48];
+	snprintf(buf, sizeof(buf), "Cell(0x%02X attr=0x%02X)",
+	    (unsigned)d->ch, (unsigned)d->legacy_attr);
+	wrenSetSlotString(vm, 0, buf);
+}
+
+static void
 fn_Cell_hyperlinkId_set(WrenVM *vm)
 {
 	struct vmem_cell *d = slot_cell_data(vm, 0);
@@ -3660,6 +3741,15 @@ fn_Cells_iteratorValue(WrenVM *vm)
 {
 	int i = (int)wrenGetSlotDouble(vm, 1);
 	cells_make_view(vm, i);
+}
+
+static void
+fn_Cells_toString(WrenVM *vm)
+{
+	struct wren_cells *cs = wrenGetSlotForeign(vm, 0);
+	char buf[32];
+	snprintf(buf, sizeof(buf), "Cells(count=%d)", cs->count);
+	wrenSetSlotString(vm, 0, buf);
 }
 
 /* ----- Font ----- */
@@ -4052,6 +4142,79 @@ fn_SFTPError_serverStatus(WrenVM *vm)
 {
 	struct wren_sftp_error *e = wrenGetSlotForeign(vm, 0);
 	wrenSetSlotDouble(vm, 0, (double)e->server_status);
+}
+
+/* Short symbolic name for sftp_err_code_t — used by SFTPError.toString
+ * since the lib's sftp_get_errcode_name covers SSH_FX_* not the
+ * library-side enum. */
+static const char *
+sftp_err_short_name(sftp_err_code_t err)
+{
+	switch (err) {
+	case SFTP_ERR_OK:                   return "OK";
+	case SFTP_ERR_NULL_STATE:           return "NULL_STATE";
+	case SFTP_ERR_NULL_PATH:            return "NULL_PATH";
+	case SFTP_ERR_NULL_HANDLE_OUT:      return "NULL_HANDLE_OUT";
+	case SFTP_ERR_NULL_HANDLE:          return "NULL_HANDLE";
+	case SFTP_ERR_HANDLE_NOT_NULL:      return "HANDLE_NOT_NULL";
+	case SFTP_ERR_NULL_DATA:            return "NULL_DATA";
+	case SFTP_ERR_NULL_OUT:             return "NULL_OUT";
+	case SFTP_ERR_OOM:                  return "OOM";
+	case SFTP_ERR_PACKET_BUILD_FAILED:  return "PACKET_BUILD_FAILED";
+	case SFTP_ERR_SEND_FAILED:          return "SEND_FAILED";
+	case SFTP_ERR_CHANNEL_CLOSED:       return "CHANNEL_CLOSED";
+	case SFTP_ERR_ABORTED:              return "ABORTED";
+	case SFTP_ERR_REPLY_NULL:           return "REPLY_NULL";
+	case SFTP_ERR_REPLY_WRONG_TYPE:     return "REPLY_WRONG_TYPE";
+	case SFTP_ERR_REPLY_BAD_STRING:     return "REPLY_BAD_STRING";
+	case SFTP_ERR_PARSE_FAILED:         return "PARSE_FAILED";
+	}
+	return "UNKNOWN";
+}
+
+/* ----- toString — SFTP* -------------------------------------------- */
+
+static void
+fn_SFTPEntry_toString(WrenVM *vm)
+{
+	struct wren_sftp_entry *e = wrenGetSlotForeign(vm, 0);
+	if (e->longname != NULL && e->longname[0] != '\0')
+		wrenSetSlotString(vm, 0, e->longname);
+	else if (e->name != NULL && e->name[0] != '\0')
+		wrenSetSlotString(vm, 0, e->name);
+	else
+		wrenSetSlotString(vm, 0, "SFTPEntry");
+}
+
+static void
+fn_SFTPStat_toString(WrenVM *vm)
+{
+	struct wren_sftp_stat *s = wrenGetSlotForeign(vm, 0);
+	char buf[128];
+	snprintf(buf, sizeof(buf),
+	    "SFTPStat(size=%" PRIu64 ", mode=0%o, mtime=%" PRIu32 ")",
+	    s->size, s->mode, s->mtime);
+	wrenSetSlotString(vm, 0, buf);
+}
+
+static void
+fn_SFTPError_toString(WrenVM *vm)
+{
+	struct wren_sftp_error *e = wrenGetSlotForeign(vm, 0);
+	const char *name;
+	if (e->code != SFTP_ERR_OK)
+		name = sftp_err_short_name((sftp_err_code_t)e->code);
+	else if (e->server_status != SSH_FX_OK)
+		name = sftp_get_errcode_name(e->server_status);
+	else
+		name = "OK";
+	char buf[256];
+	if (e->message != NULL && e->message[0] != '\0')
+		snprintf(buf, sizeof(buf), "SFTPError: %s: %s", name,
+		    e->message);
+	else
+		snprintf(buf, sizeof(buf), "SFTPError: %s", name);
+	wrenSetSlotString(vm, 0, buf);
 }
 
 /* ----- SFTP parking infrastructure --------------------------------- */
@@ -4745,6 +4908,7 @@ static const struct binding BINDINGS[] = {
 	{ "KeyEvent",   false, "code",       fn_KeyEvent_code      },
 	{ "KeyEvent",   false, "codepoint",  fn_KeyEvent_codepoint },
 	{ "KeyEvent",   false, "text",       fn_KeyEvent_text      },
+	{ "KeyEvent",   false, "toString",   fn_KeyEvent_toString  },
 
 	/* MouseEvent (instance) */
 	{ "MouseEvent", false, "event",      fn_MouseEvent_event      },
@@ -4753,6 +4917,7 @@ static const struct binding BINDINGS[] = {
 	{ "MouseEvent", false, "startY",     fn_MouseEvent_startY     },
 	{ "MouseEvent", false, "endX",       fn_MouseEvent_endX       },
 	{ "MouseEvent", false, "endY",       fn_MouseEvent_endY       },
+	{ "MouseEvent", false, "toString",   fn_MouseEvent_toString   },
 
 	/* Clipboard (all static) */
 	{ "Clipboard", true, "text",               fn_Clipboard_text     },
@@ -4791,12 +4956,14 @@ static const struct binding BINDINGS[] = {
 	{ "Cell",  false, "bgRgb=(_)",       fn_Cell_bgRgb_set       },
 	{ "Cell",  false, "hyperlinkId",     fn_Cell_hyperlinkId     },
 	{ "Cell",  false, "hyperlinkId=(_)", fn_Cell_hyperlinkId_set },
+	{ "Cell",  false, "toString",        fn_Cell_toString        },
 
 	/* Cells (all instance) */
 	{ "Cells", false, "count",            fn_Cells_count         },
 	{ "Cells", false, "[_]",              fn_Cells_subscript     },
 	{ "Cells", false, "iterate(_)",       fn_Cells_iterate       },
 	{ "Cells", false, "iteratorValue(_)", fn_Cells_iteratorValue },
+	{ "Cells", false, "toString",         fn_Cells_toString      },
 
 	/* Font (all static) */
 	{ "Font",  true,  "name(_)",       fn_Font_name       },
@@ -4836,6 +5003,7 @@ static const struct binding BINDINGS[] = {
 	{ "SFTPEntry",  false, "mtime",           fn_SFTPEntry_mtime      },
 	{ "SFTPEntry",  false, "isDir",           fn_SFTPEntry_isDir      },
 	{ "SFTPEntry",  false, "hash",            fn_SFTPEntry_hash       },
+	{ "SFTPEntry",  false, "toString",        fn_SFTPEntry_toString   },
 
 	/* SFTPStat (instance) */
 	{ "SFTPStat",   false, "size",            fn_SFTPStat_size        },
@@ -4844,12 +5012,14 @@ static const struct binding BINDINGS[] = {
 	{ "SFTPStat",   false, "mode",            fn_SFTPStat_mode        },
 	{ "SFTPStat",   false, "uid",             fn_SFTPStat_uid         },
 	{ "SFTPStat",   false, "gid",             fn_SFTPStat_gid         },
+	{ "SFTPStat",   false, "toString",        fn_SFTPStat_toString    },
 
 	/* SFTPError (instance) */
 	{ "SFTPError",  false, "code",            fn_SFTPError_code         },
 	{ "SFTPError",  false, "message",         fn_SFTPError_message      },
 	{ "SFTPError",  false, "isTransient",     fn_SFTPError_isTransient  },
 	{ "SFTPError",  false, "serverStatus",    fn_SFTPError_serverStatus },
+	{ "SFTPError",  false, "toString",        fn_SFTPError_toString     },
 
 	/* HookHandle (instance methods/getters) */
 	{ "HookHandle", false, "remove()",       fn_HookHandle_remove       },
@@ -4857,6 +5027,7 @@ static const struct binding BINDINGS[] = {
 	{ "HookHandle", false, "totalRuntime",   fn_HookHandle_totalRuntime },
 	{ "HookHandle", false, "minRuntime",     fn_HookHandle_minRuntime   },
 	{ "HookHandle", false, "maxRuntime",     fn_HookHandle_maxRuntime   },
+	{ "HookHandle", false, "toString",       fn_HookHandle_toString     },
 
 	/* Console */
 	{ "Console", true, "count",            fn_Console_count         },
@@ -4983,6 +5154,7 @@ static const struct binding BINDINGS[] = {
 	{ "Directory", false, "create(_)",       fn_Directory_create    },
 	{ "Directory", false, "createDir(_)",    fn_Directory_createDir },
 	{ "Directory", false, "delete(_)",       fn_Directory_delete    },
+	{ "Directory", false, "toString",        fn_Directory_toString  },
 	{ "File",      false, "open()",          fn_File_open           },
 	{ "File",      false, "close()",         fn_File_close          },
 	{ "File",      false, "readBytes(_)",    fn_File_readBytes_1    },
@@ -4997,6 +5169,7 @@ static const struct binding BINDINGS[] = {
 	{ "File",      false, "offset=(_)",      fn_File_offset_set     },
 	{ "File",      false, "size",            fn_File_size           },
 	{ "File",      false, "isOpen",          fn_File_isOpen         },
+	{ "File",      false, "toString",        fn_File_toString       },
 
 	/* Hook */
 	{ "Hook",  true, "onKey(_)",       fn_Hook_onKey            },

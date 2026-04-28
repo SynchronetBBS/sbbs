@@ -163,6 +163,7 @@ foreign class KeyEvent {
   foreign code
   foreign codepoint
   foreign text
+  foreign toString
 }
 foreign class MouseEvent {
   construct new(event, modifiers, startX, startY, endX, endY) {}
@@ -172,6 +173,7 @@ foreign class MouseEvent {
   foreign startY
   foreign endX
   foreign endY
+  foreign toString
 }
 class Key {
   static escape      { 0x001B }
@@ -376,6 +378,7 @@ foreign class Cell {
   foreign bgRgb=(n)
   foreign hyperlinkId
   foreign hyperlinkId=(n)
+  foreign toString
 }
 // Cells inherits Sequence so all the iteration helpers (each, where,
 // map, all, any, count(f), reduce, join, take, skip, toList, etc.)
@@ -386,6 +389,7 @@ foreign class Cells is Sequence {
   foreign [i]
   foreign iterate(it)
   foreign iteratorValue(it)
+  foreign toString
 }
 class Font {
   static cp437English      { 0 }
@@ -651,6 +655,7 @@ foreign class Directory {
   foreign create(name)
   foreign createDir(name)
   foreign delete(name)
+  foreign toString
 }
 foreign class File {
   foreign open()
@@ -667,6 +672,7 @@ foreign class File {
   foreign offset=(o)
   foreign size
   foreign isOpen
+  foreign toString
 }
 class Hook {
   foreign static onKey(fn)
@@ -733,6 +739,7 @@ foreign class HookHandle {
   foreign totalRuntime    // seconds (sum of every wrenCall in this hook)
   foreign minRuntime      // seconds (smallest single invocation)
   foreign maxRuntime      // seconds (largest single invocation)
+  foreign toString
 }
 
 // Module-private bridge for state the host owns but Wren shouldn't
@@ -814,6 +821,7 @@ foreign class SFTPEntry {
   foreign mtime
   foreign isDir
   foreign hash
+  foreign toString
 }
 
 // Result of SFTP.stat.  Time fields are POSIX seconds; `mode` is the
@@ -825,6 +833,7 @@ foreign class SFTPStat {
   foreign mode
   foreign uid
   foreign gid
+  foreign toString
 }
 
 // Opaque handle returned by SFTP.open / SFTP.opendir; consumed by
@@ -847,6 +856,7 @@ foreign class SFTPError {
   foreign serverStatus
   foreign message
   foreign isTransient
+  foreign toString
 }
 
 // Cache singleton.  Bound at module-load time so any script that
