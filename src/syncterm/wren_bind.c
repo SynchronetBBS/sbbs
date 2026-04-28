@@ -1514,24 +1514,8 @@ dir_list_impl(WrenVM *vm, const char *dir)
 		int len = snprintf(p, sizeof(p), "%s%s", dir, de->d_name);
 		if (len < 0 || (size_t)len >= sizeof(p))
 			continue;
-		struct stat sb;
-		if (stat(p, &sb) != 0)
-			continue;
 		wrenSetSlotString(vm, 1, de->d_name);
-		if (S_ISREG(sb.st_mode)) {
-			wrenGetVariable(vm, "syncterm", "File", 2);
-			struct wren_file *wf = wrenSetSlotNewForeign(vm, 3, 2,
-			    sizeof(*wf));
-			wf->type    = SWF_FILE;
-			wf->fp      = NULL;
-			wf->dead    = false;
-			wf->fs_prev = NULL;
-			wf->fs_next = NULL;
-			memcpy(wf->path, p, (size_t)len + 1);
-			fs_register_file(wf);
-			wrenSetMapValue(vm, 0, 1, 3);
-		}
-		else if (S_ISDIR(sb.st_mode)) {
+		if (isdir(p)) {
 			/* Subsequent dir_*_impl calls expect a trailing slash on
 			 * the path so name concatenation works. */
 			if ((size_t)len + 1 >= sizeof(p))
@@ -1550,8 +1534,22 @@ dir_list_impl(WrenVM *vm, const char *dir)
 			fs_register_dir(wd);
 			wrenSetMapValue(vm, 0, 1, 3);
 		}
-		/* Symlinks, devices, sockets, FIFOs etc. are silently
-		 * skipped — neither a File nor a Directory. */
+		else if (fexist(p)) {
+			wrenGetVariable(vm, "syncterm", "File", 2);
+			struct wren_file *wf = wrenSetSlotNewForeign(vm, 3, 2,
+			    sizeof(*wf));
+			wf->type    = SWF_FILE;
+			wf->fp      = NULL;
+			wf->dead    = false;
+			wf->fs_prev = NULL;
+			wf->fs_next = NULL;
+			memcpy(wf->path, p, (size_t)len + 1);
+			fs_register_file(wf);
+			wrenSetMapValue(vm, 0, 1, 3);
+		}
+		/* Anything else (entries that don't exist by the time we
+		 * stat them, or that the OS classifies as neither file nor
+		 * directory) is silently skipped. */
 	}
 	closedir(dh);
 }
@@ -1696,15 +1694,12 @@ dir_delete_impl(WrenVM *vm, const char *dir, const char *name)
 		wrenSetSlotBool(vm, 0, false);
 		return;
 	}
-	/* stat first so we only act on regular files and directories;
-	 * symlinks, devices, FIFOs etc. are refused even if a stray entry
-	 * with a fname_is_clean name happens to exist on disk. */
-	struct stat sb;
-	if (stat(p, &sb) != 0) {
-		wrenSetSlotBool(vm, 0, false);
-		return;
-	}
-	if (!S_ISREG(sb.st_mode) && !S_ISDIR(sb.st_mode)) {
+	/* Refuse to act on anything that isn't an existing file or
+	 * directory.  fexist() is xpdev's "exists as a non-directory"
+	 * (true for regular files, symlinks, devices on POSIX); isdir()
+	 * is the directory test.  fname_is_clean already rejects path
+	 * traversal in the name. */
+	if (!fexist(p) && !isdir(p)) {
 		wrenSetSlotBool(vm, 0, false);
 		return;
 	}
