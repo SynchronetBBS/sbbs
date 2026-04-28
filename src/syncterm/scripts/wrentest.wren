@@ -43,7 +43,8 @@ class WrenTest {
     // fiber clears CTerm.suspended after capturing so T06's
     // sleep-and-printf sentinel can drain back through cterm.
     __nextEventFiber   = Fiber.new {
-      __nextEventResult = Input.nextEvent()
+      Input.nextEvent(Fiber.current)
+      __nextEventResult = Fiber.yield()
       CTerm.suspended = false
     }
     // Register the test's hooks fresh each run; cleanup_() removes
@@ -627,18 +628,17 @@ class WrenTest {
       __pending = "T05"
       Conn.send("sleep 1 && printf '__\%s_X_done_X__\\n' T05\r")
     } else if (__step == 6) {
-      // Result-queue framework end-to-end.  Park the fiber on
-      // Input.nextEvent (the foreign captures Fiber.current and
-      // the wrapper yields), then unget a sentinel key.  The
-      // next main-loop iteration's dispatch_key sees the parked
-      // fiber, pushes a KeyEvent onto the result queue, and
-      // clears parked_fiber.  The iteration after that drains
-      // the queue, which constructs the foreign and resumes the
-      // fiber with it.  The 0.2 s wall-clock pause via sleep is
-      // there to give the drain a chance to fire — without it
-      // the report_ check races against the resume.  0xFD00
-      // matches the same low-byte-zero constraint the existing
-      // 0xFE00 hook test uses (see comment at the unget below).
+      // Result-queue framework end-to-end.  Register the fiber to
+      // receive the next event via Input.nextEvent, yield, then
+      // unget a sentinel key.  The next main-loop iteration's
+      // dispatch_key sees the registered fiber, pushes a KeyEvent
+      // onto the result queue, and clears parked_fiber.  The
+      // iteration after that drains the queue, which constructs the
+      // foreign and resumes the fiber with it.  The 0.2 s pause via
+      // sleep gives the drain a chance to fire — without it the
+      // report_ check races against the resume.  0xFD00 matches the
+      // same low-byte-zero constraint the existing 0xFE00 hook test
+      // uses (see comment at the unget below).
       // CTerm.suspended is toggled around the unget+resume window
       // to exercise the wire-pump suspend flag — without it,
       // remote bytes from the T05 sleep tail could repaint while

@@ -16,11 +16,11 @@ struct wren_directory;
  * Result queue
  *
  * Generic "completion destined for a parked fiber" framework.  Any
- * callable that yields a fiber (Input.nextEvent, future SFTP ops, etc.)
- * captures the fiber handle and arranges for a result to be pushed
- * here.  The owner-thread drainer pops in arrival order, builds the
- * Wren-side foreign for each result, calls the fiber, releases the
- * handle, frees the data.
+ * async op that delivers to a fiber (Input.nextEvent, SFTP.realpath,
+ * etc.) captures the fiber handle and arranges for a result to be
+ * pushed here.  The owner-thread drainer pops in arrival order,
+ * builds the Wren-side foreign for each result, calls the fiber,
+ * releases the handle, frees the data.
  *
  * Workers can push from any thread (the queue is mutex-protected);
  * delivery happens entirely on the owner thread.  Results carrying a
@@ -144,6 +144,10 @@ struct wren_host_state {
 	WrenHandle  *key_event_class;
 	WrenHandle  *mouse_event_class;
 	WrenHandle  *hook_handle_class;
+	WrenHandle  *sftp_entry_class;
+	WrenHandle  *sftp_stat_class;
+	WrenHandle  *sftp_handle_class;
+	WrenHandle  *sftp_error_class;
 
 	struct wren_hook_entry *hooks[WREN_HOOK_COUNT][WREN_HOST_MAX_HOOKS_PER_EVENT];
 	int                     hook_count[WREN_HOOK_COUNT];
@@ -156,12 +160,12 @@ struct wren_host_state {
 	 * iteration) drains it.  Empty == NULL — no counter needed. */
 	struct wren_hook_entry *cleanup_head;
 
-	/* When non-NULL, a Wren fiber is parked on Input.nextEvent() waiting
-	 * for the next key/mouse event.  Set by Input._park, transferred
-	 * onto the result queue by wren_host_dispatch_key/mouse when an
-	 * event arrives, cleared at the same time.  Parking does NOT
-	 * imply any screen claim — scripts that want modal behavior must
-	 * set CTerm.suspended = true explicitly to halt the wire pump. */
+	/* When non-NULL, a Wren fiber is registered to receive the next
+	 * key/mouse event.  Set by Input.nextEvent, transferred onto the
+	 * result queue by wren_host_dispatch_key/mouse when an event
+	 * arrives, cleared at the same time.  Registering does NOT imply
+	 * any screen claim — scripts that want modal behavior must set
+	 * CTerm.suspended = true explicitly to halt the wire pump. */
 	WrenHandle  *parked_fiber;
 
 	/* Pointer to doterm()'s local cterm_suspended flag.  Set by
@@ -261,9 +265,9 @@ WrenForeignMethodFn wren_bind_lookup(const char *module,
 WrenForeignClassMethods wren_bind_lookup_class(const char *module,
                                                 const char *className);
 
-/* If a Wren fiber is parked on Input.nextEvent(), resume it with the
- * given event.  Returns true (consumed) if a fiber was waiting;
- * false (not consumed) if no fiber was parked, in which case the
+/* If a Wren fiber is registered via Input.nextEvent, resume it with
+ * the given event.  Returns true (consumed) if a fiber was waiting;
+ * false (not consumed) if no fiber was registered, in which case the
  * caller should fall through to its hook dispatch path.  Defined
  * in wren_bind.c so the event-construction helpers live next to
  * push_key_event / push_mouse_event. */

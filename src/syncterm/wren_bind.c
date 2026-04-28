@@ -23,6 +23,8 @@
 #include "term.h"
 #include "utf8_codepages.h"
 #include "comio.h"
+#include "sftp.h"
+#include "sftp_session.h"
 
 #include <stdint.h>
 #include <stdio.h>
@@ -194,6 +196,10 @@ enum syncterm_wren_foreign {
 	SWF_CUSTOM_CURSOR,
 	SWF_VIDEO_FLAGS,
 	SWF_HOOK_HANDLE,
+	SWF_SFTP_ENTRY,
+	SWF_SFTP_STAT,
+	SWF_SFTP_HANDLE,
+	SWF_SFTP_ERROR,
 };
 
 /* Every foreign struct's first field has this exact name and type, so
@@ -425,22 +431,29 @@ push_next_event(WrenVM *vm)
 	push_key_event(vm, (uint16_t)code);
 }
 
-/* Input._park(fiber) — bookkeeping primitive for Input.nextEvent().
- * Stores the fiber handle as the parked-waiter; the Wren-side wrapper
- * then calls Fiber.yield(), which returns control to the host.  When
- * an event arrives, wren_bind_resume_parked_* picks the fiber up and
- * calls fiber.call(event), making the yield return that event. */
+/* Input.nextEvent(fiber) — register the fiber to receive the next
+ * key or mouse event.  The fiber should yield right after (typically
+ * the next statement, but it may fire other async ops first and then
+ * yield in a loop demuxing results by type).  When an event arrives,
+ * wren_bind_resume_parked_* picks the fiber up and calls
+ * fiber.call(event), making the yield return that event.
+ *
+ * Throws if another fiber is already registered — single-subscriber
+ * is a structural property of the framework today, so two parks is
+ * a script bug. */
 static void
-fn_Input_park(WrenVM *vm)
+fn_Input_nextEvent(WrenVM *vm)
 {
 	struct wren_host_state *st = wren_host_state();
 	if (st->parked_fiber != NULL) {
 		wrenEnsureSlots(vm, 1);
-		wrenSetSlotString(vm, 0, "Input: a fiber is already parked");
+		wrenSetSlotString(vm, 0, "Input.nextEvent: another fiber "
+		    "is already registered for the next event");
 		wrenAbortFiber(vm, 0);
 		return;
 	}
 	st->parked_fiber = wrenGetSlotHandle(vm, 1);
+	wrenSetSlotNull(vm, 0);
 }
 
 /* Result-queue payload for Input.nextEvent: enough state to build the
@@ -3758,6 +3771,841 @@ fn_Hyperlinks_params(WrenVM *vm)
 	free(params);
 }
 
+/* ----- SFTP --------------------------------------------------------
+ *
+ * The SFTP class (static-only) and four result foreign classes —
+ * SFTPEntry, SFTPStat, SFTPHandle, SFTPError.  Phase 2 wires up the
+ * skeleton plus the two synchronous getters (`available`, `pubdir`);
+ * Phases 3-5 add the parking ops that produce and consume these
+ * foreigns.  Allocators just stamp the type tag and zero-init —
+ * fields are populated by the deliver functions reading off the
+ * pending pointer handed to them via the result-queue framework.
+ * -------------------------------------------------------------------- */
+
+struct wren_sftp_entry {
+	enum syncterm_wren_foreign type;
+	char     *name;       /* malloc'd, NUL-terminated */
+	char     *longname;   /* malloc'd, NUL-terminated; NULL if no lname */
+	uint64_t  size;
+	uint32_t  mtime;
+	bool      is_dir;
+	uint8_t  *hash;       /* malloc'd; NULL if no sha1s/md5s ext */
+	uint32_t  hash_len;
+};
+
+struct wren_sftp_stat {
+	enum syncterm_wren_foreign type;
+	uint64_t size;
+	uint32_t mtime;
+	uint32_t atime;
+	uint32_t mode;
+	uint32_t uid;
+	uint32_t gid;
+};
+
+/* Server file/dir handle.  `handle` is owned by this foreign — copied
+ * out of pending->handle by the open deliver fn, freed here on close
+ * or finalize.  `dead` flips true after explicit SFTP.close so a
+ * later read/write/close on the same handle aborts the calling
+ * fiber rather than reusing already-closed bytes. */
+struct wren_sftp_handle {
+	enum syncterm_wren_foreign type;
+	sftp_str_t handle;
+	bool       dead;
+};
+
+/* Distinguishing library-level from server-status errors:
+ *   code == SFTP_ERR_OK and serverStatus != SSH_FX_OK
+ *     — server replied with a STATUS code (file not found, perm denied,
+ *       …); read serverStatus for the SSH_FX_* value.
+ *   code != SFTP_ERR_OK
+ *     — local / transport failure before a reply was parsed; serverStatus
+ *       is SSH_FX_OK and meaningless. */
+struct wren_sftp_error {
+	enum syncterm_wren_foreign type;
+	uint32_t code;          /* sftp_err_code_t */
+	uint32_t server_status; /* SSH_FX_* */
+	char    *message;       /* malloc'd; may be NULL */
+	bool     transient;
+};
+
+static void
+wren_sftp_entry_allocate(WrenVM *vm)
+{
+	struct wren_sftp_entry *e = wrenSetSlotNewForeign(vm, 0, 0, sizeof(*e));
+	memset(e, 0, sizeof(*e));
+	e->type = SWF_SFTP_ENTRY;
+}
+
+static void
+wren_sftp_entry_finalize(void *data)
+{
+	struct wren_sftp_entry *e = data;
+	free(e->name);
+	free(e->longname);
+	free(e->hash);
+}
+
+static void
+wren_sftp_stat_allocate(WrenVM *vm)
+{
+	struct wren_sftp_stat *s = wrenSetSlotNewForeign(vm, 0, 0, sizeof(*s));
+	memset(s, 0, sizeof(*s));
+	s->type = SWF_SFTP_STAT;
+}
+
+static void
+wren_sftp_stat_finalize(void *data)
+{
+	(void)data;
+}
+
+static void
+wren_sftp_handle_allocate(WrenVM *vm)
+{
+	struct wren_sftp_handle *h = wrenSetSlotNewForeign(vm, 0, 0, sizeof(*h));
+	memset(h, 0, sizeof(*h));
+	h->type = SWF_SFTP_HANDLE;
+}
+
+/* Best-effort close on GC.  Scripts should call SFTP.close explicitly;
+ * this is a safety net for handles that go unreferenced.  Status reply
+ * is discarded. */
+static void
+wren_sftp_handle_finalize(void *data)
+{
+	struct wren_sftp_handle *h = data;
+	if (h->handle != NULL) {
+		if (!h->dead && sftp_available && sftp_state != NULL) {
+			struct sftpc_pending *p =
+			    sftpc_close(sftp_state, h->handle, NULL, NULL);
+			sftpc_pending_free(p);
+		}
+		free_sftp_str(h->handle);
+		h->handle = NULL;
+	}
+}
+
+static void
+wren_sftp_error_allocate(WrenVM *vm)
+{
+	struct wren_sftp_error *e = wrenSetSlotNewForeign(vm, 0, 0, sizeof(*e));
+	memset(e, 0, sizeof(*e));
+	e->type = SWF_SFTP_ERROR;
+}
+
+static void
+wren_sftp_error_finalize(void *data)
+{
+	struct wren_sftp_error *e = data;
+	free(e->message);
+}
+
+/* ----- SFTP static getters ---------------------------------------- */
+
+static void
+fn_SFTP_available(WrenVM *vm)
+{
+	wrenSetSlotBool(vm, 0, sftp_available && sftp_state != NULL);
+}
+
+static void
+fn_SFTP_pubdir(WrenVM *vm)
+{
+	if (!sftp_available || sftp_state == NULL) {
+		wrenSetSlotNull(vm, 0);
+		return;
+	}
+	const char *p = sftpc_get_pubdir(sftp_state);
+	if (p == NULL)
+		wrenSetSlotNull(vm, 0);
+	else
+		wrenSetSlotString(vm, 0, p);
+}
+
+/* ----- SFTPEntry field accessors ---------------------------------- */
+
+static void
+fn_SFTPEntry_name(WrenVM *vm)
+{
+	struct wren_sftp_entry *e = wrenGetSlotForeign(vm, 0);
+	if (e->name == NULL)
+		wrenSetSlotNull(vm, 0);
+	else
+		wrenSetSlotString(vm, 0, e->name);
+}
+
+static void
+fn_SFTPEntry_longname(WrenVM *vm)
+{
+	struct wren_sftp_entry *e = wrenGetSlotForeign(vm, 0);
+	if (e->longname == NULL)
+		wrenSetSlotNull(vm, 0);
+	else
+		wrenSetSlotString(vm, 0, e->longname);
+}
+
+static void
+fn_SFTPEntry_size(WrenVM *vm)
+{
+	struct wren_sftp_entry *e = wrenGetSlotForeign(vm, 0);
+	wrenSetSlotDouble(vm, 0, (double)e->size);
+}
+
+static void
+fn_SFTPEntry_mtime(WrenVM *vm)
+{
+	struct wren_sftp_entry *e = wrenGetSlotForeign(vm, 0);
+	wrenSetSlotDouble(vm, 0, (double)e->mtime);
+}
+
+static void
+fn_SFTPEntry_isDir(WrenVM *vm)
+{
+	struct wren_sftp_entry *e = wrenGetSlotForeign(vm, 0);
+	wrenSetSlotBool(vm, 0, e->is_dir);
+}
+
+static void
+fn_SFTPEntry_hash(WrenVM *vm)
+{
+	struct wren_sftp_entry *e = wrenGetSlotForeign(vm, 0);
+	if (e->hash == NULL || e->hash_len == 0) {
+		wrenSetSlotNull(vm, 0);
+		return;
+	}
+	wrenSetSlotBytes(vm, 0, (const char *)e->hash, e->hash_len);
+}
+
+/* ----- SFTPStat field accessors ----------------------------------- */
+
+static void
+fn_SFTPStat_size(WrenVM *vm)
+{
+	struct wren_sftp_stat *s = wrenGetSlotForeign(vm, 0);
+	wrenSetSlotDouble(vm, 0, (double)s->size);
+}
+
+static void
+fn_SFTPStat_mtime(WrenVM *vm)
+{
+	struct wren_sftp_stat *s = wrenGetSlotForeign(vm, 0);
+	wrenSetSlotDouble(vm, 0, (double)s->mtime);
+}
+
+static void
+fn_SFTPStat_atime(WrenVM *vm)
+{
+	struct wren_sftp_stat *s = wrenGetSlotForeign(vm, 0);
+	wrenSetSlotDouble(vm, 0, (double)s->atime);
+}
+
+static void
+fn_SFTPStat_mode(WrenVM *vm)
+{
+	struct wren_sftp_stat *s = wrenGetSlotForeign(vm, 0);
+	wrenSetSlotDouble(vm, 0, (double)s->mode);
+}
+
+static void
+fn_SFTPStat_uid(WrenVM *vm)
+{
+	struct wren_sftp_stat *s = wrenGetSlotForeign(vm, 0);
+	wrenSetSlotDouble(vm, 0, (double)s->uid);
+}
+
+static void
+fn_SFTPStat_gid(WrenVM *vm)
+{
+	struct wren_sftp_stat *s = wrenGetSlotForeign(vm, 0);
+	wrenSetSlotDouble(vm, 0, (double)s->gid);
+}
+
+/* ----- SFTPError field accessors ---------------------------------- */
+
+static void
+fn_SFTPError_code(WrenVM *vm)
+{
+	struct wren_sftp_error *e = wrenGetSlotForeign(vm, 0);
+	wrenSetSlotDouble(vm, 0, (double)e->code);
+}
+
+static void
+fn_SFTPError_message(WrenVM *vm)
+{
+	struct wren_sftp_error *e = wrenGetSlotForeign(vm, 0);
+	if (e->message == NULL)
+		wrenSetSlotNull(vm, 0);
+	else
+		wrenSetSlotString(vm, 0, e->message);
+}
+
+static void
+fn_SFTPError_isTransient(WrenVM *vm)
+{
+	struct wren_sftp_error *e = wrenGetSlotForeign(vm, 0);
+	wrenSetSlotBool(vm, 0, e->transient);
+}
+
+static void
+fn_SFTPError_serverStatus(WrenVM *vm)
+{
+	struct wren_sftp_error *e = wrenGetSlotForeign(vm, 0);
+	wrenSetSlotDouble(vm, 0, (double)e->server_status);
+}
+
+/* ----- SFTP parking infrastructure --------------------------------- */
+
+/* Threaded by wren_result_push: the recv-thread cb stores `pending`
+ * here and pushes `ctx` onto the result queue.  The owner-thread
+ * deliver fn reads pending fields straight off and frees the pending
+ * — no intermediate copy.  Sync failures (session-dead, OOM) skip
+ * the queue entirely; the foreign method writes an SFTPError into
+ * slot 0 and returns. */
+struct sftp_call_ctx {
+	WrenHandle             *fiber;       /* owned; released by framework */
+	struct sftpc_pending   *pending;     /* set by cb; freed by deliver/free */
+	wren_result_deliver_fn  deliver;     /* per-op result builder */
+};
+
+/* Owner-thread free fn — runs after the deliver fn (or instead of it
+ * if the fiber's already done).  sftpc_pending_free is a no-op on
+ * NULL, so the deliver fn can null out ctx->pending after consuming
+ * to avoid re-freeing a borrowed reference (none of our deliver fns
+ * do today; this is just defensive).  ctx itself is always freed. */
+static void
+sftp_call_ctx_free(void *data)
+{
+	struct sftp_call_ctx *ctx = data;
+	sftpc_pending_free(ctx->pending);
+	free(ctx);
+}
+
+/* Recv-thread cb (state->mtx held) — every parking op shares this.
+ * Records the pending pointer and pushes onto the owner-thread queue.
+ * No allocation, no copying. */
+static void
+sftp_call_cb(struct sftpc_pending *p)
+{
+	struct sftp_call_ctx *ctx = p->cbdata;
+	ctx->pending = p;
+	wren_result_push(ctx->fiber, ctx, ctx->deliver, sftp_call_ctx_free);
+}
+
+/* Build an SFTPError into `slot` directly from explicit values —
+ * used for synchronous failures the foreign method returns before
+ * the queue (session-dead, OOM).  Lifetime fields cleared. */
+static void
+sftp_build_synth_error(WrenVM *vm, int slot, sftp_err_code_t err,
+                       const char *msg)
+{
+	struct wren_host_state *st = wren_host_state();
+	wrenEnsureSlots(vm, slot + 2);
+	load_class_into_slot(vm, &st->sftp_error_class, "SFTPError",
+	    slot + 1);
+	struct wren_sftp_error *e =
+	    wrenSetSlotNewForeign(vm, slot, slot + 1, sizeof(*e));
+	memset(e, 0, sizeof(*e));
+	e->type      = SWF_SFTP_ERROR;
+	e->code      = (uint32_t)err;
+	e->transient = sftp_err_is_transient(err);
+	if (msg != NULL)
+		e->message = strdup(msg);
+}
+
+/* Build an SFTPError into `slot` from a queued ctx if the call
+ * failed; return true.  Returns false (no change to slot) on
+ * success, signaling the caller to populate the typed result
+ * foreign instead.  Always called from the deliver fn — the queue
+ * path always has a non-NULL pending. */
+static bool
+sftp_deliver_error(WrenVM *vm, int slot, struct sftp_call_ctx *ctx)
+{
+	struct sftpc_pending *p = ctx->pending;
+	if (p->err == SFTP_ERR_OK && p->result == SSH_FX_OK)
+		return false;
+
+	struct wren_host_state *st = wren_host_state();
+	wrenEnsureSlots(vm, slot + 2);
+	load_class_into_slot(vm, &st->sftp_error_class, "SFTPError",
+	    slot + 1);
+	struct wren_sftp_error *e =
+	    wrenSetSlotNewForeign(vm, slot, slot + 1, sizeof(*e));
+	memset(e, 0, sizeof(*e));
+	e->type = SWF_SFTP_ERROR;
+	if (p->err != SFTP_ERR_OK) {
+		e->code      = (uint32_t)p->err;
+		e->transient = sftp_err_is_transient(p->err);
+	}
+	else {
+		e->code          = (uint32_t)SFTP_ERR_OK;
+		e->server_status = p->result;
+	}
+	if (p->estr != NULL)
+		e->message = strdup(p->estr);
+	return true;
+}
+
+/* Allocate a sftp_call_ctx and capture the fiber handle in slot 1.
+ * Returns NULL on OOM; the caller surfaces that as a synthetic
+ * SFTPError into slot 0. */
+static struct sftp_call_ctx *
+sftp_call_ctx_new(WrenVM *vm, wren_result_deliver_fn deliver)
+{
+	struct sftp_call_ctx *ctx = calloc(1, sizeof(*ctx));
+	if (ctx == NULL)
+		return NULL;
+	ctx->fiber   = wrenGetSlotHandle(vm, 1);
+	ctx->deliver = deliver;
+	return ctx;
+}
+
+/* True iff sftp_state is non-NULL and the session is still up.  The
+ * session pointer is owned by ssh.c; sftp_available flips false at
+ * the start of teardown so callers can drop us before we reach into
+ * a state that's about to be torn down. */
+static bool
+sftp_session_live(void)
+{
+	return sftp_available && sftp_state != NULL;
+}
+
+/* Standard prelude for every parking foreign — checks session,
+ * allocates ctx.  On any failure, builds an SFTPError into slot 0
+ * and returns NULL; the caller just `return`s.  On success returns
+ * the ctx; the caller fires the lib op and then sets slot 0 null. */
+static struct sftp_call_ctx *
+sftp_call_prelude(WrenVM *vm, wren_result_deliver_fn deliver)
+{
+	if (!sftp_session_live()) {
+		sftp_build_synth_error(vm, 0, SFTP_ERR_ABORTED,
+		    "SFTP session is not available");
+		return NULL;
+	}
+	struct sftp_call_ctx *ctx = sftp_call_ctx_new(vm, deliver);
+	if (ctx == NULL) {
+		sftp_build_synth_error(vm, 0, SFTP_ERR_OOM,
+		    "out of memory allocating SFTP request context");
+		return NULL;
+	}
+	return ctx;
+}
+
+/* ----- realpath ---------------------------------------------------- */
+
+static void
+sftp_realpath_deliver(WrenVM *vm, int slot, void *data)
+{
+	struct sftp_call_ctx *ctx = data;
+	if (sftp_deliver_error(vm, slot, ctx))
+		return;
+	struct sftpc_realpath_pending *rp =
+	    (struct sftpc_realpath_pending *)ctx->pending;
+	sftp_str_t r = rp->ret;
+	if (r == NULL || r->len == 0)
+		wrenSetSlotString(vm, slot, "");
+	else
+		wrenSetSlotBytes(vm, slot, (const char *)r->c_str, r->len);
+}
+
+static void
+fn_SFTP_realpath(WrenVM *vm)
+{
+	struct sftp_call_ctx *ctx = sftp_call_prelude(vm, sftp_realpath_deliver);
+	if (ctx == NULL)
+		return;
+	const char *path = wrenGetSlotString(vm, 2);
+	sftpc_realpath(sftp_state, path, sftp_call_cb, ctx);
+	wrenSetSlotNull(vm, 0);
+}
+
+/* ----- stat -------------------------------------------------------- */
+
+static void
+sftp_stat_deliver(WrenVM *vm, int slot, void *data)
+{
+	struct sftp_call_ctx *ctx = data;
+	if (sftp_deliver_error(vm, slot, ctx))
+		return;
+	struct sftpc_stat_pending *sp =
+	    (struct sftpc_stat_pending *)ctx->pending;
+	struct wren_host_state *st = wren_host_state();
+	wrenEnsureSlots(vm, slot + 2);
+	load_class_into_slot(vm, &st->sftp_stat_class, "SFTPStat", slot + 1);
+	struct wren_sftp_stat *s =
+	    wrenSetSlotNewForeign(vm, slot, slot + 1, sizeof(*s));
+	memset(s, 0, sizeof(*s));
+	s->type = SWF_SFTP_STAT;
+	sftp_fattr_get_size(sp->attrs, &s->size);
+	sftp_fattr_get_mtime(sp->attrs, &s->mtime);
+	sftp_fattr_get_atime(sp->attrs, &s->atime);
+	sftp_fattr_get_permissions(sp->attrs, &s->mode);
+	sftp_fattr_get_uid(sp->attrs, &s->uid);
+	sftp_fattr_get_gid(sp->attrs, &s->gid);
+}
+
+static void
+fn_SFTP_stat(WrenVM *vm)
+{
+	struct sftp_call_ctx *ctx = sftp_call_prelude(vm, sftp_stat_deliver);
+	if (ctx == NULL)
+		return;
+	const char *path = wrenGetSlotString(vm, 2);
+	sftpc_stat(sftp_state, path, sftp_call_cb, ctx);
+	wrenSetSlotNull(vm, 0);
+}
+
+/* ----- readdir ----------------------------------------------------- */
+
+/* Copy a sftp_str_t into a fresh malloc'd NUL-terminated string.
+ * Returns NULL on OOM or empty/missing input. */
+static char *
+sftp_str_to_cstr(sftp_str_t s)
+{
+	if (s == NULL || s->len == 0)
+		return NULL;
+	char *out = malloc(s->len + 1);
+	if (out == NULL)
+		return NULL;
+	memcpy(out, s->c_str, s->len);
+	out[s->len] = '\0';
+	return out;
+}
+
+/* Pull the sha1@syncterm.net or md5@syncterm.net hash bytes out of a
+ * file_attr's extension list.  Caller owns the returned malloc'd
+ * buffer; *len_out receives the length.  Returns NULL when the
+ * attribute has no hash extension. */
+static uint8_t *
+sftp_attr_extract_hash(sftp_file_attr_t a, uint32_t *len_out)
+{
+	*len_out = 0;
+	sftp_str_t s = sftp_fattr_get_ext_by_type(a, "sha1@syncterm.net");
+	if (s == NULL)
+		s = sftp_fattr_get_ext_by_type(a, "md5@syncterm.net");
+	if (s == NULL)
+		return NULL;
+	uint8_t *out = NULL;
+	if (s->len > 0) {
+		out = malloc(s->len);
+		if (out != NULL) {
+			memcpy(out, s->c_str, s->len);
+			*len_out = s->len;
+		}
+	}
+	free_sftp_str(s);
+	return out;
+}
+
+/* Build a SFTPEntry foreign in `slot+1` from one dir entry, slot+2 as
+ * scratch for the class lookup. */
+static void
+build_sftp_entry(WrenVM *vm, int slot,
+                 struct wren_host_state *st,
+                 struct sftpc_dir_entry *de)
+{
+	load_class_into_slot(vm, &st->sftp_entry_class, "SFTPEntry", slot + 1);
+	struct wren_sftp_entry *e =
+	    wrenSetSlotNewForeign(vm, slot, slot + 1, sizeof(*e));
+	memset(e, 0, sizeof(*e));
+	e->type     = SWF_SFTP_ENTRY;
+	e->name     = sftp_str_to_cstr(de->filename);
+	e->longname = sftp_str_to_cstr(de->longname);
+	if (de->attrs != NULL) {
+		sftp_fattr_get_size(de->attrs,  &e->size);
+		sftp_fattr_get_mtime(de->attrs, &e->mtime);
+		uint32_t perm;
+		if (sftp_fattr_get_permissions(de->attrs, &perm))
+			e->is_dir = (perm & S_IFMT) == S_IFDIR;
+		e->hash = sftp_attr_extract_hash(de->attrs, &e->hash_len);
+	}
+}
+
+/* ----- open / opendir / readdir(handle) / close -------------------- */
+
+/* Shared by open and opendir — both use sftpc_open_pending with a
+ * server-side handle.  Transfers ownership of the bytes into a fresh
+ * SFTPHandle foreign by stealing pending->handle (NULL'd before
+ * sftpc_pending_free runs in sftp_call_ctx_free). */
+static void
+sftp_open_deliver(WrenVM *vm, int slot, void *data)
+{
+	struct sftp_call_ctx *ctx = data;
+	if (sftp_deliver_error(vm, slot, ctx))
+		return;
+	struct sftpc_open_pending *op =
+	    (struct sftpc_open_pending *)ctx->pending;
+	struct wren_host_state *st = wren_host_state();
+	wrenEnsureSlots(vm, slot + 2);
+	load_class_into_slot(vm, &st->sftp_handle_class, "SFTPHandle",
+	    slot + 1);
+	struct wren_sftp_handle *h =
+	    wrenSetSlotNewForeign(vm, slot, slot + 1, sizeof(*h));
+	memset(h, 0, sizeof(*h));
+	h->type   = SWF_SFTP_HANDLE;
+	h->handle = op->handle;
+	op->handle = NULL;
+}
+
+static void
+fn_SFTP_opendir(WrenVM *vm)
+{
+	struct sftp_call_ctx *ctx = sftp_call_prelude(vm, sftp_open_deliver);
+	if (ctx == NULL)
+		return;
+	const char *path = wrenGetSlotString(vm, 2);
+	sftpc_opendir(sftp_state, path, sftp_call_cb, ctx);
+	wrenSetSlotNull(vm, 0);
+}
+
+/* SFTPHandle receiver validation — abort the calling fiber if the
+ * caller already closed the handle (in which case the bytes are
+ * gone).  Returns the foreign on success, NULL after aborting. */
+static struct wren_sftp_handle *
+sftp_handle_check(WrenVM *vm, int slot)
+{
+	if (wrenGetSlotType(vm, slot) != WREN_TYPE_FOREIGN) {
+		wren_throw(vm, "SFTP: expected SFTPHandle");
+		return NULL;
+	}
+	struct wren_foreign_header *hdr = wrenGetSlotForeign(vm, slot);
+	if (hdr->type != SWF_SFTP_HANDLE) {
+		wren_throw(vm, "SFTP: expected SFTPHandle");
+		return NULL;
+	}
+	struct wren_sftp_handle *h = (struct wren_sftp_handle *)hdr;
+	if (h->dead || h->handle == NULL) {
+		wren_throw(vm, "SFTP: handle is closed");
+		return NULL;
+	}
+	return h;
+}
+
+static void
+sftp_readdir_deliver(WrenVM *vm, int slot, void *data)
+{
+	struct sftp_call_ctx *ctx = data;
+	struct sftpc_pending *p = ctx->pending;
+	/* readdir's "EOF" is a STATUS reply with result == SSH_FX_EOF.
+	 * Surface that as null rather than as an SFTPError so callers
+	 * can `while (chunk = readdir(h))` cleanly. */
+	if (p != NULL && p->err == SFTP_ERR_OK && p->result == SSH_FX_EOF) {
+		wrenSetSlotNull(vm, slot);
+		return;
+	}
+	if (sftp_deliver_error(vm, slot, ctx))
+		return;
+	struct sftpc_readdir_pending *rp =
+	    (struct sftpc_readdir_pending *)ctx->pending;
+	struct wren_host_state *st = wren_host_state();
+	wrenEnsureSlots(vm, slot + 3);
+	wrenSetSlotNewList(vm, slot);
+	for (uint32_t i = 0; i < rp->count; i++) {
+		build_sftp_entry(vm, slot + 1, st, &rp->entries[i]);
+		wrenInsertInList(vm, slot, -1, slot + 1);
+	}
+}
+
+static void
+fn_SFTP_readdir(WrenVM *vm)
+{
+	struct sftp_call_ctx *ctx = sftp_call_prelude(vm, sftp_readdir_deliver);
+	if (ctx == NULL)
+		return;
+	struct wren_sftp_handle *h = sftp_handle_check(vm, 2);
+	if (h == NULL) {
+		/* Aborted by sftp_handle_check; clean up the captured fiber
+		 * handle + ctx the prelude allocated. */
+		wrenReleaseHandle(vm, ctx->fiber);
+		free(ctx);
+		return;
+	}
+	sftpc_readdir(sftp_state, h->handle, sftp_call_cb, ctx);
+	wrenSetSlotNull(vm, 0);
+}
+
+/* Shared by every status-only op: close, mkdir, rmdir, remove,
+ * rename.  Returns null on success or SFTPError on failure (server
+ * STATUS reply with code != SSH_FX_OK, or a library-level error). */
+static void
+sftp_status_deliver(WrenVM *vm, int slot, void *data)
+{
+	struct sftp_call_ctx *ctx = data;
+	if (sftp_deliver_error(vm, slot, ctx))
+		return;
+	wrenSetSlotNull(vm, slot);
+}
+
+static void
+fn_SFTP_close(WrenVM *vm)
+{
+	struct sftp_call_ctx *ctx = sftp_call_prelude(vm, sftp_status_deliver);
+	if (ctx == NULL)
+		return;
+	struct wren_sftp_handle *h = sftp_handle_check(vm, 2);
+	if (h == NULL) {
+		wrenReleaseHandle(vm, ctx->fiber);
+		free(ctx);
+		return;
+	}
+	/* Mark dead immediately so concurrent finalize / further
+	 * read/write/close reject the handle.  Steal the handle bytes
+	 * (owned by the SFTPHandle foreign) into a local; sftpc_close
+	 * uses them while building the tx packet, after which we free
+	 * them ourselves on return. */
+	sftp_str_t handle_bytes = h->handle;
+	h->handle = NULL;
+	h->dead   = true;
+	sftpc_close(sftp_state, handle_bytes, sftp_call_cb, ctx);
+	free_sftp_str(handle_bytes);
+	wrenSetSlotNull(vm, 0);
+}
+
+/* ----- open ------------------------------------------------------- */
+
+static void
+fn_SFTP_open(WrenVM *vm)
+{
+	struct sftp_call_ctx *ctx = sftp_call_prelude(vm, sftp_open_deliver);
+	if (ctx == NULL)
+		return;
+	const char *path  = wrenGetSlotString(vm, 2);
+	uint32_t    flags = (uint32_t)wrenGetSlotDouble(vm, 3);
+	sftpc_open(sftp_state, path, flags, sftp_call_cb, ctx);
+	wrenSetSlotNull(vm, 0);
+}
+
+/* ----- read -------------------------------------------------------- */
+
+static void
+sftp_read_deliver(WrenVM *vm, int slot, void *data)
+{
+	struct sftp_call_ctx *ctx = data;
+	struct sftpc_pending *p = ctx->pending;
+	/* read's "EOF" is a STATUS reply with result == SSH_FX_EOF.
+	 * Surface as null so callers can `while (chunk = read(...))`. */
+	if (p != NULL && p->err == SFTP_ERR_OK && p->result == SSH_FX_EOF) {
+		wrenSetSlotNull(vm, slot);
+		return;
+	}
+	if (sftp_deliver_error(vm, slot, ctx))
+		return;
+	struct sftpc_read_pending *rp =
+	    (struct sftpc_read_pending *)ctx->pending;
+	sftp_str_t d = rp->data;
+	if (d == NULL || d->len == 0)
+		wrenSetSlotBytes(vm, slot, "", 0);
+	else
+		wrenSetSlotBytes(vm, slot, (const char *)d->c_str, d->len);
+}
+
+static void
+fn_SFTP_read(WrenVM *vm)
+{
+	struct sftp_call_ctx *ctx = sftp_call_prelude(vm, sftp_read_deliver);
+	if (ctx == NULL)
+		return;
+	struct wren_sftp_handle *h = sftp_handle_check(vm, 2);
+	if (h == NULL) {
+		wrenReleaseHandle(vm, ctx->fiber);
+		free(ctx);
+		return;
+	}
+	uint64_t offset = (uint64_t)wrenGetSlotDouble(vm, 3);
+	uint32_t count  = (uint32_t)wrenGetSlotDouble(vm, 4);
+	sftpc_read(sftp_state, h->handle, offset, count, sftp_call_cb, ctx);
+	wrenSetSlotNull(vm, 0);
+}
+
+/* ----- write ------------------------------------------------------- */
+
+/* SFTP write is all-or-nothing on the wire: SSH_FX_OK means every
+ * byte was accepted, anything else is a failure with no partial
+ * progress.  Return null on success and SFTPError on failure — the
+ * caller already knows how many bytes they asked to write. */
+static void
+sftp_write_deliver(WrenVM *vm, int slot, void *data)
+{
+	struct sftp_call_ctx *ctx = data;
+	if (sftp_deliver_error(vm, slot, ctx))
+		return;
+	wrenSetSlotNull(vm, slot);
+}
+
+static void
+fn_SFTP_write(WrenVM *vm)
+{
+	struct sftp_call_ctx *ctx = sftp_call_prelude(vm, sftp_write_deliver);
+	if (ctx == NULL)
+		return;
+	struct wren_sftp_handle *h = sftp_handle_check(vm, 2);
+	if (h == NULL) {
+		wrenReleaseHandle(vm, ctx->fiber);
+		free(ctx);
+		return;
+	}
+	uint64_t    offset = (uint64_t)wrenGetSlotDouble(vm, 3);
+	int         blen   = 0;
+	const char *bytes  = wrenGetSlotBytes(vm, 4, &blen);
+	/* Borrow the Wren-slot bytes for the duration of sftpc_write —
+	 * the lib copies into the tx packet via appendstring, so the
+	 * borrow is fine to release on return. */
+	struct sftp_string data;
+	sftp_memborrow(&data, (const uint8_t *)bytes, (uint32_t)blen,
+	    NULL, NULL);
+	sftpc_write(sftp_state, h->handle, offset, &data, sftp_call_cb, ctx);
+	wrenSetSlotNull(vm, 0);
+}
+
+/* ----- mkdir / rmdir / remove / rename ----------------------------- */
+
+static void
+fn_SFTP_mkdir(WrenVM *vm)
+{
+	struct sftp_call_ctx *ctx = sftp_call_prelude(vm, sftp_status_deliver);
+	if (ctx == NULL)
+		return;
+	const char *path = wrenGetSlotString(vm, 2);
+	/* NULL attr — sftpc_mkdir builds a default fattr block on our
+	 * behalf so the server picks the umask-derived permissions. */
+	sftpc_mkdir(sftp_state, path, NULL, sftp_call_cb, ctx);
+	wrenSetSlotNull(vm, 0);
+}
+
+static void
+fn_SFTP_rmdir(WrenVM *vm)
+{
+	struct sftp_call_ctx *ctx = sftp_call_prelude(vm, sftp_status_deliver);
+	if (ctx == NULL)
+		return;
+	const char *path = wrenGetSlotString(vm, 2);
+	sftpc_rmdir(sftp_state, path, sftp_call_cb, ctx);
+	wrenSetSlotNull(vm, 0);
+}
+
+static void
+fn_SFTP_remove(WrenVM *vm)
+{
+	struct sftp_call_ctx *ctx = sftp_call_prelude(vm, sftp_status_deliver);
+	if (ctx == NULL)
+		return;
+	const char *path = wrenGetSlotString(vm, 2);
+	sftpc_remove(sftp_state, path, sftp_call_cb, ctx);
+	wrenSetSlotNull(vm, 0);
+}
+
+static void
+fn_SFTP_rename(WrenVM *vm)
+{
+	struct sftp_call_ctx *ctx = sftp_call_prelude(vm, sftp_status_deliver);
+	if (ctx == NULL)
+		return;
+	const char *oldpath = wrenGetSlotString(vm, 2);
+	const char *newpath = wrenGetSlotString(vm, 3);
+	sftpc_rename(sftp_state, oldpath, newpath, sftp_call_cb, ctx);
+	wrenSetSlotNull(vm, 0);
+}
+
 /* ----- Lookup table -----------------------------------------------
  *
  * Wren signatures: foreign static methods are reported with the
@@ -3887,7 +4735,7 @@ static const struct binding BINDINGS[] = {
 	{ "Input",  true,  "next()",              fn_Input_next               },
 	{ "Input",  true,  "next(_)",             fn_Input_next_ms            },
 	{ "Input",  true,  "poll()",              fn_Input_poll               },
-	{ "Input",  true,  "park_(_)",            fn_Input_park               },
+	{ "Input",  true,  "nextEvent(_)",        fn_Input_nextEvent          },
 	{ "Input",  true,  "ungetKey_(_)",        fn_Input_ungetKey_          },
 	{ "Input",  true,  "ungetMouse_(_)",      fn_Input_ungetMouse_        },
 	{ "Input",  true,  "mousedrag()",         fn_Input_mousedrag          },
@@ -3964,6 +4812,44 @@ static const struct binding BINDINGS[] = {
 	{ "Hyperlinks", true, "params(_)",      fn_Hyperlinks_params      },
 
 	{ "Host", true, "cacheDirectory",       fn_Host_cacheDirectory    },
+
+	/* SFTP (all static) */
+	{ "SFTP",       true,  "available",       fn_SFTP_available       },
+	{ "SFTP",       true,  "pubdir",          fn_SFTP_pubdir          },
+	{ "SFTP",       true,  "realpath(_,_)",   fn_SFTP_realpath        },
+	{ "SFTP",       true,  "stat(_,_)",       fn_SFTP_stat            },
+	{ "SFTP",       true,  "opendir(_,_)",    fn_SFTP_opendir         },
+	{ "SFTP",       true,  "readdir(_,_)",    fn_SFTP_readdir         },
+	{ "SFTP",       true,  "close(_,_)",      fn_SFTP_close           },
+	{ "SFTP",       true,  "open(_,_,_)",     fn_SFTP_open            },
+	{ "SFTP",       true,  "read(_,_,_,_)",   fn_SFTP_read            },
+	{ "SFTP",       true,  "write(_,_,_,_)",  fn_SFTP_write           },
+	{ "SFTP",       true,  "mkdir(_,_)",      fn_SFTP_mkdir           },
+	{ "SFTP",       true,  "rmdir(_,_)",      fn_SFTP_rmdir           },
+	{ "SFTP",       true,  "remove(_,_)",     fn_SFTP_remove          },
+	{ "SFTP",       true,  "rename(_,_,_)",   fn_SFTP_rename          },
+
+	/* SFTPEntry (instance) */
+	{ "SFTPEntry",  false, "name",            fn_SFTPEntry_name       },
+	{ "SFTPEntry",  false, "longname",        fn_SFTPEntry_longname   },
+	{ "SFTPEntry",  false, "size",            fn_SFTPEntry_size       },
+	{ "SFTPEntry",  false, "mtime",           fn_SFTPEntry_mtime      },
+	{ "SFTPEntry",  false, "isDir",           fn_SFTPEntry_isDir      },
+	{ "SFTPEntry",  false, "hash",            fn_SFTPEntry_hash       },
+
+	/* SFTPStat (instance) */
+	{ "SFTPStat",   false, "size",            fn_SFTPStat_size        },
+	{ "SFTPStat",   false, "mtime",           fn_SFTPStat_mtime       },
+	{ "SFTPStat",   false, "atime",           fn_SFTPStat_atime       },
+	{ "SFTPStat",   false, "mode",            fn_SFTPStat_mode        },
+	{ "SFTPStat",   false, "uid",             fn_SFTPStat_uid         },
+	{ "SFTPStat",   false, "gid",             fn_SFTPStat_gid         },
+
+	/* SFTPError (instance) */
+	{ "SFTPError",  false, "code",            fn_SFTPError_code         },
+	{ "SFTPError",  false, "message",         fn_SFTPError_message      },
+	{ "SFTPError",  false, "isTransient",     fn_SFTPError_isTransient  },
+	{ "SFTPError",  false, "serverStatus",    fn_SFTPError_serverStatus },
 
 	/* HookHandle (instance methods/getters) */
 	{ "HookHandle", false, "remove()",       fn_HookHandle_remove       },
@@ -4215,6 +5101,30 @@ wren_bind_lookup_class(const char *module, const char *className)
 		WrenForeignClassMethods m = {
 			wren_last_column_flag_allocate,
 			wren_last_column_flag_finalize
+		};
+		return m;
+	}
+	if (strcmp(className, "SFTPEntry") == 0) {
+		WrenForeignClassMethods m = {
+			wren_sftp_entry_allocate, wren_sftp_entry_finalize
+		};
+		return m;
+	}
+	if (strcmp(className, "SFTPStat") == 0) {
+		WrenForeignClassMethods m = {
+			wren_sftp_stat_allocate, wren_sftp_stat_finalize
+		};
+		return m;
+	}
+	if (strcmp(className, "SFTPHandle") == 0) {
+		WrenForeignClassMethods m = {
+			wren_sftp_handle_allocate, wren_sftp_handle_finalize
+		};
+		return m;
+	}
+	if (strcmp(className, "SFTPError") == 0) {
+		WrenForeignClassMethods m = {
+			wren_sftp_error_allocate, wren_sftp_error_finalize
 		};
 		return m;
 	}

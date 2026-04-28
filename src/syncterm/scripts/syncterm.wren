@@ -122,16 +122,32 @@ class Color {
   foreign static toLegacyAttr(fg, bg)
 }
 foreign class Input {
+  // Synchronous reads — block the entire VM via getch.  Useful when
+  // a script has fully claimed the screen (e.g. the Wren console)
+  // and wants the main loop completely idle.
   foreign static next()
   foreign static next(ms)
   foreign static poll()
   foreign static mousedrag()
   foreign static mouseVisible=(b)
-  static nextEvent() {
-    park_(Fiber.current)
-    return Fiber.yield()
-  }
-  foreign static park_(fiber)
+
+  // Async event delivery — register `fiber` to receive the next key
+  // or mouse event.  Fiber yields after, receives KeyEvent or
+  // MouseEvent on resume.  Throws if another fiber is already
+  // registered (single-subscriber).  Re-arm by calling again after
+  // each event.  Common idiom:
+  //   Input.nextEvent(Fiber.current)
+  //   var ev = Fiber.yield()
+  // Or as part of a multi-fire event loop:
+  //   Input.nextEvent(Fiber.current)
+  //   SFTP.stat(Fiber.current, "/foo")
+  //   while (true) {
+  //     var x = Fiber.yield()
+  //     if (x is KeyEvent) { Input.nextEvent(Fiber.current); ... }
+  //     if (x is SFTPStat) { ... }
+  //   }
+  foreign static nextEvent(fiber)
+
   static unget(ev) {
     if (ev is KeyEvent) {
       Input.ungetKey_(ev)
@@ -659,15 +675,14 @@ class Hook {
   foreign static onStatus(fn)
   foreign static every(ms, fn)
 
-  // Wraps every hook fire so a handler that yields directly (e.g.
-  // calls a parking SFTP op or Input.nextEvent() at the top of its
-  // body) raises a clear error instead of corrupting the dispatch
-  // chain — yielded fibers can't return the bool/string the
-  // dispatcher needs to proceed.  For deferred work that *should*
-  // yield, wrap it inside the hook in `Fiber.new { ... }.call()`;
-  // that child fiber's yield returns to the hook (not the
-  // dispatcher's wrenCall), so the hook still completes
-  // synchronously.
+  // Wraps every hook fire so a handler that yields directly raises
+  // a clear error instead of corrupting the dispatch chain — yielded
+  // fibers can't return the bool/string the dispatcher needs to
+  // proceed.  Hooks that need to wait on async ops should fire them
+  // against a Fiber.new {|r| ... } callback (so the calling fiber
+  // returns normally) or wrap the work in `Fiber.new { ... }.call()`
+  // (so the child fiber's yield returns to the hook, not the
+  // dispatcher's wrenCall).
   //
   // C dispatchers swap their cached call(_) / call() handles for
   // these and pass `Hook` itself as the receiver; the return value
@@ -723,6 +738,111 @@ foreign class HookHandle {
 // this is the only path to one.
 class Host {
   foreign static cacheDirectory
+}
+
+// SFTP — SSH-channel side-band file transfer.  All methods are static
+// on the SFTP class itself.
+//
+// Every async op takes the fiber-to-resume as its first argument.
+// The op returns null when the request was queued (the caller will
+// receive the result via that fiber later) or an SFTPError directly
+// when the request couldn't be queued (session is gone, OOM).
+//
+// Common idiom — fire and immediately await:
+//   var r = SFTP.realpath(Fiber.current, ".") || Fiber.yield()
+//   // r is String or SFTPError
+//
+// Multi-fire / event-loop dispatch — fire several heterogeneous ops
+// against the same fiber, then yield in a loop and demux by type:
+//   SFTP.stat(Fiber.current, "/a")
+//   SFTP.stat(Fiber.current, "/b")
+//   Timer.trigger(Fiber.current, 100)
+//   while (true) {
+//     var x = Fiber.yield()
+//     if (x is SFTPStat) { ... }
+//     if (x is SFTPError) { break }
+//     if (x is TimerElapsed) { ... }
+//   }
+//
+// Hook-friendly callback pattern — pass a Fiber.new whose body runs
+// when the result arrives; the calling fiber doesn't yield at all:
+//   SFTP.realpath(Fiber.new {|r| ... }, ".")
+//
+// readdir returns null at EOF; call SFTP.close yourself when done
+// with a handle.
+class SFTP {
+  foreign static available
+  foreign static pubdir
+
+  foreign static realpath(fiber, path)
+  foreign static stat(fiber, path)
+  foreign static opendir(fiber, path)
+  foreign static readdir(fiber, handle)
+  foreign static close(fiber, handle)
+  foreign static open(fiber, path, flags)
+  foreign static read(fiber, handle, offset, count)
+  foreign static write(fiber, handle, offset, bytes)
+  foreign static mkdir(fiber, path)
+  foreign static rmdir(fiber, path)
+  foreign static remove(fiber, path)
+  foreign static rename(fiber, oldpath, newpath)
+}
+
+// Open-flag bitmask for SFTP.open.  Values match the SSH_FXF_* wire
+// constants and may be OR'd together, e.g.
+//   SFTP.open(path, FileFlag.write | FileFlag.creat | FileFlag.trunc)
+class FileFlag {
+  static read   { 0x00000001 }
+  static write  { 0x00000002 }
+  static append { 0x00000004 }
+  static creat  { 0x00000008 }
+  static trunc  { 0x00000010 }
+  static excl   { 0x00000020 }
+}
+
+// One entry in a SFTP.readdir result.  `longname` is null when the
+// server didn't negotiate the lname@syncterm.net extension; `hash` is
+// null unless sha1s/md5s was advertised.
+foreign class SFTPEntry {
+  foreign name
+  foreign longname
+  foreign size
+  foreign mtime
+  foreign isDir
+  foreign hash
+}
+
+// Result of SFTP.stat.  Time fields are POSIX seconds; `mode` is the
+// SFTP-wire permissions bits (Unix-style when the server is POSIX).
+foreign class SFTPStat {
+  foreign size
+  foreign mtime
+  foreign atime
+  foreign mode
+  foreign uid
+  foreign gid
+}
+
+// Opaque handle returned by SFTP.open / SFTP.opendir; consumed by
+// SFTP.read / SFTP.write / SFTP.close (and SFTP.readdir for opendir
+// handles).  No fields — the server-side bytes are not script-visible.
+foreign class SFTPHandle {}
+
+// Error result, surfaced in place of the typed result foreign when an
+// SFTP op fails.  Two error layers — distinguish via `code`:
+//   code != 0   — library/transport-level failure (sftp_err_code_t).
+//                 serverStatus is meaningless.
+//   code == 0   — server returned a STATUS reply with an error code;
+//                 read serverStatus for the SSH_FX_* value (e.g.
+//                 SSH_FX_NO_SUCH_FILE, SSH_FX_PERMISSION_DENIED).
+// `message` is human-readable diagnostic text accumulated by the
+// library (may be null).  `isTransient` is true for failures that
+// may succeed on retry (transport drops, aborts, OOM).
+foreign class SFTPError {
+  foreign code
+  foreign serverStatus
+  foreign message
+  foreign isTransient
 }
 
 // Cache singleton.  Bound at module-load time so any script that

@@ -260,9 +260,9 @@ passthrough, a String for `onStatus`) before it can decide what to
 do next; a hook that yields up to the dispatcher would strand it
 with no value to act on.
 
-If a hook callback calls `Input.nextEvent()` (or any future parking
-primitive) directly from its top frame, the wrapper detects the
-yield and logs:
+If a hook callback yields its own fiber directly (e.g. fires an
+async op against `Fiber.current` and immediately calls
+`Fiber.yield()`), the dispatch wrapper detects the yield and logs:
 
 ----
 hook handler must not yield directly; wrap parking work in
@@ -274,9 +274,9 @@ passes through to the next hook and to SyncTERM's default handling.
 A `Fiber.abort` from the hook is caught the same way: logged with a
 stack trace, treated as passthrough.
 
-For deferred work that genuinely needs to park (a modal dialog, a
-slow query against a future async API), wrap it in a child fiber
-and `.call()` that fiber from the hook body:
+A hook that needs to wait on async results has two options that
+keep the hook itself synchronous.  The first wraps the work in a
+child fiber and `.call()`s it from the hook body:
 
 [source,wren]
 ----
@@ -289,11 +289,29 @@ Hook.onKey { |k|
 }
 ----
 
-`.call()` runs the child fiber synchronously until it parks (e.g.
-on `Input.nextEvent()`).  The child's yield returns to the hook body
-— the immediate `.call()` caller — not up to the dispatcher.  The
-hook still returns its Bool; the parked child resumes later via the
-same fiber-resumption path that drives `Input.nextEvent()`.
+`.call()` runs the child fiber synchronously until it yields (e.g.
+on the result of `Input.nextEvent` or an SFTP op).  The child's
+yield returns to the hook body — the immediate `.call()` caller —
+not up to the dispatcher.  The hook still returns its Bool; the
+child resumes later via the framework's result-queue drain.
+
+The second option is to fire the async op against a `Fiber.new {|r|
+... }` whose body runs when the result arrives.  The hook returns
+synchronously without ever yielding; the callback fiber is invoked
+later by the drainer:
+
+[source,wren]
+----
+Hook.onKey { |k|
+  if (k == Key.f2) {
+    SFTP.realpath(Fiber.new {|r|
+      // handle r …
+    }, ".")
+    return true
+  }
+  return false
+}
+----
 
 [options="header",cols="2,3,3"]
 |===
@@ -554,9 +572,12 @@ loop the doterm() main loop is blocked, and inbound server bytes
 queue up in the socket buffer until the script returns.
 
 For modal dialogs that should not block the main loop while the
-script idles between events, use `Input.nextEvent()`.  Parking does
-not claim the screen on its own — set `CTerm.suspended = true` first
-to halt the wire pump, and clear it again when you're done:
+script idles between events, use `Input.nextEvent(fiber)`.  The
+foreign registers `fiber` to receive the next key or mouse event;
+the caller yields and resumes with a `KeyEvent` or `MouseEvent`.
+Registering does not claim the screen on its own — set
+`CTerm.suspended = true` first to halt the wire pump, and clear it
+again when you're done:
 
 [source,wren]
 ----
@@ -565,7 +586,8 @@ import "syncterm" for Input, Key, Screen, CTerm
 CTerm.suspended = true
 Fiber.new {
   while (true) {
-    var ev = Input.nextEvent()
+    Input.nextEvent(Fiber.current)
+    var ev = Fiber.yield()
     if (ev is KeyEvent && ev.code == Key.escape) break
     Screen.window.print("got: %(ev)\n")
   }
@@ -574,29 +596,30 @@ Fiber.new {
 }.call()
 ----
 
-`Input.nextEvent()` parks the calling fiber and yields back through
-the C side.  The doterm() main loop continues to spin normally;
-when the next key or mouse event arrives, dispatch_key/dispatch_mouse
-pushes a result onto the framework's queue and the next main-loop
-drain calls back into the fiber with the event as its yielded value.
-The event bypasses every `Hook.onKey` / `Hook.onMouse` callback and
-SyncTERM's default handling, exactly as if a hook had returned `true`.
+The doterm() main loop continues to spin normally; when the next
+key or mouse event arrives, dispatch_key/dispatch_mouse pushes a
+result onto the framework's queue and the next main-loop drain calls
+back into the fiber with the event as its yielded value.  The event
+bypasses every `Hook.onKey` / `Hook.onMouse` callback and SyncTERM's
+default handling, exactly as if a hook had returned `true`.
 
-`CTerm.suspended` is independent of parking — any script can set it
-to claim the screen, and remote bytes pile up in the conn buffer
-behind it.  When the TCP receive window fills, the remote sees its
-`send()` calls block or `EAGAIN`.  Clearing the flag releases the
-backpressure and the buffered bytes drain through cterm normally.
+`CTerm.suspended` is independent of `Input.nextEvent` — any script
+can set it to claim the screen, and remote bytes pile up in the
+conn buffer behind it.  When the TCP receive window fills, the
+remote sees its `send()` calls block or `EAGAIN`.  Clearing the flag
+releases the backpressure and the buffered bytes drain through
+cterm normally.
 
-`nextEvent()` must be called from inside a fiber created with
-`Fiber.new {}`.  The root fiber cannot be resumed from C after it
-yields; calling `nextEvent()` from the top level of a script just
-yields to nothing.
+`Input.nextEvent` only registers a single fiber; calling it again
+while another fiber is already registered throws.  The fiber must
+be one created by `Fiber.new {}`.  The root fiber cannot be resumed
+from C after it yields; passing it just leaves the fiber in a
+state where its yield never returns.
 
-Calling `nextEvent()` from a hook callback's top frame is detected
-and reported by the `Hook.dispatch_` wrapper (see "Hooks must run
+A hook callback that yields its own fiber directly is detected and
+reported by the `Hook.dispatch_` wrapper (see "Hooks must run
 synchronously" above).  A hook that wants to drive a modal must
-spawn its child fiber explicitly:
+either spawn a child fiber:
 
 [source,wren]
 ----
@@ -604,11 +627,28 @@ Hook.onKey { |k|
   if (k == Key.f2) {
     Fiber.new {
       while (true) {
-        var ev = Input.nextEvent()
+        Input.nextEvent(Fiber.current)
+        var ev = Fiber.yield()
         if (ev is KeyEvent && ev.code == Key.escape) break
         // ...
       }
     }.call()
+    return true
+  }
+  return false
+}
+----
+
+…or register a callback fiber directly so the hook returns
+synchronously and the fiber's body runs when the event arrives:
+
+[source,wren]
+----
+Hook.onKey { |k|
+  if (k == Key.f2) {
+    Input.nextEvent(Fiber.new {|ev|
+      // handle ev …
+    })
     return true
   }
   return false
@@ -1014,8 +1054,10 @@ two-phase split.
   query for visibility, and tracking it from Wren would drift if
   other code shows or hides the cursor.
 
-| `Input.nextEvent()`
-| Park the calling fiber until the next event arrives.  See
+| `Input.nextEvent(fiber)`
+| Register `fiber` to receive the next key or mouse event.  The
+  caller yields to wait; resumes with `KeyEvent` or `MouseEvent`.
+  Throws if another fiber is already registered.  See
   <<modal-input,Modal Input>>.
 |===
 
@@ -1603,8 +1645,8 @@ emulation-aware logic.
   sees its `send()` calls block or `EAGAIN`.  Use this to claim the
   screen for a modal dialog, transfer overlay, etc., without remote
   output painting underneath.  Clear it again when you're done.
-  Parking on `Input.nextEvent` does **not** suspend on its own —
-  scripts that want modal behavior must set this explicitly.
+  Registering a fiber via `Input.nextEvent` does **not** suspend on
+  its own — scripts that want modal behavior must set this explicitly.
   When speed emulation is active and the flag transitions from true
   back to false, the byte pump is credited with all the bytes that
   would have processed at the emulated rate during the suspended

@@ -490,6 +490,24 @@ struct sftpc_descs_pending    *sftpc_descs(sftpc_state_t state,
                                             const char *path,
                                             void (*cb)(struct sftpc_pending *),
                                             void *cbdata);
+struct sftpc_pending          *sftpc_mkdir(sftpc_state_t state,
+                                            const char *path,
+                                            sftp_file_attr_t attr,
+                                            void (*cb)(struct sftpc_pending *),
+                                            void *cbdata);
+struct sftpc_pending          *sftpc_rmdir(sftpc_state_t state,
+                                            const char *path,
+                                            void (*cb)(struct sftpc_pending *),
+                                            void *cbdata);
+struct sftpc_pending          *sftpc_remove(sftpc_state_t state,
+                                            const char *path,
+                                            void (*cb)(struct sftpc_pending *),
+                                            void *cbdata);
+struct sftpc_pending          *sftpc_rename(sftpc_state_t state,
+                                            const char *oldpath,
+                                            const char *newpath,
+                                            void (*cb)(struct sftpc_pending *),
+                                            void *cbdata);
 
 /* Free the entries array attached to a struct sftpc_readdir_pending.
  * Callers that transfer ownership out (setting pending->entries=NULL

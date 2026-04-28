@@ -1018,6 +1018,14 @@ wren_host_shutdown(void)
 		wrenReleaseHandle(state.vm, state.mouse_event_class);
 	if (state.hook_handle_class != NULL)
 		wrenReleaseHandle(state.vm, state.hook_handle_class);
+	if (state.sftp_entry_class != NULL)
+		wrenReleaseHandle(state.vm, state.sftp_entry_class);
+	if (state.sftp_stat_class != NULL)
+		wrenReleaseHandle(state.vm, state.sftp_stat_class);
+	if (state.sftp_handle_class != NULL)
+		wrenReleaseHandle(state.vm, state.sftp_handle_class);
+	if (state.sftp_error_class != NULL)
+		wrenReleaseHandle(state.vm, state.sftp_error_class);
 	if (state.parked_fiber != NULL) {
 		wrenReleaseHandle(state.vm, state.parked_fiber);
 		state.parked_fiber = NULL;
@@ -1086,10 +1094,10 @@ wren_host_dispatch_key(int key)
 {
 	if (!active || !on_owner_thread())
 		return false;
-	/* A fiber parked on Input.nextEvent() claims the event before any
-	 * hook sees it.  Only non-mouse keys go straight to the fiber;
-	 * the CIO_KEY_MOUSE marker falls through so dispatch_mouse can
-	 * deliver the actual MouseEvent next. */
+	/* A fiber registered via Input.nextEvent claims the event before
+	 * any hook sees it.  Only non-mouse keys go straight to the
+	 * fiber; the CIO_KEY_MOUSE marker falls through so dispatch_mouse
+	 * can deliver the actual MouseEvent next. */
 	if (wren_bind_resume_parked_key(key))
 		return true;
 	int n = state.hook_count[WREN_HOOK_KEY];

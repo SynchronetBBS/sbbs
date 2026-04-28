@@ -828,6 +828,160 @@ sftpc_setstat(sftpc_state_t state, const char *path, sftp_file_attr_t attr,
 }
 
 /* ========================================================================
+ * mkdir / rmdir / remove / rename — STATUS-only replies
+ * ======================================================================== */
+
+static struct sftpc_pending *
+do_one_path(sftpc_state_t state, uint8_t type, const char *path,
+            void (*cb)(struct sftpc_pending *), void *cbdata)
+{
+	struct sftpc_pending *p = calloc(1, sizeof(*p));
+	if (p == NULL)
+		return NULL;
+	p->cb = cb;
+	p->cbdata = cbdata;
+	p->parse = parse_status_only;
+	p->free_self = free_self_base;
+
+	if (path == NULL) {
+		PENDING_RECORD(p, SFTP_ERR_NULL_PATH, "path == NULL");
+		fire_sync(p);
+		return p;
+	}
+	if (!client_enter(state, p)) {
+		fire_sync(p);
+		return p;
+	}
+	p->req_id = next_req_id(state);
+	if (!appendheader(&state->txp, type, p->req_id) ||
+	    !appendcstring(&state->txp, path)) {
+		PENDING_RECORD(p, SFTP_ERR_PACKET_BUILD_FAILED,
+		    "appendheader/appendcstring failed");
+		client_exit(state);
+		fire_sync(p);
+		return p;
+	}
+	if (!front_send(state, p)) {
+		client_exit(state);
+		fire_sync(p);
+		return p;
+	}
+	client_exit(state);
+	return p;
+}
+
+struct sftpc_pending *
+sftpc_rmdir(sftpc_state_t state, const char *path,
+            void (*cb)(struct sftpc_pending *), void *cbdata)
+{
+	return do_one_path(state, SSH_FXP_RMDIR, path, cb, cbdata);
+}
+
+struct sftpc_pending *
+sftpc_remove(sftpc_state_t state, const char *path,
+             void (*cb)(struct sftpc_pending *), void *cbdata)
+{
+	return do_one_path(state, SSH_FXP_REMOVE, path, cb, cbdata);
+}
+
+struct sftpc_pending *
+sftpc_mkdir(sftpc_state_t state, const char *path, sftp_file_attr_t attr,
+            void (*cb)(struct sftpc_pending *), void *cbdata)
+{
+	struct sftpc_pending *p = calloc(1, sizeof(*p));
+	if (p == NULL)
+		return NULL;
+	p->cb = cb;
+	p->cbdata = cbdata;
+	p->parse = parse_status_only;
+	p->free_self = free_self_base;
+
+	if (path == NULL) {
+		PENDING_RECORD(p, SFTP_ERR_NULL_PATH, "path == NULL");
+		fire_sync(p);
+		return p;
+	}
+	if (!client_enter(state, p)) {
+		fire_sync(p);
+		return p;
+	}
+	p->req_id = next_req_id(state);
+	sftp_file_attr_t a = attr;
+	bool need_free = false;
+	if (a == NULL) {
+		a = sftp_fattr_alloc();
+		if (a == NULL) {
+			PENDING_RECORD(p, SFTP_ERR_OOM,
+			    "sftp_fattr_alloc failed");
+			client_exit(state);
+			fire_sync(p);
+			return p;
+		}
+		need_free = true;
+	}
+	bool built = appendheader(&state->txp, SSH_FXP_MKDIR, p->req_id) &&
+	             appendcstring(&state->txp, path) &&
+	             appendfattr(&state->txp, a);
+	if (need_free)
+		sftp_fattr_free(a);
+	if (!built) {
+		PENDING_RECORD(p, SFTP_ERR_PACKET_BUILD_FAILED,
+		    "mkdir build failed");
+		client_exit(state);
+		fire_sync(p);
+		return p;
+	}
+	if (!front_send(state, p)) {
+		client_exit(state);
+		fire_sync(p);
+		return p;
+	}
+	client_exit(state);
+	return p;
+}
+
+struct sftpc_pending *
+sftpc_rename(sftpc_state_t state, const char *oldpath, const char *newpath,
+             void (*cb)(struct sftpc_pending *), void *cbdata)
+{
+	struct sftpc_pending *p = calloc(1, sizeof(*p));
+	if (p == NULL)
+		return NULL;
+	p->cb = cb;
+	p->cbdata = cbdata;
+	p->parse = parse_status_only;
+	p->free_self = free_self_base;
+
+	if (oldpath == NULL || newpath == NULL) {
+		PENDING_RECORD(p, SFTP_ERR_NULL_PATH,
+		    "oldpath/newpath == NULL");
+		fire_sync(p);
+		return p;
+	}
+	if (!client_enter(state, p)) {
+		fire_sync(p);
+		return p;
+	}
+	p->req_id = next_req_id(state);
+	if (!appendheader(&state->txp, SSH_FXP_RENAME, p->req_id) ||
+	    !appendcstring(&state->txp, oldpath) ||
+	    !appendcstring(&state->txp, newpath)) {
+		PENDING_RECORD(p, SFTP_ERR_PACKET_BUILD_FAILED,
+		    "rename build failed");
+		client_exit(state);
+		fire_sync(p);
+		return p;
+	}
+	if (!front_send(state, p)) {
+		client_exit(state);
+		fire_sync(p);
+		return p;
+	}
+	client_exit(state);
+	return p;
+}
+
+/* ========================================================================
  * read
  * ======================================================================== */
 
