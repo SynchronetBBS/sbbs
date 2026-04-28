@@ -377,7 +377,11 @@ foreign class Cell {
   foreign hyperlinkId
   foreign hyperlinkId=(n)
 }
-foreign class Cells {
+// Cells inherits Sequence so all the iteration helpers (each, where,
+// map, all, any, count(f), reduce, join, take, skip, toList, etc.)
+// work directly off the iterate/iteratorValue protocol below.  The
+// O(1) foreign `count` getter overrides Sequence's iterating one.
+foreign class Cells is Sequence {
   foreign count
   foreign [i]
   foreign iterate(it)
