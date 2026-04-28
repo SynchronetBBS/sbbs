@@ -333,11 +333,24 @@ target_compile_options(re1 PRIVATE -w)
 # builds the tool builds with the project CC; in cross-builds we
 # shell out at configure time to a host CC ($BUILD_CC, default `cc`)
 # so the tool itself can run on the build host.
-file(GLOB WREN_SCRIPTS CONFIGURE_DEPENDS
+#
+# Two source directories feed the embed:
+#   * scripts/*.wren                  pure library modules, loaded only
+#                                     when something imports them.
+#   * scripts/auto/<event>/*.wren     auto-loaded entry scripts.  Each
+#                                     subdirectory under auto/ names a
+#                                     framework event (connected,
+#                                     startup, ...).  For now only
+#                                     `connected` exists, fired per BBS
+#                                     session.
+file(GLOB WREN_LIB_SCRIPTS CONFIGURE_DEPENDS
     "${CMAKE_CURRENT_SOURCE_DIR}/scripts/*.wren")
-# scripts/runtests.wren is a developer self-test trigger; in the
-# source tree but not embedded.  Devs run against the source
-# scripts/ dir to pick it up.
+file(GLOB WREN_AUTO_SCRIPTS CONFIGURE_DEPENDS
+    "${CMAKE_CURRENT_SOURCE_DIR}/scripts/auto/connected/*.wren")
+set(WREN_SCRIPTS ${WREN_LIB_SCRIPTS} ${WREN_AUTO_SCRIPTS})
+# scripts/auto/connected/runtests.wren is a developer self-test
+# trigger; in the source tree but not embedded.  Devs run against the
+# source scripts/ dir to pick it up.
 list(FILTER WREN_SCRIPTS EXCLUDE REGEX
     "/runtests\\.wren$")
 

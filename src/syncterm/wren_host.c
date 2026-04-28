@@ -439,9 +439,11 @@ read_script_file(const char *path)
 }
 
 /* Resolve a module name to its source.  Search order:
- *   1. scripts/<name>.wren           (user override of an entry script)
- *   2. scripts/load/<name>.wren      (user library module)
- *   3. EMBEDDED_SCRIPTS              (built-in fallback)
+ *   1. scripts/<name>.wren                   (user library module)
+ *   2. scripts/auto/connected/<name>.wren    (catches imports of
+ *                                             auto-load entry scripts
+ *                                             before they self-load)
+ *   3. EMBEDDED_SCRIPTS                      (built-in fallback)
  *
  * Disk hits are malloc'd and freed by host_load_module_complete; the
  * embedded path returns a static pointer with onComplete == NULL so
@@ -475,7 +477,8 @@ host_load_module(WrenVM *vm, const char *name)
 			}
 		}
 
-		n = snprintf(path, sizeof(path), "%sload/%s.wren", dir, name);
+		n = snprintf(path, sizeof(path), "%sauto/connected/%s.wren",
+		    dir, name);
 		if (n > 0 && (size_t)n < sizeof(path)) {
 			char *src = read_script_file(path);
 			if (src != NULL) {
@@ -767,30 +770,39 @@ wren_host_init(struct bbslist *bbs)
 	owner_thread = pthread_self();
 	active = true;
 
-	/* Glob the user script dir to detect overrides of embedded
-	 * scripts.  Each user script otherwise loads as its own module
-	 * named after its filename. */
+	/* Glob the user's auto-load dir for the "connected" event to detect
+	 * overrides of embedded entry scripts and to discover any user-only
+	 * auto-load files.  Pure library modules at scripts/<name>.wren are
+	 * NOT auto-loaded — they live there to be imported on demand and
+	 * are reached through host_load_module's search path. */
+	const char *event = "connected";
 	glob_t gl;
 	memset(&gl, 0, sizeof(gl));
 	bool have_user_dir = false;
+	char auto_dir[MAX_PATH + 32];
 	if (get_syncterm_filename(dir, sizeof(dir), SYNCTERM_PATH_SCRIPTS, false)
 	    != NULL) {
-		char pat[MAX_PATH + 16];
-		snprintf(pat, sizeof(pat), "%s*.wren", dir);
+		snprintf(auto_dir, sizeof(auto_dir), "%sauto/%s/", dir, event);
+		char pat[MAX_PATH + 32];
+		snprintf(pat, sizeof(pat), "%s*.wren", auto_dir);
 		if (glob(pat, 0, NULL, &gl) == 0)
 			have_user_dir = true;
 	}
 
-	/* Run each embedded entry script as its own filename-named module.
-	 * Skip any embed the user has overridden with a same-named file in
-	 * their script dir (the user-script loop runs that version
-	 * instead), and any module already loaded — that catches modules
-	 * an earlier entry script's `import` statement has already pulled
-	 * in (notably `syncterm`, which has no top-level side effects so
-	 * lazy loading is fine), and avoids re-compile errors against the
-	 * existing module. */
+	/* Run each embedded entry script for this event as its own
+	 * filename-named module.  Skip any embed the user has overridden
+	 * with a same-named file in their auto-load dir (the user-script
+	 * loop runs that version instead), and any module already loaded —
+	 * that catches modules an earlier entry script's `import` statement
+	 * has already pulled in (notably `syncterm`, which has no top-level
+	 * side effects so lazy loading is fine), and avoids re-compile
+	 * errors against the existing module.  Library embeds (event ==
+	 * NULL) are skipped — they load on first import via
+	 * host_load_module's EMBEDDED_SCRIPTS fallback. */
 	for (const struct embedded_script *es = EMBEDDED_SCRIPTS;
 	    es->name != NULL; es++) {
+		if (es->event == NULL || strcmp(es->event, event) != 0)
+			continue;
 		bool overridden = false;
 		if (have_user_dir) {
 			for (size_t i = 0; i < gl.gl_pathc && !overridden; i++) {
@@ -810,8 +822,8 @@ wren_host_init(struct bbslist *bbs)
 			    es->name);
 	}
 
-	/* Run user scripts as their own filename-named modules.  Skip any
-	 * already loaded for the same reason as above. */
+	/* Run user auto-load files as their own filename-named modules.
+	 * Skip any already loaded for the same reason as above. */
 	if (have_user_dir) {
 		for (size_t i = 0; i < gl.gl_pathc; i++) {
 			char umod[256];

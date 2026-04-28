@@ -378,11 +378,24 @@ $(MTOBJODIR)$(DIRSEP)wren_host$(OFILE): CFLAGS += -Ire1
 # and run it natively, then the generated embedded_scripts.c compiles
 # with the target $(CC) like any other source file.  Mirrors the conio
 # genmap pattern (src/conio/genmap.c).
-# scripts/runtests.wren is a developer self-test trigger; it lives
-# in the source tree but is not embedded in the binary.  Devs run
-# syncterm against the source `scripts/` dir to pick it up; user
+#
+# Two source directories feed the embed:
+#   * scripts/*.wren           — pure library modules, loaded only when
+#                                 something imports them.
+#   * scripts/auto/<event>/*.wren — auto-loaded entry scripts.  Each
+#                                    subdirectory under auto/ names a
+#                                    framework event (connected, startup,
+#                                    …); files in it run when that event
+#                                    fires.  For now there's just one,
+#                                    `connected`, fired per BBS session.
+#
+# scripts/auto/connected/runtests.wren is a developer self-test trigger;
+# it lives in the source tree but is not embedded in the binary.  Devs
+# run syncterm against the source `scripts/` dir to pick it up; user
 # builds get a binary without it.
-WREN_SCRIPTS    := $(filter-out scripts/runtests.wren,$(wildcard scripts/*.wren))
+WREN_SCRIPTS    := $(wildcard scripts/*.wren) \
+                   $(filter-out scripts/auto/connected/runtests.wren, \
+                                $(wildcard scripts/auto/connected/*.wren))
 WREN_EMBED_GEN  := $(MTOBJODIR)$(DIRSEP)wren_embed_gen$(EXEFILE)
 WREN_EMBED_SRC  := $(MTOBJODIR)$(DIRSEP)embedded_scripts.c
 WREN_EMBED_OBJ  := $(MTOBJODIR)$(DIRSEP)embedded_scripts$(OFILE)

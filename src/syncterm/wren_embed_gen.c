@@ -2,9 +2,9 @@
  * C source file to stdout that defines:
  *
  *     const struct embedded_script EMBEDDED_SCRIPTS[] = {
- *         { "name", "...source..." },
+ *         { "name", "...source...", "event-or-null" },
  *         ...
- *         { NULL, NULL }
+ *         { NULL, NULL, NULL }
  *     };
  *
  * `struct embedded_script` is declared in wren_host_internal.h, which the
@@ -13,7 +13,10 @@
  * this tool with the *host* CC (BUILD_CC) so cross-builds work.
  *
  * Plain C99, no platform deps.  Module name = basename of the input path
- * with the trailing ".wren" extension stripped. */
+ * with the trailing ".wren" extension stripped.  Event field is the
+ * directory name immediately under `.../scripts/auto/` if present in the
+ * path, otherwise NULL — distinguishing auto-load entry scripts (per
+ * event) from pure library modules. */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -41,6 +44,43 @@ basename_no_ext(const char *path, char *out, size_t outsz)
 	return out;
 }
 
+/* Extract the event-name segment from a path of the form
+ * `.../scripts/auto/<event>/<file>.wren`.  Returns out (filled with the
+ * event name) or NULL if the path doesn't contain `/auto/<event>/`. */
+static const char *
+infer_event(const char *path, char *out, size_t outsz)
+{
+	const char *p = strstr(path, "/auto/");
+#ifdef _WIN32
+	if (p == NULL)
+		p = strstr(path, "\\auto\\");
+#endif
+	if (p == NULL)
+		return NULL;
+	p += 6;
+	const char *end = p;
+	while (*end != '\0' && *end != '/' && *end != '\\')
+		end++;
+	if (end == p)
+		return NULL;
+	size_t len = (size_t)(end - p);
+	if (len + 1 >= outsz)
+		return NULL;
+	memcpy(out, p, len);
+	out[len] = '\0';
+	return out;
+}
+
+/* True if `c` is a hex digit (0-9, a-f, A-F).  Used to decide whether
+ * a `\xNN` escape needs an empty-string concat after it to keep a
+ * following hex character from being absorbed into the same escape. */
+static int
+is_hex_digit(unsigned char c)
+{
+	return (c >= '0' && c <= '9') || (c >= 'a' && c <= 'f') ||
+	       (c >= 'A' && c <= 'F');
+}
+
 /* Emit a C string literal for `bytes` (length n) to stdout, broken into
  * one literal per source line so the generated file stays readable. */
 static void
@@ -56,10 +96,19 @@ emit_c_string(const unsigned char *bytes, size_t n)
 			case '\r': fputs("\\r", stdout); break;
 			case '\t': fputs("\\t", stdout); break;
 			default:
-				if (c < 0x20 || c >= 0x7f)
+				if (c < 0x20 || c >= 0x7f) {
 					fprintf(stdout, "\\x%02x", c);
-				else
+					/* C parses \x as "any number of hex
+					 * digits"; if the next byte is a hex
+					 * digit it gets absorbed into the
+					 * current escape and overflows.  Break
+					 * the escape with an empty-string
+					 * concat. */
+					if (i + 1 < n && is_hex_digit(bytes[i + 1]))
+						fputs("\"\"", stdout);
+				} else {
 					putchar(c);
+				}
 				break;
 		}
 	}
@@ -94,9 +143,15 @@ emit_one(const char *path)
 	char modname[256];
 	basename_no_ext(path, modname, sizeof(modname));
 
+	char event[64];
+	const char *ev = infer_event(path, event, sizeof(event));
+
 	fprintf(stdout, "    { \"%s\",\n        ", modname);
 	emit_c_string(buf, got);
-	fputs(" },\n", stdout);
+	if (ev != NULL)
+		fprintf(stdout, ",\n        \"%s\" },\n", ev);
+	else
+		fputs(",\n        NULL },\n", stdout);
 
 	free(buf);
 	return 0;
@@ -115,6 +170,6 @@ main(int argc, char **argv)
 			return EXIT_FAILURE;
 	}
 
-	fputs("    { NULL, NULL }\n};\n", stdout);
+	fputs("    { NULL, NULL, NULL }\n};\n", stdout);
 	return EXIT_SUCCESS;
 }

@@ -75,15 +75,38 @@ directory on first launch if it doesn't already exist.
 | `~/config/settings/SyncTERM/scripts/`
 |===
 
-Every file with a `.wren` extension in this directory is loaded at
-connection time.  Files in subdirectories are not scanned.
+The directory has two roles, distinguished by where files live within
+it:
+
+[options="header",cols="2,3"]
+|===
+| Path                       | Role
+
+| `scripts/<name>.wren`
+| Pure library module.  Loaded only when something imports it via
+  `import "<name>"`.  Has no auto-run side effects.  Where you put
+  reusable code that other scripts pull in.
+
+| `scripts/auto/<event>/<name>.wren`
+| Auto-loaded entry script.  Runs at the moment the framework fires
+  `<event>`; typically registers hooks.  Currently the only event is
+  `connected`, fired once per BBS session, but the layout reserves
+  room for `startup` / `ssh` / `ui` / etc. as new auto-load points
+  are added.
+|===
+
+Files anywhere else under `scripts/` (e.g. user-organised
+subdirectories of pure library code) are reached only via `import` —
+the framework owns `scripts/auto/` and ignores everything else for
+auto-load purposes.
 
 === Module Names
 
 Each script becomes its own Wren module, named after the file
-basename without the `.wren` extension.  `myscript.wren` becomes
-module `myscript`.  Module names are how scripts cross-reference each
-other:
+basename without the `.wren` extension and without any directory
+prefix.  `myscript.wren` becomes module `myscript`, whether it's at
+`scripts/myscript.wren` or `scripts/auto/connected/myscript.wren`.
+Module names are how scripts cross-reference each other:
 
 [source,wren]
 ----
@@ -97,55 +120,59 @@ works (see below).
 
 SyncTERM ships with a small set of scripts compiled into the binary.
 They are not stored as files; the build system runs `wren_embed_gen`
-at compile time to fold each `scripts/*.wren` source into a C string
-table linked alongside `wren_host.c`.
+at compile time, infers each script's role from its source path
+(library vs auto-load, and which event for auto-load), and folds the
+sources into a C string table linked alongside `wren_host.c`.
 
 The currently embedded scripts are:
 
-[options="header",cols="1,3"]
+[options="header",cols="1,1,3"]
 |===
-| Module | Purpose
+| Module     | Role            | Purpose
 
 | `syncterm`
+| library
 | Foundational module: foreign-class declarations and Wren-side
-  helpers (`REPL`, `Key`, `Color`, `Codepage`, etc.).  Every other
-  script imports from this one.
+  helpers (`REPL`, `Key`, `Color`, `Codepage`, …).  Every other
+  script imports from this one.  Loads on first import.
 
 | `console`
+| auto / connected
 | Wren REPL.  Triggered by Ctrl+&#96;.
 
 | `connected`
+| auto / connected
 | Alt+L send-login handler.  Sends username, password, and sysop
   password from the directory entry, with the right send-order rules
   per connection type.
 |===
 
-Each embedded script — including `syncterm` — runs as its own module
-named after the file (e.g. `console.wren` becomes module `console`),
-and pulls bindings it needs via `import "syncterm" for ...`.  The
-`syncterm` module itself contains only declarations; it has no
-top-level side effects and is loaded on demand the first time
-something imports it.
+The `syncterm` module contains only declarations; it has no top-level
+side effects and is loaded on demand the first time something imports
+it.  The auto-load embeds run at the start of each BBS session.
 
 === Overriding Embedded Scripts
 
-A user script whose basename matches an embedded module name
+A user script whose basename and role match an embedded module
 overrides the embedded one.  If you create
-`~/.local/share/syncterm/scripts/console.wren`, your version replaces
-the built-in REPL; the embedded version is not loaded.  The override
-runs as the same module name (`console`), so other scripts that
-`import "console"` see your version.
+`~/.local/share/syncterm/scripts/auto/connected/console.wren`, your
+version replaces the built-in REPL; the embedded version is not
+loaded.  The override runs as the same module name (`console`), so
+other scripts that `import "console"` see your version.
 
-The check is exact match on the bare module name.  `console.wren`
-overrides; `Console.wren` (different case) does not, and on
-case-sensitive filesystems will load as a separate module named
-`Console`.
+The check is exact match on the bare module name *within the same
+auto-load directory*.  `console.wren` at the script root would *not*
+override the auto-load `console` — it would simply be a separate
+library module also named `console` (and would only be reached via
+`import`, never auto-run).  Case matters too: `Console.wren` is a
+different module from `console.wren`.
 
-To opt out of an embedded script entirely, drop a stub override:
+To opt out of an embedded auto-load script entirely, drop a stub
+override into the matching directory:
 
 [source,wren]
 ----
-// ~/.local/share/syncterm/scripts/connected.wren
+// ~/.local/share/syncterm/scripts/auto/connected/connected.wren
 // Disable the default Alt+L handler.
 ----
 
@@ -154,20 +181,28 @@ nothing.
 
 === Load Order
 
-. The user script directory is globbed.
-. Each embedded script whose module name is _not_ in the user set
-  runs as its own module.
-. Each user script runs as its own filename-derived module.
+. `scripts/auto/<event>/` is globbed for the firing event.
+. Each embedded script tagged with the firing event runs, unless its
+  module name appears in the user-script set (in which case the user
+  override runs instead).
+. Each user script in `scripts/auto/<event>/` runs as its own
+  filename-derived module.
 
-`import` statements (whether from a script's top-level or inside
-its body) resolve through one lookup chain: scripts/<name>.wren,
-then scripts/load/<name>.wren, then the embedded table.  The
-foundational `syncterm` module lazily loads the first time anything
-imports it; subsequent imports hit Wren's module cache.
+`import` statements (whether from a script's top-level or inside its
+body) resolve through one lookup chain:
 
-A script's top-level code runs once per connection, at load time.
-Top-level code typically registers hooks; persistent state should be
-stored on classes (static fields).
+. `scripts/<name>.wren` — pure library module.
+. `scripts/auto/connected/<name>.wren` — catches imports of names
+  that are also auto-load entry scripts (rare, but possible if one
+  auto-load module imports another that hasn't auto-loaded yet).
+. The embedded table — built-in fallback by module name.
+
+The foundational `syncterm` module lazily loads the first time
+anything imports it; subsequent imports hit Wren's module cache.
+
+A script's top-level code runs once per connection, at the moment
+its event fires.  Top-level code typically registers hooks;
+persistent state should be stored on classes (static fields).
 
 === Per-Connection Lifecycle
 
