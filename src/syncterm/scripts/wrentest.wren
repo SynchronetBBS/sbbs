@@ -62,6 +62,22 @@ class WrenTest {
     __keyHook   = Hook.onKey(0xFE00) { |k| true }
     __hooks.add(__everyHook)
     __hooks.add(__keyHook)
+    // Hook.onInput String-return path: replace each inbound LF (0x0A)
+    // with CRLF.  A counter ticks each time the hook fires; report_()
+    // checks it > 0 at end-of-suite.  The regex hook is registered
+    // earlier in this same array, so it sees raw bytes BEFORE this
+    // replacement runs (regex hooks never abort the dispatch chain).
+    // Onlcr-mode PTYs already send CRLF over the wire, so the LFs we
+    // see here are the bare ones (from raw printf output passing
+    // through), and replacing them again just produces CRCRLF on the
+    // terminal — visually harmless and keeps the regex sentinels
+    // matching cleanly.
+    __lfReplaceCount = 0
+    __lfReplaceHook  = Hook.onInput(0x0A) { |b|
+      __lfReplaceCount = __lfReplaceCount + 1
+      return "\r\n"
+    }
+    __hooks.add(__lfReplaceHook)
     System.print("=== Wren self-test starting ===")
 
     // ------ constant enums ------------------------------------------
@@ -604,6 +620,15 @@ class WrenTest {
     check_(CTerm.suspended == false,
            "CTerm.suspended cleared by fiber after Input.nextEvent")
 
+    // Hook.onInput String-replacement path: each LF off the wire
+    // fires the LF→CRLF hook and runs through the C-side dispatcher's
+    // WREN_TYPE_STRING branch.  Counter > 0 means the dispatcher
+    // recognized the String return, copied the bytes into the filter
+    // buffer, and aborted the rest of the hook chain (matching the
+    // contract for replace).
+    check_(__lfReplaceCount > 0,
+           "Hook.onInput String return (LF→CRLF) fired off the wire")
+
     var total = __pass + __fail
     System.print("=== %(total) tests, %(__pass) pass, %(__fail) fail ===")
     cleanup_()
@@ -615,9 +640,10 @@ class WrenTest {
   // off the entry on the next iteration.
   static cleanup_() {
     for (h in __hooks) h.remove()
-    __hooks     = []
-    __everyHook = null
-    __keyHook   = null
+    __hooks         = []
+    __everyHook     = null
+    __keyHook       = null
+    __lfReplaceHook = null
   }
 }
 

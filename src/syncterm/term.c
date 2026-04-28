@@ -1126,42 +1126,117 @@ BYTE     recv_byte_buffer[BUFFER_SIZE];
 unsigned recv_byte_buffer_len = 0;
 unsigned recv_byte_buffer_pos = 0;
 
-/* Fire Hook.onInput on each byte just off the wire and compact dropped
- * bytes out of the buffer in place.  Sits between conn_recv_upto and
- * parse_rip so scripts see the raw stream — including RIP escapes that
- * parse_rip would otherwise eat — and pay the per-byte dispatch cost
- * while the buffer is still hot in cache.  No speed-emulation gating
- * (parse_rip already bypasses speed emulation in bulk; gating only the
- * Wren hook would be inconsistent). */
+/* Wire-side buffer.  Holds the raw bytes from conn_recv_upto so the
+ * onInput filter can run them into recv_byte_buffer.  Decoupled from
+ * recv_byte_buffer because Hook.onInput can return a String to expand
+ * a byte into multiple output bytes — when the output fills before
+ * the input drains, the unprocessed wire-side tail stays here for
+ * the next recv_bytes() call to pick up before reading more. */
+static BYTE     wire_buffer[BUFFER_SIZE];
+static unsigned wire_buffer_len = 0;
+static unsigned wire_buffer_pos = 0;
+
+/* Per-byte replacement cap, enforced inside wren_host_dispatch_input.
+ * Replacements bigger than this log a runtime error and the original
+ * byte passes through.  Sized to handle realistic LF→CRLF / escape-
+ * sequence rewrites without giving a script enough rope to deadlock
+ * the filter against itself by expanding 1 byte into 64K. */
+#define WREN_INPUT_REPLACEMENT_MAX 256
+
+/* Fire Hook.onInput on each byte just off the wire and write the
+ * filtered output to `out`.  Walks `in[in_pos..in_len]`, dispatching
+ * each byte; depending on the hook chain's verdict, emits 0 (drop),
+ * 1 (keep), or N (replace) bytes to `out`.  Stops when either the
+ * input is exhausted or the output would overflow `out_cap`.  Returns
+ * the produced length and updates `*in_pos` past the last consumed
+ * input byte.  No speed-emulation gating (parse_rip already bypasses
+ * speed emulation in bulk; gating only the Wren hook would be
+ * inconsistent). */
 static unsigned
-wren_filter_input(BYTE *buf, unsigned len)
+wren_filter_input(const BYTE *in, unsigned in_len, unsigned *in_pos,
+                  BYTE *out, unsigned out_cap)
 {
-	unsigned out = 0;
-	for (unsigned i = 0; i < len; i++) {
-		if (wren_host_dispatch_input(buf[i]))
+	unsigned out_len = 0;
+	unsigned i       = *in_pos;
+	while (i < in_len) {
+		char rep[WREN_INPUT_REPLACEMENT_MAX];
+		int  n = wren_host_dispatch_input(in[i], rep, (int)sizeof(rep));
+		if (n == WREN_INPUT_DROP) {
+			i++;
 			continue;
-		if (out != i)
-			buf[out] = buf[i];
-		out++;
+		}
+		if (n == WREN_INPUT_KEEP) {
+			if (out_len >= out_cap)
+				break;
+			out[out_len++] = in[i];
+			i++;
+			continue;
+		}
+		/* Replacement of n > 0 bytes; commit only if the whole
+		 * replacement fits.  If not, leave this input byte
+		 * unconsumed and let the caller make room next round. */
+		if (out_len + (unsigned)n > out_cap)
+			break;
+		memcpy(out + out_len, rep, (size_t)n);
+		out_len += (unsigned)n;
+		i++;
 	}
-	return out;
+	*in_pos = i;
+	return out_len;
 }
 
 static void
 recv_bytes(unsigned timeout /* Milliseconds */)
 {
-	if (recv_byte_buffer_len == 0) {
-		recv_byte_buffer_len = parse_rip(recv_byte_buffer, 0, sizeof(recv_byte_buffer));
-		if (recv_byte_buffer_len == 0) {
-			recv_byte_buffer_len = conn_recv_upto(recv_byte_buffer, sizeof(recv_byte_buffer) - 3, timeout);
-			if (recv_byte_buffer_len && wren_host_active())
-				recv_byte_buffer_len =
-				    wren_filter_input(recv_byte_buffer, recv_byte_buffer_len);
-			if (recv_byte_buffer_len)
-				recv_byte_buffer_len =
-				    parse_rip(recv_byte_buffer, recv_byte_buffer_len, sizeof(recv_byte_buffer));
+	if (recv_byte_buffer_len > 0)
+		return;
+
+	/* Drain any wire bytes left over from a previous filter pass
+	 * before reading more.  The filter may have stopped midway
+	 * through wire_buffer because a byte's replacement wouldn't fit
+	 * in recv_byte_buffer; pick up where it left off. */
+	if (wire_buffer_pos < wire_buffer_len) {
+		recv_byte_buffer_len = wren_filter_input(wire_buffer,
+		    wire_buffer_len, &wire_buffer_pos,
+		    recv_byte_buffer, sizeof(recv_byte_buffer));
+		if (wire_buffer_pos >= wire_buffer_len)
+			wire_buffer_pos = wire_buffer_len = 0;
+		if (recv_byte_buffer_len > 0) {
+			recv_byte_buffer_len = parse_rip(recv_byte_buffer,
+			    recv_byte_buffer_len, sizeof(recv_byte_buffer));
+			return;
 		}
 	}
+
+	/* Drain parse_rip's internal hold queue (no new wire input). */
+	recv_byte_buffer_len = parse_rip(recv_byte_buffer, 0,
+	    sizeof(recv_byte_buffer));
+	if (recv_byte_buffer_len > 0)
+		return;
+
+	/* Read fresh from the wire. */
+	wire_buffer_len = conn_recv_upto(wire_buffer,
+	    sizeof(wire_buffer) - 3, timeout);
+	wire_buffer_pos = 0;
+	if (wire_buffer_len == 0)
+		return;
+
+	if (wren_host_active()) {
+		recv_byte_buffer_len = wren_filter_input(wire_buffer,
+		    wire_buffer_len, &wire_buffer_pos,
+		    recv_byte_buffer, sizeof(recv_byte_buffer));
+		if (wire_buffer_pos >= wire_buffer_len)
+			wire_buffer_pos = wire_buffer_len = 0;
+	}
+	else {
+		memcpy(recv_byte_buffer, wire_buffer, wire_buffer_len);
+		recv_byte_buffer_len = wire_buffer_len;
+		wire_buffer_pos = wire_buffer_len = 0;
+	}
+
+	if (recv_byte_buffer_len > 0)
+		recv_byte_buffer_len = parse_rip(recv_byte_buffer,
+		    recv_byte_buffer_len, sizeof(recv_byte_buffer));
 }
 
 static int

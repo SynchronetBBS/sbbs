@@ -31,8 +31,23 @@ void wren_host_bind_cterm_suspended(bool *flag);
  * false to pass through. The first hook returning true short-circuits;
  * subsequent hooks are not called for that event. */
 bool wren_host_dispatch_key(int key);
-bool wren_host_dispatch_input(unsigned char byte);
 bool wren_host_dispatch_mouse(struct mouse_event *ev);
+
+/* Per-byte onInput dispatch.  The hook chain runs in registration
+ * order; the first hook that returns Bool true (drop) or String
+ * (replace) wins, later hooks don't see this byte.
+ *
+ * Returns:
+ *   WREN_INPUT_KEEP  (0)  — byte unchanged, pass through.
+ *   WREN_INPUT_DROP  (-1) — byte consumed, drop it.
+ *   N > 0                 — byte consumed, replace with the N bytes
+ *                           written into `out`.  N never exceeds
+ *                           `out_cap`; replacements that would exceed
+ *                           it log a runtime error and fall through
+ *                           as KEEP. */
+#define WREN_INPUT_KEEP   0
+#define WREN_INPUT_DROP   (-1)
+int wren_host_dispatch_input(unsigned char byte, char *out, int out_cap);
 
 /* Status composition: copies a replacement status line into out (size
  * outsz including NUL) and returns true if a script provided one;

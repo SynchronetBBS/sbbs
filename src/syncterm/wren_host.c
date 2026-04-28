@@ -1193,11 +1193,11 @@ dispatch_match_drain(struct wren_hook_entry *h)
 	return false;
 }
 
-bool
-wren_host_dispatch_input(unsigned char byte)
+int
+wren_host_dispatch_input(unsigned char byte, char *out, int out_cap)
 {
 	if (!active || !on_owner_thread())
-		return false;
+		return WREN_INPUT_KEEP;
 	int n = state.hook_count[WREN_HOOK_INPUT];
 	for (int i = 0; i < n; i++) {
 		struct wren_hook_entry *h = state.hooks[WREN_HOOK_INPUT][i];
@@ -1220,7 +1220,7 @@ wren_host_dispatch_input(unsigned char byte)
 			h->regex_buf[h->regex_buf_len++] = (char)byte;
 			h->regex_buf[h->regex_buf_len] = '\0';
 			if (dispatch_match_drain(h))
-				return true;
+				return WREN_INPUT_DROP;
 			continue;
 		}
 
@@ -1233,10 +1233,33 @@ wren_host_dispatch_input(unsigned char byte)
 		if (metrics_invoke(&h->metrics, state.dispatch1_handle) !=
 		    WREN_RESULT_SUCCESS)
 			continue;
-		if (read_consume_result())
-			return true;
+
+		WrenType t = wrenGetSlotType(state.vm, 0);
+		if (t == WREN_TYPE_BOOL && wrenGetSlotBool(state.vm, 0))
+			return WREN_INPUT_DROP;
+		if (t == WREN_TYPE_STRING) {
+			int len = 0;
+			const char *s = wrenGetSlotBytes(state.vm, 0, &len);
+			if (len < 0)
+				len = 0;
+			if (out == NULL || len > out_cap) {
+				char msg[160];
+				snprintf(msg, sizeof(msg),
+				    "Hook.onInput: replacement of %d bytes "
+				    "exceeds the %d-byte cap; keeping the "
+				    "original byte 0x%02x",
+				    len, out_cap, byte);
+				log_append(WREN_LOG_RUNTIME_ERROR, msg);
+				continue;
+			}
+			if (len > 0)
+				memcpy(out, s, (size_t)len);
+			return len;
+		}
+		/* Anything else (Num, null, instance, etc.) is a no-op
+		 * for this hook; fall through to the next. */
 	}
-	return false;
+	return WREN_INPUT_KEEP;
 }
 
 bool

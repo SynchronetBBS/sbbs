@@ -310,11 +310,13 @@ same fiber-resumption path that drives `Input.nextEvent()`.
 
 | `Hook.onInput { \|b\| ... }`
 | `b`: one byte received from the remote
-| Bool — true to drop the byte before it reaches the terminal
+| Bool `true` drops the byte; `String` replaces it with the string's
+  bytes (up to 256 — larger replacements log a runtime error and the
+  original byte passes through); anything else passes through.
 
 | `Hook.onInput(byte, fn)`
 | Filtered: `fn(b)` only fires when `b == byte`.  C-side filter.
-| Bool — true to drop
+| Same return contract as the unfiltered form.
 
 | `Hook.onMatch(pattern, fn)`
 | `fn(m)` fires when `pattern` matches the input stream.  See
@@ -345,11 +347,20 @@ of which form was used.
 `Hook.onInput` (and `Hook.onMatch`) fires on every byte off the wire,
 *before* RIPscrip parsing, ZMODEM/OOII detection, or the cterm
 emulator.  Scripts see the raw stream and can drop bytes that would
-otherwise be consumed by those layers.  Bytes are dispatched in bulk
-right after `conn_recv_upto`, so there is no speed-emulation gating —
-parse_rip already eats RIP escapes in bulk regardless of the
-emulated bps rate, so gating only the Wren hook would be
-inconsistent.
+otherwise be consumed by those layers, or expand a single byte into
+multiple bytes by returning a String — the canonical example is
+LF→CRLF normalization for hosts that send only LF.  Bytes are
+dispatched in bulk right after `conn_recv_upto`, so there is no
+speed-emulation gating — parse_rip already eats RIP escapes in bulk
+regardless of the emulated bps rate, so gating only the Wren hook
+would be inconsistent.
+
+Hooks run in registration order; the first one that returns Bool
+true (drop) or a String (replace) wins, and later hooks don't see
+that byte.  When a replacement won't fit in the post-filter buffer,
+the filter pauses on that input byte; the unprocessed wire-side
+tail stays parked until the next `recv_bytes()` call drains
+something out and frees room for it.
 
 `Hook.every` fires from the main-loop deadline check just before the
 sleep call.  If the loop stalls long enough that more than one
