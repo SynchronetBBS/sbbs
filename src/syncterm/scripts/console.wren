@@ -70,14 +70,35 @@ class WrenConsole {
   static run() {
     if (__history == null) __history = []
     var saved = Screen.save()
-    var currentModule = "syncterm"
-
     // The cterm's scroll window may be smaller than the full screen
     // (e.g. a BBS set DEC margins).  Force full-screen for the
     // console's lifetime; restore on exit.
-    var origBounds  = Screen.window.bounds
-    var screenSize  = Screen.size
+    var origBounds = Screen.window.bounds
+    var screenSize = Screen.size
     Screen.window.bounds = [1, 1, screenSize[0], screenSize[1]]
+
+    // Run the loop body in a child fiber so an unhandled abort —
+    // typo in a console binding, runtime error in a user script's
+    // hook — doesn't strand us with a corrupted screen.  Cleanup
+    // below always runs; errors get logged for the next console
+    // session to surface (the indicator stays unread to flag them).
+    var f = Fiber.new { runBody_() }
+    f.try()
+
+    Screen.window.bounds = origBounds
+    Screen.restore(saved)
+    if (f.error != null) {
+      System.print("console aborted: " + f.error)
+      REPL.printTrace_(f)
+    } else {
+      Console.markSeen()
+    }
+  }
+
+  static runBody_() {
+    var currentModule = "syncterm"
+
+    var screenSize = Screen.size
 
     // Scrollback state: scrollTop == -1 means "live mode" (auto-tail
     // — new entries paint at the bottom as they arrive).  Any other
@@ -348,9 +369,6 @@ class WrenConsole {
       if (redrawPrompt) drawPrompt_(promptRow, currentModule, input, cursor)
     }
 
-    Screen.window.bounds = origBounds
-    Screen.restore(saved)
-    Console.markSeen()
   }
 
   // Dispatches a finished line: a leading "/" makes it a console
