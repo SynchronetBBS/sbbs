@@ -103,6 +103,14 @@ class WrenTest {
     testAnchorRejectPlus_()
     testAnchorRejectQuest_()
 
+    // ------ Hook.dispatch_ contract --------------------------------
+    testHookDispatchPassthrough_()
+    testHookDispatchNoArg_()
+    testHookDispatchRejectsYield_()
+    testHookDispatchRejectsNoArgYield_()
+    testHookDispatchAllowsChildFiberYield_()
+    testHookDispatchCatchesAbort_()
+
     // ------ inject a sentinel key for async onKey filter test ------
     // Filter key must have low byte 0x00 (or 0xe0) — ciolib's
     // ungetch / getch byte-stuff a 16-bit value as low|high and only
@@ -403,6 +411,61 @@ class WrenTest {
     var f = Fiber.new { Hook.onMatch("a?b") { |m| } }
     var err = f.try()
     check_(err != null, "Hook.onMatch rejects leading a?")
+  }
+
+  // ===== Hook.dispatch_ contract ==================================
+  // Hook.dispatch_ wraps every hook fire in a child fiber so a
+  // handler that yields directly is caught (and reported) instead
+  // of stranding the C dispatcher with no return value.  These
+  // tests invoke dispatch_ directly rather than going through a
+  // registered hook + injected event, which keeps them synchronous
+  // and lets us assert on the exact return value.
+
+  static testHookDispatchPassthrough_() {
+    check_(Hook.dispatch_(Fn.new { |x| x + 1 }, 41) == 42,
+           "Hook.dispatch_(fn,arg) propagates return value")
+    check_(Hook.dispatch_(Fn.new { |x| true }, 0) == true,
+           "Hook.dispatch_ propagates true")
+    check_(Hook.dispatch_(Fn.new { |x| false }, 0) == false,
+           "Hook.dispatch_ propagates false")
+  }
+
+  static testHookDispatchNoArg_() {
+    // No-arg form for timer hooks.
+    check_(Hook.dispatch_(Fn.new { 7 }) == 7,
+           "Hook.dispatch_(fn) propagates return value")
+  }
+
+  static testHookDispatchRejectsYield_() {
+    // A handler that yields up to dispatch_'s wrapper fiber leaves
+    // the wrapper not-done; dispatch_ logs an error and returns null
+    // so the dispatcher's bool/string slot read falls through to the
+    // default (passthrough / default status).
+    var r = Hook.dispatch_(Fn.new { |x| Fiber.yield() }, 0)
+    check_(r == null, "Hook.dispatch_(fn,arg) rejects direct yield")
+  }
+
+  static testHookDispatchRejectsNoArgYield_() {
+    var r = Hook.dispatch_(Fn.new { Fiber.yield() })
+    check_(r == null, "Hook.dispatch_(fn) rejects direct yield")
+  }
+
+  static testHookDispatchAllowsChildFiberYield_() {
+    // A child fiber's yield returns to the hook body (its caller of
+    // .call()), not to dispatch_'s wrapper — so the hook still
+    // completes normally and dispatch_ returns its value.  This is
+    // the supported pattern for parking work from inside a hook.
+    // The inner fiber is built outside the Fn so the hook fn body
+    // is a single expression; multi-statement Fn bodies don't
+    // implicit-return the way method bodies do.
+    var inner = Fiber.new { Fiber.yield(123) }
+    var r = Hook.dispatch_(Fn.new { |x| inner.call() + 1 }, 0)
+    check_(r == 124, "Hook.dispatch_ permits child-fiber yields")
+  }
+
+  static testHookDispatchCatchesAbort_() {
+    var r = Hook.dispatch_(Fn.new { |x| Fiber.abort("test boom") }, 0)
+    check_(r == null, "Hook.dispatch_ catches Fiber.abort")
   }
 
   // ===== sentinel-driven async tests ==============================

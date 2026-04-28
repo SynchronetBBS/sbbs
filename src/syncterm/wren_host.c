@@ -822,6 +822,18 @@ wren_host_init(struct bbslist *bbs)
 		}
 		globfree(&gl);
 	}
+
+	/* Cache Hook + its dispatch_ method handles.  Every hook fire
+	 * goes through Hook.dispatch_(fn[, arg]) instead of fn.call()
+	 * so a handler that yields directly is caught and reported
+	 * rather than silently stranding the dispatcher with no return
+	 * value to act on.  Both forms are required: dispatch0 for
+	 * timer fires (no arg), dispatch1 for everything else. */
+	wrenEnsureSlots(state.vm, 1);
+	wrenGetVariable(state.vm, "syncterm", "Hook", 0);
+	state.hook_class = wrenGetSlotHandle(state.vm, 0);
+	state.dispatch0_handle = wrenMakeCallHandle(state.vm, "dispatch_(_)");
+	state.dispatch1_handle = wrenMakeCallHandle(state.vm, "dispatch_(_,_)");
 }
 
 void
@@ -884,6 +896,12 @@ wren_host_shutdown(void)
 		wrenReleaseHandle(state.vm, state.call0_handle);
 	if (state.call1_handle != NULL)
 		wrenReleaseHandle(state.vm, state.call1_handle);
+	if (state.dispatch0_handle != NULL)
+		wrenReleaseHandle(state.vm, state.dispatch0_handle);
+	if (state.dispatch1_handle != NULL)
+		wrenReleaseHandle(state.vm, state.dispatch1_handle);
+	if (state.hook_class != NULL)
+		wrenReleaseHandle(state.vm, state.hook_class);
 	if (state.cell_class != NULL)
 		wrenReleaseHandle(state.vm, state.cell_class);
 	if (state.cells_class != NULL)
@@ -949,10 +967,11 @@ wren_host_dispatch_key(int key)
 			continue;
 		if (h->filtered && h->filter != key)
 			continue;
-		wrenEnsureSlots(state.vm, 2);
-		wrenSetSlotHandle(state.vm, 0, h->fn);
-		wrenSetSlotDouble(state.vm, 1, (double)key);
-		if (metrics_invoke(&h->metrics, state.call1_handle) !=
+		wrenEnsureSlots(state.vm, 3);
+		wrenSetSlotHandle(state.vm, 0, state.hook_class);
+		wrenSetSlotHandle(state.vm, 1, h->fn);
+		wrenSetSlotDouble(state.vm, 2, (double)key);
+		if (metrics_invoke(&h->metrics, state.dispatch1_handle) !=
 		    WREN_RESULT_SUCCESS)
 			continue;
 		if (read_consume_result())
@@ -961,20 +980,22 @@ wren_host_dispatch_key(int key)
 	return false;
 }
 
-/* Build a Wren List for a regex match — slot 1 receives
+/* Build a Wren List for a regex match — slot `list_slot` receives
  * [match, group1, group2, ...] from the subp[] capture array.  Pairs
- * are walked until the first NULL/NULL pair.  Caller must have ≥3
- * Wren slots ensured before calling. */
+ * are walked until the first NULL/NULL pair.  Slot `list_slot + 1`
+ * is used as scratch.  Caller must have ≥list_slot+2 Wren slots
+ * ensured before calling. */
 static void
-build_match_list(char **subp, int nsubp)
+build_match_list(char **subp, int nsubp, int list_slot)
 {
-	wrenSetSlotNewList(state.vm, 1);
+	int scratch = list_slot + 1;
+	wrenSetSlotNewList(state.vm, list_slot);
 	for (int k = 0; k + 1 < nsubp; k += 2) {
 		if (subp[k] == NULL || subp[k+1] == NULL)
 			break;
-		wrenSetSlotBytes(state.vm, 2, subp[k],
+		wrenSetSlotBytes(state.vm, scratch, subp[k],
 		    (size_t)(subp[k+1] - subp[k]));
-		wrenInsertInList(state.vm, 1, -1, 2);
+		wrenInsertInList(state.vm, list_slot, -1, scratch);
 	}
 }
 
@@ -997,11 +1018,12 @@ dispatch_match_drain(struct wren_hook_entry *h)
 		}
 		if (r == 1) {
 			pikevm_match(h->regex_vm, subp);
-			wrenEnsureSlots(state.vm, 3);
-			build_match_list(subp, h->regex_nsubp);
-			wrenSetSlotHandle(state.vm, 0, h->fn);
+			wrenEnsureSlots(state.vm, 4);
+			wrenSetSlotHandle(state.vm, 0, state.hook_class);
+			wrenSetSlotHandle(state.vm, 1, h->fn);
+			build_match_list(subp, h->regex_nsubp, 2);
 			bool consumed = false;
-			if (metrics_invoke(&h->metrics, state.call1_handle) ==
+			if (metrics_invoke(&h->metrics, state.dispatch1_handle) ==
 			        WREN_RESULT_SUCCESS &&
 			    read_consume_result())
 				consumed = true;
@@ -1072,10 +1094,11 @@ wren_host_dispatch_input(unsigned char byte)
 
 		if (h->filtered && h->filter != (int)byte)
 			continue;
-		wrenEnsureSlots(state.vm, 2);
-		wrenSetSlotHandle(state.vm, 0, h->fn);
-		wrenSetSlotDouble(state.vm, 1, (double)byte);
-		if (metrics_invoke(&h->metrics, state.call1_handle) !=
+		wrenEnsureSlots(state.vm, 3);
+		wrenSetSlotHandle(state.vm, 0, state.hook_class);
+		wrenSetSlotHandle(state.vm, 1, h->fn);
+		wrenSetSlotDouble(state.vm, 2, (double)byte);
+		if (metrics_invoke(&h->metrics, state.dispatch1_handle) !=
 		    WREN_RESULT_SUCCESS)
 			continue;
 		if (read_consume_result())
@@ -1098,10 +1121,11 @@ wren_host_dispatch_output(const void *buf, size_t len)
 		struct wren_hook_entry *h = state.hooks[WREN_HOOK_OUTPUT][i];
 		if (h == NULL || h->fn == NULL)
 			continue;
-		wrenEnsureSlots(state.vm, 2);
-		wrenSetSlotHandle(state.vm, 0, h->fn);
-		wrenSetSlotBytes(state.vm, 1, (const char *)buf, len);
-		if (metrics_invoke(&h->metrics, state.call1_handle) !=
+		wrenEnsureSlots(state.vm, 3);
+		wrenSetSlotHandle(state.vm, 0, state.hook_class);
+		wrenSetSlotHandle(state.vm, 1, h->fn);
+		wrenSetSlotBytes(state.vm, 2, (const char *)buf, len);
+		if (metrics_invoke(&h->metrics, state.dispatch1_handle) !=
 		    WREN_RESULT_SUCCESS)
 			continue;
 		if (read_consume_result()) {
@@ -1131,9 +1155,10 @@ wren_host_dispatch_mouse(struct mouse_event *ev)
 			continue;
 		if (h->filtered && h->filter != ev->event)
 			continue;
-		wrenEnsureSlots(state.vm, 3);
-		wrenSetSlotHandle(state.vm, 0, h->fn);
-		wrenSetSlotNewList(state.vm, 1);
+		wrenEnsureSlots(state.vm, 4);
+		wrenSetSlotHandle(state.vm, 0, state.hook_class);
+		wrenSetSlotHandle(state.vm, 1, h->fn);
+		wrenSetSlotNewList(state.vm, 2);
 		const double fields[] = {
 			(double)ev->event, (double)ev->bstate,
 			(double)ev->kbmodifiers, (double)ev->startx,
@@ -1141,10 +1166,10 @@ wren_host_dispatch_mouse(struct mouse_event *ev)
 			(double)ev->endy
 		};
 		for (size_t f = 0; f < sizeof(fields) / sizeof(fields[0]); f++) {
-			wrenSetSlotDouble(state.vm, 2, fields[f]);
-			wrenInsertInList(state.vm, 1, -1, 2);
+			wrenSetSlotDouble(state.vm, 3, fields[f]);
+			wrenInsertInList(state.vm, 2, -1, 3);
 		}
-		if (metrics_invoke(&h->metrics, state.call1_handle) !=
+		if (metrics_invoke(&h->metrics, state.dispatch1_handle) !=
 		    WREN_RESULT_SUCCESS)
 			continue;
 		if (read_consume_result())
@@ -1163,10 +1188,11 @@ wren_host_compose_status(const char *def, char *out, size_t outsz)
 		struct wren_hook_entry *h = state.hooks[WREN_HOOK_STATUS][i];
 		if (h == NULL || h->fn == NULL)
 			continue;
-		wrenEnsureSlots(state.vm, 2);
-		wrenSetSlotHandle(state.vm, 0, h->fn);
-		wrenSetSlotString(state.vm, 1, def != NULL ? def : "");
-		if (metrics_invoke(&h->metrics, state.call1_handle) !=
+		wrenEnsureSlots(state.vm, 3);
+		wrenSetSlotHandle(state.vm, 0, state.hook_class);
+		wrenSetSlotHandle(state.vm, 1, h->fn);
+		wrenSetSlotString(state.vm, 2, def != NULL ? def : "");
+		if (metrics_invoke(&h->metrics, state.dispatch1_handle) !=
 		    WREN_RESULT_SUCCESS)
 			continue;
 		if (wrenGetSlotType(state.vm, 0) != WREN_TYPE_STRING)
@@ -1190,9 +1216,10 @@ wren_host_dispatch_timer(void)
 		struct wren_hook_entry *t = state.timers[i];
 		if (t == NULL || t->fn == NULL || now < t->next_fire_s)
 			continue;
-		wrenEnsureSlots(state.vm, 1);
-		wrenSetSlotHandle(state.vm, 0, t->fn);
-		(void)metrics_invoke(&t->metrics, state.call0_handle);
+		wrenEnsureSlots(state.vm, 2);
+		wrenSetSlotHandle(state.vm, 0, state.hook_class);
+		wrenSetSlotHandle(state.vm, 1, t->fn);
+		(void)metrics_invoke(&t->metrics, state.dispatch0_handle);
 		/* Advance by interval; if the loop stalled long enough that
 		 * we're more than one interval behind, jump forward to "now"
 		 * rather than firing repeatedly trying to catch up. */

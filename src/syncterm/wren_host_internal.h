@@ -82,6 +82,15 @@ struct wren_host_state {
 	 * uses signature "call()" / "call(_)". */
 	WrenHandle  *call0_handle;
 	WrenHandle  *call1_handle;
+	/* Hook.dispatch_(fn) / Hook.dispatch_(fn, arg) — every hook fire
+	 * goes through these so a handler that yields directly raises a
+	 * clear error instead of stranding the dispatcher.  See
+	 * Hook.dispatch_ in scripts/syncterm.wren for the contract.
+	 * Populated lazily after the syncterm module is loaded; the
+	 * receiver `hook_class` is the Hook class object itself. */
+	WrenHandle  *hook_class;
+	WrenHandle  *dispatch0_handle;
+	WrenHandle  *dispatch1_handle;
 
 	/* Cached class handles for foreign classes that the C side
 	 * allocates instances of (via wrenSetSlotNewForeign).  Filled

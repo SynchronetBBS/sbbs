@@ -642,7 +642,7 @@ foreign class File {
   foreign size
   foreign isOpen
 }
-foreign class Hook {
+class Hook {
   foreign static onKey(fn)
   foreign static onKey(key, fn)
   foreign static onInput(fn)
@@ -653,6 +653,49 @@ foreign class Hook {
   foreign static onMouse(event, fn)
   foreign static onStatus(fn)
   foreign static every(ms, fn)
+
+  // Wraps every hook fire so a handler that yields directly (e.g.
+  // calls a parking SFTP op or Input.nextEvent at the top of its
+  // body) raises a clear error instead of corrupting the dispatch
+  // chain — yielded fibers can't return the bool/string the
+  // dispatcher needs to proceed.  For deferred work that *should*
+  // yield, wrap it inside the hook in `Fiber.new { ... }.call()`;
+  // that child fiber's yield returns to the hook (not the
+  // dispatcher's wrenCall), so the hook still completes
+  // synchronously.
+  //
+  // C dispatchers swap their cached call(_) / call() handles for
+  // these and pass `Hook` itself as the receiver; the return value
+  // lands in slot 0 exactly as if the user's fn had been called
+  // directly.  On yield or abort, the return is null — non-bool /
+  // non-string slot types fall through the dispatchers' type
+  // checks the same way a hook returning the wrong type already
+  // does, so the input passes through untouched.
+  static dispatch_(fn) {
+    var r = null
+    var f = Fiber.new { r = fn.call() }
+    f.try()
+    return finishDispatch_(f, r)
+  }
+  static dispatch_(fn, arg) {
+    var r = null
+    var f = Fiber.new { r = fn.call(arg) }
+    f.try()
+    return finishDispatch_(f, r)
+  }
+  static finishDispatch_(f, r) {
+    if (!f.isDone) {
+      System.print("hook handler must not yield directly; " +
+                   "wrap parking work in Fiber.new { ... }.call()")
+      return null
+    }
+    if (f.error != null) {
+      System.print("hook error: " + f.error)
+      REPL.printTrace_(f)
+      return null
+    }
+    return r
+  }
 }
 
 // Returned by every Hook.on*/Hook.every registration.  No Wren-side
