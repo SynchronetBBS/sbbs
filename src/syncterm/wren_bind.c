@@ -2808,6 +2808,29 @@ fn_REPL_hasModule(WrenVM *vm)
 	wrenSetSlotBool(vm, 0, has);
 }
 
+/* REPL.modules — list of every module currently loaded into the VM
+ * (including "core", which Wren creates for its built-in classes).
+ * Walks vm->modules directly because the public C API doesn't expose
+ * an iterator.  Skips empty slots and tombstones (key is UNDEFINED_VAL
+ * for both); non-string keys are skipped as a defensive measure but
+ * shouldn't occur — the modules map is keyed by ObjString. */
+static void
+fn_REPL_modules(WrenVM *vm)
+{
+	wrenEnsureSlots(vm, 2);
+	wrenSetSlotNewList(vm, 0);
+	if (vm->modules == NULL)
+		return;
+	for (uint32_t i = 0; i < vm->modules->capacity; i++) {
+		MapEntry *e = &vm->modules->entries[i];
+		if (IS_UNDEFINED(e->key) || !IS_STRING(e->key))
+			continue;
+		ObjString *s = AS_STRING(e->key);
+		wrenSetSlotBytes(vm, 1, s->value, s->length);
+		wrenInsertInList(vm, 0, -1, 1);
+	}
+}
+
 /* Read system clipboard.  ciolib_getcliptext returns a malloc'd
  * UTF-8 buffer; we hand it to Wren and free our copy. */
 static void
@@ -3437,6 +3460,7 @@ static const struct binding BINDINGS[] = {
 	{ "REPL",  true,  "compile_(_,_,_,_)",   fn_REPL_compile_         },
 	{ "REPL",  true,  "printTrace_(_)",      fn_REPL_printTrace_      },
 	{ "REPL",  true,  "hasModule(_)",        fn_REPL_hasModule        },
+	{ "REPL",  true,  "modules",             fn_REPL_modules          },
 	{ "REPL",  true,  "captureStart_()",     fn_REPL_captureStart_    },
 	{ "REPL",  true,  "captureContains_(_)", fn_REPL_captureContains_ },
 	{ "REPL",  true,  "captureClear_()",     fn_REPL_captureClear_    },

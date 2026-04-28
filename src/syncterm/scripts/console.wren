@@ -46,6 +46,20 @@ class WrenConsole {
     return -1
   }
 
+  // Byte-wise less-than for two Strings.  Wren's String doesn't
+  // implement `<` (Unicode collation is out of scope for the core),
+  // so List.sort() needs a comparator for any sort that touches
+  // strings.  Module names are ASCII, so byte order is fine.
+  static stringLT_(a, b) {
+    var ab = a.bytes
+    var bb = b.bytes
+    var n  = ab.count.min(bb.count)
+    for (i in 0...n) {
+      if (ab[i] != bb[i]) return ab[i] < bb[i]
+    }
+    return ab.count < bb.count
+  }
+
   // Backward kill-word (Ctrl+W).  Strip trailing whitespace, then strip
   // the run of non-whitespace before it.  Matches readline's
   // unix-word-rubout: any non-space counts as part of the word.
@@ -457,7 +471,7 @@ class WrenConsole {
   // exactly the right shape for "the run loop's exit signal."
   static runCommand_(line, current) {
     if (line == "/?" || line == "/help") {
-      System.print("commands: /in [module], /quit, /?")
+      System.print("commands: /in [module], /mods, /quit, /?")
       System.print("editing:  Left/Right, Home/End, Backspace, Delete,")
       System.print("          Ctrl+W (kill word back), Ctrl+L (clear screen)")
       System.print("history:  Up/Down — type a prefix first to filter")
@@ -467,6 +481,16 @@ class WrenConsole {
     }
     if (line == "/quit" || line == "/q") {
       __quit = true
+      return current
+    }
+    if (line == "/mods") {
+      // List.sort() defaults to `a < b`; String doesn't implement `<`,
+      // so pass a byte-wise comparator.  Module names are ASCII, so
+      // byte order matches lexicographic.
+      var mods = REPL.modules
+      mods.sort {|a, b| stringLT_(a, b) }
+      System.print("modules (%(mods.count)):")
+      for (m in mods) System.print("  " + m)
       return current
     }
     if (line == "/in") {

@@ -330,6 +330,7 @@ class REPL {
   foreign static compile_(module, src, isExpression, printErrors)
   foreign static printTrace_(fiber)
   foreign static hasModule(name)
+  foreign static modules
   foreign static captureStart_()
   foreign static captureContains_(needle)
   foreign static captureClear_()
