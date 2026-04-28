@@ -692,10 +692,7 @@ class WrenConsole {
 
 }
 
-Hook.onKey { |k|
-  if (k == 0x29E0) {
-    WrenConsole.run()
-    return true
-  }
-  return false
+Hook.onKey(Key.wrenConsole) { |k|
+  WrenConsole.run()
+  return true
 }

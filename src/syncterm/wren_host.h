@@ -20,13 +20,12 @@ void wren_host_shutdown(void);
  * is hooked. */
 bool wren_host_active(void);
 
-/* Returns true while a Wren fiber is parked on Input.nextEvent().  The
- * remote-input pump in doterm() consults this and refuses to drain
- * bytes off the wire while it's true, so a modal dialog isn't
- * repainted over by incoming server output.  Bytes stay queued in the
- * socket buffer and are drained on the next doterm() iteration after
- * the fiber resumes and unparks. */
-bool wren_host_input_held(void);
+/* Bind a doterm()-local cterm_suspended flag to the host so the
+ * CTerm.suspended Wren getter/setter can read and write it.  While
+ * the flag is true, doterm() halts the wire-byte pump; bytes pile up
+ * in the conn buffer and the remote eventually sees backpressure.
+ * Pass NULL on shutdown to detach. */
+void wren_host_bind_cterm_suspended(bool *flag);
 
 /* Input-shaped dispatchers: return true to consume / drop the event,
  * false to pass through. The first hook returning true short-circuits;
@@ -53,6 +52,12 @@ void wren_host_mark_log_seen(void);
 /* Fires any Hook.every() callbacks whose deadline has elapsed. Called
  * from doterm() just before the main-loop sleep. */
 void wren_host_dispatch_timer(void);
+
+/* Drain the result queue: for every queued completion, resume the
+ * target fiber with its result (or skip if the fiber is done), then
+ * release the fiber handle and free the result data.  Owner-thread
+ * only.  Called from the doterm() main loop alongside wren_host_compact. */
+void wren_result_drain(void);
 
 /* Reclaim hook entries that scripts have unregistered.  Walks the
  * cleanup queue, shifts each entry's pointer out of the dispatch

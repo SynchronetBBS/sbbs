@@ -543,12 +543,15 @@ loop the doterm() main loop is blocked, and inbound server bytes
 queue up in the socket buffer until the script returns.
 
 For modal dialogs that should not block the main loop while the
-script idles between events, use `Input.nextEvent()`:
+script idles between events, use `Input.nextEvent()`.  Parking does
+not claim the screen on its own — set `CTerm.suspended = true` first
+to halt the wire pump, and clear it again when you're done:
 
 [source,wren]
 ----
-import "syncterm" for Input, Key, Screen
+import "syncterm" for Input, Key, Screen, CTerm
 
+CTerm.suspended = true
 Fiber.new {
   while (true) {
     var ev = Input.nextEvent()
@@ -556,19 +559,23 @@ Fiber.new {
     Screen.window.print("got: %(ev)\n")
   }
   Screen.restore(saved)
+  CTerm.suspended = false
 }.call()
 ----
 
 `Input.nextEvent()` parks the calling fiber and yields back through
 the C side.  The doterm() main loop continues to spin normally;
-remote-byte intake is gated off so server output cannot paint over
-the dialog, but server bytes remain queued and drain naturally on
-the next iteration after the fiber resumes.
+when the next key or mouse event arrives, dispatch_key/dispatch_mouse
+pushes a result onto the framework's queue and the next main-loop
+drain calls back into the fiber with the event as its yielded value.
+The event bypasses every `Hook.onKey` / `Hook.onMouse` callback and
+SyncTERM's default handling, exactly as if a hook had returned `true`.
 
-When the next key or mouse event arrives, the fiber is resumed with
-the event as its yielded value.  The event bypasses every
-`Hook.onKey` / `Hook.onMouse` callback and SyncTERM's default
-handling, exactly as if a hook had returned `true`.
+`CTerm.suspended` is independent of parking — any script can set it
+to claim the screen, and remote bytes pile up in the conn buffer
+behind it.  When the TCP receive window fills, the remote sees its
+`send()` calls block or `EAGAIN`.  Clearing the flag releases the
+backpressure and the buffered bytes drain through cterm normally.
 
 `nextEvent()` must be called from inside a fiber created with
 `Fiber.new {}`.  The root fiber cannot be resumed from C after it
@@ -1548,6 +1555,22 @@ emulation-aware logic.
 
 | `CTerm.write(s)`
 | Send `s` to `cterm_write` — bypass the wire, render directly.
+
+| `CTerm.suspended`, `CTerm.suspended = b`
+| Read or write the wire-pump suspend flag.  When set true, the main
+  loop stops draining bytes from the conn buffer.  Bytes pile up in the
+  conn buffer; the TCP receive window eventually fills and the remote
+  sees its `send()` calls block or `EAGAIN`.  Use this to claim the
+  screen for a modal dialog, transfer overlay, etc., without remote
+  output painting underneath.  Clear it again when you're done.
+  Parking on `Input.nextEvent` does **not** suspend on its own —
+  scripts that want modal behavior must set this explicitly.
+  When speed emulation is active and the flag transitions from true
+  back to false, the byte pump is credited with all the bytes that
+  would have processed at the emulated rate during the suspended
+  interval; those bytes drain past the speed gate as fast as the
+  pump can run, so the visible output catches up to where it would
+  have been if the suspend had never happened.
 |===
 
 ==== ExtAttr

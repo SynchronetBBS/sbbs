@@ -443,6 +443,37 @@ fn_Input_park(WrenVM *vm)
 	st->parked_fiber = wrenGetSlotHandle(vm, 1);
 }
 
+/* Result-queue payload for Input.nextEvent: enough state to build the
+ * KeyEvent or MouseEvent foreign instance at delivery time.  Workers
+ * never construct it (Input is owner-thread only), but it goes through
+ * the same queue path as everything else for uniformity. */
+struct input_result {
+	bool                is_mouse;
+	uint16_t            code;     /* is_mouse == false */
+	struct mouse_event  ev;       /* is_mouse == true  */
+};
+
+static void
+deliver_input_result(WrenVM *vm, int slot, void *data)
+{
+	struct wren_host_state *st = wren_host_state();
+	struct input_result    *ir = data;
+	if (ir->is_mouse) {
+		load_class_into_slot(vm, &st->mouse_event_class,
+		    "MouseEvent", slot + 1);
+		struct wren_mouse_event *me =
+		    wrenSetSlotNewForeign(vm, slot, slot + 1, sizeof(*me));
+		me->type = SWF_MOUSE_EVENT;
+		me->ev   = ir->ev;
+	} else {
+		load_class_into_slot(vm, &st->key_event_class,
+		    "KeyEvent", slot + 1);
+		struct wren_key_event *ke =
+		    wrenSetSlotNewForeign(vm, slot, slot + 1, sizeof(*ke));
+		key_event_init(ke, ir->code);
+	}
+}
+
 bool
 wren_bind_resume_parked_key(int code)
 {
@@ -452,15 +483,14 @@ wren_bind_resume_parked_key(int code)
 	WrenHandle *fiber = st->parked_fiber;
 	st->parked_fiber  = NULL;
 
-	wrenEnsureSlots(st->vm, 3);
-	load_class_into_slot(st->vm, &st->key_event_class, "KeyEvent", 2);
-	struct wren_key_event *ke =
-	    wrenSetSlotNewForeign(st->vm, 1, 2, sizeof(*ke));
-	key_event_init(ke, (uint16_t)code);
-	wrenSetSlotHandle(st->vm, 0, fiber);
-
-	wrenCall(st->vm, st->call1_handle);
-	wrenReleaseHandle(st->vm, fiber);
+	struct input_result *ir = calloc(1, sizeof(*ir));
+	if (ir == NULL) {
+		wrenReleaseHandle(st->vm, fiber);
+		return true;
+	}
+	ir->is_mouse = false;
+	ir->code     = (uint16_t)code;
+	wren_result_push(fiber, ir, deliver_input_result, free);
 	return true;
 }
 
@@ -473,16 +503,14 @@ wren_bind_resume_parked_mouse(struct mouse_event *ev)
 	WrenHandle *fiber = st->parked_fiber;
 	st->parked_fiber  = NULL;
 
-	wrenEnsureSlots(st->vm, 3);
-	load_class_into_slot(st->vm, &st->mouse_event_class, "MouseEvent", 2);
-	struct wren_mouse_event *me =
-	    wrenSetSlotNewForeign(st->vm, 1, 2, sizeof(*me));
-	me->type = SWF_MOUSE_EVENT;
-	me->ev   = *ev;
-	wrenSetSlotHandle(st->vm, 0, fiber);
-
-	wrenCall(st->vm, st->call1_handle);
-	wrenReleaseHandle(st->vm, fiber);
+	struct input_result *ir = calloc(1, sizeof(*ir));
+	if (ir == NULL) {
+		wrenReleaseHandle(st->vm, fiber);
+		return true;
+	}
+	ir->is_mouse = true;
+	ir->ev       = *ev;
+	wren_result_push(fiber, ir, deliver_input_result, free);
 	return true;
 }
 
@@ -728,6 +756,34 @@ fn_CTerm_write(WrenVM *vm)
 	int speed = 0;
 	if (cterm != NULL && len > 0)
 		cterm_write(cterm, s, len, &speed);
+}
+
+/* CTerm.suspended — backed by a doterm() local that gates the
+ * wire-byte pump.  When true, doterm() stops draining the conn buffer
+ * so the script can do something the screen can't be allowed to be
+ * scribbled on (modal dialog, transfer overlay, …) without the
+ * remote's output painting underneath.  Bytes pile up in the conn
+ * buffer; eventually the TCP window fills and the remote sees
+ * backpressure.  Reads false when no flag is bound (pre-init or
+ * post-shutdown). */
+static void
+fn_CTerm_suspended_get(WrenVM *vm)
+{
+	struct wren_host_state *st = wren_host_state();
+	bool v = (st != NULL && st->cterm_suspended != NULL)
+	    ? *st->cterm_suspended : false;
+	wrenSetSlotBool(vm, 0, v);
+}
+
+static void
+fn_CTerm_suspended_set(WrenVM *vm)
+{
+	struct wren_host_state *st = wren_host_state();
+	if (st == NULL || st->cterm_suspended == NULL)
+		return;
+	if (wrenGetSlotType(vm, 1) != WREN_TYPE_BOOL)
+		return;
+	*st->cterm_suspended = wrenGetSlotBool(vm, 1);
 }
 
 #define CTERM_FIELD_NUM(field)                                          \
@@ -3875,6 +3931,8 @@ static const struct binding BINDINGS[] = {
 	{ "CTerm", true, "extAttr",            fn_CTerm_extAttr         },
 	{ "CTerm", true, "lastColumnFlag",     fn_CTerm_lastColumnFlag  },
 	{ "CTerm", true, "write(_)",           fn_CTerm_write           },
+	{ "CTerm", true, "suspended",          fn_CTerm_suspended_get   },
+	{ "CTerm", true, "suspended=(_)",      fn_CTerm_suspended_set   },
 	{ "ExtAttr", false, "autoWrap",            fn_ExtAttr_autoWrap            },
 	{ "ExtAttr", false, "originMode",          fn_ExtAttr_originMode          },
 	{ "ExtAttr", false, "sxScroll",            fn_ExtAttr_sxScroll            },

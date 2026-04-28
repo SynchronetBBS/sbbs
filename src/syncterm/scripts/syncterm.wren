@@ -454,6 +454,8 @@ foreign class CTerm {
   foreign static extAttr
   foreign static lastColumnFlag
   foreign static write(s)
+  foreign static suspended
+  foreign static suspended=(b)
 }
 foreign class ExtAttr {
   foreign autoWrap

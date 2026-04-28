@@ -5,11 +5,54 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#include "threadwrap.h"   /* pthread_mutex_t */
 #include "wren.h"
 
 struct mouse_event;
 struct wren_file;
 struct wren_directory;
+
+/* --------------------------------------------------------------------
+ * Result queue
+ *
+ * Generic "completion destined for a parked fiber" framework.  Any
+ * callable that yields a fiber (Input.nextEvent, future SFTP ops, etc.)
+ * captures the fiber handle and arranges for a result to be pushed
+ * here.  The owner-thread drainer pops in arrival order, builds the
+ * Wren-side foreign for each result, calls the fiber, releases the
+ * handle, frees the data.
+ *
+ * Workers can push from any thread (the queue is mutex-protected);
+ * delivery happens entirely on the owner thread.  Results carrying a
+ * dead fiber (Fiber.isDone) are skipped — the handle is released and
+ * the data freed without invoking the fiber.
+ * -------------------------------------------------------------------- */
+
+/* Build the Wren-side result instance from `data` into `slot` (caller
+ * has already ensured ≥2 slots and put the fiber receiver in slot 0).
+ * `slot + 1` may be used as scratch for class loading; the deliver
+ * function must leave the result foreign in `slot`. */
+typedef void (*wren_result_deliver_fn)(WrenVM *vm, int slot, void *data);
+
+/* Free `data` after delivery (or skip).  May be NULL if `data` itself
+ * was statically allocated or owned elsewhere. */
+typedef void (*wren_result_free_fn)(void *data);
+
+struct wren_result {
+	WrenHandle             *fiber;    /* owned; released after delivery */
+	void                   *data;     /* owned; freed via free_fn */
+	wren_result_deliver_fn  deliver;
+	wren_result_free_fn     free_fn;
+	struct wren_result     *next;
+};
+
+/* Push a completion onto the queue.  Takes ownership of `fiber` and
+ * `data`.  Safe to call from any thread.  No-op if the host is shut
+ * down (releases `fiber` and frees `data` immediately in that case so
+ * callers don't have to special-case shutdown races). */
+void wren_result_push(WrenHandle *fiber, void *data,
+                      wren_result_deliver_fn deliver,
+                      wren_result_free_fn free_fn);
 
 /* Maximum simultaneous registrations per hook event and per timer slot.
  * These are intentionally small — there's no use case for hundreds of
@@ -114,9 +157,30 @@ struct wren_host_state {
 	struct wren_hook_entry *cleanup_head;
 
 	/* When non-NULL, a Wren fiber is parked on Input.nextEvent() waiting
-	 * for the next key/mouse event.  Set by Input._park, cleared and
-	 * resumed by wren_host_dispatch_key/mouse before any hooks fire. */
+	 * for the next key/mouse event.  Set by Input._park, transferred
+	 * onto the result queue by wren_host_dispatch_key/mouse when an
+	 * event arrives, cleared at the same time.  Parking does NOT
+	 * imply any screen claim — scripts that want modal behavior must
+	 * set CTerm.suspended = true explicitly to halt the wire pump. */
 	WrenHandle  *parked_fiber;
+
+	/* Pointer to doterm()'s local cterm_suspended flag.  Set by
+	 * wren_host_bind_cterm_suspended() after init; backs the
+	 * CTerm.suspended getter/setter.  When the flag is true, doterm()
+	 * stops draining bytes from the wire so the underlying conn buffer
+	 * fills, the TCP window shrinks, and the remote sees backpressure. */
+	bool        *cterm_suspended;
+
+	/* Cached Fiber.isDone getter, used by the result drainer to skip
+	 * deliveries to fibers that have terminated since the result was
+	 * queued.  Built at init from wrenMakeCallHandle("isDone"). */
+	WrenHandle  *fiber_isdone_handle;
+
+	/* Result queue head/tail.  Workers may push from any thread;
+	 * drained on the owner thread once per main-loop iteration. */
+	pthread_mutex_t      result_mutex;
+	struct wren_result  *result_head;
+	struct wren_result  *result_tail;
 
 	/* Doubly-linked lists of every live wren_file / wren_directory
 	 * foreign.  Each foreign self-registers in its allocator (or in the

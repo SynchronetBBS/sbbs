@@ -8,7 +8,10 @@
 // unique sentinels and matches them via Hook.onMatch.  Counters
 // for the time-based hooks (every, filtered onKey via
 // Input.unget) are ticked by hooks registered at module load and
-// inspected in the final report.
+// inspected in the final report.  T06 then drives the result-queue
+// framework end-to-end: spawn a fiber that parks on
+// Input.nextEvent, unget a sentinel key, and verify the fiber
+// resumes with the right KeyEvent after the next main-loop drain.
 //
 // Re-running via Alt+T resets state in WrenTest.run() — the
 // dispatcher and the test-counter hooks are registered once when
@@ -28,10 +31,20 @@ import "syncterm" for Hook, Conn, Console, Screen, CTerm, BBS, Key,
 
 class WrenTest {
   static run() {
-    __step    = 0
-    __pass    = 0
-    __fail    = 0
-    __pending = null
+    __step             = 0
+    __pass             = 0
+    __fail             = 0
+    __pending          = null
+    __nextEventResult  = null
+    // Fiber that parks on Input.nextEvent and stores the resumption
+    // value.  Started + unget'd at T06 so the earlier sentinel-driven
+    // tests don't get their input claimed by the parked fiber.  The
+    // fiber clears CTerm.suspended after capturing so T06's
+    // sleep-and-printf sentinel can drain back through cterm.
+    __nextEventFiber   = Fiber.new {
+      __nextEventResult = Input.nextEvent()
+      CTerm.suspended = false
+    }
     // Register the test's hooks fresh each run; cleanup_() removes
     // them at end-of-suite so they don't keep firing once the
     // tests are done.  The match dispatcher and watchdog are
@@ -498,6 +511,34 @@ class WrenTest {
       // assertion races.
       __pending = "T05"
       Conn.send("sleep 1 && printf '__\%s_X_done_X__\\n' T05\r")
+    } else if (__step == 6) {
+      // Result-queue framework end-to-end.  Park the fiber on
+      // Input.nextEvent (the foreign captures Fiber.current and
+      // the wrapper yields), then unget a sentinel key.  The
+      // next main-loop iteration's dispatch_key sees the parked
+      // fiber, pushes a KeyEvent onto the result queue, and
+      // clears parked_fiber.  The iteration after that drains
+      // the queue, which constructs the foreign and resumes the
+      // fiber with it.  The 0.2 s wall-clock pause via sleep is
+      // there to give the drain a chance to fire — without it
+      // the report_ check races against the resume.  0xFD00
+      // matches the same low-byte-zero constraint the existing
+      // 0xFE00 hook test uses (see comment at the unget below).
+      // CTerm.suspended is toggled around the unget+resume window
+      // to exercise the wire-pump suspend flag — without it,
+      // remote bytes from the T05 sleep tail could repaint while
+      // the fiber is parked.  The flag is cleared in the fiber's
+      // own body after it captures the event so the suspend
+      // outlives the resume by exactly one drain.
+      check_(CTerm.suspended == false,
+             "CTerm.suspended defaults to false")
+      CTerm.suspended = true
+      check_(CTerm.suspended == true,
+             "CTerm.suspended = true round-trips")
+      __nextEventFiber.call()
+      Input.unget(KeyEvent.new(0xFD00))
+      __pending = "T06"
+      Conn.send("sleep 0.2 && printf '__\%s_X_done_X__\\n' T06\r")
     } else {
       report_()
     }
@@ -517,6 +558,8 @@ class WrenTest {
       check_(value == "done", "T04 Hook.onMatch trailing sentinel")
     } else if (name == "05") {
       check_(value == "done", "T05 sleep+sentinel for timer/key tests")
+    } else if (name == "06") {
+      check_(value == "done", "T06 sleep+sentinel for result-queue test")
     } else {
       check_(false, "T%(name) unexpected sentinel")
     }
@@ -545,6 +588,21 @@ class WrenTest {
            "Hook.every fires from main-loop timer")
     check_(__keyHook.callCount > 0,
            "Hook.onKey(0xFE00) caught Input.unget'd sentinel key")
+
+    // Result-queue end-to-end: T06 unget'd 0xFD00 while the fiber
+    // was parked, so dispatch_key should have routed it through the
+    // queue and the drain should have resumed the fiber with a
+    // KeyEvent before T06's sentinel sleep elapsed.
+    check_(__nextEventResult is KeyEvent &&
+           __nextEventResult.code == 0xFD00,
+           "Input.nextEvent through result queue (T06 sentinel key)")
+    // Fiber cleared CTerm.suspended after capturing.  If this still
+    // reads true, either the fiber never resumed or the setter is
+    // broken — and in the former case the T06 sentinel could only
+    // have arrived because something else cleared it (the test
+    // would still be wrong).
+    check_(CTerm.suspended == false,
+           "CTerm.suspended cleared by fiber after Input.nextEvent")
 
     var total = __pass + __fail
     System.print("=== %(total) tests, %(__pass) pass, %(__fail) fail ===")

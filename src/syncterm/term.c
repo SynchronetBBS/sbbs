@@ -6048,7 +6048,24 @@ doterm(struct bbslist *bbs)
 	}
 	setup_mouse_events(&ms);
 	force_status_update = true;
+	/* Wren-controlled suspend flag: when scripts set CTerm.suspended,
+	 * we stop pumping bytes off the wire and let the conn buffer +
+	 * TCP window absorb backpressure.  Lives on the doterm() stack
+	 * because the host's lifetime is bounded by this function.
+	 *
+	 * speed_catchup tracks bytes "owed" from a suspend interval at
+	 * the emulated rate.  At unsuspend, we credit the script with all
+	 * the bytes that *would have* been processed during the
+	 * suspended window if speed emulation had kept running.  Those
+	 * bytes drain regardless of the speed gate (one per byte-pump
+	 * iteration) until the credit runs out, then the gate kicks back
+	 * in.  Fractional carry across multiple suspend cycles is fine. */
+	bool        cterm_suspended  = false;
+	bool        was_suspended    = false;
+	long double suspend_start    = 0;
+	double      speed_catchup    = 0;
 	wren_host_init(bbs);
+	wren_host_bind_cterm_suspended(&cterm_suspended);
 	for (; !quitting;) {
 		/* Reclaim any hook entries unregistered since the last
 		 * iteration: shifts pointer arrays, frees regex resources,
@@ -6056,6 +6073,31 @@ doterm(struct bbslist *bbs)
 		 * Runs before any dispatcher to keep the dispatch arrays
 		 * tidy and to avoid touching freed entries. */
 		wren_host_compact();
+		/* Drain queued completions (Input.nextEvent results, future
+		 * SFTP completions, etc.) and resume their target fibers.
+		 * Done before any input pump so a fiber can park, get its
+		 * result, and re-park within a single iteration's worth of
+		 * latency. */
+		wren_result_drain();
+		/* Detect cterm_suspended transitions across this iteration.
+		 * On entering suspend: capture the wall-clock start.  On
+		 * exiting suspend: credit the byte pump with the bytes that
+		 * would have drained during the suspended interval at the
+		 * current emulated speed.  Quick toggles that round-trip
+		 * inside a single drain pass are intentionally not counted —
+		 * they don't span any real time worth catching up on. */
+		if (cterm_suspended != was_suspended) {
+			if (cterm_suspended) {
+				suspend_start = xp_timer();
+			}
+			else if (speed > 0) {
+				long double elapsed = xp_timer() - suspend_start;
+				if (elapsed > 0)
+					speed_catchup += (double)(elapsed *
+					    (long double)speed / 10.0L);
+			}
+			was_suspended = cterm_suspended;
+		}
 		/* Drain any popups posted from background threads (e.g.
 		 * SSH_MSG_DEBUG with always_display set) before we go
 		 * blocking on recv/kbhit. */
@@ -6076,17 +6118,29 @@ doterm(struct bbslist *bbs)
 			if (speed)
 				thischar = xp_timer();
 
-			/* A Wren fiber parked on Input.nextEvent() claims the
-			 * screen — leave incoming bytes queued on the wire so
-			 * cterm_write() doesn't paint over the modal dialog.
-			 * Disconnect detection resumes naturally on the next
-			 * tick after the fiber unparks. */
-			if (wren_host_input_held())
+			/* CTerm.suspended halts the wire pump explicitly so a
+			 * Wren script can claim the screen for a modal dialog,
+			 * transfer overlay, etc.  Bytes pile up in the conn
+			 * buffer; the remote eventually sees backpressure via a
+			 * shrinking TCP window.  Disconnect detection resumes
+			 * naturally on the next tick after the script clears
+			 * the flag. */
+			if (cterm_suspended)
 				break;
 
-			if ((!speed) || (thischar < lastchar) /* Wrapped */ || (thischar >= nextchar)) {
+			if ((!speed) || (thischar < lastchar) /* Wrapped */ ||
+			    (thischar >= nextchar) ||
+			    speed_catchup >= 1.0) {
                                 /* Get remote input */
 				inch = recv_byte(NULL, 0);
+				/* Each processed byte spends one credit of
+				 * suspend-debt regardless of whether the
+				 * speed gate would have allowed it normally;
+				 * the credit represents bytes the suspend
+				 * froze, and processing one finally pays it
+				 * back. */
+				if (speed_catchup >= 1.0)
+					speed_catchup -= 1.0;
 
 				switch (inch) {
 					case -1:

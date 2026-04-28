@@ -323,10 +323,100 @@ wren_host_active(void)
 	return true;
 }
 
-bool
-wren_host_input_held(void)
+void
+wren_host_bind_cterm_suspended(bool *flag)
 {
-	return active && state.parked_fiber != NULL;
+	state.cterm_suspended = flag;
+}
+
+/* --------------------------------------------------------------------
+ * Result queue
+ * -------------------------------------------------------------------- */
+
+void
+wren_result_push(WrenHandle *fiber, void *data,
+                 wren_result_deliver_fn deliver,
+                 wren_result_free_fn free_fn)
+{
+	if (fiber == NULL)
+		return;
+	if (!active) {
+		/* Shutdown race: drop on the floor and clean up. */
+		if (free_fn != NULL)
+			free_fn(data);
+		return;
+	}
+	struct wren_result *r = calloc(1, sizeof(*r));
+	if (r == NULL) {
+		/* OOM: leak the fiber handle (no VM call available from
+		 * an arbitrary thread anyway).  free the data. */
+		if (free_fn != NULL)
+			free_fn(data);
+		return;
+	}
+	r->fiber   = fiber;
+	r->data    = data;
+	r->deliver = deliver;
+	r->free_fn = free_fn;
+
+	pthread_mutex_lock(&state.result_mutex);
+	if (state.result_tail == NULL)
+		state.result_head = r;
+	else
+		state.result_tail->next = r;
+	state.result_tail = r;
+	pthread_mutex_unlock(&state.result_mutex);
+}
+
+/* Returns true if the fiber has finished or aborted.  Any error from
+ * the isDone primitive itself is treated as "done" so a broken fiber
+ * doesn't keep results queued indefinitely. */
+static bool
+fiber_is_done(WrenHandle *fiber)
+{
+	if (state.fiber_isdone_handle == NULL)
+		return false;
+	wrenEnsureSlots(state.vm, 1);
+	wrenSetSlotHandle(state.vm, 0, fiber);
+	if (wrenCall(state.vm, state.fiber_isdone_handle) !=
+	    WREN_RESULT_SUCCESS)
+		return true;
+	if (wrenGetSlotType(state.vm, 0) != WREN_TYPE_BOOL)
+		return false;
+	return wrenGetSlotBool(state.vm, 0);
+}
+
+void
+wren_result_drain(void)
+{
+	if (!active || !on_owner_thread())
+		return;
+
+	/* Detach the entire batch under the lock; deliveries happen
+	 * lock-free below.  Workers can keep pushing during delivery —
+	 * those entries land on a fresh head and get drained next pass. */
+	pthread_mutex_lock(&state.result_mutex);
+	struct wren_result *r = state.result_head;
+	state.result_head = state.result_tail = NULL;
+	pthread_mutex_unlock(&state.result_mutex);
+
+	while (r != NULL) {
+		struct wren_result *next = r->next;
+
+		if (!fiber_is_done(r->fiber)) {
+			wrenEnsureSlots(state.vm, 3);
+			wrenSetSlotHandle(state.vm, 0, r->fiber);
+			r->deliver(state.vm, 1, r->data);
+			wrenCall(state.vm, state.call1_handle);
+		}
+
+		wrenReleaseHandle(state.vm, r->fiber);
+		if (r->free_fn != NULL)
+			r->free_fn(r->data);
+		free(r);
+
+		r = next;
+	}
 }
 
 /* --------------------------------------------------------------------
@@ -766,6 +856,10 @@ wren_host_init(struct bbslist *bbs)
 
 	state.call0_handle = wrenMakeCallHandle(state.vm, "call()");
 	state.call1_handle = wrenMakeCallHandle(state.vm, "call(_)");
+	state.fiber_isdone_handle = wrenMakeCallHandle(state.vm, "isDone");
+
+	pthread_mutex_init(&state.result_mutex, NULL);
+	state.result_head = state.result_tail = NULL;
 
 	owner_thread = pthread_self();
 	active = true;
@@ -929,6 +1023,31 @@ wren_host_shutdown(void)
 		state.parked_fiber = NULL;
 	}
 
+	/* Drain any results still in the queue without delivering.  Workers
+	 * may still be pushing, but `active` is going false right after
+	 * this and subsequent pushes will release-and-free on their own.
+	 * Loop until the queue stays empty under the lock. */
+	for (;;) {
+		pthread_mutex_lock(&state.result_mutex);
+		struct wren_result *r = state.result_head;
+		state.result_head = state.result_tail = NULL;
+		pthread_mutex_unlock(&state.result_mutex);
+		if (r == NULL)
+			break;
+		while (r != NULL) {
+			struct wren_result *next = r->next;
+			wrenReleaseHandle(state.vm, r->fiber);
+			if (r->free_fn != NULL)
+				r->free_fn(r->data);
+			free(r);
+			r = next;
+		}
+	}
+	state.cterm_suspended = NULL;
+
+	if (state.fiber_isdone_handle != NULL)
+		wrenReleaseHandle(state.vm, state.fiber_isdone_handle);
+
 	/* Release log-buffer cached handles before freeing the VM (they
 	 * reference Wren-heap values). */
 	wren_log_clear();
@@ -936,6 +1055,7 @@ wren_host_shutdown(void)
 	wrenFreeVM(state.vm);
 	state.vm = NULL;
 	active = false;
+	pthread_mutex_destroy(&state.result_mutex);
 }
 
 /* --------------------------------------------------------------------
