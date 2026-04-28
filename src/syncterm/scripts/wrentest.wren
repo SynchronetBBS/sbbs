@@ -27,7 +27,7 @@ import "syncterm" for Hook, Conn, Console, Screen, CTerm, BBS, Key,
     Codepage, ConnType, Emulation, Font, LogSource, LogLevel,
     Parity, BBSListType, ScreenMode, AddressFamily, MusicMode,
     RipVersion, LogMode, StatusDisplay, Color, Cell, Hyperlinks,
-    REPL, Input, KeyEvent
+    REPL, Input, KeyEvent, Cache
 import "console" for WrenConsole
 
 class WrenTest {
@@ -146,6 +146,9 @@ class WrenTest {
     testConsoleRegisterOverwrite_()
     testConsoleRegisterRejectsSpace_()
     testConsoleUnregister_()
+
+    // ------ File.readLine / File.writeLine -------------------------
+    testFileLineRoundtrip_()
 
     // ------ inject a sentinel key for async onKey filter test ------
     // Filter key must have low byte 0x00 (or 0xe0) — ciolib's
@@ -547,6 +550,50 @@ class WrenTest {
     WrenConsole.unregister("__wt_c")
     check_(!WrenConsole.commands.contains("__wt_c"),
            "WrenConsole.unregister is idempotent")
+  }
+
+  // ===== File.readLine / File.writeLine ===========================
+  // Writes a few lines (including blank + no-terminator-on-EOF cases),
+  // closes + reopens for a clean offset, then reads them back.  Uses
+  // Cache as a real on-disk directory; cleans up the test file after
+  // (and once more on entry, in case a previous run aborted mid-test).
+  static testFileLineRoundtrip_() {
+    var name = "__wt_lines"
+    if (Cache.contains(name)) Cache.delete(name)
+    var f = Cache.create(name)
+    if (f == null) {
+      check_(false, "File.create returned null in line round-trip setup")
+      return
+    }
+    f.open()
+    f.writeLine("alpha")
+    f.writeLine("")
+    f.writeLine("gamma")
+    // Tail without a trailing LF — readLine should still surface it.
+    f.writeBytes("delta")
+    f.close()
+
+    f.open()
+    f.offset = 0
+    var l1 = f.readLine()
+    var l2 = f.readLine()
+    var l3 = f.readLine()
+    var l4 = f.readLine()
+    var l5 = f.readLine()
+    f.close()
+
+    check_(l1 == "alpha",
+           "File.readLine: first line after writeLine")
+    check_(l2 == "",
+           "File.readLine: blank line is empty String, not null")
+    check_(l3 == "gamma",
+           "File.readLine: third line after writeLine")
+    check_(l4 == "delta",
+           "File.readLine: trailing line without LF is still surfaced")
+    check_(l5 == null,
+           "File.readLine: returns null at EOF")
+
+    Cache.delete(name)
   }
 
   // ===== sentinel-driven async tests ==============================

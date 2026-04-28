@@ -641,6 +641,8 @@ foreign class File {
   foreign writeBytes(s)
   foreign writeBytes(s, offset)
   foreign write(s)
+  foreign readLine()
+  foreign writeLine(s)
   foreign offset
   foreign offset=(o)
   foreign size

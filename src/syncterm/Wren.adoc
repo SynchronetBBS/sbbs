@@ -2119,6 +2119,19 @@ methods on the resulting `File` are no-ops if construction failed.
 | `File.write(s)`
 | Replace file contents with `s`.
 
+| `File.readLine()`
+| Read from the current offset to the first LF (0x0A) or EOF and
+  return the bytes read with any trailing LF removed.  Advances the
+  offset past the LF on a hit, or to EOF if none was found.  Returns
+  `null` when the offset is already at EOF; a blank line returns the
+  empty string.
+
+| `File.writeLine(s)`
+| Write `s` at the current offset, then append an LF (0x0A).  The
+  offset advances past the LF.  No special handling if `s` already
+  ends in LF — the trailing LF is appended unconditionally; use
+  `writeBytes` for raw control over line termination.
+
 | `File.offset`, `offset=(o)`
 | Current read/write position.
 

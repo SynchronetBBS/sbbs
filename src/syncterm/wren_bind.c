@@ -1938,6 +1938,105 @@ fn_File_writeBytes_2(WrenVM *vm)
 	do_write_at(vm, wf, off, bytes, len);
 }
 
+/* readLine() — read from the current offset to either the first LF
+ * (0x0A) or EOF, return the bytes read with any trailing LF removed.
+ * The file offset advances past the LF on a hit, or to EOF if no LF
+ * was found in the remainder.  Returns null when the offset is
+ * already at EOF (so a `while (line != null) ...` loop terminates
+ * cleanly).  A blank line (just LF) returns an empty string. */
+static void
+fn_File_readLine(WrenVM *vm)
+{
+	struct wren_file *wf = file_check_open(vm);
+	if (wf == NULL)
+		return;
+	long off = ftell(wf->fp);
+	long sz  = file_size_now(wf);
+	if (off >= sz) {
+		wrenSetSlotNull(vm, 0);
+		return;
+	}
+	fseek(wf->fp, off, SEEK_SET);
+
+	/* Chunked read so a 100 GB file with short lines doesn't allocate
+	 * the whole remainder up front.  Grows geometrically when a line
+	 * happens to be longer than the chunk. */
+	char   chunk[512];
+	char  *line     = NULL;
+	size_t line_len = 0;
+	size_t line_cap = 0;
+	bool   eol      = false;
+	long   advance  = 0;
+	while (off + advance < sz && !eol) {
+		long want = sz - off - advance;
+		if (want > (long)sizeof(chunk))
+			want = sizeof(chunk);
+		size_t got = fread(chunk, 1, (size_t)want, wf->fp);
+		if (got == 0)
+			break;
+		size_t take = got;
+		char  *lf   = memchr(chunk, '\n', got);
+		if (lf != NULL) {
+			take = (size_t)(lf - chunk);
+			eol  = true;
+		}
+		if (line_len + take > line_cap) {
+			size_t new_cap = line_cap == 0 ? 256 : line_cap * 2;
+			while (new_cap < line_len + take)
+				new_cap *= 2;
+			char *nb = realloc(line, new_cap);
+			if (nb == NULL) {
+				free(line);
+				wren_throw(vm, "File: out of memory");
+				return;
+			}
+			line     = nb;
+			line_cap = new_cap;
+		}
+		memcpy(line + line_len, chunk, take);
+		line_len += take;
+		advance  += eol ? (long)(take + 1) : (long)got;
+	}
+	fseek(wf->fp, off + advance, SEEK_SET);
+	wrenSetSlotBytes(vm, 0, line != NULL ? line : "", line_len);
+	free(line);
+}
+
+/* writeLine(s) — write the bytes of `s` at the current offset, then
+ * append an LF.  The offset advances past the LF.  No trailing-LF
+ * check on `s` itself — if the script wants raw control over
+ * line termination, it should use writeBytes() instead. */
+static void
+fn_File_writeLine(WrenVM *vm)
+{
+	struct wren_file *wf = file_check_open(vm);
+	if (wf == NULL)
+		return;
+	int len = 0;
+	const char *bytes = wrenGetSlotBytes(vm, 1, &len);
+	if (len < 0)
+		len = 0;
+	long off = ftell(wf->fp);
+	long sz  = file_size_now(wf);
+	if (off > sz) {
+		wren_throw(vm, "File: offset past end");
+		return;
+	}
+	fseek(wf->fp, off, SEEK_SET);
+	if (len > 0) {
+		if (fwrite(bytes, 1, (size_t)len, wf->fp) != (size_t)len) {
+			wren_throw(vm, "File: write failed");
+			return;
+		}
+	}
+	if (fwrite("\n", 1, 1, wf->fp) != 1) {
+		wren_throw(vm, "File: write failed");
+		return;
+	}
+	fflush(wf->fp);
+	fseek(wf->fp, off + len + 1, SEEK_SET);
+}
+
 /* write(s) — truncate then rewrite from offset 0; offset ends at len. */
 static void
 fn_File_write(WrenVM *vm)
@@ -4011,6 +4110,8 @@ static const struct binding BINDINGS[] = {
 	{ "File",      false, "writeBytes(_)",   fn_File_writeBytes_1   },
 	{ "File",      false, "writeBytes(_,_)", fn_File_writeBytes_2   },
 	{ "File",      false, "write(_)",        fn_File_write          },
+	{ "File",      false, "readLine()",      fn_File_readLine       },
+	{ "File",      false, "writeLine(_)",    fn_File_writeLine      },
 	{ "File",      false, "offset",          fn_File_offset_get     },
 	{ "File",      false, "offset=(_)",      fn_File_offset_set     },
 	{ "File",      false, "size",            fn_File_size           },
