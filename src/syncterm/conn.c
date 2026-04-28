@@ -361,9 +361,6 @@ conn_send(const void *vbuffer, size_t buflen, unsigned int timeout)
 	size_t      obuflen;
 	void       *expanded;
 
-	if (wren_host_dispatch_output(buffer, buflen))
-		return buflen;
-
 	if (conn_api.tx_parse_cb != NULL) {
 		expanded = conn_api.tx_parse_cb(buffer, buflen, &obuflen);
 	}

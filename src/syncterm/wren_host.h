@@ -33,7 +33,6 @@ bool wren_host_input_held(void);
  * subsequent hooks are not called for that event. */
 bool wren_host_dispatch_key(int key);
 bool wren_host_dispatch_input(unsigned char byte);
-bool wren_host_dispatch_output(const void *buf, size_t len);
 bool wren_host_dispatch_mouse(struct mouse_event *ev);
 
 /* Status composition: copies a replacement status line into out (size

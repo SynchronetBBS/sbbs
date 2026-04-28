@@ -575,12 +575,6 @@ fn_Screen_restore(WrenVM *vm)
 
 /* ----- Conn -------------------------------------------------------- */
 
-/* Wren-originated sends must not let conn_send fire onOutput hooks:
- * dispatching wrenCall while a foreign method is on the stack
- * corrupts the outer fiber's stackTop (wrenCall resets it to the new
- * closure's frame base — wren_vm.c:1464).  Bracketing conn_send with
- * the dispatch guard makes wren_host_dispatch_output bail out for
- * exactly these calls; C-side conn_send paths still see hooks. */
 static void
 fn_Conn_send(WrenVM *vm)
 {
@@ -588,12 +582,7 @@ fn_Conn_send(WrenVM *vm)
 	const char *s = wrenGetSlotBytes(vm, 1, &len);
 	if (len <= 0)
 		return;
-	struct wren_host_state *st = wren_host_state();
-	if (st != NULL)
-		st->output_dispatching++;
 	conn_send(s, (size_t)len, 0);
-	if (st != NULL)
-		st->output_dispatching--;
 }
 
 static void
@@ -603,12 +592,7 @@ fn_Conn_sendRaw(WrenVM *vm)
 	const char *s = wrenGetSlotBytes(vm, 1, &len);
 	if (len <= 0)
 		return;
-	struct wren_host_state *st = wren_host_state();
-	if (st != NULL)
-		st->output_dispatching++;
 	conn_send_raw(s, (size_t)len, 0);
-	if (st != NULL)
-		st->output_dispatching--;
 }
 
 static void
@@ -2068,12 +2052,6 @@ fn_Hook_onInput(WrenVM *vm)
 {
 	push_hook_handle(vm,
 	    wren_host_register_hook(vm, WREN_HOOK_INPUT, 1));
-}
-static void
-fn_Hook_onOutput(WrenVM *vm)
-{
-	push_hook_handle(vm,
-	    wren_host_register_hook(vm, WREN_HOOK_OUTPUT, 1));
 }
 static void
 fn_Hook_onMouse(WrenVM *vm)
@@ -3986,7 +3964,6 @@ static const struct binding BINDINGS[] = {
 	{ "Hook",  true, "onInput(_)",     fn_Hook_onInput          },
 	{ "Hook",  true, "onInput(_,_)",   fn_Hook_onInput_filtered },
 	{ "Hook",  true, "onMatch(_,_)",   fn_Hook_onMatch          },
-	{ "Hook",  true, "onOutput(_)",    fn_Hook_onOutput         },
 	{ "Hook",  true, "onMouse(_)",     fn_Hook_onMouse          },
 	{ "Hook",  true, "onMouse(_,_)",   fn_Hook_onMouse_filtered },
 	{ "Hook",  true, "onStatus(_)",    fn_Hook_onStatus         },

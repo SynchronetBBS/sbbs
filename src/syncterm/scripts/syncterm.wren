@@ -650,7 +650,6 @@ class Hook {
   foreign static onInput(fn)
   foreign static onInput(byte, fn)
   foreign static onMatch(pattern, fn)
-  foreign static onOutput(fn)
   foreign static onMouse(fn)
   foreign static onMouse(event, fn)
   foreign static onStatus(fn)

@@ -1120,36 +1120,6 @@ wren_host_dispatch_input(unsigned char byte)
 }
 
 bool
-wren_host_dispatch_output(const void *buf, size_t len)
-{
-	if (!active || !on_owner_thread() || buf == NULL)
-		return false;
-	if (state.output_dispatching > 0)
-		return false;
-	state.output_dispatching++;
-	int  n        = state.hook_count[WREN_HOOK_OUTPUT];
-	bool consumed = false;
-	for (int i = 0; i < n; i++) {
-		struct wren_hook_entry *h = state.hooks[WREN_HOOK_OUTPUT][i];
-		if (h == NULL || h->fn == NULL)
-			continue;
-		wrenEnsureSlots(state.vm, 3);
-		wrenSetSlotHandle(state.vm, 0, state.hook_class);
-		wrenSetSlotHandle(state.vm, 1, h->fn);
-		wrenSetSlotBytes(state.vm, 2, (const char *)buf, len);
-		if (metrics_invoke(&h->metrics, state.dispatch1_handle) !=
-		    WREN_RESULT_SUCCESS)
-			continue;
-		if (read_consume_result()) {
-			consumed = true;
-			break;
-		}
-	}
-	state.output_dispatching--;
-	return consumed;
-}
-
-bool
 wren_host_dispatch_mouse(struct mouse_event *ev)
 {
 	if (!active || !on_owner_thread() || ev == NULL)

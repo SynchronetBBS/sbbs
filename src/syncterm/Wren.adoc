@@ -321,10 +321,6 @@ same fiber-resumption path that drives `Input.nextEvent()`.
   "Streaming regex hooks" below.
 | Bool — true to drop the matched bytes
 
-| `Hook.onOutput { \|s\| ... }`
-| `s`: bytes about to be sent to the remote
-| Bool — true to drop them
-
 | `Hook.onMouse { \|ev\| ... }`
 | `ev`: 7-element list `[event, bstate, modifiers, sx, sy, ex, ey]`
 | Bool — true to consume
@@ -345,16 +341,6 @@ same fiber-resumption path that drives `Input.nextEvent()`.
 Filtered variants share the same per-event registration array as the
 unfiltered forms, so dispatch order = registration order regardless
 of which form was used.
-
-`Hook.onOutput` runs from `conn_send`, the path that handles telnet
-IAC escaping and other framing.  Output that originates from the
-host (terminal responses, modem keepalives, etc.) fires the hook
-normally.  Output that a script generates via `Conn.send` /
-`Conn.sendRaw` does **not** fire `onOutput` — the host suppresses
-the dispatch for the duration of the foreign call, because invoking
-`wrenCall` from inside a Wren foreign method corrupts the running
-fiber.  A script that wants to observe its own output needs to log
-or buffer at the call site.
 
 `Hook.every` fires from the main-loop deadline check just before the
 sleep call.  If the loop stalls long enough that more than one
@@ -1479,11 +1465,10 @@ Connection-level send and receive.
 | Member | Description
 
 | `Conn.send(s)`
-| Send bytes through the full path: telnet IAC escaping, `Hook.onOutput`
-  dispatch, then on-wire.
+| Send bytes through the full path: telnet IAC escaping, then on-wire.
 
 | `Conn.sendRaw(s)`
-| Send bytes raw, bypassing IAC escaping and `onOutput` hooks.
+| Send bytes raw, bypassing IAC escaping.
 
 | `Conn.close()`
 | Close the connection.
@@ -2087,7 +2072,7 @@ The dispatcher registry.  See <<hook-events,Hook Events>> for the
 contract on each method, and <<hookhandle,HookHandle>> for the
 return type.
 
-`Hook.onKey(fn)`, `Hook.onInput(fn)`, `Hook.onOutput(fn)`,
+`Hook.onKey(fn)`, `Hook.onInput(fn)`,
 `Hook.onMouse(fn)`, `Hook.onStatus(fn)`, `Hook.every(ms, fn)`,
 plus the filtered variants `Hook.onKey(key, fn)`, `Hook.onInput(byte,
 fn)`, `Hook.onMouse(event, fn)`, and `Hook.onMatch(pattern, fn)`.

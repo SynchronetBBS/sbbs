@@ -21,7 +21,6 @@ struct wren_directory;
 enum wren_hook_event {
 	WREN_HOOK_KEY,
 	WREN_HOOK_INPUT,
-	WREN_HOOK_OUTPUT,
 	WREN_HOOK_MOUSE,
 	WREN_HOOK_STATUS,
 	WREN_HOOK_COUNT,            /* count of dispatch-array events */
@@ -118,17 +117,6 @@ struct wren_host_state {
 	 * for the next key/mouse event.  Set by Input._park, cleared and
 	 * resumed by wren_host_dispatch_key/mouse before any hooks fire. */
 	WrenHandle  *parked_fiber;
-
-	/* Non-zero when wren_host_dispatch_output is on the call stack.
-	 * conn_send fires dispatch_output, but conn_send is itself reachable
-	 * from fn_Conn_send (a Wren foreign method) — calling wrenCall with
-	 * a non-empty fiber corrupts its frame stack and has produced
-	 * unbounded recursion in practice.  When this flag is set, nested
-	 * dispatch_output returns false (no consume) so the bytes go through
-	 * without firing onOutput hooks.  Wren-originated sends are already
-	 * known to the script, so missing the hook callback is a feature,
-	 * not a loss. */
-	int          output_dispatching;
 
 	/* Doubly-linked lists of every live wren_file / wren_directory
 	 * foreign.  Each foreign self-registers in its allocator (or in the

@@ -6,7 +6,7 @@
 // through the connection: constants, foreign-class roundtrips,
 // REPL, etc.  The async phase issues `printf` commands with
 // unique sentinels and matches them via Hook.onMatch.  Counters
-// for the time-based hooks (every, onOutput, filtered onKey via
+// for the time-based hooks (every, filtered onKey via
 // Input.unget) are ticked by hooks registered at module load and
 // inspected in the final report.
 //
@@ -540,10 +540,7 @@ class WrenTest {
     // Input.unget'd 0xFE00 key has had plenty of main-loop
     // iterations to be picked up.  HookHandle.callCount > 0 is the
     // direct test — much cleaner than the old static-counter
-    // baselines.  Hook.onOutput isn't checked here: the host
-    // suppresses output dispatch for Wren-originated Conn.send
-    // (otherwise wrenCall re-enters its own fiber and corrupts the
-    // stack), so it wouldn't fire from any of this suite's sends.
+    // baselines.
     check_(__everyHook.callCount > 0,
            "Hook.every fires from main-loop timer")
     check_(__keyHook.callCount > 0,
