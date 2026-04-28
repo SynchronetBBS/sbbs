@@ -275,21 +275,14 @@ void free_sftp_str(sftp_str_t str);
 
 /* sftp_outcome.c — diagnostic outcome carriers.
  *
- * Every public sftp client/server op takes an outcome pointer and reports
- * back through it.  The op's bool return is the actionable signal:
- *   true  — the op completed.  Client side: act on `result` (an SSH_FX_*
- *           code from the server's reply).  Server side: the reply is on
- *           the wire.  `err` and `estr` carry diagnostic info that the
- *           caller may write to a log but mustn't switch on.
- *   false — the op didn't complete.  `result` (client only) is undefined.
- *           `err` is a machine-readable lib failure code that the caller
- *           may switch on (e.g. for retry decisions).  `estr` is
- *           human-readable text ready to display.
+ * Server side: the consumer stack-allocates struct sftps_outcome via
+ * SFTPS_OUTCOME_DECL and passes a pointer; sftps_outcome_record_()
+ * appends file:line-prefixed records into the fixed-size estr.
  *
- * The outcome is allocated by the caller — typically on the stack via
- * SFTPC_OUTCOME_DECL / SFTPS_OUTCOME_DECL — sized to whatever text
- * budget the caller wants.  Pass NULL to ignore everything; pass an
- * outcome with sz == 0 to get the codes but no text. */
+ * Client side: each op returns a struct sftpc_<op>_pending that
+ * carries err/result/estr fields directly; estr is library-allocated
+ * and grown via realloc as records accumulate, freed by
+ * sftpc_pending_free.  See struct sftpc_pending below. */
 typedef enum {
 	SFTP_ERR_OK = 0,
 	SFTP_ERR_NULL_STATE,
@@ -310,26 +303,14 @@ typedef enum {
 	SFTP_ERR_PARSE_FAILED,
 } sftp_err_code_t;
 
-struct sftpc_outcome {
-	size_t   sz;     /* size of estr[]; 0 = caller doesn't want text */
-	uint32_t err;    /* sftp_err_code_t; valid when op returned false */
-	uint32_t result; /* SSH_FX_* from server; valid when op returned true */
-	char     estr[]; /* file:line-prefixed diagnostic, accumulated */
-};
-
+/* Server-side outcome carrier — flex-array sized via SFTPS_OUTCOME_DECL.
+ * The client side dropped this in favour of pending-owned outcome
+ * fields (err / result / estr); see struct sftpc_pending below. */
 struct sftps_outcome {
 	size_t   sz;     /* size of estr[]; 0 = caller doesn't want text */
 	uint32_t err;    /* sftp_err_code_t; valid when op returned false */
 	char     estr[]; /* file:line-prefixed diagnostic, accumulated */
 };
-
-#define SFTPC_OUTCOME_DECL(name, textsz)                                  \
-	union {                                                               \
-		struct sftpc_outcome o;                                           \
-		char _##name##_pad[sizeof(struct sftpc_outcome) + (textsz)];      \
-	} _##name##_u = {{0}};                                                \
-	struct sftpc_outcome *name = &_##name##_u.o;                          \
-	name->sz = (textsz)
 
 #define SFTPS_OUTCOME_DECL(name, textsz)                                  \
 	union {                                                               \
@@ -339,26 +320,14 @@ struct sftps_outcome {
 	struct sftps_outcome *name = &_##name##_u.o;                          \
 	name->sz = (textsz)
 
-#define sftpc_outcome_record(out, err_code, ...)                          \
-	sftpc_outcome_record_(out, err_code, __FILE__, __LINE__, __VA_ARGS__)
 #define sftps_outcome_record(out, err_code, ...)                          \
 	sftps_outcome_record_(out, err_code, __FILE__, __LINE__, __VA_ARGS__)
 
-void sftpc_outcome_record_(struct sftpc_outcome *out, sftp_err_code_t err,
-                           const char *file, int line, const char *fmt, ...);
 void sftps_outcome_record_(struct sftps_outcome *out, sftp_err_code_t err,
                            const char *file, int line, const char *fmt, ...);
 
-/* Format a server-supplied SSH_FXP_STATUS message into estr as
- *   Reply: "<msg>"          (lang_len == 0)
- *   Reply: "<msg>" (<lang>) (lang_len > 0)
- * Doesn't update out->err — the caller decides the kind separately. */
-void sftpc_outcome_reply(struct sftpc_outcome *out,
-                         const char *msg, uint32_t msg_len,
-                         const char *lang, uint32_t lang_len);
-
 /* True for failures that may succeed on retry (transport, abort).
- * Used by the SFTP queue to choose between QUEUED and FAILED. */
+ * Used by callers that distinguish "permanent" from "try-again-later". */
 bool sftp_err_is_transient(sftp_err_code_t err);
 
 /* sftp_client.c */
@@ -368,27 +337,171 @@ struct sftpc_dir_entry {
 	sftp_file_attr_t attrs;
 };
 
-void sftpc_finish(sftpc_state_t state);
+/*
+ * Async-first client API.  Each sftpc_<op>() builds + sends the
+ * request packet, registers a pending entry with the (cb, cbdata)
+ * the caller provides, and returns immediately.  The library's recv
+ * thread runs the back half: when a reply arrives, it parses it into
+ * the typed pending's fields and invokes pending->base.cb(&pending->base).
+ * The callback owns consuming the typed fields (memcpy-out, signal
+ * an event, push onto a result queue, …) and then calling
+ * sftpc_pending_free().
+ *
+ * Common base — every typed pending starts with this.  Internal
+ * fields (req_id, list links, parse, free_self, reply, delivered,
+ * aborted) are populated by the library; callers read `outcome`
+ * after the callback fires and ignore the rest.
+ */
+struct sftpc_pending {
+	/* Library-managed bookkeeping; callers don't read or write these. */
+	uint32_t                  req_id;
+	struct sftpc_pending     *prev;
+	struct sftpc_pending     *next;
+	void                    (*parse)(struct sftpc_pending *);
+	void                    (*free_self)(struct sftpc_pending *);
+	sftp_rx_pkt_t             reply;
+	bool                      delivered;
+	bool                      aborted;
+	size_t                    estr_len;   /* current estr length, no NUL */
+	size_t                    estr_cap;   /* allocated capacity */
+
+	/* Set by the caller before sftpc_<op>() returns; fired when the
+	 * back half completes (or synchronously if the front half
+	 * encounters an error before sending). */
+	void                    (*cb)(struct sftpc_pending *);
+	void                     *cbdata;
+
+	/* Outcome — populated by the back half (or by an early-error
+	 * code path); valid once the callback fires.
+	 *   err == SFTP_ERR_OK and result is an SSH_FX_* code
+	 *     — the RPC happened.  result == SSH_FX_OK means the typed
+	 *     pending's other fields are populated; any other SSH_FX_*
+	 *     means the server returned a STATUS reply with that code.
+	 *   err != SFTP_ERR_OK
+	 *     — the RPC didn't complete; estr (if non-NULL) carries
+	 *     human-readable diagnostic text.
+	 * estr is library-allocated and grown via realloc as records
+	 * accumulate; freed by sftpc_pending_free.  May be NULL if no
+	 * diagnostic was ever recorded. */
+	sftp_err_code_t           err;
+	uint32_t                  result;
+	char                     *estr;
+};
+
+/* Op-specific extensions: each is allocated with sizeof(this struct)
+ * and stored at &p->base for the library's pending list.  The cb
+ * recovers the typed pointer with `(struct sftpc_<op>_pending *)base`
+ * since `base` is the first field. */
+struct sftpc_realpath_pending {
+	struct sftpc_pending base;
+	sftp_str_t           ret;       /* server-resolved path */
+};
+
+struct sftpc_open_pending {
+	struct sftpc_pending base;
+	sftp_str_t           handle;    /* server file/dir handle */
+};
+
+struct sftpc_read_pending {
+	struct sftpc_pending base;
+	sftp_str_t           data;
+};
+
+struct sftpc_stat_pending {
+	struct sftpc_pending base;
+	sftp_file_attr_t     attrs;
+};
+
+struct sftpc_readdir_pending {
+	struct sftpc_pending      base;
+	struct sftpc_dir_entry   *entries;
+	uint32_t                  count;
+	bool                      eof;
+};
+
+struct sftpc_descs_pending {
+	struct sftpc_pending base;
+	sftp_str_t           desc;
+};
+
+/* Lifecycle. */
 sftpc_state_t sftpc_begin(bool (*send_cb)(uint8_t *buf, size_t len, void *cb_data), void *cb_data);
-bool sftpc_init(sftpc_state_t state);
+void sftpc_finish(sftpc_state_t state);
+void sftpc_end(sftpc_state_t state);
+
+/* Drains incoming SFTP-channel bytes into pending replies.  Called
+ * from the SSH recv thread; safe alongside any in-flight ops. */
 bool sftpc_recv(sftpc_state_t state, uint8_t *buf, uint32_t sz);
-bool sftpc_realpath(sftpc_state_t state, const char *path, sftp_str_t *ret, struct sftpc_outcome *out);
-bool sftpc_open(sftpc_state_t state, const char *path, uint32_t flags, sftp_str_t *handle, struct sftpc_outcome *out);
-bool sftpc_opendir(sftpc_state_t state, const char *path, sftp_str_t *handle, struct sftpc_outcome *out);
-bool sftpc_close(sftpc_state_t state, sftp_str_t *handle, struct sftpc_outcome *out);
-bool sftpc_read(sftpc_state_t state, sftp_str_t handle, uint64_t offset, uint32_t len, sftp_str_t *ret, struct sftpc_outcome *out);
-bool sftpc_write(sftpc_state_t state, sftp_str_t handle, uint64_t offset, sftp_str_t data, struct sftpc_outcome *out);
-bool sftpc_readdir(sftpc_state_t state, sftp_str_t handle, struct sftpc_dir_entry **entries_out, uint32_t *count_out, bool *eof_out, struct sftpc_outcome *out);
+
+/* Free a pending allocated by any sftpc_<op>().  Releases any typed
+ * fields the back half populated (sftp_str_t, attrs, dir entries)
+ * and the pending struct itself.  Idempotent on NULL. */
+void sftpc_pending_free(struct sftpc_pending *p);
+
+/* Async ops.  Each returns the typed pending pointer (or NULL only
+ * on alloc failure — extremely rare).  The `cb` fires exactly once
+ * unless the call returned NULL, and may fire synchronously before
+ * the front half returns if the request couldn't be sent (state
+ * terminating, packet build / transport failure, etc.).  `outcome`
+ * carries the result either way. */
+struct sftpc_pending          *sftpc_init(sftpc_state_t state,
+                                          void (*cb)(struct sftpc_pending *),
+                                          void *cbdata);
+struct sftpc_realpath_pending *sftpc_realpath(sftpc_state_t state,
+                                              const char *path,
+                                              void (*cb)(struct sftpc_pending *),
+                                              void *cbdata);
+struct sftpc_open_pending     *sftpc_open(sftpc_state_t state,
+                                          const char *path, uint32_t flags,
+                                          void (*cb)(struct sftpc_pending *),
+                                          void *cbdata);
+struct sftpc_open_pending     *sftpc_opendir(sftpc_state_t state,
+                                              const char *path,
+                                              void (*cb)(struct sftpc_pending *),
+                                              void *cbdata);
+struct sftpc_pending          *sftpc_close(sftpc_state_t state,
+                                            sftp_str_t handle,
+                                            void (*cb)(struct sftpc_pending *),
+                                            void *cbdata);
+struct sftpc_read_pending     *sftpc_read(sftpc_state_t state,
+                                          sftp_str_t handle,
+                                          uint64_t offset, uint32_t len,
+                                          void (*cb)(struct sftpc_pending *),
+                                          void *cbdata);
+struct sftpc_pending          *sftpc_write(sftpc_state_t state,
+                                            sftp_str_t handle,
+                                            uint64_t offset, sftp_str_t data,
+                                            void (*cb)(struct sftpc_pending *),
+                                            void *cbdata);
+struct sftpc_stat_pending     *sftpc_stat(sftpc_state_t state,
+                                          const char *path,
+                                          void (*cb)(struct sftpc_pending *),
+                                          void *cbdata);
+struct sftpc_pending          *sftpc_setstat(sftpc_state_t state,
+                                              const char *path,
+                                              sftp_file_attr_t attr,
+                                              void (*cb)(struct sftpc_pending *),
+                                              void *cbdata);
+struct sftpc_readdir_pending  *sftpc_readdir(sftpc_state_t state,
+                                              sftp_str_t handle,
+                                              void (*cb)(struct sftpc_pending *),
+                                              void *cbdata);
+struct sftpc_descs_pending    *sftpc_descs(sftpc_state_t state,
+                                            const char *path,
+                                            void (*cb)(struct sftpc_pending *),
+                                            void *cbdata);
+
+/* Free the entries array attached to a struct sftpc_readdir_pending.
+ * Callers that transfer ownership out (setting pending->entries=NULL
+ * and pending->count=0) free it themselves later; otherwise
+ * sftpc_pending_free handles the still-attached array. */
 void sftpc_free_dir_entries(struct sftpc_dir_entry *entries, uint32_t count);
-bool sftpc_stat(sftpc_state_t state, const char *path, sftp_file_attr_t *attr_out, struct sftpc_outcome *out);
-bool sftpc_setstat(sftpc_state_t state, const char *path, sftp_file_attr_t attr, struct sftpc_outcome *out);
-bool sftpc_descs(sftpc_state_t state, const char *path, sftp_str_t *desc, struct sftpc_outcome *out);
+
 uint32_t sftpc_get_extensions(sftpc_state_t state);
 /* Public-directory path the server advertised via the pubdir@syncterm.net
  * extension during VERSION, or NULL if the extension wasn't negotiated.
  * The library owns the string; valid for the lifetime of `state`. */
 const char *sftpc_get_pubdir(sftpc_state_t state);
-void sftpc_end(sftpc_state_t state);
 
 /* sftp_attr.c */
 sftp_file_attr_t sftp_fattr_alloc(void);

@@ -32,6 +32,7 @@
 #include "sftp_browser.h"
 #include "sftp_queue.h"
 #include "sftp_session.h"
+#include "sftp_wait.h"
 #include "uifcinit.h"
 
 /* cp437_savescrn is defined in term.c but not in any public header. */
@@ -307,13 +308,6 @@ free_entries(struct entry *entries, uint32_t count)
 static char load_dir_err[256];
 
 static void
-set_load_err(const char *op, struct sftpc_outcome *out)
-{
-	snprintf(load_dir_err, sizeof(load_dir_err),
-	    "%s failed: %s", op, out->estr);
-}
-
-static void
 set_load_err_result(const char *op, uint32_t code)
 {
 	snprintf(load_dir_err, sizeof(load_dir_err),
@@ -327,16 +321,21 @@ load_dir(const char *path, const char *dldir, uint32_t *out_count)
 	*out_count = 0;
 	load_dir_err[0] = '\0';
 
-	SFTPC_OUTCOME_DECL(out, 256);
-	sftp_dirhandle_t handle = NULL;
-	if (!sftpc_opendir(sftp_state, path, &handle, out)) {
-		set_load_err("opendir", out);
+	struct sftpc_open_pending *open_p = sftp_sync_opendir(sftp_state, path);
+	if (open_p == NULL || open_p->base.err != SFTP_ERR_OK) {
+		snprintf(load_dir_err, sizeof(load_dir_err),
+		    "opendir failed: %s", open_p ? (open_p->base.estr ? open_p->base.estr : "") : "alloc failed");
+		sftpc_pending_free((struct sftpc_pending *)open_p);
 		return NULL;
 	}
-	if (out->result != SSH_FX_OK) {
-		set_load_err_result("opendir", out->result);
+	if (open_p->base.result != SSH_FX_OK) {
+		set_load_err_result("opendir", open_p->base.result);
+		sftpc_pending_free(&open_p->base);
 		return NULL;
 	}
+	sftp_dirhandle_t handle = open_p->handle;
+	open_p->handle = NULL;
+	sftpc_pending_free(&open_p->base);
 
 	struct entry *entries = NULL;
 	uint32_t nentries = 0;
@@ -346,7 +345,8 @@ load_dir(const char *path, const char *dldir, uint32_t *out_count)
 	if (strcmp(path, "/") != 0) {
 		entries = (struct entry *)calloc(1, sizeof(*entries));
 		if (entries == NULL) {
-			sftpc_close(sftp_state, &handle, out);
+			sftpc_pending_free(sftp_sync_close(sftp_state, handle));
+			free_sftp_str(handle);
 			return NULL;
 		}
 		entries[0].name = strdup("..");
@@ -355,7 +355,8 @@ load_dir(const char *path, const char *dldir, uint32_t *out_count)
 		entries[0].line = strdup("<DIR>             ..");
 		if (entries[0].name == NULL || entries[0].line == NULL) {
 			free_entries(entries, 1);
-			sftpc_close(sftp_state, &handle, out);
+			sftpc_pending_free(sftp_sync_close(sftp_state, handle));
+			free_sftp_str(handle);
 			return NULL;
 		}
 		nentries = 1;
@@ -364,20 +365,31 @@ load_dir(const char *path, const char *dldir, uint32_t *out_count)
 
 	bool eof = false;
 	while (!eof) {
-		struct sftpc_dir_entry *chunk = NULL;
-		uint32_t chunk_n = 0;
-		if (!sftpc_readdir(sftp_state, handle, &chunk, &chunk_n, &eof, out)) {
-			set_load_err("readdir", out);
+		struct sftpc_readdir_pending *rd_p = sftp_sync_readdir(sftp_state, handle);
+		if (rd_p == NULL || rd_p->base.err != SFTP_ERR_OK) {
+			snprintf(load_dir_err, sizeof(load_dir_err),
+			    "readdir failed: %s",
+			    rd_p ? (rd_p->base.estr ? rd_p->base.estr : "") : "alloc failed");
+			sftpc_pending_free((struct sftpc_pending *)rd_p);
 			free_entries(entries, nentries);
-			sftpc_close(sftp_state, &handle, out);
+			sftpc_pending_free(sftp_sync_close(sftp_state, handle));
+			free_sftp_str(handle);
 			return NULL;
 		}
-		if (!eof && out->result != SSH_FX_OK && chunk_n == 0) {
-			set_load_err_result("readdir", out->result);
+		eof = rd_p->eof;
+		if (!eof && rd_p->base.result != SSH_FX_OK && rd_p->count == 0) {
+			set_load_err_result("readdir", rd_p->base.result);
+			sftpc_pending_free(&rd_p->base);
 			free_entries(entries, nentries);
-			sftpc_close(sftp_state, &handle, out);
+			sftpc_pending_free(sftp_sync_close(sftp_state, handle));
+			free_sftp_str(handle);
 			return NULL;
 		}
+		struct sftpc_dir_entry *chunk = rd_p->entries;
+		uint32_t chunk_n = rd_p->count;
+		rd_p->entries = NULL;  /* transfer ownership */
+		rd_p->count = 0;
+		sftpc_pending_free(&rd_p->base);
 		if (chunk_n == 0) {
 			sftpc_free_dir_entries(chunk, chunk_n);
 			continue;
@@ -390,7 +402,7 @@ load_dir(const char *path, const char *dldir, uint32_t *out_count)
 			if (ne == NULL) {
 				sftpc_free_dir_entries(chunk, chunk_n);
 				free_entries(entries, nentries);
-				sftpc_close(sftp_state, &handle, out);
+				sftpc_pending_free(sftp_sync_close(sftp_state, handle)); free_sftp_str(handle); handle = NULL;
 				return NULL;
 			}
 			entries = ne;
@@ -489,7 +501,7 @@ load_dir(const char *path, const char *dldir, uint32_t *out_count)
 				free(lname);
 				sftpc_free_dir_entries(chunk, chunk_n);
 				free_entries(entries, nentries);
-				sftpc_close(sftp_state, &handle, out);
+				sftpc_pending_free(sftp_sync_close(sftp_state, handle)); free_sftp_str(handle); handle = NULL;
 				return NULL;
 			}
 			snprintf(line, linesz, "%s %s %s %.*s",
@@ -516,7 +528,7 @@ load_dir(const char *path, const char *dldir, uint32_t *out_count)
 				free(lname);
 				sftpc_free_dir_entries(chunk, chunk_n);
 				free_entries(entries, nentries);
-				sftpc_close(sftp_state, &handle, out);
+				sftpc_pending_free(sftp_sync_close(sftp_state, handle)); free_sftp_str(handle); handle = NULL;
 				return NULL;
 			}
 			nentries++;
@@ -524,7 +536,7 @@ load_dir(const char *path, const char *dldir, uint32_t *out_count)
 		sftpc_free_dir_entries(chunk, chunk_n);
 	}
 
-	sftpc_close(sftp_state, &handle, out);
+	sftpc_pending_free(sftp_sync_close(sftp_state, handle)); free_sftp_str(handle); handle = NULL;
 	qsort(entries, nentries, sizeof(*entries), cmp_entry);
 	*out_count = nentries;
 	return entries;
@@ -593,17 +605,18 @@ sftp_browser_run(struct bbslist *bbs)
 	if (pd != NULL && pd[0] != '\0')
 		cwd = strdup(pd);
 	if (cwd == NULL) {
-		sftp_str_t rp = NULL;
-		SFTPC_OUTCOME_DECL(rp_out, 0);
-		if (sftpc_realpath(sftp_state, ".", &rp, rp_out) && rp_out->result == SSH_FX_OK
-		    && rp != NULL && rp->len > 0) {
-			cwd = (char *)malloc(rp->len + 1);
+		struct sftpc_realpath_pending *rp_p =
+		    sftp_sync_realpath(sftp_state, ".");
+		if (rp_p != NULL && rp_p->base.err == SFTP_ERR_OK
+		    && rp_p->base.result == SSH_FX_OK
+		    && rp_p->ret != NULL && rp_p->ret->len > 0) {
+			cwd = (char *)malloc(rp_p->ret->len + 1);
 			if (cwd != NULL) {
-				memcpy(cwd, rp->c_str, rp->len);
-				cwd[rp->len] = '\0';
+				memcpy(cwd, rp_p->ret->c_str, rp_p->ret->len);
+				cwd[rp_p->ret->len] = '\0';
 			}
 		}
-		free_sftp_str(rp);
+		sftpc_pending_free((struct sftpc_pending *)rp_p);
 	}
 	if (cwd == NULL)
 		cwd = strdup("/");
@@ -765,15 +778,15 @@ sftp_browser_run(struct bbslist *bbs)
 							    "`descs@syncterm.net` extension.");
 						}
 						else {
-							sftp_str_t desc = NULL;
-							SFTPC_OUTCOME_DECL(desc_out, 0);
-							if (sftpc_descs(sftp_state, e->rpath, &desc, desc_out)
-							    && desc_out->result == SSH_FX_OK
-							    && desc != NULL && desc->len > 0) {
-								char *body = (char *)malloc(desc->len + 1);
+							struct sftpc_descs_pending *dp =
+							    sftp_sync_descs(sftp_state, e->rpath);
+							if (dp != NULL && dp->base.err == SFTP_ERR_OK
+							    && dp->base.result == SSH_FX_OK
+							    && dp->desc != NULL && dp->desc->len > 0) {
+								char *body = (char *)malloc(dp->desc->len + 1);
 								if (body != NULL) {
-									memcpy(body, desc->c_str, desc->len);
-									body[desc->len] = '\0';
+									memcpy(body, dp->desc->c_str, dp->desc->len);
+									body[dp->desc->len] = '\0';
 									uifc.showbuf(WIN_SAV | WIN_MID, 0, 0,
 									    76, uifc.scrn_len - 2,
 									    e->name, body, NULL, NULL);
@@ -785,7 +798,7 @@ sftp_browser_run(struct bbslist *bbs)
 								snprintf(m, sizeof(m), "No description: %s", e->name);
 								uifcmsg(m, NULL);
 							}
-							free_sftp_str(desc);
+							sftpc_pending_free((struct sftpc_pending *)dp);
 						}
 						force_redraw = true;
 					}

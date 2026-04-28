@@ -43,6 +43,7 @@
 #include "sftp.h"
 #include "sftp_queue.h"
 #include "sftp_session.h"
+#include "sftp_wait.h"
 #include "term.h"
 
 #define CHUNK_SZ 4096
@@ -259,22 +260,29 @@ run_upload(struct sftp_job *job)
 		snprintf(job->err, sizeof(job->err), "SFTP not available");
 		return SFTP_JOB_FAILED;
 	}
-	sftp_filehandle_t h = NULL;
-	SFTPC_OUTCOME_DECL(out, 256);
-	if (!sftpc_open(sftp_state, job->remote_path,
-	                SSH_FXF_WRITE | SSH_FXF_CREAT | SSH_FXF_TRUNC,
-	                &h, out)) {
-		snprintf(job->err, sizeof(job->err), "open remote: %s", out->estr);
+	struct sftpc_open_pending *open_p = sftp_sync_open(sftp_state,
+	    job->remote_path,
+	    SSH_FXF_WRITE | SSH_FXF_CREAT | SSH_FXF_TRUNC);
+	if (open_p == NULL || open_p->base.err != SFTP_ERR_OK) {
+		snprintf(job->err, sizeof(job->err), "open remote: %s",
+		    open_p ? (open_p->base.estr ? open_p->base.estr : "") : "alloc failed");
+		int rv = (open_p && sftp_err_is_transient(open_p->base.err))
+		    ? SFTP_JOB_QUEUED : SFTP_JOB_FAILED;
+		sftpc_pending_free((struct sftpc_pending *)open_p);
 		fclose(f);
-		return sftp_err_is_transient(out->err) ? SFTP_JOB_QUEUED : SFTP_JOB_FAILED;
+		return rv;
 	}
-	if (out->result != SSH_FX_OK) {
+	if (open_p->base.result != SSH_FX_OK) {
 		snprintf(job->err, sizeof(job->err),
 		    "open remote: %s (%u)",
-		    sftp_get_errcode_name(out->result), out->result);
+		    sftp_get_errcode_name(open_p->base.result), open_p->base.result);
+		sftpc_pending_free(&open_p->base);
 		fclose(f);
 		return SFTP_JOB_FAILED;
 	}
+	sftp_filehandle_t h = open_p->handle;
+	open_p->handle = NULL;
+	sftpc_pending_free(&open_p->base);
 	uint8_t buf[CHUNK_SZ];
 	uint64_t off = 0;
 	int ret = SFTP_JOB_DONE;
@@ -309,23 +317,30 @@ run_upload(struct sftp_job *job)
 		}
 		struct sftp_string s;
 		sftp_memstatic(&s, buf, (uint32_t)n);
-		if (!sftpc_write(sftp_state, h, off, &s, out)) {
-			snprintf(job->err, sizeof(job->err), "write: %s", out->estr);
-			ret = sftp_err_is_transient(out->err) ? SFTP_JOB_QUEUED : SFTP_JOB_FAILED;
+		struct sftpc_pending *wp = sftp_sync_write(sftp_state, h, off, &s);
+		if (wp == NULL || wp->err != SFTP_ERR_OK) {
+			snprintf(job->err, sizeof(job->err), "write: %s",
+			    wp ? (wp->estr ? wp->estr : "") : "alloc failed");
+			ret = (wp && sftp_err_is_transient(wp->err))
+			    ? SFTP_JOB_QUEUED : SFTP_JOB_FAILED;
+			sftpc_pending_free(wp);
 			break;
 		}
-		if (out->result != SSH_FX_OK) {
+		if (wp->result != SSH_FX_OK) {
 			snprintf(job->err, sizeof(job->err),
 			    "write: %s (%u)",
-			    sftp_get_errcode_name(out->result), out->result);
+			    sftp_get_errcode_name(wp->result), wp->result);
+			sftpc_pending_free(wp);
 			ret = SFTP_JOB_FAILED;
 			break;
 		}
+		sftpc_pending_free(wp);
 		off += n;
 		job->done = off;
 	}
 	(void)finished;
-	sftpc_close(sftp_state, &h, out);
+	sftpc_pending_free(sftp_sync_close(sftp_state, h));
+	free_sftp_str(h);
 	fclose(f);
 
 	/* Preserve mtime so a subsequent browse shows [==]. */
@@ -337,7 +352,8 @@ run_upload(struct sftp_job *job)
 				sftp_fattr_set_times(a,
 				    (uint32_t)st.st_atime,
 				    (uint32_t)st.st_mtime);
-				sftpc_setstat(sftp_state, job->remote_path, a, out);
+				sftpc_pending_free(sftp_sync_setstat(sftp_state,
+				    job->remote_path, a));
 				sftp_fattr_free(a);
 			}
 		}
@@ -360,23 +376,30 @@ run_download(struct sftp_job *job)
 		snprintf(job->err, sizeof(job->err), "SFTP not available");
 		return SFTP_JOB_FAILED;
 	}
-	sftp_filehandle_t h = NULL;
-	SFTPC_OUTCOME_DECL(out, 256);
-	if (!sftpc_open(sftp_state, job->remote_path,
-	                SSH_FXF_READ, &h, out)) {
-		snprintf(job->err, sizeof(job->err), "open remote: %s", out->estr);
+	struct sftpc_open_pending *open_p = sftp_sync_open(sftp_state,
+	    job->remote_path, SSH_FXF_READ);
+	if (open_p == NULL || open_p->base.err != SFTP_ERR_OK) {
+		snprintf(job->err, sizeof(job->err), "open remote: %s",
+		    open_p ? (open_p->base.estr ? open_p->base.estr : "") : "alloc failed");
+		int rv = (open_p && sftp_err_is_transient(open_p->base.err))
+		    ? SFTP_JOB_QUEUED : SFTP_JOB_FAILED;
+		sftpc_pending_free((struct sftpc_pending *)open_p);
 		fclose(f);
 		unlink(job->local_path);
-		return sftp_err_is_transient(out->err) ? SFTP_JOB_QUEUED : SFTP_JOB_FAILED;
+		return rv;
 	}
-	if (out->result != SSH_FX_OK) {
+	if (open_p->base.result != SSH_FX_OK) {
 		snprintf(job->err, sizeof(job->err),
 		    "open remote: %s (%u)",
-		    sftp_get_errcode_name(out->result), out->result);
+		    sftp_get_errcode_name(open_p->base.result), open_p->base.result);
+		sftpc_pending_free(&open_p->base);
 		fclose(f);
 		unlink(job->local_path);
 		return SFTP_JOB_FAILED;
 	}
+	sftp_filehandle_t h = open_p->handle;
+	open_p->handle = NULL;
+	sftpc_pending_free(&open_p->base);
 	uint64_t off = 0;
 	int ret = SFTP_JOB_DONE;
 	while (true) {
@@ -393,41 +416,46 @@ run_download(struct sftp_job *job)
 			ret = SFTP_JOB_FAILED;
 			break;
 		}
-		sftp_str_t data = NULL;
-		if (!sftpc_read(sftp_state, h, off, CHUNK_SZ, &data, out)) {
-			snprintf(job->err, sizeof(job->err), "read: %s", out->estr);
-			free_sftp_str(data);
-			ret = sftp_err_is_transient(out->err) ? SFTP_JOB_QUEUED : SFTP_JOB_FAILED;
+		struct sftpc_read_pending *rp = sftp_sync_read(sftp_state,
+		    h, off, CHUNK_SZ);
+		if (rp == NULL || rp->base.err != SFTP_ERR_OK) {
+			snprintf(job->err, sizeof(job->err), "read: %s",
+			    rp ? (rp->base.estr ? rp->base.estr : "") : "alloc failed");
+			ret = (rp && sftp_err_is_transient(rp->base.err))
+			    ? SFTP_JOB_QUEUED : SFTP_JOB_FAILED;
+			sftpc_pending_free((struct sftpc_pending *)rp);
 			break;
 		}
-		if (out->result == SSH_FX_EOF) {
-			free_sftp_str(data);
+		if (rp->base.result == SSH_FX_EOF) {
+			sftpc_pending_free(&rp->base);
 			break;
 		}
-		if (out->result != SSH_FX_OK) {
+		if (rp->base.result != SSH_FX_OK) {
 			snprintf(job->err, sizeof(job->err),
 			    "read: %s (%u)",
-			    sftp_get_errcode_name(out->result), out->result);
-			free_sftp_str(data);
+			    sftp_get_errcode_name(rp->base.result), rp->base.result);
+			sftpc_pending_free(&rp->base);
 			ret = SFTP_JOB_FAILED;
 			break;
 		}
+		sftp_str_t data = rp->data;
 		if (data == NULL || data->len == 0) {
-			free_sftp_str(data);
+			sftpc_pending_free(&rp->base);
 			break;
 		}
 		if (fwrite(data->c_str, 1, data->len, f) != data->len) {
 			snprintf(job->err, sizeof(job->err),
 			    "write local: %s", strerror(errno));
-			free_sftp_str(data);
+			sftpc_pending_free(&rp->base);
 			ret = SFTP_JOB_FAILED;
 			break;
 		}
 		off += data->len;
 		job->done = off;
-		free_sftp_str(data);
+		sftpc_pending_free(&rp->base);
 	}
-	sftpc_close(sftp_state, &h, out);
+	sftpc_pending_free(sftp_sync_close(sftp_state, h));
+	free_sftp_str(h);
 	fclose(f);
 	if (ret != SFTP_JOB_DONE) {
 		/* Incomplete download: remove partial local file unless we
@@ -441,18 +469,22 @@ run_download(struct sftp_job *job)
 	}
 
 	/* Preserve mtime so a subsequent browse shows [==]. */
-	sftp_file_attr_t a = NULL;
-	if (sftp_available && sftpc_stat(sftp_state, job->remote_path, &a, out) && a != NULL) {
-		uint32_t mt = 0, at = 0;
-		sftp_fattr_get_mtime(a, &mt);
-		sftp_fattr_get_atime(a, &at);
-		sftp_fattr_free(a);
-		if (mt != 0) {
-			struct utimbuf t;
-			t.actime = at != 0 ? (time_t)at : (time_t)mt;
-			t.modtime = (time_t)mt;
-			utime(job->local_path, &t);
+	if (sftp_available) {
+		struct sftpc_stat_pending *sp =
+		    sftp_sync_stat(sftp_state, job->remote_path);
+		if (sp != NULL && sp->base.err == SFTP_ERR_OK
+		    && sp->base.result == SSH_FX_OK && sp->attrs != NULL) {
+			uint32_t mt = 0, at = 0;
+			sftp_fattr_get_mtime(sp->attrs, &mt);
+			sftp_fattr_get_atime(sp->attrs, &at);
+			if (mt != 0) {
+				struct utimbuf t;
+				t.actime = at != 0 ? (time_t)at : (time_t)mt;
+				t.modtime = (time_t)mt;
+				utime(job->local_path, &t);
+			}
 		}
+		sftpc_pending_free((struct sftpc_pending *)sp);
 	}
 	return ret;
 }

@@ -22,6 +22,8 @@
 #include "genwrap.h"
 #include "sftp.h"
 #include "sftp_queue.h"
+#include "sftp_session.h"
+#include "sftp_wait.h"
 #include "ssh.h"
 #include "sockwrap.h"
 #include "syncterm.h"
@@ -769,7 +771,11 @@ sftp_session_start(struct bbslist *bbs)
 	sftp_recv_shutdown = false;
 	_beginthread(sftp_recv_thread, 0, NULL);
 
-	if (!sftpc_init(sftp_state)) {
+	struct sftpc_pending *init_p = sftp_sync_init(sftp_state);
+	bool init_ok = init_p != NULL && init_p->err == SFTP_ERR_OK
+	    && init_p->result == SSH_FX_OK;
+	sftpc_pending_free(init_p);
+	if (!init_ok) {
 		sftp_recv_shutdown = true;
 		for (int i = 0; i < 50 && sftp_recv_running; i++)
 			SLEEP(10);
@@ -796,20 +802,22 @@ add_public_key(void *vpriv)
 		return;
 	}
 
-	sftp_filehandle_t f = NULL;
-	SFTPC_OUTCOME_DECL(out, 0);
-	if (sftpc_open(sftp_state, ".ssh/authorized_keys",
-	               SSH_FXF_READ | SSH_FXF_WRITE | SSH_FXF_APPEND | SSH_FXF_CREAT,
-	               &f, out) && out->result == SSH_FX_OK) {
+	struct sftpc_open_pending *open_p = sftp_sync_open(sftp_state,
+	    ".ssh/authorized_keys",
+	    SSH_FXF_READ | SSH_FXF_WRITE | SSH_FXF_APPEND | SSH_FXF_CREAT);
+	if (open_p != NULL && open_p->base.err == SFTP_ERR_OK
+	    && open_p->base.result == SSH_FX_OK) {
+		sftp_filehandle_t f = open_p->handle;
 		if (key_not_present(f, priv)) {
 			sftp_str_t ln = sftp_asprintf("ssh-ed25519 %s Added by SyncTERM\n", priv);
 			if (ln != NULL) {
-				sftpc_write(sftp_state, f, 0, ln, out);
+				sftpc_pending_free(sftp_sync_write(sftp_state, f, 0, ln));
 				free_sftp_str(ln);
 			}
 		}
-		sftpc_close(sftp_state, &f, out);
+		sftpc_pending_free(sftp_sync_close(sftp_state, f));
 	}
+	sftpc_pending_free((struct sftpc_pending *)open_p);
 
 	free(priv);
 	pubkey_thread_running = false;
@@ -831,7 +839,6 @@ key_not_present(sftp_filehandle_t f, const char *priv)
 	char *buf = NULL;
 	char *newbuf;
 	char *eolptr;
-	sftp_str_t r = NULL;
 	bool skipread = false;
 
 	while (!conn_api.terminate) {
@@ -849,25 +856,29 @@ key_not_present(sftp_filehandle_t f, const char *priv)
 				buf = newbuf;
 				bufsz += 4096;
 			}
-			SFTPC_OUTCOME_DECL(out, 0);
-			if (!sftpc_read(sftp_state, f, off, (bufsz - bufpos > 1024) ? 1024 : bufsz - bufpos, &r, out)) {
+			struct sftpc_read_pending *rp = sftp_sync_read(
+			    sftp_state, f, off,
+			    (bufsz - bufpos > 1024) ? 1024 : bufsz - bufpos);
+			if (rp == NULL || rp->base.err != SFTP_ERR_OK) {
+				sftpc_pending_free((struct sftpc_pending *)rp);
 				free(buf);
 				return false;
 			}
-			if (out->result == SSH_FX_EOF) {
+			if (rp->base.result == SSH_FX_EOF) {
+				sftpc_pending_free(&rp->base);
 				free(buf);
 				return true;
 			}
-			if (out->result != SSH_FX_OK) {
+			if (rp->base.result != SSH_FX_OK) {
+				sftpc_pending_free(&rp->base);
 				free(buf);
 				return false;
 			}
-			memcpy(&buf[bufpos], r->c_str, r->len);
+			memcpy(&buf[bufpos], rp->data->c_str, rp->data->len);
 			old_bufpos = bufpos;
-			bufpos += r->len;
-			off += r->len;
-			free_sftp_str(r);
-			r = NULL;
+			bufpos += rp->data->len;
+			off += rp->data->len;
+			sftpc_pending_free(&rp->base);
 		}
 		for (eol = old_bufpos; eol < bufpos; eol++) {
 			if (buf[eol] == '\r' || buf[eol] == '\n')
