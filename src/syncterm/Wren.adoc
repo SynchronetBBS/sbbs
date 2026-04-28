@@ -342,6 +342,15 @@ Filtered variants share the same per-event registration array as the
 unfiltered forms, so dispatch order = registration order regardless
 of which form was used.
 
+`Hook.onInput` (and `Hook.onMatch`) fires on every byte off the wire,
+*before* RIPscrip parsing, ZMODEM/OOII detection, or the cterm
+emulator.  Scripts see the raw stream and can drop bytes that would
+otherwise be consumed by those layers.  Bytes are dispatched in bulk
+right after `conn_recv_upto`, so there is no speed-emulation gating —
+parse_rip already eats RIP escapes in bulk regardless of the
+emulated bps rate, so gating only the Wren hook would be
+inconsistent.
+
 `Hook.every` fires from the main-loop deadline check just before the
 sleep call.  If the loop stalls long enough that more than one
 interval has elapsed, the deadline jumps forward to "now" rather

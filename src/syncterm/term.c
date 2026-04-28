@@ -1126,6 +1126,27 @@ BYTE     recv_byte_buffer[BUFFER_SIZE];
 unsigned recv_byte_buffer_len = 0;
 unsigned recv_byte_buffer_pos = 0;
 
+/* Fire Hook.onInput on each byte just off the wire and compact dropped
+ * bytes out of the buffer in place.  Sits between conn_recv_upto and
+ * parse_rip so scripts see the raw stream — including RIP escapes that
+ * parse_rip would otherwise eat — and pay the per-byte dispatch cost
+ * while the buffer is still hot in cache.  No speed-emulation gating
+ * (parse_rip already bypasses speed emulation in bulk; gating only the
+ * Wren hook would be inconsistent). */
+static unsigned
+wren_filter_input(BYTE *buf, unsigned len)
+{
+	unsigned out = 0;
+	for (unsigned i = 0; i < len; i++) {
+		if (wren_host_dispatch_input(buf[i]))
+			continue;
+		if (out != i)
+			buf[out] = buf[i];
+		out++;
+	}
+	return out;
+}
+
 static void
 recv_bytes(unsigned timeout /* Milliseconds */)
 {
@@ -1133,6 +1154,9 @@ recv_bytes(unsigned timeout /* Milliseconds */)
 		recv_byte_buffer_len = parse_rip(recv_byte_buffer, 0, sizeof(recv_byte_buffer));
 		if (recv_byte_buffer_len == 0) {
 			recv_byte_buffer_len = conn_recv_upto(recv_byte_buffer, sizeof(recv_byte_buffer) - 3, timeout);
+			if (recv_byte_buffer_len && wren_host_active())
+				recv_byte_buffer_len =
+				    wren_filter_input(recv_byte_buffer, recv_byte_buffer_len);
 			if (recv_byte_buffer_len)
 				recv_byte_buffer_len =
 				    parse_rip(recv_byte_buffer, recv_byte_buffer_len, sizeof(recv_byte_buffer));
@@ -6142,8 +6166,6 @@ doterm(struct bbslist *bbs)
 								break;
 						}
 #endif /* ifndef WITHOUT_OOII */
-						if (wren_host_dispatch_input((unsigned char)inch))
-							continue;
 						if (outbuf_size >= sizeof(outbuf))
 							WRITE_OUTBUF();
 						outbuf[outbuf_size++] = inch;
