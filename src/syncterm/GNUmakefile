@@ -167,11 +167,20 @@ ifndef WITHOUT_DEUCESSH
  EXTRA_LIBS += $(SFTP-MT_LIBS) $(DEUCESSH_LIB)
  DEPS       += $(DEUCESSH_LIB)
 
- # Build step — configure ran at parse time already, so this is just
- # cmake --build against the already-populated build tree.
+ # Build step — configure normally ran at parse time, but the probe at
+ # line 127 skips configure when no system crypto is on disk (intent was
+ # for the build-order's `botan` recipe to provide vendored Botan first,
+ # then leave the recipe to handle it).  Bootstrap configure here if the
+ # parse-time probe didn't, so the unprobed path actually works.
  .PHONY: deucessh
  deucessh $(DEUCESSH_LIB):
 	@echo "Building DeuceSSH ($(DEUCESSH_BACKEND) backend)"
+	@if [ ! -f $(DEUCESSH_PC) ]; then \
+	    echo "Configuring DeuceSSH..."; \
+	    cmake -S $(DEUCESSH_DIR) -B $(DEUCESSH_BUILD) \
+	        -DCMAKE_BUILD_TYPE=Release $(DEUCESSH_CMAKE_BACKEND_ARG) \
+	        $(DEUCESSH_CMAKE_TOOLCHAIN_ARGS) || exit 1; \
+	fi
 	cmake --build $(DEUCESSH_BUILD) --target deucessh_static
 else
  CFLAGS += -DWITHOUT_DEUCESSH
