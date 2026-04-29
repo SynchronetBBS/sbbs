@@ -41,6 +41,7 @@ function Unregistered_Client(id,socket) {
 	this.hostname = this.ip;
 	this.pending_resolve = false;
 	this.dns_pending = Epoch();
+	this.webirc_done = false;
 	// Variables (consts, really) that point to various state information
 	this.socket = socket;
 	this.socket.irc = this;
@@ -191,6 +192,58 @@ function Unregistered_Commands(cmdline) {
 			if (!p[0] || this.password)
 				break;
 			this.password = p[0];
+			break;
+		case "WEBIRC":
+			/* WEBIRC <password> <gatewayname> <hostname> <ip>
+			   Trusted web-gateway tells us the real client IP/hostname.
+			   Must arrive before registration completes. */
+			if (this.webirc_done) {
+				log(LOG_WARNING, format(
+					"[UNREG] %04u WEBIRC ignored: already accepted",
+					this.socket.descriptor
+				));
+				break;
+			}
+			if (!p[3]) {
+				this.numeric461("WEBIRC");
+				break;
+			}
+			var w, allowed = false;
+			for (w in WLines) {
+				if (WLines[w].hostname == this.ip
+				    && WLines[w].password == p[0]) {
+					allowed = true;
+					break;
+				}
+			}
+			if (!allowed) {
+				log(LOG_WARNING, format(
+					"[UNREG] %04u WEBIRC from %s rejected: untrusted gateway or bad password",
+					this.socket.descriptor,
+					this.ip
+				));
+				break;
+			}
+			log(LOG_NOTICE, format(
+				"[UNREG] %04u WEBIRC accepted: %s -> %s (host=%s gw=%s)",
+				this.socket.descriptor,
+				this.ip,
+				p[3],
+				p[2],
+				p[1]
+			));
+			this.ip = p[3];
+			/* Render IPv4 in IPv6 addresses as IPv4 */
+			if (this.ip.toUpperCase().slice(0,7) == "::FFFF:") {
+				this.ip = this.ip.slice(7);
+			}
+			this.hostname = p[2];
+			/* Cancel any in-flight RDNS; any pending callback will see
+			   dns_pending=false and discard its reply. */
+			this.dns_pending = false;
+			this.webirc_done = true;
+			/* In case NICK/USER already arrived */
+			this.Unregistered_Check_User_Registration();
 			break;
 		case "PONG":
 			this.pinged = false;

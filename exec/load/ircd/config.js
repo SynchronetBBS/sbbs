@@ -271,6 +271,7 @@ function Clear_Config_Globals() {
 	ULines = [];
 	YLines = [];
 	ZLines = [];
+	WLines = [];
 	RBL = [];
 	Die_Password = "";
 	Restart_Password = "";
@@ -527,6 +528,16 @@ function Write_Config_File(fn) {
 		f.writeln("");
 	}
 
+	/* [WebIRC] */
+	c = 0;
+	for (i in WLines) {
+		c++;
+		f.writeln(format("[WebIRC:%lu]", c));
+		f.writeln(format("Hostname=%s", WLines[i].hostname));
+		f.writeln(format("Password=%s", WLines[i].password));
+		f.writeln("");
+	}
+
 	f.close();
 
 	return true;
@@ -572,6 +583,7 @@ function ini_sections() {
 	this.Ban = ini_Ban;
 	this.Restrict = ini_Restrict;
 	this.RBL = ini_RBL;
+	this.WebIRC = ini_WebIRC;
 	this.Server = ini_Server;
 	this.Hub = ini_Hub;
 }
@@ -866,6 +878,17 @@ function ini_RBL(arg, ini) {
 	RBL.push(new RBL_Config_Object(ini.Hostname, ini.GoodResponses, ini.BadResponses));
 }
 
+function ini_WebIRC(arg, ini) {
+	if (!ini.Hostname || !ini.Password) {
+		log(LOG_WARNING,format(
+			"!WARNING [WebIRC:%s] requires both Hostname and Password. Section ignored.",
+			arg
+		));
+		return;
+	}
+	WLines.push(new WLine(ini.Hostname, ini.Password));
+}
+
 function load_config_defaults() {
 	/*** M:Line ***/
 	ServerName = format("%s.synchro.net", system.qwk_id.toLowerCase());
@@ -1096,6 +1119,11 @@ function read_conf_config(conf) {
 						break;
 					ULines.push(arg[1]);
 					break;
+				case "W":
+					if (!arg[2])
+						break;
+					WLines.push(new WLine(arg[1],arg[2]));
+					break;
 				case "X":
 					Die_Password = arg[1];
 					Restart_Password = arg[2];
@@ -1179,6 +1207,11 @@ function YLine(pingfreq,connfreq,maxlinks,sendq) {
 function ZLine(ipmask,reason) {
 	this.ipmask = ipmask;
 	this.reason = reason;
+}
+
+function WLine(hostname,password) {
+	this.hostname = hostname;
+	this.password = password;
 }
 
 function RBL_Config_Object(hostname, good, bad) {
