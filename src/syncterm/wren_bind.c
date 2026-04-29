@@ -524,6 +524,8 @@ static const struct binding BINDINGS[] = {
 	{ "Screen", true,  "restore(_)",            fn_Screen_restore         },
 	{ "Screen", true,  "readRect(_,_,_,_)",     fn_Screen_readRect        },
 	{ "Screen", true,  "writeRect(_,_,_,_,_)",  fn_Screen_writeRect       },
+	{ "Screen", true,  "putRect(_,_,_)",        fn_Screen_putRect_3       },
+	{ "Screen", true,  "putRect_(_,_,_,_,_,_,_)", fn_Screen_putRect_7     },
 	{ "Screen", true,  "moveRect(_,_,_,_,_,_)", fn_Screen_moveRect        },
 	{ "Screen", true,  "attr=(_)",              fn_Screen_attr_set        },
 	{ "Screen", true,  "hyperlinkId",           fn_Screen_hyperlinkId     },
@@ -636,6 +638,10 @@ static const struct binding BINDINGS[] = {
 	{ "Input",  true,  "ungetMouse_(_)",      fn_Input_ungetMouse_        },
 	{ "Input",  true,  "mousedrag()",         fn_Input_mousedrag          },
 	{ "Input",  true,  "mouseVisible=(_)",    fn_Input_mouseVisible_set   },
+	{ "Input",  true,  "mouseEvents",         fn_Input_mouseEvents        },
+	{ "Input",  true,  "mouseEvents=(_)",     fn_Input_mouseEvents_set    },
+	{ "Input",  true,  "enableMouseEvent(_)", fn_Input_enableMouseEvent   },
+	{ "Input",  true,  "disableMouseEvent(_)",fn_Input_disableMouseEvent  },
 
 	/* KeyEvent (instance) */
 	{ "KeyEvent",   false, "code",       fn_KeyEvent_code      },
@@ -691,12 +697,23 @@ static const struct binding BINDINGS[] = {
 	{ "Cell",  false, "hyperlinkId=(_)", fn_Cell_hyperlinkId_set },
 	{ "Cell",  false, "toString",        fn_Cell_toString        },
 
-	/* Cells (all instance) */
-	{ "Cells", false, "count",            fn_Cells_count         },
-	{ "Cells", false, "[_]",              fn_Cells_subscript     },
-	{ "Cells", false, "iterate(_)",       fn_Cells_iterate       },
-	{ "Cells", false, "iteratorValue(_)", fn_Cells_iteratorValue },
-	{ "Cells", false, "toString",         fn_Cells_toString      },
+	/* Surface (all instance) — w×h grid of vmem_cells.  Inherits
+	 * Sequence on the Wren side; the count / [_] / iterate /
+	 * iteratorValue methods walk the linear cell buffer.  cellAt /
+	 * putRect / fill add 2D operations.  The Wren-side Surface class
+	 * declares `putRect(_,_,_,_)` and `fill(_,_)` wrappers that unpack
+	 * a Rect before calling the underscore-suffixed primitives. */
+	{ "Surface", false, "count",                       fn_Surface_count         },
+	{ "Surface", false, "[_]",                         fn_Surface_subscript     },
+	{ "Surface", false, "iterate(_)",                  fn_Surface_iterate       },
+	{ "Surface", false, "iteratorValue(_)",            fn_Surface_iteratorValue },
+	{ "Surface", false, "width",                       fn_Surface_width         },
+	{ "Surface", false, "height",                      fn_Surface_height        },
+	{ "Surface", false, "cellAt(_,_)",                 fn_Surface_cellAt        },
+	{ "Surface", false, "putRect(_,_,_)",              fn_Surface_putRect_3     },
+	{ "Surface", false, "putRect_(_,_,_,_,_,_,_)",     fn_Surface_putRect_7     },
+	{ "Surface", false, "fill_(_,_,_,_,_)",            fn_Surface_fill_         },
+	{ "Surface", false, "toString",                    fn_Surface_toString      },
 
 	/* Font (all static) */
 	{ "Font",  true,  "name(_)",       fn_Font_name       },
@@ -951,9 +968,9 @@ wren_bind_lookup_class(const char *module, const char *className)
 		};
 		return m;
 	}
-	if (strcmp(className, "Cells") == 0) {
+	if (strcmp(className, "Surface") == 0) {
 		WrenForeignClassMethods m = {
-			wren_cells_allocate, wren_cells_finalize
+			wren_surface_allocate, wren_surface_finalize
 		};
 		return m;
 	}

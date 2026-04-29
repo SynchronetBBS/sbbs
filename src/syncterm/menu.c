@@ -239,6 +239,11 @@ syncmenu(struct bbslist *bbs, int *speed)
 #endif
 	opts[opt++] = strdup("Exit ("ALT_KEY_NAMEP "-X)");
 	opts[opt++] = strdup("Edit Dialing Directory ("ALT_KEY_NAMEP "-E)");
+	/* Ctrl+` opens the Wren console directly on backends that pass
+	 * the keypress through, but ANSI/Curses can't capture it — so
+	 * the menu entry is the universal access path.  No key hint
+	 * because the binding doesn't work everywhere. */
+	opts[opt++] = strdup("Wren Console");
 	opts[opt++] = "";
 	opt = 0;
 
@@ -284,7 +289,8 @@ syncmenu(struct bbslist *bbs, int *speed)
 #endif
 		    "`Exit`           Disconnects and closes Syncterm\n"
 		    "`Edit Dialing Directory`\n"
-		    "               Opens the directory/setting menu\n";
+		    "               Opens the directory/setting menu\n"
+		    "`Wren Console`   Opens the embedded Wren scripting console\n";
 		i = uifc.list(WIN_MID | WIN_SAV, 0, 0, 0, &opt, NULL, "SyncTERM Online Menu", opts);
 		switch (i) {
 			case -1: /* Cancel */

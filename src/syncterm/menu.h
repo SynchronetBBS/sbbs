@@ -23,6 +23,7 @@ enum syncmenu_result {
 #endif
 	SM_EXIT,
 	SM_DIRECTORY,
+	SM_WREN_CONSOLE,
 };
 
 int syncmenu(struct bbslist *, int *speed);

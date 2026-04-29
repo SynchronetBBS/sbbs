@@ -441,15 +441,19 @@ host_error_fn(WrenVM *vm, WrenErrorType type, const char *module, int line,
 			snprintf(buf, sizeof(buf), "%s:%d: %s",
 			    module ? module : "?", line, message ? message : "");
 			log_append(WREN_LOG_COMPILE_ERROR, buf);
+			fprintf(stderr, "[wren] compile %s\n", buf);
 			break;
 		case WREN_ERROR_RUNTIME:
 			log_append(WREN_LOG_RUNTIME_ERROR,
+			    message ? message : "");
+			fprintf(stderr, "[wren] runtime %s\n",
 			    message ? message : "");
 			break;
 		case WREN_ERROR_STACK_TRACE:
 			snprintf(buf, sizeof(buf), "%s:%d in %s",
 			    module ? module : "?", line, message ? message : "");
 			log_append(WREN_LOG_STACK_FRAME, buf);
+			fprintf(stderr, "[wren]   at %s\n", buf);
 			break;
 	}
 }
@@ -1010,8 +1014,8 @@ wren_host_shutdown(void)
 		wrenReleaseHandle(state.vm, state.hook_class);
 	if (state.cell_class != NULL)
 		wrenReleaseHandle(state.vm, state.cell_class);
-	if (state.cells_class != NULL)
-		wrenReleaseHandle(state.vm, state.cells_class);
+	if (state.surface_class != NULL)
+		wrenReleaseHandle(state.vm, state.surface_class);
 	if (state.key_event_class != NULL)
 		wrenReleaseHandle(state.vm, state.key_event_class);
 	if (state.mouse_event_class != NULL)

@@ -6444,6 +6444,15 @@ doterm(struct bbslist *bbs)
 							freescreen(savscrn);
 						}
 						break;
+						case SM_WREN_CONSOLE:
+							/* Synthesize the Ctrl+` keypress so the
+							 * embedded Hook.onKey(Key.wrenConsole)
+							 * runs the same console flow as the
+							 * direct binding.  Backends that can't
+							 * capture Ctrl+` reach it only through
+							 * this menu path. */
+							wren_host_dispatch_key(0x29E0);
+							break;
 					}
 					setup_mouse_events(&ms);
 					showmouse();

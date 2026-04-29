@@ -405,11 +405,17 @@ $(MTOBJODIR)$(DIRSEP)wren_host$(OFILE): CFLAGS += -Ire1
 #                                    fires.  For now there's just one,
 #                                    `connected`, fired per BBS session.
 #
-# scripts/auto/connected/runtests.wren is a developer self-test trigger;
-# it lives in the source tree but is not embedded in the binary.  Devs
-# run syncterm against the source `scripts/` dir to pick it up; user
-# builds get a binary without it.
-WREN_SCRIPTS    := $(wildcard scripts/*.wren) \
+# Developer-only files are not embedded:
+#   * scripts/auto/connected/runtests.wren — Alt+T hotkey trigger
+#   * scripts/wrentest.wren                — Wren self-test suite
+#   * scripts/*_test.wren                  — per-library test modules
+#   * scripts/*_demo.wren                  — interactive playgrounds
+# Devs run syncterm against the source `scripts/` dir to pick them up;
+# user builds get a binary without them.
+WREN_SCRIPTS    := $(filter-out scripts/wrentest.wren, \
+                       $(filter-out scripts/%_test.wren, \
+                       $(filter-out scripts/%_demo.wren, \
+                                    $(wildcard scripts/*.wren)))) \
                    $(filter-out scripts/auto/connected/runtests.wren, \
                                 $(wildcard scripts/auto/connected/*.wren))
 WREN_EMBED_GEN  := $(MTOBJODIR)$(DIRSEP)wren_embed_gen$(EXEFILE)

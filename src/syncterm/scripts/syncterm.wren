@@ -42,8 +42,16 @@ foreign class Screen {
   foreign static size
   foreign static save()
   foreign static restore(handle)
-  foreign static readRect(sx, sy, ex, ey)
-  foreign static writeRect(sx, sy, ex, ey, cells)
+  foreign static readRect(sx, sy, ex, ey)         // returns a Surface
+  foreign static writeRect(sx, sy, ex, ey, surface)
+  // Blit a Surface to the screen.  The 4-arg form takes a sub-rect of
+  // the source; it unpacks the Rect into the 7-arg foreign primitive
+  // `putRect_`.
+  foreign static putRect(src, dstX, dstY)
+  foreign static putRect_(src, srcX, srcY, srcW, srcH, dstX, dstY)
+  static putRect(src, srcRect, dstX, dstY) {
+    putRect_(src, srcRect.x, srcRect.y, srcRect.w, srcRect.h, dstX, dstY)
+  }
   foreign static moveRect(sx, sy, ex, ey, dx, dy)
   foreign static attr=(a)
   foreign static hyperlinkId
@@ -131,6 +139,16 @@ foreign class Input {
   foreign static mousedrag()
   foreign static mouseVisible=(b)
 
+  // Bitmask of `Mouse.*` events that get delivered.  The terminal
+  // mode sets a default (typically scroll-up only); a UI App should
+  // save the current mask, add what it needs, and restore on exit so
+  // the surrounding terminal's mouse-mode survives.  Use the
+  // {enable,disable}MouseEvent helpers for single events.
+  foreign static mouseEvents
+  foreign static mouseEvents=(mask)
+  foreign static enableMouseEvent(ev)
+  foreign static disableMouseEvent(ev)
+
   // Async event delivery — register `fiber` to receive the next key
   // or mouse event.  Fiber yields after, receives KeyEvent or
   // MouseEvent on resume.  Throws if another fiber is already
@@ -174,6 +192,28 @@ foreign class MouseEvent {
   foreign endX
   foreign endY
   foreign toString
+}
+// Numeric values from `enum ciolib_mouse_event` in conio/ciolib.h.
+// MouseEvent.event matches one of these.  Each button's slot is
+// press/release/click/dbl/trpl/quad/dragStart/dragMove/dragEnd in
+// that order, offset by 9 per button.  Buttons 4/5 are the scroll
+// wheel (4 = up, 5 = down) and arrive as PRESS or CLICK depending
+// on backend; coords are the cursor's current position.
+class Mouse {
+  static move           { 0  }
+  static button1Press   { 1  }
+  static button1Release { 2  }
+  static button1Click   { 3  }
+  static button1DblClick{ 4  }
+  static button1TrplClick{ 5 }
+  static button1QuadClick{ 6 }
+  static button1DragStart{ 7 }
+  static button1DragMove { 8 }
+  static button1DragEnd  { 9 }
+  static wheelUpPress   { 28 }   // BUTTON_4_PRESS
+  static wheelUpClick   { 30 }   // BUTTON_4_CLICK
+  static wheelDownPress { 37 }   // BUTTON_5_PRESS
+  static wheelDownClick { 39 }   // BUTTON_5_CLICK
 }
 class Key {
   static escape      { 0x001B }
@@ -380,16 +420,42 @@ foreign class Cell {
   foreign hyperlinkId=(n)
   foreign toString
 }
-// Cells inherits Sequence so all the iteration helpers (each, where,
-// map, all, any, count(f), reduce, join, take, skip, toList, etc.)
-// work directly off the iterate/iteratorValue protocol below.  The
-// O(1) foreign `count` getter overrides Sequence's iterating one.
-foreign class Cells is Sequence {
+// Surface owns a w×h grid of vmem_cells.  Inherits Sequence so the
+// linear `[i]` subscript, `count`, and the standard iteration helpers
+// (each, where, map, all, any, reduce, join, take, skip, toList, …)
+// all work off the iterate/iteratorValue protocol below — handy for
+// "tell me where any 'X' lives" without having to switch to 2D
+// indexing.
+//
+// Surface adds rectangular operations:
+//   surface.cellAt(x, y)              — 2D-indexed Cell view (null if oob).
+//   surface.putRect(src, dstX, dstY)  — paste full src.
+//   surface.putRect(src, srcRect, dstX, dstY) — paste sub-rect of src.
+//   surface.fill(rect, cell)          — bulk fill with a Cell template.
+//
+// `Screen.readRect` returns a Surface (sized to the requested rect);
+// `Screen.putRect` blits a Surface to the screen as a single atomic
+// puttext.
+foreign class Surface is Sequence {
+  construct new(width, height) {}
   foreign count
   foreign [i]
   foreign iterate(it)
   foreign iteratorValue(it)
+  foreign width
+  foreign height
+  foreign cellAt(x, y)
+  foreign putRect(src, dstX, dstY)
+  foreign putRect_(src, srcX, srcY, srcW, srcH, dstX, dstY)
+  foreign fill_(x, y, w, h, cell)
   foreign toString
+  // Wren-side wrappers that unpack a Rect into the primitive form.
+  putRect(src, srcRect, dstX, dstY) {
+    putRect_(src, srcRect.x, srcRect.y, srcRect.w, srcRect.h, dstX, dstY)
+  }
+  fill(rect, cell) {
+    fill_(rect.x, rect.y, rect.w, rect.h, cell)
+  }
 }
 class Font {
   static cp437English      { 0 }

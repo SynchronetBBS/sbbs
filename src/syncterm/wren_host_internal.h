@@ -149,7 +149,7 @@ struct wren_host_state {
 	 * allocates instances of (via wrenSetSlotNewForeign).  Filled
 	 * lazily on first allocation; released at shutdown. */
 	WrenHandle  *cell_class;
-	WrenHandle  *cells_class;
+	WrenHandle  *surface_class;
 	WrenHandle  *key_event_class;
 	WrenHandle  *mouse_event_class;
 	WrenHandle  *hook_handle_class;

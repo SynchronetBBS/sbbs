@@ -581,40 +581,47 @@ fn_Screen_restore(WrenVM *vm)
 	freescreen(scrn);
 }
 
-/* ----- Cell / Cells / vmem text bindings --------------------------
+/* ----- Cell / Surface / vmem text bindings ------------------------
  *
  * `Cell` wraps a single struct vmem_cell.  Two flavours: standalone
- * (Cell.new()) owns its own bytes; view (created by Cells.[i]) reads
- * and writes through to its parent Cells's buffer, with a Wren-level
- * pin on the parent so the buffer outlives the view.
+ * (Cell.new()) owns its own bytes; view (created by Surface.[i] or
+ * Surface.cellAt) reads and writes through to its parent Surface's
+ * buffer, with a Wren-level pin on the parent so the buffer outlives
+ * the view.
  *
- * `Cells` owns a malloc'd buffer of vmem_cells returned by getText.
- * It is iterable and indexable but has no add/insert/clear bindings,
- * so scripts can mutate individual cells but not change the count.
+ * `Surface` owns a width × height malloc'd buffer of vmem_cells.  It
+ * is iterable and indexable (linear, like Cells used to be) but also
+ * supports 2D operations: cellAt, putRect, fill.
  * -------------------------------------------------------------------- */
 
-struct wren_cells {
-	enum syncterm_wren_foreign type;
-	int               count;
-	struct vmem_cell *buf;          /* malloc'd; freed at finalize */
+struct wren_surface {
+	enum syncterm_wren_foreign type;     /* SWF_SURFACE */
+	int               count;             /* = width * height */
+	struct vmem_cell *buf;               /* malloc'd; freed at finalize */
+	int               width;
+	int               height;
 };
+
+/* Forward — definition lives next to the rest of the rect helpers. */
+static bool slot_to_surface_(WrenVM *vm, int slot,
+    struct vmem_cell **buf_out, int *w_out, int *h_out);
 
 struct wren_cell {
 	enum syncterm_wren_foreign type;
 	struct vmem_cell   c;             /* used when standalone */
 	int                index;         /* index into parent_buf in view mode */
-	struct vmem_cell  *parent_buf;    /* parent Cells' malloc'd buf (stable
+	struct vmem_cell  *parent_buf;    /* parent Surface's malloc'd buf (stable
 	                                     while parent_handle is held — the
-	                                     handle pins the Cells, the buf is
+	                                     handle pins the Surface, the buf is
 	                                     malloc'd, never reallocated, freed
-	                                     only at the Cells' finalize) */
-	WrenHandle        *parent_handle; /* pin on parent Cells; NULL = standalone */
+	                                     only at the Surface's finalize) */
+	WrenHandle        *parent_handle; /* pin on parent Surface; NULL = standalone */
 };
 
 /* Standalone cells return their own embedded `c`; view-mode cells use
  * their captured malloc'd buffer.  Both pointers are stable across
  * arbitrary VM calls — `parent_buf` is a malloc'd region the parent
- * Cells doesn't reallocate, kept alive via `parent_handle`. */
+ * Surface doesn't reallocate, kept alive via `parent_handle`. */
 static struct vmem_cell *
 cell_data(struct wren_cell *wc)
 {
@@ -725,26 +732,61 @@ wren_cell_finalize(void *data)
 	}
 }
 
-/* --- Cells allocate / finalize ---
+/* --- Surface allocate / finalize ---
  *
- * Allocator leaves the struct empty; Screen.getText fills count and
- * buf after construction.  Finalize releases the malloc'd buffer. */
+ * `Surface.new(width, height)`: allocates a width*height cell buffer
+ * inited to space + the current default attribute, mirroring how a
+ * fresh Cell would.  Zero or negative dimensions yield an empty
+ * (count=0) buffer so the degenerate case is a silent no-op for
+ * every primitive.  Finalize frees the malloc'd buffer. */
 void
-wren_cells_allocate(WrenVM *vm)
+wren_surface_allocate(WrenVM *vm)
 {
-	struct wren_cells *cs = wrenSetSlotNewForeign(vm, 0, 0, sizeof(*cs));
-	cs->type  = SWF_CELLS;
-	cs->count = 0;
-	cs->buf   = NULL;
+	int w = (int)wrenGetSlotDouble(vm, 1);
+	int h = (int)wrenGetSlotDouble(vm, 2);
+	if (w < 0) w = 0;
+	if (h < 0) h = 0;
+
+	struct wren_surface *sf =
+	    wrenSetSlotNewForeign(vm, 0, 0, sizeof(*sf));
+	sf->type   = SWF_SURFACE;
+	sf->width  = w;
+	sf->height = h;
+	sf->count  = w * h;
+	sf->buf    = NULL;
+	if (sf->count == 0)
+		return;
+
+	sf->buf = calloc((size_t)sf->count, sizeof *sf->buf);
+	if (sf->buf == NULL) {
+		sf->count  = 0;
+		sf->width  = 0;
+		sf->height = 0;
+		return;
+	}
+	struct text_info ti;
+	gettextinfo(&ti);
+	uint32_t fg = 0, bg = 0;
+	ciolib_attr2palette(ti.normattr, &fg, &bg);
+	for (int i = 0; i < sf->count; i++) {
+		sf->buf[i].ch           = 0x20;
+		sf->buf[i].legacy_attr  = ti.normattr;
+		sf->buf[i].fg           = fg;
+		sf->buf[i].bg           = bg;
+		sf->buf[i].font         = 0;
+		sf->buf[i].hyperlink_id = 0;
+	}
 }
 
 void
-wren_cells_finalize(void *data)
+wren_surface_finalize(void *data)
 {
-	struct wren_cells *cs = data;
-	free(cs->buf);
-	cs->buf   = NULL;
-	cs->count = 0;
+	struct wren_surface *sf = data;
+	free(sf->buf);
+	sf->buf    = NULL;
+	sf->count  = 0;
+	sf->width  = 0;
+	sf->height = 0;
 }
 
 void
@@ -805,6 +847,39 @@ fn_Input_mouseVisible_set(WrenVM *vm)
 		ciolib_showmouse();
 	else
 		ciolib_hidemouse();
+}
+
+/* ----- Input.mouseEvents getter / setter — opaque uint64 bitmask of
+ * the ciolib_mouse_event types that get delivered.  Use with the
+ * Mouse.* constants and the Input.{enable,disable}MouseEvent helpers
+ * below.  Returning the raw mask lets the App save it on entry and
+ * restore on exit so the surrounding terminal's mouse-mode (set by
+ * term.c:setup_mouse_events) survives a UI run. */
+void
+fn_Input_mouseEvents(WrenVM *vm)
+{
+	wrenSetSlotDouble(vm, 0, (double)ciomouse_getevents());
+}
+
+void
+fn_Input_mouseEvents_set(WrenVM *vm)
+{
+	uint64_t mask = (uint64_t)wrenGetSlotDouble(vm, 1);
+	ciomouse_setevents(mask);
+}
+
+void
+fn_Input_enableMouseEvent(WrenVM *vm)
+{
+	int ev = (int)wrenGetSlotDouble(vm, 1);
+	ciomouse_addevent(ev);
+}
+
+void
+fn_Input_disableMouseEvent(WrenVM *vm)
+{
+	int ev = (int)wrenGetSlotDouble(vm, 1);
+	ciomouse_delevent(ev);
 }
 
 /* ----- Font.codepage / Font.codepageOf(i) — codepage of a font slot. */
@@ -1184,6 +1259,10 @@ fnColor_toLegacyAttr(WrenVM *vm)
 
 /* ----- Screen.getText / Screen.putText ----- */
 
+/* Screen.readRect returns a Surface — the rect's width/height come
+ * along with the cell buffer.  Subscript, count, iteration, and
+ * writeRect-as-source all operate on the same linear buffer the C
+ * side allocated here. */
 void
 fn_Screen_readRect(WrenVM *vm)
 {
@@ -1197,7 +1276,9 @@ fn_Screen_readRect(WrenVM *vm)
 		return;
 	}
 
-	size_t            n   = (size_t)(ex - sx + 1) * (size_t)(ey - sy + 1);
+	int    w = ex - sx + 1;
+	int    h = ey - sy + 1;
+	size_t n = (size_t)w * (size_t)h;
 	struct vmem_cell *buf = calloc(n, sizeof *buf);
 	if (buf == NULL) {
 		wrenSetSlotNull(vm, 0);
@@ -1217,12 +1298,117 @@ fn_Screen_readRect(WrenVM *vm)
 	}
 
 	wrenEnsureSlots(vm, 2);
-	load_class_into_slot(vm, &st->cells_class, "Cells", 1);
-	struct wren_cells *cs =
-	    wrenSetSlotNewForeign(vm, 0, 1, sizeof(*cs));
-	cs->type  = SWF_CELLS;
-	cs->count = (int)n;
-	cs->buf   = buf;
+	load_class_into_slot(vm, &st->surface_class, "Surface", 1);
+	struct wren_surface *sf =
+	    wrenSetSlotNewForeign(vm, 0, 1, sizeof(*sf));
+	sf->type   = SWF_SURFACE;
+	sf->width  = w;
+	sf->height = h;
+	sf->count  = (int)n;
+	sf->buf    = buf;
+}
+
+/* Screen.putRect(src, dstX, dstY): blit a Surface to the screen at
+ * (dstX, dstY).  dstX/dstY are 1-based screen coords (matching the
+ * rest of the screen API).  Out-of-screen regions are clipped
+ * silently. */
+void
+fn_Screen_putRect_3(WrenVM *vm)
+{
+	struct vmem_cell *src_buf;
+	int src_w, src_h;
+	if (!slot_to_surface_(vm, 1, &src_buf, &src_w, &src_h)) {
+		wren_throw(vm, "putRect: source must be a Surface");
+		return;
+	}
+	int dstX = (int)wrenGetSlotDouble(vm, 2);
+	int dstY = (int)wrenGetSlotDouble(vm, 3);
+
+	struct text_info ti;
+	gettextinfo(&ti);
+	int scrW = ti.screenwidth;
+	int scrH = ti.screenheight;
+
+	int srcX = 0, srcY = 0, w = src_w, h = src_h;
+	/* Clip on the screen side: dst (1-based) + extent must fit in
+	 * [1..scrW] × [1..scrH]. */
+	if (dstX < 1) {
+		w   += dstX - 1;
+		srcX -= dstX - 1;
+		dstX = 1;
+	}
+	if (dstY < 1) {
+		h   += dstY - 1;
+		srcY -= dstY - 1;
+		dstY = 1;
+	}
+	if (dstX + w - 1 > scrW) w = scrW - dstX + 1;
+	if (dstY + h - 1 > scrH) h = scrH - dstY + 1;
+	if (w <= 0 || h <= 0)    return;
+
+	/* If we don't need to copy a sub-rect, hand the source buffer
+	 * straight to puttext; otherwise gather a temp. */
+	if (srcX == 0 && srcY == 0 && w == src_w && h == src_h) {
+		ciolib_vmem_puttext(dstX, dstY, dstX + w - 1, dstY + h - 1,
+		    src_buf);
+		return;
+	}
+	struct vmem_cell *tmp = malloc((size_t)w * (size_t)h * sizeof(*tmp));
+	if (tmp == NULL) return;
+	for (int row = 0; row < h; row++) {
+		memcpy(tmp + row * w,
+		    src_buf + (srcY + row) * src_w + srcX,
+		    (size_t)w * sizeof(*tmp));
+	}
+	ciolib_vmem_puttext(dstX, dstY, dstX + w - 1, dstY + h - 1, tmp);
+	free(tmp);
+}
+
+/* Screen.putRect(src, srcX, srcY, srcW, srcH, dstX, dstY): blit a
+ * sub-rect of `src` to the screen.  C-callable arity; the Wren-side
+ * Screen declares a putRect(src, srcRect, dstX, dstY) wrapper. */
+void
+fn_Screen_putRect_7(WrenVM *vm)
+{
+	struct vmem_cell *src_buf;
+	int src_w, src_h;
+	if (!slot_to_surface_(vm, 1, &src_buf, &src_w, &src_h)) {
+		wren_throw(vm, "putRect: source must be a Surface");
+		return;
+	}
+	int srcX = (int)wrenGetSlotDouble(vm, 2);
+	int srcY = (int)wrenGetSlotDouble(vm, 3);
+	int srcW = (int)wrenGetSlotDouble(vm, 4);
+	int srcH = (int)wrenGetSlotDouble(vm, 5);
+	int dstX = (int)wrenGetSlotDouble(vm, 6);
+	int dstY = (int)wrenGetSlotDouble(vm, 7);
+
+	/* Clip srcRect against source bounds first. */
+	if (srcX < 0) { srcW += srcX; dstX -= srcX; srcX = 0; }
+	if (srcY < 0) { srcH += srcY; dstY -= srcY; srcY = 0; }
+	if (srcX + srcW > src_w) srcW = src_w - srcX;
+	if (srcY + srcH > src_h) srcH = src_h - srcY;
+
+	struct text_info ti;
+	gettextinfo(&ti);
+	int scrW = ti.screenwidth;
+	int scrH = ti.screenheight;
+	/* Then clip on the screen side. */
+	if (dstX < 1) { srcW += dstX - 1; srcX -= dstX - 1; dstX = 1; }
+	if (dstY < 1) { srcH += dstY - 1; srcY -= dstY - 1; dstY = 1; }
+	if (dstX + srcW - 1 > scrW) srcW = scrW - dstX + 1;
+	if (dstY + srcH - 1 > scrH) srcH = scrH - dstY + 1;
+	if (srcW <= 0 || srcH <= 0) return;
+
+	struct vmem_cell *tmp = malloc((size_t)srcW * (size_t)srcH * sizeof(*tmp));
+	if (tmp == NULL) return;
+	for (int row = 0; row < srcH; row++) {
+		memcpy(tmp + row * srcW,
+		    src_buf + (srcY + row) * src_w + srcX,
+		    (size_t)srcW * sizeof(*tmp));
+	}
+	ciolib_vmem_puttext(dstX, dstY, dstX + srcW - 1, dstY + srcH - 1, tmp);
+	free(tmp);
 }
 
 void
@@ -1240,19 +1426,19 @@ fn_Screen_writeRect(WrenVM *vm)
 	int      n_expected = (ex - sx + 1) * (ey - sy + 1);
 	WrenType arg_type   = wrenGetSlotType(vm, 5);
 
-	/* Cells: contiguous vmem_cell buffer — hand it straight to puttext
+	/* Surface: contiguous vmem_cell buffer — hand straight to puttext
 	 * with no allocation or copy. */
-	if (arg_type == WREN_TYPE_FOREIGN
-	    && slot_foreign_type(vm, 5) == SWF_CELLS) {
-		struct wren_cells *cs = wrenGetSlotForeign(vm, 5);
-		if (cs->count != n_expected) {
+	if (arg_type == WREN_TYPE_FOREIGN &&
+	    slot_foreign_type(vm, 5) == SWF_SURFACE) {
+		struct wren_surface *sf = wrenGetSlotForeign(vm, 5);
+		if (sf->count != n_expected) {
 			wrenEnsureSlots(vm, 1);
 			wrenSetSlotString(vm, 0,
-			    "putText: Cells length does not match region size");
+			    "putText: Surface size does not match region size");
 			wrenAbortFiber(vm, 0);
 			return;
 		}
-		int rv = ciolib_vmem_puttext(sx, sy, ex, ey, cs->buf);
+		int rv = ciolib_vmem_puttext(sx, sy, ex, ey, sf->buf);
 		wrenSetSlotBool(vm, 0, rv != 0);
 		return;
 	}
@@ -1508,22 +1694,23 @@ fn_Cell_hyperlinkId_set(WrenVM *vm)
 	d->hyperlink_id = (uint16_t)(int)wrenGetSlotDouble(vm, 1);
 }
 
-/* ----- Cells accessors ----- */
+/* ----- Surface accessors ----- */
 
 void
-fn_Cells_count(WrenVM *vm)
+fn_Surface_count(WrenVM *vm)
 {
-	struct wren_cells *cs = wrenGetSlotForeign(vm, 0);
-	wrenSetSlotDouble(vm, 0, (double)cs->count);
+	struct wren_surface *sf = wrenGetSlotForeign(vm, 0);
+	wrenSetSlotDouble(vm, 0, (double)sf->count);
 }
 
-/* Materialize a Cell view into slot 0.  Pins the parent Cells (slot 0
- * receiver) via a Wren handle so the buffer outlives the view. */
+/* Materialize a Cell view into slot 0.  Pins the parent Surface
+ * (slot 0 receiver) via a Wren handle so the buffer outlives the
+ * view. */
 static void
-cells_make_view(WrenVM *vm, int idx)
+surface_make_view(WrenVM *vm, int idx)
 {
-	struct wren_cells *cs = wrenGetSlotForeign(vm, 0);
-	if (idx < 0 || idx >= cs->count) {
+	struct wren_surface *sf = wrenGetSlotForeign(vm, 0);
+	if (idx < 0 || idx >= sf->count) {
 		wrenSetSlotNull(vm, 0);
 		return;
 	}
@@ -1532,10 +1719,10 @@ cells_make_view(WrenVM *vm, int idx)
 		wrenSetSlotNull(vm, 0);
 		return;
 	}
-	/* Capture cs->buf before the slot-0 overwrite — it's a malloc'd
-	 * pointer that stays valid as long as the parent Cells lives,
+	/* Capture sf->buf before the slot-0 overwrite — it's a malloc'd
+	 * pointer that stays valid as long as the parent Surface lives,
 	 * which we ensure by pinning it via parent_handle. */
-	struct vmem_cell *parent_buf    = cs->buf;
+	struct vmem_cell *parent_buf    = sf->buf;
 	WrenHandle       *parent_handle = wrenGetSlotHandle(vm, 0);
 
 	wrenEnsureSlots(vm, 3);
@@ -1549,18 +1736,18 @@ cells_make_view(WrenVM *vm, int idx)
 }
 
 void
-fn_Cells_subscript(WrenVM *vm)
+fn_Surface_subscript(WrenVM *vm)
 {
 	int i = (int)wrenGetSlotDouble(vm, 1);
-	cells_make_view(vm, i);
+	surface_make_view(vm, i);
 }
 
 /* Wren iteration: null -> 0; n -> n+1; past end -> false. */
 void
-fn_Cells_iterate(WrenVM *vm)
+fn_Surface_iterate(WrenVM *vm)
 {
-	struct wren_cells *cs = wrenGetSlotForeign(vm, 0);
-	if (cs->count == 0) {
+	struct wren_surface *sf = wrenGetSlotForeign(vm, 0);
+	if (sf->count == 0) {
 		wrenSetSlotBool(vm, 0, false);
 		return;
 	}
@@ -1569,25 +1756,217 @@ fn_Cells_iterate(WrenVM *vm)
 		return;
 	}
 	int next = (int)wrenGetSlotDouble(vm, 1) + 1;
-	if (next >= cs->count)
+	if (next >= sf->count)
 		wrenSetSlotBool(vm, 0, false);
 	else
 		wrenSetSlotDouble(vm, 0, (double)next);
 }
 
 void
-fn_Cells_iteratorValue(WrenVM *vm)
+fn_Surface_iteratorValue(WrenVM *vm)
 {
 	int i = (int)wrenGetSlotDouble(vm, 1);
-	cells_make_view(vm, i);
+	surface_make_view(vm, i);
 }
 
 void
-fn_Cells_toString(WrenVM *vm)
+fn_Surface_width(WrenVM *vm)
 {
-	struct wren_cells *cs = wrenGetSlotForeign(vm, 0);
-	char buf[32];
-	snprintf(buf, sizeof(buf), "Cells(count=%d)", cs->count);
+	struct wren_surface *sf = wrenGetSlotForeign(vm, 0);
+	wrenSetSlotDouble(vm, 0, (double)sf->width);
+}
+
+void
+fn_Surface_height(WrenVM *vm)
+{
+	struct wren_surface *sf = wrenGetSlotForeign(vm, 0);
+	wrenSetSlotDouble(vm, 0, (double)sf->height);
+}
+
+/* `surface.cellAt(x, y)`: 2D-indexed Cell view.  Returns null when
+ * (x, y) is outside the surface's bounds. */
+void
+fn_Surface_cellAt(WrenVM *vm)
+{
+	struct wren_surface *sf = wrenGetSlotForeign(vm, 0);
+	int x = (int)wrenGetSlotDouble(vm, 1);
+	int y = (int)wrenGetSlotDouble(vm, 2);
+	if (x < 0 || x >= sf->width || y < 0 || y >= sf->height) {
+		wrenSetSlotNull(vm, 0);
+		return;
+	}
+	surface_make_view(vm, y * sf->width + x);
+}
+
+/* Compute the clipped overlap of the source's [srcX..srcX+srcW) x
+ * [srcY..srcY+srcH) region with both the source bounds and the
+ * destination's [0..dst->width) x [0..dst->height) at offset
+ * (dstX, dstY).  Writes adjusted offsets into *src_out / *dst_out and
+ * the clipped width/height into *w_out / *h_out.  Returns false if
+ * the clipped region is empty (caller should bail). */
+static bool
+clip_rect_(struct wren_surface *dst,
+    int src_w, int src_h,
+    int srcX, int srcY, int srcW, int srcH,
+    int dstX, int dstY,
+    int *out_srcX, int *out_srcY,
+    int *out_dstX, int *out_dstY,
+    int *out_w,    int *out_h)
+{
+	/* Clip src rect against the source's bounds. */
+	if (srcX < 0) {
+		srcW += srcX;
+		dstX -= srcX;
+		srcX = 0;
+	}
+	if (srcY < 0) {
+		srcH += srcY;
+		dstY -= srcY;
+		srcY = 0;
+	}
+	if (srcX + srcW > src_w) srcW = src_w - srcX;
+	if (srcY + srcH > src_h) srcH = src_h - srcY;
+	/* Clip the dst placement against dst bounds. */
+	if (dstX < 0) {
+		srcW += dstX;
+		srcX -= dstX;
+		dstX = 0;
+	}
+	if (dstY < 0) {
+		srcH += dstY;
+		srcY -= dstY;
+		dstY = 0;
+	}
+	if (dstX + srcW > dst->width)  srcW = dst->width  - dstX;
+	if (dstY + srcH > dst->height) srcH = dst->height - dstY;
+
+	if (srcW <= 0 || srcH <= 0)
+		return false;
+
+	*out_srcX = srcX;
+	*out_srcY = srcY;
+	*out_dstX = dstX;
+	*out_dstY = dstY;
+	*out_w    = srcW;
+	*out_h    = srcH;
+	return true;
+}
+
+/* Resolve slot to a Surface and surface its (buf, width, height) for
+ * the rect-blit primitives.  Returns false on type mismatch. */
+static bool
+slot_to_surface_(WrenVM *vm, int slot,
+    struct vmem_cell **buf_out, int *w_out, int *h_out)
+{
+	if (slot_foreign_type(vm, slot) != SWF_SURFACE)
+		return false;
+	struct wren_surface *sf = wrenGetSlotForeign(vm, slot);
+	*buf_out = sf->buf;
+	*w_out   = sf->width;
+	*h_out   = sf->height;
+	return true;
+}
+
+/* `surface.putRect(src, dstX, dstY)` — paste the entirety of `src`
+ * at (dstX, dstY) in self.  Out-of-bounds portions are clipped
+ * silently. */
+void
+fn_Surface_putRect_3(WrenVM *vm)
+{
+	struct wren_surface *dst = wrenGetSlotForeign(vm, 0);
+	struct vmem_cell    *src_buf;
+	int src_w, src_h;
+	if (!slot_to_surface_(vm, 1, &src_buf, &src_w, &src_h)) {
+		wren_throw(vm, "putRect: source must be a Surface");
+		return;
+	}
+	int dstX = (int)wrenGetSlotDouble(vm, 2);
+	int dstY = (int)wrenGetSlotDouble(vm, 3);
+
+	int sx, sy, dx, dy, w, h;
+	if (!clip_rect_(dst, src_w, src_h, 0, 0, src_w, src_h,
+	    dstX, dstY, &sx, &sy, &dx, &dy, &w, &h))
+		return;
+
+	for (int row = 0; row < h; row++) {
+		struct vmem_cell *s = src_buf + (sy + row) * src_w + sx;
+		struct vmem_cell *d = dst->buf  + (dy + row) * dst->width + dx;
+		memcpy(d, s, (size_t)w * sizeof(*d));
+	}
+}
+
+/* `surface.putRect(src, srcX, srcY, srcW, srcH, dstX, dstY)` — paste a
+ * sub-rect of `src`.  This is the C-callable arity; the Wren-side
+ * Surface declares a `putRect(src, srcRect, dstX, dstY)` wrapper that
+ * unpacks Rect.x/y/w/h before calling here. */
+void
+fn_Surface_putRect_7(WrenVM *vm)
+{
+	struct wren_surface *dst = wrenGetSlotForeign(vm, 0);
+	struct vmem_cell    *src_buf;
+	int src_w, src_h;
+	if (!slot_to_surface_(vm, 1, &src_buf, &src_w, &src_h)) {
+		wren_throw(vm, "putRect: source must be a Surface");
+		return;
+	}
+	int srcX = (int)wrenGetSlotDouble(vm, 2);
+	int srcY = (int)wrenGetSlotDouble(vm, 3);
+	int srcW = (int)wrenGetSlotDouble(vm, 4);
+	int srcH = (int)wrenGetSlotDouble(vm, 5);
+	int dstX = (int)wrenGetSlotDouble(vm, 6);
+	int dstY = (int)wrenGetSlotDouble(vm, 7);
+
+	int sx, sy, dx, dy, w, h;
+	if (!clip_rect_(dst, src_w, src_h, srcX, srcY, srcW, srcH,
+	    dstX, dstY, &sx, &sy, &dx, &dy, &w, &h))
+		return;
+
+	for (int row = 0; row < h; row++) {
+		struct vmem_cell *s = src_buf + (sy + row) * src_w + sx;
+		struct vmem_cell *d = dst->buf  + (dy + row) * dst->width + dx;
+		memcpy(d, s, (size_t)w * sizeof(*d));
+	}
+}
+
+/* `surface.fill_(x, y, w, h, cell)` — bulk-fill a rect with a single
+ * Cell template.  C-callable primitive; Wren declares a
+ * `fill(rect, cell)` convenience that unpacks Rect.x/y/w/h. */
+void
+fn_Surface_fill_(WrenVM *vm)
+{
+	struct wren_surface *sf = wrenGetSlotForeign(vm, 0);
+	int x = (int)wrenGetSlotDouble(vm, 1);
+	int y = (int)wrenGetSlotDouble(vm, 2);
+	int w = (int)wrenGetSlotDouble(vm, 3);
+	int h = (int)wrenGetSlotDouble(vm, 4);
+	if (slot_foreign_type(vm, 5) != SWF_CELL) {
+		wren_throw(vm, "fill: 5th arg must be a Cell template");
+		return;
+	}
+	struct wren_cell *tmpl = wrenGetSlotForeign(vm, 5);
+	struct vmem_cell  src  = *cell_data(tmpl);
+
+	/* Clip rect to surface bounds. */
+	if (x < 0)         { w += x; x = 0; }
+	if (y < 0)         { h += y; y = 0; }
+	if (x + w > sf->width)  w = sf->width  - x;
+	if (y + h > sf->height) h = sf->height - y;
+	if (w <= 0 || h <= 0)   return;
+
+	for (int row = 0; row < h; row++) {
+		struct vmem_cell *p = sf->buf + (y + row) * sf->width + x;
+		for (int col = 0; col < w; col++)
+			*p++ = src;
+	}
+}
+
+/* `surface.toString` — diagnostic. */
+void
+fn_Surface_toString(WrenVM *vm)
+{
+	struct wren_surface *sf = wrenGetSlotForeign(vm, 0);
+	char buf[48];
+	snprintf(buf, sizeof(buf), "Surface(%dx%d)", sf->width, sf->height);
 	wrenSetSlotString(vm, 0, buf);
 }
 

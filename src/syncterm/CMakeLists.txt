@@ -353,11 +353,15 @@ file(GLOB WREN_LIB_SCRIPTS CONFIGURE_DEPENDS
 file(GLOB WREN_AUTO_SCRIPTS CONFIGURE_DEPENDS
     "${CMAKE_CURRENT_SOURCE_DIR}/scripts/auto/connected/*.wren")
 set(WREN_SCRIPTS ${WREN_LIB_SCRIPTS} ${WREN_AUTO_SCRIPTS})
-# scripts/auto/connected/runtests.wren is a developer self-test
-# trigger; in the source tree but not embedded.  Devs run against the
-# source scripts/ dir to pick it up.
+# Developer-only files are not embedded:
+#   * scripts/auto/connected/runtests.wren — Alt+T hotkey trigger
+#   * scripts/wrentest.wren                — Wren self-test suite
+#   * scripts/*_test.wren                  — per-library test modules
+#   * scripts/*_demo.wren                  — interactive playgrounds
+# Devs run against the source scripts/ dir to pick them up; user
+# builds get a binary without them.
 list(FILTER WREN_SCRIPTS EXCLUDE REGEX
-    "/runtests\\.wren$")
+    "/(runtests|wrentest|.*_test|.*_demo)\\.wren$")
 
 if(NOT CMAKE_CROSSCOMPILING)
     add_executable(wren_embed_gen wren_embed_gen.c)

@@ -29,6 +29,10 @@ import "syncterm" for Hook, Conn, Console, Screen, CTerm, BBS, Key,
     RipVersion, LogMode, StatusDisplay, Color, Cell, Hyperlinks,
     REPL, Input, KeyEvent, Cache, Platform, Timer, TimerElapsed
 import "console" for WrenConsole
+import "ui_style_test"  for UiStyleTest
+import "ui_widget_test" for UiWidgetTest
+import "ui_draw_test"   for UiDrawTest
+import "ui_list_test"   for UiListTest
 
 class WrenTest {
   static run() {
@@ -91,6 +95,20 @@ class WrenTest {
     __hooks.add(__lfReplaceHook)
     System.print("=== Wren self-test starting ===")
 
+    // Aggregated [pass, fail] across all suites — every nested
+    // test module returns its own pair, and WrenTest's __pass /
+    // __fail counters are folded in at end-of-run().
+    __sumPass = 0
+    __sumFail = 0
+
+    // ------ in-process UI library tests -----------------------------
+    // Pure Wren, no connection needed.  Run before the
+    // sentinel-driven async chain so a UI failure surfaces early.
+    fold_(UiStyleTest.run())
+    fold_(UiWidgetTest.run())
+    fold_(UiDrawTest.run())
+    fold_(UiListTest.run())
+
     // ------ constant enums ------------------------------------------
     testKeyConstants_()
     testCodepageConstants_()
@@ -131,7 +149,7 @@ class WrenTest {
     testREPLEvalStatement_()
     testREPLHasModule_()
 
-    // ------ Cell / Cells / Screen rect roundtrip --------------------
+    // ------ Cell / Surface / Screen rect roundtrip -----------------
     testCellRoundtrip_()
     testScreenRectRoundtrip_()
 
@@ -399,7 +417,7 @@ class WrenTest {
            "REPL.hasModule discriminates known modules")
   }
 
-  // ===== Cell / Cells / Screen rect roundtrip =====================
+  // ===== Cell / Surface / Screen rect roundtrip ===================
 
   static testCellRoundtrip_() {
     // Each property is set + read independently — bright/blink share
@@ -424,15 +442,16 @@ class WrenTest {
 
   static testScreenRectRoundtrip_() {
     // Save the whole screen so any test mutation is invisible.
-    // readRect returns a Cells; mutate one cell through the view and
-    // hand the same Cells object back to writeRect — no copy.
+    // readRect returns a Surface; mutate one cell through the view
+    // and hand the same Surface back to writeRect — no copy.
     var saved = Screen.save()
-    var cells = Screen.readRect(1, 1, 1, 1)
-    cells[0].ch         = "Z"
-    cells[0].legacyAttr = 0x07
-    Screen.writeRect(1, 1, 1, 1, cells)
+    var surf = Screen.readRect(1, 1, 1, 1)
+    surf[0].ch         = "Z"
+    surf[0].legacyAttr = 0x07
+    Screen.writeRect(1, 1, 1, 1, surf)
     var rb = Screen.readRect(1, 1, 1, 1)
-    var ok = rb != null && rb.count == 1 && rb[0].ch == "Z"
+    var ok = rb != null && rb.count == 1 && rb[0].ch == "Z" &&
+             rb.width == 1 && rb.height == 1
     Screen.restore(saved)
     check_(ok, "Screen.read/writeRect roundtrip")
   }
@@ -815,17 +834,27 @@ class WrenTest {
            "Timer.trigger resumes fiber with TimerElapsed")
 
     // Hook.onInput String-replacement path: each LF off the wire
-    // fires the LF→CRLF hook and runs through the C-side dispatcher's
+    // fires the LF->CRLF hook and runs through the C-side dispatcher's
     // WREN_TYPE_STRING branch.  Counter > 0 means the dispatcher
     // recognized the String return, copied the bytes into the filter
     // buffer, and aborted the rest of the hook chain (matching the
     // contract for replace).
     check_(__lfReplaceCount > 0,
-           "Hook.onInput String return (LF→CRLF) fired off the wire")
+           "Hook.onInput String return (LF->CRLF) fired off the wire")
 
     var total = __pass + __fail
-    System.print("=== %(total) tests, %(__pass) pass, %(__fail) fail ===")
+    System.print("=== wrentest: %(total) tests, %(__pass) pass, %(__fail) fail ===")
+    fold_([__pass, __fail])
+    var grand = __sumPass + __sumFail
+    System.print("=== TOTAL: %(grand) tests, %(__sumPass) pass, %(__sumFail) fail ===")
     cleanup_()
+  }
+
+  // Accumulate a [pass, fail] pair returned by a nested test suite
+  // into the aggregate WrenTest reports at end-of-run.
+  static fold_(r) {
+    __sumPass = __sumPass + r[0]
+    __sumFail = __sumFail + r[1]
   }
 
   // Tear down every hook this run() registered.  Safe to call from
