@@ -1,6 +1,16 @@
 cmake_minimum_required(VERSION 3.22)
 project(deucessh VERSION 0.1 LANGUAGES C)
 
+# Default to Release for single-config generators when the user hasn't
+# picked a build type.  Multi-config generators (Visual Studio, Xcode)
+# select per build via CMAKE_CONFIGURATION_TYPES, so leave them alone.
+if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
+	set(CMAKE_BUILD_TYPE Release CACHE STRING
+		"Build type (Debug, Release, RelWithDebInfo, MinSizeRel)" FORCE)
+	set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS
+		Debug Release RelWithDebInfo MinSizeRel)
+endif()
+
 option(DEUCESSH_BUILD_STATIC "Build static library" ON)
 option(DEUCESSH_BUILD_SHARED "Build shared library" ON)
 
@@ -228,8 +238,11 @@ if(CMAKE_C_COMPILER_ID MATCHES "GNU|Clang|AppleClang")
 	# Baseline warnings (GCC 2.95+, Clang 4+).  -Werror=implicit,
 	# -Werror=incompatible-pointer-types, -Werror=int-conversion are
 	# C-only diagnostics; g++ rejects them with "not valid for C++".
+	# Targeted -Werror=... stays on in all configs: those catch
+	# C-obsolete constructs and security-relevant misuse, not stylistic
+	# warnings that a future compiler might broaden.
 	list(APPEND DEUCESSH_COMPILE_OPTIONS
-		-Wall -Wpedantic -pedantic -Werror
+		-Wall -Wpedantic -pedantic
 		-Wformat -Wformat=2
 		-Wimplicit-fallthrough
 		-Werror=format-security
@@ -237,12 +250,22 @@ if(CMAKE_C_COMPILER_ID MATCHES "GNU|Clang|AppleClang")
 		$<$<COMPILE_LANGUAGE:C>:-Werror=incompatible-pointer-types>
 		$<$<COMPILE_LANGUAGE:C>:-Werror=int-conversion>)
 
-	# Strict probes: we compile with -Werror, so "flag accepted but
-	# unused" (Apple Clang emits -Wunused-command-line-argument for
+	# Blanket -Werror is Debug-only.  Release/RelWithDebInfo/MinSizeRel
+	# must tolerate future compiler warnings — failing a packager's
+	# build on a new diagnostic is hostile.
+	if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+		list(APPEND DEUCESSH_COMPILE_OPTIONS -Werror)
+		set(DEUCESSH_PROBE_WERROR "-Werror")
+	else()
+		set(DEUCESSH_PROBE_WERROR "")
+	endif()
+
+	# Strict probes: when -Werror is active, "flag accepted but unused"
+	# (Apple Clang emits -Wunused-command-line-argument for
 	# -fstack-clash-protection etc.) would still break the real build.
-	# Push -Werror into CMAKE_REQUIRED_FLAGS so the probe matches the
-	# actual compile discipline.  -std=c17 matches the real targets.
-	set(CMAKE_REQUIRED_FLAGS "-std=c17 -Werror")
+	# Match the probe discipline to the actual compile discipline.
+	# -std=c17 matches the real targets.
+	set(CMAKE_REQUIRED_FLAGS "-std=c17 ${DEUCESSH_PROBE_WERROR}")
 
 	check_c_compiler_flag(-Wconversion HAVE_WCONVERSION)
 	if(HAVE_WCONVERSION)
