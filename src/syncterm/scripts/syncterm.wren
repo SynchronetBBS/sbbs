@@ -751,6 +751,33 @@ class Host {
   foreign static cacheDirectory
 }
 
+// Platform identification.  `name` returns the uname(2) sysname on
+// POSIX (e.g. "FreeBSD", "Linux", "Darwin"), "Windows" on Windows,
+// and "Unknown" elsewhere.  Useful for branching on host OS in
+// scripts; no further OS surface (no shell exec, no stdio, no
+// process model) is exposed.
+class Platform {
+  foreign static name
+}
+
+// One-shot fiber resumption after a delay.  Register a fiber to
+// receive a TimerElapsed event after `ms` milliseconds:
+//
+//   Timer.trigger(Fiber.current, 250)
+//   var x = Fiber.yield()  // x is TimerElapsed
+//
+// Multiple pending timers per fiber are fine — each fires
+// independently and yields one TimerElapsed.  For recurring callbacks
+// that don't park a fiber, use Hook.every(ms, fn) instead.
+class Timer {
+  foreign static trigger(fiber, ms)
+}
+
+// Marker class returned via the result queue when a Timer.trigger
+// delay elapses.  Carries no fields — the caller already knows what
+// it scheduled; just dispatch on type.
+foreign class TimerElapsed {}
+
 // SFTP — SSH-channel side-band file transfer.  All methods are static
 // on the SFTP class itself.
 //

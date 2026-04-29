@@ -6148,10 +6148,14 @@ doterm(struct bbslist *bbs)
 		 * Runs before any dispatcher to keep the dispatch arrays
 		 * tidy and to avoid touching freed entries. */
 		wren_host_compact();
-		/* Drain queued completions (Input.nextEvent / SFTP results,
-		 * etc.) and resume their target fibers.  Done before any
-		 * input pump so a fiber can fire an op, get its result, and
-		 * re-fire within a single iteration's worth of latency. */
+		/* Push any past-due Timer.trigger entries onto the result
+		 * queue so the drain below resumes their fibers this
+		 * iteration. */
+		wren_bind_sweep_pending_timers();
+		/* Drain queued completions (Input.nextEvent / SFTP / Timer
+		 * results, etc.) and resume their target fibers.  Done before
+		 * any input pump so a fiber can fire an op, get its result,
+		 * and re-fire within a single iteration's worth of latency. */
 		wren_result_drain();
 		/* Detect cterm_suspended transitions across this iteration.
 		 * On entering suspend: capture the wall-clock start.  On

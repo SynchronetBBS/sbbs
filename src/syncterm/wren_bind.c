@@ -17,6 +17,7 @@
 
 #include "ciolib.h"
 #include "cterm.h"
+#include "genwrap.h"      /* xp_timer */
 #include "syncterm.h"
 #include "bbslist.h"
 #include "conn.h"
@@ -25,6 +26,13 @@
 #include "comio.h"
 #include "sftp.h"
 #include "sftp_session.h"
+
+#if !defined(_WIN32)
+#include <unistd.h>     /* for _POSIX_VERSION */
+#if defined(_POSIX_VERSION)
+#include <sys/utsname.h>
+#endif
+#endif
 
 #include <stdint.h>
 #include <inttypes.h>
@@ -201,6 +209,7 @@ enum syncterm_wren_foreign {
 	SWF_SFTP_STAT,
 	SWF_SFTP_HANDLE,
 	SWF_SFTP_ERROR,
+	SWF_TIMER_ELAPSED,
 };
 
 /* Every foreign struct's first field has this exact name and type, so
@@ -1777,6 +1786,29 @@ fn_Directory_delete(WrenVM *vm)
  * call.  No Wren-side constructor exists for an `is_cache` Directory,
  * so this is the only way to obtain one; syncterm.wren binds its
  * result to the module-level `Cache` variable at module-load time. */
+/* Platform.name — OS identifier for platform-specific script logic.
+ * Returns "Windows" on Windows, the uname(2) sysname on POSIX, and
+ * "Unknown" on anything else (DOS, OS/2, …).  Win32 is checked
+ * before _POSIX_VERSION because POSIX layers like Cygwin / MSYS
+ * define both — we want the native-OS answer there.  Called
+ * rarely; not worth memoizing on the Wren side. */
+static void
+fn_Platform_name(WrenVM *vm)
+{
+	wrenEnsureSlots(vm, 1);
+#if defined(_WIN32)
+	wrenSetSlotString(vm, 0, "Windows");
+#elif defined(_POSIX_VERSION)
+	struct utsname uts;
+	if (uname(&uts) == 0)
+		wrenSetSlotString(vm, 0, uts.sysname);
+	else
+		wrenSetSlotString(vm, 0, "Unknown");
+#else
+	wrenSetSlotString(vm, 0, "Unknown");
+#endif
+}
+
 static void
 fn_Host_cacheDirectory(WrenVM *vm)
 {
@@ -4769,6 +4801,98 @@ fn_SFTP_rename(WrenVM *vm)
 	wrenSetSlotNull(vm, 0);
 }
 
+/* ----- Timer -------------------------------------------------------
+ *
+ * One-shot fiber resumption after a delay.  The foreign captures the
+ * fiber and an absolute due-time; doterm()'s sweep pushes a
+ * TimerElapsed onto the result queue once xp_timer() reaches that
+ * time.  Multiple pending entries per fiber are fine — each yields
+ * one event independently.
+ *
+ * Recurring timers belong on `Hook.every(ms, fn)`; that's a
+ * fire-and-forget callback, no fiber resume.
+ * -------------------------------------------------------------------- */
+
+struct wren_timer_elapsed {
+	enum syncterm_wren_foreign type;
+};
+
+static void
+wren_timer_elapsed_allocate(WrenVM *vm)
+{
+	struct wren_timer_elapsed *te =
+	    wrenSetSlotNewForeign(vm, 0, 0, sizeof(*te));
+	te->type = SWF_TIMER_ELAPSED;
+}
+
+static void
+wren_timer_elapsed_finalize(void *data)
+{
+	(void)data;
+}
+
+static void
+deliver_timer_elapsed(WrenVM *vm, int slot, void *data)
+{
+	(void)data;
+	struct wren_host_state *st = wren_host_state();
+	wrenEnsureSlots(vm, slot + 2);
+	load_class_into_slot(vm, &st->timer_elapsed_class, "TimerElapsed",
+	    slot + 1);
+	struct wren_timer_elapsed *te =
+	    wrenSetSlotNewForeign(vm, slot, slot + 1, sizeof(*te));
+	te->type = SWF_TIMER_ELAPSED;
+}
+
+static void
+fn_Timer_trigger(WrenVM *vm)
+{
+	if (wrenGetSlotType(vm, 2) != WREN_TYPE_NUM) {
+		wren_throw(vm, "Timer.trigger: ms must be a number");
+		return;
+	}
+	double ms = wrenGetSlotDouble(vm, 2);
+	if (ms < 0) {
+		wren_throw(vm, "Timer.trigger: ms must be non-negative");
+		return;
+	}
+	struct wren_host_state *st = wren_host_state();
+	if (st->pending_timer_count >= WREN_HOST_MAX_PENDING_TIMERS) {
+		wren_throw(vm, "Timer.trigger: too many pending timers");
+		return;
+	}
+	struct wren_pending_timer *t =
+	    &st->pending_timers[st->pending_timer_count++];
+	t->fiber = wrenGetSlotHandle(vm, 1);
+	t->due_s = xp_timer() + ms / 1000.0L;
+	wrenSetSlotNull(vm, 0);
+}
+
+void
+wren_bind_sweep_pending_timers(void)
+{
+	struct wren_host_state *st = wren_host_state();
+	if (st == NULL || st->pending_timer_count == 0)
+		return;
+	long double now = xp_timer();
+	int w = 0;
+	for (int r = 0; r < st->pending_timer_count; r++) {
+		struct wren_pending_timer t = st->pending_timers[r];
+		if (now < t.due_s) {
+			if (w != r)
+				st->pending_timers[w] = t;
+			w++;
+			continue;
+		}
+		/* wren_result_push takes ownership of `fiber` and frees
+		 * `data` (NULL here) via free_fn (also NULL).  Any past-due
+		 * entry is removed from the pending list by virtue of not
+		 * being copied to the write index. */
+		wren_result_push(t.fiber, NULL, deliver_timer_elapsed, NULL);
+	}
+	st->pending_timer_count = w;
+}
+
 /* ----- Lookup table -----------------------------------------------
  *
  * Wren signatures: foreign static methods are reported with the
@@ -4979,6 +5103,12 @@ static const struct binding BINDINGS[] = {
 	{ "Hyperlinks", true, "params(_)",      fn_Hyperlinks_params      },
 
 	{ "Host", true, "cacheDirectory",       fn_Host_cacheDirectory    },
+
+	/* Platform — OS identification. */
+	{ "Platform", true, "name",             fn_Platform_name          },
+
+	/* Timer — one-shot fiber resumption after a delay. */
+	{ "Timer", true, "trigger(_,_)",        fn_Timer_trigger          },
 
 	/* SFTP (all static) */
 	{ "SFTP",       true,  "available",       fn_SFTP_available       },
@@ -5298,6 +5428,12 @@ wren_bind_lookup_class(const char *module, const char *className)
 	if (strcmp(className, "SFTPError") == 0) {
 		WrenForeignClassMethods m = {
 			wren_sftp_error_allocate, wren_sftp_error_finalize
+		};
+		return m;
+	}
+	if (strcmp(className, "TimerElapsed") == 0) {
+		WrenForeignClassMethods m = {
+			wren_timer_elapsed_allocate, wren_timer_elapsed_finalize
 		};
 		return m;
 	}

@@ -74,6 +74,12 @@ void wren_host_dispatch_timer(void);
  * only.  Called from the doterm() main loop alongside wren_host_compact. */
 void wren_result_drain(void);
 
+/* Walk the Timer.trigger pending list and push TimerElapsed onto the
+ * result queue for any entry whose due time has passed.  Called from
+ * doterm() just before wren_result_drain so newly-due deliveries fire
+ * on this iteration. */
+void wren_bind_sweep_pending_timers(void);
+
 /* Reclaim hook entries that scripts have unregistered.  Walks the
  * cleanup queue, shifts each entry's pointer out of the dispatch
  * array, frees regex resources, and frees the entry struct itself if

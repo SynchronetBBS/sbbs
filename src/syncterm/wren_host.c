@@ -1026,6 +1026,14 @@ wren_host_shutdown(void)
 		wrenReleaseHandle(state.vm, state.sftp_handle_class);
 	if (state.sftp_error_class != NULL)
 		wrenReleaseHandle(state.vm, state.sftp_error_class);
+	if (state.timer_elapsed_class != NULL)
+		wrenReleaseHandle(state.vm, state.timer_elapsed_class);
+	for (int i = 0; i < state.pending_timer_count; i++) {
+		if (state.pending_timers[i].fiber != NULL)
+			wrenReleaseHandle(state.vm,
+			    state.pending_timers[i].fiber);
+	}
+	state.pending_timer_count = 0;
 	if (state.parked_fiber != NULL) {
 		wrenReleaseHandle(state.vm, state.parked_fiber);
 		state.parked_fiber = NULL;
