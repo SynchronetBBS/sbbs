@@ -8,6 +8,9 @@
 #include "wren_bind_sftp.h"
 #include "wren_host_internal.h"
 #include "wren_host.h"
+
+#ifndef WITHOUT_DEUCESSH
+
 #include "sftp.h"
 #include "sftp_session.h"
 
@@ -918,3 +921,79 @@ fn_SFTP_rename(WrenVM *vm)
 	sftpc_rename(sftp_state, oldpath, newpath, sftp_call_cb, ctx);
 	wrenSetSlotNull(vm, 0);
 }
+
+#else  /* WITHOUT_DEUCESSH ------------------------------------------- */
+
+/* No SFTP without DeuceSSH — the SSH transport that carries it isn't
+ * compiled in.  SFTP.available reports false so well-behaved scripts
+ * skip the subsystem entirely; everything else aborts the calling
+ * fiber.  Foreign instances can never be constructed in this build,
+ * so the per-instance accessors are unreachable but still need
+ * symbols for the BINDINGS table. */
+
+static const char SFTP_UNAVAILABLE[] = "SFTP not available in this build";
+
+#define SFTP_STUB_ALLOC(fn, tag)                                       \
+	void fn(WrenVM *vm)                                            \
+	{                                                              \
+		struct wren_foreign_header *h =                        \
+		    wrenSetSlotNewForeign(vm, 0, 0, sizeof(*h));       \
+		h->type = (tag);                                       \
+	}
+
+SFTP_STUB_ALLOC(wren_sftp_entry_allocate,  SWF_SFTP_ENTRY)
+SFTP_STUB_ALLOC(wren_sftp_stat_allocate,   SWF_SFTP_STAT)
+SFTP_STUB_ALLOC(wren_sftp_handle_allocate, SWF_SFTP_HANDLE)
+SFTP_STUB_ALLOC(wren_sftp_error_allocate,  SWF_SFTP_ERROR)
+
+#undef SFTP_STUB_ALLOC
+
+void wren_sftp_entry_finalize(void *data)  { (void)data; }
+void wren_sftp_stat_finalize(void *data)   { (void)data; }
+void wren_sftp_handle_finalize(void *data) { (void)data; }
+void wren_sftp_error_finalize(void *data)  { (void)data; }
+
+void fn_SFTP_available(WrenVM *vm) { wrenSetSlotBool(vm, 0, false); }
+void fn_SFTP_pubdir(WrenVM *vm)    { wrenSetSlotNull(vm, 0); }
+
+#define SFTP_STUB(fn) \
+	void fn(WrenVM *vm) { wren_throw(vm, SFTP_UNAVAILABLE); }
+
+SFTP_STUB(fn_SFTP_realpath)
+SFTP_STUB(fn_SFTP_stat)
+SFTP_STUB(fn_SFTP_opendir)
+SFTP_STUB(fn_SFTP_readdir)
+SFTP_STUB(fn_SFTP_close)
+SFTP_STUB(fn_SFTP_open)
+SFTP_STUB(fn_SFTP_read)
+SFTP_STUB(fn_SFTP_write)
+SFTP_STUB(fn_SFTP_mkdir)
+SFTP_STUB(fn_SFTP_rmdir)
+SFTP_STUB(fn_SFTP_remove)
+SFTP_STUB(fn_SFTP_rename)
+
+SFTP_STUB(fn_SFTPEntry_name)
+SFTP_STUB(fn_SFTPEntry_longname)
+SFTP_STUB(fn_SFTPEntry_size)
+SFTP_STUB(fn_SFTPEntry_mtime)
+SFTP_STUB(fn_SFTPEntry_isDir)
+SFTP_STUB(fn_SFTPEntry_hash)
+SFTP_STUB(fn_SFTPEntry_toString)
+
+SFTP_STUB(fn_SFTPStat_size)
+SFTP_STUB(fn_SFTPStat_mtime)
+SFTP_STUB(fn_SFTPStat_atime)
+SFTP_STUB(fn_SFTPStat_mode)
+SFTP_STUB(fn_SFTPStat_uid)
+SFTP_STUB(fn_SFTPStat_gid)
+SFTP_STUB(fn_SFTPStat_toString)
+
+SFTP_STUB(fn_SFTPError_code)
+SFTP_STUB(fn_SFTPError_message)
+SFTP_STUB(fn_SFTPError_isTransient)
+SFTP_STUB(fn_SFTPError_serverStatus)
+SFTP_STUB(fn_SFTPError_toString)
+
+#undef SFTP_STUB
+
+#endif /* WITHOUT_DEUCESSH ------------------------------------------- */
