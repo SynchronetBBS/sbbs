@@ -163,7 +163,7 @@ class WrenConsole {
     var lastTotal = paintNew_(0, true)
 
     var input  = ""
-    var cursor = 0   // byte index into `input`; 0..input.count
+    var cursor = 0   // byte index into `input`; 0..input.bytes.count
     var promptRow = Screen.window.position[1]
     drawPrompt_(promptRow, currentModule, input, cursor)
 
@@ -204,7 +204,7 @@ class WrenConsole {
                 // CR ignored
               } else if (b >= 0x20 && b < 0x7F) {
                 input = input[0...cursor] + String.fromCodePoint(b) +
-                        input[cursor...input.count]
+                        input[cursor...input.bytes.count]
                 cursor  = cursor + 1
                 histIdx = -1
               }
@@ -234,14 +234,14 @@ class WrenConsole {
           redrawPrompt = true
         } else if (key == Key.backspace || key == 0x007F) { // BS or DEL
           if (cursor > 0) {
-            input  = input[0...(cursor - 1)] + input[cursor...input.count]
+            input  = input[0...(cursor - 1)] + input[cursor...input.bytes.count]
             cursor = cursor - 1
             histIdx = -1
             redrawPrompt = true
           }
         } else if (key == Key.delete) {              // forward-delete
-          if (cursor < input.count) {
-            input = input[0...cursor] + input[(cursor + 1)...input.count]
+          if (cursor < input.bytes.count) {
+            input = input[0...cursor] + input[(cursor + 1)...input.bytes.count]
             histIdx = -1
             redrawPrompt = true
           }
@@ -251,7 +251,7 @@ class WrenConsole {
             redrawPrompt = true
           }
         } else if (key == Key.right) {
-          if (cursor < input.count) {
+          if (cursor < input.bytes.count) {
             cursor = cursor + 1
             redrawPrompt = true
           }
@@ -261,16 +261,16 @@ class WrenConsole {
             redrawPrompt = true
           }
         } else if (key == Key.end) {
-          if (cursor != input.count) {
-            cursor = input.count
+          if (cursor != input.bytes.count) {
+            cursor = input.bytes.count
             redrawPrompt = true
           }
         } else if (key == 0x0017) {                  // Ctrl+W
           // Kill the word ending at the cursor; tail (cursor..end)
           // stays put, cursor lands where the killed run started.
           var head = killWord_(input[0...cursor])
-          input  = head + input[cursor...input.count]
-          cursor = head.count
+          input  = head + input[cursor...input.bytes.count]
+          cursor = head.bytes.count
           histIdx = -1
           redrawPrompt = true
         } else if (key == Key.pageUp) {
@@ -350,7 +350,7 @@ class WrenConsole {
           if (found >= 0) {
             histIdx = found
             input   = __history[found]
-            cursor  = input.count
+            cursor  = input.bytes.count
             redrawPrompt = true
           }
         } else if (key == Key.down) {
@@ -365,7 +365,7 @@ class WrenConsole {
               histIdx = -1
               input   = histAnchor
             }
-            cursor = input.count
+            cursor = input.bytes.count
             redrawPrompt = true
           }
         } else if (key == 0x000C) {                  // Ctrl+L
@@ -386,9 +386,13 @@ class WrenConsole {
             lastTotal = paintNew_(0, true)
             promptRow = Screen.window.position[1]
           }
+          // input.count and ev.text.count are codepoint counts;
+          // cursor / slice indices are byte-based, so use
+          // bytes.count for both to keep the byte arithmetic right
+          // when pasted content includes multi-byte UTF-8.
           input  = input[0...cursor] + ev.text +
-                   input[cursor...input.count]
-          cursor = cursor + ev.text.count
+                   input[cursor...input.bytes.count]
+          cursor = cursor + ev.text.bytes.count
           histIdx = -1
           redrawPrompt = true
         }
@@ -697,18 +701,24 @@ class WrenConsole {
     // Re-position the conio cursor inside the just-painted input so
     // the user sees where Left/Right/Home/End are sitting.  Column
     // is 1-based, so prefix.count + cursor + 1.  Past-end cursor
-    // (== input.count) lands one past the last char, matching where
-    // an append would write.
+    // (== input.bytes.count) lands one past the last char, matching
+    // where an append would write.
     Screen.window.position = [prefix.count + cursor + 1, row]
   }
 
   // conio's cputs treats LF as line-feed-only (cursor down, same column).
   // The console expects \n to start a new line at column 1, so translate
   // every \n in `s` to \r\n on the way out.
+  //
+  // String.count is *codepoint* count (inherited from Sequence's
+  // iteration), but String[i] and String[a...b] are *byte* indexed.
+  // Mixing the two truncates multi-byte content by (bytes - codepoints)
+  // at the tail.  Use s.bytes.count for the byte-iteration bounds.
   static put_(s) {
+    var n = s.bytes.count
     var start = 0
     var i = 0
-    while (i < s.count) {
+    while (i < n) {
       if (s[i] == "\n") {
         if (i > start) Screen.window.print(s[start...i])
         Screen.window.print("\r\n")
@@ -716,7 +726,7 @@ class WrenConsole {
       }
       i = i + 1
     }
-    if (start < s.count) Screen.window.print(s[start...s.count])
+    if (start < n) Screen.window.print(s[start...n])
   }
 
   // Emit one log entry, returning whether the cursor is now at column 1.
@@ -726,10 +736,14 @@ class WrenConsole {
     var text   = e[2]
     var newAtStart = atLineStart
 
+    // text[i] is byte-indexed; use bytes.count - 1 to read the last
+    // byte rather than text.count - 1 (which is codepoints and lands
+    // mid-multibyte for non-ASCII content).
+    var bn = text.bytes.count
     if (src == LogSource.print) {
       put_(text)
-      if (text.count > 0) {
-        var last = text[text.count - 1]
+      if (bn > 0) {
+        var last = text[bn - 1]
         newAtStart = (last == "\n")
       }
     } else {
@@ -741,7 +755,7 @@ class WrenConsole {
       put_("[%(label) %(ts)] ")
       put_(text)
       newAtStart = true
-      if (text.count > 0 && text[text.count - 1] != "\n") put_("\n")
+      if (bn > 0 && text[bn - 1] != "\n") put_("\n")
     }
     return newAtStart
   }

@@ -91,13 +91,37 @@ fnScreenWindow_putChar(WrenVM *vm)
 	putch(c);
 }
 
+/* Forward declaration — definition lives lower in the file alongside
+ * the other UTF-8 helpers.  Needed up here so fnScreenWindow_print
+ * can decode codepoints before mapping them to CP437. */
+static int decode_utf8_first(const char *s, int len, uint32_t *cp_out);
+
+/* ScreenWindow.print(s) writes `s` one cell at a time via putch.
+ * Wren strings are UTF-8 byte sequences but local conio renders one
+ * cell per byte, so we decode codepoint-by-codepoint and map each
+ * codepoint to a CP437 byte (matching Cell.ch=) before putch.  This
+ * keeps the cursor advance == rendered cell count even when the input
+ * contains multi-byte UTF-8 sequences (em-dashes, box-drawing, etc.).
+ * Invalid UTF-8 falls through as a single raw byte so binary output
+ * still works. */
 void
 fnScreenWindow_print(WrenVM *vm)
 {
 	int len = 0;
 	const char *s = wrenGetSlotBytes(vm, 1, &len);
-	for (int i = 0; i < len; i++)
-		putch((unsigned char)s[i]);
+	int i = 0;
+	while (i < len) {
+		uint32_t cp = 0;
+		int n = decode_utf8_first(s + i, len - i, &cp);
+		if (n <= 0) {
+			putch((unsigned char)s[i]);
+			i++;
+			continue;
+		}
+		uint8_t b = cpchar_from_unicode_cpoint(CIOLIB_CP437, cp, '?');
+		putch(b);
+		i += n;
+	}
 }
 
 /* Cursor position as a single [x, y] list — getter and setter
