@@ -296,6 +296,11 @@ set(SOURCE
 	window.c
 	wren_host.c
 	wren_bind.c
+	wren_bind_sftp.c
+	wren_bind_fs.c
+	wren_bind_screen.c
+	wren_bind_conn.c
+	wren_bind_hook.c
 	../sbbs3/telnet.c
 	../sbbs3/xmodem.c
 	../sbbs3/zmodem.c

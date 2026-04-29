@@ -349,6 +349,11 @@ WREN_OBJS     := $(addprefix $(MTOBJODIR)$(DIRSEP),\
 OBJS   += $(WREN_OBJS)
 OBJS   += $(MTOBJODIR)$(DIRSEP)wren_host$(OFILE)
 OBJS   += $(MTOBJODIR)$(DIRSEP)wren_bind$(OFILE)
+OBJS   += $(MTOBJODIR)$(DIRSEP)wren_bind_sftp$(OFILE)
+OBJS   += $(MTOBJODIR)$(DIRSEP)wren_bind_fs$(OFILE)
+OBJS   += $(MTOBJODIR)$(DIRSEP)wren_bind_screen$(OFILE)
+OBJS   += $(MTOBJODIR)$(DIRSEP)wren_bind_conn$(OFILE)
+OBJS   += $(MTOBJODIR)$(DIRSEP)wren_bind_hook$(OFILE)
 CFLAGS += -Iwren/include
 
 # Wren-private include paths and PREFIX undef apply to every TU that
@@ -372,6 +377,7 @@ OBJS    += $(RE1_OBJS)
 $(RE1_OBJS): CFLAGS += -Ire1 -w
 # wren_bind reaches for re1/regexp.h too.
 $(MTOBJODIR)$(DIRSEP)wren_bind$(OFILE): CFLAGS += -Ire1
+$(MTOBJODIR)$(DIRSEP)wren_bind_hook$(OFILE): CFLAGS += -Ire1
 $(MTOBJODIR)$(DIRSEP)wren_host$(OFILE): CFLAGS += -Ire1
 
 # Embedded-script codegen.  wren_embed_gen is built with $(BUILD_CC) so
