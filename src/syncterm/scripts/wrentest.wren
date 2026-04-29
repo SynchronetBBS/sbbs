@@ -27,7 +27,7 @@ import "syncterm" for Hook, Conn, Console, Screen, CTerm, BBS, Key,
     Codepage, ConnType, Emulation, Font, LogSource, LogLevel,
     Parity, BBSListType, ScreenMode, AddressFamily, MusicMode,
     RipVersion, LogMode, StatusDisplay, Color, Cell, Hyperlinks,
-    REPL, Input, KeyEvent, Cache
+    REPL, Input, KeyEvent, Cache, Platform, Timer, TimerElapsed
 import "console" for WrenConsole
 
 class WrenTest {
@@ -37,6 +37,7 @@ class WrenTest {
     __fail             = 0
     __pending          = null
     __nextEventResult  = null
+    __timerResult      = null
     // Fiber that parks on Input.nextEvent and stores the resumption
     // value.  Started + unget'd at T06 so the earlier sentinel-driven
     // tests don't get their input claimed by the parked fiber.  The
@@ -46,6 +47,14 @@ class WrenTest {
       Input.nextEvent(Fiber.current)
       __nextEventResult = Fiber.yield()
       CTerm.suspended = false
+    }
+    // Fiber that parks on Timer.trigger with ms=0; the next doterm()
+    // iteration's sweep marks it past-due, the drain resumes the
+    // fiber with a TimerElapsed.  Started at T06 so the wallclock
+    // sentinel sleep gives the sweep time to fire.
+    __timerFiber       = Fiber.new {
+      Timer.trigger(Fiber.current, 0)
+      __timerResult = Fiber.yield()
     }
     // Register the test's hooks fresh each run; cleanup_() removes
     // them at end-of-suite so they don't keep firing once the
@@ -150,6 +159,13 @@ class WrenTest {
 
     // ------ File.readLine / File.writeLine -------------------------
     testFileLineRoundtrip_()
+
+    // ------ File.sha1 / File.md5 -----------------------------------
+    testFileHashEmpty_()
+    testFileHashKnown_()
+
+    // ------ Platform ----------------------------------------------
+    testPlatformName_()
 
     // ------ inject a sentinel key for async onKey filter test ------
     // Filter key must have low byte 0x00 (or 0xe0) — ciolib's
@@ -597,6 +613,77 @@ class WrenTest {
     Cache.delete(name)
   }
 
+  // Empty file exercises the special zero-length code path (xpmap
+  // typically rejects 0-sized maps, so the helper synthesizes an
+  // empty buffer for the hash).  Expected digests are well-known.
+  static testFileHashEmpty_() {
+    var name = "__wt_hash_empty"
+    if (Cache.contains(name)) Cache.delete(name)
+    var f = Cache.create(name)
+    if (f == null) {
+      check_(false, "File.create returned null in hash-empty setup")
+      return
+    }
+    // Don't open / write — just hash an empty file.
+    var sha = f.sha1
+    var md5 = f.md5
+    var expSha = bytesFromHex_("da39a3ee5e6b4b0d3255bfef95601890afd80709")
+    var expMd5 = bytesFromHex_("d41d8cd98f00b204e9800998ecf8427e")
+    check_(sha == expSha, "File.sha1 of empty file matches SHA1(\"\")")
+    check_(md5 == expMd5, "File.md5 of empty file matches MD5(\"\")")
+    Cache.delete(name)
+  }
+
+  // Non-empty exercises the xpmap path.  "hello" has well-known
+  // SHA-1 and MD5 digests so this checks the full pipeline rather
+  // than just round-tripping arbitrary bytes.
+  static testFileHashKnown_() {
+    var name = "__wt_hash_known"
+    if (Cache.contains(name)) Cache.delete(name)
+    var f = Cache.create(name)
+    if (f == null) {
+      check_(false, "File.create returned null in hash-known setup")
+      return
+    }
+    f.open()
+    f.write("hello")
+    f.close()
+    var sha = f.sha1
+    var md5 = f.md5
+    var expSha = bytesFromHex_("aaf4c61ddcc5e8a2dabede0f3b482cd9aea9434d")
+    var expMd5 = bytesFromHex_("5d41402abc4b2a76b9719d911017c592")
+    check_(sha == expSha, "File.sha1(\"hello\")")
+    check_(md5 == expMd5, "File.md5(\"hello\")")
+    Cache.delete(name)
+  }
+
+  // Convert a hex string to a byte-string for digest comparison.
+  static bytesFromHex_(hex) {
+    var out = ""
+    var i = 0
+    while (i < hex.count) {
+      var hi = hexDigit_(hex[i])
+      var lo = hexDigit_(hex[i + 1])
+      out = out + String.fromByte(hi * 16 + lo)
+      i = i + 2
+    }
+    return out
+  }
+
+  static hexDigit_(c) {
+    var b = c.bytes[0]
+    if (b >= 0x30 && b <= 0x39) return b - 0x30        // '0'..'9'
+    if (b >= 0x61 && b <= 0x66) return b - 0x61 + 10   // 'a'..'f'
+    if (b >= 0x41 && b <= 0x46) return b - 0x41 + 10   // 'A'..'F'
+    Fiber.abort("bad hex digit '%(c)'")
+  }
+
+  static testPlatformName_() {
+    var n = Platform.name
+    check_(n is String && n.count > 0,
+           "Platform.name returns non-empty String (got %(n))")
+  }
+
   // ===== sentinel-driven async tests ==============================
 
   static advance_() {
@@ -651,6 +738,7 @@ class WrenTest {
       check_(CTerm.suspended == true,
              "CTerm.suspended = true round-trips")
       __nextEventFiber.call()
+      __timerFiber.call()
       Input.unget(KeyEvent.new(0xFD00))
       __pending = "T06"
       Conn.send("sleep 0.2 && printf '__\%s_X_done_X__\\n' T06\r")
@@ -718,6 +806,13 @@ class WrenTest {
     // would still be wrong).
     check_(CTerm.suspended == false,
            "CTerm.suspended cleared by fiber after Input.nextEvent")
+
+    // Timer.trigger(ms=0) parks the fiber; the next doterm() iteration
+    // sweeps it past-due, the drain resumes with a TimerElapsed.  By
+    // the time T06's wallclock sentinel arrives this has had plenty
+    // of iterations to fire.
+    check_(__timerResult is TimerElapsed,
+           "Timer.trigger resumes fiber with TimerElapsed")
 
     // Hook.onInput String-replacement path: each LF off the wire
     // fires the LF→CRLF hook and runs through the C-side dispatcher's

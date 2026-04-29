@@ -26,6 +26,9 @@
 #include "comio.h"
 #include "sftp.h"
 #include "sftp_session.h"
+#include "sha1.h"
+#include "md5.h"
+#include "xpmap.h"
 
 #if !defined(_WIN32)
 #include <unistd.h>     /* for _POSIX_VERSION */
@@ -2187,6 +2190,79 @@ fn_File_isOpen(WrenVM *vm)
 	if (wf == NULL)
 		return;
 	wrenSetSlotBool(vm, 0, wf->fp != NULL);
+}
+
+/* Map a file's contents for hashing.  On success the mapping (if
+ * any) is returned via *map_out and the byte range via *data_out /
+ * *len_out; if the file is zero-length the mapping is NULL and the
+ * data is an empty buffer (xpmap typically rejects 0-sized maps so
+ * we synthesize one).  Returns false on stat / mmap failure with a
+ * fiber abort already raised. */
+static bool
+file_map_for_hash(WrenVM *vm, struct wren_file *wf,
+                  struct xpmapping **map_out, const void **data_out,
+                  size_t *len_out)
+{
+	struct stat sb;
+	if (stat(wf->path, &sb) != 0) {
+		wren_throw(vm, "File: stat failed");
+		return false;
+	}
+	if (sb.st_size == 0) {
+		*map_out  = NULL;
+		*data_out = "";
+		*len_out  = 0;
+		return true;
+	}
+	struct xpmapping *map = xpmap(wf->path, XPMAP_READ);
+	if (map == NULL) {
+		wren_throw(vm, "File: mmap failed");
+		return false;
+	}
+	*map_out  = map;
+	*data_out = map->addr;
+	*len_out  = map->size;
+	return true;
+}
+
+/* sha1 / md5 — return raw digest bytes (Wren strings are byte-safe).
+ * Hex form left to scripts (cheap to format).  Useful primarily for
+ * comparing against SFTPEntry.hash, which the sha1s/md5s extension
+ * also returns as raw bytes. */
+static void
+fn_File_sha1(WrenVM *vm)
+{
+	struct wren_file *wf = file_check(vm);
+	if (wf == NULL)
+		return;
+	struct xpmapping *map;
+	const void *data;
+	size_t len;
+	if (!file_map_for_hash(vm, wf, &map, &data, &len))
+		return;
+	uint8_t digest[SHA1_DIGEST_SIZE];
+	SHA1_calc(digest, data, len);
+	if (map != NULL)
+		xpunmap(map);
+	wrenSetSlotBytes(vm, 0, (const char *)digest, SHA1_DIGEST_SIZE);
+}
+
+static void
+fn_File_md5(WrenVM *vm)
+{
+	struct wren_file *wf = file_check(vm);
+	if (wf == NULL)
+		return;
+	struct xpmapping *map;
+	const void *data;
+	size_t len;
+	if (!file_map_for_hash(vm, wf, &map, &data, &len))
+		return;
+	uint8_t digest[MD5_DIGEST_SIZE];
+	MD5_calc(digest, data, len);
+	if (map != NULL)
+		xpunmap(map);
+	wrenSetSlotBytes(vm, 0, (const char *)digest, MD5_DIGEST_SIZE);
 }
 
 /* toString skips the usual file_check / dir_check guards so a dead
@@ -5299,6 +5375,8 @@ static const struct binding BINDINGS[] = {
 	{ "File",      false, "offset=(_)",      fn_File_offset_set     },
 	{ "File",      false, "size",            fn_File_size           },
 	{ "File",      false, "isOpen",          fn_File_isOpen         },
+	{ "File",      false, "sha1",            fn_File_sha1           },
+	{ "File",      false, "md5",             fn_File_md5            },
 	{ "File",      false, "toString",        fn_File_toString       },
 
 	/* Hook */

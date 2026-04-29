@@ -2182,6 +2182,15 @@ methods on the resulting `File` are no-ops if construction failed.
 
 | `File.isOpen`
 | `true` while the handle is valid.
+
+| `File.sha1`, `File.md5`
+| Hashes of the file's full content; raw digest bytes (20 / 16
+  bytes) returned as a Wren String.  Implementation memory-maps the
+  file; zero-length files are hashed as the empty buffer.  Returned
+  as bytes rather than hex so they compare directly against
+  `SFTPEntry.hash` from the `sha1s@syncterm.net` /
+  `md5s@syncterm.net` SFTP extensions; format hex yourself if you
+  need it for display.
 |===
 
 A `File` whose backing file has been deleted is dead — every method
@@ -2204,6 +2213,260 @@ return type.
 plus the filtered variants `Hook.onKey(key, fn)`, `Hook.onInput(byte,
 fn)`, `Hook.onMouse(event, fn)`, and `Hook.onMatch(pattern, fn)`.
 Each call returns a `HookHandle`.
+
+=== Platform [[platform]]
+
+OS identification.  No further OS surface (no shell exec, no stdio,
+no process model) is exposed.
+
+[options="header",cols="2,3"]
+|===
+| Method | Description
+
+| `Platform.name`
+| OS identifier as a String.  Returns `"Windows"` on Windows; the
+  `uname(2)` `sysname` field on POSIX hosts (typically `"FreeBSD"`,
+  `"Linux"`, `"Darwin"`, etc.); `"Unknown"` on anything else.  Win32
+  is checked before POSIX, so Cygwin / MSYS report the native OS.
+|===
+
+=== Timer [[timer]]
+
+One-shot fiber resumption after a delay.  Registers a fiber to
+receive a `TimerElapsed` event after the requested number of
+milliseconds; the event lands on the result queue and the fiber is
+resumed by the standard drainer once doterm() reaches it.
+
+For recurring fire-and-forget callbacks (no fiber resume), use
+`Hook.every(ms, fn)` instead.
+
+[options="header",cols="2,3"]
+|===
+| Method | Description
+
+| `Timer.trigger(fiber, ms)`
+| Schedule `fiber` to be resumed with a `TimerElapsed` after `ms`
+  milliseconds.  Multiple pending entries per fiber are fine — each
+  fires independently.  Returns `null`.  Throws on a non-numeric or
+  negative `ms`, or when more than 32 timers are pending across the
+  whole VM.
+|===
+
+Common idiom — fire and immediately await:
+
+[source,wren]
+----
+import "syncterm" for Timer
+
+Timer.trigger(Fiber.current, 250)
+Fiber.yield()
+// 250ms have passed, with the doterm() loop running normally
+----
+
+Multi-fire / event-loop dispatch:
+
+[source,wren]
+----
+import "syncterm" for Timer, SFTP, SFTPStat, SFTPError
+
+Timer.trigger(Fiber.current, 100)        // spinner tick
+SFTP.stat(Fiber.current, "/foo")          // stat in flight
+while (true) {
+  var x = Fiber.yield()
+  if (x is TimerElapsed) {
+    spinner.update()
+    Timer.trigger(Fiber.current, 100)    // re-arm
+  }
+  if (x is SFTPStat)  break
+  if (x is SFTPError) break
+}
+----
+
+`TimerElapsed` is a marker class with no fields — the caller already
+knows what it scheduled; just dispatch on type.
+
+=== SFTP [[sftp]]
+
+SSH-channel side-band file transfer.  The full surface follows the
+fiber-arg async pattern (see <<async-pattern,Async Ops>> below): the
+foreign primitive captures a fiber and queues work on the SSH
+session's recv thread; the result lands on the framework's queue and
+the standard drainer resumes the fiber.
+
+`SFTP.<op>(fiber, args...)` returns `null` when the request was
+queued (yield to receive the result), or an `SFTPError` directly on
+synchronous failure (session is gone, OOM at the foreign-method
+site).
+
+[options="header",cols="2,3"]
+|===
+| Method | Description
+
+| `SFTP.available`
+| `true` while the SSH connection has a usable SFTP subsystem.
+
+| `SFTP.pubdir`
+| The remote `pubdir@syncterm.net` path advertised by the server, or
+  `null` if the extension wasn't negotiated.
+
+| `SFTP.realpath(fiber, path)`
+| Resolve `path` to an absolute server path.  Resumes with `String`
+  or `SFTPError`.
+
+| `SFTP.stat(fiber, path)`
+| Stat a remote path.  Resumes with `SFTPStat` or `SFTPError`.
+
+| `SFTP.opendir(fiber, path)`
+| Open a directory for iteration.  Resumes with `SFTPHandle` or
+  `SFTPError`.
+
+| `SFTP.readdir(fiber, handle)`
+| Read the next batch of entries from an open directory handle.
+  Resumes with `List<SFTPEntry>` or `null` (EOF) or `SFTPError`.
+  Loop until null, then call `SFTP.close`.
+
+| `SFTP.open(fiber, path, flags)`
+| Open a file.  `flags` is a bitmask from `FileFlag` (see below).
+  Resumes with `SFTPHandle` or `SFTPError`.
+
+| `SFTP.read(fiber, handle, offset, count)`
+| Read up to `count` bytes from `handle` at `offset`.  Resumes with
+  the bytes as a String, `null` at EOF, or `SFTPError`.
+
+| `SFTP.write(fiber, handle, offset, bytes)`
+| Write `bytes` to `handle` at `offset`.  All-or-nothing: resumes
+  with `null` on success or `SFTPError`.
+
+| `SFTP.close(fiber, handle)`
+| Close a handle returned by `open` / `opendir`.  Resumes with
+  `null` or `SFTPError`.  After close, the handle is dead — further
+  reads / writes / closes on it abort the calling fiber.
+
+| `SFTP.mkdir(fiber, path)`, `SFTP.rmdir(fiber, path)`,
+  `SFTP.remove(fiber, path)`, `SFTP.rename(fiber, oldpath, newpath)`
+| Mutation ops.  Each resumes with `null` on success or `SFTPError`.
+|===
+
+==== FileFlag
+
+OR-able bitmask constants for `SFTP.open`'s flags argument; each
+matches the corresponding `SSH_FXF_*` wire constant.
+
+[options="header",cols="2,3"]
+|===
+| Constant | Wire value
+
+| `FileFlag.read`   | `0x01`
+| `FileFlag.write`  | `0x02`
+| `FileFlag.append` | `0x04`
+| `FileFlag.creat`  | `0x08`
+| `FileFlag.trunc`  | `0x10`
+| `FileFlag.excl`   | `0x20`
+|===
+
+==== SFTPEntry
+
+One entry from `SFTP.readdir`.
+
+[options="header",cols="2,3"]
+|===
+| Member | Description
+
+| `name`     | Filename relative to the parent directory.
+| `longname` | Server-formatted ls-style line (when the
+              `lname@syncterm.net` extension was negotiated; `null`
+              otherwise).  Used as `toString` when present.
+| `size`     | File size in bytes.
+| `mtime`    | Modification time, POSIX seconds.
+| `isDir`    | `true` if the entry is a directory.
+| `hash`     | SHA-1 / MD5 digest bytes from `sha1s@syncterm.net` /
+              `md5s@syncterm.net`, or `null` if neither extension
+              was negotiated.  Compares directly against
+              `File.sha1` / `File.md5`.
+|===
+
+==== SFTPStat
+
+Result of `SFTP.stat`.
+
+[options="header",cols="2,3"]
+|===
+| Member | Description
+
+| `size`  | File size in bytes.
+| `mtime` | Modification time, POSIX seconds.
+| `atime` | Access time, POSIX seconds.
+| `mode`  | SFTP-wire permission bits (Unix-style on POSIX servers).
+| `uid`   | Owner user ID.
+| `gid`   | Owner group ID.
+|===
+
+==== SFTPHandle
+
+Opaque server file/dir handle.  Only `SFTP.open` / `SFTP.opendir`
+produce one; only `SFTP.read` / `SFTP.write` / `SFTP.readdir` /
+`SFTP.close` consume one.  GC'd handles fire `SFTP.close`
+fire-and-forget as a safety net, but scripts should close
+explicitly.
+
+==== SFTPError
+
+Returned in place of the typed result on any failure.  Two error
+layers — distinguish via `code`:
+
+[options="header",cols="2,3"]
+|===
+| Member | Description
+
+| `code`         | `sftp_err_code_t` enum value.  Non-zero means a
+                   library / transport-level failure (`OOM`,
+                   `ABORTED`, `SEND_FAILED`, …); zero means the
+                   server returned a STATUS reply with an error
+                   code, in which case `serverStatus` carries it.
+| `serverStatus` | `SSH_FX_*` wire status (e.g. `SSH_FX_NO_SUCH_FILE`,
+                   `SSH_FX_PERMISSION_DENIED`).  Meaningful only
+                   when `code == 0`.
+| `message`      | Human-readable diagnostic text accumulated by the
+                   library (may be `null`).
+| `isTransient`  | `true` for failures that may succeed on retry
+                   (transport drops, aborts, OOM).
+|===
+
+The `toString` override produces `"SFTPError: <name>: <message>"`
+for `System.print` / interpolation; useful for log-line debug.
+
+==== Async Ops [[async-pattern]]
+
+Every `SFTP.<op>(fiber, ...)` and `Timer.trigger(fiber, ms)` follow
+the same fiber-arg pattern.  The first argument is the fiber to
+resume with the result.  Two common shapes:
+
+**Blocking-style** — pass `Fiber.current`, yield right after:
+
+[source,wren]
+----
+var r = SFTP.realpath(Fiber.current, ".") || Fiber.yield()
+// r is String or SFTPError
+----
+
+The `||` shortcut means: if the foreign returned an `SFTPError`
+synchronously (session is gone), `r` is that error and `Fiber.yield()`
+isn't evaluated.  Otherwise the yield resumes with the result.
+
+**Callback-style** — pass `Fiber.new {|r| ... }`, calling fiber
+doesn't yield at all:
+
+[source,wren]
+----
+SFTP.realpath(Fiber.new {|r|
+  // r is String or SFTPError
+}, ".")
+----
+
+The framework calls `fiber.call(result)` on whichever fiber was
+passed.  Useful from hooks (which mustn't yield directly — see
+<<hook-events>>) and for fan-out where the result handler is
+naturally a closure over its own state.
 
 == Worked Example: Auto-respond to a Prompt
 

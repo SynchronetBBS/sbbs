@@ -672,6 +672,13 @@ foreign class File {
   foreign offset=(o)
   foreign size
   foreign isOpen
+  // Hashes of the file's full content (mmap'd; zero-length files are
+  // hashed as the empty buffer).  Returned as raw digest bytes —
+  // Wren strings are byte-safe — to compare directly against
+  // SFTPEntry.hash from the sha1s/md5s extensions.  Format hex
+  // yourself if you need it for display.
+  foreign sha1
+  foreign md5
   foreign toString
 }
 class Hook {
