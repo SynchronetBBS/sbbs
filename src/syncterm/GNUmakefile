@@ -124,7 +124,12 @@ ifndef WITHOUT_DEUCESSH
  # failure.  CI extracts botan.tgz before this file parses; fresh
  # local checkouts with no system crypto let the normal build-order
  # (botan → deucessh → syncterm) run unprobed.
- DSSH_CRYPTO_READY := $(shell (pkg-config --atleast-version=3.0 botan-3 2>/dev/null || pkg-config --atleast-version=3.0 libcrypto 2>/dev/null) && echo YES)
+ # Pass PKG_CONFIG_PATH on the command line rather than relying on the
+ # `export` from build/botan.gmake — some gmake versions (observed on
+ # Ubuntu) don't propagate `export VAR := value` from an included file
+ # into $(shell ...) calls in the same parse phase.  $(PKG_CONFIG_PATH)
+ # is still set as a make variable, so we can re-emit it explicitly.
+ DSSH_CRYPTO_READY := $(shell export PKG_CONFIG_PATH="$(PKG_CONFIG_PATH)"; (pkg-config --atleast-version=3.0 botan-3 2>/dev/null || pkg-config --atleast-version=3.0 libcrypto 2>/dev/null) && echo YES)
  ifeq ($(DSSH_CRYPTO_READY),YES)
   # Use `test -f` via $(shell) rather than $(wildcard) — wildcard's
   # expansion is cached across a single make parse phase, so the first
@@ -231,7 +236,7 @@ ifdef NEED_BOTAN
  # -pthread here trips "cannot find -lpthread".
  # Append to TRAILING_LIBS — xpdev and deucessh both reference Botan
  # symbols, so Botan must appear after both static archives.
- TRAILING_LIBS += $(filter-out -pthread,$(shell pkg-config --libs botan-3))
+ TRAILING_LIBS += $(filter-out -pthread,$(shell PKG_CONFIG_PATH="$(PKG_CONFIG_PATH)" pkg-config --libs botan-3))
 endif
 
 # ini_crypt.c + xp_crypt/xp_tls backend shim are always built, even
@@ -244,7 +249,7 @@ OBJS += $(MTOBJODIR)$(DIRSEP)ini_crypt$(OFILE)
 ifeq ($(XP_CRYPTO_BACKEND),Botan)
  # Botan 3 public headers require C++20 (std::span).  Override the
  # tree-default -std=c++11 for just the Botan shim objects.
- BOTAN_CXXFLAGS = $(shell pkg-config --cflags botan-3)
+ BOTAN_CXXFLAGS = $(shell PKG_CONFIG_PATH="$(PKG_CONFIG_PATH)" pkg-config --cflags botan-3)
  OBJS += $(MTOBJODIR)$(DIRSEP)xp_crypt_botan3$(OFILE)
  OBJS += $(MTOBJODIR)$(DIRSEP)xp_tls_botan3$(OFILE)
  # `botan` is an order-only prereq: the Botan build has to have run
