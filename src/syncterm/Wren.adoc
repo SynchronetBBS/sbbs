@@ -3118,13 +3118,13 @@ passed.  Useful from hooks (which mustn't yield directly — see
 <<hook-events>>) and for fan-out where the result handler is
 naturally a closure over its own state.
 
-=== WOM [[wom]]
+=== WON [[won]]
 
-The Wren Object Model — round-trip serialisation between Wren values
+The Wren Object Notation — round-trip serialisation between Wren values
 and a textual literal format.  Output is a strict subset of valid Wren
 syntax (and therefore also pasteable into Wren source).  Deserialisation
 runs a hardened C parser, *not* `eval`, so feeding untrusted text to
-`WOM.deserialize` cannot execute code.
+`WON.deserialize` cannot execute code.
 
 Supported types:
 
@@ -3150,23 +3150,23 @@ mode.  Cyclic Lists / Maps abort in *both* modes.
 |===
 | Member | Description
 
-| `WOM.serialize(value)`
+| `WON.serialize(value)`
 | Strict compact form.  `[1,2,3]` / `{"a":1,"b":2}`.  Aborts the fiber on
   unsupported types, NaN/Infinity, or cycles.
 
-| `WOM.serialize(value, indent)`
+| `WON.serialize(value, indent)`
 | Strict pretty-printed form.  `indent` is a String inserted once per
   nesting level (e.g. `"  "` for two-space, `"\t"` for tab).  Same error
   behaviour as the one-arg form.
 
-| `WOM.serializeLossy(value)`
+| `WON.serializeLossy(value)`
 | Compact form that silently omits unsupported items from Lists and Maps;
   a top-level unsupported value becomes `"null"`.  Cycles still abort.
 
-| `WOM.serializeLossy(value, indent)`
+| `WON.serializeLossy(value, indent)`
 | Pretty-printed lossy form.
 
-| `WOM.deserialize(text)`
+| `WON.deserialize(text)`
 | Parse `text` and return the reconstructed value.  Aborts the fiber with
   a message containing the byte offset on syntax errors, premature end of
   input, trailing garbage, or a `List` / `Map` used as a `Map` key.
@@ -3177,7 +3177,7 @@ mode.  Cyclic Lists / Maps abort in *both* modes.
 
 [source,wren]
 ----
-import "syncterm" for WOM
+import "syncterm" for WON
 
 var data = {
   "name":  "syncterm",
@@ -3185,10 +3185,10 @@ var data = {
   "flags": {"verbose": true, "depth": 7},
 }
 
-System.print(WOM.serialize(data))
+System.print(WON.serialize(data))
 // {"name":"syncterm","items":[1,2,[3,4]],"flags":{"verbose":true,"depth":7}}
 
-System.print(WOM.serialize(data, "  "))
+System.print(WON.serialize(data, "  "))
 // {
 //   "name": "syncterm",
 //   "items": [
@@ -3205,12 +3205,12 @@ System.print(WOM.serialize(data, "  "))
 //   }
 // }
 
-var roundTripped = WOM.deserialize(WOM.serialize(data))
+var roundTripped = WON.deserialize(WON.serialize(data))
 System.print(roundTripped["flags"]["depth"])     // 7
 
 // Lossy mode skips unsupported entries instead of aborting.
 var mixed = [1, Fiber.new {}, 2, Fiber.new {}, 3]
-System.print(WOM.serializeLossy(mixed))          // [1,2,3]
+System.print(WON.serializeLossy(mixed))          // [1,2,3]
 ----
 
 == Built-in UI Library [[ui-library]]

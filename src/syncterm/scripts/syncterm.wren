@@ -1013,7 +1013,7 @@ foreign class SFTPError {
 // `import "syncterm" for Cache`s sees a fully-formed Directory.
 var Cache = Host.cacheDirectory
 
-// WOM — Wren Object Model serialization.
+// WON — Wren Object Notation serialization.
 //
 // Serializes / deserializes values built from Null, Bool, Num, String, List,
 // Map, Range, and Sequence (the latter two coerce to List).  Output is valid
@@ -1024,14 +1024,14 @@ var Cache = Host.cacheDirectory
 //   serializeLossy(v)    — silently omits unsupported items from Lists/Maps;
 //                          a top-level unsupported value becomes "null".
 // Each takes an optional indent String for pretty-printing:
-//   WOM.serialize(v)            // compact: {"a":1,"b":[1,2,3]}
-//   WOM.serialize(v, "  ")      // pretty, 2-space indent
-//   WOM.serialize(v, "\t")      // pretty, tab indent
+//   WON.serialize(v)            // compact: {"a":1,"b":[1,2,3]}
+//   WON.serialize(v, "  ")      // pretty, 2-space indent
+//   WON.serialize(v, "\t")      // pretty, tab indent
 //
 // deserialize runs a hardened C parser — no eval — and accepts arbitrary
 // whitespace and trailing commas between tokens.  Map keys must be a value
 // Wren can hash (Bool, Num, String, Range, null); List/Map keys are rejected.
-class WOM {
+class WON {
   static serialize(value)              { serialize_(value, null,   true)  }
   static serialize(value, indent)      { serialize_(value, indent, true)  }
   static serializeLossy(value)         { serialize_(value, null,   false) }
@@ -1043,7 +1043,7 @@ class WOM {
 
   static serialize_(value, indent, strict) {
     if (indent != null && !(indent is String)) {
-      Fiber.abort("WOM.serialize: indent must be a String or null")
+      Fiber.abort("WON.serialize: indent must be a String or null")
     }
     if (!strict && !isWritable_(value)) return "null"
     return write_(value, indent, 0, [], strict)
@@ -1058,17 +1058,17 @@ class WOM {
     if (value is Map)      return writeMap_( value,        indent, depth, stack, strict)
     if (value is Range)    return writeList_(value.toList, indent, depth, stack, strict)
     if (value is Sequence) return writeList_(value.toList, indent, depth, stack, strict)
-    if (strict) Fiber.abort("WOM.serialize: unsupported type %(value.type)")
+    if (strict) Fiber.abort("WON.serialize: unsupported type %(value.type)")
     return "null"
   }
 
   static writeNum_(n, strict) {
     if (n != n) {
-      if (strict) Fiber.abort("WOM.serialize: NaN has no Wren literal")
+      if (strict) Fiber.abort("WON.serialize: NaN has no Wren literal")
       return "null"
     }
     if (n == 1/0 || n == -1/0) {
-      if (strict) Fiber.abort("WOM.serialize: Infinity has no Wren literal")
+      if (strict) Fiber.abort("WON.serialize: Infinity has no Wren literal")
       return "null"
     }
     return n.toString
@@ -1110,7 +1110,7 @@ class WOM {
   }
 
   static writeList_(list, indent, depth, stack, strict) {
-    if (stack.contains(list)) Fiber.abort("WOM.serialize: cycle in List")
+    if (stack.contains(list)) Fiber.abort("WON.serialize: cycle in List")
     if (list.count == 0) return "[]"
     stack.add(list)
     var parts = []
@@ -1123,7 +1123,7 @@ class WOM {
   }
 
   static writeMap_(map, indent, depth, stack, strict) {
-    if (stack.contains(map)) Fiber.abort("WOM.serialize: cycle in Map")
+    if (stack.contains(map)) Fiber.abort("WON.serialize: cycle in Map")
     if (map.count == 0) return "{}"
     stack.add(map)
     var parts = []

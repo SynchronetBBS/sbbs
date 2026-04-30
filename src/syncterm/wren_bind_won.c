@@ -1,14 +1,14 @@
-/* WOM (Wren Object Model) deserialiser.  Hand-written recursive-descent
- * parser over the same literal subset that the Wren-side WOM.serialize
+/* WON (Wren Object Notation) deserialiser.  Hand-written recursive-descent
+ * parser over the same literal subset that the Wren-side WON.serialize
  * produces.  Crucially this is NOT eval — the input never reaches the
  * Wren compiler — so it is safe to feed untrusted text.
  *
- * Public API is fn_WOM_deserialize, declared in wren_bind_wom.h and
- * registered as `WOM.deserialize(_)` in the BINDINGS table in
+ * Public API is fn_WON_deserialize, declared in wren_bind_won.h and
+ * registered as `WON.deserialize(_)` in the BINDINGS table in
  * wren_bind.c. */
 
 #include "wren_bind_internal.h"
-#include "wren_bind_wom.h"
+#include "wren_bind_won.h"
 
 #include <stdarg.h>
 #include <stdbool.h>
@@ -21,9 +21,9 @@
 /* Recursion limit — every nested List/Map level recurses into
  * parse_value.  Matches the recursion budget the Wren compiler uses
  * itself (see wren_compiler.c MAX_RECURSION_DEPTH). */
-#define WOM_MAX_DEPTH 256
+#define WON_MAX_DEPTH 256
 
-struct wom_parser {
+struct won_parser {
 	const char *src;   /* start of buffer (for error offset reports) */
 	const char *end;   /* one-past-end */
 	const char *pos;   /* current cursor */
@@ -33,7 +33,7 @@ struct wom_parser {
 /* Format an error and abort the calling fiber.  Includes the cursor
  * offset so the Wren-side caller can locate the bad token. */
 static void
-wom_throw(WrenVM *vm, struct wom_parser *p, const char *fmt, ...)
+won_throw(WrenVM *vm, struct won_parser *p, const char *fmt, ...)
 {
 	char inner[160];
 	va_list ap;
@@ -42,13 +42,13 @@ wom_throw(WrenVM *vm, struct wom_parser *p, const char *fmt, ...)
 	va_end(ap);
 	char full[256];
 	snprintf(full, sizeof full,
-	    "WOM.deserialize: %s at offset %ld",
+	    "WON.deserialize: %s at offset %ld",
 	    inner, (long)(p->pos - p->src));
 	wren_throw(vm, full);
 }
 
 static void
-skip_ws(struct wom_parser *p)
+skip_ws(struct won_parser *p)
 {
 	while (p->pos < p->end) {
 		char c = *p->pos;
@@ -78,11 +78,11 @@ hex_val(char c)
 	return -1;
 }
 
-static bool parse_value(WrenVM *vm, struct wom_parser *p, int slot);
+static bool parse_value(WrenVM *vm, struct won_parser *p, int slot);
 
 /* Match a literal keyword exactly, advancing the cursor on success. */
 static bool
-match_keyword(struct wom_parser *p, const char *kw, int kwlen)
+match_keyword(struct won_parser *p, const char *kw, int kwlen)
 {
 	if (p->end - p->pos < kwlen) return false;
 	if (memcmp(p->pos, kw, kwlen) != 0) return false;
@@ -91,7 +91,7 @@ match_keyword(struct wom_parser *p, const char *kw, int kwlen)
 }
 
 static bool
-parse_number(WrenVM *vm, struct wom_parser *p, int slot)
+parse_number(WrenVM *vm, struct won_parser *p, int slot)
 {
 	const char *start = p->pos;
 	bool neg = false;
@@ -112,7 +112,7 @@ parse_number(WrenVM *vm, struct wom_parser *p, int slot)
 			p->pos++;
 		}
 		if (p->pos == hex_start) {
-			wom_throw(vm, p, "expected hex digits after '0x'");
+			won_throw(vm, p, "expected hex digits after '0x'");
 			return false;
 		}
 		double d = (double)v;
@@ -125,7 +125,7 @@ parse_number(WrenVM *vm, struct wom_parser *p, int slot)
 	const char *dig_start = p->pos;
 	while (p->pos < p->end && is_digit(*p->pos)) p->pos++;
 	if (p->pos == dig_start) {
-		wom_throw(vm, p, "expected digit");
+		won_throw(vm, p, "expected digit");
 		return false;
 	}
 	if (p->pos < p->end && *p->pos == '.') {
@@ -139,7 +139,7 @@ parse_number(WrenVM *vm, struct wom_parser *p, int slot)
 		const char *exp_start = p->pos;
 		while (p->pos < p->end && is_digit(*p->pos)) p->pos++;
 		if (p->pos == exp_start) {
-			wom_throw(vm, p, "expected digit in exponent");
+			won_throw(vm, p, "expected digit in exponent");
 			return false;
 		}
 	}
@@ -149,7 +149,7 @@ parse_number(WrenVM *vm, struct wom_parser *p, int slot)
 	 * comfortable headroom. */
 	size_t n = (size_t)(p->pos - start);
 	if (n >= 64) {
-		wom_throw(vm, p, "number literal too long");
+		won_throw(vm, p, "number literal too long");
 		return false;
 	}
 	char buf[64];
@@ -158,7 +158,7 @@ parse_number(WrenVM *vm, struct wom_parser *p, int slot)
 	char *endp;
 	double d = strtod(buf, &endp);
 	if (endp != buf + n) {
-		wom_throw(vm, p, "malformed number");
+		won_throw(vm, p, "malformed number");
 		return false;
 	}
 	wrenSetSlotDouble(vm, slot, d);
@@ -213,7 +213,7 @@ sb_put_codepoint(struct strbuf *sb, uint32_t cp)
 
 /* Read N hex digits at the cursor into *out, advancing on success. */
 static bool
-read_hex(struct wom_parser *p, int n_digits, uint32_t *out)
+read_hex(struct won_parser *p, int n_digits, uint32_t *out)
 {
 	if (p->end - p->pos < n_digits) return false;
 	uint32_t v = 0;
@@ -232,10 +232,10 @@ read_hex(struct wom_parser *p, int n_digits, uint32_t *out)
  * escape Wren itself rejects would break the "output is valid Wren
  * source" property. */
 static bool
-parse_string(WrenVM *vm, struct wom_parser *p, int slot)
+parse_string(WrenVM *vm, struct won_parser *p, int slot)
 {
 	if (p->pos >= p->end || *p->pos != '"') {
-		wom_throw(vm, p, "expected string");
+		won_throw(vm, p, "expected string");
 		return false;
 	}
 	p->pos++;
@@ -248,7 +248,7 @@ parse_string(WrenVM *vm, struct wom_parser *p, int slot)
 		}
 		if (p->pos >= p->end) {
 			free(sb.data);
-			wom_throw(vm, p, "unterminated escape");
+			won_throw(vm, p, "unterminated escape");
 			return false;
 		}
 		char e = *p->pos++;
@@ -270,7 +270,7 @@ parse_string(WrenVM *vm, struct wom_parser *p, int slot)
 		case 'x':
 			if (!read_hex(p, 2, &cp)) {
 				free(sb.data);
-				wom_throw(vm, p, "malformed \\x escape");
+				won_throw(vm, p, "malformed \\x escape");
 				return false;
 			}
 			if (!sb_putc(&sb, (char)cp)) goto oom;
@@ -278,37 +278,37 @@ parse_string(WrenVM *vm, struct wom_parser *p, int slot)
 		case 'u':
 			if (!read_hex(p, 4, &cp)) {
 				free(sb.data);
-				wom_throw(vm, p, "malformed \\u escape");
+				won_throw(vm, p, "malformed \\u escape");
 				return false;
 			}
 			if (!sb_put_codepoint(&sb, cp)) {
 				free(sb.data);
-				wom_throw(vm, p, "invalid codepoint in \\u escape");
+				won_throw(vm, p, "invalid codepoint in \\u escape");
 				return false;
 			}
 			continue;
 		case 'U':
 			if (!read_hex(p, 8, &cp)) {
 				free(sb.data);
-				wom_throw(vm, p, "malformed \\U escape");
+				won_throw(vm, p, "malformed \\U escape");
 				return false;
 			}
 			if (!sb_put_codepoint(&sb, cp)) {
 				free(sb.data);
-				wom_throw(vm, p, "invalid codepoint in \\U escape");
+				won_throw(vm, p, "invalid codepoint in \\U escape");
 				return false;
 			}
 			continue;
 		default:
 			free(sb.data);
-			wom_throw(vm, p, "invalid escape character '\\%c'", e);
+			won_throw(vm, p, "invalid escape character '\\%c'", e);
 			return false;
 		}
 		if (!sb_putc(&sb, out)) goto oom;
 	}
 	if (p->pos >= p->end) {
 		free(sb.data);
-		wom_throw(vm, p, "unterminated string");
+		won_throw(vm, p, "unterminated string");
 		return false;
 	}
 	p->pos++; /* closing quote */
@@ -318,15 +318,15 @@ parse_string(WrenVM *vm, struct wom_parser *p, int slot)
 
 oom:
 	free(sb.data);
-	wren_throw(vm, "WOM.deserialize: out of memory");
+	wren_throw(vm, "WON.deserialize: out of memory");
 	return false;
 }
 
 static bool
-parse_list(WrenVM *vm, struct wom_parser *p, int slot)
+parse_list(WrenVM *vm, struct won_parser *p, int slot)
 {
 	if (p->pos >= p->end || *p->pos != '[') {
-		wom_throw(vm, p, "expected '['");
+		won_throw(vm, p, "expected '['");
 		return false;
 	}
 	p->pos++;
@@ -348,16 +348,16 @@ parse_list(WrenVM *vm, struct wom_parser *p, int slot)
 			p->pos++;
 			return true;
 		}
-		wom_throw(vm, p, "expected ',' or ']' in List");
+		won_throw(vm, p, "expected ',' or ']' in List");
 		return false;
 	}
 }
 
 static bool
-parse_map(WrenVM *vm, struct wom_parser *p, int slot)
+parse_map(WrenVM *vm, struct won_parser *p, int slot)
 {
 	if (p->pos >= p->end || *p->pos != '{') {
-		wom_throw(vm, p, "expected '{'");
+		won_throw(vm, p, "expected '{'");
 		return false;
 	}
 	p->pos++;
@@ -371,12 +371,12 @@ parse_map(WrenVM *vm, struct wom_parser *p, int slot)
 		wrenEnsureSlots(vm, slot + 3);
 		WrenType kt = wrenGetSlotType(vm, slot + 1);
 		if (kt == WREN_TYPE_LIST || kt == WREN_TYPE_MAP) {
-			wom_throw(vm, p, "List/Map cannot be a Map key");
+			won_throw(vm, p, "List/Map cannot be a Map key");
 			return false;
 		}
 		skip_ws(p);
 		if (p->pos >= p->end || *p->pos != ':') {
-			wom_throw(vm, p, "expected ':' after Map key");
+			won_throw(vm, p, "expected ':' after Map key");
 			return false;
 		}
 		p->pos++;
@@ -394,22 +394,22 @@ parse_map(WrenVM *vm, struct wom_parser *p, int slot)
 			p->pos++;
 			return true;
 		}
-		wom_throw(vm, p, "expected ',' or '}' in Map");
+		won_throw(vm, p, "expected ',' or '}' in Map");
 		return false;
 	}
 }
 
 static bool
-parse_value(WrenVM *vm, struct wom_parser *p, int slot)
+parse_value(WrenVM *vm, struct won_parser *p, int slot)
 {
-	if (p->depth >= WOM_MAX_DEPTH) {
-		wom_throw(vm, p, "nested too deeply");
+	if (p->depth >= WON_MAX_DEPTH) {
+		won_throw(vm, p, "nested too deeply");
 		return false;
 	}
 	p->depth++;
 	skip_ws(p);
 	if (p->pos >= p->end) {
-		wom_throw(vm, p, "unexpected end of input");
+		won_throw(vm, p, "unexpected end of input");
 		p->depth--;
 		return false;
 	}
@@ -418,15 +418,15 @@ parse_value(WrenVM *vm, struct wom_parser *p, int slot)
 	if (c == 'n') {
 		ok = match_keyword(p, "null", 4);
 		if (ok) wrenSetSlotNull(vm, slot);
-		else wom_throw(vm, p, "expected 'null'");
+		else won_throw(vm, p, "expected 'null'");
 	} else if (c == 't') {
 		ok = match_keyword(p, "true", 4);
 		if (ok) wrenSetSlotBool(vm, slot, true);
-		else wom_throw(vm, p, "expected 'true'");
+		else won_throw(vm, p, "expected 'true'");
 	} else if (c == 'f') {
 		ok = match_keyword(p, "false", 5);
 		if (ok) wrenSetSlotBool(vm, slot, false);
-		else wom_throw(vm, p, "expected 'false'");
+		else won_throw(vm, p, "expected 'false'");
 	} else if (c == '"') {
 		ok = parse_string(vm, p, slot);
 	} else if (c == '[') {
@@ -436,7 +436,7 @@ parse_value(WrenVM *vm, struct wom_parser *p, int slot)
 	} else if (c == '-' || (c >= '0' && c <= '9')) {
 		ok = parse_number(vm, p, slot);
 	} else {
-		wom_throw(vm, p, "unexpected character '%c'", c);
+		won_throw(vm, p, "unexpected character '%c'", c);
 		ok = false;
 	}
 	p->depth--;
@@ -444,10 +444,10 @@ parse_value(WrenVM *vm, struct wom_parser *p, int slot)
 }
 
 void
-fn_WOM_deserialize(WrenVM *vm)
+fn_WON_deserialize(WrenVM *vm)
 {
 	if (wrenGetSlotType(vm, 1) != WREN_TYPE_STRING) {
-		wren_throw(vm, "WOM.deserialize: argument must be a String");
+		wren_throw(vm, "WON.deserialize: argument must be a String");
 		return;
 	}
 	int len;
@@ -459,13 +459,13 @@ fn_WOM_deserialize(WrenVM *vm)
 	 * could free the ObjString backing `src`.  The copy isolates us. */
 	char *text = (char *)malloc((size_t)len + 1);
 	if (text == NULL) {
-		wren_throw(vm, "WOM.deserialize: out of memory");
+		wren_throw(vm, "WON.deserialize: out of memory");
 		return;
 	}
 	if (len > 0) memcpy(text, src, (size_t)len);
 	text[len] = '\0';
 
-	struct wom_parser p = {
+	struct won_parser p = {
 		.src   = text,
 		.end   = text + len,
 		.pos   = text,
@@ -476,7 +476,7 @@ fn_WOM_deserialize(WrenVM *vm)
 	if (parse_value(vm, &p, 0)) {
 		skip_ws(&p);
 		if (p.pos < p.end)
-			wom_throw(vm, &p, "trailing data after value");
+			won_throw(vm, &p, "trailing data after value");
 	}
 	free(text);
 	/* On success, slot 0 holds the parsed value (the return).  On
