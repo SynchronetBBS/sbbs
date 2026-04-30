@@ -302,6 +302,7 @@ set(SOURCE
 	wren_bind_screen.c
 	wren_bind_conn.c
 	wren_bind_hook.c
+	wren_bind_wom.c
 	../sbbs3/telnet.c
 	../sbbs3/xmodem.c
 	../sbbs3/zmodem.c

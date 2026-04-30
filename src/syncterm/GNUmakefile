@@ -414,6 +414,7 @@ OBJS   += $(MTOBJODIR)$(DIRSEP)wren_bind_fs$(OFILE)
 OBJS   += $(MTOBJODIR)$(DIRSEP)wren_bind_screen$(OFILE)
 OBJS   += $(MTOBJODIR)$(DIRSEP)wren_bind_conn$(OFILE)
 OBJS   += $(MTOBJODIR)$(DIRSEP)wren_bind_hook$(OFILE)
+OBJS   += $(MTOBJODIR)$(DIRSEP)wren_bind_wom$(OFILE)
 CFLAGS += -Iwren/include
 
 # Wren-private include paths and PREFIX undef apply to every TU that

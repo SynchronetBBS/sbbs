@@ -27,7 +27,8 @@ import "syncterm" for Hook, Conn, Console, Screen, CTerm, BBS, Key,
     Codepage, ConnType, Emulation, Font, LogSource, LogLevel,
     Parity, BBSListType, ScreenMode, AddressFamily, MusicMode,
     RipVersion, LogMode, StatusDisplay, Color, Cell, Hyperlinks,
-    REPL, Input, KeyEvent, Cache, Platform, Timer, TimerElapsed
+    REPL, Input, KeyEvent, Cache, Platform, Timer, TimerElapsed,
+    WOM
 import "console" for WrenConsole
 import "ui_style_test"  for UiStyleTest
 import "ui_widget_test" for UiWidgetTest
@@ -217,6 +218,22 @@ class WrenTest {
 
     // ------ Platform ----------------------------------------------
     testPlatformName_()
+
+    // ------ WOM serialize / deserialize ----------------------------
+    testWOMPrimitives_()
+    testWOMStringEscapes_()
+    testWOMContainers_()
+    testWOMPrettyPrint_()
+    testWOMRangeCoerce_()
+    testWOMDeserializeWhitespace_()
+    testWOMDeserializeTrailingComma_()
+    testWOMHexLiteral_()
+    testWOMRoundTripNested_()
+    testWOMLossyOmits_()
+    testWOMLossyTopLevel_()
+    testWOMStrictAborts_()
+    testWOMCycleAborts_()
+    testWOMDeserializeErrors_()
 
     // ------ inject a sentinel key for async onKey filter test ------
     // Filter key must have low byte 0x00 (or 0xe0) — ciolib's
@@ -734,6 +751,175 @@ class WrenTest {
     var n = Platform.name
     check_(n is String && n.count > 0,
            "Platform.name returns non-empty String (got %(n))")
+  }
+
+  // ===== WOM serialize / deserialize =============================
+
+  static testWOMPrimitives_() {
+    check_(
+      WOM.serialize(null)  == "null"  &&
+      WOM.serialize(true)  == "true"  &&
+      WOM.serialize(false) == "false" &&
+      WOM.serialize(0)     == "0"     &&
+      WOM.serialize(42)    == "42"    &&
+      WOM.serialize(-7)    == "-7"    &&
+      WOM.serialize(3.14)  == "3.14"  &&
+      WOM.serialize("")    == "\"\""  &&
+      WOM.serialize("hi")  == "\"hi\"",
+      "WOM.serialize primitives")
+    check_(
+      WOM.deserialize("null")  == null  &&
+      WOM.deserialize("true")  == true  &&
+      WOM.deserialize("false") == false &&
+      WOM.deserialize("42")    == 42    &&
+      WOM.deserialize("-7")    == -7    &&
+      WOM.deserialize("3.14")  == 3.14  &&
+      WOM.deserialize("\"\"")  == ""    &&
+      WOM.deserialize("\"hi\"") == "hi",
+      "WOM.deserialize primitives")
+  }
+
+  static testWOMStringEscapes_() {
+    // Each input has a tricky byte; serialize must escape, deserialize
+    // must round-trip back to the original string.
+    var cases = [
+      ["a\"b",      "\"a\\\"b\""],   // double quote
+      ["a\\b",      "\"a\\\\b\""],   // backslash
+      ["a\nb",      "\"a\\nb\""],    // newline
+      ["a\tb",      "\"a\\tb\""],    // tab
+      ["a\%(x)b",   "\"a\\\%(x)b\""], // percent (interp suppression)
+      ["a\x01b",    "\"a\\x01b\""],  // control byte
+      ["a\x7Fb",    "\"a\\x7Fb\""],  // DEL
+      ["a\u00FFb",  "\"a\u00FFb\""]  // UTF-8 high byte preserved literally
+    ]
+    var ok = true
+    for (c in cases) {
+      if (WOM.serialize(c[0]) != c[1]) ok = false
+      if (WOM.deserialize(c[1]) != c[0]) ok = false
+    }
+    check_(ok, "WOM string escapes round-trip")
+  }
+
+  static testWOMContainers_() {
+    check_(
+      WOM.serialize([])           == "[]"           &&
+      WOM.serialize({})           == "{}"           &&
+      WOM.serialize([1, 2, 3])    == "[1,2,3]"      &&
+      WOM.serialize([[1], [2]])   == "[[1],[2]]"    &&
+      WOM.serialize({"a": 1})     == "{\"a\":1}"    &&
+      WOM.serialize({1: "x"})     == "{1:\"x\"}",
+      "WOM.serialize containers (compact)")
+    var l = WOM.deserialize("[1,2,3]")
+    var m = WOM.deserialize("{\"a\":1,\"b\":2}")
+    check_(l is List && l.count == 3 && l[0] == 1 && l[2] == 3 &&
+           m is Map && m.count == 2 && m["a"] == 1 && m["b"] == 2,
+           "WOM.deserialize containers")
+  }
+
+  static testWOMPrettyPrint_() {
+    // Lists iterate in stable order so we can pin the exact string.
+    var p1 = WOM.serialize([1, 2, 3], "  ")
+    var expected1 = "[\n  1,\n  2,\n  3\n]"
+    // Single-key map exercises the ": " separator and the inner/outer
+    // indent transitions deterministically (Wren Map iteration order
+    // is hash-bucket order, not insertion order).
+    var p2 = WOM.serialize({"a": [1, 2]}, "  ")
+    var expected2 = "{\n  \"a\": [\n    1,\n    2\n  ]\n}"
+    check_(p1 == expected1 && p2 == expected2,
+           "WOM pretty-print indents and uses ': '")
+    // Pretty output must round-trip.
+    check_(WOM.deserialize(p1).join(",") == "1,2,3" &&
+           WOM.deserialize(p2)["a"][1] == 2,
+           "WOM pretty output round-trips through deserialize")
+  }
+
+  static testWOMRangeCoerce_() {
+    check_(
+      WOM.serialize(1..3)  == "[1,2,3]" &&    // inclusive
+      WOM.serialize(1...3) == "[1,2]",        // exclusive
+      "WOM.serialize coerces Range to List")
+  }
+
+  static testWOMDeserializeWhitespace_() {
+    var v = WOM.deserialize("  [ 1 , 2 , 3 ]  ")
+    var v2 = WOM.deserialize("[\n  1,\n  2\n]")
+    check_(v.join(",") == "1,2,3" && v2.join(",") == "1,2",
+           "WOM.deserialize tolerates arbitrary whitespace")
+  }
+
+  static testWOMDeserializeTrailingComma_() {
+    var l = WOM.deserialize("[1, 2, 3,]")
+    var m = WOM.deserialize("{1: 2, 3: 4,}")
+    check_(l.count == 3 && l[2] == 3 && m.count == 2 && m[3] == 4,
+           "WOM.deserialize accepts trailing commas")
+  }
+
+  static testWOMHexLiteral_() {
+    check_(WOM.deserialize("0xFF")  == 255 &&
+           WOM.deserialize("-0x10") == -16 &&
+           WOM.deserialize("0x0")   == 0,
+           "WOM.deserialize accepts hex literals")
+  }
+
+  static testWOMRoundTripNested_() {
+    var data = {
+      "name":   "syncterm",
+      "items":  [1, 2, [3, 4, [5]]],
+      "nested": {"flags": [true, false, null], "n": 7}
+    }
+    var s = WOM.serialize(data)
+    var back = WOM.deserialize(s)
+    var s2 = WOM.serialize(back)
+    check_(s == s2, "WOM nested data round-trips")
+  }
+
+  static testWOMLossyOmits_() {
+    // A Fiber is unsupported; lossy mode must skip it from a List.
+    var f = Fiber.new {}
+    check_(WOM.serializeLossy([1, f, 2, f, 3]) == "[1,2,3]",
+           "WOM.serializeLossy skips unsupported list items")
+    // Round-trip the lossy Map to compare structurally — Wren Map
+    // iteration order is hash-bucket order, so the literal string
+    // depends on key hashes.
+    var back = WOM.deserialize(WOM.serializeLossy({"a": 1, "b": f, "c": 3}))
+    check_(back is Map && back.count == 2 &&
+           back["a"] == 1 && back["c"] == 3 && !back.containsKey("b"),
+           "WOM.serializeLossy skips unsupported map values")
+  }
+
+  static testWOMLossyTopLevel_() {
+    var f = Fiber.new {}
+    check_(WOM.serializeLossy(f) == "null",
+           "WOM.serializeLossy: top-level unsupported -> null")
+  }
+
+  static testWOMStrictAborts_() {
+    var f = Fiber.new {}
+    var msg = Fiber.new { WOM.serialize([1, f]) }.try()
+    check_(msg is String && msg.contains("unsupported"),
+           "WOM.serialize aborts on unsupported types")
+  }
+
+  static testWOMCycleAborts_() {
+    var c = []
+    c.add(c)
+    var m1 = Fiber.new { WOM.serialize(c) }.try()
+    var m2 = Fiber.new { WOM.serializeLossy(c) }.try()
+    check_(m1 is String && m1.contains("cycle") &&
+           m2 is String && m2.contains("cycle"),
+           "WOM cycles abort in both strict and lossy modes")
+  }
+
+  static testWOMDeserializeErrors_() {
+    var bad = Fiber.new { WOM.deserialize("xyz") }.try()
+    var unt = Fiber.new { WOM.deserialize("[1,2") }.try()
+    var trl = Fiber.new { WOM.deserialize("[1] more") }.try()
+    var key = Fiber.new { WOM.deserialize("{[1]: 2}") }.try()
+    check_(bad is String && bad.contains("WOM.deserialize") &&
+           unt is String && unt.contains("WOM.deserialize") &&
+           trl is String && trl.contains("trailing")        &&
+           key is String && key.contains("List/Map cannot"),
+           "WOM.deserialize reports parse errors")
   }
 
   // ===== sentinel-driven async tests ==============================

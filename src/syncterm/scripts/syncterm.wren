@@ -1012,3 +1012,162 @@ foreign class SFTPError {
 // Cache singleton.  Bound at module-load time so any script that
 // `import "syncterm" for Cache`s sees a fully-formed Directory.
 var Cache = Host.cacheDirectory
+
+// WOM — Wren Object Model serialization.
+//
+// Serializes / deserializes values built from Null, Bool, Num, String, List,
+// Map, Range, and Sequence (the latter two coerce to List).  Output is valid
+// Wren-literal syntax.  Cycles abort the fiber.
+//
+// Two serialize variants:
+//   serialize(v)         — strict; aborts on unsupported types or NaN/Inf.
+//   serializeLossy(v)    — silently omits unsupported items from Lists/Maps;
+//                          a top-level unsupported value becomes "null".
+// Each takes an optional indent String for pretty-printing:
+//   WOM.serialize(v)            // compact: {"a":1,"b":[1,2,3]}
+//   WOM.serialize(v, "  ")      // pretty, 2-space indent
+//   WOM.serialize(v, "\t")      // pretty, tab indent
+//
+// deserialize runs a hardened C parser — no eval — and accepts arbitrary
+// whitespace and trailing commas between tokens.  Map keys must be a value
+// Wren can hash (Bool, Num, String, Range, null); List/Map keys are rejected.
+class WOM {
+  static serialize(value)              { serialize_(value, null,   true)  }
+  static serialize(value, indent)      { serialize_(value, indent, true)  }
+  static serializeLossy(value)         { serialize_(value, null,   false) }
+  static serializeLossy(value, indent) { serialize_(value, indent, false) }
+
+  foreign static deserialize(text)
+
+  // ---- internal ----
+
+  static serialize_(value, indent, strict) {
+    if (indent != null && !(indent is String)) {
+      Fiber.abort("WOM.serialize: indent must be a String or null")
+    }
+    if (!strict && !isWritable_(value)) return "null"
+    return write_(value, indent, 0, [], strict)
+  }
+
+  static write_(value, indent, depth, stack, strict) {
+    if (value == null)     return "null"
+    if (value is Bool)     return value ? "true" : "false"
+    if (value is Num)      return writeNum_(value, strict)
+    if (value is String)   return writeString_(value)
+    if (value is List)     return writeList_(value,        indent, depth, stack, strict)
+    if (value is Map)      return writeMap_( value,        indent, depth, stack, strict)
+    if (value is Range)    return writeList_(value.toList, indent, depth, stack, strict)
+    if (value is Sequence) return writeList_(value.toList, indent, depth, stack, strict)
+    if (strict) Fiber.abort("WOM.serialize: unsupported type %(value.type)")
+    return "null"
+  }
+
+  static writeNum_(n, strict) {
+    if (n != n) {
+      if (strict) Fiber.abort("WOM.serialize: NaN has no Wren literal")
+      return "null"
+    }
+    if (n == 1/0 || n == -1/0) {
+      if (strict) Fiber.abort("WOM.serialize: Infinity has no Wren literal")
+      return "null"
+    }
+    return n.toString
+  }
+
+  // Escape every byte that could break a Wren string literal.  Notably
+  // includes `%` (would otherwise start an interpolation) and all control
+  // chars; UTF-8 high bytes pass through verbatim.
+  static writeString_(s) {
+    var parts = ["\""]
+    for (b in s.bytes) parts.add(escapeByte_(b))
+    parts.add("\"")
+    return parts.join("")
+  }
+
+  static escapeByte_(b) {
+    if (b == 0x22) return "\\\""           // "
+    if (b == 0x5C) return "\\\\"           // \
+    if (b == 0x25) return "\\\%"           // % (must escape both: \\ for the
+                                            // backslash, \% for the %, since
+                                            // an unescaped % starts interp)
+    if (b == 0x0A) return "\\n"
+    if (b == 0x0D) return "\\r"
+    if (b == 0x09) return "\\t"
+    if (b == 0x08) return "\\b"
+    if (b == 0x0C) return "\\f"
+    if (b == 0x0B) return "\\v"
+    if (b == 0x07) return "\\a"
+    if (b == 0x1B) return "\\e"
+    if (b == 0x00) return "\\0"
+    if (b < 0x20 || b == 0x7F) return "\\x" + hex2_(b)
+    return String.fromByte(b)
+  }
+
+  static hex2_(b) { hexNibble_((b/16).floor) + hexNibble_(b % 16) }
+  static hexNibble_(n) {
+    // 0x30='0', 0x37+10=0x41='A', 0x37+15=0x46='F'
+    return n < 10 ? String.fromByte(0x30 + n) : String.fromByte(0x37 + n)
+  }
+
+  static writeList_(list, indent, depth, stack, strict) {
+    if (stack.contains(list)) Fiber.abort("WOM.serialize: cycle in List")
+    if (list.count == 0) return "[]"
+    stack.add(list)
+    var parts = []
+    for (item in list) {
+      if (!strict && !isWritable_(item)) continue
+      parts.add(write_(item, indent, depth + 1, stack, strict))
+    }
+    stack.removeAt(-1)
+    return container_("[", "]", parts, indent, depth)
+  }
+
+  static writeMap_(map, indent, depth, stack, strict) {
+    if (stack.contains(map)) Fiber.abort("WOM.serialize: cycle in Map")
+    if (map.count == 0) return "{}"
+    stack.add(map)
+    var parts = []
+    var colon = indent == null ? ":" : ": "
+    for (key in map.keys) {
+      var val = map[key]
+      if (!strict && (!isWritable_(key) || !isWritable_(val))) continue
+      var ks = write_(key, indent, depth + 1, stack, strict)
+      var vs = write_(val, indent, depth + 1, stack, strict)
+      parts.add(ks + colon + vs)
+    }
+    stack.removeAt(-1)
+    return container_("{", "}", parts, indent, depth)
+  }
+
+  static container_(open, close, parts, indent, depth) {
+    if (parts.count == 0) return open + close
+    if (indent == null)   return open + parts.join(",") + close
+    var inner = "\n" + repeat_(indent, depth + 1)
+    var outer = "\n" + repeat_(indent, depth)
+    return open + inner + parts.join("," + inner) + outer + close
+  }
+
+  static repeat_(s, n) {
+    var r = ""
+    var i = 0
+    while (i < n) {
+      r = r + s
+      i = i + 1
+    }
+    return r
+  }
+
+  // True if write_ would handle [value] without aborting.  Used by lossy
+  // mode to decide whether to skip an entry.
+  static isWritable_(value) {
+    if (value == null)     return true
+    if (value is Bool)     return true
+    if (value is Num)      return value == value && value != 1/0 && value != -1/0
+    if (value is String)   return true
+    if (value is List)     return true
+    if (value is Map)      return true
+    if (value is Range)    return true
+    if (value is Sequence) return true
+    return false
+  }
+}

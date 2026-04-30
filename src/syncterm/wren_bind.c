@@ -30,6 +30,7 @@
 #include "wren_bind_sftp.h"
 #include "wren_bind_fs.h"
 #include "wren_bind_screen.h"
+#include "wren_bind_wom.h"
 
 #if !defined(_WIN32)
 #include <unistd.h>     /* for _POSIX_VERSION */
@@ -976,6 +977,8 @@ static const struct binding BINDINGS[] = {
 	{ "Hook",  true, "onMouse(_,_)",   fn_Hook_onMouse_filtered },
 	{ "Hook",  true, "onStatus(_)",    fn_Hook_onStatus         },
 	{ "Hook",  true, "every(_,_)",     fn_Hook_every        },
+
+	{ "WOM",   true, "deserialize(_)", fn_WOM_deserialize   },
 };
 
 WrenForeignMethodFn

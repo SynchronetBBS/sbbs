@@ -73,8 +73,8 @@ threads); whitespace-significant (newline terminates statements; no
 | `true` `false`        | Booleans.
 | `null`                | The single null value.
 | `123` `0xFF` `1.5e3`  | Numbers.  All numeric values are 64-bit floats; `0x` for hex; underscores `1_000_000` for digit grouping.
-| `"hello"`             | String literal.  Escapes: `\\` `\"` `\n` `\r` `\t` `\0` `\xNN` `\uNNNN` `\UNNNNNNNN`.
-| `"got %(x)"`          | String interpolation: `%(expr)` evaluates `expr` and inserts its `toString`.
+| `"hello"`             | String literal.  Escapes: `\\` `\"` `\%` `\0` `\a` `\b` `\e` `\f` `\n` `\r` `\t` `\v` `\xNN` `\uNNNN` `\UNNNNNNNN`.
+| `"got %(x)"`          | String interpolation: `%(expr)` evaluates `expr` and inserts its `toString`.  A bare `%` not followed by `(` is a *lex error* — see <<string-percent>>.
 | `[1, 2, 3]`           | List literal.
 | `{"a": 1, "b": 2}`    | Map literal.
 | `1..5`                | Half-open Range (1, 2, 3, 4 — excludes 5).
@@ -113,6 +113,24 @@ if (a == "x") {                     // braced, ok
 if (a == "x") foo()                 // ERROR: 'else' is orphaned
 else bar()
 ----
+
+==== Strings and `%` [[string-percent]]
+
+The Wren lexer treats `%` inside a `"..."` string as the start of an
+interpolation `%(expr)`.  A `%` *not* followed by `(` is a lex error —
+not a literal `%`.  To put a literal percent sign in a string, escape
+it as `\%`:
+
+[source,wren]
+----
+"100%"          // ERROR: Expect '(' after '%'.
+"100\%"         // ok — four bytes: 1, 0, 0, %
+"got %(x)"      // ok — interpolation, inserts x.toString
+----
+
+Every literal `%` needs a leading `\`.  The pair `\%` is its own
+escape — `\\%` does *not* work, because `\\` consumes the slash on
+its own and leaves a bare `%`; spell that as `\\\%`.
 
 === Variables
 
@@ -387,6 +405,8 @@ a single place to look up.
 * *Single-line `{ return x }` is a syntax error.*  Drop `return`.
 * *Ternaries on one line only.*  Split via `if/else` or pre-compute.
 * *`else` must follow `}` on the same line, or chain on one line.*
+* *Every literal `%` in a string needs `\%`.*  Bare `%` starts
+  interpolation.  See <<string-percent>>.
 * *Subclass `_field` is NOT the parent's.*  Use getters/setters.
 * *`String.count` is codepoints; `s[i]` and `s[a\...b]` are bytes.*
   Mixing them silently truncates UTF-8 strings.  For byte iteration
@@ -3097,6 +3117,101 @@ The framework calls `fiber.call(result)` on whichever fiber was
 passed.  Useful from hooks (which mustn't yield directly — see
 <<hook-events>>) and for fan-out where the result handler is
 naturally a closure over its own state.
+
+=== WOM [[wom]]
+
+The Wren Object Model — round-trip serialisation between Wren values
+and a textual literal format.  Output is a strict subset of valid Wren
+syntax (and therefore also pasteable into Wren source).  Deserialisation
+runs a hardened C parser, *not* `eval`, so feeding untrusted text to
+`WOM.deserialize` cannot execute code.
+
+Supported types:
+
+[options="header",cols="2,3"]
+|===
+| Type | Notes
+
+| `Null`     | `null`
+| `Bool`     | `true` / `false`
+| `Num`      | `Num.toString` form; NaN / Infinity have no Wren literal and are rejected
+| `String`   | quoted with Wren-style escapes; `%` is always escaped to `\%` so output never starts an interpolation
+| `List`     | `[a, b, c]`
+| `Map`      | `{key: value, ...}` — keys must be hashable Wren types (`Bool`, `Num`, `String`, `Range`, `null`)
+| `Range`    | coerced to `List` via `.toList`; serialisation is one-way (the deserialised value is a List)
+| `Sequence` | any other `Sequence` coerces to `List` via `.toList`
+|===
+
+Values of any other type abort serialisation in strict mode and are
+silently omitted (or replaced with `null` at the top level) in lossy
+mode.  Cyclic Lists / Maps abort in *both* modes.
+
+[options="header",cols="2,3"]
+|===
+| Member | Description
+
+| `WOM.serialize(value)`
+| Strict compact form.  `[1,2,3]` / `{"a":1,"b":2}`.  Aborts the fiber on
+  unsupported types, NaN/Infinity, or cycles.
+
+| `WOM.serialize(value, indent)`
+| Strict pretty-printed form.  `indent` is a String inserted once per
+  nesting level (e.g. `"  "` for two-space, `"\t"` for tab).  Same error
+  behaviour as the one-arg form.
+
+| `WOM.serializeLossy(value)`
+| Compact form that silently omits unsupported items from Lists and Maps;
+  a top-level unsupported value becomes `"null"`.  Cycles still abort.
+
+| `WOM.serializeLossy(value, indent)`
+| Pretty-printed lossy form.
+
+| `WOM.deserialize(text)`
+| Parse `text` and return the reconstructed value.  Aborts the fiber with
+  a message containing the byte offset on syntax errors, premature end of
+  input, trailing garbage, or a `List` / `Map` used as a `Map` key.
+  Tolerates arbitrary whitespace and trailing commas inside `[...]` /
+  `{...}`.  Accepts exactly the string-escape set the Wren compiler
+  itself recognises.
+|===
+
+[source,wren]
+----
+import "syncterm" for WOM
+
+var data = {
+  "name":  "syncterm",
+  "items": [1, 2, [3, 4]],
+  "flags": {"verbose": true, "depth": 7},
+}
+
+System.print(WOM.serialize(data))
+// {"name":"syncterm","items":[1,2,[3,4]],"flags":{"verbose":true,"depth":7}}
+
+System.print(WOM.serialize(data, "  "))
+// {
+//   "name": "syncterm",
+//   "items": [
+//     1,
+//     2,
+//     [
+//       3,
+//       4
+//     ]
+//   ],
+//   "flags": {
+//     "verbose": true,
+//     "depth": 7
+//   }
+// }
+
+var roundTripped = WOM.deserialize(WOM.serialize(data))
+System.print(roundTripped["flags"]["depth"])     // 7
+
+// Lossy mode skips unsupported entries instead of aborting.
+var mixed = [1, Fiber.new {}, 2, Fiber.new {}, 3]
+System.print(WOM.serializeLossy(mixed))          // [1,2,3]
+----
 
 == Built-in UI Library [[ui-library]]
 
