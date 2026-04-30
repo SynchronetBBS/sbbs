@@ -40,9 +40,11 @@ char* sbbs_t::fgetline(char* s, size_t size, int cols, FILE* stream, int mode)
 {
 	size_t len = 0;
 
+	if (size == 0)
+		return NULL;
 	memset(s, 0, size);
 
-	while (len < size) {
+	while (len + 1 < size) {
 		int ch = fgetc(stream);
 		if (ch == EOF)
 			break;
