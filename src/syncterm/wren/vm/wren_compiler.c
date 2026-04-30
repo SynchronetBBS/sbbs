@@ -43,6 +43,11 @@
 //      "outside %(one + "%(two + "%(three)")")"
 #define MAX_INTERPOLATION_NESTING 8
 
+// Maximum recursion depth in the parser before the compiler bails out. This
+// prevents pathological inputs (deeply nested blocks/expressions) from blowing
+// the C stack, since Compiler structs and parse functions are stack-allocated.
+#define MAX_RECURSION_DEPTH 256
+
 // The buffer size used to format a compile error message, excluding the header
 // with the module name and error location. Using a hardcoded buffer for this
 // is kind of hairy, but fortunately we can control what the longest possible
@@ -204,6 +209,10 @@ typedef struct
 
   // If a syntax or compile error has occurred.
   bool hasError;
+
+  // Current depth of mutually-recursive parsing (statement / expression /
+  // definition). Bounded to avoid C-stack overflow on pathological nesting.
+  int recursionDepth;
 } Parser;
 
 typedef struct
@@ -426,11 +435,13 @@ static void printError(Parser* parser, int line, const char* label,
   // Only report errors if there is a WrenErrorFn to handle them.
   if (parser->vm->config.errorFn == NULL) return;
 
-  // Format the label and message.
+  // Format the label and message. Use bounded variants because the [format]
+  // arguments (e.g. method names, variable names) are attacker-controlled and
+  // can easily exceed ERROR_MESSAGE_SIZE.
   char message[ERROR_MESSAGE_SIZE];
-  int length = sprintf(message, "%s: ", label);
-  length += vsprintf(message + length, format, args);
-  ASSERT(length < ERROR_MESSAGE_SIZE, "Error should not exceed buffer.");
+  int length = snprintf(message, ERROR_MESSAGE_SIZE, "%s: ", label);
+  if (length < 0 || length >= ERROR_MESSAGE_SIZE) length = ERROR_MESSAGE_SIZE - 1;
+  vsnprintf(message + length, ERROR_MESSAGE_SIZE - length, format, args);
 
   ObjString* module = parser->module->name;
   const char* module_name = module ? module->value : "<unknown>";
@@ -905,9 +916,20 @@ static void readRawString(Parser* parser)
   int skipEnd = -1;
   int lastNewline = -1;
 
+  bool terminated = false;
   for (;;)
   {
     char c = nextChar(parser);
+
+    // Bail out before peeking past the end of the source buffer. Without this,
+    // peekChar() below would read one byte past the trailing '\0'.
+    if (c == '\0')
+    {
+      lexError(parser, "Unterminated raw string.");
+      parser->currentChar--;
+      break;
+    }
+
     char c1 = peekChar(parser);
     char c2 = peekNextChar(parser);
 
@@ -919,22 +941,26 @@ static void readRawString(Parser* parser)
       firstNewline = firstNewline == -1 ? string.count : firstNewline;
     }
 
-    if (c == '"' && c1 == '"' && c2 == '"') break;
-    
+    if (c == '"' && c1 == '"' && c2 == '"')
+    {
+      terminated = true;
+      break;
+    }
+
     bool isWhitespace = c == ' ' || c == '\t';
     skipEnd = c == '\n' || isWhitespace ? skipEnd : -1;
 
-    // If we haven't seen a newline or other character yet, 
-    // and still seeing whitespace, count the characters 
+    // If we haven't seen a newline or other character yet,
+    // and still seeing whitespace, count the characters
     // as skippable till we know otherwise
     bool skippable = skipStart != -1 && isWhitespace && firstNewline == -1;
     skipStart = skippable ? string.count + 1 : skipStart;
-    
-    // We've counted leading whitespace till we hit something else, 
+
+    // We've counted leading whitespace till we hit something else,
     // but it's not a newline, so we reset skipStart since we need these characters
     if (firstNewline == -1 && !isWhitespace && c != '\n') skipStart = -1;
 
-    if (c == '\0' || c1 == '\0' || c2 == '\0')
+    if (c1 == '\0' || c2 == '\0')
     {
       lexError(parser, "Unterminated raw string.");
 
@@ -943,13 +969,18 @@ static void readRawString(Parser* parser)
       parser->currentChar--;
       break;
     }
- 
+
     wrenByteBufferWrite(parser->vm, &string, c);
   }
 
-  //consume the second and third "
-  nextChar(parser);
-  nextChar(parser);
+  // Only consume the trailing two quotes if we actually saw the closing
+  // triple-quote. Otherwise we've already backed off on '\0' and pushing past
+  // it would read OOB.
+  if (terminated)
+  {
+    nextChar(parser);
+    nextChar(parser);
+  }
 
   int offset = 0;
   int count = string.count;
@@ -1324,7 +1355,17 @@ static int emitByte(Compiler* compiler, int byte)
 static void emitOp(Compiler* compiler, Code instruction)
 {
   emitByte(compiler, instruction);
-  
+
+  // Guard against out-of-range opcodes. Error recovery (e.g. callSignature
+  // with arity > MAX_PARAMETERS) can compute an opcode past the end of
+  // [stackEffects]; the bytecode is going to be discarded, so just skip the
+  // stack-effect bookkeeping rather than read OOB.
+  if ((unsigned)instruction >=
+      sizeof(stackEffects) / sizeof(stackEffects[0]))
+  {
+    return;
+  }
+
   // Keep track of the stack's high water mark.
   compiler->numSlots += stackEffects[instruction];
   if (compiler->numSlots > compiler->fn->maxSlots)
@@ -1981,7 +2022,11 @@ static void callSignature(Compiler* compiler, Code instruction,
                           Signature* signature)
 {
   int symbol = signatureSymbol(compiler, signature);
-  emitShortArg(compiler, (Code)(instruction + signature->arity), symbol);
+  // Clamp arity so that error recovery (validateNumParameters reports but does
+  // not stop parsing) can't push the encoded opcode past CALL_16 / SUPER_16.
+  int arity = signature->arity > MAX_PARAMETERS
+              ? MAX_PARAMETERS : signature->arity;
+  emitShortArg(compiler, (Code)(instruction + arity), symbol);
 
   if (instruction == CODE_SUPER_0)
   {
@@ -2002,6 +2047,7 @@ static void callMethod(Compiler* compiler, int numArgs, const char* name,
                        int length)
 {
   int symbol = methodSymbol(compiler, name, length);
+  if (numArgs > MAX_PARAMETERS) numArgs = MAX_PARAMETERS;
   emitShortArg(compiler, (Code)(CODE_CALL_0 + numArgs), symbol);
 }
 
@@ -2860,7 +2906,15 @@ void parsePrecedence(Compiler* compiler, Precedence precedence)
 // on the stack.
 void expression(Compiler* compiler)
 {
+  Parser* parser = compiler->parser;
+  if (parser->recursionDepth >= MAX_RECURSION_DEPTH)
+  {
+    error(compiler, "Expression nested too deeply.");
+    return;
+  }
+  parser->recursionDepth++;
   parsePrecedence(compiler, PREC_LOWEST);
+  parser->recursionDepth--;
 }
 
 // Returns the number of bytes for the arguments to the instruction 
@@ -3005,6 +3059,16 @@ static void endLoop(Compiler* compiler)
   emitShortArg(compiler, CODE_LOOP, loopOffset);
 
   patchJump(compiler, compiler->loop->exitJump);
+
+  // If a parse/compile error already poisoned the bytecode stream, walking it
+  // with getByteCountForArguments() can dereference into a NULL constants
+  // table or treat operand bytes as opcodes. The function is going to be
+  // discarded, so just unwind the loop stack.
+  if (compiler->parser->hasError)
+  {
+    compiler->loop = compiler->loop->enclosing;
+    return;
+  }
 
   // Find any break placeholder instructions (which will be CODE_END in the
   // bytecode) and replace them with real jumps.
@@ -3178,7 +3242,7 @@ static void whileStatement(Compiler* compiler)
 // branches of an "if" statement.
 //
 // Unlike expressions, statements do not leave a value on the stack.
-void statement(Compiler* compiler)
+static void statementImpl(Compiler* compiler)
 {
   if (match(compiler, TOKEN_BREAK))
   {
@@ -3266,6 +3330,19 @@ void statement(Compiler* compiler)
     expression(compiler);
     emitOp(compiler, CODE_POP);
   }
+}
+
+void statement(Compiler* compiler)
+{
+  Parser* parser = compiler->parser;
+  if (parser->recursionDepth >= MAX_RECURSION_DEPTH)
+  {
+    error(compiler, "Statement nested too deeply.");
+    return;
+  }
+  parser->recursionDepth++;
+  statementImpl(compiler);
+  parser->recursionDepth--;
 }
 
 // Creates a matching constructor method for an initializer with [signature]
@@ -3791,6 +3868,7 @@ ObjFn* wrenCompile(WrenVM* vm, ObjModule* module, const char* source,
 
   parser.printErrors = printErrors;
   parser.hasError = false;
+  parser.recursionDepth = 0;
 
   // Read the first token into next
   nextToken(&parser);
