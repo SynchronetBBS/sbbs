@@ -492,8 +492,13 @@ install(FILES ${CMAKE_CURRENT_BINARY_DIR}/deucessh.pc
 	DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig)
 
 # --- Example executables (not installed) ---
+#
+# Guarded with EXISTS so a source distribution that ships CMakeLists.txt but
+# strips examples/ (e.g. SyncTERM's source tarball) doesn't fail configure on
+# the missing add_executable() inputs. The examples are EXCLUDE_FROM_ALL and
+# never built as part of a normal build anyway.
 
-if(DEUCESSH_BUILD_STATIC)
+if(DEUCESSH_BUILD_STATIC AND EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/examples/client.c")
 	add_executable(client EXCLUDE_FROM_ALL examples/client.c)
 	target_link_libraries(client PRIVATE deucessh_static)
 
