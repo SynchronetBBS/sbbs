@@ -811,8 +811,11 @@ static inline uint8_t
 libcrux_ml_kem_constant_time_ops_inz(uint8_t value)
 {
 	uint16_t value0 = (uint16_t)value;
+	/* Cast `~value0` back to uint16_t — C promotes uint16_t to int
+	 * for the bitwise NOT, which AppleClang flags as a narrowing
+	 * conversion when the result is passed to wrapping_add(uint16_t). */
 	uint16_t result =
-	    (((uint32_t)value0 | (uint32_t)core_num__u16_7__wrapping_add(~value0, 1U)) & 0xFFFFU) >> 8U & 1U;
+	    (((uint32_t)value0 | (uint32_t)core_num__u16_7__wrapping_add((uint16_t)~value0, 1U)) & 0xFFFFU) >> 8U & 1U;
 	return (uint8_t)result;
 }
 
@@ -7044,15 +7047,17 @@ libcrux_ml_kem_vector_portable_ntt_ntt_multiply(libcrux_ml_kem_vector_portable_v
 {
 	libcrux_ml_kem_vector_portable_vector_type_PortableVector out =
 	    libcrux_ml_kem_vector_portable_vector_type_zero();
+	/* Negation of int16_t promotes to int; cast back so AppleClang
+	 * doesn't flag the int->int16_t arg as a narrowing conversion. */
 	libcrux_ml_kem_vector_portable_ntt_ntt_multiply_binomials(lhs, rhs, zeta0, (size_t)0U, (size_t)1U, &out);
-	libcrux_ml_kem_vector_portable_ntt_ntt_multiply_binomials(lhs, rhs, -zeta0, (size_t)2U, (size_t)3U, &out);
+	libcrux_ml_kem_vector_portable_ntt_ntt_multiply_binomials(lhs, rhs, (int16_t)-zeta0, (size_t)2U, (size_t)3U, &out);
 	libcrux_ml_kem_vector_portable_ntt_ntt_multiply_binomials(lhs, rhs, zeta1, (size_t)4U, (size_t)5U, &out);
-	libcrux_ml_kem_vector_portable_ntt_ntt_multiply_binomials(lhs, rhs, -zeta1, (size_t)6U, (size_t)7U, &out);
+	libcrux_ml_kem_vector_portable_ntt_ntt_multiply_binomials(lhs, rhs, (int16_t)-zeta1, (size_t)6U, (size_t)7U, &out);
 	libcrux_ml_kem_vector_portable_ntt_ntt_multiply_binomials(lhs, rhs, zeta2, (size_t)8U, (size_t)9U, &out);
-	libcrux_ml_kem_vector_portable_ntt_ntt_multiply_binomials(lhs, rhs, -zeta2, (size_t)10U, (size_t)11U,
+	libcrux_ml_kem_vector_portable_ntt_ntt_multiply_binomials(lhs, rhs, (int16_t)-zeta2, (size_t)10U, (size_t)11U,
 	    &out);
 	libcrux_ml_kem_vector_portable_ntt_ntt_multiply_binomials(lhs, rhs, zeta3, (size_t)12U, (size_t)13U, &out);
-	libcrux_ml_kem_vector_portable_ntt_ntt_multiply_binomials(lhs, rhs, -zeta3, (size_t)14U, (size_t)15U,
+	libcrux_ml_kem_vector_portable_ntt_ntt_multiply_binomials(lhs, rhs, (int16_t)-zeta3, (size_t)14U, (size_t)15U,
 	    &out);
 	return out;
 }

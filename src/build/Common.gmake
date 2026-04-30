@@ -269,6 +269,30 @@ ifeq ($(os),darwin)
   CFLAGS += -arch x86_64 -arch arm64
   LDFLAGS += -arch x86_64 -arch arm64
  endif
+ # MACOS_PORTABLE pins the per-slice microarch floor for redistributable
+ # builds: x86_64 → Skylake (the iMac 2017 / iMac Pro 2017 baseline,
+ # which is the oldest x86 macOS 13 supports), arm64 → apple-m1 (the
+ # only arm64 CPU macOS 13 boots on; M2/M3/M4 are supersets).  Pair
+ # with FAT for a universal binary; standalone for a single-arch
+ # redistribution.  Without this flag, clang picks its host-default
+ # microarch — fine for local development, wrong for nightly builds.
+ ifdef MACOS_PORTABLE
+  ifdef FAT
+   # -Xarch_<arch> applies the next compiler argument only to that
+   # slice of a fat compile, so each slice gets its own microarch
+   # floor without poisoning the other.
+   CFLAGS  += -Xarch_x86_64 -march=skylake -Xarch_arm64 -mcpu=apple-m1
+   LDFLAGS += -Xarch_x86_64 -march=skylake -Xarch_arm64 -mcpu=apple-m1
+  else
+   ifeq ($(machine_uname),x86_64)
+    CFLAGS  += -march=skylake
+    LDFLAGS += -march=skylake
+   else ifeq ($(machine_uname),arm64)
+    CFLAGS  += -mcpu=apple-m1
+    LDFLAGS += -mcpu=apple-m1
+   endif
+  endif
+ endif
  ifeq ("$(machine_uname)","")
   ifeq ($(shell sysctl hw.optional.x86_64),hw.optional.x86_64: 1)
    machine_uname := x86_64

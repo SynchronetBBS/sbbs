@@ -317,25 +317,99 @@ pcurves_secp521r1,x509,system_rng,auto_rng)
 # BOTAN_JOBS=N on the command line.
 BOTAN_JOBS ?= $(shell nproc 2>/dev/null || sysctl -n hw.ncpu 2>/dev/null || echo 2)
 
+# macOS universal-binary path.  Botan's configure.py probes a single
+# CPU per source tree (build.h + the per-arch intrinsic .cpp module
+# list are CPU-specific), so we extract twice into per-arch source
+# directories, configure each with --cpu=<arch>, build, then lipo
+# the two libbotan-3.a archives into a single fat one over the
+# installed copy.  Headers + pkgconfig are arch-independent so the
+# x86_64 install carries those.  Gated on os==darwin && FAT.
+#
+# MACOS_PORTABLE additionally pins per-arch microarch floors
+# (Skylake / apple-m1) into --cc-abi-flags so the resulting fat
+# archive matches what redistributable nightly builds want.
+ifeq ($(os),darwin)
+ ifdef FAT
+  BOTAN_FAT := 1
+ endif
+endif
+
+ifdef MACOS_PORTABLE
+ BOTAN_FAT_X86_TUNE := -march=skylake
+ BOTAN_FAT_ARM_TUNE := -mcpu=apple-m1
+endif
+ifdef MIN_MAC_OSX_VERSION
+ BOTAN_VMIN_FLAG := -mmacosx-version-min=$(MIN_MAC_OSX_VERSION)
+endif
+BOTAN_FAT_X86_FLAGS := -arch x86_64 $(BOTAN_FAT_X86_TUNE) $(BOTAN_VMIN_FLAG)
+BOTAN_FAT_ARM_FLAGS := -arch arm64  $(BOTAN_FAT_ARM_TUNE) $(BOTAN_VMIN_FLAG)
+
+# The two per-arch source trees, only used when BOTAN_FAT is set.
+BOTAN_FAT_X86_DIR := $(BOTAN_SRC)-x86_64
+BOTAN_FAT_ARM_DIR := $(BOTAN_SRC)-arm64
+
+# Common configure flags shared between single-arch and per-slice
+# builds.  Spelled once so the FAT path mirrors the standard one.
+BOTAN_CFG_BASE = python3 configure.py \
+    --prefix=$(shell cd $(dir $(BOTAN_IDIR)) && pwd)/$(notdir $(BOTAN_IDIR)) \
+    --disable-shared-library \
+    --without-documentation \
+    --build-targets=static \
+    --minimized-build \
+    --enable-modules=$(BOTAN_MODULES) \
+    --build-tool=make
+
 $(BOTAN_SRC): | $(3RDPSRCDIR)
 	$(QUIET)$(IFNOTEXIST) mkdir $(BOTAN_SRC)
 
 $(BOTAN_IDIR): | $(3RDPODIR)
 	$(QUIET)$(IFNOTEXIST) mkdir $(BOTAN_IDIR)
 
+ifdef BOTAN_FAT
+$(BOTAN_BUILD): $(3RDP_ROOT)/dist/Botan.tar.xz GNUmakefile | $(BOTAN_SRC) $(BOTAN_IDIR)
+	@echo Creating $@ ...  '(universal: x86_64 + arm64)'
+	$(QUIET)# rm both per-arch trees so the post-extract rename
+	$(QUIET)# `mv Botan-* <dir>` becomes a directory rename rather
+	$(QUIET)# than an in-place move INTO an existing <dir>.
+	$(QUIET)-rm -rf $(BOTAN_FAT_X86_DIR) $(BOTAN_FAT_ARM_DIR)
+	$(QUIET)xz -dc $(3RDPDISTDIR)/Botan.tar.xz | tar -xf - -C $(dir $(BOTAN_FAT_X86_DIR))
+	$(QUIET)mv $(dir $(BOTAN_FAT_X86_DIR))Botan-* $(BOTAN_FAT_X86_DIR)
+	$(QUIET)xz -dc $(3RDPDISTDIR)/Botan.tar.xz | tar -xf - -C $(dir $(BOTAN_FAT_ARM_DIR))
+	$(QUIET)mv $(dir $(BOTAN_FAT_ARM_DIR))Botan-* $(BOTAN_FAT_ARM_DIR)
+	$(QUIET)# x86_64 slice: configure, build, install (the install
+	$(QUIET)# carries headers + pkgconfig + an x86_64-only libbotan-3.a;
+	$(QUIET)# we'll overwrite the .a with the lipo-merged one below).
+	$(QUIET)cd $(BOTAN_FAT_X86_DIR) && $(BOTAN_CFG_BASE) \
+	    --cpu=x86_64 --os=darwin \
+	    --cc-abi-flags='$(BOTAN_FAT_X86_FLAGS)'
+	$(QUIET)$(MAKE) -j$(BOTAN_JOBS) -C $(BOTAN_FAT_X86_DIR)
+	$(QUIET)$(MAKE) -C $(BOTAN_FAT_X86_DIR) install
+	$(QUIET)# arm64 slice: configure + build only (no install — its
+	$(QUIET)# libbotan-3.a is the second input to lipo, the headers
+	$(QUIET)# and pkgconfig are identical to the x86_64 install).
+	$(QUIET)cd $(BOTAN_FAT_ARM_DIR) && $(BOTAN_CFG_BASE) \
+	    --cpu=arm64 --os=darwin \
+	    --cc-abi-flags='$(BOTAN_FAT_ARM_FLAGS)'
+	$(QUIET)$(MAKE) -j$(BOTAN_JOBS) -C $(BOTAN_FAT_ARM_DIR)
+	$(QUIET)# Lipo-merge the two single-arch archives over the installed one.
+	$(QUIET)lipo -create \
+	    $(BOTAN_FAT_X86_DIR)/libbotan-3.a \
+	    $(BOTAN_FAT_ARM_DIR)/libbotan-3.a \
+	    -output $(BOTAN_IDIR)/lib/libbotan-3.a
+	$(QUIET)# Make botan-3.pc relocatable — same rationale as the
+	$(QUIET)# single-arch path (see comment in else branch).
+	$(QUIET)sed -e 's|^prefix=.*|prefix=$${pcfiledir}/../..|' \
+	            -e 's|^libdir=.*|libdir=$${prefix}/lib|' \
+	            $(BOTAN_PKGCONFIG_DIR)/botan-3.pc \
+	            > $(BOTAN_PKGCONFIG_DIR)/botan-3.pc.new
+	$(QUIET)mv $(BOTAN_PKGCONFIG_DIR)/botan-3.pc.new $(BOTAN_PKGCONFIG_DIR)/botan-3.pc
+else
 $(BOTAN_BUILD): $(3RDP_ROOT)/dist/Botan.tar.xz GNUmakefile | $(BOTAN_SRC) $(BOTAN_IDIR)
 	@echo Creating $@ ...
 	$(QUIET)-rm -rf $(BOTAN_SRC)
 	$(QUIET)xz -dc $(3RDPDISTDIR)/Botan.tar.xz | tar -xf - -C $(dir $(BOTAN_SRC))
 	$(QUIET)mv $(dir $(BOTAN_SRC))Botan-* $(BOTAN_SRC)
-	$(QUIET)cd $(BOTAN_SRC) && python3 configure.py \
-	    --prefix=$(shell cd $(dir $(BOTAN_IDIR)) && pwd)/$(notdir $(BOTAN_IDIR)) \
-	    --disable-shared-library \
-	    --without-documentation \
-	    --build-targets=static \
-	    --minimized-build \
-	    --enable-modules=$(BOTAN_MODULES) \
-	    --build-tool=make $(BOTAN_CONFIGURE_EXTRA)
+	$(QUIET)cd $(BOTAN_SRC) && $(BOTAN_CFG_BASE) $(BOTAN_CONFIGURE_EXTRA)
 	$(QUIET)$(MAKE) -j$(BOTAN_JOBS) -C $(BOTAN_SRC)
 	$(QUIET)$(MAKE) -C $(BOTAN_SRC) install
 	$(QUIET)# Make botan-3.pc relocatable: Botan's install bakes in the
@@ -349,3 +423,4 @@ $(BOTAN_BUILD): $(3RDP_ROOT)/dist/Botan.tar.xz GNUmakefile | $(BOTAN_SRC) $(BOTA
 	            $(BOTAN_PKGCONFIG_DIR)/botan-3.pc \
 	            > $(BOTAN_PKGCONFIG_DIR)/botan-3.pc.new
 	$(QUIET)mv $(BOTAN_PKGCONFIG_DIR)/botan-3.pc.new $(BOTAN_PKGCONFIG_DIR)/botan-3.pc
+endif

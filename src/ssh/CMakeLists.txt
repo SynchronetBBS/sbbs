@@ -260,12 +260,18 @@ if(CMAKE_C_COMPILER_ID MATCHES "GNU|Clang|AppleClang")
 		set(DEUCESSH_PROBE_WERROR "")
 	endif()
 
-	# Strict probes: when -Werror is active, "flag accepted but unused"
-	# (Apple Clang emits -Wunused-command-line-argument for
-	# -fstack-clash-protection etc.) would still break the real build.
-	# Match the probe discipline to the actual compile discipline.
-	# -std=c17 matches the real targets.
-	set(CMAKE_REQUIRED_FLAGS "-std=c17 ${DEUCESSH_PROBE_WERROR}")
+	# Strict probes: AppleClang accepts a number of GCC-style
+	# hardening flags (-fstack-clash-protection, -fstrict-flex-arrays,
+	# -ftrivial-auto-var-init, ...) but treats them as no-ops, emitting
+	# -Wunused-command-line-argument.  Plain check_c_compiler_flag
+	# would then return HAVE_X=YES even though the resulting binary
+	# gets none of the actual mitigation.  Gate the probe on the
+	# unused-arg warning so silently-discarded flags are correctly
+	# rejected.  In Debug builds we additionally inherit -Werror so
+	# the probe matches the real compile discipline.  -std=c17 matches
+	# the real targets.
+	set(CMAKE_REQUIRED_FLAGS
+	    "-std=c17 -Werror=unused-command-line-argument ${DEUCESSH_PROBE_WERROR}")
 
 	check_c_compiler_flag(-Wconversion HAVE_WCONVERSION)
 	if(HAVE_WCONVERSION)

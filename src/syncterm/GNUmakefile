@@ -101,6 +101,37 @@ ifndef WITHOUT_DEUCESSH
       -DCMAKE_AR=$(shell command -v $(AR)) \
       -DCMAKE_RANLIB=$(shell command -v $(RANLIB)) \
       -DCMAKE_RC_COMPILER=$(shell command -v $(WINDRES))
+ else ifeq ($(os),darwin)
+  # FAT cascades to SyncTERM's CFLAGS/LDFLAGS via Common.gmake but
+  # DeuceSSH is a CMake subproject and doesn't see those — set
+  # CMAKE_OSX_ARCHITECTURES so its libraries match the SyncTERM
+  # binary's slice list.  MACOS_PORTABLE adds per-slice microarch
+  # floors (-Xarch_<arch> ...) plus the deployment target so
+  # DeuceSSH's archive matches SyncTERM's redistributable floor.
+  DEUCESSH_CMAKE_TOOLCHAIN_ARGS :=
+  ifdef FAT
+   # Quote the value: the recipe's shell would otherwise split on the
+   # `;` in x86_64;arm64 and treat everything after as a separate
+   # command, dropping the rest of the cmake args (deployment-target,
+   # CXX_FLAGS, ...) on the floor.
+   DEUCESSH_CMAKE_TOOLCHAIN_ARGS += "-DCMAKE_OSX_ARCHITECTURES=x86_64;arm64"
+   ifdef MACOS_PORTABLE
+    DSSH_FAT_FLAGS := -Xarch_x86_64 -march=skylake -Xarch_arm64 -mcpu=apple-m1
+    DEUCESSH_CMAKE_TOOLCHAIN_ARGS += "-DCMAKE_C_FLAGS=$(DSSH_FAT_FLAGS)" \
+                                     "-DCMAKE_CXX_FLAGS=$(DSSH_FAT_FLAGS)"
+   endif
+  else ifdef MACOS_PORTABLE
+   ifeq ($(machine_uname),x86_64)
+    DEUCESSH_CMAKE_TOOLCHAIN_ARGS += -DCMAKE_C_FLAGS=-march=skylake \
+                                     -DCMAKE_CXX_FLAGS=-march=skylake
+   else ifeq ($(machine_uname),arm64)
+    DEUCESSH_CMAKE_TOOLCHAIN_ARGS += -DCMAKE_C_FLAGS=-mcpu=apple-m1 \
+                                     -DCMAKE_CXX_FLAGS=-mcpu=apple-m1
+   endif
+  endif
+  ifdef MIN_MAC_OSX_VERSION
+   DEUCESSH_CMAKE_TOOLCHAIN_ARGS += -DCMAKE_OSX_DEPLOYMENT_TARGET=$(MIN_MAC_OSX_VERSION)
+  endif
  else
   DEUCESSH_CMAKE_TOOLCHAIN_ARGS :=
  endif
@@ -140,7 +171,12 @@ ifndef WITHOUT_DEUCESSH
    # mkdir the build-log's parent dir first — on a fresh build,
    # $(3RDPODIR) doesn't exist yet and the >log redirect would fail
    # before cmake could even run, causing a false-negative probe.
+   # PKG_CONFIG_PATH explicitly re-exported here for the same reason
+   # the DSSH_CRYPTO_READY probe above does it: $(shell ...) doesn't
+   # honour the make-level `export` set by build/botan.gmake.  cmake's
+   # pkg_check_modules(botan-3) needs to see the vendored copy.
    DSSH_CFG_RC := $(shell mkdir -p $(dir $(DEUCESSH_BUILD)) && \
+       export PKG_CONFIG_PATH="$(PKG_CONFIG_PATH)" && \
        cmake -S $(DEUCESSH_DIR) -B $(DEUCESSH_BUILD) \
        -DCMAKE_BUILD_TYPE=Release $(DEUCESSH_CMAKE_BACKEND_ARG) \
        $(DEUCESSH_CMAKE_TOOLCHAIN_ARGS) >$(DEUCESSH_BUILD).log 2>&1; echo $$?)
@@ -182,6 +218,7 @@ ifndef WITHOUT_DEUCESSH
 	@echo "Building DeuceSSH ($(DEUCESSH_BACKEND) backend)"
 	@if [ ! -f $(DEUCESSH_PC) ]; then \
 	    echo "Configuring DeuceSSH..."; \
+	    PKG_CONFIG_PATH="$(PKG_CONFIG_PATH)" \
 	    cmake -S $(DEUCESSH_DIR) -B $(DEUCESSH_BUILD) \
 	        -DCMAKE_BUILD_TYPE=Release $(DEUCESSH_CMAKE_BACKEND_ARG) \
 	        $(DEUCESSH_CMAKE_TOOLCHAIN_ARGS) || exit 1; \
