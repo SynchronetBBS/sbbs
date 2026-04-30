@@ -388,8 +388,10 @@ dir_contains_impl(WrenVM *vm, const char *dir, const char *name)
 		wren_throw(vm, "Directory: path too long");
 		return;
 	}
-	struct stat sb;
-	bool yes = (stat(p, &sb) == 0) && S_ISREG(sb.st_mode);
+	/* Regular-file probe via the portable xpdev helpers — fexist()
+	 * confirms presence, isdir() rules out directories.  S_ISREG /
+	 * struct stat aren't a POSIX baseline on Win32 / MSVC. */
+	bool yes = fexist(p) && !isdir(p);
 	wrenSetSlotBool(vm, 0, yes);
 }
 
@@ -990,12 +992,12 @@ fn_File_size(WrenVM *vm)
 		wrenSetSlotDouble(vm, 0, (double)file_size_now(wf));
 		return;
 	}
-	struct stat sb;
-	if (stat(wf->path, &sb) != 0) {
-		wren_throw(vm, "File: stat failed");
+	off_t sz = flength(wf->path);
+	if (sz < 0) {
+		wren_throw(vm, "File: flength failed");
 		return;
 	}
-	wrenSetSlotDouble(vm, 0, (double)sb.st_size);
+	wrenSetSlotDouble(vm, 0, (double)sz);
 }
 
 void
@@ -1018,12 +1020,12 @@ file_map_for_hash(WrenVM *vm, struct wren_file *wf,
                   struct xpmapping **map_out, const void **data_out,
                   size_t *len_out)
 {
-	struct stat sb;
-	if (stat(wf->path, &sb) != 0) {
-		wren_throw(vm, "File: stat failed");
+	off_t sz = flength(wf->path);
+	if (sz < 0) {
+		wren_throw(vm, "File: flength failed");
 		return false;
 	}
-	if (sb.st_size == 0) {
+	if (sz == 0) {
 		*map_out  = NULL;
 		*data_out = "";
 		*len_out  = 0;
