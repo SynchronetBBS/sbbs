@@ -111,10 +111,21 @@ class Pane is Container {
                     bounds.w - 2, bounds.h - topInset - 1)
   }
 
+  // Pane gates the active-layer status of its subtree on its own
+  // `focused` flag.  When the pane is unfocused, every cell it owns
+  // (frame, title, bg fill) AND every descendant's surface picks the
+  // inactive theme variant — so multi-pane layouts go dim
+  // consistently instead of just along the chrome.
+  gatesActiveLayer { true }
+
   onPaint_() {
     var theme   = effectiveTheme
-    var fStyle  = focused ? style("frame") : style("frame.inactive")
-    var tStyle  = focused ? style("title") : style("title.inactive")
+    // No `focused ? ... : ...` shortcut here — Widget.style auto-
+    // suffixes `.inactive` when this Pane (or an unfocused ancestor)
+    // gates the layer, so all three styles agree on active-vs-
+    // inactive without the per-element ternary having to know.
+    var fStyle  = style("frame")
+    var tStyle  = style("title")
     var bgStyle = style("default")
     var rect    = Rect.new(0, 0, bounds.w, bounds.h)
     var s       = surface

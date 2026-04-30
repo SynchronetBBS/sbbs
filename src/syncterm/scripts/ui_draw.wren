@@ -156,10 +156,14 @@ class Painter {
       visible = visible + 1
     }
     if (visible == 0) return
-    var startX = rect.x + ((rect.w - visible - 4) / 2).floor
+    // Pre-truncate so the cap on text(...) doesn't bleed extra
+    // characters past the trailing-space pad — visible+2 cells must
+    // contain " <trimmed> ", not the first n chars of " <full> ".
+    var trimmed = title.count > visible ? title[0...visible] : title
+    var startX  = rect.x + ((rect.w - visible - 4) / 2).floor
     putGlyph_(surface, startX, rect.y,
               glyphs[prefix + ".title.left"], frameStyle)
-    text(surface, startX + 1, rect.y, " " + title + " ",
+    text(surface, startX + 1, rect.y, " " + trimmed + " ",
          titleStyle, visible + 2)
     putGlyph_(surface, startX + visible + 3, rect.y,
               glyphs[prefix + ".title.right"], frameStyle)

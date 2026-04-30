@@ -33,10 +33,16 @@ import "ui_style_test"  for UiStyleTest
 import "ui_widget_test" for UiWidgetTest
 import "ui_draw_test"   for UiDrawTest
 import "ui_list_test"   for UiListTest
-import "ui_input_test"  for UiInputTest
-import "ui_button_test" for UiButtonTest
-import "ui_popup_test"  for UiPopupTest
-import "ui_help_test"   for UiHelpTest
+import "ui_input_test"     for UiInputTest
+import "ui_button_test"    for UiButtonTest
+import "ui_checkbox_test"  for UiCheckboxTest
+import "ui_radio_test"     for UiRadioTest
+import "ui_spinbox_test"   for UiSpinboxTest
+import "ui_statusbar_test" for UiStatusbarTest
+import "ui_menubar_test"   for UiMenubarTest
+import "ui_form_test"      for UiFormTest
+import "ui_popup_test"     for UiPopupTest
+import "ui_help_test"      for UiHelpTest
 
 class WrenTest {
   static run() {
@@ -114,6 +120,12 @@ class WrenTest {
     fold_(UiListTest.run())
     fold_(UiInputTest.run())
     fold_(UiButtonTest.run())
+    fold_(UiCheckboxTest.run())
+    fold_(UiRadioTest.run())
+    fold_(UiSpinboxTest.run())
+    fold_(UiStatusbarTest.run())
+    fold_(UiMenubarTest.run())
+    fold_(UiFormTest.run())
     fold_(UiPopupTest.run())
     fold_(UiHelpTest.run())
 

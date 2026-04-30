@@ -334,6 +334,15 @@ class Codepage {
   static prestel      { 26 }
   static prestelSep   { 27 }
   static atariSt      { 28 }
+
+  // Returns true iff the first codepoint of `text` maps to a CP437
+  // byte (so a Cell.ch= assignment would land on a real glyph rather
+  // than the `?` fallback the C side substitutes for unmapped chars).
+  // Used by Glyphs to pick its ASCII-safe variant when the rich
+  // Unicode primary isn't representable.  Other codepages aren't yet
+  // exposed; CP437 is the cell-storage codepage so it's the only one
+  // that matters for UI painting.
+  foreign static encodes_(text)
 }
 class REPL {
   static eval(src) { eval("syncterm", src) }

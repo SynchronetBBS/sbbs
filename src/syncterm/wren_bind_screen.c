@@ -91,10 +91,9 @@ fnScreenWindow_putChar(WrenVM *vm)
 	putch(c);
 }
 
-/* Forward declaration — definition lives lower in the file alongside
- * the other UTF-8 helpers.  Needed up here so fnScreenWindow_print
- * can decode codepoints before mapping them to CP437. */
-static int decode_utf8_first(const char *s, int len, uint32_t *cp_out);
+/* Definition lives lower in the file alongside the other UTF-8
+ * helpers; declared in wren_bind_internal.h so other binding modules
+ * (wren_bind.c) can reuse it. */
 
 /* ScreenWindow.print(s) writes `s` one cell at a time via putch.
  * Wren strings are UTF-8 byte sequences but local conio renders one
@@ -638,7 +637,7 @@ slot_cell_data(WrenVM *vm, int slot)
 
 /* Decode the first UTF-8 codepoint from `s`; return bytes consumed,
  * or 0 on truncated/invalid input. */
-static int
+int
 decode_utf8_first(const char *s, int len, uint32_t *cp_out)
 {
 	if (s == NULL || len <= 0)

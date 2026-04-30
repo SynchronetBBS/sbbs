@@ -234,17 +234,10 @@ class App {
         Painter.shadow(_surface, dx, dy, c.bounds.w, c.bounds.h)
       }
     }
-    for (m in _modalStack) {
-      var ms = m.draw()
-      if (ms != null && m.bounds != null) {
-        var dx = m.bounds.x - 1
-        var dy = m.bounds.y - 1
-        _surface.putRect(ms, dx, dy)
-        if (m.shadow) Painter.shadow(_surface, dx, dy, m.bounds.w, m.bounds.h)
-      }
-    }
-    // Status overlay sits on top of everything (modals included) and
-    // doesn't intercept input — purely decorative until popStatus(null).
+    // Status overlay sits above the foreground widget tree but
+    // *below* the modal stack — a "Working..." indicator is fine to
+    // hide behind a dialog the user is actively working with.
+    // popStatus(null) clears it.
     if (_status != null) {
       var ss = _status.draw()
       if (ss != null && _status.bounds != null) {
@@ -254,6 +247,15 @@ class App {
         if (_status.shadow) {
           Painter.shadow(_surface, dx, dy, _status.bounds.w, _status.bounds.h)
         }
+      }
+    }
+    for (m in _modalStack) {
+      var ms = m.draw()
+      if (ms != null && m.bounds != null) {
+        var dx = m.bounds.x - 1
+        var dy = m.bounds.y - 1
+        _surface.putRect(ms, dx, dy)
+        if (m.shadow) Painter.shadow(_surface, dx, dy, m.bounds.w, m.bounds.h)
       }
     }
     Screen.putRect(_surface, 1, 1)

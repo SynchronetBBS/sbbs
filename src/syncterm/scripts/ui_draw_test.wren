@@ -272,12 +272,23 @@ class UiDrawTest {
 
   static testPaneDrawFramesWithTitle_() {
     var p = Pane.new()
-    p.bounds = Rect.new(1, 1, 10, 4)
-    p.title  = "Hi"
+    p.bounds      = Rect.new(1, 1, 10, 4)
+    // Test the embedded-title look (single-line frame, title in the
+    // top border).  Pane's UIFC defaults are double-line + titleAsBar
+    // + corner buttons, which don't match this test's expectations;
+    // opt out of all of them so we're testing Painter.frameTitle's
+    // single-line layout.
+    p.framePreset = "single"
+    p.titleAsBar  = false
+    p.helpable    = false
+    p.closeable   = false
+    p.title       = "Hi"
     var s = p.draw()
-    // Width 10, title "Hi" (2 cells); titleX in surface = (10-2)/2 = 4.
-    check_(s.cellAt(0, 0).ch == "┌" && s.cellAt(4, 0).ch == "H" &&
-           s.cellAt(5, 0).ch == "i" && s.cellAt(9, 0).ch == "┐",
+    // Width 10, title "Hi" (2 cells); startX = (10-2-4)/2 = 2.
+    // Layout: 0:┌ 1:─ 2:┤ 3:" " 4:H 5:i 6:" " 7:├ 8:─ 9:┐
+    check_(s.cellAt(0, 0).ch == "┌" && s.cellAt(2, 0).ch == "┤" &&
+           s.cellAt(4, 0).ch == "H" && s.cellAt(5, 0).ch == "i" &&
+           s.cellAt(7, 0).ch == "├" && s.cellAt(9, 0).ch == "┐",
            "Pane.draw: frames with centered title")
   }
 

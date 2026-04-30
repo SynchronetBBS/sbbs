@@ -12,14 +12,20 @@
 // nesting is fine because every App save/restores Screen, mouse
 // events, and CustomCursor on entry / exit.
 
-import "ui_widget" for Rect
-import "ui_pane"   for Pane
-import "ui_list"   for ListView
-import "ui_input"  for TextInput
-import "ui_popup"  for Alert, Confirm, Prompt
-import "ui_help"   for Help
-import "ui_app"    for App
-import "syncterm"  for Screen, Key, Input
+import "ui_widget"    for Rect
+import "ui_pane"      for Pane
+import "ui_list"      for ListView
+import "ui_input"     for TextInput
+import "ui_checkbox"  for Checkbox
+import "ui_radio"     for RadioGroup
+import "ui_spinbox"   for SpinBox
+import "ui_statusbar" for StatusBar
+import "ui_menubar"   for MenuBar
+import "ui_form"      for Form
+import "ui_popup"     for Alert, Confirm, Prompt
+import "ui_help"      for Help
+import "ui_app"       for App
+import "syncterm"     for Screen, Key, Input
 
 class UiDemo {
   static run() {
@@ -37,6 +43,12 @@ class UiDemo {
     var demos = [
       ["ListView - scrollable items + scrollbar",  Fn.new { runListDemo_() }],
       ["TextInput - single-line edit field",       Fn.new { runInputDemo_() }],
+      ["Checkbox - boolean toggle",                Fn.new { runCheckboxDemo_() }],
+      ["RadioGroup - mutually exclusive choices",  Fn.new { runRadioDemo_() }],
+      ["SpinBox - numeric +/- with arrows",        Fn.new { runSpinboxDemo_() }],
+      ["MenuBar - horizontal command strip",       Fn.new { runMenubarDemo_(app) }],
+      ["StatusBar - bottom strip with segments",   Fn.new { runStatusbarDemo_() }],
+      ["Form - mixed widgets in a layout",         Fn.new { runFormDemo_(app) }],
       ["Alert popup",                              Fn.new { runAlertDemo_(app) }],
       ["Confirm popup (Y/N)",                      Fn.new { runConfirmDemo_(app) }],
       ["Prompt popup (TextInput inside)",          Fn.new { runPromptDemo_(app) }],
@@ -98,6 +110,173 @@ class UiDemo {
       "(end of list)"
     ]
     pane.add(list)
+
+    app.bind(Key.escape, Fn.new {|k| app.quit() })
+    app.runSync()
+    Screen.restore(snap)
+  }
+
+  // ----- Form-control demos ---------------------------------------
+
+  static runCheckboxDemo_() {
+    var snap = Screen.save()
+    var app  = App.new()
+    var size = Screen.size
+    var pane = Pane.new()
+    pane.bounds  = Rect.new(2, 2, size[0] - 2, size[1] - 2)
+    pane.title   = "Checkbox - Space/Enter toggles, Esc to return"
+    pane.focused = true
+    pane.onClose = Fn.new { app.quit() }
+    app.root.add(pane)
+
+    var ib = pane.innerBounds
+    var c1 = Checkbox.new("Show drop shadows")
+    c1.bounds = Rect.new(ib.x + 2, ib.y + 1, 30, 1)
+    c1.value  = true
+    pane.add(c1)
+    var c2 = Checkbox.new("Auto-reconnect on drop")
+    c2.bounds = Rect.new(ib.x + 2, ib.y + 3, 30, 1)
+    pane.add(c2)
+    var c3 = Checkbox.new("Verbose logging")
+    c3.bounds = Rect.new(ib.x + 2, ib.y + 5, 30, 1)
+    pane.add(c3)
+
+    app.bind(Key.escape, Fn.new {|k| app.quit() })
+    app.runSync()
+    Screen.restore(snap)
+  }
+
+  static runRadioDemo_() {
+    var snap = Screen.save()
+    var app  = App.new()
+    var size = Screen.size
+    var pane = Pane.new()
+    pane.bounds  = Rect.new(2, 2, size[0] - 2, size[1] - 2)
+    pane.title   = "RadioGroup - Up/Down moves, Space/Enter selects"
+    pane.focused = true
+    pane.onClose = Fn.new { app.quit() }
+    app.root.add(pane)
+
+    var ib = pane.innerBounds
+    var g  = RadioGroup.new()
+    g.bounds = Rect.new(ib.x + 2, ib.y + 1, 30, 5)
+    g.items  = ["None", "Single-line", "Double-line", "Heavy", "Rounded"]
+    pane.add(g)
+
+    app.bind(Key.escape, Fn.new {|k| app.quit() })
+    app.runSync()
+    Screen.restore(snap)
+  }
+
+  static runSpinboxDemo_() {
+    var snap = Screen.save()
+    var app  = App.new()
+    var size = Screen.size
+    var pane = Pane.new()
+    pane.bounds  = Rect.new(2, 2, size[0] - 2, size[1] - 2)
+    pane.title   = "SpinBox - Up/Down/+/- changes, Esc to return"
+    pane.focused = true
+    pane.onClose = Fn.new { app.quit() }
+    app.root.add(pane)
+
+    var ib = pane.innerBounds
+    var s = SpinBox.new()
+    s.bounds = Rect.new(ib.x + 2, ib.y + 1, 12, 1)
+    s.min    = 0
+    s.max    = 200
+    s.step   = 5
+    s.value  = 100
+    pane.add(s)
+
+    app.bind(Key.escape, Fn.new {|k| app.quit() })
+    app.runSync()
+    Screen.restore(snap)
+  }
+
+  static runMenubarDemo_(parentApp) {
+    var snap = Screen.save()
+    var app  = App.new()
+    var size = Screen.size
+
+    var bar = MenuBar.new()
+    bar.bounds  = Rect.new(1, 1, size[0], 1)
+    bar.focused = true
+    bar.items   = [
+      ["File", Fn.new { Alert.show(app, "File menu activated") }],
+      ["Edit", Fn.new { Alert.show(app, "Edit menu activated") }],
+      ["View", Fn.new { Alert.show(app, "View menu activated") }],
+      ["Help", Fn.new { Alert.show(app, "Help menu activated") }],
+    ]
+    app.root.add(bar)
+
+    app.bind(Key.escape, Fn.new {|k| app.quit() })
+    app.popStatus("Left/Right move, Enter activates, " +
+                  "letter = hotkey, Esc returns")
+    app.runSync()
+    Screen.restore(snap)
+  }
+
+  static runStatusbarDemo_() {
+    var snap = Screen.save()
+    var app  = App.new()
+    var size = Screen.size
+
+    var sb = StatusBar.new()
+    sb.bounds   = Rect.new(1, size[1], size[0], 1)
+    sb.segments = [
+      ["F1 Help  Esc Quit", "left"],
+      ["StatusBar demo",    "center"],
+      ["09:42",             "right"],
+    ]
+    app.root.add(sb)
+
+    app.bind(Key.escape, Fn.new {|k| app.quit() })
+    app.popStatus("StatusBar at the bottom of the screen - " +
+                  "Esc returns")
+    app.runSync()
+    Screen.restore(snap)
+  }
+
+  static runFormDemo_(parentApp) {
+    var snap = Screen.save()
+    var app  = App.new()
+    var size = Screen.size
+
+    var pane = Pane.new()
+    pane.bounds  = Rect.new(4, 3, size[0] - 6, size[1] - 5)
+    pane.title   = "Form - Tab to move, Enter to submit"
+    pane.focused = true
+    pane.onClose = Fn.new { app.quit() }
+    app.root.add(pane)
+
+    var f = Form.new()
+    f.bounds = pane.innerBounds
+
+    var name = TextInput.new()
+    name.maxLen = 32
+    f.addField("Name:", name)
+
+    var port = SpinBox.new()
+    port.min = 1
+    port.max = 65535
+    port.step = 1
+    port.value = 23
+    f.addField("Port:", port)
+
+    var enc = RadioGroup.new()
+    enc.items = ["None", "SSL", "SSH"]
+    f.addFieldH("Encryption:", enc, 3)
+
+    var auto = Checkbox.new("Connect on startup")
+    auto.value = true
+    f.addField("", auto)
+
+    f.onSubmit = Fn.new {
+      Alert.show(app,
+                 "Submitted: name=%(name.value), port=%(port.value)")
+    }
+    f.onCancel = Fn.new { app.quit() }
+    pane.add(f)
 
     app.bind(Key.escape, Fn.new {|k| app.quit() })
     app.runSync()

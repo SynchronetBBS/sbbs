@@ -393,6 +393,30 @@ fn_Clipboard_text_set(WrenVM *vm)
 		ciolib_copytext(s, (size_t)len);
 }
 
+/* Codepage.encodes_(text) — does the *first* codepoint of `text` map
+ * to a CP437 byte?  Returns false for empty input or unmappable
+ * codepoints.  Used by ui_style's Glyphs class to fall back from a
+ * rich Unicode primary to its ASCII fallback whenever the primary
+ * isn't in the active codepage's table.  Two probes (unmapped=0 and
+ * unmapped=1) sidestep the U+0000-versus-unmapped ambiguity that a
+ * single probe with unmapped=0 leaves: if both probes agree, the
+ * codepoint mapped successfully; if they disagree, it didn't. */
+static void
+fn_Codepage_encodes_(WrenVM *vm)
+{
+	int         len = 0;
+	const char *s   = wrenGetSlotBytes(vm, 1, &len);
+	uint32_t    cp  = 0;
+
+	if (s == NULL || len <= 0 || decode_utf8_first(s, len, &cp) == 0) {
+		wrenSetSlotBool(vm, 0, false);
+		return;
+	}
+	uint8_t b0 = cpchar_from_unicode_cpoint(CIOLIB_CP437, cp, 0);
+	uint8_t b1 = cpchar_from_unicode_cpoint(CIOLIB_CP437, cp, 1);
+	wrenSetSlotBool(vm, 0, b0 == b1);
+}
+
 /* ----- Timer -------------------------------------------------------
  *
  * One-shot fiber resumption after a delay.  The foreign captures the
@@ -669,6 +693,9 @@ static const struct binding BINDINGS[] = {
 	/* Clipboard (all static) */
 	{ "Clipboard", true, "text",               fn_Clipboard_text     },
 	{ "Clipboard", true, "text=(_)",           fn_Clipboard_text_set },
+
+	/* Codepage (all static) */
+	{ "Codepage",  true, "encodes_(_)",        fn_Codepage_encodes_  },
 
 	/* REPL */
 	{ "REPL",  true,  "compile_(_,_,_,_)",   fn_REPL_compile_         },

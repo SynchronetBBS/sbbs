@@ -94,14 +94,19 @@ class Widget {
     markDirty()
   }
 
-  // True when this widget is part of the App's *active* layer — the
-  // top of the modal stack, or its descendants.  Walks up the parent
-  // chain until it finds the App (the first non-Widget ancestor)
-  // and asks it for `modalTop`; if `this` or any ancestor is that
-  // widget, we're in the active layer.  When the widget isn't
-  // anchored under any App, default true (no inactive context).
-  // Frame-drawing widgets pick their inactive theme variant when
-  // this returns false.
+  // True when this widget should render in its *active* theme variant.
+  // Two reasons a widget can land in the inactive layer:
+  //
+  //   1. It isn't part of the App's modal-top subtree (a modal is on
+  //      top, and this widget is in the layer behind it).
+  //   2. An ancestor that gates focus visibility (e.g. a Pane in a
+  //      multi-pane layout) has `focused == false` — the whole
+  //      subtree of an unfocused gate goes inactive.
+  //
+  // Walks the parent chain twice: once to find the App and confirm
+  // the widget is inside `modalTop`'s subtree, again to test for any
+  // unfocused gate ancestor.  When the widget isn't anchored under
+  // any App, default true (no inactive context).
   inActiveLayer {
     var app = null
     var w = this
@@ -114,15 +119,34 @@ class Widget {
       }
       w = p
     }
-    if (app == null) return true
-    var top = app.modalTop
-    var x = this
-    while (x is Widget) {
-      if (x == top) return true
-      x = x.parent
+    if (app != null) {
+      var top  = app.modalTop
+      var x    = this
+      var inTop = false
+      while (x is Widget) {
+        if (x == top) {
+          inTop = true
+          break
+        }
+        x = x.parent
+      }
+      if (!inTop) return false
     }
-    return false
+    var a = this
+    while (a is Widget) {
+      if (a.gatesActiveLayer && !a.focused) return false
+      a = a.parent
+    }
+    return true
   }
+
+  // Override and return true on widgets that act as a focus gate
+  // for their subtree — when such a widget has `focused == false`,
+  // its descendants render with the inactive theme variant even
+  // when no modal is on top.  Pane is the canonical user; bare
+  // Widgets default to "doesn't gate" so there's no behavior change
+  // for the simple cases.
+  gatesActiveLayer { false }
 
   parent     { _parent }
   // Accept anything that quacks like a parent (responds to

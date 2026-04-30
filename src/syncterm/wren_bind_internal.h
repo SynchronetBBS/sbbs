@@ -91,4 +91,10 @@ wren_throw(WrenVM *vm, const char *msg)
 	wrenAbortFiber(vm, 0);
 }
 
+/* Decode the first UTF-8 codepoint from `s` into `*cp_out`; returns
+ * the byte length consumed, or 0 on truncated/invalid input.  Lives
+ * in wren_bind_screen.c (the file that owns Cell.ch=) but is shared
+ * by every binding that handles Wren-side UTF-8 strings. */
+int decode_utf8_first(const char *s, int len, uint32_t *cp_out);
+
 #endif /* WREN_BIND_INTERNAL_H */

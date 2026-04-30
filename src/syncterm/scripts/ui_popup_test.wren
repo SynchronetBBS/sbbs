@@ -41,7 +41,7 @@ class UiPopupTest {
     System.print("=== ui_popup self-test starting ===")
 
     testAlertConstruction_()
-    testAlertAnyKeyDismisses_()
+    testAlertEscDismisses_()
     testConfirmYes_()
     testConfirmNo_()
     testConfirmEnterIsYes_()
@@ -75,14 +75,23 @@ class UiPopupTest {
            "Alert: message + title + null result on construct")
   }
 
-  static testAlertAnyKeyDismisses_() {
+  static testAlertEscDismisses_() {
+    // Alert dismisses on Esc directly, or via Enter / Space / mouse
+    // click on the OK button (handled by Container's focus dispatch
+    // to the focused Button child).  Random printable keys fall
+    // through and don't dismiss — the OK button is meant to feel like
+    // an actual confirmation step, not a "press any key" trap.
     var app = FakeApp.new()
     var a   = Alert.new("hi")
     a.bounds = Rect.new(1, 1, 20, 5)
     app.modal(a)
     check_(app.modalStack.count == 1, "Alert: pushed onto modal stack")
-    a.handle(KeyEvent.new(0x41))
-    check_(app.modalStack.count == 0, "Alert: any key pops the modal")
+    a.handle(KeyEvent.new(0x41))                // 'A' — falls through
+    check_(app.modalStack.count == 1,
+           "Alert: random key does not dismiss")
+    a.handle(KeyEvent.new(Key.escape))
+    check_(app.modalStack.count == 0,
+           "Alert: Esc pops the modal")
   }
 
   // ----- Confirm --------------------------------------------------

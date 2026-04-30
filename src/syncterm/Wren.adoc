@@ -2524,7 +2524,8 @@ and re-exported from the convenience aggregator `ui`:
 [source,wren]
 ----
 import "ui" for App, Pane, ListView, TextInput, Button,
-               Alert, Confirm, Prompt, Help, PopStatus,
+               Checkbox, RadioGroup, SpinBox, MenuBar, StatusBar,
+               Form, Alert, Confirm, Prompt, Help, PopStatus,
                Painter, Style, Theme, Glyphs,
                Widget, Container, Rect
 ----
@@ -2560,7 +2561,10 @@ Methods of interest:
   the widget so the caller can read its `result`.
 * `popStatus(message)` — show or clear a transient centered overlay
   that does *not* intercept input.  Useful for "Working..." status
-  while blocking on `Input.next` or a long Wren computation.
+  while blocking on `Input.next` or a long Wren computation.  The
+  overlay sits above the foreground widget tree but *below* the
+  modal stack, so a dialog the user is actively working with isn't
+  obscured by an indicator behind it.
 * `showHelp()` — walks from the focused leaf up the parent chain to
   the first widget with `helpText` set, then opens a `Help` dialog
   with that text.  No-op if nothing in the chain has help.
@@ -2738,6 +2742,173 @@ insensitively against typed input, so a button labeled "Yes" with
 `hotkeyIdx = 0` activates on `Y` from anywhere in the same
 container — even when focus is on a sibling.
 
+=== Checkbox [[ui-checkbox]]
+
+Single-row "[X] Label" toggle.  `value` is a Bool, `label` is a
+String.  `Space` or `Enter` flips the value when focused; mouse
+click anywhere on the widget toggles too.
+
+[source,wren]
+----
+var c = Checkbox.new("Show shadows")
+c.bounds   = Rect.new(x, y, c.intrinsicWidth, 1)
+c.value    = true
+c.onChange = Fn.new {|v| /* ... */ }
+----
+
+`onChange` fires only when the value actually changes — assigning
+the current value is a no-op.  Theme roles: `checkbox`,
+`checkbox.focused`.  Glyphs reused: `check.on` (`+■+`), `check.off`
+(space).
+
+=== RadioGroup [[ui-radio]]
+
+Multi-row mutually-exclusive selector.  Owns its own item list and
+selected index — the whole group is a single focusable widget.
+
+[source,wren]
+----
+var g = RadioGroup.new()
+g.bounds   = Rect.new(x, y, w, h)
+g.items    = ["None", "SSL", "SSH"]
+g.selected = 0
+g.onChange = Fn.new {|i, item| /* ... */ }
+----
+
+Two pointers: `cursor` (visually highlighted row) and `selected`
+(the committed value).  Up/Down move the cursor; `Home` / `End`
+jump to ends; `Space` or `Enter` commits the cursor as the
+selection.  Mouse click selects directly.  `onChange` fires only
+when the selection actually changes.  The cursor highlight only
+appears while the widget itself has focus — leaving the group
+shows just the filled `+•+` glyph on the selected row, so a
+multi-field Form doesn't confuse the user with a stale lightbar.
+
+`wrap=` controls the edge behavior of Up/Down.  Default `true`:
+Up at the top wraps to the bottom and vice versa; every press is
+consumed.  When `false`, Up at the top and Down at the bottom
+return false instead, letting the parent Container move focus to
+the previous / next sibling.  `Form.addField` flips this to false
+on RadioGroup children so vertical traversal escapes the group at
+its edges.
+
+Theme roles: `radio.item`, `radio.item.focused`.  Glyphs reused:
+`radio.on` (`+•+` U+2022), `radio.off` (`+○+` U+25CB).
+
+=== SpinBox [[ui-spinbox]]
+
+Single-row numeric input with up/down step buttons.  Layout:
+`[   42  +▲▼+]`.
+
+[source,wren]
+----
+var s = SpinBox.new()
+s.bounds   = Rect.new(x, y, w, 1)
+s.min      = 0
+s.max      = 100
+s.step     = 1
+s.value    = 50
+s.onChange = Fn.new {|v| /* ... */ }
+----
+
+Keys: `Up` / `+` adds step; `Down` / `-` subtracts; `PageUp` /
+`PageDown` move ten steps; `Home` / `End` jump to `min` / `max`.
+Mouse wheel scrolls one step; clicks on the up/down arrow cells
+step ±1.  `value=` clamps to `[min, max]`.  Theme roles: `spinbox`,
+`spinbox.focused`.  Glyphs reused: `scrollbar.up`, `scrollbar.down`.
+
+=== MenuBar [[ui-menubar]]
+
+Horizontal strip of activatable items, typically at the top of the
+screen.  Each item is a `[label, Fn]` pair; activation calls the
+Fn.  No nested submenus in v1 — pop a `Popup` from the callback if
+you want one.
+
+[source,wren]
+----
+var bar = MenuBar.new()
+bar.bounds = Rect.new(1, 1, sz[0], 1)
+bar.items  = [
+  ["File", Fn.new { Alert.show(app, "...") }],
+  ["Edit", Fn.new { /* ... */ }],
+  ["Help", Fn.new { app.showHelp() }],
+]
+----
+
+Keys: `Left` / `Right` move focus between items with wrap; `Home` /
+`End` jump to ends; `Enter` / `Space` activate the focused item; a
+typed letter (case-insensitive ASCII) matched against item labels'
+first characters activates that item.  `tryHotkey(ev)` is exposed
+on the widget so a `Container` parent can route a letter pressed
+elsewhere into the bar's matcher.  Mouse click activates the clicked
+item; clicks on inter-item gaps are dropped.  Theme roles:
+`menubar`, `menubar.item`, `menubar.item.focused`.
+
+=== StatusBar [[ui-statusbar]]
+
+Single-row strip used at the bottom (or top) of the screen for
+status text and key hints.  Not focusable.
+
+[source,wren]
+----
+var s = StatusBar.new()
+s.bounds = Rect.new(1, sz[1], sz[0], 1)
+s.text   = "F1 Help  Esc Quit"
+
+// or — multi-segment:
+s.segments = [
+  ["F1 Help",   "left"],
+  ["Connected", "center"],
+  ["09:42",     "right"],
+]
+----
+
+`text=` sets a single left-aligned string.  `segments=` takes a list
+of `[text, align]` pairs where `align` is `"left"`, `"center"`, or
+`"right"`.  Left segments stack from the left edge with a 2-cell
+gap; right segments flush to the right edge inward; one center
+segment is centred in the remaining space.  Setting either form
+overrides the other.  Theme role: `statusbar` (black on cyan).
+
+=== Form [[ui-form]]
+
+`Container` subclass that lays out (label, widget) pairs in a
+vertical stack with right-aligned labels in a column on the left.
+Optional OK / Cancel buttons appear on the row below the last field
+when `onSubmit` / `onCancel` are wired.
+
+[source,wren]
+----
+var f = Form.new()
+f.bounds = pane.innerBounds
+
+f.addField("Name:", nameInput)
+f.addField("Port:", portSpin)
+f.addFieldH("Encryption:", encRadio, 3)    // 3 rows tall
+f.addField("",  autoCheckbox)              // no label
+
+f.onSubmit = Fn.new { /* read field values */ }
+f.onCancel = Fn.new { app.quit() }
+pane.add(f)
+----
+
+* `addField(label, widget)` — queues a one-row field.
+* `addFieldH(label, widget, h)` — queues a multi-row field (e.g.
+  RadioGroup).
+* `clearFields()` — drops every queued field and removes the
+  widgets as children.
+* `rowGap=` — blank rows between fields.  Default 0.
+* `rowH=` — default per-field height.  Default 1.
+
+The label column width auto-sizes to the longest label; widgets
+start one column past the longest label plus a 2-cell gap.  Tab /
+BackTab traversal hits widgets in declaration order, then OK, then
+Cancel.  `Esc` fires `onCancel` if wired.
+
+`onSubmit=` / `onCancel=` are idempotent setters — assigning the
+same callback twice doesn't double-add the OK / Cancel button, and
+assigning `null` removes the button.
+
 === Popup family [[ui-popup]]
 
 Modal dialogs built on `Pane` (single-line frame, embedded title,
@@ -2819,10 +2990,21 @@ Inactive cascade: when a role ends in `.inactive`, the Theme walks
 a parallel chain — `X.inactive`, then `parent(X).inactive`, …,
 finally `default.inactive`.  Falls through to `default` if the
 theme has no inactive variants at all.  `Widget.style(role)`
-auto-suffixes `.inactive` whenever `inActiveLayer` is false (the
-widget is part of a pane behind a modal), so a single layer-state
-flag cascades through frame, title, list rows, input field, button
-labels, and scrollbar without per-widget bookkeeping.
+auto-suffixes `.inactive` whenever `inActiveLayer` is false, so a
+single layer-state flag cascades through frame, title, list rows,
+input field, button labels, and scrollbar without per-widget
+bookkeeping.
+
+A widget lands in the inactive layer for either of two reasons:
+
+* It isn't part of the App's modal-top subtree (a modal is on top,
+  and the widget is in the layer behind it).
+* An ancestor that *gates* focus visibility has `focused == false`.
+  `Widget.gatesActiveLayer` defaults to `false`; `Pane` overrides
+  it to `true`, so an unfocused Pane in a multi-pane layout dims
+  every cell it owns AND every descendant's surface — frame,
+  title, bg fill, list rows all agree on active-vs-inactive
+  without each subclass having to know.
 
 `Theme.default` is the built-in default, memoized so `someTheme ==
 Theme.default` works as identity equality.  It mirrors the classic
@@ -2832,9 +3014,16 @@ palette of bright-white-on-cyan and bright-yellow-on-cyan lightbar.
 
 `Glyphs` entries are either a single string or `[primary,
 fallback]` pairs — primary is the rich Unicode glyph, fallback is
-an ASCII-safe substitute.  Set `theme.glyphs.asciiOnly = true` to
-force the fallback everywhere (e.g. on emulations where the rich
-codepoint can't be represented).
+an ASCII-safe substitute.  Cell storage is CP437, so primary
+glyphs MUST be in CP437 too — `Cell.ch=` substitutes `?` for any
+codepoint not in the table.  As a safety net, `Glyphs[name]`
+auto-promotes to the per-entry fallback when the primary's first
+codepoint doesn't encode in CP437 (probed via the foreign
+`Codepage.encodes_(text)`).  Resolutions are cached per name so
+the encoding test runs once.  Set `theme.glyphs.asciiOnly = true`
+to force the fallback for every entry that has one — useful when
+the user has selected a font that can't render line-drawing
+characters at all.
 
 Glyph families used by the library:
 
@@ -2886,17 +3075,23 @@ convenience aggregator:
 
 [cols="1m,2"]
 |===
-| `ui`         | Re-exports every public class.
-| `ui_app`     | `App`.
-| `ui_widget`  | `Widget`, `Container`, `Rect`.
-| `ui_pane`    | `Pane`.
-| `ui_list`    | `ListView`.
-| `ui_input`   | `TextInput`.
-| `ui_button`  | `Button`.
-| `ui_popup`   | `Popup`, `Alert`, `Confirm`, `Prompt`, `PopStatus`.
-| `ui_help`    | `Help`.
-| `ui_draw`    | `Painter`.
-| `ui_style`   | `Style`, `Glyphs`, `Theme`.
+| `ui`           | Re-exports every public class.
+| `ui_app`       | `App`.
+| `ui_widget`    | `Widget`, `Container`, `Rect`.
+| `ui_pane`      | `Pane`.
+| `ui_list`      | `ListView`.
+| `ui_input`     | `TextInput`.
+| `ui_button`    | `Button`.
+| `ui_checkbox`  | `Checkbox`.
+| `ui_radio`     | `RadioGroup`.
+| `ui_spinbox`   | `SpinBox`.
+| `ui_statusbar` | `StatusBar`.
+| `ui_menubar`   | `MenuBar`.
+| `ui_form`      | `Form`.
+| `ui_popup`     | `Popup`, `Alert`, `Confirm`, `Prompt`, `PopStatus`.
+| `ui_help`      | `Help`.
+| `ui_draw`      | `Painter`.
+| `ui_style`     | `Style`, `Glyphs`, `Theme`.
 |===
 
 === Demo gallery [[ui-demo]]

@@ -12,6 +12,8 @@
 // "default" is required to be fully populated and acts as the
 // terminator of the cascade.
 
+import "syncterm" for Codepage
+
 class Style {
   construct new(font, legacyAttr, fgRgb, bgRgb) {
     _font       = font
@@ -69,23 +71,45 @@ class Style {
 // Unicode glyph, fallback is an ASCII-safe substitute used when the
 // active codepage / font can't represent the primary.
 //
-// `asciiOnly` flips the lookup to always return fallback when one is
-// defined.  Unknown names return null.  String-only entries don't
-// have a fallback and ignore `asciiOnly`.
+// `asciiOnly` forces the fallback for every entry that has one.
+// Otherwise, lookup auto-promotes to the fallback when the primary's
+// first codepoint doesn't map to CP437 — Cell.ch= writes CP437 and
+// substitutes `?` for unmappable codepoints, so a primary that isn't
+// in the table would otherwise silently render as a question mark.
+// Per-entry resolutions are cached so the encoding probe only runs
+// once per glyph name.  Unknown names return null.  String-only
+// entries don't have a fallback and ignore `asciiOnly`.
 class Glyphs {
   construct new(map) {
-    _map = map
-    _asciiOnly = false
+    _map        = map
+    _asciiOnly  = false
+    _cache      = {}     // name -> resolved string (rich)
+    _cacheAscii = {}     // name -> resolved string (asciiOnly)
   }
 
   asciiOnly     { _asciiOnly }
   asciiOnly=(b) { _asciiOnly = b }
 
   [name] {
+    var cache = _asciiOnly ? _cacheAscii : _cache
+    if (cache.containsKey(name)) return cache[name]
     var g = _map[name]
-    if (g == null) return null
-    if (g is List) return _asciiOnly ? g[1] : g[0]
-    return g
+    if (g == null) {
+      cache[name] = null
+      return null
+    }
+    var out = g
+    if (g is List) {
+      if (_asciiOnly) {
+        out = g[1]
+      } else if (Codepage.encodes_(g[0])) {
+        out = g[0]
+      } else {
+        out = g[1]
+      }
+    }
+    cache[name] = out
+    return out
   }
 }
 
@@ -259,6 +283,32 @@ class Theme {
       "statusbar":
         Style.new(null, 0x30, 0x000000, 0x00AAAA),
 
+      // Form controls — checkbox, radio, spinbox.  Unfocused state
+      // inherits "default" so the brackets read against the pane
+      // background; focused gets the lightbar.  All three share the
+      // same family so users get a consistent feel.
+      "checkbox":
+        Style.new(null, 0x1F, null, null),
+      "checkbox.focused":
+        Style.new(null, 0x70, 0x000000, 0xAAAAAA),
+      "radio.item":
+        Style.new(null, 0x1F, null, null),
+      "radio.item.focused":
+        Style.new(null, 0x70, 0x000000, 0xAAAAAA),
+      "spinbox":
+        Style.new(null, 0x70, 0x000000, 0xAAAAAA),
+      "spinbox.focused":
+        Style.new(null, 0x70, 0x000000, 0xFFFFFF),
+
+      // Menu bar — base strip + per-item.  Black on gray for the
+      // resting strip; bright on dark for the focused / hovered item.
+      "menubar":
+        Style.new(null, 0x70, 0x000000, 0xAAAAAA),
+      "menubar.item":
+        Style.new(null, 0x70, 0x000000, 0xAAAAAA),
+      "menubar.item.focused":
+        Style.new(null, 0x07, 0xAAAAAA, 0x000000),
+
       // Scroll bar: dim track, bright thumb (handled by glyphs +
       // these Styles).
       "scrollbar.track":
@@ -341,11 +391,15 @@ class Theme {
       "focus.left":          ["►", ">"],
       "focus.right":         ["◄", "<"],
 
-      "check.on":            ["■", "X"],
+      "check.on":            ["√", "X"],
       "check.off":           [" ", " "],
-      "radio.on":            ["●", "*"],
+      // U+2022 (•) maps to CP437 byte 0x07; U+25CF (●) does NOT, so
+      // it would silently render as `?` despite Glyphs' own fallback
+      // probe deciding the primary "encodes."  Always pick CP437-
+      // representable primaries — that's the cell-storage codepage.
+      "radio.on":            ["•", "*"],
       "radio.off":           ["○", "o"],
-      "tag.on":              ["►", ">"],
+      "tag.on":              ["»", ">"],
       "tag.off":             [" ", " "]
     }
 
