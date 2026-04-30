@@ -1487,6 +1487,17 @@ update_surface_size(int w, int h)
 		wl_region_add(wl_opaque_region, 0, 0, w, h);
 		wl_surface_set_opaque_region(wl_surf, wl_opaque_region);
 	}
+	/* Tell the compositor the visible content extent.  Without this,
+	 * a viewport_set_destination that shrinks the surface below the
+	 * compositor's last-configured toplevel size leaves the rest of
+	 * the toplevel painted by the compositor (transparent → black
+	 * — the "screen blacks out" symptom of ticket 246 when text mode
+	 * changes after Alt-H).  set_window_geometry hints the new
+	 * content rect so floating compositors resize the toplevel to
+	 * match; tiled compositors will hold their layout-imposed size
+	 * either way. */
+	if (xdg_surf)
+		xdg_surface_set_window_geometry(xdg_surf, 0, 0, w, h);
 }
 
 static void
