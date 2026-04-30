@@ -210,12 +210,16 @@ class UiDrawTest {
     Painter.fill(s, Rect.new(0, 0, 12, 3), " ", testStyle_)
     Painter.frameTitle(s, Rect.new(0, 0, 12, 3), glyphs, testStyle_,
                        "OK", styleB_)
-    // Width 12, title "OK" (2 cells); titleX = (12-2)/2 = 5.
-    check_(s.cellAt(0, 0).ch == "┌" && s.cellAt(4, 0).ch == "─" &&
+    // Width 12, "┤ OK ├" is 6 cells; startX = (12-2-4)/2 = 3.
+    // Layout: 0:┌ 1-2:─ 3:┤ 4:" " 5:O 6:K 7:" " 8:├ 9-10:─ 11:┐
+    check_(s.cellAt(0, 0).ch == "┌" && s.cellAt(2, 0).ch == "─" &&
+           s.cellAt(3, 0).ch == "┤" && s.cellAt(4, 0).ch == " " &&
            s.cellAt(5, 0).ch == "O" && s.cellAt(6, 0).ch == "K" &&
-           s.cellAt(7, 0).ch == "─" && s.cellAt(11, 0).ch == "┐" &&
-           s.cellAt(5, 0).legacyAttr == 0x70,
-           "Painter.frameTitle: title centered with title style")
+           s.cellAt(7, 0).ch == " " && s.cellAt(8, 0).ch == "├" &&
+           s.cellAt(9, 0).ch == "─" && s.cellAt(11, 0).ch == "┐" &&
+           s.cellAt(5, 0).legacyAttr == 0x70 &&
+           s.cellAt(4, 0).legacyAttr == 0x70,   // padding inherits title style
+           "Painter.frameTitle: title centered with bracketed spacing")
   }
 
   static testFrameTitleTruncated_() {
@@ -224,11 +228,13 @@ class UiDrawTest {
     Painter.fill(s, Rect.new(0, 0, 8, 3), " ", testStyle_)
     Painter.frameTitle(s, Rect.new(0, 0, 8, 3), glyphs, testStyle_,
                        "Hello", styleB_)
-    // maxW = 8 - 4 = 4; visible = 4; titleX = (8-4)/2 = 2.
-    check_(s.cellAt(2, 0).ch == "H" && s.cellAt(3, 0).ch == "e" &&
-           s.cellAt(4, 0).ch == "l" && s.cellAt(5, 0).ch == "l" &&
-           s.cellAt(7, 0).ch == "┐",
-           "Painter.frameTitle: title truncated to fit")
+    // maxW = 8 - 6 = 2; visible = 2 ("He"); startX = (8-2-4)/2 = 1.
+    // Layout: 0:┌ 1:┤ 2:" " 3:H 4:e 5:" " 6:├ 7:┐
+    check_(s.cellAt(0, 0).ch == "┌" && s.cellAt(1, 0).ch == "┤" &&
+           s.cellAt(2, 0).ch == " " && s.cellAt(3, 0).ch == "H" &&
+           s.cellAt(4, 0).ch == "e" && s.cellAt(5, 0).ch == " " &&
+           s.cellAt(6, 0).ch == "├" && s.cellAt(7, 0).ch == "┐",
+           "Painter.frameTitle: title truncated to maxW with brackets + spaces")
   }
 
   static testFrameTitleNullPlain_() {

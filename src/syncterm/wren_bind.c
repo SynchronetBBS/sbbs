@@ -265,14 +265,14 @@ fn_REPL_captureCommit_(WrenVM *vm)
 }
 
 /* REPL.printTrace_(fiber) — replicates wrenDebugPrintStackTrace for a
- * caught fiber.  Wren only emits stack frames via the error callback
- * for *uncaught* aborts; once you Fiber.try() a failed fiber, the
- * frames are still on it but the runtime never walks them.  This
- * helper does the walk and pushes each frame into the host error
- * callback (and from there into the log buffer) so the console can
- * surface a real trace even when it caught the abort to keep itself
- * alive.  The runtime error MESSAGE is the .try() return value — the
- * caller prints that separately. */
+ * caught fiber.  Wren only emits the runtime error + stack frames via
+ * the error callback for *uncaught* aborts; once you Fiber.try() a
+ * failed fiber, the runtime never walks them.  This helper fires both
+ * a WREN_ERROR_RUNTIME with the fiber's error string and a
+ * WREN_ERROR_STACK_TRACE per frame, so the caught-error path reaches
+ * the same log/stderr sink as an uncaught one — the in-app console
+ * can still print its own "error: …" line for the user, but
+ * developers staring at stderr also see what blew up. */
 static void
 fn_REPL_printTrace_(WrenVM *vm)
 {
@@ -282,6 +282,14 @@ fn_REPL_printTrace_(WrenVM *vm)
 	if (!IS_FIBER(v))
 		return;
 	ObjFiber *fiber = AS_FIBER(v);
+
+	if (IS_STRING(fiber->error)) {
+		vm->config.errorFn(vm, WREN_ERROR_RUNTIME, NULL, -1,
+		    AS_CSTRING(fiber->error));
+	} else if (!IS_NULL(fiber->error)) {
+		vm->config.errorFn(vm, WREN_ERROR_RUNTIME, NULL, -1,
+		    "[error object]");
+	}
 
 	for (int i = fiber->numFrames - 1; i >= 0; i--) {
 		CallFrame *frame = &fiber->frames[i];

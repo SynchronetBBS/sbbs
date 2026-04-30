@@ -35,6 +35,8 @@ class ListView is Widget {
     _scrollTop  = 0
     _showScroll = true
     _onSelect   = null
+    _sbSide     = "left"        // "left" (UIFC) or "right"
+    _sbSep      = true          // separator between scrollbar and content
   }
 
   items { _items }
@@ -82,15 +84,49 @@ class ListView is Widget {
     markDirty()
   }
 
+  // Scrollbar layout knobs.  Default is UIFC: scrollbar on the left
+  // with a `│` separator between it and the content.  Set side to
+  // "right" for the older / web-style layout, or separator to false
+  // to drop the divider.
+  scrollbarSide      { _sbSide }
+  scrollbarSide=(s) {
+    _sbSide = s
+    markDirty()
+  }
+  scrollbarSeparator      { _sbSep }
+  scrollbarSeparator=(b) {
+    _sbSep = b
+    markDirty()
+  }
+
   onSelect=(fn) { _onSelect = fn }
 
-  // Available cell width for item content — bounds.w minus the
-  // scrollbar column when one will be drawn (showScroll on AND
-  // items overflow the viewport height).
+  scrollbarVisible_ {
+    if (bounds == null) return false
+    return _showScroll && _items.count > bounds.h
+  }
+  scrollbarOverhead_ {
+    if (!scrollbarVisible_) return 0
+    return _sbSep ? 2 : 1
+  }
+  scrollbarColumn_ {
+    if (_sbSide == "right") return bounds.w - 1
+    return 0
+  }
+  separatorColumn_ {
+    if (!_sbSep) return -1
+    if (_sbSide == "right") return bounds.w - 2
+    return 1
+  }
+
   innerWidth {
     if (bounds == null) return 0
-    if (_showScroll && _items.count > bounds.h) return bounds.w - 1
-    return bounds.w
+    return bounds.w - scrollbarOverhead_
+  }
+
+  contentX_ {
+    if (!scrollbarVisible_ || _sbSide == "right") return 0
+    return _sbSep ? 2 : 1
   }
 
   // Subclass hook: format `item` into a String.  `width` is the cell
@@ -106,7 +142,7 @@ class ListView is Widget {
     if (bounds == null || _selected < 0) return null
     var rowOffset = _selected - _scrollTop
     if (rowOffset < 0 || rowOffset >= bounds.h) return null
-    return [bounds.x, bounds.y + rowOffset]
+    return [bounds.x + contentX_, bounds.y + rowOffset]
   }
 
   // Navigation primitives.  Each clamps via selected= and is a no-op
@@ -146,6 +182,7 @@ class ListView is Widget {
 
     var iw = innerWidth
     var h  = bounds.h
+    var cx = contentX_
 
     var i = 0
     while (i < h) {
@@ -156,8 +193,8 @@ class ListView is Widget {
       var st   = style(role)
       // Pad the row to iw so the highlight extends across the full
       // item line, even when the formatted text is shorter.
-      Painter.fill(sf, Rect.new(0, i, iw, 1), " ", st)
-      Painter.text(sf, 0, i, s, st, iw)
+      Painter.fill(sf, Rect.new(cx, i, iw, 1), " ", st)
+      Painter.text(sf, cx, i, s, st, iw)
       i = i + 1
     }
 
@@ -165,33 +202,22 @@ class ListView is Widget {
   }
 
   drawScrollbar_() {
-    var sf = surface
-    var x = bounds.w - 1
-    var h = bounds.h
+    var sf         = surface
+    var h          = bounds.h
     var trackStyle = style("scrollbar.track")
     var thumbStyle = style("scrollbar.thumb")
-    var trackGlyph = glyph("scrollbar.track")
-    var thumbGlyph = glyph("scrollbar.thumb")
-
-    // Thumb height is proportional to viewport / total.  Thumb Y maps
-    // [0..maxScroll] linearly onto [0..h-thumbH], so the thumb hits the
-    // bottom exactly when scrollTop is at its max.  Naive `h*scrollTop /
-    // count` undershoots after .floor and leaves a track-coloured gap
-    // at the bottom when fully scrolled.
-    var thumbH    = (h * h / _items.count).floor.max(1)
-    var maxScroll = _items.count - h
-    var thumbY    = 0
-    if (maxScroll > 0) {
-      thumbY = ((h - thumbH) * _scrollTop / maxScroll).floor
-    }
-
-    var i = 0
-    while (i < h) {
-      var inThumb = i >= thumbY && i < thumbY + thumbH
-      var st = inThumb ? thumbStyle : trackStyle
-      var g  = inThumb ? thumbGlyph : trackGlyph
-      Painter.fill(sf, Rect.new(x, i, 1, 1), g, st)
-      i = i + 1
+    var glyphs     = effectiveTheme.glyphs
+    Painter.scrollbar(sf, scrollbarColumn_, 0, h, _scrollTop,
+                      _items.count, h, glyphs, trackStyle, thumbStyle)
+    if (_sbSep) {
+      var sepStyle = style("default")
+      var sepGlyph = glyph("frame.left")
+      var sx = separatorColumn_
+      var i = 0
+      while (i < h) {
+        Painter.fill(sf, Rect.new(sx, i, 1, 1), sepGlyph, sepStyle)
+        i = i + 1
+      }
     }
   }
 
@@ -266,19 +292,13 @@ class ListView is Widget {
 
     // For drags, endX/endY follow the mouse while startX/startY stay
     // pinned at the original press point.  Hit-test the *grab* with
-    // start (so dragging off the scrollbar still scrolls), but compute
-    // the selected index from the *current* position with end.
-    // Scrollbar column?  Only when actually drawn (overflow + showScroll).
-    // Scrollbar moves the *viewport* (scrollTop), not the selection —
-    // standard scrollbar behavior.  The selection stays put; clicking
-    // on a row is what changes selection.
-    if (_showScroll && _items.count > bounds.h &&
-        me.startX == bounds.right) {
-      // Map py ∈ [0..h-1] linearly onto scrollTop ∈ [0..maxTop].
-      var py = (me.endY - bounds.y).max(0).min(bounds.h - 1)
-      var maxTop = _items.count - bounds.h
-      var t = bounds.h > 1 ? (py * maxTop / (bounds.h - 1)).floor : 0
-      scrollTop = t
+    // start (so dragging off the scrollbar still scrolls), but resolve
+    // the new scrollTop from the *current* position via end.
+    if (scrollbarVisible_ &&
+        me.startX == bounds.x + scrollbarColumn_) {
+      var py = me.endY - bounds.y
+      scrollTop = Painter.scrollbarClick(py, bounds.h, _items.count,
+                                         bounds.h, _scrollTop)
       return true
     }
 

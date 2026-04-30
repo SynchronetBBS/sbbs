@@ -95,34 +95,39 @@ class Painter {
     }
   }
 
-  // Single-line frame around `rect` using the theme's `frame.*`
-  // glyphs.  `rect` is in surface-local coords.  Interior cells are
-  // not touched.  Rects narrower than 2x2 are no-ops.
+  // Frame around `rect` using glyphs under `prefix.*`.  Default
+  // prefix "frame" gives a single-line box (`┌─┐│└┘`); pass
+  // "frame.double" for a double-line one (`╔═╗║╚╝`).  `rect` is in
+  // surface-local coords.  Interior cells are not touched.  Rects
+  // narrower than 2×2 are no-ops.
   static frame(surface, rect, glyphs, style) {
+    framePrefixed_(surface, rect, glyphs, style, "frame")
+  }
+  static frame(surface, rect, glyphs, style, prefix) {
+    framePrefixed_(surface, rect, glyphs, style, prefix)
+  }
+  static framePrefixed_(surface, rect, glyphs, style, prefix) {
     if (rect.w < 2 || rect.h < 2) return
     var x  = rect.x
     var y  = rect.y
     var x2 = rect.right
     var y2 = rect.bottom
 
-    // Corners.
-    putGlyph_(surface, x,  y,  glyphs["frame.topLeft"],     style)
-    putGlyph_(surface, x2, y,  glyphs["frame.topRight"],    style)
-    putGlyph_(surface, x,  y2, glyphs["frame.bottomLeft"],  style)
-    putGlyph_(surface, x2, y2, glyphs["frame.bottomRight"], style)
+    putGlyph_(surface, x,  y,  glyphs[prefix + ".topLeft"],     style)
+    putGlyph_(surface, x2, y,  glyphs[prefix + ".topRight"],    style)
+    putGlyph_(surface, x,  y2, glyphs[prefix + ".bottomLeft"],  style)
+    putGlyph_(surface, x2, y2, glyphs[prefix + ".bottomRight"], style)
 
-    // Top + bottom edges.
-    var topG = glyphs["frame.top"]
-    var botG = glyphs["frame.bottom"]
+    var topG = glyphs[prefix + ".top"]
+    var botG = glyphs[prefix + ".bottom"]
     var i = x + 1
     while (i < x2) {
       putGlyph_(surface, i, y,  topG, style)
       putGlyph_(surface, i, y2, botG, style)
       i = i + 1
     }
-    // Left + right edges.
-    var leftG  = glyphs["frame.left"]
-    var rightG = glyphs["frame.right"]
+    var leftG  = glyphs[prefix + ".left"]
+    var rightG = glyphs[prefix + ".right"]
     var j = y + 1
     while (j < y2) {
       putGlyph_(surface, x,  j, leftG,  style)
@@ -131,25 +136,33 @@ class Painter {
     }
   }
 
-  // Frame with a centered title in the top border.  `frameStyle` is
-  // used for the border; `titleStyle` for the title text.  Title is
-  // truncated when it would overflow rect.w - 4 cells (corners + one
-  // padding cell each side).
+  // Frame with a centered title in the top border (`┤ Title ├`).
+  // The `prefix` selects the glyph family ("frame" / "frame.double").
+  // Title truncates at rect.w - 6 cells (corners + brackets + spaces).
   static frameTitle(surface, rect, glyphs, frameStyle, title, titleStyle) {
-    frame(surface, rect, glyphs, frameStyle)
+    frameTitlePrefixed_(surface, rect, glyphs, frameStyle, title, titleStyle, "frame")
+  }
+  static frameTitle(surface, rect, glyphs, frameStyle, title, titleStyle, prefix) {
+    frameTitlePrefixed_(surface, rect, glyphs, frameStyle, title, titleStyle, prefix)
+  }
+  static frameTitlePrefixed_(surface, rect, glyphs, frameStyle, title, titleStyle, prefix) {
+    framePrefixed_(surface, rect, glyphs, frameStyle, prefix)
     if (title == null || title.count == 0) return
-    if (rect.w < 6) return
-    var maxW    = rect.w - 4
-    // Count codepoints (capped at maxW) without copying — we just
-    // need the visible width to compute the centering offset.
+    if (rect.w < 8) return
+    var maxW    = rect.w - 6                 // corners(2) brackets(2) spaces(2)
     var visible = 0
     for (c in title) {
       if (visible >= maxW) break
       visible = visible + 1
     }
     if (visible == 0) return
-    var titleX = rect.x + ((rect.w - visible) / 2).floor
-    text(surface, titleX, rect.y, title, titleStyle, maxW)
+    var startX = rect.x + ((rect.w - visible - 4) / 2).floor
+    putGlyph_(surface, startX, rect.y,
+              glyphs[prefix + ".title.left"], frameStyle)
+    text(surface, startX + 1, rect.y, " " + title + " ",
+         titleStyle, visible + 2)
+    putGlyph_(surface, startX + visible + 3, rect.y,
+              glyphs[prefix + ".title.right"], frameStyle)
   }
 
   static putGlyph_(surface, x, y, ch, style) {
@@ -158,4 +171,93 @@ class Painter {
     applyStyle(cell, style)
     cell.ch = ch
   }
+
+  // Vertical scrollbar at column `x`, starting at `y`, height `h`,
+  // showing `viewport`-sized window onto a `total`-row content with
+  // current top at `scrollTop`.  `glyphs` is a Glyphs map; styles
+  // are pulled by role.  When h >= 3 the top + bottom rows host
+  // up/down arrows that stay visible regardless of scroll position —
+  // the thumb stays inside the track area between them.  Caller is
+  // responsible for any separator column.
+  static scrollbar(surface, x, y, h, scrollTop, total, viewport,
+                   glyphs, trackStyle, thumbStyle) {
+    if (h <= 0 || total <= 0) return
+    var maxScroll = (total - viewport).max(0)
+    var hasArrows = h >= 3
+    var trackTop  = hasArrows ? 1 : 0
+    var trackH    = hasArrows ? h - 2 : h
+    if (trackH < 1) trackH = 1
+    var thumbH    = (trackH * viewport / total).floor.max(1)
+    if (thumbH > trackH) thumbH = trackH
+    var thumbOffset = 0
+    if (maxScroll > 0) {
+      thumbOffset = ((trackH - thumbH) * scrollTop / maxScroll).floor
+    }
+
+    if (hasArrows) {
+      putGlyph_(surface, x, y, glyphs["scrollbar.up"], thumbStyle)
+      putGlyph_(surface, x, y + h - 1, glyphs["scrollbar.down"], thumbStyle)
+    }
+
+    var i = 0
+    while (i < trackH) {
+      var inThumb = i >= thumbOffset && i < thumbOffset + thumbH
+      var g  = inThumb ? glyphs["scrollbar.thumb"] : glyphs["scrollbar.track"]
+      var st = inThumb ? thumbStyle : trackStyle
+      putGlyph_(surface, x, y + trackTop + i, g, st)
+      i = i + 1
+    }
+  }
+
+  // Resolve a click at offset `py` (0-based, relative to scrollbar
+  // top) into a new scrollTop.  Top-row click on an arrow-armed
+  // scrollbar steps -1; bottom-row click steps +1; clicks in the
+  // track jump proportionally.  Result is clamped to [0, maxScroll].
+  static scrollbarClick(py, h, total, viewport, current) {
+    if (h <= 0 || total <= 0) return 0
+    var maxScroll = (total - viewport).max(0)
+    var hasArrows = h >= 3
+    if (hasArrows) {
+      if (py <= 0) return (current - 1).max(0).min(maxScroll)
+      if (py >= h - 1) return (current + 1).max(0).min(maxScroll)
+      var trackH = h - 2
+      if (trackH <= 1) return 0
+      var pos = py - 1
+      return (pos * maxScroll / (trackH - 1)).floor.max(0).min(maxScroll)
+    }
+    if (h <= 1) return 0
+    var clamped = py.max(0).min(h - 1)
+    return (clamped * maxScroll / (h - 1)).floor.max(0).min(maxScroll)
+  }
+
+  // Paint a UIFC-style drop-shadow on the cells around the rect at
+  // (x0, y0, w, h).  The right side is 2 cells wide (cols x0+w and
+  // x0+w+1, rows y0+1..y0+h); the bottom is 1 cell tall (row y0+h,
+  // cols x0+1..x0+w+1).  Each shadow cell keeps its existing char
+  // (so any painted backdrop shows through as a faded silhouette)
+  // and flips to a dim style: legacy 0x08 (bright-black on black),
+  // RGB fg 0x202020 on bg 0x000000.
+  static shadow(surface, x0, y0, w, h) {
+    if (w <= 0 || h <= 0) return
+    var i = 1
+    while (i <= h) {
+      shadowCell_(surface, x0 + w,     y0 + i)
+      shadowCell_(surface, x0 + w + 1, y0 + i)
+      i = i + 1
+    }
+    var j = 1
+    while (j <= w + 1) {
+      shadowCell_(surface, x0 + j, y0 + h)
+      j = j + 1
+    }
+  }
+
+  static shadowCell_(surface, x, y) {
+    var cell = surface.cellAt(x, y)
+    if (cell == null) return
+    cell.legacyAttr = 0x08
+    cell.fgRgb      = 0x202020
+    cell.bgRgb      = 0x000000
+  }
+
 }

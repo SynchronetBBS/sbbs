@@ -64,12 +64,64 @@ class Widget {
     _dirty     = true
     _focusable = true
     _surface   = null     // lazy; matched to bounds in ensureSurface_
+    _helpText  = null
+    _shadow    = false    // drop-shadow on right + bottom edges
+    _renderedInActive = null   // last `inActiveLayer` seen at paint
   }
 
   bounds { _bounds }
   bounds=(r) {
     _bounds = r
     markDirty()
+  }
+
+  // Help text for this widget.  Default null; widgets that want to
+  // expose context-sensitive help (typically Pane-level dialogs)
+  // assign a string.  App.showHelp walks from the focused leaf
+  // upward through the parent chain to find the nearest non-null
+  // value, so you can scope help to the most-specific widget that
+  // has something to say.
+  helpText { _helpText }
+  helpText=(s) { _helpText = s }
+
+  // Drop-shadow flag.  When true, the widget's parent (or App, for
+  // modals) paints a darkened band on the cells immediately right
+  // of and below the widget's bounds.  Pane defaults this to true
+  // when used as a popup; bare Widgets default false.
+  shadow     { _shadow }
+  shadow=(b) {
+    _shadow = b
+    markDirty()
+  }
+
+  // True when this widget is part of the App's *active* layer — the
+  // top of the modal stack, or its descendants.  Walks up the parent
+  // chain until it finds the App (the first non-Widget ancestor)
+  // and asks it for `modalTop`; if `this` or any ancestor is that
+  // widget, we're in the active layer.  When the widget isn't
+  // anchored under any App, default true (no inactive context).
+  // Frame-drawing widgets pick their inactive theme variant when
+  // this returns false.
+  inActiveLayer {
+    var app = null
+    var w = this
+    while (w != null) {
+      var p = w.parent
+      if (p == null) break
+      if (!(p is Widget)) {
+        app = p
+        break
+      }
+      w = p
+    }
+    if (app == null) return true
+    var top = app.modalTop
+    var x = this
+    while (x is Widget) {
+      if (x == top) return true
+      x = x.parent
+    }
+    return false
   }
 
   parent     { _parent }
@@ -111,7 +163,17 @@ class Widget {
     return Theme.default
   }
 
-  style(role) { effectiveTheme.style(role) }
+  // Resolve a theme role for *this* widget.  When the widget isn't
+  // part of the App's active layer (modalTop subtree), append
+  // ".inactive" so the theme's inactive cascade swaps in the dim
+  // variant.  Widgets call this for every paint — frame, list rows,
+  // input field, button label, scrollbar — so a single layer-state
+  // check cascades through everything visible.
+  style(role) {
+    var r = role
+    if (!inActiveLayer) r = role + ".inactive"
+    return effectiveTheme.style(r)
+  }
   glyph(name) { effectiveTheme.glyphs[name] }
 
   markDirty() {
@@ -146,15 +208,20 @@ class Widget {
     }
   }
 
-  // Update the widget's surface (calling onPaint_ when dirty), then
-  // return it.  Caller (typically a parent Container) composites the
-  // returned Surface into its own surface at the right offset.
+  // Update the widget's surface (calling onPaint_ when dirty OR
+  // when the App's active-layer state changed since last paint),
+  // then return it.  The layer-state self-check means modal
+  // push/pop doesn't need a tree-wide dirty pass — each widget
+  // notices on its next draw that its cache no longer matches and
+  // repaints itself.
   draw() {
     ensureSurface_()
     if (_surface == null) return null
-    if (_dirty) {
+    var nowActive = inActiveLayer
+    if (_dirty || _renderedInActive != nowActive) {
       onPaint_()
       clearDirty()
+      _renderedInActive = nowActive
     }
     return _surface
   }
@@ -177,6 +244,12 @@ class Widget {
   // also park it sensibly via `cursorPos` instead of just relying on
   // visibility.
   cursorVisible { false }
+
+  // Hook for parent-driven hotkey activation.  Container scans its
+  // children with this when a printable key fell through the focused
+  // child; widgets that map their own letter to an action (Button
+  // and friends) override to return true after acting.
+  tryHotkey(ev) { false }
 
   // Default event handler — returns false (event not consumed).
   handle(ev) { false }
@@ -298,48 +371,112 @@ class Container is Widget {
     return false
   }
 
-  // Container's onPaint_: fill background with the default style, then
-  // composite visible children.  Subclasses (Pane, etc.) override
-  // wholesale and use compositeChildren_() if they want their own
-  // background / decoration treatment.
-  //
-  // Both methods reach Widget's `_surface` field through the `surface`
-  // getter — referencing `_surface` directly here would create a new
-  // Container-scoped field (Wren fields are per-class, not inherited).
+  // Container's onPaint_: just composite children.  The surface
+  // around the children is whatever was already there — typically
+  // the Surface.new default (current text-mode normattr) at
+  // allocation, or the App's captured screen backdrop if it copied
+  // one in.  No theme style is applied; the bare canvas isn't part
+  // of any widget and shouldn't pick up a focus / inactive variant.
+  // Subclasses with a themed interior (Pane, popups, …) override
+  // wholesale.
   onPaint_() {
-    Painter.fill(surface,
-                 Rect.new(0, 0, bounds.w, bounds.h),
-                 " ", style("default"))
     compositeChildren_()
   }
 
   // Walk visible children and putRect each one's surface into ours
   // at the child-relative offset.  Triggers child's draw() which may
-  // re-paint that child's own surface.
+  // re-paint that child's own surface.  Children with `shadow` set
+  // get a dim band painted on the parent surface in the cells just
+  // right of and below their bounds.
   compositeChildren_() {
     var s = surface
     for (c in _children) {
       if (!c.visible) continue
       var cs = c.draw()
       if (cs == null) continue
-      s.putRect(cs, c.bounds.x - bounds.x, c.bounds.y - bounds.y)
+      var dx = c.bounds.x - bounds.x
+      var dy = c.bounds.y - bounds.y
+      s.putRect(cs, dx, dy)
+      if (c.shadow) Painter.shadow(s, dx, dy, c.bounds.w, c.bounds.h)
     }
   }
 
   // Route key events to the focused child first; if unconsumed,
-  // handle Tab / BackTab focus traversal at this level.  Mouse and
-  // other events fall through to the base handler (returns false) —
-  // mouse routing is the App's job via hitTest, not focus-based.
-  // Subclasses override for click-on-background behaviors.
+  // handle focus traversal at this level.
+  //   Tab / BackTab               — ordered ring (always available)
+  //   Left / Right                — ordered ring (horizontal-row dialogs)
+  //   Up / Down                   — *spatial* nearest-focusable scan
+  // Spatial Up/Down picks the focusable child whose centre is above /
+  // below the current focus's centre and minimises Manhattan distance.
+  // Falls back to no-op if there's no candidate in that direction —
+  // arrows shouldn't wrap around in mixed layouts.  Widgets that need
+  // arrows for their own semantics (TextInput consumes Left/Right,
+  // ListView consumes Up/Down etc.) catch the keys before they bubble.
   handle(ev) {
     if (ev is KeyEvent) {
       var fc = focusedChild
       if (fc != null && fc.visible && fc.handle(ev)) return true
-      if (ev.code == Key.tab) return focusNext()
-      if (ev.code == Key.backTab) return focusPrev()
+      var c = ev.code
+      if (c == Key.tab || c == Key.right) return focusNext()
+      if (c == Key.backTab || c == Key.left) return focusPrev()
+      if (c == Key.up)   return focusByDirection_(0, -1)
+      if (c == Key.down) return focusByDirection_(0,  1)
+      // Hotkey scan: any focusable visible child whose tryHotkey
+      // matches consumes the key.  Lets a typed letter activate the
+      // button advertising that letter even when focus is elsewhere.
+      for (ch in _children) {
+        if (ch.visible && ch.tryHotkey(ev)) return true
+      }
       return false
     }
     return false
+  }
+
+  // Spatial focus pick: find the focusable visible child whose
+  // centre is on the requested side of the currently-focused child's
+  // centre (`dy < 0` = above, `dy > 0` = below; `dx` analogous), and
+  // minimises Manhattan distance.  Returns true if focus moved.
+  focusByDirection_(dx, dy) {
+    var fc = focusedChild
+    if (fc == null || fc.bounds == null) return false
+    var cx = fc.bounds.x + (fc.bounds.w / 2).floor
+    var cy = fc.bounds.y + (fc.bounds.h / 2).floor
+    var bestI = -1
+    var bestD = -1
+    var i = 0
+    while (i < _children.count) {
+      var ch = _children[i]
+      if (i != _focusedIndex && ch.focusable && ch.visible &&
+          ch.bounds != null) {
+        var ccx = ch.bounds.x + (ch.bounds.w / 2).floor
+        var ccy = ch.bounds.y + (ch.bounds.h / 2).floor
+        var ok = true
+        if (dy < 0 && ccy >= cy) ok = false
+        if (dy > 0 && ccy <= cy) ok = false
+        if (dx < 0 && ccx >= cx) ok = false
+        if (dx > 0 && ccx <= cx) ok = false
+        if (ok) {
+          // Compare on the primary axis only.  Tie (children on the
+          // same row for Up/Down or same column for Left/Right) goes
+          // to the lower-indexed sibling — i.e. tab order, which is
+          // typically the visually-leftmost button.
+          var d = dy != 0 ? (ccy - cy).abs : (ccx - cx).abs
+          if (bestI < 0 || d < bestD) {
+            bestI = i
+            bestD = d
+          }
+        }
+      }
+      i = i + 1
+    }
+    if (bestI < 0) return false
+    if (_focusedIndex >= 0 && _focusedIndex < _children.count) {
+      _children[_focusedIndex].focused = false
+    }
+    _focusedIndex = bestI
+    _children[bestI].focused = true
+    markDirty()
+    return true
   }
 
   // Recursive hit test: walk children top-to-bottom (last-added is

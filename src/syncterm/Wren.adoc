@@ -252,7 +252,7 @@ Every registration returns a `HookHandle` (or `null` if the per-event
 limit is hit) — see <<hookhandle>>.  Save it if the script needs to
 remove the hook later or read its metrics; toss it if not.
 
-==== Hooks must run synchronously
+=== Hooks must run synchronously
 
 Every hook fire is wrapped in a child fiber via `Hook.dispatch_`.
 The dispatcher needs the hook's return value (a Bool for consume /
@@ -2467,6 +2467,455 @@ The framework calls `fiber.call(result)` on whichever fiber was
 passed.  Useful from hooks (which mustn't yield directly — see
 <<hook-events>>) and for fan-out where the result handler is
 naturally a closure over its own state.
+
+== Built-in UI Library [[ui-library]]
+
+SyncTERM ships a pure-Wren widget library on top of the
+<<modal-input,Modal Input>> primitive.  It draws into Surfaces with
+no foreign calls per cell, composites them through a screen-sized
+backbuffer, and applies a final `Screen.putRect` per frame, so the
+whole thing runs without flicker even on slow remote BBSes.  The
+visual style follows UIFC conventions: cyan-on-blue dialog frames,
+yellow titles, lightbar selection, drop shadows on modals, and a
+distinct cyan inactive palette for any pane that's currently behind
+a modal.
+
+A minimal session looks like:
+
+[source,wren]
+----
+import "ui" for App, Pane, ListView, Alert, Rect
+import "syncterm" for Screen
+
+var snap = Screen.save()
+
+var app  = App.new()
+var size = Screen.size
+var pane = Pane.new()
+pane.bounds  = Rect.new(2, 2, size[0] - 2, size[1] - 2)
+pane.title   = "Pick one"
+pane.focused = true
+pane.onClose = Fn.new { app.quit() }
+app.root.add(pane)
+
+var list = ListView.new()
+var ib   = pane.innerBounds
+list.bounds = Rect.new(ib.x, ib.y, ib.w, ib.h)
+list.items  = ["alpha", "beta", "gamma"]
+list.onSelect = Fn.new {|i, item| Alert.show(app, "Picked: %(item)") }
+pane.add(list)
+
+app.runSync()
+Screen.restore(snap)
+----
+
+`App.run()` and `App.runSync()` differ in how they pump events.
+`run()` parks a fiber on `Input.nextEvent` and yields between events
+— inbound bytes flow normally, `Hook.every` and `Timer.trigger` keep
+firing.  `runSync()` blocks the VM on `Input.next()` instead; use it
+from contexts where doterm can't dispatch back into the App, e.g.
+the Wren console (whose REPL itself runs inside a `Hook.onKey`).
+
+=== Importing
+
+Every public class is exported from individual `ui_*.wren` modules
+and re-exported from the convenience aggregator `ui`:
+
+[source,wren]
+----
+import "ui" for App, Pane, ListView, TextInput, Button,
+               Alert, Confirm, Prompt, Help, PopStatus,
+               Painter, Style, Theme, Glyphs,
+               Widget, Container, Rect
+----
+
+If you only need a couple of classes, the per-topic modules cut
+load cost: `import "ui_pane" for Pane`, `import "ui_popup" for
+Confirm`, etc.  They're listed in <<ui-modules,UI Modules>>.
+
+=== App [[ui-app]]
+
+`App` is the root of a UI session.  It owns:
+
+* `root` — a `Container` that hosts the foreground widget tree.
+* a modal stack — synchronous dialogs push themselves onto it via
+  `app.modal(widget)`, which blocks until the widget pops itself
+  (typically from its own `dismissWith_(value)` helper).
+* a global keymap — `app.bind(keyCode, fn)` registers a hotkey that
+  fires when no widget consumes the key.  F1 is bound by default to
+  `showHelp`.
+* a screen-sized backbuffer Surface and a one-shot screen capture
+  (`Screen.readRect`) used as the backdrop behind everything.  Areas
+  not covered by widgets show that capture rather than a styled
+  fill — UIFC convention.
+
+Methods of interest:
+
+* `run()` / `runSync()` — enter the event loop.  Save/restore mouse
+  events and `CustomCursor` automatically.  `tickMs=` schedules a
+  periodic `onTick_` callback (overridable; no-op by default).
+* `quit()` — break out of the loop.  Widgets and global handlers
+  call this from their key/mouse handlers.
+* `modal(widget)` — push a modal, drain events until it pops, return
+  the widget so the caller can read its `result`.
+* `popStatus(message)` — show or clear a transient centered overlay
+  that does *not* intercept input.  Useful for "Working..." status
+  while blocking on `Input.next` or a long Wren computation.
+* `showHelp()` — walks from the focused leaf up the parent chain to
+  the first widget with `helpText` set, then opens a `Help` dialog
+  with that text.  No-op if nothing in the chain has help.
+* `theme=` — install a custom Theme (see <<ui-theme,Theme>>).
+
+`App` is not itself a `Widget` but exposes `effectiveTheme` and
+`markDirty()` so widget tree-walks can terminate at it.  Setting a
+widget's `parent` to an App is supported and is what `pushModal`
+does internally.
+
+=== Widget [[ui-widget]]
+
+Base class for everything paintable.  Holds:
+
+* `bounds` — a `Rect` in 1-based screen coords.
+* `parent` — pointer to the containing `Container` or `App`.
+* `theme=` — a per-widget Theme override; otherwise inherited via
+  `effectiveTheme` walking the parent chain.
+* `focused`, `visible`, `focusable`, `dirty` — boolean state flags.
+* `helpText=` — string surfaced by `App.showHelp` (F1).
+* `shadow=` — when true, the parent paints a drop shadow on the
+  cells immediately right and below the widget's bounds.
+* `surface` — the widget's private Surface backbuffer, allocated
+  lazily and resized when `bounds` changes.
+
+Layer-aware painting: every widget tracks the App's active layer
+state (whether it or an ancestor is the modal top of stack) and
+repaints itself when the cached state no longer matches.  No
+tree-wide dirty pass is needed when modals push or pop — each
+widget notices on its next `draw()` and repaints with the inactive
+theme variant.  Subclasses override `onPaint_()` to draw into
+`surface`; the base `Widget.draw()` calls `onPaint_()`, clears the
+dirty flag, and returns the surface.
+
+Hardware cursor: `cursorPos` returns `[x, y]` in 1-based screen
+coords (or `null`); `cursorVisible` returns whether the cursor
+should be shown while focused.  `App` reads both off the focused
+leaf each frame and applies them.  `TextInput` reports a real
+cursor; everything else hides it.
+
+`tryHotkey(ev)` is a parent-driven hotkey hook.  `Container.handle`
+scans its children with this when a printable key fell through the
+focused child, so a typed letter can activate a button advertising
+that letter even when focus is elsewhere.
+
+=== Container [[ui-container]]
+
+`Widget` subclass that manages a child list, a focused-child index,
+and event dispatch.  `add(child)` / `remove(child)` mutate the tree;
+the first focusable child added becomes focused automatically.
+
+Focus traversal:
+
+* `Tab` / `Right` — `focusNext()`, ordered ring with wrap.
+* `BackTab` / `Left` — `focusPrev()`.
+* `Up` / `Down` — *spatial* nearest-focusable scan.  Picks the
+  focusable child whose centre is above / below the current focus's
+  centre and minimises Manhattan distance.  Ties (children on the
+  same row) go to the lower-indexed sibling — i.e. tab order.
+
+Spatial Up/Down does not wrap; it falls back to a hotkey scan if
+nothing matches.  Widgets that need arrows for their own semantics
+(`TextInput` consumes Left/Right, `ListView` consumes Up/Down) catch
+the keys before they bubble.
+
+Mouse: `Container.hitTest(px, py)` walks children top-to-bottom
+(last-added wins) and returns the deepest visible widget covering
+the point, or the Container itself when nothing under it does.
+
+=== Pane [[ui-pane]]
+
+`Container` with a frame, optional title, `[?]` and `[X]` corner
+buttons, and an inset interior.  The default look is UIFC: double-
+line frame, title in its own bar row with a horizontal separator
+underneath, both corner buttons enabled.
+
+Configuration knobs:
+
+* `framePreset=` — `"single"` (default for `Popup`) or `"double"`
+  (default for bare `Pane`).  Switches the glyph family from
+  `+----+` style to `+====+` style.
+* `titleAsBar=` — when true, the title sits inside the frame in its
+  own row with a horizontal separator underneath.  When false, the
+  title is embedded in the top border (`-| Title |-`).  UIFC list
+  views use the bar form; `Popup` subclasses use the embedded form.
+* `helpable=` / `closeable=` — show or hide the `[?]` and `[X]`
+  corner buttons.  Help button calls `onHelp` if set, else
+  `App.showHelp()`.  Close button calls `onClose` if set.
+* `onHelp=`, `onClose=` — function callbacks for the corner buttons.
+
+`pane.innerBounds` returns the drawable interior `Rect` after the
+frame, title row, and separator are accounted for — children should
+size themselves against this.
+
+`Pane.focused` is a *visual* flag — set it from the App or a parent
+container when the pane is the foreground.  It does NOT redirect
+keyboard focus; that still flows through `Container`'s normal
+focused-child routing to a leaf widget inside.
+
+=== ListView [[ui-list]]
+
+Scrollable list of items with a selection cursor and an optional
+scrollbar.  Items can be anything; rendering goes through
+`formatItem(item, width)` which subclasses can override for rich
+per-row formatting.  Default is `item.toString`.
+
+Setup:
+
+[source,wren]
+----
+var list = ListView.new()
+list.bounds   = Rect.new(x, y, w, h)
+list.items    = ["alpha", "beta", "gamma"]
+list.onSelect = Fn.new {|i, item| /* ... */ }
+----
+
+Navigation: `Up`, `Down`, `PageUp`, `PageDown`, `Home`, `End` move
+the selection.  `Enter` fires `onSelect` with `(index, item)`.
+Mouse clicks select the row; wheel scrolls three rows; clicks on
+the scrollbar column step or jump proportionally.
+
+Scrollbar layout knobs:
+
+* `scrollbarSide=` — `"left"` (UIFC default) or `"right"`.
+* `scrollbarSeparator=` — when true, paints a `+|+` divider between
+  the scrollbar column and the content area.
+* `showScroll=` — set to false to disable the scrollbar entirely.
+
+The scrollbar is only painted when `items.count > bounds.h`.
+
+=== TextInput [[ui-input]]
+
+Single-line text edit field.  Stores the value as a list of
+codepoint strings so the cursor indexes by codepoint and emoji /
+multibyte characters take one cell per codepoint.
+
+[source,wren]
+----
+var t = TextInput.new()
+t.bounds   = Rect.new(x, y, w, 1)
+t.value    = "hello"
+t.maxLen   = 64                  // optional cap
+t.onSubmit = Fn.new {|s| /* Enter */ }
+t.onChange = Fn.new {|s| /* per-keystroke */ }
+----
+
+Keys: `Left`, `Right`, `Home`, `End`, `Backspace`, `Delete` /
+`DelChar` edit; `Enter` fires `onSubmit`; printable codepoints
+insert at the cursor.  `Tab`, `BackTab`, `Up`, `Down` are NOT
+consumed so containers can use them for focus traversal.  Mouse
+clicks position the cursor at the clicked column.
+
+`cursorVisible` returns true and `cursorPos` reports the cell that
+corresponds to the current insertion point in screen coords —
+backends that show the hardware cursor track the input as the user
+types.
+
+=== Button [[ui-button]]
+
+Single-row "[ label ]" widget.  Activates on `Enter`, `Space`, or
+mouse click within bounds.  `onPress=` sets the activation
+callback.  `intrinsicWidth` returns `label.count + 4` for sizing
+parents.
+
+[source,wren]
+----
+var b = Button.new("OK")
+b.bounds  = Rect.new(x, y, b.intrinsicWidth, 1)
+b.onPress = Fn.new { app.popModal() }
+----
+
+`hotkeyIdx=` selects which label letter to highlight (default 0,
+the first letter).  `tryHotkey` matches that letter case-
+insensitively against typed input, so a button labeled "Yes" with
+`hotkeyIdx = 0` activates on `Y` from anywhere in the same
+container — even when focus is on a sibling.
+
+=== Popup family [[ui-popup]]
+
+Modal dialogs built on `Pane` (single-line frame, embedded title,
+drop shadow) and pushed onto the App's modal stack.  Each `show`
+is synchronous: the App's `modal()` pumps drain until the popup
+pops itself, then control returns with the result.
+
+[source,wren]
+----
+import "ui" for Alert, Confirm, Prompt
+
+Alert.show(app, "Disk full")
+
+if (Confirm.show(app, "Delete file?")) {
+  // ...
+}
+
+var name = Prompt.show(app, "Your name?", "anonymous")
+if (name != null) {
+  // user submitted
+}
+----
+
+`Alert` — single OK button; any key (or Enter / Esc / mouse click
+on OK) dismisses.  `show` returns `null`.
+
+`Confirm` — Yes / No buttons.  `Y` / `N` letter shortcuts dismiss
+directly; `Enter` activates the focused button; `Tab` cycles focus.
+`show` returns `true` on Yes, `false` on No or Esc.
+
+`Prompt` — `TextInput` plus OK / Cancel buttons.  `Enter` in the
+input or on OK submits the value; `Esc` or Cancel returns `null`.
+
+`PopStatus` is the non-modal companion: a centered frame with a
+message and no buttons, used by `App.popStatus(message)`.  It does
+not push onto the modal stack — purely decorative — and is
+dismissed with `app.popStatus(null)`.
+
+=== Help viewer [[ui-help]]
+
+A modal scrollable text viewer for context help.  Splits the
+supplied body on newlines and renders one row per line inside a
+Popup with its own scroll state.
+
+[source,wren]
+----
+import "ui" for Help
+
+Help.show(app, "Help — Editor",
+          "Up/Down  scroll\nEnter   close\n...")
+----
+
+Keys: `Up`, `Down`, `PageUp`, `PageDown`, `Home`, `End` scroll;
+`Esc` or `Enter` dismisses.  Wheel scrolls three lines; scrollbar
+clicks/drags jump proportionally.  Same scrollbar knobs as
+`ListView` (`scrollbarSide=`, `scrollbarSeparator=`).
+
+`App.showHelp` (F1 by default) walks from the focused leaf up the
+parent chain looking for a widget with `helpText` set, then calls
+`Help.show` with the title `"Help"` and that text.  Set `helpText`
+on whichever widget is the most-specific scope you want help to
+fall back to.
+
+=== Theme, Style, Glyphs [[ui-theme]]
+
+A `Theme` bundles a role → `Style` map and a `Glyphs` (name →
+glyph) lookup.  `Style` is a four-field tuple `(font, legacyAttr,
+fgRgb, bgRgb)`; any field may be `null` to inherit from a parent
+role.  Painting picks one of the two color paths based on what the
+backend supports — RGB on capable terminals, legacy attr otherwise.
+
+Role cascade: `Theme.style(role)` walks dotted role suffixes,
+merging partial Styles at each level until every field is
+populated.  `"list.item.focused"` falls back to `"list.item"` falls
+back to `"default"`.  `"default"` is the cascade terminator and
+must be a complete Style.
+
+Inactive cascade: when a role ends in `.inactive`, the Theme walks
+a parallel chain — `X.inactive`, then `parent(X).inactive`, …,
+finally `default.inactive`.  Falls through to `default` if the
+theme has no inactive variants at all.  `Widget.style(role)`
+auto-suffixes `.inactive` whenever `inActiveLayer` is false (the
+widget is part of a pane behind a modal), so a single layer-state
+flag cascades through frame, title, list rows, input field, button
+labels, and scrollbar without per-widget bookkeeping.
+
+`Theme.default` is the built-in default, memoized so `someTheme ==
+Theme.default` works as identity equality.  It mirrors the classic
+SyncTERM look: white-on-blue active palette, yellow frame /title,
+lightbar selection, gray-on-blue scrollbar, with a UIFC inactive
+palette of bright-white-on-cyan and bright-yellow-on-cyan lightbar.
+
+`Glyphs` entries are either a single string or `[primary,
+fallback]` pairs — primary is the rich Unicode glyph, fallback is
+an ASCII-safe substitute.  Set `theme.glyphs.asciiOnly = true` to
+force the fallback everywhere (e.g. on emulations where the rich
+codepoint can't be represented).
+
+Glyph families used by the library:
+
+* `frame.*` — single-line `+--+` borders, plus `tee.left/right`,
+  `title.left/right`, `separator`.
+* `frame.double.*` — double-line `+==+` borders.  `Pane` switches
+  to this family when `framePreset = "double"`.
+* `scrollbar.track`, `scrollbar.thumb`, `scrollbar.up`,
+  `scrollbar.down` — scrollbar pieces.
+
+=== Painter [[ui-painter]]
+
+`Painter` is the low-level drawing toolbox.  Every primitive takes
+a `Surface` as its first argument and mutates the cells in place;
+no calls reach `Screen.writeRect` from here.  Coordinates inside a
+Surface are 0-based (`0..width-1`, `0..height-1`); widgets that
+work in absolute screen coords convert at composition time.
+
+The most useful entry points:
+
+[cols="1m,3"]
+|===
+| `fill(s, rect, ch, style)` | Bulk-fill a Surface rect with a single character + Style.
+
+| `text(s, x, y, str, style)` +
+  `text(s, x, y, str, style, maxW)` | Draw `str` on a single row.  6-arg form caps at `maxW` cells.
+
+| `frame(s, rect, glyphs, style)` +
+  `frame(s, rect, glyphs, style, prefix)` | Box around `rect` using `prefix.*` glyphs.  Default prefix `"frame"`; pass `"frame.double"` for the double-line family.
+
+| `frameTitle(s, rect, glyphs, frameStyle, title, titleStyle, prefix)` | Frame with a centered `+| Title |+` in the top border.
+
+| `hline(s, x, y, len, ch, style)` +
+  `vline(s, x, y, len, ch, style)` | Single-row / single-column lines.
+
+| `scrollbar(s, x, y, h, scrollTop, total, viewport, glyphs, trackStyle, thumbStyle)` | Vertical scrollbar with always-visible up/down arrows on the top/bottom rows when `h >= 3`.  Thumb stays inside the track between the arrows.
+
+| `scrollbarClick(py, h, total, viewport, current)` | Resolve a click at row `py` (0-based, scrollbar-local) into a new `scrollTop`.  Top/bottom arrow rows step ±1; track clicks jump proportionally.
+
+| `shadow(s, x0, y0, w, h)` | Paint a UIFC-style drop-shadow on the cells around the rect: 2 columns wide on the right, 1 row tall on the bottom.  Each shadow cell keeps its existing character and dims the attribute (legacy 0x08, RGB fg 0x202020 on bg 0x000000).
+
+| `applyStyle(cell, style)` | Apply a Style to an existing Cell, leaving null fields untouched.  Exposed for callers that mutate a cell view directly.
+|===
+
+=== UI Modules [[ui-modules]]
+
+The library is split across one module per topic, plus the
+convenience aggregator:
+
+[cols="1m,2"]
+|===
+| `ui`         | Re-exports every public class.
+| `ui_app`     | `App`.
+| `ui_widget`  | `Widget`, `Container`, `Rect`.
+| `ui_pane`    | `Pane`.
+| `ui_list`    | `ListView`.
+| `ui_input`   | `TextInput`.
+| `ui_button`  | `Button`.
+| `ui_popup`   | `Popup`, `Alert`, `Confirm`, `Prompt`, `PopStatus`.
+| `ui_help`    | `Help`.
+| `ui_draw`    | `Painter`.
+| `ui_style`   | `Style`, `Glyphs`, `Theme`.
+|===
+
+=== Demo gallery [[ui-demo]]
+
+`scripts/ui_demo.wren` is a playground for the library; run it from
+the Wren console (Ctrl+&#96;):
+
+[source,wren]
+----
+import "ui_demo" for UiDemo
+UiDemo.run()
+----
+
+Top level is a list of widget demos; pick one with Enter to launch
+it, Esc returns to the gallery.  Each demo runs its own App via
+`runSync` (the console blocks the main loop, so doterm can't
+dispatch through to a parked fiber); nesting is fine because every
+App save/restores Screen, mouse events, and CustomCursor on entry
+and exit.
 
 == Worked Example: Auto-respond to a Prompt
 

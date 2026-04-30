@@ -108,6 +108,14 @@ class Theme {
   // and MUST itself be a complete Style (no nulls) — themes that omit
   // it will end up with nulls in the result.
   style(role) {
+    // ".inactive" is a stable suffix that swaps in the dim variant
+    // at every level of the dotted cascade.  Detect it and walk a
+    // separate inactive chain instead of treating ".inactive" as
+    // just another component.
+    var bn = role.bytes.count
+    if (bn >= 9 && role.indexOf(".inactive") == bn - 9) {
+      return inactiveStyle_(role[0...bn - 9])
+    }
     var s = lookup_(role)
     if (s.complete) return s
     while (true) {
@@ -118,6 +126,24 @@ class Theme {
       if (s.complete || role == "default") break
     }
     return s
+  }
+
+  // Inactive-cascade lookup for a base role (without ".inactive").
+  // Walks the active-side parent chain, trying `<X>.inactive` at
+  // each step; finally falls through "default.inactive" → "default"
+  // so even roles with no explicit inactive variant pick up the
+  // theme's blanket dim look.
+  inactiveStyle_(baseRole) {
+    var s   = Style.empty
+    var cur = baseRole
+    while (cur != "") {
+      s = s | lookup_(cur + ".inactive")
+      if (s.complete) return s
+      cur = parentRole_(cur)
+    }
+    s = s | lookup_("default.inactive")
+    if (s.complete) return s
+    return s | style("default")
   }
 
   // Internal: look up `role` in the Style map; return Style.empty for
@@ -160,18 +186,26 @@ class Theme {
       // Cascade terminator — every field set.
       "default":
         Style.new(0, 0x1F, 0xFFFFFF, 0x0000A8),
+      // UIFC-style inactive palette: cyan background instead of
+      // blue.  Frames go bright-white (0x3F), the bg shifts to cyan,
+      // so any inactive pane reads as a separate "scheme" rather
+      // than a dimmer version of the active one — works on legacy
+      // backends that don't honor the bright bit.
+      "default.inactive":
+        Style.new(null, 0x3F, 0xFFFFFF, 0x00AAAA),
 
-      // Frame defaults inherit "default"; focused gets a yellow tint.
+      // Frame: focused = yellow tint on blue (active palette);
+      // inactive = bright white on cyan (UIFC inactive scheme).
       "frame":
-        Style.new(null, 0x1F, 0xFFFFFF, 0x0000A8),
-      "frame.focused":
         Style.new(null, 0x1E, 0xFFFF55, null),
+      "frame.inactive":
+        Style.new(null, 0x3F, 0xFFFFFF, 0x00AAAA),
 
-      // Title bars: bright white on blue.
+      // Title bars: same scheme as frames.
       "title":
-        Style.new(null, 0x1F, 0xFFFFFF, 0x0000A8),
-      "title.focused":
         Style.new(null, 0x1E, 0xFFFF55, null),
+      "title.inactive":
+        Style.new(null, 0x3F, 0xFFFFFF, 0x00AAAA),
 
       // Menu items: normal inherits default; focused = lightbar.
       "menu.item":
@@ -189,12 +223,37 @@ class Theme {
         Style.new(null, 0x70, 0x000000, 0xAAAAAA),
       "list.item.disabled":
         Style.new(null, 0x18, 0x808080, null),
+      // Inactive list lightbar: bright yellow on cyan, matching UIFC.
+      // Non-selected inactive items cascade through "default.inactive"
+      // (bright white on cyan).
+      "list.item.focused.inactive":
+        Style.new(null, 0x3E, 0xFFFF55, 0x00AAAA),
 
-      // Inputs: yellow text by default, white when focused.
+      // Inputs: inverse bar (legacyAttr 0x70 = gray bg, black fg) so
+      // the field is visually distinct from the surrounding pane
+      // interior.  RGB-capable backends get a brighter background on
+      // focus; legacy backends get the same lightbar both ways and
+      // rely on the cursor to show focus.  No bit-7 / blink fallback.
       "input":
-        Style.new(null, 0x1E, 0xFFFF55, 0x0000A8),
+        Style.new(null, 0x70, 0x000000, 0xAAAAAA),
       "input.focused":
-        Style.new(null, 0x1F, 0xFFFFFF, 0x0000A8),
+        Style.new(null, 0x70, 0x000000, 0xFFFFFF),
+
+      // Buttons: same lightbar family as menu/list focus state.
+      // Unfocused buttons inherit "default" so the bracketed label
+      // reads against the surrounding pane background; focused
+      // buttons get the lightbar to draw the eye.  The hotkey
+      // variant tints a single label letter so users can see what
+      // would activate the action — yellow on the default bg,
+      // bright red on the lightbar.
+      "button":
+        Style.new(null, 0x1F, null, null),
+      "button.hotkey":
+        Style.new(null, 0x1E, 0xFFFF55, null),
+      "button.focused":
+        Style.new(null, 0x70, 0x000000, 0xAAAAAA),
+      "button.focused.hotkey":
+        Style.new(null, 0x78, 0x555555, null),
 
       // Status bar: black on cyan.
       "statusbar":
@@ -216,8 +275,8 @@ class Theme {
         Style.new(null, 0x4E, 0xFFFF55, 0xAA0000),
       "popup.frame":
         Style.new(null, 0x4F, 0xFFFFFF, 0xAA0000),
-      "popup.frame.focused":
-        Style.new(null, 0x4F, 0xFFFFFF, 0xAA0000)
+      "popup.frame.inactive":
+        Style.new(null, 0x47, 0xAAAAAA, null)
     }
 
     // Glyphs are stored as [primary, fallback] pairs: primary is a
@@ -241,13 +300,38 @@ class Theme {
       "frame.bottomRight":   ["┘", "+"],
       "frame.tee.left":      ["├", "+"],
       "frame.tee.right":     ["┤", "+"],
+      // Title flanks rendered as `┤Title├` on the top frame.  Double-
+      // line themes can swap to `╡Title╞` by overriding these.
+      "frame.title.left":    ["┤", "-"],
+      "frame.title.right":   ["├", "-"],
       "frame.tee.top":       ["┬", "+"],
       "frame.tee.bottom":    ["┴", "+"],
       "frame.cross":         ["┼", "+"],
       "frame.separator":     ["─", "-"],
 
+      // Double-line frame variant — Pane.framePreset = "double" picks
+      // these up via the "frame.double" glyph prefix.  UIFC list /
+      // menu boxes are double-line.  The title brackets stay
+      // `╡Title╞` (double horizontal meeting single vertical of the
+      // title gap).
+      "frame.double.topLeft":     ["╔", "+"],
+      "frame.double.top":         ["═", "="],
+      "frame.double.topRight":    ["╗", "+"],
+      "frame.double.left":        ["║", "|"],
+      "frame.double.right":       ["║", "|"],
+      "frame.double.bottomLeft":  ["╚", "+"],
+      "frame.double.bottom":      ["═", "="],
+      "frame.double.bottomRight": ["╝", "+"],
+      "frame.double.tee.left":    ["╠", "+"],
+      "frame.double.tee.right":   ["╣", "+"],
+      "frame.double.title.left":  ["╡", "="],
+      "frame.double.title.right": ["╞", "="],
+      "frame.double.separator":   ["═", "="],
+
       "scrollbar.track":     ["░", ":"],
       "scrollbar.thumb":     ["█", "#"],
+      "scrollbar.up":        ["▲", "^"],
+      "scrollbar.down":      ["▼", "v"],
 
       "arrow.up":            ["↑", "^"],
       "arrow.down":          ["↓", "v"],

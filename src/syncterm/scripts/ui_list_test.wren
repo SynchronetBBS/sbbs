@@ -53,7 +53,9 @@ class UiListTest {
     testKeyEnterNoCallback_()
     testMouseClickSelectsRow_()
     testMouseHoverIgnored_()
-    testMouseClickScrollbar_()
+    testMouseClickScrollbarTrackBottom_()
+    testMouseClickScrollbarDownArrow_()
+    testMouseClickScrollbarUpArrow_()
     testMouseDragScrollbar_()
     testMouseWheelScrolls_()
     testMouseWheelClampsAtTop_()
@@ -253,8 +255,8 @@ class UiListTest {
   static testInnerWidthWithOverflow_() {
     var l = makeList_(20)
     l.bounds = Rect.new(1, 1, 20, 5)
-    check_(l.innerWidth == 19,
-           "ListView.innerWidth: overflow → bounds.w - 1 (scrollbar column)")
+    check_(l.innerWidth == 18,
+           "ListView.innerWidth: overflow → bounds.w - 2 (scrollbar + separator)")
   }
 
   static testInnerWidthScrollDisabled_() {
@@ -317,29 +319,50 @@ class UiListTest {
            "ListView.handle Mouse: hover (Mouse.move) ignored")
   }
 
-  static testMouseClickScrollbar_() {
+  static testMouseClickScrollbarTrackBottom_() {
     var l = makeList_(20)
-    l.bounds = Rect.new(1, 1, 10, 5)            // overflows → scrollbar at x=10
-    // Click bottom of scrollbar (y=5 of 5).  scrollTop maps to its max
-    // (count - h = 15); selection stays put.
+    l.bounds = Rect.new(1, 1, 10, 5)            // h=5 → arrows on
+    // Track rows are 1..3 (between the up + down arrows).  Click at
+    // py=3 (screen y=4) is the last track row; maps to maxScroll=15.
     var prev = l.selected
-    var ev = MouseEvent.new(Mouse.button1Click, 0, 10, 5, 10, 5)
+    var ev = MouseEvent.new(Mouse.button1Click, 0, 1, 4, 1, 4)
     var consumed = l.handle(ev)
     check_(consumed && l.scrollTop == 15 && l.selected == prev,
-           "ListView.handle Mouse: scrollbar bottom-click scrolls to end, selection unchanged")
+           "ListView.handle Mouse: scrollbar track-bottom click scrolls to end, selection unchanged")
+  }
+
+  static testMouseClickScrollbarDownArrow_() {
+    var l = makeList_(20)
+    l.bounds = Rect.new(1, 1, 10, 5)
+    // py=4 (screen y=5) is the down-arrow row; clicking it steps +1.
+    var ev = MouseEvent.new(Mouse.button1Click, 0, 1, 5, 1, 5)
+    var consumed = l.handle(ev)
+    check_(consumed && l.scrollTop == 1,
+           "ListView.handle Mouse: scrollbar down-arrow click steps +1")
+  }
+
+  static testMouseClickScrollbarUpArrow_() {
+    var l = makeList_(20)
+    l.bounds = Rect.new(1, 1, 10, 5)
+    l.scrollTop = 5
+    // py=0 (screen y=1) is the up-arrow row; clicking it steps -1.
+    var ev = MouseEvent.new(Mouse.button1Click, 0, 1, 1, 1, 1)
+    var consumed = l.handle(ev)
+    check_(consumed && l.scrollTop == 4,
+           "ListView.handle Mouse: scrollbar up-arrow click steps -1")
   }
 
   static testMouseDragScrollbar_() {
     var l = makeList_(20)
     l.bounds = Rect.new(1, 1, 10, 5)
     var prev = l.selected
-    // DragMove: pressed at scrollbar top (start), pointer now at row 4
-    // of the scrollbar (end).  scrollTop tracks the end coord; the
-    // selection stays put because scrollbars don't move it.
-    var ev = MouseEvent.new(Mouse.button1DragMove, 0, 10, 1, 10, 5)
+    // DragMove pressed at scrollbar top (startY=1), pointer now at the
+    // bottom of the *track* (endY=4 → py=3).  scrollTop tracks the end
+    // coord; selection stays put.
+    var ev = MouseEvent.new(Mouse.button1DragMove, 0, 1, 1, 1, 4)
     var consumed = l.handle(ev)
     check_(consumed && l.scrollTop == 15 && l.selected == prev,
-           "ListView.handle Mouse: scrollbar drag updates scrollTop, leaves selection alone")
+           "ListView.handle Mouse: scrollbar drag follows endY, selection unchanged")
   }
 
   static testMouseWheelScrolls_() {
@@ -379,6 +402,7 @@ class UiListTest {
     l.bounds = Rect.new(1, 1, 10, 4)
     l.selected = 1
     var s = l.draw()
+    // No overflow → no scrollbar → content starts at column 0.
     // Row 0 has "aaa" (list.item — legacy 0x1F).
     // Row 1 has "bbb" (list.item.focused — legacy 0x70 lightbar).
     check_(s.cellAt(0, 0).ch == "a" && s.cellAt(0, 1).ch == "b" &&
@@ -393,11 +417,13 @@ class UiListTest {
     l.items = items
     l.bounds = Rect.new(1, 1, 10, 5)            // overflows
     var s = l.draw()
-    // Right column (x = bounds.w - 1 = 9) is the scrollbar.  Top of
-    // viewport = thumb; bottom row at scrollTop=0 = track.
-    var top = s.cellAt(9, 0)
-    var bot = s.cellAt(9, 4)
+    // Scrollbar at column 0 (UIFC-left convention); column 1 is the
+    // separator (frame.left "│"); content from column 2 onward.
+    var top = s.cellAt(0, 0)
+    var bot = s.cellAt(0, 4)
     check_(top.chByte != bot.chByte,
            "ListView.draw: scrollbar drawn with distinct thumb / track glyphs")
+    check_(s.cellAt(1, 0).ch == "│" && s.cellAt(2, 0).ch == "x",
+           "ListView.draw: separator '│' at col 1, content starts at col 2")
   }
 }

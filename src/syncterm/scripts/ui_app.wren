@@ -27,7 +27,9 @@
 import "ui_style"  for Theme
 import "ui_widget" for Widget, Container, Rect
 import "ui_draw"   for Painter
-import "syncterm"  for Input, KeyEvent, MouseEvent, Mouse, Timer,
+import "ui_popup"  for PopStatus
+import "ui_help"   for Help
+import "syncterm"  for Input, KeyEvent, MouseEvent, Mouse, Key, Timer,
                        TimerElapsed, Screen, Surface, CustomCursor
 
 class App {
@@ -41,8 +43,13 @@ class App {
     _tickMs      = null
     _surface     = null           // screen-sized backbuffer; lazy alloc
     _surfaceSize = null           // [w, h] last allocated for; reallocs on resize
+    _backdrop    = null           // Screen.readRect snapshot from first paint
     _savedCursor = null           // CustomCursor snapshot from entry; restored on exit
-    _cursorShown = true            // mirrors the last applied state to skip redundant apply()s
+    _cursorShown = null           // mirrors last applied state; null forces first apply
+    _runMode     = null           // "async" / "sync"; modal() uses to pick pump
+    _status      = null           // PopStatus overlay or null
+    // F1 → context help; user can rebind / unbind freely.
+    bind(Key.f1, Fn.new {|k| showHelp() })
   }
 
   root        { _root        }
@@ -86,7 +93,6 @@ class App {
     if (_modalStack.count == 0) return null
     var w = _modalStack.removeAt(-1)
     w.parent = null
-    markAllDirty_()
     return w
   }
 
@@ -94,13 +100,65 @@ class App {
   // longer on the stack.  The widget pops itself (typically from a
   // key handler that calls app.popModal()).  Returns the widget so
   // the caller can read whatever result it stored on itself.
+  //
+  // Picks the pump that matches the surrounding loop's mode: if the
+  // App is in runSync (mode == "sync"), use drainOnceSync_ so we
+  // keep blocking on Input.next() rather than yielding the fiber.
+  // Yielding from inside a runSync would surface control back to the
+  // hook caller (typically doterm), which causes the visible flash
+  // back to the terminal.
   modal(widget) {
     pushModal(widget)
-    while (_modalStack.indexOf(widget) >= 0) drainOnce_()
+    while (_modalStack.indexOf(widget) >= 0) {
+      if (_runMode == "sync") {
+        drainOnceSync_()
+      } else {
+        drainOnce_()
+      }
+    }
     return widget
   }
 
   quit() { _running = false }
+
+  // ----- Status overlay ------------------------------------------
+  //
+  // popStatus(message) — show a transient frame with the message
+  // centred on screen.  Doesn't block input; the caller does
+  // whatever work it wants and dismisses with popStatus(null).
+  // Forces an immediate paint so the overlay shows up before the
+  // caller's blocking work proceeds — runSync/run wouldn't otherwise
+  // redraw until the next event arrives.
+  popStatus(message) {
+    if (message == null) {
+      _status = null
+      markAllDirty_()
+    } else {
+      _status = PopStatus.show(message)
+    }
+    drawAll_()
+  }
+
+  // ----- Context help (F1) ---------------------------------------
+  //
+  // Walk from the foreground widget tree's focused leaf up through
+  // its parent chain until we hit a Widget with helpText set, then
+  // pop a Help dialog with that text.  No-op if nothing in the
+  // chain has help.
+  showHelp() {
+    var w = modalTop
+    // Descend to the focused leaf.
+    while (w is Container && w.focusedChild != null) w = w.focusedChild
+    var found = null
+    while (w is Widget) {
+      if (w.helpText != null) {
+        found = w.helpText
+        break
+      }
+      w = w.parent
+    }
+    if (found != null) Help.show(this, "Help", found)
+  }
 
   // Dispatch entries — public so tests (and external pumps) can
   // drive them directly without going through Input.nextEvent.
@@ -146,19 +204,56 @@ class App {
         _surfaceSize[0] != sz[0] || _surfaceSize[1] != sz[1]) {
       _surface     = Surface.new(sz[0], sz[1])
       _surfaceSize = sz
+      _backdrop    = null
     }
+    // Snapshot whatever was on screen before our first paint and use
+    // it as the canvas behind every subsequent frame.  Areas not
+    // covered by widgets show that snapshot rather than a styled
+    // fill — UIFC convention: dialogs sit "on top of" the screen
+    // they came from.
+    if (_backdrop == null) {
+      _backdrop = Screen.readRect(1, 1, sz[0], sz[1])
+    }
+    if (_backdrop != null) _surface.putRect(_backdrop, 0, 0)
+
     if (_root.bounds == null) {
       _root.bounds = Rect.new(1, 1, sz[0], sz[1])
     }
-
-    var rs = _root.draw()
-    if (rs != null) {
-      _surface.putRect(rs, _root.bounds.x - 1, _root.bounds.y - 1)
+    // Composite root's children straight onto the App surface.  Root
+    // has no chrome of its own — it's a passthrough container — so
+    // skipping its draw() lets the backdrop show through the gaps
+    // between children.
+    for (c in _root.children) {
+      if (!c.visible) continue
+      var cs = c.draw()
+      if (cs == null || c.bounds == null) continue
+      var dx = c.bounds.x - 1
+      var dy = c.bounds.y - 1
+      _surface.putRect(cs, dx, dy)
+      if (c.shadow) {
+        Painter.shadow(_surface, dx, dy, c.bounds.w, c.bounds.h)
+      }
     }
     for (m in _modalStack) {
       var ms = m.draw()
       if (ms != null && m.bounds != null) {
-        _surface.putRect(ms, m.bounds.x - 1, m.bounds.y - 1)
+        var dx = m.bounds.x - 1
+        var dy = m.bounds.y - 1
+        _surface.putRect(ms, dx, dy)
+        if (m.shadow) Painter.shadow(_surface, dx, dy, m.bounds.w, m.bounds.h)
+      }
+    }
+    // Status overlay sits on top of everything (modals included) and
+    // doesn't intercept input — purely decorative until popStatus(null).
+    if (_status != null) {
+      var ss = _status.draw()
+      if (ss != null && _status.bounds != null) {
+        var dx = _status.bounds.x - 1
+        var dy = _status.bounds.y - 1
+        _surface.putRect(ss, dx, dy)
+        if (_status.shadow) {
+          Painter.shadow(_surface, dx, dy, _status.bounds.w, _status.bounds.h)
+        }
       }
     }
     Screen.putRect(_surface, 1, 1)
@@ -174,7 +269,11 @@ class App {
     if (cp != null) Screen.window.position = cp
     var want = top.cursorVisible
     if (want != _cursorShown) {
-      if (want) _savedCursor.apply() else CustomCursor.none.apply()
+      // Visible → "normal" (a sensible cursor for editors).  The
+      // saved state is for restoring on exit; using it here would
+      // inherit whatever the *parent* app left the cursor at, which
+      // could itself be CustomCursor.none.
+      if (want) CustomCursor.normal.apply() else CustomCursor.none.apply()
       _cursorShown = want
     }
   }
@@ -195,6 +294,16 @@ class App {
     if (ev is KeyEvent)     dispatchKey_(ev)
     if (ev is MouseEvent)   dispatchMouse_(ev)
     if (ev is TimerElapsed) onTick_()
+  }
+
+  // Synchronous-mode drain: paint, block on Input.next(), dispatch.
+  // No Fiber.yield — used by runSync and by modal() when invoked
+  // inside a runSync context.
+  drainOnceSync_() {
+    drawAll_()
+    var ev = Input.next()
+    if (ev is KeyEvent)   dispatchKey_(ev)
+    if (ev is MouseEvent) dispatchMouse_(ev)
   }
 
   // Save the terminal's current mouse-events bitmask, REPLACE it with
@@ -219,11 +328,12 @@ class App {
   }
 
   // Snapshot the cursor on entry so we can restore it on exit.
-  // _cursorShown starts true so the first drawAll_ that wants the
-  // cursor hidden actually applies CustomCursor.none.
+  // _cursorShown is null so the first drawAll_'s `want != _cursorShown`
+  // compare always trips, regardless of what the parent app or terminal
+  // had the cursor doing.
   setupCursor_() {
     _savedCursor = CustomCursor.current
-    _cursorShown = true
+    _cursorShown = null
   }
   teardownCursor_() {
     if (_savedCursor != null) {
@@ -235,8 +345,12 @@ class App {
   run() {
     var savedMouse = setupMouse_()
     setupCursor_()
-    _running = true
+    _runMode  = "async"
+    _running  = true
+    _backdrop = null            // recapture screen on first paint
     while (_running) drainOnce_()
+    _runMode  = null
+    _backdrop = null
     teardownCursor_()
     Input.mouseEvents = savedMouse
   }
@@ -253,13 +367,12 @@ class App {
   runSync() {
     var savedMouse = setupMouse_()
     setupCursor_()
-    _running = true
-    while (_running) {
-      drawAll_()
-      var ev = Input.next()
-      if (ev is KeyEvent)   dispatchKey_(ev)
-      if (ev is MouseEvent) dispatchMouse_(ev)
-    }
+    _runMode  = "sync"
+    _running  = true
+    _backdrop = null            // recapture screen on first paint
+    while (_running) drainOnceSync_()
+    _runMode  = null
+    _backdrop = null
     teardownCursor_()
     Input.mouseEvents = savedMouse
   }

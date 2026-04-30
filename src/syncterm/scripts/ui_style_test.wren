@@ -264,12 +264,12 @@ class UiStyleTest {
     var d = Theme.default
     // Spot-check a handful of known roles produce complete Styles.
     var roles = [
-      "frame", "frame.focused",
-      "title", "title.focused",
+      "frame", "frame.inactive",
+      "title", "title.inactive",
       "menu.item", "menu.item.focused", "menu.item.disabled",
       "input", "input.focused",
       "statusbar", "scrollbar.track", "scrollbar.thumb",
-      "help", "popup", "popup.frame", "popup.frame.focused"
+      "help", "popup", "popup.frame", "popup.frame.inactive"
     ]
     var allComplete = true
     var failingRole = null
