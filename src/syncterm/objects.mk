@@ -1,4 +1,5 @@
 OBJS = \
+                        $(MTOBJODIR)$(DIRSEP)ansi_filter$(OFILE) \
                         $(MTOBJODIR)$(DIRSEP)bbslist$(OFILE) \
                         $(MTOBJODIR)$(DIRSEP)uifcinit$(OFILE) \
                         $(MTOBJODIR)$(DIRSEP)filepick$(OFILE) \

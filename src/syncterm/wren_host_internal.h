@@ -118,6 +118,13 @@ struct wren_hook_entry {
 	size_t               regex_buf_cap;
 	size_t               regex_pos;
 	int                  regex_nsubp;
+	/* When true, inbound bytes are pre-filtered through ansi_filter
+	 * (KEEP_TEXT) so colour codes / cursor moves never reach the
+	 * regex VM.  `regex_ansi_state` is the per-hook filter state.
+	 * Both onMatch and onMatchClean are passthrough-only; the flag
+	 * only controls the pre-filter, not the dispatch path. */
+	bool                 regex_clean;
+	int                  regex_ansi_state;   /* enum ansi_state, kept as int to avoid header cycle */
 
 	/* Lifetime bookkeeping.  Free when both flags are true. */
 	bool                 unregistered;  /* compact dropped from arrays */
@@ -240,6 +247,11 @@ wren_host_register_hook_filtered(WrenVM *vm, enum wren_hook_event ev,
  * WREN_HOOK_INPUT array as filtered/unfiltered hooks; registration
  * order is preserved across all three forms.  Resources are freed
  * during compaction once the hook is unregistered. */
+struct wren_hook_entry *
+wren_host_register_hook_match_ex(WrenVM *vm, int fn_slot, struct Prog *prog,
+    struct PikeVM *vm_state, char *buf, size_t buf_cap, int nsubp,
+    bool clean);
+
 struct wren_hook_entry *
 wren_host_register_hook_match(WrenVM *vm, int fn_slot, struct Prog *prog,
                               struct PikeVM *vm_state, char *buf,

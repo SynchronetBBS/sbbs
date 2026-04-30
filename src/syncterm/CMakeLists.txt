@@ -279,6 +279,7 @@ set(SOURCE
 	audio_apc.c
 	bbslist.c
 	conn.c
+	ansi_filter.c
 	conn_pty.c
 	conn_telnet.c
 	fonts.c

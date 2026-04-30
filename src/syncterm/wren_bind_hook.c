@@ -207,12 +207,18 @@ regex_anchor_check(Regexp *r)
 	return "unknown regex node type";
 }
 
-void
-fn_Hook_onMatch(WrenVM *vm)
+/* Shared body for fn_Hook_onMatch and fn_Hook_onMatchClean.  `clean`
+ * controls whether inbound bytes are pre-filtered through ansi_filter
+ * (KEEP_TEXT) before reaching the regex VM.  `name` is "onMatch" or
+ * "onMatchClean" — used in the error strings reported back to Wren. */
+static void
+hook_on_match_impl(WrenVM *vm, bool clean, const char *name)
 {
 	const char *pat = wrenGetSlotString(vm, 1);
 	if (pat == NULL) {
-		wrenSetSlotString(vm, 0, "Hook.onMatch: pattern must be a String");
+		char buf[80];
+		snprintf(buf, sizeof buf, "Hook.%s: pattern must be a String", name);
+		wrenSetSlotString(vm, 0, buf);
 		wrenAbortFiber(vm, 0);
 		return;
 	}
@@ -223,7 +229,9 @@ fn_Hook_onMatch(WrenVM *vm)
 	size_t plen = strlen(pat);
 	char *patcopy = malloc(plen + 1);
 	if (patcopy == NULL) {
-		wrenSetSlotString(vm, 0, "Hook.onMatch: out of memory");
+		char buf[80];
+		snprintf(buf, sizeof buf, "Hook.%s: out of memory", name);
+		wrenSetSlotString(vm, 0, buf);
 		wrenAbortFiber(vm, 0);
 		return;
 	}
@@ -238,7 +246,7 @@ fn_Hook_onMatch(WrenVM *vm)
 		re1_fatal_handler = NULL;
 		free(patcopy);
 		char buf[320];
-		snprintf(buf, sizeof buf, "Hook.onMatch: %s", re1_errmsg);
+		snprintf(buf, sizeof buf, "Hook.%s: %s", name, re1_errmsg);
 		wrenSetSlotString(vm, 0, buf);
 		wrenAbortFiber(vm, 0);
 		return;
@@ -249,7 +257,7 @@ fn_Hook_onMatch(WrenVM *vm)
 		re1_fatal_handler = NULL;
 		free(patcopy);
 		char buf[320];
-		snprintf(buf, sizeof buf, "Hook.onMatch: %s", aerr);
+		snprintf(buf, sizeof buf, "Hook.%s: %s", name, aerr);
 		wrenSetSlotString(vm, 0, buf);
 		wrenAbortFiber(vm, 0);
 		return;
@@ -263,23 +271,39 @@ fn_Hook_onMatch(WrenVM *vm)
 	if (buf == NULL) {
 		pikevm_free(pvm);
 		free(p);
-		wrenSetSlotString(vm, 0, "Hook.onMatch: out of memory");
+		char emsg[80];
+		snprintf(emsg, sizeof emsg, "Hook.%s: out of memory", name);
+		wrenSetSlotString(vm, 0, emsg);
 		wrenAbortFiber(vm, 0);
 		return;
 	}
 	buf[0] = '\0';
 
-	struct wren_hook_entry *h = wren_host_register_hook_match(vm, 2,
-	    p, pvm, buf, WREN_REGEX_BUF_CAP, MAXSUB);
+	struct wren_hook_entry *h = wren_host_register_hook_match_ex(vm, 2,
+	    p, pvm, buf, WREN_REGEX_BUF_CAP, MAXSUB, clean);
 	if (h == NULL) {
 		pikevm_free(pvm);
 		free(p);
 		free(buf);
-		wrenSetSlotString(vm, 0, "Hook.onMatch: hook limit reached");
+		char emsg[80];
+		snprintf(emsg, sizeof emsg, "Hook.%s: hook limit reached", name);
+		wrenSetSlotString(vm, 0, emsg);
 		wrenAbortFiber(vm, 0);
 		return;
 	}
 	push_hook_handle(vm, h);
+}
+
+void
+fn_Hook_onMatch(WrenVM *vm)
+{
+	hook_on_match_impl(vm, false, "onMatch");
+}
+
+void
+fn_Hook_onMatchClean(WrenVM *vm)
+{
+	hook_on_match_impl(vm, true, "onMatchClean");
 }
 
 void

@@ -25,6 +25,7 @@ void fn_Hook_onKey_filtered(WrenVM *vm);
 void fn_Hook_onInput_filtered(WrenVM *vm);
 void fn_Hook_onMouse_filtered(WrenVM *vm);
 void fn_Hook_onMatch(WrenVM *vm);
+void fn_Hook_onMatchClean(WrenVM *vm);
 void fn_Hook_every(WrenVM *vm);
 
 void wren_hook_handle_allocate(WrenVM *vm);

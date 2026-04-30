@@ -24,6 +24,7 @@
 #include "genwrap.h"      /* xp_timer */
 #include "threadwrap.h"   /* pthread_self */
 #include "regexp.h"       /* RE1: Prog, PikeVM, pikevm_* */
+#include "ansi_filter.h"  /* shared escape-sequence stripper */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -658,9 +659,9 @@ wren_host_register_hook_filtered(WrenVM *vm, enum wren_hook_event ev,
 }
 
 struct wren_hook_entry *
-wren_host_register_hook_match(WrenVM *vm, int fn_slot,
+wren_host_register_hook_match_ex(WrenVM *vm, int fn_slot,
     struct Prog *prog, struct PikeVM *vm_state,
-    char *buf, size_t buf_cap, int nsubp)
+    char *buf, size_t buf_cap, int nsubp, bool clean)
 {
 	if (!active)
 		return NULL;
@@ -679,10 +680,21 @@ wren_host_register_hook_match(WrenVM *vm, int fn_slot,
 	h->regex_buf     = buf;
 	h->regex_buf_cap = buf_cap;
 	h->regex_nsubp   = nsubp;
+	h->regex_clean   = clean;
+	h->regex_ansi_state = ANSI_STATE_NONE;
 	pikevm_start(vm_state, buf);
 	state.hooks[WREN_HOOK_INPUT][n] = h;
 	state.hook_count[WREN_HOOK_INPUT] = n + 1;
 	return h;
+}
+
+struct wren_hook_entry *
+wren_host_register_hook_match(WrenVM *vm, int fn_slot,
+    struct Prog *prog, struct PikeVM *vm_state,
+    char *buf, size_t buf_cap, int nsubp)
+{
+	return wren_host_register_hook_match_ex(vm, fn_slot, prog, vm_state,
+	    buf, buf_cap, nsubp, false);
 }
 
 struct wren_hook_entry *
@@ -1154,9 +1166,14 @@ build_match_list(char **subp, int nsubp, int list_slot)
 /* Drive a single regex hook entry through any unfed bytes in its
  * buffer.  Handles MATCH (fire fn, trim, restart) and IMPOSSIBLE
  * (drop oldest byte, restart) inline; bounds itself by buf_len.
- * Returns true if any callback returned truthy (caller short-circuits
- * the rest of the per-event hook loop). */
-static bool
+ * Regex hooks (both onMatch and onMatchClean) are passthrough-only —
+ * the callback's return value is ignored.  An earlier "true drops
+ * the trigger byte" contract was misleading: it dropped only the
+ * single byte that completed the match (every prior byte already
+ * went through cterm), so users never actually got "drop the
+ * matched span."  Anyone needing wire-level drop should use
+ * Hook.onInput, which is byte-granular by design. */
+static void
 dispatch_match_drain(struct wren_hook_entry *h)
 {
 	char *subp[MAXSUB];
@@ -1174,11 +1191,8 @@ dispatch_match_drain(struct wren_hook_entry *h)
 			wrenSetSlotHandle(state.vm, 0, state.hook_class);
 			wrenSetSlotHandle(state.vm, 1, h->fn);
 			build_match_list(subp, h->regex_nsubp, 2);
-			bool consumed = false;
-			if (metrics_invoke(&h->metrics, state.dispatch1_handle) ==
-			        WREN_RESULT_SUCCESS &&
-			    read_consume_result())
-				consumed = true;
+			(void)metrics_invoke(&h->metrics,
+			    state.dispatch1_handle);
 
 			size_t end = (subp[1] != NULL)
 			    ? (size_t)(subp[1] - h->regex_buf)
@@ -1191,8 +1205,6 @@ dispatch_match_drain(struct wren_hook_entry *h)
 			h->regex_buf[h->regex_buf_len] = '\0';
 			h->regex_pos = 0;
 			pikevm_start(h->regex_vm, h->regex_buf);
-			if (consumed)
-				return true;
 			continue;
 		}
 		/* IMPOSSIBLE — drop one byte and re-feed survivors. */
@@ -1210,7 +1222,6 @@ dispatch_match_drain(struct wren_hook_entry *h)
 		h->regex_pos = 0;
 		pikevm_start(h->regex_vm, h->regex_buf);
 	}
-	return false;
 }
 
 int
@@ -1225,6 +1236,24 @@ wren_host_dispatch_input(unsigned char byte, char *out, int out_cap)
 			continue;
 
 		if (h->regex_prog != NULL) {
+			/* For onMatchClean: filter the byte through the
+			 * shared ANSI parser; bytes inside an escape sequence
+			 * never reach the regex VM, so the pattern matches
+			 * the visible text only.  The ansi_filter call
+			 * advances the per-hook state in place. */
+			uint8_t        b = byte;
+			uint8_t        kept;
+			size_t         klen = 1;
+			if (h->regex_clean) {
+				enum ansi_state st =
+				    (enum ansi_state)h->regex_ansi_state;
+				klen = ansi_filter(&b, 1, &kept, &st,
+				    ANSI_FILTER_KEEP_TEXT);
+				h->regex_ansi_state = (int)st;
+				if (klen == 0)
+					continue;
+				b = kept;
+			}
 			/* On overflow, drop the oldest half and restart so the
 			 * survivors get re-fed by dispatch_match_drain. */
 			if (h->regex_buf_len + 1 >= h->regex_buf_cap) {
@@ -1237,10 +1266,9 @@ wren_host_dispatch_input(unsigned char byte, char *out, int out_cap)
 				h->regex_pos = 0;
 				pikevm_start(h->regex_vm, h->regex_buf);
 			}
-			h->regex_buf[h->regex_buf_len++] = (char)byte;
+			h->regex_buf[h->regex_buf_len++] = (char)b;
 			h->regex_buf[h->regex_buf_len] = '\0';
-			if (dispatch_match_drain(h))
-				return WREN_INPUT_DROP;
+			dispatch_match_drain(h);
 			continue;
 		}
 

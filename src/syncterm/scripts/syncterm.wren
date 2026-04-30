@@ -787,6 +787,22 @@ class Hook {
   foreign static onInput(fn)
   foreign static onInput(byte, fn)
   foreign static onMatch(pattern, fn)
+
+  // onMatchClean is the escape-aware variant: inbound bytes are
+  // pre-filtered through SyncTERM's shared ANSI parser (the same
+  // state machine ripper.c uses) before reaching the regex VM, so
+  // colour codes, cursor moves, and DCS / OSC strings never split
+  // a literal sequence.  A pattern like "Welcome" matches even
+  // when the BBS sends "We" + ESC[1;33m + "lcome" inline.
+  //
+  // The callback's return value is IGNORED — onMatchClean is
+  // passthrough-only.  Mapping a cleaned-byte match span back to
+  // the raw byte stream (escapes interleaved through it) has no
+  // unambiguous answer for "consume", so v1 doesn't try; the
+  // matched text always reaches the terminal.  Use onMatch when
+  // you need to drop bytes off the wire.
+  foreign static onMatchClean(pattern, fn)
+
   foreign static onMouse(fn)
   foreign static onMouse(event, fn)
   foreign static onStatus(fn)

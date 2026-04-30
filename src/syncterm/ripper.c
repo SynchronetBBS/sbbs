@@ -27,6 +27,7 @@
 #include <xpbeep.h>
 
 #include "amigafont.h"
+#include "ansi_filter.h"
 #include "conn.h"
 #include "rip_icons.h"
 #include "ripper.h"
@@ -49,16 +50,7 @@ bool rip_did_reinit;
 
 #ifdef HAS_VSTAT
 
-enum ansi_state {
-	ANSI_STATE_NONE,
-	ANSI_STATE_GOT_ESC,
-	ANSI_STATE_GOT_CSI,
-	ANSI_STATE_GOT_STRING,
-	ANSI_STATE_GOT_LIMITED_STRING,
-	ANSI_STATE_GOT_ESC_IN_STRING,
-	ANSI_STATE_GOT_ESC_IN_LIMITED_STRING,
-	ANSI_STATE_GOT_IB
-};
+/* enum ansi_state lives in ansi_filter.h now. */
 
 enum rip_line_thickness {
 	RIP_LINE_THICK_THIN = 1
@@ -17934,90 +17926,17 @@ do_skypix(char *buf, size_t len)
 }
 
 /*
- * This strips out everything except valid ANSI and returns the
- * new size.
+ * Strip everything except valid ANSI escape sequences from `buf`,
+ * returning the new size.  Thin wrapper around ansi_filter() in
+ * ANSI_FILTER_KEEP_ESC mode — the state machine itself lives in
+ * ansi_filter.[ch] so other consumers (Hook.onMatchClean, etc.)
+ * can reuse it without depending on ripper.
  */
 size_t
 ansi_only(BYTE *buf, unsigned count)
 {
-	BYTE    *out = buf;
-	unsigned i;
-
-	for (i = 0; i < count; i++) {
-		switch (rip.ansi_state) {
-			case ANSI_STATE_NONE:
-				if (buf[i] == '\x1b') {
-					*(out++) = buf[i];
-					rip.ansi_state = ANSI_STATE_GOT_ESC;
-				}
-				break;
-			case ANSI_STATE_GOT_ESC:
-				*(out++) = buf[i];
-				if ((buf[i] < '0') || (buf[i] > '~')) {
-					rip.ansi_state = ANSI_STATE_NONE;
-					break;
-				}
-				switch (buf[i]) {
-					case 'X':
-						rip.ansi_state = ANSI_STATE_GOT_STRING;
-						break;
-					case 'P':
-					case ']':
-					case '^':
-					case '_':
-						rip.ansi_state = ANSI_STATE_GOT_LIMITED_STRING;
-						break;
-					case '[':
-						rip.ansi_state = ANSI_STATE_GOT_CSI;
-						break;
-					default:
-						rip.ansi_state = ANSI_STATE_NONE;
-						break;
-				}
-				break;
-			case ANSI_STATE_GOT_LIMITED_STRING:
-				*(out++) = buf[i];
-				if (buf[i] == '\x1b') {
-					rip.ansi_state = ANSI_STATE_GOT_ESC_IN_STRING;
-					break;
-				}
-				if ((buf[i] < 0x08) || ((buf[i] > 0x0d) && (buf[i] < 0x20)) || (buf[i] > 0x7e)) {
-					rip.ansi_state = ANSI_STATE_NONE;
-					break;
-				}
-				break;
-			case ANSI_STATE_GOT_ESC_IN_LIMITED_STRING:
-				*(out++) = buf[i];
-				rip.ansi_state = ANSI_STATE_NONE;
-				break;
-			case ANSI_STATE_GOT_ESC_IN_STRING:
-				*(out++) = buf[i];
-				if ((buf[i] == 'X') || (buf[i] == '\\'))
-					rip.ansi_state = ANSI_STATE_NONE;
-				break;
-			case ANSI_STATE_GOT_STRING:
-				*(out++) = buf[i];
-				if (buf[i] == '\x1b')
-					rip.ansi_state = ANSI_STATE_GOT_ESC_IN_STRING;
-				break;
-			case ANSI_STATE_GOT_CSI:
-				*(out++) = buf[i];
-				if ((buf[i] >= '@') && (buf[i] <= '~'))
-					rip.ansi_state = ANSI_STATE_NONE;
-				else if ((buf[i] >= ' ') && (buf[i] <= '/'))
-					rip.ansi_state = ANSI_STATE_GOT_IB;
-				else if ((buf[i] < '0') || (buf[i] > '?'))
-					rip.ansi_state = ANSI_STATE_NONE;
-				break;
-			case ANSI_STATE_GOT_IB:
-				if ((buf[i] < '0') || (buf[i] > '?'))
-					rip.ansi_state = ANSI_STATE_NONE;
-				else if ((buf[i] < ' ') || (buf[i] > '/'))
-					rip.ansi_state = ANSI_STATE_NONE;
-				break;
-		}
-	}
-	return out - buf;
+	return ansi_filter(buf, count, buf, &rip.ansi_state,
+	    ANSI_FILTER_KEEP_ESC);
 }
 
 static void
