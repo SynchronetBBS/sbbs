@@ -82,6 +82,7 @@ void fn_Input_next_ms(WrenVM *vm);
 void fn_Input_poll(WrenVM *vm);
 void fn_Input_ungetKey_(WrenVM *vm);
 void fn_Input_ungetMouse_(WrenVM *vm);
+void fn_Input_wake(WrenVM *vm);
 void fn_KeyEvent_code(WrenVM *vm);
 void fn_KeyEvent_codepoint(WrenVM *vm);
 void fn_KeyEvent_text(WrenVM *vm);

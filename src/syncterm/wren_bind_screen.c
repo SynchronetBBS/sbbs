@@ -7,6 +7,8 @@
 #include "wren_bind_screen.h"
 #include "wren_host_internal.h"
 #include "wren_host.h"
+#include "wren/vm/wren_vm.h"
+#include "wren/vm/wren_value.h"
 
 #include "ciolib.h"
 #include "cterm.h"
@@ -419,6 +421,83 @@ fn_Input_nextEvent(WrenVM *vm)
 		return;
 	}
 	st->parked_fiber = wrenGetSlotHandle(vm, 1);
+	wrenSetSlotNull(vm, 0);
+}
+
+/* Input.wake(fiber, value) — queue `value` to be delivered to `fiber`
+ * via the same result queue as Input.nextEvent / Timer.trigger.  Safe
+ * to call from a hook body (queues only; the resume happens on the
+ * next main-loop drain).  Hooks must NOT call from their own foreign
+ * frame; the queue dispatcher's wrenCall would re-enter the VM.
+ *
+ * Both `fiber` and `value` are pinned via wrenGetSlotHandle.  The
+ * fiber handle is released by the result-queue drain after the call.
+ * The value handle is released by the payload's free fn. */
+struct wake_payload {
+	WrenHandle *value;
+};
+
+static void
+deliver_wake_value(WrenVM *vm, int slot, void *data)
+{
+	struct wake_payload *wp = data;
+	if (wp != NULL && wp->value != NULL) {
+		wrenSetSlotHandle(vm, slot, wp->value);
+	} else {
+		wrenSetSlotNull(vm, slot);
+	}
+}
+
+static void
+free_wake_payload(void *data)
+{
+	struct wake_payload    *wp = data;
+	struct wren_host_state *st;
+
+	if (wp == NULL)
+		return;
+	st = wren_host_state();
+	if (wp->value != NULL && st != NULL && st->vm != NULL)
+		wrenReleaseHandle(st->vm, wp->value);
+	free(wp);
+}
+
+void
+fn_Input_wake(WrenVM *vm)
+{
+	struct wren_host_state *st = wren_host_state();
+	WrenHandle             *fiber;
+	WrenHandle             *value;
+	struct wake_payload    *wp;
+
+	fiber = wrenGetSlotHandle(vm, 1);
+	value = wrenGetSlotHandle(vm, 2);
+	wp    = calloc(1, sizeof(*wp));
+	if (wp == NULL) {
+		if (value != NULL)
+			wrenReleaseHandle(vm, value);
+		if (fiber != NULL)
+			wrenReleaseHandle(vm, fiber);
+		wrenSetSlotNull(vm, 0);
+		return;
+	}
+	wp->value = value;
+
+	/* If the target fiber is currently parked on Input.nextEvent,
+	 * waking it via the result queue consumes that registration —
+	 * the fiber resumes here, and the next Input.nextEvent re-arms.
+	 * Without this, the parked-fiber slot would still point at the
+	 * resumed fiber on the next iteration and Input.nextEvent would
+	 * throw "another fiber is already registered."  Compare via the
+	 * underlying Wren Value (handles wrapping the same fiber are
+	 * distinct pointers but equal Values). */
+	if (st != NULL && st->parked_fiber != NULL && fiber != NULL &&
+	    wrenValuesSame(st->parked_fiber->value, fiber->value)) {
+		wrenReleaseHandle(vm, st->parked_fiber);
+		st->parked_fiber = NULL;
+	}
+
+	wren_result_push(fiber, wp, deliver_wake_value, free_wake_payload);
 	wrenSetSlotNull(vm, 0);
 }
 

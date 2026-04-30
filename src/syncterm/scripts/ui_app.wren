@@ -32,6 +32,17 @@ import "ui_help"   for Help
 import "syncterm"  for Input, KeyEvent, MouseEvent, Mouse, Key, Timer,
                        TimerElapsed, Screen, Surface, CustomCursor
 
+// Sentinel passed into post() when the caller doesn't supply a value.
+// Identity-comparable so the App can recognise "just wake up, nothing
+// to dispatch" without confusing it for a user-supplied null payload.
+class WakeOnly {
+  static instance {
+    if (__inst == null) __inst = WakeOnly.new()
+    return __inst
+  }
+  construct new() {}
+}
+
 class App {
   construct new() {
     _root        = Container.new()
@@ -48,6 +59,8 @@ class App {
     _cursorShown = null           // mirrors last applied state; null forces first apply
     _runMode     = null           // "async" / "sync"; modal() uses to pick pump
     _status      = null           // PopStatus overlay or null
+    _runFiber    = null           // captured on first drainOnce_; target for post()
+    _onPost      = null           // user-supplied posted-value handler
     // F1 → context help; user can rebind / unbind freely.
     bind(Key.f1, Fn.new {|k| showHelp() })
   }
@@ -120,6 +133,41 @@ class App {
   }
 
   quit() { _running = false }
+
+  // ----- External wake-up ----------------------------------------
+  //
+  // post() / post(value) — wake the App's parked fiber from outside
+  // the Input.nextEvent / Timer.trigger paths.  The canonical use
+  // case is a Hook.onInput callback that mutates a widget tree
+  // (chat scrollback, ticker, etc.) and needs the App to repaint
+  // even though the user hasn't pressed anything.  Hooks must run
+  // synchronously, but `post` only queues — the resume is delivered
+  // by the next main-loop drain, so the hook contract holds.
+  //
+  // post() with no args sends a sentinel that the App recognises as
+  // "just wake up, redraw, no further dispatch."  post(value) sends
+  // the supplied value; if `onPost` is wired the App calls it with
+  // that value; otherwise the value is ignored after the redraw.
+  //
+  // No-op when the App isn't running (no parked fiber to deliver
+  // to).  Safe to call from runSync()? — no.  runSync blocks on
+  // Input.next() at the C level, not on Fiber.yield, so a wake
+  // through the result queue won't reach it.  Use the async run()
+  // for any app that needs external wake-ups.
+  post()      { post(WakeOnly.instance) }
+  post(value) {
+    if (_runFiber == null) return
+    Input.wake(_runFiber, value)
+  }
+
+  // Optional handler for posted values.  Called from drainOnce_
+  // when the resumed value isn't a KeyEvent / MouseEvent /
+  // TimerElapsed and isn't the WakeOnly sentinel.  The App always
+  // redraws on a wake-up (drawAll_ runs at the top of each
+  // drainOnce_), so onPost is only needed when the caller wants to
+  // do extra work with the value.
+  onPost     { _onPost }
+  onPost=(fn) { _onPost = fn }
 
   // ----- Status overlay ------------------------------------------
   //
@@ -290,12 +338,28 @@ class App {
   // call run() for the full event loop.
   drainOnce_() {
     drawAll_()
+    if (_runFiber == null) _runFiber = Fiber.current
     Input.nextEvent(Fiber.current)
     if (_tickMs != null) Timer.trigger(Fiber.current, _tickMs)
     var ev = Fiber.yield()
-    if (ev is KeyEvent)     dispatchKey_(ev)
-    if (ev is MouseEvent)   dispatchMouse_(ev)
-    if (ev is TimerElapsed) onTick_()
+    if (ev is KeyEvent) {
+      dispatchKey_(ev)
+      return
+    }
+    if (ev is MouseEvent) {
+      dispatchMouse_(ev)
+      return
+    }
+    if (ev is TimerElapsed) {
+      onTick_()
+      return
+    }
+    // Posted via post() / Input.wake — anything that isn't an input
+    // or timer event.  The redraw at the top of the *next* drainOnce_
+    // already gives us the "wake to repaint" semantics; onPost is for
+    // callers that want to inspect the value too.  The WakeOnly
+    // sentinel means "no payload"; skip the user handler in that case.
+    if (ev != WakeOnly.instance && _onPost != null) _onPost.call(ev)
   }
 
   // Synchronous-mode drain: paint, block on Input.next(), dispatch.
@@ -350,9 +414,11 @@ class App {
     _runMode  = "async"
     _running  = true
     _backdrop = null            // recapture screen on first paint
+    _runFiber = null            // captured by drainOnce_'s first iter
     while (_running) drainOnce_()
     _runMode  = null
     _backdrop = null
+    _runFiber = null
     teardownCursor_()
     Input.mouseEvents = savedMouse
   }

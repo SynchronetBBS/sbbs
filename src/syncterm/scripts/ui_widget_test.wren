@@ -80,6 +80,7 @@ class UiWidgetTest {
     testContainerFocusSkipsNonFocusable_()
     testContainerFocusEmptyNoOp_()
     testContainerFocusNoFocusableNoOp_()
+    testContainerFocusSingleFocusableReturnsFalse_()
 
     // Container — event routing
     testContainerHandleRoutesToFocused_()
@@ -375,6 +376,30 @@ class UiWidgetTest {
     c.add(b)
     check_(!c.focusNext() && c.focusedChild == null,
            "Container.focusNext: no focusable child, no-op")
+  }
+
+  // Single focusable child → focusNext/focusPrev must return false so
+  // the parent Container can route Tab upward.  Without this, a
+  // nested Pane with one child traps Tab inside itself.
+  static testContainerFocusSingleFocusableReturnsFalse_() {
+    var c = Container.new()
+    var a = Probe.new()
+    a.focusable = false
+    var b = Probe.new()       // the one focusable child
+    var d = Probe.new()
+    d.focusable = false
+    c.add(a)
+    c.add(b)
+    c.add(d)
+    // First focusNext finds b (was unfocused) — ok, returns true.
+    // Now we're focused on the only focusable child; the next call
+    // must return false so the Tab bubbles to the parent.
+    var moved = c.focusNext()
+    check_(moved == false && c.focusedChild == b,
+           "Container.focusNext: single focusable returns false, focus stays")
+    var movedBack = c.focusPrev()
+    check_(movedBack == false && c.focusedChild == b,
+           "Container.focusPrev: single focusable returns false, focus stays")
   }
 
   // ----- Container — event routing --------------------------------

@@ -97,6 +97,11 @@ class Pane is Container {
   }
   helpButtonRect_ {
     if (!_helpable || bounds == null) return null
+    // Only show [?] when help is actually wired — either a
+    // pane-specific onHelp callback, or this widget has helpText
+    // App.showHelp can find when it walks the focused chain.  A
+    // visible button that does nothing is worse than no button.
+    if (_onHelp == null && helpText == null) return null
     var x = _closeable ? 4 : 1
     if (bounds.w < x + 4) return null
     return Rect.new(x, 0, 3, 1)

@@ -52,6 +52,8 @@ class WrenTest {
     __pending          = null
     __nextEventResult  = null
     __timerResult      = null
+    __wakeResult       = null
+    __wakeStringResult = null
     // Fiber that parks on Input.nextEvent and stores the resumption
     // value.  Started + unget'd at T06 so the earlier sentinel-driven
     // tests don't get their input claimed by the parked fiber.  The
@@ -69,6 +71,17 @@ class WrenTest {
     __timerFiber       = Fiber.new {
       Timer.trigger(Fiber.current, 0)
       __timerResult = Fiber.yield()
+    }
+    // Fibers that park on plain `Fiber.yield()` (no registration on
+    // the input or timer queues).  Input.wake should still be able
+    // to resume them via the result-queue path.  One captures a
+    // KeyEvent (a foreign object), one captures a String — both
+    // exercise the WrenHandle pin/release in the wake payload.
+    __wakeFiber        = Fiber.new {
+      __wakeResult = Fiber.yield()
+    }
+    __wakeStringFiber  = Fiber.new {
+      __wakeStringResult = Fiber.yield()
     }
     // Register the test's hooks fresh each run; cleanup_() removes
     // them at end-of-suite so they don't keep firing once the
@@ -781,6 +794,18 @@ class WrenTest {
       Input.unget(KeyEvent.new(0xFD00))
       __pending = "T06"
       Conn.send("sleep 0.2 && printf '__\%s_X_done_X__\\n' T06\r")
+    } else if (__step == 7) {
+      // Input.wake end-to-end.  Park two fibers on plain Fiber.yield
+      // (neither registered with Input.nextEvent or Timer.trigger),
+      // then fire wake on each with a different value type.  The
+      // result-queue drain should resume both fibers with their
+      // respective values before the wallclock sentinel returns.
+      __wakeFiber.call()
+      __wakeStringFiber.call()
+      Input.wake(__wakeFiber, KeyEvent.new(0xFC00))
+      Input.wake(__wakeStringFiber, "wake-payload")
+      __pending = "T07"
+      Conn.send("sleep 0.2 && printf '__\%s_X_done_X__\\n' T07\r")
     } else {
       report_()
     }
@@ -802,6 +827,8 @@ class WrenTest {
       check_(value == "done", "T05 sleep+sentinel for timer/key tests")
     } else if (name == "06") {
       check_(value == "done", "T06 sleep+sentinel for result-queue test")
+    } else if (name == "07") {
+      check_(value == "done", "T07 sleep+sentinel for Input.wake test")
     } else {
       check_(false, "T%(name) unexpected sentinel")
     }
@@ -861,6 +888,18 @@ class WrenTest {
     // contract for replace).
     check_(__lfReplaceCount > 0,
            "Hook.onInput String return (LF->CRLF) fired off the wire")
+
+    // Input.wake delivers a queued resumption to a parked fiber via
+    // the same result-queue path Input.nextEvent and Timer.trigger
+    // use.  Two probes: one with a foreign KeyEvent value (exercises
+    // the WrenHandle pin/release across types), one with a plain
+    // String.  By T07's wallclock sentinel the drain must have
+    // resumed both fibers and stored the values in their respective
+    // captures.
+    check_(__wakeResult is KeyEvent && __wakeResult.code == 0xFC00,
+           "Input.wake delivers a foreign value to parked fiber")
+    check_(__wakeStringResult == "wake-payload",
+           "Input.wake delivers a String value to parked fiber")
 
     var total = __pass + __fail
     System.print("=== wrentest: %(total) tests, %(__pass) pass, %(__fail) fail ===")

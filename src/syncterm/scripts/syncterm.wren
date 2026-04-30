@@ -166,6 +166,31 @@ foreign class Input {
   //   }
   foreign static nextEvent(fiber)
 
+  // Queue a synthetic resume of `fiber`, delivering `value` as the
+  // return of `Fiber.yield()`.  The wake is enqueued on the same
+  // result queue Input.nextEvent and Timer.trigger use, so it's
+  // delivered on the next main-loop drain — never in the middle of
+  // the current foreign call.  Safe to call from Hook.onInput,
+  // Hook.onMouse, Hook.onStatus, etc., which is the whole point:
+  // remote bytes (or any other state change a hook observes) can
+  // wake a UI fiber that's parked on Input.nextEvent.
+  //
+  // `value` may be any Wren object — the deliverer pins it as a
+  // WrenHandle until delivery, then loads it into the fiber's
+  // resumed value slot.  Convention: pass a discriminated value
+  // your fiber's main-loop demuxer can recognise (a foreign
+  // KeyEvent / MouseEvent class, or your own sentinel).
+  //
+  // Multiple wakes can be queued for the same fiber; each becomes
+  // one resumption.  Calling `wake` does NOT wait for delivery —
+  // the caller's foreign returns immediately and the hook chain
+  // completes synchronously, satisfying the hook contract.
+  //
+  // Do not call from inside another foreign method that itself
+  // re-enters wrenCall (same rule as wrenCall in §7 of wren.md);
+  // hooks are the canonical safe site.
+  foreign static wake(fiber, value)
+
   static unget(ev) {
     if (ev is KeyEvent) {
       Input.ungetKey_(ev)

@@ -666,6 +666,7 @@ static const struct binding BINDINGS[] = {
 	{ "Input",  true,  "next(_)",             fn_Input_next_ms            },
 	{ "Input",  true,  "poll()",              fn_Input_poll               },
 	{ "Input",  true,  "nextEvent(_)",        fn_Input_nextEvent          },
+	{ "Input",  true,  "wake(_,_)",           fn_Input_wake               },
 	{ "Input",  true,  "ungetKey_(_)",        fn_Input_ungetKey_          },
 	{ "Input",  true,  "ungetMouse_(_)",      fn_Input_ungetMouse_        },
 	{ "Input",  true,  "mousedrag()",         fn_Input_mousedrag          },

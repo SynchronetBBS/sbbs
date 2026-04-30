@@ -356,10 +356,11 @@ class Container is Widget {
   focusNext() { focusStep_(1) }
   focusPrev() { focusStep_(-1) }
 
-  // Step focus by `dir` (+1 / -1), wrapping, skipping non-focusable
-  // children.  Returns true if focus moved (or stayed, if there's
-  // exactly one focusable child).  False when no focusable child
-  // exists at all.
+  // Step focus by `dir` (+1 / -1), skipping non-focusable children.
+  // Returns true when focus actually moved to a *different* child.
+  // Returns false when the only focusable child is already focused
+  // (so the parent Container can route the Tab upward) OR when no
+  // focusable child exists at all.
   //
   // Uses a counter-based termination — visit at most `n` children,
   // bailing when none are focusable.  An earlier "wrap-back to
@@ -381,6 +382,13 @@ class Container is Widget {
     var visited = 0
     while (visited < n) {
       if (_children[i].focusable) {
+        if (i == _focusedIndex) {
+          // Wrapped back to the same child — there's no *other*
+          // focusable child to receive focus.  Returning false lets
+          // the parent Container's handle() see the Tab and try
+          // focusNext at the next layer up.
+          return false
+        }
         if (_focusedIndex >= 0 && _focusedIndex < n) {
           _children[_focusedIndex].focused = false
         }

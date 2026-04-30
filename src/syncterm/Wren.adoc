@@ -50,6 +50,599 @@ Save this as `hello.wren` in the SyncTERM scripts directory (see
 <<script-loading>>), connect to any BBS, and press F1.  Open the
 console with Ctrl+&#96; to see the output.
 
+== Wren Language Reference [[wren-language]]
+
+A compact reference for the Wren syntax SyncTERM scripts use.  Full
+upstream documentation at https://wren.io/.  Key facts up front:
+Wren is single-threaded and cooperative (concurrency via fibers, no
+threads); whitespace-significant (newline terminates statements; no
+`;` token); class-based with single inheritance; dynamically typed.
+
+=== Comments
+
+[source,wren]
+----
+// Line comment.
+/* Block comment, /* nested */ blocks ok. */
+----
+
+=== Literals
+
+[cols="1m,3"]
+|===
+| `true` `false`        | Booleans.
+| `null`                | The single null value.
+| `123` `0xFF` `1.5e3`  | Numbers.  All numeric values are 64-bit floats; `0x` for hex; underscores `1_000_000` for digit grouping.
+| `"hello"`             | String literal.  Escapes: `\\` `\"` `\n` `\r` `\t` `\0` `\xNN` `\uNNNN` `\UNNNNNNNN`.
+| `"got %(x)"`          | String interpolation: `%(expr)` evaluates `expr` and inserts its `toString`.
+| `[1, 2, 3]`           | List literal.
+| `{"a": 1, "b": 2}`    | Map literal.
+| `1..5`                | Half-open Range (1, 2, 3, 4 — excludes 5).
+| `1\...5`              | Closed Range (1, 2, 3, 4, 5 — includes 5).
+|===
+
+=== Statement Termination
+
+Newlines separate statements.  *There is no `;` token at all.*  Two
+statements on one line is a compile error.  This trips up developers
+coming from C / JS / Python regularly.
+
+[source,wren]
+----
+var x = 1                  // ok
+var x = 1 ; var y = 2      // ERROR: Invalid character ';'
+----
+
+Two consequences of the same rule:
+
+* *Ternaries can't span lines.*  `cond ? a : b` must be on one line —
+  the then-branch terminates at a newline before the `:`.
+* *`else` after a newline-ended `if` body is a syntax error.*  `if (c)
+  body` whose body sits on the same line as the `if` ends at the
+  newline; an `else` on the next line is orphaned.  Either brace each
+  branch (so `else` follows `}`) or put the whole chain on one line.
+
+[source,wren]
+----
+if (a == "x") foo() else bar()      // single-line, ok
+if (a == "x") {                     // braced, ok
+  foo()
+} else {
+  bar()
+}
+if (a == "x") foo()                 // ERROR: 'else' is orphaned
+else bar()
+----
+
+=== Variables
+
+[source,wren]
+----
+var x = 1                  // declare and initialize
+x = 2                      // reassign
+----
+
+Block-scoped (everything between `{` and `}`).  Shadowing in inner
+scopes is allowed.  Top-level `var` at module scope is a module-level
+binding (importable from other modules).  Declaration is required
+before use; there is no auto-vivification.
+
+=== Operators
+
+Arithmetic: `+ - * / %` (modulo follows the dividend's sign), unary
+`-` and `+`.  Comparison: `< <= > >= == !=`.  Logical: `&& || !` —
+short-circuit, return one of their operands (not coerced to Bool).
+Bitwise: `& | ^ << >> ~` — operate on integers (Wren truncates to
+32-bit for the bitwise op).  Range: `..` and `\...`.  Conditional:
+`cond ? a : b` (one line).  Type test: `obj is Class`.
+
+The `..` / `\...` operators bind tighter than method calls, so write
+`(0\...list.count)` not `0\...list.count` when chaining.
+
+=== Control Flow
+
+[source,wren]
+----
+if (cond) {
+  ...
+} else if (cond2) {
+  ...
+} else {
+  ...
+}
+
+while (cond) {
+  ...
+}
+
+for (item in iterable) {
+  ...
+}
+
+break        // exit innermost loop
+continue     // next iteration
+return v     // return from method/function
+----
+
+`for (x in seq) {}` works on anything implementing `iterate(prev)`
+and `iteratorValue(iter)` — Lists, Maps (yields keys), Strings (yields
+codepoint substrings), Ranges, and your own classes.
+
+=== Functions and Closures
+
+Wren has no top-level `function` keyword.  Functions are closures
+created with `Fn.new`:
+
+[source,wren]
+----
+var add = Fn.new {|a, b| a + b }
+var n   = add.call(3, 4)            // 7
+
+var greet = Fn.new {
+  System.print("hi")
+}
+greet.call()
+----
+
+Block syntax `{ ... }` after a method name passes a closure as the
+last argument:
+
+[source,wren]
+----
+list.map {|x| x * 2 }        // map(_) takes a Fn
+----
+
+*Single-line `{ expr }` returns `expr` implicitly; multi-line bodies
+return `null` unless an explicit `return` is hit.*  This applies
+uniformly to `Fn.new`, `Fiber.new`, getters, methods, and operator
+overloads.  The inverse is also true: `{ return expr }` on a single
+line is a compile error — single-line bodies are expression-mode,
+and `return` is a statement.
+
+[source,wren]
+----
+foo() { 42 }                 // ok — implicit return
+foo() {                      // multi-line — last expression NOT returned
+  var x = 1
+  x + 1                      // discarded; foo() returns null
+}
+foo() {                      // ok — explicit return
+  var x = 1
+  return x + 1
+}
+foo() { return 42 }          // ERROR: single-line, return not allowed
+----
+
+=== Classes
+
+Single inheritance, no abstract classes, no interfaces.  All fields
+are private to the declaring class (see "Field scope" below).
+
+[source,wren]
+----
+class Animal {
+  construct new(name) {
+    _name = name
+  }
+
+  name { _name }                          // getter
+  name=(s) { _name = s }                  // setter
+
+  speak() {                               // method
+    System.print("%(_name) makes a sound")
+  }
+
+  static kingdom { "Animalia" }           // static getter
+  static spawn(n)  { Animal.new(n) }      // static method
+
+  // Operators: + - * / % - (prefix) ! < > <= >= == [_] [_]=(_)
+  +(other) { _name + other.name }
+}
+
+class Dog is Animal {
+  construct new(name, breed) {
+    super(name)                           // call super constructor
+    _breed = breed
+  }
+
+  speak() {                               // override
+    System.print("%(name) barks")
+  }
+
+  describe() {
+    super.speak()                         // call super method
+    System.print("It's a %(_breed)")
+  }
+}
+----
+
+==== Field scope
+
+Field references (`_name`, `__static`) resolve against the *class
+currently being compiled*, not the inheritance chain.  A subclass'
+`_x` is a brand-new slot, not the parent's `_x`.  Cross class
+boundaries via getters/setters:
+
+[source,wren]
+----
+class Widget {
+  construct new() { _surface = null }
+  surface { _surface }                    // expose to subclasses
+}
+class Pane is Widget {
+  paint() {
+    var s = surface                       // ok — uses getter
+    var t = _surface                      // BUG: brand-new field, null
+  }
+}
+----
+
+Symptom of getting it wrong: `Null does not implement 'X(_,_)'`
+errors from subclass methods reading "the parent's" field.
+
+==== Naming
+
+* `_name` — instance field.  Only legal inside a class body; the
+  parser rejects it elsewhere.
+* `__name` — static field.  Same scoping rule.
+* `name_` (trailing underscore) — convention for "class-private"
+  methods.  Not enforced by the language; a strong project hint.
+
+==== Foreign methods and classes
+
+`foreign` declarations bind to host C code:
+
+[source,wren]
+----
+class Codepage {
+  foreign static encodes_(s)              // host-implemented static
+  foreign instance_method(arg)            // host-implemented instance
+}
+
+foreign class Cell {                      // host owns instance allocation
+  foreign ch
+  foreign ch=(s)
+}
+----
+
+A class needs `foreign class` only when the host allocates instance
+data; a plain `class` with `foreign static` methods is fine for
+namespace-style bindings (see `Codepage`, `Hook`).
+
+==== Type checks
+
+`obj is Class` returns true if `Class` is in the object's class
+chain.  Compiles to `obj.is(Class)`.  You *can* override `is`, but
+you cannot delegate to the default via `super.is(c)` — `is` is a
+reserved keyword and `super.` requires an identifier after it.
+Override only if the foreign genuinely implements every method of
+the claimed class.
+
+=== Fibers
+
+Fibers are first-class coroutines.  *Wren is single-threaded and
+cooperative*; concurrency comes from yielding fibers, not threads.
+There is no `await`, no Promise, no scheduler — the fiber handle IS
+the resumption token.
+
+[source,wren]
+----
+var f = Fiber.new {
+  System.print("a")
+  Fiber.yield()                  // suspend; control returns to .call() caller
+  System.print("b")
+}
+f.call()                          // prints "a", returns when fiber yields
+f.call()                          // prints "b", fiber finishes
+
+// .yield(v) returns v from the .call() that resumed the fiber:
+var g = Fiber.new {
+  while (true) {
+    var x = Fiber.yield(42)       // yield 42, get next call's arg as x
+    System.print(x)
+  }
+}
+g.call()                          // returns 42
+g.call("hi")                      // prints "hi", returns 42
+g.call("yo")                      // prints "yo", returns 42
+
+// .try() catches abort:
+var h = Fiber.new { Fiber.abort("boom") }
+var err = h.try()                 // err == "boom"; h.error == "boom"
+----
+
+`Fiber.yield(v)` transfers to the *immediate* `.call()` caller — a
+child fiber yielding inside a hook body returns control to the hook
+body, NOT up to the dispatcher.  This is what makes
+`Fiber.new { ... }.call()` from inside a hook safe.
+
+For host-driven async: a foreign method captures `Fiber.current`
+from a slot and returns; the host arranges to call `.call(_)` on
+the captured handle later.  See <<modal-input,Modal Input>> for the
+canonical example.
+
+=== Modules and Imports
+
+[source,wren]
+----
+import "module"                   // load module, no symbols imported
+import "module" for Name          // import a single symbol
+import "module" for A, B, C       // multiple
+import "module" for Name as Alias // rename on import
+----
+
+Module names are strings; the host resolves them.  In SyncTERM,
+modules are looked up in (1) embedded scripts (compiled in), (2) the
+user script directory.  A user file `myhelper.wren` in the script
+dir is importable as `import "myhelper"`.
+
+=== Common Pitfalls
+
+A checklist of mistakes that catch every new Wren author at least
+once.  Most are consequences of rules above; this section gives them
+a single place to look up.
+
+* *Semicolons.*  Wren has no `;`.  Every separator is a newline.
+* *Multi-line bodies don't auto-return.*  Use explicit `return`.
+* *Single-line `{ return x }` is a syntax error.*  Drop `return`.
+* *Ternaries on one line only.*  Split via `if/else` or pre-compute.
+* *`else` must follow `}` on the same line, or chain on one line.*
+* *Subclass `_field` is NOT the parent's.*  Use getters/setters.
+* *`String.count` is codepoints; `s[i]` and `s[a\...b]` are bytes.*
+  Mixing them silently truncates UTF-8 strings.  For byte iteration
+  use `s.bytes.count`.
+* *String `<` `>` `<=` `>=` are not defined.*  `list.sort()` on
+  strings aborts; pass an explicit byte-wise comparator.
+* *Wren modulo follows the dividend's sign.*  `-1 % 5` is `-1`, not
+  `4`.  For positive-modulo, write `((x % n) + n) % n`.
+* *`foreign class` is for instance allocation only.*  Use plain
+  `class` with `foreign static` for namespace bindings.
+* *No `async` / `await` / scheduler.*  Use fibers and `Fiber.yield`.
+
+== Wren Standard Library [[wren-stdlib]]
+
+The built-in classes Wren provides without any host bindings.  These
+are always available, no `import` needed.  Many are mixin-aware via
+the `Sequence` protocol, so iteration and transformation methods
+work on Lists, Maps, Ranges, Strings, and your own classes that
+implement `iterate` / `iteratorValue`.
+
+=== System
+
+Static-only namespace for I/O and timing.
+
+[cols="2m,3"]
+|===
+| `System.print()`        | Print a blank line.
+| `System.print(value)`   | Print `value.toString` followed by newline.
+| `System.printAll(seq)`  | Print each item in `seq`, one per line.
+| `System.write(value)`   | Print `value.toString`, no newline.
+| `System.writeAll(seq)`  | Like `printAll` without newlines.
+| `System.clock`          | Wall-clock time in seconds since process start, as Num.
+|===
+
+=== Object
+
+Root of every class hierarchy.  Every value responds to:
+
+[cols="2m,3"]
+|===
+| `obj == other`     | Identity by default; classes can override.
+| `obj != other`     | Negation of `==`.
+| `obj.hash`         | Hash code, integer.
+| `obj.is(class)`    | Type check; same as `obj is class`.
+| `obj.toString`     | Default returns `"instance of <Class>"`.  Override for nicer output.
+| `obj.type`         | Returns the object's class.
+| `!obj`             | Boolean negation.  Falsy values are `false` and `null` only — every other value (including `0` and `""`) is truthy.
+|===
+
+=== Class
+
+The class of all classes.  Useful properties:
+
+[cols="2m,3"]
+|===
+| `Cls.name`       | String name of the class.
+| `Cls.supertype`  | Parent class, or `Object` for `Object` itself.
+| `Cls.toString`   | The class name.
+|===
+
+=== Bool
+
+`true` and `false`.  Has `toString` (returns `"true"` / `"false"`)
+and the standard `!` `&&` `||` operators (the latter two short-
+circuit and return one of the operands, not a coerced Bool).
+
+=== Null
+
+The single value `null`.  `!null` is `true`; everything else
+(`null.toString`, `null == null`) does what you'd expect.
+
+=== Num
+
+All numeric values are 64-bit floats.  No separate integer type; the
+language calls something an "integer" when it has no fractional
+part.  Mathematical method-style helpers:
+
+[cols="2m,3"]
+|===
+| `Num.pi`                                     | π.
+| `Num.infinity`                               | +∞.
+| `Num.largest`, `Num.smallest`                | Max / min finite double.
+| `Num.maxSafeInteger`, `Num.minSafeInteger`   | Range of exact-integer doubles (±2⁵³−1).
+| `n.abs`                                      | Absolute value.
+| `n.ceil`, `n.floor`, `n.round`, `n.truncate` | Round-modes.
+| `n.sqrt`                                     | Square root.
+| `n.sin`, `n.cos`, `n.tan`                    | Trig (radians).
+| `n.asin`, `n.acos`, `n.atan`                 | Inverse trig.
+| `n.atan(x)`                                  | atan2(self, x).
+| `n.log`, `n.log2`, `n.exp`                   | Natural log, log base 2, eˣ.
+| `n.pow(p)`                                   | nᵖ.
+| `n.min(other)`, `n.max(other)`               | Pairwise min / max.
+| `n.clamp(lo, hi)`                            | Clamp into `[lo, hi]`.
+| `n.fraction`                                 | Fractional part.
+| `n.sign`                                     | -1 / 0 / +1.
+| `n.isInteger`, `n.isInfinity`, `n.isNan`     | Predicates.
+| `n.toString`                                 | Decimal string.
+| `n & m`, `n \| m`, `n ^ m`, `~n`             | Bitwise (truncated to 32-bit).
+| `n << k`, `n >> k`                           | Bit shifts (also 32-bit).
+|===
+
+=== String
+
+Immutable Unicode string, stored as UTF-8.  *`s.count` is codepoint
+count; `s[i]` and `s[a\...b]` are byte-indexed.*  This pair of facts
+is the single most insidious Wren string trap — see <<wren-language,
+Common Pitfalls>>.  For byte work, use `s.bytes`.
+
+[cols="2m,3"]
+|===
+| `s.count`                          | Codepoint count.
+| `s.isEmpty`                        | True iff `count == 0`.
+| `s.bytes`                          | A `Sequence` view yielding each byte as a Num.
+| `s.codePoints`                     | A `Sequence` view yielding each codepoint as a Num.
+| `s[i]`                             | Codepoint substring starting at *byte* index `i`.  If `i` is mid-codepoint, returns the raw byte.
+| `s[a..b]`, `s[a\...b]`             | Byte-ranged substring.  Negative indices count from the end.
+| `s + other`                        | Concatenation.
+| `s * n`                            | Repeat `n` times.
+| `s.indexOf(needle)`                | Byte index of first match, or `-1`.
+| `s.indexOf(needle, start)`         | Byte index of match at-or-after `start`.
+| `s.contains(needle)`               | Substring presence.
+| `s.startsWith(prefix)`             | Prefix check.
+| `s.endsWith(suffix)`               | Suffix check.
+| `s.replace(old, new)`              | All non-overlapping occurrences.
+| `s.split(separator)`               | List of substrings, separator removed.
+| `s.trim()`, `s.trimStart()`, `s.trimEnd()`             | Strip whitespace.
+| `s.trim(chars)`, `s.trimStart(chars)`, `s.trimEnd(chars)` | Strip any chars in the supplied string.
+| `s.iterate(prev)`, `s.iteratorValue(iter)`             | `Sequence` protocol: yields one codepoint substring per step.
+| `s.toString`                       | The string itself.
+| `String.fromByte(n)`               | Single-byte string.
+| `String.fromCodePoint(cp)`         | Encode a codepoint as UTF-8 string.
+|===
+
+=== List
+
+Mutable, ordered, dynamic-length, heterogeneous.
+
+[cols="2m,3"]
+|===
+| `List.new()`                       | Empty list.
+| `List.filled(size, value)`         | Pre-fill `size` copies of `value`.
+| `[a, b, c]`                        | Literal.
+| `list.count`                       | Length.
+| `list.isEmpty`                     | True iff empty.
+| `list[i]`, `list[i] = v`           | Access / replace; negatives count from the end.
+| `list[a..b]`, `list[a\...b]`       | Slice (returns a new List).
+| `list.add(v)`                      | Append.
+| `list.addAll(seq)`                 | Append every item of `seq`.
+| `list.insert(i, v)`                | Insert `v` at index `i`.
+| `list.remove(v)`                   | Remove first occurrence; returns true if removed.
+| `list.removeAt(i)`                 | Remove and return element at `i`.
+| `list.clear()`                     | Empty the list.
+| `list.indexOf(v)`                  | Index of first match, or `-1`.
+| `list.contains(v)`                 | Membership.
+| `list.sort()`                      | In-place sort with `<`.  Aborts on Strings (no `<` defined) — pass a comparator.
+| `list.sort {\|a, b\| a < b }`      | In-place sort with a custom comparator.
+| `list.swap(i, j)`                  | In-place swap.
+| `list.iterate(prev)`, `list.iteratorValue(iter)` | Sequence protocol.
+| `list.toString`                    | `"[a, b, c]"`.
+|===
+
+=== Map
+
+Mutable hash map.  Keys may be any hashable value (Num, String,
+Bool, Null, Range, or Class — *not* List, Map, or arbitrary
+instance).  Iteration yields keys.
+
+[cols="2m,3"]
+|===
+| `Map.new()`                        | Empty map.
+| `{"a": 1, "b": 2}`                 | Literal.
+| `m.count`                          | Number of pairs.
+| `m.isEmpty`                        | Empty?
+| `m[k]`, `m[k] = v`                 | Access / set.  Missing key returns `null`.
+| `m.containsKey(k)`                 | Distinguishes "missing" from "value is null".
+| `m.remove(k)`                      | Remove and return the old value (or `null`).
+| `m.clear()`                        | Empty the map.
+| `m.keys`, `m.values`               | `Sequence` views (lazy).
+| `m.iterate(prev)`, `m.iteratorValue(iter)` | Sequence protocol; iterating yields keys.
+| `m.toString`                       | `"{a: 1, b: 2}"`.
+|===
+
+=== Range
+
+Created via the `..` (half-open) and `\...` (closed) operators on
+Nums.  Lazy — values are produced on iteration.
+
+[cols="2m,3"]
+|===
+| `r.from`                | Lower bound.
+| `r.to`                  | Upper bound.
+| `r.min`, `r.max`        | Bounds normalised regardless of direction.
+| `r.isInclusive`         | True for `\...`, false for `..`.
+| `r.count`               | Number of values.
+| `for (i in r) {}`       | Iterate.
+|===
+
+Reverse ranges are valid: `5..0` walks 5, 4, 3, 2, 1.
+
+=== Sequence (mixin)
+
+The base "iterable" protocol.  `Sequence` itself isn't usually
+instantiated; List, Map, Range, String, and your own classes that
+implement `iterate(prev)` and `iteratorValue(iter)` inherit its
+methods.  Most are lazy where it makes sense.
+
+[cols="2m,3"]
+|===
+| `seq.all { fn }`                | True iff `fn(item)` is truthy for every item.
+| `seq.any { fn }`                | True iff any item passes.
+| `seq.contains(value)`           | Membership via `==`.
+| `seq.count`                     | Eager count.
+| `seq.count { fn }`              | Items where `fn(item)` is truthy.
+| `seq.each { fn }`               | Apply `fn` for side-effects.
+| `seq.isEmpty`                   | True iff `count == 0`.
+| `seq.join()`                    | Concatenate all items' `toString`.
+| `seq.join(sep)`                 | …with `sep` between consecutive items.
+| `seq.map { fn }`                | Lazy mapped sequence.
+| `seq.where { fn }`              | Lazy filtered sequence.
+| `seq.skip(n)`, `seq.take(n)`    | Lazy.
+| `seq.reduce { \|a, b\| ... }`   | Fold from first item.
+| `seq.reduce(seed) { \|a, b\| }` | Fold from `seed`.
+| `seq.toList`                    | Materialise into a List.
+|===
+
+=== Fiber
+
+First-class coroutines.
+
+[cols="2m,3"]
+|===
+| `Fiber.new { ... }`           | Create a paused fiber whose body is the closure.
+| `Fiber.current`               | The fiber currently running.
+| `f.call()`, `f.call(value)`   | Resume `f`; the value is the return of the *most recent* `Fiber.yield` inside `f`.
+| `f.transfer()`, `f.transfer(value)` | Like call, but does not record this fiber as the resumer; cannot be returned to via `Fiber.yield`.
+| `f.transferError(err)`        | Resume `f` with `err` raised inside it.
+| `f.try()`, `f.try(value)`     | Like `call`, but if `f` aborts the abort is caught and `f.error` is set.
+| `f.isDone`                    | True after the body returns or aborts.
+| `f.error`                     | The abort message if `try` caught one, else `null`.
+| `Fiber.yield()`               | Suspend; control returns to the most recent `.call()` caller.
+| `Fiber.yield(value)`          | …passing `value` as the return of that `.call()`.
+| `Fiber.abort(err)`            | Raise `err` in the current fiber.  Caller's `.try()` catches it.
+|===
+
+=== Fn
+
+A callable closure.  `Fn.new { ... }` is the only constructor.
+
+[cols="2m,3"]
+|===
+| `Fn.new { ... }`        | Build from a closure literal.
+| `f.call()`              | Invoke with no args.
+| `f.call(a, b, ...)`     | Invoke with args (up to 16).
+| `f.arity`               | Declared parameter count.
+|===
+
 == Script Loading [[script-loading]]
 
 === Script Directory
@@ -1059,6 +1652,18 @@ two-phase split.
   caller yields to wait; resumes with `KeyEvent` or `MouseEvent`.
   Throws if another fiber is already registered.  See
   <<modal-input,Modal Input>>.
+
+| `Input.wake(fiber, value)`
+| Queue `value` to be delivered to `fiber` via the same result queue
+  `Input.nextEvent` and `Timer.trigger` use.  Safe to call from
+  inside a hook body — only enqueues; the resume happens on the next
+  main-loop drain.  The canonical use case is a network-driven app
+  where `Hook.onInput` wants to wake a UI fiber that's parked on
+  `Input.nextEvent` so the screen repaints when remote bytes change
+  visible state.  Multiple wakes queue up; each becomes one
+  resumption.  Do NOT call from inside another foreign method whose
+  caller is about to re-enter wrenCall (same rule as wrenCall itself
+  — see wren.md §7).
 |===
 
 === KeyEvent
@@ -2568,7 +3173,67 @@ Methods of interest:
 * `showHelp()` — walks from the focused leaf up the parent chain to
   the first widget with `helpText` set, then opens a `Help` dialog
   with that text.  No-op if nothing in the chain has help.
+* `post()` / `post(value)` — wake the App's parked fiber from
+  outside the input / timer paths.  See "Externally-driven repaint"
+  below.
+* `onPost=(fn)` — handler for posted values that aren't the
+  no-payload sentinel.  See below.
 * `theme=` — install a custom Theme (see <<ui-theme,Theme>>).
+
+==== Externally-driven repaint [[ui-app-post]]
+
+The async `run()` parks on `Input.nextEvent`, so by default only
+keyboard / mouse / `Timer.trigger` can wake the App.  A
+network-driven app (chat client, ticker, log viewer fed by remote
+bytes) needs a way for `Hook.onInput` to nudge the UI without
+faking a key press.  That's what `post` is for:
+
+[source,wren]
+----
+import "syncterm" for Hook
+import "ui_app"   for App
+
+var app   = App.new()
+// ... build widget tree ...
+
+Hook.onInput { |b|
+  buffer.add(b)              // mutate state
+  someWidget.markDirty()      // mark UI as needing repaint
+  app.post()                  // wake the App so drainOnce_ runs again
+  return false
+}
+
+app.run()
+----
+
+`app.post()` queues a fiber resumption with a no-payload sentinel;
+the next main-loop drain delivers it, `drawAll_` runs at the top of
+`drainOnce_`, and the dirty widget repaints.  The hook returns
+synchronously — `post` only enqueues, satisfying the
+hooks-must-run-synchronously rule.
+
+`app.post(value)` carries an arbitrary Wren value.  When a non-
+sentinel value arrives, `onPost` (if set) is called with it after
+the redraw.  Pass anything you can recognise:
+
+[source,wren]
+----
+app.onPost = Fn.new {|v|
+  if (v is String && v == "irc.PRIVMSG") chatPane.scrollToBottom()
+}
+
+Hook.onInput { |b|
+  // ...parse, accumulate...
+  if (gotPrivmsg) app.post("irc.PRIVMSG")
+  return false
+}
+----
+
+`post` is a no-op when the App isn't running (no parked fiber).
+It's not supported under `runSync` — the synchronous variant blocks
+on `Input.next()` at the C level, not on `Fiber.yield`, so a wake
+through the result queue won't reach it.  Use `run()` for any app
+that needs external wake-ups.
 
 `App` is not itself a `Widget` but exposes `effectiveTheme` and
 `markDirty()` so widget tree-walks can terminate at it.  Setting a
@@ -2758,7 +3423,7 @@ c.onChange = Fn.new {|v| /* ... */ }
 
 `onChange` fires only when the value actually changes — assigning
 the current value is a no-op.  Theme roles: `checkbox`,
-`checkbox.focused`.  Glyphs reused: `check.on` (`+■+`), `check.off`
+`checkbox.focused`.  Glyphs reused: `check.on` (`+√+` U+221A), `check.off`
 (space).
 
 === RadioGroup [[ui-radio]]
