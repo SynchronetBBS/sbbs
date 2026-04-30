@@ -469,11 +469,11 @@ send_key(WORD keyval)
 
 	if (keyval == 0xffff)
 		return;
-	/* Two bytes for any key with a non-zero high byte — including
-	 * synthetic CIO_KEY_* values whose low byte is 0xE0 (the extended-
-	 * key marker rip_getch reassembles).  Plain ASCII (high byte == 0)
-	 * goes as a single byte. */
-	if (keyval > 0xff) {
+	/* rip_getch reassembles when the first byte is 0x00 or 0xE0;
+	 * everything else is plain ASCII.  ScanCodes entries pack scancode
+	 * in the high byte and ASCII in the low byte (e.g. Enter is 0x1c0d),
+	 * so the magnitude isn't a safe discriminator — the low byte is. */
+	if ((keyval & 0xff) == 0 || (keyval & 0xff) == 0xe0) {
 		buf[0] = keyval & 0xff;
 		buf[1] = (keyval >> 8) & 0xff;
 		write(wl_key_pipe[1], buf, 2);

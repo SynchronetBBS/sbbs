@@ -2349,11 +2349,14 @@ x11_event(XEvent *ev)
 								key = cpchar_from_unicode_cpoint(getcodepage(), key, key);
 							if (key == 0xe0)
 								key = CIO_KEY_LITERAL_E0;
-							/* Two bytes for any key with a non-zero high
-							 * byte — including synthetic CIO_KEY_* values
-							 * whose low byte is 0xE0 (the extended-key
-							 * marker rip_getch reassembles). */
-							IGNORE_RESULT(write(key_pipe[1], &key, (key > 0xff) ? 2 : 1));
+							/* rip_getch reassembles when the first byte is
+							 * 0x00 or 0xE0; everything else is plain ASCII.
+							 * ScanCodes entries pack scancode in the high
+							 * byte and ASCII in the low byte (e.g. Enter
+							 * is 0x1c0d), so the magnitude isn't a safe
+							 * discriminator — the low byte is. */
+							IGNORE_RESULT(write(key_pipe[1], &key,
+							    ((key & 0xff) == 0 || (key & 0xff) == 0xe0) ? 2 : 1));
 						}
 						break;
 				}
