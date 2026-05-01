@@ -294,8 +294,9 @@ rx_pkt_append(sftp_rx_pkt_t *pktp, uint8_t *inbuf, uint32_t len)
 		new_sz = offsetof(struct sftp_rx_pkt, len) + pkt->used + len;
 	}
 	if (new_sz > old_sz) {
-		if (new_sz % SFTP_MIN_PACKET_ALLOC)
-			new_sz = new_sz / SFTP_MIN_PACKET_ALLOC + SFTP_MIN_PACKET_ALLOC;
+		size_t remain = new_sz % SFTP_MIN_PACKET_ALLOC;
+		if (remain != 0)
+			new_sz += (SFTP_MIN_PACKET_ALLOC - remain);
 		void *new_buf = realloc(pkt, new_sz);
 		if (new_buf == NULL) {
 			free(pkt);
@@ -334,7 +335,7 @@ grow_tx(sftp_tx_pkt_t *pktp, uint32_t need)
 		zero_used = true;
 	}
 	else {
-		newsz = pkt->used + need;
+		newsz = offsetof(struct sftp_tx_pkt, type) + pkt->used + need;
 		oldsz = pkt->sz;
 	}
 	if (newsz > oldsz) {
@@ -350,8 +351,8 @@ grow_tx(sftp_tx_pkt_t *pktp, uint32_t need)
 		pkt = *pktp;
 		pkt->sz = newsz;
 	}
-	assert(pkt->sz >= pkt->used);
-	assert(pkt->sz >= (pkt->used + need));
+	assert(pkt->sz >= offsetof(struct sftp_tx_pkt, type) + pkt->used);
+	assert(pkt->sz >= offsetof(struct sftp_tx_pkt, type) + pkt->used + need);
 	return true;
 }
 
