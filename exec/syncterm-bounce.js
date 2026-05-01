@@ -283,6 +283,23 @@ function pixel_capability()
 	return ret;
 }
 
+// This function plays sample 2 on the next audio channel, then copies
+// sample 1 to sample 2 for the next playback.
+//
+// It moves to the next channel so multiple can be mixed, playing at the
+// same time (audio clip is short enough that 2 is actually the max, but
+// since we're not playing any other audio, this is fine.
+var last_audio_chan = 2;
+function zip()
+{
+	if (console.cterm_version >= 1327) {
+		w('\x1b_SyncTERM:A;Queue;C='+last_audio_chan+';S=2\x1b\\\x1b_SyncTERM:A;Copy;S=1;D=2\x1b\\');
+		last_audio_chan++;
+		if (last_audio_chan >= 16)
+			last_audio_chan = 2;
+	}
+}
+
 // ===========================================================================
 // Main program
 // ===========================================================================
@@ -571,10 +588,38 @@ else {
 			    '////////////'+
 			    'w==\x1b\\');
 		}
+
 		// Load the PBM mask into the mask buffer.  Unlike LoadPPM which
 		// takes a B= buffer selector, LoadPBM loads into a single shared
 		// mask buffer referenced by the MBUF keyword in draw/paste commands.
 		w('\x1b_SyncTERM:C;LoadPBM;SyncTERM.pbm\x1b\\');
+
+		// Loads a small sound clip into the cache, then loads it
+		// into slot 1 and copies it into slot 2.
+		// It always gets queued from slot 2 then re-copied.
+		if (console.cterm_version >= 1327) {
+			// Load a sound clip into cache
+			m = lst.match(/\nSyncTERM-zip.wav\t([0-9a-f]+)\n/);
+			if (m == null || m[1] !== '6568dcbfab6597e60c7d4388127206c8') {
+				w('\x1b_SyncTERM:C;S;SyncTERM-zip.wav;'+
+					'UklGRgIDAABXQVZFZm10IBAAAAABAAEAESsAABErAAABAAgAZGF0Yd4CAABxfYmTnpiThXhrX2Rp'+
+					'eIaUo5+biXhqW19ldoaWp6ShjXpqW19idISVp6alkH1sW19icYCRoaGhkIBwX2FicYCNm52ej4B0'+
+					'aGhodICJlJWWi4B3bm5ud4CFi4yOhoB9enh3fICAgIGDgYCAgICAgIB+fH19f4CEiYmJhIB6dHNy'+
+					'eoCJkpKTiYB3bGtpdICLl5uekIN0ZWNhbnyJmJ+lloh1Yl9baXeJm6GnmYx3Yl9baHWGmKCnnJJ8'+
+					'ZWBbZnKEl5+nnJJ+amJbZnKCkpqhmI+AcWpia3SAi5KYkoyBeHJscXd/hoqPjImEgHx3enx+gIGD'+
+					'g4OBgICAgIB/fX18foCDhomLhoN+eHRxdXqCi5CWkIuAdW5obHJ/i5WfmJKDdGlfZW19i5ilnpiF'+
+					'dGhbYmh6i5mnop6Jd2hbX2V2hpanpJ+LeGpbX2V1hJWlop+NfWxbX2VzgI+enJuNgHNlZ2l1gIuW'+
+					'lpaLgHdubm53gIWLi4yGgHx4eHh8gICAgYOBgICAgICAgH58fX1/gISJiYiDgHpycnJ6gImSkpOJ'+
+					'gHVqaml1gIyYm56PgHFiYWFxgI6eoaWUg3JhXltrfIyeoqeYiHVhXltpd4mboaeYiXdiX1tpd4eY'+
+					'n6eZjHpoY11qd4STmqGWjH5uaGJsd4KOkpiSi4B3cW1yd3+Gio6LiIJ9end6fH6AgYODg4GAgICA'+
+					'gH99fXx+gIOIiYuGgHx3dHF2fIOLkJaPiX90bmhudYGPl5+YkoBxaF9lbn6Pm6efl4JuZVtiaXyP'+
+					'm6ehm4ZxZlthaHqLmaeinol3aFthaHmJlqOgnop4altiaHeEkZ6cm4t9cGJmanWAi5eVk4mAd25w'+
+					'cXmAho6NjIaAfHh4eHyAgICBg4GAgICAgICAfnx9fX+AhImJiIOAeXFzdHqAiZSSkomAdGhqbHeA'+
+					'jZubm42AcWJiYnGAj56hpZKAcF9eXW6Aj6Gkp5WDcV9cW2t8jA==\x1b\\');
+			}
+			// Load into slot 1, copy into slot 2
+			w('\x1b_SyncTERM:A;Load;S=1;SyncTERM-zip.wav\x1b\\\x1b_SyncTERM:A;Copy;S=1;D=2\x1b\\');
+		}
 
 		// --- Step 3: Query the screen pixel dimensions ---
 		// CSI ? 2 ; 1 S is XTSRGA (XTerm Set or Request Graphics Attribute).
@@ -612,22 +657,26 @@ else {
 			if (pos.x - 4 < 0) {
 				dir.x = 4;
 				pos.x += 4;
+				zip();
 			}
 			// Bounce off right edge (sprite width + 8 for the 4px border
 			// on each side of the mask)
 			if (pos.x + 4 + imgdim.width + 8 >= dim.width) {
 				dir.x = -4;
 				pos.x -= 4;
+				zip();
 			}
 			// Bounce off top edge
 			if (pos.y - 4 < 0) {
 				dir.y = 2;
 				pos.y += 2;
+				zip();
 			}
 			// Bounce off bottom edge
 			if (pos.y + 4 + imgdim.height + 8 >= dim.height) {
 				dir.y = -2;
 				pos.y -= 2;
+				zip();
 			}
 
 			// --- Draw the sprite at its new position ---
