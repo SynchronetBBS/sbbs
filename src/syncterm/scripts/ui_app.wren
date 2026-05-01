@@ -61,6 +61,7 @@ class App {
     _status      = null           // PopStatus overlay or null
     _runFiber    = null           // captured on first drainOnce_; target for post()
     _onPost      = null           // user-supplied posted-value handler
+    _dragHandedOff = false        // see dispatchMouse_ for the belt this catches
     // F1 → context help; user can rebind / unbind freely.
     bind(Key.f1, Fn.new {|k| showHelp() })
   }
@@ -233,7 +234,25 @@ class App {
   //      a button-1 drag-start with no taker hands off to the C-side
   //      `mousedrag` selector so the user gets the standard SyncTERM
   //      rectangle / line-copy UI even while a Wren App is up.
+  //
+  //   mousedrag is synchronous — it spins on getch/getmouse until the
+  //   user releases (the release event fires its `default` arm which
+  //   copies the selection and returns).  conio preserves `startx/y`
+  //   across drag events so we don't have to ungetmouse the start —
+  //   doing so would actually feed BUTTON_1_DRAG_START to mousedrag's
+  //   `default` arm and exit on iteration 1 with an empty selection.
+  //
+  //   `_dragHandedOff` is a defensive belt: if a stray DRAG_END or
+  //   release ever leaks into Wren's queue after mousedrag returned
+  //   (e.g. backend race), we silently absorb it instead of dropping
+  //   it on a widget that isn't expecting it.
   dispatchMouse_(me) {
+    if (_dragHandedOff &&
+        (me.event == Mouse.button1DragEnd ||
+         me.event == Mouse.button1Release)) {
+      _dragHandedOff = false
+      return true
+    }
     var top = modalTop
     if (top is Container) {
       var hit = top.hitTest(me.startX, me.startY)
@@ -242,11 +261,11 @@ class App {
       if (top.handle(me)) return true
     }
     if (me.event == Mouse.button1DragStart) {
-      // Hand the drag-start back to the C-side selector so it sees
-      // the actual press coords + Alt-state in its first getmouse(),
-      // not whatever drag-move fires next.
-      Input.unget(me)
-      Input.mousedrag()
+      // Force rectangular select while a Wren App owns the screen.
+      // Line-mode select makes no sense across widget chrome / cell-
+      // aligned UI; users almost always want a rectangle.
+      Input.mousedrag(true)
+      _dragHandedOff = true
       return true
     }
     return false

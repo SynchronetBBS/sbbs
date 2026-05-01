@@ -1566,8 +1566,11 @@ fn_Screen_writeRect(WrenVM *vm)
 void
 fn_Input_mousedrag(WrenVM *vm)
 {
-	(void)vm;
-	mousedrag(NULL);
+	bool force_rect = false;
+	if (wrenGetSlotCount(vm) > 1 &&
+	    wrenGetSlotType(vm, 1) == WREN_TYPE_BOOL)
+		force_rect = wrenGetSlotBool(vm, 1);
+	mousedrag(NULL, force_rect);
 }
 
 /* ----- Cell field accessors ----- */

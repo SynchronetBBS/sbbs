@@ -221,7 +221,7 @@ highlight_cell(struct vmem_cell *cell)
 #endif
 
 void
-mousedrag(struct vmem_cell *scrollback)
+mousedrag(struct vmem_cell *scrollback, bool force_rect)
 {
 	int                   key;
 	struct mouse_event    mevent;
@@ -236,7 +236,7 @@ mousedrag(struct vmem_cell *scrollback)
 	char                 *newcopybuf;
 	int                   lastchar;
 	struct ciolib_screen *savscrn;
-	bool                  rect_mode = false;
+	bool                  rect_mode = force_rect;
 	bool                  mode_locked = false;
 
 	sbufsize = (size_t)term.width * sizeof(*screen) * term.height;
@@ -264,7 +264,12 @@ mousedrag(struct vmem_cell *scrollback)
 			case CIO_KEY_MOUSE:
 				getmouse(&mevent);
 				if (!mode_locked) {
-					rect_mode = !!(mevent.kbmodifiers & CIOLIB_KMOD_ALT);
+					/* Alt at press time inverts the
+					 * default — caller's force_rect picks
+					 * which mode is the default; Alt
+					 * always flips. */
+					if (mevent.kbmodifiers & CIOLIB_KMOD_ALT)
+						rect_mode = !rect_mode;
 					mode_locked = true;
 				}
 				startpos = ((mevent.starty - 1) * term.width) + (mevent.startx - 1);
@@ -5786,7 +5791,7 @@ handle_mouse_event(struct mouse_state *ms)
 				open_url_at_cursor(&mevent);
 				break;
 			}
-			mousedrag(scrollback_buf);
+			mousedrag(scrollback_buf, false);
 			break;
 		case CIOLIB_BUTTON_2_CLICK:
 		case CIOLIB_BUTTON_3_CLICK:

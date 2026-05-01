@@ -552,7 +552,7 @@ viewofflinescroll(void)
 								break;
 							}
 							case CIOLIB_BUTTON_1_DRAG_START:
-								mousedrag(scrollback_buf);
+								mousedrag(scrollback_buf, false);
 								break;
 							case CIOLIB_BUTTON_4_PRESS:
 								top--;

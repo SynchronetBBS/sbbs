@@ -671,6 +671,7 @@ static const struct binding BINDINGS[] = {
 	{ "Input",  true,  "ungetKey_(_)",        fn_Input_ungetKey_          },
 	{ "Input",  true,  "ungetMouse_(_)",      fn_Input_ungetMouse_        },
 	{ "Input",  true,  "mousedrag()",         fn_Input_mousedrag          },
+	{ "Input",  true,  "mousedrag(_)",        fn_Input_mousedrag          },
 	{ "Input",  true,  "mouseVisible=(_)",    fn_Input_mouseVisible_set   },
 	{ "Input",  true,  "mouseEvents",         fn_Input_mouseEvents        },
 	{ "Input",  true,  "mouseEvents=(_)",     fn_Input_mouseEvents_set    },

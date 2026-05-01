@@ -137,6 +137,7 @@ foreign class Input {
   foreign static next(ms)
   foreign static poll()
   foreign static mousedrag()
+  foreign static mousedrag(forceRect)
   foreign static mouseVisible=(b)
 
   // Bitmask of `Mouse.*` events that get delivered.  The terminal

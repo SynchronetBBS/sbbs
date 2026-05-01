@@ -49,7 +49,7 @@ void xmodem_batch_upload(struct bbslist *bbs, char **paths, int npaths, long mod
 void xmodem_download(struct bbslist *bbs, long mode, char *path);
 void zmodem_download(struct bbslist *bbs);
 bool doterm(struct bbslist *);
-void mousedrag(struct vmem_cell *scrollback);
+void mousedrag(struct vmem_cell *scrollback, bool force_rect);
 void get_cterm_size(int *cols, int *rows, int ns);
 int get_cache_fn_base(struct bbslist *bbs, char *fn, size_t fnsz);
 int get_cache_fn_subdir(struct bbslist *bbs, char *fn, size_t fnsz, const char *subdir);

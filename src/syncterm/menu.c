@@ -143,7 +143,7 @@ viewscroll(void)
 								break;
 							}
 							case CIOLIB_BUTTON_1_DRAG_START:
-								mousedrag(scrollback);
+								mousedrag(scrollback, false);
 								break;
 							case CIOLIB_BUTTON_4_PRESS:
 								top--;

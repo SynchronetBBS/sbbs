@@ -302,7 +302,12 @@ class ListView is Widget {
       return true
     }
 
-    // Otherwise: click (or drag) on a row picks it.
+    // Outside the scrollbar: only press/click selects a row.  Drag
+    // events fall through so dispatchMouse_ can hand them to the
+    // C-side selector for text selection on the visible cells.
+    if (e != Mouse.button1Press && e != Mouse.button1Click) {
+      return false
+    }
     var idx = _scrollTop + (me.endY - bounds.y)
     if (idx >= 0 && idx < _items.count) {
       selected = idx
