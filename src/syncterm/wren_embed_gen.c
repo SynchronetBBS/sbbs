@@ -81,6 +81,141 @@ is_hex_digit(unsigned char c)
 	       (c >= 'A' && c <= 'F');
 }
 
+/* In-place minify a Wren source buffer.  Strips line and block
+ * comments (block comments may nest in Wren), leading and trailing
+ * whitespace per line, and collapses runs of blank lines.  Newlines
+ * are preserved — Wren depends on them as statement separators.
+ * String literals (including their interpolations) pass through
+ * verbatim, tracked via a small state stack alternating CODE /
+ * STRING; if the stack overflows the tail gets copied without
+ * further minification.  Returns the new length. */
+static size_t
+minify_wren(unsigned char *buf, size_t n)
+{
+	enum { S_CODE, S_STR };
+	int    state[16];
+	int    paren[16];   /* only meaningful in S_CODE at sp > 0 */
+	size_t cap = sizeof(state) / sizeof(state[0]);
+	int    sp = 0;
+	state[0] = S_CODE;
+	paren[0] = 0;
+
+	size_t r = 0, w = 0;
+	int    at_line_start  = 1;
+	int    last_emitted_nl = 1;
+
+	while (r < n) {
+		unsigned char c = buf[r];
+
+		if (state[sp] == S_STR) {
+			/* Copy string contents verbatim; watch for `\\`
+			 * escape, `"` close, and `%(` interpolation start. */
+			buf[w++] = c;
+			r++;
+			if (c == '\\' && r < n) {
+				buf[w++] = buf[r++];
+				continue;
+			}
+			if (c == '"') {
+				if (sp > 0)
+					sp--;
+				last_emitted_nl = 0;
+				at_line_start   = 0;
+				continue;
+			}
+			if (c == '%' && r < n && buf[r] == '(') {
+				buf[w++] = buf[r++];
+				if ((size_t)sp + 1 < cap) {
+					sp++;
+					state[sp] = S_CODE;
+					paren[sp] = 1;
+				}
+			}
+			continue;
+		}
+
+		/* S_CODE — top level minifies; nested (sp > 0) just
+		 * passes bytes through while tracking parens / strings. */
+		if (sp > 0) {
+			buf[w++] = c;
+			r++;
+			if (c == '(') {
+				paren[sp]++;
+			} else if (c == ')') {
+				paren[sp]--;
+				if (paren[sp] == 0)
+					sp--;
+			} else if (c == '"') {
+				if ((size_t)sp + 1 < cap) {
+					sp++;
+					state[sp] = S_STR;
+				}
+			}
+			continue;
+		}
+
+		if (at_line_start && (c == ' ' || c == '\t')) {
+			r++;
+			continue;
+		}
+		if (c == '\n' || c == '\r') {
+			while (w > 0 && (buf[w-1] == ' ' || buf[w-1] == '\t'))
+				w--;
+			r++;
+			if (r < n && (buf[r] == '\n' || buf[r] == '\r') &&
+			    buf[r] != c)
+				r++;
+			if (!last_emitted_nl) {
+				buf[w++] = '\n';
+				last_emitted_nl = 1;
+			}
+			at_line_start = 1;
+			continue;
+		}
+		if (c == '/' && r + 1 < n && buf[r+1] == '/') {
+			while (r < n && buf[r] != '\n' && buf[r] != '\r')
+				r++;
+			continue;
+		}
+		if (c == '/' && r + 1 < n && buf[r+1] == '*') {
+			r += 2;
+			int depth = 1;
+			while (r < n && depth > 0) {
+				if (r + 1 < n && buf[r] == '/' &&
+				    buf[r+1] == '*') {
+					depth++;
+					r += 2;
+				} else if (r + 1 < n && buf[r] == '*' &&
+				           buf[r+1] == '/') {
+					depth--;
+					r += 2;
+				} else {
+					r++;
+				}
+			}
+			continue;
+		}
+		if (c == '"') {
+			buf[w++] = c;
+			r++;
+			if ((size_t)sp + 1 < cap) {
+				sp++;
+				state[sp] = S_STR;
+			}
+			last_emitted_nl = 0;
+			at_line_start   = 0;
+			continue;
+		}
+		buf[w++] = c;
+		r++;
+		last_emitted_nl = 0;
+		at_line_start   = 0;
+	}
+	while (w > 0 && buf[w-1] == '\n')
+		w--;
+	return w;
+}
+
 /* Emit a C string literal for `bytes` (length n) to stdout, broken into
  * one literal per source line so the generated file stays readable. */
 static void
@@ -139,6 +274,8 @@ emit_one(const char *path)
 	}
 	size_t got = sz > 0 ? fread(buf, 1, (size_t)sz, f) : 0;
 	fclose(f);
+
+	got = minify_wren(buf, got);
 
 	char modname[256];
 	basename_no_ext(path, modname, sizeof(modname));
