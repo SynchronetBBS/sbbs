@@ -32,6 +32,7 @@ void fn_SFTP_mkdir(WrenVM *vm);
 void fn_SFTP_rmdir(WrenVM *vm);
 void fn_SFTP_remove(WrenVM *vm);
 void fn_SFTP_rename(WrenVM *vm);
+void fn_SFTP_descs(WrenVM *vm);
 
 /* SFTPEntry instance accessors. */
 void fn_SFTPEntry_name(WrenVM *vm);
@@ -39,6 +40,7 @@ void fn_SFTPEntry_longname(WrenVM *vm);
 void fn_SFTPEntry_size(WrenVM *vm);
 void fn_SFTPEntry_mtime(WrenVM *vm);
 void fn_SFTPEntry_isDir(WrenVM *vm);
+void fn_SFTPEntry_hasLongDesc(WrenVM *vm);
 void fn_SFTPEntry_hash(WrenVM *vm);
 void fn_SFTPEntry_toString(WrenVM *vm);
 

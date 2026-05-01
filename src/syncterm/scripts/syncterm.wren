@@ -947,6 +947,7 @@ class SFTP {
   foreign static rmdir(fiber, path)
   foreign static remove(fiber, path)
   foreign static rename(fiber, oldpath, newpath)
+  foreign static descs(fiber, path)
 }
 
 // Open-flag bitmask for SFTP.open.  Values match the SSH_FXF_* wire
@@ -970,6 +971,7 @@ foreign class SFTPEntry {
   foreign size
   foreign mtime
   foreign isDir
+  foreign hasLongDesc
   foreign hash
   foreign toString
 }

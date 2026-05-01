@@ -229,14 +229,25 @@ class App {
   //   1. modalTop.hitTest(x, y) — deepest child covering the point.
   //      Containers descend; the last-added child wins ties.
   //   2. The hit widget gets handle(me).  No bubble — mouse events
-  //      that miss the visible widget tree just drop.
+  //      that miss the visible widget tree just drop, EXCEPT that
+  //      a button-1 drag-start with no taker hands off to the C-side
+  //      `mousedrag` selector so the user gets the standard SyncTERM
+  //      rectangle / line-copy UI even while a Wren App is up.
   dispatchMouse_(me) {
     var top = modalTop
     if (top is Container) {
       var hit = top.hitTest(me.startX, me.startY)
       if (hit != null && hit.handle(me)) return true
     } else if (top.hit(me.startX, me.startY)) {
-      return top.handle(me)
+      if (top.handle(me)) return true
+    }
+    if (me.event == Mouse.button1DragStart) {
+      // Hand the drag-start back to the C-side selector so it sees
+      // the actual press coords + Alt-state in its first getmouse(),
+      // not whatever drag-move fires next.
+      Input.unget(me)
+      Input.mousedrag()
+      return true
     }
     return false
   }

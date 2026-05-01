@@ -30,6 +30,7 @@ struct wren_sftp_entry {
 	uint64_t  size;
 	uint32_t  mtime;
 	bool      is_dir;
+	bool      has_long_desc;
 	uint8_t  *hash;       /* malloc'd; NULL if no sha1s/md5s ext */
 	uint32_t  hash_len;
 };
@@ -207,6 +208,13 @@ fn_SFTPEntry_isDir(WrenVM *vm)
 {
 	struct wren_sftp_entry *e = wrenGetSlotForeign(vm, 0);
 	wrenSetSlotBool(vm, 0, e->is_dir);
+}
+
+void
+fn_SFTPEntry_hasLongDesc(WrenVM *vm)
+{
+	struct wren_sftp_entry *e = wrenGetSlotForeign(vm, 0);
+	wrenSetSlotBool(vm, 0, e->has_long_desc);
 }
 
 void
@@ -614,7 +622,15 @@ sftp_attr_extract_hash(sftp_file_attr_t a, uint32_t *len_out)
 }
 
 /* Build a SFTPEntry foreign in `slot+1` from one dir entry, slot+2 as
- * scratch for the class lookup. */
+ * scratch for the class lookup.
+ *
+ * `longname` is populated from the `lname@syncterm.net` per-attribute
+ * extension when the session negotiated it — that's the rich
+ * Synchronet description (file caption / filebase blurb).  The SFTP
+ * v3 standard ls-l style longname (`de->longname`) is intentionally
+ * NOT exposed: it's only useful as a permissions-bits fallback for
+ * is_dir, which the C side has already resolved into `e->is_dir` by
+ * this point. */
 static void
 build_sftp_entry(WrenVM *vm, int slot,
                  struct wren_host_state *st,
@@ -626,14 +642,36 @@ build_sftp_entry(WrenVM *vm, int slot,
 	memset(e, 0, sizeof(*e));
 	e->type     = SWF_SFTP_ENTRY;
 	e->name     = sftp_str_to_cstr(de->filename);
-	e->longname = sftp_str_to_cstr(de->longname);
 	if (de->attrs != NULL) {
 		sftp_fattr_get_size(de->attrs,  &e->size);
 		sftp_fattr_get_mtime(de->attrs, &e->mtime);
 		uint32_t perm;
-		if (sftp_fattr_get_permissions(de->attrs, &perm))
+		bool have_perm = sftp_fattr_get_permissions(de->attrs, &perm);
+		if (have_perm) {
 			e->is_dir = (perm & S_IFMT) == S_IFDIR;
+		}
+		else if (de->longname != NULL && de->longname->len > 0) {
+			/* No mode bits — fall back to the v3 longname's first
+			 * byte (`d` for directory in ls -l style). */
+			e->is_dir = de->longname->c_str[0] == 'd';
+		}
 		e->hash = sftp_attr_extract_hash(de->attrs, &e->hash_len);
+		uint32_t exts = sftpc_get_extensions(sftp_state);
+		if (exts & SFTP_EXT_LNAME) {
+			sftp_str_t ln = sftp_fattr_get_ext_by_type(de->attrs,
+			    SFTP_EXT_NAME_LNAME);
+			if (ln != NULL && ln->len > 0)
+				e->longname = sftp_str_to_cstr(ln);
+		}
+		if (exts & SFTP_EXT_DESCS) {
+			/* Presence of the descs extension on a fattr means the
+			 * server has a long description ready for a separate
+			 * SFTP_EXT_NAME_DESCS request.  Value is empty — the
+			 * extension acts as a one-bit availability marker. */
+			if (sftp_fattr_get_ext_by_type(de->attrs,
+			        SFTP_EXT_NAME_DESCS) != NULL)
+				e->has_long_desc = true;
+		}
 	}
 }
 
@@ -922,6 +960,34 @@ fn_SFTP_rename(WrenVM *vm)
 	wrenSetSlotNull(vm, 0);
 }
 
+/* ----- descs ------------------------------------------------------- */
+
+static void
+sftp_descs_deliver(WrenVM *vm, int slot, void *data)
+{
+	struct sftp_call_ctx *ctx = data;
+	if (sftp_deliver_error(vm, slot, ctx))
+		return;
+	struct sftpc_descs_pending *dp =
+	    (struct sftpc_descs_pending *)ctx->pending;
+	sftp_str_t d = dp->desc;
+	if (d == NULL || d->len == 0)
+		wrenSetSlotString(vm, slot, "");
+	else
+		wrenSetSlotBytes(vm, slot, (const char *)d->c_str, d->len);
+}
+
+void
+fn_SFTP_descs(WrenVM *vm)
+{
+	struct sftp_call_ctx *ctx = sftp_call_prelude(vm, sftp_descs_deliver);
+	if (ctx == NULL)
+		return;
+	const char *path = wrenGetSlotString(vm, 2);
+	sftpc_descs(sftp_state, path, sftp_call_cb, ctx);
+	wrenSetSlotNull(vm, 0);
+}
+
 #else  /* WITHOUT_DEUCESSH ------------------------------------------- */
 
 /* No SFTP without DeuceSSH — the SSH transport that carries it isn't
@@ -971,12 +1037,14 @@ SFTP_STUB(fn_SFTP_mkdir)
 SFTP_STUB(fn_SFTP_rmdir)
 SFTP_STUB(fn_SFTP_remove)
 SFTP_STUB(fn_SFTP_rename)
+SFTP_STUB(fn_SFTP_descs)
 
 SFTP_STUB(fn_SFTPEntry_name)
 SFTP_STUB(fn_SFTPEntry_longname)
 SFTP_STUB(fn_SFTPEntry_size)
 SFTP_STUB(fn_SFTPEntry_mtime)
 SFTP_STUB(fn_SFTPEntry_isDir)
+SFTP_STUB(fn_SFTPEntry_hasLongDesc)
 SFTP_STUB(fn_SFTPEntry_hash)
 SFTP_STUB(fn_SFTPEntry_toString)
 

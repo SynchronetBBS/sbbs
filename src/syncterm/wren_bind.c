@@ -788,6 +788,7 @@ static const struct binding BINDINGS[] = {
 	{ "SFTP",       true,  "rmdir(_,_)",      fn_SFTP_rmdir           },
 	{ "SFTP",       true,  "remove(_,_)",     fn_SFTP_remove          },
 	{ "SFTP",       true,  "rename(_,_,_)",   fn_SFTP_rename          },
+	{ "SFTP",       true,  "descs(_,_)",      fn_SFTP_descs           },
 
 	/* SFTPEntry (instance) */
 	{ "SFTPEntry",  false, "name",            fn_SFTPEntry_name       },
@@ -795,6 +796,7 @@ static const struct binding BINDINGS[] = {
 	{ "SFTPEntry",  false, "size",            fn_SFTPEntry_size       },
 	{ "SFTPEntry",  false, "mtime",           fn_SFTPEntry_mtime      },
 	{ "SFTPEntry",  false, "isDir",           fn_SFTPEntry_isDir      },
+	{ "SFTPEntry",  false, "hasLongDesc",     fn_SFTPEntry_hasLongDesc },
 	{ "SFTPEntry",  false, "hash",            fn_SFTPEntry_hash       },
 	{ "SFTPEntry",  false, "toString",        fn_SFTPEntry_toString   },
 
