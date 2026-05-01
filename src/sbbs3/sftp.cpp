@@ -955,6 +955,25 @@ get_longname(sbbs_t *sbbs, const char *path, const char *link, sftp_file_attr_t 
 	return ret;
 }
 
+/* Heap-allocate a UTF-8 copy of `src` (CP437 source).  Caller frees.
+ * Returns nullptr on empty/null input or allocation failure.  Used for
+ * every user-visible string that crosses into an SFTP attr extension
+ * or extended reply — the SFTP wire is UTF-8, but Synchronet stores
+ * filebase strings in CP437. */
+static char *
+sftp_cp437_to_utf8_strdup(const char *src)
+{
+	if (src == nullptr || *src == 0)
+		return nullptr;
+	size_t srclen = strlen(src);
+	size_t bufsz  = srclen * 3 + 1;
+	char  *out    = (char *)malloc(bufsz);
+	if (out == nullptr)
+		return nullptr;
+	cp437_to_utf8_str(src, out, bufsz - 1, /* min-char-val: */ '\x80');
+	return out;
+}
+
 static sftp_file_attr_t
 get_lib_attrs(sbbs_t *sbbs, int lib)
 {
@@ -965,10 +984,14 @@ get_lib_attrs(sbbs_t *sbbs, int lib)
 	sftp_fattr_set_permissions(attr, S_IFDIR | S_IRUSR | S_IWUSR | S_IXUSR | S_IRGRP | S_IXGRP);
 	sftp_fattr_set_uid_gid(attr, 1, static_cast<uint32_t>(lib) | lib_flag);
 	if (sbbs->sftp_state->extensions & SFTP_EXT_LNAME) {
-		struct sftp_string ext, dat;
-		sftp_strstatic(&ext, SFTP_EXT_NAME_LNAME);
-		sftp_strstatic(&dat, sbbs->cfg.lib[lib]->lname);
-		sftp_fattr_add_ext(&attr, &ext, &dat);
+		char *utf8 = sftp_cp437_to_utf8_strdup(sbbs->cfg.lib[lib]->lname);
+		if (utf8 != nullptr) {
+			struct sftp_string ext, dat;
+			sftp_strstatic(&ext, SFTP_EXT_NAME_LNAME);
+			sftp_strstatic(&dat, utf8);
+			sftp_fattr_add_ext(&attr, &ext, &dat);
+			free(utf8);
+		}
 	}
 	return attr;
 }
@@ -986,10 +1009,14 @@ get_dir_attrs(sbbs_t *sbbs, int32_t dir)
 	sftp_fattr_set_permissions(attr, perms);
 	sftp_fattr_set_uid_gid(attr, 1, static_cast<uint32_t>(dir));
 	if (sbbs->sftp_state->extensions & SFTP_EXT_LNAME) {
-		struct sftp_string ext, dat;
-		sftp_strstatic(&ext, SFTP_EXT_NAME_LNAME);
-		sftp_strstatic(&dat, sbbs->cfg.dir[dir]->lname);
-		sftp_fattr_add_ext(&attr, &ext, &dat);
+		char *utf8 = sftp_cp437_to_utf8_strdup(sbbs->cfg.dir[dir]->lname);
+		if (utf8 != nullptr) {
+			struct sftp_string ext, dat;
+			sftp_strstatic(&ext, SFTP_EXT_NAME_LNAME);
+			sftp_strstatic(&dat, utf8);
+			sftp_fattr_add_ext(&attr, &ext, &dat);
+			free(utf8);
+		}
 	}
 	return attr;
 }
@@ -1019,10 +1046,27 @@ get_filebase_attrs(sbbs_t *sbbs, int32_t dir, smbfile_t *file)
 	//       Real answer: We don't store the user number of uploader,
 	//                    look up the usernumber from uploader's username.
 	if (sbbs->sftp_state->extensions & SFTP_EXT_LNAME) {
-		if (file->desc && file->desc[0]) {
+		char *utf8 = sftp_cp437_to_utf8_strdup(file->desc);
+		if (utf8 != nullptr) {
 			struct sftp_string ext, dat;
 			sftp_strstatic(&ext, SFTP_EXT_NAME_LNAME);
-			sftp_strstatic(&dat, file->desc);
+			sftp_strstatic(&dat, utf8);
+			sftp_fattr_add_ext(&attr, &ext, &dat);
+			free(utf8);
+		}
+	}
+	if (sbbs->sftp_state->extensions & SFTP_EXT_DESCS) {
+		bool has_extdesc = false;
+		for (uint16_t i = 0; i < file->hdr.total_dfields; i++) {
+			if (file->dfield[i].type == TEXT_BODY && file->dfield[i].length > 0) {
+				has_extdesc = true;
+				break;
+			}
+		}
+		if (has_extdesc) {
+			struct sftp_string ext, dat;
+			sftp_strstatic(&ext, SFTP_EXT_NAME_DESCS);
+			sftp_strstatic(&dat, "");
 			sftp_fattr_add_ext(&attr, &ext, &dat);
 		}
 	}
@@ -2159,10 +2203,12 @@ sftp_ext_descs(sbbs_t *sbbs, const char *cpath)
 		    "Can't read extdesc", nullptr);
 	}
 	else {
-		const char        *ed = file.extdesc ? file.extdesc : "";
+		const char *ed = file.extdesc ? file.extdesc : "";
+		char *utf8 = sftp_cp437_to_utf8_strdup(ed);
 		struct sftp_string reply;
-		sftp_strstatic(&reply, ed);
+		sftp_strstatic(&reply, utf8 ? utf8 : "");
 		sent = sftps_send_extended_reply(sbbs->sftp_state, &reply, nullptr);
+		free(utf8);
 		smb_freefilemem(&file);
 	}
 	smb_close(&smb);
