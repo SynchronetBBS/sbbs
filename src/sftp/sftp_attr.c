@@ -33,6 +33,8 @@ sftp_fattr_free(sftp_file_attr_t fattr)
 {
 	uint32_t i;
 
+	if (!fattr)
+		return;
 	for (i = 0; i < fattr->ext_count; i++) {
 		free_sftp_str(fattr->ext[i].type);
 		free_sftp_str(fattr->ext[i].data);
