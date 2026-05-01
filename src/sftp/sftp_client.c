@@ -1149,14 +1149,28 @@ parse_readdir(struct sftpc_pending *base)
 		}
 		for (uint32_t i = 0; i < n; i++) {
 			p->entries[i].filename = getstring(reply);
-			p->entries[i].longname = getstring(reply);
-			p->entries[i].attrs    = getfattr(reply);
-			if (p->entries[i].filename == NULL ||
-			    p->entries[i].longname == NULL ||
-			    p->entries[i].attrs == NULL) {
+			if (p->entries[i].filename == NULL) {
 				PENDING_RECORD(base, SFTP_ERR_REPLY_BAD_STRING,
-				    "getstring/getfattr failed at entry %"
-				    PRIu32, i);
+				    "filename string failed at entry %"
+				    PRIu32 " of %" PRIu32, i, n);
+				sftpc_free_dir_entries(p->entries, i + 1);
+				p->entries = NULL;
+				return;
+			}
+			p->entries[i].longname = getstring(reply);
+			if (p->entries[i].longname == NULL) {
+				PENDING_RECORD(base, SFTP_ERR_REPLY_BAD_STRING,
+				    "longname string failed at entry %"
+				    PRIu32 " of %" PRIu32, i, n);
+				sftpc_free_dir_entries(p->entries, i + 1);
+				p->entries = NULL;
+				return;
+			}
+			p->entries[i].attrs = getfattr(reply);
+			if (p->entries[i].attrs == NULL) {
+				PENDING_RECORD(base, SFTP_ERR_PARSE_FAILED,
+				    "fattr parse failed at entry %"
+				    PRIu32 " of %" PRIu32, i, n);
 				sftpc_free_dir_entries(p->entries, i + 1);
 				p->entries = NULL;
 				return;
