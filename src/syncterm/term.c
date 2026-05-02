@@ -18,12 +18,6 @@
 #include "menu.h"
 #include "saucedefs.h"
 #include "sexyz.h"
-#ifndef WITHOUT_DEUCESSH
-#include "sftp_browser.h"
-#include "sftp_degraded.h"
-#include "sftp_queue.h"
-#include "sftp_queue_screen.h"
-#endif
 #include "strwrap.h"
 #include "syncterm.h"
 #include "telnet_io.h"
@@ -500,14 +494,12 @@ update_status(struct bbslist *bbs, int speed, int ooii_mode, bool ata_inv)
 		newbits |= 0x40;
 		force_status_update = false;
 	}
-	uint32_t sftp_up_active = 0, sftp_dn_active = 0;
-#ifndef WITHOUT_DEUCESSH
-	sftp_queue_activity(&sftp_up_active, &sftp_dn_active);
-	if (sftp_up_active > 0)
+	bool sftp_up_active = wren_upload_arrow_lit();
+	bool sftp_dn_active = wren_download_arrow_lit();
+	if (sftp_up_active)
 		newbits |= 0x80;
-	if (sftp_dn_active > 0)
+	if (sftp_dn_active)
 		newbits |= 0x100;
-#endif
 	bool log_unread       = wren_host_log_unread();
 	bool log_unread_error = wren_host_log_unread_error();
 	if (log_unread)
@@ -595,7 +587,7 @@ update_status(struct bbslist *bbs, int speed, int ooii_mode, bool ata_inv)
 	 * background when idle so the column doesn't linger after a
 	 * transfer finishes. */
 	if (status_bar_sz > 29) {
-		if (sftp_up_active > 0) {
+		if (sftp_up_active) {
 			status_bar[28].ch = 0x18;  /* CP437 ↑ */
 			status_bar[28].fg = 0x80ffff54;
 			status_bar[28].legacy_attr = 0x1e;
@@ -605,7 +597,7 @@ update_status(struct bbslist *bbs, int speed, int ooii_mode, bool ata_inv)
 			status_bar[28].fg = 0x80ffff54;
 			status_bar[28].legacy_attr = 0x1e;
 		}
-		if (sftp_dn_active > 0) {
+		if (sftp_dn_active) {
 			status_bar[29].ch = 0x19;  /* CP437 ↓ */
 			status_bar[29].fg = 0x80ffff54;
 			status_bar[29].legacy_attr = 0x1e;
@@ -2366,7 +2358,16 @@ is_connected(void *unused)
 {
 	if (recv_byte_buffer_len)
 		return true;
-	return conn_connected();
+	if (conn_connected())
+		return true;
+	/* Shell channel may be gone but SFTP transfers still in flight.
+	 * Keep the main loop alive so the Wren VM keeps pumping (the
+	 * SftpQueue workers run as Wren fibers, drained from the loop)
+	 * and the SftpApp lock keeps the user in the queue view until
+	 * everything finishes. */
+	if (wren_sftp_active())
+		return true;
+	return false;
 }
 
 void
@@ -6144,6 +6145,15 @@ doterm(struct bbslist *bbs)
 	bool        was_suspended    = false;
 	long double suspend_start    = 0;
 	double      speed_catchup    = 0;
+	/* Shell-channel-alive tracker.  conn_connected() goes false the
+	 * moment the SSH shell input thread exits, even if the SFTP
+	 * subsystem channel is still up.  Watch that transition so we
+	 * can fire wren_host_dispatch_shell_close() exactly once and let
+	 * scripts react (lock the SFTP App in queue mode, etc.) while
+	 * the main loop keeps running long enough for SFTP transfers to
+	 * drain.  is_connected() OR's in the SFTP-active flags so the
+	 * disconnect branch doesn't fire until everything is idle. */
+	bool        shell_was_alive  = true;
 	wren_host_init(bbs);
 	wren_host_bind_cterm_suspended(&cterm_suspended);
 	for (; !quitting;) {
@@ -6180,6 +6190,19 @@ doterm(struct bbslist *bbs)
 					    (long double)speed / 10.0L);
 			}
 			was_suspended = cterm_suspended;
+		}
+		/* Detect shell-channel-alive transition.  When the SSH input
+		 * thread exits (BBS-side logout, network drop, etc.),
+		 * conn_connected() flips false but the SFTP subsystem may
+		 * still be transferring.  Fire the shell-close hook exactly
+		 * once on the alive→dead transition so scripts can react
+		 * (e.g. SftpApp pops queue mode and locks Esc); the main
+		 * loop keeps running because is_connected() OR's in the
+		 * SFTP-active flags.  Once SFTP idle, the disconnect branch
+		 * downstream fires for real. */
+		if (shell_was_alive && !conn_connected()) {
+			shell_was_alive = false;
+			wren_host_dispatch_shell_close();
 		}
 		/* Drain any popups posted from background threads (e.g.
 		 * SSH_MSG_DEBUG with always_display set) before we go
@@ -6230,23 +6253,18 @@ doterm(struct bbslist *bbs)
 						if (!is_connected(NULL)) {
 							WRITE_OUTBUF();
 							hold_update = oldmc;
-							/* Shell closed but SFTP transfers may
-							 * still be in progress — run the
-							 * degraded-mode overlay until they
-							 * drain or the user abandons them.
-							 * Returns immediately if there's no
-							 * work to wait on. */
-#ifndef WITHOUT_DEUCESSH
-							if (!bbs->hidepopups)
-								sftp_degraded_run(bbs);
-#endif
+							/* Shell-close hook already fired on the
+							 * alive→dead transition above; the Wren
+							 * SftpApp drives the degraded modal and
+							 * keeps is_connected true until the queue
+							 * drains, so we go straight to teardown. */
 							if (!bbs->hidepopups)
 								uifcmsg("Disconnected",
 								    "`Disconnected`\n\nRemote host dropped connection");
 							check_exit(false);
 							finish_scrollback();
 							audio_apc_cleanup();
-		cterm_end(cterm, 0);
+							cterm_end(cterm, 0);
 							cterm = NULL;
 							// TODO: Do this before the popup to avoid being rude...
 							conn_close();
@@ -6383,7 +6401,7 @@ doterm(struct bbslist *bbs)
 						case -1:
 							finish_scrollback();
 							audio_apc_cleanup();
-		cterm_end(cterm, 0);
+							cterm_end(cterm, 0);
 							cterm = NULL;
 							conn_close();
 							hidemouse();
@@ -6428,7 +6446,7 @@ doterm(struct bbslist *bbs)
 						case SM_EXIT:
 							finish_scrollback();
 							audio_apc_cleanup();
-		cterm_end(cterm, 0);
+							cterm_end(cterm, 0);
 							cterm = NULL;
 							conn_close();
 							hidemouse();
@@ -6540,18 +6558,6 @@ doterm(struct bbslist *bbs)
 					showmouse();
 					sleep = false;
 					break;
-#ifndef WITHOUT_DEUCESSH
-				case 0x1f00: /* ALT-S - SFTP browser */
-					sftp_browser_run(bbs);
-					setup_mouse_events(&ms);
-					showmouse();
-					break;
-				case 0x1000: /* ALT-Q - SFTP queue */
-					sftp_queue_screen_run(bbs);
-					setup_mouse_events(&ms);
-					showmouse();
-					break;
-#endif
 				case 0x1600: /* ALT-U - Upload */
 					begin_upload(bbs, false, inch);
 					setup_mouse_events(&ms);
@@ -6607,6 +6613,9 @@ doterm(struct bbslist *bbs)
 	finish_scrollback();
 	ret = false;
 end:
+	/* Last chance for scripts to flush per-session state — runs while
+	 * the VM is still alive but after every other tear-down step. */
+	wren_host_dispatch_disconnect();
 	wren_host_shutdown();
 	return ret;
 }

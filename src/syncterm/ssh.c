@@ -21,15 +21,13 @@
 #include "gen_defs.h"
 #include "genwrap.h"
 #include "sftp.h"
-#include "sftp_queue.h"
-#include "sftp_session.h"
-#include "sftp_wait.h"
 #include "ssh.h"
 #include "sockwrap.h"
 #include "syncterm.h"
 #include "threadwrap.h"
 #include "uifcinit.h"
 #include "window.h"
+#include "wren_host.h"     /* wren_sftp_active */
 #include "xpendian.h"
 #include "xpprintf.h"
 
@@ -45,12 +43,15 @@ static dssh_channel    ssh_chan;
  * shell channel, and stays alive for the life of the SSH session; other
  * parts of the app (browser, transfer queue) share sftp_state via the
  * sftp_session.h accessors. */
-dssh_channel    sftp_chan;
-sftpc_state_t   sftp_state;
-_Atomic bool    sftp_available;
-_Atomic bool    sftp_shell_alive;
+dssh_channel        sftp_chan;
+sftpc_state_t       sftp_state;
+_Atomic bool        sftp_available;
+/* True while the interactive shell channel (ssh_chan) is open.  May flip
+ * to false while sftp_available remains true (server closed the shell;
+ * SFTP subsystem may still be usable for already-enqueued transfers).
+ * Internal to ssh.c — no external consumer. */
+static _Atomic bool sftp_shell_alive;
 static pthread_mutex_t ssh_mutex;
-static bool            pubkey_thread_running;
 /* Set by the host-key verify callback so ssh_connect can report the
    result to the user after handshake completes. */
 static enum {
@@ -646,13 +647,12 @@ ssh_input_thread(void *args)
 				break;
 		}
 	}
-	/* Shell is gone.  Keep conn_api.terminate clear if SFTP still
-	 * has outstanding work — the queue-degraded overlay in term.c
-	 * will fire, and sftp_send / sftp_recv_thread (which both gate
-	 * on conn_api.terminate) need to keep running.  If the queue is
-	 * idle, fall through to normal disconnect. */
+	/* Shell is gone.  Keep conn_api.terminate clear if Wren-side
+	 * SFTP still has outstanding work (CTerm.sftpActive) — sftp_send
+	 * / sftp_recv_thread (which both gate on conn_api.terminate)
+	 * need to keep running until the queue drains. */
 	sftp_shell_alive = false;
-	if (!sftp_queue_has_work())
+	if (!wren_sftp_active())
 		conn_api.terminate = true;
 	free(stderr_sink);
 	conn_api.input_thread_running = 2;
@@ -684,16 +684,14 @@ ssh_output_thread(void *args)
 			assert_pthread_mutex_unlock(&(conn_outbuf.mutex));
 		}
 	}
-	/* Same split as ssh_input_thread: leave conn_api.terminate clear
-	 * if SFTP has queue work pending. */
-	if (!sftp_queue_has_work())
+	/* Same as ssh_input_thread: leave conn_api.terminate clear if
+	 * the Wren-side queue has work pending. */
+	if (!wren_sftp_active())
 		conn_api.terminate = true;
 	conn_api.output_thread_running = 2;
 }
 
 /* ------------------------------------------------------------- SFTP session */
-
-static bool key_not_present(sftp_filehandle_t f, const char *priv);
 
 /*
  * Coordination between the SFTP recv thread and channel teardown.  The
@@ -739,6 +737,16 @@ sftp_send(uint8_t *buf, size_t sz, void *cb_data)
 	return sent == sz;
 }
 
+/* Wake the sftp_session_start init wait when SFTP_FXP_INIT's
+ * response arrives.  cbdata is &init_evt (xpevent_t *). */
+static void
+sftp_init_signal_cb(struct sftpc_pending *p)
+{
+	xpevent_t *evt = p->cbdata;
+	if (evt != NULL && *evt != NULL)
+		SetEvent(*evt);
+}
+
 /*
  * Opens the persistent SFTP subsystem channel alongside the shell.
  * Called from ssh_connect after ssh_chan is open.  If the server doesn't
@@ -771,7 +779,26 @@ sftp_session_start(struct bbslist *bbs)
 	sftp_recv_shutdown = false;
 	_beginthread(sftp_recv_thread, 0, NULL);
 
-	struct sftpc_pending *init_p = sftp_sync_init(sftp_state);
+	/* Drive a single synchronous SSH_FXP_INIT round-trip — the only
+	 * blocking SFTP op left in the C side, since the user-facing UI
+	 * moved to Wren and authorized_keys upload is now in
+	 * scripts/auto/connected/sftp_pubkey.wren. */
+	xpevent_t init_evt = CreateEvent(NULL, FALSE, FALSE, NULL);
+	if (init_evt == NULL) {
+		sftp_recv_shutdown = true;
+		for (int i = 0; i < 50 && sftp_recv_running; i++)
+			SLEEP(10);
+		sftpc_end(sftp_state);
+		sftp_state = NULL;
+		dssh_chan_close(sftp_chan, -1);
+		sftp_chan = NULL;
+		return;
+	}
+	struct sftpc_pending *init_p =
+	    sftpc_init(sftp_state, sftp_init_signal_cb, &init_evt);
+	if (init_p != NULL)
+		WaitForEvent(init_evt, INFINITE);
+	CloseEvent(init_evt);
 	bool init_ok = init_p != NULL && init_p->err == SFTP_ERR_OK
 	    && init_p->result == SSH_FX_OK;
 	sftpc_pending_free(init_p);
@@ -787,120 +814,6 @@ sftp_session_start(struct bbslist *bbs)
 	}
 
 	sftp_available = true;
-	sftp_queue_start();
-	sftp_queue_attach_bbs(bbs);
-}
-
-static void
-add_public_key(void *vpriv)
-{
-	char *priv = vpriv;
-
-	if (!sftp_available || sftp_state == NULL) {
-		free(priv);
-		pubkey_thread_running = false;
-		return;
-	}
-
-	struct sftpc_open_pending *open_p = sftp_sync_open(sftp_state,
-	    ".ssh/authorized_keys",
-	    SSH_FXF_READ | SSH_FXF_WRITE | SSH_FXF_APPEND | SSH_FXF_CREAT);
-	if (open_p != NULL && open_p->base.err == SFTP_ERR_OK
-	    && open_p->base.result == SSH_FX_OK) {
-		sftp_filehandle_t f = open_p->handle;
-		if (key_not_present(f, priv)) {
-			sftp_str_t ln = sftp_asprintf("ssh-ed25519 %s Added by SyncTERM\n", priv);
-			if (ln != NULL) {
-				sftpc_pending_free(sftp_sync_write(sftp_state, f, 0, ln));
-				free_sftp_str(ln);
-			}
-		}
-		sftpc_pending_free(sftp_sync_close(sftp_state, f));
-	}
-	sftpc_pending_free((struct sftpc_pending *)open_p);
-
-	free(priv);
-	pubkey_thread_running = false;
-}
-
-/*
- * Helper kept from the Cryptlib version — reads the remote's
- * authorized_keys line by line and checks whether the public-key
- * material we're about to append is already present.
- */
-static bool
-key_not_present(sftp_filehandle_t f, const char *priv)
-{
-	size_t bufsz = 0;
-	size_t old_bufpos = 0;
-	size_t bufpos = 0;
-	size_t off = 0;
-	size_t eol;
-	char *buf = NULL;
-	char *newbuf;
-	char *eolptr;
-	bool skipread = false;
-
-	while (!conn_api.terminate) {
-		if (skipread) {
-			old_bufpos = 0;
-			skipread = false;
-		}
-		else {
-			if (bufsz - bufpos < 1024) {
-				newbuf = realloc(buf, bufsz + 4096);
-				if (newbuf == NULL) {
-					free(buf);
-					return false;
-				}
-				buf = newbuf;
-				bufsz += 4096;
-			}
-			struct sftpc_read_pending *rp = sftp_sync_read(
-			    sftp_state, f, off,
-			    (bufsz - bufpos > 1024) ? 1024 : bufsz - bufpos);
-			if (rp == NULL || rp->base.err != SFTP_ERR_OK) {
-				sftpc_pending_free((struct sftpc_pending *)rp);
-				free(buf);
-				return false;
-			}
-			if (rp->base.result == SSH_FX_EOF) {
-				sftpc_pending_free(&rp->base);
-				free(buf);
-				return true;
-			}
-			if (rp->base.result != SSH_FX_OK) {
-				sftpc_pending_free(&rp->base);
-				free(buf);
-				return false;
-			}
-			memcpy(&buf[bufpos], rp->data->c_str, rp->data->len);
-			old_bufpos = bufpos;
-			bufpos += rp->data->len;
-			off += rp->data->len;
-			sftpc_pending_free(&rp->base);
-		}
-		for (eol = old_bufpos; eol < bufpos; eol++) {
-			if (buf[eol] == '\r' || buf[eol] == '\n')
-				break;
-		}
-		if (eol < bufpos) {
-			skipread = true;
-			eolptr = &buf[eol];
-			*eolptr = 0;
-			if (strstr(buf, priv) != NULL) {
-				free(buf);
-				return false;
-			}
-			*eolptr = '\n';
-			while (eol < bufpos && (buf[eol] == '\r' || buf[eol] == '\n'))
-				eol++;
-			memmove(buf, &buf[eol], bufpos - eol);
-			bufpos = bufpos - eol;
-		}
-	}
-	free(buf);
-	return false;
 }
 
 /* --------------------------------------------------------- pty modes */
@@ -1017,33 +930,6 @@ set_default_pty_modes(struct dssh_chan_params *p, struct bbslist *bbs)
 
 /* ----------------------------------------------------------- connect */
 
-static char *
-get_pubkey_str(void)
-{
-	/* Query size first, then allocate. */
-	int64_t sz = dssh_ed25519_get_pub_str(NULL, 0);
-	if (sz <= 0)
-		return NULL;
-	char *buf = malloc((size_t)sz + 1);
-	if (buf == NULL)
-		return NULL;
-	if (dssh_ed25519_get_pub_str(buf, (size_t)sz + 1) <= 0) {
-		free(buf);
-		return NULL;
-	}
-	/* OpenSSH public key line is "<algo> <base64> <comment>" -- we
-	   only need the base64 blob for authorized_keys matching.  Strip
-	   the algo prefix if present. */
-	char *space = strchr(buf, ' ');
-	if (space != NULL) {
-		memmove(buf, space + 1, strlen(space + 1) + 1);
-		space = strchr(buf, ' ');
-		if (space != NULL)
-			*space = 0;
-	}
-	return buf;
-}
-
 static void
 error_popup(struct bbslist *bbs, const char *blurb)
 {
@@ -1118,7 +1004,6 @@ ssh_connect(struct bbslist *bbs)
 	char     username[MAX_USER_LEN + 1];
 	int      rows, cols;
 	const char *term;
-	char    *pubkey = NULL;
 	struct dssh_chan_params params;
 	int      auth_rc;
 
@@ -1132,7 +1017,6 @@ ssh_connect(struct bbslist *bbs)
 	assert(ssh_chan == NULL);
 	assert(sftp_chan == NULL);
 	assert(sftp_state == NULL);
-	assert(!pubkey_thread_running);
 	assert(ssh_sock == INVALID_SOCKET);
 
 	init_crypt();
@@ -1140,14 +1024,10 @@ ssh_connect(struct bbslist *bbs)
 		error_popup(bbs, "loading or generating SSH key");
 		return -1;
 	}
-	if (bbs->sftp_public_key)
-		pubkey = get_pubkey_str();	/* may be NULL; feature best-effort */
 
 	ssh_sock = conn_socket_connect(bbs, true);
-	if (ssh_sock == INVALID_SOCKET) {
-		free(pubkey);
+	if (ssh_sock == INVALID_SOCKET)
 		return -1;
-	}
 	if (setsockopt(ssh_sock, IPPROTO_TCP, TCP_NODELAY, (char *)&off, sizeof(off)))
 		fprintf(stderr, "%s:%d: Error %d calling setsockopt()\n", __FILE__, __LINE__, errno);
 
@@ -1155,7 +1035,6 @@ ssh_connect(struct bbslist *bbs)
 		uifc.pop("Creating Session");
 	ssh_session = dssh_session_init(true, 0);
 	if (ssh_session == NULL) {
-		free(pubkey);
 		error_popup(bbs, "creating session");
 		return -1;
 	}
@@ -1183,13 +1062,11 @@ ssh_connect(struct bbslist *bbs)
 	hostkey_result = HOSTKEY_NEW;	/* overwritten by callback */
 	int handshake_rc = dssh_transport_handshake(ssh_session);
 	if (handshake_rc != 0) {
-		free(pubkey);
 		error_popup_rc(bbs, "SSH handshake", handshake_rc);
 		ssh_close();
 		return -1;
 	}
 	if (!handle_hostkey_result(bbs)) {
-		free(pubkey);
 		if (!bbs->hidepopups)
 			uifc.pop(NULL);
 		ssh_close();
@@ -1221,7 +1098,6 @@ ssh_connect(struct bbslist *bbs)
 	char methods[128] = "";
 	int  probe_rc     = dssh_auth_get_methods(ssh_session, username, methods, sizeof(methods));
 	if (probe_rc < 0) {
-		free(pubkey);
 		error_popup(bbs, "auth method probe failed");
 		ssh_close();
 		return -1;
@@ -1256,7 +1132,6 @@ ssh_connect(struct bbslist *bbs)
 	   eliminating the clear. */
 	dssh_cleanse(password, sizeof(password));
 	if (auth_rc != 0) {
-		free(pubkey);
 		error_popup(bbs, "authentication failed");
 		ssh_close();
 		return -1;
@@ -1268,7 +1143,6 @@ ssh_connect(struct bbslist *bbs)
 	}
 
 	if (dssh_session_start(ssh_session) != 0) {
-		free(pubkey);
 		error_popup(bbs, "starting session");
 		ssh_close();
 		return -1;
@@ -1288,7 +1162,6 @@ ssh_connect(struct bbslist *bbs)
 	ssh_chan = dssh_chan_open(ssh_session, &params);
 	dssh_chan_params_free(&params);
 	if (ssh_chan == NULL) {
-		free(pubkey);
 		error_popup(bbs, "opening shell channel");
 		ssh_close();
 		return -1;
@@ -1304,20 +1177,17 @@ ssh_connect(struct bbslist *bbs)
 
 	if (!create_conn_buf(&conn_inbuf, BUFFER_SIZE)) {
 		conn_api.terminate = true;
-		free(pubkey);
 		return -1;
 	}
 	if (!create_conn_buf(&conn_outbuf, BUFFER_SIZE)) {
 		destroy_conn_buf(&conn_inbuf);
 		conn_api.terminate = true;
-		free(pubkey);
 		return -1;
 	}
 	if (!(conn_api.rd_buf = (unsigned char *)malloc(BUFFER_SIZE))) {
 		destroy_conn_buf(&conn_inbuf);
 		destroy_conn_buf(&conn_outbuf);
 		conn_api.terminate = true;
-		free(pubkey);
 		return -1;
 	}
 	conn_api.rd_buf_size = BUFFER_SIZE;
@@ -1326,20 +1196,12 @@ ssh_connect(struct bbslist *bbs)
 		destroy_conn_buf(&conn_inbuf);
 		destroy_conn_buf(&conn_outbuf);
 		conn_api.terminate = true;
-		free(pubkey);
 		return -1;
 	}
 	conn_api.wr_buf_size = BUFFER_SIZE;
 
 	_beginthread(ssh_output_thread, 0, NULL);
 	_beginthread(ssh_input_thread, 0, NULL);
-	if (bbs->sftp_public_key && pubkey != NULL) {
-		pubkey_thread_running = true;
-		_beginthread(add_public_key, 0, pubkey);
-	}
-	else {
-		free(pubkey);
-	}
 	return 0;
 }
 
@@ -1373,20 +1235,17 @@ ssh_close(void)
 		dssh_session_terminate(ssh_session);
 
 	while (conn_api.input_thread_running == 1 ||
-	       conn_api.output_thread_running == 1 ||
-	       pubkey_thread_running) {
+	       conn_api.output_thread_running == 1) {
 		conn_recv_upto(garbage, sizeof(garbage), 0);
 		SLEEP(1);
 	}
 
 	/* Tear down SFTP before closing the channel: finish drains waiters,
-	 * stop the worker threads, then the recv thread, then close the
-	 * channel, then end.  sftpc_finish comes first so any worker blocked
-	 * inside sftpc_read/write wakes up and sees the terminated state
-	 * before sftp_queue_stop tries to join it. */
+	 * then the recv thread, then close the channel, then end.
+	 * sftpc_finish wakes any worker blocked inside sftpc_read/write so
+	 * they see the terminated state before we shut the recv thread. */
 	if (sftp_state != NULL)
 		sftpc_finish(sftp_state);
-	sftp_queue_stop();
 	sftp_recv_shutdown = true;
 	for (int i = 0; i < 50 && sftp_recv_running; i++)
 		SLEEP(10);

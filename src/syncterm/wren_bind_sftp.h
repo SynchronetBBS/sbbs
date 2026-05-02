@@ -20,6 +20,7 @@ void wren_sftp_error_finalize(void *data);
 /* SFTP class — synchronous getters and parking ops. */
 void fn_SFTP_available(WrenVM *vm);
 void fn_SFTP_pubdir(WrenVM *vm);
+void fn_SFTP_lname(WrenVM *vm);
 void fn_SFTP_realpath(WrenVM *vm);
 void fn_SFTP_stat(WrenVM *vm);
 void fn_SFTP_opendir(WrenVM *vm);
@@ -32,6 +33,7 @@ void fn_SFTP_mkdir(WrenVM *vm);
 void fn_SFTP_rmdir(WrenVM *vm);
 void fn_SFTP_remove(WrenVM *vm);
 void fn_SFTP_rename(WrenVM *vm);
+void fn_SFTP_setMtime(WrenVM *vm);
 void fn_SFTP_descs(WrenVM *vm);
 
 /* SFTPEntry instance accessors. */

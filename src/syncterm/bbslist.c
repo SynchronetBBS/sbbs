@@ -26,6 +26,7 @@
 #include "uifcinit.h"
 #include "vidmodes.h"
 #include "window.h"
+#include "wren_token.h"
 #include "xpbeep.h"
 
 #if defined(__unix__) && defined(SOUNDCARD_H_IN) && (SOUNDCARD_H_IN > 0) && !defined(_WIN32)
@@ -1520,6 +1521,38 @@ iniReadBBSList(FILE *fp, bool userList)
 				strListFree(&inicontents);
 			}
 		}
+
+#ifndef WITHOUT_DEUCESSH
+		/* Picker-token signing key (see wren_token.h).  Loaded only
+		 * from the user's personal list — a malicious shared/web list
+		 * must not be able to inject a known key and forge tokens
+		 * against the local install.  Generated on first use; written
+		 * back into the same encrypted blob and re-encrypted with the
+		 * just-typed password. */
+		{
+			char hex[INI_MAX_VALUE_LEN] = "";
+			iniGetString(inifile, NULL, "WrenPickerHmacKey", "", hex);
+			uint8_t tkey[32];
+			bool have_key = wren_token_key_from_hex(hex, tkey);
+			if (!have_key && wren_token_generate_key(tkey)) {
+				char enc[65];
+				wren_token_key_to_hex(tkey, enc);
+				iniSetString(&inifile, NULL, "WrenPickerHmacKey",
+				    enc, &ini_style);
+				FILE *listfp = fopen(settings.list_path, "r+b");
+				if (listfp != NULL) {
+					iniWriteEncryptedFile(listfp, inifile,
+					    list_algo, list_keysize,
+					    settings.keyDerivationIterations,
+					    list_password);
+					fclose(listfp);
+				}
+				have_key = true;
+			}
+			if (have_key)
+				wren_token_set_key(tkey);
+		}
+#endif
 	}
 
 	return inifile;

@@ -903,10 +903,11 @@ Hook.onKey { |k|
 ----
 
 `.call()` runs the child fiber synchronously until it yields (e.g.
-on the result of `Input.nextEvent` or an SFTP op).  The child's
-yield returns to the hook body — the immediate `.call()` caller —
-not up to the dispatcher.  The hook still returns its Bool; the
-child resumes later via the framework's result-queue drain.
+on an SFTP op or a `Fiber.yield()` waiting for a `Wake.post`).
+The child's yield returns to the hook body — the immediate
+`.call()` caller — not up to the dispatcher.  The hook still
+returns its Bool; the child resumes later via the framework's
+result-queue drain.
 
 The second option is to fire the async op against a `Fiber.new {|r|
 ... }` whose body runs when the result arrives.  The hook returns
@@ -976,6 +977,23 @@ Hook.onKey { |k|
 
 | `Hook.every(ms, fn)`
 | `ms`: milliseconds; `fn`: callable
+| (none — return value ignored)
+
+| `Hook.onShellClose(fn)`
+| Fires once when the SSH shell channel closes but the session is
+  still alive (e.g. SFTP transfers may still be in flight).
+  No argument; return value ignored.  Typical use: pop a
+  status / queue UI so the user can watch transfers finish, or
+  signal a worker to wind down.  See <<cterm,CTerm.sftpActive>>
+  for the corresponding "keep the session up" flag.
+| (none — return value ignored)
+
+| `Hook.onDisconnect(fn)`
+| Fires at the end of the disconnect path, after the main loop
+  has fully exited but before the BBS / Wren VM tear down.  No
+  argument; return value ignored.  SFTP is no longer available
+  at this point (sftpc_finish has already run); use this for
+  final local-state flushes (queue persistence, log close, etc.).
 | (none — return value ignored)
 |===
 
@@ -1210,88 +1228,94 @@ loop the doterm() main loop is blocked, and inbound server bytes
 queue up in the socket buffer until the script returns.
 
 For modal dialogs that should not block the main loop while the
-script idles between events, use `Input.nextEvent(fiber)`.  The
-foreign registers `fiber` to receive the next key or mouse event;
-the caller yields and resumes with a `KeyEvent` or `MouseEvent`.
-Registering does not claim the screen on its own — set
-`CTerm.suspended = true` first to halt the wire pump, and clear it
-again when you're done:
+script idles between events, use `Input.pushClaim(fn)`.  The
+foreign installs `fn` as the *current* claim on a stack of input
+claims; whenever a key or mouse event arrives, the C-side
+dispatcher walks the stack head-first (newest first) and invokes
+the first claim whose owning fiber is still alive.  The claim's
+return value is a Bool — `true` consumes the event (no other claim
+or hook sees it), `false` passes it through to the next claim down
+and ultimately to the registered `Hook.onKey` / `Hook.onMouse`
+chain.
 
 [source,wren]
 ----
-import "syncterm" for Input, Key, Screen, CTerm
+import "syncterm" for Input, Key, Wake, Screen, CTerm
 
+var saved = Screen.save()
 CTerm.suspended = true
-Fiber.new {
-  while (true) {
-    Input.nextEvent(Fiber.current)
-    var ev = Fiber.yield()
-    if (ev is KeyEvent && ev.code == Key.escape) break
-    Screen.window.print("got: %(ev)\n")
-  }
-  Screen.restore(saved)
-  CTerm.suspended = false
-}.call()
-----
-
-The doterm() main loop continues to spin normally; when the next
-key or mouse event arrives, dispatch_key/dispatch_mouse pushes a
-result onto the framework's queue and the next main-loop drain calls
-back into the fiber with the event as its yielded value.  The event
-bypasses every `Hook.onKey` / `Hook.onMouse` callback and SyncTERM's
-default handling, exactly as if a hook had returned `true`.
-
-`CTerm.suspended` is independent of `Input.nextEvent` — any script
-can set it to claim the screen, and remote bytes pile up in the
-conn buffer behind it.  When the TCP receive window fills, the
-remote sees its `send()` calls block or `EAGAIN`.  Clearing the flag
-releases the backpressure and the buffered bytes drain through
-cterm normally.
-
-`Input.nextEvent` only registers a single fiber; calling it again
-while another fiber is already registered throws.  The fiber must
-be one created by `Fiber.new {}`.  The root fiber cannot be resumed
-from C after it yields; passing it just leaves the fiber in a
-state where its yield never returns.
-
-A hook callback that yields its own fiber directly is detected and
-reported by the `Hook.dispatch_` wrapper (see "Hooks must run
-synchronously" above).  A hook that wants to drive a modal must
-either spawn a child fiber:
-
-[source,wren]
-----
-Hook.onKey { |k|
-  if (k == Key.f2) {
-    Fiber.new {
-      while (true) {
-        Input.nextEvent(Fiber.current)
-        var ev = Fiber.yield()
-        if (ev is KeyEvent && ev.code == Key.escape) break
-        // ...
-      }
-    }.call()
-    return true
-  }
-  return false
+var me = Fiber.current
+var claim
+claim = Input.pushClaim(Fn.new {|ev|
+  // Decide consume / passthrough synchronously here — handlers
+  // run from the C dispatch frame and must not yield.  Anything
+  // we want to *do* with the event is dispatched by waking the
+  // worker fiber via Wake.post; the worker yields/resumes on
+  // its own schedule.
+  Wake.post(me, ev)
+  return true
+})
+while (true) {
+  var ev = Fiber.yield()
+  if (ev is KeyEvent && ev.code == Key.escape) break
+  Screen.window.print("got: %(ev)\n")
 }
+claim.pop()
+Screen.restore(saved)
+CTerm.suspended = false
 ----
 
-…or register a callback fiber directly so the hook returns
-synchronously and the fiber's body runs when the event arrives:
+The claim is a per-fiber slot: pushing twice from the same fiber
+replaces the existing claim in place (preserving stack position).
+Pushing from a *different* fiber adds a new entry on top, which
+becomes the foreground.  Auto-prune at dispatch time drops claims
+whose owning fiber is `isDone` (so a script that aborts mid-claim
+doesn't leave a dead handler installed).  The returned
+`<<claimhandle,ClaimHandle>>` is the explicit way to remove the
+claim; `pop()` is idempotent.
+
+`CTerm.suspended` is independent of the claim mechanism — any
+script can set it to claim the screen, and remote bytes pile up in
+the conn buffer behind it.  When the TCP receive window fills, the
+remote sees its `send()` calls block or `EAGAIN`.  Clearing the
+flag releases the backpressure and the buffered bytes drain
+through cterm normally.
+
+The claim handler runs from the C dispatch frame via the same
+`Hook.dispatch_` wrapper that protects regular hooks (see "Hooks
+must run synchronously" above) — so a yield inside the handler is
+caught and treated as not-consumed, and the input falls through to
+the next claim or hook chain.  Heavy work belongs in a separate
+fiber that the handler wakes via `Wake.post`.
+
+A hook callback can install its own claim and let it persist past
+the hook return — perfect for "F2 opens a modal that captures
+input until Esc":
 
 [source,wren]
 ----
-Hook.onKey { |k|
-  if (k == Key.f2) {
-    Input.nextEvent(Fiber.new {|ev|
-      // handle ev …
+Hook.onKey(Key.f2) { |k|
+  Fiber.new {
+    var claim = Input.pushClaim(Fn.new {|ev|
+      Wake.post(Fiber.current, ev)
+      return true
     })
-    return true
-  }
-  return false
+    while (true) {
+      var ev = Fiber.yield()
+      if (ev is KeyEvent && ev.code == Key.escape) break
+      // ...
+    }
+    claim.pop()
+  }.call()
+  return true
 }
 ----
+
+For more elaborate UIs, the `App` class (see <<ui-app,App>>) wraps
+this pattern and provides synchronous claim decisions based on its
+own state (modal stack, focused widget, mouse hit-test) plus a
+`runChild` helper that lets handler code yield safely on async
+work without breaking the App's event loop.
 
 == Built-in REPL
 
@@ -1684,32 +1708,39 @@ two-phase split.
 | Push an event back to the front of the input queue.  Routes by
   event type — `KeyEvent` -> `ungetch`, `MouseEvent` -> `ungetmouse`.
 
-| `Input.mousedrag()`
-| Hand off to SyncTERM's drag-select gesture.
+| `Input.mousedrag()`, `Input.mousedrag(forceRect)`
+| Hand off to SyncTERM's drag-select gesture.  `forceRect=true`
+  forces rectangular select (line-mode select makes no sense across
+  Wren UI chrome).
 
 | `Input.mouseVisible=(b)`
 | Show or hide the mouse cursor.  Setter only — there is no ciolib
   query for visibility, and tracking it from Wren would drift if
   other code shows or hides the cursor.
 
-| `Input.nextEvent(fiber)`
-| Register `fiber` to receive the next key or mouse event.  The
-  caller yields to wait; resumes with `KeyEvent` or `MouseEvent`.
-  Throws if another fiber is already registered.  See
-  <<modal-input,Modal Input>>.
+| `Input.mouseEvents`, `Input.mouseEvents=(mask)`
+| Read or set the bitmask of `Mouse.*` events the terminal will
+  deliver.  UI code typically saves the current mask, *replaces* it
+  with exactly the events it cares about, and restores on exit so
+  the surrounding terminal's mouse mode survives.
 
-| `Input.wake(fiber, value)`
-| Queue `value` to be delivered to `fiber` via the same result queue
-  `Input.nextEvent` and `Timer.trigger` use.  Safe to call from
-  inside a hook body — only enqueues; the resume happens on the next
-  main-loop drain.  The canonical use case is a network-driven app
-  where `Hook.onInput` wants to wake a UI fiber that's parked on
-  `Input.nextEvent` so the screen repaints when remote bytes change
-  visible state.  Multiple wakes queue up; each becomes one
-  resumption.  Do NOT call from inside another foreign method whose
-  caller is about to re-enter wrenCall (same rule as wrenCall itself
-  — see wren.md §7).
+| `Input.enableMouseEvent(ev)`, `Input.disableMouseEvent(ev)`
+| Single-event toggles for the same mask.
+
+| `Input.pushClaim(fn)`
+| Push `fn` onto the input claim stack as the *current* claim for
+  the calling fiber.  `fn(ev)` is invoked by the C-side dispatcher
+  with the next key or mouse event and must return Bool — `true`
+  consumes, `false` passes through to the next claim down (and
+  ultimately to registered `Hook.onKey` / `Hook.onMouse`).
+  Per-fiber slot: a same-fiber re-push replaces the existing claim
+  in place; a different-fiber push adds a new entry on top.  Returns
+  a `<<claimhandle,ClaimHandle>>`.  See <<modal-input,Modal Input>>.
 |===
+
+For posting a synthetic resume to a parked fiber (the wake
+mechanism that `Hook.onInput`-style callbacks use to nudge a UI
+fiber), see <<wake,Wake>>.
 
 === KeyEvent
 
@@ -1759,6 +1790,51 @@ Mirrors `struct mouse_event` from `ciolib.h`.
 
 | `endX`, `endY`
 | Release coordinates (1-based).
+|===
+
+=== ClaimHandle [[claimhandle]]
+
+Returned from `Input.pushClaim`.  Drop the claim by calling
+`pop()`.
+
+[options="header",cols="2,3"]
+|===
+| Member | Description
+
+| `pop()`
+| Remove the claim entry from the stack.  Idempotent — stale
+  handles (after a same-fiber re-push bumped the entry's id, or
+  after another path popped it, or after the foreign finalizer ran)
+  no-op silently.  The C-side foreign finalizer also pops on GC,
+  so a forgotten handle still cleans up — but explicit pop is
+  cheaper and more predictable.
+|===
+
+=== Wake [[wake]]
+
+Fiber-resume primitive.  `Wake.post(fiber, value)` queues a
+synthetic resume of `fiber`, delivering `value` as the return of
+its next `Fiber.yield()`.  The wake is enqueued on the same
+result queue `Timer.trigger` and SFTP completions use, so it's
+delivered on the next main-loop drain — never in the middle of the
+current foreign call.  Safe to call from any foreign context
+(hooks, claim handlers, worker fibers).  `value` may be any Wren
+object — the deliverer pins it as a `WrenHandle` until delivery,
+then loads it into the fiber's resumed-value slot.  Multiple posts
+queue up; each becomes one resumption in arrival order.
+
+[options="header",cols="2,3"]
+|===
+| Method | Description
+
+| `Wake.post(fiber, value)`
+| Queue a resume.  Returns immediately; the wake is dispatched on
+  the next main-loop drain.  Convention: pass a discriminated value
+  the fiber's main-loop demuxer can recognise (a foreign
+  `KeyEvent` / `MouseEvent` class, or your own sentinel).  Do NOT
+  call from inside another foreign method whose caller is about to
+  re-enter `wrenCall` (same rule as wrenCall itself — see wren.md
+  §7); hooks and claim handlers are the canonical safe sites.
 |===
 
 === Key
@@ -2295,14 +2371,33 @@ emulation-aware logic.
   sees its `send()` calls block or `EAGAIN`.  Use this to claim the
   screen for a modal dialog, transfer overlay, etc., without remote
   output painting underneath.  Clear it again when you're done.
-  Registering a fiber via `Input.nextEvent` does **not** suspend on
-  its own — scripts that want modal behavior must set this explicitly.
+  Pushing an `Input.pushClaim` does **not** suspend on its own —
+  scripts that want modal behavior must set this explicitly.
   When speed emulation is active and the flag transitions from true
   back to false, the byte pump is credited with all the bytes that
   would have processed at the emulated rate during the suspended
   interval; those bytes drain past the speed gate as fast as the
   pump can run, so the visible output catches up to where it would
   have been if the suspend had never happened.
+
+| `CTerm.sftpActive`, `CTerm.sftpActive = b`
+| SFTP-active flag the SSH driver reads to decide whether to keep
+  the SSH session alive when the shell channel closes (or wire
+  goes idle).  Set true while a script has SFTP transfers in
+  flight; set false when the queue drains.  `is_connected()` ORs
+  this with the C-side queue state, so the term.c main loop keeps
+  pumping (Wren VM, paint, drainOnce_) while the flag is true even
+  after the shell channel dies — letting transfers finish in the
+  background workers and disconnecting cleanly when they're done.
+  Generic — any SFTP-using script can hold the session up.
+
+| `CTerm.refreshStatus()`
+| Force a SyncTERM status-bar repaint on the next `update_status`
+  pass.  Useful after `Screen.restore()` puts a stale snapshot on
+  the status row: this causes the bar's live state (speed, transfer
+  arrows, log indicators) to be re-emitted instead of showing
+  whatever was painted into the saved snapshot.  No-op when the
+  bar is disabled (`statusDisplay == 0`).
 |===
 
 ==== ExtAttr
@@ -2621,11 +2716,96 @@ severe; `debug` is the least.
 | `debug`     | 7    | Debug-level diagnostic.
 |===
 
+=== Host [[host]]
+
+Module-private bridge for state the host owns but Wren shouldn't
+be able to construct directly.  The members below are foreigns;
+the `Cache` / `Download` / `Upload` module-level vars (see below)
+are pre-bound from these at module load.
+
+[options="header",cols="2,3"]
+|===
+| Member | Description
+
+| `Host.cacheDirectory`
+| Returns a fresh `Directory` whose path resolves lazily from the
+  active BBS context (`SYNCTERM_PATH_CACHE`).  No Wren-visible
+  constructor for an `is_cache` `Directory` exists, so this is
+  the only path to one.  Use the module-level `Cache` binding
+  instead in most code.
+
+| `Host.downloadDir`
+| Returns a fresh `Directory` rooted at the BBS's configured
+  `DownloadPath`, with the relaxed-name predicate enabled (1..255
+  bytes; no path separators / NUL / control bytes / `.` / `..` /
+  Windows reserved devices, but spaces / leading dots / parens
+  etc. allowed).  Returns `null` when `DownloadPath` is empty OR
+  equal to the user's `$HOME` — the "unfortunate default" guard
+  for old configs.  Used as the module-level `Download` binding.
+
+| `Host.uploadDir`
+| Same shape as `downloadDir` but for `UploadPath`.  Used as the
+  module-level `Upload` binding.
+
+| `Host.pickFile(initialDir, mask, opts)`
+| User-consent escape hatch for "upload from anywhere": invokes
+  uifc's filepick UI and returns a `File` whose path is the
+  absolute path the user picked, or `null` on cancel.
+  `initialDir` may be a String path, a `Directory` foreign (uses
+  its path; handles `Cache` lazy-resolve), or `null` (defaults
+  to `BBS.ulDir`).  `mask` may be `null` (defaults to `*`).
+  `opts` is a bitmask of the C-side `UIFC_FP_*` flags (see
+  `uifc/filepick.h`).  The returned `File`'s path bypasses the
+  relaxed-name policy — the picker UI is the sandbox boundary,
+  since the user explicitly chose the path.  The returned
+  `File` carries a `.token` consent token (see "Picker consent
+  tokens" below) when the per-installation signing key is
+  loaded.
+
+| `Host.pickFiles(initialDir, mask, opts)`
+| Multi-select counterpart of `pickFile`.  Same argument shape.
+  Returns a non-empty `List<File>` on OK (each `File` has a
+  `.token`), or `null` on cancel / empty selection.  Per
+  `filepick.h`, `UIFC_FP_ALLOWENTRY` / `UIFC_FP_OVERPROMPT` /
+  `UIFC_FP_CREATPROMPT` cannot be combined with multi-select —
+  `filepick_multi` rejects them.
+
+| `Host.openLocalFile(token)`
+| Re-construct a `File` foreign from a consent token previously
+  returned by `pickFile` / `pickFiles` via the `.token` getter.
+  Returns `null` when the token is invalid (HMAC mismatch,
+  signing key rotated), the file no longer exists, or the
+  file's content has changed since consent (SHA-256 mismatch).
+  This is the only path by which Wren can construct a `File`
+  for a path outside the sandboxed `Cache` / `Upload` /
+  `Download` roots; the token *is* the consent.
+
+| `Host.uploadArrow=(b)`, `Host.downloadArrow=(b)`
+| Status-bar transfer-indicator arrows (CP437 ↑ / ↓ at columns
+  28-29).  Generic — any Wren script that knows it's transferring
+  something can light them; the canonical user is the SFTP queue's
+  worker fibers, but a Zmodem / HTTP fetcher / etc. could too.
+  Both default to `false` and are reset on session teardown.
+  Setter only — there's no getter, the host owns the rendered
+  state.
+
+| `Host.sshPublicKey`
+| The first locally-configured SSH public key, as a Map
+  `{"algo": String, "blob": String}` (e.g. `algo: "ssh-ed25519",
+  blob: "AAAA..."`), or `null` when none is available (no SSH
+  backend, key not loaded, OOM).  Used by
+  `scripts/auto/connected/sftp_pubkey.wren` to append the user's
+  `authorized_keys` entry on connect when `BBS.sftpPublicKey` is
+  set.  Today only ed25519 is exposed; the structured shape lets
+  future RSA / sntrup keys join without breaking consumers.
+|===
+
 === Cache [[cache]]
 
-Module-level `Directory` injected from C, pointing at SyncTERM's
-per-user cache directory (`SYNCTERM_PATH_CACHE`).  Use this for
-script-private state that should survive restarts.
+Module-level `Directory` injected from C (pre-bound from
+`Host.cacheDirectory`), pointing at SyncTERM's per-user cache
+directory (`SYNCTERM_PATH_CACHE`).  Use this for script-private
+state that should survive restarts.
 
 `Cache.list` returns a Map keyed by entry name; values are `File`
 objects for regular files and `Directory` objects for subdirectories.
@@ -2661,8 +2841,18 @@ if (Cache.contains("greetings.txt")) {
 //   Cache.list["RIP"].list["icons.dat"]       → File inside /RIP
 ----
 
-There is no Wren-callable factory for `Directory` — `Cache` and
-`Cache.list[someSubdir]` are the only paths to one.
+There is no Wren-callable factory for `Directory` — `Cache`,
+`Download`, `Upload`, and `Cache.list[someSubdir]` (and the
+analogous `Download.list[...]` / `Upload.list[...]`) are the
+only paths to one.
+
+`Download` and `Upload` are module-level `Directory` bindings
+pre-bound from `Host.downloadDir` / `Host.uploadDir` at import
+time.  Both are `null` when the corresponding BBS path is empty
+or set to the user's `$HOME`; scripts MUST null-check before use.
+Their relaxed-name predicate is what makes typical SFTP filenames
+("file with spaces.zip", "doc-v1.0.tar.gz") usable as `local`
+paths in transfer queues.
 
 === Directory
 
@@ -2830,8 +3020,23 @@ methods on the resulting `File` are no-ops if construction failed.
 | `File.size`
 | Length of the file in bytes.
 
+| `File.mtime`, `mtime=(t)`
+| Modification time as POSIX seconds.  Setter calls `setfdate(2)` by
+  path; works on both open and closed handles.  Used by the SFTP
+  queue to stamp completed downloads with the remote's mtime so the
+  browser's status chip can compare local-vs-remote without
+  server-side hash extensions.
+
 | `File.isOpen`
 | `true` while the handle is valid.
+
+| `File.token`
+| Opaque consent token for picker-sourced `File`s; `null` for
+  `File`s obtained via `Cache` / `Upload` / `Download` Directory
+  listings.  Persist this in WON next to the path string and pass
+  back to `Host.openLocalFile` on resume to re-construct the
+  `File` at the same absolute path.  See "Picker consent tokens"
+  below.
 
 | `File.sha1`, `File.md5`
 | Hashes of the file's full content; raw digest bytes (20 / 16
@@ -2851,6 +3056,59 @@ on every operation (a per-call `fexist()` check catches deletions
 that bypassed `Directory.delete`).  See the
 <<directory-handle-staleness,Handle staleness>> note in the Directory
 section for the full mechanism.
+
+==== Picker consent tokens [[picker-tokens]]
+
+Wren scripts must not synthesize `File` foreigns from arbitrary
+paths — that's the whole point of the `Cache` / `Upload` /
+`Download` sandboxed roots and the relaxed-name predicate.  The
+escape hatch is `Host.pickFile` / `Host.pickFiles`, where the UIFC
+filepick widget itself is the user's signal of consent.
+
+To let queued picker-sourced uploads survive a disconnect, the
+picker mints a *capability token* at consent time: an
+HMAC-SHA256 binding of the absolute path and the file's SHA-256,
+signed by a per-installation key stored in the user's encrypted
+`syncterm.lst`.  Wren can store the token freely (it's opaque
+bytes — exposed via `File.token` and accepted by
+`Host.openLocalFile`); only the C side can mint or verify one.
+The file-content hash routes through DeuceSSH's
+hardware-accelerated digest backend (Intel SHA-NI / ARM crypto
+extensions, via OpenSSL or Botan) when the build has it, so
+signing/verifying a multi-GB picked file stays in the
+sub-second range on commodity hardware.  `WITHOUT_DEUCESSH`
+builds fall back to xpdev's pure-C SHA-256 (`src/hash/sha256.c`)
+— correct, just slower on huge files; signing key generation
+in that build seeds from `/dev/urandom` (or time/PID) via
+`xp_random` rather than the SSH backend's CSPRNG.
+
+At resume time, `Host.openLocalFile(token)` verifies:
+
+. The HMAC matches (token wasn't tampered with; signing key
+  hasn't rotated).
+. The file at the encoded path still exists.
+. The file's current SHA-256 still matches the SHA-256 captured
+  at consent time.
+
+Any failure returns `null`; the queued upload should be marked
+failed and the user prompted to re-pick.  The content hash
+binding is deliberate: if the file's content has changed since
+consent, the original consent doesn't authorize uploading the
+new content.
+
+The signing key is loaded only from the user's personal BBS list
+(`USER_BBSLIST`) — never from shared/system or web-fetched
+lists.  This stops a malicious shared list from injecting a
+known key and forging tokens against the local install.  Key
+rotation is manual: remove the `WrenPickerHmacKey` line from
+`syncterm.lst`; SyncTERM regenerates on next launch.  All
+in-flight picker tokens become invalid.
+
+`Host.pickFile` / `Host.pickFiles` continue to work even when
+the signing key is unavailable (e.g. an unencrypted list, OOM
+during generation) — the returned `File`s have `null` `.token`,
+so picker uploads in such sessions don't persist across
+reconnects but otherwise behave normally.
 
 === Hook
 
@@ -2959,6 +3217,13 @@ site).
 | The remote `pubdir@syncterm.net` path advertised by the server, or
   `null` if the extension wasn't negotiated.
 
+| `SFTP.lname`
+| `true` when the session negotiated the `lname@syncterm.net`
+  extension — the per-entry friendly long name (directories) /
+  short description (files) that `SFTPEntry.longname` carries.
+  UI code can use this to decide whether to reserve a row for a
+  description bar that would otherwise always be blank.
+
 | `SFTP.realpath(fiber, path)`
 | Resolve `path` to an absolute server path.  Resumes with `String`
   or `SFTPError`.
@@ -2995,6 +3260,22 @@ site).
 | `SFTP.mkdir(fiber, path)`, `SFTP.rmdir(fiber, path)`,
   `SFTP.remove(fiber, path)`, `SFTP.rename(fiber, oldpath, newpath)`
 | Mutation ops.  Each resumes with `null` on success or `SFTPError`.
+
+| `SFTP.setMtime(fiber, path, t)`
+| Set both atime and mtime of `path` to `t` (POSIX seconds).  Used by
+  the upload queue to stamp completed remotes with the local file's
+  mtime so a subsequent browse shows `[==]` without depending on
+  hash extensions.  Resumes with `null` on success or `SFTPError`
+  (e.g. read-only mount).
+
+| `SFTP.descs(fiber, path)`
+| Fetch the server's long description for `path` via the
+  `descs@syncterm.net` extension.  Resumes with the description
+  String, `null` if there's no description (or the extension wasn't
+  negotiated), or `SFTPError`.  `SFTPEntry.hasLongDesc` is a
+  per-entry hint — server-asserted presence — that lets browsers
+  decide whether to mark a row as having a long description
+  available without paying the round-trip cost on every selection.
 |===
 
 ==== FileFlag
@@ -3022,17 +3303,25 @@ One entry from `SFTP.readdir`.
 |===
 | Member | Description
 
-| `name`     | Filename relative to the parent directory.
-| `longname` | Server-formatted ls-style line (when the
-              `lname@syncterm.net` extension was negotiated; `null`
-              otherwise).  Used as `toString` when present.
-| `size`     | File size in bytes.
-| `mtime`    | Modification time, POSIX seconds.
-| `isDir`    | `true` if the entry is a directory.
-| `hash`     | SHA-1 / MD5 digest bytes from `sha1s@syncterm.net` /
-              `md5s@syncterm.net`, or `null` if neither extension
-              was negotiated.  Compares directly against
-              `File.sha1` / `File.md5`.
+| `name`        | Filename relative to the parent directory.
+| `longname`    | Server-formatted long name (when the
+                  `lname@syncterm.net` extension was negotiated;
+                  `null` otherwise).  For directories this is the
+                  friendly long name (UI label); for files it's the
+                  one-line short description (UI status bar).
+| `size`        | File size in bytes.
+| `mtime`       | Modification time, POSIX seconds.
+| `isDir`       | `true` if the entry is a directory.
+| `hasLongDesc` | `true` if the server marked this entry as having a
+                  long description available via the
+                  `descs@syncterm.net` extension.  Lets browsers
+                  show a "+" marker on rows with descriptions
+                  without paying the round-trip cost; fetch the
+                  actual text with `SFTP.descs(fiber, path)`.
+| `hash`        | SHA-1 / MD5 digest bytes from `sha1s@syncterm.net`
+                  / `md5s@syncterm.net`, or `null` if neither
+                  extension was negotiated.  Compares directly
+                  against `File.sha1` / `File.md5`.
 |===
 
 ==== SFTPStat
@@ -3102,6 +3391,23 @@ var r = SFTP.realpath(Fiber.current, ".") || Fiber.yield()
 The `||` shortcut means: if the foreign returned an `SFTPError`
 synchronously (session is gone), `r` is that error and `Fiber.yield()`
 isn't evaluated.  Otherwise the yield resumes with the result.
+
+This shape is *only* safe in a fiber whose only resume sources are
+its own SFTP completions.  If the calling fiber has other things
+that can wake it (`Wake.post`, `Timer.trigger`, the App's claim
+handler posting events to its run-fiber, etc.), the yield can
+return a value of the wrong type and the `r is SFTPError` check
+will see something other than a String.  From inside an `App`
+handler, wrap the SFTP call with `<<ui-app,App.runChild>>`, which
+spawns a dedicated child fiber and pumps the App's event loop
+while it's parked:
+
+[source,wren]
+----
+var r = app.runChild(Fn.new {
+  return SFTP.realpath(Fiber.current, ".") || Fiber.yield()
+})
+----
 
 **Callback-style** — pass `Fiber.new {|r| ... }`, calling fiber
 doesn't yield at all:
@@ -3255,11 +3561,13 @@ Screen.restore(snap)
 ----
 
 `App.run()` and `App.runSync()` differ in how they pump events.
-`run()` parks a fiber on `Input.nextEvent` and yields between events
-— inbound bytes flow normally, `Hook.every` and `Timer.trigger` keep
-firing.  `runSync()` blocks the VM on `Input.next()` instead; use it
-from contexts where doterm can't dispatch back into the App, e.g.
-the Wren console (whose REPL itself runs inside a `Hook.onKey`).
+`run()` parks a fiber on `Fiber.yield()` between events — claim
+handler posts each accepted event via `Wake.post`, the result
+queue resumes the fiber.  Inbound bytes flow normally,
+`Hook.every` and `Timer.trigger` keep firing.  `runSync()` blocks
+the VM on `Input.next()` instead; use it from contexts where
+doterm can't dispatch back into the App, e.g. the Wren console
+(whose REPL itself runs inside a `Hook.onKey`).
 
 === Importing
 
@@ -3290,16 +3598,32 @@ Confirm`, etc.  They're listed in <<ui-modules,UI Modules>>.
 * a global keymap — `app.bind(keyCode, fn)` registers a hotkey that
   fires when no widget consumes the key.  F1 is bound by default to
   `showHelp`.
-* a screen-sized backbuffer Surface and a one-shot screen capture
-  (`Screen.readRect`) used as the backdrop behind everything.  Areas
-  not covered by widgets show that capture rather than a styled
-  fill — UIFC convention.
+* a single run-fiber that pumps the event loop.  `run()` pushes an
+  input claim (see <<modal-input,Modal Input>>) whose handler
+  decides synchronously, from App state alone, whether each event
+  is "for the App" — modal up consumes everything; with a focused
+  widget, keys are claimed and mouse events are claimed when they
+  hit the visible widget tree (or start a drag, which the App owns
+  for rectangular select); otherwise the event falls through to
+  lower claims and then to registered `Hook.onKey` /
+  `Hook.onMouse`.  Claimed events are delivered to the run-fiber
+  via `Wake.post`; the next `drainOnce_` iteration picks them up
+  and dispatches into the widget tree.
+* a backbuffer `Surface` sized to the term area (`Screen.size`
+  minus one row when `CTerm.statusDisplay > 0`, so the App's blit
+  doesn't overwrite the SyncTERM status bar) and a one-shot screen
+  capture (`Screen.readRect`) used as the backdrop behind
+  everything.  Areas not covered by widgets show that capture
+  rather than a styled fill — UIFC convention.
 
 Methods of interest:
 
-* `run()` / `runSync()` — enter the event loop.  Save/restore mouse
-  events and `CustomCursor` automatically.  `tickMs=` schedules a
-  periodic `onTick_` callback (overridable; no-op by default).
+* `run()` / `runSync()` — enter the event loop.  Save/restore
+  mouse events and `CustomCursor` automatically.  `tickMs=`
+  schedules a periodic `onTick_` callback (overridable; no-op by
+  default).  Only one timer is queued at a time per App: the
+  `_tickPending` guard means non-tick events (keys, mouse,
+  external posts) don't accumulate timers behind the pending one.
 * `quit()` — break out of the loop.  Widgets and global handlers
   call this from their key/mouse handlers.
 * `modal(widget)` — push a modal, drain events until it pops, return
@@ -3313,20 +3637,58 @@ Methods of interest:
 * `showHelp()` — walks from the focused leaf up the parent chain to
   the first widget with `helpText` set, then opens a `Help` dialog
   with that text.  No-op if nothing in the chain has help.
-* `post()` / `post(value)` — wake the App's parked fiber from
-  outside the input / timer paths.  See "Externally-driven repaint"
-  below.
+* `post()` / `post(value)` — wake the App's run-fiber from
+  outside the input / timer paths.  See "Externally-driven
+  repaint" below.
 * `onPost=(fn)` — handler for posted values that aren't the
   no-payload sentinel.  See below.
+* `runChild(fn)` — spawn `fn` in a fresh fiber, pump the App's
+  event loop from the run-fiber until the child completes, return
+  whatever `fn` returned.  See "Async work in handlers" below.
 * `theme=` — install a custom Theme (see <<ui-theme,Theme>>).
+
+==== Async work in handlers [[ui-app-runchild]]
+
+A keymap or widget handler that needs to do an SFTP op (or any
+other yielding work) cannot just write `SFTP.foo(Fiber.current,
+...) || Fiber.yield()` and expect it to work — the App's run-
+fiber has multiple resume sources (the claim handler's `Wake.post`
+for keys/mouse, the `tickMs` timer, external `app.post(value)`
+calls), and any of them might wake the fiber before the SFTP
+result arrives.  The yield then returns the wrong type and the
+calling code sees garbage.
+
+`runChild(fn)` solves this by spawning a child fiber whose only
+resume sources are its own SFTP / `Wake.post` completions:
+
+[source,wren]
+----
+fetchDescAndShow_(path) {
+  popStatus("Fetching ...")
+  var d = runChild(Fn.new {
+    return SFTP.descs(Fiber.current, path) || Fiber.yield()
+  })
+  popStatus(null)
+  if (d is SFTPError) Alert.show(this, "Failed: " + d.toString)
+  else                Alert.showPreformatted(this, d)
+}
+----
+
+The child fiber yields on `SFTP.descs`; the run-fiber drops into
+its own `drainOnce_` loop, dispatching keys, mouse, ticks, and
+repaints normally while the child is parked.  When the SFTP
+result wakes the child, its body completes and `runChild`
+returns the value.  Modal calls (Alert, Confirm) belong on the
+run-fiber side after `runChild` returns — modals pump
+`drainOnce_` from whichever fiber called them, and only the
+run-fiber receives wakes from the App's claim handler.
 
 ==== Externally-driven repaint [[ui-app-post]]
 
-The async `run()` parks on `Input.nextEvent`, so by default only
-keyboard / mouse / `Timer.trigger` can wake the App.  A
-network-driven app (chat client, ticker, log viewer fed by remote
-bytes) needs a way for `Hook.onInput` to nudge the UI without
-faking a key press.  That's what `post` is for:
+The async `run()` parks the run-fiber on `Fiber.yield()` between
+events.  A network-driven app (chat client, ticker, log viewer fed
+by remote bytes) needs a way for `Hook.onInput` to nudge the UI
+without faking a key press.  That's what `post` is for:
 
 [source,wren]
 ----
@@ -3346,11 +3708,11 @@ Hook.onInput { |b|
 app.run()
 ----
 
-`app.post()` queues a fiber resumption with a no-payload sentinel;
-the next main-loop drain delivers it, `drawAll_` runs at the top of
-`drainOnce_`, and the dirty widget repaints.  The hook returns
-synchronously — `post` only enqueues, satisfying the
-hooks-must-run-synchronously rule.
+`app.post()` calls `Wake.post(_runFiber, WakeOnly.instance)` — a
+no-payload sentinel.  The next main-loop drain delivers it,
+`drawAll_` runs at the top of `drainOnce_`, and the dirty widget
+repaints.  The hook returns synchronously — `post` only
+enqueues, satisfying the hooks-must-run-synchronously rule.
 
 `app.post(value)` carries an arbitrary Wren value.  When a non-
 sentinel value arrives, `onPost` (if set) is called with it after
@@ -3369,11 +3731,11 @@ Hook.onInput { |b|
 }
 ----
 
-`post` is a no-op when the App isn't running (no parked fiber).
-It's not supported under `runSync` — the synchronous variant blocks
-on `Input.next()` at the C level, not on `Fiber.yield`, so a wake
-through the result queue won't reach it.  Use `run()` for any app
-that needs external wake-ups.
+`post` is a no-op when the App isn't running (no run-fiber).
+It's not supported under `runSync` — the synchronous variant
+blocks on `Input.next()` at the C level, not on `Fiber.yield`,
+so a wake through the result queue won't reach it.  Use `run()`
+for any app that needs external wake-ups.
 
 `App` is not itself a `Widget` but exposes `effectiveTheme` and
 `markDirty()` so widget tree-walks can terminate at it.  Setting a

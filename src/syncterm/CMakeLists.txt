@@ -303,6 +303,7 @@ set(SOURCE
 	wren_bind_conn.c
 	wren_bind_hook.c
 	wren_bind_won.c
+	wren_token.c
 	../sbbs3/telnet.c
 	../sbbs3/xmodem.c
 	../sbbs3/zmodem.c
@@ -418,7 +419,7 @@ elseif(CMAKE_SYSTEM_NAME STREQUAL "Haiku")
 endif()
 
 if(NOT WITHOUT_DEUCESSH)
-	list(APPEND SOURCE ssh.c sftp_browser.c sftp_degraded.c sftp_queue.c sftp_queue_screen.c sftp_wait.c)
+	list(APPEND SOURCE ssh.c)
 endif()
 # ini_crypt.c + xp_crypt/xp_tls backend shim are always built, even
 # with WITHOUT_CRYPTO — bbslist.c and syncterm.c reference the

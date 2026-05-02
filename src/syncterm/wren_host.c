@@ -14,6 +14,7 @@
 
 #include "wren_host.h"
 #include "wren_host_internal.h"
+#include "wren_bind_screen.h"
 
 #include "wren.h"
 
@@ -371,8 +372,9 @@ wren_result_push(WrenHandle *fiber, void *data,
 
 /* Returns true if the fiber has finished or aborted.  Any error from
  * the isDone primitive itself is treated as "done" so a broken fiber
- * doesn't keep results queued indefinitely. */
-static bool
+ * doesn't keep results queued indefinitely.  Non-static — also used
+ * by wren_bind_screen.c's claim-stack auto-prune. */
+bool
 fiber_is_done(WrenHandle *fiber)
 {
 	if (state.fiber_isdone_handle == NULL)
@@ -1050,9 +1052,10 @@ wren_host_shutdown(void)
 			    state.pending_timers[i].fiber);
 	}
 	state.pending_timer_count = 0;
-	if (state.parked_fiber != NULL) {
-		wrenReleaseHandle(state.vm, state.parked_fiber);
-		state.parked_fiber = NULL;
+	wren_bind_claim_stack_clear();
+	if (state.claim_handle_class != NULL) {
+		wrenReleaseHandle(state.vm, state.claim_handle_class);
+		state.claim_handle_class = NULL;
 	}
 
 	/* Drain any results still in the queue without delivering.  Workers
@@ -1088,6 +1091,14 @@ wren_host_shutdown(void)
 	state.vm = NULL;
 	active = false;
 	pthread_mutex_destroy(&state.result_mutex);
+
+	/* Clear the status-bar transfer arrows — without this, a next
+	 * session's status bar would briefly show the old session's
+	 * arrows lit. */
+	wren_xfer_arrows_reset();
+	/* Clear the SFTP-active flag so the next session's ssh.c teardown
+	 * decision starts from a clean slate. */
+	wren_sftp_active_reset();
 }
 
 /* --------------------------------------------------------------------
@@ -1118,11 +1129,12 @@ wren_host_dispatch_key(int key)
 {
 	if (!active || !on_owner_thread())
 		return false;
-	/* A fiber registered via Input.nextEvent claims the event before
-	 * any hook sees it.  Only non-mouse keys go straight to the
-	 * fiber; the CIO_KEY_MOUSE marker falls through so dispatch_mouse
-	 * can deliver the actual MouseEvent next. */
-	if (wren_bind_resume_parked_key(key))
+	/* The input claim stack gets first crack — topmost (newest)
+	 * claim wins.  Only non-mouse keys go to the claim dispatcher;
+	 * the CIO_KEY_MOUSE marker falls through so dispatch_mouse can
+	 * deliver the actual MouseEvent next.  If no claim consumed,
+	 * fall through to the hook chain. */
+	if (wren_bind_dispatch_claim_key(key))
 		return true;
 	int n = state.hook_count[WREN_HOOK_KEY];
 	for (int i = 0; i < n; i++) {
@@ -1315,7 +1327,7 @@ wren_host_dispatch_mouse(struct mouse_event *ev)
 {
 	if (!active || !on_owner_thread() || ev == NULL)
 		return false;
-	if (wren_bind_resume_parked_mouse(ev))
+	if (wren_bind_dispatch_claim_mouse(ev))
 		return true;
 	int n = state.hook_count[WREN_HOOK_MOUSE];
 	if (n == 0)
@@ -1400,4 +1412,38 @@ wren_host_dispatch_timer(void)
 		if (t->next_fire_s < now)
 			t->next_fire_s = now + (long double)t->interval_ms / 1000.0L;
 	}
+}
+
+/* Fire every Hook.onShellClose / Hook.onDisconnect handler in
+ * registration order.  No payload; handlers take no args.  Return
+ * value is ignored (these aren't "consume the event" hooks).  Pattern
+ * mirrors wren_host_compose_status but with dispatch0_handle since
+ * there's no argument to pass. */
+static void
+dispatch_zero_arg_event(enum wren_hook_event ev)
+{
+	if (!active || !on_owner_thread())
+		return;
+	int n = state.hook_count[ev];
+	for (int i = 0; i < n; i++) {
+		struct wren_hook_entry *h = state.hooks[ev][i];
+		if (h == NULL || h->fn == NULL)
+			continue;
+		wrenEnsureSlots(state.vm, 2);
+		wrenSetSlotHandle(state.vm, 0, state.hook_class);
+		wrenSetSlotHandle(state.vm, 1, h->fn);
+		(void)metrics_invoke(&h->metrics, state.dispatch0_handle);
+	}
+}
+
+void
+wren_host_dispatch_shell_close(void)
+{
+	dispatch_zero_arg_event(WREN_HOOK_SHELL_CLOSE);
+}
+
+void
+wren_host_dispatch_disconnect(void)
+{
+	dispatch_zero_arg_event(WREN_HOOK_DISCONNECT);
 }

@@ -8,6 +8,7 @@ set(SOURCE
 	crc32.c
 	md5.c
 	sha1.c
+	sha256.c
 )
 
 set(HEADER
@@ -15,6 +16,7 @@ set(HEADER
 	crc32.h
 	md5.h
 	sha1.h
+	sha256.h
 )
 
 add_library(hash OBJECT ${SOURCE})

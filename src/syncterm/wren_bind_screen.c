@@ -399,36 +399,12 @@ push_next_event(WrenVM *vm)
 	push_key_event(vm, (uint16_t)code);
 }
 
-/* Input.nextEvent(fiber) — register the fiber to receive the next
- * key or mouse event.  The fiber should yield right after (typically
- * the next statement, but it may fire other async ops first and then
- * yield in a loop demuxing results by type).  When an event arrives,
- * wren_bind_resume_parked_* picks the fiber up and calls
- * fiber.call(event), making the yield return that event.
- *
- * Throws if another fiber is already registered — single-subscriber
- * is a structural property of the framework today, so two parks is
- * a script bug. */
-void
-fn_Input_nextEvent(WrenVM *vm)
-{
-	struct wren_host_state *st = wren_host_state();
-	if (st->parked_fiber != NULL) {
-		wrenEnsureSlots(vm, 1);
-		wrenSetSlotString(vm, 0, "Input.nextEvent: another fiber "
-		    "is already registered for the next event");
-		wrenAbortFiber(vm, 0);
-		return;
-	}
-	st->parked_fiber = wrenGetSlotHandle(vm, 1);
-	wrenSetSlotNull(vm, 0);
-}
-
-/* Input.wake(fiber, value) — queue `value` to be delivered to `fiber`
- * via the same result queue as Input.nextEvent / Timer.trigger.  Safe
- * to call from a hook body (queues only; the resume happens on the
- * next main-loop drain).  Hooks must NOT call from their own foreign
- * frame; the queue dispatcher's wrenCall would re-enter the VM.
+/* Wake.post(fiber, value) — queue `value` to be delivered to `fiber`
+ * via the same result queue as the claim dispatcher / Timer.trigger.
+ * Safe to call from a hook body (queues only; the resume happens on
+ * the next main-loop drain).  Hooks must NOT call from their own
+ * foreign frame; the queue dispatcher's wrenCall would re-enter the
+ * VM.
  *
  * Both `fiber` and `value` are pinned via wrenGetSlotHandle.  The
  * fiber handle is released by the result-queue drain after the call.
@@ -463,9 +439,8 @@ free_wake_payload(void *data)
 }
 
 void
-fn_Input_wake(WrenVM *vm)
+fn_Wake_post(WrenVM *vm)
 {
-	struct wren_host_state *st = wren_host_state();
 	WrenHandle             *fiber;
 	WrenHandle             *value;
 	struct wake_payload    *wp;
@@ -482,94 +457,268 @@ fn_Input_wake(WrenVM *vm)
 		return;
 	}
 	wp->value = value;
-
-	/* If the target fiber is currently parked on Input.nextEvent,
-	 * waking it via the result queue consumes that registration —
-	 * the fiber resumes here, and the next Input.nextEvent re-arms.
-	 * Without this, the parked-fiber slot would still point at the
-	 * resumed fiber on the next iteration and Input.nextEvent would
-	 * throw "another fiber is already registered."  Compare via the
-	 * underlying Wren Value (handles wrapping the same fiber are
-	 * distinct pointers but equal Values). */
-	if (st != NULL && st->parked_fiber != NULL && fiber != NULL &&
-	    wrenValuesSame(st->parked_fiber->value, fiber->value)) {
-		wrenReleaseHandle(vm, st->parked_fiber);
-		st->parked_fiber = NULL;
-	}
-
 	wren_result_push(fiber, wp, deliver_wake_value, free_wake_payload);
 	wrenSetSlotNull(vm, 0);
 }
 
-/* Result-queue payload for Input.nextEvent: enough state to build the
- * KeyEvent or MouseEvent foreign instance at delivery time.  Workers
- * never construct it (Input is owner-thread only), but it goes through
- * the same queue path as everything else for uniformity. */
-struct input_result {
-	bool                is_mouse;
-	uint16_t            code;     /* is_mouse == false */
-	struct mouse_event  ev;       /* is_mouse == true  */
+/* ----- Input claim stack -------------------------------------------
+ *
+ * Each running App (or one-shot input consumer) pushes a claim that
+ * receives KeyEvent / MouseEvent foreigns and returns a Bool
+ * (consumed).  The C dispatcher walks claims top-down, short-circuits
+ * on first consumed=true, and falls through to the hook chain when
+ * everything passed through.  Per-fiber slot: a same-fiber re-push
+ * replaces the existing entry in place; different-fiber pushes add
+ * new entries on top.
+ *
+ * ClaimHandle is a foreign whose payload pairs an entry pointer with
+ * a monotonic id.  pop() walks the list; if the entry is still
+ * present and its id matches, unlink/release.  Idempotent — stale
+ * handles (after a same-fiber re-push bumped the id) are no-ops.
+ * The foreign finalizer also calls pop() so a forgotten / GC'd
+ * handle still cleans up. */
+
+struct wren_claim_handle {
+	enum syncterm_wren_foreign  type;   /* SWF_CLAIM_HANDLE  */
+	struct wren_input_claim    *entry;
+	uint64_t                    id;
 };
 
 static void
-deliver_input_result(WrenVM *vm, int slot, void *data)
+free_claim_entry(struct wren_host_state *st, struct wren_input_claim *c)
+{
+	if (c->fn != NULL)
+		wrenReleaseHandle(st->vm, c->fn);
+	if (c->fiber != NULL)
+		wrenReleaseHandle(st->vm, c->fiber);
+	free(c);
+}
+
+void
+wren_claim_handle_allocate(WrenVM *vm)
+{
+	struct wren_claim_handle *ch = wrenSetSlotNewForeign(vm, 0, 0,
+	    sizeof(*ch));
+	memset(ch, 0, sizeof(*ch));
+	ch->type = SWF_CLAIM_HANDLE;
+}
+
+/* ClaimHandle finalizer: if the entry is still present (script
+ * forgot to pop, or the handle was GC'd before App.run could clean
+ * up), unlink it from the stack.  Compare-by-id so a same-fiber
+ * re-push that bumped the id doesn't get yanked out from under
+ * its current owner. */
+void
+wren_claim_handle_finalize(void *data)
+{
+	struct wren_claim_handle *ch = data;
+	struct wren_host_state   *st;
+	struct wren_input_claim **cur;
+
+	if (ch == NULL || ch->entry == NULL)
+		return;
+	st = wren_host_state();
+	if (st == NULL)
+		return;
+	for (cur = &st->claim_top; *cur != NULL; cur = &(*cur)->next) {
+		if (*cur != ch->entry)
+			continue;
+		if ((*cur)->id != ch->id)
+			break;
+		struct wren_input_claim *gone = *cur;
+		*cur = gone->next;
+		free_claim_entry(st, gone);
+		break;
+	}
+	ch->entry = NULL;
+}
+
+/* Input.pushClaim_(fiber, fn) — register a claim; returns ClaimHandle.
+ * Same-fiber dedup: if the calling fiber already has a claim on the
+ * stack, replace its fn in place (preserving stack position) and
+ * bump the id.  Otherwise allocate a new entry at the top. */
+void
+fn_Input_pushClaim_(WrenVM *vm)
 {
 	struct wren_host_state *st = wren_host_state();
-	struct input_result    *ir = data;
-	if (ir->is_mouse) {
-		load_class_into_slot(vm, &st->mouse_event_class,
-		    "MouseEvent", slot + 1);
-		struct wren_mouse_event *me =
-		    wrenSetSlotNewForeign(vm, slot, slot + 1, sizeof(*me));
-		me->type = SWF_MOUSE_EVENT;
-		me->ev   = ir->ev;
+	WrenHandle *fiber = wrenGetSlotHandle(vm, 1);
+	WrenHandle *fn    = wrenGetSlotHandle(vm, 2);
+
+	if (fiber == NULL || fn == NULL || st == NULL) {
+		if (fiber != NULL) wrenReleaseHandle(vm, fiber);
+		if (fn    != NULL) wrenReleaseHandle(vm, fn);
+		wrenSetSlotNull(vm, 0);
+		return;
+	}
+
+	struct wren_input_claim *entry = NULL;
+	for (struct wren_input_claim *c = st->claim_top; c != NULL;
+	    c = c->next) {
+		if (c->fiber != NULL &&
+		    wrenValuesSame(c->fiber->value, fiber->value)) {
+			entry = c;
+			break;
+		}
+	}
+
+	if (entry != NULL) {
+		/* Replace fn in place; bump id so any prior ClaimHandle
+		 * for this entry no longer matches and pop()s no-op. */
+		wrenReleaseHandle(vm, entry->fn);
+		entry->fn = fn;
+		entry->id = ++st->claim_next_id;
+		/* fiber didn't change, but we hold an extra handle to it
+		 * from this push — release the duplicate. */
+		wrenReleaseHandle(vm, fiber);
 	} else {
-		load_class_into_slot(vm, &st->key_event_class,
-		    "KeyEvent", slot + 1);
-		struct wren_key_event *ke =
-		    wrenSetSlotNewForeign(vm, slot, slot + 1, sizeof(*ke));
-		key_event_init(ke, ir->code);
+		entry = calloc(1, sizeof(*entry));
+		if (entry == NULL) {
+			wrenReleaseHandle(vm, fiber);
+			wrenReleaseHandle(vm, fn);
+			wrenSetSlotNull(vm, 0);
+			return;
+		}
+		entry->fiber = fiber;
+		entry->fn    = fn;
+		entry->id    = ++st->claim_next_id;
+		entry->next  = st->claim_top;
+		st->claim_top = entry;
 	}
+
+	/* Build a ClaimHandle pointing at the entry. */
+	wrenEnsureSlots(vm, 2);
+	load_class_into_slot(vm, &st->claim_handle_class, "ClaimHandle", 1);
+	struct wren_claim_handle *ch =
+	    wrenSetSlotNewForeign(vm, 0, 1, sizeof(*ch));
+	ch->type  = SWF_CLAIM_HANDLE;
+	ch->entry = entry;
+	ch->id    = entry->id;
+}
+
+/* ClaimHandle.pop() — unlink the claim entry by id match.  Idempotent
+ * by design: stale handles (after a same-fiber re-push, or after
+ * another path popped the entry, or after the finalizer ran) are no-
+ * ops.  Returns true if this call actually removed the entry. */
+void
+fn_ClaimHandle_pop(WrenVM *vm)
+{
+	struct wren_claim_handle *ch = wrenGetSlotForeign(vm, 0);
+	struct wren_host_state   *st = wren_host_state();
+	bool removed = false;
+
+	if (ch != NULL && ch->entry != NULL && st != NULL) {
+		struct wren_input_claim **cur;
+		for (cur = &st->claim_top; *cur != NULL;
+		    cur = &(*cur)->next) {
+			if (*cur != ch->entry)
+				continue;
+			if ((*cur)->id != ch->id)
+				break;
+			struct wren_input_claim *gone = *cur;
+			*cur = gone->next;
+			free_claim_entry(st, gone);
+			removed = true;
+			break;
+		}
+		ch->entry = NULL;
+	}
+	wrenSetSlotBool(vm, 0, removed);
+}
+
+/* Walk the claim stack with the given event in the prepared slot.
+ * Auto-prunes dead-fiber claims as it goes.  Returns true on first
+ * consumed (Bool true) return; false if all claims passed through
+ * or were pruned. */
+static bool
+dispatch_claim_event(int event_slot)
+{
+	struct wren_host_state *st = wren_host_state();
+	if (st == NULL || st->vm == NULL || st->dispatch1_handle == NULL ||
+	    st->hook_class == NULL)
+		return false;
+
+	WrenHandle *event_handle = wrenGetSlotHandle(st->vm, event_slot);
+	if (event_handle == NULL)
+		return false;
+
+	bool consumed = false;
+	struct wren_input_claim **cur = &st->claim_top;
+	while (*cur != NULL) {
+		struct wren_input_claim *c = *cur;
+		struct wren_input_claim *next = c->next;
+
+		if (c->fiber == NULL || fiber_is_done(c->fiber)) {
+			*cur = next;
+			free_claim_entry(st, c);
+			continue;
+		}
+
+		wrenEnsureSlots(st->vm, 3);
+		wrenSetSlotHandle(st->vm, 0, st->hook_class);
+		wrenSetSlotHandle(st->vm, 1, c->fn);
+		wrenSetSlotHandle(st->vm, 2, event_handle);
+		WrenInterpretResult r = wrenCall(st->vm,
+		    st->dispatch1_handle);
+		if (r == WREN_RESULT_SUCCESS &&
+		    wrenGetSlotType(st->vm, 0) == WREN_TYPE_BOOL &&
+		    wrenGetSlotBool(st->vm, 0)) {
+			consumed = true;
+			break;
+		}
+		/* Re-fetch cur each iteration: the handler may have
+		 * popped its own entry, pushed a new one (lands at top
+		 * — handled by walking from the new head next call,
+		 * not this dispatch), or had the entry mutated by a
+		 * same-fiber re-push (id bumped, fn replaced — we'd
+		 * fire the new fn next event).  Just walk forward
+		 * from where we are. */
+		if (*cur == c)
+			cur = &c->next;
+	}
+	wrenReleaseHandle(st->vm, event_handle);
+	return consumed;
 }
 
 bool
-wren_bind_resume_parked_key(int code)
+wren_bind_dispatch_claim_key(int code)
 {
 	struct wren_host_state *st = wren_host_state();
-	if (st->parked_fiber == NULL || code == CIO_KEY_MOUSE)
+	if (st == NULL || st->claim_top == NULL || code == CIO_KEY_MOUSE)
 		return false;
-	WrenHandle *fiber = st->parked_fiber;
-	st->parked_fiber  = NULL;
-
-	struct input_result *ir = calloc(1, sizeof(*ir));
-	if (ir == NULL) {
-		wrenReleaseHandle(st->vm, fiber);
-		return true;
-	}
-	ir->is_mouse = false;
-	ir->code     = (uint16_t)code;
-	wren_result_push(fiber, ir, deliver_input_result, free);
-	return true;
+	wrenEnsureSlots(st->vm, 4);
+	push_key_event(st->vm, (uint16_t)code);
+	/* push_key_event puts the event in slot 0; move to slot 3 to
+	 * keep the dispatch-table slots free. */
+	wrenSetSlotHandle(st->vm, 3, wrenGetSlotHandle(st->vm, 0));
+	return dispatch_claim_event(3);
 }
 
 bool
-wren_bind_resume_parked_mouse(struct mouse_event *ev)
+wren_bind_dispatch_claim_mouse(struct mouse_event *ev)
 {
 	struct wren_host_state *st = wren_host_state();
-	if (st->parked_fiber == NULL || ev == NULL)
+	if (st == NULL || st->claim_top == NULL || ev == NULL)
 		return false;
-	WrenHandle *fiber = st->parked_fiber;
-	st->parked_fiber  = NULL;
+	wrenEnsureSlots(st->vm, 4);
+	push_mouse_event(st->vm, ev);
+	wrenSetSlotHandle(st->vm, 3, wrenGetSlotHandle(st->vm, 0));
+	return dispatch_claim_event(3);
+}
 
-	struct input_result *ir = calloc(1, sizeof(*ir));
-	if (ir == NULL) {
-		wrenReleaseHandle(st->vm, fiber);
-		return true;
+/* Free every claim and clear the stack — called from
+ * wren_host_shutdown before wrenFreeVM. */
+void
+wren_bind_claim_stack_clear(void)
+{
+	struct wren_host_state *st = wren_host_state();
+	if (st == NULL)
+		return;
+	while (st->claim_top != NULL) {
+		struct wren_input_claim *c = st->claim_top;
+		st->claim_top = c->next;
+		free_claim_entry(st, c);
 	}
-	ir->is_mouse = true;
-	ir->ev       = *ev;
-	wren_result_push(fiber, ir, deliver_input_result, free);
-	return true;
+	st->claim_next_id = 0;
 }
 
 /* Input.next() — block until something is ready, return the event. */

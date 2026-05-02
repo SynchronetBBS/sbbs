@@ -36,12 +36,20 @@ void fn_File_writeLine(WrenVM *vm);
 void fn_File_offset_get(WrenVM *vm);
 void fn_File_offset_set(WrenVM *vm);
 void fn_File_size(WrenVM *vm);
+void fn_File_mtime(WrenVM *vm);
+void fn_File_mtime_set(WrenVM *vm);
 void fn_File_isOpen(WrenVM *vm);
 void fn_File_sha1(WrenVM *vm);
 void fn_File_md5(WrenVM *vm);
+void fn_File_token(WrenVM *vm);
 void fn_File_toString(WrenVM *vm);
 
 /* Host class methods. */
 void fn_Host_cacheDirectory(WrenVM *vm);
+void fn_Host_downloadDir(WrenVM *vm);
+void fn_Host_uploadDir(WrenVM *vm);
+void fn_Host_pickFile(WrenVM *vm);
+void fn_Host_pickFiles(WrenVM *vm);
+void fn_Host_openLocalFile(WrenVM *vm);
 
 #endif /* WREN_BIND_FS_H */

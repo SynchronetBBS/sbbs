@@ -8,10 +8,13 @@
 // unique sentinels and matches them via Hook.onMatch.  Counters
 // for the time-based hooks (every, filtered onKey via
 // Input.unget) are ticked by hooks registered at module load and
-// inspected in the final report.  T06 then drives the result-queue
-// framework end-to-end: spawn a fiber that parks on
-// Input.nextEvent, unget a sentinel key, and verify the fiber
-// resumes with the right KeyEvent after the next main-loop drain.
+// inspected in the final report.  T06-T10 drive the input claim +
+// result-queue framework end-to-end: T06 pushes a claim, ungets a
+// sentinel, and verifies the fiber resumes with the KeyEvent;
+// T07 exercises Wake.post on parked fibers; T08/T09 stack two
+// claims and confirm newer-fiber-wins + restore-on-pop semantics;
+// T10 pushes a claim that returns false and verifies the event
+// falls through to a registered Hook.onKey.
 //
 // Re-running via Alt+T resets state in WrenTest.run() — the
 // dispatcher and the test-counter hooks are registered once when
@@ -27,7 +30,7 @@ import "syncterm" for Hook, Conn, Console, Screen, CTerm, BBS, Key,
     Codepage, ConnType, Emulation, Font, LogSource, LogLevel,
     Parity, BBSListType, ScreenMode, AddressFamily, MusicMode,
     RipVersion, LogMode, StatusDisplay, Color, Cell, Hyperlinks,
-    REPL, Input, KeyEvent, Cache, Platform, Timer, TimerElapsed,
+    REPL, Input, Wake, KeyEvent, Cache, Platform, Timer, TimerElapsed,
     WON
 import "console" for WrenConsole
 import "ui_style_test"  for UiStyleTest
@@ -55,13 +58,20 @@ class WrenTest {
     __timerResult      = null
     __wakeResult       = null
     __wakeStringResult = null
-    // Fiber that parks on Input.nextEvent and stores the resumption
-    // value.  Started + unget'd at T06 so the earlier sentinel-driven
-    // tests don't get their input claimed by the parked fiber.  The
-    // fiber clears CTerm.suspended after capturing so T06's
-    // sleep-and-printf sentinel can drain back through cterm.
+    // Fiber that pushes a one-shot input claim and parks until the
+    // claim fires.  Started + unget'd at T06 so the earlier
+    // sentinel-driven tests don't get their input claimed first.
+    // The claim wakes the fiber with the event, then pops itself
+    // and returns true (consumed).  The fiber clears CTerm.suspended
+    // after capturing so T06's sleep-and-printf sentinel can drain
+    // back through cterm.
     __nextEventFiber   = Fiber.new {
-      Input.nextEvent(Fiber.current)
+      var ch
+      ch = Input.pushClaim(Fn.new {|ev|
+        Wake.post(__nextEventFiber, ev)
+        ch.pop()
+        return true
+      })
       __nextEventResult = Fiber.yield()
       CTerm.suspended = false
     }
@@ -74,7 +84,7 @@ class WrenTest {
       __timerResult = Fiber.yield()
     }
     // Fibers that park on plain `Fiber.yield()` (no registration on
-    // the input or timer queues).  Input.wake should still be able
+    // the input or timer queues).  Wake.post should still be able
     // to resume them via the result-queue path.  One captures a
     // KeyEvent (a foreign object), one captures a String — both
     // exercise the WrenHandle pin/release in the wake payload.
@@ -83,6 +93,44 @@ class WrenTest {
     }
     __wakeStringFiber  = Fiber.new {
       __wakeStringResult = Fiber.yield()
+    }
+    // Two fibers each push a long-lived input claim; T08 ungets a
+    // sentinel key, the newer-fiber claim should fire first by the
+    // per-fiber-stack semantics (newest on top).  After T08, the
+    // top claim's handle is popped and a second key is unget'd —
+    // the older fiber's claim should now fire.  Both counters wind
+    // up at 1; whichever is wrong proves the dispatch order.
+    __claimACount = 0
+    __claimBCount = 0
+    __claimAFiber = Fiber.new {
+      __claimAHandle = Input.pushClaim(Fn.new {|ev|
+        __claimACount = __claimACount + 1
+        return true
+      })
+      Fiber.yield()
+    }
+    __claimBFiber = Fiber.new {
+      __claimBHandle = Input.pushClaim(Fn.new {|ev|
+        __claimBCount = __claimBCount + 1
+        return true
+      })
+      Fiber.yield()
+    }
+    // Fall-through: a claim that returns false (passes the event) and
+    // a Hook.onKey for the same key.  T10 ungets the key after popping
+    // every other claim from the stack; both counters should bump.
+    __fallthroughCount     = 0
+    __fallthroughHookCount = 0
+    __fallthroughFiber = Fiber.new {
+      __fallthroughHandle = Input.pushClaim(Fn.new {|ev|
+        __fallthroughCount = __fallthroughCount + 1
+        return false
+      })
+      Fiber.yield()
+    }
+    __fallthroughHook = Hook.onKey(0xFA00) {|k|
+      __fallthroughHookCount = __fallthroughHookCount + 1
+      return true
     }
     // Register the test's hooks fresh each run; cleanup_() removes
     // them at end-of-suite so they don't keep firing once the
@@ -117,6 +165,7 @@ class WrenTest {
       return "\r\n"
     }
     __hooks.add(__lfReplaceHook)
+    __hooks.add(__fallthroughHook)
     System.print("=== Wren self-test starting ===")
 
     // Aggregated [pass, fail] across all suites — every nested
@@ -981,17 +1030,48 @@ class WrenTest {
       __pending = "T06"
       Conn.send("sleep 0.2 && printf '__\%s_X_done_X__\\n' T06\r")
     } else if (__step == 7) {
-      // Input.wake end-to-end.  Park two fibers on plain Fiber.yield
+      // Wake.post end-to-end.  Park two fibers on plain Fiber.yield
       // (neither registered with Input.nextEvent or Timer.trigger),
       // then fire wake on each with a different value type.  The
       // result-queue drain should resume both fibers with their
       // respective values before the wallclock sentinel returns.
       __wakeFiber.call()
       __wakeStringFiber.call()
-      Input.wake(__wakeFiber, KeyEvent.new(0xFC00))
-      Input.wake(__wakeStringFiber, "wake-payload")
+      Wake.post(__wakeFiber, KeyEvent.new(0xFC00))
+      Wake.post(__wakeStringFiber, "wake-payload")
       __pending = "T07"
       Conn.send("sleep 0.2 && printf '__\%s_X_done_X__\\n' T07\r")
+    } else if (__step == 8) {
+      // Claim-stack newer-fiber-wins.  Push A's claim first, then
+      // B's; B is on top of the stack (different fibers).  Unget
+      // a sentinel key — only B's counter should bump.  The
+      // sentinel sleep gives the dispatch a chance to fire.  Keys
+      // 0xFB00 / 0xFB01 are arbitrary — they just need to make it
+      // through the C-side dispatch_key as KeyEvents.
+      __claimAFiber.call()
+      __claimBFiber.call()
+      Input.unget(KeyEvent.new(0xFB00))
+      __pending = "T08"
+      Conn.send("sleep 0.2 && printf '__\%s_X_done_X__\\n' T08\r")
+    } else if (__step == 9) {
+      // Pop B's claim; the older A claim is now on top.  Unget
+      // another sentinel key — A's counter should bump this time.
+      __claimBHandle.pop()
+      Input.unget(KeyEvent.new(0xFB01))
+      __pending = "T09"
+      Conn.send("sleep 0.2 && printf '__\%s_X_done_X__\\n' T09\r")
+    } else if (__step == 10) {
+      // Claim fall-through.  Pop A's claim so the fall-through claim
+      // is the only one on the stack, then push it and unget 0xFA00.
+      // The claim returns false, the C dispatcher walks past every
+      // claim, and the registered Hook.onKey(0xFA00) fires.  Both
+      // counters wind up at 1; either being wrong proves the
+      // dispatch path.
+      __claimAHandle.pop()
+      __fallthroughFiber.call()
+      Input.unget(KeyEvent.new(0xFA00))
+      __pending = "T10"
+      Conn.send("sleep 0.2 && printf '__\%s_X_done_X__\\n' T10\r")
     } else {
       report_()
     }
@@ -1014,7 +1094,13 @@ class WrenTest {
     } else if (name == "06") {
       check_(value == "done", "T06 sleep+sentinel for result-queue test")
     } else if (name == "07") {
-      check_(value == "done", "T07 sleep+sentinel for Input.wake test")
+      check_(value == "done", "T07 sleep+sentinel for Wake.post test")
+    } else if (name == "08") {
+      check_(value == "done", "T08 sleep+sentinel for claim-stack test")
+    } else if (name == "09") {
+      check_(value == "done", "T09 sleep+sentinel for claim-pop test")
+    } else if (name == "10") {
+      check_(value == "done", "T10 sleep+sentinel for claim fall-through test")
     } else {
       check_(false, "T%(name) unexpected sentinel")
     }
@@ -1075,7 +1161,7 @@ class WrenTest {
     check_(__lfReplaceCount > 0,
            "Hook.onInput String return (LF->CRLF) fired off the wire")
 
-    // Input.wake delivers a queued resumption to a parked fiber via
+    // Wake.post delivers a queued resumption to a parked fiber via
     // the same result-queue path Input.nextEvent and Timer.trigger
     // use.  Two probes: one with a foreign KeyEvent value (exercises
     // the WrenHandle pin/release across types), one with a plain
@@ -1083,9 +1169,28 @@ class WrenTest {
     // resumed both fibers and stored the values in their respective
     // captures.
     check_(__wakeResult is KeyEvent && __wakeResult.code == 0xFC00,
-           "Input.wake delivers a foreign value to parked fiber")
+           "Wake.post delivers a foreign value to parked fiber")
     check_(__wakeStringResult == "wake-payload",
-           "Input.wake delivers a String value to parked fiber")
+           "Wake.post delivers a String value to parked fiber")
+
+    // Claim-stack newer-fiber-wins: T08 unget'd one key while both
+    // A and B claims were on the stack (B on top).  Only B's
+    // counter should have bumped.  T09 popped B and unget another
+    // key, so A's counter should also be 1 by now.
+    check_(__claimBCount == 1,
+           "Claim stack: newer-fiber claim wins dispatch (T08)")
+    check_(__claimACount == 1,
+           "Claim stack: older-fiber claim wins after newer pops (T09)")
+
+    // Claim fall-through: T10 ungets 0xFA00 with only the
+    // fall-through claim on the stack (returns false) and a
+    // Hook.onKey for the same key.  The claim fires once and
+    // passes; the hook then catches.  Either count being wrong
+    // proves the cascade is broken.
+    check_(__fallthroughCount == 1,
+           "Claim stack: fall-through claim fires on event (T10)")
+    check_(__fallthroughHookCount == 1,
+           "Claim stack: Hook.onKey fires when no claim consumes (T10)")
 
     var total = __pass + __fail
     System.print("=== wrentest: %(total) tests, %(__pass) pass, %(__fail) fail ===")
@@ -1109,9 +1214,16 @@ class WrenTest {
   static cleanup_() {
     for (h in __hooks) h.remove()
     __hooks         = []
-    __everyHook     = null
-    __keyHook       = null
-    __lfReplaceHook = null
+    __everyHook       = null
+    __keyHook         = null
+    __lfReplaceHook   = null
+    __fallthroughHook = null
+    // Pop A's claim if it's still on the stack (T10 popped it; if
+    // T10 didn't run, it might still be there).  B was popped
+    // during T09.  pop() is idempotent.  Same for the fall-through
+    // claim — T10 may or may not have completed.
+    if (__claimAHandle      != null) __claimAHandle.pop()
+    if (__fallthroughHandle != null) __fallthroughHandle.pop()
   }
 }
 

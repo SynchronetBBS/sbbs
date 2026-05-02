@@ -68,6 +68,33 @@ void wren_host_mark_log_seen(void);
  * from doterm() just before the main-loop sleep. */
 void wren_host_dispatch_timer(void);
 
+/* Fired by term.c when the SSH shell channel has closed but the
+ * session is still up (e.g., SFTP transfers may still be in flight).
+ * Hook.onShellClose handlers run; they typically open a degraded
+ * modal in a child fiber so the calling site can return.  No payload. */
+void wren_host_dispatch_shell_close(void);
+
+/* Fired by term.c at the end of the disconnect path, after the main
+ * loop has fully exited but before the BBS / Wren VM tear down.
+ * Hook.onDisconnect handlers run; intended for final local-state
+ * flushes (no SFTP available at this point — sftpc_finish has run). */
+void wren_host_dispatch_disconnect(void);
+
+/* Status-bar transfer arrows.  Wren toggles via Host.uploadArrow=(b)
+ * and Host.downloadArrow=(b); the status-bar update path reads here.
+ * Generic — any transfer-shaped Wren script can light them, not
+ * just SFTP.  Reset on VM teardown. */
+bool wren_upload_arrow_lit(void);
+bool wren_download_arrow_lit(void);
+void wren_xfer_arrows_reset(void);
+
+/* SFTP-active flag set by the Wren-side SftpQueue (CTerm.sftpActive=).
+ * Read by ssh.c when deciding whether to set conn_api.terminate on
+ * shell-channel close or wire idle — keep the SSH session up while
+ * Wren has SFTP work in flight.  Reset on VM teardown. */
+bool wren_sftp_active(void);
+void wren_sftp_active_reset(void);
+
 /* Drain the result queue: for every queued completion, resume the
  * target fiber with its result (or skip if the fiber is done), then
  * release the fiber handle and free the result data.  Owner-thread

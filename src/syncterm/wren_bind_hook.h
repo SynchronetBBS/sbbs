@@ -21,6 +21,8 @@ void fn_Hook_onKey(WrenVM *vm);
 void fn_Hook_onInput(WrenVM *vm);
 void fn_Hook_onMouse(WrenVM *vm);
 void fn_Hook_onStatus(WrenVM *vm);
+void fn_Hook_onShellClose(WrenVM *vm);
+void fn_Hook_onDisconnect(WrenVM *vm);
 void fn_Hook_onKey_filtered(WrenVM *vm);
 void fn_Hook_onInput_filtered(WrenVM *vm);
 void fn_Hook_onMouse_filtered(WrenVM *vm);

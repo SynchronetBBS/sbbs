@@ -12,7 +12,7 @@
 #ifndef WITHOUT_DEUCESSH
 
 #include "sftp.h"
-#include "sftp_session.h"
+#include "ssh.h"   /* sftp_state, sftp_available */
 
 #include <inttypes.h>
 #include <stdint.h>
@@ -165,6 +165,21 @@ fn_SFTP_pubdir(WrenVM *vm)
 		wrenSetSlotNull(vm, 0);
 	else
 		wrenSetSlotString(vm, 0, p);
+}
+
+/* True iff the session negotiated the lname@syncterm.net extension —
+ * the per-entry friendly long name (directories) / short description
+ * (files) the browser shows.  Lets the UI skip reserving a row for a
+ * description bar that would always be blank. */
+void
+fn_SFTP_lname(WrenVM *vm)
+{
+	if (!sftp_available || sftp_state == NULL) {
+		wrenSetSlotBool(vm, 0, false);
+		return;
+	}
+	uint32_t exts = sftpc_get_extensions(sftp_state);
+	wrenSetSlotBool(vm, 0, (exts & SFTP_EXT_LNAME) != 0);
 }
 
 /* ----- SFTPEntry field accessors ---------------------------------- */
@@ -960,6 +975,37 @@ fn_SFTP_rename(WrenVM *vm)
 	wrenSetSlotNull(vm, 0);
 }
 
+/* ----- setMtime ---------------------------------------------------- */
+
+/* SFTP.setMtime(fiber, path, t) — set both atime and mtime of the
+ * remote path to `t` (POSIX seconds).  Used by the queue to stamp
+ * completed uploads with the local file's mtime so a subsequent
+ * browse shows [==] without depending on hash extensions.  Returns
+ * null on success, SFTPError on failure. */
+void
+fn_SFTP_setMtime(WrenVM *vm)
+{
+	struct sftp_call_ctx *ctx = sftp_call_prelude(vm, sftp_status_deliver);
+	if (ctx == NULL)
+		return;
+	const char *path  = wrenGetSlotString(vm, 2);
+	uint32_t    mtime = (uint32_t)wrenGetSlotDouble(vm, 3);
+	sftp_file_attr_t a = sftp_fattr_alloc();
+	if (a == NULL) {
+		sftp_build_synth_error(vm, 0, SFTP_ERR_OOM,
+		    "out of memory allocating fattr for setstat");
+		wrenReleaseHandle(vm, ctx->fiber);
+		free(ctx);
+		return;
+	}
+	/* atime == mtime: matches "touch" semantics; the local file's
+	 * exact atime is rarely meaningful and not worth a second stat. */
+	sftp_fattr_set_times(a, mtime, mtime);
+	sftpc_setstat(sftp_state, path, a, sftp_call_cb, ctx);
+	sftp_fattr_free(a);
+	wrenSetSlotNull(vm, 0);
+}
+
 /* ----- descs ------------------------------------------------------- */
 
 static void
@@ -1021,6 +1067,7 @@ void wren_sftp_error_finalize(void *data)  { (void)data; }
 
 void fn_SFTP_available(WrenVM *vm) { wrenSetSlotBool(vm, 0, false); }
 void fn_SFTP_pubdir(WrenVM *vm)    { wrenSetSlotNull(vm, 0); }
+void fn_SFTP_lname(WrenVM *vm)     { wrenSetSlotBool(vm, 0, false); }
 
 #define SFTP_STUB(fn) \
 	void fn(WrenVM *vm) { wren_throw(vm, SFTP_UNAVAILABLE); }
@@ -1037,6 +1084,7 @@ SFTP_STUB(fn_SFTP_mkdir)
 SFTP_STUB(fn_SFTP_rmdir)
 SFTP_STUB(fn_SFTP_remove)
 SFTP_STUB(fn_SFTP_rename)
+SFTP_STUB(fn_SFTP_setMtime)
 SFTP_STUB(fn_SFTP_descs)
 
 SFTP_STUB(fn_SFTPEntry_name)
@@ -1065,3 +1113,4 @@ SFTP_STUB(fn_SFTPError_toString)
 #undef SFTP_STUB
 
 #endif /* WITHOUT_DEUCESSH ------------------------------------------- */
+

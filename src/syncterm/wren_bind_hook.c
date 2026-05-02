@@ -125,6 +125,18 @@ fn_Hook_onStatus(WrenVM *vm)
 	push_hook_handle(vm,
 	    wren_host_register_hook(vm, WREN_HOOK_STATUS, 1));
 }
+void
+fn_Hook_onShellClose(WrenVM *vm)
+{
+	push_hook_handle(vm,
+	    wren_host_register_hook(vm, WREN_HOOK_SHELL_CLOSE, 1));
+}
+void
+fn_Hook_onDisconnect(WrenVM *vm)
+{
+	push_hook_handle(vm,
+	    wren_host_register_hook(vm, WREN_HOOK_DISCONNECT, 1));
+}
 
 /* Filtered variants: signature is (filter, fn) so slot 1 is the
  * match value (key code / byte / mouse-event type) and slot 2 is the

@@ -75,6 +75,8 @@ enum wren_hook_event {
 	WREN_HOOK_INPUT,
 	WREN_HOOK_MOUSE,
 	WREN_HOOK_STATUS,
+	WREN_HOOK_SHELL_CLOSE,      /* shell channel died, session still up */
+	WREN_HOOK_DISCONNECT,       /* main loop exited, session tearing down */
 	WREN_HOOK_COUNT,            /* count of dispatch-array events */
 	WREN_HOOK_TIMER             /* lives in state.timers, not state.hooks */
 };
@@ -160,6 +162,7 @@ struct wren_host_state {
 	WrenHandle  *key_event_class;
 	WrenHandle  *mouse_event_class;
 	WrenHandle  *hook_handle_class;
+	WrenHandle  *claim_handle_class;
 	WrenHandle  *sftp_entry_class;
 	WrenHandle  *sftp_stat_class;
 	WrenHandle  *sftp_handle_class;
@@ -182,13 +185,23 @@ struct wren_host_state {
 	 * iteration) drains it.  Empty == NULL — no counter needed. */
 	struct wren_hook_entry *cleanup_head;
 
-	/* When non-NULL, a Wren fiber is registered to receive the next
-	 * key/mouse event.  Set by Input.nextEvent, transferred onto the
-	 * result queue by wren_host_dispatch_key/mouse when an event
-	 * arrives, cleared at the same time.  Registering does NOT imply
-	 * any screen claim — scripts that want modal behavior must set
-	 * CTerm.suspended = true explicitly to halt the wire pump. */
-	WrenHandle  *parked_fiber;
+	/* Stack of input claims.  Each claim is owned by a fiber and
+	 * delivers the next key/mouse event to a Wren callable.  Newest
+	 * push is at `claim_top`; dispatch walks head-first.  Per-fiber
+	 * uniqueness is enforced — a same-fiber push replaces the
+	 * existing entry in place.  Registering does NOT imply any
+	 * screen claim; scripts that want modal behavior must set
+	 * CTerm.suspended = true explicitly to halt the wire pump.
+	 * `claim_next_id` is monotonic so ClaimHandle.pop() can disarm
+	 * a stale handle without confusing it with a fresh entry that
+	 * happened to be allocated at the same address. */
+	struct wren_input_claim {
+		WrenHandle  *fiber;     /* pinned; identifies owner       */
+		WrenHandle  *fn;        /* pinned for claim's lifetime    */
+		uint64_t     id;
+		struct wren_input_claim *next;
+	}           *claim_top;
+	uint64_t     claim_next_id;
 
 	/* Pointer to doterm()'s local cterm_suspended flag.  Set by
 	 * wren_host_bind_cterm_suspended() after init; backs the
@@ -292,14 +305,22 @@ WrenForeignMethodFn wren_bind_lookup(const char *module,
 WrenForeignClassMethods wren_bind_lookup_class(const char *module,
                                                 const char *className);
 
-/* If a Wren fiber is registered via Input.nextEvent, resume it with
- * the given event.  Returns true (consumed) if a fiber was waiting;
- * false (not consumed) if no fiber was registered, in which case the
- * caller should fall through to its hook dispatch path.  Defined
- * in wren_bind.c so the event-construction helpers live next to
- * push_key_event / push_mouse_event. */
-bool wren_bind_resume_parked_key(int code);
-bool wren_bind_resume_parked_mouse(struct mouse_event *ev);
+/* Walk the input claim stack with the given event.  Returns true if
+ * any claim returned consumed (or, on key, the claim handler consumed
+ * it implicitly by virtue of always-consume semantics).  False means
+ * no claim was on the stack, all claims passed through, or every
+ * remaining claim's owning fiber was dead and got auto-pruned — in
+ * which case the caller falls through to its hook dispatch path.
+ * Defined in wren_bind_screen.c so the event-construction helpers
+ * live next to push_key_event / push_mouse_event. */
+bool wren_bind_dispatch_claim_key(int code);
+bool wren_bind_dispatch_claim_mouse(struct mouse_event *ev);
+
+/* True iff the Wren fiber has finished or aborted.  Implemented in
+ * wren_host.c using the cached Fiber.isDone call handle.  Used both
+ * by the result-queue drainer (skip dead fibers) and the input-claim
+ * dispatcher (auto-prune dead-fiber claims). */
+bool fiber_is_done(WrenHandle *fiber);
 
 /* Walk the pending one-shot timer list and push TimerElapsed onto
  * the result queue for any entry past its due time.  Called once per

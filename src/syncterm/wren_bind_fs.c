@@ -8,10 +8,13 @@
 #include "wren_host_internal.h"
 #include "syncterm.h"
 #include "term.h"        /* get_cache_fn_base */
+#include "uifcinit.h"    /* uifcfilepick / uifcfilepick_multi */
 
 #include "sha1.h"
 #include "md5.h"
 #include "xpmap.h"
+
+#include "wren_token.h"
 
 #include <dirwrap.h>     /* opendir / readdir / MKDIR */
 
@@ -32,6 +35,14 @@ struct wren_directory {
 	 * Otherwise `path` is the literal directory path with trailing
 	 * slash. */
 	bool is_cache;
+	/* When true, the relaxed filename predicate
+	 * (fname_is_clean_relaxed) is consulted instead of the strict
+	 * fname_is_clean.  Set ONLY on the download / upload roots
+	 * exposed by Host.downloadDir / Host.uploadDir, and inherited by
+	 * Directories produced from those roots via list / createDir.
+	 * Cache and any of its descendants stay strict (this flag stays
+	 * false). */
+	bool relaxed_names;
 	/* Set by fs_invalidate_subtree when a parent's Directory.delete
 	 * removes this entry (or an ancestor of it).  Subsequent ops on
 	 * the handle abort the fiber. */
@@ -47,6 +58,13 @@ struct wren_file {
 	enum syncterm_wren_foreign type;
 	char  path[MAX_PATH + 1]; /* absolute path */
 	FILE *fp;
+	/* Opaque base64 consent token for picker-sourced Files
+	 * (Host.pickFile / Host.pickFiles).  NULL for Files obtained
+	 * via the sandboxed Cache / Upload / Download Directory
+	 * listings — those don't need a token because their paths are
+	 * already inside the predicate-validated sandbox.  Freed in
+	 * wren_file_finalize.  See wren_token.h for the model. */
+	char *token;
 	/* Same dead/list mechanics as wren_directory.  A successful
 	 * Directory.delete on the file (or on an ancestor directory)
 	 * marks it dead; further ops abort the fiber. */
@@ -56,9 +74,46 @@ struct wren_file {
 };
 
 
-/* Filename policy: 1..64 chars, only [A-Za-z0-9._-], no leading '.'
- * or '-', no trailing '.', no ".." substring, basename (chars before
- * first '.') not a Windows reserved device. */
+/* Reject Windows reserved device names case-insensitively, matching
+ * the basename (chars before the first '.').  Both fname_is_clean and
+ * fname_is_clean_relaxed need this check; factored out so they share
+ * one source of truth. */
+static bool
+is_reserved_device_basename_(const char *name, size_t base_len)
+{
+	static const char *reserved[] = {
+		"CON", "PRN", "AUX", "NUL",
+		"COM1", "COM2", "COM3", "COM4", "COM5",
+		"COM6", "COM7", "COM8", "COM9",
+		"LPT1", "LPT2", "LPT3", "LPT4", "LPT5",
+		"LPT6", "LPT7", "LPT8", "LPT9",
+		NULL
+	};
+	for (int i = 0; reserved[i] != NULL; i++) {
+		size_t rlen = strlen(reserved[i]);
+		if (base_len != rlen)
+			continue;
+		bool match = true;
+		for (size_t j = 0; j < rlen; j++) {
+			char nc = name[j];
+			char rc = reserved[i][j];
+			if (nc >= 'a' && nc <= 'z')
+				nc = (char)(nc - 32);
+			if (nc != rc) {
+				match = false;
+				break;
+			}
+		}
+		if (match)
+			return true;
+	}
+	return false;
+}
+
+/* Strict filename policy used by Cache (and any non-Host-downloadDir /
+ * non-Host-uploadDir Directory): 1..64 chars, only [A-Za-z0-9._-], no
+ * leading '.' or '-', no trailing '.', no ".." substring, basename
+ * not a Windows reserved device. */
 static bool
 fname_is_clean(const char *name)
 {
@@ -81,34 +136,93 @@ fname_is_clean(const char *name)
 		return false;
 	if (strstr(name, "..") != NULL)
 		return false;
-	static const char *reserved[] = {
-		"CON", "PRN", "AUX", "NUL",
-		"COM1", "COM2", "COM3", "COM4", "COM5",
-		"COM6", "COM7", "COM8", "COM9",
-		"LPT1", "LPT2", "LPT3", "LPT4", "LPT5",
-		"LPT6", "LPT7", "LPT8", "LPT9",
-		NULL
-	};
 	const char *dot = strchr(name, '.');
 	size_t base_len = dot ? (size_t)(dot - name) : n;
-	for (int i = 0; reserved[i] != NULL; i++) {
-		size_t rlen = strlen(reserved[i]);
-		if (base_len != rlen)
-			continue;
-		bool match = true;
-		for (size_t j = 0; j < rlen; j++) {
-			char nc = name[j];
-			char rc = reserved[i][j];
-			if (nc >= 'a' && nc <= 'z')
-				nc = (char)(nc - 32);
-			if (nc != rc) {
-				match = false;
-				break;
-			}
-		}
-		if (match)
+	if (is_reserved_device_basename_(name, base_len))
+		return false;
+	return true;
+}
+
+/* Relaxed filename policy for the download / upload roots and their
+ * descendants: 1..255 bytes, no NUL, no control bytes (0x00..0x1F,
+ * 0x7F), no path separators (/, \), name not "." or "..", basename
+ * not a Windows reserved device.  Leading dot is ALLOWED (hidden
+ * files are real on Unix); trailing dot, dashes, spaces, parens, and
+ * UTF-8 bytes pass through. */
+static bool
+fname_is_clean_relaxed(const char *name)
+{
+	if (name == NULL)
+		return false;
+	size_t n = strlen(name);
+	if (n < 1 || n > 255)
+		return false;
+	for (size_t i = 0; i < n; i++) {
+		unsigned char c = (unsigned char)name[i];
+		if (c <= 0x1F || c == 0x7F)
+			return false;
+		if (c == '/' || c == '\\')
 			return false;
 	}
+	if (n == 1 && name[0] == '.')
+		return false;
+	if (n == 2 && name[0] == '.' && name[1] == '.')
+		return false;
+	const char *dot = strchr(name, '.');
+	size_t base_len = dot ? (size_t)(dot - name) : n;
+	if (is_reserved_device_basename_(name, base_len))
+		return false;
+	return true;
+}
+
+/* Per-directory filename predicate dispatch.  Strict for everything
+ * except download / upload roots and their descendants. */
+static bool
+fname_check_(struct wren_directory *wd, const char *name)
+{
+	if (wd != NULL && wd->relaxed_names)
+		return fname_is_clean_relaxed(name);
+	return fname_is_clean(name);
+}
+
+/* Identify "unfortunate default" download / upload paths from older
+ * SyncTERM versions: empty string, NULL, or the user's $HOME.
+ * Comparing trailing-slash-insensitively in case bbslist normalized
+ * one form vs the other.  Case-sensitive on POSIX, insensitive on
+ * Windows. */
+static bool
+is_dangerous_default_(const char *path)
+{
+	if (path == NULL || path[0] == '\0')
+		return true;
+	const char *home = getenv("HOME");
+#ifdef _WIN32
+	if (home == NULL)
+		home = getenv("USERPROFILE");
+#endif
+	if (home == NULL || home[0] == '\0')
+		return false;
+	size_t pn = strlen(path);
+	size_t hn = strlen(home);
+	while (pn > 1 && (path[pn - 1] == '/' || path[pn - 1] == '\\'))
+		pn--;
+	while (hn > 1 && (home[hn - 1] == '/' || home[hn - 1] == '\\'))
+		hn--;
+	if (pn != hn)
+		return false;
+#ifdef _WIN32
+	for (size_t i = 0; i < pn; i++) {
+		char p = path[i];
+		char h = home[i];
+		if (p >= 'a' && p <= 'z') p = (char)(p - 32);
+		if (h >= 'a' && h <= 'z') h = (char)(h - 32);
+		if (p != h)
+			return false;
+	}
+#else
+	if (memcmp(path, home, pn) != 0)
+		return false;
+#endif
 	return true;
 }
 
@@ -269,6 +383,7 @@ wren_file_allocate(WrenVM *vm)
 	wf->type    = SWF_FILE;
 	wf->path[0] = '\0';
 	wf->fp      = NULL;
+	wf->token   = NULL;
 	wf->dead    = false;
 	wf->fs_prev = NULL;
 	wf->fs_next = NULL;
@@ -284,6 +399,8 @@ wren_file_finalize(void *data)
 		fclose(wf->fp);
 		wf->fp = NULL;
 	}
+	free(wf->token);
+	wf->token = NULL;
 }
 
 /* Mark a foreign as dead and unhook it from the live-list immediately.
@@ -367,6 +484,7 @@ push_new_file(WrenVM *vm, int slot, const char *dir, const char *name)
 	    sizeof(*wf));
 	wf->type    = SWF_FILE;
 	wf->fp      = NULL;
+	wf->token   = NULL;
 	wf->dead    = false;
 	wf->fs_prev = NULL;
 	wf->fs_next = NULL;
@@ -376,9 +494,10 @@ push_new_file(WrenVM *vm, int slot, const char *dir, const char *name)
 }
 
 static void
-dir_contains_impl(WrenVM *vm, const char *dir, const char *name)
+dir_contains_impl(WrenVM *vm, struct wren_directory *parent,
+    const char *dir, const char *name)
 {
-	if (!fname_is_clean(name)) {
+	if (!fname_check_(parent, name)) {
 		wren_throw(vm, "Directory: invalid file name");
 		return;
 	}
@@ -396,7 +515,7 @@ dir_contains_impl(WrenVM *vm, const char *dir, const char *name)
 }
 
 static void
-dir_list_impl(WrenVM *vm, const char *dir)
+dir_list_impl(WrenVM *vm, struct wren_directory *parent, const char *dir)
 {
 	wrenEnsureSlots(vm, 4);
 	wrenSetSlotNewMap(vm, 0);
@@ -405,8 +524,9 @@ dir_list_impl(WrenVM *vm, const char *dir)
 		return;
 	struct dirent *de;
 	char p[MAX_PATH + 1];
+	bool relaxed = parent != NULL && parent->relaxed_names;
 	while ((de = readdir(dh)) != NULL) {
-		if (!fname_is_clean(de->d_name))
+		if (!fname_check_(parent, de->d_name))
 			continue;
 		int len = snprintf(p, sizeof(p), "%s%s", dir, de->d_name);
 		if (len < 0 || (size_t)len >= sizeof(p))
@@ -420,11 +540,12 @@ dir_list_impl(WrenVM *vm, const char *dir)
 			wrenGetVariable(vm, "syncterm", "Directory", 2);
 			struct wren_directory *wd = wrenSetSlotNewForeign(vm, 3,
 			    2, sizeof(*wd));
-			wd->type     = SWF_DIRECTORY;
-			wd->is_cache = false;
-			wd->dead     = false;
-			wd->fs_prev  = NULL;
-			wd->fs_next  = NULL;
+			wd->type          = SWF_DIRECTORY;
+			wd->is_cache      = false;
+			wd->relaxed_names = relaxed;
+			wd->dead          = false;
+			wd->fs_prev       = NULL;
+			wd->fs_next       = NULL;
 			memcpy(wd->path, p, (size_t)len);
 			wd->path[len]     = '/';
 			wd->path[len + 1] = '\0';
@@ -437,6 +558,7 @@ dir_list_impl(WrenVM *vm, const char *dir)
 			    sizeof(*wf));
 			wf->type    = SWF_FILE;
 			wf->fp      = NULL;
+			wf->token   = NULL;
 			wf->dead    = false;
 			wf->fs_prev = NULL;
 			wf->fs_next = NULL;
@@ -452,10 +574,11 @@ dir_list_impl(WrenVM *vm, const char *dir)
 }
 
 static void
-dir_create_impl(WrenVM *vm, const char *dir, const char *name)
+dir_create_impl(WrenVM *vm, struct wren_directory *parent,
+    const char *dir, const char *name)
 {
 	wrenEnsureSlots(vm, 1);
-	if (!fname_is_clean(name)) {
+	if (!fname_check_(parent, name)) {
 		wrenSetSlotNull(vm, 0);
 		return;
 	}
@@ -479,10 +602,11 @@ dir_create_impl(WrenVM *vm, const char *dir, const char *name)
 }
 
 static void
-dir_createdir_impl(WrenVM *vm, const char *dir, const char *name)
+dir_createdir_impl(WrenVM *vm, struct wren_directory *parent,
+    const char *dir, const char *name)
 {
 	wrenEnsureSlots(vm, 2);
-	if (!fname_is_clean(name)) {
+	if (!fname_check_(parent, name)) {
 		wrenSetSlotNull(vm, 0);
 		return;
 	}
@@ -509,11 +633,12 @@ dir_createdir_impl(WrenVM *vm, const char *dir, const char *name)
 	wrenGetVariable(vm, "syncterm", "Directory", 1);
 	struct wren_directory *wd = wrenSetSlotNewForeign(vm, 0, 1,
 	    sizeof(*wd));
-	wd->type     = SWF_DIRECTORY;
-	wd->is_cache = false;
-	wd->dead     = false;
-	wd->fs_prev  = NULL;
-	wd->fs_next  = NULL;
+	wd->type          = SWF_DIRECTORY;
+	wd->is_cache      = false;
+	wd->relaxed_names = parent != NULL && parent->relaxed_names;
+	wd->dead          = false;
+	wd->fs_prev       = NULL;
+	wd->fs_next       = NULL;
 	memcpy(wd->path, p, (size_t)len);
 	wd->path[len]     = '/';
 	wd->path[len + 1] = '\0';
@@ -533,7 +658,7 @@ fn_Directory_contains(WrenVM *vm)
 	if (dir == NULL)
 		return;
 	const char *name = wrenGetSlotString(vm, 1);
-	dir_contains_impl(vm, dir, name);
+	dir_contains_impl(vm, wd, dir, name);
 }
 
 void
@@ -546,7 +671,7 @@ fn_Directory_list(WrenVM *vm)
 	const char *dir = wd_resolve(vm, wd, scratch, sizeof(scratch));
 	if (dir == NULL)
 		return;
-	dir_list_impl(vm, dir);
+	dir_list_impl(vm, wd, dir);
 }
 
 void
@@ -560,7 +685,7 @@ fn_Directory_create(WrenVM *vm)
 	if (dir == NULL)
 		return;
 	const char *name = wrenGetSlotString(vm, 1);
-	dir_create_impl(vm, dir, name);
+	dir_create_impl(vm, wd, dir, name);
 }
 
 void
@@ -574,14 +699,15 @@ fn_Directory_createDir(WrenVM *vm)
 	if (dir == NULL)
 		return;
 	const char *name = wrenGetSlotString(vm, 1);
-	dir_createdir_impl(vm, dir, name);
+	dir_createdir_impl(vm, wd, dir, name);
 }
 
 static void
-dir_delete_impl(WrenVM *vm, const char *dir, const char *name)
+dir_delete_impl(WrenVM *vm, struct wren_directory *parent,
+    const char *dir, const char *name)
 {
 	wrenEnsureSlots(vm, 1);
-	if (!fname_is_clean(name)) {
+	if (!fname_check_(parent, name)) {
 		wrenSetSlotBool(vm, 0, false);
 		return;
 	}
@@ -594,7 +720,7 @@ dir_delete_impl(WrenVM *vm, const char *dir, const char *name)
 	/* Refuse to act on anything that isn't an existing file or
 	 * directory.  fexist() is xpdev's "exists as a non-directory"
 	 * (true for regular files, symlinks, devices on POSIX); isdir()
-	 * is the directory test.  fname_is_clean already rejects path
+	 * is the directory test.  fname_check_ already rejects path
 	 * traversal in the name. */
 	if (!fexist(p) && !isdir(p)) {
 		wrenSetSlotBool(vm, 0, false);
@@ -621,7 +747,7 @@ fn_Directory_delete(WrenVM *vm)
 	if (dir == NULL)
 		return;
 	const char *name = wrenGetSlotString(vm, 1);
-	dir_delete_impl(vm, dir, name);
+	dir_delete_impl(vm, wd, dir, name);
 }
 
 /* Host.cacheDirectory — returns a fresh Directory foreign whose path
@@ -636,13 +762,241 @@ fn_Host_cacheDirectory(WrenVM *vm)
 	wrenGetVariable(vm, "syncterm", "Directory", 1);
 	struct wren_directory *wd = wrenSetSlotNewForeign(vm, 0, 1,
 	    sizeof(*wd));
-	wd->type     = SWF_DIRECTORY;
-	wd->is_cache = true;
-	wd->dead     = false;
-	wd->fs_prev  = NULL;
-	wd->fs_next  = NULL;
-	wd->path[0]  = '\0';
+	wd->type          = SWF_DIRECTORY;
+	wd->is_cache      = true;
+	wd->relaxed_names = false;
+	wd->dead          = false;
+	wd->fs_prev       = NULL;
+	wd->fs_next       = NULL;
+	wd->path[0]       = '\0';
 	fs_register_dir(wd);
+}
+
+/* Helper for Host.downloadDir / Host.uploadDir — both hand back a
+ * Directory rooted at a per-BBS string field on the active bbslist
+ * entry, with the relaxed filename predicate enabled.  Returns null
+ * when the path is empty/unset OR equals $HOME (the unfortunate-
+ * default guard); the caller is expected to surface a "configure
+ * DownloadPath / UploadPath" message. */
+static void
+push_relaxed_root_(WrenVM *vm, const char *path)
+{
+	wrenEnsureSlots(vm, 2);
+	if (is_dangerous_default_(path)) {
+		wrenSetSlotNull(vm, 0);
+		return;
+	}
+	size_t pn = strlen(path);
+	bool need_slash = pn > 0 && path[pn - 1] != '/' && path[pn - 1] != '\\';
+	if (pn + (need_slash ? 1 : 0) >= MAX_PATH) {
+		wrenSetSlotNull(vm, 0);
+		return;
+	}
+	wrenGetVariable(vm, "syncterm", "Directory", 1);
+	struct wren_directory *wd = wrenSetSlotNewForeign(vm, 0, 1,
+	    sizeof(*wd));
+	wd->type          = SWF_DIRECTORY;
+	wd->is_cache      = false;
+	wd->relaxed_names = true;
+	wd->dead          = false;
+	wd->fs_prev       = NULL;
+	wd->fs_next       = NULL;
+	memcpy(wd->path, path, pn);
+	if (need_slash)
+		wd->path[pn++] = '/';
+	wd->path[pn] = '\0';
+	fs_register_dir(wd);
+}
+
+/* Host.downloadDir — relaxed-name Directory rooted at bbs->dldir.
+ * Returns null when dldir is empty or equals $HOME. */
+void
+fn_Host_downloadDir(WrenVM *vm)
+{
+	struct wren_host_state *st = wren_host_state();
+	if (st == NULL || st->bbs == NULL) {
+		wrenSetSlotNull(vm, 0);
+		return;
+	}
+	push_relaxed_root_(vm, st->bbs->dldir);
+}
+
+/* Host.uploadDir — relaxed-name Directory rooted at bbs->uldir.
+ * Returns null when uldir is empty or equals $HOME. */
+void
+fn_Host_uploadDir(WrenVM *vm)
+{
+	struct wren_host_state *st = wren_host_state();
+	if (st == NULL || st->bbs == NULL) {
+		wrenSetSlotNull(vm, 0);
+		return;
+	}
+	push_relaxed_root_(vm, st->bbs->uldir);
+}
+
+/* Resolve `slot`'s value into an initial-directory string for the
+ * filepick widget.  Accepts:
+ *   - String: used verbatim.
+ *   - Directory foreign: uses its resolved path (handles Cache's
+ *     lazy-resolve via wd_resolve).
+ *   - Anything else (including null): falls back to bbs->uldir or
+ *     NULL if no BBS / no uldir.
+ * `scratch` is filled when a Cache Directory needs resolving;
+ * otherwise the returned pointer aliases the slot's String or the
+ * Directory's path field. */
+static const char *
+pick_extract_initial(WrenVM *vm, int slot, char *scratch, size_t scratchsz)
+{
+	if (wrenGetSlotType(vm, slot) == WREN_TYPE_STRING) {
+		const char *s = wrenGetSlotString(vm, slot);
+		if (s != NULL && s[0] != '\0')
+			return s;
+	}
+	else if (slot_foreign_type(vm, slot) == SWF_DIRECTORY) {
+		struct wren_directory *wd = wrenGetSlotForeign(vm, slot);
+		if (!wd->dead) {
+			const char *p = wd_resolve(vm, wd, scratch, scratchsz);
+			if (p != NULL && p[0] != '\0')
+				return p;
+		}
+	}
+	struct wren_host_state *st = wren_host_state();
+	if (st != NULL && st->bbs != NULL && st->bbs->uldir[0] != '\0')
+		return st->bbs->uldir;
+	return NULL;
+}
+
+/* Allocate a File foreign at `slot` for an absolute path returned
+ * by the picker.  Sets path + signs a consent token via
+ * wren_token_sign (NULL on no-key / unreadable / OOM — the File is
+ * still valid for one-shot session use, but won't persist).
+ * Returns the wren_file pointer, or NULL when path is too long. */
+static struct wren_file *
+push_picker_file(WrenVM *vm, int slot, const char *picked)
+{
+	if (picked == NULL || strlen(picked) >= MAX_PATH)
+		return NULL;
+	wrenEnsureSlots(vm, slot + 2);
+	wrenGetVariable(vm, "syncterm", "File", slot + 1);
+	struct wren_file *wf = wrenSetSlotNewForeign(vm, slot, slot + 1,
+	    sizeof(*wf));
+	wf->type    = SWF_FILE;
+	wf->fp      = NULL;
+	wf->token   = wren_token_sign(picked);
+	wf->dead    = false;
+	wf->fs_prev = NULL;
+	wf->fs_next = NULL;
+	strlcpy(wf->path, picked, sizeof(wf->path));
+	fs_register_file(wf);
+	return wf;
+}
+
+/* Host.pickFile(initialDir, mask, opts) — wraps uifc/filepick's
+ * single-file picker.  initialDir may be a String path, a Directory
+ * foreign (uses its path; handles Cache lazy-resolve), or null
+ * (defaults to bbs->uldir).  mask may be null (defaults to "*").
+ * opts is the UIFC_FP_* bitmask.
+ *
+ * Returns a File foreign whose path is the absolute path the user
+ * picked (with .token populated when the signing key is available),
+ * or null on cancel / escape / OOM.  This is the user-consent
+ * escape hatch for "upload from anywhere": the returned File's
+ * path is NOT validated against fname_is_clean*, since the picker
+ * UI itself is the sandbox boundary. */
+void
+fn_Host_pickFile(WrenVM *vm)
+{
+	char        scratch[MAX_PATH + 1];
+	const char *initial = pick_extract_initial(vm, 1,
+	    scratch, sizeof(scratch));
+	const char *mask    = NULL;
+	int         opts    = 0;
+	if (wrenGetSlotType(vm, 2) == WREN_TYPE_STRING)
+		mask = wrenGetSlotString(vm, 2);
+	if (wrenGetSlotType(vm, 3) == WREN_TYPE_NUM)
+		opts = (int)wrenGetSlotDouble(vm, 3);
+
+	struct file_pick fp = { 0 };
+	int rc = uifcfilepick("Pick a file", &fp, initial, mask, opts);
+	if (rc <= 0 || fp.files < 1 || fp.selected == NULL ||
+	    fp.selected[0] == NULL) {
+		filepick_free(&fp);
+		wrenSetSlotNull(vm, 0);
+		return;
+	}
+	if (push_picker_file(vm, 0, fp.selected[0]) == NULL)
+		wrenSetSlotNull(vm, 0);
+	filepick_free(&fp);
+}
+
+/* Host.pickFiles(initialDir, mask, opts) — multi-select counterpart
+ * of pickFile, wrapping uifc/filepick's filepick_multi.  Same
+ * argument shape as pickFile (Directory or String for initialDir).
+ * Returns a non-empty List<File> on OK (each File has a .token),
+ * or null on cancel / empty selection / OOM.  Per filepick.h,
+ * UIFC_FP_ALLOWENTRY / OVERPROMPT / CREATPROMPT cannot be combined
+ * with multi-select — filepick_multi rejects them with -1, which
+ * we surface as null. */
+void
+fn_Host_pickFiles(WrenVM *vm)
+{
+	char        scratch[MAX_PATH + 1];
+	const char *initial = pick_extract_initial(vm, 1,
+	    scratch, sizeof(scratch));
+	const char *mask    = NULL;
+	int         opts    = 0;
+	if (wrenGetSlotType(vm, 2) == WREN_TYPE_STRING)
+		mask = wrenGetSlotString(vm, 2);
+	if (wrenGetSlotType(vm, 3) == WREN_TYPE_NUM)
+		opts = (int)wrenGetSlotDouble(vm, 3);
+
+	struct file_pick fp = { 0 };
+	int rc = uifcfilepick_multi("Tag files to upload", &fp, initial,
+	    mask, opts);
+	if (rc <= 0 || fp.files < 1 || fp.selected == NULL) {
+		filepick_free(&fp);
+		wrenSetSlotNull(vm, 0);
+		return;
+	}
+	wrenEnsureSlots(vm, 3);
+	wrenSetSlotNewList(vm, 0);
+	int produced = 0;
+	for (int i = 0; i < fp.files; i++) {
+		if (push_picker_file(vm, 1, fp.selected[i]) == NULL)
+			continue;
+		wrenInsertInList(vm, 0, -1, 1);
+		produced++;
+	}
+	filepick_free(&fp);
+	if (produced == 0)
+		wrenSetSlotNull(vm, 0);
+}
+
+/* Host.openLocalFile(token) — verify a consent token previously
+ * minted by pickFile / pickFiles and re-open the encoded path as
+ * a fresh File foreign.  Returns null on:
+ *   - bad token (HMAC mismatch, malformed, signing key rotated)
+ *   - file no longer exists (verify recomputes file SHA-1)
+ *   - file content changed since consent (SHA-1 mismatch)
+ *   - OOM / path too long
+ * This is the only path by which Wren can resurrect a non-sandbox
+ * File handle across sessions; the token is the consent signal. */
+void
+fn_Host_openLocalFile(WrenVM *vm)
+{
+	if (wrenGetSlotType(vm, 1) != WREN_TYPE_STRING) {
+		wrenSetSlotNull(vm, 0);
+		return;
+	}
+	const char *token = wrenGetSlotString(vm, 1);
+	char *path = wren_token_verify(token);
+	if (path == NULL) {
+		wrenSetSlotNull(vm, 0);
+		return;
+	}
+	if (push_picker_file(vm, 0, path) == NULL)
+		wrenSetSlotNull(vm, 0);
+	free(path);
 }
 
 /* ----- File foreign methods ---------------------------------------- */
@@ -1000,6 +1354,43 @@ fn_File_size(WrenVM *vm)
 	wrenSetSlotDouble(vm, 0, (double)sz);
 }
 
+/* File.mtime — modification time as POSIX seconds.  Returns 0 when
+ * the file can't be stat'd (e.g. the path was unlinked while we
+ * held a non-open handle).  Uses fdate by path for both open and
+ * closed files; the path is preserved on wren_file. */
+void
+fn_File_mtime(WrenVM *vm)
+{
+	struct wren_file *wf = file_check(vm);
+	if (wf == NULL)
+		return;
+	time_t t = fdate(wf->path);
+	if (t < 0)
+		t = 0;
+	wrenSetSlotDouble(vm, 0, (double)t);
+}
+
+/* File.mtime=(t) — set modification time (POSIX seconds).  Works on
+ * both open and closed files (setfdate uses utime by path).  Used by
+ * the SFTP queue to stamp completed downloads with the remote's
+ * mtime so the browser's status chip can match local-vs-remote
+ * without needing server-side hash extensions. */
+void
+fn_File_mtime_set(WrenVM *vm)
+{
+	struct wren_file *wf = file_check(vm);
+	if (wf == NULL)
+		return;
+	if (wrenGetSlotType(vm, 1) != WREN_TYPE_NUM) {
+		wren_throw(vm, "File.mtime=: argument must be a Num");
+		return;
+	}
+	double v = wrenGetSlotDouble(vm, 1);
+	if (v < 0)
+		v = 0;
+	(void)setfdate(wf->path, (time_t)v);
+}
+
 void
 fn_File_isOpen(WrenVM *vm)
 {
@@ -1007,6 +1398,23 @@ fn_File_isOpen(WrenVM *vm)
 	if (wf == NULL)
 		return;
 	wrenSetSlotBool(vm, 0, wf->fp != NULL);
+}
+
+/* File.token — opaque consent token for picker-sourced Files; null
+ * for Files obtained via Cache / Upload / Download Directory
+ * listings.  See wren_token.h for the model.  Persist this in WON
+ * next to the path string; pass back to Host.openLocalFile on
+ * resume. */
+void
+fn_File_token(WrenVM *vm)
+{
+	struct wren_file *wf = file_check(vm);
+	if (wf == NULL)
+		return;
+	if (wf->token == NULL)
+		wrenSetSlotNull(vm, 0);
+	else
+		wrenSetSlotString(vm, 0, wf->token);
 }
 
 /* Map a file's contents for hashing.  On success the mapping (if

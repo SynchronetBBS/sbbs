@@ -32,6 +32,10 @@
 #include "wren_bind_screen.h"
 #include "wren_bind_won.h"
 
+#ifndef WITHOUT_DEUCESSH
+#include "deucessh-algorithms.h"   /* dssh_ed25519_get_pub_str */
+#endif
+
 #if !defined(_WIN32)
 #include <unistd.h>     /* for _POSIX_VERSION */
 #if defined(_POSIX_VERSION)
@@ -510,6 +514,110 @@ wren_bind_sweep_pending_timers(void)
 	st->pending_timer_count = w;
 }
 
+/* ----- Status-bar transfer arrows -------------------------------- */
+
+/* Two bools backing the status-bar up/down indicator arrows.  Wren
+ * toggles them via Host.uploadArrow=(b) / Host.downloadArrow=(b);
+ * the status-bar update path in term.c reads them via
+ * wren_upload_arrow_lit() / wren_download_arrow_lit().  Generic —
+ * any transfer-shaped Wren script (SFTP queue, future Zmodem / HTTP
+ * fetcher / etc.) can light them.  Owner-thread access only;
+ * cleared on VM teardown via wren_xfer_arrows_reset(). */
+static bool xfer_up_arrow = false;
+static bool xfer_dn_arrow = false;
+
+static void
+fn_Host_uploadArrow_set(WrenVM *vm)
+{
+	if (wrenGetSlotType(vm, 1) == WREN_TYPE_BOOL)
+		xfer_up_arrow = wrenGetSlotBool(vm, 1);
+}
+
+static void
+fn_Host_downloadArrow_set(WrenVM *vm)
+{
+	if (wrenGetSlotType(vm, 1) == WREN_TYPE_BOOL)
+		xfer_dn_arrow = wrenGetSlotBool(vm, 1);
+}
+
+bool
+wren_upload_arrow_lit(void)
+{
+	return xfer_up_arrow;
+}
+
+bool
+wren_download_arrow_lit(void)
+{
+	return xfer_dn_arrow;
+}
+
+void
+wren_xfer_arrows_reset(void)
+{
+	xfer_up_arrow = false;
+	xfer_dn_arrow = false;
+}
+
+/* ----- Host.sshPublicKey ----------------------------------------- */
+
+/* Host.sshPublicKey — first locally-configured SSH public key, as a
+ * Map { "algo": String, "blob": String }, or null when no key is
+ * available (no SSH backend, key not loaded, OOM).  Used by Wren
+ * scripts (sftp_pubkey.wren) to upload the user's authorized_keys
+ * entry on connect.  The structured shape (Map rather than raw
+ * OpenSSH line) future-proofs for RSA / sntrup keys: when those
+ * become reachable here, this getter can pick whichever algo's
+ * key is configured without the consumer needing to parse a
+ * line. */
+static void
+fn_Host_sshPublicKey(WrenVM *vm)
+{
+#ifdef WITHOUT_DEUCESSH
+	wrenSetSlotNull(vm, 0);
+#else
+	int64_t sz = dssh_ed25519_get_pub_str(NULL, 0);
+	if (sz <= 0) {
+		wrenSetSlotNull(vm, 0);
+		return;
+	}
+	char *line = malloc((size_t)sz + 1);
+	if (line == NULL) {
+		wrenSetSlotNull(vm, 0);
+		return;
+	}
+	if (dssh_ed25519_get_pub_str(line, (size_t)sz + 1) <= 0) {
+		free(line);
+		wrenSetSlotNull(vm, 0);
+		return;
+	}
+	/* DeuceSSH emits "<algo> <base64-blob>" with no trailing comment.
+	 * Split on the first space to separate algo and blob; if a
+	 * future variant adds a comment, drop everything past the second
+	 * space (consumers want the bare blob for matching). */
+	char *space = strchr(line, ' ');
+	if (space == NULL) {
+		free(line);
+		wrenSetSlotNull(vm, 0);
+		return;
+	}
+	*space      = '\0';
+	char *blob  = space + 1;
+	char *trail = strchr(blob, ' ');
+	if (trail != NULL)
+		*trail = '\0';
+	wrenEnsureSlots(vm, 3);
+	wrenSetSlotNewMap(vm, 0);
+	wrenSetSlotString(vm, 1, "algo");
+	wrenSetSlotString(vm, 2, line);
+	wrenSetMapValue(vm, 0, 1, 2);
+	wrenSetSlotString(vm, 1, "blob");
+	wrenSetSlotString(vm, 2, blob);
+	wrenSetMapValue(vm, 0, 1, 2);
+	free(line);
+#endif
+}
+
 /* ----- Platform --------------------------------------------------- */
 
 /* Platform.name — OS identifier for platform-specific script logic.
@@ -666,8 +774,9 @@ static const struct binding BINDINGS[] = {
 	{ "Input",  true,  "next()",              fn_Input_next               },
 	{ "Input",  true,  "next(_)",             fn_Input_next_ms            },
 	{ "Input",  true,  "poll()",              fn_Input_poll               },
-	{ "Input",  true,  "nextEvent(_)",        fn_Input_nextEvent          },
-	{ "Input",  true,  "wake(_,_)",           fn_Input_wake               },
+	{ "Input",  true,  "pushClaim_(_,_)",     fn_Input_pushClaim_         },
+	{ "Wake",   true,  "post(_,_)",           fn_Wake_post                },
+	{ "ClaimHandle", false, "pop()",          fn_ClaimHandle_pop          },
 	{ "Input",  true,  "ungetKey_(_)",        fn_Input_ungetKey_          },
 	{ "Input",  true,  "ungetMouse_(_)",      fn_Input_ungetMouse_        },
 	{ "Input",  true,  "mousedrag()",         fn_Input_mousedrag          },
@@ -767,6 +876,11 @@ static const struct binding BINDINGS[] = {
 	{ "Hyperlinks", true, "params(_)",      fn_Hyperlinks_params      },
 
 	{ "Host", true, "cacheDirectory",       fn_Host_cacheDirectory    },
+	{ "Host", true, "downloadDir",          fn_Host_downloadDir       },
+	{ "Host", true, "uploadDir",            fn_Host_uploadDir         },
+	{ "Host", true, "pickFile(_,_,_)",      fn_Host_pickFile          },
+	{ "Host", true, "pickFiles(_,_,_)",     fn_Host_pickFiles         },
+	{ "Host", true, "openLocalFile(_)",     fn_Host_openLocalFile     },
 
 	/* Platform — OS identification. */
 	{ "Platform", true, "name",             fn_Platform_name          },
@@ -777,6 +891,7 @@ static const struct binding BINDINGS[] = {
 	/* SFTP (all static) */
 	{ "SFTP",       true,  "available",       fn_SFTP_available       },
 	{ "SFTP",       true,  "pubdir",          fn_SFTP_pubdir          },
+	{ "SFTP",       true,  "lname",           fn_SFTP_lname           },
 	{ "SFTP",       true,  "realpath(_,_)",   fn_SFTP_realpath        },
 	{ "SFTP",       true,  "stat(_,_)",       fn_SFTP_stat            },
 	{ "SFTP",       true,  "opendir(_,_)",    fn_SFTP_opendir         },
@@ -789,6 +904,7 @@ static const struct binding BINDINGS[] = {
 	{ "SFTP",       true,  "rmdir(_,_)",      fn_SFTP_rmdir           },
 	{ "SFTP",       true,  "remove(_,_)",     fn_SFTP_remove          },
 	{ "SFTP",       true,  "rename(_,_,_)",   fn_SFTP_rename          },
+	{ "SFTP",       true,  "setMtime(_,_,_)", fn_SFTP_setMtime        },
 	{ "SFTP",       true,  "descs(_,_)",      fn_SFTP_descs           },
 
 	/* SFTPEntry (instance) */
@@ -875,6 +991,9 @@ static const struct binding BINDINGS[] = {
 	{ "CTerm", true, "logMode",            fn_CTerm_logMode         },
 	{ "CTerm", true, "logPaused",          fn_CTerm_logPaused       },
 	{ "CTerm", true, "statusDisplay",      fn_CTerm_statusDisplay   },
+	{ "CTerm", true, "refreshStatus()",    fn_CTerm_refreshStatus   },
+	{ "CTerm", true, "sftpActive",         fn_CTerm_sftpActive_get  },
+	{ "CTerm", true, "sftpActive=(_)",     fn_CTerm_sftpActive_set  },
 	{ "CTerm", true, "extAttr",            fn_CTerm_extAttr         },
 	{ "CTerm", true, "lastColumnFlag",     fn_CTerm_lastColumnFlag  },
 	{ "CTerm", true, "write(_)",           fn_CTerm_write           },
@@ -964,9 +1083,12 @@ static const struct binding BINDINGS[] = {
 	{ "File",      false, "offset",          fn_File_offset_get     },
 	{ "File",      false, "offset=(_)",      fn_File_offset_set     },
 	{ "File",      false, "size",            fn_File_size           },
+	{ "File",      false, "mtime",           fn_File_mtime          },
+	{ "File",      false, "mtime=(_)",       fn_File_mtime_set      },
 	{ "File",      false, "isOpen",          fn_File_isOpen         },
 	{ "File",      false, "sha1",            fn_File_sha1           },
 	{ "File",      false, "md5",             fn_File_md5            },
+	{ "File",      false, "token",           fn_File_token          },
 	{ "File",      false, "toString",        fn_File_toString       },
 
 	/* Hook */
@@ -979,7 +1101,13 @@ static const struct binding BINDINGS[] = {
 	{ "Hook",  true, "onMouse(_)",     fn_Hook_onMouse          },
 	{ "Hook",  true, "onMouse(_,_)",   fn_Hook_onMouse_filtered },
 	{ "Hook",  true, "onStatus(_)",    fn_Hook_onStatus         },
+	{ "Hook",  true, "onShellClose(_)", fn_Hook_onShellClose    },
+	{ "Hook",  true, "onDisconnect(_)", fn_Hook_onDisconnect    },
 	{ "Hook",  true, "every(_,_)",     fn_Hook_every        },
+
+	{ "Host", true, "uploadArrow=(_)",   fn_Host_uploadArrow_set   },
+	{ "Host", true, "downloadArrow=(_)", fn_Host_downloadArrow_set },
+	{ "Host", true, "sshPublicKey",      fn_Host_sshPublicKey      },
 
 	{ "WON",   true, "deserialize(_)", fn_WON_deserialize   },
 };
@@ -1044,6 +1172,12 @@ wren_bind_lookup_class(const char *module, const char *className)
 	if (strcmp(className, "HookHandle") == 0) {
 		WrenForeignClassMethods m = {
 			wren_hook_handle_allocate, wren_hook_handle_finalize
+		};
+		return m;
+	}
+	if (strcmp(className, "ClaimHandle") == 0) {
+		WrenForeignClassMethods m = {
+			wren_claim_handle_allocate, wren_claim_handle_finalize
 		};
 		return m;
 	}

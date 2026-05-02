@@ -10,9 +10,6 @@
 #include "wren.h"
 
 struct mouse_event;
-
-bool wren_bind_resume_parked_key(int code);
-bool wren_bind_resume_parked_mouse(struct mouse_event *ev);
 void fnColor_fromAttr(WrenVM *vm);
 void fnColor_fromRgb(WrenVM *vm);
 void fnColor_toLegacyAttr(WrenVM *vm);
@@ -77,12 +74,16 @@ void fn_Input_enableMouseEvent(WrenVM *vm);
 void fn_Input_disableMouseEvent(WrenVM *vm);
 void fn_Input_mousedrag(WrenVM *vm);
 void fn_Input_next(WrenVM *vm);
-void fn_Input_nextEvent(WrenVM *vm);
 void fn_Input_next_ms(WrenVM *vm);
 void fn_Input_poll(WrenVM *vm);
+void fn_Input_pushClaim_(WrenVM *vm);
 void fn_Input_ungetKey_(WrenVM *vm);
 void fn_Input_ungetMouse_(WrenVM *vm);
-void fn_Input_wake(WrenVM *vm);
+void fn_Wake_post(WrenVM *vm);
+void fn_ClaimHandle_pop(WrenVM *vm);
+void wren_claim_handle_allocate(WrenVM *vm);
+void wren_claim_handle_finalize(void *data);
+void wren_bind_claim_stack_clear(void);
 void fn_KeyEvent_code(WrenVM *vm);
 void fn_KeyEvent_codepoint(WrenVM *vm);
 void fn_KeyEvent_text(WrenVM *vm);

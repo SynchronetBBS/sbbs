@@ -205,11 +205,6 @@ ifndef WITHOUT_DEUCESSH
  # honest: the probe may set it, and then nothing references dssh_* or
  # ssh.o at all.
  OBJS       += $(MTOBJODIR)$(DIRSEP)ssh$(OFILE)
- OBJS       += $(MTOBJODIR)$(DIRSEP)sftp_browser$(OFILE)
- OBJS       += $(MTOBJODIR)$(DIRSEP)sftp_degraded$(OFILE)
- OBJS       += $(MTOBJODIR)$(DIRSEP)sftp_queue$(OFILE)
- OBJS       += $(MTOBJODIR)$(DIRSEP)sftp_queue_screen$(OFILE)
- OBJS       += $(MTOBJODIR)$(DIRSEP)sftp_wait$(OFILE)
  CFLAGS     += -I$(SRC_ROOT)/ssh $(SFTP-MT_CFLAGS)
  LDFLAGS    += $(SFTP-MT_LDFLAGS)
  EXTRA_LIBS += $(SFTP-MT_LIBS) $(DEUCESSH_LIB)
@@ -415,6 +410,7 @@ OBJS   += $(MTOBJODIR)$(DIRSEP)wren_bind_screen$(OFILE)
 OBJS   += $(MTOBJODIR)$(DIRSEP)wren_bind_conn$(OFILE)
 OBJS   += $(MTOBJODIR)$(DIRSEP)wren_bind_hook$(OFILE)
 OBJS   += $(MTOBJODIR)$(DIRSEP)wren_bind_won$(OFILE)
+OBJS   += $(MTOBJODIR)$(DIRSEP)wren_token$(OFILE)
 CFLAGS += -Iwren/include
 
 # Wren-private include paths and PREFIX undef apply to every TU that

@@ -82,13 +82,13 @@ is_hex_digit(unsigned char c)
 }
 
 /* In-place minify a Wren source buffer.  Strips line and block
- * comments (block comments may nest in Wren), leading and trailing
- * whitespace per line, and collapses runs of blank lines.  Newlines
- * are preserved — Wren depends on them as statement separators.
- * String literals (including their interpolations) pass through
- * verbatim, tracked via a small state stack alternating CODE /
- * STRING; if the stack overflows the tail gets copied without
- * further minification.  Returns the new length. */
+ * comments (block comments may nest in Wren) and leading/trailing
+ * whitespace per line, but preserves every input newline so that
+ * compile error line numbers in the embedded module match the
+ * source.  String literals (including their interpolations) pass
+ * through verbatim, tracked via a small state stack alternating
+ * CODE / STRING; if the stack overflows the tail gets copied
+ * without further minification.  Returns the new length. */
 static size_t
 minify_wren(unsigned char *buf, size_t n)
 {
@@ -102,7 +102,6 @@ minify_wren(unsigned char *buf, size_t n)
 
 	size_t r = 0, w = 0;
 	int    at_line_start  = 1;
-	int    last_emitted_nl = 1;
 
 	while (r < n) {
 		unsigned char c = buf[r];
@@ -119,8 +118,7 @@ minify_wren(unsigned char *buf, size_t n)
 			if (c == '"') {
 				if (sp > 0)
 					sp--;
-				last_emitted_nl = 0;
-				at_line_start   = 0;
+				at_line_start = 0;
 				continue;
 			}
 			if (c == '%' && r < n && buf[r] == '(') {
@@ -165,10 +163,7 @@ minify_wren(unsigned char *buf, size_t n)
 			if (r < n && (buf[r] == '\n' || buf[r] == '\r') &&
 			    buf[r] != c)
 				r++;
-			if (!last_emitted_nl) {
-				buf[w++] = '\n';
-				last_emitted_nl = 1;
-			}
+			buf[w++] = '\n';
 			at_line_start = 1;
 			continue;
 		}
@@ -189,6 +184,17 @@ minify_wren(unsigned char *buf, size_t n)
 				           buf[r+1] == '/') {
 					depth--;
 					r += 2;
+				} else if (buf[r] == '\n') {
+					/* Preserve newlines from inside block
+					 * comments so following lines retain
+					 * their source line numbers. */
+					buf[w++] = '\n';
+					r++;
+				} else if (buf[r] == '\r') {
+					r++;
+					if (r < n && buf[r] == '\n')
+						r++;
+					buf[w++] = '\n';
 				} else {
 					r++;
 				}
@@ -202,17 +208,13 @@ minify_wren(unsigned char *buf, size_t n)
 				sp++;
 				state[sp] = S_STR;
 			}
-			last_emitted_nl = 0;
-			at_line_start   = 0;
+			at_line_start = 0;
 			continue;
 		}
 		buf[w++] = c;
 		r++;
-		last_emitted_nl = 0;
-		at_line_start   = 0;
+		at_line_start = 0;
 	}
-	while (w > 0 && buf[w-1] == '\n')
-		w--;
 	return w;
 }
 

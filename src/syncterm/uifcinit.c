@@ -6,6 +6,7 @@
 #include <uifc.h>
 #include <vidmodes.h>
 
+#include "filepick.h"
 #include "syncterm.h"
 #include "uifcinit.h"
 
@@ -202,6 +203,60 @@ uifcinput(char *title, int len, char *msg, int mode, char *helpbuf)
 		freescreen(savscrn);
 	}
 	return ret;
+}
+
+/* Shared init/bail wrapper for filepick + filepick_multi.  Mirrors
+ * uifcmsg() / uifcinput() / confirm() so the picker can be invoked
+ * from a connected session — without this dance, the UIFC layer's
+ * per-session state isn't valid and api->list crashes inside the
+ * pane-redraw path. */
+static int
+uifcfilepick_common(char *title, struct file_pick *fp,
+    const char *initial_dir, const char *default_mask, int opts,
+    bool multi)
+{
+	int                   i = uifc_initialized;
+	struct ciolib_screen *savscrn = NULL;
+	int                   ret = -1;
+
+	if (!i)
+		savscrn = savescreen();
+	setfont(0, false, 1);
+	setfont(0, false, 2);
+	setfont(0, false, 3);
+	setfont(0, false, 4);
+	init_uifc(false, false);
+	if (uifc_initialized) {
+		if (multi)
+			ret = filepick_multi(&uifc, title, fp, initial_dir,
+			    default_mask, opts);
+		else
+			ret = filepick(&uifc, title, fp, initial_dir,
+			    default_mask, opts);
+		check_exit(false);
+	}
+	if (!i) {
+		uifcbail();
+		restorescreen(savscrn);
+		freescreen(savscrn);
+	}
+	return ret;
+}
+
+int
+uifcfilepick(char *title, struct file_pick *fp,
+    const char *initial_dir, const char *default_mask, int opts)
+{
+	return uifcfilepick_common(title, fp, initial_dir, default_mask,
+	    opts, false);
+}
+
+int
+uifcfilepick_multi(char *title, struct file_pick *fp,
+    const char *initial_dir, const char *default_mask, int opts)
+{
+	return uifcfilepick_common(title, fp, initial_dir, default_mask,
+	    opts, true);
 }
 
 int

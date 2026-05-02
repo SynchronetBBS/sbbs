@@ -16,6 +16,7 @@
 #include "comio.h"     /* COM_FLOW_CONTROL_* — also used by FlowControl in wren_bind.c */
 #include "conn.h"
 #include "cterm.h"
+#include "term.h"      /* force_status_update */
 
 #include <stdbool.h>
 #include <stdint.h>
@@ -208,6 +209,40 @@ fn_CTerm_suspended_set(WrenVM *vm)
 	*st->cterm_suspended = wrenGetSlotBool(vm, 1);
 }
 
+/* CTerm.sftpActive — Wren-set flag the SSH driver reads to decide
+ * whether to keep the session alive when the shell channel closes
+ * (or the wire goes idle).  SftpQueue raises it whenever a job is
+ * QUEUED or ACTIVE and clears it when the queue drains; ssh.c OR's
+ * its own per-direction worker counts with wren_sftp_active() so the
+ * connection stays up while either side has work.  Cleared on VM
+ * teardown by wren_sftp_active_reset(). */
+static bool sftp_active_flag = false;
+
+void
+fn_CTerm_sftpActive_get(WrenVM *vm)
+{
+	wrenSetSlotBool(vm, 0, sftp_active_flag);
+}
+
+void
+fn_CTerm_sftpActive_set(WrenVM *vm)
+{
+	if (wrenGetSlotType(vm, 1) == WREN_TYPE_BOOL)
+		sftp_active_flag = wrenGetSlotBool(vm, 1);
+}
+
+bool
+wren_sftp_active(void)
+{
+	return sftp_active_flag;
+}
+
+void
+wren_sftp_active_reset(void)
+{
+	sftp_active_flag = false;
+}
+
 #define CTERM_FIELD_NUM(field)                                          \
 	do {                                                            \
 		double v = (cterm != NULL) ? (double)cterm->field : 0.0;\
@@ -235,6 +270,19 @@ void fn_CTerm_started(WrenVM *vm)        { CTERM_FIELD_BOOL(started); }
 void fn_CTerm_skypix(WrenVM *vm)         { CTERM_FIELD_BOOL(skypix); }
 void fn_CTerm_hasPaletteOverride(WrenVM *vm){ CTERM_FIELD_BOOL(has_palette_override); }
 void fn_CTerm_statusDisplay(WrenVM *vm)  { CTERM_FIELD_NUM(status_display_type); }
+
+/* Request a SyncTERM status-bar repaint on the next update_status
+ * pass.  No-op when the bar is disabled (statusDisplay == 0) — the
+ * flag is checked anyway, but update_status returns early for
+ * term.nostatus.  Useful after Screen.restore() puts a stale snapshot
+ * on the status row: this causes the bar's live state (speed,
+ * transfer arrows, log indicators) to be re-emitted. */
+void
+fn_CTerm_refreshStatus(WrenVM *vm)
+{
+	(void)vm;
+	force_status_update = true;
+}
 
 void
 fn_CTerm_fgColor(WrenVM *vm)

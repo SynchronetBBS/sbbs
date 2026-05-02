@@ -1,10 +1,19 @@
 // SyncTERM Wren UI library — App.
 //
 // App is the runtime root: owns a root Container, an optional modal
-// stack, a keymap for global hotkeys, and the event pump that fans
-// Input.nextEvent results out to the widget tree.  While App.run() is
-// active, hooks are bypassed entirely (Input.nextEvent claims events
-// before the hook chain in wren_host_dispatch_key).
+// stack, a keymap for global hotkeys, and a single run-fiber that
+// pumps the event loop.  App.run pushes an Input claim that decides
+// synchronously, from App state alone, whether each event is "for
+// the App" — modal up consumes everything; with a focused widget,
+// keys are claimed and mouse events are claimed when they hit the
+// visible widget tree (or start a drag, which the App owns for
+// rectangular select); otherwise the event falls through to lower
+// claims and then to registered Hook.onKey / Hook.onMouse.  Claimed
+// events are delivered to the run-fiber via Wake.post; the next
+// drainOnce_ iteration picks them up and dispatches into the widget
+// tree.  All widget handlers run in the run-fiber and may yield
+// freely (modal pumps, SFTP awaits, etc.); the claim handler does
+// not.
 //
 // App is not itself a Widget but exposes the two methods that Widget
 // tree walks call upward: `effectiveTheme` (returns App's theme) and
@@ -30,7 +39,7 @@ import "ui_draw"   for Painter
 import "ui_popup"  for PopStatus
 import "ui_help"   for Help
 import "syncterm"  for Input, KeyEvent, MouseEvent, Mouse, Key, Timer,
-                       TimerElapsed, Screen, Surface, CustomCursor
+                       TimerElapsed, Wake, Screen, Surface, CustomCursor, CTerm
 
 // Sentinel passed into post() when the caller doesn't supply a value.
 // Identity-comparable so the App can recognise "just wake up, nothing
@@ -59,9 +68,11 @@ class App {
     _cursorShown = null           // mirrors last applied state; null forces first apply
     _runMode     = null           // "async" / "sync"; modal() uses to pick pump
     _status      = null           // PopStatus overlay or null
-    _runFiber    = null           // captured on first drainOnce_; target for post()
+    _runFiber    = null           // set in run(); target for post() and the claim handler's wake
     _onPost      = null           // user-supplied posted-value handler
     _dragHandedOff = false        // see dispatchMouse_ for the belt this catches
+    _claim         = null         // ClaimHandle; set by run(), popped on exit
+    _tickPending   = false        // true while a Timer.trigger is queued for _runFiber
     // F1 → context help; user can rebind / unbind freely.
     bind(Key.f1, Fn.new {|k| showHelp() })
   }
@@ -158,7 +169,7 @@ class App {
   post()      { post(WakeOnly.instance) }
   post(value) {
     if (_runFiber == null) return
-    Input.wake(_runFiber, value)
+    Wake.post(_runFiber, value)
   }
 
   // Optional handler for posted values.  Called from drainOnce_
@@ -169,6 +180,31 @@ class App {
   // do extra work with the value.
   onPost     { _onPost }
   onPost=(fn) { _onPost = fn }
+
+  // ----- Run a child fiber to completion --------------------------
+  //
+  // Spawn `fn` in a fresh fiber, pump the App's event loop from the
+  // run-fiber until the child completes, return whatever `fn`
+  // returned.  The child is the only thing parked on its SFTP /
+  // Timer.trigger / Wake.post completions, so the wakes-meant-for-
+  // someone-else hazard the run-fiber has (key/mouse/tickMs all
+  // resume the run-fiber) doesn't apply here — only the child's own
+  // results land on the child.  Meanwhile the run-fiber's own
+  // events keep dispatching normally during the wait, so keystrokes,
+  // ticks, and repaints are unaffected.
+  //
+  // Caller MUST be the run-fiber (i.e., this is sync-shaped code in
+  // the App's run loop).  Modal calls (Alert.show, Confirm.show)
+  // belong on the run-fiber side after this returns; the child fiber
+  // shouldn't try to push modals (its drainOnce_ would yield the
+  // child, not the App).
+  runChild(fn) {
+    var cell = [null]
+    var f = Fiber.new { cell[0] = fn.call() }
+    f.try()
+    while (!f.isDone) drainOnce_()
+    return cell[0]
+  }
 
   // ----- Status overlay ------------------------------------------
   //
@@ -209,8 +245,28 @@ class App {
     if (found != null) Help.show(this, "Help", found)
   }
 
+  // Synchronous claim decision — runs in the C dispatch fiber via
+  // the claim handler installed by run().  No widget handlers, no
+  // yields; queries App state only.  Modal up consumes everything;
+  // otherwise the App claims input only when a widget is focused.
+  // Mouse additionally requires a hit on the visible tree, with
+  // drag-start always consumed because the App owns the rectangular-
+  // select hand-off.  Falls through (returns false) for the
+  // no-focused-widget case so an xeyes-style App can sit on screen
+  // without intercepting events.
+  shouldConsume_(ev) {
+    if (_modalStack.count > 0) return true
+    if (_root.focusedChild == null) return false
+    if (ev is KeyEvent) return true
+    if (ev is MouseEvent) {
+      if (ev.event == Mouse.button1DragStart) return true
+      return _root.hitTest(ev.startX, ev.startY) != null
+    }
+    return false
+  }
+
   // Dispatch entries — public so tests (and external pumps) can
-  // drive them directly without going through Input.nextEvent.
+  // drive them directly.
 
   // Key flow:
   //   1. modalTop.handle(ke) — focused-leaf-first via Container.
@@ -277,11 +333,21 @@ class App {
   // Order: root first, then modals top-down so the foreground wins
   // the final paint.
   drawAll_() {
-    var sz = Screen.size
+    // Effective height excludes the SyncTERM status row when one is
+    // present (statusDisplay > 0 = either the indicator bar or a
+    // host-owned status_sub).  Without this, the App's surface and
+    // its periodic blit would paint over the status row's contents
+    // on every repaint, fighting with the C-side update_status path
+    // and producing visible flicker on the transfer arrows / log
+    // indicators.
+    var sw      = Screen.size[0]
+    var sh      = Screen.size[1]
+    var hideRow = CTerm.statusDisplay > 0
+    if (hideRow) sh = sh - 1
     if (_surface == null || _surfaceSize == null ||
-        _surfaceSize[0] != sz[0] || _surfaceSize[1] != sz[1]) {
-      _surface     = Surface.new(sz[0], sz[1])
-      _surfaceSize = sz
+        _surfaceSize[0] != sw || _surfaceSize[1] != sh) {
+      _surface     = Surface.new(sw, sh)
+      _surfaceSize = [sw, sh]
       _backdrop    = null
     }
     // Snapshot whatever was on screen before our first paint and use
@@ -290,12 +356,12 @@ class App {
     // fill — UIFC convention: dialogs sit "on top of" the screen
     // they came from.
     if (_backdrop == null) {
-      _backdrop = Screen.readRect(1, 1, sz[0], sz[1])
+      _backdrop = Screen.readRect(1, 1, sw, sh)
     }
     if (_backdrop != null) _surface.putRect(_backdrop, 0, 0)
 
     if (_root.bounds == null) {
-      _root.bounds = Rect.new(1, 1, sz[0], sz[1])
+      _root.bounds = Rect.new(1, 1, sw, sh)
     }
     // Composite root's children straight onto the App surface.  Root
     // has no chrome of its own — it's a passthrough container — so
@@ -363,15 +429,29 @@ class App {
     for (m in _modalStack) m.markDirty()
   }
 
-  // One iteration of the event loop: paint, park, dispatch.  Public
-  // (well, trailing-underscore-private) for the modal-loop reuse;
-  // call run() for the full event loop.
+  // One iteration of the event loop: paint, park, dispatch.  All
+  // event handling lives in this fiber — the claim handler only
+  // decides consumption and posts a wake; KeyEvent / MouseEvent
+  // dispatch into the widget tree happens here, where handlers may
+  // yield freely.  Used by run()'s outer loop and by modal()'s
+  // nested pump.
   drainOnce_() {
     drawAll_()
-    if (_runFiber == null) _runFiber = Fiber.current
-    Input.nextEvent(Fiber.current)
-    if (_tickMs != null) Timer.trigger(Fiber.current, _tickMs)
+    // Only schedule a tick when one isn't already pending.  Without
+    // this gate, every non-tick wake (key, mouse, app.post()) would
+    // queue a fresh timer while the previous one is still in
+    // wren_host's pending-timer array, blowing past WREN_HOST_MAX_TIMERS
+    // within a few keystrokes.
+    if (_tickMs != null && !_tickPending) {
+      Timer.trigger(Fiber.current, _tickMs)
+      _tickPending = true
+    }
     var ev = Fiber.yield()
+    if (ev is TimerElapsed) {
+      _tickPending = false
+      onTick_()
+      return
+    }
     if (ev is KeyEvent) {
       dispatchKey_(ev)
       return
@@ -380,15 +460,10 @@ class App {
       dispatchMouse_(ev)
       return
     }
-    if (ev is TimerElapsed) {
-      onTick_()
-      return
-    }
-    // Posted via post() / Input.wake — anything that isn't an input
-    // or timer event.  The redraw at the top of the *next* drainOnce_
-    // already gives us the "wake to repaint" semantics; onPost is for
-    // callers that want to inspect the value too.  The WakeOnly
-    // sentinel means "no payload"; skip the user handler in that case.
+    // Posted via app.post() with a non-event value.  WakeOnly is
+    // the no-payload "just repaint" signal (redraw is automatic at
+    // the top of the next iteration); other values flow through
+    // the optional onPost handler.
     if (ev != WakeOnly.instance && _onPost != null) _onPost.call(ev)
   }
 
@@ -441,11 +516,31 @@ class App {
   run() {
     var savedMouse = setupMouse_()
     setupCursor_()
-    _runMode  = "async"
-    _running  = true
-    _backdrop = null            // recapture screen on first paint
-    _runFiber = null            // captured by drainOnce_'s first iter
+    _runMode     = "async"
+    _running     = true
+    _backdrop    = null            // recapture screen on first paint
+    _runFiber    = Fiber.current   // claim handler posts wakes here
+    _tickPending = false           // any prior run's timers fire to a dead fiber
+    // Push an input claim.  The handler runs synchronously in the
+    // C dispatch frame (via Hook.dispatch_'s wrap, same as any
+    // hook); it queries App state via shouldConsume_ to decide
+    // whether to claim the event, posts the event to _runFiber via
+    // Wake.post when claimed, and returns the consumed bool the
+    // C dispatcher needs.  The handler does no widget work and
+    // never yields — actual dispatch happens in this fiber from
+    // drainOnce_, where handlers are free to yield.
+    //
+    // When run() exits, the claim is popped explicitly; the
+    // ClaimHandle's foreign finalizer pops on GC as a safety net
+    // if cleanup is ever skipped (aborted run, etc.).
+    _claim = Input.pushClaim(Fn.new {|ev|
+      if (!shouldConsume_(ev)) return false
+      Wake.post(_runFiber, ev)
+      return true
+    })
     while (_running) drainOnce_()
+    _claim.pop()
+    _claim    = null
     _runMode  = null
     _backdrop = null
     _runFiber = null

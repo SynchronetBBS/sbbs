@@ -150,47 +150,33 @@ foreign class Input {
   foreign static enableMouseEvent(ev)
   foreign static disableMouseEvent(ev)
 
-  // Async event delivery — register `fiber` to receive the next key
-  // or mouse event.  Fiber yields after, receives KeyEvent or
-  // MouseEvent on resume.  Throws if another fiber is already
-  // registered (single-subscriber).  Re-arm by calling again after
-  // each event.  Common idiom:
-  //   Input.nextEvent(Fiber.current)
-  //   var ev = Fiber.yield()
-  // Or as part of a multi-fire event loop:
-  //   Input.nextEvent(Fiber.current)
-  //   SFTP.stat(Fiber.current, "/foo")
-  //   while (true) {
-  //     var x = Fiber.yield()
-  //     if (x is KeyEvent) { Input.nextEvent(Fiber.current); ... }
-  //     if (x is SFTPStat) { ... }
+  // Async event delivery — push a claim onto the input claim stack.
+  // Each claim is a `Fn` taking a single event arg (KeyEvent or
+  // MouseEvent foreign) and returning a Bool (consumed).  The C
+  // dispatcher walks claims top-down (newest fiber first); the
+  // first claim to return `true` consumes the event.  Below all
+  // claims, registered `Hook.onKey` / `Hook.onMouse` handlers fire.
+  //
+  // Per-fiber slot: each fiber has at most one claim on the stack.
+  // A same-fiber re-push replaces the existing entry in place; a
+  // different-fiber push adds a new entry on top.  Auto-prune at
+  // dispatch time drops claims whose owning fiber is `isDone`.
+  //
+  // Returns a `ClaimHandle`.  Call `.pop()` on it to remove the
+  // claim explicitly; the handle's foreign finalizer also pops on
+  // GC if the script forgets.  pop() is idempotent.
+  //
+  // Common pattern (App.run):
+  //   var claim = Input.pushClaim {|ev|
+  //     // dispatch ev into widget tree, return consumed bool
   //   }
-  foreign static nextEvent(fiber)
-
-  // Queue a synthetic resume of `fiber`, delivering `value` as the
-  // return of `Fiber.yield()`.  The wake is enqueued on the same
-  // result queue Input.nextEvent and Timer.trigger use, so it's
-  // delivered on the next main-loop drain — never in the middle of
-  // the current foreign call.  Safe to call from Hook.onInput,
-  // Hook.onMouse, Hook.onStatus, etc., which is the whole point:
-  // remote bytes (or any other state change a hook observes) can
-  // wake a UI fiber that's parked on Input.nextEvent.
+  //   ...                              // run loop, parks on Fiber.yield
+  //   claim.pop()
   //
-  // `value` may be any Wren object — the deliverer pins it as a
-  // WrenHandle until delivery, then loads it into the fiber's
-  // resumed value slot.  Convention: pass a discriminated value
-  // your fiber's main-loop demuxer can recognise (a foreign
-  // KeyEvent / MouseEvent class, or your own sentinel).
-  //
-  // Multiple wakes can be queued for the same fiber; each becomes
-  // one resumption.  Calling `wake` does NOT wait for delivery —
-  // the caller's foreign returns immediately and the hook chain
-  // completes synchronously, satisfying the hook contract.
-  //
-  // Do not call from inside another foreign method that itself
-  // re-enters wrenCall (same rule as wrenCall in §7 of wren.md);
-  // hooks are the canonical safe site.
-  foreign static wake(fiber, value)
+  // The two-arg `pushClaim_` is the foreign; the public one-arg
+  // `pushClaim` captures `Fiber.current` automatically.
+  foreign static pushClaim_(fiber, fn)
+  static pushClaim(fn) { pushClaim_(Fiber.current, fn) }
 
   static unget(ev) {
     if (ev is KeyEvent) {
@@ -202,6 +188,42 @@ foreign class Input {
   foreign static ungetKey_(ev)
   foreign static ungetMouse_(ev)
 }
+// Returned from Input.pushClaim.  Drop the claim by calling `.pop()`;
+// idempotent (stale handles after a same-fiber re-push are no-ops).
+// The C-side finalizer also pops on GC, so a forgotten handle still
+// cleans up — but explicit pop is cheaper and more predictable.
+foreign class ClaimHandle {
+  foreign pop()
+}
+
+// Fiber-resume primitive.  `Wake.post(fiber, value)` queues a
+// synthetic resume of `fiber`, delivering `value` as the return of
+// its next `Fiber.yield()`.  The wake is enqueued on the same
+// result queue Timer.trigger and SFTP completions use, so it's
+// delivered on the next main-loop drain — never in the middle of
+// the current foreign call.  Safe to call from hooks
+// (Hook.onInput / Hook.onMouse / Hook.onStatus / claim handlers /
+// worker fibers): remote bytes or any other state change a hook
+// observes can wake a UI fiber that's parked on `Fiber.yield()`.
+//
+// `value` may be any Wren object — the deliverer pins it as a
+// WrenHandle until delivery, then loads it into the fiber's
+// resumed value slot.  Convention: pass a discriminated value
+// your fiber's main-loop demuxer can recognise (a foreign
+// KeyEvent / MouseEvent class, or your own sentinel).
+//
+// Multiple posts can queue for the same fiber; each becomes one
+// resumption in arrival order.  `post` does NOT wait for delivery
+// — the caller's foreign returns immediately and the surrounding
+// hook chain completes synchronously, satisfying the hook contract.
+//
+// Do not call from inside another foreign method that itself
+// re-enters wrenCall (same rule as wrenCall in §7 of wren.md);
+// hooks are the canonical safe site.
+class Wake {
+  foreign static post(fiber, value)
+}
+
 foreign class KeyEvent {
   construct new(code) {}
   foreign code
@@ -322,6 +344,47 @@ class Key {
   static altF10      { 0x7100 }
   static altF11      { 0x8B00 }
   static altF12      { 0x8C00 }
+  // Alt-letter scancodes (CIO).  High byte = PC scancode of the
+  // letter key, low byte = 0.  Hex values come from rows of the
+  // IBM PC keyboard, not alphabetical order.
+  static altA        { 0x1E00 }
+  static altB        { 0x3000 }
+  static altC        { 0x2E00 }
+  static altD        { 0x2000 }
+  static altE        { 0x1200 }
+  static altF        { 0x2100 }
+  static altG        { 0x2200 }
+  static altH        { 0x2300 }
+  static altI        { 0x1700 }
+  static altJ        { 0x2400 }
+  static altK        { 0x2500 }
+  static altL        { 0x2600 }
+  static altM        { 0x3200 }
+  static altN        { 0x3100 }
+  static altO        { 0x1800 }
+  static altP        { 0x1900 }
+  static altQ        { 0x1000 }
+  static altR        { 0x1300 }
+  static altS        { 0x1F00 }
+  static altT        { 0x1400 }
+  static altU        { 0x1600 }
+  static altV        { 0x2F00 }
+  static altW        { 0x1100 }
+  static altX        { 0x2D00 }
+  static altY        { 0x1500 }
+  static altZ        { 0x2C00 }
+  // Alt-digit scancodes.  Alt-1 .. Alt-9 are 0x7800 .. 0x8000;
+  // Alt-0 is 0x8100.
+  static alt1        { 0x7800 }
+  static alt2        { 0x7900 }
+  static alt3        { 0x7A00 }
+  static alt4        { 0x7B00 }
+  static alt5        { 0x7C00 }
+  static alt6        { 0x7D00 }
+  static alt7        { 0x7E00 }
+  static alt8        { 0x7F00 }
+  static alt9        { 0x8000 }
+  static alt0        { 0x8100 }
   static mouse       { 0x7DE0 }
   static quit        { 0x7EE0 }
   static wrenConsole { 0x29E0 }
@@ -576,6 +639,15 @@ foreign class CTerm {
   foreign static logMode
   foreign static logPaused
   foreign static statusDisplay
+  foreign static refreshStatus()
+  // Wren-controlled flag the SSH driver reads to keep the session
+  // alive when the shell channel closes (or wire goes idle) while
+  // SFTP transfers are in flight.  SftpQueue raises it on enqueue
+  // and clears it when the queue drains; ssh.c OR's it with its own
+  // worker counts in the conn_api.terminate decision.  Generic — any
+  // SFTP-using script can hold the session up.
+  foreign static sftpActive
+  foreign static sftpActive=(b)
   foreign static extAttr
   foreign static lastColumnFlag
   foreign static write(s)
@@ -772,7 +844,16 @@ foreign class File {
   foreign offset
   foreign offset=(o)
   foreign size
+  foreign mtime
+  foreign mtime=(t)
   foreign isOpen
+  // Opaque consent token for picker-sourced Files; null for Files
+  // obtained via Cache / Upload / Download Directory listings.
+  // Persist this in WON next to the path string and pass back to
+  // Host.openLocalFile on resume to re-construct a File foreign at
+  // the same absolute path.  See the picker-tokens section in
+  // Wren.adoc for the threat model.
+  foreign token
   // Hashes of the file's full content (mmap'd; zero-length files are
   // hashed as the empty buffer).  Returned as raw digest bytes —
   // Wren strings are byte-safe — to compare directly against
@@ -807,6 +888,14 @@ class Hook {
   foreign static onMouse(fn)
   foreign static onMouse(event, fn)
   foreign static onStatus(fn)
+  // Lifecycle hooks: onShellClose fires when the SSH shell channel
+  // closes but the session is still up (SFTP transfers may still be
+  // in flight); onDisconnect fires after the main loop has exited,
+  // during teardown but before the VM is torn down (no SFTP at this
+  // point — sftpc_finish has already run).  Handlers take no args,
+  // return value is ignored.
+  foreign static onShellClose(fn)
+  foreign static onDisconnect(fn)
   foreign static every(ms, fn)
 
   // Wraps every hook fire so a handler that yields directly raises
@@ -871,8 +960,63 @@ foreign class HookHandle {
 // Directory whose path resolves lazily from the active BBS context;
 // no Wren-visible constructor for an `is_cache` Directory exists, so
 // this is the only path to one.
+//
+// `downloadDir` / `uploadDir` return a fresh Directory rooted at the
+// BBS's configured DownloadPath / UploadPath, with the relaxed
+// filename predicate enabled (1..255 bytes, no path separators / NUL
+// / control bytes / `.` / `..` / Windows reserved devices, but
+// spaces / leading dots / parens etc. allowed).  Returns null when
+// the corresponding path is empty OR equal to the user's $HOME —
+// the "unfortunate default" guard for old configs.  The Cache
+// strict policy is unchanged; only Directories rooted at
+// `downloadDir` / `uploadDir` (and their subdirectories) take the
+// relaxed path.
+//
+// `pickFile(initialDir, mask, opts)` is the user-consent escape
+// hatch for "upload from anywhere": invokes uifc's filepick UI and
+// returns a File foreign whose path is the absolute path the user
+// picked, or null on cancel.  initialDir / mask may be null
+// (defaults to BBS.ulDir / `*`).  opts is a bitmask of the C-side
+// UIFC_FP_* flags (see uifc/filepick.h).  The returned File bypasses
+// the relaxed-name policy — the picker UI is the sandbox boundary,
+// since the user explicitly chose the path.
 class Host {
   foreign static cacheDirectory
+  foreign static downloadDir
+  foreign static uploadDir
+  // initialDir may be a String path, a Directory foreign (uses its
+  // path; handles Cache lazy-resolve), or null (defaults to
+  // BBS.uldir).  Returns a File on OK with a non-null .token
+  // (when the picker-token signing key is loaded), or null on
+  // cancel.  See pickFiles for the multi-select counterpart.
+  foreign static pickFile(initialDir, mask, opts)
+  // Multi-select counterpart of pickFile.  Returns a non-empty
+  // List<File> on OK (each File has a .token), or null on cancel /
+  // empty selection.  opts: same UIFC_FP_* bitmask, except
+  // ALLOWENTRY / OVERPROMPT / CREATPROMPT cannot be combined with
+  // multi-select (filepick rejects those flags).
+  foreign static pickFiles(initialDir, mask, opts)
+  // Re-open a File from an opaque token previously returned by
+  // pickFile / pickFiles via the .token getter.  Returns null when
+  // the token's HMAC doesn't verify (signing key rotated / corrupt
+  // token), or when the file no longer exists or its content has
+  // changed since the user consented (SHA-1 mismatch).  This is
+  // the only path by which Wren can construct a File foreign for a
+  // path outside the sandboxed Cache / Upload / Download roots.
+  foreign static openLocalFile(token)
+  // Status-bar transfer-indicator arrows.  Generic — any Wren
+  // script that knows it's transferring something can light them
+  // (the SFTP queue is just the first user; future Zmodem / HTTP
+  // fetcher / ftp client / etc. can too).  Both default to false
+  // and are reset on session teardown by the host.
+  foreign static uploadArrow=(b)
+  foreign static downloadArrow=(b)
+  // First locally-configured SSH public key, as a Map
+  // {"algo": String, "blob": String} (e.g. algo: "ssh-ed25519", blob:
+  // base64-encoded), or null when none is available.  Used by
+  // sftp_pubkey.wren to append the user's authorized_keys entry on
+  // connect.  Returns the same key on every call within a session.
+  foreign static sshPublicKey
 }
 
 // Platform identification.  `name` returns the uname(2) sysname on
@@ -935,6 +1079,7 @@ foreign class TimerElapsed {}
 class SFTP {
   foreign static available
   foreign static pubdir
+  foreign static lname
 
   foreign static realpath(fiber, path)
   foreign static stat(fiber, path)
@@ -948,6 +1093,7 @@ class SFTP {
   foreign static rmdir(fiber, path)
   foreign static remove(fiber, path)
   foreign static rename(fiber, oldpath, newpath)
+  foreign static setMtime(fiber, path, mtime)
   foreign static descs(fiber, path)
 }
 
@@ -1015,6 +1161,13 @@ foreign class SFTPError {
 // Cache singleton.  Bound at module-load time so any script that
 // `import "syncterm" for Cache`s sees a fully-formed Directory.
 var Cache = Host.cacheDirectory
+// Download / Upload roots — null when the BBS's DownloadPath /
+// UploadPath is empty or set to $HOME (see Host.downloadDir
+// docstring).  Bound at module-load time, like Cache; the Wren VM
+// is per-session, so a reconnect to a different BBS reloads the
+// module and re-binds these.  Scripts MUST null-check before use.
+var Download = Host.downloadDir
+var Upload   = Host.uploadDir
 
 // WON — Wren Object Notation serialization.
 //
