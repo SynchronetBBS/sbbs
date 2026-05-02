@@ -412,6 +412,20 @@ static void runtimeError(WrenVM* vm)
     // Every fiber along the call chain gets aborted with the same error.
     current->error = error;
 
+    // Close all open upvalues on the aborting fiber.  CODE_RETURN does
+    // this on every clean function exit, but the abort path otherwise
+    // skips it — the fiber's stack stays "live" from the upvalue list's
+    // POV even though it's about to become unreachable.  Any closure
+    // captured outside this fiber that still references one of these
+    // upvalues (a leaked Hook.every callback, a worker fiber holding
+    // a reference, …) would otherwise read freed stack memory the next
+    // time it's invoked, producing UAF crashes that look like garbage
+    // method dispatches deep inside runInterpreter.  Closing here
+    // copies the live values into upvalue->closed and rebases the
+    // value pointer, so subsequent reads stay sane after the stack
+    // is GC'd.
+    closeUpvalues(current, current->stack);
+
     // If the caller ran this fiber using "try", give it the error and stop.
     if (current->state == FIBER_TRY)
     {
@@ -420,7 +434,7 @@ static void runtimeError(WrenVM* vm)
       vm->fiber = current->caller;
       return;
     }
-    
+
     // Otherwise, unhook the caller since we will never resume and return to it.
     ObjFiber* caller = current->caller;
     current->caller = NULL;
