@@ -163,6 +163,8 @@ void sbbs_t::badlogin(const char* user, const char* passwd, const char* protocol
 		filter_ip(&cfg, protocol, reason, host_name, ipaddr, user, /* fname: */ NULL, startup->login_attempt.filter_duration);
 	}
 
-	if (delay)
+	if (delay) {
 		mswait(startup->login_attempt.delay);
+		socket_inactive = 0;
+	}
 }

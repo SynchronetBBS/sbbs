@@ -4463,7 +4463,10 @@ void node_thread(void* arg)
 	    && (login_attempts = loginAttempts(startup->login_attempt_list, &sbbs->client_addr)) > 1) {
 		lprintf(LOG_DEBUG, "Node %d Throttling suspicious connection from: %s (%u login attempts)"
 		        , sbbs->cfg.node_num, sbbs->client_ipaddr, login_attempts);
-		mswait(login_attempts * startup->login_attempt.throttle);
+		for (uint i = 0; i < login_attempts; ++i) {
+			mswait(startup->login_attempt.throttle);
+			sbbs->socket_inactive = 0;
+		}
 	}
 
 	if (sbbs->answer()) {
