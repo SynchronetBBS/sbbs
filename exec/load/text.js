@@ -952,7 +952,9 @@ var SeekingFile=942;
 var SeekingFileDone=943;
 var SeekPrompt=944;
 var QWKSettingsMIME=945;
+var FindStringNotFound=946;
+var SeekHelp=947;
 
-var TOTAL_TEXT=945;
+var TOTAL_TEXT=947;
 
 this;

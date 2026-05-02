@@ -962,6 +962,8 @@ enum text {
 	,SeekingFileDone
 	,SeekPrompt
 	,QWKSettingsMIME
+	,FindStringNotFound
+	,SeekHelp
 
 	,TOTAL_TEXT
 };

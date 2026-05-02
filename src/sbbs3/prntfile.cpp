@@ -186,8 +186,10 @@ bool sbbs_t::printfile(const char* inpath, int mode, int org_cols, JSObject* obj
 		off_t* offset = nullptr;
 		size_t line=0;
 		size_t lines=0;
+		size_t last_match = SIZE_MAX;    // line of most recent search match (for 'n'/'N' continuation)
 		char key = 0;
-		int kmode = K_UPPER;
+		char find_str[81] = {0};
+		int kmode = 0;    // case-sensitive: 'n' (next match) and 'N' (previous match)
 		if ((sys_status & SS_USERON) && !(useron.misc & (NOPAUSESPIN)) && cfg.spinning_pause_prompt)
 			kmode |= K_SPIN;
 
@@ -214,97 +216,262 @@ bool sbbs_t::printfile(const char* inpath, int mode, int org_cols, JSObject* obj
 		int cols = (mode & P_SEEK) ? term->cols : 0;
 		while (!feof(stream) && !msgabort()) {
 			off_t o = ftello(stream);
-			if (fgetline(buf, (size_t)length + 1, cols, stream, mode) == NULL)
-				break;
-			truncnl(buf);
-			if ((mode & P_SEEK) && line == lines) {
-				++lines;
-				if ((offset = static_cast<off_t *>(realloc_or_free(offset, lines * sizeof *offset))) == nullptr) {
-					errormsg(WHERE, ERR_ALLOC, fpath, lines * sizeof *offset);
+			bool  at_eof = false;
+			if (fgetline(buf, (size_t)length + 1, cols, stream, mode) == NULL) {
+				if (!(mode & P_SEEK))
 					break;
-				}
-				offset[line] = o;
+				// P_SEEK at EOF: fall through to the prompt (don't exit silently and don't
+				// reposition the screen — 'less'-style: leave content where it is).
+				at_eof = true;
 			}
-			if ((mode & P_UTF8) && (term->charset() != CHARSET_UTF8))
-				utf8_normalize_str(buf);
-			if (putmsgfrag(buf, mode, org_cols, obj) != '\0') // early-EOF?
-				break;
-			if (term->bstrlen(buf, mode) < 1 || term->column > 0)
-				term->newline();
-			++lncntr;
-			if ((mode & P_SEEK) && (lncntr == term->rows - 1 || key == TERM_KEY_DOWN || key == '\r')) {
-				lncntr = 0;
-				int curatr = term->curatr;
-				double progress = (double)filelength(file) / ftell(stream);
-				bprintf(P_ATCODES, text[SeekPrompt], (int)(progress ? (100.0 / progress) : 0));
-				auto nextline = line;
-				key = getkey(kmode);
-				if (key == no_key() || key == quit_key())
-					sys_status |= SS_ABORT;
-				attr(curatr);
-				term->carriage_return();
-				term->cleartoeol();
-				switch (key) {
-					case TERM_KEY_HOME:
-						nextline = 0;
-						break;
-					case TERM_KEY_UP:
-						if (line <= term->rows - 1)
-							nextline = 0;
-						else
-							nextline = line - (term->rows - 1);
-						break;
-					case 'B':
-					case TERM_KEY_PAGEUP:
-						if (line <= ((term->rows - 1) * 2) - 1)
-							nextline = 0;
-						else
-							nextline = line - (((term->rows - 1) * 2) - 1);
-						break;
-					case TERM_KEY_END:
-					{
-						if (lines < 1)
-							break;
-						bputs(text[SeekingFile]);
-						if (fseeko(stream, offset[lines - 1], SEEK_SET) != 0) {
-							errormsg(WHERE, ERR_SEEK, fpath, static_cast<int>(offset[lines - 1]));
-							break;
-						}
-						if (fgetline(buf, (size_t)length + 1, cols, stream, mode) == NULL)
-							break;
-						size_t lastline = lines - 1;
-						while (!feof(stream) && !msgabort()) {
-							o = ftello(stream);
-							if (fgetline(buf, (size_t)length + 1, cols, stream, mode) == NULL)
-								break;
-							++lastline;
-							if (lastline >= lines) {
-								++lines;
-								if ((offset = static_cast<off_t*>(realloc_or_free(offset, lines * sizeof *offset))) == nullptr) {
-									errormsg(WHERE, ERR_ALLOC, fpath, lines * sizeof *offset);
-									break;
-								}
-								offset[lastline] = o;
-							}
-						}
-						bputs(text[SeekingFileDone]);
-						if (lines <= term->rows - 1)
-							nextline = 0;
-						else
-							nextline = lines - (term->rows - 1);
+			if (!at_eof) {
+				truncnl(buf);
+				if ((mode & P_SEEK) && line == lines) {
+					++lines;
+					if ((offset = static_cast<off_t *>(realloc_or_free(offset, lines * sizeof *offset))) == nullptr) {
+						errormsg(WHERE, ERR_ALLOC, fpath, lines * sizeof *offset);
 						break;
 					}
-					case TERM_KEY_PAGEDN:
-						if (feof(stream))
-							continue;
-						// Fall-through
-					default:
-					case TERM_KEY_DOWN:
-						nextline = line + 1;
-						break;
+					offset[line] = o;
 				}
+				if ((mode & P_UTF8) && (term->charset() != CHARSET_UTF8))
+					utf8_normalize_str(buf);
+				if (putmsgfrag(buf, mode, org_cols, obj) != '\0') // early-EOF?
+					break;
+				if (term->bstrlen(buf, mode) < 1 || term->column > 0)
+					term->newline();
+				++lncntr;
+			}
+			if ((mode & P_SEEK) && (at_eof || lncntr == term->rows - 1 || key == TERM_KEY_DOWN || key == '\r')) {
+				size_t nextline = line;
+				bool   reprompt;
+				do {
+					reprompt = false;
+					lncntr = 0;
+					nextline = line;
+					int    curatr = term->curatr;
+					double progress = (double)filelength(file) / ftell(stream);
+					bprintf(P_ATCODES, text[SeekPrompt], (int)(progress ? (100.0 / progress) : 0), getfname(fpath));
+					key = getkey(kmode);
+					// 'N' is reserved here for backward search ('less'-style); only quit_key aborts.
+					// toupper() lets users press 'q' or 'Q' to quit (no longer using K_UPPER on getkey()).
+					if (toupper(key) == quit_key())
+						sys_status |= SS_ABORT;
+					attr(curatr);
+					term->carriage_return();
+					term->cleartoeol();
+					switch (key) {
+						case TERM_KEY_HOME:
+							nextline = 0;
+							break;
+						case TERM_KEY_UP:
+							if (line <= term->rows - 1)
+								nextline = 0;
+							else
+								nextline = line - (term->rows - 1);
+							break;
+						case 'b':
+						case 'B':
+						case TERM_KEY_PAGEUP:
+							if (line <= ((term->rows - 1) * 2) - 1)
+								nextline = 0;
+							else
+								nextline = line - (((term->rows - 1) * 2) - 1);
+							break;
+						case TERM_KEY_END:
+						{
+							if (lines < 1)
+								break;
+							bputs(text[SeekingFile]);
+							if (fseeko(stream, offset[lines - 1], SEEK_SET) != 0) {
+								errormsg(WHERE, ERR_SEEK, fpath, static_cast<int>(offset[lines - 1]));
+								break;
+							}
+							if (fgetline(buf, (size_t)length + 1, cols, stream, mode) == NULL)
+								break;
+							size_t lastline = lines - 1;
+							while (!feof(stream) && !msgabort()) {
+								o = ftello(stream);
+								if (fgetline(buf, (size_t)length + 1, cols, stream, mode) == NULL)
+									break;
+								++lastline;
+								if (lastline >= lines) {
+									++lines;
+									if ((offset = static_cast<off_t*>(realloc_or_free(offset, lines * sizeof *offset))) == nullptr) {
+										errormsg(WHERE, ERR_ALLOC, fpath, lines * sizeof *offset);
+										break;
+									}
+									offset[lastline] = o;
+								}
+							}
+							bputs(text[SeekingFileDone]);
+							if (lines <= term->rows - 1)
+								nextline = 0;
+							else
+								nextline = lines - (term->rows - 1);
+							break;
+						}
+						case '/':
+						case 'n':    // 'less'-style: next match (search forward)
+						{
+							if (key == '/') {
+								bputs(text[SearchStringPrompt]);
+								size_t input_len = getstr(find_str, sizeof(find_str) - 1, K_LINE | K_NOCRLF);
+								// K_NOCRLF leaves the cursor at end of input; clear the prompt line.
+								term->carriage_return();
+								term->cleartoeol();
+								if (input_len == 0) {
+									find_str[0] = '\0';
+									reprompt = true;
+									break;
+								}
+							}
+							if (find_str[0] == '\0') {
+								reprompt = true;
+								break;
+							}
+							// '/' starts a fresh search from the start of the file. 'n' continues
+							// from the line right after the previous match (less-style), so matches
+							// still visible on screen above the prompt are reachable. Falls back to
+							// line+1 if there's no prior match (e.g., user navigated manually since).
+							if (key == '/')
+								last_match = SIZE_MAX;
+							size_t scan_line = (key == '/') ? 0
+							                 : (last_match != SIZE_MAX) ? last_match + 1
+							                                            : line + 1;
+							bputs(text[SeekingFile]);
+							off_t saved_pos = ftello(stream);
+							bool  found = false;
+							if (scan_line < lines && fseeko(stream, offset[scan_line], SEEK_SET) != 0) {
+								errormsg(WHERE, ERR_SEEK, fpath, static_cast<int>(offset[scan_line]));
+								break;
+							}
+							while (!feof(stream) && !msgabort()) {
+								off_t scan_o = ftello(stream);
+								if (fgetline(buf, (size_t)length + 1, cols, stream, mode) == NULL)
+									break;
+								if (scan_line >= lines) {
+									++lines;
+									if ((offset = static_cast<off_t*>(realloc_or_free(offset, lines * sizeof *offset))) == nullptr) {
+										errormsg(WHERE, ERR_ALLOC, fpath, lines * sizeof *offset);
+										break;
+									}
+									offset[scan_line] = scan_o;
+								}
+								if (strcasestr(buf, find_str) != NULL) {
+									found = true;
+									nextline = scan_line;
+									break;
+								}
+								++scan_line;
+							}
+							bputs(text[SeekingFileDone]);
+							if (offset == nullptr)
+								break;
+							if (found) {
+								// Peek forward up to rows-1 lines past the match to see if it's
+								// in the last page of the file. If so, position the display so
+								// the screen shows the last full page (match near the bottom)
+								// instead of just match + EOF (which leaves leftover content
+								// above). Otherwise, match goes at the top of the screen ('less'
+								// behavior).
+								size_t target = scan_line;
+								bool   near_eof = false;
+								for (size_t i = 1; i < (size_t)(term->rows - 1); i++) {
+									off_t peek_o = ftello(stream);
+									if (fgetline(buf, (size_t)length + 1, cols, stream, mode) == NULL) {
+										near_eof = true;
+										break;
+									}
+									size_t peek_line = scan_line + i;
+									if (peek_line >= lines) {
+										++lines;
+										if ((offset = static_cast<off_t*>(realloc_or_free(offset, lines * sizeof *offset))) == nullptr) {
+											errormsg(WHERE, ERR_ALLOC, fpath, lines * sizeof *offset);
+											break;
+										}
+										offset[peek_line] = peek_o;
+									}
+								}
+								if (offset == nullptr)
+									break;
+								if (near_eof && lines > (size_t)(term->rows - 1))
+									target = lines - (term->rows - 1);
+								if (fseeko(stream, offset[target], SEEK_SET) != 0) {
+									errormsg(WHERE, ERR_SEEK, fpath, static_cast<int>(offset[target]));
+									break;
+								}
+								clearerr(stream);
+								nextline = target;
+								last_match = scan_line;
+							} else {
+								// Not found: restore file position, show message, and re-prompt
+								// (don't advance the file display — 'less'-style).
+								(void)fseeko(stream, saved_pos, SEEK_SET);
+								clearerr(stream);
+								bputs(text[FindStringNotFound]);
+								reprompt = true;
+							}
+							break;
+						}
+						case 'N':    // 'less'-style: previous match (search backward)
+						{
+							if (find_str[0] == '\0') {
+								reprompt = true;
+								break;
+							}
+							bputs(text[SeekingFile]);
+							off_t saved_pos = ftello(stream);
+							bool  found = false;
+							// Search backward starting from before the previous match (less-style),
+							// so 'N' steps through visible matches above the prompt.
+							// offset[0..line] is populated (we've scrolled through those lines).
+							size_t scan_start = (last_match != SIZE_MAX && last_match <= line) ? last_match : line;
+							for (size_t i = scan_start; i > 0; ) {
+								--i;
+								if (fseeko(stream, offset[i], SEEK_SET) != 0) {
+									errormsg(WHERE, ERR_SEEK, fpath, static_cast<int>(offset[i]));
+									break;
+								}
+								if (fgetline(buf, (size_t)length + 1, cols, stream, mode) == NULL)
+									break;
+								if (strcasestr(buf, find_str) != NULL) {
+									found = true;
+									nextline = i;
+									last_match = i;
+									break;
+								}
+							}
+							bputs(text[SeekingFileDone]);
+							if (!found) {
+								(void)fseeko(stream, saved_pos, SEEK_SET);
+								clearerr(stream);
+								bputs(text[FindStringNotFound]);
+								reprompt = true;
+							}
+							break;
+						}
+						case '?':    // Display help (key listing); re-prompt afterward
+							bputs(text[SeekHelp]);
+							reprompt = true;
+							break;
+						case TERM_KEY_PAGEDN:
+							if (feof(stream)) {
+								// Already at EOF: stay (re-prompt) instead of advancing
+								reprompt = true;
+								break;
+							}
+							// Fall-through
+						default:
+						case TERM_KEY_DOWN:
+							nextline = line + 1;
+							break;
+					}
+				} while (reprompt && offset != nullptr && !msgabort());
 				if (offset == nullptr)
 					break;
+				if (key != '/' && key != 'n' && key != 'N' && key != '?')
+					last_match = SIZE_MAX;  // user navigated manually; clear search anchor
 				if ((key == TERM_KEY_END || nextline != line + 1) && nextline < lines) {
 					if (fseeko(stream, offset[nextline], 0) != 0) {
 						errormsg(WHERE, ERR_SEEK, fpath, static_cast<int>(offset[nextline]));
@@ -313,7 +480,7 @@ bool sbbs_t::printfile(const char* inpath, int mode, int org_cols, JSObject* obj
 				}
 				line = nextline;
 			}
-			else
+			else if (!at_eof)
 				++line;
 		}
 		if (ansiParser.current_state() != ansiState_none)

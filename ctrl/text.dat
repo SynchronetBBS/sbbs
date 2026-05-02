@@ -101,7 +101,7 @@
 "\1n\1b[\1h\1wI\1n\1b] \1hAutoLogon via IP address     "\     074 UserDefaultsAutoLogon
 	"\1n\1b: \1c%s\r\n"
 "\1n\r\n\1m%s sent to \1h%s #%u\r\n"                    075 MsgSentToUser
-"\1_\r\n\1y\1hText to search for\1\\: "                 076 SearchStringPrompt
+"\1_\1\\\1y\1hText to search for\1\\: "                 076 SearchStringPrompt
 "\1w\1h\xc4\xc4\xc4\xc4\xc4[\1i\1r%c\1n\1h]\xc4\xc4\xc4\xc4\xb4 "\                    077 PrivateChatSeparator
 	"\1yPrivate Chat - \1rCtrl-C to Quit \1y- "\
 	"Time Left: \1g%-8s\1w"\
@@ -1131,12 +1131,14 @@
 "\1n\1h\1?Wide (> 80 column) output mode is now %s.\r\n"   941 WideModeIsNow
 "\1+\1n\1hSeeking @ELLIPSIS@\1n"                           942 SeekingFile
 "\1n\1[\1-\1>"                                             943 SeekingFileDone
-"\1n\1r\1h%3d%% [\1wSeek: \1r"\                            944 SeekPrompt
-	"@~Home~\\x02@\1w/\1r"\
-	"@~End~\\x05@\1w/\1r"\
-	"@~PgUp~\\x10@\1w/\1r"\
-	"@~PgDn~\\x0e@\1w/\1r"\
-	"@~Up~\\x1e@\1w/\1r"\
-	"@~Dn~\\x0a@\1r] \1>"
+"\1+\1n\1r\1h%3d%% \1n\1c\xfe Viewing \1h%s \1n\1c"\       944 SeekPrompt
+	"(\1h\1`?\1n\1c=Help) \1>\1-"
 "\1n\1b[\1h\1wG\1n\1b] \1hMIME-encoded Message Text    "\  945 QWKSettingsMIME
 	"\1n\1b: \1c%s\r\n"
+"\1n\1hString not found.\1n\1S\1.\1[\1>"                   946 FindStringNotFound
+"\r\n\1+\1y\1hFile Viewing/Seeking\r\n"\                   947 SeekHelp
+	" \1c/\1n\1c=Find  \1hn\1n\1c=@Next@  \1hN\1n\1c=@Previous@\r\n"\
+	" \1hUp/Down arrow\1n\1c=line scroll\r\n"\
+	" \1hPgUp\1n/\1h\1cb\1n\1c=@Previous@ page  \1hPgDn\1n\1c=@Next@ page\r\n"\
+	" \1hHome\1n\1c=top  \1hEnd\1n\1c=bottom\r\n"\
+	" \1h@QUITCHAR@\1n\1c=@Quit@\r\n\1-"

@@ -946,4 +946,6 @@ const char* const text_id[]={
 	,"SeekingFileDone"
 	,"SeekPrompt"
 	,"QWKSettingsMIME"
+	,"FindStringNotFound"
+	,"SeekHelp"
 };
