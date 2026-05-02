@@ -3,17 +3,8 @@
 #ifndef _SSH_H_
 #define _SSH_H_
 
-#ifdef _MSC_VER
-/* MSVC keeps __STDC_NO_ATOMICS__ defined even with /experimental:c11atomics
- * because its atomic support is incomplete (no generic _Atomic with locks),
- * and the stdatomic.h header otherwise refuses to expand.  Same trick used
- * in conn.h. */
-#undef __STDC_NO_ATOMICS__
-#endif
-#include <stdatomic.h>
 #include <stdbool.h>
 
-#include "sftp.h"      /* sftpc_state_t */
 #include "sockwrap.h"  /* SOCKET */
 
 void init_crypt(void);
@@ -27,15 +18,30 @@ void ssh_output_thread(void *args);
 
 extern SOCKET ssh_sock;
 
+#ifndef WITHOUT_DEUCESSH
+#ifdef _MSC_VER
+/* MSVC keeps __STDC_NO_ATOMICS__ defined even with /experimental:c11atomics
+ * because its atomic support is incomplete (no generic _Atomic with locks),
+ * and the stdatomic.h header otherwise refuses to expand.  Same trick used
+ * in conn.h. */
+#undef __STDC_NO_ATOMICS__
+#endif
+#include <stdatomic.h>
+
+#include "sftp.h"      /* sftpc_state_t */
+
 /* Per-SSH-session SFTP client state, owned by ssh.c.  sftp_state is
  * valid when sftp_available is true.  Lifetime spans from
  * ssh_connect() success to the start of ssh_close(): once ssh_close
  * sets sftp_available = false, callers must not issue new sftpc_*
  * calls, though in-flight calls are still woken by sftpc_finish().
  * Sole external consumer is wren_bind_sftp.c, which guards every
- * Wren-side SFTP foreign method on these two variables. */
+ * Wren-side SFTP foreign method on these two variables.  Only
+ * declared when DeuceSSH is built in — non-SSH translation units
+ * (telnets.c etc.) include this header but don't drag in sftp.h. */
 extern sftpc_state_t  sftp_state;
 extern _Atomic bool   sftp_available;
+#endif
 
 /* Deprecated — remove once telnets.c / uifc call sites no longer
    reference it.  Kept for link-compat during the st-dssh branch. */
