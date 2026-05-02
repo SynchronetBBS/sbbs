@@ -25,6 +25,7 @@
 #include "ars_defs.h"
 #include "findstr.h"
 #include "ini_file.h"
+#include "dirwrap.h"     // MKDIR
 #include "sockwrap.h"    // IPPORT_MQTT
 #include "str_util.h"
 
@@ -743,41 +744,96 @@ void free_msgs_cfg(scfg_t* cfg)
 	cfg->total_phubs = 0;
 }
 
+/* Strip a trailing slash/backslash from path in-place. */
+static char* trim_trailing_slash(char* path)
+{
+	char* p = lastchar(path);
+	if (*p == '\\' || *p == '/')
+		*p = '\0';
+	return path;
+}
+
+/* Faster variant of md() for the make_data_dirs() hot path.
+   The common case (directory already exists from a prior boot)
+   becomes a single MKDIR() syscall returning EEXIST instead of
+   stat() + isdir(), which on Windows avoids the file-attribute
+   fetch and Defender's "file opened" introspection that stat()
+   triggers. We trust EEXIST without re-stat'ing — the cost is
+   that a non-directory file at this path won't be diagnosed
+   here; the BBS will report it later when it tries to open
+   files inside the supposed directory. Callers who need that
+   diagnostic should keep using md(). */
+static int md_fast(const char* inpath)
+{
+	char path[MAX_PATH + 1];
+
+	if (inpath[0] == 0)
+		return EINVAL;
+
+	SAFECOPY(path, inpath);
+	trim_trailing_slash(path);
+
+	if (MKDIR(path) == 0)
+		return 0;
+	if (errno == EEXIST)
+		return 0;
+	/* Parent missing or other failure — fall back to mkpath() via md(). */
+	return md(inpath);
+}
+
 /************************************************************/
 /* Create data and sub-dirs off data if not already created */
 /************************************************************/
 void make_data_dirs(scfg_t* cfg)
 {
-	char str[MAX_PATH + 1];
+	char       str[MAX_PATH + 1];
+	str_list_t seen_data_dirs = strListInit();
 
-	md(cfg->data_dir);
+	md_fast(cfg->data_dir);
 	SAFEPRINTF(str, "%ssubs", cfg->data_dir);
-	md(str);
+	md_fast(str);
 	SAFEPRINTF(str, "%sdirs", cfg->data_dir);
-	md(str);
+	if (md_fast(str) == 0) {
+		/* Seed the dedup set: dir[i]->data_dir defaults to this path
+		   (see load_cfg.c:308), so most entries in the loop below
+		   would otherwise re-stat the directory we just created.
+		   Only seed on success — if creation failed, let the loop
+		   retry per entry instead of skipping silently. */
+		strListPush(&seen_data_dirs, str);
+	}
 	SAFEPRINTF(str, "%stext", cfg->data_dir);
-	md(str);
+	md_fast(str);
 	SAFEPRINTF(str, "%smsgs", cfg->data_dir);
-	md(str);
+	md_fast(str);
 	SAFEPRINTF(str, "%suser", cfg->data_dir);
-	md(str);
+	md_fast(str);
 	SAFEPRINTF(str, "%sqnet", cfg->data_dir);
-	md(str);
+	md_fast(str);
 	SAFEPRINTF(str, "%sfile", cfg->data_dir);
-	md(str);
+	md_fast(str);
 
-	md(cfg->logs_dir);
+	md_fast(cfg->logs_dir);
 	SAFEPRINTF(str, "%slogs", cfg->logs_dir);
-	md(str);
+	md_fast(str);
 
 	if (cfg->mods_dir[0])
-		md(cfg->mods_dir);
+		md_fast(cfg->mods_dir);
 
 	for (int i = 0; i < cfg->total_dirs; i++) {
-		md(cfg->dir[i]->data_dir);
+		/* prep_dir() (load_cfg.c:520) always leaves a trailing slash;
+		   drop it so the lookup matches the seed string. */
+		char key[MAX_PATH + 1];
+		SAFECOPY(key, cfg->dir[i]->data_dir);
+		trim_trailing_slash(key);
+		if (strListFind(seen_data_dirs, key, /* case_sensitive: */ false) < 0) {
+			if (md_fast(cfg->dir[i]->data_dir) == 0)
+				strListPush(&seen_data_dirs, key);
+		}
 		if (cfg->dir[i]->misc & DIR_FCHK)
-			md(cfg->dir[i]->path);
+			md_fast(cfg->dir[i]->path);
 	}
+
+	strListFree(&seen_data_dirs);
 }
 
 int getdirnum(scfg_t* cfg, const char* code)
