@@ -1811,6 +1811,7 @@ static bool badlogin(SOCKET sock, CRYPT_SESSION sess, ulong* login_attempts
 
 	if (addr != NULL) {
 		count = loginFailure(startup->login_attempt_list, addr, client->protocol, user, passwd, &attempt);
+		mqtt_pub_login_attempt(&mqtt, &attempt);
 		if (count > 1)
 			lprintf(LOG_NOTICE, "%04d [%s] !%lu " STR_FAILED_LOGIN_ATTEMPTS " in %s"
 			        , sock, client->addr, count, duration_estimate_to_vstr(attempt.time - attempt.first, tmp, sizeof tmp, 1, 1));
@@ -2658,6 +2659,7 @@ static void ctrl_thread(void* arg)
 			if (user.pass[0]) {
 				SAFECOPY(client.user, user.alias);
 				loginSuccess(startup->login_attempt_list, &ftp.client_addr);
+				mqtt_pub_login_attempt_clear(&mqtt, client.addr);
 			} else {    /* anonymous */
 				SAFEPRINTF2(client.user, "%s <%.32s>", user.alias, password);
 			}
@@ -5458,8 +5460,9 @@ void ftp_server(void* arg)
 						else
 							lprintf(removed == 0 ? LOG_DEBUG : LOG_INFO
 							        , "0000 Cleared %ld login attempt(s) for IP %s", removed, clear_ip);
+						mqtt_pub_login_attempt_clear(&mqtt, clear_ip);
 					} else
-						loginAttemptListClear(startup->login_attempt_list);
+						mqtt_clear_login_attempt_list(&mqtt, startup->login_attempt_list);
 				}
 			}
 

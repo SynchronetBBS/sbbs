@@ -1972,6 +1972,7 @@ static void badlogin(SOCKET sock, const char* user, const char* passwd, client_t
 
 	SAFEPRINTF(reason, "%s LOGIN", client->protocol);
 	count = loginFailure(startup->login_attempt_list, addr, client->protocol, user, passwd, &attempt);
+	mqtt_pub_login_attempt(&mqtt, &attempt);
 	if (count > 1)
 		lprintf(LOG_NOTICE, "%04d %-5s [%s] !%lu " STR_FAILED_LOGIN_ATTEMPTS " in %s"
 		        , sock, client->protocol, client->addr, count, duration_estimate_to_vstr(attempt.time - attempt.first, tmp, sizeof tmp, 1, 1));
@@ -2177,8 +2178,10 @@ static bool check_ars(http_session_t * session)
 		/* Should use real name if set to do so somewhere ToDo */
 		add_env(session, "REMOTE_USER", session->user.alias);
 
-		if (thisuser.pass[0])
+		if (thisuser.pass[0]) {
 			loginSuccess(startup->login_attempt_list, &session->addr);
+			mqtt_pub_login_attempt_clear(&mqtt, session->host_ip);
+		}
 
 		return true;
 	}
@@ -7724,8 +7727,9 @@ void web_server(void* arg)
 						else
 							lprintf(removed == 0 ? LOG_DEBUG : LOG_INFO
 							        , "Cleared %ld login attempt(s) for IP %s", removed, clear_ip);
+						mqtt_pub_login_attempt_clear(&mqtt, clear_ip);
 					} else
-						loginAttemptListClear(startup->login_attempt_list);
+						mqtt_clear_login_attempt_list(&mqtt, startup->login_attempt_list);
 				}
 			}
 			if (startup->max_requests_per_period > 0 && startup->request_rate_limit_period > 0

@@ -274,6 +274,136 @@ int mqtt_pub_timestamped_msg(struct mqtt* mqtt, enum topic_depth depth, const ch
 	return mqtt_pub_strval(mqtt, depth, key, str);
 }
 
+/* Replace any field-separator (tab) chars in s with spaces, in place. */
+static void sanitize_field(char* s)
+{
+	if (s == NULL)
+		return;
+	for (; *s; s++) {
+		if (*s == '\t' || *s == '\r' || *s == '\n')
+			*s = ' ';
+	}
+}
+
+/* Publish to a host- or server-level topic with a key longer than 128 chars (room for IPv6). */
+static int pub_long_key(struct mqtt* mqtt, enum topic_depth depth, const char* key, const char* str, bool retain)
+{
+	if (mqtt == NULL || mqtt->cfg == NULL)
+		return MQTT_FAILURE;
+	if (!mqtt->connected)
+		return MQTT_SUCCESS;
+#ifdef USE_MOSQUITTO
+	if (mqtt->handle != NULL) {
+		char sub[256];
+		mqtt_topic(mqtt, depth, sub, sizeof(sub), "%s", key);
+		return mosquitto_publish_v5(mqtt->handle,
+		                            /* mid: */ NULL,
+		                            /* topic: */ sub,
+		                            /* payloadlen */ (str == NULL) ? 0 : strlen(str),
+		                            /* payload */ str,
+		                            /* qos */ mqtt->cfg->mqtt.publish_qos,
+		                            /* retain */ retain,
+		                            /* properties */ NULL);
+	}
+#endif
+	return MQTT_FAILURE;
+}
+
+int mqtt_pub_login_attempt(struct mqtt* mqtt, const login_attempt_t* attempt)
+{
+	char ip[INET6_ADDRSTRLEN];
+	char iso_first[64];
+	char iso_last[64];
+	char prot[sizeof(attempt->prot)];
+	char user[sizeof(attempt->user)];
+	char msg[1024];
+	char key[64 + INET6_ADDRSTRLEN];
+
+	if (mqtt == NULL || mqtt->cfg == NULL || attempt == NULL)
+		return MQTT_FAILURE;
+	if (!mqtt->connected)
+		return MQTT_SUCCESS;
+	if (inet_addrtop((union xp_sockaddr*)&attempt->addr, ip, sizeof(ip)) == NULL)
+		return MQTT_FAILURE;
+	time_to_isoDateTimeStr(attempt->first, xpTimeZone_local(), iso_first, sizeof(iso_first));
+	time_to_isoDateTimeStr(attempt->time,  xpTimeZone_local(), iso_last,  sizeof(iso_last));
+	SAFECOPY(prot, attempt->prot);
+	SAFECOPY(user, attempt->user);
+	sanitize_field(prot);
+	sanitize_field(user);
+	snprintf(msg, sizeof(msg), "%s\t%s\t%lu\t%lu\t%s\t%s",
+	         iso_first, iso_last,
+	         (ulong)attempt->count, (ulong)attempt->dupes,
+	         prot, user);
+	snprintf(key, sizeof(key), "login_attempts/%s", ip);
+	return pub_long_key(mqtt, TOPIC_HOST, key, msg, /* retain: */ true);
+}
+
+int mqtt_pub_login_attempt_clear(struct mqtt* mqtt, const char* ip)
+{
+	char key[64 + INET6_ADDRSTRLEN];
+
+	if (mqtt == NULL || mqtt->cfg == NULL || ip == NULL || *ip == '\0')
+		return MQTT_FAILURE;
+	if (!mqtt->connected)
+		return MQTT_SUCCESS;
+	snprintf(key, sizeof(key), "login_attempts/%s", ip);
+	/* Empty payload + retain = delete the retained message at that topic. */
+	return pub_long_key(mqtt, TOPIC_HOST, key, /* str: */ NULL, /* retain: */ true);
+}
+
+long mqtt_clear_login_attempt_list(struct mqtt* mqtt, link_list_t* list)
+{
+	list_node_t* node;
+	long         count = 0;
+
+	if (list == NULL)
+		return -1;
+	/* When MQTT isn't publishing, skip the per-IP walk and fall through to a plain clear. */
+	if (mqtt == NULL || !mqtt->connected)
+		return loginAttemptListClear(list);
+	if (!listLock(list))
+		return -1;
+	for (node = list->first; node != NULL; node = node->next) {
+		const login_attempt_t* a = (const login_attempt_t*)node->data;
+		if (a != NULL) {
+			char ipbuf[INET6_ADDRSTRLEN];
+			if (inet_addrtop((union xp_sockaddr*)&a->addr, ipbuf, sizeof(ipbuf)) != NULL)
+				mqtt_pub_login_attempt_clear(mqtt, ipbuf);
+		}
+		count++;
+	}
+	listFreeNodes(list);
+	listUnlock(list);
+	return count;
+}
+
+int mqtt_pub_max_concurrent(struct mqtt* mqtt, const char* ip, ulong strikes)
+{
+	char str[32];
+	char key[64 + INET6_ADDRSTRLEN];
+
+	if (mqtt == NULL || mqtt->cfg == NULL || ip == NULL || *ip == '\0')
+		return MQTT_FAILURE;
+	if (!mqtt->connected)
+		return MQTT_SUCCESS;
+	snprintf(str, sizeof(str), "%lu", strikes);
+	snprintf(key, sizeof(key), "max_concurrent/%s", ip);
+	return pub_long_key(mqtt, TOPIC_SERVER, key, str, /* retain: */ true);
+}
+
+int mqtt_pub_max_concurrent_clear(struct mqtt* mqtt, const char* ip)
+{
+	char key[64 + INET6_ADDRSTRLEN];
+
+	if (mqtt == NULL || mqtt->cfg == NULL || ip == NULL || *ip == '\0')
+		return MQTT_FAILURE;
+	if (!mqtt->connected)
+		return MQTT_SUCCESS;
+	snprintf(key, sizeof(key), "max_concurrent/%s", ip);
+	return pub_long_key(mqtt, TOPIC_SERVER, key, /* str: */ NULL, /* retain: */ true);
+}
+
 int mqtt_pub_uintval(struct mqtt* mqtt, enum topic_depth depth, const char* key, ulong value)
 {
 	if (mqtt == NULL || mqtt->cfg == NULL)

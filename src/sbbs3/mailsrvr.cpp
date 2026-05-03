@@ -1065,6 +1065,7 @@ static void badlogin(SOCKET sock, CRYPT_SESSION sess, const char* resp
 	if (addr != NULL) {
 		SAFEPRINTF(reason, "%s LOGIN", client->protocol);
 		count = loginFailure(startup->login_attempt_list, addr, client->protocol, user, passwd, &attempt);
+		mqtt_pub_login_attempt(&mqtt, &attempt);
 		if (count > 1)
 			lprintf(LOG_NOTICE, "%04d %-5s [%s] !%lu " STR_FAILED_LOGIN_ATTEMPTS " in %s"
 			        , sock, client->protocol, client->addr, count
@@ -1396,6 +1397,7 @@ static bool pop3_client_thread(pop3_t* pop3)
 
 		if (user.pass[0]) {
 			loginSuccess(startup->login_attempt_list, &pop3->client_addr);
+			mqtt_pub_login_attempt_clear(&mqtt, client.addr);
 			listAddNodeData(&current_logins, client.addr, strlen(client.addr) + 1, socket, LAST_NODE);
 		}
 
@@ -4332,6 +4334,7 @@ static bool smtp_client_thread(smtp_t* smtp)
 
 			if (relay_user.pass[0]) {
 				loginSuccess(startup->login_attempt_list, &smtp->client_addr);
+				mqtt_pub_login_attempt_clear(&mqtt, client.addr);
 				listAddNodeData(&current_logins, client.addr, strlen(client.addr) + 1, socket, LAST_NODE);
 			}
 
@@ -4440,6 +4443,7 @@ static bool smtp_client_thread(smtp_t* smtp)
 
 			if (relay_user.pass[0]) {
 				loginSuccess(startup->login_attempt_list, &smtp->client_addr);
+				mqtt_pub_login_attempt_clear(&mqtt, client.addr);
 				listAddNodeData(&current_logins, client.addr, strlen(client.addr) + 1, socket, LAST_NODE);
 			}
 
@@ -6501,8 +6505,9 @@ void mail_server(void* arg)
 						else
 							lprintf(removed == 0 ? LOG_DEBUG : LOG_INFO
 							        , "Cleared %ld login attempt(s) for IP %s", removed, clear_ip);
+						mqtt_pub_login_attempt_clear(&mqtt, clear_ip);
 					} else
-						loginAttemptListClear(startup->login_attempt_list);
+						mqtt_clear_login_attempt_list(&mqtt, startup->login_attempt_list);
 				}
 			}
 			if (startup->max_requests_per_period > 0 && startup->request_rate_limit_period > 0

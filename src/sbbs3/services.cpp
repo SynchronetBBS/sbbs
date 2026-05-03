@@ -388,6 +388,7 @@ static void badlogin(SOCKET sock, char* user, char* passwd, client_t* client, un
 
 	SAFEPRINTF(reason, "%s LOGIN", client->protocol);
 	count = loginFailure(startup->login_attempt_list, addr, client->protocol, user, passwd, &attempt);
+	mqtt_pub_login_attempt(&mqtt, &attempt);
 	if (count > 1)
 		lprintf(LOG_NOTICE, "%04d %s [%s] !%lu " STR_FAILED_LOGIN_ATTEMPTS " in %s"
 		        , sock, client->protocol, client->addr, count, duration_estimate_to_vstr(attempt.time - attempt.first, tmp, sizeof tmp, 1, 1));
@@ -538,8 +539,11 @@ js_login(JSContext *cx, uintN argc, jsval *arglist)
 		errprintf(LOG_ERR, WHERE, "%04d %s Error setting logged_in property for %s"
 		          , client->socket, client->service->protocol, client->user.alias);
 
-	if (client->user.pass[0])
+	if (client->user.pass[0]) {
 		loginSuccess(startup->login_attempt_list, &client->addr);
+		if (client->client != NULL)
+			mqtt_pub_login_attempt_clear(&mqtt, client->client->addr);
+	}
 
 	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(JS_TRUE));
 
@@ -2243,8 +2247,9 @@ void services_thread(void* arg)
 						else
 							lprintf(removed == 0 ? LOG_DEBUG : LOG_INFO
 							        , "0000 Cleared %ld login attempt(s) for IP %s", removed, clear_ip);
+						mqtt_pub_login_attempt_clear(&mqtt, clear_ip);
 					} else
-						loginAttemptListClear(startup->login_attempt_list);
+						mqtt_clear_login_attempt_list(&mqtt, startup->login_attempt_list);
 				}
 			}
 

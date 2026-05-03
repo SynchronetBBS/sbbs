@@ -4432,6 +4432,8 @@ void sbbs_t::register_login()
 	if (useron.pass[0]) {
 		loginSuccess(startup->login_attempt_list, &client_addr);
 		clearMaxConcurrentAttempt(client.addr);
+		mqtt_pub_login_attempt_clear(mqtt, client.addr);
+		mqtt_pub_max_concurrent_clear(mqtt, client.addr);
 		listAddNodeData(&current_logins, client.addr, strlen(client.addr) + 1, cfg.node_num, LAST_NODE);
 	}
 #ifdef _WIN32
@@ -5649,9 +5651,20 @@ NO_SSH:
 							lprintf(removed == 0 ? LOG_DEBUG : LOG_INFO
 							        , "Cleared %ld login attempt(s) for IP %s", removed, clear_ip);
 						clearMaxConcurrentAttempt(clear_ip);
+						mqtt_pub_login_attempt_clear(&mqtt, clear_ip);
+						mqtt_pub_max_concurrent_clear(&mqtt, clear_ip);
 					} else {
-						loginAttemptListClear(startup->login_attempt_list);
+						mqtt_clear_login_attempt_list(&mqtt, startup->login_attempt_list);
+						/* max_concurrent_attempts is term-server-only, so walk it here.    */
+						/* Skip the per-IP walk when MQTT isn't publishing.                 */
 						listLock(&max_concurrent_attempts);
+						if (mqtt.connected) {
+							for (list_node_t* n = max_concurrent_attempts.first; n != NULL; n = n->next) {
+								const max_concurrent_attempt_t* a = (const max_concurrent_attempt_t*)n->data;
+								if (a != NULL && a->ip[0] != '\0')
+									mqtt_pub_max_concurrent_clear(&mqtt, a->ip);
+							}
+						}
 						listFreeNodes(&max_concurrent_attempts);
 						listUnlock(&max_concurrent_attempts);
 					}
@@ -5760,14 +5773,17 @@ NO_SSH:
 					        , client_socket, client.protocol, startup->max_concurrent_connections, host_ip);
 					if (startup->max_concurrent.filter_threshold > 0) {
 						uint32_t strikes = bumpMaxConcurrentAttempt(host_ip);
+						mqtt_pub_max_concurrent(&mqtt, host_ip, strikes);
 						if (strikes >= startup->max_concurrent.filter_threshold) {
 							char reason[128];
 							SAFEPRINTF2(reason, "exceeding max concurrent connection limit (%u) %u times"
 							            , startup->max_concurrent_connections, strikes);
 							if (filter_ip(&scfg, client.protocol, reason, /* host: */ NULL, host_ip
 							              , /* user: */ NULL, /* fname: */ NULL
-							              , startup->max_concurrent.filter_duration))
+							              , startup->max_concurrent.filter_duration)) {
 								clearMaxConcurrentAttempt(host_ip);
+								mqtt_pub_max_concurrent_clear(&mqtt, host_ip);
+							}
 						}
 					}
 					close_socket(client_socket);

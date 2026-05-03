@@ -142,6 +142,7 @@ void sbbs_t::badlogin(const char* user, const char* passwd, const char* protocol
 	socklen_t addr_len = sizeof(*addr);
 	SAFEPRINTF(reason, "%s LOGIN", protocol);
 	count = loginFailure(startup->login_attempt_list, addr, protocol, user, passwd, &attempt);
+	mqtt_pub_login_attempt(mqtt, &attempt);
 	if (count > 1)
 		lprintf(LOG_NOTICE, "!%lu " STR_FAILED_LOGIN_ATTEMPTS " in %s"
 		        , count, duration_estimate_to_vstr(attempt.time - attempt.first, tmp, sizeof tmp, 1, 1));
