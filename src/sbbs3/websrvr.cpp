@@ -7722,7 +7722,8 @@ void web_server(void* arg)
 						if (removed < 0)
 							lprintf(LOG_WARNING, "Failed to clear login attempts for IP %s (invalid address?)", clear_ip);
 						else
-							lprintf(LOG_INFO, "Cleared %ld login attempt(s) for IP %s", removed, clear_ip);
+							lprintf(removed == 0 ? LOG_DEBUG : LOG_INFO
+							        , "Cleared %ld login attempt(s) for IP %s", removed, clear_ip);
 					} else
 						loginAttemptListClear(startup->login_attempt_list);
 				}

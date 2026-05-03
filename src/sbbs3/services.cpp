@@ -2241,7 +2241,8 @@ void services_thread(void* arg)
 						if (removed < 0)
 							lprintf(LOG_WARNING, "0000 Failed to clear login attempts for IP %s (invalid address?)", clear_ip);
 						else
-							lprintf(LOG_INFO, "0000 Cleared %ld login attempt(s) for IP %s", removed, clear_ip);
+							lprintf(removed == 0 ? LOG_DEBUG : LOG_INFO
+							        , "0000 Cleared %ld login attempt(s) for IP %s", removed, clear_ip);
 					} else
 						loginAttemptListClear(startup->login_attempt_list);
 				}
