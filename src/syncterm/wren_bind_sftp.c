@@ -15,6 +15,7 @@
 #include "ssh.h"   /* sftp_state, sftp_available */
 
 #include <dirwrap.h>     /* MAX_PATH */
+#include <genwrap.h>     /* strlcpy on platforms where libc lacks it */
 
 #include <inttypes.h>
 #include <stdint.h>
