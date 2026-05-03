@@ -592,6 +592,10 @@ bool inet_addrmatch(union xp_sockaddr* addr1, union xp_sockaddr* addr2)
 DLLEXPORT char* socket_strerror(int error_number, char* buf, size_t buflen)
 {
 #if defined(_WINSOCKAPI_)
+	/* Snapshot WSAGetLastError around FormatMessageA: it shares the same TLS slot as Win32 GetLastError
+	 * and SetLastError(ERROR_INSUFFICIENT_BUFFER) on a too-small buffer would otherwise clobber the WSA
+	 * error code that the caller may read in the same printf via SOCKET_ERRNO. */
+	DWORD saved_error = WSAGetLastError();
 	strncpy(buf, "Unknown error", buflen);
 	buf[buflen - 1] = 0;
 	if (error_number > 0 && error_number < WSABASEERR)
@@ -605,6 +609,7 @@ DLLEXPORT char* socket_strerror(int error_number, char* buf, size_t buflen)
 	                    NULL))
 		safe_snprintf(buf, buflen, "Error %d getting error description", GetLastError());
 	truncsp(buf);
+	WSASetLastError(saved_error);
 	return buf;
 #else
 	return safe_strerror(error_number, buf, buflen);
