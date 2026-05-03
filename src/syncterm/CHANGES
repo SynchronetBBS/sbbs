@@ -4,7 +4,7 @@ Fix error when scrolling with a non-black background colour
 Fix Prestel double-height bottom-half redraw on overwrite
 Fix key repeat on Wayland
 Fix Wayland content size change
-Reword filepick widget
+Rework filepick widget
 
 Version 1.8
 -----------
