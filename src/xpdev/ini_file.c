@@ -2181,7 +2181,7 @@ int iniGetSocketOptions(str_list_t list, const char* section, SOCKET sock
 	int               i;
 	int               result;
 	char*             name;
-	char              err[128];
+	char              err[256];
 	BYTE*             vp;
 	socklen_t         len;
 	int               option;

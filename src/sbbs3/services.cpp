@@ -309,7 +309,7 @@ static SOCKET open_socket(int family, int type, service_t* serv)
 
 static int close_socket(SOCKET sock)
 {
-	char err[128];
+	char err[256];
 	int  result;
 
 	if (sock == INVALID_SOCKET)
@@ -1822,7 +1822,7 @@ static void cleanup(int code)
 
 #ifdef _WINSOCKAPI_
 	if (WSAInitialized) {
-		char err[128];
+		char err[256];
 		if (WSACleanup() != 0)
 			lprintf(LOG_ERR, "0000 !WSACleanup ERROR %d: %s", SOCKET_ERRNO, SOCKET_STRERROR(err, sizeof(err)));
 		WSAInitialized = false;
@@ -1874,7 +1874,7 @@ void service_udp_sock_cb(SOCKET sock, void *cbdata)
 {
 	service_t *serv = (service_t *)cbdata;
 	int        optval;
-	char       err[128];
+	char       err[256];
 
 	open_socket_cb(sock, cbdata);
 

@@ -2548,7 +2548,7 @@ void passthru_thread(void* arg)
 void output_thread(void* arg)
 {
 	char node[128];
-	char errmsg[128];
+	char errmsg[256];
 	char stats[128];
 	char spy_topic[128];
 	BYTE buf[IO_THREAD_BUF_SIZE];
