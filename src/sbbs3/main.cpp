@@ -5782,6 +5782,8 @@ NO_SSH:
 					lprintf(LOG_NOTICE, "%04d %s [%s] !CLIENT BLOCKED in %s %s", client_socket, client.protocol, host_ip, ip_can.fname, trash_details(&trash, details, sizeof details));
 					sbbs->trashcan_msg("ip");
 				}
+				// Drop any unsent badip.msg residue so output_thread doesn't try to send it on the closed FD
+				sbbs->rioctl(IOFB);
 				close_socket(client_socket);
 				continue;
 			}
@@ -5867,6 +5869,8 @@ NO_SSH:
 							, client_socket, client.protocol, host_ip, host_name, host_can.fname, trash_details(&trash, details, sizeof details));
 					sbbs->trashcan_msg("host");
 				}
+				// Drop any unsent badhost.msg residue so output_thread doesn't try to send it on the closed FD
+				sbbs->rioctl(IOFB);
 				SSH_END(client_socket);
 				close_socket(client_socket);
 				continue;
@@ -5949,6 +5953,8 @@ NO_SSH:
 					sbbs->cp437_out("Please try again later.\r\n");
 				}
 				sbbs->flush_output(3000);
+				// Drop any unsent goodbye output so output_thread doesn't try to send it on the closed FD
+				sbbs->rioctl(IOFB);
 				client_off(client_socket);
 				SSH_END(client_socket);
 				close_socket(client_socket);
@@ -6023,6 +6029,8 @@ NO_SSH:
 				else
 					sbbs->cp437_out("\r\nSorry, initialization failed. Try again later.\r\n");
 				sbbs->flush_output(3000);
+				// Drop any unsent goodbye output so output_thread doesn't try to send it on the closed FD
+				sbbs->rioctl(IOFB);
 				if (sbbs->getnodedat(new_node->cfg.node_num, &node, true)) {
 					node.status = NODE_WFC;
 					sbbs->putnodedat(new_node->cfg.node_num, &node);
