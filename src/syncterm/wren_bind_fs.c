@@ -18,6 +18,7 @@
 
 #include <dirwrap.h>     /* opendir / readdir / MKDIR */
 
+#include <errno.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -37,11 +38,10 @@ struct wren_directory {
 	bool is_cache;
 	/* When true, the relaxed filename predicate
 	 * (fname_is_clean_relaxed) is consulted instead of the strict
-	 * fname_is_clean.  Set ONLY on the download / upload roots
-	 * exposed by Host.downloadDir / Host.uploadDir, and inherited by
-	 * Directories produced from those roots via list / createDir.
-	 * Cache and any of its descendants stay strict (this flag stays
-	 * false). */
+	 * fname_is_clean.  Set ONLY on the download root exposed by
+	 * Host.downloadDir, and inherited by Directories produced from
+	 * that root via list / createDir.  Cache and any of its
+	 * descendants stay strict (this flag stays false). */
 	bool relaxed_names;
 	/* Set by fs_invalidate_subtree when a parent's Directory.delete
 	 * removes this entry (or an ancestor of it).  Subsequent ops on
@@ -60,9 +60,9 @@ struct wren_file {
 	FILE *fp;
 	/* Opaque base64 consent token for picker-sourced Files
 	 * (Host.pickFile / Host.pickFiles).  NULL for Files obtained
-	 * via the sandboxed Cache / Upload / Download Directory
-	 * listings — those don't need a token because their paths are
-	 * already inside the predicate-validated sandbox.  Freed in
+	 * via the sandboxed Cache / Download Directory listings —
+	 * those don't need a token because their paths are already
+	 * inside the predicate-validated sandbox.  Freed in
 	 * wren_file_finalize.  See wren_token.h for the model. */
 	char *token;
 	/* Same dead/list mechanics as wren_directory.  A successful
@@ -72,6 +72,54 @@ struct wren_file {
 	struct wren_file *fs_prev;
 	struct wren_file *fs_next;
 };
+
+/* Recoverable I/O failures (disk full, mmap fails, file vanished out
+ * from under an open handle, etc.) surface as a FileError foreign
+ * returned IN PLACE of the typed result, mirroring SFTPError.  Bad
+ * args, dead handles, and "use after close" stay as Fiber.abort
+ * (programmer errors should fail loud).  Codes match
+ * `enum file_err_code` below; `err_no` is the captured C errno at
+ * the failure point, 0 when not applicable. */
+enum file_err_code {
+	FILE_ERR_OK = 0,
+	FILE_ERR_OPEN_FAILED,        /* fopen failed (perms, ENOSPC, …) */
+	FILE_ERR_WRITE_FAILED,       /* fwrite short / fflush failed */
+	FILE_ERR_STAT_FAILED,        /* flength / fstat on the open fd */
+	FILE_ERR_MMAP_FAILED,        /* xpmap / munmap path */
+	FILE_ERR_OOM,                /* malloc returned NULL */
+	FILE_ERR_VANISHED,           /* backing path gone (race with rm) */
+	FILE_ERR_RESOLVE_FAILED,     /* Cache: BBS-relative resolve failed */
+};
+
+struct wren_file_error {
+	enum syncterm_wren_foreign type;
+	uint32_t code;     /* enum file_err_code */
+	int      err_no;   /* C errno at failure point, 0 if not applicable */
+	char    *message;  /* malloc'd; may be NULL */
+};
+
+/* Build a FileError into `slot` and write its handle there.  Use
+ * `errno_val == 0` when the failure didn't come from a libc call
+ * (e.g. OOM in malloc has errno=ENOMEM but synthesised reasons
+ * don't).  Never aborts.  Caller is expected to RETURN to the VM
+ * immediately after — the error IS the typed-result-slot value. */
+static void
+file_build_error(WrenVM *vm, int slot, enum file_err_code code,
+                 int errno_val, const char *msg)
+{
+	struct wren_host_state *st = wren_host_state();
+	wrenEnsureSlots(vm, slot + 2);
+	load_class_into_slot(vm, &st->file_error_class, "FileError",
+	    slot + 1);
+	struct wren_file_error *e =
+	    wrenSetSlotNewForeign(vm, slot, slot + 1, sizeof(*e));
+	memset(e, 0, sizeof(*e));
+	e->type   = SWF_FILE_ERROR;
+	e->code   = (uint32_t)code;
+	e->err_no = errno_val;
+	if (msg != NULL)
+		e->message = strdup(msg);
+}
 
 
 /* Reject Windows reserved device names case-insensitively, matching
@@ -110,10 +158,10 @@ is_reserved_device_basename_(const char *name, size_t base_len)
 	return false;
 }
 
-/* Strict filename policy used by Cache (and any non-Host-downloadDir /
- * non-Host-uploadDir Directory): 1..64 chars, only [A-Za-z0-9._-], no
- * leading '.' or '-', no trailing '.', no ".." substring, basename
- * not a Windows reserved device. */
+/* Strict filename policy used by Cache (and any non-Host-downloadDir
+ * Directory): 1..64 chars, only [A-Za-z0-9._-], no leading '.' or '-',
+ * no trailing '.', no ".." substring, basename not a Windows reserved
+ * device. */
 static bool
 fname_is_clean(const char *name)
 {
@@ -363,7 +411,8 @@ wd_resolve(WrenVM *vm, struct wren_directory *wd, char *scratch,
 		return NULL;
 	}
 	if (!get_cache_fn_base(st->bbs, scratch, scratchsz)) {
-		wren_throw(vm, "Cache: failed to resolve path");
+		file_build_error(vm, 0, FILE_ERR_RESOLVE_FAILED, 0,
+		    "Cache: failed to resolve path");
 		return NULL;
 	}
 	return scratch;
@@ -401,6 +450,79 @@ wren_file_finalize(void *data)
 	}
 	free(wf->token);
 	wf->token = NULL;
+}
+
+void
+wren_file_error_allocate(WrenVM *vm)
+{
+	struct wren_file_error *e =
+	    wrenSetSlotNewForeign(vm, 0, 0, sizeof(*e));
+	memset(e, 0, sizeof(*e));
+	e->type = SWF_FILE_ERROR;
+}
+
+void
+wren_file_error_finalize(void *data)
+{
+	struct wren_file_error *e = data;
+	free(e->message);
+}
+
+void
+fn_FileError_code(WrenVM *vm)
+{
+	struct wren_file_error *e = wrenGetSlotForeign(vm, 0);
+	wrenSetSlotDouble(vm, 0, (double)e->code);
+}
+
+void
+fn_FileError_errno(WrenVM *vm)
+{
+	struct wren_file_error *e = wrenGetSlotForeign(vm, 0);
+	wrenSetSlotDouble(vm, 0, (double)e->err_no);
+}
+
+void
+fn_FileError_message(WrenVM *vm)
+{
+	struct wren_file_error *e = wrenGetSlotForeign(vm, 0);
+	if (e->message != NULL)
+		wrenSetSlotString(vm, 0, e->message);
+	else
+		wrenSetSlotNull(vm, 0);
+}
+
+/* Human-friendly form: "FileError: <code-name>: <message>".
+ * Mirrors SFTPError.toString. */
+void
+fn_FileError_toString(WrenVM *vm)
+{
+	struct wren_file_error *e = wrenGetSlotForeign(vm, 0);
+	const char *name;
+	switch ((enum file_err_code)e->code) {
+	case FILE_ERR_OK:             name = "OK";              break;
+	case FILE_ERR_OPEN_FAILED:    name = "OPEN_FAILED";     break;
+	case FILE_ERR_WRITE_FAILED:   name = "WRITE_FAILED";    break;
+	case FILE_ERR_STAT_FAILED:    name = "STAT_FAILED";     break;
+	case FILE_ERR_MMAP_FAILED:    name = "MMAP_FAILED";     break;
+	case FILE_ERR_OOM:            name = "OOM";             break;
+	case FILE_ERR_VANISHED:       name = "VANISHED";        break;
+	case FILE_ERR_RESOLVE_FAILED: name = "RESOLVE_FAILED";  break;
+	default:                      name = "UNKNOWN";         break;
+	}
+	char buf[256];
+	if (e->message != NULL && e->err_no != 0)
+		snprintf(buf, sizeof(buf), "FileError: %s: %s (errno=%d)",
+		    name, e->message, e->err_no);
+	else if (e->message != NULL)
+		snprintf(buf, sizeof(buf), "FileError: %s: %s",
+		    name, e->message);
+	else if (e->err_no != 0)
+		snprintf(buf, sizeof(buf), "FileError: %s (errno=%d)",
+		    name, e->err_no);
+	else
+		snprintf(buf, sizeof(buf), "FileError: %s", name);
+	wrenSetSlotString(vm, 0, buf);
 }
 
 /* Mark a foreign as dead and unhook it from the live-list immediately.
@@ -447,7 +569,8 @@ file_check(WrenVM *vm)
 		return wf;
 	if (!fexist(wf->path)) {
 		fs_kill_file(wf);
-		wren_throw(vm, "File: backing file no longer exists");
+		file_build_error(vm, 0, FILE_ERR_VANISHED, 0,
+		    "File: backing file no longer exists");
 		return NULL;
 	}
 	return wf;
@@ -467,7 +590,8 @@ dir_check(WrenVM *vm)
 	 * its own existence check after resolving the BBS-relative path. */
 	if (!wd->is_cache && !isdir(wd->path)) {
 		fs_kill_dir(wd);
-		wren_throw(vm, "Directory: backing directory no longer exists");
+		file_build_error(vm, 0, FILE_ERR_VANISHED, 0,
+		    "Directory: backing directory no longer exists");
 		return NULL;
 	}
 	return wd;
@@ -772,12 +896,11 @@ fn_Host_cacheDirectory(WrenVM *vm)
 	fs_register_dir(wd);
 }
 
-/* Helper for Host.downloadDir / Host.uploadDir — both hand back a
- * Directory rooted at a per-BBS string field on the active bbslist
- * entry, with the relaxed filename predicate enabled.  Returns null
- * when the path is empty/unset OR equals $HOME (the unfortunate-
- * default guard); the caller is expected to surface a "configure
- * DownloadPath / UploadPath" message. */
+/* Helper for Host.downloadDir — hands back a Directory rooted at
+ * bbs->dldir with the relaxed filename predicate enabled.  Returns
+ * null when the path is empty/unset OR equals $HOME (the
+ * unfortunate-default guard); the caller is expected to surface a
+ * "configure DownloadPath" message. */
 static void
 push_relaxed_root_(WrenVM *vm, const char *path)
 {
@@ -821,17 +944,21 @@ fn_Host_downloadDir(WrenVM *vm)
 	push_relaxed_root_(vm, st->bbs->dldir);
 }
 
-/* Host.uploadDir — relaxed-name Directory rooted at bbs->uldir.
- * Returns null when uldir is empty or equals $HOME. */
+/* Host.uploadPath — the BBS's configured UploadPath as a String, or
+ * null when no BBS context or the path is empty.  Intended for use as
+ * the initialDir argument to Host.pickFile / Host.pickFiles — uploads
+ * must go through the picker (which mints a consent token) and never
+ * by enumerating a script-controlled Directory.  No $HOME guard:
+ * scripts get the configured value verbatim. */
 void
-fn_Host_uploadDir(WrenVM *vm)
+fn_Host_uploadPath(WrenVM *vm)
 {
 	struct wren_host_state *st = wren_host_state();
-	if (st == NULL || st->bbs == NULL) {
+	if (st == NULL || st->bbs == NULL || st->bbs->uldir[0] == '\0') {
 		wrenSetSlotNull(vm, 0);
 		return;
 	}
-	push_relaxed_root_(vm, st->bbs->uldir);
+	wrenSetSlotString(vm, 0, st->bbs->uldir);
 }
 
 /* Resolve `slot`'s value into an initial-directory string for the
@@ -1036,7 +1163,8 @@ fn_File_open(WrenVM *vm)
 	}
 	wf->fp = fopen(wf->path, "r+b");
 	if (wf->fp == NULL) {
-		wren_throw(vm, "File: open failed");
+		file_build_error(vm, 0, FILE_ERR_OPEN_FAILED, errno,
+		    "fopen failed");
 		return;
 	}
 	fseek(wf->fp, 0, SEEK_SET);
@@ -1090,7 +1218,8 @@ do_read_at(WrenVM *vm, struct wren_file *wf, long off, long count,
 	}
 	char *buf = malloc((size_t)count);
 	if (buf == NULL) {
-		wren_throw(vm, "File: out of memory");
+		file_build_error(vm, 0, FILE_ERR_OOM, ENOMEM,
+		    "malloc for read buffer");
 		return;
 	}
 	size_t got = fread(buf, 1, (size_t)count, wf->fp);
@@ -1152,7 +1281,8 @@ do_write_at(WrenVM *vm, struct wren_file *wf, long off,
 	if (len > 0) {
 		size_t put = fwrite(bytes, 1, (size_t)len, wf->fp);
 		if ((int)put != len) {
-			wren_throw(vm, "File: write failed");
+			file_build_error(vm, 0, FILE_ERR_WRITE_FAILED,
+			    errno, "fwrite short");
 			return;
 		}
 	}
@@ -1233,7 +1363,9 @@ fn_File_readLine(WrenVM *vm)
 			char *nb = realloc(line, new_cap);
 			if (nb == NULL) {
 				free(line);
-				wren_throw(vm, "File: out of memory");
+				file_build_error(vm, 0, FILE_ERR_OOM,
+				    ENOMEM,
+				    "realloc for readLine buffer");
 				return;
 			}
 			line     = nb;
@@ -1271,12 +1403,14 @@ fn_File_writeLine(WrenVM *vm)
 	fseek(wf->fp, off, SEEK_SET);
 	if (len > 0) {
 		if (fwrite(bytes, 1, (size_t)len, wf->fp) != (size_t)len) {
-			wren_throw(vm, "File: write failed");
+			file_build_error(vm, 0, FILE_ERR_WRITE_FAILED,
+			    errno, "writeLine fwrite short");
 			return;
 		}
 	}
 	if (fwrite("\n", 1, 1, wf->fp) != 1) {
-		wren_throw(vm, "File: write failed");
+		file_build_error(vm, 0, FILE_ERR_WRITE_FAILED, errno,
+		    "writeLine LF fwrite short");
 		return;
 	}
 	fflush(wf->fp);
@@ -1295,13 +1429,15 @@ fn_File_write(WrenVM *vm)
 	fclose(wf->fp);
 	wf->fp = fopen(wf->path, "w+b");
 	if (wf->fp == NULL) {
-		wren_throw(vm, "File: write failed (reopen)");
+		file_build_error(vm, 0, FILE_ERR_OPEN_FAILED, errno,
+		    "fopen for truncate-rewrite");
 		return;
 	}
 	if (len > 0) {
 		size_t put = fwrite(bytes, 1, (size_t)len, wf->fp);
 		if ((int)put != len) {
-			wren_throw(vm, "File: write failed");
+			file_build_error(vm, 0, FILE_ERR_WRITE_FAILED,
+			    errno, "write fwrite short");
 			return;
 		}
 	}
@@ -1348,7 +1484,8 @@ fn_File_size(WrenVM *vm)
 	}
 	off_t sz = flength(wf->path);
 	if (sz < 0) {
-		wren_throw(vm, "File: flength failed");
+		file_build_error(vm, 0, FILE_ERR_STAT_FAILED, errno,
+		    "flength failed");
 		return;
 	}
 	wrenSetSlotDouble(vm, 0, (double)sz);
@@ -1401,10 +1538,9 @@ fn_File_isOpen(WrenVM *vm)
 }
 
 /* File.token — opaque consent token for picker-sourced Files; null
- * for Files obtained via Cache / Upload / Download Directory
- * listings.  See wren_token.h for the model.  Persist this in WON
- * next to the path string; pass back to Host.openLocalFile on
- * resume. */
+ * for Files obtained via Cache / Download Directory listings.  See
+ * wren_token.h for the model.  Persist this in WON next to the path
+ * string; pass back to Host.openLocalFile on resume. */
 void
 fn_File_token(WrenVM *vm)
 {
@@ -1422,7 +1558,7 @@ fn_File_token(WrenVM *vm)
  * *len_out; if the file is zero-length the mapping is NULL and the
  * data is an empty buffer (xpmap typically rejects 0-sized maps so
  * we synthesize one).  Returns false on stat / mmap failure with a
- * fiber abort already raised. */
+ * FileError already in slot 0 — caller just returns. */
 static bool
 file_map_for_hash(WrenVM *vm, struct wren_file *wf,
                   struct xpmapping **map_out, const void **data_out,
@@ -1430,7 +1566,8 @@ file_map_for_hash(WrenVM *vm, struct wren_file *wf,
 {
 	off_t sz = flength(wf->path);
 	if (sz < 0) {
-		wren_throw(vm, "File: flength failed");
+		file_build_error(vm, 0, FILE_ERR_STAT_FAILED, errno,
+		    "flength failed before hash");
 		return false;
 	}
 	if (sz == 0) {
@@ -1441,7 +1578,8 @@ file_map_for_hash(WrenVM *vm, struct wren_file *wf,
 	}
 	struct xpmapping *map = xpmap(wf->path, XPMAP_READ);
 	if (map == NULL) {
-		wren_throw(vm, "File: mmap failed");
+		file_build_error(vm, 0, FILE_ERR_MMAP_FAILED, errno,
+		    "xpmap failed");
 		return false;
 	}
 	*map_out  = map;

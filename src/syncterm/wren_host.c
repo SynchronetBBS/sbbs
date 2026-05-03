@@ -1044,6 +1044,12 @@ wren_host_shutdown(void)
 		wrenReleaseHandle(state.vm, state.sftp_handle_class);
 	if (state.sftp_error_class != NULL)
 		wrenReleaseHandle(state.vm, state.sftp_error_class);
+	if (state.file_error_class != NULL)
+		wrenReleaseHandle(state.vm, state.file_error_class);
+	if (state.won_error_class != NULL)
+		wrenReleaseHandle(state.vm, state.won_error_class);
+	if (state.conn_error_class != NULL)
+		wrenReleaseHandle(state.vm, state.conn_error_class);
 	if (state.timer_elapsed_class != NULL)
 		wrenReleaseHandle(state.vm, state.timer_elapsed_class);
 	for (int i = 0; i < state.pending_timer_count; i++) {
@@ -1114,6 +1120,29 @@ static bool
 on_owner_thread(void)
 {
 	return pthread_self() == owner_thread;
+}
+
+/* C2 (observe-only) hooks ignore returns by design.  Some scripts try
+ * to "consume" by returning Bool / String — silently ignored at the
+ * dispatch level, but easy to misdiagnose as "my hook isn't firing."
+ * Warn every time so the noise itself is the diagnostic; a misused
+ * `every(50)` hook will log 20 lines/sec until the script is fixed,
+ * which is the right pressure.  `who` is the hook-name token. */
+static void
+warn_if_c2_misused(const char *who)
+{
+	WrenType t = wrenGetSlotType(state.vm, 0);
+	if (t != WREN_TYPE_BOOL && t != WREN_TYPE_STRING)
+		return;
+	char msg[160];
+	snprintf(msg, sizeof(msg),
+	    "Hook.%s callback returned %s — the value is ignored. "
+	    "%s is observe-only (C2 contract); use Hook.onInput for "
+	    "byte-level drops or Hook.onKey/onMouse for consumption.",
+	    who,
+	    t == WREN_TYPE_BOOL ? "Bool" : "String",
+	    who);
+	log_append(WREN_LOG_RUNTIME_ERROR, msg);
 }
 
 static bool
@@ -1205,6 +1234,8 @@ dispatch_match_drain(struct wren_hook_entry *h)
 			build_match_list(subp, h->regex_nsubp, 2);
 			(void)metrics_invoke(&h->metrics,
 			    state.dispatch1_handle);
+			warn_if_c2_misused(
+			    h->regex_clean ? "onMatchClean" : "onMatch");
 
 			size_t end = (subp[1] != NULL)
 			    ? (size_t)(subp[1] - h->regex_buf)
@@ -1332,8 +1363,10 @@ wren_host_dispatch_mouse(struct mouse_event *ev)
 	int n = state.hook_count[WREN_HOOK_MOUSE];
 	if (n == 0)
 		return false;
-	/* Build a 7-element list: [event, bstate, kbmodifiers, startx,
-	 * starty, endx, endy].  Scripts index by position. */
+	/* Push a MouseEvent foreign as the callback's single argument.
+	 * dispatch_(fn, arg) takes its arg in slot 2; push_mouse_event
+	 * uses slot 3 as scratch for the class lookup, hence
+	 * wrenEnsureSlots(4). */
 	for (int i = 0; i < n; i++) {
 		struct wren_hook_entry *h = state.hooks[WREN_HOOK_MOUSE][i];
 		if (h == NULL || h->fn == NULL)
@@ -1343,17 +1376,7 @@ wren_host_dispatch_mouse(struct mouse_event *ev)
 		wrenEnsureSlots(state.vm, 4);
 		wrenSetSlotHandle(state.vm, 0, state.hook_class);
 		wrenSetSlotHandle(state.vm, 1, h->fn);
-		wrenSetSlotNewList(state.vm, 2);
-		const double fields[] = {
-			(double)ev->event, (double)ev->bstate,
-			(double)ev->kbmodifiers, (double)ev->startx,
-			(double)ev->starty, (double)ev->endx,
-			(double)ev->endy
-		};
-		for (size_t f = 0; f < sizeof(fields) / sizeof(fields[0]); f++) {
-			wrenSetSlotDouble(state.vm, 3, fields[f]);
-			wrenInsertInList(state.vm, 2, -1, 3);
-		}
+		push_mouse_event(state.vm, ev, 2);
 		if (metrics_invoke(&h->metrics, state.dispatch1_handle) !=
 		    WREN_RESULT_SUCCESS)
 			continue;
@@ -1405,6 +1428,7 @@ wren_host_dispatch_timer(void)
 		wrenSetSlotHandle(state.vm, 0, state.hook_class);
 		wrenSetSlotHandle(state.vm, 1, t->fn);
 		(void)metrics_invoke(&t->metrics, state.dispatch0_handle);
+		warn_if_c2_misused("every");
 		/* Advance by interval; if the loop stalled long enough that
 		 * we're more than one interval behind, jump forward to "now"
 		 * rather than firing repeatedly trying to catch up. */
@@ -1433,6 +1457,9 @@ dispatch_zero_arg_event(enum wren_hook_event ev)
 		wrenSetSlotHandle(state.vm, 0, state.hook_class);
 		wrenSetSlotHandle(state.vm, 1, h->fn);
 		(void)metrics_invoke(&h->metrics, state.dispatch0_handle);
+		warn_if_c2_misused(
+		    ev == WREN_HOOK_SHELL_CLOSE
+		        ? "onShellClose" : "onDisconnect");
 	}
 }
 

@@ -58,9 +58,12 @@ class MenuBar is Widget {
 
   // The currently-highlighted item index (Tab/arrow navigation).  Not
   // the same as "active" — activation requires Enter / Space / click.
-  focusedItem     { _focused }
+  // null when no item is focused (empty bar or explicitly cleared);
+  // otherwise an integer in 0..count - 1.
+  focusedItem     { _focused < 0 ? null : _focused }
   focusedItem=(i) {
-    if (_items.count == 0) {
+    if (i == null || _items.count == 0) {
+      if (_focused == -1) return
       _focused = -1
       markDirty()
       return

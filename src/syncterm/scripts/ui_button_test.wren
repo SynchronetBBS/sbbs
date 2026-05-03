@@ -30,7 +30,6 @@ class UiButtonTest {
   static check_(ok, label) {
     if (ok) {
       __pass = __pass + 1
-      System.print("  PASS %(label)")
     } else {
       __fail = __fail + 1
       System.print("  FAIL %(label)")
@@ -84,7 +83,7 @@ class UiButtonTest {
     b.bounds = Rect.new(5, 5, 6, 1)
     var fired = [false]
     b.onPress = Fn.new { fired[0] = true }
-    var ev = MouseEvent.new(Mouse.button1Click, 0, 6, 5, 6, 5)
+    var ev = MouseEvent.new(Mouse.button1Click, 6, 5, 6, 5)
     var consumed = b.handle(ev)
     check_(consumed && fired[0] == true,
            "Button: mouse click inside bounds activates")
@@ -95,7 +94,7 @@ class UiButtonTest {
     b.bounds = Rect.new(5, 5, 6, 1)
     var fired = [false]
     b.onPress = Fn.new { fired[0] = true }
-    var ev = MouseEvent.new(Mouse.button1Click, 0, 50, 50, 50, 50)
+    var ev = MouseEvent.new(Mouse.button1Click, 50, 50, 50, 50)
     var consumed = b.handle(ev)
     check_(!consumed && fired[0] == false,
            "Button: click outside bounds dropped")
@@ -106,7 +105,7 @@ class UiButtonTest {
     b.bounds = Rect.new(5, 5, 6, 1)
     var fired = [false]
     b.onPress = Fn.new { fired[0] = true }
-    var ev = MouseEvent.new(Mouse.move, 0, 6, 5, 6, 5)
+    var ev = MouseEvent.new(Mouse.move, 6, 5, 6, 5)
     var consumed = b.handle(ev)
     check_(!consumed && fired[0] == false,
            "Button: hover (Mouse.move) ignored")

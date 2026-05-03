@@ -35,7 +35,6 @@ class UiRadioTest {
   static check_(ok, label) {
     if (ok) {
       __pass = __pass + 1
-      System.print("  PASS %(label)")
     } else {
       __fail = __fail + 1
       System.print("  FAIL %(label)")
@@ -44,7 +43,7 @@ class UiRadioTest {
 
   static testDefaults_() {
     var g = RadioGroup.new()
-    check_(g.count == 0 && g.selected == -1 && g.focusable == true,
+    check_(g.count == 0 && g.selected == null && g.focusable == true,
            "RadioGroup: empty, no selection, focusable")
   }
 
@@ -138,7 +137,7 @@ class UiRadioTest {
     var g = RadioGroup.new()
     g.items  = ["a", "b", "c"]
     g.bounds = Rect.new(2, 5, 10, 3)
-    var ev = MouseEvent.new(Mouse.button1Click, 0, 4, 7, 4, 7)
+    var ev = MouseEvent.new(Mouse.button1Click, 4, 7, 4, 7)
     var consumed = g.handle(ev)
     check_(consumed && g.selected == 2 && g.cursor == 2,
            "RadioGroup: click selects the clicked row")
@@ -148,7 +147,7 @@ class UiRadioTest {
     var g = RadioGroup.new()
     g.items  = ["a", "b"]
     g.bounds = Rect.new(2, 5, 10, 2)
-    var ev = MouseEvent.new(Mouse.button1Click, 0, 50, 50, 50, 50)
+    var ev = MouseEvent.new(Mouse.button1Click, 50, 50, 50, 50)
     var consumed = g.handle(ev)
     check_(!consumed && g.selected == 0,
            "RadioGroup: click outside bounds dropped")

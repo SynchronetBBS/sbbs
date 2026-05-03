@@ -74,9 +74,14 @@ fnScreenWindow_bounds(WrenVM *vm)
 void
 fnScreenWindow_bounds_set(WrenVM *vm)
 {
-	if (wrenGetSlotType(vm, 1) != WREN_TYPE_LIST ||
-	    wrenGetListCount(vm, 1) < 4)
+	if (wrenGetSlotType(vm, 1) != WREN_TYPE_LIST) {
+		wren_throw(vm, "Screen.window.bounds=: must be a List");
 		return;
+	}
+	if (wrenGetListCount(vm, 1) < 4) {
+		wren_throw(vm, "Screen.window.bounds=: List must have 4 elements");
+		return;
+	}
 	wrenEnsureSlots(vm, 3);
 	int box[4];
 	for (int i = 0; i < 4; i++) {
@@ -141,9 +146,14 @@ fnScreenWindow_position(WrenVM *vm)
 void
 fnScreenWindow_position_set(WrenVM *vm)
 {
-	if (wrenGetSlotType(vm, 1) != WREN_TYPE_LIST ||
-	    wrenGetListCount(vm, 1) < 2)
+	if (wrenGetSlotType(vm, 1) != WREN_TYPE_LIST) {
+		wren_throw(vm, "Screen.window.position=: must be a List");
 		return;
+	}
+	if (wrenGetListCount(vm, 1) < 2) {
+		wren_throw(vm, "Screen.window.position=: List must have 2 elements");
+		return;
+	}
 	wrenEnsureSlots(vm, 3);
 	wrenGetListElement(vm, 1, 0, 2);
 	int x = (int)wrenGetSlotDouble(vm, 2);
@@ -243,9 +253,32 @@ key_event_init(struct wren_key_event *ke, uint16_t code)
 void
 wren_key_event_allocate(WrenVM *vm)
 {
+	uint16_t code = (uint16_t)wrenGetSlotDouble(vm, 1);
+	/* Allocate first to satisfy Wren's "<allocate> must call
+	 * wrenSetSlotNewForeign exactly once" rule.  The struct is
+	 * abandoned to GC if we abort below — the finalizer is a
+	 * no-op so that's free. */
 	struct wren_key_event *ke =
 	    wrenSetSlotNewForeign(vm, 0, 0, sizeof(*ke));
-	uint16_t code = (uint16_t)wrenGetSlotDouble(vm, 1);
+	/* ciolib's key transport packs a 16-bit code as low-byte-then-
+	 * high-byte through getch/ungetch, with the convention that low
+	 * byte == 0x00 or 0xE0 marks "extended scancode follows."  Codes
+	 * with high byte non-zero AND low byte not 0/0xE0 are not
+	 * representable in that stream — Input.unget would split them
+	 * into two unrelated reads.  Reject at construction so the
+	 * footgun fires here, not silently in dispatch later. */
+	uint8_t lo = (uint8_t)(code & 0xFFu);
+	uint8_t hi = (uint8_t)(code >> 8);
+	if (hi != 0 && lo != 0x00 && lo != 0xE0) {
+		char msg[140];
+		snprintf(msg, sizeof(msg),
+		    "KeyEvent.new: 0x%04X is not a representable key code "
+		    "(extended keys require low byte 0x00 or 0xE0; "
+		    "single-byte keys require high byte 0x00)",
+		    (unsigned)code);
+		wren_throw(vm, msg);
+		return;
+	}
 	key_event_init(ke, code);
 }
 
@@ -255,19 +288,91 @@ wren_key_event_finalize(void *data)
 	(void)data;
 }
 
+/* Derive a plausible bstate from a ciolib mouse event code: bit for
+ * the button the event is about, or 0 for MOUSE_MOVE.  Used by the
+ * shorter MouseEvent.new(...) overloads that don't take an explicit
+ * bstate.  Real bstate (which buttons were held at the instant the
+ * event fired) is only meaningful for events delivered by ciolib;
+ * synthesised events get the single-button approximation. */
+static int
+derive_bstate_from_event(int event)
+{
+	if (event <= CIOLIB_MOUSE_MOVE || event > CIOLIB_BUTTON_5_DRAG_END)
+		return 0;
+	int button = (event - 1) / 9 + 1;       /* 1..5 */
+	return CIOLIB_BUTTON(button);
+}
+
+/* MouseEvent.new — five overloads, dispatched by argument count.
+ * Wren's foreign-class allocator is keyed by class only (a single
+ * "<allocate>" per class), so all `construct new` arities funnel
+ * through here; we read the call arity from wrenGetSlotCount.
+ * Defaults when an arg is omitted:
+ *   endX, endY → copies of startX, startY (point event)
+ *   modifiers  → 0
+ *   bstate     → derived from event (bit for the button it's about)
+ */
 void
 wren_mouse_event_allocate(WrenVM *vm)
 {
+	int  arity = wrenGetSlotCount(vm) - 1;  /* slot 0 = receiver */
+	int  event, startX, startY;
+	int  endX = 0, endY = 0, modifiers = 0, bstate = 0;
+	bool bstate_explicit = false;
+
+	if (arity < 3 || arity > 7) {
+		wren_throw(vm,
+		    "MouseEvent.new: expected 3..7 arguments");
+		return;
+	}
+	event  = (int)wrenGetSlotDouble(vm, 1);
+	startX = (int)wrenGetSlotDouble(vm, 2);
+	startY = (int)wrenGetSlotDouble(vm, 3);
+	endX   = startX;
+	endY   = startY;
+
+	switch (arity) {
+	case 3:
+		/* (event, startX, startY) */
+		break;
+	case 4:
+		/* (event, startX, startY, modifiers) */
+		modifiers = (int)wrenGetSlotDouble(vm, 4);
+		break;
+	case 5:
+		/* (event, startX, startY, endX, endY) */
+		endX = (int)wrenGetSlotDouble(vm, 4);
+		endY = (int)wrenGetSlotDouble(vm, 5);
+		break;
+	case 6:
+		/* (event, startX, startY, endX, endY, modifiers) */
+		endX      = (int)wrenGetSlotDouble(vm, 4);
+		endY      = (int)wrenGetSlotDouble(vm, 5);
+		modifiers = (int)wrenGetSlotDouble(vm, 6);
+		break;
+	case 7:
+		/* (event, startX, startY, endX, endY, modifiers, bstate) */
+		endX            = (int)wrenGetSlotDouble(vm, 4);
+		endY            = (int)wrenGetSlotDouble(vm, 5);
+		modifiers       = (int)wrenGetSlotDouble(vm, 6);
+		bstate          = (int)wrenGetSlotDouble(vm, 7);
+		bstate_explicit = true;
+		break;
+	}
+	if (!bstate_explicit)
+		bstate = derive_bstate_from_event(event);
+
 	struct wren_mouse_event *me =
 	    wrenSetSlotNewForeign(vm, 0, 0, sizeof(*me));
 	memset(me, 0, sizeof(*me));
 	me->type           = SWF_MOUSE_EVENT;
-	me->ev.event       = (int)wrenGetSlotDouble(vm, 1);
-	me->ev.kbmodifiers = (int)wrenGetSlotDouble(vm, 2);
-	me->ev.startx      = (int)wrenGetSlotDouble(vm, 3);
-	me->ev.starty      = (int)wrenGetSlotDouble(vm, 4);
-	me->ev.endx        = (int)wrenGetSlotDouble(vm, 5);
-	me->ev.endy        = (int)wrenGetSlotDouble(vm, 6);
+	me->ev.event       = event;
+	me->ev.bstate      = bstate;
+	me->ev.kbmodifiers = modifiers;
+	me->ev.startx      = startX;
+	me->ev.starty      = startY;
+	me->ev.endx        = endX;
+	me->ev.endy        = endY;
 }
 
 void
@@ -311,6 +416,7 @@ fn_KeyEvent_text(WrenVM *vm)
 	}
 
 MOUSE_FIELD(event,     event)
+MOUSE_FIELD(bstate,    bstate)
 MOUSE_FIELD(modifiers, kbmodifiers)
 MOUSE_FIELD(startX,    startx)
 MOUSE_FIELD(startY,    starty)
@@ -350,27 +456,30 @@ fn_MouseEvent_toString(WrenVM *vm)
 	wrenSetSlotString(vm, 0, buf);
 }
 
-/* Build a Wren-side KeyEvent in slot 0 from a raw 16-bit code.  Uses
- * the captured KeyEvent class handle; callers must have at least 2
- * slots ensured (slot 0 = result, slot 1 = scratch for the class). */
-static void
-push_key_event(WrenVM *vm, uint16_t code)
+/* Build a Wren-side KeyEvent in `dst` from a raw 16-bit code.  Uses
+ * the captured KeyEvent class handle; callers must have at least
+ * `dst + 2` slots ensured (slot dst = result, slot dst+1 = scratch
+ * for the class lookup). */
+void
+push_key_event(WrenVM *vm, uint16_t code, int dst)
 {
 	struct wren_host_state *st = wren_host_state();
-	load_class_into_slot(vm, &st->key_event_class, "KeyEvent", 1);
+	load_class_into_slot(vm, &st->key_event_class, "KeyEvent", dst + 1);
 	struct wren_key_event *ke =
-	    wrenSetSlotNewForeign(vm, 0, 1, sizeof(*ke));
+	    wrenSetSlotNewForeign(vm, dst, dst + 1, sizeof(*ke));
 	key_event_init(ke, code);
 }
 
-/* Build a Wren-side MouseEvent in slot 0 from a struct mouse_event. */
-static void
-push_mouse_event(WrenVM *vm, const struct mouse_event *mev)
+/* Build a Wren-side MouseEvent in `dst` from a struct mouse_event.
+ * Same slot conventions as push_key_event — caller must have ensured
+ * at least `dst + 2` slots. */
+void
+push_mouse_event(WrenVM *vm, const struct mouse_event *mev, int dst)
 {
 	struct wren_host_state *st = wren_host_state();
-	load_class_into_slot(vm, &st->mouse_event_class, "MouseEvent", 1);
+	load_class_into_slot(vm, &st->mouse_event_class, "MouseEvent", dst + 1);
 	struct wren_mouse_event *me =
-	    wrenSetSlotNewForeign(vm, 0, 1, sizeof(*me));
+	    wrenSetSlotNewForeign(vm, dst, dst + 1, sizeof(*me));
 	me->type = SWF_MOUSE_EVENT;
 	me->ev   = *mev;
 }
@@ -390,13 +499,13 @@ push_next_event(WrenVM *vm)
 		if (getmouse(&mev) != 0) {
 			/* No mouse pending despite the marker — surface as a
 			 * raw KeyEvent so the script at least sees the byte. */
-			push_key_event(vm, (uint16_t)code);
+			push_key_event(vm, (uint16_t)code, 0);
 			return;
 		}
-		push_mouse_event(vm, &mev);
+		push_mouse_event(vm, &mev, 0);
 		return;
 	}
-	push_key_event(vm, (uint16_t)code);
+	push_key_event(vm, (uint16_t)code, 0);
 }
 
 /* Wake.post(fiber, value) — queue `value` to be delivered to `fiber`
@@ -625,20 +734,23 @@ fn_ClaimHandle_pop(WrenVM *vm)
 	wrenSetSlotBool(vm, 0, removed);
 }
 
-/* Walk the claim stack with the given event in the prepared slot.
- * Auto-prunes dead-fiber claims as it goes.  Returns true on first
- * consumed (Bool true) return; false if all claims passed through
- * or were pruned. */
+/* Walk the claim stack with `event_handle` (a pinned WrenHandle to a
+ * KeyEvent or MouseEvent foreign) as the dispatch arg.  Auto-prunes
+ * dead-fiber claims as it goes.  Returns true on first consumed (Bool
+ * true) return; false if all claims passed through or were pruned.
+ *
+ * The event is passed as a WrenHandle (not a slot index) so we don't
+ * have to negotiate a slot layout with the caller — wrenCall and
+ * fiber_is_done both truncate the api stack to whatever the called
+ * stub's maxSlots is, which would invalidate any "scratch slot" the
+ * caller had stashed the event in.  Pin once in the caller, push the
+ * handle back into slot 2 each iteration, release in the caller. */
 static bool
-dispatch_claim_event(int event_slot)
+dispatch_claim_event(WrenHandle *event_handle)
 {
 	struct wren_host_state *st = wren_host_state();
 	if (st == NULL || st->vm == NULL || st->dispatch1_handle == NULL ||
-	    st->hook_class == NULL)
-		return false;
-
-	WrenHandle *event_handle = wrenGetSlotHandle(st->vm, event_slot);
-	if (event_handle == NULL)
+	    st->hook_class == NULL || event_handle == NULL)
 		return false;
 
 	bool consumed = false;
@@ -675,7 +787,6 @@ dispatch_claim_event(int event_slot)
 		if (*cur == c)
 			cur = &c->next;
 	}
-	wrenReleaseHandle(st->vm, event_handle);
 	return consumed;
 }
 
@@ -685,12 +796,18 @@ wren_bind_dispatch_claim_key(int code)
 	struct wren_host_state *st = wren_host_state();
 	if (st == NULL || st->claim_top == NULL || code == CIO_KEY_MOUSE)
 		return false;
-	wrenEnsureSlots(st->vm, 4);
-	push_key_event(st->vm, (uint16_t)code);
-	/* push_key_event puts the event in slot 0; move to slot 3 to
-	 * keep the dispatch-table slots free. */
-	wrenSetSlotHandle(st->vm, 3, wrenGetSlotHandle(st->vm, 0));
-	return dispatch_claim_event(3);
+	/* Build the KeyEvent in slot 0, pin it, hand the handle off to
+	 * the dispatcher.  The slot itself is throwaway — every wrenCall
+	 * inside the dispatch loop truncates the api stack.  The pin is
+	 * what keeps the event alive across those truncations. */
+	wrenEnsureSlots(st->vm, 2);
+	push_key_event(st->vm, (uint16_t)code, 0);
+	WrenHandle *eh = wrenGetSlotHandle(st->vm, 0);
+	if (eh == NULL)
+		return false;
+	bool consumed = dispatch_claim_event(eh);
+	wrenReleaseHandle(st->vm, eh);
+	return consumed;
 }
 
 bool
@@ -699,10 +816,14 @@ wren_bind_dispatch_claim_mouse(struct mouse_event *ev)
 	struct wren_host_state *st = wren_host_state();
 	if (st == NULL || st->claim_top == NULL || ev == NULL)
 		return false;
-	wrenEnsureSlots(st->vm, 4);
-	push_mouse_event(st->vm, ev);
-	wrenSetSlotHandle(st->vm, 3, wrenGetSlotHandle(st->vm, 0));
-	return dispatch_claim_event(3);
+	wrenEnsureSlots(st->vm, 2);
+	push_mouse_event(st->vm, ev, 0);
+	WrenHandle *eh = wrenGetSlotHandle(st->vm, 0);
+	if (eh == NULL)
+		return false;
+	bool consumed = dispatch_claim_event(eh);
+	wrenReleaseHandle(st->vm, eh);
+	return consumed;
 }
 
 /* Free every claim and clear the stack — called from
@@ -1143,7 +1264,8 @@ fnScreenFonts_subscript(WrenVM *vm)
 {
 	int i = (int)wrenGetSlotDouble(vm, 1);
 	if (i < 0 || i > 4) {
-		wrenSetSlotNull(vm, 0);
+		wren_throw(vm,
+		    "Screen.font[i]: slot index must be 0..4");
 		return;
 	}
 	wrenSetSlotDouble(vm, 0, (double)getfont(i));
@@ -1154,8 +1276,11 @@ fnScreenFonts_subscript_set(WrenVM *vm)
 {
 	int i = (int)wrenGetSlotDouble(vm, 1);
 	int n = (int)wrenGetSlotDouble(vm, 2);
-	if (i < 0 || i > 4)
+	if (i < 0 || i > 4) {
+		wren_throw(vm,
+		    "Screen.font[i]=: slot index must be 0..4");
 		return;
+	}
 	/* force=0: refuse the change if the font isn't available in the
 	 * current video mode rather than silently switching modes. */
 	setfont(n, 0, i);
@@ -1173,8 +1298,16 @@ void
 fnPalette_subscript(WrenVM *vm)
 {
 	int i = (int)wrenGetSlotDouble(vm, 1);
+	if (i < 0) {
+		wren_throw(vm,
+		    "Screen.palette[i]: index must be non-negative");
+		return;
+	}
 	uint8_t r, g, b;
-	if (i < 0 || ciolib_getpalette((uint32_t)i, &r, &g, &b) != 1) {
+	/* getpalette failure is a runtime condition (palette not loaded
+	 * for this index in the current mode) — null is the documented
+	 * "no entry" return. */
+	if (ciolib_getpalette((uint32_t)i, &r, &g, &b) != 1) {
 		wrenSetSlotNull(vm, 0);
 		return;
 	}
@@ -1187,8 +1320,11 @@ fnPalette_subscript_set(WrenVM *vm)
 {
 	int      i = (int)wrenGetSlotDouble(vm, 1);
 	uint32_t c = (uint32_t)(int64_t)wrenGetSlotDouble(vm, 2);
-	if (i < 0)
+	if (i < 0) {
+		wren_throw(vm,
+		    "Screen.palette[i]=: index must be non-negative");
 		return;
+	}
 	uint16_t r = (uint16_t)(((c >> 16) & 0xFFu) * 0x101u);
 	uint16_t g = (uint16_t)(((c >>  8) & 0xFFu) * 0x101u);
 	uint16_t b = (uint16_t)(( c        & 0xFFu) * 0x101u);
@@ -1214,9 +1350,16 @@ fnPalette_mode(WrenVM *vm)
 void
 fnPalette_mode_set(WrenVM *vm)
 {
-	if (wrenGetSlotType(vm, 1) != WREN_TYPE_LIST ||
-	    wrenGetListCount(vm, 1) < 16)
+	if (wrenGetSlotType(vm, 1) != WREN_TYPE_LIST) {
+		wren_throw(vm,
+		    "Screen.palette.mode=: must be a List");
 		return;
+	}
+	if (wrenGetListCount(vm, 1) < 16) {
+		wren_throw(vm,
+		    "Screen.palette.mode=: List must have 16 elements");
+		return;
+	}
 	wrenEnsureSlots(vm, 3);
 	uint32_t pal[16];
 	for (int i = 0; i < 16; i++) {
@@ -1924,6 +2067,45 @@ fn_Cell_hyperlinkId_set(WrenVM *vm)
 	d->hyperlink_id = (uint16_t)(int)wrenGetSlotDouble(vm, 1);
 }
 
+/* Cell.eqContent(other) — structural equality of every content field
+ * of two cells.  NOT a == override (foreign `==` stays identity-based,
+ * matching every other foreign in the API).  Field-by-field; memcmp
+ * would compare struct padding and report false negatives.
+ *
+ * Equality rules:
+ *  - non-Cell `other` is always false (no fiber abort).
+ *  - the BG dirty bit (CIOLIB_BG_DIRTY) is render bookkeeping, not
+ *    content — masked out before comparison.
+ *  - if EITHER cell flies CIOLIB_BG_PIXEL_GRAPHICS, the cells reference
+ *    pixel data outside the vmem_cell and we can't prove equality from
+ *    these fields alone — return false.  Two pixel-graphics cells are
+ *    therefore never eqContent-equal even if their other fields match.
+ *  - everything else is compared bit-exact, including the Prestel
+ *    control char in fg, the double-height/Prestel-mode/etc. flags in
+ *    bg, and the palette-vs-RGB high bit. */
+void
+fn_Cell_eqContent(WrenVM *vm)
+{
+	if (slot_foreign_type(vm, 1) != SWF_CELL) {
+		wrenSetSlotBool(vm, 0, false);
+		return;
+	}
+	struct vmem_cell *a = slot_cell_data(vm, 0);
+	struct vmem_cell *b = slot_cell_data(vm, 1);
+	if ((a->bg | b->bg) & CIOLIB_BG_PIXEL_GRAPHICS) {
+		wrenSetSlotBool(vm, 0, false);
+		return;
+	}
+	uint32_t mask = ~(uint32_t)CIOLIB_BG_DIRTY;
+	bool eq = a->ch           == b->ch &&
+	          a->font         == b->font &&
+	          a->legacy_attr  == b->legacy_attr &&
+	          a->fg           == b->fg &&
+	          (a->bg & mask)  == (b->bg & mask) &&
+	          a->hyperlink_id == b->hyperlink_id;
+	wrenSetSlotBool(vm, 0, eq);
+}
+
 /* ----- Surface accessors ----- */
 
 void
@@ -1968,7 +2150,13 @@ surface_make_view(WrenVM *vm, int idx)
 void
 fn_Surface_subscript(WrenVM *vm)
 {
+	struct wren_surface *sf = wrenGetSlotForeign(vm, 0);
 	int i = (int)wrenGetSlotDouble(vm, 1);
+	if (i < 0 || i >= sf->count) {
+		wren_throw(vm,
+		    "Surface[i]: index out of bounds");
+		return;
+	}
 	surface_make_view(vm, i);
 }
 

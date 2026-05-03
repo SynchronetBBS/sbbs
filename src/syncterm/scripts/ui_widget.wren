@@ -294,7 +294,23 @@ class Container is Widget {
   }
 
   children     { _children }
-  focusedIndex { _focusedIndex }
+  // null when no child is focused; otherwise an integer in
+  // 0.._children.count - 1.
+  focusedIndex { _focusedIndex < 0 ? null : _focusedIndex }
+  // Setter for explicit focus management (e.g. App.releaseFocus
+  // around blocking host UIs that own the screen themselves).
+  // Toggles `.focused` on the previously- and newly-focused child.
+  // Pass null to clear focus entirely.
+  focusedIndex=(i) {
+    if (_focusedIndex >= 0 && _focusedIndex < _children.count) {
+      _children[_focusedIndex].focused = false
+    }
+    _focusedIndex = i == null ? -1 : i
+    if (_focusedIndex >= 0 && _focusedIndex < _children.count) {
+      _children[_focusedIndex].focused = true
+    }
+    markDirty()
+  }
   focusedChild {
     if (_focusedIndex < 0 || _focusedIndex >= _children.count) return null
     return _children[_focusedIndex]

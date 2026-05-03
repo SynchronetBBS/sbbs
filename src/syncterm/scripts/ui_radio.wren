@@ -59,9 +59,13 @@ class RadioGroup is Widget {
 
   count { _items.count }
 
-  selected { _selected }
+  // null when no row is selected (empty group or explicitly cleared);
+  // otherwise an integer in 0..count - 1.  `selected` is the
+  // committed value; `cursor` is the currently-highlighted row.
+  selected { _selected < 0 ? null : _selected }
   selected=(i) {
-    if (_items.count == 0) {
+    if (i == null || _items.count == 0) {
+      if (_selected == -1) return
       _selected = -1
       markDirty()
       return
@@ -78,9 +82,14 @@ class RadioGroup is Widget {
     return _items[_selected]
   }
 
-  cursor { _cursor }
+  cursor { _cursor < 0 ? null : _cursor }
   cursor=(i) {
-    if (_items.count == 0) return
+    if (i == null || _items.count == 0) {
+      if (_cursor == -1) return
+      _cursor = -1
+      markDirty()
+      return
+    }
     var clamped = i.max(0).min(_items.count - 1)
     if (clamped == _cursor) return
     _cursor = clamped

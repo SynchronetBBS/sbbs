@@ -30,8 +30,9 @@ import "syncterm" for Hook, Conn, Console, Screen, CTerm, BBS, Key,
     Codepage, ConnType, Emulation, Font, LogSource, LogLevel,
     Parity, BBSListType, ScreenMode, AddressFamily, MusicMode,
     RipVersion, LogMode, StatusDisplay, Color, Cell, Hyperlinks,
-    REPL, Input, Wake, KeyEvent, Cache, Platform, Timer, TimerElapsed,
-    WON
+    REPL, Input, Wake, KeyEvent, MouseEvent, Mouse, Cache, Platform,
+    Timer, TimerElapsed, WON, FileError, FileErr, WONError, WONErr,
+    Error, ScriptError, Surface
 import "console" for WrenConsole
 import "ui_style_test"  for UiStyleTest
 import "ui_widget_test" for UiWidgetTest
@@ -211,6 +212,8 @@ class WrenTest {
 
     // ------ pure C math / util --------------------------------------
     testColor_()
+    testMouseEventCtors_()
+    testKeyEventCtorValidation_()
 
     // ------ read-only live bindings ---------------------------------
     testConnConnected_()
@@ -228,13 +231,16 @@ class WrenTest {
 
     // ------ Console + REPL ------------------------------------------
     testConsoleTotal_()
+    testConsoleEntriesSequence_()
     testREPLEvalExpression_()
     testREPLEvalStatement_()
     testREPLHasModule_()
 
     // ------ Cell / Surface / Screen rect roundtrip -----------------
     testCellRoundtrip_()
+    testCellEqContent_()
     testScreenRectRoundtrip_()
+    testSurfaceRowsCols_()
 
     // ------ Hyperlinks ---------------------------------------------
     testHyperlinks_()
@@ -264,6 +270,9 @@ class WrenTest {
     // ------ File.sha1 / File.md5 -----------------------------------
     testFileHashEmpty_()
     testFileHashKnown_()
+
+    // ------ FileError ---------------------------------------------
+    testFileErrConstants_()
 
     // ------ Platform ----------------------------------------------
     testPlatformName_()
@@ -295,10 +304,11 @@ class WrenTest {
     advance_()
   }
 
+  // Only FAILs get printed; the summary line at the end carries
+  // the pass count.  Cuts ~250 lines of noise per Alt+T run.
   static check_(ok, label) {
     if (ok) {
       __pass = __pass + 1
-      System.print("  PASS %(label)")
     } else {
       __fail = __fail + 1
       System.print("  FAIL %(label)")
@@ -414,6 +424,83 @@ class WrenTest {
            "Color.toLegacyAttr produces a byte attr")
   }
 
+  // Five MouseEvent.new overloads share a single C allocator that
+  // dispatches on wrenGetSlotCount.  Verify each arity fills the
+  // missing fields with the documented defaults: endX/endY copy
+  // startX/startY, modifiers defaults to 0, bstate derives from
+  // event (bit for the button it's about, 0 for MOUSE_MOVE).
+  static testMouseEventCtors_() {
+    // 3-arg: every default kicks in.  button1Click → button 1 →
+    // bstate bit 0.
+    var a = MouseEvent.new(Mouse.button1Click, 5, 6)
+    check_(a.event == Mouse.button1Click && a.startX == 5 &&
+           a.startY == 6 && a.endX == 5 && a.endY == 6 &&
+           a.modifiers == 0 && a.bstate == 1,
+           "MouseEvent.new(event, sx, sy) defaults correctly")
+
+    // 4-arg: explicit modifiers, defaults for end and bstate.
+    var b = MouseEvent.new(Mouse.button1Press, 7, 8, 0x42)
+    check_(b.endX == 7 && b.endY == 8 && b.modifiers == 0x42 &&
+           b.bstate == 1,
+           "MouseEvent.new(event, sx, sy, modifiers)")
+
+    // 5-arg: explicit endX/endY; modifiers + bstate default.
+    // Mouse.button1DragMove (8) is button 1 → bstate 1.
+    var c = MouseEvent.new(Mouse.button1DragMove, 1, 2, 9, 10)
+    check_(c.endX == 9 && c.endY == 10 && c.modifiers == 0 &&
+           c.bstate == 1,
+           "MouseEvent.new(event, sx, sy, ex, ey)")
+
+    // 6-arg: everything explicit except bstate.  button2Press (10)
+    // → button 2 → bstate bit 1 (value 2).
+    var d = MouseEvent.new(10, 3, 4, 5, 6, 7)
+    check_(d.modifiers == 7 && d.bstate == 2,
+           "MouseEvent.new(event, sx, sy, ex, ey, modifiers)")
+
+    // 7-arg: every field explicit, including a bstate that does
+    // NOT match the natural derivation from the event code.
+    var e = MouseEvent.new(Mouse.button1Click, 1, 2, 3, 4, 5, 0xFF)
+    check_(e.bstate == 0xFF,
+           "MouseEvent.new(7-arg) honors explicit bstate")
+
+    // Mouse.move event → bstate 0 by derivation.
+    var f = MouseEvent.new(Mouse.move, 0, 0)
+    check_(f.bstate == 0, "MouseEvent.new with Mouse.move → bstate 0")
+  }
+
+  // KeyEvent.new validates that the code is roundtrip-representable
+  // through ciolib's byte-stuffing: high-byte 0 (single-byte ASCII /
+  // printable) OR low-byte 0 / 0xE0 (extended scancode-style).  Any
+  // other combination would silently split into two reads on
+  // Input.unget — reject at construction.
+  static testKeyEventCtorValidation_() {
+    // Valid: high byte 0 (printable / ASCII).
+    var a = KeyEvent.new(0x001B)        // Esc
+    check_(a.code == 0x001B, "KeyEvent.new(0x001B) accepted (Esc)")
+    var b = KeyEvent.new(0x0041)        // 'A'
+    check_(b.code == 0x0041, "KeyEvent.new(0x0041) accepted (printable)")
+
+    // Valid: low byte 0 (extended scancode-only).
+    var c = KeyEvent.new(0x3B00)        // F1
+    check_(c.code == 0x3B00, "KeyEvent.new(0x3B00) accepted (F1)")
+
+    // Valid: low byte 0xE0 (E0-prefixed extended).
+    var d = KeyEvent.new(0x29E0)        // wrenConsole
+    check_(d.code == 0x29E0, "KeyEvent.new(0x29E0) accepted (E0-extended)")
+
+    // Invalid: high byte non-zero AND low byte not 0/0xE0.
+    var f = Fiber.new { KeyEvent.new(0xFB01) }
+    var err = f.try()
+    check_(err is String && err.contains("0xFB01") &&
+           err.contains("not a representable"),
+           "KeyEvent.new(0xFB01) rejected")
+
+    var g = Fiber.new { KeyEvent.new(0x1234) }
+    var err2 = g.try()
+    check_(err2 is String && err2.contains("0x1234"),
+           "KeyEvent.new(0x1234) rejected")
+  }
+
   // ===== read-only live bindings ==================================
 
   static testConnConnected_() {
@@ -497,6 +584,20 @@ class WrenTest {
     check_(after > before, "Console.total grows on print")
   }
 
+  static testConsoleEntriesSequence_() {
+    System.print("[entries-probe]")
+    var entries = Console.entries
+    check_(entries is Sequence, "Console.entries is Sequence")
+    check_(entries.count == Console.count,
+           "Console.entries.count mirrors Console.count")
+    var list = entries.toList
+    check_(list is List && list.count == entries.count,
+           "Console.entries.toList materializes")
+    var hits = entries.where {|e| e[2].contains("[entries-probe]") }.toList
+    check_(hits.count >= 1,
+           "Console.entries.where finds the probe entry")
+  }
+
   static testREPLEvalExpression_() {
     var r = REPL.eval("1 + 2")
     check_(r is List && r.count == 1 && r[0] == 3,
@@ -539,20 +640,86 @@ class WrenTest {
     check_(c.hyperlinkId == 0, "Cell.hyperlinkId default 0")
   }
 
+  static testCellEqContent_() {
+    var a = Cell.new()
+    a.ch = "Z"
+    a.legacyAttr = 0x07
+    a.fgPalette  = 7
+    a.bgPalette  = 0
+    var b = Cell.new()
+    b.ch = "Z"
+    b.legacyAttr = 0x07
+    b.fgPalette  = 7
+    b.bgPalette  = 0
+    check_(a.eqContent(b), "Cell.eqContent: identical content matches")
+    check_(a == a, "Cell == is identity (same instance)")
+    check_(!(a == b),
+           "Cell == stays identity-based (different instances unequal)")
+    b.ch = "Y"
+    check_(!a.eqContent(b),
+           "Cell.eqContent: differing ch is unequal")
+    check_(!a.eqContent("not a cell"),
+           "Cell.eqContent: non-Cell other returns false (no abort)")
+    // Surface roundtrip via cellAt should produce eqContent-equal cells.
+    var s = Surface.new(2, 1)
+    var src = s.cellAt(0, 0)
+    src.ch         = "Q"
+    src.legacyAttr = 0x1e
+    src.fgRgb      = 0x336699
+    var dst = s.cellAt(1, 0)
+    dst.ch         = "Q"
+    dst.legacyAttr = 0x1e
+    dst.fgRgb      = 0x336699
+    check_(src.eqContent(dst),
+           "Cell.eqContent: cells from same Surface with matching content")
+  }
+
   static testScreenRectRoundtrip_() {
     // Save the whole screen so any test mutation is invisible.
     // readRect returns a Surface; mutate one cell through the view
     // and hand the same Surface back to writeRect — no copy.
-    var saved = Screen.save()
-    var surf = Screen.readRect(1, 1, 1, 1)
-    surf[0].ch         = "Z"
-    surf[0].legacyAttr = 0x07
-    Screen.writeRect(1, 1, 1, 1, surf)
-    var rb = Screen.readRect(1, 1, 1, 1)
-    var ok = rb != null && rb.count == 1 && rb[0].ch == "Z" &&
-             rb.width == 1 && rb.height == 1
-    Screen.restore(saved)
+    var ok
+    Screen.modalRun(Fn.new {
+      var surf = Screen.readRect(1, 1, 1, 1)
+      surf[0].ch         = "Z"
+      surf[0].legacyAttr = 0x07
+      Screen.writeRect(1, 1, 1, 1, surf)
+      var rb = Screen.readRect(1, 1, 1, 1)
+      ok = rb != null && rb.count == 1 && rb[0].ch == "Z" &&
+           rb.width == 1 && rb.height == 1
+    })
     check_(ok, "Screen.read/writeRect roundtrip")
+  }
+
+  // Build a 3×2 surface, stamp a known pattern via cellAt, then verify
+  // the rows / cols views see the same cells in the right order — and
+  // that linear iteration walks row-major.
+  static testSurfaceRowsCols_() {
+    var s = Surface.new(3, 2)
+    var letters = ["A", "B", "C", "D", "E", "F"]
+    for (y in 0...2) {
+      for (x in 0...3) s.cellAt(x, y).ch = letters[y * 3 + x]
+    }
+    // Linear: row-major.
+    var lin = ""
+    for (c in s) lin = lin + c.ch
+    check_(lin == "ABCDEF", "Surface linear iteration is row-major")
+    // .rows: outer-by-y, inner-by-x.
+    var byRow = ""
+    for (row in s.rows) for (c in row) byRow = byRow + c.ch
+    check_(byRow == "ABCDEF", "Surface.rows iterates row-major")
+    check_(s.rows.count == 2, "Surface.rows.count == height")
+    check_(s.rows[1][0].ch == "D", "Surface.rows[y][x] indexes correctly")
+    // .cols: outer-by-x, inner-by-y.
+    var byCol = ""
+    for (col in s.cols) for (c in col) byCol = byCol + c.ch
+    check_(byCol == "ADBECF", "Surface.cols iterates col-major")
+    check_(s.cols.count == 3, "Surface.cols.count == width")
+    check_(s.cols[2][1].ch == "F", "Surface.cols[x][y] indexes correctly")
+    // Sequence helpers should compose.
+    var rowChars = s.rows[0].map {|c| c.ch }.toList
+    check_(rowChars.count == 3 && rowChars[0] == "A" && rowChars[2] == "C",
+           "Surface.rows[y].map composes")
   }
 
   // ===== Hyperlinks ================================================
@@ -729,6 +896,27 @@ class WrenTest {
            "File.readLine: returns null at EOF")
 
     Cache.delete(name)
+  }
+
+  // FileError / FileErr are wired up.  We can't construct a
+  // FileError from Wren (no public constructor) or trigger a
+  // recoverable I/O failure from a deterministic test (every
+  // Bucket B/C path requires OS-level conditions: disk full,
+  // read-only mount, external rm out from under us, OOM).  So
+  // this only verifies the bindings exist and the enum values
+  // are sensible integers.
+  static testFileErrConstants_() {
+    check_(FileErr.ok            == 0 &&
+           FileErr.openFailed    == 1 &&
+           FileErr.writeFailed   == 2 &&
+           FileErr.statFailed    == 3 &&
+           FileErr.mmapFailed    == 4 &&
+           FileErr.oom           == 5 &&
+           FileErr.vanished      == 6 &&
+           FileErr.resolveFailed == 7,
+           "FileErr enum constants")
+    check_(FileError is Class,
+           "FileError class importable from syncterm")
   }
 
   // Empty file exercises the special zero-length code path (xpmap
@@ -959,16 +1147,52 @@ class WrenTest {
            "WON cycles abort in both strict and lossy modes")
   }
 
+  // WON.deserialize parse failures return a WONError IN PLACE of
+  // the parsed value — they don't abort the fiber.  Programmer
+  // errors (passing a non-String) DO still abort.
   static testWONDeserializeErrors_() {
-    var bad = Fiber.new { WON.deserialize("xyz") }.try()
-    var unt = Fiber.new { WON.deserialize("[1,2") }.try()
-    var trl = Fiber.new { WON.deserialize("[1] more") }.try()
-    var key = Fiber.new { WON.deserialize("{[1]: 2}") }.try()
-    check_(bad is String && bad.contains("WON.deserialize") &&
-           unt is String && unt.contains("WON.deserialize") &&
-           trl is String && trl.contains("trailing")        &&
-           key is String && key.contains("List/Map cannot"),
-           "WON.deserialize reports parse errors")
+    var bad = WON.deserialize("xyz")
+    var unt = WON.deserialize("[1,2")
+    var trl = WON.deserialize("[1] more")
+    var key = WON.deserialize("{[1]: 2}")
+    var deep = WON.deserialize("\\u01")        // truncated unicode escape
+    check_(bad is WONError && bad.code == WONErr.syntax,
+           "WON.deserialize: syntax error returns WONError")
+    check_(unt is WONError && unt.code == WONErr.truncated,
+           "WON.deserialize: truncated input returns WONError")
+    check_(trl is WONError && trl.code == WONErr.trailingData,
+           "WON.deserialize: trailing data returns WONError")
+    check_(key is WONError && key.code == WONErr.invalidKey,
+           "WON.deserialize: List/Map as Map key returns WONError")
+    check_(bad is WONError && bad.offset >= 0,
+           "WONError.offset is non-negative")
+    check_(bad is WONError && bad.toString.contains("WONError"),
+           "WONError.toString includes 'WONError'")
+
+    // Polymorphic Error base — every recoverable-failure foreign
+    // (WONError, FileError, SFTPError, ConnError) inherits from
+    // Error, so a script can demux all of them with one check.
+    check_(bad is Error,
+           "WONError is Error (polymorphic base check)")
+
+    // ScriptError: pure-Wren error subclass with constructor +
+    // fields, for scripts that want their own typed errors without
+    // C bindings.  Inherits from Error so it satisfies `is Error`
+    // alongside the foreign subclasses.
+    var se = ScriptError.new(99, "config missing")
+    check_(se is ScriptError && se is Error,
+           "ScriptError instance is both ScriptError and Error")
+    check_(se.code == 99 && se.message == "config missing",
+           "ScriptError exposes code + message via getters")
+    check_(se.toString.contains("ScriptError") &&
+           se.toString.contains("99") &&
+           se.toString.contains("config missing"),
+           "ScriptError.toString includes type, code, and message")
+
+    // Programmer error (wrong type) STILL aborts.
+    var typeErr = Fiber.new { WON.deserialize(42) }.try()
+    check_(typeErr is String && typeErr.contains("must be a String"),
+           "WON.deserialize: non-String arg aborts (programmer error)")
   }
 
   // ===== sentinel-driven async tests ==============================
@@ -1056,8 +1280,12 @@ class WrenTest {
     } else if (__step == 9) {
       // Pop B's claim; the older A claim is now on top.  Unget
       // another sentinel key — A's counter should bump this time.
+      // Code must satisfy ciolib's byte-stuffing rule (low byte 0
+      // or 0xE0) or it splits into two separate getch reads and
+      // bumps A's counter twice.  0xF900 is unused elsewhere in
+      // this suite.
       __claimBHandle.pop()
-      Input.unget(KeyEvent.new(0xFB01))
+      Input.unget(KeyEvent.new(0xF900))
       __pending = "T09"
       Conn.send("sleep 0.2 && printf '__\%s_X_done_X__\\n' T09\r")
     } else if (__step == 10) {

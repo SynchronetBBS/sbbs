@@ -13,6 +13,8 @@ void wren_directory_allocate(WrenVM *vm);
 void wren_directory_finalize(void *data);
 void wren_file_allocate(WrenVM *vm);
 void wren_file_finalize(void *data);
+void wren_file_error_allocate(WrenVM *vm);
+void wren_file_error_finalize(void *data);
 
 /* Directory instance methods. */
 void fn_Directory_contains(WrenVM *vm);
@@ -44,10 +46,16 @@ void fn_File_md5(WrenVM *vm);
 void fn_File_token(WrenVM *vm);
 void fn_File_toString(WrenVM *vm);
 
+/* FileError instance accessors. */
+void fn_FileError_code(WrenVM *vm);
+void fn_FileError_errno(WrenVM *vm);
+void fn_FileError_message(WrenVM *vm);
+void fn_FileError_toString(WrenVM *vm);
+
 /* Host class methods. */
 void fn_Host_cacheDirectory(WrenVM *vm);
 void fn_Host_downloadDir(WrenVM *vm);
-void fn_Host_uploadDir(WrenVM *vm);
+void fn_Host_uploadPath(WrenVM *vm);
 void fn_Host_pickFile(WrenVM *vm);
 void fn_Host_pickFiles(WrenVM *vm);
 void fn_Host_openLocalFile(WrenVM *vm);

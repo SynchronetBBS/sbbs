@@ -22,7 +22,7 @@
 // false and the term.c disconnect path can run normally.
 
 import "syncterm" for CTerm, Download, File, Host, Key,
-                       KeyEvent, Screen, SFTP, SFTPError, Upload
+                       KeyEvent, Screen, SFTP, SFTPError
 import "ui_app"    for App
 import "ui_pane"   for Pane
 import "ui_list"   for ListView
@@ -659,13 +659,9 @@ class SftpApp is App {
   }
 
   pickUpload_() {
-    if (Upload == null) {
-      Alert.show(this,
-          "UploadPath is not configured (or is set to $HOME).  " +
-          "Set UploadPath in your BBS list before uploading.")
-      return
-    }
-    var picked = Host.pickFiles(Upload, "*", 0)
+    releaseFocus()
+    var picked = Host.pickFiles(Host.uploadPath, "*", 0)
+    restoreFocus()
     if (picked == null || picked.count == 0) return
     var queued  = 0
     var skipped = 0
@@ -769,19 +765,15 @@ class SftpApp is App {
 
   // ----- Lifecycle -----------------------------------------------
 
-  // Wraps App.run with the screen save/restore + CTerm.suspended
-  // dance and the static-current registration.  __current is set
-  // for the lifetime of run() so onShellClose can find us.
+  // Wraps App.run with screen + CTerm-suspend save/restore (via
+  // Screen.modalRun) and the static-current registration.
+  // __current is set for the lifetime of run() so onShellClose can
+  // find us.
   run() {
-    var savedScreen  = Screen.save()
-    var wasSuspended = CTerm.suspended
-    CTerm.suspended  = true
     var savedCurrent = __current
     __current = this
-    super.run()
+    Screen.modalRun(Fn.new { super.run() })
     __current = savedCurrent
-    CTerm.suspended  = wasSuspended
-    Screen.restore(savedScreen)
     // Screen.restore re-paints the saved buffer over the status row
     // too — force a fresh status-bar repaint so live state (transfer
     // arrows, log indicators, speed) replaces the stale snapshot.

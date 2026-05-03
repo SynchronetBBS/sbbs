@@ -121,7 +121,6 @@ class UiWidgetTest {
   static check_(ok, label) {
     if (ok) {
       __pass = __pass + 1
-      System.print("  PASS %(label)")
     } else {
       __fail = __fail + 1
       System.print("  FAIL %(label)")
@@ -623,7 +622,7 @@ class UiWidgetTest {
   }
 
   // Mouse event constructor: (event, modifiers, sx, sy, ex, ey).
-  static mouse_(x, y) { MouseEvent.new(0, 0, x, y, x, y) }
+  static mouse_(x, y) { MouseEvent.new(0, x, y, x, y) }
 
   static testAppDispatchMouseHitsWidget_() {
     var app  = App.new()

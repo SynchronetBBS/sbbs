@@ -1,3 +1,39 @@
+// Common base for every recoverable-failure value type
+// (FileError, SFTPError, WONError, ConnError, …).  Lets a script
+// catch any of them with a single `if (v is Error)` check instead of
+// listing each subclass.  Every concrete subclass guarantees the
+// shape `{ code: Num, message: String?, toString: String }` — the
+// type-specific extras (errno, offset, bytesSent, serverStatus,
+// isTransient, …) live on the subclass.
+//
+// Empty by design: foreign Error subclasses (FileError etc.) need
+// the parent to be field-free or Wren rejects the inheritance at
+// module-load time (wren_vm.c:559-563).
+class Error {}
+
+// Concrete Wren-side base for script-defined error types.  Use this
+// when a script wants to surface its own typed error without writing
+// C bindings:
+//
+//   class MyConfigError is ScriptError {}
+//   ...
+//   return MyConfigError.new(42, "missing required field 'host'")
+//
+// Provides the same `code` / `message` / `toString` getters every
+// foreign Error subclass exposes, so callers can demux uniformly
+// with `is Error` and read either the foreign or script-built
+// instance the same way.  Subclasses may override `toString` for a
+// nicer prefix; the default uses the runtime class name.
+class ScriptError is Error {
+  construct new(code, message) {
+    _code    = code
+    _message = message
+  }
+  code     { _code }
+  message  { _message }
+  toString { "%(this.type.name)(%(_code)): %(_message)" }
+}
+
 class ScreenSupports {
   foreign static loadableFonts
   foreign static altBlinkFont
@@ -52,6 +88,35 @@ foreign class Screen {
   static putRect(src, srcRect, dstX, dstY) {
     putRect_(src, srcRect.x, srcRect.y, srcRect.w, srcRect.h, dstX, dstY)
   }
+
+  // Run `fn` with the screen and the wire-byte pump under our own
+  // control: snapshot the screen + suspend CTerm before the call,
+  // unsuspend + restore the screen after.  The previous
+  // `CTerm.suspended` value is saved and restored, so nested
+  // modalRun calls compose correctly.  Returns whatever `fn`
+  // returned.
+  //
+  //   Screen.modalRun(Fn.new {
+  //     var app = App.new()
+  //     // ... configure ...
+  //     app.runSync()
+  //   })
+  //
+  // No Fiber.try wrapper: `fn` runs on the calling fiber so the
+  // App-level event loops (which Fiber.yield from drainOnce_) work
+  // unmodified.  An abort inside `fn` therefore skips cleanup and
+  // propagates — the same semantics as the manual pattern this
+  // helper replaces.  Bodies that need abort-safe cleanup should
+  // wrap themselves in a Fiber.try at the boundary they own.
+  static modalRun(fn) {
+    var saved        = Screen.save()
+    var wasSuspended = CTerm.suspended
+    CTerm.suspended  = true
+    var result = fn.call()
+    CTerm.suspended  = wasSuspended
+    Screen.restore(saved)
+    return result
+  }
   foreign static moveRect(sx, sy, ex, ey, dx, dy)
   foreign static attr=(a)
   foreign static hyperlinkId
@@ -64,12 +129,40 @@ foreign class Screen {
   static videoFlags { VideoFlags     }
   static color      { Color          }
 }
+// Cursor shape (start/end scanlines, range, blink, visibility).  Two
+// access modes:
+//
+//   * Static (`CustomCursor.X` / `CustomCursor.X = v`): each read
+//     fetches the live state, each write does a full read-modify-
+//     write back to the renderer.  Cheap and ergonomic for ONE
+//     field at a time, but chained writes are NOT atomic — the
+//     renderer can paint between them.  For multi-field changes,
+//     use the instance path so the commit is one syscall:
+//
+//       var c = CustomCursor.current
+//       c.startLine = 0; c.endLine = 7; c.blink = false
+//       c.apply()       // single setcustomcursor() under the hood
+//
+//   * Instance (via `.current`, `.normal`, `.solid`, `.none`):
+//     in-memory shadow.  Reads/writes touch local fields only;
+//     `apply()` commits.  Required for atomic multi-field changes,
+//     for snapshot/restore, and as the carrier for preset values.
 foreign class CustomCursor {
   construct new() {}
   static current { new() }
   static normal  { presetLegacy_(2) }
   static solid   { presetLegacy_(1) }
   static none    { presetLegacy_(0) }
+  // Snapshot the current cursor, run `fn`, then re-apply the
+  // snapshot — convenience for "temporarily set a cursor while
+  // doing something, restore it on exit".  No Fiber.try wrapper:
+  // an abort in `fn` skips the restore (matches Screen.modalRun).
+  // Bodies that need abort-safe restore should wrap themselves.
+  static preserve(fn) {
+    var saved = current
+    fn.call()
+    saved.apply()
+  }
   foreign static presetLegacy_(legacyType)
   foreign static startLine
   foreign static startLine=(n)
@@ -93,9 +186,20 @@ foreign class CustomCursor {
   foreign visible=(b)
   foreign apply()
 }
+// Video-mode boolean flags (alt chars, no-bright, bg-bright, etc.).
+// Same two-mode shape as CustomCursor (static = live, instance =
+// shadow + apply()) — see CustomCursor's docstring for the full
+// rules, including the non-atomicity of chained static writes.
 foreign class VideoFlags {
   construct new() {}
   static current { new() }
+  // Snapshot, run `fn`, re-apply — same semantics as
+  // CustomCursor.preserve.
+  static preserve(fn) {
+    var saved = current
+    fn.call()
+    saved.apply()
+  }
   foreign static altChars
   foreign static altChars=(b)
   foreign static noBright
@@ -231,9 +335,21 @@ foreign class KeyEvent {
   foreign text
   foreign toString
 }
+// Five constructor overloads for synthesising mouse events.  All
+// funnel into the same C allocator, which dispatches on
+// wrenGetSlotCount.  Defaults when an arg is omitted:
+//   endX, endY → copies of startX, startY (zero-extent point event)
+//   modifiers  → 0
+//   bstate     → derived from event (bit for the button it's about,
+//                or 0 for MOUSE_MOVE)
 foreign class MouseEvent {
-  construct new(event, modifiers, startX, startY, endX, endY) {}
+  construct new(event, startX, startY) {}
+  construct new(event, startX, startY, modifiers) {}
+  construct new(event, startX, startY, endX, endY) {}
+  construct new(event, startX, startY, endX, endY, modifiers) {}
+  construct new(event, startX, startY, endX, endY, modifiers, bstate) {}
   foreign event
+  foreign bstate
   foreign modifiers
   foreign startX
   foreign startY
@@ -516,6 +632,13 @@ foreign class Cell {
   foreign bgRgb=(n)
   foreign hyperlinkId
   foreign hyperlinkId=(n)
+  // Structural equality of every content field — explicitly NOT a
+  // `==` override (Cell stays foreign-identity-equal like every
+  // other foreign).  Returns false for non-Cell `other`, false if
+  // either cell flies the pixel-graphics flag (the actual pixel
+  // data lives outside the vmem_cell), and ignores the BG dirty bit
+  // (render bookkeeping, not content).
+  foreign eqContent(other)
   foreign toString
 }
 // Surface owns a w×h grid of vmem_cells.  Inherits Sequence so the
@@ -525,8 +648,15 @@ foreign class Cell {
 // "tell me where any 'X' lives" without having to switch to 2D
 // indexing.
 //
+// Linear iteration order is ROW-MAJOR: cell at (x, y) sits at linear
+// index `y * width + x`.  Equivalent to `for (y in 0...h) for (x in
+// 0...w) yield cellAt(x, y)`.  This matches the underlying C vmem
+// layout (which is also row-major) and matches the order that
+// Screen.putRect blits cells to the display.
+//
 // Surface adds rectangular operations:
 //   surface.cellAt(x, y)              — 2D-indexed Cell view (null if oob).
+//   surface.rows / surface.cols       — Sequence-of-Sequence views.
 //   surface.putRect(src, dstX, dstY)  — paste full src.
 //   surface.putRect(src, srcRect, dstX, dstY) — paste sub-rect of src.
 //   surface.fill(rect, cell)          — bulk fill with a Cell template.
@@ -554,6 +684,73 @@ foreign class Surface is Sequence {
   fill(rect, cell) {
     fill_(rect.x, rect.y, rect.w, rect.h, cell)
   }
+  // Sequence-of-Sequence views.  `rows` is outer-by-y, `cols` is
+  // outer-by-x; both delegate cell access to cellAt(x, y), so they
+  // stay live against the underlying Surface (no copy).  Use these
+  // when 2D iteration reads cleaner than indexing into the linear
+  // Sequence:
+  //   for (row in surf.rows) for (cell in row) ...   // row-major
+  //   for (col in surf.cols) for (cell in col) ...   // col-major
+  //   surf.rows[y][x]                                // single cell
+  rows { SurfaceRows.new(this) }
+  cols { SurfaceCols.new(this) }
+}
+
+// `surf.rows[y]` — one horizontal slice as a Sequence<Cell> of length
+// `surf.width`.  Lazy view: holds a reference to the Surface and the
+// row index, fetches cells via cellAt on demand.
+class SurfaceRow is Sequence {
+  construct new(surface, y) {
+    _surface = surface
+    _y       = y
+  }
+  count             { _surface.width }
+  [x]               { _surface.cellAt(x, _y) }
+  iterate(it) {
+    var nx = (it == null) ? 0 : it + 1
+    return nx < _surface.width ? nx : false
+  }
+  iteratorValue(it) { _surface.cellAt(it, _y) }
+}
+
+// `surf.cols[x]` — one vertical slice as a Sequence<Cell> of length
+// `surf.height`.  Same lazy-view shape as SurfaceRow.
+class SurfaceCol is Sequence {
+  construct new(surface, x) {
+    _surface = surface
+    _x       = x
+  }
+  count             { _surface.height }
+  [y]               { _surface.cellAt(_x, y) }
+  iterate(it) {
+    var ny = (it == null) ? 0 : it + 1
+    return ny < _surface.height ? ny : false
+  }
+  iteratorValue(it) { _surface.cellAt(_x, it) }
+}
+
+// `surf.rows` — Sequence of SurfaceRow, length = surf.height.
+class SurfaceRows is Sequence {
+  construct new(surface) { _surface = surface }
+  count             { _surface.height }
+  [y]               { SurfaceRow.new(_surface, y) }
+  iterate(it) {
+    var ny = (it == null) ? 0 : it + 1
+    return ny < _surface.height ? ny : false
+  }
+  iteratorValue(it) { SurfaceRow.new(_surface, it) }
+}
+
+// `surf.cols` — Sequence of SurfaceCol, length = surf.width.
+class SurfaceCols is Sequence {
+  construct new(surface) { _surface = surface }
+  count             { _surface.width }
+  [x]               { SurfaceCol.new(_surface, x) }
+  iterate(it) {
+    var nx = (it == null) ? 0 : it + 1
+    return nx < _surface.width ? nx : false
+  }
+  iteratorValue(it) { SurfaceCol.new(_surface, it) }
 }
 class Font {
   static cp437English      { 0 }
@@ -577,11 +774,32 @@ class Font {
   foreign static codepage
   foreign static codepageOf(i)
 }
+// Typed-ID lookup table over the active hyperlink registry.  Despite
+// the `[id]` / `containsKey(id)` shape, this is NOT a Map — no
+// `keys` / `values` / `count` / iteration.  IDs flow IN from `add()`
+// returns or `Cell.hyperlinkId`; scripts can't enumerate the ID space.
+// ciolib doesn't expose an enumeration primitive either, and no
+// current script needs one — leave it as a sparse lookup until a
+// caller turns up that wants enumeration.
 class Hyperlinks {
   foreign static [id]
   foreign static containsKey(id)
   foreign static add(uri, idParam)
   foreign static params(id)
+}
+// View on Console that participates in the Sequence protocol —
+// supports map/where/toList/count/etc. via Wren's stdlib mixin.
+// `Console` itself stays an all-static namespace (so `Console.clear()`,
+// `Console.markSeen()`, `for (e in Console)` etc. read naturally);
+// the iteration view lives behind `Console.entries` because Sequence's
+// methods are defined as INSTANCE methods on `this`, which a static-
+// only class can't satisfy.
+class ConsoleEntries is Sequence {
+  construct new() {}
+  count             { Console.count }
+  [seq]             { Console[seq] }
+  iterate(it)       { Console.iterate(it) }
+  iteratorValue(it) { Console.iteratorValue(it) }
 }
 foreign class Console {
   foreign static count
@@ -591,6 +809,10 @@ foreign class Console {
   foreign static markSeen()
   foreign static iterate(it)
   foreign static iteratorValue(it)
+  // Sequence-protocol view — use for `.map`, `.where`, `.toList`, etc.
+  // `for (e in Console)` works on the class directly via the static
+  // iterate above; `entries` is only needed for the Sequence helpers.
+  static entries { ConsoleEntries.new() }
 }
 class LogSource {
   static print { 0 }
@@ -598,6 +820,11 @@ class LogSource {
   static runtimeError { 2 }
   static stackFrame { 3 }
 }
+// send / sendRaw return null on success, ConnError on failure
+// (connection down, outbuf full / partial queue).  Most scripts will
+// ignore the return — failing to send a few bytes shouldn't kill
+// the whole script.  Scripts that care can demux with `is ConnError`
+// and inspect `.bytesSent` to retry the remainder.
 foreign class Conn {
   foreign static send(s)
   foreign static sendRaw(s)
@@ -606,8 +833,23 @@ foreign class Conn {
   foreign static type
   foreign static pending
   foreign static queued
-  foreign static peek(n)
-  foreign static recv(n)
+  foreign static peek(count)
+  foreign static recv(count)
+}
+
+// Recoverable wire-side failure returned by Conn.send / Conn.sendRaw.
+// Null on success; ConnError on failure.
+foreign class ConnError is Error {
+  foreign code        // ConnErr.* enum
+  foreign bytesSent   // for SHORT_SEND: bytes queued before the buffer ran out
+  foreign message
+  foreign toString
+}
+
+class ConnErr {
+  static ok           { 0 }
+  static notConnected { 1 }
+  static shortSend    { 2 }
 }
 foreign class CTerm {
   foreign static x
@@ -848,7 +1090,7 @@ foreign class File {
   foreign mtime=(t)
   foreign isOpen
   // Opaque consent token for picker-sourced Files; null for Files
-  // obtained via Cache / Upload / Download Directory listings.
+  // obtained via Cache / Download Directory listings.
   // Persist this in WON next to the path string and pass back to
   // Host.openLocalFile on resume to re-construct a File foreign at
   // the same absolute path.  See the picker-tokens section in
@@ -863,6 +1105,38 @@ foreign class File {
   foreign md5
   foreign toString
 }
+
+// Recoverable I/O failures (disk full, mmap failed, file vanished
+// out from under an open handle, etc.) are returned IN PLACE of
+// the typed result foreign — mirrors SFTPError.  Compare with `is
+// FileError`, or just ignore the value (most scripts will: a
+// failed write returns a FileError that the caller can drop on
+// the floor and continue, rather than aborting the fiber).
+//
+// Programmer errors — using a dead handle, calling read on an
+// unopened file, passing a negative offset — still abort the
+// fiber loudly.  Only the recoverable I/O bucket flows through
+// FileError.
+foreign class FileError is Error {
+  foreign code      // FileErr.* enum
+  foreign errno     // captured C errno at failure point, 0 if N/A
+  foreign message   // human-readable diagnostic, may be null
+  foreign toString
+}
+
+// FileError code values; see Wren.adoc § FileError for the rule
+// matching each code to a failure mode.
+class FileErr {
+  static ok            { 0 }
+  static openFailed    { 1 }
+  static writeFailed   { 2 }
+  static statFailed    { 3 }
+  static mmapFailed    { 4 }
+  static oom           { 5 }
+  static vanished      { 6 }
+  static resolveFailed { 7 }
+}
+
 class Hook {
   foreign static onKey(fn)
   foreign static onKey(key, fn)
@@ -961,16 +1235,22 @@ foreign class HookHandle {
 // no Wren-visible constructor for an `is_cache` Directory exists, so
 // this is the only path to one.
 //
-// `downloadDir` / `uploadDir` return a fresh Directory rooted at the
-// BBS's configured DownloadPath / UploadPath, with the relaxed
-// filename predicate enabled (1..255 bytes, no path separators / NUL
-// / control bytes / `.` / `..` / Windows reserved devices, but
-// spaces / leading dots / parens etc. allowed).  Returns null when
-// the corresponding path is empty OR equal to the user's $HOME —
-// the "unfortunate default" guard for old configs.  The Cache
-// strict policy is unchanged; only Directories rooted at
-// `downloadDir` / `uploadDir` (and their subdirectories) take the
-// relaxed path.
+// `downloadDir` returns a fresh Directory rooted at the BBS's
+// configured DownloadPath, with the relaxed filename predicate
+// enabled (1..255 bytes, no path separators / NUL / control bytes /
+// `.` / `..` / Windows reserved devices, but spaces / leading dots /
+// parens etc. allowed).  Returns null when the path is empty OR
+// equal to the user's $HOME — the "unfortunate default" guard for
+// old configs.  The Cache strict policy is unchanged; only
+// Directories rooted at `downloadDir` (and its subdirectories) take
+// the relaxed path.
+//
+// `uploadPath` returns the configured UploadPath as a String (or
+// null if unconfigured).  Pass it as `initialDir` to pickFile /
+// pickFiles — uploads MUST go through the picker (which mints a
+// per-file consent token); there is no upload-side Directory on
+// purpose, so scripts can't enumerate UploadPath or open files
+// from it directly.
 //
 // `pickFile(initialDir, mask, opts)` is the user-consent escape
 // hatch for "upload from anywhere": invokes uifc's filepick UI and
@@ -983,7 +1263,7 @@ foreign class HookHandle {
 class Host {
   foreign static cacheDirectory
   foreign static downloadDir
-  foreign static uploadDir
+  foreign static uploadPath
   // initialDir may be a String path, a Directory foreign (uses its
   // path; handles Cache lazy-resolve), or null (defaults to
   // BBS.uldir).  Returns a File on OK with a non-null .token
@@ -1002,7 +1282,7 @@ class Host {
   // token), or when the file no longer exists or its content has
   // changed since the user consented (SHA-1 mismatch).  This is
   // the only path by which Wren can construct a File foreign for a
-  // path outside the sandboxed Cache / Upload / Download roots.
+  // path outside the sandboxed Cache / Download roots.
   foreign static openLocalFile(token)
   // Status-bar transfer-indicator arrows.  Generic — any Wren
   // script that knows it's transferring something can light them
@@ -1087,7 +1367,7 @@ class SFTP {
   foreign static readdir(fiber, handle)
   foreign static close(fiber, handle)
   foreign static open(fiber, path, flags)
-  foreign static read(fiber, handle, offset, count)
+  foreign static read(fiber, handle, count, offset)
   foreign static write(fiber, handle, offset, bytes)
   foreign static mkdir(fiber, path)
   foreign static rmdir(fiber, path)
@@ -1150,7 +1430,7 @@ foreign class SFTPHandle {}
 // `message` is human-readable diagnostic text accumulated by the
 // library (may be null).  `isTransient` is true for failures that
 // may succeed on retry (transport drops, aborts, OOM).
-foreign class SFTPError {
+foreign class SFTPError is Error {
   foreign code
   foreign serverStatus
   foreign message
@@ -1161,13 +1441,15 @@ foreign class SFTPError {
 // Cache singleton.  Bound at module-load time so any script that
 // `import "syncterm" for Cache`s sees a fully-formed Directory.
 var Cache = Host.cacheDirectory
-// Download / Upload roots — null when the BBS's DownloadPath /
-// UploadPath is empty or set to $HOME (see Host.downloadDir
-// docstring).  Bound at module-load time, like Cache; the Wren VM
-// is per-session, so a reconnect to a different BBS reloads the
-// module and re-binds these.  Scripts MUST null-check before use.
+// Download root — null when the BBS's DownloadPath is empty or set
+// to $HOME (see Host.downloadDir docstring).  Bound at module-load
+// time, like Cache; the Wren VM is per-session, so a reconnect to a
+// different BBS reloads the module and re-binds it.  Scripts MUST
+// null-check before use.  No `Upload` counterpart exists — uploads
+// must go through `Host.pickFile`/`Host.pickFiles` (which mint a
+// per-file consent token); use `Host.uploadPath` if you need the
+// configured UploadPath as the picker's `initialDir`.
 var Download = Host.downloadDir
-var Upload   = Host.uploadDir
 
 // WON — Wren Object Notation serialization.
 //
@@ -1187,6 +1469,13 @@ var Upload   = Host.uploadDir
 // deserialize runs a hardened C parser — no eval — and accepts arbitrary
 // whitespace and trailing commas between tokens.  Map keys must be a value
 // Wren can hash (Bool, Num, String, Range, null); List/Map keys are rejected.
+//
+// Parse failures (truncated input, syntax errors, malformed escapes,
+// nesting too deep, trailing data) return a WONError IN PLACE of the
+// parsed value — they do NOT abort the fiber.  The script can demux:
+//   var v = WON.deserialize(text)
+//   if (v is WONError) { ... fall back to defaults ... }
+// Programmer errors (passing a non-String) DO still abort.
 class WON {
   static serialize(value)              { serialize_(value, null,   true)  }
   static serialize(value, indent)      { serialize_(value, indent, true)  }
@@ -1326,4 +1615,28 @@ class WON {
     if (value is Sequence) return true
     return false
   }
+}
+
+// Returned IN PLACE of the parsed value when WON.deserialize hits a
+// parse failure on user-supplied input.  The script demuxes via
+// `is WONError` and reads `.code` (a `WONErr.*` value), `.offset`
+// (byte offset where the error was detected), `.message` (human-
+// readable diagnostic), or `.toString` for log lines.
+foreign class WONError is Error {
+  foreign code      // WONErr.* enum
+  foreign offset    // byte offset where the error was detected
+  foreign message   // diagnostic text
+  foreign toString
+}
+
+// WONError code values; see Wren.adoc § WONError for the rule
+// matching each code to a failure mode.
+class WONErr {
+  static ok            { 0 }
+  static syntax        { 1 }
+  static truncated     { 2 }
+  static invalidEscape { 3 }
+  static invalidKey    { 4 }
+  static tooDeep       { 5 }
+  static trailingData  { 6 }
 }

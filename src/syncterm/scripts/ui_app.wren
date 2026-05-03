@@ -73,6 +73,8 @@ class App {
     _dragHandedOff = false        // see dispatchMouse_ for the belt this catches
     _claim         = null         // ClaimHandle; set by run(), popped on exit
     _tickPending   = false        // true while a Timer.trigger is queued for _runFiber
+    _released      = false        // true while releaseFocus is in effect
+    _releasedFocus = null         // saved focusedIndex (may be null if nothing was focused)
     // F1 → context help; user can rebind / unbind freely.
     bind(Key.f1, Fn.new {|k| showHelp() })
   }
@@ -221,6 +223,46 @@ class App {
     } else {
       _status = PopStatus.show(message)
     }
+    drawAll_()
+  }
+
+  // ----- Focus hand-off ------------------------------------------
+  //
+  // Wrap blocking host UIs that own the screen themselves (the
+  // filepicker, modal C dialogs) so the App's foreground tree
+  // doesn't *also* draw as focused.  Without this, the host UI's
+  // pre-call save captures the App's panes in their focused colour
+  // scheme, and the post-call restore re-paints them that way until
+  // the next App-driven repaint — visually, two widgets are focused
+  // at once.
+  //
+  //   app.releaseFocus()
+  //   var picked = Host.pickFiles(...)
+  //   app.restoreFocus()
+  //
+  // Idempotent on both sides — a second releaseFocus before
+  // restoreFocus is a no-op, and restoreFocus without a prior
+  // release is a no-op.  Operates on `modalTop` so a release while
+  // a modal is up correctly defocuses the modal's leaf, not the
+  // root's.  Forces an immediate paint so the unfocused state
+  // lands on screen *before* the host UI's screen save.
+  releaseFocus() {
+    if (_released) return
+    _released = true
+    var top = modalTop
+    if (!(top is Container)) return
+    _releasedFocus = top.focusedIndex
+    top.focusedIndex = null
+    markAllDirty_()
+    drawAll_()
+  }
+  restoreFocus() {
+    if (!_released) return
+    var top = modalTop
+    if (top is Container) top.focusedIndex = _releasedFocus
+    _released      = false
+    _releasedFocus = null
+    markAllDirty_()
     drawAll_()
   }
 

@@ -17,17 +17,16 @@
 // connect by sftp_queue_init.wren; `stop()` runs on disconnect.
 
 import "syncterm" for Cache, CTerm, Download, File, FileFlag, Host,
-                       SFTP, SFTPError, SFTPStat, Timer, Upload, WON
+                       SFTP, SFTPError, SFTPStat, Timer, WON
 
 // One in-flight or terminal-state job.  Mutable in place; serialized
 // from `persistNow_()`.  `cancel` is the volatile flag the workers
 // poll between chunks (matches the C `volatile bool cancel`).
 //
-// `localToken` is the picker consent token (Wren `File.token`) when
-// the upload's source file came from Host.pickFiles — it lets the
-// worker re-open an arbitrary-path source via Host.openLocalFile on
-// resume.  Null for UploadPath uploads, which resolve via
-// `Upload.list[local]` instead.
+// `localToken` is the picker consent token (Wren `File.token`)
+// minted by Host.pickFiles — required for uploads, since the worker
+// re-opens the source file via Host.openLocalFile on resume.  Null
+// for download jobs.
 class Job {
   construct new(dir, local, remote, total, localToken) {
     _dir        = dir
@@ -222,12 +221,11 @@ class SftpQueue {
 
   // Append a new job.  `total` is the expected byte count for
   // display purposes only — workers re-stat at open time.
-  // `localToken` may be null (for UploadPath-rooted uploads,
-  // resolved by `Upload.list[localPath]` at upload time) or a
-  // picker consent token from `Host.pickFiles` for arbitrary-path
-  // uploads (re-opened via `Host.openLocalFile(token)` at upload
-  // time).  Returns the Job (so the caller can keep a reference)
-  // or null if the queue isn't running.
+  // `localToken` is the picker consent token from `Host.pickFiles`
+  // for upload jobs (re-opened via `Host.openLocalFile(token)` at
+  // upload time); pass null for downloads.  Returns the Job (so
+  // the caller can keep a reference) or null if the queue isn't
+  // running.
   static enqueue(direction, localPath, remotePath, total, localToken) {
     if (__running != true) return null
     var j = Job.new(direction, localPath, remotePath, total, localToken)
@@ -237,9 +235,7 @@ class SftpQueue {
     persistNow_()
     return j
   }
-  // Backward-compatible 4-arg overload — callers that don't pass a
-  // token (e.g. download enqueues, UploadPath uploads) can keep
-  // their existing call shape.
+  // 4-arg overload for download jobs (no token needed).
   static enqueue(direction, localPath, remotePath, total) {
     return enqueue(direction, localPath, remotePath, total, null)
   }
@@ -449,7 +445,7 @@ class SftpQueue {
         err = "cancelled"
         break
       }
-      var bytes = SFTP.read(Fiber.current, hSrc, off, SftpQueue.CHUNK) ||
+      var bytes = SFTP.read(Fiber.current, hSrc, SftpQueue.CHUNK, off) ||
                   Fiber.yield()
       if (bytes is SFTPError) {
         // SFTP errors that happen after the shell has closed get
@@ -503,39 +499,26 @@ class SftpQueue {
     }
   }
 
-  // Mirror — resolve the local source (either UploadPath basename
-  // or arbitrary path via consent token), open the remote with
-  // WRITE|CREAT|TRUNC, stream chunks.
+  // Mirror — re-open the picker-consented source via the token,
+  // open the remote with WRITE|CREAT|TRUNC, stream chunks.
   //
-  // For picker-sourced uploads (job.localToken != null), the
-  // token is verified by Host.openLocalFile: HMAC must match the
-  // installed signing key, AND the file's current SHA-1 must
+  // The token is verified by Host.openLocalFile: HMAC must match
+  // the installed signing key, AND the file's current SHA-1 must
   // match the SHA-1 captured at consent time.  If either fails
   // (key rotated, file edited, file deleted), the upload is
   // rejected — the user must re-pick to re-consent to the new
-  // content.
+  // content.  Uploads without a token fail immediately.
   static runUpload_(job) {
-    var lf
-    if (job.localToken != null) {
-      lf = Host.openLocalFile(job.localToken)
-      if (lf == null) {
-        job.status = SftpQueue.FAILED
-        job.errMsg = "consent token rejected (file changed, deleted, or key rotated)"
-        return
-      }
-    } else {
-      if (Upload == null) {
-        job.status = SftpQueue.FAILED
-        job.errMsg = "UploadPath not configured (or set to $HOME)"
-        return
-      }
-      var entries = Upload.list
-      lf = entries[job.local]
-      if (lf == null || !(lf is File)) {
-        job.status = SftpQueue.FAILED
-        job.errMsg = "local '%(job.local)' not found in UploadPath"
-        return
-      }
+    if (job.localToken == null) {
+      job.status = SftpQueue.FAILED
+      job.errMsg = "upload missing consent token"
+      return
+    }
+    var lf = Host.openLocalFile(job.localToken)
+    if (lf == null) {
+      job.status = SftpQueue.FAILED
+      job.errMsg = "consent token rejected (file changed, deleted, or key rotated)"
+      return
     }
     lf.open()
     var totalSize = lf.size

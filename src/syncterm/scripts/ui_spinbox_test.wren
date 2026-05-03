@@ -35,7 +35,6 @@ class UiSpinboxTest {
   static check_(ok, label) {
     if (ok) {
       __pass = __pass + 1
-      System.print("  PASS %(label)")
     } else {
       __fail = __fail + 1
       System.print("  FAIL %(label)")
@@ -148,7 +147,7 @@ class UiSpinboxTest {
     s.bounds = Rect.new(2, 5, 10, 1)
     s.value  = 5
     // Up arrow at surface col w-3 = 7, screen col bounds.x + 7 = 9
-    var ev = MouseEvent.new(Mouse.button1Click, 0, 9, 5, 9, 5)
+    var ev = MouseEvent.new(Mouse.button1Click, 9, 5, 9, 5)
     s.handle(ev)
     check_(s.value == 6, "SpinBox: click on up arrow adds step")
   }
@@ -158,7 +157,7 @@ class UiSpinboxTest {
     s.bounds = Rect.new(2, 5, 10, 1)
     s.value  = 5
     // Down arrow at surface col w-2 = 8, screen col bounds.x + 8 = 10
-    var ev = MouseEvent.new(Mouse.button1Click, 0, 10, 5, 10, 5)
+    var ev = MouseEvent.new(Mouse.button1Click, 10, 5, 10, 5)
     s.handle(ev)
     check_(s.value == 4, "SpinBox: click on down arrow subtracts step")
   }
@@ -168,7 +167,7 @@ class UiSpinboxTest {
     s.bounds = Rect.new(2, 5, 10, 1)
     s.value  = 5
     // Click in the body (surface col 4), should not change value
-    var ev = MouseEvent.new(Mouse.button1Click, 0, 6, 5, 6, 5)
+    var ev = MouseEvent.new(Mouse.button1Click, 6, 5, 6, 5)
     var consumed = s.handle(ev)
     check_(!consumed && s.value == 5,
            "SpinBox: click on body (not arrow) doesn't change value")
@@ -178,10 +177,10 @@ class UiSpinboxTest {
     var s = SpinBox.new()
     s.bounds = Rect.new(2, 5, 10, 1)
     s.value  = 5
-    var up = MouseEvent.new(Mouse.wheelUpPress, 0, 6, 5, 6, 5)
+    var up = MouseEvent.new(Mouse.wheelUpPress, 6, 5, 6, 5)
     s.handle(up)
     check_(s.value == 6, "SpinBox: wheel up adds step")
-    var dn = MouseEvent.new(Mouse.wheelDownPress, 0, 6, 5, 6, 5)
+    var dn = MouseEvent.new(Mouse.wheelDownPress, 6, 5, 6, 5)
     s.handle(dn)
     check_(s.value == 5, "SpinBox: wheel down subtracts step")
   }

@@ -20,30 +20,167 @@
 
 #include <stdbool.h>
 #include <stdint.h>
+#include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 extern struct cterminal *cterm;
 
+/* ----- ConnError -------------------------------------------------- */
+
+/* Recoverable wire-side failures from Conn.send / Conn.sendRaw.
+ * Returned IN PLACE of `null` on failure; null still means success.
+ * Mirrors the SFTPError / FileError pattern. */
+enum conn_err_code {
+	CONN_ERR_OK = 0,
+	CONN_ERR_NOT_CONNECTED,  /* connection is down at send time */
+	CONN_ERR_SHORT_SEND,     /* outbuf full / partial queue */
+};
+
+struct wren_conn_error {
+	enum syncterm_wren_foreign type;
+	uint32_t code;       /* enum conn_err_code */
+	int      bytes_sent; /* for SHORT_SEND: how much was queued before
+	                      * the buffer ran out — caller can retry the
+	                      * remainder */
+	char    *message;    /* malloc'd; may be NULL */
+};
+
+void
+wren_conn_error_allocate(WrenVM *vm)
+{
+	struct wren_conn_error *e =
+	    wrenSetSlotNewForeign(vm, 0, 0, sizeof(*e));
+	memset(e, 0, sizeof(*e));
+	e->type = SWF_CONN_ERROR;
+}
+
+void
+wren_conn_error_finalize(void *data)
+{
+	struct wren_conn_error *e = data;
+	free(e->message);
+}
+
+void
+fn_ConnError_code(WrenVM *vm)
+{
+	struct wren_conn_error *e = wrenGetSlotForeign(vm, 0);
+	wrenSetSlotDouble(vm, 0, (double)e->code);
+}
+
+void
+fn_ConnError_bytesSent(WrenVM *vm)
+{
+	struct wren_conn_error *e = wrenGetSlotForeign(vm, 0);
+	wrenSetSlotDouble(vm, 0, (double)e->bytes_sent);
+}
+
+void
+fn_ConnError_message(WrenVM *vm)
+{
+	struct wren_conn_error *e = wrenGetSlotForeign(vm, 0);
+	if (e->message != NULL)
+		wrenSetSlotString(vm, 0, e->message);
+	else
+		wrenSetSlotNull(vm, 0);
+}
+
+void
+fn_ConnError_toString(WrenVM *vm)
+{
+	struct wren_conn_error *e = wrenGetSlotForeign(vm, 0);
+	const char *name;
+	switch ((enum conn_err_code)e->code) {
+	case CONN_ERR_OK:            name = "OK";             break;
+	case CONN_ERR_NOT_CONNECTED: name = "NOT_CONNECTED";  break;
+	case CONN_ERR_SHORT_SEND:    name = "SHORT_SEND";     break;
+	default:                     name = "UNKNOWN";        break;
+	}
+	char buf[200];
+	if (e->code == CONN_ERR_SHORT_SEND)
+		snprintf(buf, sizeof(buf),
+		    "ConnError: %s: %d bytes queued%s%s",
+		    name, e->bytes_sent,
+		    e->message != NULL ? ": " : "",
+		    e->message != NULL ? e->message : "");
+	else if (e->message != NULL)
+		snprintf(buf, sizeof(buf),
+		    "ConnError: %s: %s", name, e->message);
+	else
+		snprintf(buf, sizeof(buf), "ConnError: %s", name);
+	wrenSetSlotString(vm, 0, buf);
+}
+
+/* Build a ConnError into slot 0.  Caller returns immediately; the
+ * error IS the function's return value. */
+static void
+conn_build_error(WrenVM *vm, enum conn_err_code code, int bytes_sent,
+                 const char *msg)
+{
+	struct wren_host_state *st = wren_host_state();
+	wrenEnsureSlots(vm, 2);
+	load_class_into_slot(vm, &st->conn_error_class, "ConnError", 1);
+	struct wren_conn_error *e =
+	    wrenSetSlotNewForeign(vm, 0, 1, sizeof(*e));
+	memset(e, 0, sizeof(*e));
+	e->type       = SWF_CONN_ERROR;
+	e->code       = (uint32_t)code;
+	e->bytes_sent = bytes_sent;
+	if (msg != NULL)
+		e->message = strdup(msg);
+}
+
 /* ----- Conn -------------------------------------------------------- */
 
+/* Wire-side send.  Returns null on success, ConnError on failure
+ * (connection down, outbuf full / partial queue).  Empty input is
+ * a no-op success (returns null). */
 void
 fn_Conn_send(WrenVM *vm)
 {
 	int len = 0;
 	const char *s = wrenGetSlotBytes(vm, 1, &len);
-	if (len <= 0)
+	if (len <= 0) {
+		wrenSetSlotNull(vm, 0);
 		return;
-	conn_send(s, (size_t)len, 0);
+	}
+	if (!conn_connected()) {
+		conn_build_error(vm, CONN_ERR_NOT_CONNECTED, 0,
+		    "Conn.send: connection is down");
+		return;
+	}
+	int sent = conn_send(s, (size_t)len, 0);
+	if (sent < len) {
+		conn_build_error(vm, CONN_ERR_SHORT_SEND, sent,
+		    "Conn.send: outbuf full");
+		return;
+	}
+	wrenSetSlotNull(vm, 0);
 }
 
+/* Same shape as fn_Conn_send but bypasses the IAC-escape pipeline. */
 void
 fn_Conn_sendRaw(WrenVM *vm)
 {
 	int len = 0;
 	const char *s = wrenGetSlotBytes(vm, 1, &len);
-	if (len <= 0)
+	if (len <= 0) {
+		wrenSetSlotNull(vm, 0);
 		return;
-	conn_send_raw(s, (size_t)len, 0);
+	}
+	if (!conn_connected()) {
+		conn_build_error(vm, CONN_ERR_NOT_CONNECTED, 0,
+		    "Conn.sendRaw: connection is down");
+		return;
+	}
+	int sent = conn_send_raw(s, (size_t)len, 0);
+	if (sent < len) {
+		conn_build_error(vm, CONN_ERR_SHORT_SEND, sent,
+		    "Conn.sendRaw: outbuf full");
+		return;
+	}
+	wrenSetSlotNull(vm, 0);
 }
 
 void

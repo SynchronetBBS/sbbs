@@ -49,9 +49,12 @@ class ListView is Widget {
 
   count { _items.count }
 
-  selected { _selected }
+  // null when no row is selected (empty list, or explicitly cleared);
+  // otherwise an integer in 0..count - 1.
+  selected { _selected < 0 ? null : _selected }
   selected=(i) {
-    if (_items.count == 0) {
+    if (i == null || _items.count == 0) {
+      if (_selected == -1) return
       _selected = -1
       markDirty()
       return

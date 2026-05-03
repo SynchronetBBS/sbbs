@@ -73,7 +73,6 @@ class UiListTest {
   static check_(ok, label) {
     if (ok) {
       __pass = __pass + 1
-      System.print("  PASS %(label)")
     } else {
       __fail = __fail + 1
       System.print("  FAIL %(label)")
@@ -92,9 +91,9 @@ class UiListTest {
 
   static testListDefaults_() {
     var l = ListView.new()
-    check_(l.count == 0 && l.selected == -1 && l.scrollTop == 0 &&
+    check_(l.count == 0 && l.selected == null && l.scrollTop == 0 &&
            l.showScroll == true,
-           "List defaults: empty, selected=-1, scrollTop=0, showScroll=true")
+           "List defaults: empty, selected=null, scrollTop=0, showScroll=true")
   }
 
   static testListItemsSetterResets_() {
@@ -108,8 +107,8 @@ class UiListTest {
     var l = ListView.new()
     l.items = ["x"]
     l.items = []
-    check_(l.count == 0 && l.selected == -1,
-           "List items= []: selected becomes -1")
+    check_(l.count == 0 && l.selected == null,
+           "List items= []: selected becomes null")
   }
 
   // ----- Selection clamping ---------------------------------------
@@ -303,7 +302,7 @@ class UiListTest {
     var l = makeList_(3)
     l.bounds = Rect.new(1, 1, 10, 5)
     // bounds y=1; row index 2 = y=3.  scrollTop=0 so idx=2.
-    var ev = MouseEvent.new(Mouse.button1Click, 0, 5, 3, 5, 3)
+    var ev = MouseEvent.new(Mouse.button1Click, 5, 3, 5, 3)
     var consumed = l.handle(ev)
     check_(consumed && l.selected == 2,
            "ListView.handle Mouse: row click selects that row")
@@ -313,7 +312,7 @@ class UiListTest {
     var l = makeList_(3)
     l.bounds = Rect.new(1, 1, 10, 5)
     // Mouse.move should NOT change selection.
-    var ev = MouseEvent.new(Mouse.move, 0, 5, 3, 5, 3)
+    var ev = MouseEvent.new(Mouse.move, 5, 3, 5, 3)
     var consumed = l.handle(ev)
     check_(!consumed && l.selected == 0,
            "ListView.handle Mouse: hover (Mouse.move) ignored")
@@ -325,7 +324,7 @@ class UiListTest {
     // Track rows are 1..3 (between the up + down arrows).  Click at
     // py=3 (screen y=4) is the last track row; maps to maxScroll=15.
     var prev = l.selected
-    var ev = MouseEvent.new(Mouse.button1Click, 0, 1, 4, 1, 4)
+    var ev = MouseEvent.new(Mouse.button1Click, 1, 4, 1, 4)
     var consumed = l.handle(ev)
     check_(consumed && l.scrollTop == 15 && l.selected == prev,
            "ListView.handle Mouse: scrollbar track-bottom click scrolls to end, selection unchanged")
@@ -335,7 +334,7 @@ class UiListTest {
     var l = makeList_(20)
     l.bounds = Rect.new(1, 1, 10, 5)
     // py=4 (screen y=5) is the down-arrow row; clicking it steps +1.
-    var ev = MouseEvent.new(Mouse.button1Click, 0, 1, 5, 1, 5)
+    var ev = MouseEvent.new(Mouse.button1Click, 1, 5, 1, 5)
     var consumed = l.handle(ev)
     check_(consumed && l.scrollTop == 1,
            "ListView.handle Mouse: scrollbar down-arrow click steps +1")
@@ -346,7 +345,7 @@ class UiListTest {
     l.bounds = Rect.new(1, 1, 10, 5)
     l.scrollTop = 5
     // py=0 (screen y=1) is the up-arrow row; clicking it steps -1.
-    var ev = MouseEvent.new(Mouse.button1Click, 0, 1, 1, 1, 1)
+    var ev = MouseEvent.new(Mouse.button1Click, 1, 1, 1, 1)
     var consumed = l.handle(ev)
     check_(consumed && l.scrollTop == 4,
            "ListView.handle Mouse: scrollbar up-arrow click steps -1")
@@ -359,7 +358,7 @@ class UiListTest {
     // DragMove pressed at scrollbar top (startY=1), pointer now at the
     // bottom of the *track* (endY=4 → py=3).  scrollTop tracks the end
     // coord; selection stays put.
-    var ev = MouseEvent.new(Mouse.button1DragMove, 0, 1, 1, 1, 4)
+    var ev = MouseEvent.new(Mouse.button1DragMove, 1, 1, 1, 4)
     var consumed = l.handle(ev)
     check_(consumed && l.scrollTop == 15 && l.selected == prev,
            "ListView.handle Mouse: scrollbar drag follows endY, selection unchanged")
@@ -370,7 +369,7 @@ class UiListTest {
     l.bounds = Rect.new(1, 1, 10, 5)
     var prev = l.selected
     // Wheel-down inside the widget moves scrollTop by wheelStep.
-    var ev = MouseEvent.new(Mouse.wheelDownClick, 0, 5, 3, 5, 3)
+    var ev = MouseEvent.new(Mouse.wheelDownClick, 5, 3, 5, 3)
     var consumed = l.handle(ev)
     check_(consumed && l.scrollTop == ListView.wheelStep && l.selected == prev,
            "ListView.handle Mouse: wheel-down scrolls viewport, selection unchanged")
@@ -380,7 +379,7 @@ class UiListTest {
     var l = makeList_(20)
     l.bounds = Rect.new(1, 1, 10, 5)
     // scrollTop is already 0; wheel-up clamps, doesn't go negative.
-    var ev = MouseEvent.new(Mouse.wheelUpClick, 0, 5, 3, 5, 3)
+    var ev = MouseEvent.new(Mouse.wheelUpClick, 5, 3, 5, 3)
     var consumed = l.handle(ev)
     check_(consumed && l.scrollTop == 0,
            "ListView.handle Mouse: wheel-up at top clamps to 0")
@@ -389,7 +388,7 @@ class UiListTest {
   static testMouseClickOutsideDrops_() {
     var l = makeList_(3)
     l.bounds = Rect.new(1, 1, 10, 5)
-    var ev = MouseEvent.new(Mouse.button1Click, 0, 50, 50, 50, 50)
+    var ev = MouseEvent.new(Mouse.button1Click, 50, 50, 50, 50)
     var consumed = l.handle(ev)
     check_(!consumed, "ListView.handle Mouse: click outside bounds drops")
   }

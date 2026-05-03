@@ -14,6 +14,8 @@
 #include "sftp.h"
 #include "ssh.h"   /* sftp_state, sftp_available */
 
+#include <dirwrap.h>     /* MAX_PATH */
+
 #include <inttypes.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -880,8 +882,8 @@ fn_SFTP_read(WrenVM *vm)
 		free(ctx);
 		return;
 	}
-	uint64_t offset = (uint64_t)wrenGetSlotDouble(vm, 3);
-	uint32_t count  = (uint32_t)wrenGetSlotDouble(vm, 4);
+	uint32_t count  = (uint32_t)wrenGetSlotDouble(vm, 3);
+	uint64_t offset = (uint64_t)wrenGetSlotDouble(vm, 4);
 	sftpc_read(sftp_state, h->handle, offset, count, sftp_call_cb, ctx);
 	wrenSetSlotNull(vm, 0);
 }
@@ -985,11 +987,26 @@ fn_SFTP_rename(WrenVM *vm)
 void
 fn_SFTP_setMtime(WrenVM *vm)
 {
+	/* Copy the path into a C buffer before any other VM activity:
+	 * wrenGetSlotString pointers are invalidated by the next VM call
+	 * (wren.md §6), and sftp_call_prelude / sftp_build_synth_error /
+	 * even wrenGetSlotDouble are all VM calls.  Today the slot 2
+	 * ObjString stays rooted so the original pointer happens to keep
+	 * working, but that's a property of Wren's current GC, not a
+	 * guarantee of the API. */
+	const char *path_in = wrenGetSlotString(vm, 2);
+	char        path[MAX_PATH + 1];
+	if (path_in == NULL) {
+		sftp_build_synth_error(vm, 0, SFTP_ERR_ABORTED,
+		    "SFTP.setMtime: path must be a String");
+		return;
+	}
+	strlcpy(path, path_in, sizeof(path));
+	uint32_t mtime = (uint32_t)wrenGetSlotDouble(vm, 3);
+
 	struct sftp_call_ctx *ctx = sftp_call_prelude(vm, sftp_status_deliver);
 	if (ctx == NULL)
 		return;
-	const char *path  = wrenGetSlotString(vm, 2);
-	uint32_t    mtime = (uint32_t)wrenGetSlotDouble(vm, 3);
 	sftp_file_attr_t a = sftp_fattr_alloc();
 	if (a == NULL) {
 		sftp_build_synth_error(vm, 0, SFTP_ERR_OOM,

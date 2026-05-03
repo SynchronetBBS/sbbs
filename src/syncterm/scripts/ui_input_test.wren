@@ -43,7 +43,6 @@ class UiInputTest {
   static check_(ok, label) {
     if (ok) {
       __pass = __pass + 1
-      System.print("  PASS %(label)")
     } else {
       __fail = __fail + 1
       System.print("  FAIL %(label)")
@@ -241,7 +240,7 @@ class UiInputTest {
     t.bounds = Rect.new(1, 1, 10, 1)
     t.value  = "hello"
     // Click at column 3 (bounds.x=1, so endX=4).
-    var ev = MouseEvent.new(Mouse.button1Click, 0, 4, 1, 4, 1)
+    var ev = MouseEvent.new(Mouse.button1Click, 4, 1, 4, 1)
     var consumed = t.handle(ev)
     check_(consumed && t.cursor == 3,
            "TextInput mouse click: positions cursor at column")
@@ -251,7 +250,7 @@ class UiInputTest {
     var t = TextInput.new()
     t.bounds = Rect.new(1, 1, 10, 1)
     t.value  = "hello"
-    var ev = MouseEvent.new(Mouse.move, 0, 4, 1, 4, 1)
+    var ev = MouseEvent.new(Mouse.move, 4, 1, 4, 1)
     var consumed = t.handle(ev)
     check_(!consumed && t.cursor == 5,
            "TextInput mouse hover: ignored, cursor unchanged")

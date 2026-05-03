@@ -868,10 +868,11 @@ remove the hook later or read its metrics; toss it if not.
 === Hooks must run synchronously
 
 Every hook fire is wrapped in a child fiber via `Hook.dispatch_`.
-The dispatcher needs the hook's return value (a Bool for consume /
-passthrough, a String for `onStatus`) before it can decide what to
-do next; a hook that yields up to the dispatcher would strand it
-with no value to act on.
+For `C1`-contract hooks (see <<hook-contracts>>) the dispatcher needs
+the hook's return value before it can decide what to do next; a hook
+that yields up to the dispatcher would strand it with no value to
+act on.  `C2`-contract hooks ignore returns, but yielding still
+breaks the dispatch chain.
 
 If a hook callback yields its own fiber directly (e.g. fires an
 async op against `Fiber.current` and immediately calls
@@ -927,74 +928,110 @@ Hook.onKey { |k|
 }
 ----
 
-[options="header",cols="2,3,3"]
+==== Two return contracts [[hook-contracts]]
+
+Every hook callback follows one of exactly two return-value contracts.
+Knowing which contract a hook uses tells you what (if anything) your
+return value does.
+
+[options="header",cols="1m,4"]
 |===
-| Method | Argument | Return contract
+| Contract | Behaviour
+
+| C1 — replaceable
+| `true` consumes the event (no later hook sees it; SyncTERM's
+  default handling is bypassed).  `String` replaces the event's data
+  with the bytes of the string where that's meaningful (currently:
+  `onInput` byte replacement, `onStatus` text replacement).  Any
+  other return — `false`, `null`, a number, an instance, … — is a
+  passthrough: the next hook in the chain sees the unmodified event,
+  and SyncTERM's default handling proceeds.
+
+| C2 — observe-only
+| The return value is ignored entirely.  These hooks fire as a
+  side-effect notification; the event continues regardless.  A `true`
+  or `String` return is dropped, AND the runtime logs a warning every
+  time it happens — the noise is the diagnostic, intended to make
+  the "I thought I could consume from here" mistake impossible to
+  miss.  Return `null` (or just don't `return`) to silence it.
+|===
+
+`onKey` and `onMouse` use C1 but have no meaningful interpretation
+for `String` returns (a 16-bit key code or a `MouseEvent` isn't a
+byte stream), so a `String` return from those is silently treated as
+passthrough.  Use `onInput` if you need byte-level replacement.
+
+[options="header",cols="2,3,1"]
+|===
+| Method | Argument | Contract
 
 | `Hook.onKey { \|k\| ... }`
 | `k`: 16-bit ciolib key code (see `Key`)
-| Bool — true to consume the keystroke
+| C1
 
 | `Hook.onKey(key, fn)`
 | Filtered: `fn(k)` only fires when `k == key`.  C-side filter — no
   Wren entry on misses.
-| Bool — true to consume
+| C1
 
 | `Hook.onInput { \|b\| ... }`
 | `b`: one byte received from the remote
-| Bool `true` drops the byte; `String` replaces it with the string's
-  bytes (up to 256 — larger replacements log a runtime error and the
-  original byte passes through); anything else passes through.
+| C1.  String replacements are capped at 256 bytes — larger ones log
+  a runtime error and the original byte passes through.
 
 | `Hook.onInput(byte, fn)`
 | Filtered: `fn(b)` only fires when `b == byte`.  C-side filter.
-| Same return contract as the unfiltered form.
+| C1
 
 | `Hook.onMatch(pattern, fn)`
 | `fn(m)` fires when `pattern` matches the input stream.  See
   "Streaming regex hooks" below.
-| Ignored — `onMatch` is passthrough-only.  Use `Hook.onInput` (per-
-  byte, drop / replace) when you need to remove bytes from the wire.
+| C2.  An "honor `true`-means-drop" semantics would require holding
+  every input byte until every potential pattern resolves — not
+  feasible for a streaming terminal.  Use `Hook.onInput` for
+  byte-granular drops.
 
 | `Hook.onMatchClean(pattern, fn)`
 | Same as `onMatch`, but bytes are pre-filtered through SyncTERM's
   shared ANSI parser so colour codes, cursor moves, and DCS / OSC
   strings never split a literal pattern.  A pattern like `"Welcome"`
   matches even when the BBS sends `"We"` + `ESC[1;33m` + `"lcome"`.
-| Ignored — passthrough-only, same contract as `onMatch`.
+| C2
 
 | `Hook.onMouse { \|ev\| ... }`
-| `ev`: 7-element list `[event, bstate, modifiers, sx, sy, ex, ey]`
-| Bool — true to consume
+| `ev`: <<mouseevent,`MouseEvent`>> instance
+| C1
 
 | `Hook.onMouse(event, fn)`
-| Filtered: `fn(ev)` only fires when `ev[0] == event`.  C-side filter.
-| Bool — true to consume
+| Filtered: `fn(ev)` only fires when `ev.event == event`.  C-side
+  filter.
+| C1
 
 | `Hook.onStatus { \|def\| ... }`
 | `def`: SyncTERM's default status string
-| String to replace the status, or non-string to fall through
+| C1 (only the `String`-replace branch is meaningful; the status bar
+  has no notion of "consume")
 
 | `Hook.every(ms, fn)`
 | `ms`: milliseconds; `fn`: callable
-| (none — return value ignored)
+| C2
 
 | `Hook.onShellClose(fn)`
 | Fires once when the SSH shell channel closes but the session is
-  still alive (e.g. SFTP transfers may still be in flight).
-  No argument; return value ignored.  Typical use: pop a
-  status / queue UI so the user can watch transfers finish, or
-  signal a worker to wind down.  See <<cterm,CTerm.sftpActive>>
-  for the corresponding "keep the session up" flag.
-| (none — return value ignored)
+  still alive (e.g. SFTP transfers may still be in flight).  Typical
+  use: pop a status / queue UI so the user can watch transfers
+  finish, or signal a worker to wind down.  See
+  <<cterm,CTerm.sftpActive>> for the corresponding "keep the session
+  up" flag.
+| C2
 
 | `Hook.onDisconnect(fn)`
-| Fires at the end of the disconnect path, after the main loop
-  has fully exited but before the BBS / Wren VM tear down.  No
-  argument; return value ignored.  SFTP is no longer available
-  at this point (sftpc_finish has already run); use this for
-  final local-state flushes (queue persistence, log close, etc.).
-| (none — return value ignored)
+| Fires at the end of the disconnect path, after the main loop has
+  fully exited but before the BBS / Wren VM tear down.  SFTP is no
+  longer available at this point (sftpc_finish has already run); use
+  this for final local-state flushes (queue persistence, log close,
+  etc.).
+| C2
 |===
 
 Filtered variants share the same per-event registration array as the
@@ -1461,6 +1498,94 @@ list of currently-registered names for tooling.
 The remainder of this document is a reference for every foreign
 class exposed in the `syncterm` module.
 
+A note on `toString`: every class with an explicit `toString` method
+returns it strictly for *human-readable debug output* — the format
+that `System.print(value)` and string interpolation `"%(value)"`
+emit when no other rendering is appropriate.  The exact string is
+**not part of the API contract**; it may change between SyncTERM
+versions to add or remove fields, reformat, etc.  Scripts that need
+specific data should call the named property accessors (`cell.ch`,
+`event.code`, `surface.width`) — never parse `toString` output.
+Without an explicit `toString` a foreign would print as something
+like `[instance of Cell]`, which is uniformly less useful than even
+a minimal `Cell(0x41 attr=0x07)`; that's the only motivation for
+having these methods at all.
+
+=== Error / ScriptError [[error]]
+
+`Error` is the polymorphic base for every recoverable-failure value
+type the API hands back: <<sftperror,`SFTPError`>>,
+<<fileerror,`FileError`>>, <<wonerror,`WONError`>>,
+<<connerror,`ConnError`>>, plus any user-defined
+<<scripterror,`ScriptError`>> subclass.  Lets a script catch any of
+them with one check:
+
+[source,wren]
+----
+import "syncterm" for Error
+
+var v = something_that_might_fail()
+if (v is Error) {
+  System.print("failed: %(v)")        // toString includes the type
+  return
+}
+// proceed with the typed result
+----
+
+Every concrete `Error` subclass guarantees the contract:
+
+[options="header",cols="2,3"]
+|===
+| Member | Description
+| `code`     | Numeric error code from the type's enum
+              (e.g. `FileErr.*`, `WONErr.*`).
+| `message`  | Human-readable diagnostic, may be `null`.
+| `toString` | Format with the subclass name as prefix.
+|===
+
+Type-specific extras (`FileError.errno`, `WONError.offset`,
+`ConnError.bytesSent`, `SFTPError.serverStatus`,
+`SFTPError.isTransient`) live on the subclass.
+
+`Error` itself is empty by design: foreign subclasses (FileError
+etc.) need the parent to be field-free or Wren rejects the
+inheritance at module-load time (the
+`numFields == -1 && superclass->numFields > 0` check at
+`wren_vm.c:559-563`).
+
+==== ScriptError [[scripterror]]
+
+Concrete Wren-side base for script-defined error types.  Use this
+when a script wants to surface its own typed error without writing C
+bindings:
+
+[source,wren]
+----
+import "syncterm" for ScriptError
+
+class ConfigError is ScriptError {}
+
+if (something_bad) {
+  return ConfigError.new(42, "missing required field 'host'")
+}
+----
+
+`ScriptError` provides the same `code` / `message` / `toString`
+getters every foreign Error subclass exposes, so callers see uniform
+behaviour from `is Error` and the field accesses regardless of
+whether the value came from C or Wren.  The default `toString` uses
+the runtime class name (`"ConfigError(42): missing required field
+'host'"`); subclasses may override for a different format.
+
+[options="header",cols="2,3"]
+|===
+| Member | Description
+| `ScriptError.new(code, message)` | Construct.  `code` is a Num, `message` a String (or null).
+| `code`                           | The integer passed to the constructor.
+| `message`                        | The string passed to the constructor.
+| `toString`                       | `"<className>(<code>): <message>"`.
+|===
+
 === Screen [[screen]]
 
 Read/write access to the terminal display surface.  `Screen` itself
@@ -1480,12 +1605,50 @@ operations live under `Screen.window`.
 | `Screen.restore(handle)`
 | Restore a previously saved screen.
 
+| `Screen.modalRun(fn)`
+| Run `fn` with the screen and the wire-byte pump under our own
+  control: snapshot the screen + suspend `CTerm` before the call,
+  unsuspend + restore the screen after.  The previous
+  `CTerm.suspended` value is saved and restored, so nested
+  `modalRun` calls compose.  Returns whatever `fn` returned.  No
+  `Fiber.try` wrapper — `fn` runs on the calling fiber so the
+  async `App.run` event loop (which `Fiber.yield`s from
+  `drainOnce_`) works unmodified; an abort inside `fn` therefore
+  skips cleanup and propagates.  Bodies that need abort-safe
+  cleanup should wrap themselves in a `Fiber.try` at the boundary
+  they own.
++
+[source,wren]
+----
+Screen.modalRun(Fn.new {
+  var app = App.new()
+  // ... configure app ...
+  app.runSync()
+})
+----
++
+Without this, every modal-screen script duplicates the same
+four-line dance (`Screen.save`, `CTerm.suspended = true`, work,
+unsuspend + restore) — and forgetting the `suspended` toggle
+leaks remote bytes onto the modal screen the next time the BBS
+sends something.
+
 | `Screen.readRect(sx, sy, ex, ey)`
 | Read a rectangle of cells (1-based, inclusive).  Returns a
-  <<cells,`Cells`>> or `null`.
+  <<surface,`Surface`>> sized `(ex-sx+1) × (ey-sy+1)`, or `null` on
+  invalid coords / OOM.
 
-| `Screen.writeRect(sx, sy, ex, ey, cells)`
-| Write a list of <<cell,`Cell`>> objects into a rectangle.
+| `Screen.writeRect(sx, sy, ex, ey, src)`
+| Write `src` into a rectangle.  `src` may be a <<surface,`Surface`>>
+  (whose `count` must equal the region size; the contiguous buffer is
+  blitted directly with no copy) or a `List` of <<cell,`Cell`>>
+  objects.  Aborts the calling fiber on a size or type mismatch.
+
+| `Screen.putRect(src, dstX, dstY)`,
+  `Screen.putRect(src, srcRect, dstX, dstY)`
+| Blit a <<surface,`Surface`>> to the screen at `(dstX, dstY)` (1-based).
+  The 4-arg form takes a `Rect` sub-rect of `src`; the 3-arg form
+  blits the whole source.  Out-of-screen regions are clipped silently.
 
 | `Screen.moveRect(sx, sy, ex, ey, dx, dy)`
 | Copy a rectangle to a new position.
@@ -1603,11 +1766,22 @@ The class supports two usage modes:
 
 * *Static* (live state): every static property reads or writes the
   cursor immediately.  `Screen.cursor.blink = false` hides the blink
-  on the next refresh.
+  on the next refresh.  Each setter under the hood does a full
+  read-modify-write of the renderer's cursor state — so a single
+  static write IS atomic for that one field, but a chain of static
+  writes is NOT atomic across fields.  The renderer can paint
+  between them, briefly showing intermediate states.  For
+  multi-field changes, use the instance path.
 * *Instance* (staged edit): `CustomCursor.new()` (or
   `CustomCursor.current`) snapshots the current values.  Modify the
   instance's properties locally, then `apply()` to commit
-  atomically.
+  atomically — one syscall regardless of how many fields changed.
+
+`CustomCursor.preserve(fn)` is a convenience for the common
+"snapshot, change, restore" pattern: snapshots the live cursor,
+runs `fn`, re-applies the snapshot.  Same fiber semantics as
+`Screen.modalRun` — no `Fiber.try` wrapper, an abort in `fn` skips
+the restore.
 
 Properties (both static and instance): `startLine`, `endLine`,
 `range`, `blink`, `visible`.
@@ -1631,7 +1805,9 @@ Pre-defined snapshots:
 ==== Screen.videoFlags — `VideoFlags`
 
 Boolean video-output flags, with the same static-vs-instance pattern
-as `CustomCursor`.
+as `CustomCursor` — including the chained-static-writes
+non-atomicity caveat and the `VideoFlags.preserve(fn)` snapshot
+helper.
 
 [options="header",cols="2,3"]
 |===
@@ -1751,7 +1927,9 @@ Wraps a 16-bit ciolib key code.
 | Member | Description
 
 | `KeyEvent.new(code)`
-| Construct from a raw 16-bit code.
+| Construct from a raw 16-bit code.  Aborts the calling fiber if
+  `code` is not roundtrip-representable through ciolib's
+  byte-stuffed key transport — see <<keyevent-encoding>> below.
 
 | `code`
 | Raw 16-bit ciolib code.
@@ -1764,23 +1942,63 @@ Wraps a 16-bit ciolib key code.
 | UTF-8 form of `codepoint`, or `""` for extended keys.
 |===
 
+==== Encoding constraint [[keyevent-encoding]]
+
+ciolib transports 16-bit key codes through `getch` / `ungetch` as a
+low-byte then high-byte sequence, with the convention that the
+*first* byte being `0x00` or `0xE0` means "extended scancode follows."
+The corollary: a code with high byte non-zero AND low byte not
+`0x00` / `0xE0` cannot be represented in that stream — `Input.unget`
+would split it into two separate, unrelated reads.
+
+`KeyEvent.new(code)` therefore accepts only:
+
+* High byte `0x00` — single-byte ASCII / printable keys
+  (`KeyEvent.new(0x001B)` for Esc, `KeyEvent.new(0x0041)` for `A`).
+* Low byte `0x00` — extended scancode-only keys
+  (`KeyEvent.new(0x3B00)` for F1, `KeyEvent.new(0xFA00)` for an
+  arbitrary synthetic sentinel).
+* Low byte `0xE0` — `E0`-prefixed extended keys
+  (`KeyEvent.new(0x29E0)` for the Wren console hotkey).
+
+Any other combination (`KeyEvent.new(0xFB01)`, `KeyEvent.new(0x1234)`)
+aborts the calling fiber with a clear error.
+
 The `CIO_KEY_ABORTED` scancode (0x01E0, "Esc by scancode") is
 normalized to plain Esc (0x001B) inside the constructor, so scripts
 only ever see one Esc value.
 
-=== MouseEvent
+=== MouseEvent [[mouseevent]]
 
-Mirrors `struct mouse_event` from `ciolib.h`.
+Mirrors `struct mouse_event` from `ciolib.h`.  Returned by
+`Input.next()` / `Input.poll()`, passed to `Input.pushClaim`
+handlers, and passed to `Hook.onMouse` callbacks — every mouse
+surface uses this same shape.
 
 [options="header",cols="2,3"]
 |===
 | Member | Description
 
-| `MouseEvent.new(event, modifiers, sx, sy, ex, ey)`
-| Construct from raw fields.
+| `MouseEvent.new(event, startX, startY)` +
+  `MouseEvent.new(event, startX, startY, modifiers)` +
+  `MouseEvent.new(event, startX, startY, endX, endY)` +
+  `MouseEvent.new(event, startX, startY, endX, endY, modifiers)` +
+  `MouseEvent.new(event, startX, startY, endX, endY, modifiers, bstate)`
+| Construct from raw fields.  Five overloads dispatched by arity.
+  Omitted `endX` / `endY` default to `startX` / `startY` (a
+  zero-extent point event); omitted `modifiers` defaults to `0`;
+  omitted `bstate` is derived from `event` — the bit for the
+  button this event is about, per `Mouse` / `CIOLIB_BUTTON(n)`,
+  or `0` for `Mouse.move`.  The seven-arg form is the canonical
+  fully-explicit constructor.
 
 | `event`
 | Mouse event type code.
+
+| `bstate`
+| Snapshot of the button-state bitmask at the moment the event
+  fired (the `bstate` field on `struct mouse_event`).  Lets a
+  drag-end handler check which other buttons were also held.
 
 | `modifiers`
 | Keyboard modifier mask.
@@ -2083,12 +2301,120 @@ and color state.  Use cases: read a rectangle through
 
 | `hyperlinkId`, `hyperlinkId=(n)`
 | Hyperlink ID attached to this cell.
+
+| `eqContent(other)`
+| Structural equality of every content field.  This is *not* a `==`
+  override — `cell == otherCell` stays foreign-identity-based, like
+  every other foreign in the API.  Call `eqContent` explicitly when
+  you want to know "do these two cells have the same content?"
+  (e.g. `surf.where {|c| c.eqContent(template) }`).
++
+Returns `false` for non-Cell `other` (no fiber abort), `false` if
+either cell flies the pixel-graphics flag (the actual pixel data
+lives outside the `vmem_cell` and isn't compared), and ignores the
+internal BG dirty bit (render bookkeeping, not content).  All other
+bits, including the Prestel control char in fg and the
+double-height/Prestel-mode/etc. flags in bg, are compared bit-exact.
++
+Note that `Cell` cannot be a `Map` key — Wren's Maps reject any
+foreign object regardless of `==` definitions
+(`wren_value.h:880-888`).  Defining a structural `==` would not lift
+that restriction; that's why we expose this as a named method
+instead.
 |===
 
-=== Cells [[cells]]
+=== Surface [[surface]]
 
-Immutable foreign list returned by `Screen.readRect`.  Indexable,
-iterable, has `.count`.
+A `width × height` grid of <<cell,`Cell`>>s backed by a contiguous
+`vmem_cell` buffer.  `Surface is Sequence`, so the linear `[i]`
+subscript, `count`, and the standard sequence helpers (`each`,
+`where`, `map`, `all`, `any`, `reduce`, `join`, `take`, `skip`,
+`toList`, …) all work — handy for "tell me where any 'X' lives"
+without switching to 2D indexing.  Linear order is row-major:
+`buf[y * width + x]`.
+
+`Screen.readRect` returns a Surface sized to the requested rect;
+`Screen.putRect` blits a Surface to the screen as a single atomic
+puttext; `Screen.writeRect` accepts a Surface as its source.  The
+UI library uses Surfaces as per-widget backbuffers and composites
+them into a screen-sized backbuffer Surface that's blitted once
+per frame.
+
+[options="header",cols="2,3"]
+|===
+| Member | Description
+
+| `Surface.new(width, height)`
+| Allocate a fresh Surface of the given size.  Cells start zeroed
+  (NUL char, attribute 0, slot 0, no hyperlink).
+
+| `width`, `height`
+| Dimensions in cells.
+
+| `count`
+| `width * height` — total cell count.  From the Sequence protocol.
+
+| `[i]`
+| Linear-indexed read of the cell at offset `i`.  Returns a `Cell`
+  view onto the Surface's buffer (mutating the cell mutates the
+  Surface).
+
+| `cellAt(x, y)`
+| 2D-indexed `Cell` view (0-based).  Returns `null` if `(x, y)` is
+  outside `[0, width) × [0, height)`.
+
+| `iterate(it)`, `iteratorValue(it)`
+| Sequence protocol — yields each cell linearly in row-major order
+  (the cell at `(x, y)` appears at iteration index `y * width + x`).
+
+| `rows`
+| Sequence-of-Sequence view, outer-by-y.  `surf.rows` has length
+  `surf.height` and yields `SurfaceRow` instances; each row has
+  length `surf.width` and yields `Cell`s left-to-right.  Use for
+  the natural row-major nested loop:
++
+[source,wren]
+----
+for (row in surf.rows) {
+  for (cell in row) ...
+}
+----
++
+Single-cell access: `surf.rows[y][x]` (equivalent to
+`surf.cellAt(x, y)`).
+
+| `cols`
+| Sequence-of-Sequence view, outer-by-x.  `surf.cols` has length
+  `surf.width` and yields `SurfaceCol` instances; each column has
+  length `surf.height` and yields `Cell`s top-to-bottom.  Use when
+  column-major traversal reads cleaner:
++
+[source,wren]
+----
+for (col in surf.cols) {
+  for (cell in col) ...
+}
+----
++
+Single-cell access: `surf.cols[x][y]`.
++
+Both `rows` and `cols` are *lazy views* — they hold a reference
+to the Surface and fetch cells on demand via `cellAt`, so mutating
+a cell through `surf.rows[y][x]` mutates the underlying Surface.
+
+| `putRect(src, dstX, dstY)`,
+  `putRect(src, srcRect, dstX, dstY)`
+| Paste a source Surface into this Surface at `(dstX, dstY)` (0-based).
+  The 4-arg form copies a sub-rect of `src` defined by a `Rect`.
+  Out-of-bounds writes are clipped.
+
+| `fill(rect, cell)`
+| Bulk-fill the cells inside `rect` (a `Rect`) with a copy of `cell`.
+
+| `toString`
+| Debug-only string form, e.g. `"Surface(80x25)"`.  Format may
+  change.
+|===
 
 === Font [[font]]
 
@@ -2185,14 +2511,22 @@ historical font releases that use the same codepage encoding.
 
 === Hyperlinks [[hyperlinks]]
 
-Map-like read interface over the active hyperlink table.
+Typed-ID lookup table over the active hyperlink registry.  Despite the
+`[id]` / `containsKey(id)` shape, this is **not** a `Map` — there is no
+`keys` / `values` / `count` / iteration.  IDs flow into a script from
+`add()` returns or from `Cell.hyperlinkId` on cells under the cursor;
+scripts can't enumerate the ID space.  ciolib doesn't expose an
+enumeration primitive either, and no current script needs one.  If a
+caller turns up that wants enumeration, the table can grow `keys` /
+`count` / `iterate` later without breaking the existing surface (see
+`Console.entries` for the pattern).
 
 [options="header",cols="2,3"]
 |===
 | Member | Description
 
 | `Hyperlinks[id]`
-| URI string for `id`, or `null`.
+| URI string for `id`, or `null` if `id` is not in the table.
 
 | `Hyperlinks.containsKey(id)`
 | `true` if `id` is present.
@@ -2228,15 +2562,44 @@ the ring has wrapped.
 | Monotonic count of entries ever written.  Survives `clear()`.
 
 | `Console[seq]`
-| Entry with monotonic sequence `seq`, as a tuple
-  `[seq, ts, source, text]`.  `source` is one of the
+| Entry with monotonic sequence `seq`, as a `[ts, source, text]`
+  triple (the seq number is the index you queried with — not
+  duplicated in the value).  `source` is one of the
   <<logsource,`LogSource`>> values.  Out-of-range returns `null`.
 
 | `Console.clear()`
 | Drop all entries.  `total` keeps incrementing.
 
+| `Console.markSeen()`
+| Snapshot the current `total` and error counters as the "seen"
+  baseline.  The status-bar log indicator (yellow for new prints,
+  red for new errors) compares the live counters against this
+  baseline, so calling `markSeen()` clears the indicator until the
+  next entry arrives.  The built-in REPL invokes this on exit so
+  console activity logged while the REPL is open doesn't leave the
+  indicator lit.
+
 | `Console.iterate`, `iteratorValue`
 | Wren iteration protocol — works in `for (e in Console) { ... }`.
+
+| `Console.entries`
+| `Sequence`-protocol view on the same underlying buffer.  Returns a
+  fresh `ConsoleEntries` instance that delegates `count`, `[seq]`, and
+  the iteration pair to `Console`.  Use this when you want
+  `.map`/`.where`/`.toList`/`.count`/`.where`/etc. — the helpers are
+  defined as instance methods on `Sequence`, so they need an instance
+  to dispatch on:
++
+[source,wren]
+----
+var errors = Console.entries.where {|e|
+  e[2] == LogSource.runtimeError
+}.toList
+----
++
+`Console` itself stays an all-static namespace — it can't `is Sequence`
+directly because Sequence's helpers (`map`, `where`, ...) are defined
+as instance methods on `this`, which a class object can't satisfy.
 |===
 
 === LogSource [[logsource]]
@@ -2290,9 +2653,14 @@ Connection-level send and receive.
 
 | `Conn.send(s)`
 | Send bytes through the full path: telnet IAC escaping, then on-wire.
+  Returns `null` on success or a <<connerror,`ConnError`>> on failure
+  (connection down, outbuf full / partial queue).  Most scripts ignore
+  the return; ones that care can `is ConnError` and inspect
+  `.bytesSent` to retry.
 
 | `Conn.sendRaw(s)`
-| Send bytes raw, bypassing IAC escaping.
+| Send bytes raw, bypassing IAC escaping.  Same return contract as
+  `send`.
 
 | `Conn.close()`
 | Close the connection.
@@ -2309,12 +2677,42 @@ Connection-level send and receive.
 | `Conn.queued`
 | Bytes queued to write that haven't gone out yet.
 
-| `Conn.peek(n)`
-| Look at up to `n` bytes from the inbuf without consuming.
+| `Conn.peek(count)`
+| Look at up to `count` bytes from the inbuf without consuming.
   Clamped to the actual ring size.
 
-| `Conn.recv(n)`
-| Read up to `n` bytes from the inbuf and consume them.
+| `Conn.recv(count)`
+| Read up to `count` bytes from the inbuf and consume them.
+|===
+
+==== ConnError [[connerror]]
+
+Recoverable wire-side failure returned by `Conn.send` / `Conn.sendRaw`.
+Returned IN PLACE of `null` on failure; null still means success.
+Mirrors the `<<sftperror,SFTPError>>` / `<<fileerror,FileError>>` /
+`<<wonerror,WONError>>` shape.
+
+[options="header",cols="2,3"]
+|===
+| Member | Description
+
+| `code`        | `ConnErr.*` enum value.
+| `bytesSent`   | For `ConnErr.shortSend`: number of bytes that *did*
+                 get queued before the outbuf ran out — the script can
+                 retry with `s[bytesSent..-1]` to send the remainder.
+                 `0` for other codes.
+| `message`     | Human-readable diagnostic, may be `null`.
+| `toString`    | `"ConnError: <CODE-NAME>: ..."`.
+|===
+
+`ConnErr` constants:
+
+[options="header",cols="2,1,3"]
+|===
+| Constant | Code | When emitted
+| `ConnErr.ok`           | 0 | Sentinel; never appears on a returned ConnError.
+| `ConnErr.notConnected` | 1 | Send attempted while `Conn.connected == false`.
+| `ConnErr.shortSend`    | 2 | Outbuf was full / send partially queued.
 |===
 
 === CTerm [[cterm]]
@@ -2720,8 +3118,8 @@ severe; `debug` is the least.
 
 Module-private bridge for state the host owns but Wren shouldn't
 be able to construct directly.  The members below are foreigns;
-the `Cache` / `Download` / `Upload` module-level vars (see below)
-are pre-bound from these at module load.
+the `Cache` / `Download` module-level vars (see below) are
+pre-bound from these at module load.
 
 [options="header",cols="2,3"]
 |===
@@ -2743,9 +3141,13 @@ are pre-bound from these at module load.
   equal to the user's `$HOME` — the "unfortunate default" guard
   for old configs.  Used as the module-level `Download` binding.
 
-| `Host.uploadDir`
-| Same shape as `downloadDir` but for `UploadPath`.  Used as the
-  module-level `Upload` binding.
+| `Host.uploadPath`
+| The BBS's configured `UploadPath` as a String, or `null` when
+  unconfigured.  Pass to `pickFile` / `pickFiles` as `initialDir`.
+  No upload-side `Directory` is exposed on purpose — uploads must
+  go through the picker (which mints a per-file consent token);
+  scripts can't enumerate `UploadPath` or open files from it
+  directly.
 
 | `Host.pickFile(initialDir, mask, opts)`
 | User-consent escape hatch for "upload from anywhere": invokes
@@ -2777,8 +3179,8 @@ are pre-bound from these at module load.
   signing key rotated), the file no longer exists, or the
   file's content has changed since consent (SHA-256 mismatch).
   This is the only path by which Wren can construct a `File`
-  for a path outside the sandboxed `Cache` / `Upload` /
-  `Download` roots; the token *is* the consent.
+  for a path outside the sandboxed `Cache` / `Download` roots;
+  the token *is* the consent.
 
 | `Host.uploadArrow=(b)`, `Host.downloadArrow=(b)`
 | Status-bar transfer-indicator arrows (CP437 ↑ / ↓ at columns
@@ -2842,17 +3244,23 @@ if (Cache.contains("greetings.txt")) {
 ----
 
 There is no Wren-callable factory for `Directory` — `Cache`,
-`Download`, `Upload`, and `Cache.list[someSubdir]` (and the
-analogous `Download.list[...]` / `Upload.list[...]`) are the
-only paths to one.
+`Download`, and `Cache.list[someSubdir]` (and the analogous
+`Download.list[...]`) are the only paths to one.
 
-`Download` and `Upload` are module-level `Directory` bindings
-pre-bound from `Host.downloadDir` / `Host.uploadDir` at import
-time.  Both are `null` when the corresponding BBS path is empty
-or set to the user's `$HOME`; scripts MUST null-check before use.
-Their relaxed-name predicate is what makes typical SFTP filenames
-("file with spaces.zip", "doc-v1.0.tar.gz") usable as `local`
-paths in transfer queues.
+`Download` is a module-level `Directory` binding pre-bound from
+`Host.downloadDir` at import time.  It is `null` when the
+configured `DownloadPath` is empty or set to the user's `$HOME`;
+scripts MUST null-check before use.  Its relaxed-name predicate
+is what makes typical SFTP filenames ("file with spaces.zip",
+"doc-v1.0.tar.gz") usable as `local` paths in transfer queues.
+
+There is intentionally no `Upload` counterpart.  All uploads must
+go through `Host.pickFile` / `Host.pickFiles`, which mint a
+per-file consent token tied to the file's content hash.  The
+script then enqueues uploads by token (`File.token`); the worker
+re-opens the source via `Host.openLocalFile(token)`.  Use
+`Host.uploadPath` to feed the configured `UploadPath` to the
+picker as `initialDir`.
 
 === Directory
 
@@ -3032,8 +3440,7 @@ methods on the resulting `File` are no-ops if construction failed.
 
 | `File.token`
 | Opaque consent token for picker-sourced `File`s; `null` for
-  `File`s obtained via `Cache` / `Upload` / `Download` Directory
-  listings.  Persist this in WON next to the path string and pass
+  `File`s obtained via `Cache` / `Download` Directory listings.  Persist this in WON next to the path string and pass
   back to `Host.openLocalFile` on resume to re-construct the
   `File` at the same absolute path.  See "Picker consent tokens"
   below.
@@ -3048,21 +3455,79 @@ methods on the resulting `File` are no-ops if construction failed.
   need it for display.
 |===
 
-A `File` whose backing file has been deleted is dead — every method
-aborts the calling fiber with "handle is dead" or "backing file no
-longer exists".  Detection happens both actively (when the file is
-removed via `Directory.delete` from any handle to its parent) and
-on every operation (a per-call `fexist()` check catches deletions
-that bypassed `Directory.delete`).  See the
+A `File` whose backing file has been deleted via `Directory.delete`
+is *dead* — every subsequent method aborts the calling fiber with
+"handle is dead" (a programmer error: the script kept the handle
+after explicitly invalidating it).  See the
 <<directory-handle-staleness,Handle staleness>> note in the Directory
 section for the full mechanism.
+
+A `File` whose backing path *vanished externally* (another process
+deleted it, the user `rm`'d the file outside the script's awareness)
+is recoverable — the per-call `fexist()` check catches it and
+returns a `<<fileerror,FileError>>` with `code == FileErr.vanished`
+in place of the typed result.  Drop or inspect the error and move on;
+the fiber is not aborted.
+
+==== FileError [[fileerror]]
+
+Recoverable I/O failures (disk full, mmap failure, externally-deleted
+file, OOM mid-op, …) flow through a `FileError` foreign returned IN
+PLACE of the typed result.  Mirrors `<<sftperror,SFTPError>>` in
+shape.  Most scripts will simply ignore the value — that's the point:
+a failed write returns a `FileError` the caller can drop on the floor
+and continue, rather than aborting the fiber.  Scripts that care can
+demux with `is FileError`.
+
+[options="header",cols="2,3"]
+|===
+| Member | Description
+
+| `code`
+| `FileErr.*` enum value (see below).  Indicates the failure category.
+| `errno`
+| Captured C `errno` at the failure point, or `0` when the failure
+  isn't a libc-call result (e.g., `FileErr.oom` synthesises
+  `ENOMEM` when malloc returns NULL).
+| `message`
+| Human-readable diagnostic text, or `null`.
+| `toString`
+| `"FileError: <CODE-NAME>: <message> (errno=<n>)"`, fields omitted
+  when not present.  Useful for logging.
+|===
+
+`FileErr` constants (matching `enum file_err_code` in `wren_bind_fs.c`):
+
+[options="header",cols="2,1,3"]
+|===
+| Constant | Code | When emitted
+| `FileErr.ok`            | 0 | Sentinel; never appears on a returned FileError.
+| `FileErr.openFailed`    | 1 | `fopen` returned NULL (perms, ENOSPC, missing, …).
+| `FileErr.writeFailed`   | 2 | `fwrite` short-write (disk full, I/O error, write-only mount).
+| `FileErr.statFailed`    | 3 | `flength` / `fstat` failed mid-op.
+| `FileErr.mmapFailed`    | 4 | `xpmap` returned NULL — only from `File.sha1` / `File.md5`.
+| `FileErr.oom`           | 5 | Internal `malloc` / `realloc` returned NULL.
+| `FileErr.vanished`      | 6 | Backing file/dir gone (race with external `rm`).
+| `FileErr.resolveFailed` | 7 | `Cache`-relative path resolution failed.
+|===
+
+**What is NOT a FileError:** programmer errors abort the fiber instead.
+That covers: using a dead handle (`Directory.delete` invalidated it),
+calling read/write on an unopened file, calling `open()` twice,
+passing a negative offset/count, reading past EOF, passing the wrong
+type to a setter.  These are all "your code is wrong" — fail loud.
+
+**What is also not a FileError:** EOF from a short read.  `File.read`
+and friends return whatever bytes were actually read (possibly empty),
+*not* a FileError.  The script can detect EOF by comparing the
+returned byte count to the requested count, just like `fread`.
 
 ==== Picker consent tokens [[picker-tokens]]
 
 Wren scripts must not synthesize `File` foreigns from arbitrary
-paths — that's the whole point of the `Cache` / `Upload` /
-`Download` sandboxed roots and the relaxed-name predicate.  The
-escape hatch is `Host.pickFile` / `Host.pickFiles`, where the UIFC
+paths — that's the whole point of the `Cache` / `Download`
+sandboxed roots and the relaxed-name predicate.  The escape
+hatch is `Host.pickFile` / `Host.pickFiles`, where the UIFC
 filepick widget itself is the user's signal of consent.
 
 To let queued picker-sourced uploads survive a disconnect, the
@@ -3244,9 +3709,10 @@ site).
 | Open a file.  `flags` is a bitmask from `FileFlag` (see below).
   Resumes with `SFTPHandle` or `SFTPError`.
 
-| `SFTP.read(fiber, handle, offset, count)`
+| `SFTP.read(fiber, handle, count, offset)`
 | Read up to `count` bytes from `handle` at `offset`.  Resumes with
-  the bytes as a String, `null` at EOF, or `SFTPError`.
+  the bytes as a String, `null` at EOF, or `SFTPError`.  Argument
+  order matches `File.readBytes(count, offset)`.
 
 | `SFTP.write(fiber, handle, offset, bytes)`
 | Write `bytes` to `handle` at `offset`.  All-or-nothing: resumes
@@ -3377,10 +3843,9 @@ for `System.print` / interpolation; useful for log-line debug.
 ==== Async Ops [[async-pattern]]
 
 Every `SFTP.<op>(fiber, ...)` and `Timer.trigger(fiber, ms)` follow
-the same fiber-arg pattern.  The first argument is the fiber to
-resume with the result.  Two common shapes:
-
-**Blocking-style** — pass `Fiber.current`, yield right after:
+the same fiber-arg pattern.  The first argument is the fiber that
+will be resumed with the result.  The canonical idiom is the
+`||`-yield pattern:
 
 [source,wren]
 ----
@@ -3388,29 +3853,57 @@ var r = SFTP.realpath(Fiber.current, ".") || Fiber.yield()
 // r is String or SFTPError
 ----
 
-The `||` shortcut means: if the foreign returned an `SFTPError`
-synchronously (session is gone), `r` is that error and `Fiber.yield()`
-isn't evaluated.  Otherwise the yield resumes with the result.
+The `||` short-circuits when the foreign returned a synchronous
+error (no session, OOM): `r` is the `SFTPError` immediately, no
+yield happens.  Otherwise the foreign returned `null`, the yield
+fires, and the fiber resumes with the actual result (success or
+async error).
 
-This shape is *only* safe in a fiber whose only resume sources are
-its own SFTP completions.  If the calling fiber has other things
-that can wake it (`Wake.post`, `Timer.trigger`, the App's claim
-handler posting events to its run-fiber, etc.), the yield can
-return a value of the wrong type and the `r is SFTPError` check
-will see something other than a String.  From inside an `App`
-handler, wrap the SFTP call with `<<ui-app,App.runChild>>`, which
-spawns a dedicated child fiber and pumps the App's event loop
-while it's parked:
+===== The single-source rule
 
+This idiom is correct *iff* the calling fiber's only resume sources
+are the async-op completions it's making.  If the fiber has other
+things that can wake it (`Wake.post` from the host, the App's claim
+handler posting key/mouse/timer events to its run-fiber, etc.), the
+yield can return a value of the wrong type and the result-type check
+on the next line will see garbage.
+
+In practice, every script context that calls `SFTP.<op>` is already
+single-source by construction.  The three providers:
+
+* *Hook handler fibers* — the host invokes hooks (`onConnect`,
+  `onKey`, etc.) in a fresh fiber; nothing else can wake it.
+  `auto/connected/sftp_pubkey.wren` works this way.
+
+* *SftpQueue worker fibers* — the queue spawns one worker per
+  direction; each is the long-running parker for its own ops.
+  `sftp_queue.wren` works this way.
+
+* *App.runChild children* — an `App` handler runs in the App's
+  run-fiber, which IS multi-source.  Wrap `||`-yield work in
+  `<<ui-app-runchild,App.runChild>>` to get a single-source child
+  fiber while the run-fiber keeps dispatching events:
++
 [source,wren]
 ----
 var r = app.runChild(Fn.new {
   return SFTP.realpath(Fiber.current, ".") || Fiber.yield()
 })
 ----
++
+`sftp_app.wren` works this way — every `SFTP.<op>` call inside
+`SftpApp` ultimately runs in a `runChild` fiber.
 
-**Callback-style** — pass `Fiber.new {|r| ... }`, calling fiber
-doesn't yield at all:
+If you ever find yourself wanting to write `SFTP.<op>(Fiber.current,
+...) || Fiber.yield()` *directly inside* a key/mouse handler or
+other App-handler context, that's the multi-source-fiber footgun.
+Wrap it in `runChild`.
+
+===== Callback shape (no yield)
+
+For fire-and-forget — no need for an answer at all, or the result
+handler is naturally a closure — pass `Fiber.new {|r| ... }`
+instead of `Fiber.current`.  The calling fiber doesn't yield:
 
 [source,wren]
 ----
@@ -3419,10 +3912,9 @@ SFTP.realpath(Fiber.new {|r|
 }, ".")
 ----
 
-The framework calls `fiber.call(result)` on whichever fiber was
-passed.  Useful from hooks (which mustn't yield directly — see
-<<hook-events>>) and for fan-out where the result handler is
-naturally a closure over its own state.
+The framework `.call`s the passed fiber with the result whenever
+the op completes.  Common in hooks that don't want to block on the
+result, and for fan-out where each result wants its own closure.
 
 === WON [[won]]
 
@@ -3473,13 +3965,50 @@ mode.  Cyclic Lists / Maps abort in *both* modes.
 | Pretty-printed lossy form.
 
 | `WON.deserialize(text)`
-| Parse `text` and return the reconstructed value.  Aborts the fiber with
-  a message containing the byte offset on syntax errors, premature end of
-  input, trailing garbage, or a `List` / `Map` used as a `Map` key.
-  Tolerates arbitrary whitespace and trailing commas inside `[...]` /
-  `{...}`.  Accepts exactly the string-escape set the Wren compiler
-  itself recognises.
+| Parse `text` and return the reconstructed value.  On parse failure
+  returns a <<wonerror,`WONError`>> IN PLACE of the parsed value
+  (the fiber is NOT aborted — `WON.deserialize` is the prototypical
+  consumer of untrusted input, and a corrupt config file shouldn't
+  kill the script).  Tolerates arbitrary whitespace and trailing
+  commas inside `[...]` / `{...}`.  Accepts exactly the string-escape
+  set the Wren compiler itself recognises.  Programmer errors
+  (passing a non-String) DO still abort.
 |===
+
+==== WONError [[wonerror]]
+
+Returned IN PLACE of the parsed value when `WON.deserialize` fails.
+The script demuxes via `is WONError`.  Mirrors the
+`<<sftperror,SFTPError>>` / `<<fileerror,FileError>>` /
+`<<connerror,ConnError>>` shape.
+
+[options="header",cols="2,3"]
+|===
+| Member | Description
+
+| `code`     | `WONErr.*` enum value.
+| `offset`   | Byte offset where the error was detected.  Useful for
+              flagging a position in the input.
+| `message`  | Human-readable diagnostic, may be `null`.
+| `toString` | `"WONError: <CODE-NAME>: <message> at offset <n>"`.
+|===
+
+`WONErr` constants:
+
+[options="header",cols="2,1,3"]
+|===
+| Constant | Code | When emitted
+| `WONErr.ok`            | 0 | Sentinel; never appears on a returned WONError.
+| `WONErr.syntax`        | 1 | Expected token / unexpected character / malformed number.
+| `WONErr.truncated`     | 2 | Unterminated string, premature end of input.
+| `WONErr.invalidEscape` | 3 | Malformed `\x` / `\u` / `\U` escape, or unknown `\x` letter.
+| `WONErr.invalidKey`    | 4 | A `List` or `Map` was used as a `Map` key.
+| `WONErr.tooDeep`       | 5 | Nesting exceeded the parser's recursion budget (256 levels).
+| `WONErr.trailingData`  | 6 | A complete value was followed by more (non-whitespace) data.
+|===
+
+OOM during parsing aborts the fiber (no recoverable path — the
+parser can't allocate a `WONError` to return either).
 
 [source,wren]
 ----
@@ -3634,6 +4163,26 @@ Methods of interest:
   overlay sits above the foreground widget tree but *below* the
   modal stack, so a dialog the user is actively working with isn't
   obscured by an indicator behind it.
+* `releaseFocus()` / `restoreFocus()` — wrap blocking host UIs
+  that own the screen themselves (the filepicker, modal C
+  dialogs) so the App's foreground tree doesn't *also* draw as
+  focused.  Without this, the host UI's pre-call screen save
+  captures the App's panes in their focused colour scheme, and
+  the post-call restore re-paints them that way until the next
+  App-driven repaint — visually, two widgets are focused at
+  once.  Operates on `modalTop` (so a release while a modal is
+  up defocuses the modal's leaf, not the root's) and forces an
+  immediate paint so the unfocused state lands on screen
+  *before* the host UI saves it.  Both are idempotent: a second
+  `releaseFocus` before `restoreFocus` is a no-op, and
+  `restoreFocus` without a prior release is a no-op.
++
+[source,wren]
+----
+releaseFocus()
+var picked = Host.pickFiles(Host.uploadPath, "*", 0)
+restoreFocus()
+----
 * `showHelp()` — walks from the focused leaf up the parent chain to
   the first widget with `helpText` set, then opens a `Help` dialog
   with that text.  No-op if nothing in the chain has help.
@@ -3649,17 +4198,17 @@ Methods of interest:
 
 ==== Async work in handlers [[ui-app-runchild]]
 
-A keymap or widget handler that needs to do an SFTP op (or any
-other yielding work) cannot just write `SFTP.foo(Fiber.current,
-...) || Fiber.yield()` and expect it to work — the App's run-
-fiber has multiple resume sources (the claim handler's `Wake.post`
-for keys/mouse, the `tickMs` timer, external `app.post(value)`
-calls), and any of them might wake the fiber before the SFTP
-result arrives.  The yield then returns the wrong type and the
-calling code sees garbage.
+`runChild` is the App-context provider for the single-source fiber
+that the `||`-yield SFTP idiom (see <<async-pattern>>) requires.
+A keymap or widget handler that needs to call `SFTP.<op>` can't do
+it directly: the App's run-fiber has multiple resume sources (the
+claim handler's `Wake.post` for keys/mouse, the `tickMs` timer,
+external `app.post(value)` calls), and any of them might wake the
+fiber before the SFTP result arrives.  The yield then returns the
+wrong type and the calling code sees garbage.
 
-`runChild(fn)` solves this by spawning a child fiber whose only
-resume sources are its own SFTP / `Wake.post` completions:
+`runChild(fn)` spawns a child fiber whose only resume sources are
+its own SFTP / `Wake.post` completions:
 
 [source,wren]
 ----
@@ -3801,6 +4350,16 @@ Mouse: `Container.hitTest(px, py)` walks children top-to-bottom
 (last-added wins) and returns the deepest visible widget covering
 the point, or the Container itself when nothing under it does.
 
+`focusedIndex` is readable as a property and writable as a setter
+for explicit focus management — e.g. the App-level
+`releaseFocus()` / `restoreFocus()` pair clears and restores it
+around blocking host UIs.  The getter returns `null` when no
+child is focused, otherwise an integer in `0..count - 1`.  The
+setter toggles `.focused` on the previously- and newly-focused
+child; pass `null` to clear focus.  Direct day-to-day focus
+changes still go through `focusNext` / `focusPrev` etc., not this
+setter.
+
 === Pane [[ui-pane]]
 
 `Container` with a frame, optional title, `[?]` and `[X]` corner
@@ -3852,6 +4411,11 @@ Navigation: `Up`, `Down`, `PageUp`, `PageDown`, `Home`, `End` move
 the selection.  `Enter` fires `onSelect` with `(index, item)`.
 Mouse clicks select the row; wheel scrolls three rows; clicks on
 the scrollbar column step or jump proportionally.
+
+`selected` is `null` when no row is selected (empty list, or
+explicitly cleared with `list.selected = null`); otherwise an
+integer in `0..count - 1`.  `selectedItem` mirrors the same
+contract — `null` when nothing is selected, the item otherwise.
 
 Scrollbar layout knobs:
 
@@ -3946,7 +4510,9 @@ Two pointers: `cursor` (visually highlighted row) and `selected`
 (the committed value).  Up/Down move the cursor; `Home` / `End`
 jump to ends; `Space` or `Enter` commits the cursor as the
 selection.  Mouse click selects directly.  `onChange` fires only
-when the selection actually changes.  The cursor highlight only
+when the selection actually changes.  Both pointers are `null`
+when the group is empty (or explicitly cleared by assigning
+`null`); otherwise integers in `0..count - 1`.  The cursor highlight only
 appears while the widget itself has focus — leaving the group
 shows just the filled `+•+` glyph on the selected row, so a
 multi-field Form doesn't confuse the user with a stale lightbar.
@@ -4005,7 +4571,9 @@ bar.items  = [
 Keys: `Left` / `Right` move focus between items with wrap; `Home` /
 `End` jump to ends; `Enter` / `Space` activate the focused item; a
 typed letter (case-insensitive ASCII) matched against item labels'
-first characters activates that item.  `tryHotkey(ev)` is exposed
+first characters activates that item.  `focusedItem` is `null`
+when the bar is empty (or explicitly cleared); otherwise an
+integer in `0..count - 1`.  `tryHotkey(ev)` is exposed
 on the widget so a `Container` parent can route a letter pressed
 elsewhere into the bar's matcher.  Mouse click activates the clicked
 item; clicks on inter-item gaps are dropped.  Theme roles:

@@ -315,14 +315,16 @@ fn_REPL_printTrace_(WrenVM *vm)
 static void
 fn_REPL_compile_(WrenVM *vm)
 {
+	if (wrenGetSlotType(vm, 1) != WREN_TYPE_STRING ||
+	    wrenGetSlotType(vm, 2) != WREN_TYPE_STRING) {
+		wren_throw(vm,
+		    "REPL.compile_: module and src must both be String");
+		return;
+	}
 	const char *m = wrenGetSlotString(vm, 1);
 	const char *s = wrenGetSlotString(vm, 2);
 	bool isExpr      = wrenGetSlotBool(vm, 3);
 	bool printErrors = wrenGetSlotBool(vm, 4);
-	if (m == NULL || s == NULL) {
-		wrenSetSlotNull(vm, 0);
-		return;
-	}
 	ObjClosure *closure = wrenCompileSource(vm, m, s, isExpr, printErrors);
 	if (closure == NULL)
 		vm->apiStack[0] = NULL_VAL;
@@ -341,7 +343,7 @@ fn_REPL_hasModule(WrenVM *vm)
 	}
 	char *zm = malloc((size_t)len + 1);
 	if (zm == NULL) {
-		wrenSetSlotBool(vm, 0, false);
+		wren_throw(vm, "REPL.hasModule: out of memory");
 		return;
 	}
 	memcpy(zm, m, (size_t)len);
@@ -795,6 +797,7 @@ static const struct binding BINDINGS[] = {
 
 	/* MouseEvent (instance) */
 	{ "MouseEvent", false, "event",      fn_MouseEvent_event      },
+	{ "MouseEvent", false, "bstate",     fn_MouseEvent_bstate     },
 	{ "MouseEvent", false, "modifiers",  fn_MouseEvent_modifiers  },
 	{ "MouseEvent", false, "startX",     fn_MouseEvent_startX     },
 	{ "MouseEvent", false, "startY",     fn_MouseEvent_startY     },
@@ -842,6 +845,7 @@ static const struct binding BINDINGS[] = {
 	{ "Cell",  false, "bgRgb=(_)",       fn_Cell_bgRgb_set       },
 	{ "Cell",  false, "hyperlinkId",     fn_Cell_hyperlinkId     },
 	{ "Cell",  false, "hyperlinkId=(_)", fn_Cell_hyperlinkId_set },
+	{ "Cell",  false, "eqContent(_)",    fn_Cell_eqContent       },
 	{ "Cell",  false, "toString",        fn_Cell_toString        },
 
 	/* Surface (all instance) — w×h grid of vmem_cells.  Inherits
@@ -877,7 +881,7 @@ static const struct binding BINDINGS[] = {
 
 	{ "Host", true, "cacheDirectory",       fn_Host_cacheDirectory    },
 	{ "Host", true, "downloadDir",          fn_Host_downloadDir       },
-	{ "Host", true, "uploadDir",            fn_Host_uploadDir         },
+	{ "Host", true, "uploadPath",           fn_Host_uploadPath        },
 	{ "Host", true, "pickFile(_,_,_)",      fn_Host_pickFile          },
 	{ "Host", true, "pickFiles(_,_,_)",     fn_Host_pickFiles         },
 	{ "Host", true, "openLocalFile(_)",     fn_Host_openLocalFile     },
@@ -960,6 +964,12 @@ static const struct binding BINDINGS[] = {
 	{ "Conn",  true, "queued",         fn_Conn_queued       },
 	{ "Conn",  true, "peek(_)",        fn_Conn_peek         },
 	{ "Conn",  true, "recv(_)",        fn_Conn_recv         },
+
+	/* ConnError (instance) */
+	{ "ConnError", false, "code",       fn_ConnError_code      },
+	{ "ConnError", false, "bytesSent",  fn_ConnError_bytesSent },
+	{ "ConnError", false, "message",    fn_ConnError_message   },
+	{ "ConnError", false, "toString",   fn_ConnError_toString  },
 
 	/* CTerm */
 	{ "CTerm", true, "emulation",          fn_CTerm_emulation       },
@@ -1091,6 +1101,12 @@ static const struct binding BINDINGS[] = {
 	{ "File",      false, "token",           fn_File_token          },
 	{ "File",      false, "toString",        fn_File_toString       },
 
+	/* FileError (instance) */
+	{ "FileError", false, "code",            fn_FileError_code      },
+	{ "FileError", false, "errno",           fn_FileError_errno     },
+	{ "FileError", false, "message",         fn_FileError_message   },
+	{ "FileError", false, "toString",        fn_FileError_toString  },
+
 	/* Hook */
 	{ "Hook",  true, "onKey(_)",       fn_Hook_onKey            },
 	{ "Hook",  true, "onKey(_,_)",     fn_Hook_onKey_filtered   },
@@ -1110,6 +1126,12 @@ static const struct binding BINDINGS[] = {
 	{ "Host", true, "sshPublicKey",      fn_Host_sshPublicKey      },
 
 	{ "WON",   true, "deserialize(_)", fn_WON_deserialize   },
+
+	/* WONError (instance) */
+	{ "WONError", false, "code",     fn_WONError_code     },
+	{ "WONError", false, "offset",   fn_WONError_offset   },
+	{ "WONError", false, "message",  fn_WONError_message  },
+	{ "WONError", false, "toString", fn_WONError_toString },
 };
 
 WrenForeignMethodFn
@@ -1190,6 +1212,24 @@ wren_bind_lookup_class(const char *module, const char *className)
 	if (strcmp(className, "File") == 0) {
 		WrenForeignClassMethods m = {
 			wren_file_allocate, wren_file_finalize
+		};
+		return m;
+	}
+	if (strcmp(className, "FileError") == 0) {
+		WrenForeignClassMethods m = {
+			wren_file_error_allocate, wren_file_error_finalize
+		};
+		return m;
+	}
+	if (strcmp(className, "WONError") == 0) {
+		WrenForeignClassMethods m = {
+			wren_won_error_allocate, wren_won_error_finalize
+		};
+		return m;
+	}
+	if (strcmp(className, "ConnError") == 0) {
+		WrenForeignClassMethods m = {
+			wren_conn_error_allocate, wren_conn_error_finalize
 		};
 		return m;
 	}

@@ -167,6 +167,9 @@ struct wren_host_state {
 	WrenHandle  *sftp_stat_class;
 	WrenHandle  *sftp_handle_class;
 	WrenHandle  *sftp_error_class;
+	WrenHandle  *file_error_class;
+	WrenHandle  *won_error_class;
+	WrenHandle  *conn_error_class;
 	WrenHandle  *timer_elapsed_class;
 
 	/* One-shot timer registrations from Timer.trigger.  Bounded ring

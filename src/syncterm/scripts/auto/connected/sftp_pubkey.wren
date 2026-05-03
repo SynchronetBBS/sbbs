@@ -43,7 +43,7 @@ class SftpPubkey {
     var content = ""
     var off = 0
     while (true) {
-      var b = SFTP.read(Fiber.current, h, off, 4096) || Fiber.yield()
+      var b = SFTP.read(Fiber.current, h, 4096, off) || Fiber.yield()
       if (b == null) break
       if (b is SFTPError) break
       if (b.bytes.count == 0) break

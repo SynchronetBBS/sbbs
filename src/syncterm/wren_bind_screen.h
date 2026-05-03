@@ -7,6 +7,8 @@
  * so the BINDINGS table and wren_bind_lookup_class can reach the
  * implementations defined in wren_bind_screen.c. */
 
+#include <stdint.h>
+
 #include "wren.h"
 
 struct mouse_event;
@@ -57,6 +59,7 @@ void fn_Cell_hyperlinkId(WrenVM *vm);
 void fn_Cell_hyperlinkId_set(WrenVM *vm);
 void fn_Cell_legacyAttr(WrenVM *vm);
 void fn_Cell_legacyAttr_set(WrenVM *vm);
+void fn_Cell_eqContent(WrenVM *vm);
 void fn_Cell_toString(WrenVM *vm);
 void fn_Font_available(WrenVM *vm);
 void fn_Font_codepage(WrenVM *vm);
@@ -88,6 +91,7 @@ void fn_KeyEvent_code(WrenVM *vm);
 void fn_KeyEvent_codepoint(WrenVM *vm);
 void fn_KeyEvent_text(WrenVM *vm);
 void fn_KeyEvent_toString(WrenVM *vm);
+void fn_MouseEvent_bstate(WrenVM *vm);
 void fn_MouseEvent_endX(WrenVM *vm);
 void fn_MouseEvent_endY(WrenVM *vm);
 void fn_MouseEvent_event(WrenVM *vm);
@@ -95,6 +99,14 @@ void fn_MouseEvent_modifiers(WrenVM *vm);
 void fn_MouseEvent_startX(WrenVM *vm);
 void fn_MouseEvent_startY(WrenVM *vm);
 void fn_MouseEvent_toString(WrenVM *vm);
+
+/* Build a Wren-side KeyEvent / MouseEvent foreign in slot `dst`.  Uses
+ * slot `dst + 1` as scratch for the class lookup, so the caller must
+ * have ensured at least `dst + 2` slots and treat slot `dst + 1` as
+ * clobberable.  Used from the input dispatch paths in this file and
+ * from wren_host_dispatch_mouse in wren_host.c. */
+void push_key_event(WrenVM *vm, uint16_t code, int dst);
+void push_mouse_event(WrenVM *vm, const struct mouse_event *mev, int dst);
 void fn_Screen_attr_set(WrenVM *vm);
 void fn_Screen_hyperlinkId(WrenVM *vm);
 void fn_Screen_hyperlinkId_set(WrenVM *vm);

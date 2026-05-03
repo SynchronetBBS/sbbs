@@ -33,7 +33,6 @@ class UiMenubarTest {
   static check_(ok, label) {
     if (ok) {
       __pass = __pass + 1
-      System.print("  PASS %(label)")
     } else {
       __fail = __fail + 1
       System.print("  FAIL %(label)")
@@ -53,7 +52,7 @@ class UiMenubarTest {
 
   static testDefaults_() {
     var bar = MenuBar.new()
-    check_(bar.count == 0 && bar.focusedItem == -1 && bar.focusable == true,
+    check_(bar.count == 0 && bar.focusedItem == null && bar.focusable == true,
            "MenuBar: defaults (no items, no focus, focusable)")
   }
 
@@ -137,7 +136,7 @@ class UiMenubarTest {
     var bar = makeBar_(fired)
     // Layout: File (0..6), space (6), Edit (7..13), space (13), Help (14..20)
     // Click on screen col bounds.x + 8 = 9 (inside Edit)
-    var ev = MouseEvent.new(Mouse.button1Click, 0, 9, 1, 9, 1)
+    var ev = MouseEvent.new(Mouse.button1Click, 9, 1, 9, 1)
     var consumed = bar.handle(ev)
     check_(consumed && fired[0] == "Edit" && bar.focusedItem == 1,
            "MenuBar: click on item activates it")
@@ -147,7 +146,7 @@ class UiMenubarTest {
     var fired = [null]
     var bar = makeBar_(fired)
     // Gap after File ends — surface col 6 (separator), screen col bounds.x + 6 = 7
-    var ev = MouseEvent.new(Mouse.button1Click, 0, 7, 1, 7, 1)
+    var ev = MouseEvent.new(Mouse.button1Click, 7, 1, 7, 1)
     var consumed = bar.handle(ev)
     check_(!consumed && fired[0] == null,
            "MenuBar: click on inter-item gap is dropped")

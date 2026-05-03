@@ -9,6 +9,7 @@
 
 #include "wren_bind_internal.h"
 #include "wren_bind_won.h"
+#include "wren_host_internal.h"
 
 #include <stdarg.h>
 #include <stdbool.h>
@@ -23,6 +24,27 @@
  * itself (see wren_compiler.c MAX_RECURSION_DEPTH). */
 #define WON_MAX_DEPTH 256
 
+/* WONError code values — granular enough to demux ("the input was
+ * truncated, ask the user for more" vs "the syntax is wrong, give
+ * up") without overfitting one code per message.  Mirrors the
+ * SFTPError / FileError pattern. */
+enum won_err_code {
+	WON_ERR_OK = 0,
+	WON_ERR_SYNTAX,         /* expected X, unexpected character, malformed token */
+	WON_ERR_TRUNCATED,      /* unterminated string / premature EOF */
+	WON_ERR_INVALID_ESCAPE, /* malformed \x / \u / \U */
+	WON_ERR_INVALID_KEY,    /* List/Map used as Map key */
+	WON_ERR_TOO_DEEP,       /* nested past WON_MAX_DEPTH */
+	WON_ERR_TRAILING_DATA,  /* extra bytes after a complete value */
+};
+
+struct wren_won_error {
+	enum syncterm_wren_foreign type;
+	uint32_t code;     /* enum won_err_code */
+	int      offset;   /* byte offset where the error was detected */
+	char    *message;  /* malloc'd; may be NULL */
+};
+
 struct won_parser {
 	const char *src;   /* start of buffer (for error offset reports) */
 	const char *end;   /* one-past-end */
@@ -30,21 +52,100 @@ struct won_parser {
 	int depth;
 };
 
-/* Format an error and abort the calling fiber.  Includes the cursor
- * offset so the Wren-side caller can locate the bad token. */
-static void
-won_throw(WrenVM *vm, struct won_parser *p, const char *fmt, ...)
+void
+wren_won_error_allocate(WrenVM *vm)
 {
-	char inner[160];
+	struct wren_won_error *e =
+	    wrenSetSlotNewForeign(vm, 0, 0, sizeof(*e));
+	memset(e, 0, sizeof(*e));
+	e->type = SWF_WON_ERROR;
+}
+
+void
+wren_won_error_finalize(void *data)
+{
+	struct wren_won_error *e = data;
+	free(e->message);
+}
+
+void
+fn_WONError_code(WrenVM *vm)
+{
+	struct wren_won_error *e = wrenGetSlotForeign(vm, 0);
+	wrenSetSlotDouble(vm, 0, (double)e->code);
+}
+
+void
+fn_WONError_offset(WrenVM *vm)
+{
+	struct wren_won_error *e = wrenGetSlotForeign(vm, 0);
+	wrenSetSlotDouble(vm, 0, (double)e->offset);
+}
+
+void
+fn_WONError_message(WrenVM *vm)
+{
+	struct wren_won_error *e = wrenGetSlotForeign(vm, 0);
+	if (e->message != NULL)
+		wrenSetSlotString(vm, 0, e->message);
+	else
+		wrenSetSlotNull(vm, 0);
+}
+
+void
+fn_WONError_toString(WrenVM *vm)
+{
+	struct wren_won_error *e = wrenGetSlotForeign(vm, 0);
+	const char *name;
+	switch ((enum won_err_code)e->code) {
+	case WON_ERR_OK:             name = "OK";              break;
+	case WON_ERR_SYNTAX:         name = "SYNTAX";          break;
+	case WON_ERR_TRUNCATED:      name = "TRUNCATED";       break;
+	case WON_ERR_INVALID_ESCAPE: name = "INVALID_ESCAPE";  break;
+	case WON_ERR_INVALID_KEY:    name = "INVALID_KEY";     break;
+	case WON_ERR_TOO_DEEP:       name = "TOO_DEEP";        break;
+	case WON_ERR_TRAILING_DATA:  name = "TRAILING_DATA";   break;
+	default:                     name = "UNKNOWN";         break;
+	}
+	char buf[320];
+	if (e->message != NULL)
+		snprintf(buf, sizeof(buf),
+		    "WONError: %s: %s at offset %d",
+		    name, e->message, e->offset);
+	else
+		snprintf(buf, sizeof(buf),
+		    "WONError: %s at offset %d", name, e->offset);
+	wrenSetSlotString(vm, 0, buf);
+}
+
+/* Build a WONError into slot 0 (the deserializer's return slot).
+ * Always writes to slot 0 regardless of which slot the failing parse
+ * function was working on — a parse failure invalidates whatever
+ * partial value was being built; the caller (top-level
+ * fn_WON_deserialize) reads slot 0 unconditionally.  Returns false
+ * so callers can `return won_set_error(...)` from their own
+ * `bool`-returning bodies. */
+static bool
+won_set_error(WrenVM *vm, struct won_parser *p, enum won_err_code code,
+              const char *fmt, ...)
+{
+	char msg[200];
 	va_list ap;
 	va_start(ap, fmt);
-	vsnprintf(inner, sizeof inner, fmt, ap);
+	vsnprintf(msg, sizeof msg, fmt, ap);
 	va_end(ap);
-	char full[256];
-	snprintf(full, sizeof full,
-	    "WON.deserialize: %s at offset %ld",
-	    inner, (long)(p->pos - p->src));
-	wren_throw(vm, full);
+
+	struct wren_host_state *st = wren_host_state();
+	wrenEnsureSlots(vm, 2);
+	load_class_into_slot(vm, &st->won_error_class, "WONError", 1);
+	struct wren_won_error *e =
+	    wrenSetSlotNewForeign(vm, 0, 1, sizeof(*e));
+	memset(e, 0, sizeof(*e));
+	e->type    = SWF_WON_ERROR;
+	e->code    = (uint32_t)code;
+	e->offset  = (int)(p->pos - p->src);
+	e->message = strdup(msg);
+	return false;
 }
 
 static void
@@ -112,8 +213,7 @@ parse_number(WrenVM *vm, struct won_parser *p, int slot)
 			p->pos++;
 		}
 		if (p->pos == hex_start) {
-			won_throw(vm, p, "expected hex digits after '0x'");
-			return false;
+			return won_set_error(vm, p, WON_ERR_SYNTAX, "expected hex digits after '0x'");
 		}
 		double d = (double)v;
 		if (neg) d = -d;
@@ -125,8 +225,7 @@ parse_number(WrenVM *vm, struct won_parser *p, int slot)
 	const char *dig_start = p->pos;
 	while (p->pos < p->end && is_digit(*p->pos)) p->pos++;
 	if (p->pos == dig_start) {
-		won_throw(vm, p, "expected digit");
-		return false;
+		return won_set_error(vm, p, WON_ERR_SYNTAX, "expected digit");
 	}
 	if (p->pos < p->end && *p->pos == '.') {
 		p->pos++;
@@ -139,8 +238,7 @@ parse_number(WrenVM *vm, struct won_parser *p, int slot)
 		const char *exp_start = p->pos;
 		while (p->pos < p->end && is_digit(*p->pos)) p->pos++;
 		if (p->pos == exp_start) {
-			won_throw(vm, p, "expected digit in exponent");
-			return false;
+			return won_set_error(vm, p, WON_ERR_SYNTAX, "expected digit in exponent");
 		}
 	}
 
@@ -149,8 +247,7 @@ parse_number(WrenVM *vm, struct won_parser *p, int slot)
 	 * comfortable headroom. */
 	size_t n = (size_t)(p->pos - start);
 	if (n >= 64) {
-		won_throw(vm, p, "number literal too long");
-		return false;
+		return won_set_error(vm, p, WON_ERR_SYNTAX, "number literal too long");
 	}
 	char buf[64];
 	memcpy(buf, start, n);
@@ -158,8 +255,7 @@ parse_number(WrenVM *vm, struct won_parser *p, int slot)
 	char *endp;
 	double d = strtod(buf, &endp);
 	if (endp != buf + n) {
-		won_throw(vm, p, "malformed number");
-		return false;
+		return won_set_error(vm, p, WON_ERR_SYNTAX, "malformed number");
 	}
 	wrenSetSlotDouble(vm, slot, d);
 	return true;
@@ -235,8 +331,7 @@ static bool
 parse_string(WrenVM *vm, struct won_parser *p, int slot)
 {
 	if (p->pos >= p->end || *p->pos != '"') {
-		won_throw(vm, p, "expected string");
-		return false;
+		return won_set_error(vm, p, WON_ERR_SYNTAX, "expected string");
 	}
 	p->pos++;
 	struct strbuf sb = { NULL, 0, 0 };
@@ -248,8 +343,7 @@ parse_string(WrenVM *vm, struct won_parser *p, int slot)
 		}
 		if (p->pos >= p->end) {
 			free(sb.data);
-			won_throw(vm, p, "unterminated escape");
-			return false;
+			return won_set_error(vm, p, WON_ERR_TRUNCATED, "unterminated escape");
 		}
 		char e = *p->pos++;
 		uint32_t cp;
@@ -270,46 +364,39 @@ parse_string(WrenVM *vm, struct won_parser *p, int slot)
 		case 'x':
 			if (!read_hex(p, 2, &cp)) {
 				free(sb.data);
-				won_throw(vm, p, "malformed \\x escape");
-				return false;
+				return won_set_error(vm, p, WON_ERR_INVALID_ESCAPE, "malformed \\x escape");
 			}
 			if (!sb_putc(&sb, (char)cp)) goto oom;
 			continue;
 		case 'u':
 			if (!read_hex(p, 4, &cp)) {
 				free(sb.data);
-				won_throw(vm, p, "malformed \\u escape");
-				return false;
+				return won_set_error(vm, p, WON_ERR_INVALID_ESCAPE, "malformed \\u escape");
 			}
 			if (!sb_put_codepoint(&sb, cp)) {
 				free(sb.data);
-				won_throw(vm, p, "invalid codepoint in \\u escape");
-				return false;
+				return won_set_error(vm, p, WON_ERR_INVALID_ESCAPE, "invalid codepoint in \\u escape");
 			}
 			continue;
 		case 'U':
 			if (!read_hex(p, 8, &cp)) {
 				free(sb.data);
-				won_throw(vm, p, "malformed \\U escape");
-				return false;
+				return won_set_error(vm, p, WON_ERR_INVALID_ESCAPE, "malformed \\U escape");
 			}
 			if (!sb_put_codepoint(&sb, cp)) {
 				free(sb.data);
-				won_throw(vm, p, "invalid codepoint in \\U escape");
-				return false;
+				return won_set_error(vm, p, WON_ERR_INVALID_ESCAPE, "invalid codepoint in \\U escape");
 			}
 			continue;
 		default:
 			free(sb.data);
-			won_throw(vm, p, "invalid escape character '\\%c'", e);
-			return false;
+			return won_set_error(vm, p, WON_ERR_INVALID_ESCAPE, "invalid escape character '\\%c'", e);
 		}
 		if (!sb_putc(&sb, out)) goto oom;
 	}
 	if (p->pos >= p->end) {
 		free(sb.data);
-		won_throw(vm, p, "unterminated string");
-		return false;
+		return won_set_error(vm, p, WON_ERR_TRUNCATED, "unterminated string");
 	}
 	p->pos++; /* closing quote */
 	wrenSetSlotBytes(vm, slot, sb.data ? sb.data : "", sb.len);
@@ -326,8 +413,7 @@ static bool
 parse_list(WrenVM *vm, struct won_parser *p, int slot)
 {
 	if (p->pos >= p->end || *p->pos != '[') {
-		won_throw(vm, p, "expected '['");
-		return false;
+		return won_set_error(vm, p, WON_ERR_SYNTAX, "expected '['");
 	}
 	p->pos++;
 	wrenEnsureSlots(vm, slot + 2);
@@ -348,8 +434,12 @@ parse_list(WrenVM *vm, struct won_parser *p, int slot)
 			p->pos++;
 			return true;
 		}
-		won_throw(vm, p, "expected ',' or ']' in List");
-		return false;
+		/* EOF mid-list is truncation; bad character is syntax. */
+		if (p->pos >= p->end)
+			return won_set_error(vm, p, WON_ERR_TRUNCATED,
+			    "unterminated List (expected ',' or ']')");
+		return won_set_error(vm, p, WON_ERR_SYNTAX,
+		    "expected ',' or ']' in List");
 	}
 }
 
@@ -357,8 +447,7 @@ static bool
 parse_map(WrenVM *vm, struct won_parser *p, int slot)
 {
 	if (p->pos >= p->end || *p->pos != '{') {
-		won_throw(vm, p, "expected '{'");
-		return false;
+		return won_set_error(vm, p, WON_ERR_SYNTAX, "expected '{'");
 	}
 	p->pos++;
 	wrenEnsureSlots(vm, slot + 3);
@@ -371,14 +460,14 @@ parse_map(WrenVM *vm, struct won_parser *p, int slot)
 		wrenEnsureSlots(vm, slot + 3);
 		WrenType kt = wrenGetSlotType(vm, slot + 1);
 		if (kt == WREN_TYPE_LIST || kt == WREN_TYPE_MAP) {
-			won_throw(vm, p, "List/Map cannot be a Map key");
-			return false;
+			return won_set_error(vm, p, WON_ERR_INVALID_KEY, "List/Map cannot be a Map key");
 		}
 		skip_ws(p);
-		if (p->pos >= p->end || *p->pos != ':') {
-			won_throw(vm, p, "expected ':' after Map key");
-			return false;
-		}
+		if (p->pos >= p->end)
+			return won_set_error(vm, p, WON_ERR_TRUNCATED,
+			    "unterminated Map (expected ':' after key)");
+		if (*p->pos != ':')
+			return won_set_error(vm, p, WON_ERR_SYNTAX, "expected ':' after Map key");
 		p->pos++;
 		skip_ws(p);
 		/* value */
@@ -394,8 +483,11 @@ parse_map(WrenVM *vm, struct won_parser *p, int slot)
 			p->pos++;
 			return true;
 		}
-		won_throw(vm, p, "expected ',' or '}' in Map");
-		return false;
+		/* EOF mid-map is truncation; bad character is syntax. */
+		if (p->pos >= p->end)
+			return won_set_error(vm, p, WON_ERR_TRUNCATED,
+			    "unterminated Map (expected ',' or '}')");
+		return won_set_error(vm, p, WON_ERR_SYNTAX, "expected ',' or '}' in Map");
 	}
 }
 
@@ -403,30 +495,35 @@ static bool
 parse_value(WrenVM *vm, struct won_parser *p, int slot)
 {
 	if (p->depth >= WON_MAX_DEPTH) {
-		won_throw(vm, p, "nested too deeply");
-		return false;
+		return won_set_error(vm, p, WON_ERR_TOO_DEEP, "nested too deeply");
 	}
 	p->depth++;
 	skip_ws(p);
 	if (p->pos >= p->end) {
-		won_throw(vm, p, "unexpected end of input");
 		p->depth--;
-		return false;
+		return won_set_error(vm, p, WON_ERR_TRUNCATED,
+		    "unexpected end of input");
 	}
 	bool ok;
 	char c = *p->pos;
 	if (c == 'n') {
 		ok = match_keyword(p, "null", 4);
 		if (ok) wrenSetSlotNull(vm, slot);
-		else won_throw(vm, p, "expected 'null'");
+		else { p->depth--;
+		       return won_set_error(vm, p, WON_ERR_SYNTAX,
+		           "expected 'null'"); }
 	} else if (c == 't') {
 		ok = match_keyword(p, "true", 4);
 		if (ok) wrenSetSlotBool(vm, slot, true);
-		else won_throw(vm, p, "expected 'true'");
+		else { p->depth--;
+		       return won_set_error(vm, p, WON_ERR_SYNTAX,
+		           "expected 'true'"); }
 	} else if (c == 'f') {
 		ok = match_keyword(p, "false", 5);
 		if (ok) wrenSetSlotBool(vm, slot, false);
-		else won_throw(vm, p, "expected 'false'");
+		else { p->depth--;
+		       return won_set_error(vm, p, WON_ERR_SYNTAX,
+		           "expected 'false'"); }
 	} else if (c == '"') {
 		ok = parse_string(vm, p, slot);
 	} else if (c == '[') {
@@ -436,8 +533,9 @@ parse_value(WrenVM *vm, struct won_parser *p, int slot)
 	} else if (c == '-' || (c >= '0' && c <= '9')) {
 		ok = parse_number(vm, p, slot);
 	} else {
-		won_throw(vm, p, "unexpected character '%c'", c);
-		ok = false;
+		p->depth--;
+		return won_set_error(vm, p, WON_ERR_SYNTAX,
+		    "unexpected character '%c'", c);
 	}
 	p->depth--;
 	return ok;
@@ -476,10 +574,10 @@ fn_WON_deserialize(WrenVM *vm)
 	if (parse_value(vm, &p, 0)) {
 		skip_ws(&p);
 		if (p.pos < p.end)
-			won_throw(vm, &p, "trailing data after value");
+			won_set_error(vm, &p, WON_ERR_TRAILING_DATA,
+			    "trailing data after value");
 	}
 	free(text);
-	/* On success, slot 0 holds the parsed value (the return).  On
-	 * failure, the fiber is already aborted with the error message in
-	 * slot 0. */
+	/* slot 0 holds either the parsed value (success) or a WONError
+	 * (failure — recoverable; the script can `is WONError` check). */
 }

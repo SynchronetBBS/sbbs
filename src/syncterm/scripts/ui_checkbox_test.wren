@@ -31,7 +31,6 @@ class UiCheckboxTest {
   static check_(ok, label) {
     if (ok) {
       __pass = __pass + 1
-      System.print("  PASS %(label)")
     } else {
       __fail = __fail + 1
       System.print("  FAIL %(label)")
@@ -81,7 +80,7 @@ class UiCheckboxTest {
   static testMouseClickToggles_() {
     var c = Checkbox.new("X")
     c.bounds = Rect.new(5, 5, 5, 1)
-    var ev = MouseEvent.new(Mouse.button1Click, 0, 6, 5, 6, 5)
+    var ev = MouseEvent.new(Mouse.button1Click, 6, 5, 6, 5)
     var consumed = c.handle(ev)
     check_(consumed && c.value == true,
            "Checkbox: click inside bounds toggles")
@@ -90,7 +89,7 @@ class UiCheckboxTest {
   static testMouseClickOutsideIgnored_() {
     var c = Checkbox.new("X")
     c.bounds = Rect.new(5, 5, 5, 1)
-    var ev = MouseEvent.new(Mouse.button1Click, 0, 50, 50, 50, 50)
+    var ev = MouseEvent.new(Mouse.button1Click, 50, 50, 50, 50)
     var consumed = c.handle(ev)
     check_(!consumed && c.value == false,
            "Checkbox: click outside bounds dropped")

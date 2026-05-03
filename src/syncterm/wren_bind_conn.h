@@ -10,6 +10,13 @@
 
 void fn_Conn_send(WrenVM *vm);
 void fn_Conn_sendRaw(WrenVM *vm);
+
+void wren_conn_error_allocate(WrenVM *vm);
+void wren_conn_error_finalize(void *data);
+void fn_ConnError_code(WrenVM *vm);
+void fn_ConnError_bytesSent(WrenVM *vm);
+void fn_ConnError_message(WrenVM *vm);
+void fn_ConnError_toString(WrenVM *vm);
 void fn_Conn_close(WrenVM *vm);
 void fn_Conn_connected(WrenVM *vm);
 void fn_Conn_type(WrenVM *vm);

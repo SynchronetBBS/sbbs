@@ -11,4 +11,12 @@
 
 void fn_WON_deserialize(WrenVM *vm);
 
+void wren_won_error_allocate(WrenVM *vm);
+void wren_won_error_finalize(void *data);
+
+void fn_WONError_code(WrenVM *vm);
+void fn_WONError_offset(WrenVM *vm);
+void fn_WONError_message(WrenVM *vm);
+void fn_WONError_toString(WrenVM *vm);
+
 #endif /* WREN_BIND_WON_H */
