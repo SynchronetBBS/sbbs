@@ -54,6 +54,12 @@ struct login_attempt_settings {
 	uint filter_duration;       /* in seconds */
 };
 
+/* Max-concurrent-connections auto-filter parameters */
+struct max_concurrent_settings {
+	uint filter_threshold;      /* hits before adding IP to ip.can; 0 = disabled */
+	uint filter_duration;       /* lifetime of ip.can entry, in seconds; 0 = forever */
+};
+
 struct startup_sound_settings {
 	char answer[INI_MAX_VALUE_LEN];
 	char login[INI_MAX_VALUE_LEN];
@@ -110,6 +116,7 @@ typedef struct {
 		bool                          recycle_now; \
 		bool                          shutdown_now; \
 		bool                          paused; \
+		bool                          clear_attempts_now; \
 		int                           sem_chk_freq; \
 		uint                          bind_retry_count; \
 		uint                          bind_retry_delay; \
@@ -154,6 +161,7 @@ typedef struct {
 
 	/* Miscellaneous */
 	uint max_concurrent_connections;
+	struct max_concurrent_settings max_concurrent;
 	uint default_term_height;
 	uint default_term_width;
 	bool usedosemu;

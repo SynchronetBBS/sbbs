@@ -119,6 +119,8 @@ static str_list_t          shutdown_semfiles;
 static str_list_t          clear_attempts_semfiles;
 static link_list_t         current_logins;
 static link_list_t         current_connections;
+static link_list_t         max_concurrent_attempts;
+static void                clearMaxConcurrentAttempt(const char* host_ip);
 
 static trashCan            ip_can;
 static trashCan            ip_silent_can;
@@ -4424,6 +4426,7 @@ void sbbs_t::register_login()
 		return;
 	if (useron.pass[0]) {
 		loginSuccess(startup->login_attempt_list, &client_addr);
+		clearMaxConcurrentAttempt(client.addr);
 		listAddNodeData(&current_logins, client.addr, strlen(client.addr) + 1, cfg.node_num, LAST_NODE);
 	}
 #ifdef _WIN32
@@ -4966,6 +4969,7 @@ static void cleanup(int code)
 
 	listFree(&current_logins);
 	listFree(&current_connections);
+	listFree(&max_concurrent_attempts);
 
 	protected_uint32_destroy(node_threads_running);
 	protected_uint32_destroy(ssh_sessions);
@@ -4984,6 +4988,59 @@ static void cleanup(int code)
 	host_exempt.reset();
 
 	mqtt_shutdown(&mqtt);
+}
+
+/* Per-IP tracker for "max concurrent connections" hits.
+   Each node's data is a max_concurrent_attempt_t. */
+typedef struct {
+	char     ip[INET6_ADDRSTRLEN];
+	uint32_t count;
+} max_concurrent_attempt_t;
+
+/* Increment the strike counter for host_ip. Returns the new count, or 0 on error. */
+static uint32_t bumpMaxConcurrentAttempt(const char* host_ip)
+{
+	list_node_t*              node;
+	max_concurrent_attempt_t* att;
+	uint32_t                  count = 0;
+
+	if (!listLock(&max_concurrent_attempts))
+		return 0;
+	for (node = max_concurrent_attempts.first; node != NULL; node = node->next) {
+		att = (max_concurrent_attempt_t*)node->data;
+		if (att != NULL && strcmp(att->ip, host_ip) == 0) {
+			att->count++;
+			count = att->count;
+			break;
+		}
+	}
+	if (node == NULL) {
+		max_concurrent_attempt_t entry;
+		memset(&entry, 0, sizeof(entry));
+		SAFECOPY(entry.ip, host_ip);
+		entry.count = 1;
+		if (listPushNodeData(&max_concurrent_attempts, &entry, sizeof(entry)) != NULL)
+			count = 1;
+	}
+	listUnlock(&max_concurrent_attempts);
+	return count;
+}
+
+/* Remove the strike-counter entry for host_ip (called after the IP has been filtered). */
+static void clearMaxConcurrentAttempt(const char* host_ip)
+{
+	list_node_t* node;
+
+	if (!listLock(&max_concurrent_attempts))
+		return;
+	for (node = max_concurrent_attempts.first; node != NULL; node = node->next) {
+		max_concurrent_attempt_t* att = (max_concurrent_attempt_t*)node->data;
+		if (att != NULL && strcmp(att->ip, host_ip) == 0) {
+			listRemoveNode(&max_concurrent_attempts, node, /* free_data: */ true);
+			break;
+		}
+	}
+	listUnlock(&max_concurrent_attempts);
 }
 
 void bbs_thread(void* arg)
@@ -5463,6 +5520,7 @@ NO_SSH:
 
 		listInit(&current_logins, LINK_LIST_MUTEX);
 		listInit(&current_connections, LINK_LIST_MUTEX);
+		listInit(&max_concurrent_attempts, LINK_LIST_MUTEX);
 
 #ifdef __unix__ //	unix-domain spy sockets
 		for (int i = first_node; i <= last_node && !(startup->options & BBS_OPT_NO_SPY_SOCKETS); i++)  {
@@ -5559,9 +5617,15 @@ NO_SSH:
 				break;
 			}
 
-			if ((p = semfile_list_check(&initialized, clear_attempts_semfiles)) != NULL) {
-				lprintf(LOG_INFO, "Clear Failed Login Attempts semaphore file (%s) detected", p);
+			if (((p = semfile_list_check(&initialized, clear_attempts_semfiles)) != NULL
+			     && lprintf(LOG_INFO, "Clear Failed Login Attempts semaphore file (%s) detected", p))
+			    || (startup->clear_attempts_now
+			        && lprintf(LOG_INFO, "Clear Failed Login Attempts signaled"))) {
+				startup->clear_attempts_now = false;
 				loginAttemptListClear(startup->login_attempt_list);
+				listLock(&max_concurrent_attempts);
+				listFreeNodes(&max_concurrent_attempts);
+				listUnlock(&max_concurrent_attempts);
 			}
 
 			if (client_socket == INVALID_SOCKET)
@@ -5664,6 +5728,18 @@ NO_SSH:
 				if (connections - logins >= (int)startup->max_concurrent_connections) {
 					lprintf(LOG_NOTICE, "%04d %s !Maximum concurrent connections without login (%u) reached from host: %s"
 					        , client_socket, client.protocol, startup->max_concurrent_connections, host_ip);
+					if (startup->max_concurrent.filter_threshold > 0) {
+						uint32_t strikes = bumpMaxConcurrentAttempt(host_ip);
+						if (strikes >= startup->max_concurrent.filter_threshold) {
+							char reason[128];
+							SAFEPRINTF2(reason, "exceeding max concurrent connection limit (%u) %u times"
+							            , startup->max_concurrent_connections, strikes);
+							if (filter_ip(&scfg, client.protocol, reason, /* host: */ NULL, host_ip
+							              , /* user: */ NULL, /* fname: */ NULL
+							              , startup->max_concurrent.filter_duration))
+								clearMaxConcurrentAttempt(host_ip);
+						}
+					}
 					close_socket(client_socket);
 					continue;
 				}

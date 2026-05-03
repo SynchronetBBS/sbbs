@@ -5431,6 +5431,11 @@ void ftp_server(void* arg)
 				SLEEP(startup->sem_chk_freq * 1000);
 				continue;
 			}
+			if (startup->clear_attempts_now
+			    && lprintf(LOG_INFO, "0000 Clear Failed Login Attempts signaled")) {
+				startup->clear_attempts_now = FALSE;
+				loginAttemptListClear(startup->login_attempt_list);
+			}
 
 			if (startup->max_requests_per_period > 0 && startup->request_rate_limit_period > 0
 				&& time(NULL) - last_rate_limit_report >= startup->sem_chk_freq) {

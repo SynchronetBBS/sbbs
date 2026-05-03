@@ -46,6 +46,8 @@ static const char* strMaxNewUserInactivity = "MaxNewUserInactivity";
 static const char* strMaxSessionInactivity = "MaxSessionInactivity";
 static const char* strMaxSFTPInactivity = "MaxSFTPInactivity";
 static const char* strMaxConConn = "MaxConcurrentConnections";
+static const char* strMaxConConnFilterThreshold = "MaxConConnFilterThreshold";
+static const char* strMaxConConnFilterDuration  = "MaxConConnFilterDuration";
 static const char* strMaxRequestPerPeriod = "MaxRequestsPerPeriod";
 static const char* strRequestRateLimitPeriod = "RequestRateLimitPeriod";
 static const char* strMaxConnectsPerPeriod = "MaxConnectsPerPeriod";
@@ -548,6 +550,8 @@ bool sbbs_read_ini(
 
 		bbs->login_attempt = get_login_attempt_settings(list, section, global);
 		bbs->max_concurrent_connections = iniGetUInteger(list, section, strMaxConConn, 0);
+		bbs->max_concurrent.filter_threshold = iniGetUInteger(list, section, strMaxConConnFilterThreshold, 0);
+		bbs->max_concurrent.filter_duration  = (uint)iniGetDuration(list, section, strMaxConConnFilterDuration, 24 * 60 * 60);
 
 		bbs->max_dumbterm_inactivity = (uint16_t)iniGetDuration(list, section, strMaxDumbTermInactivity, 60);
 		bbs->max_login_inactivity = (uint16_t)iniGetDuration(list, section, strMaxLoginInactivity, 10 * 60);
@@ -1022,6 +1026,10 @@ bool sbbs_write_ini(
 			if (!iniSetUInteger(lp, section, "OutbufDrainTimeout", bbs->outbuf_drain_timeout, &style))
 				break;
 			if (!iniSetUInteger(lp, section, strMaxConConn, bbs->max_concurrent_connections, &style))
+				break;
+			if (!iniSetUInteger(lp, section, strMaxConConnFilterThreshold, bbs->max_concurrent.filter_threshold, &style))
+				break;
+			if (!iniSetDuration(lp, section, strMaxConConnFilterDuration, bbs->max_concurrent.filter_duration, &style))
 				break;
 			if (!iniSetDuration(lp, section, strMaxDumbTermInactivity, bbs->max_dumbterm_inactivity, &style))
 				break;

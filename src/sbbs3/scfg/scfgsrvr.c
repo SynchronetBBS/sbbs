@@ -132,6 +132,66 @@ static void login_attempt_cfg(struct login_attempt_settings* login_attempt)
 	}
 }
 
+static void max_concurrent_cfg(uint* max, struct max_concurrent_settings* settings)
+{
+	static int cur, bar;
+	char       str[256];
+	bool       changes = uifc.changes;
+
+	while (1) {
+		int i = 0;
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Maximum (Unauthenticated)", maximum(*max));
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Auto-Filter Threshold", threshold(settings->filter_threshold));
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Auto-Filter Duration"
+		         , vduration(settings->filter_duration, strInfinite));
+		opt[i][0] = '\0';
+
+		uifc.helpbuf =
+			"`Max Concurrent Connections Settings:`\n"
+			"\n"
+			"Limit the number of simultaneous unauthenticated connections from a\n"
+			"single IP address.  Optionally, IP addresses that hit this limit\n"
+			"repeatedly are automatically added to the IP filter (`text/ip.can`).\n"
+			"\n"
+			"`Maximum`: maximum number of concurrent unauthenticated connections\n"
+			"allowed from a single client IP address.\n"
+			"\n"
+			"`Auto-Filter Threshold`: number of times a client IP may hit the\n"
+			"`Maximum` connection limit before being automatically added to the\n"
+			"IP filter file.  Set to `0` to disable auto-filtering.\n"
+			"\n"
+			"`Auto-Filter Duration`: lifetime of an automatically-added entry in\n"
+			"`text/ip.can`.  Set to `0` to filter the IP indefinitely.\n"
+			"\n"
+			"The strike counter for an IP is held in memory and is cleared on\n"
+			"any of: a successful login from that IP, terminal server recycle\n"
+			"or restart, the `clear*.term` semaphore file, or the MQTT `clear`\n"
+			"topic.\n"
+		;
+		switch (uifc.list(WIN_ACT | WIN_BOT | WIN_SAV, 0, 0, 0, &cur, &bar
+		                  , "Max Concurrent Connections", opt)) {
+			case 0:
+				SAFECOPY(str, maximum(*max));
+				if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "Maximum Concurrent (Unauthenticated) Connections", str, 10, K_EDIT) > 0)
+					*max = atoi(str);
+				break;
+			case 1:
+				SAFEPRINTF(str, "%u", settings->filter_threshold);
+				if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "Threshold for Auto-Filtering of IPs Exceeding Connection Limit", str, 4, K_NUMBER | K_EDIT) > 0)
+					settings->filter_threshold = atoi(str);
+				break;
+			case 2:
+				SAFECOPY(str, duration(settings->filter_duration, false, strInfinite));
+				if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "Lifetime of Auto-Filter of IPs", str, 10, K_EDIT) > 0)
+					settings->filter_duration = (uint)parse_duration(str);
+				break;
+			default:
+				uifc.changes = changes;
+				return;
+		}
+	}
+}
+
 static void js_startup_cfg(js_startup_t* js)
 {
 	static int cur, bar;
@@ -632,9 +692,7 @@ static void termsrvr_cfg(void)
 				startup.options ^= BBS_OPT_NO_DOS;
 				break;
 			case 9:
-				SAFECOPY(str, maximum(startup.max_concurrent_connections));
-				if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "Maximum Concurrent (Unauthenticated) Connections", str, 10, K_EDIT) > 0)
-					startup.max_concurrent_connections = atoi(str);
+				max_concurrent_cfg(&startup.max_concurrent_connections, &startup.max_concurrent);
 				break;
 #define SOCKET_INACTIVITY_HELP  "\n" \
 		"An `Inactivity Alert` (by default, 3 BELLs) can be sent to the client\n" \

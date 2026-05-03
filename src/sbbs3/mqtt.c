@@ -649,6 +649,11 @@ static void mqtt_message_received(struct mosquitto* mosq, void* cbdata, const st
 		mqtt->startup->paused = false;
 		return;
 	}
+	if (strcmp(msg->topic, mqtt_topic(mqtt, TOPIC_HOST, topic, sizeof(topic), "clear")) == 0
+	    || strcmp(msg->topic, mqtt_topic(mqtt, TOPIC_SERVER, topic, sizeof(topic), "clear")) == 0) {
+		mqtt->startup->clear_attempts_now = true;
+		return;
+	}
 }
 #endif // USE_MOSQUITTO
 
