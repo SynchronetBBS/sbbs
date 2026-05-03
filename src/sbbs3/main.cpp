@@ -2735,15 +2735,20 @@ void output_thread(void* arg)
 #endif
 		i = sendsocket(sbbs->client_socket, (char*)buf + bufbot, buftop - bufbot);
 		if (i == SOCKET_ERROR) {
+			SOCKET sock = sbbs->client_socket.load();
 			if (SOCKET_ERRNO == ENOTSOCK)
-				lprintf(LOG_NOTICE, "%s client socket closed on send", node);
+				lprintf(LOG_NOTICE, "%04d %s [%s] client socket closed on send", sock, sbbs->client.protocol, sbbs->client_ipaddr);
 			else if (SOCKET_ERRNO == ECONNRESET)
-				lprintf(LOG_NOTICE, "%s connection reset by peer on send", node);
+				lprintf(LOG_NOTICE, "%04d %s [%s] connection reset by peer on send", sock, sbbs->client.protocol, sbbs->client_ipaddr);
 			else if (SOCKET_ERRNO == ECONNABORTED)
-				lprintf(LOG_NOTICE, "%s connection aborted by peer on send", node);
+				lprintf(LOG_NOTICE, "%04d %s [%s] connection aborted by peer on send", sock, sbbs->client.protocol, sbbs->client_ipaddr);
+			else if (SOCKET_ERRNO == ESHUTDOWN)
+				lprintf(LOG_NOTICE, "%04d %s [%s] socket shutdown on send", sock, sbbs->client.protocol, sbbs->client_ipaddr);
+			else if (SOCKET_ERRNO == EINVAL)
+				lprintf(LOG_NOTICE, "%04d %s [%s] socket invalid on send", sock, sbbs->client.protocol, sbbs->client_ipaddr);
 			else
-				lprintf(LOG_WARNING, "%s !ERROR %d (%s) sending on socket %d"
-				        , node, SOCKET_ERRNO, SOCKET_STRERROR(errmsg, sizeof errmsg), sbbs->client_socket.load());
+				lprintf(LOG_WARNING, "%04d %s [%s] !ERROR %d (%s) on send"
+				        , sock, sbbs->client.protocol, sbbs->client_ipaddr, SOCKET_ERRNO, SOCKET_STRERROR(errmsg, sizeof errmsg));
 			sbbs->online = false;
 			/* was break; on 4/7/00 */
 			i = buftop - bufbot;    // Pretend we sent it all
@@ -5753,6 +5758,8 @@ NO_SSH:
 			sbbs->term->cols = startup->default_term_width;
 
 			sbbs->client_socket = client_socket; // required for output to the user
+			SAFECOPY(sbbs->client.protocol, client.protocol);
+			SAFECOPY(sbbs->client_ipaddr, host_ip);
 			if (!ssh)
 				sbbs->online = ON_REMOTE;
 
