@@ -175,6 +175,7 @@ if(DEUCESSH_CRYPTO_BACKEND STREQUAL "OpenSSL")
 		key_algo/rsa-sha2-256-openssl.c
 		key_algo/rsa-sha2-512-openssl.c
 		enc/aes256-ctr-openssl.c
+		enc/aes128-cbc-openssl.c
 		mac/hmac-sha2-256-openssl.c
 		mac/hmac-sha2-512-openssl.c
 	)
@@ -196,6 +197,8 @@ elseif(DEUCESSH_CRYPTO_BACKEND STREQUAL "Botan")
 		key_algo/rsa-sha2-512-botan.cpp
 		enc/aes256-ctr-botan.c
 		enc/aes256-ctr-botan.cpp
+		enc/aes128-cbc-botan.c
+		enc/aes128-cbc-botan.cpp
 		mac/hmac-sha2-256-botan.c
 		mac/hmac-sha2-256-botan.cpp
 		mac/hmac-sha2-512-botan.c

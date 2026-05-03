@@ -50,6 +50,7 @@ DSSH_PUBLIC int     dssh_rsa_sha2_512_generate_key(unsigned int bits);
 
 /* Encryption */
 DSSH_PUBLIC int dssh_register_aes256_ctr(void);
+DSSH_PUBLIC int dssh_register_aes128_cbc(void);
 DSSH_PUBLIC int dssh_register_none_enc(void);
 
 /* MAC */
