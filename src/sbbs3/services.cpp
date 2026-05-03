@@ -280,7 +280,7 @@ static void thread_down(void)
 
 void open_socket_cb(SOCKET sock, void *serv_ptr)
 {
-	char       error[256];
+	char       error[SOCKET_STRERROR_BUFLEN];
 	char       section[128];
 	service_t *serv = (service_t *)serv_ptr;
 
@@ -309,7 +309,7 @@ static SOCKET open_socket(int family, int type, service_t* serv)
 
 static int close_socket(SOCKET sock)
 {
-	char err[256];
+	char err[SOCKET_STRERROR_BUFLEN];
 	int  result;
 
 	if (sock == INVALID_SOCKET)
@@ -1822,7 +1822,7 @@ static void cleanup(int code)
 
 #ifdef _WINSOCKAPI_
 	if (WSAInitialized) {
-		char err[256];
+		char err[SOCKET_STRERROR_BUFLEN];
 		if (WSACleanup() != 0)
 			lprintf(LOG_ERR, "0000 !WSACleanup ERROR %d: %s", SOCKET_ERRNO, SOCKET_STRERROR(err, sizeof(err)));
 		WSAInitialized = false;
@@ -1874,7 +1874,7 @@ void service_udp_sock_cb(SOCKET sock, void *cbdata)
 {
 	service_t *serv = (service_t *)cbdata;
 	int        optval;
-	char       err[256];
+	char       err[SOCKET_STRERROR_BUFLEN];
 
 	open_socket_cb(sock, cbdata);
 
@@ -1937,7 +1937,7 @@ void services_thread(void* arg)
 {
 	char*             p;
 	char              path[MAX_PATH + 1];
-	char              error[256];
+	char              error[SOCKET_STRERROR_BUFLEN];
 	char              host_ip[64];
 	char              compiler[32];
 	char              str[128];

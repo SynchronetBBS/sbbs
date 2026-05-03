@@ -87,7 +87,7 @@ bool js_argvIsNullOrVoid(JSContext* cx, jsval* args, uintN index)
 static JSBool js_system_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 {
 	jsval     idval;
-	char      err[256];
+	char      err[SOCKET_STRERROR_BUFLEN];
 	jsint     tiny;
 	JSString* js_str;
 
@@ -4246,7 +4246,7 @@ js_socket_strerror(JSContext *cx, uintN argc, jsval *arglist)
 	if (!JS_ValueToInt32(cx, argv[0], &err))
 		return JS_FALSE;
 
-	char      str[256];
+	char      str[SOCKET_STRERROR_BUFLEN];
 	JSString* js_str;
 	if ((js_str = JS_NewStringCopyZ(cx, socket_strerror(err, str, sizeof(str)))) == NULL)
 		return JS_FALSE;

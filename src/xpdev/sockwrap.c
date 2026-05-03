@@ -444,7 +444,7 @@ int retry_bind(SOCKET s, const struct sockaddr *addr, socklen_t addrlen
                , int (*lprintf)(int level, const char *fmt, ...))
 {
 	char port_str[128];
-	char err[256];
+	char err[SOCKET_STRERROR_BUFLEN];
 	int  result = -1;
 	uint i;
 

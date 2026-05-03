@@ -59,7 +59,7 @@ bool xpms_add(struct xpms_set *xpms_set, int domain, int type,
 	unsigned int         added = 0;
 	int                  ret;
 	char                 port_str[6];
-	char                 err[256];
+	char                 err[SOCKET_STRERROR_BUFLEN];
 
 #ifndef _WIN32
 	struct addrinfo      dummy;
@@ -258,7 +258,7 @@ static bool read_socket(SOCKET sock, char *buffer, size_t len, int (*lprintf)(in
 	size_t        i;
 	int           rd;
 	unsigned char ch;
-	char          err[256];
+	char          err[SOCKET_STRERROR_BUFLEN];
 
 	for (i = 0; i < len; i++) {
 		if (socket_readable(sock, 1000)) {

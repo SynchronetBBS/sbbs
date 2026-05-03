@@ -251,6 +251,7 @@ DLLEXPORT void inet_setaddrport(union xp_sockaddr *addr, uint16_t port);
 DLLEXPORT bool inet_addrmatch(union xp_sockaddr* addr1, union xp_sockaddr* addr2);
 DLLEXPORT char* socket_strerror(int, char*, size_t);
 #define SOCKET_STRERROR(str, size)	socket_strerror(socket_errno(false), str, size)
+#define SOCKET_STRERROR_BUFLEN	256		/* Recommended buffer length for SOCKET_STRERROR / socket_strerror() */
 DLLEXPORT void set_socket_errno(int);
 DLLEXPORT int xp_inet_pton(int af, const char *src, void *dst);
 #if defined(_WIN32) // mingw and WinXP's WS2_32.DLL don't have inet_pton():
