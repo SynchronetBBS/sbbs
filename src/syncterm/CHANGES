@@ -1,3 +1,7 @@
+Version 1.9
+-----------
+Fix error when scrolling with a non-black background colour
+
 Version 1.8
 -----------
 Add RIPterm v1.54.00 pixel-level compatibility
