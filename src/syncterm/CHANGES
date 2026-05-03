@@ -1,4 +1,4 @@
-Version 1.9b
+Version 1.10
 ------------
 BBS cache directories are now deleted/renamed with the entry
 ANSI parser overhaul
@@ -12,6 +12,14 @@ Fully support OOB data in RLogin modes
 Hold Alt during drag-select to copy a rectangular region
 Prototype SFTP client (Alt+S, Alt+B)
 Add Wren scripting engine, REPL console with Ctrl+`
+
+Version 1.9
+-----------
+Fix error when scrolling with a non-black background colour
+Fix Prestel double-height bottom-half redraw on overwrite
+Fix key repeat on Wayland
+Fix Wayland content size change
+Rework filepick widget
 
 Version 1.8
 -----------
