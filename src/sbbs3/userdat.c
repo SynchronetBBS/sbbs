@@ -4385,6 +4385,48 @@ long loginAttemptListClear(link_list_t* list)
 }
 
 /****************************************************************************/
+/* Removes any list entry whose address matches the supplied IP string		*/
+/* (numeric IPv4 or IPv6). Returns the number of entries removed, or		*/
+/* a negative value on failure.												*/
+/****************************************************************************/
+long loginAttemptListClearAddr(link_list_t* list, const char* ip_addr)
+{
+	union xp_sockaddr addr;
+	list_node_t*      node;
+	list_node_t*      next;
+	long              count = 0;
+
+	if (list == NULL || ip_addr == NULL || *ip_addr == '\0')
+		return -1;
+	if (inet_ptoaddr(ip_addr, &addr, sizeof(addr)) == NULL)
+		return -1;
+	if (!listLock(list))
+		return -1;
+	for (node = list->first; node != NULL; node = next) {
+		login_attempt_t* attempt = node->data;
+		next = node->next;
+		if (attempt == NULL || attempt->addr.addr.sa_family != addr.addr.sa_family)
+			continue;
+		switch (addr.addr.sa_family) {
+			case AF_INET:
+				if (memcmp(&attempt->addr.in.sin_addr, &addr.in.sin_addr, sizeof(addr.in.sin_addr)) != 0)
+					continue;
+				break;
+			case AF_INET6:
+				if (memcmp(&attempt->addr.in6.sin6_addr, &addr.in6.sin6_addr, sizeof(addr.in6.sin6_addr)) != 0)
+					continue;
+				break;
+			default:
+				continue;
+		}
+		listRemoveNode(list, node, /* freeData: */ true);
+		count++;
+	}
+	listUnlock(list);
+	return count;
+}
+
+/****************************************************************************/
 static list_node_t* login_attempted(link_list_t* list, const union xp_sockaddr* addr)
 {
 	list_node_t*     node;

@@ -5048,6 +5048,23 @@ static void clearMaxConcurrentAttempt(const char* host_ip)
 	listUnlock(&max_concurrent_attempts);
 }
 
+/* Read first line of `path` into `dst` (trimmed). Returns true if non-empty content was read. */
+static bool readSemfileIp(const char* path, char* dst, size_t size)
+{
+	FILE* fp;
+
+	if (dst == NULL || size == 0)
+		return false;
+	*dst = '\0';
+	if ((fp = fopen(path, "r")) == NULL)
+		return false;
+	if (fgets(dst, (int)size, fp) == NULL)
+		dst[0] = '\0';
+	fclose(fp);
+	truncsp(dst);
+	return *dst != '\0';
+}
+
 void bbs_thread(void* arg)
 {
 	char host_name[256];
@@ -5622,15 +5639,35 @@ NO_SSH:
 				break;
 			}
 
-			if (((p = semfile_list_check(&initialized, clear_attempts_semfiles)) != NULL
-			     && lprintf(LOG_INFO, "Clear Failed Login Attempts semaphore file (%s) detected", p))
-			    || (startup->clear_attempts_now
-			        && lprintf(LOG_INFO, "Clear Failed Login Attempts signaled"))) {
-				startup->clear_attempts_now = false;
-				loginAttemptListClear(startup->login_attempt_list);
-				listLock(&max_concurrent_attempts);
-				listFreeNodes(&max_concurrent_attempts);
-				listUnlock(&max_concurrent_attempts);
+			{
+				char  clear_ip[INET6_ADDRSTRLEN] = {0};
+				bool  do_clear = false;
+				if ((p = semfile_list_check(&initialized, clear_attempts_semfiles)) != NULL) {
+					readSemfileIp(p, clear_ip, sizeof(clear_ip));
+					lprintf(LOG_INFO, "Clear Failed Login Attempts semaphore file (%s) detected%s%s"
+					        , p, clear_ip[0] ? " for IP " : "", clear_ip);
+					do_clear = true;
+				}
+				if (startup->clear_attempts_now) {
+					if (clear_ip[0] == '\0' && mqtt.clear_attempts_ip[0] != '\0')
+						SAFECOPY(clear_ip, mqtt.clear_attempts_ip);
+					lprintf(LOG_INFO, "Clear Failed Login Attempts signaled%s%s"
+					        , clear_ip[0] ? " for IP " : "", clear_ip);
+					startup->clear_attempts_now = false;
+					mqtt.clear_attempts_ip[0] = '\0';
+					do_clear = true;
+				}
+				if (do_clear) {
+					if (clear_ip[0] != '\0') {
+						loginAttemptListClearAddr(startup->login_attempt_list, clear_ip);
+						clearMaxConcurrentAttempt(clear_ip);
+					} else {
+						loginAttemptListClear(startup->login_attempt_list);
+						listLock(&max_concurrent_attempts);
+						listFreeNodes(&max_concurrent_attempts);
+						listUnlock(&max_concurrent_attempts);
+					}
+				}
 			}
 
 			if (client_socket == INVALID_SOCKET)

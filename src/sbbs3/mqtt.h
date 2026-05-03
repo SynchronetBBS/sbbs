@@ -54,6 +54,10 @@ struct mqtt {
 	struct startup* startup;
 	enum server_state server_state;
 	const char* server_version;
+	/* IP address (numeric, NUL-terminated) the next clear_attempts_now should target. */
+	/* Empty string = clear all (legacy). Set by the clear-topic handler, consumed and */
+	/* reset to empty by the server's accept loop. */
+	char clear_attempts_ip[INET6_ADDRSTRLEN];
 };
 
 enum topic_depth {

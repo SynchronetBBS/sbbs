@@ -26,7 +26,8 @@
 #include "xpdatetime.h"
 #include "date_str.h"
 #include "userdat.h"
-#include "scfglib.h"    // is_valid_dirnum()
+#include "scfglib.h"    /* is_valid_dirnum() */
+#include "genwrap.h"    /* truncsp() */
 
 const char* server_type_desc(enum server_type type)
 {
@@ -534,6 +535,8 @@ static void mqtt_connect_callback(struct mosquitto* mosq, void* cbdata, int rc)
 		mqtt_subscribe(mqtt, TOPIC_HOST, str, sizeof(str), "pause");
 		mqtt_subscribe(mqtt, TOPIC_SERVER, str, sizeof(str), "resume");
 		mqtt_subscribe(mqtt, TOPIC_HOST, str, sizeof(str), "resume");
+		mqtt_subscribe(mqtt, TOPIC_SERVER, str, sizeof(str), "clear");
+		mqtt_subscribe(mqtt, TOPIC_HOST, str, sizeof(str), "clear");
 		if (mqtt->server_version != NULL) {
 			mqtt_server_startup(mqtt);
 			mqtt->server_version = NULL;
@@ -651,6 +654,13 @@ static void mqtt_message_received(struct mosquitto* mosq, void* cbdata, const st
 	}
 	if (strcmp(msg->topic, mqtt_topic(mqtt, TOPIC_HOST, topic, sizeof(topic), "clear")) == 0
 	    || strcmp(msg->topic, mqtt_topic(mqtt, TOPIC_SERVER, topic, sizeof(topic), "clear")) == 0) {
+		size_t len = msg->payloadlen;
+		if (len >= sizeof(mqtt->clear_attempts_ip))
+			len = sizeof(mqtt->clear_attempts_ip) - 1;
+		if (len > 0)
+			memcpy(mqtt->clear_attempts_ip, msg->payload, len);
+		mqtt->clear_attempts_ip[len] = '\0';
+		truncsp(mqtt->clear_attempts_ip);
 		mqtt->startup->clear_attempts_now = true;
 		return;
 	}

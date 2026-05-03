@@ -7695,9 +7695,15 @@ void web_server(void* arg)
 				continue;
 			}
 			if (startup->clear_attempts_now
-			    && lprintf(LOG_INFO, "Clear Failed Login Attempts signaled")) {
+			    && lprintf(LOG_INFO, "Clear Failed Login Attempts signaled%s%s"
+			               , mqtt.clear_attempts_ip[0] ? " for IP " : ""
+			               , mqtt.clear_attempts_ip)) {
 				startup->clear_attempts_now = false;
-				loginAttemptListClear(startup->login_attempt_list);
+				if (mqtt.clear_attempts_ip[0] != '\0') {
+					loginAttemptListClearAddr(startup->login_attempt_list, mqtt.clear_attempts_ip);
+					mqtt.clear_attempts_ip[0] = '\0';
+				} else
+					loginAttemptListClear(startup->login_attempt_list);
 			}
 			if (startup->max_requests_per_period > 0 && startup->request_rate_limit_period > 0
 				&& time(NULL) - last_rate_limit_report >= startup->sem_chk_freq) {

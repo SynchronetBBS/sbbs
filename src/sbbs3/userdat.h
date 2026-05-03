@@ -244,6 +244,7 @@ DLLEXPORT link_list_t*      loginAttemptListInit(link_list_t*);
 DLLEXPORT bool              loginAttemptListFree(link_list_t*);
 DLLEXPORT long              loginAttemptListCount(link_list_t*);
 DLLEXPORT long              loginAttemptListClear(link_list_t*);
+DLLEXPORT long              loginAttemptListClearAddr(link_list_t*, const char* ip_addr);
 DLLEXPORT long              loginAttempts(link_list_t*, const union xp_sockaddr*);
 DLLEXPORT void              loginSuccess(link_list_t*, const union xp_sockaddr*);
 DLLEXPORT ulong             loginFailure(link_list_t*, const union xp_sockaddr*, const char* prot, const char* user, const char* pass, login_attempt_t*);
