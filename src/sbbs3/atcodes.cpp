@@ -2622,8 +2622,12 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 		}
 		if (code_match(sp, "FILE_TIME_TO_DL", &param))
 			return duration(gettimetodl(&cfg, current_file, cur_cps), str, maxlen, param, DURATION_FULL_HHMMSS);
+	} else {
+		if (strcmp(sp, "FILE_NAME") == 0 || strcmp(sp, "FILE_WEB_PATH") == 0) {
+			safe_snprintf(str, maxlen, "%s.QWK", cfg.sys_id);
+			return str;
+		}
 	}
-
 	return get_text(sp);
 }
 
