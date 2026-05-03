@@ -34,6 +34,7 @@ extern "C" {
 DLLEXPORT bool      semfile_signal(const char* fname, const char* text);
 DLLEXPORT bool      semfile_check(time_t* t, const char* fname);
 DLLEXPORT char*     semfile_list_check(time_t* t, str_list_t filelist);
+DLLEXPORT bool      semfile_first_line(const char* fname, char* dst, size_t size);
 DLLEXPORT str_list_t
 semfile_list_init(const char* parent, const char* action
                   , const char* service);

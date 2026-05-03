@@ -128,6 +128,7 @@ static js_server_props_t  js_server_props;
 static str_list_t         recycle_semfiles;
 static str_list_t         shutdown_semfiles;
 static str_list_t         pause_semfiles;
+static str_list_t         clear_attempts_semfiles;
 static str_list_t         cgi_env;
 static struct mqtt        mqtt;
 static link_list_t        current_connections;
@@ -7179,6 +7180,7 @@ static void cleanup(int code)
 	semfile_list_free(&pause_semfiles);
 	semfile_list_free(&recycle_semfiles);
 	semfile_list_free(&shutdown_semfiles);
+	semfile_list_free(&clear_attempts_semfiles);
 
 	if (ws_set != NULL) {
 		xpms_destroy(ws_set, close_socket_cb, NULL);
@@ -7632,6 +7634,7 @@ void web_server(void* arg)
 		shutdown_semfiles = semfile_list_init(scfg.ctrl_dir, "shutdown", server_abbrev);
 		pause_semfiles = semfile_list_init(scfg.ctrl_dir, "pause", server_abbrev);
 		recycle_semfiles = semfile_list_init(scfg.ctrl_dir, "recycle", server_abbrev);
+		clear_attempts_semfiles = semfile_list_init(scfg.ctrl_dir, "clear", server_abbrev);
 		semfile_list_add(&recycle_semfiles, startup->ini_fname);
 		SAFEPRINTF(path, "%swebsrvr.rec", scfg.ctrl_dir); /* legacy */
 		semfile_list_add(&recycle_semfiles, path);
@@ -7643,6 +7646,7 @@ void web_server(void* arg)
 			initialized = time(NULL);
 			semfile_list_check(&initialized, recycle_semfiles);
 			semfile_list_check(&initialized, shutdown_semfiles);
+			semfile_list_check(&initialized, clear_attempts_semfiles);
 		}
 
 		lprintf(LOG_INFO, "Web Server thread started");
@@ -7694,16 +7698,34 @@ void web_server(void* arg)
 				SLEEP(startup->sem_chk_freq * 1000);
 				continue;
 			}
-			if (startup->clear_attempts_now
-			    && lprintf(LOG_INFO, "Clear Failed Login Attempts signaled%s%s"
-			               , mqtt.clear_attempts_ip[0] ? " for IP " : ""
-			               , mqtt.clear_attempts_ip)) {
-				startup->clear_attempts_now = false;
-				if (mqtt.clear_attempts_ip[0] != '\0') {
-					loginAttemptListClearAddr(startup->login_attempt_list, mqtt.clear_attempts_ip);
+			{
+				char clear_ip[INET6_ADDRSTRLEN] = {0};
+				bool do_clear = false;
+				if ((p = semfile_list_check(&initialized, clear_attempts_semfiles)) != NULL) {
+					semfile_first_line(p, clear_ip, sizeof(clear_ip));
+					lprintf(LOG_INFO, "Clear Failed Login Attempts semaphore file (%s) detected%s%s"
+					        , p, clear_ip[0] ? " for IP " : "", clear_ip);
+					do_clear = true;
+				}
+				if (startup->clear_attempts_now) {
+					if (clear_ip[0] == '\0' && mqtt.clear_attempts_ip[0] != '\0')
+						SAFECOPY(clear_ip, mqtt.clear_attempts_ip);
+					lprintf(LOG_INFO, "Clear Failed Login Attempts signaled%s%s"
+					        , clear_ip[0] ? " for IP " : "", clear_ip);
+					startup->clear_attempts_now = false;
 					mqtt.clear_attempts_ip[0] = '\0';
-				} else
-					loginAttemptListClear(startup->login_attempt_list);
+					do_clear = true;
+				}
+				if (do_clear) {
+					if (clear_ip[0] != '\0') {
+						long removed = loginAttemptListClearAddr(startup->login_attempt_list, clear_ip);
+						if (removed < 0)
+							lprintf(LOG_WARNING, "Failed to clear login attempts for IP %s (invalid address?)", clear_ip);
+						else
+							lprintf(LOG_INFO, "Cleared %ld login attempt(s) for IP %s", removed, clear_ip);
+					} else
+						loginAttemptListClear(startup->login_attempt_list);
+				}
 			}
 			if (startup->max_requests_per_period > 0 && startup->request_rate_limit_period > 0
 				&& time(NULL) - last_rate_limit_report >= startup->sem_chk_freq) {

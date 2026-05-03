@@ -17,6 +17,7 @@
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
 
+#include <stdio.h>
 #include <string.h>
 
 #include "semfile.h"
@@ -110,6 +111,27 @@ void semfile_list_add(str_list_t* filelist, const char* path)
 void semfile_list_free(str_list_t* filelist)
 {
 	strListFree(filelist);
+}
+
+/****************************************************************************/
+/* Reads the first line of `fname` into `dst` (at most `size`-1 chars),		*/
+/* trimming trailing white-space. Returns true if non-empty content was		*/
+/* read. `dst` is always NUL-terminated when `size` > 0.					*/
+/****************************************************************************/
+bool semfile_first_line(const char* fname, char* dst, size_t size)
+{
+	FILE* fp;
+
+	if (dst == NULL || size == 0)
+		return false;
+	*dst = '\0';
+	if ((fp = fopen(fname, "r")) == NULL)
+		return false;
+	if (fgets(dst, (int)size, fp) == NULL)
+		dst[0] = '\0';
+	fclose(fp);
+	truncsp(dst);
+	return *dst != '\0';
 }
 
 bool semfile_signal(const char* fname, const char* text)
