@@ -1965,7 +1965,7 @@ int bitmap_movetext_clear(int x, int y, int ex, int ey, int tox, int toy, struct
 		if (fill) {
 			pixel_clear_sy = orig_ey - scroll_shift + 1;
 			pixel_clear_rows = scroll_shift;
-			pixel_clear_color = color_value(fill->bg);
+			pixel_clear_color = fill->bg;
 		}
 
 		vstat.vmem->top_row += scroll_shift;
