@@ -274,17 +274,6 @@ int mqtt_pub_timestamped_msg(struct mqtt* mqtt, enum topic_depth depth, const ch
 	return mqtt_pub_strval(mqtt, depth, key, str);
 }
 
-/* Replace any field-separator (tab) chars in s with spaces, in place. */
-static void sanitize_field(char* s)
-{
-	if (s == NULL)
-		return;
-	for (; *s; s++) {
-		if (*s == '\t' || *s == '\r' || *s == '\n')
-			*s = ' ';
-	}
-}
-
 /* Publish to a host- or server-level topic with a key longer than 128 chars (room for IPv6). */
 static int pub_long_key(struct mqtt* mqtt, enum topic_depth depth, const char* key, const char* str, bool retain)
 {
@@ -314,8 +303,9 @@ int mqtt_pub_login_attempt(struct mqtt* mqtt, const login_attempt_t* attempt)
 	char ip[INET6_ADDRSTRLEN];
 	char iso_first[64];
 	char iso_last[64];
-	char prot[sizeof(attempt->prot)];
-	char user[sizeof(attempt->user)];
+	/* Worst-case escape expansion is 4 bytes per source byte (\xNN). */
+	char prot[sizeof(attempt->prot) * 4 + 1];
+	char user[sizeof(attempt->user) * 4 + 1];
 	char msg[1024];
 	char key[64 + INET6_ADDRSTRLEN];
 
@@ -327,10 +317,8 @@ int mqtt_pub_login_attempt(struct mqtt* mqtt, const login_attempt_t* attempt)
 		return MQTT_FAILURE;
 	time_to_isoDateTimeStr(attempt->first, xpTimeZone_local(), iso_first, sizeof(iso_first));
 	time_to_isoDateTimeStr(attempt->time,  xpTimeZone_local(), iso_last,  sizeof(iso_last));
-	SAFECOPY(prot, attempt->prot);
-	SAFECOPY(user, attempt->user);
-	sanitize_field(prot);
-	sanitize_field(user);
+	c_escape_str(attempt->prot, prot, sizeof(prot) - 1, /* ctrl_only: */ true);
+	c_escape_str(attempt->user, user, sizeof(user) - 1, /* ctrl_only: */ true);
 	snprintf(msg, sizeof(msg), "%s\t%s\t%lu\t%lu\t%s\t%s",
 	         iso_first, iso_last,
 	         (ulong)attempt->count, (ulong)attempt->dupes,
