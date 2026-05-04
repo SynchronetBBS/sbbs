@@ -25,18 +25,23 @@
 import "ui_style"  for Style
 import "ui_widget" for Widget, Rect
 import "ui_draw"   for Painter
+import "ui_popup"  for Find
 import "syncterm"  for KeyEvent, MouseEvent, Key, Mouse
 
 class ListView is Widget {
   construct new() {
     super()
-    _items      = []
-    _selected   = -1
-    _scrollTop  = 0
-    _showScroll = true
-    _onSelect   = null
-    _sbSide     = "left"        // "left" (UIFC) or "right"
-    _sbSep      = true          // separator between scrollbar and content
+    _items         = []
+    _selected      = -1
+    _scrollTop     = 0
+    _showScroll    = true
+    _onSelect      = null
+    _sbSide        = "left"        // "left" (UIFC) or "right"
+    _sbSep         = true          // separator between scrollbar and content
+    _searchBuf     = ""             // type-to-search rolling buffer
+    _lastSearch    = ""             // most recent Ctrl-F query (for Ctrl-G)
+    _selectionMode = "single"       // "single" or "tag"
+    _tagged        = null           // List<Bool> in tag mode, else null
   }
 
   items { _items }
@@ -44,7 +49,53 @@ class ListView is Widget {
     _items     = list
     _selected  = list.count > 0 ? 0 : -1
     _scrollTop = 0
+    _searchBuf = ""
+    if (_selectionMode == "tag") rebuildTagged_()
     markDirty()
+  }
+
+  // "single" (default) or "tag".  In tag mode, Space toggles a
+  // per-item flag and `tagged` returns the indices that are flagged
+  // on.  Tagged rows are visually marked with a `•` glyph in the
+  // leftmost content column.  Switching modes resets the tag state.
+  selectionMode { _selectionMode }
+  selectionMode=(m) {
+    if (m != "single" && m != "tag") return
+    if (_selectionMode == m) return
+    _selectionMode = m
+    if (m == "tag") {
+      rebuildTagged_()
+    } else {
+      _tagged = null
+    }
+    markDirty()
+  }
+
+  // List<Int> of currently-tagged item indices, in ascending order.
+  // Returns an empty list when not in tag mode.
+  tagged {
+    var out = []
+    if (_tagged == null) return out
+    var i = 0
+    while (i < _tagged.count) {
+      if (_tagged[i]) out.add(i)
+      i = i + 1
+    }
+    return out
+  }
+
+  // Toggle the tag at index `i`.  No-op outside tag mode or when
+  // `i` is out of range.
+  toggleTagged(i) {
+    if (_tagged == null) return
+    if (i < 0 || i >= _tagged.count) return
+    _tagged[i] = !_tagged[i]
+    markDirty()
+  }
+
+  rebuildTagged_() {
+    _tagged = []
+    for (i in 0..._items.count) _tagged.add(false)
   }
 
   count { _items.count }
@@ -137,11 +188,16 @@ class ListView is Widget {
 
   innerWidth {
     if (bounds == null) return 0
-    var w = bounds.w - leftInset_ - rightInset_
+    var w = bounds.w - leftInset_ - rightInset_ - tagMarkerWidth_
     return w.max(0)
   }
 
-  contentX_ { leftInset_ }
+  contentX_ { leftInset_ + tagMarkerWidth_ }
+
+  // 1 cell reserved for the tag marker (`•` / blank) when in tag
+  // mode, 0 otherwise.  Reduces the text-content width and shifts
+  // contentX_ right by the same amount.
+  tagMarkerWidth_ { _selectionMode == "tag" ? 1 : 0 }
 
   // Auto-layout: smallest cell budget that displays every item
   // without truncation.  Width sums the longest item's display
@@ -215,6 +271,7 @@ class ListView is Widget {
     var iw = innerWidth
     var h  = bounds.h
     var cx = contentX_
+    var tagged = _selectionMode == "tag"
 
     // Row highlight spans the full widget width, excluding the
     // scrollbar column when one is shown — both the content area
@@ -230,6 +287,13 @@ class ListView is Widget {
       var role = idx == _selected ? "list.item.focused" : "list.item"
       var st   = style(role)
       Painter.fill(sf, Rect.new(fillX, i, fillW, 1), " ", st)
+      // Tag-mode marker column: theme `tag.on` / `tag.off` glyph,
+      // painted in the same row style so the lightbar reads through.
+      if (tagged) {
+        var on   = _tagged != null && _tagged[idx]
+        var mark = glyph(on ? "tag.on" : "tag.off")
+        Painter.text(sf, cx - 1, i, mark, st, 1)
+      }
       Painter.text(sf, cx, i, s, st, iw)
       i = i + 1
     }
@@ -264,38 +328,190 @@ class ListView is Widget {
   }
 
   handleKey_(ke) {
-    var c = ke.code
-    if (c == Key.up) {
-      up()
+    var c  = ke.code
+    var cp = ke.codepoint
+    // Navigation / activation: consume + clear the type-search
+    // buffer so the next typed letter starts a fresh prefix search.
+    // Two-pass to keep the per-key dispatch on a single line:
+    // first run the action for the matching key, then bundle the
+    // shared "clear buffer + return true" tail.
+    if (c == Key.up)       up()
+    if (c == Key.down)     down()
+    if (c == Key.pageUp)   pageUp()
+    if (c == Key.pageDown) pageDown()
+    if (c == Key.home)     home()
+    if (c == Key.end)      end()
+    if (c == Key.enter && _onSelect != null && selectedItem != null) {
+      _onSelect.call(_selected, selectedItem)
+    }
+    if (c == Key.up   || c == Key.down  || c == Key.pageUp ||
+        c == Key.pageDown || c == Key.home || c == Key.end ||
+        c == Key.enter) {
+      _searchBuf = ""
       return true
     }
-    if (c == Key.down) {
-      down()
+    // Ctrl-F (0x06) — prompt for a substring; Ctrl-G (0x07) — repeat
+    // the last query.  Both walk forward from the current selection,
+    // wrapping; case-insensitive substring match.
+    if (cp == 0x06) {
+      runFindPrompt_()
       return true
     }
-    if (c == Key.pageUp) {
-      pageUp()
+    if (cp == 0x07) {
+      runFindAgain_()
       return true
     }
-    if (c == Key.pageDown) {
-      pageDown()
+    // Space toggles the tag at the current row when in tag mode.
+    if (cp == 0x20 && _selectionMode == "tag") {
+      toggleTagged(_selected)
       return true
     }
-    if (c == Key.home) {
-      home()
-      return true
-    }
-    if (c == Key.end) {
-      end()
-      return true
-    }
-    if (c == Key.enter) {
-      if (_onSelect != null && selectedItem != null) {
-        _onSelect.call(_selected, selectedItem)
-      }
+    // Type-to-search: any other printable codepoint.  KeyEvent.text
+    // is the UTF-8 of the codepoint (or "" for extended keys).
+    if (cp >= 0x20 && cp != 0x7F && ke.text.count > 0) {
+      typeahead_(ke.text)
       return true
     }
     return false
+  }
+
+  // Append `ch` to the rolling search buffer and jump to the first
+  // item whose display text starts with the new buffer (case-
+  // insensitive).  If nothing matches, fall back to just `ch` —
+  // restart the search with the new keystroke as the prefix.  When
+  // even that fails, leave the selection alone but keep the buffer
+  // (the next keystroke will keep building on it, in case the user
+  // is correcting a typo).
+  typeahead_(ch) {
+    var attempt = _searchBuf + ch
+    var found = findPrefix_(attempt)
+    if (found >= 0) {
+      _searchBuf = attempt
+      selected = found
+      return
+    }
+    found = findPrefix_(ch)
+    if (found >= 0) {
+      _searchBuf = ch
+      selected = found
+      return
+    }
+    _searchBuf = attempt
+  }
+
+  // Open a compact Find dialog for a search string.  Walks the
+  // parent chain to find the App; no-op when not anchored.  The
+  // result becomes `_lastSearch` and drives the immediate jump
+  // (and any subsequent Ctrl-G).
+  runFindPrompt_() {
+    var app = findApp_()
+    if (app == null) return
+    var q = Find.show(app, "Find", _lastSearch)
+    if (q == null || q.count == 0) return
+    _lastSearch = q
+    var found = findSubstring_(q)
+    if (found >= 0) selected = found
+  }
+
+  runFindAgain_() {
+    if (_lastSearch.count == 0) return
+    var found = findSubstring_(_lastSearch)
+    if (found >= 0) selected = found
+  }
+
+  // Walk parent chain past Widget ancestors to find the App.  Mirrors
+  // the pattern in Pane.triggerHelp_.  Returns null when the list
+  // isn't anchored (no parent App).
+  findApp_() {
+    var w = parent
+    while (w is Widget) w = w.parent
+    return w
+  }
+
+  // ----- Search helpers ----------------------------------------
+
+  // Subclass hook: returns the string to search against for `item`.
+  // Defaults to the formatItem display string (capped wide so any
+  // padding/truncation policy doesn't cut off the term).  Override
+  // when display text and search text should differ (e.g., a list
+  // of file rows where users type the filename, not the chip-prefixed
+  // display string).
+  searchTextFor_(item) { formatItem(item, 1024) }
+
+  // Case-insensitive prefix walk: starts at current+1 (or 0 when no
+  // selection), wraps, returns the first index whose `searchTextFor_`
+  // starts with `prefix`.  -1 when no match.  Empty prefix returns
+  // the start index unchanged.
+  findPrefix_(prefix) {
+    var n = _items.count
+    if (n == 0 || prefix.count == 0) return -1
+    var start = _selected < 0 ? 0 : (_selected + 1) % n
+    var i = 0
+    while (i < n) {
+      var idx = (start + i) % n
+      if (ciStartsWith_(searchTextFor_(_items[idx]), prefix)) return idx
+      i = i + 1
+    }
+    return -1
+  }
+
+  // Case-insensitive substring walk: same shape as findPrefix_ but
+  // matches anywhere in the search text.
+  findSubstring_(needle) {
+    var n = _items.count
+    if (n == 0 || needle.count == 0) return -1
+    var start = _selected < 0 ? 0 : (_selected + 1) % n
+    var i = 0
+    while (i < n) {
+      var idx = (start + i) % n
+      if (ciContains_(searchTextFor_(_items[idx]), needle)) return idx
+      i = i + 1
+    }
+    return -1
+  }
+
+  // ASCII case-insensitive `startsWith` / `contains` — folds A..Z to
+  // a..z byte-wise.  Multi-byte UTF-8 passes through unchanged
+  // (matched as raw bytes), which is fine for the BBS-style names
+  // we typically search through.  Instance methods (not static) so
+  // bare-name calls from findPrefix_ / findSubstring_ resolve via
+  // implicit `this`; subclasses inherit them automatically.
+  ciStartsWith_(s, prefix) {
+    var sb = s.bytes
+    var pb = prefix.bytes
+    if (pb.count > sb.count) return false
+    var i = 0
+    while (i < pb.count) {
+      if (foldByte_(sb[i]) != foldByte_(pb[i])) return false
+      i = i + 1
+    }
+    return true
+  }
+  ciContains_(s, needle) {
+    var sb = s.bytes
+    var nb = needle.bytes
+    if (nb.count == 0) return true
+    if (nb.count > sb.count) return false
+    var last = sb.count - nb.count
+    var i = 0
+    while (i <= last) {
+      var j = 0
+      var ok = true
+      while (j < nb.count) {
+        if (foldByte_(sb[i + j]) != foldByte_(nb[j])) {
+          ok = false
+          break
+        }
+        j = j + 1
+      }
+      if (ok) return true
+      i = i + 1
+    }
+    return false
+  }
+  foldByte_(b) {
+    if (b >= 0x41 && b <= 0x5A) return b + 0x20
+    return b
   }
 
   // How many rows a single wheel notch moves the viewport.
@@ -347,6 +563,15 @@ class ListView is Widget {
     var idx = _scrollTop + (me.endY - bounds.y)
     if (idx >= 0 && idx < _items.count) {
       selected = idx
+      // Click-to-activate: matches UIFC's `ulist`, which returns
+      // immediately on a row click rather than waiting for Enter.
+      // Fires only on full clicks (not the initial press of a
+      // potential drag) so a click-then-drag for text selection
+      // doesn't fire onSelect prematurely.
+      if (e == Mouse.button1Click && _onSelect != null &&
+          selectedItem != null) {
+        _onSelect.call(_selected, selectedItem)
+      }
       return true
     }
     return false

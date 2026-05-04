@@ -480,3 +480,61 @@ class Prompt is Popup {
     return super.handle(ev)
   }
 }
+
+// Compact single-row prompt used for inline find dialogs (ListView's
+// Ctrl-F).  Title sits in the top frame border (UIFC convention);
+// the input row uses the full innerBounds (no top/bottom padding,
+// no buttons).  Enter submits the value; Esc returns null.  The [X]
+// corner button is hidden so the title bar reads as a clean
+// `┤ Find ├`.
+class Find is Popup {
+  construct new(label, initial) {
+    super(null)
+    title       = label
+    closeable   = false
+    _input      = TextInput.new()
+    _input.value = (initial == null ? "" : initial)
+    _input.onSubmit = Fn.new {|s| dismissWith_(s) }
+    _input.focused  = true
+    add(_input)
+  }
+
+  static show(app, label) { show(app, label, null) }
+  static show(app, label, initial) {
+    var p = Find.new(label, initial)
+    p.bounds = Find.centeredBounds_(label)
+    app.modal(p)
+    return p.result
+  }
+
+  // Width: title (with `┤  ├` brackets) + a minimum input area.
+  // Height: 3 — top frame, single input row, bottom frame.  No
+  // padding rows: this is meant to be a quick, low-overhead prompt.
+  static centeredBounds_(label) {
+    var sz = Screen.size
+    var lb = (label == null) ? 0 : label.bytes.count
+    var w  = (lb + 6 + 20).min(sz[0] - 4).max(20)
+    var h  = 3
+    var x  = ((sz[0] - w) / 2).floor + 1
+    var y  = ((sz[1] - h) / 2).floor + 1
+    return Rect.new(x, y, w, h)
+  }
+
+  // Single-row layout — input fills the entire innerBounds row,
+  // bypassing the contentBounds 1-cell padding (Find is tighter
+  // than the message popups).
+  bounds=(r) {
+    super.bounds = r
+    var ib = innerBounds
+    if (ib == null) return
+    _input.bounds = Rect.new(ib.x, ib.y, ib.w, 1)
+  }
+
+  handle(ev) {
+    if (ev is KeyEvent && ev.code == Key.escape) {
+      dismissWith_(null)
+      return true
+    }
+    return super.handle(ev)
+  }
+}

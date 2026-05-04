@@ -344,6 +344,10 @@ class BrowserListView is ListView {
     if (_onSelectionChange != null) _onSelectionChange.call(selectedItem)
   }
   formatItem(item, width) { item.line }
+  // Type-to-search and Ctrl-F/G match against the bare filename,
+  // not the chip-prefixed display line (which always starts with
+  // `[`, defeating prefix search of any filename).
+  searchTextFor_(item) { item.name }
 }
 
 class QueueRow {
@@ -358,6 +362,11 @@ class QueueRow {
 class QueueListView is ListView {
   construct new() { super() }
   formatItem(item, width) { item.line }
+  // Search against the local filename — the formatted line is
+  // status + bytes + percent + filename + remote, so any
+  // user-typed query lands on the filename slot, not the leading
+  // arrow/status text.
+  searchTextFor_(item) { item.snap.local }
 }
 
 // ----- The App ------------------------------------------------------

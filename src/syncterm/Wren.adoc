@@ -4746,13 +4746,46 @@ list.onSelect = Fn.new {|i, item| /* ... */ }
 
 Navigation: `Up`, `Down`, `PageUp`, `PageDown`, `Home`, `End` move
 the selection.  `Enter` fires `onSelect` with `(index, item)`.
-Mouse clicks select the row; wheel scrolls three rows; clicks on
-the scrollbar column step or jump proportionally.
+Mouse: a single click on a row both selects it and fires `onSelect`
+(matches UIFC's `ulist`); wheel scrolls three rows; clicks on the
+scrollbar column step or jump proportionally.
 
 `selected` is `null` when no row is selected (empty list, or
 explicitly cleared with `list.selected = null`); otherwise an
 integer in `0..count - 1`.  `selectedItem` mirrors the same
 contract — `null` when nothing is selected, the item otherwise.
+
+==== Search
+
+Two complementary search modes, both case-insensitive (ASCII fold)
+and wrapping at the end of the list:
+
+* *Type-to-search* — any printable character grows a rolling buffer
+  and jumps to the first item whose search text starts with it.
+  If the new buffer doesn't match anywhere, falls back to just the
+  new character (fresh prefix from current+1).  Buffer resets on
+  any navigation or activation key, so a paused-then-resumed search
+  starts clean.
+* *Ctrl-F / Ctrl-G* — Ctrl-F opens an inline `Find` dialog (see
+  the Popup family) for a substring query, jumps to the first
+  match.  Ctrl-G repeats the last query.
+
+The hook `searchTextFor_(item)` returns the string to match against;
+defaults to `formatItem(item, 1024)` (the normal display string).
+Override in subclasses when the displayed row decorates the underlying
+text — the SFTP browser's `BrowserListView`, for example, returns
+`item.name` so users type bare filenames rather than the chip-prefixed
+`[==] foo.dat` line.
+
+==== Tag mode
+
+`selectionMode=` accepts `"single"` (default) or `"tag"`.  In tag mode
+each row tracks an independent tag flag, toggled by `Space` on the
+current row; `tagged` returns the indices that are flagged on.  A
+1-cell marker column appears at the leftmost content position using
+the theme's `tag.on` / `tag.off` glyphs (`»` / blank by default;
+`>` / blank in ASCII-only mode).  Switching modes resets the flags;
+so does setting `items=`.
 
 Scrollbar layout knobs:
 
@@ -5041,6 +5074,21 @@ directly; `Enter` activates the focused button; `Tab` cycles focus.
 
 `Prompt` — `TextInput` plus OK / Cancel buttons.  `Enter` in the
 input or on OK submits the value; `Esc` or Cancel returns `null`.
+
+`Find` — compact single-row variant of Prompt.  Title sits in the
+top frame border, the input fills the entire `innerBounds` row (no
+padding, no buttons, no `[X]`).  Total height is 3 cells.  Used by
+`ListView`'s Ctrl-F.
+
+[source,wren]
+----
+import "ui" for Find
+
+var q = Find.show(app, "Find", lastQuery)
+if (q != null && q.count > 0) {
+  // ...
+}
+----
 
 ==== Layout
 
