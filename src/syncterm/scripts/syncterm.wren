@@ -886,6 +886,7 @@ foreign class CTerm {
   foreign static emulation
   foreign static doorwayMode
   foreign static music
+  foreign static music=(b)
   foreign static started
   foreign static skypix
   foreign static logMode
@@ -1343,6 +1344,14 @@ class Host {
   // console pane (Console.markSeen()).
   foreign static logUnread
   foreign static logUnreadError
+
+  // ANSI music mode display strings and help blurb.  Same source as
+  // the bbslist editor's music picker, so a Wren-side dialog and the
+  // C-side dialog stay aligned.  `musicNames` is a List<String>
+  // indexed by `MusicMode`; `musicHelp` is the multi-line help blurb
+  // shown above the picker.
+  foreign static musicNames
+  foreign static musicHelp
 }
 
 // Wren-driven status bar.  Replaces the old Hook.onStatus.  Install a

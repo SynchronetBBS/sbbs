@@ -6460,11 +6460,6 @@ doterm(struct bbslist *bbs)
 				 * ~/.local/share/syncterm/scripts/ that doesn't hook
 				 * Alt-L, the keystroke falls through here (and out
 				 * of the switch) — the user opted out. */
-				case 0x3200: /* ALT-M */
-					music_control(bbs);
-					setup_mouse_events(&ms);
-					showmouse();
-					break;
 				case 0x1600: /* ALT-U - Upload */
 					begin_upload(bbs, false, inch);
 					setup_mouse_events(&ms);

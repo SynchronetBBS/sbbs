@@ -299,6 +299,28 @@ fn_CTerm_music(WrenVM *vm)
 	    cterm != NULL ? (double)cterm->music_enable : 0.0);
 }
 
+/* CTerm.music = i — set the ANSI music enable level (see MusicMode in
+ * the Wren-side syncterm module).  Out-of-range values are clamped to
+ * the legal 0..N-1 range so a script can't push cterm into a state the
+ * emulator won't honour. */
+void
+fn_CTerm_music_set(WrenVM *vm)
+{
+	if (cterm == NULL)
+		return;
+	if (wrenGetSlotType(vm, 1) != WREN_TYPE_NUM)
+		return;
+	int i = (int)wrenGetSlotDouble(vm, 1);
+	int n = 0;
+	while (music_names[n] != NULL)
+		n++;
+	if (i < 0)
+		i = 0;
+	if (n > 0 && i >= n)
+		i = n - 1;
+	cterm->music_enable = i;
+}
+
 void
 fn_CTerm_width(WrenVM *vm)
 {
@@ -685,6 +707,32 @@ void
 fn_Host_logUnreadError(WrenVM *vm)
 {
 	wrenSetSlotBool(vm, 0, wren_host_log_unread_error());
+}
+
+/* Host.musicNames — display strings for the ANSI music modes, in the
+ * order the MusicMode enum uses (off, ESC[| only, BANSI style, all
+ * music).  Returned as a Wren List<String> built fresh on each
+ * call.  Mirrors `music_names[]` from bbslist.c so the bbslist
+ * editor and a Wren-side music picker stay aligned without hard-
+ * coding labels in the script. */
+void
+fn_Host_musicNames(WrenVM *vm)
+{
+	wrenEnsureSlots(vm, 2);
+	wrenSetSlotNewList(vm, 0);
+	for (int i = 0; music_names[i] != NULL; i++) {
+		wrenSetSlotString(vm, 1, music_names[i]);
+		wrenInsertInList(vm, 0, -1, 1);
+	}
+}
+
+/* Host.musicHelp — the multi-line help blurb shown by the bbslist
+ * editor's music-mode picker.  Same source as the Setup dialog so a
+ * Wren-side picker doesn't drift. */
+void
+fn_Host_musicHelp(WrenVM *vm)
+{
+	wrenSetSlotString(vm, 0, music_helpbuf);
 }
 
 /* ----- Status (Wren-driven status bar) ----------------------------- */

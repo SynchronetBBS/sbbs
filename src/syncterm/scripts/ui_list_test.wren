@@ -247,23 +247,23 @@ class UiListTest {
   static testInnerWidthNoOverflow_() {
     var l = makeList_(3)
     l.bounds = Rect.new(1, 1, 20, 5)
-    check_(l.innerWidth == 20,
-           "ListView.innerWidth: no overflow → full bounds.w")
+    check_(l.innerWidth == 18,
+           "ListView.innerWidth: no overflow → bounds.w - 2 (1-cell pad each side)")
   }
 
   static testInnerWidthWithOverflow_() {
     var l = makeList_(20)
     l.bounds = Rect.new(1, 1, 20, 5)
-    check_(l.innerWidth == 18,
-           "ListView.innerWidth: overflow → bounds.w - 2 (scrollbar + separator)")
+    check_(l.innerWidth == 17,
+           "ListView.innerWidth: overflow → bounds.w - 3 (left scrollbar+sep + right pad)")
   }
 
   static testInnerWidthScrollDisabled_() {
     var l = makeList_(20)
     l.bounds = Rect.new(1, 1, 20, 5)
     l.showScroll = false
-    check_(l.innerWidth == 20,
-           "ListView.innerWidth: showScroll=false → full bounds.w")
+    check_(l.innerWidth == 18,
+           "ListView.innerWidth: showScroll=false → bounds.w - 2 (1-cell pad each side)")
   }
 
   // ----- Event handling -------------------------------------------

@@ -176,6 +176,16 @@ class Widget {
   focusable     { _focusable }
   focusable=(b) { _focusable = b }
 
+  // Auto-layout sizing hints.  Widgets that have a natural minimum
+  // size (a ListView with N items, a Form with measured rows, …)
+  // override these to declare the smallest cell budget that displays
+  // their content cleanly.  Default `null` means "no preference,
+  // fill whatever bounds the parent gives me".  Containers that
+  // know how to lay out children (Pane.fitContent) consume these to
+  // size themselves around their content.
+  preferredWidth  { null }
+  preferredHeight { null }
+
   dirty { _dirty }
 
   // Resolve the active theme by walking up the parent chain to the

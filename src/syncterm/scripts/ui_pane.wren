@@ -30,7 +30,7 @@
 
 import "ui_widget" for Widget, Container, Rect
 import "ui_draw"   for Painter
-import "syncterm"  for MouseEvent, Mouse
+import "syncterm"  for MouseEvent, Mouse, Screen
 
 class Pane is Container {
   // UIFC-style defaults: double-line frame, title in its own bar
@@ -114,6 +114,93 @@ class Pane is Container {
     var topInset = titleBarActive_ ? 3 : 1
     return Rect.new(bounds.x + 1, bounds.y + topInset,
                     bounds.w - 2, bounds.h - topInset - 1)
+  }
+
+  // Per-axis frame overhead (= bounds size minus innerBounds size).
+  // Horizontal is always 2 (left + right border); vertical is the
+  // top inset (1 plain, 3 with title bar) plus 1 for the bottom
+  // border.  Used by fitContent_ to size around a child's
+  // preferredWidth/Height.
+  frameOverheadW_ { 2 }
+  frameOverheadH_ { (titleBarActive_ ? 3 : 1) + 1 }
+
+  // Outer width needed to display the title without truncation.
+  // The two title modes have different geometry:
+  //   * titleAsBar  — title is centered on its own row inside the
+  //     frame; reserve a 1-cell padding on each side so the title
+  //     never butts up against the side frame.  Width = title + 4
+  //     (frame(2) + padding(2)).
+  //   * frameTitle  — title sits in the top frame border between
+  //     `─ ` and ` ─` brackets; rendered cap is `bounds.w - 6`
+  //     (corners(2) + brackets(2) + spaces(2)), so width = title + 6.
+  // Returns 0 when there's no title to fit.
+  titleOuterWidth_ {
+    if (_title == null) return 0
+    var t = _title.bytes.count
+    return t + (titleBarActive_ ? 4 : 6)
+  }
+
+  // Outer width needed to display the corner buttons without
+  // overrunning either side corner.  Close (3 cells) and help
+  // (3 cells) sit on the top frame border starting at col 1, so
+  // the bar needs at least button_total + 2 (corners).  In
+  // titleAsBar mode the buttons share row 0 with no title text,
+  // so this is independent of titleOuterWidth_.  In frameTitle
+  // mode the buttons share row 0 *with* the centered title; the
+  // pane is only guaranteed to be wide enough for both when the
+  // larger of the two outer-width requests wins.
+  cornerButtonsOuterWidth_ {
+    var bw = 0
+    if (_closeable) bw = bw + 3
+    if (_helpable && (_onHelp != null || helpText != null)) bw = bw + 3
+    return bw == 0 ? 0 : bw + 2
+  }
+
+  // Auto-size the pane around a single child's preferredWidth /
+  // preferredHeight, plus whatever the title bar and corner buttons
+  // demand.  Falls back to existing bounds (or sensible defaults)
+  // for any axis the child doesn't declare.  If the pane already
+  // has bounds, its (x, y) is preserved; otherwise the pane is
+  // parked at (1, 1) until centerOnScreen / a parent layout moves
+  // it.  No-op when there are no children to measure.
+  //
+  // Multi-child panes need to lay themselves out manually — this
+  // helper is the single-content-widget convenience.
+  fitContent() {
+    if (children.count == 0) return
+    var c = children[0]
+    var pw = c.preferredWidth
+    var ph = c.preferredHeight
+    if (pw == null && ph == null) return
+    var innerW = pw == null ? (bounds == null ? 20 : bounds.w - frameOverheadW_) : pw
+    var innerH = ph == null ? (bounds == null ?  5 : bounds.h - frameOverheadH_) : ph
+    if (innerW < 1) innerW = 1
+    if (innerH < 1) innerH = 1
+    var outerW = innerW + frameOverheadW_
+    // Title and corner-button widths are independent outer-width
+    // demands; pick whichever is largest so neither gets clipped.
+    var titleW   = titleOuterWidth_
+    var buttonsW = cornerButtonsOuterWidth_
+    if (titleW   > outerW) outerW = titleW
+    if (buttonsW > outerW) outerW = buttonsW
+    var x = bounds == null ? 1 : bounds.x
+    var y = bounds == null ? 1 : bounds.y
+    bounds = Rect.new(x, y, outerW, innerH + frameOverheadH_)
+    c.bounds = innerBounds
+  }
+
+  // Reposition the pane so it's centered on the current Screen.
+  // Requires bounds to be set; pairs naturally with fitContent
+  // (`pane.fitContent(); pane.centerOnScreen()`).  Off-screen sizes
+  // are honoured -- the caller is expected to keep the pane within
+  // the screen rect themselves.
+  centerOnScreen() {
+    if (bounds == null) return
+    var sz = Screen.size
+    var x = ((sz[0] - bounds.w) / 2).floor + 1
+    var y = ((sz[1] - bounds.h) / 2).floor + 1
+    bounds = Rect.new(x, y, bounds.w, bounds.h)
+    if (children.count > 0) children[0].bounds = innerBounds
   }
 
   // Pane gates the active-layer status of its subtree on its own

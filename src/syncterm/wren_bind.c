@@ -938,6 +938,7 @@ static const struct binding BINDINGS[] = {
 	{ "CTerm", true, "attr",               fn_CTerm_attr            },
 	{ "CTerm", true, "doorwayMode",        fn_CTerm_doorwayMode     },
 	{ "CTerm", true, "music",              fn_CTerm_music           },
+	{ "CTerm", true, "music=(_)",          fn_CTerm_music_set       },
 	{ "CTerm", true, "width",              fn_CTerm_width           },
 	{ "CTerm", true, "height",             fn_CTerm_height          },
 	{ "CTerm", true, "topMargin",          fn_CTerm_topMargin       },
@@ -1092,6 +1093,8 @@ static const struct binding BINDINGS[] = {
 	{ "Host", true, "safeMode",          fn_Host_safeMode          },
 	{ "Host", true, "logUnread",         fn_Host_logUnread         },
 	{ "Host", true, "logUnreadError",    fn_Host_logUnreadError    },
+	{ "Host", true, "musicNames",        fn_Host_musicNames        },
+	{ "Host", true, "musicHelp",         fn_Host_musicHelp         },
 
 	{ "Status", true, "callable",        fn_Status_callable_get    },
 	{ "Status", true, "callable=(_)",    fn_Status_callable_set    },

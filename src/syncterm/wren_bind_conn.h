@@ -78,6 +78,10 @@ void fn_BBS_connTypeName(WrenVM *vm);
 void fn_Host_safeMode(WrenVM *vm);
 void fn_Host_logUnread(WrenVM *vm);
 void fn_Host_logUnreadError(WrenVM *vm);
+void fn_Host_musicNames(WrenVM *vm);
+void fn_Host_musicHelp(WrenVM *vm);
+
+void fn_CTerm_music_set(WrenVM *vm);
 
 void fn_Status_callable_get(WrenVM *vm);
 void fn_Status_callable_set(WrenVM *vm);

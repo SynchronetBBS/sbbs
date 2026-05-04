@@ -122,15 +122,44 @@ class ListView is Widget {
     return 1
   }
 
-  innerWidth {
-    if (bounds == null) return 0
-    return bounds.w - scrollbarOverhead_
+  // Per-side inset between the widget edge and the row content.
+  // The scrollbar (when present) provides its own visual separation;
+  // the bare side gets a single padding cell so items never touch
+  // the frame the parent Pane draws around us.
+  leftInset_ {
+    if (scrollbarVisible_ && _sbSide != "right") return scrollbarOverhead_
+    return 1
+  }
+  rightInset_ {
+    if (scrollbarVisible_ && _sbSide == "right") return scrollbarOverhead_
+    return 1
   }
 
-  contentX_ {
-    if (!scrollbarVisible_ || _sbSide == "right") return 0
-    return _sbSep ? 2 : 1
+  innerWidth {
+    if (bounds == null) return 0
+    var w = bounds.w - leftInset_ - rightInset_
+    return w.max(0)
   }
+
+  contentX_ { leftInset_ }
+
+  // Auto-layout: smallest cell budget that displays every item
+  // without truncation.  Width sums the longest item's display
+  // length and both insets (1 cell of breathing space on the
+  // frameless side(s) plus whatever the scrollbar would take if
+  // visible — assumed not visible at the natural height, see
+  // preferredHeight).  Height = items.count, clamped to at least 1
+  // so an empty list still occupies a row.
+  preferredWidth {
+    var maxLen = 0
+    for (item in _items) {
+      var s = formatItem(item, 1024)
+      var n = s.bytes.count
+      if (n > maxLen) maxLen = n
+    }
+    return maxLen + leftInset_ + rightInset_
+  }
+  preferredHeight { _items.count.max(1) }
 
   // Subclass hook: format `item` into a String.  `width` is the cell
   // budget for the row; implementations may pad / truncate / column-
