@@ -555,6 +555,7 @@ init_crypt(void)
 	dssh_register_dh_gex_sha256();
 
 	dssh_register_aes256_ctr();
+	dssh_register_aes128_cbc();
 	dssh_register_hmac_sha2_256();
 	dssh_register_hmac_sha2_512();
 	dssh_register_none_comp();
@@ -1054,6 +1055,16 @@ ssh_connect(struct bbslist *bbs)
 	dssh_session_set_terminate_cb(ssh_session, transport_terminate_cb, NULL);
 	dssh_session_set_banner_cb(ssh_session, auth_banner_cb, bbs);
 	dssh_session_set_debug_cb(ssh_session, ssh_debug_cb, bbs);
+
+	/* aes128-cbc is registered globally for compat with legacy servers
+	   (e.g. Mystic), but only offered when the entry opts in.  Default
+	   entries get a whitelist of just aes256-ctr; opted-in entries get
+	   no filter so the full registered list (aes256-ctr first, then
+	   aes128-cbc) is offered. */
+	if (!bbs->ssh_allow_aes128_cbc) {
+		const char *enc_allow[] = { "aes256-ctr" };
+		dssh_session_set_enc_filter(ssh_session, enc_allow, 1);
+	}
 
 	if (!bbs->hidepopups) {
 		uifc.pop(NULL);

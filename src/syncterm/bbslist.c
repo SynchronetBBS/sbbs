@@ -1339,6 +1339,7 @@ read_item(ini_fp_list_t *listfile, struct bbslist *entry, ini_lv_string_t *bbsna
 		}
 	}
 	entry->sftp_public_key = iniGetBool(section, NULL, "SFTPPublicKey", false);
+	entry->ssh_allow_aes128_cbc = iniGetBool(section, NULL, "SSHAllowAES128CBC", false);
 	iniGetSString(sys ? NULL : section, NULL, "DownloadPath", home, entry->dldir, sizeof(entry->dldir));
 	iniGetSString(sys ? NULL : section, NULL, "UploadPath", home, entry->uldir, sizeof(entry->uldir));
 	entry->data_bits = iniGetUShortInt(section, NULL, "DataBits", 8);
@@ -1952,6 +1953,7 @@ enum {
 	BBSLIST_FIELD_HAS_FINGERPRINT,
 	BBSLIST_FIELD_SSH_FINGERPRINT,
 	BBSLIST_FIELD_SFTP_PUBLIC_KEY,
+	BBSLIST_FIELD_SSH_ALLOW_AES128_CBC,
 	BBSLIST_FIELD_STOP_BITS,
 	BBSLIST_FIELD_DATA_BITS,
 	BBSLIST_FIELD_PARITY,
@@ -2047,6 +2049,8 @@ build_edit_list(struct bbslist *item, char opt[][69], int *optmap, char **opts, 
 	if (item->conn_type == CONN_TYPE_SSH || item->conn_type == CONN_TYPE_SSHNA) {
 		optmap[i] = BBSLIST_FIELD_SFTP_PUBLIC_KEY;
 		sprintf(opt[i++], "SFTP Public Key   %s", item->sftp_public_key ? "Yes" : "No");
+		optmap[i] = BBSLIST_FIELD_SSH_ALLOW_AES128_CBC;
+		sprintf(opt[i++], "Allow AES128-CBC  %s", item->ssh_allow_aes128_cbc ? "Yes" : "No");
 	}
 	if (item->conn_type == CONN_TYPE_TELNET || item->conn_type == CONN_TYPE_TELNETS) {
 		optmap[i] = BBSLIST_FIELD_TELNET_NO_BINARY;
@@ -2201,6 +2205,11 @@ build_edit_help(struct bbslist *item, int isdefault, char *helpbuf, size_t hbsz)
 		hblen += strlcat(helpbuf + hblen, "~ SFTP Public Key ~\n"
 		                                  "        Open an SFTP channel and transfer the public key to\n"
 		                                  "        .ssh/authorized_keys\n\n", hbsz - hblen);
+		hblen += strlcat(helpbuf + hblen, "~ Allow AES128-CBC ~\n"
+		                                  "        Offer the legacy aes128-cbc cipher during SSH negotiation.\n"
+		                                  "        Needed to connect to some older servers (e.g. Mystic) that\n"
+		                                  "        do not support aes256-ctr.  Disabled by default; aes256-ctr\n"
+		                                  "        remains preferred when both are offered.\n\n", hbsz - hblen);
 	}
 	if (item->conn_type == CONN_TYPE_TELNET || item->conn_type == CONN_TYPE_TELNETS) {
 		hblen += strlcat(helpbuf + hblen, "~ Binmode Broken ~\n"
@@ -3177,6 +3186,11 @@ edit_list(struct bbslist **list, struct bbslist *item, char *listpath, int isdef
 				changed = 1;
 				iniSetBool(&inifile, itemname, "SFTPPublicKey", item->sftp_public_key, &ini_style);
 				break;
+			case BBSLIST_FIELD_SSH_ALLOW_AES128_CBC:
+				item->ssh_allow_aes128_cbc = !item->ssh_allow_aes128_cbc;
+				changed = 1;
+				iniSetBool(&inifile, itemname, "SSHAllowAES128CBC", item->ssh_allow_aes128_cbc, &ini_style);
+				break;
 			case BBSLIST_FIELD_TELNET_NO_BINARY:
 				item->telnet_no_binary = !item->telnet_no_binary;
 				changed = 1;
@@ -3282,6 +3296,7 @@ add_bbs(char *listpath, struct bbslist *bbs, bool new_entry)
 		iniSetString(&inifile, bbs->name, "SSHFingerprint", fp, &ini_style);
 	}
 	iniSetBool(&inifile, bbs->name, "SFTPPublicKey", bbs->sftp_public_key, &ini_style);
+	iniSetBool(&inifile, bbs->name, "SSHAllowAES128CBC", bbs->ssh_allow_aes128_cbc, &ini_style);
 	iniSetUShortInt(&inifile, bbs->name, "StopBits", bbs->stop_bits, &ini_style);
 	iniSetUShortInt(&inifile, bbs->name, "DataBits", bbs->data_bits, &ini_style);
 	iniSetEnum(&inifile, bbs->name, "Parity", parity_enum, bbs->parity, &ini_style);
