@@ -758,6 +758,18 @@ The currently embedded scripts are:
 | Alt+L send-login handler.  Sends username, password, and sysop
   password from the directory entry, with the right send-order rules
   per connection type.
+
+| `keys_default`
+| auto / connected
+| Default `Hook.onKey` bindings for the in-terminal Alt-shortcuts
+  that historically lived as `case` blocks in `term.c`'s input
+  loop: Alt+O (toggle mouse-event reporting) and Alt+Up / Alt+Down
+  (walk the network throttle rate up / down the rates ladder).
+
+| `status_default`
+| auto / connected
+| Default `Status.callable` — paints the terminal's bottom row.
+  See <<status,Status>> for the API and override pattern.
 |===
 
 The `syncterm` module contains only declarations; it has no top-level
@@ -1898,6 +1910,15 @@ two-phase split.
 | `Input.enableMouseEvent(ev)`, `Input.disableMouseEvent(ev)`
 | Single-event toggles for the same mask.
 
+| `Input.setupMouseEvents()`
+| Reconfigure ciolib to report exactly the events appropriate for
+  cterm's current mouse mode (`MM_OFF` clears everything; the various
+  tracking modes each register their own button / move set), then
+  call `showmouse()`.  Wraps the C-side `setup_mouse_events(&ms)` +
+  `showmouse()` pair — call after toggling
+  <<cterm,`CTerm.mouseDisabled`>> or otherwise mutating mouse state
+  from a script.
+
 | `Input.pushClaim(fn)`
 | Push `fn` onto the input claim stack as the *current* claim for
   the calling fiber.  `fn(ev)` is invoked by the C-side dispatcher
@@ -2121,8 +2142,10 @@ keys use the low byte for the character and 0 for the high byte.
 | Constant     | Code   | Description
 | `shiftUp`    | 0x3800 | Shift+Up.
 | `ctrlUp`     | 0x8D00 | Ctrl+Up.
+| `altUp`      | 0x9800 | Alt+Up.
 | `shiftDown`  | 0x3200 | Shift+Down.
 | `ctrlDown`   | 0x9100 | Ctrl+Down.
+| `altDown`    | 0xA000 | Alt+Down.
 | `shiftLeft`  | 0x3400 | Shift+Left.
 | `ctrlLeft`   | 0x7300 | Ctrl+Left.
 | `shiftRight` | 0x3600 | Shift+Right.
@@ -2750,8 +2773,14 @@ emulation-aware logic.
 | Mouse state
 | `mouseMode` (raw enum from `cterm`'s mouse-state struct: 0 = off,
   1 = RIP, 9 = X10, 1000..1003 = the various tracking modes),
-  `mouseDisabled` (Bool — true when a tracking mode is set but the
-  conio backend has signalled it can't actually report events)
+  `mouseDisabled` / `mouseDisabled = b` (Bool — true when ciolib
+  has been told to stop delivering events even though a tracking
+  mode is set; setter pairs with `Input.setupMouseEvents()`)
+
+| Throttle
+| `throttleSpeed` (live network character-pacing rate, BPS;
+  0 = unthrottled), `throttleSpeedUp()` / `throttleSpeedDown()`
+  (walk the rates ladder; no-op on serial)
 
 | Bitfield snapshots
 | `extAttr` (`ExtAttr`), `lastColumnFlag` (`LastColumnFlag`)
@@ -2798,6 +2827,26 @@ emulation-aware logic.
   arrows, log indicators) to be re-emitted instead of showing
   whatever was painted into the saved snapshot.  No-op when the
   bar is disabled (`statusDisplay == 0`).
+
+| `CTerm.mouseDisabled = b`
+| Toggle the `MS_FLAGS_DISABLED` bit on the live `mouse_state`.
+  `true` stops ciolib from delivering motion / click events even
+  when a tracking mode is set; `false` re-enables them.  The
+  reconfiguration doesn't take effect until you follow up with
+  `Input.setupMouseEvents()`.
+
+| `CTerm.throttleSpeed`
+| Current network character-pacing rate in BPS.  `0` = unthrottled
+  (no per-byte sleep).  Always `0` on serial connections; the
+  configured port speed lives in `BBS.bpsRate`.  Default status bar
+  reads this to render the live rate.
+
+| `CTerm.throttleSpeedUp()`, `CTerm.throttleSpeedDown()`
+| Walk `throttleSpeed` one step up or down the BBS-list rates
+  ladder (300, 600, 1200, 2400, 4800, 9600, 19200, 38400, 57600,
+  76800, 115200).  `Up` from `0` jumps to `300`; `Down` from `300`
+  drops to `0` (unthrottled).  No-op on serial connections.
+  Default keys script binds these to `Key.altUp` / `Key.altDown`.
 |===
 
 ==== ExtAttr

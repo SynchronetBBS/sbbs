@@ -745,6 +745,7 @@ static const struct binding BINDINGS[] = {
 	{ "Input",  true,  "mouseEvents=(_)",     fn_Input_mouseEvents_set    },
 	{ "Input",  true,  "enableMouseEvent(_)", fn_Input_enableMouseEvent   },
 	{ "Input",  true,  "disableMouseEvent(_)",fn_Input_disableMouseEvent  },
+	{ "Input",  true,  "setupMouseEvents()", fn_Input_setupMouseEvents   },
 
 	/* KeyEvent (instance) */
 	{ "KeyEvent",   false, "code",       fn_KeyEvent_code      },
@@ -961,6 +962,10 @@ static const struct binding BINDINGS[] = {
 	{ "CTerm", true, "ooiiMode",           fn_CTerm_ooiiMode        },
 	{ "CTerm", true, "mouseMode",          fn_CTerm_mouseMode       },
 	{ "CTerm", true, "mouseDisabled",      fn_CTerm_mouseDisabled   },
+	{ "CTerm", true, "mouseDisabled=(_)",  fn_CTerm_mouseDisabled_set },
+	{ "CTerm", true, "throttleSpeed",      fn_CTerm_throttleSpeed     },
+	{ "CTerm", true, "throttleSpeedUp()",  fn_CTerm_throttleSpeedUp   },
+	{ "CTerm", true, "throttleSpeedDown()",fn_CTerm_throttleSpeedDown },
 	{ "CTerm", true, "statusDisplay",      fn_CTerm_statusDisplay   },
 	{ "CTerm", true, "refreshStatus()",    fn_CTerm_refreshStatus   },
 	{ "CTerm", true, "sftpActive",         fn_CTerm_sftpActive_get  },

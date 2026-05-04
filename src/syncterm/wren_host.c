@@ -337,6 +337,12 @@ wren_host_bind_ooii_mode(int *mode)
 	state.ooii_mode = mode;
 }
 
+void
+wren_host_bind_speed(int *speed)
+{
+	state.speed = speed;
+}
+
 /* --------------------------------------------------------------------
  * Result queue
  * -------------------------------------------------------------------- */

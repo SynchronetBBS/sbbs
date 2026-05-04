@@ -64,6 +64,11 @@ void fn_CTerm_atasciiInverse(WrenVM *vm);
 void fn_CTerm_ooiiMode(WrenVM *vm);
 void fn_CTerm_mouseMode(WrenVM *vm);
 void fn_CTerm_mouseDisabled(WrenVM *vm);
+void fn_CTerm_mouseDisabled_set(WrenVM *vm);
+void fn_CTerm_throttleSpeed(WrenVM *vm);
+void fn_CTerm_throttleSpeedUp(WrenVM *vm);
+void fn_CTerm_throttleSpeedDown(WrenVM *vm);
+void fn_Input_setupMouseEvents(WrenVM *vm);
 void fn_CTerm_extAttr(WrenVM *vm);
 void fn_CTerm_lastColumnFlag(WrenVM *vm);
 

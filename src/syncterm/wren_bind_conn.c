@@ -12,13 +12,14 @@
 #include "wren_host_internal.h"
 #include "wren_host.h"
 
+#include "bbslist.h"   /* rates[], get_rate_num */
 #include "ciolib.h"
 #include "comio.h"     /* COM_FLOW_CONTROL_* — also used by FlowControl in wren_bind.c */
 #include "conn.h"
 #include "cterm.h"
 #include "genwrap.h"   /* xp_fast_timer64 */
 #include "syncterm.h"  /* safe_mode */
-#include "term.h"      /* force_status_update, term, struct mouse_state */
+#include "term.h"      /* force_status_update, term, struct mouse_state, setup_mouse_events */
 
 #include <stdbool.h>
 #include <stdint.h>
@@ -528,6 +529,100 @@ fn_CTerm_mouseDisabled(WrenVM *vm)
 		v = (ms->flags & MS_FLAGS_DISABLED) != 0;
 	}
 	wrenSetSlotBool(vm, 0, v);
+}
+
+/* CTerm.mouseDisabled = b — toggle the MS_FLAGS_DISABLED bit on the
+ * live mouse_state.  Mirrors what the old C Alt-O handler did before
+ * delegating to setup_mouse_events.  Caller is expected to follow up
+ * with Input.setupMouseEvents() so the conio backend reconfigures
+ * which events it reports.  No-op when no mouse_state is bound. */
+void
+fn_CTerm_mouseDisabled_set(WrenVM *vm)
+{
+	if (cterm == NULL || cterm->mouse_state_change_cbdata == NULL)
+		return;
+	if (wrenGetSlotType(vm, 1) != WREN_TYPE_BOOL)
+		return;
+	struct mouse_state *ms = cterm->mouse_state_change_cbdata;
+	if (wrenGetSlotBool(vm, 1))
+		ms->flags |= MS_FLAGS_DISABLED;
+	else
+		ms->flags &= ~MS_FLAGS_DISABLED;
+}
+
+/* CTerm.throttleSpeed — current network character-pacing rate in BPS,
+ * or 0 when throttling is off (the "no cap" floor of the rates
+ * ladder).  For serial connections this is always 0; the configured
+ * port rate lives in BBS.bpsRate.  Read by the default status bar
+ * to render the live throttled rate; written via the up/down
+ * actions below. */
+void
+fn_CTerm_throttleSpeed(WrenVM *vm)
+{
+	struct wren_host_state *st = wren_host_state();
+	int v = (st != NULL && st->speed != NULL) ? *st->speed : 0;
+	wrenSetSlotDouble(vm, 0, (double)v);
+}
+
+/* Helper: walk the doterm()-bound speed up or down the rates[] ladder
+ * (bbslist.c).  rates[] is a sorted ascending list ending in a
+ * sentinel 0; `step > 0` climbs (caps at the entry just before the
+ * sentinel), `step < 0` descends (clamps to 0 = unthrottled).
+ * No-op for serial connections to mirror the historical Alt-Up /
+ * Alt-Down C handler, which silently ignored those keys when the
+ * port speed was the only meaningful rate. */
+static void
+throttle_step_(int step)
+{
+	struct wren_host_state *st = wren_host_state();
+	if (st == NULL || st->speed == NULL || st->bbs == NULL)
+		return;
+	int ct = st->bbs->conn_type;
+	if (ct == CONN_TYPE_SERIAL || ct == CONN_TYPE_SERIAL_NORTS)
+		return;
+	int cur = *st->speed;
+	if (step > 0) {
+		if (cur == 0) {
+			*st->speed = rates[0];
+			return;
+		}
+		int next = rates[get_rate_num(cur) + 1];
+		if (next != 0)
+			*st->speed = next;
+	}
+	else {
+		int idx = get_rate_num(cur);
+		*st->speed = (idx == 0) ? 0 : rates[idx - 1];
+	}
+}
+
+void
+fn_CTerm_throttleSpeedUp(WrenVM *vm)
+{
+	(void)vm;
+	throttle_step_(+1);
+}
+
+void
+fn_CTerm_throttleSpeedDown(WrenVM *vm)
+{
+	(void)vm;
+	throttle_step_(-1);
+}
+
+/* Input.setupMouseEvents() — reconfigure ciolib's reported mouse
+ * events to match the active mouse_state (MM_OFF disables; tracking
+ * modes register the appropriate button/move events).  Plus an
+ * unconditional showmouse() so the cursor surfaces.  Wraps what the
+ * old C Alt-O handler did after toggling the disabled flag. */
+void
+fn_Input_setupMouseEvents(WrenVM *vm)
+{
+	(void)vm;
+	if (cterm == NULL || cterm->mouse_state_change_cbdata == NULL)
+		return;
+	setup_mouse_events(cterm->mouse_state_change_cbdata);
+	showmouse();
 }
 
 /* BBS.elapsedSeconds — wall-clock seconds since the connect handshake

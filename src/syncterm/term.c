@@ -6068,6 +6068,7 @@ doterm(struct bbslist *bbs)
 	wren_host_init(bbs);
 	wren_host_bind_cterm_suspended(&cterm_suspended);
 	wren_host_bind_ooii_mode(&ooii_mode);
+	wren_host_bind_speed(&speed);
 	for (; !quitting;) {
 		/* Reclaim any hook entries unregistered since the last
 		 * iteration: shifts pointer arrays, frees regex resources,
@@ -6464,12 +6465,6 @@ doterm(struct bbslist *bbs)
 					setup_mouse_events(&ms);
 					showmouse();
 					break;
-				case 0x1800: /* ALT-O */
-					ms.flags ^= MS_FLAGS_DISABLED;
-					setup_mouse_events(&ms);
-					showmouse();
-					sleep = false;
-					break;
 				case 0x1600: /* ALT-U - Upload */
 					begin_upload(bbs, false, inch);
 					setup_mouse_events(&ms);
@@ -6488,25 +6483,6 @@ doterm(struct bbslist *bbs)
 					if (check_hangup(key, &hret, oldmc, &ms)) {
 						ret = hret;
 						goto end;
-					}
-					break;
-				case 0x9800: /* ALT-Up */
-					if ((bbs->conn_type != CONN_TYPE_SERIAL)
-					    && (bbs->conn_type != CONN_TYPE_SERIAL_NORTS)) {
-						if (speed)
-							speed = rates[get_rate_num(speed) + 1];
-						else
-							speed = rates[0];
-					}
-					break;
-				case 0xa000: /* ALT-Down */
-					if ((bbs->conn_type != CONN_TYPE_SERIAL)
-					    && (bbs->conn_type != CONN_TYPE_SERIAL_NORTS)) {
-						i = get_rate_num(speed);
-						if (i == 0)
-							speed = 0;
-						else
-							speed = rates[i - 1];
 					}
 					break;
 			}

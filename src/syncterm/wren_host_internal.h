@@ -217,6 +217,12 @@ struct wren_host_state {
 	 * report the live value.  NULL when no doterm() session is active. */
 	int         *ooii_mode;
 
+	/* Pointer to doterm()'s local `speed` (the throttle rate Alt-Up /
+	 * Alt-Down walk over).  Set by wren_host_bind_speed(); backs the
+	 * CTerm.throttleSpeed getter and the throttleSpeedUp/Down actions
+	 * the default keys script binds. */
+	int         *speed;
+
 	/* Status-bar callable (Fn{|surface|...}).  Installed by Wren via
 	 * Status.callable=(fn).  C invokes it from wren_status_render().
 	 * NULL when no callable is set; in that case C leaves the row

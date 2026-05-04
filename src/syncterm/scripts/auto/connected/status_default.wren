@@ -14,7 +14,7 @@
 // To override: drop a same-named file in your auto-load dir, or set
 // `Status.callable = ...` from any later script.
 
-import "syncterm" for Status, Surface, BBS, CTerm, Host
+import "syncterm" for Status, Surface, BBS, CTerm, Host, ConnType
 
 class StatusDefault {
   // Cell colour palette (RGB; matches the C original).
@@ -124,7 +124,13 @@ class StatusDefault {
     // truncated to fit the remaining body width if needed.
     var name    = nameWithFlags_()
     var conn    = BBS.connTypeName
-    var speed   = BBS.bpsRate > 0 ? "%(BBS.bpsRate) bps" : ""
+    // For serial connections the displayed rate is the configured
+    // port speed (Alt-Up/Down don't apply); for everything else,
+    // show the live throttle rate (0 = unthrottled, omit slot).
+    var ct = BBS.connType
+    var isSerial = ct == ConnType.serial || ct == ConnType.serialNoRts
+    var rate = isSerial ? BBS.bpsRate : CTerm.throttleSpeed
+    var speed   = rate > 0 ? "%(rate) bps" : ""
     var elapsed = w >= 80 ? elapsedString_() : ""
     var menu    = w >= 80 ? "ALT-Z menu" : ""
 

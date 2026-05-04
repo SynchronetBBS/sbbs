@@ -31,6 +31,12 @@ void wren_host_bind_cterm_suspended(bool *flag);
  * Wren getter can report it.  Pass NULL on shutdown to detach. */
 void wren_host_bind_ooii_mode(int *mode);
 
+/* Bind a doterm()-local `speed` int to the host so the
+ * CTerm.throttleSpeed getter and the throttleSpeedUp/Down actions can
+ * see and mutate it.  `speed` is the network character-pacing rate
+ * (BPS); 0 means unthrottled.  Pass NULL on shutdown to detach. */
+void wren_host_bind_speed(int *speed);
+
 /* Status-bar render: invoke the Wren callable installed via
  * Status.callable=(fn) with a width×1 Surface that has been pre-filled
  * to a blank default-attribute row.  The script mutates the surface in

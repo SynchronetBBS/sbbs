@@ -254,6 +254,14 @@ foreign class Input {
   foreign static enableMouseEvent(ev)
   foreign static disableMouseEvent(ev)
 
+  // Reconfigure ciolib to report the events appropriate for cterm's
+  // current mouse mode (MM_OFF disables; the various tracking modes
+  // each register their own button/move set), then call showmouse().
+  // Wraps the C-side setup_mouse_events(&ms) + showmouse() pair —
+  // call this after toggling CTerm.mouseDisabled or otherwise
+  // changing mouse_state from a Wren script.
+  foreign static setupMouseEvents()
+
   // Async event delivery — push a claim onto the input claim stack.
   // Each claim is a `Fn` taking a single event arg (KeyEvent or
   // MouseEvent foreign) and returning a Bool (consumed).  The C
@@ -404,6 +412,8 @@ class Key {
   static altDel      { 0xA300 }
   static shiftUp     { 0x3800 }
   static ctrlUp      { 0x8D00 }
+  static altUp       { 0x9800 }
+  static altDown     { 0xA000 }
   static shiftLeft   { 0x3400 }
   static ctrlLeft    { 0x7300 }
   static shiftRight  { 0x3600 }
@@ -880,6 +890,17 @@ foreign class CTerm {
   foreign static skypix
   foreign static logMode
   foreign static logPaused
+  foreign static atasciiInverse
+  foreign static ooiiMode
+  foreign static mouseMode
+  foreign static mouseDisabled
+  foreign static mouseDisabled=(b)
+  // Network character-pacing rate in BPS (Alt-Up / Alt-Down walk it
+  // up and down the rates ladder).  0 = unthrottled.  Always 0 on
+  // serial connections; the configured port speed lives in BBS.bpsRate.
+  foreign static throttleSpeed
+  foreign static throttleSpeedUp()
+  foreign static throttleSpeedDown()
   foreign static statusDisplay
   foreign static refreshStatus()
   // Wren-controlled flag the SSH driver reads to keep the session
