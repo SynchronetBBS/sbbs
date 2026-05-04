@@ -49,9 +49,17 @@ void show_status_url(const char *url);
  * current alt-font, and sends.  No-op when clipboard is empty. */
 void do_paste(void);
 
-/* Capture control dialog — uifc-driven menu for starting / stopping
- * session capture.  Caller restores mouse events afterwards. */
-void capture_control(struct bbslist *bbs);
+/* Font control dialog — uifc-driven font picker for the four cterm
+ * font slots.  No-op in safe mode and on text-only video backends.
+ * Caller restores mouse events afterwards. */
+void font_control(struct bbslist *bbs, struct cterminal *cterm);
+
+/* Save the current screen in CP437 mode after resetting font slots
+ * and the legacy bg-bright / no-blink flags — used by every uifc-
+ * shaped dialog so the saved snapshot matches the cp437 attribute
+ * model uifc paints in.  Caller restores via restorescreen +
+ * freescreen.  Returns NULL on alloc failure. */
+struct ciolib_screen *cp437_savescrn(void);
 
 /* Save the current cterm area (NOT including the status bar) as IBM-
  * CGA / BinaryText to `fp`, optionally appending a SAUCE block.
@@ -80,5 +88,7 @@ void get_cterm_size(int *cols, int *rows, int ns);
 int get_cache_fn_base(struct bbslist *bbs, char *fn, size_t fnsz);
 int get_cache_fn_subdir(struct bbslist *bbs, char *fn, size_t fnsz, const char *subdir);
 void send_login(struct bbslist *bbs);
+void begin_upload(struct bbslist *bbs, bool autozm, int lastch);
+void begin_download(struct bbslist *bbs);
 
 #endif // ifndef _TERM_H_

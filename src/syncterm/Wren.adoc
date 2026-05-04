@@ -761,12 +761,49 @@ The currently embedded scripts are:
 
 | `keys_default`
 | auto / connected
-| Default `Hook.onKey` bindings for the in-terminal Alt-shortcuts
-  that historically lived as `case` blocks in `term.c`'s input
-  loop: Alt+O (toggle mouse-event reporting), Alt+Up / Alt+Down
-  (walk the network throttle rate up / down the rates ladder),
-  and Alt+M (open the ANSI music-mode picker via `Pane` +
-  `ListView`).
+| Default `Hook.onKey` bindings for the in-terminal hot-keys that
+  historically lived as `case` blocks in `term.c`'s input loop:
+  Alt+X / Alt+H / `Key.quit` (window-close) and — text-mode terminals
+  only — Ctrl+Q route to `DisconnectFlow.run`; Alt+O toggles
+  mouse-event reporting; Alt+Up / Alt+Down walk the network throttle
+  rate; Shift+Insert pastes from the clipboard; Alt+B opens the
+  scrollback viewer; Alt+C delegates to `CaptureMenu.run`; Alt+M
+  delegates to `MusicMenu.run`.
+
+| `disconnect_flow`
+| auto / connected
+| `DisconnectFlow.run(exitApp)` — modal "Disconnect... Are you sure?"
+  Confirm popup shared by the Alt+X / Alt+H / Ctrl+Q / window-close
+  hooks in `keys_default`.  On Yes calls `Conn.endSession(exitApp)`.
+  Imported by `keys_default`; not used by `online_menu` (the menu
+  selection is itself the confirmation).
+
+| `capture_menu`
+| auto / connected
+| `CaptureMenu.run()` — Wren replacement for the historical
+  uifc-driven `capture_control` dialog (capture type / save path /
+  pause / resume / close).  Driven by Alt+C in `keys_default` and
+  the "Capture Control" entry in `online_menu`.
+
+| `music_menu`
+| auto / connected
+| `MusicMenu.run()` — Wren replacement for the historical uifc-driven
+  `music_control` dialog (ANSI music mode picker).  Driven by Alt+M
+  in `keys_default` and the "ANSI Music Control" entry in
+  `online_menu`.
+
+| `online_menu`
+| auto / connected
+| `OnlineMenu.run()` — Wren replacement for the historical
+  uifc-driven `syncmenu` (the SyncTERM "Online Menu" reached via
+  Alt+Z, plus Ctrl+S on text-mode terminals).  Lists the in-terminal
+  control commands and dispatches the selection back into the
+  primitives that drive the individual hot-keys
+  (`Conn.scrollback`, `Conn.upload`, `Conn.download`, `CaptureMenu.run`,
+  `MusicMenu.run`, ...).  The Output Rate and Log Level entries chain
+  into a sub-list before closing.  Disconnect / Exit selections call
+  `Conn.endSession` directly — no Confirm popup, since selecting the
+  entry IS the confirmation.
 
 | `status_default`
 | auto / connected
@@ -2694,7 +2731,29 @@ Connection-level send and receive.
   Alt-X / window-close semantics).  Returns immediately — the
   caller is responsible for any user-facing confirm popup.  The
   default disconnect-key hooks in `keys_default.wren` raise a
-  Wren-side `Confirm` popup before invoking this.
+  Wren-side `Confirm` popup before invoking this; the
+  `online_menu` Disconnect / Exit entries call this directly
+  (the menu selection is itself the confirmation).
+
+| `Conn.paste()`
+| Paste from the system clipboard onto the wire — codepage-aware,
+  bracketed-paste-aware.  No-op when the clipboard is empty.  Wraps
+  the historical Shift+Insert handler.
+
+| `Conn.scrollback()`
+| Open the uifc scrollback viewer modal.  Mouse events are disabled
+  for the duration and restored on exit.  Wraps the historical Alt+B
+  handler.
+
+| `Conn.upload()`
+| Open the upload picker / dialog (equivalent to the legacy Alt+U
+  path).  No-op outside an active session.  Mouse events are
+  refreshed on the way out.
+
+| `Conn.download()`
+| Open the download picker / dialog (equivalent to the legacy Alt+D
+  path).  No-op outside an active session.  Mouse events are
+  refreshed on the way out.
 
 | `Conn.connected`
 | Bool — is the link up?
@@ -2901,18 +2960,37 @@ emulation-aware logic.
   whatever was painted into the saved snapshot.  No-op when the
   bar is disabled (`statusDisplay == 0`).
 
-| `CTerm.mouseDisabled = b`
-| Toggle the `MS_FLAGS_DISABLED` bit on the live `mouse_state`.
-  `true` stops ciolib from delivering motion / click events even
-  when a tracking mode is set; `false` re-enables them.  The
-  reconfiguration doesn't take effect until you follow up with
+| `CTerm.mouseDisabled`, `CTerm.mouseDisabled = b`
+| Read or toggle the `MS_FLAGS_DISABLED` bit on the live
+  `mouse_state`.  `true` stops ciolib from delivering motion / click
+  events even when a tracking mode is set; `false` re-enables them.
+  The reconfiguration doesn't take effect until you follow up with
   `Input.setupMouseEvents()`.
 
-| `CTerm.throttleSpeed`
+| `CTerm.mouseMode`
+| Read-only enum int from the live `mouse_state` —
+  `0` (`MM_OFF`), `1` (`MM_RIP`), `9` (`MM_X10`), `1000..1003` (the
+  XTerm tracking modes).  Used by the default status bar to decide
+  whether to light the "M" indicator.
+
+| `CTerm.doorwayMode`, `CTerm.doorwayMode = b`
+| Read or write the cterm doorway-mode flag.  When true, the input
+  pump passes most keys through verbatim instead of decoding them;
+  used by door programs that want raw scancodes.
+
+| `CTerm.ooiiMode`, `CTerm.ooiiMode = n`
+| Read or write the Operation Overkill ][ tone-emulation mode
+  (`0` = off, `1`..`Host.maxOOIIMode` = the OOTerm modes).  Setting
+  out-of-range values is clamped.  The setter toggles the xptone
+  audio context to match.  Always reads `0` and is a no-op in
+  builds compiled with `WITHOUT_OOII`.
+
+| `CTerm.throttleSpeed`, `CTerm.throttleSpeed = bps`
 | Current network character-pacing rate in BPS.  `0` = unthrottled
   (no per-byte sleep).  Always `0` on serial connections; the
   configured port speed lives in `BBS.bpsRate`.  Default status bar
-  reads this to render the live rate.
+  reads this to render the live rate; the `online_menu` Output Rate
+  picker writes via the setter.
 
 | `CTerm.throttleSpeedUp()`, `CTerm.throttleSpeedDown()`
 | Walk `throttleSpeed` one step up or down the BBS-list rates
@@ -3351,6 +3429,45 @@ pre-bound from these at module load.
   music picker (`music_names[]` and `music_helpbuf` in
   `bbslist.c`), so a Wren-side picker stays aligned with the
   C-side dialog.
+
+| `Host.outputRates`, `Host.outputRateNames`
+| Throttled-output ladder.  `outputRates[i]` is the BPS value (a
+  Num); `outputRateNames[i]` is the human label (e.g. `"115200"`
+  for index 10, `"Current"` for the trailing `0` = no-cap entry).
+  Indexes line up between the two lists.  Pass any rate value to
+  `CTerm.throttleSpeed = bps`.  The `online_menu` Output Rate
+  picker uses these to populate its sub-list.
+
+| `Host.logLevel`, `Host.logLevel = n`, `Host.logLevelNames`
+| Transfer log threshold (`0` = Emergency, ..., `7` = Debug) and
+  the matching display labels indexed by the same number.  Out-of-
+  range values are clamped on write.  The `online_menu` Log Level
+  picker writes the setter; the transfer dialog reads via the
+  C-side `log_level` global.
+
+| `Host.haveOOII`
+| `true` when the build has Operation Overkill ][ tone support
+  compiled in (i.e. `WITHOUT_OOII` is not defined).  The
+  `online_menu` consults this to decide whether to expose the
+  "Toggle OOII" entry.
+
+| `Host.maxOOIIMode`
+| Highest valid OOII mode value (returns `0` in
+  `WITHOUT_OOII` builds).  The `online_menu` wraps the OOII
+  increment back to `0` when it exceeds this cap, matching the
+  historical SM_OOII cycle.
+
+| `Host.fontControl()`
+| Open the font picker dialog (uifc-driven font picker for the four
+  cterm font slots).  No-op in safe mode and on text-only video
+  backends.  Mouse events are restored on the way out.  Wraps the
+  historical Alt+F handler.
+
+| `Host.editBBSList()`
+| Open the BBS list editor (uifc-driven directory / settings
+  dialog).  Saves and restores the cterm screen around the dialog,
+  re-applies the window title, and resets the scrollback buffer if
+  the configured size changed.  Wraps the historical Alt+E handler.
 
 | `Host.sshPublicKey`
 | The first locally-configured SSH public key, as a Map

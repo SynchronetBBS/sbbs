@@ -9,47 +9,21 @@
 // the key, leaving the default a no-op.
 
 import "syncterm" for Hook, Key, CTerm, Conn, Host, Input, Screen
-import "ui_app"   for App
-import "ui_pane"  for Pane
-import "ui_list"  for ListView
-import "ui_popup" for Confirm, Popup
-import "capture_menu" for CaptureMenu
+import "disconnect_flow" for DisconnectFlow
+import "capture_menu"    for CaptureMenu
+import "music_menu"      for MusicMenu
 
-// Disconnect / exit cluster.  Each hook spawns a child fiber that
-// raises a "Disconnect... Are you sure?" Confirm popup; on yes, it
-// calls Conn.endSession to flag the actual cleanup.  doterm() picks
-// the flag up at the top of its next iteration, runs the
-// (UI-free) C cleanup, and either returns to the bbslist
-// (Alt-H / Ctrl-Q semantics) or exits syncterm entirely
-// (Alt-X / window-close semantics).
+// Disconnect / exit cluster.  DisconnectFlow lives in its own module
+// (disconnect_flow.wren) so the online menu can reuse it.  Each hook
+// here just routes to the right exitApp argument:
+//   exitApp = true   → Alt-X / window-close: exit SyncTERM after hangup
+//   exitApp = false  → Alt-H / Ctrl-Q: return to bbslist after hangup
 //
 // Ctrl-Q is gated to text-mode terminals (curses / ANSI) — graphical
 // backends (X / SDL / Wayland / Quartz / GDI) leave Ctrl-Q to cterm
 // as a normal control byte.  Host.textTerminal is stable for the
 // session, so we check at module load and skip installing the hook
 // in graphical modes rather than process-and-pass-through every key.
-class DisconnectFlow {
-  static run(exitApp) {
-    Fiber.new {
-      Screen.modalRun(Fn.new {
-        var app = App.new()
-        var msg = "Disconnect... Are you sure?\n\n" +
-                  "Selecting Yes closes the connection."
-        var c   = Confirm.new(msg)
-        c.bounds     = Popup.centeredBounds_(msg, 1, 24)
-        // The Confirm dismissal pops itself off the modal stack;
-        // also quit the App so `app.run()` returns.  Without this
-        // wire-up run() would loop forever on an empty modal stack.
-        c.onDismiss  = Fn.new { |v| app.quit() }
-        app.pushModal(c)
-        app.run()
-        if (c.result == true) Conn.endSession(exitApp)
-      })
-      Input.setupMouseEvents()
-    }.call()
-  }
-}
-
 Hook.onKey(Key.altX) { |k|
   DisconnectFlow.run(true)
   return true
@@ -116,38 +90,10 @@ Hook.onKey(Key.altC) { |k|
   return true
 }
 
-// Alt-M — ANSI music mode picker.  Replaces the C music_control()
-// dialog.  The hook body itself returns immediately; the modal UI
-// runs inside a child fiber so its event loop can yield freely (per
-// Hook.dispatch_'s "no direct yield" rule -- see wren.md §8 and the
-// header comment on App).  Refresh mouse events on the way out so
-// the in-dialog reconfiguration doesn't leak.
+// Alt-M — ANSI music mode picker.  Delegates to MusicMenu.run() so
+// the Alt-Z online menu's "ANSI Music Control" entry can reach the
+// same modal flow.
 Hook.onKey(Key.altM) { |k|
-  Fiber.new {
-    Screen.modalRun(Fn.new {
-      var app  = App.new()
-      var pane = Pane.new()
-      pane.title    = "ANSI Music Setup"
-      pane.helpText = Host.musicHelp
-      pane.focused  = true
-      pane.onClose  = Fn.new { app.quit() }
-      app.root.add(pane)
-
-      var list = ListView.new()
-      list.items    = Host.musicNames
-      list.selected = CTerm.music
-      list.onSelect = Fn.new { |i, item|
-        CTerm.music = i
-        app.quit()
-      }
-      pane.add(list)
-      pane.fitContent()
-      pane.centerOnScreen()
-
-      app.bind(Key.escape, Fn.new { |k| app.quit() })
-      app.run()
-    })
-    Input.setupMouseEvents()
-  }.call()
+  MusicMenu.run()
   return true
 }

@@ -3476,28 +3476,6 @@ end:
 /* End of X/Y-MODEM stuff */
 
 void
-music_control(struct bbslist *bbs)
-{
-	struct  text_info     txtinfo;
-	struct ciolib_screen *savscrn;
-	int                   i;
-
-	gettextinfo(&txtinfo);
-	savscrn = cp437_savescrn();
-	init_uifc(false, false);
-
-	i = cterm->music_enable;
-	uifc.helpbuf = music_helpbuf;
-	if (uifc.list(WIN_MID | WIN_SAV, 0, 0, 0, &i, NULL, "ANSI Music Setup", music_names) != -1)
-		cterm->music_enable = i;
-	else
-		check_exit(false);
-	uifcbail();
-	restorescreen(savscrn);
-	freescreen(savscrn);
-}
-
-void
 font_control(struct bbslist *bbs, struct cterminal *cterm)
 {
 	struct ciolib_screen *savscrn;
@@ -3634,184 +3612,6 @@ save_screen_binary(FILE *fp, bool with_sauce, struct bbslist *bbs)
 		return errno ? errno : EIO;
 	fflush(fp);
 	return 0;
-}
-
-void
-capture_control(struct bbslist *bbs)
-{
-	struct ciolib_screen *savscrn;
-	char                 *cap;
-	struct  text_info     txtinfo;
-	int                   i, j;
-
-	if (safe_mode)
-		return;
-	gettextinfo(&txtinfo);
-	savscrn = cp437_savescrn();
-	cap = (char *)alloca(cterm->height * cterm->width * 2);
-	gettext(cterm->x, cterm->y, cterm->x + cterm->width - 1, cterm->y + cterm->height - 1, cap);
-
-	init_uifc(false, false);
-
-	if (!cterm->log) {
-		struct file_pick fpick;
-		char            *opts[] = {
-			"ASCII",
-			"Raw",
-			"Binary",
-			"Binary with SAUCE",
-			""
-		};
-
-		i = 0;
-		uifc.helpbuf = "~ Capture Type ~\n\n"
-		    "`ASCII`              ASCII only (no ANSI escape sequences)\n"
-		    "`Raw`                Preserves ANSI sequences\n"
-		    "`Binary`             Saves current screen in IBM-CGA/BinaryText format\n"
-		    "`Binary with SAUCE`  Saves current screen in BinaryText format with SAUCE\n"
-		    "\n"
-		    "Raw is useful for stealing ANSI screens from other systems.\n"
-		    "Don't do that though.  :-)";
-		if (uifc.list(WIN_MID | WIN_SAV, 0, 0, 0, &i, NULL, "Capture Type", opts) != -1) {
-			j = filepick(&uifc, "Capture File", &fpick, bbs->dldir, i >= 2 ? "*.bin" : NULL,
-			        UIFC_FP_ALLOWENTRY | UIFC_FP_OVERPROMPT);
-			check_exit(false);
-
-			if ((j != -1) && (fpick.files >= 1)) {
-				if (i >= 2) {
-					FILE *fp = fopen(fpick.selected[0], "wb");
-
-					if (fp == NULL) {
-						char err[256];
-
-						sprintf(err, "Error %u opening file '%s'", errno, fpick.selected[0]);
-						uifc.msg(err);
-					}
-					else {
-						char msg[256];
-
-						uifc.pop("Writing to file");
-						fwrite(cap, sizeof(uint8_t), cterm->width * cterm->height * 2, fp);
-						if (i > 2) {
-							time_t       t = time(NULL);
-							struct tm   *tm;
-							struct sauce sauce;
-
-							memset(&sauce, 0, sizeof(sauce));
-							memcpy(sauce.id, SAUCE_ID, sizeof(sauce.id));
-							memcpy(sauce.ver, SAUCE_VERSION, sizeof(sauce.ver));
-							memset(sauce.title, ' ', sizeof(sauce.title));
-							memset(sauce.author, ' ', sizeof(sauce.author));
-							memset(sauce.group, ' ', sizeof(sauce.group));
-							if (bbs != NULL) {
-								memcpy(sauce.title, bbs->name,
-								    MIN(strlen(bbs->name), sizeof(sauce.title)));
-								memcpy(sauce.author, bbs->user,
-								    MIN(strlen(bbs->user), sizeof(sauce.author)));
-							}
-							if ((tm = localtime(&t)) != NULL) {
-								char tmpstr[SAUCE_LEN_DATE + 1] = {0};
-								if (snprintf(tmpstr, sizeof(tmpstr), "%04u%02u%02u",
-								    1900 + tm->tm_year, 1 + tm->tm_mon, tm->tm_mday) >= 0) {
-									memcpy(sauce.date, tmpstr, SAUCE_LEN_DATE);
-								}
-							}
-							sauce.filesize = LE_INT32(ftell(fp)); // LE
-							sauce.datatype = sauce_datatype_bin;
-							sauce.filetype = cterm->width / 2;
-							if (ciolib_getvideoflags()
-							    & (CIOLIB_VIDEO_BGBRIGHT | CIOLIB_VIDEO_NOBLINK))
-								sauce.tflags |= sauce_ansiflag_nonblink;
-
-							fputc(SAUCE_SEPARATOR, fp);
-
-                                                        /* No comment block (no comments) */
-							fwrite(&sauce.id, sizeof(sauce.id), 1, fp);
-							fwrite(&sauce.ver, sizeof(sauce.ver), 1, fp);
-							fwrite(&sauce.title, sizeof(sauce.title), 1, fp);
-							fwrite(&sauce.author, sizeof(sauce.author), 1, fp);
-							fwrite(&sauce.group, sizeof(sauce.group), 1, fp);
-							fwrite(&sauce.date, sizeof(sauce.date), 1, fp);
-							fwrite(&sauce.filesize, sizeof(sauce.filesize), 1, fp);
-							fwrite(&sauce.datatype, sizeof(sauce.datatype), 1, fp);
-							fwrite(&sauce.filetype, sizeof(sauce.filetype), 1, fp);
-							fwrite(&sauce.tinfo1, sizeof(sauce.tinfo1), 1, fp);
-							fwrite(&sauce.tinfo2, sizeof(sauce.tinfo2), 1, fp);
-							fwrite(&sauce.tinfo3, sizeof(sauce.tinfo3), 1, fp);
-							fwrite(&sauce.tinfo4, sizeof(sauce.tinfo4), 1, fp);
-							fwrite(&sauce.comments, sizeof(sauce.comments), 1, fp);
-							fwrite(&sauce.tflags, sizeof(sauce.tflags), 1, fp);
-							fwrite(&sauce.tinfos, sizeof(sauce.tinfos), 1, fp);
-						}
-						fclose(fp);
-						uifc.pop(NULL);
-						sprintf(msg, "Screen saved to '%s'", getfname(fpick.selected[0]));
-						uifc.msg(msg);
-					}
-				}
-				else {
-					cterm_openlog(cterm, fpick.selected[0], i ? CTERM_LOG_RAW : CTERM_LOG_ASCII);
-				}
-			}
-			filepick_free(&fpick);
-		}
-		else {
-			check_exit(false);
-		}
-	}
-	else {
-		if (cterm->log & CTERM_LOG_PAUSED) {
-			char *opts[3] = {
-				"Unpause",
-				"Close"
-			};
-
-			i = 0;
-			uifc.helpbuf = "`Capture Control`\n\n"
-			    "~ Unpause ~ Continues logging\n"
-			    "~ Close ~   Closes the log\n\n";
-			if (uifc.list(WIN_MID | WIN_SAV, 0, 0, 0, &i, NULL, "Capture Control", opts) != -1) {
-				switch (i) {
-					case -1:
-						check_exit(false);
-						break;
-					case 0:
-						cterm->log = cterm->log & CTERM_LOG_MASK;
-						break;
-					case 1:
-						cterm_closelog(cterm);
-						break;
-				}
-			}
-		}
-		else {
-			char *opts[3] = {
-				"Pause",
-				"Close"
-			};
-
-			i = 0;
-			uifc.helpbuf = "`Capture Control`\n\n"
-			    "~ Pause ~ Suspends logging\n"
-			    "~ Close ~ Closes the log\n\n";
-			if (uifc.list(WIN_MID | WIN_SAV, 0, 0, 0, &i, NULL, "Capture Control", opts) != -1) {
-				switch (i) {
-					case -1:
-						check_exit(false);
-						break;
-					case 0:
-						cterm->log |= CTERM_LOG_PAUSED;
-						break;
-					case 1:
-						cterm_closelog(cterm);
-						break;
-				}
-			}
-		}
-	}
-	uifcbail();
-	restorescreen(savscrn);
-	freescreen(savscrn);
 }
 
 #define OUTBUF_SIZE 2048
@@ -6033,7 +5833,7 @@ doterm(struct bbslist *bbs)
 	unsigned char     outbuf[OUTBUF_SIZE];
 	size_t            outbuf_size = 0;
 	int               key;
-	int               i, j;
+	int               i;
 	struct vmem_cell *vc;
 	BYTE              zrqbuf[ZMODEM_SEQ_LEN + 1];
 	size_t zrqlen;
@@ -6462,93 +6262,12 @@ doterm(struct bbslist *bbs)
 				case CIO_KEY_MOUSE:
 					handle_mouse_event(&ms);
 					continue;
-				case 19: /* CTRL-S */
-					if ((cio_api.mode != CIOLIB_MODE_CURSES)
-					    && (cio_api.mode != CIOLIB_MODE_CURSES_IBM)
-					    && (cio_api.mode != CIOLIB_MODE_ANSI))
-						break;
-                                /* FALLTHROUGH for curses/ansi modes */
-				case 0x2c00: /* ALT-Z */
-					if (bbs->hidepopups)
-						break;
-					i = wherex();
-					j = wherey();
-					switch (syncmenu(bbs, &speed)) {
-						case -1: /* SM_DISCONNECT */
-							check_hangup(0x2300 /* Alt-H */,
-							    &hret, oldmc, &ms);
-							ret = hret;
-							goto end;
-						case SM_UPLOAD:
-							begin_upload(bbs, false, inch);
-							break;
-						case SM_DOWNLOAD:
-							begin_download(bbs);
-							break;
-						case SM_CAPTURE:
-							capture_control(bbs);
-							break;
-						case SM_MUSIC:
-							music_control(bbs);
-							break;
-						case SM_FONT:
-							font_control(bbs, cterm);
-							break;
-						case SM_DOORWAY:
-							cterm->doorway_mode = !cterm->doorway_mode;
-							break;
-						case SM_MOUSE:
-							ms.flags ^= MS_FLAGS_DISABLED;
-							setup_mouse_events(&ms);
-							showmouse();
-							break;
-#ifndef WITHOUT_OOII
-						case SM_OOII:
-							ooii_mode++;
-							if (ooii_mode > MAX_OOII_MODE) {
-								xptone_close();
-								ooii_mode = 0;
-							}
-							else {
-								xptone_open();
-							}
-							break;
-#endif
-						case SM_EXIT:
-							uifc.exit_flags |= UIFC_XF_QUIT;
-							check_exit(true);
-							check_hangup(0x2D00 /* Alt-X */,
-							    &hret, oldmc, &ms);
-							ret = hret;
-							goto end;
-						case SM_DIRECTORY:
-						{
-							struct ciolib_screen *savscrn;
-							char                  title[LIST_NAME_MAX + 13];
-
-							savscrn = cp437_savescrn();
-							show_bbslist(bbs->name, true);
-							sprintf(title, "SyncTERM - %s\n", bbs->name);
-							settitle(title);
-							uifcbail();
-							restorescreen(savscrn);
-							freescreen(savscrn);
-						}
-						break;
-						case SM_WREN_CONSOLE:
-							/* Synthesize the Ctrl+` keypress so the
-							 * embedded Hook.onKey(Key.wrenConsole)
-							 * runs the same console flow as the
-							 * direct binding.  Backends that can't
-							 * capture Ctrl+` reach it only through
-							 * this menu path. */
-							wren_host_dispatch_key(0x29E0);
-							break;
-					}
-					setup_mouse_events(&ms);
-					showmouse();
-					gotoxy(i, j);
-					continue;
+				/* Alt-Z (always) and Ctrl-S (text-mode only) are
+				 * handled by online_menu.wren — registers
+				 * Hook.onKey hooks that drive the OnlineMenu
+				 * modal.  If a user replaces the auto script
+				 * without those handlers, the keys fall through
+				 * unhandled — opt-out is intentional. */
 			}
 
 			/*

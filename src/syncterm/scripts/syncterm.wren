@@ -883,6 +883,10 @@ foreign class Conn {
   // Open the uifc scrollback viewer modal.  Mouse events are
   // disabled for the duration and restored on exit.
   foreign static scrollback()
+  // Open the uifc upload / download dialogs.  Equivalent to the
+  // legacy Alt-U / Alt-D paths.  No-op outside an active session.
+  foreign static upload()
+  foreign static download()
   foreign static connected
   foreign static type
   foreign static pending
@@ -951,6 +955,7 @@ foreign class CTerm {
   foreign static scrollbackStart
   foreign static emulation
   foreign static doorwayMode
+  foreign static doorwayMode=(b)
   foreign static music
   foreign static music=(b)
   foreign static started
@@ -962,6 +967,10 @@ foreign class CTerm {
   foreign static saveScreenshot(file, withSauce)
   foreign static atasciiInverse
   foreign static ooiiMode
+  // Cycle the OOII mode.  Out-of-range values are clamped to
+  // 0..MAX_OOII_MODE; the binding also opens / closes the xptone
+  // audio context to match (open while non-zero, closed at 0).
+  foreign static ooiiMode=(n)
   foreign static mouseMode
   foreign static mouseDisabled
   foreign static mouseDisabled=(b)
@@ -969,6 +978,9 @@ foreign class CTerm {
   // up and down the rates ladder).  0 = unthrottled.  Always 0 on
   // serial connections; the configured port speed lives in BBS.bpsRate.
   foreign static throttleSpeed
+  // Set the throttle to a specific BPS value (0 = unthrottled).
+  // No-op on serial connections.
+  foreign static throttleSpeed=(bps)
   foreign static throttleSpeedUp()
   foreign static throttleSpeedDown()
   foreign static statusDisplay
@@ -1421,6 +1433,39 @@ class Host {
   // is true (graphical backends pass Ctrl-Q through to cterm as a
   // normal control byte).
   foreign static textTerminal
+
+  // True when the build has Operation Overkill ][ tone support
+  // compiled in (i.e. WITHOUT_OOII is not defined).  Used by the
+  // online menu to decide whether to expose the OOII toggle entry.
+  foreign static haveOOII
+  // Highest valid OOII mode value (0 in WITHOUT_OOII builds).  The
+  // online menu wraps the OOII increment back to 0 when it exceeds
+  // this cap, matching the historical SM_OOII cycle.
+  foreign static maxOOIIMode
+
+  // Throttled-output ladder.  outputRates[i] is the BPS value, and
+  // outputRateNames[i] is the human label (e.g. "115200" for index
+  // 10, "Current" for the trailing 0 = no-cap entry).  Indexes line
+  // up between the two lists; pass any rate value to
+  // CTerm.throttleSpeed=.
+  foreign static outputRates
+  foreign static outputRateNames
+
+  // Transfer log threshold (0 = Emergency, ..., 7 = Debug).  Set via
+  // logLevel=; Host.logLevelNames returns the human labels indexed by
+  // the same number.
+  foreign static logLevel
+  foreign static logLevel=(n)
+  foreign static logLevelNames
+
+  // Open the legacy uifc font picker for the four cterm font slots.
+  // No-op in safe mode and on text-only video backends.  Thin shim
+  // around the C dialog — migrated to Wren in a future pass.
+  foreign static fontControl()
+
+  // Open the bbslist editor over the active connection (uifc).  Thin
+  // shim — migrated to Wren when the bbslist editor itself is.
+  foreign static editBBSList()
 
   // Wren console activity since the user last visited the REPL.
   // logUnread covers any non-empty append (script print output, hook

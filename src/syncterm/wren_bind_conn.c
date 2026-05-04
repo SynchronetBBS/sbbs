@@ -23,6 +23,10 @@
 #include "menu.h"      /* viewscroll */
 #include "uifcinit.h"  /* uifc (the singleton), UIFC_XF_QUIT */
 #include "wren_bind_fs.h" /* wren_file_consume_write, FILE_ERR_* */
+#ifndef WITHOUT_OOII
+#include "ooii.h"      /* MAX_OOII_MODE */
+#endif
+#include "xpbeep.h"    /* xptone_open / xptone_close — OOII toggling */
 #ifndef WITHOUT_DEUCESSH
 #include "ssh.h"       /* ssh_set_sftp_buffer_mode */
 #endif
@@ -253,6 +257,38 @@ fn_Conn_scrollback(WrenVM *vm)
 	showmouse();
 }
 
+/* Conn.upload() / Conn.download() — wrap term.c's begin_upload /
+ * begin_download.  Mirror the C-side mouse-event refresh + showmouse
+ * the historical Alt-U / Alt-D / SM_UPLOAD / SM_DOWNLOAD paths did
+ * on the way out.  No-op if no active session. */
+void
+fn_Conn_upload(WrenVM *vm)
+{
+	(void)vm;
+	struct wren_host_state *st  = wren_host_state();
+	struct bbslist         *bbs = (st != NULL) ? st->bbs : NULL;
+	if (bbs == NULL)
+		return;
+	begin_upload(bbs, false, 0);
+	if (cterm != NULL && cterm->mouse_state_change_cbdata != NULL)
+		setup_mouse_events(cterm->mouse_state_change_cbdata);
+	showmouse();
+}
+
+void
+fn_Conn_download(WrenVM *vm)
+{
+	(void)vm;
+	struct wren_host_state *st  = wren_host_state();
+	struct bbslist         *bbs = (st != NULL) ? st->bbs : NULL;
+	if (bbs == NULL)
+		return;
+	begin_download(bbs);
+	if (cterm != NULL && cterm->mouse_state_change_cbdata != NULL)
+		setup_mouse_events(cterm->mouse_state_change_cbdata);
+	showmouse();
+}
+
 
 void
 fn_Conn_connected(WrenVM *vm)
@@ -351,6 +387,16 @@ fn_CTerm_doorwayMode(WrenVM *vm)
 {
 	wrenSetSlotBool(vm, 0,
 	    cterm != NULL && cterm->doorway_mode != 0);
+}
+
+/* CTerm.doorwayMode = b — toggle CTerm's doorway-keyboard mode. */
+void
+fn_CTerm_doorwayMode_set(WrenVM *vm)
+{
+	if (cterm == NULL)
+		return;
+	cterm->doorway_mode = wrenGetSlotBool(vm, 1) ? 1 : 0;
+	force_status_update = true;
 }
 
 void
@@ -712,6 +758,35 @@ fn_CTerm_ooiiMode(WrenVM *vm)
 	wrenSetSlotDouble(vm, 0, (double)v);
 }
 
+/* CTerm.ooiiMode = n — set the OOII mode.  Out-of-range values are
+ * clamped to 0..MAX_OOII_MODE.  Toggles the xptone audio context to
+ * match: open while a non-zero mode is active, close on return to 0.
+ * No-op when the session is inactive (`st->ooii_mode == NULL`) or
+ * the build was compiled WITHOUT_OOII. */
+void
+fn_CTerm_ooiiMode_set(WrenVM *vm)
+{
+#ifdef WITHOUT_OOII
+	(void)vm;
+#else
+	struct wren_host_state *st = wren_host_state();
+	if (st == NULL || st->ooii_mode == NULL)
+		return;
+	int n = (int)wrenGetSlotDouble(vm, 1);
+	if (n < 0)
+		n = 0;
+	if (n > MAX_OOII_MODE)
+		n = MAX_OOII_MODE;
+	int prev = *st->ooii_mode;
+	*st->ooii_mode = n;
+	if (n == 0 && prev != 0)
+		xptone_close();
+	else if (n != 0 && prev == 0)
+		xptone_open();
+	force_status_update = true;
+#endif
+}
+
 /* CTerm.mouseMode — raw enum value from cterm->mouse_state_change_cbdata
  * (MM_OFF == 0, MM_RIP == 1, MM_X10 == 9, MM_*_TRACKING == 1000-1003).
  * Used by the default status bar to decide whether to light "M". */
@@ -821,6 +896,23 @@ fn_CTerm_throttleSpeedDown(WrenVM *vm)
 	throttle_step_(-1);
 }
 
+/* CTerm.throttleSpeed = bps — set the throttled output rate to a
+ * specific value.  Pass 0 to disable throttling.  Values are taken
+ * verbatim — the syncmenu supplies one of the entries from
+ * Host.outputRates so no clamping is needed; scripts that hand-pick
+ * are trusted to know what they want. */
+void
+fn_CTerm_throttleSpeed_set(WrenVM *vm)
+{
+	struct wren_host_state *st = wren_host_state();
+	if (st == NULL || st->speed == NULL || st->bbs == NULL)
+		return;
+	int ct = st->bbs->conn_type;
+	if (ct == CONN_TYPE_SERIAL || ct == CONN_TYPE_SERIAL_NORTS)
+		return;
+	*st->speed = (int)wrenGetSlotDouble(vm, 1);
+}
+
 /* Input.setupMouseEvents() — reconfigure ciolib's reported mouse
  * events to match the active mouse_state (MM_OFF disables; tracking
  * modes register the appropriate button/move events).  Plus an
@@ -892,6 +984,130 @@ fn_Host_textTerminal(WrenVM *vm)
 	    || (cio_api.mode == CIOLIB_MODE_CURSES_ASCII)
 	    || (cio_api.mode == CIOLIB_MODE_ANSI);
 	wrenSetSlotBool(vm, 0, is_text);
+}
+
+/* Host.haveOOII — true when the build has Operation Overkill ][ tone
+ * support compiled in (i.e. WITHOUT_OOII is NOT defined).  The online
+ * menu uses this to decide whether to include the "Toggle OOII" entry. */
+void
+fn_Host_haveOOII(WrenVM *vm)
+{
+#ifdef WITHOUT_OOII
+	wrenSetSlotBool(vm, 0, false);
+#else
+	wrenSetSlotBool(vm, 0, true);
+#endif
+}
+
+/* Host.maxOOIIMode — highest valid Operation Overkill ][ mode value.
+ * Returns 0 in builds without OOII support.  Used by the online menu's
+ * "Toggle OOII" entry to wrap the increment back to 0 once it exceeds
+ * the cap, mirroring the historical SM_OOII cycle. */
+void
+fn_Host_maxOOIIMode(WrenVM *vm)
+{
+#ifdef WITHOUT_OOII
+	wrenSetSlotDouble(vm, 0, 0.0);
+#else
+	wrenSetSlotDouble(vm, 0, (double)MAX_OOII_MODE);
+#endif
+}
+
+/* Host.outputRates / Host.outputRateNames — display labels and BPS
+ * values for the throttled-output ladder, mirroring bbslist.c's
+ * `rate_names[]` / `rates[]`.  Indexes line up: entry N in `Names`
+ * is the human label for the BPS value at the same index in `Rates`.
+ * The trailing 0 entry means "no cap" (display label "Current").
+ * Used by the online-menu's Output Rate picker — pass the chosen
+ * rate to `CTerm.throttleSpeed=`. */
+void
+fn_Host_outputRates(WrenVM *vm)
+{
+	wrenEnsureSlots(vm, 2);
+	wrenSetSlotNewList(vm, 0);
+	for (int i = 0; rate_names[i] != NULL; i++) {
+		wrenSetSlotDouble(vm, 1, (double)rates[i]);
+		wrenInsertInList(vm, 0, -1, 1);
+	}
+}
+
+void
+fn_Host_outputRateNames(WrenVM *vm)
+{
+	wrenEnsureSlots(vm, 2);
+	wrenSetSlotNewList(vm, 0);
+	for (int i = 0; rate_names[i] != NULL; i++) {
+		wrenSetSlotString(vm, 1, rate_names[i]);
+		wrenInsertInList(vm, 0, -1, 1);
+	}
+}
+
+/* Host.logLevel — current xfer log threshold (0 = Emergency, …,
+ * 7 = Debug).  Backs the online-menu's Log Level picker. */
+void
+fn_Host_logLevel(WrenVM *vm)
+{
+	wrenSetSlotDouble(vm, 0, (double)log_level);
+}
+
+void
+fn_Host_logLevel_set(WrenVM *vm)
+{
+	int n = (int)wrenGetSlotDouble(vm, 1);
+	if (n < 0)
+		n = 0;
+	if (n > 7)
+		n = 7;
+	log_level = n;
+}
+
+void
+fn_Host_logLevelNames(WrenVM *vm)
+{
+	wrenEnsureSlots(vm, 2);
+	wrenSetSlotNewList(vm, 0);
+	for (int i = 0; log_levels[i] != NULL; i++) {
+		wrenSetSlotString(vm, 1, log_levels[i]);
+		wrenInsertInList(vm, 0, -1, 1);
+	}
+}
+
+/* Host.fontControl() — open the C-side font_control dialog.  Thin
+ * shim: the underlying font picker is uifc-driven and tightly
+ * coupled to the cterm font-slot machinery; migrating it to Wren
+ * would be a separate sub-batch.  For now the online-menu's
+ * "Font Setup" entry routes here.  No-op when the host or session
+ * is inactive. */
+void
+fn_Host_fontControl(WrenVM *vm)
+{
+	(void)vm;
+	struct wren_host_state *st = wren_host_state();
+	if (st == NULL || st->bbs == NULL || cterm == NULL)
+		return;
+	font_control(st->bbs, cterm);
+}
+
+/* Host.editBBSList() — open the bbslist editor over the active
+ * connection (UIFC-driven).  Thin shim around show_bbslist + the
+ * surrounding screen-save / settitle / uifcbail dance the C-side
+ * Alt-E case used to do.  Routes the online-menu's
+ * "Edit Dialing Directory" entry through here. */
+void
+fn_Host_editBBSList(WrenVM *vm)
+{
+	(void)vm;
+	struct wren_host_state *st = wren_host_state();
+	if (st == NULL || st->bbs == NULL)
+		return;
+	struct ciolib_screen *savscrn = cp437_savescrn();
+	show_bbslist(st->bbs->name, true);
+	char title[LIST_NAME_MAX + 13];
+	sprintf(title, "SyncTERM - %s\n", st->bbs->name);
+	settitle(title);
+	uifcbail();
+	restorescreen(savscrn);
+	freescreen(savscrn);
 }
 
 /* Host.logUnread / Host.logUnreadError — true while the Wren console
