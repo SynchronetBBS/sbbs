@@ -59,7 +59,7 @@ struct mouse_hotspot* Terminal::add_hotspot(struct mouse_hotspot* spot)
 #if 0 //def _DEBUG
 	char         dbg[128];
 	sbbs->lprintf(LOG_DEBUG, "Adding mouse hot spot %ld-%ld x %ld = '%s'"
-		, spot->minx, spot->maxx, spot->y, c_escape_str(spot->cmd, dbg, sizeof(dbg), /* Ctrl-only? */ true));
+		, spot->minx, spot->maxx, spot->y, c_escape_str(spot->cmd, dbg, sizeof(dbg) - 1, /* Ctrl-only? */ true));
 #endif
 	list_node_t* node = listInsertNodeData(mouse_hotspots, spot, sizeof(*spot));
 	if (node == nullptr)

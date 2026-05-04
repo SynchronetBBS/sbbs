@@ -405,7 +405,7 @@ bool ANSI_Terminal::getxy(unsigned* x, unsigned* y)
 				str[rsp] = '\0';
 #ifdef _DEBUG
 				char dbg[128];
-				c_escape_str(str, dbg, sizeof(dbg), /* Ctrl-only? */ true);
+				c_escape_str(str, dbg, sizeof(dbg) - 1, /* Ctrl-only? */ true);
 				sbbs->lprintf(LOG_DEBUG, "Unexpected ansi_getxy response: '%s'", dbg);
 #endif
 				sbbs->ungetkeys(str, /* insert */ false);
@@ -963,7 +963,7 @@ bool ANSI_Terminal::handle_left_press(unsigned x, unsigned y, char& ch, bool& re
 #ifdef _DEBUG
 		{
 			char dbg[128];
-			c_escape_str(spot->cmd, dbg, sizeof(dbg), /* Ctrl-only? */ true);
+			c_escape_str(spot->cmd, dbg, sizeof(dbg) - 1, /* Ctrl-only? */ true);
 			sbbs->lprintf(LOG_DEBUG, "Stuffing hot spot command into keybuf: '%s'", dbg);
 		}
 #endif
