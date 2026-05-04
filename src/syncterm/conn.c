@@ -31,6 +31,7 @@
 #include "conn.h"
 #include "raw.h"
 #include "rlogin.h"
+#include "term.h"
 #include "uifcinit.h"
 #include "wren_host.h"
 #ifndef WITHOUT_DEUCESSH
@@ -227,6 +228,14 @@ conn_buf_put(struct conn_buffer *buf, const void *voutbuf, size_t outlen)
 			buf->buftop -= buf->bufsize;
 		buf->isempty = 0;
 		sem_post(&(buf->in_sem));
+		/* Wake the doterm() main loop on remote-data arrival.  The
+		 * outbuf gets put-to from the main thread itself; waking
+		 * there is harmless (next WaitForEvent returns immediately,
+		 * costs one extra loop iteration) but inelegant -- gate on
+		 * the in-direction buffer.  Pointer-compare is safe because
+		 * conn_inbuf / conn_outbuf are file-scope globals. */
+		if (buf == &conn_inbuf)
+			doterm_wake();
 	}
 	return write_bytes;
 }

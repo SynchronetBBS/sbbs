@@ -3,6 +3,7 @@
 #include <assert.h>
 #include <ciolib.h>
 #include <cterm.h>
+#include <eventwrap.h>
 #include <genwrap.h>
 #include <float.h>
 #include <math.h>
@@ -418,6 +419,21 @@ cleanup:
 static struct vmem_cell *status_bar;
 size_t status_bar_sz;
 bool force_status_update = false;
+
+/* Auto-reset event the doterm() main loop blocks on when otherwise
+ * idle.  Setters (conn input threads, wren_result_push, the loop
+ * itself when buffered bytes remain) call doterm_wake() to break
+ * the wait so async work surfaces without a 1 ms tick of latency.
+ * NULL outside doterm()'s active session, which makes doterm_wake
+ * a safe no-op for callers that fire after disconnect. */
+static xpevent_t doterm_wake_evt = NULL;
+
+void
+doterm_wake(void)
+{
+	if (doterm_wake_evt != NULL)
+		SetEvent(doterm_wake_evt);
+}
 static uint16_t hover_hyperlink_id;
 
 struct ciolib_screen *
@@ -5897,7 +5913,6 @@ doterm(struct bbslist *bbs)
 	int               speed;
 	int               oldmc;
 	int               updated = false;
-	bool              sleep;
 	size_t            remain;
 	struct text_info  txtinfo;
 
@@ -6069,6 +6084,7 @@ doterm(struct bbslist *bbs)
 	wren_host_bind_cterm_suspended(&cterm_suspended);
 	wren_host_bind_ooii_mode(&ooii_mode);
 	wren_host_bind_speed(&speed);
+	doterm_wake_evt = CreateEvent(NULL, FALSE, FALSE, NULL);
 	for (; !quitting;) {
 		/* Reclaim any hook entries unregistered since the last
 		 * iteration: shifts pointer arrays, frees regex resources,
@@ -6122,7 +6138,6 @@ doterm(struct bbslist *bbs)
 		 * blocking on recv/kbhit. */
 		popup_queue_drain();
 		hold_update = true;
-		sleep = true;
 		/* Audio APC: emit async CSI = 7 ; <ch> ; 0 n notifications
 		 * for any channel armed via SyncTERM:A;Update that has just
 		 * transitioned from running to stopped. */
@@ -6187,7 +6202,6 @@ doterm(struct bbslist *bbs)
 						}
 						break;
 					default:
-						sleep = false;
 						if (speed) {
 							lastchar = xp_timer();
 							nextchar = lastchar + 1 / (long double)(speed / 10);
@@ -6241,8 +6255,6 @@ doterm(struct bbslist *bbs)
 				}
 			}
 			else {
-				if (speed)
-					sleep = false;
 				break;
 			}
 		}
@@ -6256,7 +6268,6 @@ doterm(struct bbslist *bbs)
                 /* Get local input */
 		while (quitting || rip_kbhit()) {
 			bool hret;
-			sleep = false;
 			updated = true;
 			gotoxy(wherex(), wherey());
 			if (quitting) {
@@ -6483,10 +6494,22 @@ doterm(struct bbslist *bbs)
 			}
 		}
 		wren_host_dispatch_timer();
-		if (sleep)
-			SLEEP(1);
+		/* Buffered remote bytes that didn't drain this iteration
+		 * (speed throttling, partial inner-loop break, etc.) need
+		 * the next iteration to run promptly — self-wake so the
+		 * WaitForEvent below returns immediately.  Auto-reset
+		 * means the signal is consumed by the wait. */
+		if (count_data_waiting() > 0)
+			doterm_wake();
+		/* WaitForEvent rejects NULL with WAIT_FAILED (no sleep), so
+		 * fall back to a plain SLEEP if CreateEvent failed at session
+		 * start — avoids spinning if the event allocation didn't
+		 * stick.  Loses the wake-on-arrival latency win in that case
+		 * but keeps the loop's CPU usage sane. */
+		if (doterm_wake_evt != NULL)
+			WaitForEvent(doterm_wake_evt, 1);
 		else
-			MAYBE_YIELD();
+			SLEEP(1);
 	}
 
 /*
@@ -6500,5 +6523,9 @@ end:
 	 * the VM is still alive but after every other tear-down step. */
 	wren_host_dispatch_disconnect();
 	wren_host_shutdown();
+	if (doterm_wake_evt != NULL) {
+		CloseEvent(doterm_wake_evt);
+		doterm_wake_evt = NULL;
+	}
 	return ret;
 }

@@ -21,7 +21,7 @@
 // CTerm.sftpActive clears as part of suspend(), so is_connected goes
 // false and the term.c disconnect path can run normally.
 
-import "syncterm" for CTerm, Download, File, Host, Key,
+import "syncterm" for CTerm, Download, File, Format, Host, Key,
                        KeyEvent, Screen, SFTP, SFTPError
 import "ui_app"    for App
 import "ui_pane"   for Pane
@@ -254,19 +254,6 @@ class SftpFmt {
     return 5
   }
 
-  // 1024-base size with 1-letter unit.
-  static formatBytes(b) {
-    if (b < 1024) return "%(b.floor)B"
-    var v = (b / 1024).floor
-    if (v < 1024) return "%(v)K"
-    v = (v / 1024).floor
-    if (v < 1024) return "%(v)M"
-    v = (v / 1024).floor
-    if (v < 1024) return "%(v)G"
-    v = (v / 1024).floor
-    return "%(v)T"
-  }
-
   static formatPct(done, total, status) {
     if (status == SftpQueue.DONE)      return "(100\%)"
     if (status == SftpQueue.FAILED)    return "( --\%)"
@@ -290,13 +277,18 @@ class SftpFmt {
     // upload (local → remote), download (local ← remote).
     var flow   = (snap.dir == SftpQueue.UPLOAD) ? "→" : "←"
     var status = padRight(snap.status, 9)
-    var bytes  = formatBytes(snap.done) + "/" + formatBytes(snap.total)
+    var bytes  = Format.bytes(snap.done) + "/" + Format.bytes(snap.total)
     var pct    = formatPct(snap.done, snap.total, snap.status)
     var name   = basename(snap.local)
     if (snap.status == SftpQueue.FAILED && snap.errMsg.count > 0) {
       return "%(arrow) %(status) %(pct) %(name) %(flow) %(snap.remote)  [%(snap.errMsg)]"
     }
-    return "%(arrow) %(status) %(padRight(bytes, 16)) %(pct) %(name) %(flow) %(snap.remote)"
+    // bpsStr / etaStr are populated only on ACTIVE jobs that have
+    // moved bytes since going active; pad to fixed width so non-ACTIVE
+    // rows still align with ACTIVE ones.
+    var rate = padRight(snap.bpsStr, 9)
+    var eta  = padRight(snap.etaStr, 6)
+    return "%(arrow) %(status) %(padRight(bytes, 14)) %(pct) %(rate) %(eta) %(name) %(flow) %(snap.remote)"
   }
 }
 

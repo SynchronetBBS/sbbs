@@ -707,7 +707,12 @@ static void
 sftp_recv_thread(void *args)
 {
 	(void)args;
-	uint8_t buf[4096];
+	/* 256 KiB recv buffer — at 30 KiB SFTP chunks, every dssh_chan_read
+	 * drains ~8 chunks per call.  Knocks per-byte syscall + sftpc_recv
+	 * dispatch overhead down roughly 64× vs. the prior 4 KiB.  Static
+	 * because the recv thread is the sole accessor and is never
+	 * re-entrant (one per session, joined at teardown). */
+	static uint8_t buf[256 * 1024];
 	SetThreadName("SSH SFTP Recv");
 	while (!conn_api.terminate && !sftp_recv_shutdown && sftp_chan != NULL) {
 		int events = dssh_chan_poll(sftp_chan, DSSH_POLL_READ, 100);
@@ -733,6 +738,17 @@ sftp_send(uint8_t *buf, size_t sz, void *cb_data)
 		int64_t n = dssh_chan_write(sftp_chan, 0, buf + sent, sz - sent);
 		if (n < 0)
 			return false;
+		if (n == 0) {
+			/* Server's window-to-us is full; instead of busy-spinning
+			 * on tx_mtx waiting for a WINDOW_ADJUST, park on the
+			 * channel's poll cv until POLL_WRITE goes ready (or the
+			 * 100 ms timeout fires so we observe conn_api.terminate
+			 * during teardown). */
+			int events = dssh_chan_poll(sftp_chan, DSSH_POLL_WRITE, 100);
+			if (events < 0)
+				return false;
+			continue;
+		}
 		sent += (size_t)n;
 	}
 	return sent == sz;
@@ -1031,6 +1047,19 @@ ssh_connect(struct bbslist *bbs)
 		return -1;
 	if (setsockopt(ssh_sock, IPPROTO_TCP, TCP_NODELAY, (char *)&off, sizeof(off)))
 		fprintf(stderr, "%s:%d: Error %d calling setsockopt()\n", __FILE__, __LINE__, errno);
+	/* Cap kernel TCP send buffer at 64 KB so a long SFTP transfer
+	 * can't queue enough bytes ahead of an interactive keystroke to
+	 * blow the 75 ms responsiveness budget.  Chosen to keep
+	 * worst-case wire-drain time under ~26 ms on a 20 Mbps link
+	 * (the keystroke waits behind whatever's already committed to
+	 * the kernel buffer).  Receive buffer is left at the kernel's
+	 * auto-tuned default — downloads are response-bound, not
+	 * outgoing-bound, so SO_RCVBUF wants the BDP-friendly large
+	 * default. */
+	int sndbuf = 64 * 1024;
+	if (setsockopt(ssh_sock, SOL_SOCKET, SO_SNDBUF, (char *)&sndbuf, sizeof(sndbuf)))
+		fprintf(stderr, "%s:%d: Error %d calling setsockopt(SO_SNDBUF)\n",
+		    __FILE__, __LINE__, errno);
 
 	if (!bbs->hidepopups)
 		uifc.pop("Creating Session");

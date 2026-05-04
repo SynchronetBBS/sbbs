@@ -467,6 +467,57 @@ deliver_timer_elapsed(WrenVM *vm, int slot, void *data)
 	te->type = SWF_TIMER_ELAPSED;
 }
 
+/* ----- Format ----------------------------------------------------- */
+
+/* Format.bytes(n) — wraps byte_estimate_to_str(n, …, 0, 1): auto-picks
+ * a K/M/G/T/P suffix based on magnitude, with 1 decimal of precision.
+ * Returns a String like "1.4M" or "37".  Negative inputs become 0. */
+static void
+fn_Format_bytes(WrenVM *vm)
+{
+	if (wrenGetSlotType(vm, 1) != WREN_TYPE_NUM) {
+		wren_throw(vm, "Format.bytes: argument must be a number");
+		return;
+	}
+	double v = wrenGetSlotDouble(vm, 1);
+	if (!(v >= 0.0))
+		v = 0.0;
+	if (v > (double)UINT64_MAX)
+		v = (double)UINT64_MAX;
+	char buf[32];
+	byte_estimate_to_str((uint64_t)v, buf, sizeof(buf), 0, 1);
+	wrenSetSlotString(vm, 0, buf);
+}
+
+/* Format.duration(seconds) — wraps duration_estimate_to_str(s, …, 0, 1):
+ * auto-picks a unit (s / m / h / d / y) with 1 decimal of precision.
+ * Returns a String like "8.2s" or "3.5m".  Negative inputs become 0. */
+static void
+fn_Format_duration(WrenVM *vm)
+{
+	if (wrenGetSlotType(vm, 1) != WREN_TYPE_NUM) {
+		wren_throw(vm, "Format.duration: argument must be a number");
+		return;
+	}
+	double v = wrenGetSlotDouble(vm, 1);
+	if (!(v >= 0.0))
+		v = 0.0;
+	char buf[32];
+	duration_estimate_to_str(v, buf, sizeof(buf), 0, 1);
+	wrenSetSlotString(vm, 0, buf);
+}
+
+/* Timer.now — monotonic seconds since some unspecified epoch.  Wraps
+ * xp_timer(); the absolute value is meaningless, but differences between
+ * two readings are reliable.  Used for throughput/ETA calculations in
+ * the SFTP queue and anywhere else a script wants to time something. */
+static void
+fn_Timer_now(WrenVM *vm)
+{
+	wrenEnsureSlots(vm, 1);
+	wrenSetSlotDouble(vm, 0, (double)xp_timer());
+}
+
 static void
 fn_Timer_trigger(WrenVM *vm)
 {
@@ -849,6 +900,11 @@ static const struct binding BINDINGS[] = {
 
 	/* Timer — one-shot fiber resumption after a delay. */
 	{ "Timer", true, "trigger(_,_)",        fn_Timer_trigger          },
+	{ "Timer", true, "now",                 fn_Timer_now              },
+
+	/* Format — number-to-string helpers. */
+	{ "Format", true, "bytes(_)",           fn_Format_bytes           },
+	{ "Format", true, "duration(_)",        fn_Format_duration        },
 
 	/* SFTP (all static) */
 	{ "SFTP",       true,  "available",       fn_SFTP_available       },

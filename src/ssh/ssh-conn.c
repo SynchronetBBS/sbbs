@@ -893,12 +893,25 @@ maybe_replenish_window(struct dssh_session_s *sess, struct dssh_channel_s *ch)
 			if (add > buf_cap)
 				add = buf_cap;
 		}
+		/* Pre-credit local_window under buf_mtx so it stays
+		 * consistent with the WINDOW_ADJUST we're about to issue.
+		 * Mirrors the ZC mode pattern in handle_channel_data —
+		 * if a subsequent demux call subtracts from local_window
+		 * before our adjust hits the wire, the math still works
+		 * out (we've optimistically applied the credit). */
+		if (add > 0)
+			ch->local_window = window_add(ch->local_window, add);
 	}
 
 	dssh_thrd_check(sess, mtx_unlock(&ch->buf_mtx));
 
 	if (add > 0)
-		return send_window_adjust(sess, ch, add);
+		/* Use the wa_slot path (try-lock + coalescing slow path)
+		 * so the WINDOW_ADJUST never has to wait for a bulk-data
+		 * sender to release tx_mtx — matters under heavy
+		 * bidirectional channel load.  Keeps stream-mode parity
+		 * with ZC mode, which has always used wa_slot. */
+		return send_to_wa_slot(sess, ch, add);
 	return 0;
 }
 

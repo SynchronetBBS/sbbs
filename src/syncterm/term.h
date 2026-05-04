@@ -43,6 +43,13 @@ extern int               log_level;
 extern bool              force_status_update;
 void setup_mouse_events(struct mouse_state *ms);
 void show_status_url(const char *url);
+
+/* Signal the doterm() main loop to skip its idle WaitForEvent so
+ * the next iteration runs immediately.  Thread-safe, NULL-safe (a
+ * no-op when called outside doterm()'s active session).  Wired into
+ * conn_buf_put for the in-direction buffer and wren_result_push so
+ * remote-byte arrivals and async-op completions wake the loop. */
+void doterm_wake(void);
 char *detect_url_at(struct vmem_cell *cells, int width, int total_rows, int click_col, int click_row);
 void zmodem_upload(struct bbslist *bbs, FILE *fp, char *path);
 void xmodem_upload(struct bbslist *bbs, FILE *fp, char *path, long mode, int lastch);

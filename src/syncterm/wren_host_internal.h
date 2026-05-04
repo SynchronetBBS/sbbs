@@ -55,10 +55,12 @@ void wren_result_push(WrenHandle *fiber, void *data,
                       wren_result_free_fn free_fn);
 
 /* Maximum simultaneous registrations per hook event and per timer slot.
- * These are intentionally small — there's no use case for hundreds of
- * scripts hooking the same event, and exceeding the cap simply drops
- * the registration with an error message. */
-#define WREN_HOST_MAX_HOOKS_PER_EVENT 8
+ * 256 hooks per event is generous headroom for an entirely Wren-driven
+ * UI (every modal, picker, status indicator, key handler is a hook);
+ * the cost is one pointer per slot, so the whole `hooks` table is
+ * WREN_HOOK_COUNT * 256 * sizeof(void *) ≈ 16 KiB.  Exceeding the cap
+ * drops the registration with a logged error. */
+#define WREN_HOST_MAX_HOOKS_PER_EVENT 256
 #define WREN_HOST_MAX_TIMERS          16
 #define WREN_HOST_MAX_PENDING_TIMERS  32
 

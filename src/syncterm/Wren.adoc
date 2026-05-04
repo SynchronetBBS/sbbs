@@ -3765,6 +3765,12 @@ For recurring fire-and-forget callbacks (no fiber resume), use
   fires independently.  Returns `null`.  Throws on a non-numeric or
   negative `ms`, or when more than 32 timers are pending across the
   whole VM.
+
+| `Timer.now`
+| Monotonic clock reading in seconds (a `Num`).  The absolute value is
+  arbitrary; only differences between two readings are meaningful.
+  Useful for measuring elapsed time around an async op or computing
+  throughput between snapshots.
 |===
 
 Common idiom — fire and immediately await:
@@ -3799,6 +3805,47 @@ while (true) {
 
 `TimerElapsed` is a marker class with no fields — the caller already
 knows what it scheduled; just dispatch on type.
+
+=== Format [[format]]
+
+Number-to-string helpers for human-readable display.  Both methods
+auto-pick a unit based on the magnitude of the input and use one
+decimal of precision; negative inputs are clamped to zero.
+
+[options="header",cols="2,3"]
+|===
+| Method | Description
+
+| `Format.bytes(n)`
+| Format `n` bytes as a String with a `K` / `M` / `G` / `T` / `P`
+  suffix (e.g.  `"1.4M"`, `"100K"`, `"42"`).  Uses 1024-byte units.
+  Throws if `n` is not a Number.
+
+| `Format.duration(seconds)`
+| Format `seconds` as a String with a `s` / `m` / `h` / `d` / `y`
+  suffix (e.g.  `"8.2s"`, `"1.5m"`, `"3.0h"`).  Throws if the argument
+  is not a Number.
+|===
+
+Combined idiom — display a transfer rate and ETA:
+
+[source,wren]
+----
+import "syncterm" for Format, Timer
+
+var startedAt  = Timer.now
+var startBytes = job.done
+// ... later ...
+var elapsed = Timer.now - startedAt
+var moved   = job.done - startBytes
+if (elapsed > 0) {
+  System.print("%(Format.bytes(moved / elapsed))/s")
+  var remain = job.total - job.done
+  if (remain > 0) {
+    System.print("ETA %(Format.duration(remain / (moved / elapsed)))")
+  }
+}
+----
 
 === SFTP [[sftp]]
 

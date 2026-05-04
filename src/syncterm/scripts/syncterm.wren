@@ -1394,6 +1394,17 @@ class Platform {
 // that don't park a fiber, use Hook.every(ms, fn) instead.
 class Timer {
   foreign static trigger(fiber, ms)
+  // Monotonic clock reading (seconds, Num).  Absolute value is
+  // arbitrary; only differences are meaningful.
+  foreign static now
+}
+
+// Number-to-string formatters for human-readable display.
+class Format {
+  // bytes(n) — auto-picks K / M / G / T / P, 1 decimal precision.
+  foreign static bytes(n)
+  // duration(seconds) — auto-picks s / m / h / d / y, 1 decimal precision.
+  foreign static duration(seconds)
 }
 
 // Marker class returned via the result queue when a Timer.trigger

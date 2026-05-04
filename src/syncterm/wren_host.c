@@ -23,6 +23,7 @@
 #include "ciolib.h"
 #include "dirwrap.h"
 #include "genwrap.h"      /* xp_timer */
+#include "term.h"         /* doterm_wake */
 #include "threadwrap.h"   /* pthread_self */
 #include "regexp.h"       /* RE1: Prog, PikeVM, pikevm_* */
 #include "ansi_filter.h"  /* shared escape-sequence stripper */
@@ -380,6 +381,9 @@ wren_result_push(WrenHandle *fiber, void *data,
 		state.result_tail->next = r;
 	state.result_tail = r;
 	pthread_mutex_unlock(&state.result_mutex);
+	/* Wake the doterm() main loop so the result drains on the next
+	 * iteration without waiting for the WaitForEvent timeout. */
+	doterm_wake();
 }
 
 /* Returns true if the fiber has finished or aborted.  Any error from

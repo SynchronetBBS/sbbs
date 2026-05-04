@@ -16,8 +16,8 @@
 // state).  Single-session singleton — `start()` is called once on
 // connect by sftp_queue_init.wren; `stop()` runs on disconnect.
 
-import "syncterm" for Cache, CTerm, Download, File, FileFlag, Host,
-                       SFTP, SFTPError, SFTPStat, Timer, WON
+import "syncterm" for Cache, CTerm, Download, File, FileFlag, Format,
+                       Host, SFTP, SFTPError, SFTPStat, Timer, Wake, WON
 
 // One in-flight or terminal-state job.  Mutable in place; serialized
 // from `persistNow_()`.  `cancel` is the volatile flag the workers
@@ -28,36 +28,77 @@ import "syncterm" for Cache, CTerm, Download, File, FileFlag, Host,
 // re-opens the source file via Host.openLocalFile on resume.  Null
 // for download jobs.
 class Job {
+  // Sliding-window throughput estimation parameters.  WIN_SECS is
+  // the look-back horizon: rate is (newest.bytes - oldest.bytes) /
+  // (newest.t - oldest.t) over samples within this window.  Long
+  // enough to smooth chunk-to-chunk jitter, short enough that the
+  // displayed rate tracks the *current* speed rather than the
+  // lifetime average.  SAMPLE_GAP is the minimum spacing between
+  // recorded samples — caps the buffer at WIN_SECS / SAMPLE_GAP
+  // entries on fast links (no growth on slow links either).
+  static WIN_SECS   { 3.0 }
+  static SAMPLE_GAP { 0.1 }
+
   construct new(dir, local, remote, total, localToken) {
-    _dir        = dir
-    _local      = local
-    _remote     = remote
-    _total      = total
-    _done       = 0
-    _status     = "queued"
-    _errMsg     = ""
-    _cancel     = false
-    _localToken = localToken
+    _dir         = dir
+    _local       = local
+    _remote      = remote
+    _total       = total
+    _done        = 0
+    _status      = "queued"
+    _errMsg      = ""
+    _cancel      = false
+    _localToken  = localToken
+    // Sliding window of [time, bytes] samples for throughput /
+    // ETA display.  Empty until the job goes ACTIVE; samples
+    // outside WIN_SECS evict on insert.  Not persisted — purely
+    // transient display state.
+    _samples     = []
   }
-  dir            { _dir         }
-  local          { _local       }
-  remote         { _remote      }
-  total          { _total       }
-  total=(v)      { _total = v   }
-  done           { _done        }
-  done=(v)       { _done = v    }
-  status         { _status      }
-  status=(s)     { _status = s  }
-  errMsg         { _errMsg      }
-  errMsg=(m)     { _errMsg = m  }
-  cancel         { _cancel      }
-  cancel=(b)     { _cancel = b  }
-  localToken     { _localToken  }
+  dir            { _dir          }
+  local          { _local        }
+  remote         { _remote       }
+  total          { _total        }
+  total=(v)      { _total = v    }
+  done           { _done         }
+  done=(v)       { _done = v     }
+  status         { _status       }
+  status=(s)     { _status = s   }
+  errMsg         { _errMsg       }
+  errMsg=(m)     { _errMsg = m   }
+  cancel         { _cancel       }
+  cancel=(b)     { _cancel = b   }
+  localToken     { _localToken   }
+  samples        { _samples      }
+
+  // Drop every sample.  Called on QUEUED → ACTIVE so a resumed job
+  // doesn't inherit a stale window from a previous session.
+  resetSamples() { _samples = [] }
+
+  // Record the current (Timer.now, _done) as a window sample.
+  // Insert is rate-limited to SAMPLE_GAP so a 100 Mbps link with
+  // 30 KiB chunks doesn't bloat the list — at most WIN_SECS /
+  // SAMPLE_GAP = 30 entries are ever live.  Older entries (outside
+  // WIN_SECS) drop from the front.
+  recordSample() {
+    var now = Timer.now
+    if (_samples.count > 0 && now - _samples[-1][0] < Job.SAMPLE_GAP) return
+    _samples.add([now, _done])
+    var cutoff = now - Job.WIN_SECS
+    while (_samples.count > 1 && _samples[0][0] < cutoff) {
+      _samples.removeAt(0)
+    }
+  }
 }
 
 // Immutable point-in-time copy of a Job — what `snapshot` returns
 // so consumers can render off a stable view without holding a
 // reference into the live list.
+//
+// `bpsStr` and `etaStr` are pre-formatted display strings; they are
+// non-empty only when the sliding window holds enough recent samples
+// to compute a stable rate.  Callers should treat empty strings as
+// "no estimate available" rather than zero.
 class JobSnap {
   construct new(j) {
     _dir    = j.dir
@@ -67,6 +108,25 @@ class JobSnap {
     _done   = j.done
     _status = j.status
     _errMsg = j.errMsg
+    _bpsStr = ""
+    _etaStr = ""
+    var s = j.samples
+    if (s.count >= 2) {
+      var oldest  = s[0]
+      var newest  = s[-1]
+      var elapsed = newest[0] - oldest[0]
+      var moved   = newest[1] - oldest[1]
+      // Sub-100ms windows or zero-byte moves produce noisy or
+      // undefined rates; leave the display blank instead.
+      if (elapsed >= 0.1 && moved > 0) {
+        var bps = moved / elapsed
+        _bpsStr = Format.bytes(bps) + "/s"
+        var remain = j.total - j.done
+        if (remain > 0) {
+          _etaStr = Format.duration(remain / bps)
+        }
+      }
+    }
   }
   dir    { _dir    }
   local  { _local  }
@@ -75,6 +135,91 @@ class JobSnap {
   done   { _done   }
   status { _status }
   errMsg { _errMsg }
+  bpsStr { _bpsStr }
+  etaStr { _etaStr }
+}
+
+// Internal — coordinator for one in-flight job's pipelined transfer.
+// Shared between the dispatcher fiber (runDownload_ / runUpload_) and
+// the N chunk-worker fibers it spawns; the dispatcher parks on
+// `await()` while the workers grind through `claimChunk()` slots and
+// the last one out posts a Wake to wake it up.
+//
+// All mutation runs on Wren's single fiber thread, so the read-modify-
+// write of `_nextOff` inside `claimChunk()` is atomic without any
+// extra locking — no two fibers can be mid-method simultaneously.
+class JobCtx {
+  construct new(job, totalSize, lf, hRemote, depth) {
+    _job       = job
+    _totalSize = totalSize
+    _lf        = lf
+    _hRemote   = hRemote
+    _depth     = depth
+    _nextOff   = 0
+    _alive     = 0
+    _waiter    = null
+    _err       = null
+  }
+
+  job        { _job        }
+  hRemote    { _hRemote    }
+  lf         { _lf         }
+  err        { _err        }
+  depth      { _depth      }
+
+  // Reserve the next chunk's [offset, size] for the calling worker.
+  // Returns null at end-of-file, on prior error, or when cancel /
+  // suspend has been requested — the worker exits its loop in any
+  // of those cases.  Cancel and suspend latch onto _err here so the
+  // dispatcher can branch on the cause.
+  claimChunk(want) {
+    if (_err != null) return null
+    if (_job.cancel) {
+      _err = "cancelled"
+      return null
+    }
+    if (SftpQueue.suspended) {
+      _err = "suspended"
+      return null
+    }
+    if (_nextOff >= _totalSize) return null
+    var off = _nextOff
+    var sz  = want
+    if (off + sz > _totalSize) sz = _totalSize - off
+    _nextOff = _nextOff + sz
+    return [off, sz]
+  }
+
+  // First error wins; later setError calls are ignored so the
+  // dispatcher's failure message reflects the original cause.
+  setError(e) {
+    if (_err == null) _err = e
+  }
+
+  // Increment alive count BEFORE spawning a worker; the worker is
+  // responsible for calling workerExit() exactly once.
+  bumpAlive() { _alive = _alive + 1 }
+
+  // Last worker out posts a wake to the dispatcher (if it actually
+  // parked in await(); _waiter stays null when no worker ever
+  // yielded, in which case await() short-circuits).
+  workerExit() {
+    _alive = _alive - 1
+    if (_alive == 0 && _waiter != null) {
+      Wake.post(_waiter, null)
+    }
+  }
+
+  // Park the dispatcher until every worker has exited.  Idempotent
+  // for the all-already-done case (workers that completed entirely
+  // during their first .call() never yielded, so _waiter was null
+  // and no wake was queued — there's nothing to drain).
+  await() {
+    if (_alive == 0) return
+    _waiter = Fiber.current
+    Fiber.yield()
+    _waiter = null
+  }
 }
 
 class SftpQueue {
@@ -93,15 +238,36 @@ class SftpQueue {
   // the sandbox filename policy (1..64 chars, [A-Za-z0-9._-]).
   static FILENAME { "sftp_queue.won" }
 
-  // Chunk size for SFTP read / write per iteration.  4 KB matches
-  // the C-side queue's cadence and keeps the terminal session
-  // responsive — each chunk is one fiber yield, so a smaller chunk
-  // means worker fibers don't monopolize a multi-millisecond
-  // window.  Larger chunks (32 KB+) would only help on RTT-bound
-  // links where wire latency dominates per-chunk overhead, and
-  // adaptive sizing (small while shell is up, larger when shell
-  // closes) is a TODO.
-  static CHUNK { 4096 }
+  // Chunk size bounds.  CHUNK is the maximum (30 KiB — the largest
+  // payload that fits in DeuceSSH's 32 KB channel max packet after
+  // SFTP framing) and the bootstrap default before the EWMA
+  // estimators have any data.  MIN_CHUNK is the floor on extreme
+  // sub-broadband links — below 4 KiB the SFTP per-request overhead
+  // starts to dominate.  See `adaptiveChunkSize` for the live policy.
+  static CHUNK     { 30720 }
+  static MIN_CHUNK { 4096  }
+
+  // Pipeline depth bounds.  PIPELINE_DEPTH is the bootstrap default
+  // (used until we've seen at least one chunk land); MIN/MAX clamp
+  // the live `adaptiveDepth` value.  Working-set ceiling is
+  // MAX_DEPTH * CHUNK = ~960 KiB.
+  static PIPELINE_DEPTH { 8  }
+  static MIN_DEPTH      { 2  }
+  static MAX_DEPTH      { 32 }
+
+  // Asymmetric EWMA constants.  α_bad applies on the "bad" direction
+  // (RTT increasing or BW dropping); α_good applies on the "good"
+  // direction (RTT dropping or BW rising).  4× faster reaction on
+  // bad than good — congestion gets recognised quickly, recovery is
+  // cautious so we don't punch a recovering session in the face.
+  // 90% convergence: ~8 samples (bad) vs ~36 samples (good).
+  static EWMA_ALPHA_BAD  { 0.25   }
+  static EWMA_ALPHA_GOOD { 0.0625 }
+
+  // Per-chunk transmission budget for keystroke responsiveness.
+  // The adaptive chunk size targets `bw * 75 ms` so a single chunk's
+  // wire time stays under our interactivity budget.
+  static CHUNK_BUDGET_S { 0.075 }
 
   // Idle poll cadence for worker fibers when no jobs are claimable.
   static IDLE_POLL_MS { 250 }
@@ -120,6 +286,12 @@ class SftpQueue {
     __running     = true
     __suspended   = false
     __shellClosed = false
+    // Adaptive sizing state.  Null until the first chunk completes
+    // and seeds them; bootstrap defaults (PIPELINE_DEPTH / CHUNK) are
+    // used in the interim.  Reset at session start since each remote
+    // (and link path) has its own characteristics.
+    __ewmaRtt     = null
+    __ewmaBps     = null
     load_()
     signalActive_()
     spawnWorkers_()
@@ -134,6 +306,8 @@ class SftpQueue {
     __running     = false
     __suspended   = false
     __shellClosed = false
+    __ewmaRtt     = null
+    __ewmaBps     = null
     __jobs        = []
     Host.uploadArrow   = false
     Host.downloadArrow = false
@@ -197,6 +371,65 @@ class SftpQueue {
   // Generation counter — bumps on enqueue and every state
   // transition.  Consumers cache it and rebuild only on change.
   static gen { __running == true ? __gen : 0 }
+
+  // ----- adaptive sizing --------------------------------------------
+
+  // Smoothed estimates exposed for diagnostics / future UI.  Null
+  // until at least one chunk has completed and seeded the EWMAs.
+  static ewmaRtt { __ewmaRtt }
+  static ewmaBps { __ewmaBps }
+
+  // Push a per-chunk RTT sample into the asymmetric EWMA.  RTT
+  // increasing is "bad" → fast α; decreasing is "good" → slow α.
+  // First sample seeds the estimator without smoothing.
+  static recordRtt_(seconds) {
+    if (seconds <= 0) return
+    if (__ewmaRtt == null) {
+      __ewmaRtt = seconds
+      return
+    }
+    var alpha = (seconds > __ewmaRtt) ? SftpQueue.EWMA_ALPHA_BAD : SftpQueue.EWMA_ALPHA_GOOD
+    __ewmaRtt = alpha * seconds + (1 - alpha) * __ewmaRtt
+  }
+
+  // Push a per-chunk BW sample into the asymmetric EWMA.  BW dropping
+  // is "bad" → fast α; rising is "good" → slow α (cautious recovery
+  // so we don't punch a recovering link in the face).  First sample
+  // seeds the estimator without smoothing.
+  static recordBps_(bps) {
+    if (bps <= 0) return
+    if (__ewmaBps == null) {
+      __ewmaBps = bps
+      return
+    }
+    var alpha = (bps < __ewmaBps) ? SftpQueue.EWMA_ALPHA_BAD : SftpQueue.EWMA_ALPHA_GOOD
+    __ewmaBps = alpha * bps + (1 - alpha) * __ewmaBps
+  }
+
+  // Adaptive chunk size — targets `bw * CHUNK_BUDGET_S` so per-chunk
+  // wire time stays under the keystroke budget.  Falls back to CHUNK
+  // before the BW estimator has any data; clamped to [MIN_CHUNK,
+  // CHUNK].
+  static adaptiveChunkSize {
+    if (__ewmaBps == null) return SftpQueue.CHUNK
+    var c = (__ewmaBps * SftpQueue.CHUNK_BUDGET_S).floor
+    if (c < SftpQueue.MIN_CHUNK) return SftpQueue.MIN_CHUNK
+    if (c > SftpQueue.CHUNK)     return SftpQueue.CHUNK
+    return c
+  }
+
+  // Adaptive pipeline depth — sized to keep the bandwidth-delay
+  // product in flight, plus one slot of headroom.  Falls back to the
+  // bootstrap PIPELINE_DEPTH while estimators are uninitialized;
+  // clamped to [MIN_DEPTH, MAX_DEPTH].
+  static adaptiveDepth {
+    if (__ewmaBps == null || __ewmaRtt == null) return SftpQueue.PIPELINE_DEPTH
+    var bdp = __ewmaBps * __ewmaRtt
+    var d   = (bdp / SftpQueue.adaptiveChunkSize).ceil + 1
+    if (d < SftpQueue.MIN_DEPTH) return SftpQueue.MIN_DEPTH
+    if (d > SftpQueue.MAX_DEPTH) return SftpQueue.MAX_DEPTH
+    return d
+  }
 
   // True if any QUEUED or ACTIVE job exists.  Used by the C-side
   // bridge to decide whether to block teardown.
@@ -323,14 +556,18 @@ class SftpQueue {
   }
 
   // Walk the list, find the first QUEUED job for `direction` whose
-  // cancel flag isn't set, and flip it to ACTIVE.  Preserves `done`
-  // — the chunk loop bumps it only after a successful write, so on
-  // a session-resumed job `done` is the offset of the last byte
-  // safely on disk and the worker can pick up where it left off.
+  // cancel flag isn't set, and flip it to ACTIVE.  Resets `done` to
+  // 0: pipelined chunk fetches arrive out-of-order so a partial
+  // file from a previous session can't be safely resumed (the local
+  // file size includes claimed-but-not-completed past-EOF holes).
+  // Throughput-window samples are reset and re-seeded by the
+  // dispatcher after it sets up its working baseline.
   static claimNext_(direction) {
     for (j in __jobs) {
       if (j.dir == direction && j.status == SftpQueue.QUEUED && !j.cancel) {
         j.status = SftpQueue.ACTIVE
+        j.done   = 0
+        j.resetSamples()
         bump_()
         persistNow_()
         return j
@@ -380,127 +617,130 @@ class SftpQueue {
     persistNow_()
   }
 
-  // Open the remote read-only, create the local destination,
-  // stream chunks updating job.done.  job.local is the basename
-  // inside DownloadPath — the relaxed-name predicate is what makes
-  // typical SFTP names like "file with spaces.zip" allowable here.
-  // Errors land the job in FAILED with a descriptive errMsg; cancel
-  // between chunks lands it in CANCELLED.
+  // Open the remote read-only, create a fresh local destination,
+  // and dispatch PIPELINE_DEPTH chunk fibers that race through the
+  // file in parallel.  job.local is the basename inside DownloadPath
+  // — the relaxed-name predicate is what makes typical SFTP names
+  // like "file with spaces.zip" allowable here.  Errors land the job
+  // in FAILED with a descriptive errMsg; cancel between chunks
+  // lands it in CANCELLED.  Mid-transfer interruption forfeits the
+  // partial — see claimNext_ for why pipelined transfers can't
+  // resume from a previous session.
   static runDownload_(job) {
     if (Download == null) {
       job.status = SftpQueue.FAILED
       job.errMsg = "DownloadPath not configured (or set to $HOME)"
       return
     }
+    if (Download.contains(job.local)) Download.delete(job.local)
+    var lf = Download.create(job.local)
+    if (lf == null) {
+      job.status = SftpQueue.FAILED
+      job.errMsg = "cannot create local '%(job.local)'"
+      return
+    }
+    lf.open()
     var hSrc = SFTP.open(Fiber.current, job.remote, FileFlag.read) ||
                Fiber.yield()
     if (hSrc is SFTPError) {
+      lf.close()
       job.status = SftpQueue.FAILED
       job.errMsg = "open remote: " + hSrc.toString
       return
     }
-    // Resume from job.done if we already have a partial local file
-    // matching that offset; otherwise start fresh.  job.done is only
-    // bumped after a successful chunk write, so the partial on disk
-    // matches it byte-for-byte (single-threaded fiber, no
-    // mid-write crash without a fiber abort).
-    var lf
-    var resumeOff = 0
-    if (job.done > 0 && Download.contains(job.local)) {
-      lf = Download.list[job.local]
-      if (lf is File) {
-        lf.open()
-        if (lf.size == job.done) {
-          resumeOff = job.done
-        } else {
-          // Partial file size doesn't match — toss it and restart.
-          lf.close()
-          Download.delete(job.local)
-          lf = Download.create(job.local)
-          if (lf != null) lf.open()
-        }
-      } else {
-        lf = null
+    // Total size: trust job.total from enqueue (browser stat'd at
+    // selection time).  Fall back to an explicit stat for legacy /
+    // out-of-band enqueues — without a known total we can't pre-
+    // issue parallel chunks.
+    var totalSize = job.total
+    if (totalSize <= 0) {
+      var st = SFTP.stat(Fiber.current, job.remote) || Fiber.yield()
+      if (st is SFTPStat) {
+        totalSize = st.size
+        job.total = totalSize
       }
     }
-    if (lf == null) {
-      if (Download.contains(job.local)) Download.delete(job.local)
-      lf = Download.create(job.local)
-      if (lf == null) {
-        SFTP.close(Fiber.current, hSrc) || Fiber.yield()
-        job.status = SftpQueue.FAILED
-        job.errMsg = "cannot create local '%(job.local)'"
-        return
-      }
-      lf.open()
+    // Seed the throughput window now that done is at its working
+    // baseline (zero — see claimNext_).
+    job.recordSample()
+    var depth = SftpQueue.adaptiveDepth
+    var ctx   = JobCtx.new(job, totalSize, lf, hSrc, depth)
+    for (i in 0...depth) {
+      ctx.bumpAlive()
+      Fiber.new { downloadChunk_(ctx) }.call()
     }
-    var off = resumeOff
-    var err = null
+    ctx.await()
+    lf.close()
+    SFTP.close(Fiber.current, hSrc) || Fiber.yield()
+    if (ctx.err == "suspended") {
+      // Worker is bailing per user request; leave the job ACTIVE so
+      // it persists in that state and resumes on the next session.
+      return
+    }
+    if (ctx.err == "cancelled") {
+      job.status = SftpQueue.CANCELLED
+    } else if (ctx.err != null) {
+      job.status = SftpQueue.FAILED
+      job.errMsg = ctx.err
+    } else {
+      job.total  = job.done
+      job.status = SftpQueue.DONE
+      // Stamp local mtime to match the remote.  Stat after the data
+      // is on disk so the local mtime matches the server's "as of
+      // completion" timestamp.  Errors are non-fatal — chip falls
+      // back to "[<>]".
+      var st = SFTP.stat(Fiber.current, job.remote) || Fiber.yield()
+      if (st is SFTPStat) lf.mtime = st.mtime
+    }
+  }
+
+  // One chunk worker for a download job.  Loops claiming offsets
+  // from the shared JobCtx, issues an SFTP read for the slot, and
+  // pwrites the result into the local file.  N of these run in
+  // parallel; out-of-order completion is fine because writeBytes is
+  // offset-keyed.  job.done aggregates total bytes written across
+  // workers and is used purely for the progress display.
+  static downloadChunk_(ctx) {
     while (true) {
-      if (__suspended == true) {
-        err = "suspended"
-        break
-      }
-      if (job.cancel) {
-        err = "cancelled"
-        break
-      }
-      var bytes = SFTP.read(Fiber.current, hSrc, SftpQueue.CHUNK, off) ||
+      var slot = ctx.claimChunk(SftpQueue.adaptiveChunkSize)
+      if (slot == null) break
+      var off  = slot[0]
+      var want = slot[1]
+      var t0 = Timer.now
+      var bytes = SFTP.read(Fiber.current, ctx.hRemote, want, off) ||
                   Fiber.yield()
+      var rtt = Timer.now - t0
       if (bytes is SFTPError) {
-        // SFTP errors that happen after the shell has closed get
-        // treated as session-ending rather than per-job FAILED:
-        // preserve the job ACTIVE so it resumes on the next connect
-        // instead of forcing the user to re-pick.  suspend() halts
-        // the other direction's worker too.  (We don't fully
-        // understand why the SFTP channel sometimes errors right
-        // around shell-close — leaving that diagnosis for later;
-        // the user-visible behavior is correct either way.)
-        if (__shellClosed) {
-          suspend()
-          err = "suspended"
+        if (SftpQueue.shellClosed) {
+          SftpQueue.suspend()
+          ctx.setError("suspended")
         } else {
-          err = "read remote: " + bytes.toString
+          ctx.setError("read remote: " + bytes.toString)
         }
         break
       }
       if (bytes == null) break
       var got = bytes.bytes.count
       if (got == 0) break
-      lf.writeBytes(bytes, off)
-      off = off + got
-      job.done = off
+      ctx.lf.writeBytes(bytes, off)
+      var job = ctx.job
+      job.done = job.done + got
+      job.recordSample()
+      // Feed adaptive sizing.  RTT sample is the issue-to-response
+      // wall time; BW sample assumes the pipeline is saturated at
+      // ctx.depth concurrent requests, so the link's per-RTT capacity
+      // is depth * got / rtt.  Both estimators clamp non-positive
+      // values internally.
+      SftpQueue.recordRtt_(rtt)
+      if (rtt > 0) SftpQueue.recordBps_((got * ctx.depth) / rtt)
       bump_()
     }
-    lf.close()
-    SFTP.close(Fiber.current, hSrc) || Fiber.yield()
-    if (err == "suspended") {
-      // Worker is bailing per user request; leave the job ACTIVE so
-      // it persists in that state and resumes on the next session.
-      return
-    }
-    if (err == "cancelled") {
-      job.status = SftpQueue.CANCELLED
-    } else if (err != null) {
-      job.status = SftpQueue.FAILED
-      job.errMsg = err
-    } else {
-      job.total  = off
-      job.status = SftpQueue.DONE
-      // Stamp local mtime to match the remote so the browser's status
-      // chip can match local-vs-remote without server-side hash
-      // extensions.  Stat after the data is on disk; the file may
-      // have been touched server-side mid-download but matching the
-      // server's "as of completion" mtime is the right thing for
-      // delta-detection.  Errors are non-fatal — leave mtime as the
-      // local-write time and the chip falls back to "[<>]".
-      var st = SFTP.stat(Fiber.current, job.remote) || Fiber.yield()
-      if (st is SFTPStat) lf.mtime = st.mtime
-    }
+    ctx.workerExit()
   }
 
   // Mirror — re-open the picker-consented source via the token,
-  // open the remote with WRITE|CREAT|TRUNC, stream chunks.
+  // open the remote with WRITE|CREAT|TRUNC, dispatch PIPELINE_DEPTH
+  // chunk fibers that race through the file in parallel.
   //
   // The token is verified by Host.openLocalFile: HMAC must match
   // the installed signing key, AND the file's current SHA-1 must
@@ -532,53 +772,27 @@ class SftpQueue {
       job.errMsg = "open remote: " + hDst.toString
       return
     }
-    var off = 0
-    var err = null
-    while (off < totalSize) {
-      if (__suspended == true) {
-        err = "suspended"
-        break
-      }
-      if (job.cancel) {
-        err = "cancelled"
-        break
-      }
-      var want = SftpQueue.CHUNK
-      if (off + want > totalSize) want = totalSize - off
-      var chunk = lf.readBytes(want, off)
-      if (chunk == null) break
-      var got = chunk.bytes.count
-      if (got == 0) break
-      var r = SFTP.write(Fiber.current, hDst, off, chunk) || Fiber.yield()
-      if (r is SFTPError) {
-        // Same logic as the download read path — see the comment
-        // there.  Post-shell-close SFTP errors → suspend (job stays
-        // ACTIVE for next-session resume) rather than FAILED.
-        if (__shellClosed) {
-          suspend()
-          err = "suspended"
-        } else {
-          err = "write remote: " + r.toString
-        }
-        break
-      }
-      off = off + got
-      job.done = off
-      bump_()
+    job.recordSample()
+    var depth = SftpQueue.adaptiveDepth
+    var ctx   = JobCtx.new(job, totalSize, lf, hDst, depth)
+    for (i in 0...depth) {
+      ctx.bumpAlive()
+      Fiber.new { uploadChunk_(ctx) }.call()
     }
+    ctx.await()
     var localMtime = lf.mtime
     lf.close()
     SFTP.close(Fiber.current, hDst) || Fiber.yield()
-    if (err == "suspended") {
+    if (ctx.err == "suspended") {
       // Worker is bailing per user request; leave the job ACTIVE so
       // it persists in that state and resumes on the next session.
       return
     }
-    if (err == "cancelled") {
+    if (ctx.err == "cancelled") {
       job.status = SftpQueue.CANCELLED
-    } else if (err != null) {
+    } else if (ctx.err != null) {
       job.status = SftpQueue.FAILED
-      job.errMsg = err
+      job.errMsg = ctx.err
     } else {
       job.status = SftpQueue.DONE
       // Stamp the remote with the local mtime so a subsequent browse
@@ -590,6 +804,44 @@ class SftpQueue {
         SFTP.setMtime(Fiber.current, job.remote, localMtime) || Fiber.yield()
       }
     }
+  }
+
+  // One chunk worker for an upload job.  Symmetric with
+  // downloadChunk_: claim an offset, pread the local slice, push it
+  // out via SFTP.write at that offset.  N parallel; out-of-order
+  // remote writes are fine for SFTP write-by-offset.
+  static uploadChunk_(ctx) {
+    while (true) {
+      var slot = ctx.claimChunk(SftpQueue.adaptiveChunkSize)
+      if (slot == null) break
+      var off  = slot[0]
+      var want = slot[1]
+      var chunk = ctx.lf.readBytes(want, off)
+      if (chunk == null) break
+      var got = chunk.bytes.count
+      if (got == 0) break
+      var t0 = Timer.now
+      var r = SFTP.write(Fiber.current, ctx.hRemote, off, chunk) ||
+              Fiber.yield()
+      var rtt = Timer.now - t0
+      if (r is SFTPError) {
+        if (SftpQueue.shellClosed) {
+          SftpQueue.suspend()
+          ctx.setError("suspended")
+        } else {
+          ctx.setError("write remote: " + r.toString)
+        }
+        break
+      }
+      var job = ctx.job
+      job.done = job.done + got
+      job.recordSample()
+      // Feed adaptive sizing — see downloadChunk_ for the rationale.
+      SftpQueue.recordRtt_(rtt)
+      if (rtt > 0) SftpQueue.recordBps_((got * ctx.depth) / rtt)
+      bump_()
+    }
+    ctx.workerExit()
   }
 
   // ----- private helpers ---------------------------------------------
