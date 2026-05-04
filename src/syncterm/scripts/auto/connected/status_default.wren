@@ -17,7 +17,7 @@
 // To override: drop a same-named file in your auto-load dir, or set
 // `Status.callable = ...` from any later script.
 
-import "syncterm" for Status, Surface, BBS, CTerm, Host, ConnType
+import "syncterm" for Status, Surface, BBS, Capture, CTerm, Host, ConnType
 
 class StatusDefault {
   // Cell colour palette (RGB; matches the C original's vmem_cell.fg
@@ -104,7 +104,7 @@ class StatusDefault {
   static nameWithFlags_() {
     var n = BBS.name
     if (Host.safeMode) n = n + " (SAFE)"
-    if (CTerm.logMode != 0) n = n + " (Logging)"
+    if (Capture.active) n = n + " (Logging)"
     var ct = BBS.connType
     var isSerial = ct == ConnType.serial || ct == ConnType.serialNoRts
     var rate = isSerial ? BBS.bpsRate : CTerm.throttleSpeed

@@ -216,6 +216,12 @@ class ListView is Widget {
     var h  = bounds.h
     var cx = contentX_
 
+    // Row highlight spans the full widget width, excluding the
+    // scrollbar column when one is shown — both the content area
+    // and the padding cells get the row's background so the
+    // selected-row lightbar reads as a single edge-to-edge bar.
+    var fillX = (scrollbarVisible_ && _sbSide != "right") ? scrollbarOverhead_ : 0
+    var fillW = bounds.w - (scrollbarVisible_ ? scrollbarOverhead_ : 0)
     var i = 0
     while (i < h) {
       var idx = _scrollTop + i
@@ -223,9 +229,7 @@ class ListView is Widget {
       var s    = formatItem(_items[idx], iw)
       var role = idx == _selected ? "list.item.focused" : "list.item"
       var st   = style(role)
-      // Pad the row to iw so the highlight extends across the full
-      // item line, even when the formatted text is shorter.
-      Painter.fill(sf, Rect.new(cx, i, iw, 1), " ", st)
+      Painter.fill(sf, Rect.new(fillX, i, fillW, 1), " ", st)
       Painter.text(sf, cx, i, s, st, iw)
       i = i + 1
     }

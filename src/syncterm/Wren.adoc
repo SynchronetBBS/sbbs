@@ -2735,6 +2735,55 @@ Mirrors the `<<sftperror,SFTPError>>` / `<<fileerror,FileError>>` /
 | `ConnErr.shortSend`    | 2 | Outbuf was full / send partially queued.
 |===
 
+=== Capture [[capture]]
+
+Streaming-log control for the active session.  Replaces the
+historical `CTerm.logMode` / `CTerm.logPaused` getters and the
+uifc-driven `capture_control` dialog (the Wren-side `CaptureMenu`
+in `scripts/auto/connected/capture_menu.wren` now drives the
+user-facing Alt-C flow on top of these primitives).  All methods
+are no-ops when no terminal is active.
+
+[options="header",cols="2,3"]
+|===
+| Method | Description
+
+| `Capture.active`
+| Bool — true while a streaming log is open (regardless of pause
+  state).
+
+| `Capture.paused`
+| Bool — true when the active log has been paused via
+  `Capture.pause()`.  Bytes still flow through cterm; just nothing
+  gets written to the log file.
+
+| `Capture.start(file, raw)`
+| Open a streaming log to the path authorized by `file` (a
+  write-consent `File` from <<host-pickSavePath,`Host.pickSavePath`>>).
+  `raw == true` preserves ANSI escape sequences (post-decode);
+  `false` strips to plain text.  Consumes the File's write consent.
+  Returns `null` on success or a <<fileerror,`FileError`>> on
+  open failure (typically `errno = EEXIST` for `WFC_CREATE` if
+  the path was created between pick and open).
+  Aborts the fiber on programmer error (already capturing, no
+  consent on `file`, etc.).
+
+| `Capture.stop()`
+| Close the active log.  No-op when not capturing.  Idempotent.
+
+| `Capture.pause()`
+| Set the PAUSED bit on the active log.  No-op when not capturing
+  or already paused.
+
+| `Capture.resume()`
+| Clear the PAUSED bit.  No-op when not capturing.
+|===
+
+The screen-snapshot side of the historical capture dialog (Binary
++ optional SAUCE) lives on `<<cterm,CTerm.saveScreenshot>>` rather
+than on `Capture` — it's a one-shot terminal-state snapshot, not a
+log.
+
 === CTerm [[cterm]]
 
 Read-only window into `cterm` state — what `term.c` and `ripper.c`
@@ -2769,10 +2818,19 @@ emulation-aware logic.
 | Mode flags
 | `emulation` (`Emulation`), `doorwayMode`, `music` /
   `music = i` (`MusicMode` enum; setter clamps out-of-range
-  values), `started`, `skypix`, `logMode` (`LogMode`), `logPaused`,
+  values), `started`, `skypix`,
   `statusDisplay` (`StatusDisplay`), `atasciiInverse` (Bool —
   ATASCII inverse-video mode), `ooiiMode` (0 = off, 1..3 = OOTerm
-  / OOTerm1 / OOTerm2)
+  / OOTerm1 / OOTerm2).  Streaming-log state moved to the
+  <<capture,`Capture`>> class.
+
+| Screenshot
+| `saveScreenshot(file, withSauce)` — write the cterm area (status
+  bar excluded) as IBM-CGA / BinaryText to `file` (a write-consent
+  File from <<host-pickSavePath,`Host.pickSavePath`>>), optionally
+  appending a SAUCE block populated from the active BBS.  Consumes
+  the File's write consent.  Returns `null` on success or a
+  <<file-error,`FileError`>> on write failure.
 
 | Mouse state
 | `mouseMode` (raw enum from `cterm`'s mouse-state struct: 0 = off,
@@ -2906,22 +2964,6 @@ line" (the so-called phantom-column).
 | `forced`  | Bool — tracking is forced on regardless of the
               underlying mode (set by SyncTERM's emulation-bridge
               code or the BBS list's `forceLcf` flag).
-|===
-
-==== LogMode
-
-Referenced by `CTerm.logMode`.
-
-[options="header",cols="2,1,4"]
-|===
-| Constant | Code | Description
-| `none`   | 0    | No log file is being written.
-| `ascii`  | 1    | Log decoded ASCII — escape sequences are
-                    interpreted, control codes are filtered down to
-                    readable text.  Good for human review.
-| `raw`    | 2    | Log the raw byte stream as received from the
-                    remote, including all escape sequences.  Good for
-                    later replay.
 |===
 
 ==== StatusDisplay
@@ -3229,6 +3271,16 @@ pre-bound from these at module load.
   `filepick.h`, `UIFC_FP_ALLOWENTRY` / `UIFC_FP_OVERPROMPT` /
   `UIFC_FP_CREATPROMPT` cannot be combined with multi-select —
   `filepick_multi` rejects them.
+
+| `Host.pickSavePath(initialDir, mask)` [[host-pickSavePath]]
+| Save-mode picker — wraps `filepick` with `UIFC_FP_ALLOWENTRY +
+  UIFC_FP_OVERPROMPT`, so the user can pick an existing file
+  (overwrite-prompted) or type a new filename.  Returns a
+  *write-consent* `File` whose `.open()` succeeds exactly once, or
+  `null` on cancel.  See <<file-write-consent,Write consent>> below
+  for the mode rules and single-shot semantics.  `.token` on the
+  returned File is `null` — write consent is intentionally
+  session-bound and doesn't replay across sessions.
 
 | `Host.openLocalFile(token)`
 | Re-construct a `File` foreign from a consent token previously
@@ -3552,6 +3604,47 @@ is recoverable — the per-call `fexist()` check catches it and
 returns a `<<fileerror,FileError>>` with `code == FileErr.vanished`
 in place of the typed result.  Drop or inspect the error and move on;
 the fiber is not aborted.
+
+==== Write consent [[file-write-consent]]
+
+`Files` minted by <<host-pickSavePath,`Host.pickSavePath`>> carry a
+*write consent* — a single-shot grant to open the user-picked path
+exactly once, in a specific mode determined at pick time:
+
+[options="header",cols="2,4"]
+|===
+| Picker outcome | `open()` mode
+
+| Path didn't exist at pick time
+| `wbx` (exclusive create) — fails if the path now exists.
+  Race-safe: an attacker can't substitute a different file between
+  the picker's "does it exist?" check and `open()`.
+
+| Path existed and the user confirmed overwrite
+| `wb` (truncate or create).  The picker enforces the prompt; user
+  saying "no" re-prompts.
+|===
+
+The consent is *consumed* by the first successful `open()`.  After
+the matching `close()`, every subsequent `open() / writeBytes /
+write / writeLine / etc.` aborts the fiber with "write consent
+already used".  Re-pick the path to write again.
+
+`File.token` is `null` on write-consent Files: persisting a write
+consent across sessions would defeat the single-shot rule.  The
+existing token mechanism is exclusively for *read* consent (the
+`Host.pickFiles` / `openLocalFile` upload-resume flow).
+
+Other bindings consume write consent on the caller's behalf:
+
+* <<host-pickSavePath,`Host.pickSavePath`>> mints the consent.
+* `<<capture,Capture.start(file, raw)>>` — opens for streaming-log
+  output and transfers the FILE pointer into `cterm`'s logfile.
+* `<<cterm,CTerm.saveScreenshot(file, withSauce)>>` — writes the
+  screen as IBM-CGA / BinaryText with optional SAUCE block.
+
+After any of these calls the File is inert — calling `open()` on it
+yourself is no longer valid.
 
 ==== FileError [[fileerror]]
 

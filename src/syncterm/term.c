@@ -3554,6 +3554,88 @@ font_control(struct bbslist *bbs, struct cterminal *cterm)
 	freescreen(savscrn);
 }
 
+/* Capture the cterm area (NOT the status bar — gettext uses cterm
+ * dimensions explicitly) as IBM-CGA / BinaryText, and optionally
+ * append a SAUCE block populated from `bbs` (name → title, user →
+ * author).  `fp` is taken pre-opened in "wb" or "wbx" mode; this
+ * function writes and flushes but does NOT close it (caller closes
+ * to honor the consent-token model).
+ *
+ * Returns 0 on success, the captured errno on fwrite failure.  bbs
+ * may be NULL when SAUCE is requested without an active session —
+ * title and author are left blank in that case. */
+int
+save_screen_binary(FILE *fp, bool with_sauce, struct bbslist *bbs)
+{
+	if (fp == NULL || cterm == NULL)
+		return EINVAL;
+	size_t cells = (size_t)cterm->width * (size_t)cterm->height;
+	char  *cap   = malloc(cells * 2);
+	if (cap == NULL)
+		return ENOMEM;
+	gettext(cterm->x, cterm->y, cterm->x + cterm->width - 1,
+	    cterm->y + cterm->height - 1, cap);
+	if (fwrite(cap, sizeof(uint8_t), cells * 2, fp) != cells * 2) {
+		int err = errno ? errno : EIO;
+		free(cap);
+		return err;
+	}
+	free(cap);
+	if (!with_sauce) {
+		fflush(fp);
+		return 0;
+	}
+	time_t       t = time(NULL);
+	struct tm   *tm;
+	struct sauce sauce;
+	memset(&sauce, 0, sizeof(sauce));
+	memcpy(sauce.id,  SAUCE_ID,      sizeof(sauce.id));
+	memcpy(sauce.ver, SAUCE_VERSION, sizeof(sauce.ver));
+	memset(sauce.title,  ' ', sizeof(sauce.title));
+	memset(sauce.author, ' ', sizeof(sauce.author));
+	memset(sauce.group,  ' ', sizeof(sauce.group));
+	if (bbs != NULL) {
+		memcpy(sauce.title, bbs->name,
+		    MIN(strlen(bbs->name), sizeof(sauce.title)));
+		memcpy(sauce.author, bbs->user,
+		    MIN(strlen(bbs->user), sizeof(sauce.author)));
+	}
+	if ((tm = localtime(&t)) != NULL) {
+		char tmpstr[SAUCE_LEN_DATE + 1] = {0};
+		if (snprintf(tmpstr, sizeof(tmpstr), "%04u%02u%02u",
+		    1900 + tm->tm_year, 1 + tm->tm_mon, tm->tm_mday) >= 0) {
+			memcpy(sauce.date, tmpstr, SAUCE_LEN_DATE);
+		}
+	}
+	sauce.filesize = LE_INT32(ftell(fp));
+	sauce.datatype = sauce_datatype_bin;
+	sauce.filetype = cterm->width / 2;
+	if (ciolib_getvideoflags() &
+	    (CIOLIB_VIDEO_BGBRIGHT | CIOLIB_VIDEO_NOBLINK))
+		sauce.tflags |= sauce_ansiflag_nonblink;
+	if (fputc(SAUCE_SEPARATOR, fp) == EOF)
+		return errno ? errno : EIO;
+	if (fwrite(&sauce.id,        sizeof(sauce.id),       1, fp) != 1 ||
+	    fwrite(&sauce.ver,       sizeof(sauce.ver),      1, fp) != 1 ||
+	    fwrite(&sauce.title,     sizeof(sauce.title),    1, fp) != 1 ||
+	    fwrite(&sauce.author,    sizeof(sauce.author),   1, fp) != 1 ||
+	    fwrite(&sauce.group,     sizeof(sauce.group),    1, fp) != 1 ||
+	    fwrite(&sauce.date,      sizeof(sauce.date),     1, fp) != 1 ||
+	    fwrite(&sauce.filesize,  sizeof(sauce.filesize), 1, fp) != 1 ||
+	    fwrite(&sauce.datatype,  sizeof(sauce.datatype), 1, fp) != 1 ||
+	    fwrite(&sauce.filetype,  sizeof(sauce.filetype), 1, fp) != 1 ||
+	    fwrite(&sauce.tinfo1,    sizeof(sauce.tinfo1),   1, fp) != 1 ||
+	    fwrite(&sauce.tinfo2,    sizeof(sauce.tinfo2),   1, fp) != 1 ||
+	    fwrite(&sauce.tinfo3,    sizeof(sauce.tinfo3),   1, fp) != 1 ||
+	    fwrite(&sauce.tinfo4,    sizeof(sauce.tinfo4),   1, fp) != 1 ||
+	    fwrite(&sauce.comments,  sizeof(sauce.comments), 1, fp) != 1 ||
+	    fwrite(&sauce.tflags,    sizeof(sauce.tflags),   1, fp) != 1 ||
+	    fwrite(&sauce.tinfos,    sizeof(sauce.tinfos),   1, fp) != 1)
+		return errno ? errno : EIO;
+	fflush(fp);
+	return 0;
+}
+
 void
 capture_control(struct bbslist *bbs)
 {
@@ -6470,20 +6552,15 @@ doterm(struct bbslist *bbs)
                          * These keys are SyncTERM control keys
                          */
 			switch (key) {
-				case CIO_KEY_SHIFT_IC: /* Shift-Insert - Paste */
-					do_paste();
-					break;
-				case 0x3000: /* ALT-B - Scrollback */
-					setup_mouse_events(NULL);
-					viewscroll();
-					setup_mouse_events(&ms);
-					showmouse();
-					break;
-				case 0x2e00: /* ALT-C - Capture */
-					capture_control(bbs);
-					setup_mouse_events(&ms);
-					showmouse();
-					break;
+				/* Shift-Insert (paste), Alt-B (scrollback), and
+				 * Alt-C (capture) handled by Wren —
+				 * keys_default.wren registers Hook.onKey for
+				 * Key.shiftIns / Key.altB / Key.altC and calls
+				 * Conn.paste / Conn.scrollback /
+				 * Conn.captureControl.  If a user replaces
+				 * keys_default.wren without those handlers, the
+				 * keys fall through here and out of the switch
+				 * unhandled — opt-out is intentional. */
 				case 0x2000: /* ALT-D - Download */
 					begin_download(bbs);
 					setup_mouse_events(&ms);

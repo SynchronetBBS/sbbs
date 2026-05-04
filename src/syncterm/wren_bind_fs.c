@@ -54,6 +54,18 @@ struct wren_directory {
 	char path[MAX_PATH + 1];
 };
 
+/* Write-consent classes for Files minted from the save picker
+ * (Host.pickSavePath).  Read-mode Files (WFC_NONE) keep the historical
+ * `r+b` open behaviour; write-consent Files open in their authorized
+ * mode exactly once and then become inert.  No File can ever be both
+ * read- and write-consent — the consent is set at mint time and
+ * doesn't change. */
+enum wren_file_write_consent {
+	WFC_NONE = 0,    /* read-mode; existing token model applies */
+	WFC_CREATE,      /* `wbx` — must not exist; race-safe single create */
+	WFC_OVERWRITE,   /* `wb` — overwrite confirmed by picker prompt */
+};
+
 struct wren_file {
 	enum syncterm_wren_foreign type;
 	char  path[MAX_PATH + 1]; /* absolute path */
@@ -62,9 +74,19 @@ struct wren_file {
 	 * (Host.pickFile / Host.pickFiles).  NULL for Files obtained
 	 * via the sandboxed Cache / Download Directory listings —
 	 * those don't need a token because their paths are already
-	 * inside the predicate-validated sandbox.  Freed in
+	 * inside the predicate-validated sandbox.  Also NULL for
+	 * write-consent Files (no persisted token — write consent is
+	 * intentionally session-bound and single-shot).  Freed in
 	 * wren_file_finalize.  See wren_token.h for the model. */
 	char *token;
+	/* Write consent class (WFC_*).  WFC_NONE on read-mode Files;
+	 * non-NONE on Files minted by Host.pickSavePath. */
+	enum wren_file_write_consent write_consent;
+	/* Set after the first successful open() on a write-consent
+	 * File — any further open()/writeBytes/etc. abort the fiber.
+	 * Single-shot is the whole point: an attacker who somehow
+	 * grabbed the foreign handle can't replay the write. */
+	bool  consent_used;
 	/* Same dead/list mechanics as wren_directory.  A successful
 	 * Directory.delete on the file (or on an ancestor directory)
 	 * marks it dead; further ops abort the fiber. */
@@ -77,19 +99,9 @@ struct wren_file {
  * from under an open handle, etc.) surface as a FileError foreign
  * returned IN PLACE of the typed result, mirroring SFTPError.  Bad
  * args, dead handles, and "use after close" stay as Fiber.abort
- * (programmer errors should fail loud).  Codes match
- * `enum file_err_code` below; `err_no` is the captured C errno at
- * the failure point, 0 when not applicable. */
-enum file_err_code {
-	FILE_ERR_OK = 0,
-	FILE_ERR_OPEN_FAILED,        /* fopen failed (perms, ENOSPC, …) */
-	FILE_ERR_WRITE_FAILED,       /* fwrite short / fflush failed */
-	FILE_ERR_STAT_FAILED,        /* flength / fstat on the open fd */
-	FILE_ERR_MMAP_FAILED,        /* xpmap / munmap path */
-	FILE_ERR_OOM,                /* malloc returned NULL */
-	FILE_ERR_VANISHED,           /* backing path gone (race with rm) */
-	FILE_ERR_RESOLVE_FAILED,     /* Cache: BBS-relative resolve failed */
-};
+ * (programmer errors should fail loud).  enum file_err_code is
+ * declared in wren_bind_fs.h so other bindings can build FileErrors
+ * into their result slots. */
 
 struct wren_file_error {
 	enum syncterm_wren_foreign type;
@@ -102,8 +114,10 @@ struct wren_file_error {
  * `errno_val == 0` when the failure didn't come from a libc call
  * (e.g. OOM in malloc has errno=ENOMEM but synthesised reasons
  * don't).  Never aborts.  Caller is expected to RETURN to the VM
- * immediately after — the error IS the typed-result-slot value. */
-static void
+ * immediately after — the error IS the typed-result-slot value.
+ * Non-static — declared in wren_bind_fs.h so Capture and
+ * CTerm.saveScreenshot can produce FileError typed results. */
+void
 file_build_error(WrenVM *vm, int slot, enum file_err_code code,
                  int errno_val, const char *msg)
 {
@@ -560,12 +574,26 @@ file_check(WrenVM *vm)
 		    "(its parent directory invalidated it via Directory.delete)");
 		return NULL;
 	}
+	/* Write-consent Files that have been used (opened then closed)
+	 * are inert — single-shot is the whole point of the consent
+	 * model.  Trips for any subsequent open(), writeBytes(), etc. */
+	if (wf->write_consent != WFC_NONE && wf->consent_used && wf->fp == NULL) {
+		wren_throw(vm, "File: write consent already used "
+		    "(re-pick the path to write again)");
+		return NULL;
+	}
 	/* Open files survive their backing path's removal — on Unix the
 	 * fd stays valid after unlink, and on Windows you can't delete an
 	 * open file at all.  Skip the existence check; let the OS return
 	 * I/O errors through subsequent reads/writes if any.  The recheck
 	 * happens in fn_File_close. */
 	if (wf->fp != NULL)
+		return wf;
+	/* Pre-open write-consent Files may legitimately point at a path
+	 * that doesn't exist yet (WFC_CREATE) — skip the existence check.
+	 * fn_File_open's fopen mode ("wbx" / "wb") enforces the right
+	 * race-safe semantics at open time. */
+	if (wf->write_consent != WFC_NONE)
 		return wf;
 	if (!fexist(wf->path)) {
 		fs_kill_file(wf);
@@ -606,12 +634,14 @@ push_new_file(WrenVM *vm, int slot, const char *dir, const char *name)
 	wrenGetVariable(vm, "syncterm", "File", slot + 1);
 	struct wren_file *wf = wrenSetSlotNewForeign(vm, slot, slot + 1,
 	    sizeof(*wf));
-	wf->type    = SWF_FILE;
-	wf->fp      = NULL;
-	wf->token   = NULL;
-	wf->dead    = false;
-	wf->fs_prev = NULL;
-	wf->fs_next = NULL;
+	wf->type          = SWF_FILE;
+	wf->fp            = NULL;
+	wf->token         = NULL;
+	wf->write_consent = WFC_NONE;
+	wf->consent_used  = false;
+	wf->dead          = false;
+	wf->fs_prev       = NULL;
+	wf->fs_next       = NULL;
 	snprintf(wf->path, sizeof(wf->path), "%s%s", dir, name);
 	fs_register_file(wf);
 	return wf;
@@ -1007,12 +1037,43 @@ push_picker_file(WrenVM *vm, int slot, const char *picked)
 	wrenGetVariable(vm, "syncterm", "File", slot + 1);
 	struct wren_file *wf = wrenSetSlotNewForeign(vm, slot, slot + 1,
 	    sizeof(*wf));
-	wf->type    = SWF_FILE;
-	wf->fp      = NULL;
-	wf->token   = wren_token_sign(picked);
-	wf->dead    = false;
-	wf->fs_prev = NULL;
-	wf->fs_next = NULL;
+	wf->type          = SWF_FILE;
+	wf->fp            = NULL;
+	wf->token         = wren_token_sign(picked);
+	wf->write_consent = WFC_NONE;
+	wf->consent_used  = false;
+	wf->dead          = false;
+	wf->fs_prev       = NULL;
+	wf->fs_next       = NULL;
+	strlcpy(wf->path, picked, sizeof(wf->path));
+	fs_register_file(wf);
+	return wf;
+}
+
+/* Mint a write-consent File for a path produced by Host.pickSavePath.
+ * `mode` records the authorized open mode (WFC_CREATE for new paths,
+ * WFC_OVERWRITE when the picker's overwrite prompt got a yes).
+ * Token is intentionally NULL — write consent is single-shot and
+ * doesn't persist across sessions (replay would defeat the model).
+ * Returns the wren_file pointer, or NULL when path is too long. */
+static struct wren_file *
+push_picker_save_file(WrenVM *vm, int slot, const char *picked,
+                      enum wren_file_write_consent mode)
+{
+	if (picked == NULL || strlen(picked) >= MAX_PATH)
+		return NULL;
+	wrenEnsureSlots(vm, slot + 2);
+	wrenGetVariable(vm, "syncterm", "File", slot + 1);
+	struct wren_file *wf = wrenSetSlotNewForeign(vm, slot, slot + 1,
+	    sizeof(*wf));
+	wf->type          = SWF_FILE;
+	wf->fp            = NULL;
+	wf->token         = NULL;
+	wf->write_consent = mode;
+	wf->consent_used  = false;
+	wf->dead          = false;
+	wf->fs_prev       = NULL;
+	wf->fs_next       = NULL;
 	strlcpy(wf->path, picked, sizeof(wf->path));
 	fs_register_file(wf);
 	return wf;
@@ -1052,6 +1113,98 @@ fn_Host_pickFile(WrenVM *vm)
 		return;
 	}
 	if (push_picker_file(vm, 0, fp.selected[0]) == NULL)
+		wrenSetSlotNull(vm, 0);
+	filepick_free(&fp);
+}
+
+/* Consume the write-consent on a File foreign in the given slot.
+ * Opens the underlying path with the authorized mode (`wbx` for
+ * WFC_CREATE, `wb` for WFC_OVERWRITE) and transfers ownership of the
+ * resulting FILE* to the caller.  Marks the foreign's consent used
+ * so subsequent open() / write / etc. abort the fiber.
+ *
+ * On programmer error (no consent / already used / read-mode File)
+ * aborts the calling fiber via wren_throw and returns NULL.  On
+ * fopen failure, builds a FileError into slot 0 and returns NULL —
+ * caller should return immediately (the slot 0 contents are the
+ * binding's typed-result).  *out_path receives a pointer into the
+ * foreign's path field; valid for the duration of the binding call.
+ *
+ * Used by Capture.start (transfers the FILE* into cterm->logfile)
+ * and CTerm.saveScreenshot (the binding does its own fwrite/fclose). */
+FILE *
+wren_file_consume_write(WrenVM *vm, int slot, const char **out_path)
+{
+	struct wren_file *wf = wrenGetSlotForeign(vm, slot);
+	if (wf == NULL) {
+		wren_throw(vm, "expected a File");
+		return NULL;
+	}
+	if (wf->dead) {
+		wren_throw(vm, "File: handle is dead");
+		return NULL;
+	}
+	if (wf->write_consent == WFC_NONE) {
+		wren_throw(vm,
+		    "File: no write consent (use Host.pickSavePath)");
+		return NULL;
+	}
+	if (wf->consent_used || wf->fp != NULL) {
+		wren_throw(vm,
+		    "File: write consent already used (re-pick to write again)");
+		return NULL;
+	}
+	const char *mode =
+	    (wf->write_consent == WFC_CREATE) ? "wbx" : "wb";
+	FILE *fp = fopen(wf->path, mode);
+	if (fp == NULL) {
+		file_build_error(vm, 0, FILE_ERR_OPEN_FAILED, errno,
+		    "fopen failed");
+		return NULL;
+	}
+	wf->consent_used = true;
+	if (out_path != NULL)
+		*out_path = wf->path;
+	return fp;
+}
+
+/* Host.pickSavePath(initialDir, mask) — wraps uifc filepick in save
+ * mode (UIFC_FP_ALLOWENTRY | UIFC_FP_OVERPROMPT).  User can either
+ * pick an existing file (overwrite-prompted) or type a new filename.
+ *
+ * Returns a write-consent File or null on cancel.  The File's
+ * write_consent records which open mode the picker authorized:
+ *   - WFC_CREATE     when the path didn't exist at pick time
+ *                    (open() uses "wbx" — race-safe single create)
+ *   - WFC_OVERWRITE  when the path existed and the user confirmed
+ *                    overwrite (open() uses "wb" — truncate)
+ *
+ * The consent is single-shot: the first successful open()+close()
+ * marks the File inert; subsequent ops abort.  No persisted token —
+ * write consent doesn't replay across sessions (the historical
+ * .token mechanism only covers read consent for upload resume). */
+void
+fn_Host_pickSavePath(WrenVM *vm)
+{
+	char        scratch[MAX_PATH + 1];
+	const char *initial = pick_extract_initial(vm, 1,
+	    scratch, sizeof(scratch));
+	const char *mask    = NULL;
+	if (wrenGetSlotType(vm, 2) == WREN_TYPE_STRING)
+		mask = wrenGetSlotString(vm, 2);
+
+	struct file_pick fp = { 0 };
+	int rc = uifcfilepick("Save as", &fp, initial, mask,
+	    UIFC_FP_ALLOWENTRY | UIFC_FP_OVERPROMPT);
+	if (rc <= 0 || fp.files < 1 || fp.selected == NULL ||
+	    fp.selected[0] == NULL) {
+		filepick_free(&fp);
+		wrenSetSlotNull(vm, 0);
+		return;
+	}
+	enum wren_file_write_consent mode =
+	    fexist(fp.selected[0]) ? WFC_OVERWRITE : WFC_CREATE;
+	if (push_picker_save_file(vm, 0, fp.selected[0], mode) == NULL)
 		wrenSetSlotNull(vm, 0);
 	filepick_free(&fp);
 }
@@ -1161,12 +1314,35 @@ fn_File_open(WrenVM *vm)
 		wren_throw(vm, "File: already open");
 		return;
 	}
-	wf->fp = fopen(wf->path, "r+b");
+	const char *mode;
+	switch (wf->write_consent) {
+		case WFC_CREATE:
+			/* Race-safe single create — fopen(_, "wbx") fails if
+			 * the path now exists, even if it didn't at pick time.
+			 * Prevents an attacker from substituting a different
+			 * file between pick and open. */
+			mode = "wbx";
+			break;
+		case WFC_OVERWRITE:
+			/* User confirmed overwrite at pick time.  "wb" is
+			 * truncate-or-create; consent is one-shot and the
+			 * race window between pick and open is the user's
+			 * accepted trade-off for the overwrite UX. */
+			mode = "wb";
+			break;
+		case WFC_NONE:
+		default:
+			mode = "r+b";
+			break;
+	}
+	wf->fp = fopen(wf->path, mode);
 	if (wf->fp == NULL) {
 		file_build_error(vm, 0, FILE_ERR_OPEN_FAILED, errno,
 		    "fopen failed");
 		return;
 	}
+	if (wf->write_consent != WFC_NONE)
+		wf->consent_used = true;
 	fseek(wf->fp, 0, SEEK_SET);
 }
 

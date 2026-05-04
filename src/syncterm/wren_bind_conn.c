@@ -20,6 +20,8 @@
 #include "genwrap.h"   /* xp_fast_timer64 */
 #include "syncterm.h"  /* safe_mode */
 #include "term.h"      /* force_status_update, term, struct mouse_state, setup_mouse_events */
+#include "menu.h"      /* viewscroll */
+#include "wren_bind_fs.h" /* wren_file_consume_write, FILE_ERR_* */
 #ifndef WITHOUT_DEUCESSH
 #include "ssh.h"       /* ssh_set_sftp_buffer_mode */
 #endif
@@ -195,6 +197,32 @@ fn_Conn_close(WrenVM *vm)
 	(void)vm;
 	conn_close();
 }
+
+/* Conn.paste() — clipboard → wire.  Wraps the historical Shift-Insert
+ * handler's `do_paste()` call: codepage conversion, alt-font
+ * awareness, bracketed-paste mode.  No-op when clipboard is empty. */
+void
+fn_Conn_paste(WrenVM *vm)
+{
+	(void)vm;
+	do_paste();
+}
+
+/* Conn.scrollback() — open the uifc scrollback viewer modal.
+ * Disables mouse events for the duration so they don't conflict with
+ * the viewer's own input handling, then restores the live mouse_state
+ * + showmouse on the way out. */
+void
+fn_Conn_scrollback(WrenVM *vm)
+{
+	(void)vm;
+	setup_mouse_events(NULL);
+	viewscroll();
+	if (cterm != NULL && cterm->mouse_state_change_cbdata != NULL)
+		setup_mouse_events(cterm->mouse_state_change_cbdata);
+	showmouse();
+}
+
 
 void
 fn_Conn_connected(WrenVM *vm)
@@ -506,18 +534,132 @@ fn_CTerm_altFonts(WrenVM *vm)
 	}
 }
 
+/* CTerm.saveScreenshot(file, withSauce) — write the cterm area as
+ * IBM-CGA / BinaryText to `file` (a write-consent File from
+ * Host.pickSavePath).  When `withSauce` is true, appends a SAUCE
+ * block populated from the active BBS (name → title, user → author).
+ *
+ * Status bar is NOT included — gettext is called with cterm
+ * dimensions, not the full term area, matching the historical Alt-C
+ * binary save behaviour.
+ *
+ * Consumes the File's write consent on success.  Returns null on
+ * success, or a FileError on fopen / fwrite failure (errno captured). */
 void
-fn_CTerm_logMode(WrenVM *vm)
+fn_CTerm_saveScreenshot(WrenVM *vm)
 {
-	int v = (cterm != NULL) ? (cterm->log & CTERM_LOG_MASK) : 0;
-	wrenSetSlotDouble(vm, 0, (double)v);
+	if (cterm == NULL) {
+		wren_throw(vm, "CTerm.saveScreenshot: no terminal");
+		return;
+	}
+	if (wrenGetSlotType(vm, 2) != WREN_TYPE_BOOL) {
+		wren_throw(vm,
+		    "CTerm.saveScreenshot: withSauce must be a Bool");
+		return;
+	}
+	bool with_sauce = wrenGetSlotBool(vm, 2);
+	FILE *fp = wren_file_consume_write(vm, 1, NULL);
+	if (fp == NULL)
+		return;
+	struct wren_host_state *st  = wren_host_state();
+	struct bbslist         *bbs = (st != NULL) ? st->bbs : NULL;
+	int rc = save_screen_binary(fp, with_sauce, bbs);
+	int close_err = (fclose(fp) == EOF) ? errno : 0;
+	if (rc != 0 || close_err != 0) {
+		file_build_error(vm, 0, FILE_ERR_WRITE_FAILED,
+		    rc != 0 ? rc : close_err,
+		    "screen save failed");
+		return;
+	}
+	wrenSetSlotNull(vm, 0);
 }
 
+/* ---- Capture: streaming-log control ----------------------------- */
+
+/* Capture.active — true iff a streaming log is open (regardless of
+ * pause state).  Replaces CTerm.logMode for the Wren-side surface. */
 void
-fn_CTerm_logPaused(WrenVM *vm)
+fn_Capture_active(WrenVM *vm)
+{
+	bool v = (cterm != NULL) && ((cterm->log & CTERM_LOG_MASK) != 0);
+	wrenSetSlotBool(vm, 0, v);
+}
+
+/* Capture.paused — true iff the active log is paused.  Replaces
+ * CTerm.logPaused. */
+void
+fn_Capture_paused(WrenVM *vm)
 {
 	bool v = (cterm != NULL) && ((cterm->log & CTERM_LOG_PAUSED) != 0);
 	wrenSetSlotBool(vm, 0, v);
+}
+
+/* Capture.start(file, raw) — open a streaming log to the path
+ * authorized by `file` (a write-consent File from Host.pickSavePath).
+ * `raw` selects ANSI capture mode: true → CTERM_LOG_RAW (preserves
+ * escape sequences), false → CTERM_LOG_ASCII (stripped).
+ *
+ * Consumes the File's write consent on success.  Returns null on
+ * success, or a FileError when the open path fails (fopen errno
+ * captured).  Aborts the fiber on programmer error (already
+ * capturing, no consent on the File, etc.). */
+void
+fn_Capture_start(WrenVM *vm)
+{
+	if (cterm == NULL) {
+		wren_throw(vm, "Capture.start: no terminal");
+		return;
+	}
+	if (cterm->log & CTERM_LOG_MASK) {
+		wren_throw(vm, "Capture.start: already capturing");
+		return;
+	}
+	if (wrenGetSlotType(vm, 2) != WREN_TYPE_BOOL) {
+		wren_throw(vm, "Capture.start: raw must be a Bool");
+		return;
+	}
+	bool raw = wrenGetSlotBool(vm, 2);
+	FILE *fp = wren_file_consume_write(vm, 1, NULL);
+	if (fp == NULL)
+		return;     /* error already in slot 0 or fiber aborted */
+	if (!cterm->started)
+		cterm_start(cterm);
+	cterm->logfile = fp;
+	cterm->log     = raw ? CTERM_LOG_RAW : CTERM_LOG_ASCII;
+	wrenSetSlotNull(vm, 0);
+}
+
+/* Capture.stop() — close the active log.  No-op when not capturing. */
+void
+fn_Capture_stop(WrenVM *vm)
+{
+	(void)vm;
+	if (cterm == NULL)
+		return;
+	cterm_closelog(cterm);
+}
+
+/* Capture.pause() — set the PAUSED bit on the active log.  No-op
+ * when not capturing or already paused. */
+void
+fn_Capture_pause(WrenVM *vm)
+{
+	(void)vm;
+	if (cterm == NULL)
+		return;
+	if (cterm->log & CTERM_LOG_MASK)
+		cterm->log |= CTERM_LOG_PAUSED;
+}
+
+/* Capture.resume() — clear the PAUSED bit.  No-op when not
+ * capturing. */
+void
+fn_Capture_resume(WrenVM *vm)
+{
+	(void)vm;
+	if (cterm == NULL)
+		return;
+	cterm->log = cterm->log & CTERM_LOG_MASK;
 }
 
 /* CTerm.atasciiInverse — true while ATASCII inverse-video mode is on.

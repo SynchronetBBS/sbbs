@@ -18,6 +18,8 @@ void fn_ConnError_bytesSent(WrenVM *vm);
 void fn_ConnError_message(WrenVM *vm);
 void fn_ConnError_toString(WrenVM *vm);
 void fn_Conn_close(WrenVM *vm);
+void fn_Conn_paste(WrenVM *vm);
+void fn_Conn_scrollback(WrenVM *vm);
 void fn_Conn_connected(WrenVM *vm);
 void fn_Conn_type(WrenVM *vm);
 void fn_Conn_pending(WrenVM *vm);
@@ -58,9 +60,17 @@ void fn_CTerm_fgColor(WrenVM *vm);
 void fn_CTerm_bgColor(WrenVM *vm);
 void fn_CTerm_paletteOverride(WrenVM *vm);
 void fn_CTerm_altFonts(WrenVM *vm);
-void fn_CTerm_logMode(WrenVM *vm);
-void fn_CTerm_logPaused(WrenVM *vm);
+void fn_CTerm_saveScreenshot(WrenVM *vm);
 void fn_CTerm_atasciiInverse(WrenVM *vm);
+
+/* Capture (streaming-log) verbs and state.  Replaces the old
+ * CTerm.logMode / CTerm.logPaused getters. */
+void fn_Capture_active(WrenVM *vm);
+void fn_Capture_paused(WrenVM *vm);
+void fn_Capture_start(WrenVM *vm);
+void fn_Capture_stop(WrenVM *vm);
+void fn_Capture_pause(WrenVM *vm);
+void fn_Capture_resume(WrenVM *vm);
 void fn_CTerm_ooiiMode(WrenVM *vm);
 void fn_CTerm_mouseMode(WrenVM *vm);
 void fn_CTerm_mouseDisabled(WrenVM *vm);

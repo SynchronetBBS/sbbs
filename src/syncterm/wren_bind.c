@@ -893,6 +893,7 @@ static const struct binding BINDINGS[] = {
 	{ "Host", true, "uploadPath",           fn_Host_uploadPath        },
 	{ "Host", true, "pickFile(_,_,_)",      fn_Host_pickFile          },
 	{ "Host", true, "pickFiles(_,_,_)",     fn_Host_pickFiles         },
+	{ "Host", true, "pickSavePath(_,_)",    fn_Host_pickSavePath      },
 	{ "Host", true, "openLocalFile(_)",     fn_Host_openLocalFile     },
 
 	/* Platform — OS identification. */
@@ -972,6 +973,8 @@ static const struct binding BINDINGS[] = {
 	{ "Conn",  true, "send(_)",        fn_Conn_send         },
 	{ "Conn",  true, "sendRaw(_)",     fn_Conn_sendRaw      },
 	{ "Conn",  true, "close()",        fn_Conn_close        },
+	{ "Conn",  true, "paste()",        fn_Conn_paste        },
+	{ "Conn",  true, "scrollback()",   fn_Conn_scrollback   },
 	{ "Conn",  true, "connected",      fn_Conn_connected    },
 	{ "Conn",  true, "type",           fn_Conn_type         },
 	{ "Conn",  true, "pending",        fn_Conn_pending      },
@@ -1013,8 +1016,16 @@ static const struct binding BINDINGS[] = {
 	{ "CTerm", true, "scrollbackStart",    fn_CTerm_scrollbackStart },
 	{ "CTerm", true, "started",            fn_CTerm_started         },
 	{ "CTerm", true, "skypix",             fn_CTerm_skypix          },
-	{ "CTerm", true, "logMode",            fn_CTerm_logMode         },
-	{ "CTerm", true, "logPaused",          fn_CTerm_logPaused       },
+	{ "CTerm", true, "saveScreenshot(_,_)", fn_CTerm_saveScreenshot },
+
+	/* Capture (streaming-log control) — replaces the old
+	 * CTerm.logMode / CTerm.logPaused getters. */
+	{ "Capture", true, "active",           fn_Capture_active       },
+	{ "Capture", true, "paused",           fn_Capture_paused       },
+	{ "Capture", true, "start(_,_)",       fn_Capture_start        },
+	{ "Capture", true, "stop()",           fn_Capture_stop         },
+	{ "Capture", true, "pause()",          fn_Capture_pause        },
+	{ "Capture", true, "resume()",         fn_Capture_resume       },
 	{ "CTerm", true, "atasciiInverse",     fn_CTerm_atasciiInverse  },
 	{ "CTerm", true, "ooiiMode",           fn_CTerm_ooiiMode        },
 	{ "CTerm", true, "mouseMode",          fn_CTerm_mouseMode       },

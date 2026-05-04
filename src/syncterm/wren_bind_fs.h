@@ -58,6 +58,39 @@ void fn_Host_downloadDir(WrenVM *vm);
 void fn_Host_uploadPath(WrenVM *vm);
 void fn_Host_pickFile(WrenVM *vm);
 void fn_Host_pickFiles(WrenVM *vm);
+void fn_Host_pickSavePath(WrenVM *vm);
 void fn_Host_openLocalFile(WrenVM *vm);
+
+/* FileError result codes — exposed so other bindings (Capture,
+ * CTerm.saveScreenshot, …) can build FileError typed-results into
+ * their result slot.  Values are part of the Wren API surface and
+ * MUST stay stable. */
+enum file_err_code {
+	FILE_ERR_OK = 0,
+	FILE_ERR_OPEN_FAILED,
+	FILE_ERR_WRITE_FAILED,
+	FILE_ERR_STAT_FAILED,
+	FILE_ERR_MMAP_FAILED,
+	FILE_ERR_OOM,
+	FILE_ERR_VANISHED,
+	FILE_ERR_RESOLVE_FAILED,
+};
+
+/* Build a FileError into slot `slot` (used as both type-result and
+ * scratch).  `errno_val == 0` when the failure didn't come from libc.
+ * Never aborts.  Caller returns to the VM immediately after — the
+ * slot's contents become the binding's typed-result. */
+void file_build_error(WrenVM *vm, int slot, enum file_err_code code,
+                      int errno_val, const char *msg);
+
+/* Consume the write-consent of a File foreign in the given slot;
+ * see wren_bind_fs.c for the contract.  Returns an owned stdio
+ * FILE* on success (caller must fclose), or NULL on error (with
+ * either a thrown fiber error or a FileError in slot 0).  Used by
+ * Capture.start / CTerm.saveScreenshot so each does its own
+ * direct stdio rather than going through fn_File_open. */
+struct wren_file;
+#include <stdio.h>
+FILE *wren_file_consume_write(WrenVM *vm, int slot, const char **out_path);
 
 #endif /* WREN_BIND_FS_H */

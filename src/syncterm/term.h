@@ -44,6 +44,23 @@ extern bool              force_status_update;
 void setup_mouse_events(struct mouse_state *ms);
 void show_status_url(const char *url);
 
+/* Clipboard → wire (codepage-aware, bracketed-paste-aware).  Reads
+ * the system clipboard, converts UTF-8 → active codepage using the
+ * current alt-font, and sends.  No-op when clipboard is empty. */
+void do_paste(void);
+
+/* Capture control dialog — uifc-driven menu for starting / stopping
+ * session capture.  Caller restores mouse events afterwards. */
+void capture_control(struct bbslist *bbs);
+
+/* Save the current cterm area (NOT including the status bar) as IBM-
+ * CGA / BinaryText to `fp`, optionally appending a SAUCE block.
+ * Returns 0 on success, errno on write failure.  Caller is responsible
+ * for closing `fp` (the consent-token model relies on the caller
+ * owning the FILE*). */
+#include <stdio.h>
+int save_screen_binary(FILE *fp, bool with_sauce, struct bbslist *bbs);
+
 /* Signal the doterm() main loop to skip its idle WaitForEvent so
  * the next iteration runs immediately.  Thread-safe, NULL-safe (a
  * no-op when called outside doterm()'s active session).  Wired into

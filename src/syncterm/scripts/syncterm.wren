@@ -839,6 +839,12 @@ foreign class Conn {
   foreign static send(s)
   foreign static sendRaw(s)
   foreign static close()
+  // Paste from system clipboard onto the wire — codepage-aware,
+  // bracketed-paste-aware.  No-op when clipboard is empty.
+  foreign static paste()
+  // Open the uifc scrollback viewer modal.  Mouse events are
+  // disabled for the duration and restored on exit.
+  foreign static scrollback()
   foreign static connected
   foreign static type
   foreign static pending
@@ -861,6 +867,28 @@ class ConnErr {
   static notConnected { 1 }
   static shortSend    { 2 }
 }
+
+// Streaming-log control for the active session.  Replaces the
+// historical CTerm.logMode / CTerm.logPaused getters and the
+// uifc-driven `capture_control` dialog (the Wren-side
+// CaptureMenu now drives the user-facing flow on top of these
+// primitives).  All methods are no-ops when no terminal is active.
+//
+// `start(file, raw)` consumes the write consent on `file` (must be
+// from Host.pickSavePath).  Returns null on success or a FileError
+// on open failure.  raw=true preserves ANSI escapes; false strips
+// to plain text.  Pause / resume toggle the PAUSED bit; data
+// continues to flow through the terminal but isn't written while
+// paused.
+foreign class Capture {
+  foreign static active
+  foreign static paused
+  foreign static start(file, raw)
+  foreign static stop()
+  foreign static pause()
+  foreign static resume()
+}
+
 foreign class CTerm {
   foreign static x
   foreign static y
@@ -889,8 +917,11 @@ foreign class CTerm {
   foreign static music=(b)
   foreign static started
   foreign static skypix
-  foreign static logMode
-  foreign static logPaused
+  // Save the cterm area (status bar excluded) as IBM-CGA / BinaryText
+  // to the given write-consent File, optionally with a SAUCE block.
+  // Consumes the File's write consent.  Returns null on success or a
+  // FileError on write failure.
+  foreign static saveScreenshot(file, withSauce)
   foreign static atasciiInverse
   foreign static ooiiMode
   foreign static mouseMode
@@ -1299,13 +1330,22 @@ class Host {
   // ALLOWENTRY / OVERPROMPT / CREATPROMPT cannot be combined with
   // multi-select (filepick rejects those flags).
   foreign static pickFiles(initialDir, mask, opts)
+  // Save-mode picker.  Wraps uifc filepick with ALLOWENTRY +
+  // OVERPROMPT — user can pick an existing file (overwrite-prompted)
+  // or type a new filename.  Returns a write-consent File whose
+  // .open() succeeds exactly once (with `wbx` for new paths, `wb`
+  // when overwrite was confirmed); the File becomes inert after
+  // close.  Returns null on cancel.  See Wren.adoc on consent.
+  foreign static pickSavePath(initialDir, mask)
   // Re-open a File from an opaque token previously returned by
   // pickFile / pickFiles via the .token getter.  Returns null when
   // the token's HMAC doesn't verify (signing key rotated / corrupt
   // token), or when the file no longer exists or its content has
   // changed since the user consented (SHA-1 mismatch).  This is
   // the only path by which Wren can construct a File foreign for a
-  // path outside the sandboxed Cache / Download roots.
+  // path outside the sandboxed Cache / Download roots.  Write-
+  // consent Files do NOT receive a token (single-shot doesn't
+  // replay across sessions).
   foreign static openLocalFile(token)
   // Status-bar transfer-indicator arrows.  Generic — any Wren
   // script that knows it's transferring something can light them

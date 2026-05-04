@@ -8,10 +8,11 @@
 // from any later script — the new handler runs first and consumes
 // the key, leaving the default a no-op.
 
-import "syncterm" for Hook, Key, CTerm, Host, Input, Screen
+import "syncterm" for Hook, Key, CTerm, Conn, Host, Input, Screen
 import "ui_app"   for App
 import "ui_pane"  for Pane
 import "ui_list"  for ListView
+import "capture_menu" for CaptureMenu
 
 // Alt-O — toggle mouse-event reporting.  Mirrors the historical C
 // handler: flip the MS_FLAGS_DISABLED bit on the live mouse_state,
@@ -34,6 +35,29 @@ Hook.onKey(Key.altUp) { |k|
 }
 Hook.onKey(Key.altDown) { |k|
   CTerm.throttleSpeedDown()
+  return true
+}
+
+// Shift-Insert — paste from system clipboard onto the wire.  The
+// foreign primitive does the codepage / bracketed-paste handling
+// the C path used to do directly.
+Hook.onKey(Key.shiftIns) { |k|
+  Conn.paste()
+  return true
+}
+
+// Alt-B — open the scrollback viewer modal.  The foreign primitive
+// handles mouse-event disable/restore around the uifc viewer.
+Hook.onKey(Key.altB) { |k|
+  Conn.scrollback()
+  return true
+}
+
+// Alt-C — open the capture menu (Wren-driven; replaces the
+// historical uifc capture_control dialog).  CaptureMenu spawns a
+// child fiber that drives the modal flow.
+Hook.onKey(Key.altC) { |k|
+  CaptureMenu.run()
   return true
 }
 
