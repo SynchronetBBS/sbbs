@@ -1,70 +1,121 @@
-
-<html>
-
+<!DOCTYPE html>
+<html lang="en">
 <head>
-<meta http-equiv="Content-Type" content="text/html; charset=windows-1252">
-<meta name="GENERATOR" content="Microsoft FrontPage 4.0">
-<meta name="ProgId" content="FrontPage.Editor.Document">
-
-<title>Synchronet BBS Software Documentation</title>
-<meta name="Microsoft Border" content="none, default">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Synchronet - Documentation</title>
+  <link rel="icon" href="//www.synchro.net/favicon.ico">
+  <link rel="stylesheet" href="style.css">
 </head>
+<body>
 
-<body><!--webbot bot="Include" U-Include="_borders/top.htm" TAG="BODY" startspan -->
+<header class="site-header">
+  <div class="header-top">
+    <div class="header-brand">
+      <a href="//www.synchro.net/index.html"><img src="images/synchronet2.png" alt="Synchronet BBS Software" class="site-logo"></a>
+    </div>
+  </div>
+  <nav class="site-nav">
+    <a href="//www.synchro.net/index.html">News</a>
+    <a href="//www.synchro.net/about.html">About</a>
+    <a href="//www.synchro.net/sbbslist.html">BBS List</a>
+    <a href="//www.synchro.net/download.xjs">Download</a>
+    <a href="index.htm" class="active">Docs</a>
+    <a href="//wiki.synchro.net/howto:support">Support</a>
+    <a href="//www.synchro.net/chat.html">Chat</a>
+    <a href="//wiki.synchro.net/faq:index">FAQ</a>
+    <a href="//wiki.synchro.net/resource:index">Resources</a>
+    <a href="//wiki.synchro.net/dev:source">Source</a>
+    <a href="//www.synchro.net/credits.html">Credits</a>
+    <a href="//wiki.synchro.net/history:museum:">Museum</a>
+  </nav>
+</header>
 
-<a href="http://www.synchro.net"><img border="0" src="images/synclogo_fancyred.png" alt="Synchronet BBS - Multinode Bulletin Board Software" width="626" height="86"></a>
+<div class="page-wrapper">
+<div class="content-card">
+<h1 class="page-title">Synchronet &mdash; Documentation</h1>
 
-<hr>
+<p>The current Synchronet documentation lives on the <strong><a href="//wiki.synchro.net/">Synchronet Wiki</a></strong> &mdash; installation, configuration, networking, customization, troubleshooting, and reference material. The pages below cover developer documentation, release notes, and reference material that is still maintained as files in this docs tree.</p>
 
-<!--webbot bot="Include" endspan i-checksum="23126" -->
-
-<h1>Synchronet Documentation Index</h1>
-<h2 align="left">Synchronet Sysop Documentation</h2>
-<blockquote>
-<h4 align="left"><a href="http://wiki.synchro.net">Synchronet Wiki</a> - Newest documentation for Synchronet System Operators</h4>
-<h4 align="left"><a href="sysop.html">Synchronet Sysop
-Documentation</a> - Old Manual for Synchronet System Operators (not being updated)</h4>
-<h4 align="left"><a href="baja.html">Baja
-Documentation</a> - The Synchronet Command Shell and Loadable Module Compiler</h4>
-<h4 align="left"><a href="js.html">JavaScript
-Documentation</a> - The JavaScript Language and Synchronet Object Model</h4>
-
-<p align="left">Miscellaneous Synchronet documents (yet to be migrated to the wiki.synchro.net) and links:</p>
+<h3>Sysop &amp; Operations (Wiki)</h3>
 <ul>
-  <li>
-    <p align="left"><a href="platforms.html">Synchronet Supported Platforms (version/platform matrix)</a></li>
-  <li>
-    <p align="left"><a href="ircd.txt" >Synchronet IRC Daemon (Server)</a></li>
-  <li>
-    <p align="left"><a href="https://git.synchro.net/gitpushlog.ssjs">Log of on-going Synchronet Developments</a></li>
-  <li>
-    <p align="left"><a href="kermit.txt">Kermit File Transfer Protocol Configuration Examples</a></li>
-  <li>
-    <p align="left"><a href="credits.html">Credits to Synchronet Contributors</a></li>
-
-
+  <li><a href="//wiki.synchro.net/install:">Installation</a> &mdash; Linux, Windows, *BSD, Docker</li>
+  <li><a href="//wiki.synchro.net/config:">Configuration</a> &mdash; SCFG and INI files</li>
+  <li><a href="//wiki.synchro.net/access:">Access Control</a> &mdash; security levels, flags, exemptions, ARS</li>
+  <li><a href="//wiki.synchro.net/network:">Networking</a> &mdash; FidoNet, QWKnet, DOVE-Net</li>
+  <li><a href="//wiki.synchro.net/util:">Utilities</a> &mdash; SCFG, smbutil, chksmb, slog, and more</li>
+  <li><a href="//wiki.synchro.net/howto:">How-To Guides</a></li>
+  <li><a href="//wiki.synchro.net/faq:">Frequently Asked Questions</a> &mdash; including <a href="//wiki.synchro.net/faq:tcpip">TCP/IP</a></li>
+  <li><a href="//wiki.synchro.net/howto:support">Support</a></li>
+  <li><a href="//wiki.synchro.net/ref:glossary">Glossary</a></li>
 </ul>
-</blockquote>
-<h2 align="left">Synchronet User Documentation</h2>
-<blockquote>
-<h4 align="left"><a href="user.html">Synchronet User
-Documentation</a> - How to use the Default Synchronet (Classic) Command Shell</h4>
 
-<h4 align="left"><a href="http://www.synchro.net/sbbslist.html">Daily Updated
-Online Synchronet BBS List</a>&nbsp; - Worldwide Listing of Synchronet
-Systems</h4>
+<h3>Developer Documentation</h3>
+<ul>
+  <li><a href="baja.html">Baja</a> &mdash; the Synchronet Command Shell and Loadable Module Compiler</li>
+  <li><a href="//wiki.synchro.net/custom:javascript">JavaScript</a> &mdash; the Synchronet JavaScript environment</li>
+  <li><a href="jsobjs.html">JavaScript Object Model</a> &mdash; reference for Synchronet&#39;s JS objects, methods, and properties</li>
+  <li><a href="//wiki.synchro.net/ref:smb">Synchronet Message Base (SMB)</a> &mdash; on-disk format <small>(see also local <a href="smb.html">smb.html</a>)</small></li>
+  <li><a href="baja2new.txt">Baja v2 changes</a></li>
+  <li><a href="//wiki.synchro.net/dev:source">Source Code</a> &mdash; building from source, repository structure</li>
+  <li><a href="//git.synchro.net/gitpushlog.ssjs">Git Commit Log</a></li>
+</ul>
 
-</blockquote>
+<h3>Release Notes</h3>
+<ul>
+  <li><a href="v321_new.txt">v3.21</a> (current)</li>
+  <li><a href="v320_new.txt">v3.20</a></li>
+  <li><a href="v319_new.txt">v3.19</a> &middot;
+      <a href="v318_new.txt">v3.18</a> &middot;
+      <a href="v317_new.txt">v3.17</a></li>
+  <li><a href="v314_new.html">v3.14</a> &middot;
+      <a href="v313_new.html">v3.13</a> &middot;
+      <a href="v312_new.html">v3.12</a> &middot;
+      <a href="v311_new.html">v3.11</a> &middot;
+      <a href="v310_new.txt">v3.10</a> &middot;
+      <a href="v300_new.txt">v3.00</a></li>
+  <li><a href="//wiki.synchro.net/history:versions">Version Number History</a> &mdash; release dates and change summaries (formerly <code>versions.hst</code>)</li>
+  <li><a href="//wiki.synchro.net/history:v2development">v2 Development History</a> &mdash; detailed v2 change log (formerly <code>sbbs.hst</code>)</li>
+</ul>
 
-<!--webbot bot="Include" U-Include="_borders/bottom.htm" TAG="BODY" startspan -->
+<h3>Servers, Services &amp; Add-Ons</h3>
+<ul>
+  <li><a href="//wiki.synchro.net/service:ircd">IRC Daemon</a></li>
+  <li><a href="//wiki.synchro.net/util:sexpots">SEXPOTS</a> &mdash; Synchronet External Plain Old Telephone System (TCP/IP &harr; modem)</li>
+  <li><a href="//wiki.synchro.net/util:sexyz">SEXYZ</a> &mdash; Xmodem/Ymodem/Zmodem protocol driver</li>
+  <li><a href="kermit.txt">Kermit File Transfer Protocol</a> configuration</li>
+  <li><a href="//wiki.synchro.net/ref:qwknet">QWK Networking</a></li>
+  <li><a href="//wiki.synchro.net/network:dove-net">DOVE-Net</a> &mdash; Synchronet&#39;s native message network</li>
+  <li><a href="//wiki.synchro.net/module:fseditor">FSEditor</a> &mdash; full-screen message editor</li>
+  <li><a href="//wiki.synchro.net/module:slyedit">SlyEdit</a></li>
+  <li><a href="//wiki.synchro.net/howto:dosemu">Linux DOSemu</a> &middot; <a href="//wiki.synchro.net/howto:dosemu2">DOSemu2</a></li>
+</ul>
 
-<hr>
-<p align="right"><font size="1">
-$Id: index.htm,v 1.13 2014/12/11 11:02:24 rswindell Exp $</font>
-</p>
+<h3>User Documentation</h3>
+<ul>
+  <li><a href="user.html">User Manual</a> &mdash; how to use the default (Classic) command shell</li>
+  <li><a href="//www.synchro.net/sbbslist.html">Public BBS List</a> &mdash; daily-updated directory of Synchronet BBSes</li>
+</ul>
 
-<!--webbot bot="Include" endspan i-checksum="55766" -->
+<h3>Reference</h3>
+<ul>
+  <li><a href="platforms.html">Supported Platforms</a> &mdash; version/platform matrix</li>
+  <li><a href="copyright.html">Copyright Notice</a> &middot;
+      <a href="gpl.txt">GPL</a> &middot;
+      <a href="lgpl.txt">LGPL</a></li>
+  <li><a href="credits.html">Contributors</a></li>
+</ul>
+
+</div><!-- content-card -->
+</div><!-- page-wrapper -->
+
+<footer class="site-footer">
+  <div class="footer-inner">
+    <div class="footer-right">
+      Copyright &copy; <a href="//www.synchro.net/author.html">Rob Swindell</a>
+    </div>
+  </div>
+</footer>
 
 </body>
-
 </html>

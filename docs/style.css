@@ -1,0 +1,395 @@
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+a { text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+body {
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 15px;
+  line-height: 1.65;
+  color: #1e2633;
+  background: #edf0f5;
+}
+
+a { color: #1a56db; }
+a:hover { text-decoration: underline; }
+
+/* ---- Header ---- */
+.site-header { background: #d6e5f3; }
+
+.header-brand {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 20px 24px 12px;
+}
+
+.site-logo { max-width: 540px; height: auto; display: block; }
+
+.header-info {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-top: 12px;
+  flex-wrap: wrap;
+  width: 100%;
+  max-width: 540px;
+}
+
+.release-badge {
+  margin-left: auto;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #2a4a6a;
+  text-align: right;
+  line-height: 1.6;
+}
+
+.release-badge .version { color: #b91c1c; font-weight: 700; }
+
+.site-nav {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  padding: 0 12px;
+  border-top: 1px solid rgba(0,0,0,0.10);
+}
+
+.site-nav a {
+  color: #1e3f62;
+  text-decoration: none;
+  padding: 8px 11px;
+  font-size: 13.5px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  border-bottom: 2px solid transparent;
+  transition: color 0.12s, border-color 0.12s;
+  white-space: nowrap;
+}
+
+.site-nav a:hover,
+.site-nav a.active {
+  color: #0a2540;
+  border-bottom-color: #1a56db;
+  text-decoration: none;
+}
+
+/* ---- Page layout ---- */
+.page-wrapper {
+  max-width: 880px;
+  margin: 0 auto;
+  padding: 28px 16px 48px;
+}
+
+.content-card {
+  background: #fff;
+  border-radius: 6px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.10);
+  padding: 28px 34px;
+}
+
+.page-title {
+  font-size: 17px;
+  font-style: italic;
+  color: #5b7491;
+  font-weight: 700;
+  margin-bottom: 18px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid #e4e9f0;
+}
+
+/* ---- News body (wraps legacy <hr>-separated content) ---- */
+.news-body hr {
+  border: none;
+  border-top: 1px solid #e4e9f0;
+  margin: 20px 0;
+}
+
+/* ---- New-style news articles ---- */
+.news-item {
+  padding-bottom: 20px;
+  margin-bottom: 20px;
+  border-bottom: 1px solid #e4e9f0;
+}
+.news-item:last-child {
+  padding-bottom: 0;
+  margin-bottom: 0;
+  border-bottom: none;
+}
+.news-item h2 {
+  font-size: 14px;
+  font-weight: 700;
+  color: #1a56db;
+  margin-bottom: 7px;
+}
+.news-item p,
+.news-item ul,
+.news-item ol {
+  font-size: 14px;
+  margin-bottom: 6px;
+}
+.news-item ul,
+.news-item ol { margin-left: 18px; }
+
+/* ---- Lists (restore indentation removed by CSS reset) ---- */
+.content-card ul,
+.content-card ol { padding-left: 1.5em; }
+
+/* ---- Overview / general content ---- */
+.content p { margin-bottom: 12px; font-size: 14px; }
+.content h3 {
+  font-size: 15px;
+  font-weight: 700;
+  color: #1e3f62;
+  margin: 22px 0 8px;
+  padding-bottom: 5px;
+  border-bottom: 1px solid #e4e9f0;
+}
+.content h3:first-child { margin-top: 0; }
+
+/* ---- News timeline (JS-enabled; no-JS sees the full list unchanged) ---- */
+
+/* Hide all items; JS adds .active to the one being shown */
+.js-news-ready .news-body .news-item { display: none; }
+.js-news-ready .news-body .news-item.active { display: block; }
+
+/* Style legacy date-paragraph headers to match modern <h2> */
+.news-item-header { margin-bottom: 7px; }
+.news-item-header p {
+  font-size: 14px !important;
+  font-weight: 700;
+  margin-bottom: 4px !important;
+  color: #1a56db;
+}
+.news-item-header font { color: inherit; }
+
+/* Timeline bar */
+.news-timeline {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 0 12px;
+  margin-bottom: 18px;
+  border-bottom: 2px solid #e4e9f0;
+  position: sticky;
+  top: 0;
+  background: #fff;
+  z-index: 10;
+}
+
+.timeline-nav {
+  flex-shrink: 0;
+  background: none;
+  border: 1px solid #c8d6e8;
+  border-radius: 4px;
+  color: #5b7491;
+  cursor: pointer;
+  font-size: 13px;
+  line-height: 1;
+  padding: 5px 9px;
+  transition: background 0.15s, color 0.15s;
+}
+.timeline-nav:hover:not(:disabled) { background: #edf3fc; color: #1a56db; }
+.timeline-nav:disabled { opacity: 0.35; cursor: default; }
+
+.timeline-track {
+  flex: 1;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+}
+.timeline-track::-webkit-scrollbar { display: none; }
+
+.timeline-chips {
+  display: flex;
+  gap: 5px;
+  padding: 2px 1px;
+}
+
+.timeline-chip {
+  flex-shrink: 0;
+  background: #f0f4f9;
+  border: 1px solid #d5e0ec;
+  border-radius: 12px;
+  color: #5b7491;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 11.5px;
+  padding: 3px 9px;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+  white-space: nowrap;
+}
+.timeline-chip:hover { background: #dbeafe; color: #1a56db; border-color: #93c5fd; }
+.timeline-chip.active {
+  background: #1a56db;
+  border-color: #1a56db;
+  color: #fff;
+  font-weight: 700;
+}
+
+/* ---- CRT Easter Egg (about.html) ---- */
+
+/* Wrapper replaces the inline float/margin/max-width on the <img> */
+.crt-wrapper {
+  float: right;
+  margin: 0 0 16px 24px;
+  max-width: 280px;
+  position: relative;
+  line-height: 0;        /* eliminate gap below inline image */
+  outline: none;
+  cursor: default;
+}
+.crt-base { width: 100%; height: auto; display: block; }
+
+/*
+ * Overlay: positioned over the dark screen area of logo.jpg (631×526 px).
+ * Percentages are relative to the wrapper, which scales with the image.
+ * Screen bounds ≈ left 11 %, top 8 %, right 89 %, bottom 82 %.
+ */
+.crt-overlay {
+  position: absolute;
+  left:   11%;
+  top:    11%;
+  width:  78%;
+  height: 68%;
+  border-radius: 3% / 4%;   /* mimic CRT screen curvature */
+  overflow: hidden;
+  opacity: 0;
+  transition: opacity 0.35s ease;
+}
+.crt-overlay.visible { opacity: 1; }
+
+/* Terminal display */
+.crt-screen {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: #000;
+}
+/* Screenshot images — contain so no edge is cropped */
+.crt-screen .crt-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: center 6px;
+  display: block;
+  background: #000;
+}
+
+/* Suppress scanlines when showing a bitmap screenshot */
+.crt-overlay.has-image::after { display: none; }
+
+.crt-screen pre {
+  margin: 0;
+  padding: 0;
+  color: #a8a8a8;
+  background: #000;
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 4px;
+  line-height: 1.25;
+  white-space: pre;
+  overflow: hidden;
+  cursor: default;
+}
+
+/* Phosphor scanline illusion */
+.crt-overlay::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    to bottom,
+    transparent      0,
+    transparent      3px,
+    rgba(0,0,0,0.13) 3px,
+    rgba(0,0,0,0.13) 4px
+  );
+  pointer-events: none;
+  z-index: 2;
+}
+
+/* BBS name / counter bar at the bottom of the screen */
+.crt-label {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: rgba(0,0,0,0.72);
+  color: #00e000;
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 6px;
+  line-height: 1.5;
+  padding: 1px 3px;
+  text-align: center;
+  z-index: 3;
+}
+
+/*
+ * Scroll hint — same screen position as the overlay, shown on hover
+ * only before the user has interacted (wrapper lacks .active class).
+ */
+.crt-hint {
+  position: absolute;
+  left:   11%;
+  top:    11%;
+  width:  78%;
+  height: 68%;
+  border-radius: 3% / 4%;
+  background: rgba(0,0,0,0.60);
+  color: #00e000;
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 7px;
+  line-height: 1.7;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  opacity: 0;
+  transition: opacity 0.25s ease;
+  pointer-events: none;
+  z-index: 4;
+}
+.crt-wrapper:not(.active):hover .crt-hint { opacity: 1; }
+
+/* ---- Footer ---- */
+.site-footer {
+  background: #d6e5f3;
+  color: #2a4a6a;
+  padding: 18px 24px;
+}
+
+.footer-inner {
+  max-width: 880px;
+  margin: 0 auto;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 14px;
+}
+
+.social-links { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.social-links a img {
+  height: 24px;
+  width: auto;
+  opacity: 0.85;
+  transition: opacity 0.12s;
+  vertical-align: middle;
+}
+.social-links a:hover img { opacity: 1; }
+.social-links img[alt="GitLab"] { height: 36px; margin: 0 -8px; }
+
+.footer-right {
+  margin-left: auto;
+  font-size: 12.5px;
+  text-align: right;
+  line-height: 1.6;
+}
+.footer-right .version { color: #b91c1c; font-weight: 700; }
+
+@media (max-width: 640px) {
+  .site-logo { max-width: 100%; }
+  .header-info { max-width: 100%; }
+  .content-card { padding: 18px 14px; }
+  .release-badge { margin-left: 0; text-align: left; }
+  .footer-right { margin-left: 0; text-align: left; }
+}
