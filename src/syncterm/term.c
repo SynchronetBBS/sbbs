@@ -778,6 +778,33 @@ dump(BYTE *buf, int len)
 /* Zmodem Stuff */
 int log_level = LOG_INFO;
 
+/* Run the owner-thread Wren machinery the main doterm() loop would
+ * normally drive but can't while an inline transfer (zmodem, xmodem,
+ * ymodem) has captured the loop.  Drains SFTP completions, fires due
+ * timers, and dispatches Hook.every callbacks so the SFTP queue
+ * keeps moving and time-driven script logic stays alive.  Skipped:
+ *   - wren_host_compact: bookkeeping; the next post-transfer outer
+ *     loop tick reclaims any unregistered hook entries.
+ *   - onMatch / onInput: the wire stream is feeding the transfer
+ *     library, not cterm, so terminal-data hooks have nothing to
+ *     fire on here.
+ * Internally rate-limited (~50 ms), so per-byte callers like
+ * recv_bytes can call it freely. */
+static void
+inline_transfer_pump_wren_(void)
+{
+	static long double last_pump = 0;
+	long double         now      = xp_timer();
+	if (now - last_pump < 0.05L)
+		return;
+	last_pump = now;
+	if (!wren_host_active())
+		return;
+	wren_result_drain();
+	wren_bind_sweep_pending_timers();
+	wren_host_dispatch_timer();
+}
+
 struct zmodem_cbdata {
 	zmodem_t       *zm;
 	struct bbslist *bbs;
@@ -793,8 +820,8 @@ zmodem_check_abort(void *vp)
 {
 	struct zmodem_cbdata *zcb = (struct zmodem_cbdata *)vp;
 	zmodem_t             *zm = zcb->zm;
-	static time_t         last_check = 0;
-	int64_t               now = xp_fast_timer64();
+	static long double    last_kb_check = 0;
+	long double           now = xp_timer();
 	int                   key;
 
 	if (zm == NULL)
@@ -804,31 +831,46 @@ zmodem_check_abort(void *vp)
 		zm->local_abort = true;
 		return true;
 	}
-	if (last_check != now) {
-		last_check = now;
-		while (kbhit()) {
-			switch ((key = getch())) {
-				case ESC:
-				case CTRL_C:
-				case CTRL_X:
-					zm->cancelled = true;
-					zm->local_abort = true;
-					break;
-				case 0:
-				case 0xe0:
-					key |= (getch() << 8);
-					if (key == CIO_KEY_MOUSE)
-						getmouse(NULL);
-					if (key == CIO_KEY_QUIT) {
-						check_exit(false);
-						zm->cancelled = true;
-						zm->local_abort = true;
-					}
-					break;
-			}
-			if (zm->cancelled)
+	/* Pump owner-thread Wren machinery — SFTP queue, timers, etc.
+	 * — that would otherwise stall while doterm is captured. */
+	inline_transfer_pump_wren_();
+	/* Keyboard / mouse poll throttled to ~50 ms — matches the
+	 * Wren-pump cadence and the doterm outer-loop responsiveness
+	 * a normal interactive session sees. */
+	if (now - last_kb_check < 0.05L)
+		return zm->cancelled;
+	last_kb_check = now;
+	while (kbhit()) {
+		key = getch();
+		if (key == 0 || key == 0xe0)
+			key |= (getch() << 8);
+		if (key == CIO_KEY_MOUSE) {
+			struct mouse_event mev;
+			getmouse(&mev);
+			wren_host_dispatch_mouse(&mev);
+			continue;
+		}
+		/* Wren first — gives any active App / claim a chance to
+		 * intercept (e.g. ESC closing the SFTP queue App layered
+		 * over the transfer screen).  If nothing consumes the
+		 * key, fall through to the transfer-cancel handling. */
+		if (wren_host_dispatch_key(key))
+			continue;
+		switch (key) {
+			case ESC:
+			case CTRL_C:
+			case CTRL_X:
+				zm->cancelled = true;
+				zm->local_abort = true;
+				break;
+			case CIO_KEY_QUIT:
+				check_exit(false);
+				zm->cancelled = true;
+				zm->local_abort = true;
 				break;
 		}
+		if (zm->cancelled)
+			break;
 	}
 	return zm->cancelled;
 }
@@ -1112,6 +1154,12 @@ wren_filter_input(const BYTE *in, unsigned in_len, unsigned *in_pos,
 static void
 recv_bytes(unsigned timeout /* Milliseconds */)
 {
+	/* Inline transfers route every byte through here, so this is a
+	 * convenient pulse-point for the Wren-pump that keeps the SFTP
+	 * queue and timers alive while doterm is hijacked.  The pump
+	 * is rate-limited internally (~50 ms), so calling it per-byte
+	 * is cheap.  No-op when no Wren VM is loaded. */
+	inline_transfer_pump_wren_();
 	if (recv_byte_buffer_len > 0)
 		return;
 
@@ -2597,42 +2645,47 @@ ulong block_num;   /* Block number                                      */
 static BOOL
 xmodem_check_abort(void *vp)
 {
-	xmodem_t     *xm = (xmodem_t *)vp;
-	static uint64_t last_check = 0;
-	uint64_t      now = xp_fast_timer64();
-	int           key;
+	xmodem_t          *xm = (xmodem_t *)vp;
+	static long double last_kb_check = 0;
+	long double        now = xp_timer();
+	int                key;
 
 	if (xm == NULL)
 		return false;
-
 	if (quitting) {
 		xm->cancelled = true;
 		return true;
 	}
-
-	if (last_check != now) {
-		last_check = now;
-		while (kbhit()) {
-			switch ((key = getch())) {
-				case ESC:
-				case CTRL_C:
-				case CTRL_X:
-					xm->cancelled = true;
-					break;
-				case 0:
-				case 0xe0:
-					key |= (getch() << 8);
-					if (key == CIO_KEY_MOUSE)
-						getmouse(NULL);
-					if (key == CIO_KEY_QUIT) {
-						check_exit(false);
-						xm->cancelled = true;
-					}
-					break;
-			}
-			if (xm->cancelled)
+	/* Same shape as zmodem_check_abort — see comments there. */
+	inline_transfer_pump_wren_();
+	if (now - last_kb_check < 0.05L)
+		return xm->cancelled;
+	last_kb_check = now;
+	while (kbhit()) {
+		key = getch();
+		if (key == 0 || key == 0xe0)
+			key |= (getch() << 8);
+		if (key == CIO_KEY_MOUSE) {
+			struct mouse_event mev;
+			getmouse(&mev);
+			wren_host_dispatch_mouse(&mev);
+			continue;
+		}
+		if (wren_host_dispatch_key(key))
+			continue;
+		switch (key) {
+			case ESC:
+			case CTRL_C:
+			case CTRL_X:
+				xm->cancelled = true;
+				break;
+			case CIO_KEY_QUIT:
+				check_exit(false);
+				xm->cancelled = true;
 				break;
 		}
+		if (xm->cancelled)
+			break;
 	}
 	return xm->cancelled;
 }

@@ -79,6 +79,33 @@ hostkey_is_weak(void)
 	return false;
 }
 
+/*
+ * SO_SNDBUF mode switch.  Called from wren_bind_conn.c when the
+ * Wren-side CTerm.sftpActive flag transitions, so the kernel send
+ * buffer is sized for the current workload:
+ *   - SFTP active  → 64 KiB: caps the worst-case keystroke-behind-
+ *     SFTP wait at ~16 ms on a 30 Mbps link, ~26 ms on 20 Mbps.
+ *   - SFTP idle    → 1 MiB:  fits inline-transfer (zmodem/ymodem-G)
+ *     BDP on a 500 Mbps × 16 ms link (and lower at any other RTT
+ *     of practical interest).
+ * No-op while ssh_sock is INVALID_SOCKET (post-teardown / pre-connect);
+ * the connect path establishes the 1 MiB baseline directly.
+ *
+ * Called only on actual transitions (the caller guards same-value
+ * sets), so tight queue runs that keep sftpActive=true throughout
+ * don't flap the kernel buffer between back-to-back jobs.
+ */
+void
+ssh_set_sftp_buffer_mode(bool sftp_active)
+{
+	if (ssh_sock == INVALID_SOCKET)
+		return;
+	int sndbuf = sftp_active ? (64 * 1024) : (1024 * 1024);
+	if (setsockopt(ssh_sock, SOL_SOCKET, SO_SNDBUF, (char *)&sndbuf, sizeof(sndbuf)))
+		fprintf(stderr, "%s:%d: Error %d calling setsockopt(SO_SNDBUF)\n",
+		    __FILE__, __LINE__, errno);
+}
+
 /* -------------------------------------------------------- transport I/O */
 
 /*
@@ -1047,16 +1074,18 @@ ssh_connect(struct bbslist *bbs)
 		return -1;
 	if (setsockopt(ssh_sock, IPPROTO_TCP, TCP_NODELAY, (char *)&off, sizeof(off)))
 		fprintf(stderr, "%s:%d: Error %d calling setsockopt()\n", __FILE__, __LINE__, errno);
-	/* Cap kernel TCP send buffer at 64 KB so a long SFTP transfer
-	 * can't queue enough bytes ahead of an interactive keystroke to
-	 * blow the 75 ms responsiveness budget.  Chosen to keep
-	 * worst-case wire-drain time under ~26 ms on a 20 Mbps link
-	 * (the keystroke waits behind whatever's already committed to
-	 * the kernel buffer).  Receive buffer is left at the kernel's
-	 * auto-tuned default — downloads are response-bound, not
-	 * outgoing-bound, so SO_RCVBUF wants the BDP-friendly large
-	 * default. */
-	int sndbuf = 64 * 1024;
+	/* Pin SO_SNDBUF to a known value to get consistent behaviour
+	 * across platforms (Windows in particular defaults to ~8 KiB
+	 * and only auto-tunes upward in some configurations).  The 1
+	 * MiB baseline fits the BDP of a 500 Mbps × ~16 ms link with
+	 * headroom; ssh_set_sftp_buffer_mode() temporarily drops it to
+	 * 64 KiB while CTerm.sftpActive is set, so a saturated SFTP
+	 * transfer can't queue more than ~16 ms of keystroke-blocking
+	 * data on a 30 Mbps wire.  Receive buffer is left at the
+	 * kernel's auto-tuned default — downloads are response-bound,
+	 * not outgoing-bound, so SO_RCVBUF wants the BDP-friendly
+	 * large default. */
+	int sndbuf = 1024 * 1024;
 	if (setsockopt(ssh_sock, SOL_SOCKET, SO_SNDBUF, (char *)&sndbuf, sizeof(sndbuf)))
 		fprintf(stderr, "%s:%d: Error %d calling setsockopt(SO_SNDBUF)\n",
 		    __FILE__, __LINE__, errno);

@@ -16,6 +16,15 @@ void ssh_send_window_change(int text_cols, int text_rows,
 void ssh_input_thread(void *args);
 void ssh_output_thread(void *args);
 
+/* Toggle the kernel SO_SNDBUF cap on the SSH socket.  active=true
+ * caps at 64 KiB so a saturating SFTP transfer can't queue more
+ * than one keystroke-budget's worth of data ahead of an interactive
+ * keystroke; active=false restores the 1 MiB baseline so inline
+ * transfers (zmodem/ymodem-G) get full BDP headroom.  No-op when no
+ * SSH socket is open.  Caller should invoke only on flag
+ * transitions to avoid flapping. */
+void ssh_set_sftp_buffer_mode(bool active);
+
 extern SOCKET ssh_sock;
 
 #ifndef WITHOUT_DEUCESSH

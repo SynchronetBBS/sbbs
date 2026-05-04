@@ -20,6 +20,9 @@
 #include "genwrap.h"   /* xp_fast_timer64 */
 #include "syncterm.h"  /* safe_mode */
 #include "term.h"      /* force_status_update, term, struct mouse_state, setup_mouse_events */
+#ifndef WITHOUT_DEUCESSH
+#include "ssh.h"       /* ssh_set_sftp_buffer_mode */
+#endif
 
 #include <stdbool.h>
 #include <stdint.h>
@@ -389,8 +392,20 @@ fn_CTerm_sftpActive_get(WrenVM *vm)
 void
 fn_CTerm_sftpActive_set(WrenVM *vm)
 {
-	if (wrenGetSlotType(vm, 1) == WREN_TYPE_BOOL)
-		sftp_active_flag = wrenGetSlotBool(vm, 1);
+	if (wrenGetSlotType(vm, 1) != WREN_TYPE_BOOL)
+		return;
+	bool new_val = wrenGetSlotBool(vm, 1);
+	if (new_val == sftp_active_flag)
+		return;
+	sftp_active_flag = new_val;
+	/* Adjust the SSH socket's SO_SNDBUF cap to fit the workload
+	 * shift — see ssh_set_sftp_buffer_mode for the rationale.
+	 * Same-value sets short-circuited above so a tight queue run
+	 * (job1 done → job2 starts immediately, sftpActive stays true
+	 * throughout) doesn't flap the kernel buffer. */
+#ifndef WITHOUT_DEUCESSH
+	ssh_set_sftp_buffer_mode(new_val);
+#endif
 }
 
 bool
