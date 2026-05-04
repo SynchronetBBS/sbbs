@@ -43,11 +43,18 @@ Use `-S . -B build` to prevent cmake from discovering the parent
 |----------|-----------|
 | Key Exchange | `mlkem768x25519-sha256`, `sntrup761x25519-sha512`, `curve25519-sha256`, `diffie-hellman-group-exchange-sha256` |
 | Host Key | `ssh-ed25519`, `rsa-sha2-256` |
-| Encryption | `aes256-ctr`, `none` |
+| Encryption | `aes256-ctr`, `aes128-cbc`*, `none` |
 | MAC | `hmac-sha2-256`, `none` |
 | Compression | `none` |
 
 All algorithms support both client and server side.
+
+\* `aes128-cbc` is provided **only for client compatibility with servers
+that offer no other cipher** (notably Mystic BBS).  CBC over SSH is
+weakened by predictable-plaintext attacks (CVE-2008-5161); do not
+register it on servers, and on clients pair it with the per-session
+filter API below so it isn't offered on connections that don't need
+it.
 
 ## Quick Start — Client
 
@@ -671,6 +678,59 @@ calling the corresponding `dssh_transport_register_*()` function.
 - Names must be 1–64 printable ASCII characters (no spaces, no control chars).
 - The `next` pointer must be NULL (the library manages the linked list).
 - Registration order determines negotiation preference.
+
+### Per-Session Algorithm Filters
+
+The global registry is "register every algorithm you might ever need".
+A per-session whitelist constrains a single session to a subset of
+those algorithms (and reorders the preference list) — useful when one
+connection wants different algorithms than another.
+
+```c
+DSSH_PUBLIC int dssh_session_set_kex_filter(dssh_session sess,
+    const char * const *names, size_t count);
+DSSH_PUBLIC int dssh_session_set_key_algo_filter(dssh_session sess,
+    const char * const *names, size_t count);
+DSSH_PUBLIC int dssh_session_set_enc_filter(dssh_session sess,
+    const char * const *names, size_t count);
+DSSH_PUBLIC int dssh_session_set_mac_filter(dssh_session sess,
+    const char * const *names, size_t count);
+DSSH_PUBLIC int dssh_session_set_comp_filter(dssh_session sess,
+    const char * const *names, size_t count);
+```
+
+- Filter order = negotiation preference order.
+- `count == 0` or `names == NULL` clears any prior filter (= use
+  every registered algorithm in registration order).
+- Names not registered are silently skipped — no error.
+- A name containing `,` returns `DSSH_ERROR_INVALID`.
+- Must be called before `dssh_session_start()`; returns
+  `DSSH_ERROR_TOOLATE` afterwards.
+- Caller-owned input: the library copies the strings; the caller's
+  array and strings need not outlive the call.
+
+Example — a client that registers both `aes256-ctr` and `aes128-cbc`
+globally, but only offers `aes128-cbc` on a connection to a Mystic
+BBS server:
+
+```c
+/* Once at startup */
+dssh_register_aes256_ctr();
+dssh_register_aes128_cbc();
+
+/* Per connection */
+dssh_session sess = dssh_session_init(true, 0);
+
+if (connecting_to_mystic) {
+    const char *enc[] = { "aes128-cbc" };
+    dssh_session_set_enc_filter(sess, enc, 1);
+} else {
+    const char *enc[] = { "aes256-ctr" };
+    dssh_session_set_enc_filter(sess, enc, 1);
+}
+
+/* ... set callbacks, start handshake ... */
+```
 
 ## Custom Algorithm Modules
 

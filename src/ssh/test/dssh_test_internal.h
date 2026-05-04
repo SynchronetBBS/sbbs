@@ -42,18 +42,27 @@ int derive_key(const char *hash_name,
  * from client_list (preference order) that also appears in server_list
  * and is registered in the linked list starting at head.
  * name_offset is the byte offset of the name[] flex member in the struct.
+ * filter is an optional CSV whitelist (NULL = no filter).
  * Returns node pointer or NULL.
  */
 void *negotiate_algo(const char *client_list,
-    const char *server_list, void *head, size_t name_offset);
+    const char *server_list, void *head, size_t name_offset, const char *filter);
 
 /*
  * Build a comma-separated name-list from a linked list of algorithm
  * entries.  head is the first node, name_offset is the offset of
- * the name[] flex member.  Returns the length written.
+ * the name[] flex member.  filter is an optional CSV whitelist
+ * (NULL = registration-order, all entries).  Returns the length
+ * written.
  */
 size_t build_namelist(void *head, size_t name_offset,
-    char *buf, size_t bufsz);
+    char *buf, size_t bufsz, const char *filter);
+
+/*
+ * Membership test: is `name` (length nlen) in the comma-separated
+ * filter string?  Returns false when filter is NULL.
+ */
+bool name_in_filter(const char *name, size_t nlen, const char *filter);
 
 /*
  * Global config -- DSSH_TESTABLE in ssh-trans.c.

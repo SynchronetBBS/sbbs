@@ -296,6 +296,14 @@ struct dssh_session_s {
 	void *banner_cbdata;
 	char *pending_banner;
 	char *pending_banner_lang;
+	/* Per-session algorithm whitelist filters (NULL = use all
+	 * registered).  CSV form, parsed with name_in_filter().
+	 * Filter order is negotiation preference order. */
+	char *kex_filter;
+	char *key_algo_filter;
+	char *enc_filter;
+	char *mac_filter;
+	char *comp_filter;
 	int   (*global_request_cb)(const uint8_t *name, size_t name_len, bool want_reply, const uint8_t *data,
             size_t data_len, void *cbdata);
 	void *global_request_cbdata;

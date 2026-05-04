@@ -205,3 +205,148 @@ dssh_session_set_timeout(struct dssh_session_s *sess, int timeout_ms)
 	sess->timeout_ms = timeout_ms;
 	return 0;
 }
+
+/*
+ * Build a comma-separated CSV from names[count] into a fresh
+ * malloc'd string.  count == 0 or names == NULL produces *out = NULL.
+ * Rejects NULL elements, empty names, and names containing commas
+ * (would corrupt CSV parsing).
+ */
+static int
+build_filter_csv(const char * const *names, size_t count, char **out)
+{
+	*out = NULL;
+	if (names == NULL || count == 0)
+		return 0;
+
+	/* Two passes: validate + measure, then allocate + copy. */
+	size_t total = 0;
+
+	for (size_t i = 0; i < count; i++) {
+		if (names[i] == NULL)
+			return DSSH_ERROR_INVALID;
+		if (strchr(names[i], ',') != NULL)
+			return DSSH_ERROR_INVALID;
+		size_t nlen = strlen(names[i]);
+
+		if (nlen == 0)
+			return DSSH_ERROR_INVALID;
+		/* Reserve nlen + 1 per name for either the comma
+		 * separator (i > 0) or the trailing NUL (last). */
+		if (nlen > SIZE_MAX - 1 - total)
+			return DSSH_ERROR_INVALID;
+		total += nlen + 1;
+	}
+
+	char *buf = malloc(total);
+
+	if (buf == NULL)
+		return DSSH_ERROR_ALLOC;
+
+	size_t pos = 0;
+
+	for (size_t i = 0; i < count; i++) {
+		size_t nlen = strlen(names[i]);
+
+		if (i > 0)
+			buf[pos++] = ',';
+		memcpy(&buf[pos], names[i], nlen);
+		pos += nlen;
+	}
+	buf[pos] = 0;
+
+	*out = buf;
+	return 0;
+}
+
+/*
+ * Per-session algorithm whitelist setters.  Caller-owned input;
+ * the library makes its own copy.  count == 0 or names == NULL
+ * clears any previous filter (= use all registered).  Filter
+ * order is negotiation preference order.  Must be called before
+ * dssh_session_start; returns DSSH_ERROR_TOOLATE otherwise.
+ */
+DSSH_PUBLIC int
+dssh_session_set_kex_filter(struct dssh_session_s *sess, const char * const *names, size_t count)
+{
+	if (sess == NULL)
+		return DSSH_ERROR_INVALID;
+	if (sess->demux_running)
+		return DSSH_ERROR_TOOLATE;
+	char *new_csv = NULL;
+	int   ret     = build_filter_csv(names, count, &new_csv);
+
+	if (ret < 0)
+		return ret;
+	free(sess->kex_filter);
+	sess->kex_filter = new_csv;
+	return 0;
+}
+
+DSSH_PUBLIC int
+dssh_session_set_key_algo_filter(struct dssh_session_s *sess, const char * const *names, size_t count)
+{
+	if (sess == NULL)
+		return DSSH_ERROR_INVALID;
+	if (sess->demux_running)
+		return DSSH_ERROR_TOOLATE;
+	char *new_csv = NULL;
+	int   ret     = build_filter_csv(names, count, &new_csv);
+
+	if (ret < 0)
+		return ret;
+	free(sess->key_algo_filter);
+	sess->key_algo_filter = new_csv;
+	return 0;
+}
+
+DSSH_PUBLIC int
+dssh_session_set_enc_filter(struct dssh_session_s *sess, const char * const *names, size_t count)
+{
+	if (sess == NULL)
+		return DSSH_ERROR_INVALID;
+	if (sess->demux_running)
+		return DSSH_ERROR_TOOLATE;
+	char *new_csv = NULL;
+	int   ret     = build_filter_csv(names, count, &new_csv);
+
+	if (ret < 0)
+		return ret;
+	free(sess->enc_filter);
+	sess->enc_filter = new_csv;
+	return 0;
+}
+
+DSSH_PUBLIC int
+dssh_session_set_mac_filter(struct dssh_session_s *sess, const char * const *names, size_t count)
+{
+	if (sess == NULL)
+		return DSSH_ERROR_INVALID;
+	if (sess->demux_running)
+		return DSSH_ERROR_TOOLATE;
+	char *new_csv = NULL;
+	int   ret     = build_filter_csv(names, count, &new_csv);
+
+	if (ret < 0)
+		return ret;
+	free(sess->mac_filter);
+	sess->mac_filter = new_csv;
+	return 0;
+}
+
+DSSH_PUBLIC int
+dssh_session_set_comp_filter(struct dssh_session_s *sess, const char * const *names, size_t count)
+{
+	if (sess == NULL)
+		return DSSH_ERROR_INVALID;
+	if (sess->demux_running)
+		return DSSH_ERROR_TOOLATE;
+	char *new_csv = NULL;
+	int   ret     = build_filter_csv(names, count, &new_csv);
+
+	if (ret < 0)
+		return ret;
+	free(sess->comp_filter);
+	sess->comp_filter = new_csv;
+	return 0;
+}

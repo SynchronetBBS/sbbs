@@ -242,6 +242,32 @@ DSSH_PUBLIC int dssh_session_set_hostkey_verify_cb(dssh_session sess, dssh_hostk
 DSSH_PUBLIC int dssh_session_set_timeout(dssh_session sess, int timeout_ms);
 
 /*
+ * Per-session algorithm whitelist filters.  Each setter constrains
+ * a single category to the listed names, in the listed order
+ * (filter order becomes negotiation preference order).  count == 0
+ * or names == NULL clears any previous filter on that category,
+ * restoring "use everything registered, in registration order".
+ *
+ * Names not registered globally are silently skipped.  Names
+ * containing commas are rejected with DSSH_ERROR_INVALID.  The
+ * library copies the strings; the caller's array and strings need
+ * not outlive the call.
+ *
+ * Must be called before dssh_session_start(); returns
+ * DSSH_ERROR_TOOLATE after start.
+ */
+DSSH_PUBLIC int dssh_session_set_kex_filter(dssh_session sess,
+    const char * const *names, size_t count);
+DSSH_PUBLIC int dssh_session_set_key_algo_filter(dssh_session sess,
+    const char * const *names, size_t count);
+DSSH_PUBLIC int dssh_session_set_enc_filter(dssh_session sess,
+    const char * const *names, size_t count);
+DSSH_PUBLIC int dssh_session_set_mac_filter(dssh_session sess,
+    const char * const *names, size_t count);
+DSSH_PUBLIC int dssh_session_set_comp_filter(dssh_session sess,
+    const char * const *names, size_t count);
+
+/*
  * Set the SSH version identification strings (RFC 4253 s4.2).
  * Must be called before any session is initialized.
  *

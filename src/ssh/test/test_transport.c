@@ -384,7 +384,7 @@ test_negotiate_first_client_match(void)
 	size_t noff = offsetof(struct test_algo_node, name);
 	void *result = negotiate_algo(
 	    "aes128-ctr,aes256-ctr", "aes256-ctr,aes128-ctr",
-	    &a, noff);
+	    &a, noff, NULL);
 	ASSERT_NOT_NULL(result);
 	/* Client prefers aes128-ctr and server has it: should match aes128-ctr */
 	ASSERT_STR_EQ(((struct test_algo_node *)result)->name, "aes128-ctr");
@@ -400,7 +400,7 @@ test_negotiate_no_match(void)
 	size_t noff = offsetof(struct test_algo_node, name);
 	void *result = negotiate_algo(
 	    "aes256-ctr,chacha20", "3des-cbc,blowfish-cbc",
-	    &a, noff);
+	    &a, noff, NULL);
 	ASSERT_NULL(result);
 	return TEST_PASS;
 }
@@ -415,7 +415,7 @@ test_negotiate_client_priority(void)
 	/* Client lists B first, server lists A first */
 	void *result = negotiate_algo(
 	    "algo-B,algo-A", "algo-A,algo-B",
-	    &a, noff);
+	    &a, noff, NULL);
 	ASSERT_NOT_NULL(result);
 	/* Client preference wins: algo-B */
 	ASSERT_STR_EQ(((struct test_algo_node *)result)->name, "algo-B");
@@ -430,7 +430,7 @@ test_negotiate_single_match(void)
 	size_t noff = offsetof(struct test_algo_node, name);
 	void *result = negotiate_algo(
 	    "the-only-one", "the-only-one",
-	    &a, noff);
+	    &a, noff, NULL);
 	ASSERT_NOT_NULL(result);
 	ASSERT_STR_EQ(((struct test_algo_node *)result)->name, "the-only-one");
 	return TEST_PASS;
@@ -445,7 +445,7 @@ test_negotiate_not_registered(void)
 	/* Both lists agree on "unregistered" but it is not in the linked list */
 	void *result = negotiate_algo(
 	    "unregistered", "unregistered",
-	    &a, noff);
+	    &a, noff, NULL);
 	ASSERT_NULL(result);
 	return TEST_PASS;
 }
@@ -457,7 +457,7 @@ test_build_namelist_single(void)
 	char buf[256];
 
 	size_t noff = offsetof(struct test_algo_node, name);
-	size_t len = build_namelist(&a, noff, buf, sizeof(buf));
+	size_t len = build_namelist(&a, noff, buf, sizeof(buf), NULL);
 	ASSERT_STR_EQ(buf, "aes256-ctr");
 	ASSERT_EQ_U(len, strlen("aes256-ctr"));
 	return TEST_PASS;
@@ -472,7 +472,7 @@ test_build_namelist_multiple(void)
 	char buf[256];
 
 	size_t noff = offsetof(struct test_algo_node, name);
-	size_t len = build_namelist(&a, noff, buf, sizeof(buf));
+	size_t len = build_namelist(&a, noff, buf, sizeof(buf), NULL);
 	ASSERT_STR_EQ(buf, "aes256-ctr,hmac-sha2-256,none");
 	ASSERT_EQ_U(len, strlen("aes256-ctr,hmac-sha2-256,none"));
 	return TEST_PASS;
@@ -483,9 +483,226 @@ test_build_namelist_empty(void)
 {
 	char buf[256];
 	buf[0] = 'X';
-	size_t len = build_namelist(NULL, 0, buf, sizeof(buf));
+	size_t len = build_namelist(NULL, 0, buf, sizeof(buf), NULL);
 	ASSERT_EQ_U(len, 0);
 	ASSERT_EQ(buf[0], '\0');
+	return TEST_PASS;
+}
+
+/* ================================================================
+ * Per-session whitelist filter (build_namelist + setters)
+ * ================================================================ */
+
+/* Filter drops a registered algorithm from the offered namelist. */
+static int
+test_filter_drops_algo(void)
+{
+	struct test_algo_node b = { NULL, "aes128-cbc" };
+	struct test_algo_node a = { &b, "aes256-ctr" };
+	char   buf[64];
+
+	size_t noff = offsetof(struct test_algo_node, name);
+	size_t len  = build_namelist(&a, noff, buf, sizeof(buf), "aes256-ctr");
+	ASSERT_STR_EQ(buf, "aes256-ctr");
+	ASSERT_EQ_U(len, strlen("aes256-ctr"));
+	return TEST_PASS;
+}
+
+/* Filter order overrides registration order. */
+static int
+test_filter_reorders(void)
+{
+	struct test_algo_node b = { NULL, "B" };
+	struct test_algo_node a = { &b, "A" };
+	char   buf[64];
+
+	size_t noff = offsetof(struct test_algo_node, name);
+	size_t len  = build_namelist(&a, noff, buf, sizeof(buf), "B,A");
+	ASSERT_STR_EQ(buf, "B,A");
+	ASSERT_EQ_U(len, 3);
+	return TEST_PASS;
+}
+
+/* Filter names not in the registry are silently skipped. */
+static int
+test_filter_skips_unknown(void)
+{
+	struct test_algo_node a = { NULL, "aes256-ctr" };
+	char   buf[64];
+
+	size_t noff = offsetof(struct test_algo_node, name);
+	size_t len  = build_namelist(&a, noff, buf, sizeof(buf),
+	    "aes256-ctr,nonexistent");
+	ASSERT_STR_EQ(buf, "aes256-ctr");
+	ASSERT_EQ_U(len, strlen("aes256-ctr"));
+	return TEST_PASS;
+}
+
+/* NULL filter restores full registration-order behaviour. */
+static int
+test_filter_null_uses_all(void)
+{
+	struct test_algo_node b = { NULL, "B" };
+	struct test_algo_node a = { &b, "A" };
+	char   buf[64];
+
+	size_t noff = offsetof(struct test_algo_node, name);
+	size_t len  = build_namelist(&a, noff, buf, sizeof(buf), NULL);
+	ASSERT_STR_EQ(buf, "A,B");
+	ASSERT_EQ_U(len, 3);
+	return TEST_PASS;
+}
+
+/* name_in_filter primitive: hits, length-exact misses, NULL filter. */
+static int
+test_name_in_filter_basic(void)
+{
+	ASSERT_TRUE(name_in_filter("foo", 3, "foo"));
+	ASSERT_TRUE(name_in_filter("bar", 3, "foo,bar,baz"));
+	ASSERT_TRUE(name_in_filter("baz", 3, "foo,bar,baz"));
+	/* prefix should not match (length-exact) */
+	ASSERT_FALSE(name_in_filter("foo", 3, "foobar"));
+	ASSERT_FALSE(name_in_filter("foobar", 6, "foo"));
+	ASSERT_FALSE(name_in_filter("xyz", 3, "foo,bar,baz"));
+	ASSERT_FALSE(name_in_filter("foo", 3, NULL));
+	return TEST_PASS;
+}
+
+/* negotiate_algo respects the filter even if peer offers a filtered name. */
+static int
+test_negotiate_filter_blocks(void)
+{
+	struct test_algo_node b = { NULL, "B" };
+	struct test_algo_node a = { &b, "A" };
+
+	size_t noff = offsetof(struct test_algo_node, name);
+
+	/* Peer offers both; filter only allows A.  A must win. */
+	void *result = negotiate_algo("A,B", "A,B", &a, noff, "A");
+	ASSERT_NOT_NULL(result);
+	ASSERT_STR_EQ(((struct test_algo_node *)result)->name, "A");
+
+	/* Peer offers only B; filter only allows A.  No match. */
+	result = negotiate_algo("B", "B", &a, noff, "A");
+	ASSERT_NULL(result);
+	return TEST_PASS;
+}
+
+/* Setter rejects names containing commas (would break CSV parsing). */
+static int
+test_filter_setter_comma_rejected(void)
+{
+	dssh_session sess = dssh_session_init(true, 0);
+	ASSERT_NOT_NULL(sess);
+
+	const char *bad[] = { "ok", "bad,name" };
+
+	ASSERT_EQ(dssh_session_set_enc_filter(sess, bad, 2),
+	    DSSH_ERROR_INVALID);
+	/* No partial state stored. */
+	ASSERT_NULL(sess->enc_filter);
+
+	dssh_session_cleanup(sess);
+	return TEST_PASS;
+}
+
+/* Setter rejects NULL elements and empty strings. */
+static int
+test_filter_setter_null_and_empty_rejected(void)
+{
+	dssh_session sess = dssh_session_init(true, 0);
+	ASSERT_NOT_NULL(sess);
+
+	const char *with_null[]  = { "ok", NULL };
+	const char *with_empty[] = { "ok", "" };
+
+	ASSERT_EQ(dssh_session_set_enc_filter(sess, with_null, 2),
+	    DSSH_ERROR_INVALID);
+	ASSERT_EQ(dssh_session_set_enc_filter(sess, with_empty, 2),
+	    DSSH_ERROR_INVALID);
+	ASSERT_NULL(sess->enc_filter);
+
+	dssh_session_cleanup(sess);
+	return TEST_PASS;
+}
+
+/* Setter stores filter, second call frees old and replaces. */
+static int
+test_filter_setter_replace(void)
+{
+	dssh_session sess = dssh_session_init(true, 0);
+	ASSERT_NOT_NULL(sess);
+
+	const char *first[]  = { "aes256-ctr", "aes128-cbc" };
+	const char *second[] = { "aes128-cbc" };
+
+	ASSERT_OK(dssh_session_set_enc_filter(sess, first, 2));
+	ASSERT_NOT_NULL(sess->enc_filter);
+	ASSERT_STR_EQ(sess->enc_filter, "aes256-ctr,aes128-cbc");
+
+	ASSERT_OK(dssh_session_set_enc_filter(sess, second, 1));
+	ASSERT_STR_EQ(sess->enc_filter, "aes128-cbc");
+
+	/* count == 0 clears */
+	ASSERT_OK(dssh_session_set_enc_filter(sess, second, 0));
+	ASSERT_NULL(sess->enc_filter);
+
+	/* names == NULL also clears (after a non-NULL value) */
+	ASSERT_OK(dssh_session_set_enc_filter(sess, first, 2));
+	ASSERT_NOT_NULL(sess->enc_filter);
+	ASSERT_OK(dssh_session_set_enc_filter(sess, NULL, 5));
+	ASSERT_NULL(sess->enc_filter);
+
+	dssh_session_cleanup(sess);
+	return TEST_PASS;
+}
+
+/* Setter returns TOOLATE once demux_running is set (post-start). */
+static int
+test_filter_setter_toolate(void)
+{
+	dssh_session sess = dssh_session_init(true, 0);
+	ASSERT_NOT_NULL(sess);
+
+	/* Simulate a started session.  We don't run a real handshake;
+	 * the TOOLATE check looks at sess->demux_running directly. */
+	atomic_store(&sess->demux_running, true);
+
+	const char *names[] = { "aes256-ctr" };
+
+	ASSERT_EQ(dssh_session_set_kex_filter(sess, names, 1),
+	    DSSH_ERROR_TOOLATE);
+	ASSERT_EQ(dssh_session_set_key_algo_filter(sess, names, 1),
+	    DSSH_ERROR_TOOLATE);
+	ASSERT_EQ(dssh_session_set_enc_filter(sess, names, 1),
+	    DSSH_ERROR_TOOLATE);
+	ASSERT_EQ(dssh_session_set_mac_filter(sess, names, 1),
+	    DSSH_ERROR_TOOLATE);
+	ASSERT_EQ(dssh_session_set_comp_filter(sess, names, 1),
+	    DSSH_ERROR_TOOLATE);
+
+	/* Reset so cleanup doesn't try to join a non-existent thread. */
+	atomic_store(&sess->demux_running, false);
+	dssh_session_cleanup(sess);
+	return TEST_PASS;
+}
+
+/* Setter returns INVALID for NULL session. */
+static int
+test_filter_setter_null_session(void)
+{
+	const char *names[] = { "aes256-ctr" };
+
+	ASSERT_EQ(dssh_session_set_kex_filter(NULL, names, 1),
+	    DSSH_ERROR_INVALID);
+	ASSERT_EQ(dssh_session_set_key_algo_filter(NULL, names, 1),
+	    DSSH_ERROR_INVALID);
+	ASSERT_EQ(dssh_session_set_enc_filter(NULL, names, 1),
+	    DSSH_ERROR_INVALID);
+	ASSERT_EQ(dssh_session_set_mac_filter(NULL, names, 1),
+	    DSSH_ERROR_INVALID);
+	ASSERT_EQ(dssh_session_set_comp_filter(NULL, names, 1),
+	    DSSH_ERROR_INVALID);
 	return TEST_PASS;
 }
 
@@ -3530,21 +3747,21 @@ test_build_namelist_overflow(void)
 	 * Comma+name checked together, so only "alpha" is emitted. */
 	char buf[8];
 	size_t len = build_namelist(e1,
-	    offsetof(struct dssh_kex_s, name), buf, sizeof(buf));
+	    offsetof(struct dssh_kex_s, name), buf, sizeof(buf), NULL);
 	ASSERT_STR_EQ(buf, "alpha");
 	ASSERT_EQ_U(len, 5);
 
 	/* Buffer too small for comma after "alpha" -- covers pos+1>=bufsz */
 	char exact[6];  /* pos=5 after "alpha", 5+1>=6 so comma not written */
 	len = build_namelist(e1,
-	    offsetof(struct dssh_kex_s, name), exact, sizeof(exact));
+	    offsetof(struct dssh_kex_s, name), exact, sizeof(exact), NULL);
 	ASSERT_STR_EQ(exact, "alpha");
 	ASSERT_EQ_U(len, 5);
 
 	/* Buffer too small even for "alpha" */
 	char tiny[4];
 	len = build_namelist(e1,
-	    offsetof(struct dssh_kex_s, name), tiny, sizeof(tiny));
+	    offsetof(struct dssh_kex_s, name), tiny, sizeof(tiny), NULL);
 	ASSERT_TRUE(len < sizeof(tiny));
 
 	dssh_test_reset_global_config();
@@ -3579,7 +3796,7 @@ test_build_namelist_truncation_no_trailing_comma(void)
 	/* Exact fit: buf[12] holds "alpha,bravo\0" */
 	char exact_fit[12];
 	size_t len = build_namelist(e1,
-	    offsetof(struct dssh_kex_s, name), exact_fit, sizeof(exact_fit));
+	    offsetof(struct dssh_kex_s, name), exact_fit, sizeof(exact_fit), NULL);
 	ASSERT_STR_EQ(exact_fit, "alpha,bravo");
 	ASSERT_EQ_U(len, 11);
 
@@ -3587,7 +3804,7 @@ test_build_namelist_truncation_no_trailing_comma(void)
 	 * Must roll back to "alpha" with no trailing comma. */
 	char one_short[11];
 	len = build_namelist(e1,
-	    offsetof(struct dssh_kex_s, name), one_short, sizeof(one_short));
+	    offsetof(struct dssh_kex_s, name), one_short, sizeof(one_short), NULL);
 	ASSERT_STR_EQ(one_short, "alpha");
 	ASSERT_EQ_U(len, 5);
 
@@ -3611,7 +3828,7 @@ test_build_namelist_truncation_no_trailing_comma(void)
 
 	char three[7];
 	len = build_namelist(e3,
-	    offsetof(struct dssh_kex_s, name), three, sizeof(three));
+	    offsetof(struct dssh_kex_s, name), three, sizeof(three), NULL);
 	ASSERT_STR_EQ(three, "aa,bb");
 	ASSERT_EQ_U(len, 5);
 
@@ -3619,7 +3836,7 @@ test_build_namelist_truncation_no_trailing_comma(void)
 	 * pos=5 after "aa,bb", comma check: 5+1>=6 -> break. */
 	char tight[6];
 	len = build_namelist(e3,
-	    offsetof(struct dssh_kex_s, name), tight, sizeof(tight));
+	    offsetof(struct dssh_kex_s, name), tight, sizeof(tight), NULL);
 	ASSERT_STR_EQ(tight, "aa,bb");
 	ASSERT_EQ_U(len, 5);
 
@@ -6286,13 +6503,13 @@ test_negotiate_no_common_comp_s2c(void)
 	/* Determine our algorithm names for the matching lists */
 	char kex_name[64], ka_name[64], enc_name[64], mac_name[64];
 	build_namelist(gconf.kex_head,
-	    offsetof(struct dssh_kex_s, name), kex_name, sizeof(kex_name));
+	    offsetof(struct dssh_kex_s, name), kex_name, sizeof(kex_name), NULL);
 	build_namelist(gconf.key_algo_head,
-	    offsetof(struct dssh_key_algo_s, name), ka_name, sizeof(ka_name));
+	    offsetof(struct dssh_key_algo_s, name), ka_name, sizeof(ka_name), NULL);
 	build_namelist(gconf.enc_head,
-	    offsetof(struct dssh_enc_s, name), enc_name, sizeof(enc_name));
+	    offsetof(struct dssh_enc_s, name), enc_name, sizeof(enc_name), NULL);
 	build_namelist(gconf.mac_head,
-	    offsetof(struct dssh_mac_s, name), mac_name, sizeof(mac_name));
+	    offsetof(struct dssh_mac_s, name), mac_name, sizeof(mac_name), NULL);
 
 	size_t pos = 17;  /* skip msg_type + cookie */
 	pos = write_namelist(crafted, pos, kex_name);     /* [0] kex */
@@ -7079,6 +7296,17 @@ static struct dssh_test_entry tests[] = {
 	{ "algo/build_namelist_single",       test_build_namelist_single },
 	{ "algo/build_namelist_multiple",     test_build_namelist_multiple },
 	{ "algo/build_namelist_empty",        test_build_namelist_empty },
+	{ "filter/drops_algo",                test_filter_drops_algo },
+	{ "filter/reorders",                  test_filter_reorders },
+	{ "filter/skips_unknown",             test_filter_skips_unknown },
+	{ "filter/null_uses_all",             test_filter_null_uses_all },
+	{ "filter/name_in_filter_basic",      test_name_in_filter_basic },
+	{ "filter/negotiate_blocks",          test_negotiate_filter_blocks },
+	{ "filter/setter_comma_rejected",     test_filter_setter_comma_rejected },
+	{ "filter/setter_null_empty_rejected", test_filter_setter_null_and_empty_rejected },
+	{ "filter/setter_replace",            test_filter_setter_replace },
+	{ "filter/setter_toolate",            test_filter_setter_toolate },
+	{ "filter/setter_null_session",       test_filter_setter_null_session },
 
 	/* Key derivation */
 	{ "derive/deterministic",             test_derive_key_deterministic },
