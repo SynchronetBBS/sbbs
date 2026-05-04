@@ -18,6 +18,7 @@ void fn_ConnError_bytesSent(WrenVM *vm);
 void fn_ConnError_message(WrenVM *vm);
 void fn_ConnError_toString(WrenVM *vm);
 void fn_Conn_close(WrenVM *vm);
+void fn_Conn_endSession(WrenVM *vm);
 void fn_Conn_paste(WrenVM *vm);
 void fn_Conn_scrollback(WrenVM *vm);
 void fn_Conn_connected(WrenVM *vm);
@@ -86,6 +87,7 @@ void fn_BBS_elapsedSeconds(WrenVM *vm);
 void fn_BBS_connTypeName(WrenVM *vm);
 
 void fn_Host_safeMode(WrenVM *vm);
+void fn_Host_textTerminal(WrenVM *vm);
 void fn_Host_logUnread(WrenVM *vm);
 void fn_Host_logUnreadError(WrenVM *vm);
 void fn_Host_musicNames(WrenVM *vm);

@@ -100,6 +100,7 @@ class Popup is Pane {
     _message      = message
     _result       = null
     _preformatted = false
+    _onDismiss    = null
     focused       = true
     shadow        = true              // dialogs always cast a drop-shadow
     // Popups use a single-line frame with title embedded in the top
@@ -299,6 +300,15 @@ class Popup is Pane {
     }
   }
 
+  // Optional dismissal callback, fired by dismissWith_ AFTER the
+  // popup has popped itself.  Use to wire dismissal to enclosing-app
+  // bookkeeping — typically `fn = Fn.new { |v| app.quit() }` so a
+  // standalone-popup driver (one that starts an App with the popup
+  // as its only widget) can exit `app.run()` once the user has
+  // chosen.  Receives the Bool result (or whatever value the
+  // subclass dismissed with).
+  onDismiss=(fn) { _onDismiss = fn }
+
   // Subclasses dismiss by calling dismissWith_(value) — writing
   // `_result` directly from a subclass method would create a new
   // subclass-scoped field instead of mutating Popup's, since Wren
@@ -306,6 +316,7 @@ class Popup is Pane {
   dismissWith_(value) {
     _result = value
     if (parent != null) parent.popModal()
+    if (_onDismiss != null) _onDismiss.call(value)
   }
 }
 

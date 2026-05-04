@@ -261,10 +261,22 @@ struct wren_host_state {
 	struct wren_directory  *fs_dir_head;
 
 	struct bbslist *bbs;
+
+	/* Pending session-end request from a Conn.endSession() Wren call.
+	 * `pending_disconnect` is the trigger; `pending_disconnect_exit`
+	 * tells doterm() whether to also tear down the app (Alt-X /
+	 * window-close semantics) versus just hang up the BBS and return
+	 * to the bbslist (Alt-H / Ctrl-Q semantics).  Drained by
+	 * `wren_host_take_pending_disconnect` at the top of the doterm
+	 * key-dispatch block. */
+	bool pending_disconnect;
+	bool pending_disconnect_exit;
 };
 
 /* Singleton state pointer (NULL when shut down). */
 extern struct wren_host_state *wren_host_state(void);
+/* `wren_host_take_pending_disconnect` lives in the public header
+ * `wren_host.h`, so callers (e.g. term.c) only need that include. */
 
 /* Hook registration helpers used by wren_bind.c.  Each calloc's a
  * fresh entry, captures the fn handle, appends a pointer into the

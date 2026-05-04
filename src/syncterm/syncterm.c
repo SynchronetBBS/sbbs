@@ -1126,6 +1126,14 @@ set_default_cursor(void)
 #endif
 }
 
+/* check_exit — flip the `quitting` latch when the caller has signalled
+ * a quit.  When `force` is true and `UIFC_XF_QUIT` isn't already set,
+ * `settings.confirm_close` raises a "Are you sure you want to exit?"
+ * uifc popup before flipping; that path is reached from bbslist /
+ * menu.c ESC handlers.  Disconnect-cluster keys (Alt-X / Ctrl-Q /
+ * Alt-H / window-close) come in via the Wren `Conn.endSession` hook,
+ * which sets `UIFC_XF_QUIT` before doterm calls into this — so the
+ * confirm is skipped there (Wren has already asked the user). */
 bool
 check_exit(bool force)
 {

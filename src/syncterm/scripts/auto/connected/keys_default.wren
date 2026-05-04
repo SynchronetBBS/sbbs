@@ -12,7 +12,62 @@ import "syncterm" for Hook, Key, CTerm, Conn, Host, Input, Screen
 import "ui_app"   for App
 import "ui_pane"  for Pane
 import "ui_list"  for ListView
+import "ui_popup" for Confirm, Popup
 import "capture_menu" for CaptureMenu
+
+// Disconnect / exit cluster.  Each hook spawns a child fiber that
+// raises a "Disconnect... Are you sure?" Confirm popup; on yes, it
+// calls Conn.endSession to flag the actual cleanup.  doterm() picks
+// the flag up at the top of its next iteration, runs the
+// (UI-free) C cleanup, and either returns to the bbslist
+// (Alt-H / Ctrl-Q semantics) or exits syncterm entirely
+// (Alt-X / window-close semantics).
+//
+// Ctrl-Q is gated to text-mode terminals (curses / ANSI) — graphical
+// backends (X / SDL / Wayland / Quartz / GDI) leave Ctrl-Q to cterm
+// as a normal control byte.  Host.textTerminal is stable for the
+// session, so we check at module load and skip installing the hook
+// in graphical modes rather than process-and-pass-through every key.
+class DisconnectFlow {
+  static run(exitApp) {
+    Fiber.new {
+      Screen.modalRun(Fn.new {
+        var app = App.new()
+        var msg = "Disconnect... Are you sure?\n\n" +
+                  "Selecting Yes closes the connection."
+        var c   = Confirm.new(msg)
+        c.bounds     = Popup.centeredBounds_(msg, 1, 24)
+        // The Confirm dismissal pops itself off the modal stack;
+        // also quit the App so `app.run()` returns.  Without this
+        // wire-up run() would loop forever on an empty modal stack.
+        c.onDismiss  = Fn.new { |v| app.quit() }
+        app.pushModal(c)
+        app.run()
+        if (c.result == true) Conn.endSession(exitApp)
+      })
+      Input.setupMouseEvents()
+    }.call()
+  }
+}
+
+Hook.onKey(Key.altX) { |k|
+  DisconnectFlow.run(true)
+  return true
+}
+Hook.onKey(Key.quit) { |k|
+  DisconnectFlow.run(true)
+  return true
+}
+Hook.onKey(Key.altH) { |k|
+  DisconnectFlow.run(false)
+  return true
+}
+if (Host.textTerminal) {
+  Hook.onKey(Key.ctrlQ) { |k|
+    DisconnectFlow.run(false)
+    return true
+  }
+}
 
 // Alt-O — toggle mouse-event reporting.  Mirrors the historical C
 // handler: flip the MS_FLAGS_DISABLED bit on the live mouse_state,

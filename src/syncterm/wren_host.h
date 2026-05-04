@@ -53,6 +53,14 @@ bool wren_status_render(int width, struct vmem_cell **out_buf);
 bool wren_host_dispatch_key(int key);
 bool wren_host_dispatch_mouse(struct mouse_event *ev);
 
+/* Atomically read-and-clear a pending session-end request (set by a
+ * Conn.endSession() Wren call).  Returns true when a request was
+ * queued since the last call; on true, `*exit_app_out` reflects
+ * whether the script asked for full app exit (Alt-X / window-close
+ * semantics) versus just hangup (Alt-H / Ctrl-Q semantics).  No-op
+ * (returns false) when the host isn't initialised. */
+bool wren_host_take_pending_disconnect(bool *exit_app_out);
+
 /* Per-byte onInput dispatch.  The hook chain runs in registration
  * order; the first hook that returns Bool true (drop) or String
  * (replace) wins, later hooks don't see this byte.

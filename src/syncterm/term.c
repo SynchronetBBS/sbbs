@@ -6004,31 +6004,27 @@ feed_ooii(int inch, int *ooii_mode)
 }
 #endif /* !WITHOUT_OOII */
 
+/* check_hangup — pure cleanup.  The caller has already obtained user
+ * consent (via the Wren-side Confirm popup that the disconnect-key
+ * hooks raise) and we just tear the session down: flush scrollback,
+ * end cterm, close the conn, restore mouse + cursor state.  *ret
+ * tells doterm() whether to fall through to its outer "exit app"
+ * path (Alt-X / window-close keys) or just return to the bbslist
+ * (Alt-H / Ctrl-Q keys).  Always returns true; the bool is kept so
+ * existing call sites read symmetrically. */
 static bool
 check_hangup(int key, bool *ret, int oldmc, struct mouse_state *ms)
 {
-	struct ciolib_screen *savscrn;
-	savscrn = cp437_savescrn();
-	if (quitting
-	    || confirm("Disconnect... Are you sure?",
-	    "Selecting Yes closes the connection\n")) {
-		freescreen(savscrn);
-		setup_mouse_events(ms);
-		finish_scrollback();
-		audio_apc_cleanup();
-		cterm_end(cterm, 0);
-		cterm = NULL;
-		conn_close();
-		hidemouse();
-		hold_update = oldmc;
-		*ret = (key == 0x2d00 /* Alt-X? */ || key == CIO_KEY_QUIT);
-		return true;
-	}
-	restorescreen(savscrn);
-	freescreen(savscrn);
 	setup_mouse_events(ms);
-	showmouse();
-	return false;
+	finish_scrollback();
+	audio_apc_cleanup();
+	cterm_end(cterm, 0);
+	cterm = NULL;
+	conn_close();
+	hidemouse();
+	hold_update = oldmc;
+	*ret = (key == 0x2d00 /* Alt-X? */ || key == CIO_KEY_QUIT);
+	return true;
 }
 
 bool
@@ -6236,6 +6232,27 @@ doterm(struct bbslist *bbs)
 		 * any input pump so a fiber can fire an op, get its result,
 		 * and re-fire within a single iteration's worth of latency. */
 		wren_result_drain();
+		/* A resumed fiber may have called Conn.endSession (e.g. the
+		 * disconnect-cluster Confirm popup running in its own App).
+		 * Drain the pending flag here too so the hangup lands this
+		 * iteration rather than waiting for another key event to
+		 * route through wren_host_dispatch_key. */
+		{
+			bool exit_app = false;
+			if (wren_host_take_pending_disconnect(&exit_app)) {
+				int  synth_key = exit_app ? 0x2D00 /* Alt-X */
+				                          : 0x2300 /* Alt-H */;
+				bool do_hangup = exit_app
+				    ? check_exit(true)
+				    : true;
+				bool hret_outer;
+				if (do_hangup &&
+				    check_hangup(synth_key, &hret_outer, oldmc, &ms)) {
+					ret = hret_outer;
+					goto end;
+				}
+			}
+		}
 		/* Detect cterm_suspended transitions across this iteration.
 		 * On entering suspend: capture the wall-clock start.  On
 		 * exiting suspend: credit the byte pump with the bytes that
@@ -6414,8 +6431,28 @@ doterm(struct bbslist *bbs)
 					continue;
 			}
 
-			if (wren_host_dispatch_key(key))
+			if (wren_host_dispatch_key(key)) {
+				/* A Wren handler may have called Conn.endSession()
+				 * — drain the pending-disconnect flag now so the
+				 * confirm + cterm tear-down lands in the same
+				 * iteration.  exit_app distinguishes Alt-X /
+				 * window-close (full quit) from Alt-H / Ctrl-Q
+				 * (hang up + back to bbslist). */
+				bool exit_app = false;
+				if (wren_host_take_pending_disconnect(&exit_app)) {
+					int synth_key = exit_app ? 0x2D00 /* Alt-X */
+					                         : 0x2300 /* Alt-H */;
+					bool do_hangup = exit_app
+					    ? check_exit(true)
+					    : true;
+					if (do_hangup &&
+					    check_hangup(synth_key, &hret, oldmc, &ms)) {
+						ret = hret;
+						goto end;
+					}
+				}
 				continue;
+			}
 
 			/*
 			 * Pre-CTerm processing... these are ALWAYS
@@ -6424,26 +6461,6 @@ doterm(struct bbslist *bbs)
 			switch (key) {
 				case CIO_KEY_MOUSE:
 					handle_mouse_event(&ms);
-					continue;
-				case CIO_KEY_QUIT:
-					uifc.exit_flags |= UIFC_XF_QUIT;
-					if (check_exit(true)) {
-						if (check_hangup(key, &hret, oldmc, &ms)) {
-							ret = hret;
-							goto end;
-						}
-					}
-					continue;
-				case 17: /* CTRL-Q */
-					if ((cio_api.mode != CIOLIB_MODE_CURSES)
-					    && (cio_api.mode != CIOLIB_MODE_CURSES_ASCII)
-					    && (cio_api.mode != CIOLIB_MODE_CURSES_IBM)
-					    && (cio_api.mode != CIOLIB_MODE_ANSI))
-						break;
-					if (check_hangup(key, &hret, oldmc, &ms)) {
-						ret = hret;
-						goto end;
-					}
 					continue;
 				case 19: /* CTRL-S */
 					if ((cio_api.mode != CIOLIB_MODE_CURSES)
@@ -6457,15 +6474,10 @@ doterm(struct bbslist *bbs)
 					i = wherex();
 					j = wherey();
 					switch (syncmenu(bbs, &speed)) {
-						case -1:
-							finish_scrollback();
-							audio_apc_cleanup();
-							cterm_end(cterm, 0);
-							cterm = NULL;
-							conn_close();
-							hidemouse();
-							hold_update = oldmc;
-							ret = false;
+						case -1: /* SM_DISCONNECT */
+							check_hangup(0x2300 /* Alt-H */,
+							    &hret, oldmc, &ms);
+							ret = hret;
 							goto end;
 						case SM_UPLOAD:
 							begin_upload(bbs, false, inch);
@@ -6503,14 +6515,11 @@ doterm(struct bbslist *bbs)
 							break;
 #endif
 						case SM_EXIT:
-							finish_scrollback();
-							audio_apc_cleanup();
-							cterm_end(cterm, 0);
-							cterm = NULL;
-							conn_close();
-							hidemouse();
-							hold_update = oldmc;
-							ret = true;
+							uifc.exit_flags |= UIFC_XF_QUIT;
+							check_exit(true);
+							check_hangup(0x2D00 /* Alt-X */,
+							    &hret, oldmc, &ms);
+							ret = hret;
 							goto end;
 						case SM_DIRECTORY:
 						{
@@ -6552,12 +6561,13 @@ doterm(struct bbslist *bbs)
                          * These keys are SyncTERM control keys
                          */
 			switch (key) {
-				/* Shift-Insert (paste), Alt-B (scrollback), and
-				 * Alt-C (capture) handled by Wren —
-				 * keys_default.wren registers Hook.onKey for
-				 * Key.shiftIns / Key.altB / Key.altC and calls
-				 * Conn.paste / Conn.scrollback /
-				 * Conn.captureControl.  If a user replaces
+				/* Shift-Insert (paste), Alt-B (scrollback),
+				 * Alt-C (capture), Alt-H / Alt-X / Ctrl-Q /
+				 * window-close (all hangup or app-exit) are
+				 * handled by Wren — keys_default.wren registers
+				 * Hook.onKey hooks that call Conn.paste /
+				 * Conn.scrollback / CaptureMenu.run /
+				 * Conn.endSession.  If a user replaces
 				 * keys_default.wren without those handlers, the
 				 * keys fall through here and out of the switch
 				 * unhandled — opt-out is intentional. */
@@ -6605,21 +6615,6 @@ doterm(struct bbslist *bbs)
 					begin_upload(bbs, false, inch);
 					setup_mouse_events(&ms);
 					showmouse();
-					break;
-				case 0x2d00: /* Alt-X - Exit */
-					uifc.exit_flags |= UIFC_XF_QUIT;
-					if (check_exit(true)) {
-						if (check_hangup(key, &hret, oldmc, &ms)) {
-							ret = hret;
-							goto end;
-						}
-					}
-					break;
-				case 0x2300: /* Alt-H - Hangup */
-					if (check_hangup(key, &hret, oldmc, &ms)) {
-						ret = hret;
-						goto end;
-					}
 					break;
 			}
 		}

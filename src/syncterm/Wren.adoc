@@ -2685,6 +2685,17 @@ Connection-level send and receive.
 | `Conn.close()`
 | Close the connection.
 
+| `Conn.endSession(exitApp)`
+| Request a session end.  Sets a flag that doterm() picks up at the
+  top of its next iteration, runs the (UI-free) cleanup
+  (cterm shutdown, conn close, mouse/cursor restore), then either
+  returns to the bbslist menu (`exitApp == false`, Alt-H / Ctrl-Q
+  semantics) or exits syncterm entirely (`exitApp == true`,
+  Alt-X / window-close semantics).  Returns immediately — the
+  caller is responsible for any user-facing confirm popup.  The
+  default disconnect-key hooks in `keys_default.wren` raise a
+  Wren-side `Confirm` popup before invoking this.
+
 | `Conn.connected`
 | Bool — is the link up?
 
@@ -3313,6 +3324,16 @@ pre-bound from these at module load.
   auto-connect, no SFTP key writes, no script-driven external
   commands.  The default status bar surfaces `(SAFE)` when this
   is set so the user can see what mode they're in.
+
+| `Host.textTerminal`
+| `true` when the active ciolib backend is a text-mode terminal
+  (curses / curses-IBM / curses-ASCII / ANSI) rather than a
+  graphical / windowed mode (X / SDL / Wayland / Quartz / GDI).
+  Stable for the lifetime of the session, so typically queried at
+  module-load time to gate hook registration — e.g. the default
+  Ctrl-Q hangup hook is only installed when this is `true`,
+  because graphical backends pass Ctrl-Q through to cterm as a
+  normal control byte.
 
 | `Host.logUnread`, `Host.logUnreadError`
 | Wren-console activity since the user last visited the REPL.
@@ -5110,6 +5131,33 @@ Prompt (input + button rows).
 message and no buttons, used by `App.popStatus(message)`.  It does
 not push onto the modal stack — purely decorative — and is
 dismissed with `app.popStatus(null)`.
+
+==== Standalone popups
+
+`Confirm.show(app, ...)` (and the other `Popup.show` family methods)
+expect `app` to already be running — they call `app.modal(p)`, which
+pumps `drainOnce_()` on the existing run loop's input claim.  When
+you need a popup from a context with no enclosing app — a
+`Hook.onKey` handler being the canonical case — set up the App
+yourself and wire `Popup.onDismiss=` to quit it:
+
+[source,wren]
+----
+var app = App.new()
+var c   = Confirm.new("Disconnect... Are you sure?")
+c.bounds    = Popup.centeredBounds_(c.message, 1, 24)
+c.onDismiss = Fn.new { |v| app.quit() }
+app.pushModal(c)
+app.run()
+if (c.result == true) {
+  // user clicked Yes
+}
+----
+
+`onDismiss=(fn)` fires from `dismissWith_` after the popup pops
+itself off the modal stack, with the dismissed value (Bool / String
+/ null depending on the popup subclass).  Without this wire-up
+`app.run()` would loop forever on an empty modal stack.
 
 === Help viewer [[ui-help]]
 

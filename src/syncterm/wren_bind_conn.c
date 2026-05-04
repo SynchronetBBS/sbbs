@@ -21,6 +21,7 @@
 #include "syncterm.h"  /* safe_mode */
 #include "term.h"      /* force_status_update, term, struct mouse_state, setup_mouse_events */
 #include "menu.h"      /* viewscroll */
+#include "uifcinit.h"  /* uifc (the singleton), UIFC_XF_QUIT */
 #include "wren_bind_fs.h" /* wren_file_consume_write, FILE_ERR_* */
 #ifndef WITHOUT_DEUCESSH
 #include "ssh.h"       /* ssh_set_sftp_buffer_mode */
@@ -196,6 +197,35 @@ fn_Conn_close(WrenVM *vm)
 {
 	(void)vm;
 	conn_close();
+}
+
+/* Conn.endSession(exitApp) — request a session end.  doterm() picks
+ * the request up at the top of its next key-dispatch iteration via
+ * `wren_host_take_pending_disconnect`, runs the existing
+ * "Disconnect... Are you sure?" confirm, and either tears the
+ * cterm down + returns to the bbslist (`exitApp == false`, like
+ * Alt-H / Ctrl-Q) or also flags syncterm for full exit
+ * (`exitApp == true`, like Alt-X / window-close).  Designed for
+ * default key handlers that used to live as C cases in doterm();
+ * synchronous from the script's perspective — the binding sets
+ * the flag and returns immediately, the modal confirm runs on
+ * doterm's next iteration. */
+void
+fn_Conn_endSession(WrenVM *vm)
+{
+	bool exit_app = false;
+	if (wrenGetSlotType(vm, 1) == WREN_TYPE_BOOL)
+		exit_app = wrenGetSlotBool(vm, 1);
+	struct wren_host_state *st = wren_host_state();
+	if (st == NULL) {
+		wrenSetSlotNull(vm, 0);
+		return;
+	}
+	st->pending_disconnect      = true;
+	st->pending_disconnect_exit = exit_app;
+	if (exit_app)
+		uifc.exit_flags |= UIFC_XF_QUIT;
+	wrenSetSlotNull(vm, 0);
 }
 
 /* Conn.paste() — clipboard → wire.  Wraps the historical Shift-Insert
@@ -846,6 +876,22 @@ void
 fn_Host_safeMode(WrenVM *vm)
 {
 	wrenSetSlotBool(vm, 0, safe_mode != 0);
+}
+
+/* Host.textTerminal — true when the active ciolib backend is a text-
+ * mode terminal (curses / curses-IBM / curses-ASCII / ANSI) rather
+ * than a graphical / windowed mode (X / SDL / Wayland / GDI / ...).
+ * Used by the default Ctrl-Q hook to decide whether to interpret the
+ * keystroke as "hangup" — graphical modes pass it through to cterm
+ * as a normal control character. */
+void
+fn_Host_textTerminal(WrenVM *vm)
+{
+	bool is_text = (cio_api.mode == CIOLIB_MODE_CURSES)
+	    || (cio_api.mode == CIOLIB_MODE_CURSES_IBM)
+	    || (cio_api.mode == CIOLIB_MODE_CURSES_ASCII)
+	    || (cio_api.mode == CIOLIB_MODE_ANSI);
+	wrenSetSlotBool(vm, 0, is_text);
 }
 
 /* Host.logUnread / Host.logUnreadError — true while the Wren console

@@ -973,6 +973,7 @@ static const struct binding BINDINGS[] = {
 	{ "Conn",  true, "send(_)",        fn_Conn_send         },
 	{ "Conn",  true, "sendRaw(_)",     fn_Conn_sendRaw      },
 	{ "Conn",  true, "close()",        fn_Conn_close        },
+	{ "Conn",  true, "endSession(_)",  fn_Conn_endSession   },
 	{ "Conn",  true, "paste()",        fn_Conn_paste        },
 	{ "Conn",  true, "scrollback()",   fn_Conn_scrollback   },
 	{ "Conn",  true, "connected",      fn_Conn_connected    },
@@ -1158,6 +1159,7 @@ static const struct binding BINDINGS[] = {
 
 	{ "Host", true, "sshPublicKey",      fn_Host_sshPublicKey      },
 	{ "Host", true, "safeMode",          fn_Host_safeMode          },
+	{ "Host", true, "textTerminal",      fn_Host_textTerminal      },
 	{ "Host", true, "logUnread",         fn_Host_logUnread         },
 	{ "Host", true, "logUnreadError",    fn_Host_logUnreadError    },
 	{ "Host", true, "musicNames",        fn_Host_musicNames        },

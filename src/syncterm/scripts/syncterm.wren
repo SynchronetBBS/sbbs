@@ -404,6 +404,37 @@ class Key {
   static insert      { 0x5200 }
   static delete      { 0x5300 }
   static backTab     { 0x0F00 }
+  // Raw control characters Ctrl-A .. Ctrl-Z (codepoints 0x01..0x1A).
+  // Some have other names in this class (Ctrl-H = backspace 0x08,
+  // Ctrl-I = tab 0x09, Ctrl-M = enter 0x0D); the ctrl* names are
+  // listed in full so callers don't have to remember which extended
+  // names exist.  Ctrl-[ (0x1B) is escape — see Key.escape.
+  static ctrlA       { 0x01 }
+  static ctrlB       { 0x02 }
+  static ctrlC       { 0x03 }
+  static ctrlD       { 0x04 }
+  static ctrlE       { 0x05 }
+  static ctrlF       { 0x06 }
+  static ctrlG       { 0x07 }
+  static ctrlH       { 0x08 }
+  static ctrlI       { 0x09 }
+  static ctrlJ       { 0x0A }
+  static ctrlK       { 0x0B }
+  static ctrlL       { 0x0C }
+  static ctrlM       { 0x0D }
+  static ctrlN       { 0x0E }
+  static ctrlO       { 0x0F }
+  static ctrlP       { 0x10 }
+  static ctrlQ       { 0x11 }
+  static ctrlR       { 0x12 }
+  static ctrlS       { 0x13 }
+  static ctrlT       { 0x14 }
+  static ctrlU       { 0x15 }
+  static ctrlV       { 0x16 }
+  static ctrlW       { 0x17 }
+  static ctrlX       { 0x18 }
+  static ctrlY       { 0x19 }
+  static ctrlZ       { 0x1A }
   static shiftIns    { 0x0500 }
   static shiftDel    { 0x0700 }
   static ctrlIns     { 0x0400 }
@@ -839,6 +870,13 @@ foreign class Conn {
   foreign static send(s)
   foreign static sendRaw(s)
   foreign static close()
+  // End the BBS session.  Shows the "Disconnect... Are you sure?"
+  // confirm; on yes, hangs up the connection.  When `exitApp` is
+  // true (Alt-X / window-close semantics), syncterm exits after
+  // hangup; when false (Alt-H / Ctrl-Q semantics), control returns
+  // to the bbslist menu.  The confirm runs on doterm()'s next
+  // iteration, so this returns immediately — handlers don't block.
+  foreign static endSession(exitApp)
   // Paste from system clipboard onto the wire — codepage-aware,
   // bracketed-paste-aware.  No-op when clipboard is empty.
   foreign static paste()
@@ -1374,6 +1412,15 @@ class Host {
   // auto-connect, no SFTP key writes, no script-driven external
   // commands.  Default status bar surfaces "(SAFE)" when this is set.
   foreign static safeMode
+
+  // True when the active ciolib backend is a text-mode terminal
+  // (curses / ANSI) rather than a graphical one (X / SDL / Wayland /
+  // Quartz / GDI / ...).  Stable for the lifetime of the session, so
+  // typically queried at module load to gate hook registration —
+  // e.g. the default Ctrl-Q hangup hook is only installed when this
+  // is true (graphical backends pass Ctrl-Q through to cterm as a
+  // normal control byte).
+  foreign static textTerminal
 
   // Wren console activity since the user last visited the REPL.
   // logUnread covers any non-empty append (script print output, hook

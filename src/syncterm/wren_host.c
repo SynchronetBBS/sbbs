@@ -316,6 +316,18 @@ wren_host_state(void)
 }
 
 bool
+wren_host_take_pending_disconnect(bool *exit_app_out)
+{
+	if (!active || !state.pending_disconnect)
+		return false;
+	state.pending_disconnect = false;
+	if (exit_app_out != NULL)
+		*exit_app_out = state.pending_disconnect_exit;
+	state.pending_disconnect_exit = false;
+	return true;
+}
+
+bool
 wren_host_active(void)
 {
 	if (!active)
