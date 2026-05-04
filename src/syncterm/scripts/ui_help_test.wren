@@ -1,9 +1,10 @@
 // Self-tests for ui_help.  FakeApp records modal pushes/pops without
 // pumping the event loop.
 
-import "ui_widget" for Rect
-import "ui_help"   for Help
-import "syncterm"  for KeyEvent, Key
+import "ui_widget"   for Rect
+import "ui_help"     for Help
+import "ui_markdown" for Markdown
+import "syncterm"    for KeyEvent, Key
 
 class FakeApp {
   construct new() {
@@ -63,12 +64,15 @@ class UiHelpTest {
     }
   }
 
+  // Build a help with `lineCount` rendered rows by emitting one bullet
+  // per row — the markdown layout treats consecutive bullets as
+  // separate blocks, so each maps to a single MdLine.
   static makeHelp_(lineCount, w, h) {
     var body = ""
     var i = 0
     while (i < lineCount) {
       if (i > 0) body = body + "\n"
-      body = body + "line %(i)"
+      body = body + "- line %(i)"
       i = i + 1
     }
     var hp = Help.new("Help", body)
@@ -76,25 +80,25 @@ class UiHelpTest {
     return hp
   }
 
-  // ----- splitLines_ ----------------------------------------------
+  // ----- Markdown.splitLines_ -------------------------------------
 
   static testSplitLines_() {
-    var lines = Help.splitLines_("a\nb\nc")
+    var lines = Markdown.splitLines_("a\nb\nc")
     check_(lines.count == 3 && lines[0] == "a" && lines[1] == "b" &&
            lines[2] == "c",
-           "Help.splitLines_: 'a\\nb\\nc' -> 3 lines")
+           "Markdown.splitLines_: 'a\\nb\\nc' -> 3 lines")
   }
 
   static testSplitLinesEmpty_() {
-    var lines = Help.splitLines_("")
+    var lines = Markdown.splitLines_("")
     check_(lines.count == 1 && lines[0] == "",
-           "Help.splitLines_: empty string -> [\"\"]")
+           "Markdown.splitLines_: empty string -> [\"\"]")
   }
 
   static testSplitLinesNoTrailing_() {
-    var lines = Help.splitLines_("only")
+    var lines = Markdown.splitLines_("only")
     check_(lines.count == 1 && lines[0] == "only",
-           "Help.splitLines_: no newline -> single line")
+           "Markdown.splitLines_: no newline -> single line")
   }
 
   // ----- Construction --------------------------------------------
@@ -128,15 +132,15 @@ class UiHelpTest {
   // ----- Scroll ---------------------------------------------------
 
   static testDownScrollsByOne_() {
-    // 20-line body, 5-row viewport (h=7 minus 2 for frame).
-    var h = makeHelp_(20, 30, 7)
+    // 20-line body, 5-row viewport (h=9 minus 4 for frame + padding).
+    var h = makeHelp_(20, 30, 9)
     h.handle(KeyEvent.new(Key.down))
     check_(h.scrollTop == 1,
            "Help: Down scrolls scrollTop by 1")
   }
 
   static testUpScrollsByOne_() {
-    var h = makeHelp_(20, 30, 7)
+    var h = makeHelp_(20, 30, 9)
     h.handle(KeyEvent.new(Key.down))
     h.handle(KeyEvent.new(Key.down))
     h.handle(KeyEvent.new(Key.up))
@@ -145,7 +149,7 @@ class UiHelpTest {
   }
 
   static testHomeJumpsToTop_() {
-    var h = makeHelp_(20, 30, 7)
+    var h = makeHelp_(20, 30, 9)
     h.handle(KeyEvent.new(Key.end))
     h.handle(KeyEvent.new(Key.home))
     check_(h.scrollTop == 0,
@@ -153,24 +157,23 @@ class UiHelpTest {
   }
 
   static testEndJumpsToBottom_() {
-    var h = makeHelp_(20, 30, 7)             // viewport = 5
+    var h = makeHelp_(20, 30, 9)             // viewport = 5
     h.handle(KeyEvent.new(Key.end))
     check_(h.scrollTop == 15,
            "Help: End -> scrollTop count - viewport")
   }
 
   static testPageDownAdvancesByViewport_() {
-    var h = makeHelp_(20, 30, 7)             // viewport = 5
+    var h = makeHelp_(20, 30, 9)             // viewport = 5
     h.handle(KeyEvent.new(Key.pageDown))
     check_(h.scrollTop == 5,
            "Help: PageDown advances by viewport rows")
   }
 
   static testWheelDownScrolls_() {
-    var h = makeHelp_(20, 30, 7)
+    var h = makeHelp_(20, 30, 9)
     var app = FakeApp.new()
     app.modal(h)
-    // Mouse wheel down.  Bounds at (1,1,30,7), interior at (2..,2..).
     var ev = KeyEvent.new(Key.pageDown)      // proxy: any key path
     h.handle(ev)
     check_(h.scrollTop == 5,

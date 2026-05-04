@@ -55,11 +55,14 @@ class PopStatus is Pane {
 
   message { _message }
 
+  // Width: msgW + 2 (frame) + 2 (padding); height: 5 (frame top +
+  // padding row + msg + padding row + frame bot).  Capped at the
+  // screen with a 2-cell margin like every other popup.
   static centeredBounds_(message) {
     var sz   = Screen.size
     var msgW = (message == null ? 0 : message.count)
     var w    = (msgW + 4).max(20).min(sz[0] - 4)
-    var h    = 3                              // top frame + 1 msg + bot frame
+    var h    = 5
     var x    = ((sz[0] - w) / 2).floor + 1
     var y    = ((sz[1] - h) / 2).floor + 1
     return Rect.new(x, y, w, h)
@@ -76,13 +79,18 @@ class PopStatus is Pane {
     if (_message == null) return
     var sf  = surface
     var st  = style("default")
-    var ib  = innerBounds
-    var iw  = ib.w
+    var cb  = contentBounds
+    if (cb == null) return
+    var iw  = cb.w
     var msg = _message
     var trim = msg
     if (msg.count > iw) trim = msg[0...iw]
-    var col = ((iw - trim.count) / 2).floor + 1
-    Painter.text(sf, col, 1, trim, st, iw)
+    // Surface coords: cb.x - bounds.x is the leftmost content col,
+    // cb.y - bounds.y is the top content row.  Both account for
+    // the frame + UIFC padding cell.
+    var col = (cb.x - bounds.x) + ((iw - trim.count) / 2).floor
+    var row = cb.y - bounds.y
+    Painter.text(sf, col, row, trim, st, iw)
   }
 }
 
@@ -118,26 +126,27 @@ class Popup is Pane {
   // and bounds= is the only place that calls it during layout.
   msgRows {
     if (_message == null) return 1
-    var ib = innerBounds
-    if (ib == null) return 1
+    var cb = contentBounds
+    if (cb == null) return 1
     var lines
     if (_preformatted) {
       lines = Popup.splitHardLines_(_message)
     } else {
-      lines = Popup.wrap_(_message, ib.w)
+      lines = Popup.wrap_(_message, cb.w)
     }
     return lines.count.max(1)
   }
 
   // Pre-compute Pane bounds centred on the screen.  Layout reserves
-  // 2 frame rows + however many rows the wrapped message needs +
-  // `extraRows` for whatever the subclass paints below the message.
-  // `minW` lets callers bump the minimum width past 20 cells when
-  // their button row is wider.  Width is sized to the longest
-  // hard-line in the message, capped to the screen width — short
-  // messages stay snug, long ones wrap.  Pass preformatted=true to
-  // count rows by hard breaks only (no word-wrapping) so a tall
-  // ASCII-art block gets the height it needs.
+  // 2 frame rows + 2 padding rows + however many rows the wrapped
+  // message needs + `extraRows` for whatever the subclass paints
+  // below the message.  `minW` lets callers bump the minimum width
+  // past 20 cells when their button row is wider.  Width is sized
+  // to the longest hard-line in the message + 4 (frame + padding),
+  // capped to the screen width — short messages stay snug, long
+  // ones wrap.  Pass preformatted=true to count rows by hard breaks
+  // only (no word-wrapping) so a tall ASCII-art block gets the
+  // height it needs.
   static centeredBounds_(message, extraRows, minW) {
     return centeredBounds_(message, extraRows, minW, false)
   }
@@ -145,8 +154,8 @@ class Popup is Pane {
     var sz   = Screen.size                    // [w, h]
     var maxW = (sz[0] - 4).max(minW)
     var longest = longestHardLine_(message)
-    var w  = (longest + 2).max(minW).min(maxW)
-    var iw = (w - 2).max(1)
+    var w  = (longest + 4).max(minW).min(maxW)   // +4 = frame(2)+padding(2)
+    var iw = (w - 4).max(1)
     var rows = 1
     if (message != null) {
       var lines
@@ -157,7 +166,7 @@ class Popup is Pane {
       }
       rows = lines.count.max(1)
     }
-    var h    = 2 + rows + extraRows
+    var h    = 4 + rows + extraRows              // 2 frame + 2 padding
     var maxH = sz[1] - 2
     if (h > maxH) h = maxH
     var x = ((sz[0] - w) / 2).floor + 1
@@ -261,28 +270,31 @@ class Popup is Pane {
     if (_message == null) return
     var sf = surface
     var st = style("default")
-    var ib = innerBounds
-    var iw = ib.w
+    var cb = contentBounds
+    if (cb == null) return
+    var iw   = cb.w
+    var sx0  = cb.x - bounds.x          // surface col of leftmost content cell
+    var sy0  = cb.y - bounds.y          // surface row of topmost content cell
     var lines
     if (_preformatted) {
       lines = Popup.splitHardLines_(_message)
     } else {
       lines = Popup.wrap_(_message, iw)
     }
-    var blockCol = 1
+    var blockCol = sx0
     if (_preformatted) {
       var longest = 0
       for (line in lines) {
         if (line.count > longest) longest = line.count
       }
-      blockCol = ((iw - longest) / 2).floor + 1
+      blockCol = sx0 + ((iw - longest) / 2).floor
     }
     var i = 0
     while (i < lines.count) {
       var line = lines[i]
       var col  = blockCol
-      if (!_preformatted) col = ((iw - line.count) / 2).floor + 1
-      Painter.text(sf, col, 1 + i, line, st, iw)
+      if (!_preformatted) col = sx0 + ((iw - line.count) / 2).floor
+      Painter.text(sf, col, sy0 + i, line, st, iw)
       i = i + 1
     }
   }
@@ -326,15 +338,18 @@ class Alert is Popup {
     return null
   }
 
-  // OK button sits on the row immediately below the wrapped message,
-  // centred horizontally.
+  // OK button sits hard against the bottom frame, centred
+  // horizontally inside the padded content area.  The blank row
+  // between the wrapped message and the button is the natural
+  // visual separator (it falls out of the height math: 2 frame +
+  // 1 top pad + msgRows + 1 separator + 1 button = 5 + msgRows).
   bounds=(r) {
     super.bounds = r
-    var ib = innerBounds
-    if (ib == null) return
+    var cb = contentBounds
+    if (cb == null) return
     var bw = _ok.intrinsicWidth
-    var bx = ib.x + ((ib.w - bw) / 2).floor
-    _ok.bounds = Rect.new(bx, ib.y + msgRows, bw, 1)
+    var bx = cb.x + ((cb.w - bw) / 2).floor
+    _ok.bounds = Rect.new(bx, bounds.y + bounds.h - 2, bw, 1)
   }
 
   // Esc dismisses directly; everything else (Enter, Space, mouse
@@ -369,18 +384,19 @@ class Confirm is Popup {
     return p.result
   }
 
-  // Side-by-side Yes / No, centred on the first row below the
-  // wrapped message.
+  // Side-by-side Yes / No hard against the bottom frame, centred
+  // horizontally.  The blank row between the message and the
+  // button row is the visual separator.
   bounds=(r) {
     super.bounds = r
-    var ib = innerBounds
-    if (ib == null) return
+    var cb = contentBounds
+    if (cb == null) return
     var yw  = _yes.intrinsicWidth
     var nw  = _no.intrinsicWidth
     var gap = 4
     var total = yw + gap + nw
-    var sx    = ib.x + ((ib.w - total) / 2).floor
-    var row   = ib.y + msgRows
+    var sx    = cb.x + ((cb.w - total) / 2).floor
+    var row   = bounds.y + bounds.h - 2
     _yes.bounds = Rect.new(sx, row, yw, 1)
     _no.bounds  = Rect.new(sx + yw + gap, row, nw, 1)
   }
@@ -433,23 +449,24 @@ class Prompt is Popup {
     return p.result
   }
 
-  // Input fills the row directly below the wrapped message; OK /
-  // Cancel sit side-by-side on the next row.
+  // OK / Cancel hard against the bottom frame; input sits one
+  // row above them.  The blank row between the message and the
+  // input is the visual separator.
   bounds=(r) {
     super.bounds = r
-    var ib = innerBounds
-    if (ib == null) return
-    var iw = (ib.w - 2).max(4)
-    var inputRow = ib.y + msgRows
-    _input.bounds = Rect.new(ib.x + 1, inputRow, iw, 1)
+    var cb = contentBounds
+    if (cb == null) return
+    var iw = cb.w.max(4)
+    var btnRow   = bounds.y + bounds.h - 2
+    var inputRow = btnRow - 1
+    _input.bounds = Rect.new(cb.x, inputRow, iw, 1)
     var ow = _ok.intrinsicWidth
     var cw = _cancel.intrinsicWidth
     var gap   = 4
     var total = ow + gap + cw
-    var sx    = ib.x + ((ib.w - total) / 2).floor
-    var row   = inputRow + 1
-    _ok.bounds     = Rect.new(sx, row, ow, 1)
-    _cancel.bounds = Rect.new(sx + ow + gap, row, cw, 1)
+    var sx    = cb.x + ((cb.w - total) / 2).floor
+    _ok.bounds     = Rect.new(sx, btnRow, ow, 1)
+    _cancel.bounds = Rect.new(sx + ow + gap, btnRow, cw, 1)
   }
 
   // Esc cancels; Enter / Tab / mouse fall through to the focused

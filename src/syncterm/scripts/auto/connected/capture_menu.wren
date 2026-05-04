@@ -29,7 +29,9 @@ class CaptureMenu {
           startFlow_()
         } else if (Capture.paused) {
           pickAndAct_("Capture Control",
-            "Unpause   Continues logging\nClose     Closes the log",
+            "# Capture Control\n\n" +
+            "- **Unpause** - Continues logging\n" +
+            "- **Close** - Closes the log",
             ["Unpause", "Close"],
             Fn.new { |i|
               if (i == 0) {
@@ -40,7 +42,9 @@ class CaptureMenu {
             })
         } else {
           pickAndAct_("Capture Control",
-            "Pause     Suspends logging\nClose     Closes the log",
+            "# Capture Control\n\n" +
+            "- **Pause** - Suspends logging\n" +
+            "- **Close** - Closes the log",
             ["Pause", "Close"],
             Fn.new { |i|
               if (i == 0) {
@@ -67,12 +71,18 @@ class CaptureMenu {
     var pane = Pane.new()
     pane.title    = "Capture Type"
     pane.helpText =
-      "ASCII              Plain text, no escape sequences\n" +
-      "Raw                Preserves ANSI escape sequences\n" +
-      "Binary             Saves the current screen as IBM-CGA / BinaryText\n" +
-      "Binary with SAUCE  Same as Binary plus a SAUCE block\n" +
+      "# Capture Type\n" +
       "\n" +
-      "Raw is useful for stealing ANSI screens from other systems.\n" +
+      "ASCII\n" +
+      ":  Plain text, no escape sequences\n" +
+      "Raw\n" +
+      ":  Preserves ANSI escape sequences\n" +
+      "Binary\n" +
+      ":  Saves the current screen as IBM-CGA / BinaryText\n" +
+      "Binary with SAUCE\n" +
+      ":  Same as Binary plus a SAUCE block\n" +
+      "\n" +
+      "**Raw** is useful for stealing ANSI screens from other systems.  \n" +
       "Don't do that though.  :-)"
     pane.focused = true
     pane.onClose = Fn.new { app.quit() }

@@ -1567,14 +1567,15 @@ foreign class SFTPError is Error {
 // Cache singleton.  Bound at module-load time so any script that
 // `import "syncterm" for Cache`s sees a fully-formed Directory.
 var Cache = Host.cacheDirectory
-// Download root — null when the BBS's DownloadPath is empty or set
-// to $HOME (see Host.downloadDir docstring).  Bound at module-load
-// time, like Cache; the Wren VM is per-session, so a reconnect to a
-// different BBS reloads the module and re-binds it.  Scripts MUST
-// null-check before use.  No `Upload` counterpart exists — uploads
-// must go through `Host.pickFile`/`Host.pickFiles` (which mint a
-// per-file consent token); use `Host.uploadPath` if you need the
-// configured UploadPath as the picker's `initialDir`.
+// Download root — null when the BBS's DownloadPath is empty, set to
+// $HOME, or doesn't exist as a directory on disk (see
+// Host.downloadDir docstring).  Bound at module-load time, like
+// Cache; the Wren VM is per-session, so a reconnect to a different
+// BBS reloads the module and re-binds it.  Scripts MUST null-check
+// before use.  No `Upload` counterpart exists — uploads must go
+// through `Host.pickFile`/`Host.pickFiles` (which mint a per-file
+// consent token); use `Host.uploadPath` if you need the configured
+// UploadPath as the picker's `initialDir`.
 var Download = Host.downloadDir
 
 // WON — Wren Object Notation serialization.

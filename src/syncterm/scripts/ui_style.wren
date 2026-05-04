@@ -316,9 +316,45 @@ class Theme {
       "scrollbar.thumb":
         Style.new(null, 0x1F, 0xFFFFFF, 0x0000A8),
 
-      // Help text: dim grey.
+      // Help text: bright white on the default blue background,
+      // matching UIFC's helpbuf body colour (api->lclr = WHITE).
+      // Used as the cascade root for the markdown sub-roles below;
+      // each inherits the help bg and overrides only the legacyAttr
+      // / fg it needs.
       "help":
-        Style.new(null, 0x17, 0xAAAAAA, 0x0000A8),
+        Style.new(null, 0x1F, 0xFFFFFF, 0x0000A8),
+      // Plain paragraph / bullet body text.  Same as "help" but
+      // explicit so layout code can target the role symbolically.
+      "help.text":
+        Style.new(null, null, null, null),
+      // Inline **bold** and `` `code` ``: both yellow on the help
+      // bg.  UIFC has only one highlight role (backtick toggles
+      // api->hclr = YELLOW), so we collapse the two markdown
+      // emphases onto the same colour for UIFC fidelity — the body
+      // text is already bright white, so a separate "code" shade
+      // would just blur into prose.
+      "help.bold":
+        Style.new(null, 0x1E, 0xFFFF55, null),
+      "help.code":
+        Style.new(null, 0x1E, 0xFFFF55, null),
+      // Headings: blue on cyan, matching UIFC's reverse-bar title
+      // render (lclr/bclr swapped — bg=cyan, fg=blue).  The layout
+      // pads the heading text with a single space cell on each end
+      // so the bar reads as " Title " instead of stopping flush
+      // against the surrounding text — see Markdown.layout.  We
+      // don't have font sizing in the terminal, so the visual
+      // hierarchy comes from the bar plus blank-line spacing
+      // rather than per-level colour shifts.
+      "help.heading.1":
+        Style.new(null, 0x31, 0x0000A8, 0x00AAAA),
+      "help.heading.2":
+        Style.new(null, 0x31, 0x0000A8, 0x00AAAA),
+      "help.heading.3":
+        Style.new(null, 0x31, 0x0000A8, 0x00AAAA),
+      // Bullet glyph: bright white so the • visually anchors the
+      // list item.
+      "help.bullet":
+        Style.new(null, 0x1F, 0xFFFFFF, null),
 
       // Modal popups: yellow on red — distinct from the main window.
       "popup":

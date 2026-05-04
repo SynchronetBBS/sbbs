@@ -402,7 +402,7 @@ class SftpApp is App {
       if (_mode == "browser") pickUpload_()
     })
 
-    // Del — queue-only operation.  No-op silently in browser mode.
+    // Del - queue-only operation.  No-op silently in browser mode.
     bind(Key.delChar, Fn.new {|k|
       if (_mode == "queue") cancelSelected_()
     })
@@ -448,7 +448,7 @@ class SftpApp is App {
   // ----- Close handling -------------------------------------------
 
   // Esc / [X] / Pane.onClose route here.  In a live session this is
-  // just `quit()` — transfers keep running in their worker fibers.
+  // just `quit()` - transfers keep running in their worker fibers.
   // After shell-close, the user wants out: suspend the workers
   // (they exit at next chunk-boundary check, leaving ACTIVE jobs
   // ACTIVE), then quit.  CTerm.sftpActive clears as part of
@@ -515,25 +515,49 @@ class SftpApp is App {
     pane.titleAsBar  = false
     pane.onClose     = Fn.new { dismiss_() }
     pane.helpText =
-        "SFTP browser\n\n" +
-        "Up / Down       move the highlight\n" +
-        "Home / End      jump to ends\n" +
-        "PageUp/PageDown scroll a page\n" +
-        "Enter           on a directory: descend (.. goes up)\n" +
-        "                on a file: queue for download\n" +
-        "F2              show long description (rows marked '+')\n" +
-        "F4              pick a file from UploadPath and queue\n" +
-        "                it as an upload to the current directory\n" +
-        "Alt-Q           switch to queue mode\n" +
-        "Esc / [X]       leave the SFTP UI\n" +
-        "F1 / [?]        this help\n\n" +
-        "The 4-char block before each filename shows transfer +\n" +
-        "local-vs-remote state:\n" +
-        "  [↓↓] downloading   [↑↑] uploading\n" +
-        "  [Q↓] queued down   [Q↑] queued up\n" +
-        "  [er] failed        [cx] cancelled\n" +
-        "  [==] local matches [<>] local differs\n" +
-        "  (blank) no local copy in DownloadPath"
+        "# SFTP browser\n\n" +
+        "## Keys\n\n" +
+        "Up / Down\n" +
+        ":  move the highlight\n" +
+        "Home / End\n" +
+        ":  jump to ends\n" +
+        "PageUp / PageDown\n" +
+        ":  scroll a page\n" +
+        "Enter\n" +
+        ":  on a directory: descend (`..` goes up); on a file: queue for download\n" +
+        "F2\n" +
+        ":  show long description (rows marked `+`)\n" +
+        "F4\n" +
+        ":  pick a file from `UploadPath` and queue it as an upload to the current directory\n" +
+        "Alt-Q\n" +
+        ":  switch to queue mode\n" +
+        "Esc / [X]\n" +
+        ":  leave the SFTP UI\n" +
+        "F1 / [?]\n" +
+        ":  this help\n" +
+        "\n" +
+        "## Status block\n" +
+        "\n" +
+        "The 4-char block before each filename shows transfer + local-vs-remote state:\n" +
+        "\n" +
+        "[↓↓]\n" +
+        ":  downloading\n" +
+        "[↑↑]\n" +
+        ":  uploading\n" +
+        "[Q↓]\n" +
+        ":  queued down\n" +
+        "[Q↑]\n" +
+        ":  queued up\n" +
+        "[er]\n" +
+        ":  failed\n" +
+        "[cx]\n" +
+        ":  cancelled\n" +
+        "[==]\n" +
+        ":  local matches\n" +
+        "[<>]\n" +
+        ":  local differs\n" +
+        "(blank)\n" +
+        ":  no local copy in `DownloadPath`"
     _bPane = pane
 
     // Description bar: only worth its own row when the lname
@@ -572,8 +596,9 @@ class SftpApp is App {
       // File: enqueue for download.  Idempotent on (DOWNLOAD, remote).
       if (Download == null) {
         Alert.show(this,
-            "DownloadPath is not configured (or is set to $HOME).  " +
-            "Set DownloadPath in your BBS list before downloading.")
+            "DownloadPath is not configured, is set to $HOME, or " +
+            "doesn't exist on disk.  Set DownloadPath in your BBS list " +
+            "(and create the directory if necessary) before downloading.")
         return
       }
       var remote   = SftpFmt.joinPath(_bCwd, item.name)
@@ -692,18 +717,25 @@ class SftpApp is App {
     pane.title      = "SFTP Queue"
     pane.onClose    = Fn.new { dismiss_() }
     pane.helpText   =
-        "SFTP queue\n\n" +
-        "Up / Down       move the highlight\n" +
-        "Home / End      jump to ends\n" +
-        "PageUp/PageDown scroll a page\n" +
-        "Del             cancel the highlighted job\n" +
-        "Alt-S           switch to browser mode (if SFTP is available)\n" +
-        "Esc / [X]       leave the SFTP UI (also stops transfers\n" +
-        "                and ends the session if the shell has closed)\n" +
-        "F1 / [?]        this help\n\n" +
-        "Active and queued jobs are at the top; finished, failed,\n" +
-        "and cancelled jobs are listed below.  Cancelling an active\n" +
-        "job takes effect at the next chunk boundary."
+        "# SFTP queue\n\n" +
+        "## Keys\n\n" +
+        "Up / Down\n" +
+        ":  move the highlight\n" +
+        "Home / End\n" +
+        ":  jump to ends\n" +
+        "PageUp / PageDown\n" +
+        ":  scroll a page\n" +
+        "Del\n" +
+        ":  cancel the highlighted job\n" +
+        "Alt-S\n" +
+        ":  switch to browser mode (if SFTP is available)\n" +
+        "Esc / [X]\n" +
+        ":  leave the SFTP UI (also stops transfers and ends the session if the shell has closed)\n" +
+        "F1 / [?]\n" +
+        ":  this help\n" +
+        "\n" +
+        "Active and queued jobs are at the top; finished, failed, and cancelled jobs are listed below.  " +
+        "Cancelling an active job takes effect at the next chunk boundary."
     _qPane = pane
 
     var ib   = pane.innerBounds

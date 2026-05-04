@@ -401,10 +401,14 @@ class UiListTest {
     l.bounds = Rect.new(1, 1, 10, 4)
     l.selected = 1
     var s = l.draw()
-    // No overflow → no scrollbar → content starts at column 0.
+    // No overflow → no scrollbar.  leftInset_ = 1 always, so content
+    // starts at col 1 even without a scrollbar (1-cell padding cell).
     // Row 0 has "aaa" (list.item — legacy 0x1F).
     // Row 1 has "bbb" (list.item.focused — legacy 0x70 lightbar).
-    check_(s.cellAt(0, 0).ch == "a" && s.cellAt(0, 1).ch == "b" &&
+    // The focused fill spans the full width, so col 0 of row 1 is a
+    // space cell painted with the focused legacyAttr.
+    check_(s.cellAt(1, 0).ch == "a" && s.cellAt(1, 1).ch == "b" &&
+           s.cellAt(1, 1).legacyAttr == 0x70 &&
            s.cellAt(0, 1).legacyAttr == 0x70,
            "ListView.draw: rows rendered, selected gets focused style")
   }

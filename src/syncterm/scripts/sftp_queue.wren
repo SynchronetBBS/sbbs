@@ -123,7 +123,11 @@ class JobSnap {
         _bpsStr = Format.bytes(bps) + "/s"
         var remain = j.total - j.done
         if (remain > 0) {
-          _etaStr = Format.duration(remain / bps)
+          // Floor the ETA seconds before formatting — duration_
+          // estimate_to_str's seconds branch uses %g, which would
+          // render sub-second values as scientific notation
+          // ("1.2e-06s") and we don't want that resolution anyway.
+          _etaStr = Format.duration((remain / bps).floor)
         }
       }
     }
@@ -629,7 +633,9 @@ class SftpQueue {
   static runDownload_(job) {
     if (Download == null) {
       job.status = SftpQueue.FAILED
-      job.errMsg = "DownloadPath not configured (or set to $HOME)"
+      job.errMsg = "DownloadPath is not configured, is set to $HOME, or " +
+                   "doesn't exist on disk.  Set DownloadPath in your BBS list " +
+                   "(and create the directory if necessary) before downloading."
       return
     }
     if (Download.contains(job.local)) Download.delete(job.local)

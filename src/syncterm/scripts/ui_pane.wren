@@ -116,6 +116,20 @@ class Pane is Container {
                     bounds.w - 2, bounds.h - topInset - 1)
   }
 
+  // UIFC-style padded interior: innerBounds inset by 1 cell on
+  // every side so text never touches the frame.  Popup-style
+  // widgets (Alert / Confirm / Prompt / PopStatus / Help) lay
+  // themselves out inside this; Panes that want full-frame access
+  // (e.g. a ListView in the SFTP browser) keep using innerBounds
+  // directly.  Width / height are clamped to >= 0 so a too-small
+  // pane returns a degenerate (rather than negative) rect.
+  contentBounds {
+    var ib = innerBounds
+    if (ib == null) return null
+    return Rect.new(ib.x + 1, ib.y + 1,
+                    (ib.w - 2).max(0), (ib.h - 2).max(0))
+  }
+
   // Per-axis frame overhead (= bounds size minus innerBounds size).
   // Horizontal is always 2 (left + right border); vertical is the
   // top inset (1 plain, 3 with title bar) plus 1 for the bottom

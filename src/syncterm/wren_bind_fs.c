@@ -608,18 +608,24 @@ static struct wren_directory *
 dir_check(WrenVM *vm)
 {
 	struct wren_directory *wd = wrenGetSlotForeign(vm, 0);
-	if (wd->dead) {
-		wren_throw(vm, "Directory: handle is dead "
-		    "(an ancestor's Directory.delete invalidated it)");
-		return NULL;
-	}
 	/* Cache directories resolve their path lazily on every call (see
 	 * wd_resolve), so we can't fexist-check them here.  wd_resolve does
-	 * its own existence check after resolving the BBS-relative path. */
+	 * its own existence check after resolving the BBS-relative path.
+	 *
+	 * Run the existence check before the `dead` check so a backing
+	 * vanish reports its true cause every time, not just on the
+	 * first call (fs_kill_dir sets `dead`, which would otherwise
+	 * cause subsequent calls to surface the misleading
+	 * "ancestor's Directory.delete" message). */
 	if (!wd->is_cache && !isdir(wd->path)) {
 		fs_kill_dir(wd);
 		file_build_error(vm, 0, FILE_ERR_VANISHED, 0,
 		    "Directory: backing directory no longer exists");
+		return NULL;
+	}
+	if (wd->dead) {
+		wren_throw(vm, "Directory: handle is dead "
+		    "(an ancestor's Directory.delete invalidated it)");
 		return NULL;
 	}
 	return wd;
@@ -928,14 +934,24 @@ fn_Host_cacheDirectory(WrenVM *vm)
 
 /* Helper for Host.downloadDir — hands back a Directory rooted at
  * bbs->dldir with the relaxed filename predicate enabled.  Returns
- * null when the path is empty/unset OR equals $HOME (the
- * unfortunate-default guard); the caller is expected to surface a
- * "configure DownloadPath" message. */
+ * null when:
+ *   - the path is empty/unset, or
+ *   - it equals $HOME (the unfortunate-default guard), or
+ *   - the path doesn't exist as a directory on disk.
+ * Consumers (sftp_app's status chip, sftp_queue's download path, …)
+ * already null-check the Wren-side `Download` constant; routing the
+ * "configured but missing" case through the same null gate avoids
+ * making every call site re-discover the missing-dir state through
+ * a `FILE_ERR_VANISHED` thrown three calls deep. */
 static void
 push_relaxed_root_(WrenVM *vm, const char *path)
 {
 	wrenEnsureSlots(vm, 2);
 	if (is_dangerous_default_(path)) {
+		wrenSetSlotNull(vm, 0);
+		return;
+	}
+	if (!isdir(path)) {
 		wrenSetSlotNull(vm, 0);
 		return;
 	}
@@ -962,7 +978,9 @@ push_relaxed_root_(WrenVM *vm, const char *path)
 }
 
 /* Host.downloadDir — relaxed-name Directory rooted at bbs->dldir.
- * Returns null when dldir is empty or equals $HOME. */
+ * Returns null when dldir is empty, equals $HOME, or doesn't exist
+ * as a directory on disk (see push_relaxed_root_ for the rationale
+ * — consumer code already null-checks `Download`). */
 void
 fn_Host_downloadDir(WrenVM *vm)
 {

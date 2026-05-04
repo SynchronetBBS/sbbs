@@ -3237,9 +3237,13 @@ pre-bound from these at module load.
   `DownloadPath`, with the relaxed-name predicate enabled (1..255
   bytes; no path separators / NUL / control bytes / `.` / `..` /
   Windows reserved devices, but spaces / leading dots / parens
-  etc. allowed).  Returns `null` when `DownloadPath` is empty OR
-  equal to the user's `$HOME` — the "unfortunate default" guard
-  for old configs.  Used as the module-level `Download` binding.
+  etc. allowed).  Returns `null` when `DownloadPath` is empty,
+  equal to the user's `$HOME` (the "unfortunate default" guard
+  for old configs), or doesn't exist as a directory on disk —
+  consumer code uniformly null-checks `Download` before use, so
+  routing the configured-but-missing case through the same null
+  gate keeps every call site simple.  Used as the module-level
+  `Download` binding.
 
 | `Host.uploadPath`
 | The BBS's configured `UploadPath` as a String, or `null` when
@@ -3385,10 +3389,11 @@ There is no Wren-callable factory for `Directory` — `Cache`,
 
 `Download` is a module-level `Directory` binding pre-bound from
 `Host.downloadDir` at import time.  It is `null` when the
-configured `DownloadPath` is empty or set to the user's `$HOME`;
-scripts MUST null-check before use.  Its relaxed-name predicate
-is what makes typical SFTP filenames ("file with spaces.zip",
-"doc-v1.0.tar.gz") usable as `local` paths in transfer queues.
+configured `DownloadPath` is empty, set to the user's `$HOME`,
+or doesn't exist as a directory on disk; scripts MUST null-check
+before use.  Its relaxed-name predicate is what makes typical
+SFTP filenames ("file with spaces.zip", "doc-v1.0.tar.gz")
+usable as `local` paths in transfer queues.
 
 There is intentionally no `Upload` counterpart.  All uploads must
 go through `Host.pickFile` / `Host.pickFiles`, which mint a
@@ -4673,6 +4678,13 @@ Configuration knobs:
 frame, title row, and separator are accounted for — children should
 size themselves against this.
 
+`pane.contentBounds` is `innerBounds` inset by one cell on every
+side: the UIFC convention that text never touches the frame.
+Popup-style widgets (`Alert` / `Confirm` / `Prompt` / `PopStatus` /
+`Help`) lay themselves out inside `contentBounds`; bare `Pane` use
+sites that want the full frame interior (e.g. a `ListView` filling
+its parent pane) keep using `innerBounds`.
+
 `Pane.focused` is a *visual* flag — set it from the App or a parent
 container when the pane is the foreground.  It does NOT redirect
 keyboard focus; that still flows through `Container`'s normal
@@ -5030,6 +5042,22 @@ directly; `Enter` activates the focused button; `Tab` cycles focus.
 `Prompt` — `TextInput` plus OK / Cancel buttons.  `Enter` in the
 input or on OK submits the value; `Esc` or Cancel returns `null`.
 
+==== Layout
+
+All popups use UIFC-style frame interior padding via
+`Pane.contentBounds` — a 1-cell pad on every side so text never
+touches the frame.  Buttons (Alert OK, Confirm Yes/No, Prompt
+OK/Cancel) anchor hard against the bottom frame; the empty row
+between the message and the button row falls out of the height
+math as a natural visual separator.
+
+`Popup.centeredBounds_(message, extraRows, minW)` sizes the dialog
+around the wrapped message: width is `longest-line + 4` (frame +
+padding), height is `4 + msgRows + extraRows` (2 frame + 2 padding +
+content).  Subclasses pass `extraRows` for whatever they paint
+below the message — `1` for Alert/Confirm (button row), `2` for
+Prompt (input + button rows).
+
 `PopStatus` is the non-modal companion: a centered frame with a
 message and no buttons, used by `App.popStatus(message)`.  It does
 not push onto the modal stack — purely decorative — and is
@@ -5037,28 +5065,93 @@ dismissed with `app.popStatus(null)`.
 
 === Help viewer [[ui-help]]
 
-A modal scrollable text viewer for context help.  Splits the
-supplied body on newlines and renders one row per line inside a
-Popup with its own scroll state.
+A modal scrollable text viewer for context help.  The body is parsed
+once as a markdown subset (see "Markdown subset" below) and laid out
+lazily — text wraps to the dialog width and reflows on resize.
 
 [source,wren]
 ----
 import "ui" for Help
 
 Help.show(app, "Help — Editor",
-          "Up/Down  scroll\nEnter   close\n...")
+          "# Editor\n\n" +
+          "- `Up`/`Down`  scroll\n" +
+          "- `Enter`     close\n")
 ----
 
 Keys: `Up`, `Down`, `PageUp`, `PageDown`, `Home`, `End` scroll;
 `Esc` or `Enter` dismisses.  Wheel scrolls three lines; scrollbar
 clicks/drags jump proportionally.  Same scrollbar knobs as
-`ListView` (`scrollbarSide=`, `scrollbarSeparator=`).
+`ListView` (`scrollbarSide=`, `scrollbarSeparator=`).  Clicking the
+frame's `[X]` corner button dismisses (inherited from `Pane`).
 
 `App.showHelp` (F1 by default) walks from the focused leaf up the
 parent chain looking for a widget with `helpText` set, then calls
 `Help.show` with the title `"Help"` and that text.  Set `helpText`
 on whichever widget is the most-specific scope you want help to
 fall back to.
+
+Default placement: `Help.centeredBounds_()` claims the full cterm
+height minus the status row (`y=1`, `h=screenHeight-1`) and a
+2-cell horizontal margin (`w=screenWidth-4`).  Pass an explicit
+`Rect` via the `bounds=` setter after construction to override.
+
+Padding: 1-cell margin on every side except the scrollbar column,
+where text is flush.  The scrollbar / separator span the full
+inner height (between the top and bottom frame chars); only text
+rows inset by the top/bottom padding.
+
+==== Markdown subset
+
+`Help` body strings (and any `helpText`) are parsed as a small
+CommonMark + Pandoc subset by `ui_markdown.wren`.  Supported syntax:
+
+* Block: `# / ## / ###` headings; `- ` or `* ` bullets; blank-line-
+  separated paragraphs; Pandoc-style definition lists (term line
+  followed by one or more `:  description` lines).
+* Inline: `**bold**`, `` `code` ``.  Backslash escapes a literal
+  `*`, `` ` ``, or `\`.
+* Hard line break: a line ending in two trailing spaces forces a
+  break at that point inside a paragraph or bullet.  Continuation
+  uses the same wrap indent as a soft wrap (so a bullet's hard-
+  break still hangs under the text).
+* Italics are intentionally omitted — terminal italic support
+  varies and dim grey on dark blue is hard to read.
+
+Each block-level token resolves to a style role (`help.heading.1`,
+`help.bold`, `help.code`, `help.bullet`, etc.) that cascades through
+`help` and finally `default`, so themes can restyle without touching
+the parser.  Unknown markup falls through as literal text.
+
+Definition lists pad each term to a common column width — capped at
+half the dialog — and wrap descriptions inside the description
+column, with continuation lines indented to the description start.
+Term and description default to `help.bold` and `help.text`
+respectively.
+
+Headings render as a single-row reverse-video bar: blue-on-cyan
+text with one styled space cell on each end (`" Title "`), matching
+UIFC's backtick-marked title convention.
+
+Layout is reflow-on-width: `Markdown.layout(doc, cols)` returns a
+list of `MdLine`s, each carrying pre-resolved style runs ready for
+`Painter.text`.  `Help` re-runs layout whenever its bounds change
+(open, resize, scrollbar appearing/disappearing) and clamps the
+scroll position accordingly.
+
+Example combining heading + def-list:
+
+[source]
+----
+# Capture Type
+
+ASCII
+:  Plain text, no escape sequences
+Raw
+:  Preserves ANSI escape sequences
+Binary
+:  Saves the current screen as IBM-CGA / BinaryText
+----
 
 === Theme, Style, Glyphs [[ui-theme]]
 

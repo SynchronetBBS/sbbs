@@ -883,13 +883,39 @@ fn_Host_musicNames(WrenVM *vm)
 	}
 }
 
-/* Host.musicHelp — the multi-line help blurb shown by the bbslist
- * editor's music-mode picker.  Same source as the Setup dialog so a
- * Wren-side picker doesn't drift. */
+/* Host.musicHelp — the multi-line help blurb shown by the Wren-side
+ * music picker.  Markdown variant of bbslist.c's `music_helpbuf`;
+ * the uifc Setup dialog uses the backtick-marked-up version
+ * directly, so we don't run a converter at runtime. */
 void
 fn_Host_musicHelp(WrenVM *vm)
 {
-	wrenSetSlotString(vm, 0, music_helpbuf);
+	wrenSetSlotString(vm, 0,
+	    "# ANSI Music Setup\n"
+	    "\n"
+	    "ESC [ | only\n"
+	    ":  Only `CSI |` (SyncTERM) ANSI music is supported.  "
+	    "Enables Delete Line.\n"
+	    "BANSI Style\n"
+	    ":  Also enables BANSI-Style (`CSI N`).  Enables Delete Line.\n"
+	    "All ANSI Music Enabled\n"
+	    ":  Enables both `CSI M` and `CSI N` ANSI music.  "
+	    "Delete Line is disabled.\n"
+	    "\n"
+	    "So-Called ANSI Music has a long and troubled history.  Although the "
+	    "original ANSI standard has well defined ways to provide private "
+	    "extensions to the spec, none of these methods were used.  Instead, "
+	    "so-called ANSI music replaced the Delete Line ANSI sequence.  Many "
+	    "full-screen editors use DL, and to this day, some programs (such as "
+	    "BitchX) require it to run.\n"
+	    "\n"
+	    "To deal with this, BananaCom decided to use what *they* thought was an "
+	    "unspecified escape code `ESC[N` for ANSI music.  Unfortunately, this "
+	    "is broken also.  Although rarely implemented in BBS clients, `ESC[N` "
+	    "is the erase field sequence.\n"
+	    "\n"
+	    "SyncTERM has now defined a third ANSI music sequence which **is** legal "
+	    "according to the ANSI spec.  Specifically `ESC[|`.");
 }
 
 /* ----- Status (Wren-driven status bar) ----------------------------- */
