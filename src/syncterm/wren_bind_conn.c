@@ -566,8 +566,9 @@ fn_CTerm_throttleSpeed(WrenVM *vm)
 
 /* Helper: walk the doterm()-bound speed up or down the rates[] ladder
  * (bbslist.c).  rates[] is a sorted ascending list ending in a
- * sentinel 0; `step > 0` climbs (caps at the entry just before the
- * sentinel), `step < 0` descends (clamps to 0 = unthrottled).
+ * sentinel 0; in this API the sentinel doubles as "unthrottled" so
+ * both directions cycle through it: stepping up from the top entry
+ * (115200) lands on 0; stepping down from 0 wraps to the top.
  * No-op for serial connections to mirror the historical Alt-Up /
  * Alt-Down C handler, which silently ignored those keys when the
  * port speed was the only meaningful rate. */
@@ -582,15 +583,16 @@ throttle_step_(int step)
 		return;
 	int cur = *st->speed;
 	if (step > 0) {
-		if (cur == 0) {
-			*st->speed = rates[0];
-			return;
-		}
-		int next = rates[get_rate_num(cur) + 1];
-		if (next != 0)
-			*st->speed = next;
+		/* Match the C original (term.c): from 0 jump to rates[0],
+		 * from any other rate index forward by one (the sentinel
+		 * 0 entry past 115200 is what disables throttling again). */
+		*st->speed = (cur == 0) ? rates[0]
+		    : rates[get_rate_num(cur) + 1];
 	}
 	else {
+		/* get_rate_num(0) returns the sentinel index, so stepping
+		 * down from 0 gives rates[sentinel - 1] = 115200 — the
+		 * wrap the C handler also produced. */
 		int idx = get_rate_num(cur);
 		*st->speed = (idx == 0) ? 0 : rates[idx - 1];
 	}
@@ -665,6 +667,24 @@ void
 fn_Host_safeMode(WrenVM *vm)
 {
 	wrenSetSlotBool(vm, 0, safe_mode != 0);
+}
+
+/* Host.logUnread / Host.logUnreadError — true while the Wren console
+ * has unread output since the user last visited it.  `_error` is the
+ * subset that includes only compile errors, runtime errors, and stack
+ * frames (the status bar tints the bug indicator red when set,
+ * yellow otherwise).  Cleared by Console.markSeen() / opening the
+ * REPL pane. */
+void
+fn_Host_logUnread(WrenVM *vm)
+{
+	wrenSetSlotBool(vm, 0, wren_host_log_unread());
+}
+
+void
+fn_Host_logUnreadError(WrenVM *vm)
+{
+	wrenSetSlotBool(vm, 0, wren_host_log_unread_error());
 }
 
 /* ----- Status (Wren-driven status bar) ----------------------------- */

@@ -25,5 +25,11 @@ Hook.onKey(Key.altO) { |k|
 // underlying C action checks conn_type, mirroring the old handler).
 // Returns true unconditionally so the key never falls through to the
 // terminal even on a serial session.
-Hook.onKey(Key.altUp)   { |k| CTerm.throttleSpeedUp();   return true }
-Hook.onKey(Key.altDown) { |k| CTerm.throttleSpeedDown(); return true }
+Hook.onKey(Key.altUp) { |k|
+  CTerm.throttleSpeedUp()
+  return true
+}
+Hook.onKey(Key.altDown) { |k|
+  CTerm.throttleSpeedDown()
+  return true
+}

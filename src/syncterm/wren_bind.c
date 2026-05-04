@@ -1090,6 +1090,8 @@ static const struct binding BINDINGS[] = {
 
 	{ "Host", true, "sshPublicKey",      fn_Host_sshPublicKey      },
 	{ "Host", true, "safeMode",          fn_Host_safeMode          },
+	{ "Host", true, "logUnread",         fn_Host_logUnread         },
+	{ "Host", true, "logUnreadError",    fn_Host_logUnreadError    },
 
 	{ "Status", true, "callable",        fn_Status_callable_get    },
 	{ "Status", true, "callable=(_)",    fn_Status_callable_set    },

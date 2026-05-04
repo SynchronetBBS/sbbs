@@ -951,6 +951,7 @@ foreign class BBS {
   foreign static addr
   foreign static port
   foreign static connType
+  foreign static connTypeName
   foreign static user
   foreign static password
   foreign static syspass
@@ -971,6 +972,7 @@ foreign class BBS {
   foreign static added
   foreign static connected
   foreign static fastConnected
+  foreign static elapsedSeconds
   foreign static calls
   foreign static dlDir
   foreign static ulDir
@@ -1331,6 +1333,16 @@ class Host {
   // auto-connect, no SFTP key writes, no script-driven external
   // commands.  Default status bar surfaces "(SAFE)" when this is set.
   foreign static safeMode
+
+  // Wren console activity since the user last visited the REPL.
+  // logUnread covers any non-empty append (script print output, hook
+  // metrics, etc.); logUnreadError is the subset for compile/runtime
+  // errors and stack frames.  Default status bar shows a CP437 ‼
+  // indicator -- red when logUnreadError is set, yellow when only
+  // logUnread is set, blank otherwise.  Cleared by visiting the
+  // console pane (Console.markSeen()).
+  foreign static logUnread
+  foreign static logUnreadError
 }
 
 // Wren-driven status bar.  Replaces the old Hook.onStatus.  Install a

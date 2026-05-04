@@ -1448,8 +1448,7 @@ wren_status_render(int width, struct vmem_cell **out_buf)
 	if (state.surface_class == NULL) {
 		wrenEnsureSlots(state.vm, 1);
 		wrenGetVariable(state.vm, "syncterm", "Surface", 0);
-		if (wrenGetSlotType(state.vm, 0) != WREN_TYPE_UNKNOWN)
-			state.surface_class = wrenGetSlotHandle(state.vm, 0);
+		state.surface_class = wrenGetSlotHandle(state.vm, 0);
 		if (state.surface_class == NULL)
 			return false;
 	}
