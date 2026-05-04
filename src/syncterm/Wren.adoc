@@ -941,11 +941,11 @@ return value does.
 | C1 — replaceable
 | `true` consumes the event (no later hook sees it; SyncTERM's
   default handling is bypassed).  `String` replaces the event's data
-  with the bytes of the string where that's meaningful (currently:
-  `onInput` byte replacement, `onStatus` text replacement).  Any
-  other return — `false`, `null`, a number, an instance, … — is a
-  passthrough: the next hook in the chain sees the unmodified event,
-  and SyncTERM's default handling proceeds.
+  with the bytes of the string where that's meaningful (currently
+  only `onInput` byte replacement).  Any other return — `false`,
+  `null`, a number, an instance, … — is a passthrough: the next
+  hook in the chain sees the unmodified event, and SyncTERM's
+  default handling proceeds.
 
 | C2 — observe-only
 | The return value is ignored entirely.  These hooks fire as a
@@ -1007,11 +1007,6 @@ passthrough.  Use `onInput` if you need byte-level replacement.
   filter.
 | C1
 
-| `Hook.onStatus { \|def\| ... }`
-| `def`: SyncTERM's default status string
-| C1 (only the `String`-replace branch is meaningful; the status bar
-  has no notion of "consume")
-
 | `Hook.every(ms, fn)`
 | `ms`: milliseconds; `fn`: callable
 | C2
@@ -1061,9 +1056,9 @@ sleep call.  If the loop stalls long enough that more than one
 interval has elapsed, the deadline jumps forward to "now" rather
 than firing repeatedly to catch up.
 
-`Hook.onStatus` is called from the status-bar composer.  Returning a
-new string replaces SyncTERM's default status text for the next
-redraw.  Returning anything that isn't a string passes through.
+The status bar is a separate dispatch path — see <<status,Status>>.
+A single render callable (rather than a hook chain) builds the row
+into a `Surface` the host hands it.
 
 === Streaming regex hooks
 
@@ -2718,7 +2713,7 @@ Mirrors the `<<sftperror,SFTPError>>` / `<<fileerror,FileError>>` /
 === CTerm [[cterm]]
 
 Read-only window into `cterm` state — what `term.c` and `ripper.c`
-read.  Useful from `Hook.onInput` and `Hook.onStatus` for
+read.  Useful from `Hook.onInput` and `Status.callable` for
 emulation-aware logic.
 
 [options="header",cols="2,3"]
@@ -2749,7 +2744,14 @@ emulation-aware logic.
 | Mode flags
 | `emulation` (`Emulation`), `doorwayMode`, `music`, `started`,
   `skypix`, `logMode` (`LogMode`), `logPaused`, `statusDisplay`
-  (`StatusDisplay`)
+  (`StatusDisplay`), `atasciiInverse` (Bool — ATASCII inverse-video
+  mode), `ooiiMode` (0 = off, 1..3 = OOTerm / OOTerm1 / OOTerm2)
+
+| Mouse state
+| `mouseMode` (raw enum from `cterm`'s mouse-state struct: 0 = off,
+  1 = RIP, 9 = X10, 1000..1003 = the various tracking modes),
+  `mouseDisabled` (Bool — true when a tracking mode is set but the
+  conio backend has signalled it can't actually report events)
 
 | Bitfield snapshots
 | `extAttr` (`ExtAttr`), `lastColumnFlag` (`LastColumnFlag`)
@@ -2904,7 +2906,8 @@ classes documented below.
 | Group | Fields
 
 | Identity
-| `name`, `addr`, `port`, `connType` (`ConnType`), `comment`,
+| `name`, `addr`, `port`, `connType` (`ConnType`),
+  `connTypeName` (display string for `connType`), `comment`,
   `type` (`BBSListType`), `id`
 
 | Network
@@ -2937,7 +2940,9 @@ classes documented below.
 | `logFile`, `appendLogFile`
 
 | Statistics
-| `added`, `connected`, `fastConnected`, `calls`, `sortOrder`
+| `added`, `connected`, `fastConnected`, `elapsedSeconds`
+  (wall-clock seconds since the connect handshake completed,
+  clamped to >= 0), `calls`, `sortOrder`
 |===
 
 ==== ConnType [[conntype]]
@@ -3182,14 +3187,23 @@ pre-bound from these at module load.
   for a path outside the sandboxed `Cache` / `Download` roots;
   the token *is* the consent.
 
-| `Host.uploadArrow=(b)`, `Host.downloadArrow=(b)`
-| Status-bar transfer-indicator arrows (CP437 ↑ / ↓ at columns
-  28-29).  Generic — any Wren script that knows it's transferring
-  something can light them; the canonical user is the SFTP queue's
-  worker fibers, but a Zmodem / HTTP fetcher / etc. could too.
-  Both default to `false` and are reset on session teardown.
-  Setter only — there's no getter, the host owns the rendered
-  state.
+| `Host.uploadArrow`, `Host.uploadArrow = b`,
+  `Host.downloadArrow`, `Host.downloadArrow = b`
+| Status-bar transfer-indicator arrows (CP437 ↑ / ↓, painted by the
+  default <<status,Status>> render at the row's right edge).
+  Generic — any Wren script that knows it's transferring something
+  can light them; the canonical user is the SFTP queue's worker
+  fibers, but a Zmodem / HTTP fetcher / etc. could too.  Pure
+  Wren-side state on the `Host` class: both default to `false` and
+  vanish with the VM at teardown, no C-side reset needed.  The
+  setter calls `CTerm.refreshStatus()` for you so the bar repaints
+  on the next pass without writers having to remember.
+
+| `Host.safeMode`
+| `true` when SyncTERM was started with `-s` (safe mode): no
+  auto-connect, no SFTP key writes, no script-driven external
+  commands.  The default status bar surfaces `(SAFE)` when this
+  is set so the user can see what mode they're in.
 
 | `Host.sshPublicKey`
 | The first locally-configured SSH public key, as a Map
@@ -3582,10 +3596,68 @@ contract on each method, and <<hookhandle,HookHandle>> for the
 return type.
 
 `Hook.onKey(fn)`, `Hook.onInput(fn)`,
-`Hook.onMouse(fn)`, `Hook.onStatus(fn)`, `Hook.every(ms, fn)`,
+`Hook.onMouse(fn)`, `Hook.every(ms, fn)`,
 plus the filtered variants `Hook.onKey(key, fn)`, `Hook.onInput(byte,
 fn)`, `Hook.onMouse(event, fn)`, and `Hook.onMatch(pattern, fn)`.
 Each call returns a `HookHandle`.
+
+=== Status [[status]]
+
+Wren-driven status bar.  The host invokes a single render callable
+on every status-bar update with a width×1 `Surface` that has been
+pre-filled to the default attribute (yellow on blue, spaces).  The
+callable mutates cells in place and returns; its return value is
+ignored.
+
+[source,wren]
+----
+import "syncterm" for Status, Surface, BBS, CTerm
+
+Status.callable = Fn.new { |surf|
+  if (!Status.enabled) return
+  var s = "%(BBS.name) | %(BBS.connTypeName) | %(BBS.bpsRate) bps"
+  var bytes = s.bytes
+  for (i in 0...bytes.count) {
+    if (i + 1 >= surf.width) break
+    surf[i + 1].chByte = bytes[i]
+  }
+}
+----
+
+The default implementation lives at
+`scripts/auto/connected/status_default.wren` and matches the
+historical C bar's layout (`name (flags) │ ConnType │ speed │
+HH:MM:SS │ ALT-Z menu`) with right-pinned indicators (mouse `M`,
+SFTP arrows).  To override, drop a same-named file in your
+auto-load dir (overrides the embedded default cleanly), or set
+`Status.callable = ...` from any later script — the host releases
+the previous handle so swapping is leak-free.
+
+[options="header",cols="2,3"]
+|===
+| Member | Description
+
+| `Status.callable`
+| The currently installed render `Fn` (or `null` when nothing has
+  been set).  Read it back if you want to chain — wrap the existing
+  callable in your own `Fn.new { \|s\| original.call(s); ... }`.
+
+| `Status.callable = fn`
+| Install (or clear) the render callable.  `fn` must be a callable
+  taking one argument (the `Surface` the host hands it); pass `null`
+  to detach.  Releases the previous handle.
+
+| `Status.enabled`
+| `true` while the SyncTERM-managed status row is active; `false`
+  when DECSSDT or startup config has hidden it.  The render
+  callable should early-return on `!Status.enabled` so it doesn't
+  do layout work that won't be displayed.
+|===
+
+The recycled `Surface` is reallocated only when the terminal width
+changes, so per-frame allocation churn stays out of the hot path.
+Out-of-bounds writes (`surf[i]` for `i >= surf.width`) throw —
+treat `surf.width` as authoritative and clip your own loops.
 
 === Platform [[platform]]
 

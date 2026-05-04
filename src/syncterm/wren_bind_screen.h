@@ -10,8 +10,21 @@
 #include <stdint.h>
 
 #include "wren.h"
+#include "wren_bind_internal.h"
+#include "ciolib.h"               /* struct vmem_cell */
 
 struct mouse_event;
+
+/* Foreign Surface header.  Definition lives here (rather than the .c
+ * file) so wren_host.c can pre-fill the recycled status-bar surface
+ * directly without going through Wren-call indirection per render. */
+struct wren_surface {
+	enum syncterm_wren_foreign type;     /* SWF_SURFACE */
+	int               count;             /* = width * height */
+	struct vmem_cell *buf;               /* malloc'd; freed at finalize */
+	int               width;
+	int               height;
+};
 void fnColor_fromAttr(WrenVM *vm);
 void fnColor_fromRgb(WrenVM *vm);
 void fnColor_toLegacyAttr(WrenVM *vm);

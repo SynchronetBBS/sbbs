@@ -74,7 +74,6 @@ enum wren_hook_event {
 	WREN_HOOK_KEY,
 	WREN_HOOK_INPUT,
 	WREN_HOOK_MOUSE,
-	WREN_HOOK_STATUS,
 	WREN_HOOK_SHELL_CLOSE,      /* shell channel died, session still up */
 	WREN_HOOK_DISCONNECT,       /* main loop exited, session tearing down */
 	WREN_HOOK_COUNT,            /* count of dispatch-array events */
@@ -212,6 +211,24 @@ struct wren_host_state {
 	 * stops draining bytes from the wire so the underlying conn buffer
 	 * fills, the TCP window shrinks, and the remote sees backpressure. */
 	bool        *cterm_suspended;
+
+	/* Pointer to doterm()'s local ooii_mode (0..3).  Set by
+	 * wren_host_bind_ooii_mode() so the CTerm.ooiiMode Wren getter can
+	 * report the live value.  NULL when no doterm() session is active. */
+	int         *ooii_mode;
+
+	/* Status-bar callable (Fn{|surface|...}).  Installed by Wren via
+	 * Status.callable=(fn).  C invokes it from wren_status_render().
+	 * NULL when no callable is set; in that case C leaves the row
+	 * blank (prefilled default attribute, no content). */
+	WrenHandle  *status_callable;
+
+	/* Long-lived width×1 Surface, recycled across status renders to
+	 * avoid per-frame allocation churn.  Reallocated when the terminal
+	 * width changes.  Holds a class-instance handle pinning the
+	 * foreign value so the GC doesn't reclaim it between renders. */
+	WrenHandle  *status_surface;
+	int          status_surface_width;
 
 	/* Cached Fiber.isDone getter, used by the result drainer to skip
 	 * deliveries to fibers that have terminated since the result was

@@ -27,6 +27,20 @@ bool wren_host_active(void);
  * Pass NULL on shutdown to detach. */
 void wren_host_bind_cterm_suspended(bool *flag);
 
+/* Bind a doterm()-local ooii_mode int to the host so the CTerm.ooiiMode
+ * Wren getter can report it.  Pass NULL on shutdown to detach. */
+void wren_host_bind_ooii_mode(int *mode);
+
+/* Status-bar render: invoke the Wren callable installed via
+ * Status.callable=(fn) with a width×1 Surface that has been pre-filled
+ * to a blank default-attribute row.  The script mutates the surface in
+ * place; on return, *out_buf is set to the surface's cell buffer
+ * (caller must NOT free) and the function returns true.  Returns false
+ * (and leaves *out_buf untouched) if no callable is registered, the VM
+ * is not on the owner thread, the call fails, or width is zero. */
+struct vmem_cell;
+bool wren_status_render(int width, struct vmem_cell **out_buf);
+
 /* Input-shaped dispatchers: return true to consume / drop the event,
  * false to pass through. The first hook returning true short-circuits;
  * subsequent hooks are not called for that event. */
@@ -48,11 +62,6 @@ bool wren_host_dispatch_mouse(struct mouse_event *ev);
 #define WREN_INPUT_KEEP   0
 #define WREN_INPUT_DROP   (-1)
 int wren_host_dispatch_input(unsigned char byte, char *out, int out_cap);
-
-/* Status composition: copies a replacement status line into out (size
- * outsz including NUL) and returns true if a script provided one;
- * returns false to use the default. */
-bool wren_host_compose_status(const char *def, char *out, size_t outsz);
 
 /* True when log entries have arrived since the last
  * wren_host_mark_log_seen() (i.e., since the user last left the Wren
@@ -79,14 +88,6 @@ void wren_host_dispatch_shell_close(void);
  * Hook.onDisconnect handlers run; intended for final local-state
  * flushes (no SFTP available at this point — sftpc_finish has run). */
 void wren_host_dispatch_disconnect(void);
-
-/* Status-bar transfer arrows.  Wren toggles via Host.uploadArrow=(b)
- * and Host.downloadArrow=(b); the status-bar update path reads here.
- * Generic — any transfer-shaped Wren script can light them, not
- * just SFTP.  Reset on VM teardown. */
-bool wren_upload_arrow_lit(void);
-bool wren_download_arrow_lit(void);
-void wren_xfer_arrows_reset(void);
 
 /* SFTP-active flag set by the Wren-side SftpQueue (CTerm.sftpActive=).
  * Read by ssh.c when deciding whether to set conn_api.terminate on

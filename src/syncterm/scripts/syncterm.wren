@@ -1161,7 +1161,6 @@ class Hook {
 
   foreign static onMouse(fn)
   foreign static onMouse(event, fn)
-  foreign static onStatus(fn)
   // Lifecycle hooks: onShellClose fires when the SSH shell channel
   // closes but the session is still up (SFTP transfers may still be
   // in flight); onDisconnect fires after the main loop has exited,
@@ -1287,16 +1286,50 @@ class Host {
   // Status-bar transfer-indicator arrows.  Generic — any Wren
   // script that knows it's transferring something can light them
   // (the SFTP queue is just the first user; future Zmodem / HTTP
-  // fetcher / ftp client / etc. can too).  Both default to false
-  // and are reset on session teardown by the host.
-  foreign static uploadArrow=(b)
-  foreign static downloadArrow=(b)
+  // fetcher / ftp client / etc. can too).  Pure Wren state: both
+  // reset to null/false when the VM is torn down on disconnect.
+  // Setters call CTerm.refreshStatus() so the indicator updates on
+  // the next render pass without the writer having to do it.
+  static uploadArrow { __upArrow == true }
+  static uploadArrow=(b) {
+    __upArrow = b
+    CTerm.refreshStatus()
+  }
+  static downloadArrow { __downArrow == true }
+  static downloadArrow=(b) {
+    __downArrow = b
+    CTerm.refreshStatus()
+  }
   // First locally-configured SSH public key, as a Map
   // {"algo": String, "blob": String} (e.g. algo: "ssh-ed25519", blob:
   // base64-encoded), or null when none is available.  Used by
   // sftp_pubkey.wren to append the user's authorized_keys entry on
   // connect.  Returns the same key on every call within a session.
   foreign static sshPublicKey
+  // True when SyncTERM was started with -s (safe mode): no
+  // auto-connect, no SFTP key writes, no script-driven external
+  // commands.  Default status bar surfaces "(SAFE)" when this is set.
+  foreign static safeMode
+}
+
+// Wren-driven status bar.  Replaces the old Hook.onStatus.  Install a
+// callable via `Status.callable = Fn.new { |surface| ... }` and the
+// host will invoke it on every status-bar update with a width×1 Surface
+// that has been pre-filled to the default attribute (yellow on blue,
+// spaces).  The callable mutates cells in place; its return value is
+// ignored.  Set `Status.callable = null` to detach.
+//
+// The default implementation lives in
+// scripts/auto/connected/status_default.wren and runs on every
+// connection.  To override, drop a same-named file in your auto-load
+// dir or assign `Status.callable = ...` from any later script.
+//
+// `Status.enabled` is false while the SyncTERM-managed row is hidden
+// (DECSSDT or startup config); the callable should early-return then.
+class Status {
+  foreign static callable
+  foreign static callable=(fn)
+  foreign static enabled
 }
 
 // Platform identification.  `name` returns the uname(2) sysname on

@@ -16,7 +16,9 @@
 #include "comio.h"     /* COM_FLOW_CONTROL_* — also used by FlowControl in wren_bind.c */
 #include "conn.h"
 #include "cterm.h"
-#include "term.h"      /* force_status_update */
+#include "genwrap.h"   /* xp_fast_timer64 */
+#include "syncterm.h"  /* safe_mode */
+#include "term.h"      /* force_status_update, term, struct mouse_state */
 
 #include <stdbool.h>
 #include <stdint.h>
@@ -478,6 +480,136 @@ fn_CTerm_logPaused(WrenVM *vm)
 {
 	bool v = (cterm != NULL) && ((cterm->log & CTERM_LOG_PAUSED) != 0);
 	wrenSetSlotBool(vm, 0, v);
+}
+
+/* CTerm.atasciiInverse — true while ATASCII inverse-video mode is on.
+ * Read by the default status bar to surface "(INV)". */
+void
+fn_CTerm_atasciiInverse(WrenVM *vm)
+{
+	wrenSetSlotBool(vm, 0,
+	    cterm != NULL && cterm_atascii_inverse(cterm));
+}
+
+/* CTerm.ooiiMode — current OOII mode (0 = off, 1..3 = OOTerm/OOTerm1/
+ * OOTerm2).  Backed by doterm()'s local; reads 0 when no session is
+ * active. */
+void
+fn_CTerm_ooiiMode(WrenVM *vm)
+{
+	struct wren_host_state *st = wren_host_state();
+	int v = (st != NULL && st->ooii_mode != NULL) ? *st->ooii_mode : 0;
+	wrenSetSlotDouble(vm, 0, (double)v);
+}
+
+/* CTerm.mouseMode — raw enum value from cterm->mouse_state_change_cbdata
+ * (MM_OFF == 0, MM_RIP == 1, MM_X10 == 9, MM_*_TRACKING == 1000-1003).
+ * Used by the default status bar to decide whether to light "M". */
+void
+fn_CTerm_mouseMode(WrenVM *vm)
+{
+	int v = 0;
+	if (cterm != NULL && cterm->mouse_state_change_cbdata != NULL) {
+		struct mouse_state *ms = cterm->mouse_state_change_cbdata;
+		v = (int)ms->mode;
+	}
+	wrenSetSlotDouble(vm, 0, (double)v);
+}
+
+/* CTerm.mouseDisabled — companion to mouseMode: true when the mouse is
+ * in a tracking mode but the conio backend has signalled it can't
+ * actually report events (no SDL pointer, headless, etc.). */
+void
+fn_CTerm_mouseDisabled(WrenVM *vm)
+{
+	bool v = false;
+	if (cterm != NULL && cterm->mouse_state_change_cbdata != NULL) {
+		struct mouse_state *ms = cterm->mouse_state_change_cbdata;
+		v = (ms->flags & MS_FLAGS_DISABLED) != 0;
+	}
+	wrenSetSlotBool(vm, 0, v);
+}
+
+/* BBS.elapsedSeconds — wall-clock seconds since the connect handshake
+ * completed (clamped to >= 0).  Avoids exposing fast_connected and
+ * forcing every script to subtract a "now" timestamp themselves. */
+void
+fn_BBS_elapsedSeconds(WrenVM *vm)
+{
+	struct wren_host_state *st = wren_host_state();
+	int64_t e = 0;
+	if (st != NULL && st->bbs != NULL) {
+		int64_t now = xp_fast_timer64();
+		e = now - st->bbs->fast_connected;
+		if (e < 0)
+			e = 0;
+	}
+	wrenSetSlotDouble(vm, 0, (double)e);
+}
+
+/* BBS.connTypeName — display string for the active connection type
+ * ("Telnet", "SSH", "Serial", "RLogin Reversed", …).  Convenience
+ * over the BBS.connType integer enum. */
+void
+fn_BBS_connTypeName(WrenVM *vm)
+{
+	struct wren_host_state *st = wren_host_state();
+	const char *s = "";
+	if (st != NULL && st->bbs != NULL) {
+		int t = st->bbs->conn_type;
+		if (t >= 0 && conn_types[t] != NULL)
+			s = conn_types[t];
+	}
+	wrenSetSlotString(vm, 0, s);
+}
+
+/* Host.safeMode — true when SyncTERM was started with -s (safe mode):
+ * no auto-connect, no SFTP key writes, no script-driven external
+ * commands.  Default status bar surfaces "(SAFE)". */
+void
+fn_Host_safeMode(WrenVM *vm)
+{
+	wrenSetSlotBool(vm, 0, safe_mode != 0);
+}
+
+/* ----- Status (Wren-driven status bar) ----------------------------- */
+
+/* Status.callable — getter returns the currently installed Fn (or null
+ * when no script has set one).  C calls it from wren_status_render(). */
+void
+fn_Status_callable_get(WrenVM *vm)
+{
+	struct wren_host_state *st = wren_host_state();
+	if (st == NULL || st->status_callable == NULL)
+		wrenSetSlotNull(vm, 0);
+	else
+		wrenSetSlotHandle(vm, 0, st->status_callable);
+}
+
+/* Status.callable=(fn) — install (or clear) the status-bar render
+ * function.  Pass null to detach.  Releases any previously installed
+ * handle so VMs can swap implementations cleanly without leaking. */
+void
+fn_Status_callable_set(WrenVM *vm)
+{
+	struct wren_host_state *st = wren_host_state();
+	if (st == NULL)
+		return;
+	if (st->status_callable != NULL) {
+		wrenReleaseHandle(vm, st->status_callable);
+		st->status_callable = NULL;
+	}
+	if (wrenGetSlotType(vm, 1) != WREN_TYPE_NULL)
+		st->status_callable = wrenGetSlotHandle(vm, 1);
+}
+
+/* Status.enabled — true while the SyncTERM-managed status row is
+ * active.  False when DECSSDT (or nostatus startup config) has hidden
+ * it; the script's render Fn should early-return then. */
+void
+fn_Status_enabled(WrenVM *vm)
+{
+	wrenSetSlotBool(vm, 0, !term.nostatus);
 }
 
 /* ----- ExtAttr / LastColumnFlag (CTerm bitfield snapshots) --------- */

@@ -331,6 +331,12 @@ wren_host_bind_cterm_suspended(bool *flag)
 	state.cterm_suspended = flag;
 }
 
+void
+wren_host_bind_ooii_mode(int *mode)
+{
+	state.ooii_mode = mode;
+}
+
 /* --------------------------------------------------------------------
  * Result queue
  * -------------------------------------------------------------------- */
@@ -1052,6 +1058,11 @@ wren_host_shutdown(void)
 		wrenReleaseHandle(state.vm, state.conn_error_class);
 	if (state.timer_elapsed_class != NULL)
 		wrenReleaseHandle(state.vm, state.timer_elapsed_class);
+	if (state.status_callable != NULL)
+		wrenReleaseHandle(state.vm, state.status_callable);
+	if (state.status_surface != NULL)
+		wrenReleaseHandle(state.vm, state.status_surface);
+	state.status_surface_width = 0;
 	for (int i = 0; i < state.pending_timer_count; i++) {
 		if (state.pending_timers[i].fiber != NULL)
 			wrenReleaseHandle(state.vm,
@@ -1098,11 +1109,11 @@ wren_host_shutdown(void)
 	active = false;
 	pthread_mutex_destroy(&state.result_mutex);
 
-	/* Clear the status-bar transfer arrows — without this, a next
-	 * session's status bar would briefly show the old session's
-	 * arrows lit. */
-	wren_xfer_arrows_reset();
-	/* Clear the SFTP-active flag so the next session's ssh.c teardown
+	/* The transfer-arrow flags now live in Wren static fields
+	 * (Host.uploadArrow / Host.downloadArrow) so they vanish with the
+	 * VM on teardown — no C-side reset needed.
+	 *
+	 * Clear the SFTP-active flag so the next session's ssh.c teardown
 	 * decision starts from a clean slate. */
 	wren_sftp_active_reset();
 }
@@ -1386,32 +1397,91 @@ wren_host_dispatch_mouse(struct mouse_event *ev)
 	return false;
 }
 
-bool
-wren_host_compose_status(const char *def, char *out, size_t outsz)
+/* --------------------------------------------------------------------
+ * Status bar render
+ * --------------------------------------------------------------------
+ *
+ * The Wren-side default lives in scripts/auto/connected/status_default.wren
+ * and installs itself via Status.callable=(fn).  Drop a same-named file
+ * in the user's auto-load dir to override; or set Status.callable from
+ * any script after the default has loaded.
+ *
+ * Per render: ensure a width×1 Surface exists (lazily allocated, recycled
+ * across frames; reallocated on width change), fill its cells to the
+ * default attribute (yellow on blue, spaces), then call the script's Fn
+ * with the surface as its single argument.  The script mutates cells in
+ * place; on return *out_buf points at the surface's underlying vmem_cell
+ * buffer for the caller to vmem_puttext.
+ *
+ * Returns false (and leaves *out_buf untouched) if no callable is set,
+ * the VM isn't on the owner thread, the surface allocation failed, or
+ * the call failed -- term.c will fall back to the prefilled blank row in
+ * that case. */
+static void
+status_surface_prefill(struct wren_surface *sf)
 {
-	if (!active || !on_owner_thread() || out == NULL || outsz == 0)
-		return false;
-	int n = state.hook_count[WREN_HOOK_STATUS];
-	for (int i = 0; i < n; i++) {
-		struct wren_hook_entry *h = state.hooks[WREN_HOOK_STATUS][i];
-		if (h == NULL || h->fn == NULL)
-			continue;
-		wrenEnsureSlots(state.vm, 3);
-		wrenSetSlotHandle(state.vm, 0, state.hook_class);
-		wrenSetSlotHandle(state.vm, 1, h->fn);
-		wrenSetSlotString(state.vm, 2, def != NULL ? def : "");
-		if (metrics_invoke(&h->metrics, state.dispatch1_handle) !=
-		    WREN_RESULT_SUCCESS)
-			continue;
-		if (wrenGetSlotType(state.vm, 0) != WREN_TYPE_STRING)
-			continue;
-		const char *s = wrenGetSlotString(state.vm, 0);
-		if (s == NULL)
-			continue;
-		strlcpy(out, s, outsz);
-		return true;
+	if (sf == NULL || sf->buf == NULL)
+		return;
+	for (int i = 0; i < sf->count; i++) {
+		sf->buf[i].ch           = 0x20;
+		sf->buf[i].font         = 0;
+		sf->buf[i].legacy_attr  = 0x1e;
+		sf->buf[i].fg           = 0x80ffff54;
+		sf->buf[i].bg           = 0x800000a8;
+		sf->buf[i].hyperlink_id = 0;
 	}
-	return false;
+}
+
+bool
+wren_status_render(int width, struct vmem_cell **out_buf)
+{
+	if (!active || !on_owner_thread() || width <= 0 || out_buf == NULL)
+		return false;
+	if (state.status_callable == NULL)
+		return false;
+	if (state.surface_class == NULL) {
+		wrenEnsureSlots(state.vm, 1);
+		wrenGetVariable(state.vm, "syncterm", "Surface", 0);
+		if (wrenGetSlotType(state.vm, 0) != WREN_TYPE_UNKNOWN)
+			state.surface_class = wrenGetSlotHandle(state.vm, 0);
+		if (state.surface_class == NULL)
+			return false;
+	}
+
+	/* (Re)allocate the long-lived Surface on first call or width change.
+	 * The previous surface's foreign data is held only via the released
+	 * handle, so dropping the handle lets Wren's GC reclaim it. */
+	if (state.status_surface == NULL ||
+	    state.status_surface_width != width) {
+		if (state.status_surface != NULL) {
+			wrenReleaseHandle(state.vm, state.status_surface);
+			state.status_surface = NULL;
+		}
+		wrenEnsureSlots(state.vm, 3);
+		wrenSetSlotHandle(state.vm, 0, state.surface_class);
+		wrenSetSlotDouble(state.vm, 1, (double)width);
+		wrenSetSlotDouble(state.vm, 2, 1.0);
+		wren_surface_allocate(state.vm);
+		struct wren_surface *sf = wrenGetSlotForeign(state.vm, 0);
+		if (sf == NULL || sf->buf == NULL || sf->count != width)
+			return false;
+		state.status_surface = wrenGetSlotHandle(state.vm, 0);
+		state.status_surface_width = width;
+	}
+
+	wrenEnsureSlots(state.vm, 2);
+	wrenSetSlotHandle(state.vm, 0, state.status_callable);
+	wrenSetSlotHandle(state.vm, 1, state.status_surface);
+	struct wren_surface *sf = wrenGetSlotForeign(state.vm, 1);
+	if (sf == NULL || sf->buf == NULL)
+		return false;
+	status_surface_prefill(sf);
+
+	if (wrenCall(state.vm, state.call1_handle) != WREN_RESULT_SUCCESS)
+		return false;
+
+	*out_buf = sf->buf;
+	return true;
 }
 
 void
@@ -1440,9 +1510,9 @@ wren_host_dispatch_timer(void)
 
 /* Fire every Hook.onShellClose / Hook.onDisconnect handler in
  * registration order.  No payload; handlers take no args.  Return
- * value is ignored (these aren't "consume the event" hooks).  Pattern
- * mirrors wren_host_compose_status but with dispatch0_handle since
- * there's no argument to pass. */
+ * value is ignored (these aren't "consume the event" hooks).  Same
+ * shape as the input/mouse dispatchers above, but using
+ * dispatch0_handle since there's no argument to pass. */
 static void
 dispatch_zero_arg_event(enum wren_hook_event ev)
 {

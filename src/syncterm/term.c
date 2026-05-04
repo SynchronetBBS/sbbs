@@ -437,17 +437,10 @@ cp437_savescrn(void)
 void
 update_status(struct bbslist *bbs, int speed, int ooii_mode, bool ata_inv)
 {
+	(void)bbs;          /* state read by Wren via host_state->bbs */
+	(void)ooii_mode;    /* state read by Wren via host_state->ooii_mode */
+	(void)ata_inv;      /* state read by Wren via CTerm.atasciiInverse */
 	size_t i;
-	int avail = 30;
-	int timeon;
-	int rc;
-	char nbuf[31]; /*
-                        * Room for "Name (Logging) (115300) (DrWy) (OOTerm2) (INV)" and terminator
-                        * SAFE and Logging should be possible.
-                        */
-	char sbuf[10];
-	char tobuf[9];
-	char fullbuf[81];
 	int64_t now = xp_fast_timer64();
 	struct mouse_state *ms = cterm->mouse_state_change_cbdata;
 	static int64_t lastupd = 0;
@@ -458,30 +451,16 @@ update_status(struct bbslist *bbs, int speed, int ooii_mode, bool ata_inv)
 	if (term.nostatus)
 		return;
 
-	if (status_bar == NULL || status_bar_sz != term.width) {
-		free(status_bar);
-		status_bar_sz = term.width;
-		status_bar = calloc(status_bar_sz, sizeof(status_bar[0]));
-		if (status_bar == NULL) {
-			status_bar_sz = 0;
-			return;
-		}
-		for (i = 0; i < status_bar_sz; i++) {
-			status_bar[i].fg = 0x80ffff54;
-			status_bar[i].bg = 0x800000a8;
-			status_bar[i].ch = ' ';
-			status_bar[i].font = 0;
-			status_bar[i].legacy_attr = 0x1e;
-			status_bar[i].hyperlink_id = 0;
-		}
-	}
-
+	/* Change detection: skip the Wren round-trip when nothing the
+	 * default script can read has moved.  `now != lastupd` ticks once
+	 * per second so the elapsed-time field still updates.  Narrow
+	 * widths force every-iteration redraws because the content
+	 * cycles faster (no time field, less cushion). */
 	if (term.width < 80)
 		lastupd = now;
-	if (ata_inv)
-		newbits = 1;
-	else
-		newbits = 0;
+	newbits = 0;
+	if (cterm_atascii_inverse(cterm))
+		newbits |= 1;
 	if (safe_mode)
 		newbits |= 0x02;
 	if (cterm->log)
@@ -494,18 +473,19 @@ update_status(struct bbslist *bbs, int speed, int ooii_mode, bool ata_inv)
 		newbits |= 0x40;
 		force_status_update = false;
 	}
-	bool sftp_up_active = wren_upload_arrow_lit();
-	bool sftp_dn_active = wren_download_arrow_lit();
-	if (sftp_up_active)
-		newbits |= 0x80;
-	if (sftp_dn_active)
-		newbits |= 0x100;
-	bool log_unread       = wren_host_log_unread();
-	bool log_unread_error = wren_host_log_unread_error();
-	if (log_unread)
+	/* SFTP arrows now live entirely in Wren (Host.uploadArrow /
+	 * Host.downloadArrow); the setters call CTerm.refreshStatus() to
+	 * force a redraw via force_status_update above. */
+	if (wren_host_log_unread())
 		newbits |= 0x200;
-	if (log_unread_error)
+	if (wren_host_log_unread_error())
 		newbits |= 0x400;
+	if (ms != NULL) {
+		if (ms->mode != MM_OFF)
+			newbits |= 0x800;
+		if (ms->flags & MS_FLAGS_DISABLED)
+			newbits |= 0x1000;
+	}
 	if (rip_did_reinit)
 		rip_did_reinit = false;
 	else {
@@ -516,122 +496,38 @@ update_status(struct bbslist *bbs, int speed, int ooii_mode, bool ata_inv)
 	oldspeed = speed;
 	oldbits = newbits;
 
-	switch(cio_api.mode) {
-		case CIOLIB_MODE_CURSES:
-		case CIOLIB_MODE_CURSES_IBM:
-		case CIOLIB_MODE_ANSI:
-			if (term.width >= 80)
-				avail = 29;
-	}
-	if (term.width == 40)
-		avail = 29;
+	if (term.width <= 0)
+		return;
 
-	if (speed)
-		snprintf(sbuf, sizeof(sbuf), " (%d)", speed);
-	else
-		sbuf[0] = 0;
-	rc = snprintf(nbuf, avail + 1, "%s%s%s%s%s%s%s", bbs->name, safe_mode ? " (SAFE)" : ""
-	    , cterm->log ? " (Logging)" : "", sbuf, cterm->doorway_mode ? " (DrWy)" : ""
-	    , ooii_mode == 1 ? " (OOTerm)" : ooii_mode == 2 ? " (OOTerm1)" : ooii_mode == 3 ? " (OOTerm2)" : ""
-	    , ata_inv ? " (INV)" : "");
-	if (rc > avail) {
-		nbuf[avail - 1] = '.';
-		nbuf[avail - 2] = '.';
-		nbuf[avail - 3] = '.';
-	}
-	if (term.width >= 80) {
-		timeon = now - bbs->fast_connected;
-		if (timeon > 360000)
-			timeon = 360000;
-		else if (timeon < 0)
-			timeon = 0;
-		if (timeon > 359999)
-			strlcpy(tobuf, "Too Long", sizeof(tobuf));
-		else
-			snprintf(tobuf, sizeof(tobuf), "%02d:%02d:%02d", timeon / 3600, (timeon / 60) % 60
-			    , timeon % 60);
-		snprintf(fullbuf, sizeof(fullbuf), " %-*.*s %c %-6.6s %c Connected: %s %c %s", avail, avail, nbuf, 0xb3
-		    , conn_types[bbs->conn_type], 0xb3, tobuf, 0xb3
-		    , avail == 29 ? "CTRL-S for menu" : ALT_KEY_NAME3CH "-Z for menu ");
-	}
-	else {
-		snprintf(fullbuf, sizeof(fullbuf), " %-*.*s %c %-6.6s ", avail, avail, nbuf, 0xb3
-		    , conn_types[bbs->conn_type]);
-	}
-	if (wren_host_active()) {
-		char overlay[81];
-		if (wren_host_compose_status(fullbuf, overlay, sizeof(overlay)))
-			strlcpy(fullbuf, overlay, sizeof(fullbuf));
-	}
-	if (ms->mode == MM_OFF) {
-		status_bar[30].ch = ' ';
-	}
-	for (i = 1; fullbuf[i] && i < term.width; i++) {
-		status_bar[i].ch = fullbuf[i];
-	}
-	if (ms->mode != MM_OFF) {
-		// TODO: Clear before M?
-		//status_bar[29].ch = ' ';
-		status_bar[30].ch = 'M';
-		if (ms->flags & MS_FLAGS_DISABLED) {
-			status_bar[30].fg = 0x80545454;
-			status_bar[30].legacy_attr = 0x18;
+	/* Try the Wren render path first.  The default callable lives in
+	 * scripts/auto/connected/status_default.wren and paints the row
+	 * directly into a recycled width×1 Surface.  When Wren is
+	 * inactive (init failed, no callable installed yet, etc.) we
+	 * fall back to a C-side blank row so the bottom line never goes
+	 * stale. */
+	struct vmem_cell *cells = NULL;
+	if (!wren_status_render(term.width, &cells)) {
+		if (status_bar == NULL || status_bar_sz != (size_t)term.width) {
+			free(status_bar);
+			status_bar_sz = term.width;
+			status_bar = calloc(status_bar_sz, sizeof(status_bar[0]));
+			if (status_bar == NULL) {
+				status_bar_sz = 0;
+				return;
+			}
 		}
-		else {
-			status_bar[30].fg = 0x80ffff54;
-			status_bar[30].legacy_attr = 0x1e;
+		for (i = 0; i < status_bar_sz; i++) {
+			status_bar[i].fg = 0x80ffff54;
+			status_bar[i].bg = 0x800000a8;
+			status_bar[i].ch = ' ';
+			status_bar[i].font = 0;
+			status_bar[i].legacy_attr = 0x1e;
+			status_bar[i].hyperlink_id = 0;
 		}
+		cells = status_bar;
 	}
-	/* SFTP transfer activity: ↑ at col 28, ↓ at col 29.  Lit bright
-	 * yellow like an active 'M'; blanked to the usual status-bar
-	 * background when idle so the column doesn't linger after a
-	 * transfer finishes. */
-	if (status_bar_sz > 29) {
-		if (sftp_up_active) {
-			status_bar[28].ch = 0x18;  /* CP437 ↑ */
-			status_bar[28].fg = 0x80ffff54;
-			status_bar[28].legacy_attr = 0x1e;
-		}
-		else {
-			status_bar[28].ch = ' ';
-			status_bar[28].fg = 0x80ffff54;
-			status_bar[28].legacy_attr = 0x1e;
-		}
-		if (sftp_dn_active) {
-			status_bar[29].ch = 0x19;  /* CP437 ↓ */
-			status_bar[29].fg = 0x80ffff54;
-			status_bar[29].legacy_attr = 0x1e;
-		}
-		else {
-			status_bar[29].ch = ' ';
-			status_bar[29].fg = 0x80ffff54;
-			status_bar[29].legacy_attr = 0x1e;
-		}
-	}
-	/* Wren log "bug" indicator at col 27, immediately left of the
-	 * SFTP queue arrows.  Bright red ‼ when at least one unread
-	 * entry is an error (compile/runtime/stack-frame); bright yellow
-	 * when only non-error print output is unread; blank when caught
-	 * up. */
-	if (status_bar_sz > 28) {
-		if (log_unread_error) {
-			status_bar[27].ch = 0x13;
-			status_bar[27].fg = 0x80ff5454;
-			status_bar[27].legacy_attr = 0x1c;
-		}
-		else if (log_unread) {
-			status_bar[27].ch = 0x13;
-			status_bar[27].fg = 0x80ffff54;
-			status_bar[27].legacy_attr = 0x1e;
-		}
-		else {
-			status_bar[27].ch = ' ';
-			status_bar[27].fg = 0x80ffff54;
-			status_bar[27].legacy_attr = 0x1e;
-		}
-	}
-	vmem_puttext(term.x - 1, term.y + term.height - 1, term.x + term.width - 2, term.y + term.height - 1
-	    , status_bar);
+	vmem_puttext(term.x - 1, term.y + term.height - 1,
+	    term.x + term.width - 2, term.y + term.height - 1, cells);
 }
 
 static bool
@@ -798,31 +694,46 @@ show_status_url(const char *url)
 {
 	size_t i;
 
-	if (term.nostatus)
+	if (term.nostatus || term.width <= 0)
 		return;
-	if (status_bar == NULL || status_bar_sz == 0)
-		return;
+
+	/* Lay out a fresh blank row (default yellow-on-blue attr) and
+	 * centre the URL in it -- truncating with a "..." tail if the
+	 * URL is wider than the row.  Doesn't touch the Wren-owned
+	 * status surface, so once the user moves off the link the next
+	 * update_status() restores whatever the script was painting. */
+	if (status_bar == NULL || status_bar_sz != (size_t)term.width) {
+		free(status_bar);
+		status_bar_sz = term.width;
+		status_bar = calloc(status_bar_sz, sizeof(status_bar[0]));
+		if (status_bar == NULL) {
+			status_bar_sz = 0;
+			return;
+		}
+	}
+	for (i = 0; i < status_bar_sz; i++) {
+		status_bar[i].fg           = 0x80ffff54;
+		status_bar[i].bg           = 0x800000a8;
+		status_bar[i].ch           = ' ';
+		status_bar[i].font         = 0;
+		status_bar[i].legacy_attr  = 0x1e;
+		status_bar[i].hyperlink_id = 0;
+	}
 
 	size_t len = strlen(url);
 	size_t avail = status_bar_sz > 2 ? status_bar_sz - 2 : 0;
-	size_t start;
 	bool truncated = false;
-
 	if (len > avail) {
 		len = avail;
 		truncated = true;
 	}
-	start = 1 + (avail - len) / 2;
-	for (i = 1; i < status_bar_sz - 1; i++) {
-		if (i >= start && i < start + len)
-			status_bar[i].ch = url[i - start];
-		else
-			status_bar[i].ch = ' ';
-	}
-	if (truncated && avail >= 3) {
-		for (i = start + len - 3; i < start + len; i++) {
-			status_bar[i].ch = '.';
-		}
+	size_t start = 1 + (avail - len) / 2;
+	for (i = 0; i < len; i++)
+		status_bar[start + i].ch = (uint8_t)url[i];
+	if (truncated && len >= 3) {
+		status_bar[start + len - 1].ch = '.';
+		status_bar[start + len - 2].ch = '.';
+		status_bar[start + len - 3].ch = '.';
 	}
 	vmem_puttext(term.x - 1, term.y + term.height - 1,
 	    term.x + term.width - 2, term.y + term.height - 1, status_bar);
@@ -6156,6 +6067,7 @@ doterm(struct bbslist *bbs)
 	bool        shell_was_alive  = true;
 	wren_host_init(bbs);
 	wren_host_bind_cterm_suspended(&cterm_suspended);
+	wren_host_bind_ooii_mode(&ooii_mode);
 	for (; !quitting;) {
 		/* Reclaim any hook entries unregistered since the last
 		 * iteration: shifts pointer arrays, frees regex resources,

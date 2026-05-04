@@ -120,12 +120,6 @@ fn_Hook_onMouse(WrenVM *vm)
 	    wren_host_register_hook(vm, WREN_HOOK_MOUSE, 1));
 }
 void
-fn_Hook_onStatus(WrenVM *vm)
-{
-	push_hook_handle(vm,
-	    wren_host_register_hook(vm, WREN_HOOK_STATUS, 1));
-}
-void
 fn_Hook_onShellClose(WrenVM *vm)
 {
 	push_hook_handle(vm,

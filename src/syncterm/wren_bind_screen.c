@@ -942,13 +942,8 @@ fn_Screen_restore(WrenVM *vm)
  * supports 2D operations: cellAt, putRect, fill.
  * -------------------------------------------------------------------- */
 
-struct wren_surface {
-	enum syncterm_wren_foreign type;     /* SWF_SURFACE */
-	int               count;             /* = width * height */
-	struct vmem_cell *buf;               /* malloc'd; freed at finalize */
-	int               width;
-	int               height;
-};
+/* struct wren_surface definition lives in wren_bind_screen.h so that
+ * wren_host.c can pre-fill the recycled status-bar surface in place. */
 
 /* Forward — definition lives next to the rest of the rect helpers. */
 static bool slot_to_surface_(WrenVM *vm, int slot,

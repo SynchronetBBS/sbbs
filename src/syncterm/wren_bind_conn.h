@@ -60,8 +60,21 @@ void fn_CTerm_paletteOverride(WrenVM *vm);
 void fn_CTerm_altFonts(WrenVM *vm);
 void fn_CTerm_logMode(WrenVM *vm);
 void fn_CTerm_logPaused(WrenVM *vm);
+void fn_CTerm_atasciiInverse(WrenVM *vm);
+void fn_CTerm_ooiiMode(WrenVM *vm);
+void fn_CTerm_mouseMode(WrenVM *vm);
+void fn_CTerm_mouseDisabled(WrenVM *vm);
 void fn_CTerm_extAttr(WrenVM *vm);
 void fn_CTerm_lastColumnFlag(WrenVM *vm);
+
+void fn_BBS_elapsedSeconds(WrenVM *vm);
+void fn_BBS_connTypeName(WrenVM *vm);
+
+void fn_Host_safeMode(WrenVM *vm);
+
+void fn_Status_callable_get(WrenVM *vm);
+void fn_Status_callable_set(WrenVM *vm);
+void fn_Status_enabled(WrenVM *vm);
 
 void wren_extattr_allocate(WrenVM *vm);
 void wren_extattr_finalize(void *data);

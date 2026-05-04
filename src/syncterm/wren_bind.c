@@ -518,49 +518,6 @@ wren_bind_sweep_pending_timers(void)
 
 /* ----- Status-bar transfer arrows -------------------------------- */
 
-/* Two bools backing the status-bar up/down indicator arrows.  Wren
- * toggles them via Host.uploadArrow=(b) / Host.downloadArrow=(b);
- * the status-bar update path in term.c reads them via
- * wren_upload_arrow_lit() / wren_download_arrow_lit().  Generic —
- * any transfer-shaped Wren script (SFTP queue, future Zmodem / HTTP
- * fetcher / etc.) can light them.  Owner-thread access only;
- * cleared on VM teardown via wren_xfer_arrows_reset(). */
-static bool xfer_up_arrow = false;
-static bool xfer_dn_arrow = false;
-
-static void
-fn_Host_uploadArrow_set(WrenVM *vm)
-{
-	if (wrenGetSlotType(vm, 1) == WREN_TYPE_BOOL)
-		xfer_up_arrow = wrenGetSlotBool(vm, 1);
-}
-
-static void
-fn_Host_downloadArrow_set(WrenVM *vm)
-{
-	if (wrenGetSlotType(vm, 1) == WREN_TYPE_BOOL)
-		xfer_dn_arrow = wrenGetSlotBool(vm, 1);
-}
-
-bool
-wren_upload_arrow_lit(void)
-{
-	return xfer_up_arrow;
-}
-
-bool
-wren_download_arrow_lit(void)
-{
-	return xfer_dn_arrow;
-}
-
-void
-wren_xfer_arrows_reset(void)
-{
-	xfer_up_arrow = false;
-	xfer_dn_arrow = false;
-}
-
 /* ----- Host.sshPublicKey ----------------------------------------- */
 
 /* Host.sshPublicKey — first locally-configured SSH public key, as a
@@ -1000,6 +957,10 @@ static const struct binding BINDINGS[] = {
 	{ "CTerm", true, "skypix",             fn_CTerm_skypix          },
 	{ "CTerm", true, "logMode",            fn_CTerm_logMode         },
 	{ "CTerm", true, "logPaused",          fn_CTerm_logPaused       },
+	{ "CTerm", true, "atasciiInverse",     fn_CTerm_atasciiInverse  },
+	{ "CTerm", true, "ooiiMode",           fn_CTerm_ooiiMode        },
+	{ "CTerm", true, "mouseMode",          fn_CTerm_mouseMode       },
+	{ "CTerm", true, "mouseDisabled",      fn_CTerm_mouseDisabled   },
 	{ "CTerm", true, "statusDisplay",      fn_CTerm_statusDisplay   },
 	{ "CTerm", true, "refreshStatus()",    fn_CTerm_refreshStatus   },
 	{ "CTerm", true, "sftpActive",         fn_CTerm_sftpActive_get  },
@@ -1050,6 +1011,8 @@ static const struct binding BINDINGS[] = {
 	{ "BBS",   true, "added",                   fn_BBS_added                 },
 	{ "BBS",   true, "connected",               fn_BBS_connected             },
 	{ "BBS",   true, "fastConnected",           fn_BBS_fastConnected         },
+	{ "BBS",   true, "elapsedSeconds",          fn_BBS_elapsedSeconds        },
+	{ "BBS",   true, "connTypeName",            fn_BBS_connTypeName          },
 	{ "BBS",   true, "calls",                   fn_BBS_calls                 },
 	{ "BBS",   true, "dlDir",                   fn_BBS_dlDir                 },
 	{ "BBS",   true, "ulDir",                   fn_BBS_ulDir                 },
@@ -1116,14 +1079,16 @@ static const struct binding BINDINGS[] = {
 	{ "Hook",  true, "onMatchClean(_,_)", fn_Hook_onMatchClean  },
 	{ "Hook",  true, "onMouse(_)",     fn_Hook_onMouse          },
 	{ "Hook",  true, "onMouse(_,_)",   fn_Hook_onMouse_filtered },
-	{ "Hook",  true, "onStatus(_)",    fn_Hook_onStatus         },
 	{ "Hook",  true, "onShellClose(_)", fn_Hook_onShellClose    },
 	{ "Hook",  true, "onDisconnect(_)", fn_Hook_onDisconnect    },
 	{ "Hook",  true, "every(_,_)",     fn_Hook_every        },
 
-	{ "Host", true, "uploadArrow=(_)",   fn_Host_uploadArrow_set   },
-	{ "Host", true, "downloadArrow=(_)", fn_Host_downloadArrow_set },
 	{ "Host", true, "sshPublicKey",      fn_Host_sshPublicKey      },
+	{ "Host", true, "safeMode",          fn_Host_safeMode          },
+
+	{ "Status", true, "callable",        fn_Status_callable_get    },
+	{ "Status", true, "callable=(_)",    fn_Status_callable_set    },
+	{ "Status", true, "enabled",         fn_Status_enabled         },
 
 	{ "WON",   true, "deserialize(_)", fn_WON_deserialize   },
 
