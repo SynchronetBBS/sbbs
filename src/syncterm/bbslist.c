@@ -1339,6 +1339,7 @@ read_item(ini_fp_list_t *listfile, struct bbslist *entry, ini_lv_string_t *bbsna
 	}
 	entry->sftp_public_key = iniGetBool(section, NULL, "SFTPPublicKey", false);
 	entry->ssh_allow_aes128_cbc = iniGetBool(section, NULL, "SSHAllowAES128CBC", false);
+	entry->ssh_accept_early_data = iniGetBool(section, NULL, "SSHAcceptEarlyData", false);
 	iniGetSString(sys ? NULL : section, NULL, "DownloadPath", home, entry->dldir, sizeof(entry->dldir));
 	iniGetSString(sys ? NULL : section, NULL, "UploadPath", home, entry->uldir, sizeof(entry->uldir));
 	entry->data_bits = iniGetUShortInt(section, NULL, "DataBits", 8);
@@ -1953,6 +1954,7 @@ enum {
 	BBSLIST_FIELD_SSH_FINGERPRINT,
 	BBSLIST_FIELD_SFTP_PUBLIC_KEY,
 	BBSLIST_FIELD_SSH_ALLOW_AES128_CBC,
+	BBSLIST_FIELD_SSH_ACCEPT_EARLY_DATA,
 	BBSLIST_FIELD_STOP_BITS,
 	BBSLIST_FIELD_DATA_BITS,
 	BBSLIST_FIELD_PARITY,
@@ -2050,6 +2052,8 @@ build_edit_list(struct bbslist *item, char opt[][69], int *optmap, char **opts, 
 		sprintf(opt[i++], "SFTP Public Key   %s", item->sftp_public_key ? "Yes" : "No");
 		optmap[i] = BBSLIST_FIELD_SSH_ALLOW_AES128_CBC;
 		sprintf(opt[i++], "Allow AES128-CBC  %s", item->ssh_allow_aes128_cbc ? "Yes" : "No");
+		optmap[i] = BBSLIST_FIELD_SSH_ACCEPT_EARLY_DATA;
+		sprintf(opt[i++], "Accept Early Data %s", item->ssh_accept_early_data ? "Yes" : "No");
 	}
 	if (item->conn_type == CONN_TYPE_TELNET || item->conn_type == CONN_TYPE_TELNETS) {
 		optmap[i] = BBSLIST_FIELD_TELNET_NO_BINARY;
@@ -2209,6 +2213,15 @@ build_edit_help(struct bbslist *item, int isdefault, char *helpbuf, size_t hbsz)
 		                                  "        Needed to connect to some older servers (e.g. Mystic) that\n"
 		                                  "        do not support aes256-ctr.  Disabled by default; aes256-ctr\n"
 		                                  "        remains preferred when both are offered.\n\n", hbsz - hblen);
+		hblen += strlcat(helpbuf + hblen, "~ Accept Early Data ~\n"
+		                                  "        Advertise a non-zero initial channel window in CHANNEL_OPEN\n"
+		                                  "        and accept channel data that arrives before pty-req and\n"
+		                                  "        shell-req have been confirmed.  Workaround for Mystic BBS\n"
+		                                  "        servers (and other Cryptlib-based servers) that send their\n"
+		                                  "        welcome banner immediately after CHANNEL_OPEN_CONFIRMATION,\n"
+		                                  "        violating RFC 4254 flow control.  Without this, the banner\n"
+		                                  "        is silently dropped and the session appears to hang until\n"
+		                                  "        a key is pressed.  Disabled by default.\n\n", hbsz - hblen);
 	}
 	if (item->conn_type == CONN_TYPE_TELNET || item->conn_type == CONN_TYPE_TELNETS) {
 		hblen += strlcat(helpbuf + hblen, "~ Binmode Broken ~\n"
@@ -3190,6 +3203,11 @@ edit_list(struct bbslist **list, struct bbslist *item, char *listpath, int isdef
 				changed = 1;
 				iniSetBool(&inifile, itemname, "SSHAllowAES128CBC", item->ssh_allow_aes128_cbc, &ini_style);
 				break;
+			case BBSLIST_FIELD_SSH_ACCEPT_EARLY_DATA:
+				item->ssh_accept_early_data = !item->ssh_accept_early_data;
+				changed = 1;
+				iniSetBool(&inifile, itemname, "SSHAcceptEarlyData", item->ssh_accept_early_data, &ini_style);
+				break;
 			case BBSLIST_FIELD_TELNET_NO_BINARY:
 				item->telnet_no_binary = !item->telnet_no_binary;
 				changed = 1;
@@ -3296,6 +3314,7 @@ add_bbs(char *listpath, struct bbslist *bbs, bool new_entry)
 	}
 	iniSetBool(&inifile, bbs->name, "SFTPPublicKey", bbs->sftp_public_key, &ini_style);
 	iniSetBool(&inifile, bbs->name, "SSHAllowAES128CBC", bbs->ssh_allow_aes128_cbc, &ini_style);
+	iniSetBool(&inifile, bbs->name, "SSHAcceptEarlyData", bbs->ssh_accept_early_data, &ini_style);
 	iniSetUShortInt(&inifile, bbs->name, "StopBits", bbs->stop_bits, &ini_style);
 	iniSetUShortInt(&inifile, bbs->name, "DataBits", bbs->data_bits, &ini_style);
 	iniSetEnum(&inifile, bbs->name, "Parity", parity_enum, bbs->parity, &ini_style);

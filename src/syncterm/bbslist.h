@@ -159,6 +159,7 @@ struct bbslist {
 	uint8_t            ssh_fingerprint[32];
 	bool               sftp_public_key;
 	bool               ssh_allow_aes128_cbc;
+	bool               ssh_accept_early_data;
 	bool               telnet_no_binary;
 	bool               defer_telnet_negotiation;
 	// No way to get a uint8_t from an ini file.

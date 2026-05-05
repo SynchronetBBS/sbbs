@@ -1227,6 +1227,8 @@ ssh_connect(struct bbslist *bbs)
 	dssh_chan_params_set_size(&params, (uint32_t)cols, (uint32_t)rows,
 	    (uint32_t)(pixelc > 0 ? pixelc : 0),
 	    (uint32_t)(pixelr > 0 ? pixelr : 0));
+	if (bbs->ssh_accept_early_data)
+		dssh_chan_params_set_accept_early_data(&params, true);
 	set_default_pty_modes(&params, bbs);
 	ssh_chan = dssh_chan_open(ssh_session, &params);
 	dssh_chan_params_free(&params);
