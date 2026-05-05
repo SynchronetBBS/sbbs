@@ -15,6 +15,7 @@ OBJS =	$(MTOBJODIR)/scfg$(OFILE)\
 	$(MTOBJODIR)/scfgxfr1$(OFILE)\
 	$(MTOBJODIR)/scfgxfr2$(OFILE)\
 	$(MTOBJODIR)/scfgchat$(OFILE)\
+	$(MTOBJODIR)/scfgsrch$(OFILE)\
 	$(MTOBJODIR)/scfgsave$(OFILE)\
 	$(MTOBJODIR)/scfglib1$(OFILE)\
 	$(MTOBJODIR)/scfglib2$(OFILE)\

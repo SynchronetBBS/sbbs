@@ -210,6 +210,7 @@
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
+    <ClCompile Include="scfgsrch.c" />
     <ClCompile Include="scfgsrvr.c" />
     <ClCompile Include="scfgsub.c">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -263,6 +264,8 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="resource.h" />
+    <ClInclude Include="scfgindex.h" />
+    <ClInclude Include="scfgsrch.h" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="scfg.rc" />

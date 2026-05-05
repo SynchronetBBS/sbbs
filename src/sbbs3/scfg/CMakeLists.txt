@@ -15,6 +15,7 @@ add_executable(scfg
 	scfgxfr1.c
 	scfgxfr2.c
 	scfgchat.c
+	scfgsrch.c
 	../scfgsave.c
 	../scfglib1.c
 	../scfglib2.c

@@ -9,3 +9,16 @@ vpath %.c ..
 $(SCFG): $(OBJS) $(CRYPT_LIB) | $(EXEODIR) $(MTOBJODIR)
 	@echo Linking $@
 	${QUIET}$(CC) $(LDFLAGS) $(MT_LDFLAGS) -o$@ $(OBJS) $(SMBLIB_LIBS) $(ENCODE_LIBS) $(HASH_LIBS) $(UIFC-MT_LIBS) $(CIOLIB-MT_LIBS) $(CRYPT_LIBS) $(XPDEV-MT_LIBS)
+
+# Regenerate the SCFG option search index (scfgindex.h) from the scfg*.c
+# sources. Only wired up for SBBS_OFFICIAL builds so downstream users
+# without Python pick up the checked-in header as-is.
+ifdef SBBS_OFFICIAL
+INDEX_SOURCES := $(filter-out scfgsrch.c,$(wildcard scfg*.c))
+
+scfgindex.h: $(INDEX_SOURCES) gen_option_index.py
+	@echo Regenerating $@
+	$(QUIET)python3 gen_option_index.py
+
+$(MTOBJODIR)/scfgsrch$(OFILE): scfgindex.h
+endif
