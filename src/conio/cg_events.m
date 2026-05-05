@@ -449,13 +449,18 @@ snap_resize(bool grow)
 	BOOL hasOpt = (mods & NSEventModifierFlagOption) != 0;
 
 	/*
-	 * On macOS, Option = Alt for BBS/terminal keycodes.
-	 * Most Option+key combos fall through to the scancode table
-	 * and are sent as Alt keycodes.  SyncTERM handles Alt+Q (quit),
-	 * Alt+V (paste), etc. at the application level.
+	 * On macOS we map Command (NOT Option) to BBS/terminal Alt.
+	 * Option is left to AppKit's input method for diacritical
+	 * composition / foreign-keyboard text entry — composed
+	 * characters arrive via NSEvent.characters and flow through
+	 * the codepage translator below.  This matches Terminal.app's
+	 * default ("Use Option as Meta key" off) and is what we'll
+	 * need for the upcoming Unicode work.
 	 *
-	 * Backend-specific features (fullscreen, snap resize) are
-	 * intercepted here, matching what X11/Wayland backends do.
+	 * Cmd-Q and Cmd-V are reserved for the macOS quit / paste
+	 * conventions and are intercepted here before the Cmd→Alt
+	 * conversion happens; every other Cmd-key combo is fed to
+	 * the scancode table as the corresponding Alt keycode.
 	 */
 
 	/* Cmd+Q: macOS quit convention → CIO_KEY_QUIT */
@@ -486,8 +491,11 @@ snap_resize(bool grow)
 		return;
 	}
 
-	/* Handle typed characters for non-extended keys */
-	if (!hasOpt && !hasCmd) {
+	/* Typed-character path.  Cmd-modified keys are handled by
+	 * the scancode table below; Option-modified keys go through
+	 * here so AppKit's IME can deliver composed/diacritical
+	 * characters via NSEvent.characters. */
+	if (!hasCmd) {
 		NSString *chars = event.characters;
 		if (chars.length > 0) {
 			unichar ch = [chars characterAtIndex:0];
@@ -513,16 +521,15 @@ snap_resize(bool grow)
 			if (ch == 0x7f && vk == kVK_Delete)
 				ch = 0x08;
 			/* Translate the typed character through the active codepage
-			 * before pushing it to the key pipe.  This is what the X11
-			 * backend does (x_events.c:2122) and is required for
-			 * emulations that remap Unicode codepoints to backend bytes
-			 * — most importantly ATASCII, which maps U+000D Return to
-			 * its EOL byte 0x9B, U+0008 BS to 0x7E, U+0009 Tab to 0x7F,
-			 * etc.  Without it those keys go out as raw ASCII and the
-			 * remote BBS never sees its own line terminator. */
-			if (!hasCtrl && ch < 128) {
+			 * before pushing it to the key pipe.  Mirrors X11's char
+			 * path (x_events.c:2122) -- required so emulations that
+			 * remap Unicode codepoints to backend bytes (ATASCII U+000D
+			 * → 0x9B EOL, U+0008 BS → 0x7E, etc.) work, and so
+			 * Option-composed diacriticals get folded onto codepage
+			 * bytes when one exists (e.g. CP437 has ä, é, ñ, ü). */
+			if (!hasCtrl) {
 				uint8_t mapped = cpchar_from_unicode_cpoint(
-				    getcodepage(), ch, (char)ch);
+				    getcodepage(), ch, ch < 128 ? (char)ch : 0);
 				if (mapped) {
 					cg_send_key(mapped);
 					return;
@@ -531,12 +538,13 @@ snap_resize(bool grow)
 		}
 	}
 
-	/* Fall through to scancode table for function/nav keys and Alt combos */
+	/* Fall through to scancode table for function/nav keys and
+	 * Cmd combos (Cmd is our Alt). */
 	if (vk < 128) {
 		int at = vk_to_at[vk];
 		if (at > 0 && at < (int)(sizeof(ScanCodes)/sizeof(ScanCodes[0]))) {
 			WORD val;
-			if (hasOpt)
+			if (hasCmd)
 				val = ScanCodes[at].alt;
 			else if (hasCtrl)
 				val = ScanCodes[at].ctrl;

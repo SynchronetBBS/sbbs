@@ -46,9 +46,9 @@ enum CursorTypeEnum {
 
 /* "ALT/META" key name string */
 #if defined(__APPLE__) && defined(__MACH__)
- #define ALT_KEY_NAME "OPTION"
- #define ALT_KEY_NAMEP "Option"
- #define ALT_KEY_NAME3CH "OPT"
+ #define ALT_KEY_NAME "COMMAND"
+ #define ALT_KEY_NAMEP "Command"
+ #define ALT_KEY_NAME3CH "CMD"
 #else
  #define ALT_KEY_NAME "ALT"
  #define ALT_KEY_NAMEP "Alt"
