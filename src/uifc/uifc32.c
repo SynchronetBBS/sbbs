@@ -2870,8 +2870,13 @@ void showbuf(uifc_winmode_t mode, int left, int top, int width, int height, cons
 
 	if ((unsigned)(top + height) >= api->scrn_len)
 		height = api->scrn_len - top;
-	if (!width || (unsigned)width < title_len + 6)
-		width = title_len + 6;
+	/* Layout is `<TL><h><h><tbL><sp>title<sp><tbR><h><h><TR>` - the title's
+	 * bracket pair plus its surrounding spaces, top corners, and a minimum
+	 * of two horizontal segments per side cost title_len + 8 cells. The
+	 * old +6 minimum left titlebreak_right and top_right one cell each
+	 * past the row, corrupting row 2's left edge. */
+	if (!width || (unsigned)width < title_len + 8)
+		width = title_len + 8;
 	if ((unsigned)(width + left) > api->scrn_width)
 		width = api->scrn_width - left;
 	if (mode & WIN_L2R)
