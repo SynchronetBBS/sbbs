@@ -1163,6 +1163,15 @@ WINDOW_ADJUST is sent for them) — the over-budget bytes were free,
 not advertised.  Once the terminal request response arrives normal
 window enforcement resumes for the rest of the channel's life.
 
+These same servers further gate *post-setup* output on receiving any
+client CHANNEL_DATA (an empty banner-fragment first, then nothing
+until the user types something).  When the flag is set, the library
+also sends a 0-byte `SSH_MSG_CHANNEL_DATA` immediately after
+`WINDOW_ADJUST` to satisfy that predicate without injecting a
+spurious keystroke.  RFC 4254 doesn't forbid empty data messages
+(well-behaved servers ignore them; Cryptlib treats them as the
+"client has spoken" event it was waiting on).
+
 Do not enable this flag globally.  It exists to allow the small set
 of legacy servers that misbehave in a specific way to still be usable
 with a stream-shaped channel; it is not a generic relaxation of the

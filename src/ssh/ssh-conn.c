@@ -642,6 +642,26 @@ send_window_adjust(struct dssh_session_s *sess, struct dssh_channel_s *ch, uint3
 	return ret;
 }
 
+/*
+ * Send a 0-byte SSH_MSG_CHANNEL_DATA.  Workaround for Cryptlib-based
+ * servers (Mystic BBS) that gate further output on receiving any
+ * client input.  An empty data message is RFC-conformant (the peer
+ * just sees "0 bytes of stdin") but it satisfies the server's
+ * "client has spoken at least once" predicate.  Best-effort: failure
+ * is non-fatal, the user can still kick it manually.
+ */
+static int
+send_empty_channel_data_kick(struct dssh_session_s *sess, struct dssh_channel_s *ch)
+{
+	uint8_t msg[9];
+	size_t  pos = 0;
+
+	msg[pos++] = SSH_MSG_CHANNEL_DATA;
+	DSSH_PUT_U32(ch->remote_id, msg, &pos);
+	DSSH_PUT_U32(0, msg, &pos);
+	return send_packet(sess, msg, pos, NULL);
+}
+
 static int
 dssh_conn_send_exit_status(struct dssh_session_s *sess, struct dssh_channel_s *ch, uint32_t exit_code)
 {
@@ -2446,6 +2466,14 @@ dssh_chan_open(struct dssh_session_s *sess, const struct dssh_chan_params *param
 	if (res < 0)
 		goto fail_close;
 
+	/* Mystic-server workaround: a Cryptlib-based server may gate
+	 * further output on receiving any client CHANNEL_DATA.  Send a
+	 * 0-byte CHANNEL_DATA to satisfy that predicate without injecting
+	 * spurious keystrokes.  Best-effort -- failure isn't fatal, the
+	 * app's first real keystroke still kicks the server. */
+	if (ch->accept_pre_window_data)
+		(void)send_empty_channel_data_kick(sess, ch);
+
 	/* Setup is done; rx-window enforcement applies for the rest of
 	 * the channel's life.  Release-store so the demux's acquire-
 	 * load in handle_channel_*data sees this without buf_mtx. */
@@ -2915,6 +2943,10 @@ dssh_chan_zc_open(struct dssh_session_s *sess, const struct dssh_chan_params *pa
 	res = send_window_adjust(sess, ch, winsz);
 	if (res < 0)
 		goto fail_close;
+
+	/* Mystic-server workaround: see dssh_chan_open. */
+	if (ch->accept_pre_window_data)
+		(void)send_empty_channel_data_kick(sess, ch);
 
 	/* Setup is done; rx-window enforcement applies for the rest of
 	 * the channel's life.  See dssh_chan_open for the atomic
