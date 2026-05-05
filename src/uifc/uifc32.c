@@ -1813,6 +1813,16 @@ int ulist(uifc_winmode_t mode, int left, int top, int width, int *cur, int *bar
 							return -1;
 						case CTRL_F:            /* find */
 						case CTRL_G:
+							/* When WIN_NOFIND is set the caller wants to
+							 * intercept Ctrl-F/Ctrl-G itself (typically to
+							 * invoke a richer "find" implementation). Hand
+							 * the key back via WIN_EXTKEYS rather than
+							 * running the built-in linear find. */
+							if (mode & WIN_NOFIND) {
+								if (mode & WIN_EXTKEYS)
+									return -2 - gotkey;
+								break;
+							}
 							if (/*!(api->mode&UIFC_NOCTRL)*/ 1) { // No no, *this* control key is fine!
 								if (gotkey == CTRL_G || api->input(WIN_MID | WIN_SAV, 0, 0, "Find", search, sizeof(search), K_EDIT | K_FIND) > 0) {
 									for (j = (*cur) + 1; j != *cur; j++, j = (j >= opts) ? 0 : j) {
