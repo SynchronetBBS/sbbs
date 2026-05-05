@@ -1608,6 +1608,18 @@ ctest -R dssh_transport      # transport layer tests
 ctest -R dssh_self           # integration selftests
 ```
 
+## Debugging
+
+Build with `-DDSSH_TRACE_WIRE` (e.g.
+`-DCMAKE_C_FLAGS=-DDSSH_TRACE_WIRE`) to emit one stderr line per
+SSH packet sent and received.  Each line is prefixed `[dssh-wire]`
+and reports `tx msg_type=N len=M` or `rx msg_type=N len=M`, where
+N is the SSH message type number (RFC 4253 / 4254, e.g. 20
+KEXINIT, 21 NEWKEYS, 91 CHANNEL_OPEN_CONFIRMATION, 93
+CHANNEL_WINDOW_ADJUST, 94 CHANNEL_DATA, 95 CHANNEL_EXTENDED_DATA,
+99 CHANNEL_SUCCESS) and M is the SSH-payload length.  Default
+builds compile the macro to a no-op with no overhead.
+
 ## Files
 
 Public headers (consumers include these):

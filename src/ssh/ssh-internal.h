@@ -14,6 +14,33 @@
 
 /* DSSH_TESTABLE is now defined in deucessh-portable.h */
 
+/*
+ * Wire-packet telemetry.  Build with -DDSSH_TRACE_WIRE to emit one
+ * stderr line per SSH packet sent (after pad/encrypt prep) and per
+ * SSH packet received (after decrypt/MAC verify).  Each line is
+ * prefixed "[dssh-wire]" so it greps cleanly.  Default builds
+ * compile the macro to a no-op.
+ */
+#ifdef DSSH_TRACE_WIRE
+ #include <stdio.h>
+ #define DSSH_TRACE_W(...)                                     \
+	 do {                                                  \
+		 fprintf(stderr, "[dssh-wire] " __VA_ARGS__);  \
+		 fputc('\n', stderr);                          \
+		 fflush(stderr);                               \
+	 } while (0)
+#else
+ /* `if (0) fprintf(...)` references the args for type-checking and to
+  * suppress -Wunused-variable on locals only used in trace lines, but
+  * the optimizer drops the dead branch at -O0+. */
+ #include <stdio.h>
+ #define DSSH_TRACE_W(...)                            \
+	 do {                                         \
+		 if (0)                               \
+			 fprintf(stderr, __VA_ARGS__);  \
+	 } while (0)
+#endif
+
 /* ================================================================
  * Channel buffer structures (formerly ssh-chan.h)
  * ================================================================ */

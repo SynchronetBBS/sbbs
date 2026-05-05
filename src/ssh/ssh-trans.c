@@ -624,6 +624,11 @@ tx_finalize_prepare(struct dssh_session_s *sess, uint8_t *buf, size_t payload_le
 {
 	int ret;
 
+	/* Single trace point for every packet about to hit the wire,
+	 * regardless of which code path led here (send_packet,
+	 * zc_send_inner, drain_one_slot, gather_prepare_one). */
+	DSSH_TRACE_W("tx msg_type=%u len=%zu", buf[9], payload_len);
+
 	size_t bs = tx_block_size(sess);
 
 	if (payload_len > SIZE_MAX - 5) {
@@ -1351,6 +1356,8 @@ recv_packet_raw(struct dssh_session_s *sess, uint8_t *msg_type, uint8_t **payloa
 	*payload     = &sess->trans.rx_packet[9];
 	*payload_len = packet_length - padding_length - 1;
 	*msg_type    = sess->trans.rx_packet[9];
+
+	DSSH_TRACE_W("rx msg_type=%u len=%zu", *msg_type, *payload_len);
 
 	sess->trans.last_rx_seq = sess->trans.rx_seq;
 	sess->trans.rx_seq++;
