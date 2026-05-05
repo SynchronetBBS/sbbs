@@ -11,7 +11,7 @@
 #include <setjmp.h>
 /* REPL.compile_ uses wrenCompileSource to produce an ObjClosure that
  * the Wren-side REPL.eval invokes via .call().  That path is internal
- * to Wren — wrenCompileSource isn't exposed in wren.h — so pull in
+ * to Wren - wrenCompileSource isn't exposed in wren.h - so pull in
  * the VM headers directly.  Mirrors what wren_opt_meta.c does. */
 #include "wren/vm/wren_vm.h"
 #include "wren/vm/wren_value.h"
@@ -51,7 +51,7 @@
 #include <errno.h>
 #include <sys/stat.h>
 
-/* dirwrap.h provides a portable opendir/readdir/closedir + struct dirent —
+/* dirwrap.h provides a portable opendir/readdir/closedir + struct dirent -
  * pulls in <dirent.h> on POSIX, supplies its own implementation for MSVC. */
 #include <dirwrap.h>
 
@@ -61,7 +61,7 @@
 #define S_ISREG(m) (((m) & S_IFMT) == S_IFREG)
 #endif
 
-/* term.c globals — emulation state and current bbs context. */
+/* term.c globals - emulation state and current bbs context. */
 extern struct cterminal *cterm;
 
 /* ----- BBS --------------------------------------------------------- */
@@ -221,7 +221,7 @@ static void fn_BBS_paletteSize(WrenVM *vm)  { BBS_FIELD_NUM(palette_size); }
 
 
 
-/* REPL.compile_(module, src, isExpression, printErrors) — compile
+/* REPL.compile_(module, src, isExpression, printErrors) - compile
  * `src` at the top level of the named module and return the resulting
  * closure as a Wren value.  Calling .call() on the closure runs the
  * body in module scope, so top-level `var x = ...` becomes a module
@@ -229,7 +229,7 @@ static void fn_BBS_paletteSize(WrenVM *vm)  { BBS_FIELD_NUM(palette_size); }
  *
  * isExpression=true compiles `src` as a single expression; .call()
  * returns the expression's value.  Wren-side REPL.eval uses this to
- * implement the "P" of REPL — try expression form, print the result,
+ * implement the "P" of REPL - try expression form, print the result,
  * fall back to statement form when the input isn't a single
  * expression (e.g. `var x = 5`).
  *
@@ -237,7 +237,7 @@ static void fn_BBS_paletteSize(WrenVM *vm)  { BBS_FIELD_NUM(palette_size); }
  * because the public API has no wrapper.  wrenCompileSource is
  * foreign-method-safe (no fiber switching), and the Wren-side .call()
  * dispatch is foreign-method-safe too. */
-/* REPL.captureStart_/Contains_/Clear_/Commit_ — gate around the
+/* REPL.captureStart_/Contains_/Clear_/Commit_ - gate around the
  * compile-error log capture in wren_host.c.  REPL.eval brackets each
  * compile attempt with start/commit (or clear) so it can peek at the
  * errors and decide whether to surface them to the real log. */
@@ -269,13 +269,13 @@ fn_REPL_captureCommit_(WrenVM *vm)
 	wren_log_capture_commit();
 }
 
-/* REPL.printTrace_(fiber) — replicates wrenDebugPrintStackTrace for a
+/* REPL.printTrace_(fiber) - replicates wrenDebugPrintStackTrace for a
  * caught fiber.  Wren only emits the runtime error + stack frames via
  * the error callback for *uncaught* aborts; once you Fiber.try() a
  * failed fiber, the runtime never walks them.  This helper fires both
  * a WREN_ERROR_RUNTIME with the fiber's error string and a
  * WREN_ERROR_STACK_TRACE per frame, so the caught-error path reaches
- * the same log/stderr sink as an uncaught one — the in-app console
+ * the same log/stderr sink as an uncaught one - the in-app console
  * can still print its own "error: …" line for the user, but
  * developers staring at stderr also see what blew up. */
 static void
@@ -353,12 +353,12 @@ fn_REPL_hasModule(WrenVM *vm)
 	wrenSetSlotBool(vm, 0, has);
 }
 
-/* REPL.modules — list of every module currently loaded into the VM
+/* REPL.modules - list of every module currently loaded into the VM
  * (including "core", which Wren creates for its built-in classes).
  * Walks vm->modules directly because the public C API doesn't expose
  * an iterator.  Skips empty slots and tombstones (key is UNDEFINED_VAL
  * for both); non-string keys are skipped as a defensive measure but
- * shouldn't occur — the modules map is keyed by ObjString. */
+ * shouldn't occur - the modules map is keyed by ObjString. */
 static void
 fn_REPL_modules(WrenVM *vm)
 {
@@ -400,7 +400,7 @@ fn_Clipboard_text_set(WrenVM *vm)
 		ciolib_copytext(s, (size_t)len);
 }
 
-/* Codepage.encodes_(text) — does the *first* codepoint of `text` map
+/* Codepage.encodes_(text) - does the *first* codepoint of `text` map
  * to a CP437 byte?  Returns false for empty input or unmappable
  * codepoints.  Used by ui_style's Glyphs class to fall back from a
  * rich Unicode primary to its ASCII fallback whenever the primary
@@ -429,7 +429,7 @@ fn_Codepage_encodes_(WrenVM *vm)
  * One-shot fiber resumption after a delay.  The foreign captures the
  * fiber and an absolute due-time; doterm()'s sweep pushes a
  * TimerElapsed onto the result queue once xp_timer() reaches that
- * time.  Multiple pending entries per fiber are fine — each yields
+ * time.  Multiple pending entries per fiber are fine - each yields
  * one event independently.
  *
  * Recurring timers belong on `Hook.every(ms, fn)`; that's a
@@ -469,7 +469,7 @@ deliver_timer_elapsed(WrenVM *vm, int slot, void *data)
 
 /* ----- Format ----------------------------------------------------- */
 
-/* Format.bytes(n) — wraps byte_estimate_to_str(n, …, 0, 1): auto-picks
+/* Format.bytes(n) - wraps byte_estimate_to_str(n, …, 0, 1): auto-picks
  * a K/M/G/T/P suffix based on magnitude, with 1 decimal of precision.
  * Returns a String like "1.4M" or "37".  Negative inputs become 0. */
 static void
@@ -489,7 +489,7 @@ fn_Format_bytes(WrenVM *vm)
 	wrenSetSlotString(vm, 0, buf);
 }
 
-/* Format.duration(seconds) — wraps duration_estimate_to_str(s, …, 0, 1):
+/* Format.duration(seconds) - wraps duration_estimate_to_str(s, …, 0, 1):
  * auto-picks a unit (s / m / h / d / y) with 1 decimal of precision.
  * Returns a String like "8.2s" or "3.5m".  Negative inputs become 0. */
 static void
@@ -507,7 +507,7 @@ fn_Format_duration(WrenVM *vm)
 	wrenSetSlotString(vm, 0, buf);
 }
 
-/* Timer.now — monotonic seconds since some unspecified epoch.  Wraps
+/* Timer.now - monotonic seconds since some unspecified epoch.  Wraps
  * xp_timer(); the absolute value is meaningless, but differences between
  * two readings are reliable.  Used for throughput/ETA calculations in
  * the SFTP queue and anywhere else a script wants to time something. */
@@ -571,7 +571,7 @@ wren_bind_sweep_pending_timers(void)
 
 /* ----- Host.sshPublicKey ----------------------------------------- */
 
-/* Host.sshPublicKey — first locally-configured SSH public key, as a
+/* Host.sshPublicKey - first locally-configured SSH public key, as a
  * Map { "algo": String, "blob": String }, or null when no key is
  * available (no SSH backend, key not loaded, OOM).  Used by Wren
  * scripts (sftp_pubkey.wren) to upload the user's authorized_keys
@@ -630,11 +630,11 @@ fn_Host_sshPublicKey(WrenVM *vm)
 
 /* ----- Platform --------------------------------------------------- */
 
-/* Platform.name — OS identifier for platform-specific script logic.
+/* Platform.name - OS identifier for platform-specific script logic.
  * Returns "Windows" on Windows, the uname(2) sysname on POSIX, and
  * "Unknown" on anything else (DOS, OS/2, …).  Win32 is checked
  * before _POSIX_VERSION because POSIX layers like Cygwin / MSYS
- * define both — we want the native-OS answer there.  Called
+ * define both - we want the native-OS answer there.  Called
  * rarely; not worth memoizing on the Wren side. */
 static void
 fn_Platform_name(WrenVM *vm)
@@ -669,7 +669,7 @@ struct binding {
 };
 
 static const struct binding BINDINGS[] = {
-	/* Screen — absolute / global operations */
+	/* Screen - absolute / global operations */
 	{ "Screen", true,  "size",                  fn_Screen_size            },
 	{ "Screen", true,  "save()",                fn_Screen_save            },
 	{ "Screen", true,  "restore(_)",            fn_Screen_restore         },
@@ -682,7 +682,7 @@ static const struct binding BINDINGS[] = {
 	{ "Screen", true,  "hyperlinkId",           fn_Screen_hyperlinkId     },
 	{ "Screen", true,  "hyperlinkId=(_)",       fn_Screen_hyperlinkId_set },
 
-	/* ScreenWindow — operations scoped to the active text window */
+	/* ScreenWindow - operations scoped to the active text window */
 	{ "ScreenWindow", true, "bounds",             fnScreenWindow_bounds          },
 	{ "ScreenWindow", true, "bounds=(_)",         fnScreenWindow_bounds_set      },
 	{ "ScreenWindow", true, "position",           fnScreenWindow_position        },
@@ -695,17 +695,17 @@ static const struct binding BINDINGS[] = {
 	{ "ScreenWindow", true, "insertLine()",       fnScreenWindow_insertLine      },
 	{ "ScreenWindow", true, "scroll()",           fnScreenWindow_scroll          },
 
-	/* ScreenFonts — Screen.font[i] / Screen.font[i] = n */
+	/* ScreenFonts - Screen.font[i] / Screen.font[i] = n */
 	{ "ScreenFonts", true, "[_]",     fnScreenFonts_subscript     },
 	{ "ScreenFonts", true, "[_]=(_)", fnScreenFonts_subscript_set },
 
-	/* Palette — Screen.palette[i] / .mode */
+	/* Palette - Screen.palette[i] / .mode */
 	{ "Palette", true, "[_]",       fnPalette_subscript     },
 	{ "Palette", true, "[_]=(_)",   fnPalette_subscript_set },
 	{ "Palette", true, "mode",      fnPalette_mode          },
 	{ "Palette", true, "mode=(_)",  fnPalette_mode_set      },
 
-	/* CustomCursor — static (live) and instance (snapshot) accessors */
+	/* CustomCursor - static (live) and instance (snapshot) accessors */
 	{ "CustomCursor", true,  "startLine",       fnCustomCursor_startLine_static     },
 	{ "CustomCursor", true,  "startLine=(_)",   fnCustomCursor_startLine_set_static },
 	{ "CustomCursor", true,  "endLine",         fnCustomCursor_endLine_static       },
@@ -729,7 +729,7 @@ static const struct binding BINDINGS[] = {
 	{ "CustomCursor", false, "apply()",         fnCustomCursor_apply                },
 	{ "CustomCursor", true,  "presetLegacy_(_)",     fnCustomCursorpresetLegacy_              },
 
-	/* VideoFlags — static (live) and instance (snapshot) */
+	/* VideoFlags - static (live) and instance (snapshot) */
 	{ "VideoFlags", true,  "altChars",                fnVideoFlags_altChars_static                },
 	{ "VideoFlags", true,  "altChars=(_)",            fnVideoFlags_altChars_set_static            },
 	{ "VideoFlags", true,  "noBright",                fnVideoFlags_noBright_static                },
@@ -758,12 +758,12 @@ static const struct binding BINDINGS[] = {
 	{ "VideoFlags", false, "lineGraphicsExpand=(_)",  fnVideoFlags_lineGraphicsExpand_set         },
 	{ "VideoFlags", false, "apply()",                 fnVideoFlags_apply                          },
 
-	/* Color — static utilities */
+	/* Color - static utilities */
 	{ "Color", true, "fromRgb(_,_,_)",     fnColor_fromRgb       },
 	{ "Color", true, "fromAttr(_)",        fnColor_fromAttr      },
 	{ "Color", true, "toLegacyAttr(_,_)",  fnColor_toLegacyAttr  },
 
-	/* ScreenSupports — Screen.supports.<flag> capability getters */
+	/* ScreenSupports - Screen.supports.<flag> capability getters */
 	{ "ScreenSupports", true, "loadableFonts",    fnScreenSupports_loadableFonts    },
 	{ "ScreenSupports", true, "altBlinkFont",     fnScreenSupports_altBlinkFont     },
 	{ "ScreenSupports", true, "altBoldFont",      fnScreenSupports_altBoldFont      },
@@ -857,7 +857,7 @@ static const struct binding BINDINGS[] = {
 	{ "Cell",  false, "eqContent(_)",    fn_Cell_eqContent       },
 	{ "Cell",  false, "toString",        fn_Cell_toString        },
 
-	/* Surface (all instance) — w×h grid of vmem_cells.  Inherits
+	/* Surface (all instance) - w×h grid of vmem_cells.  Inherits
 	 * Sequence on the Wren side; the count / [_] / iterate /
 	 * iteratorValue methods walk the linear cell buffer.  cellAt /
 	 * putRect / fill add 2D operations.  The Wren-side Surface class
@@ -870,6 +870,7 @@ static const struct binding BINDINGS[] = {
 	{ "Surface", false, "width",                       fn_Surface_width         },
 	{ "Surface", false, "height",                      fn_Surface_height        },
 	{ "Surface", false, "cellAt(_,_)",                 fn_Surface_cellAt        },
+	{ "Surface", false, "urlAt(_,_)",                  fn_Surface_urlAt         },
 	{ "Surface", false, "putRect(_,_,_)",              fn_Surface_putRect_3     },
 	{ "Surface", false, "putRect_(_,_,_,_,_,_,_)",     fn_Surface_putRect_7     },
 	{ "Surface", false, "fill_(_,_,_,_,_)",            fn_Surface_fill_         },
@@ -888,6 +889,24 @@ static const struct binding BINDINGS[] = {
 	{ "Hyperlinks", true, "add(_,_)",       fn_Hyperlinks_add         },
 	{ "Hyperlinks", true, "params(_)",      fn_Hyperlinks_params      },
 
+	/* Scrollback (all static) - uniform linearize-and-dispatch
+	 * wrappers over the Surface read-side contract, plus the two
+	 * genuinely new verbs (pushScreen / popScreen). */
+	{ "Scrollback", true, "width",                       fn_Scrollback_width         },
+	{ "Scrollback", true, "height",                      fn_Scrollback_height        },
+	{ "Scrollback", true, "count",                       fn_Scrollback_count         },
+	{ "Scrollback", true, "[_]",                         fn_Scrollback_subscript     },
+	{ "Scrollback", true, "iterate(_)",                  fn_Scrollback_iterate       },
+	{ "Scrollback", true, "iteratorValue(_)",            fn_Scrollback_iteratorValue },
+	{ "Scrollback", true, "cellAt(_,_)",                 fn_Scrollback_cellAt        },
+	{ "Scrollback", true, "urlAt(_,_)",                  fn_Scrollback_urlAt         },
+	{ "Scrollback", true, "putRect(_,_,_)",              fn_Scrollback_putRect_3     },
+	{ "Scrollback", true, "putRect_(_,_,_,_,_,_,_)",     fn_Scrollback_putRect_7     },
+	{ "Scrollback", true, "fill_(_,_,_,_,_)",            fn_Scrollback_fill_         },
+	{ "Scrollback", true, "toString",                    fn_Scrollback_toString      },
+	{ "Scrollback", true, "pushScreen()",                fn_Scrollback_pushScreen    },
+	{ "Scrollback", true, "popScreen(_)",                fn_Scrollback_popScreen     },
+
 	{ "Host", true, "cacheDirectory",       fn_Host_cacheDirectory    },
 	{ "Host", true, "downloadDir",          fn_Host_downloadDir       },
 	{ "Host", true, "uploadPath",           fn_Host_uploadPath        },
@@ -896,14 +915,14 @@ static const struct binding BINDINGS[] = {
 	{ "Host", true, "pickSavePath(_,_)",    fn_Host_pickSavePath      },
 	{ "Host", true, "openLocalFile(_)",     fn_Host_openLocalFile     },
 
-	/* Platform — OS identification. */
+	/* Platform - OS identification. */
 	{ "Platform", true, "name",             fn_Platform_name          },
 
-	/* Timer — one-shot fiber resumption after a delay. */
+	/* Timer - one-shot fiber resumption after a delay. */
 	{ "Timer", true, "trigger(_,_)",        fn_Timer_trigger          },
 	{ "Timer", true, "now",                 fn_Timer_now              },
 
-	/* Format — number-to-string helpers. */
+	/* Format - number-to-string helpers. */
 	{ "Format", true, "bytes(_)",           fn_Format_bytes           },
 	{ "Format", true, "duration(_)",        fn_Format_duration        },
 
@@ -1022,7 +1041,7 @@ static const struct binding BINDINGS[] = {
 	{ "CTerm", true, "skypix",             fn_CTerm_skypix          },
 	{ "CTerm", true, "saveScreenshot(_,_)", fn_CTerm_saveScreenshot },
 
-	/* Capture (streaming-log control) — replaces the old
+	/* Capture (streaming-log control) - replaces the old
 	 * CTerm.logMode / CTerm.logPaused getters. */
 	{ "Capture", true, "active",           fn_Capture_active       },
 	{ "Capture", true, "paused",           fn_Capture_paused       },

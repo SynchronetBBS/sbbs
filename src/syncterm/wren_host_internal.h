@@ -172,6 +172,16 @@ struct wren_host_state {
 	WrenHandle  *won_error_class;
 	WrenHandle  *conn_error_class;
 	WrenHandle  *timer_elapsed_class;
+	WrenHandle  *scrollback_class;
+
+	/* Saved cterm scrollback ring counters for Scrollback.pushScreen()
+	 * / popScreen() bookkeeping.  pushScreen captures the live values
+	 * before mutating the ring; popScreen restores them.  Single-shot
+	 * (no nesting); the bool tracks whether a save is live. */
+	bool        scrollback_save_valid;
+	int         scrollback_save_start;
+	int         scrollback_save_pos;
+	int         scrollback_save_filled;
 
 	/* One-shot timer registrations from Timer.trigger.  Bounded ring
 	 * of (fiber, due_s) entries; swept once per doterm() iteration. */

@@ -19,7 +19,6 @@
 #include "cterm.h"
 #include "filepick.h"
 #include "fonts.h"
-#include "menu.h"
 #include "named_str_list.h"
 #include "syncterm.h"
 #include "term.h"

@@ -13,7 +13,6 @@ OBJS = \
                         $(MTOBJODIR)$(DIRSEP)telnet$(OFILE) \
                         $(MTOBJODIR)$(DIRSEP)term$(OFILE) \
                         $(MTOBJODIR)$(DIRSEP)window$(OFILE) \
-                        $(MTOBJODIR)$(DIRSEP)menu$(OFILE) \
                         $(MTOBJODIR)$(DIRSEP)zmodem$(OFILE) \
                         $(MTOBJODIR)$(DIRSEP)xmodem$(OFILE) \
                         $(MTOBJODIR)$(DIRSEP)webget$(OFILE) \

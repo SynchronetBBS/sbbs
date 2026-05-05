@@ -154,8 +154,6 @@
 				DEFDC20F08F104B500A8000E,
 				DEFDC21008F104B500A8000E,
 				DEFDC21108F104B500A8000E,
-				DEFDC21208F104B500A8000E,
-				DEFDC21308F104B500A8000E,
 				DEFDC21408F104B500A8000E,
 				DEFDC21508F104B500A8000E,
 				DEFDC21608F104B500A8000E,
@@ -315,7 +313,6 @@
 				DEFDC21D08F104B500A8000E,
 				DEFDC21E08F104B500A8000E,
 				DEFDC21F08F104B500A8000E,
-				DEFDC22408F104B500A8000E,
 				DEFDC22608F104B500A8000E,
 				DEFDC22808F104B500A8000E,
 				DEFDC22B08F104B500A8000E,
@@ -351,7 +348,6 @@
 				DEFDC22108F104B500A8000E,
 				DEFDC22208F104B500A8000E,
 				DEFDC22308F104B500A8000E,
-				DEFDC22508F104B500A8000E,
 				DEFDC22708F104B500A8000E,
 				DEFDC22908F104B500A8000E,
 				DEFDC22E08F10C2500A8000E,
@@ -718,20 +714,6 @@
 			path = /private/automount/synchronet/src/src/syncterm/syncterm.c;
 			refType = 0;
 		};
-		DEFDC21208F104B500A8000E = {
-			fileEncoding = 7;
-			isa = PBXFileReference;
-			name = menu.h;
-			path = /private/automount/synchronet/src/src/syncterm/menu.h;
-			refType = 0;
-		};
-		DEFDC21308F104B500A8000E = {
-			fileEncoding = 7;
-			isa = PBXFileReference;
-			name = menu.c;
-			path = /private/automount/synchronet/src/src/syncterm/menu.c;
-			refType = 0;
-		};
 		DEFDC21408F104B500A8000E = {
 			fileEncoding = 7;
 			isa = PBXFileReference;
@@ -817,18 +799,6 @@
 		};
 		DEFDC22308F104B500A8000E = {
 			fileRef = DEFDC21108F104B500A8000E;
-			isa = PBXBuildFile;
-			settings = {
-			};
-		};
-		DEFDC22408F104B500A8000E = {
-			fileRef = DEFDC21208F104B500A8000E;
-			isa = PBXBuildFile;
-			settings = {
-			};
-		};
-		DEFDC22508F104B500A8000E = {
-			fileRef = DEFDC21308F104B500A8000E;
 			isa = PBXBuildFile;
 			settings = {
 			};

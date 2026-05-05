@@ -126,7 +126,6 @@
     <ClCompile Include="conn_conpty.c" />
     <ClCompile Include="conn_telnet.c" />
     <ClCompile Include="fonts.c" />
-    <ClCompile Include="menu.c" />
     <ClCompile Include="ansi_filter.c" />
     <ClCompile Include="modem.c" />
     <ClCompile Include="ooii.c" />

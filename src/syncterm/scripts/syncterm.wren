@@ -2,7 +2,7 @@
 // (FileError, SFTPError, WONError, ConnError, …).  Lets a script
 // catch any of them with a single `if (v is Error)` check instead of
 // listing each subclass.  Every concrete subclass guarantees the
-// shape `{ code: Num, message: String?, toString: String }` — the
+// shape `{ code: Num, message: String?, toString: String }` - the
 // type-specific extras (errno, offset, bytesSent, serverStatus,
 // isTransient, …) live on the subclass.
 //
@@ -105,7 +105,7 @@ foreign class Screen {
   // No Fiber.try wrapper: `fn` runs on the calling fiber so the
   // App-level event loops (which Fiber.yield from drainOnce_) work
   // unmodified.  An abort inside `fn` therefore skips cleanup and
-  // propagates — the same semantics as the manual pattern this
+  // propagates - the same semantics as the manual pattern this
   // helper replaces.  Bodies that need abort-safe cleanup should
   // wrap themselves in a Fiber.try at the boundary they own.
   static modalRun(fn) {
@@ -135,7 +135,7 @@ foreign class Screen {
 //   * Static (`CustomCursor.X` / `CustomCursor.X = v`): each read
 //     fetches the live state, each write does a full read-modify-
 //     write back to the renderer.  Cheap and ergonomic for ONE
-//     field at a time, but chained writes are NOT atomic — the
+//     field at a time, but chained writes are NOT atomic - the
 //     renderer can paint between them.  For multi-field changes,
 //     use the instance path so the commit is one syscall:
 //
@@ -154,7 +154,7 @@ foreign class CustomCursor {
   static solid   { presetLegacy_(1) }
   static none    { presetLegacy_(0) }
   // Snapshot the current cursor, run `fn`, then re-apply the
-  // snapshot — convenience for "temporarily set a cursor while
+  // snapshot - convenience for "temporarily set a cursor while
   // doing something, restore it on exit".  No Fiber.try wrapper:
   // an abort in `fn` skips the restore (matches Screen.modalRun).
   // Bodies that need abort-safe restore should wrap themselves.
@@ -188,12 +188,12 @@ foreign class CustomCursor {
 }
 // Video-mode boolean flags (alt chars, no-bright, bg-bright, etc.).
 // Same two-mode shape as CustomCursor (static = live, instance =
-// shadow + apply()) — see CustomCursor's docstring for the full
+// shadow + apply()) - see CustomCursor's docstring for the full
 // rules, including the non-atomicity of chained static writes.
 foreign class VideoFlags {
   construct new() {}
   static current { new() }
-  // Snapshot, run `fn`, re-apply — same semantics as
+  // Snapshot, run `fn`, re-apply - same semantics as
   // CustomCursor.preserve.
   static preserve(fn) {
     var saved = current
@@ -234,7 +234,7 @@ class Color {
   foreign static toLegacyAttr(fg, bg)
 }
 foreign class Input {
-  // Synchronous reads — block the entire VM via getch.  Useful when
+  // Synchronous reads - block the entire VM via getch.  Useful when
   // a script has fully claimed the screen (e.g. the Wren console)
   // and wants the main loop completely idle.
   foreign static next()
@@ -257,12 +257,12 @@ foreign class Input {
   // Reconfigure ciolib to report the events appropriate for cterm's
   // current mouse mode (MM_OFF disables; the various tracking modes
   // each register their own button/move set), then call showmouse().
-  // Wraps the C-side setup_mouse_events(&ms) + showmouse() pair —
+  // Wraps the C-side setup_mouse_events(&ms) + showmouse() pair -
   // call this after toggling CTerm.mouseDisabled or otherwise
   // changing mouse_state from a Wren script.
   foreign static setupMouseEvents()
 
-  // Async event delivery — push a claim onto the input claim stack.
+  // Async event delivery - push a claim onto the input claim stack.
   // Each claim is a `Fn` taking a single event arg (KeyEvent or
   // MouseEvent foreign) and returning a Bool (consumed).  The C
   // dispatcher walks claims top-down (newest fiber first); the
@@ -303,7 +303,7 @@ foreign class Input {
 // Returned from Input.pushClaim.  Drop the claim by calling `.pop()`;
 // idempotent (stale handles after a same-fiber re-push are no-ops).
 // The C-side finalizer also pops on GC, so a forgotten handle still
-// cleans up — but explicit pop is cheaper and more predictable.
+// cleans up - but explicit pop is cheaper and more predictable.
 foreign class ClaimHandle {
   foreign pop()
 }
@@ -312,13 +312,13 @@ foreign class ClaimHandle {
 // synthetic resume of `fiber`, delivering `value` as the return of
 // its next `Fiber.yield()`.  The wake is enqueued on the same
 // result queue Timer.trigger and SFTP completions use, so it's
-// delivered on the next main-loop drain — never in the middle of
+// delivered on the next main-loop drain - never in the middle of
 // the current foreign call.  Safe to call from hooks
 // (Hook.onInput / Hook.onMouse / Hook.onStatus / claim handlers /
 // worker fibers): remote bytes or any other state change a hook
 // observes can wake a UI fiber that's parked on `Fiber.yield()`.
 //
-// `value` may be any Wren object — the deliverer pins it as a
+// `value` may be any Wren object - the deliverer pins it as a
 // WrenHandle until delivery, then loads it into the fiber's
 // resumed value slot.  Convention: pass a discriminated value
 // your fiber's main-loop demuxer can recognise (a foreign
@@ -326,7 +326,7 @@ foreign class ClaimHandle {
 //
 // Multiple posts can queue for the same fiber; each becomes one
 // resumption in arrival order.  `post` does NOT wait for delivery
-// — the caller's foreign returns immediately and the surrounding
+// - the caller's foreign returns immediately and the surrounding
 // hook chain completes synchronously, satisfying the hook contract.
 //
 // Do not call from inside another foreign method that itself
@@ -408,7 +408,7 @@ class Key {
   // Some have other names in this class (Ctrl-H = backspace 0x08,
   // Ctrl-I = tab 0x09, Ctrl-M = enter 0x0D); the ctrl* names are
   // listed in full so callers don't have to remember which extended
-  // names exist.  Ctrl-[ (0x1B) is escape — see Key.escape.
+  // names exist.  Ctrl-[ (0x1B) is escape - see Key.escape.
   static ctrlA       { 0x01 }
   static ctrlB       { 0x02 }
   static ctrlC       { 0x03 }
@@ -612,7 +612,7 @@ class REPL {
   // True if the first non-whitespace token in `src` is a Wren
   // statement keyword (one that can't begin an expression).  Used by
   // eval to route the source to compile_ in the right mode without
-  // a fallback dance — preserving expression-mode compile errors
+  // a fallback dance - preserving expression-mode compile errors
   // for actual expression-form sources.
   static isStatementForm_(src) {
     var i = 0
@@ -673,7 +673,7 @@ foreign class Cell {
   foreign bgRgb=(n)
   foreign hyperlinkId
   foreign hyperlinkId=(n)
-  // Structural equality of every content field — explicitly NOT a
+  // Structural equality of every content field - explicitly NOT a
   // `==` override (Cell stays foreign-identity-equal like every
   // other foreign).  Returns false for non-Cell `other`, false if
   // either cell flies the pixel-graphics flag (the actual pixel
@@ -685,7 +685,7 @@ foreign class Cell {
 // Surface owns a w×h grid of vmem_cells.  Inherits Sequence so the
 // linear `[i]` subscript, `count`, and the standard iteration helpers
 // (each, where, map, all, any, reduce, join, take, skip, toList, …)
-// all work off the iterate/iteratorValue protocol below — handy for
+// all work off the iterate/iteratorValue protocol below - handy for
 // "tell me where any 'X' lives" without having to switch to 2D
 // indexing.
 //
@@ -696,11 +696,11 @@ foreign class Cell {
 // Screen.putRect blits cells to the display.
 //
 // Surface adds rectangular operations:
-//   surface.cellAt(x, y)              — 2D-indexed Cell view (null if oob).
-//   surface.rows / surface.cols       — Sequence-of-Sequence views.
-//   surface.putRect(src, dstX, dstY)  — paste full src.
-//   surface.putRect(src, srcRect, dstX, dstY) — paste sub-rect of src.
-//   surface.fill(rect, cell)          — bulk fill with a Cell template.
+//   surface.cellAt(x, y)              - 2D-indexed Cell view (null if oob).
+//   surface.rows / surface.cols       - Sequence-of-Sequence views.
+//   surface.putRect(src, dstX, dstY)  - paste full src.
+//   surface.putRect(src, srcRect, dstX, dstY) - paste sub-rect of src.
+//   surface.fill(rect, cell)          - bulk fill with a Cell template.
 //
 // `Screen.readRect` returns a Surface (sized to the requested rect);
 // `Screen.putRect` blits a Surface to the screen as a single atomic
@@ -714,6 +714,7 @@ foreign class Surface is Sequence {
   foreign width
   foreign height
   foreign cellAt(x, y)
+  foreign urlAt(x, y)
   foreign putRect(src, dstX, dstY)
   foreign putRect_(src, srcX, srcY, srcW, srcH, dstX, dstY)
   foreign fill_(x, y, w, h, cell)
@@ -737,7 +738,7 @@ foreign class Surface is Sequence {
   cols { SurfaceCols.new(this) }
 }
 
-// `surf.rows[y]` — one horizontal slice as a Sequence<Cell> of length
+// `surf.rows[y]` - one horizontal slice as a Sequence<Cell> of length
 // `surf.width`.  Lazy view: holds a reference to the Surface and the
 // row index, fetches cells via cellAt on demand.
 class SurfaceRow is Sequence {
@@ -754,7 +755,7 @@ class SurfaceRow is Sequence {
   iteratorValue(it) { _surface.cellAt(it, _y) }
 }
 
-// `surf.cols[x]` — one vertical slice as a Sequence<Cell> of length
+// `surf.cols[x]` - one vertical slice as a Sequence<Cell> of length
 // `surf.height`.  Same lazy-view shape as SurfaceRow.
 class SurfaceCol is Sequence {
   construct new(surface, x) {
@@ -770,7 +771,7 @@ class SurfaceCol is Sequence {
   iteratorValue(it) { _surface.cellAt(_x, it) }
 }
 
-// `surf.rows` — Sequence of SurfaceRow, length = surf.height.
+// `surf.rows` - Sequence of SurfaceRow, length = surf.height.
 class SurfaceRows is Sequence {
   construct new(surface) { _surface = surface }
   count             { _surface.height }
@@ -782,7 +783,7 @@ class SurfaceRows is Sequence {
   iteratorValue(it) { SurfaceRow.new(_surface, it) }
 }
 
-// `surf.cols` — Sequence of SurfaceCol, length = surf.width.
+// `surf.cols` - Sequence of SurfaceCol, length = surf.width.
 class SurfaceCols is Sequence {
   construct new(surface) { _surface = surface }
   count             { _surface.width }
@@ -793,6 +794,64 @@ class SurfaceCols is Sequence {
   }
   iteratorValue(it) { SurfaceCol.new(_surface, it) }
 }
+
+// Scrollback - process-wide scrollback ring presented as a
+// Surface-shaped, static-only foreign class.  Wren forbids foreign
+// classes from inheriting other foreign classes, so Scrollback can't
+// literally `is Surface` in the declaration; instead each foreign
+// static linearizes the ring (in-place rotate when `backstart != 0`,
+// no-op otherwise) and dispatches to the regular Surface foreign
+// body.  An `is(_)` override on the Wren side reports
+// `Scrollback is Surface == true` for ad-hoc type checks.
+//
+// pushScreen / popScreen bracket modal usage: pushScreen() walks the
+// live screen rows into the ring (oldest evicted on overflow);
+// popScreen(n) restores the ring counters to the snapshot pushScreen
+// captured.  `n` is the number of rows the caller pushed - currently
+// informational, but kept in the signature for symmetry / future
+// stack support.
+class Scrollback {
+  // Surface-contract foreigns - uniform linearize-and-dispatch.
+  foreign static width
+  foreign static height
+  foreign static count
+  foreign static [i]
+  foreign static iterate(it)
+  foreign static iteratorValue(it)
+  foreign static cellAt(x, y)
+  foreign static urlAt(x, y)
+  foreign static putRect(src, dstX, dstY)
+  foreign static putRect_(src, srcX, srcY, srcW, srcH, dstX, dstY)
+  foreign static fill_(x, y, w, h, cell)
+  foreign static toString
+
+  // Ring management.
+  foreign static pushScreen()
+  foreign static popScreen(n)
+
+  // Wren-side wrappers that mirror Surface's Rect-aware overloads
+  // and rows / cols views.  These delegate to the foreign statics
+  // (or to the synthetic Surface installed in slot 0 by them).
+  static putRect(src, srcRect, dstX, dstY) {
+    putRect_(src, srcRect.x, srcRect.y, srcRect.w, srcRect.h, dstX, dstY)
+  }
+  static fill(rect, cell) {
+    fill_(rect.x, rect.y, rect.w, rect.h, cell)
+  }
+  static rows { SurfaceRows.new(this) }
+  static cols { SurfaceCols.new(this) }
+
+  // Wren forbids foreign-from-foreign inheritance, so override `is`
+  // on the metaclass to report Scrollback as a Surface (and a
+  // Sequence, transitively) at runtime.  We enumerate the matches
+  // explicitly because `super.is(_)` doesn't parse - `is` is a
+  // reserved token in Wren.
+  static is(other) {
+    return other == Surface  || other == Sequence ||
+           other == Scrollback || other == Object
+  }
+}
+
 class Font {
   static cp437English      { 0 }
   static commodore64Upper  { 32 }
@@ -816,11 +875,11 @@ class Font {
   foreign static codepageOf(i)
 }
 // Typed-ID lookup table over the active hyperlink registry.  Despite
-// the `[id]` / `containsKey(id)` shape, this is NOT a Map — no
+// the `[id]` / `containsKey(id)` shape, this is NOT a Map - no
 // `keys` / `values` / `count` / iteration.  IDs flow IN from `add()`
 // returns or `Cell.hyperlinkId`; scripts can't enumerate the ID space.
 // ciolib doesn't expose an enumeration primitive either, and no
-// current script needs one — leave it as a sparse lookup until a
+// current script needs one - leave it as a sparse lookup until a
 // caller turns up that wants enumeration.
 class Hyperlinks {
   foreign static [id]
@@ -828,7 +887,7 @@ class Hyperlinks {
   foreign static add(uri, idParam)
   foreign static params(id)
 }
-// View on Console that participates in the Sequence protocol —
+// View on Console that participates in the Sequence protocol -
 // supports map/where/toList/count/etc. via Wren's stdlib mixin.
 // `Console` itself stays an all-static namespace (so `Console.clear()`,
 // `Console.markSeen()`, `for (e in Console)` etc. read naturally);
@@ -850,7 +909,7 @@ foreign class Console {
   foreign static markSeen()
   foreign static iterate(it)
   foreign static iteratorValue(it)
-  // Sequence-protocol view — use for `.map`, `.where`, `.toList`, etc.
+  // Sequence-protocol view - use for `.map`, `.where`, `.toList`, etc.
   // `for (e in Console)` works on the class directly via the static
   // iterate above; `entries` is only needed for the Sequence helpers.
   static entries { ConsoleEntries.new() }
@@ -863,7 +922,7 @@ class LogSource {
 }
 // send / sendRaw return null on success, ConnError on failure
 // (connection down, outbuf full / partial queue).  Most scripts will
-// ignore the return — failing to send a few bytes shouldn't kill
+// ignore the return - failing to send a few bytes shouldn't kill
 // the whole script.  Scripts that care can demux with `is ConnError`
 // and inspect `.bytesSent` to retry the remainder.
 foreign class Conn {
@@ -875,9 +934,9 @@ foreign class Conn {
   // true (Alt-X / window-close semantics), syncterm exits after
   // hangup; when false (Alt-H / Ctrl-Q semantics), control returns
   // to the bbslist menu.  The confirm runs on doterm()'s next
-  // iteration, so this returns immediately — handlers don't block.
+  // iteration, so this returns immediately - handlers don't block.
   foreign static endSession(exitApp)
-  // Paste from system clipboard onto the wire — codepage-aware,
+  // Paste from system clipboard onto the wire - codepage-aware,
   // bracketed-paste-aware.  No-op when clipboard is empty.
   foreign static paste()
   // Open the uifc scrollback viewer modal.  Mouse events are
@@ -989,7 +1048,7 @@ foreign class CTerm {
   // alive when the shell channel closes (or wire goes idle) while
   // SFTP transfers are in flight.  SftpQueue raises it on enqueue
   // and clears it when the queue drains; ssh.c OR's it with its own
-  // worker counts in the conn_api.terminate decision.  Generic — any
+  // worker counts in the conn_api.terminate decision.  Generic - any
   // SFTP-using script can hold the session up.
   foreign static sftpActive
   foreign static sftpActive=(b)
@@ -1202,8 +1261,8 @@ foreign class File {
   // Wren.adoc for the threat model.
   foreign token
   // Hashes of the file's full content (mmap'd; zero-length files are
-  // hashed as the empty buffer).  Returned as raw digest bytes —
-  // Wren strings are byte-safe — to compare directly against
+  // hashed as the empty buffer).  Returned as raw digest bytes -
+  // Wren strings are byte-safe - to compare directly against
   // SFTPEntry.hash from the sha1s/md5s extensions.  Format hex
   // yourself if you need it for display.
   foreign sha1
@@ -1213,13 +1272,13 @@ foreign class File {
 
 // Recoverable I/O failures (disk full, mmap failed, file vanished
 // out from under an open handle, etc.) are returned IN PLACE of
-// the typed result foreign — mirrors SFTPError.  Compare with `is
+// the typed result foreign - mirrors SFTPError.  Compare with `is
 // FileError`, or just ignore the value (most scripts will: a
 // failed write returns a FileError that the caller can drop on
 // the floor and continue, rather than aborting the fiber).
 //
-// Programmer errors — using a dead handle, calling read on an
-// unopened file, passing a negative offset — still abort the
+// Programmer errors - using a dead handle, calling read on an
+// unopened file, passing a negative offset - still abort the
 // fiber loudly.  Only the recoverable I/O bucket flows through
 // FileError.
 foreign class FileError is Error {
@@ -1256,7 +1315,7 @@ class Hook {
   // a literal sequence.  A pattern like "Welcome" matches even
   // when the BBS sends "We" + ESC[1;33m + "lcome" inline.
   //
-  // The callback's return value is IGNORED — onMatchClean is
+  // The callback's return value is IGNORED - onMatchClean is
   // passthrough-only.  Mapping a cleaned-byte match span back to
   // the raw byte stream (escapes interleaved through it) has no
   // unambiguous answer for "consume", so v1 doesn't try; the
@@ -1270,14 +1329,14 @@ class Hook {
   // closes but the session is still up (SFTP transfers may still be
   // in flight); onDisconnect fires after the main loop has exited,
   // during teardown but before the VM is torn down (no SFTP at this
-  // point — sftpc_finish has already run).  Handlers take no args,
+  // point - sftpc_finish has already run).  Handlers take no args,
   // return value is ignored.
   foreign static onShellClose(fn)
   foreign static onDisconnect(fn)
   foreign static every(ms, fn)
 
   // Wraps every hook fire so a handler that yields directly raises
-  // a clear error instead of corrupting the dispatch chain — yielded
+  // a clear error instead of corrupting the dispatch chain - yielded
   // fibers can't return the bool/string the dispatcher needs to
   // proceed.  Hooks that need to wait on async ops should fire them
   // against a Fiber.new {|r| ... } callback (so the calling fiber
@@ -1288,7 +1347,7 @@ class Hook {
   // C dispatchers swap their cached call(_) / call() handles for
   // these and pass `Hook` itself as the receiver; the return value
   // lands in slot 0 exactly as if the user's fn had been called
-  // directly.  On yield or abort, the return is null — non-bool /
+  // directly.  On yield or abort, the return is null - non-bool /
   // non-string slot types fall through the dispatchers' type
   // checks the same way a hook returning the wrong type already
   // does, so the input passes through untouched.
@@ -1320,7 +1379,7 @@ class Hook {
 }
 
 // Returned by every Hook.on*/Hook.every registration.  No Wren-side
-// constructor — the only path to a HookHandle is via a successful
+// constructor - the only path to a HookHandle is via a successful
 // registration, so scripts can't fabricate one to remove arbitrary
 // hooks.  `remove()` tombstones the underlying entry (a second call
 // is a no-op; metric getters read back zeros once removed).
@@ -1344,14 +1403,14 @@ foreign class HookHandle {
 // enabled (1..255 bytes, no path separators / NUL / control bytes /
 // `.` / `..` / Windows reserved devices, but spaces / leading dots /
 // parens etc. allowed).  Returns null when the path is empty OR
-// equal to the user's $HOME — the "unfortunate default" guard for
+// equal to the user's $HOME - the "unfortunate default" guard for
 // old configs.  The Cache strict policy is unchanged; only
 // Directories rooted at `downloadDir` (and its subdirectories) take
 // the relaxed path.
 //
 // `uploadPath` returns the configured UploadPath as a String (or
 // null if unconfigured).  Pass it as `initialDir` to pickFile /
-// pickFiles — uploads MUST go through the picker (which mints a
+// pickFiles - uploads MUST go through the picker (which mints a
 // per-file consent token); there is no upload-side Directory on
 // purpose, so scripts can't enumerate UploadPath or open files
 // from it directly.
@@ -1362,7 +1421,7 @@ foreign class HookHandle {
 // picked, or null on cancel.  initialDir / mask may be null
 // (defaults to BBS.ulDir / `*`).  opts is a bitmask of the C-side
 // UIFC_FP_* flags (see uifc/filepick.h).  The returned File bypasses
-// the relaxed-name policy — the picker UI is the sandbox boundary,
+// the relaxed-name policy - the picker UI is the sandbox boundary,
 // since the user explicitly chose the path.
 class Host {
   foreign static cacheDirectory
@@ -1381,7 +1440,7 @@ class Host {
   // multi-select (filepick rejects those flags).
   foreign static pickFiles(initialDir, mask, opts)
   // Save-mode picker.  Wraps uifc filepick with ALLOWENTRY +
-  // OVERPROMPT — user can pick an existing file (overwrite-prompted)
+  // OVERPROMPT - user can pick an existing file (overwrite-prompted)
   // or type a new filename.  Returns a write-consent File whose
   // .open() succeeds exactly once (with `wbx` for new paths, `wb`
   // when overwrite was confirmed); the File becomes inert after
@@ -1397,7 +1456,7 @@ class Host {
   // consent Files do NOT receive a token (single-shot doesn't
   // replay across sessions).
   foreign static openLocalFile(token)
-  // Status-bar transfer-indicator arrows.  Generic — any Wren
+  // Status-bar transfer-indicator arrows.  Generic - any Wren
   // script that knows it's transferring something can light them
   // (the SFTP queue is just the first user; future Zmodem / HTTP
   // fetcher / ftp client / etc. can too).  Pure Wren state: both
@@ -1428,7 +1487,7 @@ class Host {
   // True when the active ciolib backend is a text-mode terminal
   // (curses / ANSI) rather than a graphical one (X / SDL / Wayland /
   // Quartz / GDI / ...).  Stable for the lifetime of the session, so
-  // typically queried at module load to gate hook registration —
+  // typically queried at module load to gate hook registration -
   // e.g. the default Ctrl-Q hangup hook is only installed when this
   // is true (graphical backends pass Ctrl-Q through to cterm as a
   // normal control byte).
@@ -1460,11 +1519,11 @@ class Host {
 
   // Open the legacy uifc font picker for the four cterm font slots.
   // No-op in safe mode and on text-only video backends.  Thin shim
-  // around the C dialog — migrated to Wren in a future pass.
+  // around the C dialog - migrated to Wren in a future pass.
   foreign static fontControl()
 
   // Open the bbslist editor over the active connection (uifc).  Thin
-  // shim — migrated to Wren when the bbslist editor itself is.
+  // shim - migrated to Wren when the bbslist editor itself is.
   foreign static editBBSList()
 
   // Wren console activity since the user last visited the REPL.
@@ -1521,7 +1580,7 @@ class Platform {
 //   Timer.trigger(Fiber.current, 250)
 //   var x = Fiber.yield()  // x is TimerElapsed
 //
-// Multiple pending timers per fiber are fine — each fires
+// Multiple pending timers per fiber are fine - each fires
 // independently and yields one TimerElapsed.  For recurring callbacks
 // that don't park a fiber, use Hook.every(ms, fn) instead.
 class Timer {
@@ -1533,18 +1592,18 @@ class Timer {
 
 // Number-to-string formatters for human-readable display.
 class Format {
-  // bytes(n) — auto-picks K / M / G / T / P, 1 decimal precision.
+  // bytes(n) - auto-picks K / M / G / T / P, 1 decimal precision.
   foreign static bytes(n)
-  // duration(seconds) — auto-picks s / m / h / d / y, 1 decimal precision.
+  // duration(seconds) - auto-picks s / m / h / d / y, 1 decimal precision.
   foreign static duration(seconds)
 }
 
 // Marker class returned via the result queue when a Timer.trigger
-// delay elapses.  Carries no fields — the caller already knows what
+// delay elapses.  Carries no fields - the caller already knows what
 // it scheduled; just dispatch on type.
 foreign class TimerElapsed {}
 
-// SFTP — SSH-channel side-band file transfer.  All methods are static
+// SFTP - SSH-channel side-band file transfer.  All methods are static
 // on the SFTP class itself.
 //
 // Every async op takes the fiber-to-resume as its first argument.
@@ -1552,11 +1611,11 @@ foreign class TimerElapsed {}
 // receive the result via that fiber later) or an SFTPError directly
 // when the request couldn't be queued (session is gone, OOM).
 //
-// Common idiom — fire and immediately await:
+// Common idiom - fire and immediately await:
 //   var r = SFTP.realpath(Fiber.current, ".") || Fiber.yield()
 //   // r is String or SFTPError
 //
-// Multi-fire / event-loop dispatch — fire several heterogeneous ops
+// Multi-fire / event-loop dispatch - fire several heterogeneous ops
 // against the same fiber, then yield in a loop and demux by type:
 //   SFTP.stat(Fiber.current, "/a")
 //   SFTP.stat(Fiber.current, "/b")
@@ -1568,7 +1627,7 @@ foreign class TimerElapsed {}
 //     if (x is TimerElapsed) { ... }
 //   }
 //
-// Hook-friendly callback pattern — pass a Fiber.new whose body runs
+// Hook-friendly callback pattern - pass a Fiber.new whose body runs
 // when the result arrives; the calling fiber doesn't yield at all:
 //   SFTP.realpath(Fiber.new {|r| ... }, ".")
 //
@@ -1635,14 +1694,14 @@ foreign class SFTPStat {
 
 // Opaque handle returned by SFTP.open / SFTP.opendir; consumed by
 // SFTP.read / SFTP.write / SFTP.close (and SFTP.readdir for opendir
-// handles).  No fields — the server-side bytes are not script-visible.
+// handles).  No fields - the server-side bytes are not script-visible.
 foreign class SFTPHandle {}
 
 // Error result, surfaced in place of the typed result foreign when an
-// SFTP op fails.  Two error layers — distinguish via `code`:
-//   code != 0   — library/transport-level failure (sftp_err_code_t).
+// SFTP op fails.  Two error layers - distinguish via `code`:
+//   code != 0   - library/transport-level failure (sftp_err_code_t).
 //                 serverStatus is meaningless.
-//   code == 0   — server returned a STATUS reply with an error code;
+//   code == 0   - server returned a STATUS reply with an error code;
 //                 read serverStatus for the SSH_FX_* value (e.g.
 //                 SSH_FX_NO_SUCH_FILE, SSH_FX_PERMISSION_DENIED).
 // `message` is human-readable diagnostic text accumulated by the
@@ -1659,39 +1718,39 @@ foreign class SFTPError is Error {
 // Cache singleton.  Bound at module-load time so any script that
 // `import "syncterm" for Cache`s sees a fully-formed Directory.
 var Cache = Host.cacheDirectory
-// Download root — null when the BBS's DownloadPath is empty, set to
+// Download root - null when the BBS's DownloadPath is empty, set to
 // $HOME, or doesn't exist as a directory on disk (see
 // Host.downloadDir docstring).  Bound at module-load time, like
 // Cache; the Wren VM is per-session, so a reconnect to a different
 // BBS reloads the module and re-binds it.  Scripts MUST null-check
-// before use.  No `Upload` counterpart exists — uploads must go
+// before use.  No `Upload` counterpart exists - uploads must go
 // through `Host.pickFile`/`Host.pickFiles` (which mint a per-file
 // consent token); use `Host.uploadPath` if you need the configured
 // UploadPath as the picker's `initialDir`.
 var Download = Host.downloadDir
 
-// WON — Wren Object Notation serialization.
+// WON - Wren Object Notation serialization.
 //
 // Serializes / deserializes values built from Null, Bool, Num, String, List,
 // Map, Range, and Sequence (the latter two coerce to List).  Output is valid
 // Wren-literal syntax.  Cycles abort the fiber.
 //
 // Two serialize variants:
-//   serialize(v)         — strict; aborts on unsupported types or NaN/Inf.
-//   serializeLossy(v)    — silently omits unsupported items from Lists/Maps;
+//   serialize(v)         - strict; aborts on unsupported types or NaN/Inf.
+//   serializeLossy(v)    - silently omits unsupported items from Lists/Maps;
 //                          a top-level unsupported value becomes "null".
 // Each takes an optional indent String for pretty-printing:
 //   WON.serialize(v)            // compact: {"a":1,"b":[1,2,3]}
 //   WON.serialize(v, "  ")      // pretty, 2-space indent
 //   WON.serialize(v, "\t")      // pretty, tab indent
 //
-// deserialize runs a hardened C parser — no eval — and accepts arbitrary
+// deserialize runs a hardened C parser - no eval - and accepts arbitrary
 // whitespace and trailing commas between tokens.  Map keys must be a value
 // Wren can hash (Bool, Num, String, Range, null); List/Map keys are rejected.
 //
 // Parse failures (truncated input, syntax errors, malformed escapes,
 // nesting too deep, trailing data) return a WONError IN PLACE of the
-// parsed value — they do NOT abort the fiber.  The script can demux:
+// parsed value - they do NOT abort the fiber.  The script can demux:
 //   var v = WON.deserialize(text)
 //   if (v is WONError) { ... fall back to defaults ... }
 // Programmer errors (passing a non-String) DO still abort.

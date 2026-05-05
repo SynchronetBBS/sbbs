@@ -20,7 +20,6 @@
 #include "genwrap.h"   /* xp_fast_timer64 */
 #include "syncterm.h"  /* safe_mode */
 #include "term.h"      /* force_status_update, term, struct mouse_state, setup_mouse_events */
-#include "menu.h"      /* viewscroll */
 #include "uifcinit.h"  /* uifc (the singleton), UIFC_XF_QUIT */
 #include "wren_bind_fs.h" /* wren_file_consume_write, FILE_ERR_* */
 #ifndef WITHOUT_OOII
@@ -242,19 +241,20 @@ fn_Conn_paste(WrenVM *vm)
 	do_paste();
 }
 
-/* Conn.scrollback() — open the uifc scrollback viewer modal.
- * Disables mouse events for the duration so they don't conflict with
- * the viewer's own input handling, then restores the live mouse_state
- * + showmouse on the way out. */
+/* Conn.scrollback() — delegates to the Wren-side ScrollbackView.run()
+ * in scripts/auto/connected/scrollback_view.wren.  No more uifc viewer;
+ * the Wren modal owns the entire scrollback browse experience now. */
 void
 fn_Conn_scrollback(WrenVM *vm)
 {
-	(void)vm;
-	setup_mouse_events(NULL);
-	viewscroll();
-	if (cterm != NULL && cterm->mouse_state_change_cbdata != NULL)
-		setup_mouse_events(cterm->mouse_state_change_cbdata);
-	showmouse();
+	wrenEnsureSlots(vm, 1);
+	wrenGetVariable(vm, "scrollback_view", "ScrollbackView", 0);
+	WrenHandle *cls = wrenGetSlotHandle(vm, 0);
+	WrenHandle *run = wrenMakeCallHandle(vm, "run()");
+	wrenSetSlotHandle(vm, 0, cls);
+	wrenCall(vm, run);
+	wrenReleaseHandle(vm, cls);
+	wrenReleaseHandle(vm, run);
 }
 
 /* Conn.upload() / Conn.download() — wrap term.c's begin_upload /

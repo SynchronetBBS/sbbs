@@ -16,7 +16,6 @@
 #include "filepick.h"
 #include "filewrap.h"
 #include "gen_defs.h"
-#include "menu.h"
 #include "saucedefs.h"
 #include "sexyz.h"
 #include "strwrap.h"
@@ -5604,6 +5603,8 @@ handle_mouse_event(struct mouse_state *ms)
 		case CIOLIB_BUTTON_2_RELEASE:
 		case CIOLIB_BUTTON_3_PRESS:
 		case CIOLIB_BUTTON_3_RELEASE:
+		case CIOLIB_BUTTON_4_PRESS:
+		case CIOLIB_BUTTON_5_PRESS:
 			conn_send(mouse_buf,
 			    fill_mevent(mouse_buf, sizeof(mouse_buf), &mevent, ms), 0);
 			break;
@@ -5631,16 +5632,6 @@ handle_mouse_event(struct mouse_state *ms)
 						mousepointer(CIOLIB_MOUSEPTR_BAR);
 				}
 			}
-			break;
-		case CIOLIB_BUTTON_4_PRESS:
-		case CIOLIB_BUTTON_5_PRESS:
-			if ((ms->mode != MM_X10) && (ms->mode != MM_OFF) && (ms->mode != MM_RIP)) {
-				conn_send(mouse_buf,
-				    fill_mevent(mouse_buf, sizeof(mouse_buf), &mevent, ms), 0);
-				break;
-			}
-			viewscroll();
-			setup_mouse_events(ms);
 			break;
 		case CIOLIB_BUTTON_1_DRAG_START:
 			if (ms->mode == MM_OFF && mevent.hyperlink_id) {

@@ -9,9 +9,10 @@
 // the key, leaving the default a no-op.
 
 import "syncterm" for Hook, Key, CTerm, Conn, Host, Input, Screen
-import "disconnect_flow" for DisconnectFlow
-import "capture_menu"    for CaptureMenu
-import "music_menu"      for MusicMenu
+import "disconnect_flow"  for DisconnectFlow
+import "capture_menu"     for CaptureMenu
+import "music_menu"       for MusicMenu
+import "scrollback_view"  for ScrollbackView
 
 // Disconnect / exit cluster.  DisconnectFlow lives in its own module
 // (disconnect_flow.wren) so the online menu can reuse it.  Each hook
@@ -75,10 +76,11 @@ Hook.onKey(Key.shiftIns) { |k|
   return true
 }
 
-// Alt-B — open the scrollback viewer modal.  The foreign primitive
-// handles mouse-event disable/restore around the uifc viewer.
+// Alt-B - open the Wren scrollback viewer modal.  ScrollbackView
+// pushes the live screen into the ring, runs a tight Input.next()
+// pan loop, then pops the ring on exit.
 Hook.onKey(Key.altB) { |k|
-  Conn.scrollback()
+  ScrollbackView.run()
   return true
 }
 

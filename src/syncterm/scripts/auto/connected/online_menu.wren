@@ -16,6 +16,7 @@ import "ui_list"  for ListView
 import "ui_popup" for Alert
 import "capture_menu"    for CaptureMenu
 import "music_menu"      for MusicMenu
+import "scrollback_view" for ScrollbackView
 import "connected"       for Connected
 import "console"         for WrenConsole
 
@@ -30,7 +31,7 @@ class OnlineMenu {
     var disconnectLabel = hint ? "Disconnect (Alt-H)" : "Disconnect (Ctrl-Q)"
     var entries = [
       [ hint ? "Scrollback (Alt-B)"         : "Scrollback",
-        Fn.new { Conn.scrollback() } ],
+        Fn.new { ScrollbackView.run() } ],
       // No confirm prompt for the menu's Disconnect / Exit entries —
       // selecting them from the list IS the confirmation step.  The
       // hot-key paths (Alt-X / Alt-H / Ctrl-Q / window-close) still go
@@ -120,13 +121,10 @@ class OnlineMenu {
   // rule -- see wren.md §8 / App's header comment).
   //
   // The chosen action runs OUTSIDE the menu's Screen.modalRun so the
-  // screen is fully restored to terminal state before it fires.  This
-  // matters for actions like Conn.scrollback() whose viewscroll()
-  // captures the live screen for its bottom row — running it before
-  // restore would copy the menu modal pixels instead.  Sub-flows
-  // (CaptureMenu, MusicMenu, DisconnectFlow, outputRateFlow_,
-  // logLevelFlow_) wrap themselves in their own modalRun, so they
-  // save/restore against the now-clean terminal.
+  // screen is fully restored to terminal state before it fires.  Sub-
+  // flows (CaptureMenu, MusicMenu, DisconnectFlow, ScrollbackView,
+  // outputRateFlow_, logLevelFlow_) wrap themselves in their own
+  // modalRun, so they save/restore against the now-clean terminal.
   static run() {
     Fiber.new {
       var entries = buildEntries_()

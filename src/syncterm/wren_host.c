@@ -1058,6 +1058,8 @@ wren_host_shutdown(void)
 		wrenReleaseHandle(state.vm, state.cell_class);
 	if (state.surface_class != NULL)
 		wrenReleaseHandle(state.vm, state.surface_class);
+	if (state.scrollback_class != NULL)
+		wrenReleaseHandle(state.vm, state.scrollback_class);
 	if (state.key_event_class != NULL)
 		wrenReleaseHandle(state.vm, state.key_event_class);
 	if (state.mouse_event_class != NULL)
@@ -1169,7 +1171,7 @@ warn_if_c2_misused(const char *who)
 		return;
 	char msg[160];
 	snprintf(msg, sizeof(msg),
-	    "Hook.%s callback returned %s — the value is ignored. "
+	    "Hook.%s callback returned %s; the value is ignored. "
 	    "%s is observe-only (C2 contract); use Hook.onInput for "
 	    "byte-level drops or Hook.onKey/onMouse for consumption.",
 	    who,

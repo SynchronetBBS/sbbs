@@ -283,7 +283,6 @@ set(SOURCE
 	conn_pty.c
 	conn_telnet.c
 	fonts.c
-	menu.c
 	modem.c
 	rip_icons.c
 	ripper.c

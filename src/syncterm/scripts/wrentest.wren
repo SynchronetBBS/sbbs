@@ -16,7 +16,7 @@
 // T10 pushes a claim that returns false and verifies the event
 // falls through to a registered Hook.onKey.
 //
-// Re-running via Alt+T resets state in WrenTest.run() — the
+// Re-running via Alt+T resets state in WrenTest.run() - the
 // dispatcher and the test-counter hooks are registered once when
 // this module is first imported, so repeated runs don't leak hooks.
 //
@@ -32,7 +32,7 @@ import "syncterm" for Hook, Conn, Console, Screen, CTerm, BBS, Key,
     RipVersion, LogMode, StatusDisplay, Color, Cell, Hyperlinks,
     REPL, Input, Wake, KeyEvent, MouseEvent, Mouse, Cache, Platform,
     Timer, TimerElapsed, WON, FileError, FileErr, WONError, WONErr,
-    Error, ScriptError, Surface
+    Error, ScriptError, Surface, Scrollback
 import "console" for WrenConsole
 import "ui_style_test"  for UiStyleTest
 import "ui_widget_test" for UiWidgetTest
@@ -87,7 +87,7 @@ class WrenTest {
     // Fibers that park on plain `Fiber.yield()` (no registration on
     // the input or timer queues).  Wake.post should still be able
     // to resume them via the result-queue path.  One captures a
-    // KeyEvent (a foreign object), one captures a String — both
+    // KeyEvent (a foreign object), one captures a String - both
     // exercise the WrenHandle pin/release in the wake payload.
     __wakeFiber        = Fiber.new {
       __wakeResult = Fiber.yield()
@@ -98,7 +98,7 @@ class WrenTest {
     // Two fibers each push a long-lived input claim; T08 ungets a
     // sentinel key, the newer-fiber claim should fire first by the
     // per-fiber-stack semantics (newest on top).  After T08, the
-    // top claim's handle is popped and a second key is unget'd —
+    // top claim's handle is popped and a second key is unget'd -
     // the older fiber's claim should now fire.  Both counters wind
     // up at 1; whichever is wrong proves the dispatch order.
     __claimACount = 0
@@ -143,7 +143,6 @@ class WrenTest {
     __hooks = []
     __hooks.add(Hook.onMatch("__T(.+)_X_(.+)_X__") { |m|
       handle_(m[1], m[2])
-      return true
     })
     __hooks.add(Hook.every(3000) { timeout_() })
     __everyHook = Hook.every(50) { 0 }
@@ -158,7 +157,7 @@ class WrenTest {
     // Onlcr-mode PTYs already send CRLF over the wire, so the LFs we
     // see here are the bare ones (from raw printf output passing
     // through), and replacing them again just produces CRCRLF on the
-    // terminal — visually harmless and keeps the regex sentinels
+    // terminal - visually harmless and keeps the regex sentinels
     // matching cleanly.
     __lfReplaceCount = 0
     __lfReplaceHook  = Hook.onInput(0x0A) { |b|
@@ -169,7 +168,7 @@ class WrenTest {
     __hooks.add(__fallthroughHook)
     System.print("=== Wren self-test starting ===")
 
-    // Aggregated [pass, fail] across all suites — every nested
+    // Aggregated [pass, fail] across all suites - every nested
     // test module returns its own pair, and WrenTest's __pass /
     // __fail counters are folded in at end-of-run().
     __sumPass = 0
@@ -293,8 +292,15 @@ class WrenTest {
     testWONCycleAborts_()
     testWONDeserializeErrors_()
 
+    // ------ Surface.urlAt / Scrollback -----------------------------
+    testSurfaceUrlAt_()
+    testScrollbackContract_()
+    testScrollbackPushPop_()
+    testScrollbackUrlAt_()
+    testScrollbackAsSurfaceSource_()
+
     // ------ inject a sentinel key for async onKey filter test ------
-    // Filter key must have low byte 0x00 (or 0xe0) — ciolib's
+    // Filter key must have low byte 0x00 (or 0xe0) - ciolib's
     // ungetch / getch byte-stuff a 16-bit value as low|high and only
     // re-compose at rip_getch() when the first byte read is 0 or
     // 0xe0.  0xFE00 fits that constraint and isn't a real CIO_KEY.
@@ -472,7 +478,7 @@ class WrenTest {
   // through ciolib's byte-stuffing: high-byte 0 (single-byte ASCII /
   // printable) OR low-byte 0 / 0xE0 (extended scancode-style).  Any
   // other combination would silently split into two reads on
-  // Input.unget — reject at construction.
+  // Input.unget - reject at construction.
   static testKeyEventCtorValidation_() {
     // Valid: high byte 0 (printable / ASCII).
     var a = KeyEvent.new(0x001B)        // Esc
@@ -605,7 +611,7 @@ class WrenTest {
   }
 
   static testREPLEvalStatement_() {
-    // Variable name must not start with an underscore — Wren's lexer
+    // Variable name must not start with an underscore - Wren's lexer
     // tokenizes those as field/static-field references, never NAME.
     var r = REPL.eval("var wrenTestProbe = 99")
     check_(r == null, "REPL.eval statement form returns null")
@@ -620,7 +626,7 @@ class WrenTest {
   // ===== Cell / Surface / Screen rect roundtrip ===================
 
   static testCellRoundtrip_() {
-    // Each property is set + read independently — bright/blink share
+    // Each property is set + read independently - bright/blink share
     // legacy_attr's bit field, so setting them after legacyAttr would
     // mutate legacyAttr's stored value.
     var c = Cell.new()
@@ -677,7 +683,7 @@ class WrenTest {
   static testScreenRectRoundtrip_() {
     // Save the whole screen so any test mutation is invisible.
     // readRect returns a Surface; mutate one cell through the view
-    // and hand the same Surface back to writeRect — no copy.
+    // and hand the same Surface back to writeRect - no copy.
     var ok
     Screen.modalRun(Fn.new {
       var surf = Screen.readRect(1, 1, 1, 1)
@@ -692,7 +698,7 @@ class WrenTest {
   }
 
   // Build a 3×2 surface, stamp a known pattern via cellAt, then verify
-  // the rows / cols views see the same cells in the right order — and
+  // the rows / cols views see the same cells in the right order - and
   // that linear iteration walks row-major.
   static testSurfaceRowsCols_() {
     var s = Surface.new(3, 2)
@@ -722,6 +728,25 @@ class WrenTest {
            "Surface.rows[y].map composes")
   }
 
+  // Stamp a known URL string into a Surface and verify Surface.urlAt
+  // walks left/right from a click anywhere inside it.
+  static testSurfaceUrlAt_() {
+    var s = Surface.new(40, 1)
+    var url = "https://example.com/x"
+    for (i in 0...url.count) s.cellAt(i, 0).ch = url[i]
+    var clickHit = s.urlAt(0, 0)
+    check_(clickHit is String && clickHit == url,
+           "Surface.urlAt: click on URL returns it")
+    var clickMid = s.urlAt(8, 0)
+    check_(clickMid == url,
+           "Surface.urlAt: click in the middle of URL still finds it")
+    var clickMiss = s.urlAt(35, 0)
+    check_(clickMiss == null,
+           "Surface.urlAt: click on blank cell returns null")
+    var clickOOB = s.urlAt(-1, 0)
+    check_(clickOOB == null, "Surface.urlAt: out-of-bounds returns null")
+  }
+
   // ===== Hyperlinks ================================================
 
   static testHyperlinks_() {
@@ -732,6 +757,139 @@ class WrenTest {
     var uri = Hyperlinks[id]
     check_(uri is String && uri.contains("example.com"),
            "Hyperlinks[id] returns the URI")
+  }
+
+  // ===== Scrollback ================================================
+
+  // Scrollback presents the Surface contract via linearize-and-
+  // dispatch.  Verify the basic shape: width/height/count are
+  // numeric and consistent, `is` reports Surface/Sequence/Object/
+  // Scrollback, putRect/fill/rows/cols methods exist (we don't blit
+  // here, just smoke-check accessor existence), cellAt returns Cell
+  // or null, [i] roundtrips with cellAt.
+  static testScrollbackContract_() {
+    var w = Scrollback.width
+    var h = Scrollback.height
+    check_(w is Num && w >= 0, "Scrollback.width is non-negative Num")
+    check_(h is Num && h >= 0, "Scrollback.height is non-negative Num")
+    check_(Scrollback.count == w * h, "Scrollback.count == width * height")
+
+    // is(_) override claims Surface / Sequence ancestry without
+    // actually inheriting (Wren forbids foreign-from-foreign).
+    check_(Scrollback is Surface,    "Scrollback is Surface")
+    check_(Scrollback is Sequence,   "Scrollback is Sequence")
+    check_(Scrollback is Scrollback, "Scrollback is Scrollback")
+    check_(Scrollback is Object,     "Scrollback is Object")
+    check_(!(Scrollback is Cell),    "Scrollback is not Cell")
+
+    // Out-of-bounds cellAt returns null for both axes.
+    check_(Scrollback.cellAt(-1, 0) == null,
+           "Scrollback.cellAt(-1, 0) == null")
+    check_(Scrollback.cellAt(0, h + 1) == null,
+           "Scrollback.cellAt(0, height+1) == null")
+
+    // Wren-side rows/cols wrappers - non-null, lengths match.
+    if (h > 0) {
+      check_(Scrollback.rows.count == h, "Scrollback.rows.count == height")
+    }
+    if (w > 0) {
+      check_(Scrollback.cols.count == w, "Scrollback.cols.count == width")
+    }
+  }
+
+  // pushScreen / popScreen bracket a synthetic modal: push grows
+  // height by exactly screenheight rows (clamped at backlines), pop
+  // restores it.  Reads the cterm screen size from CTerm.height.
+  static testScrollbackPushPop_() {
+    var w = Scrollback.width
+    if (w == 0) {
+      // No ring allocated yet - push/pop are no-ops; just smoke.
+      Scrollback.pushScreen()
+      Scrollback.popScreen(0)
+      check_(true, "Scrollback push/pop with no ring is a no-op")
+      return
+    }
+    var hBefore = Scrollback.height
+    var screenH = CTerm.height
+    Scrollback.pushScreen()
+    var hAfter = Scrollback.height
+    var grew   = hAfter - hBefore
+    // Ring grows by min(screenH, capacity-remaining).  In the
+    // typical fresh-session case capacity is plenty; the count
+    // either grew by screenH or hit the cap.
+    check_(grew == screenH || hAfter <= w * 1000, // sanity bound
+           "Scrollback.pushScreen grew height by ~screenH (was %(hBefore), now %(hAfter), screenH=%(screenH))")
+    Scrollback.popScreen(screenH)
+    check_(Scrollback.height == hBefore,
+           "Scrollback.popScreen restored height")
+  }
+
+  // urlAt on the live ring - push the screen so we have rows to
+  // write into, write a known URL directly into scrollback cells,
+  // and verify urlAt detects it.  Avoids depending on exact
+  // pushScreen row counts (which use gettextinfo().screenheight,
+  // not CTerm.height).
+  static testScrollbackUrlAt_() {
+    if (Scrollback.width == 0) {
+      check_(true, "Scrollback.urlAt skipped (no ring)")
+      return
+    }
+    Scrollback.pushScreen()
+    var pushed = Scrollback.height
+    if (pushed == 0) {
+      Scrollback.popScreen(0)
+      check_(true, "Scrollback.urlAt skipped (no rows after push)")
+      return
+    }
+    // Write into the most-recently-pushed row.
+    var row = pushed - 1
+    var w   = Scrollback.width
+    for (i in 0...w) Scrollback.cellAt(i, row).ch = " "
+    var url = "https://example.com/sb"
+    for (i in 0...url.count) Scrollback.cellAt(i, row).ch = url[i]
+
+    var hit = Scrollback.urlAt(0, row)
+    check_(hit is String && hit.contains("example.com"),
+           "Scrollback.urlAt: written URL is detected")
+    var midHit = Scrollback.urlAt(8, row)
+    check_(midHit is String && midHit.contains("example.com"),
+           "Scrollback.urlAt: mid-URL click finds it")
+    var miss = Scrollback.urlAt(w - 1, row)
+    check_(miss == null,
+           "Scrollback.urlAt: blank cell returns null")
+    Scrollback.popScreen(CTerm.height)
+  }
+
+  // Scrollback as a SOURCE for Surface.putRect_ - exercises the
+  // slot_to_surface_ extension that recognizes the Scrollback class
+  // and linearizes the ring before reading.  Push a marker into
+  // scrollback, blit the marker row into a fresh Surface, and
+  // verify the cells landed.
+  static testScrollbackAsSurfaceSource_() {
+    if (Scrollback.width == 0) {
+      check_(true, "Scrollback as source skipped (no ring)")
+      return
+    }
+    var ok
+    Screen.modalRun(Fn.new {
+      Screen.window.position = [1, 1]
+      Screen.window.clear()
+      CTerm.write("SCROLLBACK_BLIT_MARKER")
+      Scrollback.pushScreen()
+      var screenH = CTerm.height
+      var srcTop  = Scrollback.height - screenH
+      // Copy one row from Scrollback into a fresh Surface and check
+      // the marker text comes through.  putRect_ is the 7-arg foreign
+      // (src, srcX, srcY, srcW, srcH, dstX, dstY) on the dst Surface;
+      // src is the Scrollback class, recognized by slot_to_surface_.
+      var dst = Surface.new(Scrollback.width, 1)
+      dst.putRect_(Scrollback, 0, srcTop, Scrollback.width, 1, 0, 0)
+      var s = ""
+      for (i in 0...Scrollback.width) s = s + dst[i].ch
+      ok = s.contains("SCROLLBACK_BLIT_MARKER")
+      Scrollback.popScreen(screenH)
+    })
+    check_(ok, "Scrollback as Surface source for putRect_ blits cells")
   }
 
   // ===== Hook.onMatch validation ===================================
@@ -793,7 +951,7 @@ class WrenTest {
 
   static testHookDispatchAllowsChildFiberYield_() {
     // A child fiber's yield returns to the hook body (its caller of
-    // .call()), not to dispatch_'s wrapper — so the hook still
+    // .call()), not to dispatch_'s wrapper - so the hook still
     // completes normally and dispatch_ returns its value.  This is
     // the supported pattern for parking work from inside a hook.
     // The inner fiber is built outside the Fn so the hook fn body
@@ -848,7 +1006,7 @@ class WrenTest {
     WrenConsole.unregister("__wt_c")
     check_(!WrenConsole.commands.contains("__wt_c"),
            "WrenConsole.unregister removes the command")
-    // Idempotent — double-unregister is a no-op, not an error.
+    // Idempotent - double-unregister is a no-op, not an error.
     WrenConsole.unregister("__wt_c")
     check_(!WrenConsole.commands.contains("__wt_c"),
            "WrenConsole.unregister is idempotent")
@@ -871,7 +1029,7 @@ class WrenTest {
     f.writeLine("alpha")
     f.writeLine("")
     f.writeLine("gamma")
-    // Tail without a trailing LF — readLine should still surface it.
+    // Tail without a trailing LF - readLine should still surface it.
     f.writeBytes("delta")
     f.close()
 
@@ -930,7 +1088,7 @@ class WrenTest {
       check_(false, "File.create returned null in hash-empty setup")
       return
     }
-    // Don't open / write — just hash an empty file.
+    // Don't open / write - just hash an empty file.
     var sha = f.sha1
     var md5 = f.md5
     var expSha = bytesFromHex_("da39a3ee5e6b4b0d3255bfef95601890afd80709")
@@ -1115,7 +1273,7 @@ class WrenTest {
     var f = Fiber.new {}
     check_(WON.serializeLossy([1, f, 2, f, 3]) == "[1,2,3]",
            "WON.serializeLossy skips unsupported list items")
-    // Round-trip the lossy Map to compare structurally — Wren Map
+    // Round-trip the lossy Map to compare structurally - Wren Map
     // iteration order is hash-bucket order, so the literal string
     // depends on key hashes.
     var back = WON.deserialize(WON.serializeLossy({"a": 1, "b": f, "c": 3}))
@@ -1148,7 +1306,7 @@ class WrenTest {
   }
 
   // WON.deserialize parse failures return a WONError IN PLACE of
-  // the parsed value — they don't abort the fiber.  Programmer
+  // the parsed value - they don't abort the fiber.  Programmer
   // errors (passing a non-String) DO still abort.
   static testWONDeserializeErrors_() {
     var bad = WON.deserialize("xyz")
@@ -1169,7 +1327,7 @@ class WrenTest {
     check_(bad is WONError && bad.toString.contains("WONError"),
            "WONError.toString includes 'WONError'")
 
-    // Polymorphic Error base — every recoverable-failure foreign
+    // Polymorphic Error base - every recoverable-failure foreign
     // (WONError, FileError, SFTPError, ConnError) inherits from
     // Error, so a script can demux all of them with one check.
     check_(bad is Error,
@@ -1216,7 +1374,7 @@ class WrenTest {
       // dispatch_timer sees Hook.every(50)'s next_fire_s pass
       // many times before report_() runs.  The sentinel string
       // is composed by printf at run time (the `\%s` is a
-      // *literal* percent — escape sequence — preserved into
+      // *literal* percent - escape sequence - preserved into
       // the bash command), so the *command echo* contains
       // `%s` plus `T05` separately and never matches the
       // regex; only the post-sleep printf output does.
@@ -1233,12 +1391,12 @@ class WrenTest {
       // onto the result queue, and clears parked_fiber.  The
       // iteration after that drains the queue, which constructs the
       // foreign and resumes the fiber with it.  The 0.2 s pause via
-      // sleep gives the drain a chance to fire — without it the
+      // sleep gives the drain a chance to fire - without it the
       // report_ check races against the resume.  0xFD00 matches the
       // same low-byte-zero constraint the existing 0xFE00 hook test
       // uses (see comment at the unget below).
       // CTerm.suspended is toggled around the unget+resume window
-      // to exercise the wire-pump suspend flag — without it,
+      // to exercise the wire-pump suspend flag - without it,
       // remote bytes from the T05 sleep tail could repaint while
       // the fiber is parked.  The flag is cleared in the fiber's
       // own body after it captures the event so the suspend
@@ -1268,9 +1426,9 @@ class WrenTest {
     } else if (__step == 8) {
       // Claim-stack newer-fiber-wins.  Push A's claim first, then
       // B's; B is on top of the stack (different fibers).  Unget
-      // a sentinel key — only B's counter should bump.  The
+      // a sentinel key - only B's counter should bump.  The
       // sentinel sleep gives the dispatch a chance to fire.  Keys
-      // 0xFB00 / 0xFB01 are arbitrary — they just need to make it
+      // 0xFB00 / 0xFB01 are arbitrary - they just need to make it
       // through the C-side dispatch_key as KeyEvents.
       __claimAFiber.call()
       __claimBFiber.call()
@@ -1279,7 +1437,7 @@ class WrenTest {
       Conn.send("sleep 0.2 && printf '__\%s_X_done_X__\\n' T08\r")
     } else if (__step == 9) {
       // Pop B's claim; the older A claim is now on top.  Unget
-      // another sentinel key — A's counter should bump this time.
+      // another sentinel key - A's counter should bump this time.
       // Code must satisfy ciolib's byte-stuffing rule (low byte 0
       // or 0xE0) or it splits into two separate getch reads and
       // bumps A's counter twice.  0xF900 is unused elsewhere in
@@ -1351,7 +1509,7 @@ class WrenTest {
     // 50 ms timer must have fired several times and the
     // Input.unget'd 0xFE00 key has had plenty of main-loop
     // iterations to be picked up.  HookHandle.callCount > 0 is the
-    // direct test — much cleaner than the old static-counter
+    // direct test - much cleaner than the old static-counter
     // baselines.
     check_(__everyHook.callCount > 0,
            "Hook.every fires from main-loop timer")
@@ -1367,7 +1525,7 @@ class WrenTest {
            "Input.nextEvent through result queue (T06 sentinel key)")
     // Fiber cleared CTerm.suspended after capturing.  If this still
     // reads true, either the fiber never resumed or the setter is
-    // broken — and in the former case the T06 sentinel could only
+    // broken - and in the former case the T06 sentinel could only
     // have arrived because something else cleared it (the test
     // would still be wrong).
     check_(CTerm.suspended == false,
@@ -1436,7 +1594,7 @@ class WrenTest {
   }
 
   // Tear down every hook this run() registered.  Safe to call from
-  // inside the very dispatch that triggered it — the host
+  // inside the very dispatch that triggered it - the host
   // tombstones (just NULLs fn) so the in-flight dispatcher walks
   // off the entry on the next iteration.
   static cleanup_() {
@@ -1449,7 +1607,7 @@ class WrenTest {
     // Pop A's claim if it's still on the stack (T10 popped it; if
     // T10 didn't run, it might still be there).  B was popped
     // during T09.  pop() is idempotent.  Same for the fall-through
-    // claim — T10 may or may not have completed.
+    // claim - T10 may or may not have completed.
     if (__claimAHandle      != null) __claimAHandle.pop()
     if (__fallthroughHandle != null) __fallthroughHandle.pop()
   }

@@ -16,6 +16,8 @@
 #include "term.h"
 #include "utf8_codepages.h"
 
+extern struct cterminal *cterm;
+
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -24,7 +26,7 @@
 
 /* ----- Screen / Input -------------------------------------------- */
 
-/* Screen.supports.* — backend capability flags.  Each getter is one
+/* Screen.supports.* - backend capability flags.  Each getter is one
  * bit-test against cio_api.options.  Macro to keep the boilerplate
  * out of the way. */
 #define SCREEN_SUPPORTS(name, flag)                                  \
@@ -51,7 +53,7 @@ SCREEN_SUPPORTS(closeLock,        CONIO_OPT_DISABLE_CLOSE)
 
 #undef SCREEN_SUPPORTS
 
-/* Window bounds [sx, sy, ex, ey] — 1-based, inclusive.  Setter
+/* Window bounds [sx, sy, ex, ey] - 1-based, inclusive.  Setter
  * delegates to ciolib_window which also resets the cursor to (1,1)
  * within the new window. */
 void
@@ -130,7 +132,7 @@ fnScreenWindow_print(WrenVM *vm)
 	}
 }
 
-/* Cursor position as a single [x, y] list — getter and setter
+/* Cursor position as a single [x, y] list - getter and setter
  * symmetric, no separate moveTo / cursorX / cursorY calls. */
 void
 fnScreenWindow_position(WrenVM *vm)
@@ -182,10 +184,10 @@ fn_Screen_size(WrenVM *vm)
 	wrenInsertInList(vm, 0, -1, 1);
 }
 
-/* Forward decl — defined later beside the Cell helpers. */
+/* Forward decl - defined later beside the Cell helpers. */
 static int encode_utf8(uint32_t cp, char out[4]);
 
-/* Foreign class state for KeyEvent and MouseEvent — both are simple
+/* Foreign class state for KeyEvent and MouseEvent - both are simple
  * value types (no parent, no resources) so finalize is a no-op. */
 struct wren_key_event {
 	enum syncterm_wren_foreign type;
@@ -256,7 +258,7 @@ wren_key_event_allocate(WrenVM *vm)
 	uint16_t code = (uint16_t)wrenGetSlotDouble(vm, 1);
 	/* Allocate first to satisfy Wren's "<allocate> must call
 	 * wrenSetSlotNewForeign exactly once" rule.  The struct is
-	 * abandoned to GC if we abort below — the finalizer is a
+	 * abandoned to GC if we abort below - the finalizer is a
 	 * no-op so that's free. */
 	struct wren_key_event *ke =
 	    wrenSetSlotNewForeign(vm, 0, 0, sizeof(*ke));
@@ -264,7 +266,7 @@ wren_key_event_allocate(WrenVM *vm)
 	 * high-byte through getch/ungetch, with the convention that low
 	 * byte == 0x00 or 0xE0 marks "extended scancode follows."  Codes
 	 * with high byte non-zero AND low byte not 0/0xE0 are not
-	 * representable in that stream — Input.unget would split them
+	 * representable in that stream - Input.unget would split them
 	 * into two unrelated reads.  Reject at construction so the
 	 * footgun fires here, not silently in dispatch later. */
 	uint8_t lo = (uint8_t)(code & 0xFFu);
@@ -303,7 +305,7 @@ derive_bstate_from_event(int event)
 	return CIOLIB_BUTTON(button);
 }
 
-/* MouseEvent.new — five overloads, dispatched by argument count.
+/* MouseEvent.new - five overloads, dispatched by argument count.
  * Wren's foreign-class allocator is keyed by class only (a single
  * "<allocate>" per class), so all `construct new` arities funnel
  * through here; we read the call arity from wrenGetSlotCount.
@@ -471,7 +473,7 @@ push_key_event(WrenVM *vm, uint16_t code, int dst)
 }
 
 /* Build a Wren-side MouseEvent in `dst` from a struct mouse_event.
- * Same slot conventions as push_key_event — caller must have ensured
+ * Same slot conventions as push_key_event - caller must have ensured
  * at least `dst + 2` slots. */
 void
 push_mouse_event(WrenVM *vm, const struct mouse_event *mev, int dst)
@@ -497,7 +499,7 @@ push_next_event(WrenVM *vm)
 		struct mouse_event mev;
 		memset(&mev, 0, sizeof(mev));
 		if (getmouse(&mev) != 0) {
-			/* No mouse pending despite the marker — surface as a
+			/* No mouse pending despite the marker - surface as a
 			 * raw KeyEvent so the script at least sees the byte. */
 			push_key_event(vm, (uint16_t)code, 0);
 			return;
@@ -508,7 +510,7 @@ push_next_event(WrenVM *vm)
 	push_key_event(vm, (uint16_t)code, 0);
 }
 
-/* Wake.post(fiber, value) — queue `value` to be delivered to `fiber`
+/* Wake.post(fiber, value) - queue `value` to be delivered to `fiber`
  * via the same result queue as the claim dispatcher / Timer.trigger.
  * Safe to call from a hook body (queues only; the resume happens on
  * the next main-loop drain).  Hooks must NOT call from their own
@@ -582,7 +584,7 @@ fn_Wake_post(WrenVM *vm)
  *
  * ClaimHandle is a foreign whose payload pairs an entry pointer with
  * a monotonic id.  pop() walks the list; if the entry is still
- * present and its id matches, unlink/release.  Idempotent — stale
+ * present and its id matches, unlink/release.  Idempotent - stale
  * handles (after a same-fiber re-push bumped the id) are no-ops.
  * The foreign finalizer also calls pop() so a forgotten / GC'd
  * handle still cleans up. */
@@ -642,7 +644,7 @@ wren_claim_handle_finalize(void *data)
 	ch->entry = NULL;
 }
 
-/* Input.pushClaim_(fiber, fn) — register a claim; returns ClaimHandle.
+/* Input.pushClaim_(fiber, fn) - register a claim; returns ClaimHandle.
  * Same-fiber dedup: if the calling fiber already has a claim on the
  * stack, replace its fn in place (preserving stack position) and
  * bump the id.  Otherwise allocate a new entry at the top. */
@@ -677,7 +679,7 @@ fn_Input_pushClaim_(WrenVM *vm)
 		entry->fn = fn;
 		entry->id = ++st->claim_next_id;
 		/* fiber didn't change, but we hold an extra handle to it
-		 * from this push — release the duplicate. */
+		 * from this push - release the duplicate. */
 		wrenReleaseHandle(vm, fiber);
 	} else {
 		entry = calloc(1, sizeof(*entry));
@@ -704,7 +706,7 @@ fn_Input_pushClaim_(WrenVM *vm)
 	ch->id    = entry->id;
 }
 
-/* ClaimHandle.pop() — unlink the claim entry by id match.  Idempotent
+/* ClaimHandle.pop() - unlink the claim entry by id match.  Idempotent
  * by design: stale handles (after a same-fiber re-push, or after
  * another path popped the entry, or after the finalizer ran) are no-
  * ops.  Returns true if this call actually removed the entry. */
@@ -740,7 +742,7 @@ fn_ClaimHandle_pop(WrenVM *vm)
  * true) return; false if all claims passed through or were pruned.
  *
  * The event is passed as a WrenHandle (not a slot index) so we don't
- * have to negotiate a slot layout with the caller — wrenCall and
+ * have to negotiate a slot layout with the caller - wrenCall and
  * fiber_is_done both truncate the api stack to whatever the called
  * stub's maxSlots is, which would invalidate any "scratch slot" the
  * caller had stashed the event in.  Pin once in the caller, push the
@@ -779,9 +781,9 @@ dispatch_claim_event(WrenHandle *event_handle)
 		}
 		/* Re-fetch cur each iteration: the handler may have
 		 * popped its own entry, pushed a new one (lands at top
-		 * — handled by walking from the new head next call,
+		 * - handled by walking from the new head next call,
 		 * not this dispatch), or had the entry mutated by a
-		 * same-fiber re-push (id bumped, fn replaced — we'd
+		 * same-fiber re-push (id bumped, fn replaced - we'd
 		 * fire the new fn next event).  Just walk forward
 		 * from where we are. */
 		if (*cur == c)
@@ -797,7 +799,7 @@ wren_bind_dispatch_claim_key(int code)
 	if (st == NULL || st->claim_top == NULL || code == CIO_KEY_MOUSE)
 		return false;
 	/* Build the KeyEvent in slot 0, pin it, hand the handle off to
-	 * the dispatcher.  The slot itself is throwaway — every wrenCall
+	 * the dispatcher.  The slot itself is throwaway - every wrenCall
 	 * inside the dispatch loop truncates the api stack.  The pin is
 	 * what keeps the event alive across those truncations. */
 	wrenEnsureSlots(st->vm, 2);
@@ -826,7 +828,7 @@ wren_bind_dispatch_claim_mouse(struct mouse_event *ev)
 	return consumed;
 }
 
-/* Free every claim and clear the stack — called from
+/* Free every claim and clear the stack - called from
  * wren_host_shutdown before wrenFreeVM. */
 void
 wren_bind_claim_stack_clear(void)
@@ -842,14 +844,14 @@ wren_bind_claim_stack_clear(void)
 	st->claim_next_id = 0;
 }
 
-/* Input.next() — block until something is ready, return the event. */
+/* Input.next() - block until something is ready, return the event. */
 void
 fn_Input_next(WrenVM *vm)
 {
 	push_next_event(vm);
 }
 
-/* Input.next(ms) — wait up to ms milliseconds; null on timeout. */
+/* Input.next(ms) - wait up to ms milliseconds; null on timeout. */
 void
 fn_Input_next_ms(WrenVM *vm)
 {
@@ -861,7 +863,7 @@ fn_Input_next_ms(WrenVM *vm)
 	push_next_event(vm);
 }
 
-/* Input.poll() — non-blocking; null when nothing is ready. */
+/* Input.poll() - non-blocking; null when nothing is ready. */
 void
 fn_Input_poll(WrenVM *vm)
 {
@@ -872,7 +874,7 @@ fn_Input_poll(WrenVM *vm)
 	push_next_event(vm);
 }
 
-/* Input.ungetKey_(ev) / Input.ungetMouse_(ev) — typed unget primitives.
+/* Input.ungetKey_(ev) / Input.ungetMouse_(ev) - typed unget primitives.
  * The public Input.unget(ev) is a Wren-side wrapper that picks one of
  * these via `ev is KeyEvent` / `ev is MouseEvent`, since Wren doesn't
  * expose a "class of this foreign value" API to C and we need to know
@@ -908,7 +910,7 @@ fnScreenWindow_clearToLineEnd(WrenVM *vm)
 }
 
 /* ciolib_savescreen returns a malloc'd struct ciolib_screen *.
- * Round-trip the pointer through a Wren Num — pointers are typically
+ * Round-trip the pointer through a Wren Num - pointers are typically
  * aligned and fit in the 53-bit double mantissa on every supported
  * host.  restore() frees the screen on success. */
 void
@@ -945,16 +947,21 @@ fn_Screen_restore(WrenVM *vm)
 /* struct wren_surface definition lives in wren_bind_screen.h so that
  * wren_host.c can pre-fill the recycled status-bar surface in place. */
 
-/* Forward — definition lives next to the rest of the rect helpers. */
+/* Forward - definition lives next to the rest of the rect helpers. */
 static bool slot_to_surface_(WrenVM *vm, int slot,
     struct vmem_cell **buf_out, int *w_out, int *h_out);
+
+/* Forward decl: Scrollback ring linearizer (rotates cterm->scrollback in
+ * place when backstart != 0).  Defined further down with the rest of
+ * the Scrollback foreigns. */
+static void scrollback_linearize_(void);
 
 struct wren_cell {
 	enum syncterm_wren_foreign type;
 	struct vmem_cell   c;             /* used when standalone */
 	int                index;         /* index into parent_buf in view mode */
 	struct vmem_cell  *parent_buf;    /* parent Surface's malloc'd buf (stable
-	                                     while parent_handle is held — the
+	                                     while parent_handle is held - the
 	                                     handle pins the Surface, the buf is
 	                                     malloc'd, never reallocated, freed
 	                                     only at the Surface's finalize) */
@@ -963,7 +970,7 @@ struct wren_cell {
 
 /* Standalone cells return their own embedded `c`; view-mode cells use
  * their captured malloc'd buffer.  Both pointers are stable across
- * arbitrary VM calls — `parent_buf` is a malloc'd region the parent
+ * arbitrary VM calls - `parent_buf` is a malloc'd region the parent
  * Surface doesn't reallocate, kept alive via `parent_handle`. */
 static struct vmem_cell *
 cell_data(struct wren_cell *wc)
@@ -1045,7 +1052,7 @@ encode_utf8(uint32_t cp, char out[4])
 
 /* --- Cell allocate / finalize ---
  *
- * Cell.new() in Wren land — fill a standalone cell with the current
+ * Cell.new() in Wren land - fill a standalone cell with the current
  * mode's default attribute, fg, bg, a space character, font 0, and
  * no hyperlink.  `parent` stays NULL so accessors operate on `c`. */
 void
@@ -1092,11 +1099,12 @@ wren_surface_allocate(WrenVM *vm)
 
 	struct wren_surface *sf =
 	    wrenSetSlotNewForeign(vm, 0, 0, sizeof(*sf));
-	sf->type   = SWF_SURFACE;
-	sf->width  = w;
-	sf->height = h;
-	sf->count  = w * h;
-	sf->buf    = NULL;
+	sf->type     = SWF_SURFACE;
+	sf->width    = w;
+	sf->height   = h;
+	sf->count    = w * h;
+	sf->buf      = NULL;
+	sf->borrowed = false;
 	if (sf->count == 0)
 		return;
 
@@ -1125,7 +1133,8 @@ void
 wren_surface_finalize(void *data)
 {
 	struct wren_surface *sf = data;
-	free(sf->buf);
+	if (!sf->borrowed)
+		free(sf->buf);
 	sf->buf    = NULL;
 	sf->count  = 0;
 	sf->width  = 0;
@@ -1165,7 +1174,7 @@ fnScreenWindow_scroll(WrenVM *vm)
 	wscroll();
 }
 
-/* ----- Screen.hyperlinkId — singleton current-hyperlink ID for new
+/* ----- Screen.hyperlinkId - singleton current-hyperlink ID for new
  * cells produced by window output (putChar, print). */
 void
 fn_Screen_hyperlinkId(WrenVM *vm)
@@ -1180,7 +1189,7 @@ fn_Screen_hyperlinkId_set(WrenVM *vm)
 	ciolib_set_current_hyperlink((uint16_t)id);
 }
 
-/* ----- Input.mouseVisible — setter only.  ciolib has no get
+/* ----- Input.mouseVisible - setter only.  ciolib has no get
  * counterpart, and tracking it from script-side would drift if other
  * code shows or hides the cursor. */
 void
@@ -1192,7 +1201,7 @@ fn_Input_mouseVisible_set(WrenVM *vm)
 		ciolib_hidemouse();
 }
 
-/* ----- Input.mouseEvents getter / setter — opaque uint64 bitmask of
+/* ----- Input.mouseEvents getter / setter - opaque uint64 bitmask of
  * the ciolib_mouse_event types that get delivered.  Use with the
  * Mouse.* constants and the Input.{enable,disable}MouseEvent helpers
  * below.  Returning the raw mask lets the App save it on entry and
@@ -1225,7 +1234,7 @@ fn_Input_disableMouseEvent(WrenVM *vm)
 	ciomouse_delevent(ev);
 }
 
-/* ----- Font.codepage / Font.codepageOf(i) — codepage of a font slot. */
+/* ----- Font.codepage / Font.codepageOf(i) - codepage of a font slot. */
 void
 fn_Font_codepage(WrenVM *vm)
 {
@@ -1253,7 +1262,7 @@ fn_Font_codepageOf(WrenVM *vm)
 	wrenSetSlotDouble(vm, 0, (double)conio_fontdata[f].cp);
 }
 
-/* Screen.font[i] — slot in 0..4 (5 active font slots in conio). */
+/* Screen.font[i] - slot in 0..4 (5 active font slots in conio). */
 void
 fnScreenFonts_subscript(WrenVM *vm)
 {
@@ -1286,7 +1295,7 @@ fnScreenFonts_subscript_set(WrenVM *vm)
  * Per-entry [i]/[i]= read/write a single palette color as 0xRRGGBB.
  * `.mode` and `.mode=` get/set the 16-color mode palette as a Wren
  * List of 16 colors.  Setpalette wants 16-bit r/g/b, getpalette
- * returns 8-bit — we keep the script side at 8-bit-per-channel
+ * returns 8-bit - we keep the script side at 8-bit-per-channel
  * (0xRRGGBB) and scale on the way in (×257 = ×0x101). */
 
 void
@@ -1300,7 +1309,7 @@ fnPalette_subscript(WrenVM *vm)
 	}
 	uint8_t r, g, b;
 	/* getpalette failure is a runtime condition (palette not loaded
-	 * for this index in the current mode) — null is the documented
+	 * for this index in the current mode) - null is the documented
 	 * "no entry" return. */
 	if (ciolib_getpalette((uint32_t)i, &r, &g, &b) != 1) {
 		wrenSetSlotNull(vm, 0);
@@ -1558,7 +1567,7 @@ VF_FLAG(lineGraphicsExpand, CIOLIB_VIDEO_LINE_GRAPHICS_EXPAND)
 #undef VF_FLAG
 
 /* expand is read-only: the bitmap buffer's per-cell pixel width is
- * fixed at video-mode init.  Getter only — no setter. */
+ * fixed at video-mode init.  Getter only - no setter. */
 void
 fnVideoFlags_expand_static(WrenVM *vm)
 {
@@ -1588,7 +1597,7 @@ fnColor_fromRgb(WrenVM *vm)
 	int g = (int)wrenGetSlotDouble(vm, 2);
 	int b = (int)wrenGetSlotDouble(vm, 3);
 	/* ciolib_map_rgb returns the value with the high RGB bit set; we
-	 * mask it off — Cell.fgRgb=/bgRgb= add the bit when writing.
+	 * mask it off - Cell.fgRgb=/bgRgb= add the bit when writing.
 	 * Returning the raw 24-bit value keeps the script side simpler. */
 	uint32_t v = ciolib_map_rgb((uint16_t)r, (uint16_t)g, (uint16_t)b)
 	    & 0x00FFFFFFu;
@@ -1624,7 +1633,7 @@ fnColor_toLegacyAttr(WrenVM *vm)
 
 /* ----- Screen.getText / Screen.putText ----- */
 
-/* Screen.readRect returns a Surface — the rect's width/height come
+/* Screen.readRect returns a Surface - the rect's width/height come
  * along with the cell buffer.  Subscript, count, iteration, and
  * writeRect-as-source all operate on the same linear buffer the C
  * side allocated here. */
@@ -1666,11 +1675,12 @@ fn_Screen_readRect(WrenVM *vm)
 	load_class_into_slot(vm, &st->surface_class, "Surface", 1);
 	struct wren_surface *sf =
 	    wrenSetSlotNewForeign(vm, 0, 1, sizeof(*sf));
-	sf->type   = SWF_SURFACE;
-	sf->width  = w;
-	sf->height = h;
-	sf->count  = (int)n;
-	sf->buf    = buf;
+	sf->type     = SWF_SURFACE;
+	sf->width    = w;
+	sf->height   = h;
+	sf->count    = (int)n;
+	sf->buf      = buf;
+	sf->borrowed = false;
 }
 
 /* Screen.putRect(src, dstX, dstY): blit a Surface to the screen at
@@ -1791,7 +1801,7 @@ fn_Screen_writeRect(WrenVM *vm)
 	int      n_expected = (ex - sx + 1) * (ey - sy + 1);
 	WrenType arg_type   = wrenGetSlotType(vm, 5);
 
-	/* Surface: contiguous vmem_cell buffer — hand straight to puttext
+	/* Surface: contiguous vmem_cell buffer - hand straight to puttext
 	 * with no allocation or copy. */
 	if (arg_type == WREN_TYPE_FOREIGN &&
 	    slot_foreign_type(vm, 5) == SWF_SURFACE) {
@@ -2062,7 +2072,7 @@ fn_Cell_hyperlinkId_set(WrenVM *vm)
 	d->hyperlink_id = (uint16_t)(int)wrenGetSlotDouble(vm, 1);
 }
 
-/* Cell.eqContent(other) — structural equality of every content field
+/* Cell.eqContent(other) - structural equality of every content field
  * of two cells.  NOT a == override (foreign `==` stays identity-based,
  * matching every other foreign in the API).  Field-by-field; memcmp
  * would compare struct padding and report false negatives.
@@ -2070,10 +2080,10 @@ fn_Cell_hyperlinkId_set(WrenVM *vm)
  * Equality rules:
  *  - non-Cell `other` is always false (no fiber abort).
  *  - the BG dirty bit (CIOLIB_BG_DIRTY) is render bookkeeping, not
- *    content — masked out before comparison.
+ *    content - masked out before comparison.
  *  - if EITHER cell flies CIOLIB_BG_PIXEL_GRAPHICS, the cells reference
  *    pixel data outside the vmem_cell and we can't prove equality from
- *    these fields alone — return false.  Two pixel-graphics cells are
+ *    these fields alone - return false.  Two pixel-graphics cells are
  *    therefore never eqContent-equal even if their other fields match.
  *  - everything else is compared bit-exact, including the Prestel
  *    control char in fg, the double-height/Prestel-mode/etc. flags in
@@ -2126,7 +2136,7 @@ surface_make_view(WrenVM *vm, int idx)
 		wrenSetSlotNull(vm, 0);
 		return;
 	}
-	/* Capture sf->buf before the slot-0 overwrite — it's a malloc'd
+	/* Capture sf->buf before the slot-0 overwrite - it's a malloc'd
 	 * pointer that stays valid as long as the parent Surface lives,
 	 * which we ensure by pinning it via parent_handle. */
 	struct vmem_cell *parent_buf    = sf->buf;
@@ -2211,6 +2221,30 @@ fn_Surface_cellAt(WrenVM *vm)
 	surface_make_view(vm, y * sf->width + x);
 }
 
+/* Surface.urlAt(col, row): wraps detect_url_at() against the
+ * surface's cell buffer.  Returns the detected URL as a String, or
+ * null if the click falls on a non-URL character (or outside bounds).
+ * The C side malloc's the result and we copy it into a Wren slot
+ * before freeing. */
+void
+fn_Surface_urlAt(WrenVM *vm)
+{
+	struct wren_surface *sf = wrenGetSlotForeign(vm, 0);
+	int col = (int)wrenGetSlotDouble(vm, 1);
+	int row = (int)wrenGetSlotDouble(vm, 2);
+	if (sf->buf == NULL || sf->width <= 0 || sf->height <= 0) {
+		wrenSetSlotNull(vm, 0);
+		return;
+	}
+	char *url = detect_url_at(sf->buf, sf->width, sf->height, col, row);
+	if (url == NULL) {
+		wrenSetSlotNull(vm, 0);
+		return;
+	}
+	wrenSetSlotString(vm, 0, url);
+	free(url);
+}
+
 /* Compute the clipped overlap of the source's [srcX..srcX+srcW) x
  * [srcY..srcY+srcH) region with both the source bounds and the
  * destination's [0..dst->width) x [0..dst->height) at offset
@@ -2266,21 +2300,50 @@ clip_rect_(struct wren_surface *dst,
 }
 
 /* Resolve slot to a Surface and surface its (buf, width, height) for
- * the rect-blit primitives.  Returns false on type mismatch. */
+ * the rect-blit primitives.  Accepts:
+ *   - a regular `Surface` foreign, OR
+ *   - the `Scrollback` class object, in which case the live ring is
+ *     linearized and surfaced as if it were a borrowed Surface.
+ * Returns false on type mismatch. */
 static bool
 slot_to_surface_(WrenVM *vm, int slot,
     struct vmem_cell **buf_out, int *w_out, int *h_out)
 {
-	if (slot_foreign_type(vm, slot) != SWF_SURFACE)
+	if (slot_foreign_type(vm, slot) == SWF_SURFACE) {
+		struct wren_surface *sf = wrenGetSlotForeign(vm, slot);
+		*buf_out = sf->buf;
+		*w_out   = sf->width;
+		*h_out   = sf->height;
+		return true;
+	}
+
+	/* Scrollback class object → linearized ring view. */
+	struct wren_host_state *st = wren_host_state();
+	if (st == NULL)
 		return false;
-	struct wren_surface *sf = wrenGetSlotForeign(vm, slot);
-	*buf_out = sf->buf;
-	*w_out   = sf->width;
-	*h_out   = sf->height;
+	if (st->scrollback_class == NULL) {
+		/* Lazy load: use a slot beyond any expected arg. */
+		wrenEnsureSlots(vm, 16);
+		wrenGetVariable(vm, "syncterm", "Scrollback", 15);
+		st->scrollback_class = wrenGetSlotHandle(vm, 15);
+		if (st->scrollback_class == NULL)
+			return false;
+	}
+	Value v = vm->apiStack[slot];
+	if (!IS_CLASS(v))
+		return false;
+	if (AS_CLASS(v) != AS_CLASS(st->scrollback_class->value))
+		return false;
+	if (cterm == NULL || cterm->scrollback == NULL)
+		return false;
+	scrollback_linearize_();
+	*buf_out = cterm->scrollback;
+	*w_out   = cterm->backwidth;
+	*h_out   = cterm->backfilled;
 	return true;
 }
 
-/* `surface.putRect(src, dstX, dstY)` — paste the entirety of `src`
+/* `surface.putRect(src, dstX, dstY)` - paste the entirety of `src`
  * at (dstX, dstY) in self.  Out-of-bounds portions are clipped
  * silently. */
 void
@@ -2308,7 +2371,7 @@ fn_Surface_putRect_3(WrenVM *vm)
 	}
 }
 
-/* `surface.putRect(src, srcX, srcY, srcW, srcH, dstX, dstY)` — paste a
+/* `surface.putRect(src, srcX, srcY, srcW, srcH, dstX, dstY)` - paste a
  * sub-rect of `src`.  This is the C-callable arity; the Wren-side
  * Surface declares a `putRect(src, srcRect, dstX, dstY)` wrapper that
  * unpacks Rect.x/y/w/h before calling here. */
@@ -2341,7 +2404,7 @@ fn_Surface_putRect_7(WrenVM *vm)
 	}
 }
 
-/* `surface.fill_(x, y, w, h, cell)` — bulk-fill a rect with a single
+/* `surface.fill_(x, y, w, h, cell)` - bulk-fill a rect with a single
  * Cell template.  C-callable primitive; Wren declares a
  * `fill(rect, cell)` convenience that unpacks Rect.x/y/w/h. */
 void
@@ -2373,7 +2436,7 @@ fn_Surface_fill_(WrenVM *vm)
 	}
 }
 
-/* `surface.toString` — diagnostic. */
+/* `surface.toString` - diagnostic. */
 void
 fn_Surface_toString(WrenVM *vm)
 {
@@ -2490,5 +2553,228 @@ fn_Hyperlinks_params(WrenVM *vm)
 	}
 	wrenSetSlotString(vm, 0, params);
 	free(params);
+}
+
+
+/* ----- Scrollback ------------------------------------------------- */
+
+/* Scrollback presents the process-wide scrollback ring as a
+ * Surface-shaped, static-only foreign class.  The ring lives in
+ * `cterm->scrollback` (a `vmem_cell *` of `backwidth × backlines`).
+ * `backstart` marks the oldest valid row; `backfilled` is the count
+ * of valid rows.  When the ring hasn't wrapped (`backstart == 0`)
+ * the cell layout is already linear and Wren-side reads / writes
+ * map to the buffer directly.  When it HAS wrapped, an in-place
+ * row-wise rotation runs at the moment Wren first asks for a
+ * range-spanning view, normalizing `backstart` back to 0.
+ *
+ * `Scrollback.pushScreen()` walks the live screen rows into the
+ * ring (just like cterm's own line-to-scrollback path); the oldest
+ * rows are evicted on overflow.  `popScreen(_)` restores the ring
+ * counters from a saved snapshot taken at push time, so the modal
+ * scrollback viewer can hand the ring back unchanged on exit
+ * (modulo the few rows that got clobbered when overflow evicted
+ * them - same outcome as the equivalent count of natural
+ * scrollback writes).
+ *
+ * Wren can't inherit from a foreign class, so Scrollback is its own
+ * foreign class with linearize-and-dispatch wrappers for the
+ * Surface contract; an `is(_)` override on the Wren side reports
+ * `Scrollback is Surface == true` for ad-hoc type checks. */
+
+/* Rotate the ring in-place so `backstart` becomes 0.  No-op when
+ * already linear (the typical case once data has been written).
+ * Three-reverses: reverse [0..k) rows, reverse [k..N) rows, reverse
+ * [0..N) rows - each "reverse" swaps rows pairwise via a single-row
+ * temp buffer. */
+static void
+scrollback_linearize_(void)
+{
+	if (cterm == NULL || cterm->scrollback == NULL)
+		return;
+	int k = cterm->backstart;
+	if (k == 0)
+		return;
+
+	int rows = cterm->backlines;
+	int cols = cterm->backwidth;
+	struct vmem_cell *buf = cterm->scrollback;
+	struct vmem_cell *tmp = malloc((size_t)cols * sizeof(*tmp));
+	if (tmp == NULL)
+		return;
+
+	#define SWAP_ROW(a, b) do {                                          \
+		memcpy(tmp,                buf + (size_t)(a) * cols,             \
+		    (size_t)cols * sizeof(*buf));                                \
+		memcpy(buf + (size_t)(a) * cols, buf + (size_t)(b) * cols,       \
+		    (size_t)cols * sizeof(*buf));                                \
+		memcpy(buf + (size_t)(b) * cols, tmp,                            \
+		    (size_t)cols * sizeof(*buf));                                \
+	} while (0)
+
+	for (int i = 0, j = k - 1; i < j; i++, j--)
+		SWAP_ROW(i, j);
+	for (int i = k, j = rows - 1; i < j; i++, j--)
+		SWAP_ROW(i, j);
+	for (int i = 0, j = rows - 1; i < j; i++, j--)
+		SWAP_ROW(i, j);
+	#undef SWAP_ROW
+
+	free(tmp);
+
+	/* After rotation, backstart=0 and the next write head sits past
+	 * the valid data (or wraps to 0 when the ring was already full). */
+	cterm->backstart = 0;
+	cterm->backpos   = (cterm->backfilled == cterm->backlines)
+	    ? 0 : cterm->backfilled;
+}
+
+/* Linearize the ring, then install a borrowed wren_surface foreign
+ * in slot 0 (overwriting the Scrollback class object that was the
+ * receiver).  Every subsequent slot-0 Surface foreign method body
+ * sees the ring as a normal Surface - same buf / width / height
+ * shape - and the borrowed flag prevents the eventual finalizer
+ * from freeing cterm->scrollback.  Returns false if there's no
+ * ring; the caller should set slot 0 to a sentinel and return.
+ *
+ * This is the linearize-and-dispatch shim every Scrollback static
+ * method shares: the wrappers are uniform two-liners, so the entire
+ * read-side Surface contract passes through without per-method
+ * duplication. */
+static bool
+scrollback_install_(WrenVM *vm)
+{
+	if (cterm == NULL || cterm->scrollback == NULL)
+		return false;
+	struct wren_host_state *st = wren_host_state();
+	if (st == NULL)
+		return false;
+
+	scrollback_linearize_();
+
+	int w = cterm->backwidth;
+	int h = cterm->backfilled;
+
+	/* Use a scratch slot ABOVE every method arg the dispatched
+	 * Surface foreign might read.  The widest Surface method is
+	 * putRect_(7 args), so slots 1..7 are live; pick slot 8.
+	 * Clobbering slot 1 here would silently replace `x` in
+	 * cellAt(x, y) etc. with the Surface class object, which
+	 * wrenGetSlotDouble then reads as garbage and the bounds check
+	 * trips. */
+	wrenEnsureSlots(vm, 9);
+	load_class_into_slot(vm, &st->surface_class, "Surface", 8);
+	struct wren_surface *sf =
+	    wrenSetSlotNewForeign(vm, 0, 8, sizeof(*sf));
+	sf->type     = SWF_SURFACE;
+	sf->buf      = cterm->scrollback;
+	sf->width    = w;
+	sf->height   = h;
+	sf->count    = w * h;
+	sf->borrowed = true;
+	return true;
+}
+
+/* Each Scrollback read method is two lines: install the synthetic
+ * Surface in slot 0, dispatch to the regular Surface foreign body.
+ * Failure path (no cterm / no ring) sets a method-appropriate
+ * sentinel - null for cell / view / string returns, 0 for numeric
+ * accessors. */
+#define SCROLLBACK_DISPATCH_NULL(name, fn_surface)                   \
+	void fn_Scrollback_##name(WrenVM *vm) {                          \
+		if (!scrollback_install_(vm)) { wrenSetSlotNull(vm, 0); return; } \
+		fn_surface(vm);                                              \
+	}
+
+#define SCROLLBACK_DISPATCH_NUM(name, fn_surface)                    \
+	void fn_Scrollback_##name(WrenVM *vm) {                          \
+		if (!scrollback_install_(vm)) { wrenSetSlotDouble(vm, 0, 0.0); return; } \
+		fn_surface(vm);                                              \
+	}
+
+SCROLLBACK_DISPATCH_NUM (width,         fn_Surface_width)
+SCROLLBACK_DISPATCH_NUM (height,        fn_Surface_height)
+SCROLLBACK_DISPATCH_NUM (count,         fn_Surface_count)
+SCROLLBACK_DISPATCH_NULL(subscript,     fn_Surface_subscript)
+SCROLLBACK_DISPATCH_NULL(iterate,       fn_Surface_iterate)
+SCROLLBACK_DISPATCH_NULL(iteratorValue, fn_Surface_iteratorValue)
+SCROLLBACK_DISPATCH_NULL(cellAt,        fn_Surface_cellAt)
+SCROLLBACK_DISPATCH_NULL(urlAt,         fn_Surface_urlAt)
+SCROLLBACK_DISPATCH_NULL(putRect_3,     fn_Surface_putRect_3)
+SCROLLBACK_DISPATCH_NULL(putRect_7,     fn_Surface_putRect_7)
+SCROLLBACK_DISPATCH_NULL(fill_,         fn_Surface_fill_)
+SCROLLBACK_DISPATCH_NULL(toString,      fn_Surface_toString)
+
+#undef SCROLLBACK_DISPATCH_NULL
+#undef SCROLLBACK_DISPATCH_NUM
+
+/* Push the cterm region's visible rows into the ring, row by row.
+ * Only the cterm area itself - the status bar (which sits below
+ * cterm at term.y + term.height) is excluded, otherwise the viewer
+ * sees a duplicated copy of it as the most recently pushed row.
+ * Per-row logic mirrors cterm_line_to_scrollback (which is static
+ * inside cterm.c, so we replicate rather than expose it).  The
+ * ring's pre-push counters are stashed on wren_host_state so
+ * popScreen can restore them. */
+void
+fn_Scrollback_pushScreen(WrenVM *vm)
+{
+	(void)vm;
+	struct wren_host_state *st = wren_host_state();
+	if (st == NULL || cterm == NULL || cterm->scrollback == NULL)
+		return;
+
+	st->scrollback_save_valid  = true;
+	st->scrollback_save_start  = cterm->backstart;
+	st->scrollback_save_pos    = cterm->backpos;
+	st->scrollback_save_filled = cterm->backfilled;
+
+	int copy_w = cterm->backwidth;
+	if (copy_w > cterm->width)
+		copy_w = cterm->width;
+
+	for (int i = 0; i < cterm->height; i++) {
+		int row = cterm->y + i;
+		cterm->backfilled++;
+		if (cterm->backfilled > cterm->backlines) {
+			cterm->backfilled--;
+			cterm->backstart++;
+			if (cterm->backstart == cterm->backlines)
+				cterm->backstart = 0;
+		}
+		struct vmem_cell *dst =
+		    cterm->scrollback +
+		    (size_t)cterm->backpos * cterm->backwidth;
+		ciolib_vmem_gettext(cterm->x, row,
+		    cterm->x + copy_w - 1, row, dst);
+		if (copy_w < cterm->backwidth) {
+			memset(dst + copy_w, 0,
+			    (size_t)(cterm->backwidth - copy_w) *
+			    sizeof(*dst));
+		}
+		cterm->backpos++;
+		if (cterm->backpos == cterm->backlines)
+			cterm->backpos = 0;
+	}
+}
+
+/* popScreen(_) restores the ring counters to the snapshot taken by
+ * the matching pushScreen().  The argument exists for symmetry /
+ * documentation - the caller passes the row count it pushed - but
+ * the actual restore is unconditional, since we have the saved
+ * values.  No-op when no save is live. */
+void
+fn_Scrollback_popScreen(WrenVM *vm)
+{
+	(void)vm;
+	struct wren_host_state *st = wren_host_state();
+	if (st == NULL || !st->scrollback_save_valid ||
+	    cterm == NULL || cterm->scrollback == NULL)
+		return;
+
+	cterm->backstart  = st->scrollback_save_start;
+	cterm->backpos    = st->scrollback_save_pos;
+	cterm->backfilled = st->scrollback_save_filled;
+	st->scrollback_save_valid = false;
 }
 

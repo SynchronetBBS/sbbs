@@ -2,7 +2,7 @@
 #define WREN_BIND_SCREEN_H
 
 /* Screen / Input / Cell / Cells / Font / Hyperlinks / Color / Palette
- * / CustomCursor / VideoFlags / KeyEvent / MouseEvent — the visual
+ * / CustomCursor / VideoFlags / KeyEvent / MouseEvent - the visual
  * + input foreign surface.  Declarations pulled in by wren_bind.c
  * so the BINDINGS table and wren_bind_lookup_class can reach the
  * implementations defined in wren_bind_screen.c. */
@@ -24,6 +24,11 @@ struct wren_surface {
 	struct vmem_cell *buf;               /* malloc'd; freed at finalize */
 	int               width;
 	int               height;
+	/* When true, `buf` is borrowed (e.g. points at cterm->scrollback)
+	 * and the finalizer must NOT free it.  Used by the synthetic
+	 * Surface that Scrollback's static methods install in slot 0
+	 * before delegating to the regular Surface foreign body. */
+	bool              borrowed;
 };
 void fnColor_fromAttr(WrenVM *vm);
 void fnColor_fromRgb(WrenVM *vm);
@@ -138,9 +143,29 @@ void fn_Surface_subscript(WrenVM *vm);
 void fn_Surface_width(WrenVM *vm);
 void fn_Surface_height(WrenVM *vm);
 void fn_Surface_cellAt(WrenVM *vm);
+void fn_Surface_urlAt(WrenVM *vm);
 void fn_Surface_putRect_3(WrenVM *vm);
 void fn_Surface_putRect_7(WrenVM *vm);
 void fn_Surface_fill_(WrenVM *vm);
+
+/* Scrollback foreign - static-only class that mirrors Surface's
+ * read-side contract by linearizing the ring then dispatching to the
+ * regular Surface foreign body.  pushScreen / popScreen manage the
+ * ring counters around modal usage. */
+void fn_Scrollback_width(WrenVM *vm);
+void fn_Scrollback_height(WrenVM *vm);
+void fn_Scrollback_count(WrenVM *vm);
+void fn_Scrollback_subscript(WrenVM *vm);
+void fn_Scrollback_iterate(WrenVM *vm);
+void fn_Scrollback_iteratorValue(WrenVM *vm);
+void fn_Scrollback_cellAt(WrenVM *vm);
+void fn_Scrollback_urlAt(WrenVM *vm);
+void fn_Scrollback_putRect_3(WrenVM *vm);
+void fn_Scrollback_putRect_7(WrenVM *vm);
+void fn_Scrollback_fill_(WrenVM *vm);
+void fn_Scrollback_toString(WrenVM *vm);
+void fn_Scrollback_pushScreen(WrenVM *vm);
+void fn_Scrollback_popScreen(WrenVM *vm);
 void fn_Surface_toString(WrenVM *vm);
 void wren_cell_allocate(WrenVM *vm);
 void wren_cell_finalize(void *data);
@@ -209,7 +234,7 @@ void fnVideoFlags_lineGraphicsExpand_static(WrenVM *vm);
 void fnVideoFlags_lineGraphicsExpand_set_static(WrenVM *vm);
 
 
-/* Macro-generated SCREEN_SUPPORTS accessors — bit-test against
+/* Macro-generated SCREEN_SUPPORTS accessors - bit-test against
  * cio_api.options. */
 void fnScreenSupports_loadableFonts(WrenVM *vm);
 void fnScreenSupports_altBlinkFont(WrenVM *vm);
