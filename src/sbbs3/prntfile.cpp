@@ -407,7 +407,8 @@ bool sbbs_t::printfile(const char* inpath, int mode, int org_cols, JSObject* obj
 							} else {
 								// Not found: restore file position, show message, and re-prompt
 								// (don't advance the file display — 'less'-style).
-								(void)fseeko(stream, saved_pos, SEEK_SET);
+								if (saved_pos >= 0)
+									(void)fseeko(stream, saved_pos, SEEK_SET);
 								clearerr(stream);
 								bputs(text[FindStringNotFound]);
 								reprompt = true;
@@ -444,7 +445,8 @@ bool sbbs_t::printfile(const char* inpath, int mode, int org_cols, JSObject* obj
 							}
 							bputs(text[SeekingFileDone]);
 							if (!found) {
-								(void)fseeko(stream, saved_pos, SEEK_SET);
+								if (saved_pos >= 0)
+									(void)fseeko(stream, saved_pos, SEEK_SET);
 								clearerr(stream);
 								bputs(text[FindStringNotFound]);
 								reprompt = true;
