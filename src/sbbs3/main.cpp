@@ -4449,7 +4449,7 @@ void node_thread(void* arg)
 	int file;
 	int curshell = -1;
 	node_t node;
-	uint login_attempts;
+	long login_attempts;
 	sbbs_t*         sbbs = (sbbs_t*) arg;
 
 	update_clients();
@@ -4471,9 +4471,9 @@ void node_thread(void* arg)
 
 	if (startup->login_attempt.throttle
 	    && (login_attempts = loginAttempts(startup->login_attempt_list, &sbbs->client_addr)) > 1) {
-		lprintf(LOG_DEBUG, "Node %d Throttling suspicious connection from: %s (%u login attempts)"
+		lprintf(LOG_DEBUG, "Node %d Throttling suspicious connection from: %s (%ld login attempts)"
 		        , sbbs->cfg.node_num, sbbs->client_ipaddr, login_attempts);
-		for (uint i = 0; i < login_attempts; ++i) {
+		for (long i = 0; i < login_attempts; ++i) {
 			mswait(startup->login_attempt.throttle);
 			sbbs->socket_inactive = 0;
 		}
