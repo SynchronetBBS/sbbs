@@ -545,11 +545,17 @@ send_scancode(uint32_t evdev_key, bool pressed)
 	 * for non-US keyboard layouts.  Special keys (arrows, F-keys)
 	 * return 0 from xkb_state_key_get_utf32 and fall through to
 	 * the evdev scancode table below.
+	 *
+	 * Run every codepoint (including 0x0D / 0x09 / 0x08 / 0x7F)
+	 * through cpchar_from_unicode_cpoint so that emulations like
+	 * ATASCII / PETSCII / Prestel get the per-codepage byte
+	 * (e.g. ATASCII U+000D Return -> 0x9B EOL).  Matches the X11
+	 * backend's char path.
 	 */
 	if (xkb_st && !alt_held && !ctrl_held) {
 		uint32_t utf32 = xkb.state_key_get_utf32(xkb_st,
 		    evdev_key + 8);
-		if (utf32 >= 0x20 && utf32 != 0x7f) {
+		if (utf32 != 0) {
 			uint8_t ch = cpchar_from_unicode_cpoint(
 			    getcodepage(), utf32,
 			    utf32 < 128 ? (char)utf32 : 0);
