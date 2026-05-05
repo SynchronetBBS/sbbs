@@ -39,6 +39,7 @@
 #include "cg_cio.h"
 #include "bitmap_con.h"
 #include "scale.h"
+#include "utf8_codepages.h"
 
 /*
  * gen_defs.h defines BOOL as int, which conflicts with Objective-C's BOOL
@@ -506,20 +507,26 @@ snap_resize(bool grow)
 				cg_send_key(ch);
 				return;
 			}
-			/* Normal printable character */
-			if (!hasCtrl && ch >= 0x20 && ch < 0x7f) {
-				cg_send_key(ch);
-				return;
-			}
-			/* CR, Tab, Escape via characters */
-			if (ch == 0x0d || ch == 0x09 || ch == 0x1b) {
-				cg_send_key(ch);
-				return;
-			}
-			/* macOS Delete key (backspace) generates 0x7f as char */
-			if (ch == 0x7f && vk == kVK_Delete) {
-				cg_send_key(0x08);
-				return;
+			/* macOS Delete key (physical Backspace) generates 0x7f as
+			 * char.  Remap to ASCII BS so codepage translation below
+			 * can produce the per-codepage byte (e.g. ATASCII 0x7E). */
+			if (ch == 0x7f && vk == kVK_Delete)
+				ch = 0x08;
+			/* Translate the typed character through the active codepage
+			 * before pushing it to the key pipe.  This is what the X11
+			 * backend does (x_events.c:2122) and is required for
+			 * emulations that remap Unicode codepoints to backend bytes
+			 * — most importantly ATASCII, which maps U+000D Return to
+			 * its EOL byte 0x9B, U+0008 BS to 0x7E, U+0009 Tab to 0x7F,
+			 * etc.  Without it those keys go out as raw ASCII and the
+			 * remote BBS never sees its own line terminator. */
+			if (!hasCtrl && ch < 128) {
+				uint8_t mapped = cpchar_from_unicode_cpoint(
+				    getcodepage(), ch, (char)ch);
+				if (mapped) {
+					cg_send_key(mapped);
+					return;
+				}
 			}
 		}
 	}
