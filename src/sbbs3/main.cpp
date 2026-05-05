@@ -459,7 +459,7 @@ SOCKET accept_socket(SOCKET s, union xp_sockaddr* addr, socklen_t* addrlen)
 {
 	SOCKET sock;
 
-	sock = accept(s, &addr->addr, addrlen);
+	sock = accept(s, (struct sockaddr*)addr, addrlen);
 	if (sock != INVALID_SOCKET)
 		call_socket_open_callback(true);
 

@@ -402,7 +402,7 @@ SOCKET xpms_accept(struct xpms_set *xpms_set, union xp_sockaddr * addr,
 #endif
 					if (cb_data)
 						*cb_data = xpms_set->socks[i].cb_data;
-					ret = accept(xpms_set->socks[i].sock, &addr->addr, addrlen);
+					ret = accept(xpms_set->socks[i].sock, (struct sockaddr*)addr, addrlen);
 					if (ret == INVALID_SOCKET) {
 						goto error_return;
 					}

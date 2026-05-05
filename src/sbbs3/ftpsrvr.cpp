@@ -1335,7 +1335,7 @@ static void filexfer(union xp_sockaddr* addr, SOCKET ctrl_sock, CRYPT_SESSION ct
 
 		if (startup->options & FTP_OPT_DEBUG_DATA) {
 			addr_len = sizeof(*addr);
-			if ((result = getsockname(pasv_sock, &addr->addr, &addr_len)) != 0)
+			if ((result = getsockname(pasv_sock, (struct sockaddr*)addr, &addr_len)) != 0)
 				lprintf(LOG_CRIT, "%04d <%s> PASV !DATA ERROR %d (%d) getting address/port of passive socket (%u)"
 				        , ctrl_sock, user->alias, result, SOCKET_ERRNO, pasv_sock);
 			else
@@ -1357,7 +1357,7 @@ static void filexfer(union xp_sockaddr* addr, SOCKET ctrl_sock, CRYPT_SESSION ct
 #ifdef SOCKET_DEBUG_ACCEPT
 		socket_debug[ctrl_sock] |= SOCKET_DEBUG_ACCEPT;
 #endif
-		*data_sock = accept(pasv_sock, &addr->addr, &addr_len);
+		*data_sock = accept(pasv_sock, (struct sockaddr*)addr, &addr_len);
 #ifdef SOCKET_DEBUG_ACCEPT
 		socket_debug[ctrl_sock] &= ~SOCKET_DEBUG_ACCEPT;
 #endif
