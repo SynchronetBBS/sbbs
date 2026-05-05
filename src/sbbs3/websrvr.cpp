@@ -6868,7 +6868,7 @@ void http_session_thread(void* arg)
 			thread_down();
 			return;
 		}
-		bool nodelay = true;
+		int nodelay = true;
 		setsockopt(session.socket, IPPROTO_TCP, TCP_NODELAY, (char*)&nodelay, sizeof(nodelay));
 
 		if (looking_good)

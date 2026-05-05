@@ -1123,7 +1123,7 @@ static bool pop3_client_thread(pop3_t* pop3)
 	mail_t*           mail;
 	login_attempt_t   attempted;
 	CRYPT_SESSION     session = -1;
-	bool              nodelay = true;
+	int               nodelay = true;
 	ulong             nb = 0;
 	int               stat;
 	union xp_sockaddr server_addr;
@@ -3017,7 +3017,7 @@ static bool smtp_client_thread(smtp_t* smtp)
 	struct mailproc*  mailproc;
 	login_attempt_t   attempted;
 	int               session = -1;
-	bool              nodelay = true;
+	int               nodelay = true;
 	ulong             nb = 0;
 	unsigned          with_val;
 	int               cstat;
@@ -5402,7 +5402,7 @@ static SOCKET sendmail_negotiate(CRYPT_SESSION *session, smb_t *smb, smbmsg_t *m
 	union xp_sockaddr server_addr;
 	char              server_ip[INET6_ADDRSTRLEN];
 	bool              success;
-	bool              nodelay = true;
+	int               nodelay = true;
 	ulong             nb = 0;
 	int               status;
 	char              buf[512];
