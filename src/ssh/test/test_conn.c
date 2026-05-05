@@ -4341,7 +4341,7 @@ test_rx_truncation_default(void)
 	/* No flag, no setup_complete, but local_window=0.  In the existing
 	 * universal path (bypass==false), dlen gets clipped to 0. */
 	oc.server_ch->accept_pre_window_data = false;
-	oc.server_ch->setup_complete = false;
+	atomic_store(&oc.server_ch->setup_complete, false);
 	oc.server_ch->local_window = 0;
 
 	uint8_t payload[64];
@@ -4375,7 +4375,7 @@ test_rx_truncation_clips_to_window(void)
 	}
 
 	oc.server_ch->accept_pre_window_data = false;
-	oc.server_ch->setup_complete = true;
+	atomic_store(&oc.server_ch->setup_complete, true);
 	oc.server_ch->local_window = 4;
 
 	uint8_t payload[64];
@@ -4410,7 +4410,7 @@ test_rx_bypass_pre_setup(void)
 	}
 
 	oc.server_ch->accept_pre_window_data = true;
-	oc.server_ch->setup_complete = false;
+	atomic_store(&oc.server_ch->setup_complete, false);
 	oc.server_ch->local_window = 0;
 
 	uint8_t payload[64];
@@ -4445,7 +4445,7 @@ test_rx_bypass_disengages_post_setup(void)
 	}
 
 	oc.server_ch->accept_pre_window_data = true;
-	oc.server_ch->setup_complete = true;
+	atomic_store(&oc.server_ch->setup_complete, true);
 	oc.server_ch->local_window = 0;
 
 	uint8_t payload[64];

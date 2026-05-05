@@ -260,12 +260,18 @@ struct dssh_channel_s {
 	bool    setup_mode;
 	bool    setup_ready;
 	bool    setup_error;
-	/* True until send_window_adjust at end of dssh_chan_open /
-	 * dssh_chan_zc_open succeeds; gates the early-data bypass. */
-	bool    setup_complete;
+	/* Latches true after send_window_adjust at the end of
+	 * dssh_chan_open / dssh_chan_zc_open succeeds; gates the
+	 * early-data bypass.  Atomic so the writer (app thread,
+	 * outside any DSSH mutex) publishes via release-store and
+	 * the reader (demux, in handle_channel_*data) sees the new
+	 * value via acquire-load without needing buf_mtx contention. */
+	atomic_bool setup_complete;
 	/* DSSH_PARAM_ACCEPT_EARLY_DATA copied from params at open time;
 	 * lets demux deliver CHANNEL_DATA over a closed local_window
-	 * for the duration of !setup_complete. */
+	 * for the duration of !setup_complete.  Plain bool: written
+	 * before register_channel, so the channel_mtx release in
+	 * register_channel publishes it to any later demux read. */
 	bool    accept_pre_window_data;
 	uint8_t setup_msg_type;
 

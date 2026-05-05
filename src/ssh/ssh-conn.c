@@ -1150,7 +1150,8 @@ handle_channel_data(struct dssh_session_s *sess, struct dssh_channel_s *ch, cons
 	 * unbounded buffering.  The bypass branch -- DSSH_PARAM_ACCEPT_
 	 * EARLY_DATA + still in setup -- delivers anyway and refuses to
 	 * credit the over-budget bytes back to the peer. */
-	bool bypass = ch->accept_pre_window_data && !ch->setup_complete;
+	bool bypass = ch->accept_pre_window_data
+	    && !atomic_load_explicit(&ch->setup_complete, memory_order_acquire);
 
 	if (!bypass && dlen > ch->local_window)
 		dlen = ch->local_window;
@@ -1215,7 +1216,8 @@ handle_channel_extended_data(struct dssh_session_s *sess, struct dssh_channel_s 
 	const uint8_t *data = &payload[13];
 
 	/* See handle_channel_data for window-truncation rationale. */
-	bool bypass = ch->accept_pre_window_data && !ch->setup_complete;
+	bool bypass = ch->accept_pre_window_data
+	    && !atomic_load_explicit(&ch->setup_complete, memory_order_acquire);
 
 	if (!bypass && dlen > ch->local_window)
 		dlen = ch->local_window;
@@ -2445,8 +2447,9 @@ dssh_chan_open(struct dssh_session_s *sess, const struct dssh_chan_params *param
 		goto fail_close;
 
 	/* Setup is done; rx-window enforcement applies for the rest of
-	 * the channel's life. */
-	ch->setup_complete = true;
+	 * the channel's life.  Release-store so the demux's acquire-
+	 * load in handle_channel_*data sees this without buf_mtx. */
+	atomic_store_explicit(&ch->setup_complete, true, memory_order_release);
 
 	/* Copy params for getters */
 	res = dssh_chan_params_init(&ch->params, params->type);
@@ -2914,8 +2917,9 @@ dssh_chan_zc_open(struct dssh_session_s *sess, const struct dssh_chan_params *pa
 		goto fail_close;
 
 	/* Setup is done; rx-window enforcement applies for the rest of
-	 * the channel's life. */
-	ch->setup_complete = true;
+	 * the channel's life.  See dssh_chan_open for the atomic
+	 * release-store rationale. */
+	atomic_store_explicit(&ch->setup_complete, true, memory_order_release);
 
 	/* Copy params for getters */
 	res = dssh_chan_params_init(&ch->params, params->type);
