@@ -1166,7 +1166,7 @@ static void receive_thread(void* arg)
 // Returns true upon error?!?
 static bool start_tls(SOCKET *sock, CRYPT_SESSION *sess, bool resp)
 {
-	bool  nodelay;
+	int   nodelay;
 	ulong nb;
 	int   status;
 	char *estr = NULL;
