@@ -138,7 +138,8 @@ SHA256Final(SHA256_CTX *ctx, uint8_t digest[SHA256_DIGEST_SIZE])
 	/* Append 0x80, pad with zeros to leave 8 bytes for the length. */
 	ctx->buffer[buf_off++] = 0x80;
 	if (buf_off > SHA256_BLOCK_SIZE - 8) {
-		memset(ctx->buffer + buf_off, 0, SHA256_BLOCK_SIZE - buf_off);
+		if (buf_off < SHA256_BLOCK_SIZE)
+			memset(ctx->buffer + buf_off, 0, SHA256_BLOCK_SIZE - buf_off);
 		SHA256Transform(ctx->state, ctx->buffer);
 		buf_off = 0;
 	}
