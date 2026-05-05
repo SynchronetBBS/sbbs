@@ -28,9 +28,16 @@ class OnlineMenu {
   // reliably delivered on raw terminals — we mirror that here.
   static buildEntries_() {
     var hint = !Host.textTerminal
-    var disconnectLabel = hint ? "Disconnect (Alt-H)" : "Disconnect (Ctrl-Q)"
+    // 3-char modifier prefix ("ALT" everywhere, "CMD" on macOS where
+    // the Quartz backend maps Cmd to the BBS Alt keycodes).  Use the
+    // short form so the menu pane stays usable on a 40-column screen
+    // — the widest entry is "Change Output Rate (xxx-Up/xxx-Down)"
+    // which is 36 chars with a 3-char prefix and would overflow with
+    // the spelled-out "Command".
+    var alt = Host.altKeyShort
+    var disconnectLabel = hint ? "Disconnect (%(alt)-H)" : "Disconnect (Ctrl-Q)"
     var entries = [
-      [ hint ? "Scrollback (Alt-B)"         : "Scrollback",
+      [ hint ? "Scrollback (%(alt)-B)"         : "Scrollback",
         Fn.new { ScrollbackView.run() } ],
       // No confirm prompt for the menu's Disconnect / Exit entries —
       // selecting them from the list IS the confirmation step.  The
@@ -38,25 +45,25 @@ class OnlineMenu {
       // through DisconnectFlow.
       [ disconnectLabel,
         Fn.new { Conn.endSession(false) } ],
-      [ hint ? "Send Login (Alt-L)"         : "Send Login",
+      [ hint ? "Send Login (%(alt)-L)"         : "Send Login",
         Fn.new { Connected.sendLogin() } ],
-      [ hint ? "Upload (Alt-U)"             : "Upload",
+      [ hint ? "Upload (%(alt)-U)"             : "Upload",
         Fn.new { Conn.upload() } ],
-      [ hint ? "Download (Alt-D)"           : "Download",
+      [ hint ? "Download (%(alt)-D)"           : "Download",
         Fn.new { Conn.download() } ],
-      [ hint ? "Change Output Rate (Alt-Up/Alt-Down)" : "Change Output Rate",
+      [ hint ? "Change Output Rate (%(alt)-Up/%(alt)-Down)" : "Change Output Rate",
         Fn.new { outputRateFlow_() } ],
       [ "Change Log Level",
         Fn.new { logLevelFlow_() } ],
-      [ hint ? "Capture Control (Alt-C)"    : "Capture Control",
+      [ hint ? "Capture Control (%(alt)-C)"    : "Capture Control",
         Fn.new { CaptureMenu.run() } ],
-      [ hint ? "ANSI Music Control (Alt-M)" : "ANSI Music Control",
+      [ hint ? "ANSI Music Control (%(alt)-M)" : "ANSI Music Control",
         Fn.new { MusicMenu.run() } ],
-      [ hint ? "Font Setup (Alt-F)"         : "Font Setup",
+      [ hint ? "Font Setup (%(alt)-F)"         : "Font Setup",
         Fn.new { Host.fontControl() } ],
       [ "Toggle Doorway Mode",
         Fn.new { CTerm.doorwayMode = !CTerm.doorwayMode } ],
-      [ hint ? "Toggle Remote Mouse (Alt-O)" : "Toggle Remote Mouse",
+      [ hint ? "Toggle Remote Mouse (%(alt)-O)" : "Toggle Remote Mouse",
         Fn.new {
           CTerm.mouseDisabled = !CTerm.mouseDisabled
           Input.setupMouseEvents()
@@ -71,9 +78,9 @@ class OnlineMenu {
           CTerm.ooiiMode = next
         }])
     }
-    entries.add([ hint ? "Exit (Alt-X)"     : "Exit",
+    entries.add([ hint ? "Exit (%(alt)-X)"     : "Exit",
                   Fn.new { Conn.endSession(true) } ])
-    entries.add([ hint ? "Edit Dialing Directory (Alt-E)" : "Edit Dialing Directory",
+    entries.add([ hint ? "Edit Dialing Directory (%(alt)-E)" : "Edit Dialing Directory",
                   Fn.new { Host.editBBSList() } ])
     // No key hint on Wren Console — Ctrl+` works on backends that pass
     // the byte through, but ANSI/Curses can't capture it, so the menu

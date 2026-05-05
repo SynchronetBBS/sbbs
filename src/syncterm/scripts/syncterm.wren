@@ -1493,6 +1493,15 @@ class Host {
   // normal control byte).
   foreign static textTerminal
 
+  // Display name of the modifier that produces Alt keycodes on this
+  // platform.  "Alt" everywhere except macOS, where it's "Command"
+  // because the Quartz backend maps Cmd to Alt (Option is reserved
+  // for input-method composition).  Use altKeyName in inline labels
+  // ("Disconnect (%(Host.altKeyName)-H)") and altKeyShort where
+  // horizontal space is tight ("%(Host.altKeyShort)-Z menu").
+  foreign static altKeyName
+  foreign static altKeyShort
+
   // True when the build has Operation Overkill ][ tone support
   // compiled in (i.e. WITHOUT_OOII is not defined).  Used by the
   // online menu to decide whether to expose the OOII toggle entry.

@@ -538,7 +538,7 @@ class SftpApp is App {
         ":  show long description (rows marked `+`)\n" +
         "F4\n" +
         ":  pick a file from `UploadPath` and queue it as an upload to the current directory\n" +
-        "Alt-Q\n" +
+        "%(Host.altKeyName)-Q\n" +
         ":  switch to queue mode\n" +
         "Esc / [X]\n" +
         ":  leave the SFTP UI\n" +
@@ -736,7 +736,7 @@ class SftpApp is App {
         ":  scroll a page\n" +
         "Del\n" +
         ":  cancel the highlighted job\n" +
-        "Alt-S\n" +
+        "%(Host.altKeyName)-S\n" +
         ":  switch to browser mode (if SFTP is available)\n" +
         "Esc / [X]\n" +
         ":  leave the SFTP UI (also stops transfers and ends the session if the shell has closed)\n" +

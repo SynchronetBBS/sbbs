@@ -1184,6 +1184,8 @@ static const struct binding BINDINGS[] = {
 	{ "Host", true, "sshPublicKey",      fn_Host_sshPublicKey      },
 	{ "Host", true, "safeMode",          fn_Host_safeMode          },
 	{ "Host", true, "textTerminal",      fn_Host_textTerminal      },
+	{ "Host", true, "altKeyName",        fn_Host_altKeyName        },
+	{ "Host", true, "altKeyShort",       fn_Host_altKeyShort       },
 	{ "Host", true, "haveOOII",          fn_Host_haveOOII          },
 	{ "Host", true, "maxOOIIMode",       fn_Host_maxOOIIMode       },
 	{ "Host", true, "outputRates",       fn_Host_outputRates       },

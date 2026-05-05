@@ -216,7 +216,7 @@ class StatusDefault {
     var name = nameWithFlags_()
     var conn = padTo_(BBS.connTypeName, 6)
     var time = w >= 80 ? "Connected: %(elapsedString_())" : ""
-    var menu = w >= 80 ? "ALT-Z menu" : ""
+    var menu = w >= 80 ? "%(Host.altKeyShort)-Z menu" : ""
 
     // Total width = 1 (leading space) + nameWidth + rightWidth + 1
     // (trailing space).  Solve for nameWidth.  If the name would

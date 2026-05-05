@@ -986,6 +986,27 @@ fn_Host_textTerminal(WrenVM *vm)
 	wrenSetSlotBool(vm, 0, is_text);
 }
 
+/* Host.altKeyName — display name of the modifier that produces Alt
+ * keycodes on this platform.  "Command" on macOS (Cmd-as-Alt mapping
+ * in the Quartz backend), "Alt" everywhere else.  Backed by the
+ * ALT_KEY_NAMEP macro in syncterm.h.  Used by Wren scripts for inline
+ * menu / help labels so they read e.g. "Disconnect (Command-H)" on
+ * Macs and "Disconnect (Alt-H)" elsewhere. */
+void
+fn_Host_altKeyName(WrenVM *vm)
+{
+	wrenSetSlotString(vm, 0, ALT_KEY_NAMEP);
+}
+
+/* Host.altKeyShort — three-letter abbreviation of the same modifier
+ * for places where horizontal space is tight (status bar, etc.).
+ * "CMD" on macOS, "ALT" elsewhere.  Backed by ALT_KEY_NAME3CH. */
+void
+fn_Host_altKeyShort(WrenVM *vm)
+{
+	wrenSetSlotString(vm, 0, ALT_KEY_NAME3CH);
+}
+
 /* Host.haveOOII — true when the build has Operation Overkill ][ tone
  * support compiled in (i.e. WITHOUT_OOII is NOT defined).  The online
  * menu uses this to decide whether to include the "Toggle OOII" entry. */
