@@ -1242,7 +1242,7 @@ static void filexfer(union xp_sockaddr* addr, SOCKET ctrl_sock, CRYPT_SESSION ct
 	ulong             l;
 	socklen_t         addr_len;
 	union xp_sockaddr server_addr;
-	bool              reuseaddr;
+	int               reuseaddr;
 	xfer_t*           xfer;
 	char              host_ip[INET6_ADDRSTRLEN];
 
@@ -2223,7 +2223,7 @@ static void ctrl_thread(void* arg)
 	bool              local_fsys = false;
 	bool              alias_dir;
 	bool              append;
-	bool              reuseaddr;
+	int               reuseaddr;
 	FILE*             fp;
 	FILE*             alias_fp;
 	SOCKET            sock;
