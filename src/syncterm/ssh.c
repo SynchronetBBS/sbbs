@@ -1239,7 +1239,8 @@ ssh_connect(struct bbslist *bbs)
 
 	/* Open the persistent SFTP subsystem channel.  Servers without SFTP
 	 * support will leave sftp_available = false; the shell still works. */
-	sftp_session_start(bbs);
+	if (bbs->sftp_public_key)
+		sftp_session_start(bbs);
 
 	if (!bbs->hidepopups)
 		uifc.pop(NULL);
