@@ -1119,6 +1119,27 @@ static int test_params_set_pty(void)
 	return TEST_PASS;
 }
 
+static int test_params_set_accept_early_data(void)
+{
+	struct dssh_chan_params p;
+
+	ASSERT_OK(dssh_chan_params_init(&p, DSSH_CHAN_SHELL));
+	ASSERT_FALSE(p.flags & DSSH_PARAM_ACCEPT_EARLY_DATA);
+
+	ASSERT_OK(dssh_chan_params_set_accept_early_data(&p, true));
+	ASSERT_TRUE(p.flags & DSSH_PARAM_ACCEPT_EARLY_DATA);
+
+	ASSERT_OK(dssh_chan_params_set_accept_early_data(&p, false));
+	ASSERT_FALSE(p.flags & DSSH_PARAM_ACCEPT_EARLY_DATA);
+
+	/* NULL params */
+	ASSERT_EQ(dssh_chan_params_set_accept_early_data(NULL, true),
+	    DSSH_ERROR_INVALID);
+
+	dssh_chan_params_free(&p);
+	return TEST_PASS;
+}
+
 static int test_params_set_term(void)
 {
 	struct dssh_chan_params p;
@@ -1448,6 +1469,7 @@ static struct dssh_test_entry tests[] = {
 	{ "params_init_exec",               test_params_init_exec },
 	{ "params_init_subsystem",          test_params_init_subsystem },
 	{ "params_set_pty",                 test_params_set_pty },
+	{ "params_set_accept_early_data",   test_params_set_accept_early_data },
 	{ "params_set_term",                test_params_set_term },
 	{ "params_set_size",                test_params_set_size },
 	{ "params_set_command",             test_params_set_command },

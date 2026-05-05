@@ -1091,6 +1091,7 @@ dssh_chan_params_free(&cp);
 | `dssh_chan_params_free(p)` | Release heap storage |
 | `dssh_chan_params_set_max_window(p, max)` | Max window size (0 = 2 MiB default) |
 | `dssh_chan_params_set_pty(p, enable)` | Enable/disable PTY |
+| `dssh_chan_params_set_accept_early_data(p, enable)` | Accept pre-setup data from broken servers (see below) |
 | `dssh_chan_params_set_term(p, term)` | Terminal type string |
 | `dssh_chan_params_set_size(p, cols, rows, wpx, hpx)` | Terminal dimensions |
 | `dssh_chan_params_set_mode(p, opcode, value)` | Terminal mode (RFC 4254 s8) |
@@ -1112,14 +1113,60 @@ emits opcodes 1–159 first, then 160+, then TTY_OP_END (RFC 4254 s8).
 
 `dssh_chan_open()` performs the full setup sequence internally:
 
-1. Send CHANNEL_OPEN "session" with `initial_window=0`
-2. Wait for CHANNEL_OPEN_CONFIRMATION
-3. Send env requests (from params)
-4. Send pty-req (if enabled in params)
-5. Send terminal request (shell/exec/subsystem per type)
-6. Allocate I/O buffers
+1. Allocate I/O buffers
+2. Send CHANNEL_OPEN "session" with `initial_window=0`
+3. Wait for CHANNEL_OPEN_CONFIRMATION
+4. Send env requests (from params)
+5. Send pty-req (if enabled in params)
+6. Send terminal request (shell/exec/subsystem per type)
 7. Send WINDOW_ADJUST to open the window
-8. Return live channel
+8. Mark setup complete and return live channel
+
+### Inbound window enforcement
+
+The library tracks the locally-advertised window on every channel and
+**clips inbound CHANNEL_DATA / EXTENDED_DATA to the advertised window
+before the data callback runs**.  A peer that ignores the window
+cannot drive the library into unbounded buffering — bytes past the
+window are silently dropped.  The data callback may therefore receive
+`len == 0`, or a `len` smaller than the wire packet's payload; it
+must handle that as a no-op.
+
+### `DSSH_PARAM_ACCEPT_EARLY_DATA` (broken-server workaround)
+
+Cryptlib-based SSH servers that don't wait for
+`CRYPT_SESSINFO_SSH_CHANNEL_TYPE` to be set before sending (such as
+Mystic BBS) begin emitting CHANNEL_DATA (banners, greetings, etc.)
+immediately after CHANNEL_OPEN_CONFIRMATION, before the client has
+had a chance to send its terminal request and open the window with
+WINDOW_ADJUST.  By default those bytes are dropped (the window is
+still 0).
+
+Setting `DSSH_PARAM_ACCEPT_EARLY_DATA` on the channel params asks the
+library to deliver pre-setup data anyway, bypassing the rx-window
+clip until the terminal request response arrives.  The flag only
+applies in stream-shaped channels, so it is **rejected with
+`DSSH_ERROR_INVALID` (NULL channel) on `DSSH_CHAN_SUBSYSTEM`** —
+subsystem channels use a message queue with no coherent destination
+for pre-setup bytes.
+
+```c
+struct dssh_chan_params cp;
+dssh_chan_params_init(&cp, DSSH_CHAN_SHELL);
+dssh_chan_params_set_accept_early_data(&cp, true);
+dssh_channel ch = dssh_chan_open(sess, &cp);
+dssh_chan_params_free(&cp);
+```
+
+Bytes accepted via the bypass are NOT credited back to the peer (no
+WINDOW_ADJUST is sent for them) — the over-budget bytes were free,
+not advertised.  Once the terminal request response arrives normal
+window enforcement resumes for the rest of the channel's life.
+
+Do not enable this flag globally.  It exists to allow the small set
+of legacy servers that misbehave in a specific way to still be usable
+with a stream-shaped channel; it is not a generic relaxation of the
+SSH protocol.
 
 ### Stream I/O
 

@@ -260,6 +260,13 @@ struct dssh_channel_s {
 	bool    setup_mode;
 	bool    setup_ready;
 	bool    setup_error;
+	/* True until send_window_adjust at end of dssh_chan_open /
+	 * dssh_chan_zc_open succeeds; gates the early-data bypass. */
+	bool    setup_complete;
+	/* DSSH_PARAM_ACCEPT_EARLY_DATA copied from params at open time;
+	 * lets demux deliver CHANNEL_DATA over a closed local_window
+	 * for the duration of !setup_complete. */
+	bool    accept_pre_window_data;
 	uint8_t setup_msg_type;
 
 	/* Per-channel string buffers (avoids static storage) */

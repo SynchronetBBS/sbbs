@@ -63,7 +63,18 @@ struct dssh_chan_mode_entry {
 };
 
 /* Params flag bits */
-#define DSSH_PARAM_HAS_PTY 0x01
+#define DSSH_PARAM_HAS_PTY            0x01
+/*
+ * Accept CHANNEL_DATA / CHANNEL_EXTENDED_DATA that arrives before
+ * the terminal-request response, even though the local window is
+ * still 0.  Workaround for Cryptlib-based servers that don't wait
+ * for CRYPT_SESSINFO_SSH_CHANNEL_TYPE to be set before sending
+ * (such as Mystic BBS).  Only valid with DSSH_CHAN_SHELL or
+ * DSSH_CHAN_EXEC; rejected with DSSH_ERROR_INVALID (NULL channel)
+ * for DSSH_CHAN_SUBSYSTEM.  Do not enable unless you actually need
+ * it.
+ */
+#define DSSH_PARAM_ACCEPT_EARLY_DATA  0x02
 
 /*
  * Channel parameters — populated via builder API, consumed at open time.
@@ -99,6 +110,7 @@ DSSH_PUBLIC int  dssh_chan_params_init(struct dssh_chan_params *p, enum dssh_cha
 DSSH_PUBLIC void dssh_chan_params_free(struct dssh_chan_params *p);
 DSSH_PUBLIC int  dssh_chan_params_set_max_window(struct dssh_chan_params *p, uint32_t max_window);
 DSSH_PUBLIC int  dssh_chan_params_set_pty(struct dssh_chan_params *p, bool enable);
+DSSH_PUBLIC int  dssh_chan_params_set_accept_early_data(struct dssh_chan_params *p, bool enable);
 DSSH_PUBLIC int  dssh_chan_params_set_term(struct dssh_chan_params *p, const char *term);
 DSSH_PUBLIC int  dssh_chan_params_set_size(struct dssh_chan_params *p, uint32_t cols, uint32_t rows, uint32_t wpx,
      uint32_t hpx);
@@ -156,8 +168,15 @@ struct dssh_chan_event {
 };
 
 /* ZC data callback — fires on demux thread for each inbound
- * CHANNEL_DATA/EXTENDED_DATA.  Returns bytes consumed for
- * WINDOW_ADJUST. */
+ * CHANNEL_DATA / EXTENDED_DATA.  Returns bytes consumed for
+ * WINDOW_ADJUST.
+ *
+ * `len` may be smaller than the wire packet's payload (or zero)
+ * when the local window is exhausted: the library truncates to
+ * what the advertised window allows before the call.  Callbacks
+ * MUST handle len == 0 as a no-op.  The exception is a channel
+ * opened with DSSH_PARAM_ACCEPT_EARLY_DATA, which delivers full
+ * pre-setup wire payloads without window truncation. */
 typedef uint32_t (*dssh_chan_zc_cb)(dssh_channel ch, int stream, const uint8_t *data, size_t len, void *cbdata);
 
 /* Event callback — fires from demux thread when an event is queued.

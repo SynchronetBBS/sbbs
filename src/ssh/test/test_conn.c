@@ -4280,6 +4280,212 @@ test_replenish_caps_to_buffer_space(void)
 }
 
 /* ================================================================
+ * Universal rx-window truncation + DSSH_PARAM_ACCEPT_EARLY_DATA bypass
+ * ================================================================ */
+
+/*
+ * Helper: open an exec channel and set up the server-side channel so
+ * we can poke a synthetic CHANNEL_DATA at it via demux_dispatch.  The
+ * setup_complete and accept_pre_window_data fields are set per-test
+ * by the caller after this returns.
+ */
+static int
+rx_window_setup(struct conn_ctx *ctx, struct open_exec_ctx *oc, uint32_t bufsz)
+{
+	oc->client = ctx->client;
+	oc->server = ctx->server;
+	oc->command = "rx-window";
+	oc->cbs = &accept_cbs_all;
+	oc->accept_timeout = 30000;
+	if (open_exec_channel(oc) < 0 || !oc->client_ch || !oc->server_ch)
+		return -1;
+
+	bytebuf_free(&oc->server_ch->buf.stdout_buf);
+	if (bytebuf_init(&oc->server_ch->buf.stdout_buf, bufsz) < 0)
+		return -1;
+	oc->server_ch->window_max = bufsz;
+	mtx_lock(&oc->server_ch->buf_mtx);
+	oc->server_ch->setup_mode = false;
+	mtx_unlock(&oc->server_ch->buf_mtx);
+	return 0;
+}
+
+/* Build a CHANNEL_DATA payload with N bytes of 'B' for the given channel. */
+static size_t
+build_channel_data(uint8_t *buf, size_t bufsz, uint32_t local_id, uint32_t dlen)
+{
+	size_t pos = 0;
+	buf[pos++] = SSH_MSG_CHANNEL_DATA;
+	dssh_serialize_uint32(local_id, buf, bufsz, &pos);
+	dssh_serialize_uint32(dlen, buf, bufsz, &pos);
+	memset(&buf[pos], 'B', dlen);
+	pos += dlen;
+	return pos;
+}
+
+/* Without the flag and with a closed window, all early bytes are
+ * clipped to len=0 -- the bytebuf stays empty and local_window stays 0. */
+static int
+test_rx_truncation_default(void)
+{
+	struct conn_ctx ctx;
+	if (conn_setup(&ctx) < 0)
+		return TEST_SKIP;
+
+	struct open_exec_ctx oc = { 0 };
+	if (rx_window_setup(&ctx, &oc, 64) < 0) {
+		conn_cleanup(&ctx);
+		return TEST_FAIL;
+	}
+
+	/* No flag, no setup_complete, but local_window=0.  In the existing
+	 * universal path (bypass==false), dlen gets clipped to 0. */
+	oc.server_ch->accept_pre_window_data = false;
+	oc.server_ch->setup_complete = false;
+	oc.server_ch->local_window = 0;
+
+	uint8_t payload[64];
+	size_t pos = build_channel_data(payload, sizeof(payload),
+	    oc.server_ch->local_id, 10);
+
+	demux_dispatch(ctx.server, SSH_MSG_CHANNEL_DATA, payload, pos);
+
+	ASSERT_EQ(bytebuf_available(&oc.server_ch->buf.stdout_buf), (size_t)0);
+	ASSERT_EQ(oc.server_ch->local_window, (uint32_t)0);
+
+	dssh_chan_close(oc.server_ch, 0);
+	dssh_chan_close(oc.client_ch, 0);
+	conn_cleanup(&ctx);
+	return TEST_PASS;
+}
+
+/* Universal rx-truncation: dlen exceeds local_window, bytes are clipped
+ * to local_window before stream_zc_cb runs. */
+static int
+test_rx_truncation_clips_to_window(void)
+{
+	struct conn_ctx ctx;
+	if (conn_setup(&ctx) < 0)
+		return TEST_SKIP;
+
+	struct open_exec_ctx oc = { 0 };
+	if (rx_window_setup(&ctx, &oc, 64) < 0) {
+		conn_cleanup(&ctx);
+		return TEST_FAIL;
+	}
+
+	oc.server_ch->accept_pre_window_data = false;
+	oc.server_ch->setup_complete = true;
+	oc.server_ch->local_window = 4;
+
+	uint8_t payload[64];
+	size_t pos = build_channel_data(payload, sizeof(payload),
+	    oc.server_ch->local_id, 10);
+
+	demux_dispatch(ctx.server, SSH_MSG_CHANNEL_DATA, payload, pos);
+
+	/* cb saw len=4, wrote 4 bytes; local_window depleted. */
+	ASSERT_EQ(bytebuf_available(&oc.server_ch->buf.stdout_buf), (size_t)4);
+	ASSERT_EQ(oc.server_ch->local_window, (uint32_t)0);
+
+	dssh_chan_close(oc.server_ch, 0);
+	dssh_chan_close(oc.client_ch, 0);
+	conn_cleanup(&ctx);
+	return TEST_PASS;
+}
+
+/* With the flag and !setup_complete, full dlen flows through despite
+ * a closed window -- and local_window is NOT decremented (no credit). */
+static int
+test_rx_bypass_pre_setup(void)
+{
+	struct conn_ctx ctx;
+	if (conn_setup(&ctx) < 0)
+		return TEST_SKIP;
+
+	struct open_exec_ctx oc = { 0 };
+	if (rx_window_setup(&ctx, &oc, 64) < 0) {
+		conn_cleanup(&ctx);
+		return TEST_FAIL;
+	}
+
+	oc.server_ch->accept_pre_window_data = true;
+	oc.server_ch->setup_complete = false;
+	oc.server_ch->local_window = 0;
+
+	uint8_t payload[64];
+	size_t pos = build_channel_data(payload, sizeof(payload),
+	    oc.server_ch->local_id, 10);
+
+	demux_dispatch(ctx.server, SSH_MSG_CHANNEL_DATA, payload, pos);
+
+	ASSERT_EQ(bytebuf_available(&oc.server_ch->buf.stdout_buf), (size_t)10);
+	/* Window was not credited for these out-of-budget bytes. */
+	ASSERT_EQ(oc.server_ch->local_window, (uint32_t)0);
+
+	dssh_chan_close(oc.server_ch, 0);
+	dssh_chan_close(oc.client_ch, 0);
+	conn_cleanup(&ctx);
+	return TEST_PASS;
+}
+
+/* Once setup_complete is set, bypass disengages even with the flag --
+ * truncation kicks back in and a closed window clips everything. */
+static int
+test_rx_bypass_disengages_post_setup(void)
+{
+	struct conn_ctx ctx;
+	if (conn_setup(&ctx) < 0)
+		return TEST_SKIP;
+
+	struct open_exec_ctx oc = { 0 };
+	if (rx_window_setup(&ctx, &oc, 64) < 0) {
+		conn_cleanup(&ctx);
+		return TEST_FAIL;
+	}
+
+	oc.server_ch->accept_pre_window_data = true;
+	oc.server_ch->setup_complete = true;
+	oc.server_ch->local_window = 0;
+
+	uint8_t payload[64];
+	size_t pos = build_channel_data(payload, sizeof(payload),
+	    oc.server_ch->local_id, 10);
+
+	demux_dispatch(ctx.server, SSH_MSG_CHANNEL_DATA, payload, pos);
+
+	ASSERT_EQ(bytebuf_available(&oc.server_ch->buf.stdout_buf), (size_t)0);
+	ASSERT_EQ(oc.server_ch->local_window, (uint32_t)0);
+
+	dssh_chan_close(oc.server_ch, 0);
+	dssh_chan_close(oc.client_ch, 0);
+	conn_cleanup(&ctx);
+	return TEST_PASS;
+}
+
+/* Type-lock: dssh_chan_open with the flag set on a SUBSYSTEM channel
+ * must return NULL without any wire activity. */
+static int
+test_chan_open_type_lock_subsystem(void)
+{
+	struct conn_ctx ctx;
+	if (conn_setup(&ctx) < 0)
+		return TEST_SKIP;
+
+	struct dssh_chan_params p;
+	ASSERT_OK(dssh_chan_params_init(&p, DSSH_CHAN_SUBSYSTEM));
+	ASSERT_OK(dssh_chan_params_set_subsystem(&p, "sftp"));
+	ASSERT_OK(dssh_chan_params_set_accept_early_data(&p, true));
+
+	dssh_channel ch = dssh_chan_open(ctx.client, &p);
+	ASSERT_NULL(ch);
+
+	dssh_chan_params_free(&p);
+	conn_cleanup(&ctx);
+	return TEST_PASS;
+}
+
+/* ================================================================
  * Data/ext after CLOSE
  * ================================================================ */
 
@@ -5991,6 +6197,13 @@ static struct dssh_test_entry tests[] = {
 	/* Item 74: bytebuf truncation + window accounting */
 	{ "test_demux_data_truncation",        test_demux_data_truncation_window },
 	{ "test_replenish_caps_buf_space",     test_replenish_caps_to_buffer_space },
+
+	/* Universal rx-window truncation + ACCEPT_EARLY_DATA bypass */
+	{ "rx_truncation/default",             test_rx_truncation_default },
+	{ "rx_truncation/clips_to_window",     test_rx_truncation_clips_to_window },
+	{ "rx_bypass/pre_setup",               test_rx_bypass_pre_setup },
+	{ "rx_bypass/disengages_post_setup",   test_rx_bypass_disengages_post_setup },
+	{ "early_data/type_lock_subsystem",    test_chan_open_type_lock_subsystem },
 
 	/* NULL parameter validation */
 	{ "null/chan_read",                    test_chan_read_null },

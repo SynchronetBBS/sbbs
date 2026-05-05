@@ -317,6 +317,18 @@ dssh_chan_params_set_pty(struct dssh_chan_params *p, bool enable)
 }
 
 DSSH_PUBLIC int
+dssh_chan_params_set_accept_early_data(struct dssh_chan_params *p, bool enable)
+{
+	if (p == NULL)
+		return DSSH_ERROR_INVALID;
+	if (enable)
+		p->flags |= DSSH_PARAM_ACCEPT_EARLY_DATA;
+	else
+		p->flags &= ~(uint32_t)DSSH_PARAM_ACCEPT_EARLY_DATA;
+	return 0;
+}
+
+DSSH_PUBLIC int
 dssh_chan_params_set_term(struct dssh_chan_params *p, const char *term)
 {
 	if (p == NULL || term == NULL)
@@ -1133,6 +1145,16 @@ handle_channel_data(struct dssh_session_s *sess, struct dssh_channel_s *ch, cons
 
 	const uint8_t *data = &payload[9];
 
+	/* Universal rx-window enforcement: clip dlen to local_window so
+	 * a peer that ignores our advertised window can't drive us into
+	 * unbounded buffering.  The bypass branch -- DSSH_PARAM_ACCEPT_
+	 * EARLY_DATA + still in setup -- delivers anyway and refuses to
+	 * credit the over-budget bytes back to the peer. */
+	bool bypass = ch->accept_pre_window_data && !ch->setup_complete;
+
+	if (!bypass && dlen > ch->local_window)
+		dlen = ch->local_window;
+
 	dssh_chan_zc_cb cb  = ch->zc_cb;
 	void           *cbd = ch->zc_cbdata;
 
@@ -1145,6 +1167,9 @@ handle_channel_data(struct dssh_session_s *sess, struct dssh_channel_s *ch, cons
 		dssh_thrd_check(sess, mtx_unlock(&ch->buf_mtx));
 		return 1;
 	}
+
+	if (bypass)
+		return 0;
 
 	if (consumed <= ch->local_window)
 		ch->local_window -= consumed;
@@ -1189,6 +1214,12 @@ handle_channel_extended_data(struct dssh_session_s *sess, struct dssh_channel_s 
 
 	const uint8_t *data = &payload[13];
 
+	/* See handle_channel_data for window-truncation rationale. */
+	bool bypass = ch->accept_pre_window_data && !ch->setup_complete;
+
+	if (!bypass && dlen > ch->local_window)
+		dlen = ch->local_window;
+
 	dssh_chan_zc_cb cb  = ch->zc_cb;
 	void           *cbd = ch->zc_cbdata;
 
@@ -1202,6 +1233,9 @@ handle_channel_extended_data(struct dssh_session_s *sess, struct dssh_channel_s 
 		dssh_thrd_check(sess, mtx_unlock(&ch->buf_mtx));
 		return 1;
 	}
+
+	if (bypass)
+		return 0;
 
 	if (consumed <= ch->local_window)
 		ch->local_window -= consumed;
@@ -2339,6 +2373,14 @@ dssh_chan_open(struct dssh_session_s *sess, const struct dssh_chan_params *param
 	if (sess == NULL || params == NULL)
 		return NULL;
 
+	/* DSSH_PARAM_ACCEPT_EARLY_DATA only makes sense for stream-shaped
+	 * channels: subsystem channels use a message queue and have no
+	 * coherent destination for bytes that arrive before the
+	 * subsystem-req response. */
+	if ((params->flags & DSSH_PARAM_ACCEPT_EARLY_DATA)
+	    && params->type != DSSH_CHAN_SHELL && params->type != DSSH_CHAN_EXEC)
+		return NULL;
+
 	struct dssh_channel_s *ch = calloc(1, sizeof(*ch));
 
 	if (ch == NULL)
@@ -2346,7 +2388,7 @@ dssh_chan_open(struct dssh_session_s *sess, const struct dssh_chan_params *param
 
 	uint32_t winsz = params->max_window != 0 ? params->max_window : INITIAL_WINDOW_SIZE;
 
-	/* Phase 1: sync primitives only (no buffers yet) */
+	/* Phase 1: sync primitives only */
 	int res = init_channel_sync(sess, ch);
 
 	if (res < 0) {
@@ -2354,11 +2396,12 @@ dssh_chan_open(struct dssh_session_s *sess, const struct dssh_chan_params *param
 		return NULL;
 	}
 
-	ch->sess         = sess;
-	ch->io_model     = DSSH_IO_STREAM;
-	ch->zc_cb        = stream_zc_cb;
-	ch->event_cb     = sess->default_event_cb;
-	ch->event_cbdata = sess->default_event_cbdata;
+	ch->sess                  = sess;
+	ch->io_model              = DSSH_IO_STREAM;
+	ch->zc_cb                 = stream_zc_cb;
+	ch->event_cb              = sess->default_event_cb;
+	ch->event_cbdata          = sess->default_event_cbdata;
+	ch->accept_pre_window_data = (params->flags & DSSH_PARAM_ACCEPT_EARLY_DATA) != 0;
 
 	/* Init event queue early — demux can dispatch EOF/CLOSE events
 	 * to this channel as soon as it's registered. */
@@ -2366,10 +2409,20 @@ dssh_chan_open(struct dssh_session_s *sess, const struct dssh_chan_params *param
 	if (res < 0)
 		goto fail_sync;
 
+	/* Phase 2: allocate buffers BEFORE OPEN.  Universal rx-window
+	 * truncation (handle_channel_data) keeps non-flagged channels'
+	 * early-data behaviour identical -- bytes are clipped to
+	 * local_window=0 before stream_zc_cb runs, so allocated-but-
+	 * unused bytebufs are harmless.  Flagged channels need them
+	 * populated for the bypass path to deliver into. */
+	res = init_channel_buffers(ch, winsz);
+	if (res < 0)
+		goto fail_events;
+
 	/* CHANNEL_OPEN with initial_window=0 */
 	res = open_session_channel(sess, ch);
 	if (res < 0)
-		goto fail_events;
+		goto fail_buffers;
 
 	/* Setup: env, pty-req, terminal request */
 	if (params->env_count > 0) {
@@ -2386,17 +2439,14 @@ dssh_chan_open(struct dssh_session_s *sess, const struct dssh_chan_params *param
 	if (res < 0)
 		goto fail_close;
 
-	/* Phase 2: allocate buffers now that I/O model is committed */
-	res = init_channel_buffers(ch, winsz);
+	/* Open the window -- data can flow now */
+	res = send_window_adjust(sess, ch, winsz);
 	if (res < 0)
 		goto fail_close;
 
-	/* Open the window -- data can flow now */
-	res = send_window_adjust(sess, ch, winsz);
-	if (res < 0) {
-		cleanup_channel_buffers(ch);
-		goto fail_close;
-	}
+	/* Setup is done; rx-window enforcement applies for the rest of
+	 * the channel's life. */
+	ch->setup_complete = true;
 
 	/* Copy params for getters */
 	res = dssh_chan_params_init(&ch->params, params->type);
@@ -2419,6 +2469,9 @@ dssh_chan_open(struct dssh_session_s *sess, const struct dssh_chan_params *param
 fail_close:
 	conn_close(sess, ch);
 	unregister_channel(sess, ch);
+fail_buffers:
+	bytebuf_free(&ch->buf.stdout_buf);
+	bytebuf_free(&ch->buf.stderr_buf);
 fail_events:
 	event_queue_free(&ch->events);
 fail_sync:
@@ -2788,6 +2841,12 @@ dssh_chan_zc_open(struct dssh_session_s *sess, const struct dssh_chan_params *pa
 	if (sess == NULL || params == NULL || cb == NULL)
 		return NULL;
 
+	/* See dssh_chan_open: SUBSYSTEM channels have no coherent
+	 * destination for pre-setup data. */
+	if ((params->flags & DSSH_PARAM_ACCEPT_EARLY_DATA)
+	    && params->type != DSSH_CHAN_SHELL && params->type != DSSH_CHAN_EXEC)
+		return NULL;
+
 	struct dssh_channel_s *ch = calloc(1, sizeof(*ch));
 
 	if (ch == NULL)
@@ -2803,12 +2862,13 @@ dssh_chan_zc_open(struct dssh_session_s *sess, const struct dssh_chan_params *pa
 		return NULL;
 	}
 
-	ch->sess         = sess;
-	ch->io_model     = DSSH_IO_ZC;
-	ch->zc_cb        = cb;
-	ch->zc_cbdata    = cbdata;
-	ch->event_cb     = sess->default_event_cb;
-	ch->event_cbdata = sess->default_event_cbdata;
+	ch->sess                  = sess;
+	ch->io_model              = DSSH_IO_ZC;
+	ch->zc_cb                 = cb;
+	ch->zc_cbdata             = cbdata;
+	ch->event_cb              = sess->default_event_cb;
+	ch->event_cbdata          = sess->default_event_cbdata;
+	ch->accept_pre_window_data = (params->flags & DSSH_PARAM_ACCEPT_EARLY_DATA) != 0;
 
 	/* Init event queue early — demux can dispatch EOF/CLOSE events
 	 * to this channel as soon as it's registered. */
@@ -2843,6 +2903,10 @@ dssh_chan_zc_open(struct dssh_session_s *sess, const struct dssh_chan_params *pa
 	res = send_window_adjust(sess, ch, winsz);
 	if (res < 0)
 		goto fail_close;
+
+	/* Setup is done; rx-window enforcement applies for the rest of
+	 * the channel's life. */
+	ch->setup_complete = true;
 
 	/* Copy params for getters */
 	res = dssh_chan_params_init(&ch->params, params->type);
