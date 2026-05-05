@@ -1204,6 +1204,17 @@ Return values follow POSIX semantics:
 | `DSSH_POLL_WRITE` | send window has space |
 | `DSSH_POLL_EVENT` | event ready (signal, window-change, etc.) |
 
+`dssh_chan_poll()` returns the bitwise-OR of fired flags; 0 means
+"no events before timeout".  When the session is terminated
+(`dssh_session_is_terminated()` is true), every requested data flag
+is surfaced as ready — POSIX `POLLHUP` semantics — so the caller's
+next `dssh_chan_read` returns 0 (EOF) once the bytebuf is drained
+and `dssh_chan_write` returns a negative error.  A poll loop
+therefore exits naturally through the subsequent read/write rather
+than spinning on a 0 return.  `DSSH_POLL_EVENT` is unaffected by
+termination; use the data flags or the terminate callback to
+detect it.
+
 ### Channel getters
 
 After open or accept, query channel properties:

@@ -4486,6 +4486,91 @@ test_chan_open_type_lock_subsystem(void)
 }
 
 /* ================================================================
+ * dssh_chan_poll — POSIX POLLHUP-style wake-up on session terminate
+ * ================================================================ */
+
+/* Terminate before poll: poll returns the requested data flags
+ * immediately, even with no data and a long timeout. */
+static int
+test_poll_terminate_surfaces_data_flags(void)
+{
+	struct conn_ctx ctx;
+	if (conn_setup(&ctx) < 0)
+		return TEST_SKIP;
+
+	struct open_exec_ctx oc = {
+		.client = ctx.client, .server = ctx.server,
+		.command = "echo poll-terminate",
+		.cbs = &accept_cbs_all, .accept_timeout = 30000,
+	};
+	if (open_exec_channel(&oc) < 0 || !oc.client_ch || !oc.server_ch) {
+		conn_cleanup(&ctx);
+		return TEST_FAIL;
+	}
+
+	/* Drain any data the echo command produced, so READ would
+	 * otherwise wait. */
+	uint8_t scratch[64];
+	while (dssh_chan_read(oc.client_ch, 0, scratch, sizeof(scratch)) > 0)
+		;
+
+	dssh_session_terminate(ctx.client);
+
+	/* timeout=5000 ms; should return immediately. */
+	int ev = dssh_chan_poll(oc.client_ch,
+	    DSSH_POLL_READ | DSSH_POLL_READEXT | DSSH_POLL_WRITE, 5000);
+	ASSERT_TRUE(ev & DSSH_POLL_READ);
+	ASSERT_TRUE(ev & DSSH_POLL_READEXT);
+	ASSERT_TRUE(ev & DSSH_POLL_WRITE);
+
+	/* chan_read after terminate-induced wake returns 0 (EOF) once
+	 * the bytebuf is drained. */
+	int64_t r = dssh_chan_read(oc.client_ch, 0, scratch, sizeof(scratch));
+	ASSERT_EQ(r, (int64_t)0);
+
+	conn_cleanup(&ctx);
+	return TEST_PASS;
+}
+
+/* DSSH_POLL_EVENT alone is NOT surfaced by terminate (no real event
+ * is queued; caller should rely on data flags or the terminate cb). */
+static int
+test_poll_terminate_no_event_bit(void)
+{
+	struct conn_ctx ctx;
+	if (conn_setup(&ctx) < 0)
+		return TEST_SKIP;
+
+	struct open_exec_ctx oc = {
+		.client = ctx.client, .server = ctx.server,
+		.command = "echo poll-evt",
+		.cbs = &accept_cbs_all, .accept_timeout = 30000,
+	};
+	if (open_exec_channel(&oc) < 0 || !oc.client_ch || !oc.server_ch) {
+		conn_cleanup(&ctx);
+		return TEST_FAIL;
+	}
+
+	/* Drain any pending events queued by the echo. */
+	struct dssh_chan_event tmp;
+	while (dssh_chan_read_event(oc.client_ch, &tmp) == 0)
+		;
+
+	dssh_session_terminate(ctx.client);
+
+	/* timeout=0 (peek): EVENT alone returns 0 because no real event
+	 * is queued.  Using DSSH_POLL_EVENT plus DSSH_POLL_READ should
+	 * surface only READ, not EVENT. */
+	int ev = dssh_chan_poll(oc.client_ch,
+	    DSSH_POLL_EVENT | DSSH_POLL_READ, 0);
+	ASSERT_TRUE(ev & DSSH_POLL_READ);
+	ASSERT_FALSE(ev & DSSH_POLL_EVENT);
+
+	conn_cleanup(&ctx);
+	return TEST_PASS;
+}
+
+/* ================================================================
  * Data/ext after CLOSE
  * ================================================================ */
 
@@ -6204,6 +6289,8 @@ static struct dssh_test_entry tests[] = {
 	{ "rx_bypass/pre_setup",               test_rx_bypass_pre_setup },
 	{ "rx_bypass/disengages_post_setup",   test_rx_bypass_disengages_post_setup },
 	{ "early_data/type_lock_subsystem",    test_chan_open_type_lock_subsystem },
+	{ "poll/terminate_surfaces_data",      test_poll_terminate_surfaces_data_flags },
+	{ "poll/terminate_no_event_bit",       test_poll_terminate_no_event_bit },
 
 	/* NULL parameter validation */
 	{ "null/chan_read",                    test_chan_read_null },

@@ -206,6 +206,24 @@ DSSH_PUBLIC dssh_channel dssh_chan_open(dssh_session sess, const struct dssh_cha
  * write returns bytes sent (>0), negative on error. */
 DSSH_PUBLIC int64_t dssh_chan_read(dssh_channel ch, int stream, uint8_t *buf, size_t bufsz);
 DSSH_PUBLIC int64_t dssh_chan_write(dssh_channel ch, int stream, const uint8_t *buf, size_t bufsz);
+/*
+ * Wait until any of the requested events fire, or until timeout_ms
+ * elapses (negative = wait forever, 0 = non-blocking peek).
+ *
+ * Returns the bitwise-OR of fired event flags.  0 means "no events
+ * fired before the timeout" -- the caller should poll again.
+ *
+ * Session termination behaves like POSIX POLLHUP: every requested
+ * data flag (DSSH_POLL_READ, DSSH_POLL_READEXT, DSSH_POLL_WRITE) is
+ * surfaced as ready, regardless of buffer state.  The caller's next
+ * dssh_chan_read returns 0 (EOF) once the bytebuf is drained;
+ * dssh_chan_write returns a negative error.  This means a poll loop
+ * naturally exits via subsequent read/write rather than spinning on
+ * a 0 return.  DSSH_POLL_EVENT is not affected by termination --
+ * use the data flags or the terminate callback to detect it.
+ *
+ * Returns DSSH_ERROR_INVALID for a NULL or non-stream channel.
+ */
 DSSH_PUBLIC int     dssh_chan_poll(dssh_channel ch, int events, int timeout_ms);
 
 /* Read the next frozen event (from the most recent poll with

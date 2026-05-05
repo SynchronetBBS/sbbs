@@ -2552,16 +2552,25 @@ dssh_chan_poll(struct dssh_channel_s *ch, int events, int timeout_ms)
 		dssh_deadline_from_ms(&ts, timeout_ms);
 	dssh_thrd_check(sess, mtx_lock(&ch->buf_mtx));
 	for (;;) {
+		/* Session terminate behaves like POSIX POLLHUP: surface
+		 * every requested data flag so the caller wakes and the
+		 * subsequent dssh_chan_read returns 0 (EOF) or
+		 * dssh_chan_write returns a negative error.  Mirrors how
+		 * close_received already forces READ/READEXT ready. */
+		bool terminated = sess->terminate;
 		int ready = 0;
 		if ((events & DSSH_POLL_READ)
-		    && ((bytebuf_available(&ch->buf.stdout_buf) > 0) || ch->eof_received || ch->close_received))
+		    && ((bytebuf_available(&ch->buf.stdout_buf) > 0) || ch->eof_received || ch->close_received
+		        || terminated))
 			ready |= DSSH_POLL_READ;
 		if ((events & DSSH_POLL_READEXT)
-		    && ((bytebuf_available(&ch->buf.stderr_buf) > 0) || ch->eof_received || ch->close_received))
+		    && ((bytebuf_available(&ch->buf.stderr_buf) > 0) || ch->eof_received || ch->close_received
+		        || terminated))
 			ready |= DSSH_POLL_READEXT;
 		if ((events & DSSH_POLL_WRITE)
-		    && (atomic_load_explicit(&ch->remote_window, memory_order_acquire) > 0) && ch->open
-		    && !ch->close_received)
+		    && (terminated
+		        || ((atomic_load_explicit(&ch->remote_window, memory_order_acquire) > 0) && ch->open
+		            && !ch->close_received)))
 			ready |= DSSH_POLL_WRITE;
 		if ((events & DSSH_POLL_EVENT) && (ch->events.count > 0 || ch->events.has_frozen)) {
 			if (!ch->events.has_frozen) {
@@ -2576,7 +2585,7 @@ dssh_chan_poll(struct dssh_channel_s *ch, int events, int timeout_ms)
 			if (ch->events.has_frozen)
 				ready |= DSSH_POLL_EVENT;
 		}
-		if (ready || sess->terminate) {
+		if (ready || terminated) {
 			dssh_thrd_check(sess, mtx_unlock(&ch->buf_mtx));
 			return ready;
 		}
