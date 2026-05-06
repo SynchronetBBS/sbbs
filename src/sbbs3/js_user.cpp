@@ -1291,11 +1291,13 @@ js_downloaded_file(JSContext *cx, uintN argc, jsval *arglist)
 
 	uintN argn = 0;
 	if (argc > argn && JSVAL_IS_STRING(argv[argn])) {
-		char *p;
+		char *p = nullptr;
 		JSSTRING_TO_ASTRING(cx, JSVAL_TO_STRING(argv[argn]), p, LEN_EXTCODE + 2, nullptr);
-		for (dirnum = 0; dirnum < scfg->total_dirs; dirnum++)
-			if (!stricmp(scfg->dir[dirnum]->code, p))
-				break;
+		if (p != nullptr) {
+			for (dirnum = 0; dirnum < scfg->total_dirs; dirnum++)
+				if (!stricmp(scfg->dir[dirnum]->code, p))
+					break;
+		}
 		argn++;
 	}
 	if (argc > argn && JSVAL_IS_STRING(argv[argn])) {
