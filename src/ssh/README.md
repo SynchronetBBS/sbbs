@@ -1132,6 +1132,12 @@ window are silently dropped.  The data callback may therefore receive
 `len == 0`, or a `len` smaller than the wire packet's payload; it
 must handle that as a no-op.
 
+`len == 0` is also legitimate when the peer sends an empty
+CHANNEL_DATA message (RFC 4254 doesn't forbid it, and the library
+itself sends one as part of the `DSSH_PARAM_ACCEPT_EARLY_DATA`
+workaround).  In neither case does `len == 0` mean EOF: EOF is
+delivered separately as a `DSSH_EVENT_EOF` event.
+
 ### `DSSH_PARAM_ACCEPT_EARLY_DATA` (broken-server workaround)
 
 Cryptlib-based SSH servers that don't wait for
@@ -1199,10 +1205,21 @@ int64_t w = dssh_chan_write(ch, 0, buf, len);
 int64_t w = dssh_chan_write(ch, 1, buf, len);
 ```
 
-Return values follow POSIX semantics:
+Return values follow non-blocking POSIX semantics:
 - `> 0`: bytes transferred
-- `0`: EOF (read only — peer sent CHANNEL_EOF)
-- `< 0`: `DSSH_ERROR_*`
+- `0`: read — EOF (peer sent `CHANNEL_EOF` / `CHANNEL_CLOSE`, or
+  the session has terminated and the bytebuf is drained).
+  Write — only when `bufsz == 0`.
+- `DSSH_ERROR_NOMORE`: would block (analogous to POSIX
+  `-1/EAGAIN`).  Read returns this when the bytebuf is empty but
+  no EOF has arrived; write returns it when the remote send
+  window is full.  Poll-then-read / poll-then-write callers
+  never see this because `dssh_chan_poll` only flags `READ` /
+  `READEXT` / `WRITE` ready when actual progress is possible.
+- `< 0` (other): `DSSH_ERROR_*`
+
+The peek form (`buf == NULL, bufsz == 0`) always returns the
+non-negative byte count; it never returns `NOMORE`.
 
 ### Poll events
 

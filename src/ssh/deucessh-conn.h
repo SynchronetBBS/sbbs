@@ -172,11 +172,14 @@ struct dssh_chan_event {
  * WINDOW_ADJUST.
  *
  * `len` may be smaller than the wire packet's payload (or zero)
- * when the local window is exhausted: the library truncates to
- * what the advertised window allows before the call.  Callbacks
- * MUST handle len == 0 as a no-op.  The exception is a channel
- * opened with DSSH_PARAM_ACCEPT_EARLY_DATA, which delivers full
- * pre-setup wire payloads without window truncation. */
+ * either because the library truncated to what the advertised
+ * window allows when the local window was exhausted, or because
+ * the peer sent a zero-byte data message (legal per RFC 4254).
+ * Callbacks MUST handle len == 0 as a no-op; it is NOT EOF.  EOF
+ * is delivered separately as DSSH_EVENT_EOF on the event queue.
+ * The exception is a channel opened with DSSH_PARAM_ACCEPT_EARLY_
+ * DATA, which delivers full pre-setup wire payloads without
+ * window truncation. */
 typedef uint32_t (*dssh_chan_zc_cb)(dssh_channel ch, int stream, const uint8_t *data, size_t len, void *cbdata);
 
 /* Event callback — fires from demux thread when an event is queued.
@@ -201,9 +204,25 @@ struct dssh_chan_accept_result {
 DSSH_PUBLIC dssh_channel dssh_chan_open(dssh_session sess, const struct dssh_chan_params *params);
 
 /* Stream I/O.  stream: 0=stdout/stdin, 1=stderr.
- * read returns bytes read (>0), 0 on EOF, negative on error.
- * Peek: dssh_chan_read(ch, stream, NULL, 0) returns available bytes.
- * write returns bytes sent (>0), negative on error. */
+ *
+ * Both read and write follow non-blocking POSIX semantics:
+ *
+ *   read returns bytes read (>0), 0 on EOF (peer sent CHANNEL_EOF /
+ *   CHANNEL_CLOSE, or the session is terminated and the bytebuf is
+ *   drained), DSSH_ERROR_NOMORE when the bytebuf is empty but no
+ *   EOF has arrived (would-block analog of -1/EAGAIN), and other
+ *   negative DSSH_ERROR_* on error.
+ *
+ *   write returns bytes sent (>0), 0 only when bufsz == 0,
+ *   DSSH_ERROR_NOMORE when the remote window is full (would-block
+ *   analog of -1/EAGAIN), and other negative DSSH_ERROR_* on error.
+ *
+ * Poll-then-read / poll-then-write callers never see NOMORE because
+ * dssh_chan_poll only flags READ/READEXT/WRITE ready when actual
+ * progress is possible.
+ *
+ * Peek: dssh_chan_read(ch, stream, NULL, 0) returns available bytes
+ * (always >= 0; never NOMORE). */
 DSSH_PUBLIC int64_t dssh_chan_read(dssh_channel ch, int stream, uint8_t *buf, size_t bufsz);
 DSSH_PUBLIC int64_t dssh_chan_write(dssh_channel ch, int stream, const uint8_t *buf, size_t bufsz);
 /*

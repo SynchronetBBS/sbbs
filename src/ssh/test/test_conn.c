@@ -1608,6 +1608,76 @@ test_eof_half_close(void)
 	return TEST_PASS;
 }
 
+/*
+ * Stream I/O follows non-blocking POSIX semantics:
+ *   read returns 0 only on real EOF; NOMORE for empty-no-EOF.
+ *   write returns 0 only when bufsz == 0; NOMORE for window-full.
+ *   Peek (buf == NULL) keeps the legacy "0 = no bytes available".
+ */
+static int
+test_read_nomore_vs_eof(void)
+{
+	struct conn_ctx ctx;
+	if (conn_setup(&ctx) < 0)
+		return TEST_SKIP;
+
+	struct open_exec_ctx oc = {
+		.client = ctx.client,
+		.server = ctx.server,
+		.command = "cmd",
+		.cbs = &accept_cbs_all,
+		.accept_timeout = 30000,
+	};
+	if (open_exec_channel(&oc) < 0) {
+		conn_cleanup(&ctx);
+		return TEST_SKIP;
+	}
+
+	uint8_t buf[64];
+
+	/* Empty buffer, no EOF: NOMORE. */
+	int64_t n = dssh_chan_read(oc.client_ch, 0, buf, sizeof(buf));
+	ASSERT_EQ(n, DSSH_ERROR_NOMORE);
+
+	/* Peek never returns NOMORE -- always non-negative count. */
+	int64_t avail = dssh_chan_read(oc.client_ch, 0, NULL, 0);
+	ASSERT_EQ(avail, 0);
+
+	/* After data arrives, real bytes come back. */
+	const uint8_t payload[] = "ping";
+	dssh_chan_write(oc.server_ch, 0, payload, sizeof(payload) - 1);
+	int ev = dssh_chan_poll(oc.client_ch, DSSH_POLL_READ, 5000);
+	ASSERT_TRUE(ev & DSSH_POLL_READ);
+	n = dssh_chan_read(oc.client_ch, 0, buf, sizeof(buf));
+	ASSERT_EQ(n, (int64_t)(sizeof(payload) - 1));
+
+	/* Drained again with no EOF yet: NOMORE, not 0. */
+	n = dssh_chan_read(oc.client_ch, 0, buf, sizeof(buf));
+	ASSERT_EQ(n, DSSH_ERROR_NOMORE);
+
+	/* Write side: 0-byte write returns 0; window-full returns
+	 * NOMORE; normal write returns the byte count. */
+	n = dssh_chan_write(oc.client_ch, 0, payload, 0);
+	ASSERT_EQ(n, 0);
+
+	uint32_t saved_window      = oc.client_ch->remote_window;
+	oc.client_ch->remote_window = 0;
+	n = dssh_chan_write(oc.client_ch, 0, payload, sizeof(payload) - 1);
+	ASSERT_EQ(n, DSSH_ERROR_NOMORE);
+	oc.client_ch->remote_window = saved_window;
+
+	/* Server closes -> EOF arrives.  Poll wakes; read returns 0. */
+	dssh_chan_close(oc.server_ch, 0);
+	ev = dssh_chan_poll(oc.client_ch, DSSH_POLL_READ, 5000);
+	ASSERT_TRUE(ev & DSSH_POLL_READ);
+	n = dssh_chan_read(oc.client_ch, 0, buf, sizeof(buf));
+	ASSERT_EQ(n, 0);
+
+	dssh_chan_close(oc.client_ch, 0);
+	conn_cleanup(&ctx);
+	return TEST_PASS;
+}
+
 static int
 test_graceful_disconnect(void)
 {
@@ -2405,7 +2475,12 @@ test_data_after_eof(void)
 		ASSERT_OK(send_packet(ctx.server, msg, pos, NULL));
 	}
 
-	/* Client should have received nothing */
+	/* Client should observe EOF (poll surfaces READ-ready, read
+	 * returns 0).  Polling here also guarantees the demux has
+	 * processed both the EOF and the stale-data drop before we
+	 * sample the bytebuf. */
+	int ev = dssh_chan_poll(oc.client_ch, DSSH_POLL_READ, 5000);
+	ASSERT_TRUE(ev & DSSH_POLL_READ);
 	uint8_t buf[32];
 	int64_t got = dssh_chan_read(oc.client_ch, 0, buf, sizeof(buf));
 	ASSERT_EQ(got, 0);
@@ -3248,7 +3323,7 @@ test_session_write_window_zero(void)
 	oc.client_ch->remote_window = 0;
 	int64_t w = dssh_chan_write(oc.client_ch, 0,
 	    (const uint8_t *)"data", 4);
-	ASSERT_EQ(w, 0);
+	ASSERT_EQ(w, DSSH_ERROR_NOMORE);
 
 	oc.client_ch->remote_window = 2;
 	w = dssh_chan_write(oc.client_ch, 0,
@@ -3291,7 +3366,7 @@ test_session_write_ext_window_zero(void)
 	oc.server_ch->remote_window = 0;
 	int64_t w = dssh_chan_write(oc.server_ch, 1,
 	    (const uint8_t *)"data", 4);
-	ASSERT_EQ(w, 0);
+	ASSERT_EQ(w, DSSH_ERROR_NOMORE);
 
 	oc.server_ch->remote_window = 2;
 	w = dssh_chan_write(oc.server_ch, 1,
@@ -3576,9 +3651,13 @@ test_data_dlen_exceeds_payload(void)
 
 	ASSERT_TRUE(ctx.server->demux_running);
 
+	/* Both packets had bogus dlen and were dropped by the demux,
+	 * so no bytes are buffered and no EOF arrived.  The new read
+	 * contract returns NOMORE for empty-no-EOF; old contract
+	 * returned 0.  Accept either to validate "didn't tear down". */
 	uint8_t buf[256];
 	int64_t n = dssh_chan_read(oc.server_ch, 0, buf, sizeof(buf));
-	ASSERT_TRUE(n >= 0);
+	ASSERT_TRUE(n >= 0 || n == DSSH_ERROR_NOMORE);
 
 	dssh_chan_close(oc.server_ch, 0);
 	dssh_chan_close(oc.client_ch, 0);
@@ -6200,6 +6279,7 @@ static struct dssh_test_entry tests[] = {
 	{ "test_channel_close_subsys",       test_channel_close_subsys },
 	{ "test_eof_detection",              test_eof_detection },
 	{ "test_eof_half_close",             test_eof_half_close },
+	{ "test_read_nomore_vs_eof",         test_read_nomore_vs_eof },
 	{ "test_graceful_disconnect",        test_graceful_disconnect },
 
 	/* Multiple channels */

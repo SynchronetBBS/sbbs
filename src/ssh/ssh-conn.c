@@ -2531,8 +2531,16 @@ dssh_chan_read(struct dssh_channel_s *ch, int stream, uint8_t *buf, size_t bufsz
 		dssh_thrd_check(sess, mtx_unlock(&ch->buf_mtx));
 		return (int64_t)avail;
 	}
-	size_t n = bytebuf_read(bb, buf, bufsz, 0);
+	size_t n              = bytebuf_read(bb, buf, bufsz, 0);
+	/* Disambiguate empty-buffer from EOF: return 0 only when EOF
+	 * has actually arrived (peer EOF/CLOSE) or the session has
+	 * terminated; otherwise NOMORE means "nothing right now, not
+	 * EOF".  Read under buf_mtx -- eof_received / close_received
+	 * are written under buf_mtx in the demux. */
+	bool nomore_not_eof = (n == 0) && !ch->eof_received && !ch->close_received && !sess->terminate;
 	dssh_thrd_check(sess, mtx_unlock(&ch->buf_mtx));
+	if (nomore_not_eof)
+		return DSSH_ERROR_NOMORE;
 	if (n > 0) {
 		int wret = maybe_replenish_window(sess, ch);
 		if (wret < 0)
@@ -2556,10 +2564,8 @@ dssh_chan_write(struct dssh_channel_s *ch, int stream, const uint8_t *buf, size_
 	int      ret;
 
 	ret = zc_getbuf_inner(ch, stream, &zbuf, &max_len);
-	if (ret == DSSH_ERROR_NOMORE)
-		return 0; /* window full, 0 bytes sent */
 	if (ret < 0)
-		return ret;
+		return ret; /* NOMORE for window-full, other negatives for error */
 
 	size_t len = bufsz < max_len ? bufsz : max_len;
 
