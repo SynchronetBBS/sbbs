@@ -411,6 +411,13 @@ bool sbbs_t::writemsg(const char *fname, const char *top, char *subj, int mode, 
 			}
 
 			l = (long)ftell(stream);          /* l now points to start of message */
+			if (l < 0) {
+				errormsg(WHERE, ERR_LEN, msgtmp, 0);
+				fclose(stream);
+				close(file);
+				free(buf);
+				return false;
+			}
 
 			while (online) {
 				SAFEPRINTF(str, text[QuoteLinesPrompt], linesquoted ? text[Done] : text[All]);
