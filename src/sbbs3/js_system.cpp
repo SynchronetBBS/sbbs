@@ -2169,7 +2169,7 @@ js_chkpassword(JSContext *cx, uintN argc, jsval *arglist)
 {
 	JSObject * obj = JS_THIS_OBJECT(cx, arglist);
 	jsval *    argv = JS_ARGV(cx, arglist);
-	char*      str;
+	char*      str = nullptr;
 	jsrefcount rc;
 
 	if (js_argcIsInsufficient(cx, argc, 1))
@@ -2179,6 +2179,10 @@ js_chkpassword(JSContext *cx, uintN argc, jsval *arglist)
 		return JS_TRUE;
 	}
 	JSVALUE_TO_ASTRING(cx, argv[0], str, (LEN_ALIAS > LEN_NAME)?LEN_ALIAS + 2:LEN_NAME + 2, NULL);
+	if (str == nullptr) {
+		JS_SET_RVAL(cx, arglist, JSVAL_FALSE);
+		return JS_TRUE;
+	}
 
 	js_system_private_t* sys;
 	if ((sys = (js_system_private_t*)js_GetClassPrivate(cx, obj, &js_system_class)) == NULL)
