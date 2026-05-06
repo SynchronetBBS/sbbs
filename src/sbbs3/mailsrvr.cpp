@@ -907,8 +907,9 @@ static ulong sockmimetext(SOCKET socket, const char* prot, CRYPT_SESSION sess, s
 		np = msgtxt;
 	long bytes = 0;
 	while (*np && lines < maxlines) {
+		const int avail = (int)strnlen(np, RFC822_MAX_LINE_LEN);
 		len = 0;
-		while (len < RFC822_MAX_LINE_LEN && *(np + len) != 0 && *(np + len) != '\n')
+		while (len < avail && *(np + len) != '\n')
 			len++;
 
 		tlen = len;
