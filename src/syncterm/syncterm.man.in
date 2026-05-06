@@ -1,9 +1,10 @@
-.TH SYNCTERM 1 2024-09-24
+.TH SYNCTERM 1 2026-05-05
 .SH NAME
 syncterm \- BBS terminal program
 .SH SYNOPSIS
 \fBsyncterm\fP [\-46chqrts] [\-b\fIlist\fP] [\-e\fIdelay\fP]
-[\-i\fIiface\fP] [\-l\fIlines\fP] [\-n\fIconfig\fP] [\fIURL\fP]
+[\-i\fIiface\fP] [\-l\fIlines\fP] [\-n\fIconfig\fP]
+[\-w\fIscript\fP] [\fIURL\fP]
 .PP
 \fBsyncterm\fP -T\fP
 .PP
@@ -106,6 +107,15 @@ Specifies the default scheme for \fIURL\fP to be telnet://
 When this is the ONLY argument, dumps terminfo entry to stdout and exits.
 .IP \fB\-v\fP
 When this is the ONLY argument, dumps version info to stdout and exits.
+.IP \fB\-w\fIscript\fR
+Load the named Wren script file in addition to the built-in and
+user auto-load scripts on every connect.
+The script is interpreted as its own filename-derived module after
+all other scripts have loaded, so its
+.BR import
+statements resolve against the full surface.
+Compile and runtime errors during the load are written to standard
+error.
 .SH RUN-TIME LINKING
 For some features, such as SDL, X11, and Wayland support,
 run-time linking is employed using dlopen().

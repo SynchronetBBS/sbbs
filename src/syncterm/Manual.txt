@@ -225,6 +225,14 @@ audited, and should therefore not be trusted.
 This option is case sensitive and must the be only option passed to
 SyncTERM.  Causes syncterm to output the version on stdout then exit.
 
+-W/path/to/script.wren::
+Loads the named Wren script in addition to the built-in and user
+auto-load scripts on every connect.  The script is interpreted as
+its own filename-derived module after all other scripts have loaded,
+so its `import` statements resolve against the full surface.
+Compile and runtime errors during the load are written to standard
+error.
+
 After the options, a full URI, hostname, or dialing directory entry may be
 specified.  Supported URI schemes are:
 rlogin://, ssh://, telnet://, raw://, shell://, ghost://.

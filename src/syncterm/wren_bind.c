@@ -1186,6 +1186,8 @@ static const struct binding BINDINGS[] = {
 	{ "Host", true, "textTerminal",      fn_Host_textTerminal      },
 	{ "Host", true, "altKeyName",        fn_Host_altKeyName        },
 	{ "Host", true, "altKeyShort",       fn_Host_altKeyShort       },
+	{ "Host", true, "print(_)",          fn_Host_print             },
+	{ "Host", true, "launchScript",      fn_Host_launchScript      },
 	{ "Host", true, "haveOOII",          fn_Host_haveOOII          },
 	{ "Host", true, "maxOOIIMode",       fn_Host_maxOOIIMode       },
 	{ "Host", true, "outputRates",       fn_Host_outputRates       },

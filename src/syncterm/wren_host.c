@@ -40,6 +40,11 @@ static struct wren_host_state state;
 static bool      active;
 static pthread_t owner_thread;
 
+/* -W <path>: extra script loaded at the end of every wren_host_init.
+ * NULL when not set (the common case).  Exposed to scripts via
+ * Host.launchScript so they can detect command-line invocation. */
+static char *launch_script = NULL;
+
 static bool on_owner_thread(void);
 
 /* --------------------------------------------------------------------
@@ -336,6 +341,19 @@ wren_host_active(void)
 	 * site by allowing a positive answer from any thread; only the
 	 * dispatchers themselves enforce thread affinity. */
 	return true;
+}
+
+void
+wren_host_set_launch_script(const char *path)
+{
+	free(launch_script);
+	launch_script = (path != NULL) ? strdup(path) : NULL;
+}
+
+const char *
+wren_host_launch_script(void)
+{
+	return launch_script;
 }
 
 void
@@ -973,6 +991,23 @@ wren_host_init(struct bbslist *bbs)
 			load_one_script(gl.gl_pathv[i]);
 		}
 		globfree(&gl);
+	}
+
+	/* -W: extra script supplied on the command line, loaded last so
+	 * its imports resolve against the full embedded + user surface.
+	 * Skip if a module of the same filename-derived name is already
+	 * loaded — happens when the file is symlinked into the user-dir
+	 * scripts/ tree, or has been pulled in by an `import` from another
+	 * already-loaded module (e.g. auto/connected/runtests.wren imports
+	 * "wrentest" which finds it via host_load_module).  In either
+	 * case the module's top-level code (including any Host.launchScript
+	 * auto-run guard) has already executed once, so re-interpreting
+	 * would just trip "Module variable is already defined" errors. */
+	if (launch_script != NULL) {
+		char modname[256];
+		modname_from_path(launch_script, modname, sizeof(modname));
+		if (!wrenHasModule(state.vm, modname))
+			load_one_script(launch_script);
 	}
 
 	/* Cache Hook + its dispatch_ method handles.  Every hook fire

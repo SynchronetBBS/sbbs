@@ -1007,6 +1007,39 @@ fn_Host_altKeyShort(WrenVM *vm)
 	wrenSetSlotString(vm, 0, ALT_KEY_NAME3CH);
 }
 
+/* Host.print(s) — write a string and a newline to standard output and
+ * flush.  Distinct from System.print(s), which is captured by the Wren
+ * console log buffer.  Intended for scripts run under the -W flag that
+ * need to emit results / progress lines to the launching shell. */
+void
+fn_Host_print(WrenVM *vm)
+{
+	if (wrenGetSlotType(vm, 1) != WREN_TYPE_STRING) {
+		wren_throw(vm, "Host.print: argument must be a string");
+		return;
+	}
+	int len = 0;
+	const char *s = wrenGetSlotBytes(vm, 1, &len);
+	fwrite(s, 1, (size_t)len, stdout);
+	fputc('\n', stdout);
+	fflush(stdout);
+}
+
+/* Host.launchScript — full path of the script supplied via the -W
+ * command-line flag, or null when -W wasn't used.  Lets scripts that
+ * are also embedded for normal Alt+key dispatch detect command-line
+ * invocation and run themselves immediately, without relying on
+ * coincidental signals like the BBS URL. */
+void
+fn_Host_launchScript(WrenVM *vm)
+{
+	const char *p = wren_host_launch_script();
+	if (p == NULL)
+		wrenSetSlotNull(vm, 0);
+	else
+		wrenSetSlotString(vm, 0, p);
+}
+
 /* Host.haveOOII — true when the build has Operation Overkill ][ tone
  * support compiled in (i.e. WITHOUT_OOII is NOT defined).  The online
  * menu uses this to decide whether to include the "Toggle OOII" entry. */

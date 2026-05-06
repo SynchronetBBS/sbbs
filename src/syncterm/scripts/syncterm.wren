@@ -1513,6 +1513,23 @@ class Host {
   foreign static altKeyName
   foreign static altKeyShort
 
+  // Write a string + newline to standard output and flush.  Distinct
+  // from System.print(s), which is captured by the Wren console log;
+  // Host.print bypasses the log and emits to the launching shell.
+  // Intended for scripts run under the syncterm -W flag that need to
+  // report results / progress to the harness.
+  foreign static print(s)
+
+  // Full path of the script supplied via the -W command-line flag,
+  // or null when -W wasn't used.  Lets a script that is also embedded
+  // for normal Alt+key dispatch detect command-line invocation and
+  // run itself immediately:
+  //
+  //   if (Host.launchScript != null && Host.launchScript.endsWith("foo.wren")) {
+  //     Foo.run()
+  //   }
+  foreign static launchScript
+
   // True when the build has Operation Overkill ][ tone support
   // compiled in (i.e. WITHOUT_OOII is not defined).  Used by the
   // online menu to decide whether to expose the OOII toggle entry.

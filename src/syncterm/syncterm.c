@@ -146,6 +146,9 @@ char *usage =
     "-T  =  when the ONLY argument, dumps the terminfo entry to stdout and exits\n"
     "-t  =  use telnet mode if URL does not include the scheme\n"
     "-v  =  when the ONLY argument, dumps the version info to stdout and exits\n"
+    "-w/path/to/script.wren = additionally load the named Wren script after the\n"
+    "       built-in and user auto-load scripts on every connect; load errors\n"
+    "       are reported on standard error\n"
     "\n"
     "URL format is: [(rlogin|telnet|ssh|raw)://][user[:password]@]domainname[:port]\n"
     "raw:// URLs MUST include a port.\n"
@@ -2395,6 +2398,17 @@ main(int argc, char **argv)
 					break;
 				case 'Q':
 					default_hidepopups = 1;
+					break;
+				case 'W':
+					if (argv[i][2] == 0) {
+						if ((i + 1) < argc)
+							wren_host_set_launch_script(argv[++i]);
+						else
+							goto USAGE;
+					}
+					else {
+						wren_host_set_launch_script(&argv[i][2]);
+					}
 					break;
 				default:
 					goto USAGE;

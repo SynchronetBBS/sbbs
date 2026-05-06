@@ -441,6 +441,11 @@ Static-only namespace for I/O and timing.
 | `System.clock`          | Wall-clock time in seconds since process start, as Num.
 |===
 
+NOTE: In SyncTERM, `System.print` / `System.write` are routed to the
+Wren console log buffer (visible via the Wren Console pane), not to
+the process's stdout.  Use `<<host,Host.print(s)>>` when you need
+output to reach the launching shell.
+
 === Object
 
 Root of every class hierarchy.  Every value responds to:
@@ -3412,6 +3417,39 @@ pre-bound from these at module load.
   Ctrl-Q hangup hook is only installed when this is `true`,
   because graphical backends pass Ctrl-Q through to cterm as a
   normal control byte.
+
+| `Host.altKeyName`, `Host.altKeyShort`
+| Display name of the modifier key that produces Alt keycodes on
+  this platform.  `altKeyName` is the long form (`"Alt"`
+  everywhere except macOS, where it's `"Command"` because the
+  Quartz backend maps Cmd to Alt and reserves Option for input
+  composition); `altKeyShort` is the matching three-letter
+  abbreviation (`"ALT"` / `"CMD"`, both 3 chars wide regardless
+  of platform).  Use the long form in inline help / menu entries
+  and the short form in tight slots like the status bar so menus
+  stay 40-column-safe on Mac.
+
+| `Host.print(s)`
+| Write `s` and a newline to standard output, then flush.  Distinct
+  from `System.print(s)`, which is captured by the Wren console log
+  buffer (see <<wren_console,Wren Console>>) and never reaches the
+  process's actual stdout.  `Host.print` bypasses the log and emits
+  to the launching shell — intended for scripts run under
+  `syncterm -W` that need to report results / progress lines to a
+  test harness or other launching process.
+
+| `Host.launchScript`
+| Full path of the Wren script supplied via the `-W` command-line
+  flag, or `null` when `-W` wasn't used.  Lets a script that is also
+  embedded for normal Alt+key dispatch detect command-line invocation
+  and run itself immediately:
++
+[source,wren]
+----
+if (Host.launchScript != null && Host.launchScript.endsWith("foo.wren")) {
+  Foo.run()
+}
+----
 
 | `Host.logUnread`, `Host.logUnreadError`
 | Wren-console activity since the user last visited the REPL.

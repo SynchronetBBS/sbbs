@@ -95,6 +95,8 @@ void fn_Host_safeMode(WrenVM *vm);
 void fn_Host_textTerminal(WrenVM *vm);
 void fn_Host_altKeyName(WrenVM *vm);
 void fn_Host_altKeyShort(WrenVM *vm);
+void fn_Host_print(WrenVM *vm);
+void fn_Host_launchScript(WrenVM *vm);
 void fn_Host_haveOOII(WrenVM *vm);
 void fn_Host_maxOOIIMode(WrenVM *vm);
 void fn_Host_outputRates(WrenVM *vm);

@@ -15,6 +15,17 @@ struct mouse_event;
 void wren_host_init(struct bbslist *bbs);
 void wren_host_shutdown(void);
 
+/* Register an extra Wren file to load at the end of every wren_host_init
+ * (i.e. once per connect).  Backs the -W command-line flag.  The file is
+ * interpreted as a filename-derived module after all embedded + user
+ * auto-load scripts have finished, so its imports resolve against the
+ * full surface.  Compile / load errors print "[wren] <path>: load
+ * failed" to stderr.  Pass NULL to clear.  The current value is exposed
+ * to scripts via Host.launchScript so they can detect whether they were
+ * invoked from the command line. */
+void wren_host_set_launch_script(const char *path);
+const char *wren_host_launch_script(void);
+
 /* Returns true while a VM is loaded with at least one registered hook —
  * used by hot-path call sites to skip dispatcher overhead when nothing
  * is hooked. */

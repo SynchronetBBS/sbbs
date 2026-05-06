@@ -32,7 +32,7 @@ import "syncterm" for Hook, Conn, Console, Screen, CTerm, BBS, Key,
     RipVersion, LogMode, StatusDisplay, Color, Cell, Hyperlinks,
     REPL, Input, Wake, KeyEvent, MouseEvent, Mouse, Cache, Platform,
     Timer, TimerElapsed, WON, FileError, FileErr, WONError, WONErr,
-    Error, ScriptError, Surface, Scrollback
+    Error, ScriptError, Surface, Scrollback, Host
 import "console" for WrenConsole
 import "ui_style_test"  for UiStyleTest
 import "ui_widget_test" for UiWidgetTest
@@ -166,7 +166,7 @@ class WrenTest {
     }
     __hooks.add(__lfReplaceHook)
     __hooks.add(__fallthroughHook)
-    System.print("=== Wren self-test starting ===")
+    print_("=== Wren self-test starting ===")
 
     // Aggregated [pass, fail] across all suites - every nested
     // test module returns its own pair, and WrenTest's __pass /
@@ -317,7 +317,21 @@ class WrenTest {
       __pass = __pass + 1
     } else {
       __fail = __fail + 1
-      System.print("  FAIL %(label)")
+      print_("  FAIL %(label)")
+    }
+  }
+
+  // Dispatch print: when invoked via syncterm -W (Host.launchScript
+  // is set), emit to actual stdout so the launching shell sees the
+  // results.  Otherwise fall back to System.print, which logs to
+  // the Wren console.  The two Console-test probes elsewhere keep
+  // calling System.print directly because they specifically verify
+  // that System.print appends to the console log.
+  static print_(s) {
+    if (Host.launchScript != null) {
+      Host.print(s)
+    } else {
+      System.print(s)
     }
   }
 
@@ -1496,7 +1510,7 @@ class WrenTest {
   static timeout_() {
     if (__pending == null) return
     __fail = __fail + 1
-    System.print("  FAIL %(__pending) (timeout)")
+    print_("  FAIL %(__pending) (timeout)")
     __pending = null
     advance_()
   }
@@ -1579,10 +1593,10 @@ class WrenTest {
            "Claim stack: Hook.onKey fires when no claim consumes (T10)")
 
     var total = __pass + __fail
-    System.print("=== wrentest: %(total) tests, %(__pass) pass, %(__fail) fail ===")
+    print_("=== wrentest: %(total) tests, %(__pass) pass, %(__fail) fail ===")
     fold_([__pass, __fail])
     var grand = __sumPass + __sumFail
-    System.print("=== TOTAL: %(grand) tests, %(__sumPass) pass, %(__sumFail) fail ===")
+    print_("=== TOTAL: %(grand) tests, %(__sumPass) pass, %(__sumFail) fail ===")
     cleanup_()
   }
 
@@ -1616,3 +1630,14 @@ class WrenTest {
 // All hooks are registered inside WrenTest.run() and torn down by
 // cleanup_() at the end of the suite, so the regex VM, timers, and
 // filtered key listener don't keep ticking once the tests are done.
+
+// Auto-run when invoked via `syncterm -W <path-to-this-file>`.  The
+// in-session entry point (Alt+T) lives in
+// scripts/auto/connected/runtests.wren and stays unchanged.  Match
+// on the path's tail so a wrapper script that imports wrentest from
+// some other location can also opt in by passing wrentest.wren via
+// -W -- imports happen before this block runs, so the WrenTest class
+// is fully initialized either way.
+if (Host.launchScript != null && Host.launchScript.endsWith("wrentest.wren")) {
+  WrenTest.run()
+}
