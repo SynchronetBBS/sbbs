@@ -310,21 +310,21 @@ echostat_msg_t parse_echostat_msg(str_list_t ini, const char* section, const cha
 	char           key[128];
 	echostat_msg_t msg = {{0}};
 
-	snprintf(key, sizeof key, "%s.to", prefix),         iniGetString(ini, section, key, NULL, msg.to);
-	snprintf(key, sizeof key, "%s.from", prefix),       iniGetString(ini, section, key, NULL, msg.from);
-	snprintf(key, sizeof key, "%s.subj", prefix),       iniGetString(ini, section, key, NULL, msg.subj);
-	snprintf(key, sizeof key, "%s.msg_id", prefix),     iniGetString(ini, section, key, NULL, msg.msg_id);
-	snprintf(key, sizeof key, "%s.reply_id", prefix),   iniGetString(ini, section, key, NULL, msg.reply_id);
-	snprintf(key, sizeof key, "%s.pid", prefix),            iniGetString(ini, section, key, NULL, msg.pid);
-	snprintf(key, sizeof key, "%s.tid", prefix),            iniGetString(ini, section, key, NULL, msg.tid);
-	snprintf(key, sizeof key, "%s.msg_tz", prefix),     iniGetString(ini, section, key, NULL, msg.msg_tz);
+	snprintf(key, sizeof key, "%s.to", prefix),         iniGetSString(ini, section, key, NULL, msg.to, sizeof msg.to);
+	snprintf(key, sizeof key, "%s.from", prefix),       iniGetSString(ini, section, key, NULL, msg.from, sizeof msg.from);
+	snprintf(key, sizeof key, "%s.subj", prefix),       iniGetSString(ini, section, key, NULL, msg.subj, sizeof msg.subj);
+	snprintf(key, sizeof key, "%s.msg_id", prefix),     iniGetSString(ini, section, key, NULL, msg.msg_id, sizeof msg.msg_id);
+	snprintf(key, sizeof key, "%s.reply_id", prefix),   iniGetSString(ini, section, key, NULL, msg.reply_id, sizeof msg.reply_id);
+	snprintf(key, sizeof key, "%s.pid", prefix),            iniGetSString(ini, section, key, NULL, msg.pid, sizeof msg.pid);
+	snprintf(key, sizeof key, "%s.tid", prefix),            iniGetSString(ini, section, key, NULL, msg.tid, sizeof msg.tid);
+	snprintf(key, sizeof key, "%s.msg_tz", prefix),     iniGetSString(ini, section, key, NULL, msg.msg_tz, sizeof msg.msg_tz);
 	snprintf(key, sizeof key, "%s.msg_time", prefix),   msg.msg_time = iniGetDateTime(ini, section, key, 0);
 	snprintf(key, sizeof key, "%s.localtime", prefix),  msg.localtime = iniGetDateTime(ini, section, key, 0);
 	snprintf(key, sizeof key, "%s.length", prefix),     msg.length = (size_t)iniGetBytes(ini, section, key, 1, 0);
-	snprintf(key, sizeof key, "%s.origaddr", prefix),   iniGetString(ini, section, key, NULL, str);
+	snprintf(key, sizeof key, "%s.origaddr", prefix),   iniGetSString(ini, section, key, NULL, str, sizeof str);
 	if (str[0])
 		msg.origaddr = atofaddr(str);
-	snprintf(key, sizeof key, "%s.pkt_orig", prefix),   iniGetString(ini, section, key, NULL, str);
+	snprintf(key, sizeof key, "%s.pkt_orig", prefix),   iniGetSString(ini, section, key, NULL, str, sizeof str);
 	if (str[0])
 		msg.pkt_orig = atofaddr(str);
 
