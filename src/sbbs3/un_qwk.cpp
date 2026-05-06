@@ -377,6 +377,9 @@ bool sbbs_t::unpack_qwk(char *packet, uint hubnum)
 	strListFree(&msg_filters.host_can);
 	strListFree(&msg_filters.subject_can);
 	strListFree(&msg_filters.twit_list);
+	// user_list is zero-initialized; listFree only touches list->sem when
+	// LINK_LIST_SEMAPHORE is set in flags (which it never is here).
+	// coverity[FORWARD_NULL:SUPPRESS]
 	listFree(&user_list);
 
 	delfiles(cfg.temp_dir, "*.NDX");
