@@ -112,6 +112,17 @@ foreign class Screen {
     var saved        = Screen.save()
     var wasSuspended = CTerm.suspended
     CTerm.suspended  = true
+    // Force every font slot to "Codepage 437 English" (font 0) for
+    // the duration of the modal.  Wren UI panes draw with CP437
+    // codepoints (box-drawing, shaded blocks, ANSI accents) and
+    // would render as the wrong glyphs when the cterm emulation has
+    // selected ATASCII / PETSCII / Prestel / BEEB fonts.  The same
+    // switch also makes ciolib_getcodepage() return CP437 (it reads
+    // from slot 1), so the keyboard codepage translator pipes typed
+    // characters through CP437 mappings while the modal is active.
+    // Screen.save above captured the original fonts; Screen.restore
+    // below puts them back on exit.
+    for (i in 0..4) Screen.font[i] = 0
     var result = fn.call()
     CTerm.suspended  = wasSuspended
     Screen.restore(saved)
