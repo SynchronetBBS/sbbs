@@ -242,6 +242,26 @@ DSSH_PUBLIC int dssh_session_set_hostkey_verify_cb(dssh_session sess, dssh_hostk
 DSSH_PUBLIC int dssh_session_set_timeout(dssh_session sess, int timeout_ms);
 
 /*
+ * Set the time-based auto-rekey threshold in seconds.  Pass 0 to
+ * disable the time trigger entirely (the default).
+ *
+ * Time-based rekey has no cryptographic justification on its own;
+ * the per-cipher byte limit (dssh_enc_s::bytes_per_key, RFC 4344
+ * s3.2) and packet limit (DSSH_REKEY_SOFT_LIMIT = 2^28 packets,
+ * RFC 4344 s3.1) cover key-material wear.
+ * RFC 4253 s9 calls time rekey RECOMMENDED, not required.  In
+ * practice it causes interop issues with peers that refuse mid-
+ * stream KEXINIT (Cryptlib-based servers like Mystic BBS reject
+ * it outright with CRYPT_ERROR_BADDATA), so DeuceSSH leaves it
+ * off by default.  Apps that want it on can pass a positive
+ * value here -- DSSH_REKEY_SECONDS (3600) matches the historical
+ * RFC suggestion.
+ *
+ * May be called at any point in the session.
+ */
+DSSH_PUBLIC int dssh_session_set_rekey_seconds(dssh_session sess, uint32_t seconds);
+
+/*
  * Per-session algorithm whitelist filters.  Each setter constrains
  * a single category to the listed names, in the listed order
  * (filter order becomes negotiation preference order).  count == 0

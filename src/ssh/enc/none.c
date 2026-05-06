@@ -29,14 +29,15 @@ dssh_register_none_enc(void)
 
 	if (enc == NULL)
 		return DSSH_ERROR_ALLOC;
-	enc->next      = NULL;
-	enc->init      = NULL;
-	enc->encrypt   = encrypt;
-	enc->decrypt   = decrypt;
-	enc->cleanup   = cleanup;
-	enc->flags     = 0;
-	enc->blocksize = 1;
-	enc->key_size  = 0;
+	enc->next          = NULL;
+	enc->init          = NULL;
+	enc->encrypt       = encrypt;
+	enc->decrypt       = decrypt;
+	enc->cleanup       = cleanup;
+	enc->bytes_per_key = UINT64_MAX; /* no encryption => no key wear */
+	enc->flags         = 0;
+	enc->blocksize     = 1;
+	enc->key_size      = 0;
 	memcpy(enc->name, name, sizeof(name));
 	return dssh_transport_register_enc(enc);
 }

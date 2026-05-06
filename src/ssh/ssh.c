@@ -206,6 +206,15 @@ dssh_session_set_timeout(struct dssh_session_s *sess, int timeout_ms)
 	return 0;
 }
 
+DSSH_PUBLIC int
+dssh_session_set_rekey_seconds(struct dssh_session_s *sess, uint32_t seconds)
+{
+	if (sess == NULL)
+		return DSSH_ERROR_INVALID;
+	sess->trans.rekey_seconds = seconds;
+	return 0;
+}
+
 /*
  * Build a comma-separated CSV from names[count] into a fresh
  * malloc'd string.  count == 0 or names == NULL produces *out = NULL.

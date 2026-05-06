@@ -288,18 +288,29 @@ rekey_needed(struct dssh_session_s *sess)
 	if ((tx_pkts >= DSSH_REKEY_SOFT_LIMIT) || (sess->trans.rx_since_rekey >= DSSH_REKEY_SOFT_LIMIT))
 		return true;
 
-	/* Sum tx + rx bytes (saturating) for the byte threshold */
+	/* Per-direction byte threshold: each direction is encrypted with
+	 * its own key, so compare each counter against the negotiated
+	 * cipher's bytes_per_key (RFC 4344 s3.2: 2^(L/4) blocks for
+	 * L-bit block ciphers).  Pre-handshake, enc_*_selected is NULL
+	 * and the byte check is skipped. */
+	dssh_enc enc_c2s  = atomic_load(&sess->trans.enc_c2s_selected);
+	dssh_enc enc_s2c  = atomic_load(&sess->trans.enc_s2c_selected);
 	uint64_t tx_bytes = atomic_load(&sess->trans.tx_bytes_since_rekey);
-	uint64_t total_bytes;
-	if (tx_bytes > UINT64_MAX - sess->trans.rx_bytes_since_rekey)
-		total_bytes = UINT64_MAX;
-	else
-		total_bytes = tx_bytes + sess->trans.rx_bytes_since_rekey;
-	if (total_bytes >= DSSH_REKEY_BYTES)
+	uint64_t rx_bytes = sess->trans.rx_bytes_since_rekey;
+	if (enc_c2s != NULL && tx_bytes >= enc_c2s->bytes_per_key)
+		return true;
+	if (enc_s2c != NULL && rx_bytes >= enc_s2c->bytes_per_key)
 		return true;
 	if (sess->trans.rekey_time == 0)
 		return false;
-	if (time(NULL) - sess->trans.rekey_time >= DSSH_REKEY_SECONDS)
+	/* Time threshold has no cryptographic justification (the byte
+	 * and packet thresholds do), so apps that need to interop with
+	 * peers that refuse mid-stream KEXINIT (e.g. Cryptlib-based
+	 * servers like Mystic BBS) can override or disable it via
+	 * dssh_session_set_rekey_seconds(). */
+	if (sess->trans.rekey_seconds == 0)
+		return false;
+	if ((uint64_t)(time(NULL) - sess->trans.rekey_time) >= sess->trans.rekey_seconds)
 		return true;
 	return false;
 }
@@ -2753,6 +2764,13 @@ dssh_session_init(bool client, size_t max_packet_size)
 		return NULL;
 
 	sess->trans.client = client;
+	/* Time-based rekey is OFF by default: the byte and packet
+	 * thresholds cover key-material wear, and some peers (Cryptlib-
+	 * based servers like Mystic BBS) refuse mid-stream KEXINIT
+	 * outright.  RFC 4253 s9 calls time rekey RECOMMENDED, not
+	 * required.  Apps that need it can opt in via
+	 * dssh_session_set_rekey_seconds(). */
+	sess->trans.rekey_seconds = 0;
 
 	int res = mtx_init(&sess->mtx, mtx_plain);
 

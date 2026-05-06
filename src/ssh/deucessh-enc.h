@@ -27,6 +27,13 @@ typedef struct dssh_enc_s {
 	dssh_enc_crypt     encrypt;
 	dssh_enc_crypt     decrypt;
 	dssh_enc_cleanup   cleanup;
+	/* Per-direction byte limit before auto-rekey is required.  Set
+	 * by the module per RFC 4344 s3.2: 2^(L/4) blocks for L-bit
+	 * block ciphers (64 GiB for 128-bit blocks like AES, 1 GiB for
+	 * smaller blocks).  Set to UINT64_MAX to opt out (e.g. the
+	 * none-cipher).  Compared independently against tx and rx
+	 * counters, so c2s and s2c may use different limits. */
+	uint64_t           bytes_per_key;
 	uint32_t           flags;
 	uint16_t           blocksize;
 	uint16_t           key_size;

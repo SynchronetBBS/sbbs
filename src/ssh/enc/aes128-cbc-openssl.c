@@ -96,14 +96,15 @@ dssh_register_aes128_cbc(void)
 
 	if (enc == NULL)
 		return DSSH_ERROR_ALLOC;
-	enc->next      = NULL;
-	enc->init      = init_ctx;
-	enc->encrypt   = do_crypt;
-	enc->decrypt   = do_crypt;
-	enc->cleanup   = cleanup;
-	enc->flags     = 0;
-	enc->blocksize = AES128_CBC_BLOCK_SIZE;
-	enc->key_size  = AES128_CBC_KEY_SIZE;
+	enc->next          = NULL;
+	enc->init          = init_ctx;
+	enc->encrypt       = do_crypt;
+	enc->decrypt       = do_crypt;
+	enc->cleanup       = cleanup;
+	enc->bytes_per_key = UINT64_C(1) << 36; /* RFC 4344 s3.2: 2^32 blocks * 16 = 64 GiB */
+	enc->flags         = 0;
+	enc->blocksize     = AES128_CBC_BLOCK_SIZE;
+	enc->key_size      = AES128_CBC_KEY_SIZE;
 	memcpy(enc->name, name, sizeof(name));
 	return dssh_transport_register_enc(enc);
 }

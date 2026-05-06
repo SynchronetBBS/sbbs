@@ -96,10 +96,13 @@ struct dssh_tx_slot {
 	uint8_t     *buf;         /* packet buffer, or NULL before KEX    */
 };
 
-/* Rekey thresholds (RFC 4253 s9, RFC 4251 s9.3.2) */
+/* Rekey thresholds.  Packet limits per RFC 4344 s3.1 (MAC-tag
+ * leakage); byte limit is per-module via dssh_enc_s::bytes_per_key
+ * (RFC 4344 s3.2).  DSSH_REKEY_SECONDS is the historical 1-hour
+ * suggestion (off by default; opt in via
+ * dssh_session_set_rekey_seconds). */
 #define DSSH_REKEY_SOFT_LIMIT UINT32_C(0x10000000) /* 2^28 packets */
 #define DSSH_REKEY_HARD_LIMIT UINT32_C(0x80000000) /* 2^31 packets */
-#define DSSH_REKEY_BYTES      UINT64_C(0x40000000) /* 1 GiB */
 #define DSSH_REKEY_SECONDS    3600                 /* 1 hour */
 
 struct dssh_transport_state_s {
@@ -171,14 +174,15 @@ struct dssh_transport_state_s {
 	uint32_t rx_seq;
 	uint32_t rx_since_rekey; /* packets received since last (re)key (rx_mtx) */
 	uint32_t last_rx_seq;    /* seq number of last received packet */
+	uint32_t rekey_seconds;  /* time-based rekey threshold; 0 = disabled */
 
 				 /* Pointer-sized — round-robin index for fair channel slot drain */
 	size_t drain_next_ch;
 
 	/* 1-byte */
 	bool        client;
-	atomic_bool rekey_in_progress; /* true between KEXINIT and NEWKEYS */
-	bool        rekey_pending;     /* deferred auto-rekey (set in recv_packet) */
+	atomic_bool rekey_in_progress;     /* true between KEXINIT and NEWKEYS */
+	bool        rekey_pending;         /* deferred auto-rekey (set in recv_packet) */
 
 				       /* Char arrays (naturally aligned, go last) */
 	char id_str[254];

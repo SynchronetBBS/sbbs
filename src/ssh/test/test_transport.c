@@ -1816,6 +1816,11 @@ test_rekey_needed_rx_packets(void)
 	return TEST_PASS;
 }
 
+/* Fake enc module with a small synthetic bytes_per_key so we can
+ * drive the byte-threshold logic without burning 64 GiB of counters. */
+#define TEST_REKEY_BYTES (UINT64_C(1) << 30) /* 1 GiB */
+static struct dssh_enc_s test_fake_enc = { .bytes_per_key = TEST_REKEY_BYTES };
+
 static int
 test_rekey_needed_bytes(void)
 {
@@ -1830,7 +1835,15 @@ test_rekey_needed_bytes(void)
 	dssh_session sess = dssh_session_init(true, 0);
 	ASSERT_NOT_NULL(sess);
 
-	sess->trans.tx_bytes_since_rekey = DSSH_REKEY_BYTES;
+	/* tx exceeds c2s cipher's limit -> fire. */
+	sess->trans.enc_c2s_selected     = &test_fake_enc;
+	sess->trans.tx_bytes_since_rekey = TEST_REKEY_BYTES;
+	ASSERT_TRUE(rekey_needed(sess));
+
+	/* rx exceeds s2c cipher's limit -> also fires (per-direction). */
+	sess->trans.tx_bytes_since_rekey = 0;
+	sess->trans.rx_bytes_since_rekey = TEST_REKEY_BYTES;
+	sess->trans.enc_s2c_selected     = &test_fake_enc;
 	ASSERT_TRUE(rekey_needed(sess));
 
 	dssh_session_cleanup(sess);
@@ -1853,8 +1866,50 @@ test_rekey_needed_time(void)
 	dssh_session sess = dssh_session_init(true, 0);
 	ASSERT_NOT_NULL(sess);
 
-	/* Set rekey_time to more than DSSH_REKEY_SECONDS ago */
+	/* Time rekey is off by default; opt in for this test. */
+	ASSERT_OK(dssh_session_set_rekey_seconds(sess, DSSH_REKEY_SECONDS));
 	sess->trans.rekey_time = time(NULL) - DSSH_REKEY_SECONDS - 1;
+	ASSERT_TRUE(rekey_needed(sess));
+
+	dssh_session_cleanup(sess);
+	mock_io_free(&io);
+	dssh_test_reset_global_config();
+	return TEST_PASS;
+}
+
+static int
+test_rekey_seconds_disabled(void)
+{
+	dssh_test_reset_global_config();
+	dssh_transport_set_callbacks(mock_tx_dispatch, mock_rx_dispatch,
+	    mock_rxline_dispatch, mock_extra_line_cb);
+	ASSERT_OK(dssh_register_none_comp());
+
+	struct mock_io_state io;
+	ASSERT_OK(mock_io_init(&io, 0));
+
+	dssh_session sess = dssh_session_init(true, 0);
+	ASSERT_NOT_NULL(sess);
+
+	/* rekey_time well past the default 1-hour threshold; with
+	 * the time trigger disabled, rekey_needed must stay false. */
+	sess->trans.rekey_time = time(NULL) - DSSH_REKEY_SECONDS * 10;
+	ASSERT_OK(dssh_session_set_rekey_seconds(sess, 0));
+	ASSERT_FALSE(rekey_needed(sess));
+
+	/* Re-enable with a tighter threshold; now it should fire. */
+	ASSERT_OK(dssh_session_set_rekey_seconds(sess, 60));
+	ASSERT_TRUE(rekey_needed(sess));
+
+	/* Custom higher threshold not yet reached -> false. */
+	sess->trans.rekey_time = time(NULL) - 10;
+	ASSERT_OK(dssh_session_set_rekey_seconds(sess, 3600));
+	ASSERT_FALSE(rekey_needed(sess));
+
+	/* Byte threshold still fires even when time trigger disabled. */
+	ASSERT_OK(dssh_session_set_rekey_seconds(sess, 0));
+	sess->trans.enc_c2s_selected     = &test_fake_enc;
+	sess->trans.tx_bytes_since_rekey = TEST_REKEY_BYTES;
 	ASSERT_TRUE(rekey_needed(sess));
 
 	dssh_session_cleanup(sess);
@@ -1878,10 +1933,13 @@ test_rekey_needed_below_threshold(void)
 	ASSERT_NOT_NULL(sess);
 
 	/* Set values just below thresholds */
-	sess->trans.tx_since_rekey = DSSH_REKEY_SOFT_LIMIT - 1;
-	sess->trans.rx_since_rekey = DSSH_REKEY_SOFT_LIMIT - 1;
-	sess->trans.tx_bytes_since_rekey = DSSH_REKEY_BYTES - 1;
-	sess->trans.rekey_time = time(NULL);
+	sess->trans.enc_c2s_selected     = &test_fake_enc;
+	sess->trans.enc_s2c_selected     = &test_fake_enc;
+	sess->trans.tx_since_rekey       = DSSH_REKEY_SOFT_LIMIT - 1;
+	sess->trans.rx_since_rekey       = DSSH_REKEY_SOFT_LIMIT - 1;
+	sess->trans.tx_bytes_since_rekey = TEST_REKEY_BYTES - 1;
+	sess->trans.rx_bytes_since_rekey = TEST_REKEY_BYTES - 1;
+	sess->trans.rekey_time           = time(NULL);
 	ASSERT_FALSE(rekey_needed(sess));
 
 	dssh_session_cleanup(sess);
@@ -1891,7 +1949,7 @@ test_rekey_needed_below_threshold(void)
 }
 
 static int
-test_rekey_needed_bytes_split_sum(void)
+test_rekey_bytes_per_direction(void)
 {
 	dssh_test_reset_global_config();
 	dssh_transport_set_callbacks(mock_tx_dispatch, mock_rx_dispatch,
@@ -1904,21 +1962,28 @@ test_rekey_needed_bytes_split_sum(void)
 	dssh_session sess = dssh_session_init(true, 0);
 	ASSERT_NOT_NULL(sess);
 
-	/* Each half is below threshold, but their sum exceeds it */
-	uint64_t half = DSSH_REKEY_BYTES / 2 + 1;
+	sess->trans.enc_c2s_selected = &test_fake_enc;
+	sess->trans.enc_s2c_selected = &test_fake_enc;
+	sess->trans.rekey_time       = time(NULL);
+
+	/* Each direction gets its own counter checked against its own
+	 * cipher's limit -- counters are NOT summed.  Half-each must
+	 * not fire even if the sum would have crossed the old single
+	 * threshold. */
+	uint64_t half                    = TEST_REKEY_BYTES / 2 + 1;
 	sess->trans.tx_bytes_since_rekey = half;
 	sess->trans.rx_bytes_since_rekey = half;
-	sess->trans.rekey_time = time(NULL);
+	ASSERT_FALSE(rekey_needed(sess));
+
+	/* tx alone at threshold fires. */
+	sess->trans.tx_bytes_since_rekey = TEST_REKEY_BYTES;
+	sess->trans.rx_bytes_since_rekey = 0;
 	ASSERT_TRUE(rekey_needed(sess));
 
-	/* Verify each half alone does NOT trigger */
-	sess->trans.tx_bytes_since_rekey = half;
-	sess->trans.rx_bytes_since_rekey = 0;
-	ASSERT_FALSE(rekey_needed(sess));
-
+	/* rx alone at threshold fires. */
 	sess->trans.tx_bytes_since_rekey = 0;
-	sess->trans.rx_bytes_since_rekey = half;
-	ASSERT_FALSE(rekey_needed(sess));
+	sess->trans.rx_bytes_since_rekey = TEST_REKEY_BYTES;
+	ASSERT_TRUE(rekey_needed(sess));
 
 	dssh_session_cleanup(sess);
 	mock_io_free(&io);
@@ -7351,8 +7416,9 @@ static struct dssh_test_entry tests[] = {
 	{ "rekey/needed_rx_packets",         test_rekey_needed_rx_packets },
 	{ "rekey/needed_bytes",              test_rekey_needed_bytes },
 	{ "rekey/needed_time",               test_rekey_needed_time },
+	{ "rekey/seconds_disabled",          test_rekey_seconds_disabled },
 	{ "rekey/needed_below_threshold",    test_rekey_needed_below_threshold },
-	{ "rekey/needed_bytes_split_sum",    test_rekey_needed_bytes_split_sum },
+	{ "rekey/bytes_per_direction",       test_rekey_bytes_per_direction },
 	{ "rekey/after_handshake",           test_rekey_after_handshake },
 	{ "rekey/session_id_stable",         test_rekey_session_id_stable },
 	{ "rekey/encrypted_roundtrip",       test_rekey_encrypted_roundtrip },

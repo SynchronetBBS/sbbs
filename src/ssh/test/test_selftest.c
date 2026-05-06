@@ -1283,7 +1283,7 @@ test_self_rekey_during_data(void)
 	/* Force rx_bytes_since_rekey near threshold on the CLIENT.
 	 * Auto-rekey triggers in recv_packet's default path when
 	 * the client demux receives the echoed data. */
-	ctx.client->trans.rx_bytes_since_rekey = DSSH_REKEY_BYTES - 100;
+	ctx.client->trans.rx_bytes_since_rekey = ctx.client->trans.enc_s2c_selected->bytes_per_key - 100;
 
 	dssh_chan_poll(ch, DSSH_POLL_WRITE, 5000);
 	uint8_t data[256];
@@ -1349,7 +1349,7 @@ test_self_rekey_manual(void)
 	 * small enough that one packet pushes it over. */
 	/* Only force threshold on the client.  The client's demux
 	 * will trigger rekey when it receives the echoed data. */
-	ctx.client->trans.rx_bytes_since_rekey = DSSH_REKEY_BYTES - 50;
+	ctx.client->trans.rx_bytes_since_rekey = ctx.client->trans.enc_s2c_selected->bytes_per_key - 50;
 
 	dssh_chan_poll(ch, DSSH_POLL_WRITE, 5000);
 	const uint8_t data[] = "after-rekey";
@@ -1441,7 +1441,7 @@ test_self_rekey_preserves_channels(void)
 	memcpy(sid_before, ctx.client->trans.session_id, sid_sz);
 
 	/* Force rekey */
-	ctx.client->trans.rx_bytes_since_rekey = DSSH_REKEY_BYTES - 100;
+	ctx.client->trans.rx_bytes_since_rekey = ctx.client->trans.enc_s2c_selected->bytes_per_key - 100;
 
 	/* Send data to trigger rekey */
 	const uint8_t after[] = "after-rekey-data!";
@@ -1548,7 +1548,7 @@ test_self_rekey_inflight_data(void)
 	 * packet, then on the next recv_packet call starts rekey.
 	 * Remaining packets in the socket buffer arrive during the
 	 * kexinit wait loop. */
-	ctx.client->trans.rx_bytes_since_rekey = DSSH_REKEY_BYTES - 50;
+	ctx.client->trans.rx_bytes_since_rekey = ctx.client->trans.enc_s2c_selected->bytes_per_key - 50;
 
 	/* Collect all data -- expect 500 bytes total */
 	uint8_t buf[1024];

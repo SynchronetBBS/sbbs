@@ -1524,11 +1524,18 @@ run on the demux thread.  They MUST NOT call any TX function
 The library automatically performs key re-exchange (RFC 4253 s9) when
 any of these thresholds is exceeded:
 
-| Threshold | Default | Constant |
-|-----------|---------|----------|
-| Packets per key | 2^28 (~268M) | `DSSH_REKEY_SOFT_LIMIT` |
-| Bytes per key | 1 GiB | `DSSH_REKEY_BYTES` |
-| Time per key | 1 hour | `DSSH_REKEY_SECONDS` |
+| Threshold | Default | Constant / source |
+|-----------|---------|-------------------|
+| Packets per key | 2^28 (~268M) | `DSSH_REKEY_SOFT_LIMIT` (RFC 4344 s3.1) |
+| Bytes per key (per direction) | per-cipher | `dssh_enc_s::bytes_per_key` (RFC 4344 s3.2) |
+| Time per key | disabled (opt-in) | `DSSH_REKEY_SECONDS` (3600 s suggestion) |
+
+Byte limits come from each `enc` module: 64 GiB (2^36) for 128-bit
+block ciphers (every cipher we ship — aes128-cbc, aes128-ctr,
+aes256-ctr — derives from RFC 4344 s3.2's 2^(L/4) blocks for L=128),
+and `UINT64_MAX` for the `none` cipher (no key wear).  Each
+direction's byte counter is compared independently against the
+selected cipher's limit, so c2s and s2c use their own keys' budgets.
 
 Auto-rekey is triggered transparently by the demux thread.  Peer-
 initiated rekey (incoming `SSH_MSG_KEXINIT`) is also handled
@@ -1536,6 +1543,25 @@ transparently.  The application does not need to do anything.
 
 For send-only sessions without a receive thread, a hard packet limit
 (2^31) returns `DSSH_ERROR_REKEY_NEEDED`.
+
+### Time-based rekey (off by default)
+
+The byte and packet thresholds have cryptographic justification
+(key-material wear); the time-based threshold does not.  RFC 4253
+s9 calls time rekey RECOMMENDED, not required, and some peers
+(notably Cryptlib-based servers like Mystic BBS) refuse mid-stream
+`SSH_MSG_KEXINIT` outright with `CRYPT_ERROR_BADDATA`, killing the
+session at the 1-hour mark.  DeuceSSH therefore leaves time rekey
+off by default.
+
+```c
+dssh_session_set_rekey_seconds(sess, DSSH_REKEY_SECONDS);  /* 3600 s */
+dssh_session_set_rekey_seconds(sess, 28800);               /* 8 h */
+dssh_session_set_rekey_seconds(sess, 0);                   /* off (default) */
+```
+
+Byte and packet thresholds remain in effect regardless.  May be
+called at any point in the session.
 
 ## Optional Callbacks
 
