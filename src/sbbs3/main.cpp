@@ -363,7 +363,7 @@ int sbbs_t::lputs(int level, const char* str)
 	SAFEPRINTF3(msg, "%s%s%s", prefix, user_str, str);
 	strip_ctrl(msg, msg);
 	if (is_event_thread) {
-		if (level <= startup->event_log_level) {
+		if (startup != nullptr && level <= startup->event_log_level) {
 			if (logfile_fp == nullptr) {
 				char str[128];
 				if(startup->first_node > 1)
