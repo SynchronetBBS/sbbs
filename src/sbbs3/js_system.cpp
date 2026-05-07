@@ -1618,7 +1618,7 @@ js_get_node(JSContext *cx, uintN argc, jsval *arglist)
 	JS_DefineProperty(cx, nodeobj, "connection", INT_TO_JSVAL((int)node.connection), NULL, NULL, JSPROP_ENUMERATE);
 	JS_DefineProperty(cx, nodeobj, "misc", INT_TO_JSVAL((int)node.misc), NULL, NULL, JSPROP_ENUMERATE);
 	JS_DefineProperty(cx, nodeobj, "aux", INT_TO_JSVAL((int)node.aux), NULL, NULL, JSPROP_ENUMERATE);
-	JS_DefineProperty(cx, nodeobj, "extaux", INT_TO_JSVAL((int)node.extaux), NULL, NULL, JSPROP_ENUMERATE);
+	JS_DefineProperty(cx, nodeobj, "extaux", UINT_TO_JSVAL(node.extaux), NULL, NULL, JSPROP_ENUMERATE);
 	JS_SET_RVAL(cx, arglist, OBJECT_TO_JSVAL(nodeobj));
 	return JS_TRUE;
 }
