@@ -2324,6 +2324,13 @@ js_getdims(JSContext *cx, uintN argc, jsval *arglist)
 	return JS_TRUE;
 }
 
+/* Asymmetric lock helper: callers (e.g., the JS console.lock_input(true|false)
+ * binding, hotkey handlers) take the mutex on one call and release it on a
+ * paired later call. The function intentionally leaves the mutex in either
+ * the locked or the unlocked state depending on its argument. Coverity's lock
+ * tracker can't model this contract, so it flags the lock=true path as
+ * "returning without unlocking" and propagates the same complaint to every
+ * indirect caller. */
 void
 js_do_lock_input(JSContext *cx, JSBool lock)
 {
@@ -2333,8 +2340,10 @@ js_do_lock_input(JSContext *cx, JSBool lock)
 		return;
 
 	if (lock) {
+		// coverity[LOCK:SUPPRESS]
 		pthread_mutex_lock(&sbbs->input_thread_mutex);
 	} else {
+		// coverity[LOCK:SUPPRESS]
 		pthread_mutex_unlock(&sbbs->input_thread_mutex);
 	}
 }
