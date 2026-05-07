@@ -1699,6 +1699,7 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 	}
 
 	if (code_match(sp, "CDTLEFT", &param))
+		// coverity[INTEGER_OVERFLOW:SUPPRESS] available credits cannot exceed INT64_MAX in practice (~9 EiB)
 		return byte_count(static_cast<int64_t>(user_available_credits(&useron)), str, maxlen, param, BYTE_COUNT_VERBAL);
 
 	if (code_match(sp, "CREDITS", &param))
