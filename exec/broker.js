@@ -952,6 +952,7 @@ MQTT.Connection.probateWill = function() {
 
 MQTT.Connection.expireSession = function() {
 	this.session_timeout = null;
+	this.removeAllSubscriptions();
 	delete this.broker.disconnected[this.client_id];
 };
 
@@ -960,6 +961,11 @@ MQTT.Connection.timeToDie = function() {
 	if (this.sock !== null) {
 		this.error(new Error('0x8D Keep Alive timeout'));
 	}
+};
+
+MQTT.Connection.prototype.removeAllSubscriptions = function() {
+	for (var filter in this.subscriptions)
+		this.subscriptions[filter].remove();
 };
 
 MQTT.Connection.prototype.tearDown = function() {
@@ -1002,6 +1008,8 @@ MQTT.Connection.prototype.tearDown = function() {
 		if (this.session_expiry < 0xFFFFFFFF) {
 			this.session_timeout = js.setTimeout(MQTT.Connection.expireSession, this.session_expiry * 1000, this);
 		}
+	} else {
+		this.removeAllSubscriptions();
 	}
 };
 
@@ -1093,15 +1101,19 @@ MQTT.Connection.prototype.handleCONNECT = function() {
 	this.rx_unacked = [];
 	this.client_id = pkt.client_id;
 
-	// Copy state from old connection
+	// Copy or clean up state from old connection
 	var i;
-	if (oldconn !== null && !pkt.connect_flags.clean_start) {
-		this.subscriptions = oldconn.subscriptions;
-		for (i in this.subscriptions)
-			this.subscriptions[i].conn = this;
-		this.tx_unacked = oldconn.tx_unacked;
-		this.tx_queued = oldconn.tx_queued;
-		this.rx_unacked = oldconn.rx_unacked;
+	if (oldconn !== null) {
+		if (pkt.connect_flags.clean_start) {
+			oldconn.removeAllSubscriptions();
+		} else {
+			this.subscriptions = oldconn.subscriptions;
+			for (i in this.subscriptions)
+				this.subscriptions[i].conn = this;
+			this.tx_unacked = oldconn.tx_unacked;
+			this.tx_queued = oldconn.tx_queued;
+			this.rx_unacked = oldconn.rx_unacked;
+		}
 	}
 
 	if (this.tx_unacked.length > 0) {
@@ -1739,13 +1751,17 @@ MQTT.Connection.Subscription = function(conn, topic_filter, options, subscriptio
 
 MQTT.Connection.Subscription.prototype.remove = function() {
 	var i;
-	var j;
 
-	// Remove from topics...
+	// Remove from topics
 	for (i in this.conn.broker.topics) {
-		if (this.conn.broker.topics[i][this.client_id] !== undefined) {
-			if (this.conn.broker.topics[i][this.client_id][this.topic_filter] !== undefined)
-				delete this.conn.broker.topics[i][this.client_id][this.topic_filter];
+		var subs = this.conn.broker.topics[i].subscribers;
+		if (subs[this.conn.client_id] !== undefined) {
+			if (subs[this.conn.client_id][this.topic_filter] !== undefined) {
+				delete subs[this.conn.client_id][this.topic_filter];
+				// Remove the client's subscriber entry if empty
+				if (Object.keys(subs[this.conn.client_id]).length === 0)
+					delete subs[this.conn.client_id];
+			}
 		}
 	}
 
