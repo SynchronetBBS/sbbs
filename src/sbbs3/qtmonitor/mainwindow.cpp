@@ -274,8 +274,8 @@ void MainWindow::setupToolbar()
 	}
 
 	toolbar->addSeparator();
-	auto *connectBtn = toolbar->addAction("Connect");
-	connect(connectBtn, &QAction::triggered, this, [this, connectBtn] {
+	m_connectBtn = toolbar->addAction("Connect");
+	connect(m_connectBtn, &QAction::triggered, this, [this] {
 		if (m_mqtt->isConnected()) {
 			m_mqtt->disconnectFromBroker();
 		} else {
@@ -309,9 +309,11 @@ void MainWindow::connectMqttSignals()
 	connect(m_mqtt, &MqttClient::connected, this, [this] {
 		statusBar()->showMessage("Connected to MQTT broker", 3000);
 		m_mqttLabel->setText("MQTT: Connected");
+		m_connectBtn->setText("Disconnect");
 	});
 	connect(m_mqtt, &MqttClient::disconnected, this, [this] {
 		m_mqttLabel->setText("MQTT: Disconnected");
+		m_connectBtn->setText("Connect");
 	});
 	connect(m_mqtt, &MqttClient::errorOccurred, this, [this](const QString &msg) {
 		statusBar()->showMessage(msg, 5000);

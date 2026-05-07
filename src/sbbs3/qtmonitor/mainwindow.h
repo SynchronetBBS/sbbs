@@ -64,6 +64,7 @@ private:
 	QLabel *m_mqttLabel;
 	QHash<QString, QHash<QString, int>> m_statPerServer;
 	QAction *m_darkAction;
+	QAction *m_connectBtn;
 };
 
 #endif

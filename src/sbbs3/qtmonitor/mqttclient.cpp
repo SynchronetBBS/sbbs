@@ -12,10 +12,6 @@ MqttClient::MqttClient(QObject *parent)
 
 void MqttClient::initClient()
 {
-	if (m_client) {
-		m_client->deleteLater();
-		m_client = nullptr;
-	}
 	m_client = new QMqttClient(this);
 	m_client->setProtocolVersion(QMqttClient::MQTT_5_0);
 	connect(m_client, &QMqttClient::connected, this, &MqttClient::onConnected);
@@ -107,11 +103,15 @@ void MqttClient::connectToBroker()
 
 void MqttClient::disconnectFromBroker()
 {
-	if (m_client && m_client->state() != QMqttClient::Disconnected)
-		m_client->disconnectFromHost();
+	if (m_client) {
+		if (m_client->state() != QMqttClient::Disconnected)
+			m_client->disconnectFromHost();
+		delete m_client;
+		m_client = nullptr;
+	}
 	if (m_socket) {
 		m_socket->abort();
-		m_socket->deleteLater();
+		delete m_socket;
 		m_socket = nullptr;
 	}
 }
