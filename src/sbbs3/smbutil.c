@@ -832,8 +832,11 @@ void maint(void)
 	printf("\nDone.\n\n");
 	printf("Scanning for pre-flagged messages...\n");
 	for (m = 0; m < l; m++) {
-		if (terminated)
+		if (terminated) {
+			free(idxbuf);
+			smb_unlocksmbhdr(&smb);
 			return;
+		}
 		idx = (idxrec_t*)(idxbuf + (m * idxreclen));
 //		printf("\r%2lu%%",m ? (long)(100.0/((float)l/m)) : 0);
 		if (idx->attr & MSG_DELETE)
@@ -845,8 +848,11 @@ void maint(void)
 		printf("Scanning for messages more than %u days old...\n"
 		       , smb.status.max_age);
 		for (m = f = 0; m < l; m++) {
-			if (terminated)
+			if (terminated) {
+				free(idxbuf);
+				smb_unlocksmbhdr(&smb);
 				return;
+			}
 			idx = (idxrec_t*)(idxbuf + (m * idxreclen));
 //			printf("\r%2lu%%",m ? (long)(100.0/((float)l/m)) : 0);
 			if (idx->attr & (MSG_PERMANENT | MSG_DELETE))
@@ -864,8 +870,11 @@ void maint(void)
 	printf("Scanning for read messages to be killed...\n");
 	uint32_t total_msgs = 0;
 	for (m = f = 0; m < l; m++) {
-		if (terminated)
+		if (terminated) {
+			free(idxbuf);
+			smb_unlocksmbhdr(&smb);
 			return;
+		}
 		idx = (idxrec_t*)(idxbuf + (m * idxreclen));
 		enum smb_msg_type type = smb_msg_type(idx->attr);
 		if (type == SMB_MSG_TYPE_NORMAL || type == SMB_MSG_TYPE_POLL)
@@ -884,8 +893,11 @@ void maint(void)
 	if (smb.status.max_msgs && total_msgs - flagged > smb.status.max_msgs) {
 		printf("Flagging excess messages for deletion...\n");
 		for (m = n = 0, f = flagged; l - flagged > smb.status.max_msgs && m < l; m++) {
-			if (terminated)
+			if (terminated) {
+				free(idxbuf);
+				smb_unlocksmbhdr(&smb);
 				return;
+			}
 			idx = (idxrec_t*)(idxbuf + (m * idxreclen));
 			if (idx->attr & (MSG_PERMANENT | MSG_DELETE))
 				continue;
@@ -923,8 +935,15 @@ void maint(void)
 		}
 
 		for (m = n = 0; m < l; m++) {
-			if (terminated)
+			if (terminated) {
+				if (!(smb.status.attr & SMB_HYPERALLOC)) {
+					smb_close_ha(&smb);
+					smb_close_da(&smb);
+				}
+				free(idxbuf);
+				smb_unlocksmbhdr(&smb);
 				return;
+			}
 			idx = (idxrec_t*)(idxbuf + (m * idxreclen));
 			if (idx->attr & MSG_DELETE) {
 				printf("%lu of %lu\r", ++n, flagged);
