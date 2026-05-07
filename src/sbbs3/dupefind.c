@@ -72,9 +72,9 @@ char *display_filename(scfg_t *cfg, uint dirnum, uint32_t fil_off)
 	static smb_t smb;
 	if (smb_open_dir(cfg, &smb, dirnum) != SMB_SUCCESS)
 		return smb.last_error;
-	smb_fseek(smb.sid_fp, (fil_off - 1) * sizeof(fileidxrec_t), SEEK_SET);
 	fileidxrec_t idx;
-	if (smb_fread(&smb, &idx, sizeof(idx), smb.sid_fp) != sizeof(idx)) {
+	if (smb_fseek(smb.sid_fp, (fil_off - 1) * sizeof(fileidxrec_t), SEEK_SET) != 0
+	    || smb_fread(&smb, &idx, sizeof(idx), smb.sid_fp) != sizeof(idx)) {
 		smb_close(&smb);
 		return smb.last_error;
 	}
