@@ -1417,7 +1417,7 @@ sftp_cleanup_callback(void *cb_data)
 			close(sbbs->sftp_filedes[i]->fd);
 			if (sbbs->sftp_filedes[i]->created && sbbs->sftp_filedes[i]->local_path) {
 				// If we were uploading, delete the incomplete file
-				remove(sbbs->sftp_filedes[i]->local_path);
+				(void)remove(sbbs->sftp_filedes[i]->local_path);
 			}
 			free(sbbs->sftp_filedes[i]->local_path);
 			free(sbbs->sftp_filedes[i]);
