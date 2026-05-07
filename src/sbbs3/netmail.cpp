@@ -408,6 +408,9 @@ void sbbs_t::qwktonetmail(FILE *rep, char *block, char *into, uint fromhub)
 		free(qwkbuf);
 		return;
 	}
+	/* Make the sentinel NUL explicit (calloc already zeroed it) so static
+	 * analyzers see that downstream strchr/strlen/strlcpy on qwkbuf is bounded. */
+	qwkbuf[n * QWK_BLOCK_LEN] = '\0';
 
 	size_t kludge_hdrlen = 0;
 	char*  beg = qwkbuf + QWK_BLOCK_LEN;

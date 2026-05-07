@@ -299,6 +299,9 @@ bool sbbs_t::qwk_import_msg(FILE *qwk_fp, char *hdrblk, uint blocks
 		errormsg(WHERE, ERR_READ, "QWK msg blocks", (blocks - 1) * QWK_BLOCK_LEN);
 		return false;
 	}
+	/* Make the sentinel NUL explicit (calloc already zeroed it) so static
+	 * analyzers see that downstream strchr/strlen/strlcpy on qwkbuf is bounded. */
+	qwkbuf[(blocks - 1) * QWK_BLOCK_LEN] = '\0';
 
 	bodylen = 0;
 	if ((body = (char *)malloc((blocks - 1L) * QWK_BLOCK_LEN * 2L)) == NULL) {
