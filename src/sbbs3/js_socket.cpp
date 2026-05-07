@@ -2358,7 +2358,7 @@ static JSBool js_socket_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict
 							ulong nb = 0;
 							ioctlsocket(p->sock, FIONBIO, &nb);
 							nb = 1;
-							setsockopt(p->sock, IPPROTO_TCP, TCP_NODELAY, (char*)&nb, sizeof(nb));
+							(void)setsockopt(p->sock, IPPROTO_TCP, TCP_NODELAY, (char*)&nb, sizeof(nb));
 							if ((ret = do_cryptAttribute(p->session, CRYPT_SESSINFO_NETWORKSOCKET, p->sock)) == CRYPT_OK) {
 								int minver = CRYPT_TLSOPTION_MINVER_TLS12;
 								if (p->tls_minver == 100)
