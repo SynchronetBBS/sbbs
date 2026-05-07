@@ -4363,6 +4363,8 @@ long loginAttemptListCount(link_list_t* list)
 
 	if (!listLock(list))
 		return -1;
+	/* link_list mutex is recursive (link_list.h:99) — re-lock by listCountNodes is safe */
+	// coverity[LOCK:SUPPRESS]
 	count = listCountNodes(list);
 	listUnlock(list);
 	return count;
@@ -4378,7 +4380,10 @@ long loginAttemptListClear(link_list_t* list)
 
 	if (!listLock(list))
 		return -1;
+	/* link_list mutex is recursive (link_list.h:99) — re-lock by inner ops is safe */
+	// coverity[LOCK:SUPPRESS]
 	count = listCountNodes(list);
+	// coverity[LOCK:SUPPRESS]
 	count -= listFreeNodes(list);
 	listUnlock(list);
 	return count;
@@ -4480,6 +4485,8 @@ void loginSuccess(link_list_t* list, const union xp_sockaddr* addr)
 		return;
 	listLock(list);
 	if ((node = login_attempted(list, addr)) != NULL)
+		/* link_list mutex is recursive (link_list.h:99) — re-lock by listRemoveNode is safe */
+		// coverity[LOCK:SUPPRESS]
 		listRemoveNode(list, node, /* freeData: */ true);
 	listUnlock(list);
 }
@@ -4519,6 +4526,8 @@ ulong loginFailure(link_list_t* list, const union xp_sockaddr* addr, const char*
 	count = attempt->count - attempt->dupes;
 	if (node == NULL) {
 		attempt->first = attempt->time;
+		/* link_list mutex is recursive (link_list.h:99) — re-lock by listPushNodeData is safe */
+		// coverity[LOCK:SUPPRESS]
 		listPushNodeData(list, attempt, sizeof(login_attempt_t));
 	}
 	listUnlock(list);
