@@ -3011,6 +3011,13 @@ function IRC_Queue(irc) {
 		this._recv_bytes = '';
 		this._send_bytes = '';
 	}
+	this.filter_channel = function(channel) {
+		var chan_upper = channel.toUpperCase();
+		this.queue = this.queue.filter(function(line) {
+			var m = line.match(/^(PRIVMSG|NOTICE)\s+(\S+)/i);
+			return !(m && m[2].toUpperCase() === chan_upper);
+		});
+	}
 	this.__defineGetter__("size", function() {
 		var ret = 0;
 		var i;

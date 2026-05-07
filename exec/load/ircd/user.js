@@ -413,6 +413,7 @@ function User_Work(cmdline) {
 		this.bcast_to_channel(tmp, i, true);
 		this.bcast_to_servers(i);
 		j.rmchan(tmp);
+		j.recvq.filter_channel(tmp.nam);
 		break;
 	case "TOPIC":
 		if (!p[0]) {
