@@ -1,6 +1,10 @@
 #!/bin/sh
 # PROVIDE: sbbs
 # REQUIRE: login
+# If using the MQTT broker, add "broker" to REQUIRE above:
+#   # REQUIRE: login broker
+# or add to /etc/rc.conf:
+#   sbbs_require="broker"
 
 . /etc/rc.subr
 

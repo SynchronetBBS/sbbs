@@ -1,15 +1,11 @@
 #!/bin/bash
-# 
-# Linux system service run script (init file) for Synchronet
+#
+# Linux system service run script (init file) for Synchronet MQTT Broker
 #
 # This file normally goes in your /etc/init.d directory
 #
-# $Id: sbbs,v 1.3 2005/02/23 06:40:36 rswindell Exp $
-
-# If using the MQTT broker (broker.js), ensure the broker init script
-# starts before sbbs.  The broker script uses chkconfig priority 85
-# (before sbbs at 89).  For SUSE/LSB, add to the Required-Start line:
-#   # Required-Start:      $network $syslog broker
+# If you also run sbbs via init.d, ensure the broker starts first by
+# setting the start priority lower than sbbs (e.g. 85 vs 89).
 
 # Replace the path in the following line with path to your sbbs directory
 SBBSDIR=/sbbs
@@ -18,24 +14,25 @@ export SBBSCTRL=$SBBSDIR/ctrl
 #####################################
 # RedHat Linux "chkconfig" info block
 #
-# chkconfig: 2345 89 11
-# description: Synchronet BBS Software
+# chkconfig: 2345 85 15
+# description: Synchronet MQTT Broker (broker.js)
 #
-# processname: sbbs
-# pidfile: /var/run/sbbs.pid
+# processname: jsexec
+# pidfile: /var/run/broker.pid
 #####################################
 
 #####################################
 # SUSE Linux "insserv" info block
-# (not currently used or tested)
 #
 ### BEGIN INIT INFO
-# Provides:            sbbs
+# Provides:            broker
 # Required-Start:      $network $syslog
 # Required-Stop:
+# Should-Start:
+# Should-Stop:
 # Default-Start:       2 3 5
 # Default-Stop:        0 1 6
-# Description:         Synchronet BBS Software
+# Description:         Synchronet MQTT Broker (broker.js)
 ### END INIT INFO
 #####################################
 
@@ -55,9 +52,7 @@ elif [ -f /etc/rc.d/init.d/functions ] ; then
 elif [ -f /etc/rc.status ] ; then
 	# SUSE/LSB rc commands
 	. /etc/rc.status
-	# Reset status of this service
 	rc_reset
-	# Convert init commands to SUSE (rc.status) syntax
 	start_daemon="startproc"
 	daemon_status="checkproc"
 	rc_status="rc_status -v"
@@ -68,10 +63,10 @@ else
 fi
 
 retval=0
-prog="sbbs"
-proc="$SBBSDIR/exec/$prog"
-pidfile="/var/run/sbbs.pid"
-lockfile="/var/lock/subsys/sbbs"
+prog="broker"
+proc="$SBBSDIR/exec/jsexec"
+pidfile="/var/run/broker.pid"
+lockfile="/var/lock/subsys/broker"
 
 save_status() {
 	retval=$?
@@ -81,8 +76,7 @@ start() {
 	echo -n $"Starting $prog: "
 	shift
 	export SHELL=/bin/sh
-	$start_daemon $proc -d $@
-	# Remember status and be verbose
+	$start_daemon $proc broker.js $@
 	$rc_status
 	echo
 	[ $retval = 0 ] && touch $lockfile
@@ -92,19 +86,9 @@ start() {
 stop() {
 	echo -n $"Stopping $prog: "
 	killproc $proc
-	# Remember status and be verbose
 	$rc_status
 	echo
 	[ $retval = 0 ] && rm -f $lockfile $pidfile
-	return $retval
-}
-
-reload(){
-	echo -n $"Reloading $prog: "
-	killproc $proc -HUP
-	# Remember status and be verbose
-	$rc_status
-	echo
 	return $retval
 }
 
@@ -129,12 +113,9 @@ case "$1" in
 			start $@
 		fi
 		;;
-	reload)
-		reload
-		;;
 	*)
 		echo $"Bad argument: '$1'"
-		echo $"Usage: $0 {start|stop|restart|condrestart|status|reload}"
+		echo $"Usage: $0 {start|stop|restart|condrestart|status}"
 		retval=1
 esac
 

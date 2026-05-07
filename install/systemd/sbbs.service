@@ -10,6 +10,14 @@
 # 5. Enable the BBS service by running "sudo systemctl enable sbbs"
 # 6. To run the BBS service without rebooting, run "sudo systemctl start sbbs"
 #
+# If using the MQTT broker (broker.service), uncomment the following lines
+# in an override file ("sudo systemctl edit sbbs") to ensure the broker
+# starts before the BBS:
+#
+#    [Unit]
+#    Wants=broker.service
+#    After=broker.service
+#
 # Tips:
 # A. To query the status of the BBS service, run "systemctl status sbbs"
 # B. To browse the log output of the BBS service, run "journalctl -u sbbs"

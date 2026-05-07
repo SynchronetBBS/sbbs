@@ -1,0 +1,36 @@
+# Synchronet MQTT Broker (broker.js) systemd 'unit configuration' file
+#
+# 1. Copy or symlink this file to the correct directory
+#    e.g. for Debian/Ubuntu Linux, that would be: /lib/systemd/system
+# 2. If necessary, modify the SBBSCTRL environment variable value to match your install
+# 3. If necessary, modify the User and Group values to match your install
+# 4. If necessary, modify the paths in the ExecStart value to match your install
+#    Edits should be made using "sudo systemctl edit broker", thus creating the file:
+#    /etc/systemd/system/broker.service.d/override.conf
+# 5. Enable the broker service by running "sudo systemctl enable broker"
+# 6. To run the broker service without rebooting, run "sudo systemctl start broker"
+#
+# If you use this broker with sbbs.service, add the following to sbbs.service
+# (via "sudo systemctl edit sbbs") so the BBS waits for the broker:
+#
+#    [Unit]
+#    Wants=broker.service
+#    After=broker.service
+
+[Unit]
+Description=Synchronet MQTT Broker
+Documentation=http://wiki.synchro.net/
+Before=sbbs.service
+After=syslog.target network-online.target
+
+[Service]
+Type=simple
+Environment=SBBSCTRL=/sbbs/ctrl
+User=sbbs
+Group=sbbs
+ExecStart=/sbbs/exec/jsexec broker.js
+Restart=on-failure
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

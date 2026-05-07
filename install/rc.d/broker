@@ -1,0 +1,50 @@
+#!/bin/sh
+# PROVIDE: broker
+# REQUIRE: login
+# BEFORE: sbbs
+#
+# Synchronet MQTT Broker (broker.js) rc.d script for FreeBSD
+#
+# Add the following lines to /etc/rc.conf to enable:
+#   broker_enable="YES"
+#
+# Optionally override these defaults in /etc/rc.conf:
+#   broker_dir="/sbbs"
+#   broker_ctrldir="/sbbs/ctrl"
+#   broker_execdir="/sbbs/exec"
+#
+# If you also run sbbs via rc.d, add to /etc/rc.conf:
+#   sbbs_require="broker"
+# or add to the sbbs rc.d script's REQUIRE line:
+#   # REQUIRE: login broker
+
+. /etc/rc.subr
+
+name=broker
+rcvar=`set_rcvar`
+
+load_rc_config ${name}
+
+broker_enable=${broker_enable-"NO"}
+broker_dir=${broker_dir-"/sbbs"}
+broker_ctrldir=${broker_ctrldir-"${broker_dir}/ctrl"}
+broker_execdir=${broker_execdir-"${broker_dir}/exec"}
+broker_program=${broker_execdir}/jsexec
+broker_shell=${broker_shell-"/bin/sh"}
+
+command=${broker_program}
+command_args="broker.js"
+
+start_precmd=broker_env
+
+broker_env()
+{
+	SHELL=$broker_shell
+	export SHELL
+	SBBSCTRL=$broker_ctrldir
+	export SBBSCTRL
+	PATH=/bin:/usr/bin:/usr/local/bin
+	export PATH
+}
+
+run_rc_command "$1"
