@@ -3245,6 +3245,7 @@ js_connected_socket_constructor(JSContext *cx, uintN argc, jsval *arglist)
 		goto fail;
 	}
 	memset(p, 0, sizeof(js_socket_private_t));
+	p->sock = INVALID_SOCKET;
 
 	rc = JS_SUSPENDREQUEST(cx);
 	sprintf(pstr, "%hu", port);
@@ -3258,7 +3259,6 @@ js_connected_socket_constructor(JSContext *cx, uintN argc, jsval *arglist)
 		JS_ReportError(cx, gai_strerror(i));
 		goto fail;
 	}
-	p->sock = INVALID_SOCKET;
 	for (cur = res; cur && p->sock == INVALID_SOCKET; cur = cur->ai_next) {
 		if (p->sock == INVALID_SOCKET) {
 			p->sock = socket(cur->ai_family, cur->ai_socktype, cur->ai_protocol);
@@ -3383,7 +3383,11 @@ connected:
 	return JS_TRUE;
 
 fail:
-	free(p);
+	if (p != nullptr) {
+		if (p->sock != INVALID_SOCKET)
+			closesocket(p->sock);
+		free(p);
+	}
 	free(protocol);
 	free(host);
 	return JS_FALSE;
