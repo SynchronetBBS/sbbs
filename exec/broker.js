@@ -1293,12 +1293,12 @@ MQTT.Connection.prototype.handlePUBLISH = function() {
 					rval = pkt.retain;
 				qos = this.broker.topics[pkt.topic_name].subscribers[cid][sid].options.QoS;
 				if (rval) {
-					sidsr1.push(sid);
+					sidsr1.push(this.broker.topics[pkt.topic_name].subscribers[cid][sid].subscription_id);
 					if (qos > qosr1)
 						qosr1 = qos;
 				}
 				else {
-					sidsr0.push(sid);
+					sidsr0.push(this.broker.topics[pkt.topic_name].subscribers[cid][sid].subscription_id);
 					if (qos > qosr0)
 						qosr0 = qos;
 				}
@@ -2474,15 +2474,9 @@ MQTT.Packet.PUBLISH.prototype.serializeVariableHeader = function() {
 };
 
 MQTT.Packet.PUBLISH.prototype.serializePayload = function() {
-	var ret = '';
-	if (this.payload !== null) {
-		if (this.payload_format == 0)
-			ret += MQTT.encodeBinaryData(this.payload);
-		else
-			ret += MQTT.encodeUTF8String(this.payload);
-	}
-
-	return ret;
+	if (this.payload !== null)
+		return this.payload;
+	return '';
 };
 
 MQTT.Packet.PUBLISH.prototype.recv = function(conn) {
@@ -2528,8 +2522,10 @@ MQTT.Packet.PUBLISH.prototype.dupeForSubscriptions = function(conn, sids, qos) {
 	var sid;
 	if (ret.properties[24] !== undefined)
 		delete ret.properties[24];
-	for (sid in sids)
-		ret.addProperty(this.type, 11, sids[sid]);
+	for (sid in sids) {
+		if (sids[sid] !== null && sids[sid] !== 0)
+			ret.addProperty(this.type, 11, sids[sid]);
+	}
 	if (qos > 0) {
 		ret.packet_identifier = conn.getUnusedPID();
 		conn.tx_unacked.push(ret);
