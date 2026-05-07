@@ -2031,7 +2031,9 @@ static bool check_ars(http_session_t * session)
 		if (session->req.ars[0]) {
 			/* There *IS* an ARS string  ie: Auth is required */
 			if (startup->options & WEB_OPT_DEBUG_RX)
-				lprintf(LOG_NOTICE, "%04d !No authentication information", session->socket);
+				lprintf(LOG_NOTICE, "%04d %-5s [%s] !No authentication information for request: %s (requires: %s)"
+				        , session->socket, session->client.protocol, session->host_ip
+				        , session->req.request_line, session->req.ars);
 			return false;
 		}
 		if (session->user.number == 0) {
