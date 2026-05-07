@@ -2038,13 +2038,13 @@ void alter_areas(str_list_t add_area, str_list_t del_area, nodecfg_t* nodecfg, c
 		        , smb_faddrtoa(&addr, NULL), (ulong)deleted, cfg.areafile);
 	if (added || deleted) {
 		if (stat(cfg.areafile, &st) == 0)
-			chmod(outpath, st.st_mode);
+			(void)chmod(outpath, st.st_mode); /* best-effort permission preserve before rename */
 		if (cfg.areafile_backups == 0 || !backup(cfg.areafile, cfg.areafile_backups, /* ren: */ TRUE))
 			delfile(cfg.areafile, __LINE__);                    /* Delete AREAS.BBS */
 		if (rename(outpath, cfg.areafile))           /* Rename new AREAS.BBS file */
 			lprintf(LOG_ERR, "ERROR line %d renaming %s to %s", __LINE__, outpath, cfg.areafile);
 	}
-	remove(outpath); // expected to fail (file does not exist) much of the time
+	(void)remove(outpath); // expected to fail (file does not exist) much of the time
 }
 
 bool add_sub_to_arealist(sub_t* sub, fidoaddr_t uplink)
