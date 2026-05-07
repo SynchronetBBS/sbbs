@@ -654,6 +654,12 @@ int destroy_session(int (*lprintf)(int level, const char* fmt, ...), CRYPT_SESSI
 				sess_list = sess->next;
 			}
 			else {
+				/* psess is from sess_list; that list's nodes (and their next
+				 * fields) are protected by ssl_sess_list_mutex, which is held
+				 * here. Coverity confuses sess_list's `next` writes with the
+				 * separate cert_list's `next` writes (same struct type, two
+				 * distinct list memberships, two distinct mutexes). */
+				// coverity[MISSING_LOCK:SUPPRESS]
 				psess->next = sess->next;
 			}
 			break;
@@ -673,7 +679,13 @@ int destroy_session(int (*lprintf)(int level, const char* fmt, ...), CRYPT_SESSI
 				return CRYPT_ERROR_INTERNAL;
 			}
 			sess->sess = -1;
+			/* sess was removed from sess_list above (under ssl_sess_list_mutex).
+			 * No other thread can reach it via either list now — it's
+			 * thread-local until we append it to cert_list under
+			 * ssl_cert_list_mutex below. The "second locked section" sees a
+			 * pointer this thread exclusively owns. */
 			assert_pthread_mutex_lock(&ssl_cert_list_mutex);
+			// coverity[ATOMICITY:SUPPRESS]
 			sess->next = cert_list;
 			cert_list = sess;
 			assert_pthread_mutex_unlock(&ssl_cert_list_mutex);
