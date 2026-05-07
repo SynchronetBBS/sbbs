@@ -1248,7 +1248,7 @@ bool sbbs_t::spy(uint i /* node_num */)
 			gettimeleft();
 			continue;
 		}
-		ch = in;
+		ch = (char)in;
 		if (ch == ESC) {
 			if (ansi_len)
 				ansi_len = 0;
