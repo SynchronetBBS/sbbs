@@ -6,10 +6,10 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 
-find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets Network)
+find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets Network WebSockets)
 find_package(Qt6 COMPONENTS Mqtt QUIET)
 if(NOT Qt6Mqtt_FOUND)
-    message(STATUS "Qt6Mqtt not found, building from source")
+    message(STATUS "Qt6Mqtt not found, building from source (requires Qt6WebSockets)")
     include(FetchContent)
     FetchContent_Declare(qtmqtt
         GIT_REPOSITORY https://github.com/qt/qtmqtt.git
