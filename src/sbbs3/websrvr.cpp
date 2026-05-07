@@ -733,22 +733,23 @@ static int sess_sendbuf(http_session_t *session, const char *buf, size_t len, vo
 					else if (session->socket != INVALID_SOCKET)
 						lprintf(LOG_WARNING, "%04d %-5s [%s] !ERROR %d sending on socket", session->socket, session->client.protocol, session->host_ip, SOCKET_ERRNO);
 					*failed = true;
-					return sent;
+					return (int)sent;
 				}
 			}
 		}
 		else {
 			lprintf(LOG_WARNING, "%04d %-5s [%s] Timeout waiting for socket to become writable", session->socket, session->client.protocol, session->host_ip);
 			*failed = true;
-			return sent;
+			return (int)sent;
 		}
-		sent += result;
+		if (result > 0)
+			sent += result;
 	}
 	if (sent < len)
 		*failed = true;
 	if (session->is_tls)
 		HANDLE_CRYPT_CALL(cryptFlushData(session->tls_sess), session, "flushing data");
-	return sent;
+	return (int)sent;
 }
 
 #ifdef _WINSOCKAPI_
