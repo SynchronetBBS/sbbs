@@ -325,18 +325,36 @@ function Server_Work(cmdline) {
 		}
 		break;
 	case "KICK":
-		if (!p[1])
+		if (!p[1]) {
+			log(LOG_DEBUG, "KICK: missing target param");
 			break;
+		}
 		tmp = Channels[p[0].toUpperCase()];
-		if (!tmp)
+		if (!tmp) {
+			log(LOG_DEBUG, format("KICK: channel %s not found", p[0]));
 			break;
+		}
 		j = Users[p[1].toUpperCase()];
 		if (!j)
 			j = search_nickbuf(p[1]);
-		if (!j)
+		if (!j) {
+			log(LOG_WARNING, format("KICK: target user %s not found", p[1]));
 			break;
-		if (!j.channels[tmp.nam.toUpperCase()])
+		}
+		if (!j.channels[tmp.nam.toUpperCase()]) {
+			log(LOG_WARNING, format("KICK: %s not in %s", j.nick, tmp.nam));
 			break;
+		}
+		log(LOG_DEBUG, format("KICK: %s kicked %s from %s (origin=%s local=%s, target local=%s, from server=%s)",
+			origin ? origin.nick : "(null)",
+			j.nick, tmp.nam,
+			origin ? (origin.local ? "yes" : "no") : "N/A",
+			j.local ? "yes" : "no",
+			this.nick));
+		if (!origin) {
+			log(LOG_ERR, format("KICK: origin is null for %s from %s", p[1], this.nick));
+			break;
+		}
 		origin.bcast_to_channel(tmp, format(
 			"KICK %s %s :%s",
 			tmp.nam,
