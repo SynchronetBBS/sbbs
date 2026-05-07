@@ -2418,8 +2418,10 @@ xp_audio_handle_t
 xp_audio_open(float volume_l, float volume_r)
 {
 	struct xp_audio_stream *s;
+	struct xp_audio_stream *r;
 	xp_audio_handle_t       handle = -1;
 	int                     i;
+	bool                    reapable;
 
 	pthread_once(&mixer_once, mixer_init);
 
@@ -2444,11 +2446,11 @@ xp_audio_open(float volume_l, float volume_r)
 	 * so we take r->mutex briefly to read them. r->mutex must be released
 	 * before free_stream_locked() because it destroys the mutex. */
 	for (i = 0; i < XP_AUDIO_MAX_STREAMS; i++) {
-		struct xp_audio_stream *r = mixer_streams[i];
+		r = mixer_streams[i];
 		if (!r)
 			continue;
 		assert_pthread_mutex_lock(&r->mutex);
-		bool reapable = r->auto_close && r->done;
+		reapable = r->auto_close && r->done;
 		assert_pthread_mutex_unlock(&r->mutex);
 		if (reapable) {
 			mixer_streams[i] = NULL;
