@@ -912,6 +912,14 @@ function Server_Work(cmdline) {
 	case "SJOIN":
 		if (!p[1] || p[1][0] != "#")
 			break;
+		if (!origin) {
+			log(LOG_ERR, format("SJOIN: origin is null for %s from %s", p[1], this.nick));
+			break;
+		}
+		log(LOG_DEBUG, format("SJOIN: %s joining %s (origin local=%s, from server=%s)",
+			origin.nick, p[1],
+			origin.local ? "yes" : "no",
+			this.nick));
 
 		tmp = Channels[p[1].toUpperCase()];
 		if (!tmp) {
@@ -1136,10 +1144,20 @@ function Server_Work(cmdline) {
 		if (!p[3])
 			break;
 		tmp = Channels[p[0].toUpperCase()];
-		if (!tmp)
+		if (!tmp) {
+			log(LOG_DEBUG, format("TOPIC: channel %s not found", p[0]));
 			break;
+		}
 		if (p[3] == tmp.topic)
 			break;
+		if (!origin) {
+			log(LOG_ERR, format("TOPIC: origin is null for %s from %s", p[0], this.nick));
+			break;
+		}
+		log(LOG_DEBUG, format("TOPIC: %s set topic on %s (origin local=%s, from server=%s)",
+			origin.nick, tmp.nam,
+			origin.local ? "yes" : "no",
+			this.nick));
 		tmp.topictime = this.hub ? parseInt(p[2]) : Epoch();
 		tmp.topic = p[3];
 		tmp.topicchangedby = p[1];
