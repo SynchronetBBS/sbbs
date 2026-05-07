@@ -540,7 +540,7 @@ int sbbs_t::getmsgnum(int subnum, time_t t)
 	}
 	int result = smb_getmsgidx_by_time(&smb, &idx, t);
 	smb_close(&smb);
-	if (result >= SMB_SUCCESS)
+	if (result >= SMB_SUCCESS && idx.number > 0)
 		return idx.number - 1;
 	return ~0;
 }
