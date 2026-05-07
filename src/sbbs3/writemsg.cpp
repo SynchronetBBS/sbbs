@@ -295,7 +295,7 @@ bool sbbs_t::writemsg(const char *fname, const char *top, char *subj, int mode, 
 	char     tmp[512];
 	int      i, j, file, linesquoted = 0;
 	int      length, qlen = 0, qtime = 0, ex_mode = 0;
-	uint     l;
+	long     l;
 	FILE*    stream;
 	FILE*    fp;
 	unsigned lines;
@@ -572,7 +572,7 @@ bool sbbs_t::writemsg(const char *fname, const char *top, char *subj, int mode, 
 		}
 		else
 			l = 0;
-		while (l < (ulong)(cfg.level_linespermsg[useron_level] * MAX_LINE_LEN)) {
+		while (l < (long)(cfg.level_linespermsg[useron_level] * MAX_LINE_LEN)) {
 			c = getkey(0);
 			if (sys_status & SS_ABORT) {  /* Ctrl-C */
 				free(buf);
@@ -589,7 +589,7 @@ bool sbbs_t::writemsg(const char *fname, const char *top, char *subj, int mode, 
 		}
 		console &= ~CON_RAW_IN; // Turn off raw input mode in case the input exceeded length limit
 		buf[l] = 0;
-		if (l == (ulong)cfg.level_linespermsg[useron_level] * MAX_LINE_LEN)
+		if (l == (long)cfg.level_linespermsg[useron_level] * MAX_LINE_LEN)
 			bputs(text[OutOfBytes]);
 	}
 
