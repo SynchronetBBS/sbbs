@@ -731,7 +731,8 @@ int sbbs_t::searchdn(char *search, int usernum)
 void sbbs_t::user_config(user_t* user)
 {
 	exec_mod("user configuration", cfg.usercfg_mod, /* invoked */nullptr, "%u", user->number);
-	getuserdat(&cfg, user);
+	if (getuserdat(&cfg, user) != USER_SUCCESS)
+		errormsg(WHERE, "reading", "user", user->number);
 }
 
 bool sbbs_t::purgeuser(int usernumber)
