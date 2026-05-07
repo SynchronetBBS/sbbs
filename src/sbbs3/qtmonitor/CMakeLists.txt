@@ -8,7 +8,7 @@ set(CMAKE_AUTORCC ON)
 
 find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets Network Mqtt)
 
-add_executable(qtmonitor
+add_executable(qtmonitor WIN32
     resources.qrc
     main.cpp
     mainwindow.cpp
@@ -21,7 +21,7 @@ add_executable(qtmonitor
     settingsdialog.cpp
 )
 
-target_link_libraries(qtmonitor
+target_link_libraries(qtmonitor PRIVATE
     Qt6::Core
     Qt6::Gui
     Qt6::Widgets
@@ -29,4 +29,5 @@ target_link_libraries(qtmonitor
     Qt6::Mqtt
 )
 
+qt_finalize_target(qtmonitor)
 install(TARGETS qtmonitor DESTINATION bin)
