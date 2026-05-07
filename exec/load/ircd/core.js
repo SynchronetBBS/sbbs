@@ -376,6 +376,21 @@ function IRCClient_RMChan(rmchan_obj) {
 		delete Channels[rmchan_obj.nam.toUpperCase()];
 }
 
+function IRCClient_flush_channel_sendqs(chan) {
+	var nuh_prefix = ":" + this.nuh + " ";
+	var nick_prefix = ":" + this.nick + " ";
+	var chan_upper = chan.nam.toUpperCase();
+	for (var i in chan.users) {
+		var user = chan.users[i];
+		if (user.local) {
+			user.sendq.filter_from_user(nuh_prefix, nick_prefix, chan_upper);
+		}
+	}
+	for (var i in Local_Servers) {
+		Local_Servers[i].sendq.filter_from_user(nuh_prefix, nick_prefix, chan_upper);
+	}
+}
+
 function Generate_ID() {
 	var i;
 	for (i = 0; Assigned_IDs[i]; i++) {
@@ -3015,6 +3030,17 @@ function IRC_Queue(irc) {
 		var chan_upper = channel.toUpperCase();
 		this.queue = this.queue.filter(function(line) {
 			var m = line.match(/^(PRIVMSG|NOTICE)\s+(\S+)/i);
+			return !(m && m[2].toUpperCase() === chan_upper);
+		});
+	}
+	this.filter_from_user = function(nuh_prefix, nick_prefix, chan_upper) {
+		this.queue = this.queue.filter(function(line) {
+			if (line.indexOf(nuh_prefix) !== 0 && line.indexOf(nick_prefix) !== 0)
+				return true;
+			var rest = line.indexOf(nuh_prefix) === 0
+				? line.substr(nuh_prefix.length)
+				: line.substr(nick_prefix.length);
+			var m = rest.match(/^(PRIVMSG|NOTICE)\s+(\S+)/i);
 			return !(m && m[2].toUpperCase() === chan_upper);
 		});
 	}

@@ -350,8 +350,9 @@ function Server_Work(cmdline) {
 			j.nick,
 			p[2] ? p[2] : j.nick
 		));
-		j.rmchan(tmp);
 		j.recvq.filter_channel(tmp.nam);
+		j.flush_channel_sendqs(tmp);
+		j.rmchan(tmp);
 		break;
 	case "KILL":
 		if (!p[1])

@@ -172,6 +172,7 @@ function IRC_User(id) {
 	this.netsplit=IRCClient_netsplit;
 	this.onchanwith=IRCClient_onchanwith;
 	this.rmchan=IRCClient_RMChan;
+	this.flush_channel_sendqs=IRCClient_flush_channel_sendqs;
 	this.setusermode=IRCClient_setusermode;
 	this.set_chanmode=IRCClient_set_chanmode;
 	/* Numerics */
@@ -410,10 +411,11 @@ function User_Work(cmdline) {
 			p[2] ? p[2] : j.nick
 		);
 
+		j.recvq.filter_channel(tmp.nam);
+		j.flush_channel_sendqs(tmp);
 		this.bcast_to_channel(tmp, i, true);
 		this.bcast_to_servers(i);
 		j.rmchan(tmp);
-		j.recvq.filter_channel(tmp.nam);
 		break;
 	case "TOPIC":
 		if (!p[0]) {
