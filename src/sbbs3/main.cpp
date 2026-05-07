@@ -2142,6 +2142,10 @@ static int crypt_pop_channel_data(sbbs_t *sbbs, char *inbuf, int want, int *got)
 		}
 		if (ret == CRYPT_ENVELOPE_RESOURCE)
 			return CRYPT_ERROR_TIMEOUT;
+		/* sftp_state->mtx is acquired+released entirely inside sftps_recv;
+		 * crypt_pop_channel_data never holds it across return. The caller
+		 * owns ssh_mutex and re-takes it after each sftps_recv call. */
+		// coverity[LOCK:SUPPRESS]
 		return ret;
 	}
 	return CRYPT_ERROR_TIMEOUT;
@@ -2703,7 +2707,12 @@ void output_thread(void* arg)
 					if (sendbytes > 0x2000)
 						sendbytes = 0x2000;
 					if (cryptStatusError((err = cryptPushData(sbbs->ssh_session, (char*)buf + bufbot, buftop - bufbot, &i)))) {
-						/* Handle the SSH error here... */
+						/* Handle the SSH error here. The lprintf inside GCESSTR
+						 * runs while ssh_mutex is held; releasing+reacquiring it
+						 * across the error report would make the error-handling
+						 * sequence racy (ssh_errors++, online=FALSE) and is the
+						 * wrong tradeoff for a fast log write. */
+						// coverity[SLEEP:SUPPRESS]
 						GCESSTR(err, node, sbbs->ssh_session, "pushing data");
 						sbbs->online = false;
 						i = buftop - bufbot;    // Pretend we sent it all
