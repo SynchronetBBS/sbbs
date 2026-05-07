@@ -1249,7 +1249,7 @@ js_sendto(JSContext *cx, uintN argc, jsval *arglist)
 	hints.ai_flags = AI_ADDRCONFIG;
 	dbprintf(false, p, "resolving hostname: %s", p->hostname);
 
-	if ((result = getaddrinfo(p->hostname, NULL, &hints, &res) != 0)) {
+	if ((result = getaddrinfo(p->hostname, NULL, &hints, &res)) != 0) {
 		store_socket_error(p, result, gai_strerror(result));
 		dbprintf(true, p, "getaddrinfo(%s) failed with error %d", p->hostname, result);
 		JS_SET_RVAL(cx, arglist, JSVAL_FALSE);
