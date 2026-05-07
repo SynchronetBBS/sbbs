@@ -445,7 +445,7 @@ static int sock_recvbyte(SOCKET sock, CRYPT_SESSION sess, char *buf, time_t *las
 		while (1) {
 			ret = cryptPopData(sess, buf, 1, &len);
 			/* Successive reads will be with the full timeout after a socket_readable() */
-			cryptSetAttribute(sess, CRYPT_OPTION_NET_READTIMEOUT, startup->max_inactivity);
+			(void)cryptSetAttribute(sess, CRYPT_OPTION_NET_READTIMEOUT, startup->max_inactivity);
 			switch (ret) {
 				case CRYPT_OK:
 					break;
@@ -658,7 +658,9 @@ static void send_thread(void* arg)
 		lprintf(LOG_DEBUG, "%04d <%s> DATA socket %d sending %s from offset %" PRIdOFF
 		        , xfer.ctrl_sock, xfer.user->alias, *xfer.data_sock, xfer.filename, xfer.filepos);
 
-	fseeko(fp, xfer.filepos, SEEK_SET);
+	if (fseeko(fp, xfer.filepos, SEEK_SET) != 0)
+		lprintf(LOG_WARNING, "%04d <%s> !ERROR %d (%s) seeking to %" PRIdOFF " in %s"
+		        , xfer.ctrl_sock, xfer.user->alias, errno, strerror(errno), xfer.filepos, xfer.filename);
 	last_report = start = time(NULL);
 	while ((xfer.filepos + total) < length) {
 
@@ -924,7 +926,9 @@ static void receive_thread(void* arg)
 		lprintf(LOG_DEBUG, "%04d <%s> DATA socket %d receiving %s from offset %" PRIdOFF
 		        , xfer.ctrl_sock, xfer.user->alias, *xfer.data_sock, xfer.filename, xfer.filepos);
 
-	fseeko(fp, xfer.filepos, SEEK_SET);
+	if (fseeko(fp, xfer.filepos, SEEK_SET) != 0)
+		lprintf(LOG_WARNING, "%04d <%s> !ERROR %d (%s) seeking to %" PRIdOFF " in %s"
+		        , xfer.ctrl_sock, xfer.user->alias, errno, strerror(errno), xfer.filepos, xfer.filename);
 
 	// Determine the maximum file size to allow, accounting for minimum free space
 	char    path[MAX_PATH + 1];
