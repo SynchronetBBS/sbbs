@@ -24,8 +24,11 @@ import "ui_menubar"   for MenuBar
 import "ui_form"      for Form
 import "ui_popup"     for Alert, Confirm, Prompt
 import "ui_help"      for Help
+import "ui_progress"  for ProgressBar
+import "ui_logview"   for LogView
+import "transfer_app" for TransferApp
 import "ui_app"       for App
-import "syncterm"     for Screen, Key, Input
+import "syncterm"     for Screen, Key, Input, Transfer
 
 class UiDemo {
   static run() {
@@ -64,6 +67,9 @@ class UiDemo {
         ["Help viewer (scrollable text)",            Fn.new { runHelpDemo_(app) }],
         ["F1 context help (per-widget helpText)",    Fn.new { runContextHelpDemo_() }],
         ["popStatus transient overlay",              Fn.new { runPopStatusDemo_(app) }],
+        ["ProgressBar - filled bar with \% overlay", Fn.new { runProgressDemo_() }],
+        ["LogView - severity-colored scroll buffer", Fn.new { runLogviewDemo_() }],
+        ["TransferApp - fake transfer (worker thread)", Fn.new { runTransferDemo_() }],
       ]
       var labels = []
       for (d in demos) labels.add(d[0])
@@ -460,5 +466,128 @@ class UiDemo {
       app.bind(Key.escape, Fn.new {|k| app.quit() })
       app.runSync()
     })
+  }
+
+  // ----- ProgressBar demo ----------------------------------------
+
+  static runProgressDemo_() {
+    Screen.modalRun(Fn.new {
+      var app  = App.new()
+      var size = Screen.size
+      var pane = Pane.new()
+      pane.bounds   = Rect.new(2, 2, size[0] - 2, size[1] - 2)
+      pane.title    = "ProgressBar - Left/Right adjust, Esc to return"
+      pane.focused  = true
+      pane.onClose  = Fn.new { app.quit() }
+      pane.helpText = "ProgressBar fills from the left with the medium-" +
+                      "shade character (CP437 0xB1) up to current/total " +
+                      "of its width.  An optional centered \"\% nn\" " +
+                      "overlay shows the percentage.\n\n" +
+                      "Left / Right       step ±5\n" +
+                      "Up / Down          step ±20\n" +
+                      "Home / End         jump to 0 / 100\n" +
+                      "Esc                return to the gallery"
+      app.root.add(pane)
+
+      var ib = pane.innerBounds
+      var bar = ProgressBar.new()
+      bar.bounds = Rect.new(ib.x + 2, ib.y + 2, ib.w - 4, 1)
+      bar.set(35, 100)
+      pane.add(bar)
+
+      // Second bar without the percent overlay, to show the bare fill.
+      var bare = ProgressBar.new()
+      bare.bounds      = Rect.new(ib.x + 2, ib.y + 5, ib.w - 4, 1)
+      bare.showPercent = false
+      bare.set(35, 100)
+      pane.add(bare)
+
+      var step = Fn.new {|delta|
+        var v = (bar.current + delta).max(0).min(100)
+        bar.set(v, 100)
+        bare.set(v, 100)
+      }
+
+      app.bind(Key.left,  Fn.new {|k| step.call(-5) })
+      app.bind(Key.right, Fn.new {|k| step.call( 5) })
+      app.bind(Key.up,    Fn.new {|k| step.call( 20) })
+      app.bind(Key.down,  Fn.new {|k| step.call(-20) })
+      app.bind(Key.home,  Fn.new {|k|
+        bar.set(0, 100)
+        bare.set(0, 100)
+      })
+      app.bind(Key.end,   Fn.new {|k|
+        bar.set(100, 100)
+        bare.set(100, 100)
+      })
+      app.bind(Key.escape, Fn.new {|k| app.quit() })
+      app.runSync()
+    })
+  }
+
+  // ----- LogView demo --------------------------------------------
+
+  static runLogviewDemo_() {
+    Screen.modalRun(Fn.new {
+      var app  = App.new()
+      var size = Screen.size
+      var pane = Pane.new()
+      pane.bounds   = Rect.new(2, 2, size[0] - 2, size[1] - 2)
+      pane.title    = "LogView - i/n/w/e add line, c clear, Esc return"
+      pane.focused  = true
+      pane.onClose  = Fn.new { app.quit() }
+      pane.helpText = "LogView is an append-only colored-line scroller " +
+                      "with a ring-buffered backing store.\n\n" +
+                      "i / n / w / e   append a sample line of that " +
+                      "severity (info / notice / warning / error)\n" +
+                      "c               clear the buffer\n" +
+                      "PgUp / PgDn     scroll a page\n" +
+                      "Up / Down       scroll one line\n" +
+                      "Home / End      jump to oldest / live tail\n" +
+                      "Esc             return to the gallery\n\n" +
+                      "Append while scrolled holds the anchor; End " +
+                      "snaps back to live tail."
+      app.root.add(pane)
+
+      var ib = pane.innerBounds
+      var lv = LogView.new()
+      lv.bounds = Rect.new(ib.x + 1, ib.y + 1, ib.w - 2, ib.h - 2)
+      // Pre-seed with one of each severity so the colors are visible
+      // without the user having to type anything first.
+      lv.append(LogView.LEVEL_INFO,    "Receiving foo.bin (12345 bytes)")
+      lv.append(LogView.LEVEL_NOTICE,  "Resuming at offset 8192")
+      lv.append(LogView.LEVEL_WARNING, "Block 23 retried (CRC mismatch)")
+      lv.append(LogView.LEVEL_ERR,     "Bad block 24, giving up")
+      lv.append(LogView.LEVEL_INFO,    "Type i / n / w / e to append more")
+      pane.add(lv)
+
+      var counter = 1
+      var bumpLine = Fn.new {|level, label|
+        lv.append(level, "%(label) line %(counter)")
+        counter = counter + 1
+      }
+
+      app.bind(0x69, Fn.new {|k| bumpLine.call(LogView.LEVEL_INFO,    "info") })
+      app.bind(0x6E, Fn.new {|k| bumpLine.call(LogView.LEVEL_NOTICE,  "notice") })
+      app.bind(0x77, Fn.new {|k| bumpLine.call(LogView.LEVEL_WARNING, "warning") })
+      app.bind(0x65, Fn.new {|k| bumpLine.call(LogView.LEVEL_ERR,     "error") })
+      app.bind(0x63, Fn.new {|k| lv.clear() })
+      app.bind(Key.escape, Fn.new {|k| app.quit() })
+      app.runSync()
+    })
+  }
+
+  // ----- TransferApp demo ----------------------------------------
+
+  static runTransferDemo_() {
+    // The fake worker is a 100-KiB synthetic stream that ticks every
+    // 100 ms with periodic log messages.  Esc / Ctrl+C / Ctrl+X latch
+    // an abort; the worker unwinds at protocol pace (instantly here).
+    // C-driven protocols spawn the worker via wren_run_transfer; the
+    // demo path drives Transfer.beginSession directly.
+    Transfer.beginSession("fake")
+    var t = TransferApp.new("File Transfer")
+    t.run()
+    Transfer.endSession()
   }
 }

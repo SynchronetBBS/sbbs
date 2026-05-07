@@ -15,6 +15,7 @@
 #include "wren_host.h"
 #include "wren_host_internal.h"
 #include "wren_bind_screen.h"
+#include "wren_bind_xfer.h"
 
 #include "wren.h"
 
@@ -1028,6 +1029,10 @@ wren_host_shutdown(void)
 {
 	if (!active)
 		return;
+
+	/* Stop any active transfer-window worker thread first so its
+	 * mutexes / atomics aren't accessed after we tear down. */
+	wren_xfer_shutdown();
 
 	/* Drain the live dispatch arrays.  Each entry struct may still be
 	 * referenced by a HookHandle on the Wren side; the VM teardown

@@ -422,6 +422,7 @@ OBJS   += $(MTOBJODIR)$(DIRSEP)wren_bind_screen$(OFILE)
 OBJS   += $(MTOBJODIR)$(DIRSEP)wren_bind_conn$(OFILE)
 OBJS   += $(MTOBJODIR)$(DIRSEP)wren_bind_hook$(OFILE)
 OBJS   += $(MTOBJODIR)$(DIRSEP)wren_bind_won$(OFILE)
+OBJS   += $(MTOBJODIR)$(DIRSEP)wren_bind_xfer$(OFILE)
 OBJS   += $(MTOBJODIR)$(DIRSEP)wren_token$(OFILE)
 CFLAGS += -Iwren/include
 

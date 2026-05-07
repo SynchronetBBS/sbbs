@@ -1602,6 +1602,53 @@ class Status {
   foreign static enabled
 }
 
+// Transfer-window mailbox bridge.  The Wren TransferApp drives the
+// progress / log UI while a worker thread (spawned in beginSession)
+// runs the C protocol code and produces events into a thread-safe
+// ring (logs) + snapshot pair (tick state).
+//
+//   Transfer.beginSession("fake")   // start; throws on second call
+//   ...                             // App.run loop drains and renders
+//   Transfer.endSession()           // ask worker to stop, join, reset
+//
+// Per-tick consumer pattern:
+//   for (entry in Transfer.drainLog()) logView.append(entry[0], entry[1])
+//   if (Transfer.tickDirty) progressBar.set(...Transfer.snapshot()...)
+//   if (Transfer.done) break
+//   if (escapePressed) Transfer.requestAbort()
+//
+// snapshot() returns a fixed-shape List (see TickStateView in the
+// transfer_app module for a named-field wrapper).  Stage 2 only the
+// "fake" kind is wired; "zmodem-recv" / "ymodem-send" / "xmodem-recv"
+// / "cet-recv" land in Stage 4.
+class Transfer {
+  foreign static beginSession(kind)
+  foreign static endSession()
+  foreign static drainLog()
+  foreign static tickDirty
+  foreign static snapshot()
+  foreign static done
+  foreign static success
+  foreign static requestAbort()
+  foreign static aborted
+
+  // Worker → main-thread dialog channel.  When a worker thread needs
+  // a UI decision (overwrite-duplicate-file etc.) it parks on a
+  // condvar; dialogPending returns the pending kind code (>0) for the
+  // TransferApp's tick body to surface as a popup, then dialogRespond
+  // hands the user's choice back to wake the worker.
+  //
+  //   XFER_DLG_NONE      = 0
+  //   XFER_DLG_DUPLICATE = 1
+  //
+  //   XFER_DLG_OVERWRITE = 0   (duplicate response)
+  //   XFER_DLG_SKIP      = 1
+  //   XFER_DLG_RENAME    = 2
+  foreign static dialogPending
+  foreign static dialogFilename
+  foreign static dialogRespond(resp, newName)
+}
+
 // Platform identification.  `name` returns the uname(2) sysname on
 // POSIX (e.g. "FreeBSD", "Linux", "Darwin"), "Windows" on Windows,
 // and "Unknown" elsewhere.  Useful for branching on host OS in

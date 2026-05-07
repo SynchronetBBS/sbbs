@@ -43,6 +43,7 @@
 #include "md5.h"
 #include "ripper.h"
 #include "wren_host.h"
+#include "wren_bind_xfer.h"
 
 #ifdef WITH_JPEG_XL
 #include "libjxl.h"
@@ -69,15 +70,6 @@ struct cterminal *cterm;
 static BYTE   ooii_buf[256];
 static size_t ooii_buf_len;
 #endif
-
-#define TRANSFER_WIN_WIDTH 66
-#define TRANSFER_WIN_HEIGHT 18
-static struct vmem_cell winbuf[(TRANSFER_WIN_WIDTH + 2) * (TRANSFER_WIN_HEIGHT + 1) * 2]; /* Save buffer for transfer
-                                                                                           * window */
-static struct text_info trans_ti;    // Holds the screen and window size from before transfer
-static struct text_info transw_ti;   // Holds the screen and transfer window
-static struct text_info progress_ti; // Holds the screen and progress window
-static struct text_info log_ti;      // Holds the screen and log info
 
 static struct ciolib_pixels *pixmap_buffer[2];
 static struct ciolib_mask *mask_buffer;
@@ -799,6 +791,12 @@ inline_transfer_pump_wren_(void)
 	last_pump = now;
 	if (!wren_host_active())
 		return;
+	/* Worker threads must never touch the Wren VM — TransferApp's
+	 * main-thread modal loop owns it for the duration of the
+	 * session.  Skip the pump when we're inside a session (the
+	 * caller is almost certainly the worker). */
+	if (xfer_session_active())
+		return;
 	wren_result_drain();
 	wren_bind_sweep_pending_timers();
 	wren_host_dispatch_timer();
@@ -813,66 +811,6 @@ enum {
 	ZMODEM_MODE_SEND,
 	ZMODEM_MODE_RECV
 } zmodem_mode;
-
-static BOOL
-zmodem_check_abort(void *vp)
-{
-	struct zmodem_cbdata *zcb = (struct zmodem_cbdata *)vp;
-	zmodem_t             *zm = zcb->zm;
-	static long double    last_kb_check = 0;
-	long double           now = xp_timer();
-	int                   key;
-
-	if (zm == NULL)
-		return true;
-	if (quitting) {
-		zm->cancelled = true;
-		zm->local_abort = true;
-		return true;
-	}
-	/* Pump owner-thread Wren machinery — SFTP queue, timers, etc.
-	 * — that would otherwise stall while doterm is captured. */
-	inline_transfer_pump_wren_();
-	/* Keyboard / mouse poll throttled to ~50 ms — matches the
-	 * Wren-pump cadence and the doterm outer-loop responsiveness
-	 * a normal interactive session sees. */
-	if (now - last_kb_check < 0.05L)
-		return zm->cancelled;
-	last_kb_check = now;
-	while (kbhit()) {
-		key = getch();
-		if (key == 0 || key == 0xe0)
-			key |= (getch() << 8);
-		if (key == CIO_KEY_MOUSE) {
-			struct mouse_event mev;
-			getmouse(&mev);
-			wren_host_dispatch_mouse(&mev);
-			continue;
-		}
-		/* Wren first — gives any active App / claim a chance to
-		 * intercept (e.g. ESC closing the SFTP queue App layered
-		 * over the transfer screen).  If nothing consumes the
-		 * key, fall through to the transfer-cancel handling. */
-		if (wren_host_dispatch_key(key))
-			continue;
-		switch (key) {
-			case ESC:
-			case CTRL_C:
-			case CTRL_X:
-				zm->cancelled = true;
-				zm->local_abort = true;
-				break;
-			case CIO_KEY_QUIT:
-				check_exit(false);
-				zm->cancelled = true;
-				zm->local_abort = true;
-				break;
-		}
-		if (zm->cancelled)
-			break;
-	}
-	return zm->cancelled;
-}
 
 extern FILE *log_fp;
 extern char *log_levels[];
@@ -894,49 +832,19 @@ logmsg(int level, const char *str)
 static int
 lputs(void *cbdata, int level, const char *str)
 {
-	char msg[512];
-	int  chars;
-	int  oldhold = hold_update;
-
 	logmsg(level, str);
 
 	if (level > LOG_INFO)
 		return 0;
 
-        /* Assumes the receive window has been drawn! */
-	window(log_ti.winleft, log_ti.wintop, log_ti.winright, log_ti.winbottom);
-	gotoxy(log_ti.curx, log_ti.cury);
-	textbackground(BLUE);
-	switch (level) {
-#if 0 // Not possible because of above level > LOG_INFO check
-		case LOG_DEBUG:
-			textcolor(LIGHTCYAN);
-			SAFEPRINTF(msg, "%s\r\n", str);
-			break;
-#endif
-		case LOG_INFO:
-			textcolor(WHITE);
-			SAFEPRINTF(msg, "%s\r\n", str);
-			break;
-		case LOG_NOTICE:
-			textcolor(YELLOW);
-			SAFEPRINTF(msg, "%s\r\n", str);
-			break;
-		case LOG_WARNING:
-			textcolor(LIGHTMAGENTA);
-			SAFEPRINTF(msg, "Warning: %s\r\n", str);
-			break;
-		default:
-			textcolor(LIGHTRED);
-			SAFEPRINTF(msg, "!ERROR: %s\r\n", str);
-			break;
+	/* All terminal-visible logging now flows through the Wren
+	 * TransferApp's mailbox.  Calls outside a transfer session only
+	 * land in the log file (above). */
+	if (xfer_session_active()) {
+		xfer_log_push(level, str);
+		return (int)strlen(str);
 	}
-	hold_update = false;
-	chars = cputs(msg);
-	hold_update = oldhold;
-	gettextinfo(&log_ti);
-
-	return chars;
+	return 0;
 }
 
 #if defined(__GNUC__)   // Catch printf-format errors with lprintf
@@ -958,100 +866,6 @@ lprintf(int level, const char *fmt, ...)
 #if defined(__BORLANDC__)
  #pragma argsused
 #endif
-
-void
-zmodem_progress(void *cbdata, int64_t current_pos)
-{
-	char                  orig[128];
-	unsigned              cps;
-	int                   l;
-	time_t                t;
-	time_t                now;
-	static time_t         last_progress = 0;
-	int                   old_hold = hold_update;
-	struct zmodem_cbdata *zcb = (struct zmodem_cbdata *)cbdata;
-	zmodem_t             *zm = zcb->zm;
-	bool                  growing = false;
-	int                   tww = transw_ti.winright - transw_ti.winleft + 1;
-	struct text_info      orig_info;
-
-	now = time(NULL);
-	if (current_pos > zm->current_file_size)
-		growing = true;
-	if ((now != last_progress) || ((current_pos >= zm->current_file_size) && (growing == false))) {
-		gettextinfo(&orig_info);
-		int os = _wscroll;
-		_wscroll = 0;
-		zmodem_check_abort(cbdata);
-		hold_update = true;
-		window(progress_ti.winleft, progress_ti.wintop, progress_ti.winright, progress_ti.winbottom);
-		gotoxy(1, 1);
-		textattr(LIGHTCYAN | (BLUE << 4));
-		t = now - zm->transfer_start_time;
-		if (t <= 0)
-			t = 1;
-		if (zm->transfer_start_pos > current_pos)
-			zm->transfer_start_pos = 0;
-		if ((cps = (unsigned)((current_pos - zm->transfer_start_pos) / t)) == 0)
-			cps = 1;                                 /* cps so far */
-		l = (zm->current_file_size - current_pos) / cps; /* remaining transfer est time */
-		if (l < 0)
-			l = 0;
-		cprintf("File (%u of %u): %-.*s",
-		    zm->current_file_num, zm->total_files, tww - 20, zm->current_file_name);
-		clreol();
-		cputs("\r\n");
-		if (zm->transfer_start_pos)
-			sprintf(orig, "From: %" PRId64 "  ", zm->transfer_start_pos);
-		else
-			orig[0] = 0;
-		cprintf("%sByte: %" PRId64 " of %" PRId64 " (%" PRId64 " KB)",
-		    orig, current_pos, zm->current_file_size, zm->current_file_size / 1024);
-		clreol();
-		cputs("\r\n");
-		cprintf("Time: %lu:%02lu  ETA: %lu:%02lu  Block: %u/CRC-%u  %u cps"
-		    ,
-		    (unsigned long)(t / 60L)
-		    ,
-		    (unsigned long)(t % 60L)
-		    ,
-		    (unsigned long)(l / 60L)
-		    ,
-		    (unsigned long)(l % 60L)
-		    ,
-		    zm->block_size
-		    ,
-		    zmodem_mode == ZMODEM_MODE_RECV ? (zm->receive_32bit_data ? 32 : 16)
-		                                                              : (zm->can_fcs_32 && !zm->want_fcs_16) ? 32 : 16
-		    ,
-		    cps);
-		clreol();
-		cputs("\r\n");
-		if (zm->current_file_size == 0) {
-			cprintf("%*s%3d%%\r\n", tww / 2 - 5, "", 100);
-			l = tww - 6;
-		}
-		else {
-			cprintf("%*s%3d%%\r\n", tww / 2 - 5, "",
-			    (long)(((float)current_pos / (float)zm->current_file_size) * 100.0));
-			l = (long)((tww - 6) * ((float)current_pos / (float)zm->current_file_size));
-		}
-		cprintf("[%*.*s%*s]", l, l,
-		    "\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1"
-		    "\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1"
-		    "\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1"
-		    "\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1"
-		    "\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1"
-		    "\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1",
-		    (int)((tww - 6) - l), "");
-		last_progress = now;
-		hold_update = false;
-		window(orig_info.winleft, orig_info.wintop, orig_info.winright, orig_info.winbottom);
-		gotoxy(orig_info.curx, orig_info.cury);
-		_wscroll = os;
-		hold_update = old_hold;
-	}
-}
 
 #if defined(__BORLANDC__)
  #pragma argsused
@@ -1268,135 +1082,6 @@ count_data_waiting(void)
 	return recv_byte_buffer_len - recv_byte_buffer_pos;
 }
 
-void
-draw_transfer_window(char *title)
-{
-	int  tww = TRANSFER_WIN_WIDTH;
-	int  twh = TRANSFER_WIN_HEIGHT;
-	gettextinfo(&trans_ti);
-
-	if (tww > trans_ti.screenwidth)
-		tww = trans_ti.screenwidth;
-	if (twh > trans_ti.screenheight)
-		twh = trans_ti.screenheight;
-	if (twh > tww)
-		twh = tww;
-	char outline[TRANSFER_WIN_WIDTH * 2];
-	char shadow[TRANSFER_WIN_HEIGHT * 2]; /* Assumes that width*2 > height * 2 */
-	int  i, top, left, old_hold;
-
-	old_hold = hold_update;
-	hold_update = true;
-	top = (trans_ti.screenheight - twh) / 2 + 1;
-	left = (trans_ti.screenwidth - tww) / 2 + 1;
-	window(left, top, left + tww - 1, top + twh - 1);
-	gettextinfo(&transw_ti);
-	window(transw_ti.winleft + 2, transw_ti.wintop + 1, transw_ti.winright - 2, transw_ti.wintop + 5);
-	gettextinfo(&progress_ti);
-	window(1, 1, trans_ti.screenwidth, trans_ti.screenheight);
-
-	vmem_gettext(transw_ti.winleft, transw_ti.wintop, transw_ti.winright, transw_ti.winbottom, winbuf);
-	memset(outline, YELLOW | (BLUE << 4), tww * 2);
-	for (i = 2; i < (tww - 1) * 2; i += 2) {
-		outline[i] = (char)0xcd; /* Double horizontal line */
-	}
-	outline[0] = (char)0xc9;
-	outline[(tww - 1) * 2] = (char)0xbb;
-	puttext(left, top, left + tww - 1, top, outline);
-
-        /* Title */
-	gotoxy(left + 4, top);
-	textattr(YELLOW | (BLUE << 4));
-	cprintf("\xb5 %*s \xc6", strlen(title), "");
-	gotoxy(left + 6, top);
-	textattr(WHITE | (BLUE << 4));
-	cprintf("%s", title);
-
-	for (i = 2; i < (tww - 1) * 2; i += 2) {
-		outline[i] = (char)0xc4;           /* Single horizontal line */
-	}
-	outline[0] = (char)0xc7;                   /* 0xcc */
-	outline[(tww - 1) * 2] = (char)0xb6; /* 0xb6 */
-	puttext(left, top + 6, left + tww - 1, top + 6, outline);
-
-	for (i = 2; i < (tww - 1) * 2; i += 2) {
-		outline[i] = (char)0xcd; /* Double horizontal line */
-	}
-	outline[0] = (char)0xc8;
-	outline[(tww - 1) * 2] = (char)0xbc;
-	puttext(left,
-	    top + twh - 1,
-	    left + tww - 1,
-	    top + twh - 1,
-	    outline);
-	outline[0] = (char)0xba;
-	outline[(tww - 1) * 2] = (char)0xba;
-	for (i = 2; i < (tww - 1) * 2; i += 2)
-		outline[i] = ' ';
-	for (i = 1; i < 6; i++)
-		puttext(left, top + i, left + tww - 1, top + i, outline);
-
-/*
- *      for(i=3;i < (tww - 1) * 2; i+=2) {
- *              outline[i] = LIGHTGRAY | (BLACK << 8);
- *      }
- */
-	for (i = 7; i < twh - 1; i++)
-		puttext(left, top + i, left + tww - 1, top + i, outline);
-
-        /* Title */
-	gotoxy(left + tww - 20, top + i);
-	textattr(YELLOW | (BLUE << 4));
-	cprintf("\xb5              \xc6");
-	textattr(WHITE | (BLUE << 4));
-	gotoxy(left + tww - 18, top + i);
-	cprintf("ESC to Abort");
-
-        /* Shadow */
-	if (uifc.bclr == BLUE) {
-		gettext(left + tww,
-		    top + 1,
-		    left + tww + 1,
-		    top + (twh - 1),
-		    shadow);
-		for (i = 1; i < tww * 2; i += 2)
-			shadow[i] = DARKGRAY;
-		puttext(left + tww,
-		    top + 1,
-		    left + tww + 1,
-		    top + (twh - 1),
-		    shadow);
-		gettext(left + 2,
-		    top + twh,
-		    left + tww + 1,
-		    top + twh,
-		    shadow);
-		for (i = 1; i < tww * 2; i += 2)
-			shadow[i] = DARKGRAY;
-		puttext(left + 2,
-		    top + twh,
-		    left + tww + 1,
-		    top + twh,
-		    shadow);
-	}
-
-	window(left + 2, top + 7, left + tww - 3, top + twh - 2);
-	hold_update = false;
-	gotoxy(1, 1);
-	hold_update = old_hold;
-	gettextinfo(&log_ti);
-	_setcursortype(_NOCURSOR);
-}
-
-void
-erase_transfer_window(void)
-{
-	vmem_puttext(transw_ti.winleft, transw_ti.wintop, transw_ti.winright, transw_ti.winbottom, winbuf);
-	window(trans_ti.winleft, trans_ti.wintop, trans_ti.winright, trans_ti.winbottom);
-	gotoxy(trans_ti.curx, trans_ti.cury);
-	textattr(trans_ti.attribute);
-	_setcursortype(_NORMALCURSOR);
-}
 void ascii_upload(FILE *fp);
 void raw_upload(FILE *fp);
 
@@ -1538,47 +1223,6 @@ begin_upload(struct bbslist *bbs, bool autozm, int lastch)
 	gotoxy(txtinfo.curx, txtinfo.cury);
 }
 
-static int
-ask_overwrite(int *dflt)
-{
-	char                 *opts[4] = {
-		"Overwrite",
-		"Choose New Name",
-		"Cancel Download",
-		NULL
-	};
-	uifc.helpbuf = "Duplicate file... choose action\n";
-	return uifc.list(WIN_MID | WIN_SAV, 0, 0, 0, dflt, NULL, "Duplicate File Name", opts);
-}
-
-static void
-transfer_complete(bool success, bool was_binary)
-{
-	int timeout = success ? settings.xfer_success_keypress_timeout : settings.xfer_failure_keypress_timeout;
-
-	if (!was_binary)
-		conn_binary_mode_off();
-	if (log_fp != NULL)
-		fflush(log_fp);
-
-        /* TODO: Make this pretty (countdown timer) and don't delay a second between keyboard polls */
-	lprintf(LOG_NOTICE, "Hit any key or wait %u seconds to continue...", timeout);
-	while (timeout > 0) {
-		if (kbhit()) {
-			/* coverity[cond_const:SUPPRESS] */
-			if (getch() == (CIO_KEY_QUIT & 0xff)) {
-				if ((getch() << 8) == (CIO_KEY_QUIT & 0xff00))
-					check_exit(false);
-			}
-			break;
-		}
-		timeout--;
-		SLEEP(1000);
-	}
-
-	erase_transfer_window();
-}
-
 struct cet_ts_state {
 	int (*recv_byte)(void *, unsigned);
 	uint8_t *orig_screen;
@@ -1623,73 +1267,6 @@ cet_frame_recv_byte(void *ptr, unsigned timeout)
 #define CET_TS_TIMEOUT_SEC 5
 #define CET_TS_TIMEOUT_MS (CET_TS_TIMEOUT_SEC * 1000)
 #define CET_TS_RETRIES 3
-
-static void
-cet_telesoftware_progress(struct cet_ts_state *sp)
-{
-	static int16_t   last_frame;
-	int              old_hold = hold_update;
-	struct text_info orig_info;
-
-	time_t now = time(NULL);
-	if (sp->frame_num == 0) {
-		last_frame = -1;
-	}
-	if (sp->frame_num != last_frame) {
-		gettextinfo(&orig_info);
-		hold_update = true;
-		int os = _wscroll;
-		window(progress_ti.winleft, progress_ti.wintop, progress_ti.winright, progress_ti.winbottom);
-		gotoxy(1, 1);
-		textattr(LIGHTCYAN | (BLUE << 4));
-		time_t t = now - sp->start;
-		if (t <= 0)
-			t = 1;
-		unsigned cps = (unsigned)(sp->bytes_received / t);
-		if (cps == 0)
-			cps = 1;           /* cps so far */
-		double fps = ((double)sp->frame_num) / t;
-		if (fps <= 0.0)
-			fps = DBL_MIN;     /* Avoid division by zero and denormals */
-		time_t l = (time_t)(sp->frame_count / fps); /* total transfer est time */
-		if (t >= l)
-			l = 0;
-		else
-			l -= t;                    /* now, it's est time left */
-		if (sp->frame_count != 999) {
-			cprintf("File: %-.*s\r\nFrame: %u of %u  Byte: %" PRId64,
-			    progress_ti.winright - progress_ti.winleft + 1 - 7, getfname(sp->fpath),
-			    sp->frame_num, sp->frame_count,
-			    sp->bytes_received);
-		}
-		else {
-			cprintf("File: %-.*s\r\nFrame: %u  Byte: %" PRId64,
-			    progress_ti.winright - progress_ti.winleft + 1 - 7, getfname(sp->fpath),
-			    sp->frame_num,
-			    sp->bytes_received);
-		}
-		clreol();
-		cputs("\r\n");
-		cprintf("Time: %lu:%02lu  %u cps",
-		    (ulong)(t / 60L),
-		    (ulong)(t % 60L),
-		    cps);
-		cputs("\r\n");
-		clreol();
-		if (sp->frame_count != 999) {
-			cprintf("Remain: %lu:%02lu",
-			    (ulong)(l / 60L),
-			    (ulong)(l % 60L));
-			clreol();
-		}
-		last_frame = sp->frame_num;
-		hold_update = false;
-		window(orig_info.winleft, orig_info.wintop, orig_info.winright, orig_info.winbottom);
-		gotoxy(orig_info.curx, orig_info.cury);
-		_wscroll = os;
-		hold_update = old_hold;
-	}
-}
 
 static bool
 cet_send_string(const char *str)
@@ -2000,106 +1577,127 @@ cet_telesoftware_get_block(struct cet_ts_state *sp)
 	return NULL;
 }
 
-bool
-cet_telesoftware_duplicate(struct bbslist *bbs, char *path, size_t pathsize, char *fname)
+/* CET worker context — frame buffer outputs are written by the worker;
+ * the caller (cet_telesoftware_download) reads them after
+ * wren_run_transfer joins.  Stack-allocated by the wrapper, so the
+ * pointer stays valid for the worker's whole life. */
+struct cet_recv_arg {
+	struct bbslist *bbs;
+	void           *frame_buffer;       /* OUT */
+	size_t          fb_pos;             /* OUT */
+};
+
+/* CET telesoftware progress callback — formats four lines into the
+ * shared tick_state.  bytes_total stays 0 (CET measures progress in
+ * frames, not bytes) so the percent + bar slot is suppressed and
+ * line4 (Remain) takes its place per TransferStatusPanel's layout. */
+static void
+xfer_cet_progress_cb(struct cet_ts_state *sp)
 {
-	struct  text_info     txtinfo;
-	struct ciolib_screen *savscrn;
-	bool                  ret = false;
-	int                   i;
-	char                  newfname[MAX_PATH + 1];
-	bool                  loop = true;
-	int                   old_hold = hold_update;
+	static int16_t last_frame;
+	if (sp->frame_num == 0)
+		last_frame = -1;
+	if (sp->frame_num == last_frame)
+		return;
+	last_frame = sp->frame_num;
 
-	gettextinfo(&txtinfo);
-	savscrn = cp437_savescrn();
-	window(1, 1, txtinfo.screenwidth, txtinfo.screenheight);
+	time_t now = time(NULL);
+	time_t t   = now - sp->start;
+	if (t <= 0)
+		t = 1;
+	unsigned cps = (unsigned)(sp->bytes_received / t);
+	if (cps == 0)
+		cps = 1;
+	double fps = ((double)sp->frame_num) / t;
+	if (fps <= 0.0)
+		fps = DBL_MIN;
+	time_t l = (time_t)(sp->frame_count / fps);
+	if (t >= l)
+		l = 0;
+	else
+		l -= t;
 
-	init_uifc(false, false);
-
-	hold_update = false;
-	while (loop) {
-		loop = false;
-		i = 0;
-		uifc.helpbuf = "Duplicate file... choose action\n";
-		switch (ask_overwrite(&i)) {
-			case -1:
-				if (check_exit(false)) {
-					ret = false;
-					break;
-				}
-				loop = true;
-				break;
-			case 0: /* Overwrite */
-				unlink(path);
-				ret = true;
-				break;
-			case 1: /* Choose new name */
-				uifc.changes = 0;
-				uifc.helpbuf = "Duplicate Filename... enter new name";
-				SAFECOPY(newfname, getfname(fname));
-				if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "New Filename: ", newfname,
-				    sizeof(newfname) - 1, K_EDIT) == -1) {
-					loop = true;
-				}
-				else {
-					if (uifc.changes) {
-						sprintf(path, "%s/%s", bbs->dldir, newfname);
-						ret = true;
-					}
-					else {
-						loop = true;
-					}
-				}
-				break;
-		}
+	xfer_tick_lock();
+	struct xfer_tick_state *ts = xfer_tick_get();
+	snprintf(ts->line1, sizeof(ts->line1),
+	    "File: %s", getfname(sp->fpath));
+	if (sp->frame_count != 999) {
+		snprintf(ts->line2, sizeof(ts->line2),
+		    "Frame: %u of %u  Byte: %lld",
+		    sp->frame_num, (unsigned)sp->frame_count,
+		    (long long)sp->bytes_received);
+	} else {
+		snprintf(ts->line2, sizeof(ts->line2),
+		    "Frame: %u  Byte: %lld",
+		    sp->frame_num, (long long)sp->bytes_received);
 	}
-
-	uifcbail();
-	restorescreen(savscrn);
-	freescreen(savscrn);
-	hold_update = old_hold;
-	return ret;
+	snprintf(ts->line3, sizeof(ts->line3),
+	    "Time: %lu:%02lu  %u cps",
+	    (unsigned long)(t / 60), (unsigned long)(t % 60), cps);
+	if (sp->frame_count != 999) {
+		snprintf(ts->line4, sizeof(ts->line4),
+		    "Remain: %lu:%02lu",
+		    (unsigned long)(l / 60), (unsigned long)(l % 60));
+	} else {
+		ts->line4[0] = '\0';
+	}
+	ts->bytes_cur   = sp->bytes_received;
+	ts->bytes_total = 0;
+	xfer_tick_unlock();
+	xfer_tick_dirty();
 }
 
-static void
-cet_telesoftware_download(struct bbslist *bbs, void **frame_buffer, size_t *buflen)
+/* Path-duplicate handler used by the CET (and future xmodem) workers
+ * — same dialog channel as zmodem's, but for protocols that store the
+ * full path separately from the bare filename.  Returns true if the
+ * caller should proceed with `path` (possibly rewritten with a new
+ * dldir/newname for RENAME).  Returns false to abort the file. */
+static bool
+xfer_marshal_duplicate_path(struct bbslist *bbs, char *path, size_t pathsize,
+                            const char *bare_fname)
 {
-	*frame_buffer = NULL;
-	*buflen = 0;
-	if (safe_mode)
-		return;
-	bool     was_binary = conn_api.binary_mode;
+	char new_name[MAX_PATH + 1];
+	new_name[0] = '\0';
+	int resp = xfer_request_duplicate(bare_fname, new_name,
+	    sizeof(new_name));
+	switch (resp) {
+		case XFER_DLG_OVERWRITE:
+			unlink(path);
+			return true;
+		case XFER_DLG_RENAME:
+			if (new_name[0] == '\0')
+				return false;
+			snprintf(path, pathsize, "%s/%s",
+			    bbs->dldir, new_name);
+			return true;
+		case XFER_DLG_SKIP:
+		default:
+			return false;
+	}
+}
+
+static void *
+cet_recv_worker(void *arg)
+{
+	struct cet_recv_arg *a = (struct cet_recv_arg *)arg;
+	struct bbslist      *bbs = a->bbs;
 	bool     success = false;
 	uint8_t  next_frame = 'A';
 	uint8_t  next_block = 0;
 	uint16_t frames_remaining;
-	struct text_info ti;
-	gettextinfo(&ti);
 	struct cet_ts_state st = {
-		.recv_byte = cet_frame_recv_byte,
-		.orig_screen = malloc(ti.screenwidth * ti.screenheight * 2),
+		.recv_byte       = cet_frame_recv_byte,
+		.orig_screen     = NULL,    /* Wren modal save/restore */
 		.orig_screen_pos = 0,
-		.orig_screen_sz = ti.screenwidth * ti.screenheight * 2,
-		.aborted = false,
-		.start = time(NULL),
+		.orig_screen_sz  = 0,
+		.aborted         = false,
+		.start           = time(NULL),
 	};
 	FILE *fp = NULL;
 	struct cet_ts_block *header = NULL;
 	struct cet_ts_block *blk = NULL;
 
-	if (st.orig_screen)
-		gettext(ti.winleft, ti.wintop, ti.winright, ti.winbottom, st.orig_screen);
-	draw_transfer_window("CET Telesoftware Download");
-	if (st.orig_screen == NULL) {
-		lputs(NULL, LOG_ERR, "malloc() failures");
-		goto failure;
-	}
-
-	if (!was_binary)
-		conn_binary_mode_on();
-
-	cet_telesoftware_progress(&st);
+	xfer_cet_progress_cb(&st);
 
 	header = cet_telesoftware_get_block(&st);
 	if (header == NULL) {
@@ -2140,12 +1738,12 @@ cet_telesoftware_download(struct bbslist *bbs, void **frame_buffer, size_t *bufl
 
 	while (fexistcase(st.fpath)) {
 		lprintf(LOG_WARNING, "%s already exists", st.fpath);
-		if (!cet_telesoftware_duplicate(bbs, st.fpath, sizeof(st.fpath), getfname(fname))) {
+		if (!xfer_marshal_duplicate_path(bbs, st.fpath, sizeof(st.fpath), getfname(fname))) {
 			goto failure;
 		}
 	}
 
-	cet_telesoftware_progress(&st);
+	xfer_cet_progress_cb(&st);
 	fp = fopen(st.fpath, "wb");
 	if (fp == NULL) {
 		lprintf(LOG_ERR, "Error %d creating %s", errno, st.fpath);
@@ -2173,7 +1771,7 @@ cet_telesoftware_download(struct bbslist *bbs, void **frame_buffer, size_t *bufl
 		}
 		st.bytes_received += blk->length;
 		st.frame_num++;
-		cet_telesoftware_progress(&st);
+		xfer_cet_progress_cb(&st);
 		if (blk->frame == 'A') {
 			if (next_frame == 'A') {
 				next_frame = 'a';
@@ -2243,13 +1841,44 @@ cet_telesoftware_download(struct bbslist *bbs, void **frame_buffer, size_t *bufl
 failure:
 	free(blk);
 	free(header);
-	free(st.orig_screen);
 	if (fp)
 		fclose(fp);
-	transfer_complete(success, was_binary);
-	// Display cached last frame
-	*frame_buffer = st.frame_buffer;
-	*buflen = st.fb_pos;
+	/* Hand the cached last-frame buffer back through the arg struct;
+	 * the wrapper writes back to its caller's frame_buffer/buflen. */
+	a->frame_buffer = st.frame_buffer;
+	a->fb_pos       = st.fb_pos;
+	xfer_set_done(success);
+	return NULL;
+}
+
+/* Public entry — driven from begin_download's protocol chooser.  Wraps
+ * the worker spawn + Wren TransferApp loop, propagating the worker's
+ * cached last-frame buffer back to the caller after join. */
+static void
+cet_telesoftware_download(struct bbslist *bbs, void **frame_buffer,
+                          size_t *buflen)
+{
+	*frame_buffer = NULL;
+	*buflen       = 0;
+	if (safe_mode)
+		return;
+	bool was_binary = conn_api.binary_mode;
+	if (!was_binary)
+		conn_binary_mode_on();
+
+	struct cet_recv_arg arg = {
+		.bbs = bbs, .frame_buffer = NULL, .fb_pos = 0,
+	};
+	wren_run_transfer("CET Telesoftware Download",
+	    cet_recv_worker, &arg);
+
+	*frame_buffer = arg.frame_buffer;
+	*buflen       = arg.fb_pos;
+
+	if (!was_binary)
+		conn_binary_mode_off();
+	if (log_fp != NULL)
+		fflush(log_fp);
 }
 
 void
@@ -2409,119 +2038,414 @@ ascii_upload(FILE *fp)
 	}
 }
 
+/* Worker context for zmodem upload — single-file and batch share the
+ * same struct; npaths == 0 means single (use fp + path), npaths > 0
+ * means batch (iterate paths[]).  Worker bodies live below
+ * zmodem_download alongside the rest of the new mailbox plumbing. */
+struct zmodem_send_arg {
+	struct bbslist  *bbs;
+	FILE            *fp;
+	char            *path;
+	char           **paths;
+	int              npaths;
+};
+static void *zmodem_send_worker(void *arg);
+static void *zmodem_batch_send_worker(void *arg);
+
 void
 zmodem_upload(struct bbslist *bbs, FILE *fp, char *path)
 {
-	bool                 success;
-	zmodem_t             zm;
-	int64_t              fsize;
-	struct zmodem_cbdata cbdata;
-	bool                 was_binary = conn_api.binary_mode;
-
-	draw_transfer_window("ZMODEM Upload");
-
-	zmodem_mode = ZMODEM_MODE_SEND;
-
-	cbdata.zm = &zm;
-	cbdata.bbs = bbs;
+	bool was_binary = conn_api.binary_mode;
 	if (!was_binary)
 		conn_binary_mode_on();
-	transfer_buf_len = 0;
-	zmodem_init(&zm,
+	zmodem_mode = ZMODEM_MODE_SEND;
 
-            /* cbdata */ &cbdata,
-	    lputs, zmodem_progress,
-	    send_byte, recv_byte,
-	    is_connected,
-	    zmodem_check_abort,
-	    data_waiting,
-	    flush_send);
-	zm.log_level = &log_level;
+	struct zmodem_send_arg arg = {
+		.bbs = bbs, .fp = fp, .path = path,
+		.paths = NULL, .npaths = 0,
+	};
+	wren_run_transfer("ZMODEM Upload", zmodem_send_worker, &arg);
 
-	zm.current_file_num = zm.total_files = 1;
-
-	fsize = filelength(fileno(fp));
-
-	lprintf(LOG_INFO, "Sending %s (%" PRId64 " KB) via ZMODEM",
-	    path, fsize / 1024);
-
-	if ((success = zmodem_send_file(&zm, path, fp,
-
-            /* ZRQINIT? */ true, /* start_time */ NULL, /* sent_bytes */ NULL)) == true)
-		zmodem_get_zfin(&zm);
-
-	transfer_complete(success, was_binary);
+	if (!was_binary)
+		conn_binary_mode_off();
+	if (log_fp != NULL)
+		fflush(log_fp);
 }
 
 void
 zmodem_batch_upload(struct bbslist *bbs, char **paths, int npaths)
 {
-	bool                 success = false;
-	zmodem_t             zm;
-	int64_t              fsize;
-	int64_t              total_bytes = 0;
-	int                  sent_files = 0;
-	int                  i;
-	FILE                *fp;
-	struct zmodem_cbdata cbdata;
-	bool                 was_binary = conn_api.binary_mode;
-
-	draw_transfer_window("ZMODEM Upload");
-
-	zmodem_mode = ZMODEM_MODE_SEND;
-
-	cbdata.zm = &zm;
-	cbdata.bbs = bbs;
+	bool was_binary = conn_api.binary_mode;
 	if (!was_binary)
 		conn_binary_mode_on();
+	zmodem_mode = ZMODEM_MODE_SEND;
+
+	struct zmodem_send_arg arg = {
+		.bbs = bbs, .fp = NULL, .path = NULL,
+		.paths = paths, .npaths = npaths,
+	};
+	wren_run_transfer("ZMODEM Upload", zmodem_batch_send_worker, &arg);
+
+	if (!was_binary)
+		conn_binary_mode_off();
+	if (log_fp != NULL)
+		fflush(log_fp);
+}
+
+/* zmodem_progress equivalent that pre-formats the per-tick lines and
+ * populates the shared tick_state struct.  TransferApp's onTick_
+ * picks up the change next frame and paints lines as-is.  Layout
+ * mirrors today's zmodem_progress cprintf calls (term.c:1000-1027). */
+static void
+xfer_zmodem_progress_cb(void *cbdata, int64_t current_pos)
+{
+	struct zmodem_cbdata *zcb = (struct zmodem_cbdata *)cbdata;
+	zmodem_t             *zm  = zcb->zm;
+	time_t                now = time(NULL);
+	time_t                t   = now - zm->transfer_start_time;
+	if (t <= 0)
+		t = 1;
+	if (zm->transfer_start_pos > current_pos)
+		zm->transfer_start_pos = 0;
+	uint32_t cps = (uint32_t)((current_pos - zm->transfer_start_pos) / t);
+	if (cps == 0)
+		cps = 1;
+	int64_t  remaining = zm->current_file_size - current_pos;
+	uint32_t eta = (cps > 0 && remaining > 0)
+	    ? (uint32_t)(remaining / cps) : 0;
+	unsigned crc_bits = (zmodem_mode == ZMODEM_MODE_RECV)
+	    ? (zm->receive_32bit_data ? 32 : 16)
+	    : ((zm->can_fcs_32 && !zm->want_fcs_16) ? 32 : 16);
+
+	xfer_tick_lock();
+	struct xfer_tick_state *ts = xfer_tick_get();
+	snprintf(ts->line1, sizeof(ts->line1),
+	    "File (%u of %u): %s",
+	    zm->current_file_num, zm->total_files,
+	    zm->current_file_name);
+	if (zm->transfer_start_pos > 0) {
+		snprintf(ts->line2, sizeof(ts->line2),
+		    "From: %lld  Byte: %lld of %lld (%lld KB)",
+		    (long long)zm->transfer_start_pos,
+		    (long long)current_pos,
+		    (long long)zm->current_file_size,
+		    (long long)(zm->current_file_size / 1024));
+	} else {
+		snprintf(ts->line2, sizeof(ts->line2),
+		    "Byte: %lld of %lld (%lld KB)",
+		    (long long)current_pos,
+		    (long long)zm->current_file_size,
+		    (long long)(zm->current_file_size / 1024));
+	}
+	snprintf(ts->line3, sizeof(ts->line3),
+	    "Time: %lu:%02lu  ETA: %lu:%02lu  Block: %u/CRC-%u  %u cps",
+	    (unsigned long)(t / 60), (unsigned long)(t % 60),
+	    (unsigned long)(eta / 60), (unsigned long)(eta % 60),
+	    zm->block_size, crc_bits, cps);
+	ts->line4[0]   = '\0';
+	ts->bytes_cur  = current_pos;
+	ts->bytes_total = zm->current_file_size;
+	xfer_tick_unlock();
+	xfer_tick_dirty();
+}
+
+/* Worker-side duplicate-file handler.  Marshals the question over to
+ * the main thread (TransferApp surfaces a Confirm popup) and uses
+ * the response to either delete the existing file (OVERWRITE), pick
+ * a new name (RENAME), or refuse (SKIP -> return FALSE so zmodem
+ * skips the file). */
+static BOOL
+xfer_zmodem_duplicate_cb(void *cbdata, void *zm_void)
+{
+	struct zmodem_cbdata *cb = (struct zmodem_cbdata *)cbdata;
+	zmodem_t             *zm = (zmodem_t *)zm_void;
+	char                  new_name[sizeof(zm->current_file_name)];
+	new_name[0] = '\0';
+	int resp = xfer_request_duplicate(zm->current_file_name,
+	    new_name, sizeof(new_name));
+	switch (resp) {
+		case XFER_DLG_OVERWRITE: {
+			char fpath[MAX_PATH * 2 + 2];
+			SAFEPRINTF2(fpath, "%s/%s", cb->bbs->dldir,
+			    zm->current_file_name);
+			unlink(fpath);
+			return TRUE;
+		}
+		case XFER_DLG_RENAME:
+			if (new_name[0] == '\0')
+				return FALSE;
+			strncpy(zm->current_file_name, new_name,
+			    sizeof(zm->current_file_name) - 1);
+			zm->current_file_name[
+			    sizeof(zm->current_file_name) - 1] = '\0';
+			return TRUE;
+		case XFER_DLG_SKIP:
+		default:
+			return FALSE;
+	}
+}
+
+/* Worker-thread abort poll — reads the atomic flag set by
+ * Transfer.requestAbort() (Esc / Ctrl-C / Ctrl-X in TransferApp). */
+static BOOL
+xfer_zmodem_check_abort(void *cbdata)
+{
+	struct zmodem_cbdata *zcb = (struct zmodem_cbdata *)cbdata;
+	zmodem_t             *zm  = zcb->zm;
+	if (zm == NULL)
+		return TRUE;
+	if (xfer_check_abort_atomic()) {
+		zm->cancelled  = true;
+		zm->local_abort = true;
+		return TRUE;
+	}
+	return zm->cancelled;
+}
+
+/* Forward declaration — full definition lives down with the rest of
+ * the xmodem helper code below. */
+uint64_t num_blocks(unsigned curr_block, uint64_t offset, uint64_t len,
+                    unsigned block_size);
+
+/* xmodem progress callback — formats lines for the three modes the
+ * original `xmodem_progress` rendered: ymodem-send, ymodem-recv, and
+ * xmodem-recv (which gets a smaller block of fields and no bar). */
+static void
+xfer_xmodem_progress_cb(void *cbdata, unsigned block_num,
+                        int64_t offset, int64_t fsize, time_t start)
+{
+	xmodem_t *xm = (xmodem_t *)cbdata;
+	time_t    now = time(NULL);
+	time_t    t   = now - start;
+	if (t <= 0)
+		t = 1;
+	unsigned cps = (unsigned)(offset / t);
+	if (cps == 0)
+		cps = 1;
+	time_t l = (time_t)(fsize / cps);
+	if (t >= l)
+		l = 0;
+	else
+		l -= t;
+
+	bool is_send   = ((*xm->mode) & SEND)   != 0;
+	bool is_ymodem = ((*xm->mode) & YMODEM) != 0;
+
+	/* Block-size formatted as "%lu" or "%luK" (matches original). */
+	char bs_str[16];
+	if (xm->block_size % 1024L)
+		snprintf(bs_str, sizeof(bs_str), "%lu",
+		    (unsigned long)xm->block_size);
+	else
+		snprintf(bs_str, sizeof(bs_str), "%luK",
+		    (unsigned long)(xm->block_size / 1024L));
+
+	xfer_tick_lock();
+	struct xfer_tick_state *ts = xfer_tick_get();
+
+	if (is_ymodem) {
+		snprintf(ts->line1, sizeof(ts->line1),
+		    "File (%u of %lu): %s",
+		    xm->current_file_num,
+		    (unsigned long)xm->total_files,
+		    xm->current_file_name);
+	} else {
+		ts->line1[0] = '\0';
+	}
+
+	if (is_send) {
+		uint64_t total_blocks = num_blocks(block_num, offset, fsize,
+		    xm->block_size);
+		snprintf(ts->line2, sizeof(ts->line2),
+		    "Block (%s): %u/%llu  Byte: %lld",
+		    bs_str, block_num,
+		    (unsigned long long)total_blocks, (long long)offset);
+		snprintf(ts->line3, sizeof(ts->line3),
+		    "Time: %lu:%02lu/%lu:%02lu  %u cps",
+		    (unsigned long)(t / 60), (unsigned long)(t % 60),
+		    (unsigned long)(l / 60), (unsigned long)(l % 60), cps);
+		ts->bytes_cur   = offset;
+		ts->bytes_total = fsize;
+	} else if (is_ymodem) {
+		snprintf(ts->line2, sizeof(ts->line2),
+		    "Block (%s): %u  Byte: %lld",
+		    bs_str, block_num, (long long)offset);
+		snprintf(ts->line3, sizeof(ts->line3),
+		    "Time: %lu:%02lu/%lu:%02lu  %u cps",
+		    (unsigned long)(t / 60), (unsigned long)(t % 60),
+		    (unsigned long)(l / 60), (unsigned long)(l % 60), cps);
+		ts->bytes_cur   = offset;
+		ts->bytes_total = fsize;
+	} else {
+		/* xmodem-recv: no bar, no ETA — fsize is unknown. */
+		snprintf(ts->line2, sizeof(ts->line2),
+		    "Block (%s): %u  Byte: %lld",
+		    bs_str, block_num, (long long)offset);
+		snprintf(ts->line3, sizeof(ts->line3),
+		    "Time: %lu:%02lu  %u cps",
+		    (unsigned long)(t / 60), (unsigned long)(t % 60), cps);
+		ts->bytes_cur   = offset;
+		ts->bytes_total = 0;
+	}
+	ts->line4[0] = '\0';
+	xfer_tick_unlock();
+	xfer_tick_dirty();
+}
+
+/* xmodem worker-thread abort poll — same shape as the zmodem one but
+ * matched to the xmodem cbdata convention (xmodem_t * directly). */
+static BOOL
+xfer_xmodem_check_abort(void *cbdata)
+{
+	xmodem_t *xm = (xmodem_t *)cbdata;
+	if (xm == NULL)
+		return TRUE;
+	if (xfer_check_abort_atomic()) {
+		xm->cancelled = true;
+		return TRUE;
+	}
+	return xm->cancelled;
+}
+
+/* Runs on the worker thread spawned by wren_run_transfer.  Owns the
+ * full zmodem session; pushes events via the xfer_* mailbox API.
+ * Returns once zmodem_recv_files unwinds (success or abort). */
+static void *
+zmodem_recv_worker(void *arg)
+{
+	struct bbslist       *bbs = (struct bbslist *)arg;
+	zmodem_t              zm;
+	struct zmodem_cbdata  cbdata = { .zm = &zm, .bbs = bbs };
+	uint64_t              bytes_received = 0;
+	int                   files_received;
+
 	transfer_buf_len = 0;
 	zmodem_init(&zm,
-
-	            /* cbdata */ &cbdata,
-	    lputs, zmodem_progress,
+	    &cbdata,
+	    lputs, xfer_zmodem_progress_cb,
 	    send_byte, recv_byte,
 	    is_connected,
-	    zmodem_check_abort,
+	    xfer_zmodem_check_abort,
+	    data_waiting,
+	    flush_send);
+	zm.log_level          = &log_level;
+	zm.duplicate_filename = xfer_zmodem_duplicate_cb;
+
+	files_received = zmodem_recv_files(&zm, bbs->dldir, &bytes_received);
+
+	if (files_received > 1) {
+		char msg[160];
+		snprintf(msg, sizeof(msg),
+		    "Received %d files (%llu bytes) successfully",
+		    files_received, (unsigned long long)bytes_received);
+		xfer_log_push(LOG_INFO, msg);
+	}
+	xfer_set_done(files_received > 0);
+	return NULL;
+}
+
+/* zmodem_send_worker / zmodem_batch_send_worker — bodies for the
+ * forward-declared workers used by zmodem_upload / zmodem_batch_upload.
+ * Struct definition lives above zmodem_upload so the call-site can
+ * stack-allocate one. */
+static void *
+zmodem_send_worker(void *arg)
+{
+	struct zmodem_send_arg *a = (struct zmodem_send_arg *)arg;
+	zmodem_t                zm;
+	struct zmodem_cbdata    cbdata = { .zm = &zm, .bbs = a->bbs };
+	bool                    success;
+
+	transfer_buf_len = 0;
+	zmodem_init(&zm, &cbdata,
+	    lputs, xfer_zmodem_progress_cb,
+	    send_byte, recv_byte,
+	    is_connected,
+	    xfer_zmodem_check_abort,
+	    data_waiting,
+	    flush_send);
+	zm.log_level = &log_level;
+	zm.current_file_num = zm.total_files = 1;
+
+	int64_t fsize = filelength(fileno(a->fp));
+	{
+		char msg[MAX_PATH + 64];
+		snprintf(msg, sizeof(msg),
+		    "Sending %s (%lld KB) via ZMODEM",
+		    a->path, (long long)(fsize / 1024));
+		xfer_log_push(LOG_INFO, msg);
+	}
+
+	success = zmodem_send_file(&zm, a->path, a->fp,
+	    /* ZRQINIT? */ true, NULL, NULL);
+	if (success)
+		zmodem_get_zfin(&zm);
+
+	xfer_set_done(success);
+	return NULL;
+}
+
+static void *
+zmodem_batch_send_worker(void *arg)
+{
+	struct zmodem_send_arg *a = (struct zmodem_send_arg *)arg;
+	zmodem_t                zm;
+	struct zmodem_cbdata    cbdata      = { .zm = &zm, .bbs = a->bbs };
+	bool                    success     = false;
+	int                     sent_files  = 0;
+	int64_t                 total_bytes = 0;
+
+	transfer_buf_len = 0;
+	zmodem_init(&zm, &cbdata,
+	    lputs, xfer_zmodem_progress_cb,
+	    send_byte, recv_byte,
+	    is_connected,
+	    xfer_zmodem_check_abort,
 	    data_waiting,
 	    flush_send);
 	zm.log_level = &log_level;
 
-	/* Pre-scan to compute totals (for ZFILE info fields and progress display) */
-	for (i = 0; i < npaths; i++) {
-		if (!fexist(paths[i]) || isdir(paths[i]))
+	for (int i = 0; i < a->npaths; i++) {
+		if (!fexist(a->paths[i]) || isdir(a->paths[i]))
 			continue;
 		zm.total_files++;
-		zm.total_bytes += flength(paths[i]);
+		zm.total_bytes += flength(a->paths[i]);
 	}
 	zm.files_remaining = zm.total_files;
 	zm.bytes_remaining = zm.total_bytes;
 
-	for (i = 0; i < npaths; i++) {
-		if (!fexist(paths[i]) || isdir(paths[i]))
+	for (int i = 0; i < a->npaths; i++) {
+		if (!fexist(a->paths[i]) || isdir(a->paths[i]))
 			continue;
-
-		if ((fp = fopen(paths[i], "rb")) == NULL) {
-			lprintf(LOG_ERR, "Error %d opening %s for read", errno, paths[i]);
+		FILE *fp = fopen(a->paths[i], "rb");
+		if (fp == NULL) {
+			char msg[MAX_PATH + 64];
+			snprintf(msg, sizeof(msg),
+			    "Error %d opening %s for read", errno, a->paths[i]);
+			xfer_log_push(LOG_ERR, msg);
 			continue;
 		}
 		setvbuf(fp, NULL, _IOFBF, 0x10000);
-		fsize = filelength(fileno(fp));
+		int64_t fsize = filelength(fileno(fp));
 
 		zm.current_file_num = sent_files + 1;
 
-		lprintf(LOG_INFO, "Sending %s (%" PRId64 " KB) via ZMODEM",
-		    paths[i], fsize / 1024);
+		{
+			char msg[MAX_PATH + 64];
+			snprintf(msg, sizeof(msg),
+			    "Sending %s (%lld KB) via ZMODEM",
+			    a->paths[i], (long long)(fsize / 1024));
+			xfer_log_push(LOG_INFO, msg);
+		}
 
-		success = zmodem_send_file(&zm, paths[i], fp,
-		    /* ZRQINIT? */ sent_files == 0, /* start_time */ NULL, /* sent_bytes */ NULL);
-
+		success = zmodem_send_file(&zm, a->paths[i], fp,
+		    /* ZRQINIT? */ sent_files == 0, NULL, NULL);
 		fclose(fp);
 
 		if (success) {
 			sent_files++;
 			total_bytes += fsize;
 		}
-
 		if (zm.local_abort || zm.cancelled || !success)
 			break;
 	}
@@ -2529,109 +2453,27 @@ zmodem_batch_upload(struct bbslist *bbs, char **paths, int npaths)
 	if (!zm.cancelled && is_connected(NULL) && (success || total_bytes))
 		zmodem_get_zfin(&zm);
 
-	transfer_complete(success, was_binary);
-}
-
-BOOL
-zmodem_duplicate_callback(void *cbdata, void *zm_void)
-{
-	struct  text_info     txtinfo;
-	struct ciolib_screen *savscrn;
-	bool                  ret = false;
-	int                   i;
-	struct zmodem_cbdata *cb = (struct zmodem_cbdata *)cbdata;
-	zmodem_t             *zm = (zmodem_t *)zm_void;
-	char                  fpath[MAX_PATH * 2 + 2];
-	bool                  loop = true;
-	int                   old_hold = hold_update;
-
-	gettextinfo(&txtinfo);
-	savscrn = cp437_savescrn();
-	window(1, 1, txtinfo.screenwidth, txtinfo.screenheight);
-	init_uifc(false, false);
-	hold_update = false;
-
-	while (loop) {
-		loop = false;
-		i = 0;
-		uifc.helpbuf = "Duplicate file... choose action\n";
-		switch (ask_overwrite(&i)) {
-			case -1:
-				if (check_exit(false)) {
-					ret = false;
-					break;
-				}
-				loop = true;
-				break;
-			case 0: /* Overwrite */
-				SAFEPRINTF2(fpath, "%s/%s", cb->bbs->dldir, zm->current_file_name);
-				unlink(fpath);
-				ret = true;
-				break;
-			case 1: /* Choose new name */
-				uifc.changes = 0;
-				uifc.helpbuf = "Duplicate Filename... enter new name";
-				if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "New Filename: ", zm->current_file_name,
-				    sizeof(zm->current_file_name) - 1, K_EDIT) == -1) {
-					loop = true;
-				}
-				else {
-					if (uifc.changes)
-						ret = true;
-					else
-						loop = true;
-				}
-				break;
-		}
-	}
-
-	uifcbail();
-	restorescreen(savscrn);
-	freescreen(savscrn);
-	gotoxy(txtinfo.curx, txtinfo.cury);
-	hold_update = old_hold;
-	return ret;
+	xfer_set_done(sent_files > 0);
+	return NULL;
 }
 
 void
 zmodem_download(struct bbslist *bbs)
 {
-	zmodem_t             zm;
-	int                  files_received;
-	uint64_t             bytes_received;
-	struct zmodem_cbdata cbdata;
-	bool                 was_binary = conn_api.binary_mode;
+	bool was_binary = conn_api.binary_mode;
 
 	if (safe_mode)
 		return;
-	draw_transfer_window("ZMODEM Download");
-
 	zmodem_mode = ZMODEM_MODE_RECV;
-
 	if (!was_binary)
 		conn_binary_mode_on();
-	cbdata.zm = &zm;
-	cbdata.bbs = bbs;
-	transfer_buf_len = 0;
-	zmodem_init(&zm,
 
-            /* cbdata */ &cbdata,
-	    lputs, zmodem_progress,
-	    send_byte, recv_byte,
-	    is_connected,
-	    zmodem_check_abort,
-	    data_waiting,
-	    flush_send);
-	zm.log_level = &log_level;
+	wren_run_transfer("ZMODEM Download", zmodem_recv_worker, bbs);
 
-	zm.duplicate_filename = zmodem_duplicate_callback;
-
-	files_received = zmodem_recv_files(&zm, bbs->dldir, &bytes_received);
-
-	if (files_received > 1)
-		lprintf(LOG_INFO, "Received %u files (%" PRId64 " bytes) successfully", files_received, bytes_received);
-
-	transfer_complete(files_received, was_binary);
+	if (!was_binary)
+		conn_binary_mode_off();
+	if (log_fp != NULL)
+		fflush(log_fp);
 }
 
 /* End of Zmodem Stuff */
@@ -2640,54 +2482,6 @@ zmodem_download(struct bbslist *bbs)
 
 uchar block[1024]; /* Block buffer                                      */
 ulong block_num;   /* Block number                                      */
-
-static BOOL
-xmodem_check_abort(void *vp)
-{
-	xmodem_t          *xm = (xmodem_t *)vp;
-	static long double last_kb_check = 0;
-	long double        now = xp_timer();
-	int                key;
-
-	if (xm == NULL)
-		return false;
-	if (quitting) {
-		xm->cancelled = true;
-		return true;
-	}
-	/* Same shape as zmodem_check_abort — see comments there. */
-	inline_transfer_pump_wren_();
-	if (now - last_kb_check < 0.05L)
-		return xm->cancelled;
-	last_kb_check = now;
-	while (kbhit()) {
-		key = getch();
-		if (key == 0 || key == 0xe0)
-			key |= (getch() << 8);
-		if (key == CIO_KEY_MOUSE) {
-			struct mouse_event mev;
-			getmouse(&mev);
-			wren_host_dispatch_mouse(&mev);
-			continue;
-		}
-		if (wren_host_dispatch_key(key))
-			continue;
-		switch (key) {
-			case ESC:
-			case CTRL_C:
-			case CTRL_X:
-				xm->cancelled = true;
-				break;
-			case CIO_KEY_QUIT:
-				check_exit(false);
-				xm->cancelled = true;
-				break;
-		}
-		if (xm->cancelled)
-			break;
-	}
-	return xm->cancelled;
-}
 
 /****************************************************************************/
 
@@ -2704,141 +2498,6 @@ num_blocks(unsigned curr_block, uint64_t offset, uint64_t len, unsigned block_si
 	if (len % block_size)
 		blocks++;
 	return curr_block + blocks;
-}
-
-#if defined(__BORLANDC__)
- #pragma argsused
-#endif
-
-void
-xmodem_progress(void *cbdata, unsigned block_num, int64_t offset, int64_t fsize, time_t start)
-{
-	uint64_t         total_blocks;
-	unsigned         cps;
-	int              i;
-	uint64_t         l;
-	time_t           t;
-	time_t           now;
-	static time_t    last_progress;
-	int              old_hold = hold_update;
-	xmodem_t        *xm = (xmodem_t *)cbdata;
-	int              tww = transw_ti.winright - transw_ti.winleft + 1;
-	struct text_info orig_info;
-
-	now = time(NULL);
-	if ((now - last_progress > 0) || (offset >= fsize)) {
-		xmodem_check_abort(cbdata);
-
-		hold_update = true;
-		int os = _wscroll;
-		_wscroll = 0;
-		gettextinfo(&orig_info);
-		window(progress_ti.winleft, progress_ti.wintop, progress_ti.winright, progress_ti.winbottom);
-		gotoxy(1, 1);
-		textattr(LIGHTCYAN | (BLUE << 4));
-		t = now - start;
-		if (t <= 0)
-			t = 1;
-		if ((cps = (unsigned)(offset / t)) == 0)
-			cps = 1;           /* cps so far */
-		l = (time_t)(fsize / cps); /* total transfer est time */
-		if (t >= l)
-			l = 0;
-		else
-			l -= t;                    /* now, it's est time left */
-		if ((*(xm->mode)) & YMODEM) {
-			cprintf("File (%u of %lu): %-.*s",
-			    xm->current_file_num, xm->total_files, tww - 20, xm->current_file_name);
-			clreol();
-			cputs("\r\n");
-		}
-		if ((*(xm->mode)) & SEND) {
-			total_blocks = num_blocks(block_num, offset, fsize, xm->block_size);
-			cprintf("Block (%lu%s): %u/%" PRId64 "  Byte: %" PRId64,
-			    xm->block_size % 1024L ? xm->block_size : xm->block_size / 1024L,
-			    xm->block_size % 1024L ? "" : "K",
-			    block_num,
-			    total_blocks,
-			    offset);
-			clreol();
-			cputs("\r\n");
-			cprintf("Time: %lu:%02lu/%" PRIu64 ":%02" PRIu64 "  %u cps",
-			    (ulong)(t / 60L),
-			    (ulong)(t % 60L),
-			    (ulong)(l / 60L),
-			    (ulong)(l % 60L),
-			    cps);
-			clreol();
-			cputs("\r\n");
-			cprintf("%*s%3d%%\r\n", tww / 2 - 5, "",
-			    fsize ? (long)(((float)offset / (float)fsize) * 100.0) : 100);
-			i = fsize ? (((float)offset / (float)fsize) * (tww - 6)) : (tww - 6);
-			if (i < 0)
-				i = 0;
-			else if (i > (tww - 6))
-				i = (tww - 6);
-			cprintf("[%*.*s%*s]", i, i,
-			    "\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1"
-			    "\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1"
-			    "\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1"
-			    "\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1"
-			    "\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1"
-			    "\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1",
-			    (tww - 6) - i, "");
-		}
-		else if ((*(xm->mode)) & YMODEM) {
-			cprintf("Block (%lu%s): %lu  Byte: %" PRId64,
-			    xm->block_size % 1024L ? xm->block_size : xm->block_size / 1024L,
-			    xm->block_size % 1024L ? "" : "K",
-			    block_num,
-			    offset);
-			clreol();
-			cputs("\r\n");
-			cprintf("Time: %lu:%02lu/%lu:%02lu  %u cps",
-			    (ulong)(t / 60L),
-			    (ulong)(t % 60L),
-			    (ulong)(l / 60L),
-			    (ulong)(l % 60L),
-			    cps);
-			clreol();
-			cputs("\r\n");
-			cprintf("%*s%3d%%\r\n", tww / 2 - 5, "",
-			    fsize ? (long)(((float)offset / (float)fsize) * 100.0) : 100);
-			i = fsize ? (long)(((float)offset / (float)fsize) * (tww - 6)) : (tww - 6);
-			if (i < 0)
-				i = 0;
-			else if (i > (tww - 6))
-				i = (tww - 6);
-			cprintf("[%*.*s%*s]", i, i,
-			    "\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1"
-			    "\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1"
-			    "\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1"
-			    "\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1"
-			    "\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1"
-			    "\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1",
-			    (tww - 6) - i, "");
-		}
-		else { /* XModem receive */
-			cprintf("Block (%lu%s): %lu  Byte: %" PRId64,
-			    xm->block_size % 1024L ? xm->block_size : xm->block_size / 1024L,
-			    xm->block_size % 1024L ? "" : "K",
-			    block_num,
-			    offset);
-			clreol();
-			cputs("\r\n");
-			cprintf("Time: %lu:%02lu  %u cps",
-			    (ulong)(t / 60L),
-			    (ulong)(t % 60L),
-			    cps);
-			clreol();
-		}
-		last_progress = now;
-		hold_update = false;
-		window(orig_info.winleft, orig_info.wintop, orig_info.winright, orig_info.winbottom);
-		gotoxy(orig_info.curx, orig_info.cury);
-		_wscroll = os;
-		hold_update = old_hold;
-	}
 }
 
 static int
@@ -2868,272 +2527,217 @@ recv_nak(void *cbdata, unsigned timeout)
 	return NAK;
 }
 
-void
-xmodem_upload(struct bbslist *bbs, FILE *fp, char *path, long mode, int lastch)
+/* Worker context for xmodem upload (single + batch share the struct
+ * the same way zmodem_send_arg does). */
+struct xmodem_send_arg {
+	struct bbslist  *bbs;
+	FILE            *fp;        /* single-file only */
+	char            *path;      /* single-file only */
+	char           **paths;     /* batch only */
+	int              npaths;
+	long             mode;      /* XMODEM | YMODEM | GMODE | SEND | ... */
+	int              lastch;
+};
+
+static void
+xmodem_send_worker_setup_(xmodem_t *xm, struct xmodem_send_arg *a)
 {
-	bool     success;
-	xmodem_t xm;
-	int64_t  fsize;
-	bool     was_binary = conn_api.binary_mode;
-
-	if (!was_binary)
-		conn_binary_mode_on();
-
-	xmodem_init(&xm,
-
-            /* cbdata */ &xm,
-	    &mode,
+	xmodem_init(xm,
+	    /* cbdata */ xm,
+	    &a->mode,
 	    lputs,
-	    xmodem_progress,
+	    xfer_xmodem_progress_cb,
 	    send_byte,
 	    recv_byte,
 	    is_connected,
-	    xmodem_check_abort,
+	    xfer_xmodem_check_abort,
 	    flush_send);
-	xm.log_level = &log_level;
-	if (!data_waiting(&xm, 0)) {
-		switch (lastch) {
+	xm->log_level = &log_level;
+	if (!data_waiting(xm, 0)) {
+		switch (a->lastch) {
 			case 'G':
-				xm.recv_byte = recv_g;
+				xm->recv_byte = recv_g;
 				break;
 			case 'C':
-				xm.recv_byte = recv_c;
+				xm->recv_byte = recv_c;
 				break;
 			case NAK:
-				xm.recv_byte = recv_nak;
+				xm->recv_byte = recv_nak;
 				break;
 		}
 	}
+	if (a->mode & XMODEM_128B)
+		xm->block_size = 128;
+}
 
-	if (mode & XMODEM_128B)
-		xm.block_size = 128;
+static void *
+xmodem_send_worker(void *arg)
+{
+	struct xmodem_send_arg *a = (struct xmodem_send_arg *)arg;
+	xmodem_t                xm;
+	bool                    success;
 
+	xmodem_send_worker_setup_(&xm, a);
 	xm.current_file_num = xm.total_files = 1;
+	int64_t fsize = filelength(fileno(a->fp));
 
-	fsize = filelength(fileno(fp));
+	lprintf(LOG_INFO, "Sending %s (%" PRId64 " KB) via %sMODEM%s",
+	    a->path, fsize / 1024,
+	    (a->mode & XMODEM) ? "X" : "Y",
+	    (a->mode & GMODE)  ? "-g" : "");
 
-	if (mode & XMODEM) {
-		if (mode & GMODE)
-			draw_transfer_window("XMODEM-g Upload");
-		else
-			draw_transfer_window("XMODEM Upload");
-		lprintf(LOG_INFO, "Sending %s (%" PRId64 " KB) via XMODEM%s",
-		    path, fsize / 1024, (mode & GMODE) ? "-g" : "");
-	}
-	else if (mode & YMODEM) {
-		if (mode & GMODE)
-			draw_transfer_window("YMODEM-g Upload");
-		else
-			draw_transfer_window("YMODEM Upload");
-		lprintf(LOG_INFO, "Sending %s (%" PRId64 " KB) via YMODEM%s",
-		    path, fsize / 1024, (mode & GMODE) ? "-g" : "");
-	}
-	else {
-		if (!was_binary)
-			conn_binary_mode_off();
-		return;
+	success = xmodem_send_file(&xm, a->path, a->fp, NULL, NULL);
+	if (success && (a->mode & YMODEM) && xmodem_get_mode(&xm)) {
+		lprintf(LOG_INFO, "Sending YMODEM termination block");
+		memset(block, 0, 128);
+		xmodem_put_block(&xm, block, 128, 0);
+		if (xmodem_get_ack(&xm, 6, 0) != ACK)
+			lprintf(LOG_WARNING,
+			    "Failed to receive ACK after terminating block");
 	}
 
-	if ((success = xmodem_send_file(&xm, path, fp,
-
-            /* start_time */ NULL, /* sent_bytes */ NULL)) == true) {
-		if (mode & YMODEM) {
-			if (xmodem_get_mode(&xm)) {
-				lprintf(LOG_INFO, "Sending YMODEM termination block");
-
-				memset(block, 0, 128); /* send short block for terminator */
-				xmodem_put_block(&xm, block, 128 /* block_size */, 0 /* block_num */);
-				if (xmodem_get_ack(&xm, /* tries: */ 6, /* block_num: */ 0) != ACK)
-					lprintf(LOG_WARNING, "Failed to receive ACK after terminating block");
-			}
-		}
-	}
-
-	transfer_complete(success, was_binary);
+	xfer_set_done(success);
+	return NULL;
 }
 
 void
-xmodem_batch_upload(struct bbslist *bbs, char **paths, int npaths, long mode, int lastch)
+xmodem_upload(struct bbslist *bbs, FILE *fp, char *path, long mode, int lastch)
 {
-	bool     success = false;
-	xmodem_t xm;
-	int64_t  fsize;
-	int      i;
-	FILE    *fp;
-	bool     was_binary = conn_api.binary_mode;
+	if (!(mode & XMODEM) && !(mode & YMODEM))
+		return;
 
+	bool was_binary = conn_api.binary_mode;
 	if (!was_binary)
 		conn_binary_mode_on();
 
-	xmodem_init(&xm,
-
-	            /* cbdata */ &xm,
-	    &mode,
-	    lputs,
-	    xmodem_progress,
-	    send_byte,
-	    recv_byte,
-	    is_connected,
-	    xmodem_check_abort,
-	    flush_send);
-	xm.log_level = &log_level;
-	if (!data_waiting(&xm, 0)) {
-		switch (lastch) {
-			case 'G':
-				xm.recv_byte = recv_g;
-				break;
-			case 'C':
-				xm.recv_byte = recv_c;
-				break;
-			case NAK:
-				xm.recv_byte = recv_nak;
-				break;
-		}
-	}
-
-	if (mode & XMODEM_128B)
-		xm.block_size = 128;
-
+	const char *label;
 	if (mode & XMODEM) {
-		if (mode & GMODE)
-			draw_transfer_window("XMODEM-g Upload");
-		else
-			draw_transfer_window("XMODEM Upload");
-	}
-	else if (mode & YMODEM) {
-		if (mode & GMODE)
-			draw_transfer_window("YMODEM-g Upload");
-		else
-			draw_transfer_window("YMODEM Upload");
-	}
-	else {
-		if (!was_binary)
-			conn_binary_mode_off();
-		return;
+		label = (mode & GMODE) ? "XMODEM-g Upload" : "XMODEM Upload";
+	} else {
+		label = (mode & GMODE) ? "YMODEM-g Upload" : "YMODEM Upload";
 	}
 
-	/* Pre-scan to compute totals (for YMODEM block-0 "remaining" fields) */
-	for (i = 0; i < npaths; i++) {
-		if (!fexist(paths[i]) || isdir(paths[i]))
+	struct xmodem_send_arg arg = {
+		.bbs = bbs, .fp = fp, .path = path,
+		.paths = NULL, .npaths = 0,
+		.mode = mode, .lastch = lastch,
+	};
+	wren_run_transfer(label, xmodem_send_worker, &arg);
+
+	if (!was_binary)
+		conn_binary_mode_off();
+	if (log_fp != NULL)
+		fflush(log_fp);
+}
+
+static void *
+xmodem_batch_send_worker(void *arg)
+{
+	struct xmodem_send_arg *a = (struct xmodem_send_arg *)arg;
+	xmodem_t                xm;
+	bool                    success = false;
+
+	xmodem_send_worker_setup_(&xm, a);
+
+	/* Pre-scan to compute totals (for YMODEM block-0 "remaining"). */
+	for (int i = 0; i < a->npaths; i++) {
+		if (!fexist(a->paths[i]) || isdir(a->paths[i]))
 			continue;
 		xm.total_files++;
-		xm.total_bytes += flength(paths[i]);
+		xm.total_bytes += flength(a->paths[i]);
 	}
 
-	for (i = 0; i < npaths; i++) {
-		if (!fexist(paths[i]) || isdir(paths[i]))
+	for (int i = 0; i < a->npaths; i++) {
+		if (!fexist(a->paths[i]) || isdir(a->paths[i]))
 			continue;
-
-		if ((fp = fopen(paths[i], "rb")) == NULL) {
-			lprintf(LOG_ERR, "Error %d opening %s for read", errno, paths[i]);
+		FILE *fp = fopen(a->paths[i], "rb");
+		if (fp == NULL) {
+			lprintf(LOG_ERR, "Error %d opening %s for read",
+			    errno, a->paths[i]);
 			continue;
 		}
 		setvbuf(fp, NULL, _IOFBF, 0x10000);
-		fsize = filelength(fileno(fp));
-
+		int64_t fsize = filelength(fileno(fp));
 		xm.current_file_num = xm.sent_files + 1;
 
 		lprintf(LOG_INFO, "Sending %s (%" PRId64 " KB) via %sMODEM%s",
-		    paths[i], fsize / 1024,
-		    (mode & XMODEM) ? "X" : "Y",
-		    (mode & GMODE) ? "-g" : "");
+		    a->paths[i], fsize / 1024,
+		    (a->mode & XMODEM) ? "X" : "Y",
+		    (a->mode & GMODE)  ? "-g" : "");
 
-		success = xmodem_send_file(&xm, paths[i], fp,
-		    /* start_time */ NULL, /* sent_bytes */ NULL);
-
+		success = xmodem_send_file(&xm, a->paths[i], fp, NULL, NULL);
 		fclose(fp);
-
 		if (success) {
 			xm.sent_files++;
 			xm.sent_bytes += fsize;
 		}
-
 		if (xm.cancelled || !success)
 			break;
 	}
 
-	if (success && (mode & YMODEM)) {
-		if (xmodem_get_mode(&xm)) {
-			lprintf(LOG_INFO, "Sending YMODEM termination block");
-
-			memset(block, 0, 128); /* send short block for terminator */
-			xmodem_put_block(&xm, block, 128 /* block_size */, 0 /* block_num */);
-			if (xmodem_get_ack(&xm, /* tries: */ 6, /* block_num: */ 0) != ACK)
-				lprintf(LOG_WARNING, "Failed to receive ACK after terminating block");
-		}
+	if (success && (a->mode & YMODEM) && xmodem_get_mode(&xm)) {
+		lprintf(LOG_INFO, "Sending YMODEM termination block");
+		memset(block, 0, 128);
+		xmodem_put_block(&xm, block, 128, 0);
+		if (xmodem_get_ack(&xm, 6, 0) != ACK)
+			lprintf(LOG_WARNING,
+			    "Failed to receive ACK after terminating block");
 	}
 
-	transfer_complete(success, was_binary);
-}
-
-bool
-xmodem_duplicate(xmodem_t *xm, struct bbslist *bbs, char *path, size_t pathsize, char *fname)
-{
-	struct  text_info     txtinfo;
-	struct ciolib_screen *savscrn;
-	bool                  ret = false;
-	int                   i;
-	char                  newfname[MAX_PATH + 1];
-	bool                  loop = true;
-	int                   old_hold = hold_update;
-
-	gettextinfo(&txtinfo);
-	savscrn = cp437_savescrn();
-	window(1, 1, txtinfo.screenwidth, txtinfo.screenheight);
-
-	init_uifc(false, false);
-
-	hold_update = false;
-	while (loop) {
-		loop = false;
-		i = 0;
-		uifc.helpbuf = "Duplicate file... choose action\n";
-		switch (ask_overwrite(&i)) {
-			case -1:
-				if (check_exit(false)) {
-					ret = false;
-					break;
-				}
-				loop = true;
-				break;
-			case 0: /* Overwrite */
-				unlink(path);
-				ret = true;
-				break;
-			case 1: /* Choose new name */
-				uifc.changes = 0;
-				uifc.helpbuf = "Duplicate Filename... enter new name";
-				SAFECOPY(newfname, getfname(fname));
-				if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "New Filename: ", newfname,
-				    sizeof(newfname) - 1, K_EDIT) == -1) {
-					loop = true;
-				}
-				else {
-					if (uifc.changes) {
-						sprintf(path, "%s/%s", bbs->dldir, newfname);
-						ret = true;
-					}
-					else {
-						loop = true;
-					}
-				}
-				break;
-		}
-	}
-
-	uifcbail();
-	restorescreen(savscrn);
-	freescreen(savscrn);
-	hold_update = old_hold;
-	return ret;
+	xfer_set_done(success);
+	return NULL;
 }
 
 void
-xmodem_download(struct bbslist *bbs, long mode, char *path)
+xmodem_batch_upload(struct bbslist *bbs, char **paths, int npaths,
+                    long mode, int lastch)
 {
-	xmodem_t xm;
+	if (!(mode & XMODEM) && !(mode & YMODEM))
+		return;
 
-        /* The better to -Wunused you with my dear! */
+	bool was_binary = conn_api.binary_mode;
+	if (!was_binary)
+		conn_binary_mode_on();
+
+	const char *label;
+	if (mode & XMODEM) {
+		label = (mode & GMODE) ? "XMODEM-g Upload" : "XMODEM Upload";
+	} else {
+		label = (mode & GMODE) ? "YMODEM-g Upload" : "YMODEM Upload";
+	}
+
+	struct xmodem_send_arg arg = {
+		.bbs = bbs, .fp = NULL, .path = NULL,
+		.paths = paths, .npaths = npaths,
+		.mode = mode, .lastch = lastch,
+	};
+	wren_run_transfer(label, xmodem_batch_send_worker, &arg);
+
+	if (!was_binary)
+		conn_binary_mode_off();
+	if (log_fp != NULL)
+		fflush(log_fp);
+}
+
+/* Worker context for xmodem download — `mode` is mutable because the
+ * recv loop may downgrade YMODEM → XMODEM mid-handshake.  `path` is
+ * the user-supplied filename for plain XMODEM (NULL for YMODEM, where
+ * the header block carries it).  Wrapper stack-allocates one. */
+struct xmodem_recv_arg {
+	struct bbslist *bbs;
+	long            mode;
+	char           *path;
+};
+
+static void *
+xmodem_recv_worker(void *arg)
+{
+	struct xmodem_recv_arg *a = (struct xmodem_recv_arg *)arg;
+	struct bbslist         *bbs  = a->bbs;
+	long                    mode = a->mode;
+	char                   *path = a->path;
+
+	xmodem_t xm;
 	char     str[MAX_PATH * 2 + 2];
 	char     fname[MAX_PATH + 1];
 	int      i = 0;
@@ -3149,41 +2753,17 @@ xmodem_download(struct bbslist *bbs, long mode, char *path)
 	int64_t  total_bytes = 0;
 	FILE    *fp = NULL;
 	time_t   t, startfile, ftime = 0;
-	int      old_hold = hold_update;
 	bool     extra_pass = false;
-	bool     was_binary = conn_api.binary_mode;
 
-	if (safe_mode)
-		return;
-
-	if (mode & XMODEM) {
-		if (mode & GMODE)
-			draw_transfer_window("XMODEM-g Download");
-		else
-			draw_transfer_window("XMODEM Download");
-	}
-	else if (mode & YMODEM) {
-		if (mode & GMODE)
-			draw_transfer_window("YMODEM-g Download");
-		else
-			draw_transfer_window("YMODEM Download");
-	}
-	else {
-		return;
-	}
-
-	if (!was_binary)
-		conn_binary_mode_on();
 	xmodem_init(&xm,
-
-            /* cbdata */ &xm,
+	    /* cbdata */ &xm,
 	    &mode,
 	    lputs,
-	    xmodem_progress,
+	    xfer_xmodem_progress_cb,
 	    send_byte,
 	    recv_byte,
 	    is_connected,
-	    xmodem_check_abort,
+	    xfer_xmodem_check_abort,
 	    flush_send);
 	xm.log_level = &log_level;
 	while (is_connected(NULL)) {
@@ -3224,18 +2804,14 @@ xmodem_download(struct bbslist *bbs, long mode, char *path)
 					lprintf(LOG_WARNING, "Falling back to XMODEM%s", (mode & GMODE) ? "-g" : "");
 					mode &= ~(YMODEM);
 					mode |= XMODEM | CRC;
-					erase_transfer_window();
-					hold_update = 0;
-					if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "XMODEM Filename", fname, sizeof(fname),
-					    0) == -1) {
+					/* No erase / redraw — the Wren TransferApp
+					 * keeps its window up across the prompt;
+					 * the Prompt popup overlays it. */
+					if (!xfer_request_filename("XMODEM Filename",
+					    fname, sizeof(fname))) {
 						xmodem_cancel(&xm);
 						goto end;
 					}
-					hold_update = old_hold;
-					if (mode & GMODE)
-						draw_transfer_window("XMODEM Download");
-					else
-						draw_transfer_window("XMODEM-g Download");
 					lprintf(LOG_WARNING, "Falling back to XMODEM%s", (mode & GMODE) ? "-g" : "");
 					if (isfullpath(fname))
 						SAFECOPY(str, fname);
@@ -3317,7 +2893,8 @@ xmodem_download(struct bbslist *bbs, long mode, char *path)
 
 		while (fexistcase(str) && !(mode & OVERWRITE)) {
 			lprintf(LOG_WARNING, "%s already exists", str);
-			if (!xmodem_duplicate(&xm, bbs, str, sizeof(str), getfname(fname))) {
+			if (!xfer_marshal_duplicate_path(bbs, str,
+			    sizeof(str), getfname(fname))) {
 				xmodem_cancel(&xm);
 				goto end;
 			}
@@ -3350,7 +2927,7 @@ xmodem_download(struct bbslist *bbs, long mode, char *path)
 		if (i != NOT_YMODEM)
 			xmodem_put_nak(&xm, block_num);
 		while (is_connected(NULL)) {
-			xmodem_progress(&xm, block_num, ftello(fp), file_bytes, startfile);
+			xfer_xmodem_progress_cb(&xm, block_num, ftello(fp), file_bytes, startfile);
 			if (xm.is_cancelled(&xm)) {
 				lprintf(LOG_WARNING, "Cancelled locally");
 				xmodem_cancel(&xm);
@@ -3469,7 +3046,36 @@ xmodem_download(struct bbslist *bbs, long mode, char *path)
 end:
 	if (fp)
 		fclose(fp);
-	transfer_complete(success, was_binary);
+	xfer_set_done(success);
+	return NULL;
+}
+
+void
+xmodem_download(struct bbslist *bbs, long mode, char *path)
+{
+	if (safe_mode)
+		return;
+	if (!(mode & XMODEM) && !(mode & YMODEM))
+		return;
+
+	bool was_binary = conn_api.binary_mode;
+	if (!was_binary)
+		conn_binary_mode_on();
+
+	const char *label;
+	if (mode & XMODEM) {
+		label = (mode & GMODE) ? "XMODEM-g Download" : "XMODEM Download";
+	} else {
+		label = (mode & GMODE) ? "YMODEM-g Download" : "YMODEM Download";
+	}
+
+	struct xmodem_recv_arg arg = { .bbs = bbs, .mode = mode, .path = path };
+	wren_run_transfer(label, xmodem_recv_worker, &arg);
+
+	if (!was_binary)
+		conn_binary_mode_off();
+	if (log_fp != NULL)
+		fflush(log_fp);
 }
 
 /* End of X/Y-MODEM stuff */

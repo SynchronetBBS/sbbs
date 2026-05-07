@@ -316,6 +316,27 @@ class Theme {
       "scrollbar.thumb":
         Style.new(null, 0x1F, 0xFFFFFF, 0x0000A8),
 
+      // Progress bar.  Filled portion is light cyan on blue (matching
+      // the existing transfer-window palette); empty portion + text
+      // overlay cascade through "default" so they pick up whatever
+      // pane background is in effect.
+      "progress.fill":
+        Style.new(null, 0x1B, 0x55FFFF, 0x0000A8),
+
+      // Log view.  Severity → tint mirrors the colors today's C-side
+      // `lputs()` paints into the transfer log window: white info,
+      // yellow notice, light magenta warning, light red error.  All
+      // on the standard pane blue background.  `logview.info` covers
+      // anything at or above LOG_INFO (severity >= 6).
+      "logview.info":
+        Style.new(null, 0x1F, 0xFFFFFF, 0x0000A8),
+      "logview.notice":
+        Style.new(null, 0x1E, 0xFFFF55, 0x0000A8),
+      "logview.warning":
+        Style.new(null, 0x1D, 0xFF55FF, 0x0000A8),
+      "logview.error":
+        Style.new(null, 0x1C, 0xFF5555, 0x0000A8),
+
       // Help text: bright white on the default blue background,
       // matching UIFC's helpbuf body colour (api->lclr = WHITE).
       // Used as the cascade root for the markdown sub-roles below;

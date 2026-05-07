@@ -31,6 +31,7 @@
 #include "wren_bind_fs.h"
 #include "wren_bind_screen.h"
 #include "wren_bind_won.h"
+#include "wren_bind_xfer.h"
 
 #ifndef WITHOUT_DEUCESSH
 #include "deucessh-algorithms.h"   /* dssh_ed25519_get_pub_str */
@@ -1205,6 +1206,22 @@ static const struct binding BINDINGS[] = {
 	{ "Status", true, "callable",        fn_Status_callable_get    },
 	{ "Status", true, "callable=(_)",    fn_Status_callable_set    },
 	{ "Status", true, "enabled",         fn_Status_enabled         },
+
+	/* Transfer — mailbox bridge for the in-Wren transfer-window
+	 * UI.  Worker thread drives a C-side ring/snapshot pair; the
+	 * Wren TransferApp drains them in its tick body. */
+	{ "Transfer", true, "beginSession(_)", fn_Transfer_beginSession },
+	{ "Transfer", true, "endSession()",    fn_Transfer_endSession   },
+	{ "Transfer", true, "drainLog()",      fn_Transfer_drainLog     },
+	{ "Transfer", true, "tickDirty",       fn_Transfer_tickDirty    },
+	{ "Transfer", true, "snapshot()",      fn_Transfer_snapshot     },
+	{ "Transfer", true, "done",            fn_Transfer_done         },
+	{ "Transfer", true, "success",         fn_Transfer_success      },
+	{ "Transfer", true, "requestAbort()",  fn_Transfer_requestAbort },
+	{ "Transfer", true, "aborted",         fn_Transfer_aborted      },
+	{ "Transfer", true, "dialogPending",       fn_Transfer_dialogPending  },
+	{ "Transfer", true, "dialogFilename",      fn_Transfer_dialogFilename },
+	{ "Transfer", true, "dialogRespond(_,_)",  fn_Transfer_dialogRespond  },
 
 	{ "WON",   true, "deserialize(_)", fn_WON_deserialize   },
 

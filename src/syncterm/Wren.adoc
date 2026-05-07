@@ -4003,6 +4003,89 @@ changes, so per-frame allocation churn stays out of the hot path.
 Out-of-bounds writes (`surf[i]` for `i >= surf.width`) throw —
 treat `surf.width` as authoritative and clip your own loops.
 
+=== Transfer [[transfer]]
+
+Mailbox bridge between SyncTERM's transfer-window UI (Wren-side) and
+the C protocol drivers running on a worker thread.  `beginSession`
+spawns the worker; the Wren-side `TransferApp` then drains log
+events, snapshots tick state, and watches the `done` flag in a tick
+loop until the transfer completes or the user aborts.
+
+[source,wren]
+----
+import "syncterm" for Transfer
+
+Transfer.beginSession("fake")        // start worker; throws if active
+while (!Transfer.done) {
+  for (entry in Transfer.drainLog()) System.print(entry[1])
+  if (Transfer.tickDirty) {
+    var snap = Transfer.snapshot()   // 13-element fixed-shape List
+    System.print("bytes: %(snap[1])")
+  }
+  // ... handle Esc → Transfer.requestAbort() ...
+}
+Transfer.endSession()
+----
+
+The Stage 2 build only wires `"fake"` (a 100-KiB synthetic stream
+that ticks every 100 ms with periodic log messages, useful for
+exercising the UI path).  Real protocol kinds (`"zmodem-recv"`,
+`"ymodem-send"`, `"xmodem-recv"`, `"cet-recv"`) land in Stage 4.
+
+[options="header",cols="2,3"]
+|===
+| Member | Description
+
+| `Transfer.beginSession(kind)`
+| Spawn the worker thread and reset the mailbox.  `kind` is a string
+  selecting the protocol.  Throws if a session is already active or
+  the kind is unknown.  Returns `true` on success.
+
+| `Transfer.endSession()`
+| Latch an abort if the worker hasn't already finished, join the
+  thread, and clear session state.  Idempotent — safe to call after
+  a natural completion.  Returns `null`.
+
+| `Transfer.drainLog()`
+| Drain the log ring under mutex; return a `List` of
+  `[level, text]` entries.  When the ring overflowed since the last
+  drain, a synthesized `[LOG_NOTICE, "[N log lines suppressed]"]`
+  marker is appended at the tail so the suppression is visible to
+  the user.  Empty list when no events pending.
+
+| `Transfer.tickDirty`
+| Atomic read+clear of the "tick state changed" flag.  Returns
+  `true` if a tick update has happened since the previous call;
+  callers should follow with `snapshot()` only on a `true` return so
+  the mutex is taken at most once per dirty frame.
+
+| `Transfer.snapshot()`
+| Return a 13-element fixed-shape `List` with the latest tick state
+  (filename, bytesCur, elapsed, cps, fileIndex, fileTotal,
+  bytesStart, bytesTotal, blockNum, blockSize, blockBits, frameNum,
+  frameTotal).  Optional fields are `null` when the protocol
+  doesn't populate them (e.g. CET's frame-count-unknown 999 sentinel
+  collapses to `null`).  Wrap in `TickStateView` for named-field
+  access (see `transfer_app.wren`).
+
+| `Transfer.done`
+| `true` when the worker has completed (success or abort).  The
+  pump loop exits on this flag.
+
+| `Transfer.success`
+| `true` when the worker finished without aborting.  Read after
+  `done` flips.
+
+| `Transfer.requestAbort()`
+| Latch an abort flag the worker polls between protocol steps.
+  Returns `true` only on the first call (the latch transition),
+  letting callers post a one-shot "Abort key pressed" log line
+  without spamming on key-mash.
+
+| `Transfer.aborted`
+| Read the abort flag without modifying it.  `true` after a
+  successful `requestAbort()`.
+|===
 === Platform [[platform]]
 
 OS identification.  No further OS surface (no shell exec, no stdio,

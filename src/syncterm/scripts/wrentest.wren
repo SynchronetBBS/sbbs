@@ -48,6 +48,8 @@ import "ui_menubar_test"   for UiMenubarTest
 import "ui_form_test"      for UiFormTest
 import "ui_popup_test"     for UiPopupTest
 import "ui_help_test"      for UiHelpTest
+import "ui_progress_test"  for UiProgressTest
+import "ui_logview_test"   for UiLogviewTest
 
 class WrenTest {
   static run() {
@@ -191,6 +193,8 @@ class WrenTest {
     fold_(UiFormTest.run())
     fold_(UiPopupTest.run())
     fold_(UiHelpTest.run())
+    fold_(UiProgressTest.run())
+    fold_(UiLogviewTest.run())
 
     // ------ constant enums ------------------------------------------
     testKeyConstants_()
