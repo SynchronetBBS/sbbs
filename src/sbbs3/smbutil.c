@@ -1303,13 +1303,17 @@ void packmsgs(ulong packable)
 		return;
 	}
 	fseek(smb.shd_fp, 0L, SEEK_SET);
-	if (fread(&hdr, 1, sizeof(smbhdr_t), smb.shd_fp) < 1)
+	if (fread(&hdr, 1, sizeof(smbhdr_t), smb.shd_fp) < 1) {
+		free(datoffset);
 		return;
+	}
 	fwrite(&hdr, 1, sizeof(smbhdr_t), tmp_shd);
 	fwrite(&(smb.status), 1, sizeof(smbstatus_t), tmp_shd);
 	for (l = sizeof(smbhdr_t) + sizeof(smbstatus_t); l < smb.status.header_offset; l++) {
-		if (fread(&ch, 1, 1, smb.shd_fp) < 1)       /* copy additional base header records */
+		if (fread(&ch, 1, 1, smb.shd_fp) < 1) {     /* copy additional base header records */
+			free(datoffset);
 			return;
+		}
 		fwrite(&ch, 1, 1, tmp_shd);
 	}
 	total = 0;
@@ -1391,8 +1395,10 @@ void packmsgs(ulong packable)
 
 			n = smb_datblocks(m);
 			for (m = 0; m < n; m++) {
-				if (fread(buf, 1, SDT_BLOCK_LEN, smb.sdt_fp) < 1)
+				if (fread(buf, 1, SDT_BLOCK_LEN, smb.sdt_fp) < 1) {
+					free(datoffset);
 					return;
+				}
 				if (!m && *(ushort *)buf != XLAT_NONE && *(ushort *)buf != XLAT_LZH) {
 					printf("\nUnsupported translation type (%04X)\n"
 					       , *(ushort *)buf);
