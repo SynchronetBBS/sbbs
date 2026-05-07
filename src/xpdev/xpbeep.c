@@ -2439,10 +2439,18 @@ xp_audio_open(float volume_l, float volume_r)
 	assert_pthread_mutex_init(&s->mutex, NULL);
 
 	assert_pthread_mutex_lock(&mixer_lock);
-	/* Reap any done+auto_close streams first to free slots. */
+	/* Reap any done+auto_close streams first to free slots. The flags are
+	 * written elsewhere under r->mutex (xp_audio_stop, the auto_close setter),
+	 * so we take r->mutex briefly to read them. r->mutex must be released
+	 * before free_stream_locked() because it destroys the mutex. */
 	for (i = 0; i < XP_AUDIO_MAX_STREAMS; i++) {
 		struct xp_audio_stream *r = mixer_streams[i];
-		if (r && r->auto_close && r->done) {
+		if (!r)
+			continue;
+		assert_pthread_mutex_lock(&r->mutex);
+		bool reapable = r->auto_close && r->done;
+		assert_pthread_mutex_unlock(&r->mutex);
+		if (reapable) {
 			mixer_streams[i] = NULL;
 			free_stream_locked(r);
 		}
