@@ -20,6 +20,9 @@ int main(int argc, char *argv[])
 	parser.addOption({{"P", "mqtt-pass"}, "MQTT password (system password for broker.js)", "PASS"});
 	parser.addOption({"psk-id", "TLS-PSK identity (sysop alias, lowercased)", "IDENTITY"});
 	parser.addOption({"psk-key", "TLS-PSK key (sysop password, lowercased)", "KEY"});
+	parser.addOption({"ca-file", "CA certificate file for server verification", "FILE"});
+	parser.addOption({"cert-file", "Client certificate file", "FILE"});
+	parser.addOption({"key-file", "Client private key file", "FILE"});
 	parser.process(app);
 
 	MainWindow w(
@@ -29,7 +32,10 @@ int main(int argc, char *argv[])
 		parser.value("mqtt-user"),
 		parser.value("mqtt-pass"),
 		parser.value("psk-id"),
-		parser.value("psk-key")
+		parser.value("psk-key"),
+		parser.value("ca-file"),
+		parser.value("cert-file"),
+		parser.value("key-file")
 	);
 	w.show();
 

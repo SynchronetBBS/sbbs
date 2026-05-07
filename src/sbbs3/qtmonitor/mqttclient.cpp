@@ -2,6 +2,9 @@
 #include <QMqttTopicFilter>
 #include <QSslConfiguration>
 #include <QSslCipher>
+#include <QSslCertificate>
+#include <QSslKey>
+#include <QFile>
 
 MqttClient::MqttClient(QObject *parent)
 	: QObject(parent)
@@ -23,7 +26,9 @@ void MqttClient::initClient()
 void MqttClient::configure(const QString &host, quint16 port,
                            const QString &bbsId,
                            const QString &username, const QString &password,
-                           const QByteArray &pskIdentity, const QByteArray &pskKey)
+                           const QByteArray &pskIdentity, const QByteArray &pskKey,
+                           const QString &caFile, const QString &certFile,
+                           const QString &keyFile)
 {
 	m_host = host;
 	m_port = port;
@@ -32,6 +37,9 @@ void MqttClient::configure(const QString &host, quint16 port,
 	m_password = password;
 	m_pskIdentity = pskIdentity;
 	m_pskKey = pskKey;
+	m_caFile = caFile;
+	m_certFile = certFile;
+	m_keyFile = keyFile;
 }
 
 void MqttClient::connectToBroker()
@@ -47,10 +55,14 @@ void MqttClient::connectToBroker()
 		m_client->setPassword(m_password);
 	}
 
-	if (!m_pskIdentity.isEmpty() && !m_pskKey.isEmpty()) {
+	bool usePsk = !m_pskIdentity.isEmpty() && !m_pskKey.isEmpty();
+	bool useTls = usePsk || !m_caFile.isEmpty();
+
+	if (useTls) {
 		m_socket = new QSslSocket(this);
-		connect(m_socket, &QSslSocket::preSharedKeyAuthenticationRequired,
-		        this, &MqttClient::onPskRequired);
+		if (usePsk)
+			connect(m_socket, &QSslSocket::preSharedKeyAuthenticationRequired,
+			        this, &MqttClient::onPskRequired);
 		if (!m_ignoredSslErrors.isEmpty())
 			m_socket->ignoreSslErrors(m_ignoredSslErrors);
 		connect(m_socket, &QSslSocket::sslErrors, this, [this](const QList<QSslError> &errors) {
@@ -79,20 +91,54 @@ void MqttClient::connectToBroker()
 		});
 
 		QSslConfiguration config = m_socket->sslConfiguration();
-		config.setPeerVerifyMode(QSslSocket::VerifyNone);
-		config.setProtocol(QSsl::TlsV1_2);
 
-		// Qt's setCiphers(QString) doesn't accept OpenSSL directives like
-		// @SECLEVEL. Filter PSK ciphers from the supported list instead.
-		QList<QSslCipher> pskCiphers;
-		for (const auto &c : QSslConfiguration::supportedCiphers())
-			if (c.name().contains("PSK"))
-				pskCiphers << c;
-		if (!pskCiphers.isEmpty())
-			config.setCiphers(pskCiphers);
+		if (!m_caFile.isEmpty()) {
+			QList<QSslCertificate> caCerts = QSslCertificate::fromPath(m_caFile);
+			if (!caCerts.isEmpty()) {
+				config.setCaCertificates(caCerts);
+				config.setPeerVerifyMode(QSslSocket::VerifyPeer);
+			} else {
+				emit errorOccurred("Failed to load CA certificate: " + m_caFile);
+				config.setPeerVerifyMode(QSslSocket::VerifyNone);
+			}
+		} else {
+			config.setPeerVerifyMode(QSslSocket::VerifyNone);
+		}
+
+		if (!m_certFile.isEmpty() && !m_keyFile.isEmpty()) {
+			QList<QSslCertificate> certs = QSslCertificate::fromPath(m_certFile);
+			if (!certs.isEmpty())
+				config.setLocalCertificate(certs.first());
+			else
+				emit errorOccurred("Failed to load client certificate: " + m_certFile);
+
+			QFile keyFile(m_keyFile);
+			if (keyFile.open(QIODevice::ReadOnly)) {
+				QSslKey key(&keyFile, QSsl::Rsa, QSsl::Pem);
+				if (key.isNull()) {
+					keyFile.seek(0);
+					key = QSslKey(&keyFile, QSsl::Ec, QSsl::Pem);
+				}
+				if (!key.isNull())
+					config.setPrivateKey(key);
+				else
+					emit errorOccurred("Failed to load private key: " + m_keyFile);
+			} else {
+				emit errorOccurred("Cannot open key file: " + m_keyFile);
+			}
+		}
+
+		if (usePsk) {
+			config.setProtocol(QSsl::TlsV1_2);
+			QList<QSslCipher> pskCiphers;
+			for (const auto &c : QSslConfiguration::supportedCiphers())
+				if (c.name().contains("PSK"))
+					pskCiphers << c;
+			if (!pskCiphers.isEmpty())
+				config.setCiphers(pskCiphers);
+		}
 
 		m_socket->setSslConfiguration(config);
-
 		m_socket->connectToHostEncrypted(m_host, m_port);
 	} else {
 		m_client->setHostname(m_host);

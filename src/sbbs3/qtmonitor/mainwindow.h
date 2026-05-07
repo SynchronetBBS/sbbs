@@ -21,6 +21,8 @@ public:
 	           const QString &bbsId,
 	           const QString &mqttUser, const QString &mqttPass,
 	           const QString &pskId, const QString &pskKey,
+	           const QString &caFile = {}, const QString &certFile = {},
+	           const QString &keyFile = {},
 	           QWidget *parent = nullptr);
 
 protected:

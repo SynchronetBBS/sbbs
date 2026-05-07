@@ -1,8 +1,10 @@
 #include "settingsdialog.h"
 #include <QVBoxLayout>
+#include <QHBoxLayout>
 #include <QFormLayout>
 #include <QGroupBox>
 #include <QDialogButtonBox>
+#include <QFileDialog>
 
 SettingsDialog::SettingsDialog(QSettings *settings, QWidget *parent)
 	: QDialog(parent), m_settings(settings)
@@ -54,6 +56,33 @@ SettingsDialog::SettingsDialog(QSettings *settings, QWidget *parent)
 
 	layout->addWidget(pskGroup);
 
+	auto addFileRow = [&](QFormLayout *form, const QString &label, QLineEdit *&edit, const QString &settingsKey) {
+		edit = new QLineEdit(m_settings->value(settingsKey).toString());
+		edit->setPlaceholderText("(optional)");
+		auto *row = new QHBoxLayout;
+		row->addWidget(edit);
+		auto *btn = new QPushButton("Browse...");
+		connect(btn, &QPushButton::clicked, this, [this, edit] {
+			QString path = QFileDialog::getOpenFileName(this, "Select File", {},
+				"Certificates and Keys (*.pem *.crt *.key *.cer);;All Files (*)");
+			if (!path.isEmpty())
+				edit->setText(path);
+		});
+		row->addWidget(btn);
+		form->addRow(label, row);
+	};
+
+	auto *tlsGroup = new QGroupBox("TLS");
+	auto *tlsForm = new QFormLayout(tlsGroup);
+	addFileRow(tlsForm, "CA File:", m_caFile, "mqtt/ca_file");
+	layout->addWidget(tlsGroup);
+
+	auto *certGroup = new QGroupBox("Client Certificate");
+	auto *certForm = new QFormLayout(certGroup);
+	addFileRow(certForm, "Certificate:", m_certFile, "mqtt/cert_file");
+	addFileRow(certForm, "Private Key:", m_keyFile, "mqtt/key_file");
+	layout->addWidget(certGroup);
+
 	auto *buttons = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel);
 	connect(buttons, &QDialogButtonBox::accepted, this, &SettingsDialog::saveAndAccept);
 	connect(buttons, &QDialogButtonBox::rejected, this, &QDialog::reject);
@@ -69,5 +98,8 @@ void SettingsDialog::saveAndAccept()
 	m_settings->setValue("mqtt/password", m_password->text());
 	m_settings->setValue("mqtt/psk_identity", m_pskIdentity->text());
 	m_settings->setValue("mqtt/psk_key", m_pskKey->text());
+	m_settings->setValue("mqtt/ca_file", m_caFile->text());
+	m_settings->setValue("mqtt/cert_file", m_certFile->text());
+	m_settings->setValue("mqtt/key_file", m_keyFile->text());
 	accept();
 }

@@ -5,6 +5,7 @@
 #include <QLineEdit>
 #include <QSpinBox>
 #include <QSettings>
+#include <QPushButton>
 
 class SettingsDialog : public QDialog
 {
@@ -24,6 +25,9 @@ private:
 	QLineEdit *m_password;
 	QLineEdit *m_pskIdentity;
 	QLineEdit *m_pskKey;
+	QLineEdit *m_caFile;
+	QLineEdit *m_certFile;
+	QLineEdit *m_keyFile;
 };
 
 #endif

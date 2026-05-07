@@ -17,7 +17,9 @@ public:
 	void configure(const QString &host, quint16 port,
 	               const QString &bbsId = {},
 	               const QString &username = {}, const QString &password = {},
-	               const QByteArray &pskIdentity = {}, const QByteArray &pskKey = {});
+	               const QByteArray &pskIdentity = {}, const QByteArray &pskKey = {},
+	               const QString &caFile = {}, const QString &certFile = {},
+	               const QString &keyFile = {});
 	void connectToBroker();
 	void disconnectFromBroker();
 	void ignoreSslErrors(const QList<QSslError> &errors);
@@ -72,6 +74,9 @@ private:
 	QString m_password;
 	QByteArray m_pskIdentity;
 	QByteArray m_pskKey;
+	QString m_caFile;
+	QString m_certFile;
+	QString m_keyFile;
 	QList<QSslError> m_ignoredSslErrors;
 };
 

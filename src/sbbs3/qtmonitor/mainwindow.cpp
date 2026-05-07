@@ -36,6 +36,8 @@ MainWindow::MainWindow(const QString &mqttHost, quint16 mqttPort,
                        const QString &bbsId,
                        const QString &mqttUser, const QString &mqttPass,
                        const QString &pskId, const QString &pskKey,
+                       const QString &caFile, const QString &certFile,
+                       const QString &keyFile,
                        QWidget *parent)
 	: QMainWindow(parent)
 	, m_settings("Synchronet", "Monitor")
@@ -60,6 +62,9 @@ MainWindow::MainWindow(const QString &mqttHost, quint16 mqttPort,
 	if (!mqttPass.isEmpty()) m_settings.setValue("mqtt/password", mqttPass);
 	if (!pskId.isEmpty())    m_settings.setValue("mqtt/psk_identity", pskId);
 	if (!pskKey.isEmpty())   m_settings.setValue("mqtt/psk_key", pskKey);
+	if (!caFile.isEmpty())   m_settings.setValue("mqtt/ca_file", caFile);
+	if (!certFile.isEmpty()) m_settings.setValue("mqtt/cert_file", certFile);
+	if (!keyFile.isEmpty())  m_settings.setValue("mqtt/key_file", keyFile);
 
 	QString host = m_settings.value("mqtt/host").toString();
 	quint16 port = m_settings.value("mqtt/port", 0).toUInt();
@@ -74,7 +79,10 @@ MainWindow::MainWindow(const QString &mqttHost, quint16 mqttPort,
 		m_settings.value("mqtt/username").toString(),
 		m_settings.value("mqtt/password").toString(),
 		m_settings.value("mqtt/psk_identity").toByteArray(),
-		m_settings.value("mqtt/psk_key").toByteArray()
+		m_settings.value("mqtt/psk_key").toByteArray(),
+		m_settings.value("mqtt/ca_file").toString(),
+		m_settings.value("mqtt/cert_file").toString(),
+		m_settings.value("mqtt/key_file").toString()
 	);
 	m_mqtt->connectToBroker();
 }
@@ -165,7 +173,10 @@ void MainWindow::setupMenus()
 				m_settings.value("mqtt/username").toString(),
 				m_settings.value("mqtt/password").toString(),
 				m_settings.value("mqtt/psk_identity").toByteArray(),
-				m_settings.value("mqtt/psk_key").toByteArray()
+				m_settings.value("mqtt/psk_key").toByteArray(),
+				m_settings.value("mqtt/ca_file").toString(),
+				m_settings.value("mqtt/cert_file").toString(),
+				m_settings.value("mqtt/key_file").toString()
 			);
 			m_mqtt->connectToBroker();
 		}
