@@ -2122,7 +2122,7 @@ static int crypt_pop_channel_data(sbbs_t *sbbs, char *inbuf, int want, int *got)
 				if (sbbs->sftp_channel != -1) {
 					if (!channel_open(sbbs, sbbs->sftp_channel)) {
 						if (cryptStatusOK(cryptSetAttribute(sbbs->ssh_session, CRYPT_SESSINFO_SSH_CHANNEL, sbbs->sftp_channel)))
-							cryptSetAttribute(sbbs->ssh_session, CRYPT_SESSINFO_SSH_CHANNEL_ACTIVE, 0);
+							(void)cryptSetAttribute(sbbs->ssh_session, CRYPT_SESSINFO_SSH_CHANNEL_ACTIVE, 0);
 						sbbs->sftp_channel = -1;
 						closed = true;
 					}
@@ -2130,7 +2130,7 @@ static int crypt_pop_channel_data(sbbs_t *sbbs, char *inbuf, int want, int *got)
 				if (sbbs->session_channel != -1) {
 					if (!channel_open(sbbs, sbbs->session_channel)) {
 						if (cryptStatusOK(cryptSetAttribute(sbbs->ssh_session, CRYPT_SESSINFO_SSH_CHANNEL, sbbs->session_channel)))
-							cryptSetAttribute(sbbs->ssh_session, CRYPT_SESSINFO_SSH_CHANNEL_ACTIVE, 0);
+							(void)cryptSetAttribute(sbbs->ssh_session, CRYPT_SESSINFO_SSH_CHANNEL_ACTIVE, 0);
 						sbbs->session_channel = -1;
 						closed = true;
 					}
