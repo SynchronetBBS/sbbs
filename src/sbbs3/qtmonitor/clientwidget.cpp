@@ -51,6 +51,8 @@ void ClientWidget::updateClient(const QString &server, const QString &action, co
 
 	QString ts = data.value("timestamp").toString();
 	QDateTime dt = QDateTime::fromString(ts, Qt::ISODate);
+	if (!dt.isValid())
+		dt = QDateTime::fromString(ts.left(15), "yyyyMMdd'T'HHmmss");
 	item->setText(6, dt.isValid() ? dt.toString("MMM dd hh:mm:ss") : ts);
 }
 

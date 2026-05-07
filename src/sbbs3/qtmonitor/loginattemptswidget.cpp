@@ -45,6 +45,8 @@ void LoginAttemptsWidget::updateAttempt(const QString &ip, const QString &action
 	for (auto &[col, key] : std::initializer_list<std::pair<int, const char *>>{{1, "first"}, {2, "last"}}) {
 		QString ts = data.value(key).toString();
 		QDateTime dt = QDateTime::fromString(ts, Qt::ISODate);
+		if (!dt.isValid())
+			dt = QDateTime::fromString(ts.left(15), "yyyyMMdd'T'HHmmss");
 		item->setText(col, dt.isValid() ? dt.toString("MMM dd hh:mm:ss") : ts);
 	}
 	item->setText(5, data.value("protocol").toString());
