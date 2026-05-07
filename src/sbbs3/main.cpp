@@ -3895,6 +3895,8 @@ sbbs_t::~sbbs_t()
 	/* Free allocated class members */
 	/********************************/
 
+	/* nodefile_mutex is confined to getnodedat/putnodedat — not held here. */
+	// coverity[SLEEP:SUPPRESS]
 	js_cleanup();
 
 	/* Reset text.dat */
@@ -4413,6 +4415,9 @@ void sbbs_t::logoffstats()
 		if (fp == NULL)
 			continue;
 		if (!fread_dstats(fp, &stats)) {
+			/* nodefile_mutex is confined to getnodedat/putnodedat (which
+			 * lock+unlock atomically). No nodefile_mutex is held here. */
+			// coverity[LOCK:SUPPRESS]
 			errormsg(WHERE, ERR_READ, "dsts.ini", i);
 		} else {
 			stats.total.timeon += minutes_used;
@@ -4727,6 +4732,8 @@ void sbbs_t::daily_maint(void)
 	if (cfg.mail_backup_level && getmail(&cfg, 0, false, /* attr: */ 0) > 0) {
 		lputs(LOG_DEBUG, "DAILY: Backing up mail data...");
 		smb_t mail;
+		/* nodefile_mutex is confined to getnodedat/putnodedat — not held here. */
+		// coverity[SLEEP:SUPPRESS]
 		int result = smb_open_sub(&cfg, &mail, INVALID_SUB);
 		if (result != SMB_SUCCESS)
 			errprintf(LOG_ERR, WHERE, "ERROR %d (%s) opening mail base", result, mail.last_error);

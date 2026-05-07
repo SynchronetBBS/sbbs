@@ -357,6 +357,9 @@ void sbbs_t::errormsg(int line, const char* function, const char *src, const cha
 		fflush(logfile_fp);
 	}
 
+	/* errormsg never touches nodefile_mutex; the LOCK CID is propagated
+	 * inter-procedurally from getnodedat/putnodedat callers. */
+	// coverity[LOCK:SUPPRESS]
 	errormsg_inside = false;
 }
 
