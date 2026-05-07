@@ -11,7 +11,7 @@
 
 static const QStringList Servers = {"term", "mail", "ftp", "web", "srvc"};
 static const QHash<QString, QString> ServerLabels = {
-	{"term", "Telnet"}, {"mail", "Mail"}, {"ftp", "FTP"},
+	{"term", "Terminal"}, {"mail", "Mail"}, {"ftp", "FTP"},
 	{"web", "Web"}, {"srvc", "Services"},
 };
 

@@ -1,5 +1,6 @@
 #include <QApplication>
 #include <QCommandLineParser>
+#include <QIcon>
 #include "mainwindow.h"
 
 int main(int argc, char *argv[])
@@ -7,6 +8,7 @@ int main(int argc, char *argv[])
 	QApplication app(argc, argv);
 	app.setApplicationName("Synchronet Monitor");
 	app.setOrganizationName("Synchronet");
+	app.setWindowIcon(QIcon(":/sync.ico"));
 
 	QCommandLineParser parser;
 	parser.setApplicationDescription("Synchronet BBS Monitor");
