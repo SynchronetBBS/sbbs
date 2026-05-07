@@ -695,7 +695,7 @@ static void mqtt_message_received(struct mosquitto* mosq, void* cbdata, const st
 		}
 		for (int i = bbs_startup->first_node; i <= bbs_startup->last_node; i++) {
 			if (strcmp(msg->topic, mqtt_topic(mqtt, TOPIC_BBS, topic, sizeof(topic), "node/%d/msg", i)) == 0) {
-				putnmsg(mqtt->cfg, i, msg->payload);
+				(void)putnmsg(mqtt->cfg, i, msg->payload);
 				return;
 			}
 			if (strcmp(msg->topic, mqtt_topic(mqtt, TOPIC_BBS, topic, sizeof(topic), "node/%d/set/status", i)) == 0) {
