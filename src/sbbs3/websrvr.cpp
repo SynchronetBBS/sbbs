@@ -1201,7 +1201,7 @@ static void close_request(http_session_t * session)
 		if (session->req.cleanup_file[i] != NULL) {
 			if (i != CLEANUP_SSJS_TMP_FILE
 			    || !(startup->options & WEB_OPT_DEBUG_SSJS))
-				remove(session->req.cleanup_file[i]);
+				(void)remove(session->req.cleanup_file[i]); /* best-effort cleanup */
 			free(session->req.cleanup_file[i]);
 		}
 	}
@@ -6868,8 +6868,8 @@ void http_session_thread(void* arg)
 			thread_down();
 			return;
 		}
-		int nodelay = true;
-		setsockopt(session.socket, IPPROTO_TCP, TCP_NODELAY, (char*)&nodelay, sizeof(nodelay));
+		int nodelay = TRUE;
+		(void)setsockopt(session.socket, IPPROTO_TCP, TCP_NODELAY, (char*)&nodelay, sizeof(nodelay)); /* best-effort latency hint */
 
 		if (looking_good)
 			looking_good = HANDLE_CRYPT_CALL(cryptSetAttribute(session.tls_sess, CRYPT_SESSINFO_TLS_OPTIONS, CRYPT_TLSOPTION_MINVER_TLS12), &session, "setting TLS minver to 1.2");
