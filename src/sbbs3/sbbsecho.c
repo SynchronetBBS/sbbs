@@ -6058,6 +6058,7 @@ void find_stray_packets(void)
 		else {
 			if ((pkt->fp = fopen(pkt->filename, "ab")) == NULL) {
 				lprintf(LOG_ERR, "ERROR %d (%s) line %d opening %s", errno, strerror(errno), __LINE__, pkt->filename);
+				free(pkt->filename);
 				free(pkt);
 				continue;
 			}
