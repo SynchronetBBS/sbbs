@@ -1687,8 +1687,13 @@ static void send_error(http_session_t * session, unsigned line, const char* mess
 
 void http_logon(http_session_t * session, user_t *usr)
 {
-	if (usr == NULL)
-		getuserdat(&scfg, &session->user);
+	if (usr == NULL) {
+		if (getuserdat(&scfg, &session->user) != USER_SUCCESS) {
+			lprintf(LOG_ERR, "%04d %-5s [%s] !ERROR reading user #%u data"
+			        , session->socket, session->client.protocol, session->host_ip, session->user.number);
+			session->user.number = 0;
+		}
+	}
 	else
 		session->user = *usr;
 
@@ -2064,7 +2069,11 @@ static bool check_ars(http_session_t * session)
 		return false;
 	}
 	thisuser.number = i;
-	getuserdat(&scfg, &thisuser);
+	if (getuserdat(&scfg, &thisuser) != USER_SUCCESS) {
+		lprintf(LOG_ERR, "%04d !ERROR reading user #%u data for '%s'"
+		        , session->socket, i, session->req.auth.username);
+		return false;
+	}
 	switch (session->req.auth.type) {
 		case AUTHENTICATION_TLS_PSK:
 			if ((auth_allowed & (1 << AUTHENTICATION_TLS_PSK)) == 0)
