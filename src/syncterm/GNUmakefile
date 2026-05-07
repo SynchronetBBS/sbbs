@@ -286,6 +286,10 @@ endif
 # general write path; with INI_CRYPT_ALGO_NONE it falls through to
 # plain iniWriteFile).  The "none" backend provides no-op xp_crypt
 # and xp_tls so nothing drags in OpenSSL / Botan.
+#
+# xp_crypt / xp_tls sources live in ../xptls/ (standalone library).
+XPTLS_SRC = ../xptls
+CFLAGS += -I$(XPTLS_SRC)
 OBJS += $(MTOBJODIR)$(DIRSEP)ini_crypt$(OFILE)
 ifeq ($(XP_CRYPTO_BACKEND),Botan)
  # Botan 3 public headers require C++20 (std::span).  Override the
@@ -293,22 +297,30 @@ ifeq ($(XP_CRYPTO_BACKEND),Botan)
  BOTAN_CXXFLAGS = $(shell PKG_CONFIG_PATH="$(PKG_CONFIG_PATH)" pkg-config --cflags botan-3)
  OBJS += $(MTOBJODIR)$(DIRSEP)xp_crypt_botan3$(OFILE)
  OBJS += $(MTOBJODIR)$(DIRSEP)xp_tls_botan3$(OFILE)
- # `botan` is an order-only prereq: the Botan build has to have run
- # before we compile, but the botan target has no sentinel file so its
- # timestamp is always "just now" — comparing against .cpp timestamps
- # would force a rebuild on every gmake invocation.
- $(MTOBJODIR)$(DIRSEP)xp_crypt_botan3$(OFILE): xp_crypt_botan3.cpp | botan $(MTOBJODIR)
+ $(MTOBJODIR)$(DIRSEP)xp_crypt_botan3$(OFILE): $(XPTLS_SRC)/xp_crypt_botan3.cpp | botan $(MTOBJODIR)
 	@echo $(COMPILE_MSG) $<
 	$(QUIET)$(CXX) -std=c++20 $(CFLAGS) $(CXXFLAGS) $(MT_CFLAGS) $(BOTAN_CXXFLAGS) -o $@ -c $<
- $(MTOBJODIR)$(DIRSEP)xp_tls_botan3$(OFILE): xp_tls_botan3.cpp | botan $(MTOBJODIR)
+ $(MTOBJODIR)$(DIRSEP)xp_tls_botan3$(OFILE): $(XPTLS_SRC)/xp_tls_botan3.cpp | botan $(MTOBJODIR)
 	@echo $(COMPILE_MSG) $<
 	$(QUIET)$(CXX) -std=c++20 $(CFLAGS) $(CXXFLAGS) $(MT_CFLAGS) $(BOTAN_CXXFLAGS) -o $@ -c $<
 else ifeq ($(XP_CRYPTO_BACKEND),OpenSSL)
  OBJS += $(MTOBJODIR)$(DIRSEP)xp_crypt_openssl$(OFILE)
  OBJS += $(MTOBJODIR)$(DIRSEP)xp_tls_openssl$(OFILE)
+ $(MTOBJODIR)$(DIRSEP)xp_crypt_openssl$(OFILE): $(XPTLS_SRC)/xp_crypt_openssl.c | $(MTOBJODIR)
+	@echo $(COMPILE_MSG) $<
+	$(QUIET)$(CC) $(CFLAGS) $(MT_CFLAGS) -o $@ -c $<
+ $(MTOBJODIR)$(DIRSEP)xp_tls_openssl$(OFILE): $(XPTLS_SRC)/xp_tls_openssl.c | $(MTOBJODIR)
+	@echo $(COMPILE_MSG) $<
+	$(QUIET)$(CC) $(CFLAGS) $(MT_CFLAGS) -o $@ -c $<
 else
  OBJS += $(MTOBJODIR)$(DIRSEP)xp_crypt_none$(OFILE)
  OBJS += $(MTOBJODIR)$(DIRSEP)xp_tls_none$(OFILE)
+ $(MTOBJODIR)$(DIRSEP)xp_crypt_none$(OFILE): $(XPTLS_SRC)/xp_crypt_none.c | $(MTOBJODIR)
+	@echo $(COMPILE_MSG) $<
+	$(QUIET)$(CC) $(CFLAGS) $(MT_CFLAGS) -o $@ -c $<
+ $(MTOBJODIR)$(DIRSEP)xp_tls_none$(OFILE): $(XPTLS_SRC)/xp_tls_none.c | $(MTOBJODIR)
+	@echo $(COMPILE_MSG) $<
+	$(QUIET)$(CC) $(CFLAGS) $(MT_CFLAGS) -o $@ -c $<
 endif
 
 ifndef WITHOUT_CRYPTO

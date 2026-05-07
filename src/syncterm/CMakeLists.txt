@@ -426,13 +426,8 @@ endif()
 # general write path; with INI_CRYPT_ALGO_NONE it falls through to
 # plain iniWriteFile).  The "none" backend provides no-op xp_crypt
 # and xp_tls so nothing drags in OpenSSL / Botan.
-if(XP_CRYPTO_BACKEND STREQUAL "Botan")
-	list(APPEND SOURCE ini_crypt.c xp_crypt_botan3.cpp xp_tls_botan3.cpp)
-elseif(XP_CRYPTO_BACKEND STREQUAL "OpenSSL")
-	list(APPEND SOURCE ini_crypt.c xp_crypt_openssl.c xp_tls_openssl.c)
-else()
-	list(APPEND SOURCE ini_crypt.c xp_crypt_none.c xp_tls_none.c)
-endif()
+list(APPEND SOURCE ini_crypt.c)
+add_subdirectory(../xptls xptls EXCLUDE_FROM_ALL)
 
 if(NOT WITHOUT_CRYPTO)
 	# telnets.c + legacy decrypt-only ciphers only make sense when a
@@ -557,23 +552,8 @@ else()
 	endif()
 endif()
 
-# Link the xp_tls / xp_crypt backend library.  These used to live in
-# xpdev, but SyncTERM is their only consumer — keeping them here means
-# libxpdev / libsbbs stay crypto-free.
-if(NOT WITHOUT_CRYPTO)
-	if(XP_CRYPTO_BACKEND STREQUAL "Botan")
-		if(BOTAN3_VENDORED_TARGET)
-			target_link_libraries(syncterm ${BOTAN3_VENDORED_TARGET})
-		else()
-			find_package(PkgConfig REQUIRED)
-			pkg_check_modules(XP_BOTAN3 REQUIRED IMPORTED_TARGET botan-3)
-			target_link_libraries(syncterm PkgConfig::XP_BOTAN3)
-		endif()
-	elseif(XP_CRYPTO_BACKEND STREQUAL "OpenSSL")
-		find_package(OpenSSL REQUIRED)
-		target_link_libraries(syncterm OpenSSL::Crypto OpenSSL::SSL)
-	endif()
-endif()
+# xp_tls / xp_crypt are now in the standalone xptls library.
+target_link_libraries(syncterm xptls)
 
 # Botan backend pulls C++ translation units into libdeucessh.a and into
 # syncterm (xp_tls_botan3.cpp, xp_crypt_botan3.cpp); the final link needs
