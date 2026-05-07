@@ -7003,6 +7003,10 @@ void http_session_thread(void* arg)
 	if (startup->max_clients && client_count > startup->max_clients) {
 		lprintf(LOG_WARNING, "%04d %-5s [%s] !MAXIMUM CLIENTS (%u) exceeded by %u, access denied"
 		        , socket, session.client.protocol, session.host_ip, startup->max_clients, client_count - startup->max_clients);
+		/* link_list helpers (loginAttempts, client_on, listCountMatches) acquire+release
+		 * their list mutex internally; nothing in this thread holds a list mutex when
+		 * send_error -> js_setup acquires jsrt_mutex. */
+		// coverity[ORDER_REVERSAL:SUPPRESS]
 		send_error(&session, __LINE__, error_503);
 		session.finished = true;
 	} else {
@@ -7011,6 +7015,8 @@ void http_session_thread(void* arg)
 		    && !host_exempt.listed(session.host_ip, nullptr)) {
 			lprintf(LOG_NOTICE, "%04d %-5s [%s] !Maximum concurrent connections (%u) exceeded"
 			        , socket, session.client.protocol, session.host_ip, startup->max_concurrent_connections);
+			/* See note above re: link_list helpers releasing their mutex internally. */
+			// coverity[ORDER_REVERSAL:SUPPRESS]
 			send_error(&session, __LINE__, error_429);
 			session.finished = true;
 		} else {
