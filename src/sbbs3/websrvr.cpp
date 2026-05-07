@@ -1689,7 +1689,8 @@ static void send_error(http_session_t * session, unsigned line, const char* mess
 void http_logon(http_session_t * session, user_t *usr)
 {
 	if (usr == NULL) {
-		if (getuserdat(&scfg, &session->user) != USER_SUCCESS) {
+		if (session->user.number != 0
+		    && getuserdat(&scfg, &session->user) != USER_SUCCESS) {
 			lprintf(LOG_ERR, "%04d %-5s [%s] !ERROR reading user #%u data"
 			        , session->socket, session->client.protocol, session->host_ip, session->user.number);
 			session->user.number = 0;
