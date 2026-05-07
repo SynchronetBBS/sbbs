@@ -500,11 +500,11 @@ static void add_suffix(char* str, size_t size, const char* suffix)
 	if (strcmp(str, "1") == 0)
 		plural = "";
 	if (is_word) {
-		strlcat(str, " ", size);
-		strlcat(str, suffix, size);
-		strlcat(str, plural, size);
+		(void)strlcat(str, " ", size);
+		(void)strlcat(str, suffix, size);
+		(void)strlcat(str, plural, size);
 	} else
-		strlcat(str, suffix, size);
+		(void)strlcat(str, suffix, size);
 }
 
 /* Convert a duration estimate (in seconds) to a string
