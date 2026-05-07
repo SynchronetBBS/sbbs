@@ -1713,9 +1713,9 @@ MQTT.Connection.Subscription = function(conn, topic_filter, options, subscriptio
 	// Add to each topic and send retained
 	for (i in conn.broker.topics) {
 		if (conn.broker.topics[i].name.search(this.re) === 0) {
-			if (conn.broker.topics[i][this.client_id] === undefined)
-				conn.broker.topics[i][this.client_id] = {};
-			conn.broker.topics[i][this.client_id][topic_filter] = this;
+			if (conn.broker.topics[i].subscribers[conn.client_id] === undefined)
+				conn.broker.topics[i].subscribers[conn.client_id] = {};
+			conn.broker.topics[i].subscribers[conn.client_id][topic_filter] = this;
 			if (conn.broker.topics[i].retained !== null) {
 				if (conn.broker.topics[i].retained.properties !== undefined &&
 				    conn.broker.topics[i].retained.properties[2] !== undefined &&
