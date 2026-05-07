@@ -658,6 +658,8 @@ static void mqtt_connect_callback(struct mosquitto* mosq, void* cbdata, int rc)
 		if (mqtt->server_version != NULL) {
 			mqtt_server_startup(mqtt);
 			mqtt->server_version = NULL;
+		} else {
+			mqtt_server_state(mqtt, mqtt->server_state);
 		}
 	}
 	else
@@ -842,7 +844,7 @@ int mqtt_startup(struct mqtt* mqtt, scfg_t* cfg, struct startup* startup, const 
 
 int mqtt_server_startup(struct mqtt* mqtt)
 {
-	int result = mqtt_server_state(mqtt, SERVER_INIT);
+	int result = mqtt_server_state(mqtt, mqtt->server_state);
 	mqtt_pub_strval(mqtt, TOPIC_BBS_LEVEL, NULL, mqtt->cfg->sys_name);
 	mqtt_pub_strval(mqtt, TOPIC_HOST_LEVEL, NULL, mqtt->startup->host_name);
 	mqtt_pub_strval(mqtt, TOPIC_SERVER, "version", mqtt->server_version);
@@ -879,12 +881,13 @@ int mqtt_server_state(struct mqtt* mqtt, enum server_state state)
 		         , errors);
 	} else
 		SAFECOPY(str, server_state_desc(state));
+	if (mqtt->server_state != state)
+		mqtt->server_state = state;
 	int result = mqtt_pub_strval(mqtt, TOPIC_SERVER_LEVEL, NULL, str);
-	if (mqtt->server_state != state) {
+	if (result == MQTT_SUCCESS && mqtt->connected) {
 		char topic[128];
 		snprintf(topic, sizeof(topic), "state/%s", server_state_desc(state));
-		result = mqtt_pub_timestamped_msg(mqtt, TOPIC_SERVER, topic, time(NULL), server_state_desc(mqtt->server_state));
-		mqtt->server_state = state;
+		mqtt_pub_timestamped_msg(mqtt, TOPIC_SERVER, topic, time(NULL), server_state_desc(mqtt->server_state));
 	}
 	return result;
 }
