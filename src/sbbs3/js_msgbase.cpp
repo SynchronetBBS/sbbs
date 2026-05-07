@@ -3028,13 +3028,13 @@ static JSBool js_msgbase_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 			break;
 		case SMB_PROP_LAST_MSG:
 			rc = JS_SUSPENDREQUEST(cx);
-			smb_getstatus(&(p->smb));
+			(void)smb_getstatus(&(p->smb));
 			JS_RESUMEREQUEST(cx, rc);
 			*vp = UINT_TO_JSVAL(p->smb.status.last_msg);
 			break;
 		case SMB_PROP_TOTAL_MSGS:
 			rc = JS_SUSPENDREQUEST(cx);
-			smb_getstatus(&(p->smb));
+			(void)smb_getstatus(&(p->smb));
 			JS_RESUMEREQUEST(cx, rc);
 			*vp = UINT_TO_JSVAL(p->smb.status.total_msgs);
 			break;
