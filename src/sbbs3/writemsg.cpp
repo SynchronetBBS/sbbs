@@ -353,7 +353,7 @@ bool sbbs_t::writemsg(const char *fname, const char *top, char *subj, int mode, 
 
 		if (useron_xedit && cfg.xedit[useron_xedit - 1]->misc & QUOTEALL) {
 			if (!fexist(quotes_fname(useron_xedit, path, sizeof(path))))
-				fexistcase(path);
+				(void)fexistcase(path);
 			if ((stream = fnopen(NULL, path, O_RDONLY)) == NULL) {
 				errormsg(WHERE, ERR_OPEN, path, O_RDONLY);
 				free(buf);
@@ -391,7 +391,7 @@ bool sbbs_t::writemsg(const char *fname, const char *top, char *subj, int mode, 
 
 		else if (yesno(text[QuoteMessageQ])) {
 			if (!fexist(quotes_fname(useron_xedit, path, sizeof(path))))
-				fexistcase(path);
+				(void)fexistcase(path);
 			if ((stream = fnopen(&file, path, O_RDONLY)) == NULL) {
 				errormsg(WHERE, ERR_OPEN, path, O_RDONLY);
 				free(buf);
@@ -1844,8 +1844,8 @@ bool sbbs_t::movemsg(smbmsg_t* msg, int subnum)
 		return false;
 	}
 
-	fseek(smb.sdt_fp, msg->hdr.offset, SEEK_SET);
-	if (fread(buf, length, 1, smb.sdt_fp) != 1) {
+	if (fseek(smb.sdt_fp, msg->hdr.offset, SEEK_SET) != 0
+	    || fread(buf, length, 1, smb.sdt_fp) != 1) {
 		free(buf);
 		errormsg(WHERE, ERR_READ, smb.file, length);
 		return false;
