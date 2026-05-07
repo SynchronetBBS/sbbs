@@ -1631,6 +1631,10 @@ static void native_service_thread(void* arg)
 	client_on(socket, &client, false /* update */);
 
 	if (startup->login_attempt.throttle
+	    /* loginAttempts acquires and releases list->mutex internally — the mutex
+	     * is NOT held across the mswait below or at thread exit. */
+	    // coverity[LOCK:SUPPRESS]
+	    // coverity[SLEEP:SUPPRESS]
 	    && (login_attempts = loginAttempts(startup->login_attempt_list, &service_client.addr)) > 1) {
 		lprintf(LOG_DEBUG, "%04d %s Throttling suspicious connection from: %s (%lu login attempts)"
 		        , socket, service->protocol, client.addr, login_attempts);
@@ -2510,6 +2514,8 @@ void services_thread(void* arg)
 
 					if (!host_exempt.listed(host_ip, nullptr)) {
 						login_attempt_t attempted;
+						/* loginBanned acquires and releases list->mutex internally — no caller-held lock. */
+						// coverity[LOCK:SUPPRESS]
 						ulong           banned = loginBanned(&scfg, startup->login_attempt_list, client_socket, /* host_name: */ NULL, startup->login_attempt, &attempted);
 						if (banned) {
 							char ban_duration[128];
