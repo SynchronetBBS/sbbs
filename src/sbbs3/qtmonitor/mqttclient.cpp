@@ -1,0 +1,305 @@
+#include "mqttclient.h"
+#include <QMqttTopicFilter>
+#include <QSslConfiguration>
+#include <QSslCipher>
+
+MqttClient::MqttClient(QObject *parent)
+	: QObject(parent)
+	, m_client(nullptr)
+	, m_socket(nullptr)
+{
+}
+
+void MqttClient::initClient()
+{
+	if (m_client) {
+		m_client->deleteLater();
+		m_client = nullptr;
+	}
+	m_client = new QMqttClient(this);
+	m_client->setProtocolVersion(QMqttClient::MQTT_5_0);
+	connect(m_client, &QMqttClient::connected, this, &MqttClient::onConnected);
+	connect(m_client, &QMqttClient::disconnected, this, &MqttClient::onDisconnected);
+	connect(m_client, &QMqttClient::errorChanged, this, &MqttClient::onErrorChanged);
+	connect(m_client, &QMqttClient::messageReceived, this, &MqttClient::onMessageReceived);
+}
+
+void MqttClient::configure(const QString &host, quint16 port,
+                           const QString &bbsId,
+                           const QString &username, const QString &password,
+                           const QByteArray &pskIdentity, const QByteArray &pskKey)
+{
+	m_host = host;
+	m_port = port;
+	m_bbsId = bbsId.isEmpty() ? QString() : bbsId;
+	m_username = username;
+	m_password = password;
+	m_pskIdentity = pskIdentity;
+	m_pskKey = pskKey;
+}
+
+void MqttClient::connectToBroker()
+{
+	disconnectFromBroker();
+	initClient();
+
+	if (!m_username.isEmpty()) {
+		m_client->setUsername(m_username);
+		m_client->setPassword(m_password);
+	} else if (!m_password.isEmpty() && !m_pskIdentity.isEmpty()) {
+		m_client->setUsername(QString::fromUtf8(m_pskIdentity));
+		m_client->setPassword(m_password);
+	}
+
+	if (!m_pskIdentity.isEmpty() && !m_pskKey.isEmpty()) {
+		m_socket = new QSslSocket(this);
+		connect(m_socket, &QSslSocket::preSharedKeyAuthenticationRequired,
+		        this, &MqttClient::onPskRequired);
+		if (!m_ignoredSslErrors.isEmpty())
+			m_socket->ignoreSslErrors(m_ignoredSslErrors);
+		connect(m_socket, &QSslSocket::sslErrors, this, [this](const QList<QSslError> &errors) {
+			m_socket->ignoreSslErrors(errors);
+			QList<QSslError> newErrors;
+			for (const auto &e : errors)
+				if (!m_ignoredSslErrors.contains(e))
+					newErrors << e;
+			if (newErrors.isEmpty())
+				return;
+			QStringList msgs;
+			for (const auto &e : newErrors)
+				msgs << e.errorString();
+			QMetaObject::invokeMethod(this, [this, newErrors, msgs] {
+				emit sslErrorsOccurred(newErrors, msgs);
+			}, Qt::QueuedConnection);
+		});
+		connect(m_socket, &QAbstractSocket::errorOccurred, this, [this] {
+			emit errorOccurred("Socket error: " + m_socket->errorString());
+		});
+		connect(m_socket, &QSslSocket::encrypted, this, [this] {
+			m_client->setTransport(m_socket, QMqttClient::IODevice);
+			m_client->setHostname(m_host);
+			m_client->setPort(m_port);
+			m_client->connectToHost();
+		});
+
+		QSslConfiguration config = m_socket->sslConfiguration();
+		config.setPeerVerifyMode(QSslSocket::VerifyNone);
+		config.setProtocol(QSsl::TlsV1_2);
+
+		// Qt's setCiphers(QString) doesn't accept OpenSSL directives like
+		// @SECLEVEL. Filter PSK ciphers from the supported list instead.
+		QList<QSslCipher> pskCiphers;
+		for (const auto &c : QSslConfiguration::supportedCiphers())
+			if (c.name().contains("PSK"))
+				pskCiphers << c;
+		if (!pskCiphers.isEmpty())
+			config.setCiphers(pskCiphers);
+
+		m_socket->setSslConfiguration(config);
+
+		m_socket->connectToHostEncrypted(m_host, m_port);
+	} else {
+		m_client->setHostname(m_host);
+		m_client->setPort(m_port);
+		m_client->connectToHost();
+	}
+}
+
+void MqttClient::disconnectFromBroker()
+{
+	if (m_client && m_client->state() != QMqttClient::Disconnected)
+		m_client->disconnectFromHost();
+	if (m_socket) {
+		m_socket->abort();
+		m_socket->deleteLater();
+		m_socket = nullptr;
+	}
+}
+
+void MqttClient::ignoreSslErrors(const QList<QSslError> &errors)
+{
+	m_ignoredSslErrors += errors;
+}
+
+void MqttClient::onPskRequired(QSslPreSharedKeyAuthenticator *auth)
+{
+	auth->setIdentity(m_pskIdentity);
+	auth->setPreSharedKey(m_pskKey);
+}
+
+void MqttClient::onConnected()
+{
+	QString prefix = topicPrefix();
+	const QStringList topics = {
+		prefix + "/host/+/server/+/log/#",
+		prefix + "/log/#",
+		prefix + "/node/#",
+		prefix + "/host/+/server/+/client/action/#",
+		prefix + "/host/+/server/+/client",
+		prefix + "/host/+/server/+",
+		prefix + "/host/+/server/+/served",
+		prefix + "/host/+/server/+/highwater",
+		prefix + "/host/+/server/+/error_count",
+		prefix + "/host/+/login_attempts/#",
+	};
+	for (const auto &t : topics)
+		m_client->subscribe(QMqttTopicFilter(t));
+
+	emit connected();
+}
+
+void MqttClient::onDisconnected()
+{
+	emit disconnected();
+}
+
+void MqttClient::onErrorChanged(QMqttClient::ClientError error)
+{
+	if (error != QMqttClient::NoError)
+		emit errorOccurred(QStringLiteral("MQTT error: %1").arg(static_cast<int>(error)));
+}
+
+void MqttClient::onMessageReceived(const QByteArray &payload, const QMqttTopicName &topic)
+{
+	dispatchMessage(topic.name(), QString::fromUtf8(payload));
+}
+
+bool MqttClient::isConnected() const
+{
+	return m_client && m_client->state() == QMqttClient::Connected;
+}
+
+void MqttClient::publish(const QString &topicSuffix, const QByteArray &payload)
+{
+	if (!m_bbsId.isEmpty() && isConnected())
+		m_client->publish(QMqttTopicName("sbbs/" + m_bbsId + "/" + topicSuffix), payload);
+}
+
+QString MqttClient::topicPrefix() const
+{
+	return m_bbsId.isEmpty() ? QStringLiteral("sbbs/+") : QStringLiteral("sbbs/") + m_bbsId;
+}
+
+void MqttClient::recycleServer(const QString &server) { publish("host/+/server/" + server + "/recycle", {}); }
+void MqttClient::pauseServer(const QString &server)   { publish("host/+/server/" + server + "/pause", {}); }
+void MqttClient::resumeServer(const QString &server)  { publish("host/+/server/" + server + "/resume", {}); }
+void MqttClient::clearServer(const QString &server)    { publish("host/+/server/" + server + "/clear", {}); }
+void MqttClient::triggerEvent(const QString &code)     { publish("exec", code.toUtf8()); }
+void MqttClient::triggerCallout(const QString &hubId)  { publish("call", hubId.toUtf8()); }
+void MqttClient::setNode(int n, const QString &prop, const QString &val) { publish(QStringLiteral("node/%1/set/%2").arg(n).arg(prop), val.toUtf8()); }
+void MqttClient::sendNodeMessage(int n, const QString &msg) { publish(QStringLiteral("node/%1/msg").arg(n), msg.toUtf8()); }
+
+void MqttClient::dispatchMessage(const QString &topic, const QString &text)
+{
+	QStringList parts = topic.split('/');
+
+	if (parts.size() >= 2 && parts[0] == "sbbs" && m_bbsId.isEmpty())
+		m_bbsId = parts[1];
+
+	// sbbs/{id}/host/{h}/server/{srv}/log/{level}
+	if (parts.size() >= 8 && parts[4] == "server" && parts[6] == "log") {
+		auto [timestamp, msg] = splitTsvPayload(text);
+		emit logMessage(parts[5], parseLogLevel(parts.last()), timestamp, msg);
+		return;
+	}
+
+	// sbbs/{id}/log/{level}
+	if (parts.size() >= 4 && parts[2] == "log") {
+		auto [timestamp, msg] = splitTsvPayload(text);
+		emit logMessage("bbs", parseLogLevel(parts.last()), timestamp, msg);
+		return;
+	}
+
+	// sbbs/{id}/node/{n}/status (structured)
+	if (parts.size() >= 5 && parts[2] == "node" && parts[4] == "status") {
+		bool ok;
+		int nodeNum = parts[3].toInt(&ok);
+		if (!ok) return;
+		QStringList fields = text.split('\t');
+		QStringList names = {"status", "action", "user", "connection", "misc", "aux", "extaux", "errors"};
+		QVariantMap data;
+		for (int i = 0; i < qMin(fields.size(), names.size()); ++i)
+			data[names[i]] = fields[i];
+		emit nodeStatus(nodeNum, data);
+		return;
+	}
+
+	// sbbs/{id}/node/{n} (verbose)
+	if (parts.size() == 4 && parts[2] == "node") {
+		bool ok;
+		int nodeNum = parts[3].toInt(&ok);
+		if (!ok) return;
+		emit nodeVerbose(nodeNum, text);
+		return;
+	}
+
+	// sbbs/{id}/host/{h}/server/{srv}/client/action/{act}
+	if (parts.size() >= 9 && parts[4] == "server" && parts[6] == "client" && parts[7] == "action") {
+		QStringList fields = text.split('\t');
+		QStringList names = {"timestamp", "protocol", "usernum", "username", "ip", "hostname", "port", "socket"};
+		QVariantMap data;
+		for (int i = 0; i < qMin(fields.size(), names.size()); ++i)
+			data[names[i]] = fields[i];
+		emit clientUpdate(parts[5], parts[8], data);
+		return;
+	}
+
+	// sbbs/{id}/host/{h}/server/{srv}/state/{state} — ignored, use server-level topic
+	if (parts.size() >= 8 && parts[4] == "server" && parts[6] == "state")
+		return;
+
+	// sbbs/{id}/host/{h}/login_attempts/{ip}
+	if (parts.size() >= 6 && parts[4] == "login_attempts") {
+		QString ip = QStringList(parts.mid(5)).join('/');
+		if (text.isEmpty()) {
+			emit loginAttempt(ip, "clear", {});
+		} else {
+			QStringList fields = text.split('\t');
+			QStringList names = {"first", "last", "count", "dupes", "protocol", "username"};
+			QVariantMap data;
+			for (int i = 0; i < qMin(fields.size(), names.size()); ++i)
+				data[names[i]] = fields[i];
+			emit loginAttempt(ip, "update", data);
+		}
+		return;
+	}
+
+	// sbbs/{id}/host/{h}/server/{srv}/client (count)
+	if (parts.size() == 7 && parts[4] == "server" && parts[6] == "client") {
+		emit serverStat(parts[5], "clients", text);
+		return;
+	}
+
+	// sbbs/{id}/host/{h}/server/{srv} (server-level status)
+	if (parts.size() == 6 && parts[4] == "server") {
+		emit serverState(parts[5], text.split('\t').first());
+		return;
+	}
+
+	// sbbs/{id}/host/{h}/server/{srv}/{stat}
+	if (parts.size() == 7 && parts[4] == "server"
+	    && (parts[6] == "served" || parts[6] == "highwater" || parts[6] == "error_count")) {
+		emit serverStat(parts[5], parts[6], text);
+		return;
+	}
+}
+
+int MqttClient::parseLogLevel(const QString &level) const
+{
+	bool ok;
+	int n = level.toInt(&ok);
+	if (ok) return n;
+	static const QHash<QString, int> map = {
+		{"emergency", 0}, {"alert", 1}, {"critical", 2}, {"error", 3},
+		{"warn", 4}, {"warning", 4}, {"notice", 5}, {"info", 6}, {"debug", 7},
+	};
+	return map.value(level, 6);
+}
+
+QPair<QString, QString> MqttClient::splitTsvPayload(const QString &text) const
+{
+	int tab = text.indexOf('\t');
+	if (tab >= 0)
+		return {text.left(tab), text.mid(tab + 1)};
+	return {{}, text};
+}

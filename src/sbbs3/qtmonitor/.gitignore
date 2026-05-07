@@ -1,4 +1,1 @@
-__pycache__/
-*.pyc
-test_psk.py
-test_psk_raw.py
+build/

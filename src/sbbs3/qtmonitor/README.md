@@ -1,7 +1,7 @@
 # qtmonitor — Synchronet BBS Monitor
 
 Cross-platform monitor and control panel for Synchronet BBS systems,
-built with PySide6 (Qt) and MQTT. Connects to Synchronet's built-in
+built with Qt6 (Widgets + MQTT). Connects to Synchronet's built-in
 `broker.js` MQTT broker via TLS-PSK.
 
 ## Features
@@ -10,33 +10,27 @@ built with PySide6 (Qt) and MQTT. Connects to Synchronet's built-in
 - Node status monitoring with verbose descriptions
 - Connected client tracking
 - Failed login attempt tracking
-- Server state display (ready, paused, stopped, etc.)
-- Aggregate statistics (clients, served, errors)
+- Server state and statistics in status bar
 - Server control (recycle, pause, resume, clear login attempts)
-- Node control (lock, down, interrupt, rerun, clear errors, send message)
+- Node control (lock, down, interrupt, rerun, send message)
 - Force timed events and network callouts
-- Dockable/tabbed pane layout with drag-and-drop rearrangement
+- Dockable/tabbed layout with drag-and-drop rearrangement
 - Dark/light theme toggle
 - Persistent settings and window layout
+- TLS certificate error prompting
 
 ## Requirements
 
-- Python 3.11+ (3.13+ recommended for native TLS-PSK support)
-- PySide6
-- paho-mqtt
+- Qt6 (Core, Gui, Widgets, Network, Mqtt)
+- CMake 3.22+
+- C++17 compiler
 
-## Install
+## Build
 
 ```sh
 cd src/sbbs3/qtmonitor
-pip install .
-```
-
-Or run directly:
-
-```sh
-pip install -r requirements.txt
-python3 qtmonitor.py [options]
+cmake -S . -B build
+cmake --build build
 ```
 
 ## Usage
@@ -80,3 +74,7 @@ broker.js, and TLS Mode to SBBS.
 | Ctrl+Q | Quit |
 | Ctrl+Shift+R | Reset layout |
 | Alt+1..9 | Toggle dock panes |
+
+## License
+
+BSD 2-Clause. See LICENSE.
