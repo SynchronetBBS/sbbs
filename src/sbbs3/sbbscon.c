@@ -652,6 +652,8 @@ static void client_on(void* p, bool on, int sock, client_t* client, bool update)
 			list_node_t* node;
 
 			listLock(&client_list);
+			/* link_list mutex is recursive (link_list.h:99) — listFindTaggedNode re-locks safely */
+			// coverity[LOCK:SUPPRESS]
 			if ((node = listFindTaggedNode(&client_list, sock)) != NULL)
 				memcpy(node->data, client, sizeof(client_t));
 			listUnlock(&client_list);

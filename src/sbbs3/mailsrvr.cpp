@@ -1191,6 +1191,8 @@ static bool pop3_client_thread(pop3_t* pop3)
 	}
 
 	if (!host_exempt.listed(host_ip, host_name)) {
+		/* loginBanned acquires and releases list->mutex internally — no caller-held lock. */
+		// coverity[LOCK:SUPPRESS]
 		ulong banned = loginBanned(&scfg, startup->login_attempt_list, socket, host_name, startup->login_attempt, &attempted);
 		if (banned) {
 			char ban_duration[128];
@@ -1250,6 +1252,9 @@ static bool pop3_client_thread(pop3_t* pop3)
 		safe_snprintf(challenge, sizeof(challenge), "<%x%x%lx%lx@%.128s>"
 		              , rand(), socket, (ulong)time(NULL), (ulong)clock(), server_host_name());
 
+		/* The earlier loginBanned() call locked+unlocked the list internally; the
+		 * mutex is NOT held here, so this network I/O cannot block under it. */
+		// coverity[SLEEP:SUPPRESS]
 		sockprintf(socket, client.protocol, session, "+OK Synchronet %s Server %s%c-%s Ready %s"
 		           , client.protocol, VERSION, REVISION, PLATFORM_DESC, challenge);
 
