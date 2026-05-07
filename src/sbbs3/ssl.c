@@ -543,7 +543,7 @@ static struct cert_list * get_ssl_cert(scfg_t *cfg, int (*lprintf)(int level, co
 		assert_pthread_mutex_lock(&get_ssl_cert_mutex);
 		/* Get the certificate... first try loading it from a file... */
 		if (cryptStatusOK(cryptKeysetOpen(&ssl_keyset, CRYPT_UNUSED, CRYPT_KEYSET_FILE, cert_path, CRYPT_KEYOPT_READONLY))) {
-			DO("getting private key", ssl_keyset, cryptGetPrivateKey(ssl_keyset, &cert_entry->cert, CRYPT_KEYID_NAME, "ssl_cert", cfg->sys_pass));
+			(void)DO("getting private key", ssl_keyset, cryptGetPrivateKey(ssl_keyset, &cert_entry->cert, CRYPT_KEYID_NAME, "ssl_cert", cfg->sys_pass));
 			cryptKeysetClose(ssl_keyset);
 		}
 		if (cert_entry->cert == -1) {
