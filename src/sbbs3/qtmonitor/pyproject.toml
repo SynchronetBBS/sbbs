@@ -1,0 +1,30 @@
+[build-system]
+requires = ["setuptools>=64"]
+build-backend = "setuptools.backends._legacy:_Backend"
+
+[project]
+name = "qtmonitor"
+version = "0.1.0"
+description = "Synchronet BBS Monitor — PySide6/MQTT control panel"
+requires-python = ">=3.11"
+dependencies = [
+    "PySide6",
+    "paho-mqtt",
+]
+
+[project.gui-scripts]
+qtmonitor = "qtmonitor:main"
+
+[tool.setuptools]
+py-modules = [
+    "qtmonitor",
+    "mainwindow",
+    "mqtt_client",
+    "tls_psk",
+    "log_widget",
+    "node_widget",
+    "client_widget",
+    "stats_widget",
+    "login_attempts_widget",
+    "settings_dialog",
+]
