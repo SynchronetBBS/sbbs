@@ -239,22 +239,30 @@ void MainWindow::setupMenus()
 		});
 	});
 
-	// BBS
-	auto *bbsMenu = menubar->addMenu("&BBS");
+	// BBS (host-level)
+	auto *globalMenu = menubar->addMenu("&BBS");
+	connect(globalMenu->addAction("&Recycle All"), &QAction::triggered, this, [this] { m_mqtt->recycleAll(); });
+	connect(globalMenu->addAction("&Pause All"), &QAction::triggered, this, [this] { m_mqtt->pauseAll(); });
+	connect(globalMenu->addAction("Resu&me All"), &QAction::triggered, this, [this] { m_mqtt->resumeAll(); });
+	globalMenu->addSeparator();
+	connect(globalMenu->addAction("&Clear All Login Attempts"), &QAction::triggered, this, [this] { m_mqtt->clearAll(); });
+	globalMenu->addSeparator();
+	connect(globalMenu->addAction("Force &Timed Event..."), &QAction::triggered, this, [this] {
+		auto code = QInputDialog::getText(this, "Force Timed Event", "Event code:");
+		if (!code.isEmpty()) m_mqtt->triggerEvent(code);
+	});
+	connect(globalMenu->addAction("Force &Network Callout..."), &QAction::triggered, this, [this] {
+		auto hubId = QInputDialog::getText(this, "Force Network Callout", "QHub ID:");
+		if (!hubId.isEmpty()) m_mqtt->triggerCallout(hubId);
+	});
+
+	// Terminal
+	auto *bbsMenu = menubar->addMenu("&Terminal");
 	connect(bbsMenu->addAction("&Recycle"), &QAction::triggered, this, [this] { m_mqtt->recycleServer("term"); });
 	connect(bbsMenu->addAction("&Pause"), &QAction::triggered, this, [this] { m_mqtt->pauseServer("term"); });
 	connect(bbsMenu->addAction("Resu&me"), &QAction::triggered, this, [this] { m_mqtt->resumeServer("term"); });
 	bbsMenu->addSeparator();
 	connect(bbsMenu->addAction("&Clear Login Attempts"), &QAction::triggered, this, [this] { m_mqtt->clearServer("term"); });
-	bbsMenu->addSeparator();
-	connect(bbsMenu->addAction("Force &Timed Event..."), &QAction::triggered, this, [this] {
-		auto code = QInputDialog::getText(this, "Force Timed Event", "Event code:");
-		if (!code.isEmpty()) m_mqtt->triggerEvent(code);
-	});
-	connect(bbsMenu->addAction("Force &Network Callout..."), &QAction::triggered, this, [this] {
-		auto hubId = QInputDialog::getText(this, "Force Network Callout", "QHub ID:");
-		if (!hubId.isEmpty()) m_mqtt->triggerCallout(hubId);
-	});
 
 	// Per-server menus
 	for (const auto &server : Servers) {

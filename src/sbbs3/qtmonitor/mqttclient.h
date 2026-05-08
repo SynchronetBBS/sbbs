@@ -24,6 +24,10 @@ public:
 	void disconnectFromBroker();
 	void ignoreSslErrors(const QList<QSslError> &errors);
 
+	void recycleAll();
+	void pauseAll();
+	void resumeAll();
+	void clearAll();
 	void recycleServer(const QString &server);
 	void pauseServer(const QString &server);
 	void resumeServer(const QString &server);

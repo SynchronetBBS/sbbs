@@ -229,6 +229,10 @@ QString MqttClient::topicPrefix() const
 	return m_bbsId.isEmpty() ? QStringLiteral("sbbs/+") : QStringLiteral("sbbs/") + m_bbsId;
 }
 
+void MqttClient::recycleAll()                          { publish("host/+/recycle", {}); }
+void MqttClient::pauseAll()                            { publish("host/+/pause", {}); }
+void MqttClient::resumeAll()                           { publish("host/+/resume", {}); }
+void MqttClient::clearAll()                            { publish("host/+/clear", {}); }
 void MqttClient::recycleServer(const QString &server) { publish("host/+/server/" + server + "/recycle", {}); }
 void MqttClient::pauseServer(const QString &server)   { publish("host/+/server/" + server + "/pause", {}); }
 void MqttClient::resumeServer(const QString &server)  { publish("host/+/server/" + server + "/resume", {}); }
