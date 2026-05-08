@@ -3,6 +3,8 @@
 
 #include <QWidget>
 #include <QTreeWidget>
+#include <QToolButton>
+#include <QMenu>
 #include <QVariantMap>
 
 class LoginAttemptsWidget : public QWidget
@@ -10,7 +12,9 @@ class LoginAttemptsWidget : public QWidget
 	Q_OBJECT
 
 public:
-	explicit LoginAttemptsWidget(bool dark = true, QWidget *parent = nullptr);
+	explicit LoginAttemptsWidget(const QStringList &servers,
+	                            const QHash<QString, QString> &serverLabels,
+	                            bool dark = true, QWidget *parent = nullptr);
 	void setDark(bool dark);
 
 public slots:
@@ -18,6 +22,8 @@ public slots:
 
 signals:
 	void countChanged(int count);
+	void clearAttempt(const QString &ip);
+	void clearAllAttempts(const QString &server);
 
 private:
 	QTreeWidget *m_tree;

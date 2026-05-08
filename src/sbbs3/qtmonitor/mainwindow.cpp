@@ -139,7 +139,7 @@ void MainWindow::setupDocks()
 	addDockWidget(Qt::BottomDockWidgetArea, m_clientDock);
 	if (firstLogDock) splitDockWidget(firstLogDock, m_clientDock, Qt::Horizontal);
 
-	m_loginAttemptsWidget = new LoginAttemptsWidget;
+	m_loginAttemptsWidget = new LoginAttemptsWidget(Servers, ServerLabels);
 	m_loginAttemptsDock = makeDock("Login Attempts", m_loginAttemptsWidget);
 	addDockWidget(Qt::BottomDockWidgetArea, m_loginAttemptsDock);
 	tabifyDockWidget(m_clientDock, m_loginAttemptsDock);
@@ -433,6 +433,8 @@ void MainWindow::connectMqttSignals()
 		if (!text.isEmpty())
 			m_mqtt->sendNodeMessage(n, text);
 	});
+	connect(m_loginAttemptsWidget, &LoginAttemptsWidget::clearAttempt, m_mqtt, &MqttClient::clearLoginAttempt);
+	connect(m_loginAttemptsWidget, &LoginAttemptsWidget::clearAllAttempts, m_mqtt, &MqttClient::clearServer);
 	connect(m_loginAttemptsWidget, &LoginAttemptsWidget::countChanged, this, [this](int count) {
 		m_failedLabel->setText(QStringLiteral("Failed: %1").arg(count));
 	});
@@ -459,7 +461,7 @@ void MainWindow::applyGlobalStyle()
 
 void MainWindow::applyLogMaxLines()
 {
-	int max = m_settings.value("log/max_lines", 2000000).toInt();
+	int max = m_settings.value("log/max_lines", DefaultMaxLogLines).toInt();
 	for (auto *pane : m_logPanes)
 		pane->setMaxLines(max);
 }

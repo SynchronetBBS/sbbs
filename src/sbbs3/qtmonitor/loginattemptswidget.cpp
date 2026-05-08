@@ -2,6 +2,8 @@
 #include "textutil.h"
 #include <QVBoxLayout>
 #include <QDateTime>
+#include <QMenu>
+#include <QHBoxLayout>
 
 class SortableItem : public QTreeWidgetItem
 {
@@ -16,11 +18,35 @@ public:
 	}
 };
 
-LoginAttemptsWidget::LoginAttemptsWidget(bool dark, QWidget *parent)
+LoginAttemptsWidget::LoginAttemptsWidget(const QStringList &servers,
+                                         const QHash<QString, QString> &serverLabels,
+                                         bool dark, QWidget *parent)
 	: QWidget(parent), m_dark(dark)
 {
 	auto *layout = new QVBoxLayout(this);
 	layout->setContentsMargins(2, 2, 2, 2);
+
+	auto *toolbar = new QHBoxLayout;
+	auto *clearBtn = new QToolButton;
+	clearBtn->setText("Clear");
+	clearBtn->setPopupMode(QToolButton::InstantPopup);
+	auto *clearMenu = new QMenu(this);
+	for (const auto &server : servers) {
+		auto *act = clearMenu->addAction(serverLabels.value(server, server));
+		connect(act, &QAction::triggered, this, [this, server] {
+			emit clearAllAttempts(server);
+		});
+	}
+	clearMenu->addSeparator();
+	auto *allAct = clearMenu->addAction("All");
+	connect(allAct, &QAction::triggered, this, [this, servers] {
+		for (const auto &server : servers)
+			emit clearAllAttempts(server);
+	});
+	clearBtn->setMenu(clearMenu);
+	toolbar->addWidget(clearBtn);
+	toolbar->addStretch();
+	layout->addLayout(toolbar);
 
 	m_tree = new QTreeWidget;
 	m_tree->setHeaderLabels({"IP Address", "First Attempt", "Last Attempt",
@@ -29,6 +55,22 @@ LoginAttemptsWidget::LoginAttemptsWidget(bool dark, QWidget *parent)
 	m_tree->setRootIsDecorated(false);
 	m_tree->setAlternatingRowColors(true);
 	m_tree->setSortingEnabled(true);
+	m_tree->setSelectionMode(QAbstractItemView::ExtendedSelection);
+	m_tree->setContextMenuPolicy(Qt::CustomContextMenu);
+	connect(m_tree, &QTreeWidget::customContextMenuRequested, this, [this](const QPoint &pos) {
+		auto selected = m_tree->selectedItems();
+		if (selected.isEmpty())
+			return;
+		QMenu menu(this);
+		auto *clearAct = menu.addAction(selected.size() == 1
+			? "Clear " + selected.first()->text(0)
+			: QString("Clear %1 entries").arg(selected.size()));
+		connect(clearAct, &QAction::triggered, this, [this, selected] {
+			for (auto *item : selected)
+				emit clearAttempt(item->text(0));
+		});
+		menu.exec(m_tree->viewport()->mapToGlobal(pos));
+	});
 	setDark(m_dark);
 	layout->addWidget(m_tree);
 }

@@ -28,6 +28,7 @@ public:
 	void pauseServer(const QString &server);
 	void resumeServer(const QString &server);
 	void clearServer(const QString &server);
+	void clearLoginAttempt(const QString &ip);
 	void triggerEvent(const QString &code);
 	void triggerCallout(const QString &hubId);
 	void setNode(int nodeNum, const QString &prop, const QString &value);

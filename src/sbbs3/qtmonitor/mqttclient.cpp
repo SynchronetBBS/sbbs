@@ -233,6 +233,7 @@ void MqttClient::recycleServer(const QString &server) { publish("host/+/server/"
 void MqttClient::pauseServer(const QString &server)   { publish("host/+/server/" + server + "/pause", {}); }
 void MqttClient::resumeServer(const QString &server)  { publish("host/+/server/" + server + "/resume", {}); }
 void MqttClient::clearServer(const QString &server)    { publish("host/+/server/" + server + "/clear", {}); }
+void MqttClient::clearLoginAttempt(const QString &ip)  { publish("host/+/clear", ip.toUtf8()); }
 void MqttClient::triggerEvent(const QString &code)     { publish("exec", code.toUtf8()); }
 void MqttClient::triggerCallout(const QString &hubId)  { publish("call", hubId.toUtf8()); }
 void MqttClient::setNode(int n, const QString &prop, const QString &val) { publish(QStringLiteral("node/%1/set/%2").arg(n).arg(prop), val.toUtf8()); }
