@@ -1,4 +1,5 @@
 #include "nodewidget.h"
+#include "textutil.h"
 #include <QVBoxLayout>
 #include <QToolBar>
 #include <QMenu>
@@ -127,7 +128,7 @@ void NodeWidget::updateNode(int nodeNum, const QVariantMap &data)
 
 void NodeWidget::updateNodeVerbose(int nodeNum, const QString &description)
 {
-	ensureItem(nodeNum)->setText(6, description);
+	setItemText(ensureItem(nodeNum), 6, description);
 }
 
 QString NodeWidget::statusName(const QString &code) const

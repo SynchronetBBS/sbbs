@@ -1,4 +1,5 @@
 #include "actionwidget.h"
+#include "textutil.h"
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QDateTime>
@@ -190,8 +191,8 @@ void ActionWidget::addAction(const QString &action, const QString &detail,
 	QStringList fields = payload.split('\t');
 	QString user, details;
 	parsePayload(action, fields, user, details);
-	item->setText(2, user);
-	item->setText(3, details);
+	setItemText(item, 2, user);
+	setItemText(item, 3, details);
 
 	item->setHidden(m_hiddenActions.contains(action));
 

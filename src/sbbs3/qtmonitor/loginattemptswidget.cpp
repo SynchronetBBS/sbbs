@@ -1,4 +1,5 @@
 #include "loginattemptswidget.h"
+#include "textutil.h"
 #include <QVBoxLayout>
 #include <QDateTime>
 
@@ -63,8 +64,8 @@ void LoginAttemptsWidget::updateAttempt(const QString &ip, const QString &action
 		item->setText(col, dt.isValid() ? dt.toString("MMM dd hh:mm:ss") : ts);
 		item->setData(col, Qt::UserRole, dt.isValid() ? dt : QDateTime());
 	}
-	item->setText(5, data.value("protocol").toString());
-	item->setText(6, data.value("username").toString());
+	setItemText(item, 5, data.value("protocol").toString());
+	setItemText(item, 6, data.value("username").toString());
 
 	int count = data.value("count", "0").toString().toInt();
 	item->setData(3, Qt::DisplayRole, count);
