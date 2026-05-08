@@ -278,6 +278,7 @@ void MainWindow::setupToolbar()
 
 	for (auto &[name, dock] : std::initializer_list<std::pair<const char *, QDockWidget *>>{
 		{"Nodes", m_nodeDock}, {"Stats", m_statsDock}, {"Clients", m_clientDock},
+		{"Logins", m_loginAttemptsDock}, {"Activity", m_actionDock},
 	}) {
 		auto *act = new QAction(name, this);
 		connect(act, &QAction::triggered, this, [this, d = dock] { showDock(d); });
@@ -285,10 +286,12 @@ void MainWindow::setupToolbar()
 	}
 
 	toolbar->addSeparator();
-	for (const auto &server : Servers) {
-		auto *act = new QAction(ServerLabels.value(server), this);
-		connect(act, &QAction::triggered, this, [this, server] {
-			if (auto *dock = m_logDocks.value(server))
+	for (const auto &key : Servers + QStringList{"bbs", "events"}) {
+		static const QHash<QString, QString> extraLabels = {{"bbs", "BBS"}, {"events", "Events"}};
+		QString label = ServerLabels.value(key, extraLabels.value(key, key));
+		auto *act = new QAction(label, this);
+		connect(act, &QAction::triggered, this, [this, key] {
+			if (auto *dock = m_logDocks.value(key))
 				showDock(dock);
 		});
 		toolbar->addAction(act);
