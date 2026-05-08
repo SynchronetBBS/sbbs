@@ -2,6 +2,19 @@
 #include <QVBoxLayout>
 #include <QDateTime>
 
+class SortableItem : public QTreeWidgetItem
+{
+public:
+	bool operator<(const QTreeWidgetItem &other) const override {
+		int col = treeWidget()->sortColumn();
+		QVariant a = data(col, Qt::UserRole);
+		QVariant b = other.data(col, Qt::UserRole);
+		if (a.typeId() == QMetaType::QDateTime && b.typeId() == QMetaType::QDateTime)
+			return a.toDateTime() < b.toDateTime();
+		return QTreeWidgetItem::operator<(other);
+	}
+};
+
 ClientWidget::ClientWidget(bool dark, QWidget *parent)
 	: QWidget(parent), m_dark(dark)
 {
@@ -35,7 +48,7 @@ void ClientWidget::updateClient(const QString &server, const QString &action, co
 	QTreeWidgetItem *item;
 	auto it = m_clients.find(key);
 	if (it == m_clients.end()) {
-		item = new QTreeWidgetItem;
+		item = new SortableItem;
 		m_tree->addTopLevelItem(item);
 		m_clients[key] = item;
 	} else {
@@ -54,6 +67,7 @@ void ClientWidget::updateClient(const QString &server, const QString &action, co
 	if (!dt.isValid())
 		dt = QDateTime::fromString(ts.left(15), "yyyyMMdd'T'HHmmss");
 	item->setText(6, dt.isValid() ? dt.toString("MMM dd hh:mm:ss") : ts);
+	item->setData(6, Qt::UserRole, dt.isValid() ? dt : QDateTime());
 }
 
 void ClientWidget::setDark(bool dark)
