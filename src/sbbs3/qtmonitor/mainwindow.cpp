@@ -8,6 +8,7 @@
 #include <QMessageBox>
 #include <QSslError>
 #include <QTimer>
+#include <QRegularExpression>
 
 static const QStringList Servers = {"term", "mail", "ftp", "web", "srvc"};
 static const QHash<QString, QString> ServerLabels = {
@@ -356,9 +357,31 @@ void MainWindow::connectMqttSignals()
 	connect(m_mqtt, &MqttClient::nodeVerbose, m_nodeWidget, &NodeWidget::updateNodeVerbose);
 	connect(m_mqtt, &MqttClient::clientUpdate, m_clientWidget, &ClientWidget::updateClient);
 	connect(m_mqtt, &MqttClient::loginAttempt, m_loginAttemptsWidget, &LoginAttemptsWidget::updateAttempt);
-	connect(m_mqtt, &MqttClient::serverState, this, [this](const QString &server, const QString &state) {
-		if (auto *lbl = m_serverStateLabels.value(server))
-			lbl->setText(ServerLabels.value(server, server) + ": " + state);
+	auto updateServerLabel = [this](const QString &server) {
+		if (auto *lbl = m_serverStateLabels.value(server)) {
+			QString label = ServerLabels.value(server, server);
+			QString ver = m_serverVersions.value(server);
+			QString state = m_serverStates.value(server, "--");
+			if (!ver.isEmpty())
+				lbl->setText(label + " " + ver + ": " + state);
+			else
+				lbl->setText(label + ": " + state);
+		}
+	};
+	connect(m_mqtt, &MqttClient::serverState, this, [this, updateServerLabel](const QString &server, const QString &state) {
+		m_serverStates[server] = state;
+		updateServerLabel(server);
+	});
+	connect(m_mqtt, &MqttClient::serverVersion, this, [this, updateServerLabel](const QString &server, const QString &version) {
+		static QRegularExpression verRe("(\\d+\\.\\d+\\w*)");
+		QString short_ver;
+		auto match = verRe.match(version);
+		if (match.hasMatch())
+			short_ver = match.captured(1);
+		if (version.contains("Debug", Qt::CaseInsensitive))
+			short_ver += "-Dbg";
+		m_serverVersions[server] = short_ver;
+		updateServerLabel(server);
 	});
 	connect(m_mqtt, &MqttClient::serverStat, this, [this](const QString &server, const QString &stat, const QString &value) {
 		bool ok;

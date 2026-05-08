@@ -48,6 +48,7 @@ signals:
 	void nodeVerbose(int nodeNum, const QString &description);
 	void clientUpdate(const QString &server, const QString &action, const QVariantMap &fields);
 	void serverState(const QString &server, const QString &state);
+	void serverVersion(const QString &server, const QString &version);
 	void serverStat(const QString &server, const QString &statName, const QString &value);
 	void loginAttempt(const QString &ip, const QString &action, const QVariantMap &fields);
 

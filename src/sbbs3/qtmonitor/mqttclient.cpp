@@ -183,6 +183,7 @@ void MqttClient::onConnected()
 		prefix + "/host/+/server/+/client/action/#",
 		prefix + "/host/+/server/+/client",
 		prefix + "/host/+/server/+",
+		prefix + "/host/+/server/+/version",
 		prefix + "/host/+/server/+/served",
 		prefix + "/host/+/server/+/highwater",
 		prefix + "/host/+/server/+/error_count",
@@ -327,6 +328,12 @@ void MqttClient::dispatchMessage(const QString &topic, const QString &text)
 	// sbbs/{id}/host/{h}/server/{srv} (server-level status)
 	if (parts.size() == 6 && parts[4] == "server") {
 		emit serverState(parts[5], text.split('\t').first());
+		return;
+	}
+
+	// sbbs/{id}/host/{h}/server/{srv}/version
+	if (parts.size() == 7 && parts[4] == "server" && parts[6] == "version") {
+		emit serverVersion(parts[5], text);
 		return;
 	}
 
