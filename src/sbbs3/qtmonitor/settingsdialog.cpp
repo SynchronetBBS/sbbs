@@ -83,6 +83,13 @@ SettingsDialog::SettingsDialog(QSettings *settings, QWidget *parent)
 	addFileRow(certForm, "Private Key:", m_keyFile, "mqtt/key_file");
 	layout->addWidget(certGroup);
 
+	auto *notifyGroup = new QGroupBox("Notifications");
+	auto *notifyForm = new QFormLayout(notifyGroup);
+	m_pageAlert = new QCheckBox("Alert on sysop page");
+	m_pageAlert->setChecked(m_settings->value("notify/page_alert", true).toBool());
+	notifyForm->addRow(m_pageAlert);
+	layout->addWidget(notifyGroup);
+
 	auto *buttons = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel);
 	connect(buttons, &QDialogButtonBox::accepted, this, &SettingsDialog::saveAndAccept);
 	connect(buttons, &QDialogButtonBox::rejected, this, &QDialog::reject);
@@ -101,5 +108,6 @@ void SettingsDialog::saveAndAccept()
 	m_settings->setValue("mqtt/ca_file", m_caFile->text());
 	m_settings->setValue("mqtt/cert_file", m_certFile->text());
 	m_settings->setValue("mqtt/key_file", m_keyFile->text());
+	m_settings->setValue("notify/page_alert", m_pageAlert->isChecked());
 	accept();
 }

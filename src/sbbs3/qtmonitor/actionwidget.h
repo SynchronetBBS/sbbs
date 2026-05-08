@@ -3,6 +3,9 @@
 
 #include <QWidget>
 #include <QTreeWidget>
+#include <QToolButton>
+#include <QMenu>
+#include <QSet>
 
 class ActionWidget : public QWidget
 {
@@ -17,7 +20,13 @@ public slots:
 	               const QString &timestamp, const QString &payload);
 
 private:
+	void applyFilters();
+
 	QTreeWidget *m_tree;
+	QToolButton *m_showBtn;
+	QMenu *m_showMenu;
+	QHash<QString, QAction *> m_filterActions;
+	QSet<QString> m_hiddenActions;
 	bool m_dark;
 	static const int MaxRows = 1000;
 };

@@ -9,6 +9,7 @@
 #include <QSslError>
 #include <QTimer>
 #include <QRegularExpression>
+#include <QApplication>
 
 static const QStringList Servers = {"term", "mail", "ftp", "web", "srvc"};
 static const QHash<QString, QString> ServerLabels = {
@@ -143,7 +144,7 @@ void MainWindow::setupDocks()
 	tabifyDockWidget(m_clientDock, m_loginAttemptsDock);
 
 	m_actionWidget = new ActionWidget;
-	m_actionDock = makeDock("Actions", m_actionWidget);
+	m_actionDock = makeDock("Activity", m_actionWidget);
 	addDockWidget(Qt::BottomDockWidgetArea, m_actionDock);
 	tabifyDockWidget(m_loginAttemptsDock, m_actionDock);
 
@@ -364,6 +365,18 @@ void MainWindow::connectMqttSignals()
 	connect(m_mqtt, &MqttClient::clientUpdate, m_clientWidget, &ClientWidget::updateClient);
 	connect(m_mqtt, &MqttClient::loginAttempt, m_loginAttemptsWidget, &LoginAttemptsWidget::updateAttempt);
 	connect(m_mqtt, &MqttClient::bbsAction, m_actionWidget, &ActionWidget::addAction);
+	connect(m_mqtt, &MqttClient::bbsAction, this, [this](const QString &action, const QString &detail,
+	        const QString &, const QString &payload) {
+		if (action != "page")
+			return;
+		if (!m_settings.value("notify/page_alert", true).toBool())
+			return;
+		QStringList fields = payload.split('\t');
+		QString user = fields.size() >= 2 ? fields[1] : "Unknown";
+		QApplication::alert(this);
+		QApplication::beep();
+		statusBar()->showMessage("Sysop page from " + user + " (node " + detail + ")", 15000);
+	});
 	auto updateServerLabel = [this](const QString &server) {
 		if (auto *lbl = m_serverStateLabels.value(server)) {
 			QString label = ServerLabels.value(server, server);
