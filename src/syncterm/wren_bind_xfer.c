@@ -38,25 +38,30 @@ struct log_event {
 	char msg[LOG_MSG_MAX];
 };
 
-static struct log_event log_ring[LOG_RING_CAP];
-static size_t           log_head;     /* oldest; advanced by drainLog */
-static size_t           log_count;    /* entries currently buffered  */
-static atomic_uint      log_dropped;  /* push attempts past full ring */
-static pthread_mutex_t  log_mtx;
+static struct log_event   log_ring[LOG_RING_CAP];
+static size_t             log_head;    /* oldest; advanced by drainLog */
+static size_t             log_count;   /* entries currently buffered  */
+static _Atomic unsigned   log_dropped; /* push attempts past full ring */
+static pthread_mutex_t    log_mtx;
 
 /* ----- tick state (single, borrowed) ------------------------------ */
 
 static struct xfer_tick_state tick;
 static pthread_mutex_t        tick_mtx;
-static atomic_bool            tick_dirty;
+static _Atomic bool           tick_dirty;
 
 /* ----- session lifecycle ------------------------------------------ */
 
-static atomic_bool abort_requested;
-static atomic_bool worker_done;
-static atomic_bool worker_success;
-static atomic_bool session_active;
-static xpevent_t   worker_done_evt;  /* set by worker wrapper at exit */
+/* Use the _Atomic keyword form rather than the atomic_bool typedef
+ * from <stdatomic.h> — MSVC's stdatomic.h doesn't typedef
+ * atomic_bool to a real atomic type and the clang frontend
+ * complains under /experimental:c11atomics.  rlogin.c follows the
+ * same pattern. */
+static _Atomic bool abort_requested;
+static _Atomic bool worker_done;
+static _Atomic bool worker_success;
+static _Atomic bool session_active;
+static xpevent_t    worker_done_evt;  /* set by worker wrapper at exit */
 
 /* ----- dialog request (worker → main) ----------------------------- */
 
