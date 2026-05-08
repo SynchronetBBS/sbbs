@@ -19,6 +19,7 @@ public slots:
 
 signals:
 	void nodeAction(int nodeNum, const QString &action);
+	void nodeStatus(int nodeNum, int status);
 	void nodeMessage(int nodeNum);
 
 private:

@@ -445,6 +445,9 @@ void MainWindow::connectMqttSignals()
 		QString prop = propMap.value(action, action);
 		m_mqtt->setNode(n, prop, action == "clear_errors" ? "0" : "1");
 	});
+	connect(m_nodeWidget, &NodeWidget::nodeStatus, this, [this](int n, int status) {
+		m_mqtt->setNode(n, "status", QString::number(status));
+	});
 	connect(m_nodeWidget, &NodeWidget::nodeMessage, this, [this](int n) {
 		auto text = QInputDialog::getText(this, "Send Message", QStringLiteral("Message to node %1:").arg(n));
 		if (!text.isEmpty())

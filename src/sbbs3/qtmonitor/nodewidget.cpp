@@ -64,6 +64,16 @@ NodeWidget::NodeWidget(bool dark, QWidget *parent)
 			connect(act, &QAction::triggered, this, [this, s = QString(id)] { emitAction(s); });
 		}
 		menu.addSeparator();
+		auto *statusMenu = menu.addMenu("Set Status");
+		for (auto it = StatusNames.constBegin(); it != StatusNames.constEnd(); ++it) {
+			int val = it.key().toInt();
+			auto *act = statusMenu->addAction(it.value());
+			connect(act, &QAction::triggered, this, [this, val] {
+				for (auto *item : m_tree->selectedItems())
+					emit nodeStatus(item->data(0, Qt::DisplayRole).toInt(), val);
+			});
+		}
+		menu.addSeparator();
 		auto *msgAct = menu.addAction("Send Message");
 		connect(msgAct, &QAction::triggered, this, [this] {
 			for (auto *item : m_tree->selectedItems())
