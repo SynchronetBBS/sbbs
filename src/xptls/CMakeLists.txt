@@ -58,11 +58,19 @@ elseif(CMAKE_SYSTEM_NAME STREQUAL "Haiku")
 endif()
 
 if(XP_CRYPTO_BACKEND STREQUAL "Botan")
-    if(NOT TARGET PkgConfig::SYS_BOTAN3)
-        find_package(PkgConfig REQUIRED)
-        pkg_check_modules(SYS_BOTAN3 REQUIRED IMPORTED_TARGET "botan-3>=3.6")
+    # Parent project may pre-create an IMPORTED target (e.g. when Botan
+    # is built via ExternalProject and its pkg-config file doesn't
+    # exist at configure time — common on Windows where pkg-config is
+    # often absent).  BOTAN3_VENDORED_TARGET is the cache hint.
+    if(BOTAN3_VENDORED_TARGET)
+        target_link_libraries(xptls PUBLIC ${BOTAN3_VENDORED_TARGET})
+    else()
+        if(NOT TARGET PkgConfig::SYS_BOTAN3)
+            find_package(PkgConfig REQUIRED)
+            pkg_check_modules(SYS_BOTAN3 REQUIRED IMPORTED_TARGET "botan-3>=3.6")
+        endif()
+        target_link_libraries(xptls PUBLIC PkgConfig::SYS_BOTAN3)
     endif()
-    target_link_libraries(xptls PUBLIC PkgConfig::SYS_BOTAN3)
     set_property(TARGET xptls PROPERTY CXX_STANDARD 20)
     set_property(TARGET xptls PROPERTY CXX_STANDARD_REQUIRED ON)
     set_property(TARGET xptls PROPERTY LINKER_LANGUAGE CXX)
