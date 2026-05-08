@@ -59,6 +59,21 @@ LogWidget::LogWidget(const QString &title, bool dark, QWidget *parent)
 	toolbar->addWidget(clearBtn);
 	toolbar->addStretch();
 
+	m_filterEdit = new QLineEdit;
+	m_filterEdit->setPlaceholderText("Filter");
+	m_filterEdit->setClearButtonEnabled(true);
+	m_filterEdit->setMaximumWidth(200);
+	m_filterDebounce = new QTimer(this);
+	m_filterDebounce->setSingleShot(true);
+	m_filterDebounce->setInterval(150);
+	connect(m_filterEdit, &QLineEdit::textChanged, this, [this](const QString &text) {
+		m_filterText = text;
+		m_filterGeneration++;
+		m_filterDebounce->start();
+	});
+	connect(m_filterDebounce, &QTimer::timeout, this, &LogWidget::startFilterApply);
+	toolbar->addWidget(m_filterEdit);
+
 	m_showBtn = new QToolButton;
 	m_showBtn->setText("Show");
 	m_showBtn->setPopupMode(QToolButton::InstantPopup);
@@ -69,7 +84,7 @@ LogWidget::LogWidget(const QString &title, bool dark, QWidget *parent)
 		m_filterActions[i]->setChecked(true);
 		connect(m_filterActions[i], &QAction::toggled, this, [this, i](bool on) {
 			m_levelVisible[i] = on;
-			applyFilters();
+			startFilterApply();
 		});
 	}
 	m_showBtn->setMenu(showMenu);
@@ -78,7 +93,7 @@ LogWidget::LogWidget(const QString &title, bool dark, QWidget *parent)
 	layout->addLayout(toolbar);
 
 	m_text->setReadOnly(true);
-	m_text->setMaximumBlockCount(2000000);
+	m_text->setMaximumBlockCount(DefaultMaxLogLines);
 	QFont font("Monospace", 9);
 	font.setStyleHint(QFont::Monospace);
 	m_text->setFont(font);
@@ -152,23 +167,55 @@ void LogWidget::appendLine(int level, const QString &timestamp, const QString &t
 	QTextBlock block = cursor.block().previous();
 	if (block.isValid()) {
 		block.setUserData(new LogBlockData(level));
-		block.setVisible(m_levelVisible[qBound(0, level, 7)]);
+		block.setVisible(blockMatchesFilter(block));
 	}
 
 	m_text->setTextCursor(cursor);
 	m_text->ensureCursorVisible();
 }
 
-void LogWidget::applyFilters()
+bool LogWidget::blockMatchesFilter(const QTextBlock &block) const
 {
-	QTextDocument *doc = m_text->document();
-	for (QTextBlock block = doc->begin(); block != doc->end(); block = block.next()) {
-		auto *data = static_cast<LogBlockData *>(block.userData());
-		if (data)
-			block.setVisible(m_levelVisible[qBound(0, data->level(), 7)]);
+	auto *data = static_cast<LogBlockData *>(block.userData());
+	if (!data)
+		return true;
+	if (!m_levelVisible[qBound(0, data->level(), 7)])
+		return false;
+	if (!m_filterText.isEmpty() && !block.text().contains(m_filterText, Qt::CaseInsensitive))
+		return false;
+	return true;
+}
+
+void LogWidget::startFilterApply()
+{
+	m_activeGeneration = m_filterGeneration;
+	m_filterBlock = m_text->document()->end().previous();
+	applyFilterChunk();
+}
+
+void LogWidget::applyFilterChunk()
+{
+	if (m_activeGeneration != m_filterGeneration)
+		return;
+
+	static const int ChunkSize = 50000;
+	int count = 0;
+	while (m_filterBlock.isValid() && count < ChunkSize) {
+		m_filterBlock.setVisible(blockMatchesFilter(m_filterBlock));
+		m_filterBlock = m_filterBlock.previous();
+		++count;
 	}
-	doc->markContentsDirty(0, doc->characterCount());
-	m_text->viewport()->update();
+
+	if (m_filterBlock.isValid() && m_activeGeneration == m_filterGeneration) {
+		QTextDocument *doc = m_text->document();
+		doc->markContentsDirty(0, doc->characterCount());
+		m_text->viewport()->update();
+		QTimer::singleShot(0, this, &LogWidget::applyFilterChunk);
+	} else if (m_activeGeneration == m_filterGeneration) {
+		QTextDocument *doc = m_text->document();
+		doc->markContentsDirty(0, doc->characterCount());
+		m_text->viewport()->update();
+	}
 }
 
 QColor LogWidget::colorForLevel(int level) const
