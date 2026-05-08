@@ -428,7 +428,6 @@ endif()
 # plain iniWriteFile).  The "none" backend provides no-op xp_crypt
 # and xp_tls so nothing drags in OpenSSL / Botan.
 list(APPEND SOURCE ini_crypt.c)
-add_subdirectory(../xptls xptls EXCLUDE_FROM_ALL)
 
 if(NOT WITHOUT_CRYPTO)
 	# telnets.c + legacy decrypt-only ciphers only make sense when a
@@ -484,6 +483,10 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
 	set_source_files_properties(SyncTERM.icns PROPERTIES MACOSX_PACKAGE_LOCATION "Resources")
 endif()
 require_libs(syncterm ciolib comio encode hash sftp uifc xpdev)
+# Add xptls AFTER require_libs() so the xpdev target already exists —
+# xptls links xpdev to inherit its PUBLIC platform / HAS_STDINT_H
+# defines.
+add_subdirectory(../xptls xptls EXCLUDE_FROM_ALL)
 target_link_libraries(syncterm wrenvm re1)
 target_compile_definitions(syncterm PRIVATE TELNET_NO_DLL)
 if(WITHOUT_OOII)

@@ -5,20 +5,14 @@ endif()
 
 find_package(PkgConfig QUIET)
 
-# We genuinely depend on xpdev's headers (sockwrap.h via xp_tls.h,
+# xptls genuinely depends on xpdev's headers (sockwrap.h via xp_tls.h,
 # gen_defs.h via xp_crypt.h) and on the platform / HAS_STDINT_H /
 # HAS_INTTYPES_H gating that xpdev's CMakeLists publishes as PUBLIC
-# defines on its target.  Pull in xpdev as a subdirectory if the
-# parent project hasn't already, then link it — that's the single
-# source of truth for those defines.  xpdev_DONE is the same flag
-# require_lib_dir uses, so syncterm's later require_libs() won't
-# double-add.
+# defines on its target.  Standalone builds need to add the xpdev
+# subdirectory ourselves; integrated builds (Synchronet) must add
+# xptls AFTER xpdev so this branch is skipped.
 if(NOT TARGET xpdev)
     add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../xpdev xpdev EXCLUDE_FROM_ALL)
-    # CACHE so the flag is visible from the parent project's scope
-    # too — require_lib_dir reads it from there to avoid a duplicate
-    # add_subdirectory() that would crash with CMP0002.
-    set(xpdev_DONE TRUE CACHE INTERNAL "")
 endif()
 
 # Backend selection: Botan, OpenSSL, or none
