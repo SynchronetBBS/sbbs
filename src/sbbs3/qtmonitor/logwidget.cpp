@@ -272,12 +272,48 @@ void LogWidget::updateFilterIcons()
 	}
 }
 
+void LogWidget::recolorBlocks()
+{
+	QColor tsColor = m_dark ? QColor("#888888") : QColor("gray");
+	QTextCursor cursor(m_text->document());
+	cursor.beginEditBlock();
+	for (QTextBlock block = m_text->document()->begin(); block.isValid(); block = block.next()) {
+		auto *data = static_cast<LogBlockData *>(block.userData());
+		if (!data)
+			continue;
+		QColor color = colorForLevel(data->level());
+		QTextCharFormat fmt;
+		fmt.setForeground(color);
+		if (data->level() <= 3)
+			fmt.setFontWeight(QFont::Bold);
+
+		cursor.setPosition(block.position());
+		cursor.movePosition(QTextCursor::EndOfBlock, QTextCursor::KeepAnchor);
+		QString text = block.text();
+		int tsEnd = text.indexOf(' ');
+		if (tsEnd > 0 && tsEnd < 20) {
+			cursor.setPosition(block.position());
+			cursor.setPosition(block.position() + tsEnd + 1, QTextCursor::KeepAnchor);
+			QTextCharFormat tsFmt;
+			tsFmt.setForeground(tsColor);
+			cursor.setCharFormat(tsFmt);
+			cursor.setPosition(block.position() + tsEnd + 1);
+			cursor.movePosition(QTextCursor::EndOfBlock, QTextCursor::KeepAnchor);
+			cursor.setCharFormat(fmt);
+		} else {
+			cursor.setCharFormat(fmt);
+		}
+	}
+	cursor.endEditBlock();
+}
+
 void LogWidget::setDark(bool dark)
 {
 	m_dark = dark;
 	m_text->setStyleSheet(dark
 		? "QPlainTextEdit { background-color: #1e1e1e; color: #cccccc; }"
 		: QString());
+	recolorBlocks();
 	updateFilterIcons();
 }
 

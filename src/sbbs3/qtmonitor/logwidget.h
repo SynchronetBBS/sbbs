@@ -34,6 +34,7 @@ private:
 	void appendLine(int level, const QString &timestamp, const QString &text);
 	void startFilterApply();
 	void applyFilterChunk();
+	void recolorBlocks();
 	void updateFilterIcons();
 	QColor colorForLevel(int level) const;
 	bool blockMatchesFilter(const QTextBlock &block) const;
