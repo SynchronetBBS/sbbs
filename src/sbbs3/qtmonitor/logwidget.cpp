@@ -63,6 +63,72 @@ void LogWidget::appendLog(int level, const QString &timestamp, const QString &te
 	appendLine(level, timestamp, text);
 }
 
+static const char *ControlNames[] = {
+	"NUL", "SOH", "STX", "ETX", "EOT", "ENQ", "ACK", "BEL",
+	"BS",  "HT",  "LF",  "VT",  "FF",  "CR",  "SO",  "SI",
+	"DLE", "DC1", "DC2", "DC3", "DC4", "NAK", "SYN", "ETB",
+	"CAN", "EM",  "SUB", "ESC", "FS",  "GS",  "RS",  "US",
+};
+
+static bool hasControls(const QString &s)
+{
+	for (QChar ch : s) {
+		ushort c = ch.unicode();
+		if (c <= 0x1F || c == 0x7F)
+			return true;
+	}
+	return false;
+}
+
+static const char *cEscape(ushort c)
+{
+	switch (c) {
+	case 0x00: return "\\0";
+	case 0x07: return "\\a";
+	case 0x08: return "\\b";
+	case 0x09: return "\\t";
+	case 0x0A: return "\\n";
+	case 0x0B: return "\\v";
+	case 0x0C: return "\\f";
+	case 0x0D: return "\\r";
+	case 0x1B: return "\\e";
+	default:   return nullptr;
+	}
+}
+
+static void insertWithControls(QTextCursor &cursor, const QString &text, const QTextCharFormat &fmt)
+{
+	QString run;
+	for (QChar ch : text) {
+		ushort c = ch.unicode();
+		if (c <= 0x1F || c == 0x7F) {
+			if (!run.isEmpty()) {
+				cursor.insertText(run, fmt);
+				run.clear();
+			}
+			QTextCharFormat ctrlFmt(fmt);
+			QChar display = (c == 0x7F) ? QChar(0x2421) : QChar(0x2400 + c);
+			QChar caret = (c == 0x7F) ? '?' : QChar('@' + c);
+			const char *name = (c == 0x7F) ? "DEL" : ControlNames[c];
+			const char *esc = cEscape(c);
+			QString tip;
+			if (esc)
+				tip = QString("%1, ^%2 (0x%3 \u2014 %4)")
+					.arg(esc).arg(caret).arg(c, 2, 16, QChar('0')).arg(name);
+			else
+				tip = QString("^%1 (0x%2 \u2014 %3)")
+					.arg(caret).arg(c, 2, 16, QChar('0')).arg(name);
+			ctrlFmt.setToolTip(tip);
+			ctrlFmt.setFontWeight(QFont::Bold);
+			cursor.insertText(QString(display), ctrlFmt);
+		} else {
+			run += ch;
+		}
+	}
+	if (!run.isEmpty())
+		cursor.insertText(run, fmt);
+}
+
 void LogWidget::appendLine(int level, const QString &timestamp, const QString &text)
 {
 	QTextCharFormat fmt;
@@ -77,7 +143,11 @@ void LogWidget::appendLine(int level, const QString &timestamp, const QString &t
 		tsFmt.setForeground(m_dark ? QColor("#888888") : QColor("gray"));
 		cursor.insertText(timestamp + " ", tsFmt);
 	}
-	cursor.insertText(text + "\n", fmt);
+	if (hasControls(text))
+		insertWithControls(cursor, text, fmt);
+	else
+		cursor.insertText(text, fmt);
+	cursor.insertText("\n", fmt);
 	m_text->setTextCursor(cursor);
 	m_text->ensureCursorVisible();
 }
