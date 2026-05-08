@@ -5,10 +5,24 @@
 #include <QFont>
 #include <QTextCharFormat>
 #include <QTextCursor>
+#include <QPainter>
 
 static const QStringList LogLevelNames = {
 	"Emergency", "Alert", "Critical", "Error",
 	"Warning", "Notice", "Normal", "Debug",
+};
+
+static const char *LogLevelShort[] = {
+	"Emrg", "Alrt", "Crit", "Err", "Warn", "Note", "Norm", "Dbg",
+};
+
+class LogBlockData : public QTextBlockUserData
+{
+public:
+	LogBlockData(int level) : m_level(level) {}
+	int level() const { return m_level; }
+private:
+	int m_level;
 };
 
 LogWidget::LogWidget(const QString &title, bool dark, QWidget *parent)
@@ -39,9 +53,27 @@ LogWidget::LogWidget(const QString &title, bool dark, QWidget *parent)
 	toolbar->addWidget(m_pauseBtn);
 
 	auto *clearBtn = new QPushButton("Clear");
-	connect(clearBtn, &QPushButton::clicked, m_text = new QPlainTextEdit, &QPlainTextEdit::clear);
+	m_text = new QPlainTextEdit;
+	connect(clearBtn, &QPushButton::clicked, m_text, &QPlainTextEdit::clear);
 	toolbar->addWidget(clearBtn);
 	toolbar->addStretch();
+
+	m_showBtn = new QToolButton;
+	m_showBtn->setText("Show");
+	m_showBtn->setPopupMode(QToolButton::InstantPopup);
+	auto *showMenu = new QMenu(this);
+	for (int i = 0; i < 8; ++i) {
+		m_filterActions[i] = showMenu->addAction(LogLevelNames[i]);
+		m_filterActions[i]->setCheckable(true);
+		m_filterActions[i]->setChecked(true);
+		connect(m_filterActions[i], &QAction::toggled, this, [this, i](bool on) {
+			m_levelVisible[i] = on;
+			applyFilters();
+		});
+	}
+	m_showBtn->setMenu(showMenu);
+	toolbar->addWidget(m_showBtn);
+
 	layout->addLayout(toolbar);
 
 	m_text->setReadOnly(true);
@@ -148,8 +180,27 @@ void LogWidget::appendLine(int level, const QString &timestamp, const QString &t
 	else
 		cursor.insertText(text, fmt);
 	cursor.insertText("\n", fmt);
+
+	QTextBlock block = cursor.block().previous();
+	if (block.isValid()) {
+		block.setUserData(new LogBlockData(level));
+		block.setVisible(m_levelVisible[qBound(0, level, 7)]);
+	}
+
 	m_text->setTextCursor(cursor);
 	m_text->ensureCursorVisible();
+}
+
+void LogWidget::applyFilters()
+{
+	QTextDocument *doc = m_text->document();
+	for (QTextBlock block = doc->begin(); block != doc->end(); block = block.next()) {
+		auto *data = static_cast<LogBlockData *>(block.userData());
+		if (data)
+			block.setVisible(m_levelVisible[qBound(0, data->level(), 7)]);
+	}
+	doc->markContentsDirty(0, doc->characterCount());
+	m_text->viewport()->update();
 }
 
 QColor LogWidget::colorForLevel(int level) const
@@ -177,10 +228,26 @@ QColor LogWidget::colorForLevel(int level) const
 	}
 }
 
+void LogWidget::updateFilterIcons()
+{
+	for (int i = 0; i < 8; ++i) {
+		QPixmap pm(12, 12);
+		pm.fill(Qt::transparent);
+		QPainter p(&pm);
+		p.setRenderHint(QPainter::Antialiasing);
+		p.setBrush(colorForLevel(i));
+		p.setPen(Qt::NoPen);
+		p.drawEllipse(1, 1, 10, 10);
+		p.end();
+		m_filterActions[i]->setIcon(QIcon(pm));
+	}
+}
+
 void LogWidget::setDark(bool dark)
 {
 	m_dark = dark;
 	m_text->setStyleSheet(dark
 		? "QPlainTextEdit { background-color: #1e1e1e; color: #cccccc; }"
 		: QString());
+	updateFilterIcons();
 }
