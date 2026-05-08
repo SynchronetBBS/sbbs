@@ -18,10 +18,17 @@ class LogWidget : public QWidget
 	Q_OBJECT
 
 public:
-	explicit LogWidget(const QString &title = "Log", bool dark = true, QWidget *parent = nullptr);
+	explicit LogWidget(const QString &title = "Log", const QString &serverId = {},
+	                   const QString &controlLabel = "Server",
+	                   bool dark = true, QWidget *parent = nullptr);
 	void appendLog(int level, const QString &timestamp, const QString &text);
 	void setDark(bool dark);
 	void setMaxLines(int max);
+
+signals:
+	void recycleServer(const QString &server);
+	void pauseServer(const QString &server);
+	void resumeServer(const QString &server);
 
 private:
 	void appendLine(int level, const QString &timestamp, const QString &text);

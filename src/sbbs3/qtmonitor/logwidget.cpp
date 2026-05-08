@@ -26,13 +26,27 @@ private:
 	int m_level;
 };
 
-LogWidget::LogWidget(const QString &title, bool dark, QWidget *parent)
+LogWidget::LogWidget(const QString &title, const QString &serverId,
+                     const QString &controlLabel, bool dark, QWidget *parent)
 	: QWidget(parent), m_dark(dark)
 {
 	auto *layout = new QVBoxLayout(this);
 	layout->setContentsMargins(2, 2, 2, 2);
 
 	auto *toolbar = new QHBoxLayout;
+
+	if (!serverId.isEmpty()) {
+		auto *serverBtn = new QToolButton;
+		serverBtn->setText(controlLabel);
+		serverBtn->setPopupMode(QToolButton::InstantPopup);
+		auto *serverMenu = new QMenu(this);
+		connect(serverMenu->addAction("&Recycle"), &QAction::triggered, this, [this, serverId] { emit recycleServer(serverId); });
+		connect(serverMenu->addAction("&Pause"), &QAction::triggered, this, [this, serverId] { emit pauseServer(serverId); });
+		connect(serverMenu->addAction("Resu&me"), &QAction::triggered, this, [this, serverId] { emit resumeServer(serverId); });
+		serverBtn->setMenu(serverMenu);
+		toolbar->addWidget(serverBtn);
+	}
+
 	toolbar->addWidget(new QLabel("Level:"));
 	m_levelCombo = new QComboBox;
 	m_levelCombo->addItems(LogLevelNames);

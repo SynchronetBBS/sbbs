@@ -111,7 +111,10 @@ void MainWindow::setupDocks()
 	QDockWidget *firstLogDock = nullptr;
 	for (const auto &server : Servers) {
 		QString label = ServerLabels.value(server);
-		auto *log = new LogWidget(label);
+		auto *log = new LogWidget(label, server);
+		connect(log, &LogWidget::recycleServer, m_mqtt, &MqttClient::recycleServer);
+		connect(log, &LogWidget::pauseServer, m_mqtt, &MqttClient::pauseServer);
+		connect(log, &LogWidget::resumeServer, m_mqtt, &MqttClient::resumeServer);
 		m_logPanes[server] = log;
 		auto *dock = makeDock(label, log);
 		m_logDocks[server] = dock;
@@ -120,7 +123,10 @@ void MainWindow::setupDocks()
 		else tabifyDockWidget(firstLogDock, dock);
 	}
 
-	auto *bbsLog = new LogWidget("BBS");
+	auto *bbsLog = new LogWidget("BBS", "bbs", "System");
+	connect(bbsLog, &LogWidget::recycleServer, this, [this] { m_mqtt->recycleAll(); });
+	connect(bbsLog, &LogWidget::pauseServer, this, [this] { m_mqtt->pauseAll(); });
+	connect(bbsLog, &LogWidget::resumeServer, this, [this] { m_mqtt->resumeAll(); });
 	m_logPanes["bbs"] = bbsLog;
 	auto *bbsDock = makeDock("BBS", bbsLog);
 	m_logDocks["bbs"] = bbsDock;
