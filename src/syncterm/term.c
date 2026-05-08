@@ -1676,7 +1676,7 @@ xfer_marshal_duplicate_path(struct bbslist *bbs, char *path, size_t pathsize,
 	}
 }
 
-static void *
+static void
 cet_recv_worker(void *arg)
 {
 	struct cet_recv_arg *a = (struct cet_recv_arg *)arg;
@@ -1848,7 +1848,6 @@ failure:
 	a->frame_buffer = st.frame_buffer;
 	a->fb_pos       = st.fb_pos;
 	xfer_set_done(success);
-	return NULL;
 }
 
 /* Public entry — driven from begin_download's protocol chooser.  Wraps
@@ -2049,8 +2048,8 @@ struct zmodem_send_arg {
 	char           **paths;
 	int              npaths;
 };
-static void *zmodem_send_worker(void *arg);
-static void *zmodem_batch_send_worker(void *arg);
+static void zmodem_send_worker(void *arg);
+static void zmodem_batch_send_worker(void *arg);
 
 void
 zmodem_upload(struct bbslist *bbs, FILE *fp, char *path)
@@ -2310,7 +2309,7 @@ xfer_xmodem_check_abort(void *cbdata)
 /* Runs on the worker thread spawned by wren_run_transfer.  Owns the
  * full zmodem session; pushes events via the xfer_* mailbox API.
  * Returns once zmodem_recv_files unwinds (success or abort). */
-static void *
+static void
 zmodem_recv_worker(void *arg)
 {
 	struct bbslist       *bbs = (struct bbslist *)arg;
@@ -2341,14 +2340,13 @@ zmodem_recv_worker(void *arg)
 		xfer_log_push(LOG_INFO, msg);
 	}
 	xfer_set_done(files_received > 0);
-	return NULL;
 }
 
 /* zmodem_send_worker / zmodem_batch_send_worker — bodies for the
  * forward-declared workers used by zmodem_upload / zmodem_batch_upload.
  * Struct definition lives above zmodem_upload so the call-site can
  * stack-allocate one. */
-static void *
+static void
 zmodem_send_worker(void *arg)
 {
 	struct zmodem_send_arg *a = (struct zmodem_send_arg *)arg;
@@ -2382,10 +2380,9 @@ zmodem_send_worker(void *arg)
 		zmodem_get_zfin(&zm);
 
 	xfer_set_done(success);
-	return NULL;
 }
 
-static void *
+static void
 zmodem_batch_send_worker(void *arg)
 {
 	struct zmodem_send_arg *a = (struct zmodem_send_arg *)arg;
@@ -2454,7 +2451,6 @@ zmodem_batch_send_worker(void *arg)
 		zmodem_get_zfin(&zm);
 
 	xfer_set_done(sent_files > 0);
-	return NULL;
 }
 
 void
@@ -2570,7 +2566,7 @@ xmodem_send_worker_setup_(xmodem_t *xm, struct xmodem_send_arg *a)
 		xm->block_size = 128;
 }
 
-static void *
+static void
 xmodem_send_worker(void *arg)
 {
 	struct xmodem_send_arg *a = (struct xmodem_send_arg *)arg;
@@ -2597,7 +2593,6 @@ xmodem_send_worker(void *arg)
 	}
 
 	xfer_set_done(success);
-	return NULL;
 }
 
 void
@@ -2630,7 +2625,7 @@ xmodem_upload(struct bbslist *bbs, FILE *fp, char *path, long mode, int lastch)
 		fflush(log_fp);
 }
 
-static void *
+static void
 xmodem_batch_send_worker(void *arg)
 {
 	struct xmodem_send_arg *a = (struct xmodem_send_arg *)arg;
@@ -2685,7 +2680,6 @@ xmodem_batch_send_worker(void *arg)
 	}
 
 	xfer_set_done(success);
-	return NULL;
 }
 
 void
@@ -2729,7 +2723,7 @@ struct xmodem_recv_arg {
 	char           *path;
 };
 
-static void *
+static void
 xmodem_recv_worker(void *arg)
 {
 	struct xmodem_recv_arg *a = (struct xmodem_recv_arg *)arg;
@@ -3047,7 +3041,6 @@ end:
 	if (fp)
 		fclose(fp);
 	xfer_set_done(success);
-	return NULL;
 }
 
 void

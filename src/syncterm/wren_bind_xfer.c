@@ -12,18 +12,18 @@
 
 #include "wren_bind_xfer.h"
 
-#include <pthread.h>
 #include <stdatomic.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <syslog.h>
 #include <time.h>
 
+#include "eventwrap.h"      /* xpevent_t */
 #include "genwrap.h"        /* SLEEP() macro */
-#include "threadwrap.h"
+#include "threadwrap.h"     /* pthread_mutex_t (Win32-portable), _beginthread */
+#include "xp_syslog.h"      /* LOG_INFO etc. — portable syslog priorities */
 #include "wren_bind_internal.h"
 #include "wren_host.h"
 #include "wren_host_internal.h"
@@ -42,22 +42,21 @@ static struct log_event log_ring[LOG_RING_CAP];
 static size_t           log_head;     /* oldest; advanced by drainLog */
 static size_t           log_count;    /* entries currently buffered  */
 static atomic_uint      log_dropped;  /* push attempts past full ring */
-static pthread_mutex_t  log_mtx       = PTHREAD_MUTEX_INITIALIZER;
+static pthread_mutex_t  log_mtx;
 
 /* ----- tick state (single, borrowed) ------------------------------ */
 
 static struct xfer_tick_state tick;
-static pthread_mutex_t        tick_mtx     = PTHREAD_MUTEX_INITIALIZER;
+static pthread_mutex_t        tick_mtx;
 static atomic_bool            tick_dirty;
 
 /* ----- session lifecycle ------------------------------------------ */
 
-static atomic_bool       abort_requested;
-static atomic_bool       worker_done;
-static atomic_bool       worker_success;
-static atomic_bool       session_active;
-static pthread_t         worker_thread;
-static bool              worker_joinable;
+static atomic_bool abort_requested;
+static atomic_bool worker_done;
+static atomic_bool worker_success;
+static atomic_bool session_active;
+static xpevent_t   worker_done_evt;  /* set by worker wrapper at exit */
 
 /* ----- dialog request (worker → main) ----------------------------- */
 
@@ -68,12 +67,38 @@ static struct {
 	char            new_name[256];
 	bool            ready;        /* true = main posted response */
 	pthread_mutex_t mtx;
-	pthread_cond_t  cond;
+	xpevent_t       evt;          /* set when ready flips true */
 } dlg = {
 	.kind = XFER_DLG_NONE,
-	.mtx  = PTHREAD_MUTEX_INITIALIZER,
-	.cond = PTHREAD_COND_INITIALIZER,
 };
+
+/* Storage for the worker callback so the _beginthread thunk can find
+ * it.  Single-transfer-at-a-time, so a single slot is enough. */
+static void (*worker_fn_g)(void *);
+static void  *worker_arg_g;
+
+/* Initialized once via pthread_once — covers all the runtime-init
+ * mutexes + the two manual-reset events.  Static initializers don't
+ * work on Win32 where pthread_mutex_t is a CRITICAL_SECTION. */
+static pthread_once_t init_once_ctl = PTHREAD_ONCE_INIT;
+
+static void
+xfer_init_once(void)
+{
+	pthread_mutex_init_np(&log_mtx,  /* recursive */ false);
+	pthread_mutex_init_np(&tick_mtx, /* recursive */ false);
+	pthread_mutex_init_np(&dlg.mtx,  /* recursive */ false);
+	dlg.evt         = CreateEvent(NULL, /* manual */ TRUE,
+	                              /* initial */ FALSE, NULL);
+	worker_done_evt = CreateEvent(NULL, /* manual */ TRUE,
+	                              /* initial */ FALSE, NULL);
+}
+
+static void
+ensure_init(void)
+{
+	pthread_once(&init_once_ctl, xfer_init_once);
+}
 
 /* ----- helpers ---------------------------------------------------- */
 
@@ -113,8 +138,8 @@ reset_state_locked(void)
 	atomic_store(&tick_dirty, false);
 
 	atomic_store(&abort_requested, false);
-	atomic_store(&worker_done, false);
-	atomic_store(&worker_success, false);
+	atomic_store(&worker_done,     false);
+	atomic_store(&worker_success,  false);
 
 	clear_dialog_locked();
 }
@@ -192,7 +217,25 @@ void
 xfer_set_done(bool success)
 {
 	atomic_store(&worker_success, success);
-	atomic_store(&worker_done, true);
+	atomic_store(&worker_done,    true);
+}
+
+/* Block worker on dlg.evt until main thread flips dlg.ready.  Wakes
+ * every 100 ms to re-check the abort flag — the manual-reset event
+ * remembers any SetEvent that fired after we cleared it, so racing
+ * with dialogRespond is safe. */
+static void
+wait_for_dialog_response(int abort_response)
+{
+	while (!dlg.ready) {
+		if (atomic_load(&abort_requested)) {
+			dlg.response = abort_response;
+			break;
+		}
+		pthread_mutex_unlock(&dlg.mtx);
+		WaitForEvent(dlg.evt, 100);
+		pthread_mutex_lock(&dlg.mtx);
+	}
 }
 
 bool
@@ -200,8 +243,10 @@ xfer_request_filename(const char *prompt, char *out, size_t out_sz)
 {
 	if (prompt == NULL)
 		prompt = "Filename";
+	ensure_init();
 
 	pthread_mutex_lock(&dlg.mtx);
+	ResetEvent(dlg.evt);
 	dlg.kind = XFER_DLG_FILENAME_PROMPT;
 	/* The `filename` field is overloaded as the dialog's prompt
 	 * text — same channel as XFER_DLG_DUPLICATE, the Wren side
@@ -211,20 +256,9 @@ xfer_request_filename(const char *prompt, char *out, size_t out_sz)
 	dlg.new_name[0] = '\0';
 	dlg.response    = XFER_DLG_PROMPT_CANCEL;
 	dlg.ready       = false;
-	while (!dlg.ready) {
-		if (atomic_load(&abort_requested)) {
-			dlg.response = XFER_DLG_PROMPT_CANCEL;
-			break;
-		}
-		struct timespec ts;
-		clock_gettime(CLOCK_REALTIME, &ts);
-		ts.tv_nsec += 100 * 1000 * 1000;
-		if (ts.tv_nsec >= 1000000000) {
-			ts.tv_sec  += 1;
-			ts.tv_nsec -= 1000000000;
-		}
-		pthread_cond_timedwait(&dlg.cond, &dlg.mtx, &ts);
-	}
+
+	wait_for_dialog_response(XFER_DLG_PROMPT_CANCEL);
+
 	bool ok = (dlg.response == XFER_DLG_PROMPT_OK);
 	if (ok && out != NULL && out_sz > 0) {
 		strncpy(out, dlg.new_name, out_sz - 1);
@@ -241,30 +275,19 @@ xfer_request_duplicate(const char *filename,
 {
 	if (filename == NULL)
 		filename = "";
+	ensure_init();
 
 	pthread_mutex_lock(&dlg.mtx);
+	ResetEvent(dlg.evt);
 	dlg.kind = XFER_DLG_DUPLICATE;
 	strncpy(dlg.filename, filename, sizeof(dlg.filename) - 1);
 	dlg.filename[sizeof(dlg.filename) - 1] = '\0';
 	dlg.new_name[0] = '\0';
 	dlg.response    = XFER_DLG_SKIP;     /* safe default if main bails */
 	dlg.ready       = false;
-	while (!dlg.ready) {
-		/* Wake on abort so a transfer cancelled mid-prompt unwinds
-		 * cleanly instead of stranding the worker on the condvar. */
-		if (atomic_load(&abort_requested)) {
-			dlg.response = XFER_DLG_SKIP;
-			break;
-		}
-		struct timespec ts;
-		clock_gettime(CLOCK_REALTIME, &ts);
-		ts.tv_nsec += 100 * 1000 * 1000;     /* 100 ms */
-		if (ts.tv_nsec >= 1000000000) {
-			ts.tv_sec  += 1;
-			ts.tv_nsec -= 1000000000;
-		}
-		pthread_cond_timedwait(&dlg.cond, &dlg.mtx, &ts);
-	}
+
+	wait_for_dialog_response(XFER_DLG_SKIP);
+
 	int response = dlg.response;
 	if (response == XFER_DLG_RENAME && new_name != NULL && new_name_sz > 0) {
 		strncpy(new_name, dlg.new_name, new_name_sz - 1);
@@ -278,20 +301,19 @@ xfer_request_duplicate(const char *filename,
 static void
 clear_dialog_locked(void)
 {
-	/* Called from reset_state_locked under no lock; we need the lock
-	 * here.  Wakes any worker still parked on the condvar so it
+	/* Wakes any worker still parked on the dialog event so it
 	 * unwinds with the SKIP default. */
 	pthread_mutex_lock(&dlg.mtx);
 	dlg.kind     = XFER_DLG_NONE;
 	dlg.response = XFER_DLG_SKIP;
 	dlg.ready    = true;
-	pthread_cond_broadcast(&dlg.cond);
+	SetEvent(dlg.evt);
 	pthread_mutex_unlock(&dlg.mtx);
 }
 
 /* ----- stub worker (Stage 2 demo) -------------------------------- */
 
-static void *
+static void
 fake_worker_main(void *arg)
 {
 	(void)arg;
@@ -352,23 +374,42 @@ fake_worker_main(void *arg)
 	if (ok)
 		xfer_log_push(LOG_NOTICE, "Transfer complete");
 	xfer_set_done(ok);
-	return NULL;
 }
 
 /* ----- session start / stop --------------------------------------- */
 
-static int
-spawn_worker(void *(*fn)(void *), void *arg)
+static void
+worker_thunk(void *arg)
 {
+	(void)arg;
+	void (*fn)(void *) = worker_fn_g;
+	void  *farg        = worker_arg_g;
+	if (fn != NULL)
+		fn(farg);
+	/* Always set worker_done — the protocol body should have done so
+	 * via xfer_set_done, but this is the last-line guarantee for the
+	 * main-thread join. */
+	atomic_store(&worker_done, true);
+	SetEvent(worker_done_evt);
+}
+
+static int
+spawn_worker(void (*fn)(void *), void *arg)
+{
+	ensure_init();
 	if (atomic_load(&session_active))
 		return -1;
 	reset_state_locked();
+	ResetEvent(worker_done_evt);
+	worker_fn_g  = fn;
+	worker_arg_g = arg;
 	atomic_store(&session_active, true);
-	if (pthread_create(&worker_thread, NULL, fn, arg) != 0) {
+	if (_beginthread(worker_thunk, 0, NULL) == (ulong)-1L) {
 		atomic_store(&session_active, false);
+		worker_fn_g  = NULL;
+		worker_arg_g = NULL;
 		return -1;
 	}
-	worker_joinable = true;
 	return 0;
 }
 
@@ -378,10 +419,13 @@ join_and_clear(void)
 	if (!atomic_load(&session_active))
 		return;
 	atomic_store(&abort_requested, true);
-	if (worker_joinable) {
-		pthread_join(worker_thread, NULL);
-		worker_joinable = false;
-	}
+	/* Wait for the worker thunk's SetEvent.  No bounded timeout —
+	 * the worker is responsible for honoring the abort flag and
+	 * exiting; if it doesn't, the caller (TransferApp.run loop) has
+	 * already returned, so we can afford to wait. */
+	WaitForEvent(worker_done_evt, INFINITE);
+	worker_fn_g  = NULL;
+	worker_arg_g = NULL;
 	atomic_store(&session_active, false);
 }
 
@@ -390,6 +434,7 @@ join_and_clear(void)
 void
 fn_Transfer_beginSession(WrenVM *vm)
 {
+	ensure_init();
 	if (atomic_load(&session_active)) {
 		wren_throw(vm, "Transfer.beginSession: already active");
 		return;
@@ -405,7 +450,7 @@ fn_Transfer_beginSession(WrenVM *vm)
 		return;
 	}
 	if (spawn_worker(fake_worker_main, NULL) != 0) {
-		wren_throw(vm, "Transfer.beginSession: pthread_create failed");
+		wren_throw(vm, "Transfer.beginSession: spawn failed");
 		return;
 	}
 	wrenSetSlotBool(vm, 0, true);
@@ -424,6 +469,7 @@ fn_Transfer_endSession(WrenVM *vm)
 void
 fn_Transfer_drainLog(WrenVM *vm)
 {
+	ensure_init();
 	wrenEnsureSlots(vm, 4);
 	wrenSetSlotNewList(vm, 0);
 
@@ -479,6 +525,7 @@ fn_Transfer_tickDirty(WrenVM *vm)
 void
 fn_Transfer_snapshot(WrenVM *vm)
 {
+	ensure_init();
 	pthread_mutex_lock(&tick_mtx);
 	struct xfer_tick_state s = tick;
 	pthread_mutex_unlock(&tick_mtx);
@@ -538,6 +585,7 @@ fn_Transfer_aborted(WrenVM *vm)
 void
 fn_Transfer_dialogPending(WrenVM *vm)
 {
+	ensure_init();
 	pthread_mutex_lock(&dlg.mtx);
 	int k = dlg.ready ? XFER_DLG_NONE : dlg.kind;
 	pthread_mutex_unlock(&dlg.mtx);
@@ -547,6 +595,7 @@ fn_Transfer_dialogPending(WrenVM *vm)
 void
 fn_Transfer_dialogFilename(WrenVM *vm)
 {
+	ensure_init();
 	pthread_mutex_lock(&dlg.mtx);
 	char buf[256];
 	strncpy(buf, dlg.filename, sizeof(buf) - 1);
@@ -558,6 +607,7 @@ fn_Transfer_dialogFilename(WrenVM *vm)
 void
 fn_Transfer_dialogRespond(WrenVM *vm)
 {
+	ensure_init();
 	int         resp     = (int)wrenGetSlotDouble(vm, 1);
 	const char *new_name = (wrenGetSlotType(vm, 2) == WREN_TYPE_STRING)
 	    ? wrenGetSlotString(vm, 2)
@@ -568,7 +618,7 @@ fn_Transfer_dialogRespond(WrenVM *vm)
 	strncpy(dlg.new_name, new_name, sizeof(dlg.new_name) - 1);
 	dlg.new_name[sizeof(dlg.new_name) - 1] = '\0';
 	dlg.ready = true;
-	pthread_cond_signal(&dlg.cond);
+	SetEvent(dlg.evt);
 	pthread_mutex_unlock(&dlg.mtx);
 	wrenSetSlotNull(vm, 0);
 }
@@ -615,7 +665,7 @@ invoke_transfer_app(const char *label)
 
 void
 wren_run_transfer(const char *label,
-                  void *(*worker_fn)(void *), void *arg)
+                  void (*worker_fn)(void *), void *arg)
 {
 	if (worker_fn == NULL)
 		return;

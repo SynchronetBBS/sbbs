@@ -40,6 +40,23 @@ target_include_directories(xptls
 set_property(TARGET xptls PROPERTY C_STANDARD 17)
 set_property(TARGET xptls PROPERTY C_STANDARD_REQUIRED ON)
 
+# Platform-specific gating for the xpdev/sockwrap.h headers we pull in
+# through xp_tls.h.  xpdev's own CMakeLists publishes these as PUBLIC
+# defines on the xpdev target, but xptls is structured to be standalone
+# (we borrow xpdev's headers but don't link the target), so mirror the
+# relevant sets here.  Keep in sync with src/xpdev/CMakeLists.txt.
+if(WIN32)
+    target_compile_definitions(xptls PRIVATE
+        _WIN32 _WIN32_WINNT=0x0501 WINVER=0x0501)
+elseif(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
+    target_compile_definitions(xptls PRIVATE __unix__ __DARWIN__)
+elseif(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+    target_compile_definitions(xptls PRIVATE
+        _DEFAULT_SOURCE _BSD_SOURCE _GNU_SOURCE _FILE_OFFSET_BITS=64)
+elseif(CMAKE_SYSTEM_NAME STREQUAL "Haiku")
+    target_compile_definitions(xptls PRIVATE __unix__)
+endif()
+
 if(XP_CRYPTO_BACKEND STREQUAL "Botan")
     if(NOT TARGET PkgConfig::SYS_BOTAN3)
         find_package(PkgConfig REQUIRED)

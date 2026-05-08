@@ -129,9 +129,11 @@ bool xfer_request_filename(const char *prompt,
  * run() method.  Blocks until the worker finishes AND the App
  * dismisses (post-transfer wait, key, or timeout).  `label` is
  * passed to TransferApp.new(label) for display; protocol drivers
- * pass strings like "ZMODEM Download". */
+ * pass strings like "ZMODEM Download".  Worker signature matches
+ * `_beginthread` (returns void) for portability across pthreads
+ * and the Win32 thread API. */
 void wren_run_transfer(const char *label,
-                       void *(*worker_fn)(void *), void *arg);
+                       void (*worker_fn)(void *), void *arg);
 
 /* ----- foreigns (Wren ABI surface) ------------------------------- */
 
