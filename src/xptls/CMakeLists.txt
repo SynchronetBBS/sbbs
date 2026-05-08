@@ -5,6 +5,19 @@ endif()
 
 find_package(PkgConfig QUIET)
 
+# We genuinely depend on xpdev's headers (sockwrap.h via xp_tls.h,
+# gen_defs.h via xp_crypt.h) and on the platform / HAS_STDINT_H /
+# HAS_INTTYPES_H gating that xpdev's CMakeLists publishes as PUBLIC
+# defines on its target.  Pull in xpdev as a subdirectory if the
+# parent project hasn't already, then link it — that's the single
+# source of truth for those defines.  xpdev_DONE is the same flag
+# require_lib_dir uses, so syncterm's later require_libs() won't
+# double-add.
+if(NOT TARGET xpdev)
+    add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../xpdev xpdev EXCLUDE_FROM_ALL)
+    set(xpdev_DONE TRUE)
+endif()
+
 # Backend selection: Botan, OpenSSL, or none
 if(NOT DEFINED XP_CRYPTO_BACKEND)
     if(PkgConfig_FOUND)
@@ -37,25 +50,9 @@ target_include_directories(xptls
     PUBLIC  ${CMAKE_CURRENT_SOURCE_DIR}
     PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../xpdev
 )
+target_link_libraries(xptls PUBLIC xpdev)
 set_property(TARGET xptls PROPERTY C_STANDARD 17)
 set_property(TARGET xptls PROPERTY C_STANDARD_REQUIRED ON)
-
-# Platform-specific gating for the xpdev/sockwrap.h headers we pull in
-# through xp_tls.h.  xpdev's own CMakeLists publishes these as PUBLIC
-# defines on the xpdev target, but xptls is structured to be standalone
-# (we borrow xpdev's headers but don't link the target), so mirror the
-# relevant sets here.  Keep in sync with src/xpdev/CMakeLists.txt.
-if(WIN32)
-    target_compile_definitions(xptls PRIVATE
-        _WIN32 _WIN32_WINNT=0x0501 WINVER=0x0501)
-elseif(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
-    target_compile_definitions(xptls PRIVATE __unix__ __DARWIN__)
-elseif(CMAKE_SYSTEM_NAME STREQUAL "Linux")
-    target_compile_definitions(xptls PRIVATE
-        _DEFAULT_SOURCE _BSD_SOURCE _GNU_SOURCE _FILE_OFFSET_BITS=64)
-elseif(CMAKE_SYSTEM_NAME STREQUAL "Haiku")
-    target_compile_definitions(xptls PRIVATE __unix__)
-endif()
 
 if(XP_CRYPTO_BACKEND STREQUAL "Botan")
     # Parent project may pre-create an IMPORTED target (e.g. when Botan
