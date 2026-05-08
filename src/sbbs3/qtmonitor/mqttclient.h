@@ -51,6 +51,7 @@ signals:
 	void serverVersion(const QString &server, const QString &version);
 	void serverStat(const QString &server, const QString &statName, const QString &value);
 	void loginAttempt(const QString &ip, const QString &action, const QVariantMap &fields);
+	void bbsAction(const QString &action, const QString &detail, const QString &timestamp, const QString &payload);
 
 private slots:
 	void onConnected();

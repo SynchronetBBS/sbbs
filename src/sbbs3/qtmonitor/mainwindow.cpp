@@ -142,6 +142,11 @@ void MainWindow::setupDocks()
 	addDockWidget(Qt::BottomDockWidgetArea, m_loginAttemptsDock);
 	tabifyDockWidget(m_clientDock, m_loginAttemptsDock);
 
+	m_actionWidget = new ActionWidget;
+	m_actionDock = makeDock("Actions", m_actionWidget);
+	addDockWidget(Qt::BottomDockWidgetArea, m_actionDock);
+	tabifyDockWidget(m_loginAttemptsDock, m_actionDock);
+
 	if (firstLogDock) firstLogDock->raise();
 }
 
@@ -200,6 +205,7 @@ void MainWindow::setupMenus()
 	addDockToggle(m_statsDock);
 	addDockToggle(m_clientDock);
 	addDockToggle(m_loginAttemptsDock);
+	addDockToggle(m_actionDock);
 	viewMenu->addSeparator();
 	for (const auto &key : Servers + QStringList{"bbs", "events"})
 		if (auto *dock = m_logDocks.value(key))
@@ -357,6 +363,7 @@ void MainWindow::connectMqttSignals()
 	connect(m_mqtt, &MqttClient::nodeVerbose, m_nodeWidget, &NodeWidget::updateNodeVerbose);
 	connect(m_mqtt, &MqttClient::clientUpdate, m_clientWidget, &ClientWidget::updateClient);
 	connect(m_mqtt, &MqttClient::loginAttempt, m_loginAttemptsWidget, &LoginAttemptsWidget::updateAttempt);
+	connect(m_mqtt, &MqttClient::bbsAction, m_actionWidget, &ActionWidget::addAction);
 	auto updateServerLabel = [this](const QString &server) {
 		if (auto *lbl = m_serverStateLabels.value(server)) {
 			QString label = ServerLabels.value(server, server);
@@ -443,6 +450,7 @@ void MainWindow::setDarkMode(bool dark)
 	m_statsWidget->setDark(dark);
 	m_clientWidget->setDark(dark);
 	m_loginAttemptsWidget->setDark(dark);
+	m_actionWidget->setDark(dark);
 	for (auto *pane : m_logPanes)
 		pane->setDark(dark);
 	m_darkAction->setChecked(dark);

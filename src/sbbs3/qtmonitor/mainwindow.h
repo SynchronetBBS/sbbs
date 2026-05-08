@@ -11,6 +11,7 @@
 #include "clientwidget.h"
 #include "statswidget.h"
 #include "loginattemptswidget.h"
+#include "actionwidget.h"
 
 class MainWindow : public QMainWindow
 {
@@ -50,6 +51,7 @@ private:
 	StatsWidget *m_statsWidget;
 	ClientWidget *m_clientWidget;
 	LoginAttemptsWidget *m_loginAttemptsWidget;
+	ActionWidget *m_actionWidget;
 	QHash<QString, LogWidget *> m_logPanes;
 	QHash<QString, QDockWidget *> m_logDocks;
 
@@ -57,6 +59,7 @@ private:
 	QDockWidget *m_statsDock;
 	QDockWidget *m_clientDock;
 	QDockWidget *m_loginAttemptsDock;
+	QDockWidget *m_actionDock;
 
 	QHash<QString, QLabel *> m_serverStateLabels;
 	QHash<QString, QString> m_serverVersions;
