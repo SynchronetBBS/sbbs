@@ -38,6 +38,7 @@ private:
 	void connectMqttSignals();
 	void restoreState();
 	void applyGlobalStyle();
+	void applyLogMaxLines();
 	void setDarkMode(bool dark);
 
 	QDockWidget *makeDock(const QString &title, QWidget *widget);

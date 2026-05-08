@@ -30,6 +30,7 @@ private:
 	QLineEdit *m_certFile;
 	QLineEdit *m_keyFile;
 	QCheckBox *m_pageAlert;
+	QSpinBox *m_maxLogLines;
 };
 
 #endif

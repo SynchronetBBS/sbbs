@@ -78,7 +78,7 @@ LogWidget::LogWidget(const QString &title, bool dark, QWidget *parent)
 	layout->addLayout(toolbar);
 
 	m_text->setReadOnly(true);
-	m_text->setMaximumBlockCount(5000);
+	m_text->setMaximumBlockCount(2000000);
 	QFont font("Monospace", 9);
 	font.setStyleHint(QFont::Monospace);
 	m_text->setFont(font);
@@ -218,4 +218,9 @@ void LogWidget::setDark(bool dark)
 		? "QPlainTextEdit { background-color: #1e1e1e; color: #cccccc; }"
 		: QString());
 	updateFilterIcons();
+}
+
+void LogWidget::setMaxLines(int max)
+{
+	m_text->setMaximumBlockCount(max);
 }

@@ -17,6 +17,7 @@ public:
 	explicit LogWidget(const QString &title = "Log", bool dark = true, QWidget *parent = nullptr);
 	void appendLog(int level, const QString &timestamp, const QString &text);
 	void setDark(bool dark);
+	void setMaxLines(int max);
 
 private:
 	void appendLine(int level, const QString &timestamp, const QString &text);

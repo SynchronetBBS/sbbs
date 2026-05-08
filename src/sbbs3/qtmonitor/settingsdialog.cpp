@@ -90,6 +90,16 @@ SettingsDialog::SettingsDialog(QSettings *settings, QWidget *parent)
 	notifyForm->addRow(m_pageAlert);
 	layout->addWidget(notifyGroup);
 
+	auto *logGroup = new QGroupBox("Log");
+	auto *logForm = new QFormLayout(logGroup);
+	m_maxLogLines = new QSpinBox;
+	m_maxLogLines->setRange(1000, 100000000);
+	m_maxLogLines->setSingleStep(100000);
+	m_maxLogLines->setValue(m_settings->value("log/max_lines", 2000000).toInt());
+	m_maxLogLines->setSuffix(" lines");
+	logForm->addRow("Max lines per pane:", m_maxLogLines);
+	layout->addWidget(logGroup);
+
 	auto *buttons = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel);
 	connect(buttons, &QDialogButtonBox::accepted, this, &SettingsDialog::saveAndAccept);
 	connect(buttons, &QDialogButtonBox::rejected, this, &QDialog::reject);
@@ -109,5 +119,6 @@ void SettingsDialog::saveAndAccept()
 	m_settings->setValue("mqtt/cert_file", m_certFile->text());
 	m_settings->setValue("mqtt/key_file", m_keyFile->text());
 	m_settings->setValue("notify/page_alert", m_pageAlert->isChecked());
+	m_settings->setValue("log/max_lines", m_maxLogLines->value());
 	accept();
 }

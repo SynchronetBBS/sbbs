@@ -56,6 +56,7 @@ MainWindow::MainWindow(const QString &mqttHost, quint16 mqttPort,
 	restoreState();
 	setupToolbar();
 	applyGlobalStyle();
+	applyLogMaxLines();
 
 	if (!mqttHost.isEmpty()) m_settings.setValue("mqtt/host", mqttHost);
 	if (mqttPort)            m_settings.setValue("mqtt/port", mqttPort);
@@ -186,6 +187,7 @@ void MainWindow::setupMenus()
 				m_settings.value("mqtt/key_file").toString()
 			);
 			m_mqtt->connectToBroker();
+			applyLogMaxLines();
 		}
 	});
 	fileMenu->addSeparator();
@@ -453,6 +455,13 @@ void MainWindow::showDock(QDockWidget *dock)
 void MainWindow::applyGlobalStyle()
 {
 	setDarkMode(m_settings.value("ui/dark_mode", true).toBool());
+}
+
+void MainWindow::applyLogMaxLines()
+{
+	int max = m_settings.value("log/max_lines", 2000000).toInt();
+	for (auto *pane : m_logPanes)
+		pane->setMaxLines(max);
 }
 
 void MainWindow::setDarkMode(bool dark)
