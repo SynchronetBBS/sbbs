@@ -12,6 +12,12 @@
 
 #include "wren_bind_xfer.h"
 
+/* MSVC defines __STDC_NO_ATOMICS__ defensively, which would make
+ * <stdatomic.h> expand to nothing.  Undefine it first — same dance
+ * conn.h already uses. */
+#ifdef _MSC_VER
+#undef __STDC_NO_ATOMICS__
+#endif
 #include <stdatomic.h>
 #include <stdbool.h>
 #include <stdint.h>
@@ -38,11 +44,11 @@ struct log_event {
 	char msg[LOG_MSG_MAX];
 };
 
-static struct log_event   log_ring[LOG_RING_CAP];
-static size_t             log_head;    /* oldest; advanced by drainLog */
-static size_t             log_count;   /* entries currently buffered  */
-static _Atomic unsigned   log_dropped; /* push attempts past full ring */
-static pthread_mutex_t    log_mtx;
+static struct log_event  log_ring[LOG_RING_CAP];
+static size_t            log_head;    /* oldest; advanced by drainLog */
+static size_t            log_count;   /* entries currently buffered  */
+static _Atomic unsigned  log_dropped; /* push attempts past full ring */
+static pthread_mutex_t   log_mtx;
 
 /* ----- tick state (single, borrowed) ------------------------------ */
 
@@ -52,11 +58,6 @@ static _Atomic bool           tick_dirty;
 
 /* ----- session lifecycle ------------------------------------------ */
 
-/* Use the _Atomic keyword form rather than the atomic_bool typedef
- * from <stdatomic.h> — MSVC's stdatomic.h doesn't typedef
- * atomic_bool to a real atomic type and the clang frontend
- * complains under /experimental:c11atomics.  rlogin.c follows the
- * same pattern. */
 static _Atomic bool abort_requested;
 static _Atomic bool worker_done;
 static _Atomic bool worker_success;
