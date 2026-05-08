@@ -15,7 +15,10 @@ find_package(PkgConfig QUIET)
 # double-add.
 if(NOT TARGET xpdev)
     add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../xpdev xpdev EXCLUDE_FROM_ALL)
-    set(xpdev_DONE TRUE)
+    # CACHE so the flag is visible from the parent project's scope
+    # too — require_lib_dir reads it from there to avoid a duplicate
+    # add_subdirectory() that would crash with CMP0002.
+    set(xpdev_DONE TRUE CACHE INTERNAL "")
 endif()
 
 # Backend selection: Botan, OpenSSL, or none
