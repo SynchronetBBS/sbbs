@@ -186,6 +186,7 @@ void MqttClient::onConnected()
 		prefix + "/host/+/server/+/served",
 		prefix + "/host/+/server/+/highwater",
 		prefix + "/host/+/server/+/error_count",
+		prefix + "/host/+/event/log/#",
 		prefix + "/host/+/login_attempts/#",
 	};
 	for (const auto &t : topics)
@@ -246,6 +247,13 @@ void MqttClient::dispatchMessage(const QString &topic, const QString &text)
 	if (parts.size() >= 8 && parts[4] == "server" && parts[6] == "log") {
 		auto [timestamp, msg] = splitTsvPayload(text);
 		emit logMessage(parts[5], parseLogLevel(parts.last()), timestamp, msg);
+		return;
+	}
+
+	// sbbs/{id}/host/{h}/event/log/{level}
+	if (parts.size() >= 7 && parts[4] == "event" && parts[5] == "log") {
+		auto [timestamp, msg] = splitTsvPayload(text);
+		emit eventLogMessage(parseLogLevel(parts.last()), timestamp, msg);
 		return;
 	}
 

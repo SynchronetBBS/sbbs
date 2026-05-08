@@ -345,8 +345,12 @@ void MainWindow::connectMqttSignals()
 	connect(m_mqtt, &MqttClient::logMessage, this, [this](const QString &server, int level, const QString &ts, const QString &text) {
 		if (auto *pane = m_logPanes.value(server))
 			pane->appendLog(level, ts, text);
+		if (auto *bbs = m_logPanes.value("bbs"))
+			bbs->appendLog(level, ts, "[" + ServerLabels.value(server, server) + "] " + text);
+	});
+	connect(m_mqtt, &MqttClient::eventLogMessage, this, [this](int level, const QString &ts, const QString &text) {
 		if (auto *events = m_logPanes.value("events"))
-			events->appendLog(level, ts, "[" + ServerLabels.value(server, server) + "] " + text);
+			events->appendLog(level, ts, text);
 	});
 	connect(m_mqtt, &MqttClient::nodeStatus, m_nodeWidget, &NodeWidget::updateNode);
 	connect(m_mqtt, &MqttClient::nodeVerbose, m_nodeWidget, &NodeWidget::updateNodeVerbose);

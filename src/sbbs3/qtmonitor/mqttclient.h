@@ -43,6 +43,7 @@ signals:
 	void sslErrorsOccurred(const QList<QSslError> &errors, const QStringList &descriptions);
 
 	void logMessage(const QString &server, int level, const QString &timestamp, const QString &text);
+	void eventLogMessage(int level, const QString &timestamp, const QString &text);
 	void nodeStatus(int nodeNum, const QVariantMap &fields);
 	void nodeVerbose(int nodeNum, const QString &description);
 	void clientUpdate(const QString &server, const QString &action, const QVariantMap &fields);
