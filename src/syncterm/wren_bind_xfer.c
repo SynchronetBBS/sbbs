@@ -115,7 +115,7 @@ push_log_event(int level, const char *str)
 {
 	pthread_mutex_lock(&log_mtx);
 	if (log_count >= LOG_RING_CAP) {
-		atomic_fetch_add(&log_dropped, 1);
+		log_dropped += 1;
 		pthread_mutex_unlock(&log_mtx);
 		return;
 	}
@@ -136,16 +136,16 @@ reset_state_locked(void)
 	log_head  = 0;
 	log_count = 0;
 	pthread_mutex_unlock(&log_mtx);
-	atomic_store(&log_dropped, 0);
+	log_dropped = 0;
 
 	pthread_mutex_lock(&tick_mtx);
 	memset(&tick, 0, sizeof(tick));
 	pthread_mutex_unlock(&tick_mtx);
-	atomic_store(&tick_dirty, false);
+	tick_dirty = false;
 
-	atomic_store(&abort_requested, false);
-	atomic_store(&worker_done,     false);
-	atomic_store(&worker_success,  false);
+	abort_requested = false;
+	worker_done     = false;
+	worker_success  = false;
 
 	clear_dialog_locked();
 }
@@ -204,26 +204,26 @@ xfer_tick_unlock(void)
 void
 xfer_tick_dirty(void)
 {
-	atomic_store(&tick_dirty, true);
+	tick_dirty = true;
 }
 
 bool
 xfer_check_abort_atomic(void)
 {
-	return atomic_load(&abort_requested);
+	return abort_requested;
 }
 
 bool
 xfer_session_active(void)
 {
-	return atomic_load(&session_active);
+	return session_active;
 }
 
 void
 xfer_set_done(bool success)
 {
-	atomic_store(&worker_success, success);
-	atomic_store(&worker_done,    true);
+	worker_success = success;
+	worker_done    = true;
 }
 
 /* Block worker on dlg.evt until main thread flips dlg.ready.  Wakes
@@ -234,7 +234,7 @@ static void
 wait_for_dialog_response(int abort_response)
 {
 	while (!dlg.ready) {
-		if (atomic_load(&abort_requested)) {
+		if (abort_requested) {
 			dlg.response = abort_response;
 			break;
 		}
@@ -395,7 +395,7 @@ worker_thunk(void *arg)
 	/* Always set worker_done — the protocol body should have done so
 	 * via xfer_set_done, but this is the last-line guarantee for the
 	 * main-thread join. */
-	atomic_store(&worker_done, true);
+	worker_done = true;
 	SetEvent(worker_done_evt);
 }
 
@@ -403,15 +403,15 @@ static int
 spawn_worker(void (*fn)(void *), void *arg)
 {
 	ensure_init();
-	if (atomic_load(&session_active))
+	if (session_active)
 		return -1;
 	reset_state_locked();
 	ResetEvent(worker_done_evt);
 	worker_fn_g  = fn;
 	worker_arg_g = arg;
-	atomic_store(&session_active, true);
+	session_active = true;
 	if (_beginthread(worker_thunk, 0, NULL) == (ulong)-1L) {
-		atomic_store(&session_active, false);
+		session_active = false;
 		worker_fn_g  = NULL;
 		worker_arg_g = NULL;
 		return -1;
@@ -422,9 +422,9 @@ spawn_worker(void (*fn)(void *), void *arg)
 static void
 join_and_clear(void)
 {
-	if (!atomic_load(&session_active))
+	if (!session_active)
 		return;
-	atomic_store(&abort_requested, true);
+	abort_requested = true;
 	/* Wait for the worker thunk's SetEvent.  No bounded timeout —
 	 * the worker is responsible for honoring the abort flag and
 	 * exiting; if it doesn't, the caller (TransferApp.run loop) has
@@ -432,7 +432,7 @@ join_and_clear(void)
 	WaitForEvent(worker_done_evt, INFINITE);
 	worker_fn_g  = NULL;
 	worker_arg_g = NULL;
-	atomic_store(&session_active, false);
+	session_active = false;
 }
 
 /* ----- foreigns: lifecycle ---------------------------------------- */
@@ -441,7 +441,7 @@ void
 fn_Transfer_beginSession(WrenVM *vm)
 {
 	ensure_init();
-	if (atomic_load(&session_active)) {
+	if (session_active) {
 		wren_throw(vm, "Transfer.beginSession: already active");
 		return;
 	}
@@ -562,13 +562,13 @@ fn_Transfer_snapshot(WrenVM *vm)
 void
 fn_Transfer_done(WrenVM *vm)
 {
-	wrenSetSlotBool(vm, 0, atomic_load(&worker_done));
+	wrenSetSlotBool(vm, 0, worker_done);
 }
 
 void
 fn_Transfer_success(WrenVM *vm)
 {
-	wrenSetSlotBool(vm, 0, atomic_load(&worker_success));
+	wrenSetSlotBool(vm, 0, worker_success);
 }
 
 void
@@ -583,7 +583,7 @@ fn_Transfer_requestAbort(WrenVM *vm)
 void
 fn_Transfer_aborted(WrenVM *vm)
 {
-	wrenSetSlotBool(vm, 0, atomic_load(&abort_requested));
+	wrenSetSlotBool(vm, 0, abort_requested);
 }
 
 /* ----- foreigns: dialog channel ----------------------------------- */
