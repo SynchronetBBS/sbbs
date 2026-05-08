@@ -42,12 +42,12 @@ void ClientWidget::updateClient(const QString &server, const QString &action, co
 		item = *it;
 	}
 
-	item->setText(0, sock);
+	item->setData(0, Qt::DisplayRole, sock.toInt());
 	item->setText(1, data.value("protocol", server).toString());
 	item->setText(2, data.value("username").toString());
 	item->setText(3, data.value("ip").toString());
 	item->setText(4, data.value("hostname").toString());
-	item->setText(5, data.value("port").toString());
+	item->setData(5, Qt::DisplayRole, data.value("port").toString().toInt());
 
 	QString ts = data.value("timestamp").toString();
 	QDateTime dt = QDateTime::fromString(ts, Qt::ISODate);
