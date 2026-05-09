@@ -49,15 +49,15 @@ signals:
 	void errorOccurred(const QString &message);
 	void sslErrorsOccurred(const QList<QSslError> &errors, const QStringList &descriptions);
 
-	void logMessage(const QString &server, int level, const QString &timestamp, const QString &text);
-	void eventLogMessage(int level, const QString &timestamp, const QString &text);
-	void nodeStatus(int nodeNum, const QVariantMap &fields);
-	void nodeVerbose(int nodeNum, const QString &description);
-	void clientUpdate(const QString &server, const QString &action, const QVariantMap &fields);
-	void serverState(const QString &server, const QString &state);
-	void serverVersion(const QString &server, const QString &version);
-	void serverStat(const QString &server, const QString &statName, const QString &value);
-	void loginAttempt(const QString &ip, const QString &action, const QVariantMap &fields);
+	void logMessage(const QString &host, const QString &server, int level, const QString &timestamp, const QString &text);
+	void eventLogMessage(const QString &host, int level, const QString &timestamp, const QString &text);
+	void nodeStatus(const QString &host, int nodeNum, const QVariantMap &fields);
+	void nodeVerbose(const QString &host, int nodeNum, const QString &description);
+	void clientUpdate(const QString &host, const QString &server, const QString &action, const QVariantMap &fields);
+	void serverState(const QString &host, const QString &server, const QString &state);
+	void serverVersion(const QString &host, const QString &server, const QString &version);
+	void serverStat(const QString &host, const QString &server, const QString &statName, const QString &value);
+	void loginAttempt(const QString &host, const QString &ip, const QString &action, const QVariantMap &fields);
 	void bbsAction(const QString &action, const QString &detail, const QString &timestamp, const QString &payload);
 	void hostDiscovered(const QString &host);
 

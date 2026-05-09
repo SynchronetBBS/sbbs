@@ -41,6 +41,8 @@ private:
 	void applyGlobalStyle();
 	void applyLogMaxLines();
 	QString selectedHost() const;
+	bool hostMatches(const QString &host) const;
+	bool multiHost() const;
 	void forEachHost(std::function<void(const QString &)> fn);
 	void setDarkMode(bool dark);
 

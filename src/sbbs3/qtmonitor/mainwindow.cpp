@@ -381,20 +381,36 @@ void MainWindow::connectMqttSignals()
 		else
 			m_mqtt->disconnectFromBroker();
 	});
-	connect(m_mqtt, &MqttClient::logMessage, this, [this](const QString &server, int level, const QString &ts, const QString &text) {
+	connect(m_mqtt, &MqttClient::logMessage, this, [this](const QString &host, const QString &server, int level, const QString &ts, const QString &text) {
+		if (!hostMatches(host)) return;
+		QString prefix = (multiHost() && !host.isEmpty()) ? "[" + host + "] " : "";
 		if (auto *pane = m_logPanes.value(server))
-			pane->appendLog(level, ts, text);
+			pane->appendLog(level, ts, prefix + text);
 		if (auto *bbs = m_logPanes.value("bbs"))
-			bbs->appendLog(level, ts, "[" + ServerLabels.value(server, server) + "] " + text);
+			bbs->appendLog(level, ts, prefix + "[" + ServerLabels.value(server, server) + "] " + text);
 	});
-	connect(m_mqtt, &MqttClient::eventLogMessage, this, [this](int level, const QString &ts, const QString &text) {
+	connect(m_mqtt, &MqttClient::eventLogMessage, this, [this](const QString &host, int level, const QString &ts, const QString &text) {
+		if (!hostMatches(host)) return;
+		QString prefix = (multiHost() && !host.isEmpty()) ? "[" + host + "] " : "";
 		if (auto *events = m_logPanes.value("events"))
-			events->appendLog(level, ts, text);
+			events->appendLog(level, ts, prefix + text);
 	});
-	connect(m_mqtt, &MqttClient::nodeStatus, m_nodeWidget, &NodeWidget::updateNode);
-	connect(m_mqtt, &MqttClient::nodeVerbose, m_nodeWidget, &NodeWidget::updateNodeVerbose);
-	connect(m_mqtt, &MqttClient::clientUpdate, m_clientWidget, &ClientWidget::updateClient);
-	connect(m_mqtt, &MqttClient::loginAttempt, m_loginAttemptsWidget, &LoginAttemptsWidget::updateAttempt);
+	connect(m_mqtt, &MqttClient::nodeStatus, this, [this](const QString &host, int nodeNum, const QVariantMap &fields) {
+		if (!hostMatches(host)) return;
+		m_nodeWidget->updateNode(nodeNum, fields);
+	});
+	connect(m_mqtt, &MqttClient::nodeVerbose, this, [this](const QString &host, int nodeNum, const QString &desc) {
+		if (!hostMatches(host)) return;
+		m_nodeWidget->updateNodeVerbose(nodeNum, desc);
+	});
+	connect(m_mqtt, &MqttClient::clientUpdate, this, [this](const QString &host, const QString &server, const QString &action, const QVariantMap &fields) {
+		if (!hostMatches(host)) return;
+		m_clientWidget->updateClient(server, action, fields);
+	});
+	connect(m_mqtt, &MqttClient::loginAttempt, this, [this](const QString &host, const QString &ip, const QString &action, const QVariantMap &fields) {
+		if (!hostMatches(host)) return;
+		m_loginAttemptsWidget->updateAttempt(ip, action, fields);
+	});
 	connect(m_mqtt, &MqttClient::bbsAction, m_actionWidget, &ActionWidget::addAction);
 	connect(m_mqtt, &MqttClient::bbsAction, this, [this](const QString &action, const QString &detail,
 	        const QString &, const QString &payload) {
@@ -419,11 +435,13 @@ void MainWindow::connectMqttSignals()
 				lbl->setText(label + ": " + state);
 		}
 	};
-	connect(m_mqtt, &MqttClient::serverState, this, [this, updateServerLabel](const QString &server, const QString &state) {
+	connect(m_mqtt, &MqttClient::serverState, this, [this, updateServerLabel](const QString &host, const QString &server, const QString &state) {
+		if (!hostMatches(host)) return;
 		m_serverStates[server] = state;
 		updateServerLabel(server);
 	});
-	connect(m_mqtt, &MqttClient::serverVersion, this, [this, updateServerLabel](const QString &server, const QString &version) {
+	connect(m_mqtt, &MqttClient::serverVersion, this, [this, updateServerLabel](const QString &host, const QString &server, const QString &version) {
+		if (!hostMatches(host)) return;
 		static QRegularExpression verRe("(\\d+\\.\\d+\\w*)");
 		QString short_ver;
 		auto match = verRe.match(version);
@@ -434,7 +452,8 @@ void MainWindow::connectMqttSignals()
 		m_serverVersions[server] = short_ver;
 		updateServerLabel(server);
 	});
-	connect(m_mqtt, &MqttClient::serverStat, this, [this](const QString &server, const QString &stat, const QString &value) {
+	connect(m_mqtt, &MqttClient::serverStat, this, [this](const QString &host, const QString &server, const QString &stat, const QString &value) {
+		if (!hostMatches(host)) return;
 		bool ok;
 		int v = value.toInt(&ok);
 		if (!ok) return;
@@ -500,6 +519,19 @@ QString MainWindow::selectedHost() const
 	if (m_hostCombo->currentIndex() == 0)
 		return {};
 	return m_hostCombo->currentText();
+}
+
+bool MainWindow::hostMatches(const QString &host) const
+{
+	if (host.isEmpty())
+		return true;
+	QString sel = selectedHost();
+	return sel.isEmpty() || sel == host;
+}
+
+bool MainWindow::multiHost() const
+{
+	return m_hostCombo->count() > 2;
 }
 
 void MainWindow::forEachHost(std::function<void(const QString &)> fn)

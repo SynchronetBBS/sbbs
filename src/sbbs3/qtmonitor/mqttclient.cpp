@@ -254,10 +254,12 @@ void MqttClient::dispatchMessage(const QString &topic, const QString &text)
 		emit hostDiscovered(parts[3]);
 	}
 
+	QString host = (parts.size() >= 4 && parts[2] == "host") ? parts[3] : QString();
+
 	// sbbs/{id}/host/{h}/server/{srv}/log/{level}
 	if (parts.size() >= 8 && parts[4] == "server" && parts[6] == "log") {
 		auto [timestamp, msg] = splitTsvPayload(text);
-		emit logMessage(parts[5], parseLogLevel(parts.last()), timestamp, msg);
+		emit logMessage(host, parts[5], parseLogLevel(parts.last()), timestamp, msg);
 		return;
 	}
 
@@ -273,14 +275,14 @@ void MqttClient::dispatchMessage(const QString &topic, const QString &text)
 	// sbbs/{id}/host/{h}/event/log/{level}
 	if (parts.size() >= 7 && parts[4] == "event" && parts[5] == "log") {
 		auto [timestamp, msg] = splitTsvPayload(text);
-		emit eventLogMessage(parseLogLevel(parts.last()), timestamp, msg);
+		emit eventLogMessage(host, parseLogLevel(parts.last()), timestamp, msg);
 		return;
 	}
 
 	// sbbs/{id}/log/{level}
 	if (parts.size() >= 4 && parts[2] == "log") {
 		auto [timestamp, msg] = splitTsvPayload(text);
-		emit logMessage("bbs", parseLogLevel(parts.last()), timestamp, msg);
+		emit logMessage(host, "bbs", parseLogLevel(parts.last()), timestamp, msg);
 		return;
 	}
 
@@ -294,7 +296,7 @@ void MqttClient::dispatchMessage(const QString &topic, const QString &text)
 		QVariantMap data;
 		for (int i = 0; i < qMin(fields.size(), names.size()); ++i)
 			data[names[i]] = fields[i];
-		emit nodeStatus(nodeNum, data);
+		emit nodeStatus(host, nodeNum, data);
 		return;
 	}
 
@@ -303,7 +305,7 @@ void MqttClient::dispatchMessage(const QString &topic, const QString &text)
 		bool ok;
 		int nodeNum = parts[3].toInt(&ok);
 		if (!ok) return;
-		emit nodeVerbose(nodeNum, text);
+		emit nodeVerbose(host, nodeNum, text);
 		return;
 	}
 
@@ -314,7 +316,7 @@ void MqttClient::dispatchMessage(const QString &topic, const QString &text)
 		QVariantMap data;
 		for (int i = 0; i < qMin(fields.size(), names.size()); ++i)
 			data[names[i]] = fields[i];
-		emit clientUpdate(parts[5], parts[8], data);
+		emit clientUpdate(host, parts[5], parts[8], data);
 		return;
 	}
 
@@ -326,40 +328,40 @@ void MqttClient::dispatchMessage(const QString &topic, const QString &text)
 	if (parts.size() >= 6 && parts[4] == "login_attempts") {
 		QString ip = QStringList(parts.mid(5)).join('/');
 		if (text.isEmpty()) {
-			emit loginAttempt(ip, "clear", {});
+			emit loginAttempt(host, ip, "clear", {});
 		} else {
 			QStringList fields = text.split('\t');
 			QStringList names = {"first", "last", "count", "dupes", "protocol", "username"};
 			QVariantMap data;
 			for (int i = 0; i < qMin(fields.size(), names.size()); ++i)
 				data[names[i]] = fields[i];
-			emit loginAttempt(ip, "update", data);
+			emit loginAttempt(host, ip, "update", data);
 		}
 		return;
 	}
 
 	// sbbs/{id}/host/{h}/server/{srv}/client (count)
 	if (parts.size() == 7 && parts[4] == "server" && parts[6] == "client") {
-		emit serverStat(parts[5], "clients", text);
+		emit serverStat(host, parts[5], "clients", text);
 		return;
 	}
 
 	// sbbs/{id}/host/{h}/server/{srv} (server-level status)
 	if (parts.size() == 6 && parts[4] == "server") {
-		emit serverState(parts[5], text.split('\t').first());
+		emit serverState(host, parts[5], text.split('\t').first());
 		return;
 	}
 
 	// sbbs/{id}/host/{h}/server/{srv}/version
 	if (parts.size() == 7 && parts[4] == "server" && parts[6] == "version") {
-		emit serverVersion(parts[5], text);
+		emit serverVersion(host, parts[5], text);
 		return;
 	}
 
 	// sbbs/{id}/host/{h}/server/{srv}/{stat}
 	if (parts.size() == 7 && parts[4] == "server"
 	    && (parts[6] == "served" || parts[6] == "highwater" || parts[6] == "error_count")) {
-		emit serverStat(parts[5], parts[6], text);
+		emit serverStat(host, parts[5], parts[6], text);
 		return;
 	}
 }
