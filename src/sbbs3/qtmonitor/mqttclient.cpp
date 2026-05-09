@@ -193,6 +193,7 @@ void MqttClient::onConnected()
 	};
 	for (const auto &t : topics)
 		m_client->subscribe(QMqttTopicFilter(t));
+	m_client->subscribe(QMqttTopicFilter("$SYS/#"));
 
 	emit connected();
 }
@@ -246,6 +247,18 @@ void MqttClient::sendNodeMessage(int n, const QString &msg) { publish(QStringLit
 void MqttClient::dispatchMessage(const QString &topic, const QString &text)
 {
 	QStringList parts = topic.split('/');
+
+	// $SYS/broker/version
+	if (topic == "$SYS/broker/version") {
+		emit brokerVersion(text);
+		return;
+	}
+	// $SYS/broker/log/{level}
+	if (parts.size() == 4 && parts[0] == "$SYS" && parts[1] == "broker" && parts[2] == "log") {
+		auto [timestamp, msg] = splitTsvPayload(text);
+		emit brokerLog(parseLogLevel(parts[3]), timestamp, msg);
+		return;
+	}
 
 	if (parts.size() >= 2 && parts[0] == "sbbs" && m_bbsId.isEmpty())
 		m_bbsId = parts[1];

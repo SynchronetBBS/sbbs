@@ -60,6 +60,8 @@ signals:
 	void loginAttempt(const QString &host, const QString &ip, const QString &action, const QVariantMap &fields);
 	void bbsAction(const QString &action, const QString &detail, const QString &timestamp, const QString &payload);
 	void hostDiscovered(const QString &host);
+	void brokerVersion(const QString &version);
+	void brokerLog(int level, const QString &timestamp, const QString &text);
 
 private slots:
 	void onConnected();

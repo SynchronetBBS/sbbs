@@ -356,6 +356,28 @@ void MainWindow::connectMqttSignals()
 		if (m_hostCombo->count() == 2)
 			m_hostCombo->setCurrentIndex(1);
 	});
+	connect(m_mqtt, &MqttClient::brokerVersion, this, [this](const QString &version) {
+		if (!version.startsWith("Synchronet MQTT Broker "))
+			return;
+		if (m_logPanes.contains("broker"))
+			return;
+		auto *brokerLog = new LogWidget("Broker");
+		m_logPanes["broker"] = brokerLog;
+		auto *brokerDock = makeDock("Broker", brokerLog);
+		m_logDocks["broker"] = brokerDock;
+		addDockWidget(Qt::BottomDockWidgetArea, brokerDock);
+		if (auto *firstLogDock = m_logDocks.value(Servers.first()))
+			tabifyDockWidget(firstLogDock, brokerDock);
+		brokerDock->toggleViewAction()->setShortcut(QKeySequence());
+		applyLogMaxLines();
+		setDarkMode(m_dark);
+	});
+	connect(m_mqtt, &MqttClient::brokerLog, this, [this](int level, const QString &ts, const QString &text) {
+		if (auto *pane = m_logPanes.value("broker"))
+			pane->appendLog(level, ts, text);
+		if (auto *bbs = m_logPanes.value("bbs"))
+			bbs->appendLog(level, ts, "[Broker] " + text);
+	});
 	connect(m_mqtt, &MqttClient::connected, this, [this] {
 		statusBar()->showMessage("Connected to MQTT broker", 3000);
 		m_mqttLabel->setText("MQTT: Connected");
