@@ -435,10 +435,15 @@ void MainWindow::connectMqttSignals()
 	});
 	connect(m_mqtt, &MqttClient::bbsAction, m_actionWidget, &ActionWidget::addAction);
 	connect(m_mqtt, &MqttClient::bbsAction, this, [this](const QString &action, const QString &detail,
-	        const QString &, const QString &payload) {
+	        const QString &timestamp, const QString &payload) {
 		if (action != "page")
 			return;
 		if (!m_settings.value("notify/page_alert", true).toBool())
+			return;
+		QDateTime dt = QDateTime::fromString(timestamp, Qt::ISODate);
+		if (!dt.isValid())
+			dt = QDateTime::fromString(timestamp.left(15), "yyyyMMdd'T'HHmmss");
+		if (dt.isValid() && dt.secsTo(QDateTime::currentDateTime()) > 60)
 			return;
 		QStringList fields = payload.split('\t');
 		QString user = fields.size() >= 2 ? fields[1] : "Unknown";
