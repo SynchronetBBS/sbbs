@@ -257,39 +257,6 @@ fn_Conn_scrollback(WrenVM *vm)
 	wrenReleaseHandle(vm, run);
 }
 
-/* Conn.upload() / Conn.download() — wrap term.c's begin_upload /
- * begin_download.  Mirror the C-side mouse-event refresh + showmouse
- * the historical Alt-U / Alt-D / SM_UPLOAD / SM_DOWNLOAD paths did
- * on the way out.  No-op if no active session. */
-void
-fn_Conn_upload(WrenVM *vm)
-{
-	(void)vm;
-	struct wren_host_state *st  = wren_host_state();
-	struct bbslist         *bbs = (st != NULL) ? st->bbs : NULL;
-	if (bbs == NULL)
-		return;
-	begin_upload(bbs, false, 0);
-	if (cterm != NULL && cterm->mouse_state_change_cbdata != NULL)
-		setup_mouse_events(cterm->mouse_state_change_cbdata);
-	showmouse();
-}
-
-void
-fn_Conn_download(WrenVM *vm)
-{
-	(void)vm;
-	struct wren_host_state *st  = wren_host_state();
-	struct bbslist         *bbs = (st != NULL) ? st->bbs : NULL;
-	if (bbs == NULL)
-		return;
-	begin_download(bbs);
-	if (cterm != NULL && cterm->mouse_state_change_cbdata != NULL)
-		setup_mouse_events(cterm->mouse_state_change_cbdata);
-	showmouse();
-}
-
-
 void
 fn_Conn_connected(WrenVM *vm)
 {

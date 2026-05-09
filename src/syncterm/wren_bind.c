@@ -996,8 +996,6 @@ static const struct binding BINDINGS[] = {
 	{ "Conn",  true, "endSession(_)",  fn_Conn_endSession   },
 	{ "Conn",  true, "paste()",        fn_Conn_paste        },
 	{ "Conn",  true, "scrollback()",   fn_Conn_scrollback   },
-	{ "Conn",  true, "upload()",       fn_Conn_upload       },
-	{ "Conn",  true, "download()",     fn_Conn_download     },
 	{ "Conn",  true, "connected",      fn_Conn_connected    },
 	{ "Conn",  true, "type",           fn_Conn_type         },
 	{ "Conn",  true, "pending",        fn_Conn_pending      },
@@ -1222,6 +1220,9 @@ static const struct binding BINDINGS[] = {
 	{ "Transfer", true, "dialogPending",       fn_Transfer_dialogPending  },
 	{ "Transfer", true, "dialogFilename",      fn_Transfer_dialogFilename },
 	{ "Transfer", true, "dialogRespond(_,_)",  fn_Transfer_dialogRespond  },
+	{ "Transfer", true, "upload(_,_,_)",       fn_Transfer_upload         },
+	{ "Transfer", true, "uploadBatch(_,_,_)",  fn_Transfer_uploadBatch    },
+	{ "Transfer", true, "download(_,_)",       fn_Transfer_download       },
 
 	{ "WON",   true, "deserialize(_)", fn_WON_deserialize   },
 

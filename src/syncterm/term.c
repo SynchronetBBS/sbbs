@@ -1085,144 +1085,6 @@ count_data_waiting(void)
 void ascii_upload(FILE *fp);
 void raw_upload(FILE *fp);
 
-void
-begin_upload(struct bbslist *bbs, bool autozm, int lastch)
-{
-	char                  str[MAX_PATH * 2 + 1];
-	char                  path[MAX_PATH + 1];
-	int                   result;
-	int                   i;
-	int                   proto;
-	bool                  batch;
-	FILE                 *fp;
-	struct file_pick      fpick;
-	char                 *opts[9] = {
-		"ZMODEM",
-		"ZMODEM Batch",
-		"YMODEM",
-		"YMODEM Batch",
-		"XMODEM-1K",
-		"XMODEM-128",
-		"ASCII",
-		"Raw",
-		""
-	};
-	struct  text_info     txtinfo;
-	struct ciolib_screen *savscrn;
-	struct ciolib_screen *savscrn2;
-
-	if (safe_mode)
-		return;
-
-	gettextinfo(&txtinfo);
-	suspend_rip(true);
-	savscrn = cp437_savescrn();
-	savscrn2 = savescreen();
-
-	init_uifc(false, false);
-	if (!isdir(bbs->uldir)) {
-		SAFEPRINTF(str, "Invalid upload directory: %s", bbs->uldir);
-		uifcmsg(str, "An invalid `UploadPath` was specified in the `syncterm.lst` file");
-		uifcbail();
-		restorescreen(savscrn);
-		freescreen(savscrn);
-		freescreen(savscrn2);
-		gotoxy(txtinfo.curx, txtinfo.cury);
-		return;
-	}
-
-	if (autozm) {
-		proto = 0;
-	}
-	else {
-		i = 0;
-		uifc.helpbuf = "Select Protocol";
-		proto = uifc.list(WIN_MID | WIN_SAV, 0, 0, 0, &i, NULL, "Protocol", opts);
-		if (proto < 0) {
-			check_exit(false);
-			uifcbail();
-			restorescreen(savscrn);
-			freescreen(savscrn);
-			freescreen(savscrn2);
-			gotoxy(txtinfo.curx, txtinfo.cury);
-			return;
-		}
-	}
-	batch = (proto == 1 || proto == 3);
-
-	if (batch)
-		result = filepick_multi(&uifc, "Upload", &fpick, bbs->uldir, NULL, 0);
-	else
-		result = filepick(&uifc, "Upload", &fpick, bbs->uldir, NULL, UIFC_FP_ALLOWENTRY);
-
-	if ((result == -1) || (fpick.files < 1)) {
-		check_exit(false);
-		filepick_free(&fpick);
-		uifcbail();
-		restorescreen(savscrn);
-		freescreen(savscrn);
-		freescreen(savscrn2);
-		gotoxy(txtinfo.curx, txtinfo.cury);
-		return;
-	}
-
-	restorescreen(savscrn2);
-	freescreen(savscrn2);
-
-	if (batch) {
-		switch (proto) {
-			case 1:
-				zmodem_batch_upload(bbs, fpick.selected, fpick.files);
-				break;
-			case 3:
-				xmodem_batch_upload(bbs, fpick.selected, fpick.files, YMODEM | SEND, lastch);
-				break;
-		}
-	}
-	else {
-		SAFECOPY(path, fpick.selected[0]);
-		if ((fp = fopen(path, "rb")) == NULL) {
-			SAFEPRINTF2(str, "Error %d opening %s for read", errno, path);
-			uifcmsg("Error opening file", str);
-			filepick_free(&fpick);
-			uifcbail();
-			restorescreen(savscrn);
-			freescreen(savscrn);
-			gotoxy(txtinfo.curx, txtinfo.cury);
-			return;
-		}
-		setvbuf(fp, NULL, _IOFBF, 0x10000);
-
-		switch (proto) {
-			case 0:
-				zmodem_upload(bbs, fp, path);
-				break;
-			case 2:
-				xmodem_upload(bbs, fp, path, YMODEM | SEND, lastch);
-				break;
-			case 4:
-				xmodem_upload(bbs, fp, path, XMODEM | SEND, lastch);
-				break;
-			case 5:
-				xmodem_upload(bbs, fp, path, XMODEM | SEND | XMODEM_128B, lastch);
-				break;
-			case 6:
-				ascii_upload(fp);
-				break;
-			case 7:
-				raw_upload(fp);
-				break;
-		}
-		fclose(fp);
-	}
-	filepick_free(&fpick);
-	suspend_rip(false);
-	uifcbail();
-	restorescreen(savscrn);
-	freescreen(savscrn);
-	gotoxy(txtinfo.curx, txtinfo.cury);
-}
-
 struct cet_ts_state {
 	int (*recv_byte)(void *, unsigned);
 	uint8_t *orig_screen;
@@ -1850,10 +1712,10 @@ failure:
 	xfer_set_done(success);
 }
 
-/* Public entry — driven from begin_download's protocol chooser.  Wraps
+/* Public entry — driven from DownloadApp's protocol picker.  Wraps
  * the worker spawn + Wren TransferApp loop, propagating the worker's
  * cached last-frame buffer back to the caller after join. */
-static void
+void
 cet_telesoftware_download(struct bbslist *bbs, void **frame_buffer,
                           size_t *buflen)
 {
@@ -1878,77 +1740,6 @@ cet_telesoftware_download(struct bbslist *bbs, void **frame_buffer,
 		conn_binary_mode_off();
 	if (log_fp != NULL)
 		fflush(log_fp);
-}
-
-void
-begin_download(struct bbslist *bbs)
-{
-	char                  path[MAX_PATH + 1];
-	int                   i;
-	char                 *opts[7] = {
-		"ZMODEM",
-		"YMODEM-g",
-		"YMODEM",
-		"XMODEM-CRC",
-		"XMODEM-CHKSUM",
-		"CET Telesoftware",
-		""
-	};
-	struct  text_info     txtinfo;
-	int                   old_hold = hold_update;
-	struct ciolib_screen *savscrn;
-	void *buf = NULL;
-	size_t buflen = 0;
-
-	if (safe_mode)
-		return;
-
-	gettextinfo(&txtinfo);
-	savscrn = cp437_savescrn();
-
-	init_uifc(false, false);
-
-	i = 0;
-	if (cterm->emulation != CTERM_EMULATION_PRESTEL)
-		opts[5] = "";
-	uifc.helpbuf = "Select Protocol";
-	hold_update = false;
-	suspend_rip(true);
-	switch (uifc.list(WIN_MID | WIN_SAV, 0, 0, 0, &i, NULL, "Protocol", opts)) {
-		case -1:
-			check_exit(false);
-			break;
-		case 0:
-			zmodem_download(bbs);
-			break;
-		case 1:
-			xmodem_download(bbs, YMODEM | CRC | GMODE | RECV, NULL);
-			break;
-		case 2:
-			xmodem_download(bbs, YMODEM | CRC | RECV, NULL);
-			break;
-		case 3:
-			if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "Filename", path, sizeof(path), 0) != -1)
-				xmodem_download(bbs, XMODEM | CRC | RECV, path);
-			break;
-		case 4:
-			if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "Filename", path, sizeof(path), 0) != -1)
-				xmodem_download(bbs, XMODEM | RECV, path);
-			break;
-		case 5:
-			cet_telesoftware_download(bbs, &buf, &buflen);
-			break;
-	}
-	suspend_rip(false);
-	hold_update = old_hold;
-	uifcbail();
-	restorescreen(savscrn);
-	freescreen(savscrn);
-	gotoxy(txtinfo.curx, txtinfo.cury);
-	if (buf) {
-		cterm_write(cterm, buf, buflen, NULL);
-		free(buf);
-	}
 }
 
 #if defined(__BORLANDC__)
@@ -5622,6 +5413,11 @@ doterm(struct bbslist *bbs)
 		 * any input pump so a fiber can fire an op, get its result,
 		 * and re-fire within a single iteration's worth of latency. */
 		wren_result_drain();
+		/* Run any deferred Transfer.* dispatch queued by the picker
+		 * apps' foreign hooks during the previous iteration.  Has
+		 * to happen at C top-level (not inside a foreign) because
+		 * the dispatch wrenCalls into TransferApp. */
+		xfer_drain_pending();
 		/* A resumed fiber may have called Conn.endSession (e.g. the
 		 * disconnect-cluster Confirm popup running in its own App).
 		 * Drain the pending flag here too so the hangup lands this
@@ -5760,8 +5556,14 @@ doterm(struct bbslist *bbs)
 								restorescreen(savscrn);
 								freescreen(savscrn);
 							}
-							else
-								begin_upload(bbs, true, inch);
+							else {
+								wren_run_upload_app(/* autoZ */ true, inch);
+								/* Drain immediately — the deferred
+								 * dispatch can't wait for the outer
+								 * loop top, the remote is already
+								 * waiting on the transfer to start. */
+								xfer_drain_pending();
+							}
 							setup_mouse_events(&ms);
 							suspend_rip(false);
 							zrqbuf[0] = 0;
@@ -5871,20 +5673,17 @@ doterm(struct bbslist *bbs)
                          */
 			switch (key) {
 				/* Shift-Insert (paste), Alt-B (scrollback),
-				 * Alt-C (capture), Alt-H / Alt-X / Ctrl-Q /
-				 * window-close (all hangup or app-exit) are
-				 * handled by Wren — keys_default.wren registers
-				 * Hook.onKey hooks that call Conn.paste /
-				 * Conn.scrollback / CaptureMenu.run /
-				 * Conn.endSession.  If a user replaces
-				 * keys_default.wren without those handlers, the
-				 * keys fall through here and out of the switch
-				 * unhandled — opt-out is intentional. */
-				case 0x2000: /* ALT-D - Download */
-					begin_download(bbs);
-					setup_mouse_events(&ms);
-					showmouse();
-					break;
+				 * Alt-C (capture), Alt-D (download),
+				 * Alt-H / Alt-X / Ctrl-Q / window-close (hangup
+				 * or app-exit), Alt-U (upload) are handled by
+				 * Wren — keys_default.wren registers Hook.onKey
+				 * hooks that call Conn.paste / Conn.scrollback /
+				 * CaptureMenu.run / DownloadApp.run /
+				 * Conn.endSession / UploadApp.run.  If a user
+				 * replaces keys_default.wren without those
+				 * handlers, the keys fall through here and out
+				 * of the switch unhandled — opt-out is
+				 * intentional. */
 				case 0x1200: /* ALT-E */
 				{
 					char                  title[LIST_NAME_MAX + 13];
@@ -5920,11 +5719,6 @@ doterm(struct bbslist *bbs)
 				 * ~/.local/share/syncterm/scripts/ that doesn't hook
 				 * Alt-L, the keystroke falls through here (and out
 				 * of the switch) — the user opted out. */
-				case 0x1600: /* ALT-U - Upload */
-					begin_upload(bbs, false, inch);
-					setup_mouse_events(&ms);
-					showmouse();
-					break;
 			}
 		}
 		wren_host_dispatch_timer();

@@ -953,10 +953,6 @@ foreign class Conn {
   // Open the uifc scrollback viewer modal.  Mouse events are
   // disabled for the duration and restored on exit.
   foreign static scrollback()
-  // Open the uifc upload / download dialogs.  Equivalent to the
-  // legacy Alt-U / Alt-D paths.  No-op outside an active session.
-  foreign static upload()
-  foreign static download()
   foreign static connected
   foreign static type
   foreign static pending
@@ -1647,6 +1643,29 @@ class Transfer {
   foreign static dialogPending
   foreign static dialogFilename
   foreign static dialogRespond(resp, newName)
+
+  // Single-file upload dispatch.  `kind` is one of:
+  //   "zmodem", "ymodem", "xmodem-1k", "xmodem-128", "ascii", "raw"
+  // `path` is an absolute filesystem path.  `lastCh` is the trailing
+  // wire byte that biases the xmodem family's initial recv state
+  // (irrelevant outside auto-detect; pass 0 for keyboard-driven
+  // uploads).  Blocks until the transfer (and TransferApp) finishes.
+  foreign static upload(kind, path, lastCh)
+
+  // Multi-file upload dispatch.  `kind` is "zmodem" or "ymodem"
+  // (xmodem-128 / 1k don't have a batch form).  `paths` is a List
+  // of absolute filesystem path strings.  Same blocking semantics
+  // as upload().
+  foreign static uploadBatch(kind, paths, lastCh)
+
+  // Download dispatch.  `kind` is one of:
+  //   "zmodem", "ymodem-g", "ymodem", "xmodem-crc",
+  //   "xmodem-chksum", "cet"
+  // `path` must be a non-null filename for xmodem-crc / xmodem-chksum
+  // (plain XMODEM has no header so the user pre-names the file);
+  // ignored otherwise.  CET writes its captured frame buffer back
+  // into cterm internally on completion.
+  foreign static download(kind, path)
 }
 
 // Platform identification.  `name` returns the uname(2) sysname on

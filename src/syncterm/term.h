@@ -82,13 +82,16 @@ void zmodem_batch_upload(struct bbslist *bbs, char **paths, int npaths);
 void xmodem_batch_upload(struct bbslist *bbs, char **paths, int npaths, long mode, int lastch);
 void xmodem_download(struct bbslist *bbs, long mode, char *path);
 void zmodem_download(struct bbslist *bbs);
+void ascii_upload(FILE *fp);
+void raw_upload(FILE *fp);
+/* Returns the captured CET frame buffer through frame_buffer/buflen
+ * (caller must free).  No-op if cterm isn't in PRESTEL emulation. */
+void cet_telesoftware_download(struct bbslist *bbs, void **frame_buffer, size_t *buflen);
 bool doterm(struct bbslist *);
 void mousedrag(struct vmem_cell *scrollback, bool force_rect);
 void get_cterm_size(int *cols, int *rows, int ns);
 int get_cache_fn_base(struct bbslist *bbs, char *fn, size_t fnsz);
 int get_cache_fn_subdir(struct bbslist *bbs, char *fn, size_t fnsz, const char *subdir);
 void send_login(struct bbslist *bbs);
-void begin_upload(struct bbslist *bbs, bool autozm, int lastch);
-void begin_download(struct bbslist *bbs);
 
 #endif // ifndef _TERM_H_

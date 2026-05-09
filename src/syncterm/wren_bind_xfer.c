@@ -29,10 +29,17 @@
 #include "eventwrap.h"      /* xpevent_t */
 #include "genwrap.h"        /* SLEEP() macro */
 #include "threadwrap.h"     /* pthread_mutex_t (Win32-portable), _beginthread */
-#include "xp_syslog.h"      /* LOG_INFO etc. — portable syslog priorities */
+
+#include "bbslist.h"        /* struct bbslist; pulls gen_defs.h → LOG_* */
+#include "cterm.h"          /* cterm_write */
+#include "sexyz.h"          /* XMODEM/YMODEM/SEND/RECV/CRC/GMODE protocol bits */
+#include "term.h"           /* zmodem_upload, xmodem_download, ... */
+
 #include "wren_bind_internal.h"
 #include "wren_host.h"
 #include "wren_host_internal.h"
+
+extern struct cterminal *cterm;
 
 /* ----- log mailbox ------------------------------------------------ */
 
@@ -679,6 +686,288 @@ wren_run_transfer(const char *label,
 		return;
 	invoke_transfer_app(label);
 	join_and_clear();
+}
+
+/* ----- protocol-picker dispatch (foreign + C-callable) ------------ */
+
+/* Convert a Wren list-of-strings (slot `list_slot`) into a malloc'd
+ * char** + npaths.  Caller frees with free_path_list().  Returns
+ * NULL on type error (sets npaths to 0). */
+static char **
+collect_path_list(WrenVM *vm, int list_slot, int *npaths)
+{
+	*npaths = 0;
+	if (wrenGetSlotType(vm, list_slot) != WREN_TYPE_LIST)
+		return NULL;
+	int count = wrenGetListCount(vm, list_slot);
+	if (count <= 0)
+		return NULL;
+	char **paths = calloc((size_t)count, sizeof(char *));
+	if (paths == NULL)
+		return NULL;
+	wrenEnsureSlots(vm, list_slot + 2);
+	int kept = 0;
+	for (int i = 0; i < count; i++) {
+		wrenGetListElement(vm, list_slot, i, list_slot + 1);
+		if (wrenGetSlotType(vm, list_slot + 1) != WREN_TYPE_STRING)
+			continue;
+		const char *s = wrenGetSlotString(vm, list_slot + 1);
+		if (s == NULL || *s == '\0')
+			continue;
+		paths[kept] = strdup(s);
+		if (paths[kept] != NULL)
+			kept++;
+	}
+	*npaths = kept;
+	return paths;
+}
+
+static void
+free_path_list(char **paths, int npaths)
+{
+	if (paths == NULL)
+		return;
+	for (int i = 0; i < npaths; i++)
+		free(paths[i]);
+	free(paths);
+}
+
+static struct bbslist *
+active_bbs(void)
+{
+	struct wren_host_state *st = wren_host_state();
+	return (st != NULL) ? st->bbs : NULL;
+}
+
+/* Pending-transfer queue.  The Transfer.upload / uploadBatch /
+ * download foreigns can't run wren_run_transfer directly — that calls
+ * wrenCall, which is forbidden inside a foreign method (wren.md §7
+ * / wren_vm.c:1449).  Instead they record the user's selection here
+ * and return immediately; doterm() drains the queue at the top of
+ * each iteration, where we're back at C top-level relative to the
+ * VM and the wrenCall in invoke_transfer_app is safe.
+ *
+ * Single-slot is sufficient — UploadApp / DownloadApp are modal, so
+ * a second pick can't fire until the previous transfer dismisses. */
+enum xfer_pending_kind {
+	XFER_PEND_NONE = 0,
+	XFER_PEND_UPLOAD,        /* single-file upload   */
+	XFER_PEND_UPLOAD_BATCH,  /* multi-file upload    */
+	XFER_PEND_DOWNLOAD,      /* download (any proto) */
+};
+
+static struct {
+	enum xfer_pending_kind action;
+	char                   proto[32];
+	char                   path[MAX_PATH + 1];
+	int                    lastCh;
+	char                 **paths;     /* uploadBatch: malloc'd list   */
+	int                    npaths;
+} xfer_pending;
+
+/* Synchronous ASCII / Raw upload — short, no worker thread, no
+ * TransferApp.  Skipping the queue is fine because there's no
+ * wrenCall in this path. */
+static void
+do_simple_upload(const char *path, bool raw)
+{
+	FILE *fp = fopen(path, "rb");
+	if (fp == NULL)
+		return;
+	setvbuf(fp, NULL, _IOFBF, 0x10000);
+	if (raw)
+		raw_upload(fp);
+	else
+		ascii_upload(fp);
+	fclose(fp);
+}
+
+/* Transfer.upload(kind, path, lastCh) — record the user's choice.
+ * Actual dispatch happens in xfer_drain_pending() once we're back
+ * at C top-level. */
+void
+fn_Transfer_upload(WrenVM *vm)
+{
+	wrenSetSlotNull(vm, 0);
+	if (wrenGetSlotType(vm, 1) != WREN_TYPE_STRING ||
+	    wrenGetSlotType(vm, 2) != WREN_TYPE_STRING)
+		return;
+	const char *kind = wrenGetSlotString(vm, 1);
+	const char *path = wrenGetSlotString(vm, 2);
+	int         lastCh = (wrenGetSlotType(vm, 3) == WREN_TYPE_NUM)
+	                       ? (int)wrenGetSlotDouble(vm, 3) : 0;
+	if (path == NULL || *path == '\0')
+		return;
+
+	xfer_pending.action = XFER_PEND_UPLOAD;
+	strncpy(xfer_pending.proto, kind, sizeof(xfer_pending.proto) - 1);
+	xfer_pending.proto[sizeof(xfer_pending.proto) - 1] = '\0';
+	strncpy(xfer_pending.path, path, sizeof(xfer_pending.path) - 1);
+	xfer_pending.path[sizeof(xfer_pending.path) - 1] = '\0';
+	xfer_pending.lastCh = lastCh;
+}
+
+/* Transfer.uploadBatch(kind, paths, lastCh) — record the choice. */
+void
+fn_Transfer_uploadBatch(WrenVM *vm)
+{
+	wrenSetSlotNull(vm, 0);
+	if (wrenGetSlotType(vm, 1) != WREN_TYPE_STRING)
+		return;
+	const char *kind   = wrenGetSlotString(vm, 1);
+	int         lastCh = (wrenGetSlotType(vm, 3) == WREN_TYPE_NUM)
+	                       ? (int)wrenGetSlotDouble(vm, 3) : 0;
+	int         npaths = 0;
+	char      **paths  = collect_path_list(vm, 2, &npaths);
+	if (paths == NULL || npaths < 1) {
+		free_path_list(paths, npaths);
+		return;
+	}
+	xfer_pending.action = XFER_PEND_UPLOAD_BATCH;
+	strncpy(xfer_pending.proto, kind, sizeof(xfer_pending.proto) - 1);
+	xfer_pending.proto[sizeof(xfer_pending.proto) - 1] = '\0';
+	xfer_pending.paths  = paths;       /* drain takes ownership */
+	xfer_pending.npaths = npaths;
+	xfer_pending.lastCh = lastCh;
+}
+
+/* Transfer.download(kind, path) — record the choice. */
+void
+fn_Transfer_download(WrenVM *vm)
+{
+	wrenSetSlotNull(vm, 0);
+	if (wrenGetSlotType(vm, 1) != WREN_TYPE_STRING)
+		return;
+	const char *kind = wrenGetSlotString(vm, 1);
+	const char *path = (wrenGetSlotType(vm, 2) == WREN_TYPE_STRING)
+	                     ? wrenGetSlotString(vm, 2) : NULL;
+
+	xfer_pending.action = XFER_PEND_DOWNLOAD;
+	strncpy(xfer_pending.proto, kind, sizeof(xfer_pending.proto) - 1);
+	xfer_pending.proto[sizeof(xfer_pending.proto) - 1] = '\0';
+	if (path != NULL) {
+		strncpy(xfer_pending.path, path, sizeof(xfer_pending.path) - 1);
+		xfer_pending.path[sizeof(xfer_pending.path) - 1] = '\0';
+	} else {
+		xfer_pending.path[0] = '\0';
+	}
+}
+
+/* Drain a deferred Transfer.* dispatch.  Called by doterm() at the
+ * top of each iteration — after Hook handlers (which may queue) have
+ * finished but before any other wrenCall.  Synchronously runs the
+ * full transfer (worker thread + TransferApp loop) before returning. */
+void
+xfer_drain_pending(void)
+{
+	if (xfer_pending.action == XFER_PEND_NONE)
+		return;
+	enum xfer_pending_kind action = xfer_pending.action;
+	xfer_pending.action = XFER_PEND_NONE;
+
+	struct bbslist *bbs = active_bbs();
+	if (bbs == NULL) {
+		free_path_list(xfer_pending.paths, xfer_pending.npaths);
+		xfer_pending.paths = NULL;
+		xfer_pending.npaths = 0;
+		return;
+	}
+
+	const char *kind   = xfer_pending.proto;
+	const char *path   = xfer_pending.path;
+	int         lastCh = xfer_pending.lastCh;
+
+	if (action == XFER_PEND_UPLOAD) {
+		if (strcmp(kind, "ascii") == 0) {
+			do_simple_upload(path, /* raw */ false);
+		} else if (strcmp(kind, "raw") == 0) {
+			do_simple_upload(path, /* raw */ true);
+		} else {
+			FILE *fp = fopen(path, "rb");
+			if (fp != NULL) {
+				setvbuf(fp, NULL, _IOFBF, 0x10000);
+				char path_copy[MAX_PATH + 1];
+				strncpy(path_copy, path, sizeof(path_copy) - 1);
+				path_copy[sizeof(path_copy) - 1] = '\0';
+				if (strcmp(kind, "zmodem") == 0) {
+					zmodem_upload(bbs, fp, path_copy);
+				} else if (strcmp(kind, "ymodem") == 0) {
+					xmodem_upload(bbs, fp, path_copy,
+					    YMODEM | SEND, lastCh);
+				} else if (strcmp(kind, "xmodem-1k") == 0) {
+					xmodem_upload(bbs, fp, path_copy,
+					    XMODEM | SEND, lastCh);
+				} else if (strcmp(kind, "xmodem-128") == 0) {
+					xmodem_upload(bbs, fp, path_copy,
+					    XMODEM | SEND | XMODEM_128B,
+					    lastCh);
+				}
+				fclose(fp);
+			}
+		}
+	} else if (action == XFER_PEND_UPLOAD_BATCH) {
+		if (strcmp(kind, "zmodem") == 0) {
+			zmodem_batch_upload(bbs, xfer_pending.paths,
+			    xfer_pending.npaths);
+		} else if (strcmp(kind, "ymodem") == 0) {
+			xmodem_batch_upload(bbs, xfer_pending.paths,
+			    xfer_pending.npaths, YMODEM | SEND, lastCh);
+		}
+		free_path_list(xfer_pending.paths, xfer_pending.npaths);
+		xfer_pending.paths  = NULL;
+		xfer_pending.npaths = 0;
+	} else if (action == XFER_PEND_DOWNLOAD) {
+		if (strcmp(kind, "zmodem") == 0) {
+			zmodem_download(bbs);
+		} else if (strcmp(kind, "ymodem-g") == 0) {
+			xmodem_download(bbs, YMODEM | CRC | GMODE | RECV, NULL);
+		} else if (strcmp(kind, "ymodem") == 0) {
+			xmodem_download(bbs, YMODEM | CRC | RECV, NULL);
+		} else if (strcmp(kind, "xmodem-crc") == 0 && path[0] != '\0') {
+			char path_copy[MAX_PATH + 1];
+			strncpy(path_copy, path, sizeof(path_copy) - 1);
+			path_copy[sizeof(path_copy) - 1] = '\0';
+			xmodem_download(bbs, XMODEM | CRC | RECV, path_copy);
+		} else if (strcmp(kind, "xmodem-chksum") == 0 && path[0] != '\0') {
+			char path_copy[MAX_PATH + 1];
+			strncpy(path_copy, path, sizeof(path_copy) - 1);
+			path_copy[sizeof(path_copy) - 1] = '\0';
+			xmodem_download(bbs, XMODEM | RECV, path_copy);
+		} else if (strcmp(kind, "cet") == 0) {
+			void  *buf    = NULL;
+			size_t buflen = 0;
+			cet_telesoftware_download(bbs, &buf, &buflen);
+			if (buf != NULL) {
+				cterm_write(cterm, buf, buflen, NULL);
+				free(buf);
+			}
+		}
+	}
+}
+
+/* Invoke transfer_pick.UploadApp.run(autoZ, lastCh) from C.  Used
+ * by the auto-ZMODEM detector in doterm() — the keyboard-driven
+ * Alt-D / Alt-U paths invoke UploadApp / DownloadApp directly from
+ * keys_default.wren. */
+void
+wren_run_upload_app(bool autoZ, int lastCh)
+{
+	struct wren_host_state *st = wren_host_state();
+	if (st == NULL || st->vm == NULL)
+		return;
+	WrenVM *vm = st->vm;
+
+	if (!wrenHasModule(vm, "transfer_pick") ||
+	    !wrenHasVariable(vm, "transfer_pick", "UploadApp"))
+		return;
+
+	wrenEnsureSlots(vm, 3);
+	wrenGetVariable(vm, "transfer_pick", "UploadApp", 0);
+	wrenSetSlotBool(vm, 1, autoZ);
+	wrenSetSlotDouble(vm, 2, (double)lastCh);
+	WrenHandle *call = wrenMakeCallHandle(vm, "run(_,_)");
+	wrenCall(vm, call);
+	wrenReleaseHandle(vm, call);
 }
 
 /* ----- shutdown --------------------------------------------------- */

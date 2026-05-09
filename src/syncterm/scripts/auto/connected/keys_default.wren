@@ -13,6 +13,7 @@ import "disconnect_flow"  for DisconnectFlow
 import "capture_menu"     for CaptureMenu
 import "music_menu"       for MusicMenu
 import "scrollback_view"  for ScrollbackView
+import "transfer_pick"    for UploadApp, DownloadApp
 
 // Disconnect / exit cluster.  DisconnectFlow lives in its own module
 // (disconnect_flow.wren) so the online menu can reuse it.  Each hook
@@ -97,5 +98,18 @@ Hook.onKey(Key.altC) { |k|
 // same modal flow.
 Hook.onKey(Key.altM) { |k|
   MusicMenu.run()
+  return true
+}
+
+// Alt-D / Alt-U — download / upload protocol pickers (replaces the
+// historical begin_download / begin_upload uifc dialogs).  Auto-Z
+// (in-stream ZRQINIT detection from doterm()) bypasses the picker
+// and reaches UploadApp directly via wren_run_upload_app() in C.
+Hook.onKey(Key.altD) { |k|
+  DownloadApp.run()
+  return true
+}
+Hook.onKey(Key.altU) { |k|
+  UploadApp.run(false, 0)
   return true
 }

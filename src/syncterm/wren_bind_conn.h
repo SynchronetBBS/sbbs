@@ -21,8 +21,6 @@ void fn_Conn_close(WrenVM *vm);
 void fn_Conn_endSession(WrenVM *vm);
 void fn_Conn_paste(WrenVM *vm);
 void fn_Conn_scrollback(WrenVM *vm);
-void fn_Conn_upload(WrenVM *vm);
-void fn_Conn_download(WrenVM *vm);
 void fn_Conn_connected(WrenVM *vm);
 void fn_Conn_type(WrenVM *vm);
 void fn_Conn_pending(WrenVM *vm);

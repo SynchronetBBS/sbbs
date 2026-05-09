@@ -2,8 +2,8 @@
 // uifc dialog reached via Alt-Z (always) and Ctrl-S (text-mode only).
 // Presents a ListView of session-control commands and dispatches the
 // selection back into the Wren primitives that already drive the
-// individual hot-keys (Conn.scrollback, Conn.upload, Conn.download,
-// CaptureMenu.run, MusicMenu.run, ...).
+// individual hot-keys (ScrollbackView.run, UploadApp.run,
+// DownloadApp.run, CaptureMenu.run, MusicMenu.run, ...).
 //
 // Most selections close the menu and return to the terminal — re-open
 // with Alt-Z if you need to change another setting.  The Output Rate
@@ -19,6 +19,7 @@ import "music_menu"      for MusicMenu
 import "scrollback_view" for ScrollbackView
 import "connected"       for Connected
 import "console"         for WrenConsole
+import "transfer_pick"   for UploadApp, DownloadApp
 
 class OnlineMenu {
   // Build the (label, Fn) pairs for the current build / mode.  The
@@ -48,9 +49,9 @@ class OnlineMenu {
       [ hint ? "Send Login (%(alt)-L)"         : "Send Login",
         Fn.new { Connected.sendLogin() } ],
       [ hint ? "Upload (%(alt)-U)"             : "Upload",
-        Fn.new { Conn.upload() } ],
+        Fn.new { UploadApp.run(false, 0) } ],
       [ hint ? "Download (%(alt)-D)"           : "Download",
-        Fn.new { Conn.download() } ],
+        Fn.new { DownloadApp.run() } ],
       [ hint ? "Change Output Rate (%(alt)-Up/%(alt)-Down)" : "Change Output Rate",
         Fn.new { outputRateFlow_() } ],
       [ "Change Log Level",

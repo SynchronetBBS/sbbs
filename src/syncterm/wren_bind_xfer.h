@@ -135,6 +135,23 @@ bool xfer_request_filename(const char *prompt,
 void wren_run_transfer(const char *label,
                        void (*worker_fn)(void *), void *arg);
 
+/* Invoke the Wren-side UploadApp protocol-picker → file-picker →
+ * dispatch flow.  When `autoZ` is true the picker is skipped and
+ * the flow goes straight to file-pick + ZMODEM upload (this is
+ * how doterm()'s auto-ZRQINIT trigger reaches the Wren UI; the
+ * keyboard Alt-U path goes directly through the Hook.onKey
+ * handler in keys_default.wren without touching this function).
+ * `lastCh` is the trailing wire byte that bias-feeds the xmodem
+ * recv state — meaningless outside auto-Z. */
+void wren_run_upload_app(bool autoZ, int lastCh);
+
+/* Run any deferred Transfer.upload / uploadBatch / download dispatch
+ * recorded by the Wren foreigns.  Must be called at C top-level
+ * relative to the VM (NOT from inside a foreign method) because the
+ * dispatch itself runs wrenCall to drive TransferApp.  doterm()
+ * calls this once per iteration after hook handlers have run. */
+void xfer_drain_pending(void);
+
 /* ----- foreigns (Wren ABI surface) ------------------------------- */
 
 void fn_Transfer_beginSession(WrenVM *vm);
@@ -149,6 +166,9 @@ void fn_Transfer_snapshot(WrenVM *vm);
 void fn_Transfer_dialogPending(WrenVM *vm);
 void fn_Transfer_dialogFilename(WrenVM *vm);
 void fn_Transfer_dialogRespond(WrenVM *vm);
+void fn_Transfer_upload(WrenVM *vm);
+void fn_Transfer_uploadBatch(WrenVM *vm);
+void fn_Transfer_download(WrenVM *vm);
 
 /* Called by wren_host_shutdown so worker threads / dynamic state get
  * torn down cleanly even when the host exits mid-transfer. */
