@@ -4,8 +4,9 @@
 #include <cstring>
 #include <algorithm>
 
-extern "C" {
 #include "sockwrap.h"
+
+extern "C" {
 #include "gen_defs.h"
 #include "ver.h"
 #include "sbbsdefs.h"
@@ -393,7 +394,7 @@ void Broker::deliver_to_local(LocalClient *client, std::shared_ptr<Message> msg)
 void Broker::deliver_to_network(NetworkSession &session, std::shared_ptr<Message> msg,
                                 const SubscriptionOptions &opts)
 {
-	uint8_t qos = std::min(msg->qos(), opts.max_qos);
+	uint8_t qos = (std::min)(msg->qos(), opts.max_qos);
 
 	Properties extra;
 	if (opts.subscription_id > 0)
@@ -433,7 +434,7 @@ void Broker::service_tx_queue(NetworkSession &session)
 	while (!session.tx_queued.empty() &&
 	       session.tx_unacked.size() < session.receive_maximum) {
 		Queued &q = session.tx_queued.front();
-		uint8_t qos = std::min(q.msg->qos(), (uint8_t)2);
+		uint8_t qos = (std::min)(q.msg->qos(), (uint8_t)2);
 		q.pid = session.alloc_pid();
 		auto pkt = build_publish(*q.msg, q.pid, q.dup, qos, nullptr);
 		send_to_network(session, pkt);
