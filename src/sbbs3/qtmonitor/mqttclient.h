@@ -6,6 +6,7 @@
 #include <QSslSocket>
 #include <QSslConfiguration>
 #include <QSslPreSharedKeyAuthenticator>
+#include <QStringList>
 
 class MqttClient : public QObject
 {
@@ -24,15 +25,15 @@ public:
 	void disconnectFromBroker();
 	void ignoreSslErrors(const QList<QSslError> &errors);
 
-	void recycleAll();
-	void pauseAll();
-	void resumeAll();
-	void clearAll();
-	void recycleServer(const QString &server);
-	void pauseServer(const QString &server);
-	void resumeServer(const QString &server);
-	void clearServer(const QString &server);
-	void clearLoginAttempt(const QString &ip);
+	void recycleHost(const QString &host);
+	void pauseHost(const QString &host);
+	void resumeHost(const QString &host);
+	void clearHost(const QString &host);
+	void recycleServer(const QString &host, const QString &server);
+	void pauseServer(const QString &host, const QString &server);
+	void resumeServer(const QString &host, const QString &server);
+	void clearServer(const QString &host, const QString &server);
+	void clearLoginAttempt(const QString &host, const QString &ip);
 	void triggerEvent(const QString &code);
 	void triggerCallout(const QString &hubId);
 	void setNode(int nodeNum, const QString &prop, const QString &value);
@@ -40,6 +41,7 @@ public:
 
 	bool isConnected() const;
 	QString bbsId() const { return m_bbsId; }
+	QStringList hosts() const { return m_hosts; }
 
 signals:
 	void connected();
@@ -57,6 +59,7 @@ signals:
 	void serverStat(const QString &server, const QString &statName, const QString &value);
 	void loginAttempt(const QString &ip, const QString &action, const QVariantMap &fields);
 	void bbsAction(const QString &action, const QString &detail, const QString &timestamp, const QString &payload);
+	void hostDiscovered(const QString &host);
 
 private slots:
 	void onConnected();
@@ -82,7 +85,7 @@ private:
 	QString m_password;
 	QByteArray m_pskIdentity;
 	QByteArray m_pskKey;
-	QString m_hostId;
+	QStringList m_hosts;
 	QString m_caFile;
 	QString m_certFile;
 	QString m_keyFile;

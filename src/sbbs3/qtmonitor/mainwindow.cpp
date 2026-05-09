@@ -112,9 +112,9 @@ void MainWindow::setupDocks()
 	for (const auto &server : Servers) {
 		QString label = ServerLabels.value(server);
 		auto *log = new LogWidget(label, server);
-		connect(log, &LogWidget::recycleServer, m_mqtt, &MqttClient::recycleServer);
-		connect(log, &LogWidget::pauseServer, m_mqtt, &MqttClient::pauseServer);
-		connect(log, &LogWidget::resumeServer, m_mqtt, &MqttClient::resumeServer);
+		connect(log, &LogWidget::recycleServer, this, [this](const QString &srv) { forEachHost([this, srv](const QString &h) { m_mqtt->recycleServer(h, srv); }); });
+		connect(log, &LogWidget::pauseServer, this, [this](const QString &srv) { forEachHost([this, srv](const QString &h) { m_mqtt->pauseServer(h, srv); }); });
+		connect(log, &LogWidget::resumeServer, this, [this](const QString &srv) { forEachHost([this, srv](const QString &h) { m_mqtt->resumeServer(h, srv); }); });
 		m_logPanes[server] = log;
 		auto *dock = makeDock(label, log);
 		m_logDocks[server] = dock;
@@ -124,9 +124,9 @@ void MainWindow::setupDocks()
 	}
 
 	auto *bbsLog = new LogWidget("BBS", "bbs", "System");
-	connect(bbsLog, &LogWidget::recycleServer, this, [this] { m_mqtt->recycleAll(); });
-	connect(bbsLog, &LogWidget::pauseServer, this, [this] { m_mqtt->pauseAll(); });
-	connect(bbsLog, &LogWidget::resumeServer, this, [this] { m_mqtt->resumeAll(); });
+	connect(bbsLog, &LogWidget::recycleServer, this, [this] { forEachHost([this](const QString &h) { m_mqtt->recycleHost(h); }); });
+	connect(bbsLog, &LogWidget::pauseServer, this, [this] { forEachHost([this](const QString &h) { m_mqtt->pauseHost(h); }); });
+	connect(bbsLog, &LogWidget::resumeServer, this, [this] { forEachHost([this](const QString &h) { m_mqtt->resumeHost(h); }); });
 	m_logPanes["bbs"] = bbsLog;
 	auto *bbsDock = makeDock("BBS", bbsLog);
 	m_logDocks["bbs"] = bbsDock;
@@ -247,11 +247,11 @@ void MainWindow::setupMenus()
 
 	// BBS (host-level)
 	auto *globalMenu = menubar->addMenu("&BBS");
-	connect(globalMenu->addAction("&Recycle All"), &QAction::triggered, this, [this] { m_mqtt->recycleAll(); });
-	connect(globalMenu->addAction("&Pause All"), &QAction::triggered, this, [this] { m_mqtt->pauseAll(); });
-	connect(globalMenu->addAction("Resu&me All"), &QAction::triggered, this, [this] { m_mqtt->resumeAll(); });
+	connect(globalMenu->addAction("&Recycle All"), &QAction::triggered, this, [this] { forEachHost([this](const QString &h) { m_mqtt->recycleHost(h); }); });
+	connect(globalMenu->addAction("&Pause All"), &QAction::triggered, this, [this] { forEachHost([this](const QString &h) { m_mqtt->pauseHost(h); }); });
+	connect(globalMenu->addAction("Resu&me All"), &QAction::triggered, this, [this] { forEachHost([this](const QString &h) { m_mqtt->resumeHost(h); }); });
 	globalMenu->addSeparator();
-	connect(globalMenu->addAction("&Clear All Login Attempts"), &QAction::triggered, this, [this] { m_mqtt->clearAll(); });
+	connect(globalMenu->addAction("&Clear All Login Attempts"), &QAction::triggered, this, [this] { forEachHost([this](const QString &h) { m_mqtt->clearHost(h); }); });
 	globalMenu->addSeparator();
 	connect(globalMenu->addAction("Force &Timed Event..."), &QAction::triggered, this, [this] {
 		auto code = QInputDialog::getText(this, "Force Timed Event", "Event code:");
@@ -264,22 +264,22 @@ void MainWindow::setupMenus()
 
 	// Terminal
 	auto *bbsMenu = menubar->addMenu("&Terminal");
-	connect(bbsMenu->addAction("&Recycle"), &QAction::triggered, this, [this] { m_mqtt->recycleServer("term"); });
-	connect(bbsMenu->addAction("&Pause"), &QAction::triggered, this, [this] { m_mqtt->pauseServer("term"); });
-	connect(bbsMenu->addAction("Resu&me"), &QAction::triggered, this, [this] { m_mqtt->resumeServer("term"); });
+	connect(bbsMenu->addAction("&Recycle"), &QAction::triggered, this, [this] { forEachHost([this](const QString &h) { m_mqtt->recycleServer(h, "term"); }); });
+	connect(bbsMenu->addAction("&Pause"), &QAction::triggered, this, [this] { forEachHost([this](const QString &h) { m_mqtt->pauseServer(h, "term"); }); });
+	connect(bbsMenu->addAction("Resu&me"), &QAction::triggered, this, [this] { forEachHost([this](const QString &h) { m_mqtt->resumeServer(h, "term"); }); });
 	bbsMenu->addSeparator();
-	connect(bbsMenu->addAction("&Clear Login Attempts"), &QAction::triggered, this, [this] { m_mqtt->clearServer("term"); });
+	connect(bbsMenu->addAction("&Clear Login Attempts"), &QAction::triggered, this, [this] { forEachHost([this](const QString &h) { m_mqtt->clearServer(h, "term"); }); });
 
 	// Per-server menus
 	for (const auto &server : Servers) {
 		if (server == "term") continue;
 		QString label = ServerLabels.value(server);
 		auto *srvMenu = menubar->addMenu("&" + label);
-		connect(srvMenu->addAction("&Recycle"), &QAction::triggered, this, [this, server] { m_mqtt->recycleServer(server); });
-		connect(srvMenu->addAction("&Pause"), &QAction::triggered, this, [this, server] { m_mqtt->pauseServer(server); });
-		connect(srvMenu->addAction("Resu&me"), &QAction::triggered, this, [this, server] { m_mqtt->resumeServer(server); });
+		connect(srvMenu->addAction("&Recycle"), &QAction::triggered, this, [this, server] { forEachHost([this, server](const QString &h) { m_mqtt->recycleServer(h, server); }); });
+		connect(srvMenu->addAction("&Pause"), &QAction::triggered, this, [this, server] { forEachHost([this, server](const QString &h) { m_mqtt->pauseServer(h, server); }); });
+		connect(srvMenu->addAction("Resu&me"), &QAction::triggered, this, [this, server] { forEachHost([this, server](const QString &h) { m_mqtt->resumeServer(h, server); }); });
 		srvMenu->addSeparator();
-		connect(srvMenu->addAction("&Clear Login Attempts"), &QAction::triggered, this, [this, server] { m_mqtt->clearServer(server); });
+		connect(srvMenu->addAction("&Clear Login Attempts"), &QAction::triggered, this, [this, server] { forEachHost([this, server](const QString &h) { m_mqtt->clearServer(h, server); }); });
 	}
 }
 
@@ -310,6 +310,12 @@ void MainWindow::setupToolbar()
 		});
 		toolbar->addAction(act);
 	}
+
+	toolbar->addSeparator();
+	m_hostCombo = new QComboBox;
+	m_hostCombo->addItem("All Hosts");
+	m_hostCombo->setToolTip("Target host for control actions");
+	toolbar->addWidget(m_hostCombo);
 
 	toolbar->addSeparator();
 	m_connectBtn = toolbar->addAction("Connect");
@@ -344,6 +350,12 @@ void MainWindow::setupStatusbar()
 
 void MainWindow::connectMqttSignals()
 {
+	connect(m_mqtt, &MqttClient::hostDiscovered, this, [this](const QString &host) {
+		if (m_hostCombo->findText(host) < 0)
+			m_hostCombo->addItem(host);
+		if (m_hostCombo->count() == 2)
+			m_hostCombo->setCurrentIndex(1);
+	});
 	connect(m_mqtt, &MqttClient::connected, this, [this] {
 		statusBar()->showMessage("Connected to MQTT broker", 3000);
 		m_mqttLabel->setText("MQTT: Connected");
@@ -453,8 +465,12 @@ void MainWindow::connectMqttSignals()
 		if (!text.isEmpty())
 			m_mqtt->sendNodeMessage(n, text);
 	});
-	connect(m_loginAttemptsWidget, &LoginAttemptsWidget::clearAttempt, m_mqtt, &MqttClient::clearLoginAttempt);
-	connect(m_loginAttemptsWidget, &LoginAttemptsWidget::clearAllAttempts, m_mqtt, &MqttClient::clearServer);
+	connect(m_loginAttemptsWidget, &LoginAttemptsWidget::clearAttempt, this, [this](const QString &ip) {
+		forEachHost([this, ip](const QString &h) { m_mqtt->clearLoginAttempt(h, ip); });
+	});
+	connect(m_loginAttemptsWidget, &LoginAttemptsWidget::clearAllAttempts, this, [this](const QString &server) {
+		forEachHost([this, server](const QString &h) { m_mqtt->clearServer(h, server); });
+	});
 	connect(m_loginAttemptsWidget, &LoginAttemptsWidget::countChanged, this, [this](int count) {
 		m_failedLabel->setText(QStringLiteral("Failed: %1").arg(count));
 	});
@@ -477,6 +493,24 @@ void MainWindow::showDock(QDockWidget *dock)
 void MainWindow::applyGlobalStyle()
 {
 	setDarkMode(m_settings.value("ui/dark_mode", true).toBool());
+}
+
+QString MainWindow::selectedHost() const
+{
+	if (m_hostCombo->currentIndex() == 0)
+		return {};
+	return m_hostCombo->currentText();
+}
+
+void MainWindow::forEachHost(std::function<void(const QString &)> fn)
+{
+	QString sel = selectedHost();
+	if (sel.isEmpty()) {
+		for (int i = 1; i < m_hostCombo->count(); ++i)
+			fn(m_hostCombo->itemText(i));
+	} else {
+		fn(sel);
+	}
 }
 
 void MainWindow::applyLogMaxLines()

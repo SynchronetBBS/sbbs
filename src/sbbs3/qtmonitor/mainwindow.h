@@ -4,6 +4,7 @@
 #include <QMainWindow>
 #include <QDockWidget>
 #include <QLabel>
+#include <QComboBox>
 #include <QSettings>
 #include "mqttclient.h"
 #include "logwidget.h"
@@ -39,6 +40,8 @@ private:
 	void restoreState();
 	void applyGlobalStyle();
 	void applyLogMaxLines();
+	QString selectedHost() const;
+	void forEachHost(std::function<void(const QString &)> fn);
 	void setDarkMode(bool dark);
 
 	QDockWidget *makeDock(const QString &title, QWidget *widget);
@@ -72,6 +75,7 @@ private:
 	QLabel *m_mqttLabel;
 	QHash<QString, QHash<QString, int>> m_statPerServer;
 	QAction *m_darkAction;
+	QComboBox *m_hostCombo;
 	QAction *m_connectBtn;
 };
 
