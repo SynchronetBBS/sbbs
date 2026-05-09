@@ -1,4 +1,5 @@
 #include "settingsdialog.h"
+#include "logwidget.h"
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QFormLayout>
@@ -95,7 +96,7 @@ SettingsDialog::SettingsDialog(QSettings *settings, QWidget *parent)
 	m_maxLogLines = new QSpinBox;
 	m_maxLogLines->setRange(1000, 100000000);
 	m_maxLogLines->setSingleStep(100000);
-	m_maxLogLines->setValue(m_settings->value("log/max_lines", 2000000).toInt());
+	m_maxLogLines->setValue(m_settings->value("log/max_lines", DefaultMaxLogLines).toInt());
 	m_maxLogLines->setSuffix(" lines");
 	logForm->addRow("Max lines per pane:", m_maxLogLines);
 	layout->addWidget(logGroup);
