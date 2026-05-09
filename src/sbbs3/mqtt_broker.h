@@ -13,12 +13,10 @@
 #include <unordered_map>
 #include <vector>
 
-extern "C" {
 #include "scfgdefs.h"
 #include "userdat.h"
 #include "ssl.h"
 #include "cryptlib.h"
-}
 
 namespace mqtt5 {
 
