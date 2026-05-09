@@ -6796,7 +6796,7 @@ void http_output_thread(void *arg)
 static int close_session_no_rb(http_session_t *session)
 {
 	if (session) {
-		if (session->is_tls)
+		if (session->is_tls && session->tls_sess != -1)
 			HANDLE_CRYPT_CALL(destroy_session(lprintf, session->tls_sess), session, "destroying session");
 		return close_socket(&session->socket);
 	}
