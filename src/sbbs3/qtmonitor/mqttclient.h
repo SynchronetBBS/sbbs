@@ -82,6 +82,7 @@ private:
 	QString m_password;
 	QByteArray m_pskIdentity;
 	QByteArray m_pskKey;
+	QString m_hostId;
 	QString m_caFile;
 	QString m_certFile;
 	QString m_keyFile;

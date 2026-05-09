@@ -229,15 +229,15 @@ QString MqttClient::topicPrefix() const
 	return m_bbsId.isEmpty() ? QStringLiteral("sbbs/+") : QStringLiteral("sbbs/") + m_bbsId;
 }
 
-void MqttClient::recycleAll()                          { publish("host/+/recycle", {}); }
-void MqttClient::pauseAll()                            { publish("host/+/pause", {}); }
-void MqttClient::resumeAll()                           { publish("host/+/resume", {}); }
-void MqttClient::clearAll()                            { publish("host/+/clear", {}); }
-void MqttClient::recycleServer(const QString &server) { publish("host/+/server/" + server + "/recycle", {}); }
-void MqttClient::pauseServer(const QString &server)   { publish("host/+/server/" + server + "/pause", {}); }
-void MqttClient::resumeServer(const QString &server)  { publish("host/+/server/" + server + "/resume", {}); }
-void MqttClient::clearServer(const QString &server)    { publish("host/+/server/" + server + "/clear", {}); }
-void MqttClient::clearLoginAttempt(const QString &ip)  { publish("host/+/clear", ip.toUtf8()); }
+void MqttClient::recycleAll()                          { publish("host/" + m_hostId + "/recycle", {}); }
+void MqttClient::pauseAll()                            { publish("host/" + m_hostId + "/pause", {}); }
+void MqttClient::resumeAll()                           { publish("host/" + m_hostId + "/resume", {}); }
+void MqttClient::clearAll()                            { publish("host/" + m_hostId + "/clear", {}); }
+void MqttClient::recycleServer(const QString &server) { publish("host/" + m_hostId + "/server/" + server + "/recycle", {}); }
+void MqttClient::pauseServer(const QString &server)   { publish("host/" + m_hostId + "/server/" + server + "/pause", {}); }
+void MqttClient::resumeServer(const QString &server)  { publish("host/" + m_hostId + "/server/" + server + "/resume", {}); }
+void MqttClient::clearServer(const QString &server)    { publish("host/" + m_hostId + "/server/" + server + "/clear", {}); }
+void MqttClient::clearLoginAttempt(const QString &ip)  { publish("host/" + m_hostId + "/clear", ip.toUtf8()); }
 void MqttClient::triggerEvent(const QString &code)     { publish("exec", code.toUtf8()); }
 void MqttClient::triggerCallout(const QString &hubId)  { publish("call", hubId.toUtf8()); }
 void MqttClient::setNode(int n, const QString &prop, const QString &val) { publish(QStringLiteral("node/%1/set/%2").arg(n).arg(prop), val.toUtf8()); }
@@ -249,6 +249,8 @@ void MqttClient::dispatchMessage(const QString &topic, const QString &text)
 
 	if (parts.size() >= 2 && parts[0] == "sbbs" && m_bbsId.isEmpty())
 		m_bbsId = parts[1];
+	if (parts.size() >= 4 && parts[2] == "host" && m_hostId.isEmpty())
+		m_hostId = parts[3];
 
 	// sbbs/{id}/host/{h}/server/{srv}/log/{level}
 	if (parts.size() >= 8 && parts[4] == "server" && parts[6] == "log") {
