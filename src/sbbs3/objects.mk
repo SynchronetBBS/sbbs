@@ -74,6 +74,10 @@ OBJS	=		$(LOAD_CFG_OBJS) \
 			$(MTOBJODIR)/msgdate$(OFILE)\
 			$(MTOBJODIR)/msgtoqwk$(OFILE)\
 			$(MTOBJODIR)/mqtt$(OFILE)\
+			$(MTOBJODIR)/mqtt_protocol$(OFILE)\
+			$(MTOBJODIR)/mqtt_topic$(OFILE)\
+			$(MTOBJODIR)/mqtt_broker$(OFILE)\
+			$(MTOBJODIR)/mqtt_broker_glue$(OFILE)\
 			$(MTOBJODIR)/netmail$(OFILE)\
 			$(MTOBJODIR)/newuser$(OFILE)\
 			$(MTOBJODIR)/pack_qwk$(OFILE)\

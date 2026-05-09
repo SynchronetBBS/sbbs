@@ -164,27 +164,30 @@ void mqtt_cfg()
 	while (1) {
 		int i = 0;
 		snprintf(opt[i++], MAX_OPLN, "%-20s%s", "Enabled", cfg.mqtt.enabled ? "Yes" : "No");
-		snprintf(opt[i++], MAX_OPLN, "%-20s%s", "Broker Address", cfg.mqtt.broker_addr);
-		snprintf(opt[i++], MAX_OPLN, "%-20s%u", "Broker Port", cfg.mqtt.broker_port);
-		snprintf(opt[i++], MAX_OPLN, "%-20s%u seconds", "Keep-alive", cfg.mqtt.keepalive);
-		snprintf(opt[i++], MAX_OPLN, "%-20s%s", "Publish Verbosity", cfg.mqtt.verbose ? "High" : "Low");
-		snprintf(opt[i++], MAX_OPLN, "%-20s%s", "Publish QOS", mqttQOS[cfg.mqtt.publish_qos]);
-		snprintf(opt[i++], MAX_OPLN, "%-20s%s", "Subscribe QOS", mqttQOS[cfg.mqtt.subscribe_qos]);
-		snprintf(opt[i++], MAX_OPLN, "%-20s%s", "Log Level", logLevelStringList[cfg.mqtt.log_level]);
-		snprintf(opt[i++], MAX_OPLN, "%-20s%s", "TLS (encryption)", mqttTlsMode[cfg.mqtt.tls.mode]);
-		if (cfg.mqtt.tls.mode != MQTT_TLS_SBBS) {
-			snprintf(opt[i++], MAX_OPLN, "%-20s%s", "Username", cfg.mqtt.username);
-			snprintf(opt[i++], MAX_OPLN, "%-20s%s", "Password", cfg.mqtt.password);
-			snprintf(opt[i++], MAX_OPLN, "%-20s%s", "Protocol Version", mqttVersion[cfg.mqtt.protocol_version - 3]);
-		}
-		if (cfg.mqtt.tls.mode == MQTT_TLS_CERT) {
-			snprintf(opt[i++], MAX_OPLN, "%-20s%s", "CA Cert", cfg.mqtt.tls.cafile);
-			snprintf(opt[i++], MAX_OPLN, "%-20s%s", "Client Cert", cfg.mqtt.tls.certfile);
-			snprintf(opt[i++], MAX_OPLN, "%-20s%s", "Key File", cfg.mqtt.tls.keyfile);
-			snprintf(opt[i++], MAX_OPLN, "%-20s%s", "Key File Password", cfg.mqtt.tls.keypass);
-		} else if (cfg.mqtt.tls.mode == MQTT_TLS_PSK) {
-			snprintf(opt[i++], MAX_OPLN, "%-20s%s", "Key", cfg.mqtt.tls.psk);
-			snprintf(opt[i++], MAX_OPLN, "%-20s%s", "Identity", cfg.mqtt.tls.identity);
+		snprintf(opt[i++], MAX_OPLN, "%-20s%s", "Internal Broker", cfg.mqtt.internal_broker ? "Yes" : "No");
+		if (!cfg.mqtt.internal_broker) {
+			snprintf(opt[i++], MAX_OPLN, "%-20s%s", "Broker Address", cfg.mqtt.broker_addr);
+			snprintf(opt[i++], MAX_OPLN, "%-20s%u", "Broker Port", cfg.mqtt.broker_port);
+			snprintf(opt[i++], MAX_OPLN, "%-20s%u seconds", "Keep-alive", cfg.mqtt.keepalive);
+			snprintf(opt[i++], MAX_OPLN, "%-20s%s", "Publish Verbosity", cfg.mqtt.verbose ? "High" : "Low");
+			snprintf(opt[i++], MAX_OPLN, "%-20s%s", "Publish QOS", mqttQOS[cfg.mqtt.publish_qos]);
+			snprintf(opt[i++], MAX_OPLN, "%-20s%s", "Subscribe QOS", mqttQOS[cfg.mqtt.subscribe_qos]);
+			snprintf(opt[i++], MAX_OPLN, "%-20s%s", "Log Level", logLevelStringList[cfg.mqtt.log_level]);
+			snprintf(opt[i++], MAX_OPLN, "%-20s%s", "TLS (encryption)", mqttTlsMode[cfg.mqtt.tls.mode]);
+			if (cfg.mqtt.tls.mode != MQTT_TLS_SBBS) {
+				snprintf(opt[i++], MAX_OPLN, "%-20s%s", "Username", cfg.mqtt.username);
+				snprintf(opt[i++], MAX_OPLN, "%-20s%s", "Password", cfg.mqtt.password);
+				snprintf(opt[i++], MAX_OPLN, "%-20s%s", "Protocol Version", mqttVersion[cfg.mqtt.protocol_version - 3]);
+			}
+			if (cfg.mqtt.tls.mode == MQTT_TLS_CERT) {
+				snprintf(opt[i++], MAX_OPLN, "%-20s%s", "CA Cert", cfg.mqtt.tls.cafile);
+				snprintf(opt[i++], MAX_OPLN, "%-20s%s", "Client Cert", cfg.mqtt.tls.certfile);
+				snprintf(opt[i++], MAX_OPLN, "%-20s%s", "Key File", cfg.mqtt.tls.keyfile);
+				snprintf(opt[i++], MAX_OPLN, "%-20s%s", "Key File Password", cfg.mqtt.tls.keypass);
+			} else if (cfg.mqtt.tls.mode == MQTT_TLS_PSK) {
+				snprintf(opt[i++], MAX_OPLN, "%-20s%s", "Key", cfg.mqtt.tls.psk);
+				snprintf(opt[i++], MAX_OPLN, "%-20s%s", "Identity", cfg.mqtt.tls.identity);
+			}
 		}
 		opt[i][0] = 0;
 		uifc.helpbuf =
@@ -218,6 +221,13 @@ void mqtt_cfg()
 				cfg.mqtt.enabled = !cfg.mqtt.enabled;
 				break;
 			case 1:
+				cfg.mqtt.internal_broker = !cfg.mqtt.internal_broker;
+				break;
+		}
+		if (cfg.mqtt.internal_broker)
+			continue;
+		switch (i) {
+			case 2:
 				uifc.helpbuf =
 					"~ Broker Hostname or IP Address ~\n"
 					"\n"
@@ -226,7 +236,7 @@ void mqtt_cfg()
 				uifc.input(WIN_MID | WIN_SAV, 0, 0, "Broker Hostname or IP Address"
 				           , cfg.mqtt.broker_addr, sizeof(cfg.mqtt.broker_addr) - 1, K_EDIT);
 				break;
-			case 2:
+			case 3:
 				uifc.helpbuf =
 					"~ Broker TCP Port Number ~\n"
 					"\n"
@@ -239,26 +249,26 @@ void mqtt_cfg()
 				               , str, 5, K_EDIT | K_NUMBER) > 0)
 					cfg.mqtt.broker_port = atoi(str);
 				break;
-			case 3:
+			case 4:
 				SAFEPRINTF(str, "%u", cfg.mqtt.keepalive);
 				if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "Seconds to keep inactive connection alive"
 				               , str, 5, K_EDIT | K_NUMBER) > 0 && atoi(str) >= 5)
 					cfg.mqtt.keepalive = atoi(str);
 				break;
-			case 4:
+			case 5:
 				cfg.mqtt.verbose = !cfg.mqtt.verbose;
 				break;
-			case 5:
+			case 6:
 				i = cfg.mqtt.publish_qos;
 				if ((i = uifc.list(WIN_MID | WIN_SAV, 0, 0, 0, &i, 0, "Quality of Service for Publishing", mqttQOS)) >= 0)
 					cfg.mqtt.publish_qos = i;
 				break;
-			case 6:
+			case 7:
 				i = cfg.mqtt.subscribe_qos;
 				if ((i = uifc.list(WIN_MID | WIN_SAV, 0, 0, 0, &i, 0, "Quality of Service for Subscriptions", mqttQOS)) >= 0)
 					cfg.mqtt.subscribe_qos = i;
 				break;
-			case 7:
+			case 8:
 				uifc.helpbuf =
 					"~ MQTT Log Level ~\n"
 					"\n"
@@ -271,7 +281,7 @@ void mqtt_cfg()
 				if (i >= 0 && i <= LOG_DEBUG)
 					cfg.mqtt.log_level = i;
 				break;
-			case 8:
+			case 9:
 				uifc.helpbuf =
 					"~ Encryption via TLS ~\n"
 					"\n"
@@ -288,7 +298,7 @@ void mqtt_cfg()
 				if (i >= 0)
 					cfg.mqtt.tls.mode = i;
 				break;
-			case 9:
+			case 10:
 				uifc.helpbuf =
 					"~ User name ~\n"
 					"\n"
@@ -297,7 +307,7 @@ void mqtt_cfg()
 				uifc.input(WIN_MID | WIN_SAV, 0, 0, "User name for authentication"
 				           , cfg.mqtt.username, sizeof(cfg.mqtt.username) - 1, K_EDIT);
 				break;
-			case 10:
+			case 11:
 				uifc.helpbuf =
 					"~ Password ~\n"
 					"\n"
@@ -306,12 +316,12 @@ void mqtt_cfg()
 				uifc.input(WIN_MID | WIN_SAV, 0, 0, "Password for authentication"
 				           , cfg.mqtt.password, sizeof(cfg.mqtt.password) - 1, K_EDIT);
 				break;
-			case 11:
+			case 12:
 				i = cfg.mqtt.protocol_version - 3;
 				if ((i = uifc.list(WIN_MID | WIN_SAV, 0, 0, 0, &i, 0, "Protocol Version", mqttVersion)) >= 0)
 					cfg.mqtt.protocol_version = 3 + i;
 				break;
-			case 12:
+			case 13:
 				if (cfg.mqtt.tls.mode == MQTT_TLS_CERT) {
 					uifc.helpbuf =
 						"~ CA Certificate File ~\n"
@@ -331,7 +341,7 @@ void mqtt_cfg()
 					           , cfg.mqtt.tls.psk, sizeof(cfg.mqtt.tls.psk) - 1, K_EDIT);
 				}
 				break;
-			case 13:
+			case 14:
 				if (cfg.mqtt.tls.mode == MQTT_TLS_CERT) {
 					uifc.helpbuf =
 						"~ Client Certificate File ~\n"
@@ -355,7 +365,7 @@ void mqtt_cfg()
 					           , cfg.mqtt.tls.identity, sizeof(cfg.mqtt.tls.identity) - 1, K_EDIT);
 				}
 				break;
-			case 14:
+			case 15:
 				uifc.helpbuf =
 					"~ Private Key File ~\n"
 					"\n"
@@ -367,7 +377,7 @@ void mqtt_cfg()
 				uifc.input(WIN_MID | WIN_SAV, 0, 0, "Private Key File"
 				           , cfg.mqtt.tls.keyfile, sizeof(cfg.mqtt.tls.keyfile) - 1, K_EDIT);
 				break;
-			case 15:
+			case 16:
 				uifc.helpbuf =
 					"~ Private Key File Password ~\n"
 					"\n"

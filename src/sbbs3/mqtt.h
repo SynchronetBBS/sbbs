@@ -42,6 +42,7 @@ typedef void* mqtt_handle_t;
 
 struct mqtt {
 	mqtt_handle_t handle;
+	void* local;  /* internal broker local_client (opaque, managed by mqtt_broker.cpp) */
 	scfg_t* cfg;
 	char* host;
 	bool connected;
@@ -126,6 +127,17 @@ DLLEXPORT int mqtt_user_logout(struct mqtt*, client_t*, time_t);
 DLLEXPORT int mqtt_file_upload(struct mqtt*, user_t*, int dirnum, const char* fname, off_t size, client_t*);
 DLLEXPORT int mqtt_file_download(struct mqtt*, user_t*, int dirnum, const char* fname, off_t size, client_t*);
 DLLEXPORT int mqtt_putnodedat(struct mqtt*, int number, node_t*);
+
+/* Message dispatch — shared between mosquitto callback and internal broker */
+DLLEXPORT void mqtt_dispatch_message(struct mqtt*, const char* topic, const void* payload, size_t payloadlen);
+
+/* Internal broker glue (mqtt_broker_glue.cpp) */
+DLLEXPORT int mqtt_internal_startup(struct mqtt*, scfg_t*, struct startup*, const char* version,
+                                     int (*lputs)(int level, const char* str));
+DLLEXPORT int mqtt_internal_publish(struct mqtt*, const char* topic,
+                                     const void* payload, size_t len, int qos, bool retain);
+DLLEXPORT int mqtt_internal_subscribe(struct mqtt*, const char* topic, int qos);
+DLLEXPORT void mqtt_internal_shutdown(struct mqtt*);
 
 #ifdef __cplusplus
 }

@@ -281,6 +281,7 @@ bool write_main_cfg(scfg_t* cfg)
 	{
 		const char* name = "MQTT";
 		iniSetBool(&ini, name, "Enabled", cfg->mqtt.enabled, &ini_style);
+		iniSetBool(&ini, name, "InternalBroker", cfg->mqtt.internal_broker, &ini_style);
 		iniSetBool(&ini, name, "Verbose", cfg->mqtt.verbose, &ini_style);
 		iniSetString(&ini, name, "Broker_addr", cfg->mqtt.broker_addr, &ini_style);
 		iniSetUInt16(&ini, name, "Broker_port", cfg->mqtt.broker_port, &ini_style);

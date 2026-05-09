@@ -381,6 +381,7 @@ enum mqtt_tls_mode {
 
 struct mqtt_cfg {
 	bool		enabled;
+	bool		internal_broker;
 	bool		verbose;
 	char		broker_addr[128];
 	uint16_t	broker_port;
