@@ -83,6 +83,7 @@ void fn_Font_available(WrenVM *vm);
 void fn_Font_codepage(WrenVM *vm);
 void fn_Font_codepageOf(WrenVM *vm);
 void fn_Font_count(WrenVM *vm);
+void fn_Font_load(WrenVM *vm);
 void fn_Font_name(WrenVM *vm);
 void fn_Hyperlinks_add(WrenVM *vm);
 void fn_Hyperlinks_containsKey(WrenVM *vm);

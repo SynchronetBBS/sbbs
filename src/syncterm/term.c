@@ -2864,63 +2864,6 @@ xmodem_download(struct bbslist *bbs, long mode, char *path)
 
 /* End of X/Y-MODEM stuff */
 
-void
-font_control(struct bbslist *bbs, struct cterminal *cterm)
-{
-	struct ciolib_screen *savscrn;
-	struct  text_info     txtinfo;
-	int                   i, j, k;
-
-	if (safe_mode)
-		return;
-	gettextinfo(&txtinfo);
-	savscrn = cp437_savescrn();
-	init_uifc(false, false);
-
-	switch (cio_api.mode) {
-		case CIOLIB_MODE_CONIO:
-		case CIOLIB_MODE_CONIO_FULLSCREEN:
-		case CIOLIB_MODE_CURSES_ASCII:
-		case CIOLIB_MODE_CURSES_IBM:
-		case CIOLIB_MODE_ANSI:
-			uifcmsg("Not supported in this video output mode.",
-			    "Font cannot be changed in the current video output mode");
-			check_exit(false);
-			break;
-		default:
-			i = j = cterm->altfont[0];
-			uifc.helpbuf = "`Font Setup`\n\n"
-			    "Change the current font.  Font must support the current video mode:\n\n"
-			    "`8x8`  Used for screen modes with 35 or more lines and all C64/C128 modes\n"
-			    "`8x14` Used for screen modes with 28 and 34 lines\n"
-			    "`8x16` Used for screen modes with 30 lines or fewer than 28 lines.";
-			k = uifc.list(WIN_MID | WIN_SAV | WIN_INS, 0, 0, 0, &i, &j, "Font Setup", font_names);
-			if (k != -1) {
-				if ((k & MSK_ON) == MSK_INS) {
-					struct file_pick fpick;
-
-					j = filepick(&uifc, "Load Font From File", &fpick, ".", NULL, 0);
-					check_exit(false);
-
-					if ((j != -1) && (fpick.files >= 1))
-						loadfont(fpick.selected[0]);
-					filepick_free(&fpick);
-				}
-				else {
-					setfont(i, false, 1);
-					cterm->altfont[0] = i;
-				}
-			}
-			else {
-				check_exit(false);
-			}
-			break;
-	}
-	uifcbail();
-	restorescreen(savscrn);
-	freescreen(savscrn);
-}
-
 /* Capture the cterm area (NOT the status bar — gettext uses cterm
  * dimensions explicitly) as IBM-CGA / BinaryText, and optionally
  * append a SAUCE block populated from `bbs` (name → title, user →
@@ -5674,12 +5617,13 @@ doterm(struct bbslist *bbs)
 			switch (key) {
 				/* Shift-Insert (paste), Alt-B (scrollback),
 				 * Alt-C (capture), Alt-D (download),
-				 * Alt-H / Alt-X / Ctrl-Q / window-close (hangup
-				 * or app-exit), Alt-U (upload) are handled by
-				 * Wren — keys_default.wren registers Hook.onKey
-				 * hooks that call Conn.paste / Conn.scrollback /
-				 * CaptureMenu.run / DownloadApp.run /
-				 * Conn.endSession / UploadApp.run.  If a user
+				 * Alt-F (font picker), Alt-H / Alt-X / Ctrl-Q
+				 * / window-close (hangup or app-exit), Alt-U
+				 * (upload) are handled by Wren —
+				 * keys_default.wren registers Hook.onKey hooks
+				 * that call Conn.paste / Conn.scrollback /
+				 * CaptureMenu.run / DownloadApp.run / FontApp.run
+				 * / Conn.endSession / UploadApp.run.  If a user
 				 * replaces keys_default.wren without those
 				 * handlers, the keys fall through here and out
 				 * of the switch unhandled — opt-out is
@@ -5707,11 +5651,6 @@ doterm(struct bbslist *bbs)
 					_setcursortype(_NORMALCURSOR);
 				}
 				break;
-				case 0x2100: /* ALT-F */
-					font_control(bbs, cterm);
-					setup_mouse_events(&ms);
-					showmouse();
-					break;
 				/* ALT-L is handled by connected.wren, an embedded
 				 * Wren script that registers Hook.onKey for 0x2600
 				 * and calls Conn.send with the bbslist credentials.

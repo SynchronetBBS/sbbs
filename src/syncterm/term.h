@@ -49,11 +49,6 @@ void show_status_url(const char *url);
  * current alt-font, and sends.  No-op when clipboard is empty. */
 void do_paste(void);
 
-/* Font control dialog — uifc-driven font picker for the four cterm
- * font slots.  No-op in safe mode and on text-only video backends.
- * Caller restores mouse events afterwards. */
-void font_control(struct bbslist *bbs, struct cterminal *cterm);
-
 /* Save the current screen in CP437 mode after resetting font slots
  * and the legacy bg-bright / no-blink flags — used by every uifc-
  * shaped dialog so the saved snapshot matches the cp437 attribute

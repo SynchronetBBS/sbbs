@@ -26,7 +26,7 @@ import "ui_style"  for Style
 import "ui_widget" for Widget, Rect
 import "ui_draw"   for Painter
 import "ui_popup"  for Find
-import "syncterm"  for KeyEvent, MouseEvent, Key, Mouse
+import "syncterm"  for KeyEvent, MouseEvent, Key, Mouse, Screen
 
 class ListView is Widget {
   construct new() {
@@ -203,9 +203,11 @@ class ListView is Widget {
   // without truncation.  Width sums the longest item's display
   // length and both insets (1 cell of breathing space on the
   // frameless side(s) plus whatever the scrollbar would take if
-  // visible — assumed not visible at the natural height, see
-  // preferredHeight).  Height = items.count, clamped to at least 1
-  // so an empty list still occupies a row.
+  // visible).  Height is the item count clamped to "fits on the
+  // screen with chrome budget" — ListView already scrolls, so a
+  // 200-item list reports a viewport-shaped height rather than
+  // forcing the parent pane to overflow vertically.  Callers that
+  // want a specific viewport height can set `bounds` directly.
   preferredWidth {
     var maxLen = 0
     for (item in _items) {
@@ -215,7 +217,13 @@ class ListView is Widget {
     }
     return maxLen + leftInset_ + rightInset_
   }
-  preferredHeight { _items.count.max(1) }
+  preferredHeight {
+    // Cap at screen height minus chrome budget (title bar + help
+    // text + borders).  6 rows is the typical Pane overhead.
+    var screenH = Screen.size[1]
+    var cap     = (screenH - 6).max(1)
+    return _items.count.max(1).min(cap)
+  }
 
   // Subclass hook: format `item` into a String.  `width` is the cell
   // budget for the row; implementations may pad / truncate / column-
@@ -368,7 +376,9 @@ class ListView is Widget {
     }
     // Type-to-search: any other printable codepoint.  KeyEvent.text
     // is the UTF-8 of the codepoint (or "" for extended keys).
-    if (cp >= 0x20 && cp != 0x7F && ke.text.count > 0) {
+    // Extended keys (function keys, Insert, arrow keys, ...) have
+    // codepoint == null; guard before the numeric compare.
+    if (cp != null && cp >= 0x20 && cp != 0x7F && ke.text.count > 0) {
       typeahead_(ke.text)
       return true
     }

@@ -884,6 +884,13 @@ class Font {
   foreign static available(i)
   foreign static codepage
   foreign static codepageOf(i)
+  // Load a font from a File foreign (typically the return value of
+  // Host.pickFile from a font-load picker).  Returns true on success.
+  // Takes a File rather than a path string so the consent token model
+  // holds — Wren never sees the bare path, and only paths the user
+  // explicitly approved through a picker can be opened.  Gated by
+  // ScreenSupports.loadableFonts.
+  foreign static load(file)
 }
 // Typed-ID lookup table over the active hyperlink registry.  Despite
 // the `[id]` / `containsKey(id)` shape, this is NOT a Map - no
@@ -1015,6 +1022,11 @@ foreign class CTerm {
   foreign static paletteOverride
   foreign static fontSlot
   foreign static altFonts
+  // Primary alt-font slot — the font ciolib uses for non-styled
+  // cells.  Setter calls ciolib_setfont() under the hood and
+  // updates the cterm-side cache; gated by ScreenSupports.fontSelection.
+  foreign static altFont
+  foreign static altFont=(slot)
   foreign static scrollbackLines
   foreign static scrollbackWidth
   foreign static scrollbackPos
@@ -1549,11 +1561,6 @@ class Host {
   foreign static logLevel
   foreign static logLevel=(n)
   foreign static logLevelNames
-
-  // Open the legacy uifc font picker for the four cterm font slots.
-  // No-op in safe mode and on text-only video backends.  Thin shim
-  // around the C dialog - migrated to Wren in a future pass.
-  foreign static fontControl()
 
   // Open the bbslist editor over the active connection (uifc).  Thin
   // shim - migrated to Wren when the bbslist editor itself is.

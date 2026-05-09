@@ -577,6 +577,31 @@ fn_CTerm_altFonts(WrenVM *vm)
 	}
 }
 
+/* CTerm.altFont — primary alt-font slot (altfont[0]), used for
+ * non-styled cells.  The font picker writes through this; the other
+ * three altfont entries (bold / blink / bold+blink) keep whatever
+ * conio_init assigned.  Setter calls setfont(slot, false, 1) to
+ * reload, then stashes the result so it survives mode changes. */
+void
+fn_CTerm_altFont(WrenVM *vm)
+{
+	wrenSetSlotDouble(vm, 0,
+	    cterm != NULL ? (double)cterm->altfont[0] : 0.0);
+}
+
+void
+fn_CTerm_altFont_set(WrenVM *vm)
+{
+	if (cterm == NULL || wrenGetSlotType(vm, 1) != WREN_TYPE_NUM) {
+		wrenSetSlotNull(vm, 0);
+		return;
+	}
+	int slot = (int)wrenGetSlotDouble(vm, 1);
+	setfont(slot, false, 1);
+	cterm->altfont[0] = slot;
+	wrenSetSlotNull(vm, 0);
+}
+
 /* CTerm.saveScreenshot(file, withSauce) — write the cterm area as
  * IBM-CGA / BinaryText to `file` (a write-consent File from
  * Host.pickSavePath).  When `withSauce` is true, appends a SAUCE
@@ -1091,22 +1116,6 @@ fn_Host_logLevelNames(WrenVM *vm)
 		wrenSetSlotString(vm, 1, log_levels[i]);
 		wrenInsertInList(vm, 0, -1, 1);
 	}
-}
-
-/* Host.fontControl() — open the C-side font_control dialog.  Thin
- * shim: the underlying font picker is uifc-driven and tightly
- * coupled to the cterm font-slot machinery; migrating it to Wren
- * would be a separate sub-batch.  For now the online-menu's
- * "Font Setup" entry routes here.  No-op when the host or session
- * is inactive. */
-void
-fn_Host_fontControl(WrenVM *vm)
-{
-	(void)vm;
-	struct wren_host_state *st = wren_host_state();
-	if (st == NULL || st->bbs == NULL || cterm == NULL)
-		return;
-	font_control(st->bbs, cterm);
 }
 
 /* Host.editBBSList() — open the bbslist editor over the active

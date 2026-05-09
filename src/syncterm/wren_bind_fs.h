@@ -93,4 +93,12 @@ struct wren_file;
 #include <stdio.h>
 FILE *wren_file_consume_write(WrenVM *vm, int slot, const char **out_path);
 
+/* Read-only path accessor for a File foreign in the given slot.
+ * Returns the absolute path string on success (still owned by the
+ * File foreign — do NOT free).  Returns NULL when the slot does
+ * not hold a File or the File is dead.  Use this when a foreign
+ * needs to hand the path to a C API that takes a const char *
+ * (e.g. ciolib_loadfont) but doesn't need write consent. */
+const char *wren_file_path(WrenVM *vm, int slot);
+
 #endif /* WREN_BIND_FS_H */

@@ -14,6 +14,7 @@ import "capture_menu"     for CaptureMenu
 import "music_menu"       for MusicMenu
 import "scrollback_view"  for ScrollbackView
 import "transfer_pick"    for UploadApp, DownloadApp
+import "font_pick"        for FontApp
 
 // Disconnect / exit cluster.  DisconnectFlow lives in its own module
 // (disconnect_flow.wren) so the online menu can reuse it.  Each hook
@@ -111,5 +112,13 @@ Hook.onKey(Key.altD) { |k|
 }
 Hook.onKey(Key.altU) { |k|
   UploadApp.run(false, 0)
+  return true
+}
+
+// Alt-F — font picker (replaces the historical font_control uifc
+// dialog).  FontApp pops a ListView of conio_fontdata names; Insert
+// keys into the load-from-file flow, gated by ScreenSupports.loadableFonts.
+Hook.onKey(Key.altF) { |k|
+  FontApp.run()
   return true
 }

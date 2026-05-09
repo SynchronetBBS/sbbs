@@ -883,6 +883,7 @@ static const struct binding BINDINGS[] = {
 	{ "Font",  true,  "available(_)",  fn_Font_available  },
 	{ "Font",  true,  "codepage",      fn_Font_codepage   },
 	{ "Font",  true,  "codepageOf(_)", fn_Font_codepageOf },
+	{ "Font",  true,  "load(_)",       fn_Font_load       },
 
 	/* Hyperlinks (all static) */
 	{ "Hyperlinks", true, "[_]",            fn_Hyperlinks_subscript   },
@@ -1032,6 +1033,8 @@ static const struct binding BINDINGS[] = {
 	{ "CTerm", true, "paletteOverride",    fn_CTerm_paletteOverride },
 	{ "CTerm", true, "fontSlot",           fn_CTerm_fontSlot        },
 	{ "CTerm", true, "altFonts",           fn_CTerm_altFonts        },
+	{ "CTerm", true, "altFont",            fn_CTerm_altFont         },
+	{ "CTerm", true, "altFont=(_)",        fn_CTerm_altFont_set     },
 	{ "CTerm", true, "scrollbackLines",    fn_CTerm_scrollbackLines },
 	{ "CTerm", true, "scrollbackWidth",    fn_CTerm_scrollbackWidth },
 	{ "CTerm", true, "scrollbackPos",      fn_CTerm_scrollbackPos   },
@@ -1194,7 +1197,6 @@ static const struct binding BINDINGS[] = {
 	{ "Host", true, "logLevel",          fn_Host_logLevel          },
 	{ "Host", true, "logLevel=(_)",      fn_Host_logLevel_set      },
 	{ "Host", true, "logLevelNames",     fn_Host_logLevelNames     },
-	{ "Host", true, "fontControl()",     fn_Host_fontControl       },
 	{ "Host", true, "editBBSList()",     fn_Host_editBBSList       },
 	{ "Host", true, "logUnread",         fn_Host_logUnread         },
 	{ "Host", true, "logUnreadError",    fn_Host_logUnreadError    },

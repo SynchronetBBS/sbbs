@@ -1150,6 +1150,24 @@ fn_Host_pickFile(WrenVM *vm)
  *
  * Used by Capture.start (transfers the FILE* into cterm->logfile)
  * and CTerm.saveScreenshot (the binding does its own fwrite/fclose). */
+/* Read-only path accessor for a File foreign in slot.  Returns the
+ * absolute path on success, or NULL when the slot's not a File or
+ * the handle is dead.  Caller must NOT free the returned pointer
+ * (it lives inside the File foreign).  Used by foreigns that hand
+ * the path off to a path-taking C API but don't need write
+ * consent — the returned path is still consent-bounded because the
+ * File itself was minted by a picker. */
+const char *
+wren_file_path(WrenVM *vm, int slot)
+{
+	if (slot_foreign_type(vm, slot) != SWF_FILE)
+		return NULL;
+	struct wren_file *wf = wrenGetSlotForeign(vm, slot);
+	if (wf == NULL || wf->dead)
+		return NULL;
+	return wf->path;
+}
+
 FILE *
 wren_file_consume_write(WrenVM *vm, int slot, const char **out_path)
 {

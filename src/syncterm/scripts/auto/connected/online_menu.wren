@@ -20,6 +20,7 @@ import "scrollback_view" for ScrollbackView
 import "connected"       for Connected
 import "console"         for WrenConsole
 import "transfer_pick"   for UploadApp, DownloadApp
+import "font_pick"       for FontApp
 
 class OnlineMenu {
   // Build the (label, Fn) pairs for the current build / mode.  The
@@ -61,7 +62,7 @@ class OnlineMenu {
       [ hint ? "ANSI Music Control (%(alt)-M)" : "ANSI Music Control",
         Fn.new { MusicMenu.run() } ],
       [ hint ? "Font Setup (%(alt)-F)"         : "Font Setup",
-        Fn.new { Host.fontControl() } ],
+        Fn.new { FontApp.run() } ],
       [ "Toggle Doorway Mode",
         Fn.new { CTerm.doorwayMode = !CTerm.doorwayMode } ],
       [ hint ? "Toggle Remote Mouse (%(alt)-O)" : "Toggle Remote Mouse",

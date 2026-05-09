@@ -62,6 +62,8 @@ void fn_CTerm_fgColor(WrenVM *vm);
 void fn_CTerm_bgColor(WrenVM *vm);
 void fn_CTerm_paletteOverride(WrenVM *vm);
 void fn_CTerm_altFonts(WrenVM *vm);
+void fn_CTerm_altFont(WrenVM *vm);
+void fn_CTerm_altFont_set(WrenVM *vm);
 void fn_CTerm_saveScreenshot(WrenVM *vm);
 void fn_CTerm_atasciiInverse(WrenVM *vm);
 
@@ -102,7 +104,6 @@ void fn_Host_outputRateNames(WrenVM *vm);
 void fn_Host_logLevel(WrenVM *vm);
 void fn_Host_logLevel_set(WrenVM *vm);
 void fn_Host_logLevelNames(WrenVM *vm);
-void fn_Host_fontControl(WrenVM *vm);
 void fn_Host_editBBSList(WrenVM *vm);
 void fn_Host_logUnread(WrenVM *vm);
 void fn_Host_logUnreadError(WrenVM *vm);

@@ -3,6 +3,7 @@
  * for the Wren scripting host.  Public API in wren_bind_screen.h;
  * BINDINGS table + lookup_class dispatch live in wren_bind.c. */
 
+#include "wren_bind_fs.h"
 #include "wren_bind_internal.h"
 #include "wren_bind_screen.h"
 #include "wren_host_internal.h"
@@ -2470,6 +2471,24 @@ fn_Font_available(WrenVM *vm)
 {
 	int i = (int)wrenGetSlotDouble(vm, 1);
 	wrenSetSlotBool(vm, 0, ciolib_checkfont(i) != 0);
+}
+
+/* Font.load(file) — load a font from a File foreign (typically the
+ * return value of Host.pickFile from a font-load picker dialog).
+ * Returns true on success.  Takes a File rather than a path string
+ * so the consent token model holds — Wren never sees the bare path,
+ * and only paths the user explicitly approved through a picker can
+ * be opened.  Gated by ScreenSupports.loadableFonts (text-mode
+ * backends don't support runtime font swap). */
+void
+fn_Font_load(WrenVM *vm)
+{
+	const char *path = wren_file_path(vm, 1);
+	if (path == NULL) {
+		wrenSetSlotBool(vm, 0, false);
+		return;
+	}
+	wrenSetSlotBool(vm, 0, ciolib_loadfont(path) != 0);
 }
 
 /* ----- Hyperlinks (Map-like read interface) ----- */
