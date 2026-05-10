@@ -90,6 +90,7 @@ public:
 
 private:
 	void broker_thread();
+	void accept_thread();
 	void log(int level, const char *fmt, ...);
 
 	void process_local_queues();
@@ -135,8 +136,8 @@ private:
 
 	std::atomic<bool> m_running{false};
 	std::thread m_thread;
+	std::thread m_accept_thread;
 	int m_listen_sock = -1;
-	int m_wakeup_pipe[2] = {-1, -1};
 
 	static Broker *s_instance;
 	static std::mutex s_instance_mutex;

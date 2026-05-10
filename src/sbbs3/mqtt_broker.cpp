@@ -3,8 +3,12 @@
 #include <cstdarg>
 #include <cstring>
 #include <algorithm>
+#ifdef PREFER_POLL
+#include <poll.h>
+#endif
 
 #include "sockwrap.h"
+#include "threadwrap.h"
 
 extern "C" {
 #include "gen_defs.h"
@@ -194,19 +198,9 @@ bool Broker::start(scfg_t *cfg, uint16_t port, int (*lputs)(void *, int, const c
 		return false;
 	}
 
-#ifndef _WIN32
-	if (pipe(m_wakeup_pipe) < 0) {
-		log(LOG_ERR, "MQTT broker: pipe() failed: %d", errno);
-		closesocket(m_listen_sock);
-		m_listen_sock = -1;
-		return false;
-	}
-	fcntl(m_wakeup_pipe[0], F_SETFL, O_NONBLOCK);
-	fcntl(m_wakeup_pipe[1], F_SETFL, O_NONBLOCK);
-#endif
-
 	m_running = true;
 	m_thread = std::thread(&Broker::broker_thread, this);
+	m_accept_thread = std::thread(&Broker::accept_thread, this);
 
 	{
 		std::lock_guard<std::mutex> lock(s_instance_mutex);
@@ -235,24 +229,15 @@ void Broker::stop()
 
 	m_running = false;
 
-#ifndef _WIN32
-	if (m_wakeup_pipe[1] >= 0) {
-		char c = 'x';
-		(void)write(m_wakeup_pipe[1], &c, 1);
-	}
-#endif
-
-	if (m_thread.joinable())
-		m_thread.join();
-
 	if (m_listen_sock >= 0) {
 		closesocket(m_listen_sock);
 		m_listen_sock = -1;
 	}
-#ifndef _WIN32
-	if (m_wakeup_pipe[0] >= 0) { close(m_wakeup_pipe[0]); m_wakeup_pipe[0] = -1; }
-	if (m_wakeup_pipe[1] >= 0) { close(m_wakeup_pipe[1]); m_wakeup_pipe[1] = -1; }
-#endif
+
+	if (m_accept_thread.joinable())
+		m_accept_thread.join();
+	if (m_thread.joinable())
+		m_thread.join();
 
 	for (auto it_s = m_sessions.begin(); it_s != m_sessions.end(); ++it_s) {
 		if (it_s->second.tls_sess != CRYPT_UNUSED)
@@ -301,6 +286,9 @@ void Broker::publish_sys(const char *topic, const void *payload, size_t len)
 
 	std::lock_guard<std::recursive_mutex> lock(m_mutex);
 	route_publish("$SYS", msg);
+	for (auto it_s = m_sessions.begin(); it_s != m_sessions.end(); ++it_s)
+		if (!it_s->second.send_buf.empty())
+			flush_network(it_s->second);
 }
 
 void Broker::deregister_local(LocalClient *client)
@@ -328,6 +316,9 @@ int Broker::local_publish(LocalClient *client, const std::string &topic,
 
 	std::lock_guard<std::recursive_mutex> lock(m_mutex);
 	route_publish(client->client_id, std::move(msg));
+	for (auto it_s = m_sessions.begin(); it_s != m_sessions.end(); ++it_s)
+		if (!it_s->second.send_buf.empty())
+			flush_network(it_s->second);
 	return 0;
 }
 
@@ -517,69 +508,104 @@ void Broker::teardown_network(NetworkSession &session, uint8_t reason_code)
 
 // ── Broker thread ───────────────────────────────────────────────
 
+void Broker::accept_thread()
+{
+	SetThreadName("sbbs/mqttAccept");
+	while (m_running) {
+		struct sockaddr_storage addr;
+		socklen_t addrlen = sizeof(addr);
+		int sock = accept(m_listen_sock, (struct sockaddr *)&addr, &addrlen);
+		if (sock < 0) {
+			if (!m_running) break;
+			continue;
+		}
+		accept_connection(sock);
+	}
+}
+
 void Broker::broker_thread()
 {
+	SetThreadName("sbbs/mqttBroker");
 	while (m_running) {
-		fd_set rfds, wfds;
-		FD_ZERO(&rfds);
-		FD_ZERO(&wfds);
-		int maxfd = 0;
-
-		if (m_listen_sock >= 0) {
-			FD_SET(m_listen_sock, &rfds);
-			if (m_listen_sock > maxfd) maxfd = m_listen_sock;
-		}
-#ifndef _WIN32
-		if (m_wakeup_pipe[0] >= 0) {
-			FD_SET(m_wakeup_pipe[0], &rfds);
-			if (m_wakeup_pipe[0] > maxfd) maxfd = m_wakeup_pipe[0];
-		}
-#endif
+		std::vector<std::string> keys;
+		std::vector<SOCKET> sockets;
+		std::vector<bool> want_write;
 
 		{
 			std::lock_guard<std::recursive_mutex> lock(m_mutex);
 			for (auto it_s = m_sessions.begin(); it_s != m_sessions.end(); ++it_s) {
-				NetworkSession &ns = it_s->second;
-				if (ns.socket < 0) continue;
-				FD_SET(ns.socket, &rfds);
-				if (!ns.send_buf.empty())
-					FD_SET(ns.socket, &wfds);
-				if (ns.socket > maxfd) maxfd = ns.socket;
+				if (it_s->second.socket >= 0) {
+					keys.push_back(it_s->first);
+					sockets.push_back(it_s->second.socket);
+					want_write.push_back(!it_s->second.send_buf.empty());
+				}
 			}
 		}
 
+		if (sockets.empty()) {
+			SLEEP(1000);
+			std::lock_guard<std::recursive_mutex> lock(m_mutex);
+			process_local_queues();
+			continue;
+		}
+
+		int ready;
+#ifdef PREFER_POLL
+		std::vector<struct pollfd> pfds(sockets.size());
+		for (size_t i = 0; i < sockets.size(); ++i) {
+			pfds[i].fd = sockets[i];
+			pfds[i].events = POLLIN;
+			if (want_write[i])
+				pfds[i].events |= POLLOUT;
+			pfds[i].revents = 0;
+		}
+		ready = poll(pfds.data(), pfds.size(), 1000);
+#else
+		fd_set rfds, wfds;
+		FD_ZERO(&rfds);
+		FD_ZERO(&wfds);
+		int maxfd = 0;
+		for (size_t i = 0; i < sockets.size(); ++i) {
+			FD_SET(sockets[i], &rfds);
+			if (want_write[i])
+				FD_SET(sockets[i], &wfds);
+			if ((int)sockets[i] > maxfd)
+				maxfd = (int)sockets[i];
+		}
 		struct timeval tv = {1, 0};
-		int ready = select(maxfd + 1, &rfds, &wfds, nullptr, &tv);
+		ready = select(maxfd + 1, &rfds, &wfds, NULL, &tv);
+#endif
 		if (ready < 0) {
 			if (ERROR_VALUE == EINTR) continue;
 			break;
 		}
 
-#ifndef _WIN32
-		if (m_wakeup_pipe[0] >= 0 && FD_ISSET(m_wakeup_pipe[0], &rfds)) {
-			char buf[64];
-			(void)read(m_wakeup_pipe[0], buf, sizeof(buf));
-		}
-#endif
-
-		if (m_listen_sock >= 0 && FD_ISSET(m_listen_sock, &rfds))
-			accept_connection(m_listen_sock);
-
 		{
 			std::lock_guard<std::recursive_mutex> lock(m_mutex);
 
 			std::vector<std::string> to_remove;
-			for (auto it_s = m_sessions.begin(); it_s != m_sessions.end(); ++it_s) {
+			for (size_t i = 0; i < keys.size(); ++i) {
+				auto it_s = m_sessions.find(keys[i]);
+				if (it_s == m_sessions.end()) continue;
 				auto &id = it_s->first;
 				auto &session = it_s->second;
 				if (session.socket < 0) {
 					to_remove.push_back(id);
 					continue;
 				}
-				if (FD_ISSET(session.socket, &wfds))
+#ifdef PREFER_POLL
+				bool readable = pfds[i].revents & (POLLIN | POLLHUP | POLLERR);
+				bool writable = pfds[i].revents & POLLOUT;
+#else
+				bool readable = FD_ISSET(session.socket, &rfds);
+				bool writable = FD_ISSET(session.socket, &wfds);
+#endif
+				if (writable && !session.send_buf.empty())
 					flush_network(session);
-				if (FD_ISSET(session.socket, &rfds))
+				if (readable)
 					handle_network_data(session);
+				if (!session.send_buf.empty())
+					flush_network(session);
 				if (session.connected && session.keep_alive > 0) {
 					time_t now = time(nullptr);
 					if (now - session.last_activity > (time_t)(session.keep_alive * 3 / 2)) {
@@ -625,13 +651,8 @@ void Broker::process_local_queues()
 
 // ── Network accept ──────────────────────────────────────────────
 
-void Broker::accept_connection(int listen_sock)
+void Broker::accept_connection(int sock)
 {
-	struct sockaddr_storage addr;
-	socklen_t addrlen = sizeof(addr);
-	int sock = accept(listen_sock, (struct sockaddr *)&addr, &addrlen);
-	if (sock < 0) return;
-
 	int nodelay = 1;
 	setsockopt(sock, IPPROTO_TCP, TCP_NODELAY, (char *)&nodelay, sizeof(nodelay));
 
