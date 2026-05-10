@@ -348,7 +348,8 @@ static char *conn_type_help = "`Connection Type`\n\n"
                               "`3-wire (no RTS)`..: As with Serial, but lower RTS\n"
                               "`Shell`............: Connect to a local PTY (*nix only)\n"
                               "`MBBS GHost`.......: Communicate using the Major BBS 'GHost' protocol\n"
-                              "`TelnetS`..........: Telnet over TLS\n";
+                              "`TelnetS`..........: Telnet over TLS\n"
+                              "`SBBS MQTT Spy`....: Spy on a Synchronet node via the MQTT broker\n";
 
 static char *YesNo[3] = {"Yes", "No", ""};
 
