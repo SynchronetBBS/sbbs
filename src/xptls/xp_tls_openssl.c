@@ -82,11 +82,17 @@ format_ssl_err(char *buf, size_t bufsz, const char *op)
 /* --------------------------------------------------------- context */
 
 struct xp_tls_ctx {
-	SOCKET   sock;
-	SSL_CTX *sslctx;
-	SSL     *ssl;
-	int      read_timeout_sec;
-	char     err[256];
+	SOCKET         sock;
+	SSL_CTX       *sslctx;
+	SSL           *ssl;
+	int            read_timeout_sec;
+	char           err[256];
+	/* PSK config: copies owned by the ctx so the OpenSSL callback can
+	   read them at handshake time without holding pointers into the
+	   caller's stack.  identity is NUL-terminated; psk is raw bytes. */
+	char          *psk_identity;
+	unsigned char *psk;
+	size_t         psk_len;
 };
 
 /* --------------------------------------------------------- socket timeout */
@@ -124,10 +130,43 @@ ensure_ssl_init(void)
 	                      OPENSSL_INIT_LOAD_CRYPTO_STRINGS, NULL);
 }
 
+/* ----------------------------------------------------------- PSK cb */
+
+/*
+ * OpenSSL invokes this during the ClientKeyExchange to fetch the PSK
+ * identity and shared key.  We pull both from the ctx that was attached
+ * via SSL_set_app_data() in xp_tls_client_open_psk().
+ */
+static unsigned int
+psk_client_cb(SSL *ssl, const char *hint, char *id, unsigned int max_id_len,
+              unsigned char *psk, unsigned int max_psk_len)
+{
+	struct xp_tls_ctx *ctx = SSL_get_app_data(ssl);
+	(void)hint;
+	if (ctx == NULL || ctx->psk_identity == NULL || ctx->psk == NULL)
+		return 0;
+	size_t id_len = strlen(ctx->psk_identity);
+	if (id_len + 1 > max_id_len)
+		return 0;
+	if (ctx->psk_len > max_psk_len)
+		return 0;
+	memcpy(id, ctx->psk_identity, id_len + 1);
+	memcpy(psk, ctx->psk, ctx->psk_len);
+	return (unsigned int)ctx->psk_len;
+}
+
 /* ------------------------------------------------------------- open */
 
-xp_tls_t
-xp_tls_client_open(SOCKET sock, const char *sni, int read_timeout)
+/*
+ * Common open path for cert and PSK clients.  When identity/psk are both
+ * NULL, runs as a normal cert client (peer-verify disabled).  When PSK is
+ * supplied, configures the PSK client callback and pins the protocol
+ * version to TLS 1.2 — TLS 1.3 PSK uses a different exchange that the
+ * broker doesn't speak.
+ */
+static xp_tls_t
+client_open_inner(SOCKET sock, const char *sni, int read_timeout,
+                  const char *psk_identity, const void *psk, size_t psk_len)
 {
 	struct xp_tls_ctx *ctx;
 	int rc;
@@ -143,13 +182,58 @@ xp_tls_client_open(SOCKET sock, const char *sni, int read_timeout)
 	ctx->sock = sock;
 	ctx->read_timeout_sec = read_timeout;
 
+	if (psk_identity != NULL && psk != NULL && psk_len > 0) {
+		ctx->psk_identity = strdup(psk_identity);
+		ctx->psk = malloc(psk_len);
+		if (ctx->psk_identity == NULL || ctx->psk == NULL) {
+			set_last_err("xp_tls_client_open: out of memory (PSK)");
+			goto fail;
+		}
+		memcpy(ctx->psk, psk, psk_len);
+		ctx->psk_len = psk_len;
+	}
+
 	ctx->sslctx = SSL_CTX_new(TLS_client_method());
 	if (ctx->sslctx == NULL) {
 		format_ssl_err(last_err_buf, sizeof(last_err_buf), "SSL_CTX_new");
 		goto fail;
 	}
-	/* TLS 1.2 floor; stay at the OpenSSL default ceiling. */
+	/* TLS 1.2 floor; stay at the OpenSSL default ceiling.  PSK pins
+	   both ends to 1.2 — TLS 1.3 PSK is a different exchange that the
+	   server side doesn't implement. */
 	SSL_CTX_set_min_proto_version(ctx->sslctx, TLS1_2_VERSION);
+	if (ctx->psk != NULL) {
+		SSL_CTX_set_max_proto_version(ctx->sslctx, TLS1_2_VERSION);
+		SSL_CTX_set_psk_client_callback(ctx->sslctx, psk_client_cb);
+		/* PSK-only.  cryptlib's server-side prefers cert suites
+		   when both PSK and cert are offered (TLS 1.2 cipher
+		   selection is server-driven, so client ordering can't
+		   force PSK), and a non-PSK negotiation puts the broker's
+		   MQTT layer into a username/password path that expects a
+		   different password format.  conn_mqtt.c handles fallback
+		   to a cert-only second handshake when this PSK-only attempt
+		   doesn't go through. */
+		if (SSL_CTX_set_cipher_list(ctx->sslctx, "PSK") != 1) {
+			format_ssl_err(last_err_buf, sizeof(last_err_buf),
+			              "SSL_CTX_set_cipher_list(PSK)");
+			goto fail;
+		}
+	}
+	/* TODO: when ctx->psk and a hybrid PSK kex (ECDHE_PSK, DHE_PSK,
+	   RSA_PSK) is negotiated the server still presents a certificate
+	   that we currently accept blindly.  PSK alone authenticates the
+	   peer for MITM purposes (an attacker without the PSK can't derive
+	   session keys regardless of cert) so the connection is still
+	   private, but pinning a server cert fingerprint per BBS entry
+	   would catch unintended-server-swap.  Wire this once bbslist has
+	   a fingerprint slot, similar to ssh_fingerprint.
+
+	   Validation must surface a prompt similar to SSH host-key changes:
+	   on first connect, store the fingerprint; on subsequent connects,
+	   if the cert fails to validate (mismatched fingerprint or bad
+	   signature) the user gets a yes/no/cancel modal — accept once,
+	   accept and update stored fingerprint, or abort.  Don't ever
+	   silently fail validation; the user owns the trust decision. */
 	SSL_CTX_set_verify(ctx->sslctx, SSL_VERIFY_NONE, NULL);
 
 	ctx->ssl = SSL_new(ctx->sslctx);
@@ -157,6 +241,7 @@ xp_tls_client_open(SOCKET sock, const char *sni, int read_timeout)
 		format_ssl_err(last_err_buf, sizeof(last_err_buf), "SSL_new");
 		goto fail;
 	}
+	SSL_set_app_data(ctx->ssl, ctx);
 	if (sni != NULL && sni[0] != 0) {
 		/* SSL_set_tlsext_host_name returns 1 on success. */
 		if (SSL_set_tlsext_host_name(ctx->ssl, sni) != 1) {
@@ -195,6 +280,23 @@ fail:
 	return NULL;
 }
 
+xp_tls_t
+xp_tls_client_open(SOCKET sock, const char *sni, int read_timeout)
+{
+	return client_open_inner(sock, sni, read_timeout, NULL, NULL, 0);
+}
+
+xp_tls_t
+xp_tls_client_open_psk(SOCKET sock, const char *sni, int read_timeout,
+                       const char *identity, const void *psk, size_t psk_len)
+{
+	if (identity == NULL || psk == NULL || psk_len == 0) {
+		set_last_err("xp_tls_client_open_psk: missing identity or PSK");
+		return NULL;
+	}
+	return client_open_inner(sock, sni, read_timeout, identity, psk, psk_len);
+}
+
 /* ------------------------------------------------------------- push */
 
 int
@@ -209,6 +311,12 @@ xp_tls_push(xp_tls_t ctx, const void *buf, size_t n, size_t *copied)
 		return XP_TLS_ERR;
 	if (n == 0)
 		return XP_TLS_OK;
+
+	/* Gate the underlying send() on socket_writable so a peer-closed
+	   or locally-shut-down socket reports XP_TLS_ERR_CLOSED instead of
+	   triggering SIGPIPE inside SSL_write. */
+	if (ctx->sock != INVALID_SOCKET && !socket_writable(ctx->sock, 100))
+		return XP_TLS_ERR_CLOSED;
 
 	rc = SSL_write_ex(ctx->ssl, buf, n, &written);
 	if (copied != NULL)
@@ -286,6 +394,32 @@ xp_tls_pop(xp_tls_t ctx, void *buf, size_t n, size_t *copied)
 
 /* ------------------------------------------------------------- flush */
 
+bool
+xp_tls_has_pending(xp_tls_t ctx)
+{
+	if (ctx == NULL || ctx->ssl == NULL)
+		return false;
+	/* SSL_pending() reports plaintext bytes already decrypted from a
+	   previous record that the next SSL_read can return without doing
+	   a socket read. */
+	return SSL_pending(ctx->ssl) > 0;
+}
+
+bool
+xp_tls_used_psk(xp_tls_t ctx)
+{
+	if (ctx == NULL || ctx->ssl == NULL)
+		return false;
+	const SSL_CIPHER *cipher = SSL_get_current_cipher(ctx->ssl);
+	if (cipher == NULL)
+		return false;
+	int kx = SSL_CIPHER_get_kx_nid(cipher);
+	return kx == NID_kx_psk
+	    || kx == NID_kx_dhe_psk
+	    || kx == NID_kx_ecdhe_psk
+	    || kx == NID_kx_rsa_psk;
+}
+
 int
 xp_tls_flush(xp_tls_t ctx)
 {
@@ -303,15 +437,29 @@ xp_tls_close(xp_tls_t ctx, bool close_socket)
 	if (ctx == NULL)
 		return;
 	if (ctx->ssl != NULL) {
-		/* Best-effort graceful shutdown. A zero or negative return is
-		   acceptable — the peer may have already closed. */
-		(void)SSL_shutdown(ctx->ssl);
+		/* Best-effort graceful shutdown — only attempted while the
+		   socket is in a writable state, so SSL_shutdown's write of
+		   close_notify doesn't trigger SIGPIPE on a peer-closed or
+		   locally-shut-down socket. */
+		if (ctx->sock != INVALID_SOCKET && socket_writable(ctx->sock, 0))
+			(void)SSL_shutdown(ctx->ssl);
 		SSL_free(ctx->ssl);
 	}
 	if (ctx->sslctx != NULL)
 		SSL_CTX_free(ctx->sslctx);
 	if (close_socket && ctx->sock != INVALID_SOCKET)
 		closesocket(ctx->sock);
+	if (ctx->psk != NULL) {
+		/* OPENSSL_cleanse() is barred from being elided as dead store;
+		   plain memset() to a buffer about to be freed is not.  These
+		   bytes are the BBS user's password. */
+		OPENSSL_cleanse(ctx->psk, ctx->psk_len);
+		free(ctx->psk);
+	}
+	if (ctx->psk_identity != NULL) {
+		OPENSSL_cleanse(ctx->psk_identity, strlen(ctx->psk_identity));
+		free(ctx->psk_identity);
+	}
 	free(ctx);
 }
 

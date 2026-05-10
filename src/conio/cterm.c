@@ -94,7 +94,7 @@
 const int cterm_tabs[]={1,9,17,25,33,41,49,57,65,73,81,89,97,105,113,121,129,137,145};
 
 /*
- * Send a response to the host.
+ * Send a parser-generated response to the host (DSR, DECRQM, STS, etc.).
  * If response_cb is set, calls it directly; otherwise the response is dropped.
  */
 void
@@ -102,6 +102,19 @@ cterm_respond(struct cterminal *cterm, const char *data, size_t len)
 {
 	if (cterm->response_cb)
 		cterm->response_cb(data, len, cterm->response_cbdata);
+}
+
+/*
+ * Send a user-keystroke encoding to the host.  Distinct from
+ * cterm_respond so a spy connection can mute parser auto-responses
+ * (where the real client is doing the query/response handshake) while
+ * still letting the local sysop's keystrokes reach the BBS.
+ */
+static void
+cterm_send_keystroke(struct cterminal *cterm, const char *data, size_t len)
+{
+	if (cterm->keystroke_cb)
+		cterm->keystroke_cb(data, len, cterm->keystroke_cbdata);
 }
 
 /* Printf-style wrapper for cterm_respond */
@@ -387,7 +400,7 @@ cterm_encode_key(struct cterminal *cterm, int key)
 	if (cterm->doorway_mode && (key > 0xff) && ((key & 0xff) == 0)) {
 		ch[0] = 0;
 		ch[1] = key >> 8;
-		cterm_respond(cterm, (const char *)ch, 2);
+		cterm_send_keystroke(cterm, (const char *)ch, 2);
 		return 2;
 	}
 
@@ -429,15 +442,15 @@ cterm_encode_key(struct cterminal *cterm, int key)
 			/* VT52 and ANSI-BBS: DEL and BS respect DECBKM. */
 			if (key == CIO_KEY_DC) {
 				if (cterm->extattr & CTERM_EXTATTR_DECBKM) {
-					cterm_respond(cterm, "\x7f", 1);
+					cterm_send_keystroke(cterm, "\x7f", 1);
 					return 1;
 				}
-				cterm_respond(cterm, "\x1b[3~", 4);
+				cterm_send_keystroke(cterm, "\x1b[3~", 4);
 				return 4;
 			}
 			if (key == '\b') {
 				ch[0] = (cterm->extattr & CTERM_EXTATTR_DECBKM) ? '\b' : '\x7f';
-				cterm_respond(cterm, (const char *)ch, 1);
+				cterm_send_keystroke(cterm, (const char *)ch, 1);
 				return 1;
 			}
 			switch (cterm->emulation) {
@@ -455,12 +468,12 @@ cterm_encode_key(struct cterminal *cterm, int key)
 
 	seq = lookup_key(table, table_count, key, &slen);
 	if (seq) {
-		cterm_respond(cterm, seq, slen);
+		cterm_send_keystroke(cterm, seq, slen);
 		return slen;
 	}
 	if (key >= raw_lo && key < raw_hi) {
 		ch[0] = key;
-		cterm_respond(cterm, (const char *)ch, 1);
+		cterm_send_keystroke(cterm, (const char *)ch, 1);
 		return 1;
 	}
 	return 0;

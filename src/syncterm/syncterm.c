@@ -55,6 +55,7 @@ static const KNOWNFOLDERID FOLDERID_ProgramData = {
 #include <filewrap.h> // STDOUT_FILENO
 #include <gen_defs.h>
 #include <ini_file.h>
+#include <signal.h>
 #include <stdbool.h>
 #include <stdlib.h>
 #include <vidmodes.h>
@@ -150,14 +151,17 @@ char *usage =
     "       built-in and user auto-load scripts on every connect; load errors\n"
     "       are reported on standard error\n"
     "\n"
-    "URL format is: [(rlogin|telnet|ssh|raw)://][user[:password]@]domainname[:port]\n"
+    "URL format is: [(rlogin|telnet|ssh|raw|mqtts)://][user[:password]@]domainname[:port]\n"
     "raw:// URLs MUST include a port.\n"
     "shell:command URLs are supported on *nix.\n"
+    "mqtts:// connects to a Synchronet internal MQTT broker for sysop spy\n"
+    "(node selection prompts are shown after authentication).\n"
     "examples: rlogin://deuce:password@nix.synchro.net:5885\n"
     "          telnet://deuce@nix.synchro.net\n"
     "          nix.synchro.net\n"
     "          telnet://nix.synchro.net\n"
     "          raw://nix.synchro.net:23\n"
+    "          mqtts://deuce:password@sbbs.example.org\n"
     "          shell:/usr/bin/sh\n"
 ;
 
@@ -1209,6 +1213,14 @@ parse_url(char *url, struct bbslist *bbs, int dflt_conn_type, int force_defaults
 		bbs->port = conn_ports[bbs->conn_type];
 		p1 = url + 8;
 	}
+	else if (!strnicmp("mqtts://", url, 8)) {
+		/* MQTT-over-TLS-PSK only — Synchronet's internal broker
+		 * doesn't accept plaintext.  No plain "mqtt://" alias on
+		 * purpose; accepting it would imply plaintext works. */
+		bbs->conn_type = CONN_TYPE_MQTT;
+		bbs->port = conn_ports[bbs->conn_type];
+		p1 = url + 8;
+	}
 
         /* ToDo: RFC2806 */
 	p3 = strchr(p1, '@');
@@ -1956,6 +1968,12 @@ update_webget_progress(struct webget_request *reqs, size_t items, bool leaveup)
 int
 main(int argc, char **argv)
 {
+#ifdef SIGPIPE
+	/* A peer hanging up mid-write would otherwise terminate the
+	   process; ignoring lets the offending write() return EPIPE so the
+	   connection layer can clean up like any other I/O error. */
+	signal(SIGPIPE, SIG_IGN);
+#endif
 	struct bbslist   *bbs = NULL;
 	bool              bbs_alloc = false;
 	struct  text_info txtinfo;

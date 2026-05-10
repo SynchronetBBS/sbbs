@@ -29,6 +29,7 @@
 
 #include "bbslist.h"
 #include "conn.h"
+#include "conn_mqtt.h"
 #include "raw.h"
 #include "rlogin.h"
 #include "term.h"
@@ -59,13 +60,13 @@
 struct conn_api    conn_api;
 char              *conn_types_enum[] = {
 	"Unknown", "RLogin", "RLoginReversed", "Telnet", "Raw", "SSH", "SSHNA", "Modem", "Serial", "NoRTS", "Shell",
-	"MBBSGhost", "TelnetS", NULL
+	"MBBSGhost", "TelnetS", "MQTT", NULL
 };
 char              *conn_types[] = {
 	"Unknown", "RLogin", "RLogin Reversed", "Telnet", "Raw", "SSH", "SSH (no auth)", "Modem", "Serial",
-	"3-wire (No RTS)", "Shell", "MBBS GHost", "TelnetS", NULL
+	"3-wire (No RTS)", "Shell", "MBBS GHost", "TelnetS", "SBBS MQTT Spy", NULL
 };
-short unsigned int conn_ports[] = {0, 513, 513, 23, 0, 22, 22, 0, 0, 0, 0, 65535, 992, 0};
+short unsigned int conn_ports[] = {0, 513, 513, 23, 0, 22, 22, 0, 0, 0, 0, 65535, 992, 8883, 0};
 
 struct conn_buffer conn_inbuf;
 struct conn_buffer conn_outbuf;
@@ -425,6 +426,10 @@ conn_connect(struct bbslist *bbs)
 			conn_api.binary_mode_on = telnet_binary_mode_on;
 			conn_api.binary_mode_off = telnet_binary_mode_off;
 			conn_api.send_window_change = telnet_send_window_change;
+			break;
+		case CONN_TYPE_MQTT:
+			conn_api.connect = mqtt_connect;
+			conn_api.close = mqtt_close;
 			break;
 #endif
 #ifndef WITHOUT_DEUCESSH

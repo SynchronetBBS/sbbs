@@ -235,7 +235,17 @@ error.
 
 After the options, a full URI, hostname, or dialing directory entry may be
 specified.  Supported URI schemes are:
-rlogin://, ssh://, telnet://, raw://, shell://, ghost://.
+rlogin://, ssh://, telnet://, raw://, shell://, ghost://, mqtts://.
+
+`mqtts://` connects to a Synchronet BBS's internal MQTT broker as a
+sysop-spy client.  It always uses TLS-PSK on port 8883 (no plaintext
+`mqtt://` form is accepted) — the user portion of the URL becomes the
+PSK identity, the password portion becomes the PSK secret, and a
+prompt for the system password appears at connect time if the matching
+dialing-directory entry doesn't carry one.  After authentication,
+SyncTERM auto-discovers the BBSID from a retained broker topic, lists
+the active nodes, and lets you pick which one to attach to.  See
+`SBBS MQTT Spy` under <<connection-types,Connection Types>>.
 
 If there is an entry matching the URI, hostname, or entry name, the
 settings will be loaded from the BBS list, then modified per the
@@ -607,6 +617,20 @@ The <<_mbbs_ghost,MajorBBS 'GHost' protocol>>.
 TelnetS::
 Telnet over TLS.  All the drawbacks of the telnet protocol, but
 at least it's encrypted.
+
+SBBS MQTT Spy::
+A sysop-spy connection to a Synchronet BBS's internal MQTT broker.
+Subscribes to a node's published terminal output, and (optionally)
+publishes locally typed keystrokes back as injected node input.
+Authentication is TLS-PSK on port 8883 — the entry's User and
+Password are the PSK identity and secret, and the System Password is
+the broker's MQTT-level password.  When connecting, the BBSID is
+auto-discovered from the broker's retained `sbbs/{BBSID}` topic and
+the node number is chosen from a list of currently-active nodes.
+SyncTERM's terminal emulator does not auto-respond to host
+queries (DSR, DECRQM, etc.) on this connection type so the real
+client driving the node still owns the query/response handshake.
+Also reachable from the command line as `mqtts://user:pass@host`.
 
 Finally, you will be promted for the "address".  This is the DNS addres,
 IP address, serial port, or command to connect to.  If the connection will

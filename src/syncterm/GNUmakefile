@@ -325,6 +325,7 @@ endif
 
 ifndef WITHOUT_CRYPTO
  OBJS += $(MTOBJODIR)$(DIRSEP)telnets$(OFILE)
+ OBJS += $(MTOBJODIR)$(DIRSEP)conn_mqtt$(OFILE)
 
  # Bundled decrypt-only reference implementations of legacy ciphers
  # (IDEA, RC2) that neither OpenSSL (modern, w/o legacy provider) nor

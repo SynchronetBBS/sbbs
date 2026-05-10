@@ -432,8 +432,10 @@ list(APPEND SOURCE ini_crypt.c)
 if(NOT WITHOUT_CRYPTO)
 	# telnets.c + legacy decrypt-only ciphers only make sense when a
 	# real backend is linked — the "none" path can't decrypt anything.
+	# conn_mqtt.c rides the same TLS-PSK path so it's gated identically.
 	list(APPEND SOURCE
 		telnets.c
+		conn_mqtt.c
 		legacy_ciphers/idea.c
 		legacy_ciphers/rc2.c
 		legacy_ciphers/register.c)

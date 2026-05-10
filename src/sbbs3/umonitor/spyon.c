@@ -44,6 +44,23 @@ int term_cols = 80;
 int term_rows = 25;
 bool term_utf8 = false;
 
+/*
+ * Keystroke callback for cterm_encode_key.  cterm encodes the user's
+ * keystrokes (including arrow keys, F-keys, etc.) for the active
+ * emulation and hands the bytes here; we forward them to the BBS's
+ * spy socket so the sysop can drive the node.  cbdata is the spy
+ * socket fd cast to void*.
+ */
+static void
+spyon_keystroke_cb(const char *buf, size_t len, void *cbdata)
+{
+	SOCKET sock = (SOCKET)(intptr_t)cbdata;
+	if (sock == INVALID_SOCKET)
+		return;
+	if (write(sock, buf, len) != (ssize_t)len)
+		perror("writing to spy socket");
+}
+
 time_t read_term_ini(const char* path)
 {
 	FILE* fp = iniOpenFile(path, /* for_modify: */false);
@@ -74,7 +91,6 @@ int spyon(char *sockname, int nodenum, scfg_t* cfg)  {
 	SOCKET		spy_sock=INVALID_SOCKET;
 	struct sockaddr_un spy_name;
 	socklen_t	spy_len;
-	unsigned char		key;
 	char	buf[100000];
 	char	term_ini_fname[MAX_PATH + 1];
 	time_t	term_ini_ftime;
@@ -126,6 +142,12 @@ int spyon(char *sockname, int nodenum, scfg_t* cfg)  {
 		closesocket(spy_sock);
 		return(SPY_NOCTERM);
 	}
+	/* Route encoded user keystrokes (cterm_encode_key) to the spy
+	 * socket.  response_cb intentionally stays NULL: the BBS is
+	 * already serving the real client and owns the query/response
+	 * handshake, so cterm must not auto-reply to host queries here. */
+	cterm->keystroke_cb = spyon_keystroke_cb;
+	cterm->keystroke_cbdata = (void *)(intptr_t)spy_sock;
 	while(spy_sock!=INVALID_SOCKET && cterm != NULL)  {
 		struct timeval tv;
 		tv.tv_sec=0;
@@ -171,23 +193,28 @@ int spyon(char *sockname, int nodenum, scfg_t* cfg)  {
 			++idle_count;
 		}
 		if(kbhit())  {
-			key=getch();
-			/* Check for control keys */
-			switch(key)  {
-				case 3:	/* CTRL-C */
-					close(spy_sock);
-					spy_sock=INVALID_SOCKET;
-					retval=SPY_CLOSED;
-					break;
-				case 0:		/* Extended keys */
-				case 0xe0:
-					key = getch();
-					if (key != 0xe0)
-						break;
-					// Fall-through
-				default:
-					if(write(spy_sock,&key,1) != 1)
-						perror("writing to spy socket");
+			int ckey = getch();
+			/* Combine extended keys into the high-byte form ciolib
+			 * reports through CIO_KEY_*.  CIO_KEY_LITERAL_E0 is the
+			 * encoding for a real 0xe0 byte (high byte 0xe0, low
+			 * byte 0xe0); collapse it back to a plain 0xe0 key. */
+			if (ckey == 0 || ckey == 0xe0) {
+				ckey |= getch() << 8;
+				if (ckey == CIO_KEY_LITERAL_E0)
+					ckey = 0xe0;
+			}
+			if (ckey == 3) {	/* CTRL-C */
+				close(spy_sock);
+				spy_sock=INVALID_SOCKET;
+				retval=SPY_CLOSED;
+			}
+			else {
+				/* cterm_encode_key dispatches to keystroke_cb
+				 * (spyon_keystroke_cb), which writes to the spy
+				 * socket — and gives us proper escape sequences
+				 * for arrow keys, F-keys, etc. instead of dropping
+				 * them as the old raw-byte path did. */
+				cterm_encode_key(cterm, ckey);
 			}
 		}
 	}

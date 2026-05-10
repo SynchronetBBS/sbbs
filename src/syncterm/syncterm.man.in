@@ -116,6 +116,32 @@ all other scripts have loaded, so its
 statements resolve against the full surface.
 Compile and runtime errors during the load are written to standard
 error.
+.SH URL FORMATS
+A \fIURL\fP given on the command line may use any of the following
+schemes.  When the scheme is omitted, the default is taken from
+\fI\-h\fP / \fI\-r\fP / \fI\-t\fP or, if none of those is specified,
+telnet://.
+.IP \fBrlogin://\fIuser\fP[\fI:password\fP]@\fIhost\fP[\fI:port\fP]
+RFC 1282 RLogin.
+.IP \fBssh://\fIuser\fP[\fI:password\fP]@\fIhost\fP[\fI:port\fP]
+SSH v2 (DeuceSSH backend).
+.IP \fBtelnet://\fP[\fIuser\fP[\fI:password\fP]@]\fIhost\fP[\fI:port\fP]
+RFC 854 telnet.
+.IP \fBraw://\fIhost\fP\fI:port\fP
+8-bit clean TCP, no negotiation.  A port is required.
+.IP \fBghost://\fIuser\fP@\fIhost\fP[\fI:port\fP]/\fIprogram\fP
+MajorBBS GHost.
+.IP \fBshell:\fIcommand\fP
+Run \fIcommand\fP in the terminal (UNIX only).
+.IP \fBmqtts://\fIuser\fP[\fI:password\fP]@\fIhost\fP[\fI:port\fP]
+SBBS MQTT spy.  TLS-PSK to a Synchronet internal broker on port 8883;
+the user portion of the URL is the PSK identity and the password
+portion is the PSK secret.  If the matching dialing-directory entry
+doesn't carry a system password, SyncTERM prompts for it before
+sending the MQTT CONNECT.  After authentication the BBSID is
+auto-discovered from a retained broker topic and a node picker pops
+up; pick the node to attach to.  Plain \fBmqtt://\fP is intentionally
+not accepted — the broker doesn't speak plaintext.
 .SH RUN-TIME LINKING
 For some features, such as SDL, X11, and Wayland support,
 run-time linking is employed using dlopen().

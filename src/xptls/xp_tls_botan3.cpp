@@ -44,11 +44,13 @@
 
 #include <botan/auto_rng.h>
 #include <botan/credentials_manager.h>
+#include <botan/secmem.h>
 #include <botan/tls_alert.h>
 #include <botan/tls_callbacks.h>
 #include <botan/tls_client.h>
 #include <botan/tls_policy.h>
 #include <botan/tls_server_info.h>
+#include <botan/tls_session.h>
 #include <botan/tls_session_manager_noop.h>
 
 /* ---------------------------------------------------------------- errors */
@@ -76,13 +78,93 @@ set_last_err(const char *fmt, ...)
  * Permissive credentials manager: no client certificate, no trusted CAs.
  * Combined with the verify callback below this gives us peer-verify=none
  * behaviour equivalent to the OpenSSL backend.
+ *
+ * Optionally also supplies a PSK for TLS-PSK clients.  When psk_secret_ is
+ * empty, behaves as a pure cert-mode credentials manager (no PSK offered).
  */
 class PermissiveCredentials : public Botan::Credentials_Manager {
 public:
+	PermissiveCredentials() = default;
+	PermissiveCredentials(std::string identity, Botan::secure_vector<uint8_t> psk)
+	    : psk_identity_(std::move(identity)), psk_secret_(std::move(psk)) {}
+
 	std::vector<Botan::Certificate_Store *>
 	trusted_certificate_authorities(const std::string &, const std::string &) override
 	{
 		return {};
+	}
+
+	std::string psk_identity(const std::string &type, const std::string &context,
+	                         const std::string &identity_hint) override
+	{
+		(void)type; (void)context; (void)identity_hint;
+		return psk_identity_;
+	}
+
+	Botan::SymmetricKey psk(const std::string &type, const std::string &context,
+	                        const std::string &identity) override
+	{
+		(void)type; (void)context; (void)identity;
+		if (psk_secret_.empty())
+			return Botan::Credentials_Manager::psk(type, context, identity);
+		return Botan::SymmetricKey(psk_secret_.data(), psk_secret_.size());
+	}
+
+private:
+	/* secure_vector wipes its backing storage on destruction via Botan's
+	   secure_allocator — std::vector<uint8_t> would leave the password
+	   bytes in freed heap. */
+	std::string                   psk_identity_;
+	Botan::secure_vector<uint8_t> psk_secret_;
+};
+
+/*
+ * Policy for the PSK leg of the MQTT spy connection.  Pinned to
+ * TLS 1.2 with PSK-only kex.  We deliberately do NOT mix in cert
+ * kex: cryptlib's TLS server (Synchronet internal broker) prefers
+ * cert suites whenever they're offered, even with PSK ahead in the
+ * client's list, and TLS 1.2 cipher-suite selection is server-driven
+ * so client ordering is just a hint.  conn_mqtt.c therefore tries a
+ * PSK-only handshake first; if that fails (external broker without
+ * PSK identities), it reconnects and retries with the default policy
+ * (cert auth).
+ *
+ * latest_supported_version() must also be overridden: Botan's
+ * default computes it from allow_tls13(), but the Client
+ * constructor's protocol-version check has been observed to ignore
+ * allow_tls13() alone and throw with TLS_V13 as the offered version.
+ */
+class Tls12PskPolicy : public Botan::TLS::Policy {
+public:
+	bool allow_tls12() const override { return true; }
+	bool allow_tls13() const override { return false; }
+	Botan::TLS::Protocol_Version
+	latest_supported_version(bool datagram) const override
+	{
+		if (datagram)
+			return Botan::TLS::Protocol_Version::DTLS_V12;
+		return Botan::TLS::Protocol_Version::TLS_V12;
+	}
+	std::vector<std::string> allowed_key_exchange_methods() const override
+	{
+		return { "DHE_PSK", "ECDHE_PSK", "PSK" };
+	}
+	std::vector<std::string> allowed_signature_methods() const override
+	{
+		return {};
+	}
+	std::vector<std::string> allowed_ciphers() const override
+	{
+		return {
+		    "AES-128",
+		    "AES-256",
+		    "AES-128/GCM",
+		    "AES-256/GCM",
+		};
+	}
+	std::vector<std::string> allowed_macs() const override
+	{
+		return { "SHA-256", "SHA-384", "AEAD", "SHA-1" };
 	}
 };
 
@@ -97,6 +179,7 @@ struct xp_tls_ctx {
 	std::vector<uint8_t>                     pending_tx;	/* ciphertext waiting to go out */
 	bool                                     peer_closed;
 	bool                                     fatal_alert;
+	std::string                              kex_algo;	/* "PSK", "DHE_PSK", "ECDH", "RSA", ... */
 	/* Botan 3's TLS::Client takes shared_ptrs for its dependencies, so
 	   the surrounding objects have to be shared_ptr too. */
 	std::shared_ptr<Botan::AutoSeeded_RNG>       rng;
@@ -110,6 +193,11 @@ struct xp_tls_ctx {
 class XpTlsCallbacks : public Botan::TLS::Callbacks {
 public:
 	explicit XpTlsCallbacks(xp_tls_ctx *c) : ctx(c) {}
+
+	void tls_session_established(const Botan::TLS::Session_Summary &s) override
+	{
+		ctx->kex_algo = s.kex_algo();
+	}
 
 	void tls_emit_data(std::span<const uint8_t> data) override
 	{
@@ -136,7 +224,13 @@ public:
 	                           std::string_view,
 	                           const Botan::TLS::Policy &) override
 	{
-		/* Accept any chain — matches Cryptlib-era posture. */
+		/* Accept any chain — matches the OpenSSL backend's
+		   SSL_VERIFY_NONE.  See the TODO in xp_tls_openssl.c
+		   client_open_inner(): the eventual cert-pinning path needs
+		   to surface a yes/no/cancel modal on validation failure
+		   (accept once / accept and update / abort), the same way
+		   SyncTERM's SSH layer handles host-key changes — never
+		   silently accept or reject; the user owns the trust call. */
 	}
 
 private:
@@ -164,12 +258,19 @@ set_recv_timeout(SOCKET sock, int seconds)
 /*
  * Flush pending_tx out to the socket.  Returns XP_TLS_OK on success,
  * XP_TLS_ERR_CLOSED on peer close, XP_TLS_ERR on other error.
+ *
+ * Each send() is gated on socket_writable() — same pattern that
+ * rlogin_output_thread uses — so a peer-closed or locally-shut-down
+ * socket reports as not-writable and we surface XP_TLS_ERR_CLOSED
+ * rather than calling send() and triggering SIGPIPE.
  */
 static int
 flush_pending(xp_tls_ctx *ctx)
 {
 	size_t off = 0;
 	while (off < ctx->pending_tx.size()) {
+		if (!socket_writable(ctx->sock, 100))
+			return XP_TLS_ERR_CLOSED;
 		ssize_t n = send(ctx->sock,
 		    reinterpret_cast<const char *>(ctx->pending_tx.data() + off),
 		    ctx->pending_tx.size() - off, 0);
@@ -229,8 +330,10 @@ pump_recv(xp_tls_ctx *ctx)
 
 /* ---------------------------------------------------------- open */
 
-extern "C" xp_tls_t
-xp_tls_client_open(SOCKET sock, const char *sni, int read_timeout)
+static xp_tls_t
+client_open_inner(SOCKET sock, const char *sni, int read_timeout,
+                  const char *psk_identity,
+                  const void *psk, size_t psk_len)
 {
 	last_err_buf[0] = 0;
 	auto *ctx = new (std::nothrow) xp_tls_ctx{};
@@ -248,14 +351,34 @@ xp_tls_client_open(SOCKET sock, const char *sni, int read_timeout)
 	try {
 		ctx->rng       = std::make_shared<Botan::AutoSeeded_RNG>();
 		ctx->sess_mgr  = std::make_shared<Botan::TLS::Session_Manager_Noop>();
-		ctx->creds     = std::make_shared<PermissiveCredentials>();
-		ctx->policy    = std::make_shared<Botan::TLS::Policy>();
+		if (psk_identity != nullptr && psk != nullptr && psk_len > 0) {
+			Botan::secure_vector<uint8_t> secret(
+			    static_cast<const uint8_t *>(psk),
+			    static_cast<const uint8_t *>(psk) + psk_len);
+			ctx->creds = std::make_shared<PermissiveCredentials>(
+			    std::string(psk_identity), std::move(secret));
+			ctx->policy = std::make_shared<Tls12PskPolicy>();
+		}
+		else {
+			ctx->creds  = std::make_shared<PermissiveCredentials>();
+			ctx->policy = std::make_shared<Botan::TLS::Policy>();
+		}
 		ctx->callbacks = std::make_shared<XpTlsCallbacks>(ctx);
 
 		Botan::TLS::Server_Information server_info(ctx->sni);
+		/* Pass an explicit offer_version when running PSK: the Client
+		   constructor's default is the compile-time latest_tls_version()
+		   (TLS 1.3 when Botan was built with HAS_TLS_13), and the
+		   constructor validates that against the policy *before*
+		   consulting policy->latest_supported_version().  Passing
+		   TLS_V12 directly sidesteps the contradiction. */
+		Botan::TLS::Protocol_Version offer =
+		    (psk_identity != nullptr && psk != nullptr && psk_len > 0)
+		    ? Botan::TLS::Protocol_Version(Botan::TLS::Protocol_Version::TLS_V12)
+		    : Botan::TLS::Protocol_Version::latest_tls_version();
 		ctx->client = std::make_unique<Botan::TLS::Client>(
 		    ctx->callbacks, ctx->sess_mgr, ctx->creds, ctx->policy, ctx->rng,
-		    server_info);
+		    server_info, offer);
 	}
 	catch (const std::exception &e) {
 		set_last_err("TLS client construct: %s", e.what());
@@ -306,6 +429,23 @@ xp_tls_client_open(SOCKET sock, const char *sni, int read_timeout)
 	(void)flush_pending(ctx);
 
 	return ctx;
+}
+
+extern "C" xp_tls_t
+xp_tls_client_open(SOCKET sock, const char *sni, int read_timeout)
+{
+	return client_open_inner(sock, sni, read_timeout, nullptr, nullptr, 0);
+}
+
+extern "C" xp_tls_t
+xp_tls_client_open_psk(SOCKET sock, const char *sni, int read_timeout,
+                       const char *identity, const void *psk, size_t psk_len)
+{
+	if (identity == nullptr || psk == nullptr || psk_len == 0) {
+		set_last_err("xp_tls_client_open_psk: missing identity or PSK");
+		return nullptr;
+	}
+	return client_open_inner(sock, sni, read_timeout, identity, psk, psk_len);
 }
 
 /* ---------------------------------------------------------- push */
@@ -376,6 +516,26 @@ xp_tls_flush(xp_tls_t ctx)
 	return flush_pending(ctx);
 }
 
+extern "C" bool
+xp_tls_has_pending(xp_tls_t ctx)
+{
+	if (ctx == nullptr)
+		return false;
+	return !ctx->plaintext.empty();
+}
+
+extern "C" bool
+xp_tls_used_psk(xp_tls_t ctx)
+{
+	if (ctx == nullptr)
+		return false;
+	/* kex_algo is captured in tls_session_established (the
+	   negotiation-complete callback).  Botan reports the PSK family as
+	   "PSK", "DHE_PSK", "ECDHE_PSK", "RSA_PSK"; non-PSK kex algorithms
+	   don't contain "PSK". */
+	return ctx->kex_algo.find("PSK") != std::string::npos;
+}
+
 /* --------------------------------------------------------- close */
 
 extern "C" void
@@ -383,14 +543,22 @@ xp_tls_close(xp_tls_t ctx, bool close_socket)
 {
 	if (ctx == nullptr)
 		return;
-	try {
-		if (ctx->client && !ctx->client->is_closed())
-			ctx->client->close();
+	/* Best-effort send the TLS close_notify alert, but only if the
+	   socket is in a writable state.  Otherwise the send() inside
+	   flush_pending() raises SIGPIPE on a peer-closed or
+	   locally-shut-down socket and tears the whole process down.
+	   socket_writable() with a 0ms timeout is the same gate
+	   rlogin_output_thread() uses before each send(). */
+	if (ctx->sock != INVALID_SOCKET && socket_writable(ctx->sock, 0)) {
+		try {
+			if (ctx->client && !ctx->client->is_closed())
+				ctx->client->close();
+		}
+		catch (...) {
+			/* Peer may have already disconnected. */
+		}
+		(void)flush_pending(ctx);
 	}
-	catch (...) {
-		/* Best-effort close.  Peer may have already disconnected. */
-	}
-	(void)flush_pending(ctx);
 	if (close_socket && ctx->sock != INVALID_SOCKET)
 		closesocket(ctx->sock);
 	delete ctx;

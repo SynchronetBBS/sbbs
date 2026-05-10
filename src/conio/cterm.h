@@ -283,10 +283,22 @@ struct cterminal {
 	enum prestel_prog_states prestel_prog_state;
 	uint8_t prestel_mem;
 
-	/* Response callback — sends terminal responses (DSR, DECRQM, STS, etc.)
-	 * directly to the host.  If NULL, responses are discarded. */
+	/* Response callback — sends terminal AUTO-responses (DSR, DECRQM,
+	 * STS, etc., emitted by the parser in response to host queries)
+	 * directly to the host.  If NULL, auto-responses are discarded.
+	 *
+	 * keystroke_cb is the separate channel for USER keystrokes that
+	 * cterm_encode_key encodes (e.g. arrow keys → ESC[A).  Splitting
+	 * it from response_cb lets a sysop spy connection (where the BBS
+	 * is already serving the real user via telnet/ssh and owns the
+	 * query/response handshake) mute auto-responses while still
+	 * delivering keystrokes the local user types into the spy.  If
+	 * NULL, encoded keystrokes are discarded.  When the same channel
+	 * carries both, set both fields to the same callback. */
 	void (*response_cb)(const char *buf, size_t len, void *cbdata);
 	void *response_cbdata;
+	void (*keystroke_cb)(const char *buf, size_t len, void *cbdata);
+	void *keystroke_cbdata;
 
 	/* Status display (DECSSDT/DECSASD) state.  On the main cterm,
 	 * status_display_type tracks the selected type (0=none, 1=indicator,

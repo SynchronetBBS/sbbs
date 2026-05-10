@@ -72,6 +72,23 @@ typedef struct xp_tls_ctx *xp_tls_t;
 DLLEXPORT xp_tls_t xp_tls_client_open(SOCKET sock, const char *sni, int read_timeout);
 
 /*
+ * Open a TLS-PSK 1.2 client session.  Identical to xp_tls_client_open()
+ * except authentication uses a pre-shared key instead of certificates.
+ *
+ * identity      — PSK identity string (NUL-terminated).  Sent in the clear
+ *                 in the ClientKeyExchange.
+ * psk           — raw PSK bytes (not hex-encoded).  Caller retains ownership.
+ * psk_len       — length of psk in bytes.
+ *
+ * TLS 1.3 is not negotiated for PSK sessions: the handshake floor is pinned
+ * to TLS 1.2 so the wire format matches the broker's PSK expectations.
+ */
+DLLEXPORT xp_tls_t xp_tls_client_open_psk(SOCKET sock, const char *sni,
+                                          int read_timeout,
+                                          const char *identity,
+                                          const void *psk, size_t psk_len);
+
+/*
  * Push up to n bytes. On return, *copied holds bytes actually written
  * (may be less than n if the peer's TLS flow-control kicks in).
  * Returns XP_TLS_OK on progress (including partial), XP_TLS_ERR_CLOSED
@@ -86,6 +103,26 @@ DLLEXPORT int xp_tls_push(xp_tls_t ctx, const void *buf, size_t n, size_t *copie
  * XP_TLS_ERR on protocol error.
  */
 DLLEXPORT int xp_tls_pop(xp_tls_t ctx, void *buf, size_t n, size_t *copied);
+
+/*
+ * Returns true if the next xp_tls_pop() can return application data
+ * without performing a socket read.  TLS records can decode into more
+ * plaintext than the caller asked for, so a previous pop may have
+ * left bytes buffered inside the TLS layer; a caller that gates pops
+ * on socket-readability needs this OR'd in or it will sit on data
+ * that's already in hand.  Cheap (no syscall, no locking required
+ * when the caller is the only thread doing pops).
+ */
+DLLEXPORT bool xp_tls_has_pending(xp_tls_t ctx);
+
+/*
+ * Returns true if the active session negotiated a PSK key-exchange
+ * (TLS_PSK_WITH_*, DHE_PSK, ECDHE_PSK, RSA_PSK).  Lets a caller that
+ * opens with both PSK and cert kex methods enabled learn which path
+ * actually authenticated the peer, so it can pick MQTT-level (or
+ * other application-level) credentials accordingly.
+ */
+DLLEXPORT bool xp_tls_used_psk(xp_tls_t ctx);
 
 /*
  * Ensure any buffered plaintext/ciphertext is sent on the wire.

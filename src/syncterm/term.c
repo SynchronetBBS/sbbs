@@ -4585,6 +4585,8 @@ on_status_display_change(struct cterminal *c, int old_type, int new_type,
 			c->status_sub->parent = c;
 			c->status_sub->response_cb = c->response_cb;
 			c->status_sub->response_cbdata = c->response_cbdata;
+			c->status_sub->keystroke_cb = c->keystroke_cb;
+			c->status_sub->keystroke_cbdata = c->keystroke_cbdata;
 			cterm_start(c->status_sub);
 		}
 	}
@@ -5272,8 +5274,24 @@ doterm(struct bbslist *bbs)
 		cterm->last_column_flag = (CTERM_LCF_FORCED | CTERM_LCF_ENABLED);
 	cterm->apc_handler = apc_handler;
 	cterm->apc_handler_data = bbs;
-	cterm->response_cb = term_response_cb;
-	cterm->response_cbdata = NULL;
+	/* User keystrokes encoded via cterm_encode_key go out on every
+	 * conn type so the local user can drive (or co-drive, in the MQTT
+	 * spy case) the BBS. */
+	cterm->keystroke_cb = term_response_cb;
+	cterm->keystroke_cbdata = NULL;
+	/* Parser AUTO-responses (DSR, DECRQM, STS, ENQ, etc.) are muted
+	 * for MQTT spy sessions: the BBS is already serving the real
+	 * client via telnet/ssh and owns the query/response handshake.
+	 * Letting cterm answer too would publish fake reply bytes onto
+	 * the node's input topic and corrupt the real client's session. */
+	if (bbs->conn_type == CONN_TYPE_MQTT) {
+		cterm->response_cb = NULL;
+		cterm->response_cbdata = NULL;
+	}
+	else {
+		cterm->response_cb = term_response_cb;
+		cterm->response_cbdata = NULL;
+	}
 	cterm->ext_state_7_cb = audio_ext_state_7;
 	cterm->mouse_state_change = mouse_state_change;
 	cterm->mouse_state_change_cbdata = &ms;

@@ -44,6 +44,8 @@ enum {
 	,
 	CONN_TYPE_TELNETS
 	,
+	CONN_TYPE_MQTT
+	,
 	CONN_TYPE_TERMINATOR
 };
 
@@ -55,7 +57,8 @@ enum {
 	((x) == CONN_TYPE_SSH) ||                \
 	((x) == CONN_TYPE_SSHNA) ||               \
 	((x) == CONN_TYPE_MBBS_GHOST) ||           \
-	((x) == CONN_TYPE_TELNETS))
+	((x) == CONN_TYPE_TELNETS) ||               \
+	((x) == CONN_TYPE_MQTT))
 
 struct conn_api {
 	int               (*connect)(struct bbslist *bbs);

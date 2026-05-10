@@ -27,6 +27,15 @@ xp_tls_client_open(SOCKET sock, const char *sni, int read_timeout)
 	return NULL;
 }
 
+xp_tls_t
+xp_tls_client_open_psk(SOCKET sock, const char *sni, int read_timeout,
+                       const char *identity, const void *psk, size_t psk_len)
+{
+	(void)sock; (void)sni; (void)read_timeout;
+	(void)identity; (void)psk; (void)psk_len;
+	return NULL;
+}
+
 int
 xp_tls_push(xp_tls_t ctx, const void *buf, size_t n, size_t *copied)
 {
@@ -50,6 +59,20 @@ xp_tls_flush(xp_tls_t ctx)
 {
 	(void)ctx;
 	return XP_TLS_ERR;
+}
+
+bool
+xp_tls_has_pending(xp_tls_t ctx)
+{
+	(void)ctx;
+	return false;
+}
+
+bool
+xp_tls_used_psk(xp_tls_t ctx)
+{
+	(void)ctx;
+	return false;
 }
 
 void
