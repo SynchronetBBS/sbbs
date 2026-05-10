@@ -165,7 +165,9 @@ void mqtt_cfg()
 		int i = 0;
 		snprintf(opt[i++], MAX_OPLN, "%-20s%s", "Enabled", cfg.mqtt.enabled ? "Yes" : "No");
 		snprintf(opt[i++], MAX_OPLN, "%-20s%s", "Internal Broker", cfg.mqtt.internal_broker ? "Yes" : "No");
-		if (!cfg.mqtt.internal_broker) {
+		if (cfg.mqtt.internal_broker) {
+			snprintf(opt[i++], MAX_OPLN, "%-20s%u", "Broker Port", cfg.mqtt.broker_port);
+		} else {
 			snprintf(opt[i++], MAX_OPLN, "%-20s%s", "Broker Address", cfg.mqtt.broker_addr);
 			snprintf(opt[i++], MAX_OPLN, "%-20s%u", "Broker Port", cfg.mqtt.broker_port);
 			snprintf(opt[i++], MAX_OPLN, "%-20s%u seconds", "Keep-alive", cfg.mqtt.keepalive);
@@ -222,10 +224,35 @@ void mqtt_cfg()
 				break;
 			case 1:
 				cfg.mqtt.internal_broker = !cfg.mqtt.internal_broker;
+				if (cfg.mqtt.internal_broker) {
+					SAFECOPY(cfg.mqtt.broker_addr, "127.0.0.1");
+					if (cfg.mqtt.broker_port == IPPORT_MQTT)
+						cfg.mqtt.broker_port = 8883;
+					cfg.mqtt.tls.mode = MQTT_TLS_SBBS;
+					cfg.mqtt.protocol_version = 5;
+				}
 				break;
 		}
-		if (cfg.mqtt.internal_broker)
+		if (cfg.mqtt.internal_broker) {
+			switch (i) {
+				case 2: {
+					char str[16];
+					SAFEPRINTF(str, "%hu", cfg.mqtt.broker_port);
+					uifc.helpbuf =
+						"~ Broker TCP Port Number ~\n"
+						"\n"
+						"TCP port the internal broker listens on for external MQTT clients.\n"
+						"\n"
+						"Default: `8883`"
+					;
+					if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "Broker TCP Port Number"
+					               , str, 5, K_EDIT | K_NUMBER) > 0)
+						cfg.mqtt.broker_port = atoi(str);
+					break;
+				}
+			}
 			continue;
+		}
 		switch (i) {
 			case 2:
 				uifc.helpbuf =
