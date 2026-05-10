@@ -2300,6 +2300,14 @@ xp_mixer_pull(int16_t *out, size_t frames)
 	size_t j;
 	size_t max_n = 0;
 
+	/* mixer_lock is initialized lazily in xp_audio_open via mixer_once.
+	 * Pull paths (push-backend device threads, pull-backend callbacks)
+	 * can fire before any xp_audio_open has run, e.g. when the device
+	 * is opened directly for OOII / ANSI-music side-effects with no
+	 * patch channels yet, so we have to re-trigger the once-init from
+	 * the consumer side too. */
+	pthread_once(&mixer_once, mixer_init);
+
 	assert_pthread_mutex_lock(&mixer_lock);
 
 	if (accum_cap < frames) {
