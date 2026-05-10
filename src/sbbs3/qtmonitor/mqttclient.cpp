@@ -409,8 +409,5 @@ QPair<QString, QString> MqttClient::splitTsvPayload(const QString &text,
 	auto it = userProps.constFind(QStringLiteral("time"));
 	if (it != userProps.constEnd())
 		return {it.value(), text};
-	int tab = text.indexOf('\t');
-	if (tab >= 0)
-		return {text.left(tab), text.mid(tab + 1)};
 	return {{}, text};
 }
