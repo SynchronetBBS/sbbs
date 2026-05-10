@@ -89,23 +89,26 @@ rlogin_tx_parse_cb(const void *inbuf, size_t inlen, size_t *olen)
 	return ret;
 }
 
-/* Returns 1 when the next byte to read from sock is the OOB mark
- * byte, 0 otherwise (or on error).  Uses SIOCATMARK for portability
- * — sockatmark() isn't universally available. */
+/* Returns 1 when the inline read pointer has caught up to the TCP
+ * urgent point — all bytes preceding the urgent ptr have been
+ * consumed.  We run with SO_OOBINLINE *off* (Winsock2's inline-OOB +
+ * SIOCATMARK semantics are broken), so the OOB byte itself lives in a
+ * separate mailbox readable via recv(MSG_OOB); SIOCATMARK is the
+ * signal that the inline stream has drained to that boundary, and
+ * we may now consume the OOB byte without leapfrogging in-flight
+ * inline data preceding it (which matters for RFC 1282 mode-switch
+ * bytes 0x10/0x20). */
 static int
 rlogin_at_oob_mark(SOCKET sock)
 {
 #ifdef _WIN32
 	u_long atmark = 0;
+#else
+	int atmark = 0;
+#endif
 	if (ioctlsocket(sock, SIOCATMARK, &atmark) != 0)
 		return 0;
 	return atmark ? 1 : 0;
-#else
-	int atmark = 0;
-	if (ioctl(sock, SIOCATMARK, &atmark) != 0)
-		return 0;
-	return atmark ? 1 : 0;
-#endif
 }
 
 /* Dispatch for RFC 1282 OOB control bytes.  Only 0x80 is implemented;
@@ -195,6 +198,7 @@ rlogin_input_thread(void *args)
 	int    rd = 0;
 	int    buffered;
 	size_t bufsz = 0;
+	bool   oob_pending = false;
 
 	SetThreadName("RLogin Input");
 	conn_api.input_thread_running = 1;
@@ -208,40 +212,69 @@ rlogin_input_thread(void *args)
 			SLEEP(10);
 			continue;
 		}
-		bool data_avail;
-		if (socket_check(rlogin_sock, &data_avail, NULL, bufsz ? 0 : 100)) {
-			if (data_avail && bufsz < BUFFER_SIZE) {
-				/* RFC 1282 OOB control bytes: if the socket's
-				 * urgent-data mark is at the next byte, consume
-				 * that single byte out-of-band and dispatch it
-				 * rather than passing it to the terminal.  Only
-				 * relevant for true rlogin sessions. */
-				if (atomic_load(&rlogin_active)
-				    && rlogin_at_oob_mark(rlogin_sock)) {
-					uint8_t ctl;
-					rd = recv(rlogin_sock, (char *)&ctl, 1, 0);
-					if (rd <= 0)
-						break;
-					rlogin_handle_control(ctl);
-				}
-				else {
-					rd = recv(rlogin_sock, conn_api.rd_buf + bufsz, conn_api.rd_buf_size - bufsz, 0);
-					if (rd <= 0)
-						break;
-					bufsz += rd;
-				}
-			}
-			if (bufsz) {
-				assert_pthread_mutex_lock(&(conn_inbuf.mutex));
-				conn_buf_wait_free(&conn_inbuf, 1, 1000);
-				buffered = conn_buf_put(&conn_inbuf, conn_api.rd_buf, bufsz);
-				memmove(conn_api.rd_buf, &conn_api.rd_buf[buffered], bufsz - buffered);
-				bufsz -= buffered;
-				assert_pthread_mutex_unlock(&(conn_inbuf.mutex));
-			}
-		}
-		else
+
+		/* Bespoke inline select(): watch readfds for normal data and
+		 * exceptfds for an RFC 1282 urgent/OOB notification.
+		 * socket_check() doesn't expose exceptfds and has many
+		 * out-of-tree consumers we can't touch, so we roll our own
+		 * here.  Once an OOB has been detected we stop watching
+		 * exceptfds — Winsock and POSIX both keep firing it for as
+		 * long as urgent is pending, which would busy-loop until the
+		 * inline stream drained to the mark. */
+		bool data_avail = false;
+		fd_set rd_set, ex_set;
+		struct timeval tv;
+		FD_ZERO(&rd_set);
+		FD_SET(rlogin_sock, &rd_set);
+		FD_ZERO(&ex_set);
+		FD_SET(rlogin_sock, &ex_set);
+		tv.tv_sec = 0;
+		tv.tv_usec = (bufsz ? 0 : 100) * 1000;
+		int sel = select((int)rlogin_sock + 1, &rd_set, NULL,
+		    oob_pending ? NULL : &ex_set, &tv);
+		if (sel < 0)
 			break;
+		if (sel > 0) {
+			if (FD_ISSET(rlogin_sock, &rd_set))
+				data_avail = true;
+			if (!oob_pending
+			    && atomic_load(&rlogin_active)
+			    && FD_ISSET(rlogin_sock, &ex_set))
+				oob_pending = true;
+		}
+
+		/* RFC 1282 OOB byte: when we've drained inline up to the
+		 * urgent point, pull the urgent byte from its separate
+		 * mailbox via MSG_OOB and dispatch it.  Mode-switch bytes
+		 * (0x10 / 0x20) take effect on the data following the urgent
+		 * ptr, so any pre-mark inline bytes must be processed in the
+		 * old mode first. */
+		if (oob_pending && rlogin_at_oob_mark(rlogin_sock)) {
+			uint8_t ctl;
+			int r = recv(rlogin_sock, (char *)&ctl, 1, MSG_OOB);
+			oob_pending = false;
+			if (r == 1) {
+				rlogin_handle_control(ctl);
+				continue;
+			}
+			if (r <= 0)
+				break;
+		}
+
+		if (data_avail && bufsz < BUFFER_SIZE) {
+			rd = recv(rlogin_sock, conn_api.rd_buf + bufsz, conn_api.rd_buf_size - bufsz, 0);
+			if (rd <= 0)
+				break;
+			bufsz += rd;
+		}
+		if (bufsz) {
+			assert_pthread_mutex_lock(&(conn_inbuf.mutex));
+			conn_buf_wait_free(&conn_inbuf, 1, 1000);
+			buffered = conn_buf_put(&conn_inbuf, conn_api.rd_buf, bufsz);
+			memmove(conn_api.rd_buf, &conn_api.rd_buf[buffered], bufsz - buffered);
+			bufsz -= buffered;
+			assert_pthread_mutex_unlock(&(conn_inbuf.mutex));
+		}
 	}
 	conn_api.terminate = true;
 	shutdown(rlogin_sock, SHUT_RDWR);
@@ -345,15 +378,12 @@ rlogin_connect(struct bbslist *bbs)
 	conn_api.wr_buf_size = BUFFER_SIZE;
 
 	if ((bbs->conn_type == CONN_TYPE_RLOGIN) || (bbs->conn_type == CONN_TYPE_RLOGIN_REVERSED)) {
-		/* rlogin-only: enable SO_OOBINLINE so RFC 1282 urgent-mode
-		 * control bytes arrive inline and can be detected via
-		 * SIOCATMARK.  Failure is not fatal — we just won't see
-		 * control-byte requests. */
-		{
-			int on = 1;
-			setsockopt(rlogin_sock, SOL_SOCKET, SO_OOBINLINE,
-			    (const char *)&on, sizeof(on));
-		}
+		/* RFC 1282 OOB control bytes: leave SO_OOBINLINE off (Winsock2
+		 * inline-OOB + SIOCATMARK is broken).  The input thread watches
+		 * exceptfds for urgent notification and consumes the byte via
+		 * recv(MSG_OOB) when SIOCATMARK shows the inline stream has
+		 * caught up to the mark. */
+
 		/* Send the rlogin handshake BEFORE installing tx_parse_cb so
 		 * that a password or username byte of 0x11/0x13 is passed
 		 * through verbatim rather than being stripped as XON/XOFF. */
