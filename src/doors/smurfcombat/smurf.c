@@ -21,6 +21,7 @@
 
 int             nada = 0;
 int             registered = FALSE;
+int             cleanmode = FALSE;
 
 void 
 protov(void)
@@ -137,6 +138,10 @@ char*   argv[100];
     }
     if (argc > 1) {
 	int arg=1;
+	if(strnicmp(argv[arg], "-cm", 3) == 0) {
+            cleanmode = TRUE;
+            arg++;
+        }
 
 	if(strnicmp(argv[arg], "LOCAL", 5) == 0) {
 		od_control.od_force_local=TRUE;
@@ -339,7 +344,8 @@ getcommand(void)
 		    userarena();
 		    break;
 		case '*':
-		    inciterevolt();
+		    if(!cleanmode)
+			inciterevolt();
 		    break;
 		case '(':
 		    rendezvous();
