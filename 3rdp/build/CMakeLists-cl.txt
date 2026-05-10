@@ -112,6 +112,7 @@ set(PATCHES
 	cl-enable-chacha20.patch
 	cl-no-session-cache.patch
 	cl-iowait-pollhup.patch
+	cl-psk-only-client.patch
 )
 
 set(SOURCE

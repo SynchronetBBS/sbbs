@@ -77,9 +77,7 @@ char* socklib_version(char* str, size_t size, const char* winsock_ver)
 void sbbs_t::ver(int pmode, bool verbose)
 {
 	char str[128], compiler[32], os[128], cpu[128];
-#ifdef USE_MOSQUITTO
 	char tmp[128];
-#endif
 
 	term->cond_blankline();
 	strcpy(str, VERSION_NOTICE);
@@ -142,13 +140,15 @@ void sbbs_t::ver(int pmode, bool verbose)
 	bputs(str, pmode);
 	term->cond_blankline();
 
+	if (mqtt_libver(tmp, sizeof tmp) != NULL) {
+		SAFECOPY(str, tmp);
 #ifdef USE_MOSQUITTO
-	SAFECOPY(str, mqtt_libver(tmp, sizeof tmp));
-	safe_snprintf(tmp, sizeof tmp, " (%u)", LIBMOSQUITTO_VERSION_NUMBER);
-	SAFECAT(str, tmp);
-	bputs(str, pmode);
-	term->cond_blankline();
+		safe_snprintf(tmp, sizeof tmp, " (%u)", LIBMOSQUITTO_VERSION_NUMBER);
+		SAFECAT(str, tmp);
 #endif
+		bputs(str, pmode);
+		term->cond_blankline();
+	}
 
 	safe_snprintf(str, sizeof(str), "%s %s", os_version(os, sizeof(os)), os_cpuarch(cpu, sizeof(cpu)));
 	bputs(str, pmode);

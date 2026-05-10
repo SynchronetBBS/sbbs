@@ -19,37 +19,61 @@
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
 
-#if defined USE_MOSQUITTO
 #include "sbbs.h"
 #include "js_request.h"
+
+#ifndef USE_MOSQUITTO
+#include "mqtt_client.h"
+#include "mqtt_broker.h"
+#endif
 
 typedef struct
 {
 	int retval;
+#ifdef USE_MOSQUITTO
 	mqtt_handle_t handle;
-	struct mqtt_cfg cfg;
 	msg_queue_t q;
+#else
+	mqtt5::Client *client;
+	mqtt5::LocalClient *local;
+	std::deque<mqtt5::ReceivedMessage> *local_queue;
+	std::mutex *local_mutex;
+#endif
+	struct mqtt_cfg cfg;
 
 } private_t;
 
 static void js_finalize_mqtt(JSContext* cx, JSObject* obj)
 {
-	private_t*                p;
-	struct mosquitto_message* msg;
+	private_t* p;
 
 	if ((p = (private_t*)JS_GetPrivate(cx, obj)) == NULL)
 		return;
 
+#ifdef USE_MOSQUITTO
 	if (p->handle != NULL) {
 		mosquitto_disconnect(p->handle);
 		mosquitto_loop_stop(p->handle, /* force: */ false);
 		mosquitto_destroy(p->handle);
 	}
-	while ((msg = static_cast<mosquitto_message *>(msgQueueRead(&p->q, /* timeout: */ 0))) != NULL) {
-		mosquitto_message_free_contents(msg);
-		free(msg);
+	{
+		struct mosquitto_message* msg;
+		while ((msg = static_cast<mosquitto_message *>(msgQueueRead(&p->q, /* timeout: */ 0))) != NULL) {
+			mosquitto_message_free_contents(msg);
+			free(msg);
+		}
+		msgQueueFree(&p->q);
 	}
-	msgQueueFree(&p->q);
+#else
+	if (p->local) {
+		auto *broker = mqtt5::Broker::instance();
+		if (broker)
+			broker->deregister_local(p->local);
+		delete p->local_queue;
+		delete p->local_mutex;
+	}
+	delete p->client;
+#endif
 	free(p);
 
 	JS_SetPrivate(cx, obj, NULL);
@@ -69,16 +93,40 @@ static JSBool js_disconnect(JSContext* cx, uintN argc, jsval *arglist)
 		return JS_FALSE;
 	}
 
+#ifdef USE_MOSQUITTO
 	if (p->handle == NULL)
 		return JS_TRUE;
+#else
+	if (p->client == NULL && p->local == NULL)
+		return JS_TRUE;
+#endif
 
 	rc = JS_SUSPENDREQUEST(cx);
+#ifdef USE_MOSQUITTO
 	p->retval = mosquitto_disconnect(p->handle);
 	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(p->retval == MOSQ_ERR_SUCCESS));
+#else
+	if (p->local) {
+		auto *broker = mqtt5::Broker::instance();
+		if (broker)
+			broker->deregister_local(p->local);
+		p->local = NULL;
+	} else if (p->client) {
+		p->client->disconnect();
+	}
+	p->retval = 0;
+	JS_SET_RVAL(cx, arglist, JSVAL_TRUE);
+#endif
 	JS_RESUMEREQUEST(cx, rc);
 	return JS_TRUE;
 }
 
+#ifndef USE_MOSQUITTO
+static void js_local_message_callback(void *cbdata, const char *topic,
+                                      const void *payload, size_t len);
+#endif
+
+#ifdef USE_MOSQUITTO
 static int pw_callback(char* buf, int size, int rwflag, void* userdata)
 {
 	private_t* p = (private_t*)userdata;
@@ -86,6 +134,7 @@ static int pw_callback(char* buf, int size, int rwflag, void* userdata)
 	strncpy(buf, p->cfg.tls.keypass, size);
 	return strlen(p->cfg.tls.keypass);
 }
+#endif
 
 static JSBool js_connect(JSContext* cx, uintN argc, jsval *arglist)
 {
@@ -128,6 +177,7 @@ static JSBool js_connect(JSContext* cx, uintN argc, jsval *arglist)
 		++argn;
 	}
 
+#ifdef USE_MOSQUITTO
 	if (p->cfg.tls.mode == MQTT_TLS_SBBS) {
 		username[0] = 0;
 		strlcpy(password, scfg->sys_pass, sizeof(password));
@@ -174,10 +224,10 @@ static JSBool js_connect(JSContext* cx, uintN argc, jsval *arglist)
 			}
 			strlwr(user.alias);
 			p->retval = mosquitto_tls_psk_set(p->handle,
-							   hexpass,
-							   user.alias,
-							   NULL // ciphers (default)
-							   );
+			                   hexpass,
+			                   user.alias,
+			                   NULL // ciphers (default)
+			                   );
 		}
 		else
 			p->retval = MQTT_FAILURE;
@@ -188,8 +238,38 @@ static JSBool js_connect(JSContext* cx, uintN argc, jsval *arglist)
 		                                   broker_port,
 		                                   p->cfg.keepalive,
 		                                   /* bind_address */ NULL);
+#else
+	{
+		auto *broker = mqtt5::Broker::instance();
+		if (broker && p->cfg.internal_broker) {
+			p->local_queue = new std::deque<mqtt5::ReceivedMessage>();
+			p->local_mutex = new std::mutex();
+			p->local = broker->register_local(
+				std::string("js-") + std::to_string((uintptr_t)p),
+				js_local_message_callback, p);
+			p->retval = p->local ? MQTT_SUCCESS : MQTT_FAILURE;
+		} else if (p->client != NULL) {
+			if (p->cfg.tls.mode == MQTT_TLS_SBBS) {
+				username[0] = 0;
+				strlcpy(password, scfg->sys_pass, sizeof(password));
+			}
+			p->retval = p->client->connect(
+				broker_addr, broker_port, NULL,
+				*username ? username : NULL,
+				*password ? password : NULL,
+				p->cfg.keepalive, 5,
+				p->cfg.tls.mode,
+				p->cfg.tls.psk, p->cfg.tls.identity,
+				p->cfg.tls.cafile, p->cfg.tls.certfile,
+				p->cfg.tls.keyfile, p->cfg.tls.keypass,
+				scfg, lprintf);
+		} else {
+			p->retval = MQTT_FAILURE;
+		}
+	}
+#endif
 
-	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(p->retval == MOSQ_ERR_SUCCESS));
+	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(p->retval == MQTT_SUCCESS));
 	JS_RESUMEREQUEST(cx, rc);
 
 	return JS_TRUE;
@@ -215,8 +295,13 @@ static JSBool js_publish(JSContext* cx, uintN argc, jsval *arglist)
 	if (js_argcIsInsufficient(cx, argc, 2))
 		return JS_FALSE;
 
+#ifdef USE_MOSQUITTO
 	if (p->handle == NULL)
 		return JS_TRUE;
+#else
+	if (p->client == NULL && p->local == NULL)
+		return JS_TRUE;
+#endif
 
 	uintN argn = 0;
 	if (argn < argc && JSVAL_IS_BOOLEAN(argv[argn])) {
@@ -236,6 +321,7 @@ static JSBool js_publish(JSContext* cx, uintN argc, jsval *arglist)
 	++argn;
 
 	rc = JS_SUSPENDREQUEST(cx);
+#ifdef USE_MOSQUITTO
 	p->retval = mosquitto_publish_v5(p->handle,
 	                                 /* mid: */ NULL,
 	                                 /* topic: */ topic,
@@ -244,8 +330,16 @@ static JSBool js_publish(JSContext* cx, uintN argc, jsval *arglist)
 	                                 qos,
 	                                 retain,
 	                                 /* properties */ NULL);
+#else
+	if (p->local) {
+		auto *broker = mqtt5::Broker::instance();
+		p->retval = broker ? broker->local_publish(p->local, topic, data, len, qos, retain) : MQTT_FAILURE;
+	} else {
+		p->retval = p->client->publish(topic, data, len, qos, retain);
+	}
+#endif
 
-	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(p->retval == MOSQ_ERR_SUCCESS));
+	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(p->retval == MQTT_SUCCESS));
 	free(data);
 	free(topic);
 	JS_RESUMEREQUEST(cx, rc);
@@ -270,8 +364,13 @@ static JSBool js_subscribe(JSContext* cx, uintN argc, jsval *arglist)
 	if (js_argcIsInsufficient(cx, argc, 1))
 		return JS_FALSE;
 
+#ifdef USE_MOSQUITTO
 	if (p->handle == NULL)
 		return JS_TRUE;
+#else
+	if (p->client == NULL && p->local == NULL)
+		return JS_TRUE;
+#endif
 
 	uintN argn = 0;
 	if (argn < argc && JSVAL_IS_NUMBER(argv[argn])) {
@@ -283,8 +382,17 @@ static JSBool js_subscribe(JSContext* cx, uintN argc, jsval *arglist)
 	++argn;
 
 	rc = JS_SUSPENDREQUEST(cx);
+#ifdef USE_MOSQUITTO
 	p->retval = mosquitto_subscribe(p->handle, /* msg-id: */ NULL, topic, qos);
-	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(p->retval == MOSQ_ERR_SUCCESS));
+#else
+	if (p->local) {
+		auto *broker = mqtt5::Broker::instance();
+		p->retval = broker ? broker->local_subscribe(p->local, topic, qos) : MQTT_FAILURE;
+	} else {
+		p->retval = p->client->subscribe(topic, qos);
+	}
+#endif
+	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(p->retval == MQTT_SUCCESS));
 	free(topic);
 	JS_RESUMEREQUEST(cx, rc);
 
@@ -293,21 +401,25 @@ static JSBool js_subscribe(JSContext* cx, uintN argc, jsval *arglist)
 
 static JSBool js_read(JSContext* cx, uintN argc, jsval *arglist)
 {
-	JSObject*                 obj = JS_THIS_OBJECT(cx, arglist);
-	jsval*                    argv = JS_ARGV(cx, arglist);
-	private_t*                p;
-	jsrefcount                rc;
-	int                       timeout = 0;
-	bool                      verbose = false;
-	struct mosquitto_message* msg;
+	JSObject*  obj = JS_THIS_OBJECT(cx, arglist);
+	jsval*     argv = JS_ARGV(cx, arglist);
+	private_t* p;
+	jsrefcount rc;
+	int        timeout = 0;
+	bool       verbose = false;
 
 	JS_SET_RVAL(cx, arglist, JSVAL_FALSE);
 
 	if ((p = (private_t*)js_GetClassPrivate(cx, obj, &js_mqtt_class)) == NULL)
 		return JS_FALSE;
 
+#ifdef USE_MOSQUITTO
 	if (p->handle == NULL)
 		return JS_TRUE;
+#else
+	if (p->client == NULL && p->local == NULL)
+		return JS_TRUE;
+#endif
 
 	uintN argn = 0;
 	if (argn < argc && JSVAL_IS_NUMBER(argv[argn])) {
@@ -320,6 +432,8 @@ static JSBool js_read(JSContext* cx, uintN argc, jsval *arglist)
 	}
 
 	rc = JS_SUSPENDREQUEST(cx);
+#ifdef USE_MOSQUITTO
+	struct mosquitto_message* msg;
 	msg = static_cast<mosquitto_message *>(msgQueueRead(&p->q, timeout));
 	if (msg != NULL) {
 		if (verbose) {
@@ -350,6 +464,57 @@ static JSBool js_read(JSContext* cx, uintN argc, jsval *arglist)
 		mosquitto_message_free_contents(msg);
 		free(msg);
 	}
+#else
+	mqtt5::ReceivedMessage local_rm;
+	mqtt5::ReceivedMessage *rm = NULL;
+	if (p->local) {
+		int remaining = timeout;
+		while (remaining >= 0) {
+			{
+				std::lock_guard<std::mutex> lock(*p->local_mutex);
+				if (!p->local_queue->empty()) {
+					local_rm = p->local_queue->front();
+					p->local_queue->pop_front();
+					rm = &local_rm;
+					break;
+				}
+			}
+			if (remaining <= 0) break;
+			int chunk = remaining > 10 ? 10 : remaining;
+			SLEEP(chunk);
+			remaining -= chunk;
+		}
+	} else {
+		rm = p->client->read(timeout);
+	}
+	if (rm != NULL) {
+		if (verbose) {
+			JSString* str = JS_NewStringCopyZ(cx, rm->topic.c_str());
+			obj = JS_NewObject(cx, NULL, NULL, obj);
+			if (obj != NULL) {
+				JS_DefineProperty(cx, obj, "topic"
+				                  , STRING_TO_JSVAL(str)
+				                  , NULL, NULL, JSPROP_ENUMERATE);
+				str = JS_NewStringCopyN(cx, reinterpret_cast<const char *>(rm->payload.data()), rm->payload.size());
+				JS_DefineProperty(cx, obj, "data"
+				                  , STRING_TO_JSVAL(str)
+				                  , NULL, NULL, JSPROP_ENUMERATE);
+				JS_DefineProperty(cx, obj, "mid", INT_TO_JSVAL(rm->mid)
+				                  , NULL, NULL, JSPROP_ENUMERATE);
+				JS_DefineProperty(cx, obj, "qos", INT_TO_JSVAL(rm->qos)
+				                  , NULL, NULL, JSPROP_ENUMERATE);
+				JS_DefineProperty(cx, obj, "retain", BOOLEAN_TO_JSVAL(rm->retain)
+				                  , NULL, NULL, JSPROP_ENUMERATE);
+
+				JS_SET_RVAL(cx, arglist, OBJECT_TO_JSVAL(obj));
+			}
+		} else {
+			JSString* str = JS_NewStringCopyN(cx, reinterpret_cast<const char *>(rm->payload.data()), rm->payload.size());
+			if (str != NULL)
+				JS_SET_RVAL(cx, arglist, STRING_TO_JSVAL(str));
+		}
+	}
+#endif
 	JS_RESUMEREQUEST(cx, rc);
 
 	return JS_TRUE;
@@ -506,17 +671,31 @@ static JSBool js_mqtt_get(JSContext* cx, JSObject* obj, jsid id, jsval *vp)
 			break;
 		case MQTT_PROP_ERROR_STR:
 			JS_RESUMEREQUEST(cx, rc);
+#ifdef USE_MOSQUITTO
 			if ((js_str = JS_NewStringCopyZ(cx, mosquitto_strerror(p->retval))) == NULL)
 				return JS_FALSE;
+#else
+			if (p->client)
+				js_str = JS_NewStringCopyZ(cx, p->client->error_str());
+			else
+				js_str = JS_NewStringCopyZ(cx, "No client");
+			if (js_str == NULL)
+				return JS_FALSE;
+#endif
 			*vp = STRING_TO_JSVAL(js_str);
 			rc = JS_SUSPENDREQUEST(cx);
 			break;
 		case MQTT_PROP_LIB:
 		{
-			char str[128];
 			JS_RESUMEREQUEST(cx, rc);
+#ifdef USE_MOSQUITTO
+			char str[128];
 			if ((js_str = JS_NewStringCopyZ(cx, mqtt_libver(str, sizeof str))) == NULL)
 				return JS_FALSE;
+#else
+			if ((js_str = JS_NewStringCopyZ(cx, "mqtt5-internal")) == NULL)
+				return JS_FALSE;
+#endif
 			*vp = STRING_TO_JSVAL(js_str);
 			rc = JS_SUSPENDREQUEST(cx);
 			break;
@@ -603,10 +782,28 @@ static JSBool js_mqtt_get(JSContext* cx, JSObject* obj, jsid id, jsval *vp)
 			rc = JS_SUSPENDREQUEST(cx);
 			break;
 		case MQTT_PROP_DATA_WAITING:
+#ifdef USE_MOSQUITTO
 			*vp = BOOLEAN_TO_JSVAL(INT_TO_BOOL(msgQueueReadLevel(&p->q)));
+#else
+			if (p->local) {
+				std::lock_guard<std::mutex> lock(*p->local_mutex);
+				*vp = BOOLEAN_TO_JSVAL(!p->local_queue->empty());
+			} else {
+				*vp = BOOLEAN_TO_JSVAL(p->client ? p->client->data_waiting() : false);
+			}
+#endif
 			break;
 		case MQTT_PROP_READ_LEVEL:
+#ifdef USE_MOSQUITTO
 			*vp = INT_TO_JSVAL(msgQueueReadLevel(&p->q));
+#else
+			if (p->local) {
+				std::lock_guard<std::mutex> lock(*p->local_mutex);
+				*vp = INT_TO_JSVAL((int)p->local_queue->size());
+			} else {
+				*vp = INT_TO_JSVAL(p->client ? p->client->read_level() : 0);
+			}
+#endif
 			break;
 	}
 
@@ -707,6 +904,27 @@ JSClass js_mqtt_class = {
 	, js_finalize_mqtt       /* finalize		*/
 };
 
+#ifndef USE_MOSQUITTO
+static void js_local_message_callback(void *cbdata, const char *topic,
+                                      const void *payload, size_t len)
+{
+	private_t* p = (private_t*)cbdata;
+	if (!p || !p->local_queue || !p->local_mutex)
+		return;
+	mqtt5::ReceivedMessage rm;
+	rm.topic = topic;
+	if (payload && len > 0)
+		rm.payload.assign(static_cast<const uint8_t *>(payload),
+		                  static_cast<const uint8_t *>(payload) + len);
+	rm.mid = 0;
+	rm.qos = 0;
+	rm.retain = false;
+	std::lock_guard<std::mutex> lock(*p->local_mutex);
+	p->local_queue->push_back(std::move(rm));
+}
+#endif
+
+#ifdef USE_MOSQUITTO
 static void mqtt_message_received(struct mosquitto* mosq, void* cbdata, const struct mosquitto_message* msg)
 {
 	private_t* p = (private_t*)cbdata;
@@ -717,6 +935,7 @@ static void mqtt_message_received(struct mosquitto* mosq, void* cbdata, const st
 			msgQueueWrite(&p->q, &m, sizeof m);
 	}
 }
+#endif
 
 static JSBool js_mqtt_constructor(JSContext* cx, uintN argc, jsval *arglist)
 {
@@ -744,8 +963,11 @@ static JSBool js_mqtt_constructor(JSContext* cx, uintN argc, jsval *arglist)
 		free(client_id);
 		return JS_FALSE;
 	}
-	msgQueueInit(&p->q, /* flags: */ 0);
 	p->cfg = scfg->mqtt;
+	p->retval = 0;
+
+#ifdef USE_MOSQUITTO
+	msgQueueInit(&p->q, /* flags: */ 0);
 	p->handle = mosquitto_new(client_id, /* clean_session: */ true, /* userdata: */ p);
 	free(client_id);
 	if (p->handle == NULL) {
@@ -765,6 +987,21 @@ static JSBool js_mqtt_constructor(JSContext* cx, uintN argc, jsval *arglist)
 		delete p;
 		return JS_FALSE;
 	}
+#else
+	p->local = NULL;
+	p->local_queue = NULL;
+	p->local_mutex = NULL;
+	if (!p->cfg.internal_broker || !mqtt5::Broker::instance())
+		p->client = new mqtt5::Client();
+	else
+		p->client = NULL;
+	free(client_id);
+	if (!JS_SetPrivate(cx, obj, p)) {
+		JS_ReportError(cx, "JS_SetPrivate failed");
+		delete p;
+		return JS_FALSE;
+	}
+#endif
 
 #ifdef BUILD_JSDOCS
 	js_DescribeSyncObject(cx, obj, "Class used for MQTT communications", 320);
@@ -787,5 +1024,3 @@ JSObject* js_CreateMQTTClass(JSContext* cx, JSObject* parent)
 	                    , NULL /* funcs, specified in constructor */
 	                    , NULL, NULL);
 }
-
-#endif // USE_MOSQUITTO

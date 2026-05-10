@@ -22,6 +22,7 @@
 #include <string.h>
 
 #include "mqtt.h"
+#include "mqtt_client.h"
 #include "startup.h"
 #include "xpdatetime.h"
 #include "date_str.h"
@@ -93,8 +94,9 @@ int mqtt_init(struct mqtt* mqtt, scfg_t* cfg, struct startup* startup)
 	mqtt->host = strdup(hostname);
 #ifdef USE_MOSQUITTO
 	return mosquitto_lib_init();
+#else
+	return MQTT_SUCCESS;
 #endif
-	return MQTT_FAILURE;
 }
 
 static char* format_topic(struct mqtt* mqtt, enum server_type type, enum topic_depth depth, char* str, size_t size, const char* sbuf)
@@ -165,6 +167,9 @@ static int mqtt_sub(struct mqtt* mqtt, const char* topic)
 	if (mqtt->handle != NULL && topic != NULL) {
 		return mosquitto_subscribe(mqtt->handle, /* msg-id: */ NULL, topic, mqtt->cfg->mqtt.subscribe_qos);
 	}
+#else
+	if (mqtt->handle != NULL && topic != NULL)
+		return mqtt5client_subscribe(mqtt->handle, topic, mqtt->cfg->mqtt.subscribe_qos);
 #endif
 	return MQTT_FAILURE;
 }
@@ -194,14 +199,25 @@ int mqtt_lputs(struct mqtt* mqtt, enum topic_depth depth, int level, const char*
 		return MQTT_SUCCESS;
 	if (mqtt->local) {
 		if (str != NULL) {
+			int  result;
 			char sub[128];
-			char payload[1024];
 			char timestamp[32];
 			time_to_isoDateTimeStr(time(NULL), xpTimeZone_local(), timestamp, sizeof(timestamp));
-			snprintf(payload, sizeof(payload), "%s\t%s", timestamp, str);
+			void *props = mqtt_props_new();
+			mqtt_props_add_string_pair(props, "time", timestamp);
 			mqtt_topic(mqtt, depth, sub, sizeof(sub), "log/%d", level);
-			return mqtt_internal_publish(mqtt, sub, payload, strlen(payload),
-			                             mqtt->cfg->mqtt.publish_qos, true);
+			result = mqtt_internal_publish(mqtt, sub, str, strlen(str),
+			                               mqtt->cfg->mqtt.publish_qos, true, props);
+			if (result == MQTT_SUCCESS) {
+				char lvl[32];
+				sprintf(lvl, "%d", level);
+				mqtt_props_add_string_pair(props, "level", lvl);
+				mqtt_topic(mqtt, depth, sub, sizeof(sub), "log");
+				result = mqtt_internal_publish(mqtt, sub, str, strlen(str),
+				                               mqtt->cfg->mqtt.publish_qos, true, props);
+			}
+			mqtt_props_free(props);
+			return result;
 		}
 		return MQTT_SUCCESS;
 	}
@@ -243,6 +259,28 @@ int mqtt_lputs(struct mqtt* mqtt, enum topic_depth depth, int level, const char*
 		mosquitto_property_free_all(&props);
 		return result;
 	}
+#else
+	if (mqtt->handle != NULL && str != NULL) {
+		int  result;
+		char sub[128];
+		char timestamp[32];
+		time_to_isoDateTimeStr(time(NULL), xpTimeZone_local(), timestamp, sizeof(timestamp));
+		void *props = mqtt_props_new();
+		mqtt_props_add_string_pair(props, "time", timestamp);
+		mqtt_topic(mqtt, depth, sub, sizeof(sub), "log/%d", level);
+		result = mqtt5client_publish(mqtt->handle, sub, str, strlen(str),
+		                                 mqtt->cfg->mqtt.publish_qos, true, props);
+		if (result == MQTT_SUCCESS) {
+			char lvl[32];
+			sprintf(lvl, "%d", level);
+			mqtt_props_add_string_pair(props, "level", lvl);
+			mqtt_topic(mqtt, depth, sub, sizeof(sub), "log");
+			result = mqtt5client_publish(mqtt->handle, sub, str, strlen(str),
+			                                 mqtt->cfg->mqtt.publish_qos, true, props);
+		}
+		mqtt_props_free(props);
+		return result;
+	}
 #endif
 	return MQTT_FAILURE;
 }
@@ -262,7 +300,7 @@ int mqtt_pub_strval(struct mqtt* mqtt, enum topic_depth depth, const char* key, 
 	mqtt_topic(mqtt, depth, sub, sizeof(sub), "%s", key);
 	if (mqtt->local)
 		return mqtt_internal_publish(mqtt, sub, str, (str == NULL) ? 0 : strlen(str),
-		                             mqtt->cfg->mqtt.publish_qos, true);
+		                             mqtt->cfg->mqtt.publish_qos, true, NULL);
 #ifdef USE_MOSQUITTO
 	if (mqtt->handle != NULL) {
 		return mosquitto_publish_v5(mqtt->handle,
@@ -274,6 +312,10 @@ int mqtt_pub_strval(struct mqtt* mqtt, enum topic_depth depth, const char* key, 
 		                            /* retain */ true,
 		                            /* properties */ NULL);
 	}
+#else
+	if (mqtt->handle != NULL)
+		return mqtt5client_publish(mqtt->handle, sub, str, (str == NULL) ? 0 : strlen(str),
+		                               mqtt->cfg->mqtt.publish_qos, true, NULL);
 #endif
 	return MQTT_FAILURE;
 }
@@ -303,7 +345,7 @@ static int pub_long_key(struct mqtt* mqtt, enum topic_depth depth, const char* k
 	mqtt_topic(mqtt, depth, sub, sizeof(sub), "%s", key);
 	if (mqtt->local)
 		return mqtt_internal_publish(mqtt, sub, str, (str == NULL) ? 0 : strlen(str),
-		                             mqtt->cfg->mqtt.publish_qos, retain);
+		                             mqtt->cfg->mqtt.publish_qos, retain, NULL);
 #ifdef USE_MOSQUITTO
 	if (mqtt->handle != NULL) {
 		return mosquitto_publish_v5(mqtt->handle,
@@ -315,6 +357,10 @@ static int pub_long_key(struct mqtt* mqtt, enum topic_depth depth, const char* k
 		                            /* retain */ retain,
 		                            /* properties */ NULL);
 	}
+#else
+	if (mqtt->handle != NULL)
+		return mqtt5client_publish(mqtt->handle, sub, str, (str == NULL) ? 0 : strlen(str),
+		                               mqtt->cfg->mqtt.publish_qos, retain, NULL);
 #endif
 	return MQTT_FAILURE;
 }
@@ -425,7 +471,7 @@ int mqtt_pub_uintval(struct mqtt* mqtt, enum topic_depth depth, const char* key,
 	mqtt_topic(mqtt, depth, sub, sizeof(sub), "%s", key);
 	if (mqtt->local)
 		return mqtt_internal_publish(mqtt, sub, str, strlen(str),
-		                             mqtt->cfg->mqtt.publish_qos, true);
+		                             mqtt->cfg->mqtt.publish_qos, true, NULL);
 #ifdef USE_MOSQUITTO
 	if (mqtt->handle != NULL) {
 		return mosquitto_publish_v5(mqtt->handle,
@@ -437,6 +483,10 @@ int mqtt_pub_uintval(struct mqtt* mqtt, enum topic_depth depth, const char* key,
 		                            /* retain */ true,
 		                            /* properties */ NULL);
 	}
+#else
+	if (mqtt->handle != NULL)
+		return mqtt5client_publish(mqtt->handle, sub, str, strlen(str),
+		                               mqtt->cfg->mqtt.publish_qos, true, NULL);
 #endif
 	return MQTT_FAILURE;
 }
@@ -451,7 +501,7 @@ int mqtt_pub_message(struct mqtt* mqtt, enum topic_depth depth, const char* key,
 	mqtt_topic(mqtt, depth, sub, sizeof(sub), "%s", key);
 	if (mqtt->local)
 		return mqtt_internal_publish(mqtt, sub, buf, len,
-		                             mqtt->cfg->mqtt.publish_qos, retain);
+		                             mqtt->cfg->mqtt.publish_qos, retain, NULL);
 #ifdef USE_MOSQUITTO
 	if (mqtt->handle != NULL) {
 		return mosquitto_publish_v5(mqtt->handle,
@@ -463,6 +513,10 @@ int mqtt_pub_message(struct mqtt* mqtt, enum topic_depth depth, const char* key,
 		                            /* retain */ retain,
 		                            /* properties */ NULL);
 	}
+#else
+	if (mqtt->handle != NULL)
+		return mqtt5client_publish(mqtt->handle, sub, buf, len,
+		                               mqtt->cfg->mqtt.publish_qos, retain, NULL);
 #endif
 	return MQTT_FAILURE;
 }
@@ -475,7 +529,8 @@ char* mqtt_libver(char* str, size_t size)
 	safe_snprintf(str, size, "mosquitto %d.%d.%d", major, minor, revision);
 	return str;
 #else
-	return NULL;
+	safe_snprintf(str, size, "mqtt5-internal");
+	return str;
 #endif
 }
 
@@ -491,19 +546,22 @@ int mqtt_open(struct mqtt* mqtt)
 	mqtt->handle = mosquitto_new(client_id, /* clean_session: */ true, /* userdata: */ mqtt);
 	return mqtt->handle == NULL ? MQTT_FAILURE : MQTT_SUCCESS;
 #else
-	return MQTT_FAILURE;
+	mqtt->handle = mqtt5client_open();
+	return mqtt->handle == NULL ? MQTT_FAILURE : MQTT_SUCCESS;
 #endif
 }
 
 void mqtt_close(struct mqtt* mqtt)
 {
-#ifdef USE_MOSQUITTO
 	if (mqtt->handle != NULL) {
+#ifdef USE_MOSQUITTO
 		mosquitto_destroy(mqtt->handle);
+#else
+		mqtt5client_close(mqtt->handle);
+#endif
 		mqtt->handle = NULL;
 		listFree(&mqtt->client_list);
 	}
-#endif
 	FREE_AND_NULL(mqtt->host);
 }
 
@@ -514,6 +572,29 @@ static int pw_callback(char* buf, int size, int rwflag, void* userdata)
 
 	strncpy(buf, mqtt->cfg->mqtt.tls.keypass, size);
 	return strlen(mqtt->cfg->mqtt.tls.keypass);
+}
+#else
+static int (*s_mqtt5client_lputs)(int level, const char *str);
+static pthread_mutex_t s_mqtt5client_lputs_mutex;
+static pthread_once_t s_mqtt5client_lputs_once = PTHREAD_ONCE_INIT;
+
+static void mqtt5client_lputs_mutex_init(void)
+{
+	pthread_mutex_init(&s_mqtt5client_lputs_mutex, NULL);
+}
+
+static int mqtt5client_lprintf(int level, const char *fmt, ...)
+{
+	va_list argptr;
+	char    sbuf[1024];
+
+	va_start(argptr, fmt);
+	vsnprintf(sbuf, sizeof(sbuf), fmt, argptr);
+	sbuf[sizeof(sbuf) - 1] = 0;
+	va_end(argptr);
+	if (s_mqtt5client_lputs != NULL)
+		return s_mqtt5client_lputs(level, sbuf);
+	return 0;
 }
 #endif
 
@@ -601,7 +682,44 @@ int mqtt_connect(struct mqtt* mqtt, const char* bind_address)
 	                              mqtt->cfg->mqtt.keepalive,
 	                              bind_address);
 #else
-	return MQTT_FAILURE;
+	{
+		int  ret;
+		char topic[128];
+		char value[128];
+		char* username = mqtt->cfg->mqtt.username;
+		char* password = mqtt->cfg->mqtt.password;
+		if (*username == '\0')
+			username = NULL;
+		if (*password == '\0')
+			password = NULL;
+		if (mqtt->cfg->mqtt.tls.mode == MQTT_TLS_SBBS) {
+			username = NULL;
+			password = mqtt->cfg->sys_pass;
+		}
+		SAFECOPY(value, "DISCONNECTED");
+		mqtt5client_set_will(mqtt->handle,
+		                        mqtt_topic(mqtt, TOPIC_SERVER_LEVEL, topic, sizeof(topic), NULL),
+		                        value, strlen(value), /* QOS: */ 2, /* retain: */ true);
+		pthread_once(&s_mqtt5client_lputs_once, mqtt5client_lputs_mutex_init);
+		pthread_mutex_lock(&s_mqtt5client_lputs_mutex);
+		s_mqtt5client_lputs = mqtt->lputs;
+		ret = mqtt5client_connect(mqtt->handle,
+		                              mqtt->cfg->mqtt.broker_addr,
+		                              mqtt->cfg->mqtt.broker_port,
+		                              NULL, username, password,
+		                              mqtt->cfg->mqtt.keepalive,
+		                              mqtt->cfg->mqtt.tls.mode,
+		                              mqtt->cfg->mqtt.tls.psk,
+		                              mqtt->cfg->mqtt.tls.identity,
+		                              mqtt->cfg->mqtt.tls.cafile,
+		                              mqtt->cfg->mqtt.tls.certfile,
+		                              mqtt->cfg->mqtt.tls.keyfile,
+		                              mqtt->cfg->mqtt.tls.keypass,
+		                              mqtt->cfg,
+		                              mqtt5client_lprintf);
+		pthread_mutex_unlock(&s_mqtt5client_lputs_mutex);
+		return ret;
+	}
 #endif
 }
 
@@ -613,9 +731,31 @@ int mqtt_disconnect(struct mqtt* mqtt)
 #ifdef USE_MOSQUITTO
 	return mosquitto_disconnect(mqtt->handle);
 #else
-	return MQTT_FAILURE;
+	mqtt->connected = false;
+	mqtt5client_disconnect(mqtt->handle);
+	return MQTT_SUCCESS;
 #endif
 }
+
+#ifndef USE_MOSQUITTO
+#include "threadwrap.h"
+
+static void mqtt5client_pump_thread(void *arg)
+{
+	struct mqtt* mqtt = (struct mqtt*)arg;
+	SetThreadName("mqtt-pump");
+	mqtt->pump_running = true;
+	while (mqtt->connected) {
+		struct mqtt5client_msg *msg;
+		mqtt5client_pump(mqtt->handle, 100);
+		while ((msg = mqtt5client_read(mqtt->handle)) != NULL) {
+			mqtt_dispatch_message(mqtt, msg->topic, msg->payload, msg->payload_len);
+			mqtt5client_read_free(msg);
+		}
+	}
+	mqtt->pump_running = false;
+}
+#endif
 
 int mqtt_thread_start(struct mqtt* mqtt)
 {
@@ -625,7 +765,9 @@ int mqtt_thread_start(struct mqtt* mqtt)
 #ifdef USE_MOSQUITTO
 	return mosquitto_loop_start(mqtt->handle);
 #else
-	return MQTT_FAILURE;
+	if (_beginthread(mqtt5client_pump_thread, 0, mqtt) == (uintptr_t)-1)
+		return MQTT_FAILURE;
+	return MQTT_SUCCESS;
 #endif
 }
 
@@ -637,7 +779,10 @@ int mqtt_thread_stop(struct mqtt* mqtt)
 #ifdef USE_MOSQUITTO
 	return mosquitto_loop_stop(mqtt->handle, /* force: */ false);
 #else
-	return MQTT_FAILURE;
+	mqtt->connected = false;
+	for (int i = 0; i < 50 && mqtt->pump_running; i++)
+		SLEEP(100);
+	return MQTT_SUCCESS;
 #endif
 }
 
@@ -655,39 +800,45 @@ static int lprintf(int (*lputs)(int level, const char* str), int level, const ch
 	return lputs(level, sbuf);
 }
 
+static void mqtt_connect_callback_common(struct mqtt* mqtt)
+{
+	char str[128];
+
+	if (mqtt->startup->type == SERVER_TERM) {
+		bbs_startup_t* bbs_startup = (bbs_startup_t*)mqtt->startup;
+		for (int i = bbs_startup->first_node; i <= bbs_startup->last_node; ++i) {
+			mqtt_subscribe(mqtt, TOPIC_BBS, str, sizeof(str), "node/%d/input", i);
+			mqtt_subscribe(mqtt, TOPIC_BBS, str, sizeof(str), "node/%d/set/#", i);
+			mqtt_subscribe(mqtt, TOPIC_BBS, str, sizeof(str), "node/%d/msg", i);
+		}
+		mqtt_subscribe(mqtt, TOPIC_BBS, str, sizeof(str), "exec");
+		mqtt_subscribe(mqtt, TOPIC_BBS, str, sizeof(str), "call");
+	}
+	mqtt_subscribe(mqtt, TOPIC_SERVER, str, sizeof(str), "recycle");
+	mqtt_subscribe(mqtt, TOPIC_HOST, str, sizeof(str), "recycle");
+	mqtt_subscribe(mqtt, TOPIC_SERVER, str, sizeof(str), "pause");
+	mqtt_subscribe(mqtt, TOPIC_HOST, str, sizeof(str), "pause");
+	mqtt_subscribe(mqtt, TOPIC_SERVER, str, sizeof(str), "resume");
+	mqtt_subscribe(mqtt, TOPIC_HOST, str, sizeof(str), "resume");
+	mqtt_subscribe(mqtt, TOPIC_SERVER, str, sizeof(str), "clear");
+	mqtt_subscribe(mqtt, TOPIC_HOST, str, sizeof(str), "clear");
+	if (mqtt->server_version != NULL) {
+		mqtt_server_startup(mqtt);
+		mqtt->server_version = NULL;
+	} else {
+		mqtt_server_state(mqtt, mqtt->server_state);
+	}
+}
+
 #ifdef USE_MOSQUITTO
 
 static void mqtt_connect_callback(struct mosquitto* mosq, void* cbdata, int rc)
 {
 	struct mqtt* mqtt = (struct mqtt*)cbdata;
-	char         str[128];
 
 	if (rc == MQTT_SUCCESS) {
 		mqtt->connected = true;
-		if (mqtt->startup->type == SERVER_TERM) {
-			bbs_startup_t* bbs_startup = (bbs_startup_t*)mqtt->startup;
-			for (int i = bbs_startup->first_node; i <= bbs_startup->last_node; ++i) {
-				mqtt_subscribe(mqtt, TOPIC_BBS, str, sizeof(str), "node/%d/input", i);
-				mqtt_subscribe(mqtt, TOPIC_BBS, str, sizeof(str), "node/%d/set/#", i);
-				mqtt_subscribe(mqtt, TOPIC_BBS, str, sizeof(str), "node/%d/msg", i);
-			}
-			mqtt_subscribe(mqtt, TOPIC_BBS, str, sizeof(str), "exec");
-			mqtt_subscribe(mqtt, TOPIC_BBS, str, sizeof(str), "call");
-		}
-		mqtt_subscribe(mqtt, TOPIC_SERVER, str, sizeof(str), "recycle");
-		mqtt_subscribe(mqtt, TOPIC_HOST, str, sizeof(str), "recycle");
-		mqtt_subscribe(mqtt, TOPIC_SERVER, str, sizeof(str), "pause");
-		mqtt_subscribe(mqtt, TOPIC_HOST, str, sizeof(str), "pause");
-		mqtt_subscribe(mqtt, TOPIC_SERVER, str, sizeof(str), "resume");
-		mqtt_subscribe(mqtt, TOPIC_HOST, str, sizeof(str), "resume");
-		mqtt_subscribe(mqtt, TOPIC_SERVER, str, sizeof(str), "clear");
-		mqtt_subscribe(mqtt, TOPIC_HOST, str, sizeof(str), "clear");
-		if (mqtt->server_version != NULL) {
-			mqtt_server_startup(mqtt);
-			mqtt->server_version = NULL;
-		} else {
-			mqtt_server_state(mqtt, mqtt->server_state);
-		}
+		mqtt_connect_callback_common(mqtt);
 	}
 	else
 		mqtt->connect_error = rc;
@@ -843,6 +994,7 @@ int mqtt_startup(struct mqtt* mqtt, scfg_t* cfg, struct startup* startup, const 
 	if (result != MQTT_SUCCESS) {
 		lprintf(lputs, LOG_ERR, "MQTT init failure: %d", result);
 	} else {
+		mqtt->lputs = lputs;
 		lprintf(lputs, LOG_DEBUG, "MQTT lib: %s", mqtt_libver(str, sizeof(str)));
 		result = mqtt_open(mqtt);
 		if (result != MQTT_SUCCESS) {
@@ -864,6 +1016,10 @@ int mqtt_startup(struct mqtt* mqtt, scfg_t* cfg, struct startup* startup, const 
 				result = mqtt_connect(mqtt, /* bind_address: */ NULL);
 				if (result == MQTT_SUCCESS) {
 					lprintf(lputs, LOG_DEBUG, "MQTT broker-connect (%s:%d) successful", cfg->mqtt.broker_addr, cfg->mqtt.broker_port);
+#ifndef USE_MOSQUITTO
+					mqtt->connected = true;
+					mqtt_connect_callback_common(mqtt);
+#endif
 					mqtt_pub_noval(mqtt, TOPIC_SERVER, "client");
 				} else {
 					mqtt_shutdown(mqtt);

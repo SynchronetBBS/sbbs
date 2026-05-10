@@ -85,6 +85,7 @@ set(PATCHES
 	${CMAKE_CURRENT_SOURCE_DIR}/cl-enable-chacha20.patch
 	${CMAKE_CURRENT_SOURCE_DIR}/cl-no-session-cache.patch
 	${CMAKE_CURRENT_SOURCE_DIR}/cl-iowait-pollhup.patch
+	${CMAKE_CURRENT_SOURCE_DIR}/cl-psk-only-client.patch
 )
 
 FetchContent_Declare(CryptLib

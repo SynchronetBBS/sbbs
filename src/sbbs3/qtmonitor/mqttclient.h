@@ -3,6 +3,7 @@
 
 #include <QObject>
 #include <QMqttClient>
+#include <QMqttMessage>
 #include <QSslSocket>
 #include <QSslConfiguration>
 #include <QSslPreSharedKeyAuthenticator>
@@ -67,16 +68,18 @@ private slots:
 	void onConnected();
 	void onDisconnected();
 	void onErrorChanged(QMqttClient::ClientError error);
-	void onMessageReceived(const QByteArray &payload, const QMqttTopicName &topic);
+	void onSubscriptionMessage(const QMqttMessage &msg);
 	void onPskRequired(QSslPreSharedKeyAuthenticator *auth);
 
 private:
 	void initClient();
 	void publish(const QString &topicSuffix, const QByteArray &payload);
 	QString topicPrefix() const;
-	void dispatchMessage(const QString &topic, const QString &text);
+	void dispatchMessage(const QString &topic, const QString &text,
+	                     const QHash<QString, QString> &userProps = {});
 	int parseLogLevel(const QString &level) const;
-	QPair<QString, QString> splitTsvPayload(const QString &text) const;
+	QPair<QString, QString> splitTsvPayload(const QString &text,
+	                                        const QHash<QString, QString> &userProps = {}) const;
 
 	QMqttClient *m_client;
 	QSslSocket *m_socket;

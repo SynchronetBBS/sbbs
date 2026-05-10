@@ -23,12 +23,15 @@ static int broker_lputs_adapter(void *cbdata, int level, const char *str)
 	auto *broker = mqtt5::Broker::instance();
 	if (broker) {
 		char topic[64];
-		char payload[1024];
 		char timestamp[32];
 		time_to_isoDateTimeStr(time(NULL), xpTimeZone_local(), timestamp, sizeof(timestamp));
-		snprintf(payload, sizeof(payload), "%s\t%s", timestamp, str);
+
+		mqtt5::Properties props;
+		props.add(mqtt5::PROP_USER_PROPERTY,
+		          mqtt5::PropertyValue::from_pair("time", timestamp));
+
 		snprintf(topic, sizeof(topic), "$SYS/broker/log/%d", level);
-		broker->publish_sys(topic, payload, strlen(payload));
+		broker->publish_sys(topic, str, strlen(str), &props);
 	}
 
 	s_broker_logging = false;
@@ -135,7 +138,8 @@ extern "C" int mqtt_internal_startup(struct mqtt *mqtt, scfg_t *cfg, struct star
 
 extern "C" int mqtt_internal_publish(struct mqtt *mqtt, const char *topic,
                                       const void *payload, size_t len,
-                                      int qos, bool retain)
+                                      int qos, bool retain,
+                                      const void *props)
 {
 	if (!mqtt || !mqtt->local)
 		return MQTT_FAILURE;
@@ -145,7 +149,8 @@ extern "C" int mqtt_internal_publish(struct mqtt *mqtt, const char *topic,
 		return MQTT_FAILURE;
 
 	return broker->local_publish(static_cast<mqtt5::LocalClient *>(mqtt->local),
-	                              topic, payload, len, qos, retain);
+	                              topic, payload, len, qos, retain,
+	                              static_cast<const mqtt5::Properties *>(props));
 }
 
 extern "C" int mqtt_internal_subscribe(struct mqtt *mqtt, const char *topic, int qos)
@@ -171,4 +176,22 @@ extern "C" void mqtt_internal_shutdown(struct mqtt *mqtt)
 		broker->deregister_local(static_cast<mqtt5::LocalClient *>(mqtt->local));
 	mqtt->local = nullptr;
 	mqtt->connected = false;
+}
+
+extern "C" void *mqtt_props_new(void)
+{
+	return new mqtt5::Properties();
+}
+
+extern "C" void mqtt_props_add_string_pair(void *props, const char *key, const char *val)
+{
+	if (props && key && val)
+		static_cast<mqtt5::Properties *>(props)->add(
+			mqtt5::PROP_USER_PROPERTY,
+			mqtt5::PropertyValue::from_pair(key, val));
+}
+
+extern "C" void mqtt_props_free(void *props)
+{
+	delete static_cast<mqtt5::Properties *>(props);
 }

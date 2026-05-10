@@ -1,4 +1,5 @@
 #include "mqttclient.h"
+#include <QMqttSubscription>
 #include <QMqttTopicFilter>
 #include <QSslConfiguration>
 #include <QSslCipher>
@@ -20,7 +21,6 @@ void MqttClient::initClient()
 	connect(m_client, &QMqttClient::connected, this, &MqttClient::onConnected);
 	connect(m_client, &QMqttClient::disconnected, this, &MqttClient::onDisconnected);
 	connect(m_client, &QMqttClient::errorChanged, this, &MqttClient::onErrorChanged);
-	connect(m_client, &QMqttClient::messageReceived, this, &MqttClient::onMessageReceived);
 }
 
 void MqttClient::configure(const QString &host, quint16 port,
@@ -191,9 +191,16 @@ void MqttClient::onConnected()
 		prefix + "/host/+/event/log/#",
 		prefix + "/host/+/login_attempts/#",
 	};
-	for (const auto &t : topics)
-		m_client->subscribe(QMqttTopicFilter(t));
-	m_client->subscribe(QMqttTopicFilter("$SYS/#"));
+	for (const auto &t : topics) {
+		auto *sub = m_client->subscribe(QMqttTopicFilter(t));
+		if (sub)
+			connect(sub, &QMqttSubscription::messageReceived,
+			        this, &MqttClient::onSubscriptionMessage);
+	}
+	auto *sysSub = m_client->subscribe(QMqttTopicFilter("$SYS/#"));
+	if (sysSub)
+		connect(sysSub, &QMqttSubscription::messageReceived,
+		        this, &MqttClient::onSubscriptionMessage);
 
 	emit connected();
 }
@@ -209,9 +216,13 @@ void MqttClient::onErrorChanged(QMqttClient::ClientError error)
 		emit errorOccurred(QStringLiteral("MQTT error: %1").arg(static_cast<int>(error)));
 }
 
-void MqttClient::onMessageReceived(const QByteArray &payload, const QMqttTopicName &topic)
+void MqttClient::onSubscriptionMessage(const QMqttMessage &msg)
 {
-	dispatchMessage(topic.name(), QString::fromUtf8(payload));
+	QHash<QString, QString> userProps;
+	const auto props = msg.publishProperties().userProperties();
+	for (const auto &p : props)
+		userProps.insert(p.name(), p.value());
+	dispatchMessage(msg.topic().name(), QString::fromUtf8(msg.payload()), userProps);
 }
 
 bool MqttClient::isConnected() const
@@ -244,7 +255,8 @@ void MqttClient::triggerCallout(const QString &hubId)  { publish("call", hubId.t
 void MqttClient::setNode(int n, const QString &prop, const QString &val) { publish(QStringLiteral("node/%1/set/%2").arg(n).arg(prop), val.toUtf8()); }
 void MqttClient::sendNodeMessage(int n, const QString &msg) { publish(QStringLiteral("node/%1/msg").arg(n), msg.toUtf8()); }
 
-void MqttClient::dispatchMessage(const QString &topic, const QString &text)
+void MqttClient::dispatchMessage(const QString &topic, const QString &text,
+                                  const QHash<QString, QString> &userProps)
 {
 	QStringList parts = topic.split('/');
 
@@ -255,7 +267,7 @@ void MqttClient::dispatchMessage(const QString &topic, const QString &text)
 	}
 	// $SYS/broker/log/{level}
 	if (parts.size() == 4 && parts[0] == "$SYS" && parts[1] == "broker" && parts[2] == "log") {
-		auto [timestamp, msg] = splitTsvPayload(text);
+		auto [timestamp, msg] = splitTsvPayload(text, userProps);
 		emit brokerLog(parseLogLevel(parts[3]), timestamp, msg);
 		return;
 	}
@@ -271,14 +283,14 @@ void MqttClient::dispatchMessage(const QString &topic, const QString &text)
 
 	// sbbs/{id}/host/{h}/server/{srv}/log/{level}
 	if (parts.size() >= 8 && parts[4] == "server" && parts[6] == "log") {
-		auto [timestamp, msg] = splitTsvPayload(text);
+		auto [timestamp, msg] = splitTsvPayload(text, userProps);
 		emit logMessage(host, parts[5], parseLogLevel(parts.last()), timestamp, msg);
 		return;
 	}
 
 	// sbbs/{id}/action/{type}/{detail...}
 	if (parts.size() >= 4 && parts[2] == "action") {
-		auto [timestamp, payload] = splitTsvPayload(text);
+		auto [timestamp, payload] = splitTsvPayload(text, userProps);
 		QString action = parts[3];
 		QString detail = QStringList(parts.mid(4)).join('/');
 		emit bbsAction(action, detail, timestamp, payload);
@@ -287,14 +299,14 @@ void MqttClient::dispatchMessage(const QString &topic, const QString &text)
 
 	// sbbs/{id}/host/{h}/event/log/{level}
 	if (parts.size() >= 7 && parts[4] == "event" && parts[5] == "log") {
-		auto [timestamp, msg] = splitTsvPayload(text);
+		auto [timestamp, msg] = splitTsvPayload(text, userProps);
 		emit eventLogMessage(host, parseLogLevel(parts.last()), timestamp, msg);
 		return;
 	}
 
 	// sbbs/{id}/log/{level}
 	if (parts.size() >= 4 && parts[2] == "log") {
-		auto [timestamp, msg] = splitTsvPayload(text);
+		auto [timestamp, msg] = splitTsvPayload(text, userProps);
 		emit logMessage(host, "bbs", parseLogLevel(parts.last()), timestamp, msg);
 		return;
 	}
@@ -391,8 +403,12 @@ int MqttClient::parseLogLevel(const QString &level) const
 	return map.value(level, 6);
 }
 
-QPair<QString, QString> MqttClient::splitTsvPayload(const QString &text) const
+QPair<QString, QString> MqttClient::splitTsvPayload(const QString &text,
+                                                     const QHash<QString, QString> &userProps) const
 {
+	auto it = userProps.constFind(QStringLiteral("time"));
+	if (it != userProps.constEnd())
+		return {it.value(), text};
 	int tab = text.indexOf('\t');
 	if (tab >= 0)
 		return {text.left(tab), text.mid(tab + 1)};

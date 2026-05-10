@@ -81,10 +81,12 @@ public:
 	void deregister_local(LocalClient *client);
 
 	int local_publish(LocalClient *client, const std::string &topic,
-	                  const void *payload, size_t len, int qos, bool retain);
+	                  const void *payload, size_t len, int qos, bool retain,
+	                  const Properties *props = nullptr);
 	int local_subscribe(LocalClient *client, const std::string &topic, int qos);
 
-	void publish_sys(const char *topic, const void *payload, size_t len);
+	void publish_sys(const char *topic, const void *payload, size_t len,
+	                 const Properties *props = nullptr);
 
 	static Broker *instance();
 

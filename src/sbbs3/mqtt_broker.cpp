@@ -230,6 +230,7 @@ void Broker::stop()
 	m_running = false;
 
 	if (m_listen_sock >= 0) {
+		shutdown(m_listen_sock, SHUT_RDWR);
 		closesocket(m_listen_sock);
 		m_listen_sock = -1;
 	}
@@ -273,7 +274,8 @@ LocalClient *Broker::register_local(const std::string &client_id,
 	return ptr;
 }
 
-void Broker::publish_sys(const char *topic, const void *payload, size_t len)
+void Broker::publish_sys(const char *topic, const void *payload, size_t len,
+                         const Properties *props)
 {
 	auto msg = std::make_shared<Message>();
 	msg->type = PUBLISH;
@@ -282,6 +284,8 @@ void Broker::publish_sys(const char *topic, const void *payload, size_t len)
 	if (payload && len > 0)
 		msg->payload.assign(static_cast<const uint8_t *>(payload),
 		                    static_cast<const uint8_t *>(payload) + len);
+	if (props)
+		msg->props = *props;
 	msg->created_at = time(nullptr);
 
 	std::lock_guard<std::recursive_mutex> lock(m_mutex);
@@ -293,18 +297,25 @@ void Broker::publish_sys(const char *topic, const void *payload, size_t len)
 
 void Broker::deregister_local(LocalClient *client)
 {
-	std::lock_guard<std::recursive_mutex> lock(m_mutex);
-	m_topics.unsubscribe_all(client->client_id);
-	for (auto it = m_local_clients.begin(); it != m_local_clients.end(); ++it) {
-		if (it->get() == client) {
-			m_local_clients.erase(it);
-			break;
+	bool last = false;
+	{
+		std::lock_guard<std::recursive_mutex> lock(m_mutex);
+		m_topics.unsubscribe_all(client->client_id);
+		for (auto it = m_local_clients.begin(); it != m_local_clients.end(); ++it) {
+			if (it->get() == client) {
+				m_local_clients.erase(it);
+				break;
+			}
 		}
+		last = m_local_clients.empty();
 	}
+	if (last)
+		stop();
 }
 
 int Broker::local_publish(LocalClient *client, const std::string &topic,
-                          const void *payload, size_t len, int qos, bool retain)
+                          const void *payload, size_t len, int qos, bool retain,
+                          const Properties *props)
 {
 	auto msg = std::make_shared<Message>();
 	msg->type = PUBLISH;
@@ -312,6 +323,8 @@ int Broker::local_publish(LocalClient *client, const std::string &topic,
 	msg->topic = topic;
 	if (payload && len > 0)
 		msg->payload.assign(static_cast<const uint8_t *>(payload), static_cast<const uint8_t *>(payload) + len);
+	if (props)
+		msg->props = *props;
 	msg->created_at = time(nullptr);
 
 	std::lock_guard<std::recursive_mutex> lock(m_mutex);
@@ -609,7 +622,7 @@ void Broker::broker_thread()
 				if (session.connected && session.keep_alive > 0) {
 					time_t now = time(nullptr);
 					if (now - session.last_activity > (time_t)(session.keep_alive * 3 / 2)) {
-						log(LOG_NOTICE, "MQTT broker: keep-alive timeout: %s", id.c_str());
+						log(LOG_NOTICE, "MQTT broker: keep-alive timeout: %s", session.client_id.c_str());
 						teardown_network(session);
 					}
 				}
@@ -676,11 +689,16 @@ void Broker::accept_connection(int sock)
 	}
 
 	for (auto it = m_psk_table.begin(); it != m_psk_table.end(); ++it) {
-		if (cryptSetAttributeString(tls_sess, CRYPT_SESSINFO_USERNAME,
-		                            it->first.c_str(), it->first.size()) == CRYPT_OK)
+		int psk_ret = cryptSetAttributeString(tls_sess, CRYPT_SESSINFO_USERNAME,
+		                            it->first.c_str(), it->first.size());
+		if (psk_ret == CRYPT_OK)
 			cryptSetAttributeString(tls_sess, CRYPT_SESSINFO_PASSWORD,
 			                        it->second.c_str(), it->second.size());
+		else
+			log(LOG_WARNING, "MQTT broker: failed to add PSK identity '%s': %d",
+			    it->first.c_str(), psk_ret);
 	}
+	log(LOG_DEBUG, "MQTT broker: added %zu PSK identities to TLS session", m_psk_table.size());
 
 	ret = add_private_key(m_cfg, broker_lprintf, tls_sess);
 	if (ret != CRYPT_OK) {
@@ -731,6 +749,7 @@ void Broker::accept_connection(int sock)
 	std::string temp_id = "pending-" + std::to_string(sock);
 	std::lock_guard<std::recursive_mutex> lock(m_mutex);
 	auto &session = m_sessions[temp_id];
+	session.client_id = temp_id;
 	session.socket = sock;
 	session.tls_sess = tls_sess;
 	session.tls_psk_id = psk_id;
@@ -838,12 +857,14 @@ void Broker::handle_connect(NetworkSession &session, const uint8_t *data, size_t
 
 	if (session.tls_psk_id.empty()) {
 		if (!cd.has_username() || !cd.has_password()) {
+			log(LOG_WARNING, "MQTT broker: auth rejected: no username/password (non-PSK connection)");
 			Properties props;
 			send_to_network(session, build_connack(false, 0x86, props));
 			teardown_network(session);
 			return;
 		}
 		if (!authenticate_user(cd.username, cd.password)) {
+			log(LOG_WARNING, "MQTT broker: auth rejected: invalid credentials for '%s'", cd.username.c_str());
 			Properties props;
 			send_to_network(session, build_connack(false, 0x86, props));
 			teardown_network(session);
@@ -851,6 +872,7 @@ void Broker::handle_connect(NetworkSession &session, const uint8_t *data, size_t
 		}
 	} else {
 		if (!cd.has_password() || !authenticate_psk(session.tls_psk_id, cd.password)) {
+			log(LOG_WARNING, "MQTT broker: auth rejected: PSK auth failed for '%s'", session.tls_psk_id.c_str());
 			Properties props;
 			send_to_network(session, build_connack(false, 0x86, props));
 			teardown_network(session);

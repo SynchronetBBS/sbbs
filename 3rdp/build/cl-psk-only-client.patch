@@ -1,0 +1,17 @@
+--- ./session/tls_cli.c.orig	2026-05-10 15:18:15.439432000 -0400
++++ ./session/tls_cli.c	2026-05-10 15:18:34.671618000 -0400
+@@ -217,6 +217,14 @@
+ 			continue;
+ 			}
+ 
++		/* If we're using PSK, skip non-PSK suites so the server is forced
++		   to negotiate PSK (mutual authentication via shared key) */
++		if( !( suiteFlags & CIPHERSUITE_FLAG_PSK ) && usePSK )
++			{
++			suiteIndex++;
++			continue;
++			}
++
+ 		/* If the keyex algorithm for this suite isn't enabled for this 
+ 		   build of cryptlib, skip all suites that use it.  We have to 
+ 		   explicitly exclude the special case where there's no keyex 

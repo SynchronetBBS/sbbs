@@ -78,6 +78,7 @@ OBJS	=		$(LOAD_CFG_OBJS) \
 			$(MTOBJODIR)/mqtt_topic$(OFILE)\
 			$(MTOBJODIR)/mqtt_broker$(OFILE)\
 			$(MTOBJODIR)/mqtt_broker_glue$(OFILE)\
+			$(MTOBJODIR)/mqtt_client$(OFILE)\
 			$(MTOBJODIR)/netmail$(OFILE)\
 			$(MTOBJODIR)/newuser$(OFILE)\
 			$(MTOBJODIR)/pack_qwk$(OFILE)\

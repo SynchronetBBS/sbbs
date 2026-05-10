@@ -60,6 +60,8 @@ struct mqtt {
 	/* Empty string = clear all (legacy). Set by the clear-topic handler, consumed and */
 	/* reset to empty by the server's accept loop. */
 	char clear_attempts_ip[INET6_ADDRSTRLEN];
+	bool pump_running;
+	int (*lputs)(int level, const char* str);
 };
 
 enum topic_depth {
@@ -135,9 +137,15 @@ DLLEXPORT void mqtt_dispatch_message(struct mqtt*, const char* topic, const void
 DLLEXPORT int mqtt_internal_startup(struct mqtt*, scfg_t*, struct startup*, const char* version,
                                      int (*lputs)(int level, const char* str));
 DLLEXPORT int mqtt_internal_publish(struct mqtt*, const char* topic,
-                                     const void* payload, size_t len, int qos, bool retain);
+                                     const void* payload, size_t len, int qos, bool retain,
+                                     const void* props);
 DLLEXPORT int mqtt_internal_subscribe(struct mqtt*, const char* topic, int qos);
 DLLEXPORT void mqtt_internal_shutdown(struct mqtt*);
+
+/* MQTT 5.0 user property helpers (opaque Properties* handle) */
+DLLEXPORT void* mqtt_props_new(void);
+DLLEXPORT void  mqtt_props_add_string_pair(void* props, const char* key, const char* val);
+DLLEXPORT void  mqtt_props_free(void* props);
 
 #ifdef __cplusplus
 }

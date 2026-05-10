@@ -322,8 +322,14 @@ void mqtt_cfg()
 				;
 				i = cfg.mqtt.tls.mode;
 				i = uifc.list(WIN_MID | WIN_SAV, 0, 0, 0, &i, 0, "Encryption via TLS", mqttTlsMode);
-				if (i >= 0)
+				if (i >= 0) {
 					cfg.mqtt.tls.mode = i;
+					if (i == MQTT_TLS_SBBS) {
+						if (cfg.mqtt.broker_port == IPPORT_MQTT)
+							cfg.mqtt.broker_port = 8883;
+						cfg.mqtt.protocol_version = 5;
+					}
+				}
 				break;
 			case 10:
 				uifc.helpbuf =
