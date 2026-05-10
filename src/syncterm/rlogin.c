@@ -89,28 +89,6 @@ rlogin_tx_parse_cb(const void *inbuf, size_t inlen, size_t *olen)
 	return ret;
 }
 
-/* Returns 1 when the inline read pointer has caught up to the TCP
- * urgent point — all bytes preceding the urgent ptr have been
- * consumed.  We run with SO_OOBINLINE *off* (Winsock2's inline-OOB +
- * SIOCATMARK semantics are broken), so the OOB byte itself lives in a
- * separate mailbox readable via recv(MSG_OOB); SIOCATMARK is the
- * signal that the inline stream has drained to that boundary, and
- * we may now consume the OOB byte without leapfrogging in-flight
- * inline data preceding it (which matters for RFC 1282 mode-switch
- * bytes 0x10/0x20). */
-static int
-rlogin_at_oob_mark(SOCKET sock)
-{
-#ifdef _WIN32
-	u_long atmark = 0;
-#else
-	int atmark = 0;
-#endif
-	if (ioctlsocket(sock, SIOCATMARK, &atmark) != 0)
-		return 0;
-	return atmark ? 1 : 0;
-}
-
 /* Dispatch for RFC 1282 OOB control bytes.  Only 0x80 is implemented;
  * the others are reserved stubs so new control bytes can be added
  * without touching the detection path in rlogin_input_thread. */
@@ -217,10 +195,9 @@ rlogin_input_thread(void *args)
 		 * exceptfds for an RFC 1282 urgent/OOB notification.
 		 * socket_check() doesn't expose exceptfds and has many
 		 * out-of-tree consumers we can't touch, so we roll our own
-		 * here.  Once an OOB has been detected we stop watching
-		 * exceptfds — Winsock and POSIX both keep firing it for as
-		 * long as urgent is pending, which would busy-loop until the
-		 * inline stream drained to the mark. */
+		 * here.  Once urgent has been signaled exceptfds keeps firing
+		 * until we consume the OOB byte, so the oob_pending latch
+		 * keeps us from re-arming on every spin. */
 		bool data_avail = false;
 		fd_set rd_set, ex_set;
 		struct timeval tv;
@@ -243,29 +220,40 @@ rlogin_input_thread(void *args)
 				oob_pending = true;
 		}
 
-		/* RFC 1282 OOB byte: when we've drained inline up to the
-		 * urgent point, pull the urgent byte from its separate
-		 * mailbox via MSG_OOB and dispatch it.  Mode-switch bytes
-		 * (0x10 / 0x20) take effect on the data following the urgent
-		 * ptr, so any pre-mark inline bytes must be processed in the
-		 * old mode first. */
-		if (oob_pending && rlogin_at_oob_mark(rlogin_sock)) {
-			uint8_t ctl;
-			int r = recv(rlogin_sock, (char *)&ctl, 1, MSG_OOB);
-			oob_pending = false;
-			if (r == 1) {
-				rlogin_handle_control(ctl);
-				continue;
-			}
-			if (r <= 0)
-				break;
-		}
-
 		if (data_avail && bufsz < BUFFER_SIZE) {
 			rd = recv(rlogin_sock, conn_api.rd_buf + bufsz, conn_api.rd_buf_size - bufsz, 0);
-			if (rd <= 0)
+			if (rd > 0) {
+				bufsz += rd;
+			}
+			else if (rd == 0 && oob_pending) {
+				/* Linux/BSD pseudo-EOF at the urgent mark: with
+				 * SO_OOBINLINE off, the inline read won't cross
+				 * the urgent ptr, so when the read pointer reaches
+				 * it and there are no more pre-mark bytes recv()
+				 * returns 0 even though the connection is alive.
+				 * Combined with exceptfds having fired (oob_pending)
+				 * this is the at-mark signal — pull the urgent byte
+				 * from its mailbox and dispatch.  Mode-switch bytes
+				 * (0x10 / 0x20) take effect on data following the
+				 * urgent ptr, which the gate ensures.
+				 *
+				 * On Win32 recv() at the mark hasn't been confirmed
+				 * to return 0 the same way, so this gate may simply
+				 * never fire there; that's still better than the old
+				 * SIOCATMARK-based gate, which always declared at-mark
+				 * (broken polarity) and tried to recv(MSG_OOB) on a
+				 * possibly-empty queue. */
+				uint8_t ctl;
+				int r = recv(rlogin_sock, (char *)&ctl, 1, MSG_OOB);
+				oob_pending = false;
+				if (r == 1)
+					rlogin_handle_control(ctl);
+			}
+			else {
+				/* recv() <= 0 with no urgent pending — the peer
+				 * really did close (or the socket erred out). */
 				break;
-			bufsz += rd;
+			}
 		}
 		if (bufsz) {
 			assert_pthread_mutex_lock(&(conn_inbuf.mutex));
