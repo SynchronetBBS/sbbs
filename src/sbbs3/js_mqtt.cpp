@@ -645,7 +645,8 @@ static jsSyncPropertySpec js_mqtt_properties[] = {
 static jsSyncMethodSpec js_mqtt_functions[] = {
 	{"connect",     js_connect,     0,  JSTYPE_BOOLEAN
 	 , JSDOCSTR("[<i>string</i> broker_address] [,<i>number</i> broker_port] [,<i>string</i> username] [,<i>string</i> password]")
-	 , JSDOCSTR("Connect to an MQTT broker, by default (i.e. no arguments provided), the broker configured in SCFG->Networks->MQTT")
+	 , JSDOCSTR("Connect to an MQTT broker, by default (i.e. no arguments provided), the broker configured in SCFG->Networks->MQTT "
+		 "or the broker represented by the <tt>broker_addr</tt> and <tt>broker_port</tt> properties")
 	 , 320},
 	{"disconnect",  js_disconnect,  0,  JSTYPE_VOID
 	 , JSDOCSTR("")
