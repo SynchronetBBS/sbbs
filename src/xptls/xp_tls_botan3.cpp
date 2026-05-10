@@ -26,6 +26,14 @@
  * also preserves — BBSes commonly serve self-signed certs.
  */
 
+/* sockwrap.h pulls in <windows.h> on Win32, which #defines `max` and
+ * `min` as macros and breaks `std::chrono::seconds::max()` in
+ * <botan/tls_session.h>.  NOMINMAX has to be set before that include
+ * chain runs. */
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
+
 #include <cerrno>
 #include <cstdarg>
 #include <cstdio>
