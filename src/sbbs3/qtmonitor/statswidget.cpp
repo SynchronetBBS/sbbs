@@ -7,23 +7,15 @@
 StatsWidget::StatsWidget(bool dark, QWidget *parent)
 	: QWidget(parent), m_dark(dark)
 {
-	auto *layout = new QVBoxLayout(this);
+	auto *layout = new QGridLayout(this);
 	layout->setContentsMargins(4, 4, 4, 4);
 
 	QFont valueFont("Monospace", 10);
 	valueFont.setStyleHint(QFont::Monospace);
 
 	struct Group { const char *name; QVector<QPair<QString, QString>> fields; };
-	QVector<Group> groups = {
-		{"Today", {{"logons","Logons"}, {"timeon","Time On"}, {"email","Email"},
-		           {"feedback","Feedback"}, {"newusers","New Users"}, {"posts","Posts"}}},
-		{"Total", {{"tlogons","Logons"}, {"ttimeon","Time On"}, {"temail","Email"},
-		           {"tfeedback","Feedback"}, {"tusers","Users"}}},
-		{"Uploads Today", {{"ulfiles","Files"}, {"ulbytes","Bytes"}}},
-		{"Downloads Today", {{"dlfiles","Files"}, {"dlbytes","Bytes"}}},
-	};
 
-	for (auto &g : groups) {
+	auto makeGroup = [&](const Group &g) {
 		auto *group = new QGroupBox(g.name);
 		auto *grid = new QGridLayout(group);
 		for (int row = 0; row < g.fields.size(); ++row) {
@@ -35,9 +27,17 @@ StatsWidget::StatsWidget(bool dark, QWidget *parent)
 			grid->addWidget(val, row, 1);
 			m_labels[g.fields[row].first] = val;
 		}
-		layout->addWidget(group);
-	}
-	layout->addStretch();
+		return group;
+	};
+
+	layout->addWidget(makeGroup({"Today", {{"logons","Logons"}, {"timeon","Time On"}, {"email","Email"},
+	                                        {"feedback","Feedback"}, {"newusers","New Users"}, {"posts","Posts"}}}), 0, 0);
+	auto *totalGroup = makeGroup({"Total", {{"tlogons","Logons"}, {"ttimeon","Time On"}, {"temail","Email"},
+	                                        {"tfeedback","Feedback"}, {"tusers","Users"}}});
+	layout->addWidget(totalGroup, 0, 1, Qt::AlignTop);
+	layout->addWidget(makeGroup({"Uploads Today", {{"ulfiles","Files"}, {"ulbytes","Bytes"}}}), 1, 0);
+	layout->addWidget(makeGroup({"Downloads Today", {{"dlfiles","Files"}, {"dlbytes","Bytes"}}}), 1, 1);
+	layout->setRowStretch(2, 1);
 	setDark(m_dark);
 }
 
