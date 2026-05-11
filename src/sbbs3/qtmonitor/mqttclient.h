@@ -39,6 +39,7 @@ public:
 	void triggerCallout(const QString &hubId);
 	void setNode(int nodeNum, const QString &prop, const QString &value);
 	void sendNodeMessage(int nodeNum, const QString &message);
+	void setLogLevel(const QString &key, int maxLevel);
 
 	bool isConnected() const;
 	QString bbsId() const { return m_bbsId; }
@@ -75,8 +76,10 @@ private slots:
 
 private:
 	void initClient();
+	void subscribeOne(const QString &filter);
 	void publish(const QString &topicSuffix, const QByteArray &payload);
 	QString topicPrefix() const;
+	QString logTopicBase(const QString &key) const;
 	void dispatchMessage(const QString &topic, const QString &text,
 	                     const QHash<QString, QString> &userProps = {});
 	int parseLogLevel(const QString &level) const;
@@ -97,6 +100,7 @@ private:
 	QString m_certFile;
 	QString m_keyFile;
 	QList<QSslError> m_ignoredSslErrors;
+	QHash<QString, int> m_logLevels;
 };
 
 #endif

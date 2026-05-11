@@ -111,7 +111,14 @@ void MainWindow::setupDocks()
 	QDockWidget *firstLogDock = nullptr;
 	for (const auto &server : Servers) {
 		QString label = ServerLabels.value(server);
+		int savedLevel = m_settings.value("logLevel/" + server, 6).toInt();
 		auto *log = new LogWidget(label, server);
+		log->setLevel(savedLevel);
+		m_mqtt->setLogLevel(server, savedLevel);
+		connect(log, &LogWidget::levelChanged, this, [this](const QString &srv, int level) {
+			m_mqtt->setLogLevel(srv, level);
+			m_settings.setValue("logLevel/" + srv, level);
+		});
 		connect(log, &LogWidget::recycleServer, this, [this](const QString &srv) { forEachHost([this, srv](const QString &h) { m_mqtt->recycleServer(h, srv); }); });
 		connect(log, &LogWidget::pauseServer, this, [this](const QString &srv) { forEachHost([this, srv](const QString &h) { m_mqtt->pauseServer(h, srv); }); });
 		connect(log, &LogWidget::resumeServer, this, [this](const QString &srv) { forEachHost([this, srv](const QString &h) { m_mqtt->resumeServer(h, srv); }); });
@@ -124,6 +131,10 @@ void MainWindow::setupDocks()
 	}
 
 	auto *bbsLog = new LogWidget("BBS", "bbs", "System");
+	bbsLog->setLevel(m_settings.value("logLevel/bbs", 6).toInt());
+	connect(bbsLog, &LogWidget::levelChanged, this, [this](const QString &srv, int level) {
+		m_settings.setValue("logLevel/" + srv, level);
+	});
 	connect(bbsLog, &LogWidget::recycleServer, this, [this] { forEachHost([this](const QString &h) { m_mqtt->recycleHost(h); }); });
 	connect(bbsLog, &LogWidget::pauseServer, this, [this] { forEachHost([this](const QString &h) { m_mqtt->pauseHost(h); }); });
 	connect(bbsLog, &LogWidget::resumeServer, this, [this] { forEachHost([this](const QString &h) { m_mqtt->resumeHost(h); }); });
@@ -133,7 +144,14 @@ void MainWindow::setupDocks()
 	addDockWidget(Qt::BottomDockWidgetArea, bbsDock);
 	if (firstLogDock) tabifyDockWidget(firstLogDock, bbsDock);
 
-	auto *eventsLog = new LogWidget("Events");
+	auto *eventsLog = new LogWidget("Events", "events");
+	int eventsLevel = m_settings.value("logLevel/events", 6).toInt();
+	eventsLog->setLevel(eventsLevel);
+	m_mqtt->setLogLevel("events", eventsLevel);
+	connect(eventsLog, &LogWidget::levelChanged, this, [this](const QString &srv, int level) {
+		m_mqtt->setLogLevel(srv, level);
+		m_settings.setValue("logLevel/" + srv, level);
+	});
 	m_logPanes["events"] = eventsLog;
 	auto *eventsDock = makeDock("Events", eventsLog);
 	m_logDocks["events"] = eventsDock;
@@ -376,7 +394,14 @@ void MainWindow::connectMqttSignals()
 			return;
 		if (m_logPanes.contains("broker"))
 			return;
-		auto *brokerLog = new LogWidget("Broker");
+		auto *brokerLog = new LogWidget("Broker", "broker");
+		int brokerLevel = m_settings.value("logLevel/broker", 6).toInt();
+		brokerLog->setLevel(brokerLevel);
+		m_mqtt->setLogLevel("broker", brokerLevel);
+		connect(brokerLog, &LogWidget::levelChanged, this, [this](const QString &srv, int level) {
+			m_mqtt->setLogLevel(srv, level);
+			m_settings.setValue("logLevel/" + srv, level);
+		});
 		m_logPanes["broker"] = brokerLog;
 		auto *brokerDock = makeDock("Broker", brokerLog);
 		m_logDocks["broker"] = brokerDock;

@@ -30,7 +30,7 @@ private:
 
 LogWidget::LogWidget(const QString &title, const QString &serverId,
                      const QString &controlLabel, bool dark, QWidget *parent)
-	: QWidget(parent), m_dark(dark)
+	: QWidget(parent), m_dark(dark), m_serverId(serverId)
 {
 	auto *layout = new QVBoxLayout(this);
 	layout->setContentsMargins(2, 2, 2, 2);
@@ -53,7 +53,10 @@ LogWidget::LogWidget(const QString &title, const QString &serverId,
 	m_levelCombo = new QComboBox;
 	m_levelCombo->addItems(LogLevelNames);
 	m_levelCombo->setCurrentIndex(m_minLevel);
-	connect(m_levelCombo, &QComboBox::currentIndexChanged, this, [this](int i) { m_minLevel = i; });
+	connect(m_levelCombo, &QComboBox::currentIndexChanged, this, [this](int i) {
+		m_minLevel = i;
+		emit levelChanged(m_serverId, i);
+	});
 	toolbar->addWidget(m_levelCombo);
 
 	m_pauseBtn = new QPushButton("Pause");
@@ -115,6 +118,11 @@ LogWidget::LogWidget(const QString &title, const QString &serverId,
 	m_text->setFont(font);
 	setDark(m_dark);
 	layout->addWidget(m_text);
+}
+
+void LogWidget::setLevel(int level)
+{
+	m_levelCombo->setCurrentIndex(qBound(0, level, 7));
 }
 
 void LogWidget::appendLog(int level, const QString &timestamp, const QString &text)

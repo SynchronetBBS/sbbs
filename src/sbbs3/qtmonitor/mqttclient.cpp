@@ -175,12 +175,18 @@ void MqttClient::onPskRequired(QSslPreSharedKeyAuthenticator *auth)
 	auth->setPreSharedKey(m_pskKey);
 }
 
+void MqttClient::subscribeOne(const QString &filter)
+{
+	auto *sub = m_client->subscribe(QMqttTopicFilter(filter));
+	if (sub)
+		connect(sub, &QMqttSubscription::messageReceived,
+		        this, &MqttClient::onSubscriptionMessage);
+}
+
 void MqttClient::onConnected()
 {
 	QString prefix = topicPrefix();
 	const QStringList topics = {
-		prefix + "/host/+/server/+/log/#",
-		prefix + "/log/#",
 		prefix + "/node/#",
 		prefix + "/host/+/server/+/client/action/#",
 		prefix + "/host/+/server/+/client",
@@ -190,21 +196,19 @@ void MqttClient::onConnected()
 		prefix + "/host/+/server/+/highwater",
 		prefix + "/host/+/server/+/error_count",
 		prefix + "/action/#",
-		prefix + "/host/+/event/log/#",
 		prefix + "/host/+/login_attempts/#",
 		prefix + "/host/+/server/+/max_concurrent/#",
 		prefix,
 	};
-	for (const auto &t : topics) {
-		auto *sub = m_client->subscribe(QMqttTopicFilter(t));
-		if (sub)
-			connect(sub, &QMqttSubscription::messageReceived,
-			        this, &MqttClient::onSubscriptionMessage);
+	for (const auto &t : topics)
+		subscribeOne(t);
+	subscribeOne("$SYS/broker/version");
+
+	for (auto it = m_logLevels.constBegin(); it != m_logLevels.constEnd(); ++it) {
+		QString base = logTopicBase(it.key());
+		for (int lvl = 0; lvl <= it.value(); ++lvl)
+			subscribeOne(base + QString::number(lvl));
 	}
-	auto *sysSub = m_client->subscribe(QMqttTopicFilter("$SYS/#"));
-	if (sysSub)
-		connect(sysSub, &QMqttSubscription::messageReceived,
-		        this, &MqttClient::onSubscriptionMessage);
 
 	QString clientListFilter = prefix + "/host/+/server/+/client/list";
 	auto *clientListSub = m_client->subscribe(QMqttTopicFilter(clientListFilter));
@@ -218,6 +222,32 @@ void MqttClient::onConnected()
 	}
 
 	emit connected();
+}
+
+void MqttClient::setLogLevel(const QString &key, int maxLevel)
+{
+	maxLevel = qBound(0, maxLevel, 7);
+	int old = m_logLevels.value(key, -1);
+	m_logLevels[key] = maxLevel;
+	if (!m_client || m_client->state() != QMqttClient::Connected || old == maxLevel)
+		return;
+	QString base = logTopicBase(key);
+	if (maxLevel > old) {
+		for (int lvl = old + 1; lvl <= maxLevel; ++lvl)
+			subscribeOne(base + QString::number(lvl));
+	} else {
+		for (int lvl = maxLevel + 1; lvl <= old; ++lvl)
+			m_client->unsubscribe(QMqttTopicFilter(base + QString::number(lvl)));
+	}
+}
+
+QString MqttClient::logTopicBase(const QString &key) const
+{
+	if (key == "broker")
+		return "$SYS/broker/log/";
+	if (key == "events")
+		return topicPrefix() + "/host/+/event/log/";
+	return topicPrefix() + "/host/+/server/" + key + "/log/";
 }
 
 void MqttClient::onDisconnected()

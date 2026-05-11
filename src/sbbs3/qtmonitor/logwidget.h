@@ -25,7 +25,10 @@ public:
 	void setDark(bool dark);
 	void setMaxLines(int max);
 
+	void setLevel(int level);
+
 signals:
+	void levelChanged(const QString &serverId, int maxLevel);
 	void recycleServer(const QString &server);
 	void pauseServer(const QString &server);
 	void resumeServer(const QString &server);
@@ -50,10 +53,11 @@ private:
 	QTextBlock m_filterBlock;
 	int m_filterGeneration = 0;
 	int m_activeGeneration = 0;
-	int m_minLevel = 7;
+	int m_minLevel = 6;
 	bool m_paused = false;
 	bool m_dark;
 	bool m_levelVisible[8] = {true, true, true, true, true, true, true, true};
+	QString m_serverId;
 	QVector<std::tuple<int, QString, QString>> m_buffer;
 };
 
