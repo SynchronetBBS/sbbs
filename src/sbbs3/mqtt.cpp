@@ -104,6 +104,7 @@ static void mqtt_local_message_callback(void *cbdata, const char *topic,
 		mqtt_dispatch_message(m, topic, payload, len);
 }
 
+#ifndef USE_MOSQUITTO
 static int (*s_mqtt_lputs)(int level, const char *str);
 static pthread_mutex_t s_mqtt_lputs_mutex;
 static pthread_once_t s_mqtt_lputs_once = PTHREAD_ONCE_INIT;
@@ -126,6 +127,7 @@ static int mqtt_lprintf_adapter(int level, const char *fmt, ...)
 		return s_mqtt_lputs(level, sbuf);
 	return 0;
 }
+#endif
 
 const char* server_type_desc(enum server_type type)
 {
