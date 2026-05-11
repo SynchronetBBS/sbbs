@@ -1039,6 +1039,8 @@ void Broker::handle_unsubscribe(NetworkSession &session, const uint8_t *data, si
 	for (const auto &filter : filters) {
 		m_topics.unsubscribe(filter, session.client_id);
 		reason_codes.push_back(0);
+		log(LOG_DEBUG, "MQTT broker: %s unsubscribed from %s",
+		    session.client_id.c_str(), filter.c_str());
 	}
 
 	send_to_network(session, build_unsuback(pid, reason_codes, {}));
@@ -1087,6 +1089,7 @@ void Broker::handle_pubrel(NetworkSession &session, const uint8_t *data, size_t 
 
 void Broker::handle_pingreq(NetworkSession &session)
 {
+	log(LOG_DEBUG, "MQTT broker: ping from %s", session.client_id.c_str());
 	send_to_network(session, build_pingresp());
 }
 
