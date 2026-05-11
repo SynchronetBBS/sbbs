@@ -1052,49 +1052,63 @@ int mqtt_startup(struct mqtt* mqtt, scfg_t* cfg, struct startup* startup, const 
 		return MQTT_SUCCESS;
 
 	if (cfg->mqtt.internal_broker) {
-		mqtt->cfg = cfg;
-		mqtt->startup = startup;
 		char hostname[128];
 		gethostname(hostname, sizeof(hostname));
-		mqtt->host = strdup(hostname);
-		mqtt->local = nullptr;
-		mqtt->server_version = version;
-		listInit(&mqtt->client_list, LINK_LIST_MUTEX);
+		const char *addr = cfg->mqtt.broker_addr;
+		const char *configured_host = (startup != NULL && startup->host_name[0])
+		                              ? startup->host_name : hostname;
+		bool local = (addr[0] == '\0'
+		              || stricmp(addr, "localhost") == 0
+		              || strcmp(addr, "127.0.0.1") == 0
+		              || strcmp(addr, "::1") == 0
+		              || stricmp(addr, configured_host) == 0);
 
-		auto *broker = mqtt5::Broker::instance();
-		if (!broker) {
-			static std::mutex start_mutex;
-			std::lock_guard<std::mutex> lock(start_mutex);
-			broker = mqtt5::Broker::instance();
+		if (local) {
+			mqtt->cfg = cfg;
+			mqtt->startup = startup;
+			mqtt->host = strdup(hostname);
+			mqtt->local = nullptr;
+			mqtt->server_version = version;
+			listInit(&mqtt->client_list, LINK_LIST_MUTEX);
+
+			auto *broker = mqtt5::Broker::instance();
 			if (!broker) {
-				s_broker_startup = startup;
-				static mqtt5::Broker s_broker;
-				if (!s_broker.start(cfg, cfg->mqtt.broker_port,
-				                    mqtt_broker_lputs, nullptr)) {
-					if (lputs)
-						lputs(LOG_ERR, "MQTT internal broker: failed to start");
-					return MQTT_FAILURE;
-				}
+				static std::mutex start_mutex;
+				std::lock_guard<std::mutex> lock(start_mutex);
 				broker = mqtt5::Broker::instance();
+				if (!broker) {
+					s_broker_startup = startup;
+					static mqtt5::Broker s_broker;
+					if (!s_broker.start(cfg, cfg->mqtt.broker_port,
+					                    mqtt_broker_lputs, nullptr)) {
+						if (lputs)
+							lputs(LOG_ERR, "MQTT internal broker: failed to start");
+						return MQTT_FAILURE;
+					}
+					broker = mqtt5::Broker::instance();
+				}
 			}
+
+			char client_id[256];
+			snprintf(client_id, sizeof(client_id), "sbbs-%s-%s-%s",
+			         cfg->sys_id, mqtt->host, server_type_desc((enum server_type)startup->type));
+
+			auto *lc = broker->register_local(client_id, mqtt_local_message_callback, mqtt);
+			mqtt->local = lc;
+			mqtt->connected = true;
+			mqtt_connect_callback_common(mqtt);
+			if (version) {
+				mqtt_server_startup(mqtt);
+				mqtt->server_version = NULL;
+			}
+
+			if (lputs)
+				lputs(LOG_INFO, "MQTT internal broker: connected (local)");
+			return MQTT_SUCCESS;
 		}
-
-		char client_id[256];
-		snprintf(client_id, sizeof(client_id), "sbbs-%s-%s-%s",
-		         cfg->sys_id, mqtt->host, server_type_desc((enum server_type)startup->type));
-
-		auto *lc = broker->register_local(client_id, mqtt_local_message_callback, mqtt);
-		mqtt->local = lc;
-		mqtt->connected = true;
-		mqtt_connect_callback_common(mqtt);
-		if (version) {
-			mqtt_server_startup(mqtt);
-			mqtt->server_version = NULL;
-		}
-
-		if (lputs)
-			lputs(LOG_INFO, "MQTT internal broker: connected");
-		return MQTT_SUCCESS;
+		lprintf(lputs, LOG_INFO, "MQTT internal broker: connecting to remote %s:%hu",
+		        addr, cfg->mqtt.broker_port);
+		/* fall through to external client path */
 	}
 
 	result = mqtt_init(mqtt, cfg, startup);

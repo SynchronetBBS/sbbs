@@ -166,6 +166,7 @@ void mqtt_cfg()
 		snprintf(opt[i++], MAX_OPLN, "%-20s%s", "Enabled", cfg.mqtt.enabled ? "Yes" : "No");
 		snprintf(opt[i++], MAX_OPLN, "%-20s%s", "Internal Broker", cfg.mqtt.internal_broker ? "Yes" : "No");
 		if (cfg.mqtt.internal_broker) {
+			snprintf(opt[i++], MAX_OPLN, "%-20s%s", "Broker Address", cfg.mqtt.broker_addr);
 			snprintf(opt[i++], MAX_OPLN, "%-20s%u", "Broker Port", cfg.mqtt.broker_port);
 		} else {
 			snprintf(opt[i++], MAX_OPLN, "%-20s%s", "Broker Address", cfg.mqtt.broker_addr);
@@ -225,7 +226,8 @@ void mqtt_cfg()
 			case 1:
 				cfg.mqtt.internal_broker = !cfg.mqtt.internal_broker;
 				if (cfg.mqtt.internal_broker) {
-					SAFECOPY(cfg.mqtt.broker_addr, "127.0.0.1");
+					if (cfg.mqtt.broker_addr[0] == '\0')
+						SAFECOPY(cfg.mqtt.broker_addr, "localhost");
 					if (cfg.mqtt.broker_port == IPPORT_MQTT)
 						cfg.mqtt.broker_port = 8883;
 					cfg.mqtt.tls.mode = MQTT_TLS_SBBS;
@@ -235,7 +237,22 @@ void mqtt_cfg()
 		}
 		if (cfg.mqtt.internal_broker) {
 			switch (i) {
-				case 2: {
+				case 2:
+					uifc.helpbuf =
+						"~ Broker Hostname or IP Address ~\n"
+						"\n"
+						"Enter the hostname or IP address of the MQTT Broker.\n"
+						"\n"
+						"When this matches the local hostname, Synchronet starts the\n"
+						"internal broker and connects in-process. Otherwise, it connects\n"
+						"to the remote broker as a TCP client.\n"
+						"\n"
+						"`localhost` and `127.0.0.1` are always treated as local.\n"
+					;
+					uifc.input(WIN_MID | WIN_SAV, 0, 0, "Broker Hostname or IP Address"
+					           , cfg.mqtt.broker_addr, sizeof(cfg.mqtt.broker_addr) - 1, K_EDIT);
+					break;
+				case 3: {
 					char str[16];
 					SAFEPRINTF(str, "%hu", cfg.mqtt.broker_port);
 					uifc.helpbuf =
