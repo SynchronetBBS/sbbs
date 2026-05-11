@@ -396,6 +396,21 @@ void MainWindow::connectMqttSignals()
 		m_bbsNameLabel->setText(name);
 		setWindowTitle(name + " - qtmonitor");
 	});
+	static const QHash<QString, QString> statMap = {
+		{"logons_today", "logons"}, {"timeon_today", "timeon"},
+		{"email_sent_today", "email"}, {"feedback_sent_today", "feedback"},
+		{"new_users_today", "newusers"}, {"messages_posted_today", "posts"},
+		{"total_logons", "tlogons"}, {"total_timeon", "ttimeon"},
+		{"total_email", "temail"}, {"total_feedback", "tfeedback"},
+		{"total_users", "tusers"},
+		{"files_uploaded_today", "ulfiles"}, {"bytes_uploaded_today", "ulbytes"},
+		{"files_downloaded_today", "dlfiles"}, {"bytes_downloaded_today", "dlbytes"},
+	};
+	connect(m_mqtt, &MqttClient::bbsStat, this, [this](const QString &key, const QString &value) {
+		auto it = statMap.constFind(key);
+		if (it != statMap.constEnd())
+			m_statsWidget->setStat(it.value(), value);
+	});
 	connect(m_mqtt, &MqttClient::brokerVersion, this, [this](const QString &version) {
 		if (!version.startsWith("Synchronet MQTT Broker "))
 			return;

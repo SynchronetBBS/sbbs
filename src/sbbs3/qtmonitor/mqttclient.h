@@ -65,6 +65,7 @@ signals:
 	void bbsAction(const QString &action, const QString &detail, const QString &timestamp, const QString &payload);
 	void hostDiscovered(const QString &host);
 	void bbsName(const QString &name);
+	void bbsStat(const QString &key, const QString &value);
 	void brokerVersion(const QString &version);
 	void brokerLog(int level, const QString &timestamp, const QString &text);
 

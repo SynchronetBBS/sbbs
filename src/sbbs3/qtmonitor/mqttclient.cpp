@@ -201,6 +201,7 @@ void MqttClient::onConnected()
 		prefix + "/host/+/server/+/highwater",
 		prefix + "/host/+/server/+/error_count",
 		prefix + "/action/#",
+		prefix + "/stats/#",
 		prefix + "/host/+/login_attempts/#",
 		prefix + "/host/+/server/+/max_concurrent/#",
 		prefix,
@@ -338,6 +339,12 @@ void MqttClient::dispatchMessage(const QString &topic, const QString &text,
 	// sbbs/{id} — BBS system name
 	if (parts.size() == 2 && parts[0] == "sbbs" && !text.isEmpty()) {
 		emit bbsName(text);
+		return;
+	}
+
+	// sbbs/{id}/stats/{key}
+	if (parts.size() == 4 && parts[2] == "stats") {
+		emit bbsStat(parts[3], text);
 		return;
 	}
 
