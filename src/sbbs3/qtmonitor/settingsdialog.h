@@ -4,6 +4,7 @@
 #include <QDialog>
 #include <QLineEdit>
 #include <QSpinBox>
+#include <QComboBox>
 #include <QSettings>
 #include <QPushButton>
 #include <QCheckBox>
@@ -29,6 +30,7 @@ private:
 	QLineEdit *m_caFile;
 	QLineEdit *m_certFile;
 	QLineEdit *m_keyFile;
+	QComboBox *m_publishQos;
 	QCheckBox *m_pageAlert;
 	QSpinBox *m_maxLogLines;
 };

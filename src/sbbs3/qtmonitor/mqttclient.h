@@ -40,6 +40,7 @@ public:
 	void setNode(int nodeNum, const QString &prop, const QString &value);
 	void sendNodeMessage(int nodeNum, const QString &message);
 	void setLogLevel(const QString &key, int maxLevel);
+	void setPublishQos(int qos) { m_publishQos = (qos == 2) ? 2 : 0; }
 
 	bool isConnected() const;
 	QString bbsId() const { return m_bbsId; }
@@ -100,6 +101,7 @@ private:
 	QString m_certFile;
 	QString m_keyFile;
 	QList<QSslError> m_ignoredSslErrors;
+	quint8 m_publishQos = 0;
 	QHash<QString, int> m_logLevels;
 };
 

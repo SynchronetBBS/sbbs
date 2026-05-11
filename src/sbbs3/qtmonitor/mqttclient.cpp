@@ -283,7 +283,7 @@ bool MqttClient::isConnected() const
 void MqttClient::publish(const QString &topicSuffix, const QByteArray &payload)
 {
 	if (!m_bbsId.isEmpty() && isConnected())
-		m_client->publish(QMqttTopicName("sbbs/" + m_bbsId + "/" + topicSuffix), payload);
+		m_client->publish(QMqttTopicName("sbbs/" + m_bbsId + "/" + topicSuffix), payload, m_publishQos);
 }
 
 QString MqttClient::topicPrefix() const

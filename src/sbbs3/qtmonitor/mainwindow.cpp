@@ -57,6 +57,7 @@ MainWindow::MainWindow(const QString &mqttHost, quint16 mqttPort,
 	setupToolbar();
 	applyGlobalStyle();
 	applyLogMaxLines();
+	m_mqtt->setPublishQos(m_settings.value("mqtt/publish_qos", 0).toInt());
 
 	if (!mqttHost.isEmpty()) m_settings.setValue("mqtt/host", mqttHost);
 	if (mqttPort)            m_settings.setValue("mqtt/port", mqttPort);
@@ -215,6 +216,7 @@ void MainWindow::setupMenus()
 				m_settings.value("mqtt/cert_file").toString(),
 				m_settings.value("mqtt/key_file").toString()
 			);
+			m_mqtt->setPublishQos(m_settings.value("mqtt/publish_qos", 0).toInt());
 			m_mqtt->connectToBroker();
 			applyLogMaxLines();
 		}

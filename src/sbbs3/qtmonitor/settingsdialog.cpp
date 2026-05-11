@@ -41,6 +41,13 @@ SettingsDialog::SettingsDialog(QSettings *settings, QWidget *parent)
 	m_password->setEchoMode(QLineEdit::Password);
 	form->addRow("Password:", m_password);
 
+	m_publishQos = new QComboBox;
+	m_publishQos->addItem("0 — At most once", 0);
+	m_publishQos->addItem("2 — Exactly once", 2);
+	int savedQos = m_settings->value("mqtt/publish_qos", 0).toInt();
+	m_publishQos->setCurrentIndex(savedQos == 2 ? 1 : 0);
+	form->addRow("Publish QoS:", m_publishQos);
+
 	layout->addWidget(mqttGroup);
 
 	auto *pskGroup = new QGroupBox("TLS-PSK (for broker.js)");
@@ -119,6 +126,7 @@ void SettingsDialog::saveAndAccept()
 	m_settings->setValue("mqtt/ca_file", m_caFile->text());
 	m_settings->setValue("mqtt/cert_file", m_certFile->text());
 	m_settings->setValue("mqtt/key_file", m_keyFile->text());
+	m_settings->setValue("mqtt/publish_qos", m_publishQos->currentData().toInt());
 	m_settings->setValue("notify/page_alert", m_pageAlert->isChecked());
 	m_settings->setValue("log/max_lines", m_maxLogLines->value());
 	accept();
