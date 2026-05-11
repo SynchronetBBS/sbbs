@@ -62,6 +62,7 @@ signals:
 	void maxConcurrent(const QString &host, const QString &server, const QString &ip, const QString &action, int strikes);
 	void bbsAction(const QString &action, const QString &detail, const QString &timestamp, const QString &payload);
 	void hostDiscovered(const QString &host);
+	void bbsName(const QString &name);
 	void brokerVersion(const QString &version);
 	void brokerLog(int level, const QString &timestamp, const QString &text);
 

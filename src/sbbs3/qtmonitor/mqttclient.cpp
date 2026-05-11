@@ -192,6 +192,7 @@ void MqttClient::onConnected()
 		prefix + "/host/+/event/log/#",
 		prefix + "/host/+/login_attempts/#",
 		prefix + "/host/+/server/+/max_concurrent/#",
+		prefix,
 	};
 	for (const auto &t : topics) {
 		auto *sub = m_client->subscribe(QMqttTopicFilter(t));
@@ -286,6 +287,13 @@ void MqttClient::dispatchMessage(const QString &topic, const QString &text,
 
 	if (parts.size() >= 2 && parts[0] == "sbbs" && m_bbsId.isEmpty())
 		m_bbsId = parts[1];
+
+	// sbbs/{id} — BBS system name
+	if (parts.size() == 2 && parts[0] == "sbbs" && !text.isEmpty()) {
+		emit bbsName(text);
+		return;
+	}
+
 	if (parts.size() >= 4 && parts[2] == "host" && !m_hosts.contains(parts[3])) {
 		m_hosts.append(parts[3]);
 		emit hostDiscovered(parts[3]);

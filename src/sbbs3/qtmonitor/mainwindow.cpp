@@ -340,6 +340,8 @@ void MainWindow::setupToolbar()
 void MainWindow::setupStatusbar()
 {
 	auto *sb = statusBar();
+	m_bbsNameLabel = new QLabel;
+	sb->addWidget(m_bbsNameLabel);
 	for (const auto &server : Servers) {
 		auto *lbl = new QLabel(ServerLabels.value(server) + ": --");
 		m_serverStateLabels[server] = lbl;
@@ -364,6 +366,10 @@ void MainWindow::connectMqttSignals()
 			m_hostCombo->addItem(host);
 		if (m_hostCombo->count() == 2)
 			m_hostCombo->setCurrentIndex(1);
+	});
+	connect(m_mqtt, &MqttClient::bbsName, this, [this](const QString &name) {
+		m_bbsNameLabel->setText(name);
+		setWindowTitle(name + " - qtmonitor");
 	});
 	connect(m_mqtt, &MqttClient::brokerVersion, this, [this](const QString &version) {
 		if (!version.startsWith("Synchronet MQTT Broker "))

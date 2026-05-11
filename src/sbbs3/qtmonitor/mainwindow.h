@@ -73,6 +73,7 @@ private:
 	QHash<QString, QLabel *> m_serverStateLabels;
 	QHash<QString, QString> m_serverVersions;
 	QHash<QString, QString> m_serverStates;
+	QLabel *m_bbsNameLabel;
 	QLabel *m_clientsLabel;
 	QLabel *m_servedLabel;
 	QLabel *m_failedLabel;
