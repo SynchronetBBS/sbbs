@@ -1,6 +1,7 @@
 #include "mqttclient.h"
 #include <QDateTime>
 #include <QMqttSubscription>
+#include <QTimer>
 #include <QMqttTopicFilter>
 #include <QSslConfiguration>
 #include <QSslCipher>
@@ -205,6 +206,17 @@ void MqttClient::onConnected()
 		connect(sysSub, &QMqttSubscription::messageReceived,
 		        this, &MqttClient::onSubscriptionMessage);
 
+	QString clientListFilter = prefix + "/host/+/server/+/client/list";
+	auto *clientListSub = m_client->subscribe(QMqttTopicFilter(clientListFilter));
+	if (clientListSub) {
+		connect(clientListSub, &QMqttSubscription::messageReceived,
+		        this, &MqttClient::onSubscriptionMessage);
+		QTimer::singleShot(2000, this, [this, clientListFilter] {
+			if (m_client)
+				m_client->unsubscribe(QMqttTopicFilter(clientListFilter));
+		});
+	}
+
 	emit connected();
 }
 
@@ -364,6 +376,19 @@ void MqttClient::dispatchMessage(const QString &topic, const QString &text,
 		int nodeNum = parts[3].toInt(&ok);
 		if (!ok) return;
 		emit nodeVerbose(host, nodeNum, text);
+		return;
+	}
+
+	// sbbs/{id}/host/{h}/server/{srv}/client/list
+	if (parts.size() == 8 && parts[4] == "server" && parts[6] == "client" && parts[7] == "list") {
+		QStringList names = {"timestamp", "protocol", "usernum", "username", "ip", "hostname", "port", "socket"};
+		for (const auto &line : text.split('\n', Qt::SkipEmptyParts)) {
+			QStringList fields = line.split('\t');
+			QVariantMap data;
+			for (int i = 0; i < qMin(fields.size(), names.size()); ++i)
+				data[names[i]] = fields[i];
+			emit clientUpdate(host, parts[5], "connect", data);
+		}
 		return;
 	}
 
