@@ -85,39 +85,6 @@ private:
 
 } // namespace mqtt5
 
-extern "C" {
-#endif
-
-/* C-callable wrappers for mqtt5::Client */
-void *mqtt5client_open(void);
-void  mqtt5client_close(void *handle);
-void  mqtt5client_set_will(void *handle, const char *topic,
-          const void *payload, size_t len, int qos, int retain);
-int   mqtt5client_connect(void *handle, const char *host, uint16_t port,
-          const char *client_id, const char *username, const char *password,
-          int keepalive, int tls_mode,
-          const char *psk, const char *psk_identity,
-          const char *cafile, const char *certfile,
-          const char *keyfile, const char *keypass,
-          scfg_t *scfg,
-          int (*lprintf)(int level, const char *fmt, ...));
-void  mqtt5client_disconnect(void *handle);
-int   mqtt5client_publish(void *handle, const char *topic,
-          const void *payload, size_t len, int qos, int retain,
-          const void *props);
-int   mqtt5client_subscribe(void *handle, const char *topic, int qos);
-int   mqtt5client_pump(void *handle, int timeout_ms);
-
-struct mqtt5client_msg {
-	char *topic;
-	void *payload;
-	size_t payload_len;
-};
-struct mqtt5client_msg *mqtt5client_read(void *handle);
-void  mqtt5client_read_free(struct mqtt5client_msg *msg);
-
-#ifdef __cplusplus
-}
-#endif
+#endif /* __cplusplus */
 
 #endif

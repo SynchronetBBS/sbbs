@@ -133,20 +133,6 @@ DLLEXPORT int mqtt_putnodedat(struct mqtt*, int number, node_t*);
 /* Message dispatch — shared between mosquitto callback and internal broker */
 DLLEXPORT void mqtt_dispatch_message(struct mqtt*, const char* topic, const void* payload, size_t payloadlen);
 
-/* Internal broker glue (mqtt_broker_glue.cpp) */
-DLLEXPORT int mqtt_internal_startup(struct mqtt*, scfg_t*, struct startup*, const char* version,
-                                     int (*lputs)(int level, const char* str));
-DLLEXPORT int mqtt_internal_publish(struct mqtt*, const char* topic,
-                                     const void* payload, size_t len, int qos, bool retain,
-                                     const void* props);
-DLLEXPORT int mqtt_internal_subscribe(struct mqtt*, const char* topic, int qos);
-DLLEXPORT void mqtt_internal_shutdown(struct mqtt*);
-
-/* MQTT 5.0 user property helpers (opaque Properties* handle) */
-DLLEXPORT void* mqtt_props_new(void);
-DLLEXPORT void  mqtt_props_add_string_pair(void* props, const char* key, const char* val);
-DLLEXPORT void  mqtt_props_free(void* props);
-
 #ifdef __cplusplus
 }
 #endif
