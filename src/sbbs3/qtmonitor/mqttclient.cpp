@@ -1,5 +1,7 @@
 #include "mqttclient.h"
+#include <QCoreApplication>
 #include <QDateTime>
+#include <QHostInfo>
 #include <QMqttSubscription>
 #include <QTimer>
 #include <QMqttTopicFilter>
@@ -19,6 +21,9 @@ MqttClient::MqttClient(QObject *parent)
 void MqttClient::initClient()
 {
 	m_client = new QMqttClient(this);
+	m_client->setClientId(QStringLiteral("qtmonitor-%1-%2")
+		.arg(QHostInfo::localHostName())
+		.arg(QCoreApplication::applicationPid()));
 	m_client->setProtocolVersion(QMqttClient::MQTT_5_0);
 	connect(m_client, &QMqttClient::connected, this, &MqttClient::onConnected);
 	connect(m_client, &QMqttClient::disconnected, this, &MqttClient::onDisconnected);
