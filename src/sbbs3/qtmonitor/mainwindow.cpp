@@ -425,6 +425,8 @@ void MainWindow::connectMqttSignals()
 		QString prefix = (multiHost() && !host.isEmpty()) ? "[" + host + "] " : "";
 		if (auto *events = m_logPanes.value("events"))
 			events->appendLog(level, ts, prefix + text);
+		if (auto *bbs = m_logPanes.value("bbs"))
+			bbs->appendLog(level, ts, prefix + "[Events] " + text);
 	});
 	connect(m_mqtt, &MqttClient::nodeStatus, this, [this](const QString &host, int nodeNum, const QVariantMap &fields) {
 		if (!hostMatches(host)) return;
