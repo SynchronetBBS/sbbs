@@ -35,10 +35,8 @@ function main()
 
 	do {
 		rl = readln();
-		if (rl === null) {
-			mswait(100);
-			continue;
-		}
+		if (rl === null)
+			break;
 		switch(rl.toLowerCase()) {
 			case 'help':
 				writeln("Commands available:");
