@@ -156,9 +156,9 @@ bool Broker::start(scfg_t *cfg, uint16_t port, int (*lputs)(void *, int, const c
 	build_psk_table();
 
 	m_listen_sock = socket(AF_INET6, SOCK_STREAM, 0);
-	if (m_listen_sock < 0) {
+	if (m_listen_sock == INVALID_SOCKET) {
 		m_listen_sock = socket(AF_INET, SOCK_STREAM, 0);
-		if (m_listen_sock < 0) {
+		if (m_listen_sock == INVALID_SOCKET) {
 			log(LOG_ERR, "MQTT broker: socket() failed: %d", ERROR_VALUE);
 			return false;
 		}
@@ -171,7 +171,7 @@ bool Broker::start(scfg_t *cfg, uint16_t port, int (*lputs)(void *, int, const c
 		if (bind(m_listen_sock, (struct sockaddr *)&addr, sizeof(addr)) < 0) {
 			log(LOG_ERR, "MQTT broker: bind() port %u failed: %d", port, ERROR_VALUE);
 			closesocket(m_listen_sock);
-			m_listen_sock = -1;
+			m_listen_sock = INVALID_SOCKET;
 			return false;
 		}
 	} else {
@@ -186,7 +186,7 @@ bool Broker::start(scfg_t *cfg, uint16_t port, int (*lputs)(void *, int, const c
 		if (bind(m_listen_sock, (struct sockaddr *)&addr, sizeof(addr)) < 0) {
 			log(LOG_ERR, "MQTT broker: bind() port %u failed: %d", port, ERROR_VALUE);
 			closesocket(m_listen_sock);
-			m_listen_sock = -1;
+			m_listen_sock = INVALID_SOCKET;
 			return false;
 		}
 	}
@@ -194,7 +194,7 @@ bool Broker::start(scfg_t *cfg, uint16_t port, int (*lputs)(void *, int, const c
 	if (listen(m_listen_sock, 16) < 0) {
 		log(LOG_ERR, "MQTT broker: listen() failed: %d", ERROR_VALUE);
 		closesocket(m_listen_sock);
-		m_listen_sock = -1;
+		m_listen_sock = INVALID_SOCKET;
 		return false;
 	}
 
@@ -229,10 +229,10 @@ void Broker::stop()
 
 	m_running = false;
 
-	if (m_listen_sock >= 0) {
+	if (m_listen_sock != INVALID_SOCKET) {
 		shutdown(m_listen_sock, SHUT_RDWR);
 		closesocket(m_listen_sock);
-		m_listen_sock = -1;
+		m_listen_sock = INVALID_SOCKET;
 	}
 
 	if (m_accept_thread.joinable())
@@ -243,7 +243,7 @@ void Broker::stop()
 	for (auto it_s = m_sessions.begin(); it_s != m_sessions.end(); ++it_s) {
 		if (it_s->second.tls_sess != CRYPT_UNUSED)
 			destroy_session(broker_lprintf, it_s->second.tls_sess);
-		if (it_s->second.socket >= 0)
+		if (it_s->second.socket != INVALID_SOCKET)
 			closesocket(it_s->second.socket);
 	}
 	m_sessions.clear();
@@ -454,7 +454,7 @@ void Broker::send_to_network(NetworkSession &session, const std::vector<uint8_t>
 
 void Broker::flush_network(NetworkSession &session)
 {
-	if (session.send_buf.empty() || session.socket < 0)
+	if (session.send_buf.empty() || session.socket == INVALID_SOCKET)
 		return;
 	int sent;
 	if (session.tls_sess != CRYPT_UNUSED) {
@@ -485,7 +485,7 @@ void Broker::flush_network(NetworkSession &session)
 
 void Broker::teardown_network(NetworkSession &session, uint8_t reason_code)
 {
-	if (session.socket < 0)
+	if (session.socket == INVALID_SOCKET)
 		return;
 
 	if (reason_code != 0) {
@@ -493,14 +493,6 @@ void Broker::teardown_network(NetworkSession &session, uint8_t reason_code)
 		send_to_network(session, pkt);
 		flush_network(session);
 	}
-
-	if (session.tls_sess != CRYPT_UNUSED) {
-		destroy_session(broker_lprintf, session.tls_sess);
-		session.tls_sess = CRYPT_UNUSED;
-	}
-	closesocket(session.socket);
-	session.socket = -1;
-	session.connected = false;
 
 	if (session.will) {
 		if (session.will_delay > 0) {
@@ -516,7 +508,16 @@ void Broker::teardown_network(NetworkSession &session, uint8_t reason_code)
 	} else {
 		m_topics.unsubscribe_all(session.client_id);
 	}
+
 	log(LOG_INFO, "MQTT broker: client disconnected: %s", session.client_id.c_str());
+
+	if (session.tls_sess != CRYPT_UNUSED) {
+		destroy_session(broker_lprintf, session.tls_sess);
+		session.tls_sess = CRYPT_UNUSED;
+	}
+	closesocket(session.socket);
+	session.socket = INVALID_SOCKET;
+	session.connected = false;
 }
 
 // ── Broker thread ───────────────────────────────────────────────
@@ -540,14 +541,14 @@ void Broker::broker_thread()
 {
 	SetThreadName("sbbs/mqttBroker");
 	while (m_running) {
-		std::vector<std::string> keys;
+		std::vector<int> keys;
 		std::vector<SOCKET> sockets;
 		std::vector<bool> want_write;
 
 		{
 			std::lock_guard<std::recursive_mutex> lock(m_mutex);
 			for (auto it_s = m_sessions.begin(); it_s != m_sessions.end(); ++it_s) {
-				if (it_s->second.socket >= 0) {
+				if (it_s->second.socket != INVALID_SOCKET) {
 					keys.push_back(it_s->first);
 					sockets.push_back(it_s->second.socket);
 					want_write.push_back(!it_s->second.send_buf.empty());
@@ -596,14 +597,13 @@ void Broker::broker_thread()
 		{
 			std::lock_guard<std::recursive_mutex> lock(m_mutex);
 
-			std::vector<std::string> to_remove;
+			std::vector<int> to_remove;
 			for (size_t i = 0; i < keys.size(); ++i) {
 				auto it_s = m_sessions.find(keys[i]);
 				if (it_s == m_sessions.end()) continue;
-				auto &id = it_s->first;
 				auto &session = it_s->second;
-				if (session.socket < 0) {
-					to_remove.push_back(id);
+				if (session.socket == INVALID_SOCKET) {
+					to_remove.push_back(it_s->first);
 					continue;
 				}
 #ifdef PREFER_POLL
@@ -636,7 +636,7 @@ void Broker::broker_thread()
 					session.will.reset();
 					session.will_deliver_at = 0;
 				}
-				if (session.socket < 0 && session.session_expires_at > 0 && now >= session.session_expires_at) {
+				if (session.socket == INVALID_SOCKET && session.session_expires_at > 0 && now >= session.session_expires_at) {
 					m_topics.unsubscribe_all(session.client_id);
 					to_remove.push_back(it_s->first);
 				}
@@ -746,10 +746,10 @@ void Broker::accept_connection(int sock)
 			psk_id.assign(id_buf, id_len);
 	}
 
-	std::string temp_id = "pending-" + std::to_string(sock);
 	std::lock_guard<std::recursive_mutex> lock(m_mutex);
-	auto &session = m_sessions[temp_id];
-	session.client_id = temp_id;
+	m_sessions.erase(sock);
+	auto &session = m_sessions[sock];
+	session.client_id = "socket-" + std::to_string(sock);
 	session.socket = sock;
 	session.tls_sess = tls_sess;
 	session.tls_psk_id = psk_id;
@@ -814,7 +814,7 @@ void Broker::handle_network_data(NetworkSession &session)
 		handle_packet(session, type, flags,
 		              session.recv_buf.data() + hdr_len, remaining);
 
-		if (session.socket < 0) return;
+		if (session.socket == INVALID_SOCKET) return;
 
 		session.recv_buf.erase(session.recv_buf.begin(), session.recv_buf.begin() + total);
 	}
@@ -889,7 +889,7 @@ void Broker::handle_connect(NetworkSession &session, const uint8_t *data, size_t
 	bool session_present = false;
 	for (auto it_s = m_sessions.begin(); it_s != m_sessions.end(); ++it_s) {
 		if (&it_s->second != &session && it_s->second.client_id == client_id) {
-			if (it_s->second.socket >= 0)
+			if (it_s->second.socket != INVALID_SOCKET)
 				teardown_network(it_s->second);
 			if (!cd.clean_start() && it_s->second.session_expiry > 0) {
 				session.subscriptions = std::move(it_s->second.subscriptions);
@@ -1101,7 +1101,7 @@ void Broker::handle_disconnect(NetworkSession &session, const uint8_t *data, siz
 		session.will.reset();
 
 	closesocket(session.socket);
-	session.socket = -1;
+	session.socket = INVALID_SOCKET;
 	session.connected = false;
 	log(LOG_INFO, "MQTT broker: client disconnected gracefully: %s", session.client_id.c_str());
 }

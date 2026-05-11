@@ -35,7 +35,7 @@ struct LocalClient {
 
 struct NetworkSession {
 	std::string client_id;
-	int socket = -1;
+	SOCKET socket = INVALID_SOCKET;
 	CRYPT_SESSION tls_sess = CRYPT_UNUSED;
 	bool connected = false;
 	bool clean_start = false;
@@ -128,7 +128,7 @@ private:
 	std::recursive_mutex m_mutex;
 
 	std::vector<std::unique_ptr<LocalClient>> m_local_clients;
-	std::unordered_map<std::string, NetworkSession> m_sessions;
+	std::unordered_map<SOCKET, NetworkSession> m_sessions;
 
 	std::unordered_map<std::string, std::string> m_psk_table;
 
@@ -139,7 +139,7 @@ private:
 	std::atomic<bool> m_running{false};
 	std::thread m_thread;
 	std::thread m_accept_thread;
-	int m_listen_sock = -1;
+	SOCKET m_listen_sock = INVALID_SOCKET;
 
 	static Broker *s_instance;
 	static std::mutex s_instance_mutex;
