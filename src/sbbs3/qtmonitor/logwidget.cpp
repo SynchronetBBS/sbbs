@@ -20,10 +20,12 @@ static const char *LogLevelShort[] = {
 class LogBlockData : public QTextBlockUserData
 {
 public:
-	LogBlockData(int level) : m_level(level) {}
+	LogBlockData(int level, int tsLen = 0) : m_level(level), m_tsLen(tsLen) {}
 	int level() const { return m_level; }
+	int tsLen() const { return m_tsLen; }
 private:
 	int m_level;
+	int m_tsLen;
 };
 
 LogWidget::LogWidget(const QString &title, const QString &serverId,
@@ -167,10 +169,13 @@ void LogWidget::appendLine(int level, const QString &timestamp, const QString &t
 
 	QTextCursor cursor = m_text->textCursor();
 	cursor.movePosition(QTextCursor::End);
+	int tsLen = 0;
 	if (!timestamp.isEmpty()) {
 		QTextCharFormat tsFmt;
 		tsFmt.setForeground(m_dark ? QColor("#888888") : QColor("gray"));
-		cursor.insertText(timestamp + " ", tsFmt);
+		tsLen = timestamp.size() + 1;
+		cursor.setCharFormat(tsFmt);
+		cursor.insertText(timestamp + " ");
 	}
 	if (hasControlChars(text))
 		insertWithControls(cursor, text, fmt);
@@ -180,7 +185,7 @@ void LogWidget::appendLine(int level, const QString &timestamp, const QString &t
 
 	QTextBlock block = cursor.block().previous();
 	if (block.isValid()) {
-		block.setUserData(new LogBlockData(level));
+		block.setUserData(new LogBlockData(level, tsLen));
 		block.setVisible(blockMatchesFilter(block));
 	}
 
@@ -287,22 +292,17 @@ void LogWidget::recolorBlocks()
 		if (data->level() <= 3)
 			fmt.setFontWeight(QFont::Bold);
 
+		int tsLen = data->tsLen();
 		cursor.setPosition(block.position());
-		cursor.movePosition(QTextCursor::EndOfBlock, QTextCursor::KeepAnchor);
-		QString text = block.text();
-		int tsEnd = text.indexOf(' ');
-		if (tsEnd > 0 && tsEnd < 20) {
-			cursor.setPosition(block.position());
-			cursor.setPosition(block.position() + tsEnd + 1, QTextCursor::KeepAnchor);
+		if (tsLen > 0) {
+			cursor.setPosition(block.position() + tsLen, QTextCursor::KeepAnchor);
 			QTextCharFormat tsFmt;
 			tsFmt.setForeground(tsColor);
 			cursor.setCharFormat(tsFmt);
-			cursor.setPosition(block.position() + tsEnd + 1);
-			cursor.movePosition(QTextCursor::EndOfBlock, QTextCursor::KeepAnchor);
-			cursor.setCharFormat(fmt);
-		} else {
-			cursor.setCharFormat(fmt);
+			cursor.setPosition(block.position() + tsLen);
 		}
+		cursor.movePosition(QTextCursor::EndOfBlock, QTextCursor::KeepAnchor);
+		cursor.setCharFormat(fmt);
 	}
 	cursor.endEditBlock();
 }

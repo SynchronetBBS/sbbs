@@ -1,4 +1,5 @@
 #include "mqttclient.h"
+#include <QDateTime>
 #include <QMqttSubscription>
 #include <QMqttTopicFilter>
 #include <QSslConfiguration>
@@ -255,6 +256,16 @@ void MqttClient::triggerCallout(const QString &hubId)  { publish("call", hubId.t
 void MqttClient::setNode(int n, const QString &prop, const QString &val) { publish(QStringLiteral("node/%1/set/%2").arg(n).arg(prop), val.toUtf8()); }
 void MqttClient::sendNodeMessage(int n, const QString &msg) { publish(QStringLiteral("node/%1/msg").arg(n), msg.toUtf8()); }
 
+static QString formatTimestamp(const QString &raw)
+{
+	if (raw.isEmpty())
+		return raw;
+	QDateTime dt = QDateTime::fromString(raw, Qt::ISODate);
+	if (!dt.isValid())
+		dt = QDateTime::fromString(raw.left(15), "yyyyMMdd'T'HHmmss");
+	return dt.isValid() ? dt.toString("MMM dd hh:mm:ss") : raw;
+}
+
 void MqttClient::dispatchMessage(const QString &topic, const QString &text,
                                   const QHash<QString, QString> &userProps)
 {
@@ -288,9 +299,22 @@ void MqttClient::dispatchMessage(const QString &topic, const QString &text,
 		return;
 	}
 
-	// sbbs/{id}/action/{type}/{detail...}
+	// sbbs/{id}/action/{type}/{detail...} — payload is timestamp\tdata
 	if (parts.size() >= 4 && parts[2] == "action") {
-		auto [timestamp, payload] = splitTsvPayload(text, userProps);
+		QString timestamp, payload;
+		auto it = userProps.constFind(QStringLiteral("time"));
+		if (it != userProps.constEnd()) {
+			timestamp = formatTimestamp(it.value());
+			payload = text;
+		} else {
+			int tab = text.indexOf('\t');
+			if (tab >= 0) {
+				timestamp = formatTimestamp(text.left(tab));
+				payload = text.mid(tab + 1);
+			} else {
+				payload = text;
+			}
+		}
 		QString action = parts[3];
 		QString detail = QStringList(parts.mid(4)).join('/');
 		emit bbsAction(action, detail, timestamp, payload);
@@ -408,6 +432,6 @@ QPair<QString, QString> MqttClient::splitTsvPayload(const QString &text,
 {
 	auto it = userProps.constFind(QStringLiteral("time"));
 	if (it != userProps.constEnd())
-		return {it.value(), text};
+		return {formatTimestamp(it.value()), text};
 	return {{}, text};
 }
