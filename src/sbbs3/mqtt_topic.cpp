@@ -240,4 +240,24 @@ void TopicTree::collect_retained(const std::string &filter, std::vector<std::sha
 	});
 }
 
+size_t TopicTree::purge_expired_node(Node *node, time_t now)
+{
+	size_t count = 0;
+	if (node->retained && node->retained->props.has(PROP_MESSAGE_EXPIRY)) {
+		uint32_t expiry = node->retained->props.get_u32(PROP_MESSAGE_EXPIRY, 0);
+		if (now - node->retained->created_at > (time_t)expiry) {
+			node->retained.reset();
+			++count;
+		}
+	}
+	for (auto &child : node->children)
+		count += purge_expired_node(child.second.get(), now);
+	return count;
+}
+
+size_t TopicTree::purge_expired_retained()
+{
+	return purge_expired_node(&m_root, time(nullptr));
+}
+
 } // namespace mqtt5

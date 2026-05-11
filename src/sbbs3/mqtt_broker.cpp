@@ -645,6 +645,14 @@ void Broker::broker_thread()
 			for (const auto &id : to_remove)
 				m_sessions.erase(id);
 
+			static time_t last_purge = 0;
+			if (now - last_purge >= 60) {
+				size_t purged = m_topics.purge_expired_retained();
+				if (purged > 0)
+					log(LOG_DEBUG, "MQTT broker: purged %zu expired retained messages", purged);
+				last_purge = now;
+			}
+
 			process_local_queues();
 		}
 	}

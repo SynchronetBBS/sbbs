@@ -34,6 +34,8 @@ public:
 
 	void collect_retained(const std::string &filter, std::vector<std::shared_ptr<Message>> &out) const;
 
+	size_t purge_expired_retained();
+
 	bool validate_filter(const std::string &filter) const;
 	static bool is_shared_filter(const std::string &filter);
 
@@ -51,6 +53,7 @@ private:
 	                       size_t depth, const DeliverFn &deliver) const;
 	void match_retained_node(const Node *node, const std::vector<std::string> &levels,
 	                         size_t depth, const RetainedFn &fn) const;
+	size_t purge_expired_node(Node *node, time_t now);
 
 	static std::vector<std::string> split_topic(const std::string &topic);
 	static std::string subscriber_key(const std::string &client_id, const std::string &filter);
