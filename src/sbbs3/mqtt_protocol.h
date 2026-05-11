@@ -1,5 +1,5 @@
-#ifndef MQTT_PROTOCOL_H
-#define MQTT_PROTOCOL_H
+#ifndef SBBS_MQTT_PROTOCOL_H
+#define SBBS_MQTT_PROTOCOL_H
 
 #include <cstdint>
 #include <ctime>
