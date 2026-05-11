@@ -13,6 +13,7 @@
 #include "statswidget.h"
 #include "loginattemptswidget.h"
 #include "actionwidget.h"
+#include "maxconcurrentwidget.h"
 
 class MainWindow : public QMainWindow
 {
@@ -58,6 +59,7 @@ private:
 	ClientWidget *m_clientWidget;
 	LoginAttemptsWidget *m_loginAttemptsWidget;
 	ActionWidget *m_actionWidget;
+	MaxConcurrentWidget *m_maxConcurrentWidget;
 	QHash<QString, LogWidget *> m_logPanes;
 	QHash<QString, QDockWidget *> m_logDocks;
 
@@ -66,6 +68,7 @@ private:
 	QDockWidget *m_clientDock;
 	QDockWidget *m_loginAttemptsDock;
 	QDockWidget *m_actionDock;
+	QDockWidget *m_maxConcurrentDock;
 
 	QHash<QString, QLabel *> m_serverStateLabels;
 	QHash<QString, QString> m_serverVersions;

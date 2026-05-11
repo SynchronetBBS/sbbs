@@ -150,10 +150,15 @@ void MainWindow::setupDocks()
 	addDockWidget(Qt::BottomDockWidgetArea, m_loginAttemptsDock);
 	tabifyDockWidget(m_clientDock, m_loginAttemptsDock);
 
+	m_maxConcurrentWidget = new MaxConcurrentWidget;
+	m_maxConcurrentDock = makeDock("Max Connections", m_maxConcurrentWidget);
+	addDockWidget(Qt::BottomDockWidgetArea, m_maxConcurrentDock);
+	tabifyDockWidget(m_loginAttemptsDock, m_maxConcurrentDock);
+
 	m_actionWidget = new ActionWidget;
 	m_actionDock = makeDock("Activity", m_actionWidget);
 	addDockWidget(Qt::BottomDockWidgetArea, m_actionDock);
-	tabifyDockWidget(m_loginAttemptsDock, m_actionDock);
+	tabifyDockWidget(m_maxConcurrentDock, m_actionDock);
 
 	if (firstLogDock) firstLogDock->raise();
 }
@@ -215,6 +220,7 @@ void MainWindow::setupMenus()
 	addDockToggle(m_clientDock);
 	addDockToggle(m_loginAttemptsDock);
 	addDockToggle(m_actionDock);
+	addDockToggle(m_maxConcurrentDock);
 	viewMenu->addSeparator();
 	for (const auto &key : Servers + QStringList{"bbs", "events"})
 		if (auto *dock = m_logDocks.value(key))
@@ -241,6 +247,8 @@ void MainWindow::setupMenus()
 			for (int i = 1; i < logDockList.size(); ++i)
 				tabifyDockWidget(logDockList[0], logDockList[i]);
 			tabifyDockWidget(m_clientDock, m_loginAttemptsDock);
+			tabifyDockWidget(m_loginAttemptsDock, m_maxConcurrentDock);
+			tabifyDockWidget(m_maxConcurrentDock, m_actionDock);
 			if (!logDockList.isEmpty()) logDockList[0]->raise();
 		});
 	});
@@ -292,7 +300,8 @@ void MainWindow::setupToolbar()
 
 	for (auto &[name, dock] : std::initializer_list<std::pair<const char *, QDockWidget *>>{
 		{"Nodes", m_nodeDock}, {"Stats", m_statsDock}, {"Clients", m_clientDock},
-		{"Logins", m_loginAttemptsDock}, {"Activity", m_actionDock},
+		{"Logins", m_loginAttemptsDock}, {"Max Conn", m_maxConcurrentDock},
+		{"Activity", m_actionDock},
 	}) {
 		auto *act = new QAction(name, this);
 		connect(act, &QAction::triggered, this, [this, d = dock] { showDock(d); });
@@ -432,6 +441,10 @@ void MainWindow::connectMqttSignals()
 	connect(m_mqtt, &MqttClient::loginAttempt, this, [this](const QString &host, const QString &ip, const QString &action, const QVariantMap &fields) {
 		if (!hostMatches(host)) return;
 		m_loginAttemptsWidget->updateAttempt(ip, action, fields);
+	});
+	connect(m_mqtt, &MqttClient::maxConcurrent, this, [this](const QString &host, const QString &server, const QString &ip, const QString &action, int strikes) {
+		if (!hostMatches(host)) return;
+		m_maxConcurrentWidget->updateEntry(server, ip, action, strikes);
 	});
 	connect(m_mqtt, &MqttClient::bbsAction, m_actionWidget, &ActionWidget::addAction);
 	connect(m_mqtt, &MqttClient::bbsAction, this, [this](const QString &action, const QString &detail,
@@ -587,6 +600,7 @@ void MainWindow::setDarkMode(bool dark)
 	m_statsWidget->setDark(dark);
 	m_clientWidget->setDark(dark);
 	m_loginAttemptsWidget->setDark(dark);
+	m_maxConcurrentWidget->setDark(dark);
 	m_actionWidget->setDark(dark);
 	for (auto *pane : m_logPanes)
 		pane->setDark(dark);

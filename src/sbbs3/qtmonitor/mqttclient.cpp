@@ -191,6 +191,7 @@ void MqttClient::onConnected()
 		prefix + "/action/#",
 		prefix + "/host/+/event/log/#",
 		prefix + "/host/+/login_attempts/#",
+		prefix + "/host/+/server/+/max_concurrent/#",
 	};
 	for (const auto &t : topics) {
 		auto *sub = m_client->subscribe(QMqttTopicFilter(t));
@@ -386,6 +387,16 @@ void MqttClient::dispatchMessage(const QString &topic, const QString &text,
 				data[names[i]] = fields[i];
 			emit loginAttempt(host, ip, "update", data);
 		}
+		return;
+	}
+
+	// sbbs/{id}/host/{h}/server/{srv}/max_concurrent/{ip}
+	if (parts.size() >= 8 && parts[4] == "server" && parts[6] == "max_concurrent") {
+		QString ip = QStringList(parts.mid(7)).join('/');
+		if (text.isEmpty())
+			emit maxConcurrent(host, parts[5], ip, "clear", 0);
+		else
+			emit maxConcurrent(host, parts[5], ip, "update", text.toInt());
 		return;
 	}
 

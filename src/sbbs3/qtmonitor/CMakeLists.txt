@@ -28,6 +28,7 @@ add_executable(qtmonitor WIN32
     clientwidget.cpp
     statswidget.cpp
     loginattemptswidget.cpp
+    maxconcurrentwidget.cpp
     actionwidget.cpp
     settingsdialog.cpp
 )

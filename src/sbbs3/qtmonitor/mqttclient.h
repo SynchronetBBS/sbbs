@@ -59,6 +59,7 @@ signals:
 	void serverVersion(const QString &host, const QString &server, const QString &version);
 	void serverStat(const QString &host, const QString &server, const QString &statName, const QString &value);
 	void loginAttempt(const QString &host, const QString &ip, const QString &action, const QVariantMap &fields);
+	void maxConcurrent(const QString &host, const QString &server, const QString &ip, const QString &action, int strikes);
 	void bbsAction(const QString &action, const QString &detail, const QString &timestamp, const QString &payload);
 	void hostDiscovered(const QString &host);
 	void brokerVersion(const QString &version);
