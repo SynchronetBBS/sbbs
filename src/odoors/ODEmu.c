@@ -298,8 +298,7 @@ ODAPIDEF BOOL ODCALL od_send_file(const char *pszFileName)
       }
 
       /* Get filename of remote file. */
-      strcpy(szODWorkString, pszFileName);
-      strcat(szODWorkString, ".rip");
+      snprintf(szODWorkString, sizeof(szODWorkString), "%s.rip", pszFileName);
       strupr(szODWorkString);
    }
    else
@@ -313,7 +312,7 @@ ODAPIDEF BOOL ODCALL od_send_file(const char *pszFileName)
          return(FALSE);
       }
 
-      strcpy(szODWorkString, pszFileName);
+      snprintf(szODWorkString, sizeof(szODWorkString), "%s", pszFileName);
       strupr(szODWorkString);
 
       if(strstr(szODWorkString, ".rip"))
@@ -341,8 +340,7 @@ ODAPIDEF BOOL ODCALL od_send_file(const char *pszFileName)
 
    if(!bAnythingLocal)
    {
-      strcpy(szODWorkString, od_control.od_sending_rip);
-      strcat(szODWorkString, pszFileName);
+      snprintf(szODWorkString, sizeof(szODWorkString), "%s%s", od_control.od_sending_rip, pszFileName);
       ODStringCopy(szMessage, szODWorkString, sizeof(szMessage));
 
       pWindow = ODScrnShowMessage(szMessage, 0);
@@ -637,8 +635,7 @@ ODAPIDEF BOOL ODCALL od_send_file_section(char *pszFileName, char *pszSectionNam
       }
 
       /* Get filename of remote file. */
-      strcpy(szODWorkString, pszFileName);
-      strcat(szODWorkString, ".rip");
+      snprintf(szODWorkString, sizeof(szODWorkString), "%s.rip", pszFileName);
       strupr(szODWorkString);
    }
    else
@@ -652,7 +649,7 @@ ODAPIDEF BOOL ODCALL od_send_file_section(char *pszFileName, char *pszSectionNam
          return(FALSE);
       }
 
-      strcpy(szODWorkString, pszFileName);
+      snprintf(szODWorkString, sizeof(szODWorkString), "%s", pszFileName);
       strupr(szODWorkString);
 
       if(strstr(szODWorkString, ".rip"))
@@ -680,16 +677,14 @@ ODAPIDEF BOOL ODCALL od_send_file_section(char *pszFileName, char *pszSectionNam
 
    if(!bAnythingLocal)
    {
-      strcpy(szODWorkString, od_control.od_sending_rip);
-      strcat(szODWorkString, pszFileName);
+      snprintf(szODWorkString, sizeof(szODWorkString), "%s%s", od_control.od_sending_rip, pszFileName);
       ODStringCopy(szMessage, szODWorkString, sizeof(szMessage));
 
       pWindow = ODScrnShowMessage(szMessage, 0);
    }
 
    /* Create section name information */
-   strcpy(szFullSectionName, "@#");
-   strncat(szFullSectionName, pszSectionName, 254);
+   snprintf(szFullSectionName, sizeof(szFullSectionName), "@#%s", pszSectionName);
 
    /* Get the length of the section name in it's full form */
    uSectionNameLength = strlen(szFullSectionName); 
@@ -951,28 +946,28 @@ static FILE *ODEmulateFindCompatFile(const char *pszBaseName, INT *pnLevel)
    for(;*pnLevel > LEVEL_NONE; --*pnLevel)
    {
       /* Get base-filename passed in. */
-      strcpy(szODWorkString, pszBaseName);
+      snprintf(szODWorkString, sizeof(szODWorkString), "%s", pszBaseName);
 
       /* Try current extension. */
       switch(*pnLevel)
       {
          case LEVEL_RIP:
             if(!od_control.user_rip) continue;
-            strcat(szODWorkString, ".rip");
+            snprintf(szODWorkString, sizeof(szODWorkString), "%s.rip", pszBaseName);
             break;
 
          case LEVEL_AVATAR:
             if(!od_control.user_avatar) continue;
-            strcat(szODWorkString, ".avt");
+            snprintf(szODWorkString, sizeof(szODWorkString), "%s.avt", pszBaseName);
             break;
 
          case LEVEL_ANSI:
             if(!od_control.user_ansi) continue;
-            strcat(szODWorkString, ".ans");
+            snprintf(szODWorkString, sizeof(szODWorkString), "%s.ans", pszBaseName);
             break;
 
          case LEVEL_ASCII:
-            strcat(szODWorkString, ".asc");
+            snprintf(szODWorkString, sizeof(szODWorkString), "%s.asc", pszBaseName);
             break;
       }
 
