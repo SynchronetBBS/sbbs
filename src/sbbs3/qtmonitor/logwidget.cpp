@@ -20,12 +20,15 @@ static const char *LogLevelShort[] = {
 class LogBlockData : public QTextBlockUserData
 {
 public:
-	LogBlockData(int level, int tsLen = 0) : m_level(level), m_tsLen(tsLen) {}
+	LogBlockData(int level, int tsLen = 0, const QString &host = {})
+		: m_level(level), m_tsLen(tsLen), m_host(host) {}
 	int level() const { return m_level; }
 	int tsLen() const { return m_tsLen; }
+	const QString &host() const { return m_host; }
 private:
 	int m_level;
 	int m_tsLen;
+	QString m_host;
 };
 
 LogWidget::LogWidget(const QString &title, const QString &serverId,
@@ -65,8 +68,8 @@ LogWidget::LogWidget(const QString &title, const QString &serverId,
 		m_paused = paused;
 		m_pauseBtn->setText(paused ? "Resume" : "Pause");
 		if (!paused) {
-			for (auto &[level, ts, txt] : m_buffer)
-				appendLine(level, ts, txt);
+			for (auto &[level, ts, txt, host] : m_buffer)
+				appendLine(level, ts, txt, host);
 			m_buffer.clear();
 		}
 	});
@@ -125,14 +128,23 @@ void LogWidget::setLevel(int level)
 	m_levelCombo->setCurrentIndex(qBound(0, level, 7));
 }
 
-void LogWidget::appendLog(int level, const QString &timestamp, const QString &text)
+void LogWidget::setHostFilter(const QString &host)
+{
+	if (m_hostFilter == host)
+		return;
+	m_hostFilter = host;
+	startFilterApply();
+}
+
+void LogWidget::appendLog(int level, const QString &timestamp, const QString &text,
+                          const QString &host)
 {
 	if (level > m_minLevel) return;
 	if (m_paused) {
-		m_buffer.append({level, timestamp, text});
+		m_buffer.append({level, timestamp, text, host});
 		return;
 	}
-	appendLine(level, timestamp, text);
+	appendLine(level, timestamp, text, host);
 }
 
 static void insertWithControls(QTextCursor &cursor, const QString &text, const QTextCharFormat &fmt)
@@ -168,7 +180,8 @@ static void insertWithControls(QTextCursor &cursor, const QString &text, const Q
 		cursor.insertText(run, fmt);
 }
 
-void LogWidget::appendLine(int level, const QString &timestamp, const QString &text)
+void LogWidget::appendLine(int level, const QString &timestamp, const QString &text,
+                           const QString &host)
 {
 	QTextCharFormat fmt;
 	fmt.setForeground(colorForLevel(level));
@@ -193,7 +206,7 @@ void LogWidget::appendLine(int level, const QString &timestamp, const QString &t
 
 	QTextBlock block = cursor.block().previous();
 	if (block.isValid()) {
-		block.setUserData(new LogBlockData(level, tsLen));
+		block.setUserData(new LogBlockData(level, tsLen, host));
 		block.setVisible(blockMatchesFilter(block));
 	}
 
@@ -207,6 +220,8 @@ bool LogWidget::blockMatchesFilter(const QTextBlock &block) const
 	if (!data)
 		return true;
 	if (!m_levelVisible[qBound(0, data->level(), 7)])
+		return false;
+	if (!m_hostFilter.isEmpty() && !data->host().isEmpty() && data->host() != m_hostFilter)
 		return false;
 	if (!m_filterText.isEmpty() && !block.text().contains(m_filterText, Qt::CaseInsensitive))
 		return false;

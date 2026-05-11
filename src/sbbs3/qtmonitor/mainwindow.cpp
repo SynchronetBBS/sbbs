@@ -341,7 +341,12 @@ void MainWindow::setupToolbar()
 	toolbar->addSeparator();
 	m_hostCombo = new QComboBox;
 	m_hostCombo->addItem("All Hosts");
-	m_hostCombo->setToolTip("Target host for control actions");
+	m_hostCombo->setToolTip("Filter display and target host for control actions");
+	connect(m_hostCombo, &QComboBox::currentIndexChanged, this, [this] {
+		QString host = selectedHost();
+		for (auto *pane : m_logPanes)
+			pane->setHostFilter(host);
+	});
 	toolbar->addWidget(m_hostCombo);
 
 	toolbar->addSeparator();
@@ -444,20 +449,18 @@ void MainWindow::connectMqttSignals()
 			m_mqtt->disconnectFromBroker();
 	});
 	connect(m_mqtt, &MqttClient::logMessage, this, [this](const QString &host, const QString &server, int level, const QString &ts, const QString &text) {
-		if (!hostMatches(host)) return;
 		QString prefix = (multiHost() && !host.isEmpty()) ? "[" + host + "] " : "";
 		if (auto *pane = m_logPanes.value(server))
-			pane->appendLog(level, ts, prefix + text);
+			pane->appendLog(level, ts, prefix + text, host);
 		if (auto *bbs = m_logPanes.value("bbs"))
-			bbs->appendLog(level, ts, prefix + "[" + ServerLabels.value(server, server) + "] " + text);
+			bbs->appendLog(level, ts, prefix + "[" + ServerLabels.value(server, server) + "] " + text, host);
 	});
 	connect(m_mqtt, &MqttClient::eventLogMessage, this, [this](const QString &host, int level, const QString &ts, const QString &text) {
-		if (!hostMatches(host)) return;
 		QString prefix = (multiHost() && !host.isEmpty()) ? "[" + host + "] " : "";
 		if (auto *events = m_logPanes.value("events"))
-			events->appendLog(level, ts, prefix + text);
+			events->appendLog(level, ts, prefix + text, host);
 		if (auto *bbs = m_logPanes.value("bbs"))
-			bbs->appendLog(level, ts, prefix + "[Events] " + text);
+			bbs->appendLog(level, ts, prefix + "[Events] " + text, host);
 	});
 	connect(m_mqtt, &MqttClient::nodeStatus, this, [this](const QString &host, int nodeNum, const QVariantMap &fields) {
 		if (!hostMatches(host)) return;

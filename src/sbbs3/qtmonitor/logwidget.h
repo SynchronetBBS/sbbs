@@ -21,11 +21,13 @@ public:
 	explicit LogWidget(const QString &title = "Log", const QString &serverId = {},
 	                   const QString &controlLabel = "Server",
 	                   bool dark = true, QWidget *parent = nullptr);
-	void appendLog(int level, const QString &timestamp, const QString &text);
+	void appendLog(int level, const QString &timestamp, const QString &text,
+	               const QString &host = {});
 	void setDark(bool dark);
 	void setMaxLines(int max);
 
 	void setLevel(int level);
+	void setHostFilter(const QString &host);
 
 signals:
 	void levelChanged(const QString &serverId, int maxLevel);
@@ -34,7 +36,8 @@ signals:
 	void resumeServer(const QString &server);
 
 private:
-	void appendLine(int level, const QString &timestamp, const QString &text);
+	void appendLine(int level, const QString &timestamp, const QString &text,
+	                const QString &host = {});
 	void startFilterApply();
 	void applyFilterChunk();
 	void recolorBlocks();
@@ -58,7 +61,8 @@ private:
 	bool m_dark;
 	bool m_levelVisible[8] = {true, true, true, true, true, true, true, true};
 	QString m_serverId;
-	QVector<std::tuple<int, QString, QString>> m_buffer;
+	QString m_hostFilter;
+	QVector<std::tuple<int, QString, QString, QString>> m_buffer;
 };
 
 #endif
