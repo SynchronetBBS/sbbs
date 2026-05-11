@@ -40,7 +40,7 @@ LogWidget::LogWidget(const QString &title, const QString &serverId,
 
 	auto *toolbar = new QHBoxLayout;
 
-	if (!serverId.isEmpty()) {
+	if (!serverId.isEmpty() && !controlLabel.isEmpty()) {
 		auto *serverBtn = new QToolButton;
 		serverBtn->setText(controlLabel);
 		serverBtn->setPopupMode(QToolButton::InstantPopup);

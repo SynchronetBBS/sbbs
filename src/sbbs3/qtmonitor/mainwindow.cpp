@@ -144,7 +144,7 @@ void MainWindow::setupDocks()
 	addDockWidget(Qt::BottomDockWidgetArea, bbsDock);
 	if (firstLogDock) tabifyDockWidget(firstLogDock, bbsDock);
 
-	auto *eventsLog = new LogWidget("Events", "events");
+	auto *eventsLog = new LogWidget("Events", "events", {});
 	int eventsLevel = m_settings.value("logLevel/events", 6).toInt();
 	eventsLog->setLevel(eventsLevel);
 	m_mqtt->setLogLevel("events", eventsLevel);
@@ -399,7 +399,7 @@ void MainWindow::connectMqttSignals()
 			return;
 		if (m_logPanes.contains("broker"))
 			return;
-		auto *brokerLog = new LogWidget("Broker", "broker");
+		auto *brokerLog = new LogWidget("Broker", "broker", {});
 		int brokerLevel = m_settings.value("logLevel/broker", 6).toInt();
 		brokerLog->setLevel(brokerLevel);
 		m_mqtt->setLogLevel("broker", brokerLevel);
