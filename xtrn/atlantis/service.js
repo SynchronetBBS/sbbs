@@ -26,6 +26,7 @@ function main()
 	var i;
 	var tmp;
 	var fa;
+	var rl;
 
 	f=new File(script_dir+"games.ini");
 	f.open("r");
@@ -33,7 +34,10 @@ function main()
 	f.close();
 
 	do {
-		switch(readln().toLowerCase()) {
+		rl = readln();
+		if (rl === null)
+			continue;
+		switch(rl.toLowerCase()) {
 			case 'help':
 				writeln("Commands available:");
 				writeln("quit        user        password    list_games  select_game get_summary");
