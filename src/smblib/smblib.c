@@ -1660,11 +1660,34 @@ int smb_new_msghdr(smb_t* smb, smbmsg_t* msg, int storage, bool new_msg)
 
 	idxlen = filelength(fileno(smb->sid_fp));
 	if (idxlen != (smb->status.total_msgs * idxreclen)) {
-		safe_snprintf(smb->last_error, sizeof(smb->last_error)
-		              , "%s index file length (%" PRIdOFF "), expected (%d)", __FUNCTION__
-		              , idxlen, (uint)(smb->status.total_msgs * idxreclen));
-		smb_unlocksmbhdr(smb);
-		return SMB_ERR_FILE_LEN;
+		off_t actual_msgs = idxlen / idxreclen;
+		off_t diff = actual_msgs - smb->status.total_msgs;
+		/* Allow auto-repair of small discrepancies (1-2 records) */
+		if (diff >= -2 && diff <= 1 && (idxlen % idxreclen) == 0) {
+			safe_snprintf(smb->last_error, sizeof(smb->last_error)
+			              , "%s index length mismatch (%" PRIdOFF " vs %d) auto-correcting total_msgs", __FUNCTION__
+			              , idxlen, (uint)(smb->status.total_msgs * idxreclen));
+			if (diff == 1) {
+				/* .sid is one record long — truncate the orphan */
+				if (chsize(fileno(smb->sid_fp), smb->status.total_msgs * idxreclen) != 0) {
+					smb_unlocksmbhdr(smb);
+					return SMB_ERR_WRITE;
+				}
+			} else {
+				/* .sid is 1-2 records short — reduce total_msgs to match */
+				smb->status.total_msgs = (uint32_t)actual_msgs;
+				if ((i = smb_putstatus(smb)) != SMB_SUCCESS) {
+					smb_unlocksmbhdr(smb);
+					return i;
+				}
+			}
+		} else {
+			safe_snprintf(smb->last_error, sizeof(smb->last_error)
+			              , "%s index file length (%" PRIdOFF "), expected (%d)", __FUNCTION__
+			              , idxlen, (uint)(smb->status.total_msgs * idxreclen));
+			smb_unlocksmbhdr(smb);
+			return SMB_ERR_FILE_LEN;
+		}
 	}
 
 	if (new_msg) {
@@ -1709,7 +1732,7 @@ int smb_new_msghdr(smb_t* smb, smbmsg_t* msg, int storage, bool new_msg)
 	if (i == SMB_SUCCESS && new_msg) {
 		smb->status.last_msg++;
 		smb->status.total_msgs++;
-		smb_putstatus(smb);
+		i = smb_putstatus(smb);
 	}
 	smb_unlocksmbhdr(smb);
 	return i;
