@@ -1,436 +1,356 @@
-<HTML>
-<HEAD>
-<TITLE>Synchronet - Supported Platforms</TITLE>
-<style type="text/css">
-	<!--
-	td, th {font-size: smaller}
-	-->
-</style>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Synchronet - Supported Platforms</title>
+  <link rel="icon" href="//www.synchro.net/favicon.ico">
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .platform-wrap { overflow-x: auto; margin: 0 -6px; }
+    table.ptable {
+      border-collapse: collapse;
+      font-size: 11.5px;
+      white-space: nowrap;
+      width: 100%;
+    }
+    table.ptable th, table.ptable td {
+      border: 1px solid #c8d6e8;
+      padding: 4px 7px;
+      text-align: center;
+    }
+    table.ptable th {
+      background: #d6e5f3;
+      color: #1e3f62;
+      font-weight: 700;
+    }
+    table.ptable thead .group-header th {
+      background: #b8d0ec;
+      font-size: 10.5px;
+      padding: 3px 5px;
+      letter-spacing: 0.02em;
+    }
+    table.ptable td.ver {
+      font-weight: 700;
+      text-align: left;
+      font-size: 12px;
+    }
+    table.ptable td.circa {
+      color: #5b7491;
+      text-align: left;
+      font-size: 11px;
+    }
+    table.ptable tbody tr:hover td { background-color: #f0f4f9 !important; }
+    table.ptable td.y  { background: #d1fae5; color: #065f46; }
+    table.ptable td.n  { background: #fee2e2; color: #991b1b; }
+    table.ptable td.p  { background: #fef9c3; color: #713f12; }
+    table.ptable td.na { background: #f3f4f6; color: #9ca3af; font-size: 10px; }
+    table.ptable tbody tr.current td { outline: 2px solid #1a56db; outline-offset: -1px; }
+    table.ptable tbody tr.divider td {
+      background: #edf0f5;
+      font-size: 10px;
+      font-style: italic;
+      color: #5b7491;
+      text-align: center;
+      padding: 2px 4px;
+    }
+    .pt-notes { font-size: 12.5px; margin-top: 20px; line-height: 1.7; }
+    .pt-notes dt { font-weight: 700; float: left; min-width: 24px; }
+    .pt-notes dd { margin-left: 28px; margin-bottom: 3px; }
+    .pt-legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 12px; margin-bottom: 14px; }
+    .pt-legend span { display: inline-flex; align-items: center; gap: 5px; }
+    .pt-legend .swatch {
+      display: inline-block; width: 14px; height: 14px;
+      border-radius: 2px; border: 1px solid rgba(0,0,0,0.12);
+    }
+    .swatch-y  { background: #d1fae5; }
+    .swatch-p  { background: #fef9c3; }
+    .swatch-n  { background: #fee2e2; }
+    .swatch-na { background: #f3f4f6; }
+  </style>
 </head>
-<BODY>
-<font face="Arial,Helvetica">
-<font size=2>
-<TABLE border=1 align=center nowrap>
-  <CAPTION>
-  <H1>Synchronet - Supported Platforms</H1></CAPTION>
-  <TBODY>
-  <TR>
-	<th>
-	<th>
-    <TH nowrap colspan=17>Operating System (for Intel x86/i386 architecture)
-  <tr>
-	<th>
-	<th>Synchronet
-    <TH nowrap>DOS 
-    <TH nowrap>OS/2 
-    <TH nowrap colspan=5>Windows
-	<TH nowrap colspan=4>Windows NT
-    <TH nowrap>Linux 
-    <TH nowrap>FreeBSD
-    <TH nowrap>NetBSD
-    <TH nowrap>OpenBSD
-    <TH nowrap>Solaris
-    <TH nowrap>QNX
-  <tr>
-	<th>Circa
-    <th>Version
-	<th>3.1+
-	<th>2.1+
-	<th>3.x
-	<th>95
-	<th>OSR2
-	<th>98
-	<th>ME
-	<th>3.x
-	<th>4.x
-	<th>5.x
-	<th>6.x<th>2.x+
-	<th>4.x+
-	<th>2.x+
-	<th>3.x+
-	<th>8.x+
-	<th>???
-  <tr>
-    <td nowrap>Q4 2006<TD nowrap>3.14a<TD bgColor=red nowrap style="font-size: smaller">No
-    <TD bgColor=red nowrap style="font-size: smaller">No
-    <TD bgColor=red nowrap style="font-size: smaller">No
-    <TD bgColor=green nowrap style="font-size: smaller">Yes [4]
-    <TD bgColor=lime nowrap style="font-size: smaller">Yes
-    <TD bgColor=lime nowrap style="font-size: smaller">Yes
-    <TD bgColor=lime nowrap style="font-size: smaller">Yes
-    <TD bgColor=green nowrap style="font-size: smaller">Yes [4]
-    <TD bgColor=lime nowrap style="font-size: smaller">Yes
-    <TD bgColor=lime nowrap style="font-size: smaller">Yes 
-    <TD bgColor=lime nowrap style="font-size: smaller">Yes<TD bgColor=lime nowrap style="font-size: smaller">Yes 
-    <TD bgColor=lime nowrap style="font-size: smaller">Yes 
-    <TD bgColor=lime nowrap style="font-size: smaller">Yes 
-    <TD bgColor=lime nowrap style="font-size: smaller">Yes 
-    <TD bgColor=#FFFF00 nowrap style="font-size: smaller">Yes [5]
-    <TD bgColor=#FFFF00 nowrap style="font-size: smaller">Yes [5]
-  </tr>
-  <tr>
-    <td nowrap>Q4 2004
-    <TD nowrap>3.12a
-    <TD bgColor=red nowrap>No
-    <TD bgColor=red nowrap>No
-    <TD bgColor=red nowrap>No
-    <TD bgColor=green nowrap>Yes [4]
-    <TD bgColor=lime nowrap>Yes
-    <TD bgColor=lime nowrap>Yes
-    <TD bgColor=lime nowrap>Yes
-    <TD bgColor=green nowrap>Yes [4]
-    <TD bgColor=lime nowrap>Yes
-    <TD bgColor=lime nowrap>Yes 
-    <TD bgColor=#008000 nowrap>Yes [2]<TD bgColor=lime nowrap>Yes 
-    <TD bgColor=lime nowrap>Yes 
-    <TD bgColor=lime nowrap>Yes 
-    <TD bgColor=lime nowrap>Yes 
-    <TD bgColor=#FFFF00 nowrap>Yes [5]
-    <TD bgColor=#FFFF00 nowrap>Yes [5]
-  </tr>
-  <tr>
-	<td>Q1 2004
-    <TD nowrap>3.11b
-    <TD bgColor=red nowrap>No
-    <TD bgColor=red nowrap>No
-    <TD bgColor=red nowrap>No
-    <TD bgColor=green nowrap>Yes [4]
-    <TD bgColor=lime nowrap>Yes
-    <TD bgColor=lime nowrap>Yes
-    <TD bgColor=lime nowrap>Yes
-    <TD bgColor=green nowrap>Yes [4]
-    <TD bgColor=lime nowrap>Yes
-    <TD bgColor=lime nowrap>Yes 
-    <TD bgColor=#008000 nowrap>
-<font size=2 face="Arial,Helvetica">
-    Yes [2]</font><TD bgColor=lime nowrap>Yes 
-    <TD bgColor=lime nowrap>Yes 
-    <TD bgColor=red nowrap>No 
-    <TD bgColor=lime nowrap>Yes 
-    <TD bgColor=lime nowrap>Yes 
-    <TD bgColor=lime nowrap>Yes 
-  </tr>
-  <tr>
-	<td>Q4 2003
-    <TD nowrap>3.11a
-    <TD bgColor=red nowrap>No
-    <TD bgColor=red nowrap>No
-    <TD bgColor=red nowrap>No
-    <TD bgColor=green nowrap>Yes [4]
-    <TD bgColor=lime nowrap>Yes
-    <TD bgColor=lime nowrap>Yes
-    <TD bgColor=lime nowrap>Yes
-    <TD bgColor=green nowrap>Yes [4]
-    <TD bgColor=lime nowrap>Yes
-    <TD bgColor=lime nowrap>Yes 
-    <TD bgColor=#008000 nowrap>
-<font size=2 face="Arial,Helvetica">
-    Yes [2]</font><TD bgColor=lime nowrap>Yes 
-    <TD bgColor=lime nowrap>Yes 
-    <TD bgColor=red nowrap>No 
-    <TD bgColor=lime nowrap>Yes 
-    <TD bgColor=lime nowrap>Yes
-    <TD bgColor=lime nowrap>Yes
-  </tr>
-  <tr>
-	<td>Q1 2003
-    <TD nowrap>3.10L
-    <TD bgColor=red nowrap>No
-    <TD bgColor=red nowrap>No
-    <TD bgColor=red nowrap>No
-    <TD bgColor=green nowrap>Yes [4]
-    <TD bgColor=lime nowrap>Yes
-    <TD bgColor=lime nowrap>Yes
-    <TD bgColor=lime nowrap>Yes
-    <TD bgColor=green nowrap>Yes [4]
-    <TD bgColor=lime nowrap>Yes
-    <TD bgColor=lime nowrap>Yes 
-    <TD bgColor=#008000 nowrap>
-<font size=2 face="Arial,Helvetica">
-    Yes [2]</font><TD bgColor=lime nowrap>Yes 
-    <TD bgColor=lime nowrap>Yes 
-    <TD bgColor=red nowrap>No 
-    <TD bgColor=lime nowrap>Yes 
-    <TD bgColor=lime nowrap>Yes
-    <TD bgColor=lime nowrap>Yes
-  </tr>
-  <tr>
-	<td>Q4 2002
-    <TD nowrap>3.10k
-    <TD bgColor=red nowrap>No
-    <TD bgColor=red nowrap>No
-    <TD bgColor=red nowrap>No
-    <TD bgColor=green nowrap>Yes [4]
-    <TD bgColor=lime nowrap>Yes
-    <TD bgColor=lime nowrap>Yes
-    <TD bgColor=lime nowrap>Yes
-    <TD bgColor=green nowrap>Yes [4]
-    <TD bgColor=lime nowrap>Yes
-    <TD bgColor=lime nowrap>Yes 
-    <TD bgColor=#008000 nowrap>
-<font size=2 face="Arial,Helvetica">
-    Yes [2]</font><TD bgColor=lime nowrap>Yes 
-    <TD bgColor=lime nowrap>Yes 
-    <TD bgColor=red nowrap>No 
-    <TD bgColor=red nowrap>No 
-    <TD bgColor=red nowrap>No 
-    <TD bgColor=red nowrap>No 
-  </tr>
-  <tr>
-	<td>Q3 2002
-    <TD nowrap>3.10j
-    <TD bgColor=red nowrap>No
-    <TD bgColor=red nowrap>No
-    <TD bgColor=red nowrap>No
-    <TD bgColor=green nowrap>Yes [4]
-    <TD bgColor=lime nowrap>Yes
-    <TD bgColor=lime nowrap>Yes
-    <TD bgColor=lime nowrap>Yes
-    <TD bgColor=green nowrap>Yes [4]
-    <TD bgColor=lime nowrap>Yes
-    <TD bgColor=lime nowrap>Yes 
-    <TD bgColor=#008000 nowrap>
-<font size=2 face="Arial,Helvetica">
-    Yes [2]</font><TD bgColor=lime nowrap>Yes 
-    <TD bgColor=lime nowrap>Yes 
-    <TD bgColor=red nowrap>No 
-    <TD bgColor=red nowrap>No 
-    <TD bgColor=red nowrap>No 
-    <TD bgColor=red nowrap>No 
-  </tr>
-  <tr>
-	<td>Q2 2002
-    <TD nowrap>3.10i
-    <TD bgColor=red nowrap>No
-    <TD bgColor=red nowrap>No
-    <TD bgColor=red nowrap>No
-    <TD bgColor=green nowrap>Yes [4]
-    <TD bgColor=lime nowrap>Yes
-    <TD bgColor=lime nowrap>Yes
-    <TD bgColor=lime nowrap>Yes
-    <TD bgColor=green nowrap>Yes [4]
-    <TD bgColor=lime nowrap>Yes
-    <TD bgColor=lime nowrap>Yes 
-    <TD bgColor=#008000 nowrap>
-<font size=2 face="Arial,Helvetica">
-    Yes [2]</font><TD bgColor=lime nowrap>Yes 
-    <TD bgColor=lime nowrap>Yes 
-    <TD bgColor=red nowrap>No 
-    <TD bgColor=red nowrap>No 
-    <TD bgColor=red nowrap>No 
-    <TD bgColor=red nowrap>No 
-  </tr>
-  <tr>
-	<td>Q1 2002
-    <TD nowrap>3.10h
-    <TD bgColor=red nowrap>No
-    <TD bgColor=red nowrap>No
-    <TD bgColor=red nowrap>No
-    <TD bgColor=green nowrap>Yes [4]
-    <TD bgColor=lime nowrap>Yes
-    <TD bgColor=lime nowrap>Yes
-    <TD bgColor=lime nowrap>Yes
-    <TD bgColor=green nowrap>Yes [4]
-    <TD bgColor=lime nowrap>Yes
-    <TD bgColor=lime nowrap>Yes 
-    <TD bgColor=#008000 nowrap>
-<font size=2 face="Arial,Helvetica">
-    Yes [2]</font><TD bgColor=lime nowrap>Yes 
-    <TD bgColor=lime nowrap>Yes 
-    <TD bgColor=red nowrap>No 
-    <TD bgColor=red nowrap>No 
-    <TD bgColor=red nowrap>No 
-    <TD bgColor=red nowrap>No 
-  </tr>
-  <tr>
-	<td>Q1 2002
-    <TD nowrap>3.10g
-    <TD bgColor=red nowrap>No
-    <TD bgColor=red nowrap>No
-    <TD bgColor=red nowrap>No
-    <TD bgColor=lime nowrap>Yes
-    <TD bgColor=lime nowrap>Yes
-    <TD bgColor=lime nowrap>Yes
-    <TD bgColor=lime nowrap>Yes
-    <TD bgColor=lime nowrap>Yes
-    <TD bgColor=lime nowrap>Yes
-    <TD bgColor=lime nowrap>Yes 
-    <TD bgColor=#008000 nowrap>
-<font size=2 face="Arial,Helvetica">
-    Yes [2]</font><TD bgColor=lime nowrap>Yes 
-    <TD bgColor=green nowrap>Yes [7] 
-    <TD bgColor=red nowrap>No 
-    <TD bgColor=red nowrap>No 
-    <TD bgColor=red nowrap>No 
-    <TD bgColor=red nowrap>No 
-  </tr>
-  <tr>
-    <td>Q4 2001
-    <TD nowrap>3.10f
-    <TD bgColor=red nowrap>No
-    <TD bgColor=red nowrap>No
-    <TD bgColor=red nowrap>No
-    <TD bgColor=lime nowrap>Yes
-    <TD bgColor=lime nowrap>Yes
-    <TD bgColor=lime nowrap>Yes
-    <TD bgColor=lime nowrap>Yes
-    <TD bgColor=lime nowrap>Yes
-    <TD bgColor=lime nowrap>Yes
-    <TD bgColor=lime nowrap>Yes 
-    <TD bgColor=green nowrap>
-<font size=2 face="Arial,Helvetica">
-    Yes [2]</font><TD bgColor=green nowrap>Yes [6,7]
-    <TD bgColor=green nowrap>Yes [6,7]
-    <TD bgColor=red nowrap>No 
-    <TD bgColor=red nowrap>No 
-    <TD bgColor=red nowrap>No 
-    <TD bgColor=red nowrap>No 
-  </tr>
-  <tr>
-	<td>Q3 2001
-    <TD nowrap>3.10a-e
-    <TD bgColor=red nowrap>No
-    <TD bgColor=red nowrap>No
-    <TD bgColor=red nowrap>No
-    <TD bgColor=lime nowrap>Yes
-    <TD bgColor=lime nowrap>Yes
-    <TD bgColor=lime nowrap>Yes
-    <TD bgColor=lime nowrap>Yes
-    <TD bgColor=lime nowrap>Yes
-    <TD bgColor=lime nowrap>Yes
-    <TD bgColor=lime nowrap>Yes 
-    <TD bgColor=green nowrap>
-<font size=2 face="Arial,Helvetica">
-    Yes [2]</font><TD bgColor=green nowrap>Yes [6,7]
-    <TD bgColor=red nowrap>No 
-    <TD bgColor=red nowrap>No 
-    <TD bgColor=red nowrap>No 
-    <TD bgColor=red nowrap>No 
-    <TD bgColor=red nowrap>No 
-  </tr>
-  <tr>
-	<td>Q1 2001
-    <TD nowrap>3.00c
-    <TD bgColor=red nowrap>No
-    <TD bgColor=red nowrap>No
-    <TD bgColor=red nowrap>No
-    <TD bgColor=lime nowrap>Yes
-    <TD bgColor=lime nowrap>Yes
-    <TD bgColor=lime nowrap>Yes
-    <TD bgColor=lime nowrap>Yes
-    <TD bgColor=lime nowrap>Yes
-    <TD bgColor=lime nowrap>Yes
-    <TD bgColor=lime nowrap>Yes 
-    <TD bgColor=green nowrap>
-<font size=2 face="Arial,Helvetica">
-    Yes [2]</font><TD bgColor=green nowrap>Yes [6]
-    <TD bgColor=red nowrap>No 
-    <TD bgColor=red nowrap>No  
-    <TD bgColor=red nowrap>No  
-    <TD bgColor=red nowrap>No  
-    <TD bgColor=red nowrap>No 
-  </tr>
-  <tr>
-	<td>Q2 2000
-    <TD nowrap>3.00b
-    <TD bgColor=red nowrap>No
-    <TD bgColor=red nowrap>No
-    <TD bgColor=red nowrap>No
-    <TD bgColor=red nowrap>No [3]
-    <TD bgColor=lime nowrap>Yes
-    <TD bgColor=lime nowrap>Yes
-    <TD bgColor=lime nowrap>Yes
-    <TD bgColor=red nowrap>No [3]
-    <TD bgColor=lime nowrap>Yes
-    <TD bgColor=lime nowrap>Yes 
-    <TD bgColor=#008000 nowrap>
-<font size=2 face="Arial,Helvetica">
-    Yes [2]</font><TD bgColor=red nowrap>No 
-    <TD bgColor=red nowrap>No 
-    <TD bgColor=red nowrap>No  
-    <TD bgColor=red nowrap>No  
-    <TD bgColor=red nowrap>No  
-    <TD bgColor=red nowrap>No 
-  </tr>
-  <tr>
-    <td>Q1 2000
-    <TD nowrap>3.00a
-    <TD bgColor=red nowrap>No
-    <TD bgColor=red nowrap>No
-    <TD bgColor=red nowrap>No
-    <TD bgColor=red nowrap>No [3]
-    <TD bgColor=lime nowrap>Yes
-    <TD bgColor=lime nowrap>Yes
-    <TD bgColor=lime nowrap>Yes
-    <TD bgColor=red nowrap>No [3]
-    <TD bgColor=green nowrap>Yes [2]
-    <TD bgColor=green nowrap>Yes [2] 
-    <TD bgColor=#008000 nowrap>Yes [2]<TD bgColor=red nowrap>No 
-    <TD bgColor=red nowrap>No  
-    <TD bgColor=red nowrap>No  
-    <TD bgColor=red nowrap>No  
-    <TD bgColor=red nowrap>No  
-    <TD bgColor=red nowrap>No 
-  </tr>
-  <tr>
-    <td>Q2 1997
-    <TD nowrap>2.30
-    <TD bgColor=lime nowrap>Yes
-    <TD bgColor=lime nowrap>Yes
-    <TD bgColor=green nowrap>Yes [1]
-    <TD bgColor=green nowrap>Yes [1]
-    <TD bgColor=green nowrap>Yes [1]
-    <TD bgColor=green nowrap>Yes [1]
-    <TD bgColor=green nowrap>Yes [1]
-    <TD bgColor=green nowrap>Yes [1]
-    <TD bgColor=green nowrap>Yes [1]
-    <TD bgColor=green nowrap>Yes [1] 
-    <TD bgColor=#008000 nowrap>Yes [1]<TD bgColor=red nowrap>No 
-    <TD bgColor=red nowrap>No 
-    <TD bgColor=red nowrap>No  
-    <TD bgColor=red nowrap>No  
-    <TD bgColor=red nowrap>No  
-    <TD bgColor=red nowrap>No 
-  </tr>
-  <TR>
-    <td>1992-1995
-    <TD nowrap>Pre 2.3
-    <TD bgColor=lime nowrap>Yes
-    <TD bgColor=green nowrap>Yes [1]
-    <TD bgColor=green nowrap>Yes [1]
-    <TD bgColor=green nowrap>Yes [1]
-    <TD bgColor=green nowrap>Yes [1]
-    <TD bgColor=green nowrap>Yes [1]
-    <TD bgColor=green nowrap>Yes [1]
-    <TD bgColor=green nowrap>Yes [1]
-    <TD bgColor=green nowrap>Yes [1]
-    <TD bgColor=green nowrap>Yes [1] 
-    <TD bgColor=#008000 nowrap>
-<font size=2 face="Arial,Helvetica">
-    Yes [1]</font><TD bgColor=red nowrap>No 
-    <TD bgColor=red nowrap>No 
-    <TD bgColor=red nowrap>No  
-    <TD bgColor=red nowrap>No  
-    <TD bgColor=red nowrap>No  
-    <TD bgColor=red nowrap>No 
-  </TBODY>
-</TABLE>
-<p>Note: <b>Windows NT 5.x</b> includes <i>Windows 2000</i>, <i>Windows XP</i>, and <i>Windows 2003</i>
-(and their variants)<br>
-Note: <b>Windows NT 6.x</b> includes <i>Windows 2008</i> and <i>Windows Vista</i>
-(and their variants)
-<p>
-[1] Supported in DOS-Box/Emulation mode only<BR>
-[2] No FOSSIL/DOS-interrupt driver (for external programs/doors)<BR>
-[3] No support for Win32 API function: GetDiskFreeSpaceEx<BR>
-[4] GUI portions require OLEAUT32.DLL, which may be obtained by upgrading Internet Explorer<br>
-[5] Support is theoretical.&nbsp; Has not been compiled/tested, but no changes known to break it have been comitted.<br>
-[6] No configuration utilities (ie: SCFG)<br>
-[7] No JavaScript support
-</font>
-<p align="right"><font size="1">
-$Id: platforms.html,v 1.7 2009/02/21 23:27:04 rswindell Exp $</font>
+<body>
+
+<header class="site-header">
+  <div class="header-top">
+    <div class="header-brand">
+      <a href="//www.synchro.net/index.html"><img src="images/synchronet2.png" alt="Synchronet BBS Software" class="site-logo"></a>
+    </div>
+  </div>
+  <nav class="site-nav">
+    <a href="//www.synchro.net/index.html">News</a>
+    <a href="//www.synchro.net/about.html">About</a>
+    <a href="//www.synchro.net/sbbslist.html">BBS List</a>
+    <a href="//www.synchro.net/download.xjs">Download</a>
+    <a href="index.htm" class="active">Docs</a>
+    <a href="//wiki.synchro.net/howto:support">Support</a>
+    <a href="//www.synchro.net/chat.html">Chat</a>
+    <a href="//wiki.synchro.net/faq:index">FAQ</a>
+    <a href="//wiki.synchro.net/resource:index">Resources</a>
+    <a href="//wiki.synchro.net/dev:source">Source</a>
+    <a href="//www.synchro.net/credits.html">Credits</a>
+    <a href="//wiki.synchro.net/history:museum:">Museum</a>
+  </nav>
+</header>
+
+<div class="page-wrapper">
+<div class="content-card">
+<h1 class="page-title">Synchronet &mdash; Supported Platforms</h1>
+
+<div class="pt-legend">
+  <span><span class="swatch swatch-y"></span> Yes &mdash; supported</span>
+  <span><span class="swatch swatch-p"></span> Yes* &mdash; limited or theoretical</span>
+  <span><span class="swatch swatch-n"></span> No &mdash; not supported</span>
+  <span><span class="swatch swatch-na"></span> &mdash; &mdash; not applicable / predates platform</span>
+</div>
+
+<div class="platform-wrap">
+<table class="ptable">
+  <thead>
+    <tr class="group-header">
+      <th rowspan="2">Circa</th>
+      <th rowspan="2">Version</th>
+      <th colspan="4">Windows</th>
+      <th colspan="3">Linux</th>
+      <th rowspan="2">BSD</th>
+      <th rowspan="2">macOS</th>
+    </tr>
+    <tr class="group-header">
+      <th>9x / ME</th>
+      <th>XP / 2003</th>
+      <th>Vista / 7</th>
+      <th>8 &ndash; 11</th>
+      <th>x86</th>
+      <th>x86_64</th>
+      <th>ARM</th>
+    </tr>
+  </thead>
+  <tbody>
+
+    <!-- Current release -->
+    <tr class="current">
+      <td class="circa">Q1 2026</td>
+      <td class="ver">3.21 &#x2605;</td>
+      <td class="n">No</td>
+      <td class="n">No</td>
+      <td class="n">No [a]</td>
+      <td class="y">Yes</td>
+      <td class="y">Yes</td>
+      <td class="y">Yes</td>
+      <td class="y">Yes</td>
+      <td class="y">Yes</td>
+      <td class="y">Yes</td>
+    </tr>
+
+    <tr>
+      <td class="circa">2025</td>
+      <td class="ver">3.20</td>
+      <td class="n">No</td>
+      <td class="n">No [b]</td>
+      <td class="y">Yes [a]</td>
+      <td class="y">Yes</td>
+      <td class="y">Yes</td>
+      <td class="y">Yes</td>
+      <td class="y">Yes</td>
+      <td class="y">Yes</td>
+      <td class="y">Yes</td>
+    </tr>
+
+    <tr>
+      <td class="circa">Q1 2022</td>
+      <td class="ver">3.19</td>
+      <td class="n">No</td>
+      <td class="p">Yes [c]</td>
+      <td class="y">Yes</td>
+      <td class="y">Yes</td>
+      <td class="y">Yes</td>
+      <td class="y">Yes</td>
+      <td class="y">Yes</td>
+      <td class="y">Yes</td>
+      <td class="y">Yes</td>
+    </tr>
+
+    <tr>
+      <td class="circa">Q3 2020</td>
+      <td class="ver">3.18</td>
+      <td class="n">No</td>
+      <td class="y">Yes</td>
+      <td class="y">Yes</td>
+      <td class="y">Yes</td>
+      <td class="y">Yes</td>
+      <td class="y">Yes</td>
+      <td class="y">Yes</td>
+      <td class="y">Yes</td>
+      <td class="y">Yes</td>
+    </tr>
+
+    <tr>
+      <td class="circa">Q1 2019</td>
+      <td class="ver">3.17</td>
+      <td class="n">No</td>
+      <td class="y">Yes</td>
+      <td class="y">Yes</td>
+      <td class="y">Yes</td>
+      <td class="y">Yes</td>
+      <td class="y">Yes</td>
+      <td class="y">Yes</td>
+      <td class="y">Yes</td>
+      <td class="y">Yes</td>
+    </tr>
+
+    <tr>
+      <td class="circa">Q3 2015</td>
+      <td class="ver">3.16</td>
+      <td class="n">No</td>
+      <td class="y">Yes</td>
+      <td class="y">Yes</td>
+      <td class="y">Yes</td>
+      <td class="y">Yes</td>
+      <td class="y">Yes</td>
+      <td class="n">No</td>
+      <td class="y">Yes</td>
+      <td class="p">Yes*</td>
+    </tr>
+
+    <tr>
+      <td class="circa">Q4 2011</td>
+      <td class="ver">3.15</td>
+      <td class="n">No</td>
+      <td class="y">Yes</td>
+      <td class="y">Yes</td>
+      <td class="p">Yes*</td>
+      <td class="y">Yes</td>
+      <td class="n">No</td>
+      <td class="n">No</td>
+      <td class="y">Yes</td>
+      <td class="n">No</td>
+    </tr>
+
+    <tr class="divider">
+      <td colspan="11">&#x2500; Legacy versions &#x2500;</td>
+    </tr>
+
+    <tr>
+      <td class="circa">2005 &ndash; 2006</td>
+      <td class="ver">3.13 &ndash; 3.14</td>
+      <td class="p">Yes [4]</td>
+      <td class="y">Yes</td>
+      <td class="y">Yes</td>
+      <td class="na">&mdash;</td>
+      <td class="y">Yes</td>
+      <td class="na">&mdash;</td>
+      <td class="na">&mdash;</td>
+      <td class="y">Yes</td>
+      <td class="n">No</td>
+    </tr>
+
+    <tr>
+      <td class="circa">2002 &ndash; 2004</td>
+      <td class="ver">3.10h &ndash; 3.12</td>
+      <td class="p">Yes [4]</td>
+      <td class="y">Yes</td>
+      <td class="n">No</td>
+      <td class="na">&mdash;</td>
+      <td class="y">Yes</td>
+      <td class="na">&mdash;</td>
+      <td class="na">&mdash;</td>
+      <td class="p">Yes* [5]</td>
+      <td class="n">No</td>
+    </tr>
+
+    <tr>
+      <td class="circa">2001 &ndash; 2002</td>
+      <td class="ver">3.00c &ndash; 3.10</td>
+      <td class="y">Yes</td>
+      <td class="y">Yes</td>
+      <td class="n">No</td>
+      <td class="na">&mdash;</td>
+      <td class="p">Yes [2,6,7]</td>
+      <td class="na">&mdash;</td>
+      <td class="na">&mdash;</td>
+      <td class="p">FreeBSD [6,7]</td>
+      <td class="n">No</td>
+    </tr>
+
+    <tr>
+      <td class="circa">2000</td>
+      <td class="ver">3.00a &ndash; b</td>
+      <td class="p">Yes [3]</td>
+      <td class="p">Yes [3]</td>
+      <td class="n">No</td>
+      <td class="na">&mdash;</td>
+      <td class="p">Yes [2,5]</td>
+      <td class="na">&mdash;</td>
+      <td class="na">&mdash;</td>
+      <td class="n">No</td>
+      <td class="n">No</td>
+    </tr>
+
+    <tr>
+      <td class="circa">Q2 1997</td>
+      <td class="ver">2.30 [d]</td>
+      <td class="p">Yes [1]</td>
+      <td class="p">Yes [1]</td>
+      <td class="p">Yes [1]</td>
+      <td class="p">Yes [1]</td>
+      <td class="p">Yes [1]</td>
+      <td class="na">&mdash;</td>
+      <td class="na">&mdash;</td>
+      <td class="n">No</td>
+      <td class="n">No</td>
+    </tr>
+
+    <tr>
+      <td class="circa">1992 &ndash; 1995</td>
+      <td class="ver">Pre&nbsp;2.3 [d]</td>
+      <td class="p">Yes [1]</td>
+      <td class="p">Yes [1]</td>
+      <td class="p">Yes [1]</td>
+      <td class="p">Yes [1]</td>
+      <td class="p">Yes [1]</td>
+      <td class="na">&mdash;</td>
+      <td class="na">&mdash;</td>
+      <td class="n">No</td>
+      <td class="n">No</td>
+    </tr>
+
+  </tbody>
+</table>
+</div><!-- platform-wrap -->
+
+<p style="font-size:11.5px;color:#5b7491;margin-top:8px;">
+  &#x2605; = current release &nbsp;&bull;&nbsp;
+  <strong>BSD</strong> = FreeBSD, NetBSD &amp; OpenBSD &nbsp;&bull;&nbsp;
+  <strong>Vista/7</strong> = NT 6.0&ndash;6.1 (incl. Server 2008 R2) &nbsp;&bull;&nbsp;
+  <strong>8&ndash;11</strong> = NT 6.2&ndash;10 (incl. Server 2012&ndash;2022) &nbsp;&bull;&nbsp;
+  <strong>Yes*</strong> = source builds only, no official binaries &nbsp;&bull;&nbsp;
+  Solaris 8+ and QNX supported from v3.11; source builds only [5]
 </p>
-</font>
+
+<dl class="pt-notes">
+  <dt>[1]</dt><dd>DOS/OS2 emulation only (NTVDM on Windows, DOSEMU on Linux) &mdash; no TCP/IP; all BBS services require modem/FOSSIL hardware. NTVDM is present in 32-bit editions of Windows through Windows 10.</dd>
+  <dt>[2]</dt><dd>No FOSSIL/interrupt driver &mdash; external programs and door games not supported</dd>
+  <dt>[3]</dt><dd>Windows 95 (original) and Windows NT 3.x not supported due to missing <code>GetDiskFreeSpaceEx</code>; Windows 95 OSR2+ or Windows NT 4+ required</dd>
+  <dt>[4]</dt><dd>GUI (sbbsctrl) requires <code>OLEAUT32.DLL</code>; obtain by upgrading Internet Explorer</dd>
+  <dt>[5]</dt><dd>FreeBSD, NetBSD, and OpenBSD were added incrementally across v3.10h&ndash;3.12; some variants may lack full support in earlier sub-versions of this range</dd>
+  <dt>[6]</dt><dd>No configuration utilities (SCFG) in early Unix ports</dd>
+  <dt>[7]</dt><dd>No JavaScript support in early Unix ports</dd>
+  <dt>[a]</dt><dd>v3.20 is the last release to officially support Windows Vista and 7. In v3.21, <code>scfg.exe</code> and <code>echocfg.exe</code> fail on Windows 7 due to a new dependency on <code>GetOverlappedResultEx</code> (absent from the Windows 7 kernel); patched utility builds were released separately.</dd>
+  <dt>[b]</dt><dd>Windows XP not supported &mdash; library dependencies in v3.20 require Windows Vista or later</dd>
+  <dt>[c]</dt><dd>Windows XP compatibility issues documented (e.g. missing <code>inet_ntop</code>); XP support was degrading prior to v3.20</dd>
+  <dt>[d]</dt><dd>Native DOS program; v2.30 also had a native OS/2 port. v3.00 and later are native Win32 / Unix programs.</dd>
+</dl>
+
+</div><!-- content-card -->
+</div><!-- page-wrapper -->
+
+<footer class="site-footer">
+  <div class="footer-inner">
+    <div class="footer-right">
+      Copyright &copy; <a href="//www.synchro.net/author.html">Rob Swindell</a>
+    </div>
+  </div>
+</footer>
+
 </body>
 </html>
