@@ -1799,6 +1799,13 @@ static bool pop3_client_thread(pop3_t* pop3)
 					lprintf(LOG_INFO, "%04d %-5s <%s> message deleted", socket, client.protocol, user.alias);
 				continue;
 			}
+			if (strnicmp(buf, "USER ", 5) == 0 || strnicmp(buf, "PASS ", 5) == 0) {
+				/* RFC 1939: USER/PASS are only valid in AUTHORIZATION state.
+				 * Some clients (e.g. Thunderbird) reuse a connected socket and
+				 * re-issue these commands; respond with -ERR but keep the session. */
+				sockprintf(socket, client.protocol, session, "-ERR already authenticated");
+				continue;
+			}
 			lprintf(LOG_NOTICE, "%04d %-5s <%s> !UNSUPPORTED COMMAND: '%s'"
 			        , socket, client.protocol, user.alias, buf);
 			sockprintf(socket, client.protocol, session, "-ERR UNSUPPORTED COMMAND: %s", buf);
