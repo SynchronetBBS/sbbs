@@ -134,7 +134,7 @@ void sbbs_t::scanalldirs(int mode)
 			return;
 		}
 		bputs(text[SearchStringPrompt]);
-		if (!getstr(str, 40, K_LINE | K_UPPER)) {
+		if (!getstr(str, 120, K_LINE | K_UPPER)) {
 			term->lncntr = 0;
 			return;
 		}

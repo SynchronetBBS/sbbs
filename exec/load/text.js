@@ -954,7 +954,8 @@ var SeekPrompt=944;
 var QWKSettingsMIME=945;
 var FindStringNotFound=946;
 var SeekHelp=947;
+var InvalidSearchExpression=948;
 
-var TOTAL_TEXT=947;
+var TOTAL_TEXT=948;
 
 this;

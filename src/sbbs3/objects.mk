@@ -8,6 +8,7 @@ OBJS	=		$(LOAD_CFG_OBJS) \
 			$(MTOBJODIR)/answer$(OFILE)\
 			$(MTOBJODIR)/atcodes$(OFILE)\
 			$(MTOBJODIR)/bat_xfer$(OFILE)\
+			$(MTOBJODIR)/boolsrch$(OFILE)\
 			$(MTOBJODIR)/bulkmail$(OFILE)\
 			$(MTOBJODIR)/chat$(OFILE)\
 			$(MTOBJODIR)/chk_ar$(OFILE)\

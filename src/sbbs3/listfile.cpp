@@ -20,6 +20,7 @@
  ****************************************************************************/
 
 #include "sbbs.h"
+#include "boolsrch.h"
 #include "filedat.h"
 
 #define BF_MAX  26  /* Batch Flag max: A-Z */
@@ -35,17 +36,18 @@ int extdesclines(char *str);
 /*****************************************************************************/
 int sbbs_t::listfiles(const int dirnum, const char *filespec, FILE* tofile, const int mode)
 {
-	char    hdr[256], letter = 'A';
-	char    filepattern[SMB_FILEIDX_NAMELEN + 1] = "";
-	uchar   flagprompt = 0;
-	int     c, d;
-	int     i, j;
-	int     found = 0, lastbat = 0, disp;
-	size_t  m = 0;
-	int     anchor = 0, next;
-	file_t* bf[BF_MAX]; /* bf is batch flagged files */
-	uint    file_row[BF_MAX];
-	size_t  longest = 0;
+	char         hdr[256], letter = 'A';
+	char         filepattern[SMB_FILEIDX_NAMELEN + 1] = "";
+	uchar        flagprompt = 0;
+	int          c, d;
+	int          i, j;
+	int          found = 0, lastbat = 0, disp;
+	size_t       m = 0;
+	int          anchor = 0, next;
+	file_t*      bf[BF_MAX]; /* bf is batch flagged files */
+	uint         file_row[BF_MAX];
+	size_t       longest = 0;
+	bool_expr_t* find_expr = NULL;
 
 	if (!tofile) {
 		action = NODE_LFIL;
@@ -56,15 +58,32 @@ int sbbs_t::listfiles(const int dirnum, const char *filespec, FILE* tofile, cons
 			return i;
 	}
 
-	if (!smb_init_dir(&cfg, &smb, dirnum))
+	if ((mode & FL_FIND) && filespec != NULL && *filespec) {
+		char* errmsg = NULL;
+		find_expr = bool_expr_compile(filespec, &errmsg);
+		if (find_expr == NULL) {
+			bprintf(text[InvalidSearchExpression],
+			        errmsg != NULL ? errmsg : "(?)");
+			free(errmsg);
+			return 0;
+		}
+	}
+
+	if (!smb_init_dir(&cfg, &smb, dirnum)) {
+		bool_expr_free(find_expr);
 		return 0;
+	}
 	if (mode & FL_ULTIME) {
 		last_ns_time = now;
-		if (!newfiles(&smb, ns_time))    // this is fast
+		if (!newfiles(&smb, ns_time)) {    // this is fast
+			bool_expr_free(find_expr);
 			return 0;
+		}
 	}
-	if (smb_open_dir(&cfg, &smb, dirnum) != SMB_SUCCESS)
+	if (smb_open_dir(&cfg, &smb, dirnum) != SMB_SUCCESS) {
+		bool_expr_free(find_expr);
 		return 0;
+	}
 
 	filespec = liberal_filepattern(filespec, filepattern, sizeof filepattern);
 	size_t  file_count = 0;
@@ -77,6 +96,7 @@ int sbbs_t::listfiles(const int dirnum, const char *filespec, FILE* tofile, cons
 	if (file_list == NULL || file_count < 1) {
 		smb_close(&smb);
 		free(file_list);
+		bool_expr_free(find_expr);
 		return 0;
 	}
 
@@ -147,18 +167,9 @@ int sbbs_t::listfiles(const int dirnum, const char *filespec, FILE* tofile, cons
 			break;
 		}
 		if (mode & FL_FIND) {
-			char* p = (f->desc == NULL) ? NULL : strcasestr(f->desc, filespec);
-			if (p == NULL)
-				p = strcasestr(f->name, filespec);
-			if (p == NULL && f->extdesc != NULL)
-				p = strcasestr((char*)f->extdesc, filespec);
-			if (p == NULL && f->tags != NULL)
-				p = strcasestr(f->tags, filespec);
-			if (p == NULL && f->author != NULL)
-				p = strcasestr(f->author, filespec);
-			if (p == NULL && f->author_org != NULL)
-				p = strcasestr(f->author_org, filespec);
-			if (p == NULL) {
+			const char* fields[6] = { f->name, f->desc, (const char*)f->extdesc,
+			                          f->tags, f->author, f->author_org };
+			if (find_expr == NULL || !bool_expr_match_fields(find_expr, fields, 6)) {
 				m++;
 				continue;
 			}
@@ -335,6 +346,7 @@ int sbbs_t::listfiles(const int dirnum, const char *filespec, FILE* tofile, cons
 
 	freefiles(file_list, file_count);
 	smb_close(&smb);
+	bool_expr_free(find_expr);
 	return found;
 }
 

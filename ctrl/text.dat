@@ -1142,3 +1142,4 @@
 	" \1hPgUp\1n/\1h\1cb\1n\1c=@Previous@ page  \1hPgDn\1n\1c=@Next@ page\r\n"\
 	" \1hHome\1n\1c=top  \1hEnd\1n\1c=bottom\r\n"\
 	" \1h@QUITCHAR@\1n\1c=@Quit@\r\n\1-"
+"\1n\1h\1rInvalid search expression: \1c%s\1n\r\n"         948 InvalidSearchExpression

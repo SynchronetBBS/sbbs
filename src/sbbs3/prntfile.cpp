@@ -20,6 +20,7 @@
  ****************************************************************************/
 
 #include "sbbs.h"
+#include "boolsrch.h"
 #include "utf8.h"
 #include "petdefs.h"
 #include "sauce.h"
@@ -188,7 +189,8 @@ bool sbbs_t::printfile(const char* inpath, int mode, int org_cols, JSObject* obj
 		size_t lines=0;
 		size_t last_match = SIZE_MAX;    // line of most recent search match (for 'n'/'N' continuation)
 		char key = 0;
-		char find_str[81] = {0};
+		char find_str[128] = {0};
+		bool_expr_t* find_expr = NULL;   // compiled boolean expression for '/' search
 		int kmode = 0;    // case-sensitive: 'n' (next match) and 'N' (previous match)
 		if ((sys_status & SS_USERON) && !(useron.misc & (NOPAUSESPIN)) && cfg.spinning_pause_prompt)
 			kmode |= K_SPIN;
@@ -322,11 +324,25 @@ bool sbbs_t::printfile(const char* inpath, int mode, int org_cols, JSObject* obj
 								term->cleartoeol();
 								if (input_len == 0) {
 									find_str[0] = '\0';
+									bool_expr_free(find_expr);
+									find_expr = NULL;
 									reprompt = true;
 									break;
 								}
+								char*        new_errmsg = NULL;
+								bool_expr_t* new_expr   = bool_expr_compile(find_str, &new_errmsg);
+								if (new_expr == NULL) {
+									bprintf(text[InvalidSearchExpression],
+									        new_errmsg != NULL ? new_errmsg : "(?)");
+									free(new_errmsg);
+									find_str[0] = '\0';
+									reprompt = true;
+									break;
+								}
+								bool_expr_free(find_expr);
+								find_expr = new_expr;
 							}
-							if (find_str[0] == '\0') {
+							if (find_expr == NULL) {
 								reprompt = true;
 								break;
 							}
@@ -358,7 +374,7 @@ bool sbbs_t::printfile(const char* inpath, int mode, int org_cols, JSObject* obj
 									}
 									offset[scan_line] = scan_o;
 								}
-								if (strcasestr(buf, find_str) != NULL) {
+								if (bool_expr_match(find_expr, buf)) {
 									found = true;
 									nextline = scan_line;
 									break;
@@ -491,6 +507,7 @@ bool sbbs_t::printfile(const char* inpath, int mode, int org_cols, JSObject* obj
 		free(buf);
 		fclose(stream);
 		free(offset);
+		bool_expr_free(find_expr);
 		if (!(mode & P_SAVEATR)) {
 			console = orgcon;
 			attr(tmpatr);

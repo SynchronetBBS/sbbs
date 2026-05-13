@@ -948,4 +948,5 @@ const char* const text_id[]={
 	,"QWKSettingsMIME"
 	,"FindStringNotFound"
 	,"SeekHelp"
+	,"InvalidSearchExpression"
 };
