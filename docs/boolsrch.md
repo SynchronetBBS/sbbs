@@ -31,15 +31,13 @@ inherit the same syntax — the `find` string they pass is parsed identically.
 
 ## Inline help
 
-At any boolean search prompt, entering a lone `?` displays a one-screen
-quick-reference help file (`text/menu/textsrch.msg`) and re-prompts. The
-prompt itself includes the hint `(?=help)` so the feature is discoverable
-without reading the docs first.
-
-The file pager's `/` search sub-prompt is the one exception: typing `?`
-there is treated as a literal character (scrolling the help menu would
-break the pager's in-place display). The pager has its own `?` binding at
-the main pager prompt that shows `SeekHelp`.
+At any boolean search prompt — including the file pager's `/` search —
+entering a lone `?` displays a one-screen quick-reference help file
+(`text/menu/textsrch.msg`) and re-prompts. The prompt itself includes the
+hint `(?=help)` so the feature is discoverable without reading the docs
+first. In the pager case the help text scrolls onto the screen the same
+way the pager's main `?` (which displays `SeekHelp`) already does;
+press Home or PgUp to return to the original content if needed.
 
 ## Quick reference
 

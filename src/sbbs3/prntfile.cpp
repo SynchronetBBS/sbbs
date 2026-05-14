@@ -317,12 +317,11 @@ bool sbbs_t::printfile(const char* inpath, int mode, int org_cols, JSObject* obj
 						case 'n':    // 'less'-style: next match (search forward)
 						{
 							if (key == '/') {
-								bputs(text[SearchStringPrompt]);
-								size_t input_len = getstr(find_str, sizeof(find_str) - 1, K_LINE | K_NOCRLF);
+								bool ok = get_search_string(find_str, sizeof(find_str) - 1, K_LINE | K_NOCRLF);
 								// K_NOCRLF leaves the cursor at end of input; clear the prompt line.
 								term->carriage_return();
 								term->cleartoeol();
-								if (input_len == 0) {
+								if (!ok || find_str[0] == '\0') {
 									find_str[0] = '\0';
 									bool_expr_free(find_expr);
 									find_expr = NULL;
