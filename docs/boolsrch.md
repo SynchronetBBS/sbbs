@@ -32,7 +32,7 @@ inherit the same syntax — the `find` string they pass is parsed identically.
 ## Inline help
 
 At any boolean search prompt, entering a lone `?` displays a one-screen
-quick-reference help file (`text/menu/boolsrch.msg`) and re-prompts. The
+quick-reference help file (`text/menu/srchhelp.msg`) and re-prompts. The
 prompt itself includes the hint `(?=help)` so the feature is discoverable
 without reading the docs first.
 

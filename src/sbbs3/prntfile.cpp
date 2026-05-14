@@ -669,7 +669,7 @@ bool sbbs_t::menu(const char *code, int mode, JSObject* obj)
 
 //****************************************************************************
 // Prompt the user for a boolean-search query string. If the user enters a
-// lone '?', display the "boolsrch" help menu and re-prompt. Returns true
+// lone '?', display the "srchhelp" help menu and re-prompt. Returns true
 // with the input in str on a real entry; false if the user aborted (empty
 // input or SS_ABORT). kmode is the getstr() flag set the caller wants.
 //****************************************************************************
@@ -681,7 +681,7 @@ bool sbbs_t::get_search_string(char* str, size_t maxlen, int kmode)
 			return false;
 		if (strcmp(str, "?") != 0)
 			return true;
-		menu("boolsrch");
+		menu("srchhelp");
 	}
 	return false;
 }
