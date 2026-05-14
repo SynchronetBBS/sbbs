@@ -541,7 +541,7 @@ extern "C" int savemsg(scfg_t* cfg, smb_t* smb, smbmsg_t* msg, client_t* client,
 				if (smb->subnum == INVALID_SUB) {
 					safe_snprintf(str, sizeof(str), cfg->text[UserSentYouMail], msg->from);
 					putsmsg(cfg, usernum, str);
-				} else {
+				} else if (subnum_is_valid(cfg, smb->subnum)) {
 					char        fido_buf[64];
 					const char* via = smb_netaddrstr(&msg->from_net, fido_buf);
 					if (via == NULL)
@@ -552,6 +552,9 @@ extern "C" int savemsg(scfg_t* cfg, smb_t* smb, smbmsg_t* msg, client_t* client,
 					              , cfg->grp[cfg->sub[smb->subnum]->grp]->sname, cfg->sub[smb->subnum]->lname);
 					putsmsg(cfg, usernum, str);
 				}
+				/* else: ad-hoc msgbase (e.g. is_path MsgBase) — no sub/grp metadata to format the
+				 * standard "posted to you" notification, and the caller didn't ask for sub-board
+				 * side effects, so skip the putsmsg notification entirely. */
 			}
 		}
 	}
@@ -594,7 +597,8 @@ extern "C" int votemsg(scfg_t* cfg, smb_t* smb, smbmsg_t* msg, const char* smsgf
 		result = SMB_CLOSED;
 	else
 		result = smb_addvote(smb, msg, smb_storage_mode(cfg, smb));
-	if (result == SMB_SUCCESS && smsgfmt != NULL && remsg.from_ext != NULL) {
+	if (result == SMB_SUCCESS && smsgfmt != NULL && remsg.from_ext != NULL
+	    && subnum_is_valid(cfg, smb->subnum)) {
 		user_t user;
 		ZERO_VAR(user);
 		user.number = atoi(remsg.from_ext);
