@@ -1878,6 +1878,11 @@ static const scfg_option_t scfg_option_index[] = {
 		"Servers > Terminal Server > Telnet Support... > Interfaces"
 	},
 	{
+		"Internal Broker",
+		"Message Queue Telemetry Transport",
+		"Networks > Message Queue Telemetry Transport > Internal Broker"
+	},
+	{
 		"Internal Code",
 		"Chat Channel",
 		"Chat Features > Multinode Chat Channels > Chat Channel > Internal Code"
