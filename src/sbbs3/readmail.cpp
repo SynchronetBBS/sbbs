@@ -836,8 +836,7 @@ int sbbs_t::readmail(uint usernumber, int which, int lm_mode, bool listmsgs)
 				int64_t i64;
 				if ((i64 = get_start_msgnum(&smb)) < 0)
 					break;
-				bputs(text[SearchStringPrompt]);
-				if (!getstr(search_str, sizeof(search_str) - 1, K_LINE | K_UPPER | K_EDIT | K_AUTODEL))
+				if (!get_search_string(search_str, sizeof(search_str) - 1, K_LINE | K_UPPER | K_EDIT | K_AUTODEL))
 					break;
 				searchmail(mail, (int)i64, smb.msgs, which, search_str, order);
 				break;

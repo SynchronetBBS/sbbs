@@ -60,8 +60,7 @@ void sbbs_t::scandirs(int mode)
 				term->lncntr = 0;
 				return;
 			}
-			bputs(text[SearchStringPrompt]);
-			if (!getstr(str, 40, K_LINE | K_UPPER)) {
+			if (!get_search_string(str, 120, K_LINE | K_UPPER)) {
 				term->lncntr = 0;
 				return;
 			}
@@ -133,8 +132,7 @@ void sbbs_t::scanalldirs(int mode)
 			term->lncntr = 0;
 			return;
 		}
-		bputs(text[SearchStringPrompt]);
-		if (!getstr(str, 120, K_LINE | K_UPPER)) {
+		if (!get_search_string(str, 120, K_LINE | K_UPPER)) {
 			term->lncntr = 0;
 			return;
 		}

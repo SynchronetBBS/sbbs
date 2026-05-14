@@ -981,8 +981,7 @@ int sbbs_t::scanposts(int subnum, int mode, const char *find)
 				if ((i64 = get_start_msgnum(&smb, 1)) < 0)
 					break;
 				i = (int)i64;
-				bputs(text[SearchStringPrompt]);
-				if (!getstr(find_buf, sizeof(find_buf) - 1, K_LINE | K_UPPER | K_EDIT | K_AUTODEL))
+				if (!get_search_string(find_buf, sizeof(find_buf) - 1, K_LINE | K_UPPER | K_EDIT | K_AUTODEL))
 					break;
 				{
 					char*        new_errmsg = NULL;

@@ -1046,6 +1046,7 @@ public:
 	bool	menu(const char *code, int mode = 0, JSObject* obj = NULL);
 	bool	random_menu(const char *code, int mode = 0, JSObject* obj = NULL);
 	bool	menu_exists(const char *code, const char* ext=NULL, char* realpath=NULL);
+	bool	get_search_string(char* str, size_t maxlen, int kmode);
 
 	int		uselect(bool add, uint n, const char *title, const char *item, const uchar *ar);
 	struct uselect_item { std::string name; uint num; };

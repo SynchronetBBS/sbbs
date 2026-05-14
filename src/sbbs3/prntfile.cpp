@@ -668,6 +668,25 @@ bool sbbs_t::menu(const char *code, int mode, JSObject* obj)
 }
 
 //****************************************************************************
+// Prompt the user for a boolean-search query string. If the user enters a
+// lone '?', display the "boolsrch" help menu and re-prompt. Returns true
+// with the input in str on a real entry; false if the user aborted (empty
+// input or SS_ABORT). kmode is the getstr() flag set the caller wants.
+//****************************************************************************
+bool sbbs_t::get_search_string(char* str, size_t maxlen, int kmode)
+{
+	while (online && !(sys_status & SS_ABORT)) {
+		bputs(text[SearchStringPrompt]);
+		if (!getstr(str, maxlen, kmode))
+			return false;
+		if (strcmp(str, "?") != 0)
+			return true;
+		menu("boolsrch");
+	}
+	return false;
+}
+
+//****************************************************************************
 // Check (return true) if a menu file exists with specified type/extension
 // 'path' buffer must be at least (MAX_PATH + 1) bytes in size
 //****************************************************************************

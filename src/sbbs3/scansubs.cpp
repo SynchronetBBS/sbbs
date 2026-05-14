@@ -53,8 +53,7 @@ void sbbs_t::scansubs(int mode)
 		    && text[DisplayUnreadMessagesOnlyQ][0] && yesno(text[DisplayUnreadMessagesOnlyQ]))
 			mode |= SCAN_UNREAD;
 		if (mode & SCAN_FIND) {
-			bputs(text[SearchStringPrompt]);
-			if (!getstr(str, 120, K_LINE | K_UPPER))
+			if (!get_search_string(str, 120, K_LINE | K_UPPER))
 				return;
 			if (subj_only) {
 				if (ch == text[SubGroupKeys][0] /* 'S' */) {
@@ -157,8 +156,7 @@ void sbbs_t::scanallsubs(int mode)
 		    && text[DisplayUnreadMessagesOnlyQ][0] && yesno(text[DisplayUnreadMessagesOnlyQ]))
 			mode |= SCAN_UNREAD;
 		if (mode & SCAN_FIND) {
-			bputs(text[SearchStringPrompt]);
-			if (!getstr(str, 120, K_LINE | K_UPPER))
+			if (!get_search_string(str, 120, K_LINE | K_UPPER))
 				return;
 			if (subj_only) {
 				for (i = 0; i < usrgrps; i++) {
