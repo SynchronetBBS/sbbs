@@ -20,6 +20,9 @@
 // undefined and the test throws. With the fix, to_ext is the saved
 // value.
 
+/* system.temp_dir may not exist yet on a fresh install / CI runner — create it. */
+mkpath(system.temp_dir);
+
 var path = system.temp_dir + "test_msgbase_to_ext_" + Date.now();
 var EXTENSIONS = [".shd", ".sdt", ".sid", ".sha", ".sda", ".ini", ".hash"];
 
