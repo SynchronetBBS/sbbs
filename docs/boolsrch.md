@@ -29,6 +29,18 @@ differently — the parser engages whenever `SCAN_FIND` (messages) or `FL_FIND`
 Programmatic callers (e.g. `bbs.scan_posts(sub, mode, find)` in JavaScript)
 inherit the same syntax — the `find` string they pass is parsed identically.
 
+## Inline help
+
+At any boolean search prompt, entering a lone `?` displays a one-screen
+quick-reference help file (`text/menu/boolsrch.msg`) and re-prompts. The
+prompt itself includes the hint `(?=help)` so the feature is discoverable
+without reading the docs first.
+
+The file pager's `/` search sub-prompt is the one exception: typing `?`
+there is treated as a literal character (scrolling the help menu would
+break the pager's in-place display). The pager has its own `?` binding at
+the main pager prompt that shows `SeekHelp`.
+
 ## Quick reference
 
 | You type                       | Matches when…                                                              |
