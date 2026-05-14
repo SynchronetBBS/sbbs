@@ -9,14 +9,22 @@ deliberate extensions.
 
 ## Where it works
 
-The boolean parser is used at every "Text to search for" prompt:
+The boolean parser is used at every "Text to search for" prompt. In the
+stock command shell (`exec/default.js`):
 
-| Where                                | Trigger                                                                |
-| ------------------------------------ | ---------------------------------------------------------------------- |
-| Message base scan (`F`ind / `S`can)  | `F` while reading messages, or the scan-with-search options on a sub   |
-| Private mail (`Reading E-mail`)      | `/` (slash) at the mail-read prompt                                    |
-| File listings                        | `S`earch on the file menu, or the equivalent scan-for-text choices     |
-| File pager (`P_SEEK`, less-style)    | `/` (slash) while viewing a file, bulletin, or log — `n` for next hit  |
+| Where                              | Trigger                                                              |
+| ---------------------------------- | -------------------------------------------------------------------- |
+| Message base scan (main menu)      | `F` — "Find Text in Messages" (`/F` to scan all sub-boards)          |
+| Reading messages on a sub          | `F` — "Find text" re-prompt inside the read loop                     |
+| Private mail (`Reading E-mail`)    | `/` (slash) at the mail-read prompt                                  |
+| File listings (file menu)          | `F` — "Find Text in File Descriptions" (`/F` for all dirs)           |
+| File pager (`P_SEEK`, less-style)  | `/` (slash) while viewing a file, bulletin, or log — `n` for next   |
+
+Note: the file menu's `S` ("Search for Filename(s)") is a separate
+wildcard-pattern filename match (`*.zip`, `WILD*.EXE`, etc.) and does not
+use the boolean parser. Sysops with custom shells may bind these commands
+differently — the parser engages whenever `SCAN_FIND` (messages) or `FL_FIND`
+(files) reaches the underlying scan function.
 
 Programmatic callers (e.g. `bbs.scan_posts(sub, mode, find)` in JavaScript)
 inherit the same syntax — the `find` string they pass is parsed identically.
