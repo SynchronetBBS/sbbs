@@ -2044,6 +2044,23 @@ js_get_all_msg_headers(JSContext *cx, uintN argc, jsval *arglist)
 			return JS_FALSE;
 		}
 
+		/* Eagerly define 'number' to force a SpiderMonkey shape transition on
+		 * the fresh header object. Without this, the lazy resolve hook
+		 * misbehaves on first access for *_NULL-defaulted fields (to_ext,
+		 * from_ext, replyto, etc. — anything declared with
+		 * LAZY_STRING_TRUNCSP_NULL): the first JS access returns undefined
+		 * even when p->msg.<field> is populated. Touching ANY property first
+		 * (which calls JS_DefineProperty inside the LAZY_* macro) makes
+		 * subsequent lazy resolves work; doing it eagerly here once per
+		 * header avoids the trap entirely.  See get_msg_header() — it doesn't
+		 * exhibit the bug because each call is followed by user code that
+		 * naturally touches a non-NULL field, but bulk-iteration of
+		 * get_all_msg_headers() exposes it.
+		 */
+		JS_DefineProperty(cx, hdrobj, "number",
+		                  UINT_TO_JSVAL(p->msg.hdr.number),
+		                  NULL, NULL, JSPROP_ENUMERATE);
+
 		val = OBJECT_TO_JSVAL(hdrobj);
 		sprintf(numstr, "%" PRIu32, p->msg.hdr.number);
 		JS_SetProperty(cx, retobj, numstr, &val);
