@@ -81,9 +81,21 @@ js_open(JSContext *cx, uintN argc, jsval *arglist)
 	}
 
 	rc = JS_SUSPENDREQUEST(cx);
-	if (!dirnum_is_valid(scfg, p->smb.dirnum))
+	if (!dirnum_is_valid(scfg, p->smb.dirnum)) {
 		p->smb_result = smb_open(&(p->smb));
-	else
+		if (p->smb_result == SMB_SUCCESS && filelength(fileno(p->smb.shd_fp)) < 1) {
+			/* Fresh ad-hoc (is_path) file base: smb_open() did not initialize the SMB
+			 * header. Mirror smb_open_dir()'s first-time-init: mark the base as a
+			 * file directory so smb_idxreclen() returns sizeof(fileidxrec_t) (not the
+			 * smaller msg-style idxrec_t) and writes/reads to/from the .sid file are
+			 * the right size. Without this, smb_addfile() writes a corrupt index that
+			 * loadfilenames()/get_list()/get_names() can't read back. */
+			p->smb.status.attr = SMB_FILE_DIRECTORY;
+			p->smb_result = smb_create(&(p->smb));
+			if (p->smb_result != SMB_SUCCESS)
+				smb_close(&(p->smb));
+		}
+	} else
 		p->smb_result = smb_open_dir(scfg, &(p->smb), p->smb.dirnum);
 	if (p->smb_result != SMB_SUCCESS) {
 		JS_RESUMEREQUEST(cx, rc);
