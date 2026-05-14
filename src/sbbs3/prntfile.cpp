@@ -317,24 +317,14 @@ bool sbbs_t::printfile(const char* inpath, int mode, int org_cols, JSObject* obj
 						case 'n':    // 'less'-style: next match (search forward)
 						{
 							if (key == '/') {
-								bool ok = get_search_string(find_str, sizeof(find_str) - 1, K_LINE | K_NOCRLF);
+								bool_expr_t* new_expr = get_search_string(find_str, sizeof(find_str) - 1, K_LINE | K_NOCRLF);
 								// K_NOCRLF leaves the cursor at end of input; clear the prompt line.
 								term->carriage_return();
 								term->cleartoeol();
-								if (!ok || find_str[0] == '\0') {
+								if (new_expr == NULL) {
 									find_str[0] = '\0';
 									bool_expr_free(find_expr);
 									find_expr = NULL;
-									reprompt = true;
-									break;
-								}
-								char*        new_errmsg = NULL;
-								bool_expr_t* new_expr   = bool_expr_compile(find_str, &new_errmsg);
-								if (new_expr == NULL) {
-									bprintf(text[InvalidSearchExpression],
-									        new_errmsg != NULL ? new_errmsg : "(?)");
-									free(new_errmsg);
-									find_str[0] = '\0';
 									reprompt = true;
 									break;
 								}
@@ -667,22 +657,36 @@ bool sbbs_t::menu(const char *code, int mode, JSObject* obj)
 }
 
 //****************************************************************************
-// Prompt the user for a boolean-search query string. If the user enters a
-// lone '?', display the "textsrch" help menu and re-prompt. Returns true
-// with the input in str on a real entry; false if the user aborted (empty
-// input or SS_ABORT). kmode is the getstr() flag set the caller wants.
+// Prompt the user for a boolean-search query, compile it, and return the
+// resulting expression for the caller to use (and later free). Handles:
+//   - '?' alone:        display textsrch.msg help menu, re-prompt
+//   - syntax error:     print the error, show the help menu, re-prompt
+//   - empty input/abort: return NULL
+// On success, str contains the input string (e.g. for log/display use) and
+// the returned bool_expr_t* is non-NULL. kmode is the getstr() flag set.
 //****************************************************************************
-bool sbbs_t::get_search_string(char* str, size_t maxlen, int kmode)
+bool_expr_t* sbbs_t::get_search_string(char* str, size_t maxlen, int kmode)
 {
 	while (online && !(sys_status & SS_ABORT)) {
 		bputs(text[SearchStringPrompt]);
-		if (!getstr(str, maxlen, kmode))
-			return false;
-		if (strcmp(str, "?") != 0)
-			return true;
+		if (getstr(str, maxlen, kmode) == 0)
+			return NULL;
+		if (strcmp(str, "?") == 0) {
+			menu("textsrch");
+			continue;
+		}
+		char*        errmsg = NULL;
+		bool_expr_t* expr   = bool_expr_compile(str, &errmsg);
+		if (expr != NULL) {
+			free(errmsg);
+			return expr;
+		}
+		bprintf(text[InvalidSearchExpression],
+		        errmsg != NULL ? errmsg : "(?)");
+		free(errmsg);
 		menu("textsrch");
 	}
-	return false;
+	return NULL;
 }
 
 //****************************************************************************

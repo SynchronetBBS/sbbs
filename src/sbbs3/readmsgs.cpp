@@ -981,17 +981,10 @@ int sbbs_t::scanposts(int subnum, int mode, const char *find)
 				if ((i64 = get_start_msgnum(&smb, 1)) < 0)
 					break;
 				i = (int)i64;
-				if (!get_search_string(find_buf, sizeof(find_buf) - 1, K_LINE | K_UPPER | K_EDIT | K_AUTODEL))
-					break;
 				{
-					char*        new_errmsg = NULL;
-					bool_expr_t* new_expr   = bool_expr_compile(find_buf, &new_errmsg);
-					if (new_expr == NULL) {
-						bprintf(text[InvalidSearchExpression],
-						        new_errmsg != NULL ? new_errmsg : "(?)");
-						free(new_errmsg);
+					bool_expr_t* new_expr = get_search_string(find_buf, sizeof(find_buf) - 1, K_LINE | K_UPPER | K_EDIT | K_AUTODEL);
+					if (new_expr == NULL)
 						break;
-					}
 					bool_expr_free(find_expr);
 					find_expr = new_expr;
 				}

@@ -20,6 +20,7 @@
  ****************************************************************************/
 
 #include "sbbs.h"
+#include "boolsrch.h"
 
 /****************************************************************************/
 /* Used to scan single or multiple directories. 'mode' is the scan type.    */
@@ -60,9 +61,13 @@ void sbbs_t::scandirs(int mode)
 				term->lncntr = 0;
 				return;
 			}
-			if (!get_search_string(str, 120, K_LINE | K_UPPER)) {
-				term->lncntr = 0;
-				return;
+			{
+				bool_expr_t* expr = get_search_string(str, 120, K_LINE | K_UPPER);
+				if (expr == NULL) {
+					term->lncntr = 0;
+					return;
+				}
+				bool_expr_free(expr);
 			}
 		}
 	}
@@ -132,9 +137,13 @@ void sbbs_t::scanalldirs(int mode)
 			term->lncntr = 0;
 			return;
 		}
-		if (!get_search_string(str, 120, K_LINE | K_UPPER)) {
-			term->lncntr = 0;
-			return;
+		{
+			bool_expr_t* expr = get_search_string(str, 120, K_LINE | K_UPPER);
+			if (expr == NULL) {
+				term->lncntr = 0;
+				return;
+			}
+			bool_expr_free(expr);
 		}
 	}
 	unsigned total_dirs = 0;
