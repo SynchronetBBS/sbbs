@@ -58,6 +58,7 @@ struct login_attempt_settings {
 struct max_concurrent_settings {
 	uint filter_threshold;      /* hits before adding IP to ip.can; 0 = disabled */
 	uint filter_duration;       /* lifetime of ip.can entry, in seconds; 0 = forever */
+	bool filter_silent;         /* send abuser IP to ip-silent.can instead of ip.can */
 };
 
 struct startup_sound_settings {

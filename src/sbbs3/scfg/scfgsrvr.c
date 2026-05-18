@@ -144,6 +144,8 @@ static void max_concurrent_cfg(uint* max, struct max_concurrent_settings* settin
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Auto-Filter Threshold", threshold(settings->filter_threshold));
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Auto-Filter Duration"
 		         , vduration(settings->filter_duration, strInfinite));
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Auto-Filter Silently"
+		         , settings->filter_silent ? "Yes" : "No");
 		opt[i][0] = '\0';
 
 		uifc.helpbuf =
@@ -162,6 +164,11 @@ static void max_concurrent_cfg(uint* max, struct max_concurrent_settings* settin
 			"\n"
 			"`Auto-Filter Duration`: lifetime of an automatically-added entry in\n"
 			"`text/ip.can`.  Set to `0` to filter the IP indefinitely.\n"
+			"\n"
+			"`Auto-Filter Silently`: if `Yes`, abuser IPs are added to\n"
+			"`text/ip-silent.can` instead of `text/ip.can`, so subsequent\n"
+			"connections from those IPs are dropped without logging a\n"
+			"`blocked` notice.\n"
 			"\n"
 			"The strike counter for an IP is held in memory and is cleared on\n"
 			"any of: a successful login from that IP, terminal server recycle\n"
@@ -184,6 +191,15 @@ static void max_concurrent_cfg(uint* max, struct max_concurrent_settings* settin
 				SAFECOPY(str, duration(settings->filter_duration, false, strInfinite));
 				if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "Lifetime of Auto-Filter of IPs", str, 10, K_EDIT) > 0)
 					settings->filter_duration = (uint)parse_duration(str);
+				break;
+			case 3:
+				i = settings->filter_silent ? 0 : 1;
+				i = uifc.list(WIN_MID | WIN_SAV, 0, 0, 0, &i, 0
+				              , "Add Abuser IPs to ip-silent.can (instead of ip.can)", uifcYesNoOpts);
+				if (i == 0)
+					settings->filter_silent = true;
+				else if (i == 1)
+					settings->filter_silent = false;
 				break;
 			default:
 				uifc.changes = changes;
