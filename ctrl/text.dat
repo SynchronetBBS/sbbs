@@ -101,7 +101,7 @@
 "\1n\1b[\1h\1wI\1n\1b] \1hAutoLogon via IP address     "\     074 UserDefaultsAutoLogon
 	"\1n\1b: \1c%s\r\n"
 "\1n\r\n\1m%s sent to \1h%s #%u\r\n"                    075 MsgSentToUser
-"\1_\1\\\1y\1hText to search for \1n\1y(\1h?\1n\1y=help)\1\\: "  076 SearchStringPrompt
+"\1_\1\\\1y\1hText to search for (\1w?\1y=help)\1\\: "  076 SearchStringPrompt
 "\1w\1h\xc4\xc4\xc4\xc4\xc4[\1i\1r%c\1n\1h]\xc4\xc4\xc4\xc4\xb4 "\                    077 PrivateChatSeparator
 	"\1yPrivate Chat - \1rCtrl-C to Quit \1y- "\
 	"Time Left: \1g%-8s\1w"\
