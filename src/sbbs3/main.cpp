@@ -5792,10 +5792,8 @@ NO_SSH:
 							char reason[128];
 							SAFEPRINTF2(reason, "exceeding max concurrent connection limit (%u) %u times"
 							            , startup->max_concurrent_connections, strikes);
-							char can_fname[MAX_PATH + 1];
-							trashcan_fname(&scfg,
-							               startup->max_concurrent.filter_silent ? "ip-silent" : "ip",
-							               can_fname, sizeof can_fname);
+							const char* can_fname = startup->max_concurrent.filter_silent
+							                          ? ip_silent_can.fname : ip_can.fname;
 							lprintf(LOG_NOTICE, "%04d %s !BLOCKING IP ADDRESS: %s in %s"
 							        , client_socket, client.protocol, host_ip, getfname(can_fname));
 							if (filter_ip(&scfg, client.protocol, reason, /* host: */ NULL, host_ip
