@@ -20,6 +20,7 @@
  ****************************************************************************/
 
 #include "sbbs.h"
+#include "boolsrch.h"
 #include "utf8.h"
 
 int sbbs_t::sub_op(int subnum)
@@ -426,7 +427,8 @@ int sbbs_t::scanposts(int subnum, int mode, const char *find)
 	uint32_t u;
 	post_t * post;
 	smbmsg_t msg;
-	bool     thread_mode = false;
+	bool         thread_mode = false;
+	bool_expr_t* find_expr = NULL;
 
 	action = NODE_RMSG;
 	cursubnum = subnum;   /* for ARS */
@@ -569,6 +571,21 @@ int sbbs_t::scanposts(int subnum, int mode, const char *find)
 		}
 	}
 	current_msg = &msg;   /* For MSG_* @-codes and bbs.msg_* property values */
+	if ((mode & SCAN_FIND) && find != NULL && *find) {
+		char* errmsg = NULL;
+		find_expr = bool_expr_compile(find, &errmsg);
+		if (find_expr == NULL) {
+			bprintf(text[InvalidSearchExpression],
+			        errmsg != NULL ? errmsg : "(?)");
+			free(errmsg);
+			if (post != NULL)
+				free(post);
+			smb_close(&smb);
+			smb_stack(&smb, SMB_STACK_POP);
+			current_msg = NULL;
+			return 1;
+		}
+	}
 	while (online && !done) {
 
 		action = NODE_RMSG;
@@ -662,8 +679,8 @@ int sbbs_t::scanposts(int subnum, int mode, const char *find)
 						domsg = 0;
 					continue;
 				}
-				if (strcasestr(buf, find) == NULL && strcasestr(msg.subj, find) == NULL
-				    && (msg.tags == NULL || strcasestr(msg.tags, find) == NULL)) {
+				const char* fields[3] = { buf, msg.subj, msg.tags };
+				if (find_expr == NULL || !bool_expr_match_fields(find_expr, fields, 3)) {
 					free(buf);
 					if (smb.curmsg < smb.msgs - 1)
 						smb.curmsg++;
@@ -964,9 +981,13 @@ int sbbs_t::scanposts(int subnum, int mode, const char *find)
 				if ((i64 = get_start_msgnum(&smb, 1)) < 0)
 					break;
 				i = (int)i64;
-				bputs(text[SearchStringPrompt]);
-				if (!getstr(find_buf, 40, K_LINE | K_UPPER | K_EDIT | K_AUTODEL))
-					break;
+				{
+					bool_expr_t* new_expr = get_search_string(find_buf, sizeof(find_buf) - 1, K_LINE | K_UPPER | K_EDIT | K_AUTODEL);
+					if (new_expr == NULL)
+						break;
+					bool_expr_free(find_expr);
+					find_expr = new_expr;
+				}
 				if (text[DisplaySubjectsOnlyQ][0] && yesno(text[DisplaySubjectsOnlyQ]))
 					searchposts(subnum, post, (int)i, smb.msgs, find_buf);
 				else {
@@ -1643,6 +1664,7 @@ int sbbs_t::scanposts(int subnum, int mode, const char *find)
 		subscan[subnum].cfg |= SUB_CFG_NSCAN;
 	smb_close(&smb);
 	smb_stack(&smb, SMB_STACK_POP);
+	bool_expr_free(find_expr);
 	current_msg = NULL;
 	return quit;
 }
@@ -1717,10 +1739,21 @@ int sbbs_t::listsub(int subnum, int mode, int start, const char* search)
 int sbbs_t::searchposts(int subnum, post_t *post, int start, int posts
                         , const char *search)
 {
-	char*    buf;
-	int      l, found = 0;
-	smbmsg_t msg;
+	char*        buf;
+	int          l, found = 0;
+	smbmsg_t     msg;
+	bool_expr_t* expr = NULL;
 
+	if (search != NULL && *search) {
+		char* errmsg = NULL;
+		expr = bool_expr_compile(search, &errmsg);
+		if (expr == NULL) {
+			bprintf(text[InvalidSearchExpression],
+			        errmsg != NULL ? errmsg : "(?)");
+			free(errmsg);
+			return 0;
+		}
+	}
 	msg.total_hfields = 0;
 	for (l = start; l < posts && !msgabort(); l++) {
 		msg.idx.offset = post[l].idx.offset;
@@ -1732,8 +1765,8 @@ int sbbs_t::searchposts(int subnum, post_t *post, int start, int posts
 			smb_freemsgmem(&msg);
 			continue;
 		}
-		if (strcasestr(buf, search) != NULL || strcasestr(msg.subj, search) != NULL
-		    || (msg.tags != NULL && strcasestr(msg.tags, search) != NULL)) {
+		const char* fields[3] = { buf, msg.subj, msg.tags };
+		if (expr != NULL && bool_expr_match_fields(expr, fields, 3)) {
 			if (!found)
 				bputs(text[MailOnSystemLstHdr]);
 			bprintf(P_TRUNCATE | (msg.hdr.auxattr & MSG_HFIELDS_UTF8)
@@ -1749,6 +1782,7 @@ int sbbs_t::searchposts(int subnum, post_t *post, int start, int posts
 		smb_freemsgmem(&msg);
 	}
 
+	bool_expr_free(expr);
 	return found;
 }
 

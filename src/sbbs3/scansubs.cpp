@@ -20,6 +20,7 @@
  ****************************************************************************/
 
 #include "sbbs.h"
+#include "boolsrch.h"
 
 /****************************************************************************/
 /* Used to scan single or multiple sub-boards. 'mode' is the scan type.     */
@@ -53,9 +54,12 @@ void sbbs_t::scansubs(int mode)
 		    && text[DisplayUnreadMessagesOnlyQ][0] && yesno(text[DisplayUnreadMessagesOnlyQ]))
 			mode |= SCAN_UNREAD;
 		if (mode & SCAN_FIND) {
-			bputs(text[SearchStringPrompt]);
-			if (!getstr(str, 40, K_LINE | K_UPPER))
-				return;
+			{
+				bool_expr_t* expr = get_search_string(str, 120, K_LINE | K_UPPER);
+				if (expr == NULL)
+					return;
+				bool_expr_free(expr);
+			}
 			if (subj_only) {
 				if (ch == text[SubGroupKeys][0] /* 'S' */) {
 					found = listsub(usrsub[curgrp][cursub[curgrp]], SCAN_FIND, 0, str);
@@ -157,9 +161,12 @@ void sbbs_t::scanallsubs(int mode)
 		    && text[DisplayUnreadMessagesOnlyQ][0] && yesno(text[DisplayUnreadMessagesOnlyQ]))
 			mode |= SCAN_UNREAD;
 		if (mode & SCAN_FIND) {
-			bputs(text[SearchStringPrompt]);
-			if (!getstr(str, 40, K_LINE | K_UPPER))
-				return;
+			{
+				bool_expr_t* expr = get_search_string(str, 120, K_LINE | K_UPPER);
+				if (expr == NULL)
+					return;
+				bool_expr_free(expr);
+			}
 			if (subj_only) {
 				for (i = 0; i < usrgrps; i++) {
 					for (j = 0; j < usrsubs[i] && !msgabort(); j++) {

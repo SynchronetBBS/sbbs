@@ -20,6 +20,7 @@
  ****************************************************************************/
 
 #include "sbbs.h"
+#include "boolsrch.h"
 
 static char mail_listing_flag(smbmsg_t* msg)
 {
@@ -835,9 +836,12 @@ int sbbs_t::readmail(uint usernumber, int which, int lm_mode, bool listmsgs)
 				int64_t i64;
 				if ((i64 = get_start_msgnum(&smb)) < 0)
 					break;
-				bputs(text[SearchStringPrompt]);
-				if (!getstr(search_str, 40, K_LINE | K_UPPER | K_EDIT | K_AUTODEL))
-					break;
+				{
+					bool_expr_t* expr = get_search_string(search_str, sizeof(search_str) - 1, K_LINE | K_UPPER | K_EDIT | K_AUTODEL);
+					if (expr == NULL)
+						break;
+					bool_expr_free(expr);
+				}
 				searchmail(mail, (int)i64, smb.msgs, which, search_str, order);
 				break;
 			case '?':
@@ -877,11 +881,21 @@ int sbbs_t::readmail(uint usernumber, int which, int lm_mode, bool listmsgs)
 
 int sbbs_t::searchmail(mail_t *mail, int start, int msgs, int which, const char *search, const char* order)
 {
-	char*    buf;
-	char     subj[128];
-	int      l, found = 0;
-	smbmsg_t msg;
+	char*        buf;
+	int          l, found = 0;
+	smbmsg_t     msg;
+	bool_expr_t* expr = NULL;
 
+	if (search != NULL && *search) {
+		char* errmsg = NULL;
+		expr = bool_expr_compile(search, &errmsg);
+		if (expr == NULL) {
+			bprintf(text[InvalidSearchExpression],
+			        errmsg != NULL ? errmsg : "(?)");
+			free(errmsg);
+			return 0;
+		}
+	}
 	msg.total_hfields = 0;
 	for (l = start; l < msgs && !msgabort(); l++) {
 		msg.idx.offset = mail[l].offset;
@@ -893,11 +907,9 @@ int sbbs_t::searchmail(mail_t *mail, int start, int msgs, int which, const char 
 			smb_freemsgmem(&msg);
 			continue;
 		}
-		strupr(buf);
 		strip_ctrl(buf, buf);
-		SAFECOPY(subj, msg.subj);
-		strupr(subj);
-		if (strstr(buf, search) || strstr(subj, search)) {
+		const char* fields[3] = { buf, msg.subj, msg.tags };
+		if (expr != NULL && bool_expr_match_fields(expr, fields, 3)) {
 			if (!found) {
 				if (which == MAIL_SENT)
 					bprintf(text[MailSentLstHdr], order);
@@ -924,5 +936,6 @@ int sbbs_t::searchmail(mail_t *mail, int start, int msgs, int which, const char 
 		smb_freemsgmem(&msg);
 	}
 
+	bool_expr_free(expr);
 	return found;
 }

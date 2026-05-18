@@ -964,6 +964,7 @@ enum text {
 	,QWKSettingsMIME
 	,FindStringNotFound
 	,SeekHelp
+	,InvalidSearchExpression
 
 	,TOTAL_TEXT
 };
