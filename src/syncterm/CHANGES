@@ -6,6 +6,7 @@ Fix key repeat on Wayland
 Fix Wayland content size change
 Fix Quartz and Wayland mapping on non-PC charsets (ATASCII etc)
 Fix RTS/CTS handling on close() and in 3-Wire mode
+Change audio backend try-order so PulseAudio is no longer tried first
 Change Qartz to map Command to Alt, not Option per Apple design
 Rework filepick widget
 

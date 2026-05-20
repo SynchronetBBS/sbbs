@@ -926,10 +926,13 @@ char *cursor_enum[] = {
 	"SolidBlock",
 };
 
+/* Order matches xpbeep.c's xptone_open_locked() try sequence so the
+ * Audio Output Mode UI list reflects which backend the engine will
+ * actually pick when multiple are enabled. */
 ini_bitdesc_t audio_output_bits[] = {
 	{
-		.name = "PulseAudio",
-		.bit = XPBEEP_DEVICE_PULSEAUDIO
+		.name = "WaveOut",
+		.bit = XPBEEP_DEVICE_WIN32
 	},
 	{
 		.name = "PortAudio",
@@ -940,8 +943,8 @@ ini_bitdesc_t audio_output_bits[] = {
 		.bit = XPBEEP_DEVICE_SDL
 	},
 	{
-		.name = "WaveOut",
-		.bit = XPBEEP_DEVICE_WIN32
+		.name = "PulseAudio",
+		.bit = XPBEEP_DEVICE_PULSEAUDIO
 	},
 	{
 		.name = "ALSA",
@@ -958,10 +961,10 @@ ini_bitdesc_t audio_output_bits[] = {
 };
 
 ini_bitdesc_t audio_output_types[] = {
-#ifdef WITH_PULSEAUDIO
+#ifdef _WIN32
 	{
-		.name = "PulseAudio",
-		.bit = XPBEEP_DEVICE_PULSEAUDIO
+		.name = "WaveOut",
+		.bit = XPBEEP_DEVICE_WIN32
 	},
 #endif
 #ifdef WITH_PORTAUDIO
@@ -976,10 +979,10 @@ ini_bitdesc_t audio_output_types[] = {
 		.bit = XPBEEP_DEVICE_SDL
 	},
 #endif
-#ifdef _WIN32
+#ifdef WITH_PULSEAUDIO
 	{
-		.name = "WaveOut",
-		.bit = XPBEEP_DEVICE_WIN32
+		.name = "PulseAudio",
+		.bit = XPBEEP_DEVICE_PULSEAUDIO
 	},
 #endif
 #ifdef USE_ALSA_SOUND

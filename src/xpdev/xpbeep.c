@@ -480,46 +480,27 @@ xptone_open_locked(void)
 	}
 #endif
 
-#ifdef WITH_PULSEAUDIO
-	if (xpbeep_sound_devices_enabled & XPBEEP_DEVICE_PULSEAUDIO) {
-		if (!pulseaudio_device_open_failed) {
-			if (pu_api == NULL) {
-				const char *libnames[] = {"pulse-simple", NULL};
-				if (((pu_api = (struct pulseaudio_api_struct *)malloc(sizeof(struct pulseaudio_api_struct))) == NULL)
-				    || ((pu_api->dl = xp_dlopen(libnames, RTLD_LAZY, 0)) == NULL)
-				    || ((pu_api->simple_new = xp_dlsym(pu_api->dl, pa_simple_new)) == NULL)
-				    || ((pu_api->simple_write = xp_dlsym(pu_api->dl, pa_simple_write)) == NULL)
-				    || ((pu_api->simple_drain = xp_dlsym(pu_api->dl, pa_simple_drain)) == NULL)
-				    || ((pu_api->simple_free = xp_dlsym(pu_api->dl, pa_simple_free)) == NULL)
-				    ) {
-					if (pu_api->dl)
-						xp_dlclose(pu_api->dl);
-					free(pu_api);
-					pu_api = NULL;
-				}
-				if (pu_api == NULL) {
-					pulseaudio_device_open_failed = true;
-				}
-			}
-			if (pu_api != NULL) {
-				handle_type = SOUND_DEVICE_PULSEAUDIO;
+#ifdef _WIN32
+	if (xpbeep_sound_devices_enabled & XPBEEP_DEVICE_WIN32) {
+		if (!sound_device_open_failed) {
+			w.wFormatTag = WAVE_FORMAT_PCM;
+			w.nChannels = 1;
+			w.nSamplesPerSec = S_RATE;
+			w.wBitsPerSample = 8;
+			w.nBlockAlign = (w.wBitsPerSample * w.nChannels) / 8;
+			w.nAvgBytesPerSec = w.nSamplesPerSec * w.nBlockAlign;
+
+			if (!sound_device_open_failed && waveOutOpen(&waveOut, WAVE_MAPPER, &w, 0, 0, 0) != MMSYSERR_NOERROR)
+				sound_device_open_failed = true;
+			if (sound_device_open_failed)
+				return false;
+			memset(&wh, 0, sizeof(wh));
+			wh[0].dwBufferLength = S_RATE * 15 / 2 + 1;
+			wh[1].dwBufferLength = S_RATE * 15 / 2 + 1;
+			handle_type = SOUND_DEVICE_WIN32;
+			if (!sound_device_open_failed) {
 				handle_rc++;
-	#ifdef XPDEV_THREAD_SAFE
-				assert_pthread_mutex_unlock(&handle_mutex);
-				assert_pthread_mutex_lock(&sample_mutex);
-				if (samples_posted == 0)
-					xp_play_sample_locked((unsigned char *)"\x80", 1, false);
-				assert_pthread_mutex_unlock(&sample_mutex);
-				assert_pthread_mutex_lock(&handle_mutex);
-	#else
-				xptone(0, 1, WAVE_SHAPE_SQUARE);
-	#endif
-				if (pulseaudio_device_open_failed) {
-					handle_type = SOUND_DEVICE_CLOSED;
-				}
-				else {
-					return true;
-				}
+				return true;
 			}
 		}
 	}
@@ -626,27 +607,46 @@ xptone_open_locked(void)
 	}
 #endif
 
-#ifdef _WIN32
-	if (xpbeep_sound_devices_enabled & XPBEEP_DEVICE_WIN32) {
-		if (!sound_device_open_failed) {
-			w.wFormatTag = WAVE_FORMAT_PCM;
-			w.nChannels = 1;
-			w.nSamplesPerSec = S_RATE;
-			w.wBitsPerSample = 8;
-			w.nBlockAlign = (w.wBitsPerSample * w.nChannels) / 8;
-			w.nAvgBytesPerSec = w.nSamplesPerSec * w.nBlockAlign;
-
-			if (!sound_device_open_failed && waveOutOpen(&waveOut, WAVE_MAPPER, &w, 0, 0, 0) != MMSYSERR_NOERROR)
-				sound_device_open_failed = true;
-			if (sound_device_open_failed)
-				return false;
-			memset(&wh, 0, sizeof(wh));
-			wh[0].dwBufferLength = S_RATE * 15 / 2 + 1;
-			wh[1].dwBufferLength = S_RATE * 15 / 2 + 1;
-			handle_type = SOUND_DEVICE_WIN32;
-			if (!sound_device_open_failed) {
+#ifdef WITH_PULSEAUDIO
+	if (xpbeep_sound_devices_enabled & XPBEEP_DEVICE_PULSEAUDIO) {
+		if (!pulseaudio_device_open_failed) {
+			if (pu_api == NULL) {
+				const char *libnames[] = {"pulse-simple", NULL};
+				if (((pu_api = (struct pulseaudio_api_struct *)malloc(sizeof(struct pulseaudio_api_struct))) == NULL)
+				    || ((pu_api->dl = xp_dlopen(libnames, RTLD_LAZY, 0)) == NULL)
+				    || ((pu_api->simple_new = xp_dlsym(pu_api->dl, pa_simple_new)) == NULL)
+				    || ((pu_api->simple_write = xp_dlsym(pu_api->dl, pa_simple_write)) == NULL)
+				    || ((pu_api->simple_drain = xp_dlsym(pu_api->dl, pa_simple_drain)) == NULL)
+				    || ((pu_api->simple_free = xp_dlsym(pu_api->dl, pa_simple_free)) == NULL)
+				    ) {
+					if (pu_api->dl)
+						xp_dlclose(pu_api->dl);
+					free(pu_api);
+					pu_api = NULL;
+				}
+				if (pu_api == NULL) {
+					pulseaudio_device_open_failed = true;
+				}
+			}
+			if (pu_api != NULL) {
+				handle_type = SOUND_DEVICE_PULSEAUDIO;
 				handle_rc++;
-				return true;
+	#ifdef XPDEV_THREAD_SAFE
+				assert_pthread_mutex_unlock(&handle_mutex);
+				assert_pthread_mutex_lock(&sample_mutex);
+				if (samples_posted == 0)
+					xp_play_sample_locked((unsigned char *)"\x80", 1, false);
+				assert_pthread_mutex_unlock(&sample_mutex);
+				assert_pthread_mutex_lock(&handle_mutex);
+	#else
+				xptone(0, 1, WAVE_SHAPE_SQUARE);
+	#endif
+				if (pulseaudio_device_open_failed) {
+					handle_type = SOUND_DEVICE_CLOSED;
+				}
+				else {
+					return true;
+				}
 			}
 		}
 	}
@@ -1014,25 +1014,21 @@ do_xp_play_sample(unsigned char *sampo, size_t sz, int *freed)
 	}
 #endif
 
-#ifdef WITH_PULSEAUDIO
-	if (handle_type == SOUND_DEVICE_PULSEAUDIO) {
-		int            err;
-		pa_sample_spec ss;
-		ss.format = PA_SAMPLE_U8;
-		ss.rate = 22050;
-		ss.channels = 1;
-		if (pu_handle == NULL) {
-			if ((pu_handle = pu_api->simple_new(NULL, "XPBeep", PA_STREAM_PLAYBACK, NULL, "Beeps and Boops", &ss, NULL, NULL, NULL)) == NULL) {
-				pulseaudio_device_open_failed = true;
-				pulseaudio_initialized = false;
-				xptone_close_locked();
-				xptone_open_locked();
-			}
-			else
-				pulseaudio_initialized = true;
+#ifdef _WIN32
+	if (handle_type == SOUND_DEVICE_WIN32) {
+		if (wh[curr_wh].dwFlags & WHDR_PREPARED) {
+			while (waveOutUnprepareHeader(waveOut, &wh[curr_wh], sizeof(wh[curr_wh])) == WAVERR_STILLPLAYING)
+				SLEEP(1);
 		}
-		if (pulseaudio_initialized)
-			pu_api->simple_write(pu_handle, sampo, sz, &err);
+		free(wh[curr_wh].lpData);
+		wh[curr_wh].lpData = (LPSTR)samp;
+		wh[curr_wh].dwBufferLength = sz;
+		if (waveOutPrepareHeader(waveOut, &wh[curr_wh], sizeof(wh[curr_wh])) == MMSYSERR_NOERROR) {
+			if (waveOutWrite(waveOut, &wh[curr_wh], sizeof(wh[curr_wh])) == MMSYSERR_NOERROR) {
+				curr_wh ^= 1;
+			}
+		}
+		return true;
 	}
 #endif
 
@@ -1067,21 +1063,30 @@ do_xp_play_sample(unsigned char *sampo, size_t sz, int *freed)
 	}
 #endif
 
-#ifdef _WIN32
-	if (handle_type == SOUND_DEVICE_WIN32) {
-		if (wh[curr_wh].dwFlags & WHDR_PREPARED) {
-			while (waveOutUnprepareHeader(waveOut, &wh[curr_wh], sizeof(wh[curr_wh])) == WAVERR_STILLPLAYING)
-				SLEEP(1);
-		}
-		free(wh[curr_wh].lpData);
-		wh[curr_wh].lpData = (LPSTR)samp;
-		wh[curr_wh].dwBufferLength = sz;
-		if (waveOutPrepareHeader(waveOut, &wh[curr_wh], sizeof(wh[curr_wh])) == MMSYSERR_NOERROR) {
-			if (waveOutWrite(waveOut, &wh[curr_wh], sizeof(wh[curr_wh])) == MMSYSERR_NOERROR) {
-				curr_wh ^= 1;
+#ifdef WITH_PULSEAUDIO
+	if (handle_type == SOUND_DEVICE_PULSEAUDIO) {
+		int            err;
+		pa_sample_spec ss;
+		ss.format = PA_SAMPLE_U8;
+		ss.rate = 22050;
+		ss.channels = 1;
+		if (pu_handle == NULL) {
+			if ((pu_handle = pu_api->simple_new(NULL, "XPBeep", PA_STREAM_PLAYBACK, NULL, "Beeps and Boops", &ss, NULL, NULL, NULL)) == NULL) {
+				pulseaudio_device_open_failed = true;
+				pulseaudio_initialized = false;
+				/* Close but don't reopen here.  Reopening mid-call would
+				 * leave do_xp_play_sample's need_copy state stale for the
+				 * new backend (e.g. landing on PortAudio<1899 / Win32 /
+				 * SDL_AUDIO would skip the required buffer copy).  The
+				 * worker thread's next iteration re-runs xptone_open_locked
+				 * with fresh state. */
+				xptone_close_locked();
 			}
+			else
+				pulseaudio_initialized = true;
 		}
-		return true;
+		if (pulseaudio_initialized)
+			pu_api->simple_write(pu_handle, sampo, sz, &err);
 	}
 #endif
 
@@ -1098,10 +1103,12 @@ do_xp_play_sample(unsigned char *sampo, size_t sz, int *freed)
 				}
 				else {
 					if (written == 0) {
-						/* Go back and try OSS */
-						xptone_close_locked();
+						/* Mark ALSA bad and close; let the worker
+						 * thread's next iteration reopen with fresh
+						 * need_copy state (same rationale as the PA
+						 * close-without-reopen above). */
 						alsa_device_open_failed = true;
-						xptone_open_locked();
+						xptone_close_locked();
 					}
 					break;
 				}

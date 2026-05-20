@@ -79,9 +79,10 @@ the only format otherwise.
 
 The biggest (usually) optional dependency is http://libsdl.org[SDL 2].
 SyncTERM can use SDL for both graphics and sound. X11 and Wayland can
-also be used for graphics, and OSS, ALSA, or Portaudio can also provide
-sound. These use run-time linking, so at compile time, only the headers
-are needed. Static linking with SDL is also supported.  SDL2 is required
+also be used for graphics, and PortAudio, SDL, PulseAudio, ALSA, or OSS
+can provide sound (tried in that order when more than one is enabled).
+These use run-time linking, so at compile time, only the headers are
+needed. Static linking with SDL is also supported.  SDL2 is required
 for Haiku at the present time. On macOS, the native Quartz backend and
 CoreAudio are used by default and SDL is not required.
 
