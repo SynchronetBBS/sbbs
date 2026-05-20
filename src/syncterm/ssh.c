@@ -89,7 +89,7 @@ hostkey_is_weak(void)
  *     BDP on a 500 Mbps × 16 ms link (and lower at any other RTT
  *     of practical interest).
  * No-op while ssh_sock is INVALID_SOCKET (post-teardown / pre-connect);
- * the connect path establishes the 1 MiB baseline directly.
+ * conn_socket_connect() establishes the 1 MiB baseline directly.
  *
  * Called only on actual transitions (the caller guards same-value
  * sets), so tight queue runs that keep sftpActive=true throughout
@@ -1074,21 +1074,11 @@ ssh_connect(struct bbslist *bbs)
 		return -1;
 	if (setsockopt(ssh_sock, IPPROTO_TCP, TCP_NODELAY, (char *)&off, sizeof(off)))
 		fprintf(stderr, "%s:%d: Error %d calling setsockopt()\n", __FILE__, __LINE__, errno);
-	/* Pin SO_SNDBUF to a known value to get consistent behaviour
-	 * across platforms (Windows in particular defaults to ~8 KiB
-	 * and only auto-tunes upward in some configurations).  The 1
-	 * MiB baseline fits the BDP of a 500 Mbps × ~16 ms link with
-	 * headroom; ssh_set_sftp_buffer_mode() temporarily drops it to
-	 * 64 KiB while CTerm.sftpActive is set, so a saturated SFTP
-	 * transfer can't queue more than ~16 ms of keystroke-blocking
-	 * data on a 30 Mbps wire.  Receive buffer is left at the
-	 * kernel's auto-tuned default — downloads are response-bound,
-	 * not outgoing-bound, so SO_RCVBUF wants the BDP-friendly
-	 * large default. */
-	int sndbuf = 1024 * 1024;
-	if (setsockopt(ssh_sock, SOL_SOCKET, SO_SNDBUF, (char *)&sndbuf, sizeof(sndbuf)))
-		fprintf(stderr, "%s:%d: Error %d calling setsockopt(SO_SNDBUF)\n",
-		    __FILE__, __LINE__, errno);
+	/* SO_SNDBUF and SO_RCVBUF are pinned to 1 MiB by
+	 * conn_socket_connect().  ssh_set_sftp_buffer_mode() temporarily
+	 * drops SO_SNDBUF to 64 KiB while CTerm.sftpActive is set so a
+	 * saturated SFTP transfer can't queue more than ~16 ms of
+	 * keystroke-blocking data on a 30 Mbps wire. */
 
 	if (!bbs->hidepopups)
 		uifc.pop("Creating Session");

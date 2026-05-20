@@ -650,6 +650,30 @@ connected:
 			if (setsockopt(sock, SOL_SOCKET, SO_KEEPALIVE, (void *)&keepalives, sizeof(keepalives)))
 				fprintf(stderr, "%s:%d: Error %d calling setsockopt()\n", __FILE__, __LINE__, errno);
 
+			/* Pin both kernel socket buffers to 1 MiB for consistent
+			 * throughput across platforms.  Windows defaults to ~8 KiB
+			 * for both directions and does not auto-tune the receive
+			 * buffer the way Linux does, so a Windows-side telnet (or
+			 * any TCP) download caps at roughly RCVBUF/RTT — about
+			 * 400 KiB/s on a 20 ms link with the stock 8 KiB receive
+			 * window — regardless of how fast the server streams.  1
+			 * MiB covers the BDP of a 500 Mbps × 16 ms link with
+			 * headroom and is small enough that the per-connection
+			 * memory cost is negligible.
+			 *
+			 * SSH overrides SO_SNDBUF dynamically via
+			 * ssh_set_sftp_buffer_mode() (drops to 64 KiB while
+			 * CTerm.sftpActive is set so a saturated SFTP transfer
+			 * can't queue keystroke-blocking bulk data), so the value
+			 * set here is the baseline that the toggle restores to. */
+			int sockbuf = 1024 * 1024;
+			if (setsockopt(sock, SOL_SOCKET, SO_SNDBUF, (char *)&sockbuf, sizeof(sockbuf)))
+				fprintf(stderr, "%s:%d: Error %d calling setsockopt(SO_SNDBUF)\n",
+				    __FILE__, __LINE__, errno);
+			if (setsockopt(sock, SOL_SOCKET, SO_RCVBUF, (char *)&sockbuf, sizeof(sockbuf)))
+				fprintf(stderr, "%s:%d: Error %d calling setsockopt(SO_RCVBUF)\n",
+				    __FILE__, __LINE__, errno);
+
 			if (!bbs->hidepopups)
 				uifc.pop(NULL);
 			return sock;
