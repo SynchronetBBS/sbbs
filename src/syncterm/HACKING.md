@@ -221,7 +221,7 @@ src/
 | `ini_file.c/h` | ~4360 | INI file parser: sections, typed values, !include, fast-parse |
 | `xpprintf.c/h` | ~1890 | Custom printf with positional parameters, xp_asprintf |
 | `dirwrap.c/h` | ~1550 | opendir/readdir on Windows, glob, path manipulation, fexistcase |
-| `xpbeep.c/h` | ~1340 | Tone generation: ALSA, OSS, SDL, PortAudio, PulseAudio, Win32 |
+| `xpbeep.c/h` | ~1340 | Tone generation: CoreAudio, WASAPI, PortAudio, SDL, PulseAudio, ALSA, OSS |
 | `genwrap.c/h` | ~1550 | SLEEP/YIELD, xp_random, xp_timer, c_escape_str, parse_byte_count |
 | `link_list.c/h` | ~1190 | Doubly-linked list with mutex/semaphore protection, ref counting |
 | `str_list.c/h` | ~1130 | NULL-terminated `char**` dynamic arrays, stack macros |
@@ -1065,8 +1065,9 @@ over Win32 API.
   fast-parse mode, encrypted file support
 
 #### Audio
-- `xpbeep.c/h` — Cross-platform tone generation: Win32 Beep, ALSA,
-  OSS, SDL, PortAudio, PulseAudio. Sine, sawtooth, square waveforms.
+- `xpbeep.c/h` — Cross-platform tone generation. Backends tried in
+  this order at open time: CoreAudio, WASAPI, PortAudio, SDL,
+  PulseAudio, ALSA, OSS. Sine, sawtooth, square waveforms.
   `xp_play_sample()` for raw PCM playback.
 
 #### Other Key Modules

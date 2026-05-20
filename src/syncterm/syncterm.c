@@ -1002,18 +1002,13 @@ char *cursor_enum[] = {
 	"SolidBlock",
 };
 
+/* Order matches xpbeep.c's xptone_open_locked() try sequence so the
+ * Audio Output Mode UI list reflects which backend the engine will
+ * actually pick when multiple are enabled. */
 ini_bitdesc_t audio_output_bits[] = {
 	{
-		.name = "PulseAudio",
-		.bit = XPBEEP_DEVICE_PULSEAUDIO
-	},
-	{
-		.name = "PortAudio",
-		.bit = XPBEEP_DEVICE_PORTAUDIO
-	},
-	{
-		.name = "SDL",
-		.bit = XPBEEP_DEVICE_SDL
+		.name = "CoreAudio",
+		.bit = XPBEEP_DEVICE_COREAUDIO
 	},
 	/* The Win32 backend switched from waveOut to WASAPI in the 1.8-post
 	 * audio overhaul. Newly-written configs emit "WASAPI" (first match
@@ -1026,6 +1021,18 @@ ini_bitdesc_t audio_output_bits[] = {
 	{
 		.name = "WaveOut",
 		.bit = XPBEEP_DEVICE_WIN32
+	},
+	{
+		.name = "PortAudio",
+		.bit = XPBEEP_DEVICE_PORTAUDIO
+	},
+	{
+		.name = "SDL",
+		.bit = XPBEEP_DEVICE_SDL
+	},
+	{
+		.name = "PulseAudio",
+		.bit = XPBEEP_DEVICE_PULSEAUDIO
 	},
 	{
 		.name = "ALSA",
@@ -1042,10 +1049,16 @@ ini_bitdesc_t audio_output_bits[] = {
 };
 
 ini_bitdesc_t audio_output_types[] = {
-#ifdef WITH_PULSEAUDIO
+#ifdef WITH_COREAUDIO
 	{
-		.name = "PulseAudio",
-		.bit = XPBEEP_DEVICE_PULSEAUDIO
+		.name = "CoreAudio",
+		.bit = XPBEEP_DEVICE_COREAUDIO
+	},
+#endif
+#ifdef _WIN32
+	{
+		.name = "WASAPI",
+		.bit = XPBEEP_DEVICE_WIN32
 	},
 #endif
 #ifdef WITH_PORTAUDIO
@@ -1060,10 +1073,10 @@ ini_bitdesc_t audio_output_types[] = {
 		.bit = XPBEEP_DEVICE_SDL
 	},
 #endif
-#ifdef _WIN32
+#ifdef WITH_PULSEAUDIO
 	{
-		.name = "WASAPI",
-		.bit = XPBEEP_DEVICE_WIN32
+		.name = "PulseAudio",
+		.bit = XPBEEP_DEVICE_PULSEAUDIO
 	},
 #endif
 #ifdef USE_ALSA_SOUND

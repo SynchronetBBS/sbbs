@@ -1062,6 +1062,147 @@ xptone_open_locked(void)
 	}
 #endif
 
+#ifdef _WIN32
+	if (xpbeep_sound_devices_enabled & XPBEEP_DEVICE_WIN32) {
+		if (!sound_device_open_failed) {
+#if defined(XPDEV_THREAD_SAFE) && !defined(__BORLANDC__)
+			/* MT builds with Vista SDK headers go through WASAPI
+			 * (shared-mode, event-driven, pull-native). The wrapper
+			 * owns its own render thread and calls xp_mixer_pull
+			 * directly — no device_thread_fn branch needed. */
+			if (xp_wasapi_open()) {
+				handle_type = SOUND_DEVICE_WIN32;
+				handle_rc++;
+				return true;
+			}
+			sound_device_open_failed = true;
+			return false;
+#elif !defined(XPDEV_THREAD_SAFE)
+			/* Non-MT builds keep the legacy waveOut push backend used by
+			 * do_xp_play_sample. */
+			memset(&w, 0, sizeof(w));
+			w.wFormatTag      = WAVE_FORMAT_PCM;
+			w.nChannels       = S_CHANNELS;
+			w.nSamplesPerSec  = S_RATE;
+			w.wBitsPerSample  = S_BYTEDEPTH * 8;
+			w.nBlockAlign     = (w.wBitsPerSample * w.nChannels) / 8;
+			w.nAvgBytesPerSec = w.nSamplesPerSec * w.nBlockAlign;
+
+			waveOut_done = CreateEvent(NULL, FALSE, FALSE, NULL);
+			if (waveOut_done == NULL) {
+				sound_device_open_failed = true;
+				return false;
+			}
+			if (waveOutOpen(&waveOut, WAVE_MAPPER, &w,
+			                (DWORD_PTR)waveOut_done, 0, CALLBACK_EVENT) != MMSYSERR_NOERROR) {
+				CloseHandle(waveOut_done);
+				waveOut_done = NULL;
+				sound_device_open_failed = true;
+				return false;
+			}
+			memset(&wh, 0, sizeof(wh));
+			curr_wh = 0;
+			handle_type = SOUND_DEVICE_WIN32;
+			handle_rc++;
+			return true;
+#else
+			/* Borland MT on Win32: no audio backend available (no Vista
+			 * SDK headers for WASAPI; waveOut lives in the non-MT else
+			 * branch). Fail gracefully; selection falls through to any
+			 * other enabled backend. */
+			sound_device_open_failed = true;
+			return false;
+#endif
+		}
+	}
+#endif
+
+#ifdef WITH_PORTAUDIO
+	if (xpbeep_sound_devices_enabled & XPBEEP_DEVICE_PORTAUDIO) {
+		if (!portaudio_device_open_failed) {
+			if (pa_api == NULL) {
+				const char *libnames[] = {"portaudio", NULL};
+				if (((pa_api = (struct portaudio_api_struct *)malloc(sizeof(struct portaudio_api_struct))) == NULL)
+				    || ((pa_api->dl = xp_dlopen(libnames, RTLD_LAZY, 0)) == NULL)
+				    || ((pa_api->init = xp_dlsym(pa_api->dl, Pa_Initialize)) == NULL)
+				    || ((pa_api->open = xp_dlsym(pa_api->dl, Pa_OpenDefaultStream)) == NULL)
+				    || ((pa_api->close = xp_dlsym(pa_api->dl, Pa_CloseStream)) == NULL)
+				    || ((pa_api->start = xp_dlsym(pa_api->dl, Pa_StartStream)) == NULL)
+				    ||
+					(
+						((pa_api->active = xp_dlsym(pa_api->dl, Pa_StreamActive)) == NULL)
+						&& ((pa_api->active = xp_dlsym(pa_api->dl, Pa_IsStreamActive)) == NULL)
+				    )
+				    || ((pa_api->stop = xp_dlsym(pa_api->dl, Pa_StopStream)) == NULL)
+				    ) {
+					if (pa_api->dl)
+						xp_dlclose(pa_api->dl);
+					free(pa_api);
+					pa_api = NULL;
+				}
+				else {
+					/* Optional — available on all v19 builds; used for
+					 * latency reporting in xp_device_latency_ms. */
+					pa_api->get_stream_info = xp_dlsym(pa_api->dl, Pa_GetStreamInfo);
+				}
+				if (pa_api == NULL) {
+					portaudio_device_open_failed = true;
+				}
+			}
+			if (pa_api != NULL) {
+				if (!portaudio_initialized) {
+					if (pa_api->init() != paNoError)
+						portaudio_device_open_failed = true;
+					else
+						portaudio_initialized = true;
+				}
+				if (portaudio_initialized) {
+					if (pa_api->open(&portaudio_stream, 0, S_CHANNELS,
+					                 paInt16, S_RATE, 1024,
+					                 portaudio_callback, &pawave) != paNoError)
+						portaudio_device_open_failed = true;
+					else {
+						handle_type = SOUND_DEVICE_PORTAUDIO;
+						handle_rc++;
+						return true;
+					}
+				}
+			}
+		}
+	}
+#endif
+
+#ifdef WITH_SDL_AUDIO
+	if (xpbeep_sound_devices_enabled & XPBEEP_DEVICE_SDL) {
+		if (!sdl_device_open_failed) {
+			if (init_sdl_audio() == -1) {
+				sdl_device_open_failed = true;
+			}
+			else {
+				spec.freq = S_RATE;
+				spec.format = AUDIO_S16SYS;
+				spec.channels = S_CHANNELS;
+				spec.samples = 1024;      /* frames per callback */
+				spec.size = 1024 * S_FRAMESIZE;
+				spec.callback = sdl_fillbuf;
+				spec.userdata = NULL;
+				if (xpbeep_sdl.OpenAudio(&spec, NULL) == -1) {
+					sdl_device_open_failed = true;
+				}
+				else {
+					sdlToneDone = xpbeep_sdl.SDL_CreateSemaphore(0);
+					sdl_audio_buf_len = 0;
+					sdl_audio_buf_pos = 0;
+					xpbeep_sdl.PauseAudio(false);
+					handle_type = SOUND_DEVICE_SDL;
+					handle_rc++;
+					return true;
+				}
+			}
+		}
+	}
+#endif
+
 #ifdef WITH_PULSEAUDIO
 	if (xpbeep_sound_devices_enabled & XPBEEP_DEVICE_PULSEAUDIO) {
 		if (!pulseaudio_device_open_failed) {
@@ -1234,147 +1375,6 @@ xptone_open_locked(void)
 				}
 #endif
 			}
-		}
-	}
-#endif
-
-#ifdef WITH_PORTAUDIO
-	if (xpbeep_sound_devices_enabled & XPBEEP_DEVICE_PORTAUDIO) {
-		if (!portaudio_device_open_failed) {
-			if (pa_api == NULL) {
-				const char *libnames[] = {"portaudio", NULL};
-				if (((pa_api = (struct portaudio_api_struct *)malloc(sizeof(struct portaudio_api_struct))) == NULL)
-				    || ((pa_api->dl = xp_dlopen(libnames, RTLD_LAZY, 0)) == NULL)
-				    || ((pa_api->init = xp_dlsym(pa_api->dl, Pa_Initialize)) == NULL)
-				    || ((pa_api->open = xp_dlsym(pa_api->dl, Pa_OpenDefaultStream)) == NULL)
-				    || ((pa_api->close = xp_dlsym(pa_api->dl, Pa_CloseStream)) == NULL)
-				    || ((pa_api->start = xp_dlsym(pa_api->dl, Pa_StartStream)) == NULL)
-				    ||
-					(
-						((pa_api->active = xp_dlsym(pa_api->dl, Pa_StreamActive)) == NULL)
-						&& ((pa_api->active = xp_dlsym(pa_api->dl, Pa_IsStreamActive)) == NULL)
-				    )
-				    || ((pa_api->stop = xp_dlsym(pa_api->dl, Pa_StopStream)) == NULL)
-				    ) {
-					if (pa_api->dl)
-						xp_dlclose(pa_api->dl);
-					free(pa_api);
-					pa_api = NULL;
-				}
-				else {
-					/* Optional — available on all v19 builds; used for
-					 * latency reporting in xp_device_latency_ms. */
-					pa_api->get_stream_info = xp_dlsym(pa_api->dl, Pa_GetStreamInfo);
-				}
-				if (pa_api == NULL) {
-					portaudio_device_open_failed = true;
-				}
-			}
-			if (pa_api != NULL) {
-				if (!portaudio_initialized) {
-					if (pa_api->init() != paNoError)
-						portaudio_device_open_failed = true;
-					else
-						portaudio_initialized = true;
-				}
-				if (portaudio_initialized) {
-					if (pa_api->open(&portaudio_stream, 0, S_CHANNELS,
-					                 paInt16, S_RATE, 1024,
-					                 portaudio_callback, &pawave) != paNoError)
-						portaudio_device_open_failed = true;
-					else {
-						handle_type = SOUND_DEVICE_PORTAUDIO;
-						handle_rc++;
-						return true;
-					}
-				}
-			}
-		}
-	}
-#endif
-
-#ifdef WITH_SDL_AUDIO
-	if (xpbeep_sound_devices_enabled & XPBEEP_DEVICE_SDL) {
-		if (!sdl_device_open_failed) {
-			if (init_sdl_audio() == -1) {
-				sdl_device_open_failed = true;
-			}
-			else {
-				spec.freq = S_RATE;
-				spec.format = AUDIO_S16SYS;
-				spec.channels = S_CHANNELS;
-				spec.samples = 1024;      /* frames per callback */
-				spec.size = 1024 * S_FRAMESIZE;
-				spec.callback = sdl_fillbuf;
-				spec.userdata = NULL;
-				if (xpbeep_sdl.OpenAudio(&spec, NULL) == -1) {
-					sdl_device_open_failed = true;
-				}
-				else {
-					sdlToneDone = xpbeep_sdl.SDL_CreateSemaphore(0);
-					sdl_audio_buf_len = 0;
-					sdl_audio_buf_pos = 0;
-					xpbeep_sdl.PauseAudio(false);
-					handle_type = SOUND_DEVICE_SDL;
-					handle_rc++;
-					return true;
-				}
-			}
-		}
-	}
-#endif
-
-#ifdef _WIN32
-	if (xpbeep_sound_devices_enabled & XPBEEP_DEVICE_WIN32) {
-		if (!sound_device_open_failed) {
-#if defined(XPDEV_THREAD_SAFE) && !defined(__BORLANDC__)
-			/* MT builds with Vista SDK headers go through WASAPI
-			 * (shared-mode, event-driven, pull-native). The wrapper
-			 * owns its own render thread and calls xp_mixer_pull
-			 * directly — no device_thread_fn branch needed. */
-			if (xp_wasapi_open()) {
-				handle_type = SOUND_DEVICE_WIN32;
-				handle_rc++;
-				return true;
-			}
-			sound_device_open_failed = true;
-			return false;
-#elif !defined(XPDEV_THREAD_SAFE)
-			/* Non-MT builds keep the legacy waveOut push backend used by
-			 * do_xp_play_sample. */
-			memset(&w, 0, sizeof(w));
-			w.wFormatTag      = WAVE_FORMAT_PCM;
-			w.nChannels       = S_CHANNELS;
-			w.nSamplesPerSec  = S_RATE;
-			w.wBitsPerSample  = S_BYTEDEPTH * 8;
-			w.nBlockAlign     = (w.wBitsPerSample * w.nChannels) / 8;
-			w.nAvgBytesPerSec = w.nSamplesPerSec * w.nBlockAlign;
-
-			waveOut_done = CreateEvent(NULL, FALSE, FALSE, NULL);
-			if (waveOut_done == NULL) {
-				sound_device_open_failed = true;
-				return false;
-			}
-			if (waveOutOpen(&waveOut, WAVE_MAPPER, &w,
-			                (DWORD_PTR)waveOut_done, 0, CALLBACK_EVENT) != MMSYSERR_NOERROR) {
-				CloseHandle(waveOut_done);
-				waveOut_done = NULL;
-				sound_device_open_failed = true;
-				return false;
-			}
-			memset(&wh, 0, sizeof(wh));
-			curr_wh = 0;
-			handle_type = SOUND_DEVICE_WIN32;
-			handle_rc++;
-			return true;
-#else
-			/* Borland MT on Win32: no audio backend available (no Vista
-			 * SDK headers for WASAPI; waveOut lives in the non-MT else
-			 * branch). Fail gracefully; selection falls through to any
-			 * other enabled backend. */
-			sound_device_open_failed = true;
-			return false;
-#endif
 		}
 	}
 #endif
@@ -1822,25 +1822,21 @@ do_xp_play_sample(unsigned char *sampo, size_t sz, int *freed)
 	}
 #endif
 
-#ifdef WITH_PULSEAUDIO
-	if (handle_type == SOUND_DEVICE_PULSEAUDIO) {
-		int            err;
-		pa_sample_spec ss;
-		ss.format = PA_SAMPLE_S16NE;
-		ss.rate = S_RATE;
-		ss.channels = S_CHANNELS;
-		if (pu_handle == NULL) {
-			if ((pu_handle = pu_api->simple_new(NULL, "XPBeep", PA_STREAM_PLAYBACK, NULL, "Beeps and Boops", &ss, NULL, NULL, NULL)) == NULL) {
-				pulseaudio_device_open_failed = true;
-				pulseaudio_initialized = false;
-				xptone_close_locked();
-				xptone_open_locked();
-			}
-			else
-				pulseaudio_initialized = true;
+#ifdef _WIN32
+	if (handle_type == SOUND_DEVICE_WIN32) {
+		if (wh[curr_wh].dwFlags & WHDR_PREPARED) {
+			while (waveOutUnprepareHeader(waveOut, &wh[curr_wh], sizeof(wh[curr_wh])) == WAVERR_STILLPLAYING)
+				SLEEP(1);
 		}
-		if (pulseaudio_initialized)
-			pu_api->simple_write(pu_handle, sampo, sz, &err);
+		free(wh[curr_wh].lpData);
+		wh[curr_wh].lpData = (LPSTR)samp;
+		wh[curr_wh].dwBufferLength = sz;
+		if (waveOutPrepareHeader(waveOut, &wh[curr_wh], sizeof(wh[curr_wh])) == MMSYSERR_NOERROR) {
+			if (waveOutWrite(waveOut, &wh[curr_wh], sizeof(wh[curr_wh])) == MMSYSERR_NOERROR) {
+				curr_wh ^= 1;
+			}
+		}
+		return true;
 	}
 #endif
 
@@ -1869,21 +1865,30 @@ do_xp_play_sample(unsigned char *sampo, size_t sz, int *freed)
 	}
 #endif
 
-#ifdef _WIN32
-	if (handle_type == SOUND_DEVICE_WIN32) {
-		if (wh[curr_wh].dwFlags & WHDR_PREPARED) {
-			while (waveOutUnprepareHeader(waveOut, &wh[curr_wh], sizeof(wh[curr_wh])) == WAVERR_STILLPLAYING)
-				SLEEP(1);
-		}
-		free(wh[curr_wh].lpData);
-		wh[curr_wh].lpData = (LPSTR)samp;
-		wh[curr_wh].dwBufferLength = sz;
-		if (waveOutPrepareHeader(waveOut, &wh[curr_wh], sizeof(wh[curr_wh])) == MMSYSERR_NOERROR) {
-			if (waveOutWrite(waveOut, &wh[curr_wh], sizeof(wh[curr_wh])) == MMSYSERR_NOERROR) {
-				curr_wh ^= 1;
+#ifdef WITH_PULSEAUDIO
+	if (handle_type == SOUND_DEVICE_PULSEAUDIO) {
+		int            err;
+		pa_sample_spec ss;
+		ss.format = PA_SAMPLE_S16NE;
+		ss.rate = S_RATE;
+		ss.channels = S_CHANNELS;
+		if (pu_handle == NULL) {
+			if ((pu_handle = pu_api->simple_new(NULL, "XPBeep", PA_STREAM_PLAYBACK, NULL, "Beeps and Boops", &ss, NULL, NULL, NULL)) == NULL) {
+				pulseaudio_device_open_failed = true;
+				pulseaudio_initialized = false;
+				/* Close but don't reopen here.  Reopening mid-call would
+				 * leave do_xp_play_sample's need_copy state stale for the
+				 * new backend (e.g. landing on PortAudio / Win32 / SDL_AUDIO
+				 * would skip the required buffer copy).  The worker thread's
+				 * next iteration re-runs xptone_open_locked with fresh
+				 * state. */
+				xptone_close_locked();
 			}
+			else
+				pulseaudio_initialized = true;
 		}
-		return true;
+		if (pulseaudio_initialized)
+			pu_api->simple_write(pu_handle, sampo, sz, &err);
 	}
 #endif
 
@@ -1900,10 +1905,12 @@ do_xp_play_sample(unsigned char *sampo, size_t sz, int *freed)
 				}
 				else {
 					if (written == 0) {
-						/* Go back and try OSS */
-						xptone_close_locked();
+						/* Mark ALSA bad and close; let the worker
+						 * thread's next iteration reopen with fresh
+						 * need_copy state (same rationale as the PA
+						 * close-without-reopen above). */
 						alsa_device_open_failed = true;
-						xptone_open_locked();
+						xptone_close_locked();
 					}
 					break;
 				}
