@@ -158,6 +158,7 @@ int
 modem_connect(struct bbslist *bbs)
 {
 	int  ret;
+	int  fc;
 	char respbuf[1024];
 
 	seven_bits = (bbs->data_bits == 7);
@@ -200,7 +201,16 @@ modem_connect(struct bbslist *bbs)
 			comClose(com);
 			return -1;
 		}
-		if (!comSetFlowControl(com, bbs->flow_control)) {
+		/* 3-wire serial has no RTS/CTS lines wired; asking the
+		 * tty layer to flow-control on them would block all output
+		 * as soon as the kernel sees CTS low (which it always is,
+		 * since the line isn't connected).  Mask RTS/CTS out for
+		 * NORTS regardless of what the user picked in the bbslist
+		 * UI. */
+		fc = bbs->flow_control;
+		if (bbs->conn_type == CONN_TYPE_SERIAL_NORTS)
+			fc &= ~COM_FLOW_CONTROL_RTS_CTS;
+		if (!comSetFlowControl(com, fc)) {
 			conn_api.close();
 			if (!bbs->hidepopups) {
 				uifcmsg("Failed to set Flow Control", "`Failed to set Flow Control`\n\n"
