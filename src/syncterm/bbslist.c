@@ -2619,8 +2619,40 @@ edit_list(struct bbslist **list, struct bbslist *item, char *listpath, int isdef
 				uifc.helpbuf = "`Flow Control`\n\n"
 				               "Select the desired flow control type.\n"
 				               "This should usually be left as \"RTS/CTS\".\n";
+				/* For 3-wire (NORTS) connections, hide the RTS/CTS-bearing
+				 * options.  The current value isn't forced; if the user
+				 * cancels, the stored fc stays put; modem.c masks RTS/CTS
+				 * off at connect time anyway.  Highlight the closest match
+				 * in the filtered list so the user can see what they had. */
 				i = fc_to_enum(item->flow_control);
 				j = i;
+				if (item->conn_type == CONN_TYPE_SERIAL_NORTS) {
+					static char *fc_names_norts[] = {"XON/XOFF", "None", NULL};
+					static int   fc_norts_map[]   = {1, 3};
+					int          fj;
+					/* Map full-list index to filtered-list index.
+					 * Fall back to "None" (index 1 in filtered list)
+					 * when the current value isn't representable. */
+					if (i == 1)       fj = 0;     /* XON/XOFF */
+					else if (i == 3)  fj = 1;     /* None */
+					else              fj = 1;     /* RTS/CTS variant -> None default */
+					switch (uifc.list(WIN_SAV, 0, 0, 0, &fj, NULL, optname, fc_names_norts)) {
+						case -1:
+							check_exit(false);
+							break;
+						default:
+							j = fc_norts_map[fj];
+							item->flow_control = fc_from_enum(j);
+							if (j != i) {
+								iniSetEnum(&inifile, itemname,
+								           "FlowControl", fc_enum, j,
+								           &ini_style);
+								uifc.changes = 1;
+							}
+							break;
+					}
+					break;
+				}
 				switch (uifc.list(WIN_SAV, 0, 0, 0, &j, NULL, optname, fc_names)) {
 					case -1:
 						check_exit(false);

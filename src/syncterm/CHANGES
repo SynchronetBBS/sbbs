@@ -5,6 +5,7 @@ Fix Prestel double-height bottom-half redraw on overwrite
 Fix key repeat on Wayland
 Fix Wayland content size change
 Fix Quartz and Wayland mapping on non-PC charsets (ATASCII etc)
+Fix RTS/CTS handling on close() and in 3-Wire mode
 Change Qartz to map Command to Alt, not Option per Apple design
 Rework filepick widget
 

@@ -254,6 +254,13 @@ bool comClose(COM_HANDLE handle)
 {
     if (handle == COM_HANDLE_INVALID)
         return false;
+    /* Discard any pending output before close.  The tty layer drains
+     * the transmit buffer on the last close when HUPCL is set, which
+     * with hardware flow control held off (modem detached, CTS low at
+     * disconnect) can stall close() for the kernel's per-byte timeout
+     * times the number of queued bytes.  We're disconnecting; the
+     * data is being thrown away anyway. */
+    tcflush(handle, TCOFLUSH);
     return (!close(handle));
 }
 
