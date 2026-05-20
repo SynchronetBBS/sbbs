@@ -3907,6 +3907,14 @@ static void ctrl_thread(void* arg)
 					smb_t smb;
 					if ((result = smb_open_dir(&scfg, &smb, dir)) != SMB_SUCCESS) {
 						lprintf(LOG_ERR, "ERROR %d (%s) opening %s", result, smb.last_error, smb.file);
+						if (cmd[3] == 'D') {
+							fclose(fp);
+							filexfer(&data_addr, sock, sess, pasv_sock, pasv_sess, &data_sock, &data_sess, fname, 0L
+							         , &transfer_inprogress, &transfer_aborted
+							         , true /* delfile */
+							         , true /* tmpfile */
+							         , &lastactive, &user, &client, dir, false, false, false, NULL, protection);
+						}
 						continue;
 					}
 					time_t  start = time(NULL);
@@ -4214,6 +4222,12 @@ static void ctrl_thread(void* arg)
 				smb_t smb;
 				if ((result = smb_open_dir(&scfg, &smb, dir)) != SMB_SUCCESS) {
 					lprintf(LOG_ERR, "ERROR %d (%s) opening %s", result, smb.last_error, smb.file);
+					fclose(fp);
+					filexfer(&data_addr, sock, sess, pasv_sock, pasv_sess, &data_sock, &data_sess, fname, 0L
+					         , &transfer_inprogress, &transfer_aborted
+					         , true /* delfile */
+					         , true /* tmpfile */
+					         , &lastactive, &user, &client, dir, false, false, false, NULL, protection);
 					continue;
 				}
 				time_t  start = time(NULL);
@@ -4422,17 +4436,17 @@ static void ctrl_thread(void* arg)
 					sockprintf(sock, sess, "550 Size not available for dynamically generated files");
 					continue;
 				}
-				if ((fp = fopen(ftp_tmpfname(fname, "ndx", sock), "wb")) == NULL) {
-					lprintf(LOG_ERR, "%04d <%s> !ERROR %d (%s) line %d opening %s"
-					        , sock, user.alias, errno, safe_strerror(errno, error, sizeof error), __LINE__, fname);
-					sockprintf(sock, sess, "451 Insufficient system storage");
-					filepos = 0;
-					continue;
-				}
 				success = true;
 				if (getdate)
-					file_date = time(NULL);
+					file_date = time(NULL);  // No temp file needed for a modification-time query
 				else {
+					if ((fp = fopen(ftp_tmpfname(fname, "ndx", sock), "wb")) == NULL) {
+						lprintf(LOG_ERR, "%04d <%s> !ERROR %d (%s) line %d opening %s"
+						        , sock, user.alias, errno, safe_strerror(errno, error, sizeof error), __LINE__, fname);
+						sockprintf(sock, sess, "451 Insufficient system storage");
+						filepos = 0;
+						continue;
+					}
 					lprintf(LOG_INFO, "%04d <%s> downloading %s for %s in %s mode"
 					        , sock, user.alias, startup->index_file_name, genvpath(lib, dir, str)
 					        , mode);
@@ -4515,6 +4529,11 @@ static void ctrl_thread(void* arg)
 						smb_t smb;
 						if ((result = smb_open_dir(&scfg, &smb, dir)) != SMB_SUCCESS) {
 							lprintf(LOG_ERR, "ERROR %d (%s) opening %s", result, smb.last_error, smb.file);
+							fclose(fp);
+							if (!(startup->options & FTP_OPT_KEEP_TEMP_FILES))
+								ftp_remove(sock, __LINE__, fname, user.alias, LOG_ERR);
+							sockprintf(sock, sess, "451 Insufficient system storage");
+							filepos = 0;
 							continue;
 						}
 						time_t  start = time(NULL);
