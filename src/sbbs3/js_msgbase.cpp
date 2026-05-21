@@ -40,6 +40,7 @@ typedef struct
 	private_t *p;
 	bool expand_fields;
 	bool enumerated;
+	bool defer_listing;     /* skip building field_list/can_read during eager bulk populate (they stay lazy) */
 	smbmsg_t msg;
 	post_t post;
 
@@ -1534,7 +1535,7 @@ static JSBool js_get_msg_header_resolve(JSContext *cx, JSObject *obj, jsid id)
 	LAZY_STRING_TRUNCSP_NULL("ftn_charset", p->msg.ftn_charset, JSPROP_ENUMERATE);
 	LAZY_STRING_TRUNCSP_NULL("ftn_bbsid", p->msg.ftn_bbsid, JSPROP_ENUMERATE);
 
-	if (name == NULL || strcmp(name, "field_list") == 0) {
+	if ((name == NULL && !p->defer_listing) || (name != NULL && strcmp(name, "field_list") == 0)) {
 		if (name)
 			free(name);
 		/* Create hdr.field_list[] with repeating header fields (including type and data) */
@@ -1586,7 +1587,7 @@ static JSBool js_get_msg_header_resolve(JSContext *cx, JSObject *obj, jsid id)
 			return JS_TRUE;
 	}
 
-	if (name == NULL || strcmp(name, "can_read") == 0) {
+	if ((name == NULL && !p->defer_listing) || (name != NULL && strcmp(name, "can_read") == 0)) {
 		if (name)
 			free(name);
 		v = BOOLEAN_TO_JSVAL(JS_FALSE);
@@ -2044,22 +2045,39 @@ js_get_all_msg_headers(JSContext *cx, uintN argc, jsval *arglist)
 			return JS_FALSE;
 		}
 
-		/* Eagerly define 'number' to force a SpiderMonkey shape transition on
-		 * the fresh header object. Without this, the lazy resolve hook
-		 * misbehaves on first access for *_NULL-defaulted fields (to_ext,
-		 * from_ext, replyto, etc. — anything declared with
-		 * LAZY_STRING_TRUNCSP_NULL): the first JS access returns undefined
-		 * even when p->msg.<field> is populated. Touching ANY property first
-		 * (which calls JS_DefineProperty inside the LAZY_* macro) makes
-		 * subsequent lazy resolves work; doing it eagerly here once per
-		 * header avoids the trap entirely.  See get_msg_header() — it doesn't
-		 * exhibit the bug because each call is followed by user code that
-		 * naturally touches a non-NULL field, but bulk-iteration of
-		 * get_all_msg_headers() exposes it.
+		/* Eagerly populate the header's data fields now, rather than relying
+		 * on lazy resolution at first property access.
+		 *
+		 * Header fields are normally resolved lazily by
+		 * js_get_msg_header_resolve via the LAZY_* macros. The
+		 * LAZY_STRING_TRUNCSP_NULL fields (to_ext, from_ext, replyto, to_list,
+		 * cc_list, summary, tags, from_org, etc.) are NOT defined as properties
+		 * when their underlying p->msg.<field> is NULL. In a bulk fetch, all
+		 * header objects share one SpiderMonkey shape; once the resolve hook
+		 * processes a header whose *_NULL field is NULL (leaving the property
+		 * undefined), the 1.8.5 property cache for that (shape, field) entry is
+		 * corrupted, and every subsequent same-shape header then returns
+		 * `undefined` on the FIRST access of that field — even when populated.
+		 *
+		 * Eagerly defining 'number' alone (the prior fix) masked this for tiny
+		 * or uniform message bases, but not for real mailboxes: there it bit
+		 * almost every header once the first NULL-to_ext message appeared
+		 * (e.g. ~98% of a 14k-message mail base). Resolving the data fields
+		 * here defines each (non-NULL) field as an own property up front, so
+		 * callers iterating bulk-fetched headers never trigger the GET-path
+		 * lazy resolve (nor the property-cache fast-path that mis-serves
+		 * undefined). 'number' is (re)defined by this pass too.
+		 *
+		 * defer_listing skips the expensive field_list[]/can_read branches
+		 * here (they remain lazily resolved on first access), and we do NOT
+		 * set p->enumerated, so a later enumeration still builds them. The lazy
+		 * path also still serves single-header get_msg_header() callers, which
+		 * don't exhibit the bug because user code organically touches a
+		 * non-NULL field before any *_NULL field.
 		 */
-		JS_DefineProperty(cx, hdrobj, "number",
-		                  UINT_TO_JSVAL(p->msg.hdr.number),
-		                  NULL, NULL, JSPROP_ENUMERATE);
+		p->defer_listing = true;
+		js_get_msg_header_resolve(cx, hdrobj, JSID_VOID);
+		p->defer_listing = false;
 
 		val = OBJECT_TO_JSVAL(hdrobj);
 		sprintf(numstr, "%" PRIu32, p->msg.hdr.number);

@@ -1,82 +1,105 @@
-// Regression test for MsgBase.get_all_msg_headers() lazy-property bug.
+// Regression/behavioral test for the MsgBase.get_all_msg_headers() lazy-field bug.
 //
-// Prior to the fix in js_get_all_msg_headers (js_msgbase.cpp), header
-// objects returned by get_all_msg_headers() exhibited a SpiderMonkey
-// shape-cache quirk: the first JS access to any LAZY_STRING_TRUNCSP_NULL
-// field (to_ext, from_ext, replyto, replyto_ext, replyto_list, to_list,
-// cc_list, summary, tags, from_org, etc.) returned `undefined` even when
-// p->msg.<field> was populated. Touching ANY other property first (e.g.
-// h.number, h.attr) triggered a JS_DefineProperty inside a LAZY_*
-// macro, transitioning the object's shape, after which subsequent
-// resolve calls worked normally.
+// Header objects returned by get_all_msg_headers() resolve most string fields
+// lazily (js_get_msg_header_resolve + the LAZY_* macros). The
+// LAZY_STRING_TRUNCSP_NULL fields (to_ext, from_ext, replyto, replyto_ext,
+// replyto_list, to_list, cc_list, summary, tags, from_org, etc.) are not
+// defined as properties when their underlying value is NULL. In a bulk fetch
+// all header objects share one SpiderMonkey 1.8.5 shape; once the resolve hook
+// processes a header whose *_NULL field is NULL (leaving the property
+// undefined), the property cache for that (shape, field) entry is corrupted and
+// every subsequent same-shape header returns `undefined` on the FIRST access of
+// that field — even when populated.
 //
-// The fix: eagerly JS_DefineProperty("number", ...) right after
-// JS_SetPrivate in js_get_all_msg_headers, forcing the shape transition
-// once at construction time.
+// History:
+//   - ca448cb8b eagerly JS_DefineProperty("number", ...) per header to force a
+//     shape transition. That masked the bug for tiny/uniform bases (and this
+//     test, when it had a single message) but NOT for real mailboxes, where it
+//     still bit ~98% of headers once the first NULL-to_ext message appeared.
+//   - The current fix eagerly RESOLVES the data fields per header in
+//     js_get_all_msg_headers (defer_listing skips the heavy field_list/can_read,
+//     which stay lazy), so non-NULL fields are own properties up front and the
+//     caller never triggers the GET-path lazy resolve that mis-serves undefined.
 //
-// This test creates a temp message base, saves a message with a
-// known to_ext value, then accesses to_ext as the FIRST property
-// touched on the bulk-fetched header. Without the fix, to_ext is
-// undefined and the test throws. With the fix, to_ext is the saved
-// value.
+// IMPORTANT: the failure only reproduces on real, varied mailbox data — it could
+// not be reproduced with synthetically save_msg()'d messages (uniform, varying,
+// NULL-interleaved, net-typed, header-rich, or shape-diverse, up to 15k msgs).
+// So this test is a BEHAVIORAL GUARD: it asserts the contract (cold first-access
+// of *_NULL fields returns the stored value across a bulk fetch) and catches a
+// total removal of the eager-populate, but it does not, on its own, reproduce
+// the real-mailbox property-cache corruption. Validate that against a real base.
 
-/* system.temp_dir may not exist yet on a fresh install / CI runner — create it. */
 mkpath(system.temp_dir);
 
-var path = system.temp_dir + "test_msgbase_to_ext_" + Date.now();
 var EXTENSIONS = [".shd", ".sdt", ".sid", ".sha", ".sda", ".ini", ".hash"];
 
-function cleanup() {
-	EXTENSIONS.forEach(function (ext) {
-		try { file_remove(path + ext); } catch (e) { /* ignore */ }
-	});
-}
-
-var mb = new MsgBase(path, /* is_path: */ true);
-if (!mb.open()) {
-	cleanup();
-	throw new Error("Failed to open temp msgbase '" + path + "': " + mb.last_error);
-}
-
-var saved = mb.save_msg(
-	{ to: "TestRecipient", to_ext: "1", from: "TestSender", subject: "to_ext-bug-test" },
-	"Test body for the get_all_msg_headers to_ext regression test."
-);
-mb.close();
-
-if (!saved) {
-	cleanup();
-	throw new Error("MsgBase.save_msg failed: " + mb.last_error);
-}
-
-if (!mb.open()) {
-	cleanup();
-	throw new Error("Reopen failed after save: " + mb.last_error);
-}
-
-var hdrs = mb.get_all_msg_headers();
-mb.close();
-cleanup();
-
-var seen = 0;
-for (var i in hdrs) {
-	seen++;
-	var h = hdrs[i];
-	// FIRST property access on this header object — must not return
-	// undefined. (Accessing any other property first would prime the
-	// shape and mask the bug, so don't touch h.* before this line.)
-	var first_to_ext = h.to_ext;
-	if (first_to_ext != "1") {
-		throw new Error(
-			"get_all_msg_headers(): hdrs[" + i + "].to_ext on first access " +
-			"returned " + JSON.stringify(first_to_ext) + " (expected '1'). " +
-			"Bug is in js_get_all_msg_headers (src/sbbs3/js_msgbase.cpp); " +
-			"fix forces a shape transition by JS_DefineProperty('number', ...) " +
-			"immediately after JS_SetPrivate."
-		);
+function with_base(name, build, check) {
+	var path = system.temp_dir + name + "_" + Date.now();
+	function cleanup() {
+		EXTENSIONS.forEach(function (ext) { try { file_remove(path + ext); } catch (e) {} });
+	}
+	var mb = new MsgBase(path, /* is_path: */ true);
+	if (!mb.open()) { cleanup(); throw new Error("open '" + path + "': " + mb.last_error); }
+	try {
+		build(mb);
+		mb.close();
+		if (!mb.open()) { cleanup(); throw new Error("reopen: " + mb.last_error); }
+		var hdrs = mb.get_all_msg_headers();
+		mb.close();
+		check(hdrs);
+	} finally {
+		try { mb.close(); } catch (e) {}
+		cleanup();
 	}
 }
 
-if (seen === 0) {
-	throw new Error("get_all_msg_headers() returned no entries from a base with 1 saved msg");
-}
+// --- Scenario 1: single message, to_ext read as the FIRST property access ---
+with_base("test_msgbase_to_ext", function (mb) {
+	if (!mb.save_msg({ to: "TestRecipient", to_ext: "1", from: "TestSender", subject: "to_ext-bug-test" },
+	                 "Test body."))
+		throw new Error("save_msg: " + mb.last_error);
+}, function (hdrs) {
+	var seen = 0;
+	for (var i in hdrs) {
+		seen++;
+		// FIRST property access on this header — must not be undefined. Do NOT
+		// touch any other property before this line (that would prime the shape).
+		var first = hdrs[i].to_ext;
+		if (first != "1")
+			throw new Error("hdrs[" + i + "].to_ext on first access = " + JSON.stringify(first) + " (expected '1')");
+	}
+	if (seen === 0) throw new Error("get_all_msg_headers() returned no entries");
+});
+
+// --- Scenario 2: many messages, mixed NULL/non-NULL to_ext + shape diversity,
+//     reading several *_NULL fields as the FIRST access on each header. ---
+var N = 60;
+var opt = ["replyto", "from_org", "summary", "tags", "cc_list", "from_ext", "to_list"];
+with_base("test_msgbase_bulk", function (mb) {
+	for (var i = 0; i < N; i++) {
+		var h = { to: "R" + i, from: "S", subject: "m" + i };
+		if (i % 5 != 2) h.to_ext = String((i % 9) + 1);   // most have to_ext; some omit it (NULL)
+		for (var j = 0; j < opt.length; j++)              // rotating field subset -> shape diversity
+			if ((i >> j) & 1) h[opt[j]] = opt[j] + "-" + i;
+		if (!mb.save_msg(h, "body " + i))
+			throw new Error("save_msg " + i + ": " + mb.last_error);
+	}
+}, function (hdrs) {
+	var seen = 0;
+	for (var i in hdrs) {
+		var h = hdrs[i];
+		if (typeof h != "object" || h == null) continue;
+		seen++;
+		// to_ext as the FIRST property access (the classic trap).
+		var to_ext = h.to_ext;
+		var n = Number(i);
+		// recover the message index from the subject to know what was stored
+		var subj = h.subject;                              // safe to touch after to_ext
+		var k = parseInt(String(subj).substr(1), 10);
+		var expect = (k % 5 != 2) ? String((k % 9) + 1) : undefined;
+		if (String(to_ext) !== String(expect))
+			throw new Error("bulk hdr (subject " + subj + ") to_ext first-access = "
+				+ JSON.stringify(to_ext) + " (expected " + JSON.stringify(expect) + ")");
+	}
+	if (seen !== N) throw new Error("expected " + N + " headers, got " + seen);
+});
