@@ -668,7 +668,7 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 	if (strcmp(sp, "CHARSET") == 0)
 		return term->charset_str();
 
-	if (!strcmp(sp, "CONN"))
+	if (!strcmp(sp, "CONN") || !strcmp(sp, "CARRIER")) // CARRIER (PCBoard)
 		return connection;
 
 	if (!strcmp(sp, "SYSOP"))
@@ -846,11 +846,11 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 	if (strcmp(sp, "TMP") == 0)
 		return useron.tmpext;
 
-	if (strcmp(sp, "PROT") == 0) {
+	if (strcmp(sp, "PROT") == 0 || strcmp(sp, "PROLTR") == 0) { // PROLTR (PCBoard)
 		safe_snprintf(str, maxlen, "%c", useron.prot);
 		return str;
 	}
-	if (strcmp(sp, "PROTNAME") == 0 || strcmp(sp, "PROTOCOL") == 0)
+	if (strcmp(sp, "PROTNAME") == 0 || strcmp(sp, "PROTOCOL") == 0 || strcmp(sp, "PRODESC") == 0) // PRODESC (PCBoard)
 		return protname(useron.prot);
 
 	if (strcmp(sp, "SEX") == 0 || strcmp(sp, "GENDER") == 0) {
@@ -1708,7 +1708,7 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 	if (code_match(sp, "FREECDT", &param))
 		return byte_count(useron.freecdt, str, maxlen, param, BYTE_COUNT_BYTES);
 
-	if (!strcmp(sp, "CONF")) {
+	if (!strcmp(sp, "CONF") || !strcmp(sp, "CONFNAME")) { // CONFNAME (PCBoard)
 		safe_snprintf(str, maxlen, "%s %s"
 		              , usrgrps ? cfg.grp[usrgrp[curgrp]]->sname :nulstr
 		              , usrgrps ? cfg.sub[usrsub[curgrp][cursub[curgrp]]]->sname : nulstr);
@@ -2373,7 +2373,7 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 		return current_msg->id == NULL ? nulstr : current_msg->id;
 	if (!strcmp(sp, "MSG_REPLY_ID") && current_msg != NULL)
 		return current_msg->reply_id == NULL ? nulstr : current_msg->reply_id;
-	if (!strcmp(sp, "MSG_NUM") && current_msg != NULL) {
+	if ((!strcmp(sp, "MSG_NUM") || !strcmp(sp, "CURMSGNUM")) && current_msg != NULL) { // CURMSGNUM (PCBoard)
 		safe_snprintf(str, maxlen, "%lu", (ulong)current_msg->hdr.number);
 		return str;
 	}
