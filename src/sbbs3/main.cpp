@@ -5794,11 +5794,11 @@ NO_SSH:
 							            , startup->max_concurrent_connections, strikes);
 							const char* can_fname = startup->max_concurrent.filter_silent
 							                          ? ip_silent_can.fname : ip_can.fname;
-							lprintf(LOG_NOTICE, "%04d %s !BLOCKING IP ADDRESS: %s in %s"
-							        , client_socket, client.protocol, host_ip, can_fname);
 							if (filter_ip(&scfg, client.protocol, reason, /* host: */ NULL, host_ip
 							              , /* user: */ NULL, can_fname
 							              , startup->max_concurrent.filter_duration)) {
+								lprintf(LOG_NOTICE, "%04d %s !BLOCKING IP ADDRESS: %s in %s"
+								        , client_socket, client.protocol, host_ip, can_fname);
 								clearMaxConcurrentAttempt(host_ip);
 								mqtt_pub_max_concurrent_clear(&mqtt, host_ip);
 							}

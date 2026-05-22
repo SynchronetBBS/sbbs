@@ -1082,9 +1082,9 @@ static void badlogin(SOCKET sock, CRYPT_SESSION sess, const char* resp
 		if (startup->login_attempt.filter_threshold && count >= startup->login_attempt.filter_threshold) {
 			snprintf(reason, sizeof reason, "%lu " STR_FAILED_LOGIN_ATTEMPTS " in %s"
 			         , count, duration_estimate_to_str(attempt.time - attempt.first, tmp, sizeof tmp, 1, 1));
-			lprintf(LOG_NOTICE, "%04d %-5s !BLOCKING IP ADDRESS: %s in %s"
-			        , sock, client->protocol, client->addr, ip_can.fname);
-			filter_ip(&scfg, client->protocol, reason, client->host, client->addr, user, /* fname: */ NULL, startup->login_attempt.filter_duration);
+			if (filter_ip(&scfg, client->protocol, reason, client->host, client->addr, user, /* fname: */ NULL, startup->login_attempt.filter_duration))
+				lprintf(LOG_NOTICE, "%04d %-5s !BLOCKING IP ADDRESS: %s in %s"
+				        , sock, client->protocol, client->addr, ip_can.fname);
 		}
 	}
 
@@ -4684,9 +4684,9 @@ static bool smtp_client_thread(smtp_t* smtp)
 				if (relay_user.number == 0) {
 					strcpy(tmp, "IGNORED");
 					if (dnsbl_result.s_addr == 0                       /* Don't double-filter */
-					    && !spam_block_exempt)  {
+					    && !spam_block_exempt
+					    && filter_ip(&scfg, client.protocol, reason, host_name, host_ip, reverse_path, spam_block.fname, startup->spam_block_duration)) {
 						lprintf(LOG_NOTICE, "%04d %-5s !BLOCKING IP ADDRESS: %s in %s", socket, client.protocol, client_id, spam_block.fname);
-						filter_ip(&scfg, client.protocol, reason, host_name, host_ip, reverse_path, spam_block.fname, startup->spam_block_duration);
 						strcat(tmp, " and BLOCKED");
 					}
 					spamlog(&scfg, &mqtt, client.protocol, tmp, "Attempted recipient in SPAM BAIT list"

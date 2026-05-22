@@ -162,9 +162,9 @@ void sbbs_t::badlogin(const char* user, const char* passwd, const char* protocol
 		getnameinfo(&addr->addr, addr_len, host_name, sizeof(host_name), NULL, 0, NI_NAMEREQD);
 		snprintf(reason, sizeof reason, "%lu " STR_FAILED_LOGIN_ATTEMPTS " in %s"
 		         , count, duration_estimate_to_str(attempt.time - attempt.first, tmp, sizeof tmp, 1, 1));
-		lprintf(LOG_NOTICE, "!BLOCKING IP ADDRESS: %s in %s"
-		        , ipaddr, trashcan_fname(&cfg, "ip", ip_can, sizeof ip_can));
-		filter_ip(&cfg, protocol, reason, host_name, ipaddr, user, /* fname: */ NULL, startup->login_attempt.filter_duration);
+		if (filter_ip(&cfg, protocol, reason, host_name, ipaddr, user, /* fname: */ NULL, startup->login_attempt.filter_duration))
+			lprintf(LOG_NOTICE, "!BLOCKING IP ADDRESS: %s in %s"
+			        , ipaddr, trashcan_fname(&cfg, "ip", ip_can, sizeof ip_can));
 	}
 
 	if (delay) {
