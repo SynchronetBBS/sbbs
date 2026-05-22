@@ -20,6 +20,7 @@
  ****************************************************************************/
 
 #include <unordered_map>
+#include <unordered_set>
 #include <deque>
 #include <atomic>
 #include "threadwrap.h"     /* pthread_mutex_t (std::mutex crashes in older
@@ -49,7 +50,12 @@ class rateLimiter {
 	// If denials is non-NULL, it receives the running count of times this clientId
 	// has been denied while continuously active (i.e. since its last idle cleanup).
 	// Callers can use this as an escalation signal (e.g. to auto-filter the client).
-	bool allowRequest(const std::string& clientId, unsigned* denials = nullptr) {
+	// If member is non-empty, it identifies the specific client (e.g. host IP)
+	// within the clientId bucket (e.g. a subnet). The set of distinct members
+	// that have been *denied* while the bucket is continuously active is tracked
+	// and queryable via distinctMembers(), so callers can tell whether a bucket's
+	// abuse is distributed across many members or attributable to just one.
+	bool allowRequest(const std::string& clientId, unsigned* denials = nullptr, const std::string& member = std::string()) {
 		if (denials != nullptr)
 			*denials = 0;
 		if (maxRequests == 0 || timeWindowSeconds == 0)
@@ -84,6 +90,8 @@ class rateLimiter {
 			lastLimited.time = now;
 			++disallowed;
 			unsigned n = ++deniedCount[clientId];
+			if (!member.empty())
+				bucketMembers[clientId].insert(member);
 			if (denials != nullptr)
 				*denials = n;
 			allowed = false; // Rate limit exceeded
@@ -103,6 +111,7 @@ class rateLimiter {
 			}
 			if (requestTimes.empty()) {
 				deniedCount.erase(it->first); // Reset escalation once the client goes idle
+				bucketMembers.erase(it->first);
 				it = clientRequestTimes.erase(it); // Remove client if no recent requests
 			} else {
 				++it;
@@ -114,6 +123,16 @@ class rateLimiter {
 	size_t client_count() {
 		pthread_mutex_lock(&mutex);
 		size_t count = clientRequestTimes.size();
+		pthread_mutex_unlock(&mutex);
+		return count;
+	}
+	// Number of distinct members (e.g. host IPs) that have been denied while a
+	// bucket (e.g. a subnet) has been continuously active. Used to decide whether
+	// to filter a whole subnet or just the single offending member.
+	size_t distinctMembers(const std::string& clientId) {
+		pthread_mutex_lock(&mutex);
+		auto it = bucketMembers.find(clientId);
+		size_t count = (it == bucketMembers.end()) ? 0 : it->second.size();
 		pthread_mutex_unlock(&mutex);
 		return count;
 	}
@@ -144,5 +163,6 @@ class rateLimiter {
 private:
 	std::unordered_map<std::string, std::deque<time_t>> clientRequestTimes;
 	std::unordered_map<std::string, unsigned> deniedCount;
+	std::unordered_map<std::string, std::unordered_set<std::string>> bucketMembers;
 	pthread_mutex_t mutex{};
 };

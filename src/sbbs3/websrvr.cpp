@@ -2014,10 +2014,21 @@ static std::string rate_limit_key(const char* ip, uint prefix4, uint prefix6)
  * startup->rate_limit_filter times while continuously active. The (sub)net key
  * is written to ip-silent.can (dropped at accept) or ip.can per configuration. */
 static void rate_limit_filter(SOCKET sock, const char* prot, const char* host_ip
-                              , const char* host_name, const std::string& key, unsigned denials)
+                              , const char* host_name, const std::string& key, unsigned denials
+                              , rateLimiter* limiter)
 {
 	if (startup->rate_limit_filter == 0 || denials < startup->rate_limit_filter)
 		return;
+
+	/* Distinct-IP guard: when the rate-limit bucket is an aggregated subnet,
+	 * only filter the entire subnet if more than one distinct client IP abused
+	 * it (i.e. the abuse really is distributed); if a single IP is responsible,
+	 * filter just that host IP, so we don't block innocent neighbors that happen
+	 * to share the subnet. */
+	std::string target = key;
+	size_t      distinct = (key == host_ip) ? 1 : limiter->distinctMembers(key);
+	if (key != host_ip && distinct <= 1)
+		target = host_ip;
 
 	char reason[128];
 	char fpath[MAX_PATH + 1];
@@ -2027,13 +2038,16 @@ static void rate_limit_filter(SOCKET sock, const char* prot, const char* host_ip
 		safe_snprintf(fpath, sizeof fpath, "%sip-silent.can", scfg.text_dir);
 		fname = fpath;
 	}
-	safe_snprintf(reason, sizeof reason, "%u rate-limit violations", denials);
-	if (filter_ip(&scfg, prot, reason, host_name, key.c_str(), /* username: */ NULL
+	if (target == host_ip)
+		safe_snprintf(reason, sizeof reason, "%u rate-limit violations", denials);
+	else
+		safe_snprintf(reason, sizeof reason, "%u rate-limit violations from %zu IPs", denials, distinct);
+	if (filter_ip(&scfg, prot, reason, host_name, target.c_str(), /* username: */ NULL
 	              , fname, startup->rate_limit_filter_duration))
 		lprintf(LOG_NOTICE, "%04d %s !BLOCKING %s%s: %s%s"
 		        , sock, prot
-		        , key == host_ip ? "IP ADDRESS" : "SUBNET", startup->rate_limit_filter_silent ? " (silently)" : ""
-		        , key.c_str(), startup->rate_limit_filter_silent ? "" : " in ip.can");
+		        , target == host_ip ? "IP ADDRESS" : "SUBNET", startup->rate_limit_filter_silent ? " (silently)" : ""
+		        , target.c_str(), startup->rate_limit_filter_silent ? "" : " in ip.can");
 }
 
 static void badlogin(SOCKET sock, const char* user, const char* passwd, client_t* client, union xp_sockaddr* addr)
@@ -3627,12 +3641,13 @@ static bool get_req(http_session_t * session, char *request_line)
 			if (!host_exempt.listed(session->host_ip, session->host_name)) {
 				std::string rl_key = rate_limit_key(session->host_ip, startup->rate_limit_prefix4, startup->rate_limit_prefix6);
 				unsigned    denials = 0;
-				if (request_rate_limiter->allowRequest(rl_key, &denials) == false) {
+				if (request_rate_limiter->allowRequest(rl_key, &denials
+				        , rl_key == session->host_ip ? std::string() : std::string(session->host_ip)) == false) {
 					lprintf(LOG_NOTICE, "%04d %-5s [%s] Too many requests per rate limit (%u over %us) for %s"
 						, session->socket, session->client.protocol, session->host_ip
 						, request_rate_limiter->maxRequests, request_rate_limiter->timeWindowSeconds, rl_key.c_str());
 					rate_limit_filter(session->socket, session->client.protocol, session->host_ip
-						, session->host_name, rl_key, denials);
+						, session->host_name, rl_key, denials, request_rate_limiter);
 					send_error(session, __LINE__, error_429);
 					return false;
 				}
@@ -7934,12 +7949,13 @@ void web_server(void* arg)
 				if (connect_rate_limiter->maxRequests > 0) {
 					std::string rl_key = rate_limit_key(host_ip, startup->rate_limit_prefix4, startup->rate_limit_prefix6);
 					unsigned    denials = 0;
-					if (connect_rate_limiter->allowRequest(rl_key, &denials) == false) {
+					if (connect_rate_limiter->allowRequest(rl_key, &denials
+					        , rl_key == host_ip ? std::string() : std::string(host_ip)) == false) {
 						const char* prot = session->is_tls ? "HTTPS" : "HTTP";
 						lprintf(LOG_NOTICE, "%04d %-5s [%s] !Connection rate limit exceeded (%u over %us) for %s"
 							, client_socket, prot, host_ip
 							, connect_rate_limiter->maxRequests, connect_rate_limiter->timeWindowSeconds, rl_key.c_str());
-						rate_limit_filter(client_socket, prot, host_ip, /* host_name: */ NULL, rl_key, denials);
+						rate_limit_filter(client_socket, prot, host_ip, /* host_name: */ NULL, rl_key, denials, connect_rate_limiter);
 						close_socket(&client_socket);
 						continue;
 					}
