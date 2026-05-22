@@ -4455,19 +4455,12 @@ static void ctrl_thread(void* arg)
 					sockprintf(sock, sess, "550 Size not available for dynamically generated files");
 					continue;
 				}
-				if ((fp = fopen(ftp_tmpfname(fname, "ndx", sock), "wb")) == NULL) {
-					errprintf(LOG_ERR, WHERE, "%04d <%s> !ERROR %d (%s) line %d opening %s"
-					        , sock, user.alias, errno, safe_strerror(errno, error, sizeof error), __LINE__, fname);
-					sockprintf(sock, sess, "451 Insufficient system storage");
-					filepos = 0;
-					continue;
-				}
 				success = true;
 				if (getdate)
 					file_date = time(NULL);  // No temp file needed for a modification-time query
 				else {
 					if ((fp = fopen(ftp_tmpfname(fname, "ndx", sock), "wb")) == NULL) {
-						lprintf(LOG_ERR, "%04d <%s> !ERROR %d (%s) line %d opening %s"
+						errprintf(LOG_ERR, WHERE, "%04d <%s> !ERROR %d (%s) line %d opening %s"
 						        , sock, user.alias, errno, safe_strerror(errno, error, sizeof error), __LINE__, fname);
 						sockprintf(sock, sess, "451 Insufficient system storage");
 						filepos = 0;
