@@ -486,6 +486,41 @@ char sbbs_t::putmsgfrag(const char* buf, int& mode, unsigned org_cols, JSObject*
 					l += 9;
 					continue;
 				}
+				// Wildcat!-style conditional display blocks: @IFSEC=ars@ ... @ELSE@ ... @ENDIF@
+				// The argument is a Synchronet Access Requirement String (e.g. SYSOP, LEVEL40),
+				// not a Wildcat! security-profile name. As in Wildcat!, these do not nest; the
+				// output-suppression flag is restored when this msg/file finishes rendering.
+				if (memcmp(str + l, "@IFSEC=", 7) == 0 || memcmp(str + l, "@IFSEC:", 7) == 0) {
+					char* end = strchr(str + l + 7, '@');
+					if (end != NULL) {
+						char arsbuf[128];
+						size_t arslen = end - (str + l + 7);
+						if (arslen >= sizeof(arsbuf))
+							arslen = sizeof(arsbuf) - 1;
+						memcpy(arsbuf, str + l + 7, arslen);
+						arsbuf[arslen] = 0;
+						uchar* ar = arstr(NULL, arsbuf, &cfg, NULL);
+						if (ar != NULL) {
+							if (!chk_ar(ar, &useron, &client))
+								console |= CON_ECHO_OFF;
+							else
+								console &= ~CON_ECHO_OFF;
+							free(ar);
+						}
+						l = (end - str) + 1;
+						continue;
+					}
+				}
+				if (memcmp(str + l, "@ELSE@", 6) == 0) {   // Wildcat! - invert the current @IFSEC@ condition
+					console ^= CON_ECHO_OFF;
+					l += 6;
+					continue;
+				}
+				if (memcmp(str + l, "@ENDIF@", 7) == 0) {  // Wildcat! - end conditional, resume display for all
+					console &= ~CON_ECHO_OFF;
+					l += 7;
+					continue;
+				}
 				if (memcmp(str + l, "@WRAP@", 6) == 0) {
 					l += 6;
 					mode |= P_WRAP;
