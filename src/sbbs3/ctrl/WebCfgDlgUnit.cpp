@@ -95,6 +95,7 @@ void __fastcall TWebCfgDlg::FormShow(TObject *Sender)
 	DebugRxCheckBox->Checked=MainForm->web_startup.options&WEB_OPT_DEBUG_RX;
     AccessLogCheckBox->Checked=MainForm->web_startup.options&WEB_OPT_HTTP_LOGGING;
     AccessLogCheckBoxClick(Sender);
+    LogFileCheckBox->Checked=MainForm->WebLogFile;
 	LogBaseNameEdit->Text = AnsiString(MainForm->web_startup.logfile_base);
 
     VirtualHostsCheckBox->Checked=MainForm->web_startup.options&WEB_OPT_VIRTUAL_HOSTS;
@@ -172,6 +173,7 @@ void __fastcall TWebCfgDlg::OKBtnClick(TObject *Sender)
     	MainForm->web_startup.options|=WEB_OPT_HTTP_LOGGING;
     else
 	    MainForm->web_startup.options&=~WEB_OPT_HTTP_LOGGING;
+    MainForm->WebLogFile=LogFileCheckBox->Checked;
 	if(HostnameCheckBox->Checked==false)
     	MainForm->web_startup.options|=BBS_OPT_NO_HOST_LOOKUP;
     else

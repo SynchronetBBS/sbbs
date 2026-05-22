@@ -83,6 +83,7 @@ __published:
     TEdit *SshConnTimeoutEdit;
     TButton *ConfigureSoundButton;
     TCheckBox *EventsLogFileCheckBox;
+    TCheckBox *LogFileCheckBox;
     TCheckBox *SFTPEnabledCheckBox;
     TLabel *SFTPMaxInactivityLabel;
     TEdit *SFTPMaxInactivityEdit;

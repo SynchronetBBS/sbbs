@@ -343,7 +343,43 @@ static void logged_msgs(TRichEdit* Log)
 
 static void bbs_log_msg(log_msg_t* msg)
 {
+	static FILE* LogStream;
+
+    if(msg==NULL) {
+        if(LogStream!=NULL)
+            fclose(LogStream);
+        LogStream=NULL;
+        return;
+    }
+
 	log_msg(TelnetForm->Log, msg);
+
+    if(MainForm->TelnetLogFile && MainForm->TelnetStop->Enabled) {
+        AnsiString LogFileName
+            =AnsiString(MainForm->cfg.logs_dir)
+            +"LOGS\\TS"
+            +SystemTimeToDateTime(msg->time).FormatString("mmddyy")
+            +".LOG";
+
+        if(!FileExists(LogFileName)) {
+            FileClose(FileCreate(LogFileName));
+            if(LogStream!=NULL) {
+                fclose(LogStream);
+                LogStream=NULL;
+            }
+        }
+        if(LogStream==NULL)
+            LogStream=_fsopen(LogFileName.c_str(),"a",SH_DENYNONE);
+
+        if(LogStream!=NULL) {
+            AnsiString Line=SystemTimeToDateTime(msg->time).FormatString("hh:mm:ss")+"  ";
+            Line+=AnsiString(msg->buf).Trim();
+			if(msg->repeated)
+				Line += " [x" + AnsiString(msg->repeated + 1) + "]";
+            Line+="\n";
+        	fwrite(AnsiString(Line).c_str(),1,Line.Length(),LogStream);
+        }
+	}
 }
 
 static const char* server_state_str(enum server_state state)
@@ -677,6 +713,33 @@ static void web_log_msg(log_msg_t* msg)
     }
 
 	log_msg(WebForm->Log, msg);
+
+    if(MainForm->WebLogFile && MainForm->WebStop->Enabled) {
+        AnsiString LogFileName
+            =AnsiString(MainForm->cfg.logs_dir)
+            +"LOGS\\WS"
+            +SystemTimeToDateTime(msg->time).FormatString("mmddyy")
+            +".LOG";
+
+        if(!FileExists(LogFileName)) {
+            FileClose(FileCreate(LogFileName));
+            if(LogStream!=NULL) {
+                fclose(LogStream);
+                LogStream=NULL;
+            }
+        }
+        if(LogStream==NULL)
+            LogStream=_fsopen(LogFileName.c_str(),"a",SH_DENYNONE);
+
+        if(LogStream!=NULL) {
+            AnsiString Line=SystemTimeToDateTime(msg->time).FormatString("hh:mm:ss")+"  ";
+            Line+=AnsiString(msg->buf).Trim();
+			if(msg->repeated)
+				Line += " [x" + AnsiString(msg->repeated + 1) + "]";
+            Line+="\n";
+        	fwrite(AnsiString(Line).c_str(),1,Line.Length(),LogStream);
+        }
+	}
 }
 
 static void web_set_state(void* p, enum server_state state)
@@ -1909,6 +1972,16 @@ void __fastcall TMainForm::StartupTimerTick(TObject *Sender)
     else
 		FtpLogFile=true;
 
+    if(Registry->ValueExists("WebLogFile"))
+		WebLogFile=Registry->ReadBool("WebLogFile");
+    else
+		WebLogFile=false;
+
+    if(Registry->ValueExists("TelnetLogFile"))
+		TelnetLogFile=Registry->ReadBool("TelnetLogFile");
+    else
+		TelnetLogFile=false;
+
 	if(Registry->ValueExists("TelnetFormVisible"))
 		ViewTelnet->Checked = Registry->ReadBool("TelnetFormVisible");
 	if(Registry->ValueExists("EventsFormVisible"))
@@ -2258,6 +2331,8 @@ void __fastcall TMainForm::SaveRegistrySettings(TObject* Sender)
 
 	Registry->WriteBool("FtpLogFile", FtpLogFile);
 	Registry->WriteBool("MailLogFile", MailLogFile);
+	Registry->WriteBool("WebLogFile", WebLogFile);
+	Registry->WriteBool("TelnetLogFile", TelnetLogFile);
 
     Registry->WriteInteger("MaxLogLen",MaxLogLen);
 
@@ -2393,6 +2468,7 @@ void __fastcall TMainForm::ImportSettings(TObject* Sender)
 
     ImportFormSettings(IniFile,section="TelnetForm",TelnetForm);
     ImportFont(IniFile,section,"LogFont",TelnetForm->Log->Font);
+	TelnetLogFile=IniFile->ReadBool(section,"LogFile",false);
     TelnetForm->Log->Color=StringToColor(IniFile->ReadString(section,"LogColor",clWindow));
 
     ImportFormSettings(IniFile,section="EventsForm",EventsForm);
@@ -2410,6 +2486,7 @@ void __fastcall TMainForm::ImportSettings(TObject* Sender)
 
     ImportFormSettings(IniFile,section="WebForm",WebForm);
     ImportFont(IniFile,section,"LogFont",WebForm->Log->Font);
+	WebLogFile=IniFile->ReadBool(section,"LogFile",false);
     WebForm->Log->Color=StringToColor(IniFile->ReadString(section,"LogColor",clWindow));
 
     ImportFormSettings(IniFile,section="MailForm",MailForm);
@@ -2831,9 +2908,11 @@ void __fastcall TMainForm::ViewLogClick(TObject *Sender)
     if(tm==NULL)
         return;
 
-    /* Close Mail/FTP logs */
+    /* Close Terminal/Mail/FTP/Web logs */
+    bbs_log_msg(NULL);
     mail_log_msg(NULL);
     ftp_log_msg(NULL);
+    web_log_msg(NULL);
 
     if(strchr(((TMenuItem*)Sender)->Hint.c_str(),'.')==NULL)
         sprintf(filename,"%sLOGS\\%s%02d%02d%02d.LOG"

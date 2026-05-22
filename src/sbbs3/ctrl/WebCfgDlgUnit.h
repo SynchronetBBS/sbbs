@@ -53,6 +53,7 @@ __published:	// IDE-managed Components
     TCheckBox *DebugTxCheckBox;
     TCheckBox *DebugRxCheckBox;
     TCheckBox *AccessLogCheckBox;
+    TCheckBox *LogFileCheckBox;
     TTabSheet *SoundTabSheet;
     TButton *OKBtn;
     TButton *CancelBtn;

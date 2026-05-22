@@ -432,55 +432,66 @@ object WebCfgDlg: TWebCfgDlg
       ImageIndex = 1
       object LogBaseLabel: TLabel
         Left = 8
-        Top = 102
+        Top = 129
         Width = 90
         Height = 23
         AutoSize = False
         Caption = 'Base Filename'
       end
-      object DebugTxCheckBox: TCheckBox
+      object LogFileCheckBox: TCheckBox
         Left = 8
-        Top = 39
-        Width = 180
-        Height = 23
-        Hint = 'Log (debug) transmitted HTTP responses'
-        Caption = 'Transmitted Responses'
+        Top = 12
+        Width = 270
+        Height = 22
+        Hint = 'Save log entries to a file (in your DATA directory)'
+        Caption = 'Log to Disk'
         ParentShowHint = False
         ShowHint = True
-        TabOrder = 1
+        TabOrder = 0
       end
       object DebugRxCheckBox: TCheckBox
         Left = 8
-        Top = 12
+        Top = 39
         Width = 180
         Height = 21
         Hint = 'Log (debug) all received HTTP requests'
         Caption = 'Received Requests'
         ParentShowHint = False
         ShowHint = True
-        TabOrder = 0
+        TabOrder = 1
+      end
+      object DebugTxCheckBox: TCheckBox
+        Left = 8
+        Top = 66
+        Width = 180
+        Height = 23
+        Hint = 'Log (debug) transmitted HTTP responses'
+        Caption = 'Transmitted Responses'
+        ParentShowHint = False
+        ShowHint = True
+        TabOrder = 2
       end
       object AccessLogCheckBox: TCheckBox
         Left = 8
-        Top = 68
+        Top = 95
         Width = 180
         Height = 22
         Hint = 'Create HTTP access log files'
         Caption = 'Create Access Log Files'
         ParentShowHint = False
         ShowHint = True
-        TabOrder = 2
+        TabOrder = 3
         OnClick = AccessLogCheckBoxClick
       end
       object LogBaseNameEdit: TEdit
         Left = 98
-        Top = 102
+        Top = 129
         Width = 180
         Height = 21
         Hint = 'Base directory and filename for HTTP access log files'
         ParentShowHint = False
         ShowHint = True
-        TabOrder = 3
+        TabOrder = 4
       end
     end
     object SoundTabSheet: TTabSheet

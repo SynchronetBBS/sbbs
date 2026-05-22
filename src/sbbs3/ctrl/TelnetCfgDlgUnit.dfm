@@ -103,6 +103,17 @@ object TelnetCfgDlg: TTelnetCfgDlg
         ShowHint = True
         TabOrder = 3
       end
+      object LogFileCheckBox: TCheckBox
+        Left = 171
+        Top = 132
+        Width = 135
+        Height = 26
+        Hint = 'Save log entries to a file (in your DATA directory)'
+        Caption = 'Log to Disk'
+        ParentShowHint = False
+        ShowHint = True
+        TabOrder = 9
+      end
       object QWKEventsCheckBox: TCheckBox
         Left = 171
         Top = 102
