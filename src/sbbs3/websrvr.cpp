@@ -1994,6 +1994,8 @@ static void badlogin(SOCKET sock, const char* user, const char* passwd, client_t
 	if (startup->login_attempt.filter_threshold && count >= startup->login_attempt.filter_threshold) {
 		snprintf(reason, sizeof reason, "%lu " STR_FAILED_LOGIN_ATTEMPTS " in %s"
 		         , count, duration_estimate_to_str(attempt.time - attempt.first, tmp, sizeof tmp, 1, 1));
+		lprintf(LOG_NOTICE, "%04d %s !BLOCKING IP ADDRESS: %s in %s"
+		        , sock, client->protocol, client->addr, ip_can.fname);
 		filter_ip(&scfg, client->protocol, reason
 		          , client->host, client->addr, user, /* fname: */ NULL, startup->login_attempt.filter_duration);
 	}
