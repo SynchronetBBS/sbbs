@@ -294,7 +294,7 @@ function file_info()
 			bbs.menu("xferinfo");
 		bbs.nodesync();
 		console.print("\r\n\x01y\x01h" + gettext("Info") + ": \x01n");
-		key=console.getkeys("?TYDUQ\r", 0);
+		key=console.getkeys("?TYDVUQ\r", 0);
 		bbs.log_key(key);
 
 		switch(key) {
@@ -313,6 +313,10 @@ function file_info()
 
 			case 'D':
 				bbs.dir_info();
+				break;
+
+			case 'V':
+				bbs.ver();
 				break;
 
 			case 'U':

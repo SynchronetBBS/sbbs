@@ -653,7 +653,7 @@ if_false
 	end_if
 async
 print "\r\n\x01y\x01hInfo: \x01n"
-getcmd ?TYDUQ\r
+getcmd ?TYDVUQ\r
 logkey
 
 cmdkey ?
@@ -673,6 +673,10 @@ cmdkey Y
 
 cmdkey D
 	info_directory
+	end_cmd
+
+cmdkey V
+	info_version
 	end_cmd
 
 cmdkey U

@@ -73,7 +73,7 @@ int sbbs_t::exec_function(csi_t *csi)
 			dirinfo(usrdir[curlib][curdir[curlib]]);
 			return 0;
 		case CS_INFO_VERSION:   /* Version */
-			ver();
+			ver(P_CENTER | P_80COLS, /* verbose: */true);
 			return 0;
 		case CS_INFO_USER:   /* User's statistics */
 			user_info();
