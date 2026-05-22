@@ -53,6 +53,11 @@ static const char* strMaxRequestPerPeriod = "MaxRequestsPerPeriod";
 static const char* strRequestRateLimitPeriod = "RequestRateLimitPeriod";
 static const char* strMaxConnectsPerPeriod = "MaxConnectsPerPeriod";
 static const char* strConnectRateLimitPeriod = "ConnectRateLimitPeriod";
+static const char* strRateLimitSubnetPrefix4 = "RateLimitSubnetPrefix4";
+static const char* strRateLimitSubnetPrefix6 = "RateLimitSubnetPrefix6";
+static const char* strRateLimitFilterThreshold = "RateLimitFilterThreshold";
+static const char* strRateLimitFilterDuration = "RateLimitFilterDuration";
+static const char* strRateLimitFilterSilent = "RateLimitFilterSilent";
 static const char* strHostName = "HostName";
 static const char* strLogLevel = "LogLevel";
 static const char* strEventLogLevel = "EventLogLevel";
@@ -895,8 +900,15 @@ bool sbbs_read_ini(
 		web->bind_retry_delay = iniGetInteger(list, section, strBindRetryDelay, global->bind_retry_delay);
 		web->login_attempt = get_login_attempt_settings(list, section, global);
 		web->max_concurrent_connections = iniGetUInteger(list, section, strMaxConConn, WEB_DEFAULT_MAX_CON_CONN);
+		web->max_connects_per_period = iniGetUInteger(list, section, strMaxConnectsPerPeriod, 0);
+		web->connect_rate_limit_period = iniGetUInteger(list, section, strConnectRateLimitPeriod, 60 * 60);
 		web->max_requests_per_period = iniGetUInteger(list, section, strMaxRequestPerPeriod, 0);
 		web->request_rate_limit_period = iniGetUInteger(list, section, strRequestRateLimitPeriod, 60 * 60);
+		web->rate_limit_prefix4 = iniGetUInteger(list, section, strRateLimitSubnetPrefix4, 0);
+		web->rate_limit_prefix6 = iniGetUInteger(list, section, strRateLimitSubnetPrefix6, 0);
+		web->rate_limit_filter = iniGetUInteger(list, section, strRateLimitFilterThreshold, 0);
+		web->rate_limit_filter_duration = iniGetUInteger(list, section, strRateLimitFilterDuration, 0);
+		web->rate_limit_filter_silent = iniGetBool(list, section, strRateLimitFilterSilent, false);
 		SAFECOPY(web->proxy_ip_header
 		         , iniGetString(list, section, "RemoteIPHeader", nulstr, value));
 		SAFECOPY(web->custom_log_fmt
@@ -1541,9 +1553,23 @@ bool sbbs_write_ini(
 				break;
 			if (!iniSetUInteger(lp, section, strMaxConConn, web->max_concurrent_connections, &style))
 				break;
+			if (!iniSetUInteger(lp, section, strMaxConnectsPerPeriod, web->max_connects_per_period, &style))
+				break;
+			if (!iniSetUInteger(lp, section, strConnectRateLimitPeriod, web->connect_rate_limit_period, &style))
+				break;
 			if (!iniSetUInteger(lp, section, strMaxRequestPerPeriod, web->max_requests_per_period, &style))
 				break;
 			if (!iniSetUInteger(lp, section, strRequestRateLimitPeriod, web->request_rate_limit_period, &style))
+				break;
+			if (!iniSetUInteger(lp, section, strRateLimitSubnetPrefix4, web->rate_limit_prefix4, &style))
+				break;
+			if (!iniSetUInteger(lp, section, strRateLimitSubnetPrefix6, web->rate_limit_prefix6, &style))
+				break;
+			if (!iniSetUInteger(lp, section, strRateLimitFilterThreshold, web->rate_limit_filter, &style))
+				break;
+			if (!iniSetUInteger(lp, section, strRateLimitFilterDuration, web->rate_limit_filter_duration, &style))
+				break;
+			if (!iniSetBool(lp, section, strRateLimitFilterSilent, web->rate_limit_filter_silent, &style))
 				break;
 			if (!iniSetString(lp, section, "RemoteIPHeader", web->proxy_ip_header, &style))
 				break;

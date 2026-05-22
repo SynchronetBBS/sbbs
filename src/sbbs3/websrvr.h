@@ -37,8 +37,15 @@ typedef struct {
 #define WEB_DEFAULT_MAX_CGI_INACTIVITY  120 /* seconds */
 	uint max_concurrent_connections;
 #define WEB_DEFAULT_MAX_CON_CONN        10  /* 0=unlimited */
+	uint max_connects_per_period;            /* connection rate limiter, counted at accept() (0 = disabled) */
+	uint connect_rate_limit_period;          /* connection rate-limit time window, in seconds */
 	uint max_requests_per_period;
 	uint request_rate_limit_period;
+	uint rate_limit_prefix4;                 /* IPv4 subnet bits to aggregate rate-limit counting (0 = per-host-IP) */
+	uint rate_limit_prefix6;                 /* IPv6 subnet bits to aggregate rate-limit counting (0 = per-host-IP) */
+	uint rate_limit_filter;                  /* consecutive rate-limit violations before auto-filtering the (sub)net (0 = disabled) */
+	uint rate_limit_filter_duration;         /* lifetime of an auto-filter .can entry, in seconds (0 = forever) */
+	bool rate_limit_filter_silent;           /* auto-filter to ip-silent.can (drop at accept) rather than ip.can */
 	uint16_t port;
 	uint16_t tls_port;
 	str_list_t interfaces;

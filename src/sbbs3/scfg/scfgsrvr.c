@@ -208,6 +208,140 @@ static void max_concurrent_cfg(uint* max, struct max_concurrent_settings* settin
 	}
 }
 
+static void web_rate_limit_cfg(web_startup_t* startup)
+{
+	static int cur, bar;
+	char       str[256];
+	char       tmp[128];
+	bool       changes = uifc.changes;
+
+	while (1) {
+		int i = 0;
+		if (startup->max_connects_per_period < 1 || startup->connect_rate_limit_period < 1)
+			SAFECOPY(str, strDisabled);
+		else
+			snprintf(str, sizeof str, "%u per %s", startup->max_connects_per_period
+			         , duration_to_vstr(startup->connect_rate_limit_period, tmp, sizeof tmp));
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Limit Rate of Connections", str);
+		if (startup->max_requests_per_period < 1 || startup->request_rate_limit_period < 1)
+			SAFECOPY(str, strDisabled);
+		else
+			snprintf(str, sizeof str, "%u per %s", startup->max_requests_per_period
+			         , duration_to_vstr(startup->request_rate_limit_period, tmp, sizeof tmp));
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Limit Rate of Requests", str);
+		if (startup->rate_limit_prefix4 == 0)
+			SAFECOPY(str, "Per-host IP address");
+		else
+			snprintf(str, sizeof str, "/%u subnet", startup->rate_limit_prefix4);
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Count IPv4 Clients By", str);
+		if (startup->rate_limit_prefix6 == 0)
+			SAFECOPY(str, "Per-host IP address");
+		else
+			snprintf(str, sizeof str, "/%u subnet", startup->rate_limit_prefix6);
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Count IPv6 Clients By", str);
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Auto-Filter Threshold", threshold(startup->rate_limit_filter));
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Auto-Filter Duration"
+		         , vduration(startup->rate_limit_filter_duration, strInfinite));
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Auto-Filter Silently"
+		         , startup->rate_limit_filter_silent ? "Yes" : "No");
+		opt[i][0] = '\0';
+
+		uifc.helpbuf =
+			"`Web Server Rate Limiting Settings:`\n"
+			"\n"
+			"Limit the rate of incoming requests and/or connections from a client,\n"
+			"optionally counting all clients within a subnet together, and optionally\n"
+			"auto-filtering (blocking) abusers.\n"
+			"\n"
+			"`Limit Rate of Connections`: maximum connections allowed from a client in\n"
+			"the specified period (enforced at accept, before a thread or TLS\n"
+			"handshake is spawned - the cheapest point to reject a flood).\n"
+			"\n"
+			"`Limit Rate of Requests`: maximum HTTP[S] requests allowed from a client\n"
+			"in the specified period (enforced after the request is parsed).\n"
+			"\n"
+			"`Count IPv4/IPv6 Clients By`: when set to a subnet prefix length (e.g.\n"
+			"`24` for IPv4 or `64` for IPv6), all clients within that subnet are\n"
+			"counted together against the limits above and filtered as a block (in\n"
+			"CIDR notation).  Use this to defeat distributed abuse spread thinly\n"
+			"across many addresses in a hosting provider's range.  `0` counts each\n"
+			"host IP address separately.\n"
+			"\n"
+			"`Auto-Filter Threshold`: number of times a client (or subnet) may exceed\n"
+			"a rate limit before being automatically added to the IP filter file.\n"
+			"Set to `0` to disable auto-filtering.\n"
+			"\n"
+			"`Auto-Filter Duration`: lifetime of an automatically-added filter entry.\n"
+			"Set to `0` to filter indefinitely.\n"
+			"\n"
+			"`Auto-Filter Silently`: if `Yes`, abusers are added to\n"
+			"`text/ip-silent.can` (dropped at accept, no log notice) instead of\n"
+			"`text/ip.can`.\n"
+		;
+		switch (uifc.list(WIN_ACT | WIN_BOT | WIN_SAV, 0, 0, 0, &cur, &bar
+		                  , "Web Server Rate Limiting", opt)) {
+			case 0:
+				SAFECOPY(str, maximum(startup->max_connects_per_period));
+				if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "Maximum Connections (0=unlimited)", str, 10, K_EDIT | K_NUMBER) > 0)
+					startup->max_connects_per_period = atoi(str);
+				if (startup->max_connects_per_period < 1)
+					break;
+				duration_to_vstr(startup->connect_rate_limit_period, str, sizeof str);
+				if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "Connection Rate Limit Period", str, 10, K_EDIT) > 0)
+					startup->connect_rate_limit_period = (uint)parse_duration(str);
+				break;
+			case 1:
+				SAFECOPY(str, maximum(startup->max_requests_per_period));
+				if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "Maximum Requests (0=unlimited)", str, 10, K_EDIT | K_NUMBER) > 0)
+					startup->max_requests_per_period = atoi(str);
+				if (startup->max_requests_per_period < 1)
+					break;
+				duration_to_vstr(startup->request_rate_limit_period, str, sizeof str);
+				if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "Request Rate Limit Period", str, 10, K_EDIT) > 0)
+					startup->request_rate_limit_period = (uint)parse_duration(str);
+				break;
+			case 2:
+				SAFEPRINTF(str, "%u", startup->rate_limit_prefix4);
+				if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "IPv4 Subnet Prefix Bits (0=per-host-IP, e.g. 24)", str, 2, K_NUMBER | K_EDIT) > 0) {
+					startup->rate_limit_prefix4 = atoi(str);
+					if (startup->rate_limit_prefix4 > 32)
+						startup->rate_limit_prefix4 = 32;
+				}
+				break;
+			case 3:
+				SAFEPRINTF(str, "%u", startup->rate_limit_prefix6);
+				if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "IPv6 Subnet Prefix Bits (0=per-host-IP, e.g. 64)", str, 3, K_NUMBER | K_EDIT) > 0) {
+					startup->rate_limit_prefix6 = atoi(str);
+					if (startup->rate_limit_prefix6 > 128)
+						startup->rate_limit_prefix6 = 128;
+				}
+				break;
+			case 4:
+				SAFEPRINTF(str, "%u", startup->rate_limit_filter);
+				if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "Threshold for Auto-Filtering of Rate-Limited Clients", str, 4, K_NUMBER | K_EDIT) > 0)
+					startup->rate_limit_filter = atoi(str);
+				break;
+			case 5:
+				SAFECOPY(str, duration(startup->rate_limit_filter_duration, false, strInfinite));
+				if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "Lifetime of Auto-Filter of Clients", str, 10, K_EDIT) > 0)
+					startup->rate_limit_filter_duration = (uint)parse_duration(str);
+				break;
+			case 6:
+				i = startup->rate_limit_filter_silent ? 0 : 1;
+				i = uifc.list(WIN_MID | WIN_SAV, 0, 0, 0, &i, 0
+				              , "Add Abuser IPs to ip-silent.can (instead of ip.can)", uifcYesNoOpts);
+				if (i == 0)
+					startup->rate_limit_filter_silent = true;
+				else if (i == 1)
+					startup->rate_limit_filter_silent = false;
+				break;
+			default:
+				uifc.changes = changes;
+				return;
+		}
+	}
+}
+
 static void js_startup_cfg(js_startup_t* js)
 {
 	static int cur, bar;
@@ -1105,11 +1239,20 @@ static void websrvr_cfg(void)
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Max Clients", maximum(startup.max_clients));
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Max Inactivity", vduration(startup.max_inactivity, strDefault));
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Max Concurrent Connections", maximum(startup.max_concurrent_connections));
-		if (startup.max_requests_per_period < 1 || startup.request_rate_limit_period < 1)
+		str[0] = '\0';
+		if (startup.max_connects_per_period > 0 && startup.connect_rate_limit_period > 0)
+			SAFECOPY(str, "Connections");
+		if (startup.max_requests_per_period > 0 && startup.request_rate_limit_period > 0) {
+			if (str[0] != '\0')
+				SAFECAT(str, " + Requests");
+			else
+				SAFECOPY(str, "Requests");
+		}
+		if (str[0] == '\0')
 			SAFECOPY(str, strDisabled);
-		else
-			snprintf(str, sizeof str, "%u per %s", startup.max_requests_per_period, duration_to_vstr(startup.request_rate_limit_period, tmp, sizeof tmp));
-		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Limit Rate of Requests", str);
+		else if (startup.rate_limit_filter > 0)
+			SAFECAT(str, ", Auto-Filter");
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Rate Limiting...", str);
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Authentication Methods", startup.default_auth_list);
 		snprintf(opt[i++], MAX_OPLN, "%-30s%u ms", "Output Buffer Drain Timeout", startup.outbuf_drain_timeout);
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Lookup Client Hostname", startup.options & BBS_OPT_NO_HOST_LOOKUP ? "No" : "Yes");
@@ -1214,14 +1357,7 @@ static void websrvr_cfg(void)
 					startup.max_concurrent_connections = atoi(str);
 				break;
 			case 14:
-				SAFECOPY(str, maximum(startup.max_requests_per_period));
-				if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "Maximum Requests (0=unlimited)", str, 10, K_EDIT | K_NUMBER) > 0)
-					startup.max_requests_per_period = atoi(str);
-				if (startup.max_requests_per_period < 1)
-					break;
-				duration_to_vstr(startup.request_rate_limit_period, str, sizeof str);
-				if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "Request Rate Limit Period", str, 10, K_EDIT) > 0)
-					startup.request_rate_limit_period = (uint)parse_duration(str);
+				web_rate_limit_cfg(&startup);
 				break;
 			case 15:
 				uifc.input(WIN_MID | WIN_SAV, 0, 0, "Authentication Methods"

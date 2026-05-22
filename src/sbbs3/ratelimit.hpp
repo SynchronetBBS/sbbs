@@ -38,7 +38,12 @@ class rateLimiter {
 	} currHighwater, prevHighwater, lastLimited;
 	std::atomic<uint> disallowed{};
 	std::atomic<uint> repeat{};
-	bool allowRequest(const std::string& clientId) {
+	// If denials is non-NULL, it receives the running count of times this clientId
+	// has been denied while continuously active (i.e. since its last idle cleanup).
+	// Callers can use this as an escalation signal (e.g. to auto-filter the client).
+	bool allowRequest(const std::string& clientId, unsigned* denials = nullptr) {
+		if (denials != nullptr)
+			*denials = 0;
 		if (maxRequests == 0 || timeWindowSeconds == 0)
 			return true;
 		std::lock_guard<std::mutex> lock(mutex);
@@ -69,6 +74,9 @@ class rateLimiter {
 			lastLimited.count = count;
 			lastLimited.time = now;
 			++disallowed;
+			unsigned n = ++deniedCount[clientId];
+			if (denials != nullptr)
+				*denials = n;
 			return false; // Rate limit exceeded
 		}
 	}
@@ -83,6 +91,7 @@ class rateLimiter {
 				++removed;
 			}
 			if (requestTimes.empty()) {
+				deniedCount.erase(it->first); // Reset escalation once the client goes idle
 				it = clientRequestTimes.erase(it); // Remove client if no recent requests
 			} else {
 				++it;
@@ -118,5 +127,6 @@ class rateLimiter {
 	}
 private:
 	std::unordered_map<std::string, std::deque<time_t>> clientRequestTimes;
+	std::unordered_map<std::string, unsigned> deniedCount;
 	std::mutex mutex;
 };

@@ -139,6 +139,7 @@ static named_string_t**   xjs_handlers;
 static named_string_t**   alias_list; // request path aliases
 
 static rateLimiter*       request_rate_limiter = nullptr;
+static rateLimiter*       connect_rate_limiter = nullptr;
 static trashCan           ip_can;
 static trashCan           ip_silent_can;
 static trashCan           host_can;
@@ -1970,6 +1971,71 @@ static bool digest_authentication(http_session_t* session, int auth_allowed, use
 	return true;
 }
 
+/* Compute the rate-limiting bucket key for a client IP address. When a non-zero
+ * subnet prefix is configured for the address' family, the key is the network
+ * address in CIDR notation (e.g. "47.82.14.0/24") so that requests/connections
+ * from an entire subnet are counted (and may be filtered) together; otherwise
+ * the key is simply the client IP. */
+static std::string rate_limit_key(const char* ip, uint prefix4, uint prefix6)
+{
+	if (ip == NULL || *ip == '\0')
+		return std::string();
+
+	bool ipv6 = strchr(ip, ':') != NULL;
+	uint prefix = ipv6 ? prefix6 : prefix4;
+	uint maxbits = ipv6 ? 128 : 32;
+	if (prefix == 0 || prefix >= maxbits)
+		return std::string(ip); // per-host-IP (no subnet aggregation)
+
+	char net[INET6_ADDRSTRLEN];
+	char key[INET6_ADDRSTRLEN + 8];
+	if (ipv6) {
+		uint8_t addr[16];
+		if (inet_pton(AF_INET6, ip, addr) != 1)
+			return std::string(ip);
+		for (uint bit = prefix; bit < 128; ++bit)
+			addr[bit / 8] &= ~(0x80 >> (bit % 8));
+		if (inet_ntop(AF_INET6, addr, net, sizeof net) == NULL)
+			return std::string(ip);
+	} else {
+		struct in_addr addr;
+		if (inet_pton(AF_INET, ip, &addr) != 1)
+			return std::string(ip);
+		uint32_t host = ntohl(addr.s_addr) & (0xFFFFFFFFu << (32 - prefix));
+		addr.s_addr = htonl(host);
+		if (inet_ntop(AF_INET, &addr, net, sizeof net) == NULL)
+			return std::string(ip);
+	}
+	safe_snprintf(key, sizeof key, "%s/%u", net, prefix);
+	return std::string(key);
+}
+
+/* Auto-filter a rate-limit abuser once it has exceeded the limit at least
+ * startup->rate_limit_filter times while continuously active. The (sub)net key
+ * is written to ip-silent.can (dropped at accept) or ip.can per configuration. */
+static void rate_limit_filter(SOCKET sock, const char* prot, const char* host_ip
+                              , const char* host_name, const std::string& key, unsigned denials)
+{
+	if (startup->rate_limit_filter == 0 || denials < startup->rate_limit_filter)
+		return;
+
+	char reason[128];
+	char fpath[MAX_PATH + 1];
+	const char* fname = NULL; // NULL => filter_ip() uses ip.can
+
+	if (startup->rate_limit_filter_silent) {
+		safe_snprintf(fpath, sizeof fpath, "%sip-silent.can", scfg.text_dir);
+		fname = fpath;
+	}
+	safe_snprintf(reason, sizeof reason, "%u rate-limit violations", denials);
+	if (filter_ip(&scfg, prot, reason, host_name, key.c_str(), /* username: */ NULL
+	              , fname, startup->rate_limit_filter_duration))
+		lprintf(LOG_NOTICE, "%04d %s !BLOCKING %s%s: %s%s"
+		        , sock, prot
+		        , key == host_ip ? "IP ADDRESS" : "SUBNET", startup->rate_limit_filter_silent ? " (silently)" : ""
+		        , key.c_str(), startup->rate_limit_filter_silent ? "" : " in ip.can");
+}
+
 static void badlogin(SOCKET sock, const char* user, const char* passwd, client_t* client, union xp_sockaddr* addr)
 {
 	char            tmp[128];
@@ -3558,11 +3624,18 @@ static bool get_req(http_session_t * session, char *request_line)
 				send_error(session, __LINE__, "400 Bad Request");
 				return false;
 			}
-			if (!host_exempt.listed(session->host_ip, session->host_name) && request_rate_limiter->allowRequest(session->host_ip) == false) {
-				lprintf(LOG_NOTICE, "%04d %-5s [%s] Too many requests per rate limit (%u over %us)"
-					, session->socket, session->client.protocol, session->host_ip, request_rate_limiter->maxRequests, request_rate_limiter->timeWindowSeconds);
-				send_error(session, __LINE__, error_429);
-				return false;
+			if (!host_exempt.listed(session->host_ip, session->host_name)) {
+				std::string rl_key = rate_limit_key(session->host_ip, startup->rate_limit_prefix4, startup->rate_limit_prefix6);
+				unsigned    denials = 0;
+				if (request_rate_limiter->allowRequest(rl_key, &denials) == false) {
+					lprintf(LOG_NOTICE, "%04d %-5s [%s] Too many requests per rate limit (%u over %us) for %s"
+						, session->socket, session->client.protocol, session->host_ip
+						, request_rate_limiter->maxRequests, request_rate_limiter->timeWindowSeconds, rl_key.c_str());
+					rate_limit_filter(session->socket, session->client.protocol, session->host_ip
+						, session->host_name, rl_key, denials);
+					send_error(session, __LINE__, error_429);
+					return false;
+				}
 			}
 			enum get_fullpath fullpath_valid = get_fullpath(session);
 			if (fullpath_valid != FULLPATH_VALID) {
@@ -7227,8 +7300,9 @@ static void cleanup(int code)
 
 	thread_down();
 	if (terminate_server || code) {
-		lprintf(LOG_INFO, "#### Web Server thread terminated (%lu clients served, %u concurrently, denied: %u due to rate limit, %u due to IP address, %u due to hostname)"
+		lprintf(LOG_INFO, "#### Web Server thread terminated (%lu clients served, %u concurrently, denied: %u due to connection rate limit, %u due to request rate limit, %u due to IP address, %u due to hostname)"
 		        , served, client_highwater
+				, connect_rate_limiter == nullptr ? 0 : connect_rate_limiter->disallowed.load()
 				, request_rate_limiter == nullptr ? 0 : request_rate_limiter->disallowed.load()
 				, ip_can.total_found.load() + ip_silent_can.total_found.load()
 				, host_can.total_found.load());
@@ -7480,6 +7554,7 @@ void web_server(void* arg)
 	startup->shutdown_now = false;
 	terminate_server = false;
 	protected_uint32_init(&thread_count, 0);
+	connect_rate_limiter = new rateLimiter(startup->max_connects_per_period, startup->connect_rate_limit_period);
 	request_rate_limiter = new rateLimiter(startup->max_requests_per_period, startup->request_rate_limit_period);
 
 	do {
@@ -7636,6 +7711,8 @@ void web_server(void* arg)
 				xpms_add_list(ws_set, PF_UNSPEC, SOCK_STREAM, 0, startup->tls_interfaces, startup->tls_port, "Secure Web Server", &terminate_server, open_socket, startup->seteuid, (void*)"TLS");
 		}
 
+		connect_rate_limiter->maxRequests = startup->max_connects_per_period;
+		connect_rate_limiter->timeWindowSeconds = startup->connect_rate_limit_period;
 		request_rate_limiter->maxRequests = startup->max_requests_per_period;
 		request_rate_limiter->timeWindowSeconds = startup->request_rate_limit_period;
 
@@ -7677,6 +7754,7 @@ void web_server(void* arg)
 		mqtt_client_max(&mqtt, startup->max_clients);
 
 		char rate_limit_report[512]{};
+		char connect_rate_limit_report[512]{};
 		time_t last_rate_limit_report = time(NULL);
 		while (!terminate_server) {
 			YIELD();
@@ -7753,24 +7831,42 @@ void web_server(void* arg)
 						mqtt_clear_login_attempt_list(&mqtt, startup->login_attempt_list);
 				}
 			}
-			if (startup->max_requests_per_period > 0 && startup->request_rate_limit_period > 0
-				&& time(NULL) - last_rate_limit_report >= startup->sem_chk_freq) {
+			if (time(NULL) - last_rate_limit_report >= startup->sem_chk_freq) {
 				last_rate_limit_report = time(NULL);
-				request_rate_limiter->cleanup();
-				size_t most_active_count = 0;
-				std::string most_active = request_rate_limiter->most_active(&most_active_count);
-				char str[sizeof rate_limit_report];
 				char tmp[128];
-				snprintf(str, sizeof str, "Rate limiting current: clients=%zu, requests=%zu, most-active=%s (%zu), highest: %s (%u) on %s, limited: %u, last: %s on %s (repeat: %u)"
-					, request_rate_limiter->client_count(), request_rate_limiter->total(), most_active.c_str(), most_active_count
-					, request_rate_limiter->currHighwater.client.c_str(), request_rate_limiter->currHighwater.count
-					, timestr(&scfg, (time32_t)request_rate_limiter->currHighwater.time, logstr)
-					, request_rate_limiter->disallowed.load()
-					, request_rate_limiter->lastLimited.client.c_str(), timestr(&scfg, (time32_t)request_rate_limiter->lastLimited.time, tmp)
-					, request_rate_limiter->repeat.load());
-				if (strcmp(str, rate_limit_report) != 0) {
-					SAFECOPY(rate_limit_report, str);
-					lprintf(LOG_DEBUG, "%s", rate_limit_report);
+				if (startup->max_connects_per_period > 0 && startup->connect_rate_limit_period > 0) {
+					connect_rate_limiter->cleanup();
+					size_t most_active_count = 0;
+					std::string most_active = connect_rate_limiter->most_active(&most_active_count);
+					char str[sizeof connect_rate_limit_report];
+					snprintf(str, sizeof str, "Connection rate limiting current: clients=%zu, connects=%zu, most-active=%s (%zu), highest: %s (%u) on %s, limited: %u, last: %s on %s (repeat: %u)"
+						, connect_rate_limiter->client_count(), connect_rate_limiter->total(), most_active.c_str(), most_active_count
+						, connect_rate_limiter->currHighwater.client.c_str(), connect_rate_limiter->currHighwater.count
+						, timestr(&scfg, (time32_t)connect_rate_limiter->currHighwater.time, logstr)
+						, connect_rate_limiter->disallowed.load()
+						, connect_rate_limiter->lastLimited.client.c_str(), timestr(&scfg, (time32_t)connect_rate_limiter->lastLimited.time, tmp)
+						, connect_rate_limiter->repeat.load());
+					if (strcmp(str, connect_rate_limit_report) != 0) {
+						SAFECOPY(connect_rate_limit_report, str);
+						lprintf(LOG_DEBUG, "%s", connect_rate_limit_report);
+					}
+				}
+				if (startup->max_requests_per_period > 0 && startup->request_rate_limit_period > 0) {
+					request_rate_limiter->cleanup();
+					size_t most_active_count = 0;
+					std::string most_active = request_rate_limiter->most_active(&most_active_count);
+					char str[sizeof rate_limit_report];
+					snprintf(str, sizeof str, "Request rate limiting current: clients=%zu, requests=%zu, most-active=%s (%zu), highest: %s (%u) on %s, limited: %u, last: %s on %s (repeat: %u)"
+						, request_rate_limiter->client_count(), request_rate_limiter->total(), most_active.c_str(), most_active_count
+						, request_rate_limiter->currHighwater.client.c_str(), request_rate_limiter->currHighwater.count
+						, timestr(&scfg, (time32_t)request_rate_limiter->currHighwater.time, logstr)
+						, request_rate_limiter->disallowed.load()
+						, request_rate_limiter->lastLimited.client.c_str(), timestr(&scfg, (time32_t)request_rate_limiter->lastLimited.time, tmp)
+						, request_rate_limiter->repeat.load());
+					if (strcmp(str, rate_limit_report) != 0) {
+						SAFECOPY(rate_limit_report, str);
+						lprintf(LOG_DEBUG, "%s", rate_limit_report);
+					}
 				}
 			}
 			/* signal caller that we've started up successfully */
@@ -7831,6 +7927,23 @@ void web_server(void* arg)
 					close_socket(&client_socket);
 					continue;
 				}
+
+				/* Connection rate limiting (subnet-aggregated), enforced before a
+				 * session thread or TLS handshake is spawned. Repeat offenders may
+				 * be auto-filtered (into ip-silent.can so they're dropped here). */
+				if (connect_rate_limiter->maxRequests > 0) {
+					std::string rl_key = rate_limit_key(host_ip, startup->rate_limit_prefix4, startup->rate_limit_prefix6);
+					unsigned    denials = 0;
+					if (connect_rate_limiter->allowRequest(rl_key, &denials) == false) {
+						const char* prot = session->is_tls ? "HTTPS" : "HTTP";
+						lprintf(LOG_NOTICE, "%04d %-5s [%s] !Connection rate limit exceeded (%u over %us) for %s"
+							, client_socket, prot, host_ip
+							, connect_rate_limiter->maxRequests, connect_rate_limiter->timeWindowSeconds, rl_key.c_str());
+						rate_limit_filter(client_socket, prot, host_ip, /* host_name: */ NULL, rl_key, denials);
+						close_socket(&client_socket);
+						continue;
+					}
+				}
 			}
 
 			uint32_t client_count = protected_uint32_value(active_clients);
@@ -7838,8 +7951,8 @@ void web_server(void* arg)
 			if (session->is_tls) // Successfully sending a 503 error over TLS requires a session_thread
 				threshold += 10; // so allow some extra clients/threads in that case
 			if (startup->max_clients && client_count >= threshold) {
-				lprintf(LOG_WARNING, "%04d [%s] !MAXIMUM CLIENTS (%u) %s (%u), access denied"
-				        , client_socket, host_ip, startup->max_clients, client_count > startup->max_clients ? "exceeded" : "reached", client_count);
+				lprintf(LOG_WARNING, "%04d %-5s [%s] !MAXIMUM CLIENTS (%u) %s (%u), access denied"
+				        , client_socket, session->is_tls ? "HTTPS" : "HTTP", host_ip, startup->max_clients, client_count > startup->max_clients ? "exceeded" : "reached", client_count);
 				if (!len_503)
 					len_503 = strlen(error_503);
 				if (session->is_tls == false && sendsocket(client_socket, error_503, len_503) != len_503)
@@ -7936,4 +8049,5 @@ void web_server(void* arg)
 
 	protected_uint32_destroy(thread_count);
 	delete request_rate_limiter, request_rate_limiter = nullptr;
+	delete connect_rate_limiter, connect_rate_limiter = nullptr;
 }
