@@ -188,12 +188,33 @@ DWORD RingBufWrite( RingBuf* rb, const BYTE* src,  DWORD cnt )
 		rb->pHead = rb->pStart;
 
 #ifdef RINGBUF_EVENT
+#ifdef RINGBUF_MUTEX
+	/* Mutex held across the head update and event signaling; fill_level
+	 * (pre-write) and cnt (post-clamp bytes actually written) give a
+	 * consistent transition view, so we only touch the kernel event
+	 * objects when state actually changes.  This is a large win on
+	 * platforms where SetEvent/ResetEvent are real syscalls (Win32). */
+	if (cnt > 0 && fill_level == 0) {
+		if (rb->empty_event != NULL)
+			ResetEvent(rb->empty_event);
+		if (rb->data_event != NULL)
+			SetEvent(rb->data_event);
+	}
+	if (rb->highwater_event != NULL && rb->highwater_mark != 0
+	    && fill_level < rb->highwater_mark
+	    && fill_level + cnt >= rb->highwater_mark)
+		SetEvent(rb->highwater_event);
+#else
+	/* No mutex: another writer/reader may have moved the pointers between
+	 * our fill_level read and the event signaling, so we cannot trust a
+	 * transition check.  Signal unconditionally. */
 	if (rb->empty_event != NULL)
 		ResetEvent(rb->empty_event);
 	if (rb->data_event != NULL)
 		SetEvent(rb->data_event);
 	if (rb->highwater_event != NULL && rb->highwater_mark != 0 && RINGBUF_FILL_LEVEL(rb) >= rb->highwater_mark)
 		SetEvent(rb->highwater_event);
+#endif
 #endif
 
 #ifdef RINGBUF_MUTEX
@@ -246,12 +267,30 @@ DWORD RingBufRead( RingBuf* rb, BYTE* dst,  DWORD cnt )
 		rb->pTail = rb->pStart;
 
 #ifdef RINGBUF_EVENT
+#ifdef RINGBUF_MUTEX
+	/* Mutex held: len (pre-read fill) and cnt (post-clamp bytes actually
+	 * read) give a consistent transition view.  Only touch events on
+	 * actual non-empty->empty or above->below-highwater transitions. */
+	if (cnt > 0 && cnt == len) {
+		if (rb->empty_event != NULL)
+			SetEvent(rb->empty_event);
+		if (rb->data_event != NULL)
+			ResetEvent(rb->data_event);
+	}
+	if (rb->highwater_event != NULL && rb->highwater_mark != 0
+	    && len >= rb->highwater_mark
+	    && (len - cnt) < rb->highwater_mark)
+		ResetEvent(rb->highwater_event);
+#else
+	/* No mutex: re-read the live fill level rather than trusting a
+	 * snapshot that may already be stale. */
 	if (rb->empty_event != NULL && RINGBUF_FILL_LEVEL(rb) == 0) {
 		SetEvent(rb->empty_event);
 		ResetEvent(rb->data_event);
 	}
 	if (rb->highwater_event != NULL && rb->highwater_mark != 0 && RINGBUF_FILL_LEVEL(rb) < rb->highwater_mark)
 		ResetEvent(rb->highwater_event);
+#endif
 #endif
 
 #ifdef RINGBUF_MUTEX
