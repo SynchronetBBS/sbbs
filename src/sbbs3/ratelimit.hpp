@@ -22,13 +22,21 @@
 #include <unordered_map>
 #include <deque>
 #include <atomic>
-#include <mutex>
+#include "threadwrap.h"     /* pthread_mutex_t (std::mutex crashes in older
+                               MSVCP140.dll - see filterfile.hpp / issue #1089) */
 
 class rateLimiter {
 
 	public:
 	rateLimiter(unsigned int maxRequests, unsigned int timeWindowSeconds)
-		: maxRequests(maxRequests), timeWindowSeconds(timeWindowSeconds) {}
+		: maxRequests(maxRequests), timeWindowSeconds(timeWindowSeconds) {
+		pthread_mutex_init(&mutex, nullptr);
+	}
+	rateLimiter(const rateLimiter&) = delete;
+	rateLimiter& operator=(const rateLimiter&) = delete;
+	~rateLimiter() {
+		pthread_mutex_destroy(&mutex);
+	}
 	unsigned int maxRequests;
 	unsigned int timeWindowSeconds;
 	struct {
@@ -46,7 +54,8 @@ class rateLimiter {
 			*denials = 0;
 		if (maxRequests == 0 || timeWindowSeconds == 0)
 			return true;
-		std::lock_guard<std::mutex> lock(mutex);
+		bool allowed;
+		pthread_mutex_lock(&mutex);
 		auto& requestTimes = clientRequestTimes[clientId];
 		auto now = time(NULL);
 		// Remove timestamps that are outside the time window
@@ -63,7 +72,7 @@ class rateLimiter {
 				currHighwater.client = clientId;
 				currHighwater.time = now;
 			}
-			return true; // Allow the request
+			allowed = true; // Allow the request
 		} else {
 			if (lastLimited.client == clientId)
 				++repeat;
@@ -77,13 +86,15 @@ class rateLimiter {
 			unsigned n = ++deniedCount[clientId];
 			if (denials != nullptr)
 				*denials = n;
-			return false; // Rate limit exceeded
+			allowed = false; // Rate limit exceeded
 		}
+		pthread_mutex_unlock(&mutex);
+		return allowed;
 	}
 	size_t cleanup() {
 		size_t removed = 0;
 		auto now = time(NULL);
-		std::lock_guard<std::mutex> lock(mutex);
+		pthread_mutex_lock(&mutex);
 		for (auto it = clientRequestTimes.begin(); it != clientRequestTimes.end();) {
 			auto& requestTimes = it->second;
 			while (!requestTimes.empty() && now - requestTimes.front() >= timeWindowSeconds) {
@@ -97,21 +108,25 @@ class rateLimiter {
 				++it;
 			}
 		}
+		pthread_mutex_unlock(&mutex);
 		return removed;
 	}
 	size_t client_count() {
-		std::lock_guard<std::mutex> lock(mutex);
-		return clientRequestTimes.size();
+		pthread_mutex_lock(&mutex);
+		size_t count = clientRequestTimes.size();
+		pthread_mutex_unlock(&mutex);
+		return count;
 	}
 	size_t total() {
-		std::lock_guard<std::mutex> lock(mutex);
+		pthread_mutex_lock(&mutex);
 		size_t total = 0;
 		for (auto it = clientRequestTimes.begin(); it != clientRequestTimes.end(); ++it)
 			total += it->second.size();
+		pthread_mutex_unlock(&mutex);
 		return total;
 	}
 	std::string most_active(size_t* count) {
-		std::lock_guard<std::mutex> lock(mutex);
+		pthread_mutex_lock(&mutex);
 		size_t max = 0;
 		std::string client;
 		for (auto it = clientRequestTimes.begin(); it != clientRequestTimes.end(); ++it) {
@@ -123,10 +138,11 @@ class rateLimiter {
 		}
 		if (count != nullptr)
 			*count = max;
+		pthread_mutex_unlock(&mutex);
 		return client;
 	}
 private:
 	std::unordered_map<std::string, std::deque<time_t>> clientRequestTimes;
 	std::unordered_map<std::string, unsigned> deniedCount;
-	std::mutex mutex;
+	pthread_mutex_t mutex{};
 };
