@@ -668,7 +668,7 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 	if (strcmp(sp, "CHARSET") == 0)
 		return term->charset_str();
 
-	if (!strcmp(sp, "CONN") || !strcmp(sp, "CARRIER")) // CARRIER (PCBoard)
+	if (!strcmp(sp, "CONN") || !strcmp(sp, "CARRIER") || !strcmp(sp, "CONNECT")) // CARRIER (PCBoard), CONNECT (Wildcat!)
 		return connection;
 
 	if (!strcmp(sp, "SYSOP"))
@@ -858,7 +858,7 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 		return str;
 	}
 
-	if (!strcmp(sp, "QWKID"))
+	if (!strcmp(sp, "QWKID") || !strcmp(sp, "ID")) // ID (Wildcat!)
 		return cfg.sys_id;
 
 	if (!strcmp(sp, "TIME") || !strcmp(sp, "SYSTIME") || !strcmp(sp, "TIME_UTC")) {
@@ -1128,7 +1128,7 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 		return nulstr;
 	}
 
-	if (!strcmp(sp, "PAUSE") || !strcmp(sp, "MORE")) {
+	if (!strcmp(sp, "PAUSE") || !strcmp(sp, "MORE") || !strcmp(sp, "ENTER")) { // ENTER (Wildcat!)
 		pause();
 		return nulstr;
 	}
@@ -1246,7 +1246,7 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 		return str;
 	}
 
-	if (strcmp(sp, "USERNUM") == 0 || strcmp(sp, "UN") == 0) {
+	if (strcmp(sp, "USERNUM") == 0 || strcmp(sp, "UN") == 0 || strcmp(sp, "USERID") == 0) { // USERID (Wildcat!)
 		safe_snprintf(str, maxlen, "%u", useron.number);
 		return str;
 	}
@@ -1702,7 +1702,7 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 		// coverity[INTEGER_OVERFLOW:SUPPRESS] available credits cannot exceed INT64_MAX in practice (~9 EiB)
 		return byte_count(static_cast<int64_t>(user_available_credits(&useron)), str, maxlen, param, BYTE_COUNT_VERBAL);
 
-	if (code_match(sp, "CREDITS", &param))
+	if (code_match(sp, "CREDITS", &param) || code_match(sp, "ACCBAL", &param)) // ACCBAL (Wildcat!)
 		return byte_count(useron.cdt, str, maxlen, param, BYTE_COUNT_BYTES);
 
 	if (code_match(sp, "FREECDT", &param))
@@ -1870,7 +1870,7 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 	if (strcmp(sp, "LASTIP") == 0)
 		return useron.ipaddr;
 
-	if (!strcmp(sp, "CID") || !strcmp(sp, "IP"))
+	if (!strcmp(sp, "CID") || !strcmp(sp, "IP") || !strcmp(sp, "CALLID")) // CALLID (Wildcat!)
 		return cid;
 
 	if (!strcmp(sp, "LOCAL-IP"))
