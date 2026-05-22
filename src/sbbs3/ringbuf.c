@@ -352,7 +352,7 @@ void RingBufReInit(RingBuf* rb)
 		SetEvent(rb->empty_event);
 	if (rb->data_event != NULL)
 		ResetEvent(rb->data_event);
-	if (rb->highwater_event != NULL && rb->highwater_mark != 0 && RINGBUF_FILL_LEVEL(rb) >= rb->highwater_mark)
+	if (rb->highwater_event != NULL && rb->highwater_mark != 0)
 		ResetEvent(rb->highwater_event);
 #endif
 #ifdef RINGBUF_MUTEX
