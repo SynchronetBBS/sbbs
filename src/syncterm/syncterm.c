@@ -1027,6 +1027,10 @@ ini_bitdesc_t audio_output_bits[] = {
 		.bit = XPBEEP_DEVICE_PORTAUDIO
 	},
 	{
+		.name = "PipeWire",
+		.bit = XPBEEP_DEVICE_PIPEWIRE
+	},
+	{
 		.name = "SDL",
 		.bit = XPBEEP_DEVICE_SDL
 	},
@@ -1065,6 +1069,12 @@ ini_bitdesc_t audio_output_types[] = {
 	{
 		.name = "PortAudio",
 		.bit = XPBEEP_DEVICE_PORTAUDIO
+	},
+#endif
+#ifdef WITH_PIPEWIRE
+	{
+		.name = "PipeWire",
+		.bit = XPBEEP_DEVICE_PIPEWIRE
 	},
 #endif
 #ifdef WITH_SDL_AUDIO

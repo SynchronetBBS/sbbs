@@ -5677,6 +5677,7 @@ show_bbslist(char *current, int connected)
 						         "    %s ALSA\n"
 						         "    %s WASAPI\n"
 						         "    %s PortAudio\n"
+						         "    %s PipeWire\n"
 						         "    %s PulseAudio\n"
 						         "    %s Core Audio\n"
 						         "    %s libsndfile\n",
@@ -5766,6 +5767,11 @@ show_bbslist(char *current, int connected)
 						         "[ ]",
 #endif
 #ifdef WITH_PORTAUDIO
+						         "[`\xFB`]",
+#else
+						         "[ ]",
+#endif
+#ifdef WITH_PIPEWIRE
 						         "[`\xFB`]",
 #else
 						         "[ ]",

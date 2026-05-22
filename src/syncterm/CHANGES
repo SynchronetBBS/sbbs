@@ -13,6 +13,7 @@ Hold Alt during drag-select to copy a rectangular region
 Prototype SFTP client (Alt+S, Alt+B)
 Add Wren scripting engine, REPL console with Ctrl+`
 Pin SO_SNDBUF and SO_RCVBUF to 1 MiB on all TCP connections
+Add PipeWire support
 
 Version 1.9
 -----------

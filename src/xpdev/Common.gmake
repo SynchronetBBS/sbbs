@@ -262,3 +262,14 @@ ifndef NO_PULSEAUDIO
   endif
  endif
 endif
+
+ifndef NO_PIPEWIRE
+ ifndef win
+  ifeq ($(shell command -v pkg-config > /dev/null && pkg-config --exists libpipewire-0.3 && echo 'YES'),YES)
+   XPDEV-MT_CFLAGS += -DWITH_PIPEWIRE `pkg-config libpipewire-0.3 --cflags`
+   ifeq ($(os),linux)
+    XPDEV-MT_LIBS += -ldl
+   endif
+  endif
+ endif
+endif

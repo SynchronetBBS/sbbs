@@ -82,6 +82,11 @@
 #endif
 #endif
 
+#if defined(WITH_PIPEWIRE) && defined(XPDEV_THREAD_SAFE)
+#include <pipewire/pipewire.h>
+#include <spa/param/audio/format-utils.h>
+#endif
+
 #ifdef WITH_SDL_AUDIO
 #include "sdlfuncs.h"
 #endif
@@ -149,6 +154,9 @@ static bool portaudio_device_open_failed = false;
 #ifdef WITH_PULSEAUDIO
 static bool pulseaudio_device_open_failed = false;
 #endif
+#if defined(WITH_PIPEWIRE) && defined(XPDEV_THREAD_SAFE)
+static bool pipewire_device_open_failed = false;
+#endif
 #ifdef WITH_COREAUDIO
 static bool coreaudio_device_open_failed = false;
 #endif
@@ -160,6 +168,7 @@ enum {
 	, SOUND_DEVICE_OSS
 	, SOUND_DEVICE_SDL
 	, SOUND_DEVICE_PORTAUDIO
+	, SOUND_DEVICE_PIPEWIRE
 	, SOUND_DEVICE_PULSEAUDIO
 	, SOUND_DEVICE_COREAUDIO
 };
@@ -217,6 +226,32 @@ static pa_stream *            pu_stream = NULL;
 static pa_simple *            pu_handle;
 #endif
 static bool                   pulseaudio_initialized = false;
+#endif
+
+#if defined(WITH_PIPEWIRE) && defined(XPDEV_THREAD_SAFE)
+struct pipewire_api_struct {
+	dll_handle dl;
+	void                  (*init)(int *argc, char **argv[]);
+	void                  (*deinit)(void);
+	struct pw_thread_loop *(*thread_loop_new)(const char *name, const struct spa_dict *props);
+	void                  (*thread_loop_destroy)(struct pw_thread_loop *loop);
+	int                   (*thread_loop_start)(struct pw_thread_loop *loop);
+	void                  (*thread_loop_stop)(struct pw_thread_loop *loop);
+	void                  (*thread_loop_lock)(struct pw_thread_loop *loop);
+	void                  (*thread_loop_unlock)(struct pw_thread_loop *loop);
+	struct pw_loop *      (*thread_loop_get_loop)(struct pw_thread_loop *loop);
+	struct pw_properties *(*properties_new)(const char *key, ...);
+	struct pw_stream *    (*stream_new_simple)(struct pw_loop *loop, const char *name, struct pw_properties *props, const struct pw_stream_events *events, void *data);
+	void                  (*stream_destroy)(struct pw_stream *stream);
+	int                   (*stream_connect)(struct pw_stream *stream, enum pw_direction direction, uint32_t target_id, enum pw_stream_flags flags, const struct spa_pod **params, uint32_t n_params);
+	int                   (*stream_disconnect)(struct pw_stream *stream);
+	struct pw_buffer *    (*stream_dequeue_buffer)(struct pw_stream *stream);
+	int                   (*stream_queue_buffer)(struct pw_stream *stream, struct pw_buffer *buffer);
+};
+static struct pipewire_api_struct *pw_api = NULL;
+static struct pw_thread_loop *     pw_loop_handle = NULL;
+static struct pw_stream *          pw_stream_handle = NULL;
+static bool                        pipewire_initialized = false;
 #endif
 
 #ifdef WITH_PORTAUDIO
@@ -701,6 +736,42 @@ pa_stream_write_cb(pa_stream *s, size_t nbytes, void *userdata)
 }
 #endif
 
+#if defined(WITH_PIPEWIRE) && defined(XPDEV_THREAD_SAFE)
+static void
+pw_on_process(void *userdata)
+{
+	struct pw_buffer * b;
+	struct spa_buffer *buf;
+	int16_t *          dst;
+	uint32_t           n_frames;
+	uint32_t           stride = S_FRAMESIZE;
+
+	(void)userdata;
+	b = pw_api->stream_dequeue_buffer(pw_stream_handle);
+	if (b == NULL)
+		return;
+	buf = b->buffer;
+	dst = (int16_t *)buf->datas[0].data;
+	if (dst == NULL) {
+		pw_api->stream_queue_buffer(pw_stream_handle, b);
+		return;
+	}
+	n_frames = buf->datas[0].maxsize / stride;
+	if (b->requested > 0 && b->requested < n_frames)
+		n_frames = (uint32_t)b->requested;
+	xp_mixer_pull(dst, n_frames);
+	buf->datas[0].chunk->offset = 0;
+	buf->datas[0].chunk->stride = (int32_t)stride;
+	buf->datas[0].chunk->size   = n_frames * stride;
+	pw_api->stream_queue_buffer(pw_stream_handle, b);
+}
+
+static const struct pw_stream_events pw_stream_events_table = {
+	.version = PW_VERSION_STREAM_EVENTS,
+	.process = pw_on_process,
+};
+#endif
+
 #ifdef WITH_SDL_AUDIO
 void sdl_fillbuf(void *userdata, Uint8 *stream, int len)
 {
@@ -1167,6 +1238,102 @@ xptone_open_locked(void)
 						return true;
 					}
 				}
+			}
+		}
+	}
+#endif
+
+#if defined(WITH_PIPEWIRE) && defined(XPDEV_THREAD_SAFE)
+	if (xpbeep_sound_devices_enabled & XPBEEP_DEVICE_PIPEWIRE) {
+		if (!pipewire_device_open_failed) {
+			if (pw_api == NULL) {
+				const char *libnames[] = {"pipewire-0.3", NULL};
+				if (((pw_api = (struct pipewire_api_struct *)malloc(sizeof(struct pipewire_api_struct))) == NULL)
+				    || ((pw_api->dl = xp_dlopen(libnames, RTLD_LAZY, 0)) == NULL)
+				    || ((pw_api->init = xp_dlsym(pw_api->dl, pw_init)) == NULL)
+				    || ((pw_api->deinit = xp_dlsym(pw_api->dl, pw_deinit)) == NULL)
+				    || ((pw_api->thread_loop_new = xp_dlsym(pw_api->dl, pw_thread_loop_new)) == NULL)
+				    || ((pw_api->thread_loop_destroy = xp_dlsym(pw_api->dl, pw_thread_loop_destroy)) == NULL)
+				    || ((pw_api->thread_loop_start = xp_dlsym(pw_api->dl, pw_thread_loop_start)) == NULL)
+				    || ((pw_api->thread_loop_stop = xp_dlsym(pw_api->dl, pw_thread_loop_stop)) == NULL)
+				    || ((pw_api->thread_loop_lock = xp_dlsym(pw_api->dl, pw_thread_loop_lock)) == NULL)
+				    || ((pw_api->thread_loop_unlock = xp_dlsym(pw_api->dl, pw_thread_loop_unlock)) == NULL)
+				    || ((pw_api->thread_loop_get_loop = xp_dlsym(pw_api->dl, pw_thread_loop_get_loop)) == NULL)
+				    || ((pw_api->properties_new = xp_dlsym(pw_api->dl, pw_properties_new)) == NULL)
+				    || ((pw_api->stream_new_simple = xp_dlsym(pw_api->dl, pw_stream_new_simple)) == NULL)
+				    || ((pw_api->stream_destroy = xp_dlsym(pw_api->dl, pw_stream_destroy)) == NULL)
+				    || ((pw_api->stream_connect = xp_dlsym(pw_api->dl, pw_stream_connect)) == NULL)
+				    || ((pw_api->stream_disconnect = xp_dlsym(pw_api->dl, pw_stream_disconnect)) == NULL)
+				    || ((pw_api->stream_dequeue_buffer = xp_dlsym(pw_api->dl, pw_stream_dequeue_buffer)) == NULL)
+				    || ((pw_api->stream_queue_buffer = xp_dlsym(pw_api->dl, pw_stream_queue_buffer)) == NULL)
+				    ) {
+					if (pw_api && pw_api->dl)
+						xp_dlclose(pw_api->dl);
+					free(pw_api);
+					pw_api = NULL;
+					pipewire_device_open_failed = true;
+				}
+				else {
+					pw_api->init(NULL, NULL);
+				}
+			}
+			if (pw_api != NULL) {
+				struct pw_properties *  props;
+				struct spa_pod_builder  pb;
+				uint8_t                 pod_buf[1024];
+				const struct spa_pod *  params[1];
+				struct spa_audio_info_raw info;
+				bool                    ok = false;
+
+				props = pw_api->properties_new(
+				    PW_KEY_MEDIA_TYPE, "Audio",
+				    PW_KEY_MEDIA_CATEGORY, "Playback",
+				    PW_KEY_MEDIA_ROLE, "Music",
+				    PW_KEY_NODE_NAME, "XPBeep",
+				    PW_KEY_NODE_DESCRIPTION, "Beeps and Boops",
+				    NULL);
+				pw_loop_handle = pw_api->thread_loop_new("xpbeep", NULL);
+				if (pw_loop_handle && props) {
+					pw_stream_handle = pw_api->stream_new_simple(
+					    pw_api->thread_loop_get_loop(pw_loop_handle),
+					    "XPBeep", props,
+					    &pw_stream_events_table, NULL);
+					/* stream_new_simple takes ownership of props. */
+					props = NULL;
+					if (pw_stream_handle) {
+						memset(&info, 0, sizeof info);
+						info.format   = SPA_AUDIO_FORMAT_S16;
+						info.rate     = S_RATE;
+						info.channels = S_CHANNELS;
+						info.position[0] = SPA_AUDIO_CHANNEL_FL;
+						info.position[1] = SPA_AUDIO_CHANNEL_FR;
+						spa_pod_builder_init(&pb, pod_buf, sizeof pod_buf);
+						params[0] = spa_format_audio_raw_build(&pb, SPA_PARAM_EnumFormat, &info);
+						if (pw_api->stream_connect(pw_stream_handle, PW_DIRECTION_OUTPUT,
+						                           PW_ID_ANY,
+						                           PW_STREAM_FLAG_AUTOCONNECT
+						                           | PW_STREAM_FLAG_MAP_BUFFERS
+						                           | PW_STREAM_FLAG_RT_PROCESS,
+						                           params, 1) == 0
+						    && pw_api->thread_loop_start(pw_loop_handle) == 0)
+							ok = true;
+					}
+				}
+				if (ok) {
+					pipewire_initialized = true;
+					handle_type = SOUND_DEVICE_PIPEWIRE;
+					handle_rc++;
+					return true;
+				}
+				if (pw_stream_handle) {
+					pw_api->stream_destroy(pw_stream_handle);
+					pw_stream_handle = NULL;
+				}
+				if (pw_loop_handle) {
+					pw_api->thread_loop_destroy(pw_loop_handle);
+					pw_loop_handle = NULL;
+				}
+				pipewire_device_open_failed = true;
 			}
 		}
 	}
@@ -1667,6 +1834,23 @@ bool xptone_close_locked(void)
 	}
 #endif
 
+#if defined(WITH_PIPEWIRE) && defined(XPDEV_THREAD_SAFE)
+	if (handle_type == SOUND_DEVICE_PIPEWIRE) {
+		if (pw_loop_handle)
+			pw_api->thread_loop_stop(pw_loop_handle);
+		if (pw_stream_handle) {
+			pw_api->stream_disconnect(pw_stream_handle);
+			pw_api->stream_destroy(pw_stream_handle);
+			pw_stream_handle = NULL;
+		}
+		if (pw_loop_handle) {
+			pw_api->thread_loop_destroy(pw_loop_handle);
+			pw_loop_handle = NULL;
+		}
+		pipewire_initialized = false;
+	}
+#endif
+
 #ifdef WITH_SDL_AUDIO
 	if (handle_type == SOUND_DEVICE_SDL) {
 		xpbeep_sdl.CloseAudio();
@@ -1724,6 +1908,9 @@ bool xptone_close_locked(void)
 #endif
 #ifdef WITH_PULSEAUDIO
 	pulseaudio_device_open_failed = false;
+#endif
+#if defined(WITH_PIPEWIRE) && defined(XPDEV_THREAD_SAFE)
+	pipewire_device_open_failed = false;
 #endif
 #ifdef WITH_COREAUDIO
 	coreaudio_device_open_failed = false;
