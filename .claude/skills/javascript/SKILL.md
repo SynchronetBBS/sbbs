@@ -1,6 +1,6 @@
 ---
-name: synchronet-javascript
-description: Use for Synchronet's JavaScript language and host API — the SpiderMonkey 1.8.5 dialect constraints, the object/class model (MsgBase, FileBase, File, User, system, msg_area/file_area, Socket, MQTT, etc.), how those APIs actually behave (including sharp edges like MsgBase.get_all_msg_headers() lazy fields), writing tests in exec/tests/, and the stock exec/*.js module ecosystem as API references. Trigger when authoring or debugging Synchronet .js/.ssjs/.xjs code, asking "how does the MsgBase/User/FileBase API work", "why is h.to_ext undefined", "what JS can I use in Synchronet", or "is there a stock script that does X". For *running* JS (jsexec flags, invocation, debug builds) see the synchronet-jsexec skill; for storage-layer SMB repair see synchronet-smbutils.
+name: javascript
+description: Use for Synchronet's JavaScript language and host API — the SpiderMonkey 1.8.5 dialect constraints, the object/class model (MsgBase, FileBase, File, User, system, msg_area/file_area, Socket, MQTT, etc.), how those APIs actually behave (including sharp edges like MsgBase.get_all_msg_headers() lazy fields), writing tests in exec/tests/, and the stock exec/*.js module ecosystem as API references. Trigger when authoring or debugging Synchronet .js/.ssjs/.xjs code, asking "how does the MsgBase/User/FileBase API work", "why is h.to_ext undefined", "what JS can I use in Synchronet", or "is there a stock script that does X". For *running* JS (jsexec flags, invocation, debug builds) see the jsexec skill; for storage-layer SMB repair see smbutils.
 ---
 
 # Synchronet JavaScript (the language + host API)
@@ -8,8 +8,8 @@ description: Use for Synchronet's JavaScript language and host API — the Spide
 This skill is about **writing and reasoning about Synchronet JavaScript** — the
 dialect, the host object model, and how the APIs behave. To actually *run* a
 script or inline probe (jsexec flags, invocation modes, capturing output,
-Windows debug builds), use the **`synchronet-jsexec`** skill. For low-level SMB
-file repair (smbutil/chksmb/fixsmb) use **`synchronet-smbutils`**.
+Windows debug builds), use the **`jsexec`** skill. For low-level SMB
+file repair (smbutil/chksmb/fixsmb) use **`smbutils`**.
 
 **Start here:** the wiki's JavaScript hub — https://wiki.synchro.net/custom:javascript
 — covers the engine, invocation contexts, the object model, `load()`/`require()`,
@@ -59,7 +59,7 @@ XML literals (avoid). When in doubt, match the idioms in nearby `exec/*.js`.
 
 The full surface depends on context. Under `jsexec` (no user session) you get
 the system/data objects but **not** the session-bound ones (`bbs`, `console`,
-`client`) — that distinction is documented in the `synchronet-jsexec` skill.
+`client`) — that distinction is documented in the `jsexec` skill.
 The classes themselves behave identically wherever they're bound.
 
 | Group | Objects |
@@ -93,7 +93,7 @@ differ by host:
 | Web Server | `.ssjs` pages and `*.js` under `web/root/` | generates HTTP responses |
 | Services | `exec/*service.js`, configured in `ctrl/services.ini` | all stock services are JS; static or dynamic |
 | Mail Server | inbound mail processors, `exec/mailproc_example.js` + `ctrl/mailproc.ini` | |
-| jsexec | standalone (CGI, daemon, one-off probe) | no session — see `synchronet-jsexec` |
+| jsexec | standalone (CGI, daemon, one-off probe) | no session — see `jsexec` |
 
 From Baja: `exec "?modname"` / `exec "*modname"` / `exec_bin "modname"`.
 
@@ -255,7 +255,7 @@ criterion depends on body content (e.g. distinguishing two errors that share a
 subject).
 
 `smbutil`'s `d`/`D` flag/delete **all** messages — for *selective* deletion a
-MsgBase script is the right tool (see `synchronet-smbutils` for the storage
+MsgBase script is the right tool (see `smbutils` for the storage
 layer and when to prefer each).
 
 ## Common API recipes
@@ -388,7 +388,7 @@ To update any of these wiki pages, see the `synchronet-wiki` skill.
 
 ## Cross-references
 
-- **Run JS / jsexec flags / Windows debug builds** → `synchronet-jsexec`.
-- **SMB storage-layer repair (smbutil/chksmb/fixsmb)** → `synchronet-smbutils`.
+- **Run JS / jsexec flags / Windows debug builds** → `jsexec`.
+- **SMB storage-layer repair (smbutil/chksmb/fixsmb)** → `smbutils`.
 - **Build sbbs.dll / a debug binary** → `synchronet-build`.
-- **Display/menu files, @-codes, Ctrl-A** → `synchronet-menus`.
+- **Display/menu files, @-codes, Ctrl-A** → `menus`.

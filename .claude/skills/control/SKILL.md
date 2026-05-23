@@ -1,6 +1,6 @@
 ---
-name: synchronet-control
-description: Use when controlling a running Synchronet instance — recycling/reloading, shutdown, pause, clearing the failed-login list, or forcing a timed event. Covers cross-platform **semaphore files** in `ctrl/`/`data/` (`recycle`/`shutdown`/`pause`/`clear` with per-server `.<service>` and per-host `.<hostname>` suffix variants for shared-`ctrl/` setups), POSIX signals to `sbbscon` (SIGTERM/etc. = quit, SIGHUP = recycle-all), OS service managers (systemctl, service, launchctl, sc.exe), Windows front-ends (sbbsctrl, sbbsNTsvcs), the `node rerun` utility, the "won't recycle while in use" gotcha, and the `NO_RECYCLE` flag. For control via MQTT — often preferred even on the same host — see the `synchronet-mqtt` skill. Trigger on "recycle the web server", "restart sbbs", "pause connections", "clear failed-login list", "send a signal to sbbs", "force a timed event", or "remove an IP ban".
+name: control
+description: Use when controlling a running Synchronet instance — recycling/reloading, shutdown, pause, clearing the failed-login list, or forcing a timed event. Covers cross-platform **semaphore files** in `ctrl/`/`data/` (`recycle`/`shutdown`/`pause`/`clear` with per-server `.<service>` and per-host `.<hostname>` suffix variants for shared-`ctrl/` setups), POSIX signals to `sbbscon` (SIGTERM/etc. = quit, SIGHUP = recycle-all), OS service managers (systemctl, service, launchctl, sc.exe), Windows front-ends (sbbsctrl, sbbsNTsvcs), the `node rerun` utility, the "won't recycle while in use" gotcha, and the `NO_RECYCLE` flag. For control via MQTT — often preferred even on the same host — see the `mqtt` skill. Trigger on "recycle the web server", "restart sbbs", "pause connections", "clear failed-login list", "send a signal to sbbs", "force a timed event", or "remove an IP ban".
 ---
 
 # Synchronet — controlling a running instance
@@ -12,7 +12,7 @@ description: Use when controlling a running Synchronet instance — recycling/re
 - sbbsNTsvcs (Windows NT Services): https://wiki.synchro.net/monitor:ntsvcs
 - "Why doesn't my recycle take effect?" FAQ: https://wiki.synchro.net/faq:nix#recycle
 - `node` control utility: https://wiki.synchro.net/util:node
-- For **remote** / cross-host control via MQTT: see the `synchronet-mqtt` skill.
+- For **remote** / cross-host control via MQTT: see the `mqtt` skill.
 
 The skill captures **which lever is right for which job**. Synchronet's own semaphore-file mechanism is the cross-platform native primitive — it works the same on Linux, BSD, macOS, and Windows, with or without systemd / sbbsctrl / NT Services in front. OS-level service managers and signals are the escalation path when the semfile isn't enough.
 
@@ -66,7 +66,7 @@ For any action `<A>`, Synchronet polls the following paths in `ctrl/` (verified 
 | `ctrl/<A>.<short-hostname>`             | as above but matched against the short hostname (first dot-separated component) |
 | `ctrl/<A>.<short-hostname>.<service>`   | short hostname + one server |
 
-**The hostname variants are essential when `ctrl/` is on shared storage** (NFS/SMB/CIFS/Syncthing) and you only want one host to react. Plain `ctrl/recycle` would otherwise fire on every host that mounts the share. (See the `synchronet-logs` skill's "Multi-instance traps" section for the symptom on the log side.)
+**The hostname variants are essential when `ctrl/` is on shared storage** (NFS/SMB/CIFS/Syncthing) and you only want one host to react. Plain `ctrl/recycle` would otherwise fire on every host that mounts the share. (See the `logs` skill's "Multi-instance traps" section for the symptom on the log side.)
 
 Examples:
 
@@ -198,12 +198,12 @@ Same servers, same code, no GUI; output goes to the console window. Use `Ctrl+C`
 | Want | Use |
 |------|-----|
 | Always-on, survives logout, no user logged in | `sbbsNTsvcs` |
-| GUI monitoring + log panes (the `WS<date>.LOG` files come from here — see `synchronet-logs`) | `sbbsctrl` |
+| GUI monitoring + log panes (the `WS<date>.LOG` files come from here — see `logs`) | `sbbsctrl` |
 | Foreground debugging, console output visible | `sbbs.exe` |
 
 ## When MQTT is preferred (even on the same host)
 
-Every operation in this skill has an MQTT-published equivalent: `host/+/recycle`, `host/+/pause`, `host/+/resume`, `host/+/clear`, per-server `server/+/recycle`/`clear`, per-node `node/+/set/*`, etc. See the **`synchronet-mqtt`** skill for broker connect/auth and the full control-plane topic list. MQTT and semfiles are **not mutually exclusive** — both work on the same install, and either is correct for most operations. Reach for MQTT (rather than a semfile or signal) when any of the following applies:
+Every operation in this skill has an MQTT-published equivalent: `host/+/recycle`, `host/+/pause`, `host/+/resume`, `host/+/clear`, per-server `server/+/recycle`/`clear`, per-node `node/+/set/*`, etc. See the **`mqtt`** skill for broker connect/auth and the full control-plane topic list. MQTT and semfiles are **not mutually exclusive** — both work on the same install, and either is correct for most operations. Reach for MQTT (rather than a semfile or signal) when any of the following applies:
 
 - **You don't have shell access** to the host, but you do have broker credentials (a dashboard, IRC bot, JS module, remote agent).
 - **You want positive acknowledgement.** The retained `…/server/+` status topic reflects the new state within a few seconds — `stopping` → `initializing` → `ready` after a recycle confirms it took effect. Semfiles give no feedback channel; you have to watch the journal yourself.
@@ -238,7 +238,7 @@ Reach for semfiles (rather than MQTT) when:
 
 - **Verify the lever took effect.** After a recycle, watch the journal (`journalctl -fu <unit>`) or the MQTT `…/server/+` status topic. After a clear, the next deny-at-accept hit from the released IP confirms the list was cleared (or didn't get cleared, if you see fresh `!CLIENT BLOCKED` lines for the same IP straight away).
 - **Prefer per-server over global.** `ctrl/recycle.web` only restarts web — five hosts × five servers becomes one host × one server instead of 25 restarts.
-- **Use hostname variants on shared `ctrl/`.** Without them, every host mounting the share reacts to the same global semfile. (Diagnose the symptom from the log side via `synchronet-logs`.)
+- **Use hostname variants on shared `ctrl/`.** Without them, every host mounting the share reacts to the same global semfile. (Diagnose the symptom from the log side via `logs`.)
 - **`pause` instead of `shutdown` for maintenance.** Pause lets you watch existing sessions drain naturally; shutdown kills them. Resume by `rm`-ing the pause file (or publishing to the MQTT `resume` topic).
 - **Touch `sbbs.ini` deliberately or not at all.** It's a recycle trigger via mtime. Backup/sync tools that preserve mtime won't trigger it; tools that don't (`cp` without `-p`, `rsync` without `-t`) will.
 - **Beware "stuck" recycles.** If `node` shows nodes flagged `[R]` for a long time, those users are still connected — the recycle is waiting for them. Either let them disconnect or, in an emergency, force-drop via `node <N> down` or the MQTT `node/<N>/set/intr` topic.
@@ -257,7 +257,7 @@ Reach for semfiles (rather than MQTT) when:
 
 ## Cross-references
 
-- For the file/log side of these operations (the `!Recycling`, `!Shutdown semaphore file detected`, `!Pause semaphore signaled` console lines, and the `data/error.log` entries that follow): the **`synchronet-logs`** skill.
-- For the MQTT equivalents (remote control, cross-host fan-out, retained status feedback): the **`synchronet-mqtt`** skill.
+- For the file/log side of these operations (the `!Recycling`, `!Shutdown semaphore file detected`, `!Pause semaphore signaled` console lines, and the `data/error.log` entries that follow): the **`logs`** skill.
+- For the MQTT equivalents (remote control, cross-host fan-out, retained status feedback): the **`mqtt`** skill.
 - For *building* Synchronet (not running it): the **`synchronet-build`** skill.
 - For source-level verification of the semfile naming algorithm: `src/xpdev/semfile.c::semfile_list_init`. For the per-server polling loops: `main.cpp`, `websrvr.cpp`, `mailsrvr.cpp`, `ftpsrvr.cpp`, `services.cpp` — search for `semfile_list_check`. For signal handlers: `src/sbbs3/sbbscon.c` — search for `_sighandler_quit` and `_sighandler_rerun`.

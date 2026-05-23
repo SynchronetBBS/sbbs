@@ -1,5 +1,5 @@
 ---
-name: synchronet-mqtt
+name: mqtt
 description: Use when working with Synchronet's MQTT integration — discovering whether MQTT is enabled (the `[MQTT]` section of `ctrl/main.ini`, **not** `sbbs.ini`), reading broker address/port/credentials/TLS settings, connecting with `mosquitto_sub`/`mosquitto_pub` (anonymous, user+pass, or one of four TLS modes: CA, mTLS, PSK, SBBS-internal-CA), or interacting with the topic tree for **monitoring** (server/node status, node-output spying, `action/#`, retained `login_attempts/<IP>` and `max_concurrent/<IP>`, log streams `…/log[/<N>]`) or **controlling** the BBS (production-impacting topics that recycle/pause/resume servers, clear failed-login lists, set node flags, inject input or messages into a node — plus the local-filesystem equivalents in `ctrl/`). Trigger on "is MQTT enabled", "what's the broker address", "subscribe to all sbbs logs", "pause/recycle via MQTT", "inject a message into node N", "clear failed-login for an IP", or "spy on a node remotely".
 ---
 
@@ -9,7 +9,7 @@ description: Use when working with Synchronet's MQTT integration — discovering
 - MQTT topic hierarchy and semantics: https://wiki.synchro.net/monitor:mqtt
 - SCFG configuration UI for MQTT: SCFG → Networks → MQTT
 - Log levels (used for `…/log/<N>` per-level subtopics): https://wiki.synchro.net/monitor:loglevels
-- Related — file/console log streams: see the `synchronet-logs` skill.
+- Related — file/console log streams: see the `logs` skill.
 
 **MQTT in Synchronet is two-way.** Most use cases are read-only monitoring, but the same broker also carries **control-plane** topics that recycle servers, pause/resume listeners, clear filter lists, set node flags, and inject input. Read the [Control plane — production-impacting operations](#control-plane--production-impacting-operations) section before publishing anything.
 
@@ -286,6 +286,6 @@ Verify the result by watching the matching `…/server/web` status topic — you
 
 ## Cross-references
 
-- For the file/console log streams (per-category files in `data/`, syslog/journalctl on *nix, the `WS*.LOG` sbbsctrl-on-Windows trap, and the `ip.can` field format) — see the **`synchronet-logs`** skill.
+- For the file/console log streams (per-category files in `data/`, syslog/journalctl on *nix, the `WS*.LOG` sbbsctrl-on-Windows trap, and the `ip.can` field format) — see the **`logs`** skill.
 - For low-level config parsing in `scfglib1.c` (the source of truth for the `[MQTT]` defaults and ranges quoted here) — search for `read_main_cfg` in `src/sbbs3/scfglib1.c`.
-- For MQTT-related JS host bindings (`MQTT` object, `mqtt.publish()`, etc.) — see the **`synchronet-javascript`** skill.
+- For MQTT-related JS host bindings (`MQTT` object, `mqtt.publish()`, etc.) — see the **`javascript`** skill.

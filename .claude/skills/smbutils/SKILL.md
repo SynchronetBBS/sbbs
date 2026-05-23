@@ -1,5 +1,5 @@
 ---
-name: synchronet-smbutils
+name: smbutils
 description: Use when inspecting, validating, repairing, importing into, or maintaining a Synchronet Message Base (SMB) file — mail (mail.shd), message sub-boards (data/subs/<code>.shd), or file bases (data/file/<code>.shd) — via the smbutil, chksmb, or fixsmb command-line tools. Trigger whenever the user mentions smbutil, chksmb, fixsmb, SMB files, .shd / .sdt / .sid / .sha files, "the mail base", "rebuild/renumber the message base", "pack the sub", "check the message base for corruption", "repair an SMB", "dump a hash file", "view headers", "import a message", or any low-level inspection, validation, or repair of a Synchronet messaging file that isn't doable from inside the BBS or MsgBase JS API. Prefer this skill over guessing flags or shelling out blind.
 ---
 
@@ -319,7 +319,7 @@ applies the usual posting hooks, and is friendlier to maintain:
 jsexec postmsg.js <subcode> "<from>" "<to>" "<subject>" </tmp/body.txt
 ```
 
-(See the `synchronet-jsexec` skill for details.)
+(See the `jsexec` skill for details.)
 
 # chksmb
 
@@ -437,7 +437,7 @@ For end-of-life cleanup or scheduled trimming, prefer `smbutil m`
 # When *not* to use these tools
 
 - Bulk read/edit across many messages → write a JS script using `MsgBase`
-  (see the `synchronet-jsexec` skill). Iterating with
+  (see the `jsexec` skill). Iterating with
   `MsgBase.get_all_msg_headers()` is faster and more flexible.
 - Reading a single user's mail → `MsgBase` in JS, filtering by
   `to_number` / `to_ext`.
@@ -458,7 +458,7 @@ Also:
 - **SMB on-disk format spec:** https://wiki.synchro.net/ref:smb (and the
   brief cheat-sheet earlier in this file).
 - `MsgBase` JS API (preferred for programmatic work): see the
-  `synchronet-jsexec` skill, and the stock JS modules in `exec/` of the
+  `jsexec` skill, and the stock JS modules in `exec/` of the
   Synchronet install for usage examples.
 - Source code (authoritative when this skill, wiki, and help text disagree):
   https://gitlab.synchro.net/main/sbbs — see `src/sbbs3/smbutil.c`,

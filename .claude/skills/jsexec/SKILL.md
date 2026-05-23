@@ -1,6 +1,6 @@
 ---
-name: synchronet-jsexec
-description: Use whenever you need to RUN Synchronet JavaScript — executing inline JS expressions, running scripts from the install's exec/ directory, testing JS modules, or validating changes to .js/.ssjs/.xjs files against a live install. This skill covers the jsexec runner itself: invocation modes, flags, output capture, crash tracing, and (on Windows) running a freshly-built debug binary. Trigger on "run a Synchronet script", "test this JS against Synchronet", "check what jsexec does", or any one-off JavaScript probe of a live install. For the JavaScript LANGUAGE and host API (how MsgBase/User/FileBase behave, SpiderMonkey dialect, the object model, writing tests, stock exec/*.js) see the synchronet-javascript skill.
+name: jsexec
+description: Use whenever you need to RUN Synchronet JavaScript — executing inline JS expressions, running scripts from the install's exec/ directory, testing JS modules, or validating changes to .js/.ssjs/.xjs files against a live install. This skill covers the jsexec runner itself: invocation modes, flags, output capture, crash tracing, and (on Windows) running a freshly-built debug binary. Trigger on "run a Synchronet script", "test this JS against Synchronet", "check what jsexec does", or any one-off JavaScript probe of a live install. For the JavaScript LANGUAGE and host API (how MsgBase/User/FileBase behave, SpiderMonkey dialect, the object model, writing tests, stock exec/*.js) see the javascript skill.
 ---
 
 # Synchronet jsexec (the JavaScript runner)
@@ -13,8 +13,8 @@ or validate a code change against a real install.
 
 This skill is about **driving jsexec**. For the JavaScript dialect, the host
 object model, and how the APIs behave (MsgBase, User, FileBase, …), see the
-**`synchronet-javascript`** skill. For low-level SMB file repair use
-**`synchronet-smbutils`**; to build a debug binary use **`synchronet-build`**.
+**`javascript`** skill. For low-level SMB file repair use
+**`smbutils`**; to build a debug binary use **`synchronet-build`**.
 
 **References:**
 - Official jsexec docs: https://wiki.synchro.net/util:jsexec
@@ -94,7 +94,7 @@ jsexec -n -r "print(JSON.stringify({v: system.version, nodes: system.node_list.l
 jsexec runs *outside* a user session, so the global surface differs from what
 scripts see under `bbs.exec()` / a logon flow. The classes themselves behave
 identically; what changes is which globals exist. (Full class model: the
-`synchronet-javascript` skill and https://nix.synchro.net/jsexecobjs.html.)
+`javascript` skill and https://nix.synchro.net/jsexecobjs.html.)
 
 **Available under jsexec:** `system`, `js`, `server`, `conio`; `msg_area`,
 `file_area`, `xtrn_area`; `User`, `MsgBase`, `FileBase`, `File`, `Archive`,
@@ -110,7 +110,7 @@ identically; what changes is which globals exist. (Full class model: the
 
 Porting a BBS script to a jsexec probe: replace `console.print(x)` with
 `print(x)` and strip any `bbs.*` interactivity. (Which output/input function maps
-to which context is tabulated in the `synchronet-javascript` skill.)
+to which context is tabulated in the `javascript` skill.)
 
 ## A minimal probe
 
@@ -127,7 +127,7 @@ jsexec -n -r '
 For the API details these probes exercise — and the **MsgBase
 `get_all_msg_headers()` lazy-field gotcha** (`to_ext`/`from_ext`/etc. read
 `undefined` unless you touch a non-NULL field first) — see the
-`synchronet-javascript` skill before writing anything that filters headers.
+`javascript` skill before writing anything that filters headers.
 
 ## Debugging crashes / step-tagged tracing
 
@@ -160,7 +160,7 @@ around.
 - **Run JS against the live config / message bases / users** → jsexec. It's the
   only tool that gives you the real runtime.
 - **Manipulate message-base files at the storage layer** → `smbutil` /
-  `chksmb` / `fixsmb` (`synchronet-smbutils`). Lower level, no JS.
+  `chksmb` / `fixsmb` (`smbutils`). Lower level, no JS.
 - **Just syntax-check a script** → `jsexec -r 'load("path/to/file.js");'`
   compile-checks via load, but a real run is more informative.
 
@@ -175,7 +175,7 @@ around.
 - jsexec writes log messages to **stderr**, not to `$SBBS/data/logs/`. Capture
   with `2>file`, merge into stdout with `-A`, or send to a file with `-e <file>`.
 - The engine is SpiderMonkey 1.8.5 (ES3-ish). Language do's and don'ts are in
-  the `synchronet-javascript` skill.
+  the `javascript` skill.
 
 ## Pitfalls
 
@@ -251,7 +251,7 @@ them in place. Options, in increasing disruptiveness:
    open. See `synchronet-build` for the worktree recipe.
 
 3. **Stop the BBS briefly, rebuild, restart.** Last resort — affects users.
-   For coordinated downtime see `synchronet-control` (`ctrl/recycle` /
+   For coordinated downtime see `control` (`ctrl/recycle` /
    `ctrl/shutdown` semfiles, MQTT `host/+/pause` for graceful drains).
 
 **Don't retry-loop a debug rebuild against the lock**, and don't reach for

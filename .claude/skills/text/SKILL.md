@@ -1,6 +1,6 @@
 ---
-name: synchronet-text
-description: Use when a sysop wants to customize the text strings/prompts Synchronet sends to remote users — the runtime `text[]` string database. Covers `ctrl/text.dat` syntax (Ctrl-A codes, @-codes, %-specifiers, mnemonics, the decimal-`\NNN`-vs-hex-`\xNN` trap, multi-line continuation, %-vs-@-code mutual exclusion, missing-line fallback to compiled default), `ctrl/text.ini` override file (three sections: by-ID overrides, `[substr]` global substitution, `[JS]` for `gettext()` strings), `ctrl/text.<lang>.ini` per-language overlays, and the recycle-required consequence. For display files see `synchronet-menus`; for `gettext()`/`js.load_text()` see `synchronet-javascript`; for recycling see `synchronet-control`. Trigger on "change a BBS prompt", "translate strings", "override text.dat without editing it", "what's text.ini", "retheme the BBS colors", "replace \1g with \1m everywhere" (or any global Ctrl-A code substitution), or "why didn't my text.dat change take effect".
+name: text
+description: Use when a sysop wants to customize the text strings/prompts Synchronet sends to remote users — the runtime `text[]` string database. Covers `ctrl/text.dat` syntax (Ctrl-A codes, @-codes, %-specifiers, mnemonics, the decimal-`\NNN`-vs-hex-`\xNN` trap, multi-line continuation, %-vs-@-code mutual exclusion, missing-line fallback to compiled default), `ctrl/text.ini` override file (three sections: by-ID overrides, `[substr]` global substitution, `[JS]` for `gettext()` strings), `ctrl/text.<lang>.ini` per-language overlays, and the recycle-required consequence. For display files see `menus`; for `gettext()`/`js.load_text()` see `javascript`; for recycling see `control`. Trigger on "change a BBS prompt", "translate strings", "override text.dat without editing it", "what's text.ini", "retheme the BBS colors", "replace \1g with \1m everywhere" (or any global Ctrl-A code substitution), or "why didn't my text.dat change take effect".
 ---
 
 # Synchronet — customizing terminal-server text strings
@@ -13,11 +13,11 @@ description: Use when a sysop wants to customize the text strings/prompts Synchr
 - @-codes (variable substitution): https://wiki.synchro.net/custom:atcodes
 - Mnemonics (`~`-prefix highlighted keys): https://wiki.synchro.net/custom:mnemonics
 - `gettext()` JavaScript helper: https://wiki.synchro.net/custom:javascript:lib:gettext.js
-- Related — display files (`.ans`/`.msg`/etc.): see the `synchronet-menus` skill.
-- Related — JS `gettext()` / `js.load_text()`: see the `synchronet-javascript` skill.
-- Related — making changes take effect: see the `synchronet-control` skill.
+- Related — display files (`.ans`/`.msg`/etc.): see the `menus` skill.
+- Related — JS `gettext()` / `js.load_text()`: see the `javascript` skill.
+- Related — making changes take effect: see the `control` skill.
 
-This skill is the **string-database side** of Synchronet customization. The display-file side (the full-screen `.ans`/`.msg`/`.utf8` art and menus in `text/` and `text/menu/`) belongs to `synchronet-menus`. Both layers share the same Ctrl-A and @-code rendering vocabulary, but the files, workflows, and traps are different.
+This skill is the **string-database side** of Synchronet customization. The display-file side (the full-screen `.ans`/`.msg`/`.utf8` art and menus in `text/` and `text/menu/`) belongs to `menus`. Both layers share the same Ctrl-A and @-code rendering vocabulary, but the files, workflows, and traps are different.
 
 ## The two-layer model
 
@@ -201,7 +201,7 @@ You have @USERMAIL@ message(s) waiting. = You've got mail!
 ```
 
 - The key is the **literal English source string** as passed to `gettext()`.
-- For this to take effect, the script must `require("gettext.js")` (or `load("gettext.js")` per the older idiom) — see `custom:javascript:lib:gettext.js` and the `synchronet-javascript` skill.
+- For this to take effect, the script must `require("gettext.js")` (or `load("gettext.js")` per the older idiom) — see `custom:javascript:lib:gettext.js` and the `javascript` skill.
 - A `[default.js]`-style section can scope overrides to a specific JS module (`default.js`, the main shell); other module-named sections work similarly.
 
 ## `text.<lang>.ini` — per-language overlays
@@ -222,7 +222,7 @@ No: Nein
 
 The `LANG:` line is the human-readable language name that the user sees when selecting a language; the rest are per-ID overrides.
 
-**Language selection** is per-user — see `custom:localization` for the user-side language preference flow and the parallel `text/menu/<lang>/` directory for translating *display files* (which is the `synchronet-menus` skill's territory).
+**Language selection** is per-user — see `custom:localization` for the user-side language preference flow and the parallel `text/menu/<lang>/` directory for translating *display files* (which is the `menus` skill's territory).
 
 CP437 is the native character set; the wiki's localization page is honest about the limits for non-Western scripts and the UTF-8 work-in-progress.
 
@@ -230,7 +230,7 @@ CP437 is the native character set; the wiki's localization page is honest about 
 
 `text.ini` (and `text.<lang>.ini`) overrides are loaded **at server startup**. After editing, you need to either:
 
-- **Recycle the server(s)** that use the strings (Terminal Server for almost everything, other servers if your overrides include their strings). The cross-platform way: `touch $SBBS/ctrl/recycle` (all servers) or `touch $SBBS/ctrl/recycle.term` (just the Terminal Server). See the **`synchronet-control`** skill for the full menu of mechanisms.
+- **Recycle the server(s)** that use the strings (Terminal Server for almost everything, other servers if your overrides include their strings). The cross-platform way: `touch $SBBS/ctrl/recycle` (all servers) or `touch $SBBS/ctrl/recycle.term` (just the Terminal Server). See the **`control`** skill for the full menu of mechanisms.
 - **Have users log off and back on** — minimum requirement; some text is only loaded once per server lifetime, but per-session text is re-read on each login.
 
 `text.dat` edits work the same way — startup parses the file, so a recycle is required for changes to be visible.
@@ -289,17 +289,17 @@ The line will end with the ID and IdentifierName. (If your `text.dat` is minimal
 - **Adding @-codes to a line that contains `%s`/`%d`.** The two are mutually exclusive; the @-code won't be expanded. Pick one or split the line into pieces.
 - **Reordering `%`-specifiers.** Each one is consumed by the calling C code's printf arguments in order. Reorder them and you'll print the wrong values or crash.
 - **`[substr]` replacements that are too short.** `to: for` will hit every "to" anywhere — inside other words, in URLs, in user names. Use distinctive multi-character tokens.
-- **Forgetting to recycle.** `text.ini` is loaded at startup. After editing, `touch $SBBS/ctrl/recycle` (or the per-server variant) — see `synchronet-control`.
+- **Forgetting to recycle.** `text.ini` is loaded at startup. After editing, `touch $SBBS/ctrl/recycle` (or the per-server variant) — see `control`.
 - **Multi-line value in `text.ini`.** Values must be on one line, max 1023 chars. The `\`-continuation that works in `text.dat` does **not** work in `text.ini`.
 - **Using `ID = value` for a value with control characters.** Use `ID: value` (colon) instead — see `config:ini_files#string_literals` for why.
 - **Expecting `gettext()` overrides to "just work".** The script must `require('gettext.js')` and call `gettext(theString)`. A bare string literal in JS isn't routed through the override table.
-- **Translating only `text.<lang>.ini` and forgetting `text/menu/<lang>/`.** The two cover different surfaces — prompts vs. display files. Translate both for a coherent non-English experience. (See `synchronet-menus`.)
+- **Translating only `text.<lang>.ini` and forgetting `text/menu/<lang>/`.** The two cover different surfaces — prompts vs. display files. Translate both for a coherent non-English experience. (See `menus`.)
 - **Confusing the `text.dat` identifier with the numeric ID.** `text.ini` uses the **identifier name** (e.g. `Email`), not the number (e.g. `010`). The number is a comment; the identifier is the key.
 
 ## Cross-references
 
-- **Display files** (`.ans`, `.msg`, `.asc`, `.rip`, `.utf8` in `text/` and `text/menu/`; `data/subs/<code>.*` info files; `mods/text/` overrides; per-language `text/menu/<lang>/`): the **`synchronet-menus`** skill.
-- **JavaScript-emitted strings** (`gettext()`, `js.load_text()`, the JS dialect): the **`synchronet-javascript`** skill.
-- **Making your changes take effect** (`ctrl/recycle`, `ctrl/recycle.term`, signals, MQTT control topics): the **`synchronet-control`** skill.
-- **Where the runtime writes about loading these files** (look for "Loading text.ini" lines on startup): the **`synchronet-logs`** skill — console stream / syslog / journal.
+- **Display files** (`.ans`, `.msg`, `.asc`, `.rip`, `.utf8` in `text/` and `text/menu/`; `data/subs/<code>.*` info files; `mods/text/` overrides; per-language `text/menu/<lang>/`): the **`menus`** skill.
+- **JavaScript-emitted strings** (`gettext()`, `js.load_text()`, the JS dialect): the **`javascript`** skill.
+- **Making your changes take effect** (`ctrl/recycle`, `ctrl/recycle.term`, signals, MQTT control topics): the **`control`** skill.
+- **Where the runtime writes about loading these files** (look for "Loading text.ini" lines on startup): the **`logs`** skill — console stream / syslog / journal.
 - **Source of truth in the codebase**: `src/sbbs3/load_cfg.c` reads `text.ini` at startup; `src/xpdev/ini_file.c` is the parser. The compiled defaults live in the auto-generated `src/sbbs3/text_defaults.c` (built from `text.dat` by `textgen.c`).

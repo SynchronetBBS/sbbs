@@ -1,5 +1,5 @@
 ---
-name: synchronet-logs
+name: logs
 description: Use when locating the right Synchronet log file or stream for a given question on Windows or *nix — the per-category files in `data/` (error/hack/spam/guru/hungup/crash/events/sbbsecho/sendmail/logon/csts.tab), the per-day Terminal Server logs in `data/logs/<date>.log`, the Web Server's HTTP access log, the server console (lprintf) stream and its routing to syslog/journalctl/console depending on daemon mode and init system, the sbbsctrl-on-Windows-only `data/logs/{TS,WS,MS,FS}*.LOG` trap, MQTT log subscription, multi-instance traps when sibling BBSes share `text/*.can`, and the `ip.can`/`ip-silent.can` field format. Trigger on "did the auto-filter fire?", "tail the web server log", "where do hack attempts go?", "subscribe to all logs across hosts", "decode an ip.can line", or "why doesn't WS<date>.LOG update on Linux?"
 ---
 
@@ -27,7 +27,7 @@ Three independent axes determine where the console (lprintf) stream actually lan
 |------|----------|-----------------|
 | OS family | **Windows** vs ***nix** (Linux, BSD, macOS) | sbbsctrl (Windows GUI) vs sbbscon (*nix terminal); presence of `data/logs/{TS,WS,MS,FS}*.LOG`; backslash paths inside log strings |
 | *nix mode | **daemonized** (`sbbs d …`) or `sbbs syslog`, vs **interactive** (`sbbs` with no daemon/syslog flag) | daemonized → syslog; interactive → console/stderr only |
-| *nix init | **systemd** vs **everything else** (sysvinit, OpenRC, runit, launchd, no init manager…) | `journalctl -u <unit>` is the natural view on systemd; on other init systems, tail the syslog target file directly (typically `/var/log/sbbs.log*` or `/var/log/messages`, per `rsyslog`/`syslog-ng` config) |
+| *nix init | **systemd** vs **everything else** (sysvinit, OpenRC, runit, launchd, no init manager…) | `journalctl -u <unit>` is the natural view on systemd; on other init systems, tail the syslog target file directly (depends on `rsyslog`/`syslog-ng` config — typically `/var/log/syslog` or `/var/log/messages` by distro default, or a dedicated `/var/log/sbbs.log` if the optional `install/rsyslog.d/sbbslog.conf` snippet was deployed) |
 
 The wiki's `monitor:syslog` page lists `tail -f`, `journalctl --follow`, `lnav`, and macOS's `log stream` as the canonical ways to monitor each variant.
 
@@ -90,7 +90,7 @@ The full syslog ident is `LogIdent` (from `[UNIX]` in `ctrl/sbbs.ini`, default `
 
 | Invocation | Facility | Typical syslog target file (Debian-family defaults; varies by distro/`rsyslog`/`syslog-ng` config) |
 |------------|----------|---------------------------------------------------------------------------------------------------|
-| `sbbs d`         | `LOG_USER` (default) | only captured if you've added an `rsyslog`/`syslog-ng` rule for it — by convention `/var/log/sbbs.log`. Without a rule it usually lands in `/var/log/user.log` (Debian) or `/var/log/messages`. |
+| `sbbs d`         | `LOG_USER` (default) | by distro default lands in `/var/log/user.log` (Debian) or `/var/log/messages` (RHEL-family), and the catch-all `/var/log/syslog` on Debian. The repo ships an optional `install/rsyslog.d/sbbslog.conf` snippet that routes Synchronet output to a dedicated `/var/log/sbbs.log` — but it requires `LogFacility=3` (i.e. `sbbs d3`, LOG_LOCAL3) and isn't installed automatically. |
 | `sbbs d<X>` (LOCAL0..LOCAL7) | `LOG_LOCAL<X>` | wherever you've routed that LOCAL facility — common pattern for keeping Synchronet output isolated. |
 | `sbbs dS` (standard facilities) | **per-server**: term→`LOG_AUTH`, ftp→`LOG_FTP`, mail→`LOG_MAIL`, web/services→`LOG_DAEMON` | each server lands in a *different* file: `auth.log`, `xferlog`, `mail.log`, `daemon.log` respectively. **Easy to miss the web server's lines if you only check `auth.log`** — this is a subtle gotcha. |
 | `sbbs syslog` (interactive + syslog) | same as `sbbs d` (LOG_USER) | as above. |
@@ -117,10 +117,13 @@ systemctl show <unit> -p MainPID -p ExecStart
 **On non-systemd *nix hosts** (sysvinit, OpenRC, runit, launchd, or just plain `sbbs d …` from a shell), there is no `journalctl`. Tail the syslog file directly, or use `lnav`:
 
 ```
-tail -f /var/log/sbbs.log          # or wherever rsyslog routes it
-sudo lnav /var/log/sbbs.log        # interactive log viewer with leveling
+tail -f /var/log/syslog            # Debian default (catch-all); /var/log/messages on RHEL-family
+tail -f /var/log/sbbs.log          # only if the optional sbbslog.conf snippet is deployed
+sudo lnav /var/log/syslog          # interactive log viewer with leveling
 log stream --debug --process sbbs  # macOS unified log
 ```
+
+Find the exact destination on an unfamiliar host by inspecting `/etc/rsyslog.conf` / `/etc/rsyslog.d/`, or by sending a probe message with `logger` and seeing where it appears.
 
 **Interactive (non-daemonized, no `syslog` flag) sbbs** writes to stdout/stderr only — there is *no* syslog/journal capture. That's the right mode for short-lived debugging but it means once you close the terminal, the scrollback is gone (unless you started it under `script`, `tmux`, etc.).
 
@@ -151,7 +154,7 @@ Two dead giveaways that a `WS<date>.LOG` you're reading isn't from the local hos
 
 ## MQTT: unified log view across hosts and servers
 
-If MQTT is enabled on the BBS (configured in `ctrl/main.ini`'s `[MQTT]` section, see the **`synchronet-mqtt`** skill for discovery, authentication, and full topic reference), every `lputs` line is also published to the broker — so a single subscriber can see every host's log output, including hosts running different operating systems.
+If MQTT is enabled on the BBS (configured in `ctrl/main.ini`'s `[MQTT]` section, see the **`mqtt`** skill for discovery, authentication, and full topic reference), every `lputs` line is also published to the broker — so a single subscriber can see every host's log output, including hosts running different operating systems.
 
 The log-relevant topics (`<BBSID>` is the QWK BBS ID; `<HOSTNAME>` is each instance's configured host name):
 
@@ -167,7 +170,7 @@ Lines published to a bare `…/log` (no level suffix) carry the level in an MQTT
 
 For cross-host alerting, the **action** topics are usually more useful than `log` (one message per discrete event, with the subject in the topic itself). For a "current bad-IP state" dashboard, subscribe to the retained `login_attempts/<IP>` snapshots — they replay on connect. For a live feed, subscribe to `action/login_fail/<PROTOCOL>` — but it's an event stream, not retained, so a fresh subscriber sees nothing about pre-connect history. Use both together to get "current state + live updates".
 
-For the `mosquitto_sub` / `mosquitto_pub` invocation, broker discovery, credentials, and TLS — see the `synchronet-mqtt` skill.
+For the `mosquitto_sub` / `mosquitto_pub` invocation, broker discovery, credentials, and TLS — see the `mqtt` skill.
 
 ## Multi-instance traps: shared `text/` directories
 
@@ -180,7 +183,7 @@ For the `mosquitto_sub` / `mosquitto_pub` invocation, broker discovery, credenti
 **How to find the writer when the creation event is missing locally:**
 
 1. **First, check the same-host case.** List every Synchronet instance on this host — `ps -ef | grep -i sbbs`, `systemctl list-units --type=service | grep -iE 'sbbs|synchro|httpd|ircd'`, distinct `LogIdent`s in each instance's `ctrl/sbbs.ini`. Search each one's journal/syslog for the `t=` minute. If found, you're done.
-2. **If still missing, check the cross-host case.** Is `text/` on shared storage? `mount | grep text`, `findmnt $SBBS/text`, `stat -f $SBBS/text` will tell you. If yes, the writer is on another host — and the *only* unified view that bridges multiple hosts' log streams is **MQTT**, if it's enabled. Subscribe to `sbbs/+/host/+/server/+/log` and grep the same minute (see the `synchronet-mqtt` skill). The `<HOSTNAME>` topic component reveals which host fired.
+2. **If still missing, check the cross-host case.** Is `text/` on shared storage? `mount | grep text`, `findmnt $SBBS/text`, `stat -f $SBBS/text` will tell you. If yes, the writer is on another host — and the *only* unified view that bridges multiple hosts' log streams is **MQTT**, if it's enabled. Subscribe to `sbbs/+/host/+/server/+/log` and grep the same minute (see the `mqtt` skill). The `<HOSTNAME>` topic component reveals which host fired.
 3. **Only then** suspect journald rate-limiting, `SystemMaxRateLimit` drops, or syslog discard. Those do happen, but they're the diagnosis of last resort — almost always the writer is just somewhere you haven't looked yet.
 
 (Reminder: `LogIdent` is the syslog identifier from `[UNIX] LogIdent` in `sbbs.ini`, *not* the QWK `BBSID` used in MQTT topics. The two are independent unless a sysop deliberately sets `LogIdent` to the BBSID — a useful convention but not the default.)
@@ -227,7 +230,7 @@ The matching console-log creation line (`!BLOCKING IP ADDRESS: …` or `!BLOCKIN
 | Cross-host real-time view | MQTT subscribe `sbbs/+/host/+/server/+/log` and `sbbs/+/action/#` |
 | Console scrollback (*nix, systemd, days old) | `journalctl --since '<date>' -u <unit>` |
 | Console scrollback (*nix, systemd, live tail) | `journalctl -fu <unit>` |
-| Console scrollback (*nix, non-systemd) | `tail -f /var/log/sbbs.log` (or wherever rsyslog routes it); `lnav` for interactive |
+| Console scrollback (*nix, non-systemd) | `tail -f /var/log/syslog` (Debian catch-all) / `/var/log/messages` (RHEL-family) / `/var/log/sbbs.log` (if optional `sbbslog.conf` snippet was deployed with `LogFacility=3`); `lnav` for interactive |
 | Console scrollback (*nix, interactive sbbs, no syslog flag) | only what's still in your terminal scrollback — start under `tmux`/`script` next time |
 | Console scrollback (Windows) | sbbsctrl panes, or `data/logs/{TS,WS,MS,FS}<MMDDYY>.LOG` — NOT applicable on *nix |
 | Suspected SPAM delivery | `data/spam.log` |
@@ -261,8 +264,8 @@ The matching console-log creation line (`!BLOCKING IP ADDRESS: …` or `!BLOCKIN
 # *nix, systemd:
 journalctl -u <web-unit> --since today | grep -E '!BLOCKING|rate-limit violations'
 
-# *nix, non-systemd:
-grep -E '!BLOCKING|rate-limit violations' /var/log/sbbs.log /var/log/sbbs.log.1
+# *nix, non-systemd (path depends on rsyslog config: /var/log/syslog, /var/log/messages, or /var/log/sbbs.log):
+grep -E '!BLOCKING|rate-limit violations' /var/log/<your-syslog-target>*
 
 # Then cross-check the resulting ip.can entries:
 awk -F'\t' '/rate-limit/ {print}' $SBBS/text/ip.can
@@ -295,8 +298,8 @@ mosquitto_sub -h <broker> -v \
 journalctl --since '<YYYY-MM-DD HH:MM:30>' --until '<YYYY-MM-DD HH:MM+1:30>' \
   -u <unit-a> -u <unit-b> ...
 
-# *nix, non-systemd:
-grep -h '<YYYY-MM-DDTHH:MM>' /var/log/sbbs.log /var/log/sbbs.log.1
+# *nix, non-systemd (substitute your actual syslog target):
+grep -h '<YYYY-MM-DDTHH:MM>' /var/log/<your-syslog-target>*
 ```
 
 The matching `!BLOCKING IP ADDRESS: <that-ip>` line carries the writer's `LogIdent` in its syslog identifier — that tells you which instance fired it.
