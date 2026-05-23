@@ -68,7 +68,7 @@ In **parallel**, specific events also append to per-category files in `data/`, r
 | `data/logs/<date>.log` | term server | per-day user activity (timestamped node-by-node) |
 | `data/logs/<date>.lol` | term server | per-day log-off statistics |
 | `data/logs/http-*.log` | web server | HTTP access log (one per day, per virtual host); enabled by `HttpLogFile` / formatted by `HttpLogFormat` in `[Web]` |
-| `ctrl/csts.tab`      | term server (`logon.cpp`) | cumulative stats binary (parse with `slog` util / `module:slog`) |
+| `ctrl/csts.tab`      | term server (`logon.cpp`) | cumulative per-day stats — tab-separated ASCII with a header row (`Date / Logons / Timeon / Uploads / UploadB / Dnloads / DnloadB / Posts / Email / Feedback / NewUsers`); readable with the `slog` util / `module:slog`, but also fine to inspect with `cat` / `awk` / a spreadsheet |
 
 The `.log` files **without** a date in the filename rotate automatically — size limit configured in SCFG → System → Advanced → Maximum Log File Size, and for sbbsecho in echocfg.
 
@@ -231,7 +231,7 @@ The matching console-log creation line (`!BLOCKING IP ADDRESS: …` or `!BLOCKIN
 | Console scrollback (*nix, interactive sbbs, no syslog flag) | only what's still in your terminal scrollback — start under `tmux`/`script` next time |
 | Console scrollback (Windows) | sbbsctrl panes, or `data/logs/{TS,WS,MS,FS}<MMDDYY>.LOG` — NOT applicable on *nix |
 | Suspected SPAM delivery | `data/spam.log` |
-| Cumulative stats (logons, calls, etc.) | `ctrl/csts.tab` (binary-ish; use `slog` util or `module:slog`). Other stats (not logs) — `ctrl/dsts.ini`, `data/echostats.ini`, `data/binkstats.ini` — are documented at `monitor:statsfiles`. |
+| Cumulative stats (logons, calls, etc.) | `ctrl/csts.tab` (tab-separated ASCII; `slog` util / `module:slog` print it, but `cat` / `awk` / a spreadsheet work too). Other stats (not logs) — `ctrl/dsts.ini`, `data/echostats.ini`, `data/binkstats.ini` — are documented at `monitor:statsfiles`. |
 
 ## Common mistakes
 

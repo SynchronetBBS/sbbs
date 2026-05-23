@@ -1,6 +1,6 @@
 ---
 name: synchronet-menus
-description: Use when authoring or modifying Synchronet Terminal Server display/menu files — anything in `text/`, `text/menu/`, `mods/text/`, `mods/text/menu/`, `data/subs/<code>.*`, `data/dirs/<code>.*`, plus the prompts/strings in `ctrl/text.dat`. Covers Ctrl-A (^A) attribute codes, @-code message variables, the file-extension priority by terminal type (rip/ans/mon/asc/msg/seq/utf8), .Xcol/.cX width variants, language overlays, security gating, mouse hotspots, and the C++/JS/Baja entry points that render these files. Trigger on tasks like "add help menu file", "fix CGA brown color", "show this only to sysops", "make this prompt work on PETSCII", "what @-codes are available in this context", "why isn't my .ans file being picked up", "wire @SHOW:LEVEL40@", or any work that touches the look/content of what a remote BBS user sees.
+description: Use when authoring or modifying Synchronet Terminal Server display/menu files — anything in `text/`, `text/menu/`, `mods/text/`, `mods/text/menu/`, `data/subs/<code>.*`, `data/dirs/<code>.*`. Covers Ctrl-A (^A) attribute codes, @-code message variables, the file-extension priority by terminal type (rip/ans/mon/asc/msg/seq/utf8), .Xcol/.cX width variants, language overlays, security gating, mouse hotspots, and the C++/JS/Baja entry points that render these files. For the runtime string database (`ctrl/text.dat`, `ctrl/text.ini`, `ctrl/text.<lang>.ini`) see the `synchronet-text` skill. Trigger on tasks like "add help menu file", "fix CGA brown color", "show this only to sysops", "make this prompt work on PETSCII", "what @-codes are available in this context", "why isn't my .ans file being picked up", "wire @SHOW:LEVEL40@", or any work that touches the look/content of what a remote BBS user sees.
 ---
 
 # Synchronet menu and display files
@@ -10,8 +10,11 @@ description: Use when authoring or modifying Synchronet Terminal Server display/
 - @-codes (message variables): https://wiki.synchro.net/custom:atcodes
 - Text file locations: https://wiki.synchro.net/config:text_files
 - Menu file conventions: https://wiki.synchro.net/custom:menu_files
+- Related — the runtime string database (`ctrl/text.dat`, `ctrl/text.ini`, language overlays): see the **`synchronet-text`** skill.
 
-This skill describes the **content-side** of customization: what a sysop sees inside `text/`, `text/menu/`, and `ctrl/text.dat`, and how those bytes turn into pixels on a remote user's terminal. Building / running the BBS itself is covered by the `synchronet-build` and `synchronet-jsexec` skills.
+This skill describes the **display-file side** of customization: what a sysop sees inside `text/`, `text/menu/`, and the related `mods/text/` overrides — the full-screen `.ans` / `.msg` / `.utf8` / `.rip` files, plus the smaller `.msg` / `.asc` snippets — and how those bytes turn into pixels on a remote user's terminal. The runtime **string database** (`ctrl/text.dat` and its `text.ini` runtime overrides — the per-prompt one-liners that the BBS code emits via `text[ID]`) is covered by the **`synchronet-text`** skill; `text.dat` is mentioned here only where the rendering machinery is shared (Ctrl-A codes, @-codes including `@TEXT:N@` and `@MENU:foo@`).
+
+Building / running the BBS itself is covered by the `synchronet-build` and `synchronet-jsexec` skills.
 
 ## File-system layout
 
@@ -94,6 +97,17 @@ The default `menu()` modes already set `P_OPENCLOSE | P_CPM_EOF`. Pass `P_NOERRO
 ## Ctrl-A codes (^A)
 
 A Ctrl-A code is a 2-byte sequence: the literal byte `0x01` (Ctrl-A) followed by one operand char. In `text.dat` and JS/Baja source they appear as `\1X` or `\x01X` — the runtime stuffs the actual `0x01` byte at load time. In binary `.msg` / `.ans` files the byte is literal (see `cat -v` → `^A`).
+
+> **For BBS-wide Ctrl-A colour substitution** — *"retheme every `\1g` to `\1m`"*, or any one-operand-to-another rewrite that should apply to every string the BBS emits without you editing files individually — **don't use `attr.ini`.** `attr.ini` only repaints named colour *slots* (`userhigh`, `nodestatus`, `chatlocal`, etc.) used by specific code paths; literal `\1G` bytes embedded in `.msg`/`.ans`/`text.dat` lines are dispatched directly by `con_out.cpp`'s `ctrl_a()` and **cannot be remapped by `attr.ini`** — which is what trips most sysops who grep their `text/` tree, find hundreds of hard-coded `^AG`s, and conclude "there's no global knob." There is — it's just in a different file.
+>
+> Add this to `ctrl/text.ini`:
+> ```ini
+> [substr]
+> \1g: \1m
+> ```
+> Then `touch ctrl/recycle.term` to load it. The `[substr]` substitution is applied to every string going out to a user, regardless of source (`.msg` file, `.ans` file, `text.dat` line, JS-built output) — so a single line reaches everywhere `^AG` appears. Repeat for `\1G`/`\1H\1G` if you want bright green → bright magenta too.
+>
+> For the full `[substr]` traps (case-sensitive matches, the don't-substitute-short-tokens warning, the global-applies-to-*everything* implication) and the rest of `text.ini` — `[JS]` overrides, per-language overlays, the by-ID override section — see the **`synchronet-text`** skill.
 
 The one exception is the file-embed form: `Ctrl-A "filename` (the `"` operand, then a filename terminated by another Ctrl-A or end-of-line).
 
