@@ -362,7 +362,7 @@ int Client::connect(const char *host, uint16_t port, const char *client_id,
 		Properties will_props;
 		w.write_properties(will_props);
 		w.write_utf8(m_will_topic);
-		w.write_u16(m_will_payload.size());
+		w.write_u16(static_cast<uint16_t>(m_will_payload.size()));
 		w.write_bytes(m_will_payload.data(), m_will_payload.size());
 	}
 	if (username && *username)
