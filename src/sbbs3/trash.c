@@ -173,8 +173,8 @@ bool filter_ip(scfg_t* cfg, const char* prot, const char* reason, const char* ho
 	if (fname == NULL)
 		fname = ip_can;
 
-	if (findstr(ip_addr, fname)) /* Already filtered? */
-		return true;
+	if (findstr(ip_addr, fname)) /* Already filtered? Don't append a dup, and report "not newly added" so callers don't re-log a BLOCKING notice. */
+		return false;
 
 	if ((fp = fnopen(NULL, fname, O_CREAT | O_APPEND | O_WRONLY)) == NULL)
 		return false;
