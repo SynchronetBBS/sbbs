@@ -72,6 +72,7 @@
 #include "xpmap.h"
 #include "xpprintf.h"
 #include "ratelimit.hpp"
+#include "ratelimit_filter.hpp"
 #include "filterfile.hpp"
 
 static const char*  server_name = "Synchronet Web Server";
@@ -1971,86 +1972,8 @@ static bool digest_authentication(http_session_t* session, int auth_allowed, use
 	return true;
 }
 
-/* Compute the rate-limiting bucket key for a client IP address. When a non-zero
- * subnet prefix is configured for the address' family, the key is the network
- * address in CIDR notation (e.g. "47.82.14.0/24") so that requests/connections
- * from an entire subnet are counted (and may be filtered) together; otherwise
- * the key is simply the client IP. */
-static std::string rate_limit_key(const char* ip, uint prefix4, uint prefix6)
-{
-	if (ip == NULL || *ip == '\0')
-		return std::string();
-
-	bool ipv6 = strchr(ip, ':') != NULL;
-	uint prefix = ipv6 ? prefix6 : prefix4;
-	uint maxbits = ipv6 ? 128 : 32;
-	if (prefix == 0 || prefix >= maxbits)
-		return std::string(ip); // per-host-IP (no subnet aggregation)
-
-	char net[INET6_ADDRSTRLEN];
-	char key[INET6_ADDRSTRLEN + 8];
-	if (ipv6) {
-		uint8_t addr[16];
-		if (inet_pton(AF_INET6, ip, addr) != 1)
-			return std::string(ip);
-		for (uint bit = prefix; bit < 128; ++bit)
-			addr[bit / 8] &= ~(0x80 >> (bit % 8));
-		if (inet_ntop(AF_INET6, addr, net, sizeof net) == NULL)
-			return std::string(ip);
-	} else {
-		struct in_addr addr;
-		if (inet_pton(AF_INET, ip, &addr) != 1)
-			return std::string(ip);
-		uint32_t host = ntohl(addr.s_addr) & (0xFFFFFFFFu << (32 - prefix));
-		addr.s_addr = htonl(host);
-		if (inet_ntop(AF_INET, &addr, net, sizeof net) == NULL)
-			return std::string(ip);
-	}
-	safe_snprintf(key, sizeof key, "%s/%u", net, prefix);
-	return std::string(key);
-}
-
-/* Auto-filter a rate-limit abuser once it has exceeded the limit at least
- * startup->rate_limit_filter times while continuously active. The (sub)net key
- * is written to ip-silent.can (dropped at accept) or ip.can per configuration. */
-static void rate_limit_filter(SOCKET sock, const char* prot, const char* host_ip
-                              , const char* host_name, const std::string& key, unsigned denials
-                              , rateLimiter* limiter)
-{
-	if (startup->rate_limit_filter == 0 || denials < startup->rate_limit_filter)
-		return;
-
-	/* Distinct-IP guard: when the rate-limit bucket is an aggregated subnet,
-	 * only filter the entire subnet if at least rate_limit_filter_subnet_threshold
-	 * distinct client IPs have abused it (i.e. the abuse really is distributed);
-	 * otherwise filter just that host IP, so we don't block innocent neighbors
-	 * that happen to share the subnet. A threshold of 1 disables the guard
-	 * (subnet is filtered on the first abuser). */
-	std::string target = key;
-	size_t      distinct = (key == host_ip) ? 1 : limiter->distinctMembers(key);
-	uint        subnet_min = startup->rate_limit_filter_subnet_threshold ? startup->rate_limit_filter_subnet_threshold : 1;
-	if (key != host_ip && distinct < subnet_min)
-		target = host_ip;
-
-	char reason[128];
-	char fpath[MAX_PATH + 1];
-	const char* fname = NULL; // NULL => filter_ip() uses ip.can
-
-	if (startup->rate_limit_filter_silent) {
-		safe_snprintf(fpath, sizeof fpath, "%sip-silent.can", scfg.text_dir);
-		fname = fpath;
-	}
-	if (target == host_ip)
-		safe_snprintf(reason, sizeof reason, "%u rate-limit violations", denials);
-	else
-		safe_snprintf(reason, sizeof reason, "%u rate-limit violations from %zu IPs", denials, distinct);
-	if (filter_ip(&scfg, prot, reason, host_name, target.c_str(), /* username: */ NULL
-	              , fname, startup->rate_limit_filter_duration))
-		lprintf(LOG_NOTICE, "%04d %s !BLOCKING %s%s: %s%s"
-		        , sock, prot
-		        , target == host_ip ? "IP ADDRESS" : "SUBNET", startup->rate_limit_filter_silent ? " (silently)" : ""
-		        , target.c_str(), startup->rate_limit_filter_silent ? "" : " in ip.can");
-}
+/* rate_limit_key() and rate_limit_filter() are shared with the other servers
+ * via ratelimit_filter.hpp (included near the top of this file). */
 
 static void badlogin(SOCKET sock, const char* user, const char* passwd, client_t* client, union xp_sockaddr* addr)
 {
@@ -3648,8 +3571,11 @@ static bool get_req(http_session_t * session, char *request_line)
 					lprintf(LOG_NOTICE, "%04d %-5s [%s] Too many requests per rate limit (%u over %us) for %s"
 						, session->socket, session->client.protocol, session->host_ip
 						, request_rate_limiter->maxRequests, request_rate_limiter->timeWindowSeconds, rl_key.c_str());
-					rate_limit_filter(session->socket, session->client.protocol, session->host_ip
-						, session->host_name, rl_key, denials, request_rate_limiter);
+					rate_limit_filter(session->socket, &scfg, session->client.protocol, session->host_ip
+						, session->host_name, rl_key, denials, request_rate_limiter
+						, startup->rate_limit_filter, startup->rate_limit_filter_duration
+						, startup->rate_limit_filter_silent, startup->rate_limit_filter_subnet_threshold
+						, lprintf);
 					send_error(session, __LINE__, error_429);
 					return false;
 				}
@@ -7957,7 +7883,11 @@ void web_server(void* arg)
 						lprintf(LOG_NOTICE, "%04d %-5s [%s] !Connection rate limit exceeded (%u over %us) for %s"
 							, client_socket, prot, host_ip
 							, connect_rate_limiter->maxRequests, connect_rate_limiter->timeWindowSeconds, rl_key.c_str());
-						rate_limit_filter(client_socket, prot, host_ip, /* host_name: */ NULL, rl_key, denials, connect_rate_limiter);
+						rate_limit_filter(client_socket, &scfg, prot, host_ip, /* host_name: */ NULL
+						    , rl_key, denials, connect_rate_limiter
+						    , startup->rate_limit_filter, startup->rate_limit_filter_duration
+						    , startup->rate_limit_filter_silent, startup->rate_limit_filter_subnet_threshold
+						    , lprintf);
 						close_socket(&client_socket);
 						continue;
 					}

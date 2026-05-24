@@ -1,5 +1,8 @@
 // Rate Limiter
 
+#ifndef _RATELIMIT_HPP
+#define _RATELIMIT_HPP
+
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
@@ -166,3 +169,5 @@ private:
 	std::unordered_map<std::string, std::unordered_set<std::string>> bucketMembers;
 	pthread_mutex_t mutex{};
 };
+
+#endif // _RATELIMIT_HPP

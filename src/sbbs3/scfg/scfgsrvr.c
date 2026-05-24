@@ -208,48 +208,106 @@ static void max_concurrent_cfg(uint* max, struct max_concurrent_settings* settin
 	}
 }
 
-static void web_rate_limit_cfg(web_startup_t* startup)
+/* View struct passed to rate_limit_cfg() so a single SCFG menu function can
+ * serve servers with different combinations of rate-limit knobs.  Set any
+ * pointer to NULL to hide the corresponding menu item; e.g. FTP/Mail don't
+ * have connect-rate limiting, Services doesn't have request-rate limiting. */
+struct rate_limit_cfg_view {
+	const char* server_name;        /* e.g. "Web Server", "FTP Server" */
+	uint*       max_connects;       /* connect-rate limit; NULL = not supported */
+	uint*       connect_period;
+	uint*       max_requests;       /* request-rate limit; NULL = not supported */
+	uint*       request_period;
+	uint*       prefix4;
+	uint*       prefix6;
+	uint*       filter_threshold;
+	uint*       filter_duration;
+	bool*       filter_silent;
+	uint*       subnet_threshold;
+};
+
+enum rate_limit_cfg_action {
+	RLA_NONE,
+	RLA_CONNECTS,
+	RLA_REQUESTS,
+	RLA_PREFIX4,
+	RLA_PREFIX6,
+	RLA_FILTER_THRESHOLD,
+	RLA_FILTER_DURATION,
+	RLA_FILTER_SILENT,
+	RLA_SUBNET_THRESHOLD,
+};
+
+static void rate_limit_cfg(struct rate_limit_cfg_view* view)
 {
 	static int cur, bar;
+	char       title[64];
 	char       str[256];
 	char       tmp[128];
 	bool       changes = uifc.changes;
+	int        action[16];  /* parallel to opt[]: maps menu index -> RLA_* */
+
+	snprintf(title, sizeof title, "%s Rate Limiting", view->server_name);
 
 	while (1) {
 		int i = 0;
-		if (startup->max_connects_per_period < 1 || startup->connect_rate_limit_period < 1)
-			SAFECOPY(str, strDisabled);
-		else
-			snprintf(str, sizeof str, "%u per %s", startup->max_connects_per_period
-			         , duration_to_vstr(startup->connect_rate_limit_period, tmp, sizeof tmp));
-		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Limit Rate of Connections", str);
-		if (startup->max_requests_per_period < 1 || startup->request_rate_limit_period < 1)
-			SAFECOPY(str, strDisabled);
-		else
-			snprintf(str, sizeof str, "%u per %s", startup->max_requests_per_period
-			         , duration_to_vstr(startup->request_rate_limit_period, tmp, sizeof tmp));
-		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Limit Rate of Requests", str);
-		if (startup->rate_limit_prefix4 == 0)
-			SAFECOPY(str, "Per-host IP address");
-		else
-			snprintf(str, sizeof str, "/%u subnet", startup->rate_limit_prefix4);
-		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Count IPv4 Clients By", str);
-		if (startup->rate_limit_prefix6 == 0)
-			SAFECOPY(str, "Per-host IP address");
-		else
-			snprintf(str, sizeof str, "/%u subnet", startup->rate_limit_prefix6);
-		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Count IPv6 Clients By", str);
-		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Auto-Filter Threshold", threshold(startup->rate_limit_filter));
-		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Auto-Filter Duration"
-		         , vduration(startup->rate_limit_filter_duration, strInfinite));
-		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Auto-Filter Silently"
-		         , startup->rate_limit_filter_silent ? "Yes" : "No");
-		snprintf(opt[i++], MAX_OPLN, "%-30s%u", "Subnet Filter Threshold"
-		         , startup->rate_limit_filter_subnet_threshold);
+		if (view->max_connects != NULL && view->connect_period != NULL) {
+			if (*view->max_connects < 1 || *view->connect_period < 1)
+				SAFECOPY(str, strDisabled);
+			else
+				snprintf(str, sizeof str, "%u per %s", *view->max_connects
+				         , duration_to_vstr(*view->connect_period, tmp, sizeof tmp));
+			action[i] = RLA_CONNECTS;
+			snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Limit Rate of Connections", str);
+		}
+		if (view->max_requests != NULL && view->request_period != NULL) {
+			if (*view->max_requests < 1 || *view->request_period < 1)
+				SAFECOPY(str, strDisabled);
+			else
+				snprintf(str, sizeof str, "%u per %s", *view->max_requests
+				         , duration_to_vstr(*view->request_period, tmp, sizeof tmp));
+			action[i] = RLA_REQUESTS;
+			snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Limit Rate of Requests", str);
+		}
+		if (view->prefix4 != NULL) {
+			if (*view->prefix4 == 0)
+				SAFECOPY(str, "Per-host IP address");
+			else
+				snprintf(str, sizeof str, "/%u subnet", *view->prefix4);
+			action[i] = RLA_PREFIX4;
+			snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Count IPv4 Clients By", str);
+		}
+		if (view->prefix6 != NULL) {
+			if (*view->prefix6 == 0)
+				SAFECOPY(str, "Per-host IP address");
+			else
+				snprintf(str, sizeof str, "/%u subnet", *view->prefix6);
+			action[i] = RLA_PREFIX6;
+			snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Count IPv6 Clients By", str);
+		}
+		if (view->filter_threshold != NULL) {
+			action[i] = RLA_FILTER_THRESHOLD;
+			snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Auto-Filter Threshold", threshold(*view->filter_threshold));
+		}
+		if (view->filter_duration != NULL) {
+			action[i] = RLA_FILTER_DURATION;
+			snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Auto-Filter Duration"
+			         , vduration(*view->filter_duration, strInfinite));
+		}
+		if (view->filter_silent != NULL) {
+			action[i] = RLA_FILTER_SILENT;
+			snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Auto-Filter Silently"
+			         , *view->filter_silent ? "Yes" : "No");
+		}
+		if (view->subnet_threshold != NULL) {
+			action[i] = RLA_SUBNET_THRESHOLD;
+			snprintf(opt[i++], MAX_OPLN, "%-30s%u", "Subnet Filter Threshold"
+			         , *view->subnet_threshold);
+		}
 		opt[i][0] = '\0';
 
 		uifc.helpbuf =
-			"`Web Server Rate Limiting Settings:`\n"
+			"`Rate Limiting Settings:`\n"
 			"\n"
 			"Limit the rate of incoming requests and/or connections from a client,\n"
 			"optionally counting all clients within a subnet together, and optionally\n"
@@ -259,8 +317,8 @@ static void web_rate_limit_cfg(web_startup_t* startup)
 			"the specified period (enforced at accept, before a thread or TLS\n"
 			"handshake is spawned - the cheapest point to reject a flood).\n"
 			"\n"
-			"`Limit Rate of Requests`: maximum HTTP[S] requests allowed from a client\n"
-			"in the specified period (enforced after the request is parsed).\n"
+			"`Limit Rate of Requests`: maximum requests allowed from a client in the\n"
+			"specified period (enforced after the request is parsed).\n"
 			"\n"
 			"`Count IPv4/IPv6 Clients By`: when set to a subnet prefix length (e.g.\n"
 			"`24` for IPv4 or `64` for IPv6), all clients within that subnet are\n"
@@ -290,78 +348,146 @@ static void web_rate_limit_cfg(web_startup_t* startup)
 			"collateral risk is higher.  Has no effect when both subnet prefixes\n"
 			"are `0`.\n"
 		;
-		switch (uifc.list(WIN_ACT | WIN_BOT | WIN_SAV, 0, 0, 0, &cur, &bar
-		                  , "Web Server Rate Limiting", opt)) {
-			case 0:
-				SAFECOPY(str, maximum(startup->max_connects_per_period));
+		int sel = uifc.list(WIN_ACT | WIN_BOT | WIN_SAV, 0, 0, 0, &cur, &bar, title, opt);
+		if (sel < 0 || sel >= i) {
+			uifc.changes = changes;
+			return;
+		}
+		switch (action[sel]) {
+			case RLA_CONNECTS:
+				SAFECOPY(str, maximum(*view->max_connects));
 				if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "Maximum Connections (0=unlimited)", str, 10, K_EDIT | K_NUMBER) > 0)
-					startup->max_connects_per_period = atoi(str);
-				if (startup->max_connects_per_period < 1)
+					*view->max_connects = atoi(str);
+				if (*view->max_connects < 1)
 					break;
-				duration_to_vstr(startup->connect_rate_limit_period, str, sizeof str);
+				duration_to_vstr(*view->connect_period, str, sizeof str);
 				if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "Connection Rate Limit Period", str, 10, K_EDIT) > 0)
-					startup->connect_rate_limit_period = (uint)parse_duration(str);
+					*view->connect_period = (uint)parse_duration(str);
 				break;
-			case 1:
-				SAFECOPY(str, maximum(startup->max_requests_per_period));
+			case RLA_REQUESTS:
+				SAFECOPY(str, maximum(*view->max_requests));
 				if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "Maximum Requests (0=unlimited)", str, 10, K_EDIT | K_NUMBER) > 0)
-					startup->max_requests_per_period = atoi(str);
-				if (startup->max_requests_per_period < 1)
+					*view->max_requests = atoi(str);
+				if (*view->max_requests < 1)
 					break;
-				duration_to_vstr(startup->request_rate_limit_period, str, sizeof str);
+				duration_to_vstr(*view->request_period, str, sizeof str);
 				if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "Request Rate Limit Period", str, 10, K_EDIT) > 0)
-					startup->request_rate_limit_period = (uint)parse_duration(str);
+					*view->request_period = (uint)parse_duration(str);
 				break;
-			case 2:
-				SAFEPRINTF(str, "%u", startup->rate_limit_prefix4);
+			case RLA_PREFIX4:
+				SAFEPRINTF(str, "%u", *view->prefix4);
 				if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "IPv4 Subnet Prefix Bits (0=per-host-IP, e.g. 24)", str, 2, K_NUMBER | K_EDIT) > 0) {
-					startup->rate_limit_prefix4 = atoi(str);
-					if (startup->rate_limit_prefix4 > 32)
-						startup->rate_limit_prefix4 = 32;
+					*view->prefix4 = atoi(str);
+					if (*view->prefix4 > 32)
+						*view->prefix4 = 32;
 				}
 				break;
-			case 3:
-				SAFEPRINTF(str, "%u", startup->rate_limit_prefix6);
+			case RLA_PREFIX6:
+				SAFEPRINTF(str, "%u", *view->prefix6);
 				if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "IPv6 Subnet Prefix Bits (0=per-host-IP, e.g. 64)", str, 3, K_NUMBER | K_EDIT) > 0) {
-					startup->rate_limit_prefix6 = atoi(str);
-					if (startup->rate_limit_prefix6 > 128)
-						startup->rate_limit_prefix6 = 128;
+					*view->prefix6 = atoi(str);
+					if (*view->prefix6 > 128)
+						*view->prefix6 = 128;
 				}
 				break;
-			case 4:
-				SAFEPRINTF(str, "%u", startup->rate_limit_filter);
+			case RLA_FILTER_THRESHOLD:
+				SAFEPRINTF(str, "%u", *view->filter_threshold);
 				if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "Threshold for Auto-Filtering of Rate-Limited Clients", str, 4, K_NUMBER | K_EDIT) > 0)
-					startup->rate_limit_filter = atoi(str);
+					*view->filter_threshold = atoi(str);
 				break;
-			case 5:
-				SAFECOPY(str, duration(startup->rate_limit_filter_duration, false, strInfinite));
+			case RLA_FILTER_DURATION:
+				SAFECOPY(str, duration(*view->filter_duration, false, strInfinite));
 				if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "Lifetime of Auto-Filter of Clients", str, 10, K_EDIT) > 0)
-					startup->rate_limit_filter_duration = (uint)parse_duration(str);
+					*view->filter_duration = (uint)parse_duration(str);
 				break;
-			case 6:
-				i = startup->rate_limit_filter_silent ? 0 : 1;
-				i = uifc.list(WIN_MID | WIN_SAV, 0, 0, 0, &i, 0
-				              , "Add Abuser IPs to ip-silent.can (instead of ip.can)", uifcYesNoOpts);
-				if (i == 0)
-					startup->rate_limit_filter_silent = true;
-				else if (i == 1)
-					startup->rate_limit_filter_silent = false;
+			case RLA_FILTER_SILENT: {
+				int yn = *view->filter_silent ? 0 : 1;
+				yn = uifc.list(WIN_MID | WIN_SAV, 0, 0, 0, &yn, 0
+				               , "Add Abuser IPs to ip-silent.can (instead of ip.can)", uifcYesNoOpts);
+				if (yn == 0)
+					*view->filter_silent = true;
+				else if (yn == 1)
+					*view->filter_silent = false;
 				break;
-			case 7:
-				SAFEPRINTF(str, "%u", startup->rate_limit_filter_subnet_threshold);
+			}
+			case RLA_SUBNET_THRESHOLD:
+				SAFEPRINTF(str, "%u", *view->subnet_threshold);
 				if (uifc.input(WIN_MID | WIN_SAV, 0, 0
 				               , "Minimum Distinct Abusers in Subnet Before Filtering Whole Subnet"
 				               , str, 4, K_NUMBER | K_EDIT) > 0) {
-					startup->rate_limit_filter_subnet_threshold = atoi(str);
-					if (startup->rate_limit_filter_subnet_threshold < 1)
-						startup->rate_limit_filter_subnet_threshold = 1;
+					*view->subnet_threshold = atoi(str);
+					if (*view->subnet_threshold < 1)
+						*view->subnet_threshold = 1;
 				}
 				break;
-			default:
-				uifc.changes = changes;
-				return;
 		}
 	}
+}
+
+static void web_rate_limit_cfg(web_startup_t* startup)
+{
+	struct rate_limit_cfg_view view = {
+		.server_name      = "Web Server",
+		.max_connects     = &startup->max_connects_per_period,
+		.connect_period   = &startup->connect_rate_limit_period,
+		.max_requests     = &startup->max_requests_per_period,
+		.request_period   = &startup->request_rate_limit_period,
+		.prefix4          = &startup->rate_limit_prefix4,
+		.prefix6          = &startup->rate_limit_prefix6,
+		.filter_threshold = &startup->rate_limit_filter,
+		.filter_duration  = &startup->rate_limit_filter_duration,
+		.filter_silent    = &startup->rate_limit_filter_silent,
+		.subnet_threshold = &startup->rate_limit_filter_subnet_threshold,
+	};
+	rate_limit_cfg(&view);
+}
+
+static void ftp_rate_limit_cfg(ftp_startup_t* startup)
+{
+	struct rate_limit_cfg_view view = {
+		.server_name      = "FTP Server",
+		.max_requests     = &startup->max_requests_per_period,
+		.request_period   = &startup->request_rate_limit_period,
+		.prefix4          = &startup->rate_limit_prefix4,
+		.prefix6          = &startup->rate_limit_prefix6,
+		.filter_threshold = &startup->rate_limit_filter,
+		.filter_duration  = &startup->rate_limit_filter_duration,
+		.filter_silent    = &startup->rate_limit_filter_silent,
+		.subnet_threshold = &startup->rate_limit_filter_subnet_threshold,
+	};
+	rate_limit_cfg(&view);
+}
+
+static void mail_rate_limit_cfg(mail_startup_t* startup)
+{
+	struct rate_limit_cfg_view view = {
+		.server_name      = "Mail Server",
+		.max_requests     = &startup->max_requests_per_period,
+		.request_period   = &startup->request_rate_limit_period,
+		.prefix4          = &startup->rate_limit_prefix4,
+		.prefix6          = &startup->rate_limit_prefix6,
+		.filter_threshold = &startup->rate_limit_filter,
+		.filter_duration  = &startup->rate_limit_filter_duration,
+		.filter_silent    = &startup->rate_limit_filter_silent,
+		.subnet_threshold = &startup->rate_limit_filter_subnet_threshold,
+	};
+	rate_limit_cfg(&view);
+}
+
+static void services_rate_limit_cfg(services_startup_t* startup)
+{
+	struct rate_limit_cfg_view view = {
+		.server_name      = "Services",
+		.max_connects     = &startup->max_connects_per_period,
+		.connect_period   = &startup->connect_rate_limit_period,
+		.prefix4          = &startup->rate_limit_prefix4,
+		.prefix6          = &startup->rate_limit_prefix6,
+		.filter_threshold = &startup->rate_limit_filter,
+		.filter_duration  = &startup->rate_limit_filter_duration,
+		.filter_silent    = &startup->rate_limit_filter_silent,
+		.subnet_threshold = &startup->rate_limit_filter_subnet_threshold,
+	};
+	rate_limit_cfg(&view);
 }
 
 static void js_startup_cfg(js_startup_t* js)
@@ -1512,11 +1638,12 @@ static void ftpsrvr_cfg(void)
 		else
 			snprintf(str, sizeof str, "%s bytes", byte_count_to_str(startup.max_fsize, tmp, sizeof tmp));
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Max Uploaded File Size", str);
-		if (startup.max_requests_per_period < 1 || startup.request_rate_limit_period < 1)
-			SAFECOPY(str, strDisabled);
-		else
-			snprintf(str, sizeof str, "%u per %s", startup.max_requests_per_period, duration_to_vstr(startup.request_rate_limit_period, tmp, sizeof tmp));
-		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Limit Rate of Requests", str);
+		SAFECOPY(str, strDisabled);
+		if (startup.max_requests_per_period > 0 && startup.request_rate_limit_period > 0)
+			SAFECOPY(str, "Requests");
+		if (str[0] != '\0' && startup.rate_limit_filter > 0)
+			SAFECAT(str, ", Auto-Filter");
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Rate Limiting...", str);
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Sysop File System Access", startup.options & FTP_OPT_NO_LOCAL_FSYS ? "No" : "Yes");
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Allow Bounce Transfers", startup.options & FTP_OPT_ALLOW_BOUNCE ? "Yes" : "No");
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Lookup Client Hostname", startup.options & BBS_OPT_NO_HOST_LOOKUP ? "No" : "Yes");
@@ -1627,14 +1754,7 @@ static void ftpsrvr_cfg(void)
 					startup.max_fsize = parse_byte_count(str, 1);
 				break;
 			case 14:
-				SAFECOPY(str, maximum(startup.max_requests_per_period));
-				if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "Maximum Requests (0=unlimited)", str, 10, K_EDIT | K_NUMBER) > 0)
-					startup.max_requests_per_period = atoi(str);
-				if (startup.max_requests_per_period < 1)
-					break;
-				duration_to_vstr(startup.request_rate_limit_period, str, sizeof str);
-				if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "Request Rate Limit Period", str, 10, K_EDIT) > 0)
-					startup.request_rate_limit_period = (uint)parse_duration(str);
+				ftp_rate_limit_cfg(&startup);
 				break;
 			case 15:
 				startup.options ^= FTP_OPT_NO_LOCAL_FSYS;
@@ -2007,11 +2127,12 @@ static void mailsrvr_cfg(void)
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Max Recipients Per Message", maximum(startup.max_recipients));
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Max Messages Waiting", maximum(startup.max_msgs_waiting));
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s bytes", "Max Receive Message Size", byte_count_to_str(startup.max_msg_size, tmp, sizeof(tmp)));
-		if (startup.max_requests_per_period < 1 || startup.request_rate_limit_period < 1)
-			SAFECOPY(str, strDisabled);
-		else
-			snprintf(str, sizeof str, "%u per %s", startup.max_requests_per_period, duration_to_vstr(startup.request_rate_limit_period, tmp, sizeof tmp));
-		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Limit Rate of Requests", str);
+		SAFECOPY(str, strDisabled);
+		if (startup.max_requests_per_period > 0 && startup.request_rate_limit_period > 0)
+			SAFECOPY(str, "Requests");
+		if (str[0] != '\0' && startup.rate_limit_filter > 0)
+			SAFECAT(str, ", Auto-Filter");
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Rate Limiting...", str);
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Post Recipient", startup.post_to);
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Default Recipient", startup.default_user);
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Receive By Sysop Aliases", startup.options & MAIL_OPT_ALLOW_SYSOP_ALIASES ? "Yes" : "No");
@@ -2131,14 +2252,7 @@ static void mailsrvr_cfg(void)
 					startup.max_msg_size = (uint32_t)parse_byte_count(str, 1);
 				break;
 			case 16:
-				SAFECOPY(str, maximum(startup.max_requests_per_period));
-				if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "Maximum Requests (0=unlimited)", str, 10, K_EDIT | K_NUMBER) > 0)
-					startup.max_requests_per_period = atoi(str);
-				if (startup.max_requests_per_period < 1)
-					break;
-				duration_to_vstr(startup.request_rate_limit_period, str, sizeof str);
-				if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "Request Rate Limit Period", str, 10, K_EDIT) > 0)
-					startup.request_rate_limit_period = (uint)parse_duration(str);
+				mail_rate_limit_cfg(&startup);
 				break;
 			case 17:
 				uifc.input(WIN_MID | WIN_SAV, 0, 0, "Override Recipient of SMTP Posts"
@@ -2316,11 +2430,12 @@ static void services_cfg(void)
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Configuration File", startup.services_ini);
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Login Requirements", startup.login_ars);
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Login Info Save", startup.login_info_save);
-		if (startup.max_connects_per_period < 1 || startup.connect_rate_limit_period < 1)
-			SAFECOPY(str, strDisabled);
-		else
-			snprintf(str, sizeof str, "%u per %s", startup.max_connects_per_period, duration_to_vstr(startup.connect_rate_limit_period, tmp, sizeof tmp));
-		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Limit Rate of Connections", str);
+		SAFECOPY(str, strDisabled);
+		if (startup.max_connects_per_period > 0 && startup.connect_rate_limit_period > 0)
+			SAFECOPY(str, "Connections");
+		if (str[0] != '\0' && startup.rate_limit_filter > 0)
+			SAFECAT(str, ", Auto-Filter");
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Rate Limiting...", str);
 		strcpy(opt[i++], "JavaScript Settings...");
 		strcpy(opt[i++], "Failed Login Attempts...");
 		opt[i][0] = '\0';
@@ -2361,14 +2476,7 @@ static void services_cfg(void)
 				getar("Services Login Info Saved", startup.login_info_save, /* helpbuf: */ NULL);
 				break;
 			case 7:
-				SAFECOPY(str, maximum(startup.max_connects_per_period));
-				if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "Maximum Connections (0=unlimited)", str, 10, K_EDIT | K_NUMBER) > 0)
-					startup.max_connects_per_period = atoi(str);
-				if (startup.max_connects_per_period < 1)
-					break;
-				duration_to_vstr(startup.connect_rate_limit_period, str, sizeof str);
-				if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "Connection Rate Limit Period", str, 10, K_EDIT) > 0)
-					startup.connect_rate_limit_period = (uint)parse_duration(str);
+				services_rate_limit_cfg(&startup);
 				break;
 			case 8:
 				js_startup_cfg(&startup.js);

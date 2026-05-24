@@ -46,6 +46,14 @@ typedef struct {
 	uint max_concurrent_connections;
 	uint max_requests_per_period;
 	uint request_rate_limit_period;
+	uint rate_limit_prefix4;                 /* IPv4 subnet bits to aggregate rate-limit counting (0 = per-host-IP) */
+	uint rate_limit_prefix6;                 /* IPv6 subnet bits to aggregate rate-limit counting (0 = per-host-IP) */
+	uint rate_limit_filter;                  /* consecutive rate-limit violations before auto-filtering the (sub)net (0 = disabled) */
+	uint rate_limit_filter_duration;         /* lifetime of an auto-filter .can entry, in seconds (0 = forever) */
+	bool rate_limit_filter_silent;           /* auto-filter to ip-silent.can (drop at accept) rather than ip.can */
+	uint rate_limit_filter_subnet_threshold; /* min distinct host IPs in a subnet bucket that must trip the rate limit before
+	                                            the whole subnet is filtered (rather than just the offending host); 1 = filter
+	                                            the subnet on the first abuser (no neighbor required); default/recommended: 2 */
 	char index_file_name[64];
 	char login_info_save[INI_MAX_VALUE_LEN];
 
