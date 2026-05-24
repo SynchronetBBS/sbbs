@@ -269,7 +269,15 @@ static void rate_limit_cfg(struct rate_limit_cfg_view* view)
 			action[i] = RLA_REQUESTS;
 			snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Limit Rate of Requests", str);
 		}
-		if (view->prefix4 != NULL) {
+		/* Prefix + auto-filter knobs apply on top of an active rate limit; hide
+		 * them entirely when no rate limit is enabled, since there is nothing
+		 * for them to act on. */
+		bool connects_on = view->max_connects != NULL && view->connect_period != NULL
+		                   && *view->max_connects > 0 && *view->connect_period > 0;
+		bool requests_on = view->max_requests != NULL && view->request_period != NULL
+		                   && *view->max_requests > 0 && *view->request_period > 0;
+		bool any_rate_limit = connects_on || requests_on;
+		if (any_rate_limit && view->prefix4 != NULL) {
 			if (*view->prefix4 == 0)
 				SAFECOPY(str, "Per-host IP address");
 			else
@@ -277,7 +285,7 @@ static void rate_limit_cfg(struct rate_limit_cfg_view* view)
 			action[i] = RLA_PREFIX4;
 			snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Count IPv4 Clients By", str);
 		}
-		if (view->prefix6 != NULL) {
+		if (any_rate_limit && view->prefix6 != NULL) {
 			if (*view->prefix6 == 0)
 				SAFECOPY(str, "Per-host IP address");
 			else
@@ -285,21 +293,24 @@ static void rate_limit_cfg(struct rate_limit_cfg_view* view)
 			action[i] = RLA_PREFIX6;
 			snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Count IPv6 Clients By", str);
 		}
-		if (view->filter_threshold != NULL) {
+		if (any_rate_limit && view->filter_threshold != NULL) {
 			action[i] = RLA_FILTER_THRESHOLD;
 			snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Auto-Filter Threshold", threshold(*view->filter_threshold));
 		}
-		if (view->filter_duration != NULL) {
+		/* The remaining knobs only configure the auto-filter; hide them when
+		 * it is disabled (filter_threshold == 0) since they have no effect. */
+		bool autofilter_on = any_rate_limit && view->filter_threshold != NULL && *view->filter_threshold > 0;
+		if (autofilter_on && view->filter_duration != NULL) {
 			action[i] = RLA_FILTER_DURATION;
 			snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Auto-Filter Duration"
 			         , vduration(*view->filter_duration, strInfinite));
 		}
-		if (view->filter_silent != NULL) {
+		if (autofilter_on && view->filter_silent != NULL) {
 			action[i] = RLA_FILTER_SILENT;
 			snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Auto-Filter Silently"
 			         , *view->filter_silent ? "Yes" : "No");
 		}
-		if (view->subnet_threshold != NULL) {
+		if (autofilter_on && view->subnet_threshold != NULL) {
 			action[i] = RLA_SUBNET_THRESHOLD;
 			snprintf(opt[i++], MAX_OPLN, "%-30s%u", "Subnet Filter Threshold"
 			         , *view->subnet_threshold);
@@ -325,7 +336,10 @@ static void rate_limit_cfg(struct rate_limit_cfg_view* view)
 			"counted together against the limits above and filtered as a block (in\n"
 			"CIDR notation).  Use this to defeat distributed abuse spread thinly\n"
 			"across many addresses in a hosting provider's range.  `0` counts each\n"
-			"host IP address separately.\n"
+			"host IP address separately.  The IPv6 default is `64` because a typical\n"
+			"IPv6 subscriber gets a /64 (or larger) allocation -- counting per-host\n"
+			"would let a single attacker cycle freely through addresses they own.\n"
+			"The IPv4 default is `0` (per-host).\n"
 			"\n"
 			"`Auto-Filter Threshold`: number of times a client (or subnet) may exceed\n"
 			"a rate limit before being automatically added to the IP filter file.\n"
@@ -1638,12 +1652,14 @@ static void ftpsrvr_cfg(void)
 		else
 			snprintf(str, sizeof str, "%s bytes", byte_count_to_str(startup.max_fsize, tmp, sizeof tmp));
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Max Uploaded File Size", str);
-		SAFECOPY(str, strDisabled);
-		if (startup.max_requests_per_period > 0 && startup.request_rate_limit_period > 0)
-			SAFECOPY(str, "Requests");
-		if (str[0] != '\0' && startup.rate_limit_filter > 0)
-			SAFECAT(str, ", Auto-Filter");
-		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Rate Limiting...", str);
+		if (startup.max_requests_per_period > 0 && startup.request_rate_limit_period > 0) {
+			snprintf(str, sizeof str, "%u per %s", startup.max_requests_per_period
+			         , duration_to_vstr(startup.request_rate_limit_period, tmp, sizeof tmp));
+			if (startup.rate_limit_filter > 0)
+				SAFECAT(str, ", Auto-Filter");
+		} else
+			SAFECOPY(str, strDisabled);
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Limit Rate of Requests", str);
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Sysop File System Access", startup.options & FTP_OPT_NO_LOCAL_FSYS ? "No" : "Yes");
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Allow Bounce Transfers", startup.options & FTP_OPT_ALLOW_BOUNCE ? "Yes" : "No");
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Lookup Client Hostname", startup.options & BBS_OPT_NO_HOST_LOOKUP ? "No" : "Yes");
@@ -2127,12 +2143,14 @@ static void mailsrvr_cfg(void)
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Max Recipients Per Message", maximum(startup.max_recipients));
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Max Messages Waiting", maximum(startup.max_msgs_waiting));
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s bytes", "Max Receive Message Size", byte_count_to_str(startup.max_msg_size, tmp, sizeof(tmp)));
-		SAFECOPY(str, strDisabled);
-		if (startup.max_requests_per_period > 0 && startup.request_rate_limit_period > 0)
-			SAFECOPY(str, "Requests");
-		if (str[0] != '\0' && startup.rate_limit_filter > 0)
-			SAFECAT(str, ", Auto-Filter");
-		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Rate Limiting...", str);
+		if (startup.max_requests_per_period > 0 && startup.request_rate_limit_period > 0) {
+			snprintf(str, sizeof str, "%u per %s", startup.max_requests_per_period
+			         , duration_to_vstr(startup.request_rate_limit_period, tmp, sizeof tmp));
+			if (startup.rate_limit_filter > 0)
+				SAFECAT(str, ", Auto-Filter");
+		} else
+			SAFECOPY(str, strDisabled);
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Limit Rate of Requests", str);
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Post Recipient", startup.post_to);
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Default Recipient", startup.default_user);
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Receive By Sysop Aliases", startup.options & MAIL_OPT_ALLOW_SYSOP_ALIASES ? "Yes" : "No");
@@ -2430,12 +2448,14 @@ static void services_cfg(void)
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Configuration File", startup.services_ini);
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Login Requirements", startup.login_ars);
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Login Info Save", startup.login_info_save);
-		SAFECOPY(str, strDisabled);
-		if (startup.max_connects_per_period > 0 && startup.connect_rate_limit_period > 0)
-			SAFECOPY(str, "Connections");
-		if (str[0] != '\0' && startup.rate_limit_filter > 0)
-			SAFECAT(str, ", Auto-Filter");
-		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Rate Limiting...", str);
+		if (startup.max_connects_per_period > 0 && startup.connect_rate_limit_period > 0) {
+			snprintf(str, sizeof str, "%u per %s", startup.max_connects_per_period
+			         , duration_to_vstr(startup.connect_rate_limit_period, tmp, sizeof tmp));
+			if (startup.rate_limit_filter > 0)
+				SAFECAT(str, ", Auto-Filter");
+		} else
+			SAFECOPY(str, strDisabled);
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Limit Rate of Connections", str);
 		strcpy(opt[i++], "JavaScript Settings...");
 		strcpy(opt[i++], "Failed Login Attempts...");
 		opt[i][0] = '\0';
