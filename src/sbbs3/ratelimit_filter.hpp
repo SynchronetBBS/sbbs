@@ -21,8 +21,8 @@
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
 
-#ifndef _RATELIMIT_FILTER_HPP
-#define _RATELIMIT_FILTER_HPP
+#ifndef RATELIMIT_FILTER_HPP_
+#define RATELIMIT_FILTER_HPP_
 
 #include <string>
 #include "ratelimit.hpp"        // rateLimiter
@@ -114,4 +114,4 @@ static inline void rate_limit_filter(SOCKET sock, scfg_t* cfg, const char* prot
 		    , target.c_str(), silent ? "" : " in ip.can");
 }
 
-#endif // _RATELIMIT_FILTER_HPP
+#endif // RATELIMIT_FILTER_HPP_

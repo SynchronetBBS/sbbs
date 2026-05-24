@@ -1,7 +1,7 @@
 // Rate Limiter
 
-#ifndef _RATELIMIT_HPP
-#define _RATELIMIT_HPP
+#ifndef RATELIMIT_HPP_
+#define RATELIMIT_HPP_
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -170,4 +170,4 @@ private:
 	pthread_mutex_t mutex{};
 };
 
-#endif // _RATELIMIT_HPP
+#endif // RATELIMIT_HPP_
