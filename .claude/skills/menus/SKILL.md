@@ -19,7 +19,7 @@ Building / running the BBS itself is covered by the `synchronet-build` and `jsex
 ## File-system layout
 
 ```
-$SBBS/
+<sbbs>/
 ├── ctrl/text.dat         # all hard-coded BBS prompts/strings (one record per line)
 ├── text/
 │   ├── *.msg / *.ans     # login flow + special screens (answer, welcome, sbbs, feedback…)
@@ -34,7 +34,7 @@ $SBBS/
 │   ├── subs/<code>.*     # info file for a sub-board (used by 'I' / 'IS')
 │   └── dirs/<code>.*     # info file for a file directory (used by 'ID')
 └── mods/
-    └── text/             # sysop overrides; takes priority over $SBBS/text/
+    └── text/             # sysop overrides; takes priority over <sbbs>/text/
         └── menu/
 ```
 
@@ -398,8 +398,8 @@ Two-way converters: `ans2asc` takes a `.ans` file with ANSI X3.64 escapes and pr
 Don't edit `text/foo.msg` in place — a future `git pull` (or release update) will overwrite it. Copy first:
 
 ```bash
-cp $SBBS/text/menu/main.msg $SBBS/mods/text/menu/main.msg
-$EDITOR $SBBS/mods/text/menu/main.msg
+cp <sbbs>/text/menu/main.msg <sbbs>/mods/text/menu/main.msg
+$EDITOR <sbbs>/mods/text/menu/main.msg
 ```
 
 The runtime picks up `mods/text/menu/main.msg` before the stock one because `cfg.mods_dir` is checked first in `menu_exists()` (see `src/sbbs3/prntfile.cpp`).
@@ -410,7 +410,7 @@ The runtime picks up `mods/text/menu/main.msg` before the stock one because `cfg
 
 To rebuild after structural changes:
 ```bash
-cd $SBBS/src/sbbs3
+cd <sbbs>/src/sbbs3
 ./textgen           # or msbuild on the textgen vcxproj
 ```
 

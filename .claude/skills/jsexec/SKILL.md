@@ -28,12 +28,12 @@ Path conventions here are relative to the Synchronet install root. Use the
 
 ```bash
 SBBS="$(dirname "$SBBSCTRL")"        # install root
-"$SBBS/exec/jsexec"  ...             # binary
-"$SBBS/exec/foo.js"                  # a stock module
-"$SBBS/data/logs/"                   # log files land here
+"<sbbs>/exec/jsexec"  ...             # binary
+"<sbbs>/exec/foo.js"                  # a stock module
+"<sbbs>/data/logs/"                   # log files land here
 ```
 
-On a host where `$SBBS/exec` isn't on `PATH`, prepend `"$SBBS/"` or `cd "$SBBS"`
+On a host where `<sbbs>/exec` isn't on `PATH`, prepend `"<sbbs>/"` or `cd "<sbbs>"`
 first. To target a *different* install than `$SBBSCTRL` points at, use
 `-c <other-ctrl-dir>`. (On Windows with a freshly-built debug binary there's an
 extra wrinkle — see "Windows / debug-build invocation" below.)
@@ -60,7 +60,7 @@ jsexec path/to/script.js [args...]
 jsexec -c "$SBBSCTRL" exec/foo.js
 ```
 
-A bare `module[.js]` resolves to the Synchronet exec directory (`$SBBS/exec`);
+A bare `module[.js]` resolves to the Synchronet exec directory (`<sbbs>/exec`);
 the `.js` extension is appended if omitted. To run a script elsewhere, pass an
 absolute path or one containing `/`. Extra positional args are exposed to the
 script as `argv`. The `-i` flag affects only `load()` lookups inside the script,
@@ -172,7 +172,7 @@ around.
   `-c <ctrl-dir>` to target a different install.
 - Heap defaults to 16 MB (`-m`) and time limit to 10 days (`-t`); adjust if a
   probe needs it.
-- jsexec writes log messages to **stderr**, not to `$SBBS/data/logs/`. Capture
+- jsexec writes log messages to **stderr**, not to `<sbbs>/data/logs/`. Capture
   with `2>file`, merge into stdout with `-A`, or send to a file with `-e <file>`.
 - The engine is SpiderMonkey 1.8.5 (ES3-ish). Language do's and don'ts are in
   the `javascript` skill.

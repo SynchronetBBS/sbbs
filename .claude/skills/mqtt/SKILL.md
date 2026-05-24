@@ -18,7 +18,7 @@ description: Use when working with Synchronet's MQTT integration — discovering
 The `[MQTT]` section lives in **`ctrl/main.ini`**, not `ctrl/sbbs.ini`. (This trips a lot of people; the rest of Synchronet's server/daemon config is in `sbbs.ini`, but MQTT belongs to BBS-level system settings in `main.ini`.) Read it:
 
 ```
-grep -A 20 '^\[MQTT\]' $SBBS/ctrl/main.ini
+grep -A 20 '^\[MQTT\]' <sbbs>/ctrl/main.ini
 ```
 
 Keys (defaults shown; full source of truth is `scfglib1.c::read_main_cfg`):
@@ -219,7 +219,7 @@ sbbs/<BBSID>/node/<N>/set/rerun         ← reload config on next connection; "0
 **"Is MQTT enabled on this host, and where's the broker?"**
 
 ```
-awk '/^\[MQTT\]/,/^\[/' $SBBS/ctrl/main.ini
+awk '/^\[MQTT\]/,/^\[/' <sbbs>/ctrl/main.ini
 ```
 
 If `Enabled=false` (or the section is missing), no further work is possible until SCFG → Networks → MQTT is set up. If `InternalBroker=true`, the broker is Synchronet itself (default port `Broker_port`); otherwise connect to `Broker_addr:Broker_port`.
@@ -262,7 +262,7 @@ The payload is the terminal byte stream (CP437 by default, including ANSI contro
 mosquitto_pub -h <broker> -p <port> -t 'sbbs/<BBSID>/host/<HOSTNAME>/clear' -m '203.0.113.42'
 ```
 
-(Or, locally: `echo 203.0.113.42 > $SBBS/ctrl/clear`.)
+(Or, locally: `echo 203.0.113.42 > <sbbs>/ctrl/clear`.)
 
 **"Recycle just the web server on host X."**
 
@@ -276,7 +276,7 @@ Verify the result by watching the matching `…/server/web` status topic — you
 
 - **Looking for `[MQTT]` in `sbbs.ini`.** It's in `main.ini`. `sbbs.ini` has the per-server (term/web/mail/ftp/services) settings; MQTT is a BBS-level concern and lives with the rest of the system config in `main.ini`.
 - **Forgetting `-V 5`.** Without it, `mosquitto_sub` defaults to v3.1.1 and you don't see the MQTT v5 user property carrying the log level on bare `…/log` topics — you'd have to subscribe to all eight `…/log/<N>` subtopics instead.
-- **Reading the password from `main.ini` and pasting it into a shell history.** Use `-P "$(awk -F= '/^[[:space:]]*Password=/{print $2}' $SBBS/ctrl/main.ini)"` or set `MOSQUITTO_PWD` and read with `-P "$MOSQUITTO_PWD"`. Better still, configure a dedicated read-only MQTT user for diagnostics.
+- **Reading the password from `main.ini` and pasting it into a shell history.** Use `-P "$(awk -F= '/^[[:space:]]*Password=/{print $2}' <sbbs>/ctrl/main.ini)"` or set `MOSQUITTO_PWD` and read with `-P "$MOSQUITTO_PWD"`. Better still, configure a dedicated read-only MQTT user for diagnostics.
 - **Treating action topics as retained.** They aren't — a fresh subscriber sees only new events. For pre-connect state, use the retained `login_attempts/<IP>` and `max_concurrent/<IP>` topics in parallel.
 - **Publishing to a control topic without `-r ''` cleanup.** If you publish a one-shot control with `-r` set (retained), Synchronet may re-consume it on reconnect; clear by publishing an empty retained payload to the same topic afterwards.
 - **Subscribing to `node/+/output` and dumping straight to a terminal.** The payload contains ANSI CSI sequences that may reposition your cursor, clear your screen, change colours, etc. Pipe to a file or a controlled viewer for analysis.

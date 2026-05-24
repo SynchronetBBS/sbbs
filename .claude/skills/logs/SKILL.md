@@ -183,7 +183,7 @@ For the `mosquitto_sub` / `mosquitto_pub` invocation, broker discovery, credenti
 **How to find the writer when the creation event is missing locally:**
 
 1. **First, check the same-host case.** List every Synchronet instance on this host — `ps -ef | grep -i sbbs`, `systemctl list-units --type=service | grep -iE 'sbbs|synchro|httpd|ircd'`, distinct `LogIdent`s in each instance's `ctrl/sbbs.ini`. Search each one's journal/syslog for the `t=` minute. If found, you're done.
-2. **If still missing, check the cross-host case.** Is `text/` on shared storage? `mount | grep text`, `findmnt $SBBS/text`, `stat -f $SBBS/text` will tell you. If yes, the writer is on another host — and the *only* unified view that bridges multiple hosts' log streams is **MQTT**, if it's enabled. Subscribe to `sbbs/+/host/+/server/+/log` and grep the same minute (see the `mqtt` skill). The `<HOSTNAME>` topic component reveals which host fired.
+2. **If still missing, check the cross-host case.** Is `text/` on shared storage? `mount | grep text`, `findmnt <sbbs>/text`, `stat -f <sbbs>/text` will tell you. If yes, the writer is on another host — and the *only* unified view that bridges multiple hosts' log streams is **MQTT**, if it's enabled. Subscribe to `sbbs/+/host/+/server/+/log` and grep the same minute (see the `mqtt` skill). The `<HOSTNAME>` topic component reveals which host fired.
 3. **Only then** suspect journald rate-limiting, `SystemMaxRateLimit` drops, or syslog discard. Those do happen, but they're the diagnosis of last resort — almost always the writer is just somewhere you haven't looked yet.
 
 (Reminder: `LogIdent` is the syslog identifier from `[UNIX] LogIdent` in `sbbs.ini`, *not* the QWK `BBSID` used in MQTT topics. The two are independent unless a sysop deliberately sets `LogIdent` to the BBSID — a useful convention but not the default.)
@@ -269,7 +269,7 @@ journalctl -u <web-unit> --since today | grep -E '!BLOCKING|rate-limit violation
 grep -E '!BLOCKING|rate-limit violations' /var/log/<your-syslog-target>*
 
 # Then cross-check the resulting ip.can entries:
-awk -F'\t' '/rate-limit/ {print}' $SBBS/text/ip.can
+awk -F'\t' '/rate-limit/ {print}' <sbbs>/text/ip.can
 ```
 
 `!BLOCKING IP ADDRESS:` (or `!BLOCKING SUBNET:`) is the creation event — one per filter. The `!CLIENT BLOCKED in …/ip.can since …` lines that follow are *repeated* deny-at-accept hits — noisy but harmless; they confirm the filter is still suppressing the source.

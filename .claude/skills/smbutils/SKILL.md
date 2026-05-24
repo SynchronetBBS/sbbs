@@ -38,21 +38,21 @@ parent. So on any properly-configured host:
 
 ```bash
 SBBS="$(dirname "$SBBSCTRL")"        # install root
-"$SBBS/exec/smbutil"  ...            # binary
-"$SBBS/data/mail"                    # mail base
-"$SBBS/docs/smb.html"                # local SMB spec (historical)
+"<sbbs>/exec/smbutil"  ...            # binary
+"<sbbs>/data/mail"                    # mail base
+"<sbbs>/docs/smb.html"                # local SMB spec (historical)
 ```
 
 Recipes below use shorthand: bare command names (`smbutil`, `chksmb`,
 `fixsmb`) and install-relative paths (`exec/...`, `data/...`, `docs/...`).
-On a host where `$SBBS/exec` isn't on `PATH`, prepend `"$SBBS/"` or `cd
-"$SBBS"` first.
+On a host where `<sbbs>/exec` isn't on `PATH`, prepend `"<sbbs>/"` or `cd
+"<sbbs>"` first.
 
 The `.exe` variants of each binary in `exec/` are for Windows — don't run
 them on Linux. Conversely on **Windows** (incl. Git Bash / MSYS / WSL talking
 to a Windows install), you must call the `.exe` explicitly — `./smbutil` will
 attempt to exec the Linux ELF and fail with `Exec format error`. Use
-`./exec/smbutil.exe` (or `cd $SBBS && exec/smbutil.exe ...`). Also note
+`./exec/smbutil.exe` (or `cd <sbbs> && exec/smbutil.exe ...`). Also note
 `$SBBSCTRL` on Windows is a Windows-style path like `C:\sbbs\ctrl` (or
 whichever drive the install lives on); from Git Bash / MSYS the same path
 is reachable via the `/c/sbbs/ctrl` mount-point form.

@@ -124,9 +124,9 @@ Any string commented out with `#` (or simply missing from the file) is replaced 
 `ctrl/text.dat` is plain ASCII, but tools that classify by file extension (e.g. some AI-coding tooling's Read/Edit tools that refuse `.dat`) won't open it. Workaround:
 
 ```
-cp $SBBS/ctrl/text.dat /tmp/text_dat.txt
+cp <sbbs>/ctrl/text.dat /tmp/text_dat.txt
 # edit /tmp/text_dat.txt
-cp /tmp/text_dat.txt $SBBS/ctrl/text.dat
+cp /tmp/text_dat.txt <sbbs>/ctrl/text.dat
 ```
 
 (Some sysops keep `ctrl/text.txt` as a working copy for the same reason.)
@@ -230,7 +230,7 @@ CP437 is the native character set; the wiki's localization page is honest about 
 
 `text.ini` (and `text.<lang>.ini`) overrides are loaded **at server startup**. After editing, you need to either:
 
-- **Recycle the server(s)** that use the strings (Terminal Server for almost everything, other servers if your overrides include their strings). The cross-platform way: `touch $SBBS/ctrl/recycle` (all servers) or `touch $SBBS/ctrl/recycle.term` (just the Terminal Server). See the **`control`** skill for the full menu of mechanisms.
+- **Recycle the server(s)** that use the strings (Terminal Server for almost everything, other servers if your overrides include their strings). The cross-platform way: `touch <sbbs>/ctrl/recycle` (all servers) or `touch <sbbs>/ctrl/recycle.term` (just the Terminal Server). See the **`control`** skill for the full menu of mechanisms.
 - **Have users log off and back on** — minimum requirement; some text is only loaded once per server lifetime, but per-session text is re-read on each login.
 
 `text.dat` edits work the same way — startup parses the file, so a recycle is required for changes to be visible.
@@ -244,7 +244,7 @@ CP437 is the native character set; the wiki's localization page is honest about 
 Email: "\1_\1?\1c\1hE-mail (User name or number): \1w"
 ```
 
-Then `touch $SBBS/ctrl/recycle.term`.
+Then `touch <sbbs>/ctrl/recycle.term`.
 
 **"Replace every occurrence of 'Group' with 'Area' in every BBS message."**
 
@@ -277,7 +277,7 @@ The JS code must use `gettext("Press any key to continue")` rather than the bare
 **"Find the identifier name for a stock prompt I want to override."**
 
 ```
-grep -F 'the prompt text I see' $SBBS/ctrl/text.dat
+grep -F 'the prompt text I see' <sbbs>/ctrl/text.dat
 ```
 
 The line will end with the ID and IdentifierName. (If your `text.dat` is minimal, grep `src/sbbs3/text_defaults.c` in the source tree instead — those are the compiled defaults.)
@@ -289,7 +289,7 @@ The line will end with the ID and IdentifierName. (If your `text.dat` is minimal
 - **Adding @-codes to a line that contains `%s`/`%d`.** The two are mutually exclusive; the @-code won't be expanded. Pick one or split the line into pieces.
 - **Reordering `%`-specifiers.** Each one is consumed by the calling C code's printf arguments in order. Reorder them and you'll print the wrong values or crash.
 - **`[substr]` replacements that are too short.** `to: for` will hit every "to" anywhere — inside other words, in URLs, in user names. Use distinctive multi-character tokens.
-- **Forgetting to recycle.** `text.ini` is loaded at startup. After editing, `touch $SBBS/ctrl/recycle` (or the per-server variant) — see `control`.
+- **Forgetting to recycle.** `text.ini` is loaded at startup. After editing, `touch <sbbs>/ctrl/recycle` (or the per-server variant) — see `control`.
 - **Multi-line value in `text.ini`.** Values must be on one line, max 1023 chars. The `\`-continuation that works in `text.dat` does **not** work in `text.ini`.
 - **Using `ID = value` for a value with control characters.** Use `ID: value` (colon) instead — see `config:ini_files#string_literals` for why.
 - **Expecting `gettext()` overrides to "just work".** The script must `require('gettext.js')` and call `gettext(theString)`. A bare string literal in JS isn't routed through the override table.

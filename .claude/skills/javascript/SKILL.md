@@ -316,7 +316,7 @@ way to learn an API, and many double as ready-made tools. Grep for `new X(` or
 
 ```bash
 # All stock modules that have no bbs./console. deps (jsexec-friendly):
-cd "$SBBS/exec" && for f in *.js; do grep -qE '\b(bbs|console)\.' "$f" || echo "$f"; done
+cd "<sbbs>/exec" && for f in *.js; do grep -qE '\b(bbs|console)\.' "$f" || echo "$f"; done
 ```
 
 ## Writing tests in exec/tests/
