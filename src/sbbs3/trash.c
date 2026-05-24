@@ -22,6 +22,7 @@
 #include "trash.h"
 #include "datewrap.h"
 #include "xpdatetime.h"
+#include "filewrap.h"   /* chsize() */
 #include "ini_file.h"
 #include "scfglib.h"
 #include "findstr.h"
@@ -150,6 +151,74 @@ bool host_is_exempt(scfg_t* cfg, const char* ip_addr, const char* host_name)
 }
 
 /****************************************************************************/
+/* Remove every line from `fname` whose `e=` expiry has passed. Lines		*/
+/* without an `e=` field (permanent block), with a future expiry, or with	*/
+/* metadata we can't parse are preserved verbatim. The file is rewritten	*/
+/* only if at least one line was removed; the rewrite happens on the same	*/
+/* fd held open across the read so a concurrent appender can't slip a new	*/
+/* line in between a close-and-reopen window and have it truncated away.	*/
+/* Same shape as trashman's maint() but done inline so callers don't have to	*/
+/* wait for the [monthly_event] sweep before a stale entry stops shadowing	*/
+/* a fresh append. Returns true on success (whether or not anything was		*/
+/* removed) or if the file can't be opened (nothing to clean). Returns		*/
+/* false only if a needed rewrite or allocation failed -- the caller should	*/
+/* then NOT proceed to append a fresh entry, since a stale matching line	*/
+/* may still shadow it in find2strs/trashcan2.								*/
+/****************************************************************************/
+static bool remove_expired_filter_entries(const char* fname)
+{
+	int        fd = -1;
+	FILE*      fp = fnopen(&fd, fname, O_RDWR);
+	str_list_t list;
+	time_t     now = time(NULL);
+	bool       modified = false;
+	bool       ok = true;
+
+	if (fp == NULL)
+		return true;
+	list = strListReadFile(fp, NULL, FINDSTR_MAX_LINE_LEN);
+	if (list == NULL) {
+		fclose(fp);
+		return false;
+	}
+
+	for (size_t i = 0; list[i] != NULL; ) {
+		char         tmp[FINDSTR_MAX_LINE_LEN + 1];
+		struct trash existing;
+
+		SAFECOPY(tmp, list[i]);
+		truncnl(tmp);
+		if (trash_parse_details(tmp, &existing, NULL, 0)
+		    && existing.expires != 0 && existing.expires <= now) {
+			strListDelete(&list, i);
+			modified = true;
+			continue;
+		}
+		i++;
+	}
+
+	if (modified) {
+		rewind(fp);
+		for (size_t j = 0; list[j] != NULL; j++) {
+			if (fputs(list[j], fp) == EOF) {
+				ok = false;
+				break;
+			}
+		}
+		if (ok && fflush(fp) != 0)
+			ok = false;
+		if (ok) {
+			long len = ftell(fp);
+			if (len < 0 || chsize(fd, len) != 0)
+				ok = false;
+		}
+	}
+	fclose(fp);
+	strListFree(&list);
+	return ok;
+}
+
+/****************************************************************************/
 /* Add an IP address (with comment) to the IP filter/trashcan file			*/
 /****************************************************************************/
 bool filter_ip(scfg_t* cfg, const char* prot, const char* reason, const char* host
@@ -159,6 +228,7 @@ bool filter_ip(scfg_t* cfg, const char* prot, const char* reason, const char* ho
 	char   ip_can[MAX_PATH + 1];
 	char   exempt[MAX_PATH + 1];
 	char   tstr[64];
+	char   metadata[FINDSTR_MAX_LINE_LEN + 1];
 	FILE*  fp;
 	time_t now = time(NULL);
 
@@ -173,8 +243,21 @@ bool filter_ip(scfg_t* cfg, const char* prot, const char* reason, const char* ho
 	if (fname == NULL)
 		fname = ip_can;
 
-	if (findstr(ip_addr, fname)) /* Already filtered? Don't append a dup, and report "not newly added" so callers don't re-log a BLOCKING notice. */
-		return false;
+	if (find2strs(ip_addr, NULL, fname, metadata)) {
+		/* IP already matches some line. If the match is still active
+		 * (no expiry, or future expiry), don't dup -- and signal "not
+		 * newly filtered" so the caller skips logging BLOCKING IP
+		 * ADDRESS. If the match is an expired entry, prune it before
+		 * appending a fresh one; otherwise the stale entry would shadow
+		 * the new one in find2strs/trashcan2. */
+		struct trash existing;
+		if (!trash_parse_details(metadata, &existing, NULL, 0)
+		    || existing.expires == 0
+		    || existing.expires > now)
+			return false;
+		if (!remove_expired_filter_entries(fname))
+			return false;
+	}
 
 	if ((fp = fnopen(NULL, fname, O_CREAT | O_APPEND | O_WRONLY)) == NULL)
 		return false;
