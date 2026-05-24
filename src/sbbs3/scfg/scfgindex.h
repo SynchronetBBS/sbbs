@@ -34,6 +34,11 @@ static const scfg_option_t scfg_option_index[] = {
 	},
 	{
 		"Access Requirements",
+		"Artificial Gurus",
+		"Chat Features > Artificial Gurus > Access Requirements"
+	},
+	{
+		"Access Requirements",
 		"Chat Channel",
 		"Chat Features > Multinode Chat Channels > Chat Channel > Access Requirements"
 	},
@@ -44,8 +49,18 @@ static const scfg_option_t scfg_option_index[] = {
 	},
 	{
 		"Access Requirements",
+		"Command Shells",
+		"Command Shells > Access Requirements"
+	},
+	{
+		"Access Requirements",
 		"Compressible File Type",
 		"File Options > Compressible File Types > Compressible File Type > Access Requirements"
+	},
+	{
+		"Access Requirements",
+		"Directories",
+		"File Areas > Directories > Access Requirements"
 	},
 	{
 		"Access Requirements",
@@ -64,8 +79,18 @@ static const scfg_option_t scfg_option_index[] = {
 	},
 	{
 		"Access Requirements",
+		"External Sysop Chat Pagers",
+		"Chat Features > External Sysop Chat Pagers > Access Requirements"
+	},
+	{
+		"Access Requirements",
 		"Extractable File Type",
 		"File Options > Extractable File Types > Extractable File Type > Access Requirements"
+	},
+	{
+		"Access Requirements",
+		"File Options",
+		"File Options > Access Requirements"
 	},
 	{
 		"Access Requirements",
@@ -89,8 +114,173 @@ static const scfg_option_t scfg_option_index[] = {
 	},
 	{
 		"Access Requirements",
+		"Message Editors",
+		"External Programs > Message Editors > Access Requirements"
+	},
+	{
+		"Access Requirements",
 		"Module",
 		"System > Loadable Modules... > Login > Module > Access Requirements"
+	},
+	{
+		"Access Requirements",
+		"Module",
+		"System > Loadable Modules... > Logon > Module > Access Requirements"
+	},
+	{
+		"Access Requirements",
+		"Module",
+		"System > Loadable Modules... > Logoff > Module > Access Requirements"
+	},
+	{
+		"Access Requirements",
+		"Module",
+		"System > Loadable Modules... > Logout > Module > Access Requirements"
+	},
+	{
+		"Access Requirements",
+		"Module",
+		"System > Loadable Modules... > New User Prompts > Module > Access Requirements"
+	},
+	{
+		"Access Requirements",
+		"Module",
+		"System > Loadable Modules... > New User Info > Module > Access Requirements"
+	},
+	{
+		"Access Requirements",
+		"Module",
+		"System > Loadable Modules... > New User Created > Module > Access Requirements"
+	},
+	{
+		"Access Requirements",
+		"Module",
+		"System > Loadable Modules... > User Config > Module > Access Requirements"
+	},
+	{
+		"Access Requirements",
+		"Module",
+		"System > Loadable Modules... > Expired User > Module > Access Requirements"
+	},
+	{
+		"Access Requirements",
+		"Module",
+		"System > Loadable Modules... > Auto Message > Module > Access Requirements"
+	},
+	{
+		"Access Requirements",
+		"Module",
+		"System > Loadable Modules... > Send Feedback > Module > Access Requirements"
+	},
+	{
+		"Access Requirements",
+		"Module",
+		"System > Loadable Modules... > Email Section > Module > Access Requirements"
+	},
+	{
+		"Access Requirements",
+		"Module",
+		"System > Loadable Modules... > Chat Section > Module > Access Requirements"
+	},
+	{
+		"Access Requirements",
+		"Module",
+		"System > Loadable Modules... > Text Section > Module > Access Requirements"
+	},
+	{
+		"Access Requirements",
+		"Module",
+		"System > Loadable Modules... > Xtrn Section > Module > Access Requirements"
+	},
+	{
+		"Access Requirements",
+		"Module",
+		"System > Loadable Modules... > Pre Xtrn > Module > Access Requirements"
+	},
+	{
+		"Access Requirements",
+		"Module",
+		"System > Loadable Modules... > Post Xtrn > Module > Access Requirements"
+	},
+	{
+		"Access Requirements",
+		"Module",
+		"System > Loadable Modules... > Read Mail > Module > Access Requirements"
+	},
+	{
+		"Access Requirements",
+		"Module",
+		"System > Loadable Modules... > Scan Msgs > Module > Access Requirements"
+	},
+	{
+		"Access Requirements",
+		"Module",
+		"System > Loadable Modules... > Scan Subs > Module > Access Requirements"
+	},
+	{
+		"Access Requirements",
+		"Module",
+		"System > Loadable Modules... > List Msgs > Module > Access Requirements"
+	},
+	{
+		"Access Requirements",
+		"Module",
+		"System > Loadable Modules... > List Logons > Module > Access Requirements"
+	},
+	{
+		"Access Requirements",
+		"Module",
+		"System > Loadable Modules... > List Users > Module > Access Requirements"
+	},
+	{
+		"Access Requirements",
+		"Module",
+		"System > Loadable Modules... > List Nodes > Module > Access Requirements"
+	},
+	{
+		"Access Requirements",
+		"Module",
+		"System > Loadable Modules... > Who's Online > Module > Access Requirements"
+	},
+	{
+		"Access Requirements",
+		"Module",
+		"System > Loadable Modules... > Private Msg > Module > Access Requirements"
+	},
+	{
+		"Access Requirements",
+		"Module",
+		"System > Loadable Modules... > Scan Dirs > Module > Access Requirements"
+	},
+	{
+		"Access Requirements",
+		"Module",
+		"System > Loadable Modules... > List Files > Module > Access Requirements"
+	},
+	{
+		"Access Requirements",
+		"Module",
+		"System > Loadable Modules... > View File Info > Module > Access Requirements"
+	},
+	{
+		"Access Requirements",
+		"Module",
+		"System > Loadable Modules... > Batch Transfer > Module > Access Requirements"
+	},
+	{
+		"Access Requirements",
+		"Module",
+		"System > Loadable Modules... > Temp Transfer > Module > Access Requirements"
+	},
+	{
+		"Access Requirements",
+		"Module",
+		"System > Loadable Modules... > Select Item > Module > Access Requirements"
+	},
+	{
+		"Access Requirements",
+		"Module",
+		"System > Loadable Modules... > Sync > Module > Access Requirements"
 	},
 	{
 		"Access Requirements",
@@ -104,6 +294,11 @@ static const scfg_option_t scfg_option_index[] = {
 	},
 	{
 		"Access Requirements",
+		"Online Programs (Doors)",
+		"External Programs > Online Programs (Doors) > Access Requirements"
+	},
+	{
+		"Access Requirements",
 		"Program Section",
 		"External Programs > Online Programs (Doors) > Program Section > Access Requirements"
 	},
@@ -114,6 +309,11 @@ static const scfg_option_t scfg_option_index[] = {
 	},
 	{
 		"Access Requirements",
+		"Sub-boards",
+		"Message Areas > Sub-boards > Access Requirements"
+	},
+	{
+		"Access Requirements",
 		"Sysop Chat Pager #",
 		"Chat Features > External Sysop Chat Pagers > Sysop Chat Pager # > Access Requirements"
 	},
@@ -121,6 +321,11 @@ static const scfg_option_t scfg_option_index[] = {
 		"Access Requirements",
 		"Testable File Type",
 		"File Options > Testable File Types > Testable File Type > Access Requirements"
+	},
+	{
+		"Access Requirements",
+		"Text File Sections",
+		"Text File Sections > Access Requirements"
 	},
 	{
 		"Access Requirements",
@@ -223,6 +428,11 @@ static const scfg_option_t scfg_option_index[] = {
 		"File Areas > Directories > Toggle Options... > Allow File Tagging"
 	},
 	{
+		"Allow File Tagging",
+		"Toggle Options...",
+		"File Areas > Directory Default Settings > Toggle Options... > Allow File Tagging"
+	},
+	{
 		"Allow Forwarding to NetMail",
 		"Message Options",
 		"Message Options > Allow Forwarding to NetMail"
@@ -323,6 +533,11 @@ static const scfg_option_t scfg_option_index[] = {
 		"File Areas > Directories > Toggle Options... > Anonymous Uploads"
 	},
 	{
+		"Anonymous Uploads",
+		"Toggle Options...",
+		"File Areas > Directory Default Settings > Toggle Options... > Anonymous Uploads"
+	},
+	{
 		"Append Tag/Origin Line",
 		"Network Options",
 		"Message Areas > Sub-boards > Sub-board > Network Options > Append Tag/Origin Line"
@@ -349,13 +564,13 @@ static const scfg_option_t scfg_option_index[] = {
 	},
 	{
 		"Australian Central",
-		"Non-U.S. Time Zone",
-		"Non-U.S. Time Zone > Australian Central"
+		"Local Time Zone",
+		"System > Local Time Zone > Australian Central"
 	},
 	{
 		"Australian Eastern",
-		"Non-U.S. Time Zone",
-		"Non-U.S. Time Zone > Australian Eastern"
+		"Local Time Zone",
+		"System > Local Time Zone > Australian Eastern"
 	},
 	{
 		"Authentication Methods",
@@ -366,6 +581,11 @@ static const scfg_option_t scfg_option_index[] = {
 		"Auto Message",
 		"Loadable Modules",
 		"System > Loadable Modules > Auto Message"
+	},
+	{
+		"Auto Message",
+		"Loadable Modules...",
+		"System > Loadable Modules... > Auto Message"
 	},
 	{
 		"Auto-Add Sub-directories",
@@ -390,7 +610,22 @@ static const scfg_option_t scfg_option_index[] = {
 	{
 		"Auto-Filter Duration",
 		"Rate Limiting",
+		"Servers > Web Server > Rate Limiting... > Rate Limiting > Auto-Filter Duration"
+	},
+	{
+		"Auto-Filter Duration",
+		"Rate Limiting",
 		"Servers > FTP Server > Limit Rate of Requests > Rate Limiting > Auto-Filter Duration"
+	},
+	{
+		"Auto-Filter Duration",
+		"Rate Limiting",
+		"Servers > Mail Server > Limit Rate of Requests > Rate Limiting > Auto-Filter Duration"
+	},
+	{
+		"Auto-Filter Duration",
+		"Rate Limiting",
+		"Servers > Services Server > Limit Rate of Connections > Rate Limiting > Auto-Filter Duration"
 	},
 	{
 		"Auto-Filter Silently",
@@ -400,7 +635,22 @@ static const scfg_option_t scfg_option_index[] = {
 	{
 		"Auto-Filter Silently",
 		"Rate Limiting",
+		"Servers > Web Server > Rate Limiting... > Rate Limiting > Auto-Filter Silently"
+	},
+	{
+		"Auto-Filter Silently",
+		"Rate Limiting",
 		"Servers > FTP Server > Limit Rate of Requests > Rate Limiting > Auto-Filter Silently"
+	},
+	{
+		"Auto-Filter Silently",
+		"Rate Limiting",
+		"Servers > Mail Server > Limit Rate of Requests > Rate Limiting > Auto-Filter Silently"
+	},
+	{
+		"Auto-Filter Silently",
+		"Rate Limiting",
+		"Servers > Services Server > Limit Rate of Connections > Rate Limiting > Auto-Filter Silently"
 	},
 	{
 		"Auto-Filter Threshold",
@@ -410,7 +660,22 @@ static const scfg_option_t scfg_option_index[] = {
 	{
 		"Auto-Filter Threshold",
 		"Rate Limiting",
+		"Servers > Web Server > Rate Limiting... > Rate Limiting > Auto-Filter Threshold"
+	},
+	{
+		"Auto-Filter Threshold",
+		"Rate Limiting",
 		"Servers > FTP Server > Limit Rate of Requests > Rate Limiting > Auto-Filter Threshold"
+	},
+	{
+		"Auto-Filter Threshold",
+		"Rate Limiting",
+		"Servers > Mail Server > Limit Rate of Requests > Rate Limiting > Auto-Filter Threshold"
+	},
+	{
+		"Auto-Filter Threshold",
+		"Rate Limiting",
+		"Servers > Services Server > Limit Rate of Connections > Rate Limiting > Auto-Filter Threshold"
 	},
 	{
 		"Auto-generate Index File",
@@ -420,12 +685,62 @@ static const scfg_option_t scfg_option_index[] = {
 	{
 		"Automatic Filter Duration",
 		"Failed Login Attempts...",
+		"Servers > Global Settings > Failed Login Attempts... > Automatic Filter Duration"
+	},
+	{
+		"Automatic Filter Duration",
+		"Failed Login Attempts...",
+		"Servers > Terminal Server > Failed Login Attempts... > Automatic Filter Duration"
+	},
+	{
+		"Automatic Filter Duration",
+		"Failed Login Attempts...",
+		"Servers > Web Server > Failed Login Attempts... > Automatic Filter Duration"
+	},
+	{
+		"Automatic Filter Duration",
+		"Failed Login Attempts...",
 		"Servers > FTP Server > Failed Login Attempts... > Automatic Filter Duration"
+	},
+	{
+		"Automatic Filter Duration",
+		"Failed Login Attempts...",
+		"Servers > Mail Server > Failed Login Attempts... > Automatic Filter Duration"
+	},
+	{
+		"Automatic Filter Duration",
+		"Failed Login Attempts...",
+		"Servers > Services Server > Failed Login Attempts... > Automatic Filter Duration"
+	},
+	{
+		"Automatic Filter Threshold",
+		"Failed Login Attempts...",
+		"Servers > Global Settings > Failed Login Attempts... > Automatic Filter Threshold"
+	},
+	{
+		"Automatic Filter Threshold",
+		"Failed Login Attempts...",
+		"Servers > Terminal Server > Failed Login Attempts... > Automatic Filter Threshold"
+	},
+	{
+		"Automatic Filter Threshold",
+		"Failed Login Attempts...",
+		"Servers > Web Server > Failed Login Attempts... > Automatic Filter Threshold"
 	},
 	{
 		"Automatic Filter Threshold",
 		"Failed Login Attempts...",
 		"Servers > FTP Server > Failed Login Attempts... > Automatic Filter Threshold"
+	},
+	{
+		"Automatic Filter Threshold",
+		"Failed Login Attempts...",
+		"Servers > Mail Server > Failed Login Attempts... > Automatic Filter Threshold"
+	},
+	{
+		"Automatic Filter Threshold",
+		"Failed Login Attempts...",
+		"Servers > Services Server > Failed Login Attempts... > Automatic Filter Threshold"
 	},
 	{
 		"Automatically Quoted Text",
@@ -434,8 +749,8 @@ static const scfg_option_t scfg_option_index[] = {
 	},
 	{
 		"Azores",
-		"Non-U.S. Time Zone",
-		"Non-U.S. Time Zone > Azores"
+		"Local Time Zone",
+		"System > Local Time Zone > Azores"
 	},
 	{
 		"Background Execution",
@@ -444,8 +759,8 @@ static const scfg_option_t scfg_option_index[] = {
 	},
 	{
 		"Bangkok",
-		"Non-U.S. Time Zone",
-		"Non-U.S. Time Zone > Bangkok"
+		"Local Time Zone",
+		"System > Local Time Zone > Bangkok"
 	},
 	{
 		"Batch Download Command Line",
@@ -456,6 +771,11 @@ static const scfg_option_t scfg_option_index[] = {
 		"Batch Transfer",
 		"Loadable Modules",
 		"System > Loadable Modules > Batch Transfer"
+	},
+	{
+		"Batch Transfer",
+		"Loadable Modules...",
+		"System > Loadable Modules... > Batch Transfer"
 	},
 	{
 		"Batch Upload Command Line",
@@ -494,13 +814,13 @@ static const scfg_option_t scfg_option_index[] = {
 	},
 	{
 		"Bogota",
-		"Non-U.S. Time Zone",
-		"Non-U.S. Time Zone > Bogota"
+		"Local Time Zone",
+		"System > Local Time Zone > Bogota"
 	},
 	{
 		"Bombay",
-		"Non-U.S. Time Zone",
-		"Non-U.S. Time Zone > Bombay"
+		"Local Time Zone",
+		"System > Local Time Zone > Bombay"
 	},
 	{
 		"Broker Address",
@@ -526,6 +846,11 @@ static const scfg_option_t scfg_option_index[] = {
 		"Calculate/Store Hash of Files",
 		"Toggle Options...",
 		"File Areas > Directories > Toggle Options... > Calculate/Store Hash of Files"
+	},
+	{
+		"Calculate/Store Hash of Files",
+		"Toggle Options...",
+		"File Areas > Directory Default Settings > Toggle Options... > Calculate/Store Hash of Files"
 	},
 	{
 		"Call-out Command Line",
@@ -559,13 +884,13 @@ static const scfg_option_t scfg_option_index[] = {
 	},
 	{
 		"Caracas",
-		"Non-U.S. Time Zone",
-		"Non-U.S. Time Zone > Caracas"
+		"Local Time Zone",
+		"System > Local Time Zone > Caracas"
 	},
 	{
 		"Central Europe (CET)",
-		"Non-U.S. Time Zone",
-		"Non-U.S. Time Zone > Central Europe (CET)"
+		"Local Time Zone",
+		"System > Local Time Zone > Central Europe (CET)"
 	},
 	{
 		"CGI Support...",
@@ -603,9 +928,19 @@ static const scfg_option_t scfg_option_index[] = {
 		"System > Loadable Modules > Chat Section"
 	},
 	{
+		"Chat Section",
+		"Loadable Modules...",
+		"System > Loadable Modules... > Chat Section"
+	},
+	{
 		"Check for File Existence",
 		"Toggle Options...",
 		"File Areas > Directories > Toggle Options... > Check for File Existence"
+	},
+	{
+		"Check for File Existence",
+		"Toggle Options...",
+		"File Areas > Directory Default Settings > Toggle Options... > Check for File Existence"
 	},
 	{
 		"Check Headers against DNSBL",
@@ -625,7 +960,337 @@ static const scfg_option_t scfg_option_index[] = {
 	{
 		"Clear Requirements",
 		"Access Requirements",
+		"Text File Sections > Access Requirements > Clear Requirements"
+	},
+	{
+		"Clear Requirements",
+		"Access Requirements",
+		"Command Shells > Access Requirements > Clear Requirements"
+	},
+	{
+		"Clear Requirements",
+		"Access Requirements",
+		"Chat Features > External Sysop Chat Pagers > Access Requirements > Clear Requirements"
+	},
+	{
+		"Clear Requirements",
+		"Access Requirements",
 		"Chat Features > Multinode Chat Channels > Access Requirements > Clear Requirements"
+	},
+	{
+		"Clear Requirements",
+		"Access Requirements",
+		"Chat Features > Artificial Gurus > Access Requirements > Clear Requirements"
+	},
+	{
+		"Clear Requirements",
+		"Access Requirements",
+		"Message Areas > Sub-boards > Access Requirements > Clear Requirements"
+	},
+	{
+		"Clear Requirements",
+		"Access Requirements",
+		"System > Loadable Modules... > Login > Module > Access Requirements > Clear Requirements"
+	},
+	{
+		"Clear Requirements",
+		"Access Requirements",
+		"System > Loadable Modules... > Logon > Module > Access Requirements > Clear Requirements"
+	},
+	{
+		"Clear Requirements",
+		"Access Requirements",
+		"System > Loadable Modules... > Logoff > Module > Access Requirements > Clear Requirements"
+	},
+	{
+		"Clear Requirements",
+		"Access Requirements",
+		"System > Loadable Modules... > Logout > Module > Access Requirements > Clear Requirements"
+	},
+	{
+		"Clear Requirements",
+		"Access Requirements",
+		"System > Loadable Modules... > New User Prompts > Module > Access Requirements > Clear Requirements"
+	},
+	{
+		"Clear Requirements",
+		"Access Requirements",
+		"System > Loadable Modules... > New User Info > Module > Access Requirements > Clear Requirements"
+	},
+	{
+		"Clear Requirements",
+		"Access Requirements",
+		"System > Loadable Modules... > New User Created > Module > Access Requirements > Clear Requirements"
+	},
+	{
+		"Clear Requirements",
+		"Access Requirements",
+		"System > Loadable Modules... > User Config > Module > Access Requirements > Clear Requirements"
+	},
+	{
+		"Clear Requirements",
+		"Access Requirements",
+		"System > Loadable Modules... > Expired User > Module > Access Requirements > Clear Requirements"
+	},
+	{
+		"Clear Requirements",
+		"Access Requirements",
+		"System > Loadable Modules... > Auto Message > Module > Access Requirements > Clear Requirements"
+	},
+	{
+		"Clear Requirements",
+		"Access Requirements",
+		"System > Loadable Modules... > Send Feedback > Module > Access Requirements > Clear Requirements"
+	},
+	{
+		"Clear Requirements",
+		"Access Requirements",
+		"System > Loadable Modules... > Email Section > Module > Access Requirements > Clear Requirements"
+	},
+	{
+		"Clear Requirements",
+		"Access Requirements",
+		"System > Loadable Modules... > Chat Section > Module > Access Requirements > Clear Requirements"
+	},
+	{
+		"Clear Requirements",
+		"Access Requirements",
+		"System > Loadable Modules... > Text Section > Module > Access Requirements > Clear Requirements"
+	},
+	{
+		"Clear Requirements",
+		"Access Requirements",
+		"System > Loadable Modules... > Xtrn Section > Module > Access Requirements > Clear Requirements"
+	},
+	{
+		"Clear Requirements",
+		"Access Requirements",
+		"System > Loadable Modules... > Pre Xtrn > Module > Access Requirements > Clear Requirements"
+	},
+	{
+		"Clear Requirements",
+		"Access Requirements",
+		"System > Loadable Modules... > Post Xtrn > Module > Access Requirements > Clear Requirements"
+	},
+	{
+		"Clear Requirements",
+		"Access Requirements",
+		"System > Loadable Modules... > Read Mail > Module > Access Requirements > Clear Requirements"
+	},
+	{
+		"Clear Requirements",
+		"Access Requirements",
+		"System > Loadable Modules... > Scan Msgs > Module > Access Requirements > Clear Requirements"
+	},
+	{
+		"Clear Requirements",
+		"Access Requirements",
+		"System > Loadable Modules... > Scan Subs > Module > Access Requirements > Clear Requirements"
+	},
+	{
+		"Clear Requirements",
+		"Access Requirements",
+		"System > Loadable Modules... > List Msgs > Module > Access Requirements > Clear Requirements"
+	},
+	{
+		"Clear Requirements",
+		"Access Requirements",
+		"System > Loadable Modules... > List Logons > Module > Access Requirements > Clear Requirements"
+	},
+	{
+		"Clear Requirements",
+		"Access Requirements",
+		"System > Loadable Modules... > List Users > Module > Access Requirements > Clear Requirements"
+	},
+	{
+		"Clear Requirements",
+		"Access Requirements",
+		"System > Loadable Modules... > List Nodes > Module > Access Requirements > Clear Requirements"
+	},
+	{
+		"Clear Requirements",
+		"Access Requirements",
+		"System > Loadable Modules... > Who's Online > Module > Access Requirements > Clear Requirements"
+	},
+	{
+		"Clear Requirements",
+		"Access Requirements",
+		"System > Loadable Modules... > Private Msg > Module > Access Requirements > Clear Requirements"
+	},
+	{
+		"Clear Requirements",
+		"Access Requirements",
+		"System > Loadable Modules... > Scan Dirs > Module > Access Requirements > Clear Requirements"
+	},
+	{
+		"Clear Requirements",
+		"Access Requirements",
+		"System > Loadable Modules... > List Files > Module > Access Requirements > Clear Requirements"
+	},
+	{
+		"Clear Requirements",
+		"Access Requirements",
+		"System > Loadable Modules... > View File Info > Module > Access Requirements > Clear Requirements"
+	},
+	{
+		"Clear Requirements",
+		"Access Requirements",
+		"System > Loadable Modules... > Batch Transfer > Module > Access Requirements > Clear Requirements"
+	},
+	{
+		"Clear Requirements",
+		"Access Requirements",
+		"System > Loadable Modules... > Temp Transfer > Module > Access Requirements > Clear Requirements"
+	},
+	{
+		"Clear Requirements",
+		"Access Requirements",
+		"System > Loadable Modules... > Select Item > Module > Access Requirements > Clear Requirements"
+	},
+	{
+		"Clear Requirements",
+		"Access Requirements",
+		"System > Loadable Modules... > Sync > Module > Access Requirements > Clear Requirements"
+	},
+	{
+		"Clear Requirements",
+		"Access Requirements",
+		"File Options > Access Requirements > Clear Requirements"
+	},
+	{
+		"Clear Requirements",
+		"Access Requirements",
+		"File Areas > Directories > Access Requirements > Clear Requirements"
+	},
+	{
+		"Clear Requirements",
+		"Access Requirements",
+		"External Programs > Message Editors > Access Requirements > Clear Requirements"
+	},
+	{
+		"Clear Requirements",
+		"Access Requirements",
+		"External Programs > Online Programs (Doors) > Access Requirements > Clear Requirements"
+	},
+	{
+		"Clear Requirements",
+		"Archive Requirements",
+		"Servers > Mail Server > Archive Requirements > Clear Requirements"
+	},
+	{
+		"Clear Requirements",
+		"Download Requirements",
+		"File Areas > Directories > Download Requirements > Clear Requirements"
+	},
+	{
+		"Clear Requirements",
+		"Exemption Requirements",
+		"File Areas > Directories > Exemption Requirements > Clear Requirements"
+	},
+	{
+		"Clear Requirements",
+		"Login Info Save",
+		"Servers > Web Server > Login Info Save > Clear Requirements"
+	},
+	{
+		"Clear Requirements",
+		"Login Info Save",
+		"Servers > FTP Server > Login Info Save > Clear Requirements"
+	},
+	{
+		"Clear Requirements",
+		"Login Info Save",
+		"Servers > Services Server > Login Info Save > Clear Requirements"
+	},
+	{
+		"Clear Requirements",
+		"Login Requirements",
+		"Servers > Global Settings > Login Requirements > Clear Requirements"
+	},
+	{
+		"Clear Requirements",
+		"Login Requirements",
+		"Servers > Terminal Server > Login Requirements > Clear Requirements"
+	},
+	{
+		"Clear Requirements",
+		"Login Requirements",
+		"Servers > Web Server > Login Requirements > Clear Requirements"
+	},
+	{
+		"Clear Requirements",
+		"Login Requirements",
+		"Servers > FTP Server > Login Requirements > Clear Requirements"
+	},
+	{
+		"Clear Requirements",
+		"Login Requirements",
+		"Servers > Mail Server > Login Requirements > Clear Requirements"
+	},
+	{
+		"Clear Requirements",
+		"Login Requirements",
+		"Servers > Services Server > Login Requirements > Clear Requirements"
+	},
+	{
+		"Clear Requirements",
+		"Moderated Posting User",
+		"Message Areas > Sub-boards > Moderated Posting User > Clear Requirements"
+	},
+	{
+		"Clear Requirements",
+		"Operator Requirements",
+		"Message Areas > Sub-boards > Operator Requirements > Clear Requirements"
+	},
+	{
+		"Clear Requirements",
+		"Operator Requirements",
+		"File Areas > Directories > Operator Requirements > Clear Requirements"
+	},
+	{
+		"Clear Requirements",
+		"Posting Requirements",
+		"Message Areas > Sub-boards > Posting Requirements > Clear Requirements"
+	},
+	{
+		"Clear Requirements",
+		"Reading Requirements",
+		"Message Areas > Sub-boards > Reading Requirements > Clear Requirements"
+	},
+	{
+		"Clear Requirements",
+		"Requirements",
+		"Message Areas > Requirements > Clear Requirements"
+	},
+	{
+		"Clear Requirements",
+		"Requirements",
+		"Nodes > Node Configuration > Requirements > Clear Requirements"
+	},
+	{
+		"Clear Requirements",
+		"Requirements",
+		"File Options > Requirements > Clear Requirements"
+	},
+	{
+		"Clear Requirements",
+		"Requirements",
+		"File Areas > Requirements > Clear Requirements"
+	},
+	{
+		"Clear Requirements",
+		"Requirements",
+		"External Programs > Online Programs (Doors) > Online Programs... > Requirements > Clear Requirements"
+	},
+	{
+		"Clear Requirements",
+		"Sysop Chat Override",
+		"System > Advanced Options... > Sysop Chat Override > Clear Requirements"
+	},
+	{
+		"Clear Requirements",
+		"Upload Requirements",
+		"File Areas > Directories > Upload Requirements > Clear Requirements"
 	},
 	{
 		"Client Cert",
@@ -670,7 +1335,27 @@ static const scfg_option_t scfg_option_index[] = {
 	{
 		"Command Line",
 		"Event",
+		"Nodes > Node Configuration > Event > Command Line"
+	},
+	{
+		"Command Line",
+		"Event",
 		"External Programs > Fixed Events > New User > Event > Command Line"
+	},
+	{
+		"Command Line",
+		"Event",
+		"External Programs > Fixed Events > Logon > Event > Command Line"
+	},
+	{
+		"Command Line",
+		"Event",
+		"External Programs > Fixed Events > Logout > Event > Command Line"
+	},
+	{
+		"Command Line",
+		"Event",
+		"External Programs > Fixed Events > Events > Event > Command Line"
 	},
 	{
 		"Command Line",
@@ -790,12 +1475,42 @@ static const scfg_option_t scfg_option_index[] = {
 	{
 		"Count IPv4 Clients By",
 		"Rate Limiting",
+		"Servers > Web Server > Rate Limiting... > Rate Limiting > Count IPv4 Clients By"
+	},
+	{
+		"Count IPv4 Clients By",
+		"Rate Limiting",
 		"Servers > FTP Server > Limit Rate of Requests > Rate Limiting > Count IPv4 Clients By"
+	},
+	{
+		"Count IPv4 Clients By",
+		"Rate Limiting",
+		"Servers > Mail Server > Limit Rate of Requests > Rate Limiting > Count IPv4 Clients By"
+	},
+	{
+		"Count IPv4 Clients By",
+		"Rate Limiting",
+		"Servers > Services Server > Limit Rate of Connections > Rate Limiting > Count IPv4 Clients By"
+	},
+	{
+		"Count IPv6 Clients By",
+		"Rate Limiting",
+		"Servers > Web Server > Rate Limiting... > Rate Limiting > Count IPv6 Clients By"
 	},
 	{
 		"Count IPv6 Clients By",
 		"Rate Limiting",
 		"Servers > FTP Server > Limit Rate of Requests > Rate Limiting > Count IPv6 Clients By"
+	},
+	{
+		"Count IPv6 Clients By",
+		"Rate Limiting",
+		"Servers > Mail Server > Limit Rate of Requests > Rate Limiting > Count IPv6 Clients By"
+	},
+	{
+		"Count IPv6 Clients By",
+		"Rate Limiting",
+		"Servers > Services Server > Limit Rate of Connections > Rate Limiting > Count IPv6 Clients By"
 	},
 	{
 		"Create Self-signed Certificate",
@@ -806,6 +1521,11 @@ static const scfg_option_t scfg_option_index[] = {
 		"Credit Downloads",
 		"Toggle Options...",
 		"File Areas > Directories > Toggle Options... > Credit Downloads"
+	},
+	{
+		"Credit Downloads",
+		"Toggle Options...",
+		"File Areas > Directory Default Settings > Toggle Options... > Credit Downloads"
 	},
 	{
 		"Credit on Download",
@@ -833,9 +1553,19 @@ static const scfg_option_t scfg_option_index[] = {
 		"File Areas > Directories > Toggle Options... > Credit Uploads"
 	},
 	{
+		"Credit Uploads",
+		"Toggle Options...",
+		"File Areas > Directory Default Settings > Toggle Options... > Credit Uploads"
+	},
+	{
 		"Credit with Minutes",
 		"Toggle Options...",
 		"File Areas > Directories > Toggle Options... > Credit with Minutes"
+	},
+	{
+		"Credit with Minutes",
+		"Toggle Options...",
+		"File Areas > Directory Default Settings > Toggle Options... > Credit with Minutes"
 	},
 	{
 		"Credits",
@@ -893,6 +1623,11 @@ static const scfg_option_t scfg_option_index[] = {
 		"File Areas > Directories > Toggle Options... > Deduct Upload Time"
 	},
 	{
+		"Deduct Upload Time",
+		"Toggle Options...",
+		"File Areas > Directory Default Settings > Toggle Options... > Deduct Upload Time"
+	},
+	{
 		"Default Content-Type",
 		"CGI Support...",
 		"Servers > Web Server > CGI Support... > Default Content-Type"
@@ -940,7 +1675,32 @@ static const scfg_option_t scfg_option_index[] = {
 	{
 		"Delay",
 		"Failed Login Attempts...",
+		"Servers > Global Settings > Failed Login Attempts... > Delay"
+	},
+	{
+		"Delay",
+		"Failed Login Attempts...",
+		"Servers > Terminal Server > Failed Login Attempts... > Delay"
+	},
+	{
+		"Delay",
+		"Failed Login Attempts...",
+		"Servers > Web Server > Failed Login Attempts... > Delay"
+	},
+	{
+		"Delay",
+		"Failed Login Attempts...",
 		"Servers > FTP Server > Failed Login Attempts... > Delay"
+	},
+	{
+		"Delay",
+		"Failed Login Attempts...",
+		"Servers > Mail Server > Failed Login Attempts... > Delay"
+	},
+	{
+		"Delay",
+		"Failed Login Attempts...",
+		"Servers > Services Server > Failed Login Attempts... > Delay"
 	},
 	{
 		"Delivery Method",
@@ -954,8 +1714,8 @@ static const scfg_option_t scfg_option_index[] = {
 	},
 	{
 		"Dhaka",
-		"Non-U.S. Time Zone",
-		"Non-U.S. Time Zone > Dhaka"
+		"Local Time Zone",
+		"System > Local Time Zone > Dhaka"
 	},
 	{
 		"Directories",
@@ -1038,9 +1798,19 @@ static const scfg_option_t scfg_option_index[] = {
 		"File Areas > Directories > Toggle Options... > Download Notifications"
 	},
 	{
+		"Download Notifications",
+		"Toggle Options...",
+		"File Areas > Directory Default Settings > Toggle Options... > Download Notifications"
+	},
+	{
 		"Download Protocol",
 		"New User Values",
 		"System > New User Values > Download Protocol"
+	},
+	{
+		"Download Requirements",
+		"Directories",
+		"File Areas > Directories > Download Requirements"
 	},
 	{
 		"Download Requirements",
@@ -1059,8 +1829,8 @@ static const scfg_option_t scfg_option_index[] = {
 	},
 	{
 		"Dubai",
-		"Non-U.S. Time Zone",
-		"Non-U.S. Time Zone > Dubai"
+		"Local Time Zone",
+		"System > Local Time Zone > Dubai"
 	},
 	{
 		"Duplicate Checking",
@@ -1074,8 +1844,8 @@ static const scfg_option_t scfg_option_index[] = {
 	},
 	{
 		"Eastern Europe (EET)",
-		"Non-U.S. Time Zone",
-		"Non-U.S. Time Zone > Eastern Europe (EET)"
+		"Local Time Zone",
+		"System > Local Time Zone > Eastern Europe (EET)"
 	},
 	{
 		"EchoMail Semaphore",
@@ -1099,8 +1869,8 @@ static const scfg_option_t scfg_option_index[] = {
 	},
 	{
 		"Edmonton",
-		"Non-U.S. Time Zone",
-		"Non-U.S. Time Zone > Edmonton"
+		"Local Time Zone",
+		"System > Local Time Zone > Edmonton"
 	},
 	{
 		"Email Per Day",
@@ -1113,6 +1883,11 @@ static const scfg_option_t scfg_option_index[] = {
 		"System > Loadable Modules > Email Section"
 	},
 	{
+		"Email Section",
+		"Loadable Modules...",
+		"System > Loadable Modules... > Email Section"
+	},
+	{
 		"Enabled",
 		"CGI Support...",
 		"Servers > Web Server > CGI Support... > Enabled"
@@ -1120,7 +1895,27 @@ static const scfg_option_t scfg_option_index[] = {
 	{
 		"Enabled",
 		"Event",
+		"Nodes > Node Configuration > Event > Enabled"
+	},
+	{
+		"Enabled",
+		"Event",
 		"External Programs > Fixed Events > New User > Event > Enabled"
+	},
+	{
+		"Enabled",
+		"Event",
+		"External Programs > Fixed Events > Logon > Event > Enabled"
+	},
+	{
+		"Enabled",
+		"Event",
+		"External Programs > Fixed Events > Logout > Event > Enabled"
+	},
+	{
+		"Enabled",
+		"Event",
+		"External Programs > Fixed Events > Events > Event > Enabled"
 	},
 	{
 		"Enabled",
@@ -1244,13 +2039,38 @@ static const scfg_option_t scfg_option_index[] = {
 	},
 	{
 		"Event",
+		"Events",
+		"External Programs > Fixed Events > Events > Event"
+	},
+	{
+		"Event",
+		"Logon",
+		"External Programs > Fixed Events > Logon > Event"
+	},
+	{
+		"Event",
+		"Logout",
+		"External Programs > Fixed Events > Logout > Event"
+	},
+	{
+		"Event",
 		"New User",
 		"External Programs > Fixed Events > New User > Event"
+	},
+	{
+		"Event",
+		"Node Configuration",
+		"Nodes > Node Configuration > Event"
 	},
 	{
 		"Event Log Level",
 		"Terminal Server",
 		"Servers > Terminal Server > Event Log Level"
+	},
+	{
+		"Events",
+		"Fixed Events",
+		"External Programs > Fixed Events > Events"
 	},
 	{
 		"Exec Directory",
@@ -1314,6 +2134,11 @@ static const scfg_option_t scfg_option_index[] = {
 	},
 	{
 		"Exemption Requirements",
+		"Directories",
+		"File Areas > Directories > Exemption Requirements"
+	},
+	{
+		"Exemption Requirements",
 		"Directory",
 		"File Areas > Directories > Directory > Exemption Requirements"
 	},
@@ -1366,6 +2191,11 @@ static const scfg_option_t scfg_option_index[] = {
 		"Expired User",
 		"Loadable Modules",
 		"System > Loadable Modules > Expired User"
+	},
+	{
+		"Expired User",
+		"Loadable Modules...",
+		"System > Loadable Modules... > Expired User"
 	},
 	{
 		"Export Areas...",
@@ -1474,8 +2304,8 @@ static const scfg_option_t scfg_option_index[] = {
 	},
 	{
 		"Fernando de Noronha",
-		"Non-U.S. Time Zone",
-		"Non-U.S. Time Zone > Fernando de Noronha"
+		"Local Time Zone",
+		"System > Local Time Zone > Fernando de Noronha"
 	},
 	{
 		"FidoNet Address",
@@ -1638,6 +2468,11 @@ static const scfg_option_t scfg_option_index[] = {
 		"File Areas > Directories > Toggle Options... > Force Content Ratings"
 	},
 	{
+		"Force Content Ratings",
+		"Toggle Options...",
+		"File Areas > Directory Default Settings > Toggle Options... > Force Content Ratings"
+	},
+	{
 		"Force Users Off-line",
 		"Timed Event",
 		"External Programs > Timed Events > Timed Event > Force Users Off-line"
@@ -1658,9 +2493,29 @@ static const scfg_option_t scfg_option_index[] = {
 		"Chat Features > External Sysop Chat Pagers > I/O Method > FOSSIL Only"
 	},
 	{
+		"FOSSIL Only",
+		"I/O Method",
+		"External Programs > Online Programs (Doors) > Online Programs... > I/O Method > FOSSIL Only"
+	},
+	{
+		"FOSSIL Only",
+		"Record Terminal Width",
+		"External Programs > Message Editors > Record Terminal Width > FOSSIL Only"
+	},
+	{
 		"FOSSIL or UART",
 		"I/O Method",
 		"Chat Features > External Sysop Chat Pagers > I/O Method > FOSSIL or UART"
+	},
+	{
+		"FOSSIL or UART",
+		"I/O Method",
+		"External Programs > Online Programs (Doors) > Online Programs... > I/O Method > FOSSIL or UART"
+	},
+	{
+		"FOSSIL or UART",
+		"Record Terminal Width",
+		"External Programs > Message Editors > Record Terminal Width > FOSSIL or UART"
 	},
 	{
 		"Free Credits Per Day",
@@ -1673,9 +2528,19 @@ static const scfg_option_t scfg_option_index[] = {
 		"File Areas > Directories > Toggle Options... > Free Download Time"
 	},
 	{
+		"Free Download Time",
+		"Toggle Options...",
+		"File Areas > Directory Default Settings > Toggle Options... > Free Download Time"
+	},
+	{
 		"Free Downloads",
 		"Toggle Options...",
 		"File Areas > Directories > Toggle Options... > Free Downloads"
+	},
+	{
+		"Free Downloads",
+		"Toggle Options...",
+		"File Areas > Directory Default Settings > Toggle Options... > Free Downloads"
 	},
 	{
 		"FTP Server",
@@ -1691,6 +2556,26 @@ static const scfg_option_t scfg_option_index[] = {
 		"GC Interval",
 		"JavaScript Settings...",
 		"Servers > Global Settings > JavaScript Settings... > GC Interval"
+	},
+	{
+		"GC Interval",
+		"JavaScript Settings...",
+		"Servers > Terminal Server > JavaScript Settings... > GC Interval"
+	},
+	{
+		"GC Interval",
+		"JavaScript Settings...",
+		"Servers > Web Server > JavaScript Settings... > GC Interval"
+	},
+	{
+		"GC Interval",
+		"JavaScript Settings...",
+		"Servers > Mail Server > JavaScript Settings... > GC Interval"
+	},
+	{
+		"GC Interval",
+		"JavaScript Settings...",
+		"Servers > Services Server > JavaScript Settings... > GC Interval"
 	},
 	{
 		"Gender Options",
@@ -1740,7 +2625,32 @@ static const scfg_option_t scfg_option_index[] = {
 	{
 		"Hack Log Threshold",
 		"Failed Login Attempts...",
+		"Servers > Global Settings > Failed Login Attempts... > Hack Log Threshold"
+	},
+	{
+		"Hack Log Threshold",
+		"Failed Login Attempts...",
+		"Servers > Terminal Server > Failed Login Attempts... > Hack Log Threshold"
+	},
+	{
+		"Hack Log Threshold",
+		"Failed Login Attempts...",
+		"Servers > Web Server > Failed Login Attempts... > Hack Log Threshold"
+	},
+	{
+		"Hack Log Threshold",
+		"Failed Login Attempts...",
 		"Servers > FTP Server > Failed Login Attempts... > Hack Log Threshold"
+	},
+	{
+		"Hack Log Threshold",
+		"Failed Login Attempts...",
+		"Servers > Mail Server > Failed Login Attempts... > Hack Log Threshold"
+	},
+	{
+		"Hack Log Threshold",
+		"Failed Login Attempts...",
+		"Servers > Services Server > Failed Login Attempts... > Hack Log Threshold"
 	},
 	{
 		"Handle Soft CRs",
@@ -1758,9 +2668,29 @@ static const scfg_option_t scfg_option_index[] = {
 		"Servers > Global Settings > JavaScript Settings... > Heap Size"
 	},
 	{
+		"Heap Size",
+		"JavaScript Settings...",
+		"Servers > Terminal Server > JavaScript Settings... > Heap Size"
+	},
+	{
+		"Heap Size",
+		"JavaScript Settings...",
+		"Servers > Web Server > JavaScript Settings... > Heap Size"
+	},
+	{
+		"Heap Size",
+		"JavaScript Settings...",
+		"Servers > Mail Server > JavaScript Settings... > Heap Size"
+	},
+	{
+		"Heap Size",
+		"JavaScript Settings...",
+		"Servers > Services Server > JavaScript Settings... > Heap Size"
+	},
+	{
 		"Hong Kong",
-		"Non-U.S. Time Zone",
-		"Non-U.S. Time Zone > Hong Kong"
+		"Local Time Zone",
+		"System > Local Time Zone > Hong Kong"
 	},
 	{
 		"HTTP Support...",
@@ -1794,6 +2724,11 @@ static const scfg_option_t scfg_option_index[] = {
 	},
 	{
 		"I/O Method",
+		"Online Programs...",
+		"External Programs > Online Programs (Doors) > Online Programs... > I/O Method"
+	},
+	{
+		"I/O Method",
 		"Sysop Chat Pager #",
 		"Chat Features > External Sysop Chat Pagers > Sysop Chat Pager # > I/O Method"
 	},
@@ -1821,6 +2756,11 @@ static const scfg_option_t scfg_option_index[] = {
 		"Import FILE_ID.DIZ",
 		"Toggle Options...",
 		"File Areas > Directories > Toggle Options... > Import FILE_ID.DIZ"
+	},
+	{
+		"Import FILE_ID.DIZ",
+		"Toggle Options...",
+		"File Areas > Directory Default Settings > Toggle Options... > Import FILE_ID.DIZ"
 	},
 	{
 		"Inbound E-mail Semaphore",
@@ -1856,6 +2796,11 @@ static const scfg_option_t scfg_option_index[] = {
 		"Include Transfers In Stats",
 		"Toggle Options...",
 		"File Areas > Directories > Toggle Options... > Include Transfers In Stats"
+	},
+	{
+		"Include Transfers In Stats",
+		"Toggle Options...",
+		"File Areas > Directory Default Settings > Toggle Options... > Include Transfers In Stats"
 	},
 	{
 		"Include UTF-8 Characters",
@@ -2004,18 +2949,18 @@ static const scfg_option_t scfg_option_index[] = {
 	},
 	{
 		"Kabul",
-		"Non-U.S. Time Zone",
-		"Non-U.S. Time Zone > Kabul"
+		"Local Time Zone",
+		"System > Local Time Zone > Kabul"
 	},
 	{
 		"Karachi",
-		"Non-U.S. Time Zone",
-		"Non-U.S. Time Zone > Karachi"
+		"Local Time Zone",
+		"System > Local Time Zone > Karachi"
 	},
 	{
 		"Kathmandu",
-		"Non-U.S. Time Zone",
-		"Non-U.S. Time Zone > Kathmandu"
+		"Local Time Zone",
+		"System > Local Time Zone > Kathmandu"
 	},
 	{
 		"Keep Node File Open",
@@ -2100,7 +3045,22 @@ static const scfg_option_t scfg_option_index[] = {
 	{
 		"Limit Rate of Connections",
 		"Rate Limiting",
+		"Servers > Web Server > Rate Limiting... > Rate Limiting > Limit Rate of Connections"
+	},
+	{
+		"Limit Rate of Connections",
+		"Rate Limiting",
 		"Servers > FTP Server > Limit Rate of Requests > Rate Limiting > Limit Rate of Connections"
+	},
+	{
+		"Limit Rate of Connections",
+		"Rate Limiting",
+		"Servers > Mail Server > Limit Rate of Requests > Rate Limiting > Limit Rate of Connections"
+	},
+	{
+		"Limit Rate of Connections",
+		"Rate Limiting",
+		"Servers > Services Server > Limit Rate of Connections > Rate Limiting > Limit Rate of Connections"
 	},
 	{
 		"Limit Rate of Connections",
@@ -2120,7 +3080,22 @@ static const scfg_option_t scfg_option_index[] = {
 	{
 		"Limit Rate of Requests",
 		"Rate Limiting",
+		"Servers > Web Server > Rate Limiting... > Rate Limiting > Limit Rate of Requests"
+	},
+	{
+		"Limit Rate of Requests",
+		"Rate Limiting",
 		"Servers > FTP Server > Limit Rate of Requests > Rate Limiting > Limit Rate of Requests"
+	},
+	{
+		"Limit Rate of Requests",
+		"Rate Limiting",
+		"Servers > Mail Server > Limit Rate of Requests > Rate Limiting > Limit Rate of Requests"
+	},
+	{
+		"Limit Rate of Requests",
+		"Rate Limiting",
+		"Servers > Services Server > Limit Rate of Connections > Rate Limiting > Limit Rate of Requests"
 	},
 	{
 		"Lines Per Message",
@@ -2133,9 +3108,19 @@ static const scfg_option_t scfg_option_index[] = {
 		"System > Loadable Modules > List Files"
 	},
 	{
+		"List Files",
+		"Loadable Modules...",
+		"System > Loadable Modules... > List Files"
+	},
+	{
 		"List Logons",
 		"Loadable Modules",
 		"System > Loadable Modules > List Logons"
+	},
+	{
+		"List Logons",
+		"Loadable Modules...",
+		"System > Loadable Modules... > List Logons"
 	},
 	{
 		"List Msgs",
@@ -2143,9 +3128,19 @@ static const scfg_option_t scfg_option_index[] = {
 		"System > Loadable Modules > List Msgs"
 	},
 	{
+		"List Msgs",
+		"Loadable Modules...",
+		"System > Loadable Modules... > List Msgs"
+	},
+	{
 		"List Nodes",
 		"Loadable Modules",
 		"System > Loadable Modules > List Nodes"
+	},
+	{
+		"List Nodes",
+		"Loadable Modules...",
+		"System > Loadable Modules... > List Nodes"
 	},
 	{
 		"List Users",
@@ -2153,9 +3148,34 @@ static const scfg_option_t scfg_option_index[] = {
 		"System > Loadable Modules > List Users"
 	},
 	{
+		"List Users",
+		"Loadable Modules...",
+		"System > Loadable Modules... > List Users"
+	},
+	{
 		"Load Path",
 		"JavaScript Settings...",
 		"Servers > Global Settings > JavaScript Settings... > Load Path"
+	},
+	{
+		"Load Path",
+		"JavaScript Settings...",
+		"Servers > Terminal Server > JavaScript Settings... > Load Path"
+	},
+	{
+		"Load Path",
+		"JavaScript Settings...",
+		"Servers > Web Server > JavaScript Settings... > Load Path"
+	},
+	{
+		"Load Path",
+		"JavaScript Settings...",
+		"Servers > Mail Server > JavaScript Settings... > Load Path"
+	},
+	{
+		"Load Path",
+		"JavaScript Settings...",
+		"Servers > Services Server > JavaScript Settings... > Load Path"
 	},
 	{
 		"Loadable Modules",
@@ -2278,6 +3298,11 @@ static const scfg_option_t scfg_option_index[] = {
 		"System > Loadable Modules > Logoff"
 	},
 	{
+		"Logoff",
+		"Loadable Modules...",
+		"System > Loadable Modules... > Logoff"
+	},
+	{
 		"Logon",
 		"Fixed Events",
 		"External Programs > Fixed Events > Logon"
@@ -2288,6 +3313,11 @@ static const scfg_option_t scfg_option_index[] = {
 		"System > Loadable Modules > Logon"
 	},
 	{
+		"Logon",
+		"Loadable Modules...",
+		"System > Loadable Modules... > Logon"
+	},
+	{
 		"Logout",
 		"Fixed Events",
 		"External Programs > Fixed Events > Logout"
@@ -2296,6 +3326,11 @@ static const scfg_option_t scfg_option_index[] = {
 		"Logout",
 		"Loadable Modules",
 		"System > Loadable Modules > Logout"
+	},
+	{
+		"Logout",
+		"Loadable Modules...",
+		"System > Loadable Modules... > Logout"
 	},
 	{
 		"Logs Directory",
@@ -2366,6 +3401,11 @@ static const scfg_option_t scfg_option_index[] = {
 		"Mark Moved Files as New",
 		"Toggle Options...",
 		"File Areas > Directories > Toggle Options... > Mark Moved Files as New"
+	},
+	{
+		"Mark Moved Files as New",
+		"Toggle Options...",
+		"File Areas > Directory Default Settings > Toggle Options... > Mark Moved Files as New"
 	},
 	{
 		"Mark Retrieved Mail as Read",
@@ -2584,8 +3624,8 @@ static const scfg_option_t scfg_option_index[] = {
 	},
 	{
 		"Midway",
-		"Non-U.S. Time Zone",
-		"Non-U.S. Time Zone > Midway"
+		"Local Time Zone",
+		"System > Local Time Zone > Midway"
 	},
 	{
 		"Military (24 hour) Time Format",
@@ -2623,6 +3663,11 @@ static const scfg_option_t scfg_option_index[] = {
 		"Message Areas > Sub-boards > Sub-board > Moderated Posting User"
 	},
 	{
+		"Moderated Posting User",
+		"Sub-boards",
+		"Message Areas > Sub-boards > Moderated Posting User"
+	},
+	{
 		"Modify User Data",
 		"Online Program",
 		"External Programs > Online Programs (Doors) > Online Programs... > Online Program > Modify User Data"
@@ -2634,8 +3679,168 @@ static const scfg_option_t scfg_option_index[] = {
 	},
 	{
 		"Module",
+		"Auto Message",
+		"System > Loadable Modules... > Auto Message > Module"
+	},
+	{
+		"Module",
+		"Batch Transfer",
+		"System > Loadable Modules... > Batch Transfer > Module"
+	},
+	{
+		"Module",
+		"Chat Section",
+		"System > Loadable Modules... > Chat Section > Module"
+	},
+	{
+		"Module",
+		"Email Section",
+		"System > Loadable Modules... > Email Section > Module"
+	},
+	{
+		"Module",
+		"Expired User",
+		"System > Loadable Modules... > Expired User > Module"
+	},
+	{
+		"Module",
+		"List Files",
+		"System > Loadable Modules... > List Files > Module"
+	},
+	{
+		"Module",
+		"List Logons",
+		"System > Loadable Modules... > List Logons > Module"
+	},
+	{
+		"Module",
+		"List Msgs",
+		"System > Loadable Modules... > List Msgs > Module"
+	},
+	{
+		"Module",
+		"List Nodes",
+		"System > Loadable Modules... > List Nodes > Module"
+	},
+	{
+		"Module",
+		"List Users",
+		"System > Loadable Modules... > List Users > Module"
+	},
+	{
+		"Module",
 		"Login",
 		"System > Loadable Modules... > Login > Module"
+	},
+	{
+		"Module",
+		"Logoff",
+		"System > Loadable Modules... > Logoff > Module"
+	},
+	{
+		"Module",
+		"Logon",
+		"System > Loadable Modules... > Logon > Module"
+	},
+	{
+		"Module",
+		"Logout",
+		"System > Loadable Modules... > Logout > Module"
+	},
+	{
+		"Module",
+		"New User Created",
+		"System > Loadable Modules... > New User Created > Module"
+	},
+	{
+		"Module",
+		"New User Info",
+		"System > Loadable Modules... > New User Info > Module"
+	},
+	{
+		"Module",
+		"New User Prompts",
+		"System > Loadable Modules... > New User Prompts > Module"
+	},
+	{
+		"Module",
+		"Post Xtrn",
+		"System > Loadable Modules... > Post Xtrn > Module"
+	},
+	{
+		"Module",
+		"Pre Xtrn",
+		"System > Loadable Modules... > Pre Xtrn > Module"
+	},
+	{
+		"Module",
+		"Private Msg",
+		"System > Loadable Modules... > Private Msg > Module"
+	},
+	{
+		"Module",
+		"Read Mail",
+		"System > Loadable Modules... > Read Mail > Module"
+	},
+	{
+		"Module",
+		"Scan Dirs",
+		"System > Loadable Modules... > Scan Dirs > Module"
+	},
+	{
+		"Module",
+		"Scan Msgs",
+		"System > Loadable Modules... > Scan Msgs > Module"
+	},
+	{
+		"Module",
+		"Scan Subs",
+		"System > Loadable Modules... > Scan Subs > Module"
+	},
+	{
+		"Module",
+		"Select Item",
+		"System > Loadable Modules... > Select Item > Module"
+	},
+	{
+		"Module",
+		"Send Feedback",
+		"System > Loadable Modules... > Send Feedback > Module"
+	},
+	{
+		"Module",
+		"Sync",
+		"System > Loadable Modules... > Sync > Module"
+	},
+	{
+		"Module",
+		"Temp Transfer",
+		"System > Loadable Modules... > Temp Transfer > Module"
+	},
+	{
+		"Module",
+		"Text Section",
+		"System > Loadable Modules... > Text Section > Module"
+	},
+	{
+		"Module",
+		"User Config",
+		"System > Loadable Modules... > User Config > Module"
+	},
+	{
+		"Module",
+		"View File Info",
+		"System > Loadable Modules... > View File Info > Module"
+	},
+	{
+		"Module",
+		"Who's Online",
+		"System > Loadable Modules... > Who's Online > Module"
+	},
+	{
+		"Module",
+		"Xtrn Section",
+		"System > Loadable Modules... > Xtrn Section > Module"
 	},
 	{
 		"Monitor Time Left",
@@ -2644,8 +3849,8 @@ static const scfg_option_t scfg_option_index[] = {
 	},
 	{
 		"Moscow",
-		"Non-U.S. Time Zone",
-		"Non-U.S. Time Zone > Moscow"
+		"Local Time Zone",
+		"System > Local Time Zone > Moscow"
 	},
 	{
 		"Mouse Hot-spots in Menus/Prompts",
@@ -2671,6 +3876,11 @@ static const scfg_option_t scfg_option_index[] = {
 		"Multiple File Numberings",
 		"Toggle Options...",
 		"File Areas > Directories > Toggle Options... > Multiple File Numberings"
+	},
+	{
+		"Multiple File Numberings",
+		"Toggle Options...",
+		"File Areas > Directory Default Settings > Toggle Options... > Multiple File Numberings"
 	},
 	{
 		"Name",
@@ -2706,6 +3916,166 @@ static const scfg_option_t scfg_option_index[] = {
 		"Name / Command-line",
 		"Module",
 		"System > Loadable Modules... > Login > Module > Name / Command-line"
+	},
+	{
+		"Name / Command-line",
+		"Module",
+		"System > Loadable Modules... > Logon > Module > Name / Command-line"
+	},
+	{
+		"Name / Command-line",
+		"Module",
+		"System > Loadable Modules... > Logoff > Module > Name / Command-line"
+	},
+	{
+		"Name / Command-line",
+		"Module",
+		"System > Loadable Modules... > Logout > Module > Name / Command-line"
+	},
+	{
+		"Name / Command-line",
+		"Module",
+		"System > Loadable Modules... > New User Prompts > Module > Name / Command-line"
+	},
+	{
+		"Name / Command-line",
+		"Module",
+		"System > Loadable Modules... > New User Info > Module > Name / Command-line"
+	},
+	{
+		"Name / Command-line",
+		"Module",
+		"System > Loadable Modules... > New User Created > Module > Name / Command-line"
+	},
+	{
+		"Name / Command-line",
+		"Module",
+		"System > Loadable Modules... > User Config > Module > Name / Command-line"
+	},
+	{
+		"Name / Command-line",
+		"Module",
+		"System > Loadable Modules... > Expired User > Module > Name / Command-line"
+	},
+	{
+		"Name / Command-line",
+		"Module",
+		"System > Loadable Modules... > Auto Message > Module > Name / Command-line"
+	},
+	{
+		"Name / Command-line",
+		"Module",
+		"System > Loadable Modules... > Send Feedback > Module > Name / Command-line"
+	},
+	{
+		"Name / Command-line",
+		"Module",
+		"System > Loadable Modules... > Email Section > Module > Name / Command-line"
+	},
+	{
+		"Name / Command-line",
+		"Module",
+		"System > Loadable Modules... > Chat Section > Module > Name / Command-line"
+	},
+	{
+		"Name / Command-line",
+		"Module",
+		"System > Loadable Modules... > Text Section > Module > Name / Command-line"
+	},
+	{
+		"Name / Command-line",
+		"Module",
+		"System > Loadable Modules... > Xtrn Section > Module > Name / Command-line"
+	},
+	{
+		"Name / Command-line",
+		"Module",
+		"System > Loadable Modules... > Pre Xtrn > Module > Name / Command-line"
+	},
+	{
+		"Name / Command-line",
+		"Module",
+		"System > Loadable Modules... > Post Xtrn > Module > Name / Command-line"
+	},
+	{
+		"Name / Command-line",
+		"Module",
+		"System > Loadable Modules... > Read Mail > Module > Name / Command-line"
+	},
+	{
+		"Name / Command-line",
+		"Module",
+		"System > Loadable Modules... > Scan Msgs > Module > Name / Command-line"
+	},
+	{
+		"Name / Command-line",
+		"Module",
+		"System > Loadable Modules... > Scan Subs > Module > Name / Command-line"
+	},
+	{
+		"Name / Command-line",
+		"Module",
+		"System > Loadable Modules... > List Msgs > Module > Name / Command-line"
+	},
+	{
+		"Name / Command-line",
+		"Module",
+		"System > Loadable Modules... > List Logons > Module > Name / Command-line"
+	},
+	{
+		"Name / Command-line",
+		"Module",
+		"System > Loadable Modules... > List Users > Module > Name / Command-line"
+	},
+	{
+		"Name / Command-line",
+		"Module",
+		"System > Loadable Modules... > List Nodes > Module > Name / Command-line"
+	},
+	{
+		"Name / Command-line",
+		"Module",
+		"System > Loadable Modules... > Who's Online > Module > Name / Command-line"
+	},
+	{
+		"Name / Command-line",
+		"Module",
+		"System > Loadable Modules... > Private Msg > Module > Name / Command-line"
+	},
+	{
+		"Name / Command-line",
+		"Module",
+		"System > Loadable Modules... > Scan Dirs > Module > Name / Command-line"
+	},
+	{
+		"Name / Command-line",
+		"Module",
+		"System > Loadable Modules... > List Files > Module > Name / Command-line"
+	},
+	{
+		"Name / Command-line",
+		"Module",
+		"System > Loadable Modules... > View File Info > Module > Name / Command-line"
+	},
+	{
+		"Name / Command-line",
+		"Module",
+		"System > Loadable Modules... > Batch Transfer > Module > Name / Command-line"
+	},
+	{
+		"Name / Command-line",
+		"Module",
+		"System > Loadable Modules... > Temp Transfer > Module > Name / Command-line"
+	},
+	{
+		"Name / Command-line",
+		"Module",
+		"System > Loadable Modules... > Select Item > Module > Name / Command-line"
+	},
+	{
+		"Name / Command-line",
+		"Module",
+		"System > Loadable Modules... > Sync > Module > Name / Command-line"
 	},
 	{
 		"Native Call-out Command",
@@ -2793,6 +4163,11 @@ static const scfg_option_t scfg_option_index[] = {
 		"System > Loadable Modules > New User Created"
 	},
 	{
+		"New User Created",
+		"Loadable Modules...",
+		"System > Loadable Modules... > New User Created"
+	},
+	{
 		"New User Feedback",
 		"Notifications...",
 		"System > Notifications... > New User Feedback"
@@ -2803,6 +4178,11 @@ static const scfg_option_t scfg_option_index[] = {
 		"System > Loadable Modules > New User Info"
 	},
 	{
+		"New User Info",
+		"Loadable Modules...",
+		"System > Loadable Modules... > New User Info"
+	},
+	{
 		"New User Magic Word",
 		"Advanced Options",
 		"System > Advanced Options > New User Magic Word"
@@ -2811,6 +4191,11 @@ static const scfg_option_t scfg_option_index[] = {
 		"New User Prompts",
 		"Loadable Modules",
 		"System > Loadable Modules > New User Prompts"
+	},
+	{
+		"New User Prompts",
+		"Loadable Modules...",
+		"System > Loadable Modules... > New User Prompts"
 	},
 	{
 		"New User Prompts...",
@@ -2829,8 +4214,8 @@ static const scfg_option_t scfg_option_index[] = {
 	},
 	{
 		"New Zealand",
-		"Non-U.S. Time Zone",
-		"Non-U.S. Time Zone > New Zealand"
+		"Local Time Zone",
+		"System > Local Time Zone > New Zealand"
 	},
 	{
 		"Newsgroup Name",
@@ -2853,11 +4238,6 @@ static const scfg_option_t scfg_option_index[] = {
 		"Nodes"
 	},
 	{
-		"Non-U.S. Time Zone",
-		"",
-		"Non-U.S. Time Zone"
-	},
-	{
 		"Notifications...",
 		"System",
 		"System > Notifications..."
@@ -2874,8 +4254,8 @@ static const scfg_option_t scfg_option_index[] = {
 	},
 	{
 		"Noumea",
-		"Non-U.S. Time Zone",
-		"Non-U.S. Time Zone > Noumea"
+		"Local Time Zone",
+		"System > Local Time Zone > Noumea"
 	},
 	{
 		"Online Program",
@@ -2914,6 +4294,11 @@ static const scfg_option_t scfg_option_index[] = {
 	},
 	{
 		"Operator Requirements",
+		"Directories",
+		"File Areas > Directories > Operator Requirements"
+	},
+	{
+		"Operator Requirements",
 		"Directory",
 		"File Areas > Directories > Directory > Operator Requirements"
 	},
@@ -2928,9 +4313,14 @@ static const scfg_option_t scfg_option_index[] = {
 		"Message Areas > Sub-boards > Sub-board > Operator Requirements"
 	},
 	{
+		"Operator Requirements",
+		"Sub-boards",
+		"Message Areas > Sub-boards > Operator Requirements"
+	},
+	{
 		"Other...",
-		"Non-U.S. Time Zone",
-		"Non-U.S. Time Zone > Other..."
+		"Local Time Zone",
+		"System > Local Time Zone > Other..."
 	},
 	{
 		"Outbound E-mail Semaphore",
@@ -3093,9 +4483,19 @@ static const scfg_option_t scfg_option_index[] = {
 		"System > Loadable Modules > Post Xtrn"
 	},
 	{
+		"Post Xtrn",
+		"Loadable Modules...",
+		"System > Loadable Modules... > Post Xtrn"
+	},
+	{
 		"Posting Requirements",
 		"Sub-board",
 		"Message Areas > Sub-boards > Sub-board > Posting Requirements"
+	},
+	{
+		"Posting Requirements",
+		"Sub-boards",
+		"Message Areas > Sub-boards > Posting Requirements"
 	},
 	{
 		"Posts Per Day",
@@ -3108,9 +4508,19 @@ static const scfg_option_t scfg_option_index[] = {
 		"System > Loadable Modules > Pre Xtrn"
 	},
 	{
+		"Pre Xtrn",
+		"Loadable Modules...",
+		"System > Loadable Modules... > Pre Xtrn"
+	},
+	{
 		"Private Msg",
 		"Loadable Modules",
 		"System > Loadable Modules > Private Msg"
+	},
+	{
+		"Private Msg",
+		"Loadable Modules...",
+		"System > Loadable Modules... > Private Msg"
 	},
 	{
 		"Program Section",
@@ -3166,6 +4576,11 @@ static const scfg_option_t scfg_option_index[] = {
 		"Purge by Last Download",
 		"Toggle Options...",
 		"File Areas > Directories > Toggle Options... > Purge by Last Download"
+	},
+	{
+		"Purge by Last Download",
+		"Toggle Options...",
+		"File Areas > Directory Default Settings > Toggle Options... > Purge by Last Download"
 	},
 	{
 		"Purge Deleted E-mail",
@@ -3224,8 +4639,23 @@ static const scfg_option_t scfg_option_index[] = {
 	},
 	{
 		"Rate Limiting",
+		"Limit Rate of Connections",
+		"Servers > Services Server > Limit Rate of Connections > Rate Limiting"
+	},
+	{
+		"Rate Limiting",
 		"Limit Rate of Requests",
 		"Servers > FTP Server > Limit Rate of Requests > Rate Limiting"
+	},
+	{
+		"Rate Limiting",
+		"Limit Rate of Requests",
+		"Servers > Mail Server > Limit Rate of Requests > Rate Limiting"
+	},
+	{
+		"Rate Limiting",
+		"Rate Limiting...",
+		"Servers > Web Server > Rate Limiting... > Rate Limiting"
 	},
 	{
 		"Rate Limiting...",
@@ -3238,9 +4668,19 @@ static const scfg_option_t scfg_option_index[] = {
 		"System > Loadable Modules > Read Mail"
 	},
 	{
+		"Read Mail",
+		"Loadable Modules...",
+		"System > Loadable Modules... > Read Mail"
+	},
+	{
 		"Reading Requirements",
 		"Sub-board",
 		"Message Areas > Sub-boards > Sub-board > Reading Requirements"
+	},
+	{
+		"Reading Requirements",
+		"Sub-boards",
+		"Message Areas > Sub-boards > Reading Requirements"
 	},
 	{
 		"Receive By Sysop Aliases",
@@ -3256,6 +4696,11 @@ static const scfg_option_t scfg_option_index[] = {
 		"Record Terminal Width",
 		"Editor",
 		"External Programs > Message Editors > Editor > Record Terminal Width"
+	},
+	{
+		"Record Terminal Width",
+		"Message Editors",
+		"External Programs > Message Editors > Record Terminal Width"
 	},
 	{
 		"Relay Server Address",
@@ -3281,6 +4726,31 @@ static const scfg_option_t scfg_option_index[] = {
 		"Relay Server Username",
 		"SendMail Support...",
 		"Servers > Mail Server > SendMail Support... > Relay Server Username"
+	},
+	{
+		"Requirements",
+		"File Areas",
+		"File Areas > Requirements"
+	},
+	{
+		"Requirements",
+		"File Options",
+		"File Options > Requirements"
+	},
+	{
+		"Requirements",
+		"Message Areas",
+		"Message Areas > Requirements"
+	},
+	{
+		"Requirements",
+		"Node Configuration",
+		"Nodes > Node Configuration > Requirements"
+	},
+	{
+		"Requirements",
+		"Online Programs...",
+		"External Programs > Online Programs (Doors) > Online Programs... > Requirements"
 	},
 	{
 		"Requires Exclusive Exec",
@@ -3314,8 +4784,8 @@ static const scfg_option_t scfg_option_index[] = {
 	},
 	{
 		"Rio de Janeiro",
-		"Non-U.S. Time Zone",
-		"Non-U.S. Time Zone > Rio de Janeiro"
+		"Local Time Zone",
+		"System > Local Time Zone > Rio de Janeiro"
 	},
 	{
 		"RLogin Support...",
@@ -3328,9 +4798,19 @@ static const scfg_option_t scfg_option_index[] = {
 		"System > Loadable Modules > Scan Dirs"
 	},
 	{
+		"Scan Dirs",
+		"Loadable Modules...",
+		"System > Loadable Modules... > Scan Dirs"
+	},
+	{
 		"Scan Msgs",
 		"Loadable Modules",
 		"System > Loadable Modules > Scan Msgs"
+	},
+	{
+		"Scan Msgs",
+		"Loadable Modules...",
+		"System > Loadable Modules... > Scan Msgs"
 	},
 	{
 		"Scan Subs",
@@ -3338,9 +4818,19 @@ static const scfg_option_t scfg_option_index[] = {
 		"System > Loadable Modules > Scan Subs"
 	},
 	{
+		"Scan Subs",
+		"Loadable Modules...",
+		"System > Loadable Modules... > Scan Subs"
+	},
+	{
 		"Search for Auto-ADDFILES",
 		"Toggle Options...",
 		"File Areas > Directories > Toggle Options... > Search for Auto-ADDFILES"
+	},
+	{
+		"Search for Auto-ADDFILES",
+		"Toggle Options...",
+		"File Areas > Directory Default Settings > Toggle Options... > Search for Auto-ADDFILES"
 	},
 	{
 		"Search for Duplicates",
@@ -3348,9 +4838,19 @@ static const scfg_option_t scfg_option_index[] = {
 		"File Areas > Directories > Toggle Options... > Search for Duplicates"
 	},
 	{
+		"Search for Duplicates",
+		"Toggle Options...",
+		"File Areas > Directory Default Settings > Toggle Options... > Search for Duplicates"
+	},
+	{
 		"Search for New Files",
 		"Toggle Options...",
 		"File Areas > Directories > Toggle Options... > Search for New Files"
+	},
+	{
+		"Search for New Files",
+		"Toggle Options...",
+		"File Areas > Directory Default Settings > Toggle Options... > Search for New Files"
 	},
 	{
 		"Security Level Values",
@@ -3373,6 +4873,11 @@ static const scfg_option_t scfg_option_index[] = {
 		"System > Loadable Modules > Select Item"
 	},
 	{
+		"Select Item",
+		"Loadable Modules...",
+		"System > Loadable Modules... > Select Item"
+	},
+	{
 		"Sem File Check Interval",
 		"Global Settings",
 		"Servers > Global Settings > Sem File Check Interval"
@@ -3391,6 +4896,11 @@ static const scfg_option_t scfg_option_index[] = {
 		"Send Feedback",
 		"Loadable Modules",
 		"System > Loadable Modules > Send Feedback"
+	},
+	{
+		"Send Feedback",
+		"Loadable Modules...",
+		"System > Loadable Modules... > Send Feedback"
 	},
 	{
 		"Send Go-Aheads",
@@ -3425,7 +4935,352 @@ static const scfg_option_t scfg_option_index[] = {
 	{
 		"Set Required Age",
 		"Access Requirements",
+		"Text File Sections > Access Requirements > Set Required Age"
+	},
+	{
+		"Set Required Age",
+		"Access Requirements",
+		"Command Shells > Access Requirements > Set Required Age"
+	},
+	{
+		"Set Required Age",
+		"Access Requirements",
+		"Chat Features > External Sysop Chat Pagers > Access Requirements > Set Required Age"
+	},
+	{
+		"Set Required Age",
+		"Access Requirements",
 		"Chat Features > Multinode Chat Channels > Access Requirements > Set Required Age"
+	},
+	{
+		"Set Required Age",
+		"Access Requirements",
+		"Chat Features > Artificial Gurus > Access Requirements > Set Required Age"
+	},
+	{
+		"Set Required Age",
+		"Access Requirements",
+		"Message Areas > Sub-boards > Access Requirements > Set Required Age"
+	},
+	{
+		"Set Required Age",
+		"Access Requirements",
+		"System > Loadable Modules... > Login > Module > Access Requirements > Set Required Age"
+	},
+	{
+		"Set Required Age",
+		"Access Requirements",
+		"System > Loadable Modules... > Logon > Module > Access Requirements > Set Required Age"
+	},
+	{
+		"Set Required Age",
+		"Access Requirements",
+		"System > Loadable Modules... > Logoff > Module > Access Requirements > Set Required Age"
+	},
+	{
+		"Set Required Age",
+		"Access Requirements",
+		"System > Loadable Modules... > Logout > Module > Access Requirements > Set Required Age"
+	},
+	{
+		"Set Required Age",
+		"Access Requirements",
+		"System > Loadable Modules... > New User Prompts > Module > Access Requirements > Set Required Age"
+	},
+	{
+		"Set Required Age",
+		"Access Requirements",
+		"System > Loadable Modules... > New User Info > Module > Access Requirements > Set Required Age"
+	},
+	{
+		"Set Required Age",
+		"Access Requirements",
+		"System > Loadable Modules... > New User Created > Module > Access Requirements > Set Required Age"
+	},
+	{
+		"Set Required Age",
+		"Access Requirements",
+		"System > Loadable Modules... > User Config > Module > Access Requirements > Set Required Age"
+	},
+	{
+		"Set Required Age",
+		"Access Requirements",
+		"System > Loadable Modules... > Expired User > Module > Access Requirements > Set Required Age"
+	},
+	{
+		"Set Required Age",
+		"Access Requirements",
+		"System > Loadable Modules... > Auto Message > Module > Access Requirements > Set Required Age"
+	},
+	{
+		"Set Required Age",
+		"Access Requirements",
+		"System > Loadable Modules... > Send Feedback > Module > Access Requirements > Set Required Age"
+	},
+	{
+		"Set Required Age",
+		"Access Requirements",
+		"System > Loadable Modules... > Email Section > Module > Access Requirements > Set Required Age"
+	},
+	{
+		"Set Required Age",
+		"Access Requirements",
+		"System > Loadable Modules... > Chat Section > Module > Access Requirements > Set Required Age"
+	},
+	{
+		"Set Required Age",
+		"Access Requirements",
+		"System > Loadable Modules... > Text Section > Module > Access Requirements > Set Required Age"
+	},
+	{
+		"Set Required Age",
+		"Access Requirements",
+		"System > Loadable Modules... > Xtrn Section > Module > Access Requirements > Set Required Age"
+	},
+	{
+		"Set Required Age",
+		"Access Requirements",
+		"System > Loadable Modules... > Pre Xtrn > Module > Access Requirements > Set Required Age"
+	},
+	{
+		"Set Required Age",
+		"Access Requirements",
+		"System > Loadable Modules... > Post Xtrn > Module > Access Requirements > Set Required Age"
+	},
+	{
+		"Set Required Age",
+		"Access Requirements",
+		"System > Loadable Modules... > Read Mail > Module > Access Requirements > Set Required Age"
+	},
+	{
+		"Set Required Age",
+		"Access Requirements",
+		"System > Loadable Modules... > Scan Msgs > Module > Access Requirements > Set Required Age"
+	},
+	{
+		"Set Required Age",
+		"Access Requirements",
+		"System > Loadable Modules... > Scan Subs > Module > Access Requirements > Set Required Age"
+	},
+	{
+		"Set Required Age",
+		"Access Requirements",
+		"System > Loadable Modules... > List Msgs > Module > Access Requirements > Set Required Age"
+	},
+	{
+		"Set Required Age",
+		"Access Requirements",
+		"System > Loadable Modules... > List Logons > Module > Access Requirements > Set Required Age"
+	},
+	{
+		"Set Required Age",
+		"Access Requirements",
+		"System > Loadable Modules... > List Users > Module > Access Requirements > Set Required Age"
+	},
+	{
+		"Set Required Age",
+		"Access Requirements",
+		"System > Loadable Modules... > List Nodes > Module > Access Requirements > Set Required Age"
+	},
+	{
+		"Set Required Age",
+		"Access Requirements",
+		"System > Loadable Modules... > Who's Online > Module > Access Requirements > Set Required Age"
+	},
+	{
+		"Set Required Age",
+		"Access Requirements",
+		"System > Loadable Modules... > Private Msg > Module > Access Requirements > Set Required Age"
+	},
+	{
+		"Set Required Age",
+		"Access Requirements",
+		"System > Loadable Modules... > Scan Dirs > Module > Access Requirements > Set Required Age"
+	},
+	{
+		"Set Required Age",
+		"Access Requirements",
+		"System > Loadable Modules... > List Files > Module > Access Requirements > Set Required Age"
+	},
+	{
+		"Set Required Age",
+		"Access Requirements",
+		"System > Loadable Modules... > View File Info > Module > Access Requirements > Set Required Age"
+	},
+	{
+		"Set Required Age",
+		"Access Requirements",
+		"System > Loadable Modules... > Batch Transfer > Module > Access Requirements > Set Required Age"
+	},
+	{
+		"Set Required Age",
+		"Access Requirements",
+		"System > Loadable Modules... > Temp Transfer > Module > Access Requirements > Set Required Age"
+	},
+	{
+		"Set Required Age",
+		"Access Requirements",
+		"System > Loadable Modules... > Select Item > Module > Access Requirements > Set Required Age"
+	},
+	{
+		"Set Required Age",
+		"Access Requirements",
+		"System > Loadable Modules... > Sync > Module > Access Requirements > Set Required Age"
+	},
+	{
+		"Set Required Age",
+		"Access Requirements",
+		"File Options > Access Requirements > Set Required Age"
+	},
+	{
+		"Set Required Age",
+		"Access Requirements",
+		"File Areas > Directories > Access Requirements > Set Required Age"
+	},
+	{
+		"Set Required Age",
+		"Access Requirements",
+		"External Programs > Message Editors > Access Requirements > Set Required Age"
+	},
+	{
+		"Set Required Age",
+		"Access Requirements",
+		"External Programs > Online Programs (Doors) > Access Requirements > Set Required Age"
+	},
+	{
+		"Set Required Age",
+		"Archive Requirements",
+		"Servers > Mail Server > Archive Requirements > Set Required Age"
+	},
+	{
+		"Set Required Age",
+		"Download Requirements",
+		"File Areas > Directories > Download Requirements > Set Required Age"
+	},
+	{
+		"Set Required Age",
+		"Exemption Requirements",
+		"File Areas > Directories > Exemption Requirements > Set Required Age"
+	},
+	{
+		"Set Required Age",
+		"Login Info Save",
+		"Servers > Web Server > Login Info Save > Set Required Age"
+	},
+	{
+		"Set Required Age",
+		"Login Info Save",
+		"Servers > FTP Server > Login Info Save > Set Required Age"
+	},
+	{
+		"Set Required Age",
+		"Login Info Save",
+		"Servers > Services Server > Login Info Save > Set Required Age"
+	},
+	{
+		"Set Required Age",
+		"Login Requirements",
+		"Servers > Global Settings > Login Requirements > Set Required Age"
+	},
+	{
+		"Set Required Age",
+		"Login Requirements",
+		"Servers > Terminal Server > Login Requirements > Set Required Age"
+	},
+	{
+		"Set Required Age",
+		"Login Requirements",
+		"Servers > Web Server > Login Requirements > Set Required Age"
+	},
+	{
+		"Set Required Age",
+		"Login Requirements",
+		"Servers > FTP Server > Login Requirements > Set Required Age"
+	},
+	{
+		"Set Required Age",
+		"Login Requirements",
+		"Servers > Mail Server > Login Requirements > Set Required Age"
+	},
+	{
+		"Set Required Age",
+		"Login Requirements",
+		"Servers > Services Server > Login Requirements > Set Required Age"
+	},
+	{
+		"Set Required Age",
+		"Moderated Posting User",
+		"Message Areas > Sub-boards > Moderated Posting User > Set Required Age"
+	},
+	{
+		"Set Required Age",
+		"Operator Requirements",
+		"Message Areas > Sub-boards > Operator Requirements > Set Required Age"
+	},
+	{
+		"Set Required Age",
+		"Operator Requirements",
+		"File Areas > Directories > Operator Requirements > Set Required Age"
+	},
+	{
+		"Set Required Age",
+		"Posting Requirements",
+		"Message Areas > Sub-boards > Posting Requirements > Set Required Age"
+	},
+	{
+		"Set Required Age",
+		"Reading Requirements",
+		"Message Areas > Sub-boards > Reading Requirements > Set Required Age"
+	},
+	{
+		"Set Required Age",
+		"Requirements",
+		"Message Areas > Requirements > Set Required Age"
+	},
+	{
+		"Set Required Age",
+		"Requirements",
+		"Nodes > Node Configuration > Requirements > Set Required Age"
+	},
+	{
+		"Set Required Age",
+		"Requirements",
+		"File Options > Requirements > Set Required Age"
+	},
+	{
+		"Set Required Age",
+		"Requirements",
+		"File Areas > Requirements > Set Required Age"
+	},
+	{
+		"Set Required Age",
+		"Requirements",
+		"External Programs > Online Programs (Doors) > Online Programs... > Requirements > Set Required Age"
+	},
+	{
+		"Set Required Age",
+		"Sysop Chat Override",
+		"System > Advanced Options... > Sysop Chat Override > Set Required Age"
+	},
+	{
+		"Set Required Age",
+		"Upload Requirements",
+		"File Areas > Directories > Upload Requirements > Set Required Age"
+	},
+	{
+		"Set Required Day of Week",
+		"Access Requirements",
+		"Text File Sections > Access Requirements > Set Required Day of Week"
+	},
+	{
+		"Set Required Day of Week",
+		"Access Requirements",
+		"Command Shells > Access Requirements > Set Required Day of Week"
+	},
+	{
+		"Set Required Day of Week",
+		"Access Requirements",
+		"Chat Features > External Sysop Chat Pagers > Access Requirements > Set Required Day of Week"
 	},
 	{
 		"Set Required Day of Week",
@@ -3433,9 +5288,669 @@ static const scfg_option_t scfg_option_index[] = {
 		"Chat Features > Multinode Chat Channels > Access Requirements > Set Required Day of Week"
 	},
 	{
+		"Set Required Day of Week",
+		"Access Requirements",
+		"Chat Features > Artificial Gurus > Access Requirements > Set Required Day of Week"
+	},
+	{
+		"Set Required Day of Week",
+		"Access Requirements",
+		"Message Areas > Sub-boards > Access Requirements > Set Required Day of Week"
+	},
+	{
+		"Set Required Day of Week",
+		"Access Requirements",
+		"System > Loadable Modules... > Login > Module > Access Requirements > Set Required Day of Week"
+	},
+	{
+		"Set Required Day of Week",
+		"Access Requirements",
+		"System > Loadable Modules... > Logon > Module > Access Requirements > Set Required Day of Week"
+	},
+	{
+		"Set Required Day of Week",
+		"Access Requirements",
+		"System > Loadable Modules... > Logoff > Module > Access Requirements > Set Required Day of Week"
+	},
+	{
+		"Set Required Day of Week",
+		"Access Requirements",
+		"System > Loadable Modules... > Logout > Module > Access Requirements > Set Required Day of Week"
+	},
+	{
+		"Set Required Day of Week",
+		"Access Requirements",
+		"System > Loadable Modules... > New User Prompts > Module > Access Requirements > Set Required Day of Week"
+	},
+	{
+		"Set Required Day of Week",
+		"Access Requirements",
+		"System > Loadable Modules... > New User Info > Module > Access Requirements > Set Required Day of Week"
+	},
+	{
+		"Set Required Day of Week",
+		"Access Requirements",
+		"System > Loadable Modules... > New User Created > Module > Access Requirements > Set Required Day of Week"
+	},
+	{
+		"Set Required Day of Week",
+		"Access Requirements",
+		"System > Loadable Modules... > User Config > Module > Access Requirements > Set Required Day of Week"
+	},
+	{
+		"Set Required Day of Week",
+		"Access Requirements",
+		"System > Loadable Modules... > Expired User > Module > Access Requirements > Set Required Day of Week"
+	},
+	{
+		"Set Required Day of Week",
+		"Access Requirements",
+		"System > Loadable Modules... > Auto Message > Module > Access Requirements > Set Required Day of Week"
+	},
+	{
+		"Set Required Day of Week",
+		"Access Requirements",
+		"System > Loadable Modules... > Send Feedback > Module > Access Requirements > Set Required Day of Week"
+	},
+	{
+		"Set Required Day of Week",
+		"Access Requirements",
+		"System > Loadable Modules... > Email Section > Module > Access Requirements > Set Required Day of Week"
+	},
+	{
+		"Set Required Day of Week",
+		"Access Requirements",
+		"System > Loadable Modules... > Chat Section > Module > Access Requirements > Set Required Day of Week"
+	},
+	{
+		"Set Required Day of Week",
+		"Access Requirements",
+		"System > Loadable Modules... > Text Section > Module > Access Requirements > Set Required Day of Week"
+	},
+	{
+		"Set Required Day of Week",
+		"Access Requirements",
+		"System > Loadable Modules... > Xtrn Section > Module > Access Requirements > Set Required Day of Week"
+	},
+	{
+		"Set Required Day of Week",
+		"Access Requirements",
+		"System > Loadable Modules... > Pre Xtrn > Module > Access Requirements > Set Required Day of Week"
+	},
+	{
+		"Set Required Day of Week",
+		"Access Requirements",
+		"System > Loadable Modules... > Post Xtrn > Module > Access Requirements > Set Required Day of Week"
+	},
+	{
+		"Set Required Day of Week",
+		"Access Requirements",
+		"System > Loadable Modules... > Read Mail > Module > Access Requirements > Set Required Day of Week"
+	},
+	{
+		"Set Required Day of Week",
+		"Access Requirements",
+		"System > Loadable Modules... > Scan Msgs > Module > Access Requirements > Set Required Day of Week"
+	},
+	{
+		"Set Required Day of Week",
+		"Access Requirements",
+		"System > Loadable Modules... > Scan Subs > Module > Access Requirements > Set Required Day of Week"
+	},
+	{
+		"Set Required Day of Week",
+		"Access Requirements",
+		"System > Loadable Modules... > List Msgs > Module > Access Requirements > Set Required Day of Week"
+	},
+	{
+		"Set Required Day of Week",
+		"Access Requirements",
+		"System > Loadable Modules... > List Logons > Module > Access Requirements > Set Required Day of Week"
+	},
+	{
+		"Set Required Day of Week",
+		"Access Requirements",
+		"System > Loadable Modules... > List Users > Module > Access Requirements > Set Required Day of Week"
+	},
+	{
+		"Set Required Day of Week",
+		"Access Requirements",
+		"System > Loadable Modules... > List Nodes > Module > Access Requirements > Set Required Day of Week"
+	},
+	{
+		"Set Required Day of Week",
+		"Access Requirements",
+		"System > Loadable Modules... > Who's Online > Module > Access Requirements > Set Required Day of Week"
+	},
+	{
+		"Set Required Day of Week",
+		"Access Requirements",
+		"System > Loadable Modules... > Private Msg > Module > Access Requirements > Set Required Day of Week"
+	},
+	{
+		"Set Required Day of Week",
+		"Access Requirements",
+		"System > Loadable Modules... > Scan Dirs > Module > Access Requirements > Set Required Day of Week"
+	},
+	{
+		"Set Required Day of Week",
+		"Access Requirements",
+		"System > Loadable Modules... > List Files > Module > Access Requirements > Set Required Day of Week"
+	},
+	{
+		"Set Required Day of Week",
+		"Access Requirements",
+		"System > Loadable Modules... > View File Info > Module > Access Requirements > Set Required Day of Week"
+	},
+	{
+		"Set Required Day of Week",
+		"Access Requirements",
+		"System > Loadable Modules... > Batch Transfer > Module > Access Requirements > Set Required Day of Week"
+	},
+	{
+		"Set Required Day of Week",
+		"Access Requirements",
+		"System > Loadable Modules... > Temp Transfer > Module > Access Requirements > Set Required Day of Week"
+	},
+	{
+		"Set Required Day of Week",
+		"Access Requirements",
+		"System > Loadable Modules... > Select Item > Module > Access Requirements > Set Required Day of Week"
+	},
+	{
+		"Set Required Day of Week",
+		"Access Requirements",
+		"System > Loadable Modules... > Sync > Module > Access Requirements > Set Required Day of Week"
+	},
+	{
+		"Set Required Day of Week",
+		"Access Requirements",
+		"File Options > Access Requirements > Set Required Day of Week"
+	},
+	{
+		"Set Required Day of Week",
+		"Access Requirements",
+		"File Areas > Directories > Access Requirements > Set Required Day of Week"
+	},
+	{
+		"Set Required Day of Week",
+		"Access Requirements",
+		"External Programs > Message Editors > Access Requirements > Set Required Day of Week"
+	},
+	{
+		"Set Required Day of Week",
+		"Access Requirements",
+		"External Programs > Online Programs (Doors) > Access Requirements > Set Required Day of Week"
+	},
+	{
+		"Set Required Day of Week",
+		"Archive Requirements",
+		"Servers > Mail Server > Archive Requirements > Set Required Day of Week"
+	},
+	{
+		"Set Required Day of Week",
+		"Download Requirements",
+		"File Areas > Directories > Download Requirements > Set Required Day of Week"
+	},
+	{
+		"Set Required Day of Week",
+		"Exemption Requirements",
+		"File Areas > Directories > Exemption Requirements > Set Required Day of Week"
+	},
+	{
+		"Set Required Day of Week",
+		"Login Info Save",
+		"Servers > Web Server > Login Info Save > Set Required Day of Week"
+	},
+	{
+		"Set Required Day of Week",
+		"Login Info Save",
+		"Servers > FTP Server > Login Info Save > Set Required Day of Week"
+	},
+	{
+		"Set Required Day of Week",
+		"Login Info Save",
+		"Servers > Services Server > Login Info Save > Set Required Day of Week"
+	},
+	{
+		"Set Required Day of Week",
+		"Login Requirements",
+		"Servers > Global Settings > Login Requirements > Set Required Day of Week"
+	},
+	{
+		"Set Required Day of Week",
+		"Login Requirements",
+		"Servers > Terminal Server > Login Requirements > Set Required Day of Week"
+	},
+	{
+		"Set Required Day of Week",
+		"Login Requirements",
+		"Servers > Web Server > Login Requirements > Set Required Day of Week"
+	},
+	{
+		"Set Required Day of Week",
+		"Login Requirements",
+		"Servers > FTP Server > Login Requirements > Set Required Day of Week"
+	},
+	{
+		"Set Required Day of Week",
+		"Login Requirements",
+		"Servers > Mail Server > Login Requirements > Set Required Day of Week"
+	},
+	{
+		"Set Required Day of Week",
+		"Login Requirements",
+		"Servers > Services Server > Login Requirements > Set Required Day of Week"
+	},
+	{
+		"Set Required Day of Week",
+		"Moderated Posting User",
+		"Message Areas > Sub-boards > Moderated Posting User > Set Required Day of Week"
+	},
+	{
+		"Set Required Day of Week",
+		"Operator Requirements",
+		"Message Areas > Sub-boards > Operator Requirements > Set Required Day of Week"
+	},
+	{
+		"Set Required Day of Week",
+		"Operator Requirements",
+		"File Areas > Directories > Operator Requirements > Set Required Day of Week"
+	},
+	{
+		"Set Required Day of Week",
+		"Posting Requirements",
+		"Message Areas > Sub-boards > Posting Requirements > Set Required Day of Week"
+	},
+	{
+		"Set Required Day of Week",
+		"Reading Requirements",
+		"Message Areas > Sub-boards > Reading Requirements > Set Required Day of Week"
+	},
+	{
+		"Set Required Day of Week",
+		"Requirements",
+		"Message Areas > Requirements > Set Required Day of Week"
+	},
+	{
+		"Set Required Day of Week",
+		"Requirements",
+		"Nodes > Node Configuration > Requirements > Set Required Day of Week"
+	},
+	{
+		"Set Required Day of Week",
+		"Requirements",
+		"File Options > Requirements > Set Required Day of Week"
+	},
+	{
+		"Set Required Day of Week",
+		"Requirements",
+		"File Areas > Requirements > Set Required Day of Week"
+	},
+	{
+		"Set Required Day of Week",
+		"Requirements",
+		"External Programs > Online Programs (Doors) > Online Programs... > Requirements > Set Required Day of Week"
+	},
+	{
+		"Set Required Day of Week",
+		"Sysop Chat Override",
+		"System > Advanced Options... > Sysop Chat Override > Set Required Day of Week"
+	},
+	{
+		"Set Required Day of Week",
+		"Upload Requirements",
+		"File Areas > Directories > Upload Requirements > Set Required Day of Week"
+	},
+	{
+		"Set Required Gender",
+		"Access Requirements",
+		"Text File Sections > Access Requirements > Set Required Gender"
+	},
+	{
+		"Set Required Gender",
+		"Access Requirements",
+		"Command Shells > Access Requirements > Set Required Gender"
+	},
+	{
+		"Set Required Gender",
+		"Access Requirements",
+		"Chat Features > External Sysop Chat Pagers > Access Requirements > Set Required Gender"
+	},
+	{
 		"Set Required Gender",
 		"Access Requirements",
 		"Chat Features > Multinode Chat Channels > Access Requirements > Set Required Gender"
+	},
+	{
+		"Set Required Gender",
+		"Access Requirements",
+		"Chat Features > Artificial Gurus > Access Requirements > Set Required Gender"
+	},
+	{
+		"Set Required Gender",
+		"Access Requirements",
+		"Message Areas > Sub-boards > Access Requirements > Set Required Gender"
+	},
+	{
+		"Set Required Gender",
+		"Access Requirements",
+		"System > Loadable Modules... > Login > Module > Access Requirements > Set Required Gender"
+	},
+	{
+		"Set Required Gender",
+		"Access Requirements",
+		"System > Loadable Modules... > Logon > Module > Access Requirements > Set Required Gender"
+	},
+	{
+		"Set Required Gender",
+		"Access Requirements",
+		"System > Loadable Modules... > Logoff > Module > Access Requirements > Set Required Gender"
+	},
+	{
+		"Set Required Gender",
+		"Access Requirements",
+		"System > Loadable Modules... > Logout > Module > Access Requirements > Set Required Gender"
+	},
+	{
+		"Set Required Gender",
+		"Access Requirements",
+		"System > Loadable Modules... > New User Prompts > Module > Access Requirements > Set Required Gender"
+	},
+	{
+		"Set Required Gender",
+		"Access Requirements",
+		"System > Loadable Modules... > New User Info > Module > Access Requirements > Set Required Gender"
+	},
+	{
+		"Set Required Gender",
+		"Access Requirements",
+		"System > Loadable Modules... > New User Created > Module > Access Requirements > Set Required Gender"
+	},
+	{
+		"Set Required Gender",
+		"Access Requirements",
+		"System > Loadable Modules... > User Config > Module > Access Requirements > Set Required Gender"
+	},
+	{
+		"Set Required Gender",
+		"Access Requirements",
+		"System > Loadable Modules... > Expired User > Module > Access Requirements > Set Required Gender"
+	},
+	{
+		"Set Required Gender",
+		"Access Requirements",
+		"System > Loadable Modules... > Auto Message > Module > Access Requirements > Set Required Gender"
+	},
+	{
+		"Set Required Gender",
+		"Access Requirements",
+		"System > Loadable Modules... > Send Feedback > Module > Access Requirements > Set Required Gender"
+	},
+	{
+		"Set Required Gender",
+		"Access Requirements",
+		"System > Loadable Modules... > Email Section > Module > Access Requirements > Set Required Gender"
+	},
+	{
+		"Set Required Gender",
+		"Access Requirements",
+		"System > Loadable Modules... > Chat Section > Module > Access Requirements > Set Required Gender"
+	},
+	{
+		"Set Required Gender",
+		"Access Requirements",
+		"System > Loadable Modules... > Text Section > Module > Access Requirements > Set Required Gender"
+	},
+	{
+		"Set Required Gender",
+		"Access Requirements",
+		"System > Loadable Modules... > Xtrn Section > Module > Access Requirements > Set Required Gender"
+	},
+	{
+		"Set Required Gender",
+		"Access Requirements",
+		"System > Loadable Modules... > Pre Xtrn > Module > Access Requirements > Set Required Gender"
+	},
+	{
+		"Set Required Gender",
+		"Access Requirements",
+		"System > Loadable Modules... > Post Xtrn > Module > Access Requirements > Set Required Gender"
+	},
+	{
+		"Set Required Gender",
+		"Access Requirements",
+		"System > Loadable Modules... > Read Mail > Module > Access Requirements > Set Required Gender"
+	},
+	{
+		"Set Required Gender",
+		"Access Requirements",
+		"System > Loadable Modules... > Scan Msgs > Module > Access Requirements > Set Required Gender"
+	},
+	{
+		"Set Required Gender",
+		"Access Requirements",
+		"System > Loadable Modules... > Scan Subs > Module > Access Requirements > Set Required Gender"
+	},
+	{
+		"Set Required Gender",
+		"Access Requirements",
+		"System > Loadable Modules... > List Msgs > Module > Access Requirements > Set Required Gender"
+	},
+	{
+		"Set Required Gender",
+		"Access Requirements",
+		"System > Loadable Modules... > List Logons > Module > Access Requirements > Set Required Gender"
+	},
+	{
+		"Set Required Gender",
+		"Access Requirements",
+		"System > Loadable Modules... > List Users > Module > Access Requirements > Set Required Gender"
+	},
+	{
+		"Set Required Gender",
+		"Access Requirements",
+		"System > Loadable Modules... > List Nodes > Module > Access Requirements > Set Required Gender"
+	},
+	{
+		"Set Required Gender",
+		"Access Requirements",
+		"System > Loadable Modules... > Who's Online > Module > Access Requirements > Set Required Gender"
+	},
+	{
+		"Set Required Gender",
+		"Access Requirements",
+		"System > Loadable Modules... > Private Msg > Module > Access Requirements > Set Required Gender"
+	},
+	{
+		"Set Required Gender",
+		"Access Requirements",
+		"System > Loadable Modules... > Scan Dirs > Module > Access Requirements > Set Required Gender"
+	},
+	{
+		"Set Required Gender",
+		"Access Requirements",
+		"System > Loadable Modules... > List Files > Module > Access Requirements > Set Required Gender"
+	},
+	{
+		"Set Required Gender",
+		"Access Requirements",
+		"System > Loadable Modules... > View File Info > Module > Access Requirements > Set Required Gender"
+	},
+	{
+		"Set Required Gender",
+		"Access Requirements",
+		"System > Loadable Modules... > Batch Transfer > Module > Access Requirements > Set Required Gender"
+	},
+	{
+		"Set Required Gender",
+		"Access Requirements",
+		"System > Loadable Modules... > Temp Transfer > Module > Access Requirements > Set Required Gender"
+	},
+	{
+		"Set Required Gender",
+		"Access Requirements",
+		"System > Loadable Modules... > Select Item > Module > Access Requirements > Set Required Gender"
+	},
+	{
+		"Set Required Gender",
+		"Access Requirements",
+		"System > Loadable Modules... > Sync > Module > Access Requirements > Set Required Gender"
+	},
+	{
+		"Set Required Gender",
+		"Access Requirements",
+		"File Options > Access Requirements > Set Required Gender"
+	},
+	{
+		"Set Required Gender",
+		"Access Requirements",
+		"File Areas > Directories > Access Requirements > Set Required Gender"
+	},
+	{
+		"Set Required Gender",
+		"Access Requirements",
+		"External Programs > Message Editors > Access Requirements > Set Required Gender"
+	},
+	{
+		"Set Required Gender",
+		"Access Requirements",
+		"External Programs > Online Programs (Doors) > Access Requirements > Set Required Gender"
+	},
+	{
+		"Set Required Gender",
+		"Archive Requirements",
+		"Servers > Mail Server > Archive Requirements > Set Required Gender"
+	},
+	{
+		"Set Required Gender",
+		"Download Requirements",
+		"File Areas > Directories > Download Requirements > Set Required Gender"
+	},
+	{
+		"Set Required Gender",
+		"Exemption Requirements",
+		"File Areas > Directories > Exemption Requirements > Set Required Gender"
+	},
+	{
+		"Set Required Gender",
+		"Login Info Save",
+		"Servers > Web Server > Login Info Save > Set Required Gender"
+	},
+	{
+		"Set Required Gender",
+		"Login Info Save",
+		"Servers > FTP Server > Login Info Save > Set Required Gender"
+	},
+	{
+		"Set Required Gender",
+		"Login Info Save",
+		"Servers > Services Server > Login Info Save > Set Required Gender"
+	},
+	{
+		"Set Required Gender",
+		"Login Requirements",
+		"Servers > Global Settings > Login Requirements > Set Required Gender"
+	},
+	{
+		"Set Required Gender",
+		"Login Requirements",
+		"Servers > Terminal Server > Login Requirements > Set Required Gender"
+	},
+	{
+		"Set Required Gender",
+		"Login Requirements",
+		"Servers > Web Server > Login Requirements > Set Required Gender"
+	},
+	{
+		"Set Required Gender",
+		"Login Requirements",
+		"Servers > FTP Server > Login Requirements > Set Required Gender"
+	},
+	{
+		"Set Required Gender",
+		"Login Requirements",
+		"Servers > Mail Server > Login Requirements > Set Required Gender"
+	},
+	{
+		"Set Required Gender",
+		"Login Requirements",
+		"Servers > Services Server > Login Requirements > Set Required Gender"
+	},
+	{
+		"Set Required Gender",
+		"Moderated Posting User",
+		"Message Areas > Sub-boards > Moderated Posting User > Set Required Gender"
+	},
+	{
+		"Set Required Gender",
+		"Operator Requirements",
+		"Message Areas > Sub-boards > Operator Requirements > Set Required Gender"
+	},
+	{
+		"Set Required Gender",
+		"Operator Requirements",
+		"File Areas > Directories > Operator Requirements > Set Required Gender"
+	},
+	{
+		"Set Required Gender",
+		"Posting Requirements",
+		"Message Areas > Sub-boards > Posting Requirements > Set Required Gender"
+	},
+	{
+		"Set Required Gender",
+		"Reading Requirements",
+		"Message Areas > Sub-boards > Reading Requirements > Set Required Gender"
+	},
+	{
+		"Set Required Gender",
+		"Requirements",
+		"Message Areas > Requirements > Set Required Gender"
+	},
+	{
+		"Set Required Gender",
+		"Requirements",
+		"Nodes > Node Configuration > Requirements > Set Required Gender"
+	},
+	{
+		"Set Required Gender",
+		"Requirements",
+		"File Options > Requirements > Set Required Gender"
+	},
+	{
+		"Set Required Gender",
+		"Requirements",
+		"File Areas > Requirements > Set Required Gender"
+	},
+	{
+		"Set Required Gender",
+		"Requirements",
+		"External Programs > Online Programs (Doors) > Online Programs... > Requirements > Set Required Gender"
+	},
+	{
+		"Set Required Gender",
+		"Sysop Chat Override",
+		"System > Advanced Options... > Sysop Chat Override > Set Required Gender"
+	},
+	{
+		"Set Required Gender",
+		"Upload Requirements",
+		"File Areas > Directories > Upload Requirements > Set Required Gender"
+	},
+	{
+		"Set Required Number of Credits",
+		"Access Requirements",
+		"Text File Sections > Access Requirements > Set Required Number of Credits"
+	},
+	{
+		"Set Required Number of Credits",
+		"Access Requirements",
+		"Command Shells > Access Requirements > Set Required Number of Credits"
+	},
+	{
+		"Set Required Number of Credits",
+		"Access Requirements",
+		"Chat Features > External Sysop Chat Pagers > Access Requirements > Set Required Number of Credits"
 	},
 	{
 		"Set Required Number of Credits",
@@ -3443,9 +5958,669 @@ static const scfg_option_t scfg_option_index[] = {
 		"Chat Features > Multinode Chat Channels > Access Requirements > Set Required Number of Credits"
 	},
 	{
+		"Set Required Number of Credits",
+		"Access Requirements",
+		"Chat Features > Artificial Gurus > Access Requirements > Set Required Number of Credits"
+	},
+	{
+		"Set Required Number of Credits",
+		"Access Requirements",
+		"Message Areas > Sub-boards > Access Requirements > Set Required Number of Credits"
+	},
+	{
+		"Set Required Number of Credits",
+		"Access Requirements",
+		"System > Loadable Modules... > Login > Module > Access Requirements > Set Required Number of Credits"
+	},
+	{
+		"Set Required Number of Credits",
+		"Access Requirements",
+		"System > Loadable Modules... > Logon > Module > Access Requirements > Set Required Number of Credits"
+	},
+	{
+		"Set Required Number of Credits",
+		"Access Requirements",
+		"System > Loadable Modules... > Logoff > Module > Access Requirements > Set Required Number of Credits"
+	},
+	{
+		"Set Required Number of Credits",
+		"Access Requirements",
+		"System > Loadable Modules... > Logout > Module > Access Requirements > Set Required Number of Credits"
+	},
+	{
+		"Set Required Number of Credits",
+		"Access Requirements",
+		"System > Loadable Modules... > New User Prompts > Module > Access Requirements > Set Required Number of Credits"
+	},
+	{
+		"Set Required Number of Credits",
+		"Access Requirements",
+		"System > Loadable Modules... > New User Info > Module > Access Requirements > Set Required Number of Credits"
+	},
+	{
+		"Set Required Number of Credits",
+		"Access Requirements",
+		"System > Loadable Modules... > New User Created > Module > Access Requirements > Set Required Number of Credits"
+	},
+	{
+		"Set Required Number of Credits",
+		"Access Requirements",
+		"System > Loadable Modules... > User Config > Module > Access Requirements > Set Required Number of Credits"
+	},
+	{
+		"Set Required Number of Credits",
+		"Access Requirements",
+		"System > Loadable Modules... > Expired User > Module > Access Requirements > Set Required Number of Credits"
+	},
+	{
+		"Set Required Number of Credits",
+		"Access Requirements",
+		"System > Loadable Modules... > Auto Message > Module > Access Requirements > Set Required Number of Credits"
+	},
+	{
+		"Set Required Number of Credits",
+		"Access Requirements",
+		"System > Loadable Modules... > Send Feedback > Module > Access Requirements > Set Required Number of Credits"
+	},
+	{
+		"Set Required Number of Credits",
+		"Access Requirements",
+		"System > Loadable Modules... > Email Section > Module > Access Requirements > Set Required Number of Credits"
+	},
+	{
+		"Set Required Number of Credits",
+		"Access Requirements",
+		"System > Loadable Modules... > Chat Section > Module > Access Requirements > Set Required Number of Credits"
+	},
+	{
+		"Set Required Number of Credits",
+		"Access Requirements",
+		"System > Loadable Modules... > Text Section > Module > Access Requirements > Set Required Number of Credits"
+	},
+	{
+		"Set Required Number of Credits",
+		"Access Requirements",
+		"System > Loadable Modules... > Xtrn Section > Module > Access Requirements > Set Required Number of Credits"
+	},
+	{
+		"Set Required Number of Credits",
+		"Access Requirements",
+		"System > Loadable Modules... > Pre Xtrn > Module > Access Requirements > Set Required Number of Credits"
+	},
+	{
+		"Set Required Number of Credits",
+		"Access Requirements",
+		"System > Loadable Modules... > Post Xtrn > Module > Access Requirements > Set Required Number of Credits"
+	},
+	{
+		"Set Required Number of Credits",
+		"Access Requirements",
+		"System > Loadable Modules... > Read Mail > Module > Access Requirements > Set Required Number of Credits"
+	},
+	{
+		"Set Required Number of Credits",
+		"Access Requirements",
+		"System > Loadable Modules... > Scan Msgs > Module > Access Requirements > Set Required Number of Credits"
+	},
+	{
+		"Set Required Number of Credits",
+		"Access Requirements",
+		"System > Loadable Modules... > Scan Subs > Module > Access Requirements > Set Required Number of Credits"
+	},
+	{
+		"Set Required Number of Credits",
+		"Access Requirements",
+		"System > Loadable Modules... > List Msgs > Module > Access Requirements > Set Required Number of Credits"
+	},
+	{
+		"Set Required Number of Credits",
+		"Access Requirements",
+		"System > Loadable Modules... > List Logons > Module > Access Requirements > Set Required Number of Credits"
+	},
+	{
+		"Set Required Number of Credits",
+		"Access Requirements",
+		"System > Loadable Modules... > List Users > Module > Access Requirements > Set Required Number of Credits"
+	},
+	{
+		"Set Required Number of Credits",
+		"Access Requirements",
+		"System > Loadable Modules... > List Nodes > Module > Access Requirements > Set Required Number of Credits"
+	},
+	{
+		"Set Required Number of Credits",
+		"Access Requirements",
+		"System > Loadable Modules... > Who's Online > Module > Access Requirements > Set Required Number of Credits"
+	},
+	{
+		"Set Required Number of Credits",
+		"Access Requirements",
+		"System > Loadable Modules... > Private Msg > Module > Access Requirements > Set Required Number of Credits"
+	},
+	{
+		"Set Required Number of Credits",
+		"Access Requirements",
+		"System > Loadable Modules... > Scan Dirs > Module > Access Requirements > Set Required Number of Credits"
+	},
+	{
+		"Set Required Number of Credits",
+		"Access Requirements",
+		"System > Loadable Modules... > List Files > Module > Access Requirements > Set Required Number of Credits"
+	},
+	{
+		"Set Required Number of Credits",
+		"Access Requirements",
+		"System > Loadable Modules... > View File Info > Module > Access Requirements > Set Required Number of Credits"
+	},
+	{
+		"Set Required Number of Credits",
+		"Access Requirements",
+		"System > Loadable Modules... > Batch Transfer > Module > Access Requirements > Set Required Number of Credits"
+	},
+	{
+		"Set Required Number of Credits",
+		"Access Requirements",
+		"System > Loadable Modules... > Temp Transfer > Module > Access Requirements > Set Required Number of Credits"
+	},
+	{
+		"Set Required Number of Credits",
+		"Access Requirements",
+		"System > Loadable Modules... > Select Item > Module > Access Requirements > Set Required Number of Credits"
+	},
+	{
+		"Set Required Number of Credits",
+		"Access Requirements",
+		"System > Loadable Modules... > Sync > Module > Access Requirements > Set Required Number of Credits"
+	},
+	{
+		"Set Required Number of Credits",
+		"Access Requirements",
+		"File Options > Access Requirements > Set Required Number of Credits"
+	},
+	{
+		"Set Required Number of Credits",
+		"Access Requirements",
+		"File Areas > Directories > Access Requirements > Set Required Number of Credits"
+	},
+	{
+		"Set Required Number of Credits",
+		"Access Requirements",
+		"External Programs > Message Editors > Access Requirements > Set Required Number of Credits"
+	},
+	{
+		"Set Required Number of Credits",
+		"Access Requirements",
+		"External Programs > Online Programs (Doors) > Access Requirements > Set Required Number of Credits"
+	},
+	{
+		"Set Required Number of Credits",
+		"Archive Requirements",
+		"Servers > Mail Server > Archive Requirements > Set Required Number of Credits"
+	},
+	{
+		"Set Required Number of Credits",
+		"Download Requirements",
+		"File Areas > Directories > Download Requirements > Set Required Number of Credits"
+	},
+	{
+		"Set Required Number of Credits",
+		"Exemption Requirements",
+		"File Areas > Directories > Exemption Requirements > Set Required Number of Credits"
+	},
+	{
+		"Set Required Number of Credits",
+		"Login Info Save",
+		"Servers > Web Server > Login Info Save > Set Required Number of Credits"
+	},
+	{
+		"Set Required Number of Credits",
+		"Login Info Save",
+		"Servers > FTP Server > Login Info Save > Set Required Number of Credits"
+	},
+	{
+		"Set Required Number of Credits",
+		"Login Info Save",
+		"Servers > Services Server > Login Info Save > Set Required Number of Credits"
+	},
+	{
+		"Set Required Number of Credits",
+		"Login Requirements",
+		"Servers > Global Settings > Login Requirements > Set Required Number of Credits"
+	},
+	{
+		"Set Required Number of Credits",
+		"Login Requirements",
+		"Servers > Terminal Server > Login Requirements > Set Required Number of Credits"
+	},
+	{
+		"Set Required Number of Credits",
+		"Login Requirements",
+		"Servers > Web Server > Login Requirements > Set Required Number of Credits"
+	},
+	{
+		"Set Required Number of Credits",
+		"Login Requirements",
+		"Servers > FTP Server > Login Requirements > Set Required Number of Credits"
+	},
+	{
+		"Set Required Number of Credits",
+		"Login Requirements",
+		"Servers > Mail Server > Login Requirements > Set Required Number of Credits"
+	},
+	{
+		"Set Required Number of Credits",
+		"Login Requirements",
+		"Servers > Services Server > Login Requirements > Set Required Number of Credits"
+	},
+	{
+		"Set Required Number of Credits",
+		"Moderated Posting User",
+		"Message Areas > Sub-boards > Moderated Posting User > Set Required Number of Credits"
+	},
+	{
+		"Set Required Number of Credits",
+		"Operator Requirements",
+		"Message Areas > Sub-boards > Operator Requirements > Set Required Number of Credits"
+	},
+	{
+		"Set Required Number of Credits",
+		"Operator Requirements",
+		"File Areas > Directories > Operator Requirements > Set Required Number of Credits"
+	},
+	{
+		"Set Required Number of Credits",
+		"Posting Requirements",
+		"Message Areas > Sub-boards > Posting Requirements > Set Required Number of Credits"
+	},
+	{
+		"Set Required Number of Credits",
+		"Reading Requirements",
+		"Message Areas > Sub-boards > Reading Requirements > Set Required Number of Credits"
+	},
+	{
+		"Set Required Number of Credits",
+		"Requirements",
+		"Message Areas > Requirements > Set Required Number of Credits"
+	},
+	{
+		"Set Required Number of Credits",
+		"Requirements",
+		"Nodes > Node Configuration > Requirements > Set Required Number of Credits"
+	},
+	{
+		"Set Required Number of Credits",
+		"Requirements",
+		"File Options > Requirements > Set Required Number of Credits"
+	},
+	{
+		"Set Required Number of Credits",
+		"Requirements",
+		"File Areas > Requirements > Set Required Number of Credits"
+	},
+	{
+		"Set Required Number of Credits",
+		"Requirements",
+		"External Programs > Online Programs (Doors) > Online Programs... > Requirements > Set Required Number of Credits"
+	},
+	{
+		"Set Required Number of Credits",
+		"Sysop Chat Override",
+		"System > Advanced Options... > Sysop Chat Override > Set Required Number of Credits"
+	},
+	{
+		"Set Required Number of Credits",
+		"Upload Requirements",
+		"File Areas > Directories > Upload Requirements > Set Required Number of Credits"
+	},
+	{
+		"Set Required Post/Call Ratio (percentage)",
+		"Access Requirements",
+		"Text File Sections > Access Requirements > Set Required Post/Call Ratio (percentage)"
+	},
+	{
+		"Set Required Post/Call Ratio (percentage)",
+		"Access Requirements",
+		"Command Shells > Access Requirements > Set Required Post/Call Ratio (percentage)"
+	},
+	{
+		"Set Required Post/Call Ratio (percentage)",
+		"Access Requirements",
+		"Chat Features > External Sysop Chat Pagers > Access Requirements > Set Required Post/Call Ratio (percentage)"
+	},
+	{
 		"Set Required Post/Call Ratio (percentage)",
 		"Access Requirements",
 		"Chat Features > Multinode Chat Channels > Access Requirements > Set Required Post/Call Ratio (percentage)"
+	},
+	{
+		"Set Required Post/Call Ratio (percentage)",
+		"Access Requirements",
+		"Chat Features > Artificial Gurus > Access Requirements > Set Required Post/Call Ratio (percentage)"
+	},
+	{
+		"Set Required Post/Call Ratio (percentage)",
+		"Access Requirements",
+		"Message Areas > Sub-boards > Access Requirements > Set Required Post/Call Ratio (percentage)"
+	},
+	{
+		"Set Required Post/Call Ratio (percentage)",
+		"Access Requirements",
+		"System > Loadable Modules... > Login > Module > Access Requirements > Set Required Post/Call Ratio (percentage)"
+	},
+	{
+		"Set Required Post/Call Ratio (percentage)",
+		"Access Requirements",
+		"System > Loadable Modules... > Logon > Module > Access Requirements > Set Required Post/Call Ratio (percentage)"
+	},
+	{
+		"Set Required Post/Call Ratio (percentage)",
+		"Access Requirements",
+		"System > Loadable Modules... > Logoff > Module > Access Requirements > Set Required Post/Call Ratio (percentage)"
+	},
+	{
+		"Set Required Post/Call Ratio (percentage)",
+		"Access Requirements",
+		"System > Loadable Modules... > Logout > Module > Access Requirements > Set Required Post/Call Ratio (percentage)"
+	},
+	{
+		"Set Required Post/Call Ratio (percentage)",
+		"Access Requirements",
+		"System > Loadable Modules... > New User Prompts > Module > Access Requirements > Set Required Post/Call Ratio (percentage)"
+	},
+	{
+		"Set Required Post/Call Ratio (percentage)",
+		"Access Requirements",
+		"System > Loadable Modules... > New User Info > Module > Access Requirements > Set Required Post/Call Ratio (percentage)"
+	},
+	{
+		"Set Required Post/Call Ratio (percentage)",
+		"Access Requirements",
+		"System > Loadable Modules... > New User Created > Module > Access Requirements > Set Required Post/Call Ratio (percentage)"
+	},
+	{
+		"Set Required Post/Call Ratio (percentage)",
+		"Access Requirements",
+		"System > Loadable Modules... > User Config > Module > Access Requirements > Set Required Post/Call Ratio (percentage)"
+	},
+	{
+		"Set Required Post/Call Ratio (percentage)",
+		"Access Requirements",
+		"System > Loadable Modules... > Expired User > Module > Access Requirements > Set Required Post/Call Ratio (percentage)"
+	},
+	{
+		"Set Required Post/Call Ratio (percentage)",
+		"Access Requirements",
+		"System > Loadable Modules... > Auto Message > Module > Access Requirements > Set Required Post/Call Ratio (percentage)"
+	},
+	{
+		"Set Required Post/Call Ratio (percentage)",
+		"Access Requirements",
+		"System > Loadable Modules... > Send Feedback > Module > Access Requirements > Set Required Post/Call Ratio (percentage)"
+	},
+	{
+		"Set Required Post/Call Ratio (percentage)",
+		"Access Requirements",
+		"System > Loadable Modules... > Email Section > Module > Access Requirements > Set Required Post/Call Ratio (percentage)"
+	},
+	{
+		"Set Required Post/Call Ratio (percentage)",
+		"Access Requirements",
+		"System > Loadable Modules... > Chat Section > Module > Access Requirements > Set Required Post/Call Ratio (percentage)"
+	},
+	{
+		"Set Required Post/Call Ratio (percentage)",
+		"Access Requirements",
+		"System > Loadable Modules... > Text Section > Module > Access Requirements > Set Required Post/Call Ratio (percentage)"
+	},
+	{
+		"Set Required Post/Call Ratio (percentage)",
+		"Access Requirements",
+		"System > Loadable Modules... > Xtrn Section > Module > Access Requirements > Set Required Post/Call Ratio (percentage)"
+	},
+	{
+		"Set Required Post/Call Ratio (percentage)",
+		"Access Requirements",
+		"System > Loadable Modules... > Pre Xtrn > Module > Access Requirements > Set Required Post/Call Ratio (percentage)"
+	},
+	{
+		"Set Required Post/Call Ratio (percentage)",
+		"Access Requirements",
+		"System > Loadable Modules... > Post Xtrn > Module > Access Requirements > Set Required Post/Call Ratio (percentage)"
+	},
+	{
+		"Set Required Post/Call Ratio (percentage)",
+		"Access Requirements",
+		"System > Loadable Modules... > Read Mail > Module > Access Requirements > Set Required Post/Call Ratio (percentage)"
+	},
+	{
+		"Set Required Post/Call Ratio (percentage)",
+		"Access Requirements",
+		"System > Loadable Modules... > Scan Msgs > Module > Access Requirements > Set Required Post/Call Ratio (percentage)"
+	},
+	{
+		"Set Required Post/Call Ratio (percentage)",
+		"Access Requirements",
+		"System > Loadable Modules... > Scan Subs > Module > Access Requirements > Set Required Post/Call Ratio (percentage)"
+	},
+	{
+		"Set Required Post/Call Ratio (percentage)",
+		"Access Requirements",
+		"System > Loadable Modules... > List Msgs > Module > Access Requirements > Set Required Post/Call Ratio (percentage)"
+	},
+	{
+		"Set Required Post/Call Ratio (percentage)",
+		"Access Requirements",
+		"System > Loadable Modules... > List Logons > Module > Access Requirements > Set Required Post/Call Ratio (percentage)"
+	},
+	{
+		"Set Required Post/Call Ratio (percentage)",
+		"Access Requirements",
+		"System > Loadable Modules... > List Users > Module > Access Requirements > Set Required Post/Call Ratio (percentage)"
+	},
+	{
+		"Set Required Post/Call Ratio (percentage)",
+		"Access Requirements",
+		"System > Loadable Modules... > List Nodes > Module > Access Requirements > Set Required Post/Call Ratio (percentage)"
+	},
+	{
+		"Set Required Post/Call Ratio (percentage)",
+		"Access Requirements",
+		"System > Loadable Modules... > Who's Online > Module > Access Requirements > Set Required Post/Call Ratio (percentage)"
+	},
+	{
+		"Set Required Post/Call Ratio (percentage)",
+		"Access Requirements",
+		"System > Loadable Modules... > Private Msg > Module > Access Requirements > Set Required Post/Call Ratio (percentage)"
+	},
+	{
+		"Set Required Post/Call Ratio (percentage)",
+		"Access Requirements",
+		"System > Loadable Modules... > Scan Dirs > Module > Access Requirements > Set Required Post/Call Ratio (percentage)"
+	},
+	{
+		"Set Required Post/Call Ratio (percentage)",
+		"Access Requirements",
+		"System > Loadable Modules... > List Files > Module > Access Requirements > Set Required Post/Call Ratio (percentage)"
+	},
+	{
+		"Set Required Post/Call Ratio (percentage)",
+		"Access Requirements",
+		"System > Loadable Modules... > View File Info > Module > Access Requirements > Set Required Post/Call Ratio (percentage)"
+	},
+	{
+		"Set Required Post/Call Ratio (percentage)",
+		"Access Requirements",
+		"System > Loadable Modules... > Batch Transfer > Module > Access Requirements > Set Required Post/Call Ratio (percentage)"
+	},
+	{
+		"Set Required Post/Call Ratio (percentage)",
+		"Access Requirements",
+		"System > Loadable Modules... > Temp Transfer > Module > Access Requirements > Set Required Post/Call Ratio (percentage)"
+	},
+	{
+		"Set Required Post/Call Ratio (percentage)",
+		"Access Requirements",
+		"System > Loadable Modules... > Select Item > Module > Access Requirements > Set Required Post/Call Ratio (percentage)"
+	},
+	{
+		"Set Required Post/Call Ratio (percentage)",
+		"Access Requirements",
+		"System > Loadable Modules... > Sync > Module > Access Requirements > Set Required Post/Call Ratio (percentage)"
+	},
+	{
+		"Set Required Post/Call Ratio (percentage)",
+		"Access Requirements",
+		"File Options > Access Requirements > Set Required Post/Call Ratio (percentage)"
+	},
+	{
+		"Set Required Post/Call Ratio (percentage)",
+		"Access Requirements",
+		"File Areas > Directories > Access Requirements > Set Required Post/Call Ratio (percentage)"
+	},
+	{
+		"Set Required Post/Call Ratio (percentage)",
+		"Access Requirements",
+		"External Programs > Message Editors > Access Requirements > Set Required Post/Call Ratio (percentage)"
+	},
+	{
+		"Set Required Post/Call Ratio (percentage)",
+		"Access Requirements",
+		"External Programs > Online Programs (Doors) > Access Requirements > Set Required Post/Call Ratio (percentage)"
+	},
+	{
+		"Set Required Post/Call Ratio (percentage)",
+		"Archive Requirements",
+		"Servers > Mail Server > Archive Requirements > Set Required Post/Call Ratio (percentage)"
+	},
+	{
+		"Set Required Post/Call Ratio (percentage)",
+		"Download Requirements",
+		"File Areas > Directories > Download Requirements > Set Required Post/Call Ratio (percentage)"
+	},
+	{
+		"Set Required Post/Call Ratio (percentage)",
+		"Exemption Requirements",
+		"File Areas > Directories > Exemption Requirements > Set Required Post/Call Ratio (percentage)"
+	},
+	{
+		"Set Required Post/Call Ratio (percentage)",
+		"Login Info Save",
+		"Servers > Web Server > Login Info Save > Set Required Post/Call Ratio (percentage)"
+	},
+	{
+		"Set Required Post/Call Ratio (percentage)",
+		"Login Info Save",
+		"Servers > FTP Server > Login Info Save > Set Required Post/Call Ratio (percentage)"
+	},
+	{
+		"Set Required Post/Call Ratio (percentage)",
+		"Login Info Save",
+		"Servers > Services Server > Login Info Save > Set Required Post/Call Ratio (percentage)"
+	},
+	{
+		"Set Required Post/Call Ratio (percentage)",
+		"Login Requirements",
+		"Servers > Global Settings > Login Requirements > Set Required Post/Call Ratio (percentage)"
+	},
+	{
+		"Set Required Post/Call Ratio (percentage)",
+		"Login Requirements",
+		"Servers > Terminal Server > Login Requirements > Set Required Post/Call Ratio (percentage)"
+	},
+	{
+		"Set Required Post/Call Ratio (percentage)",
+		"Login Requirements",
+		"Servers > Web Server > Login Requirements > Set Required Post/Call Ratio (percentage)"
+	},
+	{
+		"Set Required Post/Call Ratio (percentage)",
+		"Login Requirements",
+		"Servers > FTP Server > Login Requirements > Set Required Post/Call Ratio (percentage)"
+	},
+	{
+		"Set Required Post/Call Ratio (percentage)",
+		"Login Requirements",
+		"Servers > Mail Server > Login Requirements > Set Required Post/Call Ratio (percentage)"
+	},
+	{
+		"Set Required Post/Call Ratio (percentage)",
+		"Login Requirements",
+		"Servers > Services Server > Login Requirements > Set Required Post/Call Ratio (percentage)"
+	},
+	{
+		"Set Required Post/Call Ratio (percentage)",
+		"Moderated Posting User",
+		"Message Areas > Sub-boards > Moderated Posting User > Set Required Post/Call Ratio (percentage)"
+	},
+	{
+		"Set Required Post/Call Ratio (percentage)",
+		"Operator Requirements",
+		"Message Areas > Sub-boards > Operator Requirements > Set Required Post/Call Ratio (percentage)"
+	},
+	{
+		"Set Required Post/Call Ratio (percentage)",
+		"Operator Requirements",
+		"File Areas > Directories > Operator Requirements > Set Required Post/Call Ratio (percentage)"
+	},
+	{
+		"Set Required Post/Call Ratio (percentage)",
+		"Posting Requirements",
+		"Message Areas > Sub-boards > Posting Requirements > Set Required Post/Call Ratio (percentage)"
+	},
+	{
+		"Set Required Post/Call Ratio (percentage)",
+		"Reading Requirements",
+		"Message Areas > Sub-boards > Reading Requirements > Set Required Post/Call Ratio (percentage)"
+	},
+	{
+		"Set Required Post/Call Ratio (percentage)",
+		"Requirements",
+		"Message Areas > Requirements > Set Required Post/Call Ratio (percentage)"
+	},
+	{
+		"Set Required Post/Call Ratio (percentage)",
+		"Requirements",
+		"Nodes > Node Configuration > Requirements > Set Required Post/Call Ratio (percentage)"
+	},
+	{
+		"Set Required Post/Call Ratio (percentage)",
+		"Requirements",
+		"File Options > Requirements > Set Required Post/Call Ratio (percentage)"
+	},
+	{
+		"Set Required Post/Call Ratio (percentage)",
+		"Requirements",
+		"File Areas > Requirements > Set Required Post/Call Ratio (percentage)"
+	},
+	{
+		"Set Required Post/Call Ratio (percentage)",
+		"Requirements",
+		"External Programs > Online Programs (Doors) > Online Programs... > Requirements > Set Required Post/Call Ratio (percentage)"
+	},
+	{
+		"Set Required Post/Call Ratio (percentage)",
+		"Sysop Chat Override",
+		"System > Advanced Options... > Sysop Chat Override > Set Required Post/Call Ratio (percentage)"
+	},
+	{
+		"Set Required Post/Call Ratio (percentage)",
+		"Upload Requirements",
+		"File Areas > Directories > Upload Requirements > Set Required Post/Call Ratio (percentage)"
+	},
+	{
+		"Set Required Security Flag",
+		"Access Requirements",
+		"Text File Sections > Access Requirements > Set Required Security Flag"
+	},
+	{
+		"Set Required Security Flag",
+		"Access Requirements",
+		"Command Shells > Access Requirements > Set Required Security Flag"
+	},
+	{
+		"Set Required Security Flag",
+		"Access Requirements",
+		"Chat Features > External Sysop Chat Pagers > Access Requirements > Set Required Security Flag"
 	},
 	{
 		"Set Required Security Flag",
@@ -3453,9 +6628,669 @@ static const scfg_option_t scfg_option_index[] = {
 		"Chat Features > Multinode Chat Channels > Access Requirements > Set Required Security Flag"
 	},
 	{
+		"Set Required Security Flag",
+		"Access Requirements",
+		"Chat Features > Artificial Gurus > Access Requirements > Set Required Security Flag"
+	},
+	{
+		"Set Required Security Flag",
+		"Access Requirements",
+		"Message Areas > Sub-boards > Access Requirements > Set Required Security Flag"
+	},
+	{
+		"Set Required Security Flag",
+		"Access Requirements",
+		"System > Loadable Modules... > Login > Module > Access Requirements > Set Required Security Flag"
+	},
+	{
+		"Set Required Security Flag",
+		"Access Requirements",
+		"System > Loadable Modules... > Logon > Module > Access Requirements > Set Required Security Flag"
+	},
+	{
+		"Set Required Security Flag",
+		"Access Requirements",
+		"System > Loadable Modules... > Logoff > Module > Access Requirements > Set Required Security Flag"
+	},
+	{
+		"Set Required Security Flag",
+		"Access Requirements",
+		"System > Loadable Modules... > Logout > Module > Access Requirements > Set Required Security Flag"
+	},
+	{
+		"Set Required Security Flag",
+		"Access Requirements",
+		"System > Loadable Modules... > New User Prompts > Module > Access Requirements > Set Required Security Flag"
+	},
+	{
+		"Set Required Security Flag",
+		"Access Requirements",
+		"System > Loadable Modules... > New User Info > Module > Access Requirements > Set Required Security Flag"
+	},
+	{
+		"Set Required Security Flag",
+		"Access Requirements",
+		"System > Loadable Modules... > New User Created > Module > Access Requirements > Set Required Security Flag"
+	},
+	{
+		"Set Required Security Flag",
+		"Access Requirements",
+		"System > Loadable Modules... > User Config > Module > Access Requirements > Set Required Security Flag"
+	},
+	{
+		"Set Required Security Flag",
+		"Access Requirements",
+		"System > Loadable Modules... > Expired User > Module > Access Requirements > Set Required Security Flag"
+	},
+	{
+		"Set Required Security Flag",
+		"Access Requirements",
+		"System > Loadable Modules... > Auto Message > Module > Access Requirements > Set Required Security Flag"
+	},
+	{
+		"Set Required Security Flag",
+		"Access Requirements",
+		"System > Loadable Modules... > Send Feedback > Module > Access Requirements > Set Required Security Flag"
+	},
+	{
+		"Set Required Security Flag",
+		"Access Requirements",
+		"System > Loadable Modules... > Email Section > Module > Access Requirements > Set Required Security Flag"
+	},
+	{
+		"Set Required Security Flag",
+		"Access Requirements",
+		"System > Loadable Modules... > Chat Section > Module > Access Requirements > Set Required Security Flag"
+	},
+	{
+		"Set Required Security Flag",
+		"Access Requirements",
+		"System > Loadable Modules... > Text Section > Module > Access Requirements > Set Required Security Flag"
+	},
+	{
+		"Set Required Security Flag",
+		"Access Requirements",
+		"System > Loadable Modules... > Xtrn Section > Module > Access Requirements > Set Required Security Flag"
+	},
+	{
+		"Set Required Security Flag",
+		"Access Requirements",
+		"System > Loadable Modules... > Pre Xtrn > Module > Access Requirements > Set Required Security Flag"
+	},
+	{
+		"Set Required Security Flag",
+		"Access Requirements",
+		"System > Loadable Modules... > Post Xtrn > Module > Access Requirements > Set Required Security Flag"
+	},
+	{
+		"Set Required Security Flag",
+		"Access Requirements",
+		"System > Loadable Modules... > Read Mail > Module > Access Requirements > Set Required Security Flag"
+	},
+	{
+		"Set Required Security Flag",
+		"Access Requirements",
+		"System > Loadable Modules... > Scan Msgs > Module > Access Requirements > Set Required Security Flag"
+	},
+	{
+		"Set Required Security Flag",
+		"Access Requirements",
+		"System > Loadable Modules... > Scan Subs > Module > Access Requirements > Set Required Security Flag"
+	},
+	{
+		"Set Required Security Flag",
+		"Access Requirements",
+		"System > Loadable Modules... > List Msgs > Module > Access Requirements > Set Required Security Flag"
+	},
+	{
+		"Set Required Security Flag",
+		"Access Requirements",
+		"System > Loadable Modules... > List Logons > Module > Access Requirements > Set Required Security Flag"
+	},
+	{
+		"Set Required Security Flag",
+		"Access Requirements",
+		"System > Loadable Modules... > List Users > Module > Access Requirements > Set Required Security Flag"
+	},
+	{
+		"Set Required Security Flag",
+		"Access Requirements",
+		"System > Loadable Modules... > List Nodes > Module > Access Requirements > Set Required Security Flag"
+	},
+	{
+		"Set Required Security Flag",
+		"Access Requirements",
+		"System > Loadable Modules... > Who's Online > Module > Access Requirements > Set Required Security Flag"
+	},
+	{
+		"Set Required Security Flag",
+		"Access Requirements",
+		"System > Loadable Modules... > Private Msg > Module > Access Requirements > Set Required Security Flag"
+	},
+	{
+		"Set Required Security Flag",
+		"Access Requirements",
+		"System > Loadable Modules... > Scan Dirs > Module > Access Requirements > Set Required Security Flag"
+	},
+	{
+		"Set Required Security Flag",
+		"Access Requirements",
+		"System > Loadable Modules... > List Files > Module > Access Requirements > Set Required Security Flag"
+	},
+	{
+		"Set Required Security Flag",
+		"Access Requirements",
+		"System > Loadable Modules... > View File Info > Module > Access Requirements > Set Required Security Flag"
+	},
+	{
+		"Set Required Security Flag",
+		"Access Requirements",
+		"System > Loadable Modules... > Batch Transfer > Module > Access Requirements > Set Required Security Flag"
+	},
+	{
+		"Set Required Security Flag",
+		"Access Requirements",
+		"System > Loadable Modules... > Temp Transfer > Module > Access Requirements > Set Required Security Flag"
+	},
+	{
+		"Set Required Security Flag",
+		"Access Requirements",
+		"System > Loadable Modules... > Select Item > Module > Access Requirements > Set Required Security Flag"
+	},
+	{
+		"Set Required Security Flag",
+		"Access Requirements",
+		"System > Loadable Modules... > Sync > Module > Access Requirements > Set Required Security Flag"
+	},
+	{
+		"Set Required Security Flag",
+		"Access Requirements",
+		"File Options > Access Requirements > Set Required Security Flag"
+	},
+	{
+		"Set Required Security Flag",
+		"Access Requirements",
+		"File Areas > Directories > Access Requirements > Set Required Security Flag"
+	},
+	{
+		"Set Required Security Flag",
+		"Access Requirements",
+		"External Programs > Message Editors > Access Requirements > Set Required Security Flag"
+	},
+	{
+		"Set Required Security Flag",
+		"Access Requirements",
+		"External Programs > Online Programs (Doors) > Access Requirements > Set Required Security Flag"
+	},
+	{
+		"Set Required Security Flag",
+		"Archive Requirements",
+		"Servers > Mail Server > Archive Requirements > Set Required Security Flag"
+	},
+	{
+		"Set Required Security Flag",
+		"Download Requirements",
+		"File Areas > Directories > Download Requirements > Set Required Security Flag"
+	},
+	{
+		"Set Required Security Flag",
+		"Exemption Requirements",
+		"File Areas > Directories > Exemption Requirements > Set Required Security Flag"
+	},
+	{
+		"Set Required Security Flag",
+		"Login Info Save",
+		"Servers > Web Server > Login Info Save > Set Required Security Flag"
+	},
+	{
+		"Set Required Security Flag",
+		"Login Info Save",
+		"Servers > FTP Server > Login Info Save > Set Required Security Flag"
+	},
+	{
+		"Set Required Security Flag",
+		"Login Info Save",
+		"Servers > Services Server > Login Info Save > Set Required Security Flag"
+	},
+	{
+		"Set Required Security Flag",
+		"Login Requirements",
+		"Servers > Global Settings > Login Requirements > Set Required Security Flag"
+	},
+	{
+		"Set Required Security Flag",
+		"Login Requirements",
+		"Servers > Terminal Server > Login Requirements > Set Required Security Flag"
+	},
+	{
+		"Set Required Security Flag",
+		"Login Requirements",
+		"Servers > Web Server > Login Requirements > Set Required Security Flag"
+	},
+	{
+		"Set Required Security Flag",
+		"Login Requirements",
+		"Servers > FTP Server > Login Requirements > Set Required Security Flag"
+	},
+	{
+		"Set Required Security Flag",
+		"Login Requirements",
+		"Servers > Mail Server > Login Requirements > Set Required Security Flag"
+	},
+	{
+		"Set Required Security Flag",
+		"Login Requirements",
+		"Servers > Services Server > Login Requirements > Set Required Security Flag"
+	},
+	{
+		"Set Required Security Flag",
+		"Moderated Posting User",
+		"Message Areas > Sub-boards > Moderated Posting User > Set Required Security Flag"
+	},
+	{
+		"Set Required Security Flag",
+		"Operator Requirements",
+		"Message Areas > Sub-boards > Operator Requirements > Set Required Security Flag"
+	},
+	{
+		"Set Required Security Flag",
+		"Operator Requirements",
+		"File Areas > Directories > Operator Requirements > Set Required Security Flag"
+	},
+	{
+		"Set Required Security Flag",
+		"Posting Requirements",
+		"Message Areas > Sub-boards > Posting Requirements > Set Required Security Flag"
+	},
+	{
+		"Set Required Security Flag",
+		"Reading Requirements",
+		"Message Areas > Sub-boards > Reading Requirements > Set Required Security Flag"
+	},
+	{
+		"Set Required Security Flag",
+		"Requirements",
+		"Message Areas > Requirements > Set Required Security Flag"
+	},
+	{
+		"Set Required Security Flag",
+		"Requirements",
+		"Nodes > Node Configuration > Requirements > Set Required Security Flag"
+	},
+	{
+		"Set Required Security Flag",
+		"Requirements",
+		"File Options > Requirements > Set Required Security Flag"
+	},
+	{
+		"Set Required Security Flag",
+		"Requirements",
+		"File Areas > Requirements > Set Required Security Flag"
+	},
+	{
+		"Set Required Security Flag",
+		"Requirements",
+		"External Programs > Online Programs (Doors) > Online Programs... > Requirements > Set Required Security Flag"
+	},
+	{
+		"Set Required Security Flag",
+		"Sysop Chat Override",
+		"System > Advanced Options... > Sysop Chat Override > Set Required Security Flag"
+	},
+	{
+		"Set Required Security Flag",
+		"Upload Requirements",
+		"File Areas > Directories > Upload Requirements > Set Required Security Flag"
+	},
+	{
+		"Set Required Security Level",
+		"Access Requirements",
+		"Text File Sections > Access Requirements > Set Required Security Level"
+	},
+	{
+		"Set Required Security Level",
+		"Access Requirements",
+		"Command Shells > Access Requirements > Set Required Security Level"
+	},
+	{
+		"Set Required Security Level",
+		"Access Requirements",
+		"Chat Features > External Sysop Chat Pagers > Access Requirements > Set Required Security Level"
+	},
+	{
 		"Set Required Security Level",
 		"Access Requirements",
 		"Chat Features > Multinode Chat Channels > Access Requirements > Set Required Security Level"
+	},
+	{
+		"Set Required Security Level",
+		"Access Requirements",
+		"Chat Features > Artificial Gurus > Access Requirements > Set Required Security Level"
+	},
+	{
+		"Set Required Security Level",
+		"Access Requirements",
+		"Message Areas > Sub-boards > Access Requirements > Set Required Security Level"
+	},
+	{
+		"Set Required Security Level",
+		"Access Requirements",
+		"System > Loadable Modules... > Login > Module > Access Requirements > Set Required Security Level"
+	},
+	{
+		"Set Required Security Level",
+		"Access Requirements",
+		"System > Loadable Modules... > Logon > Module > Access Requirements > Set Required Security Level"
+	},
+	{
+		"Set Required Security Level",
+		"Access Requirements",
+		"System > Loadable Modules... > Logoff > Module > Access Requirements > Set Required Security Level"
+	},
+	{
+		"Set Required Security Level",
+		"Access Requirements",
+		"System > Loadable Modules... > Logout > Module > Access Requirements > Set Required Security Level"
+	},
+	{
+		"Set Required Security Level",
+		"Access Requirements",
+		"System > Loadable Modules... > New User Prompts > Module > Access Requirements > Set Required Security Level"
+	},
+	{
+		"Set Required Security Level",
+		"Access Requirements",
+		"System > Loadable Modules... > New User Info > Module > Access Requirements > Set Required Security Level"
+	},
+	{
+		"Set Required Security Level",
+		"Access Requirements",
+		"System > Loadable Modules... > New User Created > Module > Access Requirements > Set Required Security Level"
+	},
+	{
+		"Set Required Security Level",
+		"Access Requirements",
+		"System > Loadable Modules... > User Config > Module > Access Requirements > Set Required Security Level"
+	},
+	{
+		"Set Required Security Level",
+		"Access Requirements",
+		"System > Loadable Modules... > Expired User > Module > Access Requirements > Set Required Security Level"
+	},
+	{
+		"Set Required Security Level",
+		"Access Requirements",
+		"System > Loadable Modules... > Auto Message > Module > Access Requirements > Set Required Security Level"
+	},
+	{
+		"Set Required Security Level",
+		"Access Requirements",
+		"System > Loadable Modules... > Send Feedback > Module > Access Requirements > Set Required Security Level"
+	},
+	{
+		"Set Required Security Level",
+		"Access Requirements",
+		"System > Loadable Modules... > Email Section > Module > Access Requirements > Set Required Security Level"
+	},
+	{
+		"Set Required Security Level",
+		"Access Requirements",
+		"System > Loadable Modules... > Chat Section > Module > Access Requirements > Set Required Security Level"
+	},
+	{
+		"Set Required Security Level",
+		"Access Requirements",
+		"System > Loadable Modules... > Text Section > Module > Access Requirements > Set Required Security Level"
+	},
+	{
+		"Set Required Security Level",
+		"Access Requirements",
+		"System > Loadable Modules... > Xtrn Section > Module > Access Requirements > Set Required Security Level"
+	},
+	{
+		"Set Required Security Level",
+		"Access Requirements",
+		"System > Loadable Modules... > Pre Xtrn > Module > Access Requirements > Set Required Security Level"
+	},
+	{
+		"Set Required Security Level",
+		"Access Requirements",
+		"System > Loadable Modules... > Post Xtrn > Module > Access Requirements > Set Required Security Level"
+	},
+	{
+		"Set Required Security Level",
+		"Access Requirements",
+		"System > Loadable Modules... > Read Mail > Module > Access Requirements > Set Required Security Level"
+	},
+	{
+		"Set Required Security Level",
+		"Access Requirements",
+		"System > Loadable Modules... > Scan Msgs > Module > Access Requirements > Set Required Security Level"
+	},
+	{
+		"Set Required Security Level",
+		"Access Requirements",
+		"System > Loadable Modules... > Scan Subs > Module > Access Requirements > Set Required Security Level"
+	},
+	{
+		"Set Required Security Level",
+		"Access Requirements",
+		"System > Loadable Modules... > List Msgs > Module > Access Requirements > Set Required Security Level"
+	},
+	{
+		"Set Required Security Level",
+		"Access Requirements",
+		"System > Loadable Modules... > List Logons > Module > Access Requirements > Set Required Security Level"
+	},
+	{
+		"Set Required Security Level",
+		"Access Requirements",
+		"System > Loadable Modules... > List Users > Module > Access Requirements > Set Required Security Level"
+	},
+	{
+		"Set Required Security Level",
+		"Access Requirements",
+		"System > Loadable Modules... > List Nodes > Module > Access Requirements > Set Required Security Level"
+	},
+	{
+		"Set Required Security Level",
+		"Access Requirements",
+		"System > Loadable Modules... > Who's Online > Module > Access Requirements > Set Required Security Level"
+	},
+	{
+		"Set Required Security Level",
+		"Access Requirements",
+		"System > Loadable Modules... > Private Msg > Module > Access Requirements > Set Required Security Level"
+	},
+	{
+		"Set Required Security Level",
+		"Access Requirements",
+		"System > Loadable Modules... > Scan Dirs > Module > Access Requirements > Set Required Security Level"
+	},
+	{
+		"Set Required Security Level",
+		"Access Requirements",
+		"System > Loadable Modules... > List Files > Module > Access Requirements > Set Required Security Level"
+	},
+	{
+		"Set Required Security Level",
+		"Access Requirements",
+		"System > Loadable Modules... > View File Info > Module > Access Requirements > Set Required Security Level"
+	},
+	{
+		"Set Required Security Level",
+		"Access Requirements",
+		"System > Loadable Modules... > Batch Transfer > Module > Access Requirements > Set Required Security Level"
+	},
+	{
+		"Set Required Security Level",
+		"Access Requirements",
+		"System > Loadable Modules... > Temp Transfer > Module > Access Requirements > Set Required Security Level"
+	},
+	{
+		"Set Required Security Level",
+		"Access Requirements",
+		"System > Loadable Modules... > Select Item > Module > Access Requirements > Set Required Security Level"
+	},
+	{
+		"Set Required Security Level",
+		"Access Requirements",
+		"System > Loadable Modules... > Sync > Module > Access Requirements > Set Required Security Level"
+	},
+	{
+		"Set Required Security Level",
+		"Access Requirements",
+		"File Options > Access Requirements > Set Required Security Level"
+	},
+	{
+		"Set Required Security Level",
+		"Access Requirements",
+		"File Areas > Directories > Access Requirements > Set Required Security Level"
+	},
+	{
+		"Set Required Security Level",
+		"Access Requirements",
+		"External Programs > Message Editors > Access Requirements > Set Required Security Level"
+	},
+	{
+		"Set Required Security Level",
+		"Access Requirements",
+		"External Programs > Online Programs (Doors) > Access Requirements > Set Required Security Level"
+	},
+	{
+		"Set Required Security Level",
+		"Archive Requirements",
+		"Servers > Mail Server > Archive Requirements > Set Required Security Level"
+	},
+	{
+		"Set Required Security Level",
+		"Download Requirements",
+		"File Areas > Directories > Download Requirements > Set Required Security Level"
+	},
+	{
+		"Set Required Security Level",
+		"Exemption Requirements",
+		"File Areas > Directories > Exemption Requirements > Set Required Security Level"
+	},
+	{
+		"Set Required Security Level",
+		"Login Info Save",
+		"Servers > Web Server > Login Info Save > Set Required Security Level"
+	},
+	{
+		"Set Required Security Level",
+		"Login Info Save",
+		"Servers > FTP Server > Login Info Save > Set Required Security Level"
+	},
+	{
+		"Set Required Security Level",
+		"Login Info Save",
+		"Servers > Services Server > Login Info Save > Set Required Security Level"
+	},
+	{
+		"Set Required Security Level",
+		"Login Requirements",
+		"Servers > Global Settings > Login Requirements > Set Required Security Level"
+	},
+	{
+		"Set Required Security Level",
+		"Login Requirements",
+		"Servers > Terminal Server > Login Requirements > Set Required Security Level"
+	},
+	{
+		"Set Required Security Level",
+		"Login Requirements",
+		"Servers > Web Server > Login Requirements > Set Required Security Level"
+	},
+	{
+		"Set Required Security Level",
+		"Login Requirements",
+		"Servers > FTP Server > Login Requirements > Set Required Security Level"
+	},
+	{
+		"Set Required Security Level",
+		"Login Requirements",
+		"Servers > Mail Server > Login Requirements > Set Required Security Level"
+	},
+	{
+		"Set Required Security Level",
+		"Login Requirements",
+		"Servers > Services Server > Login Requirements > Set Required Security Level"
+	},
+	{
+		"Set Required Security Level",
+		"Moderated Posting User",
+		"Message Areas > Sub-boards > Moderated Posting User > Set Required Security Level"
+	},
+	{
+		"Set Required Security Level",
+		"Operator Requirements",
+		"Message Areas > Sub-boards > Operator Requirements > Set Required Security Level"
+	},
+	{
+		"Set Required Security Level",
+		"Operator Requirements",
+		"File Areas > Directories > Operator Requirements > Set Required Security Level"
+	},
+	{
+		"Set Required Security Level",
+		"Posting Requirements",
+		"Message Areas > Sub-boards > Posting Requirements > Set Required Security Level"
+	},
+	{
+		"Set Required Security Level",
+		"Reading Requirements",
+		"Message Areas > Sub-boards > Reading Requirements > Set Required Security Level"
+	},
+	{
+		"Set Required Security Level",
+		"Requirements",
+		"Message Areas > Requirements > Set Required Security Level"
+	},
+	{
+		"Set Required Security Level",
+		"Requirements",
+		"Nodes > Node Configuration > Requirements > Set Required Security Level"
+	},
+	{
+		"Set Required Security Level",
+		"Requirements",
+		"File Options > Requirements > Set Required Security Level"
+	},
+	{
+		"Set Required Security Level",
+		"Requirements",
+		"File Areas > Requirements > Set Required Security Level"
+	},
+	{
+		"Set Required Security Level",
+		"Requirements",
+		"External Programs > Online Programs (Doors) > Online Programs... > Requirements > Set Required Security Level"
+	},
+	{
+		"Set Required Security Level",
+		"Sysop Chat Override",
+		"System > Advanced Options... > Sysop Chat Override > Set Required Security Level"
+	},
+	{
+		"Set Required Security Level",
+		"Upload Requirements",
+		"File Areas > Directories > Upload Requirements > Set Required Security Level"
+	},
+	{
+		"Set Required Terminal Type/Capability",
+		"Access Requirements",
+		"Text File Sections > Access Requirements > Set Required Terminal Type/Capability"
+	},
+	{
+		"Set Required Terminal Type/Capability",
+		"Access Requirements",
+		"Command Shells > Access Requirements > Set Required Terminal Type/Capability"
+	},
+	{
+		"Set Required Terminal Type/Capability",
+		"Access Requirements",
+		"Chat Features > External Sysop Chat Pagers > Access Requirements > Set Required Terminal Type/Capability"
 	},
 	{
 		"Set Required Terminal Type/Capability",
@@ -3463,9 +7298,669 @@ static const scfg_option_t scfg_option_index[] = {
 		"Chat Features > Multinode Chat Channels > Access Requirements > Set Required Terminal Type/Capability"
 	},
 	{
+		"Set Required Terminal Type/Capability",
+		"Access Requirements",
+		"Chat Features > Artificial Gurus > Access Requirements > Set Required Terminal Type/Capability"
+	},
+	{
+		"Set Required Terminal Type/Capability",
+		"Access Requirements",
+		"Message Areas > Sub-boards > Access Requirements > Set Required Terminal Type/Capability"
+	},
+	{
+		"Set Required Terminal Type/Capability",
+		"Access Requirements",
+		"System > Loadable Modules... > Login > Module > Access Requirements > Set Required Terminal Type/Capability"
+	},
+	{
+		"Set Required Terminal Type/Capability",
+		"Access Requirements",
+		"System > Loadable Modules... > Logon > Module > Access Requirements > Set Required Terminal Type/Capability"
+	},
+	{
+		"Set Required Terminal Type/Capability",
+		"Access Requirements",
+		"System > Loadable Modules... > Logoff > Module > Access Requirements > Set Required Terminal Type/Capability"
+	},
+	{
+		"Set Required Terminal Type/Capability",
+		"Access Requirements",
+		"System > Loadable Modules... > Logout > Module > Access Requirements > Set Required Terminal Type/Capability"
+	},
+	{
+		"Set Required Terminal Type/Capability",
+		"Access Requirements",
+		"System > Loadable Modules... > New User Prompts > Module > Access Requirements > Set Required Terminal Type/Capability"
+	},
+	{
+		"Set Required Terminal Type/Capability",
+		"Access Requirements",
+		"System > Loadable Modules... > New User Info > Module > Access Requirements > Set Required Terminal Type/Capability"
+	},
+	{
+		"Set Required Terminal Type/Capability",
+		"Access Requirements",
+		"System > Loadable Modules... > New User Created > Module > Access Requirements > Set Required Terminal Type/Capability"
+	},
+	{
+		"Set Required Terminal Type/Capability",
+		"Access Requirements",
+		"System > Loadable Modules... > User Config > Module > Access Requirements > Set Required Terminal Type/Capability"
+	},
+	{
+		"Set Required Terminal Type/Capability",
+		"Access Requirements",
+		"System > Loadable Modules... > Expired User > Module > Access Requirements > Set Required Terminal Type/Capability"
+	},
+	{
+		"Set Required Terminal Type/Capability",
+		"Access Requirements",
+		"System > Loadable Modules... > Auto Message > Module > Access Requirements > Set Required Terminal Type/Capability"
+	},
+	{
+		"Set Required Terminal Type/Capability",
+		"Access Requirements",
+		"System > Loadable Modules... > Send Feedback > Module > Access Requirements > Set Required Terminal Type/Capability"
+	},
+	{
+		"Set Required Terminal Type/Capability",
+		"Access Requirements",
+		"System > Loadable Modules... > Email Section > Module > Access Requirements > Set Required Terminal Type/Capability"
+	},
+	{
+		"Set Required Terminal Type/Capability",
+		"Access Requirements",
+		"System > Loadable Modules... > Chat Section > Module > Access Requirements > Set Required Terminal Type/Capability"
+	},
+	{
+		"Set Required Terminal Type/Capability",
+		"Access Requirements",
+		"System > Loadable Modules... > Text Section > Module > Access Requirements > Set Required Terminal Type/Capability"
+	},
+	{
+		"Set Required Terminal Type/Capability",
+		"Access Requirements",
+		"System > Loadable Modules... > Xtrn Section > Module > Access Requirements > Set Required Terminal Type/Capability"
+	},
+	{
+		"Set Required Terminal Type/Capability",
+		"Access Requirements",
+		"System > Loadable Modules... > Pre Xtrn > Module > Access Requirements > Set Required Terminal Type/Capability"
+	},
+	{
+		"Set Required Terminal Type/Capability",
+		"Access Requirements",
+		"System > Loadable Modules... > Post Xtrn > Module > Access Requirements > Set Required Terminal Type/Capability"
+	},
+	{
+		"Set Required Terminal Type/Capability",
+		"Access Requirements",
+		"System > Loadable Modules... > Read Mail > Module > Access Requirements > Set Required Terminal Type/Capability"
+	},
+	{
+		"Set Required Terminal Type/Capability",
+		"Access Requirements",
+		"System > Loadable Modules... > Scan Msgs > Module > Access Requirements > Set Required Terminal Type/Capability"
+	},
+	{
+		"Set Required Terminal Type/Capability",
+		"Access Requirements",
+		"System > Loadable Modules... > Scan Subs > Module > Access Requirements > Set Required Terminal Type/Capability"
+	},
+	{
+		"Set Required Terminal Type/Capability",
+		"Access Requirements",
+		"System > Loadable Modules... > List Msgs > Module > Access Requirements > Set Required Terminal Type/Capability"
+	},
+	{
+		"Set Required Terminal Type/Capability",
+		"Access Requirements",
+		"System > Loadable Modules... > List Logons > Module > Access Requirements > Set Required Terminal Type/Capability"
+	},
+	{
+		"Set Required Terminal Type/Capability",
+		"Access Requirements",
+		"System > Loadable Modules... > List Users > Module > Access Requirements > Set Required Terminal Type/Capability"
+	},
+	{
+		"Set Required Terminal Type/Capability",
+		"Access Requirements",
+		"System > Loadable Modules... > List Nodes > Module > Access Requirements > Set Required Terminal Type/Capability"
+	},
+	{
+		"Set Required Terminal Type/Capability",
+		"Access Requirements",
+		"System > Loadable Modules... > Who's Online > Module > Access Requirements > Set Required Terminal Type/Capability"
+	},
+	{
+		"Set Required Terminal Type/Capability",
+		"Access Requirements",
+		"System > Loadable Modules... > Private Msg > Module > Access Requirements > Set Required Terminal Type/Capability"
+	},
+	{
+		"Set Required Terminal Type/Capability",
+		"Access Requirements",
+		"System > Loadable Modules... > Scan Dirs > Module > Access Requirements > Set Required Terminal Type/Capability"
+	},
+	{
+		"Set Required Terminal Type/Capability",
+		"Access Requirements",
+		"System > Loadable Modules... > List Files > Module > Access Requirements > Set Required Terminal Type/Capability"
+	},
+	{
+		"Set Required Terminal Type/Capability",
+		"Access Requirements",
+		"System > Loadable Modules... > View File Info > Module > Access Requirements > Set Required Terminal Type/Capability"
+	},
+	{
+		"Set Required Terminal Type/Capability",
+		"Access Requirements",
+		"System > Loadable Modules... > Batch Transfer > Module > Access Requirements > Set Required Terminal Type/Capability"
+	},
+	{
+		"Set Required Terminal Type/Capability",
+		"Access Requirements",
+		"System > Loadable Modules... > Temp Transfer > Module > Access Requirements > Set Required Terminal Type/Capability"
+	},
+	{
+		"Set Required Terminal Type/Capability",
+		"Access Requirements",
+		"System > Loadable Modules... > Select Item > Module > Access Requirements > Set Required Terminal Type/Capability"
+	},
+	{
+		"Set Required Terminal Type/Capability",
+		"Access Requirements",
+		"System > Loadable Modules... > Sync > Module > Access Requirements > Set Required Terminal Type/Capability"
+	},
+	{
+		"Set Required Terminal Type/Capability",
+		"Access Requirements",
+		"File Options > Access Requirements > Set Required Terminal Type/Capability"
+	},
+	{
+		"Set Required Terminal Type/Capability",
+		"Access Requirements",
+		"File Areas > Directories > Access Requirements > Set Required Terminal Type/Capability"
+	},
+	{
+		"Set Required Terminal Type/Capability",
+		"Access Requirements",
+		"External Programs > Message Editors > Access Requirements > Set Required Terminal Type/Capability"
+	},
+	{
+		"Set Required Terminal Type/Capability",
+		"Access Requirements",
+		"External Programs > Online Programs (Doors) > Access Requirements > Set Required Terminal Type/Capability"
+	},
+	{
+		"Set Required Terminal Type/Capability",
+		"Archive Requirements",
+		"Servers > Mail Server > Archive Requirements > Set Required Terminal Type/Capability"
+	},
+	{
+		"Set Required Terminal Type/Capability",
+		"Download Requirements",
+		"File Areas > Directories > Download Requirements > Set Required Terminal Type/Capability"
+	},
+	{
+		"Set Required Terminal Type/Capability",
+		"Exemption Requirements",
+		"File Areas > Directories > Exemption Requirements > Set Required Terminal Type/Capability"
+	},
+	{
+		"Set Required Terminal Type/Capability",
+		"Login Info Save",
+		"Servers > Web Server > Login Info Save > Set Required Terminal Type/Capability"
+	},
+	{
+		"Set Required Terminal Type/Capability",
+		"Login Info Save",
+		"Servers > FTP Server > Login Info Save > Set Required Terminal Type/Capability"
+	},
+	{
+		"Set Required Terminal Type/Capability",
+		"Login Info Save",
+		"Servers > Services Server > Login Info Save > Set Required Terminal Type/Capability"
+	},
+	{
+		"Set Required Terminal Type/Capability",
+		"Login Requirements",
+		"Servers > Global Settings > Login Requirements > Set Required Terminal Type/Capability"
+	},
+	{
+		"Set Required Terminal Type/Capability",
+		"Login Requirements",
+		"Servers > Terminal Server > Login Requirements > Set Required Terminal Type/Capability"
+	},
+	{
+		"Set Required Terminal Type/Capability",
+		"Login Requirements",
+		"Servers > Web Server > Login Requirements > Set Required Terminal Type/Capability"
+	},
+	{
+		"Set Required Terminal Type/Capability",
+		"Login Requirements",
+		"Servers > FTP Server > Login Requirements > Set Required Terminal Type/Capability"
+	},
+	{
+		"Set Required Terminal Type/Capability",
+		"Login Requirements",
+		"Servers > Mail Server > Login Requirements > Set Required Terminal Type/Capability"
+	},
+	{
+		"Set Required Terminal Type/Capability",
+		"Login Requirements",
+		"Servers > Services Server > Login Requirements > Set Required Terminal Type/Capability"
+	},
+	{
+		"Set Required Terminal Type/Capability",
+		"Moderated Posting User",
+		"Message Areas > Sub-boards > Moderated Posting User > Set Required Terminal Type/Capability"
+	},
+	{
+		"Set Required Terminal Type/Capability",
+		"Operator Requirements",
+		"Message Areas > Sub-boards > Operator Requirements > Set Required Terminal Type/Capability"
+	},
+	{
+		"Set Required Terminal Type/Capability",
+		"Operator Requirements",
+		"File Areas > Directories > Operator Requirements > Set Required Terminal Type/Capability"
+	},
+	{
+		"Set Required Terminal Type/Capability",
+		"Posting Requirements",
+		"Message Areas > Sub-boards > Posting Requirements > Set Required Terminal Type/Capability"
+	},
+	{
+		"Set Required Terminal Type/Capability",
+		"Reading Requirements",
+		"Message Areas > Sub-boards > Reading Requirements > Set Required Terminal Type/Capability"
+	},
+	{
+		"Set Required Terminal Type/Capability",
+		"Requirements",
+		"Message Areas > Requirements > Set Required Terminal Type/Capability"
+	},
+	{
+		"Set Required Terminal Type/Capability",
+		"Requirements",
+		"Nodes > Node Configuration > Requirements > Set Required Terminal Type/Capability"
+	},
+	{
+		"Set Required Terminal Type/Capability",
+		"Requirements",
+		"File Options > Requirements > Set Required Terminal Type/Capability"
+	},
+	{
+		"Set Required Terminal Type/Capability",
+		"Requirements",
+		"File Areas > Requirements > Set Required Terminal Type/Capability"
+	},
+	{
+		"Set Required Terminal Type/Capability",
+		"Requirements",
+		"External Programs > Online Programs (Doors) > Online Programs... > Requirements > Set Required Terminal Type/Capability"
+	},
+	{
+		"Set Required Terminal Type/Capability",
+		"Sysop Chat Override",
+		"System > Advanced Options... > Sysop Chat Override > Set Required Terminal Type/Capability"
+	},
+	{
+		"Set Required Terminal Type/Capability",
+		"Upload Requirements",
+		"File Areas > Directories > Upload Requirements > Set Required Terminal Type/Capability"
+	},
+	{
+		"Set Required Time of Day",
+		"Access Requirements",
+		"Text File Sections > Access Requirements > Set Required Time of Day"
+	},
+	{
+		"Set Required Time of Day",
+		"Access Requirements",
+		"Command Shells > Access Requirements > Set Required Time of Day"
+	},
+	{
+		"Set Required Time of Day",
+		"Access Requirements",
+		"Chat Features > External Sysop Chat Pagers > Access Requirements > Set Required Time of Day"
+	},
+	{
 		"Set Required Time of Day",
 		"Access Requirements",
 		"Chat Features > Multinode Chat Channels > Access Requirements > Set Required Time of Day"
+	},
+	{
+		"Set Required Time of Day",
+		"Access Requirements",
+		"Chat Features > Artificial Gurus > Access Requirements > Set Required Time of Day"
+	},
+	{
+		"Set Required Time of Day",
+		"Access Requirements",
+		"Message Areas > Sub-boards > Access Requirements > Set Required Time of Day"
+	},
+	{
+		"Set Required Time of Day",
+		"Access Requirements",
+		"System > Loadable Modules... > Login > Module > Access Requirements > Set Required Time of Day"
+	},
+	{
+		"Set Required Time of Day",
+		"Access Requirements",
+		"System > Loadable Modules... > Logon > Module > Access Requirements > Set Required Time of Day"
+	},
+	{
+		"Set Required Time of Day",
+		"Access Requirements",
+		"System > Loadable Modules... > Logoff > Module > Access Requirements > Set Required Time of Day"
+	},
+	{
+		"Set Required Time of Day",
+		"Access Requirements",
+		"System > Loadable Modules... > Logout > Module > Access Requirements > Set Required Time of Day"
+	},
+	{
+		"Set Required Time of Day",
+		"Access Requirements",
+		"System > Loadable Modules... > New User Prompts > Module > Access Requirements > Set Required Time of Day"
+	},
+	{
+		"Set Required Time of Day",
+		"Access Requirements",
+		"System > Loadable Modules... > New User Info > Module > Access Requirements > Set Required Time of Day"
+	},
+	{
+		"Set Required Time of Day",
+		"Access Requirements",
+		"System > Loadable Modules... > New User Created > Module > Access Requirements > Set Required Time of Day"
+	},
+	{
+		"Set Required Time of Day",
+		"Access Requirements",
+		"System > Loadable Modules... > User Config > Module > Access Requirements > Set Required Time of Day"
+	},
+	{
+		"Set Required Time of Day",
+		"Access Requirements",
+		"System > Loadable Modules... > Expired User > Module > Access Requirements > Set Required Time of Day"
+	},
+	{
+		"Set Required Time of Day",
+		"Access Requirements",
+		"System > Loadable Modules... > Auto Message > Module > Access Requirements > Set Required Time of Day"
+	},
+	{
+		"Set Required Time of Day",
+		"Access Requirements",
+		"System > Loadable Modules... > Send Feedback > Module > Access Requirements > Set Required Time of Day"
+	},
+	{
+		"Set Required Time of Day",
+		"Access Requirements",
+		"System > Loadable Modules... > Email Section > Module > Access Requirements > Set Required Time of Day"
+	},
+	{
+		"Set Required Time of Day",
+		"Access Requirements",
+		"System > Loadable Modules... > Chat Section > Module > Access Requirements > Set Required Time of Day"
+	},
+	{
+		"Set Required Time of Day",
+		"Access Requirements",
+		"System > Loadable Modules... > Text Section > Module > Access Requirements > Set Required Time of Day"
+	},
+	{
+		"Set Required Time of Day",
+		"Access Requirements",
+		"System > Loadable Modules... > Xtrn Section > Module > Access Requirements > Set Required Time of Day"
+	},
+	{
+		"Set Required Time of Day",
+		"Access Requirements",
+		"System > Loadable Modules... > Pre Xtrn > Module > Access Requirements > Set Required Time of Day"
+	},
+	{
+		"Set Required Time of Day",
+		"Access Requirements",
+		"System > Loadable Modules... > Post Xtrn > Module > Access Requirements > Set Required Time of Day"
+	},
+	{
+		"Set Required Time of Day",
+		"Access Requirements",
+		"System > Loadable Modules... > Read Mail > Module > Access Requirements > Set Required Time of Day"
+	},
+	{
+		"Set Required Time of Day",
+		"Access Requirements",
+		"System > Loadable Modules... > Scan Msgs > Module > Access Requirements > Set Required Time of Day"
+	},
+	{
+		"Set Required Time of Day",
+		"Access Requirements",
+		"System > Loadable Modules... > Scan Subs > Module > Access Requirements > Set Required Time of Day"
+	},
+	{
+		"Set Required Time of Day",
+		"Access Requirements",
+		"System > Loadable Modules... > List Msgs > Module > Access Requirements > Set Required Time of Day"
+	},
+	{
+		"Set Required Time of Day",
+		"Access Requirements",
+		"System > Loadable Modules... > List Logons > Module > Access Requirements > Set Required Time of Day"
+	},
+	{
+		"Set Required Time of Day",
+		"Access Requirements",
+		"System > Loadable Modules... > List Users > Module > Access Requirements > Set Required Time of Day"
+	},
+	{
+		"Set Required Time of Day",
+		"Access Requirements",
+		"System > Loadable Modules... > List Nodes > Module > Access Requirements > Set Required Time of Day"
+	},
+	{
+		"Set Required Time of Day",
+		"Access Requirements",
+		"System > Loadable Modules... > Who's Online > Module > Access Requirements > Set Required Time of Day"
+	},
+	{
+		"Set Required Time of Day",
+		"Access Requirements",
+		"System > Loadable Modules... > Private Msg > Module > Access Requirements > Set Required Time of Day"
+	},
+	{
+		"Set Required Time of Day",
+		"Access Requirements",
+		"System > Loadable Modules... > Scan Dirs > Module > Access Requirements > Set Required Time of Day"
+	},
+	{
+		"Set Required Time of Day",
+		"Access Requirements",
+		"System > Loadable Modules... > List Files > Module > Access Requirements > Set Required Time of Day"
+	},
+	{
+		"Set Required Time of Day",
+		"Access Requirements",
+		"System > Loadable Modules... > View File Info > Module > Access Requirements > Set Required Time of Day"
+	},
+	{
+		"Set Required Time of Day",
+		"Access Requirements",
+		"System > Loadable Modules... > Batch Transfer > Module > Access Requirements > Set Required Time of Day"
+	},
+	{
+		"Set Required Time of Day",
+		"Access Requirements",
+		"System > Loadable Modules... > Temp Transfer > Module > Access Requirements > Set Required Time of Day"
+	},
+	{
+		"Set Required Time of Day",
+		"Access Requirements",
+		"System > Loadable Modules... > Select Item > Module > Access Requirements > Set Required Time of Day"
+	},
+	{
+		"Set Required Time of Day",
+		"Access Requirements",
+		"System > Loadable Modules... > Sync > Module > Access Requirements > Set Required Time of Day"
+	},
+	{
+		"Set Required Time of Day",
+		"Access Requirements",
+		"File Options > Access Requirements > Set Required Time of Day"
+	},
+	{
+		"Set Required Time of Day",
+		"Access Requirements",
+		"File Areas > Directories > Access Requirements > Set Required Time of Day"
+	},
+	{
+		"Set Required Time of Day",
+		"Access Requirements",
+		"External Programs > Message Editors > Access Requirements > Set Required Time of Day"
+	},
+	{
+		"Set Required Time of Day",
+		"Access Requirements",
+		"External Programs > Online Programs (Doors) > Access Requirements > Set Required Time of Day"
+	},
+	{
+		"Set Required Time of Day",
+		"Archive Requirements",
+		"Servers > Mail Server > Archive Requirements > Set Required Time of Day"
+	},
+	{
+		"Set Required Time of Day",
+		"Download Requirements",
+		"File Areas > Directories > Download Requirements > Set Required Time of Day"
+	},
+	{
+		"Set Required Time of Day",
+		"Exemption Requirements",
+		"File Areas > Directories > Exemption Requirements > Set Required Time of Day"
+	},
+	{
+		"Set Required Time of Day",
+		"Login Info Save",
+		"Servers > Web Server > Login Info Save > Set Required Time of Day"
+	},
+	{
+		"Set Required Time of Day",
+		"Login Info Save",
+		"Servers > FTP Server > Login Info Save > Set Required Time of Day"
+	},
+	{
+		"Set Required Time of Day",
+		"Login Info Save",
+		"Servers > Services Server > Login Info Save > Set Required Time of Day"
+	},
+	{
+		"Set Required Time of Day",
+		"Login Requirements",
+		"Servers > Global Settings > Login Requirements > Set Required Time of Day"
+	},
+	{
+		"Set Required Time of Day",
+		"Login Requirements",
+		"Servers > Terminal Server > Login Requirements > Set Required Time of Day"
+	},
+	{
+		"Set Required Time of Day",
+		"Login Requirements",
+		"Servers > Web Server > Login Requirements > Set Required Time of Day"
+	},
+	{
+		"Set Required Time of Day",
+		"Login Requirements",
+		"Servers > FTP Server > Login Requirements > Set Required Time of Day"
+	},
+	{
+		"Set Required Time of Day",
+		"Login Requirements",
+		"Servers > Mail Server > Login Requirements > Set Required Time of Day"
+	},
+	{
+		"Set Required Time of Day",
+		"Login Requirements",
+		"Servers > Services Server > Login Requirements > Set Required Time of Day"
+	},
+	{
+		"Set Required Time of Day",
+		"Moderated Posting User",
+		"Message Areas > Sub-boards > Moderated Posting User > Set Required Time of Day"
+	},
+	{
+		"Set Required Time of Day",
+		"Operator Requirements",
+		"Message Areas > Sub-boards > Operator Requirements > Set Required Time of Day"
+	},
+	{
+		"Set Required Time of Day",
+		"Operator Requirements",
+		"File Areas > Directories > Operator Requirements > Set Required Time of Day"
+	},
+	{
+		"Set Required Time of Day",
+		"Posting Requirements",
+		"Message Areas > Sub-boards > Posting Requirements > Set Required Time of Day"
+	},
+	{
+		"Set Required Time of Day",
+		"Reading Requirements",
+		"Message Areas > Sub-boards > Reading Requirements > Set Required Time of Day"
+	},
+	{
+		"Set Required Time of Day",
+		"Requirements",
+		"Message Areas > Requirements > Set Required Time of Day"
+	},
+	{
+		"Set Required Time of Day",
+		"Requirements",
+		"Nodes > Node Configuration > Requirements > Set Required Time of Day"
+	},
+	{
+		"Set Required Time of Day",
+		"Requirements",
+		"File Options > Requirements > Set Required Time of Day"
+	},
+	{
+		"Set Required Time of Day",
+		"Requirements",
+		"File Areas > Requirements > Set Required Time of Day"
+	},
+	{
+		"Set Required Time of Day",
+		"Requirements",
+		"External Programs > Online Programs (Doors) > Online Programs... > Requirements > Set Required Time of Day"
+	},
+	{
+		"Set Required Time of Day",
+		"Sysop Chat Override",
+		"System > Advanced Options... > Sysop Chat Override > Set Required Time of Day"
+	},
+	{
+		"Set Required Time of Day",
+		"Upload Requirements",
+		"File Areas > Directories > Upload Requirements > Set Required Time of Day"
+	},
+	{
+		"Set Required Time Remaining",
+		"Access Requirements",
+		"Text File Sections > Access Requirements > Set Required Time Remaining"
+	},
+	{
+		"Set Required Time Remaining",
+		"Access Requirements",
+		"Command Shells > Access Requirements > Set Required Time Remaining"
+	},
+	{
+		"Set Required Time Remaining",
+		"Access Requirements",
+		"Chat Features > External Sysop Chat Pagers > Access Requirements > Set Required Time Remaining"
 	},
 	{
 		"Set Required Time Remaining",
@@ -3473,9 +7968,669 @@ static const scfg_option_t scfg_option_index[] = {
 		"Chat Features > Multinode Chat Channels > Access Requirements > Set Required Time Remaining"
 	},
 	{
+		"Set Required Time Remaining",
+		"Access Requirements",
+		"Chat Features > Artificial Gurus > Access Requirements > Set Required Time Remaining"
+	},
+	{
+		"Set Required Time Remaining",
+		"Access Requirements",
+		"Message Areas > Sub-boards > Access Requirements > Set Required Time Remaining"
+	},
+	{
+		"Set Required Time Remaining",
+		"Access Requirements",
+		"System > Loadable Modules... > Login > Module > Access Requirements > Set Required Time Remaining"
+	},
+	{
+		"Set Required Time Remaining",
+		"Access Requirements",
+		"System > Loadable Modules... > Logon > Module > Access Requirements > Set Required Time Remaining"
+	},
+	{
+		"Set Required Time Remaining",
+		"Access Requirements",
+		"System > Loadable Modules... > Logoff > Module > Access Requirements > Set Required Time Remaining"
+	},
+	{
+		"Set Required Time Remaining",
+		"Access Requirements",
+		"System > Loadable Modules... > Logout > Module > Access Requirements > Set Required Time Remaining"
+	},
+	{
+		"Set Required Time Remaining",
+		"Access Requirements",
+		"System > Loadable Modules... > New User Prompts > Module > Access Requirements > Set Required Time Remaining"
+	},
+	{
+		"Set Required Time Remaining",
+		"Access Requirements",
+		"System > Loadable Modules... > New User Info > Module > Access Requirements > Set Required Time Remaining"
+	},
+	{
+		"Set Required Time Remaining",
+		"Access Requirements",
+		"System > Loadable Modules... > New User Created > Module > Access Requirements > Set Required Time Remaining"
+	},
+	{
+		"Set Required Time Remaining",
+		"Access Requirements",
+		"System > Loadable Modules... > User Config > Module > Access Requirements > Set Required Time Remaining"
+	},
+	{
+		"Set Required Time Remaining",
+		"Access Requirements",
+		"System > Loadable Modules... > Expired User > Module > Access Requirements > Set Required Time Remaining"
+	},
+	{
+		"Set Required Time Remaining",
+		"Access Requirements",
+		"System > Loadable Modules... > Auto Message > Module > Access Requirements > Set Required Time Remaining"
+	},
+	{
+		"Set Required Time Remaining",
+		"Access Requirements",
+		"System > Loadable Modules... > Send Feedback > Module > Access Requirements > Set Required Time Remaining"
+	},
+	{
+		"Set Required Time Remaining",
+		"Access Requirements",
+		"System > Loadable Modules... > Email Section > Module > Access Requirements > Set Required Time Remaining"
+	},
+	{
+		"Set Required Time Remaining",
+		"Access Requirements",
+		"System > Loadable Modules... > Chat Section > Module > Access Requirements > Set Required Time Remaining"
+	},
+	{
+		"Set Required Time Remaining",
+		"Access Requirements",
+		"System > Loadable Modules... > Text Section > Module > Access Requirements > Set Required Time Remaining"
+	},
+	{
+		"Set Required Time Remaining",
+		"Access Requirements",
+		"System > Loadable Modules... > Xtrn Section > Module > Access Requirements > Set Required Time Remaining"
+	},
+	{
+		"Set Required Time Remaining",
+		"Access Requirements",
+		"System > Loadable Modules... > Pre Xtrn > Module > Access Requirements > Set Required Time Remaining"
+	},
+	{
+		"Set Required Time Remaining",
+		"Access Requirements",
+		"System > Loadable Modules... > Post Xtrn > Module > Access Requirements > Set Required Time Remaining"
+	},
+	{
+		"Set Required Time Remaining",
+		"Access Requirements",
+		"System > Loadable Modules... > Read Mail > Module > Access Requirements > Set Required Time Remaining"
+	},
+	{
+		"Set Required Time Remaining",
+		"Access Requirements",
+		"System > Loadable Modules... > Scan Msgs > Module > Access Requirements > Set Required Time Remaining"
+	},
+	{
+		"Set Required Time Remaining",
+		"Access Requirements",
+		"System > Loadable Modules... > Scan Subs > Module > Access Requirements > Set Required Time Remaining"
+	},
+	{
+		"Set Required Time Remaining",
+		"Access Requirements",
+		"System > Loadable Modules... > List Msgs > Module > Access Requirements > Set Required Time Remaining"
+	},
+	{
+		"Set Required Time Remaining",
+		"Access Requirements",
+		"System > Loadable Modules... > List Logons > Module > Access Requirements > Set Required Time Remaining"
+	},
+	{
+		"Set Required Time Remaining",
+		"Access Requirements",
+		"System > Loadable Modules... > List Users > Module > Access Requirements > Set Required Time Remaining"
+	},
+	{
+		"Set Required Time Remaining",
+		"Access Requirements",
+		"System > Loadable Modules... > List Nodes > Module > Access Requirements > Set Required Time Remaining"
+	},
+	{
+		"Set Required Time Remaining",
+		"Access Requirements",
+		"System > Loadable Modules... > Who's Online > Module > Access Requirements > Set Required Time Remaining"
+	},
+	{
+		"Set Required Time Remaining",
+		"Access Requirements",
+		"System > Loadable Modules... > Private Msg > Module > Access Requirements > Set Required Time Remaining"
+	},
+	{
+		"Set Required Time Remaining",
+		"Access Requirements",
+		"System > Loadable Modules... > Scan Dirs > Module > Access Requirements > Set Required Time Remaining"
+	},
+	{
+		"Set Required Time Remaining",
+		"Access Requirements",
+		"System > Loadable Modules... > List Files > Module > Access Requirements > Set Required Time Remaining"
+	},
+	{
+		"Set Required Time Remaining",
+		"Access Requirements",
+		"System > Loadable Modules... > View File Info > Module > Access Requirements > Set Required Time Remaining"
+	},
+	{
+		"Set Required Time Remaining",
+		"Access Requirements",
+		"System > Loadable Modules... > Batch Transfer > Module > Access Requirements > Set Required Time Remaining"
+	},
+	{
+		"Set Required Time Remaining",
+		"Access Requirements",
+		"System > Loadable Modules... > Temp Transfer > Module > Access Requirements > Set Required Time Remaining"
+	},
+	{
+		"Set Required Time Remaining",
+		"Access Requirements",
+		"System > Loadable Modules... > Select Item > Module > Access Requirements > Set Required Time Remaining"
+	},
+	{
+		"Set Required Time Remaining",
+		"Access Requirements",
+		"System > Loadable Modules... > Sync > Module > Access Requirements > Set Required Time Remaining"
+	},
+	{
+		"Set Required Time Remaining",
+		"Access Requirements",
+		"File Options > Access Requirements > Set Required Time Remaining"
+	},
+	{
+		"Set Required Time Remaining",
+		"Access Requirements",
+		"File Areas > Directories > Access Requirements > Set Required Time Remaining"
+	},
+	{
+		"Set Required Time Remaining",
+		"Access Requirements",
+		"External Programs > Message Editors > Access Requirements > Set Required Time Remaining"
+	},
+	{
+		"Set Required Time Remaining",
+		"Access Requirements",
+		"External Programs > Online Programs (Doors) > Access Requirements > Set Required Time Remaining"
+	},
+	{
+		"Set Required Time Remaining",
+		"Archive Requirements",
+		"Servers > Mail Server > Archive Requirements > Set Required Time Remaining"
+	},
+	{
+		"Set Required Time Remaining",
+		"Download Requirements",
+		"File Areas > Directories > Download Requirements > Set Required Time Remaining"
+	},
+	{
+		"Set Required Time Remaining",
+		"Exemption Requirements",
+		"File Areas > Directories > Exemption Requirements > Set Required Time Remaining"
+	},
+	{
+		"Set Required Time Remaining",
+		"Login Info Save",
+		"Servers > Web Server > Login Info Save > Set Required Time Remaining"
+	},
+	{
+		"Set Required Time Remaining",
+		"Login Info Save",
+		"Servers > FTP Server > Login Info Save > Set Required Time Remaining"
+	},
+	{
+		"Set Required Time Remaining",
+		"Login Info Save",
+		"Servers > Services Server > Login Info Save > Set Required Time Remaining"
+	},
+	{
+		"Set Required Time Remaining",
+		"Login Requirements",
+		"Servers > Global Settings > Login Requirements > Set Required Time Remaining"
+	},
+	{
+		"Set Required Time Remaining",
+		"Login Requirements",
+		"Servers > Terminal Server > Login Requirements > Set Required Time Remaining"
+	},
+	{
+		"Set Required Time Remaining",
+		"Login Requirements",
+		"Servers > Web Server > Login Requirements > Set Required Time Remaining"
+	},
+	{
+		"Set Required Time Remaining",
+		"Login Requirements",
+		"Servers > FTP Server > Login Requirements > Set Required Time Remaining"
+	},
+	{
+		"Set Required Time Remaining",
+		"Login Requirements",
+		"Servers > Mail Server > Login Requirements > Set Required Time Remaining"
+	},
+	{
+		"Set Required Time Remaining",
+		"Login Requirements",
+		"Servers > Services Server > Login Requirements > Set Required Time Remaining"
+	},
+	{
+		"Set Required Time Remaining",
+		"Moderated Posting User",
+		"Message Areas > Sub-boards > Moderated Posting User > Set Required Time Remaining"
+	},
+	{
+		"Set Required Time Remaining",
+		"Operator Requirements",
+		"Message Areas > Sub-boards > Operator Requirements > Set Required Time Remaining"
+	},
+	{
+		"Set Required Time Remaining",
+		"Operator Requirements",
+		"File Areas > Directories > Operator Requirements > Set Required Time Remaining"
+	},
+	{
+		"Set Required Time Remaining",
+		"Posting Requirements",
+		"Message Areas > Sub-boards > Posting Requirements > Set Required Time Remaining"
+	},
+	{
+		"Set Required Time Remaining",
+		"Reading Requirements",
+		"Message Areas > Sub-boards > Reading Requirements > Set Required Time Remaining"
+	},
+	{
+		"Set Required Time Remaining",
+		"Requirements",
+		"Message Areas > Requirements > Set Required Time Remaining"
+	},
+	{
+		"Set Required Time Remaining",
+		"Requirements",
+		"Nodes > Node Configuration > Requirements > Set Required Time Remaining"
+	},
+	{
+		"Set Required Time Remaining",
+		"Requirements",
+		"File Options > Requirements > Set Required Time Remaining"
+	},
+	{
+		"Set Required Time Remaining",
+		"Requirements",
+		"File Areas > Requirements > Set Required Time Remaining"
+	},
+	{
+		"Set Required Time Remaining",
+		"Requirements",
+		"External Programs > Online Programs (Doors) > Online Programs... > Requirements > Set Required Time Remaining"
+	},
+	{
+		"Set Required Time Remaining",
+		"Sysop Chat Override",
+		"System > Advanced Options... > Sysop Chat Override > Set Required Time Remaining"
+	},
+	{
+		"Set Required Time Remaining",
+		"Upload Requirements",
+		"File Areas > Directories > Upload Requirements > Set Required Time Remaining"
+	},
+	{
+		"Set Required Upload/Download Byte Ratio (percentage)",
+		"Access Requirements",
+		"Text File Sections > Access Requirements > Set Required Upload/Download Byte Ratio (percentage)"
+	},
+	{
+		"Set Required Upload/Download Byte Ratio (percentage)",
+		"Access Requirements",
+		"Command Shells > Access Requirements > Set Required Upload/Download Byte Ratio (percentage)"
+	},
+	{
+		"Set Required Upload/Download Byte Ratio (percentage)",
+		"Access Requirements",
+		"Chat Features > External Sysop Chat Pagers > Access Requirements > Set Required Upload/Download Byte Ratio (percentage)"
+	},
+	{
 		"Set Required Upload/Download Byte Ratio (percentage)",
 		"Access Requirements",
 		"Chat Features > Multinode Chat Channels > Access Requirements > Set Required Upload/Download Byte Ratio (percentage)"
+	},
+	{
+		"Set Required Upload/Download Byte Ratio (percentage)",
+		"Access Requirements",
+		"Chat Features > Artificial Gurus > Access Requirements > Set Required Upload/Download Byte Ratio (percentage)"
+	},
+	{
+		"Set Required Upload/Download Byte Ratio (percentage)",
+		"Access Requirements",
+		"Message Areas > Sub-boards > Access Requirements > Set Required Upload/Download Byte Ratio (percentage)"
+	},
+	{
+		"Set Required Upload/Download Byte Ratio (percentage)",
+		"Access Requirements",
+		"System > Loadable Modules... > Login > Module > Access Requirements > Set Required Upload/Download Byte Ratio (percentage)"
+	},
+	{
+		"Set Required Upload/Download Byte Ratio (percentage)",
+		"Access Requirements",
+		"System > Loadable Modules... > Logon > Module > Access Requirements > Set Required Upload/Download Byte Ratio (percentage)"
+	},
+	{
+		"Set Required Upload/Download Byte Ratio (percentage)",
+		"Access Requirements",
+		"System > Loadable Modules... > Logoff > Module > Access Requirements > Set Required Upload/Download Byte Ratio (percentage)"
+	},
+	{
+		"Set Required Upload/Download Byte Ratio (percentage)",
+		"Access Requirements",
+		"System > Loadable Modules... > Logout > Module > Access Requirements > Set Required Upload/Download Byte Ratio (percentage)"
+	},
+	{
+		"Set Required Upload/Download Byte Ratio (percentage)",
+		"Access Requirements",
+		"System > Loadable Modules... > New User Prompts > Module > Access Requirements > Set Required Upload/Download Byte Ratio (percentage)"
+	},
+	{
+		"Set Required Upload/Download Byte Ratio (percentage)",
+		"Access Requirements",
+		"System > Loadable Modules... > New User Info > Module > Access Requirements > Set Required Upload/Download Byte Ratio (percentage)"
+	},
+	{
+		"Set Required Upload/Download Byte Ratio (percentage)",
+		"Access Requirements",
+		"System > Loadable Modules... > New User Created > Module > Access Requirements > Set Required Upload/Download Byte Ratio (percentage)"
+	},
+	{
+		"Set Required Upload/Download Byte Ratio (percentage)",
+		"Access Requirements",
+		"System > Loadable Modules... > User Config > Module > Access Requirements > Set Required Upload/Download Byte Ratio (percentage)"
+	},
+	{
+		"Set Required Upload/Download Byte Ratio (percentage)",
+		"Access Requirements",
+		"System > Loadable Modules... > Expired User > Module > Access Requirements > Set Required Upload/Download Byte Ratio (percentage)"
+	},
+	{
+		"Set Required Upload/Download Byte Ratio (percentage)",
+		"Access Requirements",
+		"System > Loadable Modules... > Auto Message > Module > Access Requirements > Set Required Upload/Download Byte Ratio (percentage)"
+	},
+	{
+		"Set Required Upload/Download Byte Ratio (percentage)",
+		"Access Requirements",
+		"System > Loadable Modules... > Send Feedback > Module > Access Requirements > Set Required Upload/Download Byte Ratio (percentage)"
+	},
+	{
+		"Set Required Upload/Download Byte Ratio (percentage)",
+		"Access Requirements",
+		"System > Loadable Modules... > Email Section > Module > Access Requirements > Set Required Upload/Download Byte Ratio (percentage)"
+	},
+	{
+		"Set Required Upload/Download Byte Ratio (percentage)",
+		"Access Requirements",
+		"System > Loadable Modules... > Chat Section > Module > Access Requirements > Set Required Upload/Download Byte Ratio (percentage)"
+	},
+	{
+		"Set Required Upload/Download Byte Ratio (percentage)",
+		"Access Requirements",
+		"System > Loadable Modules... > Text Section > Module > Access Requirements > Set Required Upload/Download Byte Ratio (percentage)"
+	},
+	{
+		"Set Required Upload/Download Byte Ratio (percentage)",
+		"Access Requirements",
+		"System > Loadable Modules... > Xtrn Section > Module > Access Requirements > Set Required Upload/Download Byte Ratio (percentage)"
+	},
+	{
+		"Set Required Upload/Download Byte Ratio (percentage)",
+		"Access Requirements",
+		"System > Loadable Modules... > Pre Xtrn > Module > Access Requirements > Set Required Upload/Download Byte Ratio (percentage)"
+	},
+	{
+		"Set Required Upload/Download Byte Ratio (percentage)",
+		"Access Requirements",
+		"System > Loadable Modules... > Post Xtrn > Module > Access Requirements > Set Required Upload/Download Byte Ratio (percentage)"
+	},
+	{
+		"Set Required Upload/Download Byte Ratio (percentage)",
+		"Access Requirements",
+		"System > Loadable Modules... > Read Mail > Module > Access Requirements > Set Required Upload/Download Byte Ratio (percentage)"
+	},
+	{
+		"Set Required Upload/Download Byte Ratio (percentage)",
+		"Access Requirements",
+		"System > Loadable Modules... > Scan Msgs > Module > Access Requirements > Set Required Upload/Download Byte Ratio (percentage)"
+	},
+	{
+		"Set Required Upload/Download Byte Ratio (percentage)",
+		"Access Requirements",
+		"System > Loadable Modules... > Scan Subs > Module > Access Requirements > Set Required Upload/Download Byte Ratio (percentage)"
+	},
+	{
+		"Set Required Upload/Download Byte Ratio (percentage)",
+		"Access Requirements",
+		"System > Loadable Modules... > List Msgs > Module > Access Requirements > Set Required Upload/Download Byte Ratio (percentage)"
+	},
+	{
+		"Set Required Upload/Download Byte Ratio (percentage)",
+		"Access Requirements",
+		"System > Loadable Modules... > List Logons > Module > Access Requirements > Set Required Upload/Download Byte Ratio (percentage)"
+	},
+	{
+		"Set Required Upload/Download Byte Ratio (percentage)",
+		"Access Requirements",
+		"System > Loadable Modules... > List Users > Module > Access Requirements > Set Required Upload/Download Byte Ratio (percentage)"
+	},
+	{
+		"Set Required Upload/Download Byte Ratio (percentage)",
+		"Access Requirements",
+		"System > Loadable Modules... > List Nodes > Module > Access Requirements > Set Required Upload/Download Byte Ratio (percentage)"
+	},
+	{
+		"Set Required Upload/Download Byte Ratio (percentage)",
+		"Access Requirements",
+		"System > Loadable Modules... > Who's Online > Module > Access Requirements > Set Required Upload/Download Byte Ratio (percentage)"
+	},
+	{
+		"Set Required Upload/Download Byte Ratio (percentage)",
+		"Access Requirements",
+		"System > Loadable Modules... > Private Msg > Module > Access Requirements > Set Required Upload/Download Byte Ratio (percentage)"
+	},
+	{
+		"Set Required Upload/Download Byte Ratio (percentage)",
+		"Access Requirements",
+		"System > Loadable Modules... > Scan Dirs > Module > Access Requirements > Set Required Upload/Download Byte Ratio (percentage)"
+	},
+	{
+		"Set Required Upload/Download Byte Ratio (percentage)",
+		"Access Requirements",
+		"System > Loadable Modules... > List Files > Module > Access Requirements > Set Required Upload/Download Byte Ratio (percentage)"
+	},
+	{
+		"Set Required Upload/Download Byte Ratio (percentage)",
+		"Access Requirements",
+		"System > Loadable Modules... > View File Info > Module > Access Requirements > Set Required Upload/Download Byte Ratio (percentage)"
+	},
+	{
+		"Set Required Upload/Download Byte Ratio (percentage)",
+		"Access Requirements",
+		"System > Loadable Modules... > Batch Transfer > Module > Access Requirements > Set Required Upload/Download Byte Ratio (percentage)"
+	},
+	{
+		"Set Required Upload/Download Byte Ratio (percentage)",
+		"Access Requirements",
+		"System > Loadable Modules... > Temp Transfer > Module > Access Requirements > Set Required Upload/Download Byte Ratio (percentage)"
+	},
+	{
+		"Set Required Upload/Download Byte Ratio (percentage)",
+		"Access Requirements",
+		"System > Loadable Modules... > Select Item > Module > Access Requirements > Set Required Upload/Download Byte Ratio (percentage)"
+	},
+	{
+		"Set Required Upload/Download Byte Ratio (percentage)",
+		"Access Requirements",
+		"System > Loadable Modules... > Sync > Module > Access Requirements > Set Required Upload/Download Byte Ratio (percentage)"
+	},
+	{
+		"Set Required Upload/Download Byte Ratio (percentage)",
+		"Access Requirements",
+		"File Options > Access Requirements > Set Required Upload/Download Byte Ratio (percentage)"
+	},
+	{
+		"Set Required Upload/Download Byte Ratio (percentage)",
+		"Access Requirements",
+		"File Areas > Directories > Access Requirements > Set Required Upload/Download Byte Ratio (percentage)"
+	},
+	{
+		"Set Required Upload/Download Byte Ratio (percentage)",
+		"Access Requirements",
+		"External Programs > Message Editors > Access Requirements > Set Required Upload/Download Byte Ratio (percentage)"
+	},
+	{
+		"Set Required Upload/Download Byte Ratio (percentage)",
+		"Access Requirements",
+		"External Programs > Online Programs (Doors) > Access Requirements > Set Required Upload/Download Byte Ratio (percentage)"
+	},
+	{
+		"Set Required Upload/Download Byte Ratio (percentage)",
+		"Archive Requirements",
+		"Servers > Mail Server > Archive Requirements > Set Required Upload/Download Byte Ratio (percentage)"
+	},
+	{
+		"Set Required Upload/Download Byte Ratio (percentage)",
+		"Download Requirements",
+		"File Areas > Directories > Download Requirements > Set Required Upload/Download Byte Ratio (percentage)"
+	},
+	{
+		"Set Required Upload/Download Byte Ratio (percentage)",
+		"Exemption Requirements",
+		"File Areas > Directories > Exemption Requirements > Set Required Upload/Download Byte Ratio (percentage)"
+	},
+	{
+		"Set Required Upload/Download Byte Ratio (percentage)",
+		"Login Info Save",
+		"Servers > Web Server > Login Info Save > Set Required Upload/Download Byte Ratio (percentage)"
+	},
+	{
+		"Set Required Upload/Download Byte Ratio (percentage)",
+		"Login Info Save",
+		"Servers > FTP Server > Login Info Save > Set Required Upload/Download Byte Ratio (percentage)"
+	},
+	{
+		"Set Required Upload/Download Byte Ratio (percentage)",
+		"Login Info Save",
+		"Servers > Services Server > Login Info Save > Set Required Upload/Download Byte Ratio (percentage)"
+	},
+	{
+		"Set Required Upload/Download Byte Ratio (percentage)",
+		"Login Requirements",
+		"Servers > Global Settings > Login Requirements > Set Required Upload/Download Byte Ratio (percentage)"
+	},
+	{
+		"Set Required Upload/Download Byte Ratio (percentage)",
+		"Login Requirements",
+		"Servers > Terminal Server > Login Requirements > Set Required Upload/Download Byte Ratio (percentage)"
+	},
+	{
+		"Set Required Upload/Download Byte Ratio (percentage)",
+		"Login Requirements",
+		"Servers > Web Server > Login Requirements > Set Required Upload/Download Byte Ratio (percentage)"
+	},
+	{
+		"Set Required Upload/Download Byte Ratio (percentage)",
+		"Login Requirements",
+		"Servers > FTP Server > Login Requirements > Set Required Upload/Download Byte Ratio (percentage)"
+	},
+	{
+		"Set Required Upload/Download Byte Ratio (percentage)",
+		"Login Requirements",
+		"Servers > Mail Server > Login Requirements > Set Required Upload/Download Byte Ratio (percentage)"
+	},
+	{
+		"Set Required Upload/Download Byte Ratio (percentage)",
+		"Login Requirements",
+		"Servers > Services Server > Login Requirements > Set Required Upload/Download Byte Ratio (percentage)"
+	},
+	{
+		"Set Required Upload/Download Byte Ratio (percentage)",
+		"Moderated Posting User",
+		"Message Areas > Sub-boards > Moderated Posting User > Set Required Upload/Download Byte Ratio (percentage)"
+	},
+	{
+		"Set Required Upload/Download Byte Ratio (percentage)",
+		"Operator Requirements",
+		"Message Areas > Sub-boards > Operator Requirements > Set Required Upload/Download Byte Ratio (percentage)"
+	},
+	{
+		"Set Required Upload/Download Byte Ratio (percentage)",
+		"Operator Requirements",
+		"File Areas > Directories > Operator Requirements > Set Required Upload/Download Byte Ratio (percentage)"
+	},
+	{
+		"Set Required Upload/Download Byte Ratio (percentage)",
+		"Posting Requirements",
+		"Message Areas > Sub-boards > Posting Requirements > Set Required Upload/Download Byte Ratio (percentage)"
+	},
+	{
+		"Set Required Upload/Download Byte Ratio (percentage)",
+		"Reading Requirements",
+		"Message Areas > Sub-boards > Reading Requirements > Set Required Upload/Download Byte Ratio (percentage)"
+	},
+	{
+		"Set Required Upload/Download Byte Ratio (percentage)",
+		"Requirements",
+		"Message Areas > Requirements > Set Required Upload/Download Byte Ratio (percentage)"
+	},
+	{
+		"Set Required Upload/Download Byte Ratio (percentage)",
+		"Requirements",
+		"Nodes > Node Configuration > Requirements > Set Required Upload/Download Byte Ratio (percentage)"
+	},
+	{
+		"Set Required Upload/Download Byte Ratio (percentage)",
+		"Requirements",
+		"File Options > Requirements > Set Required Upload/Download Byte Ratio (percentage)"
+	},
+	{
+		"Set Required Upload/Download Byte Ratio (percentage)",
+		"Requirements",
+		"File Areas > Requirements > Set Required Upload/Download Byte Ratio (percentage)"
+	},
+	{
+		"Set Required Upload/Download Byte Ratio (percentage)",
+		"Requirements",
+		"External Programs > Online Programs (Doors) > Online Programs... > Requirements > Set Required Upload/Download Byte Ratio (percentage)"
+	},
+	{
+		"Set Required Upload/Download Byte Ratio (percentage)",
+		"Sysop Chat Override",
+		"System > Advanced Options... > Sysop Chat Override > Set Required Upload/Download Byte Ratio (percentage)"
+	},
+	{
+		"Set Required Upload/Download Byte Ratio (percentage)",
+		"Upload Requirements",
+		"File Areas > Directories > Upload Requirements > Set Required Upload/Download Byte Ratio (percentage)"
+	},
+	{
+		"Set Required Upload/Download File Ratio (percentage)",
+		"Access Requirements",
+		"Text File Sections > Access Requirements > Set Required Upload/Download File Ratio (percentage)"
+	},
+	{
+		"Set Required Upload/Download File Ratio (percentage)",
+		"Access Requirements",
+		"Command Shells > Access Requirements > Set Required Upload/Download File Ratio (percentage)"
+	},
+	{
+		"Set Required Upload/Download File Ratio (percentage)",
+		"Access Requirements",
+		"Chat Features > External Sysop Chat Pagers > Access Requirements > Set Required Upload/Download File Ratio (percentage)"
 	},
 	{
 		"Set Required Upload/Download File Ratio (percentage)",
@@ -3483,14 +8638,989 @@ static const scfg_option_t scfg_option_index[] = {
 		"Chat Features > Multinode Chat Channels > Access Requirements > Set Required Upload/Download File Ratio (percentage)"
 	},
 	{
+		"Set Required Upload/Download File Ratio (percentage)",
+		"Access Requirements",
+		"Chat Features > Artificial Gurus > Access Requirements > Set Required Upload/Download File Ratio (percentage)"
+	},
+	{
+		"Set Required Upload/Download File Ratio (percentage)",
+		"Access Requirements",
+		"Message Areas > Sub-boards > Access Requirements > Set Required Upload/Download File Ratio (percentage)"
+	},
+	{
+		"Set Required Upload/Download File Ratio (percentage)",
+		"Access Requirements",
+		"System > Loadable Modules... > Login > Module > Access Requirements > Set Required Upload/Download File Ratio (percentage)"
+	},
+	{
+		"Set Required Upload/Download File Ratio (percentage)",
+		"Access Requirements",
+		"System > Loadable Modules... > Logon > Module > Access Requirements > Set Required Upload/Download File Ratio (percentage)"
+	},
+	{
+		"Set Required Upload/Download File Ratio (percentage)",
+		"Access Requirements",
+		"System > Loadable Modules... > Logoff > Module > Access Requirements > Set Required Upload/Download File Ratio (percentage)"
+	},
+	{
+		"Set Required Upload/Download File Ratio (percentage)",
+		"Access Requirements",
+		"System > Loadable Modules... > Logout > Module > Access Requirements > Set Required Upload/Download File Ratio (percentage)"
+	},
+	{
+		"Set Required Upload/Download File Ratio (percentage)",
+		"Access Requirements",
+		"System > Loadable Modules... > New User Prompts > Module > Access Requirements > Set Required Upload/Download File Ratio (percentage)"
+	},
+	{
+		"Set Required Upload/Download File Ratio (percentage)",
+		"Access Requirements",
+		"System > Loadable Modules... > New User Info > Module > Access Requirements > Set Required Upload/Download File Ratio (percentage)"
+	},
+	{
+		"Set Required Upload/Download File Ratio (percentage)",
+		"Access Requirements",
+		"System > Loadable Modules... > New User Created > Module > Access Requirements > Set Required Upload/Download File Ratio (percentage)"
+	},
+	{
+		"Set Required Upload/Download File Ratio (percentage)",
+		"Access Requirements",
+		"System > Loadable Modules... > User Config > Module > Access Requirements > Set Required Upload/Download File Ratio (percentage)"
+	},
+	{
+		"Set Required Upload/Download File Ratio (percentage)",
+		"Access Requirements",
+		"System > Loadable Modules... > Expired User > Module > Access Requirements > Set Required Upload/Download File Ratio (percentage)"
+	},
+	{
+		"Set Required Upload/Download File Ratio (percentage)",
+		"Access Requirements",
+		"System > Loadable Modules... > Auto Message > Module > Access Requirements > Set Required Upload/Download File Ratio (percentage)"
+	},
+	{
+		"Set Required Upload/Download File Ratio (percentage)",
+		"Access Requirements",
+		"System > Loadable Modules... > Send Feedback > Module > Access Requirements > Set Required Upload/Download File Ratio (percentage)"
+	},
+	{
+		"Set Required Upload/Download File Ratio (percentage)",
+		"Access Requirements",
+		"System > Loadable Modules... > Email Section > Module > Access Requirements > Set Required Upload/Download File Ratio (percentage)"
+	},
+	{
+		"Set Required Upload/Download File Ratio (percentage)",
+		"Access Requirements",
+		"System > Loadable Modules... > Chat Section > Module > Access Requirements > Set Required Upload/Download File Ratio (percentage)"
+	},
+	{
+		"Set Required Upload/Download File Ratio (percentage)",
+		"Access Requirements",
+		"System > Loadable Modules... > Text Section > Module > Access Requirements > Set Required Upload/Download File Ratio (percentage)"
+	},
+	{
+		"Set Required Upload/Download File Ratio (percentage)",
+		"Access Requirements",
+		"System > Loadable Modules... > Xtrn Section > Module > Access Requirements > Set Required Upload/Download File Ratio (percentage)"
+	},
+	{
+		"Set Required Upload/Download File Ratio (percentage)",
+		"Access Requirements",
+		"System > Loadable Modules... > Pre Xtrn > Module > Access Requirements > Set Required Upload/Download File Ratio (percentage)"
+	},
+	{
+		"Set Required Upload/Download File Ratio (percentage)",
+		"Access Requirements",
+		"System > Loadable Modules... > Post Xtrn > Module > Access Requirements > Set Required Upload/Download File Ratio (percentage)"
+	},
+	{
+		"Set Required Upload/Download File Ratio (percentage)",
+		"Access Requirements",
+		"System > Loadable Modules... > Read Mail > Module > Access Requirements > Set Required Upload/Download File Ratio (percentage)"
+	},
+	{
+		"Set Required Upload/Download File Ratio (percentage)",
+		"Access Requirements",
+		"System > Loadable Modules... > Scan Msgs > Module > Access Requirements > Set Required Upload/Download File Ratio (percentage)"
+	},
+	{
+		"Set Required Upload/Download File Ratio (percentage)",
+		"Access Requirements",
+		"System > Loadable Modules... > Scan Subs > Module > Access Requirements > Set Required Upload/Download File Ratio (percentage)"
+	},
+	{
+		"Set Required Upload/Download File Ratio (percentage)",
+		"Access Requirements",
+		"System > Loadable Modules... > List Msgs > Module > Access Requirements > Set Required Upload/Download File Ratio (percentage)"
+	},
+	{
+		"Set Required Upload/Download File Ratio (percentage)",
+		"Access Requirements",
+		"System > Loadable Modules... > List Logons > Module > Access Requirements > Set Required Upload/Download File Ratio (percentage)"
+	},
+	{
+		"Set Required Upload/Download File Ratio (percentage)",
+		"Access Requirements",
+		"System > Loadable Modules... > List Users > Module > Access Requirements > Set Required Upload/Download File Ratio (percentage)"
+	},
+	{
+		"Set Required Upload/Download File Ratio (percentage)",
+		"Access Requirements",
+		"System > Loadable Modules... > List Nodes > Module > Access Requirements > Set Required Upload/Download File Ratio (percentage)"
+	},
+	{
+		"Set Required Upload/Download File Ratio (percentage)",
+		"Access Requirements",
+		"System > Loadable Modules... > Who's Online > Module > Access Requirements > Set Required Upload/Download File Ratio (percentage)"
+	},
+	{
+		"Set Required Upload/Download File Ratio (percentage)",
+		"Access Requirements",
+		"System > Loadable Modules... > Private Msg > Module > Access Requirements > Set Required Upload/Download File Ratio (percentage)"
+	},
+	{
+		"Set Required Upload/Download File Ratio (percentage)",
+		"Access Requirements",
+		"System > Loadable Modules... > Scan Dirs > Module > Access Requirements > Set Required Upload/Download File Ratio (percentage)"
+	},
+	{
+		"Set Required Upload/Download File Ratio (percentage)",
+		"Access Requirements",
+		"System > Loadable Modules... > List Files > Module > Access Requirements > Set Required Upload/Download File Ratio (percentage)"
+	},
+	{
+		"Set Required Upload/Download File Ratio (percentage)",
+		"Access Requirements",
+		"System > Loadable Modules... > View File Info > Module > Access Requirements > Set Required Upload/Download File Ratio (percentage)"
+	},
+	{
+		"Set Required Upload/Download File Ratio (percentage)",
+		"Access Requirements",
+		"System > Loadable Modules... > Batch Transfer > Module > Access Requirements > Set Required Upload/Download File Ratio (percentage)"
+	},
+	{
+		"Set Required Upload/Download File Ratio (percentage)",
+		"Access Requirements",
+		"System > Loadable Modules... > Temp Transfer > Module > Access Requirements > Set Required Upload/Download File Ratio (percentage)"
+	},
+	{
+		"Set Required Upload/Download File Ratio (percentage)",
+		"Access Requirements",
+		"System > Loadable Modules... > Select Item > Module > Access Requirements > Set Required Upload/Download File Ratio (percentage)"
+	},
+	{
+		"Set Required Upload/Download File Ratio (percentage)",
+		"Access Requirements",
+		"System > Loadable Modules... > Sync > Module > Access Requirements > Set Required Upload/Download File Ratio (percentage)"
+	},
+	{
+		"Set Required Upload/Download File Ratio (percentage)",
+		"Access Requirements",
+		"File Options > Access Requirements > Set Required Upload/Download File Ratio (percentage)"
+	},
+	{
+		"Set Required Upload/Download File Ratio (percentage)",
+		"Access Requirements",
+		"File Areas > Directories > Access Requirements > Set Required Upload/Download File Ratio (percentage)"
+	},
+	{
+		"Set Required Upload/Download File Ratio (percentage)",
+		"Access Requirements",
+		"External Programs > Message Editors > Access Requirements > Set Required Upload/Download File Ratio (percentage)"
+	},
+	{
+		"Set Required Upload/Download File Ratio (percentage)",
+		"Access Requirements",
+		"External Programs > Online Programs (Doors) > Access Requirements > Set Required Upload/Download File Ratio (percentage)"
+	},
+	{
+		"Set Required Upload/Download File Ratio (percentage)",
+		"Archive Requirements",
+		"Servers > Mail Server > Archive Requirements > Set Required Upload/Download File Ratio (percentage)"
+	},
+	{
+		"Set Required Upload/Download File Ratio (percentage)",
+		"Download Requirements",
+		"File Areas > Directories > Download Requirements > Set Required Upload/Download File Ratio (percentage)"
+	},
+	{
+		"Set Required Upload/Download File Ratio (percentage)",
+		"Exemption Requirements",
+		"File Areas > Directories > Exemption Requirements > Set Required Upload/Download File Ratio (percentage)"
+	},
+	{
+		"Set Required Upload/Download File Ratio (percentage)",
+		"Login Info Save",
+		"Servers > Web Server > Login Info Save > Set Required Upload/Download File Ratio (percentage)"
+	},
+	{
+		"Set Required Upload/Download File Ratio (percentage)",
+		"Login Info Save",
+		"Servers > FTP Server > Login Info Save > Set Required Upload/Download File Ratio (percentage)"
+	},
+	{
+		"Set Required Upload/Download File Ratio (percentage)",
+		"Login Info Save",
+		"Servers > Services Server > Login Info Save > Set Required Upload/Download File Ratio (percentage)"
+	},
+	{
+		"Set Required Upload/Download File Ratio (percentage)",
+		"Login Requirements",
+		"Servers > Global Settings > Login Requirements > Set Required Upload/Download File Ratio (percentage)"
+	},
+	{
+		"Set Required Upload/Download File Ratio (percentage)",
+		"Login Requirements",
+		"Servers > Terminal Server > Login Requirements > Set Required Upload/Download File Ratio (percentage)"
+	},
+	{
+		"Set Required Upload/Download File Ratio (percentage)",
+		"Login Requirements",
+		"Servers > Web Server > Login Requirements > Set Required Upload/Download File Ratio (percentage)"
+	},
+	{
+		"Set Required Upload/Download File Ratio (percentage)",
+		"Login Requirements",
+		"Servers > FTP Server > Login Requirements > Set Required Upload/Download File Ratio (percentage)"
+	},
+	{
+		"Set Required Upload/Download File Ratio (percentage)",
+		"Login Requirements",
+		"Servers > Mail Server > Login Requirements > Set Required Upload/Download File Ratio (percentage)"
+	},
+	{
+		"Set Required Upload/Download File Ratio (percentage)",
+		"Login Requirements",
+		"Servers > Services Server > Login Requirements > Set Required Upload/Download File Ratio (percentage)"
+	},
+	{
+		"Set Required Upload/Download File Ratio (percentage)",
+		"Moderated Posting User",
+		"Message Areas > Sub-boards > Moderated Posting User > Set Required Upload/Download File Ratio (percentage)"
+	},
+	{
+		"Set Required Upload/Download File Ratio (percentage)",
+		"Operator Requirements",
+		"Message Areas > Sub-boards > Operator Requirements > Set Required Upload/Download File Ratio (percentage)"
+	},
+	{
+		"Set Required Upload/Download File Ratio (percentage)",
+		"Operator Requirements",
+		"File Areas > Directories > Operator Requirements > Set Required Upload/Download File Ratio (percentage)"
+	},
+	{
+		"Set Required Upload/Download File Ratio (percentage)",
+		"Posting Requirements",
+		"Message Areas > Sub-boards > Posting Requirements > Set Required Upload/Download File Ratio (percentage)"
+	},
+	{
+		"Set Required Upload/Download File Ratio (percentage)",
+		"Reading Requirements",
+		"Message Areas > Sub-boards > Reading Requirements > Set Required Upload/Download File Ratio (percentage)"
+	},
+	{
+		"Set Required Upload/Download File Ratio (percentage)",
+		"Requirements",
+		"Message Areas > Requirements > Set Required Upload/Download File Ratio (percentage)"
+	},
+	{
+		"Set Required Upload/Download File Ratio (percentage)",
+		"Requirements",
+		"Nodes > Node Configuration > Requirements > Set Required Upload/Download File Ratio (percentage)"
+	},
+	{
+		"Set Required Upload/Download File Ratio (percentage)",
+		"Requirements",
+		"File Options > Requirements > Set Required Upload/Download File Ratio (percentage)"
+	},
+	{
+		"Set Required Upload/Download File Ratio (percentage)",
+		"Requirements",
+		"File Areas > Requirements > Set Required Upload/Download File Ratio (percentage)"
+	},
+	{
+		"Set Required Upload/Download File Ratio (percentage)",
+		"Requirements",
+		"External Programs > Online Programs (Doors) > Online Programs... > Requirements > Set Required Upload/Download File Ratio (percentage)"
+	},
+	{
+		"Set Required Upload/Download File Ratio (percentage)",
+		"Sysop Chat Override",
+		"System > Advanced Options... > Sysop Chat Override > Set Required Upload/Download File Ratio (percentage)"
+	},
+	{
+		"Set Required Upload/Download File Ratio (percentage)",
+		"Upload Requirements",
+		"File Areas > Directories > Upload Requirements > Set Required Upload/Download File Ratio (percentage)"
+	},
+	{
+		"Set Required User Number",
+		"Access Requirements",
+		"Text File Sections > Access Requirements > Set Required User Number"
+	},
+	{
+		"Set Required User Number",
+		"Access Requirements",
+		"Command Shells > Access Requirements > Set Required User Number"
+	},
+	{
+		"Set Required User Number",
+		"Access Requirements",
+		"Chat Features > External Sysop Chat Pagers > Access Requirements > Set Required User Number"
+	},
+	{
 		"Set Required User Number",
 		"Access Requirements",
 		"Chat Features > Multinode Chat Channels > Access Requirements > Set Required User Number"
 	},
 	{
+		"Set Required User Number",
+		"Access Requirements",
+		"Chat Features > Artificial Gurus > Access Requirements > Set Required User Number"
+	},
+	{
+		"Set Required User Number",
+		"Access Requirements",
+		"Message Areas > Sub-boards > Access Requirements > Set Required User Number"
+	},
+	{
+		"Set Required User Number",
+		"Access Requirements",
+		"System > Loadable Modules... > Login > Module > Access Requirements > Set Required User Number"
+	},
+	{
+		"Set Required User Number",
+		"Access Requirements",
+		"System > Loadable Modules... > Logon > Module > Access Requirements > Set Required User Number"
+	},
+	{
+		"Set Required User Number",
+		"Access Requirements",
+		"System > Loadable Modules... > Logoff > Module > Access Requirements > Set Required User Number"
+	},
+	{
+		"Set Required User Number",
+		"Access Requirements",
+		"System > Loadable Modules... > Logout > Module > Access Requirements > Set Required User Number"
+	},
+	{
+		"Set Required User Number",
+		"Access Requirements",
+		"System > Loadable Modules... > New User Prompts > Module > Access Requirements > Set Required User Number"
+	},
+	{
+		"Set Required User Number",
+		"Access Requirements",
+		"System > Loadable Modules... > New User Info > Module > Access Requirements > Set Required User Number"
+	},
+	{
+		"Set Required User Number",
+		"Access Requirements",
+		"System > Loadable Modules... > New User Created > Module > Access Requirements > Set Required User Number"
+	},
+	{
+		"Set Required User Number",
+		"Access Requirements",
+		"System > Loadable Modules... > User Config > Module > Access Requirements > Set Required User Number"
+	},
+	{
+		"Set Required User Number",
+		"Access Requirements",
+		"System > Loadable Modules... > Expired User > Module > Access Requirements > Set Required User Number"
+	},
+	{
+		"Set Required User Number",
+		"Access Requirements",
+		"System > Loadable Modules... > Auto Message > Module > Access Requirements > Set Required User Number"
+	},
+	{
+		"Set Required User Number",
+		"Access Requirements",
+		"System > Loadable Modules... > Send Feedback > Module > Access Requirements > Set Required User Number"
+	},
+	{
+		"Set Required User Number",
+		"Access Requirements",
+		"System > Loadable Modules... > Email Section > Module > Access Requirements > Set Required User Number"
+	},
+	{
+		"Set Required User Number",
+		"Access Requirements",
+		"System > Loadable Modules... > Chat Section > Module > Access Requirements > Set Required User Number"
+	},
+	{
+		"Set Required User Number",
+		"Access Requirements",
+		"System > Loadable Modules... > Text Section > Module > Access Requirements > Set Required User Number"
+	},
+	{
+		"Set Required User Number",
+		"Access Requirements",
+		"System > Loadable Modules... > Xtrn Section > Module > Access Requirements > Set Required User Number"
+	},
+	{
+		"Set Required User Number",
+		"Access Requirements",
+		"System > Loadable Modules... > Pre Xtrn > Module > Access Requirements > Set Required User Number"
+	},
+	{
+		"Set Required User Number",
+		"Access Requirements",
+		"System > Loadable Modules... > Post Xtrn > Module > Access Requirements > Set Required User Number"
+	},
+	{
+		"Set Required User Number",
+		"Access Requirements",
+		"System > Loadable Modules... > Read Mail > Module > Access Requirements > Set Required User Number"
+	},
+	{
+		"Set Required User Number",
+		"Access Requirements",
+		"System > Loadable Modules... > Scan Msgs > Module > Access Requirements > Set Required User Number"
+	},
+	{
+		"Set Required User Number",
+		"Access Requirements",
+		"System > Loadable Modules... > Scan Subs > Module > Access Requirements > Set Required User Number"
+	},
+	{
+		"Set Required User Number",
+		"Access Requirements",
+		"System > Loadable Modules... > List Msgs > Module > Access Requirements > Set Required User Number"
+	},
+	{
+		"Set Required User Number",
+		"Access Requirements",
+		"System > Loadable Modules... > List Logons > Module > Access Requirements > Set Required User Number"
+	},
+	{
+		"Set Required User Number",
+		"Access Requirements",
+		"System > Loadable Modules... > List Users > Module > Access Requirements > Set Required User Number"
+	},
+	{
+		"Set Required User Number",
+		"Access Requirements",
+		"System > Loadable Modules... > List Nodes > Module > Access Requirements > Set Required User Number"
+	},
+	{
+		"Set Required User Number",
+		"Access Requirements",
+		"System > Loadable Modules... > Who's Online > Module > Access Requirements > Set Required User Number"
+	},
+	{
+		"Set Required User Number",
+		"Access Requirements",
+		"System > Loadable Modules... > Private Msg > Module > Access Requirements > Set Required User Number"
+	},
+	{
+		"Set Required User Number",
+		"Access Requirements",
+		"System > Loadable Modules... > Scan Dirs > Module > Access Requirements > Set Required User Number"
+	},
+	{
+		"Set Required User Number",
+		"Access Requirements",
+		"System > Loadable Modules... > List Files > Module > Access Requirements > Set Required User Number"
+	},
+	{
+		"Set Required User Number",
+		"Access Requirements",
+		"System > Loadable Modules... > View File Info > Module > Access Requirements > Set Required User Number"
+	},
+	{
+		"Set Required User Number",
+		"Access Requirements",
+		"System > Loadable Modules... > Batch Transfer > Module > Access Requirements > Set Required User Number"
+	},
+	{
+		"Set Required User Number",
+		"Access Requirements",
+		"System > Loadable Modules... > Temp Transfer > Module > Access Requirements > Set Required User Number"
+	},
+	{
+		"Set Required User Number",
+		"Access Requirements",
+		"System > Loadable Modules... > Select Item > Module > Access Requirements > Set Required User Number"
+	},
+	{
+		"Set Required User Number",
+		"Access Requirements",
+		"System > Loadable Modules... > Sync > Module > Access Requirements > Set Required User Number"
+	},
+	{
+		"Set Required User Number",
+		"Access Requirements",
+		"File Options > Access Requirements > Set Required User Number"
+	},
+	{
+		"Set Required User Number",
+		"Access Requirements",
+		"File Areas > Directories > Access Requirements > Set Required User Number"
+	},
+	{
+		"Set Required User Number",
+		"Access Requirements",
+		"External Programs > Message Editors > Access Requirements > Set Required User Number"
+	},
+	{
+		"Set Required User Number",
+		"Access Requirements",
+		"External Programs > Online Programs (Doors) > Access Requirements > Set Required User Number"
+	},
+	{
+		"Set Required User Number",
+		"Archive Requirements",
+		"Servers > Mail Server > Archive Requirements > Set Required User Number"
+	},
+	{
+		"Set Required User Number",
+		"Download Requirements",
+		"File Areas > Directories > Download Requirements > Set Required User Number"
+	},
+	{
+		"Set Required User Number",
+		"Exemption Requirements",
+		"File Areas > Directories > Exemption Requirements > Set Required User Number"
+	},
+	{
+		"Set Required User Number",
+		"Login Info Save",
+		"Servers > Web Server > Login Info Save > Set Required User Number"
+	},
+	{
+		"Set Required User Number",
+		"Login Info Save",
+		"Servers > FTP Server > Login Info Save > Set Required User Number"
+	},
+	{
+		"Set Required User Number",
+		"Login Info Save",
+		"Servers > Services Server > Login Info Save > Set Required User Number"
+	},
+	{
+		"Set Required User Number",
+		"Login Requirements",
+		"Servers > Global Settings > Login Requirements > Set Required User Number"
+	},
+	{
+		"Set Required User Number",
+		"Login Requirements",
+		"Servers > Terminal Server > Login Requirements > Set Required User Number"
+	},
+	{
+		"Set Required User Number",
+		"Login Requirements",
+		"Servers > Web Server > Login Requirements > Set Required User Number"
+	},
+	{
+		"Set Required User Number",
+		"Login Requirements",
+		"Servers > FTP Server > Login Requirements > Set Required User Number"
+	},
+	{
+		"Set Required User Number",
+		"Login Requirements",
+		"Servers > Mail Server > Login Requirements > Set Required User Number"
+	},
+	{
+		"Set Required User Number",
+		"Login Requirements",
+		"Servers > Services Server > Login Requirements > Set Required User Number"
+	},
+	{
+		"Set Required User Number",
+		"Moderated Posting User",
+		"Message Areas > Sub-boards > Moderated Posting User > Set Required User Number"
+	},
+	{
+		"Set Required User Number",
+		"Operator Requirements",
+		"Message Areas > Sub-boards > Operator Requirements > Set Required User Number"
+	},
+	{
+		"Set Required User Number",
+		"Operator Requirements",
+		"File Areas > Directories > Operator Requirements > Set Required User Number"
+	},
+	{
+		"Set Required User Number",
+		"Posting Requirements",
+		"Message Areas > Sub-boards > Posting Requirements > Set Required User Number"
+	},
+	{
+		"Set Required User Number",
+		"Reading Requirements",
+		"Message Areas > Sub-boards > Reading Requirements > Set Required User Number"
+	},
+	{
+		"Set Required User Number",
+		"Requirements",
+		"Message Areas > Requirements > Set Required User Number"
+	},
+	{
+		"Set Required User Number",
+		"Requirements",
+		"Nodes > Node Configuration > Requirements > Set Required User Number"
+	},
+	{
+		"Set Required User Number",
+		"Requirements",
+		"File Options > Requirements > Set Required User Number"
+	},
+	{
+		"Set Required User Number",
+		"Requirements",
+		"File Areas > Requirements > Set Required User Number"
+	},
+	{
+		"Set Required User Number",
+		"Requirements",
+		"External Programs > Online Programs (Doors) > Online Programs... > Requirements > Set Required User Number"
+	},
+	{
+		"Set Required User Number",
+		"Sysop Chat Override",
+		"System > Advanced Options... > Sysop Chat Override > Set Required User Number"
+	},
+	{
+		"Set Required User Number",
+		"Upload Requirements",
+		"File Areas > Directories > Upload Requirements > Set Required User Number"
+	},
+	{
+		"Set Required User Type (e.g. Sysop, Guest)",
+		"Access Requirements",
+		"Text File Sections > Access Requirements > Set Required User Type (e.g. Sysop, Guest)"
+	},
+	{
+		"Set Required User Type (e.g. Sysop, Guest)",
+		"Access Requirements",
+		"Command Shells > Access Requirements > Set Required User Type (e.g. Sysop, Guest)"
+	},
+	{
+		"Set Required User Type (e.g. Sysop, Guest)",
+		"Access Requirements",
+		"Chat Features > External Sysop Chat Pagers > Access Requirements > Set Required User Type (e.g. Sysop, Guest)"
+	},
+	{
 		"Set Required User Type (e.g. Sysop, Guest)",
 		"Access Requirements",
 		"Chat Features > Multinode Chat Channels > Access Requirements > Set Required User Type (e.g. Sysop, Guest)"
+	},
+	{
+		"Set Required User Type (e.g. Sysop, Guest)",
+		"Access Requirements",
+		"Chat Features > Artificial Gurus > Access Requirements > Set Required User Type (e.g. Sysop, Guest)"
+	},
+	{
+		"Set Required User Type (e.g. Sysop, Guest)",
+		"Access Requirements",
+		"Message Areas > Sub-boards > Access Requirements > Set Required User Type (e.g. Sysop, Guest)"
+	},
+	{
+		"Set Required User Type (e.g. Sysop, Guest)",
+		"Access Requirements",
+		"System > Loadable Modules... > Login > Module > Access Requirements > Set Required User Type (e.g. Sysop, Guest)"
+	},
+	{
+		"Set Required User Type (e.g. Sysop, Guest)",
+		"Access Requirements",
+		"System > Loadable Modules... > Logon > Module > Access Requirements > Set Required User Type (e.g. Sysop, Guest)"
+	},
+	{
+		"Set Required User Type (e.g. Sysop, Guest)",
+		"Access Requirements",
+		"System > Loadable Modules... > Logoff > Module > Access Requirements > Set Required User Type (e.g. Sysop, Guest)"
+	},
+	{
+		"Set Required User Type (e.g. Sysop, Guest)",
+		"Access Requirements",
+		"System > Loadable Modules... > Logout > Module > Access Requirements > Set Required User Type (e.g. Sysop, Guest)"
+	},
+	{
+		"Set Required User Type (e.g. Sysop, Guest)",
+		"Access Requirements",
+		"System > Loadable Modules... > New User Prompts > Module > Access Requirements > Set Required User Type (e.g. Sysop, Guest)"
+	},
+	{
+		"Set Required User Type (e.g. Sysop, Guest)",
+		"Access Requirements",
+		"System > Loadable Modules... > New User Info > Module > Access Requirements > Set Required User Type (e.g. Sysop, Guest)"
+	},
+	{
+		"Set Required User Type (e.g. Sysop, Guest)",
+		"Access Requirements",
+		"System > Loadable Modules... > New User Created > Module > Access Requirements > Set Required User Type (e.g. Sysop, Guest)"
+	},
+	{
+		"Set Required User Type (e.g. Sysop, Guest)",
+		"Access Requirements",
+		"System > Loadable Modules... > User Config > Module > Access Requirements > Set Required User Type (e.g. Sysop, Guest)"
+	},
+	{
+		"Set Required User Type (e.g. Sysop, Guest)",
+		"Access Requirements",
+		"System > Loadable Modules... > Expired User > Module > Access Requirements > Set Required User Type (e.g. Sysop, Guest)"
+	},
+	{
+		"Set Required User Type (e.g. Sysop, Guest)",
+		"Access Requirements",
+		"System > Loadable Modules... > Auto Message > Module > Access Requirements > Set Required User Type (e.g. Sysop, Guest)"
+	},
+	{
+		"Set Required User Type (e.g. Sysop, Guest)",
+		"Access Requirements",
+		"System > Loadable Modules... > Send Feedback > Module > Access Requirements > Set Required User Type (e.g. Sysop, Guest)"
+	},
+	{
+		"Set Required User Type (e.g. Sysop, Guest)",
+		"Access Requirements",
+		"System > Loadable Modules... > Email Section > Module > Access Requirements > Set Required User Type (e.g. Sysop, Guest)"
+	},
+	{
+		"Set Required User Type (e.g. Sysop, Guest)",
+		"Access Requirements",
+		"System > Loadable Modules... > Chat Section > Module > Access Requirements > Set Required User Type (e.g. Sysop, Guest)"
+	},
+	{
+		"Set Required User Type (e.g. Sysop, Guest)",
+		"Access Requirements",
+		"System > Loadable Modules... > Text Section > Module > Access Requirements > Set Required User Type (e.g. Sysop, Guest)"
+	},
+	{
+		"Set Required User Type (e.g. Sysop, Guest)",
+		"Access Requirements",
+		"System > Loadable Modules... > Xtrn Section > Module > Access Requirements > Set Required User Type (e.g. Sysop, Guest)"
+	},
+	{
+		"Set Required User Type (e.g. Sysop, Guest)",
+		"Access Requirements",
+		"System > Loadable Modules... > Pre Xtrn > Module > Access Requirements > Set Required User Type (e.g. Sysop, Guest)"
+	},
+	{
+		"Set Required User Type (e.g. Sysop, Guest)",
+		"Access Requirements",
+		"System > Loadable Modules... > Post Xtrn > Module > Access Requirements > Set Required User Type (e.g. Sysop, Guest)"
+	},
+	{
+		"Set Required User Type (e.g. Sysop, Guest)",
+		"Access Requirements",
+		"System > Loadable Modules... > Read Mail > Module > Access Requirements > Set Required User Type (e.g. Sysop, Guest)"
+	},
+	{
+		"Set Required User Type (e.g. Sysop, Guest)",
+		"Access Requirements",
+		"System > Loadable Modules... > Scan Msgs > Module > Access Requirements > Set Required User Type (e.g. Sysop, Guest)"
+	},
+	{
+		"Set Required User Type (e.g. Sysop, Guest)",
+		"Access Requirements",
+		"System > Loadable Modules... > Scan Subs > Module > Access Requirements > Set Required User Type (e.g. Sysop, Guest)"
+	},
+	{
+		"Set Required User Type (e.g. Sysop, Guest)",
+		"Access Requirements",
+		"System > Loadable Modules... > List Msgs > Module > Access Requirements > Set Required User Type (e.g. Sysop, Guest)"
+	},
+	{
+		"Set Required User Type (e.g. Sysop, Guest)",
+		"Access Requirements",
+		"System > Loadable Modules... > List Logons > Module > Access Requirements > Set Required User Type (e.g. Sysop, Guest)"
+	},
+	{
+		"Set Required User Type (e.g. Sysop, Guest)",
+		"Access Requirements",
+		"System > Loadable Modules... > List Users > Module > Access Requirements > Set Required User Type (e.g. Sysop, Guest)"
+	},
+	{
+		"Set Required User Type (e.g. Sysop, Guest)",
+		"Access Requirements",
+		"System > Loadable Modules... > List Nodes > Module > Access Requirements > Set Required User Type (e.g. Sysop, Guest)"
+	},
+	{
+		"Set Required User Type (e.g. Sysop, Guest)",
+		"Access Requirements",
+		"System > Loadable Modules... > Who's Online > Module > Access Requirements > Set Required User Type (e.g. Sysop, Guest)"
+	},
+	{
+		"Set Required User Type (e.g. Sysop, Guest)",
+		"Access Requirements",
+		"System > Loadable Modules... > Private Msg > Module > Access Requirements > Set Required User Type (e.g. Sysop, Guest)"
+	},
+	{
+		"Set Required User Type (e.g. Sysop, Guest)",
+		"Access Requirements",
+		"System > Loadable Modules... > Scan Dirs > Module > Access Requirements > Set Required User Type (e.g. Sysop, Guest)"
+	},
+	{
+		"Set Required User Type (e.g. Sysop, Guest)",
+		"Access Requirements",
+		"System > Loadable Modules... > List Files > Module > Access Requirements > Set Required User Type (e.g. Sysop, Guest)"
+	},
+	{
+		"Set Required User Type (e.g. Sysop, Guest)",
+		"Access Requirements",
+		"System > Loadable Modules... > View File Info > Module > Access Requirements > Set Required User Type (e.g. Sysop, Guest)"
+	},
+	{
+		"Set Required User Type (e.g. Sysop, Guest)",
+		"Access Requirements",
+		"System > Loadable Modules... > Batch Transfer > Module > Access Requirements > Set Required User Type (e.g. Sysop, Guest)"
+	},
+	{
+		"Set Required User Type (e.g. Sysop, Guest)",
+		"Access Requirements",
+		"System > Loadable Modules... > Temp Transfer > Module > Access Requirements > Set Required User Type (e.g. Sysop, Guest)"
+	},
+	{
+		"Set Required User Type (e.g. Sysop, Guest)",
+		"Access Requirements",
+		"System > Loadable Modules... > Select Item > Module > Access Requirements > Set Required User Type (e.g. Sysop, Guest)"
+	},
+	{
+		"Set Required User Type (e.g. Sysop, Guest)",
+		"Access Requirements",
+		"System > Loadable Modules... > Sync > Module > Access Requirements > Set Required User Type (e.g. Sysop, Guest)"
+	},
+	{
+		"Set Required User Type (e.g. Sysop, Guest)",
+		"Access Requirements",
+		"File Options > Access Requirements > Set Required User Type (e.g. Sysop, Guest)"
+	},
+	{
+		"Set Required User Type (e.g. Sysop, Guest)",
+		"Access Requirements",
+		"File Areas > Directories > Access Requirements > Set Required User Type (e.g. Sysop, Guest)"
+	},
+	{
+		"Set Required User Type (e.g. Sysop, Guest)",
+		"Access Requirements",
+		"External Programs > Message Editors > Access Requirements > Set Required User Type (e.g. Sysop, Guest)"
+	},
+	{
+		"Set Required User Type (e.g. Sysop, Guest)",
+		"Access Requirements",
+		"External Programs > Online Programs (Doors) > Access Requirements > Set Required User Type (e.g. Sysop, Guest)"
+	},
+	{
+		"Set Required User Type (e.g. Sysop, Guest)",
+		"Archive Requirements",
+		"Servers > Mail Server > Archive Requirements > Set Required User Type (e.g. Sysop, Guest)"
+	},
+	{
+		"Set Required User Type (e.g. Sysop, Guest)",
+		"Download Requirements",
+		"File Areas > Directories > Download Requirements > Set Required User Type (e.g. Sysop, Guest)"
+	},
+	{
+		"Set Required User Type (e.g. Sysop, Guest)",
+		"Exemption Requirements",
+		"File Areas > Directories > Exemption Requirements > Set Required User Type (e.g. Sysop, Guest)"
+	},
+	{
+		"Set Required User Type (e.g. Sysop, Guest)",
+		"Login Info Save",
+		"Servers > Web Server > Login Info Save > Set Required User Type (e.g. Sysop, Guest)"
+	},
+	{
+		"Set Required User Type (e.g. Sysop, Guest)",
+		"Login Info Save",
+		"Servers > FTP Server > Login Info Save > Set Required User Type (e.g. Sysop, Guest)"
+	},
+	{
+		"Set Required User Type (e.g. Sysop, Guest)",
+		"Login Info Save",
+		"Servers > Services Server > Login Info Save > Set Required User Type (e.g. Sysop, Guest)"
+	},
+	{
+		"Set Required User Type (e.g. Sysop, Guest)",
+		"Login Requirements",
+		"Servers > Global Settings > Login Requirements > Set Required User Type (e.g. Sysop, Guest)"
+	},
+	{
+		"Set Required User Type (e.g. Sysop, Guest)",
+		"Login Requirements",
+		"Servers > Terminal Server > Login Requirements > Set Required User Type (e.g. Sysop, Guest)"
+	},
+	{
+		"Set Required User Type (e.g. Sysop, Guest)",
+		"Login Requirements",
+		"Servers > Web Server > Login Requirements > Set Required User Type (e.g. Sysop, Guest)"
+	},
+	{
+		"Set Required User Type (e.g. Sysop, Guest)",
+		"Login Requirements",
+		"Servers > FTP Server > Login Requirements > Set Required User Type (e.g. Sysop, Guest)"
+	},
+	{
+		"Set Required User Type (e.g. Sysop, Guest)",
+		"Login Requirements",
+		"Servers > Mail Server > Login Requirements > Set Required User Type (e.g. Sysop, Guest)"
+	},
+	{
+		"Set Required User Type (e.g. Sysop, Guest)",
+		"Login Requirements",
+		"Servers > Services Server > Login Requirements > Set Required User Type (e.g. Sysop, Guest)"
+	},
+	{
+		"Set Required User Type (e.g. Sysop, Guest)",
+		"Moderated Posting User",
+		"Message Areas > Sub-boards > Moderated Posting User > Set Required User Type (e.g. Sysop, Guest)"
+	},
+	{
+		"Set Required User Type (e.g. Sysop, Guest)",
+		"Operator Requirements",
+		"Message Areas > Sub-boards > Operator Requirements > Set Required User Type (e.g. Sysop, Guest)"
+	},
+	{
+		"Set Required User Type (e.g. Sysop, Guest)",
+		"Operator Requirements",
+		"File Areas > Directories > Operator Requirements > Set Required User Type (e.g. Sysop, Guest)"
+	},
+	{
+		"Set Required User Type (e.g. Sysop, Guest)",
+		"Posting Requirements",
+		"Message Areas > Sub-boards > Posting Requirements > Set Required User Type (e.g. Sysop, Guest)"
+	},
+	{
+		"Set Required User Type (e.g. Sysop, Guest)",
+		"Reading Requirements",
+		"Message Areas > Sub-boards > Reading Requirements > Set Required User Type (e.g. Sysop, Guest)"
+	},
+	{
+		"Set Required User Type (e.g. Sysop, Guest)",
+		"Requirements",
+		"Message Areas > Requirements > Set Required User Type (e.g. Sysop, Guest)"
+	},
+	{
+		"Set Required User Type (e.g. Sysop, Guest)",
+		"Requirements",
+		"Nodes > Node Configuration > Requirements > Set Required User Type (e.g. Sysop, Guest)"
+	},
+	{
+		"Set Required User Type (e.g. Sysop, Guest)",
+		"Requirements",
+		"File Options > Requirements > Set Required User Type (e.g. Sysop, Guest)"
+	},
+	{
+		"Set Required User Type (e.g. Sysop, Guest)",
+		"Requirements",
+		"File Areas > Requirements > Set Required User Type (e.g. Sysop, Guest)"
+	},
+	{
+		"Set Required User Type (e.g. Sysop, Guest)",
+		"Requirements",
+		"External Programs > Online Programs (Doors) > Online Programs... > Requirements > Set Required User Type (e.g. Sysop, Guest)"
+	},
+	{
+		"Set Required User Type (e.g. Sysop, Guest)",
+		"Sysop Chat Override",
+		"System > Advanced Options... > Sysop Chat Override > Set Required User Type (e.g. Sysop, Guest)"
+	},
+	{
+		"Set Required User Type (e.g. Sysop, Guest)",
+		"Upload Requirements",
+		"File Areas > Directories > Upload Requirements > Set Required User Type (e.g. Sysop, Guest)"
 	},
 	{
 		"Short Date Format",
@@ -3536,6 +9666,16 @@ static const scfg_option_t scfg_option_index[] = {
 		"Socket",
 		"I/O Method",
 		"Chat Features > External Sysop Chat Pagers > I/O Method > Socket"
+	},
+	{
+		"Socket",
+		"I/O Method",
+		"External Programs > Online Programs (Doors) > Online Programs... > I/O Method > Socket"
+	},
+	{
+		"Socket",
+		"Record Terminal Width",
+		"External Programs > Message Editors > Record Terminal Width > Socket"
 	},
 	{
 		"Socket I/O",
@@ -3586,6 +9726,16 @@ static const scfg_option_t scfg_option_index[] = {
 		"Standard",
 		"I/O Method",
 		"Chat Features > External Sysop Chat Pagers > I/O Method > Standard"
+	},
+	{
+		"Standard",
+		"I/O Method",
+		"External Programs > Online Programs (Doors) > Online Programs... > I/O Method > Standard"
+	},
+	{
+		"Standard",
+		"Record Terminal Width",
+		"External Programs > Message Editors > Record Terminal Width > Standard"
 	},
 	{
 		"Start-up Directory",
@@ -3650,7 +9800,22 @@ static const scfg_option_t scfg_option_index[] = {
 	{
 		"Subnet Filter Threshold",
 		"Rate Limiting",
+		"Servers > Web Server > Rate Limiting... > Rate Limiting > Subnet Filter Threshold"
+	},
+	{
+		"Subnet Filter Threshold",
+		"Rate Limiting",
 		"Servers > FTP Server > Limit Rate of Requests > Rate Limiting > Subnet Filter Threshold"
+	},
+	{
+		"Subnet Filter Threshold",
+		"Rate Limiting",
+		"Servers > Mail Server > Limit Rate of Requests > Rate Limiting > Subnet Filter Threshold"
+	},
+	{
+		"Subnet Filter Threshold",
+		"Rate Limiting",
+		"Servers > Services Server > Limit Rate of Connections > Rate Limiting > Subnet Filter Threshold"
 	},
 	{
 		"Subscribe QOS",
@@ -3688,9 +9853,19 @@ static const scfg_option_t scfg_option_index[] = {
 		"System > Loadable Modules > Sync"
 	},
 	{
+		"Sync",
+		"Loadable Modules...",
+		"System > Loadable Modules... > Sync"
+	},
+	{
 		"Sysop Chat Override",
 		"Advanced Options",
 		"System > Advanced Options > Sysop Chat Override"
+	},
+	{
+		"Sysop Chat Override",
+		"Advanced Options...",
+		"System > Advanced Options... > Sysop Chat Override"
 	},
 	{
 		"Sysop Chat Pager #",
@@ -3733,6 +9908,11 @@ static const scfg_option_t scfg_option_index[] = {
 		"System > Loadable Modules > Temp Transfer"
 	},
 	{
+		"Temp Transfer",
+		"Loadable Modules...",
+		"System > Loadable Modules... > Temp Transfer"
+	},
+	{
 		"Template for New Subs",
 		"Toggle Options",
 		"Message Areas > Sub-boards > Sub-board > Toggle Options > Template for New Subs"
@@ -3740,12 +9920,62 @@ static const scfg_option_t scfg_option_index[] = {
 	{
 		"Temporary Ban Duration",
 		"Failed Login Attempts...",
+		"Servers > Global Settings > Failed Login Attempts... > Temporary Ban Duration"
+	},
+	{
+		"Temporary Ban Duration",
+		"Failed Login Attempts...",
+		"Servers > Terminal Server > Failed Login Attempts... > Temporary Ban Duration"
+	},
+	{
+		"Temporary Ban Duration",
+		"Failed Login Attempts...",
+		"Servers > Web Server > Failed Login Attempts... > Temporary Ban Duration"
+	},
+	{
+		"Temporary Ban Duration",
+		"Failed Login Attempts...",
 		"Servers > FTP Server > Failed Login Attempts... > Temporary Ban Duration"
+	},
+	{
+		"Temporary Ban Duration",
+		"Failed Login Attempts...",
+		"Servers > Mail Server > Failed Login Attempts... > Temporary Ban Duration"
+	},
+	{
+		"Temporary Ban Duration",
+		"Failed Login Attempts...",
+		"Servers > Services Server > Failed Login Attempts... > Temporary Ban Duration"
+	},
+	{
+		"Temporary Ban Threshold",
+		"Failed Login Attempts...",
+		"Servers > Global Settings > Failed Login Attempts... > Temporary Ban Threshold"
+	},
+	{
+		"Temporary Ban Threshold",
+		"Failed Login Attempts...",
+		"Servers > Terminal Server > Failed Login Attempts... > Temporary Ban Threshold"
+	},
+	{
+		"Temporary Ban Threshold",
+		"Failed Login Attempts...",
+		"Servers > Web Server > Failed Login Attempts... > Temporary Ban Threshold"
 	},
 	{
 		"Temporary Ban Threshold",
 		"Failed Login Attempts...",
 		"Servers > FTP Server > Failed Login Attempts... > Temporary Ban Threshold"
+	},
+	{
+		"Temporary Ban Threshold",
+		"Failed Login Attempts...",
+		"Servers > Mail Server > Failed Login Attempts... > Temporary Ban Threshold"
+	},
+	{
+		"Temporary Ban Threshold",
+		"Failed Login Attempts...",
+		"Servers > Services Server > Failed Login Attempts... > Temporary Ban Threshold"
 	},
 	{
 		"Terminal Server",
@@ -3778,6 +10008,11 @@ static const scfg_option_t scfg_option_index[] = {
 		"System > Loadable Modules > Text Section"
 	},
 	{
+		"Text Section",
+		"Loadable Modules...",
+		"System > Loadable Modules... > Text Section"
+	},
+	{
 		"Text Section Internal Code",
 		"Text File Sections",
 		"Text File Sections > Text Section Internal Code"
@@ -3785,12 +10020,57 @@ static const scfg_option_t scfg_option_index[] = {
 	{
 		"Throttle",
 		"Failed Login Attempts...",
+		"Servers > Global Settings > Failed Login Attempts... > Throttle"
+	},
+	{
+		"Throttle",
+		"Failed Login Attempts...",
+		"Servers > Terminal Server > Failed Login Attempts... > Throttle"
+	},
+	{
+		"Throttle",
+		"Failed Login Attempts...",
+		"Servers > Web Server > Failed Login Attempts... > Throttle"
+	},
+	{
+		"Throttle",
+		"Failed Login Attempts...",
 		"Servers > FTP Server > Failed Login Attempts... > Throttle"
+	},
+	{
+		"Throttle",
+		"Failed Login Attempts...",
+		"Servers > Mail Server > Failed Login Attempts... > Throttle"
+	},
+	{
+		"Throttle",
+		"Failed Login Attempts...",
+		"Servers > Services Server > Failed Login Attempts... > Throttle"
 	},
 	{
 		"Time Limit",
 		"JavaScript Settings...",
 		"Servers > Global Settings > JavaScript Settings... > Time Limit"
+	},
+	{
+		"Time Limit",
+		"JavaScript Settings...",
+		"Servers > Terminal Server > JavaScript Settings... > Time Limit"
+	},
+	{
+		"Time Limit",
+		"JavaScript Settings...",
+		"Servers > Web Server > JavaScript Settings... > Time Limit"
+	},
+	{
+		"Time Limit",
+		"JavaScript Settings...",
+		"Servers > Mail Server > JavaScript Settings... > Time Limit"
+	},
+	{
+		"Time Limit",
+		"JavaScript Settings...",
+		"Servers > Services Server > JavaScript Settings... > Time Limit"
 	},
 	{
 		"Time Per Call",
@@ -3859,13 +10139,23 @@ static const scfg_option_t scfg_option_index[] = {
 	},
 	{
 		"Tokyo",
-		"Non-U.S. Time Zone",
-		"Non-U.S. Time Zone > Tokyo"
+		"Local Time Zone",
+		"System > Local Time Zone > Tokyo"
 	},
 	{
 		"UART Only",
 		"I/O Method",
 		"Chat Features > External Sysop Chat Pagers > I/O Method > UART Only"
+	},
+	{
+		"UART Only",
+		"I/O Method",
+		"External Programs > Online Programs (Doors) > Online Programs... > I/O Method > UART Only"
+	},
+	{
+		"UART Only",
+		"Record Terminal Width",
+		"External Programs > Message Editors > Record Terminal Width > UART Only"
 	},
 	{
 		"Unpack Command Line",
@@ -3881,6 +10171,16 @@ static const scfg_option_t scfg_option_index[] = {
 		"Upload Date in Listings",
 		"Toggle Options...",
 		"File Areas > Directories > Toggle Options... > Upload Date in Listings"
+	},
+	{
+		"Upload Date in Listings",
+		"Toggle Options...",
+		"File Areas > Directory Default Settings > Toggle Options... > Upload Date in Listings"
+	},
+	{
+		"Upload Requirements",
+		"Directories",
+		"File Areas > Directories > Upload Requirements"
 	},
 	{
 		"Upload Requirements",
@@ -3916,6 +10216,11 @@ static const scfg_option_t scfg_option_index[] = {
 		"User Config",
 		"Loadable Modules",
 		"System > Loadable Modules > User Config"
+	},
+	{
+		"User Config",
+		"Loadable Modules...",
+		"System > Loadable Modules... > User Config"
 	},
 	{
 		"User Database Backups",
@@ -3954,13 +10259,18 @@ static const scfg_option_t scfg_option_index[] = {
 	},
 	{
 		"Vancouver",
-		"Non-U.S. Time Zone",
-		"Non-U.S. Time Zone > Vancouver"
+		"Local Time Zone",
+		"System > Local Time Zone > Vancouver"
 	},
 	{
 		"View File Info",
 		"Loadable Modules",
 		"System > Loadable Modules > View File Info"
+	},
+	{
+		"View File Info",
+		"Loadable Modules...",
+		"System > Loadable Modules... > View File Info"
 	},
 	{
 		"Viewable File Type",
@@ -4009,8 +10319,8 @@ static const scfg_option_t scfg_option_index[] = {
 	},
 	{
 		"Western Europe (WET)",
-		"Non-U.S. Time Zone",
-		"Non-U.S. Time Zone > Western Europe (WET)"
+		"Local Time Zone",
+		"System > Local Time Zone > Western Europe (WET)"
 	},
 	{
 		"Who's Online",
@@ -4018,9 +10328,14 @@ static const scfg_option_t scfg_option_index[] = {
 		"System > Loadable Modules > Who's Online"
 	},
 	{
+		"Who's Online",
+		"Loadable Modules...",
+		"System > Loadable Modules... > Who's Online"
+	},
+	{
 		"Winnipeg",
-		"Non-U.S. Time Zone",
-		"Non-U.S. Time Zone > Winnipeg"
+		"Local Time Zone",
+		"System > Local Time Zone > Winnipeg"
 	},
 	{
 		"Word-wrap Exported Messages",
@@ -4053,9 +10368,34 @@ static const scfg_option_t scfg_option_index[] = {
 		"System > Loadable Modules > Xtrn Section"
 	},
 	{
+		"Xtrn Section",
+		"Loadable Modules...",
+		"System > Loadable Modules... > Xtrn Section"
+	},
+	{
 		"Yield Interval",
 		"JavaScript Settings...",
 		"Servers > Global Settings > JavaScript Settings... > Yield Interval"
+	},
+	{
+		"Yield Interval",
+		"JavaScript Settings...",
+		"Servers > Terminal Server > JavaScript Settings... > Yield Interval"
+	},
+	{
+		"Yield Interval",
+		"JavaScript Settings...",
+		"Servers > Web Server > JavaScript Settings... > Yield Interval"
+	},
+	{
+		"Yield Interval",
+		"JavaScript Settings...",
+		"Servers > Mail Server > JavaScript Settings... > Yield Interval"
+	},
+	{
+		"Yield Interval",
+		"JavaScript Settings...",
+		"Servers > Services Server > JavaScript Settings... > Yield Interval"
 	},
 };
 

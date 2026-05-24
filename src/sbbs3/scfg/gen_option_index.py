@@ -983,65 +983,87 @@ def parse_function(text: str, body_start: int, body_end: int,
 # Path resolution
 # ---------------------------------------------------------------------------
 
-def build_path(option_func: str, menu_chain: list[str], label: str,
-               finfo_by_name: dict, callers_of: dict) -> str:
-    """Build a path string by walking the call graph from option_func upward
-    to main. Each segment is the option LABEL the user clicked to enter that
-    menu (e.g. main()'s "Servers" option label, not server_cfg()'s
+def build_paths(option_func: str, menu_chain: list[str], label: str,
+                finfo_by_name: dict, callers_of: dict) -> list[str]:
+    """Return one resolved menu path per distinct caller chain from
+    option_func up to main. Helpers called from multiple places (e.g.
+    rate_limit_cfg from each server's submenu, login_attempt_cfg from
+    every server type) get one entry per caller so a sysop searching for
+    the option lands on every menu path that reaches it.
+
+    Each segment is the option LABEL the user clicked to enter that menu
+    (e.g. main()'s "Servers" option label, not server_cfg()'s
     "Server Configuration" screen title). Falls back to the function's
     first nav title when no entry label is recorded.
 
-    `menu_chain` is the ordered list of menu titles WITHIN option_func that
-    enclose the option (outermost first, immediate last). The FIRST entry
-    is option_func's own primary nav title (i.e. first_title) - that gets
-    replaced by the entry label the caller used to reach option_func, so
-    it's stripped here. Any inner entries (sub-navs within option_func)
-    are real navigation steps the user clicks through, so they stay."""
+    `menu_chain` is the ordered list of menu titles WITHIN option_func
+    that enclose the option (outermost first, immediate last). The FIRST
+    entry is option_func's own primary nav title (i.e. first_title) -
+    that gets replaced by the entry label the caller used to reach
+    option_func, so it's stripped here. Any inner entries (sub-navs
+    within option_func) are real navigation steps the user clicks
+    through, so they stay."""
     inner_chain = list(menu_chain[1:]) if menu_chain else []
     suffix = inner_chain + ([label] if label else [])
-    prefix: list[str] = []
-    visited: set[str] = set()
-    current = option_func
-    while current is not None and current not in visited:
-        visited.add(current)
+
+    results: list[list[str]] = []
+
+    def walk(current: str, prefix: list[str], visited: frozenset[str]):
+        if current in visited:
+            results.append(list(prefix))
+            return
+        visited = visited | {current}
         callers = callers_of.get(current, [])
         if not callers:
-            # No caller registered - fall back to current's first nav title
-            # so the path still has a leading anchor.
+            # No caller registered - fall back to current's first nav
+            # title so the path still has a leading anchor.
             cur_info = finfo_by_name.get(current)
+            new_prefix = list(prefix)
             if cur_info and cur_info.first_title:
-                prefix.insert(0, cur_info.first_title)
-            break
-        callers_sorted = sorted(
-            callers, key=lambda c: (0 if c[0] == "main" else 1, c[0]))
-        parent_entry = callers_sorted[0]
-        parent = parent_entry[0]
-        entry_chain = parent_entry[3] if len(parent_entry) > 3 else []
-        if entry_chain:
-            # Outermost first; insert in reverse so they end up in order.
-            for seg in reversed(entry_chain):
+                new_prefix.insert(0, cur_info.first_title)
+            results.append(new_prefix)
+            return
+        for parent_entry in callers:
+            parent = parent_entry[0]
+            entry_chain = parent_entry[3] if len(parent_entry) > 3 else []
+            seg_prefix: list[str] = []
+            if entry_chain:
+                # Outermost first; insert in reverse so they end up in order.
+                for seg in reversed(entry_chain):
+                    if seg:
+                        seg_prefix.insert(0, seg)
+            else:
+                cur_info = finfo_by_name.get(current)
+                seg = cur_info.first_title if cur_info else None
                 if seg:
-                    prefix.insert(0, seg)
-        else:
-            cur_info = finfo_by_name.get(current)
-            seg = cur_info.first_title if cur_info else None
-            if seg:
-                prefix.insert(0, seg)
-        if parent == "main":
-            prefix.insert(0, "Configure")
-            break
-        current = parent
+                    seg_prefix.insert(0, seg)
+            new_prefix = seg_prefix + prefix
+            if parent == "main":
+                results.append(["Configure"] + new_prefix)
+            else:
+                walk(parent, new_prefix, visited)
+
+    walk(option_func, [], frozenset())
+
     # De-duplicate consecutive equal entries (a function whose first_title
-    # matches its caller's option label would otherwise duplicate).
-    full = prefix + suffix
-    dedup: list[str] = []
-    for p in full:
-        if not p:
-            continue
-        if dedup and dedup[-1] == p:
-            continue
-        dedup.append(p)
-    return " > ".join(dedup)
+    # matches its caller's option label would otherwise duplicate) and
+    # collapse identical paths across caller chains.
+    out_paths: list[str] = []
+    seen: set[str] = set()
+    for prefix in results:
+        full = prefix + suffix
+        dedup: list[str] = []
+        for p in full:
+            if not p:
+                continue
+            if dedup and dedup[-1] == p:
+                continue
+            dedup.append(p)
+        s = " > ".join(dedup)
+        if s and s not in seen:
+            seen.add(s)
+            out_paths.append(s)
+    return out_paths
 
 
 # ---------------------------------------------------------------------------
@@ -1132,8 +1154,18 @@ def main():
     # reach this call. Helpers reached through nested inline navs (e.g.
     # main's case 6 contains a "Chat Features" sub-nav) get a multi-element
     # chain like ["Chat Features", "Multinode Chat Actions"].
+    #
+    # Skip CALLER_BLACKLIST: functions that aren't reachable from main's
+    # Configure-menu dispatch (the only context where Ctrl-F search is
+    # available). cfg_wizard runs once at first-install before main's menu
+    # loop; indexing its callees would pollute the search results with
+    # paths that have no "Configure >" anchor (and steal attribution from
+    # the real menu callers via alphabetical sort).
+    CALLER_BLACKLIST = {"cfg_wizard"}
     callers_of: dict[str, list[tuple[str, int, str | None, list[str]]]] = {}
     for caller, info in finfo_by_name.items():
+        if caller in CALLER_BLACKLIST:
+            continue
         for callee, ln, title, entry_chain in info.calls:
             callers_of.setdefault(callee, []).append(
                 (caller, ln, title, entry_chain))
@@ -1148,53 +1180,55 @@ def main():
 
     for func_name, info in finfo_by_name.items():
         for label, ln, menu_chain in info.options:
-            path = build_path(func_name, menu_chain, label,
-                              finfo_by_name, callers_of)
-            if path.startswith("Configure > "):
-                path = path[len("Configure > "):]
-            # The displayed "menu" for a result is the path segment just
-            # before the option label, i.e. the option label the user
-            # clicks to enter the menu containing this option. Falling back
-            # to menu_chain[-1] (the screen title) only when path resolution
-            # produces a single segment.
-            path_parts = path.split(" > ") if path else []
-            if len(path_parts) >= 2:
-                immediate_menu = path_parts[-2]
-            else:
-                immediate_menu = menu_chain[-1] if menu_chain else ""
-            entries.append({
-                "label": label,
-                "menu":  immediate_menu,
-                "path":  path,
-                "file":  info.file,
-                "line":  ln,
-            })
-
-            # Synthesise menu-as-destination entries: every menu in the
-            # chain (and the chain's anchor up through main) is itself a
-            # navigable target. Add one entry per unique menu path.
-            menu_path = build_path(func_name, menu_chain, "",
-                                   finfo_by_name, callers_of)
-            if menu_path.endswith(" > "):
-                menu_path = menu_path[:-3]
-            if menu_path.startswith("Configure > "):
-                menu_path = menu_path[len("Configure > "):]
-            menu_path_parts = [p for p in menu_path.split(" > ") if p]
-            for depth in range(1, len(menu_path_parts) + 1):
-                sub_path = " > ".join(menu_path_parts[:depth])
-                if sub_path in seen_menu_paths:
-                    continue
-                seen_menu_paths.add(sub_path)
-                this_menu = menu_path_parts[depth - 1]
-                parent_menu = (menu_path_parts[depth - 2]
-                               if depth >= 2 else "")
+            paths = build_paths(func_name, menu_chain, label,
+                                finfo_by_name, callers_of)
+            for path in paths:
+                if path.startswith("Configure > "):
+                    path = path[len("Configure > "):]
+                # The displayed "menu" for a result is the path segment
+                # just before the option label, i.e. the option label the
+                # user clicks to enter the menu containing this option.
+                # Falling back to menu_chain[-1] (the screen title) only
+                # when path resolution produces a single segment.
+                path_parts = path.split(" > ") if path else []
+                if len(path_parts) >= 2:
+                    immediate_menu = path_parts[-2]
+                else:
+                    immediate_menu = menu_chain[-1] if menu_chain else ""
                 entries.append({
-                    "label": this_menu,
-                    "menu":  parent_menu,
-                    "path":  sub_path,
+                    "label": label,
+                    "menu":  immediate_menu,
+                    "path":  path,
                     "file":  info.file,
                     "line":  ln,
                 })
+
+            # Synthesise menu-as-destination entries: every menu in the
+            # chain (and the chain's anchor up through main) is itself a
+            # navigable target. Add one entry per unique menu path,
+            # across every caller chain.
+            for menu_path in build_paths(func_name, menu_chain, "",
+                                         finfo_by_name, callers_of):
+                if menu_path.endswith(" > "):
+                    menu_path = menu_path[:-3]
+                if menu_path.startswith("Configure > "):
+                    menu_path = menu_path[len("Configure > "):]
+                menu_path_parts = [p for p in menu_path.split(" > ") if p]
+                for depth in range(1, len(menu_path_parts) + 1):
+                    sub_path = " > ".join(menu_path_parts[:depth])
+                    if sub_path in seen_menu_paths:
+                        continue
+                    seen_menu_paths.add(sub_path)
+                    this_menu = menu_path_parts[depth - 1]
+                    parent_menu = (menu_path_parts[depth - 2]
+                                   if depth >= 2 else "")
+                    entries.append({
+                        "label": this_menu,
+                        "menu":  parent_menu,
+                        "path":  sub_path,
+                        "file":  info.file,
+                        "line":  ln,
+                    })
 
     # De-duplicate by (label, menu, path).
     seen = set()
