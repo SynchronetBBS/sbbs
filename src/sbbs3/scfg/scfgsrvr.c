@@ -520,9 +520,36 @@ static void js_startup_cfg(js_startup_t* js)
 		opt[i][0] = '\0';
 
 		uifc.helpbuf =
-			"`JavaScript Server Settings:`\n"
+			"`JavaScript Settings:`\n"
 			"\n"
-			"Settings that control the server-side JavaScript execution environment.\n"
+			"Limits and tuning knobs for the SpiderMonkey JavaScript runtime that\n"
+			"executes server-side scripts (logon/logoff, services, web SSJS, timed\n"
+			"events, external programs, etc.).  These values may be set globally\n"
+			"and overridden per-server; changes take effect after a server recycle.\n"
+			"\n"
+			"`Heap Size`: maximum bytes the JavaScript runtime may allocate for one\n"
+			"script invocation before a forced garbage collection.  Raise if\n"
+			"scripts run out of memory; lower if many concurrent scripts run\n"
+			"together and total memory matters more than per-script ceiling.\n"
+			"\n"
+			"`Time Limit`: maximum number of operation callbacks before a script\n"
+			"is forcibly terminated (infinite-loop guard).  Counts JavaScript\n"
+			"engine branch operations, NOT wall-clock time, so the actual run-time\n"
+			"depends on the script's workload.  `0` disables the limit -- required\n"
+			"for long-running service scripts.\n"
+			"\n"
+			"`GC Interval`: number of operation callbacks between periodic garbage-\n"
+			"collection attempts.  Lower = more frequent GC = lower peak memory\n"
+			"but more CPU overhead.  `0` disables periodic GC (heap-size forced\n"
+			"GC still runs).\n"
+			"\n"
+			"`Yield Interval`: number of operation callbacks between voluntary CPU\n"
+			"yields.  Lets other threads run while a long script executes.\n"
+			"`0` disables voluntary yielding.\n"
+			"\n"
+			"`Load Path`: comma-separated additional directories searched by JS\n"
+			"`load()` when a script imports a library (relative to `exec/` and\n"
+			"`mods/`).  The built-in `load` directory is always searched."
 		;
 		switch (uifc.list(WIN_ACT | WIN_BOT | WIN_SAV, 0, 0, 0, &cur, &bar
 		                  , "JavaScript Settings", opt)) {
