@@ -27,6 +27,7 @@
 #include <string>
 #include "ratelimit.hpp"        // rateLimiter
 #include "scfgdefs.h"           // scfg_t
+#include "startup.h"            // struct rate_limit_settings
 #include "trash.h"              // filter_ip()
 #include "sockwrap.h"           // SOCKET, INET6_ADDRSTRLEN, inet_pton, inet_ntop
 #include "genwrap.h"            // safe_snprintf
@@ -37,13 +38,13 @@
  * network address in CIDR notation (e.g. "47.82.14.0/24") so that requests
  * (or connections) from an entire subnet are counted (and may be filtered)
  * together; otherwise the key is simply the client IP. */
-static inline std::string rate_limit_key(const char* ip, uint prefix4, uint prefix6)
+static inline std::string rate_limit_key(const char* ip, const struct rate_limit_settings* rl)
 {
 	if (ip == NULL || *ip == '\0')
 		return std::string();
 
 	bool ipv6 = strchr(ip, ':') != NULL;
-	uint prefix = ipv6 ? prefix6 : prefix4;
+	uint prefix = ipv6 ? rl->prefix6 : rl->prefix4;
 	uint maxbits = ipv6 ? 128 : 32;
 	if (prefix == 0 || prefix >= maxbits)
 		return std::string(ip); // per-host-IP (no subnet aggregation)
@@ -83,15 +84,15 @@ static inline std::string rate_limit_key(const char* ip, uint prefix4, uint pref
 static inline void rate_limit_filter(SOCKET sock, scfg_t* cfg, const char* prot
                                      , const char* host_ip, const char* host_name
                                      , const std::string& key, unsigned denials, rateLimiter* limiter
-                                     , uint threshold, uint duration, bool silent, uint subnet_threshold
+                                     , const struct rate_limit_settings* rl
                                      , int (*log)(int, const char*, ...))
 {
-	if (threshold == 0 || denials < threshold)
+	if (rl->filter == 0 || denials < rl->filter)
 		return;
 
 	std::string target = key;
 	size_t      distinct = (key == host_ip) ? 1 : limiter->distinctMembers(key);
-	uint        subnet_min = subnet_threshold ? subnet_threshold : 1;
+	uint        subnet_min = rl->filter_subnet_threshold ? rl->filter_subnet_threshold : 1;
 	if (key != host_ip && distinct < subnet_min)
 		target = host_ip;
 
@@ -99,7 +100,7 @@ static inline void rate_limit_filter(SOCKET sock, scfg_t* cfg, const char* prot
 	char fpath[MAX_PATH + 1];
 	const char* fname = NULL; // NULL => filter_ip() uses ip.can
 
-	if (silent) {
+	if (rl->filter_silent) {
 		safe_snprintf(fpath, sizeof fpath, "%sip-silent.can", cfg->text_dir);
 		fname = fpath;
 	}
@@ -107,11 +108,11 @@ static inline void rate_limit_filter(SOCKET sock, scfg_t* cfg, const char* prot
 		safe_snprintf(reason, sizeof reason, "%u rate-limit violations", denials);
 	else
 		safe_snprintf(reason, sizeof reason, "%u rate-limit violations from %zu IPs", denials, distinct);
-	if (filter_ip(cfg, prot, reason, host_name, target.c_str(), /* username: */ NULL, fname, duration))
+	if (filter_ip(cfg, prot, reason, host_name, target.c_str(), /* username: */ NULL, fname, rl->filter_duration))
 		log(LOG_NOTICE, "%04d %s !BLOCKING %s%s: %s%s"
 		    , sock, prot
-		    , target == host_ip ? "IP ADDRESS" : "SUBNET", silent ? " (silently)" : ""
-		    , target.c_str(), silent ? "" : " in ip.can");
+		    , target == host_ip ? "IP ADDRESS" : "SUBNET", rl->filter_silent ? " (silently)" : ""
+		    , target.c_str(), rl->filter_silent ? "" : " in ip.can");
 }
 
 #endif // RATELIMIT_FILTER_HPP_

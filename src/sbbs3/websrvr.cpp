@@ -3564,7 +3564,7 @@ static bool get_req(http_session_t * session, char *request_line)
 				return false;
 			}
 			if (!host_exempt.listed(session->host_ip, session->host_name)) {
-				std::string rl_key = rate_limit_key(session->host_ip, startup->rate_limit_prefix4, startup->rate_limit_prefix6);
+				std::string rl_key = rate_limit_key(session->host_ip, &startup->rate_limit);
 				unsigned    denials = 0;
 				if (request_rate_limiter->allowRequest(rl_key, &denials
 				        , rl_key == session->host_ip ? std::string() : std::string(session->host_ip)) == false) {
@@ -3573,9 +3573,7 @@ static bool get_req(http_session_t * session, char *request_line)
 						, request_rate_limiter->maxRequests, request_rate_limiter->timeWindowSeconds, rl_key.c_str());
 					rate_limit_filter(session->socket, &scfg, session->client.protocol, session->host_ip
 						, session->host_name, rl_key, denials, request_rate_limiter
-						, startup->rate_limit_filter, startup->rate_limit_filter_duration
-						, startup->rate_limit_filter_silent, startup->rate_limit_filter_subnet_threshold
-						, lprintf);
+						, &startup->rate_limit, lprintf);
 					send_error(session, __LINE__, error_429);
 					return false;
 				}
@@ -7875,7 +7873,7 @@ void web_server(void* arg)
 				 * session thread or TLS handshake is spawned. Repeat offenders may
 				 * be auto-filtered (into ip-silent.can so they're dropped here). */
 				if (connect_rate_limiter->maxRequests > 0) {
-					std::string rl_key = rate_limit_key(host_ip, startup->rate_limit_prefix4, startup->rate_limit_prefix6);
+					std::string rl_key = rate_limit_key(host_ip, &startup->rate_limit);
 					unsigned    denials = 0;
 					if (connect_rate_limiter->allowRequest(rl_key, &denials
 					        , rl_key == host_ip ? std::string() : std::string(host_ip)) == false) {
@@ -7885,9 +7883,7 @@ void web_server(void* arg)
 							, connect_rate_limiter->maxRequests, connect_rate_limiter->timeWindowSeconds, rl_key.c_str());
 						rate_limit_filter(client_socket, &scfg, prot, host_ip, /* host_name: */ NULL
 						    , rl_key, denials, connect_rate_limiter
-						    , startup->rate_limit_filter, startup->rate_limit_filter_duration
-						    , startup->rate_limit_filter_silent, startup->rate_limit_filter_subnet_threshold
-						    , lprintf);
+						    , &startup->rate_limit, lprintf);
 						close_socket(&client_socket);
 						continue;
 					}

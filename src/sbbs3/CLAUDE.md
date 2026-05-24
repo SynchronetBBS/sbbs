@@ -2,6 +2,17 @@
 
 For any C or C++ source modifications in this tree, follow the dominant coding style defined in [../uncrustify.cfg](../uncrustify.cfg). When in doubt about formatting (indentation, brace placement, spacing, alignment, line wrapping, etc.), defer to that configuration rather than inventing a new convention or matching nearby code that may already be out of compliance.
 
+## Prefer consolidation when the same lines repeat
+
+When you notice the same cluster of fields, the same ini read/write block, or the same menu/dispatch pattern repeated across the per-server code (web/ftp/mail/services, or the various scfg dialogs, etc.), prefer to factor it into a shared form rather than leaving the duplication. Concretely:
+
+- **Repeated field clusters in startup/config structs** → lift into a named sub-struct (e.g. `struct login_attempt_settings`, `struct max_concurrent_settings`, `struct rate_limit_settings` in `startup.h`) and embed by value. A nested struct is byte-contiguous in declared order, so this preserves the on-disk/ABI layout of the outer struct.
+- **Repeated ini get/set blocks in `sbbs_ini.c`** → factor into a `get_<thing>_settings()` / `set_<thing>_settings()` helper pair, mirroring `get_login_attempt_settings` / `set_login_attempt_settings`.
+- **Repeated menu logic in `scfg/`** → use a "view" struct of pointers (e.g. `struct rate_limit_cfg_view`) and one shared `<thing>_cfg()` function, plus a thin per-server wrapper that initializes the view. NULL pointers in the view can suppress menu items that don't apply to a given server.
+- **Repeated request-handler logic in the server `.cpp` files** → a static-inline helper in a shared `.hpp` (e.g. `ratelimit_filter.hpp`) keeps it header-only so no shared `.cpp` needs to be added to each server's `.vcxproj`.
+
+This is consolidation of existing repetition, not speculative abstraction. Don't invent a sub-struct or helper for a single use site, and don't reshape code that only *looks* similar but is actually doing different things. But when 3–4 servers each carry the same N-line block verbatim, collapsing it is the preference.
+
 ## Adding or modifying text strings (the `text[]` array)
 
 The runtime `text[]` array (indexed by IDs in `text.h`, accessed as `text[SomeIdentifier]`) is fed by **`ctrl/text.dat`**, which is the **single source of truth**. The textgen tool (`src/sbbs3/textgen.c`, built as `textgen.exe`) reads `text.dat` and (re)generates four files:

@@ -276,6 +276,38 @@ static void set_login_attempt_settings(str_list_t* lp, const char* section, stru
 	iniSetDuration(lp, section, strLoginAttemptFilterDuration, settings.filter_duration, &style);
 }
 
+static struct rate_limit_settings get_rate_limit_settings(str_list_t list, const char* section)
+{
+	struct rate_limit_settings settings;
+
+	settings.prefix4                 = iniGetUInteger(list, section, strRateLimitSubnetPrefix4, 0);
+	settings.prefix6                 = iniGetUInteger(list, section, strRateLimitSubnetPrefix6, 64);
+	settings.filter                  = iniGetUInteger(list, section, strRateLimitFilterThreshold, 0);
+	settings.filter_duration         = iniGetUInteger(list, section, strRateLimitFilterDuration, 0);
+	settings.filter_silent           = iniGetBool(list, section, strRateLimitFilterSilent, false);
+	settings.filter_subnet_threshold = iniGetUInteger(list, section, strRateLimitFilterSubnetThreshold, 2);
+	if (settings.filter_subnet_threshold < 1)
+		settings.filter_subnet_threshold = 1;
+	return settings;
+}
+
+static bool set_rate_limit_settings(str_list_t* lp, const char* section, struct rate_limit_settings settings, ini_style_t style)
+{
+	if (!iniSetUInteger(lp, section, strRateLimitSubnetPrefix4, settings.prefix4, &style))
+		return false;
+	if (!iniSetUInteger(lp, section, strRateLimitSubnetPrefix6, settings.prefix6, &style))
+		return false;
+	if (!iniSetUInteger(lp, section, strRateLimitFilterThreshold, settings.filter, &style))
+		return false;
+	if (!iniSetUInteger(lp, section, strRateLimitFilterDuration, settings.filter_duration, &style))
+		return false;
+	if (!iniSetBool(lp, section, strRateLimitFilterSilent, settings.filter_silent, &style))
+		return false;
+	if (!iniSetUInteger(lp, section, strRateLimitFilterSubnetThreshold, settings.filter_subnet_threshold, &style))
+		return false;
+	return true;
+}
+
 static const struct in6_addr wildcard6;
 
 static bool get_ini_globals(str_list_t list, global_startup_t* global)
@@ -642,14 +674,7 @@ bool sbbs_read_ini(
 		ftp->max_concurrent_connections = iniGetUInteger(list, section, strMaxConConn, 0);
 		ftp->max_requests_per_period = iniGetUInteger(list, section, strMaxRequestPerPeriod, 0);
 		ftp->request_rate_limit_period = iniGetUInteger(list, section, strRequestRateLimitPeriod, 60 * 60);
-		ftp->rate_limit_prefix4 = iniGetUInteger(list, section, strRateLimitSubnetPrefix4, 0);
-		ftp->rate_limit_prefix6 = iniGetUInteger(list, section, strRateLimitSubnetPrefix6, 64);
-		ftp->rate_limit_filter = iniGetUInteger(list, section, strRateLimitFilterThreshold, 0);
-		ftp->rate_limit_filter_duration = iniGetUInteger(list, section, strRateLimitFilterDuration, 0);
-		ftp->rate_limit_filter_silent = iniGetBool(list, section, strRateLimitFilterSilent, false);
-		ftp->rate_limit_filter_subnet_threshold = iniGetUInteger(list, section, strRateLimitFilterSubnetThreshold, 2);
-		if (ftp->rate_limit_filter_subnet_threshold < 1)
-			ftp->rate_limit_filter_subnet_threshold = 1;
+		ftp->rate_limit = get_rate_limit_settings(list, section);
 
 	}
 
@@ -762,14 +787,7 @@ bool sbbs_read_ini(
 		mail->max_concurrent_connections = iniGetUInteger(list, section, strMaxConConn, 0);
 		mail->max_requests_per_period = iniGetUInteger(list, section, strMaxRequestPerPeriod, 0);
 		mail->request_rate_limit_period = iniGetUInteger(list, section, strRequestRateLimitPeriod, 60 * 60);
-		mail->rate_limit_prefix4 = iniGetUInteger(list, section, strRateLimitSubnetPrefix4, 0);
-		mail->rate_limit_prefix6 = iniGetUInteger(list, section, strRateLimitSubnetPrefix6, 64);
-		mail->rate_limit_filter = iniGetUInteger(list, section, strRateLimitFilterThreshold, 0);
-		mail->rate_limit_filter_duration = iniGetUInteger(list, section, strRateLimitFilterDuration, 0);
-		mail->rate_limit_filter_silent = iniGetBool(list, section, strRateLimitFilterSilent, false);
-		mail->rate_limit_filter_subnet_threshold = iniGetUInteger(list, section, strRateLimitFilterSubnetThreshold, 2);
-		if (mail->rate_limit_filter_subnet_threshold < 1)
-			mail->rate_limit_filter_subnet_threshold = 1;
+		mail->rate_limit = get_rate_limit_settings(list, section);
 		mail->spam_block_duration = (uint)iniGetDuration(list, section, "SpamBlockDuration", 0);
 		mail->notify_offline_users = iniGetBool(list, section, "NotifyOfflineUsers", false);
 	}
@@ -824,14 +842,7 @@ bool sbbs_read_ini(
 
 		services->max_connects_per_period = iniGetUInteger(list, section, strMaxConnectsPerPeriod, 0);
 		services->connect_rate_limit_period = iniGetUInteger(list, section, strConnectRateLimitPeriod, 60 * 60);
-		services->rate_limit_prefix4 = iniGetUInteger(list, section, strRateLimitSubnetPrefix4, 0);
-		services->rate_limit_prefix6 = iniGetUInteger(list, section, strRateLimitSubnetPrefix6, 64);
-		services->rate_limit_filter = iniGetUInteger(list, section, strRateLimitFilterThreshold, 0);
-		services->rate_limit_filter_duration = iniGetUInteger(list, section, strRateLimitFilterDuration, 0);
-		services->rate_limit_filter_silent = iniGetBool(list, section, strRateLimitFilterSilent, false);
-		services->rate_limit_filter_subnet_threshold = iniGetUInteger(list, section, strRateLimitFilterSubnetThreshold, 2);
-		if (services->rate_limit_filter_subnet_threshold < 1)
-			services->rate_limit_filter_subnet_threshold = 1;
+		services->rate_limit = get_rate_limit_settings(list, section);
 
 		services->bind_retry_count = iniGetInteger(list, section, strBindRetryCount, global->bind_retry_count);
 		services->bind_retry_delay = iniGetInteger(list, section, strBindRetryDelay, global->bind_retry_delay);
@@ -929,14 +940,7 @@ bool sbbs_read_ini(
 		web->connect_rate_limit_period = iniGetUInteger(list, section, strConnectRateLimitPeriod, 60 * 60);
 		web->max_requests_per_period = iniGetUInteger(list, section, strMaxRequestPerPeriod, 0);
 		web->request_rate_limit_period = iniGetUInteger(list, section, strRequestRateLimitPeriod, 60 * 60);
-		web->rate_limit_prefix4 = iniGetUInteger(list, section, strRateLimitSubnetPrefix4, 0);
-		web->rate_limit_prefix6 = iniGetUInteger(list, section, strRateLimitSubnetPrefix6, 64);
-		web->rate_limit_filter = iniGetUInteger(list, section, strRateLimitFilterThreshold, 0);
-		web->rate_limit_filter_duration = iniGetUInteger(list, section, strRateLimitFilterDuration, 0);
-		web->rate_limit_filter_silent = iniGetBool(list, section, strRateLimitFilterSilent, false);
-		web->rate_limit_filter_subnet_threshold = iniGetUInteger(list, section, strRateLimitFilterSubnetThreshold, 2);
-		if (web->rate_limit_filter_subnet_threshold < 1)
-			web->rate_limit_filter_subnet_threshold = 1;
+		web->rate_limit = get_rate_limit_settings(list, section);
 		SAFECOPY(web->proxy_ip_header
 		         , iniGetString(list, section, "RemoteIPHeader", nulstr, value));
 		SAFECOPY(web->custom_log_fmt
@@ -1188,17 +1192,7 @@ bool sbbs_write_ini(
 				break;
 			if (!iniSetUInteger(lp, section, strRequestRateLimitPeriod, ftp->request_rate_limit_period, &style))
 				break;
-			if (!iniSetUInteger(lp, section, strRateLimitSubnetPrefix4, ftp->rate_limit_prefix4, &style))
-				break;
-			if (!iniSetUInteger(lp, section, strRateLimitSubnetPrefix6, ftp->rate_limit_prefix6, &style))
-				break;
-			if (!iniSetUInteger(lp, section, strRateLimitFilterThreshold, ftp->rate_limit_filter, &style))
-				break;
-			if (!iniSetUInteger(lp, section, strRateLimitFilterDuration, ftp->rate_limit_filter_duration, &style))
-				break;
-			if (!iniSetBool(lp, section, strRateLimitFilterSilent, ftp->rate_limit_filter_silent, &style))
-				break;
-			if (!iniSetUInteger(lp, section, strRateLimitFilterSubnetThreshold, ftp->rate_limit_filter_subnet_threshold, &style))
+			if (!set_rate_limit_settings(lp, section, ftp->rate_limit, style))
 				break;
 			if (!iniSetDuration(lp, section, "QwkTimeout", ftp->qwk_timeout, &style))
 				break;
@@ -1336,17 +1330,7 @@ bool sbbs_write_ini(
 				break;
 			if (!iniSetUInteger(lp, section, strRequestRateLimitPeriod, mail->request_rate_limit_period, &style))
 				break;
-			if (!iniSetUInteger(lp, section, strRateLimitSubnetPrefix4, mail->rate_limit_prefix4, &style))
-				break;
-			if (!iniSetUInteger(lp, section, strRateLimitSubnetPrefix6, mail->rate_limit_prefix6, &style))
-				break;
-			if (!iniSetUInteger(lp, section, strRateLimitFilterThreshold, mail->rate_limit_filter, &style))
-				break;
-			if (!iniSetUInteger(lp, section, strRateLimitFilterDuration, mail->rate_limit_filter_duration, &style))
-				break;
-			if (!iniSetBool(lp, section, strRateLimitFilterSilent, mail->rate_limit_filter_silent, &style))
-				break;
-			if (!iniSetUInteger(lp, section, strRateLimitFilterSubnetThreshold, mail->rate_limit_filter_subnet_threshold, &style))
+			if (!set_rate_limit_settings(lp, section, mail->rate_limit, style))
 				break;
 
 			if (strcmp(mail->host_name, global->host_name) == 0
@@ -1493,17 +1477,7 @@ bool sbbs_write_ini(
 				break;
 			if (!iniSetUInteger(lp, section, strConnectRateLimitPeriod, services->connect_rate_limit_period, &style))
 				break;
-			if (!iniSetUInteger(lp, section, strRateLimitSubnetPrefix4, services->rate_limit_prefix4, &style))
-				break;
-			if (!iniSetUInteger(lp, section, strRateLimitSubnetPrefix6, services->rate_limit_prefix6, &style))
-				break;
-			if (!iniSetUInteger(lp, section, strRateLimitFilterThreshold, services->rate_limit_filter, &style))
-				break;
-			if (!iniSetUInteger(lp, section, strRateLimitFilterDuration, services->rate_limit_filter_duration, &style))
-				break;
-			if (!iniSetBool(lp, section, strRateLimitFilterSilent, services->rate_limit_filter_silent, &style))
-				break;
-			if (!iniSetUInteger(lp, section, strRateLimitFilterSubnetThreshold, services->rate_limit_filter_subnet_threshold, &style))
+			if (!set_rate_limit_settings(lp, section, services->rate_limit, style))
 				break;
 		}
 
@@ -1625,17 +1599,7 @@ bool sbbs_write_ini(
 				break;
 			if (!iniSetUInteger(lp, section, strRequestRateLimitPeriod, web->request_rate_limit_period, &style))
 				break;
-			if (!iniSetUInteger(lp, section, strRateLimitSubnetPrefix4, web->rate_limit_prefix4, &style))
-				break;
-			if (!iniSetUInteger(lp, section, strRateLimitSubnetPrefix6, web->rate_limit_prefix6, &style))
-				break;
-			if (!iniSetUInteger(lp, section, strRateLimitFilterThreshold, web->rate_limit_filter, &style))
-				break;
-			if (!iniSetUInteger(lp, section, strRateLimitFilterDuration, web->rate_limit_filter_duration, &style))
-				break;
-			if (!iniSetBool(lp, section, strRateLimitFilterSilent, web->rate_limit_filter_silent, &style))
-				break;
-			if (!iniSetUInteger(lp, section, strRateLimitFilterSubnetThreshold, web->rate_limit_filter_subnet_threshold, &style))
+			if (!set_rate_limit_settings(lp, section, web->rate_limit, style))
 				break;
 			if (!iniSetString(lp, section, "RemoteIPHeader", web->proxy_ip_header, &style))
 				break;

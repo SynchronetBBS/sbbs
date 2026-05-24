@@ -1482,7 +1482,7 @@ static bool pop3_client_thread(pop3_t* pop3)
 			if (startup->options & MAIL_OPT_DEBUG_POP3)
 				lprintf(LOG_DEBUG, "%04d %-5s RX: %s", socket, client.protocol, buf);
 			if (!host_exempt.listed(host_ip, host_name)) {
-				std::string rl_key = rate_limit_key(host_ip, startup->rate_limit_prefix4, startup->rate_limit_prefix6);
+				std::string rl_key = rate_limit_key(host_ip, &startup->rate_limit);
 				unsigned    denials = 0;
 				if (request_rate_limiter->allowRequest(rl_key, &denials
 				        , rl_key == host_ip ? std::string() : std::string(host_ip)) == false) {
@@ -1490,9 +1490,7 @@ static bool pop3_client_thread(pop3_t* pop3)
 						, socket, client.protocol, host_ip, user.alias
 						, request_rate_limiter->maxRequests, request_rate_limiter->timeWindowSeconds, rl_key.c_str());
 					rate_limit_filter(socket, &scfg, client.protocol, host_ip, host_name, rl_key, denials, request_rate_limiter
-					    , startup->rate_limit_filter, startup->rate_limit_filter_duration
-					    , startup->rate_limit_filter_silent, startup->rate_limit_filter_subnet_threshold
-					    , lprintf);
+					    , &startup->rate_limit, lprintf);
 					sockprintf(socket, client.protocol, session, "-ERR too many requests, try again later");
 					break;
 				}
@@ -4194,7 +4192,7 @@ static bool smtp_client_thread(smtp_t* smtp)
 			continue;
 		}
 		if (!host_exempt.listed(host_ip, host_name)) {
-			std::string rl_key = rate_limit_key(host_ip, startup->rate_limit_prefix4, startup->rate_limit_prefix6);
+			std::string rl_key = rate_limit_key(host_ip, &startup->rate_limit);
 			unsigned    denials = 0;
 			if (request_rate_limiter->allowRequest(rl_key, &denials
 			        , rl_key == host_ip ? std::string() : std::string(host_ip)) == false) {
@@ -4202,9 +4200,7 @@ static bool smtp_client_thread(smtp_t* smtp)
 					, socket, client.protocol, client_id
 					, request_rate_limiter->maxRequests, request_rate_limiter->timeWindowSeconds, rl_key.c_str());
 				rate_limit_filter(socket, &scfg, client.protocol, host_ip, host_name, rl_key, denials, request_rate_limiter
-				    , startup->rate_limit_filter, startup->rate_limit_filter_duration
-				    , startup->rate_limit_filter_silent, startup->rate_limit_filter_subnet_threshold
-				    , lprintf);
+				    , &startup->rate_limit, lprintf);
 				sockprintf(socket, client.protocol, session, "421 too many requests, try again later");
 				break;
 			}

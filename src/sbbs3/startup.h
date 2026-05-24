@@ -61,6 +61,19 @@ struct max_concurrent_settings {
 	bool filter_silent;         /* send abuser IP to ip-silent.can instead of ip.can */
 };
 
+/* Rate-limit subnet aggregation + auto-filter parameters
+   (shared by web/ftp/mail/services startup structs) */
+struct rate_limit_settings {
+	uint prefix4;                 /* IPv4 subnet bits to aggregate rate-limit counting (0 = per-host-IP) */
+	uint prefix6;                 /* IPv6 subnet bits to aggregate rate-limit counting (0 = per-host-IP) */
+	uint filter;                  /* consecutive rate-limit violations before auto-filtering the (sub)net (0 = disabled) */
+	uint filter_duration;         /* lifetime of an auto-filter .can entry, in seconds (0 = forever) */
+	bool filter_silent;           /* auto-filter to ip-silent.can (drop at accept) rather than ip.can */
+	uint filter_subnet_threshold; /* min distinct host IPs in a subnet bucket that must trip the rate limit before
+	                                 the whole subnet is filtered (rather than just the offending host); 1 = filter
+	                                 the subnet on the first abuser (no neighbor required); default/recommended: 2 */
+};
+
 struct startup_sound_settings {
 	char answer[INI_MAX_VALUE_LEN];
 	char login[INI_MAX_VALUE_LEN];

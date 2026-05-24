@@ -2798,7 +2798,7 @@ static void ctrl_thread(void* arg)
 
 		// FTP is a chatty protocol, so check rate limit after the initial login sequence (after USER/PASS)
 		if (!host_exempt.listed(host_ip, host_name)) {
-			std::string rl_key = rate_limit_key(host_ip, startup->rate_limit_prefix4, startup->rate_limit_prefix6);
+			std::string rl_key = rate_limit_key(host_ip, &startup->rate_limit);
 			unsigned    denials = 0;
 			if (request_rate_limiter->allowRequest(rl_key, &denials
 			        , rl_key == host_ip ? std::string() : std::string(host_ip)) == false) {
@@ -2806,9 +2806,7 @@ static void ctrl_thread(void* arg)
 					, sock, user.number ? user.alias : host_ip
 					, request_rate_limiter->maxRequests, request_rate_limiter->timeWindowSeconds, rl_key.c_str());
 				rate_limit_filter(sock, &scfg, client.protocol, host_ip, host_name, rl_key, denials, request_rate_limiter
-				    , startup->rate_limit_filter, startup->rate_limit_filter_duration
-				    , startup->rate_limit_filter_silent, startup->rate_limit_filter_subnet_threshold
-				    , lprintf);
+				    , &startup->rate_limit, lprintf);
 				sockprintf(sock, sess, "421 Too many requests, try again later.");
 				break;
 			}

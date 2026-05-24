@@ -213,17 +213,12 @@ static void max_concurrent_cfg(uint* max, struct max_concurrent_settings* settin
  * pointer to NULL to hide the corresponding menu item; e.g. FTP/Mail don't
  * have connect-rate limiting, Services doesn't have request-rate limiting. */
 struct rate_limit_cfg_view {
-	const char* server_name;        /* e.g. "Web Server", "FTP Server" */
-	uint*       max_connects;       /* connect-rate limit; NULL = not supported */
-	uint*       connect_period;
-	uint*       max_requests;       /* request-rate limit; NULL = not supported */
-	uint*       request_period;
-	uint*       prefix4;
-	uint*       prefix6;
-	uint*       filter_threshold;
-	uint*       filter_duration;
-	bool*       filter_silent;
-	uint*       subnet_threshold;
+	const char*                 server_name;     /* e.g. "Web Server", "FTP Server" */
+	uint*                       max_connects;    /* connect-rate limit; NULL = not supported */
+	uint*                       connect_period;
+	uint*                       max_requests;    /* request-rate limit; NULL = not supported */
+	uint*                       request_period;
+	struct rate_limit_settings* rl;              /* common subnet + auto-filter knobs */
 };
 
 enum rate_limit_cfg_action {
@@ -277,43 +272,39 @@ static void rate_limit_cfg(struct rate_limit_cfg_view* view)
 		bool requests_on = view->max_requests != NULL && view->request_period != NULL
 		                   && *view->max_requests > 0 && *view->request_period > 0;
 		bool any_rate_limit = connects_on || requests_on;
-		if (any_rate_limit && view->prefix4 != NULL) {
-			if (*view->prefix4 == 0)
+		if (any_rate_limit) {
+			if (view->rl->prefix4 == 0)
 				SAFECOPY(str, "Per-host IP address");
 			else
-				snprintf(str, sizeof str, "/%u subnet", *view->prefix4);
+				snprintf(str, sizeof str, "/%u subnet", view->rl->prefix4);
 			action[i] = RLA_PREFIX4;
 			snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Count IPv4 Clients By", str);
-		}
-		if (any_rate_limit && view->prefix6 != NULL) {
-			if (*view->prefix6 == 0)
+
+			if (view->rl->prefix6 == 0)
 				SAFECOPY(str, "Per-host IP address");
 			else
-				snprintf(str, sizeof str, "/%u subnet", *view->prefix6);
+				snprintf(str, sizeof str, "/%u subnet", view->rl->prefix6);
 			action[i] = RLA_PREFIX6;
 			snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Count IPv6 Clients By", str);
-		}
-		if (any_rate_limit && view->filter_threshold != NULL) {
+
 			action[i] = RLA_FILTER_THRESHOLD;
-			snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Auto-Filter Threshold", threshold(*view->filter_threshold));
+			snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Auto-Filter Threshold", threshold(view->rl->filter));
 		}
 		/* The remaining knobs only configure the auto-filter; hide them when
-		 * it is disabled (filter_threshold == 0) since they have no effect. */
-		bool autofilter_on = any_rate_limit && view->filter_threshold != NULL && *view->filter_threshold > 0;
-		if (autofilter_on && view->filter_duration != NULL) {
+		 * it is disabled (filter == 0) since they have no effect. */
+		bool autofilter_on = any_rate_limit && view->rl->filter > 0;
+		if (autofilter_on) {
 			action[i] = RLA_FILTER_DURATION;
 			snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Auto-Filter Duration"
-			         , vduration(*view->filter_duration, strInfinite));
-		}
-		if (autofilter_on && view->filter_silent != NULL) {
+			         , vduration(view->rl->filter_duration, strInfinite));
+
 			action[i] = RLA_FILTER_SILENT;
 			snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Auto-Filter Silently"
-			         , *view->filter_silent ? "Yes" : "No");
-		}
-		if (autofilter_on && view->subnet_threshold != NULL) {
+			         , view->rl->filter_silent ? "Yes" : "No");
+
 			action[i] = RLA_SUBNET_THRESHOLD;
 			snprintf(opt[i++], MAX_OPLN, "%-30s%u", "Subnet Filter Threshold"
-			         , *view->subnet_threshold);
+			         , view->rl->filter_subnet_threshold);
 		}
 		opt[i][0] = '\0';
 
@@ -389,49 +380,49 @@ static void rate_limit_cfg(struct rate_limit_cfg_view* view)
 					*view->request_period = (uint)parse_duration(str);
 				break;
 			case RLA_PREFIX4:
-				SAFEPRINTF(str, "%u", *view->prefix4);
+				SAFEPRINTF(str, "%u", view->rl->prefix4);
 				if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "IPv4 Subnet Prefix Bits (0=per-host-IP, e.g. 24)", str, 2, K_NUMBER | K_EDIT) > 0) {
-					*view->prefix4 = atoi(str);
-					if (*view->prefix4 > 32)
-						*view->prefix4 = 32;
+					view->rl->prefix4 = atoi(str);
+					if (view->rl->prefix4 > 32)
+						view->rl->prefix4 = 32;
 				}
 				break;
 			case RLA_PREFIX6:
-				SAFEPRINTF(str, "%u", *view->prefix6);
+				SAFEPRINTF(str, "%u", view->rl->prefix6);
 				if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "IPv6 Subnet Prefix Bits (0=per-host-IP, e.g. 64)", str, 3, K_NUMBER | K_EDIT) > 0) {
-					*view->prefix6 = atoi(str);
-					if (*view->prefix6 > 128)
-						*view->prefix6 = 128;
+					view->rl->prefix6 = atoi(str);
+					if (view->rl->prefix6 > 128)
+						view->rl->prefix6 = 128;
 				}
 				break;
 			case RLA_FILTER_THRESHOLD:
-				SAFEPRINTF(str, "%u", *view->filter_threshold);
+				SAFEPRINTF(str, "%u", view->rl->filter);
 				if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "Threshold for Auto-Filtering of Rate-Limited Clients", str, 4, K_NUMBER | K_EDIT) > 0)
-					*view->filter_threshold = atoi(str);
+					view->rl->filter = atoi(str);
 				break;
 			case RLA_FILTER_DURATION:
-				SAFECOPY(str, duration(*view->filter_duration, false, strInfinite));
+				SAFECOPY(str, duration(view->rl->filter_duration, false, strInfinite));
 				if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "Lifetime of Auto-Filter of Clients", str, 10, K_EDIT) > 0)
-					*view->filter_duration = (uint)parse_duration(str);
+					view->rl->filter_duration = (uint)parse_duration(str);
 				break;
 			case RLA_FILTER_SILENT: {
-				int yn = *view->filter_silent ? 0 : 1;
+				int yn = view->rl->filter_silent ? 0 : 1;
 				yn = uifc.list(WIN_MID | WIN_SAV, 0, 0, 0, &yn, 0
 				               , "Add Abuser IPs to ip-silent.can (instead of ip.can)", uifcYesNoOpts);
 				if (yn == 0)
-					*view->filter_silent = true;
+					view->rl->filter_silent = true;
 				else if (yn == 1)
-					*view->filter_silent = false;
+					view->rl->filter_silent = false;
 				break;
 			}
 			case RLA_SUBNET_THRESHOLD:
-				SAFEPRINTF(str, "%u", *view->subnet_threshold);
+				SAFEPRINTF(str, "%u", view->rl->filter_subnet_threshold);
 				if (uifc.input(WIN_MID | WIN_SAV, 0, 0
 				               , "Minimum Distinct Abusers in Subnet Before Filtering Whole Subnet"
 				               , str, 4, K_NUMBER | K_EDIT) > 0) {
-					*view->subnet_threshold = atoi(str);
-					if (*view->subnet_threshold < 1)
-						*view->subnet_threshold = 1;
+					view->rl->filter_subnet_threshold = atoi(str);
+					if (view->rl->filter_subnet_threshold < 1)
+						view->rl->filter_subnet_threshold = 1;
 				}
 				break;
 		}
@@ -441,17 +432,12 @@ static void rate_limit_cfg(struct rate_limit_cfg_view* view)
 static void web_rate_limit_cfg(web_startup_t* startup)
 {
 	struct rate_limit_cfg_view view = {
-		.server_name      = "Web Server",
-		.max_connects     = &startup->max_connects_per_period,
-		.connect_period   = &startup->connect_rate_limit_period,
-		.max_requests     = &startup->max_requests_per_period,
-		.request_period   = &startup->request_rate_limit_period,
-		.prefix4          = &startup->rate_limit_prefix4,
-		.prefix6          = &startup->rate_limit_prefix6,
-		.filter_threshold = &startup->rate_limit_filter,
-		.filter_duration  = &startup->rate_limit_filter_duration,
-		.filter_silent    = &startup->rate_limit_filter_silent,
-		.subnet_threshold = &startup->rate_limit_filter_subnet_threshold,
+		.server_name    = "Web Server",
+		.max_connects   = &startup->max_connects_per_period,
+		.connect_period = &startup->connect_rate_limit_period,
+		.max_requests   = &startup->max_requests_per_period,
+		.request_period = &startup->request_rate_limit_period,
+		.rl             = &startup->rate_limit,
 	};
 	rate_limit_cfg(&view);
 }
@@ -459,15 +445,10 @@ static void web_rate_limit_cfg(web_startup_t* startup)
 static void ftp_rate_limit_cfg(ftp_startup_t* startup)
 {
 	struct rate_limit_cfg_view view = {
-		.server_name      = "FTP Server",
-		.max_requests     = &startup->max_requests_per_period,
-		.request_period   = &startup->request_rate_limit_period,
-		.prefix4          = &startup->rate_limit_prefix4,
-		.prefix6          = &startup->rate_limit_prefix6,
-		.filter_threshold = &startup->rate_limit_filter,
-		.filter_duration  = &startup->rate_limit_filter_duration,
-		.filter_silent    = &startup->rate_limit_filter_silent,
-		.subnet_threshold = &startup->rate_limit_filter_subnet_threshold,
+		.server_name    = "FTP Server",
+		.max_requests   = &startup->max_requests_per_period,
+		.request_period = &startup->request_rate_limit_period,
+		.rl             = &startup->rate_limit,
 	};
 	rate_limit_cfg(&view);
 }
@@ -475,15 +456,10 @@ static void ftp_rate_limit_cfg(ftp_startup_t* startup)
 static void mail_rate_limit_cfg(mail_startup_t* startup)
 {
 	struct rate_limit_cfg_view view = {
-		.server_name      = "Mail Server",
-		.max_requests     = &startup->max_requests_per_period,
-		.request_period   = &startup->request_rate_limit_period,
-		.prefix4          = &startup->rate_limit_prefix4,
-		.prefix6          = &startup->rate_limit_prefix6,
-		.filter_threshold = &startup->rate_limit_filter,
-		.filter_duration  = &startup->rate_limit_filter_duration,
-		.filter_silent    = &startup->rate_limit_filter_silent,
-		.subnet_threshold = &startup->rate_limit_filter_subnet_threshold,
+		.server_name    = "Mail Server",
+		.max_requests   = &startup->max_requests_per_period,
+		.request_period = &startup->request_rate_limit_period,
+		.rl             = &startup->rate_limit,
 	};
 	rate_limit_cfg(&view);
 }
@@ -491,15 +467,10 @@ static void mail_rate_limit_cfg(mail_startup_t* startup)
 static void services_rate_limit_cfg(services_startup_t* startup)
 {
 	struct rate_limit_cfg_view view = {
-		.server_name      = "Services",
-		.max_connects     = &startup->max_connects_per_period,
-		.connect_period   = &startup->connect_rate_limit_period,
-		.prefix4          = &startup->rate_limit_prefix4,
-		.prefix6          = &startup->rate_limit_prefix6,
-		.filter_threshold = &startup->rate_limit_filter,
-		.filter_duration  = &startup->rate_limit_filter_duration,
-		.filter_silent    = &startup->rate_limit_filter_silent,
-		.subnet_threshold = &startup->rate_limit_filter_subnet_threshold,
+		.server_name    = "Services",
+		.max_connects   = &startup->max_connects_per_period,
+		.connect_period = &startup->connect_rate_limit_period,
+		.rl             = &startup->rate_limit,
 	};
 	rate_limit_cfg(&view);
 }
@@ -1439,7 +1410,7 @@ static void websrvr_cfg(void)
 		}
 		if (str[0] == '\0')
 			SAFECOPY(str, strDisabled);
-		else if (startup.rate_limit_filter > 0)
+		else if (startup.rate_limit.filter > 0)
 			SAFECAT(str, ", Auto-Filter");
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Rate Limiting...", str);
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Authentication Methods", startup.default_auth_list);
@@ -1682,7 +1653,7 @@ static void ftpsrvr_cfg(void)
 		if (startup.max_requests_per_period > 0 && startup.request_rate_limit_period > 0) {
 			snprintf(str, sizeof str, "%u per %s", startup.max_requests_per_period
 			         , duration_to_vstr(startup.request_rate_limit_period, tmp, sizeof tmp));
-			if (startup.rate_limit_filter > 0)
+			if (startup.rate_limit.filter > 0)
 				SAFECAT(str, ", Auto-Filter");
 		} else
 			SAFECOPY(str, strDisabled);
@@ -2173,7 +2144,7 @@ static void mailsrvr_cfg(void)
 		if (startup.max_requests_per_period > 0 && startup.request_rate_limit_period > 0) {
 			snprintf(str, sizeof str, "%u per %s", startup.max_requests_per_period
 			         , duration_to_vstr(startup.request_rate_limit_period, tmp, sizeof tmp));
-			if (startup.rate_limit_filter > 0)
+			if (startup.rate_limit.filter > 0)
 				SAFECAT(str, ", Auto-Filter");
 		} else
 			SAFECOPY(str, strDisabled);
@@ -2478,7 +2449,7 @@ static void services_cfg(void)
 		if (startup.max_connects_per_period > 0 && startup.connect_rate_limit_period > 0) {
 			snprintf(str, sizeof str, "%u per %s", startup.max_connects_per_period
 			         , duration_to_vstr(startup.connect_rate_limit_period, tmp, sizeof tmp));
-			if (startup.rate_limit_filter > 0)
+			if (startup.rate_limit.filter > 0)
 				SAFECAT(str, ", Auto-Filter");
 		} else
 			SAFECOPY(str, strDisabled);

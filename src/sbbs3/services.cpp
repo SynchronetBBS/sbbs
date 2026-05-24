@@ -2489,7 +2489,7 @@ void services_thread(void* arg)
 							close_socket(client_socket);
 							continue;
 						}
-						std::string rl_key = rate_limit_key(host_ip, startup->rate_limit_prefix4, startup->rate_limit_prefix6);
+						std::string rl_key = rate_limit_key(host_ip, &startup->rate_limit);
 						unsigned    denials = 0;
 						if (!connect_rate_limiter->allowRequest(rl_key, &denials
 						        , rl_key == host_ip ? std::string() : std::string(host_ip))) {
@@ -2498,9 +2498,7 @@ void services_thread(void* arg)
 							    , connect_rate_limiter->maxRequests, connect_rate_limiter->timeWindowSeconds, rl_key.c_str());
 							rate_limit_filter(client_socket, &scfg, service[i].protocol, host_ip, /* host_name: */ NULL
 							    , rl_key, denials, connect_rate_limiter
-							    , startup->rate_limit_filter, startup->rate_limit_filter_duration
-							    , startup->rate_limit_filter_silent, startup->rate_limit_filter_subnet_threshold
-							    , lprintf);
+							    , &startup->rate_limit, lprintf);
 							FREE_AND_NULL(udp_buf);
 							close_socket(client_socket);
 							continue;
