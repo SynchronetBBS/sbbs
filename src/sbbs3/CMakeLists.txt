@@ -104,6 +104,7 @@ set(SBBS_OBJS
 	js_server
 	js_socket
 	js_sprintf
+	js_sqlite
 	js_system
 	js_user
 	js_xtrn_area
@@ -207,6 +208,12 @@ else()
 endif()
 target_link_libraries(sbbs ${3RDP_MOZJS_LIB})
 target_link_libraries(sbbs ${3RDP_CRYPTLIB_LIB})
+
+find_package(SQLite3)
+if(SQLite3_FOUND)
+	target_compile_definitions(sbbs PUBLIC USE_SQLITE)
+	target_link_libraries(sbbs SQLite::SQLite3)
+endif()
 
 add_library(ftpsrvr SHARED ftpsrvr.c nopen.c)
 require_libs(ftpsrvr xpdev smblib comio)

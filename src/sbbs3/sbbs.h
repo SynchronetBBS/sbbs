@@ -1611,6 +1611,9 @@ extern "C" {
 	DLLEXPORT JSObject* js_CreateFileClass(JSContext* cx, JSObject* parent);
 	DLLEXPORT JSObject* js_CreateFileObject(JSContext* cx, JSObject* parent, const char *name, int fd, const char* mode);
 
+	/* js_sqlite.cpp */
+	DLLEXPORT JSObject* js_CreateSQLiteClass(JSContext* cx, JSObject* parent);
+
 	/* js_archive.c */
 	DLLEXPORT JSObject* js_CreateArchiveClass(JSContext* cx, JSObject* parent, const str_list_t supported_formats);
 

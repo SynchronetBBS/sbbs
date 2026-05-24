@@ -346,6 +346,21 @@ if(js.global.ListeningSocket != undefined) {
 	if(sock != undefined)		document_object("ListeningSocket"	,sock, "class");
 }
 if(js.global.MQTT !== undefined) document_object("MQTT", new MQTT, "class");
+if(js.global.SQLite !== undefined) {
+	var sqdb = new SQLite(":memory:");
+	sqdb.exec("CREATE TABLE t (i INTEGER PRIMARY KEY, n TEXT DEFAULT 'x')");
+	sqdb.run("INSERT INTO t (i) VALUES (?)", [1]);
+	document_object("SQLite", sqdb, "class");
+	var sqstmt = sqdb.prepare("SELECT i FROM t");
+	document_object("SQLiteStatement", sqstmt, "class");
+	var sqrow = sqstmt.step();
+	document_object("SQLiteRow", sqrow, "class");
+	document_object("SQLiteValue", sqrow[0], "class");
+	sqstmt.close();
+	document_object("SQLiteTable", sqdb.table.t, "class");
+	document_object("SQLiteRecord", sqdb.table.t.row(1), "class");
+	sqdb.close();
+}
 if(js.global.COM != undefined) {
 	var com;
 	if(system.platform=="Win32")

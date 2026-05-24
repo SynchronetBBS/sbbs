@@ -928,6 +928,12 @@ js_initcx(JSRuntime* js_runtime, SOCKET sock, service_client_t* service_client, 
 		if (js_CreateFileClass(js_cx, *glob) == NULL)
 			break;
 
+#ifdef USE_SQLITE
+		/* SQLite Class */
+		if (js_CreateSQLiteClass(js_cx, *glob) == NULL)
+			break;
+#endif
+
 		/* Queue Class */
 		if (js_CreateQueueClass(js_cx, *glob) == NULL)
 			break;

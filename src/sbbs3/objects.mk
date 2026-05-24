@@ -61,6 +61,7 @@ OBJS	=		$(LOAD_CFG_OBJS) \
 			$(MTOBJODIR)/js_server$(OFILE)\
 			$(MTOBJODIR)/js_socket$(OFILE)\
 			$(MTOBJODIR)/js_sprintf$(OFILE)\
+			$(MTOBJODIR)/js_sqlite$(OFILE)\
 			$(MTOBJODIR)/js_system$(OFILE)\
 			$(MTOBJODIR)/js_user$(OFILE)\
 			$(MTOBJODIR)/js_xtrn_area$(OFILE)\
@@ -208,6 +209,7 @@ JSDOOR_OBJS = 		$(LOAD_CFG_OBJS) \
 			$(MTOBJODIR)/js_conio$(OFILE) \
 			$(MTOBJODIR)/js_request$(OFILE) \
 			$(MTOBJODIR)/js_socket$(OFILE) \
+			$(MTOBJODIR)/js_sqlite$(OFILE) \
 			$(MTOBJODIR)/comio$(OFILE)\
 			$(MTOBJODIR)/js_client$(OFILE) \
 			$(MTOBJODIR)/js_com$(OFILE) \
