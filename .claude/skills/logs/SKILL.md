@@ -218,7 +218,7 @@ The matching console-log creation line (`!BLOCKING IP ADDRESS: …` or `!BLOCKIN
 | Question | First place to look |
 |----------|---------------------|
 | Did the web rate-limit filter fire? | console stream (syslog/journal/sbbsctrl pane) → grep `!BLOCKING` and `rate-limit`; then `text/ip.can` for the resulting entry |
-| Is there active rate-limit deny pressure right now? | live tail the web server's console stream → grep `Too many requests` |
+| Is there active rate-limit deny pressure right now? | live tail the relevant server's console stream → grep `Too many requests per rate limit`. Lines carry a trailing `for <IP-or-CIDR>` suffix (matches the rate-limit bucket key — `host_ip` when `RateLimitSubnetPrefixN=0`, the CIDR when subnet aggregation is on) so you can attribute denials by host/subnet. |
 | Failed login attempts (any server) | `data/hack.log`; MQTT `action/login_fail/<PROT>`; MQTT retained `host/+/login_attempts/+` |
 | Why did a node drop / hang during an external? | `data/hungup.log`, `data/crash.log` |
 | Is a daily event running / mis-running? | `data/events.log` (term server only — no events on a web-/mail-only host) |
@@ -244,6 +244,7 @@ The matching console-log creation line (`!BLOCKING IP ADDRESS: …` or `!BLOCKIN
 - **Grepping the wrong systemd unit for "the web server".** A site that runs the web server as its own daemon (`sbbs d w!`) typically puts it under a separate systemd unit from the BBS — its log lines won't appear under the BBS unit's journal. Discover the right unit with `systemctl list-units` and `systemctl show <unit> -p ExecStart`.
 - **Mistaking `sendmail.log` for the Mail Server's outbound log.** It only records invocations of `exec/sendmail.js` (the `/usr/sbin/sendmail`-replacement). The Mail Server's own SMTP send/relay activity is in its console stream; SMTP delivery problems are summarised in `data/error.log`.
 - **Forgetting that `HttpLogFile=` (empty) disables `data/logs/http-*.log`.** No HTTP access log means reconstructing request flow from the web server's console stream — slower, but available.
+- **Trusting `ls`/`stat` mtime when reading sbbsctrl logs over SMB/Samba (or another network FS) while sbbsctrl is still writing them.** sbbsctrl keeps the file open with `_fsopen(name, "a", SH_DENYNONE)`; SMB clients commonly cache file metadata aggressively and don't see updated mtime until the writer closes the handle or the server flushes. Observed: a `tail -F` over a Samba mount happily streaming new lines while `ls -la` on the same file still reported a 20-minute-old mtime. On a local NTFS path on the same Windows host, mtime updates as expected. If you must check whether a log is still being written over a network mount, use `wc -l`, `stat --printf %s`, or just trust `tail -F` — not mtime.
 - **Assuming the term server is running on a host that only serves web/mail.** No term server → no `events.log`, no `data/logs/<date>.log`, no `crash.log`, no `csts.tab` updates.
 - **Confusing `action/login_fail` (event stream, not retained) with `login_attempts/<IP>` (retained snapshot).** Subscribing only to the retained topic on first connect gives you the *current* state; subscribing only to the event topic gives you new failures going forward but nothing about pre-connect history. Subscribe to both for "current state + live updates".
 - **Tailing an interactive (non-daemonized) sbbs without preserving its console.** No syslog, no journal — close the terminal and the log is gone. Run under `tmux`/`screen`/`script` if you need to keep it.
@@ -287,6 +288,24 @@ mosquitto_sub -h <broker> -v \
   -t 'sbbs/+/action/login_fail/#' \
   -t 'sbbs/+/action/hack/#'
 ```
+
+**"Live-watch a server's disk log on Windows (sbbsctrl)."** The per-day `data/logs/{TS,MS,FS,WS}<MMDDYY>.LOG` files are appended in real time while the server runs; tail them through a line-buffered grep to surface only the events you care about, and run it in the background so the watcher keeps streaming while you do other work:
+
+```bash
+tail -F /s/sbbs/data/logs/FS$(date +%m%d%y).LOG \
+  | grep --line-buffered -iE 'too many|BLOCKING|Server terminate|Server Version'
+```
+
+`--line-buffered` is the part people miss — without it, grep waits for a full block before flushing and the watcher feels dead. Useful patterns:
+
+| Pattern | What it catches |
+|---------|------------------|
+| `too many` | rate-limit denials (new format: trailing `for <IP-or-CIDR>`) |
+| `BLOCKING` | auto-filter fires (writes to `ip.can` / `ip-silent.can`) |
+| `Server terminate` | start of shutdown/recycle (logged while still SERVER_READY) |
+| `Server Version` | post-recycle server-up banner |
+
+Tail this file, not the sbbsctrl GUI Log control — but be aware that a few specific lines (notably the post-shutdown `#### Xxx Server thread terminated (...)` summary with denial counts) appear only in the GUI and never reach disk.
 
 **"This `text/ip.can` entry didn't come from my instance — who wrote it?"**
 
