@@ -378,6 +378,7 @@ static void bbs_log_msg(log_msg_t* msg)
 				Line += " [x" + AnsiString(msg->repeated + 1) + "]";
             Line+="\n";
         	fwrite(AnsiString(Line).c_str(),1,Line.Length(),LogStream);
+        	fflush(LogStream);
         }
 	}
 }
@@ -544,6 +545,7 @@ static void mail_log_msg(log_msg_t* msg)
 				Line += " [x" + AnsiString(msg->repeated + 1) + "]";
 	        Line+="\n";
         	fwrite(AnsiString(Line).c_str(),1,Line.Length(),LogStream);
+        	fflush(LogStream);
         }
 	}
 }
@@ -641,6 +643,7 @@ static void ftp_log_msg(log_msg_t* msg)
 				Line += " [x" + AnsiString(msg->repeated + 1) + "]";
             Line+="\n";
         	fwrite(AnsiString(Line).c_str(),1,Line.Length(),LogStream);
+        	fflush(LogStream);
         }
 	}
 }
@@ -738,6 +741,7 @@ static void web_log_msg(log_msg_t* msg)
 				Line += " [x" + AnsiString(msg->repeated + 1) + "]";
             Line+="\n";
         	fwrite(AnsiString(Line).c_str(),1,Line.Length(),LogStream);
+        	fflush(LogStream);
         }
 	}
 }
