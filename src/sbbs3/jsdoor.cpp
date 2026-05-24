@@ -530,6 +530,12 @@ bool DLLCALL js_CreateCommonObjects(JSContext* js_cx
 		if (js_CreateFileClass(js_cx, *glob) == NULL)
 			break;
 
+#ifdef USE_SQLITE
+		/* SQLite Class */
+		if (js_CreateSQLiteClass(js_cx, *glob) == NULL)
+			break;
+#endif
+
 		/* Archive Class */
 		if (js_CreateArchiveClass(js_cx, *glob, NULL) == NULL)
 			break;

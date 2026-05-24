@@ -104,6 +104,13 @@ ifndef WITHOUT_MOSQUITTO
   endif
  endif
 endif
+ifndef WITHOUT_SQLITE
+ ifeq ($(shell pkg-config sqlite3 --exists && echo "yes"),yes)
+  CFLAGS += -DUSE_SQLITE
+  CFLAGS += $(shell pkg-config sqlite3 --cflags)
+  JS_LIBS += $(shell pkg-config sqlite3 --libs)
+ endif
+endif
 ifeq ($(shell pkg-config libarchive --exists && echo "yes"),yes)
  CFLAGS += $(shell pkg-config libarchive --cflags)
  FILE_LIBS	= $(shell pkg-config libarchive --libs)
