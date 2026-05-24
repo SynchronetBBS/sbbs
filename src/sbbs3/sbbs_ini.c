@@ -643,7 +643,7 @@ bool sbbs_read_ini(
 		ftp->max_requests_per_period = iniGetUInteger(list, section, strMaxRequestPerPeriod, 0);
 		ftp->request_rate_limit_period = iniGetUInteger(list, section, strRequestRateLimitPeriod, 60 * 60);
 		ftp->rate_limit_prefix4 = iniGetUInteger(list, section, strRateLimitSubnetPrefix4, 0);
-		ftp->rate_limit_prefix6 = iniGetUInteger(list, section, strRateLimitSubnetPrefix6, 0);
+		ftp->rate_limit_prefix6 = iniGetUInteger(list, section, strRateLimitSubnetPrefix6, 64);
 		ftp->rate_limit_filter = iniGetUInteger(list, section, strRateLimitFilterThreshold, 0);
 		ftp->rate_limit_filter_duration = iniGetUInteger(list, section, strRateLimitFilterDuration, 0);
 		ftp->rate_limit_filter_silent = iniGetBool(list, section, strRateLimitFilterSilent, false);
@@ -763,7 +763,7 @@ bool sbbs_read_ini(
 		mail->max_requests_per_period = iniGetUInteger(list, section, strMaxRequestPerPeriod, 0);
 		mail->request_rate_limit_period = iniGetUInteger(list, section, strRequestRateLimitPeriod, 60 * 60);
 		mail->rate_limit_prefix4 = iniGetUInteger(list, section, strRateLimitSubnetPrefix4, 0);
-		mail->rate_limit_prefix6 = iniGetUInteger(list, section, strRateLimitSubnetPrefix6, 0);
+		mail->rate_limit_prefix6 = iniGetUInteger(list, section, strRateLimitSubnetPrefix6, 64);
 		mail->rate_limit_filter = iniGetUInteger(list, section, strRateLimitFilterThreshold, 0);
 		mail->rate_limit_filter_duration = iniGetUInteger(list, section, strRateLimitFilterDuration, 0);
 		mail->rate_limit_filter_silent = iniGetBool(list, section, strRateLimitFilterSilent, false);
@@ -825,7 +825,7 @@ bool sbbs_read_ini(
 		services->max_connects_per_period = iniGetUInteger(list, section, strMaxConnectsPerPeriod, 0);
 		services->connect_rate_limit_period = iniGetUInteger(list, section, strConnectRateLimitPeriod, 60 * 60);
 		services->rate_limit_prefix4 = iniGetUInteger(list, section, strRateLimitSubnetPrefix4, 0);
-		services->rate_limit_prefix6 = iniGetUInteger(list, section, strRateLimitSubnetPrefix6, 0);
+		services->rate_limit_prefix6 = iniGetUInteger(list, section, strRateLimitSubnetPrefix6, 64);
 		services->rate_limit_filter = iniGetUInteger(list, section, strRateLimitFilterThreshold, 0);
 		services->rate_limit_filter_duration = iniGetUInteger(list, section, strRateLimitFilterDuration, 0);
 		services->rate_limit_filter_silent = iniGetBool(list, section, strRateLimitFilterSilent, false);
@@ -930,7 +930,7 @@ bool sbbs_read_ini(
 		web->max_requests_per_period = iniGetUInteger(list, section, strMaxRequestPerPeriod, 0);
 		web->request_rate_limit_period = iniGetUInteger(list, section, strRequestRateLimitPeriod, 60 * 60);
 		web->rate_limit_prefix4 = iniGetUInteger(list, section, strRateLimitSubnetPrefix4, 0);
-		web->rate_limit_prefix6 = iniGetUInteger(list, section, strRateLimitSubnetPrefix6, 0);
+		web->rate_limit_prefix6 = iniGetUInteger(list, section, strRateLimitSubnetPrefix6, 64);
 		web->rate_limit_filter = iniGetUInteger(list, section, strRateLimitFilterThreshold, 0);
 		web->rate_limit_filter_duration = iniGetUInteger(list, section, strRateLimitFilterDuration, 0);
 		web->rate_limit_filter_silent = iniGetBool(list, section, strRateLimitFilterSilent, false);
