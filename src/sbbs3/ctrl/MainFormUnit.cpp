@@ -354,7 +354,7 @@ static void bbs_log_msg(log_msg_t* msg)
 
 	log_msg(TelnetForm->Log, msg);
 
-    if(MainForm->TelnetLogFile && MainForm->TelnetStop->Enabled) {
+    if(MainForm->TelnetLogFile) {
         AnsiString LogFileName
             =AnsiString(MainForm->cfg.logs_dir)
             +"LOGS\\TS"
@@ -521,7 +521,7 @@ static void mail_log_msg(log_msg_t* msg)
 
 	log_msg(MailForm->Log, msg);
 
-    if(MainForm->MailLogFile && MainForm->MailStop->Enabled) {
+    if(MainForm->MailLogFile) {
         AnsiString LogFileName
             =AnsiString(MainForm->cfg.logs_dir)
             +"LOGS\\MS"
@@ -617,7 +617,7 @@ static void ftp_log_msg(log_msg_t* msg)
 
 	log_msg(FtpForm->Log, msg);
 
-    if(MainForm->FtpLogFile && MainForm->FtpStop->Enabled) {
+    if(MainForm->FtpLogFile) {
         AnsiString LogFileName
             =AnsiString(MainForm->cfg.logs_dir)
             +"LOGS\\FS"
@@ -714,7 +714,7 @@ static void web_log_msg(log_msg_t* msg)
 
 	log_msg(WebForm->Log, msg);
 
-    if(MainForm->WebLogFile && MainForm->WebStop->Enabled) {
+    if(MainForm->WebLogFile) {
         AnsiString LogFileName
             =AnsiString(MainForm->cfg.logs_dir)
             +"LOGS\\WS"
