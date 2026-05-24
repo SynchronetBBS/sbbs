@@ -1,35 +1,68 @@
-// Regression/behavioral test for the MsgBase.get_all_msg_headers() lazy-field bug.
+// Regression/behavioral test for the MsgBase.get_all_msg_headers() *_NULL
+// cold-access bug (gitlab issue #1143).
 //
-// Header objects returned by get_all_msg_headers() resolve most string fields
-// lazily (js_get_msg_header_resolve + the LAZY_* macros). The
+// Symptom: header objects returned by get_all_msg_headers() resolve string
+// fields lazily (js_get_msg_header_resolve + the LAZY_* macros). The
 // LAZY_STRING_TRUNCSP_NULL fields (to_ext, from_ext, replyto, replyto_ext,
 // replyto_list, to_list, cc_list, summary, tags, from_org, etc.) are not
-// defined as properties when their underlying value is NULL. In a bulk fetch
-// all header objects share one SpiderMonkey 1.8.5 shape; once the resolve hook
-// processes a header whose *_NULL field is NULL (leaving the property
-// undefined), the property cache for that (shape, field) entry is corrupted and
-// every subsequent same-shape header returns `undefined` on the FIRST access of
-// that field — even when populated.
+// defined as properties when their underlying value is NULL. All bulk-fetched
+// header objects share one SpiderMonkey 1.8.5 shape, so the property set
+// diverges across the shared shape (a *_NULL field is an own property on some
+// headers, absent on others). The TraceMonkey trace-JIT records a shape-
+// guarded GETPROP on the hot for..in dot-access loop; once a header whose
+// *_NULL field is absent contributes to the recorded trace, the replay yields
+// `undefined` for that field on every subsequent same-shape header — even
+// when populated. Touching any non-NULL field first dodges it.
 //
-// History:
+// Root cause: TraceMonkey (JSOPTION_JIT, bit 11 = 0x800), not the interpreter
+// PropertyCache or the lazy resolve hook. The interpreter cache invalidates
+// correctly on shape transitions; the trace recorder does not, for this
+// shared-shape / conditional-resolve pattern.
+//
+// Fix: JSOPTION_JIT was dropped from JAVASCRIPT_OPTIONS in sbbsdefs.h (changed
+// from 0x810 to 0x10). JSOPTION_COMPILE_N_GO is kept. TraceMonkey is dead
+// upstream in SpiderMonkey, and on builds that compile it in (Linux, Windows
+// via MSVC) leaving it enabled produces this and likely other shape-guarded
+// trace-replay surprises.
+//
+// History (workaround attempts, both now reverted in favor of the root-cause
+// fix above):
 //   - ca448cb8b eagerly JS_DefineProperty("number", ...) per header to force a
-//     shape transition. That masked the bug for tiny/uniform bases (and this
-//     test, when it had a single message) but NOT for real mailboxes, where it
-//     still bit ~98% of headers once the first NULL-to_ext message appeared.
-//   - The current fix eagerly RESOLVES the data fields per header in
-//     js_get_all_msg_headers (defer_listing skips the heavy field_list/can_read,
-//     which stay lazy), so non-NULL fields are own properties up front and the
-//     caller never triggers the GET-path lazy resolve that mis-serves undefined.
+//     shape transition. Masked the bug for tiny/uniform bases but not for
+//     real mailboxes.
+//   - 666ff71ce eagerly RESOLVED the data fields per header, which did fix the
+//     symptom but at the cost of the lazy design and on the wrong diagnosis
+//     (named the interpreter PropertyCache, but the misprediction is in the
+//     trace JIT).
 //
-// IMPORTANT: the failure only reproduces on real, varied mailbox data — it could
-// not be reproduced with synthetically save_msg()'d messages (uniform, varying,
-// NULL-interleaved, net-typed, header-rich, or shape-diverse, up to 15k msgs).
-// So this test is a BEHAVIORAL GUARD: it asserts the contract (cold first-access
-// of *_NULL fields returns the stored value across a bulk fetch) and catches a
-// total removal of the eager-populate, but it does not, on its own, reproduce
-// the real-mailbox property-cache corruption. Validate that against a real base.
+// What this test does:
+//   - Asserts JSOPTION_JIT is NOT set in js.options. If a future change re-
+//     enables it, this fails fast with a clear message before getting to the
+//     behavioral check.
+//   - Behavioral check: builds a bulk message base with mixed NULL/non-NULL
+//     to_ext + rotating LAZY_STRING_TRUNCSP_NULL fields (for shape diversity),
+//     bulk-fetches, and reads to_ext as the FIRST property access on each
+//     header. Expects every populated to_ext to come back correctly and every
+//     genuine NULL to come back as undefined — no spurious mispredicts.
+//
+// IMPORTANT: the symptom only reproduces robustly on real, varied mailbox
+// data — it could not be reproduced reliably with synthetic save_msg()'d
+// messages even at 15k+ entries. The behavioral scenario here is a contract
+// guard, not a faithful reproduction of the original Linux/Windows misfire.
+// For that, see probe_to_ext.js / probe_enum.js attached to issue #1143 and
+// run against a real mail base.
 
 mkpath(system.temp_dir);
+
+var JSOPTION_JIT = 0x800;
+if ((js.options & JSOPTION_JIT) !== 0) {
+	throw new Error(
+		"JSOPTION_JIT (0x800) is set in js.options (=0x" + js.options.toString(16) + "). " +
+		"This re-enables TraceMonkey, which is the root cause of issue #1143 " +
+		"(cold *_NULL field access mis-served as undefined across bulk-fetched " +
+		"headers). See sbbsdefs.h: JAVASCRIPT_OPTIONS must omit bit 0x800."
+	);
+}
 
 var EXTENSIONS = [".shd", ".sdt", ".sid", ".sha", ".sda", ".ini", ".hash"];
 
@@ -53,33 +86,16 @@ function with_base(name, build, check) {
 	}
 }
 
-// --- Scenario 1: single message, to_ext read as the FIRST property access ---
-with_base("test_msgbase_to_ext", function (mb) {
-	if (!mb.save_msg({ to: "TestRecipient", to_ext: "1", from: "TestSender", subject: "to_ext-bug-test" },
-	                 "Test body."))
-		throw new Error("save_msg: " + mb.last_error);
-}, function (hdrs) {
-	var seen = 0;
-	for (var i in hdrs) {
-		seen++;
-		// FIRST property access on this header — must not be undefined. Do NOT
-		// touch any other property before this line (that would prime the shape).
-		var first = hdrs[i].to_ext;
-		if (first != "1")
-			throw new Error("hdrs[" + i + "].to_ext on first access = " + JSON.stringify(first) + " (expected '1')");
-	}
-	if (seen === 0) throw new Error("get_all_msg_headers() returned no entries");
-});
-
-// --- Scenario 2: many messages, mixed NULL/non-NULL to_ext + shape diversity,
-//     reading several *_NULL fields as the FIRST access on each header. ---
+// Bulk: mixed NULL/non-NULL to_ext + rotating LAZY_STRING_TRUNCSP_NULL fields
+// (shape diversity). to_ext is read as the FIRST property access on each
+// header — the original trap.
 var N = 60;
 var opt = ["replyto", "from_org", "summary", "tags", "cc_list", "from_ext", "to_list"];
 with_base("test_msgbase_bulk", function (mb) {
 	for (var i = 0; i < N; i++) {
 		var h = { to: "R" + i, from: "S", subject: "m" + i };
 		if (i % 5 != 2) h.to_ext = String((i % 9) + 1);   // most have to_ext; some omit it (NULL)
-		for (var j = 0; j < opt.length; j++)              // rotating field subset -> shape diversity
+		for (var j = 0; j < opt.length; j++)              // rotating subset -> shape diversity
 			if ((i >> j) & 1) h[opt[j]] = opt[j] + "-" + i;
 		if (!mb.save_msg(h, "body " + i))
 			throw new Error("save_msg " + i + ": " + mb.last_error);
@@ -92,7 +108,6 @@ with_base("test_msgbase_bulk", function (mb) {
 		seen++;
 		// to_ext as the FIRST property access (the classic trap).
 		var to_ext = h.to_ext;
-		var n = Number(i);
 		// recover the message index from the subject to know what was stored
 		var subj = h.subject;                              // safe to touch after to_ext
 		var k = parseInt(String(subj).substr(1), 10);

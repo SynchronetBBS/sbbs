@@ -66,7 +66,7 @@
 #define JAVASCRIPT_GC_INTERVAL      100
 #define JAVASCRIPT_LOAD_PATH        "load"
 #define JAVASCRIPT_LOAD_PATH_LIST   "load_path_list"
-#define JAVASCRIPT_OPTIONS          0x810   // JSOPTION_JIT | JSOPTION_COMPILE_N_GO
+#define JAVASCRIPT_OPTIONS          0x10    // JSOPTION_COMPILE_N_GO (JSOPTION_JIT/TraceMonkey omitted -- see issue #1143)
 
 #define JSVAL_NULL_OR_VOID(val)     (JSVAL_IS_NULL(val) || JSVAL_IS_VOID(val))
 
