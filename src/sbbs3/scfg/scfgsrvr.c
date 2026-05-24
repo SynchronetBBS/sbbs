@@ -244,6 +244,8 @@ static void web_rate_limit_cfg(web_startup_t* startup)
 		         , vduration(startup->rate_limit_filter_duration, strInfinite));
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Auto-Filter Silently"
 		         , startup->rate_limit_filter_silent ? "Yes" : "No");
+		snprintf(opt[i++], MAX_OPLN, "%-30s%u", "Subnet Filter Threshold"
+		         , startup->rate_limit_filter_subnet_threshold);
 		opt[i][0] = '\0';
 
 		uifc.helpbuf =
@@ -277,6 +279,16 @@ static void web_rate_limit_cfg(web_startup_t* startup)
 			"`Auto-Filter Silently`: if `Yes`, abusers are added to\n"
 			"`text/ip-silent.can` (dropped at accept, no log notice) instead of\n"
 			"`text/ip.can`.\n"
+			"\n"
+			"`Subnet Filter Threshold`: when subnet aggregation is enabled (above),\n"
+			"this is the minimum number of distinct host IPs within the subnet that\n"
+			"must trip the rate limit before the entire subnet is auto-filtered;\n"
+			"if fewer distinct hosts are responsible, only the offending host IP\n"
+			"is filtered, sparing innocent neighbors in the subnet.  Default `2`\n"
+			"(one neighbor required); set to `1` to filter the subnet on the first\n"
+			"abuser (no neighbor required); raise it for wider prefixes where\n"
+			"collateral risk is higher.  Has no effect when both subnet prefixes\n"
+			"are `0`.\n"
 		;
 		switch (uifc.list(WIN_ACT | WIN_BOT | WIN_SAV, 0, 0, 0, &cur, &bar
 		                  , "Web Server Rate Limiting", opt)) {
@@ -334,6 +346,16 @@ static void web_rate_limit_cfg(web_startup_t* startup)
 					startup->rate_limit_filter_silent = true;
 				else if (i == 1)
 					startup->rate_limit_filter_silent = false;
+				break;
+			case 7:
+				SAFEPRINTF(str, "%u", startup->rate_limit_filter_subnet_threshold);
+				if (uifc.input(WIN_MID | WIN_SAV, 0, 0
+				               , "Minimum Distinct Abusers in Subnet Before Filtering Whole Subnet"
+				               , str, 4, K_NUMBER | K_EDIT) > 0) {
+					startup->rate_limit_filter_subnet_threshold = atoi(str);
+					if (startup->rate_limit_filter_subnet_threshold < 1)
+						startup->rate_limit_filter_subnet_threshold = 1;
+				}
 				break;
 			default:
 				uifc.changes = changes;

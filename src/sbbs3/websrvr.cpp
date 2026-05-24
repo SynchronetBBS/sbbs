@@ -2021,13 +2021,15 @@ static void rate_limit_filter(SOCKET sock, const char* prot, const char* host_ip
 		return;
 
 	/* Distinct-IP guard: when the rate-limit bucket is an aggregated subnet,
-	 * only filter the entire subnet if more than one distinct client IP abused
-	 * it (i.e. the abuse really is distributed); if a single IP is responsible,
-	 * filter just that host IP, so we don't block innocent neighbors that happen
-	 * to share the subnet. */
+	 * only filter the entire subnet if at least rate_limit_filter_subnet_threshold
+	 * distinct client IPs have abused it (i.e. the abuse really is distributed);
+	 * otherwise filter just that host IP, so we don't block innocent neighbors
+	 * that happen to share the subnet. A threshold of 1 disables the guard
+	 * (subnet is filtered on the first abuser). */
 	std::string target = key;
 	size_t      distinct = (key == host_ip) ? 1 : limiter->distinctMembers(key);
-	if (key != host_ip && distinct <= 1)
+	uint        subnet_min = startup->rate_limit_filter_subnet_threshold ? startup->rate_limit_filter_subnet_threshold : 1;
+	if (key != host_ip && distinct < subnet_min)
 		target = host_ip;
 
 	char reason[128];

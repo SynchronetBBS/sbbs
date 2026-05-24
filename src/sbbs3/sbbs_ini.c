@@ -58,6 +58,7 @@ static const char* strRateLimitSubnetPrefix6 = "RateLimitSubnetPrefix6";
 static const char* strRateLimitFilterThreshold = "RateLimitFilterThreshold";
 static const char* strRateLimitFilterDuration = "RateLimitFilterDuration";
 static const char* strRateLimitFilterSilent = "RateLimitFilterSilent";
+static const char* strRateLimitFilterSubnetThreshold = "RateLimitFilterSubnetThreshold";
 static const char* strHostName = "HostName";
 static const char* strLogLevel = "LogLevel";
 static const char* strEventLogLevel = "EventLogLevel";
@@ -909,6 +910,9 @@ bool sbbs_read_ini(
 		web->rate_limit_filter = iniGetUInteger(list, section, strRateLimitFilterThreshold, 0);
 		web->rate_limit_filter_duration = iniGetUInteger(list, section, strRateLimitFilterDuration, 0);
 		web->rate_limit_filter_silent = iniGetBool(list, section, strRateLimitFilterSilent, false);
+		web->rate_limit_filter_subnet_threshold = iniGetUInteger(list, section, strRateLimitFilterSubnetThreshold, 2);
+		if (web->rate_limit_filter_subnet_threshold < 1)
+			web->rate_limit_filter_subnet_threshold = 1;
 		SAFECOPY(web->proxy_ip_header
 		         , iniGetString(list, section, "RemoteIPHeader", nulstr, value));
 		SAFECOPY(web->custom_log_fmt
@@ -1570,6 +1574,8 @@ bool sbbs_write_ini(
 			if (!iniSetUInteger(lp, section, strRateLimitFilterDuration, web->rate_limit_filter_duration, &style))
 				break;
 			if (!iniSetBool(lp, section, strRateLimitFilterSilent, web->rate_limit_filter_silent, &style))
+				break;
+			if (!iniSetUInteger(lp, section, strRateLimitFilterSubnetThreshold, web->rate_limit_filter_subnet_threshold, &style))
 				break;
 			if (!iniSetString(lp, section, "RemoteIPHeader", web->proxy_ip_header, &style))
 				break;

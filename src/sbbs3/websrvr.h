@@ -46,6 +46,9 @@ typedef struct {
 	uint rate_limit_filter;                  /* consecutive rate-limit violations before auto-filtering the (sub)net (0 = disabled) */
 	uint rate_limit_filter_duration;         /* lifetime of an auto-filter .can entry, in seconds (0 = forever) */
 	bool rate_limit_filter_silent;           /* auto-filter to ip-silent.can (drop at accept) rather than ip.can */
+	uint rate_limit_filter_subnet_threshold; /* min distinct host IPs in a subnet bucket that must trip the rate limit before
+	                                            the whole subnet is filtered (rather than just the offending host); 1 = filter
+	                                            the subnet on the first abuser (no neighbor required); default/recommended: 2 */
 	uint16_t port;
 	uint16_t tls_port;
 	str_list_t interfaces;
