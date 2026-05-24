@@ -590,7 +590,12 @@ def is_navigable_list(text: str, off: int, body_start: int, body_end: int,
             # instead. Reassignments at DEEPER depth (inside an `if (...) {
             # ... break; }` early-exit block, for instance) are conditional
             # and don't disrupt the flow to a same-depth switch.
-            sw_pat  = re.compile(r'\bswitch\s*\(\s*' + re.escape(var) + r'\s*\)')
+            # Accept direct dispatch `switch (var)` and indirection-table
+            # dispatch `switch (table[var])` (used when options are conditionally
+            # hidden and a parallel action[] array maps the menu index to a
+            # stable action code - see rate_limit_cfg).
+            sw_pat  = re.compile(r'\bswitch\s*\(\s*(?:[A-Za-z_][A-Za-z0-9_]*\s*\[\s*)?'
+                                 + re.escape(var) + r'\s*\]?\s*\)')
             msk_pat = re.compile(r'\b' + re.escape(var) + r'\s*&\s*MSK_(?:ON|OFF)\b')
             ra_pat  = re.compile(r'\b' + re.escape(var) + r'\s*=\s*[^=]')
             kind = _find_first_at_depth(text, off, body_end, body_start,

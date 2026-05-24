@@ -388,9 +388,29 @@ static const scfg_option_t scfg_option_index[] = {
 		"Servers > Terminal Server > Max Concurrent Connections > Auto-Filter Duration"
 	},
 	{
+		"Auto-Filter Duration",
+		"Rate Limiting",
+		"Servers > FTP Server > Limit Rate of Requests > Rate Limiting > Auto-Filter Duration"
+	},
+	{
+		"Auto-Filter Silently",
+		"Max Concurrent Connections",
+		"Servers > Terminal Server > Max Concurrent Connections > Auto-Filter Silently"
+	},
+	{
+		"Auto-Filter Silently",
+		"Rate Limiting",
+		"Servers > FTP Server > Limit Rate of Requests > Rate Limiting > Auto-Filter Silently"
+	},
+	{
 		"Auto-Filter Threshold",
 		"Max Concurrent Connections",
 		"Servers > Terminal Server > Max Concurrent Connections > Auto-Filter Threshold"
+	},
+	{
+		"Auto-Filter Threshold",
+		"Rate Limiting",
+		"Servers > FTP Server > Limit Rate of Requests > Rate Limiting > Auto-Filter Threshold"
 	},
 	{
 		"Auto-generate Index File",
@@ -766,6 +786,16 @@ static const scfg_option_t scfg_option_index[] = {
 		"Cost to Send NetMail",
 		"FidoNet EchoMail and NetMail",
 		"Networks > FidoNet EchoMail and NetMail > Cost to Send NetMail"
+	},
+	{
+		"Count IPv4 Clients By",
+		"Rate Limiting",
+		"Servers > FTP Server > Limit Rate of Requests > Rate Limiting > Count IPv4 Clients By"
+	},
+	{
+		"Count IPv6 Clients By",
+		"Rate Limiting",
+		"Servers > FTP Server > Limit Rate of Requests > Rate Limiting > Count IPv6 Clients By"
 	},
 	{
 		"Create Self-signed Certificate",
@@ -2069,6 +2099,11 @@ static const scfg_option_t scfg_option_index[] = {
 	},
 	{
 		"Limit Rate of Connections",
+		"Rate Limiting",
+		"Servers > FTP Server > Limit Rate of Requests > Rate Limiting > Limit Rate of Connections"
+	},
+	{
+		"Limit Rate of Connections",
 		"Services Server",
 		"Servers > Services Server > Limit Rate of Connections"
 	},
@@ -2084,8 +2119,8 @@ static const scfg_option_t scfg_option_index[] = {
 	},
 	{
 		"Limit Rate of Requests",
-		"Web Server",
-		"Servers > Web Server > Limit Rate of Requests"
+		"Rate Limiting",
+		"Servers > FTP Server > Limit Rate of Requests > Rate Limiting > Limit Rate of Requests"
 	},
 	{
 		"Lines Per Message",
@@ -3188,6 +3223,16 @@ static const scfg_option_t scfg_option_index[] = {
 		"System > New User Values > QWK Packet Settings..."
 	},
 	{
+		"Rate Limiting",
+		"Limit Rate of Requests",
+		"Servers > FTP Server > Limit Rate of Requests > Rate Limiting"
+	},
+	{
+		"Rate Limiting...",
+		"Web Server",
+		"Servers > Web Server > Rate Limiting..."
+	},
+	{
 		"Read Mail",
 		"Loadable Modules",
 		"System > Loadable Modules > Read Mail"
@@ -3601,6 +3646,11 @@ static const scfg_option_t scfg_option_index[] = {
 		"Submission/TLS Support",
 		"Mail Server",
 		"Servers > Mail Server > Submission/TLS Support"
+	},
+	{
+		"Subnet Filter Threshold",
+		"Rate Limiting",
+		"Servers > FTP Server > Limit Rate of Requests > Rate Limiting > Subnet Filter Threshold"
 	},
 	{
 		"Subscribe QOS",
