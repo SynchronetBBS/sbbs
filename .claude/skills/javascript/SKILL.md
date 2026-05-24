@@ -116,6 +116,81 @@ their definitions land in the passed object — this isolates them from the pare
 scope (no name collisions). `load()`'s search path is jsexec's `-i` (default
 `load`).
 
+### Constants: C vs JS namespaces (USER_UTF8 ≠ UTF8)
+
+C/C++ headers and the JS-side constant files don't share names. Same values,
+different prefixes:
+
+| C/C++ (`sbbsdefs.h`, `scfgdefs.h`) | JS (`exec/load/*.js`)                       |
+|------------------------------------|---------------------------------------------|
+| `UTF8`, `NO_EXASCII`, `ANSI`       | `USER_UTF8`, `USER_NO_EXASCII`, `USER_ANSI` |
+| `K_UTF8`, `K_NOCRLF`               | `K_UTF8`, `K_NOCRLF` (same)                 |
+| `P_UTF8`, `P_NONE`                 | `P_UTF8`, `P_NONE` (same)                   |
+
+User-related terminal/setting flags get a `USER_` prefix on the JS side to
+avoid polluting the JS global namespace (`UTF8` as a bare word would collide
+too easily). Input/print mode flags (`K_*`, `P_*`) keep their prefix on both
+sides since the prefix is already a namespace.
+
+Constants live in three places, and the load behavior differs:
+
+1. **Host-injected globals** — defined in C++ (`js_global.cpp`), added to
+   the global object at runtime init. Always available, no load:
+   - `LOG_EMERG`, `LOG_ALERT`, `LOG_CRIT`, `LOG_ERR`/`LOG_ERROR`,
+     `LOG_WARNING`, `LOG_NOTICE`, `LOG_INFO`, `LOG_DEBUG`
+   - `INVALID_SOCKET`
+
+2. **Class-static properties** — attached to the JS class itself via
+   `JS_DefineObject` on the constructor. Always available wherever the
+   class is:
+   - `FileBase.DETAIL.*`, `FileBase.SORT.*` (`js_filebase.cpp`)
+   - `CryptContext.ALGO_*` (and similar) (`js_cryptcon.c`)
+   - Reach them like `FileBase.SORT.NAME_AZ`, no load needed
+
+3. **JS-library constants** — defined in `exec/load/*.js` files. Must be
+   pulled in with `load()` or `require()`:
+   - **`sbbsdefs.js`** — `K_*`, `P_*`, `MSG_*`, `SS_*`, `NODE_*`, etc.
+   - **`userdefs.js`** — `USER_*` flags (terminal caps, settings bitfield)
+   - **`sockdefs.js`** — `SOCK_STREAM`, `AF_INET`, etc.
+
+```javascript
+require("sbbsdefs.js", "K_NOCRLF");        // canonical: name a sentinel
+require("userdefs.js", "USER_UTF8");
+// or
+load("sbbsdefs.js"); load("userdefs.js");
+```
+
+Defensive idiom for code that might run without the require (seen throughout
+the stock scripts):
+
+```javascript
+var supports_utf8 = (typeof(USER_UTF8) != "undefined")
+    ? console.term_supports(USER_UTF8) : false;
+```
+
+Rule of thumb: if you can grep the JS-side constant in `exec/load/*.js`,
+you need to load that file. If it's defined only in C/C++ headers, check
+whether the host injected it (LOG_*, INVALID_SOCKET) or attached it to a
+class (FileBase.DETAIL, CryptContext.ALGO) — those work without load.
+
+### Terminal capability: runtime vs stored
+
+Two different ways to ask "does this user have UTF-8":
+
+- `console.term_supports(USER_UTF8)` — **runtime**: what the live connection
+  actually negotiated. Authoritative at session time.
+- `user.settings & USER_UTF8` — **stored**: the user's saved preference
+  (set via `user_terminal.js` / `user_info_prompts.js`).
+
+These can disagree (user toggled their pref but the connection still reports
+old caps, or they connected from a different terminal). For "what can I
+render right now" decisions, use `term_supports()`. For "what does this user
+normally want" (e.g. when serializing a message that may be read later), use
+`user.settings`.
+
+`console` is only available in a real BBS session — not in `jsexec`, and not
+always in early-startup contexts. Guard accordingly.
+
 ## MsgBase — the message-base API
 
 `MsgBase` opens local mail (`"mail"`), a sub-board (by internal code, e.g.
