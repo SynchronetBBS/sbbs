@@ -26,7 +26,7 @@
 
 typedef struct {							/* Message sub board info */
 	char		code[LEN_EXTCODE+1];		/* Internal code (with optional lib prefix) */
-	char		code_suffix[LEN_CODE+1];	/* Eight character code suffix */
+	char		code_suffix[LEN_CODE+1];	/* Sixteen character code suffix */
 	char		lname[LEN_SLNAME+1],		/* Long name - used for listing */
 				sname[LEN_SSNAME+1],		/* Short name - used for prompts */
 				arstr[LEN_ARSTR+1],			/* Access requirements */
@@ -73,7 +73,7 @@ typedef struct {							/* Message group info */
 
 typedef struct {							/* Transfer Directory Info */
 	char		code[LEN_EXTCODE+1];		/* Internal code (with optional lib prefix) */
-	char		code_suffix[LEN_CODE+1];	/* Eight character code suffix */
+	char		code_suffix[LEN_CODE+1];	/* Sixteen character code suffix */
 	char		vdir[LEN_DIR+1];			/* Virtual Directory name (dynamically generated) */
 	char		vdir_name[LEN_DIR+1];		/* Sysop-defined Virtual Directory name */
 	char		vshortcut[LEN_DIR+1];		/* Sysop-defined Virtual Directory shortcut (from root) */
@@ -132,7 +132,7 @@ typedef struct {							/* Transfer Library Information */
 } lib_t;
 
 typedef struct {							/* Gfile Section Information */
-	char		code[LEN_CODE+1];			/* Eight character code */
+	char		code[LEN_CODE+1];			/* Sixteen character code */
 	char		name[41],					/* Name of section */
 				arstr[LEN_ARSTR+1];			/* Access requirements */
 	uchar		ar[LEN_ARSTR+1];
@@ -140,7 +140,7 @@ typedef struct {							/* Gfile Section Information */
 } txtsec_t;
 
 typedef struct {							/* External Section Information */
-	char		code[LEN_CODE+1];			/* Eight character code	*/
+	char		code[LEN_CODE+1];			/* Sixteen character code */
 	char		name[41],					/* Name of section */
 				arstr[LEN_ARSTR+1];			/* Access requirements */
 	uchar		ar[LEN_ARSTR+1];
