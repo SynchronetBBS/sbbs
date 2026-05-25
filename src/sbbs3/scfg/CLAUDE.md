@@ -34,7 +34,13 @@ uifc.helpbuf =
   so 72 visible chars per line is the renderer's actual ceiling
   (`showbuf()` in `src/uifc/uifc32.c`). Lines exceeding 72 visible chars
   auto-wrap mid-word at the boundary, which looks ragged — rebalance
-  the paragraph instead of pushing past 72. Markup characters consumed
+  the paragraph instead of pushing past 72.
+- **Pack lines tightly within that 72-budget — don't leave 10+ chars of
+  slack.** Wrapping at ~62 when ~70 would fit produces a column of
+  short lines that reads as choppy and wastes vertical space. After
+  drafting, scan each line: if the *next* word would still fit under 72
+  visible chars, pull it up. Aim for most lines to land in the high
+  60s to low 70s of visible width. Markup characters consumed
   by the renderer don't take screen space and should *not* be counted
   against the wrap budget; per its `WIN_HLP` rendering:
   - `` ` `` and `\x01` toggle high-intensity (highlight) color
