@@ -29,8 +29,20 @@ uifc.helpbuf =
 ### Conventions
 
 - **Title** in backticks with trailing colon: `` "`Menu Title:`\n" ``.
-- **Wrap at column ~72** to fit comfortably in the uifc help window.
-  Existing helpbufs wrap at 70–76; pick a consistent width per file.
+- **Wrap at 72 visible columns — this is a hard limit, not a target.**
+  The uifc help window is 76 chars wide minus 2 borders minus 2×1 pad,
+  so 72 visible chars per line is the renderer's actual ceiling
+  (`showbuf()` in `src/uifc/uifc32.c`). Lines exceeding 72 visible chars
+  auto-wrap mid-word at the boundary, which looks ragged — rebalance
+  the paragraph instead of pushing past 72. Markup characters consumed
+  by the renderer don't take screen space and should *not* be counted
+  against the wrap budget; per its `WIN_HLP` rendering:
+  - `` ` `` and `\x01` toggle high-intensity (highlight) color
+  - `~` and `\x02` toggle inverse-video
+  So a literal source line like
+  `` "`Network Interfaces`: comma-separated IPv4/IPv6 ..." `` displays
+  as `Network Interfaces: comma-separated IPv4/IPv6 ...` — wrap against
+  that visible form, not the source-character count.
 - **Backtick-quote** option names (matching their menu labels) and literal
   values (`` `Yes` ``, `` `0` ``, `` `16M` ``) — uifc renders backtick
   spans in highlight color.
@@ -38,6 +50,14 @@ uifc.helpbuf =
 - **Sysop voice** — do not reference C source files, function names, or
   internal struct/macro identifiers in helpbuf text. Describe what the
   sysop sees, types, or configures, using the labels they see on screen.
+- **Don't cross-reference `sbbsctrl`** — SCFG runs on every platform
+  Synchronet supports (Windows, Linux, *BSD, macOS), but `sbbsctrl` is
+  the Windows-only Control Panel GUI. Pointing a Linux/BSD sysop at it
+  is a dead end. Describe the option in its own terms; if you need to
+  cite an alternative configuration entry point, prefer the relevant
+  `.ini` section (`sbbs.ini`, `services.ini`, etc.) or the wiki page.
+  (The wiki page may list `sbbsctrl` as one of several configuration
+  surfaces — the helpbuf shouldn't.)
 - **State when changes take effect** — most server settings need a
   recycle; mention it.
 - **Cross-reference cousin menus** sparingly if helpful (e.g. "see also
