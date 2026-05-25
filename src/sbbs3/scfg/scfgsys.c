@@ -2382,7 +2382,7 @@ void sys_cfg(void)
 						"JavaScript; must be one configured under `Command Shells`.\n"
 						"\n"
 						"`Download Protocol`: single-letter key of the default transfer\n"
-						"protocol (e.g. `Z` for Zmodem).  Blank = no default; user chooses\n"
+						"protocol (e.g. `Z` for ZMODEM).  Blank = no default; user chooses\n"
 						"each transfer.\n"
 						"\n"
 						"`Days of New Messages`: how many days of message history to include\n"
