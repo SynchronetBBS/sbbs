@@ -130,17 +130,28 @@ shell.file_menu = {
        '/G': { eval: 'logoff(/* fast: */true)' },
 		'K': { eval: "console.clear();" + "console.print('\\x01n\\x01h\\x01cFile Configuration Listing\\r\\n');" +
             "console.print('-----------------------------------\\r\\n');" +
-			"console.print('Current Library : ' + bbs.curlib + ' - ' "
-			+ "+ file_area.lib_list[bbs.curlib].description + '\\r\\n');" +
-			"console.print('Current Dir     : ' + bbs.curdir + ' - ' "
-			+ "+ file_area.lib_list[bbs.curlib].dir_list[bbs.curdir].description + '\\r\\n');" +
-			"console.print('New-scan Date   : ' + system.timestr(user.new_file_time) + '\\r\\n');" +
-            "console.print('Batch Queue     : ' + bbs.batch_size + ' file(s)\\r\\n');" +
-            "console.print('Protocol        : ' + user.protocol + '\\r\\n');" +
-            "console.print('UL Today        : ' + user.ulb + ' bytes\\r\\n');" +
-            "console.print('DL Today        : ' + user.dlb + ' bytes\\r\\n');" +
-            "console.crlf();"
-		},
+            "var curlib = bbs.curlib;" +
+            "var curdir = bbs.curdir;" +
+            "console.print('Current Library : ' + curlib + ' - ' " +
+            "+ file_area.lib_list[curlib].description + '\\r\\n');" +
+			"console.print('Current Dir     : ' + curdir + ' - ' " +
+            "+ file_area.lib_list[curlib].dir_list[curdir].description + '\\r\\n');" +
+            "console.print('New-scan Date   : ' + system.timestr(user.new_file_time) + '\\r\\n');" +
+			"var batch = (bbs.batch_size ? bbs.batch_size : 0);" +
+			"console.print('Batch Queue     : ' + batch + ' file(s)\\r\\n');" +
+			"var prot = 'Zmodem';" +
+			"if (user.download_protocol == 'Y')" +
+            "prot = 'Ymodem';" +
+			"else if (user.download_protocol == 'X')" +
+            "prot = 'Xmodem';" +
+			"else if (user.download_protocol == '')" +
+            "prot = 'None';" +
+			"console.print('Protocol        : ' + prot + '\\r\\n');" +
+			"var ul = (typeof user.ulb === 'number' ? user.ulb : 0);" +
+            "var dl = (typeof user.dlb === 'number' ? user.dlb : 0);" +
+            "console.print('UL Today        : ' + ul + ' bytes\\r\\n');" +
+            "console.print('DL Today        : ' + dl + ' bytes\\r\\n');" +
+            "console.crlf();" },
         'L': { eval: 'list_files()' },
         'N': {
             eval: 'bbs.scan_dirs(FL_ULTIME)',
