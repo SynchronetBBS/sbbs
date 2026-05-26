@@ -25,7 +25,7 @@ shell.main_menu = {
     file: "obv-2/main",
     eval: 'bbs.main_cmds++',
     node_action: NODE_MAIN,
-   prompt: "\x01n\x01gMain \x01cþ\x01h@TLEFT@\x01n\x01cþ " 
+    prompt: "\x01n\x01gMain \x01cþ\x01h@TLEFT@\x01n\x01cþ " 
 	    + "\x01h\x01kC\x01n\x01go\x01hm\x01nm\x01hand: \x01n",
     command: {
         'A': { eval: 'bbs.auto_msg()' },
@@ -112,7 +112,7 @@ shell.file_menu = {
     file: "obv-2/files",
     eval: 'bbs.file_cmds++',
     node_action: NODE_XFER,
-   prompt: "\x01n\x01gFile \x01cþ \x01h@TLEFT@ \x01n\x01cþ " 
+    prompt: "\x01n\x01gFile \x01cþ \x01h@TLEFT@ \x01n\x01cþ " 
         + "\x01h\x01c(@LN@) @LIB@ (@DN@) @DIR@: ",
     num_input: shell.get_dir_num,
     slash_num_input: shell.get_lib_num,
