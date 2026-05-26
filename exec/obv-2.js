@@ -121,11 +121,11 @@ shell.file_menu = {
                + 'select_file_area();' },
         'B': { eval: 'bbs.batch_menu()' },
         'C': { exec: 'filescancfg.js' },
-       '/D': { eval: 'download_files()',
-            msg: '\r\n\x01c\x01h' + gettext("Download File(s)") + '\r\n',
-            ars: 'REST NOT D' },
+       '/D': { eval: 'download_files()'
+               ,msg: '\r\n\x01c\x01h' + gettext("Download File(s)") + '\r\n'
+	           ,ars: 'REST NOT D' },
 		'E': { eval: 'view_file_info(FI_REMOVE)'
-			,msg: '\r\n\x01c\x01h' + gettext("Remove/Edit File(s)") + '\r\n' },	
+			   ,msg: '\r\n\x01c\x01h' + gettext("Remove/Edit File(s)") + '\r\n' },	
         'G': { eval: 'logoff(/* fast: */false)' },
        '/G': { eval: 'logoff(/* fast: */true)' },
 		'K': { eval: "console.clear();" + "console.print('\\x01n\\x01h\\x01cFile Configuration Listing\\r\\n');" +
@@ -153,29 +153,20 @@ shell.file_menu = {
             "console.print('DL Today        : ' + dl + ' bytes\\r\\n');" +
             "console.crlf();" },
         'L': { eval: 'list_files()' },
-        'N': {
-            eval: 'bbs.scan_dirs(FL_ULTIME)',
-            msg: '\r\n\x01c\x01h' + gettext("New File Scan") + '\r\n'
-        },
+        'N': { eval: 'bbs.scan_dirs(FL_ULTIME)'
+               ,msg: '\r\n\x01c\x01h' + gettext("New File Scan") + '\r\n' },
         'R': { eval: 'bbs.batch_menu()' },       
-        'S': {
-            eval: 'bbs.scan_dirs(FL_NO_HDR)',
-            msg: '\r\n\x01c\x01h' + gettext("Search for Filename(s)") + '\r\n'
-        },
+        'S': { eval: 'bbs.scan_dirs(FL_NO_HDR)'
+               ,msg: '\r\n\x01c\x01h' + gettext("Search for Filename(s)") + '\r\n' },
         'T': { eval: 'bbs.temp_xfer()' },
-        'U': {
-            eval: 'upload_file()',
-            msg: '\r\n\x01c\x01h' + gettext("Upload File") + '\r\n'
-        },
-	  '/U': { eval: 'upload_user_file()'
-			,msg: '\r\n\x01c\x01h' + gettext("Upload File to User") + '\r\n' },
-        'V': {
-            eval: 'view_files()',
-            msg: '\r\n\x01c\x01h' + gettext("View File(s)") + '\r\n'
-        },
-        'W': {
-            eval: 'view_file_info(FI_INFO)',
-            msg: '\r\n\x01c\x01h' + gettext("List Extended File Information") + '\r\n' },
+        'U': { eval: 'upload_file()',
+        	   ,msg: '\r\n\x01c\x01h' + gettext("Upload File") + '\r\n' },
+	   '/U': { eval: 'upload_user_file()'
+			   ,msg: '\r\n\x01c\x01h' + gettext("Upload File to User") + '\r\n' },
+        'V': { eval: 'view_files()'
+               ,msg: '\r\n\x01c\x01h' + gettext("View File(s)") + '\r\n' },
+        'W': { eval: 'view_file_info(FI_INFO)'
+               ,msg: '\r\n\x01c\x01h' + gettext("List Extended File Information") + '\r\n' },
         'X': { eval: "if (file_exists(system.text_dir + 'jsyswant.txt')) {"
 			   + "console.crlf();"
                + "bbs.printfile(system.text_dir + 'jsyswant.txt');"
