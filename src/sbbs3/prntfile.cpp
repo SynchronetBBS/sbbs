@@ -710,60 +710,69 @@ bool sbbs_t::menu_exists(const char *code, const char* ext, char* path)
 		       || menu_exists(code, "msg", path)
 		       || menu_exists(code, "ans", path);
 
-	char prefix[MAX_PATH];
-	if (isfullpath(code))
-		SAFECOPY(prefix, code);
-	else {
-		char subdir[MAX_PATH + 1];
-		SAFECOPY(subdir, menu_dir);
-		backslash(subdir);
-		if (*code == '.')
-			*subdir = '\0';
-		SAFEPRINTF3(prefix, "%smenu/%s%s", cfg.text_dir, subdir, code);
-		FULLPATH(path, prefix, MAX_PATH);
-		SAFECOPY(prefix, path);
-		if (cfg.mods_dir[0] != '\0') {
-			char modprefix[MAX_PATH + 1];
-			char modpath[MAX_PATH + 1];
-			snprintf(modprefix, sizeof modprefix, "%stext/menu/%s%s", cfg.mods_dir, subdir, code);
-			snprintf(modpath, sizeof modpath, "%s.%s", modprefix, ext);
-			FULLPATH(path, modpath, MAX_PATH);
-			SAFECOPY(modpath, path);
-			if (fexist(modpath)) {
-				FULLPATH(path, modprefix, MAX_PATH);
-				SAFECOPY(prefix, path);
+	char subdir[MAX_PATH + 1];
+	SAFECOPY(subdir, menu_dir);
+	for (;;) {
+		char prefix[MAX_PATH];
+		if (isfullpath(code))
+			SAFECOPY(prefix, code);
+		else {
+			char sub[MAX_PATH + 1];
+			SAFECOPY(sub, subdir);
+			backslash(sub);
+			if (*code == '.')
+				*sub = '\0';
+			SAFEPRINTF3(prefix, "%smenu/%s%s", cfg.text_dir, sub, code);
+			FULLPATH(path, prefix, MAX_PATH);
+			SAFECOPY(prefix, path);
+			if (cfg.mods_dir[0] != '\0') {
+				char modprefix[MAX_PATH + 1];
+				char modpath[MAX_PATH + 1];
+				snprintf(modprefix, sizeof modprefix, "%stext/menu/%s%s", cfg.mods_dir, sub, code);
+				snprintf(modpath, sizeof modpath, "%s.%s", modprefix, ext);
+				FULLPATH(path, modpath, MAX_PATH);
+				SAFECOPY(modpath, path);
+				if (fexist(modpath)) {
+					FULLPATH(path, modprefix, MAX_PATH);
+					SAFECOPY(prefix, path);
+				}
 			}
 		}
-	}
-	// Display specified EXACT width file
-	safe_snprintf(path, MAX_PATH, "%s.%ucol.%s", prefix, term->cols, ext);
-	if (fexistcase(path))
-		return true;
-	// Display specified MINIMUM width file
-	glob_t g = {0};
-	safe_snprintf(path, MAX_PATH, "%s.c*.%s", prefix, ext);
-	if (globi(path, GLOB_NOESCAPE | GLOB_MARK, NULL, &g) == 0) {
-		char*  p;
-		char   term[MAX_PATH + 1];
-		safe_snprintf(term, sizeof(term), ".%s", ext);
-		size_t skip = safe_snprintf(path, MAX_PATH, "%s.c", prefix);
-		unsigned max = 0;
-		for (size_t i = 0; i < g.gl_pathc; i++) {
-			unsigned long c = strtoul(g.gl_pathv[i] + skip, &p, 10);
-			if (stricmp(p, term) != 0) // Some other weird pattern ending in c*.<ext>
-				continue;
-			if (c <= this->term->cols && c > max) {
-				max = c;
-				safe_snprintf(path, MAX_PATH, "%s", g.gl_pathv[i]);
-			}
-		}
-		globfree(&g);
-		if (max > 0)
+		// Display specified EXACT width file
+		safe_snprintf(path, MAX_PATH, "%s.%ucol.%s", prefix, term->cols, ext);
+		if (fexistcase(path))
 			return true;
-	}
+		// Display specified MINIMUM width file
+		glob_t g = {0};
+		safe_snprintf(path, MAX_PATH, "%s.c*.%s", prefix, ext);
+		if (globi(path, GLOB_NOESCAPE | GLOB_MARK, NULL, &g) == 0) {
+			char*  p;
+			char   term[MAX_PATH + 1];
+			safe_snprintf(term, sizeof(term), ".%s", ext);
+			size_t skip = safe_snprintf(path, MAX_PATH, "%s.c", prefix);
+			unsigned max = 0;
+			for (size_t i = 0; i < g.gl_pathc; i++) {
+				unsigned long c = strtoul(g.gl_pathv[i] + skip, &p, 10);
+				if (stricmp(p, term) != 0) // Some other weird pattern ending in c*.<ext>
+					continue;
+				if (c <= this->term->cols && c > max) {
+					max = c;
+					safe_snprintf(path, MAX_PATH, "%s", g.gl_pathv[i]);
+				}
+			}
+			globfree(&g);
+			if (max > 0)
+				return true;
+		}
 
-	safe_snprintf(path, MAX_PATH, "%s.%s", prefix, ext);
-	return fexistcase(path) ? true : false;
+		safe_snprintf(path, MAX_PATH, "%s.%s", prefix, ext);
+		if (fexistcase(path))
+			return true;
+		/* Not found — if a menu subdirectory was in effect, retry in the default menu dir */
+		if (isfullpath(code) || subdir[0] == '\0')
+			return false;
+		subdir[0] = '\0';
+	}
 }
 
 /****************************************************************************/
