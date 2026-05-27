@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Auto-imported by MSBuild after every sbbs3 vcxproj's body.
+
+  Disables PDB generation for Release|Win32 across all projects, eliminating
+  mspdbsrv.exe as a shared toolchain dependency. mspdbsrv contention has been
+  observed to produce sporadic, non-deterministic "internal compiler error"
+  failures on Windows GitLab runners (random source file / line each run).
+  Release artifacts shipped from CI never included .pdb files anyway.
+-->
+<Project>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <DebugInformationFormat>None</DebugInformationFormat>
+    </ClCompile>
+    <Link>
+      <GenerateDebugInformation>false</GenerateDebugInformation>
+    </Link>
+  </ItemDefinitionGroup>
+</Project>
