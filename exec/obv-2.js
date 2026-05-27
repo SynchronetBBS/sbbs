@@ -128,30 +128,27 @@ shell.file_menu = {
 			   ,msg: '\r\n\x01c\x01h' + gettext("Remove/Edit File(s)") + '\r\n' },	
         'G': { eval: 'logoff(/* fast: */false)' },
        '/G': { eval: 'logoff(/* fast: */true)' },
-		'K': { eval: "console.clear();" + "console.print('\\x01n\\x01h\\x01cFile Configuration Listing\\r\\n');" +
-            "console.print('-----------------------------------\\r\\n');" +
-            "var curlib = bbs.curlib;" +
-            "var curdir = bbs.curdir;" +
-            "console.print('Current Library : ' + curlib + ' - ' " +
-            "+ file_area.lib_list[curlib].description + '\\r\\n');" +
-			"console.print('Current Dir     : ' + curdir + ' - ' " +
-            "+ file_area.lib_list[curlib].dir_list[curdir].description + '\\r\\n');" +
-            "console.print('New-scan Date   : ' + system.timestr(user.new_file_time) + '\\r\\n');" +
-			"var batch = (bbs.batch_size ? bbs.batch_size : 0);" +
-			"console.print('Batch Queue     : ' + batch + ' file(s)\\r\\n');" +
-			"var prot = 'Zmodem';" +
-			"if (user.download_protocol == 'Y')" +
-            "prot = 'Ymodem';" +
-			"else if (user.download_protocol == 'X')" +
-            "prot = 'Xmodem';" +
-			"else if (user.download_protocol == '')" +
-            "prot = 'None';" +
-			"console.print('Protocol        : ' + prot + '\\r\\n');" +
-			"var ul = (typeof user.ulb === 'number' ? user.ulb : 0);" +
-            "var dl = (typeof user.dlb === 'number' ? user.dlb : 0);" +
-            "console.print('UL Today        : ' + ul + ' bytes\\r\\n');" +
-            "console.print('DL Today        : ' + dl + ' bytes\\r\\n');" +
-            "console.crlf();" },
+		'K': { eval:
+			"console.clear();" +
+			"console.print('\\x01n\\x01h\\x01cFile Configuration Listing\\r\\n');" +
+			"console.print('-----------------------------------\\r\\n');" +
+			"var curlib = bbs.curlib;" +
+    "var curdir = bbs.curdir;" +
+    "console.print('Current Library : ' + curlib + ' - ' + file_area.lib_list[curlib].description + '\\r\\n');" +
+    "console.print('Current Dir     : ' + curdir + ' - ' + file_area.lib_list[curlib].dir_list[curdir].description + '\\r\\n');" +
+    "console.print('New-scan Date   : ' + system.timestr(user.new_file_time) + '\\r\\n');" +
+    "var batch = (bbs.batch_size ? bbs.batch_size : 0);" +
+    "console.print('Batch Queue     : ' + batch + ' file(s)\\r\\n');" +
+    "var prot = 'Zmodem';" +
+    "if (user.download_protocol == 'Y') prot = 'Ymodem';" +
+    "else if (user.download_protocol == 'X') prot = 'Xmodem';" +
+    "else if (user.download_protocol == '') prot = 'None';" +
+    "console.print('Protocol        : ' + prot + '\\r\\n');" +
+    "var ul = (typeof user.ulb === 'number' ? user.ulb : 0);" +
+    "var dl = (typeof user.dlb === 'number' ? user.dlb : 0);" +
+    "console.print('UL Today        : ' + ul + ' bytes\\r\\n');" +
+    "console.print('DL Today        : ' + dl + ' bytes\\r\\n');" +
+    "console.crlf();" },
         'L': { eval: 'list_files()' },
         'N': { eval: 'bbs.scan_dirs(FL_ULTIME)'
                ,msg: '\r\n\x01c\x01h' + gettext("New File Scan") + '\r\n' },
@@ -160,7 +157,7 @@ shell.file_menu = {
                ,msg: '\r\n\x01c\x01h' + gettext("Search for Filename(s)") + '\r\n' },
         'T': { eval: 'bbs.temp_xfer()' },
         'U': { eval: 'upload_file()',
-        	   ,msg: '\r\n\x01c\x01h' + gettext("Upload File") + '\r\n' },
+               msg: '\r\n\x01c\x01h' + gettext("Upload File") + '\r\n' },
 	   '/U': { eval: 'upload_user_file()'
 			   ,msg: '\r\n\x01c\x01h' + gettext("Upload File to User") + '\r\n' },
         'V': { eval: 'view_files()'
