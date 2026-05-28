@@ -2,19 +2,32 @@
 <!--
   Auto-imported by MSBuild after every sbbs3 vcxproj's body.
 
-  Disables PDB generation for Release|Win32 across all projects, eliminating
-  mspdbsrv.exe as a shared toolchain dependency. mspdbsrv contention has been
-  observed to produce sporadic, non-deterministic "internal compiler error"
-  failures on Windows GitLab runners (random source file / line each run).
-  Release artifacts shipped from CI never included .pdb files anyway.
+  For Release|Win32 across all sbbs3 projects:
+    - Disable PDB generation (DebugInformationFormat=None, GenerateDebugInformation=false).
+      Eliminates mspdbsrv.exe as a shared toolchain dependency.
+    - Disable whole-program optimization / link-time code generation
+      (WholeProgramOptimization=false -> drops /GL; LinkTimeCodeGeneration=Default ->
+      drops /LTCG:incremental). Eliminates the LTCG backend (c2.dll UTC) as a
+      shared toolchain dependency.
+
+  Both subsystems have been observed to produce sporadic, non-deterministic
+  "internal compiler error" failures on the Windows GitLab runner (random source
+  file / line each run): first the compile-time mspdbsrv path (fixed in 266083317),
+  then the link-time LTCG path. Release artifacts shipped from CI never included
+  .pdb files, and WPO inlining is not load-bearing for these I/O-bound BBS binaries.
 -->
 <Project>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <WholeProgramOptimization>false</WholeProgramOptimization>
+  </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
       <DebugInformationFormat>None</DebugInformationFormat>
+      <WholeProgramOptimization>false</WholeProgramOptimization>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>false</GenerateDebugInformation>
+      <LinkTimeCodeGeneration>Default</LinkTimeCodeGeneration>
     </Link>
   </ItemDefinitionGroup>
 </Project>
