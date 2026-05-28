@@ -1684,7 +1684,7 @@ addParsedLine(named_str_list_t** lp, size_t sections, char *data, size_t *keys)
 named_str_list_t** iniParseSections(const str_list_t list)
 {
 	char               str[INI_MAX_LINE_LEN];
-	char*              p;
+	char*              p = NULL;
 	size_t             i;
 	size_t             sections = 0;
 	size_t             keys = 0;
