@@ -91,7 +91,9 @@ endif
 quittest: quittest.c $(CIOLIB-MT_BUILD)
 	${QUIET}$(CC) $(CFLAGS) $(MT_CFLAGS) $(LDFLAGS) $(MT_LDFLAGS) $(XPDEV-MT_LDFLAGS) quittest.c -o $@ $(CIOLIB-MT_LIBS) $(XPDEV-MT_LIBS)
 
+scale_spinner: scale_spinner.c $(CIOLIB-MT_BUILD)
+	${QUIET}$(CC) $(CFLAGS) $(MT_CFLAGS) $(LDFLAGS) $(MT_LDFLAGS) $(XPDEV-MT_LDFLAGS) scale_spinner.c -o $@ $(CIOLIB-MT_LIBS) $(XPDEV-MT_LIBS)
+
 cterm_test: cterm_test.c $(CIOLIB-MT_BUILD)
 	@echo Building $@ ...
 	${QUIET}$(CC) $(CFLAGS) $(MT_CFLAGS) $(LDFLAGS) $(MT_LDFLAGS) $(XPDEV-MT_LDFLAGS) $(ENCODE_LDFLAGS) $(HASH_LDFLAGS) cterm_test.c -o $@ $(CIOLIB-MT_LIBS) $(ENCODE_LIBS) $(HASH_LIBS) $(XPDEV-MT_LIBS)
-

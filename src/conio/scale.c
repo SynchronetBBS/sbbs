@@ -14,7 +14,7 @@
 static void pointy_scale3(const uint32_t* src, uint32_t* dest, const int width, const int height);
 static void pointy_scale5(const uint32_t* src, uint32_t* dest, const int width, const int height);
 static void pointy_scale_odd(const uint32_t* src, uint32_t* dest, const int width, const int height, const int mult);
-static void interpolate_height(uint32_t const* src, uint32_t* dst, const int width, const int height, const int newheight);
+static void interpolate_height(uint32_t const* src, uint32_t* dst, const int width, const int height, const int newheight, const int yrepeat);
 static void interpolate_width(uint32_t const* src, uint32_t* dst, const int width, const int height, const int newwidth);
 static void multiply_scale(uint32_t const* src, uint32_t* dst, const int width, const int height, const int xmult, const int ymult);
 
@@ -239,6 +239,7 @@ do_scale(struct rectlist* rect, int fwidth, int fheight)
 	struct graphics_buffer *csrc;
 	uint32_t* nt;
 	bool swapxy = false;
+	int yrepeat = 1;
 
 	int xscale = fwidth / rect->rect.width;
 	int yscale = fheight / rect->rect.height;
@@ -371,6 +372,7 @@ csrc->w, csrc->h, pointymult, pointy5, pointy3, xbr4, xbr2, xmult, ymult, csrc->
 		multiply_scale(csrc->data, ctarget->data, csrc->w, csrc->h, xmult, ymult);
 		ctarget->w = csrc->w * xmult;
 		ctarget->h = csrc->h * ymult;
+		yrepeat = ymult;
 		ymult = 1;
 		xmult = 1;
 		csrc = ctarget;
@@ -384,6 +386,7 @@ csrc->w, csrc->h, pointymult, pointy5, pointy3, xbr4, xbr2, xmult, ymult, csrc->
 		ctarget->w = csrc->w * pointymult;
 		ctarget->h = csrc->h * pointymult;
 		pointymult = 1;
+		yrepeat = 1;
 		csrc = ctarget;
 		if (ctarget == ret1)
 			ctarget = ret2;
@@ -395,6 +398,7 @@ csrc->w, csrc->h, pointymult, pointy5, pointy3, xbr4, xbr2, xmult, ymult, csrc->
 		pointy5--;
 		ctarget->w = csrc->w * 5;
 		ctarget->h = csrc->h * 5;
+		yrepeat = 1;
 		csrc = ctarget;
 		if (ctarget == ret1)
 			ctarget = ret2;
@@ -406,6 +410,7 @@ csrc->w, csrc->h, pointymult, pointy5, pointy3, xbr4, xbr2, xmult, ymult, csrc->
 		pointy3--;
 		ctarget->w = csrc->w * 3;
 		ctarget->h = csrc->h * 3;
+		yrepeat = 1;
 		csrc = ctarget;
 		if (ctarget == ret1)
 			ctarget = ret2;
@@ -417,6 +422,7 @@ csrc->w, csrc->h, pointymult, pointy5, pointy3, xbr4, xbr2, xmult, ymult, csrc->
 		xbr4--;
 		ctarget->w = csrc->w * 4;
 		ctarget->h = csrc->h * 4;
+		yrepeat = 1;
 		csrc = ctarget;
 		if (ctarget == ret1)
 			ctarget = ret2;
@@ -428,6 +434,7 @@ csrc->w, csrc->h, pointymult, pointy5, pointy3, xbr4, xbr2, xmult, ymult, csrc->
 		xbr2--;
 		ctarget->w = csrc->w * 2;
 		ctarget->h = csrc->h * 2;
+		yrepeat = 1;
 		csrc = ctarget;
 		if (ctarget == ret1)
 			ctarget = ret2;
@@ -437,7 +444,7 @@ csrc->w, csrc->h, pointymult, pointy5, pointy3, xbr4, xbr2, xmult, ymult, csrc->
 
 	// And finally, interpolate if needed
 	if (fheight != csrc->h) {
-		interpolate_height(csrc->data, ctarget->data, csrc->w, csrc->h, fheight);
+		interpolate_height(csrc->data, ctarget->data, csrc->w, csrc->h, fheight, yrepeat);
 		ctarget->h = fheight;
 		ctarget->w = csrc->w;
 		csrc = ctarget;
@@ -865,56 +872,31 @@ interpolate_width(uint32_t const* src, uint32_t* dst, const int width, const int
  * pixels.
  */
 static void
-interpolate_height(uint32_t const* src, uint32_t* dst, const int width, const int height, const int newheight)
+interpolate_height(uint32_t const* src, uint32_t* dst, const int width, const int height, const int newheight, const int yrepeat)
 {
 	int x, y;
 	const uint64_t mult = (((uint64_t)height) << 16) / newheight;
 	uint64_t ypos = 0;
-	int last_yposi = 0;
-	int ywn = width;
-	static uint32_t *nline = NULL;
-	static uint32_t *tline = NULL;
-	static size_t nsz = 0;
-	static size_t tsz = 0;
-	uint32_t *stmp;
+	const size_t row_bytes = width * sizeof(*src);
 
-	if (nsz < width * 4) {
-		stmp = realloc(nline, width * 4);
-		if (stmp == NULL)
-			goto fail;
-		nline = stmp;
-		nsz = width * 4;
-	}
-	if (tsz < width * 4) {
-		stmp = realloc(tline, width * 4);
-		if (stmp == NULL)
-			goto fail;
-		tline = stmp;
-		tsz = width * 4;
-	}
-
-	memcpy(tline, src, width * sizeof(*tline));
-	memcpy(nline, src + width, width * sizeof(*tline));
 	for (y = 0; y < newheight; y++) {
 		const int yposi = ypos >> 16;
 		const uint16_t weight = ypos & 0xffff;
-		if (yposi != last_yposi) {
-			ywn += width;
-			last_yposi = yposi;
-			stmp = tline;
-			tline = nline;
-			nline = stmp;
-			memcpy(nline, &src[ywn], nsz);
-		}
-		if (weight == 0 || yposi >= height - 1) {
-			memcpy(dst, tline, tsz);
+		uint32_t const *row1 = &src[yposi * width];
+		uint32_t const *row2 = yposi < height - 1 ? row1 + width : row1;
+		const bool repeated_row = yrepeat > 1
+		    && yposi < height - 1
+		    && (yposi / yrepeat) == ((yposi + 1) / yrepeat);
+
+		if (weight == 0 || row1 == row2 || repeated_row) {
+			memcpy(dst, row1, row_bytes);
 			dst += width;
 		}
 		else {
 			for (x = 0; x < width; x++) {
 				// Now pick the two pixels
-				const uint32_t pix1 = tline[x];
-				const uint32_t pix2 = nline[x];
+				const uint32_t pix1 = row1[x];
+				const uint32_t pix2 = row2[x];
 				if (pix1 == pix2)
 					*dst = pix1;
 				else
@@ -924,17 +906,6 @@ interpolate_height(uint32_t const* src, uint32_t* dst, const int width, const in
 		}
 		ypos += mult;
 	}
-
-	return;
-fail:
-	free(nline);
-	free(tline);
-	nline = NULL;
-	tline = NULL;
-	nsz = 0;
-	tsz = 0;
-	memcpy(dst, src, width * height * sizeof(*src));
-	fprintf(stderr, "Allocation failure in interpolate_height()!");
 }
 
 static void

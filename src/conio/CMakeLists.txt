@@ -261,6 +261,9 @@ endif()
 target_link_libraries(ciolib ${CMAKE_THREAD_LIBS_INIT})
 target_link_libraries(ciolib hash encode xpdev)
 
+add_executable(scale_spinner scale_spinner.c)
+target_link_libraries(scale_spinner ciolib xpdev)
+
 if(UNIX AND SDL2_FOUND)
 	enable_testing()
 	add_executable(cterm_test cterm_test.c)
