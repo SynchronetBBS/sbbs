@@ -65,11 +65,11 @@ void wren_result_push(WrenHandle *fiber, void *data,
 #define WREN_HOST_MAX_PENDING_TIMERS  32
 
 /* One-shot Timer.trigger registration: a fiber waiting to be resumed
- * at `due_s` (xp_timer() value).  Stored in the host's
+ * at `due_ms` (xp_fast_timer64_ms() value).  Stored in the host's
  * pending_timers array and swept once per doterm() iteration. */
 struct wren_pending_timer {
 	WrenHandle *fiber;
-	long double due_s;
+	int64_t due_ms;
 };
 
 enum wren_hook_event {
@@ -111,7 +111,7 @@ struct wren_hook_entry {
 
 	/* Timer-only fields (ev == WREN_HOOK_TIMER). */
 	uint32_t             interval_ms;
-	long double          next_fire_s;
+	int64_t              next_fire_ms;
 
 	/* Streaming-regex fields (ev == WREN_HOOK_INPUT, regex hooks). */
 	struct Prog         *regex_prog;
@@ -184,7 +184,7 @@ struct wren_host_state {
 	int         scrollback_save_filled;
 
 	/* One-shot timer registrations from Timer.trigger.  Bounded ring
-	 * of (fiber, due_s) entries; swept once per doterm() iteration. */
+	 * of (fiber, due_ms) entries; swept once per doterm() iteration. */
 	struct wren_pending_timer pending_timers[WREN_HOST_MAX_PENDING_TIMERS];
 	int                       pending_timer_count;
 

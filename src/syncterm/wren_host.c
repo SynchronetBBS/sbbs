@@ -763,7 +763,7 @@ wren_host_register_timer(WrenVM *vm, int ms, int fn_slot)
 	t->ev          = WREN_HOOK_TIMER;
 	t->fn          = wrenGetSlotHandle(vm, fn_slot);
 	t->interval_ms = (uint32_t)ms;
-	t->next_fire_s = xp_timer() + (long double)ms / 1000.0L;
+	t->next_fire_ms = xp_fast_timer64_ms() + ms;
 	state.timers[state.timer_count++] = t;
 	return t;
 }
@@ -1552,10 +1552,10 @@ wren_host_dispatch_timer(void)
 {
 	if (!active || !on_owner_thread())
 		return;
-	long double now = xp_timer();
+	int64_t now = xp_fast_timer64_ms();
 	for (int i = 0; i < state.timer_count; i++) {
 		struct wren_hook_entry *t = state.timers[i];
-		if (t == NULL || t->fn == NULL || now < t->next_fire_s)
+		if (t == NULL || t->fn == NULL || now < t->next_fire_ms)
 			continue;
 		wrenEnsureSlots(state.vm, 2);
 		wrenSetSlotHandle(state.vm, 0, state.hook_class);
@@ -1565,9 +1565,9 @@ wren_host_dispatch_timer(void)
 		/* Advance by interval; if the loop stalled long enough that
 		 * we're more than one interval behind, jump forward to "now"
 		 * rather than firing repeatedly trying to catch up. */
-		t->next_fire_s += (long double)t->interval_ms / 1000.0L;
-		if (t->next_fire_s < now)
-			t->next_fire_s = now + (long double)t->interval_ms / 1000.0L;
+		t->next_fire_ms += t->interval_ms;
+		if (t->next_fire_ms < now)
+			t->next_fire_ms = now + t->interval_ms;
 	}
 }
 

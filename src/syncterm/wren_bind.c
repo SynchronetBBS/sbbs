@@ -429,7 +429,7 @@ fn_Codepage_encodes_(WrenVM *vm)
  *
  * One-shot fiber resumption after a delay.  The foreign captures the
  * fiber and an absolute due-time; doterm()'s sweep pushes a
- * TimerElapsed onto the result queue once xp_timer() reaches that
+ * TimerElapsed onto the result queue once xp_fast_timer64_ms() reaches that
  * time.  Multiple pending entries per fiber are fine - each yields
  * one event independently.
  *
@@ -539,7 +539,7 @@ fn_Timer_trigger(WrenVM *vm)
 	struct wren_pending_timer *t =
 	    &st->pending_timers[st->pending_timer_count++];
 	t->fiber = wrenGetSlotHandle(vm, 1);
-	t->due_s = xp_timer() + ms / 1000.0L;
+	t->due_ms = xp_fast_timer64_ms() + (int64_t)ms;
 	wrenSetSlotNull(vm, 0);
 }
 
@@ -549,11 +549,11 @@ wren_bind_sweep_pending_timers(void)
 	struct wren_host_state *st = wren_host_state();
 	if (st == NULL || st->pending_timer_count == 0)
 		return;
-	long double now = xp_timer();
+	int64_t now = xp_fast_timer64_ms();
 	int w = 0;
 	for (int r = 0; r < st->pending_timer_count; r++) {
 		struct wren_pending_timer t = st->pending_timers[r];
-		if (now < t.due_s) {
+		if (now < t.due_ms) {
 			if (w != r)
 				st->pending_timers[w] = t;
 			w++;

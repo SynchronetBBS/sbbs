@@ -784,11 +784,9 @@ int log_level = LOG_INFO;
 static void
 inline_transfer_pump_wren_(void)
 {
-	static long double last_pump = 0;
-	long double         now      = xp_timer();
-	if (now - last_pump < 0.05L)
-		return;
-	last_pump = now;
+	static int64_t last_pump = 0;
+	int64_t        now;
+
 	if (!wren_host_active())
 		return;
 	/* Worker threads must never touch the Wren VM — TransferApp's
@@ -797,6 +795,11 @@ inline_transfer_pump_wren_(void)
 	 * caller is almost certainly the worker). */
 	if (xfer_session_active())
 		return;
+
+	now = xp_fast_timer64_ms();
+	if (now - last_pump < 50)
+		return;
+	last_pump = now;
 	wren_result_drain();
 	wren_bind_sweep_pending_timers();
 	wren_host_dispatch_timer();
