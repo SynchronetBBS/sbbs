@@ -240,6 +240,106 @@ HTTPRequest.prototype.Post=function(url, data, referer, base, content_type) {
 	return(this.body);
 };
 
+/* Streaming POST: same shape as Post(), but reads the response in chunks
+ * and invokes `on_chunk(text)` for each body chunk as it arrives. Returns
+ * the full accumulated body string after the stream completes.
+ *
+ * Handles HTTP/1.1 chunked transfer encoding, which is what server-sent
+ * events (SSE) and similar streaming APIs use. Falls back to a single
+ * on_chunk call with the whole body if the server doesn't chunk.
+ *
+ * Sends HTTP/1.1 (vs the default Post()'s 1.0) because chunked transfer
+ * is an HTTP/1.1 feature -- servers using non-chunked frames over 1.0
+ * still work but won't actually stream incrementally. */
+HTTPRequest.prototype.SetupPostStreaming = function(url, referer, base, data, content_type) {
+	if (content_type === undefined)
+		content_type = 'application/x-www-form-urlencoded';
+	this.referer = referer;
+	this.base    = base;
+	this.url     = new URL(url, this.base);
+	if (this.url.scheme != 'http' && this.url.scheme != 'https')
+		throw new Error("Unknown scheme! '" + this.url.scheme + "' in url: " + url);
+	if (this.url.path == '')
+		this.url.path = '/';
+	this.request = "POST " + this.url.request_path + " HTTP/1.1";
+	this.request_headers = [];
+	this.AddDefaultHeaders();
+	this.AddExtraHeaders();
+	this.body = data;
+	this.request_headers.push("Content-Type: " + content_type);
+	this.request_headers.push("Content-Length: " + data.length);
+};
+
+/* Read a chunked-transfer-encoded body, calling on_chunk(text) for each
+ * chunk as it arrives. Decodes the wire format:
+ *     <hex_size>\r\n   (optional ";chunk-extension" after the size)
+ *     <bytes>\r\n
+ *     ...repeats...
+ *     0\r\n
+ *     \r\n              (optional trailers, then empty line)
+ * Sets this.body to the accumulated text. */
+HTTPRequest.prototype.ReadChunkedBody = function(on_chunk) {
+	var accum = '';
+	while (true) {
+		var size_line = this.sock.recvline(64, this.recv_timeout);
+		if (size_line == null)
+			throw new Error("Unable to read chunk size");
+		/* Chunk-size lines can have ";extension" after hex size. */
+		var hex = size_line.replace(/[\r\n;].*$/, '').replace(/^\s+|\s+$/g, '');
+		var chunk_size = parseInt(hex, 16);
+		if (isNaN(chunk_size))
+			throw new Error("Bad chunk size: '" + size_line + "'");
+		if (chunk_size == 0) {
+			/* End of stream: read trailing CRLF (or trailer headers) */
+			while (true) {
+				var trailer = this.sock.recvline(4096, this.recv_timeout);
+				if (trailer == null || trailer == '') break;
+			}
+			break;
+		}
+		/* Read exactly chunk_size bytes. */
+		var remaining = chunk_size;
+		var chunk = '';
+		while (remaining > 0) {
+			var part = this.sock.recv(remaining, this.recv_timeout);
+			if (part == null || part == '')
+				throw new Error("Unable to read chunk data");
+			var s = part.toString();
+			chunk += s;
+			remaining -= s.length;
+		}
+		/* Consume the trailing CRLF after the chunk data. */
+		this.sock.recvline(4, this.recv_timeout);
+
+		accum += chunk;
+		if (on_chunk)
+			on_chunk(chunk);
+	}
+	this.body = accum;
+};
+
+HTTPRequest.prototype.PostStreaming = function(url, data, on_chunk, content_type, referer, base) {
+	this.SetupPostStreaming(url, referer, base, data, content_type);
+	this.BasicAuth();
+	this.SendRequest();
+	this.ReadStatus();
+	this.ReadHeaders();
+	var te_list = this.response_headers_parsed['transfer-encoding']
+	           || this.response_headers_parsed['Transfer-Encoding'];
+	var te = (te_list && te_list.length) ? te_list.join(' ').toLowerCase() : '';
+	if (te.indexOf('chunked') >= 0) {
+		this.ReadChunkedBody(on_chunk);
+	} else {
+		/* Non-chunked response: read the whole body, deliver as a single
+		 * chunk. Caller still gets the on_chunk callback so they don't
+		 * need separate code paths. */
+		this.ReadBody();
+		if (on_chunk && this.body)
+			on_chunk(this.body);
+	}
+	return this.body;
+};
+
 HTTPRequest.prototype.Head=function(url, referer, base) {
 	var i;
 	var m;
