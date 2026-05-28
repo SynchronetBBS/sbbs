@@ -383,6 +383,7 @@ DLLEXPORT long		xp_random(int);
 DLLEXPORT long double xp_timer(void);
 DLLEXPORT uint64_t xp_timer64(void);
 DLLEXPORT int64_t xp_fast_timer64(void);
+DLLEXPORT int64_t xp_fast_timer64_ms(void);
 DLLEXPORT char*		lastchar(const char* str);
 DLLEXPORT int		safe_snprintf(char *dst, size_t size, const char *fmt, ...)
 #if defined(__GNUC__)   // Catch printf-format errors
