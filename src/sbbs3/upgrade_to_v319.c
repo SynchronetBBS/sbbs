@@ -28,7 +28,7 @@
 #include "dat_rec.h"
 
 scfg_t      scfg;
-BOOL        overwrite_existing_files = TRUE;
+BOOL        overwrite_existing_files = FALSE;
 ini_style_t style = { 25, NULL, NULL, " = ", NULL };
 
 ssize_t my_write(int fd, const void* buf, size_t count)
@@ -45,21 +45,6 @@ ssize_t my_read(int fd, void* buf, size_t count)
 	if (rd != count)
 		perror("reading file");
 	return rd;
-}
-
-BOOL overwrite(const char* path)
-{
-	char str[128];
-
-	if (!overwrite_existing_files && fexist(path)) {
-		printf("\n%s already exists, overwrite? ", path);
-		if (fgets(str, sizeof(str), stdin) == NULL)
-			*str = '\0';
-		if (toupper(*str) != 'Y')
-			return FALSE;
-	}
-
-	return TRUE;
 }
 
 int lprintf(int level, const char *fmt, ...)
@@ -379,6 +364,7 @@ bool upgrade_file_bases(bool hash)
 {
 	int    result;
 	ulong  total_files = 0;
+	ulong  skipped_dirs = 0;
 	time_t start = time(NULL);
 
 	printf("Upgrading File Bases...\n");
@@ -390,6 +376,14 @@ bool upgrade_file_bases(bool hash)
 		if ((result = smb_open(&smb)) != SMB_SUCCESS) {
 			fprintf(stderr, "Error %d (%s) opening %s\n", result, smb.last_error, smb.file);
 			return false;
+		}
+		/* Refuse to clobber an already-upgraded file base unless -f was given. */
+		if (smb.status.total_msgs > 0 && !overwrite_existing_files) {
+			printf("\n%-16s already upgraded (%u files), skipping. Use -f to force overwrite.\n"
+			       , scfg.dir[i]->code, smb.status.total_msgs);
+			smb_close(&smb);
+			skipped_dirs++;
+			continue;
 		}
 		smb.status.attr = SMB_FILE_DIRECTORY;
 		if (!hash || (scfg.dir[i]->misc & DIR_NOHASH))
@@ -525,12 +519,18 @@ bool upgrade_file_bases(bool hash)
 	}
 	time_t diff = time(NULL) - start;
 	printf("\r%lu files imported in %u directories (%lu files/second)%40s\n"
-	       , total_files, scfg.total_dirs, (ulong)(diff ? total_files / diff : total_files), "");
+	       , total_files, (uint)(scfg.total_dirs - skipped_dirs), (ulong)(diff ? total_files / diff : total_files), "");
+	if (skipped_dirs > 0)
+		printf("%lu directories skipped (already upgraded). Re-run with -f to force overwrite.\n"
+		       , skipped_dirs);
 
 	return true;
 }
 
-char *usage = "\nusage: upgrade [ctrl_dir]\n";
+char *usage = "\nusage: upgrade [-f] [ctrl_dir]\n"
+              "\n"
+              "  -f   force overwrite of file bases that have already been upgraded\n"
+              "       (DANGEROUS: destroys the current SMB file base contents)\n";
 
 int main(int argc, char** argv)
 {
@@ -539,6 +539,23 @@ int main(int argc, char** argv)
 	fprintf(stderr, "\nupgrade - Upgrade Synchronet BBS to %s\n"
 	        , VERSION
 	        );
+
+	for (int i = 1; i < argc; i++) {
+		if (argv[i][0] == '-') {
+			switch (tolower((uchar)argv[i][1])) {
+				case 'f':
+					overwrite_existing_files = TRUE;
+					break;
+				case 'h':
+				case '?':
+					printf("%s", usage);
+					return EXIT_SUCCESS;
+				default:
+					fprintf(stderr, "Unrecognized option: %s\n%s", argv[i], usage);
+					return EXIT_FAILURE + __COUNTER__;
+			}
+		}
+	}
 
 	memset(&scfg, 0, sizeof(scfg));
 	scfg.size = sizeof(scfg);
