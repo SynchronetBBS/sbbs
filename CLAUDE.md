@@ -51,3 +51,11 @@ Other areas where MSVC is more forgiving than GCC/Clang:
 Borland is even more conservative than MSVC on modern C/C++ features and largely affects only the two GUI sub-projects; if you're touching those, see `src/sbbs3/CLAUDE.md` and the `synchronet-build` skill's Borland section. For everything else, the practical rule is: write code that compiles cleanly under GCC/Clang first; MSVC will follow.
 
 When you make a `.c`/`.cpp` change and can only verify it under MSVC, say so explicitly when offering the commit so the next compile under GCC/Clang isn't a surprise.
+
+## Release notes — `docs/v3*_new*`
+
+Each release has a "what's new" file in `docs/` (`docs/v321_new.txt`, `docs/v320_new.txt`, …, and the in-progress `docs/v322_new.md`). When recording changes for an upcoming release, update the file for that version (one greater than the last shipped release).
+
+- **Match the existing `v3xx_new` files in style, category structure, and depth.** Group changes under the same kinds of headings the prior notes use, written for sysops/users — *what* changed and *why it matters* — not as a raw commit log.
+- **Keep entries brief.** Concise, one-line-style bullets; no paragraphs or commit-message dumps.
+- To find what belongs in the notes, review the merged changes on master since the previous release tag (git / GitLab history); `data/gitpush.jsonl` can help enumerate them.
