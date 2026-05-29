@@ -33,7 +33,9 @@
  *
  *   irc_network                            -- default "irc.synchro.net"
  *   irc_port                               -- default 6667
- *   irc_channel                            -- default "#synchronet"
+ *   irc_channels                           -- comma-separated list of
+ *                                             channels to join;
+ *                                             default "#synchronet"
  *   irc_nick                               -- default "<qwk_id>_<persona_name>",
  *                                             collisions get a "_" suffix
  *   irc_aliases                            -- comma-separated extra names
@@ -337,7 +339,7 @@ function reload_config_if_changed() {
     INTERVENTION_COOLDOWN  = parseInt(cfg.irc_intervention_cooldown, 10) || 900;
     INTERVENTION_MIN_SCORE = parseFloat(cfg.irc_intervention_min_score_per_token) || 8.0;
     STATIC_ALIASES         = build_aliases(cfg.irc_aliases);
-    /* irc_nick / irc_network / irc_channel changes require a
+    /* irc_nick / irc_network / irc_channels changes require a
      * reconnect to take effect -- we DON'T auto-reconnect on them
      * because that would disrupt the active session.  Sysop should
      * recycle the service if they want to change these. */
