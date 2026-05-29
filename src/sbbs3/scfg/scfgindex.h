@@ -3704,6 +3704,11 @@ static const scfg_option_t scfg_option_index[] = {
 	},
 	{
 		"Module",
+		"Guru",
+		"Chat Features > Artificial Gurus > Guru > Module"
+	},
+	{
+		"Module",
 		"List Files",
 		"System > Loadable Modules... > List Files > Module"
 	},

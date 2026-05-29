@@ -1130,6 +1130,9 @@ public:
 	void	guruchat(char* line, char* guru, int gurunum, char* last_answer);
 	bool	guruexp(char **ptrptr, char *line);
 	void	localguru(char *guru, int gurunum);
+	void	simulate_type(const char* str, bool with_typos = true, double speed_factor = 1.0);
+	bool	chat_llm_session(int gurunum);
+	bool	chat_llm_multinode_turn(int gurunum, const char* input);
 	bool	sysop_page(void);
 	bool	guru_page(void);
 	void	privchat(bool forced=false, int node_num=0);

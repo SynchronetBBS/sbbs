@@ -991,6 +991,8 @@ bool write_chat_cfg(scfg_t* cfg)
 		SAFEPRINTF(section, "guru:%s", cfg->guru[i]->code);
 		iniSetString(&ini, section, "name", cfg->guru[i]->name, &ini_style);
 		iniSetString(&ini, section, "ars", cfg->guru[i]->arstr, &ini_style);
+		if (cfg->guru[i]->module[0])
+			iniSetString(&ini, section, "module", cfg->guru[i]->module, &ini_style);
 	}
 
 	for (int i = 0; i < cfg->total_actsets; i++) {

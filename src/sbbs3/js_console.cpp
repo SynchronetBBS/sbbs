@@ -21,6 +21,7 @@
 
 #include "sbbs.h"
 #include "js_request.h"
+#include "str_util.h"  /* utf8_to_cp437_inplace, for js_simulate_type */
 
 #ifdef JAVASCRIPT
 
@@ -2443,6 +2444,62 @@ js_term_supports(JSContext *cx, uintN argc, jsval *arglist)
 	return JS_TRUE;
 }
 
+/* console.simulate_type(str [,with_typos=true] [,speed_factor=1.0])
+ *
+ * Output a string with per-character typing delays and optional
+ * fat-finger / transposition typo simulation. Delegates to
+ * sbbs_t::simulate_type (chat.cpp). Used by chat_llm.js's streaming
+ * mode to emit tokens as they arrive over SSE.
+ *
+ * UTF-8 -> CP437 conversion: if the caller's terminal doesn't support
+ * UTF-8, we transform the input string in place so smart-quotes, em
+ * dashes, etc. become their CP437 equivalents (or "?" for unmappable
+ * chars like emojis). Otherwise the bytes pass through unchanged.
+ * Same safety net the C++ chat_llm_session applies to non-streamed
+ * replies; without this, streaming bypasses the conversion and the
+ * caller sees garbage like "ΓÇÖ" for a curly apostrophe.
+ */
+static JSBool
+js_simulate_type(JSContext *cx, uintN argc, jsval *arglist)
+{
+	jsval*     argv = JS_ARGV(cx, arglist);
+	sbbs_t*    sbbs;
+	char*      cstr = NULL;
+	size_t     cstr_sz = 0;
+	JSBool     with_typos = JS_TRUE;
+	double     speed_factor = 1.0;
+	jsrefcount rc;
+
+	if ((sbbs = (sbbs_t*)js_GetClassPrivate(cx, JS_THIS_OBJECT(cx, arglist), &js_console_class)) == NULL)
+		return JS_FALSE;
+
+	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
+
+	if (argc < 1)
+		return JS_TRUE;
+
+	JSVALUE_TO_RASTRING(cx, argv[0], cstr, &cstr_sz, NULL);
+	if (cstr == NULL)
+		return JS_FALSE;
+
+	if (argc >= 2)
+		JS_ValueToBoolean(cx, argv[1], &with_typos);
+	if (argc >= 3) {
+		double n;
+		if (JS_ValueToNumber(cx, argv[2], &n))
+			speed_factor = n;
+	}
+
+	rc = JS_SUSPENDREQUEST(cx);
+	if (!sbbs->term->supports(UTF8))
+		utf8_to_cp437_inplace(cstr);
+	sbbs->simulate_type(cstr, with_typos == JS_TRUE, speed_factor);
+	JS_RESUMEREQUEST(cx, rc);
+
+	free(cstr);
+	return JS_TRUE;
+}
+
 static JSBool
 js_term_updated(JSContext *cx, uintN argc, jsval *arglist)
 {
@@ -2907,6 +2964,13 @@ static jsSyncMethodSpec js_console_functions[] = {
 		        "supports all the specified <i>terminal_flags</i>, or returns the current user/client's "
 		        "<i>terminal_flags</i> (numeric bit-field) if no <i>terminal_flags</i> were specified")
 	 , 314
+	},
+	{"simulate_type",   js_simulate_type,   1, JSTYPE_VOID,     JSDOCSTR("<i>string</i> text [,<i>bool</i> with_typos=true] [,<i>number</i> speed_factor=1.0]")
+	 , JSDOCSTR("Output <i>text</i> with per-character typing delays and optional fat-finger "
+		        "and transposition typo simulation. <i>speed_factor</i> multiplies the typing "
+		        "speed (1.0 = legacy guru speed, 2.0 = 2x faster, 0 = instant). Used by "
+		        "chat_llm.js for token-by-token streaming output of LLM responses.")
+	 , 32200
 	},
 	{"term_updated",    js_term_updated,    1, JSTYPE_BOOLEAN,  JSDOCSTR("")
 	 , JSDOCSTR("Update the node's <tt>terminal.ini</tt> file to match the current terminal settings")

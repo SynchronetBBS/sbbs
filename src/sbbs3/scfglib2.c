@@ -629,6 +629,8 @@ bool read_chat_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 
 		SAFECOPY(cfg->guru[i]->arstr, iniGetString(section, NULL, "ars", "", value));
 		arstr(NULL, cfg->guru[i]->arstr, cfg, cfg->guru[i]->ar);
+
+		SAFECOPY(cfg->guru[i]->module, iniGetString(section, NULL, "module", "", value));
 	}
 	iniFreeStringList(list);
 

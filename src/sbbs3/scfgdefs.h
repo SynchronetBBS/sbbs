@@ -205,6 +205,7 @@ typedef struct {							/* Gurus */
 	char		name[26],
 				arstr[LEN_ARSTR+1];
 	uchar		ar[LEN_ARSTR+1];
+	char		module[LEN_CODE+1];			/* JS module (no .js); empty = legacy pattern engine */
 
 } guru_t;
 

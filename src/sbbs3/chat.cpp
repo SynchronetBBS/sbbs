@@ -20,6 +20,7 @@
  ****************************************************************************/
 
 #include "sbbs.h"
+#include "js_request.h"  /* JS_BEGINREQUEST / JS_ENDREQUEST for chat_llm_session() */
 
 #define PCHAT_LEN 1000      /* Size of Private chat file */
 
@@ -519,9 +520,23 @@ void sbbs_t::multinodechat(int channel)
 						getnodedat(qusr[i], &node);
 						putnmsg(qusr[i], buf);
 					}
-					if (!usrs && channel && gurubuf
-					    && cfg.chan[channel - 1]->misc & CHAN_GURU)
-						guruchat(pgraph, gurubuf, cfg.chan[channel - 1]->guru, guru_lastanswer);
+					/* Channel-guru turn -- legacy only fires the guru
+					 * when alone in the channel.  Dispatch to the LLM
+					 * engine if the channel's guru has a module
+					 * configured, otherwise fall back to the .dat
+					 * pattern engine. */
+					if (!usrs && channel
+					    && (cfg.chan[channel - 1]->misc & CHAN_GURU)
+					    && cfg.chan[channel - 1]->guru < cfg.total_gurus) {
+						int gn = cfg.chan[channel - 1]->guru;
+#ifdef JAVASCRIPT
+						if (cfg.guru[gn]->module[0])
+							chat_llm_multinode_turn(gn, pgraph);
+						else
+#endif
+						if (gurubuf)
+							guruchat(pgraph, gurubuf, gn, guru_lastanswer);
+					}
 				}
 			}
 		}
@@ -560,6 +575,14 @@ bool sbbs_t::guru_page(void)
 		if (i < 0)
 			return false;
 	}
+#ifdef JAVASCRIPT
+	/* If a JS module is configured for this guru, dispatch to the LLM
+	 * engine instead of loading the .dat file for the legacy pattern
+	 * engine. Empty module field = legacy behavior (back-compat). */
+	if (cfg.guru[i]->module[0])
+		return chat_llm_session(i);
+#endif
+
 	snprintf(path, sizeof path, "%s%s.dat", cfg.ctrl_dir, cfg.guru[i]->code);
 	if ((file = nopen(path, O_RDONLY)) == -1) {
 		errormsg(WHERE, ERR_OPEN, path, O_RDONLY);
@@ -1474,7 +1497,7 @@ void sbbs_t::guruchat(char* line, char* gurubuf, int gurunum, char* last_answer)
 	bool       mistakes = 1, hu = 0;
 	char       tmp[512];
 	FILE*      fp;
-	uint       c, i, j, k, answers;
+	uint       i, j, k, answers;
 	long       len;
 	struct  tm tm;
 
@@ -1711,35 +1734,15 @@ void sbbs_t::guruchat(char* line, char* gurubuf, int gurunum, char* last_answer)
 			theanswer[k] = 0;
 			mswait(500 + sbbs_random(1000));   /* thinking time */
 			if (action != NODE_MCHT) {
-				for (i = 0; i < k; i++) {
-					if (i && mistakes && theanswer[i] != theanswer[i - 1] &&
-					    ((!IS_ALPHANUMERIC(theanswer[i]) && !sbbs_random(100))
-					     || (IS_ALPHANUMERIC(theanswer[i]) && !sbbs_random(30)))) {
-						c = j = ((uint)sbbs_random(3) + 1);   /* 1 to 3 chars */
-						if (c < strcspn(theanswer + (i + 1), "\0., "))
-							c = j = 1;
-						while (j) {
-							outchar(97 + sbbs_random(26));
-							mswait(25 + sbbs_random(150));
-							j--;
-						}
-						if (sbbs_random(100)) {
-							mswait(100 + sbbs_random(300));
-							while (c) {
-								term->backspace();
-								mswait(50 + sbbs_random(50));
-								c--;
-							}
-						}
-					}
-					outchar(theanswer[i]);
-					if (theanswer[i] == theanswer[i + 1])
-						mswait(25 + sbbs_random(50));
-					else
-						mswait(25 + sbbs_random(150));
-					if (theanswer[i] == ' ')
-						mswait(sbbs_random(50));
-				}
+				/* Shared per-char typing simulator (see simulate_type
+				 * definition below). `mistakes` is the legacy toggle that
+				 * the pattern file flips with the `!` control code, so
+				 * pass it through as the with_typos flag. speed_factor=1.0
+				 * preserves the legacy 25-150ms-per-char timing. As a
+				 * side benefit of the consolidation, the legacy guru now
+				 * gets QWERTY-adjacency typos (instead of uniform a-z)
+				 * and transposition typos. */
+				simulate_type(theanswer, mistakes != 0, 1.0);
 			}
 			else {
 				mswait(strlen(theanswer) * 100);
@@ -1962,4 +1965,682 @@ void sbbs_t::localguru(char *gurubuf, int gurunum)
 	console = con;                /* restore console state */
 }
 
+#ifdef JAVASCRIPT
+/****************************************************************************/
+/* LLM-backed guru chat session. Dispatches via the JS module named in       */
+/* cfg.guru[gurunum]->module (loaded from exec/<module>.js, with mods/       */
+/* shadowing). Calls open_session(ctx) for the greeting and chat_session     */
+/* (input, ctx) for each user turn. ctx is built via the JS helper           */
+/* ctx_from_user(); see exec/chat_llm.js. Memory persistence, summarization, */
+/* and /forget detection are handled JS-side.                                */
+/****************************************************************************/
+static bool js_to_cstr(JSContext* cx, jsval val, char* out, size_t outsz)
+{
+	if (!JSVAL_IS_STRING(val) || outsz == 0)
+		return false;
+	JSString* s = JSVAL_TO_STRING(val);
+	char*     cs = JS_EncodeString(cx, s);
+	if (cs == NULL)
+		return false;
+	strncpy(out, cs, outsz - 1);
+	out[outsz - 1] = '\0';
+	JS_free(cx, cs);
+	return true;
+}
 
+static bool is_chat_exit_cmd(const char* s, const char* quit_text)
+{
+	while (*s == '/')
+		s++;
+	if (stricmp(s, "bye") == 0)
+		return true;
+	if (stricmp(s, "exit") == 0)
+		return true;
+	/* Match the sysop-configured/translated text[Quit] string (default
+	 * "Quit"). Covers localized installs (Spanish "Salir", German
+	 * "Beenden", etc.). */
+	if (quit_text && *quit_text && stricmp(s, quit_text) == 0)
+		return true;
+	return false;
+}
+
+/* US-QWERTY "fat finger" neighbor table for realistic typo generation.
+ * Each entry lists keys adjacent on the keyboard (above/below/left/
+ * right and diagonals) to the indexed letter. Used by simulate_type
+ * to pick a believable wrong key instead of a uniformly-random letter
+ * (which is what the legacy guruchat loop did). */
+static const char* qwerty_neighbors[26] = {
+	/* a */ "qwsxz",
+	/* b */ "vghn",
+	/* c */ "xdfv",
+	/* d */ "serfcx",
+	/* e */ "wsdr",
+	/* f */ "drtgvc",
+	/* g */ "ftyhbv",
+	/* h */ "gyujnb",
+	/* i */ "ujko",
+	/* j */ "huiknm",
+	/* k */ "jiolm",
+	/* l */ "kop",
+	/* m */ "njk",
+	/* n */ "bhjm",
+	/* o */ "iklp",
+	/* p */ "ol",
+	/* q */ "wa",
+	/* r */ "edft",
+	/* s */ "awdxz",
+	/* t */ "rfgy",
+	/* u */ "yhji",
+	/* v */ "cfgb",
+	/* w */ "qase",
+	/* x */ "zsdc",
+	/* y */ "tghu",
+	/* z */ "asx"
+};
+
+static char fat_finger(char c)
+{
+	if (!isalpha((unsigned char)c)) return c;
+	char lc = (char)tolower((unsigned char)c);
+	const char* n = qwerty_neighbors[lc - 'a'];
+	if (!n || !*n) return c;
+	char picked = n[sbbs_random((int)strlen(n))];
+	return isupper((unsigned char)c) ? (char)toupper((unsigned char)picked) : picked;
+}
+
+/* Per-character output with human-like timing and optional typos.
+ * Replaces the legacy inline loop in localguru()'s guruchat() output
+ * (chat.cpp:1714-1742) -- extracted so both the legacy engine (still
+ * inline for now) and the LLM dispatch can share the behavior.
+ *
+ * Typo model:
+ *  - Substitution: ~2.5% chance per alphanumeric (~1% on non-alnum) to
+ *    type 1-3 fat-finger neighbor keys, then ~99% chance backspace and
+ *    correct. Replaces the legacy random a-z with QWERTY-adjacency for
+ *    more believable mistakes.
+ *  - Transposition: ~1.7% chance per pair of alphanumeric chars to
+ *    type them in reverse order, then ~85% chance backspace and correct.
+ *    Captures the "teh"/"adn" class of typos that substitution can't.
+ *    Uncorrected transpositions are the dominant source of visible typo
+ *    bleed-through (substitution corrects 99% of the time), so the
+ *    correction rate is set higher than substitution's noise floor.
+ *
+ * Caller is responsible for any trailing newline.
+ */
+void sbbs_t::simulate_type(const char* str, bool with_typos, double speed_factor)
+{
+	if (str == NULL) return;
+	int len = (int)strlen(str);
+	if (len == 0) return;
+
+	/* speed_factor <= 0 means "skip typing simulation entirely" -- just
+	 * print the whole string at terminal speed. Useful when the sysop
+	 * wants snappy bot output with no character delays. */
+	if (speed_factor <= 0) {
+		bputs(str);
+		return;
+	}
+
+	/* All mswait calls below divide their delay by speed_factor. So
+	 * factor=1.0 preserves legacy timing; factor=2.0 halves all delays;
+	 * factor=3.0 thirds them; etc. The clamp guards against runaway
+	 * tiny waits if a sysop sets factor extremely high. */
+	#define TYPE_WAIT(ms) mswait((int)(((ms) / speed_factor) < 1 ? 1 : ((ms) / speed_factor)))
+
+	for (int i = 0; i < len; i++) {
+		char ch = str[i];
+
+		/* Newlines bypass typo logic and force CRLF. Synchronet's
+		 * outchar('\n') only does a line-feed (term->line_feed in
+		 * cp437_out), so the cursor stays in the previous column on
+		 * the new row. LLM responses use LF-only line endings, which
+		 * without this fix render with the second paragraph indented
+		 * to wherever the first paragraph ended. */
+		if (ch == '\n') {
+			term->newline();
+			if (i + 1 < len)
+				TYPE_WAIT(80);   /* short pause at paragraph breaks */
+			continue;
+		}
+
+		/* Transposition error: swap str[i] and str[i+1].  Eligible
+		 * only when both are alphanumeric and different.  Disallowed
+		 * when str[i] is word-initial -- real typists are highly
+		 * accurate on the first key of each word, so a transposition
+		 * starting at position 0 of a word is uncommon. */
+		bool transp_word_initial = i > 0 && !IS_ALPHANUMERIC(str[i - 1]);
+		if (with_typos
+		    && i + 1 < len
+		    && IS_ALPHANUMERIC(ch)
+		    && IS_ALPHANUMERIC(str[i + 1])
+		    && ch != str[i + 1]
+		    && !transp_word_initial
+		    && sbbs_random(60) == 0)
+		{
+			char a = ch;
+			char b = str[i + 1];
+			/* Type the pair in the wrong order. */
+			outchar(b);
+			TYPE_WAIT(25 + sbbs_random(100));
+			outchar(a);
+			TYPE_WAIT(25 + sbbs_random(100));
+			/* 85% chance to notice and correct (lower than substitution's
+			 * ~99% because real transpositions slip past more often in
+			 * practice, but high enough that uncorrected ones don't
+			 * dominate the output). */
+			if (sbbs_random(100) < 85) {
+				TYPE_WAIT(200 + sbbs_random(400));
+				term->backspace();
+				TYPE_WAIT(40 + sbbs_random(60));
+				term->backspace();
+				TYPE_WAIT(40 + sbbs_random(80));
+				outchar(a);
+				TYPE_WAIT(25 + sbbs_random(100));
+				outchar(b);
+				TYPE_WAIT(25 + sbbs_random(100));
+			}
+			/* If we didn't correct, the wrong order stays in the output.
+			 * Either way, we've consumed both chars; skip the next i. */
+			i++;
+			continue;
+		}
+
+		/* Substitution typo: type 1-3 fat-finger neighbors, then likely
+		 * backspace + correct.  ~2.5% per word-internal alnum, ~0.6%
+		 * per word-initial alnum, ~1% per non-alnum.  Word-initial
+		 * suppression matches typing research (Salthouse 1986 and
+		 * follow-ups): transcription typists pause and orient before
+		 * each new word, so word-initial keystrokes have a much lower
+		 * error rate than word-internal ones.
+		 *
+		 * "Word-initial" = previous char wasn't alphanumeric (covers
+		 * start-of-string after the `i > 0` guard handles that
+		 * separately, plus after whitespace and punctuation).
+		 *
+		 * Doubled-letter guard (ch != str[i-1]) preserved: the same
+		 * letter pressed twice rarely fat-fingers. */
+		bool word_initial = i > 0 && !IS_ALPHANUMERIC(str[i - 1]);
+		int sub_denom = !IS_ALPHANUMERIC(ch) ? 100
+		              : word_initial         ? 160
+		                                     : 40;
+		if (i > 0 && with_typos && ch != str[i - 1]
+		    && !sbbs_random(sub_denom))
+		{
+			int c = (int)sbbs_random(3) + 1;   /* 1 to 3 chars */
+			if (c < (int)strcspn(str + (i + 1), "\0., "))
+				c = 1;
+			int j = c;
+			while (j) {
+				outchar(fat_finger(ch));
+				TYPE_WAIT(25 + sbbs_random(150));
+				j--;
+			}
+			if (sbbs_random(100)) {
+				TYPE_WAIT(100 + sbbs_random(300));
+				while (c) {
+					term->backspace();
+					TYPE_WAIT(50 + sbbs_random(50));
+					c--;
+				}
+			}
+		}
+
+		outchar(ch);
+		/* Skip the trailing pacing wait when there's no next char in
+		 * THIS call -- the wait paces against the next character, and
+		 * with no next character it just delays whatever the caller
+		 * does after (term->newline, save_memory, the next streamed
+		 * SSE token...). Eliminates a perceptible 25-175ms gap
+		 * between the last typed char and the cursor jumping to the
+		 * next line on every reply. */
+		if (i + 1 < len) {
+			if (ch == str[i + 1])
+				TYPE_WAIT(25 + sbbs_random(50));
+			else
+				TYPE_WAIT(25 + sbbs_random(150));
+			if (ch == ' ')
+				TYPE_WAIT(sbbs_random(50));
+		}
+	}
+
+	#undef TYPE_WAIT
+}
+
+/* Append one user/bot exchange to data/logs/guru.log, matching the
+ * format the legacy guruchat() writes (chat.cpp:1759-ish). Both engines
+ * use the same log file so sysops see all guru conversations together.
+ * `input` may be empty for synthetic events like opening greetings --
+ * "(paged)" is used in that case. */
+static void log_guru_turn(sbbs_t* sbbs, int gurunum,
+                          const char* input, const char* reply,
+                          const char* profile /* nullable */)
+{
+	if (sbbs == NULL || reply == NULL)
+		return;
+	char  path[MAX_PATH + 1];
+	SAFEPRINTF(path, "%sguru.log", sbbs->cfg.logs_dir);
+	FILE* fp = fopenlog(&sbbs->cfg, path, /* shareable: */ true);
+	if (fp == NULL) {
+		sbbs->errormsg(WHERE, ERR_OPEN, path, O_WRONLY | O_CREAT | O_APPEND);
+		return;
+	}
+	char ts[64];
+	xpDateTime_to_isoDateTimeStr(xpDateTime_now(), "-", " ", ":", 0,
+	                             ts, sizeof(ts) - 3);
+	fprintf(fp, "%s\r\n", ts);
+	if (sbbs->action == NODE_MCHT)
+		fprintf(fp, "[Multi] ");
+	fprintf(fp, "%s:\r\n", (sbbs->sys_status & SS_USERON)
+	        ? sbbs->useron.alias : "UNKNOWN");
+	fprintf(fp, "%s\r\n", (input && *input) ? input : "(paged)");
+	fprintf(fp, "%s:\r\n", sbbs->cfg.guru[gurunum]->name);
+	fprintf(fp, "%s\r\n", reply);
+	if (profile && *profile)
+		fprintf(fp, "[prof] %s\r\n", profile);
+	fclose(fp);
+}
+
+/* Read ctx._profile (set by chat_session() in JS). Returns NULL if the
+ * property doesn't exist or isn't a string. Caller must free with
+ * JS_free() if non-NULL. */
+static char* extract_profile(JSContext* cx, jsval ctx_val)
+{
+	if (!JSVAL_IS_OBJECT(ctx_val) || JSVAL_IS_NULL(ctx_val))
+		return NULL;
+	JSObject* obj = JSVAL_TO_OBJECT(ctx_val);
+	jsval v;
+	if (!JS_GetProperty(cx, obj, "_profile", &v) || !JSVAL_IS_STRING(v))
+		return NULL;
+	return JS_EncodeString(cx, JSVAL_TO_STRING(v));
+}
+
+bool sbbs_t::chat_llm_session(int gurunum)
+{
+	if (js_cx == NULL || js_glob == NULL) {
+		errormsg(WHERE, ERR_CHK, "chat_llm_session: no JS context", 0);
+		return false;
+	}
+	if (cfg.guru[gurunum]->module[0] == '\0')
+		return false;
+	if (sys_status & SS_GURUCHAT)
+		return false;
+
+	int  con = console;          /* save console state */
+	bool ok  = false;
+
+	sys_status |= SS_GURUCHAT;
+	console &= ~CON_PASSWORD;
+
+	/* Page animation -- only when arriving from the chat section,
+	 * matching the legacy localguru() behavior. */
+	if (action == NODE_CHAT) {
+		bprintf(text[PagingGuru], cfg.guru[gurunum]->name);
+		char dots = sbbs_random(25) + 25;
+		while (dots--) {
+			mswait(200);
+			outchar('.');
+		}
+	}
+	bprintf(text[SysopIsHere], cfg.guru[gurunum]->name);
+
+	/* Mark the node as being in a guru chat. */
+	if (getnodedat(cfg.node_num, &thisnode, true)) {
+		thisnode.aux = gurunum;
+		putnodedat(cfg.node_num, &thisnode);
+	}
+	action = NODE_GCHT;
+
+	/* Load the JS module. Its standalone block is guarded by
+	 * `typeof bbs == 'undefined'` which is false in a session, so loading
+	 * just defines the chat_session / open_session / ctx_from_user
+	 * functions in our global scope. */
+	char module_fname[MAX_PATH + 1];
+	SAFEPRINTF(module_fname, "%s.js", cfg.guru[gurunum]->module);
+	if (js_execfile(module_fname, /* startup_dir: */ NULL,
+	                /* scope: */ js_glob, js_cx, js_glob) != 0) {
+		bprintf("\r\n\1n\1rError loading chat module: %s\r\n", module_fname);
+		goto cleanup;
+	}
+
+	/* If the caller's terminal can't render UTF-8, we'll convert LLM
+	 * output via utf8_to_cp437_inplace() before printing -- belt-and-
+	 * suspenders against the model slipping emojis/other Unicode through
+	 * the "no emojis" prompt. */
+	bool supports_utf8 = term->supports(UTF8);
+
+	JS_BEGINREQUEST(js_cx);
+	{
+		jsval ctx_val = JSVAL_VOID;
+		jsval rval;
+		bool  ctx_rooted = false;
+		char  reply[2048];
+
+		/* Build ctx via ctx_from_user(user, code, name, supports_utf8). */
+		jsval user_val;
+		if (!JS_GetProperty(js_cx, js_glob, "user", &user_val)) {
+			lprintf(LOG_ERR, "chat_llm_session: no `user` JS global "
+			                 "in session (guru #%d)", gurunum);
+			goto js_done;
+		}
+		{
+			JSString* code_str = JS_NewStringCopyZ(js_cx, cfg.guru[gurunum]->code);
+			JSString* name_str = JS_NewStringCopyZ(js_cx, cfg.guru[gurunum]->name);
+			if (code_str == NULL || name_str == NULL)
+				goto js_done;
+			jsval args[4] = {
+				user_val,
+				STRING_TO_JSVAL(code_str),
+				STRING_TO_JSVAL(name_str),
+				BOOLEAN_TO_JSVAL(term->supports(UTF8) ? JS_TRUE : JS_FALSE)
+			};
+			if (!JS_CallFunctionName(js_cx, js_glob, "ctx_from_user",
+			                         4, args, &ctx_val)) {
+				lprintf(LOG_ERR, "chat_llm_session: ctx_from_user "
+				                 "JS call failed (guru #%d)", gurunum);
+				goto js_done;
+			}
+		}
+		JS_AddValueRoot(js_cx, &ctx_val);
+		ctx_rooted = true;
+
+		/* Read typing-simulation knobs the JS side stashed on ctx for us. */
+		double speed_factor = 2.0;
+		bool   sim_typos    = true;
+		{
+			JSObject* ctx_obj = JSVAL_TO_OBJECT(ctx_val);
+			jsval v;
+			if (JS_GetProperty(js_cx, ctx_obj, "typing_speed_factor", &v)) {
+				double n;
+				if (JS_ValueToNumber(js_cx, v, &n) && n >= 0)
+					speed_factor = n;
+			}
+			if (JS_GetProperty(js_cx, ctx_obj, "simulate_typos", &v)
+			    && JSVAL_IS_BOOLEAN(v))
+				sim_typos = (JSVAL_TO_BOOLEAN(v) == JS_TRUE);
+		}
+
+		/* Opening greeting via LLM open_session. With a fast model
+		 * (e.g. qwen2.5:7b) the opening returns in ~1-2s and produces
+		 * a contextual, varied hello using the same persona as the
+		 * chat turns. No fallback: if the LLM call fails, the caller
+		 * gets a clear error and the session exits -- much better than
+		 * a misleading legacy "hello" followed by an immediate failure
+		 * on their first message. */
+		{
+			attr(cfg.color[clr_chatlocal]);
+			jsval open_args[1] = { ctx_val };
+			if (JS_CallFunctionName(js_cx, js_glob, "open_session",
+			                        1, open_args, &rval)) {
+				if (JSVAL_IS_STRING(rval)
+				    && js_to_cstr(js_cx, rval, reply, sizeof reply)) {
+					if (!supports_utf8)
+						utf8_to_cp437_inplace(reply);
+					/* Check ctx._streamed -- when true, JS already
+					 * typed the greeting out via console.simulate_type
+					 * while receiving SSE tokens. Skip our own
+					 * simulate_type to avoid double-printing. */
+					bool streamed = false;
+					{
+						jsval sv;
+						JSObject* co = JSVAL_TO_OBJECT(ctx_val);
+						if (JS_GetProperty(js_cx, co, "_streamed", &sv)
+						    && JSVAL_IS_BOOLEAN(sv))
+							streamed = (JSVAL_TO_BOOLEAN(sv) == JS_TRUE);
+					}
+					if (!streamed)
+						simulate_type(reply, sim_typos, speed_factor);
+					term->newline();
+					char* prof = extract_profile(js_cx, ctx_val);
+					log_guru_turn(this, gurunum, NULL, reply, prof);
+					if (prof) JS_free(js_cx, prof);
+				}
+			}
+		}
+
+		/* Chat loop. */
+		char input[256];     /* per-getstr buffer (one wrapped row at a time) */
+		char accum[1024];    /* accumulated input across wrap continuations */
+		accum[0] = 0;
+		while (online) {
+			attr(cfg.color[clr_chatremote]);
+			size_t got = getstr(input, sizeof input - 1,
+			                    K_WORDWRAP | K_CHAT);
+			if (got < 1 && wordwrap[0] == 0)
+				continue;
+			if (!online)
+				break;
+
+			/* Append this row to the accumulator. If the line wrapped
+			 * mid-word, wordwrap holds the carry (handled by the next
+			 * getstr automatically). We continue reading until the
+			 * user actually hits Enter (signaled by wordwrap[0] == 0
+			 * after the getstr returns). */
+			size_t alen = strlen(accum);
+			if (alen + got + 1 < sizeof accum) {
+				memcpy(accum + alen, input, got);
+				accum[alen + got] = 0;
+			}
+			if (wordwrap[0] != 0)
+				continue;  /* line wrapped; keep accumulating */
+
+			/* Strip leading/trailing whitespace; skip whitespace-only
+			 * lines so we don't waste an LLM call on empty input. */
+			char* trimmed = accum;
+			SKIP_WHITESPACE(trimmed);
+			truncsp(trimmed);
+			if (*trimmed == '\0') {
+				accum[0] = 0;
+				continue;
+			}
+
+			/* Send every input to the LLM -- including exit cues -- so the
+			 * bot says a farewell before the chat ends. Mirrors the legacy
+			 * (BYE|SEE YA|LATER) -> `Q farewell-then-quit pattern.
+			 *
+			 * Set the chat-local color BEFORE the JS call: when JS streams
+			 * tokens via console.simulate_type(), the C++ side never
+			 * gets a chance to attr() before the first output. */
+			attr(cfg.color[clr_chatlocal]);
+			JSString* input_str = JS_NewStringCopyZ(js_cx, trimmed);
+			if (input_str == NULL)
+				break;
+			jsval chat_args[2] = {
+				STRING_TO_JSVAL(input_str),
+				ctx_val
+			};
+			if (!JS_CallFunctionName(js_cx, js_glob, "chat_session",
+			                         2, chat_args, &rval)) {
+				lprintf(LOG_ERR, "chat_llm_session: chat_session "
+				                 "JS call failed (guru #%d)", gurunum);
+				break;
+			}
+			if (JSVAL_IS_STRING(rval)
+			    && js_to_cstr(js_cx, rval, reply, sizeof reply)) {
+				if (!supports_utf8)
+					utf8_to_cp437_inplace(reply);
+				/* Check ctx._streamed -- when true, JS already typed the
+				 * reply out via console.simulate_type() while receiving
+				 * SSE tokens. Skip our own simulate_type to avoid
+				 * double-printing. */
+				bool streamed = false;
+				{
+					jsval sv;
+					JSObject* co = JSVAL_TO_OBJECT(ctx_val);
+					if (JS_GetProperty(js_cx, co, "_streamed", &sv)
+					    && JSVAL_IS_BOOLEAN(sv))
+						streamed = (JSVAL_TO_BOOLEAN(sv) == JS_TRUE);
+				}
+				if (!streamed) {
+					attr(cfg.color[clr_chatlocal]);
+					/* No "thinking" pause -- LLM round-trip is the pause. */
+					simulate_type(reply, sim_typos, speed_factor);
+				}
+				term->newline();
+				char* prof = extract_profile(js_cx, ctx_val);
+				log_guru_turn(this, gurunum, trimmed, reply, prof);
+				if (prof) JS_free(js_cx, prof);
+			}
+
+			/* Exit AFTER the farewell printed. */
+			if (is_chat_exit_cmd(trimmed, text[Quit]))
+				break;
+
+			/* Reset accumulator for the next user message. */
+			accum[0] = 0;
+		}
+
+		ok = true;
+
+	js_done:
+		if (ctx_rooted)
+			JS_RemoveValueRoot(js_cx, &ctx_val);
+	}
+	JS_ENDREQUEST(js_cx);
+
+cleanup:
+	bputs(text[EndOfChat]);
+	sys_status &= ~SS_GURUCHAT;
+	console = con;
+	return ok;
+}
+
+/* Single-turn dispatch into the LLM engine from multinode chat.
+ *
+ * Multinode chatsection() calls this once per user-typed line (when
+ * the user is alone in the channel and the channel has CHAN_GURU
+ * and the channel's guru has `module` set).  Unlike chat_llm_session,
+ * there's no enclosing chat loop here -- the loop lives in
+ * chatsection() and just calls this for each turn.
+ *
+ * The JS module is loaded lazily on first call by checking whether
+ * `chat_session` is defined in js_glob.  Subsequent turns in the same
+ * chatsection() invocation reuse the already-loaded module.
+ *
+ * Reply is displayed locally only (matching the legacy guruchat()
+ * behavior, which fires only when no other users are present in the
+ * channel).  Broadcasting the bot's reply to other participants when
+ * multi-user channels gain LLM-guru support is a future change. */
+bool sbbs_t::chat_llm_multinode_turn(int gurunum, const char* input)
+{
+	if (gurunum < 0 || gurunum >= cfg.total_gurus) return false;
+	if (cfg.guru[gurunum]->module[0] == '\0') return false;
+	if (input == NULL || *input == '\0') return false;
+	if (js_cx == NULL || js_glob == NULL) return false;
+
+	bool ok = false;
+
+	JS_BEGINREQUEST(js_cx);
+	{
+		jsval rval, ctx_val = JSVAL_VOID;
+		bool ctx_rooted = false;
+		char reply[2048];
+
+		/* Lazy-load the module: check whether chat_session is
+		 * already defined in our JS globals; if not, js_execfile
+		 * the module file into our global scope. */
+		jsval cs_val;
+		bool module_ready = JS_GetProperty(js_cx, js_glob, "chat_session", &cs_val)
+		                 && !JSVAL_IS_VOID(cs_val)
+		                 && JSVAL_IS_OBJECT(cs_val);
+		if (!module_ready) {
+			char module_fname[MAX_PATH + 1];
+			SAFEPRINTF(module_fname, "%s.js", cfg.guru[gurunum]->module);
+			if (js_execfile(module_fname, /* startup_dir: */ NULL,
+			                /* scope: */ js_glob, js_cx, js_glob) != 0) {
+				bprintf("\r\n\1n\1rError loading chat module: %s\r\n",
+				        module_fname);
+				goto mt_done;
+			}
+		}
+
+		bool supports_utf8 = term->supports(UTF8);
+
+		/* Build ctx via ctx_from_user. */
+		jsval user_val;
+		if (!JS_GetProperty(js_cx, js_glob, "user", &user_val))
+			goto mt_done;
+		{
+			JSString* code_str = JS_NewStringCopyZ(js_cx, cfg.guru[gurunum]->code);
+			JSString* name_str = JS_NewStringCopyZ(js_cx, cfg.guru[gurunum]->name);
+			if (code_str == NULL || name_str == NULL)
+				goto mt_done;
+			jsval args[4] = {
+				user_val,
+				STRING_TO_JSVAL(code_str),
+				STRING_TO_JSVAL(name_str),
+				BOOLEAN_TO_JSVAL(supports_utf8 ? JS_TRUE : JS_FALSE)
+			};
+			if (!JS_CallFunctionName(js_cx, js_glob, "ctx_from_user",
+			                         4, args, &ctx_val))
+				goto mt_done;
+		}
+		JS_AddValueRoot(js_cx, &ctx_val);
+		ctx_rooted = true;
+
+		/* Override mode -> 'multinode' so JS treats the transcript
+		 * as multi-party (turn content prefixed "<who> " for the
+		 * model to attribute speakers). */
+		{
+			JSObject* ctx_obj = JSVAL_TO_OBJECT(ctx_val);
+			JSString* mode_str = JS_NewStringCopyZ(js_cx, "multinode");
+			if (mode_str != NULL) {
+				jsval mode_val = STRING_TO_JSVAL(mode_str);
+				JS_SetProperty(js_cx, ctx_obj, "mode", &mode_val);
+			}
+			/* In multinode the bot is always addressable (no
+			 * is_addressed gate -- the legacy "alone in channel"
+			 * condition already filters). */
+			jsval addr_val = BOOLEAN_TO_JSVAL(JS_TRUE);
+			JS_SetProperty(js_cx, ctx_obj, "addressed", &addr_val);
+		}
+
+		/* (No typing-simulation knobs needed -- multinode emits as
+		 * a single ChatLineFmt line, not per-character.) */
+
+		/* Call chat_session(input, ctx). */
+		attr(cfg.color[clr_chatlocal]);
+		JSString* input_str = JS_NewStringCopyZ(js_cx, input);
+		if (input_str == NULL)
+			goto mt_done;
+		jsval chat_args[2] = {
+			STRING_TO_JSVAL(input_str),
+			ctx_val
+		};
+		if (!JS_CallFunctionName(js_cx, js_glob, "chat_session",
+		                         2, chat_args, &rval)) {
+			lprintf(LOG_ERR, "chat_llm_multinode: chat_session "
+			                 "JS call failed (guru #%d)", gurunum);
+			goto mt_done;
+		}
+		if (JSVAL_IS_STRING(rval)
+		    && js_to_cstr(js_cx, rval, reply, sizeof reply)) {
+			if (!supports_utf8)
+				utf8_to_cp437_inplace(reply);
+			/* Multinode emits the reply as a single line via
+			 * text[ChatLineFmt] (e.g. "<guru-name> #N: <text>"),
+			 * NOT character-by-character via simulate_type.  This
+			 * matches the legacy guruchat() multinode branch
+			 * (chat.cpp line 1748-1750) and the format the other
+			 * chat participants would expect to see.  Short
+			 * thinking-time pause approximates the legacy
+			 * mswait(strlen * 100). */
+			size_t reply_len = strlen(reply);
+			mswait((int)(reply_len * 100));
+			attr(cfg.color[clr_chatlocal]);
+			bprintf(text[ChatLineFmt], cfg.guru[gurunum]->name,
+			        cfg.sys_nodes + 1, ':', reply);
+			term->newline();
+			char* prof = extract_profile(js_cx, ctx_val);
+			log_guru_turn(this, gurunum, input, reply, prof);
+			if (prof) JS_free(js_cx, prof);
+			ok = true;
+		}
+
+	mt_done:
+		if (ctx_rooted)
+			JS_RemoveValueRoot(js_cx, &ctx_val);
+	}
+	JS_ENDREQUEST(js_cx);
+	return ok;
+}
+#endif /* JAVASCRIPT */

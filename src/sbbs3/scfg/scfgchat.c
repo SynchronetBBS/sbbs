@@ -693,6 +693,7 @@ void guru_cfg()
 			snprintf(opt[k++], MAX_OPLN, "%-27.27s%s", "Guru Name", cfg.guru[i]->name);
 			snprintf(opt[k++], MAX_OPLN, "%-27.27s%s", "Guru Internal Code", cfg.guru[i]->code);
 			snprintf(opt[k++], MAX_OPLN, "%-27.27s%.40s", "Access Requirements", cfg.guru[i]->arstr);
+			snprintf(opt[k++], MAX_OPLN, "%-27.27s%s", "Module", cfg.guru[i]->module);
 			opt[k][0] = 0;
 			uifc.helpbuf =
 				"`Guru Configuration:`\n"
@@ -749,6 +750,25 @@ void guru_cfg()
 					break;
 				case 2:
 					getar(cfg.guru[i]->name, cfg.guru[i]->arstr, /* helpbuf: */ NULL);
+					break;
+				case 3:
+					uifc.helpbuf =
+						"`Guru Module:`\n"
+						"\n"
+						"Optional name of a JavaScript module (under `exec/`) that handles\n"
+						"this Guru's chat behavior instead of the built-in ELIZA-style\n"
+						"pattern matcher.  The module must define `chat_session(input, ctx)`\n"
+						"and `open_session(ctx)` JS functions and accept the standard\n"
+						"chat context object.  The bundled `chat_llm` module dispatches to\n"
+						"an LLM (Ollama, OpenAI-compatible, etc.) configured via\n"
+						"`ctrl/chat_llm.ini`.\n"
+						"\n"
+						"Leave blank for the legacy pattern-matching behavior driven by\n"
+						"the Guru's `.dat` answer file.\n"
+					;
+					uifc.input(WIN_MID | WIN_SAV, 0, 0, "Guru Module"
+					           , cfg.guru[i]->module, sizeof(cfg.guru[i]->module) - 1
+					           , K_EDIT);
 					break;
 			}
 		}
