@@ -2267,6 +2267,12 @@ bool sbbs_t::chat_llm_session(int gurunum)
 
 	int  con = console;          /* save console state */
 	bool ok  = false;
+	/* If the caller's terminal can't render UTF-8, we'll convert LLM
+	 * output via utf8_to_cp437_inplace() before printing -- belt-and-
+	 * suspenders against the model slipping emojis/other Unicode through
+	 * the "no emojis" prompt.  Hoisted above any `goto cleanup` so
+	 * GCC's "jump crosses initialization" rule is satisfied. */
+	bool supports_utf8 = term->supports(UTF8);
 
 	sys_status |= SS_GURUCHAT;
 	console &= ~CON_PASSWORD;
@@ -2294,19 +2300,15 @@ bool sbbs_t::chat_llm_session(int gurunum)
 	 * `typeof bbs == 'undefined'` which is false in a session, so loading
 	 * just defines the chat_session / open_session / ctx_from_user
 	 * functions in our global scope. */
-	char module_fname[MAX_PATH + 1];
-	SAFEPRINTF(module_fname, "%s.js", cfg.guru[gurunum]->module);
-	if (js_execfile(module_fname, /* startup_dir: */ NULL,
-	                /* scope: */ js_glob, js_cx, js_glob) != 0) {
-		bprintf("\r\n\1n\1rError loading chat module: %s\r\n", module_fname);
-		goto cleanup;
+	{
+		char module_fname[MAX_PATH + 1];
+		SAFEPRINTF(module_fname, "%s.js", cfg.guru[gurunum]->module);
+		if (js_execfile(module_fname, /* startup_dir: */ NULL,
+		                /* scope: */ js_glob, js_cx, js_glob) != 0) {
+			bprintf("\r\n\1n\1rError loading chat module: %s\r\n", module_fname);
+			goto cleanup;
+		}
 	}
-
-	/* If the caller's terminal can't render UTF-8, we'll convert LLM
-	 * output via utf8_to_cp437_inplace() before printing -- belt-and-
-	 * suspenders against the model slipping emojis/other Unicode through
-	 * the "no emojis" prompt. */
-	bool supports_utf8 = term->supports(UTF8);
 
 	JS_BEGINREQUEST(js_cx);
 	{
@@ -2314,6 +2316,11 @@ bool sbbs_t::chat_llm_session(int gurunum)
 		jsval rval;
 		bool  ctx_rooted = false;
 		char  reply[2048];
+		/* Typing-simulation knobs the JS side stashes on ctx for us.
+		 * Hoisted to the top of the block so the `goto js_done`s below
+		 * don't cross their initialization (GCC error). */
+		double speed_factor = 2.0;
+		bool   sim_typos    = true;
 
 		/* Build ctx via ctx_from_user(user, code, name, supports_utf8). */
 		jsval user_val;
@@ -2343,9 +2350,8 @@ bool sbbs_t::chat_llm_session(int gurunum)
 		JS_AddValueRoot(js_cx, &ctx_val);
 		ctx_rooted = true;
 
-		/* Read typing-simulation knobs the JS side stashed on ctx for us. */
-		double speed_factor = 2.0;
-		bool   sim_typos    = true;
+		/* Read typing-simulation knobs the JS side stashed on ctx for us.
+		 * (Declarations hoisted above.) */
 		{
 			JSObject* ctx_obj = JSVAL_TO_OBJECT(ctx_val);
 			jsval v;
@@ -2534,6 +2540,9 @@ bool sbbs_t::chat_llm_multinode_turn(int gurunum, const char* input)
 		jsval rval, ctx_val = JSVAL_VOID;
 		bool ctx_rooted = false;
 		char reply[2048];
+		/* Hoisted above any `goto mt_done` so GCC's "jump crosses
+		 * initialization" rule is satisfied. */
+		bool supports_utf8 = term->supports(UTF8);
 
 		/* Lazy-load the module: check whether chat_session is
 		 * already defined in our JS globals; if not, js_execfile
@@ -2552,8 +2561,6 @@ bool sbbs_t::chat_llm_multinode_turn(int gurunum, const char* input)
 				goto mt_done;
 			}
 		}
-
-		bool supports_utf8 = term->supports(UTF8);
 
 		/* Build ctx via ctx_from_user. */
 		jsval user_val;
@@ -2597,43 +2604,48 @@ bool sbbs_t::chat_llm_multinode_turn(int gurunum, const char* input)
 		/* (No typing-simulation knobs needed -- multinode emits as
 		 * a single ChatLineFmt line, not per-character.) */
 
-		/* Call chat_session(input, ctx). */
-		attr(cfg.color[clr_chatlocal]);
-		JSString* input_str = JS_NewStringCopyZ(js_cx, input);
-		if (input_str == NULL)
-			goto mt_done;
-		jsval chat_args[2] = {
-			STRING_TO_JSVAL(input_str),
-			ctx_val
-		};
-		if (!JS_CallFunctionName(js_cx, js_glob, "chat_session",
-		                         2, chat_args, &rval)) {
-			lprintf(LOG_ERR, "chat_llm_multinode: chat_session "
-			                 "JS call failed (guru #%d)", gurunum);
-			goto mt_done;
-		}
-		if (JSVAL_IS_STRING(rval)
-		    && js_to_cstr(js_cx, rval, reply, sizeof reply)) {
-			if (!supports_utf8)
-				utf8_to_cp437_inplace(reply);
-			/* Multinode emits the reply as a single line via
-			 * text[ChatLineFmt] (e.g. "<guru-name> #N: <text>"),
-			 * NOT character-by-character via simulate_type.  This
-			 * matches the legacy guruchat() multinode branch
-			 * (chat.cpp line 1748-1750) and the format the other
-			 * chat participants would expect to see.  Short
-			 * thinking-time pause approximates the legacy
-			 * mswait(strlen * 100). */
-			size_t reply_len = strlen(reply);
-			mswait((int)(reply_len * 100));
+		/* Call chat_session(input, ctx).  The input_str / chat_args
+		 * declarations are scoped to this inner block so their
+		 * initializations aren't crossed by `goto mt_done` below
+		 * them (GCC rule). */
+		{
 			attr(cfg.color[clr_chatlocal]);
-			bprintf(text[ChatLineFmt], cfg.guru[gurunum]->name,
-			        cfg.sys_nodes + 1, ':', reply);
-			term->newline();
-			char* prof = extract_profile(js_cx, ctx_val);
-			log_guru_turn(this, gurunum, input, reply, prof);
-			if (prof) JS_free(js_cx, prof);
-			ok = true;
+			JSString* input_str = JS_NewStringCopyZ(js_cx, input);
+			if (input_str == NULL)
+				goto mt_done;
+			jsval chat_args[2] = {
+				STRING_TO_JSVAL(input_str),
+				ctx_val
+			};
+			if (!JS_CallFunctionName(js_cx, js_glob, "chat_session",
+			                         2, chat_args, &rval)) {
+				lprintf(LOG_ERR, "chat_llm_multinode: chat_session "
+				                 "JS call failed (guru #%d)", gurunum);
+				goto mt_done;
+			}
+			if (JSVAL_IS_STRING(rval)
+			    && js_to_cstr(js_cx, rval, reply, sizeof reply)) {
+				if (!supports_utf8)
+					utf8_to_cp437_inplace(reply);
+				/* Multinode emits the reply as a single line via
+				 * text[ChatLineFmt] (e.g. "<guru-name> #N: <text>"),
+				 * NOT character-by-character via simulate_type.  This
+				 * matches the legacy guruchat() multinode branch
+				 * (chat.cpp line 1748-1750) and the format the other
+				 * chat participants would expect to see.  Short
+				 * thinking-time pause approximates the legacy
+				 * mswait(strlen * 100). */
+				size_t reply_len = strlen(reply);
+				mswait((int)(reply_len * 100));
+				attr(cfg.color[clr_chatlocal]);
+				bprintf(text[ChatLineFmt], cfg.guru[gurunum]->name,
+				        cfg.sys_nodes + 1, ':', reply);
+				term->newline();
+				char* prof = extract_profile(js_cx, ctx_val);
+				log_guru_turn(this, gurunum, input, reply, prof);
+				if (prof) JS_free(js_cx, prof);
+				ok = true;
+			}
 		}
 
 	mt_done:
