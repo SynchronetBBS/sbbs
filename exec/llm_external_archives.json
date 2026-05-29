@@ -1,0 +1,529 @@
+{
+  "version": 1,
+  "_comment": "Hand-curated index of external BBS-history archives the guru can point users at.  Loaded by chat_tools.js's external_archives() tool.  Each entry is matched substring-style against the user's query (tags + summary + url).  Keep it small (~50 entries) -- this is a tool, not a RAG corpus.  When adding entries, prefer canonical landing pages over deep links that may rot.",
+  "sources": {
+    "textfiles": {
+      "site": "textfiles.com",
+      "curator": "Jason Scott",
+      "blurb": "Massive archive of text files from the BBS era, organized by topic.  Plus sister sites for ANSI art, CD-ROMs, PDFs, audio, and old web content."
+    },
+    "bbsdoc": {
+      "site": "bbsdocumentary.com",
+      "curator": "Jason Scott",
+      "blurb": "Eight-episode documentary on the history of bulletin board systems, released 2005.  Long-form interviews with sysops, software authors, and scene participants."
+    }
+  },
+  "entries": [
+    {
+      "id": "tf-bbs",
+      "src": "textfiles",
+      "tags": ["bbs", "bulletin board", "bulletin board system", "history", "sysop"],
+      "url": "https://textfiles.com/bbs/",
+      "summary": "textfiles.com's BBS section -- history articles, sysop newsletters, phone-number lists, BBS software docs, and the culture that surrounded bulletin boards.  The single best landing page for BBS-era research."
+    },
+    {
+      "id": "tf-100",
+      "src": "textfiles",
+      "tags": ["100", "essential", "important", "starter", "classics"],
+      "url": "https://textfiles.com/100/",
+      "summary": "Jason Scott's curated \"100 files\" collection -- the text files he considers the most important / influential from the BBS era.  Good first stop for newcomers."
+    },
+    {
+      "id": "tf-news",
+      "src": "textfiles",
+      "tags": ["news", "newsletters", "sysop newsletters", "bbs news"],
+      "url": "https://textfiles.com/news/",
+      "summary": "Archive of BBS-era newsletters and online magazines -- the sysop press that covered the scene as it happened."
+    },
+    {
+      "id": "tf-sysop",
+      "src": "textfiles",
+      "tags": ["sysop", "operator", "running a bbs", "guides", "how to"],
+      "url": "https://textfiles.com/sysop/",
+      "summary": "Sysop-specific guides, how-tos, ethics docs, and tools -- written by and for the people who actually ran BBSes."
+    },
+    {
+      "id": "tf-magazines",
+      "src": "textfiles",
+      "tags": ["magazines", "ezines", "online magazines", "phrack", "cult of the dead cow", "cdc"],
+      "url": "https://textfiles.com/magazines/",
+      "summary": "Online magazines from the BBS era -- Phrack, 2600, Cult of the Dead Cow, NIA, LOD/H, and many more.  The BBS scene's own self-documentation."
+    },
+    {
+      "id": "tf-messages",
+      "src": "textfiles",
+      "tags": ["messages", "message bases", "captures", "echoes"],
+      "url": "https://textfiles.com/messages/",
+      "summary": "Captured BBS message-base threads and echo-mail conversations -- a snapshot of what people actually talked about on BBSes."
+    },
+    {
+      "id": "tf-groups",
+      "src": "textfiles",
+      "tags": ["groups", "warez", "pirate groups", "scene groups", "crews"],
+      "url": "https://textfiles.com/groups/",
+      "summary": "Catalogs and NFOs from warez / pirate / scene groups -- the social organizations that drove much of the BBS file-trading economy."
+    },
+    {
+      "id": "tf-piracy",
+      "src": "textfiles",
+      "tags": ["piracy", "warez", "software piracy", "cracking", "0day"],
+      "url": "https://textfiles.com/piracy/",
+      "summary": "Files about software piracy -- philosophy, methodology, and the back-and-forth between crackers and copy protection."
+    },
+    {
+      "id": "tf-hacking",
+      "src": "textfiles",
+      "tags": ["hacking", "hackers", "security", "unix hacking", "exploits"],
+      "url": "https://textfiles.com/hacking/",
+      "summary": "BBS-era hacking text files -- system penetration, security holes, exploits, and the underground that documented them."
+    },
+    {
+      "id": "tf-phreak",
+      "src": "textfiles",
+      "tags": ["phreaking", "phone phreaking", "phones", "blue box", "red box", "cap'n crunch"],
+      "url": "https://textfiles.com/phreak/",
+      "summary": "Phone phreaking text files -- blue/red/black box plans, telco internals, COCOTs, and the long history of phone-system hacking that predated the BBS."
+    },
+    {
+      "id": "tf-anarchy",
+      "src": "textfiles",
+      "tags": ["anarchy", "anarchist cookbook", "explosives", "lockpicking", "underground"],
+      "url": "https://textfiles.com/anarchy/",
+      "summary": "Anarchy files -- the Anarchist Cookbook era, lockpicking, and the genre of \"forbidden knowledge\" text files that defined a chunk of BBS culture (rightly or wrongly)."
+    },
+    {
+      "id": "tf-humor",
+      "src": "textfiles",
+      "tags": ["humor", "jokes", "funny", "parody"],
+      "url": "https://textfiles.com/humor/",
+      "summary": "Humor text files -- jokes, parodies, fake news, and the long-running comedy genres of the BBS era."
+    },
+    {
+      "id": "tf-games",
+      "src": "textfiles",
+      "tags": ["games", "door games", "tradewars", "lord", "walkthroughs", "hints"],
+      "url": "https://textfiles.com/games/",
+      "summary": "Game-related text files -- walkthroughs, hints, FAQs, and door-game docs (TradeWars 2002, LORD, etc.)."
+    },
+    {
+      "id": "tf-programming",
+      "src": "textfiles",
+      "tags": ["programming", "source code", "code", "tutorials"],
+      "url": "https://textfiles.com/programming/",
+      "summary": "Programming text files -- BBS software source, tutorials, language references, and the docs that taught a generation to code on dial-up."
+    },
+    {
+      "id": "tf-internet",
+      "src": "textfiles",
+      "tags": ["internet", "early internet", "tcp/ip", "usenet", "uucp"],
+      "url": "https://textfiles.com/internet/",
+      "summary": "Early-internet text files -- the BBS-to-internet transition, TCP/IP primers, UUCP/Usenet docs, the world before the web."
+    },
+    {
+      "id": "tf-computers",
+      "src": "textfiles",
+      "tags": ["computers", "apple", "atari", "commodore", "c64", "amiga", "ibm pc", "tandy", "trs-80"],
+      "url": "https://textfiles.com/computers/",
+      "summary": "Computer-specific archives -- Apple II, Atari, C64, Amiga, IBM PC, Tandy/TRS-80, and others.  Per-platform docs, tips, and software."
+    },
+    {
+      "id": "tf-stories",
+      "src": "textfiles",
+      "tags": ["stories", "fiction", "creative writing", "erotica"],
+      "url": "https://textfiles.com/stories/",
+      "summary": "Fiction text files -- short stories, novellas, and the creative-writing scene that lived on BBSes."
+    },
+    {
+      "id": "tf-conspiracy",
+      "src": "textfiles",
+      "tags": ["conspiracy", "jfk", "ufo adjacent", "secret societies"],
+      "url": "https://textfiles.com/conspiracy/",
+      "summary": "Conspiracy text files -- JFK, Roswell-adjacent, secret societies, and the conspiratorial fringe that found a home on BBSes."
+    },
+    {
+      "id": "tf-occult",
+      "src": "textfiles",
+      "tags": ["occult", "magick", "satanism", "religion"],
+      "url": "https://textfiles.com/occult/",
+      "summary": "Occult and esoteric text files -- another fringe that BBSes hosted before the web."
+    },
+    {
+      "id": "tf-uploads",
+      "src": "textfiles",
+      "tags": ["uploads", "new", "recent", "latest additions"],
+      "url": "https://textfiles.com/uploads/",
+      "summary": "Recently uploaded files to textfiles.com -- the still-growing edge of an otherwise historical archive."
+    },
+    {
+      "id": "tf-artscene",
+      "src": "textfiles",
+      "tags": ["ansi", "ascii art", "artscene", "ans", "asc", "art groups", "ice", "acid", "fire"],
+      "url": "https://artscene.textfiles.com/",
+      "summary": "The ANSI/ASCII art archive (artscene.textfiles.com) -- artpacks from ACiD, iCE, FiRE, etc., plus the history of the art scene that produced BBS login screens."
+    },
+    {
+      "id": "tf-cdrom",
+      "src": "textfiles",
+      "tags": ["cd-rom", "cdrom", "iso", "shareware cd", "night owl", "walnut creek"],
+      "url": "https://cd.textfiles.com/",
+      "summary": "Shareware CD-ROM archive (cd.textfiles.com) -- ISOs and contents of classic shareware compilations (Night Owl, Walnut Creek, etc.)."
+    },
+    {
+      "id": "tf-pdf",
+      "src": "textfiles",
+      "tags": ["pdf", "scans", "manuals", "magazines"],
+      "url": "https://pdf.textfiles.com/",
+      "summary": "PDF archive (pdf.textfiles.com) -- scanned manuals, magazines, and documents that don't fit the plain-text mold."
+    },
+    {
+      "id": "tf-web",
+      "src": "textfiles",
+      "tags": ["old web", "geocities", "tripod", "early websites"],
+      "url": "https://web.textfiles.com/",
+      "summary": "Old-web archive (web.textfiles.com) -- captured early websites, GeoCities-era pages, and the immediate post-BBS web."
+    },
+    {
+      "id": "tf-audio",
+      "src": "textfiles",
+      "tags": ["audio", "voicemail", "phone recordings", "voice"],
+      "url": "https://audio.textfiles.com/",
+      "summary": "Audio archive (audio.textfiles.com) -- voicemail captures, phone-system recordings, and BBS-era audio artifacts."
+    },
+    {
+      "id": "bbsdoc-main",
+      "src": "bbsdoc",
+      "tags": ["bbs documentary", "documentary", "jason scott", "movie", "film", "history of bbses"],
+      "url": "http://www.bbsdocumentary.com/",
+      "summary": "Jason Scott's 2005 documentary film about the bulletin board system era -- eight episodes, 5+ hours of interviews with sysops, authors, and scene participants.  Released under a Creative Commons license."
+    },
+    {
+      "id": "bbsdoc-library",
+      "src": "bbsdoc",
+      "tags": ["bbs documentary library", "library", "bbs encyclopedia", "bbs topics", "bbs lore", "incidents", "controversies"],
+      "url": "http://bbsdocumentary.com/library/",
+      "summary": "The BBS Documentary Library -- Jason Scott's curated commentary on key BBS-era topics: famous incidents, lawsuits, services, door games, graphics protocols, controversies, and etymology.  Where to read about LORD, TradeWars, PC-Pursuit, the Steve Jackson Games raid, SEA vs. PKWARE, the modem tax rumor, and more."
+    },
+    {
+      "id": "bbsdoc-lib-lord",
+      "src": "bbsdoc",
+      "tags": ["lord", "legend of the red dragon", "seth robinson", "metropolis gameport", "michael preslar", "door game"],
+      "url": "http://bbsdocumentary.com/library/PROGRAMS/DOORS/LORD",
+      "summary": "Library entry on Legend of the Red Dragon (LORD) -- Seth Robinson's 1989 fantasy door game, ported to DOS / Worldgroup / Wildcat / etc., later maintained by Metropolis Gameport with Michael Preslar as lead programmer.  One of the iconic BBS door games."
+    },
+    {
+      "id": "bbsdoc-lib-tradewars",
+      "src": "bbsdoc",
+      "tags": ["tradewars", "trade wars 2002", "tw2002", "space trading", "door game"],
+      "url": "http://bbsdocumentary.com/library/PROGRAMS/DOORS/TRADEWARS",
+      "summary": "Library entry on TradeWars -- the space-trading multi-player door game that became one of the most-played and most-modified BBS games of all time."
+    },
+    {
+      "id": "bbsdoc-lib-dopewars",
+      "src": "bbsdoc",
+      "tags": ["dope wars", "dopewars", "drug wars", "john e dell", "1984 game", "door game"],
+      "url": "http://bbsdocumentary.com/library/PROGRAMS/DOORS/DOPEWARS",
+      "summary": "Library entry on Dope Wars -- John E. Dell's 1984 economic-simulation door game (originally a high-school project), one of the most ported and revisioned BBS games of the era."
+    },
+    {
+      "id": "bbsdoc-lib-bre",
+      "src": "bbsdoc",
+      "tags": ["barren realms elite", "bre", "door game", "interbbs game", "league game"],
+      "url": "http://bbsdocumentary.com/library/PROGRAMS/DOORS/BRE",
+      "summary": "Library entry on Barren Realms Elite (BRE) -- a strategy door game popular on the InterBBS leagues that linked competing BBSes together for inter-system games."
+    },
+    {
+      "id": "bbsdoc-lib-pimpwars",
+      "src": "bbsdoc",
+      "tags": ["pimpwars", "pimp wars", "paul j martino", "1990 game", "door game"],
+      "url": "http://bbsdocumentary.com/library/PROGRAMS/DOORS/PIMPWARS",
+      "summary": "Library entry on Pimp Wars -- Paul J. Martino's 1990 door game, long-supported by the author and a cultural-touchstone (if dated) BBS title."
+    },
+    {
+      "id": "bbsdoc-lib-ansi",
+      "src": "bbsdoc",
+      "tags": ["ansi", "ansi.sys", "ansi escape codes", "ansi graphics", "bbs colors"],
+      "url": "http://bbsdocumentary.com/library/PROGRAMS/GRAPHICS/ANSI",
+      "summary": "Library entry on ANSI -- the escape-code graphics standard that became the BBS world's lingua franca for color, cursor positioning, and the art that defined login screens."
+    },
+    {
+      "id": "bbsdoc-lib-ripscript",
+      "src": "bbsdoc",
+      "tags": ["ripscript", "rip", "rip graphics", "telegrafix", "vector graphics bbs"],
+      "url": "http://bbsdocumentary.com/library/PROGRAMS/GRAPHICS/RIPSCRIPT",
+      "summary": "Library entry on RIPscript -- TeleGrafix's vector-graphics protocol that briefly promised GUIs over BBS connections in the mid-90s, just before the web rendered it moot."
+    },
+    {
+      "id": "bbsdoc-lib-naplps",
+      "src": "bbsdoc",
+      "tags": ["naplps", "north american presentation level protocol", "videotex", "graphics protocol"],
+      "url": "http://bbsdocumentary.com/library/PROGRAMS/GRAPHICS/NAPLPS",
+      "summary": "Library entry on NAPLPS -- the North American Presentation Level Protocol, a pre-ANSI/RIP attempt at standardized BBS graphics, used by Prodigy and some commercial BBSes."
+    },
+    {
+      "id": "bbsdoc-lib-pcpursuit",
+      "src": "bbsdoc",
+      "tags": ["pc-pursuit", "pcpursuit", "pc pursuit", "sprintnet", "packet network", "long distance bbs", "telenet"],
+      "url": "http://bbsdocumentary.com/library/CONCEPTS/SERVICES/PCPURSUIT",
+      "summary": "Library entry on PC-Pursuit -- Sprint's packet-network service that let BBS users dial cross-country boards at flat rates, one of the unsung heroes of the long-distance-BBS era."
+    },
+    {
+      "id": "bbsdoc-lib-sea-pkware",
+      "src": "bbsdoc",
+      "tags": ["sea vs pkware", "arc", "pkarc", "pkzip", "phil katz", "system enhancement associates", "compression wars"],
+      "url": "http://bbsdocumentary.com/library/CONTROVERSY/LAWSUITS/SEA",
+      "summary": "Library entry on SEA vs. PKWARE -- the late-1980s lawsuit between System Enhancement Associates (ARC) and Phil Katz / PKWARE (PKARC, later PKZIP), one of the biggest controversies the BBS world ever saw."
+    },
+    {
+      "id": "bbsdoc-lib-sjackson",
+      "src": "bbsdoc",
+      "tags": ["steve jackson games", "sjackson", "secret service raid", "illuminati bbs", "eff founding", "1990 raid"],
+      "url": "http://bbsdocumentary.com/library/CONTROVERSY/RAIDS/SJACKSON",
+      "summary": "Library entry on the Steve Jackson Games raid -- the 1990 Secret Service seizure of SJG's Illuminati BBS, a landmark incident that helped catalyze the founding of the Electronic Frontier Foundation."
+    },
+    {
+      "id": "bbsdoc-lib-modemtax",
+      "src": "bbsdoc",
+      "tags": ["modem tax", "fcc", "modem tax rumor", "phone line tax", "urban legend"],
+      "url": "http://bbsdocumentary.com/library/CONCEPTS/EVENTS/MODEMTAX",
+      "summary": "Library entry on the Modem Tax rumors -- the recurring 1980s/90s urban legend that the FCC was about to tax modem-using phone lines, sparking panic chain letters across BBSes for years."
+    },
+    {
+      "id": "bbsdoc-lib-fossil",
+      "src": "bbsdoc",
+      "tags": ["fossil", "fossil driver", "serial driver", "x00", "bnu", "fossil specification"],
+      "url": "http://bbsdocumentary.com/library/PROGRAMS/NETWORK/FOSSIL",
+      "summary": "Library entry on FOSSIL -- the Fido Opus Seadog Standard Interface Layer serial driver spec that abstracted COM-port access for DOS BBS software (X00, BNU, etc.).  Essential infrastructure for the FidoNet-era BBS."
+    },
+    {
+      "id": "bbsdoc-lib-warez",
+      "src": "bbsdoc",
+      "tags": ["warez", "warez etymology", "warez scene", "the word warez"],
+      "url": "http://bbsdocumentary.com/library/ETYMOLOGY/WORDS/WAREZ",
+      "summary": "Library entry on \"warez\" -- the etymology and history of the term as it emerged from BBS pirate culture."
+    },
+    {
+      "id": "bbsdoc-lib-wwivwar",
+      "src": "bbsdoc",
+      "tags": ["wwivwar", "wwiv war", "wwivnet", "wwivlink", "icenet", "wwiv split", "wayne bell"],
+      "url": "http://bbsdocumentary.com/library/CONTROVERSY/EVENTS/WWIVWAR",
+      "summary": "Library entry on the WWIVwar -- the early-90s split between WWIVnet (run by WWIV author Wayne Bell) and the breakaway WWIVlink network, a cautionary tale about how minor disagreements can fracture online communities."
+    },
+    {
+      "id": "bbsdoc-software-directory",
+      "src": "bbsdoc",
+      "tags": ["bbs software", "software directory", "bbs programs", "catalog", "every bbs program", "list of bbs software"],
+      "url": "http://software.bbsdocumentary.com/",
+      "summary": "The BBS Software Directory -- Jason Scott's canonical catalog of every known BBS software package across every platform (CP/M, Apple, Atari, Commodore, IBM DOS/OS2/Windows, Tandy, TI-99, Unix, VAX/VMS, etc.).  ~900 entries with version histories, authors, and screenshots."
+    },
+    {
+      "id": "bbsdoc-sw-synchronet",
+      "src": "bbsdoc",
+      "tags": ["synchronet", "rob swindell", "digital dynamics", "sbbs", "vertrauen"],
+      "url": "http://software.bbsdocumentary.com/IBM/DOS/SYNCHRONET",
+      "summary": "Software directory entry for Synchronet -- Rob Swindell's multi-line BBS, originally released as commercial DOS software (Digital Dynamics, 1991) and now open-source / cross-platform (DOS, OS/2, Windows, Linux, BSD, macOS).  This is the software the host BBS runs."
+    },
+    {
+      "id": "bbsdoc-sw-pcboard",
+      "src": "bbsdoc",
+      "tags": ["pcboard", "clark development", "fred clark", "ppe", "pcboard programming"],
+      "url": "http://software.bbsdocumentary.com/IBM/DOS/PCBOARD",
+      "summary": "Software directory entry for PCBoard -- Fred Clark / Clark Development's commercial DOS BBS, one of the dominant 1990s packages, known for PPE (PCBoard Programming Language) extensibility."
+    },
+    {
+      "id": "bbsdoc-sw-wwiv",
+      "src": "bbsdoc",
+      "tags": ["wwiv", "wayne bell", "wwivnet", "world war iv", "modnet", "amateur radio bbs"],
+      "url": "http://software.bbsdocumentary.com/IBM/DOS/WWIV",
+      "summary": "Software directory entry for WWIV -- Wayne Bell's BBS, source-licensed (a rare thing in the 1990s) and the basis for WWIVnet plus an enormous modding community."
+    },
+    {
+      "id": "bbsdoc-sw-wildcat",
+      "src": "bbsdoc",
+      "tags": ["wildcat", "mustang software", "wildcat bbs", "tomcat"],
+      "url": "http://software.bbsdocumentary.com/IBM/DOS/WILDCAT",
+      "summary": "Software directory entry for Wildcat! -- Mustang Software's commercial DOS BBS, known for its menu-driven sysop UI (vs. config-file-heavy competitors)."
+    },
+    {
+      "id": "bbsdoc-sw-renegade",
+      "src": "bbsdoc",
+      "tags": ["renegade", "telegard fork", "renegade bbs", "cott miller"],
+      "url": "http://software.bbsdocumentary.com/IBM/DOS/RENEGADE",
+      "summary": "Software directory entry for Renegade -- Cott Miller's DOS BBS, a Telegard fork that grew into its own thing and built a deep enthusiast community."
+    },
+    {
+      "id": "bbsdoc-sw-remoteaccess",
+      "src": "bbsdoc",
+      "tags": ["remoteaccess", "ra", "remote access", "andrew milner", "wantree"],
+      "url": "http://software.bbsdocumentary.com/IBM/DOS/REMOTEACCESS",
+      "summary": "Software directory entry for RemoteAccess (RA) -- Andrew Milner / Wantree Development's commercial DOS BBS, hugely popular in Australia, Europe, and the FidoNet world."
+    },
+    {
+      "id": "bbsdoc-sw-telegard",
+      "src": "bbsdoc",
+      "tags": ["telegard", "tim strike", "telegard bbs"],
+      "url": "http://software.bbsdocumentary.com/IBM/DOS/TELEGARD",
+      "summary": "Software directory entry for Telegard -- Tim Strike's DOS BBS, ancestor of Renegade and a major name in the late-80s / early-90s ANSI-art scene."
+    },
+    {
+      "id": "bbsdoc-sw-tbbs",
+      "src": "bbsdoc",
+      "tags": ["tbbs", "ehap", "esoft", "the bread board system", "phil becker"],
+      "url": "http://software.bbsdocumentary.com/IBM/DOS/TBBS",
+      "summary": "Software directory entry for TBBS (The Bread Board System) -- Phil Becker / eSoft's commercial multi-line BBS, one of the earliest to support many simultaneous callers on a single PC."
+    },
+    {
+      "id": "bbsdoc-sw-spitfire",
+      "src": "bbsdoc",
+      "tags": ["spitfire", "spitfire bbs", "buffalo creek"],
+      "url": "http://software.bbsdocumentary.com/IBM/DOS/SPITFIRE",
+      "summary": "Software directory entry for Spitfire -- Buffalo Creek Software's shareware DOS BBS, an inexpensive option that filled the gap between freeware and PCBoard-class systems."
+    },
+    {
+      "id": "bbsdoc-sw-maximus",
+      "src": "bbsdoc",
+      "tags": ["maximus", "scott dudley", "lanius", "max bbs", "opus to maximus"],
+      "url": "http://software.bbsdocumentary.com/IBM/DOS/MAXIMUS",
+      "summary": "Software directory entry for Maximus -- Scott Dudley / Lanius Corporation's DOS (later OS/2 and Unix) BBS, a FidoNet powerhouse with a strong technical reputation."
+    },
+    {
+      "id": "bbsdoc-sw-mystic",
+      "src": "bbsdoc",
+      "tags": ["mystic", "g4mystic", "mystic bbs", "mpl"],
+      "url": "http://software.bbsdocumentary.com/IBM/DOS/MYSTIC",
+      "summary": "Software directory entry for Mystic BBS -- a modern multi-platform BBS by g4mystic, with its own scripting language (MPL).  Still actively developed; one of today's most common Synchronet alternatives."
+    },
+    {
+      "id": "bbsdoc-sw-majorbbs",
+      "src": "bbsdoc",
+      "tags": ["majorbbs", "the major bbs", "worldgroup", "galacticomm", "tim stryker", "mud games"],
+      "url": "http://software.bbsdocumentary.com/IBM/DOS/MAJORBBS",
+      "summary": "Software directory entry for The Major BBS -- Tim Stryker / Galacticomm's high-end commercial BBS (later renamed Worldgroup), known for native MUD-style multi-user games and 256+ simultaneous lines."
+    },
+    {
+      "id": "bbsdoc-sw-searchlight",
+      "src": "bbsdoc",
+      "tags": ["searchlight", "frank lapinske", "slbbs", "rip graphics"],
+      "url": "http://software.bbsdocumentary.com/IBM/DOS/SEARCHLIGHT",
+      "summary": "Software directory entry for Searchlight -- Frank LaPinske's DOS BBS, an early adopter of RIP graphics support and a regional favorite."
+    },
+    {
+      "id": "bbsdoc-sw-opus",
+      "src": "bbsdoc",
+      "tags": ["opus", "opus cbcs", "wynn wagner", "opus bbs", "fidonet origins"],
+      "url": "http://software.bbsdocumentary.com/IBM/DOS/OPUS",
+      "summary": "Software directory entry for Opus-CBCS -- Wynn Wagner's freeware DOS BBS, the first BBS software with native FidoNet support and an enormous influence on the network's growth."
+    },
+    {
+      "id": "bbsdoc-sw-rbbs",
+      "src": "bbsdoc",
+      "tags": ["rbbs", "rbbs-pc", "tom mack", "free bbs", "basic bbs"],
+      "url": "http://software.bbsdocumentary.com/IBM/DOS/RBBS",
+      "summary": "Software directory entry for RBBS-PC -- Tom Mack's free, BASIC-source DOS BBS, one of the most-deployed early BBS programs because the source was open and modifiable."
+    },
+    {
+      "id": "bbsdoc-sw-citadel",
+      "src": "bbsdoc",
+      "tags": ["citadel", "room-based", "jeff prothero", "cynbe ru taren", "citadel lineage", "anticlimactic"],
+      "url": "http://software.bbsdocumentary.com/AACPM/CPM/CITADEL",
+      "summary": "Software directory entry for the original Citadel -- Jeff Prothero / Cynbe ru Taren's CP/M BBS that invented the \"room\" message-base model and spawned dozens of forks across every platform.  See also http://anticlimactic.org/Citadel/ for the lineage."
+    },
+    {
+      "id": "bbsdoc-sw-cbbs",
+      "src": "bbsdoc",
+      "tags": ["cbbs", "ward christensen", "randy suess", "first bbs", "1978", "origins", "computerized bulletin board system"],
+      "url": "http://software.bbsdocumentary.com/AAA/AAA/CBBS",
+      "summary": "Software directory entry for CBBS -- Ward Christensen and Randy Suess's 1978 S-100 kit-computer system, the first computerized bulletin board.  Patient zero for the entire BBS phenomenon."
+    },
+    {
+      "id": "bbsdoc-sw-vbbs",
+      "src": "bbsdoc",
+      "tags": ["vbbs", "virtual bbs", "vircom", "amiga bbs", "virtualnet"],
+      "url": "http://software.bbsdocumentary.com/IBM/DOS/VBBS",
+      "summary": "Software directory entry for Virtual BBS (VBBS) -- a DOS BBS that grew its own VirtualNET inter-BBS network, popular in the early 90s."
+    },
+    {
+      "id": "bbsdoc-sw-powerbbs",
+      "src": "bbsdoc",
+      "tags": ["powerbbs", "russell frey", "shareware bbs"],
+      "url": "http://software.bbsdocumentary.com/IBM/DOS/POWERBBS",
+      "summary": "Software directory entry for PowerBBS -- Russell Frey's shareware DOS (later Windows) BBS, popular in budget-conscious sysop circles."
+    },
+    {
+      "id": "bbsdoc-sw-ezycom",
+      "src": "bbsdoc",
+      "tags": ["ezycom", "peter davies", "ez", "easy bbs"],
+      "url": "http://software.bbsdocumentary.com/IBM/DOS/EZYCOM",
+      "summary": "Software directory entry for Ezycom -- Peter Davies's DOS BBS, known for being well-documented and easy to set up, with a strong FidoNet feature set."
+    },
+    {
+      "id": "tf-timeline",
+      "src": "textfiles",
+      "tags": ["timeline", "bbs history", "history", "events", "chronology", "when did", "year", "what year", "first bbs"],
+      "url": "http://timeline.textfiles.com/",
+      "summary": "The TEXTFILES.COM BBS Timeline -- a chronological list of 261 BBS-related events from 1874 to 2002 (telegraph and telephone precursors through the end of the dial-up era).  Best resource for \"when did X happen\" style questions."
+    },
+    {
+      "id": "anticlimactic-citadel",
+      "src": "textfiles",
+      "tags": ["citadel", "citadel lineage", "citadel forks", "anticlimactic", "room-based bbs"],
+      "url": "http://anticlimactic.org/Citadel/",
+      "summary": "Anticlimactic.org's Citadel archive -- a comprehensive collection of Citadel-family software, lore, and the lineage tree connecting every fork (referenced by the BBS Software Directory itself as the canonical Citadel source)."
+    },
+    {
+      "id": "bbsdoc-ep1-baud",
+      "src": "bbsdoc",
+      "tags": ["episode 1", "baud", "cbbs", "ward christensen", "randy suess", "origins", "1978"],
+      "url": "http://www.bbsdocumentary.com/",
+      "summary": "BBS Documentary Episode 1: \"BAUD\" -- the origins, Ward Christensen and Randy Suess inventing CBBS in 1978, and the first wave of homebrew bulletin board systems."
+    },
+    {
+      "id": "bbsdoc-ep2-sysops",
+      "src": "bbsdoc",
+      "tags": ["episode 2", "sysops and users", "sysop culture", "sysop", "users"],
+      "url": "http://www.bbsdocumentary.com/",
+      "summary": "BBS Documentary Episode 2: \"SYSOPS AND USERS\" -- the social compact between BBS operators and their callers, and the culture that emerged."
+    },
+    {
+      "id": "bbsdoc-ep3-makeitpay",
+      "src": "bbsdoc",
+      "tags": ["episode 3", "make it pay", "commercial bbs", "subscription", "the well", "compuserve"],
+      "url": "http://www.bbsdocumentary.com/",
+      "summary": "BBS Documentary Episode 3: \"MAKE IT PAY!\" -- the commercial BBS business -- subscription services, The WELL, GEnie, and the on-ramp toward online services."
+    },
+    {
+      "id": "bbsdoc-ep4-fidonet",
+      "src": "bbsdoc",
+      "tags": ["episode 4", "fidonet", "tom jennings", "echomail", "netmail", "store and forward"],
+      "url": "http://www.bbsdocumentary.com/",
+      "summary": "BBS Documentary Episode 4: \"FIDONET\" -- Tom Jennings and the creation of FidoNet, the store-and-forward network that connected BBSes worldwide before the internet did."
+    },
+    {
+      "id": "bbsdoc-ep5-artscene",
+      "src": "bbsdoc",
+      "tags": ["episode 5", "artscene", "ansi art", "ascii art", "acid", "ice"],
+      "url": "http://www.bbsdocumentary.com/",
+      "summary": "BBS Documentary Episode 5: \"ARTSCENE\" -- the ANSI art scene, the art groups (ACiD, iCE) that defined BBS visual identity, and the artists behind login screens."
+    },
+    {
+      "id": "bbsdoc-ep6-hpac",
+      "src": "bbsdoc",
+      "tags": ["episode 6", "hpac", "hacking", "phreaking", "anarchy", "cracking", "underground"],
+      "url": "http://www.bbsdocumentary.com/",
+      "summary": "BBS Documentary Episode 6: \"HPAC\" -- Hacking, Phreaking, Anarchy, and Cracking.  The underground side of the BBS world and the boards that hosted it."
+    },
+    {
+      "id": "bbsdoc-ep7-nocopy",
+      "src": "bbsdoc",
+      "tags": ["episode 7", "no copy", "warez", "piracy", "cracking groups", "0day"],
+      "url": "http://www.bbsdocumentary.com/",
+      "summary": "BBS Documentary Episode 7: \"NO COPY\" -- the warez scene, software piracy as social practice, and the cracking groups that drove BBS file traffic."
+    },
+    {
+      "id": "bbsdoc-ep8-compression",
+      "src": "bbsdoc",
+      "tags": ["episode 8", "compression", "decline", "death of the bbs", "internet takeover", "end of an era"],
+      "url": "http://www.bbsdocumentary.com/",
+      "summary": "BBS Documentary Episode 8: \"COMPRESSION\" -- the decline of the BBS as the internet arrived, and reflections from sysops on what was lost and gained."
+    }
+  ]
+}
