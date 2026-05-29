@@ -181,6 +181,12 @@
 
 ## Stock Modules
 
+- New: **LLM-backed Guru** — optional JavaScript chat engine
+  (`chat_llm.js`) that backs a Guru, or an IRC bot
+  (`chat_llm_irc.js`), with a local or hosted LLM: tool calling,
+  BM25 retrieval (RAG) over your own message/file bases, and
+  per-caller memory. Enabled per-Guru via the SCFG **Module**
+  field; configured in `ctrl/chat_llm.ini`
 - New: **SynChess** — graphical chess game with JXL piece
   artwork
 - New: **ZZT** — game port for Synchronet (`xtrn/zzt`)
