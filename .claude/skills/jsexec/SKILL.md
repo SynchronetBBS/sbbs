@@ -107,10 +107,50 @@ identically; what changes is which globals exist. (Full class model: the
 - `console` — the user's terminal I/O (`console.print`, `console.getkey`, …);
   use plain `print()` / `writeln()` / `log()` instead
 - `client` — the connecting client's socket/identity
+- `user` — the **current session's logged-on user** (lowercase, distinct from
+  the `User` constructor class which IS available).  In the C++ codebase the
+  same object is called `useron`; the JS binding renamed it to `user`.  Inside
+  a BBS session this is the caller; under jsexec there's no session so the
+  global is undefined.
 
 Porting a BBS script to a jsexec probe: replace `console.print(x)` with
 `print(x)` and strip any `bbs.*` interactivity. (Which output/input function maps
 to which context is tabulated in the `javascript` skill.)
+
+### Checking access against a specific user under jsexec
+
+A common need in indexing / batch scripts is: *would user X be able to read
+sub Y / download dir Z?*  The natural-looking accessors `sub.can_read`,
+`dir.can_access`, `dir.can_download` evaluate against the **current session
+user** — and under jsexec there isn't one, so they return `true` for
+everything (no restrictions to compare against).  Likewise `user = new
+User(N)` doesn't override the implicit session user — the global isn't
+writable that way.
+
+The reliable pattern is to instantiate a `User` and call its `compare_ars`
+method directly against the ARS strings you find on the target object.
+Walk the ownership chain because access is conjunctive (group ARS AND sub
+ARS AND read-specific ARS, etc.):
+
+```js
+var u = new User(4);   // pick the user whose perms you want to check
+function user_can_read_sub(u, sub) {
+    var grp = msg_area.grp_list[sub.grp_index];
+    return u.compare_ars(grp.ars     || '')
+        && u.compare_ars(sub.ars     || '')
+        && u.compare_ars(sub.read_ars || '');
+}
+function user_can_download_dir(u, dir) {
+    var lib = file_area.lib_list[dir.lib_index];
+    return u.compare_ars(lib.ars          || '')
+        && u.compare_ars(dir.ars          || '')
+        && u.compare_ars(dir.download_ars || '');
+}
+```
+
+Note: it's `u.compare_ars(...)` on the User object itself, NOT
+`u.security.compare_ars(...)` — `security` holds the level / flags / etc.
+fields but the evaluator hangs off the User.
 
 ## A minimal probe
 
@@ -176,6 +216,69 @@ around.
   with `2>file`, merge into stdout with `-A`, or send to a file with `-e <file>`.
 - The engine is SpiderMonkey 1.8.5 (ES3-ish). Language do's and don'ts are in
   the `javascript` skill.
+
+## stdout / stderr / stdin are global File instances (with a gotcha)
+
+jsexec exposes the three standard streams as global `File` objects: `stdin`,
+`stdout`, `stderr`. They're created at startup via `js_CreateFileObject()` in
+`src/sbbs3/jsexec.cpp:940-952` and have the full `File` method surface —
+including `.flush()` (wraps `fflush()` on the underlying `FILE*`).
+
+```js
+stdout.writeln("hi");      // write via the File's FILE* buffer
+stderr.writeln("warn");    // bypasses Synchronet's log() formatter
+stdout.flush();            // fflush() the File's FILE*
+```
+
+**Why this matters: `print()` is block-buffered when stdout is redirected.**
+When stdout goes to a TTY, C stdio uses line buffering and you see output
+as it's emitted. When stdout is redirected to a file or pipe (`jsexec foo.js
+> out.log`), C stdio switches to *block* buffering (~4KB chunks), and
+`print()` calls accumulate in the buffer until either the buffer fills or
+the process exits. A long-running script can look completely stalled in
+`tail -f` even though it's making progress.
+
+### Gotcha: `stdout.flush()` does NOT flush `print()`
+
+The JS `stdout` File object wraps a **separately dup()'d FILE\***, not libc's
+stdout FILE\*. From `js_CreateFileObject()` in `js_file.cpp`:
+
+```c
+int newfd = dup(fd);           // duplicate the fd
+fp = fdopen(newfd, mode);      // open a NEW FILE* on the duped fd
+p->fp = fp;                    // File object's private FILE*
+```
+
+So `print()` writes through libc's `stdout` FILE\* (one buffer), and
+`stdout.writeln()` / `stdout.flush()` operate on the JS File's FILE\*
+(a different buffer that just happens to point at the same fd). Calling
+`stdout.flush()` after `print()` flushes nothing useful — `print()`'s
+data is still sitting in libc's buffer.
+
+**To make output watchable via `tail -f`, route ALL output through
+`stdout.writeln()` and flush the same File:**
+
+```js
+/* Make `print` route to the JS File so flushes are effective. */
+print = function (s) { stdout.writeln(String(s == null ? '' : s)); };
+
+for (var i = 0; i < cases.length; i++) {
+    run_one_case(cases[i]);
+    print('---- case ' + i + ' done ----');
+    stdout.flush();          // NOW tail -f sees it
+}
+```
+
+Don't mix `print()` and `stdout.writeln()` in the same script if you care
+about real-time visibility — output from each goes into a different buffer
+with no ordering guarantee in the receiving file. Replace `print` globally
+(as above) and you're consistent.
+
+`log(LOG_INFO, msg)` is an alternative for crash-survivable trace output —
+it goes to stderr via Synchronet's log facility which flushes more
+aggressively per message. Side effects: `log()` output is formatted
+(timestamp prefix, log-level tag) and goes to stderr (capture with `-A` or
+`-e <file>`).
 
 ## Pitfalls
 
