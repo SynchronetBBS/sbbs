@@ -950,6 +950,15 @@ function classify_intent(input) {
         'pkware', 'pkzip', 'pkarc',
         'wwivwar', 'wwiv war', 'wwivnet',
         'barren realms elite',
+        /* BBS software packages -- each has a curated archive entry
+         * (bbsdoc-sw-*).  Without these, queries like "tell me about
+         * WWIV chains" fall through to the model, which misroutes them
+         * (e.g. to git_commits, searching Synchronet's own repo). */
+        'wwiv', 'pcboard', 'wildcat', 'renegade', 'remoteaccess',
+        'telegard', 'tbbs', 'spitfire', 'maximus', 'mystic',
+        'majorbbs', 'major bbs', 'worldgroup', 'searchlight',
+        'opus cbcs', 'opus-cbcs', 'rbbs', 'vbbs', 'powerbbs',
+        'ezycom', 'citadel',
         'dope wars', 'dopewars',
         'pimp wars', 'pimpwars',
         'fossil driver',
