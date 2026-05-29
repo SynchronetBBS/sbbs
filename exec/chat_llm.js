@@ -2750,7 +2750,7 @@ function _archive_urls_set() {
     if (_ARCHIVE_URLS_CACHE !== null) return _ARCHIVE_URLS_CACHE;
     _ARCHIVE_URLS_CACHE = {};
     try {
-        var path = system.exec_dir + 'chat_external_archives.json';
+        var path = system.ctrl_dir + 'llm_external_archives.json';
         var f = new File(path);
         if (!f.open('r')) return _ARCHIVE_URLS_CACHE;
         var txt = f.read();

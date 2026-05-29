@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "_comment": "Hand-curated index of external BBS-history archives the guru can point users at.  Loaded by chat_tools.js's external_archives() tool.  Each entry is matched substring-style against the user's query (tags + summary + url).  Keep it small (~50 entries) -- this is a tool, not a RAG corpus.  When adding entries, prefer canonical landing pages over deep links that may rot.",
+  "_comment": "Hand-curated index of external BBS-history archives the guru can point users at.  Loaded by llm_tools/external_archives.js's external_archives() tool.  Each entry is matched substring-style against the user's query (tags + summary + url).  Keep it small (~50 entries) -- this is a tool, not a RAG corpus.  When adding entries, prefer canonical landing pages over deep links that may rot.",
   "sources": {
     "textfiles": {
       "site": "textfiles.com",

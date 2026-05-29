@@ -3,7 +3,7 @@
  *
  * Curated index of BBS-era resources (textfiles.com,
  * bbsdocumentary.com, et al).  Reads its data file
- * (llm_external_archives.json) from the exec directory.
+ * (llm_external_archives.json) from the ctrl directory.
  */
 
 /* Hand-curated index of BBS-era resources on Jason Scott's sites
@@ -16,7 +16,7 @@ var _EXTERNAL_ARCHIVES_LOADED = false;
 function _load_external_archives() {
     if (_EXTERNAL_ARCHIVES_LOADED) return _EXTERNAL_ARCHIVES;
     _EXTERNAL_ARCHIVES_LOADED = true;
-    var path = system.exec_dir + 'llm_external_archives.json';
+    var path = system.ctrl_dir + 'llm_external_archives.json';
     var f = new File(path);
     if (!f.open('r')) return null;
     var txt = f.read();
