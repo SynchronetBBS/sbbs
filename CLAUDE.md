@@ -2,6 +2,21 @@
 
 This project's coding guidelines live in [CONTRIBUTING.md](CONTRIBUTING.md). Read it before making non-trivial code changes and follow the conventions it describes (style, formatting, commit messages, patch submission, etc.).
 
+## Directory hierarchy — put files where they belong
+
+Synchronet's install directory has a defined structure (documented at <https://wiki.synchro.net/dir:>). Each sub-directory has a specific purpose, and **what a file is determines where it goes** — getting this wrong (e.g. dropping a data file in `exec/`) is a real defect, not a stylistic nit. The defaults below are sub-directories of the install dir (`/sbbs`, `~/sbbs`, `c:\sbbs`) but are SCFG-configurable, so **code must locate them via `system.*_dir` (`system.ctrl_dir`, `system.data_dir`, `system.exec_dir`, `system.text_dir`, `system.mods_dir`) — never a hardcoded path.**
+
+| Dir | `system.*` | Holds | Don't put here |
+|-----|-----------|-------|----------------|
+| `ctrl/` | `ctrl_dir` | **Configuration** for components that ship with Synchronet — `.ini`/`.cfg`/`.dat` config and curated/hand-edited data files (e.g. `text.dat`, `chat_llm.ini`, the curated `llm_external_archives.json`). The one place for "how this BBS is set up." | generated runtime state; scripts |
+| `data/` | `data_dir` | **Generated run-time data** created during normal operation — message bases, user data (`data/user/`), logs, `*.json`/`*.jsonl` state, semaphore files, and generated indexes (e.g. the chat BM25 index `data/chat/guru.idx`). | config; scripts |
+| `exec/` | `exec_dir` | **Executable & interpreted code** — `.exe`, Baja `.bin`/`.src`/`.inc`, and JavaScript `.js`. Not normally modified by the sysop. | data/config files of any kind |
+| `exec/load/` | — | JS **libraries** `load()`ed by other modules (`sbbsdefs.js`, etc.). | standalone modules |
+| `mods/` | `mods_dir` | Sysop-modified-stock or 3rd-party `.js`/`.bin` (and, since v3.21, `text`/`menu` files). **Shadows** `exec/` and `text/`: a file here is used instead of the same-named file there, surviving upgrades. | brand-new stock features |
+| `text/` | `text_dir` | User-displayable text & menu files (`text/menu/`, `.asc`/`.ans`/`.msg`, avatars). | code; config |
+
+Practical rule that has bitten this codebase: a curated/config data file (JSON included) goes in **`ctrl/`**, generated state goes in **`data/`**, and **`exec/` is for code only**. When adding a file or a path that reads/writes one, pick the directory by the file's role and address it with the matching `system.*_dir`.
+
 ## Segfaults are bugs — always investigate
 
 Any segfault (or other crash: access violation, abort, stack overflow) of a Synchronet executable — `sbbs.dll`, `jsexec`, `sbbscon`, `mailsrvr`, `ftpsrvr`, `websrvr`, `services`, `ntsvcs`, `smbutil`, `chksmb`, `fixsmb`, `scfg`, `sbbsctrl`, `useredit`, `syncterm`, the SMB or xpdev test binaries, etc. — is a real defect and **must be root-caused**, not worked around or ignored. This applies whether the crash happens during normal use, in a test, or in a one-off probe (jsexec, a quick MsgBase script, a build's own self-test). "Just don't do that" / "retry / skip the offending input" is not an acceptable resolution.
