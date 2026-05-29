@@ -53,6 +53,10 @@ uifc.helpbuf =
   values (`` `Yes` ``, `` `0` ``, `` `16M` ``) — uifc renders backtick
   spans in highlight color.
 - **One blank line** (`"\n"`) between paragraphs and between option blocks.
+- **Two spaces between sentences** within a paragraph — `". " ` is the wrong
+  convention here; use `".  "` (period + double-space + capital). Match the
+  surrounding helpbuf style; mixed spacing within one help block reads as
+  inconsistent at runtime.
 - **Sysop voice** — do not reference C source files, function names, or
   internal struct/macro identifiers in helpbuf text. Describe what the
   sysop sees, types, or configures, using the labels they see on screen.
