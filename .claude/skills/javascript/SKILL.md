@@ -384,6 +384,11 @@ way to learn an API, and many double as ready-made tools. Grep for `new X(` or
 **Config:** `exportcfg.js` / `importcfg.js` (SCFG ↔ JSON), `make_areas_ini.js`.
 **Net/mail/IRC:** `wget.js` (HTTPRequest reference), `letsyncrypt.js`,
 `certtool.js`, `sendmail.js`, `ircbot.js`, `mqtt_pub.js`/`mqtt_sub.js`.
+**LLM chat / Guru:** `chat_llm.js` (LLM-backed Guru chat engine; entry
+`chat_session(input, ctx)` / `open_session(ctx)`, driven by a Guru's SCFG
+`Module` field), `chat_llm_irc.js` (IRC bot adapter), `llm_tools.js` +
+`llm_tools/*.js` (drop-in function-calling tools), `llm_index.js` +
+`llm_index/*.js` (BM25 RAG indexer). See the wiki links below.
 **Inspection:** `dumpini.js`, `hexdump.js`, `sauce.js`, `jsdocs.js`,
 `syncjslint.js`, `sockinfo.js`.
 **Services** (also runnable standalone for testing): `nntpservice.js`,
@@ -451,6 +456,7 @@ JavaScript hub (https://wiki.synchro.net/custom:javascript):
 - Baja (legacy scripting language) — https://synchro.net/docs/baja.html · https://wiki.synchro.net/util:baja
 - Ctrl-A codes — https://wiki.synchro.net/custom:ctrl-a_codes · @-codes — https://wiki.synchro.net/custom:atcodes · colors/attributes — https://wiki.synchro.net/custom:colors
 - Mail processor example/config — https://wiki.synchro.net/module:mailproc_example · https://wiki.synchro.net/config:mailproc.ini · services — https://wiki.synchro.net/config:services.ini
+- LLM-backed Guru — engine https://wiki.synchro.net/module:chat_llm · config https://wiki.synchro.net/config:chat_llm.ini · tools https://wiki.synchro.net/module:llm_tools · RAG index https://wiki.synchro.net/module:llm_index · IRC adapter https://wiki.synchro.net/module:chat_llm_irc · how-to https://wiki.synchro.net/howto:llm-guru
 
 **Core JavaScript language (the engine speaks this):**
 - MDN JavaScript Guide — https://developer.mozilla.org/en-US/docs/Web/JavaScript
