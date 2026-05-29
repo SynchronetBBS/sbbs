@@ -1,0 +1,32 @@
+# Synchronet chat_llm RAG index rebuild timer -- companion to
+# llm_index.service.
+#
+# Fires the index rebuild nightly with a small random delay so multiple
+# Synchronet hosts on the same network don't all start crawling at the
+# same instant.  Persistent=true means a missed run (host was off at
+# midnight) catches up on next boot.  Tune the cadence to your corpus
+# refresh rate -- weekly is fine if your wiki / filebases / msgbases
+# change rarely; hourly is fine if you want the bot to see new wiki
+# edits within an hour.
+#
+# Installation: copy both this file and llm_index.service to your
+# systemd unit directory, then enable this TIMER (not the service):
+#   sudo systemctl enable --now llm_index.timer
+#
+# Verify the schedule:
+#   systemctl list-timers llm_index.timer
+#
+# Adjust the cadence via "sudo systemctl edit llm_index.timer" which
+# creates an override in /etc/systemd/system/llm_index.timer.d/.
+
+[Unit]
+Description=Nightly rebuild of chat_llm RAG index
+Documentation=http://wiki.synchro.net/
+
+[Timer]
+OnCalendar=daily
+RandomizedDelaySec=15min
+Persistent=true
+
+[Install]
+WantedBy=timers.target

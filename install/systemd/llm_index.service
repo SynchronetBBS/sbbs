@@ -1,0 +1,48 @@
+# Synchronet chat_llm RAG index rebuilder (llm_index.js) systemd 'unit
+# configuration' file -- companion to llm_index.timer.
+#
+# Crawls the index_sources configured in ctrl/chat_llm.ini's [<persona>]
+# section (DokuWiki pages, Synchronet file bases, message bases, etc.),
+# tokenizes them, and writes a fresh BM25 index to <data_dir>/<index_output>
+# for chat_llm.js's retrieval side.  Used by every chat_llm consumer
+# (terminal-side guru paging, multinode channel guru, the chat_llm_irc
+# bot, any future LLM use case) -- the actual chat dispatch itself runs
+# in-process inside sbbs.service or chat_llm_irc.service; this unit just
+# refreshes the corpus they retrieve from.
+#
+# Cadence is driven by the companion llm_index.timer (defaults to nightly
+# with a random delay).  Don't enable this .service directly -- enable the
+# .timer instead.  See `man systemd.timer`.
+#
+# Installation (do both this file AND llm_index.timer):
+# 1. Copy or symlink BOTH files to the correct directory
+#    e.g. for Debian/Ubuntu Linux, that would be: /lib/systemd/system
+# 2. If necessary, modify the SBBSCTRL environment variable value to match
+#    your install
+# 3. If necessary, modify the User and Group values to match your install
+# 4. If necessary, modify the paths in the ExecStart value to match your
+#    install.  Edits should be made using "sudo systemctl edit llm_index",
+#    creating /etc/systemd/system/llm_index.service.d/override.conf
+# 5. Enable the TIMER (not the service) by running
+#    "sudo systemctl enable --now llm_index.timer"
+# 6. Force an immediate one-off rebuild with "sudo systemctl start llm_index"
+#
+# Multiple personas: if you index more than one persona's corpus, copy
+# this file as llm_index@.service (note trailing "@") and pass the persona
+# code as the instance name, e.g. "systemctl start llm_index@guru".
+# Replace the persona arg in ExecStart below with %i and create a
+# matching llm_index@.timer.
+
+[Unit]
+Description=Synchronet chat_llm RAG index rebuild
+Documentation=http://wiki.synchro.net/
+
+[Service]
+Type=oneshot
+Environment=SBBSCTRL=/sbbs/ctrl
+User=sbbs
+Group=sbbs
+# Argument is the persona code (matches a section name in chat_llm.ini,
+# falling back to [default]).  Memory budget is generous so the index
+# build can hold a large corpus in RAM.  Tune if needed.
+ExecStart=/sbbs/exec/jsexec -m 536870912 llm_index.js

@@ -1,0 +1,57 @@
+# Synchronet chat_llm IRC bot (chat_llm_irc.js) systemd 'unit configuration' file
+#
+# Runs the LLM-backed chat guru as an IRC bot.  Joins one or more channels
+# defined in ctrl/chat_llm.ini and lurks until someone addresses the bot
+# directly or asks a question the engine has a high-confidence answer to.
+#
+# Prerequisites:
+#   - An LLM backend reachable from this host (Ollama, OpenAI-compatible
+#     API, etc.) -- configured via the endpoint= line in ctrl/chat_llm.ini.
+#   - ctrl/chat_llm.ini, ctrl/chat_llm_persona.utf8 (and the other prompt
+#     files) populated.
+#   - The BM25 RAG index built at least once (run `jsexec llm_index.js
+#     <persona>`; schedule periodic rebuilds via a systemd timer or cron
+#     if your index sources change often).
+#
+# Installation:
+# 1. Copy or symlink this file to the correct directory
+#    e.g. for Debian/Ubuntu Linux, that would be: /lib/systemd/system
+# 2. If necessary, modify the SBBSCTRL environment variable value to match
+#    your install
+# 3. If necessary, modify the User and Group values to match your install
+# 4. If necessary, modify the paths in the ExecStart value to match your
+#    install.  Edits should be made using "sudo systemctl edit
+#    chat_llm_irc", thus creating the file:
+#    /etc/systemd/system/chat_llm_irc.service.d/override.conf
+# 5. Enable the bot by running "sudo systemctl enable chat_llm_irc"
+# 6. To run without rebooting, run "sudo systemctl start chat_llm_irc"
+#
+# Multiple bots: if you run more than one guru persona, copy this file
+# as chat_llm_irc@.service (note the trailing "@" -- it's a systemd
+# "template unit") and pass the persona code as the instance name, e.g.
+# "systemctl start chat_llm_irc@guru".  Replace the persona argument in
+# ExecStart below with %i so each instance gets its own persona config.
+
+[Unit]
+Description=Synchronet chat_llm IRC bot
+Documentation=http://wiki.synchro.net/
+After=syslog.target network-online.target
+
+[Service]
+Type=simple
+Environment=SBBSCTRL=/sbbs/ctrl
+User=sbbs
+Group=sbbs
+# The bot allocates a generous JS runtime so the BM25 index can fit
+# alongside transcript / cache buffers.  Tune downward if your machine
+# is RAM-constrained or upward if you index a very large corpus.
+ExecStart=/sbbs/exec/jsexec -m 536870912 chat_llm_irc.js
+# systemd's default SIGTERM-and-wait is enough -- chat_llm_irc.js's main
+# loop watches js.terminated and sends an IRC QUIT before exiting.  Give
+# it a few seconds for that round-trip before SIGKILL.
+TimeoutStopSec=10
+Restart=on-failure
+RestartSec=30
+
+[Install]
+WantedBy=multi-user.target
