@@ -2500,9 +2500,22 @@ function bm25_search(idx, query_tokens, top_k, source_weights, recency_halflife_
     var howto_intent = /\bhow\s+(to|do|does|would|can|should|might|i)\b/.test(raw_lower)
                     || /\bhow\s+would\s+\w+\s+(join|setup|configure|install)\b/.test(raw_lower);
     var WIKI_BOOST = howto_intent ? 4.0 : 2.0;
+    /* Definitional intent ("what is X", "what does X stand for / mean",
+     * "define X", "what's a/an X"): the authoritative source is the
+     * acronyms list / glossary (ref:) / fact list.  But acronym/ and
+     * syncfact/ docs don't get WIKI_BOOST (only dokuwiki/ does), so a
+     * bare acronym entry otherwise loses to a wiki-boosted config page
+     * (observed: "what does FOSSIL stand for" -> acronym/FOSSIL only #3).
+     * Boost the definitional sources so they win for these queries. */
+    var def_intent = _is_definitional_query(raw_query);
+    var DEF_BOOST = 3.5;
     for (var d in scores) {
         var id = idx.docs[d].id || '';
         if (id.indexOf('dokuwiki/') === 0) scores[d] *= WIKI_BOOST;
+        if (def_intent && (id.indexOf('acronym/') === 0
+                        || id.indexOf('syncfact/') === 0
+                        || id.indexOf('dokuwiki/ref:') === 0))
+            scores[d] *= DEF_BOOST;
     }
 
     /* Recency decay: multiply each doc's BM25 score by
@@ -2700,6 +2713,22 @@ function format_retrieved_context(hits)
  * "step by step instructions", "give me a tutorial", etc. --
  * all queries where the right answer lives in the Synchronet wiki
  * rather than a file description or msgbase chatter. */
+/* Definitional / "what does this term mean" queries.  bm25_search uses
+ * this to boost the acronyms list / glossary (ref:) / fact list so a
+ * short authoritative definition outranks a wiki config page that merely
+ * mentions the term.  Examples: "what is FTN", "what does DSZ stand for",
+ * "what's an ARS", "define FOSSIL", "meaning of SMB". */
+function _is_definitional_query(input) {
+    var s = String(input || '');
+    if (/\bwhat\s+(?:is|are|'?s)\b/i.test(s)) return true;
+    if (/\bwhat\s+(?:does|do|did)\b[^?]*\b(?:stands?\s+for|mean|means|abbreviat)/i.test(s))
+        return true;
+    if (/\bwhat'?s\s+(?:a|an)\b/i.test(s)) return true;
+    if (/\b(?:define|definition\s+of|meaning\s+of|acronym\s+for|abbreviation\s+for|stands?\s+for)\b/i.test(s))
+        return true;
+    return false;
+}
+
 function _is_docstyle_query(input) {
     var s = String(input || '');
     if (/\b(?:wiki|docs?|documentation|tutorial|guide|walkthrough|manual|howto|how-to)\b/i.test(s))
