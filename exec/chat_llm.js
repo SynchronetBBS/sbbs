@@ -1449,17 +1449,19 @@ function final_reply_postprocess(s)
      * forms ("&amp;lt;...&amp;gt;").  Output is plain text (IRC /
      * terminal) and the model never legitimately wants a literal "&lt;"
      * in a chat reply, so decode aggressively: iterate until the string
-     * stops changing (bounded) so double-/triple-escaped entities fully
-     * resolve.  Runs BEFORE markdown-strip and URL validation -- the
-     * literal entities must not reach the user, and "&amp;" would break
-     * URL matching against the curated/wiki sets. */
+     * stops changing (bounded) so multiply-escaped entities fully
+     * resolve -- the 7B has been seen QUADRUPLE-escaping
+     * ("&amp;amp;amp;lt;"), so the cap is generous.  Runs BEFORE
+     * markdown-strip and URL validation -- the literal entities must
+     * not reach the user, and "&amp;" would break URL matching against
+     * the curated/wiki sets. */
     var ent_prev, ent_passes = 0;
     do {
         ent_prev = s;
         s = s.replace(/&lt;/g, '<').replace(/&gt;/g, '>')
              .replace(/&quot;/g, '"').replace(/&#0*39;/g, "'")
              .replace(/&apos;/g, "'").replace(/&amp;/g, '&');
-    } while (s !== ent_prev && ++ent_passes < 3);
+    } while (s !== ent_prev && ++ent_passes < 6);
 
     /* (1) Strip tool-name / JSON leakage.  The model sometimes writes
      * literal tool-call syntax into the user-facing content instead
@@ -1545,7 +1547,7 @@ function final_reply_postprocess(s)
      * when that clause carries no http(s) URL, so real citations
      * survive (verified by the callback). */
     s = s.replace(
-        /[\s,;.]+(?:(?:and|but)\s+)?(?:for\s+[^.!?\n]{0,40}?\s+)?(?:you\s+can\s+|to\s+)?(?:check(?:ing)?\s+(?:it\s+)?out|see|visit|read\s+more|find\s+(?:out\s+)?more|learn\s+more|explore|refer\s+to)\s+[^.!?\n]*?\b(?:this|the|the\s+following)\s+links?\b\s*:?[^.!?\n]*$/i,
+        /[\s,;.]+(?:(?:and|but)\s+)?(?:for\s+[^.!?\n]{0,40}?\s+)?(?:you\s+can\s+|to\s+)?(?:check(?:ing)?\s+(?:it\s+)?out|see|visit|read\s+more|find\s+(?:out\s+)?more|learn\s+more|explore|refer\s+to)\s+[^.!?\n]*?\b(?:this|the|the\s+following)\s+(?:links?|resources?|pages?|articles?|guides?|entr(?:y|ies)|write[\s-]?ups?)\b\s*:?[^.!?\n]*$/i,
         function (m) { return /https?:\/\//.test(m) ? m : '.'; });
 
     /* (5) Collapse 2+ consecutive newlines to a single space.  By the
@@ -1554,6 +1556,9 @@ function final_reply_postprocess(s)
      * string (memory + log), not the on-screen rendering for THIS
      * turn. */
     s = s.replace(/\s*\n\s*\n\s*/g, ' ');
+    /* List-to-inline conversion can leave "item., item" -- collapse the
+     * period-then-comma into one comma. */
+    s = s.replace(/\.,/g, ',');
     /* Collapse runs of whitespace introduced by removals above. */
     s = s.replace(/[ \t]{2,}/g, ' ');
     s = s.replace(/^\s+|\s+$/g, '');
