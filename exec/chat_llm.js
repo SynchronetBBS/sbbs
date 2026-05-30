@@ -2508,14 +2508,35 @@ function bm25_search(idx, query_tokens, top_k, source_weights, recency_halflife_
      * (observed: "what does FOSSIL stand for" -> acronym/FOSSIL only #3).
      * Boost the definitional sources so they win for these queries. */
     var def_intent = _is_definitional_query(raw_query);
-    var DEF_BOOST = 3.5;
+    /* Download / file-availability intent ("is X available for
+     * download", "where do I download X", "do you have X.zip"): the
+     * answer is a filebase entry, but the word "download" pulls in
+     * wiki file-config pages (config:file_options, user:files) that get
+     * WIKI_BOOST and outrank the actual files.  Boost filebase/ so the
+     * real files win. */
+    /* Exclude docstyle ("how do I download X") so wiki how-tos aren't
+     * demoted -- only treat bare "is X available / where's X" as a
+     * file-lookup. */
+    var dl_intent  = _is_download_query(raw_query) && !_is_docstyle_query(raw_query);
+    var DEF_BOOST  = 3.5;
+    var FILE_BOOST = 4.0;
     for (var d in scores) {
         var id = idx.docs[d].id || '';
-        if (id.indexOf('dokuwiki/') === 0) scores[d] *= WIKI_BOOST;
+        /* On a file-lookup query, skip the wiki boost so wiki
+         * file-config pages (config:file_options, user:files) -- which
+         * match "download" with high frequency -- don't get an extra
+         * leg up over the actual filebase entries.  (Penalizing wiki
+         * harder just let syncfacts surface instead, so leave it at no
+         * boost.)  The filebase boost below lifts the real files when
+         * the query term matches a filename/description; a term that
+         * doesn't match any file (e.g. "hyperterminal" vs htpe63.zip)
+         * can't be surfaced by boosting and is a data limitation. */
+        if (id.indexOf('dokuwiki/') === 0 && !dl_intent) scores[d] *= WIKI_BOOST;
         if (def_intent && (id.indexOf('acronym/') === 0
                         || id.indexOf('syncfact/') === 0
                         || id.indexOf('dokuwiki/ref:') === 0))
             scores[d] *= DEF_BOOST;
+        if (dl_intent && id.indexOf('filebase/') === 0) scores[d] *= FILE_BOOST;
     }
 
     /* Recency decay: multiply each doc's BM25 score by
@@ -2726,6 +2747,25 @@ function _is_definitional_query(input) {
     if (/\bwhat'?s\s+(?:a|an)\b/i.test(s)) return true;
     if (/\b(?:define|definition\s+of|meaning\s+of|acronym\s+for|abbreviation\s+for|stands?\s+for)\b/i.test(s))
         return true;
+    return false;
+}
+
+/* Download / file-availability queries.  bm25_search uses this to boost
+ * filebase/ entries so the actual file outranks a wiki file-config page
+ * that the word "download" otherwise pulls to the top.  Examples: "is
+ * hyperterminal available for download", "where do I download X", "do
+ * you have htpe63.zip", "can I grab X". */
+function _is_download_query(input) {
+    var s = String(input || '').toLowerCase();
+    if (/\b(?:download|d\/l)\b/.test(s)) return true;
+    if (/\bavailable\b/.test(s)
+        && /\b(?:download|file|\.(?:zip|exe|arj|lzh|gz|tgz|rar|7z|lha))\b/.test(s))
+        return true;
+    if (/\bwhere\s+(?:do|can|could|would|to)\b[^?]*\b(?:download|get|grab|find)\b/.test(s))
+        return true;
+    if (/\b(?:do\s+you|does\s+(?:this|the)\s+bbs|does\s+vert\w*)\s+(?:have|carry|host|offer|stock)\b/.test(s))
+        return true;
+    if (/\bcan\s+i\s+(?:download|get|grab)\b/.test(s)) return true;
     return false;
 }
 
