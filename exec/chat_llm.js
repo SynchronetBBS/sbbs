@@ -95,6 +95,12 @@ function load_config(persona_code)
     cfg.max_tokens  = parseInt(cfg.max_tokens, 10)  || DEFAULT_TOKENS;
     cfg.temperature = parseFloat(cfg.temperature)   || DEFAULT_TEMP;
     cfg.timeout     = parseInt(cfg.timeout, 10)     || DEFAULT_TIMEOUT;
+    /* Ollama context window (tokens).  0/unset => omitted from the
+     * request, so Ollama uses its server default (~4096).  Set in
+     * chat_llm.ini when the system prompt + RAG exceed the default and
+     * the model truncates the front of the prompt (where the identity
+     * and style rules live). */
+    cfg.num_ctx     = parseInt(cfg.num_ctx, 10)     || 0;
     /* keep_alive is passed through as a string; empty/unset means
      * "use the backend's default" (5m for Ollama). */
     cfg.keep_alive  = cfg.keep_alive  || '';
@@ -1063,19 +1069,22 @@ function chat_ollama(cfg, messages, opts)
         think:    false,
         options:  {
             temperature: cfg.temperature,
-            num_predict: cfg.max_tokens
-            /* Note: deliberately NOT setting num_ctx.  Tried num_ctx:8192
-             * 2026-05-27 -- gave the model enough room to read RAG
-             * chunks fully, but for state-query questions about a
-             * specific BBS the model then ANSWERED from the chunks
-             * (and confidently fabricated -- "over 10K BBSes",
-             * "BBS Freedom (sysop: Freedom)", "42 downloads today")
-             * instead of calling the directory/stats tools.  The
-             * default 4K context that truncates RAG turns out to be
-             * a forcing function for the model to fall back to
-             * tools.  Re-enabling num_ctx requires either a bigger
-             * model or per-query intent detection so chunks aren't
-             * injected for state queries. */
+            num_predict: cfg.max_tokens,
+            /* num_ctx: 0/unset => omitted (JSON.stringify drops an
+             * undefined value), so Ollama uses its server default
+             * (~4096).  Set cfg.num_ctx in chat_llm.ini when the system
+             * prompt + RAG exceed the default -- otherwise llama.cpp
+             * keeps the prompt's tail and truncates the front, where the
+             * identity and style rules live (observed: a 4698-token
+             * system prompt capped at 4096 dropped the "you are a
+             * co-sysop, NOT an AI assistant" block).
+             * History: the 4K default was once relied on as a forcing
+             * function for tool fallback -- a larger window let the
+             * model answer state queries from RAG chunks instead of
+             * calling the directory/stats tools (sometimes fabricating).
+             * After raising num_ctx, re-run the tool/archive regression
+             * to confirm routing still holds. */
+            num_ctx: cfg.num_ctx || undefined
         }
     };
     if (cfg.keep_alive) req.keep_alive = cfg.keep_alive;
@@ -1225,7 +1234,8 @@ function chat_ollama(cfg, messages, opts)
                     think:    false,
                     options:  {
                         temperature: cfg.temperature,
-                        num_predict: cfg.max_tokens
+                        num_predict: cfg.max_tokens,
+                        num_ctx:     cfg.num_ctx || undefined
                     }
                 };
                 if (cfg.keep_alive)  pre_req.keep_alive = cfg.keep_alive;
@@ -1321,7 +1331,8 @@ function chat_ollama(cfg, messages, opts)
             think:    false,
             options:  {
                 temperature: cfg.temperature,
-                num_predict: cfg.max_tokens
+                num_predict: cfg.max_tokens,
+                num_ctx:     cfg.num_ctx || undefined
             }
         };
         if (cfg.keep_alive)  follow_req.keep_alive = cfg.keep_alive;
