@@ -2688,10 +2688,36 @@ function _wiki_boosted_weights(base, multiplier) {
     return out;
 }
 
+/* Self-referential / identity / social questions that RAG cannot answer
+ * and actively HARMS: retrieving board + wiki content for "what's your
+ * name?" injects text about the BBS that the model then conflates with
+ * its own identity ("I'm Vertrauen BBS").  These should be answered from
+ * the system prompt's identity rules alone, with no retrieved context.
+ * Kept deliberately narrow -- only clearly about-the-bot / pleasantry
+ * phrasings -- so genuine knowledge questions still retrieve. */
+function _is_conversational_query(input)
+{
+    var s = String(input || '').toLowerCase();
+    /* identity: who/what are you, your name/role, are you a bot/sysop */
+    if (/\b(who|what)\s+(are|r)\s+(you|u|ya)\b/.test(s)) return true;
+    if (/\bwhat'?s\s+your\s+name\b/.test(s)) return true;
+    if (/\byour\s+(name|identity|role|job|purpose|gender|age)\b/.test(s)) return true;
+    if (/\bare\s+you\s+(a|an|the)?\s*(real\s+)?(bot|ai|a\.i\.|human|person|robot|chat\s?bot|assistant|sysop|co.?sysop|guru|alive|sentient|conscious|there)\b/.test(s)) return true;
+    if (/\b(introduce|tell\s+me\s+about)\s+yourself\b/.test(s)) return true;
+    if (/\bwhat\s+(can|do)\s+you\s+do\b/.test(s)) return true;
+    /* social pleasantries */
+    if (/\b(how\s+are\s+(you|u|ya)|how'?s\s+it\s+going|how\s+do\s+you\s+do)\b/.test(s)) return true;
+    if (/^\s*(thanks|thank\s+you|thx|ty|cheers|good\s+(morning|afternoon|evening|night)|gm|gn)\b/.test(s)) return true;
+    return false;
+}
+
 function inject_retrieval(input, ctx, cfg)
 {
     ctx._rag_hits = 0;   /* default for profile metric */
     if (!cfg.index_top_k) return;
+    /* Don't retrieve for identity/social queries -- RAG can't help and
+     * the injected board/wiki text confuses the bot's sense of self. */
+    if (_is_conversational_query(input)) { ctx._rag_skipped = 'conversational'; return; }
     var tokens = tokenize_query(input);
     if (tokens.length < 1) return;   /* all stopwords / nothing to query */
     var persona = ctx.persona && ctx.persona.code;
