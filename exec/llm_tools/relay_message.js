@@ -15,11 +15,29 @@
  * load_relay()/deliver_pending().  Both sides read/write the same
  * JSON file; the tool side appends, the bot side drains. */
 var RELAY_PATH = (typeof system != 'undefined' && system.data_dir)
-    ? system.data_dir + 'guru_irc_relay.json' : 'data/guru_irc_relay.json';
+    ? system.data_dir + 'chat/guru_irc_relay.json' : 'data/chat/guru_irc_relay.json';
 
-function _read_relay() {
+/* Per-user relay opt-out set, shared with chat_llm_irc.js's
+ * load_norelay()/save_norelay() (data/chat/guru_irc_norelay.json).
+ * Read-only here: the tool refuses to queue for an opted-out recipient. */
+var NORELAY_PATH = (typeof system != 'undefined' && system.data_dir)
+    ? system.data_dir + 'chat/guru_irc_norelay.json' : 'data/chat/guru_irc_norelay.json';
+function _is_norelay(nick, path) {
+    path = path || NORELAY_PATH;
+    if (typeof File == 'undefined') return false;
+    var f = new File(path);
+    if (!f.open('r')) return false;
+    var raw = f.read(); f.close();
+    try {
+        var s = JSON.parse(raw);
+        return !!(s && s.users && s.users[String(nick).toLowerCase()]);
+    } catch (e) { return false; }
+}
+
+function _read_relay(path) {
+    path = path || RELAY_PATH;
     if (typeof File == 'undefined') return { messages: [] };
-    var f = new File(RELAY_PATH);
+    var f = new File(path);
     if (!f.open('r')) return { messages: [] };
     var raw = f.read();
     f.close();
@@ -29,9 +47,10 @@ function _read_relay() {
     } catch (e) {}
     return { messages: [] };
 }
-function _write_relay(state) {
+function _write_relay(state, path) {
+    path = path || RELAY_PATH;
     if (typeof File == 'undefined') return;
-    var f = new File(RELAY_PATH);
+    var f = new File(path);
     if (!f.open('w')) return;
     f.write(JSON.stringify(state, null, 2));
     f.close();
@@ -114,6 +133,11 @@ function _resolve_recipient(query, env) {
 }
 
 function relay_message(args, env) {
+    /* Queue + opt-out paths come from the bot via env (the persona-derived
+     * data/chat/<base>_*.json files), so the tool and bot always read/write
+     * the SAME files.  Fall back to the literal default only off-session. */
+    var relay_path   = (env && env.relay_path)   || RELAY_PATH;
+    var norelay_path = (env && env.norelay_path) || NORELAY_PATH;
     var recipient = String((args && args.recipient) || '').replace(/^\s+|\s+$/g, '');
     var text      = String((args && args.text) || '').replace(/^\s+|\s+$/g, '');
     if (!recipient) {
@@ -145,20 +169,48 @@ function relay_message(args, env) {
         };
     }
 
+    /* Honor the recipient's relay opt-out ("don't relay messages to me").
+     * Refuse with honest feedback instead of silently dropping or
+     * fake-acknowledging -- the model passes this back to the sender. */
+    if (_is_norelay(resolved.canonical, norelay_path)) {
+        return {
+            error: resolved.canonical + ' has opted out of relayed messages '
+                 + '-- I can\'t pass that along. Reach them directly if '
+                 + 'they\'re around.'
+        };
+    }
+
     /* Cap queue length per recipient to keep things sane (one user
      * shouldn't stockpile dozens of relays against one target). */
-    var state = _read_relay();
-    var per_recipient = 0;
+    var state = _read_relay(relay_path);
+    /* Max pending relays held per recipient AND per sender.  Configurable
+     * via chat_llm.ini's relay_max_pending, passed through env by the
+     * engine; default 5 when unset. */
+    var cap = parseInt(env && env.relay_max_pending, 10);
+    if (!(cap > 0)) cap = 5;
+    var per_recipient = 0, per_sender = 0;
     var canon_lower = resolved.canonical.toLowerCase();
+    var from_lower  = String(from).toLowerCase();
     for (var i = 0; i < state.messages.length; i++) {
-        if (String(state.messages[i].recipient || '').toLowerCase()
-            === canon_lower) per_recipient++;
+        var rl = String(state.messages[i].recipient || '').toLowerCase();
+        var fl = String(state.messages[i].from || '').toLowerCase();
+        if (rl === canon_lower) per_recipient++;
+        if (fl === from_lower)  per_sender++;
     }
-    if (per_recipient >= 5) {
+    if (per_recipient >= cap) {
         return {
-            error: 'I am already holding 5 pending messages for '
+            error: 'I am already holding ' + cap + ' pending messages for '
                  + resolved.canonical + '. Try again after some of those '
                  + 'have been delivered.'
+        };
+    }
+    /* Also cap per SENDER (across all recipients): one user shouldn't be
+     * able to stockpile a flood of relays -- the abuse vector the
+     * per-recipient cap alone doesn't cover. */
+    if (per_sender >= cap) {
+        return {
+            error: 'You already have ' + cap + ' messages waiting to be '
+                 + 'delivered. Let some of those land before queuing more.'
         };
     }
 
@@ -169,7 +221,7 @@ function relay_message(args, env) {
         ts:        time(),
         queued_in: (env && env.channel) || ''
     });
-    _write_relay(state);
+    _write_relay(state, relay_path);
     return {
         ok:        true,
         recipient: resolved.canonical,

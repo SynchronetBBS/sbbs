@@ -80,7 +80,10 @@ load("chat_llm.js");
  * chat_llm.ini (model override, etc.) layered on top of [default].
  * Override with command-line arg if the sysop wants a different
  * persona configuration for this bot instance. */
-var PERSONA = (argv && argv[0]) || "guru:irc";
+/* Lowercase the persona code at the source so it's case-stable everywhere
+ * it becomes a filename (BOT_FILE_BASE, the index key, per-user memory) --
+ * a "GURU:IRC" arg can't produce files distinct from "guru:irc". */
+var PERSONA = String((argv && argv[0]) || "guru:irc").toLowerCase();
 var cfg     = load_config(PERSONA);
 
 var IRC_HOST    = cfg.irc_network || "irc.synchro.net";
@@ -169,8 +172,11 @@ var MAX_REPLY_BYTES           = 400;  /* IRC line limit ~512, account for protoc
  * the default persona "guru:irc" this gives "guru_irc". */
 var BOT_FILE_BASE = (function () {
     var parts  = String(PERSONA).split(":");
-    var name   = parts[0] || "guru";
-    var proto  = parts[1] || "irc";
+    /* Run each part through safe_id() (from chat_llm.js, load()ed above)
+     * so an unfortunate persona arg can't produce an invalid path or
+     * escape data/chat/ (e.g. "a/b:irc" -> "a_b_irc", not a subdir). */
+    var name   = safe_id(parts[0] || "guru");
+    var proto  = safe_id(parts[1] || "irc");
     return name + "_" + proto;
 })();
 
@@ -225,7 +231,7 @@ var IRC_CHAT_LOG = system.data_dir + BOT_FILE_BASE + "_chat.log";
  * message to another user; drained by deliver_pending() when that
  * user next speaks in ANY channel the bot is in.  Persisted across
  * bot restarts so messages don't get lost on restart. */
-var IRC_RELAY_PATH = system.data_dir + BOT_FILE_BASE + "_relay.json";
+var IRC_RELAY_PATH = system.data_dir + "chat/" + BOT_FILE_BASE + "_relay.json";
 function load_relay() {
     if (!file_exists(IRC_RELAY_PATH)) return { messages: [] };
     var f = new File(IRC_RELAY_PATH);
@@ -253,7 +259,7 @@ function save_relay(state) {
  * case-insensitive), matching the relay/seen convention.  IRC-only:
  * this is the sole context where the guru speaks unprompted, so it's
  * the only place there's anything to mute. */
-var IRC_MUTE_PATH = system.data_dir + BOT_FILE_BASE + "_mute.json";
+var IRC_MUTE_PATH = system.data_dir + "chat/" + BOT_FILE_BASE + "_mute.json";
 var muted_users   = null;   /* lazy { "<lc-nick>": muted_at_ts } */
 function load_mutes() {
     if (muted_users !== null) return muted_users;
@@ -295,6 +301,55 @@ function mute_command(input) {
     return null;
 }
 
+/* ---- Per-user relay opt-out ("no-relay") ----
+ * A user can tell the bot "don't relay messages to me" (and variants) so
+ * the relay_message tool refuses to queue anything for them; "relay me"
+ * opts back in.  Persisted to data/chat/<bot_file_base>_norelay.json,
+ * shared with the relay_message tool (which reads it before queuing),
+ * the same way the relay queue is shared.  Lowercased-nick keyed. */
+var IRC_NORELAY_PATH = system.data_dir + "chat/" + BOT_FILE_BASE + "_norelay.json";
+var norelay_users    = null;   /* lazy { "<lc-nick>": optout_at_ts } */
+function load_norelay() {
+    if (norelay_users !== null) return norelay_users;
+    norelay_users = {};
+    if (!file_exists(IRC_NORELAY_PATH)) return norelay_users;
+    var f = new File(IRC_NORELAY_PATH);
+    if (!f.open("r")) return norelay_users;
+    var raw = f.read(); f.close();
+    try { var s = JSON.parse(raw); if (s && s.users) norelay_users = s.users; }
+    catch (e) { blog("load_norelay: corrupt " + IRC_NORELAY_PATH + ": " + e); }
+    return norelay_users;
+}
+function save_norelay() {
+    load_norelay();
+    var f = new File(IRC_NORELAY_PATH);
+    if (!f.open("w")) return;
+    f.write(JSON.stringify({ users: norelay_users }, null, 2));
+    f.close();
+}
+function is_norelay(nick) {
+    return !!load_norelay()[String(nick).toLowerCase()];
+}
+function set_norelay(nick, on) {
+    load_norelay();
+    var k = String(nick).toLowerCase();
+    if (on) norelay_users[k] = time();
+    else delete norelay_users[k];
+    save_norelay();
+}
+/* Classify a message as a 'norelay' (opt-out) / 'relay-ok' (opt-in)
+ * command, or null.  Tolerates trailing context like "from others". */
+function norelay_command(input) {
+    var s = String(input || "").toLowerCase()
+                .replace(/^\s+|\s+$/g, "").replace(/[.!,]+$/, "");
+    if (/^(relay me|allow relays?( to me)?|you (can|may) relay( to me)?|resume relays?|relays? (on|ok)( for me)?)$/.test(s))
+        return "relay-ok";
+    if (/^(please\s+)?(don'?t|do\s+not|never|no|stop)\s+(relay\w*|pass\w*)\b/.test(s)
+        && /\bme\b/.test(s))
+        return "norelay";
+    return null;
+}
+
 function format_age(secs) {
     if (secs < 60) return Math.floor(secs) + "s";
     if (secs < 3600) return Math.floor(secs / 60) + "m";
@@ -317,6 +372,9 @@ function deliver_pending(channel, speaker_nick) {
     if (!deliver.length) return;
     state.messages = remaining;
     save_relay(state);
+    /* If the recipient has since opted out of relays, drop the queued
+     * messages (already dequeued above) rather than delivering them. */
+    if (is_norelay(speaker_nick)) return;
     var now = time();
     for (var i = 0; i < deliver.length; i++) {
         var m = deliver[i];
@@ -534,6 +592,11 @@ function build_irc_ctx(speaker_nick, channel) {
         participants: [],
         transcript:   [],
         mode:         "irc",
+        /* Relay queue + opt-out paths, so the relay_message tool uses the
+         * SAME persona-derived files this bot reads/writes -- no hardcoded
+         * "guru_irc" base in the tool. */
+        relay_path:    IRC_RELAY_PATH,
+        norelay_path:  IRC_NORELAY_PATH,
         supports_utf8: true,
         addressed:    true,
         /* IRC has no terminal -- typing simulation makes no sense.
@@ -620,7 +683,7 @@ function add_member(channel, nick) {
  * lets the bot accept a "tell funbot hi when you see them" relay
  * for funbot even when funbot isn't currently connected, as long as
  * the bot has seen funbot here at least once before. */
-var SEEN_FILE = system.data_dir + BOT_FILE_BASE + "_seen.json";
+var SEEN_FILE = system.data_dir + "chat/" + BOT_FILE_BASE + "_seen.json";
 var seen_members = {};   /* { channel_lower: { nick_lower: canonical } } */
 var seen_dirty = false;
 function chan_seen(name) {
@@ -856,6 +919,19 @@ function handle_privmsg(from_nick, target, text) {
         if (mc === "unmute") {
             set_mute(from_nick, false);
             irc_say(target, from_nick + ": back atcha -- what's up?");
+            return;
+        }
+        /* Relay opt-out, also handled regardless of mute state. */
+        var rc = norelay_command(input);
+        if (rc === "norelay") {
+            set_norelay(from_nick, true);
+            irc_say(target, from_nick + ": got it -- i won't relay anyone's "
+                + "messages to you. say \"relay me\" to undo.");
+            return;
+        }
+        if (rc === "relay-ok") {
+            set_norelay(from_nick, false);
+            irc_say(target, from_nick + ": ok, i'll relay messages to you again.");
             return;
         }
         if (is_muted(from_nick)) return;   /* muted: stay silent */

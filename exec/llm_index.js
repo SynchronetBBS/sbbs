@@ -45,8 +45,10 @@ function load_config(persona)
     var f = new File(CHAT_LLM_CONFIG_FILE);
     if (!f.open('r'))
         throw new Error('cannot open ' + CHAT_LLM_CONFIG_FILE);
-    var section  = persona ? f.iniGetObject(persona) : null;
-    var defaults = f.iniGetObject('default') || {};
+    /* Defaults in the root (unnamed) section; named [<persona>] overrides. */
+    var defaults = f.iniGetObject(null) || {};
+    var section  = (persona && String(persona).toLowerCase() != 'default')
+                 ? f.iniGetObject(persona) : null;
     f.close();
 
     var cfg = {};

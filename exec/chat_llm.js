@@ -81,12 +81,17 @@ function load_config(persona_code)
     var f = new File(CHAT_LLM_CONFIG_FILE);
     if (!f.open('r'))
         throw new Error('cannot open ' + CHAT_LLM_CONFIG_FILE);
-    /* Look up [<persona_code>] first, fall back to [default]. */
-    var section = persona_code ? f.iniGetObject(persona_code) : null;
-    var defaults = f.iniGetObject('default') || {};
+    /* Defaults live in the root (unnamed) section; a named [<persona_code>]
+     * section overrides them.  "default" is the reserved fallback persona
+     * -- it has no section of its own (it IS the root defaults), so we
+     * don't look up a [default] section for it.  A sysop guru must not be
+     * coded "default" (see ctx_from_user's canonicalization). */
+    var defaults = f.iniGetObject(null) || {};
+    var section  = (persona_code && String(persona_code).toLowerCase() != 'default')
+                 ? f.iniGetObject(persona_code) : null;
     f.close();
 
-    /* Merge: persona section overrides default. */
+    /* Merge: persona section overrides root defaults. */
     var cfg = {};
     var k;
     for (k in defaults) cfg[k] = defaults[k];
@@ -122,6 +127,9 @@ function load_config(persona_code)
     cfg.summarize_threshold = parseInt(cfg.summarize_threshold, 10) || 30;
     cfg.summarize_batch     = parseInt(cfg.summarize_batch, 10)     || 10;
     cfg.memory_max_age_days = parseInt(cfg.memory_max_age_days, 10) || 365;
+    /* Relay queue cap: max pending relays held per recipient AND per
+     * sender (anti-abuse).  Passed to the relay_message tool via env. */
+    cfg.relay_max_pending   = parseInt(cfg.relay_max_pending, 10)   || 5;
 
     /* BM25 retrieval knobs (step 3). The indexer (exec/chat_index.js)
      * writes the index file; we just need its path and top_k here. */
@@ -1265,11 +1273,14 @@ function chat_ollama(cfg, messages, opts)
             }
             if (intent) {
                 var pre_env = {
-                    speaker:         _ctx0.speaker,
-                    mode:            _ctx0.mode,
-                    channel:         _ctx0.channel || '',
-                    channel_members: _ctx0.channel_members || {},
-                    seen_members:    _ctx0.seen_members || {}
+                    speaker:           _ctx0.speaker,
+                    mode:              _ctx0.mode,
+                    channel:           _ctx0.channel || '',
+                    channel_members:   _ctx0.channel_members || {},
+                    seen_members:      _ctx0.seen_members || {},
+                    relay_max_pending: cfg.relay_max_pending,
+                    relay_path:        _ctx0.relay_path,
+                    norelay_path:      _ctx0.norelay_path
                 };
                 var pre_result;
                 try {
@@ -1279,6 +1290,29 @@ function chat_ollama(cfg, messages, opts)
                 } catch (e2) {
                     pre_result = JSON.stringify(
                         { error: 'pre-classifier exec: ' + e2 });
+                }
+                /* relay_message: speak the tool's own result text verbatim
+                 * and skip the model turn entirely.  The tool already
+                 * returns first-person bot speech for every outcome --
+                 * refusals (opt-out / unknown nick / per-recipient or
+                 * per-sender cap) carry .error, a successful queue carries
+                 * .note ("Stored. Will deliver the next time X speaks...").
+                 * qwen2.5:7b has been observed DISCARDING a refusal result
+                 * and fabricating a delivery promise instead ("I'll make
+                 * sure X knows"), telling the sender a message was relayed
+                 * that the tool actually refused (e.g. to an opted-out
+                 * recipient).  Returning the tool text deterministically
+                 * removes any chance of the model misreporting whether the
+                 * relay happened. */
+                if (intent.tool == 'relay_message') {
+                    var _rr = null;
+                    try { _rr = JSON.parse(String(pre_result)); } catch (e3) {}
+                    var _say = _rr && (_rr.error || _rr.note);
+                    if (_say) {
+                        opts._tool_calls.push('!pre:' + intent.tool
+                            + '(' + JSON.stringify(intent.args) + ')');
+                        return _say;
+                    }
                 }
                 var pre_id = 'preclass_0';
                 current_messages = current_messages.slice();
@@ -1375,7 +1409,10 @@ function chat_ollama(cfg, messages, opts)
              * it has ever observed in a channel).  Used by
              * relay_message to allow "tell <X> when you see <X>"
              * for a nick that's known but not currently connected. */
-            seen_members:    _ctx.seen_members || {}
+            seen_members:    _ctx.seen_members || {},
+            relay_max_pending: _ctx.relay_max_pending || cfg.relay_max_pending,
+            relay_path:        _ctx.relay_path,
+            norelay_path:      _ctx.norelay_path
         };
         for (var tci = 0; tci < tool_calls.length; tci++) {
             var tc      = tool_calls[tci];
@@ -1822,6 +1859,14 @@ function is_addressed(line, names)
 
 function ctx_from_user(useron, persona_code, persona_name, supports_utf8)
 {
+    /* Canonicalize the persona code to lowercase: ini section lookups are
+     * case-insensitive anyway, and lowercasing keeps the derived filenames
+     * (data/chat/<speaker>.<code>.json, <code>.idx) case-stable so a guru
+     * coded "GURU" vs "guru" can't spawn duplicate/colliding files on a
+     * case-insensitive filesystem.  Blank/missing -> the reserved "default"
+     * fallback persona; a guru coded "default" collapses into it rather
+     * than colliding with the fallback's files. */
+    persona_code = String(persona_code || 'default').toLowerCase();
     var attrs = useron ? {
         real_name: useron.name,
         level:     useron.security ? useron.security.level : 0,
@@ -2428,7 +2473,7 @@ function load_index(persona_code, cfg)
      * sysop would only need a separate per-mode index in unusual
      * setups, in which case they can rebuild with the full
      * "guru:irc" persona explicitly. */
-    var key = (persona_code || 'default').split(':')[0];
+    var key = safe_id((persona_code || 'default').split(':')[0]);
     var path = system.data_dir
              + String(cfg.index_output).replace(/<persona>/g, key);
 

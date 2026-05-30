@@ -369,6 +369,32 @@ Consequences for JS callers:
 - Inline comments after bool/enum/numeric keys are fine (and appear throughout
   stock `.ini` files) — that's exactly what the type-specific stripping is for.
 
+### The root (unnamed) section = global defaults
+
+Keys that appear **before any `[section]` tag** live in the **root (unnamed)
+section**. `File.iniGetObject(null)` reads it (and `iniSetObject(null, obj)`
+writes it — see `exec/upgrade_to_v320.js`). The standard Synchronet idiom is to
+put **global/default key-values in the root**, then let each named `[section]`
+**override** them — read the root for the defaults, read the section, merge the
+section on top:
+
+```javascript
+var f = new File(system.ctrl_dir + 'foo.ini'); f.open('r');
+var defaults = f.iniGetObject(null)       || {};   // root: shared defaults
+var section  = f.iniGetObject('guru:irc') || {};   // per-thing overrides
+f.close();
+var cfg = {}; for (var k in defaults) cfg[k] = defaults[k];
+for (k in section) cfg[k] = section[k];            // section wins
+```
+
+Prefer the root over a *named* `[default]` section for defaults: it's what the
+docs describe (https://wiki.synchro.net/config:ini_files#root_section) and it
+avoids overloading a section name — a literal `[default]` section collides with
+any value that's *also* used as a section key elsewhere (e.g. a sysop-configured
+code that happens to be "default"). Section names are case-insensitive, so a
+value used as a section key should be case-folded before it lands in a filename
+to avoid case-variant dupes on case-insensitive filesystems.
+
 ## Common API recipes
 
 ```javascript
