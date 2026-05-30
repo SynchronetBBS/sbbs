@@ -46,6 +46,13 @@ var CHAT_LLM_CONFIG_FILE = system.ctrl_dir + 'chat_llm.ini';
 var DEFAULT_TIMEOUT      = 60;
 var DEFAULT_TOKENS       = 500;
 var DEFAULT_TEMP         = 0.7;
+/* After the primary endpoint fails, skip it (go straight to the
+ * fallback) for this many seconds so an outage doesn't add the primary's
+ * full timeout to every reply.  Module-level state below persists across
+ * turns in a long-running process (the IRC bot); a one-shot process
+ * (guru_ask) re-probes the primary each run. */
+var ENDPOINT_FAILOVER_COOLDOWN = 60;
+var _primary_down_until = 0;   /* unix time; 0 = primary presumed up */
 
 /* ISO 639-1 -> English name lookup. Synchronet's user.lang field is
  * usually a 2-letter code (matching the text.<lang>.ini convention),
@@ -92,6 +99,9 @@ function load_config(persona_code)
 
     cfg.provider    = cfg.provider    || 'openai';
     cfg.api_key     = cfg.api_key     || 'placeholder';
+    /* Optional secondary endpoint.  When set and the primary endpoint
+     * fails (transport error / non-200), dispatch() retries once here. */
+    cfg.endpoint_fallback = cfg.endpoint_fallback || '';
     cfg.max_tokens  = parseInt(cfg.max_tokens, 10)  || DEFAULT_TOKENS;
     cfg.temperature = parseFloat(cfg.temperature)   || DEFAULT_TEMP;
     cfg.timeout     = parseInt(cfg.timeout, 10)     || DEFAULT_TIMEOUT;
@@ -1353,7 +1363,7 @@ function chat_ollama(cfg, messages, opts)
     return '(tool-call loop did not converge -- try rephrasing)';
 }
 
-function dispatch(cfg, messages, opts)
+function _dispatch_provider(cfg, messages, opts)
 {
     switch (cfg.provider) {
     case 'openai':
@@ -1363,6 +1373,48 @@ function dispatch(cfg, messages, opts)
     /* case 'gemini': return chat_gemini(cfg, messages, opts); */
     default:
         throw new Error('unknown provider: ' + cfg.provider);
+    }
+}
+
+/* dispatch() with endpoint failover.  If cfg.endpoint_fallback is set and
+ * the primary endpoint throws (transport error / non-200 -- the provider
+ * functions throw "HTTP <code>" on any failure), retry once against the
+ * fallback.  A short cooldown after a primary failure routes straight to
+ * the fallback on subsequent turns so an outage doesn't add the primary's
+ * full timeout to every reply. */
+function dispatch(cfg, messages, opts)
+{
+    var fb = cfg.endpoint_fallback;
+    if (!fb || fb === cfg.endpoint)
+        return _dispatch_provider(cfg, messages, opts);   /* no fallback */
+
+    function _via(ep) {
+        if (ep === cfg.endpoint) return cfg;
+        var c = {}; for (var k in cfg) c[k] = cfg[k];
+        c.endpoint = ep;
+        return c;
+    }
+
+    var now = time();
+    /* Primary recently failed -> skip it, go straight to the fallback. */
+    if (_primary_down_until > now) {
+        try {
+            return _dispatch_provider(_via(fb), messages, opts);
+        } catch (e) {
+            _primary_down_until = 0;   /* fallback down too -- re-probe primary next turn */
+            throw e;
+        }
+    }
+
+    try {
+        var r = _dispatch_provider(cfg, messages, opts);
+        _primary_down_until = 0;       /* primary healthy */
+        return r;
+    } catch (e) {
+        _primary_down_until = now + ENDPOINT_FAILOVER_COOLDOWN;
+        log(LOG_WARNING, 'chat_llm: primary endpoint ' + cfg.endpoint
+            + ' failed (' + e + '); failing over to ' + fb);
+        return _dispatch_provider(_via(fb), messages, opts);
     }
 }
 
