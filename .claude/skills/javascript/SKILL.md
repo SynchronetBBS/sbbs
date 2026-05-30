@@ -333,6 +333,42 @@ subject).
 MsgBase script is the right tool (see `smbutils` for the storage
 layer and when to prefer each).
 
+## Reading INI files (and the trailing-comment trap)
+
+`File.iniGetValue(section, key, default)` and `File.iniGetObject(section)` read
+Synchronet `.ini` config (`js_file.cpp` → `xpdev/ini_file.c`). The parser
+recognizes `;` as the comment char (`INI_COMMENT_CHAR`), but **whether a trailing
+`; comment` on a value line is stripped depends on the value's TYPE** — this is
+the single most common config-corruption surprise:
+
+| Value type | Trailing `key = value ; comment` | Why |
+|------------|----------------------------------|-----|
+| **string** | **NOT stripped** — the comment becomes part of the value | `read_value`/`get_value` take everything after `=`, apply only `truncsp` (trim trailing whitespace); a string can legitimately contain `;` and spaces, so nothing is cut |
+| **boolean** | stripped/ignored | `isTrue()` truncates the value at the first `;`, space, or tab before matching `true`/`yes`/`on` |
+| **enum** | stripped/ignored | `parseEnum()` keeps only the first whitespace-delimited word |
+| **integer / float / datetime** | stripped/ignored | the numeric parse stops at the first non-numeric char |
+
+The asymmetry is deliberate. A single-token value (bool/enum/number) can't
+contain spaces, so anything after the token is safely a comment — support was
+added on purpose: `isTrue` (`cceb1fbb8`, after FozzTexx reported the wiki's
+`sexpots.ini` had `true ; comment` values parsing as false) and `parseEnum`
+(`7346893d6`, "Enum values followed by comments are now supported"). A **string**
+value has no such delimiter, so the parser can't guess where the value ends and
+a comment begins — it keeps the whole thing.
+
+Consequences for JS callers:
+
+- `File.iniGetObject()` returns **every** value as a raw string, so it **never**
+  strips inline comments. `iniGetValue(s, k, dflt)` strips only when `dflt`'s
+  type routes it through the bool/number/enum path (`iniGetBool`/`iniGetInteger`/
+  etc.); a string default goes through `iniGetString` and keeps the comment.
+- **Don't put an inline `; comment` after a string-valued key** (URLs, paths,
+  filenames, names) — put the comment on its own line above the key. A line like
+  `endpoint = http://host:11434/api/chat   ; my note` yields the literal value
+  `http://host:11434/api/chat   ; my note`, which then fails wherever it's used.
+- Inline comments after bool/enum/numeric keys are fine (and appear throughout
+  stock `.ini` files) — that's exactly what the type-specific stripping is for.
+
 ## Common API recipes
 
 ```javascript
