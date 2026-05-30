@@ -280,6 +280,34 @@ aggressively per message. Side effects: `log()` output is formatted
 (timestamp prefix, log-level tag) and goes to stderr (capture with `-A` or
 `-e <file>`).
 
+### Interactive input: use `prompt()`, not a raw `stdin` read
+
+For a script that reads lines typed at an **interactive terminal**, use the
+global **`prompt(label)`** — NOT `stdin.readln()` / `new File('/dev/stdin')`.
+jsexec puts the controlling terminal into raw / no-echo mode for its own
+console handling, so a raw stdin read consumes keystrokes **without echoing
+them and without line-editing** — the user ends up typing blind. `prompt()`
+manages the terminal itself (echo + line edit), prints `label` followed by
+`": "`, and returns:
+
+- the entered string,
+- `""` on a blank line,
+- `null` on EOF (Ctrl-D) — use that to terminate a read loop.
+
+```js
+var line;
+while ((line = prompt('query')) !== null) {   // echoes; null on Ctrl-D
+    line = line.replace(/^\s+|\s+$/g, '');
+    if (!line) continue;                       // blank line
+    if (line === '/quit') break;
+    handle(line);
+}
+```
+
+This only matters for a real TTY. Reading **piped / redirected** input
+(`echo … | jsexec foo.js`, `jsexec foo.js < input`) has no terminal and no
+echo concern, so reading lines off the `stdin` File is fine there.
+
 ## Pitfalls
 
 - `-e` is **not** the inline-expression flag — that's `-r`. `-e<filename>` means
