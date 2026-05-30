@@ -44,6 +44,23 @@ function external_archives(args) {
     var q = String(args.query || '').toLowerCase().replace(/^\s+|\s+$/g, '');
     if (!q) return { error: 'external_archives needs a "query" arg '
                           + '(topic or keyword).' };
+    /* Synchronet's OWN features / configuration are wiki territory, not
+     * BBS-era history.  When the query pairs Synchronet/sbbs with a
+     * technical or config term ("which TLS algorithms does Synchronet
+     * support", "Synchronet MQTT config"), redirect to the wiki instead
+     * of returning this archive's documentary Synchronet entry --
+     * otherwise the model answers a feature question from a history
+     * blurb.  Plain "tell me about Synchronet" / "who created
+     * Synchronet" (no tech term) still get the curated entry. */
+    if ((/\bsynchronet\b/.test(q) || /\bsbbs\b/.test(q))
+        && /\b(tls|ssl|crypt|cipher|encryption|certificate|sbbs\.ini|main\.ini|scfg|ars|mqtt|websocket|javascript|jsexec|smbutil|chksmb|fixsmb|msgbase|filebase|baja|sexyz|binkit|sbbsecho|config(?:ure|uration)?|setting|module|port)\b/.test(q)) {
+        return { query: args.query, count: 0, hits: [],
+                 note: "This is a question about Synchronet's own features "
+                     + "or configuration, which is documented on the "
+                     + "Synchronet wiki (wiki.synchro.net), not in this "
+                     + "BBS-history archive. Answer from the retrieved wiki "
+                     + "context above, not from here." };
+    }
     /* Tool-scoped stopwords.  EVERY entry in this index is about
      * BBSes / the BBS era, so "bbs"/"system"/"history" carry no
      * discriminating signal -- they match dozens of entries and
