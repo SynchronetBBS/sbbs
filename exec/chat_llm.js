@@ -1445,15 +1445,21 @@ function final_reply_postprocess(s)
 
     /* (0) HTML-entity decode.  The 7B model occasionally emits escaped
      * characters -- "&lt;http://...&gt;" when it autolinks a URL in
-     * angle brackets, or "&amp;" inside a URL query string.  Output is
-     * plain text (IRC / terminal), so decode the common entities BEFORE
-     * markdown-stripping and URL validation -- otherwise the literal
-     * "&lt;...&gt;" reaches the user and "&amp;" breaks URL matching
-     * against the curated/wiki sets.  Decode &amp; LAST so we don't
-     * double-decode (e.g. "&amp;lt;" must stay "&lt;"). */
-    s = s.replace(/&lt;/g, '<').replace(/&gt;/g, '>')
-         .replace(/&quot;/g, '"').replace(/&#0*39;/g, "'").replace(/&apos;/g, "'")
-         .replace(/&amp;/g, '&');
+     * angle brackets, "&amp;" inside a URL, and sometimes DOUBLE-escaped
+     * forms ("&amp;lt;...&amp;gt;").  Output is plain text (IRC /
+     * terminal) and the model never legitimately wants a literal "&lt;"
+     * in a chat reply, so decode aggressively: iterate until the string
+     * stops changing (bounded) so double-/triple-escaped entities fully
+     * resolve.  Runs BEFORE markdown-strip and URL validation -- the
+     * literal entities must not reach the user, and "&amp;" would break
+     * URL matching against the curated/wiki sets. */
+    var ent_prev, ent_passes = 0;
+    do {
+        ent_prev = s;
+        s = s.replace(/&lt;/g, '<').replace(/&gt;/g, '>')
+             .replace(/&quot;/g, '"').replace(/&#0*39;/g, "'")
+             .replace(/&apos;/g, "'").replace(/&amp;/g, '&');
+    } while (s !== ent_prev && ++ent_passes < 3);
 
     /* (1) Strip tool-name / JSON leakage.  The model sometimes writes
      * literal tool-call syntax into the user-facing content instead
