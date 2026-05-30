@@ -1536,6 +1536,18 @@ function final_reply_postprocess(s)
      * regex lookbehind, so capture the prefix char and put it back. */
     s = s.replace(/(^|[^\w*])\*([^*\n]+)\*(?!\w)/g, '$1$2');
 
+    /* Drop a dangling "...check out this link: <name>" tail that names
+     * a resource but gives NO actual URL.  The 7B model frequently
+     * appends these ("...for more info, check out this link: BBS
+     * Documentaries"); strip_fake_urls() can't catch them because there
+     * is no URL to strip.  Remove the trailing clause -- from a lead-in
+     * verb through "(this|the) link[:] <name>" to the end -- but ONLY
+     * when that clause carries no http(s) URL, so real citations
+     * survive (verified by the callback). */
+    s = s.replace(
+        /[\s,;.]+(?:(?:and|but)\s+)?(?:for\s+[^.!?\n]{0,40}?\s+)?(?:you\s+can\s+|to\s+)?(?:check(?:ing)?\s+(?:it\s+)?out|see|visit|read\s+more|find\s+(?:out\s+)?more|learn\s+more|explore|refer\s+to)\s+[^.!?\n]*?\b(?:this|the|the\s+following)\s+links?\b\s*:?[^.!?\n]*$/i,
+        function (m) { return /https?:\/\//.test(m) ? m : '.'; });
+
     /* (5) Collapse 2+ consecutive newlines to a single space.  By the
      * time we get here streaming has already drawn the paragraph
      * break on the terminal -- the post-processing affects the STORED
